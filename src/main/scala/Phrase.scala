@@ -19,11 +19,14 @@ case class New(f : Phrase) extends Phrase
 case class Assign(lhs : Phrase, rhs : Phrase) extends Phrase
 case class IfThenElse(cond : Phrase, thenP : Phrase, elseP : Phrase) extends Phrase
 case class For(upper : Phrase, body: Phrase) extends Phrase
-case class IntLitteral(i : Int) extends Phrase
+case class IntLiteral(i : Int) extends Phrase
 
+
+
+case class BinOp(op : BinOp.Op.Value, lhs : Phrase, rhs : Phrase) extends Phrase
 
 object BinOp {
-  class Op extends Enumeration {
+  object Op extends Enumeration {
     val ADD = Value("+")
     val SUB = Value("-")
     val MUL = Value("*")
@@ -31,5 +34,3 @@ object BinOp {
     val MOD = Value("%")
   }
 }
-
-case class BinOp(op : BinOp.Op, lhs : Phrase, rhs : Phrase) extends Phrase

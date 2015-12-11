@@ -10,16 +10,16 @@ object float extends DataType
 
 class PhraseType extends Type
 
-case class Exp(t : DataType) extends PhraseType
+case class ExpType(t : DataType) extends PhraseType
 
-case class Acc(t : DataType) extends PhraseType
+case class AccType(t : DataType) extends PhraseType
 
 object Command extends PhraseType
 
-case class Tuple(t1 : PhraseType, t2 : PhraseType) extends PhraseType
+case class PairType(t1 : PhraseType, t2 : PhraseType) extends PhraseType
 
-case class Function(inT : PhraseType, outT : PhraseType) extends PhraseType
+case class FunctionType(inT : PhraseType, outT : PhraseType) extends PhraseType
 
-case class PassiveFunction(inT : PhraseType, outT : PhraseType) extends PhraseType
+case class PassiveFunctionType(inT : PhraseType, outT : PhraseType) extends PhraseType
 
 // TODO: deal with "type variable" related to Kind
