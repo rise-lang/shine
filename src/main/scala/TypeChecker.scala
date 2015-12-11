@@ -31,13 +31,13 @@ object TypeChecker {
 
     case Pair(a, b) => PairType(TypeChecker(a), TypeChecker(b))
 
-    case Proj0(pair) =>
+    case Proj1(pair) =>
       TypeChecker(pair) match {
         case pt: PairType[_, _] => pt.t1
         case t => error(t.toString, PairType.toString)
       }
 
-    case Proj1(pair) =>
+    case Proj2(pair) =>
       TypeChecker(pair) match {
         case pt: PairType[_, _] => pt.t2
         case t => error(t.toString, PairType.toString)

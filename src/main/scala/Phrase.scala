@@ -2,13 +2,26 @@ import PhraseType._
 
 sealed abstract class Phrase[T <: PhraseType] {
   var t : T = null.asInstanceOf[T]
+
+//  def add(rhs: Phrase[ExpType]) : Phrase[ExpType] = {
+//    BinOp(BinOp.Op.ADD, this, rhs)
+//  }
+}
+
+object Phrase {
+  type π1[T1 <: PhraseType, T2 <: PhraseType] = Proj1[T1, T2]
+  type π2[T1 <: PhraseType, T2 <: PhraseType] = Proj2[T1, T2]
 }
 
 case class Ident[T <: PhraseType](name : String)
   extends Phrase[T]
 
 case class Lambda[T1 <: PhraseType, T2 <: PhraseType](param : Phrase[T1], body : Phrase[T2])
-  extends Phrase[T1 -> T2]
+  extends Phrase[T1 -> T2] {
+  def apply(arg: Phrase[T1]): Apply[T1, T2] = {
+    Apply(this, arg)
+  }
+}
 
 case class Apply[T1 <: PhraseType, T2 <: PhraseType](fun : Phrase[T1 -> T2], arg: Phrase[T1])
   extends Phrase[T2]
@@ -16,10 +29,10 @@ case class Apply[T1 <: PhraseType, T2 <: PhraseType](fun : Phrase[T1 -> T2], arg
 case class Pair[T1 <: PhraseType, T2 <: PhraseType](fst : Phrase[T1], snd : Phrase[T2])
   extends Phrase[T1 x T2]
 
-case class Proj0[T1 <: PhraseType, T2 <: PhraseType](pair : Phrase[T1 x T2])
+case class Proj1[T1 <: PhraseType, T2 <: PhraseType](pair : Phrase[T1 x T2])
   extends Phrase[T1]
 
-case class Proj1[T1 <: PhraseType, T2 <: PhraseType](pair : Phrase[T1 x T2])
+case class Proj2[T1 <: PhraseType, T2 <: PhraseType](pair : Phrase[T1 x T2])
   extends Phrase[T2]
 
 case class Skip()
