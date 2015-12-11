@@ -1,18 +1,8 @@
-sealed class Type
+sealed trait PhraseType
 
+case class ExpType(dataType : DataType) extends PhraseType
 
-class DataType extends Type
-
-object bool extends DataType
-object int extends DataType
-object int4 extends DataType
-object float extends DataType
-
-class PhraseType extends Type
-
-case class ExpType(t : DataType) extends PhraseType
-
-case class AccType(t : DataType) extends PhraseType
+case class AccType(dataType : DataType) extends PhraseType
 
 object Command extends PhraseType
 
