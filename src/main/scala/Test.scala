@@ -1,14 +1,17 @@
+import PhraseType._
 
 object Test extends App {
 
-
-  val v1 = Ident("v1")
+  val v1 = Ident[ExpType]("v1")
   v1.t = ExpType(int)
   val l = Lambda(v1, v1)
 
   println(TypeChecker(l))
 
-  val v2 = Ident("v2")
+  val ty: ExpType -> ExpType
+    = FunctionType(ExpType(int), ExpType(float))
+
+  val v2 = Ident[ExpType]("v2")
   v2.t = ExpType(int)
   println(TypeChecker(Apply(l, v2)))
 

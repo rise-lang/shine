@@ -4,12 +4,23 @@ case class ExpType(dataType : DataType) extends PhraseType
 
 case class AccType(dataType : DataType) extends PhraseType
 
-object Command extends PhraseType
+case class CommandType() extends PhraseType
 
-case class PairType(t1 : PhraseType, t2 : PhraseType) extends PhraseType
+case class PairType[T1 <: PhraseType, T2 <: PhraseType](t1 : T1, t2 : T2) extends PhraseType
 
-case class FunctionType(inT : PhraseType, outT : PhraseType) extends PhraseType
+case class FunctionType[T1 <: PhraseType, T2 <: PhraseType](inT : T1, outT : T2) extends PhraseType
 
-case class PassiveFunctionType(inT : PhraseType, outT : PhraseType) extends PhraseType
+case class PassiveFunctionType[T1 <: PhraseType, T2 <: PhraseType](inT : T1, outT : T2)
+  extends PhraseType
 
-// TODO: deal with "type variable" related to Kind
+// convenience types for writing the phrase types more readable
+object PhraseType {
+  // TODO: move into package object ...
+
+  type x[T1 <: PhraseType, T2 <: PhraseType] = PairType[T1, T2]
+  type ->[T1 <: PhraseType, T2 <: PhraseType] = FunctionType[T1, T2]
+  type `->p`[T1 <: PhraseType, T2 <: PhraseType] = PassiveFunctionType[T1, T2]
+  type VarType = ExpType x AccType
+}
+
+// TODO: introduce "type variables"
