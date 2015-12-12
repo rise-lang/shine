@@ -1,4 +1,4 @@
-import PhraseType._
+import PhraseExtensions._
 
 object Test extends App {
 
@@ -14,13 +14,19 @@ object Test extends App {
 
   val one = IntLiteral(1)
   val two = IntLiteral(2)
-  val add = BinOp(BinOp.Op.ADD, one, two)
-  println(TypeChecker(add))
+  println(TypeChecker(one + two))
 
-  val l2 = Lambda(v1, BinOp(BinOp.Op.ADD, one, v1))
-  println(TypeChecker(Apply(l2, two)))
+  val l2 = Lambda(v1, one % v1)
+  println(TypeChecker( l2(two) ))
 
   val p = Pair(v1, one)
   println(TypeChecker( p ))
+
+  val acc = Ident[AccType]("x")
+  acc.t = AccType(int)
+  val assign: Assign = acc := one
+  val skip: Seq = assign `;` Skip()
+
+  println(TypeChecker( skip ))
 
 }

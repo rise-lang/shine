@@ -48,13 +48,15 @@ object TypeChecker {
     case Seq(c1, c2) =>
       check(TypeChecker(c1), CommandType())
       check(TypeChecker(c2), CommandType())
-      FunctionType(PairType(CommandType(), CommandType()),CommandType())
+//      FunctionType(PairType(CommandType(), CommandType()),CommandType())
+      CommandType()
 
     case New(f) =>
       TypeChecker(f) match {
         case funType@FunctionType(PairType(ExpType(d1), AccType(d2)), CommandType()) =>
           if (d1 == d2) {
-            PassiveFunctionType(funType, CommandType())
+//            PassiveFunctionType(funType, CommandType())
+            CommandType()
           } else {
             error(d1.toString +" and "+d2.toString, expected="them to match")
           }
@@ -66,7 +68,8 @@ object TypeChecker {
         (TypeChecker(lhs), TypeChecker(rhs)) match {
           case (at@AccType(d1), et@ExpType(d2)) =>
             if (d1 == d2) {
-              PassiveFunctionType(PairType(at, et), CommandType())
+//              PassiveFunctionType(PairType(at, et), CommandType())
+              CommandType()
             } else {
               error(d1.toString +" and "+d2.toString, expected="them to match")
             }
@@ -79,14 +82,16 @@ object TypeChecker {
         val thenPT = TypeChecker(thenP)
         val elsePT = TypeChecker(elseP)
         check(thenPT,elsePT)
-        PassiveFunctionType(
-          PairType(ExpType(bool),PairType(thenPT, elsePT)),thenPT)
+//        PassiveFunctionType(
+//          PairType(ExpType(bool),PairType(thenPT, elsePT)),thenPT)
+        thenPT
 
       case For(upper, body) =>
         check(TypeChecker(upper), ExpType(int))
         check(TypeChecker(body), CommandType())
-        FunctionType(
-          PairType(ExpType(int), FunctionType(ExpType(int), CommandType())), CommandType())
+//        FunctionType(
+//          PairType(ExpType(int), FunctionType(ExpType(int), CommandType())), CommandType())
+        CommandType()
 
 
       case IntLiteral(i) => ExpType(int)
