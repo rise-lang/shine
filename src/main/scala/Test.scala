@@ -27,11 +27,11 @@ object Test extends App {
 
   println(TypeChecker( s ))
 
-  val scopedLambda: Phrase[ (ExpType x AccType) -> CommandType ] =
-    \ ( ExpType(int) x AccType(int) ) {
-      pair =>
-        π2(pair) := IntLiteral(42)
-    }
+//  val scopedLambda: Phrase[ (ExpType x AccType) -> CommandType ] =
 
-  val n = New( scopedLambda )
+
+  val n = New( \ ( ExpType(int) x AccType(int) ) {
+    pair =>
+      π2(pair) := IntLiteral(42)
+  } )
 }

@@ -1,5 +1,7 @@
 import PhraseType._
 
+import scala.language.implicitConversions
+
 object PhraseExtensions {
   implicit class BinOps(lhs: Phrase[ExpType]) {
     def +(rhs: Phrase[ExpType]) = BinOp(BinOp.Op.ADD, lhs, rhs)
@@ -47,7 +49,7 @@ object VarType {
 
 object `;` {
   def apply(): Phrase[CommandType x CommandType -> CommandType] = {
-    \ ( PairType(CommandType(), CommandType()) ) {
+    \ ( CommandType() x CommandType() ) {
       pair => Seq(Proj1(pair), Proj2(pair))
     }
   }
