@@ -1,32 +1,37 @@
 import PhraseExtensions._
+import PhraseType._
 
 object Test extends App {
 
-  val v1 = identifier("v1")
-  v1.t = ExpType(int)
-  val l = Lambda(v1, v1)
+  val v1 = identifier("v1", ExpType(int))
+  val l = \(v1, v1)
 
   println(TypeChecker( l ))
 
-  val v2 = identifier("v2")
-  v2.t = ExpType(int)
+  val v2 = identifier("v2", ExpType(int))
   println(TypeChecker( l(v2) ))
 
   val one = IntLiteral(1)
   val two = IntLiteral(2)
   println(TypeChecker(one + two))
 
-  val l2 = Lambda(v1, one % v1)
+  val l2 = \(ExpType(int))(x => one % x)
   println(TypeChecker( l2(two) ))
 
-  val p = Pair(v1, one)
+  val p: Pair[ExpType, ExpType] = (v1, one)
   println(TypeChecker( p ))
 
-  val acc = Ident[AccType]("x")
-  acc.t = AccType(int)
+  val acc = identifier("x", AccType(int))
   val assign: Assign = acc := one
-  val skip: Seq = assign `;` Skip()
+  val s: Seq = assign `;` skip
 
-  println(TypeChecker( skip ))
+  println(TypeChecker( s ))
 
+  val scopedLambda: Phrase[ (ExpType x AccType) -> CommandType ] =
+    \ ( ExpType(int) x AccType(int) ) {
+      pair =>
+        π2(pair) := IntLiteral(42)
+    }
+
+  val n = New( scopedLambda )
 }

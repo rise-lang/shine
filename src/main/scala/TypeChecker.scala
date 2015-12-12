@@ -1,3 +1,5 @@
+import PhraseExtensions._
+
 class TypeException(msg : String) extends Exception(msg)
 
 object TypeChecker {
@@ -19,7 +21,7 @@ object TypeChecker {
         throw new TypeException("Type error: type not set for "+i)
       i.t
 
-    case Lambda(param, body) => FunctionType(TypeChecker(param), TypeChecker(body))
+    case Lambda(param, body) => TypeChecker(param) -> TypeChecker(body)
 
     case Apply(fun, arg) =>
       TypeChecker(fun) match {
@@ -29,7 +31,7 @@ object TypeChecker {
         case t => error(t.toString, FunctionType.toString)
       }
 
-    case Pair(a, b) => PairType(TypeChecker(a), TypeChecker(b))
+    case Pair(a, b) => TypeChecker(a) x TypeChecker(b)
 
     case Proj1(pair) =>
       TypeChecker(pair) match {
@@ -43,7 +45,7 @@ object TypeChecker {
         case t => error(t.toString, PairType.toString)
       }
 
-    case _: Skip => CommandType()
+    case _: SkipPhrase => CommandType()
 
     case Seq(c1, c2) =>
       check(TypeChecker(c1), CommandType())

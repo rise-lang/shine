@@ -4,11 +4,6 @@ sealed abstract class Phrase[T <: PhraseType] {
   var t : T = null.asInstanceOf[T]
 }
 
-object Phrase {
-  type π1[T1 <: PhraseType, T2 <: PhraseType] = Proj1[T1, T2]
-  type π2[T1 <: PhraseType, T2 <: PhraseType] = Proj2[T1, T2]
-}
-
 case class Ident[T <: PhraseType](name : String)
   extends Phrase[T]
 
@@ -27,28 +22,23 @@ case class Proj1[T1 <: PhraseType, T2 <: PhraseType](pair : Phrase[T1 x T2])
 case class Proj2[T1 <: PhraseType, T2 <: PhraseType](pair : Phrase[T1 x T2])
   extends Phrase[T2]
 
-case class Skip()
+case class SkipPhrase()
   extends Phrase[CommandType]
 
 case class Seq(c1 : Phrase[CommandType], c2 : Phrase[CommandType])
   extends Phrase[CommandType]
-  //extends Phrase[CommandType x CommandType -> CommandType]
 
 case class New(f : Phrase[ (ExpType x AccType) -> CommandType ])
   extends Phrase[CommandType]
-  //extends Phrase[(VarType -> CommandType) `->p` CommandType]
 
 case class Assign(lhs : Phrase[AccType], rhs : Phrase[ExpType])
   extends Phrase[CommandType]
-  //extends Phrase[AccType x ExpType `->p` CommandType]
 
 case class IfThenElse[T <: PhraseType](cond : Phrase[ExpType], thenP : Phrase[T], elseP : Phrase[T])
   extends Phrase[T]
-  //extends Phrase[ExpType x T x T `->p` T]
 
 case class For(n : Phrase[ExpType], body: Phrase[ExpType -> CommandType])
   extends Phrase[CommandType]
-  //extends Phrase[ExpType x (ExpType -> CommandType) -> CommandType]
 
 case class IntLiteral(i : Int)
   extends Phrase[ExpType]
