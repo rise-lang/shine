@@ -77,7 +77,10 @@ object TypeChecker {
 
       case IfThenElse(cond, thenP, elseP) =>
         val condT = TypeChecker(cond)
-        check (condT, ExpType(bool))
+        // TODO: Decide on this: the evaluation currently want this to be an int
+//        check (condT, ExpType(bool))
+        check(condT, ExpType(int))
+
         val thenPT = TypeChecker(thenP)
         val elsePT = TypeChecker(elseP)
         check(thenPT,elsePT)
