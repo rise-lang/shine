@@ -3,6 +3,7 @@ import PhraseType._
 import scala.language.implicitConversions
 
 object PhraseExtensions {
+
   implicit class BinOps(lhs: Phrase[ExpType]) {
     def +(rhs: Phrase[ExpType]) = BinOp(BinOp.Op.ADD, lhs, rhs)
     def -(rhs: Phrase[ExpType]) = BinOp(BinOp.Op.SUB, lhs, rhs)
@@ -94,21 +95,32 @@ object makeIfThenElse {
   }
 }
 
+
+object makeFor {
+  def apply() = {
+    //: Phrase[ ExpType x (ExpType -> CommandType) -> CommandType ]
+    \(ExpType(int) x (ExpType(int) -> CommandType())) {
+      args => {
+        For(π1(args), π2(args))
+      }
+    }
+  }
+}
+
 object `if` {
   def apply[T <: PhraseType](cond: Phrase[ExpType], thenP: Phrase[T], elseP: Phrase[T]) = {
     IfThenElse(cond, thenP, elseP)
   }
 }
 
-object makeFor {
-  def apply() =  {
-    //: Phrase[ ExpType x (ExpType -> CommandType) -> CommandType ]
-    \ ( ExpType(int) x (ExpType(int) -> CommandType()) ) {
-      args => {
-        For(π1(args), π2(args))
-      }
-    }
+object `for` {
+  def apply(n: Phrase[ExpType], f: (Phrase[ExpType] => Phrase[CommandType])) = {
+    For(n, λ( ExpType(int) ) { i => f(i) })
   }
+}
+
+object `new` {
+  def apply(f: Phrase[ (ExpType x AccType) -> CommandType ]) = New(f)
 }
 
 object π1 {
@@ -179,4 +191,5 @@ object \ extends funDef
 object λ extends funDef
 
 object skip extends SkipPhrase
+
 

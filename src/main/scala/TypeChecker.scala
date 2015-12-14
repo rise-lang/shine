@@ -88,7 +88,7 @@ object TypeChecker {
 
       case For(upper, body) =>
         check(TypeChecker(upper), ExpType(int))
-        check(TypeChecker(body), CommandType())
+        check(TypeChecker(body), FunctionType(ExpType(int), CommandType()))
         CommandType()
 
 
