@@ -58,7 +58,7 @@ object TypeChecker {
       check(TypeChecker(c2), CommandType())
       CommandType()
 
-    case New(f) =>
+    case NewPhrase(f) =>
       TypeChecker(f) match {
         case funType@FunctionType(PairType(ExpType(d1), AccType(d2)), CommandType()) =>
           if (d1 == d2) {
@@ -92,13 +92,15 @@ object TypeChecker {
       check(thenPT,elsePT)
       thenPT
 
-    case For(upper, body) =>
+    case ForPhrase(upper, body) =>
       check(TypeChecker(upper), ExpType(int))
       check(TypeChecker(body), FunctionType(ExpType(int), CommandType()))
       CommandType()
 
 
     case IntLiteral(i) => ExpType(int)
+
+    case Literal(d) => ExpType(d.dataType)
 
     case BinOp(op, lhs, rhs) =>
       check(TypeChecker(lhs), ExpType(int))
@@ -108,18 +110,37 @@ object TypeChecker {
     case Map(f, in) =>
       TypeChecker(f) match {
         case funType@FunctionType(ExpType(a), ExpType(b)) =>
-          check(TypeChecker(in), ExpType(ArrayType(a)))
-          ExpType(ArrayType(b))
+          TypeChecker(in) match {
+            case ExpType(ArrayType(n, a1)) if a == a1 =>
+              ExpType(ArrayType(n, b))
+          }
         case t => error(t.toString, "FunctionType")
       }
 
     case Zip(lhs, rhs) =>
       (TypeChecker(lhs), TypeChecker(rhs)) match {
-        case (ExpType(ArrayType(a)), ExpType(ArrayType(b))) =>
-          ExpType(ArrayType(RecordType(a, b)))
-        case t => error(t.toString(), "Zip")
+        case (ExpType(ArrayType(n, a)), ExpType(ArrayType(m, b))) if n == m =>
+          ExpType(ArrayType(n, RecordType(a, b)))
+        case t => error(t.toString(), "PairOfArrayTypes")
       }
 
+    case Length(array) =>
+      TypeChecker(array) match {
+        case ExpType(ArrayType(n, t)) => ExpType(int)
+        case t => error(t.toString(), "ArrayType")
+      }
+
+    case ArrayExpAccess(array, index) =>
+      TypeChecker(array) match {
+        case ExpType(ArrayType(n, t)) => ExpType(t)
+        case t => error(t.toString(), "ArrayType")
+      }
+
+    case ArrayAccAccess(array, index) =>
+      TypeChecker(array) match {
+        case AccType(ArrayType(n, t)) => AccType(t)
+        case t => error(t.toString(), "ArrayType")
+      }
   }
 
 }

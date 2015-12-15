@@ -46,6 +46,12 @@ object PhraseExtensions {
   implicit class ExpPhraseExtensions(e: Phrase[ExpType]) {
     def _1() = FieldAccess(0, e)
     def _2() = FieldAccess(1, e)
+
+    def `@`(index: Phrase[ExpType]) = ArrayExpAccess(e, index)
+  }
+
+  implicit class AccPhraseExtensions(a: Phrase[AccType]) {
+    def `@`(index: Phrase[ExpType]) = ArrayAccAccess(a, index)
   }
 }
 
@@ -69,7 +75,7 @@ object makeNew {
   def apply(t: DataType) = {
     //: Phrase[(VarType -> CommandType) -> CommandType]
     \ ( VarType(t) -> CommandType() ) {
-      f => New(f)
+      f => NewPhrase(f)
     }
   }
 }
@@ -106,7 +112,7 @@ object makeFor {
     //: Phrase[ ExpType x (ExpType -> CommandType) -> CommandType ]
     \(ExpType(int) x (ExpType(int) -> CommandType())) {
       args => {
-        For(π1(args), π2(args))
+        ForPhrase(π1(args), π2(args))
       }
     }
   }
@@ -120,12 +126,12 @@ object `if` {
 
 object `for` {
   def apply(n: Phrase[ExpType], f: (Phrase[ExpType] => Phrase[CommandType])) = {
-    For(n, λ( ExpType(int) ) { i => f(i) })
+    ForPhrase(n, λ( ExpType(int) ) { i => f(i) })
   }
 }
 
 object `new` {
-  def apply(f: Phrase[ (ExpType x AccType) -> CommandType ]) = New(f)
+  def apply(f: Phrase[ (ExpType x AccType) -> CommandType ]) = NewPhrase(f)
 }
 
 object π1 {

@@ -97,12 +97,12 @@ object Test extends App {
   {
     var store = HashMap[String, Data]()
 
-    val in1 = identifier("in1", ExpType(ArrayType(int)))
-    val in2 = identifier("in2", ExpType(ArrayType(int)))
-    val out = identifier("out", AccType(ArrayType(int)))
-    store = store + (in1.name -> 1)
-    store = store + (in2.name -> 2)
-    store = store + (out.name -> 0)
+    val in1 = identifier("in1", ExpType(ArrayType(5, int)))
+    val in2 = identifier("in2", ExpType(ArrayType(5, int)))
+    val out = identifier("out", AccType(ArrayType(5, int)))
+    store = store + (in1.name -> ArrayData(Vector(1, 2, 3, 4, 5)))
+    store = store + (in2.name -> ArrayData(Vector(2, 3, 4, 5, 6)))
+    store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0, 0)))
 
     val f = λ( ExpType(RecordType(int, int)) ) { x => x._1 + x._2 }
 
@@ -115,52 +115,73 @@ object Test extends App {
     println( OperationalSemantics.evalCommand(store, p) )
   }
 
-//  {
-//    var store = HashMap[String, Data]()
-//
-//    val in1 = identifier("in1", ExpType(int))
-//    val in2 = identifier("in2", ExpType(int))
-//    val out = identifier("out", AccType(int))
-//    store = store + (in1.name -> 1)
-//    store = store + (in2.name -> 2)
-//    store = store + (out.name -> 0)
-//
-//    val f = λ( ExpType(RecordType(int, int)) ) { x => x._1 + x._2 }
-//
-//    val p = `for`(1, { _ =>
-//      λ( AccType(int) x ExpType(RecordType(int, int)) ) {
-//        p => π1(p) := f(π2(p))
-//      }(Pair(out, Zip(in1, in2)))
-//    })
-//
-//    println( p )
-//
-//    println( TypeChecker(p) )
-//
-//    println( OperationalSemantics.evalCommand(store, p) )
-//  }
-//
-//  {
-//    var store = HashMap[String, Data]()
-//
-//    val in1 = identifier("in1", ExpType(int))
-//    val in2 = identifier("in2", ExpType(int))
-//    val out = identifier("out", AccType(int))
-//    store = store + (in1.name -> 1)
-//    store = store + (in2.name -> 2)
-//    store = store + (out.name -> 0)
-//
-//    val f = λ( ExpType(RecordType(int, int)) ) { x => x._1 + x._2 }
-//
-//    val p = `for`(1, { _ =>
-//      out := f(Zip(in1, in2))
-//    })
-//
-//    println( p )
-//
-//    println( TypeChecker(p) )
-//
-//    println( OperationalSemantics.evalCommand(store, p) )
-//  }
+  {
+    var store = HashMap[String, Data]()
+
+    val in1 = identifier("in1", ExpType(ArrayType(5, int)))
+    val in2 = identifier("in2", ExpType(ArrayType(5, int)))
+    val out = identifier("out", AccType(ArrayType(5, int)))
+    store = store + (in1.name -> ArrayData(Vector(1, 2, 3, 4, 5)))
+    store = store + (in2.name -> ArrayData(Vector(2, 3, 4, 5, 6)))
+    store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0, 0)))
+
+    val f = λ( ExpType(RecordType(int, int)) ) { x => x._1 + x._2 }
+
+    val p = `for`(Length(in1), { i =>
+      λ( AccType(int) x ExpType(RecordType(int, int)) ) {
+        p => π1(p) := f(π2(p))
+      }(Pair(out `@` i, Zip(in1, in2) `@` i))
+    })
+
+    println( p )
+
+    println( TypeChecker(p) )
+
+    println( OperationalSemantics.evalCommand(store, p) )
+  }
+
+  {
+    var store = HashMap[String, Data]()
+
+    val in1 = identifier("in1", ExpType(ArrayType(5, int)))
+    val in2 = identifier("in2", ExpType(ArrayType(5, int)))
+    val out = identifier("out", AccType(ArrayType(5, int)))
+    store = store + (in1.name -> ArrayData(Vector(1, 2, 3, 4, 5)))
+    store = store + (in2.name -> ArrayData(Vector(2, 3, 4, 5, 6)))
+    store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0, 0)))
+
+    val f = λ( ExpType(RecordType(int, int)) ) { x => x._1 + x._2 }
+
+    val p = `for`(Length(in1), { i =>
+      out `@` i := f(Zip(in1, in2) `@` i)
+    })
+
+    println( p )
+
+    println( TypeChecker(p) )
+
+    println( OperationalSemantics.evalCommand(store, p) )
+  }
+
+  {
+    var store = HashMap[String, Data]()
+
+    val in1 = identifier("in1", ExpType(ArrayType(5, int)))
+    val in2 = identifier("in2", ExpType(ArrayType(5, int)))
+    val out = identifier("out", AccType(ArrayType(5, int)))
+    store = store + (in1.name -> ArrayData(Vector(1, 2, 3, 4, 5)))
+    store = store + (in2.name -> ArrayData(Vector(2, 3, 4, 5, 6)))
+    store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0, 0)))
+
+    val p = `for`(Length(in1), { i =>
+      out `@` i := (Zip(in1, in2) `@` i)._1 + (Zip(in1, in2) `@` i)._2
+    })
+
+    println( p )
+
+    println( TypeChecker(p) )
+
+    println( OperationalSemantics.evalCommand(store, p) )
+  }
 
 }

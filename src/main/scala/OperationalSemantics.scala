@@ -6,13 +6,14 @@ import scala.language.implicitConversions
 
 object OperationalSemantics {
 
-  abstract class Data
-  case class BoolData(b: Boolean) extends Data
-  case class IntData(i: Int) extends Data
-  case class Int4Data(i0: Int, i1: Int, i2: Int, i3: Int) extends Data
-  case class FloatData(f: Float) extends Data
-  case class ArrayData(a: Array[Data]) extends Data
-  case class RecordData(fields: Data*) extends Data
+//  sealed
+  abstract class Data(val dataType: DataType)
+  case class BoolData(b: Boolean) extends Data(bool)
+  case class IntData(i: Int) extends Data(int)
+  case class Int4Data(i0: Int, i1: Int, i2: Int, i3: Int) extends Data(int4)
+  case class FloatData(f: Float) extends Data(float)
+  case class ArrayData(a: Vector[Data]) extends Data(ArrayType(a.length, a.head.dataType))
+  case class RecordData(fields: Data*) extends Data(RecordType(fields.map(_.dataType):_*))
 
   implicit def toIntData(i: Int): IntData = IntData(i)
 
@@ -49,8 +50,8 @@ object OperationalSemantics {
         case Seq(c1, c2) =>
           Seq(substitute(p1, p2, c1), substitute(p1, p2, c2)).asInstanceOf[Phrase[T2]]
 
-        case New(f) =>
-          New(substitute(p1, p2, f)).asInstanceOf[Phrase[T2]]
+        case NewPhrase(f) =>
+          NewPhrase(substitute(p1, p2, f)).asInstanceOf[Phrase[T2]]
 
         case Assign(lhs, rhs) =>
           Assign(substitute(p1, p2, lhs), substitute(p1, p2, rhs)).asInstanceOf[Phrase[T2]]
@@ -61,8 +62,8 @@ object OperationalSemantics {
           val newElseP = substitute(p1, p2, i.elseP)
           IfThenElse(newCond, newThenP, newElseP)
 
-        case For(n, body) =>
-          For(substitute(p1, p2, n), substitute(p1, p2, body)).asInstanceOf[Phrase[T2]]
+        case ForPhrase(n, body) =>
+          ForPhrase(substitute(p1, p2, n), substitute(p1, p2, body)).asInstanceOf[Phrase[T2]]
 
         case BinOp(op, lhs, rhs) =>
           BinOp(op, substitute(p1, p2, lhs), substitute(p1, p2, rhs)).asInstanceOf[Phrase[T2]]
@@ -73,8 +74,17 @@ object OperationalSemantics {
         case Zip(lhs, rhs) =>
           Zip(substitute(p1, p2, lhs), substitute(p1, p2, rhs)).asInstanceOf[Phrase[T2]]
 
+        case Length(array) => Length(substitute(p1, p2, array)).asInstanceOf[Phrase[T2]]
+
+        case ArrayExpAccess(array, index) =>
+          ArrayExpAccess(substitute(p1, p2, array), substitute(p1, p2, index)).asInstanceOf[Phrase[T2]]
+
+        case ArrayAccAccess(array, index) =>
+          ArrayAccAccess(substitute(p1, p2, array), substitute(p1, p2, index)).asInstanceOf[Phrase[T2]]
+
         case _: Ident[_]   => in
         case _: IntLiteral => in
+        case _: Literal    => in
         case _: SkipPhrase => in
       }
     }
@@ -165,7 +175,6 @@ object OperationalSemantics {
           case r: RecordData => r.fields(n)
         }
 
-
       case p1: Proj1[ExpType, b] =>
         val pair = evalPair(s, p1.pair)
         evalExp(s, pair._1)
@@ -182,7 +191,9 @@ object OperationalSemantics {
           evalExp(s, ifThenElse.elseP)
         }
 
-      case z: IntLiteral => IntData(z.i)
+      case IntLiteral(i) => IntData(i)
+
+      case Literal(d) => d
 
       case op: BinOp =>
         op.op match {
@@ -195,10 +206,28 @@ object OperationalSemantics {
 
       case m: Map =>
         val f = evalFunction(s, m.f)
-        evalExp(s, f(m.in))
+        evalExp(s, m.in) match {
+          case ArrayData(xs) =>
+            ArrayData(xs.map { x => evalExp(s, f(Literal(x))) })
+        }
 
       case z: Zip =>
-        RecordData(evalExp(s, z.lhs), evalExp(s, z.rhs))
+        (evalExp(s, z.lhs), evalExp(s, z.rhs)) match {
+          case (ArrayData(lhs), ArrayData(rhs)) =>
+            ArrayData( (lhs zip rhs) map { p =>
+              RecordData(p._1, p._2)
+            } )
+        }
+
+      case l: Length =>
+        evalExp(s, l.array) match {
+          case ArrayData(array) => IntData(array.length)
+        }
+
+      case ArrayExpAccess(array, index) =>
+        (evalExp(s, array), evalExp(s, index)) match {
+          case (ArrayData(xs), IntData(i)) => xs(i)
+        }
     }
   }
 
@@ -225,6 +254,9 @@ object OperationalSemantics {
         } else {
           evalAcc(s, ifThenElse.elseP)
         }
+
+      case ArrayAccAccess(array, index) =>
+        evalAcc(s, array) + "[" + evalExp(s, index).asInstanceOf[IntData].i + "]"
     }
   }
 
@@ -251,13 +283,21 @@ object OperationalSemantics {
         val s1 = evalCommand(s, c1)
         evalCommand(s1, c2)
 
-      case New(f) => evalNew(s, f)
+      case NewPhrase(f) => evalNew(s, f)
 
       case Assign(lhs, rhs) =>
         val varName = evalAcc(s, lhs)
         val value = evalExp(s, rhs)
-        assert( s.contains(varName) )
-        s + (varName -> value)
+        if (varName.endsWith("]")) {
+          val (name, index) = varName.splitAt(varName.indexOf("["))
+          assert(s.contains(name))
+          val vec = s(name).asInstanceOf[ArrayData].a
+          val i = index.substring(1, index.length-1).toInt
+          s + (name -> ArrayData(vec.updated(i, value)))
+        } else {
+          assert(s.contains(varName))
+          s + (varName -> value)
+        }
 
       case ifThenElse: IfThenElse[CommandType] =>
         val cond = evalCondExp(s, ifThenElse.cond)
@@ -267,7 +307,7 @@ object OperationalSemantics {
           evalCommand(s, ifThenElse.elseP)
         }
 
-      case For(nP, bodyP) =>
+      case ForPhrase(nP, bodyP) =>
         val n = evalIntExp(s, nP)
         val body = evalFunction(s, bodyP)
         var s1 = s

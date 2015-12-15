@@ -30,7 +30,7 @@ case class SkipPhrase()
 case class Seq(c1 : Phrase[CommandType], c2 : Phrase[CommandType])
   extends Phrase[CommandType]
 
-case class New(f : Phrase[ (ExpType x AccType) -> CommandType ])
+case class NewPhrase(f : Phrase[ (ExpType x AccType) -> CommandType ])
   extends Phrase[CommandType]
 
 case class Assign(lhs : Phrase[AccType], rhs : Phrase[ExpType])
@@ -39,11 +39,13 @@ case class Assign(lhs : Phrase[AccType], rhs : Phrase[ExpType])
 case class IfThenElse[T <: PhraseType](cond : Phrase[ExpType], thenP : Phrase[T], elseP : Phrase[T])
   extends Phrase[T]
 
-case class For(n : Phrase[ExpType], body: Phrase[ExpType -> CommandType])
+case class ForPhrase(n : Phrase[ExpType], body: Phrase[ExpType -> CommandType])
   extends Phrase[CommandType]
 
 case class IntLiteral(i : Int)
   extends Phrase[ExpType]
+
+case class Literal(d: OperationalSemantics.Data) extends Phrase[ExpType]
 
 case class BinOp(op : BinOp.Op.Value, lhs : Phrase[ExpType], rhs : Phrase[ExpType])
   extends Phrase[ExpType]
@@ -61,3 +63,9 @@ object BinOp {
 case class Map(f: Phrase[ExpType -> ExpType], in: Phrase[ExpType]) extends Phrase[ExpType]
 
 case class Zip(lhs: Phrase[ExpType], rhs: Phrase[ExpType]) extends Phrase[ExpType]
+
+case class Length(array: Phrase[ExpType]) extends Phrase[ExpType]
+
+case class ArrayExpAccess(array: Phrase[ExpType], index: Phrase[ExpType]) extends Phrase[ExpType]
+
+case class ArrayAccAccess(array: Phrase[AccType], index: Phrase[ExpType]) extends Phrase[AccType]
