@@ -4,9 +4,16 @@ import PhraseType._
 import scala.language.implicitConversions
 
 // countable set; representing state of the store
-class World
+abstract class World
+
+class Z extends World
 
 class PairOfWorlds[W1 <: World, W2 <: World](val w1: W1, val w2: W2) extends World
+
+object Worlds {
+  type xx[W1 <: World, W2 <: World] = PairOfWorlds[W1, W2]
+}
+import Worlds._
 
 // (a) extract sub-part of the store
 // (b) update a sub-part of the store
@@ -14,6 +21,7 @@ abstract class Lense[W1 <: World, W2 <: World] {
   def get(w: W1): W2
   def put(w2: W2, w1: W1): W1
 
+  // seq composition of lenses
   def o[W3 <: World](l2: Lense[W3, W1]): Lense[W3, W2] = {
     val l1: Lense[W1, W2] = this
     new Lense[W3, W2] {
@@ -31,18 +39,18 @@ class idLense[W <: World] extends Lense[W, W] {
   def put(w: W, `w'`: W) = w
 }
 
-class LProj1[W1 <: World, W2 <: World] extends Lense[PairOfWorlds[W1, W2], W1] {
-  def get(w: PairOfWorlds[W1, W2]) = w.w1
+class Lproj1[W1 <: World, W2 <: World] extends Lense[W1 xx W2, W1] {
+  def get(w: W1 xx W2) = w.w1
 
-  def put(`w1'`: W1, p: PairOfWorlds[W1, W2]) = {
+  def put(`w1'`: W1, p: W1 xx W2) = {
     new PairOfWorlds(`w1'`, p.w2)
   }
 }
 
-class LProj2[W1 <: World, W2 <: World] extends Lense[PairOfWorlds[W1, W2], W2] {
-  def get(w: PairOfWorlds[W1, W2]) = w.w2
+class Lproj2[W1 <: World, W2 <: World] extends Lense[W1 xx W2, W2] {
+  def get(w: W1 xx W2) = w.w2
 
-  def put(`w2'`: W2, p: PairOfWorlds[W1, W2]) = {
+  def put(`w2'`: W2, p: W1 xx W2) = {
     new PairOfWorlds(p.w1, `w2'`)
   }
 }

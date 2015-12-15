@@ -22,6 +22,8 @@ case class Proj1[T1 <: PhraseType, T2 <: PhraseType](pair : Phrase[T1 x T2])
 case class Proj2[T1 <: PhraseType, T2 <: PhraseType](pair : Phrase[T1 x T2])
   extends Phrase[T2]
 
+case class FieldAccess(n: Int, record: Phrase[ExpType]) extends Phrase[ExpType]
+
 case class SkipPhrase()
   extends Phrase[CommandType]
 
@@ -55,3 +57,7 @@ object BinOp {
     val MOD = Value("%")
   }
 }
+
+case class Map(f: Phrase[ExpType -> ExpType], in: Phrase[ExpType]) extends Phrase[ExpType]
+
+case class Zip(lhs: Phrase[ExpType], rhs: Phrase[ExpType]) extends Phrase[ExpType]

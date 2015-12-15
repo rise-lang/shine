@@ -1,11 +1,12 @@
 import PhraseExtensions._
+import OperationalSemantics._
 
 import scala.collection.immutable.HashMap
 
 object Test extends App {
   // first test
   {
-    var store = HashMap[String, Int]()
+    var store = HashMap[String, Data]()
 
     val out = identifier("out", AccType(int))
     store = store + (out.name -> 0)
@@ -52,7 +53,7 @@ object Test extends App {
 
   // second test
   {
-    var store = HashMap[String, Int]()
+    var store = HashMap[String, Data]()
 
     val out = identifier("out", AccType(int))
     store = store + (out.name -> 0)
@@ -92,5 +93,74 @@ object Test extends App {
       println(out)
     }
   }
+
+  {
+    var store = HashMap[String, Data]()
+
+    val in1 = identifier("in1", ExpType(ArrayType(int)))
+    val in2 = identifier("in2", ExpType(ArrayType(int)))
+    val out = identifier("out", AccType(ArrayType(int)))
+    store = store + (in1.name -> 1)
+    store = store + (in2.name -> 2)
+    store = store + (out.name -> 0)
+
+    val f = λ( ExpType(RecordType(int, int)) ) { x => x._1 + x._2 }
+
+    val p = out := Map(f, Zip(in1, in2))
+
+    println( p )
+
+    println( TypeChecker(p) )
+
+    println( OperationalSemantics.evalCommand(store, p) )
+  }
+
+//  {
+//    var store = HashMap[String, Data]()
+//
+//    val in1 = identifier("in1", ExpType(int))
+//    val in2 = identifier("in2", ExpType(int))
+//    val out = identifier("out", AccType(int))
+//    store = store + (in1.name -> 1)
+//    store = store + (in2.name -> 2)
+//    store = store + (out.name -> 0)
+//
+//    val f = λ( ExpType(RecordType(int, int)) ) { x => x._1 + x._2 }
+//
+//    val p = `for`(1, { _ =>
+//      λ( AccType(int) x ExpType(RecordType(int, int)) ) {
+//        p => π1(p) := f(π2(p))
+//      }(Pair(out, Zip(in1, in2)))
+//    })
+//
+//    println( p )
+//
+//    println( TypeChecker(p) )
+//
+//    println( OperationalSemantics.evalCommand(store, p) )
+//  }
+//
+//  {
+//    var store = HashMap[String, Data]()
+//
+//    val in1 = identifier("in1", ExpType(int))
+//    val in2 = identifier("in2", ExpType(int))
+//    val out = identifier("out", AccType(int))
+//    store = store + (in1.name -> 1)
+//    store = store + (in2.name -> 2)
+//    store = store + (out.name -> 0)
+//
+//    val f = λ( ExpType(RecordType(int, int)) ) { x => x._1 + x._2 }
+//
+//    val p = `for`(1, { _ =>
+//      out := f(Zip(in1, in2))
+//    })
+//
+//    println( p )
+//
+//    println( TypeChecker(p) )
+//
+//    println( OperationalSemantics.evalCommand(store, p) )
+//  }
 
 }

@@ -2,15 +2,26 @@
 import PhraseType._
 
 import scala.collection.immutable.HashMap
+import scala.language.implicitConversions
 
 object OperationalSemantics {
 
-  type Store = HashMap[String, Int]
+  abstract class Data
+  case class BoolData(b: Boolean) extends Data
+  case class IntData(i: Int) extends Data
+  case class Int4Data(i0: Int, i1: Int, i2: Int, i3: Int) extends Data
+  case class FloatData(f: Float) extends Data
+  case class ArrayData(a: Array[Data]) extends Data
+  case class RecordData(fields: Data*) extends Data
+
+  implicit def toIntData(i: Int): IntData = IntData(i)
+
+  type Store = HashMap[String, Data]
 
   def substitute[T1 <: PhraseType, T2 <: PhraseType](p1: Phrase[T1],
                                                      p2: Phrase[T1],
                                                      in: Phrase[T2]): Phrase[T2] = {
-    if (p2.eq(in)) {
+    if (p2 == in) {
       p1.asInstanceOf[Phrase[T2]] // T1 == T2
     } else {
       in match {
@@ -32,6 +43,9 @@ object OperationalSemantics {
         case p: Proj1[T2, b] => Proj1(substitute(p1, p2, p.pair))
         case p: Proj2[a, T2] => Proj2(substitute(p1, p2, p.pair))
 
+        case FieldAccess(n, record) =>
+          FieldAccess(n, substitute(p1, p2, record)).asInstanceOf[Phrase[T2]]
+
         case Seq(c1, c2) =>
           Seq(substitute(p1, p2, c1), substitute(p1, p2, c2)).asInstanceOf[Phrase[T2]]
 
@@ -52,6 +66,12 @@ object OperationalSemantics {
 
         case BinOp(op, lhs, rhs) =>
           BinOp(op, substitute(p1, p2, lhs), substitute(p1, p2, rhs)).asInstanceOf[Phrase[T2]]
+
+        case Map(f, x) =>
+          Map(substitute(p1, p2, f), substitute(p1, p2, x)).asInstanceOf[Phrase[T2]]
+
+        case Zip(lhs, rhs) =>
+          Zip(substitute(p1, p2, lhs), substitute(p1, p2, rhs)).asInstanceOf[Phrase[T2]]
 
         case _: Ident[_]   => in
         case _: IntLiteral => in
@@ -81,7 +101,7 @@ object OperationalSemantics {
         evalFunction(s, pair._2)
 
       case ifThenElse: IfThenElse[T1 -> T2] =>
-        val cond = evalExp(s, ifThenElse.cond)
+        val cond = evalCondExp(s, ifThenElse.cond)
         if (cond == 0) {
           evalFunction(s, ifThenElse.thenP)
         } else {
@@ -110,7 +130,7 @@ object OperationalSemantics {
         evalPair(s, pair._2)
 
       case ifThenElse: IfThenElse[T1 x T2] =>
-        val cond = evalExp(s, ifThenElse.cond)
+        val cond = evalCondExp(s, ifThenElse.cond)
         if (cond == 0) {
           evalPair(s, ifThenElse.thenP)
         } else {
@@ -119,13 +139,32 @@ object OperationalSemantics {
     }
   }
 
-  def evalExp(s: Store, p: Phrase[ExpType]): Int = {
+  def evalCondExp(s: Store, p: Phrase[ExpType]): Int = {
+    evalExp(s, p) match {
+      case b: BoolData => if (b.b) { 0 } else { 1 }
+      case i: IntData => i.i
+    }
+  }
+
+  def evalIntExp(s: Store, p: Phrase[ExpType]): Int = {
+    evalExp(s, p) match {
+      case i: IntData => i.i
+    }
+  }
+
+  def evalExp(s: Store, p: Phrase[ExpType]): Data = {
     p match {
       case v: Ident[ExpType] => s(v.name)
 
       case app: Apply[a, ExpType] =>
         val fun = evalFunction(s, app.fun)
         evalExp(s, fun(app.arg))
+
+      case FieldAccess(n, record) =>
+        evalExp(s, record) match {
+          case r: RecordData => r.fields(n)
+        }
+
 
       case p1: Proj1[ExpType, b] =>
         val pair = evalPair(s, p1.pair)
@@ -136,23 +175,30 @@ object OperationalSemantics {
         evalExp(s, pair._2)
 
       case ifThenElse: IfThenElse[ExpType] =>
-        val cond = evalExp(s, ifThenElse.cond)
+        val cond = evalCondExp(s, ifThenElse.cond)
         if (cond == 0) {
           evalExp(s, ifThenElse.thenP)
         } else {
           evalExp(s, ifThenElse.elseP)
         }
 
-      case z: IntLiteral => z.i
+      case z: IntLiteral => IntData(z.i)
 
       case op: BinOp =>
         op.op match {
-          case BinOp.Op.ADD => evalExp(s, op.lhs) + evalExp(s, op.rhs)
-          case BinOp.Op.SUB => evalExp(s, op.lhs) - evalExp(s, op.rhs)
-          case BinOp.Op.MUL => evalExp(s, op.lhs) * evalExp(s, op.rhs)
-          case BinOp.Op.DIV => evalExp(s, op.lhs) / evalExp(s, op.rhs)
-          case BinOp.Op.MOD => evalExp(s, op.lhs) % evalExp(s, op.rhs)
+          case BinOp.Op.ADD => evalIntExp(s, op.lhs) + evalIntExp(s, op.rhs)
+          case BinOp.Op.SUB => evalIntExp(s, op.lhs) - evalIntExp(s, op.rhs)
+          case BinOp.Op.MUL => evalIntExp(s, op.lhs) * evalIntExp(s, op.rhs)
+          case BinOp.Op.DIV => evalIntExp(s, op.lhs) / evalIntExp(s, op.rhs)
+          case BinOp.Op.MOD => evalIntExp(s, op.lhs) % evalIntExp(s, op.rhs)
         }
+
+      case m: Map =>
+        val f = evalFunction(s, m.f)
+        evalExp(s, f(m.in))
+
+      case z: Zip =>
+        RecordData(evalExp(s, z.lhs), evalExp(s, z.rhs))
     }
   }
 
@@ -173,7 +219,7 @@ object OperationalSemantics {
         evalAcc(s, pair._2)
 
       case ifThenElse: IfThenElse[AccType] =>
-        val cond = evalExp(s, ifThenElse.cond)
+        val cond = evalCondExp(s, ifThenElse.cond)
         if (cond == 0) {
           evalAcc(s, ifThenElse.thenP)
         } else {
@@ -214,7 +260,7 @@ object OperationalSemantics {
         s + (varName -> value)
 
       case ifThenElse: IfThenElse[CommandType] =>
-        val cond = evalExp(s, ifThenElse.cond)
+        val cond = evalCondExp(s, ifThenElse.cond)
         if (cond == 0) {
           evalCommand(s, ifThenElse.thenP)
         } else {
@@ -222,8 +268,8 @@ object OperationalSemantics {
         }
 
       case For(nP, bodyP) =>
+        val n = evalIntExp(s, nP)
         val body = evalFunction(s, bodyP)
-        val n = evalExp(s, nP)
         var s1 = s
         for (i <- 0 until n) {
           s1 = evalCommand(s1, body(IntLiteral(i)))
@@ -256,7 +302,7 @@ object OperationalSemantics {
         evalNew(s, pair._2)
 
       case ifThenElse: IfThenElse[ExpType x AccType -> CommandType] =>
-        val cond = evalExp(s, ifThenElse.cond)
+        val cond = evalCondExp(s, ifThenElse.cond)
         if (cond == 0) {
           evalNew(s, ifThenElse.thenP)
         } else {

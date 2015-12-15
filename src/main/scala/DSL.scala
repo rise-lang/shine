@@ -42,6 +42,11 @@ object PhraseExtensions {
   }
 
   implicit def toLiteral(i: Int): IntLiteral = IntLiteral(i)
+
+  implicit class ExpPhraseExtensions(e: Phrase[ExpType]) {
+    def _1() = FieldAccess(0, e)
+    def _2() = FieldAccess(1, e)
+  }
 }
 
 import PhraseExtensions._
