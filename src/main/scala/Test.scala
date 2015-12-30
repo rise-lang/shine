@@ -188,4 +188,25 @@ object Test extends App {
     println(OperationalSemantics.evalCommand(store, p))
   }
 
+  {
+    var store = HashMap[String, Data]()
+
+    val in1 = identifier("in1", ExpType(ArrayType(5, int)))
+    val in2 = identifier("in2", ExpType(ArrayType(5, int)))
+    val out = identifier("out", AccType(ArrayType(5, int)))
+    store = store + (in1.name -> ArrayData(Vector(1, 2, 3, 4, 5)))
+    store = store + (in2.name -> ArrayData(Vector(2, 3, 4, 5, 6)))
+    store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0, 0)))
+
+    val p = `for`(Length(out), { i =>
+      (out `@` i) := in1 `@` i + in2 `@` i
+    })
+
+    println( p )
+
+    println( TypeChecker(p) )
+
+    println( OperationalSemantics.evalCommand(store, p) )
+  }
+
 }

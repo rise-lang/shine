@@ -66,7 +66,7 @@ case class Map(f: Phrase[ExpType -> ExpType], in: Phrase[ExpType]) extends Phras
 
 case class Zip(lhs: Phrase[ExpType], rhs: Phrase[ExpType]) extends Phrase[ExpType]
 
-case class Length(array: Phrase[ExpType]) extends Phrase[ExpType]
+case class Length[T <: BasePhraseTypes](array: Phrase[T]) extends Phrase[ExpType]
 
 case class ArrayExpAccess(array: Phrase[ExpType], index: Phrase[ExpType]) extends Phrase[ExpType]
 

@@ -224,9 +224,10 @@ object OperationalSemantics {
             } )
         }
 
-      case l: Length =>
-        evalExp(s, l.array) match {
-          case ArrayData(array) => IntData(array.length)
+      case Length(arrayP) =>
+        arrayP.t match {
+          case ExpType(ArrayType(n, _)) => n
+          case AccType(ArrayType(n, _)) => n
         }
 
       case ArrayExpAccess(array, index) =>

@@ -1,8 +1,10 @@
 sealed trait PhraseType
 
-case class ExpType(dataType: DataType) extends PhraseType
+abstract class BasePhraseTypes extends PhraseType
 
-case class AccType(dataType: DataType) extends PhraseType
+case class ExpType(dataType: DataType) extends BasePhraseTypes
+
+case class AccType(dataType: DataType) extends BasePhraseTypes
 
 case class CommandType() extends PhraseType
 

@@ -188,6 +188,7 @@ object TypeChecker {
       case Length(array) =>
         TypeChecker(array) match {
           case ExpType(ArrayType(n, t)) => ExpType(int)
+          case AccType(ArrayType(n, t)) => ExpType(int)
           case t => error(t.toString, "ArrayType")
         }
 
