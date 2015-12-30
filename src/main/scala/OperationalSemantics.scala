@@ -127,7 +127,8 @@ object OperationalSemantics {
   def evalPair[T1 <: PhraseType,
                T2 <: PhraseType](s: Store, p: Phrase[T1 x T2]): (Phrase[T1], Phrase[T2]) = {
     p match {
-      case i: Ident[T1 x T2] => throw new Exception("Don't know how to implement this")
+      case i: Ident[T1 x T2] =>
+        (Ident[T1](i.name), Ident[T2](i.name))
 
       case pair: Pair[T1, T2] => (pair.fst, pair.snd)
 

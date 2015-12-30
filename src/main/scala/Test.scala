@@ -11,17 +11,17 @@ object Test extends App {
     val out = identifier("out", AccType(int))
     store = store + (out.name -> 0)
 
-    val p = `new`(λ(ExpType(int) x AccType(int)) { v =>
+    val p = `new`(v =>
       (π2(v) := 42 + 1) `;`
-        `new`(λ(ExpType(int) x AccType(int)) { v2 =>
+        `new`(v2 =>
           (π2(v2) := π1(v) + 1) `;`
             (π2(v) := π1(v2))
-        }) `;`
+        ) `;`
         `if`(π1(v) % 2,
           thenP = π2(v) := π1(v) + 1,
           elseP = π2(v) := π1(v) + 10) `;`
         (out := π1(v))
-    })
+    )
 
     println(p)
 
@@ -58,7 +58,7 @@ object Test extends App {
     val out = identifier("out", AccType(int))
     store = store + (out.name -> 0)
 
-    val p = `new`(λ(ExpType(int) x AccType(int)) { v =>
+    val p = `new`( v =>
       (π2(v) := 42 + 1) `;`
         `for`(10, { i =>
           π2(v) := i + π1(v)
@@ -67,7 +67,7 @@ object Test extends App {
           thenP = π2(v) := π1(v) + 1,
           elseP = π2(v) := π1(v) + 10) `;`
         (out := π1(v))
-    })
+    )
 
     println(p)
 
@@ -106,7 +106,7 @@ object Test extends App {
     store = store + (in2.name -> ArrayData(Vector(2, 3, 4, 5, 6)))
     store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0, 0)))
 
-    val f = λ(ExpType(RecordType(int, int))) { x => x._1 + x._2 }
+    val f = λ( (x, y) => x + y )
 
     val p = out := Map(f, Zip(in1, in2))
 
@@ -127,7 +127,7 @@ object Test extends App {
     store = store + (in2.name -> ArrayData(Vector(2, 3, 4, 5, 6)))
     store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0, 0)))
 
-    val f = λ(ExpType(RecordType(int, int))) { x => x._1 + x._2 }
+    val f = λ( (x, y) => x + y )
 
     val p = `for`(Length(in1), { i =>
       λ(AccType(int) x ExpType(RecordType(int, int))) {
@@ -152,7 +152,9 @@ object Test extends App {
     store = store + (in2.name -> ArrayData(Vector(2, 3, 4, 5, 6)))
     store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0, 0)))
 
-    val f = λ(ExpType(RecordType(int, int))) { x => x._1 + x._2 }
+    val f = λ( (x, y) => x + y )
+//   ==
+//    val f = λ(ExpType(RecordType(int, int))) { x => x._1 + x._2 }
 
     val p = `for`(Length(in1), { i =>
       out `@` i := f(Zip(in1, in2) `@` i)

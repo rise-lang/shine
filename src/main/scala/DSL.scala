@@ -28,6 +28,28 @@ object PhraseExtensions {
     def :=(rhs: Phrase[ExpType]) = Assign(lhs, rhs)
   }
 
+//  implicit class ArrayAssignment(lhs: Phrase[ArrayType[AccType]]) {
+//    def :==(rhs: Phrase[ArrayType[ExpType]]): Phrase[CommandType] = {
+//      `for`(lhs.length, { i => lhs `@` i := rhs `@` i })
+//    }
+//  }
+//
+//  implicit class MatrixAssignment(lhs: Phrase[ArrayType[ArrayType[AccType]]]) {
+//    def :==(rhs: Phrase[ArrayType[ArrayType[ExpType]]]): Phrase[CommandType] = {
+//      `for`(lhs.length, { i =>
+//        `for`((lhs `@` i).length, { j =>
+//          (lhs `@` i) `@` j := (rhs `@` i) `@`j
+//        })
+//      })
+//    }
+//  }
+//
+//  implicit class ArrayVarAssignment(lhs: Phrase[ArrayType[VarType]]) {
+//    def :==(rhs: Phrase[ArrayType[ExpType]]): Phrase[CommandType] = {
+//      `for`(lhs.length, { i => lhs.acc `@` i := rhs `@` i })
+//    }
+//  }
+
   implicit class PairTypeConstructor[T1 <: PhraseType](t1: T1) {
     def x[T2 <: PhraseType](t2: T2) = PairType(t1, t2)
   }
@@ -57,6 +79,11 @@ object PhraseExtensions {
 
   implicit class AccPhraseExtensions(a: Phrase[AccType]) {
     def `@`(index: Phrase[ExpType]) = ArrayAccAccess(a, index)
+  }
+
+  implicit class VarExtensions(v: Phrase[VarType]) {
+    def exp = π1(v)
+    def acc = π2(v)
   }
 
 }
@@ -137,7 +164,11 @@ object `for` {
 }
 
 object `new` {
-  def apply(f: Phrase[(ExpType x AccType) -> CommandType]) = NewPhrase(f)
+  def apply(f: Phrase[ (ExpType x AccType) -> CommandType ]) = NewPhrase(f)
+
+  def apply(f: Phrase[ExpType x AccType] => Phrase[CommandType]) = {
+    NewPhrase(λ( ExpType(int) x AccType(int) ) { v => f(v) })
+  }
 }
 
 object π1 {
@@ -166,9 +197,15 @@ trait funDef {
     "v" + counter
   }
 
-  def apply[T1 <: PhraseType, T2 <: PhraseType](f: Ident[T1] => Phrase[T2]): Lambda[T1, T2] = {
-    val param = Ident[T1](newName())
+  def apply[T <: PhraseType](f: Ident[ExpType] => Phrase[T]): Lambda[ExpType, T] = {
+    val param = Ident[ExpType]( newName() )
     Lambda(param, f(param))
+  }
+
+  def apply[T <: PhraseType](f: (Phrase[ExpType], Phrase[ExpType]) => Phrase[T]): Lambda[ExpType, T] = {
+    val param = Ident[ExpType]( newName() )
+    val g = λ(ExpType(RecordType(int, int))) { x => f(x._1(), x._2()) }
+    Lambda(param, g(param))
   }
 
   def apply[T <: PhraseType](t: ExpType)(f: Ident[ExpType] => Phrase[T]): Lambda[ExpType, T] = {
@@ -181,19 +218,26 @@ trait funDef {
     Lambda(param, f(param))
   }
 
+
   def apply[T1 <: PhraseType,
-  T2 <: PhraseType,
-  T3 <: PhraseType](t: T1 x T2)
-                   (f: Pair[T1, T2] => Phrase[T3]): Lambda[T1 x T2, T3] = {
-    val n = newName()
-    val param = Pair(identifier(n, t.t1), identifier(n, t.t2))
-    Lambda(param, f(param))
+            T2 <: PhraseType,
+            T3 <: PhraseType](t: T1 x T2)
+                             (f: Phrase[T1 x T2] => Phrase[T3]): Lambda[T1 x T2, T3] = {
+    t match {
+        // VarType
+      case PairType(ExpType(t1), AccType(t2)) if t1 == t2 =>
+        val param = identifier(newName(), t)
+        Lambda(param, f(param))
+      case _ =>
+        val param = Pair(identifier(newName(), t.t1), identifier(newName(), t.t2))
+        Lambda(param, f(param))
+    }
   }
 
   def apply[T1 <: PhraseType,
-  T2 <: PhraseType,
-  T3 <: PhraseType](t: T1 -> T2)
-                   (f: Ident[T1 -> T2] => Phrase[T3]): Lambda[T1 -> T2, T3] = {
+            T2 <: PhraseType,
+            T3 <: PhraseType](t: T1 -> T2)
+                             (f: Ident[T1 -> T2] => Phrase[T3]): Lambda[T1 -> T2, T3] = {
     val param = identifier(newName(), t)
     Lambda(param, f(param))
   }
@@ -211,5 +255,62 @@ object \ extends funDef
 object λ extends funDef
 
 object skip extends SkipPhrase
+
+//object Map {
+//  def apply[T1 <: PhraseType, T2 <: PhraseType](f: Phrase[T1 -> T2]) = {
+//    val param = Ident[ArrayType[T1]](λ.newName())
+//    Lambda(param, MapPhrase(f, param))
+//  }
+//
+//  def apply[T1 <: PhraseType,
+//            T2 <: PhraseType](f: Phrase[T1 -> T2],
+//                              array: Phrase[ArrayType[T1]]) = {
+//    MapPhrase(f, array)
+//  }
+//}
+//
+//object Zip {
+//  def apply[T1 <: PhraseType,
+//            T2 <: PhraseType](lhs: Phrase[ArrayType[T1]],
+//                              rhs: Phrase[ArrayType[T2]]) = ZipPhrase(lhs, rhs)
+//}
+//
+//object Split {
+//  def apply[T <: PhraseType](n: Int, array: Phrase[ArrayType[T]]) =
+//    SplitPhrase(n, array)
+//}
+//
+//object Join {
+//  def apply[T <: PhraseType](array: Phrase[ArrayType[ArrayType[T]]]) =
+//    JoinPhrase(array)
+//}
+//
+//object Reduce {
+//  def apply[T <: PhraseType](f: Phrase[T x T -> T]) = {
+//    val param = Pair(Ident[T](λ.newName()), Ident[ArrayType[T]](λ.newName()))
+//    Lambda(param, ReducePhrase(f, π1(param), π2(param)))
+//  }
+//
+//  def apply[T <: PhraseType](f: Phrase[T x T -> T],
+//                             init: Phrase[T]) = {
+//    val param = Ident[ArrayType[T]](λ.newName())
+//    Lambda(param, ReducePhrase(f, init, param))
+//  }
+//
+//  def apply[T <: PhraseType](f: Phrase[T x T -> T],
+//                             init: Phrase[T],
+//                             array: Phrase[ArrayType[T]]) =
+//    ReducePhrase(f, init, array)
+//}
+//
+//object Iterate {
+//  def apply[T <: PhraseType](n: Int, f: Phrase[T -> T]) = {
+//    val param = Ident[T](λ.newName())
+//    Lambda(param, IteratePhrase(n, f, param))
+//  }
+//
+//  def apply[T <: PhraseType](n: Int, f: Phrase[T -> T], in: Phrase[T]) =
+//    IteratePhrase(n, f, in)
+//}
 
 
