@@ -13,12 +13,14 @@ class PairOfWorlds[W1 <: World, W2 <: World](val w1: W1, val w2: W2) extends Wor
 object Worlds {
   type xx[W1 <: World, W2 <: World] = PairOfWorlds[W1, W2]
 }
+
 import Worlds._
 
 // (a) extract sub-part of the store
 // (b) update a sub-part of the store
 abstract class Lense[W1 <: World, W2 <: World] {
   def get(w: W1): W2
+
   def put(w2: W2, w1: W1): W1
 
   // seq composition of lenses
@@ -36,6 +38,7 @@ abstract class Lense[W1 <: World, W2 <: World] {
 
 class idLense[W <: World] extends Lense[W, W] {
   def get(w: W) = w
+
   def put(w: W, `w'`: W) = w
 }
 
@@ -73,11 +76,11 @@ class EvalOfAccType[W <: World] extends EvalOfPhraseTypes[AccType, W] {
 
 class EvalOfPairType[T1 <: PhraseType, T2 <: PhraseType, W <: World] extends EvalOfPhraseTypes[T1 x T2, W] {
   // This is most likely not working ...
-  type Type = ( EvalOfPhraseTypes[T1, W]#Type, EvalOfPhraseTypes[T2, W]#Type )
+  type Type = (EvalOfPhraseTypes[T1, W]#Type, EvalOfPhraseTypes[T2, W]#Type)
 }
 
 class EvalOfFunctionType[T1 <: PhraseType, T2 <: PhraseType, W <: World] extends EvalOfPhraseTypes[T1 -> T2, W] {
-//  type Type = ???
+  //  type Type = ???
 }
 
 
@@ -106,21 +109,21 @@ object Eval {
     (a: (Int) => (W2) => W2) => {
       z: Int => {
         sigma: W1 => {
-          l.put( a(z)(l.get(sigma)), sigma )
+          l.put(a(z)(l.get(sigma)), sigma)
         }
       }
     }
   }
 
-//  def eval[T1 <: PhraseType,
-//           T2 <: PhraseType,
-//           W1 <: World,
-//           W2 <: World](pair: T1 x T2,
-//                        l: Lense[W1, W2]): (EvalOfPairType[T1, T2, W2]#Type => EvalOfPairType[T1, T2, W1]#Type) = {
-//    (p: (EvalOfPhraseTypes[T1, W2]#Type, EvalOfPhraseTypes[T2, W2]#Type)) => {
-//      val x = p._1
-//      val y = p._2
-////      ( eval() , eval() )
-//    }
-//  }
+  //  def eval[T1 <: PhraseType,
+  //           T2 <: PhraseType,
+  //           W1 <: World,
+  //           W2 <: World](pair: T1 x T2,
+  //                        l: Lense[W1, W2]): (EvalOfPairType[T1, T2, W2]#Type => EvalOfPairType[T1, T2, W1]#Type) = {
+  //    (p: (EvalOfPhraseTypes[T1, W2]#Type, EvalOfPhraseTypes[T2, W2]#Type)) => {
+  //      val x = p._1
+  //      val y = p._2
+  ////      ( eval() , eval() )
+  //    }
+  //  }
 }

@@ -1,24 +1,24 @@
 import PhraseExtensions._
 
-class TypeException(msg : String) extends Exception(msg)
+class TypeException(msg: String) extends Exception(msg)
 
 object TypeChecker {
 
-  def error(found : String, expected : String) = {
-    throw new TypeException("Type error: found "+found+" expected "+expected)
+  def error(found: String, expected: String) = {
+    throw new TypeException("Type error: found " + found + " expected " + expected)
   }
 
-  def check(current : PhraseType, expected : PhraseType) = {
+  def check(current: PhraseType, expected: PhraseType) = {
     if (current != expected) {
       error(current.toString, expected.toString)
     }
   }
 
-  def apply[T <: PhraseType](p : Phrase[T]) : PhraseType = p match {
+  def apply[T <: PhraseType](p: Phrase[T]): PhraseType = p match {
 
     case i: Ident[T] =>
       if (i.t == null)
-        throw new TypeException("Type error: type not set for "+i)
+        throw new TypeException("Type error: type not set for " + i)
       i.t
 
     case Lambda(param, body) => TypeChecker(param) -> TypeChecker(body)
@@ -64,10 +64,10 @@ object TypeChecker {
           if (d1 == d2) {
             CommandType()
           } else {
-            error(d1.toString +" and "+d2.toString, expected="them to match")
+            error(d1.toString + " and " + d2.toString, expected = "them to match")
           }
-        case t => error(t.toString, FunctionType.toString+"("+PairType.toString+
-          "("+ExpType.toString+"(A),"+AccType.toString+"(A)),"+CommandType()+")")
+        case t => error(t.toString, FunctionType.toString + "(" + PairType.toString +
+          "(" + ExpType.toString + "(A)," + AccType.toString + "(A))," + CommandType() + ")")
       }
 
     case Assign(lhs, rhs) =>
@@ -76,20 +76,20 @@ object TypeChecker {
           if (d1 == d2) {
             CommandType()
           } else {
-            error(d1.toString +" and "+d2.toString, expected="them to match")
+            error(d1.toString + " and " + d2.toString, expected = "them to match")
           }
-        case t => error(t.toString, "("+AccType.toString()+"(A),"+ExpType.toString()+"(A))")
+        case t => error(t.toString, "(" + AccType.toString() + "(A)," + ExpType.toString() + "(A))")
       }
 
     case IfThenElse(cond, thenP, elseP) =>
       val condT = TypeChecker(cond)
       // TODO: Decide on this: the evaluation currently want this to be an int
-//        check (condT, ExpType(bool))
+      //        check (condT, ExpType(bool))
       check(condT, ExpType(int))
 
       val thenPT = TypeChecker(thenP)
       val elsePT = TypeChecker(elseP)
-      check(thenPT,elsePT)
+      check(thenPT, elsePT)
       thenPT
 
     case ForPhrase(upper, body) =>
@@ -127,19 +127,19 @@ object TypeChecker {
     case Length(array) =>
       TypeChecker(array) match {
         case ExpType(ArrayType(n, t)) => ExpType(int)
-        case t => error(t.toString(), "ArrayType")
+        case t => error(t.toString, "ArrayType")
       }
 
     case ArrayExpAccess(array, index) =>
       TypeChecker(array) match {
         case ExpType(ArrayType(n, t)) => ExpType(t)
-        case t => error(t.toString(), "ArrayType")
+        case t => error(t.toString, "ArrayType")
       }
 
     case ArrayAccAccess(array, index) =>
       TypeChecker(array) match {
         case AccType(ArrayType(n, t)) => AccType(t)
-        case t => error(t.toString(), "ArrayType")
+        case t => error(t.toString, "ArrayType")
       }
   }
 

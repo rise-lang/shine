@@ -1,5 +1,5 @@
-import PhraseExtensions._
 import OperationalSemantics._
+import PhraseExtensions._
 
 import scala.collection.immutable.HashMap
 
@@ -11,23 +11,23 @@ object Test extends App {
     val out = identifier("out", AccType(int))
     store = store + (out.name -> 0)
 
-    val p = `new`( λ( ExpType(int) x AccType(int) ) { v =>
+    val p = `new`(λ(ExpType(int) x AccType(int)) { v =>
       (π2(v) := 42 + 1) `;`
-      `new`( λ( ExpType(int) x AccType(int) ) { v2 =>
-        (π2(v2) := π1(v) + 1) `;`
-        (π2(v)  := π1(v2))
-      } ) `;`
-      `if`(π1(v) % 2,
-        thenP = π2(v) := π1(v) + 1,
-        elseP = π2(v) := π1(v) + 10 ) `;`
-      (out := π1(v))
-    } )
+        `new`(λ(ExpType(int) x AccType(int)) { v2 =>
+          (π2(v2) := π1(v) + 1) `;`
+            (π2(v) := π1(v2))
+        }) `;`
+        `if`(π1(v) % 2,
+          thenP = π2(v) := π1(v) + 1,
+          elseP = π2(v) := π1(v) + 10) `;`
+        (out := π1(v))
+    })
 
-    println( p )
+    println(p)
 
-    println( TypeChecker(p) )
+    println(TypeChecker(p))
 
-    println( OperationalSemantics.evalCommand(store, p) )
+    println(OperationalSemantics.evalCommand(store, p))
 
     // same program in scala
     {
@@ -58,22 +58,22 @@ object Test extends App {
     val out = identifier("out", AccType(int))
     store = store + (out.name -> 0)
 
-    val p = `new`( λ( ExpType(int) x AccType(int) ) { v =>
+    val p = `new`(λ(ExpType(int) x AccType(int)) { v =>
       (π2(v) := 42 + 1) `;`
-      `for`(10, { i =>
-        π2(v) := i + π1(v)
-      }) `;` skip `;`
-      `if`(π1(v) % 2,
-        thenP = π2(v) := π1(v) + 1,
-        elseP = π2(v) := π1(v) + 10 ) `;`
-      (out := π1(v))
-    } )
+        `for`(10, { i =>
+          π2(v) := i + π1(v)
+        }) `;` skip `;`
+        `if`(π1(v) % 2,
+          thenP = π2(v) := π1(v) + 1,
+          elseP = π2(v) := π1(v) + 10) `;`
+        (out := π1(v))
+    })
 
-    println( p )
+    println(p)
 
-    println( TypeChecker(p) )
+    println(TypeChecker(p))
 
-    println( OperationalSemantics.evalCommand(store, p) )
+    println(OperationalSemantics.evalCommand(store, p))
 
     // same program in scala
     {
@@ -82,7 +82,9 @@ object Test extends App {
         var v = 42 + 1
         for (i <- 0 until 10) {
           v = i + v
-        }; ;
+        }
+        ;
+        ;
         if (v % 2 == 0) {
           v = v + 1
         } else {
@@ -104,15 +106,15 @@ object Test extends App {
     store = store + (in2.name -> ArrayData(Vector(2, 3, 4, 5, 6)))
     store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0, 0)))
 
-    val f = λ( ExpType(RecordType(int, int)) ) { x => x._1 + x._2 }
+    val f = λ(ExpType(RecordType(int, int))) { x => x._1 + x._2 }
 
     val p = out := Map(f, Zip(in1, in2))
 
-    println( p )
+    println(p)
 
-    println( TypeChecker(p) )
+    println(TypeChecker(p))
 
-    println( OperationalSemantics.evalCommand(store, p) )
+    println(OperationalSemantics.evalCommand(store, p))
   }
 
   {
@@ -125,19 +127,19 @@ object Test extends App {
     store = store + (in2.name -> ArrayData(Vector(2, 3, 4, 5, 6)))
     store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0, 0)))
 
-    val f = λ( ExpType(RecordType(int, int)) ) { x => x._1 + x._2 }
+    val f = λ(ExpType(RecordType(int, int))) { x => x._1 + x._2 }
 
     val p = `for`(Length(in1), { i =>
-      λ( AccType(int) x ExpType(RecordType(int, int)) ) {
+      λ(AccType(int) x ExpType(RecordType(int, int))) {
         p => π1(p) := f(π2(p))
       }(Pair(out `@` i, Zip(in1, in2) `@` i))
     })
 
-    println( p )
+    println(p)
 
-    println( TypeChecker(p) )
+    println(TypeChecker(p))
 
-    println( OperationalSemantics.evalCommand(store, p) )
+    println(OperationalSemantics.evalCommand(store, p))
   }
 
   {
@@ -150,17 +152,17 @@ object Test extends App {
     store = store + (in2.name -> ArrayData(Vector(2, 3, 4, 5, 6)))
     store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0, 0)))
 
-    val f = λ( ExpType(RecordType(int, int)) ) { x => x._1 + x._2 }
+    val f = λ(ExpType(RecordType(int, int))) { x => x._1 + x._2 }
 
     val p = `for`(Length(in1), { i =>
       out `@` i := f(Zip(in1, in2) `@` i)
     })
 
-    println( p )
+    println(p)
 
-    println( TypeChecker(p) )
+    println(TypeChecker(p))
 
-    println( OperationalSemantics.evalCommand(store, p) )
+    println(OperationalSemantics.evalCommand(store, p))
   }
 
   {
@@ -177,11 +179,11 @@ object Test extends App {
       out `@` i := (Zip(in1, in2) `@` i)._1 + (Zip(in1, in2) `@` i)._2
     })
 
-    println( p )
+    println(p)
 
-    println( TypeChecker(p) )
+    println(TypeChecker(p))
 
-    println( OperationalSemantics.evalCommand(store, p) )
+    println(OperationalSemantics.evalCommand(store, p))
   }
 
 }

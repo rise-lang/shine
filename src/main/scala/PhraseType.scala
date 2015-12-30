@@ -1,16 +1,16 @@
 sealed trait PhraseType
 
-case class ExpType(dataType : DataType) extends PhraseType
+case class ExpType(dataType: DataType) extends PhraseType
 
-case class AccType(dataType : DataType) extends PhraseType
+case class AccType(dataType: DataType) extends PhraseType
 
 case class CommandType() extends PhraseType
 
-case class PairType[T1 <: PhraseType, T2 <: PhraseType](t1 : T1, t2 : T2) extends PhraseType
+case class PairType[T1 <: PhraseType, T2 <: PhraseType](t1: T1, t2: T2) extends PhraseType
 
-case class FunctionType[T1 <: PhraseType, T2 <: PhraseType](inT : T1, outT : T2) extends PhraseType
+case class FunctionType[T1 <: PhraseType, T2 <: PhraseType](inT: T1, outT: T2) extends PhraseType
 
-case class PassiveFunctionType[T1 <: PhraseType, T2 <: PhraseType](inT : T1, outT : T2)
+case class PassiveFunctionType[T1 <: PhraseType, T2 <: PhraseType](inT: T1, outT: T2)
   extends PhraseType
 
 // convenience types for writing the phrase types more readable

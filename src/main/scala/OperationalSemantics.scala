@@ -6,7 +6,7 @@ import scala.language.implicitConversions
 
 object OperationalSemantics {
 
-//  sealed
+  //sealed
   abstract class Data(val dataType: DataType)
   case class BoolData(b: Boolean) extends Data(bool)
   case class IntData(i: Int) extends Data(int)
@@ -14,6 +14,10 @@ object OperationalSemantics {
   case class FloatData(f: Float) extends Data(float)
   case class ArrayData(a: Vector[Data]) extends Data(ArrayType(a.length, a.head.dataType))
   case class RecordData(fields: Data*) extends Data(RecordType(fields.map(_.dataType):_*))
+
+  sealed trait AccIdentifier
+  case class NamedIdentifier(name: String) extends AccIdentifier
+  case class ArrayAccessIdentifier(array: AccIdentifier, index: Int) extends AccIdentifier
 
   implicit def toIntData(i: Int): IntData = IntData(i)
 
@@ -231,9 +235,9 @@ object OperationalSemantics {
     }
   }
 
-  def evalAcc(s: Store, p: Phrase[AccType]): String = {
+  def evalAcc(s: Store, p: Phrase[AccType]): AccIdentifier = {
     p match {
-      case v: Ident[AccType] => v.name
+      case v: Ident[AccType] => NamedIdentifier(v.name)
 
       case app: Apply[a, AccType] =>
         val fun = evalFunction(s, app.fun)
@@ -255,8 +259,10 @@ object OperationalSemantics {
           evalAcc(s, ifThenElse.elseP)
         }
 
-      case ArrayAccAccess(array, index) =>
-        evalAcc(s, array) + "[" + evalExp(s, index).asInstanceOf[IntData].i + "]"
+      case ArrayAccAccess(arrayP, indexP) =>
+        val array = evalAcc(s, arrayP)
+        val index = evalExp(s, indexP) match { case IntData(i) => i }
+        ArrayAccessIdentifier(array, index)
     }
   }
 
@@ -286,18 +292,8 @@ object OperationalSemantics {
       case NewPhrase(f) => evalNew(s, f)
 
       case Assign(lhs, rhs) =>
-        val varName = evalAcc(s, lhs)
-        val value = evalExp(s, rhs)
-        if (varName.endsWith("]")) {
-          val (name, index) = varName.splitAt(varName.indexOf("["))
-          assert(s.contains(name))
-          val vec = s(name).asInstanceOf[ArrayData].a
-          val i = index.substring(1, index.length-1).toInt
-          s + (name -> ArrayData(vec.updated(i, value)))
-        } else {
-          assert(s.contains(varName))
-          s + (varName -> value)
-        }
+        val (identifier, value) = evalAssign(s, evalAcc(s, lhs), evalExp(s, rhs))
+        s + (identifier -> value)
 
       case ifThenElse: IfThenElse[CommandType] =>
         val cond = evalCondExp(s, ifThenElse.cond)
@@ -318,6 +314,21 @@ object OperationalSemantics {
     }
   }
 
+  def evalAssign(s: Store, lhs: AccIdentifier, rhs: Data): (String, Data) = {
+    lhs match {
+      case NamedIdentifier(name) =>
+        assert(s.contains(name))
+        (name, rhs)
+      case ArrayAccessIdentifier(array, index) =>
+        val (name, rhsValue) = evalAssign(s, array, rhs)
+        assert(s.contains(name))
+        s(name) match {
+          case ArrayData(vec) =>
+            (name, ArrayData(vec.updated(index, rhsValue)))
+        }
+    }
+  }
+
   def evalNew(s: Store, f: Phrase[ ExpType x AccType -> CommandType ]): Store = {
     f match {
       case v: Ident[ExpType x AccType -> CommandType] =>
@@ -325,9 +336,13 @@ object OperationalSemantics {
 
       case l: Lambda[ExpType x AccType, CommandType] =>
         val params = evalPair(s, l.param)
-        val varName = evalAcc(s, params._2)
-        val s1 = evalCommand(s + (varName -> 0), l.body)
-        s1 - varName
+        evalAcc(s, params._2) match {
+          case NamedIdentifier(address) =>
+            val s1 = evalCommand(s + (address -> 0), l.body)
+            s1 - address
+          case ArrayAccessIdentifier(baseAddress, offset) =>
+            throw new Exception("I don't known how to implement this")
+        }
 
       case app: Apply[a, ExpType x AccType -> CommandType] =>
         val fun = evalFunction(s, app.fun)
