@@ -64,11 +64,14 @@ object TypeChecker {
       case Seq(c1, c2) =>
       case SkipPhrase() =>
       case Zip(lhs, rhs) =>
+      case Record(fields@_*) =>
+      case Split(n, array) =>
+      case Join(array) =>
     }
   }
 
   def apply[T <: PhraseType](p: Phrase[T]): T = {
-    val phraseType = p match {
+    val phraseType: PhraseType = p match {
 
       case i: Ident[T] =>
         if (i.t == null)
@@ -203,6 +206,24 @@ object TypeChecker {
           case AccType(ArrayType(n, t)) => AccType(t)
           case t => error(t.toString, "ArrayType")
         }
+
+      case Record(fields@_*) =>
+        ExpType(RecordType( fields.map(f => TypeChecker(f).dataType):_* ))
+
+      case Split(n, array) =>
+        TypeChecker(array) match {
+          case ExpType(ArrayType(m, dt)) =>
+            ExpType(ArrayType(m/n, ArrayType(n, dt)))
+          case t => error(t.toString, "ArrayType")
+        }
+
+      case Join(array) =>
+        TypeChecker(array) match {
+          case ExpType(ArrayType(n, ArrayType(m, t))) =>
+            ExpType(ArrayType(n*m, t))
+          case t => error(t.toString, "ArrayType(ArrayType)")
+        }
+
     }
     p.t = phraseType.asInstanceOf[T]
     p.t

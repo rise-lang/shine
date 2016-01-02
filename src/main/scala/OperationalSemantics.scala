@@ -78,6 +78,12 @@ object OperationalSemantics {
         case Zip(lhs, rhs) =>
           Zip(substitute(p1, p2, lhs), substitute(p1, p2, rhs)).asInstanceOf[Phrase[T2]]
 
+        case Split(n, array) =>
+          Split(n, substitute(p1, p2, array)).asInstanceOf[Phrase[T2]]
+
+        case Join(array) =>
+          Join(substitute(p1, p2, array)).asInstanceOf[Phrase[T2]]
+
         case Length(array) => Length(substitute(p1, p2, array)).asInstanceOf[Phrase[T2]]
 
         case ArrayExpAccess(array, index) =>
@@ -85,6 +91,9 @@ object OperationalSemantics {
 
         case ArrayAccAccess(array, index) =>
           ArrayAccAccess(substitute(p1, p2, array), substitute(p1, p2, index)).asInstanceOf[Phrase[T2]]
+
+        case Record(fields@_*) =>
+          Record(fields.map(f => substitute(p1, p2, f)):_*).asInstanceOf[Phrase[T2]]
 
         case _: Ident[_]   => in
         case _: IntLiteral => in
@@ -224,6 +233,21 @@ object OperationalSemantics {
             } )
         }
 
+      case Split(n, arrayP) =>
+        evalExp(s, arrayP) match {
+          case ArrayData(array) =>
+            ArrayData(split(n, array).map(ArrayData))
+        }
+
+      case Join(arrayP) =>
+        evalExp(s, arrayP) match {
+          case ArrayData(outer) =>
+            val arrays = outer.map(row => row match {
+              case ArrayData(inner) => inner
+            })
+            ArrayData(arrays.flatten)
+        }
+
       case Length(arrayP) =>
         arrayP.t match {
           case ExpType(ArrayType(n, _)) => n
@@ -234,6 +258,9 @@ object OperationalSemantics {
         (evalExp(s, array), evalExp(s, index)) match {
           case (ArrayData(xs), IntData(i)) => xs(i)
         }
+
+      case Record(fields@_*) =>
+        RecordData(fields.map(f => evalExp(s, f)):_*)
     }
   }
 
@@ -366,6 +393,17 @@ object OperationalSemantics {
           evalNew(s, ifThenElse.elseP)
         }
     }
+  }
+
+  def split[T](n: Int, vector: Vector[T]): Vector[Vector[T]] = {
+    val builder = Vector.newBuilder[Vector[T]]
+    var vec = vector
+    for (i <- 0 until vector.length / n) {
+      val (head, tail) = vec splitAt n
+      vec = tail
+      builder += head
+    }
+    builder.result()
   }
 
 }
