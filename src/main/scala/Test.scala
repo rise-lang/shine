@@ -499,23 +499,23 @@ object Test extends App {
     println( OperationalSemantics.evalCommand(store, p) )
   }
 
-//  {
-//    var store = HashMap[String, Data]()
-//    val x = identifier("x", ExpType(ArrayType(4, int)))
-//    val out = identifier("out", AccType(ArrayType(4, int)))
-//    store = store + (x.name -> ArrayData(Vector(1, 2, 3, 4)))
-//    store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0)))
-//
-//    val f = λ( (x1, x2) => x1 + x2 )
-//
-//    val p = out := Reduce(f, 0, x)
-//
-//    println( p )
-//
-//    println( TypeChecker(p) )
-//
-//    println( OperationalSemantics.evalCommand(store, p) )
-//  }
+  {
+    var store = HashMap[String, Data]()
+    val x = identifier("x", ExpType(ArrayType(4, int)))
+    val out = identifier("out", AccType(ArrayType(1, int)))
+    store = store + (x.name -> ArrayData(Vector(1, 2, 3, 4)))
+    store = store + (out.name -> ArrayData(Vector(0)))
+
+    val f = λ( (x1, x2) => x1 + x2 )
+
+    val p = out := Reduce(f, 0, x)
+
+    println( p )
+
+    println( TypeChecker(p) )
+
+    println( OperationalSemantics.evalCommand(store, p) )
+  }
 //
 //  {
 //    val s0 = HashMap[String, Int]()

@@ -67,6 +67,7 @@ object TypeChecker {
       case Record(fields@_*) =>
       case Split(n, array) =>
       case Join(array) =>
+      case Reduce(f, init, array) =>
     }
   }
 
@@ -186,6 +187,23 @@ object TypeChecker {
           case (ExpType(ArrayType(n, a)), ExpType(ArrayType(m, b))) if n == m =>
             ExpType(ArrayType(n, RecordType(a, b)))
           case t => error(t.toString(), "PairOfArrayTypes")
+        }
+
+      case Reduce(f, init, array) =>
+        TypeChecker(array) match {
+          case ExpType(ArrayType(n, dt)) =>
+            setParamType(f, ExpType(RecordType(dt, dt)))
+            TypeChecker(f) match {
+              case FunctionType(ExpType(RecordType(t1, t2)), ExpType(t3)) =>
+                if (dt == t1 && dt == t2 && dt == t3) ExpType(ArrayType(1, dt))
+                else {
+                  error(dt.toString + ", " + t1.toString + ", " + t2.toString +
+                    " and " + t3.toString,
+                    expected = "them to match")
+                }
+              case t => error(t.toString, "FunctionType")
+            }
+          case t => error(t.toString, "ArrayType")
         }
 
       case Length(array) =>

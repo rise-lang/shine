@@ -68,6 +68,8 @@ case class Map(f: Phrase[ExpType -> ExpType], in: Phrase[ExpType]) extends Phras
 
 case class Zip(lhs: Phrase[ExpType], rhs: Phrase[ExpType]) extends Phrase[ExpType]
 
+case class Reduce(f: Phrase[ExpType -> ExpType], init: Phrase[ExpType], array: Phrase[ExpType]) extends Phrase[ExpType]
+
 case class Split(n: Int, array: Phrase[ExpType]) extends Phrase[ExpType]
 
 case class Join(array: Phrase[ExpType]) extends Phrase[ExpType]

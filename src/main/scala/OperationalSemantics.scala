@@ -72,11 +72,14 @@ object OperationalSemantics {
         case BinOp(op, lhs, rhs) =>
           BinOp(op, substitute(p1, p2, lhs), substitute(p1, p2, rhs)).asInstanceOf[Phrase[T2]]
 
-        case Map(f, x) =>
-          Map(substitute(p1, p2, f), substitute(p1, p2, x)).asInstanceOf[Phrase[T2]]
+        case Map(f, array) =>
+          Map(substitute(p1, p2, f), substitute(p1, p2, array)).asInstanceOf[Phrase[T2]]
 
         case Zip(lhs, rhs) =>
           Zip(substitute(p1, p2, lhs), substitute(p1, p2, rhs)).asInstanceOf[Phrase[T2]]
+
+        case Reduce(f, init, array) =>
+          Reduce(substitute(p1, p2, f), substitute(p1, p2, init), substitute(p1, p2, array)).asInstanceOf[Phrase[T2]]
 
         case Split(n, array) =>
           Split(n, substitute(p1, p2, array)).asInstanceOf[Phrase[T2]]
@@ -231,6 +234,16 @@ object OperationalSemantics {
             ArrayData( (lhs zip rhs) map { p =>
               RecordData(p._1, p._2)
             } )
+        }
+
+      case r: Reduce =>
+        val f: (Phrase[ExpType]) => Phrase[ExpType] = evalFunction(s, r.f)
+        val init = evalExp(s, r.init)
+        evalExp(s, r.array) match {
+          case ArrayData(xs) =>
+            ArrayData(Vector(xs.fold(init) {
+              (x, y) => evalExp(s, f(Record(Literal(x), Literal(y))))
+            }))
         }
 
       case Split(n, arrayP) =>
