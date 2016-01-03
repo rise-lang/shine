@@ -516,40 +516,41 @@ object Test extends App {
 
     println( OperationalSemantics.evalCommand(store, p) )
   }
-//
-//  {
-//    val s0 = HashMap[String, Int]()
-//    val (s1, x)   = makeArray(s0, "x", 1, 2, 3, 4)
-//    val (s2, out) = makeArray(s1, "out", 0, 0, 0, 0)
-//    val store = s2
-//
-//    val plusOne = λ( x => x + 1 )
-//
-//    val g = λa( x => Map(plusOne, x) )
-//
-//    val p = out.acc :== Iterate(2, g, x.exp)
-//
-//    println( p )
-//
-//    println( TypeChecker(p) )
-//
-//    println( OperationalSemantics.evalCommand(store, p) )
-//  }
-//
-//  {
-//    val s0 = HashMap[String, Int]()
-//    val (s1, x)   = makeMatrix(s0, "x",   Vector(1, 2, 3, 4), Vector(5, 6, 7, 8))
-//    val (s2, out) = makeMatrix(s1, "out", Vector(0, 0, 0, 0), Vector(0, 0, 0, 0))
-//    val store = s2
-//
-//    val plusOne = λ( x => x + 1 )
-//
-//    val p = out.acc :== Map(Map(plusOne), x.exp)
-//
-//    println( p )
-//
-//    println( TypeChecker(p) )
-//
-//    println( OperationalSemantics.evalCommand(store, p) )
-//  }
+
+  {
+    var store = HashMap[String, Data]()
+    val x = identifier("x", ExpType(ArrayType(4, int)))
+    val out = identifier("out", AccType(ArrayType(4, int)))
+    store = store + (x.name -> ArrayData(Vector(1, 2, 3, 4)))
+    store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0)))
+
+    val plusOne = λ( x => x + 1 )
+    val g = λ( x => Map(plusOne, x) )
+
+    val p = out := Iterate(2, g, x)
+
+    println( p )
+
+    println( TypeChecker(p) )
+
+    println( OperationalSemantics.evalCommand(store, p) )
+  }
+
+  {
+    var store = HashMap[String, Data]()
+    val x = identifier("x", ExpType(ArrayType(2, ArrayType(4, int))))
+    val out = identifier("out", AccType(ArrayType(2, ArrayType(4, int))))
+    store = store + (x.name -> ArrayData(Vector(ArrayData(Vector(1, 2, 3, 4)), ArrayData(Vector(5, 6, 7, 8)))))
+    store = store + (out.name -> ArrayData(Vector(ArrayData(Vector(0, 0, 0, 0)), ArrayData(Vector(0, 0, 0, 0)))))
+
+    val plusOne = λ( x => x + 1 )
+
+    val p = out := Map( λ( Map(plusOne, _) ) , x)
+
+    println( p )
+
+    println( TypeChecker(p) )
+
+    println( OperationalSemantics.evalCommand(store, p) )
+  }
 }

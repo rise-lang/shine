@@ -74,6 +74,8 @@ case class Split(n: Int, array: Phrase[ExpType]) extends Phrase[ExpType]
 
 case class Join(array: Phrase[ExpType]) extends Phrase[ExpType]
 
+case class Iterate(n: Int, f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) extends Phrase[ExpType]
+
 case class Length[T <: BasePhraseTypes](array: Phrase[T]) extends Phrase[ExpType]
 
 case class ArrayExpAccess(array: Phrase[ExpType], index: Phrase[ExpType]) extends Phrase[ExpType]

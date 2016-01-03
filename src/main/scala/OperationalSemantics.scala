@@ -87,6 +87,9 @@ object OperationalSemantics {
         case Join(array) =>
           Join(substitute(p1, p2, array)).asInstanceOf[Phrase[T2]]
 
+        case Iterate(n, f, array) =>
+          Iterate(n, substitute(p1, p2, f), substitute(p1, p2, array)).asInstanceOf[Phrase[T2]]
+
         case Length(array) => Length(substitute(p1, p2, array)).asInstanceOf[Phrase[T2]]
 
         case ArrayExpAccess(array, index) =>
@@ -259,6 +262,15 @@ object OperationalSemantics {
               case ArrayData(inner) => inner
             })
             ArrayData(arrays.flatten)
+        }
+
+      case i: Iterate =>
+        val f = evalFunction(s, i.f)
+        evalExp(s, i.array) match {
+          case ArrayData(xs) =>
+            var array = i.array
+            for (_ <- 0 until i.n) { array = f(array) }
+            evalExp(s, array)
         }
 
       case Length(arrayP) =>

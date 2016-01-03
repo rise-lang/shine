@@ -68,6 +68,7 @@ object TypeChecker {
       case Split(n, array) =>
       case Join(array) =>
       case Reduce(f, init, array) =>
+      case Iterate(n, f, array) =>
     }
   }
 
@@ -240,6 +241,18 @@ object TypeChecker {
           case ExpType(ArrayType(n, ArrayType(m, t))) =>
             ExpType(ArrayType(n*m, t))
           case t => error(t.toString, "ArrayType(ArrayType)")
+        }
+
+      case Iterate(n, f, array) =>
+        TypeChecker(array) match {
+          case t@ExpType(ArrayType(m, dt)) =>
+            setParamType(f, t)
+            TypeChecker(f) match {
+              case FunctionType(t1, t2) if (t1 == t2) && (t == t1) =>
+                t // improve and capture effect on array size
+              case ft => error(ft.toString, "FunctionType")
+            }
+          case t => error(t.toString, "ArrayType")
         }
 
     }
