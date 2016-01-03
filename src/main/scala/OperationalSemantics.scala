@@ -72,31 +72,31 @@ object OperationalSemantics {
         case BinOp(op, lhs, rhs) =>
           BinOp(op, substitute(p1, p2, lhs), substitute(p1, p2, rhs)).asInstanceOf[Phrase[T2]]
 
-        case Map(f, array) =>
-          Map(substitute(p1, p2, f), substitute(p1, p2, array)).asInstanceOf[Phrase[T2]]
+        case MapPhrase(f, array) =>
+          MapPhrase(substitute(p1, p2, f), substitute(p1, p2, array)).asInstanceOf[Phrase[T2]]
 
-        case Zip(lhs, rhs) =>
-          Zip(substitute(p1, p2, lhs), substitute(p1, p2, rhs)).asInstanceOf[Phrase[T2]]
+        case ZipPhrase(lhs, rhs) =>
+          ZipPhrase(substitute(p1, p2, lhs), substitute(p1, p2, rhs)).asInstanceOf[Phrase[T2]]
 
-        case Reduce(f, init, array) =>
-          Reduce(substitute(p1, p2, f), substitute(p1, p2, init), substitute(p1, p2, array)).asInstanceOf[Phrase[T2]]
+        case ReducePhrase(f, init, array) =>
+          ReducePhrase(substitute(p1, p2, f), substitute(p1, p2, init), substitute(p1, p2, array)).asInstanceOf[Phrase[T2]]
 
-        case Split(n, array) =>
-          Split(n, substitute(p1, p2, array)).asInstanceOf[Phrase[T2]]
+        case SplitPhrase(n, array) =>
+          SplitPhrase(n, substitute(p1, p2, array)).asInstanceOf[Phrase[T2]]
 
-        case Join(array) =>
-          Join(substitute(p1, p2, array)).asInstanceOf[Phrase[T2]]
+        case JoinPhrase(array) =>
+          JoinPhrase(substitute(p1, p2, array)).asInstanceOf[Phrase[T2]]
 
-        case Iterate(n, f, array) =>
-          Iterate(n, substitute(p1, p2, f), substitute(p1, p2, array)).asInstanceOf[Phrase[T2]]
+        case IteratePhrase(n, f, array) =>
+          IteratePhrase(n, substitute(p1, p2, f), substitute(p1, p2, array)).asInstanceOf[Phrase[T2]]
 
-        case Length(array) => Length(substitute(p1, p2, array)).asInstanceOf[Phrase[T2]]
+        case LengthPhrase(array) => LengthPhrase(substitute(p1, p2, array)).asInstanceOf[Phrase[T2]]
 
-        case ArrayExpAccess(array, index) =>
-          ArrayExpAccess(substitute(p1, p2, array), substitute(p1, p2, index)).asInstanceOf[Phrase[T2]]
+        case ArrayExpAccessPhrase(array, index) =>
+          ArrayExpAccessPhrase(substitute(p1, p2, array), substitute(p1, p2, index)).asInstanceOf[Phrase[T2]]
 
-        case ArrayAccAccess(array, index) =>
-          ArrayAccAccess(substitute(p1, p2, array), substitute(p1, p2, index)).asInstanceOf[Phrase[T2]]
+        case ArrayAccAccessPhrase(array, index) =>
+          ArrayAccAccessPhrase(substitute(p1, p2, array), substitute(p1, p2, index)).asInstanceOf[Phrase[T2]]
 
         case Record(fields@_*) =>
           Record(fields.map(f => substitute(p1, p2, f)):_*).asInstanceOf[Phrase[T2]]
@@ -224,14 +224,14 @@ object OperationalSemantics {
           case BinOp.Op.MOD => evalIntExp(s, op.lhs) % evalIntExp(s, op.rhs)
         }
 
-      case m: Map =>
+      case m: MapPhrase =>
         val f = evalFunction(s, m.f)
         evalExp(s, m.in) match {
           case ArrayData(xs) =>
             ArrayData(xs.map { x => evalExp(s, f(Literal(x))) })
         }
 
-      case z: Zip =>
+      case z: ZipPhrase =>
         (evalExp(s, z.lhs), evalExp(s, z.rhs)) match {
           case (ArrayData(lhs), ArrayData(rhs)) =>
             ArrayData( (lhs zip rhs) map { p =>
@@ -239,7 +239,7 @@ object OperationalSemantics {
             } )
         }
 
-      case r: Reduce =>
+      case r: ReducePhrase =>
         val f: (Phrase[ExpType]) => Phrase[ExpType] = evalFunction(s, r.f)
         val init = evalExp(s, r.init)
         evalExp(s, r.array) match {
@@ -249,13 +249,13 @@ object OperationalSemantics {
             }))
         }
 
-      case Split(n, arrayP) =>
+      case SplitPhrase(n, arrayP) =>
         evalExp(s, arrayP) match {
           case ArrayData(array) =>
             ArrayData(split(n, array).map(ArrayData))
         }
 
-      case Join(arrayP) =>
+      case JoinPhrase(arrayP) =>
         evalExp(s, arrayP) match {
           case ArrayData(outer) =>
             val arrays = outer.map(row => row match {
@@ -264,7 +264,7 @@ object OperationalSemantics {
             ArrayData(arrays.flatten)
         }
 
-      case i: Iterate =>
+      case i: IteratePhrase =>
         val f = evalFunction(s, i.f)
         evalExp(s, i.array) match {
           case ArrayData(xs) =>
@@ -273,13 +273,13 @@ object OperationalSemantics {
             evalExp(s, array)
         }
 
-      case Length(arrayP) =>
+      case LengthPhrase(arrayP) =>
         arrayP.t match {
           case ExpType(ArrayType(n, _)) => n
           case AccType(ArrayType(n, _)) => n
         }
 
-      case ArrayExpAccess(array, index) =>
+      case ArrayExpAccessPhrase(array, index) =>
         (evalExp(s, array), evalExp(s, index)) match {
           case (ArrayData(xs), IntData(i)) => xs(i)
         }
@@ -313,7 +313,7 @@ object OperationalSemantics {
           evalAcc(s, ifThenElse.elseP)
         }
 
-      case ArrayAccAccess(arrayP, indexP) =>
+      case ArrayAccAccessPhrase(arrayP, indexP) =>
         val array = evalAcc(s, arrayP)
         val index = evalExp(s, indexP) match { case IntData(i) => i }
         ArrayAccessIdentifier(array, index)

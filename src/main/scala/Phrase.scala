@@ -64,20 +64,20 @@ object BinOp {
 
 }
 
-case class Map(f: Phrase[ExpType -> ExpType], in: Phrase[ExpType]) extends Phrase[ExpType]
+case class MapPhrase(f: Phrase[ExpType -> ExpType], in: Phrase[ExpType]) extends Phrase[ExpType]
 
-case class Zip(lhs: Phrase[ExpType], rhs: Phrase[ExpType]) extends Phrase[ExpType]
+case class ZipPhrase(lhs: Phrase[ExpType], rhs: Phrase[ExpType]) extends Phrase[ExpType]
 
-case class Reduce(f: Phrase[ExpType -> ExpType], init: Phrase[ExpType], array: Phrase[ExpType]) extends Phrase[ExpType]
+case class ReducePhrase(f: Phrase[ExpType -> ExpType], init: Phrase[ExpType], array: Phrase[ExpType]) extends Phrase[ExpType]
 
-case class Split(n: Int, array: Phrase[ExpType]) extends Phrase[ExpType]
+case class SplitPhrase(n: Int, array: Phrase[ExpType]) extends Phrase[ExpType]
 
-case class Join(array: Phrase[ExpType]) extends Phrase[ExpType]
+case class JoinPhrase(array: Phrase[ExpType]) extends Phrase[ExpType]
 
-case class Iterate(n: Int, f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) extends Phrase[ExpType]
+case class IteratePhrase(n: Int, f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) extends Phrase[ExpType]
 
-case class Length[T <: BasePhraseTypes](array: Phrase[T]) extends Phrase[ExpType]
+case class LengthPhrase[T <: BasePhraseTypes](array: Phrase[T]) extends Phrase[ExpType]
 
-case class ArrayExpAccess(array: Phrase[ExpType], index: Phrase[ExpType]) extends Phrase[ExpType]
+case class ArrayExpAccessPhrase(array: Phrase[ExpType], index: Phrase[ExpType]) extends Phrase[ExpType]
 
-case class ArrayAccAccess(array: Phrase[AccType], index: Phrase[ExpType]) extends Phrase[AccType]
+case class ArrayAccAccessPhrase(array: Phrase[AccType], index: Phrase[ExpType]) extends Phrase[AccType]

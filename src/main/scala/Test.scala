@@ -545,7 +545,7 @@ object Test extends App {
 
     val plusOne = λ( x => x + 1 )
 
-    val p = out := Map( λ( Map(plusOne, _) ) , x)
+    val p = out := Map(Map(plusOne), x)
 
     println( p )
 

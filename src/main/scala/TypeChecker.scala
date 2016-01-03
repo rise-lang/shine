@@ -48,8 +48,8 @@ object TypeChecker {
         setIdentType(pair, t)
 
       case app: Apply[a, T] =>
-      case ArrayAccAccess(array, index) =>
-      case ArrayExpAccess(array, index) =>
+      case ArrayAccAccessPhrase(array, index) =>
+      case ArrayExpAccessPhrase(array, index) =>
       case Assign(lhs, rhs) =>
       case BinOp(lhs, op, rhs) =>
       case FieldAccess(n, record) =>
@@ -57,18 +57,18 @@ object TypeChecker {
       case IfThenElse(cond, theP, elseP) =>
       case IntLiteral(i) =>
       case Lambda(param, body) =>
-      case Length(array) =>
+      case LengthPhrase(array) =>
       case Literal(l) =>
-      case Map(f, array) =>
+      case MapPhrase(f, array) =>
       case NewPhrase(f) =>
       case Seq(c1, c2) =>
       case SkipPhrase() =>
-      case Zip(lhs, rhs) =>
+      case ZipPhrase(lhs, rhs) =>
       case Record(fields@_*) =>
-      case Split(n, array) =>
-      case Join(array) =>
-      case Reduce(f, init, array) =>
-      case Iterate(n, f, array) =>
+      case SplitPhrase(n, array) =>
+      case JoinPhrase(array) =>
+      case ReducePhrase(f, init, array) =>
+      case IteratePhrase(n, f, array) =>
     }
   }
 
@@ -167,7 +167,7 @@ object TypeChecker {
         check(TypeChecker(rhs), ExpType(int))
         ExpType(int)
 
-      case Map(f, array) =>
+      case MapPhrase(f, array) =>
         TypeChecker(array) match {
           case ExpType(ArrayType(n, dt)) =>
             setParamType(f, ExpType(dt))
@@ -183,14 +183,14 @@ object TypeChecker {
           case t => error(t.toString, "ArrayType")
         }
 
-      case Zip(lhs, rhs) =>
+      case ZipPhrase(lhs, rhs) =>
         (TypeChecker(lhs), TypeChecker(rhs)) match {
           case (ExpType(ArrayType(n, a)), ExpType(ArrayType(m, b))) if n == m =>
             ExpType(ArrayType(n, RecordType(a, b)))
           case t => error(t.toString(), "PairOfArrayTypes")
         }
 
-      case Reduce(f, init, array) =>
+      case ReducePhrase(f, init, array) =>
         TypeChecker(array) match {
           case ExpType(ArrayType(n, dt)) =>
             setParamType(f, ExpType(RecordType(dt, dt)))
@@ -207,20 +207,20 @@ object TypeChecker {
           case t => error(t.toString, "ArrayType")
         }
 
-      case Length(array) =>
+      case LengthPhrase(array) =>
         TypeChecker(array) match {
           case ExpType(ArrayType(n, t)) => ExpType(int)
           case AccType(ArrayType(n, t)) => ExpType(int)
           case t => error(t.toString, "ArrayType")
         }
 
-      case ArrayExpAccess(array, index) =>
+      case ArrayExpAccessPhrase(array, index) =>
         TypeChecker(array) match {
           case ExpType(ArrayType(n, t)) => ExpType(t)
           case t => error(t.toString, "ArrayType")
         }
 
-      case ArrayAccAccess(array, index) =>
+      case ArrayAccAccessPhrase(array, index) =>
         TypeChecker(array) match {
           case AccType(ArrayType(n, t)) => AccType(t)
           case t => error(t.toString, "ArrayType")
@@ -229,21 +229,21 @@ object TypeChecker {
       case Record(fields@_*) =>
         ExpType(RecordType( fields.map(f => TypeChecker(f).dataType):_* ))
 
-      case Split(n, array) =>
+      case SplitPhrase(n, array) =>
         TypeChecker(array) match {
           case ExpType(ArrayType(m, dt)) =>
             ExpType(ArrayType(m/n, ArrayType(n, dt)))
           case t => error(t.toString, "ArrayType")
         }
 
-      case Join(array) =>
+      case JoinPhrase(array) =>
         TypeChecker(array) match {
           case ExpType(ArrayType(n, ArrayType(m, t))) =>
             ExpType(ArrayType(n*m, t))
           case t => error(t.toString, "ArrayType(ArrayType)")
         }
 
-      case Iterate(n, f, array) =>
+      case IteratePhrase(n, f, array) =>
         TypeChecker(array) match {
           case t@ExpType(ArrayType(m, dt)) =>
             setParamType(f, t)
