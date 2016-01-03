@@ -193,9 +193,9 @@ object TypeChecker {
       case ReducePhrase(f, init, array) =>
         TypeChecker(array) match {
           case ExpType(ArrayType(n, dt)) =>
-            setParamType(f, ExpType(RecordType(dt, dt)))
+            setParamType(f, PairType(ExpType(dt), ExpType(dt)))
             TypeChecker(f) match {
-              case FunctionType(ExpType(RecordType(t1, t2)), ExpType(t3)) =>
+              case FunctionType(PairType(ExpType(t1), ExpType(t2)), ExpType(t3)) =>
                 if (dt == t1 && dt == t2 && dt == t3) ExpType(ArrayType(1, dt))
                 else {
                   error(dt.toString + ", " + t1.toString + ", " + t2.toString +

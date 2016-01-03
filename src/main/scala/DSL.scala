@@ -180,9 +180,9 @@ trait funDef {
     Lambda(param, f(param))
   }
 
-  def apply[T <: PhraseType](f: (Phrase[ExpType], Phrase[ExpType]) => Phrase[T]): Lambda[ExpType, T] = {
-    val param = Ident[ExpType]( newName() )
-    val g = λ(ExpType(RecordType(int, int))) { x => f(x._1(), x._2()) }
+  def apply[T <: PhraseType](f: (Phrase[ExpType], Phrase[ExpType]) => Phrase[T]): Lambda[ExpType x ExpType, T] = {
+    val param = Pair(Ident[ExpType]( newName() ), Ident[ExpType]( newName() ))
+    val g = λ(PairType(ExpType(int), ExpType(int))) { x => f(π1(x), π2(x)) }
     Lambda(param, g(param))
   }
 
@@ -234,38 +234,37 @@ object λ extends funDef
 
 object skip extends SkipPhrase
 
-object Map {
+object map {
   def apply(f: Phrase[ExpType -> ExpType]) = λ( x => MapPhrase(f, x))
 
   def apply(f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) =
     MapPhrase(f, array)
 }
 
-object Zip {
+object zip {
   def apply(lhs: Phrase[ExpType], rhs: Phrase[ExpType]) = ZipPhrase(lhs, rhs)
 }
 
-object Split {
+object split {
   def apply(n: Int, array: Phrase[ExpType]) = SplitPhrase(n, array)
 }
 
-object Join {
+object join {
   def apply(array: Phrase[ExpType]) = JoinPhrase(array)
 }
 
-// ReducePhrase(f: Phrase[ExpType -> ExpType], init: Phrase[ExpType], array: Phrase[ExpType])
-object Reduce {
-  def apply(f: Phrase[ExpType -> ExpType]) =
+object reduce {
+  def apply(f: Phrase[ExpType x ExpType -> ExpType]) =
     λ( (init, array) => ReducePhrase(f, init, array))
 
-  def apply(f: Phrase[ExpType -> ExpType], init: Phrase[ExpType]) =
+  def apply(f: Phrase[ExpType x ExpType -> ExpType], init: Phrase[ExpType]) =
     λ( array => ReducePhrase(f, init, array))
 
-  def apply(f: Phrase[ExpType -> ExpType], init: Phrase[ExpType],
+  def apply(f: Phrase[ExpType x ExpType -> ExpType], init: Phrase[ExpType],
             array: Phrase[ExpType]) = ReducePhrase(f, init, array)
 }
 
-object Iterate {
+object iterate {
   def apply(n: Int, f: Phrase[ExpType -> ExpType]) =
     λ( array => IteratePhrase(n, f, array))
 
@@ -273,7 +272,7 @@ object Iterate {
     IteratePhrase(n, f, array)
 }
 
-object Length {
+object length {
   def apply[T <: BasePhraseTypes](array: Phrase[T]) =
     LengthPhrase(array)
 }

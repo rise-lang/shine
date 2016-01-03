@@ -240,12 +240,12 @@ object OperationalSemantics {
         }
 
       case r: ReducePhrase =>
-        val f: (Phrase[ExpType]) => Phrase[ExpType] = evalFunction(s, r.f)
+        val f = evalFunction(s, r.f)
         val init = evalExp(s, r.init)
         evalExp(s, r.array) match {
           case ArrayData(xs) =>
             ArrayData(Vector(xs.fold(init) {
-              (x, y) => evalExp(s, f(Record(Literal(x), Literal(y))))
+              (x, y) => evalExp(s, f(Pair(Literal(x), Literal(y))))
             }))
         }
 

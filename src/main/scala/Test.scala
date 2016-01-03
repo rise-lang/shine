@@ -106,9 +106,9 @@ object Test extends App {
     store = store + (in2.name -> ArrayData(Vector(2, 3, 4, 5, 6)))
     store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0, 0)))
 
-    val f = λ( (x, y) => x + y )
+    val f = λ( x => x._1 + x._2 )
 
-    val p = out := Map(f, Zip(in1, in2))
+    val p = out := map(f, zip(in1, in2))
 
     println(p)
 
@@ -129,12 +129,12 @@ object Test extends App {
     store = store + (in2.name -> ArrayData(Vector(2, 3, 4, 5, 6)))
     store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0, 0)))
 
-    val f = λ( (x, y) => x + y )
+    val f = λ( x => x._1 + x._2 )
 
-    val p = `for`(Length(in1), { i =>
+    val p = `for`(length(in1), { i =>
       λ(AccType(int) x ExpType(RecordType(int, int))) {
         p => π1(p) := f(π2(p))
-      }(Pair(out `@` i, Zip(in1, in2) `@` i))
+      }(Pair(out `@` i, zip(in1, in2) `@` i))
     })
 
     println(p)
@@ -156,12 +156,10 @@ object Test extends App {
     store = store + (in2.name -> ArrayData(Vector(2, 3, 4, 5, 6)))
     store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0, 0)))
 
-    val f = λ( (x, y) => x + y )
-//   ==
-//    val f = λ(ExpType(RecordType(int, int))) { x => x._1 + x._2 }
+    val f = λ( x => x._1 + x._2 )
 
-    val p = `for`(Length(in1), { i =>
-      out `@` i := f(Zip(in1, in2) `@` i)
+    val p = `for`(length(in1), { i =>
+      out `@` i := f(zip(in1, in2) `@` i)
     })
 
     println(p)
@@ -184,8 +182,8 @@ object Test extends App {
     store = store + (in2.name -> ArrayData(Vector(2, 3, 4, 5, 6)))
     store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0, 0)))
 
-    val p = `for`(Length(in1), { i =>
-      out `@` i := (Zip(in1, in2) `@` i)._1 + (Zip(in1, in2) `@` i)._2
+    val p = `for`(length(in1), { i =>
+      out `@` i := (zip(in1, in2) `@` i)._1 + (zip(in1, in2) `@` i)._2
     })
 
     println(p)
@@ -207,7 +205,7 @@ object Test extends App {
     store = store + (in2.name -> ArrayData(Vector(2, 3, 4, 5, 6)))
     store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0, 0)))
 
-    val p = `for`(Length(out), { i =>
+    val p = `for`(length(out), { i =>
       (out `@` i) := Record(in1 `@` i, in2 `@` i)._1 + Record(in1 `@` i, in2 `@` i)._2
     })
 
@@ -230,7 +228,7 @@ object Test extends App {
     store = store + (in2.name -> ArrayData(Vector(2, 3, 4, 5, 6)))
     store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0, 0)))
 
-    val p = `for`(Length(out), { i =>
+    val p = `for`(length(out), { i =>
       (out `@` i) := in1 `@` i + in2 `@` i
     })
 
@@ -251,8 +249,8 @@ object Test extends App {
     store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0)))
 
     val f = λ( x => x._1 + x._2)
-    val g = λ( x => Map(f, x) )
-    val p = out := Join(Map(g, Split(2, Zip(x, y))))
+    val g = λ( x => map(f, x) )
+    val p = out := join(map(g, split(2, zip(x, y))))
 
     println( p )
 
@@ -276,13 +274,13 @@ object Test extends App {
     store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0)))
 
     val f = λ( x => x._1 + x._2)
-    val g = λ( x => Map(f, x) )
+    val g = λ( x => map(f, x) )
 
     val p = `for`(2, { i =>
       `for`(2, { j =>
         λ( AccType(int) x ExpType(ArrayType(2, int)) ) { p =>
           π1(p) := π2(p) `@` j
-        }(Pair(out `@` (i*2+j), Map(g, Split(2, Zip(x, y))) `@` i))
+        }(Pair(out `@` (i*2+j), map(g, split(2, zip(x, y))) `@` i))
       })
     })
 
@@ -305,11 +303,11 @@ object Test extends App {
     store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0)))
 
     val f = λ( x => x._1 + x._2)
-    val g = λ( x => Map(f, x) )
+    val g = λ( x => map(f, x) )
 
     val p = `for`(2, { i =>
       `for`(2, { j =>
-        out `@` (i*2+j) := (Map(g, Split(2, Zip(x, y))) `@` i) `@` j
+        out `@` (i*2+j) := (map(g, split(2, zip(x, y))) `@` i) `@` j
       })
     })
 
@@ -332,11 +330,11 @@ object Test extends App {
     store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0)))
 
     val f = λ( x => x._1 + x._2)
-    val g = λ( x => Map(f, x) )
+    val g = λ( x => map(f, x) )
 
     val p = `for`(2, { i =>
       `for`(2, { j =>
-        out `@` (i*2+j) := g(Split(2, Zip(x, y)) `@` i) `@` j
+        out `@` (i*2+j) := g(split(2, zip(x, y)) `@` i) `@` j
       })
     })
 
@@ -360,7 +358,7 @@ object Test extends App {
 
     val p = `for`(2, { i =>
       `for`(2, { j =>
-        out `@` (i*2+j) := Map(f, Split(2, Zip(x, y)) `@` i) `@` j
+        out `@` (i*2+j) := map(f, split(2, zip(x, y)) `@` i) `@` j
       })
     })
 
@@ -386,7 +384,7 @@ object Test extends App {
 
     val p = `for`(2, { i =>
       `for`(2, { j =>
-        out `@` (i*2+j) := f((Split(2, Zip(x, y)) `@` i) `@` j)
+        out `@` (i*2+j) := f((split(2, zip(x, y)) `@` i) `@` j)
       })
     })
 
@@ -412,7 +410,7 @@ object Test extends App {
 
     val p = `for`(2, { i =>
       `for`(2, { j =>
-        out `@` (i*2+j) := f( Zip(x, y) `@` (i*2+j) )
+        out `@` (i*2+j) := f( zip(x, y) `@` (i*2+j) )
       })
     })
     println( p )
@@ -508,7 +506,7 @@ object Test extends App {
 
     val f = λ( (x1, x2) => x1 + x2 )
 
-    val p = out := Reduce(f, 0, x)
+    val p = out := reduce(f, 0, x)
 
     println( p )
 
@@ -525,9 +523,9 @@ object Test extends App {
     store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0)))
 
     val plusOne = λ( x => x + 1 )
-    val g = λ( x => Map(plusOne, x) )
+    val g = λ( x => map(plusOne, x) )
 
-    val p = out := Iterate(2, g, x)
+    val p = out := iterate(2, g, x)
 
     println( p )
 
@@ -545,7 +543,7 @@ object Test extends App {
 
     val plusOne = λ( x => x + 1 )
 
-    val p = out := Map(Map(plusOne), x)
+    val p = out := map(map(plusOne), x)
 
     println( p )
 
