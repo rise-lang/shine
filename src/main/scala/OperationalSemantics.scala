@@ -15,6 +15,10 @@ object OperationalSemantics {
   case class ArrayData(a: Vector[Data]) extends Data(ArrayType(a.length, a.head.dataType))
   case class RecordData(fields: Data*) extends Data(RecordType(fields.map(_.dataType):_*))
 
+  object makeArrayData {
+    def apply(seq: Data*) = ArrayData(Vector(seq: _*))
+  }
+
   sealed trait AccIdentifier
   case class NamedIdentifier(name: String) extends AccIdentifier
   case class ArrayAccessIdentifier(array: AccIdentifier, index: Int) extends AccIdentifier
@@ -29,13 +33,13 @@ object OperationalSemantics {
     if (p2 == in) {
       p1.asInstanceOf[Phrase[T2]] // T1 == T2
     } else {
-      in match {
+      val res = in match {
         // these cases must all be `<: Phrase[T2]`, because they match on in.
         // The casts should be unnecessary
         case l: Lambda[_, _] =>
           val newParam = substitute(p1, p2, l.param)
           val newBody = substitute(p1, p2, l.body)
-          Lambda(newParam, newBody).asInstanceOf[Phrase[T2]]
+          Lambda(newParam, newBody)
 
         case app: Apply[a, T2] =>
           val newFun = substitute(p1, p2, app.fun)
@@ -43,22 +47,22 @@ object OperationalSemantics {
           Apply(newFun, newArg)
 
         case pair: Pair[a, b] =>
-          Pair(substitute(p1, p2, pair.fst), substitute(p1, p2, pair.snd)).asInstanceOf[Phrase[T2]]
+          Pair(substitute(p1, p2, pair.fst), substitute(p1, p2, pair.snd))
 
         case p: Proj1[T2, b] => Proj1(substitute(p1, p2, p.pair))
         case p: Proj2[a, T2] => Proj2(substitute(p1, p2, p.pair))
 
         case FieldAccess(n, record) =>
-          FieldAccess(n, substitute(p1, p2, record)).asInstanceOf[Phrase[T2]]
+          FieldAccess(n, substitute(p1, p2, record))
 
         case Seq(c1, c2) =>
-          Seq(substitute(p1, p2, c1), substitute(p1, p2, c2)).asInstanceOf[Phrase[T2]]
+          Seq(substitute(p1, p2, c1), substitute(p1, p2, c2))
 
         case NewPhrase(f) =>
-          NewPhrase(substitute(p1, p2, f)).asInstanceOf[Phrase[T2]]
+          NewPhrase(substitute(p1, p2, f))
 
         case Assign(lhs, rhs) =>
-          Assign(substitute(p1, p2, lhs), substitute(p1, p2, rhs)).asInstanceOf[Phrase[T2]]
+          Assign(substitute(p1, p2, lhs), substitute(p1, p2, rhs))
 
         case i: IfThenElse[T2] =>
           val newCond = substitute(p1, p2, i.cond)
@@ -67,45 +71,46 @@ object OperationalSemantics {
           IfThenElse(newCond, newThenP, newElseP)
 
         case ForPhrase(n, body) =>
-          ForPhrase(substitute(p1, p2, n), substitute(p1, p2, body)).asInstanceOf[Phrase[T2]]
+          ForPhrase(substitute(p1, p2, n), substitute(p1, p2, body))
 
         case BinOp(op, lhs, rhs) =>
-          BinOp(op, substitute(p1, p2, lhs), substitute(p1, p2, rhs)).asInstanceOf[Phrase[T2]]
+          BinOp(op, substitute(p1, p2, lhs), substitute(p1, p2, rhs))
 
         case MapPhrase(f, array) =>
-          MapPhrase(substitute(p1, p2, f), substitute(p1, p2, array)).asInstanceOf[Phrase[T2]]
+          MapPhrase(substitute(p1, p2, f), substitute(p1, p2, array))
 
         case ZipPhrase(lhs, rhs) =>
-          ZipPhrase(substitute(p1, p2, lhs), substitute(p1, p2, rhs)).asInstanceOf[Phrase[T2]]
+          ZipPhrase(substitute(p1, p2, lhs), substitute(p1, p2, rhs))
 
         case ReducePhrase(f, init, array) =>
-          ReducePhrase(substitute(p1, p2, f), substitute(p1, p2, init), substitute(p1, p2, array)).asInstanceOf[Phrase[T2]]
+          ReducePhrase(substitute(p1, p2, f), substitute(p1, p2, init), substitute(p1, p2, array))
 
         case SplitPhrase(n, array) =>
-          SplitPhrase(n, substitute(p1, p2, array)).asInstanceOf[Phrase[T2]]
+          SplitPhrase(n, substitute(p1, p2, array))
 
         case JoinPhrase(array) =>
-          JoinPhrase(substitute(p1, p2, array)).asInstanceOf[Phrase[T2]]
+          JoinPhrase(substitute(p1, p2, array))
 
         case IteratePhrase(n, f, array) =>
-          IteratePhrase(n, substitute(p1, p2, f), substitute(p1, p2, array)).asInstanceOf[Phrase[T2]]
+          IteratePhrase(n, substitute(p1, p2, f), substitute(p1, p2, array))
 
-        case LengthPhrase(array) => LengthPhrase(substitute(p1, p2, array)).asInstanceOf[Phrase[T2]]
+        case LengthPhrase(array) => LengthPhrase(substitute(p1, p2, array))
 
         case ArrayExpAccessPhrase(array, index) =>
-          ArrayExpAccessPhrase(substitute(p1, p2, array), substitute(p1, p2, index)).asInstanceOf[Phrase[T2]]
+          ArrayExpAccessPhrase(substitute(p1, p2, array), substitute(p1, p2, index))
 
         case ArrayAccAccessPhrase(array, index) =>
-          ArrayAccAccessPhrase(substitute(p1, p2, array), substitute(p1, p2, index)).asInstanceOf[Phrase[T2]]
+          ArrayAccAccessPhrase(substitute(p1, p2, array), substitute(p1, p2, index))
 
         case Record(fields@_*) =>
-          Record(fields.map(f => substitute(p1, p2, f)):_*).asInstanceOf[Phrase[T2]]
+          Record(fields.map(f => substitute(p1, p2, f)):_*)
 
         case _: Ident[_]   => in
         case _: IntLiteral => in
         case _: Literal    => in
         case _: SkipPhrase => in
       }
+      res.asInstanceOf[Phrase[T2]]
     }
   }
 

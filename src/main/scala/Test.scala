@@ -102,9 +102,9 @@ object Test extends App {
     val in1 = identifier("in1", ExpType(ArrayType(5, int)))
     val in2 = identifier("in2", ExpType(ArrayType(5, int)))
     val out = identifier("out", AccType(ArrayType(5, int)))
-    store = store + (in1.name -> ArrayData(Vector(1, 2, 3, 4, 5)))
-    store = store + (in2.name -> ArrayData(Vector(2, 3, 4, 5, 6)))
-    store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0, 0)))
+    store = store + (in1.name -> makeArrayData(1, 2, 3, 4, 5))
+    store = store + (in2.name -> makeArrayData(2, 3, 4, 5, 6))
+    store = store + (out.name -> makeArrayData(0, 0, 0, 0, 0))
 
     val f = λ( x => x._1 + x._2 )
 
@@ -125,9 +125,9 @@ object Test extends App {
     val in1 = identifier("in1", ExpType(ArrayType(5, int)))
     val in2 = identifier("in2", ExpType(ArrayType(5, int)))
     val out = identifier("out", AccType(ArrayType(5, int)))
-    store = store + (in1.name -> ArrayData(Vector(1, 2, 3, 4, 5)))
-    store = store + (in2.name -> ArrayData(Vector(2, 3, 4, 5, 6)))
-    store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0, 0)))
+    store = store + (in1.name -> makeArrayData(1, 2, 3, 4, 5))
+    store = store + (in2.name -> makeArrayData(2, 3, 4, 5, 6))
+    store = store + (out.name -> makeArrayData(0, 0, 0, 0, 0))
 
     val f = λ( x => x._1 + x._2 )
 
@@ -152,9 +152,9 @@ object Test extends App {
     val in1 = identifier("in1", ExpType(ArrayType(5, int)))
     val in2 = identifier("in2", ExpType(ArrayType(5, int)))
     val out = identifier("out", AccType(ArrayType(5, int)))
-    store = store + (in1.name -> ArrayData(Vector(1, 2, 3, 4, 5)))
-    store = store + (in2.name -> ArrayData(Vector(2, 3, 4, 5, 6)))
-    store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0, 0)))
+    store = store + (in1.name -> makeArrayData(1, 2, 3, 4, 5))
+    store = store + (in2.name -> makeArrayData(2, 3, 4, 5, 6))
+    store = store + (out.name -> makeArrayData(0, 0, 0, 0, 0))
 
     val f = λ( x => x._1 + x._2 )
 
@@ -178,9 +178,9 @@ object Test extends App {
     val in1 = identifier("in1", ExpType(ArrayType(5, int)))
     val in2 = identifier("in2", ExpType(ArrayType(5, int)))
     val out = identifier("out", AccType(ArrayType(5, int)))
-    store = store + (in1.name -> ArrayData(Vector(1, 2, 3, 4, 5)))
-    store = store + (in2.name -> ArrayData(Vector(2, 3, 4, 5, 6)))
-    store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0, 0)))
+    store = store + (in1.name -> makeArrayData(1, 2, 3, 4, 5))
+    store = store + (in2.name -> makeArrayData(2, 3, 4, 5, 6))
+    store = store + (out.name -> makeArrayData(0, 0, 0, 0, 0))
 
     val p = `for`(length(in1), { i =>
       out `@` i := (zip(in1, in2) `@` i)._1 + (zip(in1, in2) `@` i)._2
@@ -201,9 +201,9 @@ object Test extends App {
     val in1 = identifier("in1", ExpType(ArrayType(5, int)))
     val in2 = identifier("in2", ExpType(ArrayType(5, int)))
     val out = identifier("out", AccType(ArrayType(5, int)))
-    store = store + (in1.name -> ArrayData(Vector(1, 2, 3, 4, 5)))
-    store = store + (in2.name -> ArrayData(Vector(2, 3, 4, 5, 6)))
-    store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0, 0)))
+    store = store + (in1.name -> makeArrayData(1, 2, 3, 4, 5))
+    store = store + (in2.name -> makeArrayData(2, 3, 4, 5, 6))
+    store = store + (out.name -> makeArrayData(0, 0, 0, 0, 0))
 
     val p = `for`(length(out), { i =>
       (out `@` i) := Record(in1 `@` i, in2 `@` i)._1 + Record(in1 `@` i, in2 `@` i)._2
@@ -224,9 +224,9 @@ object Test extends App {
     val in1 = identifier("in1", ExpType(ArrayType(5, int)))
     val in2 = identifier("in2", ExpType(ArrayType(5, int)))
     val out = identifier("out", AccType(ArrayType(5, int)))
-    store = store + (in1.name -> ArrayData(Vector(1, 2, 3, 4, 5)))
-    store = store + (in2.name -> ArrayData(Vector(2, 3, 4, 5, 6)))
-    store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0, 0)))
+    store = store + (in1.name -> makeArrayData(1, 2, 3, 4, 5))
+    store = store + (in2.name -> makeArrayData(2, 3, 4, 5, 6))
+    store = store + (out.name -> makeArrayData(0, 0, 0, 0, 0))
 
     val p = `for`(length(out), { i =>
       (out `@` i) := in1 `@` i + in2 `@` i
@@ -244,9 +244,9 @@ object Test extends App {
     val x = identifier("x", ExpType(ArrayType(4, int)))
     val y = identifier("y", ExpType(ArrayType(4, int)))
     val out = identifier("out", AccType(ArrayType(4, int)))
-    store = store + (x.name -> ArrayData(Vector(1, 2, 3, 4)))
-    store = store + (y.name -> ArrayData(Vector(2, 3, 4, 5)))
-    store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0)))
+    store = store + (x.name -> makeArrayData(1, 2, 3, 4))
+    store = store + (y.name -> makeArrayData(2, 3, 4, 5))
+    store = store + (out.name -> makeArrayData(0, 0, 0, 0))
 
     val f = λ( x => x._1 + x._2)
     val g = λ( x => map(f, x) )
@@ -269,9 +269,9 @@ object Test extends App {
     val x = identifier("x", ExpType(ArrayType(4, int)))
     val y = identifier("y", ExpType(ArrayType(4, int)))
     val out = identifier("out", AccType(ArrayType(4, int)))
-    store = store + (x.name -> ArrayData(Vector(1, 2, 3, 4)))
-    store = store + (y.name -> ArrayData(Vector(2, 3, 4, 5)))
-    store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0)))
+    store = store + (x.name -> makeArrayData(1, 2, 3, 4))
+    store = store + (y.name -> makeArrayData(2, 3, 4, 5))
+    store = store + (out.name -> makeArrayData(0, 0, 0, 0))
 
     val f = λ( x => x._1 + x._2)
     val g = λ( x => map(f, x) )
@@ -298,9 +298,9 @@ object Test extends App {
     val x = identifier("x", ExpType(ArrayType(4, int)))
     val y = identifier("y", ExpType(ArrayType(4, int)))
     val out = identifier("out", AccType(ArrayType(4, int)))
-    store = store + (x.name -> ArrayData(Vector(1, 2, 3, 4)))
-    store = store + (y.name -> ArrayData(Vector(2, 3, 4, 5)))
-    store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0)))
+    store = store + (x.name -> makeArrayData(1, 2, 3, 4))
+    store = store + (y.name -> makeArrayData(2, 3, 4, 5))
+    store = store + (out.name -> makeArrayData(0, 0, 0, 0))
 
     val f = λ( x => x._1 + x._2)
     val g = λ( x => map(f, x) )
@@ -325,9 +325,9 @@ object Test extends App {
     val x = identifier("x", ExpType(ArrayType(4, int)))
     val y = identifier("y", ExpType(ArrayType(4, int)))
     val out = identifier("out", AccType(ArrayType(4, int)))
-    store = store + (x.name -> ArrayData(Vector(1, 2, 3, 4)))
-    store = store + (y.name -> ArrayData(Vector(2, 3, 4, 5)))
-    store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0)))
+    store = store + (x.name -> makeArrayData(1, 2, 3, 4))
+    store = store + (y.name -> makeArrayData(2, 3, 4, 5))
+    store = store + (out.name -> makeArrayData(0, 0, 0, 0))
 
     val f = λ( x => x._1 + x._2)
     val g = λ( x => map(f, x) )
@@ -350,9 +350,9 @@ object Test extends App {
     val x = identifier("x", ExpType(ArrayType(4, int)))
     val y = identifier("y", ExpType(ArrayType(4, int)))
     val out = identifier("out", AccType(ArrayType(4, int)))
-    store = store + (x.name -> ArrayData(Vector(1, 2, 3, 4)))
-    store = store + (y.name -> ArrayData(Vector(2, 3, 4, 5)))
-    store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0)))
+    store = store + (x.name -> makeArrayData(1, 2, 3, 4))
+    store = store + (y.name -> makeArrayData(2, 3, 4, 5))
+    store = store + (out.name -> makeArrayData(0, 0, 0, 0))
 
     val f = λ( x => x._1 + x._2)
 
@@ -376,9 +376,9 @@ object Test extends App {
     val x = identifier("x", ExpType(ArrayType(4, int)))
     val y = identifier("y", ExpType(ArrayType(4, int)))
     val out = identifier("out", AccType(ArrayType(4, int)))
-    store = store + (x.name -> ArrayData(Vector(1, 2, 3, 4)))
-    store = store + (y.name -> ArrayData(Vector(2, 3, 4, 5)))
-    store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0)))
+    store = store + (x.name -> makeArrayData(1, 2, 3, 4))
+    store = store + (y.name -> makeArrayData(2, 3, 4, 5))
+    store = store + (out.name -> makeArrayData(0, 0, 0, 0))
 
     val f = λ( x => x._1 + x._2)
 
@@ -402,9 +402,9 @@ object Test extends App {
     val x = identifier("x", ExpType(ArrayType(4, int)))
     val y = identifier("y", ExpType(ArrayType(4, int)))
     val out = identifier("out", AccType(ArrayType(4, int)))
-    store = store + (x.name -> ArrayData(Vector(1, 2, 3, 4)))
-    store = store + (y.name -> ArrayData(Vector(2, 3, 4, 5)))
-    store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0)))
+    store = store + (x.name -> makeArrayData(1, 2, 3, 4))
+    store = store + (y.name -> makeArrayData(2, 3, 4, 5))
+    store = store + (out.name -> makeArrayData(0, 0, 0, 0))
 
     val f = λ( x => x._1 + x._2)
 
@@ -427,9 +427,9 @@ object Test extends App {
     val x = identifier("x", ExpType(ArrayType(4, int)))
     val y = identifier("y", ExpType(ArrayType(4, int)))
     val out = identifier("out", AccType(ArrayType(4, int)))
-    store = store + (x.name -> ArrayData(Vector(1, 2, 3, 4)))
-    store = store + (y.name -> ArrayData(Vector(2, 3, 4, 5)))
-    store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0)))
+    store = store + (x.name -> makeArrayData(1, 2, 3, 4))
+    store = store + (y.name -> makeArrayData(2, 3, 4, 5))
+    store = store + (out.name -> makeArrayData(0, 0, 0, 0))
 
     val f = λ( x => x._1 + x._2)
 
@@ -454,9 +454,9 @@ object Test extends App {
     val x = identifier("x", ExpType(ArrayType(4, int)))
     val y = identifier("y", ExpType(ArrayType(4, int)))
     val out = identifier("out", AccType(ArrayType(4, int)))
-    store = store + (x.name -> ArrayData(Vector(1, 2, 3, 4)))
-    store = store + (y.name -> ArrayData(Vector(2, 3, 4, 5)))
-    store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0)))
+    store = store + (x.name -> makeArrayData(1, 2, 3, 4))
+    store = store + (y.name -> makeArrayData(2, 3, 4, 5))
+    store = store + (out.name -> makeArrayData(0, 0, 0, 0))
 
     val p = `for`(2, { i =>
       `for`(2, { j =>
@@ -480,9 +480,9 @@ object Test extends App {
     val x = identifier("x", ExpType(ArrayType(4, int)))
     val y = identifier("y", ExpType(ArrayType(4, int)))
     val out = identifier("out", AccType(ArrayType(4, int)))
-    store = store + (x.name -> ArrayData(Vector(1, 2, 3, 4)))
-    store = store + (y.name -> ArrayData(Vector(2, 3, 4, 5)))
-    store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0)))
+    store = store + (x.name -> makeArrayData(1, 2, 3, 4))
+    store = store + (y.name -> makeArrayData(2, 3, 4, 5))
+    store = store + (out.name -> makeArrayData(0, 0, 0, 0))
 
     val p = `for`(2, { i =>
       `for`(2, { j =>
@@ -501,8 +501,8 @@ object Test extends App {
     var store = HashMap[String, Data]()
     val x = identifier("x", ExpType(ArrayType(4, int)))
     val out = identifier("out", AccType(ArrayType(1, int)))
-    store = store + (x.name -> ArrayData(Vector(1, 2, 3, 4)))
-    store = store + (out.name -> ArrayData(Vector(0)))
+    store = store + (x.name -> makeArrayData(1, 2, 3, 4))
+    store = store + (out.name -> makeArrayData(0))
 
     val f = λ( (x1, x2) => x1 + x2 )
 
@@ -519,8 +519,8 @@ object Test extends App {
     var store = HashMap[String, Data]()
     val x = identifier("x", ExpType(ArrayType(4, int)))
     val out = identifier("out", AccType(ArrayType(4, int)))
-    store = store + (x.name -> ArrayData(Vector(1, 2, 3, 4)))
-    store = store + (out.name -> ArrayData(Vector(0, 0, 0, 0)))
+    store = store + (x.name -> makeArrayData(1, 2, 3, 4))
+    store = store + (out.name -> makeArrayData(0, 0, 0, 0))
 
     val plusOne = λ( x => x + 1 )
     val g = λ( x => map(plusOne, x) )
@@ -538,8 +538,8 @@ object Test extends App {
     var store = HashMap[String, Data]()
     val x = identifier("x", ExpType(ArrayType(2, ArrayType(4, int))))
     val out = identifier("out", AccType(ArrayType(2, ArrayType(4, int))))
-    store = store + (x.name -> ArrayData(Vector(ArrayData(Vector(1, 2, 3, 4)), ArrayData(Vector(5, 6, 7, 8)))))
-    store = store + (out.name -> ArrayData(Vector(ArrayData(Vector(0, 0, 0, 0)), ArrayData(Vector(0, 0, 0, 0)))))
+    store = store + (x.name -> makeArrayData(makeArrayData(1, 2, 3, 4), makeArrayData(5, 6, 7, 8)))
+    store = store + (out.name -> makeArrayData(makeArrayData(0, 0, 0, 0), makeArrayData(0, 0, 0, 0)))
 
     val plusOne = λ( x => x + 1 )
 
