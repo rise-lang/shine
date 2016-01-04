@@ -551,4 +551,29 @@ object Test extends App {
 
     println( OperationalSemantics.evalCommand(store, p) )
   }
+
+  {
+    var store = HashMap[String, Data]()
+    val x = identifier("x", ExpType(ArrayType(2, ArrayType(2, int))))
+    val y = identifier("y", ExpType(ArrayType(2, ArrayType(2, int))))
+    val out = identifier("out", AccType(ArrayType(2, ArrayType(2, int))))
+    store = store + (x.name -> makeArrayData(makeArrayData(1, 2), makeArrayData(3, 4)))
+    store = store + (y.name -> makeArrayData(makeArrayData(5, 6), makeArrayData(7, 8)))
+    store = store + (out.name -> makeArrayData(makeArrayData(0, 0), makeArrayData(0, 0)))
+
+    val add = λ( (x, y) => x + y )
+    val mult = λ( x => x._1 * x._2 )
+
+    val p = out := map(λ( row =>
+        join(map(λ( col =>
+          reduce(add, 0, map(mult, zip(row, col)))
+        ), y))
+      ), x)
+
+    println( p )
+
+    println( TypeChecker(p) )
+
+    println( OperationalSemantics.evalCommand(store, p) )
+  }
 }
