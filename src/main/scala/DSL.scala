@@ -181,46 +181,18 @@ trait funDef {
   }
 
   def apply[T <: PhraseType](f: (Phrase[ExpType], Phrase[ExpType]) => Phrase[T]): Lambda[ExpType x ExpType, T] = {
-    val param = Pair(Ident[ExpType]( newName() ), Ident[ExpType]( newName() ))
+    val param = Ident[PairType[ExpType, ExpType]]( newName() )
     val g = λ(PairType(ExpType(int), ExpType(int))) { x => f(π1(x), π2(x)) }
     Lambda(param, g(param))
   }
 
-  def apply[T <: PhraseType](t: ExpType)(f: Ident[ExpType] => Phrase[T]): Lambda[ExpType, T] = {
+  def apply[T1 <: PhraseType, T2 <: PhraseType](t: T1)
+                                               (f: Ident[T1] => Phrase[T2]): Lambda[T1, T2] = {
     val param = identifier(newName(), t)
     Lambda(param, f(param))
   }
 
-  def apply[T <: PhraseType](t: AccType)(f: Ident[AccType] => Phrase[T]): Lambda[AccType, T] = {
-    val param = identifier(newName(), t)
-    Lambda(param, f(param))
-  }
-
-
-  def apply[T1 <: PhraseType,
-            T2 <: PhraseType,
-            T3 <: PhraseType](t: T1 x T2)
-                             (f: Phrase[T1 x T2] => Phrase[T3]): Lambda[T1 x T2, T3] = {
-    t match {
-        // VarType
-      case PairType(ExpType(t1), AccType(t2)) if t1 == t2 =>
-        val param = identifier(newName(), t)
-        Lambda(param, f(param))
-      case _ =>
-        val param = Pair(identifier(newName(), t.t1), identifier(newName(), t.t2))
-        Lambda(param, f(param))
-    }
-  }
-
-  def apply[T1 <: PhraseType,
-            T2 <: PhraseType,
-            T3 <: PhraseType](t: T1 -> T2)
-                             (f: Ident[T1 -> T2] => Phrase[T3]): Lambda[T1 -> T2, T3] = {
-    val param = identifier(newName(), t)
-    Lambda(param, f(param))
-  }
-
-  def apply[T1 <: PhraseType, T2 <: PhraseType](param: Phrase[T1],
+  def apply[T1 <: PhraseType, T2 <: PhraseType](param: Ident[T1],
                                                 body: Phrase[T2]): Lambda[T1, T2] = {
     Lambda(param, body)
   }

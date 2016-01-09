@@ -7,7 +7,7 @@ sealed abstract class Phrase[T <: PhraseType] {
 case class Ident[T <: PhraseType](name: String)
   extends Phrase[T]
 
-case class Lambda[T1 <: PhraseType, T2 <: PhraseType](param: Phrase[T1], body: Phrase[T2])
+case class Lambda[T1 <: PhraseType, T2 <: PhraseType](param: Ident[T1], body: Phrase[T2])
   extends Phrase[T1 -> T2]
 
 case class Apply[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 -> T2], arg: Phrase[T1])

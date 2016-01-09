@@ -23,7 +23,7 @@ object OperationalSemantics {
   case class NamedIdentifier(name: String) extends AccIdentifier
   case class ArrayAccessIdentifier(array: AccIdentifier, index: Int) extends AccIdentifier
 
-  implicit def toIntData(i: Int): IntData = IntData(i)
+  implicit def IntToIntData(i: Int): IntData = IntData(i)
 
   type Store = HashMap[String, Data]
 
@@ -37,7 +37,7 @@ object OperationalSemantics {
         // these cases must all be `<: Phrase[T2]`, because they match on in.
         // The casts should be unnecessary
         case l: Lambda[_, _] =>
-          val newParam = substitute(p1, p2, l.param)
+          val newParam = substitute(p1, p2, l.param).asInstanceOf[Ident[PhraseType]]
           val newBody = substitute(p1, p2, l.body)
           Lambda(newParam, newBody)
 
@@ -114,326 +114,256 @@ object OperationalSemantics {
     }
   }
 
-  def evalFunction[T1 <: PhraseType,
-                   T2 <: PhraseType](s: Store, p: Phrase[T1 -> T2]): (Phrase[T1] => Phrase[T2]) = {
+  def eval[T <: PhraseType, R](s: Store, p: Phrase[T])
+                              (implicit evaluator: Evaluator[T, R]): R = {
+    import implicits._
     p match {
-      case i: Ident[T1 -> T2] => throw new Exception("Don't know how to implement this")
+      case app: Apply[a, T] =>
+        val fun: (Phrase[a]) => Phrase[T] = eval(s, app.fun)
+        eval(s, fun(app.arg))
 
-      case l: Lambda[T1, T2] =>
-        (arg: Phrase[T1]) => substitute(arg, l.param, in=l.body)
+      case p1: Proj1[a, b] =>
+        val pair: (Phrase[a], Phrase[b]) = eval(s, p1.pair)
+        eval(s, pair._1)
 
-      case app: Apply[a, T1 -> T2] =>
-        val fun = evalFunction(s, app.fun)
-        evalFunction(s, fun(app.arg))
+      case p2: Proj2[a, b] =>
+        val pair: (Phrase[a], Phrase[b]) = eval(s, p2.pair)
+        eval(s, pair._2)
 
-      case p1: Proj1[T1 -> T2, b] =>
-        val pair = evalPair(s, p1.pair)
-        evalFunction(s, pair._1)
-
-      case p2: Proj2[a, T1 -> T2] =>
-        val pair = evalPair(s, p2.pair)
-        evalFunction(s, pair._2)
-
-      case ifThenElse: IfThenElse[T1 -> T2] =>
-        val cond = evalCondExp(s, ifThenElse.cond)
-        if (cond == 0) {
-          evalFunction(s, ifThenElse.thenP)
+      case IfThenElse(cond, thenP, elseP) =>
+        if (evalCondExp(s, cond)) {
+          eval(s, thenP)
         } else {
-          evalFunction(s, ifThenElse.elseP)
+          eval(s, elseP)
         }
+
+      case _ => evaluator(s, p)
     }
   }
 
-  def evalPair[T1 <: PhraseType,
-               T2 <: PhraseType](s: Store, p: Phrase[T1 x T2]): (Phrase[T1], Phrase[T2]) = {
-    p match {
-      case i: Ident[T1 x T2] =>
-        (Ident[T1](i.name), Ident[T2](i.name))
-
-      case pair: Pair[T1, T2] => (pair.fst, pair.snd)
-
-      case app: Apply[a, T1 x T2] =>
-        val fun = evalFunction(s, app.fun)
-        evalPair(s, fun(app.arg))
-
-      case p1: Proj1[T1 x T2, b] =>
-        val pair = evalPair(s, p1.pair)
-        evalPair(s, pair._1)
-
-      case p2: Proj2[a, T1 x T2] =>
-        val pair = evalPair(s, p2.pair)
-        evalPair(s, pair._2)
-
-      case ifThenElse: IfThenElse[T1 x T2] =>
-        val cond = evalCondExp(s, ifThenElse.cond)
-        if (cond == 0) {
-          evalPair(s, ifThenElse.thenP)
-        } else {
-          evalPair(s, ifThenElse.elseP)
-        }
-    }
+  trait Evaluator[T <: PhraseType, R] {
+    def apply(s: Store, p: Phrase[T]): R
   }
 
-  def evalCondExp(s: Store, p: Phrase[ExpType]): Int = {
-    evalExp(s, p) match {
-      case b: BoolData => if (b.b) { 0 } else { 1 }
-      case i: IntData => i.i
+  object implicits {
+
+    implicit def FunctionEvaluator[T1 <: PhraseType, T2 <: PhraseType]: Evaluator[T1 -> T2, (Phrase[T1] => Phrase[T2])] =
+      new Evaluator[T1 -> T2, (Phrase[T1] => Phrase[T2])] {
+        def apply(s: Store, p: Phrase[T1 -> T2]): (Phrase[T1] => Phrase[T2]) = {
+          p match {
+            case l: Lambda[T1, T2] => (arg: Phrase[T1]) => substitute(arg, l.param, in = l.body)
+            case Ident(_) | Apply(_, _) | IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
+              throw new Exception("This should never happen")
+          }
+        }
+      }
+
+    implicit def PairEvaluator[T1 <: PhraseType, T2 <: PhraseType]: Evaluator[T1 x T2, (Phrase[T1], Phrase[T2])] =
+      new Evaluator[T1 x T2, (Phrase[T1], Phrase[T2])] {
+        def apply(s: Store, p: Phrase[T1 x T2]): (Phrase[T1], Phrase[T2]) = {
+          p match {
+            case i: Ident[T1 x T2] => (Ident[T1](i.name), Ident[T2](i.name))
+            case pair: Pair[T1, T2] => (pair.fst, pair.snd)
+            case Apply(_, _) | IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
+              throw new Exception("This should never happen")
+          }
+        }
+      }
+
+    implicit def ExpEvaluator: Evaluator[ExpType, Data] =
+      new Evaluator[ExpType, Data] {
+        def apply(s: Store, p: Phrase[ExpType]): Data = {
+          p match {
+            case Ident(name) => s(name)
+
+            case FieldAccess(n, record) =>
+              val data: Data = eval(s, record)
+              data match {
+                case r: RecordData => r.fields(n)
+              }
+
+            case IntLiteral(i) => IntData(i)
+
+            case Literal(d) => d
+
+            case BinOp(op, lhs, rhs) =>
+              op match {
+                case BinOp.Op.ADD => evalIntExp(s, lhs) + evalIntExp(s, rhs)
+                case BinOp.Op.SUB => evalIntExp(s, lhs) - evalIntExp(s, rhs)
+                case BinOp.Op.MUL => evalIntExp(s, lhs) * evalIntExp(s, rhs)
+                case BinOp.Op.DIV => evalIntExp(s, lhs) / evalIntExp(s, rhs)
+                case BinOp.Op.MOD => evalIntExp(s, lhs) % evalIntExp(s, rhs)
+              }
+
+            case MapPhrase(fP, in) =>
+              val f = eval(s, fP)
+              eval(s, in) match {
+                case ArrayData(xs) =>
+                  ArrayData(xs.map { x => eval(s, f(Literal(x))) })
+              }
+
+            case ZipPhrase(lhsP, rhsP) =>
+              (eval(s, lhsP), eval(s, rhsP)) match {
+                case (ArrayData(lhs), ArrayData(rhs)) =>
+                  ArrayData((lhs zip rhs) map { p =>
+                    RecordData(p._1, p._2)
+                  })
+              }
+
+            case ReducePhrase(fP, initP, arrayP) =>
+              val f = eval(s, fP)
+              val init = eval(s, initP)
+              eval(s, arrayP) match {
+                case ArrayData(xs) =>
+                  ArrayData(Vector(xs.fold(init) {
+                    (x, y) => eval(s, f(Pair(Literal(x), Literal(y))))
+                  }))
+              }
+
+            case SplitPhrase(n, arrayP) =>
+              eval(s, arrayP) match {
+                case ArrayData(array) =>
+
+                  def split[T](n: Int, vector: Vector[T]): Vector[Vector[T]] = {
+                    val builder = Vector.newBuilder[Vector[T]]
+                    var vec = vector
+                    for (i <- 0 until vector.length / n) {
+                      val (head, tail) = vec splitAt n
+                      vec = tail
+                      builder += head
+                    }
+                    builder.result()
+                  }
+
+                  ArrayData(split(n, array).map(ArrayData))
+              }
+
+            case JoinPhrase(arrayP) =>
+              eval(s, arrayP) match {
+                case ArrayData(outer) =>
+                  val arrays = outer.map(row => row match {
+                    case ArrayData(inner) => inner
+                  })
+                  ArrayData(arrays.flatten)
+              }
+
+            case IteratePhrase(n, fP, arrayP) =>
+              val f = eval(s, fP)
+              eval(s, arrayP) match {
+                case ArrayData(xs) =>
+                  var array = arrayP
+                  for (_ <- 0 until n) {
+                    array = f(array)
+                  }
+                  eval(s, array)
+              }
+
+            case LengthPhrase(arrayP) =>
+              arrayP.t match {
+                case ExpType(ArrayType(n, _)) => n
+                case AccType(ArrayType(n, _)) => n
+              }
+
+            case ArrayExpAccessPhrase(array, index) =>
+              (eval(s, array), eval(s, index)) match {
+                case (ArrayData(xs), IntData(i)) => xs(i)
+              }
+
+            case Record(fields@_*) =>
+              RecordData(fields.map(f => eval(s, f)): _*)
+
+            case Apply(_, _) | IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
+              throw new Exception("This should never happen")
+          }
+        }
+      }
+
+    implicit def AccEvaluator: Evaluator[AccType, AccIdentifier] =
+      new Evaluator[AccType, AccIdentifier] {
+        def apply(s: Store, p: Phrase[AccType]): AccIdentifier = {
+          p match {
+            case Ident(name) => NamedIdentifier(name)
+            case ArrayAccAccessPhrase(arrayP, indexP) =>
+              val array = eval(s, arrayP)
+              val index = eval(s, indexP) match {
+                case IntData(i) => i
+              }
+              ArrayAccessIdentifier(array, index)
+            case Apply(_, _) | IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
+              throw new Exception("This should never happen")
+          }
+        }
+      }
+
+    implicit def CommandEvaluator: Evaluator[CommandType, Store] =
+      new Evaluator[CommandType, Store] {
+        def apply(s: Store, p: Phrase[CommandType]): Store = {
+          p match {
+            case Ident(_) => throw new Exception("This should never happen")
+
+            case SkipPhrase() => s
+
+            case Seq(c1, c2) =>
+              val s1 = eval(s, c1)
+              eval(s1, c2)
+
+            case NewPhrase(fP) =>
+              val f = eval(s, fP)
+              val arg = Ident[ExpType x AccType](λ.newName())
+              val s1: Store = eval(s + (arg.name -> 0), f(arg))
+              s1 - arg.name
+
+            case Assign(lhs, rhs) =>
+              def evalAssign(s: Store, lhs: AccIdentifier, rhs: Data): (String, Data) = {
+                lhs match {
+                  case NamedIdentifier(name) =>
+                    assert(s.contains(name))
+                    (name, rhs)
+                  case ArrayAccessIdentifier(array, index) =>
+                    val (name, rhsValue) = evalAssign(s, array, rhs)
+                    assert(s.contains(name))
+                    s(name) match {
+                      case ArrayData(vec) =>
+                        (name, ArrayData(vec.updated(index, rhsValue)))
+                    }
+                }
+              }
+
+              val (identifier, value) = evalAssign(s, eval(s, lhs), eval(s, rhs))
+              s + (identifier -> value)
+
+            case ForPhrase(nP, bodyP) =>
+              val n = evalIntExp(s, nP)
+              val body = eval(s, bodyP)
+              var s1 = s
+              for (i <- 0 until n) {
+                s1 = eval(s1, body(IntLiteral(i)))
+              }
+              s1
+
+            case Apply(_, _) | IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
+              throw new Exception("This should never happen")
+          }
+        }
+      }
+
+  }
+
+  def evalCondExp(s: Store, p: Phrase[ExpType]): Boolean = {
+    import implicits._
+    eval(s, p) match {
+      case BoolData(b) => b
+      case IntData(i)  => i == 0
+      case _ => throw new Exception("This should never happen")
     }
   }
 
   def evalIntExp(s: Store, p: Phrase[ExpType]): Int = {
-    evalExp(s, p) match {
-      case i: IntData => i.i
+    import implicits._
+    eval(s, p) match {
+      case IntData(i) => i
+      case _ => throw new Exception("This should never happen")
     }
-  }
-
-  def evalExp(s: Store, p: Phrase[ExpType]): Data = {
-    p match {
-      case v: Ident[ExpType] => s(v.name)
-
-      case app: Apply[a, ExpType] =>
-        val fun = evalFunction(s, app.fun)
-        evalExp(s, fun(app.arg))
-
-      case FieldAccess(n, record) =>
-        evalExp(s, record) match {
-          case r: RecordData => r.fields(n)
-        }
-
-      case p1: Proj1[ExpType, b] =>
-        val pair = evalPair(s, p1.pair)
-        evalExp(s, pair._1)
-
-      case p2: Proj2[a, ExpType] =>
-        val pair = evalPair(s, p2.pair)
-        evalExp(s, pair._2)
-
-      case ifThenElse: IfThenElse[ExpType] =>
-        val cond = evalCondExp(s, ifThenElse.cond)
-        if (cond == 0) {
-          evalExp(s, ifThenElse.thenP)
-        } else {
-          evalExp(s, ifThenElse.elseP)
-        }
-
-      case IntLiteral(i) => IntData(i)
-
-      case Literal(d) => d
-
-      case op: BinOp =>
-        op.op match {
-          case BinOp.Op.ADD => evalIntExp(s, op.lhs) + evalIntExp(s, op.rhs)
-          case BinOp.Op.SUB => evalIntExp(s, op.lhs) - evalIntExp(s, op.rhs)
-          case BinOp.Op.MUL => evalIntExp(s, op.lhs) * evalIntExp(s, op.rhs)
-          case BinOp.Op.DIV => evalIntExp(s, op.lhs) / evalIntExp(s, op.rhs)
-          case BinOp.Op.MOD => evalIntExp(s, op.lhs) % evalIntExp(s, op.rhs)
-        }
-
-      case m: MapPhrase =>
-        val f = evalFunction(s, m.f)
-        evalExp(s, m.in) match {
-          case ArrayData(xs) =>
-            ArrayData(xs.map { x => evalExp(s, f(Literal(x))) })
-        }
-
-      case z: ZipPhrase =>
-        (evalExp(s, z.lhs), evalExp(s, z.rhs)) match {
-          case (ArrayData(lhs), ArrayData(rhs)) =>
-            ArrayData( (lhs zip rhs) map { p =>
-              RecordData(p._1, p._2)
-            } )
-        }
-
-      case r: ReducePhrase =>
-        val f = evalFunction(s, r.f)
-        val init = evalExp(s, r.init)
-        evalExp(s, r.array) match {
-          case ArrayData(xs) =>
-            ArrayData(Vector(xs.fold(init) {
-              (x, y) => evalExp(s, f(Pair(Literal(x), Literal(y))))
-            }))
-        }
-
-      case SplitPhrase(n, arrayP) =>
-        evalExp(s, arrayP) match {
-          case ArrayData(array) =>
-            ArrayData(split(n, array).map(ArrayData))
-        }
-
-      case JoinPhrase(arrayP) =>
-        evalExp(s, arrayP) match {
-          case ArrayData(outer) =>
-            val arrays = outer.map(row => row match {
-              case ArrayData(inner) => inner
-            })
-            ArrayData(arrays.flatten)
-        }
-
-      case i: IteratePhrase =>
-        val f = evalFunction(s, i.f)
-        evalExp(s, i.array) match {
-          case ArrayData(xs) =>
-            var array = i.array
-            for (_ <- 0 until i.n) { array = f(array) }
-            evalExp(s, array)
-        }
-
-      case LengthPhrase(arrayP) =>
-        arrayP.t match {
-          case ExpType(ArrayType(n, _)) => n
-          case AccType(ArrayType(n, _)) => n
-        }
-
-      case ArrayExpAccessPhrase(array, index) =>
-        (evalExp(s, array), evalExp(s, index)) match {
-          case (ArrayData(xs), IntData(i)) => xs(i)
-        }
-
-      case Record(fields@_*) =>
-        RecordData(fields.map(f => evalExp(s, f)):_*)
-    }
-  }
-
-  def evalAcc(s: Store, p: Phrase[AccType]): AccIdentifier = {
-    p match {
-      case v: Ident[AccType] => NamedIdentifier(v.name)
-
-      case app: Apply[a, AccType] =>
-        val fun = evalFunction(s, app.fun)
-        evalAcc(s, fun(app.arg))
-
-      case p1: Proj1[AccType, b] =>
-        val pair = evalPair(s, p1.pair)
-        evalAcc(s, pair._1)
-
-      case p2: Proj2[a, AccType] =>
-        val pair = evalPair(s, p2.pair)
-        evalAcc(s, pair._2)
-
-      case ifThenElse: IfThenElse[AccType] =>
-        val cond = evalCondExp(s, ifThenElse.cond)
-        if (cond == 0) {
-          evalAcc(s, ifThenElse.thenP)
-        } else {
-          evalAcc(s, ifThenElse.elseP)
-        }
-
-      case ArrayAccAccessPhrase(arrayP, indexP) =>
-        val array = evalAcc(s, arrayP)
-        val index = evalExp(s, indexP) match { case IntData(i) => i }
-        ArrayAccessIdentifier(array, index)
-    }
-  }
-
-  def evalCommand(s: Store, p: Phrase[CommandType]): Store = {
-    p match {
-      case i: Ident[CommandType] =>
-        throw new Exception("I don't known how to implement this")
-
-      case app: Apply[a, CommandType] =>
-        val fun = evalFunction(s, app.fun)
-        evalCommand(s, fun(app.arg))
-
-      case p1: Proj1[CommandType, b] =>
-        val pair = evalPair(s, p1.pair)
-        evalCommand(s, pair._1)
-
-      case p2: Proj2[a, CommandType] =>
-        val pair = evalPair(s, p2.pair)
-        evalCommand(s, pair._2)
-
-      case _: SkipPhrase => s
-
-      case Seq(c1, c2) =>
-        val s1 = evalCommand(s, c1)
-        evalCommand(s1, c2)
-
-      case NewPhrase(f) => evalNew(s, f)
-
-      case Assign(lhs, rhs) =>
-        val (identifier, value) = evalAssign(s, evalAcc(s, lhs), evalExp(s, rhs))
-        s + (identifier -> value)
-
-      case ifThenElse: IfThenElse[CommandType] =>
-        val cond = evalCondExp(s, ifThenElse.cond)
-        if (cond == 0) {
-          evalCommand(s, ifThenElse.thenP)
-        } else {
-          evalCommand(s, ifThenElse.elseP)
-        }
-
-      case ForPhrase(nP, bodyP) =>
-        val n = evalIntExp(s, nP)
-        val body = evalFunction(s, bodyP)
-        var s1 = s
-        for (i <- 0 until n) {
-          s1 = evalCommand(s1, body(IntLiteral(i)))
-        }
-        s1
-    }
-  }
-
-  def evalAssign(s: Store, lhs: AccIdentifier, rhs: Data): (String, Data) = {
-    lhs match {
-      case NamedIdentifier(name) =>
-        assert(s.contains(name))
-        (name, rhs)
-      case ArrayAccessIdentifier(array, index) =>
-        val (name, rhsValue) = evalAssign(s, array, rhs)
-        assert(s.contains(name))
-        s(name) match {
-          case ArrayData(vec) =>
-            (name, ArrayData(vec.updated(index, rhsValue)))
-        }
-    }
-  }
-
-  def evalNew(s: Store, f: Phrase[ ExpType x AccType -> CommandType ]): Store = {
-    f match {
-      case v: Ident[ExpType x AccType -> CommandType] =>
-        throw new Exception("I don't known how to implement this")
-
-      case l: Lambda[ExpType x AccType, CommandType] =>
-        val params = evalPair(s, l.param)
-        evalAcc(s, params._2) match {
-          case NamedIdentifier(address) =>
-            val s1 = evalCommand(s + (address -> 0), l.body)
-            s1 - address
-          case ArrayAccessIdentifier(baseAddress, offset) =>
-            throw new Exception("I don't known how to implement this")
-        }
-
-      case app: Apply[a, ExpType x AccType -> CommandType] =>
-        val fun = evalFunction(s, app.fun)
-        evalNew(s, fun(app.arg))
-
-      case p1: Proj1[ExpType x AccType -> CommandType, b] =>
-        val pair = evalPair(s, p1.pair)
-        evalNew(s, pair._1)
-
-      case p2: Proj2[a, ExpType x AccType -> CommandType] =>
-        val pair = evalPair(s, p2.pair)
-        evalNew(s, pair._2)
-
-      case ifThenElse: IfThenElse[ExpType x AccType -> CommandType] =>
-        val cond = evalCondExp(s, ifThenElse.cond)
-        if (cond == 0) {
-          evalNew(s, ifThenElse.thenP)
-        } else {
-          evalNew(s, ifThenElse.elseP)
-        }
-    }
-  }
-
-  def split[T](n: Int, vector: Vector[T]): Vector[Vector[T]] = {
-    val builder = Vector.newBuilder[Vector[T]]
-    var vec = vector
-    for (i <- 0 until vector.length / n) {
-      val (head, tail) = vec splitAt n
-      vec = tail
-      builder += head
-    }
-    builder.result()
   }
 
 }

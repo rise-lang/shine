@@ -1,6 +1,10 @@
 import PhraseExtensions._
 import PhraseType._
 
+import OperationalSemantics._
+
+import scala.collection.immutable.HashMap
+
 class TypeException(msg: String) extends Exception(msg)
 
 object TypeChecker {
@@ -16,59 +20,32 @@ object TypeChecker {
   }
 
   def setParamType[T1 <: PhraseType, T2 <: PhraseType](p: Phrase[T1 -> T2], t: T1): Unit = {
+    import OperationalSemantics.implicits._
     p match {
-      case l: Lambda[T1, T2] => setIdentType(l.param, t)
-      case i: Ident[T1 -> T2] =>
-      case app: Apply[a, T1 -> T2] =>
-      //      case ArrayAccess(arrayP, indexP) =>
-      case p1: Proj1[T1 -> T2, b] =>
-      case p2: Proj2[a, T1 -> T2] =>
-      case ifThenElse: IfThenElse[T1 -> T2] =>
-      //      case IteratePhrase(n, fP, inP) =>
-    }
-  }
-
-  def setIdentType[T <: PhraseType](p: Phrase[T], t: PhraseType): Unit = {
-    p match {
-      case i: Ident[T] =>
-        i.t match {
-          case null => i.t = t.asInstanceOf[T] // infer the type if not set
+      case l: Lambda[T1, T2] =>
+        l.param.t match {
+          case null => l.param.t = t // infer the type if not set
           case _ =>
         }
-      case Pair(lhs, rhs) =>
-        t match {
-          case pt: PairType[_, _] =>
-            setIdentType(lhs, pt.t1)
-            setIdentType(rhs, pt.t2)
-          case _ => error(t.toString, "PairType")
-        }
-      case Proj1(pair) =>
-        setIdentType(pair, t)
-      case Proj2(pair) =>
-        setIdentType(pair, t)
 
-      case app: Apply[a, T] =>
-      case ArrayAccAccessPhrase(array, index) =>
-      case ArrayExpAccessPhrase(array, index) =>
-      case Assign(lhs, rhs) =>
-      case BinOp(lhs, op, rhs) =>
-      case FieldAccess(n, record) =>
-      case ForPhrase(n, body) =>
-      case IfThenElse(cond, theP, elseP) =>
-      case IntLiteral(i) =>
-      case Lambda(param, body) =>
-      case LengthPhrase(array) =>
-      case Literal(l) =>
-      case MapPhrase(f, array) =>
-      case NewPhrase(f) =>
-      case Seq(c1, c2) =>
-      case SkipPhrase() =>
-      case ZipPhrase(lhs, rhs) =>
-      case Record(fields@_*) =>
-      case SplitPhrase(n, array) =>
-      case JoinPhrase(array) =>
-      case ReducePhrase(f, init, array) =>
-      case IteratePhrase(n, f, array) =>
+      // TODO: figure out how to handle this properly
+      case app: Apply[a, T1 -> T2] =>
+        val fun: (Phrase[a]) => Phrase[T1 -> T2] = eval(HashMap[String, Data](), app.fun)
+        setParamType(fun(app.arg), t)
+
+      case p1: Proj1[T1 -> T2, b] =>
+        val pair: (Phrase[T1 -> T2], Phrase[b]) = eval(HashMap[String, Data](), p1.pair)
+        setParamType(pair._1, t)
+
+      case p2: Proj2[a, T1 -> T2] =>
+        val pair: (Phrase[a], Phrase[T1 -> T2]) = eval(HashMap[String, Data](), p2.pair)
+        setParamType(pair._2, t)
+
+      case IfThenElse(_, thenP, elseP) =>
+        setParamType(thenP, t)
+        setParamType(elseP, t)
+
+      case Ident(_) => throw new Exception("This should never happen")
     }
   }
 

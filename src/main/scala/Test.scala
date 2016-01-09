@@ -3,6 +3,8 @@ import PhraseExtensions._
 
 import scala.collection.immutable.HashMap
 
+import OperationalSemantics.implicits._
+
 object Test extends App {
   // first test
   {
@@ -27,7 +29,7 @@ object Test extends App {
 
     println(TypeChecker(p))
 
-    println(OperationalSemantics.evalCommand(store, p))
+    println(OperationalSemantics.eval(store, p))
 
     // same program in scala
     {
@@ -73,7 +75,7 @@ object Test extends App {
 
     println(TypeChecker(p))
 
-    println(OperationalSemantics.evalCommand(store, p))
+    println(OperationalSemantics.eval(store, p))
 
     // same program in scala
     {
@@ -114,7 +116,7 @@ object Test extends App {
 
     println(TypeChecker(p))
 
-    println(OperationalSemantics.evalCommand(store, p))
+    println(OperationalSemantics.eval(store, p))
   }
   // out := map f in
   //  =>
@@ -141,7 +143,7 @@ object Test extends App {
 
     println(TypeChecker(p))
 
-    println(OperationalSemantics.evalCommand(store, p))
+    println(OperationalSemantics.eval(store, p))
   }
   // λi. (λa e. a := f e) (out @ i) (in @ i)
   //  =>
@@ -166,7 +168,7 @@ object Test extends App {
 
     println(TypeChecker(p))
 
-    println(OperationalSemantics.evalCommand(store, p))
+    println(OperationalSemantics.eval(store, p))
   }
   // f = λp. π1(p) + π2(p)
   // f (in @ i)
@@ -190,7 +192,7 @@ object Test extends App {
 
     println(TypeChecker(p))
 
-    println(OperationalSemantics.evalCommand(store, p))
+    println(OperationalSemantics.eval(store, p))
   }
   // (zip x y) @ i
   //  =>
@@ -213,7 +215,7 @@ object Test extends App {
 
     println( TypeChecker(p) )
 
-    println( OperationalSemantics.evalCommand(store, p) )
+    println( OperationalSemantics.eval(store, p) )
   }
   // (record (x @ i) (y @ i)) _1
   //  =>
@@ -236,7 +238,7 @@ object Test extends App {
 
     println( TypeChecker(p) )
 
-    println( OperationalSemantics.evalCommand(store, p) )
+    println( OperationalSemantics.eval(store, p) )
   }
 
   {
@@ -256,7 +258,7 @@ object Test extends App {
 
     println( TypeChecker(p) )
 
-    println( OperationalSemantics.evalCommand(store, p) )
+    println( OperationalSemantics.eval(store, p) )
   }
   // out := join in
   // in: Array(n, Array(m, _))
@@ -288,7 +290,7 @@ object Test extends App {
 
     println( TypeChecker(p) )
 
-    println( OperationalSemantics.evalCommand(store, p) )
+    println( OperationalSemantics.eval(store, p) )
   }
   // (λj. (λa e. a := e @ j) (out @ i1) (in @ i2))
   //  =>
@@ -315,7 +317,7 @@ object Test extends App {
 
     println( TypeChecker(p) )
 
-    println( OperationalSemantics.evalCommand(store, p) )
+    println( OperationalSemantics.eval(store, p) )
   }
   // map(f, in) @ i
   //  =>
@@ -342,7 +344,7 @@ object Test extends App {
 
     println( TypeChecker(p) )
 
-    println( OperationalSemantics.evalCommand(store, p) )
+    println( OperationalSemantics.eval(store, p) )
   }
   // beta reduction of g
   {
@@ -366,7 +368,7 @@ object Test extends App {
 
     println( TypeChecker(p) )
 
-    println( OperationalSemantics.evalCommand(store, p) )
+    println( OperationalSemantics.eval(store, p) )
   }
   // map(f, in) @ i
   //  =>
@@ -392,7 +394,7 @@ object Test extends App {
 
     println( TypeChecker(p) )
 
-    println( OperationalSemantics.evalCommand(store, p) )
+    println( OperationalSemantics.eval(store, p) )
   }
   // ((split n in) @ i) @ j
   //  =>
@@ -417,7 +419,7 @@ object Test extends App {
 
     println( TypeChecker(p) )
 
-    println( OperationalSemantics.evalCommand(store, p) )
+    println( OperationalSemantics.eval(store, p) )
   }
   // (zip x y) @ i
   //  =>
@@ -443,7 +445,7 @@ object Test extends App {
 
     println( TypeChecker(p) )
 
-    println( OperationalSemantics.evalCommand(store, p) )
+    println( OperationalSemantics.eval(store, p) )
   }
   // f = λp. p._1 + p._2
   // f (in @ i)
@@ -470,7 +472,7 @@ object Test extends App {
 
     println( TypeChecker(p) )
 
-    println( OperationalSemantics.evalCommand(store, p) )
+    println( OperationalSemantics.eval(store, p) )
   }
   // (record (x @ i) (y @ i))._1
   //  =>
@@ -494,7 +496,7 @@ object Test extends App {
 
     println( TypeChecker(p) )
 
-    println( OperationalSemantics.evalCommand(store, p) )
+    println( OperationalSemantics.eval(store, p) )
   }
 
   {
@@ -512,7 +514,7 @@ object Test extends App {
 
     println( TypeChecker(p) )
 
-    println( OperationalSemantics.evalCommand(store, p) )
+    println( OperationalSemantics.eval(store, p) )
   }
 
   {
@@ -531,7 +533,7 @@ object Test extends App {
 
     println( TypeChecker(p) )
 
-    println( OperationalSemantics.evalCommand(store, p) )
+    println( OperationalSemantics.eval(store, p) )
   }
 
   {
@@ -549,7 +551,7 @@ object Test extends App {
 
     println( TypeChecker(p) )
 
-    println( OperationalSemantics.evalCommand(store, p) )
+    println( OperationalSemantics.eval(store, p) )
   }
 
   {
@@ -574,6 +576,6 @@ object Test extends App {
 
     println( TypeChecker(p) )
 
-    println( OperationalSemantics.evalCommand(store, p) )
+    println( OperationalSemantics.eval(store, p) )
   }
 }
