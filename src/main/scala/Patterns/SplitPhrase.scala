@@ -35,6 +35,8 @@ case class SplitPhrase(n: Int, array: Phrase[ExpType]) extends Pattern {
         }
 
         ArrayData(split(n, arrayE).map(ArrayData))
+
+      case _ => throw new Exception("This should not happen")
     }
   }
 

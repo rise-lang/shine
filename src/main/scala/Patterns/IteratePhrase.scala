@@ -34,6 +34,7 @@ case class IteratePhrase(n: Int, f: Phrase[ExpType -> ExpType], array: Phrase[Ex
           a = fE(a)
         }
         OperationalSemantics.eval(s, a)
+      case _ => throw new Exception("This should not happen")
     }
   }
 }

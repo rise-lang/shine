@@ -7,14 +7,13 @@ import scala.language.implicitConversions
 
 object OperationalSemantics {
 
-  //sealed
-  abstract class Data(val dataType: DataType)
-  case class BoolData(b: Boolean) extends Data(bool)
-  case class IntData(i: Int) extends Data(int)
-  case class Int4Data(i0: Int, i1: Int, i2: Int, i3: Int) extends Data(int4)
-  case class FloatData(f: Float) extends Data(float)
-  case class ArrayData(a: Vector[Data]) extends Data(ArrayType(a.length, a.head.dataType))
-  case class RecordData(fields: Data*) extends Data(RecordType(fields.map(_.dataType):_*))
+  sealed abstract class Data(val dataType: DataType)
+  final case class BoolData(b: Boolean) extends Data(bool)
+  final case class IntData(i: Int) extends Data(int)
+  final case class Int4Data(i0: Int, i1: Int, i2: Int, i3: Int) extends Data(int4)
+  final case class FloatData(f: Float) extends Data(float)
+  final case class ArrayData(a: Vector[Data]) extends Data(ArrayType(a.length, a.head.dataType))
+  final case class RecordData(fields: Data*) extends Data(RecordType(fields.map(_.dataType):_*))
 
   object makeArrayData {
     def apply(seq: Data*) = ArrayData(Vector(seq: _*))
@@ -98,7 +97,6 @@ object OperationalSemantics {
         case ForPhrase(n, body) =>
           ForPhrase(substitute(p1, p2, n), substitute(p1, p2, body))
 
-        case _: IntLiteral => in
         case _: Literal    => in
 
         case BinOp(op, lhs, rhs) =>
@@ -179,6 +177,7 @@ object OperationalSemantics {
               val data: Data = eval(s, record)
               data match {
                 case r: RecordData => r.fields(n)
+                case _ => throw new Exception("This should not happen")
               }
 
             case LengthPhrase(arrayP) =>
@@ -190,9 +189,8 @@ object OperationalSemantics {
             case ArrayExpAccessPhrase(array, index) =>
               (eval(s, array), eval(s, index)) match {
                 case (ArrayData(xs), IntData(i)) => xs(i)
+                case _ => throw new Exception("This should not happen")
               }
-
-            case IntLiteral(i) => IntData(i)
 
             case Literal(d) => d
 
@@ -222,6 +220,7 @@ object OperationalSemantics {
               val array = eval(s, arrayP)
               val index = eval(s, indexP) match {
                 case IntData(i) => i
+                case _ => throw new Exception("This should not happen")
               }
               ArrayAccessIdentifier(array, index)
             case Apply(_, _) | IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
@@ -258,8 +257,8 @@ object OperationalSemantics {
                     val (name, rhsValue) = evalAssign(s, array, rhs)
                     assert(s.contains(name))
                     s(name) match {
-                      case ArrayData(vec) =>
-                        (name, ArrayData(vec.updated(index, rhsValue)))
+                      case ArrayData(vec) => (name, ArrayData(vec.updated(index, rhsValue)))
+                      case _ => throw new Exception("This should not happen")
                     }
                 }
               }
@@ -272,7 +271,7 @@ object OperationalSemantics {
               val body = eval(s, bodyP)
               var s1 = s
               for (i <- 0 until n) {
-                s1 = eval(s1, body(IntLiteral(i)))
+                s1 = eval(s1, body(Literal(i)))
               }
               s1
 

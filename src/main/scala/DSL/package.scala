@@ -32,7 +32,7 @@ package object DSL {
     Pair(pair._1, pair._2)
   }
 
-  implicit def toLiteral(i: Int): IntLiteral = IntLiteral(i)
+  implicit def toLiteral(i: Int): Literal = Literal(i)
 
   implicit class ExpPhraseExtensions(e: Phrase[ExpType]) {
     def _1() = FieldAccess(0, e)

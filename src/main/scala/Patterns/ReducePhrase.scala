@@ -41,6 +41,7 @@ case class ReducePhrase(f: Phrase[ExpType x ExpType -> ExpType], init: Phrase[Ex
         ArrayData(Vector(xs.fold(initE) {
           (x, y) => OperationalSemantics.eval(s, fE(Pair(Literal(x), Literal(y))))
         }))
+      case _ => throw new Exception("This should not happen")
     }
   }
 

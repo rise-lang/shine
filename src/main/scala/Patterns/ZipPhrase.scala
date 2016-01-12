@@ -25,6 +25,8 @@ case class ZipPhrase(lhs: Phrase[ExpType], rhs: Phrase[ExpType]) extends Pattern
         ArrayData((lhsE zip rhsE) map { p =>
           RecordData(p._1, p._2)
         })
+
+      case _ => throw new Exception("This should not happen")
     }
   }
 

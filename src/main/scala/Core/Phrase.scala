@@ -52,9 +52,6 @@ final case class IfThenElse[T <: PhraseType](cond: Phrase[ExpType], thenP: Phras
 final case class ForPhrase(n: Phrase[ExpType], body: Phrase[ExpType -> CommandType])
   extends Phrase[CommandType]
 
-final case class IntLiteral(i: Int)
-  extends Phrase[ExpType]
-
 final case class Literal(d: OperationalSemantics.Data) extends Phrase[ExpType]
 
 final case class BinOp(op: BinOp.Op.Value, lhs: Phrase[ExpType], rhs: Phrase[ExpType])

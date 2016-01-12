@@ -24,8 +24,11 @@ case class JoinPhrase(array: Phrase[ExpType]) extends Pattern {
       case ArrayData(outer) =>
         val arrays = outer.map(row => row match {
           case ArrayData(inner) => inner
+          case _ => throw new Exception("This should not happen")
         })
         ArrayData(arrays.flatten)
+
+      case _ => throw new Exception("This should not happen")
     }
   }
 

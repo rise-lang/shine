@@ -143,9 +143,9 @@ object TypeChecker {
 
       case IfThenElse(cond, thenP, elseP) =>
         val condT = TypeChecker(cond)
-        // TODO: Decide on this: the evaluation currently want this to be an int
-        //        check (condT, ExpType(bool))
-        check(condT, ExpType(int))
+        if (condT != ExpType(int) && condT != ExpType(bool)) {
+          error(condT.toString, expected = "int or boolean")
+        }
 
         val thenPT = TypeChecker(thenP)
         val elsePT = TypeChecker(elseP)
@@ -156,9 +156,6 @@ object TypeChecker {
         check(TypeChecker(upper), ExpType(int))
         check(TypeChecker(body), FunctionType(ExpType(int), CommandType()))
         CommandType()
-
-
-      case IntLiteral(i) => ExpType(int)
 
       case Literal(d) => ExpType(d.dataType)
 
