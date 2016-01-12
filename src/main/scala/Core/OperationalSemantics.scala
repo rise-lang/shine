@@ -36,6 +36,7 @@ object OperationalSemantics {
 
   type Store = HashMap[String, Data]
 
+  // substitues `p1` for `p2` in `in`
   def substitute[T1 <: PhraseType, T2 <: PhraseType](p1: Phrase[T1],
                                                      p2: Phrase[T1],
                                                      in: Phrase[T2]): Phrase[T2] = {

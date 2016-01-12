@@ -17,7 +17,7 @@ object Test extends App {
     store = store + (out.name -> 0)
 
     val p = `new`(v =>
-      (π2(v) := 42 + 1) `;`
+      (π2(v) := Literal(42) + Literal(1)) `;`
         `new`(v2 =>
           (π2(v2) := π1(v) + 1) `;`
             (π2(v) := π1(v2))
@@ -31,6 +31,8 @@ object Test extends App {
     println(p)
 
     println(TypeChecker(p))
+
+    println(Printer.toC(store, p))
 
     println(OperationalSemantics.eval(store, p))
 
@@ -99,6 +101,57 @@ object Test extends App {
       }
       println(out)
     }
+  }
+
+  {
+    var store = HashMap[String, Data]()
+
+    val N = 5
+
+    val in1 = identifier("in1", ExpType(ArrayType(N, int)))
+    val in2 = identifier("in2", ExpType(ArrayType(N, int)))
+
+    val add = λ( x => x._1 + x._2 )
+
+    val expression = map(add, zip(in1, in2))
+
+    val resultType = TypeChecker(expression) match {
+      case ExpType(dt) => AccType(dt)
+    }
+
+    val out = identifier("out", resultType)
+    store = store + (in1.name -> makeArrayData(1, 2, 3, 4, 5))
+    store = store + (in2.name -> makeArrayData(2, 3, 4, 5, 6))
+    store = store + (out.name -> makeArrayData(0, 0, 0, 0, 0))
+
+    val p0 = out := expression
+
+    import Rewriting.RewriteRules._
+
+    val p1 = mapToFor.rewrite(p0)
+
+    val p2 = p1 match {
+      case ForPhrase(n, Lambda(i, Assign(acc, expr))) =>
+        ForPhrase(n, Lambda(i, Assign(acc, betaReduction.rewrite(expr))))
+    }
+
+    val p3 = p2 match {
+      case ForPhrase(n, Lambda(i, Assign(acc, BinOp(op, FieldAccess(j, lhs), FieldAccess(k, rhs))))) =>
+        ForPhrase(n, Lambda(i, Assign(acc, BinOp(op, FieldAccess(j, zipIndex.rewrite(lhs)), FieldAccess(k, zipIndex.rewrite(rhs))))))
+    }
+
+    val p4 = p3 match {
+      case ForPhrase(n, Lambda(i, Assign(acc, BinOp(op, lhs, rhs)))) =>
+        ForPhrase(n, Lambda(i, Assign(acc, BinOp(op, recordFieldAccess.rewrite(lhs), recordFieldAccess.rewrite(rhs)))))
+    }
+
+    val p = p4
+
+    println( Printer.toC(store, p) )
+
+    println(p)
+
+    println(OperationalSemantics.eval(store, p))
   }
 
   {

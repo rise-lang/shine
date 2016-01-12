@@ -16,8 +16,8 @@ package object DSL {
     def %(rhs: Phrase[ExpType]) = BinOp(BinOp.Op.MOD, lhs, rhs)
   }
 
-  implicit class CallLambda[T1 <: PhraseType, T2 <: PhraseType](lambda: Lambda[T1, T2]) {
-    def apply(arg: Phrase[T1]) = Apply(lambda, arg)
+  implicit class CallLambda[T1 <: PhraseType, T2 <: PhraseType](fun: Lambda[T1, T2]) {
+    def apply(arg: Phrase[T1]) = Apply(fun, arg)
   }
 
   implicit class SequentialComposition(c1: Phrase[CommandType]) {
