@@ -1,3 +1,5 @@
+package Core
+
 sealed trait PhraseType
 
 abstract class BasePhraseTypes extends PhraseType
@@ -23,6 +25,18 @@ object PhraseType {
   type ->[T1 <: PhraseType, T2 <: PhraseType] = FunctionType[T1, T2]
   type `->p`[T1 <: PhraseType, T2 <: PhraseType] = PassiveFunctionType[T1, T2]
   type VarType = ExpType x AccType
+
+  implicit class PairTypeConstructor[T1 <: PhraseType](t1: T1) {
+    def x[T2 <: PhraseType](t2: T2) = PairType(t1, t2)
+  }
+
+  implicit class FunctionTypeConstructor[T1 <: PhraseType](t1: T1) {
+    def ->[T2 <: PhraseType](t2: T2) = FunctionType(t1, t2)
+  }
+
+  implicit class PassiveFunctionTypeConstructor[T1 <: PhraseType](t1: T1) {
+    def `->p`[T2 <: PhraseType](t2: T2) = PassiveFunctionType(t1, t2)
+  }
 }
 
 // TODO: introduce "type variables"

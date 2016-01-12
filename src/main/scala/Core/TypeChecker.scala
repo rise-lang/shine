@@ -1,4 +1,5 @@
-import PhraseExtensions._
+package Core
+
 import PhraseType._
 
 import OperationalSemantics._
@@ -82,10 +83,32 @@ object TypeChecker {
           case t => error(t.toString, PairType.toString)
         }
 
+      case Record(fields@_*) =>
+        ExpType(RecordType( fields.map(f => TypeChecker(f).dataType):_* ))
+
       case FieldAccess(n, record) =>
         TypeChecker(record) match {
           case ExpType(RecordType(fields@_*)) => ExpType(fields(n))
           case t => error(t.toString, "Something else")
+        }
+
+      case LengthPhrase(array) =>
+        TypeChecker(array) match {
+          case ExpType(ArrayType(n, t)) => ExpType(int)
+          case AccType(ArrayType(n, t)) => ExpType(int)
+          case t => error(t.toString, "ArrayType")
+        }
+
+      case ArrayExpAccessPhrase(array, index) =>
+        TypeChecker(array) match {
+          case ExpType(ArrayType(n, t)) => ExpType(t)
+          case t => error(t.toString, "ArrayType")
+        }
+
+      case ArrayAccAccessPhrase(array, index) =>
+        TypeChecker(array) match {
+          case AccType(ArrayType(n, t)) => AccType(t)
+          case t => error(t.toString, "ArrayType")
         }
 
       case _: SkipPhrase => CommandType()
@@ -144,93 +167,7 @@ object TypeChecker {
         check(TypeChecker(rhs), ExpType(int))
         ExpType(int)
 
-      case MapPhrase(f, array) =>
-        TypeChecker(array) match {
-          case ExpType(ArrayType(n, dt)) =>
-            setParamType(f, ExpType(dt))
-            TypeChecker(f) match {
-              case FunctionType(ExpType(t1), ExpType(t2)) =>
-                if (dt == t1) ExpType(ArrayType(n, t2))
-                else {
-                  error(dt.toString + " and " + t1.toString,
-                    expected = "them to match")
-                }
-              case t => error(t.toString, "FunctionType")
-            }
-          case t => error(t.toString, "ArrayType")
-        }
-
-      case ZipPhrase(lhs, rhs) =>
-        (TypeChecker(lhs), TypeChecker(rhs)) match {
-          case (ExpType(ArrayType(n, a)), ExpType(ArrayType(m, b))) if n == m =>
-            ExpType(ArrayType(n, RecordType(a, b)))
-          case t => error(t.toString(), "PairOfArrayTypes")
-        }
-
-      case ReducePhrase(f, init, array) =>
-        TypeChecker(array) match {
-          case ExpType(ArrayType(n, dt)) =>
-            setParamType(f, PairType(ExpType(dt), ExpType(dt)))
-            TypeChecker(f) match {
-              case FunctionType(PairType(ExpType(t1), ExpType(t2)), ExpType(t3)) =>
-                if (dt == t1 && dt == t2 && dt == t3) ExpType(ArrayType(1, dt))
-                else {
-                  error(dt.toString + ", " + t1.toString + ", " + t2.toString +
-                    " and " + t3.toString,
-                    expected = "them to match")
-                }
-              case t => error(t.toString, "FunctionType")
-            }
-          case t => error(t.toString, "ArrayType")
-        }
-
-      case LengthPhrase(array) =>
-        TypeChecker(array) match {
-          case ExpType(ArrayType(n, t)) => ExpType(int)
-          case AccType(ArrayType(n, t)) => ExpType(int)
-          case t => error(t.toString, "ArrayType")
-        }
-
-      case ArrayExpAccessPhrase(array, index) =>
-        TypeChecker(array) match {
-          case ExpType(ArrayType(n, t)) => ExpType(t)
-          case t => error(t.toString, "ArrayType")
-        }
-
-      case ArrayAccAccessPhrase(array, index) =>
-        TypeChecker(array) match {
-          case AccType(ArrayType(n, t)) => AccType(t)
-          case t => error(t.toString, "ArrayType")
-        }
-
-      case Record(fields@_*) =>
-        ExpType(RecordType( fields.map(f => TypeChecker(f).dataType):_* ))
-
-      case SplitPhrase(n, array) =>
-        TypeChecker(array) match {
-          case ExpType(ArrayType(m, dt)) =>
-            ExpType(ArrayType(m/n, ArrayType(n, dt)))
-          case t => error(t.toString, "ArrayType")
-        }
-
-      case JoinPhrase(array) =>
-        TypeChecker(array) match {
-          case ExpType(ArrayType(n, ArrayType(m, t))) =>
-            ExpType(ArrayType(n*m, t))
-          case t => error(t.toString, "ArrayType(ArrayType)")
-        }
-
-      case IteratePhrase(n, f, array) =>
-        TypeChecker(array) match {
-          case t@ExpType(ArrayType(m, dt)) =>
-            setParamType(f, t)
-            TypeChecker(f) match {
-              case FunctionType(t1, t2) if (t1 == t2) && (t == t1) =>
-                t // improve and capture effect on array size
-              case ft => error(ft.toString, "FunctionType")
-            }
-          case t => error(t.toString, "ArrayType")
-        }
+      case PatternPhrase(pattern) => pattern.typeCheck()
 
     }
     p.t = phraseType.asInstanceOf[T]

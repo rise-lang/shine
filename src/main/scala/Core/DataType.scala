@@ -1,3 +1,5 @@
+package Core
+
 sealed trait DataType
 
 object bool extends DataType

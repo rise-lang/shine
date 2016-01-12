@@ -1,72 +1,9 @@
-import PhraseType._
+package DSL
 
-import scala.language.implicitConversions
-
-object PhraseExtensions {
-
-  implicit class BinOps(lhs: Phrase[ExpType]) {
-    def +(rhs: Phrase[ExpType]) = BinOp(BinOp.Op.ADD, lhs, rhs)
-
-    def -(rhs: Phrase[ExpType]) = BinOp(BinOp.Op.SUB, lhs, rhs)
-
-    def *(rhs: Phrase[ExpType]) = BinOp(BinOp.Op.MUL, lhs, rhs)
-
-    def /(rhs: Phrase[ExpType]) = BinOp(BinOp.Op.DIV, lhs, rhs)
-
-    def %(rhs: Phrase[ExpType]) = BinOp(BinOp.Op.MOD, lhs, rhs)
-  }
-
-  implicit class CallLambda[T1 <: PhraseType, T2 <: PhraseType](lambda: Lambda[T1, T2]) {
-    def apply(arg: Phrase[T1]) = Apply(lambda, arg)
-  }
-
-  implicit class SequentialComposition(c1: Phrase[CommandType]) {
-    def `;`(c2: Phrase[CommandType]) = Seq(c1, c2)
-  }
-
-  implicit class Assignment(lhs: Phrase[AccType]) {
-    def :=(rhs: Phrase[ExpType]) = Assign(lhs, rhs)
-  }
-
-  implicit class PairTypeConstructor[T1 <: PhraseType](t1: T1) {
-    def x[T2 <: PhraseType](t2: T2) = PairType(t1, t2)
-  }
-
-  implicit class FunctionTypeConstructor[T1 <: PhraseType](t1: T1) {
-    def ->[T2 <: PhraseType](t2: T2) = FunctionType(t1, t2)
-  }
-
-  implicit class PassiveFunctionTypeConstructor[T1 <: PhraseType](t1: T1) {
-    def `->p`[T2 <: PhraseType](t2: T2) = PassiveFunctionType(t1, t2)
-  }
-
-  implicit def toPair[T1 <: PhraseType,
-  T2 <: PhraseType](pair: (Phrase[T1], Phrase[T2])): Pair[T1, T2] = {
-    Pair(pair._1, pair._2)
-  }
-
-  implicit def toLiteral(i: Int): IntLiteral = IntLiteral(i)
-
-  implicit class ExpPhraseExtensions(e: Phrase[ExpType]) {
-    def _1() = FieldAccess(0, e)
-
-    def _2() = FieldAccess(1, e)
-
-    def `@`(index: Phrase[ExpType]) = ArrayExpAccessPhrase(e, index)
-  }
-
-  implicit class AccPhraseExtensions(a: Phrase[AccType]) {
-    def `@`(index: Phrase[ExpType]) = ArrayAccAccessPhrase(a, index)
-  }
-
-  implicit class VarExtensions(v: Phrase[VarType]) {
-    def exp = π1(v)
-    def acc = π2(v)
-  }
-
-}
-
-import PhraseExtensions._
+import Core.OperationalSemantics._
+import Core.PhraseType._
+import Core._
+import Patterns._
 
 object VarType {
   def apply(dataType: DataType) = ExpType(dataType) x AccType(dataType)
@@ -168,13 +105,6 @@ object identifier {
 }
 
 trait funDef {
-  var counter = 0
-
-  def newName(): String = {
-    counter += 1
-    "v" + counter
-  }
-
   def apply[T <: PhraseType](f: Ident[ExpType] => Phrase[T]): Lambda[ExpType, T] = {
     val param = Ident[ExpType]( newName() )
     Lambda(param, f(param))

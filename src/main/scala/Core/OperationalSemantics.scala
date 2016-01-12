@@ -1,3 +1,4 @@
+package Core
 
 import PhraseType._
 
@@ -25,6 +26,15 @@ object OperationalSemantics {
 
   implicit def IntToIntData(i: Int): IntData = IntData(i)
 
+  object newName {
+    var counter = 0
+
+    def apply(): String = {
+      counter += 1
+      "v" + counter
+    }
+  }
+
   type Store = HashMap[String, Data]
 
   def substitute[T1 <: PhraseType, T2 <: PhraseType](p1: Phrase[T1],
@@ -36,6 +46,8 @@ object OperationalSemantics {
       val res = in match {
         // these cases must all be `<: Phrase[T2]`, because they match on in.
         // The casts should be unnecessary
+        case _: Ident[_]   => in
+
         case l: Lambda[_, _] =>
           val newParam = substitute(p1, p2, l.param).asInstanceOf[Ident[PhraseType]]
           val newBody = substitute(p1, p2, l.body)
@@ -52,8 +64,21 @@ object OperationalSemantics {
         case p: Proj1[T2, b] => Proj1(substitute(p1, p2, p.pair))
         case p: Proj2[a, T2] => Proj2(substitute(p1, p2, p.pair))
 
+        case Record(fields@_*) =>
+          Record(fields.map(f => substitute(p1, p2, f)):_*)
+
         case FieldAccess(n, record) =>
           FieldAccess(n, substitute(p1, p2, record))
+
+        case LengthPhrase(array) => LengthPhrase(substitute(p1, p2, array))
+
+        case ArrayExpAccessPhrase(array, index) =>
+          ArrayExpAccessPhrase(substitute(p1, p2, array), substitute(p1, p2, index))
+
+        case ArrayAccAccessPhrase(array, index) =>
+          ArrayAccAccessPhrase(substitute(p1, p2, array), substitute(p1, p2, index))
+
+        case _: SkipPhrase => in
 
         case Seq(c1, c2) =>
           Seq(substitute(p1, p2, c1), substitute(p1, p2, c2))
@@ -73,42 +98,13 @@ object OperationalSemantics {
         case ForPhrase(n, body) =>
           ForPhrase(substitute(p1, p2, n), substitute(p1, p2, body))
 
+        case _: IntLiteral => in
+        case _: Literal    => in
+
         case BinOp(op, lhs, rhs) =>
           BinOp(op, substitute(p1, p2, lhs), substitute(p1, p2, rhs))
 
-        case MapPhrase(f, array) =>
-          MapPhrase(substitute(p1, p2, f), substitute(p1, p2, array))
-
-        case ZipPhrase(lhs, rhs) =>
-          ZipPhrase(substitute(p1, p2, lhs), substitute(p1, p2, rhs))
-
-        case ReducePhrase(f, init, array) =>
-          ReducePhrase(substitute(p1, p2, f), substitute(p1, p2, init), substitute(p1, p2, array))
-
-        case SplitPhrase(n, array) =>
-          SplitPhrase(n, substitute(p1, p2, array))
-
-        case JoinPhrase(array) =>
-          JoinPhrase(substitute(p1, p2, array))
-
-        case IteratePhrase(n, f, array) =>
-          IteratePhrase(n, substitute(p1, p2, f), substitute(p1, p2, array))
-
-        case LengthPhrase(array) => LengthPhrase(substitute(p1, p2, array))
-
-        case ArrayExpAccessPhrase(array, index) =>
-          ArrayExpAccessPhrase(substitute(p1, p2, array), substitute(p1, p2, index))
-
-        case ArrayAccAccessPhrase(array, index) =>
-          ArrayAccAccessPhrase(substitute(p1, p2, array), substitute(p1, p2, index))
-
-        case Record(fields@_*) =>
-          Record(fields.map(f => substitute(p1, p2, f)):_*)
-
-        case _: Ident[_]   => in
-        case _: IntLiteral => in
-        case _: Literal    => in
-        case _: SkipPhrase => in
+        case PatternPhrase(pattern) => PatternPhrase(pattern.substitute(p1, p2))
       }
       res.asInstanceOf[Phrase[T2]]
     }
@@ -176,10 +172,24 @@ object OperationalSemantics {
           p match {
             case Ident(name) => s(name)
 
+            case Record(fields@_*) =>
+              RecordData(fields.map(f => eval(s, f)): _*)
+
             case FieldAccess(n, record) =>
               val data: Data = eval(s, record)
               data match {
                 case r: RecordData => r.fields(n)
+              }
+
+            case LengthPhrase(arrayP) =>
+              arrayP.t match {
+                case ExpType(ArrayType(n, _)) => n
+                case AccType(ArrayType(n, _)) => n
+              }
+
+            case ArrayExpAccessPhrase(array, index) =>
+              (eval(s, array), eval(s, index)) match {
+                case (ArrayData(xs), IntData(i)) => xs(i)
               }
 
             case IntLiteral(i) => IntData(i)
@@ -195,82 +205,7 @@ object OperationalSemantics {
                 case BinOp.Op.MOD => evalIntExp(s, lhs) % evalIntExp(s, rhs)
               }
 
-            case MapPhrase(fP, in) =>
-              val f = eval(s, fP)
-              eval(s, in) match {
-                case ArrayData(xs) =>
-                  ArrayData(xs.map { x => eval(s, f(Literal(x))) })
-              }
-
-            case ZipPhrase(lhsP, rhsP) =>
-              (eval(s, lhsP), eval(s, rhsP)) match {
-                case (ArrayData(lhs), ArrayData(rhs)) =>
-                  ArrayData((lhs zip rhs) map { p =>
-                    RecordData(p._1, p._2)
-                  })
-              }
-
-            case ReducePhrase(fP, initP, arrayP) =>
-              val f = eval(s, fP)
-              val init = eval(s, initP)
-              eval(s, arrayP) match {
-                case ArrayData(xs) =>
-                  ArrayData(Vector(xs.fold(init) {
-                    (x, y) => eval(s, f(Pair(Literal(x), Literal(y))))
-                  }))
-              }
-
-            case SplitPhrase(n, arrayP) =>
-              eval(s, arrayP) match {
-                case ArrayData(array) =>
-
-                  def split[T](n: Int, vector: Vector[T]): Vector[Vector[T]] = {
-                    val builder = Vector.newBuilder[Vector[T]]
-                    var vec = vector
-                    for (i <- 0 until vector.length / n) {
-                      val (head, tail) = vec splitAt n
-                      vec = tail
-                      builder += head
-                    }
-                    builder.result()
-                  }
-
-                  ArrayData(split(n, array).map(ArrayData))
-              }
-
-            case JoinPhrase(arrayP) =>
-              eval(s, arrayP) match {
-                case ArrayData(outer) =>
-                  val arrays = outer.map(row => row match {
-                    case ArrayData(inner) => inner
-                  })
-                  ArrayData(arrays.flatten)
-              }
-
-            case IteratePhrase(n, fP, arrayP) =>
-              val f = eval(s, fP)
-              eval(s, arrayP) match {
-                case ArrayData(xs) =>
-                  var array = arrayP
-                  for (_ <- 0 until n) {
-                    array = f(array)
-                  }
-                  eval(s, array)
-              }
-
-            case LengthPhrase(arrayP) =>
-              arrayP.t match {
-                case ExpType(ArrayType(n, _)) => n
-                case AccType(ArrayType(n, _)) => n
-              }
-
-            case ArrayExpAccessPhrase(array, index) =>
-              (eval(s, array), eval(s, index)) match {
-                case (ArrayData(xs), IntData(i)) => xs(i)
-              }
-
-            case Record(fields@_*) =>
-              RecordData(fields.map(f => eval(s, f)): _*)
+            case PatternPhrase(pattern) => pattern.eval(s)
 
             case Apply(_, _) | IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
               throw new Exception("This should never happen")
@@ -309,7 +244,7 @@ object OperationalSemantics {
 
             case NewPhrase(fP) =>
               val f = eval(s, fP)
-              val arg = Ident[ExpType x AccType](λ.newName())
+              val arg = Ident[ExpType x AccType](newName())
               val s1: Store = eval(s + (arg.name -> 0), f(arg))
               s1 - arg.name
 

@@ -1,11 +1,14 @@
-import OperationalSemantics._
-import PhraseExtensions._
+import Core._
+import Core.OperationalSemantics.implicits._
+import DSL._
 
 import scala.collection.immutable.HashMap
 
-import OperationalSemantics.implicits._
-
 object Test extends App {
+
+  type Data = OperationalSemantics.Data
+  val makeArrayData = OperationalSemantics.makeArrayData
+
   // first test
   {
     var store = HashMap[String, Data]()
