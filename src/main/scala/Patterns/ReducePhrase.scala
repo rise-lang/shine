@@ -33,7 +33,6 @@ case class ReducePhrase(f: Phrase[ExpType x ExpType -> ExpType], init: Phrase[Ex
   }
 
   override def eval(s: OperationalSemantics.Store): OperationalSemantics.Data = {
-    import OperationalSemantics.implicits._
     val fE = OperationalSemantics.eval(s, f)
     val initE = OperationalSemantics.eval(s, init)
     OperationalSemantics.eval(s, array) match {

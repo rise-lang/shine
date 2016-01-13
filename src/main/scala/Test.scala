@@ -1,5 +1,4 @@
 import Core._
-import Core.OperationalSemantics.implicits._
 import DSL._
 
 import scala.collection.immutable.HashMap
@@ -32,7 +31,7 @@ object Test extends App {
 
     println(TypeChecker(p))
 
-    println(Printer.toC(store, p))
+    println(Printer.toC(p))
 
     println(OperationalSemantics.eval(store, p))
 
@@ -80,7 +79,7 @@ object Test extends App {
 
     println(TypeChecker(p))
 
-    println(Printer.toC(store, p))
+    println(Printer.toC(p))
 
     println(OperationalSemantics.eval(store, p))
 
@@ -103,6 +102,29 @@ object Test extends App {
       }
       println(out)
     }
+  }
+
+  {
+    var store = HashMap[String, Data]()
+    val x = identifier("x", ExpType(ArrayType(4, int)))
+    val y = identifier("y", ExpType(ArrayType(4, int)))
+    val out = identifier("out", AccType(ArrayType(4, int)))
+    store = store + (x.name -> makeArrayData(1, 2, 3, 4))
+    store = store + (y.name -> makeArrayData(2, 3, 4, 5))
+    store = store + (out.name -> makeArrayData(0, 0, 0, 0))
+
+    val p = `for`(2, { i =>
+      `for`(2, { j =>
+        out `@` (i*2+j) := x `@` (i*2+j) + y `@` (i*2+j)
+      })
+    })
+    println(p)
+
+    println(TypeChecker(p))
+
+    println(Printer.toC(p))
+
+    println(OperationalSemantics.eval(store, p))
   }
 
   {
@@ -130,26 +152,26 @@ object Test extends App {
 
     import Rewriting.RewriteRules._
 
-    val p1 = mapToFor.rewrite(p0)
+    val p1 = mapToFor(p0)
 
     val p2 = p1 match {
       case ForPhrase(n, Lambda(i, Assign(acc, expr))) =>
-        ForPhrase(n, Lambda(i, Assign(acc, betaReduction.rewrite(expr))))
+        ForPhrase(n, Lambda(i, Assign(acc, betaReduction(expr))))
     }
 
     val p3 = p2 match {
       case ForPhrase(n, Lambda(i, Assign(acc, BinOp(op, FieldAccess(j, lhs), FieldAccess(k, rhs))))) =>
-        ForPhrase(n, Lambda(i, Assign(acc, BinOp(op, FieldAccess(j, zipIndex.rewrite(lhs)), FieldAccess(k, zipIndex.rewrite(rhs))))))
+        ForPhrase(n, Lambda(i, Assign(acc, BinOp(op, FieldAccess(j, zipIndex(lhs)), FieldAccess(k, zipIndex(rhs))))))
     }
 
     val p4 = p3 match {
       case ForPhrase(n, Lambda(i, Assign(acc, BinOp(op, lhs, rhs)))) =>
-        ForPhrase(n, Lambda(i, Assign(acc, BinOp(op, recordFieldAccess.rewrite(lhs), recordFieldAccess.rewrite(rhs)))))
+        ForPhrase(n, Lambda(i, Assign(acc, BinOp(op, recordFieldAccess(lhs), recordFieldAccess(rhs)))))
     }
 
     val p = p4
 
-    println( Printer.toC(store, p) )
+    println( Printer.toC(p) )
 
     println(p)
 

@@ -19,7 +19,6 @@ case class ZipPhrase(lhs: Phrase[ExpType], rhs: Phrase[ExpType]) extends Pattern
   }
 
   override def eval(s: OperationalSemantics.Store): OperationalSemantics.Data = {
-    import OperationalSemantics.implicits._
     (OperationalSemantics.eval(s, lhs), OperationalSemantics.eval(s, rhs)) match {
       case (ArrayData(lhsE), ArrayData(rhsE)) =>
         ArrayData((lhsE zip rhsE) map { p =>

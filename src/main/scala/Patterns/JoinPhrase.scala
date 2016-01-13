@@ -19,7 +19,6 @@ case class JoinPhrase(array: Phrase[ExpType]) extends Pattern {
   }
 
   override def eval(s: Store): Data = {
-    import OperationalSemantics.implicits._
     OperationalSemantics.eval(s, array) match {
       case ArrayData(outer) =>
         val arrays = outer.map(row => row match {

@@ -6,6 +6,7 @@ import Patterns._
 
 case class RewriteRule[T <: PhraseType](desc: String, rewrite: PartialFunction[Phrase[T], Phrase[T]]) {
   override def toString: String = desc
+  def apply(p: Phrase[T]): Phrase[T] = rewrite(p)
 }
 
 object RewriteRules {

@@ -2,10 +2,6 @@ package Core
 
 import PhraseType._
 
-import OperationalSemantics._
-
-import scala.collection.immutable.HashMap
-
 class TypeException(msg: String) extends Exception(msg)
 
 object TypeChecker {
@@ -21,7 +17,6 @@ object TypeChecker {
   }
 
   def setParamType[T1 <: PhraseType, T2 <: PhraseType](p: Phrase[T1 -> T2], t: T1): Unit = {
-    import OperationalSemantics.implicits._
     p match {
       case l: Lambda[T1, T2] =>
         l.param.t match {
@@ -29,17 +24,16 @@ object TypeChecker {
           case _ =>
         }
 
-      // TODO: figure out how to handle this properly
       case app: Apply[a, T1 -> T2] =>
-        val fun: (Phrase[a]) => Phrase[T1 -> T2] = eval(HashMap[String, Data](), app.fun)
+        val fun = Lift.liftFunction(app.fun)
         setParamType(fun(app.arg), t)
 
       case p1: Proj1[T1 -> T2, b] =>
-        val pair: (Phrase[T1 -> T2], Phrase[b]) = eval(HashMap[String, Data](), p1.pair)
+        val pair = Lift.liftPair(p1.pair)
         setParamType(pair._1, t)
 
       case p2: Proj2[a, T1 -> T2] =>
-        val pair: (Phrase[a], Phrase[T1 -> T2]) = eval(HashMap[String, Data](), p2.pair)
+        val pair = Lift.liftPair(p2.pair)
         setParamType(pair._2, t)
 
       case IfThenElse(_, thenP, elseP) =>

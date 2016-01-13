@@ -1,68 +1,62 @@
 package Core
 
-import Core.OperationalSemantics._
-import Core.PhraseType.{->, x}
+import OperationalSemantics._
+import PhraseType.x
 
 object Printer {
-  def toC[T <: PhraseType](s: OperationalSemantics.Store, p: Phrase[T]): String = {
+  def toC[T <: PhraseType](p: Phrase[T]): String = {
     p match {
       case Ident(name) => name
 
-      case Proj1(pair) =>
-        import OperationalSemantics.implicits._
-        val (fst, _) = OperationalSemantics.eval(s, pair)
-        toC(s, fst)
-
-      case Proj2(pair) =>
-        import OperationalSemantics.implicits._
-        val (_, snd) = OperationalSemantics.eval(s, pair)
-        toC(s, snd)
-
+      case Proj1(pair) => toC(Lift.liftPair(pair)._1)
+      case Proj2(pair) => toC(Lift.liftPair(pair)._2)
 
       case Record(fields @ _*) =>
         val dt = p.t match { case ExpType(dataType) => dataType }
-        s"(struct ${nameOf(dt)}){ ${fields.map(toC(s, _)).reduce( (x,y) => x + ", " + y )} }"
+        s"(struct ${nameOf(dt)}){ ${fields.map(toC).reduce( (x,y) => x + ", " + y )} }"
 
       case FieldAccess(n, record) =>
-        toC(s, record) + "._" + n.toString
+        toC(record) + "._" + n.toString
 
       case LengthPhrase(array) => array.t match {
         case ExpType(ArrayType(n, dt)) => n.toString
         case AccType(ArrayType(n, dt)) => n.toString
       }
 
-      case ArrayAccAccessPhrase(array, index) => toC(s, array) + "[" + toC(s, index) + "]"
+      case ArrayAccAccessPhrase(array, index) => toC(array) + "[" + toC(index) + "]"
 
-      case ArrayExpAccessPhrase(array, index) => toC(s, array) + "[" + toC(s, index) + "]"
+      case ArrayExpAccessPhrase(array, index) => toC(array) + "[" + toC(index) + "]"
 
       case SkipPhrase() => ""
 
-      case Seq(c1, c2) => toC(s, c1) + ";\n" + toC(s, c2)
+      case Seq(c1, c2) => toC(c1) + ";\n" + toC(c2)
 
       case NewPhrase(fP) =>
-        import OperationalSemantics.implicits._
-        val f = OperationalSemantics.eval(s, fP)
+        val f = Lift.liftFunction(fP)
         val v = Ident[ExpType x AccType](OperationalSemantics.newName())
         val dt = fP.t.inT.t1.dataType
-        s"{\n${nameOf(dt)} ${v.name};\n${toC(s, f(v))}; \n}"
+        v.t = PairType(ExpType(dt), AccType(dt))
+        s"{\n${nameOf(dt)} ${v.name};\n${toC(f(v))}; \n}"
 
       case Assign(lhs, rhs) =>
-        toC(s, lhs) + " = " + toC(s, rhs)
+        toC(lhs) + " = " + toC(rhs) + ";\n"
 
       case IfThenElse(condP, thenP, elseP) =>
-        s"if (${toC(s, condP)}) { ${toC(s, thenP)}; } else { ${toC(s, elseP)}; }"
+        s"if (${toC(condP)}) { ${toC(thenP)}; } else { ${toC(elseP)}; }"
 
       case ForPhrase(n, fP) =>
-        import OperationalSemantics.implicits._
-        val f = OperationalSemantics.eval(s, fP)
+        val f = Lift.liftFunction(fP)
         val i = Ident[ExpType](OperationalSemantics.newName())
-        s"for (int ${i.name} = 0; ${i.name} < ${toC(s, n)}; ++${i.name}) {\n${toC(s, f(i))};\n}\n"
+        i.t = ExpType(int)
+        s"for (int ${i.name} = 0; ${i.name} < ${toC(n)}; ++${i.name}) {\n${toC(f(i))}}\n"
 
       case Literal(d) =>
-        val dt = p.t match { case ExpType(dataType) => dataType }
+        // TODO: Find out why the type is not set
+//        val dt = p.t match { case ExpType(dataType) => dataType }
+        val dt = int
         literal(d, dt)
 
-      case BinOp(op, lhs, rhs) => "(" + toC(s, lhs) + " " + op.toString + " " + toC(s, rhs) + ")"
+      case BinOp(op, lhs, rhs) => "(" + toC(lhs) + " " + op.toString + " " + toC(rhs) + ")"
 
       case Lambda(_, _) | Apply(_, _) | Pair(_, _) | PatternPhrase(_) =>
         throw new Exception("This should not happen")
@@ -111,7 +105,7 @@ object Printer {
           case ArrayType(_, et) => et
           case _ => throw new Exception("This should never happen")
         }
-        s"{ ${a.map(literal(_, elemT)).reduce( (x,y) => x + ", " + y )} }"
+        s"(${nameOf(elemT)}[]){ ${a.map(literal(_, elemT)).reduce( (x,y) => x + ", " + y )} }"
     }
   }
 }

@@ -25,7 +25,6 @@ case class IteratePhrase(n: Int, f: Phrase[ExpType -> ExpType], array: Phrase[Ex
   }
 
   override def eval(s: Store): Data = {
-    import OperationalSemantics.implicits._
     val fE = OperationalSemantics.eval(s, f)
     OperationalSemantics.eval(s, array) match {
       case ArrayData(xs) =>

@@ -36,7 +36,7 @@ object OperationalSemantics {
 
   type Store = HashMap[String, Data]
 
-  // substitues `p1` for `p2` in `in`
+  // substitutes `p1` for `p2` in `in`
   def substitute[T1 <: PhraseType, T2 <: PhraseType](p1: Phrase[T1],
                                                      p2: Phrase[T1],
                                                      in: Phrase[T2]): Phrase[T2] = {
@@ -110,7 +110,6 @@ object OperationalSemantics {
 
   def eval[T <: PhraseType, R](s: Store, p: Phrase[T])
                               (implicit evaluator: Evaluator[T, R]): R = {
-    import implicits._
     p match {
       case app: Apply[a, T] =>
         val fun: (Phrase[a]) => Phrase[T] = eval(s, app.fun)
@@ -139,152 +138,149 @@ object OperationalSemantics {
     def apply(s: Store, p: Phrase[T]): R
   }
 
-  object implicits {
 
-    implicit def FunctionEvaluator[T1 <: PhraseType, T2 <: PhraseType]: Evaluator[T1 -> T2, (Phrase[T1] => Phrase[T2])] =
-      new Evaluator[T1 -> T2, (Phrase[T1] => Phrase[T2])] {
-        def apply(s: Store, p: Phrase[T1 -> T2]): (Phrase[T1] => Phrase[T2]) = {
-          p match {
-            case l: Lambda[T1, T2] => (arg: Phrase[T1]) => substitute(arg, l.param, in = l.body)
-            case Ident(_) | Apply(_, _) | IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
-              throw new Exception("This should never happen")
-          }
+  implicit def FunctionEvaluator[T1 <: PhraseType, T2 <: PhraseType]: Evaluator[T1 -> T2, (Phrase[T1] => Phrase[T2])] =
+    new Evaluator[T1 -> T2, (Phrase[T1] => Phrase[T2])] {
+      def apply(s: Store, p: Phrase[T1 -> T2]): (Phrase[T1] => Phrase[T2]) = {
+        p match {
+          case l: Lambda[T1, T2] => (arg: Phrase[T1]) => substitute(arg, l.param, in = l.body)
+          case Ident(_) | Apply(_, _) | IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
+            throw new Exception("This should never happen")
         }
       }
+    }
 
-    implicit def PairEvaluator[T1 <: PhraseType, T2 <: PhraseType]: Evaluator[T1 x T2, (Phrase[T1], Phrase[T2])] =
-      new Evaluator[T1 x T2, (Phrase[T1], Phrase[T2])] {
-        def apply(s: Store, p: Phrase[T1 x T2]): (Phrase[T1], Phrase[T2]) = {
-          p match {
-            case i: Ident[T1 x T2] => (Ident[T1](i.name), Ident[T2](i.name))
-            case pair: Pair[T1, T2] => (pair.fst, pair.snd)
-            case Apply(_, _) | IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
-              throw new Exception("This should never happen")
-          }
+  implicit def PairEvaluator[T1 <: PhraseType, T2 <: PhraseType]: Evaluator[T1 x T2, (Phrase[T1], Phrase[T2])] =
+    new Evaluator[T1 x T2, (Phrase[T1], Phrase[T2])] {
+      def apply(s: Store, p: Phrase[T1 x T2]): (Phrase[T1], Phrase[T2]) = {
+        p match {
+          case i: Ident[T1 x T2] => (Ident[T1](i.name), Ident[T2](i.name))
+          case pair: Pair[T1, T2] => (pair.fst, pair.snd)
+          case Apply(_, _) | IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
+            throw new Exception("This should never happen")
         }
       }
+    }
 
-    implicit def ExpEvaluator: Evaluator[ExpType, Data] =
-      new Evaluator[ExpType, Data] {
-        def apply(s: Store, p: Phrase[ExpType]): Data = {
-          p match {
-            case Ident(name) => s(name)
+  implicit def ExpEvaluator: Evaluator[ExpType, Data] =
+    new Evaluator[ExpType, Data] {
+      def apply(s: Store, p: Phrase[ExpType]): Data = {
+        p match {
+          case Ident(name) => s(name)
 
-            case Record(fields@_*) =>
-              RecordData(fields.map(f => eval(s, f)): _*)
+          case Record(fields@_*) =>
+            RecordData(fields.map(f => eval(s, f)): _*)
 
-            case FieldAccess(n, record) =>
-              val data: Data = eval(s, record)
-              data match {
-                case r: RecordData => r.fields(n)
-                case _ => throw new Exception("This should not happen")
-              }
+          case FieldAccess(n, record) =>
+            val data: Data = eval(s, record)
+            data match {
+              case r: RecordData => r.fields(n)
+              case _ => throw new Exception("This should not happen")
+            }
 
-            case LengthPhrase(arrayP) =>
-              arrayP.t match {
-                case ExpType(ArrayType(n, _)) => n
-                case AccType(ArrayType(n, _)) => n
-              }
+          case LengthPhrase(arrayP) =>
+            arrayP.t match {
+              case ExpType(ArrayType(n, _)) => n
+              case AccType(ArrayType(n, _)) => n
+            }
 
-            case ArrayExpAccessPhrase(array, index) =>
-              (eval(s, array), eval(s, index)) match {
-                case (ArrayData(xs), IntData(i)) => xs(i)
-                case _ => throw new Exception("This should not happen")
-              }
+          case ArrayExpAccessPhrase(array, index) =>
+            (eval(s, array), eval(s, index)) match {
+              case (ArrayData(xs), IntData(i)) => xs(i)
+              case _ => throw new Exception("This should not happen")
+            }
 
-            case Literal(d) => d
+          case Literal(d) => d
 
-            case BinOp(op, lhs, rhs) =>
-              op match {
-                case BinOp.Op.ADD => evalIntExp(s, lhs) + evalIntExp(s, rhs)
-                case BinOp.Op.SUB => evalIntExp(s, lhs) - evalIntExp(s, rhs)
-                case BinOp.Op.MUL => evalIntExp(s, lhs) * evalIntExp(s, rhs)
-                case BinOp.Op.DIV => evalIntExp(s, lhs) / evalIntExp(s, rhs)
-                case BinOp.Op.MOD => evalIntExp(s, lhs) % evalIntExp(s, rhs)
-              }
+          case BinOp(op, lhs, rhs) =>
+            op match {
+              case BinOp.Op.ADD => evalIntExp(s, lhs) + evalIntExp(s, rhs)
+              case BinOp.Op.SUB => evalIntExp(s, lhs) - evalIntExp(s, rhs)
+              case BinOp.Op.MUL => evalIntExp(s, lhs) * evalIntExp(s, rhs)
+              case BinOp.Op.DIV => evalIntExp(s, lhs) / evalIntExp(s, rhs)
+              case BinOp.Op.MOD => evalIntExp(s, lhs) % evalIntExp(s, rhs)
+            }
 
-            case PatternPhrase(pattern) => pattern.eval(s)
+          case PatternPhrase(pattern) => pattern.eval(s)
 
-            case Apply(_, _) | IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
-              throw new Exception("This should never happen")
-          }
+          case Apply(_, _) | IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
+            throw new Exception("This should never happen")
         }
       }
+    }
 
-    implicit def AccEvaluator: Evaluator[AccType, AccIdentifier] =
-      new Evaluator[AccType, AccIdentifier] {
-        def apply(s: Store, p: Phrase[AccType]): AccIdentifier = {
-          p match {
-            case Ident(name) => NamedIdentifier(name)
-            case ArrayAccAccessPhrase(arrayP, indexP) =>
-              val array = eval(s, arrayP)
-              val index = eval(s, indexP) match {
-                case IntData(i) => i
-                case _ => throw new Exception("This should not happen")
-              }
-              ArrayAccessIdentifier(array, index)
-            case Apply(_, _) | IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
-              throw new Exception("This should never happen")
-          }
+  implicit def AccEvaluator: Evaluator[AccType, AccIdentifier] =
+    new Evaluator[AccType, AccIdentifier] {
+      def apply(s: Store, p: Phrase[AccType]): AccIdentifier = {
+        p match {
+          case Ident(name) => NamedIdentifier(name)
+          case ArrayAccAccessPhrase(arrayP, indexP) =>
+            val array = eval(s, arrayP)
+            val index = eval(s, indexP) match {
+              case IntData(i) => i
+              case _ => throw new Exception("This should not happen")
+            }
+            ArrayAccessIdentifier(array, index)
+          case Apply(_, _) | IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
+            throw new Exception("This should never happen")
         }
       }
+    }
 
-    implicit def CommandEvaluator: Evaluator[CommandType, Store] =
-      new Evaluator[CommandType, Store] {
-        def apply(s: Store, p: Phrase[CommandType]): Store = {
-          p match {
-            case Ident(_) => throw new Exception("This should never happen")
+  implicit def CommandEvaluator: Evaluator[CommandType, Store] =
+    new Evaluator[CommandType, Store] {
+      def apply(s: Store, p: Phrase[CommandType]): Store = {
+        p match {
+          case Ident(_) => throw new Exception("This should never happen")
 
-            case SkipPhrase() => s
+          case SkipPhrase() => s
 
-            case Seq(c1, c2) =>
-              val s1 = eval(s, c1)
-              eval(s1, c2)
+          case Seq(c1, c2) =>
+            val s1 = eval(s, c1)
+            eval(s1, c2)
 
-            case NewPhrase(fP) =>
-              val f = eval(s, fP)
-              val arg = Ident[ExpType x AccType](newName())
-              val s1: Store = eval(s + (arg.name -> 0), f(arg))
-              s1 - arg.name
+          case NewPhrase(fP) =>
+            val f = eval(s, fP)
+            val arg = Ident[ExpType x AccType](newName())
+            val s1: Store = eval(s + (arg.name -> 0), f(arg))
+            s1 - arg.name
 
-            case Assign(lhs, rhs) =>
-              def evalAssign(s: Store, lhs: AccIdentifier, rhs: Data): (String, Data) = {
-                lhs match {
-                  case NamedIdentifier(name) =>
-                    assert(s.contains(name))
-                    (name, rhs)
-                  case ArrayAccessIdentifier(array, index) =>
-                    val (name, rhsValue) = evalAssign(s, array, rhs)
-                    assert(s.contains(name))
-                    s(name) match {
-                      case ArrayData(vec) => (name, ArrayData(vec.updated(index, rhsValue)))
-                      case _ => throw new Exception("This should not happen")
-                    }
-                }
+          case Assign(lhs, rhs) =>
+            def evalAssign(s: Store, lhs: AccIdentifier, rhs: Data): (String, Data) = {
+              lhs match {
+                case NamedIdentifier(name) =>
+                  assert(s.contains(name))
+                  (name, rhs)
+                case ArrayAccessIdentifier(array, index) =>
+                  val (name, rhsValue) = evalAssign(s, array, rhs)
+                  assert(s.contains(name))
+                  s(name) match {
+                    case ArrayData(vec) => (name, ArrayData(vec.updated(index, rhsValue)))
+                    case _ => throw new Exception("This should not happen")
+                  }
               }
+            }
 
-              val (identifier, value) = evalAssign(s, eval(s, lhs), eval(s, rhs))
-              s + (identifier -> value)
+            val (identifier, value) = evalAssign(s, eval(s, lhs), eval(s, rhs))
+            s + (identifier -> value)
 
-            case ForPhrase(nP, bodyP) =>
-              val n = evalIntExp(s, nP)
-              val body = eval(s, bodyP)
-              var s1 = s
-              for (i <- 0 until n) {
-                s1 = eval(s1, body(Literal(i)))
-              }
-              s1
+          case ForPhrase(nP, bodyP) =>
+            val n = evalIntExp(s, nP)
+            val body = eval(s, bodyP)
+            var s1 = s
+            for (i <- 0 until n) {
+              s1 = eval(s1, body(Literal(i)))
+            }
+            s1
 
-            case Apply(_, _) | IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
-              throw new Exception("This should never happen")
-          }
+          case Apply(_, _) | IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
+            throw new Exception("This should never happen")
         }
       }
+    }
 
-  }
 
   def evalCondExp(s: Store, p: Phrase[ExpType]): Boolean = {
-    import implicits._
     eval(s, p) match {
       case BoolData(b) => b
       case IntData(i)  => i != 0
@@ -293,7 +289,6 @@ object OperationalSemantics {
   }
 
   def evalIntExp(s: Store, p: Phrase[ExpType]): Int = {
-    import implicits._
     eval(s, p) match {
       case IntData(i) => i
       case _ => throw new Exception("This should never happen")

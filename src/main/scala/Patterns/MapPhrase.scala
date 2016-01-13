@@ -29,7 +29,6 @@ case class MapPhrase(f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) exte
   }
 
   override def eval(s: OperationalSemantics.Store): OperationalSemantics.Data = {
-    import OperationalSemantics.implicits._
     val fE = OperationalSemantics.eval(s, f)
     OperationalSemantics.eval(s, array) match {
       case ArrayData(xs) =>

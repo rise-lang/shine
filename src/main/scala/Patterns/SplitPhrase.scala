@@ -19,7 +19,6 @@ case class SplitPhrase(n: Int, array: Phrase[ExpType]) extends Pattern {
   }
 
   override def eval(s: OperationalSemantics.Store): OperationalSemantics.Data = {
-    import OperationalSemantics.implicits._
     OperationalSemantics.eval(s, array) match {
       case ArrayData(arrayE) =>
 
