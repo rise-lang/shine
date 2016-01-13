@@ -47,7 +47,7 @@ object Test extends App {
           v2 = v + 1
           v = v2
         }
-        if (v % 2 == 0) {
+        if (v % 2 != 0) {
           v = v + 1
         } else {
           v = v + 10
@@ -80,6 +80,8 @@ object Test extends App {
 
     println(TypeChecker(p))
 
+    println(Printer.toC(store, p))
+
     println(OperationalSemantics.eval(store, p))
 
     // same program in scala
@@ -92,7 +94,7 @@ object Test extends App {
         }
         ;
         ;
-        if (v % 2 == 0) {
+        if (v % 2 != 0) {
           v = v + 1
         } else {
           v = v + 10

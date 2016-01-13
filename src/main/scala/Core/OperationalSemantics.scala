@@ -43,15 +43,13 @@ object OperationalSemantics {
     if (p2 == in) {
       p1.asInstanceOf[Phrase[T2]] // T1 == T2
     } else {
-      val res = in match {
+      val res = (in match {
         // these cases must all be `<: Phrase[T2]`, because they match on in.
         // The casts should be unnecessary
         case _: Ident[_]   => in
 
         case l: Lambda[_, _] =>
-          val newParam = substitute(p1, p2, l.param).asInstanceOf[Ident[PhraseType]]
-          val newBody = substitute(p1, p2, l.body)
-          Lambda(newParam, newBody)
+          Lambda(l.param, substitute(p1, p2, l.body))
 
         case app: Apply[a, T2] =>
           val newFun = substitute(p1, p2, app.fun)
@@ -104,8 +102,9 @@ object OperationalSemantics {
           BinOp(op, substitute(p1, p2, lhs), substitute(p1, p2, rhs))
 
         case PatternPhrase(pattern) => PatternPhrase(pattern.substitute(p1, p2))
-      }
-      res.asInstanceOf[Phrase[T2]]
+      }).asInstanceOf[Phrase[T2]]
+      res.t = in.t // preserve type
+      res
     }
   }
 
@@ -288,7 +287,7 @@ object OperationalSemantics {
     import implicits._
     eval(s, p) match {
       case BoolData(b) => b
-      case IntData(i)  => i == 0
+      case IntData(i)  => i != 0
       case _ => throw new Exception("This should never happen")
     }
   }

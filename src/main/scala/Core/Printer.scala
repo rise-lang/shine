@@ -1,7 +1,7 @@
 package Core
 
 import Core.OperationalSemantics._
-import Core.PhraseType.x
+import Core.PhraseType.{->, x}
 
 object Printer {
   def toC[T <: PhraseType](s: OperationalSemantics.Store, p: Phrase[T]): String = {
@@ -43,10 +43,8 @@ object Printer {
         import OperationalSemantics.implicits._
         val f = OperationalSemantics.eval(s, fP)
         val v = Ident[ExpType x AccType](OperationalSemantics.newName())
-        // TODO: understand what triggers the null pointer exception ...
-//        val dt = fP.t match { case FunctionType(PairType(ExpType(d1), AccType(d2)), CommandType()) => d1 }
-        val dt = int
-        s"{\n ${nameOf(dt)} ${v.name};\n ${toC(s, f(v))}; }"
+        val dt = fP.t.inT.t1.dataType
+        s"{\n${nameOf(dt)} ${v.name};\n${toC(s, f(v))}; \n}"
 
       case Assign(lhs, rhs) =>
         toC(s, lhs) + " = " + toC(s, rhs)

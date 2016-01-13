@@ -51,14 +51,15 @@ object TypeChecker {
   }
 
   def apply[T <: PhraseType](p: Phrase[T]): T = {
-    val phraseType: PhraseType = p match {
+    val phraseType = (p match {
 
       case i: Ident[T] =>
         if (i.t == null)
           throw new TypeException("Type error: type not set for " + i)
         i.t
 
-      case Lambda(param, body) => TypeChecker(param) -> TypeChecker(body)
+      case Lambda(param, body) =>
+        TypeChecker(param) -> TypeChecker(body)
 
       case Apply(fun, arg) =>
         setParamType(fun, TypeChecker(arg))
@@ -166,8 +167,8 @@ object TypeChecker {
 
       case PatternPhrase(pattern) => pattern.typeCheck()
 
-    }
-    p.t = phraseType.asInstanceOf[T]
+    }).asInstanceOf[T]
+    p.t = phraseType
     p.t
   }
 
