@@ -95,12 +95,14 @@ object TypeChecker {
         }
 
       case ArrayExpAccessPhrase(array, index) =>
+        check(TypeChecker(index), ExpType(int))
         TypeChecker(array) match {
           case ExpType(ArrayType(n, t)) => ExpType(t)
           case t => error(t.toString, "ArrayType")
         }
 
       case ArrayAccAccessPhrase(array, index) =>
+        check(TypeChecker(index), ExpType(int))
         TypeChecker(array) match {
           case AccType(ArrayType(n, t)) => AccType(t)
           case t => error(t.toString, "ArrayType")

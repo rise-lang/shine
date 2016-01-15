@@ -51,9 +51,7 @@ object Printer {
         s"for (int ${i.name} = 0; ${i.name} < ${toC(n)}; ++${i.name}) {\n${toC(f(i))}}\n"
 
       case Literal(d) =>
-        // TODO: Find out why the type is not set
-//        val dt = p.t match { case ExpType(dataType) => dataType }
-        val dt = int
+        val dt = p.t match { case ExpType(dataType) => dataType }
         literal(d, dt)
 
       case BinOp(op, lhs, rhs) => "(" + toC(lhs) + " " + op.toString + " " + toC(rhs) + ")"
