@@ -14,8 +14,8 @@ case class ZipPhrase(lhs: Phrase[ExpType], rhs: Phrase[ExpType]) extends Pattern
     }
   }
 
-  override def substitute[T <: PhraseType](p1: Phrase[T], p2: Phrase[T]): Pattern = {
-    ZipPhrase(OperationalSemantics.substitute(p1, p2, lhs), OperationalSemantics.substitute(p1, p2, rhs))
+  override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): Pattern = {
+    ZipPhrase(OperationalSemantics.substitute(phrase, `for`, lhs), OperationalSemantics.substitute(phrase, `for`, rhs))
   }
 
   override def eval(s: OperationalSemantics.Store): OperationalSemantics.Data = {

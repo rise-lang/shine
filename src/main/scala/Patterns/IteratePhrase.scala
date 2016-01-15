@@ -20,8 +20,10 @@ case class IteratePhrase(n: Int, f: Phrase[ExpType -> ExpType], array: Phrase[Ex
     }
   }
 
-  override def substitute[T <: PhraseType](p1: Phrase[T], p2: Phrase[T]): Pattern = {
-    IteratePhrase(n, OperationalSemantics.substitute(p1, p2, f), OperationalSemantics.substitute(p1, p2, array))
+  override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): Pattern = {
+    IteratePhrase(n,
+      OperationalSemantics.substitute(phrase, `for`, f),
+      OperationalSemantics.substitute(phrase, `for`, array))
   }
 
   override def eval(s: Store): Data = {

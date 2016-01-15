@@ -4,30 +4,53 @@ import Core._
 import DSL._
 import Patterns._
 
-case class RewriteRule[T <: PhraseType](desc: String, rewrite: PartialFunction[Phrase[T], Phrase[T]]) {
+case class RewriteRule(desc: String, rewrite: PartialFunction[Phrase[_ <: PhraseType], Phrase[_ <: PhraseType]]) {
   override def toString: String = desc
-  def apply(p: Phrase[T]): Phrase[T] = rewrite(p)
+  def apply[T <: PhraseType](p: Phrase[T]): Phrase[T] = {
+    rewrite(p).asInstanceOf[Phrase[T]]
+  }
 }
 
 object RewriteRules {
-  val mapToFor = RewriteRule[CommandType]("map to for", {
+  val betaReduction = RewriteRule("beta reduction", {
+    case Apply(Lambda(param, body), arg) =>
+      OperationalSemantics.substitute(arg, param, body)
+  })
+
+  val mapToFor = RewriteRule("map to for", {
     case Assign(out, PatternPhrase(MapPhrase(f, array))) =>
       `for`(length(out), { i =>
         out `@` i := Apply(f, array `@` i)
       })
   })
 
-  val betaReduction = RewriteRule[ExpType]("beta reduction", {
-    case Apply(Lambda(param, body), arg) =>
-      OperationalSemantics.substitute(arg, param, in = body)
+  val joinToFor = RewriteRule("join to for", {
+    case Assign(out, PatternPhrase(JoinPhrase(array))) =>
+      `for`(length(array), { i =>
+        `for`(length(array `@` i), { j =>
+          out `@` (i*length(array `@` i)+j) := (array `@` j) `@` j
+        })
+      })
   })
 
-  val zipIndex = RewriteRule[ExpType]("zip index", {
+  val mapIndex = RewriteRule("map index", {
+    case ArrayExpAccessPhrase(PatternPhrase(MapPhrase(f, array)), i) =>
+      Apply(f, array `@` i)
+  })
+
+  val splitIndex = RewriteRule("split index", {
+    case ArrayExpAccessPhrase(ArrayExpAccessPhrase(PatternPhrase(SplitPhrase(n, array)), i), j) =>
+      array `@` (i * n + j)
+  })
+
+  val zipIndex = RewriteRule("zip index", {
     case ArrayExpAccessPhrase(PatternPhrase(ZipPhrase(lhs, rhs)), i) =>
       Record(lhs `@` i, rhs `@` i)
   })
 
-  val recordFieldAccess = RewriteRule[ExpType]("record field access", {
-    case FieldAccess(i, Record(fields @ _*)) => fields(i)
+  val recordFieldAccess = RewriteRule("record field access", {
+    case FieldAccess(i, Record(fields@_*)) => fields(i)
   })
+
+  val rules: Vector[RewriteRule] = Vector(betaReduction, mapToFor, joinToFor, mapIndex, splitIndex, zipIndex, recordFieldAccess)
 }

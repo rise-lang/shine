@@ -25,11 +25,11 @@ case class ReducePhrase(f: Phrase[ExpType x ExpType -> ExpType], init: Phrase[Ex
     }
   }
 
-  override def substitute[T <: PhraseType](p1: Phrase[T], p2: Phrase[T]): Pattern = {
+  override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): Pattern = {
     ReducePhrase(
-      OperationalSemantics.substitute(p1, p2, f),
-      OperationalSemantics.substitute(p1, p2, init),
-      OperationalSemantics.substitute(p1, p2, array))
+      OperationalSemantics.substitute(phrase, `for`, f),
+      OperationalSemantics.substitute(phrase, `for`, init),
+      OperationalSemantics.substitute(phrase, `for`, array))
   }
 
   override def eval(s: OperationalSemantics.Store): OperationalSemantics.Data = {

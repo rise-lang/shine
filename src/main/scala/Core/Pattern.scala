@@ -3,7 +3,7 @@ package Core
 trait Pattern {
   def typeCheck(): ExpType
 
-  def substitute[T <: PhraseType](p1: Phrase[T], p2: Phrase[T]): Pattern
+  def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): Pattern
 
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Data
 }

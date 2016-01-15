@@ -14,8 +14,8 @@ case class SplitPhrase(n: Int, array: Phrase[ExpType]) extends Pattern {
     }
   }
 
-  override def substitute[T <: PhraseType](p1: Phrase[T], p2: Phrase[T]): Pattern = {
-    SplitPhrase(n, OperationalSemantics.substitute(p1, p2, array))
+  override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): Pattern = {
+    SplitPhrase(n, OperationalSemantics.substitute(phrase, `for`, array))
   }
 
   override def eval(s: OperationalSemantics.Store): OperationalSemantics.Data = {

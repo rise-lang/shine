@@ -7,7 +7,7 @@ object Lift {
 
   def liftFunction[T1 <: PhraseType, T2 <: PhraseType](p: Phrase[T1 -> T2]): (Phrase[T1] => Phrase[T2]) = {
     p match {
-      case l: Lambda[T1, T2] => (arg: Phrase[T1]) => OperationalSemantics.substitute(arg, l.param, in = l.body)
+      case l: Lambda[T1, T2] => (arg: Phrase[T1]) => OperationalSemantics.substitute(arg, `for` = l.param, in = l.body)
       case app: Apply[a, T1 -> T2] =>
         val fun = liftFunction(app.fun)
         liftFunction(fun(app.arg))

@@ -36,12 +36,12 @@ object OperationalSemantics {
 
   type Store = HashMap[String, Data]
 
-  // substitutes `p1` for `p2` in `in`
-  def substitute[T1 <: PhraseType, T2 <: PhraseType](p1: Phrase[T1],
-                                                     p2: Phrase[T1],
+  // substitutes `phrase` for `for` in `in`
+  def substitute[T1 <: PhraseType, T2 <: PhraseType](phrase: Phrase[T1],
+                                                     `for`: Phrase[T1],
                                                      in: Phrase[T2]): Phrase[T2] = {
-    if (p2 == in) {
-      p1.asInstanceOf[Phrase[T2]] // T1 == T2
+    if (`for` == in) {
+      phrase.asInstanceOf[Phrase[T2]] // T1 == T2
     } else {
       val res = (in match {
         // these cases must all be `<: Phrase[T2]`, because they match on in.
@@ -49,59 +49,59 @@ object OperationalSemantics {
         case _: Ident[_]   => in
 
         case l: Lambda[_, _] =>
-          Lambda(l.param, substitute(p1, p2, l.body))
+          Lambda(l.param, substitute(phrase, `for`, l.body))
 
         case app: Apply[a, T2] =>
-          val newFun = substitute(p1, p2, app.fun)
-          val newArg = substitute(p1, p2, app.arg)
+          val newFun = substitute(phrase, `for`, app.fun)
+          val newArg = substitute(phrase, `for`, app.arg)
           Apply(newFun, newArg)
 
         case pair: Pair[a, b] =>
-          Pair(substitute(p1, p2, pair.fst), substitute(p1, p2, pair.snd))
+          Pair(substitute(phrase, `for`, pair.fst), substitute(phrase, `for`, pair.snd))
 
-        case p: Proj1[T2, b] => Proj1(substitute(p1, p2, p.pair))
-        case p: Proj2[a, T2] => Proj2(substitute(p1, p2, p.pair))
+        case p: Proj1[T2, b] => Proj1(substitute(phrase, `for`, p.pair))
+        case p: Proj2[a, T2] => Proj2(substitute(phrase, `for`, p.pair))
 
         case Record(fields@_*) =>
-          Record(fields.map(f => substitute(p1, p2, f)):_*)
+          Record(fields.map(f => substitute(phrase, `for`, f)):_*)
 
         case FieldAccess(n, record) =>
-          FieldAccess(n, substitute(p1, p2, record))
+          FieldAccess(n, substitute(phrase, `for`, record))
 
-        case LengthPhrase(array) => LengthPhrase(substitute(p1, p2, array))
+        case LengthPhrase(array) => LengthPhrase(substitute(phrase, `for`, array))
 
         case ArrayExpAccessPhrase(array, index) =>
-          ArrayExpAccessPhrase(substitute(p1, p2, array), substitute(p1, p2, index))
+          ArrayExpAccessPhrase(substitute(phrase, `for`, array), substitute(phrase, `for`, index))
 
         case ArrayAccAccessPhrase(array, index) =>
-          ArrayAccAccessPhrase(substitute(p1, p2, array), substitute(p1, p2, index))
+          ArrayAccAccessPhrase(substitute(phrase, `for`, array), substitute(phrase, `for`, index))
 
         case _: SkipPhrase => in
 
         case Seq(c1, c2) =>
-          Seq(substitute(p1, p2, c1), substitute(p1, p2, c2))
+          Seq(substitute(phrase, `for`, c1), substitute(phrase, `for`, c2))
 
         case NewPhrase(f) =>
-          NewPhrase(substitute(p1, p2, f))
+          NewPhrase(substitute(phrase, `for`, f))
 
         case Assign(lhs, rhs) =>
-          Assign(substitute(p1, p2, lhs), substitute(p1, p2, rhs))
+          Assign(substitute(phrase, `for`, lhs), substitute(phrase, `for`, rhs))
 
         case i: IfThenElse[T2] =>
-          val newCond = substitute(p1, p2, i.cond)
-          val newThenP = substitute(p1, p2, i.thenP)
-          val newElseP = substitute(p1, p2, i.elseP)
+          val newCond = substitute(phrase, `for`, i.cond)
+          val newThenP = substitute(phrase, `for`, i.thenP)
+          val newElseP = substitute(phrase, `for`, i.elseP)
           IfThenElse(newCond, newThenP, newElseP)
 
         case ForPhrase(n, body) =>
-          ForPhrase(substitute(p1, p2, n), substitute(p1, p2, body))
+          ForPhrase(substitute(phrase, `for`, n), substitute(phrase, `for`, body))
 
         case _: Literal    => in
 
         case BinOp(op, lhs, rhs) =>
-          BinOp(op, substitute(p1, p2, lhs), substitute(p1, p2, rhs))
+          BinOp(op, substitute(phrase, `for`, lhs), substitute(phrase, `for`, rhs))
 
-        case PatternPhrase(pattern) => PatternPhrase(pattern.substitute(p1, p2))
+        case PatternPhrase(pattern) => PatternPhrase(pattern.substitute(phrase, `for`))
       }).asInstanceOf[Phrase[T2]]
       res.t = in.t // preserve type
       res
@@ -143,7 +143,7 @@ object OperationalSemantics {
     new Evaluator[T1 -> T2, (Phrase[T1] => Phrase[T2])] {
       def apply(s: Store, p: Phrase[T1 -> T2]): (Phrase[T1] => Phrase[T2]) = {
         p match {
-          case l: Lambda[T1, T2] => (arg: Phrase[T1]) => substitute(arg, l.param, in = l.body)
+          case l: Lambda[T1, T2] => (arg: Phrase[T1]) => substitute(arg, `for` = l.param, in = l.body)
           case Ident(_) | Apply(_, _) | IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
             throw new Exception("This should never happen")
         }

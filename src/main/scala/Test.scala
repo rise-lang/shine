@@ -1,5 +1,6 @@
 import Core._
 import DSL._
+import Rewriting.Rewrite
 
 import scala.collection.immutable.HashMap
 
@@ -171,9 +172,25 @@ object Test extends App {
 
     val p = p4
 
-    println( Printer.toC(p) )
+    println("========================")
 
     println(p)
+
+    println("========================")
+
+    println( Printer.toC(p) )
+
+    println("========================")
+
+    val pp = Rewrite(Rewrite(p0))
+
+    println(pp)
+
+    println("========================")
+
+    println( Printer.toC(pp) )
+
+    println("========================")
 
     println(OperationalSemantics.eval(store, p))
   }
@@ -337,6 +354,14 @@ object Test extends App {
     println( p )
 
     println( TypeChecker(p) )
+
+    val pp = Rewrite(Rewrite(Rewrite(Rewrite(Rewrite(p)))))
+
+    TypeChecker(pp)
+
+    println( pp )
+
+    println( Printer.toC(pp) )
 
     println( OperationalSemantics.eval(store, p) )
   }
