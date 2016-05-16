@@ -156,7 +156,26 @@ object OperationalSemantics {
     new Evaluator[T1 -> (T2 -> T3), (Phrase[T1] => Phrase[T2] => Phrase[T3])] {
       def apply(s: Store, p: Phrase[T1 -> (T2 -> T3)]): (Phrase[T1] => Phrase[T2] => Phrase[T3]) = {
         p match {
-          case l: Lambda[T1, T2 -> T3] => (arg: Phrase[T1]) => eval(s, substitute(arg, `for` = l.param, in = l.body))
+          case l: Lambda[T1, T2 -> T3] => (arg: Phrase[T1]) =>
+            eval(s, substitute(arg, `for` = l.param, in = l.body))(UnaryFunctionEvaluator)
+
+          case Ident(_) | Apply(_, _) | IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
+            throw new Exception("This should never happen")
+        }
+      }
+    }
+
+  implicit def TrinaryFunctionEvaluator[T1 <: PhraseType,
+                                        T2 <: PhraseType,
+                                        T3 <: PhraseType,
+                                        T4 <: PhraseType]: Evaluator[T1 -> (T2 -> (T3 -> T4)),
+                                                                     (Phrase[T1] => Phrase[T2] => Phrase[T3] => Phrase[T4])] =
+    new Evaluator[T1 -> (T2 -> (T3 -> T4)), (Phrase[T1] => Phrase[T2] => Phrase[T3] => Phrase[T4])] {
+      def apply(s: Store, p: Phrase[T1 -> (T2 -> (T3 -> T4))]): (Phrase[T1] => Phrase[T2] => Phrase[T3] => Phrase[T4]) = {
+        p match {
+          case l: Lambda[T1, T2 -> (T3 -> T4)] => (arg: Phrase[T1]) =>
+            eval(s, substitute(arg, `for` = l.param, in = l.body))(BinaryFunctionEvaluator)
+
           case Ident(_) | Apply(_, _) | IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
             throw new Exception("This should never happen")
         }

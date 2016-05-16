@@ -611,7 +611,9 @@ object Test extends App {
     store = store + (x.name -> makeArrayData(1, 2, 3, 4))
     store = store + (out.name -> makeArrayData(0))
 
-    val f = λ( (x1, x2) => x1 + x2 )
+//    val f = λ( (x1, x2) => x1 + x2 )
+
+    val f = λ( x1 => λ( x2 => x1 + x2 ) )
 
     val p = out := reduce(f, 0, x)
 
@@ -668,7 +670,8 @@ object Test extends App {
     store = store + (y.name -> makeArrayData(makeArrayData(5, 6), makeArrayData(7, 8)))
     store = store + (out.name -> makeArrayData(makeArrayData(0, 0), makeArrayData(0, 0)))
 
-    val add = λ( (x, y) => x + y )
+//    val add = λ( (x, y) => x + y )
+    val add = λ( x => λ( y => x + y ) )
     val mult = λ( x => x._1 * x._2 )
 
     val p = out := map(λ( row =>

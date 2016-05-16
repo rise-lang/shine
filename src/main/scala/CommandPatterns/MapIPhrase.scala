@@ -4,11 +4,14 @@ import Core._
 import Core.PhraseType._
 import Core.OperationalSemantics._
 
-case class MapIPhrase(out: Phrase[AccType], f: Phrase[AccType -> (ExpType -> CommandType)], in: Phrase[ExpType]) extends CommandPattern {
+case class MapIPhrase(out: Phrase[AccType],
+                      f: Phrase[AccType -> (ExpType -> CommandType)],
+                      in: Phrase[ExpType]) extends CommandPattern {
+
   override def typeCheck(): CommandType = {
     import TypeChecker._
-    (TypeChecker(in), TypeChecker(out)) match {
-      case (ExpType(ArrayType(n, dt1)), AccType(ArrayType(m, dt2))) if n == m =>
+    (TypeChecker(out), TypeChecker(in)) match {
+      case (AccType(ArrayType(n, dt2)), ExpType(ArrayType(m, dt1))) if n == m =>
         setParamType(f, AccType(dt2))
         setSecondParamType(f, ExpType(dt1))
         TypeChecker(f) match {
@@ -21,7 +24,7 @@ case class MapIPhrase(out: Phrase[AccType], f: Phrase[AccType -> (ExpType -> Com
             }
           case t => error(t.toString, "FunctionType")
         }
-      case t => error(t.toString, "ArrayType")
+      case t => error(t.toString, "(ArrayType, ArrayType)")
     }
   }
 
@@ -41,4 +44,5 @@ case class MapIPhrase(out: Phrase[AccType], f: Phrase[AccType -> (ExpType -> Com
       OperationalSemantics.eval(sOld, comm)
     } )
   }
+
 }

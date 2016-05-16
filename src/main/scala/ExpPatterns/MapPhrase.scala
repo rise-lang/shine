@@ -15,8 +15,7 @@ case class MapPhrase(f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) exte
           case FunctionType(ExpType(t), ExpType(dt2)) =>
             if (dt1 == t) ExpType(ArrayType(n, dt2))
             else {
-              error(dt1.toString + " and " + t.toString,
-                expected = "them to match")
+              error(dt1.toString + " and " + t.toString, expected = "them to match")
             }
           case t => error(t.toString, "FunctionType")
         }

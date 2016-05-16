@@ -44,7 +44,9 @@ object TypeChecker {
     }
   }
 
-  def setSecondParamType[T1 <: PhraseType, T2 <: PhraseType, T3 <: PhraseType](p: Phrase[T1 -> (T2 -> T3)], t: T2): Unit = {
+  def setSecondParamType[T1 <: PhraseType,
+                         T2 <: PhraseType,
+                         T3 <: PhraseType](p: Phrase[T1 -> (T2 -> T3)], t: T2): Unit = {
     p match {
       case l: Lambda[T1, T2 -> T3] =>  setParamType(l.body, t)
 
@@ -63,6 +65,33 @@ object TypeChecker {
       case IfThenElse(_, thenP, elseP) =>
         setSecondParamType(thenP, t)
         setSecondParamType(elseP, t)
+
+      case Ident(_) => throw new Exception("This should never happen")
+    }
+  }
+
+  def setThirdParamType[T1 <: PhraseType,
+                        T2 <: PhraseType,
+                        T3 <: PhraseType,
+                        T4 <: PhraseType](p: Phrase[T1 -> (T2 -> (T3 -> T4))], t: T3): Unit = {
+    p match {
+      case l: Lambda[T1, T2 -> (T3 -> T4)] =>  setSecondParamType(l.body, t)
+
+      case app: Apply[a, T1 -> (T2 -> (T3 -> T4))] =>
+        val fun = Lift.liftFunction(app.fun)
+        setThirdParamType(fun(app.arg), t)
+
+      case p1: Proj1[T1 -> (T2 -> (T3 -> T4)), b] =>
+        val pair = Lift.liftPair(p1.pair)
+        setThirdParamType(pair._1, t)
+
+      case p2: Proj2[a, T1 -> (T2 -> (T3 -> T4))] =>
+        val pair = Lift.liftPair(p2.pair)
+        setThirdParamType(pair._2, t)
+
+      case IfThenElse(_, thenP, elseP) =>
+        setThirdParamType(thenP, t)
+        setThirdParamType(elseP, t)
 
       case Ident(_) => throw new Exception("This should never happen")
     }

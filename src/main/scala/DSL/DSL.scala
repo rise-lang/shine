@@ -157,13 +157,13 @@ object join {
 }
 
 object reduce {
-  def apply(f: Phrase[ExpType x ExpType -> ExpType]) =
+  def apply(f: Phrase[ExpType -> (ExpType -> ExpType)]) =
     λ( (init, array) => ReducePhrase(f, init, array))
 
-  def apply(f: Phrase[ExpType x ExpType -> ExpType], init: Phrase[ExpType]) =
+  def apply(f: Phrase[ExpType -> (ExpType -> ExpType)], init: Phrase[ExpType]) =
     λ( array => ReducePhrase(f, init, array))
 
-  def apply(f: Phrase[ExpType x ExpType -> ExpType], init: Phrase[ExpType],
+  def apply(f: Phrase[ExpType -> (ExpType -> ExpType)], init: Phrase[ExpType],
             array: Phrase[ExpType]) = ReducePhrase(f, init, array)
 }
 
