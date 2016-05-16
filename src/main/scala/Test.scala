@@ -607,7 +607,7 @@ object Test extends App {
   {
     var store = HashMap[String, Data]()
     val x = identifier("x", ExpType(ArrayType(4, int)))
-    val out = identifier("out", AccType(ArrayType(1, int)))
+    val out = identifier("out", AccType(int))
     store = store + (x.name -> makeArrayData(1, 2, 3, 4))
     store = store + (out.name -> makeArrayData(0))
 
@@ -672,11 +672,30 @@ object Test extends App {
     val mult = λ( x => x._1 * x._2 )
 
     val p = out := map(λ( row =>
-        join(map(λ( col =>
+        map(λ( col =>
           reduce(add, 0, map(mult, zip(row, col)))
-        ), y))
+        ), y)
       ), x)
 
+    println( p )
+
+    println( TypeChecker(p) )
+
+    println( OperationalSemantics.eval(store, p) )
+  }
+
+  {
+    var store = HashMap[String, Data]()
+    val x = identifier("x", ExpType(ArrayType(4, int)))
+    val y = identifier("y", ExpType(ArrayType(4, int)))
+    val out = identifier("out", AccType(ArrayType(4, int)))
+    store = store + (x.name -> makeArrayData(1, 2, 3, 4))
+    store = store + (y.name -> makeArrayData(2, 3, 4, 5))
+    store = store + (out.name -> makeArrayData(0, 0, 0, 0))
+
+    val f = λ(AccType(int))(o => λ(i => o := i + 4 )  )
+
+    val p = mapI(out, f, x)
     println( p )
 
     println( TypeChecker(p) )

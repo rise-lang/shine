@@ -1,10 +1,10 @@
-package Patterns
+package ExpPatterns
 
 import Core._
 import Core.PhraseType._
 import Core.OperationalSemantics._
 
-case class IteratePhrase(n: Int, f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) extends Pattern {
+case class IteratePhrase(n: Int, f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) extends ExpPattern {
 
   override def typeCheck(): ExpType = {
     import TypeChecker._
@@ -20,7 +20,7 @@ case class IteratePhrase(n: Int, f: Phrase[ExpType -> ExpType], array: Phrase[Ex
     }
   }
 
-  override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): Pattern = {
+  override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): ExpPattern = {
     IteratePhrase(n,
       OperationalSemantics.substitute(phrase, `for`, f),
       OperationalSemantics.substitute(phrase, `for`, array))

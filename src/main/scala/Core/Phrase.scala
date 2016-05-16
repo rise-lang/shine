@@ -69,4 +69,6 @@ object BinOp {
 
 }
 
-final case class PatternPhrase(pattern: Pattern) extends Phrase[ExpType]
+final case class ExpPatternPhrase(pattern: ExpPattern) extends Phrase[ExpType]
+
+final case class CommandPatternPhrase(pattern: CommandPattern) extends Phrase[CommandType]

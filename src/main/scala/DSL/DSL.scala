@@ -3,7 +3,8 @@ package DSL
 import Core.OperationalSemantics._
 import Core.PhraseType._
 import Core._
-import Patterns._
+import ExpPatterns._
+import CommandPatterns._
 
 object VarType {
   def apply(dataType: DataType) = ExpType(dataType) x AccType(dataType)
@@ -177,6 +178,11 @@ object iterate {
 object length {
   def apply[T <: BasePhraseTypes](array: Phrase[T]) =
     LengthPhrase(array)
+}
+
+object mapI {
+  def apply(out: Phrase[AccType], f: Phrase[AccType -> (ExpType -> CommandType)], in: Phrase[ExpType]) =
+    MapIPhrase(out, f, in)
 }
 
 

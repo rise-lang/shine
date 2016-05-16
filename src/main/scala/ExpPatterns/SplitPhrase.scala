@@ -1,9 +1,9 @@
-package Patterns
+package ExpPatterns
 
 import Core._
 import Core.OperationalSemantics._
 
-case class SplitPhrase(n: Int, array: Phrase[ExpType]) extends Pattern {
+case class SplitPhrase(n: Int, array: Phrase[ExpType]) extends ExpPattern {
 
   override def typeCheck(): ExpType = {
     import TypeChecker._
@@ -14,11 +14,11 @@ case class SplitPhrase(n: Int, array: Phrase[ExpType]) extends Pattern {
     }
   }
 
-  override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): Pattern = {
+  override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): ExpPattern = {
     SplitPhrase(n, OperationalSemantics.substitute(phrase, `for`, array))
   }
 
-  override def eval(s: OperationalSemantics.Store): OperationalSemantics.Data = {
+  override def eval(s: Store): Data = {
     OperationalSemantics.eval(s, array) match {
       case ArrayData(arrayE) =>
 

@@ -101,7 +101,9 @@ object OperationalSemantics {
         case BinOp(op, lhs, rhs) =>
           BinOp(op, substitute(phrase, `for`, lhs), substitute(phrase, `for`, rhs))
 
-        case PatternPhrase(pattern) => PatternPhrase(pattern.substitute(phrase, `for`))
+        case ExpPatternPhrase(pattern) => ExpPatternPhrase(pattern.substitute(phrase, `for`))
+
+        case CommandPatternPhrase(pattern) => CommandPatternPhrase(pattern.substitute(phrase, `for`))
       }).asInstanceOf[Phrase[T2]]
       res.t = in.t // preserve type
       res
@@ -139,11 +141,22 @@ object OperationalSemantics {
   }
 
 
-  implicit def FunctionEvaluator[T1 <: PhraseType, T2 <: PhraseType]: Evaluator[T1 -> T2, (Phrase[T1] => Phrase[T2])] =
+  implicit def UnaryFunctionEvaluator[T1 <: PhraseType, T2 <: PhraseType]: Evaluator[T1 -> T2, (Phrase[T1] => Phrase[T2])] =
     new Evaluator[T1 -> T2, (Phrase[T1] => Phrase[T2])] {
       def apply(s: Store, p: Phrase[T1 -> T2]): (Phrase[T1] => Phrase[T2]) = {
         p match {
           case l: Lambda[T1, T2] => (arg: Phrase[T1]) => substitute(arg, `for` = l.param, in = l.body)
+          case Ident(_) | Apply(_, _) | IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
+            throw new Exception("This should never happen")
+        }
+      }
+    }
+
+  implicit def BinaryFunctionEvaluator[T1 <: PhraseType, T2 <: PhraseType, T3 <: PhraseType]: Evaluator[T1 -> (T2 -> T3), (Phrase[T1] => Phrase[T2] => Phrase[T3])] =
+    new Evaluator[T1 -> (T2 -> T3), (Phrase[T1] => Phrase[T2] => Phrase[T3])] {
+      def apply(s: Store, p: Phrase[T1 -> (T2 -> T3)]): (Phrase[T1] => Phrase[T2] => Phrase[T3]) = {
+        p match {
+          case l: Lambda[T1, T2 -> T3] => (arg: Phrase[T1]) => eval(s, substitute(arg, `for` = l.param, in = l.body))
           case Ident(_) | Apply(_, _) | IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
             throw new Exception("This should never happen")
         }
@@ -201,7 +214,8 @@ object OperationalSemantics {
               case BinOp.Op.MOD => evalIntExp(s, lhs) % evalIntExp(s, rhs)
             }
 
-          case PatternPhrase(pattern) => pattern.eval(s)
+          case ExpPatternPhrase(pattern) =>
+            pattern.eval(s)
 
           case Apply(_, _) | IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
             throw new Exception("This should never happen")
@@ -267,11 +281,12 @@ object OperationalSemantics {
           case ForPhrase(nP, bodyP) =>
             val n = evalIntExp(s, nP)
             val body = eval(s, bodyP)
-            var s1 = s
-            for (i <- 0 until n) {
-              s1 = eval(s1, body(Literal(i)))
-            }
-            s1
+            (0 until n).foldLeft(s)( (s1, i) => {
+              eval(s1, body(Literal(i)))
+            } )
+
+
+          case CommandPatternPhrase(pattern) => pattern.eval(s)
 
           case Apply(_, _) | IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
             throw new Exception("This should never happen")

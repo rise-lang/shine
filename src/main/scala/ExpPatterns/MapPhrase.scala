@@ -1,21 +1,21 @@
-package Patterns
+package ExpPatterns
 
 import Core._
 import Core.PhraseType._
 import Core.OperationalSemantics._
 
-case class MapPhrase(f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) extends Pattern {
+case class MapPhrase(f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) extends ExpPattern {
 
   override def typeCheck(): ExpType = {
     import TypeChecker._
     TypeChecker(array) match {
-      case ExpType(ArrayType(n, dt)) =>
-        setParamType(f, ExpType(dt))
+      case ExpType(ArrayType(n, dt1)) =>
+        setParamType(f, ExpType(dt1))
         TypeChecker(f) match {
-          case FunctionType(ExpType(t1), ExpType(t2)) =>
-            if (dt == t1) ExpType(ArrayType(n, t2))
+          case FunctionType(ExpType(t), ExpType(dt2)) =>
+            if (dt1 == t) ExpType(ArrayType(n, dt2))
             else {
-              error(dt.toString + " and " + t1.toString,
+              error(dt1.toString + " and " + t.toString,
                 expected = "them to match")
             }
           case t => error(t.toString, "FunctionType")
@@ -24,11 +24,12 @@ case class MapPhrase(f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) exte
     }
   }
 
-  override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): Pattern = {
+  override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): ExpPattern = {
     MapPhrase(OperationalSemantics.substitute(phrase, `for`, f), OperationalSemantics.substitute(phrase, `for`, array))
   }
 
-  override def eval(s: OperationalSemantics.Store): OperationalSemantics.Data = {
+  override def eval(s: Store): Data = {
+    import OperationalSemantics._
     val fE = OperationalSemantics.eval(s, f)
     OperationalSemantics.eval(s, array) match {
       case ArrayData(xs) =>

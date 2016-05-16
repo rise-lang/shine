@@ -56,7 +56,7 @@ object Printer {
 
       case BinOp(op, lhs, rhs) => "(" + toC(lhs) + " " + op.toString + " " + toC(rhs) + ")"
 
-      case Lambda(_, _) | Apply(_, _) | Pair(_, _) | PatternPhrase(_) =>
+      case Lambda(_, _) | Apply(_, _) | Pair(_, _) | ExpPatternPhrase(_) | CommandPatternPhrase(_) =>
         throw new Exception("This should not happen")
     }
   }

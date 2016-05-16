@@ -44,6 +44,30 @@ object TypeChecker {
     }
   }
 
+  def setSecondParamType[T1 <: PhraseType, T2 <: PhraseType, T3 <: PhraseType](p: Phrase[T1 -> (T2 -> T3)], t: T2): Unit = {
+    p match {
+      case l: Lambda[T1, T2 -> T3] =>  setParamType(l.body, t)
+
+      case app: Apply[a, T1 -> (T2 -> T3)] =>
+        val fun = Lift.liftFunction(app.fun)
+        setSecondParamType(fun(app.arg), t)
+
+      case p1: Proj1[T1 -> (T2 -> T3), b] =>
+        val pair = Lift.liftPair(p1.pair)
+        setSecondParamType(pair._1, t)
+
+      case p2: Proj2[a, T1 -> (T2 -> T3)] =>
+        val pair = Lift.liftPair(p2.pair)
+        setSecondParamType(pair._2, t)
+
+      case IfThenElse(_, thenP, elseP) =>
+        setSecondParamType(thenP, t)
+        setSecondParamType(elseP, t)
+
+      case Ident(_) => throw new Exception("This should never happen")
+    }
+  }
+
   def apply[T <: PhraseType](p: Phrase[T]): T = {
     val phraseType = (p match {
 
@@ -161,7 +185,9 @@ object TypeChecker {
         check(TypeChecker(rhs), ExpType(int))
         ExpType(int)
 
-      case PatternPhrase(pattern) => pattern.typeCheck()
+      case ExpPatternPhrase(pattern) => pattern.typeCheck()
+
+      case CommandPatternPhrase(pattern) => pattern.typeCheck()
 
     }).asInstanceOf[T]
     p.t = phraseType

@@ -31,7 +31,8 @@ object Rewrite {
       case ForPhrase(n, body)                 => ForPhrase(apply(n), apply(body))
       case l: Literal                         => l
       case BinOp(op, lhs, rhs)                => BinOp(op, apply(lhs), apply(rhs))
-      case PatternPhrase(pattern)             => PatternPhrase(pattern)
+      case ExpPatternPhrase(pattern)          => ExpPatternPhrase(pattern)
+      case CommandPatternPhrase(pattern)      => CommandPatternPhrase(pattern)
     }).asInstanceOf[Phrase[T]]
     res.t = p.t
     res

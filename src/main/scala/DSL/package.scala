@@ -42,7 +42,7 @@ package object DSL {
     def `@`(index: Phrase[ExpType]) = ArrayExpAccessPhrase(e, index)
   }
 
-  implicit class PatternExtensions(p: Pattern) {
+  implicit class ExpPatternExtensions(p: ExpPattern) {
     def _1() = FieldAccess(0, p)
 
     def _2() = FieldAccess(1, p)
@@ -59,5 +59,7 @@ package object DSL {
     def acc = π2(v)
   }
 
-  implicit def toPatternPhrase(p: Pattern): PatternPhrase = PatternPhrase(p)
+  implicit def toExpPatternPhrase(p: ExpPattern): ExpPatternPhrase = ExpPatternPhrase(p)
+
+  implicit def toCommandPatternPhrase(p: CommandPattern): CommandPatternPhrase = CommandPatternPhrase(p)
 }
