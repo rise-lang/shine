@@ -87,6 +87,22 @@ object `new` {
   }
 }
 
+object fst {
+  def apply(record: Phrase[ExpType]) = FstExprPhrase(record)
+}
+
+object snd {
+  def apply(record: Phrase[ExpType]) = SndExprPhrase(record)
+}
+
+object fstAcc {
+  def apply(record: Phrase[AccType]) = FstAccPhrase(record)
+}
+
+object sndAcc {
+  def apply(record: Phrase[AccType]) = SndAccPhrase(record)
+}
+
 object π1 {
   def apply[T1 <: PhraseType, T2 <: PhraseType](pair: Phrase[T1 x T2]) = Proj1Phrase(pair)
 }

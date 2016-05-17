@@ -18,8 +18,12 @@ object Rewrite {
       case pair: PairPhrase[a, b]                   => PairPhrase(apply(pair.fst), apply(pair.snd))
       case p: Proj1Phrase[T, b]                     => Proj1Phrase(apply(p.pair))
       case p: Proj2Phrase[a, T]                     => Proj1Phrase(apply(p.pair))
-      case RecordExpPhase(fields@_*)                  => RecordExpPhase(fields.map(apply):_*)
-      case FieldAccessExpPhrase(n, record)             => FieldAccessExpPhrase(n, apply(record))
+      case RecordExpPhase(fst, snd)                 => RecordExpPhase(apply(fst), apply(snd))
+      case FstExprPhrase(record)                    => FstExprPhrase(apply(record))
+      case SndExprPhrase(record)                    => SndExprPhrase(apply(record))
+      case RecordAccPhase(fst, snd)                 => RecordAccPhase(apply(fst), apply(snd))
+      case FstAccPhrase(record)                     => FstAccPhrase(apply(record))
+      case SndAccPhrase(record)                     => SndAccPhrase(apply(record))
       case LengthPhrase(array)                => LengthPhrase(apply(array))
       case ArrayExpAccessPhrase(array, index) => ArrayExpAccessPhrase(apply(array), apply(index))
       case ArrayAccAccessPhrase(array, index) => ArrayAccAccessPhrase(apply(array), apply(index))
@@ -32,6 +36,7 @@ object Rewrite {
       case l: LiteralPhrase                         => l
       case BinOpPhrase(op, lhs, rhs)                => BinOpPhrase(op, apply(lhs), apply(rhs))
       case ExpPatternPhrase(pattern)          => ExpPatternPhrase(pattern)
+      case AccPatternPhrase(pattern)          => AccPatternPhrase(pattern)
       case CommandPatternPhrase(pattern)      => CommandPatternPhrase(pattern)
     }).asInstanceOf[Phrase[T]]
     res.t = p.t

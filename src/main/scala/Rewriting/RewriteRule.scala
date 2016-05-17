@@ -48,9 +48,13 @@ object RewriteRules {
       RecordExpPhase(lhs `@` i, rhs `@` i)
   })
 
-  val recordFieldAccess = RewriteRule("record field access", {
-    case FieldAccessExpPhrase(i, RecordExpPhase(fields@_*)) => fields(i)
+  val fstAccess = RewriteRule("record field access", {
+    case FstExprPhrase(RecordExpPhase(fst, _)) => fst
   })
 
-  val rules: Vector[RewriteRule] = Vector(betaReduction, mapToFor, joinToFor, mapIndex, splitIndex, zipIndex, recordFieldAccess)
+  val sndAccess = RewriteRule("record field access", {
+    case SndExprPhrase(RecordExpPhase(_, snd)) => snd
+  })
+
+  val rules: Vector[RewriteRule] = Vector(betaReduction, mapToFor, joinToFor, mapIndex, splitIndex, zipIndex, fstAccess, sndAccess)
 }

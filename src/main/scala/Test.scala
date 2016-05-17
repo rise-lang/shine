@@ -161,13 +161,13 @@ object Test extends App {
     }
 
     val p3 = p2 match {
-      case ForPhrase(n, LambdaPhrase(i, AssignPhrase(acc, BinOpPhrase(op, FieldAccessExpPhrase(j, lhs), FieldAccessExpPhrase(k, rhs))))) =>
-        ForPhrase(n, LambdaPhrase(i, AssignPhrase(acc, BinOpPhrase(op, FieldAccessExpPhrase(j, zipIndex(lhs)), FieldAccessExpPhrase(k, zipIndex(rhs))))))
+      case ForPhrase(n, LambdaPhrase(i, AssignPhrase(acc, BinOpPhrase(op, FstExprPhrase(lhs), SndExprPhrase(rhs))))) =>
+        ForPhrase(n, LambdaPhrase(i, AssignPhrase(acc, BinOpPhrase(op, FstExprPhrase(zipIndex(lhs)), SndExprPhrase(zipIndex(rhs))))))
     }
 
     val p4 = p3 match {
       case ForPhrase(n, LambdaPhrase(i, AssignPhrase(acc, BinOpPhrase(op, lhs, rhs)))) =>
-        ForPhrase(n, LambdaPhrase(i, AssignPhrase(acc, BinOpPhrase(op, recordFieldAccess(lhs), recordFieldAccess(rhs)))))
+        ForPhrase(n, LambdaPhrase(i, AssignPhrase(acc, BinOpPhrase(op, fstAccess(lhs), sndAccess(rhs)))))
     }
 
     val p = p4

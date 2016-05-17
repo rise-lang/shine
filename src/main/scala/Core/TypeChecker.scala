@@ -131,12 +131,33 @@ object TypeChecker {
           case t => error(t.toString, PairType.toString)
         }
 
-      case RecordExpPhase(fields@_*) =>
-        ExpType(RecordType( fields.map(f => TypeChecker(f).dataType):_* ))
+      case RecordExpPhase(fst, snd) =>
+        ExpType(RecordType( TypeChecker(fst).dataType, TypeChecker(snd).dataType ))
 
-      case FieldAccessExpPhrase(n, record) =>
+      case FstExprPhrase(record) =>
         TypeChecker(record) match {
-          case ExpType(RecordType(fields@_*)) => ExpType(fields(n))
+          case ExpType(RecordType(fst, snd)) => ExpType(fst)
+          case t => error(t.toString, "Something else")
+        }
+
+      case SndExprPhrase(record) =>
+        TypeChecker(record) match {
+          case ExpType(RecordType(fst, snd)) => ExpType(snd)
+          case t => error(t.toString, "Something else")
+        }
+
+      case RecordAccPhase(fst, snd) =>
+        AccType(RecordType( TypeChecker(fst).dataType, TypeChecker(snd).dataType ))
+
+      case FstAccPhrase(record) =>
+        TypeChecker(record) match {
+          case AccType(RecordType(fst, snd)) => ExpType(fst)
+          case t => error(t.toString, "Something else")
+        }
+
+      case SndAccPhrase(record) =>
+        TypeChecker(record) match {
+          case AccType(RecordType(fst, snd)) => ExpType(snd)
           case t => error(t.toString, "Something else")
         }
 
@@ -215,6 +236,8 @@ object TypeChecker {
         ExpType(int)
 
       case ExpPatternPhrase(pattern) => pattern.typeCheck()
+
+      case AccPatternPhrase(pattern) => pattern.typeCheck()
 
       case CommandPatternPhrase(pattern) => pattern.typeCheck()
 

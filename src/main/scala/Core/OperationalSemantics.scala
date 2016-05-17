@@ -13,7 +13,7 @@ object OperationalSemantics {
   final case class Int4Data(i0: Int, i1: Int, i2: Int, i3: Int) extends Data(int4)
   final case class FloatData(f: Float) extends Data(float)
   final case class ArrayData(a: Vector[Data]) extends Data(ArrayType(a.length, a.head.dataType))
-  final case class RecordData(fields: Data*) extends Data(RecordType(fields.map(_.dataType):_*))
+  final case class RecordData(fst: Data, snd: Data) extends Data(RecordType(fst.dataType, snd.dataType))
 
   object makeArrayData {
     def apply(seq: Data*) = ArrayData(Vector(seq: _*))
@@ -22,7 +22,7 @@ object OperationalSemantics {
   sealed trait AccIdentifier
   case class NamedIdentifier(name: String) extends AccIdentifier
   case class ArrayAccessIdentifier(array: AccIdentifier, index: Int) extends AccIdentifier
-  case class RecordIdentiers(fields: AccIdentifier*) extends AccIdentifier
+  case class RecordIdentiers(fst: AccIdentifier, snd: AccIdentifier) extends AccIdentifier
 
   implicit def IntToIntData(i: Int): IntData = IntData(i)
 
@@ -63,17 +63,23 @@ object OperationalSemantics {
         case p: Proj1Phrase[T2, b] => Proj1Phrase(substitute(phrase, `for`, p.pair))
         case p: Proj2Phrase[a, T2] => Proj2Phrase(substitute(phrase, `for`, p.pair))
 
-        case RecordExpPhase(fields@_*) =>
-          RecordExpPhase(fields.map(f => substitute(phrase, `for`, f)):_*)
+        case RecordExpPhase(fst, snd) =>
+          RecordExpPhase(substitute(phrase, `for`, fst), substitute(phrase, `for`, snd))
 
-        case RecordAccPhase(fields@_*) =>
-          RecordAccPhase(fields.map(f => substitute(phrase, `for`, f)):_*)
+        case RecordAccPhase(fst, snd) =>
+          RecordAccPhase(substitute(phrase, `for`, fst), substitute(phrase, `for`, snd))
 
-        case FieldAccessExpPhrase(n, record) =>
-          FieldAccessExpPhrase(n, substitute(phrase, `for`, record))
+        case FstExprPhrase(record) =>
+          FstExprPhrase(substitute(phrase, `for`, record))
 
-        case FieldAccessAccPhrase(n, record) =>
-          FieldAccessAccPhrase(n, substitute(phrase, `for`, record))
+        case SndExprPhrase(record) =>
+          SndExprPhrase(substitute(phrase, `for`, record))
+
+        case FstAccPhrase(record) =>
+          FstAccPhrase(substitute(phrase, `for`, record))
+
+        case SndAccPhrase(record) =>
+          SndAccPhrase(substitute(phrase, `for`, record))
 
         case LengthPhrase(array) => LengthPhrase(substitute(phrase, `for`, array))
 
@@ -214,13 +220,18 @@ object OperationalSemantics {
         p match {
           case IdentPhrase(name) => s(name)
 
-          case RecordExpPhase(fields@_*) =>
-            RecordData(fields.map(f => eval(s, f)): _*)
+          case RecordExpPhase(fst, snd) =>
+            RecordData(eval(s, fst), eval(s, snd))
 
-          case FieldAccessExpPhrase(n, record) =>
-            val data: Data = eval(s, record)
-            data match {
-              case r: RecordData => r.fields(n)
+          case FstExprPhrase(record) =>
+            eval(s, record) match {
+              case r: RecordData => r.fst
+              case _ => throw new Exception("This should not happen")
+            }
+
+          case SndExprPhrase(record) =>
+            eval(s, record) match {
+              case r: RecordData => r.snd
               case _ => throw new Exception("This should not happen")
             }
 
@@ -262,13 +273,18 @@ object OperationalSemantics {
         p match {
           case IdentPhrase(name) => NamedIdentifier(name)
 
-          case RecordAccPhase(fields@_*) =>
-            RecordIdentiers(fields.map(f => eval(s, f)): _*)
+          case RecordAccPhase(fst, snd) =>
+            RecordIdentiers(eval(s, fst), eval(s, snd))
 
-          case FieldAccessAccPhrase(n, record) =>
-            val data: AccIdentifier = eval(s, record)
-            data match {
-              case r: RecordIdentiers => r.fields(n)
+          case FstAccPhrase(record) =>
+            eval(s, record) match {
+              case r: RecordIdentiers => r.fst
+              case _ => throw new Exception("This should not happen")
+            }
+
+          case SndAccPhrase(record) =>
+            eval(s, record) match {
+              case r: RecordIdentiers => r.snd
               case _ => throw new Exception("This should not happen")
             }
 

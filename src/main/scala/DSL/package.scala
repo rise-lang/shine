@@ -16,7 +16,7 @@ package object DSL {
     def %(rhs: Phrase[ExpType]) = BinOpPhrase(BinOpPhrase.Op.MOD, lhs, rhs)
   }
 
-  implicit class CallLambda[T1 <: PhraseType, T2 <: PhraseType](fun: LambdaPhrase[T1, T2]) {
+  implicit class CallLambda[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 -> T2]) {
     def apply(arg: Phrase[T1]) = ApplyPhrase(fun, arg)
   }
 
@@ -35,17 +35,17 @@ package object DSL {
   implicit def toLiteral(i: Int): LiteralPhrase = LiteralPhrase(i)
 
   implicit class ExpPhraseExtensions(e: Phrase[ExpType]) {
-    def _1() = FieldAccessExpPhrase(0, e)
+    def _1() = FstExprPhrase(e)
 
-    def _2() = FieldAccessExpPhrase(1, e)
+    def _2() = SndExprPhrase(e)
 
     def `@`(index: Phrase[ExpType]) = ArrayExpAccessPhrase(e, index)
   }
 
   implicit class ExpPatternExtensions(p: ExpPattern) {
-    def _1() = FieldAccessExpPhrase(0, p)
+    def _1() = FstExprPhrase(p)
 
-    def _2() = FieldAccessExpPhrase(1, p)
+    def _2() = SndExprPhrase(p)
 
     def `@`(index: Phrase[ExpType]) = ArrayExpAccessPhrase(p, index)
   }

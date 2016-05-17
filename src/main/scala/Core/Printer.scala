@@ -11,12 +11,15 @@ object Printer {
       case Proj1Phrase(pair) => toC(Lift.liftPair(pair)._1)
       case Proj2Phrase(pair) => toC(Lift.liftPair(pair)._2)
 
-      case RecordExpPhase(fields @ _*) =>
+      case RecordExpPhase(fst, snd) =>
         val dt = p.t match { case ExpType(dataType) => dataType }
-        s"(struct ${nameOf(dt)}){ ${fields.map(toC).reduce( (x,y) => x + ", " + y )} }"
+        s"(struct ${nameOf(dt)}){ ${toC(fst)} , ${toC(snd)} }"
 
-      case FieldAccessExpPhrase(n, record) =>
-        toC(record) + "._" + n.toString
+      case FstExprPhrase(record) =>
+        toC(record) + ".fst"
+
+      case SndExprPhrase(record) =>
+        toC(record) + ".snd"
 
       case LengthPhrase(array) => array.t match {
         case ExpType(ArrayType(n, dt)) => n.toString
@@ -63,8 +66,8 @@ object Printer {
 
   def nameOf(t: DataType): String = {
     t match {
-      case RecordType(fieldTs@_*) =>
-        "record" + fieldTs.foldLeft("")((s, dt) => s + "_" + nameOf(dt))
+      case RecordType(fst, snd) =>
+        "record" + nameOf(fst) + "_" + nameOf(snd)
       case ArrayType(n, elemType) => nameOf(elemType) + "*"
       case `bool`   => "int"
       case `int`    => "int"
@@ -75,10 +78,8 @@ object Printer {
 
   def definitionOf(t: DataType): String = {
     t match {
-      case RecordType(fieldTs@_*) =>
-        s"typedef struct ${nameOf(t)} {\n ${fieldTs.zipWithIndex.map({ case (field, i) =>
-          nameOf(field) + " _" + i.toString + ";\n"
-        })} }\n"
+      case RecordType(fst, snd) =>
+        s"typedef struct ${nameOf(t)} {\n ${nameOf(fst)} _fst;\n ${nameOf(snd)} _snd;\n }\n"
 
       case _ => nameOf(t)
     }
@@ -90,14 +91,12 @@ object Printer {
       case IntData(i) => i.toString
       case Int4Data(i0, i1, i2, i3) => s"(int4)( $i0, $i1, $i2, $i3 )"
       case FloatData(f) => f.toString + "f"
-      case RecordData(fields @ _*) =>
-        val ts = t match {
-          case RecordType(fieldTs@_*) => fieldTs
+      case RecordData(fst, snd) =>
+        val (fstT, sndT) = t match {
+          case r: RecordType => (r.fst, r.snd)
           case _ => throw new Exception("This should never happen")
         }
-        s"(struct ${nameOf(t)}){ ${fields.zipWithIndex.map({ case (field, i) =>
-          literal(field, ts(i))
-        }).reduce( (x,y) => x + ", " + y )} }"
+        s"(struct ${nameOf(t)}){ ${literal(fst, fstT)} , ${literal(snd, sndT)} }"
       case ArrayData(a) =>
         val elemT = t match {
           case ArrayType(_, et) => et

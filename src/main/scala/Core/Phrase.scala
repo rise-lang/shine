@@ -24,13 +24,17 @@ final case class Proj1Phrase[T1 <: PhraseType, T2 <: PhraseType](pair: Phrase[T1
 final case class Proj2Phrase[T1 <: PhraseType, T2 <: PhraseType](pair: Phrase[T1 x T2])
   extends Phrase[T2]
 
-final case class RecordExpPhase(fields: Phrase[ExpType]*) extends Phrase[ExpType]
+final case class RecordExpPhase(fst: Phrase[ExpType], snd: Phrase[ExpType]) extends Phrase[ExpType]
 
-final case class RecordAccPhase(fields: Phrase[AccType]*) extends Phrase[AccType]
+final case class RecordAccPhase(fst: Phrase[AccType], snd: Phrase[AccType]) extends Phrase[AccType]
 
-final case class FieldAccessExpPhrase(n: Int, record: Phrase[ExpType]) extends Phrase[ExpType]
+final case class FstExprPhrase(record: Phrase[ExpType]) extends Phrase[ExpType]
 
-final case class FieldAccessAccPhrase(n: Int, record: Phrase[AccType]) extends Phrase[AccType]
+final case class SndExprPhrase(record: Phrase[ExpType]) extends Phrase[ExpType]
+
+final case class FstAccPhrase(record: Phrase[AccType]) extends Phrase[AccType]
+
+final case class SndAccPhrase(record: Phrase[AccType]) extends Phrase[AccType]
 
 final case class LengthPhrase[T <: BasePhraseTypes](array: Phrase[T]) extends Phrase[ExpType]
 
