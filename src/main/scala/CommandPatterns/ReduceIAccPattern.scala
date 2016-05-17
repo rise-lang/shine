@@ -4,10 +4,10 @@ import Core._
 import Core.PhraseType._
 import Core.OperationalSemantics._
 
-case class ReduceIAccPhrase(out: Phrase[AccType],
-                            f: Phrase[AccType -> (ExpType -> (ExpType -> CommandType))],
-                            init: Phrase[ExpType],
-                            in: Phrase[ExpType]) extends CommandPattern {
+case class ReduceIAccPattern(out: Phrase[AccType],
+                             f: Phrase[AccType -> (ExpType -> (ExpType -> CommandType))],
+                             init: Phrase[ExpType],
+                             in: Phrase[ExpType]) extends CommandPattern {
 
   override def typeCheck(): CommandType = {
     import TypeChecker._
@@ -31,7 +31,7 @@ case class ReduceIAccPhrase(out: Phrase[AccType],
   }
 
   override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): CommandPattern = {
-    ReduceIAccPhrase(
+    ReduceIAccPattern(
       OperationalSemantics.substitute(phrase, `for`, out),
       OperationalSemantics.substitute(phrase, `for`, f),
       OperationalSemantics.substitute(phrase, `for`, init),
@@ -39,12 +39,11 @@ case class ReduceIAccPhrase(out: Phrase[AccType],
   }
 
   override def eval(s: Store): Store = {
-    val fE: (Phrase[AccType]) => (Phrase[ExpType]) => (Phrase[ExpType]) => Phrase[CommandType] =
-      OperationalSemantics.eval(s, f)(TrinaryFunctionEvaluator)
+    val fE = OperationalSemantics.eval(s, f)(TrinaryFunctionEvaluator)
     val n = TypeChecker(in) match { case ExpType(ArrayType(len, _)) => len }
 
     (0 until n).foldLeft(s)( (sOld, i) => {
-      val comm = fE(out)(ArrayExpAccessPhrase(in, Literal(i)))(init)
+      val comm = fE(out)(ArrayExpAccessPhrase(in, LiteralPhrase(i)))(init)
       OperationalSemantics.eval(sOld, comm)
     } )
   }

@@ -18,29 +18,29 @@ object TypeChecker {
 
   def setParamType[T1 <: PhraseType, T2 <: PhraseType](p: Phrase[T1 -> T2], t: T1): Unit = {
     p match {
-      case l: Lambda[T1, T2] =>
+      case l: LambdaPhrase[T1, T2] =>
         l.param.t match {
           case null => l.param.t = t // infer the type if not set
           case _ =>
         }
 
-      case app: Apply[a, T1 -> T2] =>
+      case app: ApplyPhrase[a, T1 -> T2] =>
         val fun = Lift.liftFunction(app.fun)
         setParamType(fun(app.arg), t)
 
-      case p1: Proj1[T1 -> T2, b] =>
+      case p1: Proj1Phrase[T1 -> T2, b] =>
         val pair = Lift.liftPair(p1.pair)
         setParamType(pair._1, t)
 
-      case p2: Proj2[a, T1 -> T2] =>
+      case p2: Proj2Phrase[a, T1 -> T2] =>
         val pair = Lift.liftPair(p2.pair)
         setParamType(pair._2, t)
 
-      case IfThenElse(_, thenP, elseP) =>
+      case IfThenElsePhrase(_, thenP, elseP) =>
         setParamType(thenP, t)
         setParamType(elseP, t)
 
-      case Ident(_) => throw new Exception("This should never happen")
+      case IdentPhrase(_) => throw new Exception("This should never happen")
     }
   }
 
@@ -48,25 +48,25 @@ object TypeChecker {
                          T2 <: PhraseType,
                          T3 <: PhraseType](p: Phrase[T1 -> (T2 -> T3)], t: T2): Unit = {
     p match {
-      case l: Lambda[T1, T2 -> T3] =>  setParamType(l.body, t)
+      case l: LambdaPhrase[T1, T2 -> T3] =>  setParamType(l.body, t)
 
-      case app: Apply[a, T1 -> (T2 -> T3)] =>
+      case app: ApplyPhrase[a, T1 -> (T2 -> T3)] =>
         val fun = Lift.liftFunction(app.fun)
         setSecondParamType(fun(app.arg), t)
 
-      case p1: Proj1[T1 -> (T2 -> T3), b] =>
+      case p1: Proj1Phrase[T1 -> (T2 -> T3), b] =>
         val pair = Lift.liftPair(p1.pair)
         setSecondParamType(pair._1, t)
 
-      case p2: Proj2[a, T1 -> (T2 -> T3)] =>
+      case p2: Proj2Phrase[a, T1 -> (T2 -> T3)] =>
         val pair = Lift.liftPair(p2.pair)
         setSecondParamType(pair._2, t)
 
-      case IfThenElse(_, thenP, elseP) =>
+      case IfThenElsePhrase(_, thenP, elseP) =>
         setSecondParamType(thenP, t)
         setSecondParamType(elseP, t)
 
-      case Ident(_) => throw new Exception("This should never happen")
+      case IdentPhrase(_) => throw new Exception("This should never happen")
     }
   }
 
@@ -75,40 +75,40 @@ object TypeChecker {
                         T3 <: PhraseType,
                         T4 <: PhraseType](p: Phrase[T1 -> (T2 -> (T3 -> T4))], t: T3): Unit = {
     p match {
-      case l: Lambda[T1, T2 -> (T3 -> T4)] =>  setSecondParamType(l.body, t)
+      case l: LambdaPhrase[T1, T2 -> (T3 -> T4)] =>  setSecondParamType(l.body, t)
 
-      case app: Apply[a, T1 -> (T2 -> (T3 -> T4))] =>
+      case app: ApplyPhrase[a, T1 -> (T2 -> (T3 -> T4))] =>
         val fun = Lift.liftFunction(app.fun)
         setThirdParamType(fun(app.arg), t)
 
-      case p1: Proj1[T1 -> (T2 -> (T3 -> T4)), b] =>
+      case p1: Proj1Phrase[T1 -> (T2 -> (T3 -> T4)), b] =>
         val pair = Lift.liftPair(p1.pair)
         setThirdParamType(pair._1, t)
 
-      case p2: Proj2[a, T1 -> (T2 -> (T3 -> T4))] =>
+      case p2: Proj2Phrase[a, T1 -> (T2 -> (T3 -> T4))] =>
         val pair = Lift.liftPair(p2.pair)
         setThirdParamType(pair._2, t)
 
-      case IfThenElse(_, thenP, elseP) =>
+      case IfThenElsePhrase(_, thenP, elseP) =>
         setThirdParamType(thenP, t)
         setThirdParamType(elseP, t)
 
-      case Ident(_) => throw new Exception("This should never happen")
+      case IdentPhrase(_) => throw new Exception("This should never happen")
     }
   }
 
   def apply[T <: PhraseType](p: Phrase[T]): T = {
     val phraseType = (p match {
 
-      case i: Ident[T] =>
+      case i: IdentPhrase[T] =>
         if (i.t == null)
           throw new TypeException("Type error: type not set for " + i)
         i.t
 
-      case Lambda(param, body) =>
+      case LambdaPhrase(param, body) =>
         TypeChecker(param) -> TypeChecker(body)
 
-      case Apply(fun, arg) =>
+      case ApplyPhrase(fun, arg) =>
         setParamType(fun, TypeChecker(arg))
         TypeChecker(fun) match {
           case ft: FunctionType[_, _] =>
@@ -117,24 +117,24 @@ object TypeChecker {
           case t => error(t.toString, FunctionType.toString)
         }
 
-      case Pair(a, b) => TypeChecker(a) x TypeChecker(b)
+      case PairPhrase(a, b) => TypeChecker(a) x TypeChecker(b)
 
-      case Proj1(pair) =>
+      case Proj1Phrase(pair) =>
         TypeChecker(pair) match {
           case pt: PairType[_, _] => pt.t1
           case t => error(t.toString, PairType.toString)
         }
 
-      case Proj2(pair) =>
+      case Proj2Phrase(pair) =>
         TypeChecker(pair) match {
           case pt: PairType[_, _] => pt.t2
           case t => error(t.toString, PairType.toString)
         }
 
-      case Record(fields@_*) =>
+      case RecordExpPhase(fields@_*) =>
         ExpType(RecordType( fields.map(f => TypeChecker(f).dataType):_* ))
 
-      case FieldAccess(n, record) =>
+      case FieldAccessExpPhrase(n, record) =>
         TypeChecker(record) match {
           case ExpType(RecordType(fields@_*)) => ExpType(fields(n))
           case t => error(t.toString, "Something else")
@@ -147,8 +147,8 @@ object TypeChecker {
           case t => error(t.toString, "ArrayType")
         }
 
-      case ArrayExpAccessPhrase(array, index) =>
-        check(TypeChecker(index), ExpType(int))
+      case ArrayExpAccessPhrase(array, i) =>
+        check(TypeChecker(i), ExpType(int))
         TypeChecker(array) match {
           case ExpType(ArrayType(n, t)) => ExpType(t)
           case t => error(t.toString, "ArrayType")
@@ -163,7 +163,7 @@ object TypeChecker {
 
       case _: SkipPhrase => CommandType()
 
-      case Seq(c1, c2) =>
+      case SeqPhrase(c1, c2) =>
         check(TypeChecker(c1), CommandType())
         check(TypeChecker(c2), CommandType())
         CommandType()
@@ -180,7 +180,7 @@ object TypeChecker {
             "(" + ExpType.toString + "(A)," + AccType.toString + "(A))," + CommandType() + ")")
         }
 
-      case Assign(lhs, rhs) =>
+      case AssignPhrase(lhs, rhs) =>
         (TypeChecker(lhs), TypeChecker(rhs)) match {
           case (AccType(d1), ExpType(d2)) =>
             if (d1 == d2) {
@@ -191,7 +191,7 @@ object TypeChecker {
           case t => error(t.toString, "(" + AccType.toString() + "(A)," + ExpType.toString() + "(A))")
         }
 
-      case IfThenElse(cond, thenP, elseP) =>
+      case IfThenElsePhrase(cond, thenP, elseP) =>
         val condT = TypeChecker(cond)
         if (condT != ExpType(int) && condT != ExpType(bool)) {
           error(condT.toString, expected = "int or boolean")
@@ -207,9 +207,9 @@ object TypeChecker {
         check(TypeChecker(body), FunctionType(ExpType(int), CommandType()))
         CommandType()
 
-      case Literal(d) => ExpType(d.dataType)
+      case LiteralPhrase(d) => ExpType(d.dataType)
 
-      case BinOp(op, lhs, rhs) =>
+      case BinOpPhrase(op, lhs, rhs) =>
         check(TypeChecker(lhs), ExpType(int))
         check(TypeChecker(rhs), ExpType(int))
         ExpType(int)

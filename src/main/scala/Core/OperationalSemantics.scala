@@ -22,6 +22,7 @@ object OperationalSemantics {
   sealed trait AccIdentifier
   case class NamedIdentifier(name: String) extends AccIdentifier
   case class ArrayAccessIdentifier(array: AccIdentifier, index: Int) extends AccIdentifier
+  case class RecordIdentiers(fields: AccIdentifier*) extends AccIdentifier
 
   implicit def IntToIntData(i: Int): IntData = IntData(i)
 
@@ -46,27 +47,33 @@ object OperationalSemantics {
       val res = (in match {
         // these cases must all be `<: Phrase[T2]`, because they match on in.
         // The casts should be unnecessary
-        case _: Ident[_]   => in
+        case _: IdentPhrase[_]   => in
 
-        case l: Lambda[_, _] =>
-          Lambda(l.param, substitute(phrase, `for`, l.body))
+        case l: LambdaPhrase[_, _] =>
+          LambdaPhrase(l.param, substitute(phrase, `for`, l.body))
 
-        case app: Apply[a, T2] =>
+        case app: ApplyPhrase[a, T2] =>
           val newFun = substitute(phrase, `for`, app.fun)
           val newArg = substitute(phrase, `for`, app.arg)
-          Apply(newFun, newArg)
+          ApplyPhrase(newFun, newArg)
 
-        case pair: Pair[a, b] =>
-          Pair(substitute(phrase, `for`, pair.fst), substitute(phrase, `for`, pair.snd))
+        case pair: PairPhrase[a, b] =>
+          PairPhrase(substitute(phrase, `for`, pair.fst), substitute(phrase, `for`, pair.snd))
 
-        case p: Proj1[T2, b] => Proj1(substitute(phrase, `for`, p.pair))
-        case p: Proj2[a, T2] => Proj2(substitute(phrase, `for`, p.pair))
+        case p: Proj1Phrase[T2, b] => Proj1Phrase(substitute(phrase, `for`, p.pair))
+        case p: Proj2Phrase[a, T2] => Proj2Phrase(substitute(phrase, `for`, p.pair))
 
-        case Record(fields@_*) =>
-          Record(fields.map(f => substitute(phrase, `for`, f)):_*)
+        case RecordExpPhase(fields@_*) =>
+          RecordExpPhase(fields.map(f => substitute(phrase, `for`, f)):_*)
 
-        case FieldAccess(n, record) =>
-          FieldAccess(n, substitute(phrase, `for`, record))
+        case RecordAccPhase(fields@_*) =>
+          RecordAccPhase(fields.map(f => substitute(phrase, `for`, f)):_*)
+
+        case FieldAccessExpPhrase(n, record) =>
+          FieldAccessExpPhrase(n, substitute(phrase, `for`, record))
+
+        case FieldAccessAccPhrase(n, record) =>
+          FieldAccessAccPhrase(n, substitute(phrase, `for`, record))
 
         case LengthPhrase(array) => LengthPhrase(substitute(phrase, `for`, array))
 
@@ -78,30 +85,32 @@ object OperationalSemantics {
 
         case _: SkipPhrase => in
 
-        case Seq(c1, c2) =>
-          Seq(substitute(phrase, `for`, c1), substitute(phrase, `for`, c2))
+        case SeqPhrase(c1, c2) =>
+          SeqPhrase(substitute(phrase, `for`, c1), substitute(phrase, `for`, c2))
 
         case NewPhrase(f) =>
           NewPhrase(substitute(phrase, `for`, f))
 
-        case Assign(lhs, rhs) =>
-          Assign(substitute(phrase, `for`, lhs), substitute(phrase, `for`, rhs))
+        case AssignPhrase(lhs, rhs) =>
+          AssignPhrase(substitute(phrase, `for`, lhs), substitute(phrase, `for`, rhs))
 
-        case i: IfThenElse[T2] =>
+        case i: IfThenElsePhrase[T2] =>
           val newCond = substitute(phrase, `for`, i.cond)
           val newThenP = substitute(phrase, `for`, i.thenP)
           val newElseP = substitute(phrase, `for`, i.elseP)
-          IfThenElse(newCond, newThenP, newElseP)
+          IfThenElsePhrase(newCond, newThenP, newElseP)
 
         case ForPhrase(n, body) =>
           ForPhrase(substitute(phrase, `for`, n), substitute(phrase, `for`, body))
 
-        case _: Literal    => in
+        case _: LiteralPhrase    => in
 
-        case BinOp(op, lhs, rhs) =>
-          BinOp(op, substitute(phrase, `for`, lhs), substitute(phrase, `for`, rhs))
+        case BinOpPhrase(op, lhs, rhs) =>
+          BinOpPhrase(op, substitute(phrase, `for`, lhs), substitute(phrase, `for`, rhs))
 
         case ExpPatternPhrase(pattern) => ExpPatternPhrase(pattern.substitute(phrase, `for`))
+
+        case AccPatternPhrase(pattern) => AccPatternPhrase(pattern.substitute(phrase, `for`))
 
         case CommandPatternPhrase(pattern) => CommandPatternPhrase(pattern.substitute(phrase, `for`))
       }).asInstanceOf[Phrase[T2]]
@@ -113,19 +122,19 @@ object OperationalSemantics {
   def eval[T <: PhraseType, R](s: Store, p: Phrase[T])
                               (implicit evaluator: Evaluator[T, R]): R = {
     p match {
-      case app: Apply[a, T] =>
+      case app: ApplyPhrase[a, T] =>
         val fun: (Phrase[a]) => Phrase[T] = eval(s, app.fun)
         eval(s, fun(app.arg))
 
-      case p1: Proj1[a, b] =>
+      case p1: Proj1Phrase[a, b] =>
         val pair: (Phrase[a], Phrase[b]) = eval(s, p1.pair)
         eval(s, pair._1)
 
-      case p2: Proj2[a, b] =>
+      case p2: Proj2Phrase[a, b] =>
         val pair: (Phrase[a], Phrase[b]) = eval(s, p2.pair)
         eval(s, pair._2)
 
-      case IfThenElse(cond, thenP, elseP) =>
+      case IfThenElsePhrase(cond, thenP, elseP) =>
         if (evalCondExp(s, cond)) {
           eval(s, thenP)
         } else {
@@ -141,25 +150,30 @@ object OperationalSemantics {
   }
 
 
-  implicit def UnaryFunctionEvaluator[T1 <: PhraseType, T2 <: PhraseType]: Evaluator[T1 -> T2, (Phrase[T1] => Phrase[T2])] =
+  implicit def UnaryFunctionEvaluator[T1 <: PhraseType,
+                                      T2 <: PhraseType]: Evaluator[T1 -> T2,
+                                                                   (Phrase[T1] => Phrase[T2])] =
     new Evaluator[T1 -> T2, (Phrase[T1] => Phrase[T2])] {
       def apply(s: Store, p: Phrase[T1 -> T2]): (Phrase[T1] => Phrase[T2]) = {
         p match {
-          case l: Lambda[T1, T2] => (arg: Phrase[T1]) => substitute(arg, `for` = l.param, in = l.body)
-          case Ident(_) | Apply(_, _) | IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
+          case l: LambdaPhrase[T1, T2] => (arg: Phrase[T1]) => substitute(arg, `for` = l.param, in = l.body)
+          case IdentPhrase(_) | ApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) | Proj1Phrase(_) | Proj2Phrase(_) =>
             throw new Exception("This should never happen")
         }
       }
     }
 
-  implicit def BinaryFunctionEvaluator[T1 <: PhraseType, T2 <: PhraseType, T3 <: PhraseType]: Evaluator[T1 -> (T2 -> T3), (Phrase[T1] => Phrase[T2] => Phrase[T3])] =
+  implicit def BinaryFunctionEvaluator[T1 <: PhraseType,
+                                       T2 <: PhraseType,
+                                       T3 <: PhraseType]: Evaluator[T1 -> (T2 -> T3),
+                                                                    (Phrase[T1] => Phrase[T2] => Phrase[T3])] =
     new Evaluator[T1 -> (T2 -> T3), (Phrase[T1] => Phrase[T2] => Phrase[T3])] {
       def apply(s: Store, p: Phrase[T1 -> (T2 -> T3)]): (Phrase[T1] => Phrase[T2] => Phrase[T3]) = {
         p match {
-          case l: Lambda[T1, T2 -> T3] => (arg: Phrase[T1]) =>
+          case l: LambdaPhrase[T1, T2 -> T3] => (arg: Phrase[T1]) =>
             eval(s, substitute(arg, `for` = l.param, in = l.body))(UnaryFunctionEvaluator)
 
-          case Ident(_) | Apply(_, _) | IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
+          case IdentPhrase(_) | ApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) | Proj1Phrase(_) | Proj2Phrase(_) =>
             throw new Exception("This should never happen")
         }
       }
@@ -173,10 +187,10 @@ object OperationalSemantics {
     new Evaluator[T1 -> (T2 -> (T3 -> T4)), (Phrase[T1] => Phrase[T2] => Phrase[T3] => Phrase[T4])] {
       def apply(s: Store, p: Phrase[T1 -> (T2 -> (T3 -> T4))]): (Phrase[T1] => Phrase[T2] => Phrase[T3] => Phrase[T4]) = {
         p match {
-          case l: Lambda[T1, T2 -> (T3 -> T4)] => (arg: Phrase[T1]) =>
+          case l: LambdaPhrase[T1, T2 -> (T3 -> T4)] => (arg: Phrase[T1]) =>
             eval(s, substitute(arg, `for` = l.param, in = l.body))(BinaryFunctionEvaluator)
 
-          case Ident(_) | Apply(_, _) | IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
+          case IdentPhrase(_) | ApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) | Proj1Phrase(_) | Proj2Phrase(_) =>
             throw new Exception("This should never happen")
         }
       }
@@ -186,9 +200,9 @@ object OperationalSemantics {
     new Evaluator[T1 x T2, (Phrase[T1], Phrase[T2])] {
       def apply(s: Store, p: Phrase[T1 x T2]): (Phrase[T1], Phrase[T2]) = {
         p match {
-          case i: Ident[T1 x T2] => (Ident[T1](i.name), Ident[T2](i.name))
-          case pair: Pair[T1, T2] => (pair.fst, pair.snd)
-          case Apply(_, _) | IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
+          case i: IdentPhrase[T1 x T2] => (IdentPhrase[T1](i.name), IdentPhrase[T2](i.name))
+          case pair: PairPhrase[T1, T2] => (pair.fst, pair.snd)
+          case ApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) | Proj1Phrase(_) | Proj2Phrase(_) =>
             throw new Exception("This should never happen")
         }
       }
@@ -198,12 +212,12 @@ object OperationalSemantics {
     new Evaluator[ExpType, Data] {
       def apply(s: Store, p: Phrase[ExpType]): Data = {
         p match {
-          case Ident(name) => s(name)
+          case IdentPhrase(name) => s(name)
 
-          case Record(fields@_*) =>
+          case RecordExpPhase(fields@_*) =>
             RecordData(fields.map(f => eval(s, f)): _*)
 
-          case FieldAccess(n, record) =>
+          case FieldAccessExpPhrase(n, record) =>
             val data: Data = eval(s, record)
             data match {
               case r: RecordData => r.fields(n)
@@ -222,21 +236,21 @@ object OperationalSemantics {
               case _ => throw new Exception("This should not happen")
             }
 
-          case Literal(d) => d
+          case LiteralPhrase(d) => d
 
-          case BinOp(op, lhs, rhs) =>
+          case BinOpPhrase(op, lhs, rhs) =>
             op match {
-              case BinOp.Op.ADD => evalIntExp(s, lhs) + evalIntExp(s, rhs)
-              case BinOp.Op.SUB => evalIntExp(s, lhs) - evalIntExp(s, rhs)
-              case BinOp.Op.MUL => evalIntExp(s, lhs) * evalIntExp(s, rhs)
-              case BinOp.Op.DIV => evalIntExp(s, lhs) / evalIntExp(s, rhs)
-              case BinOp.Op.MOD => evalIntExp(s, lhs) % evalIntExp(s, rhs)
+              case BinOpPhrase.Op.ADD => evalIntExp(s, lhs) + evalIntExp(s, rhs)
+              case BinOpPhrase.Op.SUB => evalIntExp(s, lhs) - evalIntExp(s, rhs)
+              case BinOpPhrase.Op.MUL => evalIntExp(s, lhs) * evalIntExp(s, rhs)
+              case BinOpPhrase.Op.DIV => evalIntExp(s, lhs) / evalIntExp(s, rhs)
+              case BinOpPhrase.Op.MOD => evalIntExp(s, lhs) % evalIntExp(s, rhs)
             }
 
           case ExpPatternPhrase(pattern) =>
             pattern.eval(s)
 
-          case Apply(_, _) | IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
+          case ApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) | Proj1Phrase(_) | Proj2Phrase(_) =>
             throw new Exception("This should never happen")
         }
       }
@@ -246,7 +260,18 @@ object OperationalSemantics {
     new Evaluator[AccType, AccIdentifier] {
       def apply(s: Store, p: Phrase[AccType]): AccIdentifier = {
         p match {
-          case Ident(name) => NamedIdentifier(name)
+          case IdentPhrase(name) => NamedIdentifier(name)
+
+          case RecordAccPhase(fields@_*) =>
+            RecordIdentiers(fields.map(f => eval(s, f)): _*)
+
+          case FieldAccessAccPhrase(n, record) =>
+            val data: AccIdentifier = eval(s, record)
+            data match {
+              case r: RecordIdentiers => r.fields(n)
+              case _ => throw new Exception("This should not happen")
+            }
+
           case ArrayAccAccessPhrase(arrayP, indexP) =>
             val array = eval(s, arrayP)
             val index = eval(s, indexP) match {
@@ -254,7 +279,10 @@ object OperationalSemantics {
               case _ => throw new Exception("This should not happen")
             }
             ArrayAccessIdentifier(array, index)
-          case Apply(_, _) | IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
+
+          case AccPatternPhrase(pattern) => pattern.eval(s)
+
+          case ApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) | Proj1Phrase(_) | Proj2Phrase(_) =>
             throw new Exception("This should never happen")
         }
       }
@@ -264,21 +292,21 @@ object OperationalSemantics {
     new Evaluator[CommandType, Store] {
       def apply(s: Store, p: Phrase[CommandType]): Store = {
         p match {
-          case Ident(_) => throw new Exception("This should never happen")
+          case IdentPhrase(_) => throw new Exception("This should never happen")
 
           case SkipPhrase() => s
 
-          case Seq(c1, c2) =>
+          case SeqPhrase(c1, c2) =>
             val s1 = eval(s, c1)
             eval(s1, c2)
 
           case NewPhrase(fP) =>
             val f = eval(s, fP)
-            val arg = Ident[ExpType x AccType](newName())
+            val arg = IdentPhrase[ExpType x AccType](newName())
             val s1: Store = eval(s + (arg.name -> 0), f(arg))
             s1 - arg.name
 
-          case Assign(lhs, rhs) =>
+          case AssignPhrase(lhs, rhs) =>
             def evalAssign(s: Store, lhs: AccIdentifier, rhs: Data): (String, Data) = {
               lhs match {
                 case NamedIdentifier(name) =>
@@ -301,13 +329,13 @@ object OperationalSemantics {
             val n = evalIntExp(s, nP)
             val body = eval(s, bodyP)
             (0 until n).foldLeft(s)( (s1, i) => {
-              eval(s1, body(Literal(i)))
+              eval(s1, body(LiteralPhrase(i)))
             } )
 
 
           case CommandPatternPhrase(pattern) => pattern.eval(s)
 
-          case Apply(_, _) | IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
+          case ApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) | Proj1Phrase(_) | Proj2Phrase(_) =>
             throw new Exception("This should never happen")
         }
       }

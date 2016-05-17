@@ -4,7 +4,7 @@ import Core._
 import Core.PhraseType._
 import Core.OperationalSemantics._
 
-case class MapPhrase(f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) extends ExpPattern {
+case class MapPattern(f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) extends ExpPattern {
 
   override def typeCheck(): ExpType = {
     import TypeChecker._
@@ -24,7 +24,7 @@ case class MapPhrase(f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) exte
   }
 
   override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): ExpPattern = {
-    MapPhrase(OperationalSemantics.substitute(phrase, `for`, f), OperationalSemantics.substitute(phrase, `for`, array))
+    MapPattern(OperationalSemantics.substitute(phrase, `for`, f), OperationalSemantics.substitute(phrase, `for`, array))
   }
 
   override def eval(s: Store): Data = {
@@ -32,7 +32,7 @@ case class MapPhrase(f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) exte
     val fE = OperationalSemantics.eval(s, f)
     OperationalSemantics.eval(s, array) match {
       case ArrayData(xs) =>
-        ArrayData(xs.map { x => OperationalSemantics.eval(s, fE(Literal(x))) })
+        ArrayData(xs.map { x => OperationalSemantics.eval(s, fE(LiteralPhrase(x))) })
 
       case _ => throw new Exception("This should not happen")
     }

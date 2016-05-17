@@ -17,7 +17,7 @@ object Test extends App {
     store = store + (out.name -> 0)
 
     val p = `new`(v =>
-      (π2(v) := Literal(42) + Literal(1)) `;`
+      (π2(v) := LiteralPhrase(42) + LiteralPhrase(1)) `;`
         `new`(v2 =>
           (π2(v2) := π1(v) + 1) `;`
             (π2(v) := π1(v2))
@@ -156,18 +156,18 @@ object Test extends App {
     val p1 = mapToFor(p0)
 
     val p2 = p1 match {
-      case ForPhrase(n, Lambda(i, Assign(acc, expr))) =>
-        ForPhrase(n, Lambda(i, Assign(acc, betaReduction(expr))))
+      case ForPhrase(n, LambdaPhrase(i, AssignPhrase(acc, expr))) =>
+        ForPhrase(n, LambdaPhrase(i, AssignPhrase(acc, betaReduction(expr))))
     }
 
     val p3 = p2 match {
-      case ForPhrase(n, Lambda(i, Assign(acc, BinOp(op, FieldAccess(j, lhs), FieldAccess(k, rhs))))) =>
-        ForPhrase(n, Lambda(i, Assign(acc, BinOp(op, FieldAccess(j, zipIndex(lhs)), FieldAccess(k, zipIndex(rhs))))))
+      case ForPhrase(n, LambdaPhrase(i, AssignPhrase(acc, BinOpPhrase(op, FieldAccessExpPhrase(j, lhs), FieldAccessExpPhrase(k, rhs))))) =>
+        ForPhrase(n, LambdaPhrase(i, AssignPhrase(acc, BinOpPhrase(op, FieldAccessExpPhrase(j, zipIndex(lhs)), FieldAccessExpPhrase(k, zipIndex(rhs))))))
     }
 
     val p4 = p3 match {
-      case ForPhrase(n, Lambda(i, Assign(acc, BinOp(op, lhs, rhs)))) =>
-        ForPhrase(n, Lambda(i, Assign(acc, BinOp(op, recordFieldAccess(lhs), recordFieldAccess(rhs)))))
+      case ForPhrase(n, LambdaPhrase(i, AssignPhrase(acc, BinOpPhrase(op, lhs, rhs)))) =>
+        ForPhrase(n, LambdaPhrase(i, AssignPhrase(acc, BinOpPhrase(op, recordFieldAccess(lhs), recordFieldAccess(rhs)))))
     }
 
     val p = p4
@@ -233,7 +233,7 @@ object Test extends App {
     val p = `for`(length(in1), { i =>
       λ(AccType(int) x ExpType(RecordType(int, int))) {
         p => π1(p) := f(π2(p))
-      }(Pair(out `@` i, zip(in1, in2) `@` i))
+      }(PairPhrase(out `@` i, zip(in1, in2) `@` i))
     })
 
     println(p)
@@ -305,7 +305,7 @@ object Test extends App {
     store = store + (out.name -> makeArrayData(0, 0, 0, 0, 0))
 
     val p = `for`(length(out), { i =>
-      (out `@` i) := Record(in1 `@` i, in2 `@` i)._1 + Record(in1 `@` i, in2 `@` i)._2
+      (out `@` i) := RecordExpPhase(in1 `@` i, in2 `@` i)._1 + RecordExpPhase(in1 `@` i, in2 `@` i)._2
     })
 
     println( p )
@@ -387,7 +387,7 @@ object Test extends App {
       `for`(2, { j =>
         λ( AccType(int) x ExpType(ArrayType(2, int)) ) { p =>
           π1(p) := π2(p) `@` j
-        }(Pair(out `@` (i*2+j), map(g, split(2, zip(x, y))) `@` i))
+        }(PairPhrase(out `@` (i*2+j), map(g, split(2, zip(x, y))) `@` i))
       })
     })
 
@@ -542,7 +542,7 @@ object Test extends App {
 
     val p = `for`(2, { i =>
       `for`(2, { j =>
-        out `@` (i*2+j) := f( Record(x `@` (i*2+j), y `@` (i*2+j)) )
+        out `@` (i*2+j) := f( RecordExpPhase(x `@` (i*2+j), y `@` (i*2+j)) )
       })
     })
 
@@ -568,8 +568,8 @@ object Test extends App {
     val p = `for`(2, { i =>
       `for`(2, { j =>
         out `@` (i*2+j) :=
-          Record(x `@` (i*2+j), y `@` (i*2+j))._1 +
-            Record(x `@` (i*2+j), y `@` (i*2+j))._2
+          RecordExpPhase(x `@` (i*2+j), y `@` (i*2+j))._1 +
+            RecordExpPhase(x `@` (i*2+j), y `@` (i*2+j))._2
       })
     })
 

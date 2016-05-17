@@ -6,16 +6,16 @@ import PhraseType.x
 object Printer {
   def toC[T <: PhraseType](p: Phrase[T]): String = {
     p match {
-      case Ident(name) => name
+      case IdentPhrase(name) => name
 
-      case Proj1(pair) => toC(Lift.liftPair(pair)._1)
-      case Proj2(pair) => toC(Lift.liftPair(pair)._2)
+      case Proj1Phrase(pair) => toC(Lift.liftPair(pair)._1)
+      case Proj2Phrase(pair) => toC(Lift.liftPair(pair)._2)
 
-      case Record(fields @ _*) =>
+      case RecordExpPhase(fields @ _*) =>
         val dt = p.t match { case ExpType(dataType) => dataType }
         s"(struct ${nameOf(dt)}){ ${fields.map(toC).reduce( (x,y) => x + ", " + y )} }"
 
-      case FieldAccess(n, record) =>
+      case FieldAccessExpPhrase(n, record) =>
         toC(record) + "._" + n.toString
 
       case LengthPhrase(array) => array.t match {
@@ -29,34 +29,34 @@ object Printer {
 
       case SkipPhrase() => ""
 
-      case Seq(c1, c2) => toC(c1) + ";\n" + toC(c2)
+      case SeqPhrase(c1, c2) => toC(c1) + ";\n" + toC(c2)
 
       case NewPhrase(fP) =>
         val f = Lift.liftFunction(fP)
-        val v = Ident[ExpType x AccType](OperationalSemantics.newName())
+        val v = IdentPhrase[ExpType x AccType](OperationalSemantics.newName())
         val dt = fP.t.inT.t1.dataType
         v.t = PairType(ExpType(dt), AccType(dt))
         s"{\n${nameOf(dt)} ${v.name};\n${toC(f(v))}; \n}"
 
-      case Assign(lhs, rhs) =>
+      case AssignPhrase(lhs, rhs) =>
         toC(lhs) + " = " + toC(rhs) + ";\n"
 
-      case IfThenElse(condP, thenP, elseP) =>
+      case IfThenElsePhrase(condP, thenP, elseP) =>
         s"if (${toC(condP)}) { ${toC(thenP)}; } else { ${toC(elseP)}; }"
 
       case ForPhrase(n, fP) =>
         val f = Lift.liftFunction(fP)
-        val i = Ident[ExpType](OperationalSemantics.newName())
+        val i = IdentPhrase[ExpType](OperationalSemantics.newName())
         i.t = ExpType(int)
         s"for (int ${i.name} = 0; ${i.name} < ${toC(n)}; ++${i.name}) {\n${toC(f(i))}}\n"
 
-      case Literal(d) =>
+      case LiteralPhrase(d) =>
         val dt = p.t match { case ExpType(dataType) => dataType }
         literal(d, dt)
 
-      case BinOp(op, lhs, rhs) => "(" + toC(lhs) + " " + op.toString + " " + toC(rhs) + ")"
+      case BinOpPhrase(op, lhs, rhs) => "(" + toC(lhs) + " " + op.toString + " " + toC(rhs) + ")"
 
-      case Lambda(_, _) | Apply(_, _) | Pair(_, _) | ExpPatternPhrase(_) | CommandPatternPhrase(_) =>
+      case LambdaPhrase(_, _) | ApplyPhrase(_, _) | PairPhrase(_, _) | ExpPatternPhrase(_) | CommandPatternPhrase(_) =>
         throw new Exception("This should not happen")
     }
   }

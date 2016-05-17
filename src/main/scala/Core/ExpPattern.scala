@@ -6,4 +6,6 @@ trait ExpPattern {
   def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): ExpPattern
 
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Data
+
+  def asPhrase = ExpPatternPhrase(this)
 }

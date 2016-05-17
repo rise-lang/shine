@@ -4,9 +4,9 @@ import Core._
 import Core.PhraseType._
 import Core.OperationalSemantics._
 
-case class MapIPhrase(out: Phrase[AccType],
-                      f: Phrase[AccType -> (ExpType -> CommandType)],
-                      in: Phrase[ExpType]) extends CommandPattern {
+case class MapIPattern(out: Phrase[AccType],
+                       f: Phrase[AccType -> (ExpType -> CommandType)],
+                       in: Phrase[ExpType]) extends CommandPattern {
 
   override def typeCheck(): CommandType = {
     import TypeChecker._
@@ -29,7 +29,7 @@ case class MapIPhrase(out: Phrase[AccType],
   }
 
   override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): CommandPattern = {
-    MapIPhrase(
+    MapIPattern(
       OperationalSemantics.substitute(phrase, `for`, out),
       OperationalSemantics.substitute(phrase, `for`, f),
       OperationalSemantics.substitute(phrase, `for`, in))
@@ -40,7 +40,7 @@ case class MapIPhrase(out: Phrase[AccType],
     val n = TypeChecker(in) match { case ExpType(ArrayType(len, _)) => len }
 
     (0 until n).foldLeft(s)( (sOld, i) => {
-      val comm = fE(ArrayAccAccessPhrase(out, Literal(i)))(ArrayExpAccessPhrase(in, Literal(i)))
+      val comm = fE(ArrayAccAccessPhrase(out, LiteralPhrase(i)))(ArrayExpAccessPhrase(in, LiteralPhrase(i)))
       OperationalSemantics.eval(sOld, comm)
     } )
   }
