@@ -3,6 +3,7 @@ import Core._
 import DSL._
 import Rewriting.Rewrite
 import CommandPatterns._
+import Core.PhraseType.->
 import ExpPatterns._
 
 import scala.collection.immutable.HashMap
@@ -775,5 +776,67 @@ object Test extends App {
     println( TypeChecker(p) )
 
     println( OperationalSemantics.eval(store, p) )
+  }
+
+  {
+    val add = λ( x1 => λ( x2 => x1 + x2 ) )
+    val p = λ(ExpType(ArrayType(4, int)))( inp =>
+      reduce(add, 0, map(reduce(add, 0), split(2, inp)))
+    )
+    println("=====")
+    println(p)
+    println("=====")
+
+    val in = identifier("x", ExpType(ArrayType(4, int)))
+    val out = identifier("out", AccType(ArrayType(4, int)))
+    val p2 = Rewriting.Rewriting.acc(p(in), out)
+
+    println("=====")
+    println(p2)
+    println("=====")
+
+//  New(
+//    Lambda(tmp,
+//      Lambda(tmp2,
+//        Lambda(tmp3,
+//          MapI(
+//            tmp.wr,
+//            Lambda(o,
+//              Lambda(x,
+//                Lambda(tmp5,
+//                  Lambda(tmp6,
+//                    ReduceIAcc(
+//                      o,
+//                      Lambda(o',
+//                        Lambda(x',
+//                          Lambda(y,
+//                            Lambda(tmp10,
+//                              Lambda(tmp11,
+//                                o' := tmp10 + tmp11)(y))(x')))),
+//                      tmp6,
+//                      tmp5)
+//                    )(0)
+//                  )(x)
+//                )
+//              ),
+//            tmp3)
+//          )(Split(2, tmp2))
+//        )(input);
+//      Lambda(tmp12,
+//        Lambda(tmp13,
+//         ReduceIAcc(
+//            out,
+//            Lambda(o,
+//              Lambda(x,
+//                Lambda(y,
+//                  Lambda(tmp17,
+//                    Lambda(tmp18,
+//                      o := tmp17 + tmp18)(y))(x)))),
+//            tmp13,
+//            tmp12)
+//          )(0)
+//        )(tmp.rd)
+//      )
+//    )
   }
 }

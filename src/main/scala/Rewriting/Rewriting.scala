@@ -68,6 +68,9 @@ object Rewriting {
         case Split(n, e) => acc(e, SplitAcc(n, A).asPhrase)
 
       }
+
+      // on the fly beta-reduction
+      case ApplyPhrase(fun, arg) => acc(Lift.liftFunction(fun)(arg), A)
     }
   }
 

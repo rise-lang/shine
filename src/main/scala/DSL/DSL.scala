@@ -200,5 +200,3 @@ object mapI {
   def apply(out: Phrase[AccType], f: Phrase[AccType -> (ExpType -> CommandType)], in: Phrase[ExpType]) =
     MapI(out, f, in)
 }
-
-
