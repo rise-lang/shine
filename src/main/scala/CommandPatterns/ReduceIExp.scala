@@ -56,4 +56,6 @@ case class ReduceIExp(out: Phrase[ExpType -> CommandType],
 
   override def toC = ???
 
+  def impl: Phrase[CommandType] = ???
+
 }

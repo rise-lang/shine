@@ -7,9 +7,15 @@ import ExpPatterns._
 import AccPatterns._
 import CommandPatterns._
 
-object Rewriting {
+object RewriteToImperative {
 
-  def acc(E: Phrase[ExpType], A: Phrase[AccType]): Phrase[CommandType] = {
+  def apply(p: Phrase[ExpType -> ExpType]): Phrase[CommandType] = {
+    val in = identifier.exp("input")
+    val out = identifier.acc("output")
+    acc(p(in), out)
+  }
+
+  private def acc(E: Phrase[ExpType], A: Phrase[AccType]): Phrase[CommandType] = {
     E match {
       case x: IdentPhrase[ExpType] if x.t.dataType.isBasicType =>
         A `:=` x
@@ -74,7 +80,7 @@ object Rewriting {
     }
   }
 
-  def exp(E: Phrase[ExpType], C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
+  private def exp(E: Phrase[ExpType], C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
     E match {
       case x: IdentPhrase[ExpType] => C(x)
 
@@ -125,6 +131,13 @@ object Rewriting {
           })
 
       }
+
+      // on the fly beta-reduction
+      case ApplyPhrase(fun, arg) => exp(Lift.liftFunction(fun)(arg), C)
+
+      case IfThenElsePhrase(cond, thenP, elseP) => throw new Exception("This should never happen")
+      case Proj1Phrase(pair) => throw new Exception("This should never happen")
+      case Proj2Phrase(pair) => throw new Exception("This should never happen")
     }
   }
 

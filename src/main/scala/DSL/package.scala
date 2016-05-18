@@ -32,7 +32,9 @@ package object DSL {
   }
 
   implicit class CallLambda[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 -> T2]) {
-    def apply(arg: Phrase[T1]) = ApplyPhrase(fun, arg)
+    // on-the-fly beta-reduction
+    def apply(arg: Phrase[T1]) = Lift.liftFunction(fun)(arg)
+    //def apply(arg: Phrase[T1]) = ApplyPhrase(fun, arg)
   }
 
   implicit class SequentialComposition(c1: Phrase[CommandType]) {
@@ -78,8 +80,8 @@ package object DSL {
   }
 
   implicit class VarExtensions(v: Phrase[VarType]) {
-    def exp = π1(v)
-    def acc = π2(v)
+    def rd = π1(v)
+    def wr = π2(v)
   }
 
   implicit def toExpPatternPhrase(p: ExpPattern): ExpPatternPhrase = ExpPatternPhrase(p)

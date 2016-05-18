@@ -11,15 +11,9 @@
             <option value="$PROJECT_DIR$/project" />
           </set>
         </option>
-        <option name="sbtVersion" value="0.13.8" />
+        <option name="sbtVersion" value="0.13.9" />
         <option name="useAutoImport" value="true" />
         <option name="useOurOwnAutoImport" value="true" />
-        <option name="myModules">
-          <set>
-            <option value="$PROJECT_DIR$" />
-            <option value="$PROJECT_DIR$/project" />
-          </set>
-        </option>
       </SbtProjectSettings>
     </option>
   </component>

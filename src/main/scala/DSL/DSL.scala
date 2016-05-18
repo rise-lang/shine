@@ -113,6 +113,9 @@ object π2 {
 }
 
 object identifier {
+  def exp(name: String) = IdentPhrase[ExpType](name)
+  def acc(name: String) = IdentPhrase[AccType](name)
+
   def apply(name: String) = IdentPhrase[ExpType](name)
 
   def apply[T <: PhraseType](name: String, t: T) = {

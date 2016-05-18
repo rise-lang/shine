@@ -1,7 +1,7 @@
 
 import Core._
 import DSL._
-import Rewriting.Rewrite
+import Rewriting.{Rewrite, RewriteToImperative, SubstituteImplementations}
 import CommandPatterns._
 import Core.PhraseType.->
 import ExpPatterns._
@@ -167,7 +167,7 @@ object Test extends App {
 
     val p1 = mapToFor(p0)
 
-    val p2 = p1 match {
+    val p2 = (p1: @unchecked) match {
       case CommandPatternPhrase(For(n, LambdaPhrase(i, CommandPatternPhrase(Assign(acc, expr))))) =>
         For(n, LambdaPhrase(i, Assign(acc, betaReduction(expr)))).asPhrase
     }
@@ -780,63 +780,43 @@ object Test extends App {
 
   {
     val add = λ( x1 => λ( x2 => x1 + x2 ) )
-    val p = λ(ExpType(ArrayType(4, int)))( inp =>
+    val p = λ(ExpType(ArrayType(4, int)))(inp =>
       reduce(add, 0, map(reduce(add, 0), split(2, inp)))
     )
     println("=====")
     println(p)
     println("=====")
 
-    val in = identifier("x", ExpType(ArrayType(4, int)))
-    val out = identifier("out", AccType(ArrayType(4, int)))
-    val p2 = Rewriting.Rewriting.acc(p(in), out)
+    val p2 = RewriteToImperative(p)
 
     println("=====")
     println(p2)
     println("=====")
 
-//  New(
-//    Lambda(tmp,
-//      Lambda(tmp2,
-//        Lambda(tmp3,
-//          MapI(
-//            tmp.wr,
-//            Lambda(o,
-//              Lambda(x,
-//                Lambda(tmp5,
-//                  Lambda(tmp6,
-//                    ReduceIAcc(
-//                      o,
-//                      Lambda(o',
-//                        Lambda(x',
-//                          Lambda(y,
-//                            Lambda(tmp10,
-//                              Lambda(tmp11,
-//                                o' := tmp10 + tmp11)(y))(x')))),
-//                      tmp6,
-//                      tmp5)
-//                    )(0)
-//                  )(x)
-//                )
-//              ),
-//            tmp3)
-//          )(Split(2, tmp2))
-//        )(input);
-//      Lambda(tmp12,
-//        Lambda(tmp13,
-//         ReduceIAcc(
-//            out,
-//            Lambda(o,
-//              Lambda(x,
-//                Lambda(y,
-//                  Lambda(tmp17,
-//                    Lambda(tmp18,
-//                      o := tmp17 + tmp18)(y))(x)))),
-//            tmp13,
-//            tmp12)
-//          )(0)
-//        )(tmp.rd)
-//      )
-//    )
+// New(λ(tmp,
+//    MapI(tmp.wr, λ(o, λ(x, ReduceIAcc(o, λ(o', λ(x', λ(y, o' := x' + y))), 0, x))), Split(2, x));
+//    ReduceIAcc(out, λ(o, λ(x, λ(y, o := x + y ))), 0, tmp.rd)))
+
+    val p3 = SubstituteImplementations(p2)
+
+    println("=====")
+    println(p3)
+    println("=====")
+
+// New(λ(tmp,
+//    For( Length( Split(2,input) ),
+//      λ(i,
+//        New(λ(accum,
+//          accum.wr := 0 ;
+//          For( Length( Split(2,input)[i] ),
+//            λ(j,
+//              accum.wr := (Split(2, input))[i][j] + accum.rd ) ) ;
+//          (tmp.wr)[i] := accum.rd ) ) ) ) ;
+//    New(λ(accum,
+//      accum.wr := 0 ;
+//      For( Length(tmp.rd),
+//        λ(tmp5,
+//          accum.wr := (tmp.rd)[tmp5] + accum.rd ) ) ;
+//      output := accum.rd ) ) ) )
   }
 }

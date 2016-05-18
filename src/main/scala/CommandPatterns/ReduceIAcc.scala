@@ -5,6 +5,8 @@ import Core.PhraseType._
 import Core.OperationalSemantics._
 import ExpPatterns.Idx
 
+import DSL._
+
 case class ReduceIAcc(out: Phrase[AccType],
                       f: Phrase[AccType -> (ExpType -> (ExpType -> CommandType))],
                       init: Phrase[ExpType],
@@ -51,4 +53,13 @@ case class ReduceIAcc(out: Phrase[AccType],
 
   override def toC = ???
 
+  def impl: Phrase[CommandType] = {
+    `new`( accum => {
+      (accum.wr `:=` init) `;`
+      `for`(length(in), i => {
+        f(accum.wr)(in `@` i)(accum.rd)
+      }) `;`
+      (out `:=` accum.rd)
+    } )
+  }
 }

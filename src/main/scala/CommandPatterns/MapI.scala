@@ -4,6 +4,8 @@ import Core._
 import Core.PhraseType._
 import Core.OperationalSemantics._
 
+import DSL._
+
 import AccPatterns._
 import ExpPatterns._
 
@@ -49,5 +51,11 @@ case class MapI(out: Phrase[AccType],
   }
 
   override def toC = ???
+
+  def impl: Phrase[CommandType] = {
+    `for`(length(in), i => {
+      f( out `@` i )( in `@` i )
+    })
+  }
 
 }
