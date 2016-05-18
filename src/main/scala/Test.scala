@@ -1,13 +1,18 @@
+
 import Core._
 import DSL._
 import Rewriting.Rewrite
+import CommandPatterns._
+import ExpPatterns._
 
 import scala.collection.immutable.HashMap
 
 object Test extends App {
 
   type Data = OperationalSemantics.Data
-  val makeArrayData = OperationalSemantics.makeArrayData
+//  val makeData       = OperationalSemantics.makeData
+  val makeArrayData  = OperationalSemantics.makeArrayData
+//  val makeMatrixData = OperationalSemantics.makeMatrixData
 
   // first test
   {
@@ -113,6 +118,9 @@ object Test extends App {
     store = store + (x.name -> makeArrayData(1, 2, 3, 4))
     store = store + (y.name -> makeArrayData(2, 3, 4, 5))
     store = store + (out.name -> makeArrayData(0, 0, 0, 0))
+//    store = makeArrayData(store, x.name, 1, 2, 3, 4)
+//    store = makeArrayData(store, y.name, 2, 3, 4, 5)
+//    store = makeArrayData(store, out.name, 0, 0, 0, 0)
 
     val p = `for`(2, { i =>
       `for`(2, { j =>
@@ -148,6 +156,9 @@ object Test extends App {
     store = store + (in1.name -> makeArrayData(1, 2, 3, 4, 5))
     store = store + (in2.name -> makeArrayData(2, 3, 4, 5, 6))
     store = store + (out.name -> makeArrayData(0, 0, 0, 0, 0))
+//    store = makeArrayData(store, in1.name, 1, 2, 3, 4, 5)
+//    store = makeArrayData(store, in2.name, 2, 3, 4, 5, 6)
+//    store = makeArrayData(store, out.name, 0, 0, 0, 0, 0)
 
     val p0 = out := expression
 
@@ -156,18 +167,18 @@ object Test extends App {
     val p1 = mapToFor(p0)
 
     val p2 = p1 match {
-      case ForPhrase(n, LambdaPhrase(i, AssignPhrase(acc, expr))) =>
-        ForPhrase(n, LambdaPhrase(i, AssignPhrase(acc, betaReduction(expr))))
+      case CommandPatternPhrase(For(n, LambdaPhrase(i, CommandPatternPhrase(Assign(acc, expr))))) =>
+        For(n, LambdaPhrase(i, Assign(acc, betaReduction(expr)))).asPhrase
     }
 
     val p3 = p2 match {
-      case ForPhrase(n, LambdaPhrase(i, AssignPhrase(acc, BinOpPhrase(op, FstExprPhrase(lhs), SndExprPhrase(rhs))))) =>
-        ForPhrase(n, LambdaPhrase(i, AssignPhrase(acc, BinOpPhrase(op, FstExprPhrase(zipIndex(lhs)), SndExprPhrase(zipIndex(rhs))))))
+      case CommandPatternPhrase(For(n, LambdaPhrase(i, CommandPatternPhrase(Assign(acc, BinOpPhrase(op, ExpPatternPhrase(Fst(lhs)), ExpPatternPhrase(Snd(rhs)))))))) =>
+        For(n, LambdaPhrase(i, Assign(acc, BinOpPhrase(op, Fst(zipIndex(lhs)), Snd(zipIndex(rhs)))))).asPhrase
     }
 
     val p4 = p3 match {
-      case ForPhrase(n, LambdaPhrase(i, AssignPhrase(acc, BinOpPhrase(op, lhs, rhs)))) =>
-        ForPhrase(n, LambdaPhrase(i, AssignPhrase(acc, BinOpPhrase(op, fstAccess(lhs), sndAccess(rhs)))))
+      case CommandPatternPhrase(For(n, LambdaPhrase(i, CommandPatternPhrase(Assign(acc, BinOpPhrase(op, lhs, rhs)))))) =>
+        For(n, LambdaPhrase(i, Assign(acc, BinOpPhrase(op, fstAccess(lhs), sndAccess(rhs))))).asPhrase
     }
 
     val p = p4
@@ -204,6 +215,9 @@ object Test extends App {
     store = store + (in1.name -> makeArrayData(1, 2, 3, 4, 5))
     store = store + (in2.name -> makeArrayData(2, 3, 4, 5, 6))
     store = store + (out.name -> makeArrayData(0, 0, 0, 0, 0))
+//    store = makeArrayData(store, in1.name, 1, 2, 3, 4, 5)
+//    store = makeArrayData(store, in2.name, 2, 3, 4, 5, 6)
+//    store = makeArrayData(store, out.name, 0, 0, 0, 0, 0)
 
     val f = λ( x => x._1 + x._2 )
 
@@ -227,6 +241,9 @@ object Test extends App {
     store = store + (in1.name -> makeArrayData(1, 2, 3, 4, 5))
     store = store + (in2.name -> makeArrayData(2, 3, 4, 5, 6))
     store = store + (out.name -> makeArrayData(0, 0, 0, 0, 0))
+//    store = makeArrayData(store, in1.name, 1, 2, 3, 4, 5)
+//    store = makeArrayData(store, in2.name, 2, 3, 4, 5, 6)
+//    store = makeArrayData(store, out.name, 0, 0, 0, 0, 0)
 
     val f = λ( x => x._1 + x._2 )
 
@@ -254,6 +271,9 @@ object Test extends App {
     store = store + (in1.name -> makeArrayData(1, 2, 3, 4, 5))
     store = store + (in2.name -> makeArrayData(2, 3, 4, 5, 6))
     store = store + (out.name -> makeArrayData(0, 0, 0, 0, 0))
+//    store = makeArrayData(store, in1.name, 1, 2, 3, 4, 5)
+//    store = makeArrayData(store, in2.name, 2, 3, 4, 5, 6)
+//    store = makeArrayData(store, out.name, 0, 0, 0, 0, 0)
 
     val f = λ( x => x._1 + x._2 )
 
@@ -280,6 +300,9 @@ object Test extends App {
     store = store + (in1.name -> makeArrayData(1, 2, 3, 4, 5))
     store = store + (in2.name -> makeArrayData(2, 3, 4, 5, 6))
     store = store + (out.name -> makeArrayData(0, 0, 0, 0, 0))
+//    store = makeArrayData(store, in1.name, 1, 2, 3, 4, 5)
+//    store = makeArrayData(store, in2.name, 2, 3, 4, 5, 6)
+//    store = makeArrayData(store, out.name, 0, 0, 0, 0, 0)
 
     val p = `for`(length(in1), { i =>
       out `@` i := (zip(in1, in2) `@` i)._1 + (zip(in1, in2) `@` i)._2
@@ -303,9 +326,12 @@ object Test extends App {
     store = store + (in1.name -> makeArrayData(1, 2, 3, 4, 5))
     store = store + (in2.name -> makeArrayData(2, 3, 4, 5, 6))
     store = store + (out.name -> makeArrayData(0, 0, 0, 0, 0))
+//    store = makeArrayData(store, in1.name, 1, 2, 3, 4, 5)
+//    store = makeArrayData(store, in2.name, 2, 3, 4, 5, 6)
+//    store = makeArrayData(store, out.name, 0, 0, 0, 0, 0)
 
     val p = `for`(length(out), { i =>
-      (out `@` i) := RecordExpPhase(in1 `@` i, in2 `@` i)._1 + RecordExpPhase(in1 `@` i, in2 `@` i)._2
+      (out `@` i) := Record(in1 `@` i, in2 `@` i)._1 + Record(in1 `@` i, in2 `@` i)._2
     })
 
     println( p )
@@ -326,6 +352,9 @@ object Test extends App {
     store = store + (in1.name -> makeArrayData(1, 2, 3, 4, 5))
     store = store + (in2.name -> makeArrayData(2, 3, 4, 5, 6))
     store = store + (out.name -> makeArrayData(0, 0, 0, 0, 0))
+//    store = makeArrayData(store, in1.name, 1, 2, 3, 4, 5)
+//    store = makeArrayData(store, in2.name, 2, 3, 4, 5, 6)
+//    store = makeArrayData(store, out.name, 0, 0, 0, 0, 0)
 
     val p = `for`(length(out), { i =>
       (out `@` i) := in1 `@` i + in2 `@` i
@@ -346,6 +375,9 @@ object Test extends App {
     store = store + (x.name -> makeArrayData(1, 2, 3, 4))
     store = store + (y.name -> makeArrayData(2, 3, 4, 5))
     store = store + (out.name -> makeArrayData(0, 0, 0, 0))
+//    store = makeArrayData(store, x.name, 1, 2, 3, 4)
+//    store = makeArrayData(store, y.name, 2, 3, 4, 5)
+//    store = makeArrayData(store, out.name, 0, 0, 0, 0)
 
     val f = λ( x => x._1 + x._2)
     val g = λ( x => map(f, x) )
@@ -379,6 +411,9 @@ object Test extends App {
     store = store + (x.name -> makeArrayData(1, 2, 3, 4))
     store = store + (y.name -> makeArrayData(2, 3, 4, 5))
     store = store + (out.name -> makeArrayData(0, 0, 0, 0))
+//    store = makeArrayData(store, x.name, 1, 2, 3, 4)
+//    store = makeArrayData(store, y.name, 2, 3, 4, 5)
+//    store = makeArrayData(store, out.name, 0, 0, 0, 0)
 
     val f = λ( x => x._1 + x._2)
     val g = λ( x => map(f, x) )
@@ -408,6 +443,9 @@ object Test extends App {
     store = store + (x.name -> makeArrayData(1, 2, 3, 4))
     store = store + (y.name -> makeArrayData(2, 3, 4, 5))
     store = store + (out.name -> makeArrayData(0, 0, 0, 0))
+//    store = makeArrayData(store, x.name, 1, 2, 3, 4)
+//    store = makeArrayData(store, y.name, 2, 3, 4, 5)
+//    store = makeArrayData(store, out.name, 0, 0, 0, 0)
 
     val f = λ( x => x._1 + x._2)
     val g = λ( x => map(f, x) )
@@ -435,6 +473,9 @@ object Test extends App {
     store = store + (x.name -> makeArrayData(1, 2, 3, 4))
     store = store + (y.name -> makeArrayData(2, 3, 4, 5))
     store = store + (out.name -> makeArrayData(0, 0, 0, 0))
+//    store = makeArrayData(store, x.name, 1, 2, 3, 4)
+//    store = makeArrayData(store, y.name, 2, 3, 4, 5)
+//    store = makeArrayData(store, out.name, 0, 0, 0, 0)
 
     val f = λ( x => x._1 + x._2)
     val g = λ( x => map(f, x) )
@@ -460,6 +501,9 @@ object Test extends App {
     store = store + (x.name -> makeArrayData(1, 2, 3, 4))
     store = store + (y.name -> makeArrayData(2, 3, 4, 5))
     store = store + (out.name -> makeArrayData(0, 0, 0, 0))
+//    store = makeArrayData(store, x.name, 1, 2, 3, 4)
+//    store = makeArrayData(store, y.name, 2, 3, 4, 5)
+//    store = makeArrayData(store, out.name, 0, 0, 0, 0)
 
     val f = λ( x => x._1 + x._2)
 
@@ -486,6 +530,9 @@ object Test extends App {
     store = store + (x.name -> makeArrayData(1, 2, 3, 4))
     store = store + (y.name -> makeArrayData(2, 3, 4, 5))
     store = store + (out.name -> makeArrayData(0, 0, 0, 0))
+//    store = makeArrayData(store, x.name, 1, 2, 3, 4)
+//    store = makeArrayData(store, y.name, 2, 3, 4, 5)
+//    store = makeArrayData(store, out.name, 0, 0, 0, 0)
 
     val f = λ( x => x._1 + x._2)
 
@@ -512,6 +559,9 @@ object Test extends App {
     store = store + (x.name -> makeArrayData(1, 2, 3, 4))
     store = store + (y.name -> makeArrayData(2, 3, 4, 5))
     store = store + (out.name -> makeArrayData(0, 0, 0, 0))
+//    store = makeArrayData(store, x.name, 1, 2, 3, 4)
+//    store = makeArrayData(store, y.name, 2, 3, 4, 5)
+//    store = makeArrayData(store, out.name, 0, 0, 0, 0)
 
     val f = λ( x => x._1 + x._2)
 
@@ -537,12 +587,15 @@ object Test extends App {
     store = store + (x.name -> makeArrayData(1, 2, 3, 4))
     store = store + (y.name -> makeArrayData(2, 3, 4, 5))
     store = store + (out.name -> makeArrayData(0, 0, 0, 0))
+//    store = makeArrayData(store, x.name, 1, 2, 3, 4)
+//    store = makeArrayData(store, y.name, 2, 3, 4, 5)
+//    store = makeArrayData(store, out.name, 0, 0, 0, 0)
 
     val f = λ( x => x._1 + x._2)
 
     val p = `for`(2, { i =>
       `for`(2, { j =>
-        out `@` (i*2+j) := f( RecordExpPhase(x `@` (i*2+j), y `@` (i*2+j)) )
+        out `@` (i*2+j) := f( Record(x `@` (i*2+j), y `@` (i*2+j)) )
       })
     })
 
@@ -564,12 +617,15 @@ object Test extends App {
     store = store + (x.name -> makeArrayData(1, 2, 3, 4))
     store = store + (y.name -> makeArrayData(2, 3, 4, 5))
     store = store + (out.name -> makeArrayData(0, 0, 0, 0))
+//    store = makeArrayData(store, x.name, 1, 2, 3, 4)
+//    store = makeArrayData(store, y.name, 2, 3, 4, 5)
+//    store = makeArrayData(store, out.name, 0, 0, 0, 0)
 
     val p = `for`(2, { i =>
       `for`(2, { j =>
         out `@` (i*2+j) :=
-          RecordExpPhase(x `@` (i*2+j), y `@` (i*2+j))._1 +
-            RecordExpPhase(x `@` (i*2+j), y `@` (i*2+j))._2
+          Record(x `@` (i*2+j), y `@` (i*2+j))._1 +
+            Record(x `@` (i*2+j), y `@` (i*2+j))._2
       })
     })
 
@@ -590,6 +646,9 @@ object Test extends App {
     store = store + (x.name -> makeArrayData(1, 2, 3, 4))
     store = store + (y.name -> makeArrayData(2, 3, 4, 5))
     store = store + (out.name -> makeArrayData(0, 0, 0, 0))
+//    store = makeArrayData(store, x.name, 1, 2, 3, 4)
+//    store = makeArrayData(store, y.name, 2, 3, 4, 5)
+//    store = makeArrayData(store, out.name, 0, 0, 0, 0)
 
     val p = `for`(2, { i =>
       `for`(2, { j =>
@@ -608,8 +667,10 @@ object Test extends App {
     var store = HashMap[String, Data]()
     val x = identifier("x", ExpType(ArrayType(4, int)))
     val out = identifier("out", AccType(int))
+//    store = makeArrayData(store, x.name, 1, 2, 3, 4)
+//    store = makeData(store, out.name, 0)
     store = store + (x.name -> makeArrayData(1, 2, 3, 4))
-    store = store + (out.name -> makeArrayData(0))
+    store = store + (out.name -> 0)
 
 //    val f = λ( (x1, x2) => x1 + x2 )
 
@@ -628,6 +689,8 @@ object Test extends App {
     var store = HashMap[String, Data]()
     val x = identifier("x", ExpType(ArrayType(4, int)))
     val out = identifier("out", AccType(ArrayType(4, int)))
+//    store = makeArrayData(store, x.name, 1, 2, 3, 4)
+//    store = makeArrayData(store, out.name, 0, 0, 0, 0)
     store = store + (x.name -> makeArrayData(1, 2, 3, 4))
     store = store + (out.name -> makeArrayData(0, 0, 0, 0))
 
@@ -647,6 +710,8 @@ object Test extends App {
     var store = HashMap[String, Data]()
     val x = identifier("x", ExpType(ArrayType(2, ArrayType(4, int))))
     val out = identifier("out", AccType(ArrayType(2, ArrayType(4, int))))
+//    store = makeMatrixData(store, x.name, Vector(Vector(1, 2, 3, 4), Vector(5, 6, 7, 8)))
+//    store = makeMatrixData(store, out.name, Vector(Vector(0, 0, 0, 0), Vector(0, 0, 0, 0)))
     store = store + (x.name -> makeArrayData(makeArrayData(1, 2, 3, 4), makeArrayData(5, 6, 7, 8)))
     store = store + (out.name -> makeArrayData(makeArrayData(0, 0, 0, 0), makeArrayData(0, 0, 0, 0)))
 
@@ -666,6 +731,9 @@ object Test extends App {
     val x = identifier("x", ExpType(ArrayType(2, ArrayType(2, int))))
     val y = identifier("y", ExpType(ArrayType(2, ArrayType(2, int))))
     val out = identifier("out", AccType(ArrayType(2, ArrayType(2, int))))
+//    store = makeMatrixData(store, x.name, Vector(Vector(1, 2), Vector(3, 4)))
+//    store = makeMatrixData(store, x.name, Vector(Vector(5, 6), Vector(7, 8)))
+//    store = makeMatrixData(store, out.name, Vector(Vector(0, 0), Vector(0, 0)))
     store = store + (x.name -> makeArrayData(makeArrayData(1, 2), makeArrayData(3, 4)))
     store = store + (y.name -> makeArrayData(makeArrayData(5, 6), makeArrayData(7, 8)))
     store = store + (out.name -> makeArrayData(makeArrayData(0, 0), makeArrayData(0, 0)))
@@ -695,6 +763,9 @@ object Test extends App {
     store = store + (x.name -> makeArrayData(1, 2, 3, 4))
     store = store + (y.name -> makeArrayData(2, 3, 4, 5))
     store = store + (out.name -> makeArrayData(0, 0, 0, 0))
+//    store = makeArrayData(store, x.name, 1, 2, 3, 4)
+//    store = makeArrayData(store, y.name, 2, 3, 4, 5)
+//    store = makeArrayData(store, out.name, 0, 0, 0, 0)
 
     val f = λ(AccType(int))(o => λ(i => o := i + 4 )  )
 

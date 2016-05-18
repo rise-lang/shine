@@ -15,6 +15,36 @@ object OperationalSemantics {
   final case class ArrayData(a: Vector[Data]) extends Data(ArrayType(a.length, a.head.dataType))
   final case class RecordData(fst: Data, snd: Data) extends Data(RecordType(fst.dataType, snd.dataType))
 
+//  object makeData {
+//    def apply(store: Store, name: String, data: Data): Store = {
+//      store + (name -> data)
+//    }
+//  }
+//
+//  object makeArrayData {
+//    def apply(store: Store, name: String, seq: Data*): Store = {
+//      apply(store, name, seq:_*)
+//    }
+//
+//    def apply(store: Store, name: String, seq: Vector[Data]): Store = {
+//      var c = -1
+//      seq.foldLeft(store)( (s: Store, d: Data) => {
+//        c = c + 1
+//        makeData(s, name + c, d) // create entries: name0, name1, name2, ...
+//      } )
+//    }
+//  }
+//
+//  object makeMatrixData {
+//    def apply(store: Store, name: String, seq: Vector[Vector[Data]]): Store = {
+//      var c = -1
+//      seq.foldLeft(store)( (s: Store, d: Vector[Data]) => {
+//        c = c + 1
+//        makeArrayData(s, name + c, d) // create entries: name0, name1, name2, ...
+//      } )
+//    }
+//  }
+
   object makeArrayData {
     def apply(seq: Data*) = ArrayData(Vector(seq: _*))
   }
@@ -63,51 +93,11 @@ object OperationalSemantics {
         case p: Proj1Phrase[T2, b] => Proj1Phrase(substitute(phrase, `for`, p.pair))
         case p: Proj2Phrase[a, T2] => Proj2Phrase(substitute(phrase, `for`, p.pair))
 
-        case RecordExpPhase(fst, snd) =>
-          RecordExpPhase(substitute(phrase, `for`, fst), substitute(phrase, `for`, snd))
-
-        case RecordAccPhase(fst, snd) =>
-          RecordAccPhase(substitute(phrase, `for`, fst), substitute(phrase, `for`, snd))
-
-        case FstExprPhrase(record) =>
-          FstExprPhrase(substitute(phrase, `for`, record))
-
-        case SndExprPhrase(record) =>
-          SndExprPhrase(substitute(phrase, `for`, record))
-
-        case FstAccPhrase(record) =>
-          FstAccPhrase(substitute(phrase, `for`, record))
-
-        case SndAccPhrase(record) =>
-          SndAccPhrase(substitute(phrase, `for`, record))
-
-        case LengthPhrase(array) => LengthPhrase(substitute(phrase, `for`, array))
-
-        case ArrayExpAccessPhrase(array, index) =>
-          ArrayExpAccessPhrase(substitute(phrase, `for`, array), substitute(phrase, `for`, index))
-
-        case ArrayAccAccessPhrase(array, index) =>
-          ArrayAccAccessPhrase(substitute(phrase, `for`, array), substitute(phrase, `for`, index))
-
-        case _: SkipPhrase => in
-
-        case SeqPhrase(c1, c2) =>
-          SeqPhrase(substitute(phrase, `for`, c1), substitute(phrase, `for`, c2))
-
-        case NewPhrase(f) =>
-          NewPhrase(substitute(phrase, `for`, f))
-
-        case AssignPhrase(lhs, rhs) =>
-          AssignPhrase(substitute(phrase, `for`, lhs), substitute(phrase, `for`, rhs))
-
         case i: IfThenElsePhrase[T2] =>
           val newCond = substitute(phrase, `for`, i.cond)
           val newThenP = substitute(phrase, `for`, i.thenP)
           val newElseP = substitute(phrase, `for`, i.elseP)
           IfThenElsePhrase(newCond, newThenP, newElseP)
-
-        case ForPhrase(n, body) =>
-          ForPhrase(substitute(phrase, `for`, n), substitute(phrase, `for`, body))
 
         case _: LiteralPhrase    => in
 
@@ -220,33 +210,6 @@ object OperationalSemantics {
         p match {
           case IdentPhrase(name) => s(name)
 
-          case RecordExpPhase(fst, snd) =>
-            RecordData(eval(s, fst), eval(s, snd))
-
-          case FstExprPhrase(record) =>
-            eval(s, record) match {
-              case r: RecordData => r.fst
-              case _ => throw new Exception("This should not happen")
-            }
-
-          case SndExprPhrase(record) =>
-            eval(s, record) match {
-              case r: RecordData => r.snd
-              case _ => throw new Exception("This should not happen")
-            }
-
-          case LengthPhrase(arrayP) =>
-            arrayP.t match {
-              case ExpType(ArrayType(n, _)) => n
-              case AccType(ArrayType(n, _)) => n
-            }
-
-          case ArrayExpAccessPhrase(array, index) =>
-            (eval(s, array), eval(s, index)) match {
-              case (ArrayData(xs), IntData(i)) => xs(i)
-              case _ => throw new Exception("This should not happen")
-            }
-
           case LiteralPhrase(d) => d
 
           case BinOpPhrase(op, lhs, rhs) =>
@@ -273,29 +236,6 @@ object OperationalSemantics {
         p match {
           case IdentPhrase(name) => NamedIdentifier(name)
 
-          case RecordAccPhase(fst, snd) =>
-            RecordIdentiers(eval(s, fst), eval(s, snd))
-
-          case FstAccPhrase(record) =>
-            eval(s, record) match {
-              case r: RecordIdentiers => r.fst
-              case _ => throw new Exception("This should not happen")
-            }
-
-          case SndAccPhrase(record) =>
-            eval(s, record) match {
-              case r: RecordIdentiers => r.snd
-              case _ => throw new Exception("This should not happen")
-            }
-
-          case ArrayAccAccessPhrase(arrayP, indexP) =>
-            val array = eval(s, arrayP)
-            val index = eval(s, indexP) match {
-              case IntData(i) => i
-              case _ => throw new Exception("This should not happen")
-            }
-            ArrayAccessIdentifier(array, index)
-
           case AccPatternPhrase(pattern) => pattern.eval(s)
 
           case ApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) | Proj1Phrase(_) | Proj2Phrase(_) =>
@@ -309,57 +249,6 @@ object OperationalSemantics {
       def apply(s: Store, p: Phrase[CommandType]): Store = {
         p match {
           case IdentPhrase(_) => throw new Exception("This should never happen")
-
-          case SkipPhrase() => s
-
-          case SeqPhrase(c1, c2) =>
-            val s1 = eval(s, c1)
-            eval(s1, c2)
-
-          case NewPhrase(fP) =>
-            val f = eval(s, fP)
-            val arg = IdentPhrase[ExpType x AccType](newName())
-            val s1: Store = eval(s + (arg.name -> 0), f(arg))
-            s1 - arg.name
-
-          case AssignPhrase(lhs, rhs) =>
-            def evalAssign(s: Store, lhs: AccIdentifier, rhs: Data,
-                           continuation: (Store, String, Data) => Store): Store = {
-              lhs match {
-                case NamedIdentifier(name) =>
-                  assert(s.contains(name))
-                  continuation(s, name, rhs)
-
-                case ArrayAccessIdentifier(array, index) =>
-                  evalAssign(s, array, rhs, (s, arrayName, rhsValue) => {
-                    assert(s.contains(arrayName))
-                    s(arrayName) match {
-                      case ArrayData(vec) => continuation(s, arrayName, ArrayData(vec.updated(index, rhsValue)))
-                      case _ => throw new Exception("This should not happen")
-                    }
-                  })
-
-                case RecordIdentiers(fstI, sndI) =>
-                  rhs match {
-                    case RecordData(fstD, sndD) =>
-                      val s1 = evalAssign(s, fstI, fstD, continuation)
-                      evalAssign(s1, sndI, sndD, continuation)
-                    case _ => throw new Exception("This should not happen")
-                  }
-              }
-            }
-
-            evalAssign(s, eval(s, lhs), eval(s, rhs), (s, identifier, value) => {
-              s + (identifier -> value)
-            })
-
-          case ForPhrase(nP, bodyP) =>
-            val n = evalIntExp(s, nP)
-            val body = eval(s, bodyP)
-            (0 until n).foldLeft(s)( (s1, i) => {
-              eval(s1, body(LiteralPhrase(i)))
-            } )
-
 
           case CommandPatternPhrase(pattern) => pattern.eval(s)
 

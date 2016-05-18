@@ -4,9 +4,12 @@ import Core._
 import Core.PhraseType._
 import Core.OperationalSemantics._
 
-case class MapIPattern(out: Phrase[AccType],
-                       f: Phrase[AccType -> (ExpType -> CommandType)],
-                       in: Phrase[ExpType]) extends CommandPattern {
+import AccPatterns._
+import ExpPatterns._
+
+case class MapI(out: Phrase[AccType],
+                f: Phrase[AccType -> (ExpType -> CommandType)],
+                in: Phrase[ExpType]) extends CommandPattern {
 
   override def typeCheck(): CommandType = {
     import TypeChecker._
@@ -29,7 +32,7 @@ case class MapIPattern(out: Phrase[AccType],
   }
 
   override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): CommandPattern = {
-    MapIPattern(
+    MapI(
       OperationalSemantics.substitute(phrase, `for`, out),
       OperationalSemantics.substitute(phrase, `for`, f),
       OperationalSemantics.substitute(phrase, `for`, in))
@@ -40,9 +43,11 @@ case class MapIPattern(out: Phrase[AccType],
     val n = TypeChecker(in) match { case ExpType(ArrayType(len, _)) => len }
 
     (0 until n).foldLeft(s)( (sOld, i) => {
-      val comm = fE(ArrayAccAccessPhrase(out, LiteralPhrase(i)))(ArrayExpAccessPhrase(in, LiteralPhrase(i)))
+      val comm = fE(IdxAcc(out, LiteralPhrase(i)).asPhrase)(Idx(in, LiteralPhrase(i)).asPhrase)
       OperationalSemantics.eval(sOld, comm)
     } )
   }
+
+  override def toC = ???
 
 }

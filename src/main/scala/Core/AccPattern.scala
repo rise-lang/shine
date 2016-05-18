@@ -7,5 +7,7 @@ trait AccPattern {
 
   def eval(s: OperationalSemantics.Store): OperationalSemantics.AccIdentifier
 
+  def toC: String
+
   def asPhrase = AccPatternPhrase(this)
 }

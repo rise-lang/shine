@@ -4,9 +4,9 @@ import Core._
 import Core.PhraseType._
 import Core.OperationalSemantics._
 
-case class ReducePattern(f: Phrase[ExpType -> (ExpType -> ExpType)],
-                         init: Phrase[ExpType],
-                         array: Phrase[ExpType]) extends ExpPattern {
+case class Reduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
+                  init: Phrase[ExpType],
+                  array: Phrase[ExpType]) extends ExpPattern {
 
   override def typeCheck(): ExpType = {
     import TypeChecker._
@@ -29,7 +29,7 @@ case class ReducePattern(f: Phrase[ExpType -> (ExpType -> ExpType)],
   }
 
   override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): ExpPattern = {
-    ReducePattern(
+    Reduce(
       OperationalSemantics.substitute(phrase, `for`, f),
       OperationalSemantics.substitute(phrase, `for`, init),
       OperationalSemantics.substitute(phrase, `for`, array))
@@ -46,6 +46,8 @@ case class ReducePattern(f: Phrase[ExpType -> (ExpType -> ExpType)],
       case _ => throw new Exception("This should not happen")
     }
   }
+
+  override def toC = ???
 
 }
 

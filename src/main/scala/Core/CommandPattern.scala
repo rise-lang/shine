@@ -7,5 +7,7 @@ trait CommandPattern {
 
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Store
 
+  def toC: String
+
   def asPhrase = CommandPatternPhrase(this)
 }

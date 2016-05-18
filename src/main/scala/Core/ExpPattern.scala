@@ -7,5 +7,7 @@ trait ExpPattern {
 
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Data
 
+  def toC: String
+
   def asPhrase = ExpPatternPhrase(this)
 }

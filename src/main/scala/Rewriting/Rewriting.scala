@@ -15,7 +15,7 @@ object Rewriting {
         A `:=` x
 
       case x: IdentPhrase[ExpType] if x.t.dataType.isInstanceOf[ArrayType] =>
-        MapIPattern(A,
+        MapI(A,
           λ(A.t) { o => λ(x.t) { x => acc(x, o) } },
           x
         ).asPhrase
@@ -34,18 +34,18 @@ object Rewriting {
 
       case ExpPatternPhrase(pattern) => pattern match {
 
-        case MapPattern(f, e) =>
+        case Map(f, e) =>
           exp(e, λ(e.t) { x =>
-            MapIPattern(A,
+            MapI(A,
               λ(A.t) { o => λ(e.t) { x => acc(f(x), o) } },
               x
             ).asPhrase
           })
 
-        case ReducePattern(f, i, e) =>
+        case Reduce(f, i, e) =>
           exp(e, λ(e.t) { x =>
             exp(i, λ(i.t) { y =>
-              ReduceIAccPattern(A,
+              ReduceIAcc(A,
                 λ(A.t) { o => λ(e.t) { x => λ(i.t) { y => acc(f(x)(y), o) } } },
                 y,
                 x
@@ -53,19 +53,19 @@ object Rewriting {
             })
           })
 
-        case ZipPattern(e1, e2) =>
+        case Zip(e1, e2) =>
           exp(e1, λ(e1.t) { x =>
             exp(e2, λ(e2.t) { y =>
-              MapIPattern(A,
+              MapI(A,
                 λ(A.t) { o => λ(ExpType(RecordType(e1.t.dataType, e2.t.dataType))) { x => acc(x, o) } },
-                ZipPattern(x, y).asPhrase
+                Zip(x, y).asPhrase
               ).asPhrase
             })
           })
 
-        case JoinPattern(e) => acc(e, JoinAccPattern(A).asPhrase)
+        case Join(e) => acc(e, JoinAcc(A).asPhrase)
 
-        case SplitPattern(n, e) => acc(e, SplitAccPattern(n, A).asPhrase)
+        case Split(n, e) => acc(e, SplitAcc(n, A).asPhrase)
 
       }
     }
@@ -86,17 +86,17 @@ object Rewriting {
 
       case ExpPatternPhrase(pattern) => pattern match {
 
-        case MapPattern(f, e) =>
+        case Map(f, e) =>
           // specify array type + size info
           `new`( tmp =>
-            acc(MapPattern(f, e), π2(tmp)) `;`
+            acc(Map(f, e), π2(tmp)) `;`
             C(π1(tmp))
           )
 
-        case ReducePattern(f, i, e) =>
+        case Reduce(f, i, e) =>
           exp(e, λ(e.t) { x =>
             exp(i, λ(i.t) { y =>
-              ReduceIExpPattern(C,
+              ReduceIExp(C,
                 λ(AccType(i.t.dataType)) { o => λ(e.t) { x => λ(i.t) { y => acc(f(x)(y), o) } } },
                 y,
                 x
@@ -104,21 +104,21 @@ object Rewriting {
             })
           })
 
-        case ZipPattern(e1, e2) =>
+        case Zip(e1, e2) =>
           exp(e1, λ(e1.t) { x =>
             exp(e2, λ(e2.t) { y =>
-              C(ZipPattern(x, y).asPhrase)
+              C(Zip(x, y).asPhrase)
             })
           })
 
-        case JoinPattern(e) =>
+        case Join(e) =>
           exp(e, λ(e.t) { x =>
-            C(JoinPattern(x))
+            C(Join(x))
           })
 
-        case SplitPattern(n, e) =>
+        case Split(n, e) =>
           exp(e, λ(e.t) { x =>
-            C(SplitPattern(n, x))
+            C(Split(n, x))
           })
 
       }

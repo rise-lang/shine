@@ -1,5 +1,8 @@
 import Core.PhraseType._
 import Core._
+import ExpPatterns._
+import AccPatterns._
+import CommandPatterns._
 
 import scala.language.implicitConversions
 
@@ -16,16 +19,36 @@ package object DSL {
     def %(rhs: Phrase[ExpType]) = BinOpPhrase(BinOpPhrase.Op.MOD, lhs, rhs)
   }
 
+  implicit class BinOpsPatterns(lhs: ExpPattern) {
+    def +(rhs: Phrase[ExpType]) = BinOpPhrase(BinOpPhrase.Op.ADD, lhs, rhs)
+
+    def -(rhs: Phrase[ExpType]) = BinOpPhrase(BinOpPhrase.Op.SUB, lhs, rhs)
+
+    def *(rhs: Phrase[ExpType]) = BinOpPhrase(BinOpPhrase.Op.MUL, lhs, rhs)
+
+    def /(rhs: Phrase[ExpType]) = BinOpPhrase(BinOpPhrase.Op.DIV, lhs, rhs)
+
+    def %(rhs: Phrase[ExpType]) = BinOpPhrase(BinOpPhrase.Op.MOD, lhs, rhs)
+  }
+
   implicit class CallLambda[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 -> T2]) {
     def apply(arg: Phrase[T1]) = ApplyPhrase(fun, arg)
   }
 
   implicit class SequentialComposition(c1: Phrase[CommandType]) {
-    def `;`(c2: Phrase[CommandType]) = SeqPhrase(c1, c2)
+    def `;`(c2: Phrase[CommandType]): Phrase[CommandType] = Seq(c1, c2)
+  }
+
+  implicit class SequentialPatternComposition(c1: CommandPattern) {
+    def `;`(c2: Phrase[CommandType]): Phrase[CommandType] = Seq(c1, c2)
   }
 
   implicit class Assignment(lhs: Phrase[AccType]) {
-    def :=(rhs: Phrase[ExpType]) = AssignPhrase(lhs, rhs)
+    def :=(rhs: Phrase[ExpType]) = Assign(lhs, rhs)
+  }
+
+  implicit class AssignmentPattern(lhs: AccPattern) {
+    def :=(rhs: Phrase[ExpType]) = Assign(lhs, rhs)
   }
 
   implicit def toPair[T1 <: PhraseType, T2 <: PhraseType](pair: (Phrase[T1], Phrase[T2])): PairPhrase[T1, T2] = {
@@ -35,23 +58,23 @@ package object DSL {
   implicit def toLiteral(i: Int): LiteralPhrase = LiteralPhrase(i)
 
   implicit class ExpPhraseExtensions(e: Phrase[ExpType]) {
-    def _1() = FstExprPhrase(e)
+    def _1() = Fst(e).asPhrase
 
-    def _2() = SndExprPhrase(e)
+    def _2() = Snd(e).asPhrase
 
-    def `@`(index: Phrase[ExpType]) = ArrayExpAccessPhrase(e, index)
+    def `@`(index: Phrase[ExpType]) = Idx(e, index)
   }
 
   implicit class ExpPatternExtensions(p: ExpPattern) {
-    def _1() = FstExprPhrase(p)
+    def _1() = Fst(p).asPhrase
 
-    def _2() = SndExprPhrase(p)
+    def _2() = Snd(p).asPhrase
 
-    def `@`(index: Phrase[ExpType]) = ArrayExpAccessPhrase(p, index)
+    def `@`(index: Phrase[ExpType]) = Idx(p, index)
   }
 
   implicit class AccPhraseExtensions(a: Phrase[AccType]) {
-    def `@`(index: Phrase[ExpType]) = ArrayAccAccessPhrase(a, index)
+    def `@`(index: Phrase[ExpType]) = IdxAcc(a, index)
   }
 
   implicit class VarExtensions(v: Phrase[VarType]) {

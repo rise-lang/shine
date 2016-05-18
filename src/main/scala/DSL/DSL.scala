@@ -3,6 +3,7 @@ package DSL
 import Core.OperationalSemantics._
 import Core.PhraseType._
 import Core._
+import AccPatterns._
 import ExpPatterns._
 import CommandPatterns._
 
@@ -14,7 +15,7 @@ object `;` {
   def apply() = {
     //: Phrase[CommandType x CommandType -> CommandType]
     λ(CommandType() x CommandType()) {
-      pair => SeqPhrase(Proj1Phrase(pair), Proj2Phrase(pair))
+      pair => Seq(Proj1Phrase(pair), Proj2Phrase(pair))
     }
   }
 }
@@ -24,7 +25,7 @@ object makeNew {
   def apply(t: DataType) = {
     //: Phrase[(VarType -> CommandType) -> CommandType]
     λ(VarType(t) -> CommandType()) {
-      f => NewPhrase(f)
+      f => New(f)
     }
   }
 }
@@ -34,7 +35,7 @@ object := {
   def apply(t: DataType) = {
     //: Phrase[ AccType x ExpType -> CommandType ]
     λ(AccType(t) x ExpType(t)) {
-      pair => AssignPhrase(π1(pair), π2(pair))
+      pair => Assign(π1(pair), π2(pair))
     }
   }
 }
@@ -61,7 +62,7 @@ object makeFor {
     //: Phrase[ ExpType x (ExpType -> CommandType) -> CommandType ]
     λ(ExpType(int) x (ExpType(int) -> CommandType())) {
       args => {
-        ForPhrase(π1(args), π2(args))
+        For(π1(args), π2(args))
       }
     }
   }
@@ -75,32 +76,32 @@ object `if` {
 
 object `for` {
   def apply(n: Phrase[ExpType], f: (Phrase[ExpType] => Phrase[CommandType])) = {
-    ForPhrase(n, λ(ExpType(int)) { i => f(i) })
+    For(n, λ(ExpType(int)) { i => f(i) })
   }
 }
 
 object `new` {
-  def apply(f: Phrase[ (ExpType x AccType) -> CommandType ]) = NewPhrase(f)
+  def apply(f: Phrase[ (ExpType x AccType) -> CommandType ]) = New(f)
 
   def apply(f: Phrase[ExpType x AccType] => Phrase[CommandType]) = {
-    NewPhrase(λ( ExpType(int) x AccType(int) ) { v => f(v) })
+    New(λ( ExpType(int) x AccType(int) ) { v => f(v) })
   }
 }
 
 object fst {
-  def apply(record: Phrase[ExpType]) = FstExprPhrase(record)
+  def apply(record: Phrase[ExpType]) = Fst(record)
 }
 
 object snd {
-  def apply(record: Phrase[ExpType]) = SndExprPhrase(record)
+  def apply(record: Phrase[ExpType]) = Snd(record)
 }
 
 object fstAcc {
-  def apply(record: Phrase[AccType]) = FstAccPhrase(record)
+  def apply(record: Phrase[AccType]) = FstAcc(record)
 }
 
 object sndAcc {
-  def apply(record: Phrase[AccType]) = SndAccPhrase(record)
+  def apply(record: Phrase[AccType]) = SndAcc(record)
 }
 
 object π1 {
@@ -151,54 +152,53 @@ object \ extends funDef
 
 object λ extends funDef
 
-object skip extends SkipPhrase
+object skip extends Skip
 
 object map {
-  def apply(f: Phrase[ExpType -> ExpType]) = λ( x => MapPattern(f, x))
+  def apply(f: Phrase[ExpType -> ExpType]) = λ( x => Map(f, x))
 
   def apply(f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) =
-    MapPattern(f, array)
+    Map(f, array)
 }
 
 object zip {
-  def apply(lhs: Phrase[ExpType], rhs: Phrase[ExpType]) = ZipPattern(lhs, rhs)
+  def apply(lhs: Phrase[ExpType], rhs: Phrase[ExpType]) = Zip(lhs, rhs)
 }
 
 object split {
-  def apply(n: Int, array: Phrase[ExpType]) = SplitPattern(n, array)
+  def apply(n: Int, array: Phrase[ExpType]) = Split(n, array)
 }
 
 object join {
-  def apply(array: Phrase[ExpType]) = JoinPattern(array)
+  def apply(array: Phrase[ExpType]) = Join(array)
 }
 
 object reduce {
   def apply(f: Phrase[ExpType -> (ExpType -> ExpType)]) =
-    λ( (init, array) => ReducePattern(f, init, array))
+    λ( (init, array) => Reduce(f, init, array))
 
   def apply(f: Phrase[ExpType -> (ExpType -> ExpType)], init: Phrase[ExpType]) =
-    λ( array => ReducePattern(f, init, array))
+    λ( array => Reduce(f, init, array))
 
   def apply(f: Phrase[ExpType -> (ExpType -> ExpType)], init: Phrase[ExpType],
-            array: Phrase[ExpType]) = ReducePattern(f, init, array)
+            array: Phrase[ExpType]) = Reduce(f, init, array)
 }
 
 object iterate {
   def apply(n: Int, f: Phrase[ExpType -> ExpType]) =
-    λ( array => IteratePattern(n, f, array))
+    λ( array => Iterate(n, f, array))
 
   def apply(n: Int, f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) =
-    IteratePattern(n, f, array)
+    Iterate(n, f, array)
 }
 
 object length {
-  def apply[T <: BasePhraseTypes](array: Phrase[T]) =
-    LengthPhrase(array)
+  def apply[T <: BasePhraseTypes](array: Phrase[T]) = Length(array)
 }
 
 object mapI {
   def apply(out: Phrase[AccType], f: Phrase[AccType -> (ExpType -> CommandType)], in: Phrase[ExpType]) =
-    MapIPattern(out, f, in)
+    MapI(out, f, in)
 }
 
 

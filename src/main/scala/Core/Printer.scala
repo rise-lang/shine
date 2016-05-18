@@ -1,7 +1,6 @@
 package Core
 
 import OperationalSemantics._
-import PhraseType.x
 
 object Printer {
   def toC[T <: PhraseType](p: Phrase[T]): String = {
@@ -9,49 +8,11 @@ object Printer {
       case IdentPhrase(name) => name
 
       case Proj1Phrase(pair) => toC(Lift.liftPair(pair)._1)
+
       case Proj2Phrase(pair) => toC(Lift.liftPair(pair)._2)
-
-      case RecordExpPhase(fst, snd) =>
-        val dt = p.t match { case ExpType(dataType) => dataType }
-        s"(struct ${nameOf(dt)}){ ${toC(fst)} , ${toC(snd)} }"
-
-      case FstExprPhrase(record) =>
-        toC(record) + ".fst"
-
-      case SndExprPhrase(record) =>
-        toC(record) + ".snd"
-
-      case LengthPhrase(array) => array.t match {
-        case ExpType(ArrayType(n, dt)) => n.toString
-        case AccType(ArrayType(n, dt)) => n.toString
-      }
-
-      case ArrayAccAccessPhrase(array, index) => toC(array) + "[" + toC(index) + "]"
-
-      case ArrayExpAccessPhrase(array, index) => toC(array) + "[" + toC(index) + "]"
-
-      case SkipPhrase() => ""
-
-      case SeqPhrase(c1, c2) => toC(c1) + ";\n" + toC(c2)
-
-      case NewPhrase(fP) =>
-        val f = Lift.liftFunction(fP)
-        val v = IdentPhrase[ExpType x AccType](OperationalSemantics.newName())
-        val dt = fP.t.inT.t1.dataType
-        v.t = PairType(ExpType(dt), AccType(dt))
-        s"{\n${nameOf(dt)} ${v.name};\n${toC(f(v))}; \n}"
-
-      case AssignPhrase(lhs, rhs) =>
-        toC(lhs) + " = " + toC(rhs) + ";\n"
 
       case IfThenElsePhrase(condP, thenP, elseP) =>
         s"if (${toC(condP)}) { ${toC(thenP)}; } else { ${toC(elseP)}; }"
-
-      case ForPhrase(n, fP) =>
-        val f = Lift.liftFunction(fP)
-        val i = IdentPhrase[ExpType](OperationalSemantics.newName())
-        i.t = ExpType(int)
-        s"for (int ${i.name} = 0; ${i.name} < ${toC(n)}; ++${i.name}) {\n${toC(f(i))}}\n"
 
       case LiteralPhrase(d) =>
         val dt = p.t match { case ExpType(dataType) => dataType }
@@ -59,9 +20,13 @@ object Printer {
 
       case BinOpPhrase(op, lhs, rhs) => "(" + toC(lhs) + " " + op.toString + " " + toC(rhs) + ")"
 
-      case LambdaPhrase(_, _) | ApplyPhrase(_, _) | PairPhrase(_, _) |
-           ExpPatternPhrase(_) | CommandPatternPhrase(_) | AccPatternPhrase(_) |
-           RecordAccPhase(_, _) | FstAccPhrase(_) | SndAccPhrase(_) =>
+      case ExpPatternPhrase(pattern) => pattern.toC
+
+      case AccPatternPhrase(pattern) => pattern.toC
+
+      case CommandPatternPhrase(pattern) => pattern.toC
+
+      case LambdaPhrase(_, _) | ApplyPhrase(_, _) | PairPhrase(_, _)  =>
         throw new Exception("This should not happen")
     }
   }

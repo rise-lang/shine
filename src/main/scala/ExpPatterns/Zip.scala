@@ -3,7 +3,7 @@ package ExpPatterns
 import Core._
 import Core.OperationalSemantics._
 
-case class ZipPattern(lhs: Phrase[ExpType], rhs: Phrase[ExpType]) extends ExpPattern {
+case class Zip(lhs: Phrase[ExpType], rhs: Phrase[ExpType]) extends ExpPattern {
 
   override def typeCheck(): ExpType = {
     import TypeChecker._
@@ -15,7 +15,7 @@ case class ZipPattern(lhs: Phrase[ExpType], rhs: Phrase[ExpType]) extends ExpPat
   }
 
   override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): ExpPattern = {
-    ZipPattern(OperationalSemantics.substitute(phrase, `for`, lhs), OperationalSemantics.substitute(phrase, `for`, rhs))
+    Zip(OperationalSemantics.substitute(phrase, `for`, lhs), OperationalSemantics.substitute(phrase, `for`, rhs))
   }
 
   override def eval(s: Store): Data = {
@@ -28,5 +28,7 @@ case class ZipPattern(lhs: Phrase[ExpType], rhs: Phrase[ExpType]) extends ExpPat
       case _ => throw new Exception("This should not happen")
     }
   }
+
+  override def toC = ???
 
 }

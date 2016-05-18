@@ -2,7 +2,10 @@ package Rewriting
 
 import Core._
 import DSL._
+
 import ExpPatterns._
+import AccPatterns._
+import CommandPatterns._
 
 case class RewriteRule(desc: String, rewrite: PartialFunction[Phrase[_ <: PhraseType], Phrase[_ <: PhraseType]]) {
   override def toString: String = desc
@@ -18,14 +21,14 @@ object RewriteRules {
   })
 
   val mapToFor = RewriteRule("map to for", {
-    case AssignPhrase(out, ExpPatternPhrase(MapPattern(f, array))) =>
+    case CommandPatternPhrase(Assign(out, ExpPatternPhrase(Map(f, array)))) =>
       `for`(length(out), { i =>
         out `@` i := ApplyPhrase(f, array `@` i)
       })
   })
 
   val joinToFor = RewriteRule("join to for", {
-    case AssignPhrase(out, ExpPatternPhrase(JoinPattern(array))) =>
+    case CommandPatternPhrase(Assign(out, ExpPatternPhrase(Join(array)))) =>
       `for`(length(array), { i =>
         `for`(length(array `@` i), { j =>
           out `@` (i*length(array `@` i)+j) := (array `@` j) `@` j
@@ -34,26 +37,26 @@ object RewriteRules {
   })
 
   val mapIndex = RewriteRule("map index", {
-    case ArrayExpAccessPhrase(ExpPatternPhrase(MapPattern(f, array)), i) =>
+    case ExpPatternPhrase(Idx(ExpPatternPhrase(Map(f, array)), i)) =>
       ApplyPhrase(f, array `@` i)
   })
 
   val splitIndex = RewriteRule("split index", {
-    case ArrayExpAccessPhrase(ArrayExpAccessPhrase(ExpPatternPhrase(SplitPattern(n, array)), i), j) =>
+    case ExpPatternPhrase(Idx(ExpPatternPhrase(Idx(ExpPatternPhrase(Split(n, array)), i)), j)) =>
       array `@` (i * n + j)
   })
 
   val zipIndex = RewriteRule("zip index", {
-    case ArrayExpAccessPhrase(ExpPatternPhrase(ZipPattern(lhs, rhs)), i) =>
-      RecordExpPhase(lhs `@` i, rhs `@` i)
+    case ExpPatternPhrase(Idx(ExpPatternPhrase(Zip(lhs, rhs)), i)) =>
+      Record(lhs `@` i, rhs `@` i)
   })
 
   val fstAccess = RewriteRule("record field access", {
-    case FstExprPhrase(RecordExpPhase(fst, _)) => fst
+    case ExpPatternPhrase(Fst(ExpPatternPhrase(Record(fst, _)))) => fst
   })
 
   val sndAccess = RewriteRule("record field access", {
-    case SndExprPhrase(RecordExpPhase(_, snd)) => snd
+    case ExpPatternPhrase(Snd(ExpPatternPhrase(Record(_, snd)))) => snd
   })
 
   val rules: Vector[RewriteRule] = Vector(betaReduction, mapToFor, joinToFor, mapIndex, splitIndex, zipIndex, fstAccess, sndAccess)

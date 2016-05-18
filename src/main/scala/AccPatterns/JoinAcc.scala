@@ -3,7 +3,7 @@ package AccPatterns
 import Core._
 import Core.OperationalSemantics._
 
-case class JoinAccPattern(array: Phrase[AccType]) extends AccPattern {
+case class JoinAcc(array: Phrase[AccType]) extends AccPattern {
 
   override def typeCheck(): AccType = {
     import TypeChecker._
@@ -15,11 +15,13 @@ case class JoinAccPattern(array: Phrase[AccType]) extends AccPattern {
   }
 
   override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): AccPattern = {
-    JoinAccPattern(OperationalSemantics.substitute(phrase, `for`, array))
+    JoinAcc(OperationalSemantics.substitute(phrase, `for`, array))
   }
 
   override def eval(s: Store): AccIdentifier = {
     ???
   }
+
+  override def toC = ???
 
 }

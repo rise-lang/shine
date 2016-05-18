@@ -3,11 +3,12 @@ package CommandPatterns
 import Core._
 import Core.PhraseType._
 import Core.OperationalSemantics._
+import ExpPatterns.Idx
 
-case class ReduceIAccPattern(out: Phrase[AccType],
-                             f: Phrase[AccType -> (ExpType -> (ExpType -> CommandType))],
-                             init: Phrase[ExpType],
-                             in: Phrase[ExpType]) extends CommandPattern {
+case class ReduceIAcc(out: Phrase[AccType],
+                      f: Phrase[AccType -> (ExpType -> (ExpType -> CommandType))],
+                      init: Phrase[ExpType],
+                      in: Phrase[ExpType]) extends CommandPattern {
 
   override def typeCheck(): CommandType = {
     import TypeChecker._
@@ -31,7 +32,7 @@ case class ReduceIAccPattern(out: Phrase[AccType],
   }
 
   override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): CommandPattern = {
-    ReduceIAccPattern(
+    ReduceIAcc(
       OperationalSemantics.substitute(phrase, `for`, out),
       OperationalSemantics.substitute(phrase, `for`, f),
       OperationalSemantics.substitute(phrase, `for`, init),
@@ -43,8 +44,11 @@ case class ReduceIAccPattern(out: Phrase[AccType],
     val n = TypeChecker(in) match { case ExpType(ArrayType(len, _)) => len }
 
     (0 until n).foldLeft(s)( (sOld, i) => {
-      val comm = fE(out)(ArrayExpAccessPhrase(in, LiteralPhrase(i)))(init)
+      val comm = fE(out)(Idx(in, LiteralPhrase(i)).asPhrase)(init)
       OperationalSemantics.eval(sOld, comm)
     } )
   }
+
+  override def toC = ???
+
 }

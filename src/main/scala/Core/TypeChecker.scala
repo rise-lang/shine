@@ -131,87 +131,6 @@ object TypeChecker {
           case t => error(t.toString, PairType.toString)
         }
 
-      case RecordExpPhase(fst, snd) =>
-        ExpType(RecordType( TypeChecker(fst).dataType, TypeChecker(snd).dataType ))
-
-      case FstExprPhrase(record) =>
-        TypeChecker(record) match {
-          case ExpType(RecordType(fst, snd)) => ExpType(fst)
-          case t => error(t.toString, "Something else")
-        }
-
-      case SndExprPhrase(record) =>
-        TypeChecker(record) match {
-          case ExpType(RecordType(fst, snd)) => ExpType(snd)
-          case t => error(t.toString, "Something else")
-        }
-
-      case RecordAccPhase(fst, snd) =>
-        AccType(RecordType( TypeChecker(fst).dataType, TypeChecker(snd).dataType ))
-
-      case FstAccPhrase(record) =>
-        TypeChecker(record) match {
-          case AccType(RecordType(fst, snd)) => ExpType(fst)
-          case t => error(t.toString, "Something else")
-        }
-
-      case SndAccPhrase(record) =>
-        TypeChecker(record) match {
-          case AccType(RecordType(fst, snd)) => ExpType(snd)
-          case t => error(t.toString, "Something else")
-        }
-
-      case LengthPhrase(array) =>
-        TypeChecker(array) match {
-          case ExpType(ArrayType(n, t)) => ExpType(int)
-          case AccType(ArrayType(n, t)) => ExpType(int)
-          case t => error(t.toString, "ArrayType")
-        }
-
-      case ArrayExpAccessPhrase(array, i) =>
-        check(TypeChecker(i), ExpType(int))
-        TypeChecker(array) match {
-          case ExpType(ArrayType(n, t)) => ExpType(t)
-          case t => error(t.toString, "ArrayType")
-        }
-
-      case ArrayAccAccessPhrase(array, index) =>
-        check(TypeChecker(index), ExpType(int))
-        TypeChecker(array) match {
-          case AccType(ArrayType(n, t)) => AccType(t)
-          case t => error(t.toString, "ArrayType")
-        }
-
-      case _: SkipPhrase => CommandType()
-
-      case SeqPhrase(c1, c2) =>
-        check(TypeChecker(c1), CommandType())
-        check(TypeChecker(c2), CommandType())
-        CommandType()
-
-      case NewPhrase(f) =>
-        TypeChecker(f) match {
-          case FunctionType(PairType(ExpType(d1), AccType(d2)), CommandType()) =>
-            if (d1 == d2) {
-              CommandType()
-            } else {
-              error(d1.toString + " and " + d2.toString, expected = "them to match")
-            }
-          case t => error(t.toString, FunctionType.toString + "(" + PairType.toString +
-            "(" + ExpType.toString + "(A)," + AccType.toString + "(A))," + CommandType() + ")")
-        }
-
-      case AssignPhrase(lhs, rhs) =>
-        (TypeChecker(lhs), TypeChecker(rhs)) match {
-          case (AccType(d1), ExpType(d2)) =>
-            if (d1 == d2) {
-              CommandType()
-            } else {
-              error(d1.toString + " and " + d2.toString, expected = "them to match")
-            }
-          case t => error(t.toString, "(" + AccType.toString() + "(A)," + ExpType.toString() + "(A))")
-        }
-
       case IfThenElsePhrase(cond, thenP, elseP) =>
         val condT = TypeChecker(cond)
         if (condT != ExpType(int) && condT != ExpType(bool)) {
@@ -222,11 +141,6 @@ object TypeChecker {
         val elsePT = TypeChecker(elseP)
         check(thenPT, elsePT)
         thenPT
-
-      case ForPhrase(upper, body) =>
-        check(TypeChecker(upper), ExpType(int))
-        check(TypeChecker(body), FunctionType(ExpType(int), CommandType()))
-        CommandType()
 
       case LiteralPhrase(d) => ExpType(d.dataType)
 

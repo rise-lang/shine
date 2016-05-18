@@ -3,7 +3,7 @@ package ExpPatterns
 import Core.OperationalSemantics._
 import Core._
 
-case class JoinPattern(array: Phrase[ExpType]) extends ExpPattern {
+case class Join(array: Phrase[ExpType]) extends ExpPattern {
 
   override def typeCheck(): ExpType = {
     import TypeChecker._
@@ -15,7 +15,7 @@ case class JoinPattern(array: Phrase[ExpType]) extends ExpPattern {
   }
 
   override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): ExpPattern = {
-    JoinPattern(OperationalSemantics.substitute(phrase, `for`, array))
+    Join(OperationalSemantics.substitute(phrase, `for`, array))
   }
 
   override def eval(s: Store): Data = {
@@ -30,5 +30,7 @@ case class JoinPattern(array: Phrase[ExpType]) extends ExpPattern {
       case _ => throw new Exception("This should not happen")
     }
   }
+
+  override def toC = ???
 
 }
