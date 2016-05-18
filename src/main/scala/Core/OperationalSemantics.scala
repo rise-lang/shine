@@ -323,23 +323,35 @@ object OperationalSemantics {
             s1 - arg.name
 
           case AssignPhrase(lhs, rhs) =>
-            def evalAssign(s: Store, lhs: AccIdentifier, rhs: Data): (String, Data) = {
+            def evalAssign(s: Store, lhs: AccIdentifier, rhs: Data,
+                           continuation: (Store, String, Data) => Store): Store = {
               lhs match {
                 case NamedIdentifier(name) =>
                   assert(s.contains(name))
-                  (name, rhs)
+                  continuation(s, name, rhs)
+
                 case ArrayAccessIdentifier(array, index) =>
-                  val (name, rhsValue) = evalAssign(s, array, rhs)
-                  assert(s.contains(name))
-                  s(name) match {
-                    case ArrayData(vec) => (name, ArrayData(vec.updated(index, rhsValue)))
+                  evalAssign(s, array, rhs, (s, arrayName, rhsValue) => {
+                    assert(s.contains(arrayName))
+                    s(arrayName) match {
+                      case ArrayData(vec) => continuation(s, arrayName, ArrayData(vec.updated(index, rhsValue)))
+                      case _ => throw new Exception("This should not happen")
+                    }
+                  })
+
+                case RecordIdentiers(fstI, sndI) =>
+                  rhs match {
+                    case RecordData(fstD, sndD) =>
+                      val s1 = evalAssign(s, fstI, fstD, continuation)
+                      evalAssign(s1, sndI, sndD, continuation)
                     case _ => throw new Exception("This should not happen")
                   }
               }
             }
 
-            val (identifier, value) = evalAssign(s, eval(s, lhs), eval(s, rhs))
-            s + (identifier -> value)
+            evalAssign(s, eval(s, lhs), eval(s, rhs), (s, identifier, value) => {
+              s + (identifier -> value)
+            })
 
           case ForPhrase(nP, bodyP) =>
             val n = evalIntExp(s, nP)

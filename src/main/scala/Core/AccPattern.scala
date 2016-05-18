@@ -1,7 +1,7 @@
 package Core
 
 trait AccPattern {
-  def typeCheck(): ExpType
+  def typeCheck(): AccType
 
   def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): AccPattern
 

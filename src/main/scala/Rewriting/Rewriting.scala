@@ -2,9 +2,10 @@ package Rewriting
 
 import Core._
 import Core.PhraseType._
-import CommandPatterns._
 import DSL._
 import ExpPatterns._
+import AccPatterns._
+import CommandPatterns._
 
 object Rewriting {
 
@@ -60,11 +61,9 @@ object Rewriting {
             })
           })
 
-//        case JoinPattern(e) =>
-//          acc(e, )
+        case JoinPattern(e) => acc(e, JoinAccPattern(A).asPhrase)
 
-//        case SplitPattern(e) =>
-//            acc(e, )
+        case SplitPattern(n, e) => acc(e, SplitAccPattern(n, A).asPhrase)
 
       }
     }

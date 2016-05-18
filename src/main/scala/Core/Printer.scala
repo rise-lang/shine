@@ -59,7 +59,9 @@ object Printer {
 
       case BinOpPhrase(op, lhs, rhs) => "(" + toC(lhs) + " " + op.toString + " " + toC(rhs) + ")"
 
-      case LambdaPhrase(_, _) | ApplyPhrase(_, _) | PairPhrase(_, _) | ExpPatternPhrase(_) | CommandPatternPhrase(_) =>
+      case LambdaPhrase(_, _) | ApplyPhrase(_, _) | PairPhrase(_, _) |
+           ExpPatternPhrase(_) | CommandPatternPhrase(_) | AccPatternPhrase(_) |
+           RecordAccPhase(_, _) | FstAccPhrase(_) | SndAccPhrase(_) =>
         throw new Exception("This should not happen")
     }
   }

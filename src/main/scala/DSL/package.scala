@@ -61,5 +61,7 @@ package object DSL {
 
   implicit def toExpPatternPhrase(p: ExpPattern): ExpPatternPhrase = ExpPatternPhrase(p)
 
+  implicit def toAccPatternPhrase(p: AccPattern): AccPatternPhrase = AccPatternPhrase(p)
+
   implicit def toCommandPatternPhrase(p: CommandPattern): CommandPatternPhrase = CommandPatternPhrase(p)
 }
