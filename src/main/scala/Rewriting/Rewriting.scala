@@ -23,6 +23,8 @@ object Rewriting {
       case x: IdentPhrase[ExpType] if x.t.dataType.isInstanceOf[RecordType] =>
         acc(fst(x), fstAcc(A)) `;` acc(snd(x), sndAcc(A))
 
+      case c : LiteralPhrase => A `:=` c
+
       case BinOpPhrase(op, e1, e2) =>
         exp(e1, λ(e1.t) { x =>
           exp(e2, λ(e2.t) { y =>
@@ -72,6 +74,8 @@ object Rewriting {
   def exp(E: Phrase[ExpType], C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
     E match {
       case x: IdentPhrase[ExpType] => C(x)
+
+      case c : LiteralPhrase => C(c)
 
       case BinOpPhrase(op, e1, e2) =>
         exp(e1, λ(e1.t) { x =>
