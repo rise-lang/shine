@@ -168,18 +168,18 @@ object Test extends App {
     val p1 = mapToFor(p0)
 
     val p2 = (p1: @unchecked) match {
-      case CommandPatternPhrase(For(n, LambdaPhrase(i, CommandPatternPhrase(Assign(acc, expr))))) =>
-        For(n, LambdaPhrase(i, Assign(acc, betaReduction(expr)))).asPhrase
+      case For(n, LambdaPhrase(i, Assign(acc, expr))) =>
+        For(n, LambdaPhrase(i, Assign(acc, betaReduction(expr))))
     }
 
     val p3 = p2 match {
-      case CommandPatternPhrase(For(n, LambdaPhrase(i, CommandPatternPhrase(Assign(acc, BinOpPhrase(op, ExpPatternPhrase(Fst(lhs)), ExpPatternPhrase(Snd(rhs)))))))) =>
-        For(n, LambdaPhrase(i, Assign(acc, BinOpPhrase(op, Fst(zipIndex(lhs)), Snd(zipIndex(rhs)))))).asPhrase
+      case For(n, LambdaPhrase(i, Assign(acc, BinOpPhrase(op, Fst(lhs), Snd(rhs))))) =>
+        For(n, LambdaPhrase(i, Assign(acc, BinOpPhrase(op, Fst(zipIndex(lhs)), Snd(zipIndex(rhs))))))
     }
 
     val p4 = p3 match {
-      case CommandPatternPhrase(For(n, LambdaPhrase(i, CommandPatternPhrase(Assign(acc, BinOpPhrase(op, lhs, rhs)))))) =>
-        For(n, LambdaPhrase(i, Assign(acc, BinOpPhrase(op, fstAccess(lhs), sndAccess(rhs))))).asPhrase
+      case For(n, LambdaPhrase(i, Assign(acc, BinOpPhrase(op, lhs, rhs)))) =>
+        For(n, LambdaPhrase(i, Assign(acc, BinOpPhrase(op, fstAccess(lhs), sndAccess(rhs)))))
     }
 
     val p = p4

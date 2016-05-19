@@ -149,11 +149,11 @@ object TypeChecker {
         check(TypeChecker(rhs), ExpType(int))
         ExpType(int)
 
-      case ExpPatternPhrase(pattern) => pattern.typeCheck()
+      case p: ExpPattern => p.typeCheck()
 
-      case AccPatternPhrase(pattern) => pattern.typeCheck()
+      case p: AccPattern => p.typeCheck()
 
-      case CommandPatternPhrase(pattern) => pattern.typeCheck()
+      case p: CommandPattern => p.typeCheck()
 
     }).asInstanceOf[T]
     p.t = phraseType

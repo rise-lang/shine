@@ -60,19 +60,11 @@ package object DSL {
   implicit def toLiteral(i: Int): LiteralPhrase = LiteralPhrase(i)
 
   implicit class ExpPhraseExtensions(e: Phrase[ExpType]) {
-    def _1() = Fst(e).asPhrase
+    def _1() = Fst(e)
 
-    def _2() = Snd(e).asPhrase
+    def _2() = Snd(e)
 
     def `@`(index: Phrase[ExpType]) = Idx(e, index)
-  }
-
-  implicit class ExpPatternExtensions(p: ExpPattern) {
-    def _1() = Fst(p).asPhrase
-
-    def _2() = Snd(p).asPhrase
-
-    def `@`(index: Phrase[ExpType]) = Idx(p, index)
   }
 
   implicit class AccPhraseExtensions(a: Phrase[AccType]) {
@@ -83,10 +75,4 @@ package object DSL {
     def rd = π1(v)
     def wr = π2(v)
   }
-
-  implicit def toExpPatternPhrase(p: ExpPattern): ExpPatternPhrase = ExpPatternPhrase(p)
-
-  implicit def toAccPatternPhrase(p: AccPattern): AccPatternPhrase = AccPatternPhrase(p)
-
-  implicit def toCommandPatternPhrase(p: CommandPattern): CommandPatternPhrase = CommandPatternPhrase(p)
 }

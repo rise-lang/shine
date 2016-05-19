@@ -46,7 +46,7 @@ case class ReduceIAcc(out: Phrase[AccType],
     val n = TypeChecker(in) match { case ExpType(ArrayType(len, _)) => len }
 
     (0 until n).foldLeft(s)( (sOld, i) => {
-      val comm = fE(out)(Idx(in, LiteralPhrase(i)).asPhrase)(init)
+      val comm = fE(out)(Idx(in, LiteralPhrase(i)))(init)
       OperationalSemantics.eval(sOld, comm)
     } )
   }

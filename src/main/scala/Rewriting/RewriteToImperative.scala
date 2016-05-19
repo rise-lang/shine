@@ -24,7 +24,7 @@ object RewriteToImperative {
         MapI(A,
           λ(A.t) { o => λ(x.t) { x => acc(x, o) } },
           x
-        ).asPhrase
+        )
 
       case x: IdentPhrase[ExpType] if x.t.dataType.isInstanceOf[RecordType] =>
         acc(fst(x), fstAcc(A)) `;` acc(snd(x), sndAcc(A))
@@ -38,14 +38,14 @@ object RewriteToImperative {
           })
         })
 
-      case ExpPatternPhrase(pattern) => pattern match {
+      case pattern : ExpPattern => pattern match {
 
         case Map(f, e) =>
           exp(e, λ(e.t) { x =>
             MapI(A,
               λ(A.t) { o => λ(e.t) { x => acc(f(x), o) } },
               x
-            ).asPhrase
+            )
           })
 
         case Reduce(f, i, e) =>
@@ -55,7 +55,7 @@ object RewriteToImperative {
                 λ(A.t) { o => λ(e.t) { x => λ(i.t) { y => acc(f(x)(y), o) } } },
                 y,
                 x
-              ).asPhrase
+              )
             })
           })
 
@@ -64,14 +64,14 @@ object RewriteToImperative {
             exp(e2, λ(e2.t) { y =>
               MapI(A,
                 λ(A.t) { o => λ(ExpType(RecordType(e1.t.dataType, e2.t.dataType))) { x => acc(x, o) } },
-                Zip(x, y).asPhrase
-              ).asPhrase
+                Zip(x, y)
+              )
             })
           })
 
-        case Join(e) => acc(e, JoinAcc(A).asPhrase)
+        case Join(e) => acc(e, JoinAcc(A))
 
-        case Split(n, e) => acc(e, SplitAcc(n, A).asPhrase)
+        case Split(n, e) => acc(e, SplitAcc(n, A))
 
       }
 
@@ -93,7 +93,7 @@ object RewriteToImperative {
           })
         })
 
-      case ExpPatternPhrase(pattern) => pattern match {
+      case pattern : ExpPattern => pattern match {
 
         case Map(f, e) =>
           // specify array type + size info
@@ -109,14 +109,14 @@ object RewriteToImperative {
                 λ(AccType(i.t.dataType)) { o => λ(e.t) { x => λ(i.t) { y => acc(f(x)(y), o) } } },
                 y,
                 x
-              ).asPhrase
+              )
             })
           })
 
         case Zip(e1, e2) =>
           exp(e1, λ(e1.t) { x =>
             exp(e2, λ(e2.t) { y =>
-              C(Zip(x, y).asPhrase)
+              C(Zip(x, y))
             })
           })
 

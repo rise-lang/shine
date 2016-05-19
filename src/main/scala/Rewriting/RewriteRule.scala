@@ -4,7 +4,6 @@ import Core._
 import DSL._
 
 import ExpPatterns._
-import AccPatterns._
 import CommandPatterns._
 
 case class RewriteRule(desc: String, rewrite: PartialFunction[Phrase[_ <: PhraseType], Phrase[_ <: PhraseType]]) {
@@ -21,14 +20,14 @@ object RewriteRules {
   })
 
   val mapToFor = RewriteRule("map to for", {
-    case CommandPatternPhrase(Assign(out, ExpPatternPhrase(Map(f, array)))) =>
+    case Assign(out, Map(f, array)) =>
       `for`(length(out), { i =>
         out `@` i := ApplyPhrase(f, array `@` i)
       })
   })
 
   val joinToFor = RewriteRule("join to for", {
-    case CommandPatternPhrase(Assign(out, ExpPatternPhrase(Join(array)))) =>
+    case Assign(out, Join(array)) =>
       `for`(length(array), { i =>
         `for`(length(array `@` i), { j =>
           out `@` (i*length(array `@` i)+j) := (array `@` j) `@` j
@@ -37,26 +36,26 @@ object RewriteRules {
   })
 
   val mapIndex = RewriteRule("map index", {
-    case ExpPatternPhrase(Idx(ExpPatternPhrase(Map(f, array)), i)) =>
+    case Idx(Map(f, array), i) =>
       ApplyPhrase(f, array `@` i)
   })
 
   val splitIndex = RewriteRule("split index", {
-    case ExpPatternPhrase(Idx(ExpPatternPhrase(Idx(ExpPatternPhrase(Split(n, array)), i)), j)) =>
+    case Idx(Idx(Split(n, array), i), j) =>
       array `@` (i * n + j)
   })
 
   val zipIndex = RewriteRule("zip index", {
-    case ExpPatternPhrase(Idx(ExpPatternPhrase(Zip(lhs, rhs)), i)) =>
+    case Idx(Zip(lhs, rhs), i) =>
       Record(lhs `@` i, rhs `@` i)
   })
 
   val fstAccess = RewriteRule("record field access", {
-    case ExpPatternPhrase(Fst(ExpPatternPhrase(Record(fst, _)))) => fst
+    case Fst(Record(fst, _)) => fst
   })
 
   val sndAccess = RewriteRule("record field access", {
-    case ExpPatternPhrase(Snd(ExpPatternPhrase(Record(_, snd)))) => snd
+    case Snd(Record(_, snd)) => snd
   })
 
   val rules: Vector[RewriteRule] = Vector(betaReduction, mapToFor, joinToFor, mapIndex, splitIndex, zipIndex, fstAccess, sndAccess)

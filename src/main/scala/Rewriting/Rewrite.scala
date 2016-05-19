@@ -24,32 +24,32 @@ object Rewrite {
       case i: IfThenElsePhrase[T]             => IfThenElsePhrase(apply(i.cond), apply(i.thenP), apply(i.elseP))
       case l: LiteralPhrase                   => l
       case BinOpPhrase(op, lhs, rhs)          => BinOpPhrase(op, apply(lhs), apply(rhs))
-      case ExpPatternPhrase(pattern)          =>
-        ExpPatternPhrase(pattern match {
+      case p: ExpPattern                      =>
+        p match {
           case Record(fst, snd)               => Record(apply(fst), apply(snd))
           case Fst(record)                    => Fst(apply(record))
           case Snd(record)                    => Snd(apply(record))
           case Length(array)                  => Length(apply(array))
           case Idx(array, index)              => Idx(apply(array), apply(index))
-          case _                              => pattern
-        })
-      case AccPatternPhrase(pattern)          =>
-        AccPatternPhrase(pattern match {
+          case _                              => p
+        }
+      case p: AccPattern                      =>
+        p match {
           case RecordAcc(fst, snd)            => RecordAcc(apply(fst), apply(snd))
           case FstAcc(record)                 => FstAcc(record)
           case SndAcc(record)                 => SndAcc(record)
           case IdxAcc(array, index)           => IdxAcc(array, index)
-          case _                              => pattern
-        })
-      case CommandPatternPhrase(pattern)      =>
-        CommandPatternPhrase(pattern match {
+          case _                              => p
+        }
+      case p: CommandPattern                  =>
+        p match {
           case s: Skip                        => s
           case Seq(c1, c2)                    => Seq(apply(c1), apply(c2))
           case New(f)                         => New(apply(f))
           case Assign(lhs, rhs)               => Assign(apply(lhs), apply(rhs))
           case For(n, body)                   => For(apply(n), apply(body))
-          case _                              => pattern
-        })
+          case _                              => p
+        }
     }).asInstanceOf[Phrase[T]]
     res.t = p.t
     res

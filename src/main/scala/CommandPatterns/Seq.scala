@@ -24,7 +24,7 @@ case class Seq(c1: Phrase[CommandType], c2: Phrase[CommandType]) extends Command
       OperationalSemantics.substitute(phrase, `for`, c2))
   }
 
-  override def substituteImpl: Phrase[CommandType] = Seq(SubstituteImplementations(c1), SubstituteImplementations(c2)).asPhrase
+  override def substituteImpl: Phrase[CommandType] = Seq(SubstituteImplementations(c1), SubstituteImplementations(c2))
 
   override def toC = Printer.toC(c1) + ";\n" + Printer.toC(c2)
 

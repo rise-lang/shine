@@ -42,15 +42,43 @@ object BinOpPhrase {
 
 }
 
-
 final case class LiteralPhrase(d: OperationalSemantics.Data)
   extends Phrase[ExpType]
 
-final case class ExpPatternPhrase(pattern: ExpPattern)
-  extends Phrase[ExpType]
+abstract class ExpPattern extends Phrase[ExpType] {
+  def typeCheck(): ExpType
 
-final case class AccPatternPhrase(pattern: AccPattern)
-  extends Phrase[AccType]
+  def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): ExpPattern
 
-final case class CommandPatternPhrase(pattern: CommandPattern)
-  extends Phrase[CommandType]
+  def eval(s: OperationalSemantics.Store): OperationalSemantics.Data
+
+  def toC: String
+
+  def prettyPrint: String
+}
+
+abstract class AccPattern extends Phrase[AccType] {
+  def typeCheck(): AccType
+
+  def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): AccPattern
+
+  def eval(s: OperationalSemantics.Store): OperationalSemantics.AccIdentifier
+
+  def toC: String
+
+  def prettyPrint: String
+}
+
+abstract class CommandPattern extends  Phrase[CommandType] {
+  def typeCheck(): CommandType
+
+  def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): CommandPattern
+
+  def eval(s: OperationalSemantics.Store): OperationalSemantics.Store
+
+  def toC: String
+
+  def prettyPrint: String
+
+  def substituteImpl: Phrase[CommandType]
+}

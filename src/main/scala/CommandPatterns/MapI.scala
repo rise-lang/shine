@@ -45,7 +45,7 @@ case class MapI(out: Phrase[AccType],
     val n = TypeChecker(in) match { case ExpType(ArrayType(len, _)) => len }
 
     (0 until n).foldLeft(s)( (sOld, i) => {
-      val comm = fE(IdxAcc(out, LiteralPhrase(i)).asPhrase)(Idx(in, LiteralPhrase(i)).asPhrase)
+      val comm = fE(IdxAcc(out, LiteralPhrase(i)))(Idx(in, LiteralPhrase(i)))
       OperationalSemantics.eval(sOld, comm)
     } )
   }

@@ -32,7 +32,7 @@ case class New(f: Phrase[(ExpType x AccType) -> CommandType]) extends CommandPat
     New(OperationalSemantics.substitute(phrase, `for`, f))
   }
 
-  override def substituteImpl: Phrase[CommandType] = New(SubstituteImplementations.applyFun(f)).asPhrase
+  override def substituteImpl: Phrase[CommandType] = New(SubstituteImplementations.applyFun(f))
 
   override def toC = {
     val fE = Lift.liftFunction(f)

@@ -28,7 +28,7 @@ case class For(n: Phrase[ExpType], body: Phrase[ExpType -> CommandType]) extends
       OperationalSemantics.substitute(phrase, `for`, body))
   }
 
-  override def substituteImpl: Phrase[CommandType] = For(n, SubstituteImplementations.applyFun(body)).asPhrase
+  override def substituteImpl: Phrase[CommandType] = For(n, SubstituteImplementations.applyFun(body))
 
   override def toC = {
     val bodyE = Lift.liftFunction(body)

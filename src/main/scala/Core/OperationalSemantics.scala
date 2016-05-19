@@ -104,11 +104,11 @@ object OperationalSemantics {
         case BinOpPhrase(op, lhs, rhs) =>
           BinOpPhrase(op, substitute(phrase, `for`, lhs), substitute(phrase, `for`, rhs))
 
-        case ExpPatternPhrase(pattern) => ExpPatternPhrase(pattern.substitute(phrase, `for`))
+        case p : ExpPattern => p.substitute(phrase, `for`)
 
-        case AccPatternPhrase(pattern) => AccPatternPhrase(pattern.substitute(phrase, `for`))
+        case p: AccPattern => p.substitute(phrase, `for`)
 
-        case CommandPatternPhrase(pattern) => CommandPatternPhrase(pattern.substitute(phrase, `for`))
+        case p: CommandPattern => p.substitute(phrase, `for`)
       }).asInstanceOf[Phrase[T2]]
       res.t = in.t // preserve type
       res
@@ -221,8 +221,7 @@ object OperationalSemantics {
               case BinOpPhrase.Op.MOD => evalIntExp(s, lhs) % evalIntExp(s, rhs)
             }
 
-          case ExpPatternPhrase(pattern) =>
-            pattern.eval(s)
+          case p: ExpPattern => p.eval(s)
 
           case ApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) | Proj1Phrase(_) | Proj2Phrase(_) =>
             throw new Exception("This should never happen")
@@ -236,7 +235,7 @@ object OperationalSemantics {
         p match {
           case IdentPhrase(name) => NamedIdentifier(name)
 
-          case AccPatternPhrase(pattern) => pattern.eval(s)
+          case p: AccPattern => p.eval(s)
 
           case ApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) | Proj1Phrase(_) | Proj2Phrase(_) =>
             throw new Exception("This should never happen")
@@ -250,7 +249,7 @@ object OperationalSemantics {
         p match {
           case IdentPhrase(_) => throw new Exception("This should never happen")
 
-          case CommandPatternPhrase(pattern) => pattern.eval(s)
+          case p: CommandPattern => p.eval(s)
 
           case ApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) | Proj1Phrase(_) | Proj2Phrase(_) =>
             throw new Exception("This should never happen")

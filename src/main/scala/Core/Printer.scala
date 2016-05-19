@@ -20,11 +20,11 @@ object Printer {
 
       case BinOpPhrase(op, lhs, rhs) => "(" + toC(lhs) + " " + op.toString + " " + toC(rhs) + ")"
 
-      case ExpPatternPhrase(pattern) => pattern.toC
+      case p: ExpPattern => p.toC
 
-      case AccPatternPhrase(pattern) => pattern.toC
+      case p: AccPattern => p.toC
 
-      case CommandPatternPhrase(pattern) => pattern.toC
+      case p: CommandPattern => p.toC
 
       case LambdaPhrase(_, _) | ApplyPhrase(_, _) | PairPhrase(_, _)  =>
         throw new Exception("This should not happen")
