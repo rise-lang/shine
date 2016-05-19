@@ -26,4 +26,5 @@ case class FstAcc(record: Phrase[AccType]) extends AccPattern {
 
   override def toC = ???
 
+  override def prettyPrint: String = s"${PrettyPrinter(record)}._1"
 }

@@ -9,5 +9,7 @@ trait ExpPattern {
 
   def toC: String
 
+  def prettyPrint: String
+
   def asPhrase = ExpPatternPhrase(this)
 }

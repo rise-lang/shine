@@ -49,6 +49,8 @@ case class Reduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
 
   override def toC = ???
 
+  override def prettyPrint: String = s"(reduce ${PrettyPrinter(f)} ${PrettyPrinter(init)} ${PrettyPrinter(array)})"
+
 }
 
 // Implementation with PairType instead of curried FunctionType to represent binary function

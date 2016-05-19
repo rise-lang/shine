@@ -52,7 +52,9 @@ case class MapI(out: Phrase[AccType],
 
   override def toC = ???
 
-  def impl: Phrase[CommandType] = {
+  override def prettyPrint: String = s"mapI ${PrettyPrinter(out)} ${PrettyPrinter(f)} ${PrettyPrinter(in)}"
+
+  override def substituteImpl: Phrase[CommandType] = {
     `for`(length(in), i => {
       f( out `@` i )( in `@` i )
     })

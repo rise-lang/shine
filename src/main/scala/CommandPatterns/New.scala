@@ -3,6 +3,7 @@ package CommandPatterns
 import Core._
 import Core.OperationalSemantics._
 import Core.PhraseType._
+import Rewriting.SubstituteImplementations
 
 case class New(f: Phrase[(ExpType x AccType) -> CommandType]) extends CommandPattern {
 
@@ -31,6 +32,8 @@ case class New(f: Phrase[(ExpType x AccType) -> CommandType]) extends CommandPat
     New(OperationalSemantics.substitute(phrase, `for`, f))
   }
 
+  override def substituteImpl: Phrase[CommandType] = New(SubstituteImplementations.applyFun(f)).asPhrase
+
   override def toC = {
     val fE = Lift.liftFunction(f)
     val v = IdentPhrase[ExpType x AccType](OperationalSemantics.newName())
@@ -38,5 +41,7 @@ case class New(f: Phrase[(ExpType x AccType) -> CommandType]) extends CommandPat
     v.t = PairType(ExpType(dt), AccType(dt))
     s"{\n${Printer.nameOf(dt)} ${v.name};\n${Printer.toC(fE(v))}; \n}"
   }
+
+  override def prettyPrint: String = s"new ${PrettyPrinter(f)}"
 
 }

@@ -29,4 +29,6 @@ case class Idx(array: Phrase[ExpType], index: Phrase[ExpType]) extends ExpPatter
 
   override def toC = Printer.toC(array) + "[" + Printer.toC(index) + "]"
 
+  override def prettyPrint: String = s"${PrettyPrinter(array)}[${PrettyPrinter(index)}]"
+
 }

@@ -24,4 +24,6 @@ case class JoinAcc(array: Phrase[AccType]) extends AccPattern {
 
   override def toC = ???
 
+  override def prettyPrint: String = s"(join ${PrettyPrinter(array)})"
+
 }

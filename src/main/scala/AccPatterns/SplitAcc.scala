@@ -24,4 +24,6 @@ case class SplitAcc(n: Int, array: Phrase[AccType]) extends AccPattern {
 
   override def toC = ???
 
+  override def prettyPrint: String = s"(split ${n.toString} ${PrettyPrinter(array)})"
+
 }

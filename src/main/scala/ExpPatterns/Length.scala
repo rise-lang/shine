@@ -30,4 +30,6 @@ case class Length[T <: BasePhraseTypes](array: Phrase[T]) extends ExpPattern {
     case AccType(ArrayType(n, dt)) => n.toString
   }
 
+  override def prettyPrint: String = s"(length ${PrettyPrinter(array)})"
+
 }

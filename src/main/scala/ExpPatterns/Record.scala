@@ -26,4 +26,6 @@ case class Record(fst: Phrase[ExpType], snd: Phrase[ExpType]) extends ExpPattern
     s"(struct ${Printer.nameOf(dt)}){ ${Printer.toC(fst)} , ${Printer.toC(snd)} }"
   }
 
+  override def prettyPrint: String = s"(${PrettyPrinter(fst)}, ${PrettyPrinter(snd)})"
+
 }

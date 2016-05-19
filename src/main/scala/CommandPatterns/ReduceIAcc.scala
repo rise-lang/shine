@@ -53,7 +53,9 @@ case class ReduceIAcc(out: Phrase[AccType],
 
   override def toC = ???
 
-  def impl: Phrase[CommandType] = {
+  override def prettyPrint: String = s"reduceIAcc ${PrettyPrinter(out)} ${PrettyPrinter(f)} ${PrettyPrinter(init)} ${PrettyPrinter(in)}"
+
+  override def substituteImpl: Phrase[CommandType] = {
     `new`( accum => {
       (accum.wr `:=` init) `;`
       `for`(length(in), i => {

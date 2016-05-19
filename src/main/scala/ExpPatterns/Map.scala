@@ -40,4 +40,6 @@ case class Map(f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) extends Ex
 
   override def toC = ???
 
+  override def prettyPrint: String = s"(map ${PrettyPrinter(f)} ${PrettyPrinter(array)})"
+
 }

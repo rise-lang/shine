@@ -9,5 +9,9 @@ trait CommandPattern {
 
   def toC: String
 
+  def prettyPrint: String
+
+  def substituteImpl: Phrase[CommandType]
+
   def asPhrase = CommandPatternPhrase(this)
 }

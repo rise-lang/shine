@@ -56,6 +56,10 @@ case class Assign(lhs: Phrase[AccType], rhs: Phrase[ExpType]) extends CommandPat
       OperationalSemantics.substitute(phrase, `for`, rhs))
   }
 
+  override def substituteImpl: Phrase[CommandType] = this.asPhrase
+
   override def toC = Printer.toC(lhs) + " = " + Printer.toC(rhs) + ";\n"
+
+  override def prettyPrint: String = s"${PrettyPrinter(lhs)} := ${PrettyPrinter(rhs)}"
 
 }

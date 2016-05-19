@@ -25,4 +25,6 @@ case class Fst(record: Phrase[ExpType]) extends ExpPattern {
 
   override def toC = Printer.toC(record) + ".fst"
 
+  override def prettyPrint: String = s"${PrettyPrinter(record)}._1"
+
 }

@@ -23,4 +23,6 @@ case class RecordAcc(fst: Phrase[AccType], snd: Phrase[AccType]) extends AccPatt
 
   override def toC = ???
 
+  override def prettyPrint: String = s"(${PrettyPrinter(fst)}, ${PrettyPrinter(snd)})"
+
 }

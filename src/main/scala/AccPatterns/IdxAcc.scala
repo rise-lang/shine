@@ -31,4 +31,6 @@ case class IdxAcc(array: Phrase[AccType], index: Phrase[ExpType]) extends AccPat
 
   override def toC = Printer.toC(array) + "[" + Printer.toC(index) + "]"
 
+  override def prettyPrint: String = s"${PrettyPrinter(array)}[${PrettyPrinter(index)}]"
+
 }

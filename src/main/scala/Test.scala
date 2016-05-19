@@ -818,5 +818,27 @@ object Test extends App {
 //        λ(tmp5,
 //          accum.wr := (tmp.rd)[tmp5] + accum.rd ) ) ;
 //      output := accum.rd ) ) ) )
+
+    println(PrettyPrinter(p3))
+
+//    new (λ tmp.
+//      for (length (split 2 input))
+//        (λ v101.
+//          new (λ v102.
+//            v102._2 := IntData(0) ;
+//            for (length (split 2 input)[v101])
+//              (λ v103. v102._2 := ((split 2 input)[v101][v103] + v102._1) ) ;
+//            tmp._2[v101] := v102._1
+//          )
+//        ) ;
+//      new (λ v104.
+//        v104._2 := IntData(0) ;
+//        for (length tmp._1)
+//          (λ v105. v104._2 := (tmp._1[v105] + v104._1) ) ;
+//        output := v104._1
+//      )
+//    )
+
+
   }
 }

@@ -41,4 +41,6 @@ case class Iterate(n: Int, f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]
 
   override def toC = ???
 
+  override def prettyPrint: String = s"(iterate ${n.toString} ${PrettyPrinter(f)})"
+
 }

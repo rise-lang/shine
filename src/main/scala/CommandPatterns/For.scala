@@ -3,6 +3,7 @@ package CommandPatterns
 import Core._
 import Core.OperationalSemantics._
 import Core.PhraseType._
+import Rewriting.SubstituteImplementations
 
 case class For(n: Phrase[ExpType], body: Phrase[ExpType -> CommandType]) extends CommandPattern {
 
@@ -27,11 +28,15 @@ case class For(n: Phrase[ExpType], body: Phrase[ExpType -> CommandType]) extends
       OperationalSemantics.substitute(phrase, `for`, body))
   }
 
+  override def substituteImpl: Phrase[CommandType] = For(n, SubstituteImplementations.applyFun(body)).asPhrase
+
   override def toC = {
     val bodyE = Lift.liftFunction(body)
     val i = IdentPhrase[ExpType](OperationalSemantics.newName())
     i.t = ExpType(int)
     s"for (int ${i.name} = 0; ${i.name} < ${Printer.toC(n)}; ++${i.name}) {\n${Printer.toC(bodyE(i))}}\n"
   }
+
+  override def prettyPrint: String = s"for ${PrettyPrinter(n)} ${PrettyPrinter(body)}"
 
 }

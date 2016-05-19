@@ -2,6 +2,7 @@ package CommandPatterns
 
 import Core._
 import Core.OperationalSemantics._
+import Rewriting.SubstituteImplementations
 
 case class Seq(c1: Phrase[CommandType], c2: Phrase[CommandType]) extends CommandPattern {
 
@@ -23,6 +24,10 @@ case class Seq(c1: Phrase[CommandType], c2: Phrase[CommandType]) extends Command
       OperationalSemantics.substitute(phrase, `for`, c2))
   }
 
+  override def substituteImpl: Phrase[CommandType] = Seq(SubstituteImplementations(c1), SubstituteImplementations(c2)).asPhrase
+
   override def toC = Printer.toC(c1) + ";\n" + Printer.toC(c2)
+
+  override def prettyPrint: String = s"${PrettyPrinter(c1)} ; ${PrettyPrinter(c2)}"
 
 }

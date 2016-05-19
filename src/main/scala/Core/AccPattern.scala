@@ -9,5 +9,7 @@ trait AccPattern {
 
   def toC: String
 
+  def prettyPrint: String
+
   def asPhrase = AccPatternPhrase(this)
 }

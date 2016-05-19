@@ -56,6 +56,8 @@ case class ReduceIExp(out: Phrase[ExpType -> CommandType],
 
   override def toC = ???
 
-  def impl: Phrase[CommandType] = ???
+  override def prettyPrint: String = s"reduceIExp ${PrettyPrinter(out)} ${PrettyPrinter(f)} ${PrettyPrinter(init)} ${PrettyPrinter(in)}"
+
+  override def substituteImpl: Phrase[CommandType] = ???
 
 }

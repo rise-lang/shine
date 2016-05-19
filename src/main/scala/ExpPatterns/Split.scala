@@ -41,4 +41,6 @@ case class Split(n: Int, array: Phrase[ExpType]) extends ExpPattern {
 
   override def toC = ???
 
+  override def prettyPrint: String = s"(split ${n.toString} ${PrettyPrinter(array)})"
+
 }
