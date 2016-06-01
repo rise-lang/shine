@@ -48,7 +48,7 @@ case class ReduceIExp(out: Phrase[ExpType -> CommandType],
 
   override def eval(s: Store): Store = {
     val outE = OperationalSemantics.eval(s, out)
-    OperationalSemantics.eval(s, `new`(v => {
+    OperationalSemantics.eval(s, `new`(init.t.dataType, v => {
       ReduceIAcc(π2(v), f, init, in) `;`
         outE(π1(v))
     }))

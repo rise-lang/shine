@@ -2,6 +2,7 @@ package ExpPatterns
 
 import Core._
 import Core.OperationalSemantics._
+import Core.PhraseType.->
 
 case class Idx(array: Phrase[ExpType], index: Phrase[ExpType]) extends ExpPattern {
 
@@ -31,4 +32,7 @@ case class Idx(array: Phrase[ExpType], index: Phrase[ExpType]) extends ExpPatter
 
   override def prettyPrint: String = s"${PrettyPrinter(array)}[${PrettyPrinter(index)}]"
 
+  override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = ???
+
+  override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = ???
 }

@@ -3,7 +3,6 @@ import Core._
 import DSL._
 import Rewriting.{Rewrite, RewriteToImperative, SubstituteImplementations}
 import CommandPatterns._
-import Core.PhraseType.->
 import ExpPatterns._
 
 import scala.collection.immutable.HashMap
@@ -22,9 +21,9 @@ object Test extends App {
     val out = identifier("out", AccType(int))
     store = store + (out.name -> 0)
 
-    val p = `new`(v =>
+    val p = `new`(int, v =>
       (π2(v) := LiteralPhrase(42) + LiteralPhrase(1)) `;`
-        `new`(v2 =>
+        `new`(int, v2 =>
           (π2(v2) := π1(v) + 1) `;`
             (π2(v) := π1(v2))
         ) `;`
@@ -71,7 +70,7 @@ object Test extends App {
     val out = identifier("out", AccType(int))
     store = store + (out.name -> 0)
 
-    val p = `new`( v =>
+    val p = `new`(int, v =>
       (π2(v) := 42 + 1) `;`
       `for`(10, { i =>
         π2(v) := i + π1(v)

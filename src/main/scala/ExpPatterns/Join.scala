@@ -1,7 +1,11 @@
 package ExpPatterns
 
+import AccPatterns.JoinAcc
 import Core.OperationalSemantics._
+import Core.PhraseType.->
 import Core._
+import Rewriting.RewriteToImperative
+import DSL._
 
 case class Join(array: Phrase[ExpType]) extends ExpPattern {
 
@@ -10,7 +14,7 @@ case class Join(array: Phrase[ExpType]) extends ExpPattern {
     TypeChecker(array) match {
       case ExpType(ArrayType(n, ArrayType(m, dt))) =>
         ExpType(ArrayType(n*m, dt))
-      case t => error(t.toString, "ArrayType(ArrayType)")
+      case x => error(x.toString, "ArrayType(ArrayType)")
     }
   }
 
@@ -35,4 +39,13 @@ case class Join(array: Phrase[ExpType]) extends ExpPattern {
 
   override def prettyPrint: String = s"(join ${PrettyPrinter(array)})"
 
+  override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
+    RewriteToImperative.acc(array, JoinAcc(A))
+  }
+
+  override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
+    RewriteToImperative.exp(array, λ(array.t) { x =>
+      C(Join(x))
+    })
+  }
 }

@@ -9,9 +9,9 @@ import DSL._
 import AccPatterns._
 import ExpPatterns._
 
-case class MapI(out: Phrase[AccType],
-                f: Phrase[AccType -> (ExpType -> CommandType)],
-                in: Phrase[ExpType]) extends CommandPattern {
+abstract class AbstractMapI(out: Phrase[AccType],
+                            f: Phrase[AccType -> (ExpType -> CommandType)],
+                            in: Phrase[ExpType]) extends CommandPattern {
 
   override def typeCheck(): CommandType = {
     import TypeChecker._
@@ -33,21 +33,29 @@ case class MapI(out: Phrase[AccType],
     }
   }
 
+  override def eval(s: Store): Store = {
+    val fE = OperationalSemantics.eval(s, f)(BinaryFunctionEvaluator)
+    val n = TypeChecker(in) match {
+      case ExpType(ArrayType(len, _)) => len
+    }
+
+    (0 until n).foldLeft(s)((sOld, i) => {
+      val comm = fE(IdxAcc(out, LiteralPhrase(i)))(Idx(in, LiteralPhrase(i)))
+      OperationalSemantics.eval(sOld, comm)
+    })
+  }
+
+}
+
+case class MapI(out: Phrase[AccType],
+                f: Phrase[AccType -> (ExpType -> CommandType)],
+                in: Phrase[ExpType]) extends AbstractMapI(out, f, in) {
+
   override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): CommandPattern = {
     MapI(
       OperationalSemantics.substitute(phrase, `for`, out),
       OperationalSemantics.substitute(phrase, `for`, f),
       OperationalSemantics.substitute(phrase, `for`, in))
-  }
-
-  override def eval(s: Store): Store = {
-    val fE = OperationalSemantics.eval(s, f)(BinaryFunctionEvaluator)
-    val n = TypeChecker(in) match { case ExpType(ArrayType(len, _)) => len }
-
-    (0 until n).foldLeft(s)( (sOld, i) => {
-      val comm = fE(IdxAcc(out, LiteralPhrase(i)))(Idx(in, LiteralPhrase(i)))
-      OperationalSemantics.eval(sOld, comm)
-    } )
   }
 
   override def toC = ???
@@ -56,7 +64,7 @@ case class MapI(out: Phrase[AccType],
 
   override def substituteImpl: Phrase[CommandType] = {
     `for`(length(in), i => {
-      f( out `@` i )( in `@` i )
+      f(out `@` i)(in `@` i)
     })
   }
 

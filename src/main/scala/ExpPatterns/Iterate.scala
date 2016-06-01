@@ -16,7 +16,7 @@ case class Iterate(n: Int, f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]
             t // improve and capture effect on array size
           case ft => error(ft.toString, "FunctionType")
         }
-      case t => error(t.toString, "ArrayType")
+      case t_ => error(t_.toString, "ArrayType")
     }
   }
 
@@ -43,4 +43,7 @@ case class Iterate(n: Int, f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]
 
   override def prettyPrint: String = s"(iterate ${n.toString} ${PrettyPrinter(f)})"
 
+  override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = ???
+
+  override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = ???
 }

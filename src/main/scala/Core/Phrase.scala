@@ -55,6 +55,10 @@ abstract class ExpPattern extends Phrase[ExpType] {
   def toC: String
 
   def prettyPrint: String
+
+  def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType]
+
+  def rewriteToImperativeExp(C: Phrase[ExpType -> CommandType]): Phrase[CommandType]
 }
 
 abstract class AccPattern extends Phrase[AccType] {

@@ -20,16 +20,6 @@ object `;` {
   }
 }
 
-object makeNew {
-  // TODO: make passive lambda ...
-  def apply(t: DataType) = {
-    //: Phrase[(VarType -> CommandType) -> CommandType]
-    λ(VarType(t) -> CommandType()) {
-      f => New(f)
-    }
-  }
-}
-
 object := {
   // TODO: add passivity
   def apply(t: DataType) = {
@@ -81,10 +71,10 @@ object `for` {
 }
 
 object `new` {
-  def apply(f: Phrase[ (ExpType x AccType) -> CommandType ]) = New(f)
+  def apply(dt: DataType, f: Phrase[ (ExpType x AccType) -> CommandType ]) = New(dt, f)
 
-  def apply(f: Phrase[ExpType x AccType] => Phrase[CommandType]) = {
-    New(λ( ExpType(int) x AccType(int) ) { v => f(v) })
+  def apply(dt: DataType, f: Phrase[ExpType x AccType] => Phrase[CommandType]) = {
+    New(dt, λ( ExpType(int) x AccType(int) ) { v => f(v) })
   }
 }
 

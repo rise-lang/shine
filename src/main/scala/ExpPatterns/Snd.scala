@@ -2,6 +2,7 @@ package ExpPatterns
 
 import Core._
 import Core.OperationalSemantics._
+import Core.PhraseType.->
 
 case class Snd(record: Phrase[ExpType]) extends ExpPattern {
 
@@ -27,4 +28,7 @@ case class Snd(record: Phrase[ExpType]) extends ExpPattern {
 
   override def prettyPrint: String = s"${PrettyPrinter(record)}._2"
 
+  override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = ???
+
+  override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = ???
 }

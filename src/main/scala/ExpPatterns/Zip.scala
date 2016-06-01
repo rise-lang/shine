@@ -1,7 +1,11 @@
 package ExpPatterns
 
+import CommandPatterns.MapI
 import Core._
 import Core.OperationalSemantics._
+import Core.PhraseType.->
+import DSL._
+import Rewriting.RewriteToImperative
 
 case class Zip(lhs: Phrase[ExpType], rhs: Phrase[ExpType]) extends ExpPattern {
 
@@ -33,4 +37,22 @@ case class Zip(lhs: Phrase[ExpType], rhs: Phrase[ExpType]) extends ExpPattern {
 
   override def prettyPrint: String = s"(zip ${PrettyPrinter(lhs)} ${PrettyPrinter(rhs)})"
 
+  override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
+    RewriteToImperative.exp(lhs, λ(lhs.t) { x =>
+      RewriteToImperative.exp(rhs, λ(rhs.t) { y =>
+        MapI(A,
+          λ(A.t) { o => λ(ExpType(RecordType(lhs.t.dataType, rhs.t.dataType))) { x => RewriteToImperative.acc(x, o) } },
+          Zip(x, y)
+        )
+      })
+    })
+  }
+
+  override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
+    RewriteToImperative.exp(lhs, λ(lhs.t) { x =>
+      RewriteToImperative.exp(rhs, λ(rhs.t) { y =>
+        C(Zip(x, y))
+      })
+    })
+  }
 }

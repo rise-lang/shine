@@ -1,7 +1,11 @@
 package ExpPatterns
 
+import AccPatterns.SplitAcc
 import Core._
 import Core.OperationalSemantics._
+import Core.PhraseType.->
+import Rewriting.RewriteToImperative
+import DSL._
 
 case class Split(n: Int, array: Phrase[ExpType]) extends ExpPattern {
 
@@ -43,4 +47,13 @@ case class Split(n: Int, array: Phrase[ExpType]) extends ExpPattern {
 
   override def prettyPrint: String = s"(split ${n.toString} ${PrettyPrinter(array)})"
 
+  override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
+    RewriteToImperative.acc(array, SplitAcc(n, A))
+  }
+
+  override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
+    RewriteToImperative.exp(array, λ(array.t) { x =>
+      C(Split(n, x))
+    })
+  }
 }
