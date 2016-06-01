@@ -787,20 +787,20 @@ object Test extends App {
     println("=====")
 
     val p2 = RewriteToImperative(p)
-
     println("=====")
     println(p2)
     println("=====")
+    TypeChecker(p2)
 
 // New(λ(tmp,
 //    MapI(tmp.wr, λ(o, λ(x, ReduceIAcc(o, λ(o', λ(x', λ(y, o' := x' + y))), 0, x))), Split(2, x));
 //    ReduceIAcc(out, λ(o, λ(x, λ(y, o := x + y ))), 0, tmp.rd)))
 
     val p3 = SubstituteImplementations(p2)
-
     println("=====")
     println(p3)
     println("=====")
+    TypeChecker(p3)
 
 // New(λ(tmp,
 //    For( Length( Split(2,input) ),

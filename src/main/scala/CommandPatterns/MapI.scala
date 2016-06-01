@@ -67,8 +67,8 @@ case class MapI(out: Phrase[AccType],
   override def makeMapI = MapI
 
   override def substituteImpl: Phrase[CommandType] = {
-    `for`(length(in), i => {
-      f(out `@` i)(in `@` i)
+    `parFor`(length(in), out, i => o => {
+      f(o)(in `@` i)
     })
   }
 

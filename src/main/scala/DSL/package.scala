@@ -72,7 +72,7 @@ package object DSL {
   }
 
   implicit class VarExtensions(v: Phrase[VarType]) {
-    def rd = π1(v)
-    def wr = π2(v)
+    def rd: Proj1Phrase[ExpType, AccType] = π1(v)
+    def wr: Proj2Phrase[ExpType, AccType] = π2(v)
   }
 }

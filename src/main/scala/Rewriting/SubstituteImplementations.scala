@@ -25,4 +25,12 @@ object SubstituteImplementations {
     }
   }
 
+  def applyBinaryFun[T1 <: PhraseType, T2 <: PhraseType](p: Phrase[T1 -> (T2 -> CommandType)]): Phrase[T1 -> (T2 -> CommandType)] = {
+    p match {
+      case LambdaPhrase(p1, body) =>
+        LambdaPhrase(p1, applyFun(body))
+      case _ => throw new Exception("This should never happen")
+    }
+  }
+
 }

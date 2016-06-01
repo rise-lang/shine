@@ -11,10 +11,15 @@ abstract class AbstractReduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
                               init: Phrase[ExpType],
                               array: Phrase[ExpType]) extends ExpPattern {
 
+  protected var n: Int = 0
+  protected var dt1: DataType = null
+  protected var dt2: DataType = null
+
   override def typeCheck(): ExpType = {
     import TypeChecker._
     (TypeChecker(init), TypeChecker(array)) match {
-      case (ExpType(dt2), ExpType(ArrayType(n, dt1))) =>
+      case (ExpType(dt2_), ExpType(ArrayType(n_, dt1_))) =>
+        n = n_; dt1 = dt1_; dt2 = dt2_
         setParamType(f, ExpType(dt1))
         setSecondParamType(f, ExpType(dt2))
         TypeChecker(f) match {
@@ -50,10 +55,15 @@ case class Reduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
                   array: Phrase[ExpType]) extends AbstractReduce(f, init, array) {
 
   override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): ExpPattern = {
-    Reduce(
+    val r = Reduce(
       OperationalSemantics.substitute(phrase, `for`, f),
       OperationalSemantics.substitute(phrase, `for`, init),
       OperationalSemantics.substitute(phrase, `for`, array))
+    r.t = t
+    r.n = n
+    r.dt1 = dt1
+    r.dt2 = dt2
+    r
   }
 
   override def toC = ???
@@ -61,10 +71,14 @@ case class Reduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
   override def prettyPrint: String = s"(reduce ${PrettyPrinter(f)} ${PrettyPrinter(init)} ${PrettyPrinter(array)})"
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
-    RewriteToImperative.exp(array, λ(array.t) { x =>
-      RewriteToImperative.exp(init, λ(init.t) { y =>
+    assert(n != 0 && dt1 != null && dt2 != null)
+
+    RewriteToImperative.exp(array, λ( ExpType(ArrayType(n, dt1)) ) { x =>
+      RewriteToImperative.exp(init, λ( ExpType(dt2) ) { y =>
         ReduceIAcc(A,
-          λ(A.t) { o => λ(array.t) { x => λ(init.t) { y => RewriteToImperative.acc(f(x)(y), o) } } },
+          λ( AccType(dt2) ) { o =>
+            λ( ExpType(dt1) ) { x =>
+              λ( ExpType(dt2) ) { y => RewriteToImperative.acc(f(x)(y), o) } } },
           y,
           x
         )
@@ -72,11 +86,16 @@ case class Reduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
     })
   }
 
-  override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
-    RewriteToImperative.exp(array, λ(array.t) { x =>
-      RewriteToImperative.exp(init, λ(init.t) { y =>
+  override def rewriteToImperativeExp(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
+    println(s"n: $n; dt1: $dt1; dt2: $dt2")
+    assert(n != 0 && dt1 != null && dt2 != null)
+
+    RewriteToImperative.exp(array, λ( ExpType(ArrayType(n, dt1)) ) { x =>
+      RewriteToImperative.exp(init, λ( ExpType(dt2) ) { y =>
         ReduceIExp(C,
-          λ(AccType(init.t.dataType)) { o => λ(array.t) { x => λ(init.t) { y => RewriteToImperative.acc(f(x)(y), o) } } },
+          λ( AccType(dt2) ) { o =>
+            λ( ExpType(dt1) ) { x =>
+              λ( ExpType(dt2) ) { y => RewriteToImperative.acc(f(x)(y), o) } } },
           y,
           x
         )

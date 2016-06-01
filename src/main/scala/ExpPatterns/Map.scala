@@ -12,16 +12,21 @@ abstract class AbstractMap(f: Phrase[ExpType -> ExpType],
                            makeMap: (Phrase[ExpType -> ExpType], Phrase[ExpType]) => AbstractMap,
                            makeMapI: (Phrase[AccType], Phrase[AccType -> (ExpType -> CommandType)], Phrase[ExpType]) => AbstractMapI) extends ExpPattern {
 
+  protected var n: Int = 0
+  protected var dt1: DataType = null
+  protected var dt2: DataType = null
+
   override def typeCheck(): ExpType = {
     import TypeChecker._
     TypeChecker(array) match {
-      case ExpType(ArrayType(n, dt1)) =>
+      case ExpType(ArrayType(n_, dt1_)) =>
+        n = n_; dt1 = dt1_
         setParamType(f, ExpType(dt1))
         TypeChecker(f) match {
-          case FunctionType(ExpType(t_), ExpType(dt2)) =>
+          case FunctionType(ExpType(t_), ExpType(dt2_)) =>
+            dt2 = dt2_
             if (dt1 == t_) {
-              outDataType = ArrayType(n, dt2)
-              ExpType(outDataType)
+              ExpType(ArrayType(n, dt2))
             } else {
               error(dt1.toString + " and " + t_.toString, expected = "them to match")
             }
@@ -32,7 +37,12 @@ abstract class AbstractMap(f: Phrase[ExpType -> ExpType],
   }
 
   override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): ExpPattern = {
-    makeMap(OperationalSemantics.substitute(phrase, `for`, f), OperationalSemantics.substitute(phrase, `for`, array))
+    val m = makeMap(OperationalSemantics.substitute(phrase, `for`, f), OperationalSemantics.substitute(phrase, `for`, array))
+    m.t = t
+    m.n = n
+    m.dt1 = dt1
+    m.dt2 = dt2
+    m
   }
 
   override def eval(s: Store): Data = {
@@ -46,21 +56,24 @@ abstract class AbstractMap(f: Phrase[ExpType -> ExpType],
     }
   }
 
-  private var outDataType: DataType = null
-
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
-    RewriteToImperative.exp(array, λ(array.t) { x =>
+    assert(n != 0 && dt1 != null && dt2 != null)
+
+    RewriteToImperative.exp(array, λ( ExpType(ArrayType(n, dt1)) ) { x =>
       makeMapI(A,
-        λ(A.t) { o => λ(array.t) { x => RewriteToImperative.acc(f(x), o) } },
+        λ( AccType(dt2) ) { o =>
+          λ( ExpType(dt1) ) { x => RewriteToImperative.acc(f(x), o) } },
         x
       )
     })
   }
 
   override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
-    `new`(outDataType, tmp =>
-      RewriteToImperative.acc(this, π2(tmp)) `;`
-        C(π1(tmp))
+    assert(n != 0 && dt1 != null && dt2 != null)
+
+    `new`(ArrayType(n, dt2), tmp =>
+      RewriteToImperative.acc(this, tmp.wr) `;`
+        C(tmp.rd)
     )
   }
 

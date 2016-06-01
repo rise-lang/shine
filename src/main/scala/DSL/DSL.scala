@@ -46,18 +46,6 @@ object makeIfThenElse {
   }
 }
 
-
-object makeFor {
-  def apply() = {
-    //: Phrase[ ExpType x (ExpType -> CommandType) -> CommandType ]
-    λ(ExpType(int) x (ExpType(int) -> CommandType())) {
-      args => {
-        For(π1(args), π2(args))
-      }
-    }
-  }
-}
-
 object `if` {
   def apply[T <: PhraseType](cond: Phrase[ExpType], thenP: Phrase[T], elseP: Phrase[T]) = {
     IfThenElsePhrase(cond, thenP, elseP)
@@ -70,11 +58,20 @@ object `for` {
   }
 }
 
+object `parFor` {
+  def apply(n: Phrase[ExpType],
+            out: Phrase[AccType],
+            f: (Phrase[ExpType] => Phrase[AccType] => Phrase[CommandType])) = {
+    val elemT = out.t match { case AccType(ArrayType(_, dt)) => dt }
+    ParFor(n, out, λ( ExpType(int) ) { i => λ( AccType(elemT) ) { o => f(i)(o) } })
+  }
+}
+
 object `new` {
   def apply(dt: DataType, f: Phrase[ (ExpType x AccType) -> CommandType ]) = New(dt, f)
 
   def apply(dt: DataType, f: Phrase[ExpType x AccType] => Phrase[CommandType]) = {
-    New(dt, λ( ExpType(int) x AccType(int) ) { v => f(v) })
+    New(dt, λ( ExpType(dt) x AccType(dt) ) { v => f(v) })
   }
 }
 

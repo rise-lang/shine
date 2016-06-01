@@ -5,7 +5,8 @@ import Core.OperationalSemantics._
 import Core.PhraseType._
 import Rewriting.SubstituteImplementations
 
-case class For(n: Phrase[ExpType], body: Phrase[ExpType -> CommandType]) extends CommandPattern {
+case class For(n: Phrase[ExpType],
+               body: Phrase[ExpType -> CommandType]) extends CommandPattern {
 
   override def typeCheck(): CommandType = {
     import TypeChecker._
