@@ -7,7 +7,10 @@ import Core.OperationalSemantics._
 import DSL._
 import Rewriting.RewriteToImperative
 
-abstract class AbstractMap(f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) extends ExpPattern {
+abstract class AbstractMap(f: Phrase[ExpType -> ExpType],
+                           array: Phrase[ExpType],
+                           makeMap: (Phrase[ExpType -> ExpType], Phrase[ExpType]) => AbstractMap,
+                           makeMapI: (Phrase[AccType], Phrase[AccType -> (ExpType -> CommandType)], Phrase[ExpType]) => AbstractMapI) extends ExpPattern {
 
   override def typeCheck(): ExpType = {
     import TypeChecker._
@@ -26,6 +29,10 @@ abstract class AbstractMap(f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]
         }
       case t_ => error(t_.toString, "ArrayType")
     }
+  }
+
+  override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): ExpPattern = {
+    makeMap(OperationalSemantics.substitute(phrase, `for`, f), OperationalSemantics.substitute(phrase, `for`, array))
   }
 
   override def eval(s: Store): Data = {
@@ -50,25 +57,17 @@ abstract class AbstractMap(f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]
     })
   }
 
-  def makeMapI: (Phrase[AccType], Phrase[AccType -> (ExpType -> CommandType)], Phrase[ExpType]) => AbstractMapI
-
   override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
     `new`(outDataType, tmp =>
       RewriteToImperative.acc(this, π2(tmp)) `;`
         C(π1(tmp))
     )
   }
-}
-
-case class Map(f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) extends AbstractMap(f, array) {
-
-  override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): ExpPattern = {
-    Map(OperationalSemantics.substitute(phrase, `for`, f), OperationalSemantics.substitute(phrase, `for`, array))
-  }
 
   override def toC = ???
 
-  override def prettyPrint: String = s"(map ${PrettyPrinter(f)} ${PrettyPrinter(array)})"
+  override def prettyPrint: String = s"(${this.getClass.getSimpleName} ${PrettyPrinter(f)} ${PrettyPrinter(array)})"
 
-  override def makeMapI = MapI
 }
+
+case class Map(f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) extends AbstractMap(f, array, Map, MapI)

@@ -27,9 +27,9 @@ abstract class AbstractMapI(out: Phrase[AccType],
                 ", " + dt1.toString + " and " + t2.toString,
                 expected = "them to match")
             }
-          case t => error(t.toString, "FunctionType")
+          case x => error(x.toString, "FunctionType")
         }
-      case t => error(t.toString, "(ArrayType, ArrayType)")
+      case x => error(x.toString, "(ArrayType, ArrayType)")
     }
   }
 
@@ -45,22 +45,26 @@ abstract class AbstractMapI(out: Phrase[AccType],
     })
   }
 
+  override def toC = ???
+
+  override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): CommandPattern = {
+    makeMapI(
+      OperationalSemantics.substitute(phrase, `for`, out),
+      OperationalSemantics.substitute(phrase, `for`, f),
+      OperationalSemantics.substitute(phrase, `for`, in))
+  }
+
+  def makeMapI: (Phrase[AccType], Phrase[AccType -> (ExpType -> CommandType)], Phrase[ExpType]) => AbstractMapI
+
+  override def prettyPrint: String = s"${this.getClass.getSimpleName} ${PrettyPrinter(out)} ${PrettyPrinter(f)} ${PrettyPrinter(in)}"
+
 }
 
 case class MapI(out: Phrase[AccType],
                 f: Phrase[AccType -> (ExpType -> CommandType)],
                 in: Phrase[ExpType]) extends AbstractMapI(out, f, in) {
 
-  override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): CommandPattern = {
-    MapI(
-      OperationalSemantics.substitute(phrase, `for`, out),
-      OperationalSemantics.substitute(phrase, `for`, f),
-      OperationalSemantics.substitute(phrase, `for`, in))
-  }
-
-  override def toC = ???
-
-  override def prettyPrint: String = s"mapI ${PrettyPrinter(out)} ${PrettyPrinter(f)} ${PrettyPrinter(in)}"
+  override def makeMapI = MapI
 
   override def substituteImpl: Phrase[CommandType] = {
     `for`(length(in), i => {
