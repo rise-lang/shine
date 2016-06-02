@@ -23,6 +23,7 @@ object Rewrite {
       case p: Proj2Phrase[a, T]               => Proj1Phrase(apply(p.pair))
       case i: IfThenElsePhrase[T]             => IfThenElsePhrase(apply(i.cond), apply(i.thenP), apply(i.elseP))
       case l: LiteralPhrase                   => l
+      case UnaryOpPhrase(op, x)               => UnaryOpPhrase(op, apply(x))
       case BinOpPhrase(op, lhs, rhs)          => BinOpPhrase(op, apply(lhs), apply(rhs))
       case p: ExpPattern                      =>
         p match {

@@ -10,7 +10,8 @@ import Rewriting.RewriteToImperative
 abstract class AbstractMap(f: Phrase[ExpType -> ExpType],
                            array: Phrase[ExpType],
                            makeMap: (Phrase[ExpType -> ExpType], Phrase[ExpType]) => AbstractMap,
-                           makeMapI: (Phrase[AccType], Phrase[AccType -> (ExpType -> CommandType)], Phrase[ExpType]) => AbstractMapI) extends ExpPattern {
+                           makeMapI: (Phrase[AccType], Phrase[AccType -> (ExpType -> CommandType)], Phrase[ExpType]) => AbstractMapI)
+  extends ExpPattern {
 
   protected var n: Int = 0
   protected var dt1: DataType = null

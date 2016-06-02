@@ -3,6 +3,7 @@ package CommandPatterns
 import Core.PhraseType._
 import Core._
 import DSL._
+import Rewriting.SubstituteImplementations
 
 case class MapGlobalI(out: Phrase[AccType],
                       f: Phrase[AccType -> (ExpType -> CommandType)],
@@ -13,7 +14,7 @@ case class MapGlobalI(out: Phrase[AccType],
   override def substituteImpl: Phrase[CommandType] = {
     // TODO: replace with for loop iterating over global stuff
     `for`(length(in), i => {
-      f(out `@` i)(in `@` i)
+      SubstituteImplementations( f(out `@` i)(in `@` i) )
     })
   }
 

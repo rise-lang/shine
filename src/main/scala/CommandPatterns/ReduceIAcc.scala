@@ -4,8 +4,8 @@ import Core._
 import Core.PhraseType._
 import Core.OperationalSemantics._
 import ExpPatterns.Idx
-
 import DSL._
+import Rewriting.SubstituteImplementations
 
 case class ReduceIAcc(out: Phrase[AccType],
                       f: Phrase[AccType -> (ExpType -> (ExpType -> CommandType))],
@@ -15,7 +15,7 @@ case class ReduceIAcc(out: Phrase[AccType],
   override def typeCheck(): CommandType = {
     import TypeChecker._
     (TypeChecker(out), TypeChecker(init), TypeChecker(in)) match {
-      case (AccType(dt2), ExpType(t), ExpType(ArrayType(n, dt1))) if dt2 == t =>
+      case (AccType(dt2), ExpType(dt3), ExpType(ArrayType(n, dt1))) if dt2 == dt3 =>
         setParamType(f, AccType(dt2))
         setSecondParamType(f, ExpType(dt1))
         setThirdParamType(f, ExpType(dt2))
@@ -27,9 +27,9 @@ case class ReduceIAcc(out: Phrase[AccType],
                 dt1.toString + ", " + t2.toString + " and " + dt2.toString + ", " + t3.toString,
                 expected = "them to match")
             }
-          case ty => error(ty.toString, "FunctionType")
+          case x => error(x.toString, "FunctionType")
         }
-      case t => error(t.toString, "(AccType, ExpType, ArrayType)")
+      case x => error(x.toString, "(AccType, ExpType, ArrayType)")
     }
   }
 
@@ -59,7 +59,7 @@ case class ReduceIAcc(out: Phrase[AccType],
     `new`(init.t.dataType, accum => {
       (accum.wr `:=` init) `;`
       `for`(length(in), i => {
-        f(accum.wr)(in `@` i)(accum.rd)
+        SubstituteImplementations( f(accum.wr)(in `@` i)(accum.rd) )
       }) `;`
       (out `:=` accum.rd)
     } )

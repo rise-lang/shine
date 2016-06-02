@@ -1,16 +1,15 @@
 package Core
 
-sealed trait DataType {
-  def isBasicType = false
-}
+sealed trait DataType
+sealed abstract class BasicType extends DataType
 
-object bool extends DataType { override def isBasicType = true; override def toString = "bool" }
+object bool extends BasicType { override def toString = "bool" }
 
-object int extends DataType { override def isBasicType = true; override def toString = "int" }
+object int extends BasicType { override def toString = "int" }
 
-object int4 extends DataType { override def isBasicType = true; override def toString = "int4"  }
+object int4 extends BasicType { override def toString = "int4" }
 
-object float extends DataType { override def isBasicType = true; override def toString = "float"  }
+object float extends BasicType { override def toString = "float" }
 
 case class ArrayType(size: Int, elemType: DataType) extends DataType
 

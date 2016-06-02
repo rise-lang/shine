@@ -3,15 +3,15 @@ package CommandPatterns
 import Core._
 import Core.PhraseType._
 import Core.OperationalSemantics._
-
 import DSL._
-
 import AccPatterns._
 import ExpPatterns._
+import Rewriting.SubstituteImplementations
 
 abstract class AbstractMapI(out: Phrase[AccType],
                             f: Phrase[AccType -> (ExpType -> CommandType)],
-                            in: Phrase[ExpType]) extends CommandPattern {
+                            in: Phrase[ExpType])
+  extends CommandPattern {
 
   override def typeCheck(): CommandType = {
     import TypeChecker._
@@ -68,7 +68,7 @@ case class MapI(out: Phrase[AccType],
 
   override def substituteImpl: Phrase[CommandType] = {
     `parFor`(length(in), out, i => o => {
-      f(o)(in `@` i)
+      SubstituteImplementations( f(o)(in `@` i) )
     })
   }
 

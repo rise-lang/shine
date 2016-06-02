@@ -16,8 +16,8 @@ case class ReduceIExp(out: Phrase[ExpType -> CommandType],
       case (ExpType(dt2), ExpType(ArrayType(n, dt1))) =>
         setParamType(out, ExpType(dt2))
         TypeChecker(out) match {
-          case FunctionType(ExpType(t), CommandType()) =>
-            if (dt2 != t) error(dt2.toString + " and " + t.toString, expected = "them to match")
+          case FunctionType(ExpType(dt), CommandType()) =>
+            if (dt2 != dt) error(dt2.toString + " and " + dt.toString, expected = "them to match")
           case ty => error(ty.toString, "FunctionType")
         }
 
@@ -32,9 +32,9 @@ case class ReduceIExp(out: Phrase[ExpType -> CommandType],
                 dt1.toString + ", " + t2.toString + " and " + dt2.toString + ", " + t3.toString,
                 expected = "them to match")
             }
-          case ty => error(ty.toString, "FunctionType")
+          case x => error(x.toString, "FunctionType")
         }
-      case t => error(t.toString, "(AccType, ExpType, ArrayType)")
+      case x => error(x.toString, "(AccType, ExpType, ArrayType)")
     }
   }
 

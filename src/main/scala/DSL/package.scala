@@ -3,6 +3,7 @@ import Core._
 import ExpPatterns._
 import AccPatterns._
 import CommandPatterns._
+import Core.OperationalSemantics.newName
 
 import scala.language.implicitConversions
 
@@ -17,6 +18,12 @@ package object DSL {
     def /(rhs: Phrase[ExpType]) = BinOpPhrase(BinOpPhrase.Op.DIV, lhs, rhs)
 
     def %(rhs: Phrase[ExpType]) = BinOpPhrase(BinOpPhrase.Op.MOD, lhs, rhs)
+
+    def >(rhs: Phrase[ExpType]) = BinOpPhrase(BinOpPhrase.Op.GT, lhs, rhs)
+
+    def <(rhs: Phrase[ExpType]) = BinOpPhrase(BinOpPhrase.Op.LT, lhs, rhs)
+
+    def unary_- = UnaryOpPhrase(UnaryOpPhrase.Op.NEG, lhs)
   }
 
   implicit class BinOpsPatterns(lhs: ExpPattern) {
@@ -29,12 +36,27 @@ package object DSL {
     def /(rhs: Phrase[ExpType]) = BinOpPhrase(BinOpPhrase.Op.DIV, lhs, rhs)
 
     def %(rhs: Phrase[ExpType]) = BinOpPhrase(BinOpPhrase.Op.MOD, lhs, rhs)
+
+    def >(rhs: Phrase[ExpType]) = BinOpPhrase(BinOpPhrase.Op.GT, lhs, rhs)
+
+    def <(rhs: Phrase[ExpType]) = BinOpPhrase(BinOpPhrase.Op.LT, lhs, rhs)
+
+    def unary_- = UnaryOpPhrase(UnaryOpPhrase.Op.NEG, lhs)
   }
 
   implicit class CallLambda[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 -> T2]) {
     // on-the-fly beta-reduction
-    def apply(arg: Phrase[T1]) = Lift.liftFunction(fun)(arg)
+    def apply(arg: Phrase[T1]): Phrase[T2] = Lift.liftFunction(fun)(arg)
     //def apply(arg: Phrase[T1]) = ApplyPhrase(fun, arg)
+
+    def $(arg: Phrase[T1]): Phrase[T2] = apply(arg)
+  }
+
+  implicit class FunComp[T1 <: PhraseType, T2 <: PhraseType](f: Phrase[T1 -> T2]) {
+    def o[T3 <: PhraseType](g: Phrase[T3 -> T1]): Phrase[T3 -> T2] = {
+      val param = IdentPhrase[T3](newName())
+      λ(param)((arg: IdentPhrase[T3]) => f(g(arg)))
+    }
   }
 
   implicit class SequentialComposition(c1: Phrase[CommandType]) {

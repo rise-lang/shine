@@ -27,6 +27,17 @@ final case class Proj2Phrase[T1 <: PhraseType, T2 <: PhraseType](pair: Phrase[T1
 final case class IfThenElsePhrase[T <: PhraseType](cond: Phrase[ExpType], thenP: Phrase[T], elseP: Phrase[T])
   extends Phrase[T]
 
+final case class UnaryOpPhrase(op: UnaryOpPhrase.Op.Value, p: Phrase[ExpType])
+  extends Phrase[ExpType]
+
+object UnaryOpPhrase {
+
+  object Op extends Enumeration {
+    val NEG = Value("-")
+  }
+
+}
+
 final case class BinOpPhrase(op: BinOpPhrase.Op.Value, lhs: Phrase[ExpType], rhs: Phrase[ExpType])
   extends Phrase[ExpType]
 
@@ -38,6 +49,8 @@ object BinOpPhrase {
     val MUL = Value("*")
     val DIV = Value("/")
     val MOD = Value("%")
+    val GT = Value(">")
+    val LT = Value("<")
   }
 
 }

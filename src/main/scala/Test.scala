@@ -3,6 +3,7 @@ import Core._
 import DSL._
 import Rewriting.{Rewrite, RewriteToImperative, SubstituteImplementations}
 import CommandPatterns._
+import Core.PhraseType.->
 import ExpPatterns._
 
 import scala.collection.immutable.HashMap
@@ -839,5 +840,134 @@ object Test extends App {
 //    )
 
 
+  }
+
+  {
+    println("== scal ==")
+    val a: Phrase[ExpType] = 5
+    val p = λ(ExpType(ArrayType(1048576, int)))(inp =>
+      map(λ( x => x * a )) $ inp
+    )
+    println("=====")
+    println(PrettyPrinter(p))
+
+    val p2 = RewriteToImperative(p)
+    println("=====")
+    println(PrettyPrinter(p2))
+    TypeChecker(p2)
+
+    val p3 = SubstituteImplementations(p2)
+    println("=====")
+    println(PrettyPrinter(p3))
+    TypeChecker(p3)
+
+    println("-----")
+  }
+
+  {
+    println("== assum ==")
+    val p = λ(ExpType(ArrayType(1048576, int)))(inp =>
+      reduce(λ( x1 => λ( x2 => x1 + x2 ) ), 0, map(λ( x => `if`(x < 0, -x, x) ), inp))
+    )
+    println("=====")
+    println(PrettyPrinter(p))
+
+    val p2 = RewriteToImperative(p)
+    println("=====")
+    println(PrettyPrinter(p2))
+    TypeChecker(p2)
+
+    val p3 = SubstituteImplementations(p2)
+    println("=====")
+    println(PrettyPrinter(p3))
+    TypeChecker(p3)
+
+    println("-----")
+  }
+
+  {
+    println("== dot ==")
+    val a: Phrase[ExpType] = 5
+    val t: ExpType = ExpType(ArrayType(1048576, int))
+    val p: Phrase[ExpType -> (ExpType -> ExpType)] = λ(t)(xs => λ(t)(ys =>
+      map(λ( x => x * a )) $ xs
+    ) )
+    println("=====")
+    println(PrettyPrinter(p))
+
+    val p2 = RewriteToImperative( p(identifier("input", t))(identifier("input2", t)) )
+    println("=====")
+    println(PrettyPrinter(p2))
+    TypeChecker(p2)
+
+    val p3 = SubstituteImplementations(p2)
+    println("=====")
+    println(PrettyPrinter(p3))
+    TypeChecker(p3)
+
+    println("-----")
+  }
+
+//  {
+//    println("== gemv ==")
+//    val add = λ( x1 => λ( x2 => x1 + x2 ) )
+//
+//    val scal = λ(inp =>
+//      map(λ( x => x * a )) $ inp
+//    )
+//
+//    val a: Phrase[ExpType] = 5
+//    val b: Phrase[ExpType] = 2
+//    val n = 1048576
+//    val m = n / 2
+//    val vectorT: ExpType = ExpType(ArrayType(n, int))
+//    val matrixT: ExpType = ExpType(ArrayType(n, ArrayType(m, int)))
+//    val p: Phrase[ExpType -> (ExpType -> (ExpType -> ExpType))] =
+//      λ(matrixT)(mat => λ(vectorT)(xs => λ(vectorT)(ys => {
+//        val lhs = map() $ mat
+//        val rhs =
+//      }) ) )
+//    println("=====")
+//    println(PrettyPrinter(p))
+//
+//    val p2 = RewriteToImperative( p(identifier("mat", matrixT))(identifier("xs", vectorT))(identifier("ys", vectorT)) )
+//    println("=====")
+//    println(PrettyPrinter(p2))
+//    TypeChecker(p2)
+//
+//    val p3 = SubstituteImplementations(p2)
+//    println("=====")
+//    println(PrettyPrinter(p3))
+//    TypeChecker(p3)
+//
+//    println("-----")
+//  }
+
+  {
+    // results in a stack overflow error
+    // join() o split(2048) $ inp
+
+    println("== assum Nvidia ==")
+    val abs = (x: Phrase[ExpType]) => `if`(x < 0, -x, x)
+
+    val p = λ(ExpType(ArrayType(1048576, int)))(inp =>
+      mapWorkgroup(
+        mapLocal( reduce(λ( x1 => λ( x2 => x1 + abs(x2) ) ), 0) )
+      ) o split(128) o split(2048) $ inp
+    )
+    println("=====")
+    println(PrettyPrinter(p))
+
+    val p2 = RewriteToImperative(p)
+    println("=====")
+    println(PrettyPrinter(p2))
+    TypeChecker(p2)
+
+    val p3 = SubstituteImplementations(p2)
+    println("=====")
+    println(PrettyPrinter(p3))
+    TypeChecker(p3)
+
+    println("-----")
   }
 }

@@ -13,6 +13,8 @@ object PrettyPrinter {
       case IfThenElsePhrase(cond, thenP, elseP) =>
         s"if(${apply(cond)}) { ${apply(thenP)} } else { ${apply(elseP)} }"
 
+      case UnaryOpPhrase(op, x) => s"(${op.toString} ${apply(x)})"
+
       case BinOpPhrase(op, lhs, rhs) => s"(${apply(lhs)} ${op.toString} ${apply(rhs)})"
 
       case IdentPhrase(name) => name

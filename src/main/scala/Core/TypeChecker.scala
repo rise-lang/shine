@@ -144,6 +144,10 @@ object TypeChecker {
 
       case LiteralPhrase(d) => ExpType(d.dataType)
 
+      case UnaryOpPhrase(op, x) =>
+        check(TypeChecker(x), ExpType(int))
+        ExpType(int)
+
       case BinOpPhrase(op, lhs, rhs) =>
         check(TypeChecker(lhs), ExpType(int))
         check(TypeChecker(rhs), ExpType(int))

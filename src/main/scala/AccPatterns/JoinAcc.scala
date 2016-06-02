@@ -10,7 +10,7 @@ case class JoinAcc(array: Phrase[AccType]) extends AccPattern {
     TypeChecker(array) match {
       case AccType(ArrayType(n, ArrayType(m, dt))) =>
         AccType(ArrayType(n*m, dt))
-      case t => error(t.toString, "ArrayType(ArrayType)")
+      case x => error(x.toString, "ArrayType(ArrayType)")
     }
   }
 

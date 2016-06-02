@@ -101,6 +101,9 @@ object OperationalSemantics {
 
         case _: LiteralPhrase    => in
 
+        case UnaryOpPhrase(op, p) =>
+          UnaryOpPhrase(op, substitute(phrase, `for`, p))
+
         case BinOpPhrase(op, lhs, rhs) =>
           BinOpPhrase(op, substitute(phrase, `for`, lhs), substitute(phrase, `for`, rhs))
 
@@ -212,6 +215,11 @@ object OperationalSemantics {
 
           case LiteralPhrase(d) => d
 
+          case UnaryOpPhrase(op, x) =>
+            op match {
+              case UnaryOpPhrase.Op.NEG => - evalIntExp(s, x)
+            }
+
           case BinOpPhrase(op, lhs, rhs) =>
             op match {
               case BinOpPhrase.Op.ADD => evalIntExp(s, lhs) + evalIntExp(s, rhs)
@@ -219,6 +227,8 @@ object OperationalSemantics {
               case BinOpPhrase.Op.MUL => evalIntExp(s, lhs) * evalIntExp(s, rhs)
               case BinOpPhrase.Op.DIV => evalIntExp(s, lhs) / evalIntExp(s, rhs)
               case BinOpPhrase.Op.MOD => evalIntExp(s, lhs) % evalIntExp(s, rhs)
+              case BinOpPhrase.Op.GT => if (evalIntExp(s, lhs) > evalIntExp(s, rhs)) 1 else 0
+              case BinOpPhrase.Op.LT => if (evalIntExp(s, lhs) < evalIntExp(s, rhs)) 1 else 0
             }
 
           case p: ExpPattern => p.eval(s)

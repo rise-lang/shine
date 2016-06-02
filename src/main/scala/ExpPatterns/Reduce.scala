@@ -9,7 +9,9 @@ import Rewriting.RewriteToImperative
 
 abstract class AbstractReduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
                               init: Phrase[ExpType],
-                              array: Phrase[ExpType]) extends ExpPattern {
+                              array: Phrase[ExpType],
+                              makeReduce: (Phrase[ExpType -> (ExpType -> ExpType)], Phrase[ExpType], Phrase[ExpType]) => AbstractReduce)
+  extends ExpPattern {
 
   protected var n: Int = 0
   protected var dt1: DataType = null
@@ -36,6 +38,18 @@ abstract class AbstractReduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
     }
   }
 
+  override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): ExpPattern = {
+    val r = makeReduce(
+      OperationalSemantics.substitute(phrase, `for`, f),
+      OperationalSemantics.substitute(phrase, `for`, init),
+      OperationalSemantics.substitute(phrase, `for`, array))
+    r.t = t
+    r.n = n
+    r.dt1 = dt1
+    r.dt2 = dt2
+    r
+  }
+
   override def eval(s: Store): Data = {
     val fE = OperationalSemantics.eval(s, f)(BinaryFunctionEvaluator)
     val initE = OperationalSemantics.eval(s, init)
@@ -48,27 +62,15 @@ abstract class AbstractReduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
     }
   }
 
+  override def toC = ???
+
+  override def prettyPrint: String = s"(${this.getClass.getSimpleName} ${PrettyPrinter(f)} ${PrettyPrinter(init)} ${PrettyPrinter(array)})"
+
 }
 
 case class Reduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
                   init: Phrase[ExpType],
-                  array: Phrase[ExpType]) extends AbstractReduce(f, init, array) {
-
-  override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): ExpPattern = {
-    val r = Reduce(
-      OperationalSemantics.substitute(phrase, `for`, f),
-      OperationalSemantics.substitute(phrase, `for`, init),
-      OperationalSemantics.substitute(phrase, `for`, array))
-    r.t = t
-    r.n = n
-    r.dt1 = dt1
-    r.dt2 = dt2
-    r
-  }
-
-  override def toC = ???
-
-  override def prettyPrint: String = s"(reduce ${PrettyPrinter(f)} ${PrettyPrinter(init)} ${PrettyPrinter(array)})"
+                  array: Phrase[ExpType]) extends AbstractReduce(f, init, array, Reduce) {
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
     assert(n != 0 && dt1 != null && dt2 != null)
@@ -87,7 +89,6 @@ case class Reduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
   }
 
   override def rewriteToImperativeExp(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
-    println(s"n: $n; dt1: $dt1; dt2: $dt2")
     assert(n != 0 && dt1 != null && dt2 != null)
 
     RewriteToImperative.exp(array, λ( ExpType(ArrayType(n, dt1)) ) { x =>

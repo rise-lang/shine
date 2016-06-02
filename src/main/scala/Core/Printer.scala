@@ -18,6 +18,8 @@ object Printer {
         val dt = p.t match { case ExpType(dataType) => dataType }
         literal(d, dt)
 
+      case UnaryOpPhrase(op, x) => "(" + op.toString + " " + toC(x) + ")"
+
       case BinOpPhrase(op, lhs, rhs) => "(" + toC(lhs) + " " + op.toString + " " + toC(rhs) + ")"
 
       case p: ExpPattern => p.toC

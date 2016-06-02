@@ -7,6 +7,8 @@ import AccPatterns._
 import ExpPatterns._
 import CommandPatterns._
 
+import scala.reflect.ClassTag
+
 object VarType {
   def apply(dataType: DataType) = ExpType(dataType) x AccType(dataType)
 }
@@ -130,6 +132,11 @@ trait funDef {
     LambdaPhrase(param, f(param))
   }
 
+  def apply[T1 <: PhraseType, T2 <: PhraseType](param: IdentPhrase[T1])
+                                               (f: IdentPhrase[T1] => Phrase[T2]): LambdaPhrase[T1, T2] = {
+    LambdaPhrase(param, f(param))
+  }
+
   def apply[T1 <: PhraseType, T2 <: PhraseType](param: IdentPhrase[T1],
                                                 body: Phrase[T2]): LambdaPhrase[T1, T2] = {
     LambdaPhrase(param, body)
@@ -147,8 +154,19 @@ object skip extends Skip
 object map {
   def apply(f: Phrase[ExpType -> ExpType]) = λ( x => Map(f, x))
 
-  def apply(f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) =
-    Map(f, array)
+  def apply(f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) = Map(f, array)
+}
+
+object mapWorkgroup {
+  def apply(f: Phrase[ExpType -> ExpType]) = λ( x => MapWorkgroup(f, x))
+
+  def apply(f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) = MapWorkgroup(f, array)
+}
+
+object mapLocal {
+  def apply(f: Phrase[ExpType -> ExpType]) = λ( x => MapLocal(f, x))
+
+  def apply(f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) = MapLocal(f, array)
 }
 
 object zip {
@@ -156,10 +174,12 @@ object zip {
 }
 
 object split {
+  def apply(n: Int) = λ( array => Split(n, array) )
   def apply(n: Int, array: Phrase[ExpType]) = Split(n, array)
 }
 
 object join {
+  def apply() = λ( array => Join(array) )
   def apply(array: Phrase[ExpType]) = Join(array)
 }
 
