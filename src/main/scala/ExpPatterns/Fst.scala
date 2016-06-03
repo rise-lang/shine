@@ -3,6 +3,8 @@ package ExpPatterns
 import Core._
 import Core.OperationalSemantics._
 import Core.PhraseType.->
+import Rewriting.RewriteToImperative
+import DSL._
 
 case class Fst(record: Phrase[ExpType]) extends ExpPattern {
 
@@ -28,7 +30,12 @@ case class Fst(record: Phrase[ExpType]) extends ExpPattern {
 
   override def prettyPrint: String = s"${PrettyPrinter(record)}._1"
 
-  override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = ???
+  override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] =
+    RewriteToImperative.exp(this, λ(this.t) {
+      this.t.dataType match {
+        case _: BasicType => x => A `:=` x
+      }
+    })
 
-  override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = ???
+  override def rewriteToImperativeExp(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = C(this)
 }

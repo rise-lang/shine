@@ -157,6 +157,12 @@ object map {
   def apply(f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) = Map(f, array)
 }
 
+object mapSeq {
+  def apply(f: Phrase[ExpType -> ExpType]) = λ( x => MapSeq(f, x))
+
+  def apply(f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) = MapSeq(f, array)
+}
+
 object mapWorkgroup {
   def apply(f: Phrase[ExpType -> ExpType]) = λ( x => MapWorkgroup(f, x))
 
@@ -192,6 +198,19 @@ object reduce {
 
   def apply(f: Phrase[ExpType -> (ExpType -> ExpType)], init: Phrase[ExpType],
             array: Phrase[ExpType]) = Reduce(f, init, array)
+}
+
+object reduceSeq {
+  def apply(f: Phrase[ExpType -> (ExpType -> ExpType)]) =
+    λ( (init, array) => ReduceSeq(f, init, array))
+
+  def apply(f: Phrase[ExpType -> (ExpType -> ExpType)], init: Phrase[ExpType]) =
+    λ( array => ReduceSeq(f, init, array))
+
+  def apply(f: Phrase[ExpType -> (ExpType -> ExpType)],
+            init: Phrase[ExpType],
+            array: Phrase[ExpType]) =
+    ReduceSeq(f, init, array)
 }
 
 object iterate {

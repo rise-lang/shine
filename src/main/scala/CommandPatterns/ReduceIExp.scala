@@ -4,6 +4,7 @@ import Core._
 import Core.PhraseType._
 import Core.OperationalSemantics._
 import DSL._
+import Rewriting.SubstituteImplementations
 
 case class ReduceIExp(out: Phrase[ExpType -> CommandType],
                       f: Phrase[AccType -> (ExpType -> (ExpType -> CommandType))],
@@ -58,6 +59,14 @@ case class ReduceIExp(out: Phrase[ExpType -> CommandType],
 
   override def prettyPrint: String = s"reduceIExp ${PrettyPrinter(out)} ${PrettyPrinter(f)} ${PrettyPrinter(init)} ${PrettyPrinter(in)}"
 
-  override def substituteImpl: Phrase[CommandType] = ???
+  override def substituteImpl: Phrase[CommandType] = {
+    `new`(init.t.dataType, accum => {
+      (accum.wr `:=` init) `;`
+        `for`(length(in), i => {
+          SubstituteImplementations( f(accum.wr)(in `@` i)(accum.rd) )
+        }) `;`
+        out(accum.rd)
+    } )
+  }
 
 }

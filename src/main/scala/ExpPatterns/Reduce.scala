@@ -10,7 +10,9 @@ import Rewriting.RewriteToImperative
 abstract class AbstractReduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
                               init: Phrase[ExpType],
                               array: Phrase[ExpType],
-                              makeReduce: (Phrase[ExpType -> (ExpType -> ExpType)], Phrase[ExpType], Phrase[ExpType]) => AbstractReduce)
+                              makeReduce: (Phrase[ExpType -> (ExpType -> ExpType)], Phrase[ExpType], Phrase[ExpType]) => AbstractReduce,
+                              makeReduceIAcc: (Phrase[AccType], Phrase[AccType -> (ExpType -> (ExpType -> CommandType))], Phrase[ExpType], Phrase[ExpType]) => ReduceIAcc,
+                              makeReduceIExp: (Phrase[ExpType -> CommandType], Phrase[AccType -> (ExpType -> (ExpType -> CommandType))], Phrase[ExpType], Phrase[ExpType]) => ReduceIExp)
   extends ExpPattern {
 
   protected var n: Int = 0
@@ -66,18 +68,12 @@ abstract class AbstractReduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
 
   override def prettyPrint: String = s"(${this.getClass.getSimpleName} ${PrettyPrinter(f)} ${PrettyPrinter(init)} ${PrettyPrinter(array)})"
 
-}
-
-case class Reduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
-                  init: Phrase[ExpType],
-                  array: Phrase[ExpType]) extends AbstractReduce(f, init, array, Reduce) {
-
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
     assert(n != 0 && dt1 != null && dt2 != null)
 
     RewriteToImperative.exp(array, λ( ExpType(ArrayType(n, dt1)) ) { x =>
       RewriteToImperative.exp(init, λ( ExpType(dt2) ) { y =>
-        ReduceIAcc(A,
+        makeReduceIAcc(A,
           λ( AccType(dt2) ) { o =>
             λ( ExpType(dt1) ) { x =>
               λ( ExpType(dt2) ) { y => RewriteToImperative.acc(f(x)(y), o) } } },
@@ -93,7 +89,7 @@ case class Reduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
 
     RewriteToImperative.exp(array, λ( ExpType(ArrayType(n, dt1)) ) { x =>
       RewriteToImperative.exp(init, λ( ExpType(dt2) ) { y =>
-        ReduceIExp(C,
+        makeReduceIExp(C,
           λ( AccType(dt2) ) { o =>
             λ( ExpType(dt1) ) { x =>
               λ( ExpType(dt2) ) { y => RewriteToImperative.acc(f(x)(y), o) } } },
@@ -103,4 +99,9 @@ case class Reduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
       })
     })
   }
+
 }
+
+case class Reduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
+                  init: Phrase[ExpType],
+                  array: Phrase[ExpType]) extends AbstractReduce(f, init, array, Reduce, ReduceIAcc, ReduceIExp)

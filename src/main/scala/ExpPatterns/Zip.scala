@@ -14,7 +14,7 @@ case class Zip(lhs: Phrase[ExpType], rhs: Phrase[ExpType]) extends ExpPattern {
     (TypeChecker(lhs), TypeChecker(rhs)) match {
       case (ExpType(ArrayType(n, dt1)), ExpType(ArrayType(m, dt2))) if n == m =>
         ExpType(ArrayType(n, RecordType(dt1, dt2)))
-      case t => error(t.toString(), "PairOfArrayTypes")
+      case x => error(x.toString(), "PairOfArrayTypes")
     }
   }
 
