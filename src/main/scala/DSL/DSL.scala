@@ -189,6 +189,16 @@ object join {
   def apply(array: Phrase[ExpType]) = Join(array)
 }
 
+object toLocal {
+  def apply() = λ( x => ToLocal(x) )
+  def apply(x: Phrase[ExpType]) = ToLocal(x)
+}
+
+object toGlobal {
+  def apply() = λ( x => ToGlobal(x) )
+  def apply(x: Phrase[ExpType]) = ToGlobal(x)
+}
+
 object reduce {
   def apply(f: Phrase[ExpType -> (ExpType -> ExpType)]) =
     λ( (init, array) => Reduce(f, init, array))

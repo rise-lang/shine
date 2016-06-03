@@ -997,57 +997,55 @@ object Test extends App {
     println("-----")
   }
 
-//  {
-//    println("== gemv fused ==")
-//    val a: Phrase[ExpType] = 5
-//    val b: Phrase[ExpType] = 2
-//    val n = 1048576
-//    val m = n / 2
-//    val xsVectorT: ExpType = ExpType(ArrayType(n, int))
-//    val ysVectorT: ExpType = ExpType(ArrayType(m, int))
-//    val matrixT: ExpType = ExpType(ArrayType(m, ArrayType(n, int)))
-//
-//
-//    val add = λ(x1 => λ(x2 => x1 + x2 ))
-//    val mult = λ(p => p._1 * p._2 )
-//
-//    val scal = λ(a => λ(vec =>  mapSeq(λ(x => x * a )) $ vec ))
-//
-//    val dot = λ(xs => λ(ys => reduceSeq(add, 0) o mapSeq(mult) $ zip(xs, ys) ))
-//
-//    val p =
-//      λ(matrixT)(mat => λ(xsVectorT)(xs => λ(ysVectorT)(ys => {
-//
-//        mapWorkgroup(λ(t =>
-//          mapLocal(λ(x =>
-//            x
-//          )) o
-//          mapLocal(
-//            λ(x => x * a ) o
-//            /* toLocal(mapSeq(id)) o */
-//            reduceSeq(λ(acc => λ(y => acc + ( y._1 * y._2 ) )), 0)
-//          ) o split(n) $ zip(xs, t._1)
-//        )) $ zip(mat, ys)
-//
-//
-//        val lhs = mapSeq( λ(x => x * a ) o dot(xs) ) $ mat
-//        val rhs = scal(b) $ ys
-//        mapSeq(mult) $ zip(lhs, rhs)
-//      }) ) )
-//
-//    println("=====")
-//    println(PrettyPrinter(p))
-//
-//    val p2 = RewriteToImperative( p(identifier("mat", matrixT))(identifier("xs", xsVectorT))(identifier("ys", ysVectorT)) )
-//    println("=====")
-//    println(PrettyPrinter(p2))
-//    TypeChecker(p2)
-//
-//    val p3 = SubstituteImplementations(p2)
-//    println("=====")
-//    println(PrettyPrinter(p3))
-//    TypeChecker(p3)
-//
-//    println("-----")
-//  }
+  {
+    println("== gemv fused ==")
+    val a: Phrase[ExpType] = 5
+    val b: Phrase[ExpType] = 2
+    val n = 1048576
+    val m = n / 2
+    val xsVectorT: ExpType = ExpType(ArrayType(n, int))
+    val ysVectorT: ExpType = ExpType(ArrayType(m, int))
+    val matrixT: ExpType = ExpType(ArrayType(m, ArrayType(n, int)))
+
+
+    val add = λ(x1 => λ(x2 => x1 + x2 ))
+    val mult = λ(p => p._1 * p._2 )
+
+    val scal = λ(a => λ(vec =>  mapSeq(λ(x => x * a )) $ vec ))
+
+    val dot = λ(xs => λ(ys => reduceSeq(add, 0) o mapSeq(mult) $ zip(xs, ys) ))
+
+    val id = λ(x => x)
+
+    val p =
+      λ(matrixT)(mat => λ(xsVectorT)(xs => λ(ysVectorT)(ys => {
+
+        mapWorkgroup(λ(t =>
+          mapLocal(toGlobal() o λ(x =>
+            x + (t._2 * b)
+          )) o
+          mapLocal(
+            toLocal() o
+            λ(x => x * a ) o
+            reduceSeq(λ(y => λ(acc => acc + ( y._1 * y._2 ) )), 0)
+          ) o split(n) $ zip(xs, t._1)
+        )) $ zip(mat, ys)
+
+      }) ) )
+
+    println("=====")
+    println(PrettyPrinter(p))
+
+    val p2 = RewriteToImperative( p(identifier("mat", matrixT))(identifier("xs", xsVectorT))(identifier("ys", ysVectorT)) )
+    println("=====")
+    println(PrettyPrinter(p2))
+    TypeChecker(p2)
+
+    val p3 = SubstituteImplementations(p2)
+    println("=====")
+    println(PrettyPrinter(p3))
+    TypeChecker(p3)
+
+    println("-----")
+  }
 }
