@@ -82,9 +82,9 @@ package object DSL {
   implicit def toLiteral(i: Int): LiteralPhrase = LiteralPhrase(i)
 
   implicit class ExpPhraseExtensions(e: Phrase[ExpType]) {
-    def _1() = Fst(e)
+    def _1 = Fst(e)
 
-    def _2() = Snd(e)
+    def _2 = Snd(e)
 
     def `@`(index: Phrase[ExpType]) = Idx(e, index)
   }

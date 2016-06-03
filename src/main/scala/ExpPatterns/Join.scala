@@ -9,10 +9,13 @@ import DSL._
 
 case class Join(array: Phrase[ExpType]) extends ExpPattern {
 
+  private var n: Int = 0
+
   override def typeCheck(): ExpType = {
     import TypeChecker._
     TypeChecker(array) match {
-      case ExpType(ArrayType(n, ArrayType(m, dt))) =>
+      case ExpType(ArrayType(n_, ArrayType(m, dt))) =>
+        n = n_
         ExpType(ArrayType(n*m, dt))
       case x => error(x.toString, "ArrayType(ArrayType)")
     }
@@ -40,7 +43,8 @@ case class Join(array: Phrase[ExpType]) extends ExpPattern {
   override def prettyPrint: String = s"(join ${PrettyPrinter(array)})"
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
-    RewriteToImperative.acc(array, JoinAcc(A))
+    assert(n != 0)
+    RewriteToImperative.acc(array, JoinAcc(n, A))
   }
 
   override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
