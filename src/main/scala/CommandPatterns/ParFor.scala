@@ -48,6 +48,6 @@ case class ParFor(n: Phrase[ExpType],
 
   override def substituteImpl: Phrase[CommandType] = ParFor(n, out, SubstituteImplementations.applyBinaryFun(body))
 
-  override def prettyPrint: String = s"parFor ${PrettyPrinter(n)} ${PrettyPrinter(body)}"
+  override def prettyPrint: String = s"parFor ${PrettyPrinter(n)} ${PrettyPrinter(out)} ${PrettyPrinter(body)}"
 
 }
