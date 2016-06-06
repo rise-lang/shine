@@ -38,7 +38,6 @@ object Printer {
       case RecordType(fst, snd) =>
         "record" + nameOf(fst) + "_" + nameOf(snd)
       case ArrayType(n, elemType) => nameOf(elemType) + "*"
-      case IndexType => "int"
       case `bool`   => "int"
       case `int`    => "int"
       case `int4`   => "int4"

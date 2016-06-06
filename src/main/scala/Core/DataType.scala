@@ -13,8 +13,6 @@ object int4 extends BasicType { override def toString = "int4" }
 
 object float extends BasicType { override def toString = "float" }
 
-object IndexType extends DataType
-
 case class ArrayType(size: ArithExpr, elemType: DataType) extends DataType
 
 case class RecordType(fst: DataType, snd: DataType) extends DataType
