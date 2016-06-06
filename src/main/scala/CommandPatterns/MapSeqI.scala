@@ -12,7 +12,9 @@ case class MapSeqI(out: Phrase[AccType],
   override def makeMapI = MapSeqI
 
   override def substituteImpl: Phrase[CommandType] = {
-    `for`(length(in), i => {
+    val l = length(in)
+    TypeChecker(l)
+    `for`(l, i => {
       SubstituteImplementations( f(out `@` i)(in `@` i) )
     })
   }

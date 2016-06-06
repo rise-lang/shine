@@ -13,7 +13,7 @@ case class ParFor(n: Phrase[ExpType],
     import TypeChecker._
 
     check(TypeChecker(n), ExpType(int))
-    val nInt = OperationalSemantics.evalIntExp(new OperationalSemantics.Store(), n)
+    val nInt = OperationalSemantics.evalIndexExp(new OperationalSemantics.Store(), n)
 
     TypeChecker(out) match {
       case AccType(ArrayType(m, dt)) =>

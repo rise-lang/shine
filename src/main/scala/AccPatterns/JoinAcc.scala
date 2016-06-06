@@ -2,8 +2,9 @@ package AccPatterns
 
 import Core._
 import Core.OperationalSemantics._
+import apart.arithmetic.ArithExpr
 
-case class JoinAcc(n: Int, array: Phrase[AccType]) extends AccPattern {
+case class JoinAcc(n: ArithExpr, array: Phrase[AccType]) extends AccPattern {
 
   override def typeCheck(): AccType = {
     import TypeChecker._

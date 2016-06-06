@@ -38,6 +38,7 @@ object Printer {
       case RecordType(fst, snd) =>
         "record" + nameOf(fst) + "_" + nameOf(snd)
       case ArrayType(n, elemType) => nameOf(elemType) + "*"
+      case IndexType => "int"
       case `bool`   => "int"
       case `int`    => "int"
       case `int4`   => "int4"
@@ -60,6 +61,7 @@ object Printer {
       case IntData(i) => i.toString
       case Int4Data(i0, i1, i2, i3) => s"(int4)( $i0, $i1, $i2, $i3 )"
       case FloatData(f) => f.toString + "f"
+      case IndexData(i) => i.toString
       case RecordData(fst, snd) =>
         val (fstT, sndT) = t match {
           case r: RecordType => (r.fst, r.snd)

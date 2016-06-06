@@ -10,8 +10,8 @@ case class Idx(array: Phrase[ExpType], index: Phrase[ExpType]) extends ExpPatter
     import TypeChecker._
     check(TypeChecker(index), ExpType(int))
     TypeChecker(array) match {
-      case ExpType(ArrayType(n, t)) => ExpType(t)
-      case t => error(t.toString, "ArrayType")
+      case ExpType(ArrayType(_, dt)) => ExpType(dt)
+      case x => error(x.toString, "ArrayType")
     }
   }
 
@@ -30,7 +30,7 @@ case class Idx(array: Phrase[ExpType], index: Phrase[ExpType]) extends ExpPatter
 
   override def toC = Printer.toC(array) + "[" + Printer.toC(index) + "]"
 
-  override def prettyPrint: String = s"${PrettyPrinter(array)}[${PrettyPrinter(index)}]"
+  override def prettyPrint: String = s"(${PrettyPrinter(array)})[${PrettyPrinter(index)}]"
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = ???
 

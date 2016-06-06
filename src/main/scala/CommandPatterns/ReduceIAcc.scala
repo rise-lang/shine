@@ -45,7 +45,7 @@ case class ReduceIAcc(out: Phrase[AccType],
     val fE = OperationalSemantics.eval(s, f)(TrinaryFunctionEvaluator)
     val n = TypeChecker(in) match { case ExpType(ArrayType(len, _)) => len }
 
-    (0 until n).foldLeft(s)( (sOld, i) => {
+    (0 until n.eval).foldLeft(s)( (sOld, i) => {
       val comm = fE(out)(Idx(in, LiteralPhrase(i)))(init)
       OperationalSemantics.eval(sOld, comm)
     } )
@@ -56,9 +56,11 @@ case class ReduceIAcc(out: Phrase[AccType],
   override def prettyPrint: String = s"reduceIAcc ${PrettyPrinter(out)} ${PrettyPrinter(f)} ${PrettyPrinter(init)} ${PrettyPrinter(in)}"
 
   override def substituteImpl: Phrase[CommandType] = {
-    `new`(init.t.dataType, accum => {
+    val l = length(in)
+    TypeChecker(l)
+    `new`(init.t.dataType, PrivateMemory, accum => {
       (accum.wr `:=` init) `;`
-      `for`(length(in), i => {
+      `for`(l, i => {
         SubstituteImplementations( f(accum.wr)(in `@` i)(accum.rd) )
       }) `;`
       (out `:=` accum.rd)

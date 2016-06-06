@@ -5,6 +5,7 @@ import Rewriting.{Rewrite, RewriteToImperative, SubstituteImplementations}
 import CommandPatterns._
 import Core.PhraseType.->
 import ExpPatterns._
+import apart.arithmetic.{ArithExpr, Cst, SizeVar}
 
 import scala.collection.immutable.HashMap
 
@@ -22,9 +23,9 @@ object Test extends App {
     val out = identifier("out", AccType(int))
     store = store + (out.name -> 0)
 
-    val p = `new`(int, v =>
+    val p = `new`(int, PrivateMemory, v =>
       (π2(v) := LiteralPhrase(42) + LiteralPhrase(1)) `;`
-        `new`(int, v2 =>
+        `new`(int, PrivateMemory, v2 =>
           (π2(v2) := π1(v) + 1) `;`
             (π2(v) := π1(v2))
         ) `;`
@@ -71,11 +72,11 @@ object Test extends App {
     val out = identifier("out", AccType(int))
     store = store + (out.name -> 0)
 
-    val p = `new`(int, v =>
+    val p = `new`(int, PrivateMemory, v =>
       (π2(v) := 42 + 1) `;`
-      `for`(10, { i =>
+      `for`(Cst(10), { i =>
         π2(v) := i + π1(v)
-      }) `;` skip `;`
+      })  `;` skip `;`
       `if`(π1(v) % 2,
         thenP = π2(v) := π1(v) + 1,
         elseP = π2(v) := π1(v) + 10 ) `;`
@@ -123,8 +124,8 @@ object Test extends App {
 //    store = makeArrayData(store, y.name, 2, 3, 4, 5)
 //    store = makeArrayData(store, out.name, 0, 0, 0, 0)
 
-    val p = `for`(2, { i =>
-      `for`(2, { j =>
+    val p = `for`(Cst(2), { i =>
+      `for`(Cst(2), { j =>
         out `@` (i*2+j) := x `@` (i*2+j) + y `@` (i*2+j)
       })
     })
@@ -419,8 +420,8 @@ object Test extends App {
     val f = λ( x => x._1 + x._2)
     val g = λ( x => map(f, x) )
 
-    val p = `for`(2, { i =>
-      `for`(2, { j =>
+    val p = `for`(Cst(2), { i =>
+      `for`(Cst(2), { j =>
         λ( AccType(int) x ExpType(ArrayType(2, int)) ) { p =>
           π1(p) := π2(p) `@` j
         }(PairPhrase(out `@` (i*2+j), map(g, split(2, zip(x, y))) `@` i))
@@ -887,7 +888,6 @@ object Test extends App {
 
   {
     println("== dot ==")
-    val a: Phrase[ExpType] = 5
     val t: ExpType = ExpType(ArrayType(1048576, int))
     val p: Phrase[ExpType -> (ExpType -> ExpType)] =
       λ(t)(xs => λ(t)(ys =>
@@ -1001,8 +1001,8 @@ object Test extends App {
     println("== gemv fused ==")
     val a: Phrase[ExpType] = 5
     val b: Phrase[ExpType] = 2
-    val n = 1048576
-    val m = n / 2
+    val n: ArithExpr = SizeVar("N")
+    val m: ArithExpr = n / 2
     val xsVectorT: ExpType = ExpType(ArrayType(n, int))
     val ysVectorT: ExpType = ExpType(ArrayType(m, int))
     val matrixT: ExpType = ExpType(ArrayType(m, ArrayType(n, int)))
@@ -1011,24 +1011,17 @@ object Test extends App {
     val add = λ(x1 => λ(x2 => x1 + x2 ))
     val mult = λ(p => p._1 * p._2 )
 
-    val scal = λ(a => λ(vec =>  mapSeq(λ(x => x * a )) $ vec ))
-
-    val dot = λ(xs => λ(ys => reduceSeq(add, 0) o mapSeq(mult) $ zip(xs, ys) ))
-
-    val id = λ(x => x)
-
     val p =
       λ(matrixT)(mat => λ(xsVectorT)(xs => λ(ysVectorT)(ys => {
 
         mapWorkgroup(λ(t =>
-          mapLocal(toGlobal() o λ(x =>
+          toGlobal(mapLocal( λ(x =>
             x + (t._2 * b)
-          )) o
-          mapLocal(
-            toLocal() o
+          ) )) o
+          toLocal(mapLocal(
             λ(x => x * a ) o
             reduceSeq(λ(y => λ(acc => acc + ( y._1 * y._2 ) )), 0)
-          ) o split(n) $ zip(xs, t._1)
+          )) o split(n) $ zip(xs, t._1)
         )) $ zip(mat, ys)
 
       }) ) )

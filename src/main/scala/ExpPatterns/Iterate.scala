@@ -3,8 +3,9 @@ package ExpPatterns
 import Core._
 import Core.PhraseType._
 import Core.OperationalSemantics._
+import apart.arithmetic.ArithExpr
 
-case class Iterate(n: Int, f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) extends ExpPattern {
+case class Iterate(n: ArithExpr, f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) extends ExpPattern {
 
   override def typeCheck(): ExpType = {
     import TypeChecker._
@@ -31,7 +32,7 @@ case class Iterate(n: Int, f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]
     OperationalSemantics.eval(s, array) match {
       case ArrayData(xs) =>
         var a = array
-        for (_ <- 0 until n) {
+        for (_ <- 0 until n.eval) {
           a = fE(a)
         }
         OperationalSemantics.eval(s, a)

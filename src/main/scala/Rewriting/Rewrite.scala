@@ -46,7 +46,7 @@ object Rewrite {
         p match {
           case s: Skip                        => s
           case Seq(c1, c2)                    => Seq(apply(c1), apply(c2))
-          case New(dt, f)                     => New(dt, apply(f))
+          case New(dt, as, f)                 => New(dt, as, apply(f))
           case Assign(lhs, rhs)               => Assign(apply(lhs), apply(rhs))
           case For(n, body)                   => For(apply(n), apply(body))
           case _                              => p

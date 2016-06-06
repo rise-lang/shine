@@ -39,7 +39,7 @@ abstract class AbstractMapI(out: Phrase[AccType],
       case ExpType(ArrayType(len, _)) => len
     }
 
-    (0 until n).foldLeft(s)((sOld, i) => {
+    (0 until n.eval).foldLeft(s)((sOld, i) => {
       val comm = fE(IdxAcc(out, LiteralPhrase(i)))(Idx(in, LiteralPhrase(i)))
       OperationalSemantics.eval(sOld, comm)
     })
@@ -67,7 +67,9 @@ case class MapI(out: Phrase[AccType],
   override def makeMapI = MapI
 
   override def substituteImpl: Phrase[CommandType] = {
-    `parFor`(length(in), out, i => o => {
+    val l = length(in)
+    TypeChecker(l)
+    `parFor`(l, out, i => o => {
       SubstituteImplementations( f(o)(in `@` i) )
     })
   }

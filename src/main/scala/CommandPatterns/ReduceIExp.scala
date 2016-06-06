@@ -49,9 +49,9 @@ case class ReduceIExp(out: Phrase[ExpType -> CommandType],
 
   override def eval(s: Store): Store = {
     val outE = OperationalSemantics.eval(s, out)
-    OperationalSemantics.eval(s, `new`(init.t.dataType, v => {
-      ReduceIAcc(π2(v), f, init, in) `;`
-        outE(π1(v))
+    OperationalSemantics.eval(s, `new`(init.t.dataType, PrivateMemory, accum => {
+      ReduceIAcc(π2(accum), f, init, in) `;`
+        outE(π1(accum))
     }))
   }
 
@@ -60,9 +60,11 @@ case class ReduceIExp(out: Phrase[ExpType -> CommandType],
   override def prettyPrint: String = s"reduceIExp ${PrettyPrinter(out)} ${PrettyPrinter(f)} ${PrettyPrinter(init)} ${PrettyPrinter(in)}"
 
   override def substituteImpl: Phrase[CommandType] = {
-    `new`(init.t.dataType, accum => {
+    val l = length(in)
+    TypeChecker(l)
+    `new`(init.t.dataType, PrivateMemory, accum => {
       (accum.wr `:=` init) `;`
-        `for`(length(in), i => {
+        `for`(l, i => {
           SubstituteImplementations( f(accum.wr)(in `@` i)(accum.rd) )
         }) `;`
         out(accum.rd)

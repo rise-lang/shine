@@ -1,6 +1,7 @@
 package Core
 
 import PhraseType._
+import apart.arithmetic.ArithExpr
 
 import scala.collection.immutable.HashMap
 import scala.language.implicitConversions
@@ -8,6 +9,7 @@ import scala.language.implicitConversions
 object OperationalSemantics {
 
   sealed abstract class Data(val dataType: DataType)
+  final case class IndexData(i: ArithExpr) extends Data(int)
   final case class BoolData(b: Boolean) extends Data(bool)
   final case class IntData(i: Int) extends Data(int)
   final case class Int4Data(i0: Int, i1: Int, i2: Int, i3: Int) extends Data(int4)
@@ -51,7 +53,7 @@ object OperationalSemantics {
 
   sealed trait AccIdentifier
   case class NamedIdentifier(name: String) extends AccIdentifier
-  case class ArrayAccessIdentifier(array: AccIdentifier, index: Int) extends AccIdentifier
+  case class ArrayAccessIdentifier(array: AccIdentifier, index: ArithExpr) extends AccIdentifier
   case class RecordIdentiers(fst: AccIdentifier, snd: AccIdentifier) extends AccIdentifier
 
   implicit def IntToIntData(i: Int): IntData = IntData(i)
@@ -276,9 +278,18 @@ object OperationalSemantics {
     }
   }
 
+  def evalIndexExp(s: Store, p: Phrase[ExpType]): ArithExpr = {
+    eval(s, p) match {
+      case IndexData(i) => i
+      case IntData(i) => i
+      case _ => throw new Exception("This should never happen")
+    }
+  }
+
   def evalIntExp(s: Store, p: Phrase[ExpType]): Int = {
     eval(s, p) match {
       case IntData(i) => i
+      case IndexData(i) => i.eval
       case _ => throw new Exception("This should never happen")
     }
   }

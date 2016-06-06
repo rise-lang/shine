@@ -6,10 +6,11 @@ import Core.PhraseType.->
 import Core._
 import Rewriting.RewriteToImperative
 import DSL._
+import apart.arithmetic.ArithExpr
 
 case class Join(array: Phrase[ExpType]) extends ExpPattern {
 
-  private var n: Int = 0
+  private var n: ArithExpr = null
 
   override def typeCheck(): ExpType = {
     import TypeChecker._
@@ -43,7 +44,7 @@ case class Join(array: Phrase[ExpType]) extends ExpPattern {
   override def prettyPrint: String = s"(join ${PrettyPrinter(array)})"
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
-    assert(n != 0)
+    assert(n != null)
     RewriteToImperative.acc(array, JoinAcc(n, A))
   }
 
