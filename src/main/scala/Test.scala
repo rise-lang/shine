@@ -888,7 +888,6 @@ object Test extends App {
 
   {
     println("== dot ==")
-    val a: Phrase[ExpType] = 5
     val t: ExpType = ExpType(ArrayType(1048576, int))
     val p: Phrase[ExpType -> (ExpType -> ExpType)] =
       λ(t)(xs => λ(t)(ys =>
@@ -1011,12 +1010,6 @@ object Test extends App {
 
     val add = λ(x1 => λ(x2 => x1 + x2 ))
     val mult = λ(p => p._1 * p._2 )
-
-    val scal = λ(a => λ(vec =>  mapSeq(λ(x => x * a )) $ vec ))
-
-    val dot = λ(xs => λ(ys => reduceSeq(add, 0) o mapSeq(mult) $ zip(xs, ys) ))
-
-    val id = λ(x => x)
 
     val p =
       λ(matrixT)(mat => λ(xsVectorT)(xs => λ(ysVectorT)(ys => {
