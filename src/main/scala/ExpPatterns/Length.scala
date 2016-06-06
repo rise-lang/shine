@@ -9,9 +9,9 @@ case class Length[T <: BasePhraseTypes](array: Phrase[T]) extends ExpPattern {
   override def typeCheck(): ExpType = {
     import TypeChecker._
     TypeChecker(array) match {
-      case ExpType(ArrayType(n, t)) => ExpType(int)
-      case AccType(ArrayType(n, t)) => ExpType(int)
-      case t => error(t.toString, "ArrayType")
+      case ExpType(ArrayType(_, _)) => ExpType(int)
+      case AccType(ArrayType(_, _)) => ExpType(int)
+      case x => error(x.toString, "ArrayType")
     }
   }
 
@@ -19,6 +19,7 @@ case class Length[T <: BasePhraseTypes](array: Phrase[T]) extends ExpPattern {
     array.t match {
       case ExpType(ArrayType(n, _)) => IndexData(n)
       case AccType(ArrayType(n, _)) => IndexData(n)
+      case _ => throw new Exception(s"This should not happen (${array.t})")
     }
   }
 
@@ -27,8 +28,8 @@ case class Length[T <: BasePhraseTypes](array: Phrase[T]) extends ExpPattern {
   }
 
   override def toC = array.t match {
-    case ExpType(ArrayType(n, dt)) => n.toString
-    case AccType(ArrayType(n, dt)) => n.toString
+    case ExpType(ArrayType(n, _)) => n.toString
+    case AccType(ArrayType(n, _)) => n.toString
   }
 
   override def prettyPrint: String = s"(length ${PrettyPrinter(array)})"

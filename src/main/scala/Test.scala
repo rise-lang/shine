@@ -5,7 +5,7 @@ import Rewriting.{Rewrite, RewriteToImperative, SubstituteImplementations}
 import CommandPatterns._
 import Core.PhraseType.->
 import ExpPatterns._
-import apart.arithmetic.{ArithExpr, Cst}
+import apart.arithmetic.{ArithExpr, Cst, SizeVar}
 
 import scala.collection.immutable.HashMap
 
@@ -1002,8 +1002,8 @@ object Test extends App {
     println("== gemv fused ==")
     val a: Phrase[ExpType] = 5
     val b: Phrase[ExpType] = 2
-    val n = 1048576
-    val m = n / 2
+    val n: ArithExpr = SizeVar("N")
+    val m: ArithExpr = n / 2
     val xsVectorT: ExpType = ExpType(ArrayType(n, int))
     val ysVectorT: ExpType = ExpType(ArrayType(m, int))
     val matrixT: ExpType = ExpType(ArrayType(m, ArrayType(n, int)))

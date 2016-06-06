@@ -38,6 +38,9 @@ case class For(n: Phrase[ExpType],
     s"for (int ${i.name} = 0; ${i.name} < ${Printer.toC(n)}; ++${i.name}) {\n${Printer.toC(bodyE(i))}}\n"
   }
 
-  override def prettyPrint: String = s"for ${PrettyPrinter(n)} ${PrettyPrinter(body)}"
+  override def prettyPrint: String = {
+    val length = OperationalSemantics.evalIndexExp(new OperationalSemantics.Store(), n)
+    s"for 0..$length ${PrettyPrinter(body)}"
+  }
 
 }

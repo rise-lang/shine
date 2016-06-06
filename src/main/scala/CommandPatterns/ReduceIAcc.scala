@@ -56,9 +56,11 @@ case class ReduceIAcc(out: Phrase[AccType],
   override def prettyPrint: String = s"reduceIAcc ${PrettyPrinter(out)} ${PrettyPrinter(f)} ${PrettyPrinter(init)} ${PrettyPrinter(in)}"
 
   override def substituteImpl: Phrase[CommandType] = {
+    val l = length(in)
+    TypeChecker(l)
     `new`(init.t.dataType, PrivateMemory, accum => {
       (accum.wr `:=` init) `;`
-      `for`(length(in), i => {
+      `for`(l, i => {
         SubstituteImplementations( f(accum.wr)(in `@` i)(accum.rd) )
       }) `;`
       (out `:=` accum.rd)

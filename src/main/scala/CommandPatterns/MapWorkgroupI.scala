@@ -13,8 +13,10 @@ case class MapWorkgroupI(out: Phrase[AccType],
 
   override def substituteImpl: Phrase[CommandType] = {
     // TODO: replace with for loop iterating over workgroup stuff
-    `for`(length(in), i => {
-      SubstituteImplementations( f(out `@` i)(in `@` i) )
+    val l = length(in)
+    TypeChecker(l)
+    `for`(l, i => {
+      SubstituteImplementations(f(out `@` i)(in `@` i))
     })
   }
 

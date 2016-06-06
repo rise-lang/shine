@@ -60,9 +60,11 @@ case class ReduceIExp(out: Phrase[ExpType -> CommandType],
   override def prettyPrint: String = s"reduceIExp ${PrettyPrinter(out)} ${PrettyPrinter(f)} ${PrettyPrinter(init)} ${PrettyPrinter(in)}"
 
   override def substituteImpl: Phrase[CommandType] = {
+    val l = length(in)
+    TypeChecker(l)
     `new`(init.t.dataType, PrivateMemory, accum => {
       (accum.wr `:=` init) `;`
-        `for`(length(in), i => {
+        `for`(l, i => {
           SubstituteImplementations( f(accum.wr)(in `@` i)(accum.rd) )
         }) `;`
         out(accum.rd)

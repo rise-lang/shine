@@ -54,9 +54,6 @@ object `if` {
 }
 
 object `for` {
-//  def apply(n: ArithExpr, f: (Phrase[ExpType] => Phrase[CommandType])) = {
-//    For(LiteralPhrase(IndexData(n)), λ(ExpType(int)) { i => f(i) })
-//  }
   def apply(n: Phrase[ExpType], f: (Phrase[ExpType] => Phrase[CommandType])) = {
     For(n, λ(ExpType(int)) { i => f(i) })
   }
