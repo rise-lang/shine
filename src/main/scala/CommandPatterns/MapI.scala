@@ -39,7 +39,7 @@ abstract class AbstractMapI(out: Phrase[AccType],
       case ExpType(ArrayType(len, _)) => len
     }
 
-    (0 until n).foldLeft(s)((sOld, i) => {
+    (0 until n.eval).foldLeft(s)((sOld, i) => {
       val comm = fE(IdxAcc(out, LiteralPhrase(i)))(Idx(in, LiteralPhrase(i)))
       OperationalSemantics.eval(sOld, comm)
     })

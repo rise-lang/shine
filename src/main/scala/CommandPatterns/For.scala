@@ -16,9 +16,9 @@ case class For(n: Phrase[ExpType],
   }
 
   override def eval(s: Store): Store = {
-    val nE = evalIntExp(s, n)
+    val nE = evalIndexExp(s, n)
     val bodyE = OperationalSemantics.eval(s, body)
-    (0 until nE).foldLeft(s)( (s1, i) => {
+    (0 until nE.eval).foldLeft(s)( (s1, i) => {
       OperationalSemantics.eval(s1, bodyE(LiteralPhrase(i)))
     } )
   }

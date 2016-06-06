@@ -6,6 +6,7 @@ import Core.PhraseType._
 import Core.OperationalSemantics._
 import DSL._
 import Rewriting.RewriteToImperative
+import apart.arithmetic.ArithExpr
 
 abstract class AbstractMap(f: Phrase[ExpType -> ExpType],
                            array: Phrase[ExpType],
@@ -13,7 +14,7 @@ abstract class AbstractMap(f: Phrase[ExpType -> ExpType],
                            makeMapI: (Phrase[AccType], Phrase[AccType -> (ExpType -> CommandType)], Phrase[ExpType]) => AbstractMapI)
   extends ExpPattern {
 
-  protected var n: Int = 0
+  protected var n: ArithExpr = null
   protected var dt1: DataType = null
   protected var dt2: DataType = null
 
@@ -58,7 +59,7 @@ abstract class AbstractMap(f: Phrase[ExpType -> ExpType],
   }
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
-    assert(n != 0 && dt1 != null && dt2 != null)
+    assert(n != null && dt1 != null && dt2 != null)
 
     RewriteToImperative.exp(array, λ( ExpType(ArrayType(n, dt1)) ) { x =>
       makeMapI(A,
@@ -70,7 +71,7 @@ abstract class AbstractMap(f: Phrase[ExpType -> ExpType],
   }
 
   override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
-    assert(n != 0 && dt1 != null && dt2 != null)
+    assert(n != null && dt1 != null && dt2 != null)
 
     `new`(ArrayType(n, dt2), GlobalMemory, tmp =>
       RewriteToImperative.acc(this, tmp.wr) `;`

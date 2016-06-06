@@ -6,6 +6,7 @@ import Core.PhraseType._
 import Core.OperationalSemantics._
 import DSL._
 import Rewriting.RewriteToImperative
+import apart.arithmetic.ArithExpr
 
 abstract class AbstractReduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
                               init: Phrase[ExpType],
@@ -15,7 +16,7 @@ abstract class AbstractReduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
                               makeReduceIExp: (Phrase[ExpType -> CommandType], Phrase[AccType -> (ExpType -> (ExpType -> CommandType))], Phrase[ExpType], Phrase[ExpType]) => ReduceIExp)
   extends ExpPattern {
 
-  protected var n: Int = 0
+  protected var n: ArithExpr = null
   protected var dt1: DataType = null
   protected var dt2: DataType = null
 
@@ -69,7 +70,7 @@ abstract class AbstractReduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
   override def prettyPrint: String = s"(${this.getClass.getSimpleName} ${PrettyPrinter(f)} ${PrettyPrinter(init)} ${PrettyPrinter(array)})"
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
-    assert(n != 0 && dt1 != null && dt2 != null)
+    assert(n != null && dt1 != null && dt2 != null)
 
     RewriteToImperative.exp(array, λ( ExpType(ArrayType(n, dt1)) ) { x =>
       RewriteToImperative.exp(init, λ( ExpType(dt2) ) { y =>
@@ -85,7 +86,7 @@ abstract class AbstractReduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
   }
 
   override def rewriteToImperativeExp(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
-    assert(n != 0 && dt1 != null && dt2 != null)
+    assert(n != null && dt1 != null && dt2 != null)
 
     RewriteToImperative.exp(array, λ( ExpType(ArrayType(n, dt1)) ) { x =>
       RewriteToImperative.exp(init, λ( ExpType(dt2) ) { y =>

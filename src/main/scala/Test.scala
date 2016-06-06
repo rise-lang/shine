@@ -5,6 +5,7 @@ import Rewriting.{Rewrite, RewriteToImperative, SubstituteImplementations}
 import CommandPatterns._
 import Core.PhraseType.->
 import ExpPatterns._
+import apart.arithmetic.{ArithExpr, Cst}
 
 import scala.collection.immutable.HashMap
 
@@ -73,9 +74,9 @@ object Test extends App {
 
     val p = `new`(int, PrivateMemory, v =>
       (π2(v) := 42 + 1) `;`
-      `for`(10, { i =>
+      `for`(Cst(10), { i =>
         π2(v) := i + π1(v)
-      }) `;` skip `;`
+      })  `;` skip `;`
       `if`(π1(v) % 2,
         thenP = π2(v) := π1(v) + 1,
         elseP = π2(v) := π1(v) + 10 ) `;`
@@ -123,8 +124,8 @@ object Test extends App {
 //    store = makeArrayData(store, y.name, 2, 3, 4, 5)
 //    store = makeArrayData(store, out.name, 0, 0, 0, 0)
 
-    val p = `for`(2, { i =>
-      `for`(2, { j =>
+    val p = `for`(Cst(2), { i =>
+      `for`(Cst(2), { j =>
         out `@` (i*2+j) := x `@` (i*2+j) + y `@` (i*2+j)
       })
     })
@@ -419,8 +420,8 @@ object Test extends App {
     val f = λ( x => x._1 + x._2)
     val g = λ( x => map(f, x) )
 
-    val p = `for`(2, { i =>
-      `for`(2, { j =>
+    val p = `for`(Cst(2), { i =>
+      `for`(Cst(2), { j =>
         λ( AccType(int) x ExpType(ArrayType(2, int)) ) { p =>
           π1(p) := π2(p) `@` j
         }(PairPhrase(out `@` (i*2+j), map(g, split(2, zip(x, y))) `@` i))

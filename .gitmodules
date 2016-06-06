@@ -1,0 +1,3 @@
+[submodule "lib/ArithExpr"]
+	path = lib/ArithExpr
+	url = git@bitbucket.org:cdubach/arithexpr.git

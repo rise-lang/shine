@@ -17,8 +17,8 @@ case class Length[T <: BasePhraseTypes](array: Phrase[T]) extends ExpPattern {
 
   override def eval(s: Store): Data = {
     array.t match {
-      case ExpType(ArrayType(n, _)) => n
-      case AccType(ArrayType(n, _)) => n
+      case ExpType(ArrayType(n, _)) => IndexData(n)
+      case AccType(ArrayType(n, _)) => IndexData(n)
     }
   }
 

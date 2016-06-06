@@ -6,8 +6,9 @@ import Core.OperationalSemantics._
 import Core.PhraseType.->
 import Rewriting.RewriteToImperative
 import DSL._
+import apart.arithmetic.ArithExpr
 
-case class Split(n: Int, array: Phrase[ExpType]) extends ExpPattern {
+case class Split(n: ArithExpr, array: Phrase[ExpType]) extends ExpPattern {
 
   override def typeCheck(): ExpType = {
     import TypeChecker._
@@ -26,11 +27,11 @@ case class Split(n: Int, array: Phrase[ExpType]) extends ExpPattern {
     OperationalSemantics.eval(s, array) match {
       case ArrayData(arrayE) =>
 
-        def split[T](n: Int, vector: Vector[T]): Vector[Vector[T]] = {
+        def split[T](n: ArithExpr, vector: Vector[T]): Vector[Vector[T]] = {
           val builder = Vector.newBuilder[Vector[T]]
           var vec = vector
-          for (i <- 0 until vector.length / n) {
-            val (head, tail) = vec splitAt n
+          for (i <- 0 until vector.length / n.eval) {
+            val (head, tail) = vec splitAt n.eval
             vec = tail
             builder += head
           }

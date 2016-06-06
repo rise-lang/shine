@@ -30,7 +30,7 @@ case class Assign(lhs: Phrase[AccType], rhs: Phrase[ExpType]) extends CommandPat
           evalAssign(s, array, rhs, (s, arrayName, rhsValue) => {
             assert(s.contains(arrayName))
             s(arrayName) match {
-              case ArrayData(vec) => continuation(s, arrayName, ArrayData(vec.updated(index, rhsValue)))
+              case ArrayData(vec) => continuation(s, arrayName, ArrayData(vec.updated(index.eval, rhsValue)))
               case _ => throw new Exception("This should not happen")
             }
           })

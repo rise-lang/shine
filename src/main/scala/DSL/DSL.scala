@@ -6,8 +6,7 @@ import Core._
 import AccPatterns._
 import ExpPatterns._
 import CommandPatterns._
-
-import scala.reflect.ClassTag
+import apart.arithmetic.ArithExpr
 
 object VarType {
   def apply(dataType: DataType) = ExpType(dataType) x AccType(dataType)
@@ -55,6 +54,9 @@ object `if` {
 }
 
 object `for` {
+//  def apply(n: ArithExpr, f: (Phrase[ExpType] => Phrase[CommandType])) = {
+//    For(LiteralPhrase(IndexData(n)), λ(ExpType(int)) { i => f(i) })
+//  }
   def apply(n: Phrase[ExpType], f: (Phrase[ExpType] => Phrase[CommandType])) = {
     For(n, λ(ExpType(int)) { i => f(i) })
   }
@@ -180,8 +182,8 @@ object zip {
 }
 
 object split {
-  def apply(n: Int) = λ( array => Split(n, array) )
-  def apply(n: Int, array: Phrase[ExpType]) = Split(n, array)
+  def apply(n: ArithExpr) = λ(array => Split(n, array) )
+  def apply(n: ArithExpr, array: Phrase[ExpType]) = Split(n, array)
 }
 
 object join {
@@ -224,10 +226,10 @@ object reduceSeq {
 }
 
 object iterate {
-  def apply(n: Int, f: Phrase[ExpType -> ExpType]) =
+  def apply(n: ArithExpr, f: Phrase[ExpType -> ExpType]) =
     λ( array => Iterate(n, f, array))
 
-  def apply(n: Int, f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) =
+  def apply(n: ArithExpr, f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) =
     Iterate(n, f, array)
 }
 
