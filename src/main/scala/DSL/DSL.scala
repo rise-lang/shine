@@ -190,13 +190,13 @@ object join {
 }
 
 object toLocal {
-  def apply() = λ( x => ToLocal(x) )
-  def apply(x: Phrase[ExpType]) = ToLocal(x)
+  def apply(f: Phrase[ExpType -> ExpType]) = λ( x => ToLocal(f, x))
+  def apply(f: Phrase[ExpType -> ExpType], x: Phrase[ExpType]) = ToLocal(f, x)
 }
 
 object toGlobal {
-  def apply() = λ( x => ToGlobal(x) )
-  def apply(x: Phrase[ExpType]) = ToGlobal(x)
+  def apply(f: Phrase[ExpType -> ExpType]) = λ( x => ToGlobal(f, x))
+  def apply(f: Phrase[ExpType -> ExpType], x: Phrase[ExpType]) = ToGlobal(f, x)
 }
 
 object reduce {

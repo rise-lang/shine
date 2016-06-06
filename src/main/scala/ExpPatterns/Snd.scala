@@ -34,6 +34,8 @@ case class Snd(record: Phrase[ExpType]) extends ExpPattern {
     RewriteToImperative.exp(this, λ(this.t) {
       this.t.dataType match {
         case _: BasicType => x => A `:=` x
+        case _: ArrayType => throw new Exception("This should not happen")
+        case _: RecordType => throw new Exception("This should not happen")
       }
     })
 

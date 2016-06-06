@@ -74,7 +74,7 @@ abstract class AbstractMap(f: Phrase[ExpType -> ExpType],
 
     `new`(ArrayType(n, dt2), tmp =>
       RewriteToImperative.acc(this, tmp.wr) `;`
-        C(tmp.rd)
+      C(tmp.rd)
     )
   }
 

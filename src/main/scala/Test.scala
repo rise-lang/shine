@@ -1021,14 +1021,13 @@ object Test extends App {
       λ(matrixT)(mat => λ(xsVectorT)(xs => λ(ysVectorT)(ys => {
 
         mapWorkgroup(λ(t =>
-          mapLocal(toGlobal() o λ(x =>
+          toGlobal(mapLocal( λ(x =>
             x + (t._2 * b)
-          )) o
-          mapLocal(
-            toLocal() o
+          ) )) o
+          toLocal(mapLocal(
             λ(x => x * a ) o
             reduceSeq(λ(y => λ(acc => acc + ( y._1 * y._2 ) )), 0)
-          ) o split(n) $ zip(xs, t._1)
+          )) o split(n) $ zip(xs, t._1)
         )) $ zip(mat, ys)
 
       }) ) )
