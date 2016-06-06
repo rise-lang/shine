@@ -70,10 +70,10 @@ object `parFor` {
 }
 
 object `new` {
-  def apply(dt: DataType, f: Phrase[ (ExpType x AccType) -> CommandType ]) = New(dt, f)
+  def apply(dt: DataType, addressSpace: AddressSpace, f: Phrase[ (ExpType x AccType) -> CommandType ]) = New(dt, addressSpace, f)
 
-  def apply(dt: DataType, f: Phrase[ExpType x AccType] => Phrase[CommandType]) = {
-    New(dt, λ( ExpType(dt) x AccType(dt) ) { v => f(v) })
+  def apply(dt: DataType, addressSpace: AddressSpace, f: Phrase[ExpType x AccType] => Phrase[CommandType]) = {
+    New(dt, addressSpace, λ( ExpType(dt) x AccType(dt) ) { v => f(v) })
   }
 }
 

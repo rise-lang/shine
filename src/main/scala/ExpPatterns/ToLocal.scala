@@ -1,6 +1,5 @@
 package ExpPatterns
 
-import AccPatterns.ToLocalAcc
 import Core.OperationalSemantics.{Data, Store}
 import Core.PhraseType.->
 import Core._
@@ -49,13 +48,13 @@ case class ToLocal(f: Phrase[ExpType -> ExpType], input: Phrase[ExpType]) extend
   override def prettyPrint: String = s"(toLocal ${PrettyPrinter(input)})"
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
-    RewriteToImperative.acc(f(input), ToLocalAcc(A))
+    RewriteToImperative.acc(f(input), A)
   }
 
   override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
     assert(dt1 != null && dt2 != null)
 
-    `new`(dt2, tmp =>
+    `new`(dt2, LocalMemory, tmp =>
       RewriteToImperative.acc(this, tmp.wr) `;` C(tmp.rd)
     )
   }

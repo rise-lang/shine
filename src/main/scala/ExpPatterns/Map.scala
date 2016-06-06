@@ -72,7 +72,7 @@ abstract class AbstractMap(f: Phrase[ExpType -> ExpType],
   override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
     assert(n != 0 && dt1 != null && dt2 != null)
 
-    `new`(ArrayType(n, dt2), tmp =>
+    `new`(ArrayType(n, dt2), GlobalMemory, tmp =>
       RewriteToImperative.acc(this, tmp.wr) `;`
       C(tmp.rd)
     )

@@ -1,6 +1,5 @@
 package ExpPatterns
 
-import AccPatterns.ToGlobalAcc
 import Core.OperationalSemantics.{Data, Store}
 import Core.PhraseType.->
 import Core._
@@ -49,13 +48,13 @@ case class ToGlobal(f: Phrase[ExpType -> ExpType], input: Phrase[ExpType]) exten
   override def prettyPrint: String = s"(toGlobal ${PrettyPrinter(input)})"
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
-    RewriteToImperative.acc(f(input), ToGlobalAcc(A))
+    RewriteToImperative.acc(f(input), A)
   }
 
   override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
     assert(dt1 != null && dt2 != null)
 
-    `new`(dt2, tmp =>
+    `new`(dt2, GlobalMemory, tmp =>
       RewriteToImperative.acc(this, tmp.wr) `;` C(tmp.rd)
     )
   }
