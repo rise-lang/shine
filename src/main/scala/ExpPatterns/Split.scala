@@ -7,6 +7,7 @@ import Core.PhraseType.->
 import Rewriting.RewriteToImperative
 import DSL._
 import apart.arithmetic.ArithExpr
+import opencl.generator.OpenCLAST.Expression
 
 case class Split(n: ArithExpr, array: Phrase[ExpType]) extends ExpPattern {
 
@@ -45,6 +46,8 @@ case class Split(n: ArithExpr, array: Phrase[ExpType]) extends ExpPattern {
   }
 
   override def toC = ???
+
+  override def toOpenCL: Expression = ???
 
   override def prettyPrint: String = s"(split ${n.toString} ${PrettyPrinter(array)})"
 

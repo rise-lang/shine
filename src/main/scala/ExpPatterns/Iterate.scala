@@ -4,6 +4,7 @@ import Core._
 import Core.PhraseType._
 import Core.OperationalSemantics._
 import apart.arithmetic.ArithExpr
+import opencl.generator.OpenCLAST.Expression
 
 case class Iterate(n: ArithExpr, f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) extends ExpPattern {
 
@@ -41,6 +42,8 @@ case class Iterate(n: ArithExpr, f: Phrase[ExpType -> ExpType], array: Phrase[Ex
   }
 
   override def toC = ???
+
+  override def toOpenCL: Expression = ???
 
   override def prettyPrint: String = s"(iterate ${n.toString} ${PrettyPrinter(f)})"
 

@@ -6,6 +6,7 @@ import Core.OperationalSemantics._
 import Core.PhraseType.->
 import DSL._
 import Rewriting.RewriteToImperative
+import opencl.generator.OpenCLAST.Expression
 
 case class Zip(lhs: Phrase[ExpType], rhs: Phrase[ExpType]) extends ExpPattern {
 
@@ -34,6 +35,8 @@ case class Zip(lhs: Phrase[ExpType], rhs: Phrase[ExpType]) extends ExpPattern {
   }
 
   override def toC = ???
+
+  override def toOpenCL: Expression = ???
 
   override def prettyPrint: String = s"(zip ${PrettyPrinter(lhs)} ${PrettyPrinter(rhs)})"
 

@@ -3,6 +3,7 @@ package ExpPatterns
 import Core._
 import Core.OperationalSemantics._
 import Core.PhraseType.->
+import opencl.generator.OpenCLAST.{ArithExpression, Expression, Literal}
 
 case class Length[T <: BasePhraseTypes](array: Phrase[T]) extends ExpPattern {
 
@@ -30,6 +31,10 @@ case class Length[T <: BasePhraseTypes](array: Phrase[T]) extends ExpPattern {
   override def toC = array.t match {
     case ExpType(ArrayType(n, _)) => n.toString
     case AccType(ArrayType(n, _)) => n.toString
+  }
+
+  override def toOpenCL: Expression = {
+    ArithExpression( OperationalSemantics.evalIndexExp(new OperationalSemantics.Store(), this) )
   }
 
   override def prettyPrint: String = s"(length ${PrettyPrinter(array)})"

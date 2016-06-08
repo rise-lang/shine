@@ -3,6 +3,7 @@ package ExpPatterns
 import Core._
 import Core.OperationalSemantics._
 import Core.PhraseType.->
+import opencl.generator.OpenCLAST.{Expression, Literal}
 
 case class Idx(array: Phrase[ExpType], index: Phrase[ExpType]) extends ExpPattern {
 
@@ -29,6 +30,8 @@ case class Idx(array: Phrase[ExpType], index: Phrase[ExpType]) extends ExpPatter
   }
 
   override def toC = Printer.toC(array) + "[" + Printer.toC(index) + "]"
+
+  override def toOpenCL: Expression = Literal("access")
 
   override def prettyPrint: String = s"(${PrettyPrinter(array)})[${PrettyPrinter(index)}]"
 

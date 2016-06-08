@@ -6,6 +6,8 @@ import CommandPatterns._
 import Core.PhraseType.->
 import ExpPatterns._
 import apart.arithmetic.{ArithExpr, Cst, SizeVar}
+import opencl.generator.OpenCLAST.Block
+import opencl.generator.OpenCLPrinter
 
 import scala.collection.immutable.HashMap
 
@@ -1038,6 +1040,11 @@ object Test extends App {
     println("=====")
     println(PrettyPrinter(p3))
     TypeChecker(p3)
+
+    println("-----")
+
+    val ast = ToOpenCL.cmd(p3, Block())
+    println(OpenCLPrinter()(ast))
 
     println("-----")
   }

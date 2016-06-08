@@ -5,6 +5,7 @@ import Core.OperationalSemantics._
 import Core.PhraseType.->
 import DSL._
 import Rewriting.RewriteToImperative
+import opencl.generator.OpenCLAST.{Expression, Literal}
 
 case class Snd(record: Phrase[ExpType]) extends ExpPattern {
 
@@ -27,6 +28,8 @@ case class Snd(record: Phrase[ExpType]) extends ExpPattern {
   }
 
   override def toC = Printer.toC(record) + ".snd"
+
+  override def toOpenCL: Expression = Literal("rhs")
 
   override def prettyPrint: String = s"${PrettyPrinter(record)}._2"
 

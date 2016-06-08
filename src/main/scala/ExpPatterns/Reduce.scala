@@ -7,6 +7,7 @@ import Core.OperationalSemantics._
 import DSL._
 import Rewriting.RewriteToImperative
 import apart.arithmetic.ArithExpr
+import opencl.generator.OpenCLAST.Expression
 
 abstract class AbstractReduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
                               init: Phrase[ExpType],
@@ -66,6 +67,8 @@ abstract class AbstractReduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
   }
 
   override def toC = ???
+
+  override def toOpenCL: Expression = ???
 
   override def prettyPrint: String = s"(${this.getClass.getSimpleName} ${PrettyPrinter(f)} ${PrettyPrinter(init)} ${PrettyPrinter(array)})"
 

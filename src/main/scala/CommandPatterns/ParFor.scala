@@ -4,6 +4,7 @@ import Core._
 import Core.OperationalSemantics._
 import Core.PhraseType._
 import Rewriting.SubstituteImplementations
+import opencl.generator.OpenCLAST.Block
 
 case class ParFor(n: Phrase[ExpType],
                   out: Phrase[AccType],
@@ -38,6 +39,8 @@ case class ParFor(n: Phrase[ExpType],
     i.t = ExpType(int)
     s"for (int ${i.name} = 0; ${i.name} < ${Printer.toC(n)}; ++${i.name}) {\n${Printer.toC(bodyE(i))}}\n"
   }
+
+  override def toOpenCL(b: Block): Block = ???
 
   override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): CommandPattern = {
     ParFor(

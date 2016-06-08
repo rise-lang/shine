@@ -7,6 +7,7 @@ import Core._
 import Rewriting.RewriteToImperative
 import DSL._
 import apart.arithmetic.ArithExpr
+import opencl.generator.OpenCLAST.Expression
 
 case class Join(array: Phrase[ExpType]) extends ExpPattern {
 
@@ -40,6 +41,8 @@ case class Join(array: Phrase[ExpType]) extends ExpPattern {
   }
 
   override def toC = ???
+
+  override def toOpenCL: Expression = ???
 
   override def prettyPrint: String = s"(join ${PrettyPrinter(array)})"
 

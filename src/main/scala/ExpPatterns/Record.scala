@@ -3,6 +3,7 @@ package ExpPatterns
 import Core._
 import Core.OperationalSemantics._
 import Core.PhraseType.->
+import opencl.generator.OpenCLAST.Expression
 
 case class Record(fst: Phrase[ExpType], snd: Phrase[ExpType]) extends ExpPattern {
 
@@ -26,6 +27,8 @@ case class Record(fst: Phrase[ExpType], snd: Phrase[ExpType]) extends ExpPattern
     val dt = typeCheck() match { case ExpType(dataType) => dataType }
     s"(struct ${Printer.nameOf(dt)}){ ${Printer.toC(fst)} , ${Printer.toC(snd)} }"
   }
+
+  override def toOpenCL: Expression = ???
 
   override def prettyPrint: String = s"(${PrettyPrinter(fst)}, ${PrettyPrinter(snd)})"
 

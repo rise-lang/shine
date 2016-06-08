@@ -1,6 +1,7 @@
 package Core
 
 import PhraseType._
+import opencl.generator.OpenCLAST.{Block, Expression, OclAstNode}
 
 sealed abstract class Phrase[T <: PhraseType] {
   var t: T = null.asInstanceOf[T]
@@ -67,6 +68,8 @@ abstract class ExpPattern extends Phrase[ExpType] {
 
   def toC: String
 
+  def toOpenCL: Expression
+
   def prettyPrint: String
 
   def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType]
@@ -83,6 +86,8 @@ abstract class AccPattern extends Phrase[AccType] {
 
   def toC: String
 
+  def toOpenCL: OclAstNode
+
   def prettyPrint: String
 }
 
@@ -94,6 +99,8 @@ abstract class CommandPattern extends  Phrase[CommandType] {
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Store
 
   def toC: String
+
+  def toOpenCL(block: Block): Block
 
   def prettyPrint: String
 

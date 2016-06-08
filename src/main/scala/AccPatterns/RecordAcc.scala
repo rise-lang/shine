@@ -2,6 +2,7 @@ package AccPatterns
 
 import Core._
 import Core.OperationalSemantics._
+import opencl.generator.OpenCLAST.OclAstNode
 
 case class RecordAcc(fst: Phrase[AccType], snd: Phrase[AccType]) extends AccPattern {
 
@@ -22,6 +23,8 @@ case class RecordAcc(fst: Phrase[AccType], snd: Phrase[AccType]) extends AccPatt
   }
 
   override def toC = ???
+
+  override def toOpenCL: OclAstNode = ???
 
   override def prettyPrint: String = s"(${PrettyPrinter(fst)}, ${PrettyPrinter(snd)})"
 

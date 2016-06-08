@@ -2,6 +2,7 @@ package AccPatterns
 
 import Core._
 import Core.OperationalSemantics._
+import opencl.generator.OpenCLAST.{OclAstNode, OpenCLCode}
 
 case class IdxAcc(array: Phrase[AccType], index: Phrase[ExpType]) extends AccPattern {
 
@@ -30,6 +31,8 @@ case class IdxAcc(array: Phrase[AccType], index: Phrase[ExpType]) extends AccPat
   }
 
   override def toC = Printer.toC(array) + "[" + Printer.toC(index) + "]"
+
+  override def toOpenCL: OclAstNode = OpenCLCode("access")
 
   override def prettyPrint: String = s"${PrettyPrinter(array)}[${PrettyPrinter(index)}]"
 

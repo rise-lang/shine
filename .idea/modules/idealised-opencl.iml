@@ -12,7 +12,6 @@
       <sourceFolder url="file://$MODULE_DIR$/../../src/main/scala-2.11" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/../../target/scala-2.11/src_managed/main" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/../../lib/apart/src/main" isTestSource="true" />
-      <sourceFolder url="file://$MODULE_DIR$/../../lib/ArithExpr/src/main" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/../../src/test/java" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/../../src/test/scala" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/../../src/test/scala-2.11" isTestSource="true" />
@@ -28,23 +27,23 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="SBT: org.scala-lang:scala-library:2.11.8:jar" level="project" />
-    <orderEntry type="library" name="SBT: ch.qos.logback:logback-classic:1.1.7:jar" level="project" />
-    <orderEntry type="library" name="SBT: ch.qos.logback:logback-core:1.1.7:jar" level="project" />
-    <orderEntry type="library" scope="TEST" name="SBT: com.novocode:junit-interface:0.11:jar" level="project" />
-    <orderEntry type="library" name="SBT: com.typesafe.scala-logging:scala-logging_2.11:3.4.0:jar" level="project" />
-    <orderEntry type="library" name="SBT: commons-cli:commons-cli:1.3.1:jar" level="project" />
-    <orderEntry type="library" name="SBT: jline:jline:2.12.1:jar" level="project" />
-    <orderEntry type="library" name="SBT: junit:junit:4.11:jar" level="project" />
-    <orderEntry type="library" name="SBT: org.clapper:argot_2.11:1.0.3:jar" level="project" />
-    <orderEntry type="library" name="SBT: org.clapper:grizzled-scala_2.11:1.2:jar" level="project" />
-    <orderEntry type="library" name="SBT: org.hamcrest:hamcrest-core:1.3:jar" level="project" />
-    <orderEntry type="library" name="SBT: org.scala-lang:scala-compiler:2.11.8:jar" level="project" />
-    <orderEntry type="library" name="SBT: org.scala-lang:scala-reflect:2.11.8:jar" level="project" />
-    <orderEntry type="library" name="SBT: org.scala-lang.modules:scala-async_2.11:0.9.1:jar" level="project" />
-    <orderEntry type="library" name="SBT: org.scala-lang.modules:scala-parser-combinators_2.11:1.0.4:jar" level="project" />
-    <orderEntry type="library" name="SBT: org.scala-lang.modules:scala-xml_2.11:1.0.4:jar" level="project" />
-    <orderEntry type="library" scope="TEST" name="SBT: org.scala-sbt:test-interface:1.0:jar" level="project" />
-    <orderEntry type="library" scope="TEST" name="SBT: org.scalacheck:scalacheck_2.11:1.13.0:jar" level="project" />
     <orderEntry type="library" name="SBT: org.slf4j:slf4j-api:1.7.21:jar" level="project" />
+    <orderEntry type="library" scope="TEST" name="SBT: org.scalacheck:scalacheck_2.11:1.13.0:jar" level="project" />
+    <orderEntry type="library" scope="TEST" name="SBT: org.scala-sbt:test-interface:1.0:jar" level="project" />
+    <orderEntry type="library" name="SBT: org.scala-lang.modules:scala-xml_2.11:1.0.4:jar" level="project" />
+    <orderEntry type="library" name="SBT: org.scala-lang.modules:scala-parser-combinators_2.11:1.0.4:jar" level="project" />
+    <orderEntry type="library" name="SBT: org.scala-lang.modules:scala-async_2.11:0.9.1:jar" level="project" />
+    <orderEntry type="library" name="SBT: org.scala-lang:scala-reflect:2.11.8:jar" level="project" />
+    <orderEntry type="library" name="SBT: org.scala-lang:scala-compiler:2.11.8:jar" level="project" />
+    <orderEntry type="library" name="SBT: org.hamcrest:hamcrest-core:1.3:jar" level="project" />
+    <orderEntry type="library" name="SBT: org.clapper:grizzled-scala_2.11:1.2:jar" level="project" />
+    <orderEntry type="library" name="SBT: org.clapper:argot_2.11:1.0.3:jar" level="project" />
+    <orderEntry type="library" name="SBT: junit:junit:4.11:jar" level="project" />
+    <orderEntry type="library" name="SBT: jline:jline:2.12.1:jar" level="project" />
+    <orderEntry type="library" name="SBT: commons-cli:commons-cli:1.3.1:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.typesafe.scala-logging:scala-logging_2.11:3.4.0:jar" level="project" />
+    <orderEntry type="library" scope="TEST" name="SBT: com.novocode:junit-interface:0.11:jar" level="project" />
+    <orderEntry type="library" name="SBT: ch.qos.logback:logback-core:1.1.7:jar" level="project" />
+    <orderEntry type="library" name="SBT: ch.qos.logback:logback-classic:1.1.7:jar" level="project" />
   </component>
 </module>

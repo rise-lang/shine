@@ -3,6 +3,7 @@ package AccPatterns
 import Core._
 import Core.OperationalSemantics._
 import apart.arithmetic.ArithExpr
+import opencl.generator.OpenCLAST.OclAstNode
 
 case class JoinAcc(n: ArithExpr, array: Phrase[AccType]) extends AccPattern {
 
@@ -22,6 +23,8 @@ case class JoinAcc(n: ArithExpr, array: Phrase[AccType]) extends AccPattern {
   override def eval(s: Store): AccIdentifier = ???
 
   override def toC = ???
+
+  override def toOpenCL: OclAstNode = ???
 
   override def prettyPrint: String = s"(join ${n.toString} ${PrettyPrinter(array)})"
 

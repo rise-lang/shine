@@ -3,6 +3,7 @@ package CommandPatterns
 import Core._
 import Core.OperationalSemantics._
 import Rewriting.SubstituteImplementations
+import opencl.generator.OpenCLAST.Block
 
 case class Seq(c1: Phrase[CommandType], c2: Phrase[CommandType]) extends CommandPattern {
 
@@ -27,6 +28,11 @@ case class Seq(c1: Phrase[CommandType], c2: Phrase[CommandType]) extends Command
   override def substituteImpl: Phrase[CommandType] = Seq(SubstituteImplementations(c1), SubstituteImplementations(c2))
 
   override def toC = Printer.toC(c1) + ";\n" + Printer.toC(c2)
+
+  override def toOpenCL(block: Block): Block = {
+    ToOpenCL.cmd(c1, block)
+    ToOpenCL.cmd(c2, block)
+  }
 
   override def prettyPrint: String = s"${PrettyPrinter(c1)} ; ${PrettyPrinter(c2)}"
 

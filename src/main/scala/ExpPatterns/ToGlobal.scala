@@ -5,6 +5,7 @@ import Core.PhraseType.->
 import Core._
 import Rewriting.RewriteToImperative
 import DSL._
+import opencl.generator.OpenCLAST.Expression
 
 case class ToGlobal(f: Phrase[ExpType -> ExpType], input: Phrase[ExpType]) extends ExpPattern {
 
@@ -34,6 +35,8 @@ case class ToGlobal(f: Phrase[ExpType -> ExpType], input: Phrase[ExpType]) exten
   override def eval(s: Store): Data = OperationalSemantics.eval(s, input)
 
   override def toC: String = ???
+
+  override def toOpenCL: Expression = ???
 
   override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): ExpPattern = {
     val tG = ToGlobal(

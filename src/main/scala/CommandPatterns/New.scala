@@ -4,6 +4,8 @@ import Core._
 import Core.OperationalSemantics._
 import Core.PhraseType._
 import Rewriting.SubstituteImplementations
+import apart.arithmetic.Var
+import opencl.generator.OpenCLAST.Block
 
 case class New(dt: DataType, addressSpace: AddressSpace, f: Phrase[(ExpType x AccType) -> CommandType]) extends CommandPattern {
 
@@ -40,6 +42,12 @@ case class New(dt: DataType, addressSpace: AddressSpace, f: Phrase[(ExpType x Ac
     val dt = f.t.inT.t1.dataType
     v.t = PairType(ExpType(dt), AccType(dt))
     s"{\n${Printer.nameOf(dt)} ${v.name};\n${Printer.toC(fE(v))}; \n}"
+  }
+
+  override def toOpenCL(b: Block): Block = {
+    val fE: (Phrase[PairType[ExpType, AccType]]) => Phrase[CommandType] = Lift.liftFunction(f)
+    val vE = IdentPhrase[ExpType x AccType](Var("").toString)
+    ToOpenCL.cmd(fE(vE), b)
   }
 
   override def prettyPrint: String = s"new $dt $addressSpace ${PrettyPrinter(f)}"

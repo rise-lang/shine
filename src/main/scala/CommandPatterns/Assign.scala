@@ -2,6 +2,7 @@ package CommandPatterns
 
 import Core._
 import Core.OperationalSemantics._
+import opencl.generator.OpenCLAST.{AssignmentExpression, Block}
 
 case class Assign(lhs: Phrase[AccType], rhs: Phrase[ExpType]) extends CommandPattern {
 
@@ -59,6 +60,9 @@ case class Assign(lhs: Phrase[AccType], rhs: Phrase[ExpType]) extends CommandPat
   override def substituteImpl: Phrase[CommandType] = this
 
   override def toC = Printer.toC(lhs) + " = " + Printer.toC(rhs) + ";\n"
+
+  override def toOpenCL(block: Block): Block =
+    (block: Block) += AssignmentExpression(ToOpenCL.acc(lhs), ToOpenCL.exp(rhs))
 
   override def prettyPrint: String = s"${PrettyPrinter(lhs)} := ${PrettyPrinter(rhs)}"
 

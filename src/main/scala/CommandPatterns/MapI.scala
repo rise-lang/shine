@@ -7,6 +7,7 @@ import DSL._
 import AccPatterns._
 import ExpPatterns._
 import Rewriting.SubstituteImplementations
+import opencl.generator.OpenCLAST.Block
 
 abstract class AbstractMapI(out: Phrase[AccType],
                             f: Phrase[AccType -> (ExpType -> CommandType)],
@@ -46,6 +47,8 @@ abstract class AbstractMapI(out: Phrase[AccType],
   }
 
   override def toC = ???
+
+  override def toOpenCL(b: Block): Block = ???
 
   override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): CommandPattern = {
     makeMapI(
