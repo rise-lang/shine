@@ -2,7 +2,7 @@ package AccPatterns
 
 import Core.OperationalSemantics._
 import Core._
-import opencl.generator.OpenCLAST.OclAstNode
+import opencl.generator.OpenCLAST.VarRef
 
 case class ToGlobalAcc(p: Phrase[AccType]) extends AccPattern{
 
@@ -18,7 +18,7 @@ case class ToGlobalAcc(p: Phrase[AccType]) extends AccPattern{
 
   override def toC: String = ???
 
-  override def toOpenCL: OclAstNode = ???
+  override def toOpenCL: VarRef = ???
 
   override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): AccPattern = {
     ToGlobalAcc(OperationalSemantics.substitute(phrase, `for`, p))

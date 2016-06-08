@@ -2,7 +2,7 @@ package AccPatterns
 
 import Core._
 import Core.OperationalSemantics._
-import opencl.generator.OpenCLAST.OclAstNode
+import opencl.generator.OpenCLAST.VarRef
 
 case class SplitAcc(array: Phrase[AccType]) extends AccPattern {
 
@@ -25,7 +25,7 @@ case class SplitAcc(array: Phrase[AccType]) extends AccPattern {
 
   override def toC = ???
 
-  override def toOpenCL: OclAstNode = ???
+  override def toOpenCL: VarRef = ???
 
   override def prettyPrint: String = s"(split ${PrettyPrinter(array)})"
 

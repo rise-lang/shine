@@ -1,7 +1,7 @@
 package Core
 
 import PhraseType._
-import opencl.generator.OpenCLAST.{Block, Expression, OclAstNode}
+import opencl.generator.OpenCLAST.{VarRef, Block, Expression, OclAstNode}
 
 sealed abstract class Phrase[T <: PhraseType] {
   var t: T = null.asInstanceOf[T]
@@ -86,7 +86,7 @@ abstract class AccPattern extends Phrase[AccType] {
 
   def toC: String
 
-  def toOpenCL: OclAstNode
+  def toOpenCL: VarRef
 
   def prettyPrint: String
 }

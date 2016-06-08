@@ -5,7 +5,7 @@ import ExpPatterns._
 import AccPatterns._
 import CommandPatterns._
 
-object Rewrite {
+object Rew {
   def rewrite[T <: PhraseType](p: Phrase[T]): Phrase[T] = {
     RewriteRules.rules.foreach( rule => {
       if (rule.rewrite.isDefinedAt(p)) { return rule(p) } // return on the first rule that fired

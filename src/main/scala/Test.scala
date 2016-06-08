@@ -1,7 +1,7 @@
 
 import Core._
 import DSL._
-import Rewriting.{Rewrite, RewriteToImperative, SubstituteImplementations}
+import Rewriting.{Rew, RewriteToImperative, SubstituteImplementations}
 import CommandPatterns._
 import Core.PhraseType.->
 import ExpPatterns._
@@ -197,7 +197,7 @@ object Test extends App {
 
     println("========================")
 
-    val pp = Rewrite(Rewrite(p0))
+    val pp = Rew(Rew(p0))
 
     println(pp)
 
@@ -391,7 +391,7 @@ object Test extends App {
 
     println( TypeChecker(p) )
 
-    val pp = Rewrite(Rewrite(Rewrite(Rewrite(Rewrite(p)))))
+    val pp = Rew(Rew(Rew(Rew(Rew(p)))))
 
     TypeChecker(pp)
 
