@@ -49,6 +49,18 @@ case class Split(n: ArithExpr, array: Phrase[ExpType]) extends ExpPattern {
 
   override def toOpenCL: Expression = ???
 
+  override def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = {
+
+    val (firstTwo, rest) = arrayAccess.splitAt(2)
+
+    val chunkId = firstTwo.head
+    val chunkElemId = firstTwo.tail.head
+
+    val newIdx = chunkId._1 * n + chunkElemId._1
+
+    ToOpenCL.exp(array, (newIdx, chunkElemId._2) :: rest, tupleAccess)
+  }
+
   override def prettyPrint: String = s"(split ${n.toString} ${PrettyPrinter(array)})"
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {

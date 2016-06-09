@@ -1000,6 +1000,48 @@ object Test extends App {
   }
 
   {
+    println("== PACT paper example ==")
+    val n: ArithExpr = SizeVar("N")
+    val xsVectorT: ExpType = ExpType(ArrayType(n, int))
+    val ysVectorT: ExpType = ExpType(ArrayType(n, int))
+
+
+    val add = λ(x1 => λ(x2 => x1 + x2 ))
+    val mult = λ(p => p._1 * p._2 )
+
+    val p =
+      λ(xsVectorT)(xs => λ(ysVectorT)(ys => {
+
+        mapWorkgroup(
+          mapLocal(
+            reduceSeq(λ(xy => λ(a => a + ( xy._1 * xy._2 ) )), 0)
+          ) o split(2)
+        ) o split(128) $ zip(xs, ys)
+
+      }) )
+
+    println("=====")
+    println(PrettyPrinter(p))
+
+    val p2 = RewriteToImperative( p(identifier("xs", xsVectorT))(identifier("ys", ysVectorT)) )
+    println("=====")
+    println(PrettyPrinter(p2))
+    TypeChecker(p2)
+
+    val p3 = SubstituteImplementations(p2)
+    println("=====")
+    println(PrettyPrinter(p3))
+    TypeChecker(p3)
+
+    println("-----")
+
+    val ast = ToOpenCL.cmd(p3, Block())
+    println(OpenCLPrinter()(ast))
+
+    println("-----")
+  }
+
+  {
     println("== gemv fused ==")
     val a: Phrase[ExpType] = 5
     val b: Phrase[ExpType] = 2

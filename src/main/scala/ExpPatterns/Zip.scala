@@ -6,6 +6,7 @@ import Core.OperationalSemantics._
 import Core.PhraseType.->
 import DSL._
 import Rewriting.RewriteToImperative
+import apart.arithmetic.{ArithExpr, Cst}
 import opencl.generator.OpenCLAST.Expression
 
 case class Zip(lhs: Phrase[ExpType], rhs: Phrase[ExpType]) extends ExpPattern {
@@ -37,6 +38,21 @@ case class Zip(lhs: Phrase[ExpType], rhs: Phrase[ExpType]) extends ExpPattern {
   override def toC = ???
 
   override def toOpenCL: Expression = ???
+
+  override def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = {
+    val i = tupleAccess.head
+    val rest = tupleAccess.tail
+
+    if (i == Cst(1)) {
+      return ToOpenCL.exp(lhs, arrayAccess, rest)
+    }
+
+    if (i == Cst(2)) {
+      return ToOpenCL.exp(rhs, arrayAccess, rest)
+    }
+
+    throw new Exception("This should not happen")
+  }
 
   override def prettyPrint: String = s"(zip ${PrettyPrinter(lhs)} ${PrettyPrinter(rhs)})"
 

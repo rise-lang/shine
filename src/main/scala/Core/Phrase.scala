@@ -1,7 +1,8 @@
 package Core
 
 import PhraseType._
-import opencl.generator.OpenCLAST.{VarRef, Block, Expression, OclAstNode}
+import apart.arithmetic.ArithExpr
+import opencl.generator.OpenCLAST.{Block, Expression, VarRef}
 
 sealed abstract class Phrase[T <: PhraseType] {
   var t: T = null.asInstanceOf[T]
@@ -70,6 +71,8 @@ abstract class ExpPattern extends Phrase[ExpType] {
 
   def toOpenCL: Expression
 
+  def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression
+
   def prettyPrint: String
 
   def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType]
@@ -87,6 +90,8 @@ abstract class AccPattern extends Phrase[AccType] {
   def toC: String
 
   def toOpenCL: VarRef
+
+  def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): VarRef
 
   def prettyPrint: String
 }

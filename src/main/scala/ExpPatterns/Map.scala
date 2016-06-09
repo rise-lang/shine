@@ -84,6 +84,8 @@ abstract class AbstractMap(f: Phrase[ExpType -> ExpType],
 
   override def toOpenCL: Expression = ???
 
+  override def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = ???
+
   override def prettyPrint: String = s"(${this.getClass.getSimpleName} ${PrettyPrinter(f)} ${PrettyPrinter(array)})"
 
 }

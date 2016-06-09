@@ -1,6 +1,6 @@
 package Core
 
-import apart.arithmetic.ArithExpr
+import apart.arithmetic.{ArithExpr, Cst}
 
 sealed trait DataType
 sealed abstract class BasicType extends DataType
@@ -28,6 +28,18 @@ object DataType {
       }
       case a: ArrayType => ir.ArrayType(DataType.toType(a.elemType), a.size)
       case r: RecordType => ir.TupleType(DataType.toType(r.fst), DataType.toType(r.snd))
+    }
+  }
+
+  def getLengths(dt: DataType, tupleAccesss: List[ArithExpr], list: List[ArithExpr]): List[ArithExpr] = {
+    dt match {
+      case _: BasicType => 1 :: list
+      case r: RecordType => {
+        val t = tupleAccesss.head
+        val elemT = if (t == Cst(1)) { r.fst } else if (t == Cst(2)) { r.snd } else { throw new Exception("This should not happen") }
+        getLengths(elemT, tupleAccesss.tail, list)
+      }
+      case a: ArrayType => getLengths(a.elemType, tupleAccesss, a.size :: list)
     }
   }
 }

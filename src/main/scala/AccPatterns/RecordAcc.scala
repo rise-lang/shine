@@ -2,6 +2,7 @@ package AccPatterns
 
 import Core._
 import Core.OperationalSemantics._
+import apart.arithmetic.ArithExpr
 import opencl.generator.OpenCLAST.VarRef
 
 case class RecordAcc(fst: Phrase[AccType], snd: Phrase[AccType]) extends AccPattern {
@@ -25,6 +26,8 @@ case class RecordAcc(fst: Phrase[AccType], snd: Phrase[AccType]) extends AccPatt
   override def toC = ???
 
   override def toOpenCL: VarRef = ???
+
+  def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): VarRef = ???
 
   override def prettyPrint: String = s"(${PrettyPrinter(fst)}, ${PrettyPrinter(snd)})"
 

@@ -3,6 +3,7 @@ package ExpPatterns
 import Core._
 import Core.OperationalSemantics._
 import Core.PhraseType.->
+import apart.arithmetic.ArithExpr
 import opencl.generator.OpenCLAST.Expression
 
 case class Record(fst: Phrase[ExpType], snd: Phrase[ExpType]) extends ExpPattern {
@@ -29,6 +30,8 @@ case class Record(fst: Phrase[ExpType], snd: Phrase[ExpType]) extends ExpPattern
   }
 
   override def toOpenCL: Expression = ???
+
+  override def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = ???
 
   override def prettyPrint: String = s"(${PrettyPrinter(fst)}, ${PrettyPrinter(snd)})"
 

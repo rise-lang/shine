@@ -4,7 +4,7 @@ import Core._
 import Core.OperationalSemantics._
 import Core.PhraseType._
 import Rewriting.SubstituteImplementations
-import apart.arithmetic.Var
+import apart.arithmetic.{NamedVar, Var}
 import opencl.generator.OpenCLAST.Block
 
 case class For(n: Phrase[ExpType],
@@ -48,13 +48,13 @@ case class For(n: Phrase[ExpType],
   override def toOpenCL(block: Block): Block = {
     import opencl.generator.OpenCLAST._
 
-    val v = Var("")
-    val init = VarDecl(v.toString, opencl.ir.Int, init = ArithExpression(0), addressSpace = opencl.ir.PrivateMemory)
-    val cond = CondExpression(VarRef(v.toString), ToOpenCL.exp(n) ,CondExpression.Operator.<)
-    val increment = AssignmentExpression(ArithExpression(v), ArithExpression(v + 1))
+    val name = NamedVar(newName())
+    val init = VarDecl(name.name, opencl.ir.Int, init = ArithExpression(0), addressSpace = opencl.ir.PrivateMemory)
+    val cond = CondExpression(VarRef(name.name), ToOpenCL.exp(n) ,CondExpression.Operator.<)
+    val increment = AssignmentExpression(ArithExpression(name), ArithExpression(name + 1))
 
     val bodyE = Lift.liftFunction(body)
-    val vE = IdentPhrase[ExpType](v.toString)
+    val vE = IdentPhrase[ExpType](name.name)
 
     (block: Block) += ForLoop(init, cond, increment, ToOpenCL.cmd(bodyE(vE), Block()))
   }

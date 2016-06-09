@@ -70,6 +70,8 @@ abstract class AbstractReduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
 
   override def toOpenCL: Expression = ???
 
+  override def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = ???
+
   override def prettyPrint: String = s"(${this.getClass.getSimpleName} ${PrettyPrinter(f)} ${PrettyPrinter(init)} ${PrettyPrinter(array)})"
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {

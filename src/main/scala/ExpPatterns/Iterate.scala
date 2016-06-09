@@ -45,6 +45,8 @@ case class Iterate(n: ArithExpr, f: Phrase[ExpType -> ExpType], array: Phrase[Ex
 
   override def toOpenCL: Expression = ???
 
+  override def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = ???
+
   override def prettyPrint: String = s"(iterate ${n.toString} ${PrettyPrinter(f)})"
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = ???

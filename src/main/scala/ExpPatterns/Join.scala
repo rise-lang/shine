@@ -44,6 +44,8 @@ case class Join(array: Phrase[ExpType]) extends ExpPattern {
 
   override def toOpenCL: Expression = ???
 
+  override def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = ???
+
   override def prettyPrint: String = s"(join ${PrettyPrinter(array)})"
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {

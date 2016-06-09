@@ -5,6 +5,7 @@ import Core.PhraseType.->
 import Core._
 import Rewriting.RewriteToImperative
 import DSL._
+import apart.arithmetic.ArithExpr
 import opencl.generator.OpenCLAST.Expression
 
 case class ToLocal(f: Phrase[ExpType -> ExpType], input: Phrase[ExpType]) extends ExpPattern {
@@ -37,6 +38,8 @@ case class ToLocal(f: Phrase[ExpType -> ExpType], input: Phrase[ExpType]) extend
   override def toC: String = ???
 
   override def toOpenCL: Expression = ???
+
+  override def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = ???
 
   override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): ExpPattern = {
     val tL = ToLocal(

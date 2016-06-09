@@ -4,8 +4,8 @@ import Core._
 import Core.OperationalSemantics._
 import Core.PhraseType._
 import Rewriting.SubstituteImplementations
-import apart.arithmetic.Var
-import opencl.generator.OpenCLAST.{VarDecl, Block}
+import apart.arithmetic.{NamedVar, Var}
+import opencl.generator.OpenCLAST.{Block, VarDecl}
 
 case class New(dt: DataType, addressSpace: AddressSpace, f: Phrase[(ExpType x AccType) -> CommandType]) extends CommandPattern {
 
@@ -45,16 +45,16 @@ case class New(dt: DataType, addressSpace: AddressSpace, f: Phrase[(ExpType x Ac
   }
 
   override def toOpenCL(block: Block): Block = {
-    val name = Var("").toString
+    val v = NamedVar(newName())
 
     if (addressSpace == PrivateMemory) {
-      (block: Block) += VarDecl(name, DataType.toType(dt))
+      (block: Block) += VarDecl(v.name, DataType.toType(dt))
     } else {
       // TODO: allocate elsewhere
     }
 
     val fE: (Phrase[PairType[ExpType, AccType]]) => Phrase[CommandType] = Lift.liftFunction(f)
-    val vE = IdentPhrase[ExpType x AccType](name)
+    val vE = IdentPhrase[ExpType x AccType](v.name)
     ToOpenCL.cmd(fE(vE), block)
   }
 
