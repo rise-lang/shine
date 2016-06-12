@@ -3,6 +3,7 @@ package CommandPatterns
 import Core._
 import Core.OperationalSemantics._
 import Core.PhraseType._
+import DSL.identifier
 import Rewriting.SubstituteImplementations
 import apart.arithmetic.{NamedVar, Var}
 import opencl.generator.OpenCLAST.{Block, VarDecl}
@@ -24,10 +25,10 @@ case class New(dt: DataType, addressSpace: AddressSpace, f: Phrase[(ExpType x Ac
   }
 
   override def eval(s: Store): Store = {
-    val fE = OperationalSemantics.eval(s, f)
-    val arg = IdentPhrase[ExpType x AccType](newName())
-    val s1: Store = OperationalSemantics.eval(s + (arg.name -> 0), fE(arg))
-    s1 - arg.name
+    val f_ = OperationalSemantics.eval(s, f)
+    val arg = identifier.newVar(newName())
+    val newStore = OperationalSemantics.eval(s + (arg.name -> 0), f_(arg))
+    newStore - arg.name
   }
 
   override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): CommandPattern = {
@@ -35,14 +36,6 @@ case class New(dt: DataType, addressSpace: AddressSpace, f: Phrase[(ExpType x Ac
   }
 
   override def substituteImpl: Phrase[CommandType] = New(dt, addressSpace, SubstituteImplementations.applyFun(f))
-
-  override def toC = {
-    val fE = Lift.liftFunction(f)
-    val v = IdentPhrase[ExpType x AccType](OperationalSemantics.newName())
-    val dt = f.t.inT.t1.dataType
-    v.t = PairType(ExpType(dt), AccType(dt))
-    s"{\n${Printer.nameOf(dt)} ${v.name};\n${Printer.toC(fE(v))}; \n}"
-  }
 
   override def toOpenCL(block: Block): Block = {
     val v = NamedVar(newName())
@@ -53,9 +46,9 @@ case class New(dt: DataType, addressSpace: AddressSpace, f: Phrase[(ExpType x Ac
       // TODO: allocate elsewhere
     }
 
-    val fE: (Phrase[PairType[ExpType, AccType]]) => Phrase[CommandType] = Lift.liftFunction(f)
-    val vE = IdentPhrase[ExpType x AccType](v.name)
-    ToOpenCL.cmd(fE(vE), block)
+    val f_ = Lift.liftFunction(f)
+    val v_ = identifier.newVar(v.name, dt)
+    ToOpenCL.cmd(f_(v_), block)
   }
 
   override def prettyPrint: String = s"new $dt $addressSpace ${PrettyPrinter(f)}"

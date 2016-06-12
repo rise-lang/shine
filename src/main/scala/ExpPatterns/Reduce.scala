@@ -66,8 +66,6 @@ abstract class AbstractReduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
     }
   }
 
-  override def toC = ???
-
   override def toOpenCL: Expression = ???
 
   override def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = ???

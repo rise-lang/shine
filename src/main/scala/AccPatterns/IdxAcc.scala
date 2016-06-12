@@ -37,8 +37,6 @@ case class IdxAcc(array: Phrase[AccType], index: Phrase[ExpType]) extends AccPat
     i
   }
 
-  override def toC = Printer.toC(array) + "[" + Printer.toC(index) + "]"
-
   override def toOpenCL: VarRef = ToOpenCL.acc(this, List(), List())
 
   override def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): VarRef = {

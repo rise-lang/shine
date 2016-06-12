@@ -22,8 +22,6 @@ case class JoinAcc(n: ArithExpr, array: Phrase[AccType]) extends AccPattern {
 
   override def eval(s: Store): AccIdentifier = ???
 
-  override def toC = ???
-
   override def toOpenCL: VarRef = ???
 
   def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): VarRef = ???

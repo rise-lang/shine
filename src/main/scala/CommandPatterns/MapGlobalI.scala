@@ -7,15 +7,19 @@ import Rewriting.SubstituteImplementations
 
 case class MapGlobalI(out: Phrase[AccType],
                       f: Phrase[AccType -> (ExpType -> CommandType)],
-                      in: Phrase[ExpType]) extends AbstractMapI(out, f, in) {
+                      in: Phrase[ExpType])
+  extends AbstractMapI(out, f, in) {
 
   override def makeMapI = MapGlobalI
 
   override def substituteImpl: Phrase[CommandType] = {
-    // TODO: replace with for loop iterating over global stuff
-    `for`(length(in), i => {
-      SubstituteImplementations( f(out `@` i)(in `@` i) )
-    })
+    val l = length(in)
+    TypeChecker(l)
+
+    val elemT = out.t match { case AccType(ArrayType(_, dt)) => dt }
+    ParForGlobal(l, out, λ( ExpType(int) ) { i => λ( AccType(elemT) ) { o =>
+      SubstituteImplementations( f(o)(in `@` i) )
+    } })
   }
 
 }

@@ -41,8 +41,6 @@ object Test extends App {
 
     println(TypeChecker(p))
 
-    println(Printer.toC(p))
-
     println(OperationalSemantics.eval(store, p))
 
     // same program in scala
@@ -89,8 +87,6 @@ object Test extends App {
 
     println(TypeChecker(p))
 
-    println(Printer.toC(p))
-
     println(OperationalSemantics.eval(store, p))
 
     // same program in scala
@@ -134,8 +130,6 @@ object Test extends App {
     println(p)
 
     println(TypeChecker(p))
-
-    println(Printer.toC(p))
 
     println(OperationalSemantics.eval(store, p))
   }
@@ -193,17 +187,9 @@ object Test extends App {
 
     println("========================")
 
-    println( Printer.toC(p) )
-
-    println("========================")
-
     val pp = Rew(Rew(p0))
 
     println(pp)
-
-    println("========================")
-
-    println( Printer.toC(pp) )
 
     println("========================")
 
@@ -396,8 +382,6 @@ object Test extends App {
     TypeChecker(pp)
 
     println( pp )
-
-    println( Printer.toC(pp) )
 
     println( OperationalSemantics.eval(store, p) )
   }

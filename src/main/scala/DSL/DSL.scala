@@ -104,6 +104,14 @@ object identifier {
   def exp(name: String) = IdentPhrase[ExpType](name)
   def acc(name: String) = IdentPhrase[AccType](name)
 
+  def newVar(name: String) = IdentPhrase[ExpType x AccType](name)
+
+  def newVar(name: String, dt: DataType) = {
+    val i = IdentPhrase[ExpType x AccType](name)
+    i.t = PairType[ExpType, AccType](ExpType(dt), AccType(dt))
+    i
+  }
+
   def apply(name: String) = IdentPhrase[ExpType](name)
 
   def apply[T <: PhraseType](name: String, t: T) = {

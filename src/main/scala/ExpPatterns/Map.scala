@@ -41,7 +41,6 @@ abstract class AbstractMap(f: Phrase[ExpType -> ExpType],
 
   override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): ExpPattern = {
     val m = makeMap(OperationalSemantics.substitute(phrase, `for`, f), OperationalSemantics.substitute(phrase, `for`, array))
-    m.t = t
     m.n = n
     m.dt1 = dt1
     m.dt2 = dt2
@@ -79,8 +78,6 @@ abstract class AbstractMap(f: Phrase[ExpType -> ExpType],
       C(tmp.rd)
     )
   }
-
-  override def toC = ???
 
   override def toOpenCL: Expression = ???
 

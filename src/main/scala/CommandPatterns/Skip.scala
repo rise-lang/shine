@@ -14,8 +14,6 @@ case class Skip() extends CommandPattern {
 
   override def substituteImpl: Phrase[CommandType] = this
 
-  override def toC = ""
-
   override def toOpenCL(b: Block): Block = b
 
   override def prettyPrint: String = ""

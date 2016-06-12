@@ -7,17 +7,19 @@ import Rewriting.SubstituteImplementations
 
 case class MapWorkgroupI(out: Phrase[AccType],
                          f: Phrase[AccType -> (ExpType -> CommandType)],
-                         in: Phrase[ExpType]) extends AbstractMapI(out, f, in) {
+                         in: Phrase[ExpType])
+  extends AbstractMapI(out, f, in) {
 
   override def makeMapI = MapWorkgroupI
 
   override def substituteImpl: Phrase[CommandType] = {
-    // TODO: replace with for loop iterating over workgroup stuff
     val l = length(in)
     TypeChecker(l)
-    `for`(l, i => {
-      SubstituteImplementations(f(out `@` i)(in `@` i))
-    })
+
+    val elemT = out.t match { case AccType(ArrayType(_, dt)) => dt }
+    ParForWorkgroup(l, out, λ( ExpType(int) ) { i => λ( AccType(elemT) ) { o =>
+      SubstituteImplementations( f(o)(in `@` i) )
+    } })
   }
 
 }

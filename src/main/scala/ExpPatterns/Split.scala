@@ -45,8 +45,6 @@ case class Split(n: ArithExpr, array: Phrase[ExpType]) extends ExpPattern {
     }
   }
 
-  override def toC = ???
-
   override def toOpenCL: Expression = ???
 
   override def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = {

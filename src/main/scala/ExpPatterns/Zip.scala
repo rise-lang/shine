@@ -35,8 +35,6 @@ case class Zip(lhs: Phrase[ExpType], rhs: Phrase[ExpType]) extends ExpPattern {
     }
   }
 
-  override def toC = ???
-
   override def toOpenCL: Expression = ???
 
   override def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = {

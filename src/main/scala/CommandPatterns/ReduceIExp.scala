@@ -56,8 +56,6 @@ case class ReduceIExp(out: Phrase[ExpType -> CommandType],
     }))
   }
 
-  override def toC = ???
-
   override def toOpenCL(b: Block): Block = ???
 
   override def prettyPrint: String = s"reduceIExp ${PrettyPrinter(out)} ${PrettyPrinter(f)} ${PrettyPrinter(init)} ${PrettyPrinter(in)}"

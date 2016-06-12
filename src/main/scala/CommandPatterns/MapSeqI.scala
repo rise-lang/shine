@@ -7,7 +7,8 @@ import Rewriting.SubstituteImplementations
 
 case class MapSeqI(out: Phrase[AccType],
                    f: Phrase[AccType -> (ExpType -> CommandType)],
-                   in: Phrase[ExpType]) extends AbstractMapI(out, f, in) {
+                   in: Phrase[ExpType])
+  extends AbstractMapI(out, f, in) {
 
   override def makeMapI = MapSeqI
 

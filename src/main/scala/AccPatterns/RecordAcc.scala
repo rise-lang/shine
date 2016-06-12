@@ -23,8 +23,6 @@ case class RecordAcc(fst: Phrase[AccType], snd: Phrase[AccType]) extends AccPatt
       OperationalSemantics.substitute(phrase, `for`, snd))
   }
 
-  override def toC = ???
-
   override def toOpenCL: VarRef = ???
 
   def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): VarRef = ???

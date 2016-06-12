@@ -35,8 +35,6 @@ case class ToLocal(f: Phrase[ExpType -> ExpType], input: Phrase[ExpType]) extend
 
   override def eval(s: Store): Data = OperationalSemantics.eval(s, input)
 
-  override def toC: String = ???
-
   override def toOpenCL: Expression = ???
 
   override def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = ???

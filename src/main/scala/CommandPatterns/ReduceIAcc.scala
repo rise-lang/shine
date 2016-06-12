@@ -52,8 +52,6 @@ case class ReduceIAcc(out: Phrase[AccType],
     } )
   }
 
-  override def toC = ???
-
   override def toOpenCL(b: Block): Block = ???
 
   override def prettyPrint: String = s"reduceIAcc ${PrettyPrinter(out)} ${PrettyPrinter(f)} ${PrettyPrinter(init)} ${PrettyPrinter(in)}"

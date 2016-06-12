@@ -26,8 +26,6 @@ case class SndAcc(record: Phrase[AccType]) extends AccPattern {
     SndAcc(OperationalSemantics.substitute(phrase, `for`, record))
   }
 
-  override def toC = ???
-
   override def toOpenCL: VarRef = ???
 
   def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): VarRef = ???

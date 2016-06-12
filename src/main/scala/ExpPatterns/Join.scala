@@ -40,8 +40,6 @@ case class Join(array: Phrase[ExpType]) extends ExpPattern {
     }
   }
 
-  override def toC = ???
-
   override def toOpenCL: Expression = ???
 
   override def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = ???

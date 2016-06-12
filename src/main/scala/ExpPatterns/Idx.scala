@@ -36,8 +36,6 @@ case class Idx(array: Phrase[ExpType], index: Phrase[ExpType]) extends ExpPatter
     i
   }
 
-  override def toC = Printer.toC(array) + "[" + Printer.toC(index) + "]"
-
   override def toOpenCL: Expression = {
     val v = ToOpenCL.exp(array) match {
       case VarRef(name, _, _) => name

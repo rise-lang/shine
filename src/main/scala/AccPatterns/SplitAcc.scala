@@ -24,8 +24,6 @@ case class SplitAcc(array: Phrase[AccType]) extends AccPattern {
     ???
   }
 
-  override def toC = ???
-
   override def toOpenCL: VarRef = ???
 
   def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): VarRef = ???

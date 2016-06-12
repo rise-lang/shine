@@ -41,8 +41,6 @@ case class Iterate(n: ArithExpr, f: Phrase[ExpType -> ExpType], array: Phrase[Ex
     }
   }
 
-  override def toC = ???
-
   override def toOpenCL: Expression = ???
 
   override def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = ???

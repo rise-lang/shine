@@ -29,11 +29,6 @@ case class Length[T <: BasePhraseTypes](array: Phrase[T]) extends ExpPattern {
     Length(OperationalSemantics.substitute(phrase, `for`, array))
   }
 
-  override def toC = array.t match {
-    case ExpType(ArrayType(n, _)) => n.toString
-    case AccType(ArrayType(n, _)) => n.toString
-  }
-
   override def toOpenCL: Expression = {
     ArithExpression( OperationalSemantics.evalIndexExp(new OperationalSemantics.Store(), this) )
   }

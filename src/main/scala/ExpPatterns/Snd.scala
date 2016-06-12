@@ -28,8 +28,6 @@ case class Snd(record: Phrase[ExpType]) extends ExpPattern {
     Snd(OperationalSemantics.substitute(phrase, `for`, record))
   }
 
-  override def toC = Printer.toC(record) + ".snd"
-
   override def toOpenCL: Expression = ToOpenCL.exp(this, List(), List())
 
   override def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = {

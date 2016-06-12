@@ -46,8 +46,6 @@ abstract class AbstractMapI(out: Phrase[AccType],
     })
   }
 
-  override def toC = ???
-
   override def toOpenCL(b: Block): Block = ???
 
   override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): CommandPattern = {
