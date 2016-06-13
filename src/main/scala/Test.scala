@@ -1057,19 +1057,9 @@ object Test extends App {
     println("=====")
     println(PrettyPrinter(p))
 
-    val p2 = RewriteToImperative( p(identifier("mat", matrixT))(identifier("xs", xsVectorT))(identifier("ys", ysVectorT)) )
-    println("=====")
-    println(PrettyPrinter(p2))
-    TypeChecker(p2)
-
-    val p3 = SubstituteImplementations(p2)
-    println("=====")
-    println(PrettyPrinter(p3))
-    TypeChecker(p3)
-
     println("-----")
 
-    val ast = ToOpenCL.cmd(p3, Block())
+    val ast = ToOpenCL(p, identifier("mat", matrixT), identifier("xs", xsVectorT), identifier("ys", ysVectorT))
     println(OpenCLPrinter()(ast))
 
     println("-----")

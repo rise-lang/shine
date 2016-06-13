@@ -68,6 +68,7 @@ abstract class AbstractMap(f: Phrase[ExpType -> ExpType],
         x
       )
     })
+
   }
 
   override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {

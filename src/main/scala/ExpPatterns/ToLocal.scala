@@ -43,7 +43,6 @@ case class ToLocal(f: Phrase[ExpType -> ExpType], input: Phrase[ExpType]) extend
     val tL = ToLocal(
       OperationalSemantics.substitute(phrase, `for`, f),
       OperationalSemantics.substitute(phrase, `for`, input))
-    tL.t = t
     tL.dt1 = dt1
     tL.dt2 = dt2
     tL
@@ -51,9 +50,8 @@ case class ToLocal(f: Phrase[ExpType -> ExpType], input: Phrase[ExpType]) extend
 
   override def prettyPrint: String = s"(toLocal ${PrettyPrinter(input)})"
 
-  override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
+  override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] =
     RewriteToImperative.acc(f(input), A)
-  }
 
   override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
     assert(dt1 != null && dt2 != null)
