@@ -1,12 +1,83 @@
 package Core
 
 import Core.OperationalSemantics._
-import apart.arithmetic.{ArithExpr, Cst}
+import Core.PhraseType.->
+import Rewriting.{RewriteToImperative, SubstituteImplementations}
+import apart.arithmetic.{ArithExpr, Cst, Var}
+import ir.{Type, UndefType}
 import opencl.generator.OpenCLAST._
+import DSL._
 
 import scala.collection.immutable.List
 
 object ToOpenCL {
+
+  private def make(p: Phrase[ExpType],
+                   args: List[IdentPhrase[ExpType]]): Function = {
+    val outT = TypeChecker(p)
+    val out = identifier("output", AccType(outT.dataType))
+    val params = makeParams(out, args: _*)
+
+    val p2 = RewriteToImperative.acc(p, out)
+    val p3 = SubstituteImplementations(p2)
+    TypeChecker(p3)
+    val body = cmd(p3, Block())
+
+    Function(name = "KERNEL", ret = UndefType, params = params, body = body, kernel = true)
+  }
+
+  private def makeParams(out: IdentPhrase[AccType], args: IdentPhrase[ExpType]*): List[ParamDecl] = {
+    val output = ParamDecl(out.name, DataType.toType(out.t.dataType), opencl.ir.GlobalMemory, const = false)
+
+    val inputs = args.map( arg =>
+      ParamDecl(arg.name, DataType.toType(arg.t.dataType), opencl.ir.GlobalMemory, const = true)
+    )
+
+    val types = args.map(_.t.dataType).+:(out.t.dataType).map(DataType.toType)
+    val lengths = types.flatMap(Type.getLengths)
+    val vars = lengths.filter(_.isInstanceOf[Var]).distinct
+
+    val varDecls = vars.map( v =>
+      ParamDecl(v.toString, opencl.ir.Int)
+    )
+
+    List(output) ++ inputs ++ varDecls
+  }
+
+  def apply(p: Phrase[ExpType]) = make(p, List())
+
+  private def make(p: Phrase[ExpType -> ExpType],
+                   arg: IdentPhrase[ExpType],
+                   args: List[IdentPhrase[ExpType]]): Function = {
+    make(p(arg), arg +: args)
+  }
+
+  def apply(p: Phrase[ExpType -> ExpType],
+            arg: IdentPhrase[ExpType]) = make(p, arg, List())
+
+  private def make(p: Phrase[ExpType -> (ExpType -> ExpType)],
+                   arg0: IdentPhrase[ExpType],
+                   arg1: IdentPhrase[ExpType],
+                   args: List[IdentPhrase[ExpType]]): Function = {
+    make(p(arg0), arg1, arg0 +: args)
+  }
+
+  def apply(p: Phrase[ExpType -> (ExpType -> ExpType)],
+            arg0: IdentPhrase[ExpType],
+            arg1: IdentPhrase[ExpType]) = make(p, arg0, arg1, List())
+
+  private def make(p: Phrase[ExpType -> (ExpType -> (ExpType -> ExpType))],
+                   arg0: IdentPhrase[ExpType],
+                   arg1: IdentPhrase[ExpType],
+                   arg2: IdentPhrase[ExpType],
+                   args: List[IdentPhrase[ExpType]]): Function = {
+    make(p(arg0), arg1, arg2, arg0 +: args)
+  }
+
+  def apply(p: Phrase[ExpType -> (ExpType -> (ExpType -> ExpType))],
+            arg0: IdentPhrase[ExpType],
+            arg1: IdentPhrase[ExpType],
+            arg2: IdentPhrase[ExpType]) = make(p, arg0, arg1, arg2, List())
 
   def cmd(p: Phrase[CommandType], block: Block): Block = {
     p match {

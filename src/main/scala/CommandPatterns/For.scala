@@ -56,6 +56,8 @@ case class For(n: Phrase[ExpType],
     val bodyE = Lift.liftFunction(body)
     val vE = IdentPhrase[ExpType](name.name)
 
-    (block: Block) += ForLoop(init, cond, increment, ToOpenCL.cmd(bodyE(vE), Block()))
+    val body_ = ToOpenCL.cmd(bodyE(vE), Block())
+
+    (block: Block) += ForLoop(init, cond, increment, body_)
   }
 }

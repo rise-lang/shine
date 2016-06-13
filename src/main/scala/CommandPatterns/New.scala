@@ -5,7 +5,7 @@ import Core.OperationalSemantics._
 import Core.PhraseType._
 import Rewriting.SubstituteImplementations
 import apart.arithmetic.{NamedVar, Var}
-import opencl.generator.OpenCLAST.{Block, VarDecl}
+import opencl.generator.OpenCLAST.{Block, Comment, VarDecl}
 
 case class New(dt: DataType, addressSpace: AddressSpace, f: Phrase[(ExpType x AccType) -> CommandType]) extends CommandPattern {
 
@@ -51,6 +51,7 @@ case class New(dt: DataType, addressSpace: AddressSpace, f: Phrase[(ExpType x Ac
       (block: Block) += VarDecl(v.name, DataType.toType(dt))
     } else {
       // TODO: allocate elsewhere
+      (block: Block) += Comment(s"new ${v.name} $dt $addressSpace")
     }
 
     val fE: (Phrase[PairType[ExpType, AccType]]) => Phrase[CommandType] = Lift.liftFunction(f)
