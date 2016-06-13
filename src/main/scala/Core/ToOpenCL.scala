@@ -22,6 +22,9 @@ object ToOpenCL {
     TypeChecker(p2)
     val p3 = SubstituteImplementations(p2)
     TypeChecker(p3)
+
+    println(PrettyPrinter(p3))
+
     val body = cmd(p3, Block())
 
     Function(name = "KERNEL", ret = UndefType, params = params, body = body, kernel = true)

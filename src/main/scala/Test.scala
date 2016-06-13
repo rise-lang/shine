@@ -1,7 +1,7 @@
 
 import Core._
 import DSL._
-import Rewriting.{Rew, RewriteToImperative, SubstituteImplementations}
+import Rewriting.{RewriteToImperative, SubstituteImplementations}
 import CommandPatterns._
 import Core.PhraseType.->
 import ExpPatterns._
@@ -130,68 +130,6 @@ object Test extends App {
     println(p)
 
     println(TypeChecker(p))
-
-    println(OperationalSemantics.eval(store, p))
-  }
-
-  {
-    var store = HashMap[String, Data]()
-
-    val N = 5
-
-    val in1 = identifier("in1", ExpType(ArrayType(N, int)))
-    val in2 = identifier("in2", ExpType(ArrayType(N, int)))
-
-    val add = λ( x => x._1 + x._2 )
-
-    val expression = map(add, zip(in1, in2))
-
-    val resultType = TypeChecker(expression) match {
-      case ExpType(dt) => AccType(dt)
-    }
-
-    val out = identifier("out", resultType)
-    store = store + (in1.name -> makeArrayData(1, 2, 3, 4, 5))
-    store = store + (in2.name -> makeArrayData(2, 3, 4, 5, 6))
-    store = store + (out.name -> makeArrayData(0, 0, 0, 0, 0))
-//    store = makeArrayData(store, in1.name, 1, 2, 3, 4, 5)
-//    store = makeArrayData(store, in2.name, 2, 3, 4, 5, 6)
-//    store = makeArrayData(store, out.name, 0, 0, 0, 0, 0)
-
-    val p0 = out := expression
-
-    import Rewriting.RewriteRules._
-
-    val p1 = mapToFor(p0)
-
-    val p2 = (p1: @unchecked) match {
-      case For(n, LambdaPhrase(i, Assign(acc, expr))) =>
-        For(n, LambdaPhrase(i, Assign(acc, betaReduction(expr))))
-    }
-
-    val p3 = p2 match {
-      case For(n, LambdaPhrase(i, Assign(acc, BinOpPhrase(op, Fst(lhs), Snd(rhs))))) =>
-        For(n, LambdaPhrase(i, Assign(acc, BinOpPhrase(op, Fst(zipIndex(lhs)), Snd(zipIndex(rhs))))))
-    }
-
-    val p4 = p3 match {
-      case For(n, LambdaPhrase(i, Assign(acc, BinOpPhrase(op, lhs, rhs)))) =>
-        For(n, LambdaPhrase(i, Assign(acc, BinOpPhrase(op, fstAccess(lhs), sndAccess(rhs)))))
-    }
-
-    val p = p4
-
-    println("========================")
-
-    println(p)
-
-    println("========================")
-
-    val pp = Rew(Rew(p0))
-
-    println(pp)
-
-    println("========================")
 
     println(OperationalSemantics.eval(store, p))
   }
@@ -357,35 +295,7 @@ object Test extends App {
     println( OperationalSemantics.eval(store, p) )
   }
 
-  {
-    var store = HashMap[String, Data]()
-    val x = identifier("x", ExpType(ArrayType(4, int)))
-    val y = identifier("y", ExpType(ArrayType(4, int)))
-    val out = identifier("out", AccType(ArrayType(4, int)))
-    store = store + (x.name -> makeArrayData(1, 2, 3, 4))
-    store = store + (y.name -> makeArrayData(2, 3, 4, 5))
-    store = store + (out.name -> makeArrayData(0, 0, 0, 0))
-//    store = makeArrayData(store, x.name, 1, 2, 3, 4)
-//    store = makeArrayData(store, y.name, 2, 3, 4, 5)
-//    store = makeArrayData(store, out.name, 0, 0, 0, 0)
-
-    val f = λ( x => x._1 + x._2)
-    val g = λ( x => map(f, x) )
-    val p = out := join(map(g, split(2, zip(x, y))))
-
-    println( p )
-
-    println( TypeChecker(p) )
-
-    val pp = Rew(Rew(Rew(Rew(Rew(p)))))
-
-    TypeChecker(pp)
-
-    println( pp )
-
-    println( OperationalSemantics.eval(store, p) )
-  }
-  // out := join in
+    // out := join in
   // in: Array(n, Array(m, _))
   //  =>
   // for n (λi.
