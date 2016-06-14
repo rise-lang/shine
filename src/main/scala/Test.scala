@@ -3,6 +3,7 @@ import Core._
 import DSL._
 import Rewriting.{RewriteToImperative, SubstituteImplementations}
 import CommandPatterns._
+import Core.OperationalSemantics.IntData
 import Core.PhraseType.->
 import ExpPatterns._
 import apart.arithmetic.{ArithExpr, Cst, SizeVar}
@@ -742,42 +743,34 @@ object Test extends App {
   {
     println("== scal ==")
     val a: Phrase[ExpType] = 5
-    val p = λ(ExpType(ArrayType(1048576, int)))(inp =>
+    val t = ExpType(ArrayType(1048576, int))
+    val p = λ(t)(inp =>
       map(λ( x => x * a )) $ inp
     )
     println("=====")
     println(PrettyPrinter(p))
 
-    val p2 = RewriteToImperative(p)
-    println("=====")
-    println(PrettyPrinter(p2))
-    TypeChecker(p2)
+    println("-----")
 
-    val p3 = SubstituteImplementations(p2)
-    println("=====")
-    println(PrettyPrinter(p3))
-    TypeChecker(p3)
+    val ast = ToOpenCL(p, identifier("inp", t))
+    println(OpenCLPrinter()(ast))
 
     println("-----")
   }
 
   {
     println("== assum ==")
-    val p = λ(ExpType(ArrayType(1048576, int)))(inp =>
+    val t = ExpType(ArrayType(1048576, int))
+    val p = λ(t)(inp =>
       reduce(λ( x1 => λ( x2 => x1 + x2 ) ), 0, map(λ( x => `if`(x < 0, -x, x) ), inp))
     )
     println("=====")
     println(PrettyPrinter(p))
 
-    val p2 = RewriteToImperative(p)
-    println("=====")
-    println(PrettyPrinter(p2))
-    TypeChecker(p2)
+    println("-----")
 
-    val p3 = SubstituteImplementations(p2)
-    println("=====")
-    println(PrettyPrinter(p3))
-    TypeChecker(p3)
+    val ast = ToOpenCL(p, identifier("inp", t))
+    println(OpenCLPrinter()(ast))
 
     println("-----")
   }
@@ -792,15 +785,10 @@ object Test extends App {
     println("=====")
     println(PrettyPrinter(p))
 
-    val p2 = RewriteToImperative( p(identifier("input", t))(identifier("input2", t)) )
-    println("=====")
-    println(PrettyPrinter(p2))
-    TypeChecker(p2)
+    println("-----")
 
-    val p3 = SubstituteImplementations(p2)
-    println("=====")
-    println(PrettyPrinter(p3))
-    TypeChecker(p3)
+    val ast = ToOpenCL(p, identifier("xs", t), identifier("ys", t))
+    println(OpenCLPrinter()(ast))
 
     println("-----")
   }
@@ -833,15 +821,10 @@ object Test extends App {
     println("=====")
     println(PrettyPrinter(p))
 
-    val p2 = RewriteToImperative( p(identifier("mat", matrixT))(identifier("xs", xsVectorT))(identifier("ys", ysVectorT)) )
-    println("=====")
-    println(PrettyPrinter(p2))
-    TypeChecker(p2)
+    println("-----")
 
-    val p3 = SubstituteImplementations(p2)
-    println("=====")
-    println(PrettyPrinter(p3))
-    TypeChecker(p3)
+    val ast = ToOpenCL(p, identifier("mat", matrixT), identifier("xs", xsVectorT), identifier("ys", ysVectorT))
+    println(OpenCLPrinter()(ast))
 
     println("-----")
   }
@@ -951,5 +934,36 @@ object Test extends App {
     println(OpenCLPrinter()(ast))
 
     println("-----")
+
+    {
+      val mat = identifier("mat", matrixT)
+      val xs = identifier("xs", xsVectorT)
+      val ys = identifier("ys", ysVectorT)
+      val outT = TypeChecker(p(mat)(xs)(ys))
+      val output = identifier("output", AccType(outT.dataType))
+      val pp =
+        ParForWorkgroup( n / 2, output, λ(ExpType(int))(v370 => λ(AccType(ArrayType(n, int)))(v371 =>
+          `new`(ArrayType(1, int), LocalMemory, v350 =>
+            ParForLocal(1, π2(v350), λ(ExpType(int))(v372 => λ(AccType(int))(v373 =>
+              `new`(int, PrivateMemory, v374 =>
+                (π2 (v374) `:=` LiteralPhrase(0)) `;`
+                  `for`(n, v375 =>
+                    π2(v374) `:=` (π1(v374) + (
+                      ((split(n, zip(xs, (zip(mat, ys) `@` v370)._1)) `@` v372) `@` v375)._1
+                        * ((split(n, zip(xs, (zip(mat, ys) `@` v370)._1)) `@` v372) `@` v375)._2
+                      ))
+                  ) `;`
+                  (π2(v374) `:=` π1(v374) * LiteralPhrase(5))
+              )
+            ))) `;`
+            ParForLocal(1, v371, λ(ExpType(int))(v377 => λ(AccType(int))(v378 =>
+              v378 `:=` ( (π1(v350) `@` v377) + (zip(mat, ys) `@` v370)._2 * LiteralPhrase(2) )
+            )))
+          )
+        )))
+
+      println(PrettyPrinter(pp))
+    }
   }
+
 }
