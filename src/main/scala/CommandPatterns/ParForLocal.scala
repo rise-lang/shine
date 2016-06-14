@@ -15,20 +15,20 @@ case class ParForLocal(n: Phrase[ExpType],
 
   override def makeParFor = ParForLocal
 
-  override def name: NamedVar =
+  override val name: NamedVar =
     NamedVar(newName())
 
-  override def init: Declaration =
+  override val init: Declaration =
     VarDecl(name.name, opencl.ir.Int,
       init = ArithExpression(get_local_id(0)),
       addressSpace = opencl.ir.PrivateMemory)
 
-  override def cond: ExpressionStatement =
+  override val cond: ExpressionStatement =
     CondExpression(VarRef(name.name),
       ToOpenCL.exp(n),
       CondExpression.Operator.<)
 
-  override def increment: Expression =
+  override val increment: Expression =
     AssignmentExpression(ArithExpression(name),
       ArithExpression(name + get_local_size(0)))
 

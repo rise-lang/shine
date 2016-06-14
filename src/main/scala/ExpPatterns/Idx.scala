@@ -36,13 +36,7 @@ case class Idx(array: Phrase[ExpType], index: Phrase[ExpType]) extends ExpPatter
     i
   }
 
-  override def toOpenCL: Expression = {
-    val v = ToOpenCL.exp(array) match {
-      case VarRef(name, _, _) => name
-      case _ => throw new Exception("This should not happen")
-    }
-    VarRef(v, null, ToOpenCL.exp(index))
-  }
+  override def toOpenCL: Expression = ToOpenCL.exp(this, List(), List())
 
   override def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = {
     val idx: ArithExpr = ToOpenCL.exp(index) match {

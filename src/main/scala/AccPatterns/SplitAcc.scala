@@ -3,21 +3,27 @@ package AccPatterns
 import Core._
 import Core.OperationalSemantics._
 import apart.arithmetic.ArithExpr
+import ir.Type
 import opencl.generator.OpenCLAST.VarRef
 
 case class SplitAcc(array: Phrase[AccType]) extends AccPattern {
 
+  private var n: ArithExpr = null
+
   override def typeCheck(): AccType = {
     import TypeChecker._
     TypeChecker(array) match {
-      case AccType(ArrayType(n, ArrayType(m, dt))) =>
+      case AccType(ArrayType(n_, ArrayType(m, dt))) =>
+        n = n_
         AccType(ArrayType(n*m, dt))
       case x => error(x.toString, "ArrayType(ArrayType)")
     }
   }
 
   override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): AccPattern = {
-    SplitAcc(OperationalSemantics.substitute(phrase, `for`, array))
+    val s = SplitAcc(OperationalSemantics.substitute(phrase, `for`, array))
+    s.n = n
+    s
   }
 
   override def eval(s: Store): AccIdentifier = {
@@ -26,7 +32,19 @@ case class SplitAcc(array: Phrase[AccType]) extends AccPattern {
 
   override def toOpenCL: VarRef = ???
 
-  def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): VarRef = ???
+  override def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): VarRef = {
+    val idx = arrayAccess.head
+    val stack = arrayAccess.tail
+
+    val chunkId = idx._1 / n
+    val chunkElemId = idx._1 % n
+
+    val l = Type.getLengths( DataType.toType(t.dataType) ).reduce(_*_)
+
+    val newAs = (chunkId, l * n) :: (chunkElemId, l) :: stack
+
+    ToOpenCL.acc(array, newAs, tupleAccess)
+  }
 
   override def prettyPrint: String = s"(split ${PrettyPrinter(array)})"
 

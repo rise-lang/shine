@@ -7,6 +7,7 @@ import Core._
 import Rewriting.RewriteToImperative
 import DSL._
 import apart.arithmetic.ArithExpr
+import ir.Type
 import opencl.generator.OpenCLAST.Expression
 
 case class Join(array: Phrase[ExpType]) extends ExpPattern {
@@ -42,7 +43,19 @@ case class Join(array: Phrase[ExpType]) extends ExpPattern {
 
   override def toOpenCL: Expression = ???
 
-  override def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = ???
+  override def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = {
+    val idx = arrayAccess.head
+    val stack = arrayAccess.tail
+
+    val chunkId = idx._1 / n
+    val chunkElemId = idx._1 % n
+
+    val l = Type.getLengths( DataType.toType(t.dataType) ).reduce(_*_)
+
+    val newAs = (chunkId, l * n) :: (chunkElemId, l) :: stack
+
+    ToOpenCL.exp(array, newAs, tupleAccess)
+  }
 
   override def prettyPrint: String = s"(join ${PrettyPrinter(array)})"
 

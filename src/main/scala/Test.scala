@@ -848,31 +848,32 @@ object Test extends App {
 
   {
     println("== join split ==")
+
+    val xsVectorT = ExpType(ArrayType(1048576, int))
+
     // results in type error after RewriteToImperative
-    val p = λ(ExpType(ArrayType(1048576, int)))(inp =>
+    val p = λ(xsVectorT)(inp =>
       join() o split(2048) $ inp
     )
     println("=====")
     println(PrettyPrinter(p))
 
-    val p2 = RewriteToImperative(p)
-    println("=====")
-    println(PrettyPrinter(p2))
-    TypeChecker(p2)
+    println("-----")
 
-    val p3 = SubstituteImplementations(p2)
-    println("=====")
-    println(PrettyPrinter(p3))
-    TypeChecker(p3)
+    val ast = ToOpenCL(p, identifier("xs", xsVectorT))
+    println(OpenCLPrinter()(ast))
 
     println("-----")
   }
 
   {
     println("== assum Nvidia ==")
+    val xsVectorT: ExpType = ExpType(ArrayType(1048576, int))
+
     val abs = (x: Phrase[ExpType]) => `if`(x < 0, -x, x)
 
-    val p = λ(ExpType(ArrayType(1048576, int)))(inp =>
+    val p = λ(xsVectorT)(inp =>
+
       mapWorkgroup(
         mapLocal( reduce(λ( x1 => λ( x2 => x1 + abs(x2) ) ), 0) )
       ) o split(128) o split(2048) $ inp
@@ -880,15 +881,10 @@ object Test extends App {
     println("=====")
     println(PrettyPrinter(p))
 
-    val p2 = RewriteToImperative(p)
-    println("=====")
-    println(PrettyPrinter(p2))
-    TypeChecker(p2)
+    println("-----")
 
-    val p3 = SubstituteImplementations(p2)
-    println("=====")
-    println(PrettyPrinter(p3))
-    TypeChecker(p3)
+    val ast = ToOpenCL(p, identifier("xs", xsVectorT))
+    println(OpenCLPrinter()(ast))
 
     println("-----")
   }
@@ -898,10 +894,6 @@ object Test extends App {
     val n: ArithExpr = SizeVar("N")
     val xsVectorT: ExpType = ExpType(ArrayType(n, int))
     val ysVectorT: ExpType = ExpType(ArrayType(n, int))
-
-
-    val add = λ(x1 => λ(x2 => x1 + x2 ))
-    val mult = λ(p => p._1 * p._2 )
 
     val p =
       λ(xsVectorT)(xs => λ(ysVectorT)(ys => {
@@ -917,19 +909,9 @@ object Test extends App {
     println("=====")
     println(PrettyPrinter(p))
 
-    val p2 = RewriteToImperative( p(identifier("xs", xsVectorT))(identifier("ys", ysVectorT)) )
-    println("=====")
-    println(PrettyPrinter(p2))
-    TypeChecker(p2)
-
-    val p3 = SubstituteImplementations(p2)
-    println("=====")
-    println(PrettyPrinter(p3))
-    TypeChecker(p3)
-
     println("-----")
 
-    val ast = ToOpenCL.cmd(p3, Block())
+    val ast = ToOpenCL(p, identifier("xs", xsVectorT), identifier("ys", ysVectorT))
     println(OpenCLPrinter()(ast))
 
     println("-----")
@@ -944,10 +926,6 @@ object Test extends App {
     val xsVectorT: ExpType = ExpType(ArrayType(n, int))
     val ysVectorT: ExpType = ExpType(ArrayType(m, int))
     val matrixT: ExpType = ExpType(ArrayType(m, ArrayType(n, int)))
-
-
-    val add = λ(x1 => λ(x2 => x1 + x2 ))
-    val mult = λ(p => p._1 * p._2 )
 
     val p =
       λ(matrixT)(mat => λ(xsVectorT)(xs => λ(ysVectorT)(ys => {

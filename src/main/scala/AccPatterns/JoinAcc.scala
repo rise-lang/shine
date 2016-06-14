@@ -24,7 +24,17 @@ case class JoinAcc(n: ArithExpr, array: Phrase[AccType]) extends AccPattern {
 
   override def toOpenCL: VarRef = ???
 
-  def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): VarRef = ???
+  def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): VarRef = {
+
+    val (firstTwo, rest) = arrayAccess.splitAt(2)
+
+    val chunkId = firstTwo.head
+    val chunkElemId = firstTwo.tail.head
+
+    val newIdx = chunkId._1 * n + chunkElemId._1
+
+    ToOpenCL.acc(array, (newIdx, chunkElemId._2) :: rest, tupleAccess)
+  }
 
   override def prettyPrint: String = s"(join ${n.toString} ${PrettyPrinter(array)})"
 

@@ -13,22 +13,22 @@ case class ParForGlobal(n: Phrase[ExpType],
                            body: Phrase[ExpType -> (AccType -> CommandType)])
   extends AbstractParFor(n, out, body) {
 
-  override def makeParFor = ParForGlobal
+  override val makeParFor = ParForGlobal
 
-  override def name: NamedVar =
+  override val name: NamedVar =
     NamedVar(newName())
 
-  override def init: Declaration =
+  override val init: Declaration =
     VarDecl(name.name, opencl.ir.Int,
       init = ArithExpression(get_global_id(0)),
       addressSpace = opencl.ir.PrivateMemory)
 
-  override def cond: ExpressionStatement =
+  override val cond: ExpressionStatement =
     CondExpression(VarRef(name.name),
       ToOpenCL.exp(n),
       CondExpression.Operator.<)
 
-  override def increment: Expression =
+  override val increment: Expression =
     AssignmentExpression(ArithExpression(name),
       ArithExpression(name + get_global_size(0)))
 
