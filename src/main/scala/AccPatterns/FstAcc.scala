@@ -22,9 +22,7 @@ case class FstAcc(record: Phrase[AccType]) extends AccPattern {
     }
   }
 
-  override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): AccPattern = {
-    FstAcc(OperationalSemantics.substitute(phrase, `for`, record))
-  }
+  override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[AccType] = FstAcc(VisitAndRebuild(record, f))
 
   override def toOpenCL: VarRef = ???
 

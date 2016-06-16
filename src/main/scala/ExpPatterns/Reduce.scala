@@ -42,11 +42,8 @@ abstract class AbstractReduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
     }
   }
 
-  override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): ExpPattern = {
-    val r = makeReduce(
-      OperationalSemantics.substitute(phrase, `for`, f),
-      OperationalSemantics.substitute(phrase, `for`, init),
-      OperationalSemantics.substitute(phrase, `for`, array))
+  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[ExpType] = {
+    val r = makeReduce(VisitAndRebuild(f, fun), VisitAndRebuild(init, fun), VisitAndRebuild(array, fun))
     r.t = t
     r.n = n
     r.dt1 = dt1

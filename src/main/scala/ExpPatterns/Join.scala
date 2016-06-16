@@ -24,8 +24,8 @@ case class Join(array: Phrase[ExpType]) extends ExpPattern {
     }
   }
 
-  override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): ExpPattern = {
-    Join(OperationalSemantics.substitute(phrase, `for`, array))
+  override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[ExpType] = {
+    Join(VisitAndRebuild(array, f))
   }
 
   override def eval(s: Store): Data = {

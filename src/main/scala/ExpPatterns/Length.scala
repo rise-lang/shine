@@ -25,8 +25,8 @@ case class Length[T <: BasePhraseTypes](array: Phrase[T]) extends ExpPattern {
     }
   }
 
-  override def substitute[U <: PhraseType](phrase: Phrase[U], `for`: Phrase[U]): ExpPattern = {
-    Length(OperationalSemantics.substitute(phrase, `for`, array))
+  override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[ExpType] = {
+    Length(VisitAndRebuild(array, f))
   }
 
   override def toOpenCL: Expression = {

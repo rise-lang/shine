@@ -39,13 +39,11 @@ case class ToLocal(f: Phrase[ExpType -> ExpType], input: Phrase[ExpType]) extend
 
   override def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = ???
 
-  override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): ExpPattern = {
-    val tL = ToLocal(
-      OperationalSemantics.substitute(phrase, `for`, f),
-      OperationalSemantics.substitute(phrase, `for`, input))
-    tL.dt1 = dt1
-    tL.dt2 = dt2
-    tL
+  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[ExpType] = {
+    val tl = ToLocal(VisitAndRebuild(f, fun), VisitAndRebuild(input, fun))
+    tl.dt1 = dt1
+    tl.dt2 = dt2
+    tl
   }
 
   override def prettyPrint: String = s"(toLocal ${PrettyPrinter(input)})"

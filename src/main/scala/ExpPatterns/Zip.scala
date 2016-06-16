@@ -20,8 +20,8 @@ case class Zip(lhs: Phrase[ExpType], rhs: Phrase[ExpType]) extends ExpPattern {
     }
   }
 
-  override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): ExpPattern = {
-    Zip(OperationalSemantics.substitute(phrase, `for`, lhs), OperationalSemantics.substitute(phrase, `for`, rhs))
+  override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[ExpType] = {
+    Zip(VisitAndRebuild(lhs, f), VisitAndRebuild(rhs, f))
   }
 
   override def eval(s: Store): Data = {

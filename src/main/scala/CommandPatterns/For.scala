@@ -27,10 +27,9 @@ case class For(n: Phrase[ExpType],
     } )
   }
 
-  override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]) =
-    For(
-      OperationalSemantics.substitute(phrase, `for`, n),
-      OperationalSemantics.substitute(phrase, `for`, body))
+  override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[CommandType] = {
+    For(VisitAndRebuild(n, f), VisitAndRebuild(body, f))
+  }
 
   override def substituteImpl: Phrase[CommandType] =
     For(n, SubstituteImplementations.applyFun(body))

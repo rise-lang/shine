@@ -34,12 +34,8 @@ case class ReduceIAcc(out: Phrase[AccType],
     }
   }
 
-  override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): CommandPattern = {
-    ReduceIAcc(
-      OperationalSemantics.substitute(phrase, `for`, out),
-      OperationalSemantics.substitute(phrase, `for`, f),
-      OperationalSemantics.substitute(phrase, `for`, init),
-      OperationalSemantics.substitute(phrase, `for`, in))
+  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[CommandType] = {
+    ReduceIAcc(VisitAndRebuild(out, fun), VisitAndRebuild(f, fun), VisitAndRebuild(init, fun), VisitAndRebuild(in, fun))
   }
 
   override def eval(s: Store): Store = {

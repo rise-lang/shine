@@ -9,9 +9,9 @@ import opencl.generator.OpenCLAST
 import opencl.generator.OpenCLAST._
 import DSL._
 
-abstract class AbstractParFor(n: Phrase[ExpType],
-                              out: Phrase[AccType],
-                              body: Phrase[ExpType -> (AccType -> CommandType)])
+abstract class AbstractParFor(val n: Phrase[ExpType],
+                              val out: Phrase[AccType],
+                              val body: Phrase[ExpType -> (AccType -> CommandType)])
   extends CommandPattern {
 
   override def typeCheck(): CommandType = {
@@ -30,7 +30,7 @@ abstract class AbstractParFor(n: Phrase[ExpType],
               } else error(s"$i, $dt, and $dt2", expected = "to be int and the last two to match")
             case t_ => error(t_.toString, expected = "FunctionType")
           }
-        } else error("$nInt != $m", expected = "them to match")
+        } else error(s"$nInt != $m", expected = "them to match")
       case t_ => error(t_.toString, expected = "ArrayType")
     }
   }
@@ -44,11 +44,9 @@ abstract class AbstractParFor(n: Phrase[ExpType],
     })
   }
 
-  override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): CommandPattern =
-    makeParFor(
-      OperationalSemantics.substitute(phrase, `for`, n),
-      OperationalSemantics.substitute(phrase, `for`, out),
-      OperationalSemantics.substitute(phrase, `for`, body))
+  override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[CommandType] = {
+    makeParFor(VisitAndRebuild(n, f), VisitAndRebuild(out, f), VisitAndRebuild(body, f))
+  }
 
   override def substituteImpl: Phrase[CommandType] =
     makeParFor(n, out, SubstituteImplementations.applyBinaryFun(body))
@@ -77,9 +75,9 @@ abstract class AbstractParFor(n: Phrase[ExpType],
 
 }
 
-case class ParFor(n: Phrase[ExpType],
-                  out: Phrase[AccType],
-                  body: Phrase[ExpType -> (AccType -> CommandType)])
+case class ParFor(override val n: Phrase[ExpType],
+                  override val out: Phrase[AccType],
+                  override val body: Phrase[ExpType -> (AccType -> CommandType)])
   extends AbstractParFor(n, out, body) {
 
   override def makeParFor = ParFor

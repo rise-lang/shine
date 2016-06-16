@@ -31,8 +31,8 @@ case class New(dt: DataType, addressSpace: AddressSpace, f: Phrase[(ExpType x Ac
     newStore - arg.name
   }
 
-  override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): CommandPattern = {
-    New(dt, addressSpace, OperationalSemantics.substitute(phrase, `for`, f))
+  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[CommandType] = {
+    New(dt, addressSpace, VisitAndRebuild(f, fun))
   }
 
   override def substituteImpl: Phrase[CommandType] = New(dt, addressSpace, SubstituteImplementations.applyFun(f))

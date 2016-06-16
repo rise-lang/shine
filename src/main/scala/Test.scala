@@ -7,8 +7,11 @@ import Core.OperationalSemantics.IntData
 import Core.PhraseType.->
 import ExpPatterns._
 import apart.arithmetic.{ArithExpr, Cst, SizeVar}
+import opencl.executor.{Execute, Utils}
 import opencl.generator.OpenCLAST.Block
 import opencl.generator.OpenCLPrinter
+
+import org.junit.Assert._
 
 import scala.collection.immutable.HashMap
 
@@ -902,8 +905,10 @@ object Test extends App {
 
   {
     println("== gemv fused ==")
-    val a: Phrase[ExpType] = 5
-    val b: Phrase[ExpType] = 2
+    val alpha = 5
+    val beta = 2
+    val a: Phrase[ExpType] = alpha
+    val b: Phrase[ExpType] = beta
     val n: ArithExpr = SizeVar("N")
     val m: ArithExpr = n / 2
     val xsVectorT: ExpType = ExpType(ArrayType(n, int))
@@ -935,35 +940,80 @@ object Test extends App {
 
     println("-----")
 
-    {
-      val mat = identifier("mat", matrixT)
-      val xs = identifier("xs", xsVectorT)
-      val ys = identifier("ys", ysVectorT)
-      val outT = TypeChecker(p(mat)(xs)(ys))
-      val output = identifier("output", AccType(outT.dataType))
-      val pp =
-        ParForWorkgroup( n / 2, output, λ(ExpType(int))(v370 => λ(AccType(ArrayType(n, int)))(v371 =>
-          `new`(ArrayType(1, int), LocalMemory, v350 =>
-            ParForLocal(1, π2(v350), λ(ExpType(int))(v372 => λ(AccType(int))(v373 =>
-              `new`(int, PrivateMemory, v374 =>
-                (π2 (v374) `:=` LiteralPhrase(0)) `;`
-                  `for`(n, v375 =>
-                    π2(v374) `:=` (π1(v374) + (
-                      ((split(n, zip(xs, (zip(mat, ys) `@` v370)._1)) `@` v372) `@` v375)._1
-                        * ((split(n, zip(xs, (zip(mat, ys) `@` v370)._1)) `@` v372) `@` v375)._2
-                      ))
-                  ) `;`
-                  (π2(v374) `:=` π1(v374) * LiteralPhrase(5))
-              )
-            ))) `;`
-            ParForLocal(1, v371, λ(ExpType(int))(v377 => λ(AccType(int))(v378 =>
-              v378 `:=` ( (π1(v350) `@` v377) + (zip(mat, ys) `@` v370)._2 * LiteralPhrase(2) )
-            )))
-          )
-        )))
+//    {
+//      val mat = identifier("mat", matrixT)
+//      val xs = identifier("xs", xsVectorT)
+//      val ys = identifier("ys", ysVectorT)
+//      val outT = TypeChecker(p(mat)(xs)(ys))
+//      val output = identifier("output", AccType(outT.dataType))
+//      val pp =
+//        ParForWorkgroup( n / 2, output, λ(ExpType(int))(v370 => λ(AccType(ArrayType(1, int)))(v371 =>
+//          `new`(ArrayType(1, int), LocalMemory, v350 =>
+//            ParForLocal(1, π2(v350), λ(ExpType(int))(v372 => λ(AccType(int))(v373 =>
+//              `new`(int, PrivateMemory, v374 =>
+//                (π2 (v374) `:=` LiteralPhrase(0)) `;`
+//                  `for`(n, v375 =>
+//                    π2(v374) `:=` (π1(v374) + (
+//                      ((split(n, zip(xs, (zip(mat, ys) `@` v370)._1)) `@` v372) `@` v375)._1
+//                        * ((split(n, zip(xs, (zip(mat, ys) `@` v370)._1)) `@` v372) `@` v375)._2
+//                      ))
+//                  ) `;`
+//                  (π2(v374) `:=` π1(v374) * LiteralPhrase(5))
+//              )
+//            ))) `;`
+//            ParForLocal(1, v371, λ(ExpType(int))(v377 => λ(AccType(int))(v378 =>
+//              v378 `:=` ( (π1(v350) `@` v377) + (zip(mat, ys) `@` v370)._2 * LiteralPhrase(2) )
+//            )))
+//          )
+//        )))
+//
+//      println(PrettyPrinter(pp))
+//      TypeChecker(pp)
+//
+//      val ast = ToOpenCL.cmd(pp, Block())
+//      println(OpenCLPrinter()(ast))
+//    }
 
-      println(PrettyPrinter(pp))
-    }
+  }
+
+  {
+    println("== sgemv hawaii best ==")
+    val n = SizeVar("N")
+    val m = SizeVar("M")
+    val matrixT = ExpType(ArrayType(n, ArrayType(m, int)))
+    val xsVectorT = ExpType(ArrayType(m, int))
+    val ysVectorT = ExpType(ArrayType(n, int))
+    val aT = ExpType(int)
+    val bT = ExpType(int)
+
+    val p =
+      λ(matrixT)(mat => λ(xsVectorT)(xs => λ(ysVectorT)(ys => λ(aT)(a => λ(bT)(b => {
+
+        mapWorkgroup(λ(t =>
+
+          toGlobal( λ(x =>
+            (x * a) + (t._2 * b)
+          ) )
+          o
+          reduceSeq(λ(y => λ(acc => acc + y)), 0)
+          o
+          toLocal(mapLocal(
+            reduceSeq(λ(y => λ(acc => acc + ( y._1 * y._2 ) )), 0)
+          )) o split(m / 128) /* o reorderWithStride(128) */ $ zip(xs, t._1)
+
+        )) $ zip(mat, ys)
+
+      }) ) ) ) )
+
+    println("=====")
+    println(PrettyPrinter(p))
+
+    println("-----")
+
+    val ast = ToOpenCL(p, identifier("mat", matrixT), identifier("xs", xsVectorT), identifier("ys", ysVectorT), identifier("alpha", aT), identifier("beta", bT))
+    println(OpenCLPrinter()(ast))
+
+    println("-----")
   }
 
 }

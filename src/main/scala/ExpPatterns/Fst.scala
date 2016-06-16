@@ -24,8 +24,8 @@ case class Fst(record: Phrase[ExpType]) extends ExpPattern {
     }
   }
 
-  override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): ExpPattern = {
-    Fst(OperationalSemantics.substitute(phrase, `for`, record))
+  override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[ExpType] = {
+    Fst(VisitAndRebuild(record, f))
   }
 
   override def toOpenCL: Expression = ToOpenCL.exp(this, List(), List())

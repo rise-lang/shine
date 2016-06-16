@@ -3,7 +3,7 @@ import Core._
 import ExpPatterns._
 import AccPatterns._
 import CommandPatterns._
-import Core.OperationalSemantics.{IndexData, newName}
+import Core.OperationalSemantics.{FloatData, IndexData, newName}
 import apart.arithmetic.ArithExpr
 
 import scala.language.implicitConversions
@@ -83,6 +83,7 @@ package object DSL {
   implicit def toLiteralIndex(i: ArithExpr): LiteralPhrase = LiteralPhrase(IndexData(i))
 
   implicit def toLiteralInt(i: Int): LiteralPhrase = LiteralPhrase(i)
+  implicit def toLiteralFloat(f: Float): LiteralPhrase = LiteralPhrase(FloatData(f))
 
   implicit class ExpPhraseExtensions(e: Phrase[ExpType]) {
     def _1 = Fst(e)

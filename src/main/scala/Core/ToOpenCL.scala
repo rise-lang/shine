@@ -25,7 +25,13 @@ object ToOpenCL {
 
     println(PrettyPrinter(p3))
 
-    val body = cmd(p3, Block())
+    val p4 = AdjustMemoryAllocation(p3)
+
+    println("--------------------")
+
+    println(PrettyPrinter(p4))
+
+    val body = cmd(p4, Block())
 
     Function(name = "KERNEL", ret = UndefType, params = params, body = body, kernel = true)
   }
@@ -82,6 +88,50 @@ object ToOpenCL {
             arg0: IdentPhrase[ExpType],
             arg1: IdentPhrase[ExpType],
             arg2: IdentPhrase[ExpType]) = make(p, arg0, arg1, arg2, List())
+
+  private def make(p: Phrase[ExpType -> (ExpType -> (ExpType -> (ExpType -> ExpType)))],
+                   arg0: IdentPhrase[ExpType],
+                   arg1: IdentPhrase[ExpType],
+                   arg2: IdentPhrase[ExpType],
+                   arg3: IdentPhrase[ExpType],
+                   args: List[IdentPhrase[ExpType]]): Function = {
+    make(p(arg0), arg1, arg2, arg3, arg0 +: args)
+  }
+
+  def apply(p: Phrase[ExpType -> (ExpType -> (ExpType -> (ExpType -> ExpType)))],
+            arg0: IdentPhrase[ExpType],
+            arg1: IdentPhrase[ExpType],
+            arg2: IdentPhrase[ExpType],
+            arg3: IdentPhrase[ExpType]) = make(p, arg0, arg1, arg2, arg3, List())
+
+  private def make(p: Phrase[ExpType -> (ExpType -> (ExpType -> (ExpType -> (ExpType -> ExpType))))],
+                   arg0: IdentPhrase[ExpType],
+                   arg1: IdentPhrase[ExpType],
+                   arg2: IdentPhrase[ExpType],
+                   arg3: IdentPhrase[ExpType],
+                   arg4: IdentPhrase[ExpType],
+                   args: List[IdentPhrase[ExpType]]): Function = {
+    make(p(arg0), arg1, arg2, arg3, arg4, arg0 +: args)
+  }
+
+  def apply(p: Phrase[ExpType -> (ExpType -> (ExpType -> (ExpType -> (ExpType -> ExpType))))],
+            arg0: IdentPhrase[ExpType],
+            arg1: IdentPhrase[ExpType],
+            arg2: IdentPhrase[ExpType],
+            arg3: IdentPhrase[ExpType],
+            arg4: IdentPhrase[ExpType]) = make(p, arg0, arg1, arg2, arg3, arg4, List())
+
+
+
+
+
+
+
+
+
+
+
+
 
   def cmd(p: Phrase[CommandType], block: Block): Block = {
     p match {

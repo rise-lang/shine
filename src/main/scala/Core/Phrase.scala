@@ -63,8 +63,6 @@ final case class LiteralPhrase(d: OperationalSemantics.Data)
 abstract class ExpPattern extends Phrase[ExpType] {
   def typeCheck(): ExpType
 
-  def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): ExpPattern
-
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Data
 
   def toOpenCL: Expression
@@ -76,12 +74,12 @@ abstract class ExpPattern extends Phrase[ExpType] {
   def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType]
 
   def rewriteToImperativeExp(C: Phrase[ExpType -> CommandType]): Phrase[CommandType]
+
+  def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[ExpType]
 }
 
 abstract class AccPattern extends Phrase[AccType] {
   def typeCheck(): AccType
-
-  def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): AccPattern
 
   def eval(s: OperationalSemantics.Store): OperationalSemantics.AccIdentifier
 
@@ -90,12 +88,12 @@ abstract class AccPattern extends Phrase[AccType] {
   def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): VarRef
 
   def prettyPrint: String
+
+  def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[AccType]
 }
 
 abstract class CommandPattern extends  Phrase[CommandType] {
   def typeCheck(): CommandType
-
-  def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): CommandPattern
 
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Store
 
@@ -104,4 +102,6 @@ abstract class CommandPattern extends  Phrase[CommandType] {
   def prettyPrint: String
 
   def substituteImpl: Phrase[CommandType]
+
+  def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[CommandType]
 }

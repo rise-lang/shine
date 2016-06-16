@@ -21,8 +21,8 @@ case class ToLocalAcc(p: Phrase[AccType]) extends AccPattern{
 
   def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): VarRef = ???
 
-  override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): AccPattern = {
-    ToLocalAcc(OperationalSemantics.substitute(phrase, `for`, p))
+  override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[AccType] = {
+    ToLocalAcc(VisitAndRebuild(p, f))
   }
 
   override def prettyPrint: String = s"(toLocalAcc ${PrettyPrinter(p)})"

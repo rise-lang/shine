@@ -17,10 +17,8 @@ case class RecordAcc(fst: Phrase[AccType], snd: Phrase[AccType]) extends AccPatt
       OperationalSemantics.eval(s, snd))
   }
 
-  override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): AccPattern = {
-    RecordAcc(
-      OperationalSemantics.substitute(phrase, `for`, fst),
-      OperationalSemantics.substitute(phrase, `for`, snd))
+  override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[AccType] = {
+    RecordAcc(VisitAndRebuild(fst, f), VisitAndRebuild(snd, f))
   }
 
   override def toOpenCL: VarRef = ???

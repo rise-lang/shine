@@ -22,10 +22,8 @@ case class Iterate(n: ArithExpr, f: Phrase[ExpType -> ExpType], array: Phrase[Ex
     }
   }
 
-  override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): ExpPattern = {
-    Iterate(n,
-      OperationalSemantics.substitute(phrase, `for`, f),
-      OperationalSemantics.substitute(phrase, `for`, array))
+  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[ExpType] = {
+    Iterate(n, VisitAndRebuild(f, fun), VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): Data = {

@@ -20,8 +20,8 @@ case class SplitAcc(array: Phrase[AccType]) extends AccPattern {
     }
   }
 
-  override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): AccPattern = {
-    val s = SplitAcc(OperationalSemantics.substitute(phrase, `for`, array))
+  override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[AccType] = {
+    val s = SplitAcc(VisitAndRebuild(array, f))
     s.n = n
     s
   }

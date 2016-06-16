@@ -16,8 +16,8 @@ case class JoinAcc(n: ArithExpr, array: Phrase[AccType]) extends AccPattern {
     }
   }
 
-  override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): AccPattern = {
-    JoinAcc(n, OperationalSemantics.substitute(phrase, `for`, array))
+  override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[AccType] = {
+    JoinAcc(n, VisitAndRebuild(array, f))
   }
 
   override def eval(s: Store): AccIdentifier = ???

@@ -8,9 +8,9 @@ import opencl.generator.OpenCLAST._
 import opencl.generator.{get_num_groups, get_group_id}
 
 
-case class ParForWorkgroup(n: Phrase[ExpType],
-                           out: Phrase[AccType],
-                           body: Phrase[ExpType -> (AccType -> CommandType)])
+case class ParForWorkgroup(override val n: Phrase[ExpType],
+                           override val out: Phrase[AccType],
+                           override val body: Phrase[ExpType -> (AccType -> CommandType)])
   extends AbstractParFor(n, out, body) {
 
   override def makeParFor = ParForWorkgroup

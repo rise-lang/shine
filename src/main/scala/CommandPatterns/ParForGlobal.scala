@@ -8,9 +8,9 @@ import opencl.generator.OpenCLAST._
 import opencl.generator.{get_global_id, get_global_size}
 
 
-case class ParForGlobal(n: Phrase[ExpType],
-                           out: Phrase[AccType],
-                           body: Phrase[ExpType -> (AccType -> CommandType)])
+case class ParForGlobal(override val n: Phrase[ExpType],
+                        override val out: Phrase[AccType],
+                        override val body: Phrase[ExpType -> (AccType -> CommandType)])
   extends AbstractParFor(n, out, body) {
 
   override val makeParFor = ParForGlobal

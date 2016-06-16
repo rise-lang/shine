@@ -19,10 +19,8 @@ case class Seq(c1: Phrase[CommandType], c2: Phrase[CommandType]) extends Command
     OperationalSemantics.eval(s1, c2)
   }
 
-  override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): CommandPattern = {
-    Seq(
-      OperationalSemantics.substitute(phrase, `for`, c1),
-      OperationalSemantics.substitute(phrase, `for`, c2))
+  override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[CommandType] = {
+    Seq(VisitAndRebuild(c1, f), VisitAndRebuild(c2, f))
   }
 
   override def substituteImpl: Phrase[CommandType] = Seq(SubstituteImplementations(c1), SubstituteImplementations(c2))

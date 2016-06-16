@@ -39,14 +39,12 @@ case class ToGlobal(f: Phrase[ExpType -> ExpType], input: Phrase[ExpType]) exten
 
   override def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = ???
 
-  override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): ExpPattern = {
-    val tG = ToGlobal(
-      OperationalSemantics.substitute(phrase, `for`, f),
-      OperationalSemantics.substitute(phrase, `for`, input))
-    tG.t = t
-    tG.dt1 = dt1
-    tG.dt2 = dt2
-    tG
+  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[ExpType] = {
+    val tg = ToGlobal(VisitAndRebuild(f, fun), VisitAndRebuild(input, fun))
+    tg.t = t
+    tg.dt1 = dt1
+    tg.dt2 = dt2
+    tg
   }
 
   override def prettyPrint: String = s"(toGlobal ${PrettyPrinter(input)})"

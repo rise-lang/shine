@@ -29,10 +29,8 @@ case class IdxAcc(array: Phrase[AccType], index: Phrase[ExpType]) extends AccPat
     ArrayAccessIdentifier(arrayE, indexE)
   }
 
-  override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): AccPattern = {
-    val i = IdxAcc(
-      OperationalSemantics.substitute(phrase, `for`, array),
-      OperationalSemantics.substitute(phrase, `for`, index))
+  override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[AccType] = {
+    val i = IdxAcc(VisitAndRebuild(array, f), VisitAndRebuild(index, f))
     i.dt = dt
     i
   }

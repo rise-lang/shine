@@ -71,53 +71,15 @@ object OperationalSemantics {
 
   // substitutes `phrase` for `for` in `in`
   def substitute[T1 <: PhraseType, T2 <: PhraseType](phrase: Phrase[T1],
-                                                     `for`: Phrase[T1],
+                                                    `for`: Phrase[T1],
                                                      in: Phrase[T2]): Phrase[T2] = {
-    if (`for` == in) {
-      phrase.asInstanceOf[Phrase[T2]] // T1 == T2
-    } else {
-      val res = (in match {
-        // these cases must all be `<: Phrase[T2]`, because they match on in.
-        // The casts should be unnecessary
-        case _: IdentPhrase[_]   => in
-
-        case l: LambdaPhrase[_, _] =>
-          LambdaPhrase(l.param, substitute(phrase, `for`, l.body))
-
-        case app: ApplyPhrase[a, T2] =>
-          val newFun = substitute(phrase, `for`, app.fun)
-          val newArg = substitute(phrase, `for`, app.arg)
-          ApplyPhrase(newFun, newArg)
-
-        case pair: PairPhrase[a, b] =>
-          PairPhrase(substitute(phrase, `for`, pair.fst), substitute(phrase, `for`, pair.snd))
-
-        case p: Proj1Phrase[T2, b] => Proj1Phrase(substitute(phrase, `for`, p.pair))
-        case p: Proj2Phrase[a, T2] => Proj2Phrase(substitute(phrase, `for`, p.pair))
-
-        case i: IfThenElsePhrase[T2] =>
-          val newCond = substitute(phrase, `for`, i.cond)
-          val newThenP = substitute(phrase, `for`, i.thenP)
-          val newElseP = substitute(phrase, `for`, i.elseP)
-          IfThenElsePhrase(newCond, newThenP, newElseP)
-
-        case _: LiteralPhrase    => in
-
-        case UnaryOpPhrase(op, p) =>
-          UnaryOpPhrase(op, substitute(phrase, `for`, p))
-
-        case BinOpPhrase(op, lhs, rhs) =>
-          BinOpPhrase(op, substitute(phrase, `for`, lhs), substitute(phrase, `for`, rhs))
-
-        case p : ExpPattern => p.substitute(phrase, `for`)
-
-        case p: AccPattern => p.substitute(phrase, `for`)
-
-        case p: CommandPattern => p.substitute(phrase, `for`)
-      }).asInstanceOf[Phrase[T2]]
-      res.t = in.t // preserve type
-      res
+    case class fun() extends VisitAndRebuild.fun {
+      override def apply[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
+        if (`for` == p) { Replace(phrase.asInstanceOf[Phrase[T]]) } else { Continue(this) }
+      }
     }
+
+    VisitAndRebuild(in, fun())
   }
 
   def eval[T <: PhraseType, R](s: Store, p: Phrase[T])

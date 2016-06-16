@@ -48,11 +48,8 @@ abstract class AbstractMapI(out: Phrase[AccType],
 
   override def toOpenCL(b: Block): Block = ???
 
-  override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): CommandPattern = {
-    makeMapI(
-      OperationalSemantics.substitute(phrase, `for`, out),
-      OperationalSemantics.substitute(phrase, `for`, f),
-      OperationalSemantics.substitute(phrase, `for`, in))
+  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[CommandType] = {
+    makeMapI(VisitAndRebuild(out, fun), VisitAndRebuild(f, fun), VisitAndRebuild(in, fun))
   }
 
   def makeMapI: (Phrase[AccType], Phrase[AccType -> (ExpType -> CommandType)], Phrase[ExpType]) => AbstractMapI

@@ -10,7 +10,7 @@ case class Skip() extends CommandPattern {
 
   override def eval(s: Store): Store = s
 
-  override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): CommandPattern = this
+  override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[CommandType] = this
 
   override def substituteImpl: Phrase[CommandType] = this
 

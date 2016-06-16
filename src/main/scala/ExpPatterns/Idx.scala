@@ -28,10 +28,8 @@ case class Idx(array: Phrase[ExpType], index: Phrase[ExpType]) extends ExpPatter
     }
   }
 
-  override def substitute[T <: PhraseType](phrase: Phrase[T], `for`: Phrase[T]): ExpPattern = {
-    val i = Idx(
-      OperationalSemantics.substitute(phrase, `for`, array),
-      OperationalSemantics.substitute(phrase, `for`, index))
+  override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[ExpType] = {
+    val i = Idx(VisitAndRebuild(array, f), VisitAndRebuild(index, f))
     i.dt = dt
     i
   }
