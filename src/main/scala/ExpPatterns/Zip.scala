@@ -35,18 +35,18 @@ case class Zip(lhs: Phrase[ExpType], rhs: Phrase[ExpType]) extends ExpPattern {
     }
   }
 
-  override def toOpenCL: Expression = ???
+  override def toOpenCL(ocl: ToOpenCL): Expression = ???
 
-  override def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = {
+  override def toOpenCL(ocl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = {
     val i = tupleAccess.head
     val rest = tupleAccess.tail
 
     if (i == Cst(1)) {
-      return ToOpenCL.exp(lhs, arrayAccess, rest)
+      return ToOpenCL.exp(lhs, ocl, arrayAccess, rest)
     }
 
     if (i == Cst(2)) {
-      return ToOpenCL.exp(rhs, arrayAccess, rest)
+      return ToOpenCL.exp(rhs, ocl, arrayAccess, rest)
     }
 
     throw new Exception("This should not happen")

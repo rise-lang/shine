@@ -37,7 +37,7 @@ case class New(dt: DataType, addressSpace: AddressSpace, f: Phrase[(ExpType x Ac
 
   override def substituteImpl: Phrase[CommandType] = New(dt, addressSpace, SubstituteImplementations.applyFun(f))
 
-  override def toOpenCL(block: Block): Block = {
+  override def toOpenCL(block: Block, ocl: ToOpenCL): Block = {
     val v = NamedVar(newName())
 
     if (addressSpace == PrivateMemory) {
@@ -49,7 +49,7 @@ case class New(dt: DataType, addressSpace: AddressSpace, f: Phrase[(ExpType x Ac
 
     val f_ = Lift.liftFunction(f)
     val v_ = identifier.newVar(v.name, dt)
-    ToOpenCL.cmd(f_(v_), block)
+    ToOpenCL.cmd(f_(v_), block, ocl)
   }
 
   override def prettyPrint: String = s"new $dt $addressSpace ${PrettyPrinter(f)}"

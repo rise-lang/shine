@@ -34,15 +34,15 @@ case class Idx(array: Phrase[ExpType], index: Phrase[ExpType]) extends ExpPatter
     i
   }
 
-  override def toOpenCL: Expression = ToOpenCL.exp(this, List(), List())
+  override def toOpenCL(ocl: ToOpenCL): Expression = ToOpenCL.exp(this, ocl, List(), List())
 
-  override def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = {
-    val idx: ArithExpr = ToOpenCL.exp(index) match {
+  override def toOpenCL(ocl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = {
+    val idx: ArithExpr = ToOpenCL.exp(index, ocl) match {
       case VarRef(name, _, _) => NamedVar(name)
       case _ => throw new Exception("This should not happen")
     }
     val length = DataType.getLengths(dt, tupleAccess, List()).foldLeft(1:ArithExpr)((x,y) => x * y)
-    ToOpenCL.exp(array, (idx, length) :: arrayAccess, tupleAccess)
+    ToOpenCL.exp(array, ocl, (idx, length) :: arrayAccess, tupleAccess)
   }
 
   override def prettyPrint: String = s"(${PrettyPrinter(array)})[${PrettyPrinter(index)}]"

@@ -46,7 +46,7 @@ abstract class AbstractMapI(out: Phrase[AccType],
     })
   }
 
-  override def toOpenCL(b: Block): Block = ???
+  override def toOpenCL(b: Block, ocl: ToOpenCL): Block = ???
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[CommandType] = {
     makeMapI(VisitAndRebuild(out, fun), VisitAndRebuild(f, fun), VisitAndRebuild(in, fun))

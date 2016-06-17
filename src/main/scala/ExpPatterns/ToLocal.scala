@@ -35,9 +35,9 @@ case class ToLocal(f: Phrase[ExpType -> ExpType], input: Phrase[ExpType]) extend
 
   override def eval(s: Store): Data = OperationalSemantics.eval(s, input)
 
-  override def toOpenCL: Expression = ???
+  override def toOpenCL(ocl: ToOpenCL): Expression = ???
 
-  override def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = ???
+  override def toOpenCL(ocl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = ???
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[ExpType] = {
     val tl = ToLocal(VisitAndRebuild(f, fun), VisitAndRebuild(input, fun))

@@ -21,9 +21,9 @@ case class RecordAcc(fst: Phrase[AccType], snd: Phrase[AccType]) extends AccPatt
     RecordAcc(VisitAndRebuild(fst, f), VisitAndRebuild(snd, f))
   }
 
-  override def toOpenCL: VarRef = ???
+  override def toOpenCL(ocl: ToOpenCL): VarRef = ???
 
-  def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): VarRef = ???
+  def toOpenCL(ocl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): VarRef = ???
 
   override def prettyPrint: String = s"(${PrettyPrinter(fst)}, ${PrettyPrinter(snd)})"
 

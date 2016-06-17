@@ -17,9 +17,9 @@ case class ToLocalAcc(p: Phrase[AccType]) extends AccPattern{
 
   override def eval(s: Store): AccIdentifier = ???
 
-  override def toOpenCL: VarRef = ???
+  override def toOpenCL(ocl: ToOpenCL): VarRef = ???
 
-  def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): VarRef = ???
+  def toOpenCL(ocl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): VarRef = ???
 
   override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[AccType] = {
     ToLocalAcc(VisitAndRebuild(p, f))

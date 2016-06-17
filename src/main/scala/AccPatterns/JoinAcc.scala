@@ -11,8 +11,8 @@ case class JoinAcc(n: ArithExpr, array: Phrase[AccType]) extends AccPattern {
     import TypeChecker._
     TypeChecker(array) match {
       case AccType(ArrayType(m, dt)) =>
-        AccType(ArrayType(m/n, ArrayType(n, dt)))
-      case t => error(t.toString, "ArrayType")
+        AccType(ArrayType(m /^ n, ArrayType(n, dt)))
+      case x => error(x.toString, "ArrayType")
     }
   }
 
@@ -22,9 +22,9 @@ case class JoinAcc(n: ArithExpr, array: Phrase[AccType]) extends AccPattern {
 
   override def eval(s: Store): AccIdentifier = ???
 
-  override def toOpenCL: VarRef = ???
+  override def toOpenCL(opencl: ToOpenCL): VarRef = ???
 
-  def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): VarRef = {
+  def toOpenCL(opencl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): VarRef = {
 
     val (firstTwo, rest) = arrayAccess.splitAt(2)
 
@@ -33,7 +33,7 @@ case class JoinAcc(n: ArithExpr, array: Phrase[AccType]) extends AccPattern {
 
     val newIdx = chunkId._1 * n + chunkElemId._1
 
-    ToOpenCL.acc(array, (newIdx, chunkElemId._2) :: rest, tupleAccess)
+    ToOpenCL.acc(array, opencl, (newIdx, chunkElemId._2) :: rest, tupleAccess)
   }
 
   override def prettyPrint: String = s"(join ${n.toString} ${PrettyPrinter(array)})"

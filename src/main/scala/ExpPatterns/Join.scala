@@ -41,9 +41,9 @@ case class Join(array: Phrase[ExpType]) extends ExpPattern {
     }
   }
 
-  override def toOpenCL: Expression = ???
+  override def toOpenCL(ocl: ToOpenCL): Expression = ???
 
-  override def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = {
+  override def toOpenCL(ocl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = {
     val idx = arrayAccess.head
     val stack = arrayAccess.tail
 
@@ -54,7 +54,7 @@ case class Join(array: Phrase[ExpType]) extends ExpPattern {
 
     val newAs = (chunkId, l * n) :: (chunkElemId, l) :: stack
 
-    ToOpenCL.exp(array, newAs, tupleAccess)
+    ToOpenCL.exp(array, ocl, newAs, tupleAccess)
   }
 
   override def prettyPrint: String = s"(join ${PrettyPrinter(array)})"

@@ -57,8 +57,8 @@ case class Assign(lhs: Phrase[AccType], rhs: Phrase[ExpType]) extends CommandPat
 
   override def substituteImpl: Phrase[CommandType] = this
 
-  override def toOpenCL(block: Block): Block =
-    (block: Block) += AssignmentExpression(ToOpenCL.acc(lhs), ToOpenCL.exp(rhs))
+  override def toOpenCL(block: Block, opencl: ToOpenCL): Block =
+    (block: Block) += AssignmentExpression(ToOpenCL.acc(lhs, opencl), ToOpenCL.exp(rhs, opencl))
 
   override def prettyPrint: String = s"${PrettyPrinter(lhs)} := ${PrettyPrinter(rhs)}"
 

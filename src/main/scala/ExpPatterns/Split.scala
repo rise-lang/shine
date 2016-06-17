@@ -15,8 +15,8 @@ case class Split(n: ArithExpr, array: Phrase[ExpType]) extends ExpPattern {
     import TypeChecker._
     TypeChecker(array) match {
       case ExpType(ArrayType(m, dt)) =>
-        ExpType(ArrayType(m/n, ArrayType(n, dt)))
-      case t => error(t.toString, "ArrayType")
+        ExpType(ArrayType(m /^ n, ArrayType(n, dt)))
+      case x => error(x.toString, "ArrayType")
     }
   }
 
@@ -45,9 +45,9 @@ case class Split(n: ArithExpr, array: Phrase[ExpType]) extends ExpPattern {
     }
   }
 
-  override def toOpenCL: Expression = ???
+  override def toOpenCL(ocl: ToOpenCL): Expression = ???
 
-  override def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = {
+  override def toOpenCL(ocl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = {
 
     val (firstTwo, rest) = arrayAccess.splitAt(2)
 
@@ -56,7 +56,7 @@ case class Split(n: ArithExpr, array: Phrase[ExpType]) extends ExpPattern {
 
     val newIdx = chunkId._1 * n + chunkElemId._1
 
-    ToOpenCL.exp(array, (newIdx, chunkElemId._2) :: rest, tupleAccess)
+    ToOpenCL.exp(array, ocl, (newIdx, chunkElemId._2) :: rest, tupleAccess)
   }
 
   override def prettyPrint: String = s"(split ${n.toString} ${PrettyPrinter(array)})"

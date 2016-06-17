@@ -65,9 +65,9 @@ abstract class ExpPattern extends Phrase[ExpType] {
 
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Data
 
-  def toOpenCL: Expression
+  def toOpenCL(opencl: ToOpenCL): Expression
 
-  def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression
+  def toOpenCL(opencl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression
 
   def prettyPrint: String
 
@@ -83,9 +83,9 @@ abstract class AccPattern extends Phrase[AccType] {
 
   def eval(s: OperationalSemantics.Store): OperationalSemantics.AccIdentifier
 
-  def toOpenCL: VarRef
+  def toOpenCL(opencl: ToOpenCL): VarRef
 
-  def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): VarRef
+  def toOpenCL(opencl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): VarRef
 
   def prettyPrint: String
 
@@ -97,7 +97,7 @@ abstract class CommandPattern extends  Phrase[CommandType] {
 
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Store
 
-  def toOpenCL(block: Block): Block
+  def toOpenCL(block: Block, opencl: ToOpenCL): Block
 
   def prettyPrint: String
 

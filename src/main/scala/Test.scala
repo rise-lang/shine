@@ -2,16 +2,11 @@
 import Core._
 import DSL._
 import Rewriting.{RewriteToImperative, SubstituteImplementations}
-import CommandPatterns._
-import Core.OperationalSemantics.IntData
 import Core.PhraseType.->
 import ExpPatterns._
-import apart.arithmetic.{ArithExpr, Cst, SizeVar}
-import opencl.executor.{Execute, Utils}
-import opencl.generator.OpenCLAST.Block
+import apart.arithmetic._
 import opencl.generator.OpenCLPrinter
 
-import org.junit.Assert._
 
 import scala.collection.immutable.HashMap
 
@@ -755,7 +750,7 @@ object Test extends App {
 
     println("-----")
 
-    val ast = ToOpenCL(p, identifier("inp", t))
+    val ast = (new ToOpenCL(?, ?))(p, identifier("inp", t))
     println(OpenCLPrinter()(ast))
 
     println("-----")
@@ -772,7 +767,7 @@ object Test extends App {
 
     println("-----")
 
-    val ast = ToOpenCL(p, identifier("inp", t))
+    val ast = (new ToOpenCL(?, ?))(p, identifier("inp", t))
     println(OpenCLPrinter()(ast))
 
     println("-----")
@@ -790,7 +785,7 @@ object Test extends App {
 
     println("-----")
 
-    val ast = ToOpenCL(p, identifier("xs", t), identifier("ys", t))
+    val ast = (new ToOpenCL(?, ?))(p, identifier("xs", t), identifier("ys", t))
     println(OpenCLPrinter()(ast))
 
     println("-----")
@@ -826,7 +821,9 @@ object Test extends App {
 
     println("-----")
 
-    val ast = ToOpenCL(p, identifier("mat", matrixT), identifier("xs", xsVectorT), identifier("ys", ysVectorT))
+    val toOpenCL = new ToOpenCL(localSize = 128, globalSize = m)
+
+    val ast = toOpenCL(p, identifier("mat", matrixT), identifier("xs", xsVectorT), identifier("ys", ysVectorT))
     println(OpenCLPrinter()(ast))
 
     println("-----")
@@ -846,7 +843,7 @@ object Test extends App {
 
     println("-----")
 
-    val ast = ToOpenCL(p, identifier("xs", xsVectorT))
+    val ast = (new ToOpenCL(?, ?))(p, identifier("xs", xsVectorT))
     println(OpenCLPrinter()(ast))
 
     println("-----")
@@ -869,7 +866,7 @@ object Test extends App {
 
     println("-----")
 
-    val ast = ToOpenCL(p, identifier("xs", xsVectorT))
+    val ast = (new ToOpenCL(128, ?))(p, identifier("xs", xsVectorT))
     println(OpenCLPrinter()(ast))
 
     println("-----")
@@ -897,7 +894,7 @@ object Test extends App {
 
     println("-----")
 
-    val ast = ToOpenCL(p, identifier("xs", xsVectorT), identifier("ys", ysVectorT))
+    val ast = (new ToOpenCL(128, ?))(p, identifier("xs", xsVectorT), identifier("ys", ysVectorT))
     println(OpenCLPrinter()(ast))
 
     println("-----")
@@ -935,7 +932,7 @@ object Test extends App {
 
     println("-----")
 
-    val ast = ToOpenCL(p, identifier("mat", matrixT), identifier("xs", xsVectorT), identifier("ys", ysVectorT))
+    val ast = (new ToOpenCL(?, ?))(p, identifier("mat", matrixT), identifier("xs", xsVectorT), identifier("ys", ysVectorT))
     println(OpenCLPrinter()(ast))
 
     println("-----")
@@ -986,6 +983,13 @@ object Test extends App {
     val aT = ExpType(int)
     val bT = ExpType(int)
 
+    val reorderWithStride = (s: ArithExpr) => {
+      (i: ArithExpr, t: DataType) => {
+        val n = ir.Type.getLength(DataType.toType(t)) /^ s
+        (i / n) + s * (i % n)
+      }
+    }
+
     val p =
       λ(matrixT)(mat => λ(xsVectorT)(xs => λ(ysVectorT)(ys => λ(aT)(a => λ(bT)(b => {
 
@@ -995,11 +999,11 @@ object Test extends App {
             (x * a) + (t._2 * b)
           ) )
           o
-          reduceSeq(λ(y => λ(acc => acc + y)), 0)
+          toLocal(reduceSeq(λ(y => λ(acc => acc + y)), 0))
           o
           toLocal(mapLocal(
             reduceSeq(λ(y => λ(acc => acc + ( y._1 * y._2 ) )), 0)
-          )) o split(m / 128) /* o reorderWithStride(128) */ $ zip(xs, t._1)
+          )) o split(m /^ 128) o gather(reorderWithStride(128)) $ zip(xs, t._1)
 
         )) $ zip(mat, ys)
 
@@ -1010,7 +1014,9 @@ object Test extends App {
 
     println("-----")
 
-    val ast = ToOpenCL(p, identifier("mat", matrixT), identifier("xs", xsVectorT), identifier("ys", ysVectorT), identifier("alpha", aT), identifier("beta", bT))
+    val toOpenCL = new ToOpenCL(localSize = 128, globalSize = n)
+
+    val ast = toOpenCL(p, identifier("mat", matrixT), identifier("xs", xsVectorT), identifier("ys", ysVectorT), identifier("alpha", aT), identifier("beta", bT))
     println(OpenCLPrinter()(ast))
 
     println("-----")

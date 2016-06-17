@@ -14,6 +14,8 @@ abstract class AbstractParFor(val n: Phrase[ExpType],
                               val body: Phrase[ExpType -> (AccType -> CommandType)])
   extends CommandPattern {
 
+  protected var ocl: ToOpenCL = null
+
   override def typeCheck(): CommandType = {
     import TypeChecker._
 
@@ -61,8 +63,10 @@ abstract class AbstractParFor(val n: Phrase[ExpType],
   def cond: OpenCLAST.ExpressionStatement
   def increment: OpenCLAST.Expression
 
-  override def toOpenCL(block: Block): Block = {
+  override def toOpenCL(block: Block, ocl: ToOpenCL): Block = {
     import opencl.generator.OpenCLAST._
+
+    this.ocl = ocl
 
     val i = identifier(name.name, ExpType(int))
     val body_ = Lift.liftFunction( Lift.liftFunction(body)(i) )
@@ -70,7 +74,7 @@ abstract class AbstractParFor(val n: Phrase[ExpType],
     TypeChecker(out_at_i)
 
     (block: Block) +=
-      ForLoop(init, cond, increment, ToOpenCL.cmd(body_(out_at_i), Block()))
+      ForLoop(init, cond, increment, ToOpenCL.cmd(body_(out_at_i), Block(), ocl))
   }
 
 }
@@ -85,17 +89,17 @@ case class ParFor(override val n: Phrase[ExpType],
   override val name: NamedVar =
     NamedVar(newName())
 
-  override val init: Declaration =
+  override lazy val init: Declaration =
     VarDecl(name.name, opencl.ir.Int,
       init = ArithExpression(0),
       addressSpace = opencl.ir.PrivateMemory)
 
-  override val cond: ExpressionStatement =
+  override lazy val cond: ExpressionStatement =
     CondExpression(VarRef(name.name),
-      ToOpenCL.exp(n),
+      ToOpenCL.exp(n, ocl),
       CondExpression.Operator.<)
 
-  override val increment: Expression =
+  override lazy val increment: Expression =
     AssignmentExpression(ArithExpression(name),
       ArithExpression(name + 1))
 

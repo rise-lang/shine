@@ -26,9 +26,9 @@ case class SndAcc(record: Phrase[AccType]) extends AccPattern {
     SndAcc(VisitAndRebuild(record, f))
   }
 
-  override def toOpenCL: VarRef = ???
+  override def toOpenCL(ocl: ToOpenCL): VarRef = ???
 
-  def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): VarRef = ???
+  def toOpenCL(ocl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): VarRef = ???
 
   override def prettyPrint: String = s"${PrettyPrinter(record)}._2"
 

@@ -30,9 +30,9 @@ case class SplitAcc(array: Phrase[AccType]) extends AccPattern {
     ???
   }
 
-  override def toOpenCL: VarRef = ???
+  override def toOpenCL(opencl: ToOpenCL): VarRef = ???
 
-  override def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): VarRef = {
+  override def toOpenCL(opencl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): VarRef = {
     val idx = arrayAccess.head
     val stack = arrayAccess.tail
 
@@ -43,7 +43,7 @@ case class SplitAcc(array: Phrase[AccType]) extends AccPattern {
 
     val newAs = (chunkId, l * n) :: (chunkElemId, l) :: stack
 
-    ToOpenCL.acc(array, newAs, tupleAccess)
+    ToOpenCL.acc(array, opencl, newAs, tupleAccess)
   }
 
   override def prettyPrint: String = s"(split ${PrettyPrinter(array)})"

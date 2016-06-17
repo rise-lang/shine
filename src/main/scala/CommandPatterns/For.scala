@@ -39,16 +39,20 @@ case class For(n: Phrase[ExpType],
     s"for 0..$length ${PrettyPrinter(body)}"
   }
 
-  override def toOpenCL(block: Block): Block = {
+  override def toOpenCL(block: Block, ocl: ToOpenCL): Block = {
     import opencl.generator.OpenCLAST._
 
     val name = NamedVar(newName())
-    val init = VarDecl(name.name, opencl.ir.Int,
+    val init = VarDecl(name, opencl.ir.Int,
       init = ArithExpression(0),
       addressSpace = opencl.ir.PrivateMemory)
 
-    val cond = CondExpression(VarRef(name.name),
-      ToOpenCL.exp(n),
+    val upperBound = ToOpenCL.exp(n, ocl) match {
+      case ArithExpression(ae) => ae
+    }
+
+    val cond = CondExpression(VarRef(name),
+      ArithExpression(upperBound),
       CondExpression.Operator.<)
 
     val increment = AssignmentExpression(ArithExpression(name), ArithExpression(name + 1))
@@ -56,7 +60,7 @@ case class For(n: Phrase[ExpType],
     val bodyE = Lift.liftFunction(body)
     val i = identifier(name.name, ExpType(int))
 
-    val body_ = ToOpenCL.cmd(bodyE(i), Block())
+    val body_ = ToOpenCL.cmd(bodyE(i), Block(), ocl)
 
     (block: Block) += ForLoop(init, cond, increment, body_)
   }

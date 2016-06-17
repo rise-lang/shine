@@ -246,3 +246,7 @@ object mapI {
   def apply(out: Phrase[AccType], f: Phrase[AccType -> (ExpType -> CommandType)], in: Phrase[ExpType]) =
     MapI(out, f, in)
 }
+
+object gather {
+  def apply(idxF: (ArithExpr, DataType) => ArithExpr) = λ( array => Gather(idxF, array))
+}

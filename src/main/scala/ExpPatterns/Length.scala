@@ -29,11 +29,11 @@ case class Length[T <: BasePhraseTypes](array: Phrase[T]) extends ExpPattern {
     Length(VisitAndRebuild(array, f))
   }
 
-  override def toOpenCL: Expression = {
+  override def toOpenCL(ocl: ToOpenCL): Expression = {
     ArithExpression( OperationalSemantics.evalIndexExp(new OperationalSemantics.Store(), this) )
   }
 
-  override def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = ???
+  override def toOpenCL(ocl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = ???
 
   override def prettyPrint: String = s"(length ${PrettyPrinter(array)})"
 

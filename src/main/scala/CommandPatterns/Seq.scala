@@ -25,9 +25,9 @@ case class Seq(c1: Phrase[CommandType], c2: Phrase[CommandType]) extends Command
 
   override def substituteImpl: Phrase[CommandType] = Seq(SubstituteImplementations(c1), SubstituteImplementations(c2))
 
-  override def toOpenCL(block: Block): Block = {
-    ToOpenCL.cmd(c1, block)
-    ToOpenCL.cmd(c2, block)
+  override def toOpenCL(block: Block, ocl: ToOpenCL): Block = {
+    ToOpenCL.cmd(c1, block, ocl)
+    ToOpenCL.cmd(c2, block, ocl)
   }
 
   override def prettyPrint: String = s"${PrettyPrinter(c1)} ; ${PrettyPrinter(c2)}"

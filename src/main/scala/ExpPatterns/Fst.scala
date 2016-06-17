@@ -28,10 +28,10 @@ case class Fst(record: Phrase[ExpType]) extends ExpPattern {
     Fst(VisitAndRebuild(record, f))
   }
 
-  override def toOpenCL: Expression = ToOpenCL.exp(this, List(), List())
+  override def toOpenCL(ocl: ToOpenCL): Expression = ToOpenCL.exp(this, ocl, List(), List())
 
-  override def toOpenCL(arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = {
-    ToOpenCL.exp(record, arrayAccess, 1 :: tupleAccess)
+  override def toOpenCL(ocl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = {
+    ToOpenCL.exp(record, ocl, arrayAccess, 1 :: tupleAccess)
   }
 
   override def prettyPrint: String = s"${PrettyPrinter(record)}._1"
