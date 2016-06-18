@@ -6,7 +6,7 @@ import Core.OperationalSemantics._
 import DSL._
 import AccPatterns._
 import ExpPatterns._
-import Rewriting.SubstituteImplementations
+import Compiling.SubstituteImplementations
 import opencl.generator.OpenCLAST.Block
 
 abstract class AbstractMapI(out: Phrase[AccType],

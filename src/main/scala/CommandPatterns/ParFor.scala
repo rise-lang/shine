@@ -3,8 +3,8 @@ package CommandPatterns
 import Core._
 import Core.OperationalSemantics._
 import Core.PhraseType._
-import Rewriting.SubstituteImplementations
-import apart.arithmetic.NamedVar
+import Compiling.SubstituteImplementations
+import apart.arithmetic.{RangeAdd, NamedVar}
 import opencl.generator.OpenCLAST
 import opencl.generator.OpenCLAST._
 import DSL._
@@ -58,23 +58,36 @@ abstract class AbstractParFor(val n: Phrase[ExpType],
 
   def makeParFor: (Phrase[ExpType], Phrase[AccType], Phrase[ExpType -> (AccType -> CommandType)]) => AbstractParFor
 
-  def name: NamedVar
+  protected val name: String = newName()
+
+  protected lazy val upperBound = ToOpenCL.exp(n, ocl) match {
+    case ArithExpression(ae) => ae
+    case _ => throw new Exception("This should not happen")
+  }
+
   def init: OpenCLAST.Declaration
   def cond: OpenCLAST.ExpressionStatement
   def increment: OpenCLAST.Expression
+  def synchronize: OpenCLAST.OclAstNode with BlockMember
 
   override def toOpenCL(block: Block, ocl: ToOpenCL): Block = {
     import opencl.generator.OpenCLAST._
 
     this.ocl = ocl
 
-    val i = identifier(name.name, ExpType(int))
+    ocl.env(name) = RangeAdd(0, upperBound, 1)
+
+    val i = identifier(name, ExpType(int))
     val body_ = Lift.liftFunction( Lift.liftFunction(body)(i) )
     val out_at_i = out `@` i
     TypeChecker(out_at_i)
 
     (block: Block) +=
       ForLoop(init, cond, increment, ToOpenCL.cmd(body_(out_at_i), Block(), ocl))
+
+    ocl.env.remove(name)
+
+    (block: Block) += synchronize
   }
 
 }
@@ -86,21 +99,20 @@ case class ParFor(override val n: Phrase[ExpType],
 
   override def makeParFor = ParFor
 
-  override val name: NamedVar =
-    NamedVar(newName())
-
   override lazy val init: Declaration =
-    VarDecl(name.name, opencl.ir.Int,
+    VarDecl(name, opencl.ir.Int,
       init = ArithExpression(0),
       addressSpace = opencl.ir.PrivateMemory)
 
   override lazy val cond: ExpressionStatement =
-    CondExpression(VarRef(name.name),
-      ToOpenCL.exp(n, ocl),
+    CondExpression(VarRef(name),
+      ArithExpression(upperBound),
       CondExpression.Operator.<)
 
-  override lazy val increment: Expression =
-    AssignmentExpression(ArithExpression(name),
-      ArithExpression(name + 1))
+  override lazy val increment: Expression = {
+    val v = NamedVar(name)
+    AssignmentExpression(ArithExpression(v), ArithExpression(v + 1))
+  }
 
+  override def synchronize: OclAstNode with BlockMember = Comment("")
 }

@@ -4,7 +4,7 @@ import Core.OperationalSemantics._
 import Core.PhraseType._
 import Core.VisitAndRebuild.fun
 import Core._
-import Rewriting.RewriteToImperative
+import Compiling.RewriteToImperative
 import apart.arithmetic.ArithExpr
 import opencl.generator.OpenCLAST.Expression
 

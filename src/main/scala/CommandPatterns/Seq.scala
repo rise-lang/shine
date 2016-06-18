@@ -2,7 +2,7 @@ package CommandPatterns
 
 import Core._
 import Core.OperationalSemantics._
-import Rewriting.SubstituteImplementations
+import Compiling.SubstituteImplementations
 import opencl.generator.OpenCLAST.Block
 
 case class Seq(c1: Phrase[CommandType], c2: Phrase[CommandType]) extends CommandPattern {

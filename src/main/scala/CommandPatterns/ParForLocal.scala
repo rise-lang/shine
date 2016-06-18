@@ -1,6 +1,5 @@
 package CommandPatterns
 
-import Core.OperationalSemantics.newName
 import Core.PhraseType._
 import Core._
 import apart.arithmetic._
@@ -15,16 +14,13 @@ case class ParForLocal(override val n: Phrase[ExpType],
 
   override def makeParFor = ParForLocal
 
-  override val name: NamedVar =
-    NamedVar(newName())
-
   override lazy val init: Declaration =
-    VarDecl(name.name, opencl.ir.Int,
+    VarDecl(name, opencl.ir.Int,
       init = ArithExpression(get_local_id(0, RangeAdd(0, ocl.localSize, 1))),
       addressSpace = opencl.ir.PrivateMemory)
 
   override lazy val cond: ExpressionStatement =
-    CondExpression(VarRef(name.name),
+    CondExpression(VarRef(name),
       ToOpenCL.exp(n, ocl),
       CondExpression.Operator.<)
 
@@ -32,8 +28,12 @@ case class ParForLocal(override val n: Phrase[ExpType],
     if (ocl.localSize == ?) ContinuousRange(1, PosInf)
     else RangeAdd(ocl.localSize, ocl.localSize + 1, 1)
 
-  override lazy val increment: Expression =
-    AssignmentExpression(ArithExpression(name),
-      ArithExpression(name + get_local_size(0, local_size_range)))
+  override lazy val increment: Expression = {
+    val v = NamedVar(name)
+    AssignmentExpression(ArithExpression(v),
+      ArithExpression(v + get_local_size(0, local_size_range)))
+  }
+
+  override def synchronize: OclAstNode with BlockMember = OpenCLCode("barrier(CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE);")
 
 }

@@ -4,7 +4,7 @@ import Core._
 import Core.PhraseType._
 import Core.OperationalSemantics._
 import DSL._
-import Rewriting.SubstituteImplementations
+import Compiling.SubstituteImplementations
 import opencl.generator.OpenCLAST.Block
 
 case class ReduceIExp(out: Phrase[ExpType -> CommandType],

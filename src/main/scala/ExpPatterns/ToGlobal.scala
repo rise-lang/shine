@@ -3,7 +3,7 @@ package ExpPatterns
 import Core.OperationalSemantics.{Data, Store}
 import Core.PhraseType.->
 import Core._
-import Rewriting.RewriteToImperative
+import Compiling.RewriteToImperative
 import DSL._
 import apart.arithmetic.ArithExpr
 import opencl.generator.OpenCLAST.Expression

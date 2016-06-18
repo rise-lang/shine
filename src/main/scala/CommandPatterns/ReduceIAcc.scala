@@ -5,7 +5,7 @@ import Core.PhraseType._
 import Core.OperationalSemantics._
 import ExpPatterns.Idx
 import DSL._
-import Rewriting.SubstituteImplementations
+import Compiling.SubstituteImplementations
 import opencl.generator.OpenCLAST.Block
 
 case class ReduceIAcc(out: Phrase[AccType],

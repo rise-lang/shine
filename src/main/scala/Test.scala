@@ -1,7 +1,7 @@
 
 import Core._
 import DSL._
-import Rewriting.{RewriteToImperative, SubstituteImplementations}
+import Compiling.{RewriteToImperative, SubstituteImplementations}
 import Core.PhraseType.->
 import ExpPatterns._
 import apart.arithmetic._

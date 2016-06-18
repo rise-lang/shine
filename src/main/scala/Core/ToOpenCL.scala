@@ -2,7 +2,7 @@ package Core
 
 import Core.OperationalSemantics._
 import Core.PhraseType.->
-import Rewriting.{RewriteToImperative, SubstituteImplementations}
+import Compiling.{RewriteToImperative, SubstituteImplementations}
 import apart.arithmetic.{ArithExpr, Cst, NamedVar, Var}
 import ir.{Type, UndefType}
 import opencl.generator.OpenCLAST._
@@ -10,7 +10,11 @@ import DSL._
 
 import scala.collection.immutable.List
 
+import scala.collection._
+
 class ToOpenCL(val localSize: ArithExpr, val globalSize: ArithExpr) {
+
+  val env = mutable.Map[String, apart.arithmetic.Range]()
 
   def apply(p: Phrase[ExpType -> ExpType],
             arg: IdentPhrase[ExpType]): Function =

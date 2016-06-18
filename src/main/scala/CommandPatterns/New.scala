@@ -4,7 +4,7 @@ import Core._
 import Core.OperationalSemantics._
 import Core.PhraseType._
 import DSL.identifier
-import Rewriting.SubstituteImplementations
+import Compiling.SubstituteImplementations
 import apart.arithmetic.{NamedVar, Var}
 import opencl.generator.OpenCLAST.{Block, Comment, VarDecl}
 

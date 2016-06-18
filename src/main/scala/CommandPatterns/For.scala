@@ -3,8 +3,8 @@ package CommandPatterns
 import Core._
 import Core.OperationalSemantics._
 import Core.PhraseType._
-import Rewriting.SubstituteImplementations
-import apart.arithmetic.NamedVar
+import Compiling.SubstituteImplementations
+import apart.arithmetic.{RangeAdd, NamedVar}
 import opencl.generator.OpenCLAST.Block
 import DSL._
 
@@ -42,26 +42,35 @@ case class For(n: Phrase[ExpType],
   override def toOpenCL(block: Block, ocl: ToOpenCL): Block = {
     import opencl.generator.OpenCLAST._
 
-    val name = NamedVar(newName())
+    val upperBound = ToOpenCL.exp(n, ocl) match {
+      case ArithExpression(ae) => ae
+      case _ => throw new Exception("This should not happen")
+    }
+
+    val name = newName()
+
+    ocl.env(name) = RangeAdd(0, upperBound, 1)
+
     val init = VarDecl(name, opencl.ir.Int,
       init = ArithExpression(0),
       addressSpace = opencl.ir.PrivateMemory)
-
-    val upperBound = ToOpenCL.exp(n, ocl) match {
-      case ArithExpression(ae) => ae
-    }
 
     val cond = CondExpression(VarRef(name),
       ArithExpression(upperBound),
       CondExpression.Operator.<)
 
-    val increment = AssignmentExpression(ArithExpression(name), ArithExpression(name + 1))
+    val v = NamedVar(name)
+    val increment = AssignmentExpression(ArithExpression(v), ArithExpression(v + 1))
 
     val bodyE = Lift.liftFunction(body)
-    val i = identifier(name.name, ExpType(int))
+    val i = identifier(name, ExpType(int))
 
     val body_ = ToOpenCL.cmd(bodyE(i), Block(), ocl)
 
     (block: Block) += ForLoop(init, cond, increment, body_)
+
+    ocl.env.remove(name)
+
+    block
   }
 }

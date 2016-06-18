@@ -1,4 +1,4 @@
-package Rewriting
+package Compiling
 
 import Core._
 import CommandPatterns._

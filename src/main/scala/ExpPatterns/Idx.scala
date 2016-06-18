@@ -3,7 +3,7 @@ package ExpPatterns
 import Core._
 import Core.OperationalSemantics._
 import Core.PhraseType.->
-import apart.arithmetic.{ArithExpr, NamedVar}
+import apart.arithmetic.{Range, ArithExpr, NamedVar}
 import opencl.generator.OpenCLAST.{Expression, VarRef}
 
 case class Idx(array: Phrase[ExpType], index: Phrase[ExpType]) extends ExpPattern {
@@ -38,7 +38,7 @@ case class Idx(array: Phrase[ExpType], index: Phrase[ExpType]) extends ExpPatter
 
   override def toOpenCL(ocl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = {
     val idx: ArithExpr = ToOpenCL.exp(index, ocl) match {
-      case VarRef(name, _, _) => NamedVar(name)
+      case VarRef(name, _, _) => NamedVar(name, ocl.env(name))
       case _ => throw new Exception("This should not happen")
     }
     val length = DataType.getLengths(dt, tupleAccess, List()).foldLeft(1:ArithExpr)((x,y) => x * y)

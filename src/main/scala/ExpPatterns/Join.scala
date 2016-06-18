@@ -4,7 +4,7 @@ import AccPatterns.JoinAcc
 import Core.OperationalSemantics._
 import Core.PhraseType.->
 import Core._
-import Rewriting.RewriteToImperative
+import Compiling.RewriteToImperative
 import DSL._
 import apart.arithmetic.ArithExpr
 import ir.Type

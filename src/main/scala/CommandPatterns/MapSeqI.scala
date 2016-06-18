@@ -3,7 +3,7 @@ package CommandPatterns
 import Core.PhraseType._
 import Core._
 import DSL._
-import Rewriting.SubstituteImplementations
+import Compiling.SubstituteImplementations
 
 case class MapSeqI(out: Phrase[AccType],
                    f: Phrase[AccType -> (ExpType -> CommandType)],

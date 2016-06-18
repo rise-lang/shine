@@ -4,7 +4,7 @@ import AccPatterns.SplitAcc
 import Core._
 import Core.OperationalSemantics._
 import Core.PhraseType.->
-import Rewriting.RewriteToImperative
+import Compiling.RewriteToImperative
 import DSL._
 import apart.arithmetic.ArithExpr
 import opencl.generator.OpenCLAST.Expression

@@ -19,25 +19,26 @@ case class ParForWorkgroup(override val n: Phrase[ExpType],
 
   override def makeParFor = ParForWorkgroup
 
-  override val name: NamedVar =
-    NamedVar(newName())
-
   override lazy val init: Declaration =
-    VarDecl(name.name, opencl.ir.Int,
+    VarDecl(name, opencl.ir.Int,
       init = ArithExpression(get_group_id(0, RangeAdd(0, num_groups, 1))),
       addressSpace = opencl.ir.PrivateMemory)
 
   override lazy val cond: ExpressionStatement =
-    CondExpression(VarRef(name.name),
-      ToOpenCL.exp(n, ocl),
+    CondExpression(VarRef(name),
+      ArithExpression(upperBound),
       CondExpression.Operator.<)
 
   lazy val num_groups_range =
     if (num_groups == ?)  ContinuousRange(1, PosInf)
     else RangeAdd(num_groups, num_groups + 1, 1)
 
-  override lazy val increment: Expression =
-    AssignmentExpression(ArithExpression(name),
-      ArithExpression(name + get_num_groups(0, num_groups_range)))
+  override lazy val increment: Expression = {
+    val v = NamedVar(name)
+    AssignmentExpression(ArithExpression(v),
+      ArithExpression(v + get_num_groups(0, num_groups_range)))
+  }
+
+  override def synchronize: OclAstNode with BlockMember = Comment("par for workgroup sync")
 
 }
