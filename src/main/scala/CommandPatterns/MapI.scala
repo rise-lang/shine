@@ -7,12 +7,11 @@ import DSL._
 import AccPatterns._
 import ExpPatterns._
 import Compiling.SubstituteImplementations
-import opencl.generator.OpenCLAST.Block
 
 abstract class AbstractMapI(out: Phrase[AccType],
                             f: Phrase[AccType -> (ExpType -> CommandType)],
                             in: Phrase[ExpType])
-  extends CommandPattern {
+  extends IntermediateCommandPattern {
 
   override def typeCheck(): CommandType = {
     import TypeChecker._
@@ -45,8 +44,6 @@ abstract class AbstractMapI(out: Phrase[AccType],
       OperationalSemantics.eval(sOld, comm)
     })
   }
-
-  override def toOpenCL(b: Block, ocl: ToOpenCL): Block = ???
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[CommandType] = {
     makeMapI(VisitAndRebuild(out, fun), VisitAndRebuild(f, fun), VisitAndRebuild(in, fun))

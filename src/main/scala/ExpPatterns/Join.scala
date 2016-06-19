@@ -10,7 +10,7 @@ import apart.arithmetic.ArithExpr
 import ir.Type
 import opencl.generator.OpenCLAST.Expression
 
-case class Join(array: Phrase[ExpType]) extends ExpPattern {
+case class Join(array: Phrase[ExpType]) extends ExpPattern with ViewExpPattern {
 
   private var n: ArithExpr = null
 
@@ -40,8 +40,6 @@ case class Join(array: Phrase[ExpType]) extends ExpPattern {
       case _ => throw new Exception("This should not happen")
     }
   }
-
-  override def toOpenCL(ocl: ToOpenCL): Expression = ???
 
   override def toOpenCL(ocl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = {
     val idx = arrayAccess.head

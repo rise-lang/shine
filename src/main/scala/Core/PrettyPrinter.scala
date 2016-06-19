@@ -29,7 +29,7 @@ object PrettyPrinter {
 
       case p: AccPattern => p.prettyPrint
 
-      case p: CommandPattern => p.prettyPrint
+      case p: IntermediateCommandPattern => p.prettyPrint
     }
   }
 

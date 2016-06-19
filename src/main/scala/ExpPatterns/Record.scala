@@ -6,7 +6,7 @@ import Core.PhraseType.->
 import apart.arithmetic.ArithExpr
 import opencl.generator.OpenCLAST.Expression
 
-case class Record(fst: Phrase[ExpType], snd: Phrase[ExpType]) extends ExpPattern {
+case class Record(fst: Phrase[ExpType], snd: Phrase[ExpType]) extends ExpPattern with GeneratableExpPattern {
 
   override def typeCheck(): ExpType = {
     ExpType(RecordType( TypeChecker(fst).dataType, TypeChecker(snd).dataType ))
@@ -23,8 +23,6 @@ case class Record(fst: Phrase[ExpType], snd: Phrase[ExpType]) extends ExpPattern
   }
 
   override def toOpenCL(ocl: ToOpenCL): Expression = ???
-
-  override def toOpenCL(ocl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = ???
 
   override def prettyPrint: String = s"(${PrettyPrinter(fst)}, ${PrettyPrinter(snd)})"
 

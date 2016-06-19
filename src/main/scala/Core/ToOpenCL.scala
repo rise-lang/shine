@@ -3,7 +3,7 @@ package Core
 import Core.OperationalSemantics._
 import Core.PhraseType.->
 import Compiling.{RewriteToImperative, SubstituteImplementations}
-import apart.arithmetic.{ArithExpr, Cst, NamedVar, Var}
+import apart.arithmetic.{ArithExpr, Cst, Var}
 import ir.{Type, UndefType}
 import opencl.generator.OpenCLAST._
 import DSL._
@@ -132,24 +132,29 @@ class ToOpenCL(val localSize: ArithExpr, val globalSize: ArithExpr) {
 
 object ToOpenCL {
 
-  def cmd(p: Phrase[CommandType], block: Block, opencl: ToOpenCL): Block = {
+  def cmd(p: Phrase[CommandType], block: Block, ocl: ToOpenCL): Block = {
     p match {
       case IfThenElsePhrase(condP, thenP, elseP) =>
-        val trueBlock = cmd(thenP, Block(), opencl)
-        val falseBlock = cmd(elseP, Block(), opencl)
-        (block: Block) += IfThenElse(exp(condP, opencl), trueBlock, falseBlock)
+        val trueBlock = cmd(thenP, Block(), ocl)
+        val falseBlock = cmd(elseP, Block(), ocl)
+        (block: Block) += IfThenElse(exp(condP, ocl), trueBlock, falseBlock)
 
-      case c: CommandPattern => c.toOpenCL(block, opencl)
+      case c: IntermediateCommandPattern => {
+        c match {
+          case fc: CommandPattern => fc.toOpenCL(block, ocl)
+          case _ => throw new Exception("This should not happen")
+        }
+      }
 
       case ApplyPhrase(_, _) | IdentPhrase(_) | Proj1Phrase(_) | Proj2Phrase(_) =>
         throw new Exception("This should not happen")
     }
   }
 
-  def exp(p: Phrase[ExpType], opencl: ToOpenCL): Expression = {
+  def exp(p: Phrase[ExpType], ocl: ToOpenCL): Expression = {
     p match {
       case BinOpPhrase(op, lhs, rhs) =>
-        BinaryExpression(op.toString, exp(lhs, opencl), exp(rhs, opencl))
+        BinaryExpression(op.toString, exp(lhs, ocl), exp(rhs, ocl))
       case IdentPhrase(name) => VarRef(name)
       case LiteralPhrase(d) =>
         d match {
@@ -161,30 +166,36 @@ object ToOpenCL {
           case _: RecordData => ???
           case _: ArrayData => ???
         }
-      case p: Proj1Phrase[ExpType, _] => exp(Lift.liftPair(p.pair)._1, opencl)
-      case p: Proj2Phrase[_, ExpType] => exp(Lift.liftPair(p.pair)._2, opencl)
+      case p: Proj1Phrase[ExpType, _] => exp(Lift.liftPair(p.pair)._1, ocl)
+      case p: Proj2Phrase[_, ExpType] => exp(Lift.liftPair(p.pair)._2, ocl)
       case UnaryOpPhrase(op, x) =>
-        UnaryExpression(op.toString, exp(x, opencl))
-      case e: ExpPattern => e.toOpenCL(opencl)
+        UnaryExpression(op.toString, exp(x, ocl))
+      case e: ExpPattern => e match {
+        case g: GeneratableExpPattern => g.toOpenCL(ocl)
+        case _ => throw new Exception("This should not happen")
+      }
 
       case ApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) =>
         throw new Exception("This should not happen")
     }
   }
 
-  def acc(p: Phrase[AccType], opencl: ToOpenCL): VarRef = {
+  def acc(p: Phrase[AccType], ocl: ToOpenCL): VarRef = {
     p match {
       case IdentPhrase(name) => VarRef(name)
-      case p: Proj1Phrase[AccType, _] => acc(Lift.liftPair(p.pair)._1, opencl)
-      case p: Proj2Phrase[_, AccType] => acc(Lift.liftPair(p.pair)._2, opencl)
-      case a: AccPattern => a.toOpenCL(opencl)
+      case p: Proj1Phrase[AccType, _] => acc(Lift.liftPair(p.pair)._1, ocl)
+      case p: Proj2Phrase[_, AccType] => acc(Lift.liftPair(p.pair)._2, ocl)
+      case a: AccPattern => a.toOpenCL(ocl)
 
       case ApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) =>
         throw new Exception("This should not happen")
     }
   }
 
-  def exp(p: Phrase[ExpType], opencl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = {
+  def exp(p: Phrase[ExpType],
+          ocl: ToOpenCL,
+          arrayAccess: List[(ArithExpr, ArithExpr)],
+          tupleAccess: List[ArithExpr]): Expression = {
     p match {
       case IdentPhrase(name) =>
         val i = arrayAccess.map(x => x._1 * x._2).foldLeft(0: ArithExpr)((x, y) => x + y)
@@ -207,17 +218,24 @@ object ToOpenCL {
 
         VarRef(name, suffix, ArithExpression(index))
 
-      case p: Proj1Phrase[ExpType, _] => exp(Lift.liftPair(p.pair)._1, opencl, arrayAccess, tupleAccess)
-      case p: Proj2Phrase[_, ExpType] => exp(Lift.liftPair(p.pair)._2, opencl, arrayAccess, tupleAccess)
+      case p: Proj1Phrase[ExpType, _] => exp(Lift.liftPair(p.pair)._1, ocl, arrayAccess, tupleAccess)
+      case p: Proj2Phrase[_, ExpType] => exp(Lift.liftPair(p.pair)._2, ocl, arrayAccess, tupleAccess)
 
-      case e: ExpPattern => e.toOpenCL(opencl, arrayAccess, tupleAccess)
+      case e: ExpPattern => e match {
+        case v: ViewExpPattern => v.toOpenCL(ocl, arrayAccess, tupleAccess)
+        case _ => throw new Exception("This should not happen")
+      }
 
-      case ApplyPhrase(_, _) | BinOpPhrase(_, _, _) | UnaryOpPhrase(_, _) | IfThenElsePhrase(_, _, _) | LiteralPhrase(_) =>
+      case ApplyPhrase(_, _) | BinOpPhrase(_, _, _) | UnaryOpPhrase(_, _) |
+           IfThenElsePhrase(_, _, _) | LiteralPhrase(_) =>
         throw new Exception("This should not happen")
     }
   }
 
-  def acc(p: Phrase[AccType], opencl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): VarRef = {
+  def acc(p: Phrase[AccType],
+          ocl: ToOpenCL,
+          arrayAccess: List[(ArithExpr, ArithExpr)],
+          tupleAccess: List[ArithExpr]): VarRef = {
     p match {
       case IdentPhrase(name) =>
         val i = arrayAccess.map(x => x._1 * x._2).foldLeft(0: ArithExpr)((x, y) => x + y)
@@ -240,10 +258,10 @@ object ToOpenCL {
 
         VarRef(name, suffix, ArithExpression(index))
 
-      case a: AccPattern => a.toOpenCL(opencl, arrayAccess, tupleAccess)
+      case a: AccPattern => a.toOpenCL(ocl, arrayAccess, tupleAccess)
 
-      case p: Proj1Phrase[AccType, _] => acc(Lift.liftPair(p.pair)._1, opencl, arrayAccess, tupleAccess)
-      case p: Proj2Phrase[_, AccType] => acc(Lift.liftPair(p.pair)._2, opencl, arrayAccess, tupleAccess)
+      case p: Proj1Phrase[AccType, _] => acc(Lift.liftPair(p.pair)._1, ocl, arrayAccess, tupleAccess)
+      case p: Proj2Phrase[_, AccType] => acc(Lift.liftPair(p.pair)._2, ocl, arrayAccess, tupleAccess)
 
       case ApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) =>
         throw new Exception("This should not happen")

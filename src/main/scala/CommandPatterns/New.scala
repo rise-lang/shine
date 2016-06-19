@@ -8,7 +8,9 @@ import Compiling.SubstituteImplementations
 import apart.arithmetic.{NamedVar, Var}
 import opencl.generator.OpenCLAST.{Block, Comment, VarDecl}
 
-case class New(dt: DataType, addressSpace: AddressSpace, f: Phrase[(ExpType x AccType) -> CommandType]) extends CommandPattern {
+case class New(dt: DataType, addressSpace: AddressSpace,
+               f: Phrase[(ExpType x AccType) -> CommandType])
+  extends CommandPattern {
 
   override def typeCheck(): CommandType = {
     import TypeChecker._
@@ -35,7 +37,8 @@ case class New(dt: DataType, addressSpace: AddressSpace, f: Phrase[(ExpType x Ac
     New(dt, addressSpace, VisitAndRebuild(f, fun))
   }
 
-  override def substituteImpl: Phrase[CommandType] = New(dt, addressSpace, SubstituteImplementations.applyFun(f))
+  override def substituteImpl: Phrase[CommandType] =
+    New(dt, addressSpace, SubstituteImplementations.applyFun(f))
 
   override def toOpenCL(block: Block, ocl: ToOpenCL): Block = {
     val v = NamedVar(newName())

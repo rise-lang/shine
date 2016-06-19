@@ -9,7 +9,7 @@ import Compiling.RewriteToImperative
 import apart.arithmetic.{ArithExpr, Cst}
 import opencl.generator.OpenCLAST.Expression
 
-case class Zip(lhs: Phrase[ExpType], rhs: Phrase[ExpType]) extends ExpPattern {
+case class Zip(lhs: Phrase[ExpType], rhs: Phrase[ExpType]) extends ExpPattern with ViewExpPattern {
 
   override def typeCheck(): ExpType = {
     import TypeChecker._
@@ -34,8 +34,6 @@ case class Zip(lhs: Phrase[ExpType], rhs: Phrase[ExpType]) extends ExpPattern {
       case _ => throw new Exception("This should not happen")
     }
   }
-
-  override def toOpenCL(ocl: ToOpenCL): Expression = ???
 
   override def toOpenCL(ocl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = {
     val i = tupleAccess.head

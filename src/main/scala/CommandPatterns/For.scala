@@ -44,7 +44,7 @@ case class For(n: Phrase[ExpType],
 
     val upperBound = ToOpenCL.exp(n, ocl) match {
       case ArithExpression(ae) => ae
-      case _ => throw new Exception("This should not happen")
+      case _ => throw new Exception
     }
 
     val name = newName()

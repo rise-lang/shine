@@ -223,7 +223,7 @@ object OperationalSemantics {
         p match {
           case IdentPhrase(_) => throw new Exception("This should never happen")
 
-          case p: CommandPattern => p.eval(s)
+          case p: IntermediateCommandPattern => p.eval(s)
 
           case ApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) | Proj1Phrase(_) | Proj2Phrase(_) =>
             throw new Exception("This should never happen")

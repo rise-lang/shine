@@ -8,7 +8,7 @@ import Compiling.RewriteToImperative
 import apart.arithmetic.ArithExpr
 import opencl.generator.OpenCLAST.{Expression, Literal}
 
-case class Snd(record: Phrase[ExpType]) extends ExpPattern {
+case class Snd(record: Phrase[ExpType]) extends ExpPattern with ViewExpPattern with GeneratableExpPattern {
 
   override def typeCheck(): ExpType = {
     TypeChecker(record) match {

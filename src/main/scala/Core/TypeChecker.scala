@@ -157,7 +157,7 @@ object TypeChecker {
 
       case p: AccPattern => p.typeCheck()
 
-      case p: CommandPattern => p.typeCheck()
+      case p: IntermediateCommandPattern => p.typeCheck()
 
     }).asInstanceOf[T]
     p.t = phraseType

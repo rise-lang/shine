@@ -65,10 +65,6 @@ abstract class ExpPattern extends Phrase[ExpType] {
 
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Data
 
-  def toOpenCL(opencl: ToOpenCL): Expression
-
-  def toOpenCL(opencl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression
-
   def prettyPrint: String
 
   def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType]
@@ -76,6 +72,14 @@ abstract class ExpPattern extends Phrase[ExpType] {
   def rewriteToImperativeExp(C: Phrase[ExpType -> CommandType]): Phrase[CommandType]
 
   def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[ExpType]
+}
+
+trait GeneratableExpPattern {
+  def toOpenCL(opencl: ToOpenCL): Expression
+}
+
+trait ViewExpPattern {
+  def toOpenCL(opencl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression
 }
 
 abstract class AccPattern extends Phrase[AccType] {
@@ -92,16 +96,18 @@ abstract class AccPattern extends Phrase[AccType] {
   def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[AccType]
 }
 
-abstract class CommandPattern extends  Phrase[CommandType] {
+abstract class IntermediateCommandPattern extends  Phrase[CommandType] {
   def typeCheck(): CommandType
 
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Store
-
-  def toOpenCL(block: Block, opencl: ToOpenCL): Block
 
   def prettyPrint: String
 
   def substituteImpl: Phrase[CommandType]
 
   def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[CommandType]
+}
+
+abstract class CommandPattern extends IntermediateCommandPattern {
+  def toOpenCL(block: Block, ocl: ToOpenCL): Block
 }

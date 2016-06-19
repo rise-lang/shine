@@ -6,7 +6,7 @@ import Core.PhraseType.->
 import apart.arithmetic.{Range, ArithExpr, NamedVar}
 import opencl.generator.OpenCLAST.{Expression, VarRef}
 
-case class Idx(array: Phrase[ExpType], index: Phrase[ExpType]) extends ExpPattern {
+case class Idx(array: Phrase[ExpType], index: Phrase[ExpType]) extends ExpPattern with ViewExpPattern with GeneratableExpPattern {
 
   private var dt: DataType = null
 

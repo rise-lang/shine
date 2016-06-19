@@ -8,7 +8,7 @@ object SubstituteImplementations {
 
   def apply(p: Phrase[CommandType]): Phrase[CommandType] = {
     p match {
-      case p : CommandPattern               => p.substituteImpl
+      case p : IntermediateCommandPattern               => p.substituteImpl
       case ApplyPhrase(fun, arg)            => ApplyPhrase(applyFun(fun), arg)
       case _: IdentPhrase[CommandType]      => p
       case _: IfThenElsePhrase[CommandType] => p

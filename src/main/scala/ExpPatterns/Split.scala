@@ -9,7 +9,7 @@ import DSL._
 import apart.arithmetic.ArithExpr
 import opencl.generator.OpenCLAST.Expression
 
-case class Split(n: ArithExpr, array: Phrase[ExpType]) extends ExpPattern {
+case class Split(n: ArithExpr, array: Phrase[ExpType]) extends ExpPattern with ViewExpPattern {
 
   override def typeCheck(): ExpType = {
     import TypeChecker._
@@ -44,8 +44,6 @@ case class Split(n: ArithExpr, array: Phrase[ExpType]) extends ExpPattern {
       case _ => throw new Exception("This should not happen")
     }
   }
-
-  override def toOpenCL(ocl: ToOpenCL): Expression = ???
 
   override def toOpenCL(ocl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = {
 

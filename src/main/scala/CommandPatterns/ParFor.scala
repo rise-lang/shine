@@ -114,5 +114,5 @@ case class ParFor(override val n: Phrase[ExpType],
     AssignmentExpression(ArithExpression(v), ArithExpression(v + 1))
   }
 
-  override def synchronize: OclAstNode with BlockMember = Comment("")
+  override def synchronize: OclAstNode with BlockMember = OpenCLAST.Skip()
 }

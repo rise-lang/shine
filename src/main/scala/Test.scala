@@ -1022,4 +1022,26 @@ object Test extends App {
     println("-----")
   }
 
+
+  {
+    println("== toLocal ==")
+    val n: ArithExpr = SizeVar("N")
+    val xsVectorT: ExpType = ExpType(ArrayType(n, int))
+
+    val p =
+      λ(xsVectorT)(xs =>
+        toLocal(λ( x => x), xs)
+      )
+
+    println("=====")
+    println(PrettyPrinter(p))
+
+    println("-----")
+
+    val ast = (new ToOpenCL(128, ?))(p, identifier("xs", xsVectorT))
+    println(OpenCLPrinter()(ast))
+
+    println("-----")
+  }
+
 }

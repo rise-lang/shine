@@ -11,7 +11,7 @@ import opencl.generator.OpenCLAST.Block
 case class ReduceIAcc(out: Phrase[AccType],
                       f: Phrase[AccType -> (ExpType -> (ExpType -> CommandType))],
                       init: Phrase[ExpType],
-                      in: Phrase[ExpType]) extends CommandPattern {
+                      in: Phrase[ExpType]) extends IntermediateCommandPattern {
 
   override def typeCheck(): CommandType = {
     import TypeChecker._
@@ -47,8 +47,6 @@ case class ReduceIAcc(out: Phrase[AccType],
       OperationalSemantics.eval(sOld, comm)
     } )
   }
-
-  override def toOpenCL(b: Block, ocl: ToOpenCL): Block = ???
 
   override def prettyPrint: String = s"reduceIAcc ${PrettyPrinter(out)} ${PrettyPrinter(f)} ${PrettyPrinter(init)} ${PrettyPrinter(in)}"
 

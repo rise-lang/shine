@@ -15,7 +15,7 @@ case class Assign(lhs: Phrase[AccType], rhs: Phrase[ExpType]) extends CommandPat
         } else {
           error(d1.toString + " and " + d2.toString, expected = "them to match")
         }
-      case t => error(t.toString, "(" + AccType.toString() + "(A)," + ExpType.toString() + "(A))")
+      case x => error(x.toString, "(" + AccType.toString() + "(A)," + ExpType.toString() + "(A))")
     }
   }
 
@@ -57,8 +57,8 @@ case class Assign(lhs: Phrase[AccType], rhs: Phrase[ExpType]) extends CommandPat
 
   override def substituteImpl: Phrase[CommandType] = this
 
-  override def toOpenCL(block: Block, opencl: ToOpenCL): Block =
-    (block: Block) += AssignmentExpression(ToOpenCL.acc(lhs, opencl), ToOpenCL.exp(rhs, opencl))
+  override def toOpenCL(block: Block, ocl: ToOpenCL): Block =
+    (block: Block) += AssignmentExpression(ToOpenCL.acc(lhs, ocl), ToOpenCL.exp(rhs, ocl))
 
   override def prettyPrint: String = s"${PrettyPrinter(lhs)} := ${PrettyPrinter(rhs)}"
 

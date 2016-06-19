@@ -10,7 +10,7 @@ import opencl.generator.OpenCLAST.Block
 case class ReduceIExp(out: Phrase[ExpType -> CommandType],
                       f: Phrase[AccType -> (ExpType -> (ExpType -> CommandType))],
                       init: Phrase[ExpType],
-                      in: Phrase[ExpType]) extends CommandPattern {
+                      in: Phrase[ExpType]) extends IntermediateCommandPattern {
 
   override def typeCheck(): CommandType = {
     import TypeChecker._
@@ -51,8 +51,6 @@ case class ReduceIExp(out: Phrase[ExpType -> CommandType],
         outE(π1(accum))
     }))
   }
-
-  override def toOpenCL(b: Block, ocl: ToOpenCL): Block = ???
 
   override def prettyPrint: String = s"reduceIExp ${PrettyPrinter(out)} ${PrettyPrinter(f)} ${PrettyPrinter(init)} ${PrettyPrinter(in)}"
 

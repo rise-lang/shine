@@ -10,7 +10,7 @@ import opencl.generator.OpenCLAST.Expression
 
 import DSL._
 
-case class Gather(idxF: (ArithExpr, DataType) => ArithExpr, array: Phrase[ExpType]) extends ExpPattern{
+case class Gather(idxF: (ArithExpr, DataType) => ArithExpr, array: Phrase[ExpType]) extends ExpPattern with ViewExpPattern {
   override def typeCheck(): ExpType = TypeChecker(array)
 
   override def eval(s: Store): Data = {
@@ -29,7 +29,11 @@ case class Gather(idxF: (ArithExpr, DataType) => ArithExpr, array: Phrase[ExpTyp
   override def visitAndRebuild(f: fun): Phrase[ExpType] =
     Gather(idxF, VisitAndRebuild(array, f))
 
-  override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = ???
+  override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
+    RewriteToImperative.exp(this, λ(array.t) { x =>
+      RewriteToImperative.acc(x, A)
+    })
+  }
 
   override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
     RewriteToImperative.exp(array, λ(array.t) { x =>
@@ -47,8 +51,6 @@ case class Gather(idxF: (ArithExpr, DataType) => ArithExpr, array: Phrase[ExpTyp
     ToOpenCL.exp(array, ocl, (newIdx, idx._2) :: stack, tupleAccess)
 
   }
-
-  override def toOpenCL(ocl: ToOpenCL): Expression = ???
 
   override def prettyPrint: String = s"(gather idxF ${PrettyPrinter(array)})"
 }

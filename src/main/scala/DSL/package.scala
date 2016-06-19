@@ -64,7 +64,7 @@ package object DSL {
     def `;`(c2: Phrase[CommandType]): Phrase[CommandType] = Seq(c1, c2)
   }
 
-  implicit class SequentialPatternComposition(c1: CommandPattern) {
+  implicit class SequentialPatternComposition(c1: IntermediateCommandPattern) {
     def `;`(c2: Phrase[CommandType]): Phrase[CommandType] = Seq(c1, c2)
   }
 

@@ -34,6 +34,7 @@ case class ParForLocal(override val n: Phrase[ExpType],
       ArithExpression(v + get_local_size(0, local_size_range)))
   }
 
-  override def synchronize: OclAstNode with BlockMember = OpenCLCode("barrier(CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE);")
+  override def synchronize: OclAstNode with BlockMember =
+    OpenCLCode("barrier(CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE);")
 
 }

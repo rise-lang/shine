@@ -5,7 +5,9 @@ import Core.OperationalSemantics._
 import Compiling.SubstituteImplementations
 import opencl.generator.OpenCLAST.Block
 
-case class Seq(c1: Phrase[CommandType], c2: Phrase[CommandType]) extends CommandPattern {
+case class Seq(c1: Phrase[CommandType],
+               c2: Phrase[CommandType])
+  extends CommandPattern {
 
   override def typeCheck(): CommandType = {
     import TypeChecker._
@@ -23,7 +25,8 @@ case class Seq(c1: Phrase[CommandType], c2: Phrase[CommandType]) extends Command
     Seq(VisitAndRebuild(c1, f), VisitAndRebuild(c2, f))
   }
 
-  override def substituteImpl: Phrase[CommandType] = Seq(SubstituteImplementations(c1), SubstituteImplementations(c2))
+  override def substituteImpl: Phrase[CommandType] =
+    Seq(SubstituteImplementations(c1), SubstituteImplementations(c2))
 
   override def toOpenCL(block: Block, ocl: ToOpenCL): Block = {
     ToOpenCL.cmd(c1, block, ocl)
