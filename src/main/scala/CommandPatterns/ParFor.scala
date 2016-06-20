@@ -4,7 +4,7 @@ import Core._
 import Core.OperationalSemantics._
 import Core.PhraseType._
 import Compiling.SubstituteImplementations
-import apart.arithmetic.{RangeAdd, NamedVar}
+import apart.arithmetic.{ArithExpr, Cst, NamedVar, RangeAdd}
 import opencl.generator.OpenCLAST
 import opencl.generator.OpenCLAST._
 import DSL._
@@ -65,9 +65,8 @@ abstract class AbstractParFor(val n: Phrase[ExpType],
     case _ => throw new Exception("This should not happen")
   }
 
-  def init: OpenCLAST.Declaration
-  def cond: OpenCLAST.ExpressionStatement
-  def increment: OpenCLAST.Expression
+  def init: ArithExpr
+  def step: ArithExpr
   def synchronize: OpenCLAST.OclAstNode with BlockMember
 
   override def toOpenCL(block: Block, ocl: ToOpenCL): Block = {
@@ -75,15 +74,58 @@ abstract class AbstractParFor(val n: Phrase[ExpType],
 
     this.ocl = ocl
 
-    ocl.env(name) = RangeAdd(0, upperBound, 1)
+    val range = RangeAdd(init, upperBound, step)
+
+    ocl.env(name) = range
 
     val i = identifier(name, ExpType(int))
     val body_ = Lift.liftFunction( Lift.liftFunction(body)(i) )
     val out_at_i = out `@` i
     TypeChecker(out_at_i)
 
-    (block: Block) +=
-      ForLoop(init, cond, increment, ToOpenCL.cmd(body_(out_at_i), Block(), ocl))
+    val initDecl = VarDecl(name, opencl.ir.Int,
+      init = ArithExpression(init),
+      addressSpace = opencl.ir.PrivateMemory)
+
+    val cond = CondExpression(VarRef(name),
+      ArithExpression(upperBound),
+      CondExpression.Operator.<)
+
+
+    val increment: Expression = {
+      val v = NamedVar(name)
+      AssignmentExpression(ArithExpression(v), ArithExpression(v + step))
+    }
+
+    val bodyBlock = (b: Block) => ToOpenCL.cmd(body_(out_at_i), b, ocl)
+
+    range.numVals match {
+      case Cst(0) =>
+        (block: Block) +=
+          OpenCLAST.Comment("iteration count is 0, no loop emitted")
+
+      case Cst(1) =>
+        (block: Block) +=
+          OpenCLAST.Comment("iteration count is exactly 1, no loop emitted")
+        (block: Block) += bodyBlock(Block(Vector(initDecl)))
+
+      case _ =>
+        if ( (range.start.min.min == Cst(0) && range.stop == Cst(1))
+          || (range.numVals.min == Cst(0) && range.numVals.max == Cst(1)) ) {
+          (block: Block) +=
+            OpenCLAST.Comment("iteration count is 1 or less, no loop emitted")
+          val ifthenelse =
+            IfThenElse(CondExpression(
+              ArithExpression(init),
+              ArithExpression(upperBound),
+              CondExpression.Operator.<), bodyBlock(Block()))
+          (block: Block) += Block(Vector(initDecl, ifthenelse))
+        } else {
+          (block: Block) +=
+            ForLoop(initDecl, cond, increment, bodyBlock(Block()))
+        }
+
+    }
 
     ocl.env.remove(name)
 
@@ -99,20 +141,9 @@ case class ParFor(override val n: Phrase[ExpType],
 
   override def makeParFor = ParFor
 
-  override lazy val init: Declaration =
-    VarDecl(name, opencl.ir.Int,
-      init = ArithExpression(0),
-      addressSpace = opencl.ir.PrivateMemory)
+  override lazy val init = Cst(0)
 
-  override lazy val cond: ExpressionStatement =
-    CondExpression(VarRef(name),
-      ArithExpression(upperBound),
-      CondExpression.Operator.<)
-
-  override lazy val increment: Expression = {
-    val v = NamedVar(name)
-    AssignmentExpression(ArithExpression(v), ArithExpression(v + 1))
-  }
+  override lazy val step = Cst(1)
 
   override def synchronize: OclAstNode with BlockMember = OpenCLAST.Skip()
 }

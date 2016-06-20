@@ -14,25 +14,13 @@ case class ParForLocal(override val n: Phrase[ExpType],
 
   override def makeParFor = ParForLocal
 
-  override lazy val init: Declaration =
-    VarDecl(name, opencl.ir.Int,
-      init = ArithExpression(get_local_id(0, RangeAdd(0, ocl.localSize, 1))),
-      addressSpace = opencl.ir.PrivateMemory)
+  override lazy val init =  get_local_id(0, RangeAdd(0, ocl.localSize, 1))
 
-  override lazy val cond: ExpressionStatement =
-    CondExpression(VarRef(name),
-      ToOpenCL.exp(n, ocl),
-      CondExpression.Operator.<)
+  override lazy val step = get_local_size(0, local_size_range)
 
   lazy val local_size_range =
     if (ocl.localSize == ?) ContinuousRange(1, PosInf)
     else RangeAdd(ocl.localSize, ocl.localSize + 1, 1)
-
-  override lazy val increment: Expression = {
-    val v = NamedVar(name)
-    AssignmentExpression(ArithExpression(v),
-      ArithExpression(v + get_local_size(0, local_size_range)))
-  }
 
   override def synchronize: OclAstNode with BlockMember =
     OpenCLCode("barrier(CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE);")

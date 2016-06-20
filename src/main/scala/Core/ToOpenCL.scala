@@ -61,9 +61,9 @@ class ToOpenCL(val localSize: ArithExpr, val globalSize: ArithExpr) {
 
     val p4 = AdjustMemoryAllocation(p3)
 
-    println("--------------------")
+//    println("--------------------")
 
-    println(PrettyPrinter(p4))
+    //println(PrettyPrinter(p4))
 
     val body = ToOpenCL.cmd(p4, Block(), this)
 
