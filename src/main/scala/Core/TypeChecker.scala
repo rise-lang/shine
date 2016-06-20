@@ -145,13 +145,25 @@ object TypeChecker {
       case LiteralPhrase(d) => ExpType(d.dataType)
 
       case UnaryOpPhrase(op, x) =>
-        check(TypeChecker(x), ExpType(int))
-        ExpType(int)
+        TypeChecker(x) match {
+          case ExpType(dt) => ExpType(dt)
+          case x => error(x.toString, expected = "ExpType")
+        }
 
       case BinOpPhrase(op, lhs, rhs) =>
-        check(TypeChecker(lhs), ExpType(int))
-        check(TypeChecker(rhs), ExpType(int))
-        ExpType(int)
+        op match {
+          case BinOpPhrase.Op.GT | BinOpPhrase.Op.LT =>
+            (TypeChecker(lhs), TypeChecker(rhs)) match {
+              case (ExpType(dt1), ExpType(dt2)) if dt1 == dt2 =>
+                ExpType(bool)
+              case x => error(x.toString, expected = "")
+            }
+          case _ => (TypeChecker(lhs), TypeChecker(rhs)) match {
+            case (ExpType(dt1), ExpType(dt2)) if dt1 == dt2 =>
+              ExpType(dt1)
+            case x => error(x.toString, expected = "")
+          }
+        }
 
       case p: ExpPattern => p.typeCheck()
 

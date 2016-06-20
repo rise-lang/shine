@@ -850,7 +850,7 @@ object Test extends App {
   }
 
   {
-    println("== assum Nvidia ==")
+    println("== asum Nvidia ==")
     val xsVectorT: ExpType = ExpType(ArrayType(1048576, int))
 
     val abs = (x: Phrase[ExpType]) => `if`(x < 0, -x, x)

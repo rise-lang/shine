@@ -110,11 +110,20 @@ class ToOpenCL(val localSize: ArithExpr, val globalSize: ArithExpr) {
     make(p(arg0), arg1, arg2, arg3, arg4, arg0 +: args)
   }
 
-  private def makeParams(out: IdentPhrase[AccType], args: IdentPhrase[ExpType]*): List[ParamDecl] = {
-    val output = ParamDecl(out.name, DataType.toType(out.t.dataType), opencl.ir.GlobalMemory, const = false)
+  private def makeParams(out: IdentPhrase[AccType],
+                         args: IdentPhrase[ExpType]*): List[ParamDecl] = {
+    val output = ParamDecl(
+      out.name,
+      DataType.toType(out.t.dataType),
+      opencl.ir.GlobalMemory,
+      const = false)
 
     val inputs = args.map(arg =>
-      ParamDecl(arg.name, DataType.toType(arg.t.dataType), opencl.ir.GlobalMemory, const = true)
+      ParamDecl(
+        arg.name,
+        DataType.toType(arg.t.dataType),
+        opencl.ir.GlobalMemory,
+        const = true)
     )
 
     val types = args.map(_.t.dataType).+:(out.t.dataType).map(DataType.toType)
@@ -139,11 +148,9 @@ object ToOpenCL {
         val falseBlock = cmd(elseP, Block(), ocl)
         (block: Block) += IfThenElse(exp(condP, ocl), trueBlock, falseBlock)
 
-      case c: IntermediateCommandPattern => {
-        c match {
-          case fc: CommandPattern => fc.toOpenCL(block, ocl)
-          case _ => throw new Exception("This should not happen")
-        }
+      case c: IntermediateCommandPattern => c match {
+        case fc: CommandPattern => fc.toOpenCL(block, ocl)
+        case _ => throw new Exception("This should not happen")
       }
 
       case ApplyPhrase(_, _) | IdentPhrase(_) | Proj1Phrase(_) | Proj2Phrase(_) =>
@@ -205,11 +212,14 @@ object ToOpenCL {
           null
         }
 
-        val s = tupleAccess.map(x => if (x == Cst(1)) {
-          "._1"
-        } else if (x == Cst(2)) {
-          "._2"
-        }).foldLeft("")(_ + _)
+        val s = tupleAccess.map(x =>
+          if (x == Cst(1)) {
+            "._1"
+          }
+          else if (x == Cst(2)) {
+            "._2"
+          }).foldLeft("")(_ + _)
+
         val suffix = if (s != "") {
           s
         } else {
@@ -245,11 +255,14 @@ object ToOpenCL {
           null
         }
 
-        val s = tupleAccess.map(x => if (x == Cst(1)) {
-          "._1"
-        } else if (x == Cst(2)) {
-          "._2"
-        }).foldLeft("")(_ + _)
+        val s = tupleAccess.map(x =>
+          if (x == Cst(1)) {
+            "._1"
+          }
+          else if (x == Cst(2)) {
+            "._2"
+          }).foldLeft("")(_ + _)
+
         val suffix = if (s != "") {
           s
         } else {
