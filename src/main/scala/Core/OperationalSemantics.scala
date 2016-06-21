@@ -12,10 +12,34 @@ object OperationalSemantics {
   final case class IndexData(i: ArithExpr) extends Data(int)
   final case class BoolData(b: Boolean) extends Data(bool)
   final case class IntData(i: Int) extends Data(int)
-  final case class Int4Data(i0: Int, i1: Int, i2: Int, i3: Int) extends Data(int4)
+//  final case class Int4Data(i0: Int, i1: Int, i2: Int, i3: Int) extends Data(int4)
   final case class FloatData(f: Float) extends Data(float)
+  final case class VectorData(a: Vector[Data]) extends Data(VectorType(a.length, a.head.dataType match {
+    case b: BasicType => b
+    case _ => throw new Exception("This should not happen")
+  }))
   final case class ArrayData(a: Vector[Data]) extends Data(ArrayType(a.length, a.head.dataType))
   final case class RecordData(fst: Data, snd: Data) extends Data(RecordType(fst.dataType, snd.dataType))
+
+  object Data {
+    def toString(d: Data): String = {
+      d match {
+        case i: IntData => i.i.toString
+        case b: BoolData => b.b.toString
+        case f: FloatData => f.f.toString
+        case i: IndexData => i.i.toString
+        //          case i: Int4Data => Literal(s"(int4)(${i.i0.toString}, ${i.i1.toString}, ${i.i2.toString}, ${i.i3.toString})")
+        case v: VectorData => v.a.length match {
+          case 2 | 3 | 4 | 8 | 16 =>
+            val dt = DataType.toString(v.a.head.dataType)
+            val n = v.a.length
+            s"($dt$n)(" + v.a.map(x => toString(x)).reduce( _ + ", " + _ ) + ")"
+        }
+        case _: RecordData => ???
+        case _: ArrayData => ???
+      }
+    }
+  }
 
 //  object makeData {
 //    def apply(store: Store, name: String, data: Data): Store = {

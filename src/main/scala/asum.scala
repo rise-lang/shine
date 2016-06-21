@@ -2,6 +2,7 @@
 import Core._
 import DSL._
 import Compiling._
+import Core.OperationalSemantics.VectorData
 import Core.PhraseType.->
 import ExpPatterns._
 import apart.arithmetic._
@@ -94,11 +95,10 @@ object asum extends App {
   // TypeChecker(nvidiaDerived2) // TODO: make this type check
 
   val amdDerived1 = λ(inputT)(input =>
-    /* asScalar() o */
     mapWorkgroup(
-      mapLocal(
-        reduceSeq(add, 0.0f)
-      ) o split(2048) o gather(reorderWithStride(64)) /* o asVector(2) */
+      asScalar() o mapLocal(
+        reduceSeq(λ( x => λ( a => x + a)), vectorize(2, 0.0f))
+      ) o split(2048) o gather(reorderWithStride(64)) o asVector(2)
     ) o split(4096 * 128) $ input
   )
   TypeChecker(amdDerived1)

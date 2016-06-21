@@ -250,3 +250,17 @@ object mapI {
 object gather {
   def apply(idxF: (ArithExpr, DataType) => ArithExpr) = λ( array => Gather(idxF, array))
 }
+
+object asVector {
+  def apply(n: ArithExpr) = λ(array => AsVector(n, array) )
+  def apply(n: ArithExpr, array: Phrase[ExpType]) = AsVector(n, array)
+}
+
+object asScalar {
+  def apply() = λ( array => AsScalar(array) )
+  def apply(array: Phrase[ExpType]) = AsScalar(array)
+}
+
+object vectorize {
+  def apply(len: Int, f: Float) = LiteralPhrase(VectorData(Vector.fill(len)(FloatData(f))))
+}

@@ -25,7 +25,9 @@ case class Join(array: Phrase[ExpType]) extends ExpPattern with ViewExpPattern {
   }
 
   override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[ExpType] = {
-    Join(VisitAndRebuild(array, f))
+    val j = Join(VisitAndRebuild(array, f))
+    j.n = n
+    j
   }
 
   override def eval(s: Store): Data = {
@@ -59,11 +61,13 @@ case class Join(array: Phrase[ExpType]) extends ExpPattern with ViewExpPattern {
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
     assert(n != null)
-    RewriteToImperative.acc(array, JoinAcc(n, A))
+    import RewriteToImperative._
+    acc(array)(JoinAcc(n, A))
   }
 
   override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
-    RewriteToImperative.exp(array, λ(array.t) { x =>
+    import RewriteToImperative._
+    exp(array)(λ(array.t) { x =>
       C(Join(x))
     })
   }

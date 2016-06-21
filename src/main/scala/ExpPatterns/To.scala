@@ -49,17 +49,19 @@ abstract class To(f: Phrase[ExpType -> ExpType],
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
     assert(dt1 != null && dt2 != null)
+    import RewriteToImperative._
 
-    RewriteToImperative.exp(this, λ(ExpType(dt2)) { x =>
-      RewriteToImperative.acc(x, A)
+    exp(this)(λ(ExpType(dt2)) { x =>
+      acc(x)(A)
     })
   }
 
   override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
     assert(dt1 != null && dt2 != null)
+    import RewriteToImperative._
 
     `new`(dt2, addressSpace, tmp =>
-      RewriteToImperative.acc(f(input), tmp.wr) `;` C(tmp.rd)
+      acc(f(input))(tmp.wr) `;` C(tmp.rd)
     )
   }
 }

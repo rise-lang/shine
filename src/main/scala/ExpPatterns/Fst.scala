@@ -37,9 +37,9 @@ case class Fst(record: Phrase[ExpType]) extends ExpPattern with ViewExpPattern w
   override def prettyPrint: String = s"${PrettyPrinter(record)}._1"
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] =
-    RewriteToImperative.exp(this, λ(this.t) {
+    RewriteToImperative.exp(this)(λ(this.t) {
       this.t.dataType match {
-        case _: BasicType => x => A `:=` x
+        case _: BasicType | _: VectorType => x => A `:=` x
         case _: ArrayType => throw new Exception("This should not happen")
         case _: RecordType => throw new Exception("This should not happen")
       }

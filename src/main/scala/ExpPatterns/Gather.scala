@@ -30,13 +30,15 @@ case class Gather(idxF: (ArithExpr, DataType) => ArithExpr, array: Phrase[ExpTyp
     Gather(idxF, VisitAndRebuild(array, f))
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
-    RewriteToImperative.exp(this, λ(array.t) { x =>
-      RewriteToImperative.acc(x, A)
+    import RewriteToImperative._
+    exp(this)(λ(array.t) { x =>
+      acc(x)(A)
     })
   }
 
   override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
-    RewriteToImperative.exp(array, λ(array.t) { x =>
+    import RewriteToImperative._
+    exp(array)(λ(array.t) { x =>
       C(Gather(idxF, x))
     })
   }

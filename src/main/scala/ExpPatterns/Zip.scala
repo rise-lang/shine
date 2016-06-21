@@ -53,10 +53,12 @@ case class Zip(lhs: Phrase[ExpType], rhs: Phrase[ExpType]) extends ExpPattern wi
   override def prettyPrint: String = s"(zip ${PrettyPrinter(lhs)} ${PrettyPrinter(rhs)})"
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
-    RewriteToImperative.exp(lhs, λ(lhs.t) { x =>
-      RewriteToImperative.exp(rhs, λ(rhs.t) { y =>
+    import RewriteToImperative._
+    exp(lhs)(λ(lhs.t) { x =>
+      exp(rhs)(λ(rhs.t) { y =>
         MapI(A,
-          λ(A.t) { o => λ(ExpType(RecordType(lhs.t.dataType, rhs.t.dataType))) { x => RewriteToImperative.acc(x, o) } },
+          λ(A.t) { o => λ(ExpType(RecordType(lhs.t.dataType, rhs.t.dataType))) {
+            x => acc(x)(o) } },
           Zip(x, y)
         )
       })
@@ -64,8 +66,9 @@ case class Zip(lhs: Phrase[ExpType], rhs: Phrase[ExpType]) extends ExpPattern wi
   }
 
   override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
-    RewriteToImperative.exp(lhs, λ(lhs.t) { x =>
-      RewriteToImperative.exp(rhs, λ(rhs.t) { y =>
+    import RewriteToImperative._
+    exp(lhs)(λ(lhs.t) { x =>
+      exp(rhs)(λ(rhs.t) { y =>
         C(Zip(x, y))
       })
     })

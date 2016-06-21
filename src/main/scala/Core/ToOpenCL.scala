@@ -52,7 +52,7 @@ class ToOpenCL(val localSize: ArithExpr, val globalSize: ArithExpr) {
     val out = identifier("output", AccType(outT.dataType))
     val params = makeParams(out, args: _*)
 
-    val p2 = RewriteToImperative.acc(p, out)
+    val p2 = RewriteToImperative.acc(p)(out)
     TypeChecker(p2)
     val p3 = SubstituteImplementations(p2)
     TypeChecker(p3)
@@ -169,7 +169,8 @@ object ToOpenCL {
           case b: BoolData => Literal(b.b.toString)
           case f: FloatData => Literal(f.f.toString)
           case i: IndexData => Literal(i.i.toString)
-          case i: Int4Data => Literal(s"(int4)(${i.i0.toString}, ${i.i1.toString}, ${i.i2.toString}, ${i.i3.toString})")
+//          case i: Int4Data => Literal(s"(int4)(${i.i0.toString}, ${i.i1.toString}, ${i.i2.toString}, ${i.i3.toString})")
+          case v: VectorData => Literal(Data.toString(v))
           case _: RecordData => ???
           case _: ArrayData => ???
         }

@@ -60,11 +60,12 @@ abstract class AbstractMap(f: Phrase[ExpType -> ExpType],
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
     assert(n != null && dt1 != null && dt2 != null)
+    import RewriteToImperative._
 
-    RewriteToImperative.exp(array, λ( ExpType(ArrayType(n, dt1)) ) { x =>
+    exp(array)(λ( ExpType(ArrayType(n, dt1)) ) { x =>
       makeMapI(A,
         λ( AccType(dt2) ) { o =>
-          λ( ExpType(dt1) ) { x => RewriteToImperative.acc(f(x), o) } },
+          λ( ExpType(dt1) ) { x => acc(f(x))(o) } },
         x
       )
     })
@@ -73,9 +74,10 @@ abstract class AbstractMap(f: Phrase[ExpType -> ExpType],
 
   override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
     assert(n != null && dt1 != null && dt2 != null)
+    import RewriteToImperative._
 
     `new`(ArrayType(n, dt2), GlobalMemory, tmp =>
-      RewriteToImperative.acc(this, tmp.wr) `;`
+      acc(this)(tmp.wr) `;`
       C(tmp.rd)
     )
   }

@@ -60,11 +60,13 @@ case class Split(n: ArithExpr, array: Phrase[ExpType]) extends ExpPattern with V
   override def prettyPrint: String = s"(split ${n.toString} ${PrettyPrinter(array)})"
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
-    RewriteToImperative.acc(array, SplitAcc(A))
+    import RewriteToImperative._
+    acc(array)(SplitAcc(A))
   }
 
   override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
-    RewriteToImperative.exp(array, λ(array.t) { x =>
+    import RewriteToImperative._
+    exp(array)(λ(array.t) { x =>
       C(Split(n, x))
     })
   }

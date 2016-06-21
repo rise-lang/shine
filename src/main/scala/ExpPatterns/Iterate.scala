@@ -6,7 +6,9 @@ import Core.OperationalSemantics._
 import apart.arithmetic.ArithExpr
 import opencl.generator.OpenCLAST.Expression
 
-case class Iterate(n: ArithExpr, f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) extends ExpPattern {
+case class Iterate(n: ArithExpr,
+                   f: Phrase[ExpType -> ExpType],
+                   array: Phrase[ExpType]) extends ExpPattern {
 
   override def typeCheck(): ExpType = {
     import TypeChecker._
@@ -41,7 +43,38 @@ case class Iterate(n: ArithExpr, f: Phrase[ExpType -> ExpType], array: Phrase[Ex
 
   override def prettyPrint: String = s"(iterate ${n.toString} ${PrettyPrinter(f)})"
 
-  override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = ???
+  override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
+    import Compiling.RewriteToImperative._
 
-  override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = ???
+    ???
+
+    /*
+  new \(output =>
+    new \(tmp =>
+
+    )
+  )
+  */
+  }
+
+  override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
+    import Compiling.RewriteToImperative._
+
+    ???
+  }
+
+/*
+  exp(array)(λ( ExpType(ArrayType(n, dt1)) ) { x =>
+      makeMapI(A,
+        λ( AccType(dt2) ) { o =>
+          λ( ExpType(dt1) ) { x => acc(f(x))(o) } },
+        x
+      )
+    })
+
+  `new`(ArrayType(n, dt2), GlobalMemory, tmp =>
+      acc(this)(tmp.wr) `;`
+      C(tmp.rd)
+    )
+   */
 }

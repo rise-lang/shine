@@ -36,9 +36,9 @@ abstract class AbstractReduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
                 dt2.toString + ", " + t2.toString + " and " + t3.toString,
                 expected = "them to match")
             }
-          case t => error(t.toString, "FunctionType")
+          case x => error(x.toString, "FunctionType")
         }
-      case t => error(t.toString, "(ExpType, ArrayType)")
+      case x => error(x.toString, "(ExpType, ArrayType)")
     }
   }
 
@@ -67,13 +67,14 @@ abstract class AbstractReduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
     assert(n != null && dt1 != null && dt2 != null)
+    import RewriteToImperative._
 
-    RewriteToImperative.exp(array, λ( ExpType(ArrayType(n, dt1)) ) { x =>
-      RewriteToImperative.exp(init, λ( ExpType(dt2) ) { y =>
+    exp(array)(λ( ExpType(ArrayType(n, dt1)) ) { x =>
+      exp(init)(λ( ExpType(dt2) ) { y =>
         makeReduceIAcc(A,
           λ( AccType(dt2) ) { o =>
             λ( ExpType(dt1) ) { x =>
-              λ( ExpType(dt2) ) { y => RewriteToImperative.acc(f(x)(y), o) } } },
+              λ( ExpType(dt2) ) { y => acc( f(x)(y) )( o ) } } },
           y,
           x
         )
@@ -83,13 +84,14 @@ abstract class AbstractReduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
 
   override def rewriteToImperativeExp(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
     assert(n != null && dt1 != null && dt2 != null)
+    import RewriteToImperative._
 
-    RewriteToImperative.exp(array, λ( ExpType(ArrayType(n, dt1)) ) { x =>
-      RewriteToImperative.exp(init, λ( ExpType(dt2) ) { y =>
+    exp(array)(λ( ExpType(ArrayType(n, dt1)) ) { x =>
+      exp(init)(λ( ExpType(dt2) ) { y =>
         makeReduceIExp(C,
           λ( AccType(dt2) ) { o =>
             λ( ExpType(dt1) ) { x =>
-              λ( ExpType(dt2) ) { y => RewriteToImperative.acc(f(x)(y), o) } } },
+              λ( ExpType(dt2) ) { y => acc( f(x)(y) )( o ) } } },
           y,
           x
         )

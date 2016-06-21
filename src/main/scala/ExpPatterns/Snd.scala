@@ -36,14 +36,16 @@ case class Snd(record: Phrase[ExpType]) extends ExpPattern with ViewExpPattern w
 
   override def prettyPrint: String = s"${PrettyPrinter(record)}._2"
 
-  override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] =
-    RewriteToImperative.exp(this, λ(this.t) {
+  override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
+    import RewriteToImperative._
+    exp(this)(λ(this.t) {
       this.t.dataType match {
-        case _: BasicType => x => A `:=` x
+        case _: BasicType | _: VectorType => x => A `:=` x
         case _: ArrayType => throw new Exception("This should not happen")
         case _: RecordType => throw new Exception("This should not happen")
       }
     })
+  }
 
   override def rewriteToImperativeExp(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = C(this)
 }
