@@ -92,7 +92,12 @@ object asum extends App {
       )) o split(128)
     ) o split(8192) $ input
   )
-  // TypeChecker(nvidiaDerived2) // TODO: make this type check
+  TypeChecker(nvidiaDerived2)
+
+  println("-- Nvidia Derived 2 --")
+  println(OpenCLPrinter()((new ToOpenCL(localSize = 128, globalSize = N))(
+    nvidiaDerived2, identifier("input", inputT))))
+  println("----------------")
 
   val amdDerived1 = λ(inputT)(input =>
     mapWorkgroup(

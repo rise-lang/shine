@@ -1044,4 +1044,8 @@ object Test extends App {
     println("-----")
   }
 
+  {
+    println("== zip scatter ==")
+  }
+
 }

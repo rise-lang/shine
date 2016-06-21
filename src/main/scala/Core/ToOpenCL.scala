@@ -54,6 +54,7 @@ class ToOpenCL(val localSize: ArithExpr, val globalSize: ArithExpr) {
 
     val p2 = RewriteToImperative.acc(p)(out)
     TypeChecker(p2)
+    println(PrettyPrinter(p2))
     val p3 = SubstituteImplementations(p2)
     TypeChecker(p3)
 
