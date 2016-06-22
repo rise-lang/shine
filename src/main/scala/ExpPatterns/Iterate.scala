@@ -1,6 +1,6 @@
 package ExpPatterns
 
-import CommandPatterns.IterateI
+import CommandPatterns.{IterateIAcc, IterateIExp}
 import Core._
 import Core.PhraseType._
 import Core.OperationalSemantics._
@@ -71,7 +71,7 @@ case class Iterate(k: ArithExpr,
     assert(n != null && m != null && k != null && dt != null)
 
     exp(array)(λ(ExpType(ArrayType(m, dt))) { x =>
-      IterateI(n, m = m /^ n.pow(k), k, dt, A,
+      IterateIAcc(n, m = m /^ n.pow(k), k, dt, A,
         λ(null.asInstanceOf[AccType]) { o =>
           λ(null.asInstanceOf[ExpType]) { x =>
             acc(f(x))(o) }
@@ -84,10 +84,17 @@ case class Iterate(k: ArithExpr,
   override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
     import Compiling.RewriteToImperative._
 
-    `new`(t.dataType, GlobalMemory, tmp =>
-      acc(this)(tmp.wr) `;`
-      C(tmp.rd)
-    )
+    assert(n != null && m != null && k != null && dt != null)
+
+    exp(array)(λ(ExpType(ArrayType(m, dt))) { x =>
+      IterateIExp(n, m = m /^ n.pow(k), k, dt, C,
+        λ(null.asInstanceOf[AccType]) { o =>
+          λ(null.asInstanceOf[ExpType]) { x =>
+            acc(f(x))(o) }
+        },
+        x
+      )
+    })
   }
 
 /*

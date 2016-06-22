@@ -10,13 +10,13 @@ import Compiling.SubstituteImplementations
 import Core.VisitAndRebuild.fun
 import apart.arithmetic._
 
-case class IterateI(n: ArithExpr,
-                    m: ArithExpr,
-                    k: ArithExpr,
-                    dt: DataType,
-                    out: Phrase[AccType],
-                    f: Phrase[AccType -> (ExpType -> CommandType)],
-                    in: Phrase[ExpType])
+case class IterateIAcc(n: ArithExpr,
+                       m: ArithExpr,
+                       k: ArithExpr,
+                       dt: DataType,
+                       out: Phrase[AccType],
+                       f: Phrase[AccType -> (ExpType -> CommandType)],
+                       in: Phrase[ExpType])
   extends IntermediateCommandPattern {
 
   override def typeCheck(): CommandType = {
@@ -42,7 +42,7 @@ case class IterateI(n: ArithExpr,
   override def eval(s: Store): Store = ???
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[CommandType] = {
-    IterateI(n, m, k, dt,
+    IterateIAcc(n, m, k, dt,
       VisitAndRebuild(out, fun),
       VisitAndRebuild(f, fun),
       VisitAndRebuild(in, fun))
@@ -53,6 +53,6 @@ case class IterateI(n: ArithExpr,
   }
 
   override def prettyPrint: String =
-    s"(iterateI ${PrettyPrinter(out)} ${PrettyPrinter(f)} ${PrettyPrinter(in)}"
+    s"(iterateIAcc ${PrettyPrinter(out)} ${PrettyPrinter(f)} ${PrettyPrinter(in)}"
 
 }
