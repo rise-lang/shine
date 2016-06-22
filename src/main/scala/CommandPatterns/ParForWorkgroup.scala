@@ -9,9 +9,10 @@ import opencl.generator.{get_group_id, get_num_groups}
 
 
 case class ParForWorkgroup(override val n: ArithExpr,
+                           override val dt: DataType,
                            override val out: Phrase[AccType],
                            override val body: Phrase[ExpType -> (AccType -> CommandType)])
-  extends AbstractParFor(n, out, body) {
+  extends AbstractParFor(n, dt, out, body) {
 
   lazy val num_groups =
     if (ocl.globalSize == ? || ocl.localSize == ?) ?

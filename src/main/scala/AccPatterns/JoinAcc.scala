@@ -5,19 +5,22 @@ import Core.OperationalSemantics._
 import apart.arithmetic.ArithExpr
 import opencl.generator.OpenCLAST.VarRef
 
-case class JoinAcc(n: ArithExpr, array: Phrase[AccType]) extends AccPattern {
+case class JoinAcc(n: ArithExpr,
+                   m: ArithExpr,
+                   dt: DataType,
+                   array: Phrase[AccType]) extends AccPattern {
 
   override def typeCheck(): AccType = {
     import TypeChecker._
     TypeChecker(array) match {
-      case AccType(ArrayType(m, dt)) =>
+      case AccType(ArrayType(m_, dt_)) if dt_ == dt && m_ == m =>
         AccType(ArrayType(m /^ n, ArrayType(n, dt)))
       case x => error(x.toString, "ArrayType")
     }
   }
 
   override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[AccType] = {
-    JoinAcc(n, VisitAndRebuild(array, f))
+    JoinAcc(n, m, dt, VisitAndRebuild(array, f))
   }
 
   override def eval(s: Store): AccIdentifier = ???

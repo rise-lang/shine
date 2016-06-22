@@ -61,10 +61,10 @@ object `for` {
 
 object `parFor` {
   def apply(n: ArithExpr,
+            dt: DataType,
             out: Phrase[AccType],
             f: (Phrase[ExpType] => Phrase[AccType] => Phrase[CommandType])) = {
-    val elemT = out.t match { case AccType(ArrayType(_, dt)) => dt }
-    ParFor(n, out, λ( ExpType(int) ) { i => λ( AccType(elemT) ) { o => f(i)(o) } })
+    ParFor(n, dt, out, λ( ExpType(int) ) { i => λ( AccType(dt) ) { o => f(i)(o) } })
   }
 }
 
@@ -85,11 +85,13 @@ object snd {
 }
 
 object fstAcc {
-  def apply(record: Phrase[AccType]) = FstAcc(record)
+  def apply(fstT: DataType, sndT: DataType, record: Phrase[AccType]) =
+    FstAcc(fstT, sndT, record)
 }
 
 object sndAcc {
-  def apply(record: Phrase[AccType]) = SndAcc(record)
+  def apply(fstT: DataType, sndT: DataType, record: Phrase[AccType]) =
+    SndAcc(fstT, sndT, record)
 }
 
 object π1 {

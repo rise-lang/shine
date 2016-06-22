@@ -13,7 +13,7 @@ object VisitAndRebuild {
 
   def apply[T <: PhraseType](p: Phrase[T], f: fun): Phrase[T] = {
     f(p) match {
-      case r: f.Replace[T] => r.p
+      case r: f.Replace[T]@unchecked => r.p
       case c: f.Continue =>
         val f = c.f
         val res = (p match {

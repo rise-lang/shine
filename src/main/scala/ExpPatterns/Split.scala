@@ -12,12 +12,13 @@ import opencl.generator.OpenCLAST.Expression
 case class Split(n: ArithExpr, array: Phrase[ExpType]) extends ExpPattern with ViewExpPattern {
 
   private var m: ArithExpr = null
+  private var dt: DataType = null
 
   override def typeCheck(): ExpType = {
     import TypeChecker._
     TypeChecker(array) match {
-      case ExpType(ArrayType(m_, dt)) =>
-        m = m_
+      case ExpType(ArrayType(m_, dt_)) =>
+        m = m_; dt = dt_
         ExpType(ArrayType(m /^ n, ArrayType(n, dt)))
       case x => error(x.toString, "ArrayType")
     }
@@ -26,6 +27,7 @@ case class Split(n: ArithExpr, array: Phrase[ExpType]) extends ExpPattern with V
   override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[ExpType] = {
     var s = Split(n, VisitAndRebuild(array, f))
     s.m = m
+    s.dt = dt
     s
   }
 
@@ -66,7 +68,7 @@ case class Split(n: ArithExpr, array: Phrase[ExpType]) extends ExpPattern with V
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
-    acc(array)(SplitAcc(A))
+    acc(array)(SplitAcc(n, m, dt, A))
   }
 
   override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {

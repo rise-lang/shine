@@ -5,7 +5,8 @@ import Core.OperationalSemantics._
 import apart.arithmetic.{ArithExpr, NamedVar}
 import opencl.generator.OpenCLAST.VarRef
 
-case class IdxAcc(array: Phrase[AccType], index: Phrase[ExpType]) extends AccPattern {
+case class IdxAcc(array: Phrase[AccType],
+                  index: Phrase[ExpType]) extends AccPattern {
 
   private var dt: DataType = null
 

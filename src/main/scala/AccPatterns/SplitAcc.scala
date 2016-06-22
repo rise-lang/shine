@@ -6,24 +6,24 @@ import apart.arithmetic.ArithExpr
 import ir.Type
 import opencl.generator.OpenCLAST.VarRef
 
-case class SplitAcc(array: Phrase[AccType]) extends AccPattern {
-
-  private var n: ArithExpr = null
+case class SplitAcc(n: ArithExpr,
+                    m: ArithExpr,
+                    dt: DataType,
+                    array: Phrase[AccType]) extends AccPattern {
 
   override def typeCheck(): AccType = {
     import TypeChecker._
     TypeChecker(array) match {
-      case AccType(ArrayType(n_, ArrayType(m, dt))) =>
-        n = n_
+      case AccType(ArrayType(n_, ArrayType(m_, dt_)))
+        if n_ == n && m_ == m && dt == dt_ =>
+
         AccType(ArrayType(n*m, dt))
       case x => error(x.toString, "ArrayType(ArrayType)")
     }
   }
 
   override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[AccType] = {
-    val s = SplitAcc(VisitAndRebuild(array, f))
-    s.n = n
-    s
+    SplitAcc(n, m, dt, VisitAndRebuild(array, f))
   }
 
   override def eval(s: Store): AccIdentifier = {

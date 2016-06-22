@@ -5,13 +5,16 @@ import Core.OperationalSemantics._
 import apart.arithmetic.ArithExpr
 import opencl.generator.OpenCLAST.VarRef
 
-case class FstAcc(record: Phrase[AccType]) extends AccPattern {
+case class FstAcc(dt1: DataType,
+                  dt2: DataType,
+                  record: Phrase[AccType]) extends AccPattern {
 
   override def typeCheck(): AccType = {
     import TypeChecker._
     TypeChecker(record) match {
-      case AccType(RecordType(fst, snd)) => AccType(fst)
-      case t => error(t.toString, "Something else")
+      case AccType(RecordType(fst, snd)) if fst == dt1 && snd == dt2 =>
+        AccType(fst)
+      case x => error(x.toString, "Something else")
     }
   }
 
@@ -22,7 +25,8 @@ case class FstAcc(record: Phrase[AccType]) extends AccPattern {
     }
   }
 
-  override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[AccType] = FstAcc(VisitAndRebuild(record, f))
+  override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[AccType] =
+    FstAcc(dt1, dt2, VisitAndRebuild(record, f))
 
   override def toOpenCL(ocl: ToOpenCL): VarRef = ???
 

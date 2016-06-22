@@ -10,6 +10,7 @@ import opencl.generator.OpenCLAST._
 import DSL._
 
 abstract class AbstractParFor(val n: ArithExpr,
+                              val dt: DataType,
                               val out: Phrase[AccType],
                               val body: Phrase[ExpType -> (AccType -> CommandType)])
   extends CommandPattern {
@@ -23,7 +24,7 @@ abstract class AbstractParFor(val n: ArithExpr,
     val nInt = OperationalSemantics.evalIndexExp(new OperationalSemantics.Store(), n)
 
     TypeChecker(out) match {
-      case AccType(ArrayType(m, dt)) =>
+      case AccType(ArrayType(m, dt_)) if dt_ == dt =>
         if (nInt == m) {
           TypeChecker(body) match {
             case FunctionType(ExpType(i), FunctionType(AccType(dt2), CommandType())) =>
@@ -47,16 +48,16 @@ abstract class AbstractParFor(val n: ArithExpr,
   }
 
   override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[CommandType] = {
-    makeParFor(n, VisitAndRebuild(out, f), VisitAndRebuild(body, f))
+    makeParFor(n, dt, VisitAndRebuild(out, f), VisitAndRebuild(body, f))
   }
 
   override def substituteImpl: Phrase[CommandType] =
-    makeParFor(n, out, SubstituteImplementations.applyBinaryFun(body))
+    makeParFor(n, dt, out, SubstituteImplementations.applyBinaryFun(body))
 
   override def prettyPrint: String =
     s"${this.getClass.getSimpleName} ${evalIndexExp(new OperationalSemantics.Store(), n)} ${PrettyPrinter(out)} ${PrettyPrinter(body)}"
 
-  def makeParFor: (ArithExpr, Phrase[AccType], Phrase[ExpType -> (AccType -> CommandType)]) => AbstractParFor
+  def makeParFor: (ArithExpr, DataType, Phrase[AccType], Phrase[ExpType -> (AccType -> CommandType)]) => AbstractParFor
 
   protected val name: String = newName()
 
@@ -130,9 +131,10 @@ abstract class AbstractParFor(val n: ArithExpr,
 }
 
 case class ParFor(override val n: ArithExpr,
+                  override val dt: DataType,
                   override val out: Phrase[AccType],
                   override val body: Phrase[ExpType -> (AccType -> CommandType)])
-  extends AbstractParFor(n, out, body) {
+  extends AbstractParFor(n, dt, out, body) {
 
   override def makeParFor = ParFor
 

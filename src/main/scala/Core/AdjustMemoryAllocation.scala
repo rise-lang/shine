@@ -24,12 +24,12 @@ object AdjustMemoryAllocation {
 
           case pf: AbstractParFor =>
             pf match {
-              case ParForGlobal(_, _, _) | ParForWorkgroup(_, _, _) =>
+              case ParForGlobal(_, _, _, _) | ParForWorkgroup(_, _, _, _) =>
                 val t = DataType.toType(pf.out.t.dataType)
                 val len = ir.Type.getMaxLength(t)
                 Continue(fun(numGlb * len, numLcl, numPvt))
 
-              case ParForLocal(_, _, _) =>
+              case ParForLocal(_, _, _, _) =>
                 val t = DataType.toType(pf.out.t.dataType)
                 val len = ir.Type.getMaxLength(t)
                 Continue(fun(numGlb * len, numLcl * len, numPvt))

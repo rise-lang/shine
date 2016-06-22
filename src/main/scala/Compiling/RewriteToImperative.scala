@@ -26,7 +26,7 @@ object RewriteToImperative {
         x.t.dataType match {
           case _: BasicType | _: VectorType => A `:=` x
           case ArrayType(n, dt) => MapI(n, dt, dt, A, λ( AccType(dt) ) { o => λ( ExpType(dt) ) { x => acc(x)(o) } }, x)
-          case _: RecordType => acc(fst(x))(fstAcc(A)) `;` acc(snd(x))(sndAcc(A))
+          case RecordType(fstT, sndT) => acc(fst(x))(fstAcc(fstT, sndT, A)) `;` acc(snd(x))(sndAcc(fstT, sndT, A))
         }
 
       case c : LiteralPhrase => A `:=` c

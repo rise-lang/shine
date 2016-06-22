@@ -8,9 +8,10 @@ import opencl.generator.{get_global_id, get_global_size}
 
 
 case class ParForGlobal(override val n: ArithExpr,
+                        override val dt: DataType,
                         override val out: Phrase[AccType],
                         override val body: Phrase[ExpType -> (AccType -> CommandType)])
-  extends AbstractParFor(n, out, body) {
+  extends AbstractParFor(n, dt, out, body) {
 
   override val makeParFor = ParForGlobal
 

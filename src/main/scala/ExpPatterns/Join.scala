@@ -13,12 +13,14 @@ import opencl.generator.OpenCLAST.Expression
 case class Join(array: Phrase[ExpType]) extends ExpPattern with ViewExpPattern {
 
   private var n: ArithExpr = null
+  private var m: ArithExpr = null
+  private var dt: DataType = null
 
   override def typeCheck(): ExpType = {
     import TypeChecker._
     TypeChecker(array) match {
-      case ExpType(ArrayType(n_, ArrayType(m, dt))) =>
-        n = n_
+      case ExpType(ArrayType(n_, ArrayType(m_, dt_))) =>
+        n = n_; m = m_; dt = dt_
         ExpType(ArrayType(n*m, dt))
       case x => error(x.toString, "ArrayType(ArrayType)")
     }
@@ -27,6 +29,8 @@ case class Join(array: Phrase[ExpType]) extends ExpPattern with ViewExpPattern {
   override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[ExpType] = {
     val j = Join(VisitAndRebuild(array, f))
     j.n = n
+    j.m = m
+    j.dt = dt
     j
   }
 
@@ -60,9 +64,9 @@ case class Join(array: Phrase[ExpType]) extends ExpPattern with ViewExpPattern {
   override def prettyPrint: String = s"(join ${PrettyPrinter(array)})"
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
-    assert(n != null)
+    assert(n != null && m != null && dt != null)
     import RewriteToImperative._
-    acc(array)(JoinAcc(n, A))
+    acc(array)(JoinAcc(n, m, dt, A))
   }
 
   override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {

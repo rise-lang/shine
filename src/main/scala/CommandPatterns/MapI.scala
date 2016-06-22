@@ -71,7 +71,7 @@ case class MapI(n: ArithExpr,
   override def makeMapI = MapI
 
   override def substituteImpl: Phrase[CommandType] = {
-    `parFor`(n, out, i => o => {
+    `parFor`(n, dt2, out, i => o => {
       SubstituteImplementations(f(o)(in `@` i))
     })
   }

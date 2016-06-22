@@ -18,8 +18,7 @@ case class MapWorkgroupI(n: ArithExpr,
 
   override def substituteImpl: Phrase[CommandType] = {
 
-    val elemT = out.t match { case AccType(ArrayType(_, dt)) => dt }
-    ParForWorkgroup(n, out, λ( ExpType(int) ) { i => λ( AccType(elemT) ) { o =>
+    ParForWorkgroup(n, dt2, out, λ( ExpType(int) ) { i => λ( AccType(dt2) ) { o =>
       SubstituteImplementations( f(o)(in `@` i) )
     } })
   }
