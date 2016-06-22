@@ -57,8 +57,9 @@ case class Zip(lhs: Phrase[ExpType], rhs: Phrase[ExpType]) extends ExpPattern wi
     exp(lhs)(λ(lhs.t) { x =>
       exp(rhs)(λ(rhs.t) { y =>
         MapI(A,
-          λ(A.t) { o => λ(ExpType(RecordType(lhs.t.dataType, rhs.t.dataType))) {
-            x => acc(x)(o) } },
+          λ(A.t) { o =>
+            λ(ExpType(RecordType(lhs.t.dataType, rhs.t.dataType))) { x =>
+              acc(x)(o) } },
           Zip(x, y)
         )
       })
