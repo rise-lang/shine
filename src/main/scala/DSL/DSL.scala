@@ -54,13 +54,13 @@ object `if` {
 }
 
 object `for` {
-  def apply(n: Phrase[ExpType], f: (Phrase[ExpType] => Phrase[CommandType])) = {
+  def apply(n: ArithExpr, f: (Phrase[ExpType] => Phrase[CommandType])) = {
     For(n, λ(ExpType(int)) { i => f(i) })
   }
 }
 
 object `parFor` {
-  def apply(n: Phrase[ExpType],
+  def apply(n: ArithExpr,
             out: Phrase[AccType],
             f: (Phrase[ExpType] => Phrase[AccType] => Phrase[CommandType])) = {
     val elemT = out.t match { case AccType(ArrayType(_, dt)) => dt }
@@ -240,11 +240,6 @@ object iterate {
 
 object length {
   def apply[T <: BasePhraseTypes](array: Phrase[T]) = Length(array)
-}
-
-object mapI {
-  def apply(out: Phrase[AccType], f: Phrase[AccType -> (ExpType -> CommandType)], in: Phrase[ExpType]) =
-    MapI(out, f, in)
 }
 
 object gather {

@@ -94,10 +94,10 @@ object asum extends App {
   )
   TypeChecker(nvidiaDerived2)
 
-  println("-- Nvidia Derived 2 --")
-  println(OpenCLPrinter()((new ToOpenCL(localSize = 128, globalSize = N))(
-    nvidiaDerived2, identifier("input", inputT))))
-  println("----------------")
+//  println("-- Nvidia Derived 2 --")
+//  println(OpenCLPrinter()((new ToOpenCL(localSize = 128, globalSize = N))(
+//    nvidiaDerived2, identifier("input", inputT))))
+//  println("----------------")
 
   val amdDerived1 = λ(inputT)(input =>
     mapWorkgroup(

@@ -5,9 +5,13 @@ import Core.PhraseType._
 import Core.OperationalSemantics._
 import DSL._
 import Compiling.SubstituteImplementations
+import apart.arithmetic.ArithExpr
 import opencl.generator.OpenCLAST.Block
 
-case class ReduceIExp(out: Phrase[ExpType -> CommandType],
+case class ReduceIExp(n: ArithExpr,
+                      dt1: DataType,
+                      dt2: DataType,
+                      out: Phrase[ExpType -> CommandType],
                       f: Phrase[AccType -> (ExpType -> (ExpType -> CommandType))],
                       init: Phrase[ExpType],
                       in: Phrase[ExpType]) extends IntermediateCommandPattern {
@@ -15,7 +19,9 @@ case class ReduceIExp(out: Phrase[ExpType -> CommandType],
   override def typeCheck(): CommandType = {
     import TypeChecker._
     (TypeChecker(init), TypeChecker(in)) match {
-      case (ExpType(dt2), ExpType(ArrayType(n, dt1))) =>
+      case (ExpType(dt2_), ExpType(ArrayType(n_, dt1_)))
+        if n == n_ && dt1 == dt1_ && dt2 == dt2_ =>
+
         setParamType(out, ExpType(dt2))
         TypeChecker(out) match {
           case FunctionType(ExpType(dt), CommandType()) =>
@@ -41,13 +47,17 @@ case class ReduceIExp(out: Phrase[ExpType -> CommandType],
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[CommandType] = {
-    ReduceIExp(VisitAndRebuild(out, fun), VisitAndRebuild(f, fun), VisitAndRebuild(init, fun), VisitAndRebuild(in, fun))
+    ReduceIExp(n, dt1, dt2,
+      VisitAndRebuild(out, fun),
+      VisitAndRebuild(f, fun),
+      VisitAndRebuild(init, fun),
+      VisitAndRebuild(in, fun))
   }
 
   override def eval(s: Store): Store = {
     val outE = OperationalSemantics.eval(s, out)
     OperationalSemantics.eval(s, `new`(init.t.dataType, PrivateMemory, accum => {
-      ReduceIAcc(π2(accum), f, init, in) `;`
+      ReduceIAcc(n, dt1, dt2, π2(accum), f, init, in) `;`
         outE(π1(accum))
     }))
   }
@@ -55,11 +65,9 @@ case class ReduceIExp(out: Phrase[ExpType -> CommandType],
   override def prettyPrint: String = s"reduceIExp ${PrettyPrinter(out)} ${PrettyPrinter(f)} ${PrettyPrinter(init)} ${PrettyPrinter(in)}"
 
   override def substituteImpl: Phrase[CommandType] = {
-    val l = length(in)
-    TypeChecker(l)
     `new`(init.t.dataType, PrivateMemory, accum => {
       (accum.wr `:=` init) `;`
-        `for`(l, i => {
+        `for`(n, i => {
           SubstituteImplementations( f(accum.wr)(in `@` i)(accum.rd) )
         }) `;`
         out(accum.rd)

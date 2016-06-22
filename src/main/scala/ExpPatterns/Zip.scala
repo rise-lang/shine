@@ -9,12 +9,21 @@ import Compiling.RewriteToImperative
 import apart.arithmetic.{ArithExpr, Cst}
 import opencl.generator.OpenCLAST.Expression
 
-case class Zip(lhs: Phrase[ExpType], rhs: Phrase[ExpType]) extends ExpPattern with ViewExpPattern {
+case class Zip(lhs: Phrase[ExpType],
+               rhs: Phrase[ExpType])
+  extends ExpPattern with ViewExpPattern {
+
+  private var n: ArithExpr = null
+  private var dt1: DataType = null
+  private var dt2: DataType = null
 
   override def typeCheck(): ExpType = {
     import TypeChecker._
     (TypeChecker(lhs), TypeChecker(rhs)) match {
-      case (ExpType(ArrayType(n, dt1)), ExpType(ArrayType(m, dt2))) if n == m =>
+      case (ExpType(ArrayType(n_, dt1_)), ExpType(ArrayType(m_, dt2_)))
+        if n_ == m_ =>
+        n = n_; dt1 = dt1_; dt2 = dt2_
+
         ExpType(ArrayType(n, RecordType(dt1, dt2)))
       case x => error(x.toString(), "PairOfArrayTypes")
     }
@@ -56,7 +65,7 @@ case class Zip(lhs: Phrase[ExpType], rhs: Phrase[ExpType]) extends ExpPattern wi
     import RewriteToImperative._
     exp(lhs)(λ(lhs.t) { x =>
       exp(rhs)(λ(rhs.t) { y =>
-        MapI(A,
+        MapI(n, RecordType(dt1, dt2), RecordType(dt1, dt2), A,
           λ(A.t) { o =>
             λ(ExpType(RecordType(lhs.t.dataType, rhs.t.dataType))) { x =>
               acc(x)(o) } },

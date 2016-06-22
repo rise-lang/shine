@@ -10,7 +10,7 @@ case class Assign(lhs: Phrase[AccType], rhs: Phrase[ExpType]) extends CommandPat
     import TypeChecker._
     (TypeChecker(lhs), TypeChecker(rhs)) match {
       case (AccType(d1), ExpType(d2)) =>
-        if (d1 == d2) {
+        if (d1 == d2 && d1.isInstanceOf[BasicType]) {
           CommandType()
         } else {
           error(d1.toString + " and " + d2.toString, expected = "them to match")

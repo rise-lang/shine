@@ -1,14 +1,18 @@
 package CommandPatterns
 
-import Core._
-import Core.PhraseType._
-import Core.OperationalSemantics._
-import DSL._
 import AccPatterns._
-import ExpPatterns._
 import Compiling.SubstituteImplementations
+import Core.OperationalSemantics._
+import Core.PhraseType._
+import Core._
+import DSL._
+import ExpPatterns._
+import apart.arithmetic.ArithExpr
 
-abstract class AbstractMapI(out: Phrase[AccType],
+abstract class AbstractMapI(n: ArithExpr,
+                            dt1: DataType,
+                            dt2: DataType,
+                            out: Phrase[AccType],
                             f: Phrase[AccType -> (ExpType -> CommandType)],
                             in: Phrase[ExpType])
   extends IntermediateCommandPattern {
@@ -16,7 +20,9 @@ abstract class AbstractMapI(out: Phrase[AccType],
   override def typeCheck(): CommandType = {
     import TypeChecker._
     (TypeChecker(out), TypeChecker(in)) match {
-      case (AccType(ArrayType(n, dt2)), ExpType(ArrayType(m, dt1))) if n == m =>
+      case (AccType(ArrayType(n_, dt2_)), ExpType(ArrayType(m, dt1_)))
+        if n_ == n && n == m && dt2_ == dt2 && dt1_ == dt1 =>
+
         setParamType(f, AccType(dt2))
         setSecondParamType(f, ExpType(dt1))
         TypeChecker(f) match {
@@ -46,26 +52,27 @@ abstract class AbstractMapI(out: Phrase[AccType],
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[CommandType] = {
-    makeMapI(VisitAndRebuild(out, fun), VisitAndRebuild(f, fun), VisitAndRebuild(in, fun))
+    makeMapI(n, dt1, dt2, VisitAndRebuild(out, fun), VisitAndRebuild(f, fun), VisitAndRebuild(in, fun))
   }
 
-  def makeMapI: (Phrase[AccType], Phrase[AccType -> (ExpType -> CommandType)], Phrase[ExpType]) => AbstractMapI
+  def makeMapI: (ArithExpr, DataType, DataType, Phrase[AccType], Phrase[AccType -> (ExpType -> CommandType)], Phrase[ExpType]) => AbstractMapI
 
   override def prettyPrint: String = s"${this.getClass.getSimpleName} ${PrettyPrinter(out)} ${PrettyPrinter(f)} ${PrettyPrinter(in)}"
 
 }
 
-case class MapI(out: Phrase[AccType],
+case class MapI(n: ArithExpr,
+                dt1: DataType,
+                dt2: DataType,
+                out: Phrase[AccType],
                 f: Phrase[AccType -> (ExpType -> CommandType)],
-                in: Phrase[ExpType]) extends AbstractMapI(out, f, in) {
+                in: Phrase[ExpType]) extends AbstractMapI(n, dt1, dt2, out, f, in) {
 
   override def makeMapI = MapI
 
   override def substituteImpl: Phrase[CommandType] = {
-    val l = length(in)
-    TypeChecker(l)
-    `parFor`(l, out, i => o => {
-      SubstituteImplementations( f(o)(in `@` i) )
+    `parFor`(n, out, i => o => {
+      SubstituteImplementations(f(o)(in `@` i))
     })
   }
 

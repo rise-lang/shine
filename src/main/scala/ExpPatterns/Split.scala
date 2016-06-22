@@ -11,17 +11,22 @@ import opencl.generator.OpenCLAST.Expression
 
 case class Split(n: ArithExpr, array: Phrase[ExpType]) extends ExpPattern with ViewExpPattern {
 
+  private var m: ArithExpr = null
+
   override def typeCheck(): ExpType = {
     import TypeChecker._
     TypeChecker(array) match {
-      case ExpType(ArrayType(m, dt)) =>
+      case ExpType(ArrayType(m_, dt)) =>
+        m = m_
         ExpType(ArrayType(m /^ n, ArrayType(n, dt)))
       case x => error(x.toString, "ArrayType")
     }
   }
 
   override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[ExpType] = {
-    Split(n, VisitAndRebuild(array, f))
+    var s = Split(n, VisitAndRebuild(array, f))
+    s.m = m
+    s
   }
 
   override def eval(s: Store): Data = {

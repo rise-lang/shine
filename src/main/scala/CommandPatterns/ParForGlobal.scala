@@ -2,12 +2,12 @@ package CommandPatterns
 
 import Core.PhraseType._
 import Core._
-import apart.arithmetic.{NamedVar, RangeAdd}
+import apart.arithmetic.{ArithExpr, NamedVar, RangeAdd}
 import opencl.generator.OpenCLAST._
 import opencl.generator.{get_global_id, get_global_size}
 
 
-case class ParForGlobal(override val n: Phrase[ExpType],
+case class ParForGlobal(override val n: ArithExpr,
                         override val out: Phrase[AccType],
                         override val body: Phrase[ExpType -> (AccType -> CommandType)])
   extends AbstractParFor(n, out, body) {

@@ -4,17 +4,16 @@ import Core._
 import Core.OperationalSemantics._
 import Core.PhraseType._
 import Compiling.SubstituteImplementations
-import apart.arithmetic.{RangeAdd, NamedVar}
+import apart.arithmetic.{ArithExpr, NamedVar, RangeAdd}
 import opencl.generator.OpenCLAST.Block
 import DSL._
 
-case class For(n: Phrase[ExpType],
+case class For(n: ArithExpr,
                body: Phrase[ExpType -> CommandType])
   extends CommandPattern {
 
   override def typeCheck(): CommandType = {
     import TypeChecker._
-    check(TypeChecker(n), ExpType(int))
     check(TypeChecker(body), FunctionType(ExpType(int), CommandType()))
     CommandType()
   }
@@ -28,7 +27,7 @@ case class For(n: Phrase[ExpType],
   }
 
   override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[CommandType] = {
-    For(VisitAndRebuild(n, f), VisitAndRebuild(body, f))
+    For(n, VisitAndRebuild(body, f))
   }
 
   override def substituteImpl: Phrase[CommandType] =
@@ -42,21 +41,16 @@ case class For(n: Phrase[ExpType],
   override def toOpenCL(block: Block, ocl: ToOpenCL): Block = {
     import opencl.generator.OpenCLAST._
 
-    val upperBound = ToOpenCL.exp(n, ocl) match {
-      case ArithExpression(ae) => ae
-      case _ => throw new Exception
-    }
-
     val name = newName()
 
-    ocl.env(name) = RangeAdd(0, upperBound, 1)
+    ocl.env(name) = RangeAdd(0, n, 1)
 
     val init = VarDecl(name, opencl.ir.Int,
       init = ArithExpression(0),
       addressSpace = opencl.ir.PrivateMemory)
 
     val cond = CondExpression(VarRef(name),
-      ArithExpression(upperBound),
+      ArithExpression(n),
       CondExpression.Operator.<)
 
     val v = NamedVar(name)

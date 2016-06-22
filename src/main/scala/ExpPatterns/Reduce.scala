@@ -7,14 +7,13 @@ import Core.OperationalSemantics._
 import DSL._
 import Compiling.RewriteToImperative
 import apart.arithmetic.ArithExpr
-import opencl.generator.OpenCLAST.Expression
 
 abstract class AbstractReduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
                               init: Phrase[ExpType],
                               array: Phrase[ExpType],
                               makeReduce: (Phrase[ExpType -> (ExpType -> ExpType)], Phrase[ExpType], Phrase[ExpType]) => AbstractReduce,
-                              makeReduceIAcc: (Phrase[AccType], Phrase[AccType -> (ExpType -> (ExpType -> CommandType))], Phrase[ExpType], Phrase[ExpType]) => ReduceIAcc,
-                              makeReduceIExp: (Phrase[ExpType -> CommandType], Phrase[AccType -> (ExpType -> (ExpType -> CommandType))], Phrase[ExpType], Phrase[ExpType]) => ReduceIExp)
+                              makeReduceIAcc: (ArithExpr, DataType, DataType, Phrase[AccType], Phrase[AccType -> (ExpType -> (ExpType -> CommandType))], Phrase[ExpType], Phrase[ExpType]) => ReduceIAcc,
+                              makeReduceIExp: (ArithExpr, DataType, DataType, Phrase[ExpType -> CommandType], Phrase[AccType -> (ExpType -> (ExpType -> CommandType))], Phrase[ExpType], Phrase[ExpType]) => ReduceIExp)
   extends ExpPattern {
 
   protected var n: ArithExpr = null
@@ -71,7 +70,7 @@ abstract class AbstractReduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
 
     exp(array)(λ( ExpType(ArrayType(n, dt1)) ) { x =>
       exp(init)(λ( ExpType(dt2) ) { y =>
-        makeReduceIAcc(A,
+        makeReduceIAcc(n, dt1, dt2, A,
           λ( AccType(dt2) ) { o =>
             λ( ExpType(dt1) ) { x =>
               λ( ExpType(dt2) ) { y => acc( f(x)(y) )( o ) } } },
@@ -88,7 +87,7 @@ abstract class AbstractReduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
 
     exp(array)(λ( ExpType(ArrayType(n, dt1)) ) { x =>
       exp(init)(λ( ExpType(dt2) ) { y =>
-        makeReduceIExp(C,
+        makeReduceIExp(n, dt1, dt2, C,
           λ( AccType(dt2) ) { o =>
             λ( ExpType(dt1) ) { x =>
               λ( ExpType(dt2) ) { y => acc( f(x)(y) )( o ) } } },

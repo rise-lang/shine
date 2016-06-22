@@ -7,7 +7,7 @@ import opencl.generator.OpenCLAST._
 import opencl.generator.{get_local_id, get_local_size}
 
 
-case class ParForLocal(override val n: Phrase[ExpType],
+case class ParForLocal(override val n: ArithExpr,
                        override val out: Phrase[AccType],
                        override val body: Phrase[ExpType -> (AccType -> CommandType)])
   extends AbstractParFor(n, out, body) {

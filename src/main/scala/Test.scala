@@ -174,7 +174,7 @@ object Test extends App {
 
     val f = λ( x => x._1 + x._2 )
 
-    val p = `for`(length(in1), { i =>
+    val p = `for`(5, { i =>
       λ(AccType(int) x ExpType(RecordType(int, int))) {
         p => π1(p) := f(π2(p))
       }(PairPhrase(out `@` i, zip(in1, in2) `@` i))
@@ -204,7 +204,7 @@ object Test extends App {
 
     val f = λ( x => x._1 + x._2 )
 
-    val p = `for`(length(in1), { i =>
+    val p = `for`(5, { i =>
       out `@` i := f(zip(in1, in2) `@` i)
     })
 
@@ -231,7 +231,7 @@ object Test extends App {
 //    store = makeArrayData(store, in2.name, 2, 3, 4, 5, 6)
 //    store = makeArrayData(store, out.name, 0, 0, 0, 0, 0)
 
-    val p = `for`(length(in1), { i =>
+    val p = `for`(5, { i =>
       out `@` i := (zip(in1, in2) `@` i)._1 + (zip(in1, in2) `@` i)._2
     })
 
@@ -257,7 +257,7 @@ object Test extends App {
 //    store = makeArrayData(store, in2.name, 2, 3, 4, 5, 6)
 //    store = makeArrayData(store, out.name, 0, 0, 0, 0, 0)
 
-    val p = `for`(length(out), { i =>
+    val p = `for`(5, { i =>
       (out `@` i) := Record(in1 `@` i, in2 `@` i)._1 + Record(in1 `@` i, in2 `@` i)._2
     })
 
@@ -283,7 +283,7 @@ object Test extends App {
 //    store = makeArrayData(store, in2.name, 2, 3, 4, 5, 6)
 //    store = makeArrayData(store, out.name, 0, 0, 0, 0, 0)
 
-    val p = `for`(length(out), { i =>
+    val p = `for`(5, { i =>
       (out `@` i) := in1 `@` i + in2 `@` i
     })
 
@@ -645,28 +645,6 @@ object Test extends App {
         ), y)
       ), x)
 
-    println( p )
-
-    println( TypeChecker(p) )
-
-    println( OperationalSemantics.eval(store, p) )
-  }
-
-  {
-    var store = HashMap[String, Data]()
-    val x = identifier("x", ExpType(ArrayType(4, int)))
-    val y = identifier("y", ExpType(ArrayType(4, int)))
-    val out = identifier("out", AccType(ArrayType(4, int)))
-    store = store + (x.name -> makeArrayData(1, 2, 3, 4))
-    store = store + (y.name -> makeArrayData(2, 3, 4, 5))
-    store = store + (out.name -> makeArrayData(0, 0, 0, 0))
-//    store = makeArrayData(store, x.name, 1, 2, 3, 4)
-//    store = makeArrayData(store, y.name, 2, 3, 4, 5)
-//    store = makeArrayData(store, out.name, 0, 0, 0, 0)
-
-    val f = λ(AccType(int))(o => λ(i => o := i + 4 )  )
-
-    val p = mapI(out, f, x)
     println( p )
 
     println( TypeChecker(p) )

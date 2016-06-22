@@ -6,9 +6,12 @@ import Core.OperationalSemantics._
 import ExpPatterns.Idx
 import DSL._
 import Compiling.SubstituteImplementations
-import opencl.generator.OpenCLAST.Block
+import apart.arithmetic.ArithExpr
 
-case class ReduceIAcc(out: Phrase[AccType],
+case class ReduceIAcc(n: ArithExpr,
+                      dt1: DataType,
+                      dt2: DataType,
+                      out: Phrase[AccType],
                       f: Phrase[AccType -> (ExpType -> (ExpType -> CommandType))],
                       init: Phrase[ExpType],
                       in: Phrase[ExpType]) extends IntermediateCommandPattern {
@@ -16,7 +19,9 @@ case class ReduceIAcc(out: Phrase[AccType],
   override def typeCheck(): CommandType = {
     import TypeChecker._
     (TypeChecker(out), TypeChecker(init), TypeChecker(in)) match {
-      case (AccType(dt2), ExpType(dt3), ExpType(ArrayType(n, dt1))) if dt2 == dt3 =>
+      case (AccType(dt2_), ExpType(dt3), ExpType(ArrayType(n_, dt1_)))
+        if dt1_ == dt1 && dt2_ == dt2 && dt2 == dt3 && n_ == n =>
+
         setParamType(f, AccType(dt2))
         setSecondParamType(f, ExpType(dt1))
         setThirdParamType(f, ExpType(dt2))
@@ -35,7 +40,11 @@ case class ReduceIAcc(out: Phrase[AccType],
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[CommandType] = {
-    ReduceIAcc(VisitAndRebuild(out, fun), VisitAndRebuild(f, fun), VisitAndRebuild(init, fun), VisitAndRebuild(in, fun))
+    ReduceIAcc(n, dt1, dt2,
+      VisitAndRebuild(out, fun),
+      VisitAndRebuild(f, fun),
+      VisitAndRebuild(init, fun),
+      VisitAndRebuild(in, fun))
   }
 
   override def eval(s: Store): Store = {
@@ -51,11 +60,9 @@ case class ReduceIAcc(out: Phrase[AccType],
   override def prettyPrint: String = s"reduceIAcc ${PrettyPrinter(out)} ${PrettyPrinter(f)} ${PrettyPrinter(init)} ${PrettyPrinter(in)}"
 
   override def substituteImpl: Phrase[CommandType] = {
-    val l = length(in)
-    TypeChecker(l)
     `new`(init.t.dataType, PrivateMemory, accum => {
       (accum.wr `:=` init) `;`
-      `for`(l, i => {
+      `for`(n, i => {
         SubstituteImplementations( f(accum.wr)(in `@` i)(accum.rd) )
       }) `;`
       (out `:=` accum.rd)

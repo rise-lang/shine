@@ -9,7 +9,7 @@ import opencl.generator.OpenCLAST
 import opencl.generator.OpenCLAST._
 import DSL._
 
-abstract class AbstractParFor(val n: Phrase[ExpType],
+abstract class AbstractParFor(val n: ArithExpr,
                               val out: Phrase[AccType],
                               val body: Phrase[ExpType -> (AccType -> CommandType)])
   extends CommandPattern {
@@ -47,7 +47,7 @@ abstract class AbstractParFor(val n: Phrase[ExpType],
   }
 
   override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[CommandType] = {
-    makeParFor(VisitAndRebuild(n, f), VisitAndRebuild(out, f), VisitAndRebuild(body, f))
+    makeParFor(n, VisitAndRebuild(out, f), VisitAndRebuild(body, f))
   }
 
   override def substituteImpl: Phrase[CommandType] =
@@ -56,14 +56,9 @@ abstract class AbstractParFor(val n: Phrase[ExpType],
   override def prettyPrint: String =
     s"${this.getClass.getSimpleName} ${evalIndexExp(new OperationalSemantics.Store(), n)} ${PrettyPrinter(out)} ${PrettyPrinter(body)}"
 
-  def makeParFor: (Phrase[ExpType], Phrase[AccType], Phrase[ExpType -> (AccType -> CommandType)]) => AbstractParFor
+  def makeParFor: (ArithExpr, Phrase[AccType], Phrase[ExpType -> (AccType -> CommandType)]) => AbstractParFor
 
   protected val name: String = newName()
-
-  protected lazy val upperBound = ToOpenCL.exp(n, ocl) match {
-    case ArithExpression(ae) => ae
-    case _ => throw new Exception("This should not happen")
-  }
 
   def init: ArithExpr
   def step: ArithExpr
@@ -74,7 +69,7 @@ abstract class AbstractParFor(val n: Phrase[ExpType],
 
     this.ocl = ocl
 
-    val range = RangeAdd(init, upperBound, step)
+    val range = RangeAdd(init, n, step)
 
     ocl.env(name) = range
 
@@ -88,7 +83,7 @@ abstract class AbstractParFor(val n: Phrase[ExpType],
       addressSpace = opencl.ir.PrivateMemory)
 
     val cond = CondExpression(VarRef(name),
-      ArithExpression(upperBound),
+      ArithExpression(n),
       CondExpression.Operator.<)
 
 
@@ -117,7 +112,7 @@ abstract class AbstractParFor(val n: Phrase[ExpType],
           val ifthenelse =
             IfThenElse(CondExpression(
               ArithExpression(init),
-              ArithExpression(upperBound),
+              ArithExpression(n),
               CondExpression.Operator.<), bodyBlock(Block()))
           (block: Block) += Block(Vector(initDecl, ifthenelse))
         } else {
@@ -134,7 +129,7 @@ abstract class AbstractParFor(val n: Phrase[ExpType],
 
 }
 
-case class ParFor(override val n: Phrase[ExpType],
+case class ParFor(override val n: ArithExpr,
                   override val out: Phrase[AccType],
                   override val body: Phrase[ExpType -> (AccType -> CommandType)])
   extends AbstractParFor(n, out, body) {

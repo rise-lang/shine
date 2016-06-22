@@ -7,12 +7,11 @@ import Core.OperationalSemantics._
 import DSL._
 import Compiling.RewriteToImperative
 import apart.arithmetic.ArithExpr
-import opencl.generator.OpenCLAST.Expression
 
 abstract class AbstractMap(f: Phrase[ExpType -> ExpType],
                            array: Phrase[ExpType],
                            makeMap: (Phrase[ExpType -> ExpType], Phrase[ExpType]) => AbstractMap,
-                           makeMapI: (Phrase[AccType], Phrase[AccType -> (ExpType -> CommandType)], Phrase[ExpType]) => AbstractMapI)
+                           makeMapI: (ArithExpr, DataType, DataType, Phrase[AccType], Phrase[AccType -> (ExpType -> CommandType)], Phrase[ExpType]) => AbstractMapI)
   extends ExpPattern {
 
   protected var n: ArithExpr = null
@@ -63,7 +62,7 @@ abstract class AbstractMap(f: Phrase[ExpType -> ExpType],
     import RewriteToImperative._
 
     exp(array)(λ( ExpType(ArrayType(n, dt1)) ) { x =>
-      makeMapI(A,
+      makeMapI(n, dt1, dt2, A,
         λ( AccType(dt2) ) { o =>
           λ( ExpType(dt1) ) { x => acc(f(x))(o) } },
         x
