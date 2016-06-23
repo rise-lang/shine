@@ -16,9 +16,12 @@ case class TruncExp(n: ArithExpr,
   override def typeCheck(): ExpType = {
     import TypeChecker._
     TypeChecker(array) match {
-      case ExpType(ArrayType(nm, dt_))
-        if nm == n+m && dt_ == dt =>
-        ExpType(ArrayType(n, dt))
+      case ExpType(ArrayType(nm, dt_)) =>
+        if (nm == n+m && dt_ == dt) {
+          ExpType(ArrayType(n, dt))
+        } else {
+          error(s"[$nm.$dt_]", s"[$n + $m.$dt]")
+        }
       case x => error(x.toString, "ArrayType")
     }
   }

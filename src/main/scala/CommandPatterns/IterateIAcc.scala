@@ -66,18 +66,9 @@ case class IterateIAcc(n: ArithExpr,
         dblBufFor(s, dt, buf1, buf2, k,
           _Λ_(l => {
             val s_l_l = s_l(l)
-            λ(null.asInstanceOf[AccType]) { o =>
-              λ(null.asInstanceOf[ExpType]) { x =>
-
-                println(f)
-                println(TypeChecker(f))
-
-                val fl = f(s_l(l))
-
-                println(fl)
-                println(fl.t)
-
-                fl(TruncAcc(s, s_l_l, dt, o))(TruncExp(s, s_l_l, dt, x))
+            λ(AccType(ArrayType(s_l(l - 1), dt))) { o =>
+              λ(ExpType(ArrayType(s_l_l, dt))) { x =>
+                f(s_l_l)(TruncAcc(s_l_l, s_l_l, dt, o))(TruncExp(s_l(l+1), s_l(l+1), dt, x))
               }
             }
           }

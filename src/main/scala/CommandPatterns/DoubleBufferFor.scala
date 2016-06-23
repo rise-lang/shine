@@ -19,39 +19,57 @@ case class DoubleBufferFor(n: ArithExpr,
   extends CommandPattern {
 
   override def toOpenCL(block: Block, ocl: ToOpenCL): Block = {
-//    import opencl.generator.OpenCLAST._
-//
-//    val upperBound = ToOpenCL.exp(n, ocl) match {
-//      case ArithExpression(ae) => ae
-//      case _ => throw new Exception
-//    }
-//
-//    val name = newName()
-//
-//    ocl.env(name) = RangeAdd(0, upperBound, 1)
-//
-//    val init = VarDecl(name, opencl.ir.Int,
-//      init = ArithExpression(0),
-//      addressSpace = opencl.ir.PrivateMemory)
-//
-//    val cond = CondExpression(VarRef(name),
-//      ArithExpression(upperBound),
-//      CondExpression.Operator.<)
-//
-//    val v = NamedVar(name)
-//    val increment = AssignmentExpression(ArithExpression(v), ArithExpression(v + 1))
-//
-//    val bodyE = Lift.liftFunction(body)
-//    val i = identifier(name, ExpType(int))
-//
-//    val body_ = ToOpenCL.cmd(bodyE(i), Block(), ocl)
-//
-//    (block: Block) += ForLoop(init, cond, increment, body_)
-//
-//    ocl.env.remove(name)
-//
-//    block
-    (block: Block) += Comment("double buffer for")
+    import opencl.generator.OpenCLAST._
+
+    // in* = buffer1
+    val buffer1Name = buffer1 match {
+      case i: IdentPhrase[VarType] => i.name
+    }
+    val inptr = newName()
+
+    (block: Block) += VarDecl(inptr, DataType.toType(dt),
+      init = VarRef(buffer1Name), addressSpace = opencl.ir.PrivateMemory)
+
+    // out* = buffer2
+    val buffer2Name = buffer2 match {
+      case i: IdentPhrase[VarType] => i.name
+    }
+    val outptr = newName()
+
+    (block: Block) += VarDecl(outptr, DataType.toType(dt),
+      init = VarRef(buffer2Name), addressSpace = opencl.ir.PrivateMemory)
+
+    // for ...
+    val name = newName()
+    val loopVar = NamedVar(name)
+
+    ocl.env(name) = RangeAdd(0, k, 1)
+
+    val init = VarDecl(name, opencl.ir.Int,
+      init = ArithExpression(0),
+      addressSpace = opencl.ir.PrivateMemory)
+
+    val cond = CondExpression(VarRef(name),
+      ArithExpression(k),
+      CondExpression.Operator.<)
+
+    val increment = AssignmentExpression(ArithExpression(loopVar), ArithExpression(loopVar + 1))
+
+    val bodyE = Lift.liftNatDependentFunction(body)
+    val tmp = bodyE(loopVar)
+    TypeChecker(tmp)
+    val bodyEE  = Lift.liftFunction(tmp)
+
+    val in = identifier(inptr, ExpType(dt))
+    val out = identifier(outptr, AccType(dt))
+
+    val body_ = ToOpenCL.cmd(bodyEE(out)(in), Block(), ocl)
+
+    (block: Block) += ForLoop(init, cond, increment, body_)
+
+    ocl.env.remove(name)
+
+    block
   }
 
   override def eval(s: Store): Store = ???

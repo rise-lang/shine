@@ -53,6 +53,8 @@ object PhraseType {
 
     case class fun() extends VisitAndRebuild.fun {
       override def apply[T2 <: PhraseType](p: Phrase[T2]): Result[Phrase[T2]] = {
+        println(p)
+        TypeChecker(p)
         p.t = substitute(ae, `for`, p.t).asInstanceOf[T2]
         Continue(p, this)
       }

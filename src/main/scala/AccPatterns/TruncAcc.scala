@@ -2,7 +2,6 @@ package AccPatterns
 
 import Core._
 import Core.OperationalSemantics._
-import Core.VisitAndRebuild.fun
 import apart.arithmetic.ArithExpr
 import opencl.generator.OpenCLAST.VarRef
 
@@ -15,9 +14,12 @@ case class TruncAcc(n: ArithExpr,
   override def typeCheck(): AccType = {
     import TypeChecker._
     TypeChecker(array) match {
-      case AccType(ArrayType(nm, dt_))
-        if nm == n+m && dt_ == dt =>
-        AccType(ArrayType(n, dt))
+      case AccType(ArrayType(nm, dt_)) =>
+        if (nm == n+m && dt_ == dt) {
+          AccType(ArrayType(n, dt))
+        } else {
+          error(s"[$nm.$dt_]", s"[$n + $m.$dt]")
+        }
       case x => error(x.toString, "ArrayType")
     }
   }
