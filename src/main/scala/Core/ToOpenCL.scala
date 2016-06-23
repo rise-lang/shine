@@ -60,13 +60,13 @@ class ToOpenCL(val localSize: ArithExpr, val globalSize: ArithExpr) {
 
     println(PrettyPrinter(p3))
 
-    val p4 = AdjustMemoryAllocation(p3)
+//    val p4 = AdjustMemoryAllocation(p3)
 
 //    println("--------------------")
 
     //println(PrettyPrinter(p4))
 
-    val body = ToOpenCL.cmd(p4, Block(), this)
+    val body = ToOpenCL.cmd(p3, Block(), this)
 
     Function(name = "KERNEL", ret = UndefType, params = params, body = body, kernel = true)
   }
@@ -238,7 +238,7 @@ object ToOpenCL {
 
       case e: ExpPattern => e match {
         case v: ViewExpPattern => v.toOpenCL(ocl, arrayAccess, tupleAccess)
-        case _ => throw new Exception("This should not happen")
+        case _ => throw new Exception(s"This should not happen: $e")
       }
 
       case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |

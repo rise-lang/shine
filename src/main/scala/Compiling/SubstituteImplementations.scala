@@ -42,4 +42,12 @@ object SubstituteImplementations {
     }
   }
 
+  def applyNatDependentBinaryFun[T1 <: PhraseType, T2 <: PhraseType](p: Phrase[`(nat)->`[T1 -> (T2 -> CommandType)]]): Phrase[`(nat)->`[T1 -> (T2 -> CommandType)]] = {
+    p match {
+      case NatDependentLambdaPhrase(x, body) =>
+        NatDependentLambdaPhrase(x, applyBinaryFun(body))
+      case _ => throw new Exception("This should never happen")
+    }
+  }
+
 }

@@ -4,9 +4,8 @@ import Core._
 import Core.OperationalSemantics._
 import Core.PhraseType._
 import Compiling.SubstituteImplementations
-import Core.VisitAndRebuild.fun
 import apart.arithmetic.{ArithExpr, NamedVar, RangeAdd}
-import opencl.generator.OpenCLAST.{Block, Comment}
+import opencl.generator.OpenCLAST.Block
 import DSL._
 
 case class DoubleBufferFor(n: ArithExpr,
@@ -55,17 +54,27 @@ case class DoubleBufferFor(n: ArithExpr,
 
     val increment = AssignmentExpression(ArithExpression(loopVar), ArithExpression(loopVar + 1))
 
+    val in = identifier(inptr, ExpType(ArrayType(n, dt)))
+    val out = identifier(outptr, AccType(ArrayType(n, dt)))
+
     val bodyE = Lift.liftNatDependentFunction(body)
-    val tmp = bodyE(loopVar)
-    TypeChecker(tmp)
-    val bodyEE  = Lift.liftFunction(tmp)
+    val bodyEE = Lift.liftFunction(bodyE(loopVar))
+    val bodyEEE = Lift.liftFunction(bodyEE(out))
 
-    val in = identifier(inptr, ExpType(dt))
-    val out = identifier(outptr, AccType(dt))
+    val nestedBlock = Block()
+    val body_ = ToOpenCL.cmd(bodyEEE(in), nestedBlock, ocl)
 
-    val body_ = ToOpenCL.cmd(bodyEE(out)(in), Block(), ocl)
+    nestedBlock += Comment(s"swap($inptr, $outptr);")
 
     (block: Block) += ForLoop(init, cond, increment, body_)
+
+    // copy result to output
+    val CE = Lift.liftFunction(C)
+
+    val tmp = CE(in)
+    TypeChecker(tmp)
+
+    (block: Block) += ToOpenCL.cmd(tmp, Block(), ocl)
 
     ocl.env.remove(name)
 
@@ -87,7 +96,14 @@ case class DoubleBufferFor(n: ArithExpr,
     CommandType()
   }
 
-  override def substituteImpl: Phrase[CommandType] = ???
+  override def substituteImpl: Phrase[CommandType] = {
+    DoubleBufferFor(n, dt,
+      buffer1,
+      buffer2,
+      k,
+      SubstituteImplementations.applyNatDependentBinaryFun(body),
+      SubstituteImplementations.applyFun(C))
+  }
 
   override def prettyPrint: String = {
     s"doubleBufferFor $buffer1 $buffer2 $k $body $C"

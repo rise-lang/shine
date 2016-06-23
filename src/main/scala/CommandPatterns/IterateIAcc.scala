@@ -56,27 +56,26 @@ case class IterateIAcc(n: ArithExpr,
   }
 
   override def substituteImpl: Phrase[CommandType] = {
-    val s = n.pow(k)*m
-    val s_l = (l: ArithExpr) => n.pow(k-l)*m
+    val sEnd = n.pow(k)*m
+    val s = (l: ArithExpr) => n.pow(k-l)*m
 
-    `new`( ArrayType(s, dt), GlobalMemory, buf1 => {
-      `new`( ArrayType(s, dt), GlobalMemory, buf2 => {
-        SubstituteImplementations(MapI(s, dt, dt, buf1.wr,
+    `new`( ArrayType(sEnd, dt), GlobalMemory, buf1 => {
+      `new`( ArrayType(sEnd, dt), GlobalMemory, buf2 => {
+        SubstituteImplementations(MapI(sEnd, dt, dt, buf1.wr,
           λ( AccType(dt) ) { o => λ( ExpType(dt) ) { x => o `:=` x } }, in)) `;`
-        dblBufFor(s, dt, buf1, buf2, k,
+        dblBufFor(sEnd, dt, buf1, buf2, k,
           _Λ_(l => {
-            val s_l_l = s_l(l)
-            λ(AccType(ArrayType(s_l(l - 1), dt))) { o =>
-              λ(ExpType(ArrayType(s_l_l, dt))) { x =>
-                f(s_l_l)(TruncAcc(s_l_l, s_l_l, dt, o))(TruncExp(s_l(l+1), s_l(l+1), dt, x))
+            val s_l = s(l)
+            val s_l1 = s(l + 1)
+            λ(AccType(ArrayType(sEnd, dt))) { o =>
+              λ(ExpType(ArrayType(sEnd, dt))) { x =>
+                SubstituteImplementations(f(s_l)(TruncAcc(sEnd, s_l1, dt, o))(TruncExp(sEnd, s_l, dt, x)))
               }
             }
-          }
-          ),
-          λ(ExpType(ArrayType(s, dt)))( x =>
+          }),
+          λ(ExpType(ArrayType(sEnd, dt)))( x =>
             SubstituteImplementations(MapI(m, dt, dt, out,
-              λ( AccType(dt) ) { o => λ( ExpType(dt) ) { x => o `:=` x } }, x))
-          )
+              λ( AccType(dt) ) { o => λ( ExpType(dt) ) { x => o `:=` x } }, x)))
         )
       } )
     } )

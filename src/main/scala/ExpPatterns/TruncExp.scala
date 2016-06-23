@@ -5,22 +5,22 @@ import Core.OperationalSemantics._
 import Core.PhraseType.->
 import Core.VisitAndRebuild.fun
 import apart.arithmetic.ArithExpr
-import opencl.generator.OpenCLAST.VarRef
+import opencl.generator.OpenCLAST.{Expression, VarRef}
 
 case class TruncExp(n: ArithExpr,
                     m: ArithExpr,
                     dt: DataType,
                     array: Phrase[ExpType])
-  extends ExpPattern {
+  extends ExpPattern with ViewExpPattern {
 
   override def typeCheck(): ExpType = {
     import TypeChecker._
     TypeChecker(array) match {
-      case ExpType(ArrayType(nm, dt_)) =>
-        if (nm == n+m && dt_ == dt) {
-          ExpType(ArrayType(n, dt))
+      case ExpType(ArrayType(n_, dt_)) =>
+        if (n_ == n && dt_ == dt) {
+          ExpType(ArrayType(m, dt))
         } else {
-          error(s"[$nm.$dt_]", s"[$n + $m.$dt]")
+          error(s"[$n_.$dt_]", s"[$n.$dt]")
         }
       case x => error(x.toString, "ArrayType")
     }
@@ -37,5 +37,11 @@ case class TruncExp(n: ArithExpr,
   override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = ???
 
   override def prettyPrint: String = ???
+
+  override def toOpenCL(ocl: ToOpenCL,
+                        arrayAccess: List[(ArithExpr, ArithExpr)],
+                        tupleAccess: List[ArithExpr]): Expression = {
+    ToOpenCL.exp(array, ocl, arrayAccess, tupleAccess)
+  }
 
 }
