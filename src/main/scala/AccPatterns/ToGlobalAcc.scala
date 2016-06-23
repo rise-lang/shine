@@ -21,8 +21,8 @@ case class ToGlobalAcc(p: Phrase[AccType]) extends AccPattern{
 
   def toOpenCL(ocl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): VarRef = ???
 
-  override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[AccType] = {
-    ToGlobalAcc(VisitAndRebuild(p, f))
+  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[AccType] = {
+    ToGlobalAcc(VisitAndRebuild(p, fun))
   }
 
   override def prettyPrint: String = s"(toGlobalAcc ${PrettyPrinter(p)})"

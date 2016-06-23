@@ -151,7 +151,7 @@ object ToOpenCL {
 
       case c: IntermediateCommandPattern => c match {
         case fc: CommandPattern => fc.toOpenCL(block, ocl)
-        case _ => throw new Exception("This should not happen")
+        case _ => throw new Exception(s"This should not happen $c")
       }
 
       case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |

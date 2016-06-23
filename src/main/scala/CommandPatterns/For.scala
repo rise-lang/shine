@@ -26,8 +26,8 @@ case class For(n: ArithExpr,
     } )
   }
 
-  override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[CommandType] = {
-    For(n, VisitAndRebuild(body, f))
+  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[CommandType] = {
+    For(fun(n), VisitAndRebuild(body, fun))
   }
 
   override def substituteImpl: Phrase[CommandType] =

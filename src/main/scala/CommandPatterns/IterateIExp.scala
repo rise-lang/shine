@@ -1,13 +1,12 @@
 package CommandPatterns
 
+import AccPatterns.TruncAcc
+import Compiling.RewriteToImperative
 import Core._
 import Core.PhraseType._
 import Core.OperationalSemantics._
 import DSL._
-import AccPatterns._
-import ExpPatterns._
-import Compiling.SubstituteImplementations
-import Core.VisitAndRebuild.fun
+import ExpPatterns.TruncExp
 import apart.arithmetic._
 
 case class IterateIExp(n: ArithExpr,
@@ -15,7 +14,7 @@ case class IterateIExp(n: ArithExpr,
                        k: ArithExpr,
                        dt: DataType,
                        out: Phrase[ExpType -> CommandType],
-                       f: Phrase[AccType -> (ExpType -> CommandType)],
+                       f: Phrase[`(nat)->`[AccType -> (ExpType -> CommandType)]],
                        in: Phrase[ExpType])
   extends IntermediateCommandPattern {
 
@@ -34,16 +33,20 @@ case class IterateIExp(n: ArithExpr,
           case x => error(x.toString, "FunctionType")
         }
 
-        val l = NamedVar("l")
-        setParamType(f, AccType(ArrayType(l, dt)))
-        setSecondParamType(f, ExpType(ArrayType(l * n, dt)))
-        TypeChecker(f) match {
-          case FunctionType(AccType(ArrayType(l_, dt3_)),
-          FunctionType(ExpType(ArrayType(ln_, dt4_)), CommandType()))
-            if l_ == l && dt3_ == dt && ln_ == l*n && dt4_ == dt =>
-            CommandType()
-          case ft => error(ft.toString, "FunctionType")
+        f match {
+          case NatDependentLambdaPhrase(l, body) =>
+            setParamType(body, AccType(ArrayType(l /^ n, dt)))
+            setSecondParamType(body, ExpType(ArrayType(l, dt)))
+            TypeChecker(body) match {
+              case FunctionType(AccType(ArrayType(l_, dt3_)),
+              FunctionType(ExpType(ArrayType(ln_, dt4_)), CommandType()))
+                if l_ == l && dt3_ == dt && ln_ == l*n && dt4_ == dt =>
+                CommandType()
+              case ft => error(ft.toString, "FunctionType")
+            }
+          case _ => error(f.toString, "NatDependentLambdaPhrase")
         }
+
       case t_ => error(t_.toString, "ArrayType")
     }
   }
@@ -51,14 +54,33 @@ case class IterateIExp(n: ArithExpr,
   override def eval(s: Store): Store = ???
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[CommandType] = {
-    IterateIExp(n, m, k, dt,
+    IterateIExp(fun(n), fun(m), fun(k), fun(dt),
       VisitAndRebuild(out, fun),
       VisitAndRebuild(f, fun),
       VisitAndRebuild(in, fun))
   }
 
   override def substituteImpl: Phrase[CommandType] = {
-    ???
+    import RewriteToImperative._
+
+    val s = n.pow(k)*m
+    val s_l = (l: ArithExpr) => n.pow(k-l)*m
+
+    `new`( ArrayType(n.pow(k)*m, dt), GlobalMemory, buf1 => {
+      `new`( ArrayType(n.pow(k)*m, dt), GlobalMemory, buf2 => {
+        acc(in)(buf1.wr) `;`
+        dblBufFor(s, dt, buf1, buf2, k,
+          _Λ_(l =>
+            λ(null.asInstanceOf[AccType]) { o =>
+              λ(null.asInstanceOf[ExpType]) { x =>
+                f (s_l(l)) (TruncAcc(s, s_l(l), dt, o)) (TruncExp(s, s_l(l), dt, x))
+              }
+            }
+          ),
+          out
+        )
+      } )
+    } )
   }
 
   override def prettyPrint: String =

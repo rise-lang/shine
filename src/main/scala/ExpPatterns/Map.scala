@@ -40,9 +40,9 @@ abstract class AbstractMap(f: Phrase[ExpType -> ExpType],
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[ExpType] = {
     val m = makeMap(VisitAndRebuild(f, fun), VisitAndRebuild(array, fun))
-    m.n = n
-    m.dt1 = dt1
-    m.dt2 = dt2
+    m.n = fun(n)
+    m.dt1 = fun(dt1)
+    m.dt2 = fun(dt2)
     m
   }
 

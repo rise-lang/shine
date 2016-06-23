@@ -56,9 +56,16 @@ object PhraseType {
         p.t = substitute(ae, `for`, p.t).asInstanceOf[T2]
         Continue(p, this)
       }
+
+      override def apply(e: ArithExpr) = substitute(ae, `for`, e)
+
+      override def apply(dt: DataType) = substitute(ae, `for`, dt)
     }
 
-    VisitAndRebuild(in, fun())
+    val p = VisitAndRebuild(in, fun())
+    println(p)
+    TypeChecker(p)
+    p
   }
 
   def substitute(ae: ArithExpr, `for`: NamedVar, in: PhraseType): PhraseType = {
@@ -88,6 +95,10 @@ object PhraseType {
       case r: RecordType =>
         RecordType(substitute(ae, `for`, r.fst), substitute(ae, `for`, r.snd))
     }
+  }
+
+  def substitute(ae: ArithExpr, `for`: NamedVar, in: ArithExpr): ArithExpr = {
+   ArithExpr.substitute(in, Map( (`for`, ae) ))
   }
 
 }

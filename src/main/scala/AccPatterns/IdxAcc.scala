@@ -30,9 +30,9 @@ case class IdxAcc(array: Phrase[AccType],
     ArrayAccessIdentifier(arrayE, indexE)
   }
 
-  override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[AccType] = {
-    val i = IdxAcc(VisitAndRebuild(array, f), VisitAndRebuild(index, f))
-    i.dt = dt
+  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[AccType] = {
+    val i = IdxAcc(VisitAndRebuild(array, fun), VisitAndRebuild(index, fun))
+    i.dt = fun(dt)
     i
   }
 

@@ -40,8 +40,8 @@ abstract class To(f: Phrase[ExpType -> ExpType],
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[ExpType] = {
     val tl = makeTo(VisitAndRebuild(f, fun), VisitAndRebuild(input, fun))
-    tl.dt1 = dt1
-    tl.dt2 = dt2
+    tl.dt1 = fun(dt1)
+    tl.dt2 = fun(dt2)
     tl
   }
 

@@ -52,7 +52,9 @@ package object DSL {
   }
 
   implicit class CallNatDependentLambda[T <: PhraseType](fun: Phrase[`(nat)->`[T]]) {
-    def apply(arg: ArithExpr): Phrase[T] = Lift.liftNatDependentFunction(fun)(arg)
+    def apply(arg: ArithExpr): Phrase[T] = {
+      Lift.liftNatDependentFunction(fun)(arg)
+    }
 
     def $(arg: ArithExpr): Phrase[T] = apply(arg)
   }
@@ -89,6 +91,8 @@ package object DSL {
   implicit def toLiteralInt(i: Int): LiteralPhrase = LiteralPhrase(i)
   implicit def toLiteralFloat(f: Float): LiteralPhrase = LiteralPhrase(FloatData(f))
   implicit def toLiteralFloat4(v: VectorData): LiteralPhrase = LiteralPhrase(v)
+
+  implicit def toNatDependentLambda[T <: PhraseType](p: Phrase[T]): NatDependentLambdaPhrase[T] = _Λ_( l => p )
 
   implicit class ExpPhraseExtensions(e: Phrase[ExpType]) {
     def _1 = Fst(e)

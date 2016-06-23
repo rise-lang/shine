@@ -26,11 +26,11 @@ case class Join(array: Phrase[ExpType]) extends ExpPattern with ViewExpPattern {
     }
   }
 
-  override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[ExpType] = {
-    val j = Join(VisitAndRebuild(array, f))
-    j.n = n
-    j.m = m
-    j.dt = dt
+  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[ExpType] = {
+    val j = Join(VisitAndRebuild(array, fun))
+    j.n = fun(n)
+    j.m = fun(m)
+    j.dt = fun(dt)
     j
   }
 

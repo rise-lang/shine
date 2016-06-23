@@ -1,9 +1,13 @@
 package Core
 
+import apart.arithmetic.ArithExpr
+
 object VisitAndRebuild {
 
   abstract class fun {
-    def apply[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]]
+    def apply[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = Continue(p, this)
+    def apply(ae: ArithExpr): ArithExpr = ae
+    def apply(dt: DataType): DataType = dt
 
     abstract class Result[+T]
     case class Stop[T <: PhraseType](p: Phrase[T]) extends Result[Phrase[T]]

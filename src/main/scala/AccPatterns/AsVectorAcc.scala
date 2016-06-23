@@ -19,9 +19,9 @@ case class AsVectorAcc(array: Phrase[AccType]) extends AccPattern {
     }
   }
 
-  override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[AccType] = {
-    val s = AsVectorAcc(VisitAndRebuild(array, f))
-    s.n = n
+  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[AccType] = {
+    val s = AsVectorAcc(VisitAndRebuild(array, fun))
+    s.n = fun(n)
     s
   }
 

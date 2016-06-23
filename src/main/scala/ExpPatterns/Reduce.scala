@@ -43,10 +43,9 @@ abstract class AbstractReduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[ExpType] = {
     val r = makeReduce(VisitAndRebuild(f, fun), VisitAndRebuild(init, fun), VisitAndRebuild(array, fun))
-    r.t = t
-    r.n = n
-    r.dt1 = dt1
-    r.dt2 = dt2
+    r.n = fun(n)
+    r.dt1 = fun(dt1)
+    r.dt2 = fun(dt2)
     r
   }
 

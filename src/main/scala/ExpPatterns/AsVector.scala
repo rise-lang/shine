@@ -23,7 +23,7 @@ case class AsVector(n: ArithExpr,
   }
 
   override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[ExpType] = {
-    AsVector(n, VisitAndRebuild(array, f))
+    AsVector(f(n), VisitAndRebuild(array, f))
   }
 
   override def eval(s: Store): Data = ???

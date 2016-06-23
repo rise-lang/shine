@@ -17,8 +17,8 @@ case class RecordAcc(fst: Phrase[AccType], snd: Phrase[AccType]) extends AccPatt
       OperationalSemantics.eval(s, snd))
   }
 
-  override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[AccType] = {
-    RecordAcc(VisitAndRebuild(fst, f), VisitAndRebuild(snd, f))
+  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[AccType] = {
+    RecordAcc(VisitAndRebuild(fst, fun), VisitAndRebuild(snd, fun))
   }
 
   override def toOpenCL(ocl: ToOpenCL): VarRef = ???

@@ -47,8 +47,8 @@ abstract class AbstractParFor(val n: ArithExpr,
     })
   }
 
-  override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[CommandType] = {
-    makeParFor(n, dt, VisitAndRebuild(out, f), VisitAndRebuild(body, f))
+  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[CommandType] = {
+    makeParFor(fun(n), fun(dt), VisitAndRebuild(out, fun), VisitAndRebuild(body, fun))
   }
 
   override def substituteImpl: Phrase[CommandType] =

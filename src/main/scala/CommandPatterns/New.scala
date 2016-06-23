@@ -34,7 +34,7 @@ case class New(dt: DataType, addressSpace: AddressSpace,
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[CommandType] = {
-    New(dt, addressSpace, VisitAndRebuild(f, fun))
+    New(fun(dt), addressSpace, VisitAndRebuild(f, fun))
   }
 
   override def substituteImpl: Phrase[CommandType] =

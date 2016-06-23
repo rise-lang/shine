@@ -51,8 +51,8 @@ case class Assign(lhs: Phrase[AccType], rhs: Phrase[ExpType]) extends CommandPat
     })
   }
 
-  override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[CommandType] = {
-    Assign(VisitAndRebuild(lhs, f), VisitAndRebuild(rhs, f))
+  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[CommandType] = {
+    Assign(VisitAndRebuild(lhs, fun), VisitAndRebuild(rhs, fun))
   }
 
   override def substituteImpl: Phrase[CommandType] = this

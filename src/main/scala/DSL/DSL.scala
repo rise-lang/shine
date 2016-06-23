@@ -68,6 +68,18 @@ object `parFor` {
   }
 }
 
+object dblBufFor {
+  def apply(n: ArithExpr,
+            dt: DataType,
+            buffer1: Phrase[VarType],
+            buffer2: Phrase[VarType],
+            k: ArithExpr,
+            body: Phrase[`(nat)->`[AccType -> (ExpType -> CommandType)]],
+            C: Phrase[ExpType -> CommandType]) = {
+    DoubleBufferFor(n, dt, buffer1, buffer2, k, body, C)
+  }
+}
+
 object `new` {
   def apply(dt: DataType, addressSpace: AddressSpace, f: Phrase[ (ExpType x AccType) -> CommandType ]) = New(dt, addressSpace, f)
 
@@ -245,13 +257,13 @@ object reduceSeq {
     ReduceSeq(f, init, array)
 }
 
-//object iterate {
-//  def apply(n: ArithExpr, f: Phrase[ExpType -> ExpType]) =
-//    λ( array => Iterate(n, f, array))
-//
-//  def apply(n: ArithExpr, f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) =
-//    Iterate(n, f, array)
-//}
+object iterate {
+  def apply(n: ArithExpr, f: Phrase[`(nat)->`[ExpType -> ExpType]]) =
+    λ( array => Iterate(n, f, array))
+
+  def apply(n: ArithExpr, f: Phrase[`(nat)->`[ExpType -> ExpType]], array: Phrase[ExpType]) =
+    Iterate(n, f, array)
+}
 
 object length {
   def apply[T <: BasePhraseTypes](array: Phrase[T]) = Length(array)
@@ -274,3 +286,4 @@ object asScalar {
 object vectorize {
   def apply(len: Int, f: Float) = LiteralPhrase(VectorData(Vector.fill(len)(FloatData(f))))
 }
+

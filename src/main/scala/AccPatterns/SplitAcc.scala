@@ -22,8 +22,8 @@ case class SplitAcc(n: ArithExpr,
     }
   }
 
-  override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[AccType] = {
-    SplitAcc(n, m, dt, VisitAndRebuild(array, f))
+  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[AccType] = {
+    SplitAcc(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): AccIdentifier = {

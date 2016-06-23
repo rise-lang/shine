@@ -24,10 +24,10 @@ case class Split(n: ArithExpr, array: Phrase[ExpType]) extends ExpPattern with V
     }
   }
 
-  override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[ExpType] = {
-    var s = Split(n, VisitAndRebuild(array, f))
-    s.m = m
-    s.dt = dt
+  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[ExpType] = {
+    var s = Split(n, VisitAndRebuild(array, fun))
+    s.m = fun(m)
+    s.dt = fun(dt)
     s
   }
 

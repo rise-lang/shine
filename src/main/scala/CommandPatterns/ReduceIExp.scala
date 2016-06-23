@@ -47,7 +47,7 @@ case class ReduceIExp(n: ArithExpr,
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[CommandType] = {
-    ReduceIExp(n, dt1, dt2,
+    ReduceIExp(fun(n), fun(dt1), fun(dt2),
       VisitAndRebuild(out, fun),
       VisitAndRebuild(f, fun),
       VisitAndRebuild(init, fun),

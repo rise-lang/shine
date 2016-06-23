@@ -20,20 +20,22 @@ abstract class AbstractMapI(n: ArithExpr,
   override def typeCheck(): CommandType = {
     import TypeChecker._
     (TypeChecker(out), TypeChecker(in)) match {
-      case (AccType(ArrayType(n_, dt2_)), ExpType(ArrayType(m, dt1_)))
-        if n_ == n && n == m && dt2_ == dt2 && dt1_ == dt1 =>
-
-        setParamType(f, AccType(dt2))
-        setSecondParamType(f, ExpType(dt1))
-        TypeChecker(f) match {
-          case FunctionType(AccType(t1), FunctionType(ExpType(t2), CommandType())) =>
-            if (dt2 == t1 && dt1 == t2) CommandType()
-            else {
-              error(dt2.toString + " and " + t1.toString +
-                ", " + dt1.toString + " and " + t2.toString,
-                expected = "them to match")
-            }
-          case x => error(x.toString, "FunctionType")
+      case (AccType(ArrayType(n_, dt2_)), ExpType(ArrayType(m_, dt1_))) =>
+        if (n_ == n && m_ == n && dt2_ == dt2 && dt1_ == dt1) {
+          setParamType(f, AccType(dt2))
+          setSecondParamType(f, ExpType(dt1))
+          TypeChecker(f) match {
+            case FunctionType(AccType(t1), FunctionType(ExpType(t2), CommandType())) =>
+              if (dt2 == t1 && dt1 == t2) CommandType()
+              else {
+                error(dt2.toString + " and " + t1.toString +
+                  ", " + dt1.toString + " and " + t2.toString,
+                  expected = "them to match")
+              }
+            case x => error(x.toString, "FunctionType")
+          }
+        } else {
+          error(s"([$dt1_]_$m_ -> [$dt2_]_$n_)", s"[$dt1]_$n -> [$dt2]_$n")
         }
       case x => error(x.toString, "(ArrayType, ArrayType)")
     }
@@ -52,7 +54,10 @@ abstract class AbstractMapI(n: ArithExpr,
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[CommandType] = {
-    makeMapI(n, dt1, dt2, VisitAndRebuild(out, fun), VisitAndRebuild(f, fun), VisitAndRebuild(in, fun))
+    makeMapI(fun(n), fun(dt1), fun(dt2),
+      VisitAndRebuild(out, fun),
+      VisitAndRebuild(f, fun),
+      VisitAndRebuild(in, fun))
   }
 
   def makeMapI: (ArithExpr, DataType, DataType, Phrase[AccType], Phrase[AccType -> (ExpType -> CommandType)], Phrase[ExpType]) => AbstractMapI

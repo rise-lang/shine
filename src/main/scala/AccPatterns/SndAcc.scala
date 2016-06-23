@@ -25,8 +25,8 @@ case class SndAcc(dt1: DataType,
     }
   }
 
-  override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[AccType] = {
-    SndAcc(dt1, dt2, VisitAndRebuild(record, f))
+  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[AccType] = {
+    SndAcc(fun(dt1), fun(dt2), VisitAndRebuild(record, fun))
   }
 
   override def toOpenCL(ocl: ToOpenCL): VarRef = ???

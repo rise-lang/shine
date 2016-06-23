@@ -18,8 +18,8 @@ case class AsScalarAcc(n: ArithExpr,
     }
   }
 
-  override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[AccType] = {
-    AsScalarAcc(n, VisitAndRebuild(array, f))
+  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[AccType] = {
+    AsScalarAcc(fun(n), VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): AccIdentifier = ???

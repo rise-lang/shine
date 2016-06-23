@@ -20,33 +20,29 @@ case class Iterate(k: ArithExpr,
     import TypeChecker._
     TypeChecker(array) match {
       case ExpType(ArrayType(m_, dt_)) =>
-        m = m_; dt = dt_
+        m = m_
+        dt = dt_
 
-        TypeChecker(f) match {
-          case NatDependentFunctionType(l,
-            FunctionType(ExpType(ArrayType(l_, dt1_)), ExpType(ArrayType(l_n, dt2_))))
-              if l.equals(l_) && dt1_ == dt && dt2_ == dt =>
+        f match {
+          case NatDependentLambdaPhrase(l, body) =>
+            setParamType(body, ExpType(ArrayType(l, dt)))
 
-            l_n match {
-              case Prod(l__ :: Pow(n_, Cst(-1)) :: Nil) if l__.equals(l) =>
-                n = n_
+            TypeChecker(body) match {
+              case FunctionType(ExpType(ArrayType(l_, dt1_)), ExpType(ArrayType(l_n, dt2_)))
+                if l.equals(l_) && dt1_ == dt && dt2_ == dt =>
+
+                l_n match {
+                  case Prod(l__ :: Pow(n_, Cst(-1)) :: Nil) if l__.equals(l) =>
+                    n = n_
+                }
+                //  l_n /^ l match {
+                //    case Pow(n_, Cst(-1)) => n = n_
+                //  }
+
+                ExpType(ArrayType(m / n.pow(k), dt))
+              case ft => error(ft.toString, "FunctionType")
             }
-
-//        //val l = NamedVar("l")
-//        setParamType(f, ExpType(ArrayType(l, dt)))
-//        TypeChecker(f) match {
-//          case FunctionType(ExpType(ArrayType(l_, dt1_)), ExpType(ArrayType(l_n, dt2_)))
-//            if l_.equals(l) && dt1_ == dt && dt2_ == dt =>
-//            l_n match {
-//              case Prod(l__ :: Pow(n_, Cst(-1)) :: Nil) if l__.equals(l) =>
-//                n = n_
-//            }
-////            l_n /^ l match {
-////              case Pow(n_, Cst(-1)) => n = n_
-////            }
-
-            ExpType(ArrayType(m / n.pow(k), dt))
-          case ft => error(ft.toString, "FunctionType")
+          case _ => error(f.toString, "NatDependentLambdaPhrase")
         }
       case t_ => error(t_.toString, "ArrayType")
     }
@@ -54,9 +50,9 @@ case class Iterate(k: ArithExpr,
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[ExpType] = {
     val i = Iterate(k, VisitAndRebuild(f, fun), VisitAndRebuild(array, fun))
-    i.n = n
-    i.m = m
-    i.dt = dt
+    i.n = fun(n)
+    i.m = fun(m)
+    i.dt = fun(dt)
     i
   }
 
@@ -81,16 +77,18 @@ case class Iterate(k: ArithExpr,
 
     assert(n != null && m != null && k != null && dt != null)
 
-//    exp(array)(λ(ExpType(ArrayType(m, dt))) { x =>
-//      IterateIAcc(n, m = m /^ n.pow(k), k, dt, A,
-//        λ(null.asInstanceOf[AccType]) { o =>
-//          λ(null.asInstanceOf[ExpType]) { x =>
-//            acc(f(x))(o) }
-//        },
-//        x
-//      )
-//    })
-    ???
+    exp(array)(λ(ExpType(ArrayType(m, dt))) { x =>
+      IterateIAcc(n, m = m /^ n.pow(k), k, dt, A,
+        _Λ_(l =>
+          λ(null.asInstanceOf[AccType]) { o =>
+            λ(null.asInstanceOf[ExpType]) { x =>
+              acc(f(l)(x))(o)
+            }
+          }
+        ),
+        x
+      )
+    })
   }
 
   override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
@@ -98,16 +96,18 @@ case class Iterate(k: ArithExpr,
 
     assert(n != null && m != null && k != null && dt != null)
 
-//    exp(array)(λ(ExpType(ArrayType(m, dt))) { x =>
-//      IterateIExp(n, m = m /^ n.pow(k), k, dt, C,
-//        λ(null.asInstanceOf[AccType]) { o =>
-//          λ(null.asInstanceOf[ExpType]) { x =>
-//            acc(f(x))(o) }
-//        },
-//        x
-//      )
-//    })
-    ???
+    exp(array)(λ(ExpType(ArrayType(m, dt))) { x =>
+      IterateIExp(n, m = m /^ n.pow(k), k, dt, C,
+        _Λ_(l =>
+          λ(null.asInstanceOf[AccType]) { o =>
+            λ(null.asInstanceOf[ExpType]) { x =>
+              acc(f(l)(x))(o)
+            }
+          }
+        ),
+        x
+      )
+    })
   }
 
 /*

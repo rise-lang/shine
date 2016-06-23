@@ -31,7 +31,7 @@ case class Idx(array: Phrase[ExpType],
 
   override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[ExpType] = {
     val i = Idx(VisitAndRebuild(array, f), VisitAndRebuild(index, f))
-    i.dt = dt
+    i.dt = f(dt)
     i
   }
 

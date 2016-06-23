@@ -133,7 +133,6 @@ object TypeChecker {
         param -> TypeChecker(body)
 
       case NatDependentApplyPhrase(fun, arg) =>
-        //setParamNat(fun, arg)
         TypeChecker(fun) match {
           case nf: NatDependentFunctionType[_] =>
             nf.outT
@@ -169,7 +168,7 @@ object TypeChecker {
       case UnaryOpPhrase(op, x) =>
         TypeChecker(x) match {
           case ExpType(dt) => ExpType(dt)
-          case x => error(x.toString, expected = "ExpType")
+          case y => error(y.toString, expected = "ExpType")
         }
 
       case BinOpPhrase(op, lhs, rhs) =>

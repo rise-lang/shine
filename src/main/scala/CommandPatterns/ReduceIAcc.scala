@@ -40,7 +40,7 @@ case class ReduceIAcc(n: ArithExpr,
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[CommandType] = {
-    ReduceIAcc(n, dt1, dt2,
+    ReduceIAcc(fun(n), fun(dt1), fun(dt2),
       VisitAndRebuild(out, fun),
       VisitAndRebuild(f, fun),
       VisitAndRebuild(init, fun),

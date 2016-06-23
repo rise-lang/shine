@@ -21,8 +21,8 @@ case class Seq(c1: Phrase[CommandType],
     OperationalSemantics.eval(s1, c2)
   }
 
-  override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[CommandType] = {
-    Seq(VisitAndRebuild(c1, f), VisitAndRebuild(c2, f))
+  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[CommandType] = {
+    Seq(VisitAndRebuild(c1, fun), VisitAndRebuild(c2, fun))
   }
 
   override def substituteImpl: Phrase[CommandType] =

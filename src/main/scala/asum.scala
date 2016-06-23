@@ -80,24 +80,24 @@ object asum extends App {
     nvidiaDerived1, identifier("input", inputT))))
   println("----------------")
 
-//  val nvidiaDerived2 = λ(inputT)(input =>
-//    mapWorkgroup(
-//      toGlobal(iterate(6,
-//        mapLocal(reduceSeq(add, 0.0f)) o
-//        split(2)
-//      ))
-//      o
-//      toLocal(mapLocal(
-//        reduceSeq(add, 0.0f)
-//      )) o split(128)
-//    ) o split(8192) $ input
-//  )
-//  TypeChecker(nvidiaDerived2)
+  val nvidiaDerived2 = λ(inputT)(input =>
+    mapWorkgroup(
+      toGlobal(iterate(6,
+        mapLocal(reduceSeq(add, 0.0f)) o
+        split(2)
+      ))
+      o
+      toLocal(mapLocal(
+        reduceSeq(add, 0.0f)
+      )) o split(128)
+    ) o split(8192) $ input
+  )
+  TypeChecker(nvidiaDerived2)
 
-//  println("-- Nvidia Derived 2 --")
-//  println(OpenCLPrinter()((new ToOpenCL(localSize = 128, globalSize = N))(
-//    nvidiaDerived2, identifier("input", inputT))))
-//  println("----------------")
+  println("-- Nvidia Derived 2 --")
+  println(OpenCLPrinter()((new ToOpenCL(localSize = 128, globalSize = N))(
+    nvidiaDerived2, identifier("input", inputT))))
+  println("----------------")
 
   val amdDerived1 = λ(inputT)(input =>
     mapWorkgroup(
