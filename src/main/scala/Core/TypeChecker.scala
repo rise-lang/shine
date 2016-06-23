@@ -28,6 +28,10 @@ object TypeChecker {
         val fun = Lift.liftFunction(app.fun)
         setParamType(fun(app.arg), t)
 
+      case app: NatDependentApplyPhrase[T1 -> T2] =>
+        val fun = Lift.liftNatDependentFunction(app.fun)
+        setParamType(fun(app.arg), t)
+
       case p1: Proj1Phrase[T1 -> T2, b] =>
         val pair = Lift.liftPair(p1.pair)
         setParamType(pair._1, t)
@@ -52,6 +56,10 @@ object TypeChecker {
 
       case app: ApplyPhrase[a, T1 -> (T2 -> T3)] =>
         val fun = Lift.liftFunction(app.fun)
+        setSecondParamType(fun(app.arg), t)
+
+      case app: NatDependentApplyPhrase[T1 -> (T2 -> T3)] =>
+        val fun = Lift.liftNatDependentFunction(app.fun)
         setSecondParamType(fun(app.arg), t)
 
       case p1: Proj1Phrase[T1 -> (T2 -> T3), b] =>
@@ -79,6 +87,10 @@ object TypeChecker {
 
       case app: ApplyPhrase[a, T1 -> (T2 -> (T3 -> T4))] =>
         val fun = Lift.liftFunction(app.fun)
+        setThirdParamType(fun(app.arg), t)
+
+      case app: NatDependentApplyPhrase[T1 -> (T2 -> (T3 -> T4))] =>
+        val fun = Lift.liftNatDependentFunction(app.fun)
         setThirdParamType(fun(app.arg), t)
 
       case p1: Proj1Phrase[T1 -> (T2 -> (T3 -> T4)), b] =>
@@ -115,6 +127,16 @@ object TypeChecker {
             check(TypeChecker(arg), ft.inT)
             ft.outT
           case t => error(t.toString, FunctionType.toString)
+        }
+
+      case NatDependentLambdaPhrase(param, body) =>
+        param -> TypeChecker(body)
+
+      case NatDependentApplyPhrase(fun, arg) =>
+        //setParamNat(fun, arg)
+        TypeChecker(fun) match {
+          case nf: NatDependentFunctionType[_] =>
+            nf.outT
         }
 
       case PairPhrase(a, b) => TypeChecker(a) x TypeChecker(b)

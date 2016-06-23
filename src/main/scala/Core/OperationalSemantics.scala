@@ -99,7 +99,7 @@ object OperationalSemantics {
                                                      in: Phrase[T2]): Phrase[T2] = {
     case class fun() extends VisitAndRebuild.fun {
       override def apply[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
-        if (`for` == p) { Replace(phrase.asInstanceOf[Phrase[T]]) } else { Continue(this) }
+        if (`for` == p) { Stop(phrase.asInstanceOf[Phrase[T]]) } else { Continue(p, this) }
       }
     }
 
@@ -143,8 +143,10 @@ object OperationalSemantics {
     new Evaluator[T1 -> T2, (Phrase[T1] => Phrase[T2])] {
       def apply(s: Store, p: Phrase[T1 -> T2]): (Phrase[T1] => Phrase[T2]) = {
         p match {
-          case l: LambdaPhrase[T1, T2] => (arg: Phrase[T1]) => substitute(arg, `for` = l.param, in = l.body)
-          case IdentPhrase(_) | ApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) | Proj1Phrase(_) | Proj2Phrase(_) =>
+          case l: LambdaPhrase[T1, T2] =>
+            (arg: Phrase[T1]) => substitute(arg, `for` = l.param, in = l.body)
+          case IdentPhrase(_) | ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
+               IfThenElsePhrase(_, _, _) | Proj1Phrase(_) | Proj2Phrase(_) =>
             throw new Exception("This should never happen")
         }
       }
@@ -160,7 +162,8 @@ object OperationalSemantics {
           case l: LambdaPhrase[T1, T2 -> T3] => (arg: Phrase[T1]) =>
             eval(s, substitute(arg, `for` = l.param, in = l.body))(UnaryFunctionEvaluator)
 
-          case IdentPhrase(_) | ApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) | Proj1Phrase(_) | Proj2Phrase(_) =>
+          case IdentPhrase(_) | ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
+               IfThenElsePhrase(_, _, _) | Proj1Phrase(_) | Proj2Phrase(_) =>
             throw new Exception("This should never happen")
         }
       }
@@ -177,7 +180,8 @@ object OperationalSemantics {
           case l: LambdaPhrase[T1, T2 -> (T3 -> T4)] => (arg: Phrase[T1]) =>
             eval(s, substitute(arg, `for` = l.param, in = l.body))(BinaryFunctionEvaluator)
 
-          case IdentPhrase(_) | ApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) | Proj1Phrase(_) | Proj2Phrase(_) =>
+          case IdentPhrase(_) | ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
+               IfThenElsePhrase(_, _, _) | Proj1Phrase(_) | Proj2Phrase(_) =>
             throw new Exception("This should never happen")
         }
       }
@@ -189,7 +193,8 @@ object OperationalSemantics {
         p match {
           case i: IdentPhrase[T1 x T2] => (IdentPhrase[T1](i.name), IdentPhrase[T2](i.name))
           case pair: PairPhrase[T1, T2] => (pair.fst, pair.snd)
-          case ApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) | Proj1Phrase(_) | Proj2Phrase(_) =>
+          case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
+               IfThenElsePhrase(_, _, _) | Proj1Phrase(_) | Proj2Phrase(_) =>
             throw new Exception("This should never happen")
         }
       }
@@ -221,7 +226,8 @@ object OperationalSemantics {
 
           case p: ExpPattern => p.eval(s)
 
-          case ApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) | Proj1Phrase(_) | Proj2Phrase(_) =>
+          case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
+               IfThenElsePhrase(_, _, _) | Proj1Phrase(_) | Proj2Phrase(_) =>
             throw new Exception("This should never happen")
         }
       }
@@ -235,7 +241,8 @@ object OperationalSemantics {
 
           case p: AccPattern => p.eval(s)
 
-          case ApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) | Proj1Phrase(_) | Proj2Phrase(_) =>
+          case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
+               IfThenElsePhrase(_, _, _) | Proj1Phrase(_) | Proj2Phrase(_) =>
             throw new Exception("This should never happen")
         }
       }
@@ -249,7 +256,8 @@ object OperationalSemantics {
 
           case p: IntermediateCommandPattern => p.eval(s)
 
-          case ApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) | Proj1Phrase(_) | Proj2Phrase(_) =>
+          case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
+               IfThenElsePhrase(_, _, _) | Proj1Phrase(_) | Proj2Phrase(_) =>
             throw new Exception("This should never happen")
         }
       }

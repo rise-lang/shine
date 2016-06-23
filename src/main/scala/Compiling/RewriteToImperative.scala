@@ -52,6 +52,7 @@ object RewriteToImperative {
 
       // on the fly beta-reduction
       case ApplyPhrase(fun, arg) => acc(Lift.liftFunction(fun)(arg))(A)
+      case NatDependentApplyPhrase(fun, arg) => acc(Lift.liftNatDependentFunction(fun)(arg))(A)
 
       case Proj1Phrase(pair) => throw new Exception("This should never happen")
       case Proj2Phrase(pair) => throw new Exception("This should never happen")
@@ -86,6 +87,7 @@ object RewriteToImperative {
 
       // on the fly beta-reduction
       case ApplyPhrase(fun, arg) => exp(Lift.liftFunction(fun)(arg))(C)
+      case NatDependentApplyPhrase(fun, arg) => exp(Lift.liftNatDependentFunction(fun)(arg))(C)
 
       case Proj1Phrase(pair) => throw new Exception("This should never happen")
       case Proj2Phrase(pair) => throw new Exception("This should never happen")

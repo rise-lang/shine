@@ -154,7 +154,8 @@ object ToOpenCL {
         case _ => throw new Exception("This should not happen")
       }
 
-      case ApplyPhrase(_, _) | IdentPhrase(_) | Proj1Phrase(_) | Proj2Phrase(_) =>
+      case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
+           IdentPhrase(_) | Proj1Phrase(_) | Proj2Phrase(_) =>
         throw new Exception("This should not happen")
     }
   }
@@ -184,7 +185,8 @@ object ToOpenCL {
         case _ => throw new Exception("This should not happen")
       }
 
-      case ApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) =>
+      case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
+           IfThenElsePhrase(_, _, _) =>
         throw new Exception("This should not happen")
     }
   }
@@ -196,7 +198,8 @@ object ToOpenCL {
       case p: Proj2Phrase[_, AccType] => acc(Lift.liftPair(p.pair)._2, ocl)
       case a: AccPattern => a.toOpenCL(ocl)
 
-      case ApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) =>
+      case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
+           IfThenElsePhrase(_, _, _) =>
         throw new Exception("This should not happen")
     }
   }
@@ -238,7 +241,8 @@ object ToOpenCL {
         case _ => throw new Exception("This should not happen")
       }
 
-      case ApplyPhrase(_, _) | BinOpPhrase(_, _, _) | UnaryOpPhrase(_, _) |
+      case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
+           BinOpPhrase(_, _, _) | UnaryOpPhrase(_, _) |
            IfThenElsePhrase(_, _, _) | LiteralPhrase(_) =>
         throw new Exception("This should not happen")
     }
@@ -278,7 +282,8 @@ object ToOpenCL {
       case p: Proj1Phrase[AccType, _] => acc(Lift.liftPair(p.pair)._1, ocl, arrayAccess, tupleAccess)
       case p: Proj2Phrase[_, AccType] => acc(Lift.liftPair(p.pair)._2, ocl, arrayAccess, tupleAccess)
 
-      case ApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) =>
+      case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
+           IfThenElsePhrase(_, _, _) =>
         throw new Exception("This should not happen")
     }
   }

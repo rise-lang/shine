@@ -6,6 +6,8 @@ object PrettyPrinter {
     p match {
       case app: ApplyPhrase[a, T] => s"(${apply(app.fun)} ${apply(app.arg)})"
 
+      case app: NatDependentApplyPhrase[T] => s"(${apply(app.fun)} ${app.arg.toString})"
+
       case p1: Proj1Phrase[a, b] => s"${apply(p1.pair)}._1"
 
       case p2: Proj2Phrase[a, b] => s"${apply(p2.pair)}._2"
@@ -20,6 +22,8 @@ object PrettyPrinter {
       case IdentPhrase(name) => name
 
       case LambdaPhrase(param, body) => s"(λ ${apply(param)}. ${apply(body)})"
+
+      case NatDependentLambdaPhrase(param, body) => s"(Λ ${param.name}. ${apply(body)})"
 
       case LiteralPhrase(d) => d.toString
 

@@ -6,21 +6,23 @@ object VisitAndRebuild {
     def apply[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]]
 
     abstract class Result[+T]
-    case class Replace[T <: PhraseType](p: Phrase[T]) extends Result[Phrase[T]]
-    case class Continue(f: fun) extends Result[Nothing]
+    case class Stop[T <: PhraseType](p: Phrase[T]) extends Result[Phrase[T]]
+    case class Continue[T <: PhraseType](p: Phrase[T], f: fun) extends Result[Phrase[T]]
 
   }
 
   def apply[T <: PhraseType](p: Phrase[T], f: fun): Phrase[T] = {
     f(p) match {
-      case r: f.Replace[T]@unchecked => r.p
-      case c: f.Continue =>
+      case r: f.Stop[T]@unchecked => r.p
+      case c: f.Continue[T]@unchecked =>
         val f = c.f
-        val res = (p match {
-          case _: IdentPhrase[_] => p
-          case _: LiteralPhrase => p
+        val res = (c.p match {
+          case _: IdentPhrase[_] => c.p
+          case _: LiteralPhrase => c.p
           case l: LambdaPhrase[_, _] => LambdaPhrase(l.param, apply(l.body, f))
+          case l: NatDependentLambdaPhrase[_] => NatDependentLambdaPhrase(l.x, apply(l.body, f))
           case app: ApplyPhrase[a, T] => ApplyPhrase(apply(app.fun, f), apply(app.arg, f))
+          case app: NatDependentApplyPhrase[T] => NatDependentApplyPhrase(apply(app.fun, f), app.arg)
           case pair: PairPhrase[_, _] => PairPhrase(apply(pair.fst, f), apply(pair.snd, f))
           case p: Proj1Phrase[T, b] => Proj1Phrase(apply(p.pair, f))
           case p: Proj2Phrase[a, T] => Proj2Phrase(apply(p.pair, f))
@@ -31,7 +33,7 @@ object VisitAndRebuild {
           case a: AccPattern => a.visitAndRebuild(f)
           case c: IntermediateCommandPattern => c.visitAndRebuild(f)
         }).asInstanceOf[Phrase[T]]
-        res.t = p.t
+        res.t = c.p.t
         res
     }
   }

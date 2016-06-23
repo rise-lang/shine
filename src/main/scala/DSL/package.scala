@@ -46,11 +46,15 @@ package object DSL {
   }
 
   implicit class CallLambda[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 -> T2]) {
-    // on-the-fly beta-reduction
     def apply(arg: Phrase[T1]): Phrase[T2] = Lift.liftFunction(fun)(arg)
-    //def apply(arg: Phrase[T1]) = ApplyPhrase(fun, arg)
 
     def $(arg: Phrase[T1]): Phrase[T2] = apply(arg)
+  }
+
+  implicit class CallNatDependentLambda[T <: PhraseType](fun: Phrase[`(nat)->`[T]]) {
+    def apply(arg: ArithExpr): Phrase[T] = Lift.liftNatDependentFunction(fun)(arg)
+
+    def $(arg: ArithExpr): Phrase[T] = apply(arg)
   }
 
   implicit class FunComp[T1 <: PhraseType, T2 <: PhraseType](f: Phrase[T1 -> T2]) {

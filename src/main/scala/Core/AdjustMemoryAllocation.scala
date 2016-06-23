@@ -17,9 +17,9 @@ object AdjustMemoryAllocation {
                 n.f.asInstanceOf[LambdaPhrase[(ExpType x AccType), CommandType]].param.name
                 val nn = New(n.dt, GlobalMemory, VisitAndRebuild(n.f, this))
                 nn.t = n.t.asInstanceOf[CommandType]
-                Replace(nn.asInstanceOf[Phrase[U]])
-              case LocalMemory => Continue(this)
-              case PrivateMemory => Continue(this)
+                Stop(nn.asInstanceOf[Phrase[U]])
+              case LocalMemory => Continue(n, this)
+              case PrivateMemory => Continue(n, this)
             }
 
           case pf: AbstractParFor =>
@@ -27,17 +27,17 @@ object AdjustMemoryAllocation {
               case ParForGlobal(_, _, _, _) | ParForWorkgroup(_, _, _, _) =>
                 val t = DataType.toType(pf.out.t.dataType)
                 val len = ir.Type.getMaxLength(t)
-                Continue(fun(numGlb * len, numLcl, numPvt))
+                Continue(pf, fun(numGlb * len, numLcl, numPvt))
 
               case ParForLocal(_, _, _, _) =>
                 val t = DataType.toType(pf.out.t.dataType)
                 val len = ir.Type.getMaxLength(t)
-                Continue(fun(numGlb * len, numLcl * len, numPvt))
+                Continue(pf, fun(numGlb * len, numLcl * len, numPvt))
 
-              case _ => Continue(this)
+              case _ => Continue(pf, this)
             }
 
-          case _ => Continue(this)
+          case _ => Continue(p, this)
         }
       }
     }

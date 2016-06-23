@@ -1,7 +1,7 @@
 package Core
 
 import PhraseType._
-import apart.arithmetic.ArithExpr
+import apart.arithmetic.{ArithExpr, NamedVar}
 import opencl.generator.OpenCLAST.{Block, Expression, VarRef}
 
 sealed abstract class Phrase[T <: PhraseType] {
@@ -16,6 +16,12 @@ final case class LambdaPhrase[T1 <: PhraseType, T2 <: PhraseType](param: IdentPh
 
 final case class ApplyPhrase[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 -> T2], arg: Phrase[T1])
   extends Phrase[T2]
+
+final case class NatDependentLambdaPhrase[T <: PhraseType](x: NamedVar, body: Phrase[T])
+  extends Phrase[`(nat)->`[T]]
+
+final case class NatDependentApplyPhrase[T <: PhraseType](fun: Phrase[`(nat)->`[T]], arg: ArithExpr)
+  extends Phrase[T]
 
 final case class PairPhrase[T1 <: PhraseType, T2 <: PhraseType](fst: Phrase[T1], snd: Phrase[T2])
   extends Phrase[T1 x T2]

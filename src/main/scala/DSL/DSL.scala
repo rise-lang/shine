@@ -6,7 +6,7 @@ import Core._
 import AccPatterns._
 import ExpPatterns._
 import CommandPatterns._
-import apart.arithmetic.ArithExpr
+import apart.arithmetic.{ArithExpr, NamedVar}
 
 object VarType {
   def apply(dataType: DataType) = ExpType(dataType) x AccType(dataType)
@@ -158,6 +158,19 @@ object \ extends funDef
 
 object λ extends funDef
 
+
+
+trait natDependentFunDef {
+
+  def apply[T <: PhraseType](f: NamedVar => Phrase[T]): NatDependentLambdaPhrase[T] = {
+    val x = NamedVar(newName())
+    NatDependentLambdaPhrase(x, f(x))
+  }
+
+}
+
+object _Λ_ extends natDependentFunDef
+
 object skip extends Skip
 
 object map {
@@ -232,13 +245,13 @@ object reduceSeq {
     ReduceSeq(f, init, array)
 }
 
-object iterate {
-  def apply(n: ArithExpr, f: Phrase[ExpType -> ExpType]) =
-    λ( array => Iterate(n, f, array))
-
-  def apply(n: ArithExpr, f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) =
-    Iterate(n, f, array)
-}
+//object iterate {
+//  def apply(n: ArithExpr, f: Phrase[ExpType -> ExpType]) =
+//    λ( array => Iterate(n, f, array))
+//
+//  def apply(n: ArithExpr, f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) =
+//    Iterate(n, f, array)
+//}
 
 object length {
   def apply[T <: BasePhraseTypes](array: Phrase[T]) = Length(array)

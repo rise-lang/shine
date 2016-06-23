@@ -148,13 +148,13 @@ object Test extends App {
 
     val f = λ( x => x._1 + x._2 )
 
-    val p = out := map(f, zip(in1, in2))
-
-    println(p)
-
-    println(TypeChecker(p))
-
-    println(OperationalSemantics.eval(store, p))
+//    val p = out := map(f, zip(in1, in2))
+//
+//    println(p)
+//
+//    println(TypeChecker(p))
+//
+//    println(OperationalSemantics.eval(store, p))
   }
   // out := map f in
   //  =>
@@ -594,13 +594,13 @@ object Test extends App {
     val plusOne = λ( x => x + 1 )
     val g = λ( x => map(plusOne, x) )
 
-    val p = out := iterate(2, g, x)
-
-    println( p )
-
-    println( TypeChecker(p) )
-
-    println( OperationalSemantics.eval(store, p) )
+//    val p = out := iterate(2, g, x)
+//
+//    println( p )
+//
+//    println( TypeChecker(p) )
+//
+//    println( OperationalSemantics.eval(store, p) )
   }
 
   {
@@ -614,13 +614,13 @@ object Test extends App {
 
     val plusOne = λ( x => x + 1 )
 
-    val p = out := map(map(plusOne), x)
-
-    println( p )
-
-    println( TypeChecker(p) )
-
-    println( OperationalSemantics.eval(store, p) )
+//    val p = out := map(map(plusOne), x)
+//
+//    println( p )
+//
+//    println( TypeChecker(p) )
+//
+//    println( OperationalSemantics.eval(store, p) )
   }
 
   {
@@ -639,17 +639,17 @@ object Test extends App {
     val add = λ( x => λ( y => x + y ) )
     val mult = λ( x => x._1 * x._2 )
 
-    val p = out := map(λ( row =>
-        map(λ( col =>
-          reduce(add, 0, map(mult, zip(row, col)))
-        ), y)
-      ), x)
-
-    println( p )
-
-    println( TypeChecker(p) )
-
-    println( OperationalSemantics.eval(store, p) )
+//    val p = out := map(λ( row =>
+//        map(λ( col =>
+//          reduce(add, 0, map(mult, zip(row, col)))
+//        ), y)
+//      ), x)
+//
+//    println( p )
+//
+//    println( TypeChecker(p) )
+//
+//    println( OperationalSemantics.eval(store, p) )
   }
 
   {
@@ -807,25 +807,25 @@ object Test extends App {
     println("-----")
   }
 
-  {
-    println("== join split ==")
-
-    val xsVectorT = ExpType(ArrayType(1048576, int))
-
-    // results in type error after RewriteToImperative
-    val p = λ(xsVectorT)(inp =>
-      join() o split(2048) $ inp
-    )
-    println("=====")
-    println(PrettyPrinter(p))
-
-    println("-----")
-
-    val ast = (new ToOpenCL(?, ?))(p, identifier("xs", xsVectorT))
-    println(OpenCLPrinter()(ast))
-
-    println("-----")
-  }
+//  { // TODO: check this again!!!
+//    println("== join split ==")
+//
+//    val xsVectorT = ExpType(ArrayType(1048576, int))
+//
+//    // results in type error after RewriteToImperative
+//    val p = λ(xsVectorT)(inp =>
+//      join() o split(2048) $ inp
+//    )
+//    println("=====")
+//    println(PrettyPrinter(p))
+//
+//    println("-----")
+//
+//    val ast = (new ToOpenCL(?, ?))(p, identifier("xs", xsVectorT))
+//    println(OpenCLPrinter()(ast))
+//
+//    println("-----")
+//  }
 
   {
     println("== asum Nvidia ==")
@@ -1023,7 +1023,31 @@ object Test extends App {
   }
 
   {
-    println("== zip scatter ==")
+    println("== test ==")
+
+    {
+      import PhraseType._
+      val x = NamedVar("x")
+      val f: `(nat)->`[ExpType] = x -> ExpType(ArrayType(x, int))
+    }
+
+    {
+      import PhraseType._
+      val n: ArithExpr = NamedVar("n")
+      val dt: DataType = float
+      val f: Phrase[ `(nat)->`[ExpType -> ExpType] ] = _Λ_( l =>
+        λ(ExpType(ArrayType(l, dt)))( in =>
+          mapSeq( reduceSeq(λ(y => λ(acc => acc + y)), 0.0f) ) o split(2) $ in
+        )
+      )
+
+      println( TypeChecker(f) )
+
+
+      println( TypeChecker(f(1024)) )
+
+    }
+
   }
 
 }

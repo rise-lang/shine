@@ -10,7 +10,10 @@ import opencl.generator.OpenCLAST.Expression
 
 import DSL._
 
-case class Gather(idxF: (ArithExpr, DataType) => ArithExpr, array: Phrase[ExpType]) extends ExpPattern with ViewExpPattern {
+case class Gather(idxF: (ArithExpr, DataType) => ArithExpr,
+                  array: Phrase[ExpType])
+  extends ExpPattern with ViewExpPattern {
+
   override def typeCheck(): ExpType = TypeChecker(array)
 
   override def eval(s: Store): Data = {
