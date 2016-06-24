@@ -25,8 +25,8 @@ case class Seq(c1: Phrase[CommandType],
     Seq(VisitAndRebuild(c1, fun), VisitAndRebuild(c2, fun))
   }
 
-  override def substituteImpl: Phrase[CommandType] =
-    Seq(SubstituteImplementations(c1), SubstituteImplementations(c2))
+  override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] =
+    Seq(SubstituteImplementations(c1, env), SubstituteImplementations(c2, env))
 
   override def toOpenCL(block: Block, ocl: ToOpenCL): Block = {
     ToOpenCL.cmd(c1, block, ocl)

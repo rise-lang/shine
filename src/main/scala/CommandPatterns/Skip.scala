@@ -3,6 +3,7 @@ package CommandPatterns
 import Core._
 import Core.OperationalSemantics._
 import opencl.generator.OpenCLAST.Block
+import Compiling.SubstituteImplementations
 
 case class Skip() extends CommandPattern {
 
@@ -12,7 +13,7 @@ case class Skip() extends CommandPattern {
 
   override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[CommandType] = this
 
-  override def substituteImpl: Phrase[CommandType] = this
+  override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = this
 
   override def toOpenCL(b: Block, ocl: ToOpenCL): Block = b
 

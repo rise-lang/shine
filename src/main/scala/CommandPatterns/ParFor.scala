@@ -51,8 +51,8 @@ abstract class AbstractParFor(val n: ArithExpr,
     makeParFor(fun(n), fun(dt), VisitAndRebuild(out, fun), VisitAndRebuild(body, fun))
   }
 
-  override def substituteImpl: Phrase[CommandType] =
-    makeParFor(n, dt, out, SubstituteImplementations.applyBinaryFun(body))
+  override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] =
+    makeParFor(n, dt, out, SubstituteImplementations.applyBinaryFun(body, env))
 
   override def prettyPrint: String =
     s"${this.getClass.getSimpleName} ${evalIndexExp(new OperationalSemantics.Store(), n)} ${PrettyPrinter(out)} ${PrettyPrinter(body)}"

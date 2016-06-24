@@ -9,7 +9,11 @@ object Lift {
   def liftNatDependentFunction[T <: PhraseType](p: Phrase[`(nat)->`[T]]): (ArithExpr => Phrase[T]) = {
     p match {
       case l: NatDependentLambdaPhrase[T] =>
-        (arg: ArithExpr) =>  PhraseType.substitute(arg, `for`=l.x, in=l.body)
+        (arg: ArithExpr) => {
+          val body = VisitAndRebuild.copy(l.body)
+          TypeChecker(body)
+          PhraseType.substitute(arg, `for`=l.x, in=body)
+        }
       case app: ApplyPhrase[a, `(nat)->`[T]] =>
         val fun = liftFunction(app.fun)
         liftNatDependentFunction(fun(app.arg))
@@ -29,7 +33,8 @@ object Lift {
 
   def liftFunction[T1 <: PhraseType, T2 <: PhraseType](p: Phrase[T1 -> T2]): (Phrase[T1] => Phrase[T2]) = {
     p match {
-      case l: LambdaPhrase[T1, T2] => (arg: Phrase[T1]) => OperationalSemantics.substitute(arg, `for` = l.param, in = l.body)
+      case l: LambdaPhrase[T1, T2] =>
+        (arg: Phrase[T1]) => OperationalSemantics.substitute(arg, `for` = l.param, in = l.body)
       case app: ApplyPhrase[a, T1 -> T2] =>
         val fun = liftFunction(app.fun)
         liftFunction(fun(app.arg))

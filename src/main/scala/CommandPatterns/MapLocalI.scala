@@ -16,9 +16,9 @@ case class MapLocalI(n: ArithExpr,
 
   override def makeMapI = MapLocalI
 
-  override def substituteImpl: Phrase[CommandType] = {
+  override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
     ParForLocal(n, dt2, out, λ( ExpType(int) ) { i => λ( AccType(dt2) ) { o =>
-      SubstituteImplementations( f(o)(in `@` i) )
+      SubstituteImplementations( f(o)(in `@` i), env )
     } })
   }
 

@@ -16,10 +16,10 @@ case class MapWorkgroupI(n: ArithExpr,
 
   override def makeMapI = MapWorkgroupI
 
-  override def substituteImpl: Phrase[CommandType] = {
+  override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
 
     ParForWorkgroup(n, dt2, out, λ( ExpType(int) ) { i => λ( AccType(dt2) ) { o =>
-      SubstituteImplementations( f(o)(in `@` i) )
+      SubstituteImplementations( f(o)(in `@` i), env )
     } })
   }
 

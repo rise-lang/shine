@@ -35,6 +35,19 @@ object DataType {
     }
   }
 
+  def scalarType(dt: DataType): ir.ScalarType = {
+    dt match {
+      case b: BasicType => b match {
+        case Core.bool => opencl.ir.Int
+        case Core.int => opencl.ir.Int
+        case Core.float => opencl.ir.Float
+        case v: VectorType => scalarType(v.elemType)
+      }
+      case a: ArrayType => scalarType(a.elemType)
+      case r: RecordType => ???
+    }
+  }
+
   def toString(dt: DataType): String = {
     dt match {
       case b: BasicType => b match {

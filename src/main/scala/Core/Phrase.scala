@@ -3,6 +3,7 @@ package Core
 import PhraseType._
 import apart.arithmetic.{ArithExpr, NamedVar}
 import opencl.generator.OpenCLAST.{Block, Expression, VarRef}
+import Compiling.SubstituteImplementations
 
 sealed abstract class Phrase[T <: PhraseType] {
   var t: T = null.asInstanceOf[T]
@@ -109,7 +110,7 @@ abstract class IntermediateCommandPattern extends  Phrase[CommandType] {
 
   def prettyPrint: String
 
-  def substituteImpl: Phrase[CommandType]
+  def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType]
 
   def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[CommandType]
 }

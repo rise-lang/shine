@@ -36,7 +36,7 @@ case class TruncExp(n: ArithExpr,
 
   override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = ???
 
-  override def prettyPrint: String = ???
+  override def prettyPrint: String = s"(truncExp $array)"
 
   override def toOpenCL(ocl: ToOpenCL,
                         arrayAccess: List[(ArithExpr, ArithExpr)],

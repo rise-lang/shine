@@ -29,6 +29,10 @@ object asum extends App {
 
   TypeChecker(high_level)
 
+  println(high_level)
+
+  println(VisitAndRebuild.copy(high_level))
+
   println("High-Level:\n" + PrettyPrinter(high_level))
 
 
@@ -82,7 +86,7 @@ object asum extends App {
 
   val nvidiaDerived2 = λ(inputT)(input =>
     mapWorkgroup(
-      toGlobal(iterate(6,
+      toLocal(iterate(6,
         mapLocal(reduceSeq(add, 0.0f)) o
         split(2)
       ))
@@ -95,7 +99,7 @@ object asum extends App {
   TypeChecker(nvidiaDerived2)
 
   println("-- Nvidia Derived 2 --")
-  println(OpenCLPrinter()((new ToOpenCL(localSize = 128, globalSize = N))(
+  println(OpenCLPrinter()((new ToOpenCL(localSize = ?, globalSize = N))(
     nvidiaDerived2, identifier("input", inputT))))
   println("----------------")
 

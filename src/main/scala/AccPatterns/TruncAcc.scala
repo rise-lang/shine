@@ -38,5 +38,5 @@ case class TruncAcc(n: ArithExpr,
     ToOpenCL.acc(array, ocl, arrayAccess, tupleAccess)
   }
 
-  override def prettyPrint: String = ???
+  override def prettyPrint: String = s"(truncAcc $array)"
 }

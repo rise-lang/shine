@@ -1,7 +1,7 @@
 package CommandPatterns
 
 import AccPatterns.TruncAcc
-import Compiling.RewriteToImperative
+import Compiling.SubstituteImplementations
 import Core._
 import Core.PhraseType._
 import Core.OperationalSemantics._
@@ -28,8 +28,7 @@ case class IterateIExp(n: ArithExpr,
         TypeChecker(out) match {
           case FunctionType(ExpType(ArrayType(m_, dt2_)), CommandType()) =>
             if (m_ != m || dt2_ != dt)
-              error(m_.toString + " and " + m.toString + "; " +
-                dt2_.toString + " and " + dt.toString, expected = "them to match")
+              error(s"[$m_.$dt2_]", s"[$m.$dt]")
           case x => error(x.toString, "FunctionType")
         }
 
@@ -60,25 +59,28 @@ case class IterateIExp(n: ArithExpr,
       VisitAndRebuild(in, fun))
   }
 
-  override def substituteImpl: Phrase[CommandType] = {
-    import RewriteToImperative._
+  override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
+    val sEnd = n.pow(k)*m
+    val s = (l: ArithExpr) => n.pow(k-l)*m
 
-    val s = n.pow(k)*m
-    val s_l = (l: ArithExpr) => n.pow(k-l)*m
+    val addressSpace = GlobalMemory
 
-    `new`( ArrayType(n.pow(k)*m, dt), GlobalMemory, buf1 => {
-      `new`( ArrayType(n.pow(k)*m, dt), GlobalMemory, buf2 => {
-        acc(in)(buf1.wr) `;`
-        dblBufFor(s, dt, buf1, buf2, k,
-          _Λ_(l =>
-            λ(null.asInstanceOf[AccType]) { o =>
-              λ(null.asInstanceOf[ExpType]) { x =>
-                f (s_l(l)) (TruncAcc(s, s_l(l), dt, o)) (TruncExp(s, s_l(l), dt, x))
+    `new`( ArrayType(sEnd, dt), addressSpace, buf1 => {
+      `new`( ArrayType(sEnd, dt), addressSpace, buf2 => {
+        SubstituteImplementations(MapI(sEnd, dt, dt, buf1.wr,
+          λ( AccType(dt) ) { o => λ( ExpType(dt) ) { x => o `:=` x } }, in), env) `;`
+          dblBufFor(sEnd, dt, addressSpace, buf1, buf2, k,
+            _Λ_(l => {
+              val s_l = s(l)
+              val s_l1 = s(l + 1)
+              λ(AccType(ArrayType(sEnd, dt))) { o =>
+                λ(ExpType(ArrayType(sEnd, dt))) { x =>
+                  SubstituteImplementations(f(s_l)(TruncAcc(sEnd, s_l1, dt, o))(TruncExp(sEnd, s_l, dt, x)), env)
+                }
               }
-            }
-          ),
-          out
-        )
+            }),
+            out
+          )
       } )
     } )
   }

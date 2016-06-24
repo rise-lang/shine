@@ -59,11 +59,11 @@ case class ReduceIAcc(n: ArithExpr,
 
   override def prettyPrint: String = s"reduceIAcc ${PrettyPrinter(out)} ${PrettyPrinter(f)} ${PrettyPrinter(init)} ${PrettyPrinter(in)}"
 
-  override def substituteImpl: Phrase[CommandType] = {
+  override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
     `new`(init.t.dataType, PrivateMemory, accum => {
       (accum.wr `:=` init) `;`
       `for`(n, i => {
-        SubstituteImplementations( f(accum.wr)(in `@` i)(accum.rd) )
+        SubstituteImplementations( f(accum.wr)(in `@` i)(accum.rd), env )
       }) `;`
       (out `:=` accum.rd)
     } )

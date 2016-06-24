@@ -5,7 +5,7 @@ import Core._
 import Core.PhraseType._
 import Core.OperationalSemantics._
 import apart.arithmetic._
-import Compiling.{RewriteToImperative, SubstituteImplementations}
+import Compiling.SubstituteImplementations
 import DSL._
 import ExpPatterns.TruncExp
 
@@ -34,8 +34,8 @@ case class IterateIAcc(n: ArithExpr,
                 if (l_n == l /^ n && dt3_ == dt && l_ == l && dt4_ == dt) {
                   CommandType()
                 } else {
-                  error(s"[$dt3_]_$l_n -> [$dt4_]_$l_ -> CommandType",
-                        s"[$dt]_${l /^ n} -> [$dt]_$l -> CommandType")
+                  error(s"[$l_n.$dt3_] -> [$l_.$dt4_] -> CommandType",
+                        s"[${l /^ n}.$dt] -> [$l.$dt] -> CommandType")
                 }
               case ft => error(ft.toString, "FunctionType")
             }
@@ -55,30 +55,83 @@ case class IterateIAcc(n: ArithExpr,
       VisitAndRebuild(in, fun))
   }
 
-  override def substituteImpl: Phrase[CommandType] = {
+  override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
+    // infer the address space from the output
+    val identifier = ToOpenCL.acc(out, new ToOpenCL(?, ?))
+    val addressSpace = env.addressspace(identifier.name)
+
     val sEnd = n.pow(k)*m
+
+    val iterateLoop = (start: ArithExpr,
+                       end: ArithExpr,
+                       buf1: Phrase[VarType],
+                       buf2: Phrase[VarType]) => {
+      val s = (l: ArithExpr) => n.pow(end - l - start) * m
+
+      end - start match {
+        case Cst(x) if x > 2 =>
+          // unrolling the last iteration
+          dblBufFor(sEnd, dt, addressSpace, buf1, buf2, end - start - 1,
+            _Λ_(l => {
+              val s_l = s(l)
+              val s_l1 = s(l + 1)
+              λ(AccType(ArrayType(sEnd, dt))) { o =>
+                λ(ExpType(ArrayType(sEnd, dt))) { x =>
+                  SubstituteImplementations(
+                    f(s_l)(TruncAcc(sEnd, s_l1, dt, o))(TruncExp(sEnd, s_l, dt, x)),
+                    env)
+                }
+              }
+            }),
+            λ(ExpType(ArrayType(sEnd, dt)))(x =>
+              SubstituteImplementations(
+                f(s(end - start - 1))(TruncAcc(m, s(end - start), dt, out))(TruncExp(sEnd, s(end - start - 1), dt, x))
+                , env))
+          )
+
+        case _ =>
+          // extra copy to output
+          dblBufFor(sEnd, dt, addressSpace, buf1, buf2, end - start,
+            _Λ_(l => {
+              val s_l = s(l)
+              val s_l1 = s(l + 1)
+              λ(AccType(ArrayType(sEnd, dt))) { o =>
+                λ(ExpType(ArrayType(sEnd, dt))) { x =>
+                  SubstituteImplementations(
+                    f(s_l)(TruncAcc(sEnd, s_l1, dt, o))(TruncExp(sEnd, s_l, dt, x)),
+                    env)
+                }
+              }
+            }),
+            λ(ExpType(ArrayType(sEnd, dt)))(x =>
+              SubstituteImplementations(MapI(m, dt, dt, out,
+                λ(AccType(dt)) { o => λ(ExpType(dt)) { x => o `:=` x } }, x), env))
+          )
+      }
+    }
+
     val s = (l: ArithExpr) => n.pow(k-l)*m
 
-    `new`( ArrayType(sEnd, dt), GlobalMemory, buf1 => {
-      `new`( ArrayType(sEnd, dt), GlobalMemory, buf2 => {
-        SubstituteImplementations(MapI(sEnd, dt, dt, buf1.wr,
-          λ( AccType(dt) ) { o => λ( ExpType(dt) ) { x => o `:=` x } }, in)) `;`
-        dblBufFor(sEnd, dt, buf1, buf2, k,
-          _Λ_(l => {
-            val s_l = s(l)
-            val s_l1 = s(l + 1)
-            λ(AccType(ArrayType(sEnd, dt))) { o =>
-              λ(ExpType(ArrayType(sEnd, dt))) { x =>
-                SubstituteImplementations(f(s_l)(TruncAcc(sEnd, s_l1, dt, o))(TruncExp(sEnd, s_l, dt, x)))
-              }
-            }
-          }),
-          λ(ExpType(ArrayType(sEnd, dt)))( x =>
-            SubstituteImplementations(MapI(m, dt, dt, out,
-              λ( AccType(dt) ) { o => λ( ExpType(dt) ) { x => o `:=` x } }, x)))
-        )
-      } )
-    } )
+    k match {
+      case Cst(x) if x > 2 =>
+        `new`(ArrayType(sEnd, dt), addressSpace, buf1 => {
+          `new`(ArrayType(sEnd, dt), addressSpace, buf2 => {
+            SubstituteImplementations(
+              f(s(0))(TruncAcc(sEnd, s(1), dt, buf1.wr))(TruncExp(sEnd, s(0), dt, in))
+              , env) `;`
+              iterateLoop(1, k, buf1, buf2)
+          })
+        })
+
+      case _ =>
+        `new`(ArrayType(sEnd, dt), addressSpace, buf1 => {
+          `new`(ArrayType(sEnd, dt), addressSpace, buf2 => {
+            SubstituteImplementations(MapI(sEnd, dt, dt, buf1.wr,
+              λ(AccType(dt)) { o => λ(ExpType(dt)) { x => o `:=` x } }, in), env) `;`
+              iterateLoop(0, k, buf1, buf2)
+          })
+        })
+    }
   }
 
   override def prettyPrint: String =

@@ -16,9 +16,9 @@ case class MapSeqI(n: ArithExpr,
 
   override def makeMapI = MapSeqI
 
-  override def substituteImpl: Phrase[CommandType] = {
+  override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
     `for`(n, i => {
-      SubstituteImplementations( f(out `@` i)(in `@` i) )
+      SubstituteImplementations( f(out `@` i)(in `@` i), env )
     })
   }
 

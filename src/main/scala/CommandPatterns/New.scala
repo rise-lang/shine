@@ -37,8 +37,16 @@ case class New(dt: DataType, addressSpace: AddressSpace,
     New(fun(dt), addressSpace, VisitAndRebuild(f, fun))
   }
 
-  override def substituteImpl: Phrase[CommandType] =
-    New(dt, addressSpace, SubstituteImplementations.applyFun(f))
+  override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
+    val p = f match {
+      case LambdaPhrase(param, _) => param
+      case _ => throw new Exception("This should not happen")
+    }
+    env.addressspace(p.name) = addressSpace
+    val n = New(dt, addressSpace, SubstituteImplementations.applyFun(f, env))
+    env.addressspace.remove(p.name)
+    n
+  }
 
   override def toOpenCL(block: Block, ocl: ToOpenCL): Block = {
     val v = NamedVar(newName())

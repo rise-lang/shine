@@ -71,12 +71,13 @@ object `parFor` {
 object dblBufFor {
   def apply(n: ArithExpr,
             dt: DataType,
+            addressSpace: AddressSpace,
             buffer1: Phrase[VarType],
             buffer2: Phrase[VarType],
             k: ArithExpr,
             body: Phrase[`(nat)->`[AccType -> (ExpType -> CommandType)]],
             C: Phrase[ExpType -> CommandType]) = {
-    DoubleBufferFor(n, dt, buffer1, buffer2, k, body, C)
+    DoubleBufferFor(n, dt, addressSpace, buffer1, buffer2, k, body, C)
   }
 }
 

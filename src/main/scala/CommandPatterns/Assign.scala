@@ -3,6 +3,7 @@ package CommandPatterns
 import Core._
 import Core.OperationalSemantics._
 import opencl.generator.OpenCLAST.{AssignmentExpression, Block}
+import Compiling.SubstituteImplementations
 
 case class Assign(lhs: Phrase[AccType], rhs: Phrase[ExpType]) extends CommandPattern {
 
@@ -55,7 +56,7 @@ case class Assign(lhs: Phrase[AccType], rhs: Phrase[ExpType]) extends CommandPat
     Assign(VisitAndRebuild(lhs, fun), VisitAndRebuild(rhs, fun))
   }
 
-  override def substituteImpl: Phrase[CommandType] = this
+  override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = this
 
   override def toOpenCL(block: Block, ocl: ToOpenCL): Block =
     (block: Block) += AssignmentExpression(ToOpenCL.acc(lhs, ocl), ToOpenCL.exp(rhs, ocl))

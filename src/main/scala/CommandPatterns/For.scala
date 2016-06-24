@@ -30,8 +30,8 @@ case class For(n: ArithExpr,
     For(fun(n), VisitAndRebuild(body, fun))
   }
 
-  override def substituteImpl: Phrase[CommandType] =
-    For(n, SubstituteImplementations.applyFun(body))
+  override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] =
+    For(n, SubstituteImplementations.applyFun(body, env))
 
   override def prettyPrint: String = {
     val length = OperationalSemantics.evalIndexExp(new OperationalSemantics.Store(), n)
