@@ -16,6 +16,22 @@ object gemv extends App {
   val ysT = ExpType(ArrayType(M, dataT))
   val matT = ExpType(ArrayType(M, ArrayType(N, dataT)))
 
+  def printOpenCLKernel1(name: String,
+                         lambda: Phrase[ExpType ->(ExpType -> (ExpType -> (ExpType -> (ExpType -> ExpType))))]) = {
+    TypeChecker(lambda)
+    println(name + ":\n" + PrettyPrinter(lambda))
+
+    println(s"-- $name --")
+    println(OpenCLPrinter()((new ToOpenCL(localSize = 128, globalSize = N))(lambda,
+      identifier("mat", matT),
+      identifier("xs", xsT),
+      identifier("ys", ysT),
+      identifier("alpha", ExpType(dataT)),
+      identifier("beta", ExpType(dataT))
+      )))
+    println("----------------")
+  }
+
   val mult = λ( x => x._1 * x._2 )
   val add = λ( x => λ( a => x + a))
   val scal = λ(xs => λ(alpha => map(λ( x => alpha * x ), xs) ) )
@@ -30,8 +46,20 @@ object gemv extends App {
 
     ) ) ) ) )
 
-  TypeChecker(high_level)
+    printOpenCLKernel1("high_level", high_level)
 
-  println("High-Level:\n" + PrettyPrinter(high_level))
+  val fullMatrixVectorFusedOpenCL =
+    λ(matT)(mat => λ(xsT)(xs => λ(ysT)(ys =>
+      λ(ExpType(dataT))(alpha => λ(ExpType(dataT))(beta =>
+
+        join() o mapWorkgroup(λ(t =>
+          mapLocal(λ(x => (alpha * x) + (t._2 * beta))) o
+            toLocal(mapLocal(reduceSeq(λ(x => λ(a => mult(x) + a)), 0.0f)))
+            o split(N) $ zip(xs, t._1)
+        )) $ zip(mat, ys)
+
+      ) ) ) ) )
+
+  printOpenCLKernel1("fullMatrixVectorFusedOpenCL", fullMatrixVectorFusedOpenCL)
 
 }
