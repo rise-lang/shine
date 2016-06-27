@@ -116,5 +116,4 @@ object asum extends App {
   println(OpenCLPrinter()((new ToOpenCL(localSize = 128, globalSize = N))(
     amdDerived1, identifier("input", inputT))))
   println("----------------")
-
 }

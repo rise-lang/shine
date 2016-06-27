@@ -2,10 +2,11 @@ package AccPatterns
 
 import Core._
 import Core.OperationalSemantics._
-import Core.PrettyPrinter.Indent
 import apart.arithmetic.ArithExpr
 import ir.Type
 import opencl.generator.OpenCLAST.VarRef
+
+import scala.xml.Elem
 
 case class SplitAcc(n: ArithExpr,
                     m: ArithExpr,
@@ -47,9 +48,10 @@ case class SplitAcc(n: ArithExpr,
     ToOpenCL.acc(array, opencl, newAs, tupleAccess)
   }
 
-  override def prettyPrint(indent: Indent): String =
-    indent + s"(splitAcc\n" +
-      s"${PrettyPrinter(array, indent.more)} : acc[$m.$n.$dt]\n" +
-      indent + s") : acc[${n*m}.$dt]"
+  override def prettyPrint: String = s"(splitAcc ${PrettyPrinter(array)})"
 
+  override def xmlPrinter: Elem =
+    <splitAcc n={n.toString} m={m.toString} dt={dt.toString}>
+      {Core.xmlPrinter(array)}
+    </splitAcc>
 }

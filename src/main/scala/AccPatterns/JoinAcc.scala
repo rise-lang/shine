@@ -2,9 +2,10 @@ package AccPatterns
 
 import Core._
 import Core.OperationalSemantics._
-import Core.PrettyPrinter.Indent
 import apart.arithmetic.ArithExpr
 import opencl.generator.OpenCLAST.VarRef
+
+import scala.xml.Elem
 
 case class JoinAcc(n: ArithExpr,
                    m: ArithExpr,
@@ -44,9 +45,11 @@ case class JoinAcc(n: ArithExpr,
     ToOpenCL.acc(array, opencl, (newIdx, chunkElemId._2) :: rest, tupleAccess)
   }
 
-  override def prettyPrint(indent: Indent): String =
-    indent + s"(joinAcc\n" +
-      indent.more + s"(${PrettyPrinter(array, indent.more)}) : acc[${n*m}.$dt]\n" +
-      indent + s") : acc[$n.$m.$dt]\n"
+  override def prettyPrint: String =
+    s"(joinAcc ${PrettyPrinter(array)})"
 
+  override def xmlPrinter: Elem =
+    <joinAcc n={n.toString} m={m.toString} dt={dt.toString}>
+      {Core.xmlPrinter(array)}
+    </joinAcc>
 }

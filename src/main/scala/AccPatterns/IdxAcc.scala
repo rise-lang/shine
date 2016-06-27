@@ -2,9 +2,10 @@ package AccPatterns
 
 import Core._
 import Core.OperationalSemantics._
-import Core.PrettyPrinter.Indent
 import apart.arithmetic.{ArithExpr, Cst, NamedVar}
 import opencl.generator.OpenCLAST.{Literal, VarRef}
+
+import scala.xml.Elem
 
 case class IdxAcc(array: Phrase[AccType],
                   index: Phrase[ExpType]) extends AccPattern {
@@ -49,7 +50,11 @@ case class IdxAcc(array: Phrase[AccType],
     ToOpenCL.acc(array, ocl, (idx, length) :: arrayAccess, tupleAccess)
   }
 
-  override def prettyPrint(indent: Indent): String =
-    indent + s"${PrettyPrinter(array)}[${PrettyPrinter(index)}]"
+  override def prettyPrint: String = s"${PrettyPrinter(array)}[${PrettyPrinter(index)}]"
 
+  override def xmlPrinter: Elem =
+    <idxAcc dt={dt.toString}>
+      <input>{Core.xmlPrinter(array)}</input>
+      <index>{Core.xmlPrinter(index)}</index>
+    </idxAcc>
 }

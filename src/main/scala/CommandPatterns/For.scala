@@ -4,10 +4,11 @@ import Core._
 import Core.OperationalSemantics._
 import Core.PhraseType._
 import Compiling.SubstituteImplementations
-import Core.PrettyPrinter.Indent
 import apart.arithmetic.{ArithExpr, NamedVar, RangeAdd}
 import opencl.generator.OpenCLAST.Block
 import DSL._
+
+import scala.xml.Elem
 
 case class For(n: ArithExpr,
                body: Phrase[ExpType -> CommandType])
@@ -34,11 +35,12 @@ case class For(n: ArithExpr,
   override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] =
     For(n, SubstituteImplementations.applyFun(body, env))
 
-  override def prettyPrint(indent: Indent): String = {
-    indent + s"(for 0..$n\n" +
-      s"${PrettyPrinter(body, indent.more)} : (exp[nat] -> comm)\n" +
-      indent + s") : comm"
-  }
+  override def prettyPrint: String = s"(for 0..$n ${PrettyPrinter(body)})"
+
+  override def xmlPrinter: Elem =
+    <for n={n.toString}>
+      {Core.xmlPrinter(body)}
+    </for>
 
   override def toOpenCL(block: Block, ocl: ToOpenCL): Block = {
     import opencl.generator.OpenCLAST._

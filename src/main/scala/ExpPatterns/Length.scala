@@ -3,9 +3,9 @@ package ExpPatterns
 import Core._
 import Core.OperationalSemantics._
 import Core.PhraseType.->
-import Core.PrettyPrinter.Indent
-import apart.arithmetic.ArithExpr
-import opencl.generator.OpenCLAST.{ArithExpression, Expression, Literal}
+import opencl.generator.OpenCLAST.{ArithExpression, Expression}
+
+import scala.xml.Elem
 
 case class Length[T <: BasePhraseTypes](array: Phrase[T]) extends ExpPattern with GeneratableExpPattern {
 
@@ -34,7 +34,12 @@ case class Length[T <: BasePhraseTypes](array: Phrase[T]) extends ExpPattern wit
     ArithExpression( OperationalSemantics.evalIndexExp(new OperationalSemantics.Store(), this) )
   }
 
-  override def prettyPrint(indent: Indent): String = indent + s"(length ${PrettyPrinter(array)})"
+  override def prettyPrint: String = s"(length ${PrettyPrinter(array)})"
+
+  override def xmlPrinter: Elem =
+    <length>
+      {Core.xmlPrinter(array)}
+    </length>
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = ???
 

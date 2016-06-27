@@ -5,13 +5,15 @@ import Core.OperationalSemantics._
 import Core.PhraseType.->
 import Core._
 import Compiling.RewriteToImperative
-import Core.PrettyPrinter.Indent
 import DSL._
 import apart.arithmetic.ArithExpr
 import ir.Type
 import opencl.generator.OpenCLAST.Expression
 
-case class Join(array: Phrase[ExpType]) extends ExpPattern with ViewExpPattern {
+import scala.xml.Elem
+
+case class Join(array: Phrase[ExpType])
+  extends ExpPattern with ViewExpPattern {
 
   private var n: ArithExpr = null
   private var m: ArithExpr = null
@@ -62,10 +64,12 @@ case class Join(array: Phrase[ExpType]) extends ExpPattern with ViewExpPattern {
     ToOpenCL.exp(array, ocl, newAs, tupleAccess)
   }
 
-  override def prettyPrint(indent: Indent): String =
-    indent + s"(join\n" +
-      s"${PrettyPrinter(array, indent.more)} : exp[$n.$m.$dt]\n" +
-      indent + s") : exp[$n$m.$dt]"
+  override def prettyPrint: String = s"(join ${PrettyPrinter(array)})"
+
+  override def xmlPrinter: Elem =
+    <join n={n.toString} m={m.toString} dt={dt.toString}>
+      {Core.xmlPrinter(array)}
+    </join>
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
     assert(n != null && m != null && dt != null)

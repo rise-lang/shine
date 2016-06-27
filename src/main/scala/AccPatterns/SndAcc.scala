@@ -2,9 +2,10 @@ package AccPatterns
 
 import Core._
 import Core.OperationalSemantics._
-import Core.PrettyPrinter.Indent
 import apart.arithmetic.ArithExpr
 import opencl.generator.OpenCLAST.VarRef
+
+import scala.xml.Elem
 
 case class SndAcc(dt1: DataType,
                   dt2: DataType,
@@ -34,9 +35,10 @@ case class SndAcc(dt1: DataType,
 
   def toOpenCL(ocl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): VarRef = ???
 
-  override def prettyPrint(indent: Indent): String =
-    indent + s"(SndAcc\n" +
-      s"${PrettyPrinter(record, indent.more)} : acc[$dt1 x $dt2]\n" +
-      indent + s") : acc[$dt2]"
+  override def prettyPrint: String = s"(SndAcc ${PrettyPrinter(record)})"
 
+  override def xmlPrinter: Elem =
+    <sndAcc dt1={dt1.toString} dt2={dt2.toString}>
+      {Core.xmlPrinter(record)}
+    </sndAcc>
 }

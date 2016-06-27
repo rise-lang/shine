@@ -4,11 +4,12 @@ import Core._
 import Core.OperationalSemantics._
 import Core.PhraseType._
 import Compiling.SubstituteImplementations
-import Core.PrettyPrinter.Indent
 import apart.arithmetic.{ArithExpr, NamedVar, RangeAdd}
 import opencl.generator.OpenCLAST.Block
 import DSL._
 import opencl.ir.PtrType
+
+import scala.xml.Elem
 
 case class DoubleBufferFor(n: ArithExpr,
                            dt: DataType,
@@ -123,8 +124,13 @@ case class DoubleBufferFor(n: ArithExpr,
       SubstituteImplementations.applyFun(C, env))
   }
 
-  override def prettyPrint(indent: Indent): String = {
-    s"doubleBufferFor $buffer1 $buffer2 $k $body $C"
-  }
+  override def prettyPrint: String = s"doubleBufferFor $buffer1 $buffer2 $k $body $C"
 
+  override def xmlPrinter: Elem =
+    <doubleBufferFor k={k.toString} n={n.toString} dt={dt.toString} addressSpace={addressSpace.toString}>
+      <buffer1>{Core.xmlPrinter(buffer1)}</buffer1>
+      <buffer2>{Core.xmlPrinter(buffer2)}</buffer2>
+      <body>{Core.xmlPrinter(body)}</body>
+      <continuation>{Core.xmlPrinter(C)}</continuation>
+    </doubleBufferFor>
 }

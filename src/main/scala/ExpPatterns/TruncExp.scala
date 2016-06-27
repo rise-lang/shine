@@ -3,10 +3,10 @@ package ExpPatterns
 import Core._
 import Core.OperationalSemantics._
 import Core.PhraseType.->
-import Core.PrettyPrinter.Indent
-import Core.VisitAndRebuild.fun
 import apart.arithmetic.ArithExpr
-import opencl.generator.OpenCLAST.{Expression, VarRef}
+import opencl.generator.OpenCLAST.Expression
+
+import scala.xml.Elem
 
 case class TruncExp(n: ArithExpr,
                     m: ArithExpr,
@@ -37,7 +37,12 @@ case class TruncExp(n: ArithExpr,
 
   override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = ???
 
-  override def prettyPrint(indent: Indent): String = indent + s"(truncExp $array)"
+  override def xmlPrinter: Elem =
+    <truncExp n={n.toString} m={m.toString} dt={dt.toString}>
+      {Core.xmlPrinter(array)}
+    </truncExp>
+
+  override def prettyPrint: String = s"(truncExp $array)"
 
   override def toOpenCL(ocl: ToOpenCL,
                         arrayAccess: List[(ArithExpr, ArithExpr)],

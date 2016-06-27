@@ -5,9 +5,10 @@ import Core.OperationalSemantics._
 import Core.PhraseType._
 import DSL.identifier
 import Compiling.SubstituteImplementations
-import Core.PrettyPrinter.Indent
 import apart.arithmetic.{NamedVar, Var}
 import opencl.generator.OpenCLAST.{Block, Comment, VarDecl}
+
+import scala.xml.Elem
 
 case class New(dt: DataType, addressSpace: AddressSpace,
                f: Phrase[(ExpType x AccType) -> CommandType])
@@ -63,9 +64,10 @@ case class New(dt: DataType, addressSpace: AddressSpace,
     ToOpenCL.cmd(f_(v_), block, ocl)
   }
 
-  override def prettyPrint(indent: Indent): String =
-    indent + s"(new $addressSpace\n" +
-      s"${PrettyPrinter(f, indent.more)} : (var[$dt] -> comm)\n" +
-      indent + s") : comm"
+  override def prettyPrint: String = s"(new $addressSpace ${PrettyPrinter(f)})"
 
+  override def xmlPrinter: Elem =
+    <new dt={dt.toString} addressspace={addressSpace.toString}>
+      {Core.xmlPrinter(f)}
+    </new>
 }

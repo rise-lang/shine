@@ -4,11 +4,12 @@ import AccPatterns._
 import Compiling.SubstituteImplementations
 import Core.OperationalSemantics._
 import Core.PhraseType._
-import Core.PrettyPrinter.Indent
 import Core._
 import DSL._
 import ExpPatterns._
 import apart.arithmetic.ArithExpr
+
+import scala.xml.Elem
 
 abstract class AbstractMapI(n: ArithExpr,
                             dt1: DataType,
@@ -63,13 +64,15 @@ abstract class AbstractMapI(n: ArithExpr,
 
   def makeMapI: (ArithExpr, DataType, DataType, Phrase[AccType], Phrase[AccType -> (ExpType -> CommandType)], Phrase[ExpType]) => AbstractMapI
 
-  override def prettyPrint(indent: Indent) =
-    indent + s"(${this.getClass.getSimpleName}\n" +
-      indent.more + s"(${PrettyPrinter(out, indent.more)}) : acc[$n.$dt2]\n" +
-      indent.more + s"(${PrettyPrinter(f, indent.more)}) : (acc[$dt2] -> exp[$dt1] -> comm)\n" +
-      indent.more + s"(${PrettyPrinter(in, indent.more)}) : exp[$n.$dt1]\n" +
-      indent + s") : comm\n"
+  override def prettyPrint =
+    s"(${this.getClass.getSimpleName} ${PrettyPrinter(out)} ${PrettyPrinter(f)} ${PrettyPrinter(in)})"
 
+  override def xmlPrinter: Elem =
+    <map n={n.toString} dt1={dt1.toString} dt2={dt2.toString}>
+      <output>{Core.xmlPrinter(out)}</output>
+      <f>{Core.xmlPrinter(f)}</f>
+      <input>{Core.xmlPrinter(in)}</input>
+    </map>.copy(label = this.getClass.getSimpleName)
 }
 
 case class MapI(n: ArithExpr,

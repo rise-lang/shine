@@ -4,11 +4,12 @@ import AccPatterns.AsVectorAcc
 import Compiling.RewriteToImperative
 import Core.OperationalSemantics._
 import Core.PhraseType.->
-import Core.PrettyPrinter.Indent
 import Core._
 import DSL._
 import apart.arithmetic.ArithExpr
 import opencl.generator.OpenCLAST.Expression
+
+import scala.xml.Elem
 
 case class AsVector(n: ArithExpr,
                     array: Phrase[ExpType])
@@ -37,7 +38,12 @@ case class AsVector(n: ArithExpr,
     ToOpenCL.exp(array, ocl, newAAS, tupleAccess)
   }
 
-  override def prettyPrint(indent: Indent): String = indent + s"(asVector ${n.toString} ${PrettyPrinter(array)})"
+  override def prettyPrint: String = s"(asVector ${n.toString} ${PrettyPrinter(array)})"
+
+  override def xmlPrinter: Elem =
+    <asVector n={n.toString}>
+      {Core.xmlPrinter(array)}
+    </asVector>
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
     RewriteToImperative.acc(array)(AsVectorAcc(A))

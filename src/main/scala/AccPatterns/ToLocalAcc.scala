@@ -1,10 +1,11 @@
 package AccPatterns
 
 import Core.OperationalSemantics._
-import Core.PrettyPrinter.Indent
 import Core._
 import apart.arithmetic.ArithExpr
 import opencl.generator.OpenCLAST.VarRef
+
+import scala.xml.Elem
 
 case class ToLocalAcc(p: Phrase[AccType]) extends AccPattern{
 
@@ -26,8 +27,10 @@ case class ToLocalAcc(p: Phrase[AccType]) extends AccPattern{
     ToLocalAcc(VisitAndRebuild(p, fun))
   }
 
-  override def prettyPrint(indent: Indent): String =
-    indent + s"(toLocalAcc\n" +
-      s"${PrettyPrinter(p, indent.more)}" +
-      indent + s"\n)"
+  override def prettyPrint: String = s"(toLocalAcc ${PrettyPrinter(p)})"
+
+  override def xmlPrinter: Elem =
+    <toLocalAcc>
+      {Core.xmlPrinter(p)}
+    </toLocalAcc>
 }

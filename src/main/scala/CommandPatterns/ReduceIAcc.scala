@@ -6,8 +6,9 @@ import Core.OperationalSemantics._
 import ExpPatterns.Idx
 import DSL._
 import Compiling.SubstituteImplementations
-import Core.PrettyPrinter.Indent
 import apart.arithmetic.ArithExpr
+
+import scala.xml.Elem
 
 case class ReduceIAcc(n: ArithExpr,
                       dt1: DataType,
@@ -58,13 +59,16 @@ case class ReduceIAcc(n: ArithExpr,
     } )
   }
 
-  override def prettyPrint(indent: Indent) =
-    indent + s"(reduceIAcc\n" +
-      s"${PrettyPrinter(out, indent.more)} : acc[$dt2]\n" +
-      s"${PrettyPrinter(f, indent.more)} : (acc[$dt2] -> exp[$dt1] -> exp[$dt2] -> comm)\n" +
-      s"${PrettyPrinter(init, indent.more)} : exp[$dt2]\n" +
-      s"${PrettyPrinter(in, indent.more)} : exp[$n.$dt1]\n" +
-      indent + s") : comm\n"
+  override def prettyPrint =
+    s"(reduceIAcc ${PrettyPrinter(out)} ${PrettyPrinter(f)} ${PrettyPrinter(init)} ${PrettyPrinter(in)})"
+
+  override def xmlPrinter: Elem =
+    <reduceIAcc n={n.toString} dt1={dt1.toString} dt2={dt2.toString}>
+      <output>{Core.xmlPrinter(out)}</output>
+      <f>{Core.xmlPrinter(f)}</f>
+      <init>{Core.xmlPrinter(init)}</init>
+      <input>{Core.xmlPrinter(in)}</input>
+    </reduceIAcc>
 
   override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
     `new`(init.t.dataType, PrivateMemory, accum => {

@@ -3,11 +3,13 @@ package ExpPatterns
 import Core._
 import Core.OperationalSemantics._
 import Core.PhraseType.->
-import Core.PrettyPrinter.Indent
-import apart.arithmetic.ArithExpr
 import opencl.generator.OpenCLAST.Expression
 
-case class Record(fst: Phrase[ExpType], snd: Phrase[ExpType]) extends ExpPattern with GeneratableExpPattern {
+import scala.xml.Elem
+
+case class Record(fst: Phrase[ExpType],
+                  snd: Phrase[ExpType])
+  extends ExpPattern with GeneratableExpPattern {
 
   override def typeCheck(): ExpType = {
     ExpType(RecordType( TypeChecker(fst).dataType, TypeChecker(snd).dataType ))
@@ -25,11 +27,13 @@ case class Record(fst: Phrase[ExpType], snd: Phrase[ExpType]) extends ExpPattern
 
   override def toOpenCL(ocl: ToOpenCL): Expression = ???
 
-  override def prettyPrint(indent: Indent): String =
-    indent + s"(\n" +
-      s"${PrettyPrinter(fst, indent.more)},\n" +
-      s"${PrettyPrinter(snd, indent.more)}\n" +
-      indent + s")"
+  override def prettyPrint: String = s"(${PrettyPrinter(fst)}, ${PrettyPrinter(snd)})"
+
+  override def xmlPrinter: Elem =
+    <record>
+      <fst>{Core.xmlPrinter(fst)}</fst>
+      <snd>{Core.xmlPrinter(snd)}</snd>
+    </record>
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = ???
 

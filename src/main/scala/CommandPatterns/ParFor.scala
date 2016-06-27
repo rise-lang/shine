@@ -4,11 +4,12 @@ import Core._
 import Core.OperationalSemantics._
 import Core.PhraseType._
 import Compiling.SubstituteImplementations
-import Core.PrettyPrinter.Indent
 import apart.arithmetic.{ArithExpr, Cst, NamedVar, RangeAdd}
 import opencl.generator.OpenCLAST
 import opencl.generator.OpenCLAST._
 import DSL._
+
+import scala.xml.Elem
 
 abstract class AbstractParFor(val n: ArithExpr,
                               val dt: DataType,
@@ -55,11 +56,15 @@ abstract class AbstractParFor(val n: ArithExpr,
   override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] =
     makeParFor(n, dt, out, SubstituteImplementations.applyBinaryFun(body, env))
 
-  override def prettyPrint(indent: Indent): String =
-    indent + s"(${this.getClass.getSimpleName} $n\n" +
-      s"${PrettyPrinter(out, indent.more)} : acc[$n.$dt]\n" +
-      s"${PrettyPrinter(body, indent.more)} : (exp[nat] -> acc[$dt] -> comm)\n" +
-      indent + s") : comm"
+  override def prettyPrint: String =
+    s"(${this.getClass.getSimpleName} $n ${PrettyPrinter(out)} ${PrettyPrinter(body)})"
+
+
+  override def xmlPrinter: Elem =
+    <parFor n={n.toString} dt={dt.toString}>
+      <output>{Core.xmlPrinter(out)}</output>
+      <body>{Core.xmlPrinter(body)}</body>
+    </parFor>.copy(label = this.getClass.getSimpleName)
 
   def makeParFor: (ArithExpr, DataType, Phrase[AccType], Phrase[ExpType -> (AccType -> CommandType)]) => AbstractParFor
 

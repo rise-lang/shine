@@ -6,9 +6,10 @@ import Core.PhraseType._
 import Core.OperationalSemantics._
 import apart.arithmetic._
 import Compiling.SubstituteImplementations
-import Core.PrettyPrinter.Indent
 import DSL._
 import ExpPatterns.TruncExp
+
+import scala.xml.Elem
 
 case class IterateIAcc(n: ArithExpr,
                        m: ArithExpr,
@@ -135,11 +136,12 @@ case class IterateIAcc(n: ArithExpr,
     }
   }
 
-  override def prettyPrint(indent: Indent): String =
-    indent + s"(iterateIAcc\n" +
-      s"${PrettyPrinter(out, indent.more)} : acc[$m.$dt]\n" +
-      s"${PrettyPrinter(f, indent.more)} : ((l:nat) -> acc[l/$n.$dt] -> exp[l.$dt] -> comm)\n" +
-      s"${PrettyPrinter(in, indent.more)}: exp[${n.pow(k) * m}.$dt]\n" +
-      indent + s") : comm"
+  override def prettyPrint: String = s"(iterateIAcc ${PrettyPrinter(out)} ${PrettyPrinter(f)} ${PrettyPrinter(in)})"
 
+  override def xmlPrinter: Elem =
+    <iterateIAcc n={n.toString} m={m.toString} k={k.toString} dt={dt.toString}>
+      <output>{Core.xmlPrinter(out)}</output>
+      <f>{Core.xmlPrinter(f)}</f>
+      <input>{Core.xmlPrinter(in)}</input>
+    </iterateIAcc>
 }

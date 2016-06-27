@@ -5,10 +5,11 @@ import Core.PhraseType._
 import Core.VisitAndRebuild.fun
 import Core._
 import Compiling.RewriteToImperative
-import Core.PrettyPrinter.Indent
 import apart.arithmetic.ArithExpr
 import opencl.generator.OpenCLAST.Expression
 import DSL._
+
+import scala.xml.Elem
 
 case class Gather(idxF: (ArithExpr, DataType) => ArithExpr,
                   array: Phrase[ExpType])
@@ -57,5 +58,10 @@ case class Gather(idxF: (ArithExpr, DataType) => ArithExpr,
 
   }
 
-  override def prettyPrint(indent: Indent): String = indent + s"(gather idxF ${PrettyPrinter(array)})"
+  override def prettyPrint: String = s"(gather idxF ${PrettyPrinter(array)})"
+
+  override def xmlPrinter: Elem =
+    <gather ixdF={idxF.toString}>
+      {Core.xmlPrinter(array)}
+    </gather>
 }

@@ -4,9 +4,10 @@ import CommandPatterns.{IterateIAcc, IterateIExp}
 import Core._
 import Core.PhraseType._
 import Core.OperationalSemantics._
-import Core.PrettyPrinter.Indent
 import DSL._
 import apart.arithmetic._
+
+import scala.xml.Elem
 
 case class Iterate(k: ArithExpr,
                    f: Phrase[`(nat)->`[ExpType -> ExpType]],
@@ -71,14 +72,14 @@ case class Iterate(k: ArithExpr,
     ???
   }
 
-  override def prettyPrint(indent: Indent): String = {
-    val mnk: String = if (n != null && m != null && k != null) { (m / n.pow(k)).toString } else { null }
-    indent + s"(iterate\n" +
-      indent.more + s"$k : nat\n" +
-      s"${PrettyPrinter(f, indent.more)} : (l: nat -> exp[l.$dt] -> exp[l/$n.$dt])\n" +
-      s"${PrettyPrinter(array, indent.more)} : exp[$m.$dt]\n" +
-      indent + s") : exp[$mnk.$dt]"
-  }
+  override def xmlPrinter: Elem =
+    <iterate k={k.toString}>
+      <f>{Core.xmlPrinter(f)}</f>
+      <input>{Core.xmlPrinter(array)}</input>
+    </iterate>
+
+  override def prettyPrint: String =
+    s"(iterate $k ${PrettyPrinter(f)} ${PrettyPrinter(array)})"
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
     import Compiling.RewriteToImperative._

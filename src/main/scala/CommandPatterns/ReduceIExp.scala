@@ -5,9 +5,10 @@ import Core.PhraseType._
 import Core.OperationalSemantics._
 import DSL._
 import Compiling.SubstituteImplementations
-import Core.PrettyPrinter.Indent
 import apart.arithmetic.ArithExpr
 import opencl.generator.OpenCLAST.Block
+
+import scala.xml.Elem
 
 case class ReduceIExp(n: ArithExpr,
                       dt1: DataType,
@@ -63,13 +64,16 @@ case class ReduceIExp(n: ArithExpr,
     }))
   }
 
-  override def prettyPrint(indent: Indent) =
-    indent + s"(reduceIExp\n" +
-      s"${PrettyPrinter(out, indent.more)} : (exp[$dt2] -> comm)\n" +
-      s"${PrettyPrinter(f, indent.more)} : (acc[$dt2] -> exp[$dt1] -> exp[$dt2] -> comm)\n" +
-      s"${PrettyPrinter(init, indent.more)} : exp[$dt2]\n" +
-      s"${PrettyPrinter(in, indent.more)} : exp[$n.$dt1]\n" +
-      indent + s") : comm"
+  override def prettyPrint =
+    s"(reduceIExp ${PrettyPrinter(out)} ${PrettyPrinter(f)} ${PrettyPrinter(init)} ${PrettyPrinter(in)})"
+
+  override def xmlPrinter: Elem =
+    <reduceIExp n={n.toString} dt1={dt1.toString} dt2={dt2.toString}>
+      <output>{Core.xmlPrinter(out)}</output>
+      <f>{Core.xmlPrinter(f)}</f>
+      <init>{Core.xmlPrinter(init)}</init>
+      <input>{Core.xmlPrinter(in)}</input>
+    </reduceIExp>
 
   override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
     `new`(init.t.dataType, PrivateMemory, accum => {

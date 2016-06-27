@@ -6,8 +6,9 @@ import Core.PhraseType._
 import Core.OperationalSemantics._
 import DSL._
 import Compiling.RewriteToImperative
-import Core.PrettyPrinter.Indent
 import apart.arithmetic.ArithExpr
+
+import scala.xml.Elem
 
 abstract class AbstractMap(f: Phrase[ExpType -> ExpType],
                            array: Phrase[ExpType],
@@ -82,12 +83,16 @@ abstract class AbstractMap(f: Phrase[ExpType -> ExpType],
     )
   }
 
-  override def prettyPrint(indent: Indent): String =
-    indent + s"(${this.getClass.getSimpleName}\n" +
-      s"${PrettyPrinter(f, indent.more)} : (exp[$dt1] -> exp[$dt2])\n" +
-      s"${PrettyPrinter(array, indent.more)} : exp[$n.$dt1]\n" +
-      indent + s") : exp[$n.dt2]"
+  override def prettyPrint: String =
+    s"(${this.getClass.getSimpleName} ${PrettyPrinter(f)} ${PrettyPrinter(array)})"
 
+  override def xmlPrinter: Elem =
+    <map n={n.toString} dt1={dt1.toString} dt2={dt2.toString}>
+      <f>{Core.xmlPrinter(f)}</f>
+      <input>{Core.xmlPrinter(array)}</input>
+    </map>.copy(label = this.getClass.getSimpleName)
 }
 
-case class Map(f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) extends AbstractMap(f, array, Map, MapI)
+case class Map(f: Phrase[ExpType -> ExpType],
+               array: Phrase[ExpType])
+  extends AbstractMap(f, array, Map, MapI)

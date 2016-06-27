@@ -4,7 +4,8 @@ import Core._
 import Core.OperationalSemantics._
 import opencl.generator.OpenCLAST.Block
 import Compiling.SubstituteImplementations
-import Core.PrettyPrinter.Indent
+
+import scala.xml.Elem
 
 case class Skip() extends CommandPattern {
 
@@ -18,6 +19,7 @@ case class Skip() extends CommandPattern {
 
   override def toOpenCL(b: Block, ocl: ToOpenCL): Block = b
 
-  override def prettyPrint(indent: Indent): String = indent + "skip : comm"
+  override def prettyPrint: String = "skip"
 
+  override def xmlPrinter: Elem = <skip/>
 }

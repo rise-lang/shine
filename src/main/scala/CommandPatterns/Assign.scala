@@ -4,9 +4,12 @@ import Core._
 import Core.OperationalSemantics._
 import opencl.generator.OpenCLAST.{AssignmentExpression, Block}
 import Compiling.SubstituteImplementations
-import Core.PrettyPrinter.Indent
 
-case class Assign(lhs: Phrase[AccType], rhs: Phrase[ExpType]) extends CommandPattern {
+import scala.xml.Elem
+
+case class Assign(lhs: Phrase[AccType],
+                  rhs: Phrase[ExpType])
+  extends CommandPattern {
 
   override def typeCheck(): CommandType = {
     import TypeChecker._
@@ -62,6 +65,11 @@ case class Assign(lhs: Phrase[AccType], rhs: Phrase[ExpType]) extends CommandPat
   override def toOpenCL(block: Block, ocl: ToOpenCL): Block =
     (block: Block) += AssignmentExpression(ToOpenCL.acc(lhs, ocl), ToOpenCL.exp(rhs, ocl))
 
-  override def prettyPrint(indent: Indent): String = s"(${PrettyPrinter(lhs)} := ${PrettyPrinter(rhs)}) : comm"
+  override def prettyPrint: String = s"(${PrettyPrinter(lhs)} := ${PrettyPrinter(rhs)})"
 
+  override def xmlPrinter: Elem =
+    <assign>
+      <lhs>{Core.xmlPrinter(lhs)}</lhs>
+      <rhs>{Core.xmlPrinter(rhs)}</rhs>
+    </assign>
 }

@@ -5,12 +5,15 @@ import Core._
 import Core.OperationalSemantics._
 import Core.PhraseType.->
 import Compiling.RewriteToImperative
-import Core.PrettyPrinter.Indent
 import DSL._
 import apart.arithmetic.ArithExpr
 import opencl.generator.OpenCLAST.Expression
 
-case class Split(n: ArithExpr, array: Phrase[ExpType]) extends ExpPattern with ViewExpPattern {
+import scala.xml.Elem
+
+case class Split(n: ArithExpr,
+                 array: Phrase[ExpType])
+  extends ExpPattern with ViewExpPattern {
 
   private var m: ArithExpr = null
   private var dt: DataType = null
@@ -65,11 +68,12 @@ case class Split(n: ArithExpr, array: Phrase[ExpType]) extends ExpPattern with V
     ToOpenCL.exp(array, ocl, (newIdx, chunkElemId._2) :: rest, tupleAccess)
   }
 
-  override def prettyPrint(indent: Indent): String =
-    indent + s"(split\n" +
-      indent.more + s"$n : nat\n" +
-      s"${PrettyPrinter(array, indent.more)} : exp[$n$m.$dt]\n" +
-      indent + s") : exp[$n.$m.$dt]"
+  override def prettyPrint: String = s"(split $n ${PrettyPrinter(array)})"
+
+  override def xmlPrinter: Elem =
+    <split n={n.toString} m={m.toString} dt={dt.toString}>
+      {Core.xmlPrinter(array)}
+    </split>
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._

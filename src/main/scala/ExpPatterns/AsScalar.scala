@@ -1,15 +1,15 @@
 package ExpPatterns
 
-import AccPatterns.{AsScalarAcc, JoinAcc}
+import AccPatterns.AsScalarAcc
 import Core.OperationalSemantics._
 import Core.PhraseType.->
 import Core._
 import Compiling.RewriteToImperative
-import Core.PrettyPrinter.Indent
 import DSL._
 import apart.arithmetic.ArithExpr
-import ir.Type
 import opencl.generator.OpenCLAST.Expression
+
+import scala.xml.Elem
 
 case class AsScalar(array: Phrase[ExpType])
   extends ExpPattern with ViewExpPattern {
@@ -41,8 +41,12 @@ case class AsScalar(array: Phrase[ExpType])
     ToOpenCL.exp(array, ocl, newAAS, tupleAccess)
   }
 
-  override def prettyPrint(indent: Indent): String =
-    indent + s"(asScalar ${PrettyPrinter(array)})"
+  override def prettyPrint: String = s"(asScalar ${PrettyPrinter(array)})"
+
+  override def xmlPrinter: Elem =
+    <asScalar n={n.toString}>
+      {Core.xmlPrinter(array)}
+    </asScalar>
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
     assert(n != null)

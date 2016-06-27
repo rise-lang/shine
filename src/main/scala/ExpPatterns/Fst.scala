@@ -4,12 +4,14 @@ import Core._
 import Core.OperationalSemantics._
 import Core.PhraseType.->
 import Compiling.RewriteToImperative
-import Core.PrettyPrinter.Indent
 import DSL._
 import apart.arithmetic.ArithExpr
 import opencl.generator.OpenCLAST.{Expression, Literal}
 
-case class Fst(record: Phrase[ExpType]) extends ExpPattern with ViewExpPattern with GeneratableExpPattern {
+import scala.xml.Elem
+
+case class Fst(record: Phrase[ExpType])
+  extends ExpPattern with ViewExpPattern with GeneratableExpPattern {
 
   override def typeCheck(): ExpType = {
     TypeChecker(record) match {
@@ -35,8 +37,9 @@ case class Fst(record: Phrase[ExpType]) extends ExpPattern with ViewExpPattern w
     ToOpenCL.exp(record, ocl, arrayAccess, 1 :: tupleAccess)
   }
 
-  override def prettyPrint(indent: Indent): String =
-    indent + s"${PrettyPrinter(record)}._1"
+  override def prettyPrint: String = s"${PrettyPrinter(record)}._1"
+
+  override def xmlPrinter: Elem = <fst>{Core.xmlPrinter(record)}</fst>
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] =
     RewriteToImperative.exp(this)(λ(this.t) {

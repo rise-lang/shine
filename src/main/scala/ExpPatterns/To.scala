@@ -4,10 +4,11 @@ import Core.OperationalSemantics.{Data, Store}
 import Core.PhraseType.->
 import Core._
 import Compiling.RewriteToImperative
-import Core.PrettyPrinter.Indent
 import DSL._
 import apart.arithmetic.ArithExpr
 import opencl.generator.OpenCLAST.Expression
+
+import scala.xml.Elem
 
 abstract class To(f: Phrase[ExpType -> ExpType],
                   input: Phrase[ExpType],
@@ -46,11 +47,14 @@ abstract class To(f: Phrase[ExpType -> ExpType],
     tl
   }
 
-  override def prettyPrint(indent: Indent): String =
-    indent + s"(to$addressSpace\n" +
-      s"${PrettyPrinter(f, indent.more)}\n" +
-      s"${PrettyPrinter(input, indent.more)}\n" +
-      indent + s")"
+  override def prettyPrint: String =
+    s"(to$addressSpace ${PrettyPrinter(f)} ${PrettyPrinter(input)})"
+
+  override def xmlPrinter: Elem =
+    <to dt1={dt1.toString} dt2={dt2.toString}>
+      <f>{Core.xmlPrinter(f)}</f>
+      <input>{Core.xmlPrinter(input)}</input>
+    </to>.copy(label = this.getClass.getSimpleName)
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
     assert(dt1 != null && dt2 != null)

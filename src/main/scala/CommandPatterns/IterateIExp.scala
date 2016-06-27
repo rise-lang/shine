@@ -5,10 +5,11 @@ import Compiling.SubstituteImplementations
 import Core._
 import Core.PhraseType._
 import Core.OperationalSemantics._
-import Core.PrettyPrinter.Indent
 import DSL._
 import ExpPatterns.TruncExp
 import apart.arithmetic._
+
+import scala.xml.Elem
 
 case class IterateIExp(n: ArithExpr,
                        m: ArithExpr,
@@ -86,11 +87,12 @@ case class IterateIExp(n: ArithExpr,
     } )
   }
 
-  override def prettyPrint(indent: Indent): String =
-    indent + s"(iterateIExp\n" +
-      s"${PrettyPrinter(out, indent.more)} : (exp[$m.$dt] -> comm)\n" +
-      s"${PrettyPrinter(f, indent.more)} : ((l:nat) -> acc[l/$n.$dt] -> exp[l.$dt] -> comm)\n" +
-      s"${PrettyPrinter(in, indent.more)}: exp[${n.pow(k) * m}.$dt]\n" +
-      indent + s") : comm"
+  override def prettyPrint: String = s"(iterateIExp ${PrettyPrinter(out)} ${PrettyPrinter(f)} ${PrettyPrinter(in)})"
 
+  override def xmlPrinter: Elem =
+    <iterateIExp n={n.toString} m={m.toString} k={k.toString} dt={dt.toString}>
+      <output>{Core.xmlPrinter(out)}</output>
+      <f>{Core.xmlPrinter(f)}</f>
+      <input>{Core.xmlPrinter(in)}</input>
+    </iterateIExp>
 }
