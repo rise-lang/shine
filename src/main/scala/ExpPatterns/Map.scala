@@ -87,9 +87,9 @@ abstract class AbstractMap(f: Phrase[ExpType -> ExpType],
     s"(${this.getClass.getSimpleName} ${PrettyPrinter(f)} ${PrettyPrinter(array)})"
 
   override def xmlPrinter: Elem =
-    <map n={n.toString} dt1={dt1.toString} dt2={dt2.toString}>
-      <f>{Core.xmlPrinter(f)}</f>
-      <input>{Core.xmlPrinter(array)}</input>
+    <map n={ToString(n)} dt1={ToString(dt1)} dt2={ToString(dt2)}>
+      <f type={ToString(ExpType(dt1) -> ExpType(dt2))}>{Core.xmlPrinter(f)}</f>
+      <input type={ToString(ExpType(ArrayType(n, dt1)))}>{Core.xmlPrinter(array)}</input>
     </map>.copy(label = this.getClass.getSimpleName)
 }
 

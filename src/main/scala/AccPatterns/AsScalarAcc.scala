@@ -39,7 +39,7 @@ case class AsScalarAcc(n: ArithExpr,
   override def prettyPrint = s"(asScalarAcc $n ${PrettyPrinter(array)})"
 
   override def xmlPrinter: Elem =
-    <asScalarAcc n={n.toString}>
+    <asScalarAcc n={ToString(n)}>
       {Core.xmlPrinter(array)}
     </asScalarAcc>
 }

@@ -41,7 +41,7 @@ case class AsVectorAcc(array: Phrase[AccType]) extends AccPattern {
   override def prettyPrint: String = s"(asVectorAcc ${PrettyPrinter(array)})"
 
   override def xmlPrinter: Elem =
-    <asVectorAcc n={n.toString}>
+    <asVectorAcc n={ToString(n)}>
       {Core.xmlPrinter(array)}
     </asVectorAcc>
 }

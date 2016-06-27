@@ -68,10 +68,16 @@ abstract class AbstractMapI(n: ArithExpr,
     s"(${this.getClass.getSimpleName} ${PrettyPrinter(out)} ${PrettyPrinter(f)} ${PrettyPrinter(in)})"
 
   override def xmlPrinter: Elem =
-    <map n={n.toString} dt1={dt1.toString} dt2={dt2.toString}>
-      <output>{Core.xmlPrinter(out)}</output>
-      <f>{Core.xmlPrinter(f)}</f>
-      <input>{Core.xmlPrinter(in)}</input>
+    <map n={ToString(n)} dt1={ToString(dt1)} dt2={ToString(dt2)}>
+      <output type={ToString(AccType(ArrayType(n, dt2)))}>
+        {Core.xmlPrinter(out)}
+      </output>
+      <f type={ToString(AccType(dt2) -> (ExpType(dt1) -> CommandType()))}>
+        {Core.xmlPrinter(f)}
+      </f>
+      <input type={ToString(ExpType(ArrayType(n, dt1)))}>
+        {Core.xmlPrinter(in)}
+      </input>
     </map>.copy(label = this.getClass.getSimpleName)
 }
 

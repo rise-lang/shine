@@ -65,9 +65,9 @@ case class Zip(lhs: Phrase[ExpType],
     s"(zip ${PrettyPrinter(lhs)} ${PrettyPrinter(rhs)})"
 
   override def xmlPrinter: Elem =
-    <zip n={n.toString} dt1={dt1.toString} dt2={dt2.toString}>
-      <lhs>{Core.xmlPrinter(lhs)}</lhs>
-      <rhs>{Core.xmlPrinter(rhs)}</rhs>
+    <zip n={ToString(n)} dt1={ToString(dt1)} dt2={ToString(dt2)}>
+      <lhs type={ToString(ExpType(ArrayType(n, dt1)))}>{Core.xmlPrinter(lhs)}</lhs>
+      <rhs type={ToString(ExpType(ArrayType(n, dt2)))}>{Core.xmlPrinter(rhs)}</rhs>
     </zip>
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {

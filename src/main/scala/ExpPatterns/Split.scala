@@ -71,7 +71,7 @@ case class Split(n: ArithExpr,
   override def prettyPrint: String = s"(split $n ${PrettyPrinter(array)})"
 
   override def xmlPrinter: Elem =
-    <split n={n.toString} m={m.toString} dt={dt.toString}>
+    <split n={ToString(n)} m={ToString(m)} dt={ToString(dt)}>
       {Core.xmlPrinter(array)}
     </split>
 

@@ -4,6 +4,12 @@ import java.io.{File, PrintWriter}
 
 import scala.xml._
 
+object ToString {
+  def apply(a: Any): String = {
+    if (a == null) { "null" } else { a.toString }
+  }
+}
+
 object xmlPrinter {
 
   def toFile[T <: PhraseType](filename: String, p: Phrase[T]): Unit = {
@@ -16,7 +22,7 @@ object xmlPrinter {
   }
 
   def apply[T <: PhraseType](p: Phrase[T]): xml.Elem = {
-    (p match {
+    val elem = p match {
       case app: ApplyPhrase[a, T] =>
         <apply>
           <fun>{apply(app.fun)}</fun>
@@ -55,9 +61,8 @@ object xmlPrinter {
         <identifier name={name} />
 
       case LambdaPhrase(param, body) =>
-        <lambda>
-          <param>{apply(param)}</param>
-          <body>{apply(body)}</body>
+        <lambda param={param.name}>
+          {apply(body)}
         </lambda>
 
       case NatDependentLambdaPhrase(param, body) =>
@@ -80,7 +85,17 @@ object xmlPrinter {
 
       case p: IntermediateCommandPattern => p.xmlPrinter
 
-    }) % Attribute(None, "type", Text(p.t.toString), Null)
+    }
+    elem.copy(attributes =
+      append(elem.attributes,
+        Attribute("type", Text(ToString(p.t)), Null)))
+  }
+
+  def append(head: MetaData, node: MetaData): MetaData = {
+    head.next match {
+      case null | Null => head.copy(next = node)
+      case _ => head.copy(next = append(head.next, node))
+    }
   }
 
 }

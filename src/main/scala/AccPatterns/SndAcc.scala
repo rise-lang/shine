@@ -38,7 +38,7 @@ case class SndAcc(dt1: DataType,
   override def prettyPrint: String = s"(SndAcc ${PrettyPrinter(record)})"
 
   override def xmlPrinter: Elem =
-    <sndAcc dt1={dt1.toString} dt2={dt2.toString}>
+    <sndAcc dt1={ToString(dt1)} dt2={ToString(dt2)}>
       {Core.xmlPrinter(record)}
     </sndAcc>
 }

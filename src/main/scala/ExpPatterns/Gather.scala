@@ -61,7 +61,7 @@ case class Gather(idxF: (ArithExpr, DataType) => ArithExpr,
   override def prettyPrint: String = s"(gather idxF ${PrettyPrinter(array)})"
 
   override def xmlPrinter: Elem =
-    <gather ixdF={idxF.toString}>
+    <gather ixdF={ToString(idxF)}>
       {Core.xmlPrinter(array)}
     </gather>
 }

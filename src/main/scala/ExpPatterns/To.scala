@@ -51,7 +51,7 @@ abstract class To(f: Phrase[ExpType -> ExpType],
     s"(to$addressSpace ${PrettyPrinter(f)} ${PrettyPrinter(input)})"
 
   override def xmlPrinter: Elem =
-    <to dt1={dt1.toString} dt2={dt2.toString}>
+    <to dt1={ToString(dt1)} dt2={ToString(dt2)}>
       <f>{Core.xmlPrinter(f)}</f>
       <input>{Core.xmlPrinter(input)}</input>
     </to>.copy(label = this.getClass.getSimpleName)

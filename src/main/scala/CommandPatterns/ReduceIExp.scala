@@ -68,11 +68,11 @@ case class ReduceIExp(n: ArithExpr,
     s"(reduceIExp ${PrettyPrinter(out)} ${PrettyPrinter(f)} ${PrettyPrinter(init)} ${PrettyPrinter(in)})"
 
   override def xmlPrinter: Elem =
-    <reduceIExp n={n.toString} dt1={dt1.toString} dt2={dt2.toString}>
-      <output>{Core.xmlPrinter(out)}</output>
-      <f>{Core.xmlPrinter(f)}</f>
-      <init>{Core.xmlPrinter(init)}</init>
-      <input>{Core.xmlPrinter(in)}</input>
+    <reduceIExp n={ToString(n)} dt1={ToString(dt1)} dt2={ToString(dt2)}>
+      <output type={ToString(ExpType(dt2) -> CommandType())}>{Core.xmlPrinter(out)}</output>
+      <f type={ToString(AccType(dt2) -> (ExpType(dt1) -> (ExpType(dt2) -> CommandType())))}>{Core.xmlPrinter(f)}</f>
+      <init type={ToString(ExpType(dt2))}>{Core.xmlPrinter(init)}</init>
+      <input type={ToString(ExpType(ArrayType(n, dt1)))}>{Core.xmlPrinter(in)}</input>
     </reduceIExp>
 
   override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {

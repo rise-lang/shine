@@ -67,7 +67,7 @@ case class Join(array: Phrase[ExpType])
   override def prettyPrint: String = s"(join ${PrettyPrinter(array)})"
 
   override def xmlPrinter: Elem =
-    <join n={n.toString} m={m.toString} dt={dt.toString}>
+    <join n={ToString(n)} m={ToString(m)} dt={ToString(dt)}>
       {Core.xmlPrinter(array)}
     </join>
 

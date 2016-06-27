@@ -41,7 +41,7 @@ case class AsVector(n: ArithExpr,
   override def prettyPrint: String = s"(asVector ${n.toString} ${PrettyPrinter(array)})"
 
   override def xmlPrinter: Elem =
-    <asVector n={n.toString}>
+    <asVector n={ToString(n)}>
       {Core.xmlPrinter(array)}
     </asVector>
 

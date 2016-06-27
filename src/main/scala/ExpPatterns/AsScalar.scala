@@ -44,7 +44,7 @@ case class AsScalar(array: Phrase[ExpType])
   override def prettyPrint: String = s"(asScalar ${PrettyPrinter(array)})"
 
   override def xmlPrinter: Elem =
-    <asScalar n={n.toString}>
+    <asScalar n={ToString(n)}>
       {Core.xmlPrinter(array)}
     </asScalar>
 

@@ -35,7 +35,7 @@ case class FstAcc(dt1: DataType,
   def toOpenCL(ocl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): VarRef = ???
 
   override def xmlPrinter: Elem =
-    <fstAcc dt1={dt1.toString} dt2={dt2.toString}>
+    <fstAcc dt1={ToString(dt1)} dt2={ToString(dt2)}>
       {Core.xmlPrinter(record)}
     </fstAcc>
 

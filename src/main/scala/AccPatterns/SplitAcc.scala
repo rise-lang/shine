@@ -51,7 +51,7 @@ case class SplitAcc(n: ArithExpr,
   override def prettyPrint: String = s"(splitAcc ${PrettyPrinter(array)})"
 
   override def xmlPrinter: Elem =
-    <splitAcc n={n.toString} m={m.toString} dt={dt.toString}>
+    <splitAcc n={ToString(n)} m={ToString(m)} dt={ToString(dt)}>
       {Core.xmlPrinter(array)}
     </splitAcc>
 }

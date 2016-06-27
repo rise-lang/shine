@@ -9,6 +9,13 @@ import opencl.generator.OpenCLPrinter
 
 object gemv extends App {
 
+  val reorderWithStride = (s: ArithExpr) => {
+    (i: ArithExpr, t: DataType) => {
+      val n = ir.Type.getLength(DataType.toType(t)) /^ s
+      (i / n) + s * (i % n)
+    }
+  }
+
   val N = SizeVar("N")
   val M = SizeVar("M")
   val dataT = float
@@ -61,5 +68,24 @@ object gemv extends App {
       ) ) ) ) )
 
   printOpenCLKernel1("fullMatrixVectorFusedOpenCL", fullMatrixVectorFusedOpenCL)
+
+  val fullMatrixVectorFusedOpenCLAMD =
+    λ(matT)(mat => λ(xsT)(xs => λ(ysT)(ys =>
+      λ(ExpType(dataT))(alpha => λ(ExpType(dataT))(beta =>
+
+        join() o mapWorkgroup(λ(t =>
+          mapLocal(λ(x => x + (t._2 * beta))) o
+            mapLocal(reduceSeq(add, 0.0f)) o split(128) o
+            mapLocal(λ(x => alpha * x)) o
+            toLocal(mapLocal(reduceSeq(λ(x => λ(a => mult(x) + a)), 0.0f)))
+            o split(N /^ 128) o gather(reorderWithStride(128)) $ zip(xs, t._1)
+        )) $ zip(mat, ys)
+
+      ) ) ) ) )
+
+  TypeChecker(fullMatrixVectorFusedOpenCLAMD)
+  println(xmlPrinter.asString(fullMatrixVectorFusedOpenCLAMD))
+
+  printOpenCLKernel1("fullMatrixVectorFusedOpenCLAMD", fullMatrixVectorFusedOpenCLAMD)
 
 }

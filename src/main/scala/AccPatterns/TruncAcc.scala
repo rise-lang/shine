@@ -43,7 +43,7 @@ case class TruncAcc(n: ArithExpr,
   override def prettyPrint: String = s"(truncAcc ${PrettyPrinter(array)})"
 
   override def xmlPrinter: Elem =
-    <truncAcc n={n.toString} m={m.toString} dt={dt.toString}>
+    <truncAcc n={ToString(n)} m={ToString(m)} dt={ToString(dt)}>
       {Core.xmlPrinter(array)}
     </truncAcc>
 }

@@ -67,7 +67,7 @@ case class New(dt: DataType, addressSpace: AddressSpace,
   override def prettyPrint: String = s"(new $addressSpace ${PrettyPrinter(f)})"
 
   override def xmlPrinter: Elem =
-    <new dt={dt.toString} addressspace={addressSpace.toString}>
+    <new dt={ToString(dt)} addressspace={ToString(addressSpace)}>
       {Core.xmlPrinter(f)}
     </new>
 }

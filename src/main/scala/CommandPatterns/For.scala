@@ -38,7 +38,7 @@ case class For(n: ArithExpr,
   override def prettyPrint: String = s"(for 0..$n ${PrettyPrinter(body)})"
 
   override def xmlPrinter: Elem =
-    <for n={n.toString}>
+    <for n={ToString(n)}>
       {Core.xmlPrinter(body)}
     </for>
 

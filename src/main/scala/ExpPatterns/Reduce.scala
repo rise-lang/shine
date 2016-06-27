@@ -101,10 +101,10 @@ abstract class AbstractReduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
   }
 
   override def xmlPrinter: Elem =
-    <reduce n={n.toString} dt1={dt1.toString} dt2={dt2.toString}>
-      <f>{Core.xmlPrinter(f)}</f>
-      <init>{Core.xmlPrinter(init)}</init>
-      <input>{Core.xmlPrinter(array)}</input>
+    <reduce n={ToString(n)} dt1={ToString(dt1)} dt2={ToString(dt2)}>
+      <f type={ToString(ExpType(dt1) -> (ExpType(dt2) -> ExpType(dt2)))}>{Core.xmlPrinter(f)}</f>
+      <init type={ToString(ExpType(dt2))}>{Core.xmlPrinter(init)}</init>
+      <input type={ToString(ExpType(ArrayType(n, dt1)))}>{Core.xmlPrinter(array)}</input>
     </reduce>.copy(label = this.getClass.getSimpleName)
 }
 

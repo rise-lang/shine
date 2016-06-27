@@ -11,9 +11,13 @@ object OperationalSemantics {
   sealed abstract class Data(val dataType: DataType)
   final case class IndexData(i: ArithExpr) extends Data(int)
   final case class BoolData(b: Boolean) extends Data(bool)
-  final case class IntData(i: Int) extends Data(int)
+  final case class IntData(i: Int) extends Data(int) {
+    override def toString = i.toString
+  }
 //  final case class Int4Data(i0: Int, i1: Int, i2: Int, i3: Int) extends Data(int4)
-  final case class FloatData(f: Float) extends Data(float)
+  final case class FloatData(f: Float) extends Data(float) {
+    override def toString = f.toString + "f"
+  }
   final case class VectorData(a: Vector[Data]) extends Data(VectorType(a.length, a.head.dataType match {
     case b: BasicType => b
     case _ => throw new Exception("This should not happen")

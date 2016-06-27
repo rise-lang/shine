@@ -49,7 +49,7 @@ case class JoinAcc(n: ArithExpr,
     s"(joinAcc ${PrettyPrinter(array)})"
 
   override def xmlPrinter: Elem =
-    <joinAcc n={n.toString} m={m.toString} dt={dt.toString}>
+    <joinAcc n={ToString(n)} m={ToString(m)} dt={ToString(dt)}>
       {Core.xmlPrinter(array)}
     </joinAcc>
 }

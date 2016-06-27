@@ -126,11 +126,24 @@ case class DoubleBufferFor(n: ArithExpr,
 
   override def prettyPrint: String = s"doubleBufferFor $buffer1 $buffer2 $k $body $C"
 
-  override def xmlPrinter: Elem =
-    <doubleBufferFor k={k.toString} n={n.toString} dt={dt.toString} addressSpace={addressSpace.toString}>
-      <buffer1>{Core.xmlPrinter(buffer1)}</buffer1>
-      <buffer2>{Core.xmlPrinter(buffer2)}</buffer2>
-      <body>{Core.xmlPrinter(body)}</body>
-      <continuation>{Core.xmlPrinter(C)}</continuation>
+  override def xmlPrinter: Elem = {
+    val l = body match {
+      case NatDependentLambdaPhrase(l, _) => l
+      case _ => throw new Exception("This should not happen")
+    }
+    <doubleBufferFor k={ToString(k)} n={ToString(n)} dt={ToString(dt)} addressSpace={ToString(addressSpace)}>
+      <buffer1 type={ToString(VarType(ArrayType(n, dt)))}>
+        {Core.xmlPrinter(buffer1)}
+      </buffer1>
+      <buffer2 type={ToString(VarType(ArrayType(n, dt)))}>
+        {Core.xmlPrinter(buffer2)}
+      </buffer2>
+      <body type={ToString(l -> ((AccType(ArrayType(n, dt)) x ExpType(ArrayType(n, dt))) -> CommandType()))}>
+        {Core.xmlPrinter(body)}
+      </body>
+      <continuation type={ToString(ExpType(ArrayType(n, dt)) -> CommandType())}>
+        {Core.xmlPrinter(C)}
+      </continuation>
     </doubleBufferFor>
+  }
 }

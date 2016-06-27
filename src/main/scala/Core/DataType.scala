@@ -21,7 +21,7 @@ final case class ArrayType(size: ArithExpr, elemType: DataType) extends DataType
 }
 
 final case class RecordType(fst: DataType, snd: DataType) extends DataType {
-  override def toString = s"$fst x $snd"
+  override def toString = s"($fst x $snd)"
 }
 
 object DataType {

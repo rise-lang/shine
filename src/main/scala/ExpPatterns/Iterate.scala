@@ -72,11 +72,20 @@ case class Iterate(k: ArithExpr,
     ???
   }
 
-  override def xmlPrinter: Elem =
-    <iterate k={k.toString}>
-      <f>{Core.xmlPrinter(f)}</f>
-      <input>{Core.xmlPrinter(array)}</input>
+  override def xmlPrinter: Elem = {
+    val l = f match {
+      case NatDependentLambdaPhrase(l, _) => l
+      case _ => throw new Exception("This should not happen")
+    }
+    <iterate n={ToString(n)} m={ToString(m)} k={ToString(k)} dt={ToString(dt)}>
+      <f type={ToString(l -> (ExpType(ArrayType(l, dt)) -> ExpType(ArrayType(l /^ n, dt))))}>
+        {Core.xmlPrinter(f)}
+      </f>
+      <input type={ToString(ExpType(ArrayType(m, dt)))}>
+        {Core.xmlPrinter(array)}
+      </input>
     </iterate>
+  }
 
   override def prettyPrint: String =
     s"(iterate $k ${PrettyPrinter(f)} ${PrettyPrinter(array)})"

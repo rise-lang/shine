@@ -11,14 +11,15 @@ import scala.xml.Elem
 case class Idx(array: Phrase[ExpType],
                index: Phrase[ExpType]) extends ExpPattern with ViewExpPattern with GeneratableExpPattern {
 
+  private var n: ArithExpr = null
   private var dt: DataType = null
 
   override def typeCheck(): ExpType = {
     import TypeChecker._
     check(TypeChecker(index), ExpType(int))
     TypeChecker(array) match {
-      case ExpType(ArrayType(_, dt_)) =>
-        dt = dt_
+      case ExpType(ArrayType(n_, dt_)) =>
+        n = n_; dt = dt_
         ExpType(dt)
       case x => error(x.toString, "ArrayType")
     }
@@ -33,6 +34,7 @@ case class Idx(array: Phrase[ExpType],
 
   override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[ExpType] = {
     val i = Idx(VisitAndRebuild(array, f), VisitAndRebuild(index, f))
+    i.n = f(n)
     i.dt = f(dt)
     i
   }
@@ -51,9 +53,9 @@ case class Idx(array: Phrase[ExpType],
   override def prettyPrint: String = s"(${PrettyPrinter(array)})[${PrettyPrinter(index)}]"
 
   override def xmlPrinter: Elem =
-    <idx dt={dt.toString}>
-      <input>{Core.xmlPrinter(array)}</input>
-      <index>{Core.xmlPrinter(index)}</index>
+    <idx n={ToString(n)} dt={ToString(dt)}>
+      <input type={ToString(ExpType(ArrayType(n, dt)))}>{Core.xmlPrinter(array)}</input>
+      <index type={ToString(ExpType(int))}>{Core.xmlPrinter(index)}</index>
     </idx>
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = ???

@@ -53,7 +53,7 @@ case class IdxAcc(array: Phrase[AccType],
   override def prettyPrint: String = s"${PrettyPrinter(array)}[${PrettyPrinter(index)}]"
 
   override def xmlPrinter: Elem =
-    <idxAcc dt={dt.toString}>
+    <idxAcc dt={ToString(dt)}>
       <input>{Core.xmlPrinter(array)}</input>
       <index>{Core.xmlPrinter(index)}</index>
     </idxAcc>

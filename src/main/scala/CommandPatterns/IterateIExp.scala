@@ -89,10 +89,21 @@ case class IterateIExp(n: ArithExpr,
 
   override def prettyPrint: String = s"(iterateIExp ${PrettyPrinter(out)} ${PrettyPrinter(f)} ${PrettyPrinter(in)})"
 
-  override def xmlPrinter: Elem =
-    <iterateIExp n={n.toString} m={m.toString} k={k.toString} dt={dt.toString}>
-      <output>{Core.xmlPrinter(out)}</output>
-      <f>{Core.xmlPrinter(f)}</f>
-      <input>{Core.xmlPrinter(in)}</input>
+  override def xmlPrinter: Elem = {
+    val l = f match {
+      case NatDependentLambdaPhrase(l, _) => l
+      case _ => throw new Exception("This should not happen")
+    }
+    <iterateIExp n={ToString(n)} m={ToString(m)} k={ToString(k)} dt={ToString(dt)}>
+      <output type={ToString(ExpType(ArrayType(m, dt)) -> CommandType())}>
+        {Core.xmlPrinter(out)}
+      </output>
+      <f type={ToString(l -> (AccType(ArrayType(l /^ n, dt)) -> (ExpType(ArrayType(l, dt)) -> CommandType())))}>
+        {Core.xmlPrinter(f)}
+      </f>
+      <input type={ToString(ExpType(ArrayType((n.pow(k) * m), dt)))}>
+        {Core.xmlPrinter(in)}
+      </input>
     </iterateIExp>
+  }
 }

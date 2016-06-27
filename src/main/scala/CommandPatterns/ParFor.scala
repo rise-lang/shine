@@ -61,9 +61,13 @@ abstract class AbstractParFor(val n: ArithExpr,
 
 
   override def xmlPrinter: Elem =
-    <parFor n={n.toString} dt={dt.toString}>
-      <output>{Core.xmlPrinter(out)}</output>
-      <body>{Core.xmlPrinter(body)}</body>
+    <parFor n={ToString(n)} dt={ToString(dt)}>
+      <output type={ToString(AccType(ArrayType(n, dt)))}>
+        {Core.xmlPrinter(out)}
+      </output>
+      <body type={ToString(ExpType(int) -> (AccType(dt) -> CommandType()))}>
+        {Core.xmlPrinter(body)}
+      </body>
     </parFor>.copy(label = this.getClass.getSimpleName)
 
   def makeParFor: (ArithExpr, DataType, Phrase[AccType], Phrase[ExpType -> (AccType -> CommandType)]) => AbstractParFor
