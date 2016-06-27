@@ -6,6 +6,7 @@ import Core.PhraseType._
 import Core.OperationalSemantics._
 import DSL._
 import Compiling.RewriteToImperative
+import Core.PrettyPrinter.Indent
 import apart.arithmetic.ArithExpr
 
 abstract class AbstractMap(f: Phrase[ExpType -> ExpType],
@@ -81,7 +82,11 @@ abstract class AbstractMap(f: Phrase[ExpType -> ExpType],
     )
   }
 
-  override def prettyPrint: String = s"(${this.getClass.getSimpleName} ${PrettyPrinter(f)} ${PrettyPrinter(array)})"
+  override def prettyPrint(indent: Indent): String =
+    indent + s"(${this.getClass.getSimpleName}\n" +
+      s"${PrettyPrinter(f, indent.more)} : (exp[$dt1] -> exp[$dt2])\n" +
+      s"${PrettyPrinter(array, indent.more)} : exp[$n.$dt1]\n" +
+      indent + s") : exp[$n.dt2]"
 
 }
 

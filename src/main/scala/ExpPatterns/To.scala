@@ -4,6 +4,7 @@ import Core.OperationalSemantics.{Data, Store}
 import Core.PhraseType.->
 import Core._
 import Compiling.RewriteToImperative
+import Core.PrettyPrinter.Indent
 import DSL._
 import apart.arithmetic.ArithExpr
 import opencl.generator.OpenCLAST.Expression
@@ -45,7 +46,11 @@ abstract class To(f: Phrase[ExpType -> ExpType],
     tl
   }
 
-  override def prettyPrint: String = s"(toLocal ${PrettyPrinter(input)})"
+  override def prettyPrint(indent: Indent): String =
+    indent + s"(to$addressSpace\n" +
+      s"${PrettyPrinter(f, indent.more)}\n" +
+      s"${PrettyPrinter(input, indent.more)}\n" +
+      indent + s")"
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
     assert(dt1 != null && dt2 != null)

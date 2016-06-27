@@ -2,6 +2,7 @@ package AccPatterns
 
 import Core._
 import Core.OperationalSemantics._
+import Core.PrettyPrinter.Indent
 import apart.arithmetic.ArithExpr
 import ir.Type
 import opencl.generator.OpenCLAST.VarRef
@@ -14,7 +15,7 @@ case class SplitAcc(n: ArithExpr,
   override def typeCheck(): AccType = {
     import TypeChecker._
     TypeChecker(array) match {
-      case AccType(ArrayType(n_, ArrayType(m_, dt_)))
+      case AccType(ArrayType(m_, ArrayType(n_, dt_)))
         if n_ == n && m_ == m && dt == dt_ =>
 
         AccType(ArrayType(n*m, dt))
@@ -46,6 +47,9 @@ case class SplitAcc(n: ArithExpr,
     ToOpenCL.acc(array, opencl, newAs, tupleAccess)
   }
 
-  override def prettyPrint: String = s"(split ${PrettyPrinter(array)})"
+  override def prettyPrint(indent: Indent): String =
+    indent + s"(splitAcc\n" +
+      s"${PrettyPrinter(array, indent.more)} : acc[$m.$n.$dt]\n" +
+      indent + s") : acc[${n*m}.$dt]"
 
 }

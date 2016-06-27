@@ -2,8 +2,9 @@ package AccPatterns
 
 import Core._
 import Core.OperationalSemantics._
-import apart.arithmetic.{ArithExpr, NamedVar}
-import opencl.generator.OpenCLAST.VarRef
+import Core.PrettyPrinter.Indent
+import apart.arithmetic.{ArithExpr, Cst, NamedVar}
+import opencl.generator.OpenCLAST.{Literal, VarRef}
 
 case class IdxAcc(array: Phrase[AccType],
                   index: Phrase[ExpType]) extends AccPattern {
@@ -41,12 +42,14 @@ case class IdxAcc(array: Phrase[AccType],
   override def toOpenCL(ocl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): VarRef = {
     val idx: ArithExpr = ToOpenCL.exp(index, ocl) match {
       case VarRef(name, _, _) => NamedVar(name, ocl.env(name))
+      case Literal(i) => Cst(i.toInt)
       case _ => throw new Exception("This should not happen")
     }
     val length = DataType.getLengths(dt, tupleAccess, List()).foldLeft(1: ArithExpr)((x,y) => x * y)
     ToOpenCL.acc(array, ocl, (idx, length) :: arrayAccess, tupleAccess)
   }
 
-  override def prettyPrint: String = s"${PrettyPrinter(array)}[${PrettyPrinter(index)}]"
+  override def prettyPrint(indent: Indent): String =
+    indent + s"${PrettyPrinter(array)}[${PrettyPrinter(index)}]"
 
 }

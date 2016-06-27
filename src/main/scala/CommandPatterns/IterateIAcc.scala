@@ -6,6 +6,7 @@ import Core.PhraseType._
 import Core.OperationalSemantics._
 import apart.arithmetic._
 import Compiling.SubstituteImplementations
+import Core.PrettyPrinter.Indent
 import DSL._
 import ExpPatterns.TruncExp
 
@@ -134,7 +135,11 @@ case class IterateIAcc(n: ArithExpr,
     }
   }
 
-  override def prettyPrint: String =
-    s"(iterateIAcc ${PrettyPrinter(out)} ${PrettyPrinter(f)} ${PrettyPrinter(in)}"
+  override def prettyPrint(indent: Indent): String =
+    indent + s"(iterateIAcc\n" +
+      s"${PrettyPrinter(out, indent.more)} : acc[$m.$dt]\n" +
+      s"${PrettyPrinter(f, indent.more)} : ((l:nat) -> acc[l/$n.$dt] -> exp[l.$dt] -> comm)\n" +
+      s"${PrettyPrinter(in, indent.more)}: exp[${n.pow(k) * m}.$dt]\n" +
+      indent + s") : comm"
 
 }

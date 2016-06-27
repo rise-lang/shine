@@ -2,38 +2,52 @@ package Core
 
 object PrettyPrinter {
 
-  def apply[T <: PhraseType](p: Phrase[T]): String = {
+  case class Indent(i: Int) {
+    assert(i >= 0)
+
+    override def toString = " " * i
+
+    def more = Indent(i + 1)
+    def less = Indent(i - 1)
+  }
+
+  def apply[T <: PhraseType](p: Phrase[T], indent: Indent = Indent(0)): String = {
     p match {
-      case app: ApplyPhrase[a, T] => s"(${apply(app.fun)} ${apply(app.arg)})"
+      case p: ExpPattern => p.prettyPrint(indent)
 
-      case app: NatDependentApplyPhrase[T] => s"(${apply(app.fun)} ${app.arg.toString})"
+      case p: AccPattern => p.prettyPrint(indent)
 
-      case p1: Proj1Phrase[a, b] => s"${apply(p1.pair)}._1"
+      case p: IntermediateCommandPattern => p.prettyPrint(indent)
 
-      case p2: Proj2Phrase[a, b] => s"${apply(p2.pair)}._2"
+      case _ => indent + (p match {
+        case app: ApplyPhrase[a, T] => s"(${apply(app.fun)} ${apply(app.arg)})"
 
-      case IfThenElsePhrase(cond, thenP, elseP) =>
-        s"if(${apply(cond)}) { ${apply(thenP)} } else { ${apply(elseP)} }"
+        case app: NatDependentApplyPhrase[T] => s"(${apply(app.fun)} ${app.arg})"
 
-      case UnaryOpPhrase(op, x) => s"(${op.toString} ${apply(x)})"
+        case p1: Proj1Phrase[a, b] => s"${apply(p1.pair)}._1"
 
-      case BinOpPhrase(op, lhs, rhs) => s"(${apply(lhs)} ${op.toString} ${apply(rhs)})"
+        case p2: Proj2Phrase[a, b] => s"${apply(p2.pair)}._2"
 
-      case IdentPhrase(name) => name
+        case IfThenElsePhrase(cond, thenP, elseP) =>
+          s"if(${apply(cond)}) { ${apply(thenP)} } else { ${apply(elseP)} }"
 
-      case LambdaPhrase(param, body) => s"(λ ${apply(param)}. ${apply(body)})"
+        case UnaryOpPhrase(op, x) => s"(${op.toString} ${apply(x)})"
 
-      case NatDependentLambdaPhrase(param, body) => s"(Λ ${param.name}. ${apply(body)})"
+        case BinOpPhrase(op, lhs, rhs) => s"(${apply(lhs)} ${op.toString} ${apply(rhs)})"
 
-      case LiteralPhrase(d) => d.toString
+        case IdentPhrase(name) => s"($name : ${p.t})"
 
-      case PairPhrase(fst, snd) => s"(${apply(fst)}, ${apply(snd)})"
+        case LambdaPhrase(param, body) => s"((λ ${apply(param)}.\n ${apply(body, indent)}) : ${p.t})"
 
-      case p: ExpPattern => p.prettyPrint
+        case NatDependentLambdaPhrase(param, body) => s"(Λ ${param.name}. ${apply(body)})"
 
-      case p: AccPattern => p.prettyPrint
+        case LiteralPhrase(d) => d.toString
 
-      case p: IntermediateCommandPattern => p.prettyPrint
+        case PairPhrase(fst, snd) => s"(${apply(fst)}, ${apply(snd)})"
+
+        case _: ExpPattern | _: AccPattern | _: IntermediateCommandPattern =>
+          throw new Exception("This should not happen")
+      })
     }
   }
 

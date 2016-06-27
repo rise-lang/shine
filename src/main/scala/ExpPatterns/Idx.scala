@@ -3,7 +3,8 @@ package ExpPatterns
 import Core._
 import Core.OperationalSemantics._
 import Core.PhraseType.->
-import apart.arithmetic.{Range, ArithExpr, NamedVar}
+import Core.PrettyPrinter.Indent
+import apart.arithmetic.{ArithExpr, NamedVar}
 import opencl.generator.OpenCLAST.{Expression, VarRef}
 
 case class Idx(array: Phrase[ExpType],
@@ -46,7 +47,7 @@ case class Idx(array: Phrase[ExpType],
     ToOpenCL.exp(array, ocl, (idx, length) :: arrayAccess, tupleAccess)
   }
 
-  override def prettyPrint: String = s"(${PrettyPrinter(array)})[${PrettyPrinter(index)}]"
+  override def prettyPrint(indent: Indent): String = indent + s"(${PrettyPrinter(array)})[${PrettyPrinter(index)}]"
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = ???
 

@@ -20,8 +20,7 @@ object TypeChecker {
     p match {
       case l: LambdaPhrase[T1, T2] =>
         l.param.t match {
-          case null => l.param.t = t // infer the type if not set
-          case _ =>
+          case _ => l.param.t = t
         }
 
       case app: ApplyPhrase[a, T1 -> T2] =>
@@ -182,7 +181,7 @@ object TypeChecker {
           case _ => (TypeChecker(lhs), TypeChecker(rhs)) match {
             case (ExpType(dt1), ExpType(dt2)) if dt1 == dt2 =>
               ExpType(dt1)
-            case x => error(x.toString, expected = "")
+            case x => error(x.toString, expected = "them to match")
           }
         }
 

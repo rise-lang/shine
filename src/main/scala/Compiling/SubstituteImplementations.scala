@@ -3,13 +3,15 @@ package Compiling
 import Core._
 import Core.PhraseType.{->, `(nat)->`}
 
-import scala.collection.mutable
+import scala.collection.immutable
 
 
 object SubstituteImplementations {
 
-  class Environment {
-    val addressspace = mutable.Map[String, AddressSpace]()
+  case class Environment(addressspace : immutable.Map[String, AddressSpace])
+
+  object Environment {
+    def apply(): Environment = Environment(immutable.Map[String, AddressSpace]())
   }
 
   def apply(p: Phrase[CommandType], env: Environment): Phrase[CommandType] = {

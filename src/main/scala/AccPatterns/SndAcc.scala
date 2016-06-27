@@ -2,6 +2,7 @@ package AccPatterns
 
 import Core._
 import Core.OperationalSemantics._
+import Core.PrettyPrinter.Indent
 import apart.arithmetic.ArithExpr
 import opencl.generator.OpenCLAST.VarRef
 
@@ -33,6 +34,9 @@ case class SndAcc(dt1: DataType,
 
   def toOpenCL(ocl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): VarRef = ???
 
-  override def prettyPrint: String = s"${PrettyPrinter(record)}._2"
+  override def prettyPrint(indent: Indent): String =
+    indent + s"(SndAcc\n" +
+      s"${PrettyPrinter(record, indent.more)} : acc[$dt1 x $dt2]\n" +
+      indent + s") : acc[$dt2]"
 
 }

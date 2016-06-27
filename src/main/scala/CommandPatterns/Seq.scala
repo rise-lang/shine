@@ -3,6 +3,7 @@ package CommandPatterns
 import Core._
 import Core.OperationalSemantics._
 import Compiling.SubstituteImplementations
+import Core.PrettyPrinter.Indent
 import opencl.generator.OpenCLAST.Block
 
 case class Seq(c1: Phrase[CommandType],
@@ -33,6 +34,11 @@ case class Seq(c1: Phrase[CommandType],
     ToOpenCL.cmd(c2, block, ocl)
   }
 
-  override def prettyPrint: String = s"${PrettyPrinter(c1)} ; ${PrettyPrinter(c2)}"
+  override def prettyPrint(indent: Indent): String =
+    indent + s"(\n" +
+      s"${PrettyPrinter(c1, indent.more)}\n" +
+      indent.more + ";\n" +
+      s"${PrettyPrinter(c2, indent.more)}\n" +
+      indent + s") : comm"
 
 }

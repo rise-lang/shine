@@ -4,6 +4,7 @@ import AccPatterns.AsVectorAcc
 import Compiling.RewriteToImperative
 import Core.OperationalSemantics._
 import Core.PhraseType.->
+import Core.PrettyPrinter.Indent
 import Core._
 import DSL._
 import apart.arithmetic.ArithExpr
@@ -36,7 +37,7 @@ case class AsVector(n: ArithExpr,
     ToOpenCL.exp(array, ocl, newAAS, tupleAccess)
   }
 
-  override def prettyPrint: String = s"(asVector ${n.toString} ${PrettyPrinter(array)})"
+  override def prettyPrint(indent: Indent): String = indent + s"(asVector ${n.toString} ${PrettyPrinter(array)})"
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
     RewriteToImperative.acc(array)(AsVectorAcc(A))

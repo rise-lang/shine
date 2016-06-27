@@ -4,6 +4,7 @@ import Core._
 import Core.OperationalSemantics._
 import opencl.generator.OpenCLAST.{AssignmentExpression, Block}
 import Compiling.SubstituteImplementations
+import Core.PrettyPrinter.Indent
 
 case class Assign(lhs: Phrase[AccType], rhs: Phrase[ExpType]) extends CommandPattern {
 
@@ -61,6 +62,6 @@ case class Assign(lhs: Phrase[AccType], rhs: Phrase[ExpType]) extends CommandPat
   override def toOpenCL(block: Block, ocl: ToOpenCL): Block =
     (block: Block) += AssignmentExpression(ToOpenCL.acc(lhs, ocl), ToOpenCL.exp(rhs, ocl))
 
-  override def prettyPrint: String = s"${PrettyPrinter(lhs)} := ${PrettyPrinter(rhs)}"
+  override def prettyPrint(indent: Indent): String = s"(${PrettyPrinter(lhs)} := ${PrettyPrinter(rhs)}) : comm"
 
 }

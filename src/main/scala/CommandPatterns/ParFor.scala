@@ -4,6 +4,7 @@ import Core._
 import Core.OperationalSemantics._
 import Core.PhraseType._
 import Compiling.SubstituteImplementations
+import Core.PrettyPrinter.Indent
 import apart.arithmetic.{ArithExpr, Cst, NamedVar, RangeAdd}
 import opencl.generator.OpenCLAST
 import opencl.generator.OpenCLAST._
@@ -54,8 +55,11 @@ abstract class AbstractParFor(val n: ArithExpr,
   override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] =
     makeParFor(n, dt, out, SubstituteImplementations.applyBinaryFun(body, env))
 
-  override def prettyPrint: String =
-    s"${this.getClass.getSimpleName} ${evalIndexExp(new OperationalSemantics.Store(), n)} ${PrettyPrinter(out)} ${PrettyPrinter(body)}"
+  override def prettyPrint(indent: Indent): String =
+    indent + s"(${this.getClass.getSimpleName} $n\n" +
+      s"${PrettyPrinter(out, indent.more)} : acc[$n.$dt]\n" +
+      s"${PrettyPrinter(body, indent.more)} : (exp[nat] -> acc[$dt] -> comm)\n" +
+      indent + s") : comm"
 
   def makeParFor: (ArithExpr, DataType, Phrase[AccType], Phrase[ExpType -> (AccType -> CommandType)]) => AbstractParFor
 

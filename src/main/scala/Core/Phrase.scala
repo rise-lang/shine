@@ -4,6 +4,7 @@ import PhraseType._
 import apart.arithmetic.{ArithExpr, NamedVar}
 import opencl.generator.OpenCLAST.{Block, Expression, VarRef}
 import Compiling.SubstituteImplementations
+import Core.PrettyPrinter.Indent
 
 sealed abstract class Phrase[T <: PhraseType] {
   var t: T = null.asInstanceOf[T]
@@ -72,7 +73,7 @@ abstract class ExpPattern extends Phrase[ExpType] {
 
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Data
 
-  def prettyPrint: String
+  def prettyPrint(indent: Indent): String
 
   def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType]
 
@@ -98,7 +99,7 @@ abstract class AccPattern extends Phrase[AccType] {
 
   def toOpenCL(opencl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): VarRef
 
-  def prettyPrint: String
+  def prettyPrint(indent: Indent): String
 
   def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[AccType]
 }
@@ -108,7 +109,7 @@ abstract class IntermediateCommandPattern extends  Phrase[CommandType] {
 
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Store
 
-  def prettyPrint: String
+  def prettyPrint(indent: Indent): String
 
   def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType]
 

@@ -6,6 +6,7 @@ import Core.OperationalSemantics._
 import Core.PhraseType.->
 import DSL._
 import Compiling.RewriteToImperative
+import Core.PrettyPrinter.Indent
 import apart.arithmetic.{ArithExpr, Cst}
 import opencl.generator.OpenCLAST.Expression
 
@@ -59,7 +60,11 @@ case class Zip(lhs: Phrase[ExpType],
     throw new Exception("This should not happen")
   }
 
-  override def prettyPrint: String = s"(zip ${PrettyPrinter(lhs)} ${PrettyPrinter(rhs)})"
+  override def prettyPrint(indent: Indent): String =
+    indent + s"(zip\n" +
+      s"${PrettyPrinter(lhs, indent.more)} : exp[$n.$dt1]\n" +
+      s"${PrettyPrinter(rhs, indent.more)} : exp[$n.$dt2]\n" +
+      indent + s") : exp[$n.($dt1 x $dt2)]"
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._

@@ -55,7 +55,8 @@ class ToOpenCL(val localSize: ArithExpr, val globalSize: ArithExpr) {
     val p2 = RewriteToImperative.acc(p)(out)
     TypeChecker(p2)
     println(PrettyPrinter(p2))
-    val p3 = SubstituteImplementations(p2, new SubstituteImplementations.Environment())
+    val p3 = SubstituteImplementations(p2,
+      SubstituteImplementations.Environment(immutable.Map[String, AddressSpace]( ("output", GlobalMemory) )))
     TypeChecker(p3)
 
     println(PrettyPrinter(p3))

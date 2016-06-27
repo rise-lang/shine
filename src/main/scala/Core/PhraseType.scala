@@ -6,15 +6,25 @@ sealed trait PhraseType
 
 abstract class BasePhraseTypes extends PhraseType
 
-final case class ExpType(dataType: DataType) extends BasePhraseTypes
+final case class ExpType(dataType: DataType) extends BasePhraseTypes {
+  override def toString = s"exp[$dataType]"
+}
 
-final case class AccType(dataType: DataType) extends BasePhraseTypes
+final case class AccType(dataType: DataType) extends BasePhraseTypes {
+  override def toString = s"acc[$dataType]"
+}
 
-final case class CommandType() extends PhraseType
+final case class CommandType() extends PhraseType {
+  override def toString = "comm"
+}
 
-final case class PairType[T1 <: PhraseType, T2 <: PhraseType](t1: T1, t2: T2) extends PhraseType
+final case class PairType[T1 <: PhraseType, T2 <: PhraseType](t1: T1, t2: T2) extends PhraseType {
+  override def toString = s"$t1 x $t2"
+}
 
-final case class FunctionType[T1 <: PhraseType, T2 <: PhraseType](inT: T1, outT: T2) extends PhraseType
+final case class FunctionType[T1 <: PhraseType, T2 <: PhraseType](inT: T1, outT: T2) extends PhraseType {
+  override def toString = s"$inT -> $outT"
+}
 
 final case class PassiveFunctionType[T1 <: PhraseType, T2 <: PhraseType](inT: T1, outT: T2)
   extends PhraseType

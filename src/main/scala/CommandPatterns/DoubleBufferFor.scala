@@ -4,6 +4,7 @@ import Core._
 import Core.OperationalSemantics._
 import Core.PhraseType._
 import Compiling.SubstituteImplementations
+import Core.PrettyPrinter.Indent
 import apart.arithmetic.{ArithExpr, NamedVar, RangeAdd}
 import opencl.generator.OpenCLAST.Block
 import DSL._
@@ -122,7 +123,7 @@ case class DoubleBufferFor(n: ArithExpr,
       SubstituteImplementations.applyFun(C, env))
   }
 
-  override def prettyPrint: String = {
+  override def prettyPrint(indent: Indent): String = {
     s"doubleBufferFor $buffer1 $buffer2 $k $body $C"
   }
 

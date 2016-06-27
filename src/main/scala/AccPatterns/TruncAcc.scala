@@ -2,6 +2,7 @@ package AccPatterns
 
 import Core._
 import Core.OperationalSemantics._
+import Core.PrettyPrinter.Indent
 import apart.arithmetic.ArithExpr
 import opencl.generator.OpenCLAST.VarRef
 
@@ -38,5 +39,8 @@ case class TruncAcc(n: ArithExpr,
     ToOpenCL.acc(array, ocl, arrayAccess, tupleAccess)
   }
 
-  override def prettyPrint: String = s"(truncAcc $array)"
+  override def prettyPrint(indent: Indent): String =
+    indent + s"(truncAcc\n" +
+      s"${PrettyPrinter(array, indent.more)}\n" +
+      indent + s")"
 }

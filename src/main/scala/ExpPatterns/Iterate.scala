@@ -4,6 +4,7 @@ import CommandPatterns.{IterateIAcc, IterateIExp}
 import Core._
 import Core.PhraseType._
 import Core.OperationalSemantics._
+import Core.PrettyPrinter.Indent
 import DSL._
 import apart.arithmetic._
 
@@ -70,7 +71,14 @@ case class Iterate(k: ArithExpr,
     ???
   }
 
-  override def prettyPrint: String = s"(iterate ${k.toString} ${PrettyPrinter(f)})"
+  override def prettyPrint(indent: Indent): String = {
+    val mnk: String = if (n != null && m != null && k != null) { (m / n.pow(k)).toString } else { null }
+    indent + s"(iterate\n" +
+      indent.more + s"$k : nat\n" +
+      s"${PrettyPrinter(f, indent.more)} : (l: nat -> exp[l.$dt] -> exp[l/$n.$dt])\n" +
+      s"${PrettyPrinter(array, indent.more)} : exp[$m.$dt]\n" +
+      indent + s") : exp[$mnk.$dt]"
+  }
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
     import Compiling.RewriteToImperative._

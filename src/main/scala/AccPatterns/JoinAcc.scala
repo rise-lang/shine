@@ -2,6 +2,7 @@ package AccPatterns
 
 import Core._
 import Core.OperationalSemantics._
+import Core.PrettyPrinter.Indent
 import apart.arithmetic.ArithExpr
 import opencl.generator.OpenCLAST.VarRef
 
@@ -13,8 +14,12 @@ case class JoinAcc(n: ArithExpr,
   override def typeCheck(): AccType = {
     import TypeChecker._
     TypeChecker(array) match {
-      case AccType(ArrayType(m_, dt_)) if dt_ == dt && m_ == m =>
-        AccType(ArrayType(m /^ n, ArrayType(n, dt)))
+      case AccType(ArrayType(mn_, dt_)) =>
+        if (dt_ == dt && mn_ == (m * n)) {
+          AccType(ArrayType(n, ArrayType(m, dt)))
+        } else {
+          error(s"[$mn_.$dt_] -> [$n.${mn_ /^ n}.$dt_]", s"[${m*n}.$dt] -> [$n.$m.$dt]")
+        }
       case x => error(x.toString, "ArrayType")
     }
   }
@@ -39,6 +44,9 @@ case class JoinAcc(n: ArithExpr,
     ToOpenCL.acc(array, opencl, (newIdx, chunkElemId._2) :: rest, tupleAccess)
   }
 
-  override def prettyPrint: String = s"(join ${n.toString} ${PrettyPrinter(array)})"
+  override def prettyPrint(indent: Indent): String =
+    indent + s"(joinAcc\n" +
+      indent.more + s"(${PrettyPrinter(array, indent.more)}) : acc[${n*m}.$dt]\n" +
+      indent + s") : acc[$n.$m.$dt]\n"
 
 }

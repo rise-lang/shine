@@ -2,6 +2,7 @@ package AccPatterns
 
 import Core._
 import Core.OperationalSemantics._
+import Core.PrettyPrinter.Indent
 import apart.arithmetic.ArithExpr
 import opencl.generator.OpenCLAST.VarRef
 
@@ -34,6 +35,9 @@ case class AsScalarAcc(n: ArithExpr,
     ToOpenCL.acc(array, opencl, newAAS, tupleAccess)
   }
 
-  override def prettyPrint: String = s"(asScalarAcc ${n.toString} ${PrettyPrinter(array)})"
+  override def prettyPrint(indent: Indent) =
+    indent + s"(asScalarAcc $n\n" +
+      indent.more + s"${PrettyPrinter(array, indent.more)}\n" +
+      indent + ")"
 
 }

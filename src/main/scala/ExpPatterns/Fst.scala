@@ -4,6 +4,7 @@ import Core._
 import Core.OperationalSemantics._
 import Core.PhraseType.->
 import Compiling.RewriteToImperative
+import Core.PrettyPrinter.Indent
 import DSL._
 import apart.arithmetic.ArithExpr
 import opencl.generator.OpenCLAST.{Expression, Literal}
@@ -34,7 +35,8 @@ case class Fst(record: Phrase[ExpType]) extends ExpPattern with ViewExpPattern w
     ToOpenCL.exp(record, ocl, arrayAccess, 1 :: tupleAccess)
   }
 
-  override def prettyPrint: String = s"${PrettyPrinter(record)}._1"
+  override def prettyPrint(indent: Indent): String =
+    indent + s"${PrettyPrinter(record)}._1"
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] =
     RewriteToImperative.exp(this)(λ(this.t) {

@@ -5,6 +5,7 @@ import Core.OperationalSemantics._
 import Core.PhraseType.->
 import Core._
 import Compiling.RewriteToImperative
+import Core.PrettyPrinter.Indent
 import DSL._
 import apart.arithmetic.ArithExpr
 import ir.Type
@@ -40,7 +41,8 @@ case class AsScalar(array: Phrase[ExpType])
     ToOpenCL.exp(array, ocl, newAAS, tupleAccess)
   }
 
-  override def prettyPrint: String = s"(asScalar ${PrettyPrinter(array)})"
+  override def prettyPrint(indent: Indent): String =
+    indent + s"(asScalar ${PrettyPrinter(array)})"
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
     assert(n != null)

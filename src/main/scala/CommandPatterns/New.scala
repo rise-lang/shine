@@ -5,6 +5,7 @@ import Core.OperationalSemantics._
 import Core.PhraseType._
 import DSL.identifier
 import Compiling.SubstituteImplementations
+import Core.PrettyPrinter.Indent
 import apart.arithmetic.{NamedVar, Var}
 import opencl.generator.OpenCLAST.{Block, Comment, VarDecl}
 
@@ -19,10 +20,10 @@ case class New(dt: DataType, addressSpace: AddressSpace,
         if (dt == d1 && d1 == d2) {
           CommandType()
         } else {
-          error(dt.toString + ", " + d1.toString + ", and " + d2.toString, expected = "them to match")
+          error(s"((exp[$d1] x acc[$d2]) -> comm) -> comm",
+                s"((exp[$dt] x acc[$dt]) -> comm) -> comm")
         }
-      case x => error(x.toString, FunctionType.toString + "(" + PairType.toString +
-        "(" + ExpType.toString + "(A)," + AccType.toString + "(A))," + CommandType() + ")")
+      case x => error(x.toString, s"((exp[$dt] x acc[$dt]) -> comm) -> comm")
     }
   }
 
@@ -42,10 +43,9 @@ case class New(dt: DataType, addressSpace: AddressSpace,
       case LambdaPhrase(param, _) => param
       case _ => throw new Exception("This should not happen")
     }
-    env.addressspace(p.name) = addressSpace
-    val n = New(dt, addressSpace, SubstituteImplementations.applyFun(f, env))
-    env.addressspace.remove(p.name)
-    n
+    New(dt, addressSpace,
+      SubstituteImplementations.applyFun(f,
+        env.copy(env.addressspace.updated(p.name, addressSpace)) ))
   }
 
   override def toOpenCL(block: Block, ocl: ToOpenCL): Block = {
@@ -63,6 +63,9 @@ case class New(dt: DataType, addressSpace: AddressSpace,
     ToOpenCL.cmd(f_(v_), block, ocl)
   }
 
-  override def prettyPrint: String = s"new $dt $addressSpace ${PrettyPrinter(f)}"
+  override def prettyPrint(indent: Indent): String =
+    indent + s"(new $addressSpace\n" +
+      s"${PrettyPrinter(f, indent.more)} : (var[$dt] -> comm)\n" +
+      indent + s") : comm"
 
 }

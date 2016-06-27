@@ -1,6 +1,7 @@
 package AccPatterns
 
 import Core.OperationalSemantics._
+import Core.PrettyPrinter.Indent
 import Core._
 import apart.arithmetic.ArithExpr
 import opencl.generator.OpenCLAST.VarRef
@@ -25,5 +26,8 @@ case class ToGlobalAcc(p: Phrase[AccType]) extends AccPattern{
     ToGlobalAcc(VisitAndRebuild(p, fun))
   }
 
-  override def prettyPrint: String = s"(toGlobalAcc ${PrettyPrinter(p)})"
+  override def prettyPrint(indent: Indent): String =
+    indent + s"(toGlobalAcc\n" +
+      s"${PrettyPrinter(p, indent.more)}\n" +
+      indent + s")"
 }

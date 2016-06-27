@@ -5,6 +5,7 @@ import Core._
 import Core.OperationalSemantics._
 import Core.PhraseType.->
 import Compiling.RewriteToImperative
+import Core.PrettyPrinter.Indent
 import DSL._
 import apart.arithmetic.ArithExpr
 import opencl.generator.OpenCLAST.Expression
@@ -17,9 +18,9 @@ case class Split(n: ArithExpr, array: Phrase[ExpType]) extends ExpPattern with V
   override def typeCheck(): ExpType = {
     import TypeChecker._
     TypeChecker(array) match {
-      case ExpType(ArrayType(m_, dt_)) =>
-        m = m_; dt = dt_
-        ExpType(ArrayType(m /^ n, ArrayType(n, dt)))
+      case ExpType(ArrayType(mn_, dt_)) =>
+        m = mn_ /^ n; dt = dt_
+        ExpType(ArrayType(m, ArrayType(n, dt)))
       case x => error(x.toString, "ArrayType")
     }
   }
@@ -64,7 +65,11 @@ case class Split(n: ArithExpr, array: Phrase[ExpType]) extends ExpPattern with V
     ToOpenCL.exp(array, ocl, (newIdx, chunkElemId._2) :: rest, tupleAccess)
   }
 
-  override def prettyPrint: String = s"(split ${n.toString} ${PrettyPrinter(array)})"
+  override def prettyPrint(indent: Indent): String =
+    indent + s"(split\n" +
+      indent.more + s"$n : nat\n" +
+      s"${PrettyPrinter(array, indent.more)} : exp[$n$m.$dt]\n" +
+      indent + s") : exp[$n.$m.$dt]"
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._

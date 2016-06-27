@@ -5,6 +5,7 @@ import Core.OperationalSemantics._
 import Core.PhraseType.->
 import Core._
 import Compiling.RewriteToImperative
+import Core.PrettyPrinter.Indent
 import DSL._
 import apart.arithmetic.ArithExpr
 import ir.Type
@@ -61,7 +62,10 @@ case class Join(array: Phrase[ExpType]) extends ExpPattern with ViewExpPattern {
     ToOpenCL.exp(array, ocl, newAs, tupleAccess)
   }
 
-  override def prettyPrint: String = s"(join ${PrettyPrinter(array)})"
+  override def prettyPrint(indent: Indent): String =
+    indent + s"(join\n" +
+      s"${PrettyPrinter(array, indent.more)} : exp[$n.$m.$dt]\n" +
+      indent + s") : exp[$n$m.$dt]"
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
     assert(n != null && m != null && dt != null)

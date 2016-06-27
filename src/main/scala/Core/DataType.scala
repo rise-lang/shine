@@ -12,11 +12,17 @@ object int extends BasicType { override def toString = "int" }
 
 object float extends BasicType { override def toString = "float" }
 
-final case class VectorType(size: ArithExpr, elemType: BasicType) extends BasicType
+final case class VectorType(size: ArithExpr, elemType: BasicType) extends BasicType {
+  override def toString = s"$elemType$size"
+}
 
-final case class ArrayType(size: ArithExpr, elemType: DataType) extends DataType
+final case class ArrayType(size: ArithExpr, elemType: DataType) extends DataType {
+  override def toString = s"$size.$elemType"
+}
 
-final case class RecordType(fst: DataType, snd: DataType) extends DataType
+final case class RecordType(fst: DataType, snd: DataType) extends DataType {
+  override def toString = s"$fst x $snd"
+}
 
 object DataType {
   def toType(dt: DataType): ir.Type = {

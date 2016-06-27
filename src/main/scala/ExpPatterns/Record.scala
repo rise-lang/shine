@@ -3,6 +3,7 @@ package ExpPatterns
 import Core._
 import Core.OperationalSemantics._
 import Core.PhraseType.->
+import Core.PrettyPrinter.Indent
 import apart.arithmetic.ArithExpr
 import opencl.generator.OpenCLAST.Expression
 
@@ -24,7 +25,11 @@ case class Record(fst: Phrase[ExpType], snd: Phrase[ExpType]) extends ExpPattern
 
   override def toOpenCL(ocl: ToOpenCL): Expression = ???
 
-  override def prettyPrint: String = s"(${PrettyPrinter(fst)}, ${PrettyPrinter(snd)})"
+  override def prettyPrint(indent: Indent): String =
+    indent + s"(\n" +
+      s"${PrettyPrinter(fst, indent.more)},\n" +
+      s"${PrettyPrinter(snd, indent.more)}\n" +
+      indent + s")"
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = ???
 

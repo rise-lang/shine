@@ -3,6 +3,7 @@ package ExpPatterns
 import Core._
 import Core.OperationalSemantics._
 import Core.PhraseType.->
+import Core.PrettyPrinter.Indent
 import Core.VisitAndRebuild.fun
 import apart.arithmetic.ArithExpr
 import opencl.generator.OpenCLAST.{Expression, VarRef}
@@ -36,7 +37,7 @@ case class TruncExp(n: ArithExpr,
 
   override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = ???
 
-  override def prettyPrint: String = s"(truncExp $array)"
+  override def prettyPrint(indent: Indent): String = indent + s"(truncExp $array)"
 
   override def toOpenCL(ocl: ToOpenCL,
                         arrayAccess: List[(ArithExpr, ArithExpr)],

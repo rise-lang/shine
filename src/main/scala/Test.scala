@@ -671,7 +671,7 @@ object Test extends App {
 //    MapI(tmp.wr, λ(o, λ(x, ReduceIAcc(o, λ(o', λ(x', λ(y, o' := x' + y))), 0, x))), Split(2, x));
 //    ReduceIAcc(out, λ(o, λ(x, λ(y, o := x + y ))), 0, tmp.rd)))
 
-    val p3 = SubstituteImplementations(p2, new SubstituteImplementations.Environment())
+    val p3 = SubstituteImplementations(p2, SubstituteImplementations.Environment())
     println("=====")
     println(p3)
     println("=====")

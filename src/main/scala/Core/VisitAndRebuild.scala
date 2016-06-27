@@ -24,7 +24,12 @@ object VisitAndRebuild {
         val res = (c.p match {
           case _: IdentPhrase[_] => c.p
           case _: LiteralPhrase => c.p
-          case l: LambdaPhrase[_, _] => LambdaPhrase(l.param, apply(l.body, f))
+          case l: LambdaPhrase[_, _] =>
+            val newParam = apply(l.param, f) match {
+              case p: IdentPhrase[_] => p
+              case _ => throw new Exception("This should not happen")
+            }
+            LambdaPhrase(newParam, apply(l.body, f))
           case l: NatDependentLambdaPhrase[_] => NatDependentLambdaPhrase(l.x, apply(l.body, f))
           case app: ApplyPhrase[a, T] => ApplyPhrase(apply(app.fun, f), apply(app.arg, f))
           case app: NatDependentApplyPhrase[T] => NatDependentApplyPhrase(apply(app.fun, f), app.arg)

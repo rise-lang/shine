@@ -6,6 +6,7 @@ import Core.OperationalSemantics._
 import ExpPatterns.Idx
 import DSL._
 import Compiling.SubstituteImplementations
+import Core.PrettyPrinter.Indent
 import apart.arithmetic.ArithExpr
 
 case class ReduceIAcc(n: ArithExpr,
@@ -57,7 +58,13 @@ case class ReduceIAcc(n: ArithExpr,
     } )
   }
 
-  override def prettyPrint: String = s"reduceIAcc ${PrettyPrinter(out)} ${PrettyPrinter(f)} ${PrettyPrinter(init)} ${PrettyPrinter(in)}"
+  override def prettyPrint(indent: Indent) =
+    indent + s"(reduceIAcc\n" +
+      s"${PrettyPrinter(out, indent.more)} : acc[$dt2]\n" +
+      s"${PrettyPrinter(f, indent.more)} : (acc[$dt2] -> exp[$dt1] -> exp[$dt2] -> comm)\n" +
+      s"${PrettyPrinter(init, indent.more)} : exp[$dt2]\n" +
+      s"${PrettyPrinter(in, indent.more)} : exp[$n.$dt1]\n" +
+      indent + s") : comm\n"
 
   override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
     `new`(init.t.dataType, PrivateMemory, accum => {
