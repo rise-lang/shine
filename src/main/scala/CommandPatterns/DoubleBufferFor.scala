@@ -28,6 +28,7 @@ case class DoubleBufferFor(n: ArithExpr,
     // in* = buffer1
     val buffer1Name = buffer1 match {
       case i: IdentPhrase[VarType] => i.name
+      case _ => throw new Exception("This should not happen")
     }
     val in = identifier(newName(), ExpType(ArrayType(n, dt)))
 
@@ -37,6 +38,7 @@ case class DoubleBufferFor(n: ArithExpr,
     // out* = buffer2
     val buffer2Name = buffer2 match {
       case i: IdentPhrase[VarType] => i.name
+      case _ => throw new Exception("This should not happen")
     }
     val out = identifier(newName(), AccType(ArrayType(n, dt)))
 

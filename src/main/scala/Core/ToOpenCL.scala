@@ -171,7 +171,6 @@ object ToOpenCL {
           case b: BoolData => Literal(b.b.toString)
           case f: FloatData => Literal(f.f.toString)
           case i: IndexData => Literal(i.i.toString)
-//          case i: Int4Data => Literal(s"(int4)(${i.i0.toString}, ${i.i1.toString}, ${i.i2.toString}, ${i.i3.toString})")
           case v: VectorData => Literal(Data.toString(v))
           case _: RecordData => ???
           case _: ArrayData => ???
@@ -211,25 +210,15 @@ object ToOpenCL {
     p match {
       case IdentPhrase(name) =>
         val i = arrayAccess.map(x => x._1 * x._2).foldLeft(0: ArithExpr)((x, y) => x + y)
-        val index = if (i != Cst(0)) {
-          i
-        } else {
-          null
-        }
+        val index = if (i != Cst(0)) { i } else { null }
 
-        val s = tupleAccess.map(x =>
-          if (x == Cst(1)) {
-            "._1"
-          }
-          else if (x == Cst(2)) {
-            "._2"
-          }).foldLeft("")(_ + _)
+        val s = tupleAccess.map {
+            case Cst(1) => "._1"
+            case Cst(2) => "._2"
+            case _ => throw new Exception("This should not happen")
+          }.foldLeft("")(_ + _)
 
-        val suffix = if (s != "") {
-          s
-        } else {
-          null
-        }
+        val suffix = if (s != "") { s } else { null }
 
         VarRef(name, suffix, ArithExpression(index))
 
@@ -255,25 +244,15 @@ object ToOpenCL {
     p match {
       case IdentPhrase(name) =>
         val i = arrayAccess.map(x => x._1 * x._2).foldLeft(0: ArithExpr)((x, y) => x + y)
-        val index = if (i != Cst(0)) {
-          i
-        } else {
-          null
-        }
+        val index = if (i != Cst(0)) { i } else { null }
 
-        val s = tupleAccess.map(x =>
-          if (x == Cst(1)) {
-            "._1"
-          }
-          else if (x == Cst(2)) {
-            "._2"
-          }).foldLeft("")(_ + _)
+        val s = tupleAccess.map {
+          case Cst(1) => "._1"
+          case Cst(2) => "._2"
+          case _ => throw new Exception("This should not happen")
+        }.foldLeft("")(_ + _)
 
-        val suffix = if (s != "") {
-          s
-        } else {
-          null
-        }
+        val suffix = if (s != "") { s } else { null }
 
         VarRef(name, suffix, ArithExpression(index))
 
