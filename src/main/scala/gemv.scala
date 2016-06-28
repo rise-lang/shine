@@ -27,7 +27,7 @@ object gemv extends App {
     println(name + ":\n" + PrettyPrinter(lambda))
 
     println(s"-- $name --")
-    println(OpenCLPrinter()((new ToOpenCL(localSize = 128, globalSize = N))(lambda,
+    println(OpenCLPrinter()((new ToOpenCL(localSize = 128, globalSize = M * 128))(lambda,
       identifier("mat", matT),
       identifier("xs", xsT),
       identifier("ys", ysT),
@@ -85,5 +85,23 @@ object gemv extends App {
   xmlPrinter.toFile("/Users/michel/Desktop/fullMatrixVectorFusedOpenCLAMD.xml", fullMatrixVectorFusedOpenCLAMD)
 
   printOpenCLKernel1("fullMatrixVectorFusedOpenCLAMD", fullMatrixVectorFusedOpenCLAMD)
+
+  val keplerBest =
+    λ(matT)(mat => λ(xsT)(xs => λ(ysT)(ys =>
+      λ(ExpType(dataT))(alpha => λ(ExpType(dataT))(beta =>
+
+        mapWorkgroup(λ(t =>
+          λ(x => (x * alpha) + (t._2 * beta)) o
+            toLocal(reduceSeq(add, 0.0f)) o
+            toLocal(mapLocal(reduceSeq(λ(x => λ(a => mult(x) + a)), 0.0f))) o
+            split(N /^ 128) o gather(reorderWithStride(128)) $ zip(xs, t._1)
+        )) $ zip(mat, ys)
+
+      ) ) ) ) )
+
+  TypeChecker(keplerBest)
+  xmlPrinter.toFile("/Users/michel/Desktop/keplerBest.xml", keplerBest)
+
+  printOpenCLKernel1("keplerBest", keplerBest)
 
 }

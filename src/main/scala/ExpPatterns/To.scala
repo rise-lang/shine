@@ -1,12 +1,10 @@
 package ExpPatterns
 
 import Core.OperationalSemantics.{Data, Store}
-import Core.PhraseType.->
+import Core.PhraseType._
 import Core._
 import Compiling.RewriteToImperative
 import DSL._
-import apart.arithmetic.ArithExpr
-import opencl.generator.OpenCLAST.Expression
 
 import scala.xml.Elem
 

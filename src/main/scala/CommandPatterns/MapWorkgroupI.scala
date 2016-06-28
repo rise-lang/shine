@@ -20,10 +20,11 @@ case class MapWorkgroupI(n: ArithExpr,
 
     ParForWorkgroup(n, dt2, out, λ( ExpType(int) ) { i => λ( AccType(dt2) ) { o =>
 
-      val access = (out `@` 0) `@` 0 // TODO: this is totally not generic ...
-      TypeChecker(access)
-      val identifier = ToOpenCL.acc(access, new ToOpenCL(?, ?))
-      val addressSpace = env.addressspace(identifier.name)
+//      val access = (out `@` 0) `@` 0 // TODO: this is totally not generic ...
+//      TypeChecker(access)
+//      val identifier = ToOpenCL.acc(access, new ToOpenCL(?, ?))
+//      val addressSpace = env.addressspace(identifier.name)
+      val addressSpace = GlobalMemory
 
       SubstituteImplementations( f(o)(in `@` i), env.copy(env.addressspace.updated(o.name, addressSpace)) )
     } } )

@@ -111,6 +111,7 @@ abstract class AbstractParFor(val n: ArithExpr,
 
     val bodyBlock = (b: Block) => ToOpenCL.cmd(body_(out_at_i), b, ocl)
 
+//    println(s"range.numValues: ${range.numVals}")
     range.numVals match {
       case Cst(0) =>
         (block: Block) +=

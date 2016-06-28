@@ -25,14 +25,14 @@ object xmlPrinter {
     val elem = p match {
       case app: ApplyPhrase[a, T] =>
         <apply>
-          <fun>{apply(app.fun)}</fun>
-          <arg>{apply(app.arg)}</arg>
+          <fun type={ToString(app.fun.t)}>{apply(app.fun)}</fun>
+          <arg type={ToString(app.arg.t)}>{apply(app.arg)}</arg>
         </apply>
 
       case app: NatDependentApplyPhrase[T] =>
         <natApply>
-          <fun>{apply(app.fun)}</fun>
-          <arg t="Nat">{app.arg}</arg>
+          <fun type={ToString(app.fun.t)}>{apply(app.fun)}</fun>
+          <arg type="Nat">{app.arg}</arg>
         </natApply>
 
       case p1: Proj1Phrase[a, b] =>
@@ -43,9 +43,9 @@ object xmlPrinter {
 
       case IfThenElsePhrase(cond, thenP, elseP) =>
         <ifThenElse>
-          <if>{apply(cond)}</if>
-          <then>{apply(thenP)}</then>
-          <else>{apply(elseP)}</else>
+          <if type={ToString(cond.t)}>{apply(cond)}</if>
+          <then type={ToString(thenP.t)}>{apply(thenP)}</then>
+          <else type={ToString(elseP.t)}>{apply(elseP)}</else>
         </ifThenElse>
 
       case UnaryOpPhrase(op, x) =>
@@ -53,8 +53,8 @@ object xmlPrinter {
 
       case BinOpPhrase(op, lhs, rhs) =>
         <binary op={op.toString}>
-          <lhs>{apply(lhs)}</lhs>
-          <rhs>{apply(rhs)}</rhs>
+          <lhs type={ToString(lhs.t)}>{apply(lhs)}</lhs>
+          <rhs type={ToString(rhs.t)}>{apply(rhs)}</rhs>
         </binary>
 
       case IdentPhrase(name) =>
@@ -74,8 +74,8 @@ object xmlPrinter {
 
       case PairPhrase(fst, snd) =>
         <pair>
-          <fst>{apply(fst)}</fst>
-          <snd>{apply(snd)}</snd>
+          <fst type={ToString(fst.t)}>{apply(fst)}</fst>
+          <snd type={ToString(snd.t)}>{apply(snd)}</snd>
         </pair>
 
       case p: ExpPattern => p.xmlPrinter
