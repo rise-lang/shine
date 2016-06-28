@@ -64,10 +64,18 @@ case class ReduceIAcc(n: ArithExpr,
 
   override def xmlPrinter: Elem =
     <reduceIAcc n={ToString(n)} dt1={ToString(dt1)} dt2={ToString(dt2)}>
-      <output type={ToString(AccType(dt2))}>{Core.xmlPrinter(out)}</output>
-      <f type={ToString(AccType(dt2) -> (ExpType(dt1) -> (ExpType(dt2) -> CommandType())))}>{Core.xmlPrinter(f)}</f>
-      <init type={ToString(ExpType(dt2))}>{Core.xmlPrinter(init)}</init>
-      <input type={ToString(ExpType(ArrayType(n, dt1)))}>{Core.xmlPrinter(in)}</input>
+      <output type={ToString(AccType(dt2))}>
+        {Core.xmlPrinter(out)}
+      </output>
+      <f type={ToString(AccType(dt2) -> (ExpType(dt1) -> (ExpType(dt2) -> CommandType())))}>
+        {Core.xmlPrinter(f)}
+      </f>
+      <init type={ToString(ExpType(dt2))}>
+        {Core.xmlPrinter(init)}
+      </init>
+      <input type={ToString(ExpType(ArrayType(n, dt1)))}>
+        {Core.xmlPrinter(in)}
+      </input>
     </reduceIAcc>
 
   override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {

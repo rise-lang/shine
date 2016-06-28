@@ -68,7 +68,10 @@ abstract class AbstractParFor(val n: ArithExpr,
       <body type={ToString(ExpType(int) -> (AccType(dt) -> CommandType()))}>
         {Core.xmlPrinter(body)}
       </body>
-    </parFor>.copy(label = this.getClass.getSimpleName)
+    </parFor>.copy(label = {
+      val name = this.getClass.getSimpleName
+      Character.toLowerCase(name.charAt(0)) + name.substring(1)
+    })
 
   def makeParFor: (ArithExpr, DataType, Phrase[AccType], Phrase[ExpType -> (AccType -> CommandType)]) => AbstractParFor
 

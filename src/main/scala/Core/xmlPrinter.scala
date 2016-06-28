@@ -61,15 +61,14 @@ object xmlPrinter {
         <identifier name={name} />
 
       case LambdaPhrase(param, body) =>
-        <lambda param={param.name}>
+        <λ param={param.name}>
           {apply(body)}
-        </lambda>
+        </λ>
 
       case NatDependentLambdaPhrase(param, body) =>
-        <natLambda>
-          <param t="Nat">{param.name}</param>
-          <body>{apply(body)}</body>
-        </natLambda>
+        <Λ param={param.name}>
+          {apply(body)}
+        </Λ>
 
       case LiteralPhrase(d) => <lit>{d}</lit>
 
@@ -92,9 +91,12 @@ object xmlPrinter {
   }
 
   def append(head: MetaData, node: MetaData): MetaData = {
-    head.next match {
-      case null | Null => head.copy(next = node)
-      case _ => head.copy(next = append(head.next, node))
+    head match {
+      case Null => node
+      case _ => head.next match {
+        case Null => head.copy(next = node)
+        case _ => head.copy(next = append(head.next, node))
+      }
     }
   }
 

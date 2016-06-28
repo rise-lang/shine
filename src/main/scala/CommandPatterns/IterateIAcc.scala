@@ -30,9 +30,10 @@ case class IterateIAcc(n: ArithExpr,
           case NatDependentLambdaPhrase(l, body) =>
             setParamType(body, AccType(ArrayType(l /^ n, dt)))
             setSecondParamType(body, ExpType(ArrayType(l, dt)))
-            TypeChecker(body) match {
-              case FunctionType(AccType(ArrayType(l_n, dt3_)),
-              FunctionType(ExpType(ArrayType(l_, dt4_)), CommandType())) =>
+            TypeChecker(f) match {
+              case NatDependentFunctionType(_,
+                FunctionType(AccType(ArrayType(l_n, dt3_)),
+                  FunctionType(ExpType(ArrayType(l_, dt4_)), CommandType()))) =>
                 if (l_n == l /^ n && dt3_ == dt && l_ == l && dt4_ == dt) {
                   CommandType()
                 } else {

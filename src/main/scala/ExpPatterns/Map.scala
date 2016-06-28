@@ -90,7 +90,10 @@ abstract class AbstractMap(f: Phrase[ExpType -> ExpType],
     <map n={ToString(n)} dt1={ToString(dt1)} dt2={ToString(dt2)}>
       <f type={ToString(ExpType(dt1) -> ExpType(dt2))}>{Core.xmlPrinter(f)}</f>
       <input type={ToString(ExpType(ArrayType(n, dt1)))}>{Core.xmlPrinter(array)}</input>
-    </map>.copy(label = this.getClass.getSimpleName)
+    </map>.copy(label = {
+      val name = this.getClass.getSimpleName
+      Character.toLowerCase(name.charAt(0)) + name.substring(1)
+    })
 }
 
 case class Map(f: Phrase[ExpType -> ExpType],

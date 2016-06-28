@@ -78,7 +78,10 @@ abstract class AbstractMapI(n: ArithExpr,
       <input type={ToString(ExpType(ArrayType(n, dt1)))}>
         {Core.xmlPrinter(in)}
       </input>
-    </map>.copy(label = this.getClass.getSimpleName)
+    </map>.copy(label = {
+      val name = this.getClass.getSimpleName
+      Character.toLowerCase(name.charAt(0)) + name.substring(1)
+    })
 }
 
 case class MapI(n: ArithExpr,

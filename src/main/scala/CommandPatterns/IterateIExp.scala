@@ -38,9 +38,10 @@ case class IterateIExp(n: ArithExpr,
           case NatDependentLambdaPhrase(l, body) =>
             setParamType(body, AccType(ArrayType(l /^ n, dt)))
             setSecondParamType(body, ExpType(ArrayType(l, dt)))
-            TypeChecker(body) match {
-              case FunctionType(AccType(ArrayType(l_, dt3_)),
-              FunctionType(ExpType(ArrayType(ln_, dt4_)), CommandType()))
+            TypeChecker(f) match {
+              case NatDependentFunctionType(_,
+                FunctionType(AccType(ArrayType(l_, dt3_)),
+                  FunctionType(ExpType(ArrayType(ln_, dt4_)), CommandType())))
                 if l_ == l && dt3_ == dt && ln_ == l*n && dt4_ == dt =>
                 CommandType()
               case ft => error(ft.toString, "FunctionType")

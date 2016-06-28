@@ -52,9 +52,16 @@ abstract class To(f: Phrase[ExpType -> ExpType],
 
   override def xmlPrinter: Elem =
     <to dt1={ToString(dt1)} dt2={ToString(dt2)}>
-      <f>{Core.xmlPrinter(f)}</f>
-      <input>{Core.xmlPrinter(input)}</input>
-    </to>.copy(label = this.getClass.getSimpleName)
+      <f type={ToString(ExpType(dt1) -> ExpType(dt2))}>
+        {Core.xmlPrinter(f)}
+      </f>
+      <input type={ToString(ExpType(dt1))}>
+        {Core.xmlPrinter(input)}
+      </input>
+    </to>.copy(label = {
+      val name = this.getClass.getSimpleName
+      Character.toLowerCase(name.charAt(0)) + name.substring(1)
+    })
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
     assert(dt1 != null && dt2 != null)

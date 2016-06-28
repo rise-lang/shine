@@ -29,7 +29,9 @@ final case class FunctionType[T1 <: PhraseType, T2 <: PhraseType](inT: T1, outT:
 final case class PassiveFunctionType[T1 <: PhraseType, T2 <: PhraseType](inT: T1, outT: T2)
   extends PhraseType
 
-final case class NatDependentFunctionType[T <: PhraseType](x: NamedVar, outT: T) extends PhraseType
+final case class NatDependentFunctionType[T <: PhraseType](x: NamedVar, outT: T) extends PhraseType {
+  override def toString = s"($x : Nat) -> $outT"
+}
 
 // convenience types for writing the phrase types more readable
 object PhraseType {

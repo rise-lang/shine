@@ -24,13 +24,13 @@ case class Iterate(k: ArithExpr,
       case ExpType(ArrayType(m_, dt_)) =>
         m = m_
         dt = dt_
-
         f match {
           case NatDependentLambdaPhrase(l, body) =>
             setParamType(body, ExpType(ArrayType(l, dt)))
 
-            TypeChecker(body) match {
-              case FunctionType(ExpType(ArrayType(l_, dt1_)), ExpType(ArrayType(l_n, dt2_)))
+            TypeChecker(f) match {
+              case NatDependentFunctionType(_,
+                  FunctionType(ExpType(ArrayType(l_, dt1_)), ExpType(ArrayType(l_n, dt2_))))
                 if l.equals(l_) && dt1_ == dt && dt2_ == dt =>
 
                 l_n match {
