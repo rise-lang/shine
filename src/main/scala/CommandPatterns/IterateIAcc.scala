@@ -151,7 +151,7 @@ case class IterateIAcc(n: ArithExpr,
       <f type={ToString(l -> (AccType(ArrayType(l /^ n, dt)) -> (ExpType(ArrayType(l, dt)) -> CommandType())))}>
         {Core.xmlPrinter(f)}
       </f>
-      <input type={ToString(ExpType(ArrayType((n.pow(k) * m), dt)))}>
+      <input type={ToString(ExpType(ArrayType(n.pow(k) * m, dt)))}>
         {Core.xmlPrinter(in)}
       </input>
     </iterateIAcc>

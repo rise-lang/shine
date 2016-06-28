@@ -31,8 +31,12 @@ case class Record(fst: Phrase[ExpType],
 
   override def xmlPrinter: Elem =
     <record>
-      <fst>{Core.xmlPrinter(fst)}</fst>
-      <snd>{Core.xmlPrinter(snd)}</snd>
+      <fst>
+        {Core.xmlPrinter(fst)}
+      </fst>
+      <snd>
+        {Core.xmlPrinter(snd)}
+      </snd>
     </record>
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = ???

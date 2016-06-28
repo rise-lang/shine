@@ -34,11 +34,14 @@ case class AsScalar(array: Phrase[ExpType])
 
   override def eval(s: Store): Data = ???
 
-  override def toOpenCL(ocl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = {
+  override def toOpenCL(ocl: ToOpenCL,
+                        arrayAccess: List[(ArithExpr, ArithExpr)],
+                        tupleAccess: List[ArithExpr],
+                        dt: DataType): Expression = {
     val top = arrayAccess.head
     val newAAS = ((top._1 /^ n, top._2) :: arrayAccess.tail).map(x => (x._1, x._2 * n))
 
-    ToOpenCL.exp(array, ocl, newAAS, tupleAccess)
+    ToOpenCL.exp(array, ocl, newAAS, tupleAccess, dt)
   }
 
   override def prettyPrint: String = s"(asScalar ${PrettyPrinter(array)})"

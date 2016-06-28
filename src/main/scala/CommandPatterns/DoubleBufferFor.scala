@@ -128,7 +128,7 @@ case class DoubleBufferFor(n: ArithExpr,
 
   override def xmlPrinter: Elem = {
     val l = body match {
-      case NatDependentLambdaPhrase(l, _) => l
+      case NatDependentLambdaPhrase(l_, _) => l_
       case _ => throw new Exception("This should not happen")
     }
     <doubleBufferFor k={ToString(k)} n={ToString(n)} dt={ToString(dt)} addressSpace={ToString(addressSpace)}>

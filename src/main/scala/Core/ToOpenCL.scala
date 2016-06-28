@@ -51,12 +51,15 @@ class ToOpenCL(val localSize: ArithExpr, val globalSize: ArithExpr) {
     val outT = TypeChecker(p)
     val out = identifier("output", AccType(outT.dataType))
     val params = makeParams(out, args: _*)
+    xmlPrinter.toFile("/tmp/p.xml", p)
 
     val p2 = RewriteToImperative.acc(p)(out)
     TypeChecker(p2)
+    xmlPrinter.toFile("/tmp/p2.xml", p2)
     val p3 = SubstituteImplementations(p2,
       SubstituteImplementations.Environment(immutable.Map[String, AddressSpace]( ("output", GlobalMemory) )))
     TypeChecker(p3)
+    xmlPrinter.toFile("/tmp/p3.xml", p3)
 
 //    println(PrettyPrinter(p3))
 //    val p4 = AdjustMemoryAllocation(p3)
@@ -202,7 +205,8 @@ object ToOpenCL {
   def exp(p: Phrase[ExpType],
           ocl: ToOpenCL,
           arrayAccess: List[(ArithExpr, ArithExpr)],
-          tupleAccess: List[ArithExpr]): Expression = {
+          tupleAccess: List[ArithExpr],
+          dt: DataType): Expression = {
     p match {
       case IdentPhrase(name) =>
         val i = arrayAccess.map(x => x._1 * x._2).foldLeft(0: ArithExpr)((x, y) => x + y)
@@ -216,13 +220,23 @@ object ToOpenCL {
 
         val suffix = if (s != "") { s } else { null }
 
-        VarRef(name, suffix, ArithExpression(index))
+        val originalType = p.t.dataType
+        val currentType = dt
 
-      case p: Proj1Phrase[ExpType, _] => exp(Lift.liftPair(p.pair)._1, ocl, arrayAccess, tupleAccess)
-      case p: Proj2Phrase[_, ExpType] => exp(Lift.liftPair(p.pair)._2, ocl, arrayAccess, tupleAccess)
+        (originalType, currentType) match {
+          case (ArrayType(_, st1), VectorType(n, st2)) if st1 == st2 && st1.isInstanceOf[BasicType] =>
+            VLoad(
+              VarRef(name), DataType.toType(VectorType(n, st2)).asInstanceOf[ir.VectorType],
+              ArithExpression(index))
+          case _ =>
+            VarRef(name, suffix, ArithExpression(index))
+        }
+
+      case p: Proj1Phrase[ExpType, _] => exp(Lift.liftPair(p.pair)._1, ocl, arrayAccess, tupleAccess, dt)
+      case p: Proj2Phrase[_, ExpType] => exp(Lift.liftPair(p.pair)._2, ocl, arrayAccess, tupleAccess, dt)
 
       case e: ExpPattern => e match {
-        case v: ViewExpPattern => v.toOpenCL(ocl, arrayAccess, tupleAccess)
+        case v: ViewExpPattern => v.toOpenCL(ocl, arrayAccess, tupleAccess, dt)
         case _ => throw new Exception(s"This should not happen: $e")
       }
 
@@ -236,7 +250,8 @@ object ToOpenCL {
   def acc(p: Phrase[AccType],
           ocl: ToOpenCL,
           arrayAccess: List[(ArithExpr, ArithExpr)],
-          tupleAccess: List[ArithExpr]): VarRef = {
+          tupleAccess: List[ArithExpr],
+          dt: DataType): VarRef = {
     p match {
       case IdentPhrase(name) =>
         val i = arrayAccess.map(x => x._1 * x._2).foldLeft(0: ArithExpr)((x, y) => x + y)
@@ -250,12 +265,22 @@ object ToOpenCL {
 
         val suffix = if (s != "") { s } else { null }
 
-        VarRef(name, suffix, ArithExpression(index))
+        val originalType = p.t.dataType
+        val currentType = dt
 
-      case a: AccPattern => a.toOpenCL(ocl, arrayAccess, tupleAccess)
+        (originalType, currentType) match {
+          case (ArrayType(_, st1), VectorType(n, st2)) if st1 == st2 && st1.isInstanceOf[BasicType] =>
+            // TODO: can we turn this into a vload => need the value for this ...
+            // TODO: figure out addressspace of identifier name
+            VarRef(s"((/*the addressspace is hardcoded*/global $currentType*)$name)", suffix, ArithExpression(index))
+          case _ =>
+            VarRef(name, suffix, ArithExpression(index))
+        }
 
-      case p: Proj1Phrase[AccType, _] => acc(Lift.liftPair(p.pair)._1, ocl, arrayAccess, tupleAccess)
-      case p: Proj2Phrase[_, AccType] => acc(Lift.liftPair(p.pair)._2, ocl, arrayAccess, tupleAccess)
+      case a: AccPattern => a.toOpenCL(ocl, arrayAccess, tupleAccess, dt)
+
+      case p: Proj1Phrase[AccType, _] => acc(Lift.liftPair(p.pair)._1, ocl, arrayAccess, tupleAccess, dt)
+      case p: Proj2Phrase[_, AccType] => acc(Lift.liftPair(p.pair)._2, ocl, arrayAccess, tupleAccess, dt)
 
       case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
            IfThenElsePhrase(_, _, _) =>

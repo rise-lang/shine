@@ -36,8 +36,9 @@ case class TruncAcc(n: ArithExpr,
 
   override def toOpenCL(ocl: ToOpenCL,
                         arrayAccess: List[(ArithExpr, ArithExpr)],
-                        tupleAccess: List[ArithExpr]): VarRef = {
-    ToOpenCL.acc(array, ocl, arrayAccess, tupleAccess)
+                        tupleAccess: List[ArithExpr],
+                        dt: DataType): VarRef = {
+    ToOpenCL.acc(array, ocl, arrayAccess, tupleAccess, dt)
   }
 
   override def prettyPrint: String = s"(truncAcc ${PrettyPrinter(array)})"

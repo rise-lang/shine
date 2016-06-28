@@ -47,14 +47,17 @@ case class Gather(idxF: (ArithExpr, DataType) => ArithExpr,
     })
   }
 
-  override def toOpenCL(ocl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = {
+  override def toOpenCL(ocl: ToOpenCL,
+                        arrayAccess: List[(ArithExpr, ArithExpr)],
+                        tupleAccess: List[ArithExpr],
+                        dt: DataType): Expression = {
 
     val idx = arrayAccess.head
     val stack = arrayAccess.tail
 
     val newIdx = idxF(idx._1, array.t.dataType)
 
-    ToOpenCL.exp(array, ocl, (newIdx, idx._2) :: stack, tupleAccess)
+    ToOpenCL.exp(array, ocl, (newIdx, idx._2) :: stack, tupleAccess, dt)
 
   }
 

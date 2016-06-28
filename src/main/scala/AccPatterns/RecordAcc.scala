@@ -27,7 +27,7 @@ case class RecordAcc(fst: Phrase[AccType],
 
   override def toOpenCL(ocl: ToOpenCL): VarRef = ???
 
-  def toOpenCL(ocl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): VarRef = ???
+  def toOpenCL(ocl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr], dt: DataType): VarRef = ???
 
   override def prettyPrint: String =
     s"(${PrettyPrinter(fst)}, ${PrettyPrinter(snd)})"

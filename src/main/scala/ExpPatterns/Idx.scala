@@ -39,23 +39,30 @@ case class Idx(array: Phrase[ExpType],
     i
   }
 
-  override def toOpenCL(ocl: ToOpenCL): Expression = ToOpenCL.exp(this, ocl, List(), List())
+  override def toOpenCL(ocl: ToOpenCL): Expression = ToOpenCL.exp(this, ocl, List(), List(), t.dataType)
 
-  override def toOpenCL(ocl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = {
+  override def toOpenCL(ocl: ToOpenCL,
+                        arrayAccess: List[(ArithExpr, ArithExpr)],
+                        tupleAccess: List[ArithExpr],
+                        dt: DataType): Expression = {
     val idx: ArithExpr = ToOpenCL.exp(index, ocl) match {
       case VarRef(name, _, _) => NamedVar(name, ocl.env(name))
       case _ => throw new Exception("This should not happen")
     }
     val length = DataType.getLengths(dt, tupleAccess, List()).foldLeft(1:ArithExpr)((x,y) => x * y)
-    ToOpenCL.exp(array, ocl, (idx, length) :: arrayAccess, tupleAccess)
+    ToOpenCL.exp(array, ocl, (idx, length) :: arrayAccess, tupleAccess, dt)
   }
 
   override def prettyPrint: String = s"(${PrettyPrinter(array)})[${PrettyPrinter(index)}]"
 
   override def xmlPrinter: Elem =
     <idx n={ToString(n)} dt={ToString(dt)}>
-      <input type={ToString(ExpType(ArrayType(n, dt)))}>{Core.xmlPrinter(array)}</input>
-      <index type={ToString(ExpType(int))}>{Core.xmlPrinter(index)}</index>
+      <input type={ToString(ExpType(ArrayType(n, dt)))}>
+        {Core.xmlPrinter(array)}
+      </input>
+      <index type={ToString(ExpType(int))}>
+        {Core.xmlPrinter(index)}
+      </index>
     </idx>
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = ???

@@ -46,8 +46,9 @@ case class TruncExp(n: ArithExpr,
 
   override def toOpenCL(ocl: ToOpenCL,
                         arrayAccess: List[(ArithExpr, ArithExpr)],
-                        tupleAccess: List[ArithExpr]): Expression = {
-    ToOpenCL.exp(array, ocl, arrayAccess, tupleAccess)
+                        tupleAccess: List[ArithExpr],
+                        dt: DataType): Expression = {
+    ToOpenCL.exp(array, ocl, arrayAccess, tupleAccess, dt)
   }
 
 }

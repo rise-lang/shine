@@ -38,16 +38,19 @@ case class IdxAcc(array: Phrase[AccType],
     i
   }
 
-  override def toOpenCL(opencl: ToOpenCL): VarRef = ToOpenCL.acc(this, opencl, List(), List())
+  override def toOpenCL(opencl: ToOpenCL): VarRef = ToOpenCL.acc(this, opencl, List(), List(), t.dataType)
 
-  override def toOpenCL(ocl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): VarRef = {
+  override def toOpenCL(ocl: ToOpenCL,
+                        arrayAccess: List[(ArithExpr, ArithExpr)],
+                        tupleAccess: List[ArithExpr],
+                        dt: DataType): VarRef = {
     val idx: ArithExpr = ToOpenCL.exp(index, ocl) match {
       case VarRef(name, _, _) => NamedVar(name, ocl.env(name))
       case Literal(i) => Cst(i.toInt)
       case _ => throw new Exception("This should not happen")
     }
     val length = DataType.getLengths(dt, tupleAccess, List()).foldLeft(1: ArithExpr)((x,y) => x * y)
-    ToOpenCL.acc(array, ocl, (idx, length) :: arrayAccess, tupleAccess)
+    ToOpenCL.acc(array, ocl, (idx, length) :: arrayAccess, tupleAccess, dt)
   }
 
   override def prettyPrint: String = s"${PrettyPrinter(array)}[${PrettyPrinter(index)}]"

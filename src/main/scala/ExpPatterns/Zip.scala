@@ -46,16 +46,19 @@ case class Zip(lhs: Phrase[ExpType],
     }
   }
 
-  override def toOpenCL(ocl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = {
+  override def toOpenCL(ocl: ToOpenCL,
+                        arrayAccess: List[(ArithExpr, ArithExpr)],
+                        tupleAccess: List[ArithExpr],
+                        dt: DataType): Expression = {
     val i = tupleAccess.head
     val rest = tupleAccess.tail
 
     if (i == Cst(1)) {
-      return ToOpenCL.exp(lhs, ocl, arrayAccess, rest)
+      return ToOpenCL.exp(lhs, ocl, arrayAccess, rest, dt)
     }
 
     if (i == Cst(2)) {
-      return ToOpenCL.exp(rhs, ocl, arrayAccess, rest)
+      return ToOpenCL.exp(rhs, ocl, arrayAccess, rest, dt)
     }
 
     throw new Exception("This should not happen")
@@ -66,8 +69,12 @@ case class Zip(lhs: Phrase[ExpType],
 
   override def xmlPrinter: Elem =
     <zip n={ToString(n)} dt1={ToString(dt1)} dt2={ToString(dt2)}>
-      <lhs type={ToString(ExpType(ArrayType(n, dt1)))}>{Core.xmlPrinter(lhs)}</lhs>
-      <rhs type={ToString(ExpType(ArrayType(n, dt2)))}>{Core.xmlPrinter(rhs)}</rhs>
+      <lhs type={ToString(ExpType(ArrayType(n, dt1)))}>
+        {Core.xmlPrinter(lhs)}
+      </lhs>
+      <rhs type={ToString(ExpType(ArrayType(n, dt2)))}>
+        {Core.xmlPrinter(rhs)}
+      </rhs>
     </zip>
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {

@@ -16,7 +16,7 @@ case class Fst(record: Phrase[ExpType])
   override def typeCheck(): ExpType = {
     TypeChecker(record) match {
       case ExpType(RecordType(fst, snd)) => ExpType(fst)
-      case t => TypeChecker.error(t.toString, "Something else")
+      case x => TypeChecker.error(x.toString, "Something else")
     }
   }
 
@@ -31,10 +31,13 @@ case class Fst(record: Phrase[ExpType])
     Fst(VisitAndRebuild(record, f))
   }
 
-  override def toOpenCL(ocl: ToOpenCL): Expression = ToOpenCL.exp(this, ocl, List(), List())
+  override def toOpenCL(ocl: ToOpenCL): Expression = ToOpenCL.exp(this, ocl, List(), List(), t.dataType)
 
-  override def toOpenCL(ocl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression = {
-    ToOpenCL.exp(record, ocl, arrayAccess, 1 :: tupleAccess)
+  override def toOpenCL(ocl: ToOpenCL,
+                        arrayAccess: List[(ArithExpr, ArithExpr)],
+                        tupleAccess: List[ArithExpr],
+                        dt: DataType): Expression = {
+    ToOpenCL.exp(record, ocl, arrayAccess, 1 :: tupleAccess, dt)
   }
 
   override def prettyPrint: String = s"${PrettyPrinter(record)}._1"

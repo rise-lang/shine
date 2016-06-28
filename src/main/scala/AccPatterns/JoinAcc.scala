@@ -33,16 +33,19 @@ case class JoinAcc(n: ArithExpr,
 
   override def toOpenCL(opencl: ToOpenCL): VarRef = ???
 
-  def toOpenCL(opencl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): VarRef = {
+  def toOpenCL(opencl: ToOpenCL,
+               arrayAccess: List[(ArithExpr, ArithExpr)],
+               tupleAccess: List[ArithExpr],
+               dt: DataType): VarRef = {
 
     val (firstTwo, rest) = arrayAccess.splitAt(2)
 
     val chunkId = firstTwo.head
     val chunkElemId = firstTwo.tail.head
 
-    val newIdx = chunkId._1 * n + chunkElemId._1
+    val newIdx = chunkId._1 * m + chunkElemId._1
 
-    ToOpenCL.acc(array, opencl, (newIdx, chunkElemId._2) :: rest, tupleAccess)
+    ToOpenCL.acc(array, opencl, (newIdx, chunkElemId._2) :: rest, tupleAccess, dt)
   }
 
   override def prettyPrint: String =

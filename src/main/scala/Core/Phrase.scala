@@ -88,7 +88,7 @@ trait GeneratableExpPattern {
 }
 
 trait ViewExpPattern {
-  def toOpenCL(opencl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): Expression
+  def toOpenCL(opencl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr], dt: DataType): Expression
 }
 
 abstract class AccPattern extends Phrase[AccType] {
@@ -98,7 +98,7 @@ abstract class AccPattern extends Phrase[AccType] {
 
   def toOpenCL(opencl: ToOpenCL): VarRef
 
-  def toOpenCL(opencl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]): VarRef
+  def toOpenCL(opencl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr], dt: DataType): VarRef
 
   def prettyPrint: String
 

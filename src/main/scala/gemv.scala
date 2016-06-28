@@ -72,9 +72,8 @@ object gemv extends App {
       λ(ExpType(dataT))(alpha => λ(ExpType(dataT))(beta =>
 
         join() o mapWorkgroup(λ(t =>
-          mapLocal(λ(x => x + (t._2 * beta))) o
+          mapLocal(λ(x => (alpha * x) + (t._2 * beta))) o
             mapLocal(reduceSeq(add, 0.0f)) o split(128) o
-            mapLocal(λ(x => alpha * x)) o
             toLocal(mapLocal(reduceSeq(λ(x => λ(a => mult(x) + a)), 0.0f)))
             o split(N /^ 128) o gather(reorderWithStride(128)) $ zip(xs, t._1)
         )) $ zip(mat, ys)
@@ -82,7 +81,7 @@ object gemv extends App {
       ) ) ) ) )
 
   TypeChecker(fullMatrixVectorFusedOpenCLAMD)
-  xmlPrinter.toFile("/Users/michel/Desktop/fullMatrixVectorFusedOpenCLAMD.xml", fullMatrixVectorFusedOpenCLAMD)
+  xmlPrinter.toFile("/home/msteuwer/Desktop/fullMatrixVectorFusedOpenCLAMD.xml", fullMatrixVectorFusedOpenCLAMD)
 
   printOpenCLKernel1("fullMatrixVectorFusedOpenCLAMD", fullMatrixVectorFusedOpenCLAMD)
 
@@ -100,7 +99,7 @@ object gemv extends App {
       ) ) ) ) )
 
   TypeChecker(keplerBest)
-  xmlPrinter.toFile("/Users/michel/Desktop/keplerBest.xml", keplerBest)
+  xmlPrinter.toFile("/home/msteuwer/Desktop/keplerBest.xml", keplerBest)
 
   printOpenCLKernel1("keplerBest", keplerBest)
 
