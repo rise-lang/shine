@@ -63,10 +63,13 @@ abstract class AbstractMap(f: Phrase[ExpType -> ExpType],
     assert(n != null && dt1 != null && dt2 != null)
     import RewriteToImperative._
 
-    exp(array)(λ( ExpType(ArrayType(n, dt1)) ) { x =>
+    val F = f
+    val E = array
+
+    exp( E )(λ( ExpType(ArrayType(n, dt1)) ) { x =>
       makeMapI(n, dt1, dt2, A,
-        λ( AccType(dt2) ) { o =>
-          λ( ExpType(dt1) ) { x => acc(f(x))(o) } },
+        λ( AccType(dt2) )( o =>
+          λ( ExpType(dt1) )( x => acc( F(x) )(o) ) ),
         x
       )
     })

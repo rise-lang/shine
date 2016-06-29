@@ -29,16 +29,16 @@ case class AsVectorAcc(array: Phrase[AccType]) extends AccPattern {
 
   override def eval(s: Store): AccIdentifier = ???
 
-  override def toOpenCL(opencl: ToOpenCL): VarRef = ???
+  override def toOpenCL(env: ToOpenCL.Environment): VarRef = ???
 
-  override def toOpenCL(opencl: ToOpenCL,
+  override def toOpenCL(env: ToOpenCL.Environment,
                         arrayAccess: List[(ArithExpr, ArithExpr)],
                         tupleAccess: List[ArithExpr],
                         dt: DataType): VarRef = {
     val top = arrayAccess.head
     val newAAS = ((top._1 /^ n, top._2) :: arrayAccess.tail).map(x => (x._1, x._2 * n))
 
-    ToOpenCL.acc(array, opencl, newAAS, tupleAccess, dt)
+    ToOpenCL.acc(array, env, newAAS, tupleAccess, dt)
   }
 
   override def prettyPrint: String = s"(asVectorAcc ${PrettyPrinter(array)})"

@@ -1,5 +1,6 @@
 package Core
 
+import DSL.VarType
 import apart.arithmetic.{ArithExpr, NamedVar}
 
 sealed trait PhraseType
@@ -59,6 +60,12 @@ object PhraseType {
     def ->[T <: PhraseType](outT: T) = NatDependentFunctionType(x, outT)
   }
 
+  implicit class PhraseTypeHelper(val sc: StringContext) extends AnyVal {
+    def t(args: Any*): PhraseType = {
+      new PhraseTypeParser(sc.s(args:_*), sc.parts.iterator, args.iterator).parsePhraseType
+    }
+  }
+
   def substitute[T <: PhraseType](ae: ArithExpr,
                                   `for`: NamedVar,
                                   in: Phrase[T]): Phrase[T] = {
@@ -111,6 +118,93 @@ object PhraseType {
 
   def substitute(ae: ArithExpr, `for`: NamedVar, in: ArithExpr): ArithExpr = {
    ArithExpr.substitute(in, Map( (`for`, ae) ))
+  }
+
+  class PhraseTypeParser(val string: String,
+                         var strings: Iterator[String],
+                         val values: Iterator[Any]) {
+
+    def check(cond: Boolean): Unit = {
+      if (!cond) {
+        throw new Exception(s"Could not parse $string into a PhraseType")
+      }
+    }
+
+    def parseArrayType(n: ArithExpr): ArrayType = {
+      if (strings.hasNext) {
+        strings.next.trim match {
+          case "." => ArrayType(n, parseDataType)
+          case _ =>
+            throw new Exception(s"Could not parse $string into a PhraseType")
+        }
+      } else {
+        throw new Exception(s"Could not parse $string into a PhraseType")
+      }
+    }
+
+    def parseRecordOrBaseType(dt: DataType): DataType = {
+      if (!strings.hasNext) { dt }
+
+      val (iter1, iter2) = strings.duplicate
+      strings = iter1
+
+      iter2.next.trim match {
+        case "x" =>
+          strings.next // consume token
+          RecordType(dt, parseDataType)
+        case _ => dt
+      }
+    }
+
+    def parseDataType: DataType = {
+      if (values.hasNext) {
+        values.next match {
+          case n: ArithExpr => parseArrayType(n)
+          case dt: DataType => parseRecordOrBaseType(dt)
+          case _ =>
+            throw new Exception(s"Could not parse $string into a PhraseType")
+        }
+      } else {
+        throw new Exception(s"Could not parse $string into a PhraseType")
+      }
+    }
+
+    def parseBasePhraseType: PhraseType = {
+      if (strings.hasNext) {
+        strings.next.trim match {
+          case "exp[" =>
+            val expType = ExpType(parseDataType)
+            check(strings.hasNext && strings.next().trim == "]")
+            expType
+          case "acc[" =>
+            val accType = AccType(parseDataType)
+            check(strings.hasNext && strings.next().trim == "]")
+            accType
+          case "var[" =>
+            val varType = VarType(parseDataType)
+            check(strings.hasNext && strings.next().trim == "]")
+            varType
+          case "comm" => CommandType()
+          case _ =>
+            throw new Exception(s"Could not parse $string into a PhraseType")
+        }
+      } else {
+        throw new Exception(s"Could not parse $string into a PhraseType")
+      }
+    }
+
+    def parsePhraseType: PhraseType = {
+      val pt1 = parseBasePhraseType
+      if (!strings.hasNext) return pt1
+      strings.next.trim match {
+        case "x" =>
+          PairType(pt1, parsePhraseType)
+        case "->" =>
+          FunctionType(pt1, parsePhraseType)
+        case _ =>
+          throw new Exception(s"Could not parse $string into a PhraseType")
+      }
+    }
   }
 
 }

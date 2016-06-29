@@ -15,13 +15,13 @@ case class ParForLocal(override val n: ArithExpr,
 
   override def makeParFor = ParForLocal
 
-  override lazy val init =  get_local_id(0, RangeAdd(0, ocl.localSize, 1))
+  override lazy val init =  get_local_id(0, RangeAdd(0, env.localSize, 1))
 
   override lazy val step = get_local_size(0, local_size_range)
 
   lazy val local_size_range =
-    if (ocl.localSize == ?) ContinuousRange(1, PosInf)
-    else RangeAdd(ocl.localSize, ocl.localSize + 1, 1)
+    if (env.localSize == ?) ContinuousRange(1, PosInf)
+    else RangeAdd(env.localSize, env.localSize + 1, 1)
 
   override def synchronize: OclAstNode with BlockMember =
     OpenCLCode("barrier(CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE);")

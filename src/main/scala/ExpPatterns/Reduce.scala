@@ -70,17 +70,21 @@ abstract class AbstractReduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
     assert(n != null && dt1 != null && dt2 != null)
     import RewriteToImperative._
 
-    exp(array)(λ( ExpType(ArrayType(n, dt1)) ) { x =>
-      exp(init)(λ( ExpType(dt2) ) { y =>
+    val F = f
+    val I = init
+    val E = array
+
+    exp( E )(λ( ExpType(ArrayType(n, dt1)) )(x =>
+      exp( I )(λ( ExpType(dt2) )(y =>
         makeReduceIAcc(n, dt1, dt2, A,
-          λ( AccType(dt2) ) { o =>
-            λ( ExpType(dt1) ) { x =>
-              λ( ExpType(dt2) ) { y => acc( f(x)(y) )( o ) } } },
+          λ( AccType(dt2) )( o =>
+            λ( ExpType(dt1) )( x =>
+              λ( ExpType(dt2) )( y => acc( F(x)(y) )( o ) ) ) ),
           y,
           x
         )
-      })
-    })
+      ))
+    ))
   }
 
   override def rewriteToImperativeExp(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {

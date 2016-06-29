@@ -25,9 +25,11 @@ case class RecordAcc(fst: Phrase[AccType],
     RecordAcc(VisitAndRebuild(fst, fun), VisitAndRebuild(snd, fun))
   }
 
-  override def toOpenCL(ocl: ToOpenCL): VarRef = ???
+  override def toOpenCL(env: ToOpenCL.Environment): VarRef = ???
 
-  def toOpenCL(ocl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr], dt: DataType): VarRef = ???
+  def toOpenCL(env: ToOpenCL.Environment,
+               arrayAccess: List[(ArithExpr, ArithExpr)],
+               tupleAccess: List[ArithExpr], dt: DataType): VarRef = ???
 
   override def prettyPrint: String =
     s"(${PrettyPrinter(fst)}, ${PrettyPrinter(snd)})"

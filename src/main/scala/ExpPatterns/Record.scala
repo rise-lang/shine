@@ -25,7 +25,7 @@ case class Record(fst: Phrase[ExpType],
     Record(VisitAndRebuild(fst, f), VisitAndRebuild(snd, f))
   }
 
-  override def toOpenCL(ocl: ToOpenCL): Expression = ???
+  override def toOpenCL(env: ToOpenCL.Environment): Expression = ???
 
   override def prettyPrint: String = s"(${PrettyPrinter(fst)}, ${PrettyPrinter(snd)})"
 

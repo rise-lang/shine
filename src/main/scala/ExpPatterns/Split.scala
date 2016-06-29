@@ -56,7 +56,7 @@ case class Split(n: ArithExpr,
     }
   }
 
-  override def toOpenCL(ocl: ToOpenCL,
+  override def toOpenCL(env: ToOpenCL.Environment,
                         arrayAccess: List[(ArithExpr, ArithExpr)],
                         tupleAccess: List[ArithExpr],
                         dt: DataType): Expression = {
@@ -68,7 +68,7 @@ case class Split(n: ArithExpr,
 
     val newIdx = chunkId._1 * n + chunkElemId._1
 
-    ToOpenCL.exp(array, ocl, (newIdx, chunkElemId._2) :: rest, tupleAccess, dt)
+    ToOpenCL.exp(array, env, (newIdx, chunkElemId._2) :: rest, tupleAccess, dt)
   }
 
   override def prettyPrint: String = s"(split $n ${PrettyPrinter(array)})"

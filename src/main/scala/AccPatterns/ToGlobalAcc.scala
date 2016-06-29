@@ -19,9 +19,11 @@ case class ToGlobalAcc(p: Phrase[AccType]) extends AccPattern{
 
   override def eval(s: Store): AccIdentifier = ???
 
-  override def toOpenCL(ocl: ToOpenCL): VarRef = ???
+  override def toOpenCL(env: ToOpenCL.Environment): VarRef = ???
 
-  def toOpenCL(ocl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr], dt: DataType): VarRef = ???
+  def toOpenCL(env: ToOpenCL.Environment,
+               arrayAccess: List[(ArithExpr, ArithExpr)],
+               tupleAccess: List[ArithExpr], dt: DataType): VarRef = ???
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[AccType] = {
     ToGlobalAcc(VisitAndRebuild(p, fun))

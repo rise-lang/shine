@@ -76,4 +76,12 @@ object DataType {
       case a: ArrayType => getLengths(a.elemType, tupleAccesss, a.size :: list)
     }
   }
+
+  implicit class RecordTypeConstructor(dt1: DataType) {
+    def x(dt2: DataType) = RecordType(dt1, dt2)
+  }
+
+  implicit class ArrayTypeConstructor(s: ArithExpr) {
+    def `.`(dt: DataType) = ArrayType(s, dt)
+  }
 }

@@ -30,7 +30,7 @@ case class AsVector(n: ArithExpr,
 
   override def eval(s: Store): Data = ???
 
-  override def toOpenCL(ocl: ToOpenCL,
+  override def toOpenCL(env: ToOpenCL.Environment,
                         arrayAccess: List[(ArithExpr, ArithExpr)],
                         tupleAccess: List[ArithExpr],
                         dt: DataType): Expression = {
@@ -38,7 +38,7 @@ case class AsVector(n: ArithExpr,
     val top = arrayAccess.head
     val newAAS = ((top._1 * n, top._2) :: arrayAccess.tail).map(x => (x._1, x._2 /^ n))
 
-    ToOpenCL.exp(array, ocl, newAAS, tupleAccess, dt)
+    ToOpenCL.exp(array, env, newAAS, tupleAccess, dt)
   }
 
   override def prettyPrint: String = s"(asVector ${n.toString} ${PrettyPrinter(array)})"

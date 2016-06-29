@@ -30,13 +30,14 @@ case class Snd(record: Phrase[ExpType]) extends ExpPattern with ViewExpPattern w
     Snd(VisitAndRebuild(record, f))
   }
 
-  override def toOpenCL(ocl: ToOpenCL): Expression = ToOpenCL.exp(this, ocl, List(), List(), t.dataType)
+  override def toOpenCL(env: ToOpenCL.Environment): Expression =
+    ToOpenCL.exp(this, env, List(), List(), t.dataType)
 
-  override def toOpenCL(ocl: ToOpenCL,
+  override def toOpenCL(env: ToOpenCL.Environment,
                         arrayAccess: List[(ArithExpr, ArithExpr)],
                         tupleAccess: List[ArithExpr],
                         dt: DataType): Expression = {
-    ToOpenCL.exp(record, ocl, arrayAccess, 2 :: tupleAccess, dt)
+    ToOpenCL.exp(record, env, arrayAccess, 2 :: tupleAccess, dt)
   }
 
   override def xmlPrinter: Elem = <snd>{Core.xmlPrinter(record)}</snd>

@@ -32,13 +32,13 @@ case class TruncAcc(n: ArithExpr,
     TruncAcc(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))
   }
 
-  override def toOpenCL(opencl: ToOpenCL): VarRef = ???
+  override def toOpenCL(env: ToOpenCL.Environment): VarRef = ???
 
-  override def toOpenCL(ocl: ToOpenCL,
+  override def toOpenCL(env: ToOpenCL.Environment,
                         arrayAccess: List[(ArithExpr, ArithExpr)],
                         tupleAccess: List[ArithExpr],
                         dt: DataType): VarRef = {
-    ToOpenCL.acc(array, ocl, arrayAccess, tupleAccess, dt)
+    ToOpenCL.acc(array, env, arrayAccess, tupleAccess, dt)
   }
 
   override def prettyPrint: String = s"(truncAcc ${PrettyPrinter(array)})"

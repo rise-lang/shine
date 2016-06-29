@@ -32,9 +32,9 @@ case class SplitAcc(n: ArithExpr,
     ???
   }
 
-  override def toOpenCL(opencl: ToOpenCL): VarRef = ???
+  override def toOpenCL(env: ToOpenCL.Environment): VarRef = ???
 
-  override def toOpenCL(opencl: ToOpenCL,
+  override def toOpenCL(env: ToOpenCL.Environment,
                         arrayAccess: List[(ArithExpr, ArithExpr)],
                         tupleAccess: List[ArithExpr],
                         dt: DataType): VarRef = {
@@ -48,7 +48,7 @@ case class SplitAcc(n: ArithExpr,
 
     val newAs = (chunkId, l * n) :: (chunkElemId, l) :: stack
 
-    ToOpenCL.acc(array, opencl, newAs, tupleAccess, dt)
+    ToOpenCL.acc(array, env, newAs, tupleAccess, dt)
   }
 
   override def prettyPrint: String = s"(splitAcc ${PrettyPrinter(array)})"

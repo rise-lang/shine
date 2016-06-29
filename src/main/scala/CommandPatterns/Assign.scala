@@ -62,8 +62,8 @@ case class Assign(lhs: Phrase[AccType],
 
   override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = this
 
-  override def toOpenCL(block: Block, ocl: ToOpenCL): Block =
-    (block: Block) += AssignmentExpression(ToOpenCL.acc(lhs, ocl), ToOpenCL.exp(rhs, ocl))
+  override def toOpenCL(block: Block, env: ToOpenCL.Environment): Block =
+    (block: Block) += AssignmentExpression(ToOpenCL.acc(lhs, env), ToOpenCL.exp(rhs, env))
 
   override def prettyPrint: String = s"(${PrettyPrinter(lhs)} := ${PrettyPrinter(rhs)})"
 

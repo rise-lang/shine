@@ -14,8 +14,6 @@ import scala.collection._
 
 class ToOpenCL(val localSize: ArithExpr, val globalSize: ArithExpr) {
 
-  val env = mutable.Map[String, apart.arithmetic.Range]()
-
   def apply(p: Phrase[ExpType -> ExpType],
             arg: IdentPhrase[ExpType]): Function =
     make(p, arg, List())
@@ -65,7 +63,7 @@ class ToOpenCL(val localSize: ArithExpr, val globalSize: ArithExpr) {
 //    val p4 = AdjustMemoryAllocation(p3)
 //    println(PrettyPrinter(p4))
 
-    val body = ToOpenCL.cmd(p3, Block(), this)
+    val body = ToOpenCL.cmd(p3, Block(), ToOpenCL.Environment(localSize, globalSize))
 
     Function(name = "KERNEL", ret = UndefType, params = params, body = body, kernel = true)
   }
@@ -141,15 +139,26 @@ class ToOpenCL(val localSize: ArithExpr, val globalSize: ArithExpr) {
 
 object ToOpenCL {
 
-  def cmd(p: Phrase[CommandType], block: Block, ocl: ToOpenCL): Block = {
+  case class Environment(localSize: ArithExpr,
+                         globalSize: ArithExpr,
+                         ranges: mutable.Map[String, apart.arithmetic.Range])
+
+  object Environment {
+    def apply(localSize: ArithExpr, globalSize: ArithExpr): Environment = {
+      Environment(localSize, globalSize,
+        mutable.Map[String, apart.arithmetic.Range]())
+    }
+  }
+
+  def cmd(p: Phrase[CommandType], block: Block, env: Environment): Block = {
     p match {
       case IfThenElsePhrase(condP, thenP, elseP) =>
-        val trueBlock = cmd(thenP, Block(), ocl)
-        val falseBlock = cmd(elseP, Block(), ocl)
-        (block: Block) += IfThenElse(exp(condP, ocl), trueBlock, falseBlock)
+        val trueBlock = cmd(thenP, Block(), env)
+        val falseBlock = cmd(elseP, Block(), env)
+        (block: Block) += IfThenElse(exp(condP, env), trueBlock, falseBlock)
 
       case c: IntermediateCommandPattern => c match {
-        case fc: CommandPattern => fc.toOpenCL(block, ocl)
+        case fc: CommandPattern => fc.toOpenCL(block, env)
         case _ => throw new Exception(s"This should not happen $c")
       }
 
@@ -159,10 +168,10 @@ object ToOpenCL {
     }
   }
 
-  def exp(p: Phrase[ExpType], ocl: ToOpenCL): Expression = {
+  def exp(p: Phrase[ExpType], env: Environment): Expression = {
     p match {
       case BinOpPhrase(op, lhs, rhs) =>
-        BinaryExpression(op.toString, exp(lhs, ocl), exp(rhs, ocl))
+        BinaryExpression(op.toString, exp(lhs, env), exp(rhs, env))
       case IdentPhrase(name) => VarRef(name)
       case LiteralPhrase(d) =>
         d match {
@@ -174,12 +183,12 @@ object ToOpenCL {
           case _: RecordData => ???
           case _: ArrayData => ???
         }
-      case p: Proj1Phrase[ExpType, _] => exp(Lift.liftPair(p.pair)._1, ocl)
-      case p: Proj2Phrase[_, ExpType] => exp(Lift.liftPair(p.pair)._2, ocl)
+      case p: Proj1Phrase[ExpType, _] => exp(Lift.liftPair(p.pair)._1, env)
+      case p: Proj2Phrase[_, ExpType] => exp(Lift.liftPair(p.pair)._2, env)
       case UnaryOpPhrase(op, x) =>
-        UnaryExpression(op.toString, exp(x, ocl))
+        UnaryExpression(op.toString, exp(x, env))
       case e: ExpPattern => e match {
-        case g: GeneratableExpPattern => g.toOpenCL(ocl)
+        case g: GeneratableExpPattern => g.toOpenCL(env)
         case _ => throw new Exception("This should not happen")
       }
 
@@ -189,12 +198,12 @@ object ToOpenCL {
     }
   }
 
-  def acc(p: Phrase[AccType], ocl: ToOpenCL): VarRef = {
+  def acc(p: Phrase[AccType], env: Environment): VarRef = {
     p match {
       case IdentPhrase(name) => VarRef(name)
-      case p: Proj1Phrase[AccType, _] => acc(Lift.liftPair(p.pair)._1, ocl)
-      case p: Proj2Phrase[_, AccType] => acc(Lift.liftPair(p.pair)._2, ocl)
-      case a: AccPattern => a.toOpenCL(ocl)
+      case p: Proj1Phrase[AccType, _] => acc(Lift.liftPair(p.pair)._1, env)
+      case p: Proj2Phrase[_, AccType] => acc(Lift.liftPair(p.pair)._2, env)
+      case a: AccPattern => a.toOpenCL(env)
 
       case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
            IfThenElsePhrase(_, _, _) =>
@@ -203,7 +212,7 @@ object ToOpenCL {
   }
 
   def exp(p: Phrase[ExpType],
-          ocl: ToOpenCL,
+          env: Environment,
           arrayAccess: List[(ArithExpr, ArithExpr)],
           tupleAccess: List[ArithExpr],
           dt: DataType): Expression = {
@@ -232,11 +241,11 @@ object ToOpenCL {
             VarRef(name, suffix, ArithExpression(index))
         }
 
-      case p: Proj1Phrase[ExpType, _] => exp(Lift.liftPair(p.pair)._1, ocl, arrayAccess, tupleAccess, dt)
-      case p: Proj2Phrase[_, ExpType] => exp(Lift.liftPair(p.pair)._2, ocl, arrayAccess, tupleAccess, dt)
+      case p: Proj1Phrase[ExpType, _] => exp(Lift.liftPair(p.pair)._1, env, arrayAccess, tupleAccess, dt)
+      case p: Proj2Phrase[_, ExpType] => exp(Lift.liftPair(p.pair)._2, env, arrayAccess, tupleAccess, dt)
 
       case e: ExpPattern => e match {
-        case v: ViewExpPattern => v.toOpenCL(ocl, arrayAccess, tupleAccess, dt)
+        case v: ViewExpPattern => v.toOpenCL(env, arrayAccess, tupleAccess, dt)
         case _ => throw new Exception(s"This should not happen: $e")
       }
 
@@ -248,7 +257,7 @@ object ToOpenCL {
   }
 
   def acc(p: Phrase[AccType],
-          ocl: ToOpenCL,
+          env: Environment,
           arrayAccess: List[(ArithExpr, ArithExpr)],
           tupleAccess: List[ArithExpr],
           dt: DataType): VarRef = {
@@ -277,10 +286,10 @@ object ToOpenCL {
             VarRef(name, suffix, ArithExpression(index))
         }
 
-      case a: AccPattern => a.toOpenCL(ocl, arrayAccess, tupleAccess, dt)
+      case a: AccPattern => a.toOpenCL(env, arrayAccess, tupleAccess, dt)
 
-      case p: Proj1Phrase[AccType, _] => acc(Lift.liftPair(p.pair)._1, ocl, arrayAccess, tupleAccess, dt)
-      case p: Proj2Phrase[_, AccType] => acc(Lift.liftPair(p.pair)._2, ocl, arrayAccess, tupleAccess, dt)
+      case p: Proj1Phrase[AccType, _] => acc(Lift.liftPair(p.pair)._1, env, arrayAccess, tupleAccess, dt)
+      case p: Proj2Phrase[_, AccType] => acc(Lift.liftPair(p.pair)._2, env, arrayAccess, tupleAccess, dt)
 
       case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
            IfThenElsePhrase(_, _, _) =>

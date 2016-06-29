@@ -84,11 +84,11 @@ abstract class ExpPattern extends Phrase[ExpType] {
 }
 
 trait GeneratableExpPattern {
-  def toOpenCL(opencl: ToOpenCL): Expression
+  def toOpenCL(env: ToOpenCL.Environment): Expression
 }
 
 trait ViewExpPattern {
-  def toOpenCL(opencl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr], dt: DataType): Expression
+  def toOpenCL(env: ToOpenCL.Environment, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr], dt: DataType): Expression
 }
 
 abstract class AccPattern extends Phrase[AccType] {
@@ -96,9 +96,9 @@ abstract class AccPattern extends Phrase[AccType] {
 
   def eval(s: OperationalSemantics.Store): OperationalSemantics.AccIdentifier
 
-  def toOpenCL(opencl: ToOpenCL): VarRef
+  def toOpenCL(env: ToOpenCL.Environment): VarRef
 
-  def toOpenCL(opencl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr], dt: DataType): VarRef
+  def toOpenCL(env: ToOpenCL.Environment, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr], dt: DataType): VarRef
 
   def prettyPrint: String
 
@@ -122,5 +122,5 @@ abstract class IntermediateCommandPattern extends  Phrase[CommandType] {
 }
 
 abstract class CommandPattern extends IntermediateCommandPattern {
-  def toOpenCL(block: Block, ocl: ToOpenCL): Block
+  def toOpenCL(block: Block, env: ToOpenCL.Environment): Block
 }

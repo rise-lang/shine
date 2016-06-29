@@ -17,7 +17,7 @@ abstract class AbstractParFor(val n: ArithExpr,
                               val body: Phrase[ExpType -> (AccType -> CommandType)])
   extends CommandPattern {
 
-  protected var ocl: ToOpenCL = null
+  protected var env: ToOpenCL.Environment = null
 
   override def typeCheck(): CommandType = {
     import TypeChecker._
@@ -81,14 +81,14 @@ abstract class AbstractParFor(val n: ArithExpr,
   def step: ArithExpr
   def synchronize: OpenCLAST.OclAstNode with BlockMember
 
-  override def toOpenCL(block: Block, ocl: ToOpenCL): Block = {
+  override def toOpenCL(block: Block, env: ToOpenCL.Environment): Block = {
     import opencl.generator.OpenCLAST._
 
-    this.ocl = ocl
+    this.env = env
 
     val range = RangeAdd(init, n, step)
 
-    ocl.env(name) = range
+    env.ranges(name) = range
 
     val i = identifier(name, ExpType(int))
     val body_ = Lift.liftFunction( Lift.liftFunction(body)(i) )
@@ -109,7 +109,7 @@ abstract class AbstractParFor(val n: ArithExpr,
       AssignmentExpression(ArithExpression(v), ArithExpression(v + step))
     }
 
-    val bodyBlock = (b: Block) => ToOpenCL.cmd(body_(out_at_i), b, ocl)
+    val bodyBlock = (b: Block) => ToOpenCL.cmd(body_(out_at_i), b, env)
 
 //    println(s"range.numValues: ${range.numVals}")
     range.numVals match {
@@ -140,7 +140,7 @@ abstract class AbstractParFor(val n: ArithExpr,
 
     }
 
-    ocl.env.remove(name)
+    env.ranges.remove(name)
 
     (block: Block) += synchronize
   }

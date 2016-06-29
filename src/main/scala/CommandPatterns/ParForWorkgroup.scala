@@ -15,8 +15,8 @@ case class ParForWorkgroup(override val n: ArithExpr,
   extends AbstractParFor(n, dt, out, body) {
 
   lazy val num_groups =
-    if (ocl.globalSize == ? || ocl.localSize == ?) ?
-    else ocl.globalSize /^ ocl.localSize
+    if (env.globalSize == ? || env.localSize == ?) ?
+    else env.globalSize /^ env.localSize
 
   override def makeParFor = ParForWorkgroup
 

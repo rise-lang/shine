@@ -30,9 +30,9 @@ case class Seq(c1: Phrase[CommandType],
   override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] =
     Seq(SubstituteImplementations(c1, env), SubstituteImplementations(c2, env))
 
-  override def toOpenCL(block: Block, ocl: ToOpenCL): Block = {
-    ToOpenCL.cmd(c1, block, ocl)
-    ToOpenCL.cmd(c2, block, ocl)
+  override def toOpenCL(block: Block, env: ToOpenCL.Environment): Block = {
+    ToOpenCL.cmd(c1, block, env)
+    ToOpenCL.cmd(c2, block, env)
   }
 
   override def prettyPrint: String =

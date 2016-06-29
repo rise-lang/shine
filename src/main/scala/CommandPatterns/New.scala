@@ -49,7 +49,7 @@ case class New(dt: DataType, addressSpace: AddressSpace,
         env.copy(env.addressspace.updated(p.name, addressSpace)) ))
   }
 
-  override def toOpenCL(block: Block, ocl: ToOpenCL): Block = {
+  override def toOpenCL(block: Block, env: ToOpenCL.Environment): Block = {
     val v = NamedVar(newName())
 
     if (addressSpace == PrivateMemory) {
@@ -61,7 +61,7 @@ case class New(dt: DataType, addressSpace: AddressSpace,
 
     val f_ = Lift.liftFunction(f)
     val v_ = identifier.newVar(v.name, dt)
-    ToOpenCL.cmd(f_(v_), block, ocl)
+    ToOpenCL.cmd(f_(v_), block, env)
   }
 
   override def prettyPrint: String = s"(new $addressSpace ${PrettyPrinter(f)})"

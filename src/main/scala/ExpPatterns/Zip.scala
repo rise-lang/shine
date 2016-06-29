@@ -3,7 +3,7 @@ package ExpPatterns
 import CommandPatterns.MapI
 import Core._
 import Core.OperationalSemantics._
-import Core.PhraseType.->
+import Core.PhraseType._
 import DSL._
 import Compiling.RewriteToImperative
 import apart.arithmetic.{ArithExpr, Cst}
@@ -46,7 +46,7 @@ case class Zip(lhs: Phrase[ExpType],
     }
   }
 
-  override def toOpenCL(ocl: ToOpenCL,
+  override def toOpenCL(env: ToOpenCL.Environment,
                         arrayAccess: List[(ArithExpr, ArithExpr)],
                         tupleAccess: List[ArithExpr],
                         dt: DataType): Expression = {
@@ -54,11 +54,11 @@ case class Zip(lhs: Phrase[ExpType],
     val rest = tupleAccess.tail
 
     if (i == Cst(1)) {
-      return ToOpenCL.exp(lhs, ocl, arrayAccess, rest, dt)
+      return ToOpenCL.exp(lhs, env, arrayAccess, rest, dt)
     }
 
     if (i == Cst(2)) {
-      return ToOpenCL.exp(rhs, ocl, arrayAccess, rest, dt)
+      return ToOpenCL.exp(rhs, env, arrayAccess, rest, dt)
     }
 
     throw new Exception("This should not happen")
@@ -79,16 +79,21 @@ case class Zip(lhs: Phrase[ExpType],
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
-    exp(lhs)(λ(lhs.t) { x =>
-      exp(rhs)(λ(rhs.t) { y =>
-        MapI(n, RecordType(dt1, dt2), RecordType(dt1, dt2), A,
+    val E1 = lhs
+    val E2 = rhs
+
+    exp(E1)(λ(ExpType(ArrayType(n, dt1)))(x =>
+      exp(E2)(λ(ExpType(ArrayType(n, dt2)))(y =>
+        MapI(n, dt1 x dt2, dt1 x dt2, A,
           λ(A.t) { o =>
             λ(ExpType(RecordType(lhs.t.dataType, rhs.t.dataType))) { x =>
-              acc(x)(o) } },
+              acc(x)(o)
+            }
+          },
           Zip(x, y)
         )
-      })
-    })
+      ))
+    ))
   }
 
   override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {

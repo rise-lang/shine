@@ -60,7 +60,7 @@ case class IterateIAcc(n: ArithExpr,
 
   override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
     // infer the address space from the output
-    val identifier = ToOpenCL.acc(out, new ToOpenCL(?, ?))
+    val identifier = ToOpenCL.acc(out, ToOpenCL.Environment(?, ?))
     val addressSpace = env.addressspace(identifier.name)
 
     val sEnd = n.pow(k)*m

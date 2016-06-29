@@ -31,9 +31,11 @@ case class SndAcc(dt1: DataType,
     SndAcc(fun(dt1), fun(dt2), VisitAndRebuild(record, fun))
   }
 
-  override def toOpenCL(ocl: ToOpenCL): VarRef = ???
+  override def toOpenCL(env: ToOpenCL.Environment): VarRef = ???
 
-  def toOpenCL(ocl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr], dt: DataType): VarRef = ???
+  def toOpenCL(env: ToOpenCL.Environment,
+               arrayAccess: List[(ArithExpr, ArithExpr)],
+               tupleAccess: List[ArithExpr], dt: DataType): VarRef = ???
 
   override def prettyPrint: String = s"(SndAcc ${PrettyPrinter(record)})"
 

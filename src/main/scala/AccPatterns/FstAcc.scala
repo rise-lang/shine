@@ -30,9 +30,11 @@ case class FstAcc(dt1: DataType,
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[AccType] =
     FstAcc(fun(dt1), fun(dt2), VisitAndRebuild(record, fun))
 
-  override def toOpenCL(ocl: ToOpenCL): VarRef = ???
+  override def toOpenCL(env: ToOpenCL.Environment): VarRef = ???
 
-  def toOpenCL(ocl: ToOpenCL, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr], dt: DataType): VarRef = ???
+  def toOpenCL(env: ToOpenCL.Environment,
+               arrayAccess: List[(ArithExpr, ArithExpr)],
+               tupleAccess: List[ArithExpr], dt: DataType): VarRef = ???
 
   override def xmlPrinter: Elem =
     <fstAcc dt1={ToString(dt1)} dt2={ToString(dt2)}>

@@ -30,7 +30,7 @@ case class Length[T <: BasePhraseTypes](array: Phrase[T]) extends ExpPattern wit
     Length(VisitAndRebuild(array, f))
   }
 
-  override def toOpenCL(ocl: ToOpenCL): Expression = {
+  override def toOpenCL(env: ToOpenCL.Environment): Expression = {
     ArithExpression( OperationalSemantics.evalIndexExp(new OperationalSemantics.Store(), this) )
   }
 

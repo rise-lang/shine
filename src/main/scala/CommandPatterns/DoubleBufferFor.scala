@@ -21,7 +21,7 @@ case class DoubleBufferFor(n: ArithExpr,
                            C: Phrase[ExpType -> CommandType])
   extends CommandPattern {
 
-  override def toOpenCL(block: Block, ocl: ToOpenCL): Block = {
+  override def toOpenCL(block: Block, env: ToOpenCL.Environment): Block = {
     import opencl.generator.OpenCLAST._
 
     val ptrType =
@@ -49,7 +49,7 @@ case class DoubleBufferFor(n: ArithExpr,
 
     // for ...
     val loopVar = NamedVar(newName())
-    ocl.env(loopVar.name) = RangeAdd(0, k, 1)
+    env.ranges(loopVar.name) = RangeAdd(0, k, 1)
 
     val init = VarDecl(loopVar.name, opencl.ir.Int,
       init = ArithExpression(0),
@@ -67,7 +67,7 @@ case class DoubleBufferFor(n: ArithExpr,
     val bodyEEE = Lift.liftFunction(bodyEE(out))
 
     val nestedBlock = Block()
-    val body_ = ToOpenCL.cmd(bodyEEE(in), nestedBlock, ocl)
+    val body_ = ToOpenCL.cmd(bodyEEE(in), nestedBlock, env)
 
     (block: Block) += ForLoop(init, cond, increment, body_)
 
@@ -91,9 +91,9 @@ case class DoubleBufferFor(n: ArithExpr,
     // copy result to output
     val CE = Lift.liftFunction(C)(in)
     TypeChecker(CE)
-    (block: Block) += ToOpenCL.cmd(CE, Block(), ocl)
+    (block: Block) += ToOpenCL.cmd(CE, Block(), env)
 
-    ocl.env.remove(loopVar.name)
+    env.ranges.remove(loopVar.name)
 
     block
   }

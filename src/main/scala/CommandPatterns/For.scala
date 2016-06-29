@@ -42,12 +42,12 @@ case class For(n: ArithExpr,
       {Core.xmlPrinter(body)}
     </for>
 
-  override def toOpenCL(block: Block, ocl: ToOpenCL): Block = {
+  override def toOpenCL(block: Block, env: ToOpenCL.Environment): Block = {
     import opencl.generator.OpenCLAST._
 
     val name = newName()
 
-    ocl.env(name) = RangeAdd(0, n, 1)
+    env.ranges(name) = RangeAdd(0, n, 1)
 
     val init = VarDecl(name, opencl.ir.Int,
       init = ArithExpression(0),
@@ -63,11 +63,11 @@ case class For(n: ArithExpr,
     val bodyE = Lift.liftFunction(body)
     val i = identifier(name, ExpType(int))
 
-    val body_ = ToOpenCL.cmd(bodyE(i), Block(), ocl)
+    val body_ = ToOpenCL.cmd(bodyE(i), Block(), env)
 
     (block: Block) += ForLoop(init, cond, increment, body_)
 
-    ocl.env.remove(name)
+    env.ranges.remove(name)
 
     block
   }

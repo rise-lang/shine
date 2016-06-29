@@ -2,7 +2,7 @@
 import Core._
 import DSL._
 import Compiling.{RewriteToImperative, SubstituteImplementations}
-import Core.PhraseType.->
+import Core.PhraseType._
 import ExpPatterns._
 import apart.arithmetic._
 import opencl.generator.OpenCLPrinter
@@ -734,320 +734,345 @@ object Test extends App {
     println("-----")
   }
 
-  {
-    println("== assum ==")
-    val t = ExpType(ArrayType(1048576, int))
-    val p = λ(t)(inp =>
-      reduce(λ( x1 => λ( x2 => x1 + x2 ) ), 0, map(λ( x => `if`(x < 0, -x, x) ), inp))
-    )
-    println("=====")
-    println(PrettyPrinter(p))
-
-    println("-----")
-
-    val ast = (new ToOpenCL(?, ?))(p, identifier("inp", t))
-    println(OpenCLPrinter()(ast))
-
-    println("-----")
-  }
-
-  {
-    println("== dot ==")
-    val t: ExpType = ExpType(ArrayType(1048576, int))
-    val p: Phrase[ExpType -> (ExpType -> ExpType)] =
-      λ(t)(xs => λ(t)(ys =>
-        reduce(λ(x1 => λ(x2 => x1 + x2 )), 0) o map(λ(p => p._1 * p._2 )) $ zip(xs, ys)
-      ) )
-    println("=====")
-    println(PrettyPrinter(p))
-
-    println("-----")
-
-    val ast = (new ToOpenCL(?, ?))(p, identifier("xs", t), identifier("ys", t))
-    println(OpenCLPrinter()(ast))
-
-    println("-----")
-  }
-
-  {
-    println("== gemv ==")
-    val a: Phrase[ExpType] = 5
-    val b: Phrase[ExpType] = 2
-    val n = 1048576
-    val m = n / 2
-    val xsVectorT: ExpType = ExpType(ArrayType(n, int))
-    val ysVectorT: ExpType = ExpType(ArrayType(m, int))
-    val matrixT: ExpType = ExpType(ArrayType(m, ArrayType(n, int)))
-
-
-    val add = λ(x1 => λ(x2 => x1 + x2 ))
-    val mult = λ(p => p._1 * p._2 )
-
-    val scal = λ(a => λ(vec =>  mapSeq(λ(x => x * a )) $ vec ))
-
-    val dot = λ(xs => λ(ys => reduceSeq(add, 0) o mapSeq(mult) $ zip(xs, ys) ))
-
-    val p =
-      λ(matrixT)(mat => λ(xsVectorT)(xs => λ(ysVectorT)(ys => {
-        val lhs = mapSeq( λ(x => x * a ) o dot(xs) ) $ mat
-        val rhs = scal(b) $ ys
-        mapSeq(mult) $ zip(lhs, rhs)
-      }) ) )
-
-    println("=====")
-    println(PrettyPrinter(p))
-
-    println("-----")
-
-    val toOpenCL = new ToOpenCL(localSize = 128, globalSize = m)
-
-    val ast = toOpenCL(p, identifier("mat", matrixT), identifier("xs", xsVectorT), identifier("ys", ysVectorT))
-    println(OpenCLPrinter()(ast))
-
-    println("-----")
-  }
-
-//  { // TODO: check this again!!!
-//    println("== join split ==")
-//
-//    val xsVectorT = ExpType(ArrayType(1048576, int))
-//
-//    // results in type error after RewriteToImperative
-//    val p = λ(xsVectorT)(inp =>
-//      join() o split(2048) $ inp
+//  {
+//    println("== assum ==")
+//    val t = ExpType(ArrayType(1048576, int))
+//    val p = λ(t)(inp =>
+//      reduce(λ( x1 => λ( x2 => x1 + x2 ) ), 0, map(λ( x => `if`(x < 0, -x, x) ), inp))
 //    )
 //    println("=====")
 //    println(PrettyPrinter(p))
 //
 //    println("-----")
 //
-//    val ast = (new ToOpenCL(?, ?))(p, identifier("xs", xsVectorT))
+//    val ast = (new ToOpenCL(?, ?))(p, identifier("inp", t))
 //    println(OpenCLPrinter()(ast))
 //
 //    println("-----")
 //  }
 
-  {
-    println("== asum Nvidia ==")
-    val xsVectorT: ExpType = ExpType(ArrayType(1048576, int))
-
-    val abs = (x: Phrase[ExpType]) => `if`(x < 0, -x, x)
-
-    val p = λ(xsVectorT)(inp =>
-
-      mapWorkgroup(
-        mapLocal( reduce(λ( x1 => λ( x2 => x1 + abs(x2) ) ), 0) )
-      ) o split(128) o split(2048) $ inp
-    )
-    println("=====")
-    println(PrettyPrinter(p))
-
-    println("-----")
-
-    val ast = (new ToOpenCL(128, ?))(p, identifier("xs", xsVectorT))
-    println(OpenCLPrinter()(ast))
-
-    println("-----")
-  }
-
-  {
-    println("== PACT paper example ==")
-    val n: ArithExpr = SizeVar("N")
-    val xsVectorT: ExpType = ExpType(ArrayType(n, int))
-    val ysVectorT: ExpType = ExpType(ArrayType(n, int))
-
-    val p =
-      λ(xsVectorT)(xs => λ(ysVectorT)(ys => {
-
-        mapWorkgroup(
-          mapLocal(
-            reduceSeq(λ(xy => λ(a => a + ( xy._1 * xy._2 ) )), 0)
-          ) o split(2)
-        ) o split(128) $ zip(xs, ys)
-
-      }) )
-
-    println("=====")
-    println(PrettyPrinter(p))
-
-    println("-----")
-
-    val ast = (new ToOpenCL(128, ?))(p, identifier("xs", xsVectorT), identifier("ys", ysVectorT))
-    println(OpenCLPrinter()(ast))
-
-    println("-----")
-  }
-
-  {
-    println("== gemv fused ==")
-    val alpha = 5
-    val beta = 2
-    val a: Phrase[ExpType] = alpha
-    val b: Phrase[ExpType] = beta
-    val n: ArithExpr = SizeVar("N")
-    val m: ArithExpr = n / 2
-    val xsVectorT: ExpType = ExpType(ArrayType(n, int))
-    val ysVectorT: ExpType = ExpType(ArrayType(m, int))
-    val matrixT: ExpType = ExpType(ArrayType(m, ArrayType(n, int)))
-
-    val p =
-      λ(matrixT)(mat => λ(xsVectorT)(xs => λ(ysVectorT)(ys => {
-
-        mapWorkgroup(λ(t =>
-          toGlobal(mapLocal( λ(x =>
-            x + (t._2 * b)
-          ) )) o
-          toLocal(mapLocal(
-            λ(x => x * a ) o
-            reduceSeq(λ(y => λ(acc => acc + ( y._1 * y._2 ) )), 0)
-          )) o split(n) $ zip(xs, t._1)
-        )) $ zip(mat, ys)
-
-      }) ) )
-
-    println("=====")
-    println(PrettyPrinter(p))
-
-    println("-----")
-
-    val ast = (new ToOpenCL(?, ?))(p, identifier("mat", matrixT), identifier("xs", xsVectorT), identifier("ys", ysVectorT))
-    println(OpenCLPrinter()(ast))
-
-    println("-----")
-
-//    {
-//      val mat = identifier("mat", matrixT)
-//      val xs = identifier("xs", xsVectorT)
-//      val ys = identifier("ys", ysVectorT)
-//      val outT = TypeChecker(p(mat)(xs)(ys))
-//      val output = identifier("output", AccType(outT.dataType))
-//      val pp =
-//        ParForWorkgroup( n / 2, output, λ(ExpType(int))(v370 => λ(AccType(ArrayType(1, int)))(v371 =>
-//          `new`(ArrayType(1, int), LocalMemory, v350 =>
-//            ParForLocal(1, π2(v350), λ(ExpType(int))(v372 => λ(AccType(int))(v373 =>
-//              `new`(int, PrivateMemory, v374 =>
-//                (π2 (v374) `:=` LiteralPhrase(0)) `;`
-//                  `for`(n, v375 =>
-//                    π2(v374) `:=` (π1(v374) + (
-//                      ((split(n, zip(xs, (zip(mat, ys) `@` v370)._1)) `@` v372) `@` v375)._1
-//                        * ((split(n, zip(xs, (zip(mat, ys) `@` v370)._1)) `@` v372) `@` v375)._2
-//                      ))
-//                  ) `;`
-//                  (π2(v374) `:=` π1(v374) * LiteralPhrase(5))
-//              )
-//            ))) `;`
-//            ParForLocal(1, v371, λ(ExpType(int))(v377 => λ(AccType(int))(v378 =>
-//              v378 `:=` ( (π1(v350) `@` v377) + (zip(mat, ys) `@` v370)._2 * LiteralPhrase(2) )
-//            )))
-//          )
-//        )))
+//  {
+//    println("== dot ==")
+//    val t: ExpType = ExpType(ArrayType(1048576, int))
+//    val p: Phrase[ExpType -> (ExpType -> ExpType)] =
+//      λ(t)(xs => λ(t)(ys =>
+//        reduce(λ(x1 => λ(x2 => x1 + x2 )), 0) o map(λ(p => p._1 * p._2 )) $ zip(xs, ys)
+//      ) )
+//    println("=====")
+//    println(PrettyPrinter(p))
 //
-//      println(PrettyPrinter(pp))
-//      TypeChecker(pp)
+//    println("-----")
 //
-//      val ast = ToOpenCL.cmd(pp, Block())
-//      println(OpenCLPrinter()(ast))
+//    val ast = (new ToOpenCL(?, ?))(p, identifier("xs", t), identifier("ys", t))
+//    println(OpenCLPrinter()(ast))
+//
+//    println("-----")
+//  }
+//
+//  {
+//    println("== gemv ==")
+//    val a: Phrase[ExpType] = 5
+//    val b: Phrase[ExpType] = 2
+//    val n = 1048576
+//    val m = n / 2
+//    val xsVectorT: ExpType = ExpType(ArrayType(n, int))
+//    val ysVectorT: ExpType = ExpType(ArrayType(m, int))
+//    val matrixT: ExpType = ExpType(ArrayType(m, ArrayType(n, int)))
+//
+//
+//    val add = λ(x1 => λ(x2 => x1 + x2 ))
+//    val mult = λ(p => p._1 * p._2 )
+//
+//    val scal = λ(a => λ(vec =>  mapSeq(λ(x => x * a )) $ vec ))
+//
+//    val dot = λ(xs => λ(ys => reduceSeq(add, 0) o mapSeq(mult) $ zip(xs, ys) ))
+//
+//    val p =
+//      λ(matrixT)(mat => λ(xsVectorT)(xs => λ(ysVectorT)(ys => {
+//        val lhs = mapSeq( λ(x => x * a ) o dot(xs) ) $ mat
+//        val rhs = scal(b) $ ys
+//        mapSeq(mult) $ zip(lhs, rhs)
+//      }) ) )
+//
+//    println("=====")
+//    println(PrettyPrinter(p))
+//
+//    println("-----")
+//
+//    val toOpenCL = new ToOpenCL(localSize = 128, globalSize = m)
+//
+//    val ast = toOpenCL(p, identifier("mat", matrixT), identifier("xs", xsVectorT), identifier("ys", ysVectorT))
+//    println(OpenCLPrinter()(ast))
+//
+//    println("-----")
+//  }
+//
+////  { // TODO: check this again!!!
+////    println("== join split ==")
+////
+////    val xsVectorT = ExpType(ArrayType(1048576, int))
+////
+////    // results in type error after RewriteToImperative
+////    val p = λ(xsVectorT)(inp =>
+////      join() o split(2048) $ inp
+////    )
+////    println("=====")
+////    println(PrettyPrinter(p))
+////
+////    println("-----")
+////
+////    val ast = (new ToOpenCL(?, ?))(p, identifier("xs", xsVectorT))
+////    println(OpenCLPrinter()(ast))
+////
+////    println("-----")
+////  }
+//
+//  {
+//    println("== asum Nvidia ==")
+//    val xsVectorT: ExpType = ExpType(ArrayType(1048576, int))
+//
+//    val abs = (x: Phrase[ExpType]) => `if`(x < 0, -x, x)
+//
+//    val p = λ(xsVectorT)(inp =>
+//
+//      mapWorkgroup(
+//        mapLocal( reduce(λ( x1 => λ( x2 => x1 + abs(x2) ) ), 0) )
+//      ) o split(128) o split(2048) $ inp
+//    )
+//    println("=====")
+//    println(PrettyPrinter(p))
+//
+//    println("-----")
+//
+//    val ast = (new ToOpenCL(128, ?))(p, identifier("xs", xsVectorT))
+//    println(OpenCLPrinter()(ast))
+//
+//    println("-----")
+//  }
+//
+//  {
+//    println("== PACT paper example ==")
+//    val n: ArithExpr = SizeVar("N")
+//    val xsVectorT: ExpType = ExpType(ArrayType(n, int))
+//    val ysVectorT: ExpType = ExpType(ArrayType(n, int))
+//
+//    val p =
+//      λ(xsVectorT)(xs => λ(ysVectorT)(ys => {
+//
+//        mapWorkgroup(
+//          mapLocal(
+//            reduceSeq(λ(xy => λ(a => a + ( xy._1 * xy._2 ) )), 0)
+//          ) o split(2)
+//        ) o split(128) $ zip(xs, ys)
+//
+//      }) )
+//
+//    println("=====")
+//    println(PrettyPrinter(p))
+//
+//    println("-----")
+//
+//    val ast = (new ToOpenCL(128, ?))(p, identifier("xs", xsVectorT), identifier("ys", ysVectorT))
+//    println(OpenCLPrinter()(ast))
+//
+//    println("-----")
+//  }
+//
+//  {
+//    println("== gemv fused ==")
+//    val alpha = 5
+//    val beta = 2
+//    val a: Phrase[ExpType] = alpha
+//    val b: Phrase[ExpType] = beta
+//    val n: ArithExpr = SizeVar("N")
+//    val m: ArithExpr = n / 2
+//    val xsVectorT: ExpType = ExpType(ArrayType(n, int))
+//    val ysVectorT: ExpType = ExpType(ArrayType(m, int))
+//    val matrixT: ExpType = ExpType(ArrayType(m, ArrayType(n, int)))
+//
+//    val p =
+//      λ(matrixT)(mat => λ(xsVectorT)(xs => λ(ysVectorT)(ys => {
+//
+//        mapWorkgroup(λ(t =>
+//          toGlobal(mapLocal( λ(x =>
+//            x + (t._2 * b)
+//          ) )) o
+//          toLocal(mapLocal(
+//            λ(x => x * a ) o
+//            reduceSeq(λ(y => λ(acc => acc + ( y._1 * y._2 ) )), 0)
+//          )) o split(n) $ zip(xs, t._1)
+//        )) $ zip(mat, ys)
+//
+//      }) ) )
+//
+//    println("=====")
+//    println(PrettyPrinter(p))
+//
+//    println("-----")
+//
+//    val ast = (new ToOpenCL(?, ?))(p, identifier("mat", matrixT), identifier("xs", xsVectorT), identifier("ys", ysVectorT))
+//    println(OpenCLPrinter()(ast))
+//
+//    println("-----")
+//
+////    {
+////      val mat = identifier("mat", matrixT)
+////      val xs = identifier("xs", xsVectorT)
+////      val ys = identifier("ys", ysVectorT)
+////      val outT = TypeChecker(p(mat)(xs)(ys))
+////      val output = identifier("output", AccType(outT.dataType))
+////      val pp =
+////        ParForWorkgroup( n / 2, output, λ(ExpType(int))(v370 => λ(AccType(ArrayType(1, int)))(v371 =>
+////          `new`(ArrayType(1, int), LocalMemory, v350 =>
+////            ParForLocal(1, π2(v350), λ(ExpType(int))(v372 => λ(AccType(int))(v373 =>
+////              `new`(int, PrivateMemory, v374 =>
+////                (π2 (v374) `:=` LiteralPhrase(0)) `;`
+////                  `for`(n, v375 =>
+////                    π2(v374) `:=` (π1(v374) + (
+////                      ((split(n, zip(xs, (zip(mat, ys) `@` v370)._1)) `@` v372) `@` v375)._1
+////                        * ((split(n, zip(xs, (zip(mat, ys) `@` v370)._1)) `@` v372) `@` v375)._2
+////                      ))
+////                  ) `;`
+////                  (π2(v374) `:=` π1(v374) * LiteralPhrase(5))
+////              )
+////            ))) `;`
+////            ParForLocal(1, v371, λ(ExpType(int))(v377 => λ(AccType(int))(v378 =>
+////              v378 `:=` ( (π1(v350) `@` v377) + (zip(mat, ys) `@` v370)._2 * LiteralPhrase(2) )
+////            )))
+////          )
+////        )))
+////
+////      println(PrettyPrinter(pp))
+////      TypeChecker(pp)
+////
+////      val ast = ToOpenCL.cmd(pp, Block())
+////      println(OpenCLPrinter()(ast))
+////    }
+//
+//  }
+//
+//  {
+//    println("== sgemv hawaii best ==")
+//    val n = SizeVar("N")
+//    val m = SizeVar("M")
+//    val matrixT = ExpType(ArrayType(n, ArrayType(m, int)))
+//    val xsVectorT = ExpType(ArrayType(m, int))
+//    val ysVectorT = ExpType(ArrayType(n, int))
+//    val aT = ExpType(int)
+//    val bT = ExpType(int)
+//
+//    val reorderWithStride = (s: ArithExpr) => {
+//      (i: ArithExpr, t: DataType) => {
+//        val n = ir.Type.getLength(DataType.toType(t)) /^ s
+//        (i / n) + s * (i % n)
+//      }
 //    }
+//
+//    val p =
+//      λ(matrixT)(mat => λ(xsVectorT)(xs => λ(ysVectorT)(ys => λ(aT)(a => λ(bT)(b => {
+//
+//        mapWorkgroup(λ(t =>
+//
+//          toGlobal( λ(x =>
+//            (x * a) + (t._2 * b)
+//          ) )
+//          o
+//          toLocal(reduceSeq(λ(y => λ(acc => acc + y)), 0))
+//          o
+//          toLocal(mapLocal(
+//            reduceSeq(λ(y => λ(acc => acc + ( y._1 * y._2 ) )), 0)
+//          )) o split(m /^ 128) o gather(reorderWithStride(128)) $ zip(xs, t._1)
+//
+//        )) $ zip(mat, ys)
+//
+//      }) ) ) ) )
+//
+//    println("=====")
+//    println(PrettyPrinter(p))
+//
+//    println("-----")
+//
+//    val toOpenCL = new ToOpenCL(localSize = 128, globalSize = n)
+//
+//    val ast = toOpenCL(p, identifier("mat", matrixT), identifier("xs", xsVectorT), identifier("ys", ysVectorT), identifier("alpha", aT), identifier("beta", bT))
+//    println(OpenCLPrinter()(ast))
+//
+//    println("-----")
+//  }
+//
+//
+//  {
+//    println("== toLocal ==")
+//    val n: ArithExpr = SizeVar("N")
+//    val xsVectorT: ExpType = ExpType(ArrayType(n, int))
+//
+//    val p =
+//      λ(xsVectorT)(xs =>
+//        toLocal(λ( x => x), xs)
+//      )
+//
+//    println("=====")
+//    println(PrettyPrinter(p))
+//
+//    println("-----")
+//
+//    val ast = (new ToOpenCL(128, ?))(p, identifier("xs", xsVectorT))
+//    println(OpenCLPrinter()(ast))
+//
+//    println("-----")
+//  }
+//
+//  {
+//    println("== test ==")
+//
+//    {
+//      import PhraseType._
+//      val x = NamedVar("x")
+//      val f: `(nat)->`[ExpType] = x -> ExpType(ArrayType(x, int))
+//    }
+//
+//    {
+//      import PhraseType._
+//      val n: ArithExpr = NamedVar("n")
+//      val dt: DataType = float
+//      val f: Phrase[ `(nat)->`[ExpType -> ExpType] ] = _Λ_( l =>
+//        λ(ExpType(ArrayType(l, dt)))( in =>
+//          mapSeq( reduceSeq(λ(y => λ(acc => acc + y)), 0.0f) ) o split(2) $ in
+//        )
+//      )
+//
+//      println( TypeChecker(f) )
+//
+//
+//      println( TypeChecker(f(1024)) )
+//
+//    }
+//
+//  }
 
+  {
+
+    val n: ArithExpr = 1024
+    val dt1: DataType = int
+
+    println(s"exp[$n.$dt1]")
+
+    val t = t"exp[ $n . $n . $dt1 x $dt1 ]"
+    println(s"t: $t")
+
+  }
+
+
+
+  case class Email(local: String, domain: String) {
+    override def toString = local + "@" + domain
+  }
+
+  implicit class EmailHelper(val sc: StringContext) extends AnyVal {
+    def email(args: Any*) = Email("ms", "ed.ac.uk")
   }
 
   {
-    println("== sgemv hawaii best ==")
-    val n = SizeVar("N")
-    val m = SizeVar("M")
-    val matrixT = ExpType(ArrayType(n, ArrayType(m, int)))
-    val xsVectorT = ExpType(ArrayType(m, int))
-    val ysVectorT = ExpType(ArrayType(n, int))
-    val aT = ExpType(int)
-    val bT = ExpType(int)
-
-    val reorderWithStride = (s: ArithExpr) => {
-      (i: ArithExpr, t: DataType) => {
-        val n = ir.Type.getLength(DataType.toType(t)) /^ s
-        (i / n) + s * (i % n)
-      }
-    }
-
-    val p =
-      λ(matrixT)(mat => λ(xsVectorT)(xs => λ(ysVectorT)(ys => λ(aT)(a => λ(bT)(b => {
-
-        mapWorkgroup(λ(t =>
-
-          toGlobal( λ(x =>
-            (x * a) + (t._2 * b)
-          ) )
-          o
-          toLocal(reduceSeq(λ(y => λ(acc => acc + y)), 0))
-          o
-          toLocal(mapLocal(
-            reduceSeq(λ(y => λ(acc => acc + ( y._1 * y._2 ) )), 0)
-          )) o split(m /^ 128) o gather(reorderWithStride(128)) $ zip(xs, t._1)
-
-        )) $ zip(mat, ys)
-
-      }) ) ) ) )
-
-    println("=====")
-    println(PrettyPrinter(p))
-
-    println("-----")
-
-    val toOpenCL = new ToOpenCL(localSize = 128, globalSize = n)
-
-    val ast = toOpenCL(p, identifier("mat", matrixT), identifier("xs", xsVectorT), identifier("ys", ysVectorT), identifier("alpha", aT), identifier("beta", bT))
-    println(OpenCLPrinter()(ast))
-
-    println("-----")
+    val email = email"michel.steuwer@ed.ac.uk"
   }
-
-
-  {
-    println("== toLocal ==")
-    val n: ArithExpr = SizeVar("N")
-    val xsVectorT: ExpType = ExpType(ArrayType(n, int))
-
-    val p =
-      λ(xsVectorT)(xs =>
-        toLocal(λ( x => x), xs)
-      )
-
-    println("=====")
-    println(PrettyPrinter(p))
-
-    println("-----")
-
-    val ast = (new ToOpenCL(128, ?))(p, identifier("xs", xsVectorT))
-    println(OpenCLPrinter()(ast))
-
-    println("-----")
-  }
-
-  {
-    println("== test ==")
-
-    {
-      import PhraseType._
-      val x = NamedVar("x")
-      val f: `(nat)->`[ExpType] = x -> ExpType(ArrayType(x, int))
-    }
-
-    {
-      import PhraseType._
-      val n: ArithExpr = NamedVar("n")
-      val dt: DataType = float
-      val f: Phrase[ `(nat)->`[ExpType -> ExpType] ] = _Λ_( l =>
-        λ(ExpType(ArrayType(l, dt)))( in =>
-          mapSeq( reduceSeq(λ(y => λ(acc => acc + y)), 0.0f) ) o split(2) $ in
-        )
-      )
-
-      println( TypeChecker(f) )
-
-
-      println( TypeChecker(f(1024)) )
-
-    }
-
-  }
-
 }

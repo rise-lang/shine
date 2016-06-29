@@ -44,11 +44,11 @@ case class TruncExp(n: ArithExpr,
 
   override def prettyPrint: String = s"(truncExp $array)"
 
-  override def toOpenCL(ocl: ToOpenCL,
+  override def toOpenCL(env: ToOpenCL.Environment,
                         arrayAccess: List[(ArithExpr, ArithExpr)],
                         tupleAccess: List[ArithExpr],
                         dt: DataType): Expression = {
-    ToOpenCL.exp(array, ocl, arrayAccess, tupleAccess, dt)
+    ToOpenCL.exp(array, env, arrayAccess, tupleAccess, dt)
   }
 
 }
