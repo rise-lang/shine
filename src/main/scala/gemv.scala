@@ -1,7 +1,6 @@
 
 import Core._
 import DSL._
-import Core.PhraseType.->
 import apart.arithmetic._
 import opencl.generator.OpenCLPrinter
 

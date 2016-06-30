@@ -7,14 +7,17 @@ import opencl.generator.OpenCLAST.VarRef
 
 import scala.xml.Elem
 
-case class ToGlobalAcc(p: Phrase[AccType]) extends AccPattern{
+case class ToGlobalAcc(dt: DataType,
+                       p: Phrase[AccType]) extends AccPattern{
 
   override def typeCheck(): AccType = {
     import TypeChecker._
-    TypeChecker(p) match {
-      case AccType(dt) => AccType(dt)
-      case x => error(x.toString, "AccType")
-    }
+    p.t =?= acc"[$dt]"
+    acc"[$dt]"
+//    TypeChecker(p) match {
+//      case AccType(dt) => AccType(dt)
+//      case x => error(x.toString, "AccType")
+//    }
   }
 
   override def eval(s: Store): AccIdentifier = ???
@@ -26,7 +29,7 @@ case class ToGlobalAcc(p: Phrase[AccType]) extends AccPattern{
                tupleAccess: List[ArithExpr], dt: DataType): VarRef = ???
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[AccType] = {
-    ToGlobalAcc(VisitAndRebuild(p, fun))
+    ToGlobalAcc(fun(dt), VisitAndRebuild(p, fun))
   }
 
   override def prettyPrint: String = s"(toGlobalAcc ${PrettyPrinter(p)})"

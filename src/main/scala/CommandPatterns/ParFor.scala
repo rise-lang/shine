@@ -21,23 +21,26 @@ abstract class AbstractParFor(val n: ArithExpr,
 
   override def typeCheck(): CommandType = {
     import TypeChecker._
+    out.t =?= acc"[$n.$dt]"
+    body.t =?= t"exp[$int] -> acc[$dt] -> comm"
+    comm
 
-    check(TypeChecker(n), ExpType(int))
-    val nInt = OperationalSemantics.evalIndexExp(new OperationalSemantics.Store(), n)
-
-    TypeChecker(out) match {
-      case AccType(ArrayType(m, dt_)) if dt_ == dt =>
-        if (nInt == m) {
-          TypeChecker(body) match {
-            case FunctionType(ExpType(i), FunctionType(AccType(dt2), CommandType())) =>
-              if (i == int && dt == dt2) {
-                CommandType()
-              } else error(s"$i, $dt, and $dt2", expected = "to be int and the last two to match")
-            case t_ => error(t_.toString, expected = "FunctionType")
-          }
-        } else error(s"$nInt != $m", expected = "them to match")
-      case t_ => error(t_.toString, expected = "ArrayType")
-    }
+//    check(TypeChecker(n), ExpType(int))
+//    val nInt = OperationalSemantics.evalIndexExp(new OperationalSemantics.Store(), n)
+//
+//    TypeChecker(out) match {
+//      case AccType(ArrayType(m, dt_)) if dt_ == dt =>
+//        if (nInt == m) {
+//          TypeChecker(body) match {
+//            case FunctionType(ExpType(i), FunctionType(AccType(dt2), CommandType())) =>
+//              if (i == int && dt == dt2) {
+//                CommandType()
+//              } else error(s"$i, $dt, and $dt2", expected = "to be int and the last two to match")
+//            case t_ => error(t_.toString, expected = "FunctionType")
+//          }
+//        } else error(s"$nInt != $m", expected = "them to match")
+//      case t_ => error(t_.toString, expected = "ArrayType")
+//    }
   }
 
   override def eval(s: Store): Store = {

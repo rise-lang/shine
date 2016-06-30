@@ -16,8 +16,8 @@ case class For(n: ArithExpr,
 
   override def typeCheck(): CommandType = {
     import TypeChecker._
-    check(TypeChecker(body), FunctionType(ExpType(int), CommandType()))
-    CommandType()
+    body.t =?= t"exp[$int] -> comm"
+    comm
   }
 
   override def eval(s: Store): Store = {

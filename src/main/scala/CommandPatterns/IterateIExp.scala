@@ -22,35 +22,44 @@ case class IterateIExp(n: ArithExpr,
 
   override def typeCheck(): CommandType = {
     import TypeChecker._
-    TypeChecker(in) match {
-      case ExpType(ArrayType(nkm_, dt1_))
-        if nkm_ == (n.pow(k) * m) && dt1_ == dt =>
-
-        setParamType(out, ExpType(ArrayType(m, dt)))
-        TypeChecker(out) match {
-          case FunctionType(ExpType(ArrayType(m_, dt2_)), CommandType()) =>
-            if (m_ != m || dt2_ != dt)
-              error(s"[$m_.$dt2_]", s"[$m.$dt]")
-          case x => error(x.toString, "FunctionType")
-        }
-
-        f match {
-          case NatDependentLambdaPhrase(l, body) =>
-            setParamType(body, AccType(ArrayType(l /^ n, dt)))
-            setSecondParamType(body, ExpType(ArrayType(l, dt)))
-            TypeChecker(f) match {
-              case NatDependentFunctionType(_,
-                FunctionType(AccType(ArrayType(l_, dt3_)),
-                  FunctionType(ExpType(ArrayType(ln_, dt4_)), CommandType())))
-                if l_ == l && dt3_ == dt && ln_ == l*n && dt4_ == dt =>
-                CommandType()
-              case ft => error(ft.toString, "FunctionType")
-            }
-          case _ => error(f.toString, "NatDependentLambdaPhrase")
-        }
-
-      case t_ => error(t_.toString, "ArrayType")
+    out.t =?= t"(exp[$m.$dt] -> comm)"
+    f match {
+      case NatDependentLambdaPhrase(l, _) =>
+        f.t =?= t"($l : nat) -> acc[${l/^n}.$dt] -> exp[$l.$dt] -> comm"
+      case _ => throw new Exception("This should not happen")
     }
+    in.t =?= exp"[${n.pow(k)*m}.$dt]"
+    comm
+
+//    TypeChecker(in) match {
+//      case ExpType(ArrayType(nkm_, dt1_))
+//        if nkm_ == (n.pow(k) * m) && dt1_ == dt =>
+//
+//        setParamType(out, ExpType(ArrayType(m, dt)))
+//        TypeChecker(out) match {
+//          case FunctionType(ExpType(ArrayType(m_, dt2_)), CommandType()) =>
+//            if (m_ != m || dt2_ != dt)
+//              error(s"[$m_.$dt2_]", s"[$m.$dt]")
+//          case x => error(x.toString, "FunctionType")
+//        }
+//
+//        f match {
+//          case NatDependentLambdaPhrase(l, body) =>
+//            setParamType(body, AccType(ArrayType(l /^ n, dt)))
+//            setSecondParamType(body, ExpType(ArrayType(l, dt)))
+//            TypeChecker(f) match {
+//              case NatDependentFunctionType(_,
+//                FunctionType(AccType(ArrayType(l_, dt3_)),
+//                  FunctionType(ExpType(ArrayType(ln_, dt4_)), CommandType())))
+//                if l_ == l && dt3_ == dt && ln_ == l*n && dt4_ == dt =>
+//                CommandType()
+//              case ft => error(ft.toString, "FunctionType")
+//            }
+//          case _ => error(f.toString, "NatDependentLambdaPhrase")
+//        }
+//
+//      case t_ => error(t_.toString, "ArrayType")
+//    }
   }
 
   override def eval(s: Store): Store = ???

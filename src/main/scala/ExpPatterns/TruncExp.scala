@@ -2,7 +2,6 @@ package ExpPatterns
 
 import Core._
 import Core.OperationalSemantics._
-import Core.PhraseType.->
 import apart.arithmetic.ArithExpr
 import opencl.generator.OpenCLAST.Expression
 
@@ -16,13 +15,16 @@ case class TruncExp(n: ArithExpr,
 
   override def typeCheck(): ExpType = {
     import TypeChecker._
-    TypeChecker(array) match {
+    array.t =?= exp"[$n.$dt]"
+    exp"[$m.$dt]"
+  }
+
+  override def inferTypes(): TruncExp = {
+    import TypeInference._
+    val array_ = TypeInference(array)
+    array_.t match {
       case ExpType(ArrayType(n_, dt_)) =>
-        if (n_ == n && dt_ == dt) {
-          ExpType(ArrayType(m, dt))
-        } else {
-          error(s"[$n_.$dt_]", s"[$n.$dt]")
-        }
+        TruncExp(n_, m, dt_, array_)
       case x => error(x.toString, "ArrayType")
     }
   }

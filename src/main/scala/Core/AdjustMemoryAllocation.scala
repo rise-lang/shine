@@ -1,7 +1,6 @@
 package Core
 
 import CommandPatterns._
-import Core.PhraseType.x
 import apart.arithmetic.ArithExpr
 
 object AdjustMemoryAllocation {
@@ -16,7 +15,6 @@ object AdjustMemoryAllocation {
               case GlobalMemory =>
                 n.f.asInstanceOf[LambdaPhrase[(ExpType x AccType), CommandType]].param.name
                 val nn = New(n.dt, GlobalMemory, VisitAndRebuild(n.f, this))
-                nn.t = n.t.asInstanceOf[CommandType]
                 Stop(nn.asInstanceOf[Phrase[U]])
               case LocalMemory => Continue(n, this)
               case PrivateMemory => Continue(n, this)

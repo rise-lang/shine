@@ -20,32 +20,37 @@ case class ReduceIExp(n: ArithExpr,
 
   override def typeCheck(): CommandType = {
     import TypeChecker._
-    (TypeChecker(init), TypeChecker(in)) match {
-      case (ExpType(dt2_), ExpType(ArrayType(n_, dt1_)))
-        if n == n_ && dt1 == dt1_ && dt2 == dt2_ =>
-
-        setParamType(out, ExpType(dt2))
-        TypeChecker(out) match {
-          case FunctionType(ExpType(dt), CommandType()) =>
-            if (dt2 != dt) error(dt2.toString + " and " + dt.toString, expected = "them to match")
-          case ty => error(ty.toString, "FunctionType")
-        }
-
-        setParamType(f, AccType(dt2))
-        setSecondParamType(f, ExpType(dt1))
-        setThirdParamType(f, ExpType(dt2))
-        TypeChecker(f) match {
-          case FunctionType(AccType(t1), FunctionType(ExpType(t2), FunctionType(ExpType(t3), CommandType()))) =>
-            if (dt2 == t1 && dt1 == t2 && dt2 == t3) CommandType()
-            else {
-              error(dt2.toString + ", " + t1.toString + " as well as " +
-                dt1.toString + ", " + t2.toString + " and " + dt2.toString + ", " + t3.toString,
-                expected = "them to match")
-            }
-          case x => error(x.toString, "FunctionType")
-        }
-      case x => error(x.toString, "(AccType, ExpType, ArrayType)")
-    }
+    out.t =?= t"exp[$dt2] -> comm"
+    f.t =?= t"acc[$dt2] -> exp[$dt1] -> exp[$dt2] -> comm"
+    init.t =?= exp"[$dt2]"
+    in.t =?= exp"[$n.$dt1]"
+    comm
+//    (TypeChecker(init), TypeChecker(in)) match {
+//      case (ExpType(dt2_), ExpType(ArrayType(n_, dt1_)))
+//        if n == n_ && dt1 == dt1_ && dt2 == dt2_ =>
+//
+//        setParamType(out, ExpType(dt2))
+//        TypeChecker(out) match {
+//          case FunctionType(ExpType(dt), CommandType()) =>
+//            if (dt2 != dt) error(dt2.toString + " and " + dt.toString, expected = "them to match")
+//          case ty => error(ty.toString, "FunctionType")
+//        }
+//
+//        setParamType(f, AccType(dt2))
+//        setSecondParamType(f, ExpType(dt1))
+//        setThirdParamType(f, ExpType(dt2))
+//        TypeChecker(f) match {
+//          case FunctionType(AccType(t1), FunctionType(ExpType(t2), FunctionType(ExpType(t3), CommandType()))) =>
+//            if (dt2 == t1 && dt1 == t2 && dt2 == t3) CommandType()
+//            else {
+//              error(dt2.toString + ", " + t1.toString + " as well as " +
+//                dt1.toString + ", " + t2.toString + " and " + dt2.toString + ", " + t3.toString,
+//                expected = "them to match")
+//            }
+//          case x => error(x.toString, "FunctionType")
+//        }
+//      case x => error(x.toString, "(AccType, ExpType, ArrayType)")
+//    }
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[CommandType] = {

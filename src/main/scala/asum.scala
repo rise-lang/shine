@@ -23,9 +23,11 @@ object asum extends App {
     reduce(add, 0.0f) o map(abs) $ input
   )
 
-  TypeChecker(high_level)
+  val high_level_ = TypeInference(high_level)
 
-  println(high_level)
+  TypeChecker(high_level_)
+
+  println(high_level_)
 
   println(VisitAndRebuild.copy(high_level))
 

@@ -13,9 +13,9 @@ case class Seq(c1: Phrase[CommandType],
 
   override def typeCheck(): CommandType = {
     import TypeChecker._
-    check(TypeChecker(c1), CommandType())
-    check(TypeChecker(c2), CommandType())
-    CommandType()
+    c1.t =?= comm
+    c2.t =?= comm
+    comm
   }
 
   override def eval(s: Store): Store = {

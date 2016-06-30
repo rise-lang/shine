@@ -10,31 +10,39 @@ import apart.arithmetic.ArithExpr
 
 import scala.xml.Elem
 
-abstract class AbstractReduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
+abstract class AbstractReduce(n: ArithExpr,
+                              dt1: DataType,
+                              dt2: DataType,
+                              f: Phrase[ExpType -> (ExpType -> ExpType)],
                               init: Phrase[ExpType],
                               array: Phrase[ExpType],
-                              makeReduce: (Phrase[ExpType -> (ExpType -> ExpType)], Phrase[ExpType], Phrase[ExpType]) => AbstractReduce,
+                              makeReduce: (ArithExpr, DataType, DataType, Phrase[ExpType -> (ExpType -> ExpType)], Phrase[ExpType], Phrase[ExpType]) => AbstractReduce,
                               makeReduceIAcc: (ArithExpr, DataType, DataType, Phrase[AccType], Phrase[AccType -> (ExpType -> (ExpType -> CommandType))], Phrase[ExpType], Phrase[ExpType]) => ReduceIAcc,
                               makeReduceIExp: (ArithExpr, DataType, DataType, Phrase[ExpType -> CommandType], Phrase[AccType -> (ExpType -> (ExpType -> CommandType))], Phrase[ExpType], Phrase[ExpType]) => ReduceIExp)
   extends ExpPattern {
 
-  protected var n: ArithExpr = null
-  protected var dt1: DataType = null
-  protected var dt2: DataType = null
-
   override def typeCheck(): ExpType = {
     import TypeChecker._
-    (TypeChecker(init), TypeChecker(array)) match {
+    f.t =?= t"exp[$dt1] -> exp[$dt2] -> exp[$dt2]"
+    init.t =?= exp"[$dt2]"
+    array.t =?= exp"[$n.$dt1]"
+    exp"[$dt2]"
+  }
+
+  override def inferTypes(): AbstractReduce = {
+    import TypeInference._
+    val array_ = TypeInference(array)
+    val init_ = TypeInference(init)
+    (init_.t, array_.t) match {
       case (ExpType(dt2_), ExpType(ArrayType(n_, dt1_))) =>
-        n = n_; dt1 = dt1_; dt2 = dt2_
-        setParamType(f, ExpType(dt1))
-        setSecondParamType(f, ExpType(dt2))
-        TypeChecker(f) match {
+        val f_ = TypeInference.setParamTypes(f, exp"[$dt1_]", exp"[$dt2_]")
+        f_.t match {
           case FunctionType(ExpType(t1), FunctionType(ExpType(t2), ExpType(t3))) =>
-            if (dt1 == t1 && dt2 == t2 && dt2 == t3) ExpType(dt2)
-            else {
-              error(dt1.toString + ", " + t1.toString + " as well as " +
-                dt2.toString + ", " + t2.toString + " and " + t3.toString,
+            if (dt1_ == t1 && dt2_ == t2 && dt2_ == t3) {
+              makeReduce(n_, dt1_, dt2_, f_, init_, array_)
+            } else {
+              error(dt1_.toString + ", " + t1.toString + " as well as " +
+                dt2_.toString + ", " + t2.toString + " and " + t3.toString,
                 expected = "them to match")
             }
           case x => error(x.toString, "FunctionType")
@@ -44,11 +52,7 @@ abstract class AbstractReduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[ExpType] = {
-    val r = makeReduce(VisitAndRebuild(f, fun), VisitAndRebuild(init, fun), VisitAndRebuild(array, fun))
-    r.n = fun(n)
-    r.dt1 = fun(dt1)
-    r.dt2 = fun(dt2)
-    r
+    makeReduce(fun(n), fun(dt1), fun(dt2), VisitAndRebuild(f, fun), VisitAndRebuild(init, fun), VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): Data = {
@@ -74,12 +78,12 @@ abstract class AbstractReduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
     val I = init
     val E = array
 
-    exp( E )(λ( ExpType(ArrayType(n, dt1)) )(x =>
-      exp( I )(λ( ExpType(dt2) )(y =>
+    exp(E)(λ(ExpType(ArrayType(n, dt1)))(x =>
+      exp(I)(λ(ExpType(dt2))(y =>
         makeReduceIAcc(n, dt1, dt2, A,
-          λ( AccType(dt2) )( o =>
-            λ( ExpType(dt1) )( x =>
-              λ( ExpType(dt2) )( y => acc( F(x)(y) )( o ) ) ) ),
+          λ(AccType(dt2))(o =>
+            λ(ExpType(dt1))(x =>
+              λ(ExpType(dt2))(y => acc(F(x)(y))(o)))),
           y,
           x
         )
@@ -91,12 +95,14 @@ abstract class AbstractReduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
     assert(n != null && dt1 != null && dt2 != null)
     import RewriteToImperative._
 
-    exp(array)(λ( ExpType(ArrayType(n, dt1)) ) { x =>
-      exp(init)(λ( ExpType(dt2) ) { y =>
+    exp(array)(λ(ExpType(ArrayType(n, dt1))) { x =>
+      exp(init)(λ(ExpType(dt2)) { y =>
         makeReduceIExp(n, dt1, dt2, C,
-          λ( AccType(dt2) ) { o =>
-            λ( ExpType(dt1) ) { x =>
-              λ( ExpType(dt2) ) { y => acc( f(x)(y) )( o ) } } },
+          λ(AccType(dt2)) { o =>
+            λ(ExpType(dt1)) { x =>
+              λ(ExpType(dt2)) { y => acc(f(x)(y))(o) }
+            }
+          },
           y,
           x
         )
@@ -121,6 +127,10 @@ abstract class AbstractReduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
     })
 }
 
-case class Reduce(f: Phrase[ExpType -> (ExpType -> ExpType)],
+case class Reduce(n: ArithExpr,
+                  dt1: DataType,
+                  dt2: DataType,
+                  f: Phrase[ExpType -> (ExpType -> ExpType)],
                   init: Phrase[ExpType],
-                  array: Phrase[ExpType]) extends AbstractReduce(f, init, array, Reduce, ReduceIAcc, ReduceIExp)
+                  array: Phrase[ExpType])
+  extends AbstractReduce(n, dt1, dt2, f, init, array, Reduce, ReduceIAcc, ReduceIExp)

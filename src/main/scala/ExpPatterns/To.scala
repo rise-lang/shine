@@ -8,27 +8,32 @@ import DSL._
 
 import scala.xml.Elem
 
-abstract class To(f: Phrase[ExpType -> ExpType],
+abstract class To(dt1: DataType,
+                  dt2: DataType,
+                  f: Phrase[ExpType -> ExpType],
                   input: Phrase[ExpType],
                   addressSpace: AddressSpace,
-                  makeTo: (Phrase[ExpType -> ExpType], Phrase[ExpType]) => To) extends ExpPattern {
-
-  private var dt1: DataType = null
-  private var dt2: DataType = null
+                  makeTo: (DataType, DataType, Phrase[ExpType -> ExpType], Phrase[ExpType]) => To) extends ExpPattern {
 
   override def typeCheck(): ExpType = {
     import TypeChecker._
-    TypeChecker(input) match {
+    f.t =?= t"exp[$dt1] -> exp[$dt2]"
+    input.t =?= exp"[$dt1]"
+    exp"[$dt2]"
+  }
+
+  override def inferTypes(): To = {
+    import TypeInference._
+    val input_ = TypeInference(input)
+    input_.t match {
       case ExpType(dt1_) =>
-        dt1 = dt1_
-        setParamType(f, ExpType(dt1))
-        TypeChecker(f) match {
+        val f_ = TypeInference.setParamType(f, exp"[$dt1_]")
+        f_.t match {
           case FunctionType(ExpType(t1_), ExpType(dt2_)) =>
-            dt2 = dt2_
-            if (dt1 == t1_) {
-              ExpType(dt2)
+            if (dt1_ == t1_) {
+              makeTo(dt1_, dt2_, f_, input_)
             } else {
-              error(dt1.toString + " and " + t1_.toString, expected = "them to match")
+              error(dt1_.toString + " and " + t1_.toString, expected = "them to match")
             }
           case x => error(x.toString, "FunctionType")
         }
@@ -39,10 +44,7 @@ abstract class To(f: Phrase[ExpType -> ExpType],
   override def eval(s: Store): Data = OperationalSemantics.eval(s, input)
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[ExpType] = {
-    val tl = makeTo(VisitAndRebuild(f, fun), VisitAndRebuild(input, fun))
-    tl.dt1 = fun(dt1)
-    tl.dt2 = fun(dt2)
-    tl
+    makeTo(fun(dt1), fun(dt2), VisitAndRebuild(f, fun), VisitAndRebuild(input, fun))
   }
 
   override def prettyPrint: String =

@@ -2,7 +2,6 @@
 import Core._
 import DSL._
 import Compiling._
-import Core.PhraseType.->
 import ExpPatterns._
 import apart.arithmetic._
 import opencl.generator.OpenCLPrinter

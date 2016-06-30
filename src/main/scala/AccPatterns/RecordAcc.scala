@@ -12,7 +12,8 @@ case class RecordAcc(fst: Phrase[AccType],
   extends AccPattern {
 
   override def typeCheck(): AccType = {
-    AccType(RecordType( TypeChecker(fst).dataType, TypeChecker(snd).dataType ))
+    acc"[${fst.t.dataType} x ${snd.t.dataType}]"
+//    AccType(RecordType( TypeChecker(fst).dataType, TypeChecker(snd).dataType ))
   }
 
   override def eval(s: Store): AccIdentifier = {

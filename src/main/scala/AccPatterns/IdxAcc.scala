@@ -15,16 +15,20 @@ case class IdxAcc(n: ArithExpr,
 
   override def typeCheck(): AccType = {
     import TypeChecker._
-    check(TypeChecker(index), ExpType(int))
-    TypeChecker(array) match {
-      case AccType(ArrayType(n_, dt_)) =>
-        if (dt == dt_ && n == n_) {
-          AccType(dt)
-        } else {
-          error(acc"[$n_.$dt]", acc"[$n.$dt]")
-        }
-      case x => error(x.toString, "ArrayType")
-    }
+    index.t =?= exp"[$int]"
+    array.t =?= acc"[$n.$dt]"
+    acc"[$dt]"
+
+//    check(TypeChecker(index), ExpType(int))
+//    TypeChecker(array) match {
+//      case AccType(ArrayType(n_, dt_)) =>
+//        if (dt == dt_ && n == n_) {
+//          AccType(dt)
+//        } else {
+//          error(acc"[$n_.$dt]", acc"[$n.$dt]")
+//        }
+//      case x => error(x.toString, "ArrayType")
+//    }
   }
 
   override def eval(s: Store): AccIdentifier = {

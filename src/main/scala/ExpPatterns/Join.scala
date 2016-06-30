@@ -2,7 +2,6 @@ package ExpPatterns
 
 import AccPatterns.JoinAcc
 import Core.OperationalSemantics._
-import Core.PhraseType.->
 import Core._
 import Compiling.RewriteToImperative
 import DSL._
@@ -12,29 +11,29 @@ import opencl.generator.OpenCLAST.Expression
 
 import scala.xml.Elem
 
-case class Join(array: Phrase[ExpType])
+case class Join(n: ArithExpr,
+                m: ArithExpr,
+                dt: DataType,
+                array: Phrase[ExpType])
   extends ExpPattern with ViewExpPattern {
-
-  private var n: ArithExpr = null
-  private var m: ArithExpr = null
-  private var dt: DataType = null
 
   override def typeCheck(): ExpType = {
     import TypeChecker._
-    TypeChecker(array) match {
-      case ExpType(ArrayType(n_, ArrayType(m_, dt_))) =>
-        n = n_; m = m_; dt = dt_
-        ExpType(ArrayType(n*m, dt))
-      case x => error(x.toString, "ArrayType(ArrayType)")
+    array.t =?= exp"[$n.$m.$dt]"
+    exp"[${n * m}.$dt]"
+  }
+
+  override def inferTypes(): Join = {
+    import TypeInference._
+    val array_ = TypeInference(array)
+    array_.t match {
+      case ExpType(ArrayType(n_, ArrayType(m_, dt_))) => Join(n_, m_, dt_, array_)
+      case x => error(x.toString, "ExpType(ArrayType(ArrayType))")
     }
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[ExpType] = {
-    val j = Join(VisitAndRebuild(array, fun))
-    j.n = fun(n)
-    j.m = fun(m)
-    j.dt = fun(dt)
-    j
+    Join(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): Data = {
@@ -60,9 +59,9 @@ case class Join(array: Phrase[ExpType])
     val chunkId = idx._1 / n
     val chunkElemId = idx._1 % n
 
-    val l = Type.getLengths( DataType.toType(t.dataType) ).reduce(_*_)
+    val l = Type.getLengths(DataType.toType(t.dataType)).reduce(_ * _)
 
-    val newAs = (chunkId, l * n) :: (chunkElemId, l) :: stack
+    val newAs = (chunkId, l * n) ::(chunkElemId, l) :: stack
 
     ToOpenCL.exp(array, env, newAs, tupleAccess, dt)
   }
@@ -83,7 +82,7 @@ case class Join(array: Phrase[ExpType])
   override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
     import RewriteToImperative._
     exp(array)(λ(array.t) { x =>
-      C(Join(x))
+      C(Join(n, m, dt, x))
     })
   }
 }

@@ -15,13 +15,15 @@ case class SplitAcc(n: ArithExpr,
 
   override def typeCheck(): AccType = {
     import TypeChecker._
-    TypeChecker(array) match {
-      case AccType(ArrayType(m_, ArrayType(n_, dt_)))
-        if n_ == n && m_ == m && dt == dt_ =>
-
-        AccType(ArrayType(n*m, dt))
-      case x => error(x.toString, "ArrayType(ArrayType)")
-    }
+    array.t =?= acc"[$m.$n.$dt]"
+    acc"[${n * m}.$dt]"
+//    TypeChecker(array) match {
+//      case AccType(ArrayType(m_, ArrayType(n_, dt_)))
+//        if n_ == n && m_ == m && dt == dt_ =>
+//
+//        AccType(ArrayType(n*m, dt))
+//      case x => error(x.toString, "ArrayType(ArrayType)")
+//    }
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[AccType] = {

@@ -2,7 +2,6 @@ package ExpPatterns
 
 import CommandPatterns._
 import Core._
-import Core.PhraseType._
 import Core.OperationalSemantics._
 import DSL._
 import Compiling.RewriteToImperative
@@ -10,42 +9,43 @@ import apart.arithmetic.ArithExpr
 
 import scala.xml.Elem
 
-abstract class AbstractMap(f: Phrase[ExpType -> ExpType],
+abstract class AbstractMap(n: ArithExpr,
+                           dt1: DataType,
+                           dt2: DataType,
+                           f: Phrase[ExpType -> ExpType],
                            array: Phrase[ExpType],
-                           makeMap: (Phrase[ExpType -> ExpType], Phrase[ExpType]) => AbstractMap,
+                           makeMap: (ArithExpr, DataType, DataType, Phrase[ExpType -> ExpType], Phrase[ExpType]) => AbstractMap,
                            makeMapI: (ArithExpr, DataType, DataType, Phrase[AccType], Phrase[AccType -> (ExpType -> CommandType)], Phrase[ExpType]) => AbstractMapI)
   extends ExpPattern {
 
-  protected var n: ArithExpr = null
-  protected var dt1: DataType = null
-  protected var dt2: DataType = null
-
   override def typeCheck(): ExpType = {
     import TypeChecker._
-    TypeChecker(array) match {
+    f.t =?= t"exp[$dt1] -> exp[$dt2]"
+    array.t =?= exp"[$n.$dt1]"
+    exp"[$n.$dt2]"
+  }
+
+  override def inferTypes(): AbstractMap = {
+    import TypeInference._
+    val array_ = TypeInference(array)
+    array_.t match {
       case ExpType(ArrayType(n_, dt1_)) =>
-        n = n_; dt1 = dt1_
-        setParamType(f, ExpType(dt1))
-        TypeChecker(f) match {
-          case FunctionType(ExpType(t_), ExpType(dt2_)) =>
-            dt2 = dt2_
-            if (dt1 == t_) {
-              ExpType(ArrayType(n, dt2))
+        val f_ = TypeInference.setParamType(f, exp"[$dt1_]")
+        f_.t match {
+          case FunctionType(ExpType(dt1__), ExpType(dt2_)) =>
+            if (dt1_ == dt1__) {
+              makeMap(n_, dt1_, dt2_, f_, array_)
             } else {
-              error(dt1.toString + " and " + t_.toString, expected = "them to match")
+              error(s"$dt1__", s"$dt1_")
             }
-          case t_ => error(t_.toString, "FunctionType")
+          case x => error(x.toString, "FunctionType")
         }
-      case t_ => error(t_.toString, "ArrayType")
+      case x => error(x.toString, "ArrayType")
     }
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[ExpType] = {
-    val m = makeMap(VisitAndRebuild(f, fun), VisitAndRebuild(array, fun))
-    m.n = fun(n)
-    m.dt1 = fun(dt1)
-    m.dt2 = fun(dt2)
-    m
+    makeMap(fun(n), fun(dt1), fun(dt2), VisitAndRebuild(f, fun), VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): Data = {
@@ -66,10 +66,10 @@ abstract class AbstractMap(f: Phrase[ExpType -> ExpType],
     val F = f
     val E = array
 
-    exp( E )(λ( ExpType(ArrayType(n, dt1)) ) { x =>
+    exp(E)(λ(ExpType(ArrayType(n, dt1))) { x =>
       makeMapI(n, dt1, dt2, A,
-        λ( AccType(dt2) )( o =>
-          λ( ExpType(dt1) )( x => acc( F(x) )(o) ) ),
+        λ(AccType(dt2))(o =>
+          λ(ExpType(dt1))(x => acc(F(x))(o))),
         x
       )
     })
@@ -82,7 +82,7 @@ abstract class AbstractMap(f: Phrase[ExpType -> ExpType],
 
     `new`(ArrayType(n, dt2), GlobalMemory, tmp =>
       acc(this)(tmp.wr) `;`
-      C(tmp.rd)
+        C(tmp.rd)
     )
   }
 
@@ -91,14 +91,21 @@ abstract class AbstractMap(f: Phrase[ExpType -> ExpType],
 
   override def xmlPrinter: Elem =
     <map n={ToString(n)} dt1={ToString(dt1)} dt2={ToString(dt2)}>
-      <f type={ToString(ExpType(dt1) -> ExpType(dt2))}>{Core.xmlPrinter(f)}</f>
-      <input type={ToString(ExpType(ArrayType(n, dt1)))}>{Core.xmlPrinter(array)}</input>
+      <f type={ToString(ExpType(dt1) -> ExpType(dt2))}>
+        {Core.xmlPrinter(f)}
+      </f>
+      <input type={ToString(ExpType(ArrayType(n, dt1)))}>
+        {Core.xmlPrinter(array)}
+      </input>
     </map>.copy(label = {
       val name = this.getClass.getSimpleName
       Character.toLowerCase(name.charAt(0)) + name.substring(1)
     })
 }
 
-case class Map(f: Phrase[ExpType -> ExpType],
+case class Map(n: ArithExpr,
+               dt1: DataType,
+               dt2: DataType,
+               f: Phrase[ExpType -> ExpType],
                array: Phrase[ExpType])
-  extends AbstractMap(f, array, Map, MapI)
+  extends AbstractMap(n, dt1, dt2, f, array, Map, MapI)

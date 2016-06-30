@@ -3,7 +3,6 @@ package ExpPatterns
 import AccPatterns.SplitAcc
 import Core._
 import Core.OperationalSemantics._
-import Core.PhraseType.->
 import Compiling.RewriteToImperative
 import DSL._
 import apart.arithmetic.ArithExpr
@@ -12,27 +11,29 @@ import opencl.generator.OpenCLAST.Expression
 import scala.xml.Elem
 
 case class Split(n: ArithExpr,
+                 m: ArithExpr,
+                 dt: DataType,
                  array: Phrase[ExpType])
   extends ExpPattern with ViewExpPattern {
 
-  private var m: ArithExpr = null
-  private var dt: DataType = null
-
   override def typeCheck(): ExpType = {
     import TypeChecker._
-    TypeChecker(array) match {
+    array.t =?= exp"[${m * n}, $dt]"
+    exp"[$m.$n.$dt]"
+  }
+
+  override def inferTypes(): Split = {
+    import TypeInference._
+    val array_ = TypeInference(array)
+    array_.t match {
       case ExpType(ArrayType(mn_, dt_)) =>
-        m = mn_ /^ n; dt = dt_
-        ExpType(ArrayType(m, ArrayType(n, dt)))
+        Split(n, mn_ /^ n, dt_, array_)
       case x => error(x.toString, "ArrayType")
     }
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[ExpType] = {
-    var s = Split(n, VisitAndRebuild(array, fun))
-    s.m = fun(m)
-    s.dt = fun(dt)
-    s
+    Split(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): Data = {
@@ -86,7 +87,7 @@ case class Split(n: ArithExpr,
   override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
     import RewriteToImperative._
     exp(array)(λ(array.t) { x =>
-      C(Split(n, x))
+      C(Split(n, m, dt, x))
     })
   }
 }

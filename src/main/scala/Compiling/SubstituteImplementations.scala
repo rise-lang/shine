@@ -1,7 +1,6 @@
 package Compiling
 
 import Core._
-import Core.PhraseType.{->, `(nat)->`}
 
 import scala.collection.immutable
 

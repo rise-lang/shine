@@ -7,14 +7,17 @@ import opencl.generator.OpenCLAST.VarRef
 
 import scala.xml.Elem
 
-case class ToLocalAcc(p: Phrase[AccType]) extends AccPattern{
+case class ToLocalAcc(dt: DataType,
+                      p: Phrase[AccType]) extends AccPattern{
 
   override def typeCheck(): AccType = {
     import TypeChecker._
-    TypeChecker(p) match {
-      case AccType(dt) => AccType(dt)
-      case x => error(x.toString, "AccType")
-    }
+    p.t =?= acc"[$dt]"
+    acc"[$dt]"
+//    TypeChecker(p) match {
+//      case AccType(dt) => AccType(dt)
+//      case x => error(x.toString, "AccType")
+//    }
   }
 
   override def eval(s: Store): AccIdentifier = ???
@@ -26,7 +29,7 @@ case class ToLocalAcc(p: Phrase[AccType]) extends AccPattern{
                tupleAccess: List[ArithExpr], dt: DataType): VarRef = ???
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[AccType] = {
-    ToLocalAcc(VisitAndRebuild(p, fun))
+    ToLocalAcc(fun(dt), VisitAndRebuild(p, fun))
   }
 
   override def prettyPrint: String = s"(toLocalAcc ${PrettyPrinter(p)})"

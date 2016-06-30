@@ -8,7 +8,7 @@ object VisitAndRebuild {
   class fun {
     def apply[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = Continue(p, this)
     def apply(ae: ArithExpr): ArithExpr = ae
-    def apply(dt: DataType): DataType = dt
+    def apply[T <: DataType](dt: T): T = dt
 
     abstract class Result[+T]
     case class Stop[T <: PhraseType](p: Phrase[T]) extends Result[Phrase[T]]
@@ -43,7 +43,7 @@ object VisitAndRebuild {
           case a: AccPattern => a.visitAndRebuild(f)
           case c: IntermediateCommandPattern => c.visitAndRebuild(f)
         }).asInstanceOf[Phrase[T]]
-        res.t = c.p.t
+//        res.t = c.p.t
         res
     }
   }
@@ -58,7 +58,7 @@ object VisitAndRebuild {
           val newBody  =
             VisitAndRebuild(l.body, copyFun(map.updated(l.param.name, newParam.name)))
           val newL = LambdaPhrase(newParam, newBody).asInstanceOf[Phrase[T2]]
-          newL.t = l.t
+//          newL.t = l.t
           Continue(newL, this)
         case i: IdentPhrase[T2] =>
           Continue(IdentPhrase[T2](map.getOrElse(i.name, i.name), i.t), this)

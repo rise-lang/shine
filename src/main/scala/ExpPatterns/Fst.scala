@@ -2,7 +2,6 @@ package ExpPatterns
 
 import Core._
 import Core.OperationalSemantics._
-import Core.PhraseType.->
 import Compiling.RewriteToImperative
 import DSL._
 import apart.arithmetic.ArithExpr
@@ -10,13 +9,22 @@ import opencl.generator.OpenCLAST.{Expression, Literal}
 
 import scala.xml.Elem
 
-case class Fst(record: Phrase[ExpType])
+case class Fst(dt1: DataType,
+               dt2: DataType,
+               record: Phrase[ExpType])
   extends ExpPattern with ViewExpPattern with GeneratableExpPattern {
 
   override def typeCheck(): ExpType = {
-    TypeChecker(record) match {
-      case ExpType(RecordType(fst, snd)) => ExpType(fst)
-      case x => TypeChecker.error(x.toString, "Something else")
+    import TypeChecker._
+    record.t =?= exp"[$dt1 x $dt2]"
+    exp"[$dt1]"
+  }
+
+  override def inferTypes(): Fst = {
+    import TypeInference._
+    record.t match {
+      case ExpType(RecordType(dt1_, dt2_)) => Fst(dt1_, dt2_, record)
+      case x => error(x.toString, "ExpType(RecordType)")
     }
   }
 
@@ -27,8 +35,8 @@ case class Fst(record: Phrase[ExpType])
     }
   }
 
-  override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[ExpType] = {
-    Fst(VisitAndRebuild(record, f))
+  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[ExpType] = {
+    Fst(fun(dt1), fun(dt2), VisitAndRebuild(record, fun))
   }
 
   override def toOpenCL(env: ToOpenCL.Environment): Expression = ToOpenCL.exp(this, env, List(), List(), t.dataType)
@@ -42,7 +50,9 @@ case class Fst(record: Phrase[ExpType])
 
   override def prettyPrint: String = s"${PrettyPrinter(record)}._1"
 
-  override def xmlPrinter: Elem = <fst>{Core.xmlPrinter(record)}</fst>
+  override def xmlPrinter: Elem = <fst>
+    {Core.xmlPrinter(record)}
+  </fst>
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] =
     RewriteToImperative.exp(this)(λ(this.t) {

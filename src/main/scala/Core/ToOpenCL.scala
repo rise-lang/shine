@@ -1,7 +1,6 @@
 package Core
 
 import Core.OperationalSemantics._
-import Core.PhraseType.->
 import Compiling.{RewriteToImperative, SubstituteImplementations}
 import apart.arithmetic.{ArithExpr, Cst, Var}
 import ir.{Type, UndefType}

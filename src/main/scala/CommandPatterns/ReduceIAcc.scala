@@ -20,25 +20,30 @@ case class ReduceIAcc(n: ArithExpr,
 
   override def typeCheck(): CommandType = {
     import TypeChecker._
-    (TypeChecker(out), TypeChecker(init), TypeChecker(in)) match {
-      case (AccType(dt2_), ExpType(dt3), ExpType(ArrayType(n_, dt1_)))
-        if dt1_ == dt1 && dt2_ == dt2 && dt2 == dt3 && n_ == n =>
-
-        setParamType(f, AccType(dt2))
-        setSecondParamType(f, ExpType(dt1))
-        setThirdParamType(f, ExpType(dt2))
-        TypeChecker(f) match {
-          case FunctionType(AccType(t1), FunctionType(ExpType(t2), FunctionType(ExpType(t3), CommandType()))) =>
-            if (dt2 == t1 && dt1 == t2 && dt2 == t3) CommandType()
-            else {
-              error(dt2.toString + ", " + t1.toString + " as well as " +
-                dt1.toString + ", " + t2.toString + " and " + dt2.toString + ", " + t3.toString,
-                expected = "them to match")
-            }
-          case x => error(x.toString, "FunctionType")
-        }
-      case x => error(x.toString, "(AccType, ExpType, ArrayType)")
-    }
+    out.t =?= acc"[$dt2]"
+    f.t =?= t"acc[$dt2] -> exp[$dt1] -> exp[$dt2] -> comm"
+    init.t =?= exp"[$dt2]"
+    in.t =?= exp"[$n.$dt1]"
+    comm
+//    (TypeChecker(out), TypeChecker(init), TypeChecker(in)) match {
+//      case (AccType(dt2_), ExpType(dt3), ExpType(ArrayType(n_, dt1_)))
+//        if dt1_ == dt1 && dt2_ == dt2 && dt2 == dt3 && n_ == n =>
+//
+//        setParamType(f, AccType(dt2))
+//        setSecondParamType(f, ExpType(dt1))
+//        setThirdParamType(f, ExpType(dt2))
+//        TypeChecker(f) match {
+//          case FunctionType(AccType(t1), FunctionType(ExpType(t2), FunctionType(ExpType(t3), CommandType()))) =>
+//            if (dt2 == t1 && dt1 == t2 && dt2 == t3) CommandType()
+//            else {
+//              error(dt2.toString + ", " + t1.toString + " as well as " +
+//                dt1.toString + ", " + t2.toString + " and " + dt2.toString + ", " + t3.toString,
+//                expected = "them to match")
+//            }
+//          case x => error(x.toString, "FunctionType")
+//        }
+//      case x => error(x.toString, "(AccType, ExpType, ArrayType)")
+//    }
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[CommandType] = {

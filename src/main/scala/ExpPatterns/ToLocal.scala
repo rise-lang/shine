@@ -1,8 +1,9 @@
 package ExpPatterns
 
-import Core.PhraseType.->
 import Core._
 
-case class ToLocal(f: Phrase[ExpType -> ExpType],
+case class ToLocal(dt1: DataType,
+                   dt2: DataType,
+                   f: Phrase[ExpType -> ExpType],
                    input: Phrase[ExpType])
-  extends To(f, input, LocalMemory, ToLocal)
+  extends To(dt1, dt2, f, input, LocalMemory, ToLocal)

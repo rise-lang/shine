@@ -1,18 +1,16 @@
 package Core
 
-import PhraseType._
 import apart.arithmetic.{ArithExpr, NamedVar}
 import opencl.generator.OpenCLAST.{Block, Expression, VarRef}
 import Compiling.SubstituteImplementations
 
 sealed abstract class Phrase[T <: PhraseType] {
-  var t: T = null.asInstanceOf[T]
+  lazy val t: T = `type`
+  def `type`: T = TypeChecker(this)
 }
 
-final case class IdentPhrase[T <: PhraseType](name: String, `type`: T)
-  extends Phrase[T] {
-  t = `type`
-}
+final case class IdentPhrase[T <: PhraseType](name: String, override val `type`: T)
+  extends Phrase[T]
 
 final case class LambdaPhrase[T1 <: PhraseType, T2 <: PhraseType](param: IdentPhrase[T1], body: Phrase[T2])
   extends Phrase[T1 -> T2]
@@ -72,6 +70,8 @@ final case class LiteralPhrase(d: OperationalSemantics.Data)
 abstract class ExpPattern extends Phrase[ExpType] {
   def typeCheck(): ExpType
 
+  def inferTypes(): ExpPattern
+
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Data
 
   def prettyPrint: String
@@ -96,6 +96,8 @@ trait ViewExpPattern {
 abstract class AccPattern extends Phrase[AccType] {
   def typeCheck(): AccType
 
+//  def inferTypes(): AccPattern
+
   def eval(s: OperationalSemantics.Store): OperationalSemantics.AccIdentifier
 
   def toOpenCL(env: ToOpenCL.Environment): VarRef
@@ -111,6 +113,8 @@ abstract class AccPattern extends Phrase[AccType] {
 
 abstract class IntermediateCommandPattern extends  Phrase[CommandType] {
   def typeCheck(): CommandType
+
+//  def inferTypes(): IntermediateCommandPattern
 
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Store
 

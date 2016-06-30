@@ -1,51 +1,11 @@
 package DSL
 
 import Core.OperationalSemantics._
-import Core.PhraseType._
 import Core._
 import AccPatterns._
 import ExpPatterns._
 import CommandPatterns._
-import apart.arithmetic.{ArithExpr, NamedVar}
-
-object VarType {
-  def apply(dataType: DataType) = ExpType(dataType) x AccType(dataType)
-}
-
-object `;` {
-  def apply() = {
-    //: Phrase[CommandType x CommandType -> CommandType]
-    λ(CommandType() x CommandType()) {
-      pair => Seq(Proj1Phrase(pair), Proj2Phrase(pair))
-    }
-  }
-}
-
-object := {
-  // TODO: add passivity
-  def apply(t: DataType) = {
-    //: Phrase[ AccType x ExpType -> CommandType ]
-    λ(AccType(t) x ExpType(t)) {
-      pair => Assign(π1(pair), π2(pair))
-    }
-  }
-}
-
-object makeIfThenElse {
-  // TODO: add passivity
-  def apply[T <: PhraseType](t: T) = {
-    //: Phrase[ ExpType x T x T -> T ]
-    λ(ExpType(bool) x t x t) {
-      args => {
-        val firstTwo = π1(args)
-        val cond = π1(firstTwo)
-        val thenP = π2(firstTwo)
-        val elseP = π2(args)
-        IfThenElsePhrase(cond, thenP, elseP)
-      }
-    }
-  }
-}
+import apart.arithmetic.{ArithExpr, NamedVar, ?}
 
 object `if` {
   def apply[T <: PhraseType](cond: Phrase[ExpType], thenP: Phrase[T], elseP: Phrase[T]) = {
@@ -64,7 +24,7 @@ object `parFor` {
             dt: DataType,
             out: Phrase[AccType],
             f: (Phrase[ExpType] => Phrase[AccType] => Phrase[CommandType])) = {
-    ParFor(n, dt, out, λ( ExpType(int) ) { i => λ( AccType(dt) ) { o => f(i)(o) } })
+    ParFor(n, dt, out, λ(ExpType(int)) { i => λ(AccType(dt)) { o => f(i)(o) } })
   }
 }
 
@@ -82,19 +42,19 @@ object dblBufFor {
 }
 
 object `new` {
-  def apply(dt: DataType, addressSpace: AddressSpace, f: Phrase[ (ExpType x AccType) -> CommandType ]) = New(dt, addressSpace, f)
+  def apply(dt: DataType, addressSpace: AddressSpace, f: Phrase[(ExpType x AccType) -> CommandType]) = New(dt, addressSpace, f)
 
   def apply(dt: DataType, addressSpace: AddressSpace, f: Phrase[ExpType x AccType] => Phrase[CommandType]) = {
-    New(dt, addressSpace, λ( ExpType(dt) x AccType(dt) ) { v => f(v) })
+    New(dt, addressSpace, λ(ExpType(dt) x AccType(dt)) { v => f(v) })
   }
 }
 
 object fst {
-  def apply(record: Phrase[ExpType]) = Fst(record)
+  def apply(record: Phrase[ExpType]) = Fst(null, null, record)
 }
 
 object snd {
-  def apply(record: Phrase[ExpType]) = Snd(record)
+  def apply(record: Phrase[ExpType]) = Snd(null, null, record)
 }
 
 object fstAcc {
@@ -117,6 +77,7 @@ object π2 {
 
 object identifier {
   def exp(name: String) = IdentPhrase[ExpType](name, null)
+
   def acc(name: String) = IdentPhrase[AccType](name, null)
 
   def newVar(name: String) = IdentPhrase[ExpType x AccType](name, null)
@@ -132,12 +93,12 @@ object identifier {
 
 trait funDef {
   def apply[T <: PhraseType](f: IdentPhrase[ExpType] => Phrase[T]): LambdaPhrase[ExpType, T] = {
-    val param = identifier.exp( newName() )
+    val param = identifier.exp(newName())
     LambdaPhrase(param, f(param))
   }
 
   def apply[T <: PhraseType](f: (Phrase[ExpType], Phrase[ExpType]) => Phrase[T]): LambdaPhrase[ExpType x ExpType, T] = {
-    val param = IdentPhrase[PairType[ExpType, ExpType]]( newName(), null )
+    val param = IdentPhrase[PairType[ExpType, ExpType]](newName(), null)
     val g = λ(PairType(ExpType(int), ExpType(int))) { x => f(π1(x), π2(x)) }
     LambdaPhrase(param, g(param))
   }
@@ -166,7 +127,6 @@ object \ extends funDef
 object λ extends funDef
 
 
-
 trait natDependentFunDef {
 
   def apply[T <: PhraseType](f: NamedVar => Phrase[T]): NatDependentLambdaPhrase[T] = {
@@ -181,83 +141,110 @@ object _Λ_ extends natDependentFunDef
 object skip extends Skip
 
 object map {
-  def apply(f: Phrase[ExpType -> ExpType]) = λ( x => Map(f, x))
+  def apply(f: Phrase[ExpType -> ExpType]): Phrase[ExpType -> ExpType] = λ(x => {
+    map(f, x)
+  })
 
-  def apply(f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) = Map(f, array)
+  def apply(f: Phrase[ExpType -> ExpType], x: Phrase[ExpType]): Map = {
+    Map(?, null, null, f, x)
+  }
 }
 
 object mapSeq {
-  def apply(f: Phrase[ExpType -> ExpType]) = λ( x => MapSeq(f, x))
+  def apply(f: Phrase[ExpType -> ExpType]): Phrase[ExpType -> ExpType] = λ(x =>
+    mapSeq(f, x))
 
-  def apply(f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) = MapSeq(f, array)
+  def apply(f: Phrase[ExpType -> ExpType], x: Phrase[ExpType]) =
+    MapSeq(?, null, null, f, x)
 }
 
 object mapWorkgroup {
-  def apply(f: Phrase[ExpType -> ExpType]) = λ( x => MapWorkgroup(f, x))
+  def apply(f: Phrase[ExpType -> ExpType]): Phrase[ExpType -> ExpType] = λ(x =>
+    mapWorkgroup(f, x)
+  )
 
-  def apply(f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) = MapWorkgroup(f, array)
+  def apply(f: Phrase[ExpType -> ExpType], x: Phrase[ExpType]) =
+    MapWorkgroup(?, null, null, f, x)
 }
 
 object mapLocal {
-  def apply(f: Phrase[ExpType -> ExpType]) = λ( x => MapLocal(f, x))
+  def apply(f: Phrase[ExpType -> ExpType]): Phrase[ExpType -> ExpType] = λ(x =>
+    mapLocal(f, x))
 
-  def apply(f: Phrase[ExpType -> ExpType], array: Phrase[ExpType]) = MapLocal(f, array)
+  def apply(f: Phrase[ExpType -> ExpType], x: Phrase[ExpType]) =
+    MapLocal(?, null, null, f, x)
 }
 
 object zip {
-  def apply(lhs: Phrase[ExpType], rhs: Phrase[ExpType]) = Zip(lhs, rhs)
+  def apply(lhs: Phrase[ExpType], rhs: Phrase[ExpType]) =
+    Zip(?, null, null, lhs, rhs)
 }
 
 object split {
-  def apply(n: ArithExpr) = λ(array => Split(n, array) )
-  def apply(n: ArithExpr, array: Phrase[ExpType]) = Split(n, array)
+  def apply(n: ArithExpr): Phrase[ExpType -> ExpType] =
+    λ(array => split(n, array))
+
+  def apply(n: ArithExpr, array: Phrase[ExpType]): Split =
+    Split(n, ?, null, array)
 }
 
 object join {
-  def apply() = λ( array => Join(array) )
-  def apply(array: Phrase[ExpType]) = Join(array)
+  def apply(): Phrase[ExpType -> ExpType] = λ(array => join(array))
+
+  def apply(array: Phrase[ExpType]): Join = Join(?, ?, null, array)
 }
 
 object toLocal {
-  def apply(f: Phrase[ExpType -> ExpType]) = λ( x => ToLocal(f, x))
-  def apply(f: Phrase[ExpType -> ExpType], x: Phrase[ExpType]) = ToLocal(f, x)
+  def apply(f: Phrase[ExpType -> ExpType]): Phrase[ExpType -> ExpType] =
+    λ(x => toLocal(f, x))
+
+  def apply(f: Phrase[ExpType -> ExpType], x: Phrase[ExpType]): ToLocal =
+    ToLocal(null, null, f, x)
 }
 
 object toGlobal {
-  def apply(f: Phrase[ExpType -> ExpType]) = λ( x => ToGlobal(f, x))
-  def apply(f: Phrase[ExpType -> ExpType], x: Phrase[ExpType]) = ToGlobal(f, x)
+  def apply(f: Phrase[ExpType -> ExpType]): Phrase[ExpType -> ExpType] =
+    λ(x => toGlobal(f, x))
+
+  def apply(f: Phrase[ExpType -> ExpType], x: Phrase[ExpType]): ToGlobal =
+    ToGlobal(null, null, f, x)
 }
 
 object reduce {
-  def apply(f: Phrase[ExpType -> (ExpType -> ExpType)]) =
-    λ( (init, array) => Reduce(f, init, array))
+  def apply(f: Phrase[ExpType -> (ExpType -> ExpType)]): Phrase[(ExpType x ExpType) -> ExpType] =
+    λ((init, array) => reduce(f, init, array))
 
-  def apply(f: Phrase[ExpType -> (ExpType -> ExpType)], init: Phrase[ExpType]) =
-    λ( array => Reduce(f, init, array))
+  def apply(f: Phrase[ExpType -> (ExpType -> ExpType)], init: Phrase[ExpType]): Phrase[ExpType -> ExpType] =
+    λ(array => reduce(f, init, array))
 
   def apply(f: Phrase[ExpType -> (ExpType -> ExpType)], init: Phrase[ExpType],
-            array: Phrase[ExpType]) = Reduce(f, init, array)
+            array: Phrase[ExpType]): Reduce = {
+    Reduce(?, null, null, f, init, array)
+  }
 }
 
 object reduceSeq {
-  def apply(f: Phrase[ExpType -> (ExpType -> ExpType)]) =
-    λ( (init, array) => ReduceSeq(f, init, array))
+  def apply(f: Phrase[ExpType -> (ExpType -> ExpType)]): Phrase[(ExpType x ExpType) -> ExpType] =
+    λ((init, array) => reduceSeq(f, init, array))
 
-  def apply(f: Phrase[ExpType -> (ExpType -> ExpType)], init: Phrase[ExpType]) =
-    λ( array => ReduceSeq(f, init, array))
+  def apply(f: Phrase[ExpType -> (ExpType -> ExpType)], init: Phrase[ExpType]): Phrase[ExpType -> ExpType] =
+    λ(array => reduceSeq(f, init, array))
 
   def apply(f: Phrase[ExpType -> (ExpType -> ExpType)],
             init: Phrase[ExpType],
             array: Phrase[ExpType]) =
-    ReduceSeq(f, init, array)
+    ReduceSeq(?, null, null, f, init, array)
 }
 
 object iterate {
-  def apply(n: ArithExpr, f: Phrase[`(nat)->`[ExpType -> ExpType]]) =
-    λ( array => Iterate(n, f, array))
+  def apply(n: ArithExpr, f: Phrase[`(nat)->`[ExpType -> ExpType]]): Phrase[ExpType -> ExpType] =
+    λ(array => iterate(n, f, array))
 
-  def apply(n: ArithExpr, f: Phrase[`(nat)->`[ExpType -> ExpType]], array: Phrase[ExpType]) =
-    Iterate(n, f, array)
+  def apply(n: ArithExpr,
+            f: Phrase[`(nat)->`[ExpType -> ExpType]],
+            array: Phrase[ExpType]): Iterate = {
+    Iterate(n, ?, ?, null, f, array)
+  }
 }
 
 object length {
@@ -265,17 +252,23 @@ object length {
 }
 
 object gather {
-  def apply(idxF: (ArithExpr, DataType) => ArithExpr) = λ( array => Gather(idxF, array))
+  def apply(idxF: (ArithExpr, DataType) => ArithExpr) = λ(array =>
+      Gather(idxF, null, array)
+  )
 }
 
 object asVector {
-  def apply(n: ArithExpr) = λ(array => AsVector(n, array) )
-  def apply(n: ArithExpr, array: Phrase[ExpType]) = AsVector(n, array)
+  def apply(n: ArithExpr): Phrase[ExpType -> ExpType] = λ(array => asVector(n, array))
+
+  def apply(n: ArithExpr, array: Phrase[ExpType]): AsVector =
+      AsVector(n, ?, null, array)
 }
 
 object asScalar {
-  def apply() = λ( array => AsScalar(array) )
-  def apply(array: Phrase[ExpType]) = AsScalar(array)
+  def apply(): Phrase[ExpType -> ExpType] = λ(array => asScalar(array))
+
+  def apply(array: Phrase[ExpType]): AsScalar =
+      AsScalar(?, ?, null, array)
 }
 
 object vectorize {

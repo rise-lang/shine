@@ -19,7 +19,7 @@ object PrettyPrinter {
 
       case BinOpPhrase(op, lhs, rhs) => s"(${apply(lhs)} ${op.toString} ${apply(rhs)})"
 
-      case IdentPhrase(name) => name
+      case IdentPhrase(name, _) => name
 
       case LambdaPhrase(param, body) => s"(λ ${apply(param)}: ${param.t} . ${apply(body)})"
 

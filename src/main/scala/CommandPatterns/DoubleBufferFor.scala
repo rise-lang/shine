@@ -21,6 +21,19 @@ case class DoubleBufferFor(n: ArithExpr,
                            C: Phrase[ExpType -> CommandType])
   extends CommandPattern {
 
+  override def typeCheck(): CommandType = {
+    import TypeChecker._
+    buffer1.t =?= t"var[$n.$dt]"
+    buffer2.t =?= t"var[$n.$dt]"
+    body match {
+      case NatDependentLambdaPhrase(l, _) =>
+        body.t =?= t"($l : nat) -> acc[$n.$dt] -> exp[$n.$dt] -> comm"
+      case _ => throw new Exception("This should not happen")
+    }
+    C.t =?= t"exp[$n.$dt] -> comm"
+    comm
+  }
+
   override def toOpenCL(block: Block, env: ToOpenCL.Environment): Block = {
     import opencl.generator.OpenCLAST._
 
@@ -108,10 +121,6 @@ case class DoubleBufferFor(n: ArithExpr,
       fun(k),
       VisitAndRebuild(body, fun),
       VisitAndRebuild(C, fun))
-  }
-
-  override def typeCheck(): CommandType = {
-    CommandType()
   }
 
   override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {

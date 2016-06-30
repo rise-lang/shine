@@ -2,7 +2,6 @@ package ExpPatterns
 
 import Core._
 import Core.OperationalSemantics._
-import Core.PhraseType.->
 import opencl.generator.OpenCLAST.{ArithExpression, Expression}
 
 import scala.xml.Elem
@@ -11,12 +10,15 @@ case class Length[T <: BasePhraseTypes](array: Phrase[T]) extends ExpPattern wit
 
   override def typeCheck(): ExpType = {
     import TypeChecker._
-    TypeChecker(array) match {
+    array.t match {
       case ExpType(ArrayType(_, _)) => ExpType(int)
       case AccType(ArrayType(_, _)) => ExpType(int)
       case x => error(x.toString, "ArrayType")
     }
+    exp"[$int]"
   }
+
+  override def inferTypes(): Length[T] = Length(TypeInference(array))
 
   override def eval(s: Store): Data = {
     array.t match {

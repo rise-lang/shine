@@ -15,15 +15,17 @@ case class TruncAcc(n: ArithExpr,
 
   override def typeCheck(): AccType = {
     import TypeChecker._
-    TypeChecker(array) match {
-      case AccType(ArrayType(n_, dt_)) =>
-        if (n_ == n && dt_ == dt) {
-          AccType(ArrayType(m, dt))
-        } else {
-          error(s"[$n_.$dt_]", s"[$n.$dt]")
-        }
-      case x => error(x.toString, "ArrayType")
-    }
+    array.t =?= acc"[$n.$dt]"
+    acc"[$m.$dt]"
+//    TypeChecker(array) match {
+//      case AccType(ArrayType(n_, dt_)) =>
+//        if (n_ == n && dt_ == dt) {
+//          AccType(ArrayType(m, dt))
+//        } else {
+//          error(s"[$n_.$dt_]", s"[$n.$dt]")
+//        }
+//      case x => error(x.toString, "ArrayType")
+//    }
   }
 
   override def eval(s: Store): AccIdentifier = ???

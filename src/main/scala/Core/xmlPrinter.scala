@@ -57,7 +57,7 @@ object xmlPrinter {
           <rhs type={ToString(rhs.t)}>{apply(rhs)}</rhs>
         </binary>
 
-      case IdentPhrase(name) =>
+      case IdentPhrase(name, _) =>
         <identifier name={name} />
 
       case LambdaPhrase(param, body) =>

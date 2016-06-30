@@ -7,21 +7,25 @@ import Compiling.SubstituteImplementations
 
 import scala.xml.Elem
 
-case class Assign(lhs: Phrase[AccType],
+case class Assign(dt: BasicType,
+                  lhs: Phrase[AccType],
                   rhs: Phrase[ExpType])
   extends CommandPattern {
 
   override def typeCheck(): CommandType = {
     import TypeChecker._
-    (TypeChecker(lhs), TypeChecker(rhs)) match {
-      case (AccType(d1), ExpType(d2)) =>
-        if (d1 == d2 && d1.isInstanceOf[BasicType]) {
-          CommandType()
-        } else {
-          error(d1.toString + " and " + d2.toString, expected = "them to match")
-        }
-      case x => error(x.toString, "(" + AccType.toString() + "(A)," + ExpType.toString() + "(A))")
-    }
+    lhs.t =?= acc"[$dt]"
+    rhs.t =?= exp"[$dt]"
+    comm
+//    (TypeChecker(lhs), TypeChecker(rhs)) match {
+//      case (AccType(d1), ExpType(d2)) =>
+//        if (d1 == d2 && d1.isInstanceOf[BasicType]) {
+//          CommandType()
+//        } else {
+//          error(d1.toString + " and " + d2.toString, expected = "them to match")
+//        }
+//      case x => error(x.toString, "(" + AccType.toString() + "(A)," + ExpType.toString() + "(A))")
+//    }
   }
 
   override def eval(s: Store): Store = {
@@ -57,7 +61,7 @@ case class Assign(lhs: Phrase[AccType],
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[CommandType] = {
-    Assign(VisitAndRebuild(lhs, fun), VisitAndRebuild(rhs, fun))
+    Assign(fun(dt), VisitAndRebuild(lhs, fun), VisitAndRebuild(rhs, fun))
   }
 
   override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = this

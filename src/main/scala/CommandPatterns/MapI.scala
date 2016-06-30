@@ -21,26 +21,30 @@ abstract class AbstractMapI(n: ArithExpr,
 
   override def typeCheck(): CommandType = {
     import TypeChecker._
-    (TypeChecker(out), TypeChecker(in)) match {
-      case (AccType(ArrayType(n_, dt2_)), ExpType(ArrayType(m_, dt1_))) =>
-        if (n_ == n && m_ == n && dt2_ == dt2 && dt1_ == dt1) {
-          setParamType(f, AccType(dt2))
-          setSecondParamType(f, ExpType(dt1))
-          TypeChecker(f) match {
-            case FunctionType(AccType(t1), FunctionType(ExpType(t2), CommandType())) =>
-              if (dt2 == t1 && dt1 == t2) CommandType()
-              else {
-                error(dt2.toString + " and " + t1.toString +
-                  ", " + dt1.toString + " and " + t2.toString,
-                  expected = "them to match")
-              }
-            case x => error(x.toString, "FunctionType")
-          }
-        } else {
-          error(s"([$m_.$dt1_] -> [$n_.$dt2_])", s"[$n.$dt1] -> [$n.$dt2]")
-        }
-      case x => error(x.toString, "(ArrayType, ArrayType)")
-    }
+    out.t =?= acc"[$n.$dt2]"
+    f.t =?= t"acc[$dt2] -> exp[$dt1] -> comm"
+    in.t =?= exp"[$n.$dt1]"
+    comm
+//    (TypeChecker(out), TypeChecker(in)) match {
+//      case (AccType(ArrayType(n_, dt2_)), ExpType(ArrayType(m_, dt1_))) =>
+//        if (n_ == n && m_ == n && dt2_ == dt2 && dt1_ == dt1) {
+//          setParamType(f, AccType(dt2))
+//          setSecondParamType(f, ExpType(dt1))
+//          TypeChecker(f) match {
+//            case FunctionType(AccType(t1), FunctionType(ExpType(t2), CommandType())) =>
+//              if (dt2 == t1 && dt1 == t2) CommandType()
+//              else {
+//                error(dt2.toString + " and " + t1.toString +
+//                  ", " + dt1.toString + " and " + t2.toString,
+//                  expected = "them to match")
+//              }
+//            case x => error(x.toString, "FunctionType")
+//          }
+//        } else {
+//          error(s"([$m_.$dt1_] -> [$n_.$dt2_])", s"[$n.$dt1] -> [$n.$dt2]")
+//        }
+//      case x => error(x.toString, "(ArrayType, ArrayType)")
+//    }
   }
 
   override def eval(s: Store): Store = {

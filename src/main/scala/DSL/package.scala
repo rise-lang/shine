@@ -1,10 +1,9 @@
-import Core.PhraseType._
 import Core._
 import ExpPatterns._
 import AccPatterns._
 import CommandPatterns._
 import Core.OperationalSemantics.{FloatData, IndexData, VectorData, newName}
-import apart.arithmetic.ArithExpr
+import apart.arithmetic.{?, ArithExpr}
 
 import scala.language.implicitConversions
 
@@ -75,11 +74,17 @@ package object DSL {
   }
 
   implicit class Assignment(lhs: Phrase[AccType]) {
-    def :=(rhs: Phrase[ExpType]) = Assign(lhs, rhs)
+    def :=(rhs: Phrase[ExpType]) = {
+      (lhs.t, rhs.t) match {
+        case (AccType(dt1), ExpType(dt2)) if dt1 == dt2 && dt1.isInstanceOf[BasicType] =>
+          Assign(dt1.asInstanceOf[BasicType], lhs, rhs)
+        case _ => Assign(null, lhs, rhs)
+      }
+    }
   }
 
   implicit class AssignmentPattern(lhs: AccPattern) {
-    def :=(rhs: Phrase[ExpType]) = Assign(lhs, rhs)
+    def :=(rhs: Phrase[ExpType]) = Assignment(lhs).:=(rhs)
   }
 
   implicit def toPair[T1 <: PhraseType, T2 <: PhraseType](pair: (Phrase[T1], Phrase[T2])): PairPhrase[T1, T2] = {
@@ -95,27 +100,15 @@ package object DSL {
   implicit def toNatDependentLambda[T <: PhraseType](p: Phrase[T]): NatDependentLambdaPhrase[T] = _Λ_( l => p )
 
   implicit class ExpPhraseExtensions(e: Phrase[ExpType]) {
-    def _1 = Fst(e)
+    def _1 = Fst(null, null, e)
 
-    def _2 = Snd(e)
+    def _2 = Snd(null, null, e)
 
-    def `@`(index: Phrase[ExpType]) = {
-      e.t match {
-        case ExpType(ArrayType(n, dt)) => Idx(n, dt, index, e)
-        case null => Idx(null, null, index, e)
-        case x => throw new Exception(s"This should not happen: $x")
-      }
-    }
+    def `@`(index: Phrase[ExpType]) = Idx(?, null, index, e)
   }
 
   implicit class AccPhraseExtensions(a: Phrase[AccType]) {
-    def `@`(index: Phrase[ExpType]) = {
-      a.t match {
-        case AccType(ArrayType(n, dt)) => IdxAcc(n, dt, index, a)
-        case null => IdxAcc(null, null, index, a)
-        case x => throw new Exception(s"This should not happen: $x")
-      }
-    }
+    def `@`(index: Phrase[ExpType]) = IdxAcc(?, null, index, a)
   }
 
   implicit class VarExtensions(v: Phrase[VarType]) {

@@ -4,6 +4,7 @@ import apart.arithmetic.{ArithExpr, Cst}
 import ir.ScalarType
 
 sealed trait DataType
+
 sealed abstract class BasicType extends DataType
 
 object bool extends BasicType { override def toString = "bool" }

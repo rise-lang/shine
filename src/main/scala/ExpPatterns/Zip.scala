@@ -11,28 +11,34 @@ import opencl.generator.OpenCLAST.Expression
 
 import scala.xml.Elem
 
-case class Zip(lhs: Phrase[ExpType],
+case class Zip(n: ArithExpr,
+               dt1: DataType,
+               dt2: DataType,
+               lhs: Phrase[ExpType],
                rhs: Phrase[ExpType])
   extends ExpPattern with ViewExpPattern {
 
-  private var n: ArithExpr = null
-  private var dt1: DataType = null
-  private var dt2: DataType = null
-
   override def typeCheck(): ExpType = {
     import TypeChecker._
-    (TypeChecker(lhs), TypeChecker(rhs)) match {
+    lhs.t =?= exp"[$n.$dt1]"
+    rhs.t =?= exp"[$n.$dt2]"
+    exp"[$n.($dt1 x $dt2)]"
+  }
+
+  override def inferTypes(): Zip = {
+    import TypeInference._
+    val lhs_ = TypeInference(lhs)
+    val rhs_ = TypeInference(rhs)
+    (lhs_.t, rhs_.t) match {
       case (ExpType(ArrayType(n_, dt1_)), ExpType(ArrayType(m_, dt2_)))
         if n_ == m_ =>
-        n = n_; dt1 = dt1_; dt2 = dt2_
-
-        ExpType(ArrayType(n, RecordType(dt1, dt2)))
+        Zip(n_, dt1_, dt2_, lhs_, rhs_)
       case x => error(x.toString(), "PairOfArrayTypes")
     }
   }
 
   override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[ExpType] = {
-    Zip(VisitAndRebuild(lhs, f), VisitAndRebuild(rhs, f))
+    Zip(f(n), f(dt1), f(dt2), VisitAndRebuild(lhs, f), VisitAndRebuild(rhs, f))
   }
 
   override def eval(s: Store): Data = {
@@ -82,7 +88,7 @@ case class Zip(lhs: Phrase[ExpType],
     val E1 = lhs
     val E2 = rhs
 
-    exp(E1)(λ(exp"[$n.$dt2]" )(x =>
+    exp(E1)(λ(exp"[$n.$dt2]")(x =>
       exp(E2)(λ(exp"[$n.$dt2]")(y =>
         MapI(n, dt1 x dt2, dt1 x dt2, A,
           λ(A.t) { o =>
@@ -90,7 +96,7 @@ case class Zip(lhs: Phrase[ExpType],
               acc(x)(o)
             }
           },
-          Zip(x, y)
+          Zip(n, dt1, dt2, x, y)
         )
       ))
     ))
@@ -100,7 +106,7 @@ case class Zip(lhs: Phrase[ExpType],
     import RewriteToImperative._
     exp(lhs)(λ(lhs.t) { x =>
       exp(rhs)(λ(rhs.t) { y =>
-        C(Zip(x, y))
+        C(Zip(n, dt1, dt2, x, y))
       })
     })
   }

@@ -8,20 +8,25 @@ import opencl.generator.OpenCLAST.VarRef
 import scala.xml.Elem
 
 case class AsScalarAcc(n: ArithExpr,
+                       m: ArithExpr,
+                       dt: BasicType,
                        array: Phrase[AccType])
   extends AccPattern {
 
   override def typeCheck(): AccType = {
     import TypeChecker._
-    TypeChecker(array) match {
-      case AccType(ArrayType(m, dt)) if dt.isInstanceOf[BasicType] =>
-        AccType(ArrayType(n, VectorType(m /^ n, dt.asInstanceOf[BasicType])))
-      case x => error(x.toString, "ArrayType")
-    }
+    array.t =?= acc"[$m.$dt]"
+    acc"[$n.${VectorType(m/^n, dt)}]"
+
+//    TypeChecker(array) match {
+//      case AccType(ArrayType(m, dt)) if dt.isInstanceOf[BasicType] =>
+//        AccType(ArrayType(n, VectorType(m /^ n, dt.asInstanceOf[BasicType])))
+//      case x => error(x.toString, "ArrayType")
+//    }
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[AccType] = {
-    AsScalarAcc(fun(n), VisitAndRebuild(array, fun))
+    AsScalarAcc(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): AccIdentifier = ???

@@ -13,11 +13,13 @@ case class SndAcc(dt1: DataType,
 
   override def typeCheck(): AccType = {
     import TypeChecker._
-    TypeChecker(record) match {
-      case AccType(RecordType(fst, snd)) if fst == dt1 && snd == dt2 =>
-        AccType(snd)
-      case t => error(t.toString, "Something else")
-    }
+    record.t =?= acc"[$dt1 x $dt2]"
+    acc"[$dt2]"
+//    TypeChecker(record) match {
+//      case AccType(RecordType(fst, snd)) if fst == dt1 && snd == dt2 =>
+//        AccType(snd)
+//      case t => error(t.toString, "Something else")
+//    }
   }
 
   override def eval(s: Store): AccIdentifier = {

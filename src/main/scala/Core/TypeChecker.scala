@@ -1,193 +1,194 @@
 package Core
 
-import PhraseType._
+import scala.language.reflectiveCalls
 
 class TypeException(msg: String) extends Exception(msg)
 
 object TypeChecker {
 
   def error(found: String, expected: String): Nothing = {
-    throw new TypeException("Type error: found " + found + " expected " + expected)
+    throw new TypeException(s"Type error: found $found expected $expected")
   }
 
   def error(found: PhraseType, expected: PhraseType): Nothing = {
-    error(if (found != null) found.toString else "null",
-      if (expected != null) expected.toString else "null")
+    error(ToString(found), ToString(expected))
   }
 
-  def check(current: PhraseType, expected: PhraseType) = {
-    if (current != expected) {
-      error(current.toString, expected.toString)
+  def check(found: PhraseType, expected: PhraseType): Unit = {
+    if (found != expected) { error(found, expected) }
+  }
+
+  implicit class CheckHelper(p1: PhraseType) {
+    def =?=(p2: PhraseType): Unit = check(p1, p2)
+
+    def =?=(f: (PhraseType => Unit)) = f(p1)
+
+    def |(p2: PhraseType): (PhraseType => Unit) = (p: PhraseType) => {
+      if (!(p == p1 || p ==p2 )) {
+        error(ToString(p), "")
+      }
     }
   }
 
-  def setParamType[T1 <: PhraseType, T2 <: PhraseType](p: Phrase[T1 -> T2], t: T1): Unit = {
-    p match {
-      case l: LambdaPhrase[T1, T2] =>
-        l.param.t match {
-          case _ => l.param.t = t
+//  def setParamType[T1 <: PhraseType, T2 <: PhraseType](p: Phrase[T1 -> T2], t: T1): Unit = {
+//    p match {
+//      case l: LambdaPhrase[T1, T2] =>
+//        l.param.t match {
+//          case _ => l.param.t = t
+//        }
+//
+//      case app: ApplyPhrase[a, T1 -> T2] =>
+//        val fun = Lift.liftFunction(app.fun)
+//        setParamType(fun(app.arg), t)
+//
+//      case app: NatDependentApplyPhrase[T1 -> T2] =>
+//        val fun = Lift.liftNatDependentFunction(app.fun)
+//        setParamType(fun(app.arg), t)
+//
+//      case p1: Proj1Phrase[T1 -> T2, b] =>
+//        val pair = Lift.liftPair(p1.pair)
+//        setParamType(pair._1, t)
+//
+//      case p2: Proj2Phrase[a, T1 -> T2] =>
+//        val pair = Lift.liftPair(p2.pair)
+//        setParamType(pair._2, t)
+//
+//      case IfThenElsePhrase(_, thenP, elseP) =>
+//        setParamType(thenP, t)
+//        setParamType(elseP, t)
+//
+//      case IdentPhrase(_, _) => throw new Exception("This should never happen")
+//    }
+//  }
+//
+//  def setSecondParamType[T1 <: PhraseType,
+//                         T2 <: PhraseType,
+//                         T3 <: PhraseType](p: Phrase[T1 -> (T2 -> T3)], t: T2): Unit = {
+//    p match {
+//      case l: LambdaPhrase[T1, T2 -> T3] =>  setParamType(l.body, t)
+//
+//      case app: ApplyPhrase[a, T1 -> (T2 -> T3)] =>
+//        val fun = Lift.liftFunction(app.fun)
+//        setSecondParamType(fun(app.arg), t)
+//
+//      case app: NatDependentApplyPhrase[T1 -> (T2 -> T3)] =>
+//        val fun = Lift.liftNatDependentFunction(app.fun)
+//        setSecondParamType(fun(app.arg), t)
+//
+//      case p1: Proj1Phrase[T1 -> (T2 -> T3), b] =>
+//        val pair = Lift.liftPair(p1.pair)
+//        setSecondParamType(pair._1, t)
+//
+//      case p2: Proj2Phrase[a, T1 -> (T2 -> T3)] =>
+//        val pair = Lift.liftPair(p2.pair)
+//        setSecondParamType(pair._2, t)
+//
+//      case IfThenElsePhrase(_, thenP, elseP) =>
+//        setSecondParamType(thenP, t)
+//        setSecondParamType(elseP, t)
+//
+//      case IdentPhrase(_, _) => throw new Exception("This should never happen")
+//    }
+//  }
+//
+//  def setThirdParamType[T1 <: PhraseType,
+//                        T2 <: PhraseType,
+//                        T3 <: PhraseType,
+//                        T4 <: PhraseType](p: Phrase[T1 -> (T2 -> (T3 -> T4))], t: T3): Unit = {
+//    p match {
+//      case l: LambdaPhrase[T1, T2 -> (T3 -> T4)] =>  setSecondParamType(l.body, t)
+//
+//      case app: ApplyPhrase[a, T1 -> (T2 -> (T3 -> T4))] =>
+//        val fun = Lift.liftFunction(app.fun)
+//        setThirdParamType(fun(app.arg), t)
+//
+//      case app: NatDependentApplyPhrase[T1 -> (T2 -> (T3 -> T4))] =>
+//        val fun = Lift.liftNatDependentFunction(app.fun)
+//        setThirdParamType(fun(app.arg), t)
+//
+//      case p1: Proj1Phrase[T1 -> (T2 -> (T3 -> T4)), b] =>
+//        val pair = Lift.liftPair(p1.pair)
+//        setThirdParamType(pair._1, t)
+//
+//      case p2: Proj2Phrase[a, T1 -> (T2 -> (T3 -> T4))] =>
+//        val pair = Lift.liftPair(p2.pair)
+//        setThirdParamType(pair._2, t)
+//
+//      case IfThenElsePhrase(_, thenP, elseP) =>
+//        setThirdParamType(thenP, t)
+//        setThirdParamType(elseP, t)
+//
+//      case IdentPhrase(_, _) => throw new Exception("This should never happen")
+//    }
+//  }
+
+  def apply[T <: PhraseType](phrase: Phrase[T]): T = {
+    (phrase match {
+      case x: IdentPhrase[T] => x.t
+
+      case LambdaPhrase(x, p) => x.t -> p.t
+
+      case ApplyPhrase(p, q) =>
+        p.t match {
+          case FunctionType(t1, t2) =>
+            t1 =?= q.t
+            t2
+          case x => error(x.toString, FunctionType.toString)
         }
 
-      case app: ApplyPhrase[a, T1 -> T2] =>
-        val fun = Lift.liftFunction(app.fun)
-        setParamType(fun(app.arg), t)
+      case NatDependentLambdaPhrase(a, p) => a -> p.t
 
-      case app: NatDependentApplyPhrase[T1 -> T2] =>
-        val fun = Lift.liftNatDependentFunction(app.fun)
-        setParamType(fun(app.arg), t)
-
-      case p1: Proj1Phrase[T1 -> T2, b] =>
-        val pair = Lift.liftPair(p1.pair)
-        setParamType(pair._1, t)
-
-      case p2: Proj2Phrase[a, T1 -> T2] =>
-        val pair = Lift.liftPair(p2.pair)
-        setParamType(pair._2, t)
-
-      case IfThenElsePhrase(_, thenP, elseP) =>
-        setParamType(thenP, t)
-        setParamType(elseP, t)
-
-      case IdentPhrase(_) => throw new Exception("This should never happen")
-    }
-  }
-
-  def setSecondParamType[T1 <: PhraseType,
-                         T2 <: PhraseType,
-                         T3 <: PhraseType](p: Phrase[T1 -> (T2 -> T3)], t: T2): Unit = {
-    p match {
-      case l: LambdaPhrase[T1, T2 -> T3] =>  setParamType(l.body, t)
-
-      case app: ApplyPhrase[a, T1 -> (T2 -> T3)] =>
-        val fun = Lift.liftFunction(app.fun)
-        setSecondParamType(fun(app.arg), t)
-
-      case app: NatDependentApplyPhrase[T1 -> (T2 -> T3)] =>
-        val fun = Lift.liftNatDependentFunction(app.fun)
-        setSecondParamType(fun(app.arg), t)
-
-      case p1: Proj1Phrase[T1 -> (T2 -> T3), b] =>
-        val pair = Lift.liftPair(p1.pair)
-        setSecondParamType(pair._1, t)
-
-      case p2: Proj2Phrase[a, T1 -> (T2 -> T3)] =>
-        val pair = Lift.liftPair(p2.pair)
-        setSecondParamType(pair._2, t)
-
-      case IfThenElsePhrase(_, thenP, elseP) =>
-        setSecondParamType(thenP, t)
-        setSecondParamType(elseP, t)
-
-      case IdentPhrase(_) => throw new Exception("This should never happen")
-    }
-  }
-
-  def setThirdParamType[T1 <: PhraseType,
-                        T2 <: PhraseType,
-                        T3 <: PhraseType,
-                        T4 <: PhraseType](p: Phrase[T1 -> (T2 -> (T3 -> T4))], t: T3): Unit = {
-    p match {
-      case l: LambdaPhrase[T1, T2 -> (T3 -> T4)] =>  setSecondParamType(l.body, t)
-
-      case app: ApplyPhrase[a, T1 -> (T2 -> (T3 -> T4))] =>
-        val fun = Lift.liftFunction(app.fun)
-        setThirdParamType(fun(app.arg), t)
-
-      case app: NatDependentApplyPhrase[T1 -> (T2 -> (T3 -> T4))] =>
-        val fun = Lift.liftNatDependentFunction(app.fun)
-        setThirdParamType(fun(app.arg), t)
-
-      case p1: Proj1Phrase[T1 -> (T2 -> (T3 -> T4)), b] =>
-        val pair = Lift.liftPair(p1.pair)
-        setThirdParamType(pair._1, t)
-
-      case p2: Proj2Phrase[a, T1 -> (T2 -> (T3 -> T4))] =>
-        val pair = Lift.liftPair(p2.pair)
-        setThirdParamType(pair._2, t)
-
-      case IfThenElsePhrase(_, thenP, elseP) =>
-        setThirdParamType(thenP, t)
-        setThirdParamType(elseP, t)
-
-      case IdentPhrase(_) => throw new Exception("This should never happen")
-    }
-  }
-
-  def apply[T <: PhraseType](p: Phrase[T]): T = {
-    val phraseType = (p match {
-
-      case i: IdentPhrase[T] =>
-        if (i.t == null)
-          throw new TypeException("Type error: type not set for " + i)
-        i.t
-
-      case LambdaPhrase(param, body) =>
-        TypeChecker(param) -> TypeChecker(body)
-
-      case ApplyPhrase(fun, arg) =>
-        setParamType(fun, TypeChecker(arg))
-        TypeChecker(fun) match {
-          case ft: FunctionType[_, _] =>
-            check(TypeChecker(arg), ft.inT)
-            ft.outT
-          case t => error(t.toString, FunctionType.toString)
+      case NatDependentApplyPhrase(p, e) =>
+        p.t match {
+          case NatDependentFunctionType(a, t) =>
+            t `[` e `/` a `]`
+          case x => error(x.toString, NatDependentFunctionType.toString)
         }
 
-      case NatDependentLambdaPhrase(param, body) =>
-        param -> TypeChecker(body)
+      case PairPhrase(p, q) => p.t x q.t
 
-      case NatDependentApplyPhrase(fun, arg) =>
-        TypeChecker(fun) match {
-          case nf: NatDependentFunctionType[_] =>
-            nf.outT
+      case Proj1Phrase(p) =>
+        p.t match {
+          case PairType(t1, _) => t1
+          case x => error(x.toString, PairType.toString)
         }
 
-      case PairPhrase(a, b) => TypeChecker(a) x TypeChecker(b)
-
-      case Proj1Phrase(pair) =>
-        TypeChecker(pair) match {
-          case pt: PairType[_, _] => pt.t1
-          case t => error(t.toString, PairType.toString)
-        }
-
-      case Proj2Phrase(pair) =>
-        TypeChecker(pair) match {
-          case pt: PairType[_, _] => pt.t2
-          case t => error(t.toString, PairType.toString)
+      case Proj2Phrase(p) =>
+        p.t match {
+          case PairType(_, t2) => t2
+          case x => error(x.toString, PairType.toString)
         }
 
       case IfThenElsePhrase(cond, thenP, elseP) =>
-        val condT = TypeChecker(cond)
-        if (condT != ExpType(int) && condT != ExpType(bool)) {
-          error(condT.toString, expected = "int or boolean")
-        }
+        cond.t =?= (exp"[$int]" | exp"[$bool")
+        thenP.t =?= elseP.t
 
-        val thenPT = TypeChecker(thenP)
-        val elsePT = TypeChecker(elseP)
-        check(thenPT, elsePT)
-        thenPT
+        thenP.t
 
       case LiteralPhrase(d) => ExpType(d.dataType)
 
       case UnaryOpPhrase(op, x) =>
-        TypeChecker(x) match {
-          case ExpType(dt) => ExpType(dt)
-          case y => error(y.toString, expected = "ExpType")
+        x.t match {
+          case ExpType(dt) => x.t
+          case y => error(y.toString, ExpType.toString)
         }
 
       case BinOpPhrase(op, lhs, rhs) =>
         op match {
           case BinOpPhrase.Op.GT | BinOpPhrase.Op.LT =>
-            (TypeChecker(lhs), TypeChecker(rhs)) match {
-              case (ExpType(dt1), ExpType(dt2)) if dt1 == dt2 =>
-                ExpType(bool)
-              case x => error(x.toString, expected = "")
+            (lhs.t, rhs.t) match {
+              case (ExpType(dt1), ExpType(dt2)) =>
+                check(lhs.t, rhs.t)
+                exp"[$bool]"
+              case x => error(x.toString, "(ExpType, ExpType)")
             }
-          case _ => (TypeChecker(lhs), TypeChecker(rhs)) match {
-            case (ExpType(dt1), ExpType(dt2)) if dt1 == dt2 =>
-              ExpType(dt1)
-            case x => error(x.toString, expected = "them to match")
-          }
+          case _ =>
+            (lhs.t, rhs.t) match {
+              case (ExpType(dt1), ExpType(dt2)) =>
+                check(lhs.t, rhs.t)
+                lhs.t
+              case x => error(x.toString, "(ExpType, ExpType)")
+            }
         }
 
       case p: ExpPattern => p.typeCheck()
@@ -197,8 +198,6 @@ object TypeChecker {
       case p: IntermediateCommandPattern => p.typeCheck()
 
     }).asInstanceOf[T]
-    p.t = phraseType
-    p.t
   }
 
 }

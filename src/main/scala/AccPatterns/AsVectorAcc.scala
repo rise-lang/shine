@@ -7,24 +7,26 @@ import opencl.generator.OpenCLAST.VarRef
 
 import scala.xml.Elem
 
-case class AsVectorAcc(array: Phrase[AccType]) extends AccPattern {
-
-  private var n: ArithExpr = null
+case class AsVectorAcc(n: ArithExpr,
+                       m: ArithExpr,
+                       dt: BasicType,
+                       array: Phrase[AccType])
+  extends AccPattern {
 
   override def typeCheck(): AccType = {
     import TypeChecker._
-    TypeChecker(array) match {
-      case AccType(ArrayType(n_, VectorType(m, dt))) =>
-        n = n_
-        AccType(ArrayType(n * m, dt))
-      case x => error(x.toString, "ArrayType(VectorType)")
-    }
+    array.t =?= acc"[$n.${VectorType(m, dt)}]"
+    acc"[${n * m}, dt]"
+//    TypeChecker(array) match {
+//      case AccType(ArrayType(n_, VectorType(m, dt))) =>
+//        n = n_
+//        AccType(ArrayType(n * m, dt))
+//      case x => error(x.toString, "ArrayType(VectorType)")
+//    }
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[AccType] = {
-    val s = AsVectorAcc(VisitAndRebuild(array, fun))
-    s.n = fun(n)
-    s
+    AsVectorAcc(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): AccIdentifier = ???

@@ -3,7 +3,6 @@ package ExpPatterns
 import AccPatterns.AsVectorAcc
 import Compiling.RewriteToImperative
 import Core.OperationalSemantics._
-import Core.PhraseType.->
 import Core._
 import DSL._
 import apart.arithmetic.ArithExpr
@@ -12,20 +11,29 @@ import opencl.generator.OpenCLAST.Expression
 import scala.xml.Elem
 
 case class AsVector(n: ArithExpr,
+                    m: ArithExpr,
+                    dt: BasicType,
                     array: Phrase[ExpType])
   extends ExpPattern with ViewExpPattern {
 
   override def typeCheck(): ExpType = {
     import TypeChecker._
-    TypeChecker(array) match {
-      case ExpType(ArrayType(m, dt)) if dt.isInstanceOf[BasicType] =>
-        ExpType(ArrayType(m /^ n, VectorType(n, dt.asInstanceOf[BasicType])))
-      case x => error(x.toString, "ArrayType")
+    array.t =?= exp"[$m.$dt]"
+    exp"[${m /^ n}.${VectorType(n, dt)}]"
+  }
+
+  override def inferTypes(): AsVector = {
+    import TypeInference._
+    val array_ = TypeInference(array)
+    array_.t match {
+      case ExpType(ArrayType(mn_, dt_)) if dt.isInstanceOf[BasicType] =>
+        AsVector(n, mn_ /^ n, dt.asInstanceOf[BasicType], array_)
+      case x => error(x.toString, "ExpType(ArrayType)")
     }
   }
 
   override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[ExpType] = {
-    AsVector(f(n), VisitAndRebuild(array, f))
+    AsVector(f(n), f(m), f(dt), VisitAndRebuild(array, f))
   }
 
   override def eval(s: Store): Data = ???
@@ -49,12 +57,12 @@ case class AsVector(n: ArithExpr,
     </asVector>
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
-    RewriteToImperative.acc(array)(AsVectorAcc(A))
+    RewriteToImperative.acc(array)(AsVectorAcc(n, m, dt, A))
   }
 
   override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
     RewriteToImperative.exp(array)(λ(array.t) { x =>
-      C(AsVector(n, x))
+      C(AsVector(n, m, dt, x))
     })
   }
 }

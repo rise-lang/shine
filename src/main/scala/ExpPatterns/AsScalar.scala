@@ -2,7 +2,6 @@ package ExpPatterns
 
 import AccPatterns.AsScalarAcc
 import Core.OperationalSemantics._
-import Core.PhraseType.->
 import Core._
 import Compiling.RewriteToImperative
 import DSL._
@@ -11,25 +10,30 @@ import opencl.generator.OpenCLAST.Expression
 
 import scala.xml.Elem
 
-case class AsScalar(array: Phrase[ExpType])
+case class AsScalar(n: ArithExpr,
+                    m: ArithExpr,
+                    dt: BasicType,
+                    array: Phrase[ExpType])
   extends ExpPattern with ViewExpPattern {
-
-  private var n: ArithExpr = null
 
   override def typeCheck(): ExpType = {
     import TypeChecker._
-    TypeChecker(array) match {
-      case ExpType(ArrayType(n_, VectorType(m, dt))) =>
-        n = n_
-        ExpType(ArrayType(n*m, dt))
-      case x => error(x.toString, "ArrayType(VectorType)")
+    array.t =?= exp"[$n.${VectorType(m, dt)}]"
+    exp"[${n * m}.$dt]"
+  }
+
+  override def inferTypes(): AsScalar = {
+    import TypeInference._
+    val array_ = TypeInference(array)
+    array_.t match {
+      case ExpType(ArrayType(n_, VectorType(m_, dt_))) =>
+        AsScalar(n_, m_, dt_, array_)
+      case x => error(x.toString, "ExpType(ArrayType(VectorType))")
     }
   }
 
-  override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[ExpType] = {
-    val as = AsScalar(VisitAndRebuild(array, f))
-    as.n = n
-    as
+  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[ExpType] = {
+    AsScalar(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): Data = ???
@@ -52,15 +56,14 @@ case class AsScalar(array: Phrase[ExpType])
     </asScalar>
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
-    assert(n != null)
     import RewriteToImperative._
-    acc(array)(AsScalarAcc(n, A))
+    acc(array)(AsScalarAcc(n, m, dt, A))
   }
 
   override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
     import RewriteToImperative._
     exp(array)(λ(array.t) { x =>
-      C(AsScalar(x))
+      C(AsScalar(n, m, dt, x))
     })
   }
 }

@@ -12,10 +12,24 @@ import DSL._
 import scala.xml.Elem
 
 case class Gather(idxF: (ArithExpr, DataType) => ArithExpr,
+                  dt: DataType,
                   array: Phrase[ExpType])
   extends ExpPattern with ViewExpPattern {
 
-  override def typeCheck(): ExpType = TypeChecker(array)
+  override def typeCheck(): ExpType = {
+    import TypeChecker._
+    array.t =?= exp"[$dt]"
+    exp"[$dt]"
+  }
+
+  override def inferTypes(): Gather = {
+    import TypeInference._
+    val array_ = TypeInference(array)
+    array_.t match {
+      case ExpType(ArrayType(_, dt_)) => Gather(idxF, dt_, array_)
+      case x => error(x.toString, "ExpType(ArrayType)")
+    }
+  }
 
   override def eval(s: Store): Data = {
     import OperationalSemantics._
@@ -30,8 +44,8 @@ case class Gather(idxF: (ArithExpr, DataType) => ArithExpr,
     }
   }
 
-  override def visitAndRebuild(f: fun): Phrase[ExpType] =
-    Gather(idxF, VisitAndRebuild(array, f))
+  override def visitAndRebuild(fun: fun): Phrase[ExpType] =
+    Gather(idxF, fun(dt), VisitAndRebuild(array, fun))
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
@@ -43,7 +57,7 @@ case class Gather(idxF: (ArithExpr, DataType) => ArithExpr,
   override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
     import RewriteToImperative._
     exp(array)(λ(array.t) { x =>
-      C(Gather(idxF, x))
+      C(Gather(idxF, dt, x))
     })
   }
 
