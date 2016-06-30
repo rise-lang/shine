@@ -116,34 +116,28 @@ object π2 {
 }
 
 object identifier {
-  def exp(name: String) = IdentPhrase[ExpType](name)
-  def acc(name: String) = IdentPhrase[AccType](name)
+  def exp(name: String) = IdentPhrase[ExpType](name, null)
+  def acc(name: String) = IdentPhrase[AccType](name, null)
 
-  def newVar(name: String) = IdentPhrase[ExpType x AccType](name)
+  def newVar(name: String) = IdentPhrase[ExpType x AccType](name, null)
 
   def newVar(name: String, dt: DataType) = {
-    val i = IdentPhrase[ExpType x AccType](name)
-    i.t = PairType[ExpType, AccType](ExpType(dt), AccType(dt))
-    i
+    IdentPhrase[ExpType x AccType](name, PairType[ExpType, AccType](ExpType(dt), AccType(dt)))
   }
 
-  def apply(name: String) = IdentPhrase[ExpType](name)
-
   def apply[T <: PhraseType](name: String, t: T) = {
-    val i = IdentPhrase[T](name)
-    i.t = t
-    i
+    IdentPhrase[T](name, t)
   }
 }
 
 trait funDef {
   def apply[T <: PhraseType](f: IdentPhrase[ExpType] => Phrase[T]): LambdaPhrase[ExpType, T] = {
-    val param = IdentPhrase[ExpType]( newName() )
+    val param = identifier.exp( newName() )
     LambdaPhrase(param, f(param))
   }
 
   def apply[T <: PhraseType](f: (Phrase[ExpType], Phrase[ExpType]) => Phrase[T]): LambdaPhrase[ExpType x ExpType, T] = {
-    val param = IdentPhrase[PairType[ExpType, ExpType]]( newName() )
+    val param = IdentPhrase[PairType[ExpType, ExpType]]( newName(), null )
     val g = λ(PairType(ExpType(int), ExpType(int))) { x => f(π1(x), π2(x)) }
     LambdaPhrase(param, g(param))
   }

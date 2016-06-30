@@ -9,8 +9,10 @@ sealed abstract class Phrase[T <: PhraseType] {
   var t: T = null.asInstanceOf[T]
 }
 
-final case class IdentPhrase[T <: PhraseType](name: String)
-  extends Phrase[T]
+final case class IdentPhrase[T <: PhraseType](name: String, `type`: T)
+  extends Phrase[T] {
+  t = `type`
+}
 
 final case class LambdaPhrase[T1 <: PhraseType, T2 <: PhraseType](param: IdentPhrase[T1], body: Phrase[T2])
   extends Phrase[T1 -> T2]

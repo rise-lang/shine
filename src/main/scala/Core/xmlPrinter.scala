@@ -18,7 +18,7 @@ object xmlPrinter {
   }
 
   def asString[T <: PhraseType](p: Phrase[T]): String = {
-    <expression>{apply(p)}</expression>.toString()
+    <expression p={PrettyPrinter(p)}>{apply(p)}</expression>.toString()
   }
 
   def apply[T <: PhraseType](p: Phrase[T]): xml.Elem = {

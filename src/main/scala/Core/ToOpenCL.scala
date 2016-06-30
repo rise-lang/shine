@@ -274,6 +274,8 @@ object ToOpenCL {
 
         val suffix = if (s != "") { s } else { null }
 
+        println(xmlPrinter.asString(p))
+
         val originalType = p.t.dataType
         val currentType = dt
 

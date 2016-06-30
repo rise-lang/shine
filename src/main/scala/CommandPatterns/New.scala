@@ -5,7 +5,7 @@ import Core.OperationalSemantics._
 import Core.PhraseType._
 import DSL.identifier
 import Compiling.SubstituteImplementations
-import apart.arithmetic.{NamedVar, Var}
+import apart.arithmetic.NamedVar
 import opencl.generator.OpenCLAST.{Block, Comment, VarDecl}
 
 import scala.xml.Elem

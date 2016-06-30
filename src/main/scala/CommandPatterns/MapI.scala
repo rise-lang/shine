@@ -50,7 +50,7 @@ abstract class AbstractMapI(n: ArithExpr,
     }
 
     (0 until n.eval).foldLeft(s)((sOld, i) => {
-      val comm = fE(IdxAcc(out, LiteralPhrase(i)))(Idx(in, LiteralPhrase(i)))
+      val comm = fE(out `@` LiteralPhrase(i))(Idx(in, LiteralPhrase(i)))
       OperationalSemantics.eval(sOld, comm)
     })
   }

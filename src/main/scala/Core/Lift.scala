@@ -26,7 +26,7 @@ object Lift {
       case p2: Proj2Phrase[a, `(nat)->`[T]] =>
         val pair = liftPair(p2.pair)
         liftNatDependentFunction(pair._2)
-      case IdentPhrase(_) | IfThenElsePhrase(_, _, _) =>
+      case IdentPhrase(_, _) | IfThenElsePhrase(_, _, _) =>
         throw new Exception("This should never happen")
     }
   }
@@ -47,14 +47,21 @@ object Lift {
       case p2: Proj2Phrase[a, T1 -> T2] =>
         val pair = liftPair(p2.pair)
         liftFunction(pair._2)
-      case IdentPhrase(_) | IfThenElsePhrase(_, _, _) =>
+      case IdentPhrase(_, _) | IfThenElsePhrase(_, _, _) =>
         throw new Exception("This should never happen")
     }
   }
 
   def liftPair[T1 <: PhraseType, T2 <: PhraseType](p: Phrase[T1 x T2]): (Phrase[T1], Phrase[T2]) = {
     p match {
-      case i: IdentPhrase[T1 x T2] => (IdentPhrase[T1](i.name), IdentPhrase[T2](i.name))
+      case i: IdentPhrase[T1 x T2] =>
+        if (i.t == null) {
+          val t1 = null.asInstanceOf[T1]
+          val t2 = null.asInstanceOf[T2]
+          (IdentPhrase[T1](i.name, t1), IdentPhrase[T2](i.name, t2))
+        } else {
+          (IdentPhrase[T1](i.name, i.t.t1), IdentPhrase[T2](i.name, i.t.t2))
+        }
       case pair: PairPhrase[T1, T2] => (pair.fst, pair.snd)
       case app: ApplyPhrase[a, T1 x T2] =>
         val fun = liftFunction(app.fun)
@@ -68,7 +75,7 @@ object Lift {
       case p2: Proj2Phrase[a, T1 x T2] =>
         val pair = liftPair(p2.pair)
         liftPair(pair._2)
-      case IdentPhrase(_) | IfThenElsePhrase(_, _, _) =>
+      case IdentPhrase(_, _) | IfThenElsePhrase(_, _, _) =>
         throw new Exception("This should never happen")
     }
   }

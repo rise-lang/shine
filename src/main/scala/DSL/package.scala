@@ -61,7 +61,7 @@ package object DSL {
 
   implicit class FunComp[T1 <: PhraseType, T2 <: PhraseType](f: Phrase[T1 -> T2]) {
     def o[T3 <: PhraseType](g: Phrase[T3 -> T1]): Phrase[T3 -> T2] = {
-      val param = IdentPhrase[T3](newName())
+      val param = IdentPhrase[T3](newName(), null.asInstanceOf[T3])
       λ(param)((arg: IdentPhrase[T3]) => f(g(arg)))
     }
   }
@@ -103,7 +103,14 @@ package object DSL {
   }
 
   implicit class AccPhraseExtensions(a: Phrase[AccType]) {
-    def `@`(index: Phrase[ExpType]) = IdxAcc(a, index)
+    def `@`(index: Phrase[ExpType]) = {
+      (a.t, index.t) match {
+        case (AccType(ArrayType(n, dt)), ExpType(int)) =>
+          IdxAcc(n, dt, index, a)
+        case (null, null) => IdxAcc(null, null, index, a)
+        case _ => throw new Exception("This should not happen")
+      }
+    }
   }
 
   implicit class VarExtensions(v: Phrase[VarType]) {

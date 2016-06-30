@@ -2,23 +2,27 @@ package AccPatterns
 
 import Core._
 import Core.OperationalSemantics._
+import Core.PhraseType._
 import apart.arithmetic.{ArithExpr, Cst, NamedVar}
 import opencl.generator.OpenCLAST.{Literal, VarRef}
 
 import scala.xml.Elem
 
-case class IdxAcc(array: Phrase[AccType],
-                  index: Phrase[ExpType]) extends AccPattern {
-
-  private var dt: DataType = null
+case class IdxAcc(n: ArithExpr,
+                  dt: DataType,
+                  index: Phrase[ExpType],
+                  array: Phrase[AccType]) extends AccPattern {
 
   override def typeCheck(): AccType = {
     import TypeChecker._
     check(TypeChecker(index), ExpType(int))
     TypeChecker(array) match {
-      case AccType(ArrayType(n, dt_)) =>
-        dt = dt_
-        AccType(dt)
+      case AccType(ArrayType(n_, dt_)) =>
+        if (dt == dt_ && n == n_) {
+          AccType(dt)
+        } else {
+          error(acc"[$n_.$dt]", acc"[$n.$dt]")
+        }
       case x => error(x.toString, "ArrayType")
     }
   }
@@ -33,9 +37,7 @@ case class IdxAcc(array: Phrase[AccType],
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[AccType] = {
-    val i = IdxAcc(VisitAndRebuild(array, fun), VisitAndRebuild(index, fun))
-    i.dt = fun(dt)
-    i
+    IdxAcc(fun(n), fun(dt), VisitAndRebuild(index, fun), VisitAndRebuild(array, fun))
   }
 
   override def toOpenCL(env: ToOpenCL.Environment): VarRef = ToOpenCL.acc(this, env, List(), List(), t.dataType)
@@ -56,8 +58,8 @@ case class IdxAcc(array: Phrase[AccType],
   override def prettyPrint: String = s"${PrettyPrinter(array)}[${PrettyPrinter(index)}]"
 
   override def xmlPrinter: Elem =
-    <idxAcc dt={ToString(dt)}>
-      <input>{Core.xmlPrinter(array)}</input>
+    <idxAcc n={ToString(n)} dt={ToString(dt)}>
+      <output>{Core.xmlPrinter(array)}</output>
       <index>{Core.xmlPrinter(index)}</index>
     </idxAcc>
 }

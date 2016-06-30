@@ -6,8 +6,13 @@ class TypeException(msg: String) extends Exception(msg)
 
 object TypeChecker {
 
-  def error(found: String, expected: String) = {
+  def error(found: String, expected: String): Nothing = {
     throw new TypeException("Type error: found " + found + " expected " + expected)
+  }
+
+  def error(found: PhraseType, expected: PhraseType): Nothing = {
+    error(if (found != null) found.toString else "null",
+      if (expected != null) expected.toString else "null")
   }
 
   def check(current: PhraseType, expected: PhraseType) = {

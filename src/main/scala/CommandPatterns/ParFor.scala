@@ -109,6 +109,8 @@ abstract class AbstractParFor(val n: ArithExpr,
       AssignmentExpression(ArithExpression(v), ArithExpression(v + step))
     }
 
+    println(Core.xmlPrinter.asString(body_(out_at_i)))
+
     val bodyBlock = (b: Block) => ToOpenCL.cmd(body_(out_at_i), b, env)
 
 //    println(s"range.numValues: ${range.numVals}")
