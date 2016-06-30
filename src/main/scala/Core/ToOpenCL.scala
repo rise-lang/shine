@@ -56,6 +56,7 @@ class ToOpenCL(val localSize: ArithExpr, val globalSize: ArithExpr) {
     xmlPrinter.toFile("/tmp/p2.xml", p2)
     val p3 = SubstituteImplementations(p2,
       SubstituteImplementations.Environment(immutable.Map[String, AddressSpace]( ("output", GlobalMemory) )))
+    xmlPrinter.toFile("/tmp/p3.xml", p3)
     TypeChecker(p3)
     xmlPrinter.toFile("/tmp/p3.xml", p3)
 
@@ -163,7 +164,7 @@ object ToOpenCL {
       }
 
       case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
-           IdentPhrase(_) | Proj1Phrase(_) | Proj2Phrase(_) =>
+           IdentPhrase(_, _) | Proj1Phrase(_) | Proj2Phrase(_) =>
         throw new Exception("This should not happen")
     }
   }
@@ -172,7 +173,7 @@ object ToOpenCL {
     p match {
       case BinOpPhrase(op, lhs, rhs) =>
         BinaryExpression(op.toString, exp(lhs, env), exp(rhs, env))
-      case IdentPhrase(name) => VarRef(name)
+      case IdentPhrase(name, _) => VarRef(name)
       case LiteralPhrase(d) =>
         d match {
           case i: IntData => Literal(i.i.toString)
@@ -200,7 +201,7 @@ object ToOpenCL {
 
   def acc(p: Phrase[AccType], env: Environment): VarRef = {
     p match {
-      case IdentPhrase(name) => VarRef(name)
+      case IdentPhrase(name, _) => VarRef(name)
       case p: Proj1Phrase[AccType, _] => acc(Lift.liftPair(p.pair)._1, env)
       case p: Proj2Phrase[_, AccType] => acc(Lift.liftPair(p.pair)._2, env)
       case a: AccPattern => a.toOpenCL(env)
@@ -217,7 +218,7 @@ object ToOpenCL {
           tupleAccess: List[ArithExpr],
           dt: DataType): Expression = {
     p match {
-      case IdentPhrase(name) =>
+      case IdentPhrase(name, t) =>
         val i = arrayAccess.map(x => x._1 * x._2).foldLeft(0: ArithExpr)((x, y) => x + y)
         val index = if (i != Cst(0)) { i } else { null }
 
@@ -229,7 +230,7 @@ object ToOpenCL {
 
         val suffix = if (s != "") { s } else { null }
 
-        val originalType = p.t.dataType
+        val originalType = t.dataType
         val currentType = dt
 
         (originalType, currentType) match {
@@ -262,7 +263,7 @@ object ToOpenCL {
           tupleAccess: List[ArithExpr],
           dt: DataType): VarRef = {
     p match {
-      case IdentPhrase(name) =>
+      case IdentPhrase(name, t) =>
         val i = arrayAccess.map(x => x._1 * x._2).foldLeft(0: ArithExpr)((x, y) => x + y)
         val index = if (i != Cst(0)) { i } else { null }
 
@@ -274,9 +275,7 @@ object ToOpenCL {
 
         val suffix = if (s != "") { s } else { null }
 
-        println(xmlPrinter.asString(p))
-
-        val originalType = p.t.dataType
+        val originalType = t.dataType
         val currentType = dt
 
         (originalType, currentType) match {

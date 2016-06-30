@@ -99,16 +99,21 @@ package object DSL {
 
     def _2 = Snd(e)
 
-    def `@`(index: Phrase[ExpType]) = Idx(e, index)
+    def `@`(index: Phrase[ExpType]) = {
+      e.t match {
+        case ExpType(ArrayType(n, dt)) => Idx(n, dt, index, e)
+        case null => Idx(null, null, index, e)
+        case x => throw new Exception(s"This should not happen: $x")
+      }
+    }
   }
 
   implicit class AccPhraseExtensions(a: Phrase[AccType]) {
     def `@`(index: Phrase[ExpType]) = {
-      (a.t, index.t) match {
-        case (AccType(ArrayType(n, dt)), ExpType(int)) =>
-          IdxAcc(n, dt, index, a)
-        case (null, null) => IdxAcc(null, null, index, a)
-        case _ => throw new Exception("This should not happen")
+      a.t match {
+        case AccType(ArrayType(n, dt)) => IdxAcc(n, dt, index, a)
+        case null => IdxAcc(null, null, index, a)
+        case x => throw new Exception(s"This should not happen: $x")
       }
     }
   }

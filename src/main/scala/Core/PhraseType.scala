@@ -169,6 +169,7 @@ object PhraseType {
         values.next match {
           case n: ArithExpr => parseArrayType(n)
           case dt: DataType => parseRecordOrBaseType(dt)
+          case null => null.asInstanceOf[DataType]
           case _ =>
             throw new Exception(s"Could not parse $string into a PhraseType")
         }

@@ -2,25 +2,30 @@ package ExpPatterns
 
 import Core._
 import Core.OperationalSemantics._
-import Core.PhraseType.->
+import Core.PhraseType._
 import apart.arithmetic.{ArithExpr, NamedVar}
 import opencl.generator.OpenCLAST.{Expression, VarRef}
 
 import scala.xml.Elem
 
-case class Idx(array: Phrase[ExpType],
-               index: Phrase[ExpType]) extends ExpPattern with ViewExpPattern with GeneratableExpPattern {
+case class Idx(n: ArithExpr,
+               dt: DataType,
+               index: Phrase[ExpType],
+               array: Phrase[ExpType])
+  extends ExpPattern with ViewExpPattern with GeneratableExpPattern {
 
-  private var n: ArithExpr = null
-  private var dt: DataType = null
+  t = ExpType(dt)
 
   override def typeCheck(): ExpType = {
     import TypeChecker._
     check(TypeChecker(index), ExpType(int))
     TypeChecker(array) match {
       case ExpType(ArrayType(n_, dt_)) =>
-        n = n_; dt = dt_
-        ExpType(dt)
+        if (dt == dt_ && n == n_) {
+          ExpType(dt)
+        } else {
+          error(exp"[$n_.$dt_]", exp"[$n.$dt]")
+        }
       case x => error(x.toString, "ArrayType")
     }
   }
@@ -32,11 +37,8 @@ case class Idx(array: Phrase[ExpType],
     }
   }
 
-  override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[ExpType] = {
-    val i = Idx(VisitAndRebuild(array, f), VisitAndRebuild(index, f))
-    i.n = f(n)
-    i.dt = f(dt)
-    i
+  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[ExpType] = {
+    Idx(fun(n), fun(dt), VisitAndRebuild(index, fun), VisitAndRebuild(array, fun))
   }
 
   override def toOpenCL(env: ToOpenCL.Environment): Expression =
@@ -50,7 +52,7 @@ case class Idx(array: Phrase[ExpType],
       case VarRef(name, _, _) => NamedVar(name, env.ranges(name))
       case _ => throw new Exception("This should not happen")
     }
-    val length = DataType.getLengths(dt, tupleAccess, List()).foldLeft(1:ArithExpr)((x,y) => x * y)
+    val length = DataType.getLengths(dt, tupleAccess, List()).foldLeft(1: ArithExpr)((x, y) => x * y)
     ToOpenCL.exp(array, env, (idx, length) :: arrayAccess, tupleAccess, dt)
   }
 
