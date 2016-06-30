@@ -82,8 +82,8 @@ case class Zip(lhs: Phrase[ExpType],
     val E1 = lhs
     val E2 = rhs
 
-    exp(E1)(λ(ExpType(ArrayType(n, dt1)))(x =>
-      exp(E2)(λ(ExpType(ArrayType(n, dt2)))(y =>
+    exp(E1)(λ(exp"[$n.$dt2]" )(x =>
+      exp(E2)(λ(exp"[$n.$dt2]")(y =>
         MapI(n, dt1 x dt2, dt1 x dt2, A,
           λ(A.t) { o =>
             λ(ExpType(RecordType(lhs.t.dataType, rhs.t.dataType))) { x =>

@@ -1060,19 +1060,7 @@ object Test extends App {
     val t = t"exp[ $n . $n . $dt1 x $dt1 ]"
     println(s"t: $t")
 
-  }
+    println(exp"[$n.$dt1]")
 
-
-
-  case class Email(local: String, domain: String) {
-    override def toString = local + "@" + domain
-  }
-
-  implicit class EmailHelper(val sc: StringContext) extends AnyVal {
-    def email(args: Any*) = Email("ms", "ed.ac.uk")
-  }
-
-  {
-    val email = email"michel.steuwer@ed.ac.uk"
   }
 }

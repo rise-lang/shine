@@ -64,6 +64,14 @@ object PhraseType {
     def t(args: Any*): PhraseType = {
       new PhraseTypeParser(sc.s(args:_*), sc.parts.iterator, args.iterator).parsePhraseType
     }
+
+    def exp(args: Any*): ExpType = {
+      new PhraseTypeParser(sc.s(args:_*), sc.parts.iterator.drop(1), args.iterator).parseExpType
+    }
+
+    def acc(args: Any*): AccType = {
+      new PhraseTypeParser(sc.s(args:_*), sc.parts.iterator.drop(1), args.iterator).parseAccType
+    }
   }
 
   def substitute[T <: PhraseType](ae: ArithExpr,
@@ -173,11 +181,11 @@ object PhraseType {
       if (strings.hasNext) {
         strings.next.trim match {
           case "exp[" =>
-            val expType = ExpType(parseDataType)
+            val expType = parseExpType
             check(strings.hasNext && strings.next().trim == "]")
             expType
           case "acc[" =>
-            val accType = AccType(parseDataType)
+            val accType = parseAccType
             check(strings.hasNext && strings.next().trim == "]")
             accType
           case "var[" =>
@@ -192,6 +200,10 @@ object PhraseType {
         throw new Exception(s"Could not parse $string into a PhraseType")
       }
     }
+
+    def parseExpType: ExpType = ExpType(parseDataType)
+
+    def parseAccType: AccType = AccType(parseDataType)
 
     def parsePhraseType: PhraseType = {
       val pt1 = parseBasePhraseType
