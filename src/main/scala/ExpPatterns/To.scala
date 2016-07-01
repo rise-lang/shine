@@ -1,7 +1,6 @@
 package ExpPatterns
 
 import Core.OperationalSemantics.{Data, Store}
-import Core.PhraseType._
 import Core._
 import Compiling.RewriteToImperative
 import DSL._
@@ -18,7 +17,7 @@ abstract class To(dt1: DataType,
 
   override lazy val `type` = exp"[$dt2]"
 
-  override def typeCheck: Unit = {
+  override def typeCheck(): Unit = {
     import TypeChecker._
     f checkType t"exp[$dt1] -> exp[$dt2]"
     input checkType exp"[$dt1]"

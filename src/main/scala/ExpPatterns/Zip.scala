@@ -3,7 +3,6 @@ package ExpPatterns
 import CommandPatterns.MapI
 import Core._
 import Core.OperationalSemantics._
-import Core.PhraseType._
 import DSL._
 import Compiling.RewriteToImperative
 import apart.arithmetic.{ArithExpr, Cst}
@@ -20,7 +19,7 @@ case class Zip(n: ArithExpr,
 
   override lazy val `type` = exp"[$n.($dt1 x $dt2)]"
 
-  override def typeCheck: Unit = {
+  override def typeCheck(): Unit = {
     import TypeChecker._
     lhs checkType exp"[$n.$dt1]"
     rhs checkType exp"[$n.$dt2]"

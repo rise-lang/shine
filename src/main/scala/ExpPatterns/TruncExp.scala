@@ -15,7 +15,7 @@ case class TruncExp(n: ArithExpr,
 
   override lazy val `type` = exp"[$m.$dt]"
 
-  override def typeCheck: Unit = {
+  override def typeCheck(): Unit = {
     import TypeChecker._
     array checkType exp"[$n.$dt]"
   }

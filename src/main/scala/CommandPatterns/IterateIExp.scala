@@ -3,7 +3,6 @@ package CommandPatterns
 import AccPatterns.TruncAcc
 import Compiling.SubstituteImplementations
 import Core._
-import Core.PhraseType._
 import Core.OperationalSemantics._
 import DSL._
 import ExpPatterns.TruncExp
@@ -20,7 +19,7 @@ case class IterateIExp(n: ArithExpr,
                        in: Phrase[ExpType])
   extends IntermediateCommandPattern {
 
-  override def typeCheck: Unit = {
+  override def typeCheck(): Unit = {
     import TypeChecker._
     out checkType t"(exp[$m.$dt] -> comm)"
     f match {
@@ -70,7 +69,7 @@ case class IterateIExp(n: ArithExpr,
 
   override def xmlPrinter: Elem = {
     val l = f match {
-      case NatDependentLambdaPhrase(l, _) => l
+      case NatDependentLambdaPhrase(l_, _) => l_
       case _ => throw new Exception("This should not happen")
     }
     <iterateIExp n={ToString(n)} m={ToString(m)} k={ToString(k)} dt={ToString(dt)}>

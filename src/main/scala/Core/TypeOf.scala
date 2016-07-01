@@ -11,14 +11,15 @@ object TypeOf {
       case ApplyPhrase(p, q) =>
         p.t match {
           case FunctionType(_, t2) => t2
+          case null => null
         }
 
       case NatDependentLambdaPhrase(a, p) => a -> p.t
 
       case NatDependentApplyPhrase(p, e) =>
         p.t match {
-          case NatDependentFunctionType(a, t) =>
-            t `[` e `/` a `]`
+          case NatDependentFunctionType(a, t) => t `[` e `/` a `]`
+          case null => null
         }
 
       case PairPhrase(p, q) => p.t x q.t
@@ -26,11 +27,13 @@ object TypeOf {
       case Proj1Phrase(p) =>
         p.t match {
           case PairType(t1, _) => t1
+          case null => null
         }
 
       case Proj2Phrase(p) =>
         p.t match {
           case PairType(_, t2) => t2
+          case null => null
         }
 
       case IfThenElsePhrase(cond, thenP, elseP) =>
@@ -41,6 +44,7 @@ object TypeOf {
       case UnaryOpPhrase(op, x) =>
         x.t match {
           case ExpType(dt) => x.t
+          case null => null
         }
 
       case BinOpPhrase(op, lhs, rhs) =>

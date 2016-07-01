@@ -2,7 +2,6 @@ package ExpPatterns
 
 import CommandPatterns.MapGlobalI
 import Core._
-import Core.PhraseType._
 import apart.arithmetic.ArithExpr
 
 case class MapGlobal(n: ArithExpr,

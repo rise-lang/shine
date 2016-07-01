@@ -1,12 +1,10 @@
 package CommandPatterns
 
 import Core._
-import Core.PhraseType._
 import Core.OperationalSemantics._
 import DSL._
 import Compiling.SubstituteImplementations
 import apart.arithmetic.ArithExpr
-import opencl.generator.OpenCLAST.Block
 
 import scala.xml.Elem
 
@@ -18,7 +16,7 @@ case class ReduceIExp(n: ArithExpr,
                       init: Phrase[ExpType],
                       in: Phrase[ExpType]) extends IntermediateCommandPattern {
 
-  override def typeCheck: Unit = {
+  override def typeCheck(): Unit = {
     import TypeChecker._
     out checkType t"exp[$dt2] -> comm"
     f checkType t"acc[$dt2] -> exp[$dt1] -> exp[$dt2] -> comm"

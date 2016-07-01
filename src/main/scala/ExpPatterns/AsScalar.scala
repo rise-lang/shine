@@ -18,12 +18,12 @@ case class AsScalar(n: ArithExpr,
 
   override lazy val `type` = exp"[${n * m}.$dt]"
 
-  override def typeCheck: Unit = {
+  override def typeCheck(): Unit = {
     import TypeChecker._
     array checkType exp"[$n.${VectorType(m, dt)}]"
   }
 
-  override def inferTypes(): AsScalar = {
+  override def inferTypes: AsScalar = {
     import TypeInference._
     val array_ = TypeInference(array)
     array_.t match {

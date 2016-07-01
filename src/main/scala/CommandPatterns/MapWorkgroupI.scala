@@ -1,10 +1,9 @@
 package CommandPatterns
 
-import Core.PhraseType._
 import Core._
 import DSL._
 import Compiling.SubstituteImplementations
-import apart.arithmetic.{?, ArithExpr}
+import apart.arithmetic.ArithExpr
 
 case class MapWorkgroupI(n: ArithExpr,
                          dt1: DataType,

@@ -1,6 +1,5 @@
 package Core
 
-import Core.OperationalSemantics.newName
 import apart.arithmetic.ArithExpr
 
 object VisitAndRebuild {
@@ -21,18 +20,17 @@ object VisitAndRebuild {
       case r: f.Stop[T]@unchecked => r.p
       case c: f.Continue[T]@unchecked =>
         val f = c.f
-        val res = (c.p match {
-          case i: IdentPhrase[_] => {
+        (c.p match {
+          case i: IdentPhrase[_] =>
             val t = i.t match {
               case ExpType(dt) => ExpType(f(dt))
               case AccType(dt) => AccType(f(dt))
               case PairType(ExpType(dt1), AccType(dt2)) if dt1 == dt2 => VarType(f(dt1))
               case null => null
-              case x => throw new Exception(s"This should not happen: $x")
+              case _ => throw new Exception("This should not happen")
             }
             IdentPhrase(i.name, t)
-          }
-          case _: LiteralPhrase => c.p
+          case l: LiteralPhrase => l
           case l: LambdaPhrase[_, _] =>
             val newParam = apply(l.param, f) match {
               case p: IdentPhrase[_] => p
@@ -52,33 +50,7 @@ object VisitAndRebuild {
           case a: AccPattern => a.visitAndRebuild(f)
           case c: IntermediateCommandPattern => c.visitAndRebuild(f)
         }).asInstanceOf[Phrase[T]]
-//        res.t = c.p.t
-        res
     }
-  }
-
-  case class copyFun(map: scala.collection.immutable.Map[String, String])
-    extends VisitAndRebuild.fun {
-
-    override def apply[T2 <: PhraseType](p: Phrase[T2]): Result[Phrase[T2]] = {
-      p match {
-        case l: LambdaPhrase[a, b] =>
-          val newParam = IdentPhrase[a](newName(), l.param.t)
-          val newBody  =
-            VisitAndRebuild(l.body, copyFun(map.updated(l.param.name, newParam.name)))
-          val newL = LambdaPhrase(newParam, newBody).asInstanceOf[Phrase[T2]]
-//          newL.t = l.t
-          Continue(newL, this)
-        case i: IdentPhrase[T2] =>
-          Continue(IdentPhrase[T2](map.getOrElse(i.name, i.name), i.t), this)
-        case _ => Continue(p, this)
-      }
-    }
-
-  }
-
-  def copy[T <: PhraseType](p: Phrase[T]): Phrase[T] = {
-    VisitAndRebuild(p, copyFun(Map[String, String]()))
   }
 
 }

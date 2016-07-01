@@ -10,9 +10,9 @@ case class Length[T <: BasePhraseTypes](array: Phrase[T]) extends ExpPattern wit
 
   override lazy val `type` = exp"[$int]"
 
-  override def typeCheck: Unit = {
+  override def typeCheck(): Unit = {
     import TypeChecker._
-    array.typeCheck
+    array.typeCheck()
     array.t match {
       case ExpType(ArrayType(_, _)) =>
       case AccType(ArrayType(_, _)) =>
@@ -20,7 +20,7 @@ case class Length[T <: BasePhraseTypes](array: Phrase[T]) extends ExpPattern wit
     }
   }
 
-  override def inferTypes(): Length[T] = Length(TypeInference(array))
+  override def inferTypes: Length[T] = Length(TypeInference(array))
 
   override def eval(s: Store): Data = {
     array.t match {

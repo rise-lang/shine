@@ -2,7 +2,6 @@ package ExpPatterns
 
 import Core._
 import Core.OperationalSemantics._
-import Core.PhraseType._
 import apart.arithmetic.{ArithExpr, NamedVar}
 import opencl.generator.OpenCLAST.{Expression, VarRef}
 
@@ -16,7 +15,7 @@ case class Idx(n: ArithExpr,
 
   override lazy val `type` = exp"[$dt]"
 
-  override def typeCheck: Unit = {
+  override def typeCheck(): Unit = {
     import TypeChecker._
     index checkType exp"[$int]"
     array checkType exp"[$n.$dt]"

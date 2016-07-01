@@ -2,7 +2,6 @@ package ExpPatterns
 
 import CommandPatterns.{IterateIAcc, IterateIExp}
 import Core._
-import Core.PhraseType._
 import Core.OperationalSemantics._
 import DSL._
 import apart.arithmetic._
@@ -25,7 +24,7 @@ case class Iterate(n: ArithExpr,
     }
   }
 
-  override def typeCheck: Unit = {
+  override def typeCheck(): Unit = {
     import TypeChecker._
     f match {
       case NatDependentLambdaPhrase(l, _) =>
@@ -35,7 +34,7 @@ case class Iterate(n: ArithExpr,
     array checkType exp"[$m.$dt]"
   }
 
-  override def inferTypes(): Iterate = {
+  override def inferTypes: Iterate = {
     import TypeInference._
     val array_ = TypeInference(array)
     array_.t match {

@@ -15,7 +15,7 @@ case class AsScalarAcc(n: ArithExpr,
 
   override lazy val `type` = acc"[$n.${VectorType(m, dt)}]"
 
-  override def typeCheck: Unit = {
+  override def typeCheck(): Unit = {
     import TypeChecker._
     array checkType acc"[${m*n}.$dt]"
   }

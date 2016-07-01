@@ -27,7 +27,7 @@ package object Core {
   implicit class PhraseSubstitutionHelper[T1 <: PhraseType](in: Phrase[T1]) {
     def `[`[T2 <: PhraseType](p: Phrase[T2]) = new {
       def `/`(`for`: Phrase[T2]) = new {
-        def `]` = OperationalSemantics.substitute(p, `for`, in)
+        def `]` = Phrase.substitute(p, `for`, in)
       }
     }
   }

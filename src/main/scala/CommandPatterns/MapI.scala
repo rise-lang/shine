@@ -16,7 +16,7 @@ abstract class AbstractMapI(n: ArithExpr,
                             in: Phrase[ExpType])
   extends IntermediateCommandPattern {
 
-  override def typeCheck: Unit = {
+  override def typeCheck(): Unit = {
     import TypeChecker._
     out checkType acc"[$n.$dt2]"
     f checkType t"acc[$dt2] -> exp[$dt1] -> comm"

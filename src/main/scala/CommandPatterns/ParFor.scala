@@ -2,7 +2,6 @@ package CommandPatterns
 
 import Core._
 import Core.OperationalSemantics._
-import Core.PhraseType._
 import Compiling.SubstituteImplementations
 import apart.arithmetic.{ArithExpr, Cst, NamedVar, RangeAdd}
 import opencl.generator.OpenCLAST
@@ -19,7 +18,7 @@ abstract class AbstractParFor(val n: ArithExpr,
 
   protected var env: ToOpenCL.Environment = null
 
-  override def typeCheck: Unit = {
+  override def typeCheck(): Unit = {
     import TypeChecker._
     out checkType acc"[$n.$dt]"
     body checkType t"exp[$int] -> acc[$dt] -> comm"

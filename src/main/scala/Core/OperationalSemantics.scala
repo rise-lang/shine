@@ -1,10 +1,11 @@
 package Core
 
-import PhraseType._
 import apart.arithmetic.ArithExpr
 
 import scala.collection.immutable.HashMap
 import scala.language.implicitConversions
+import scala.language.postfixOps
+import scala.language.reflectiveCalls
 
 object OperationalSemantics {
 
@@ -45,36 +46,6 @@ object OperationalSemantics {
     }
   }
 
-//  object makeData {
-//    def apply(store: Store, name: String, data: Data): Store = {
-//      store + (name -> data)
-//    }
-//  }
-//
-//  object makeArrayData {
-//    def apply(store: Store, name: String, seq: Data*): Store = {
-//      apply(store, name, seq:_*)
-//    }
-//
-//    def apply(store: Store, name: String, seq: Vector[Data]): Store = {
-//      var c = -1
-//      seq.foldLeft(store)( (s: Store, d: Data) => {
-//        c = c + 1
-//        makeData(s, name + c, d) // create entries: name0, name1, name2, ...
-//      } )
-//    }
-//  }
-//
-//  object makeMatrixData {
-//    def apply(store: Store, name: String, seq: Vector[Vector[Data]]): Store = {
-//      var c = -1
-//      seq.foldLeft(store)( (s: Store, d: Vector[Data]) => {
-//        c = c + 1
-//        makeArrayData(s, name + c, d) // create entries: name0, name1, name2, ...
-//      } )
-//    }
-//  }
-
   object makeArrayData {
     def apply(seq: Data*) = ArrayData(Vector(seq: _*))
   }
@@ -96,19 +67,6 @@ object OperationalSemantics {
   }
 
   type Store = HashMap[String, Data]
-
-  // substitutes `phrase` for `for` in `in`
-  def substitute[T1 <: PhraseType, T2 <: PhraseType](phrase: Phrase[T1],
-                                                    `for`: Phrase[T1],
-                                                     in: Phrase[T2]): Phrase[T2] = {
-    case class fun() extends VisitAndRebuild.fun {
-      override def apply[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
-        if (`for` == p) { Stop(phrase.asInstanceOf[Phrase[T]]) } else { Continue(p, this) }
-      }
-    }
-
-    VisitAndRebuild(in, fun())
-  }
 
   def eval[T <: PhraseType, R](s: Store, p: Phrase[T])
                               (implicit evaluator: Evaluator[T, R]): R = {
@@ -148,7 +106,7 @@ object OperationalSemantics {
       def apply(s: Store, p: Phrase[T1 -> T2]): (Phrase[T1] => Phrase[T2]) = {
         p match {
           case l: LambdaPhrase[T1, T2] =>
-            (arg: Phrase[T1]) => substitute(arg, `for` = l.param, in = l.body)
+            (arg: Phrase[T1]) => l.body `[` arg `/` l.param `]`
           case IdentPhrase(_, _) | ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
                IfThenElsePhrase(_, _, _) | Proj1Phrase(_) | Proj2Phrase(_) =>
             throw new Exception("This should never happen")
@@ -164,7 +122,7 @@ object OperationalSemantics {
       def apply(s: Store, p: Phrase[T1 -> (T2 -> T3)]): (Phrase[T1] => Phrase[T2] => Phrase[T3]) = {
         p match {
           case l: LambdaPhrase[T1, T2 -> T3] => (arg: Phrase[T1]) =>
-            eval(s, substitute(arg, `for` = l.param, in = l.body))(UnaryFunctionEvaluator)
+            eval(s, l.body `[` arg `/` l.param `]` )(UnaryFunctionEvaluator)
 
           case IdentPhrase(_, _) | ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
                IfThenElsePhrase(_, _, _) | Proj1Phrase(_) | Proj2Phrase(_) =>
@@ -182,7 +140,7 @@ object OperationalSemantics {
       def apply(s: Store, p: Phrase[T1 -> (T2 -> (T3 -> T4))]): (Phrase[T1] => Phrase[T2] => Phrase[T3] => Phrase[T4]) = {
         p match {
           case l: LambdaPhrase[T1, T2 -> (T3 -> T4)] => (arg: Phrase[T1]) =>
-            eval(s, substitute(arg, `for` = l.param, in = l.body))(BinaryFunctionEvaluator)
+            eval(s, l.body `[` arg  `/` l.param `]` )(BinaryFunctionEvaluator)
 
           case IdentPhrase(_, _) | ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
                IfThenElsePhrase(_, _, _) | Proj1Phrase(_) | Proj2Phrase(_) =>

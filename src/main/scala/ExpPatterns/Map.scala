@@ -20,13 +20,13 @@ abstract class AbstractMap(n: ArithExpr,
 
   override lazy val `type` = exp"[$n.$dt2]"
 
-  override def typeCheck: Unit = {
+  override def typeCheck(): Unit = {
     import TypeChecker._
     f checkType t"exp[$dt1] -> exp[$dt2]"
     array checkType exp"[$n.$dt1]"
   }
 
-  override def inferTypes(): AbstractMap = {
+  override def inferTypes: AbstractMap = {
     import TypeInference._
     val array_ = TypeInference(array)
     array_.t match {

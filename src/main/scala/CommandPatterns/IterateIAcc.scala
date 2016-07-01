@@ -2,7 +2,6 @@ package CommandPatterns
 
 import AccPatterns.TruncAcc
 import Core._
-import Core.PhraseType._
 import Core.OperationalSemantics._
 import apart.arithmetic._
 import Compiling.SubstituteImplementations
@@ -20,7 +19,7 @@ case class IterateIAcc(n: ArithExpr,
                        in: Phrase[ExpType])
   extends IntermediateCommandPattern {
 
-  override def typeCheck: Unit = {
+  override def typeCheck(): Unit = {
     import TypeChecker._
     out checkType acc"[$m.$dt]"
     f match {

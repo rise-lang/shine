@@ -13,7 +13,7 @@ case class SndAcc(dt1: DataType,
 
   override lazy val `type` = acc"[$dt2]"
 
-  override def typeCheck: Unit = {
+  override def typeCheck(): Unit = {
     import TypeChecker._
     record checkType acc"[$dt1 x $dt2]"
   }

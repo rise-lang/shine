@@ -18,12 +18,12 @@ case class AsVector(n: ArithExpr,
 
   override lazy val `type` = exp"[$m.${VectorType(n, dt)}]"
 
-  override def typeCheck: Unit = {
+  override def typeCheck(): Unit = {
     import TypeChecker._
     array checkType exp"[${m*n}.$dt]"
   }
 
-  override def inferTypes(): AsVector = {
+  override def inferTypes: AsVector = {
     import TypeInference._
     val array_ = TypeInference(array)
     array_.t match {

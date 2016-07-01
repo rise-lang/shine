@@ -1,6 +1,8 @@
 package Core
 
 import Core.OperationalSemantics.newName
+import scala.language.postfixOps
+import scala.language.reflectiveCalls
 
 class TypeInferenceException(msg: String) extends TypeException(msg)
 
@@ -70,7 +72,7 @@ object TypeInference {
     phrase match {
       case l@LambdaPhrase(x, p) =>
         val newX = IdentPhrase(newName(), t)
-        TypeInference(OperationalSemantics.substitute(newX, `for`=x, in=l))
+        TypeInference( l `[` newX  `/` x `]` )
 
       case ApplyPhrase(fun, arg) =>
         setParamAndInferType(Lift.liftFunction(fun)(arg), t)
@@ -97,7 +99,7 @@ object TypeInference {
     phrase match {
       case LambdaPhrase(x, p) =>
         val newX = IdentPhrase(newName(), t1)
-        TypeInference(LambdaPhrase(newX, setParamAndInferType(OperationalSemantics.substitute(newX, `for`=x, in=p), t2)))
+        TypeInference(LambdaPhrase(newX, setParamAndInferType(p `[` newX `/` x `]`, t2)))
 
       case ApplyPhrase(fun, arg) =>
         setParamsAndInferTypes(Lift.liftFunction(fun)(arg), t1, t2)

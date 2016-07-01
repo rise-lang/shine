@@ -13,7 +13,7 @@ case class RecordAcc(fst: Phrase[AccType],
 
   override lazy val `type` = acc"[${fst.t.dataType} x ${snd.t.dataType}]"
 
-  override def typeCheck: Unit = { }
+  override def typeCheck(): Unit = { }
 
   override def eval(s: Store): AccIdentifier = {
     RecordIdentiers(

@@ -1,7 +1,8 @@
 package Core
 
-import PhraseType._
 import apart.arithmetic.ArithExpr
+import scala.language.postfixOps
+import scala.language.reflectiveCalls
 
 // TODO: Discuss with Bob: this excludes if (as the condition needs to be properly evaluated)
 object Lift {
@@ -32,7 +33,7 @@ object Lift {
   def liftFunction[T1 <: PhraseType, T2 <: PhraseType](p: Phrase[T1 -> T2]): (Phrase[T1] => Phrase[T2]) = {
     p match {
       case l: LambdaPhrase[T1, T2] =>
-        (arg: Phrase[T1]) => OperationalSemantics.substitute(arg, `for` = l.param, in = l.body)
+        (arg: Phrase[T1]) => l.body `[` arg  `/` l.param `]`
       case app: ApplyPhrase[a, T1 -> T2] =>
         val fun = liftFunction(app.fun)
         liftFunction(fun(app.arg))

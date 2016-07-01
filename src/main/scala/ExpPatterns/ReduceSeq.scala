@@ -1,7 +1,6 @@
 package ExpPatterns
 
 import CommandPatterns.{ReduceIAcc, ReduceIExp}
-import Core.PhraseType._
 import Core._
 import apart.arithmetic.ArithExpr
 

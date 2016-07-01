@@ -5,7 +5,7 @@ import Core.OperationalSemantics._
 import DSL._
 import Compiling.RewriteToImperative
 import apart.arithmetic.ArithExpr
-import opencl.generator.OpenCLAST.{Expression, Literal}
+import opencl.generator.OpenCLAST.Expression
 
 import scala.xml.Elem
 
@@ -16,7 +16,7 @@ case class Snd(dt1: DataType,
 
   override lazy val `type` = exp"[$dt2]"
 
-  override def typeCheck: Unit = {
+  override def typeCheck(): Unit = {
     import TypeChecker._
     record checkType exp"[$dt1 x $dt2]"
   }

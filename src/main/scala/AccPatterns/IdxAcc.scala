@@ -14,7 +14,7 @@ case class IdxAcc(n: ArithExpr,
 
   override lazy val `type` = acc"[$dt]"
 
-  override def typeCheck: Unit = {
+  override def typeCheck(): Unit = {
     import TypeChecker._
     index checkType exp"[$int]"
     array checkType acc"[$n.$dt]"

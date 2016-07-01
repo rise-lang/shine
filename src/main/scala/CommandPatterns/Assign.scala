@@ -12,7 +12,7 @@ case class Assign(dt: BasicType,
                   rhs: Phrase[ExpType])
   extends CommandPattern {
 
-  override def typeCheck: Unit = {
+  override def typeCheck(): Unit = {
     import TypeChecker._
     lhs checkType acc"[$dt]"
     rhs checkType exp"[$dt]"

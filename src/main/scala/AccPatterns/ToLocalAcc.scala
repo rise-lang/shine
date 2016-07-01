@@ -12,7 +12,7 @@ case class ToLocalAcc(dt: DataType,
 
   override lazy val `type` = acc"[$dt]"
 
-  override def typeCheck: Unit = {
+  override def typeCheck(): Unit = {
     import TypeChecker._
     p checkType acc"[$dt]"
   }

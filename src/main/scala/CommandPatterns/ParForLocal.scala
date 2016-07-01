@@ -1,6 +1,5 @@
 package CommandPatterns
 
-import Core.PhraseType._
 import Core._
 import apart.arithmetic._
 import opencl.generator.OpenCLAST._

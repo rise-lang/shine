@@ -2,7 +2,6 @@ package ExpPatterns
 
 import CommandPatterns.{ReduceIAcc, ReduceIExp}
 import Core._
-import Core.PhraseType._
 import Core.OperationalSemantics._
 import DSL._
 import Compiling.RewriteToImperative
@@ -23,7 +22,7 @@ abstract class AbstractReduce(n: ArithExpr,
 
   override lazy val `type` = exp"[$dt2]"
 
-  override def typeCheck: Unit = {
+  override def typeCheck(): Unit = {
     import TypeChecker._
     f checkType t"exp[$dt1] -> exp[$dt2] -> exp[$dt2]"
     init checkType exp"[$dt2]"

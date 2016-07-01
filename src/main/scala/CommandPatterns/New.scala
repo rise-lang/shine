@@ -2,7 +2,6 @@ package CommandPatterns
 
 import Core._
 import Core.OperationalSemantics._
-import Core.PhraseType._
 import DSL.identifier
 import Compiling.SubstituteImplementations
 import apart.arithmetic.NamedVar
@@ -15,7 +14,7 @@ case class New(dt: DataType,
                f: Phrase[(ExpType x AccType) -> CommandType])
   extends CommandPattern {
 
-  override def typeCheck: Unit = {
+  override def typeCheck(): Unit = {
     import TypeChecker._
     f checkType t"var[$dt] -> comm"
   }

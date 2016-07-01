@@ -1,8 +1,7 @@
 package CommandPatterns
 
-import Core.PhraseType._
 import Core._
-import apart.arithmetic.{ArithExpr, NamedVar, RangeAdd}
+import apart.arithmetic.{ArithExpr, RangeAdd}
 import opencl.generator.OpenCLAST._
 import opencl.generator.{get_global_id, get_global_size}
 

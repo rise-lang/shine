@@ -5,7 +5,7 @@ import Core.OperationalSemantics._
 import Compiling.RewriteToImperative
 import DSL._
 import apart.arithmetic.ArithExpr
-import opencl.generator.OpenCLAST.{Expression, Literal}
+import opencl.generator.OpenCLAST.Expression
 
 import scala.xml.Elem
 
@@ -16,12 +16,12 @@ case class Fst(dt1: DataType,
 
   override lazy val `type` = exp"[$dt1]"
 
-  override def typeCheck: Unit = {
+  override def typeCheck(): Unit = {
     import TypeChecker._
     record checkType exp"[$dt1 x $dt2]"
   }
 
-  override def inferTypes(): Fst = {
+  override def inferTypes: Fst = {
     import TypeInference._
     val record_ = TypeInference(record)
     record_.t match {

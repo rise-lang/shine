@@ -12,7 +12,7 @@ case class Record(fst: Phrase[ExpType],
 
   override lazy val `type` = exp"[${fst.t.dataType} x ${snd.t.dataType}]"
 
-  override def typeCheck: Unit = {}
+  override def typeCheck(): Unit = {}
 
   override def inferTypes: Record = Record(TypeInference(fst), TypeInference(snd))
 

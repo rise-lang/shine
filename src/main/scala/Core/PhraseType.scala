@@ -42,18 +42,13 @@ object PhraseType {
                                   in: Phrase[T]): Phrase[T] = {
 
     case class fun() extends VisitAndRebuild.fun {
-      override def apply[T2 <: PhraseType](p: Phrase[T2]): Result[Phrase[T2]] = {
-        Continue(p, this)
-      }
-
       override def apply(e: ArithExpr) = substitute(ae, `for`, e)
 
       override def apply[DT <: DataType](dt: DT) = substitute(ae, `for`, dt)
     }
 
     val p = VisitAndRebuild(in, fun())
-    println(Core.xmlPrinter.asString(p))
-    TypeChecker(p)
+    p.typeCheck()
     p
 
   }
@@ -107,11 +102,8 @@ object PhraseType {
       tokens.foreach(token => {
         if (head.startsWith(token)) {
           val (_, tail) = head.splitAt(token.length)
-          if (tail.isEmpty) {
-            strings = strings.tail
-          } else {
-            strings = tail +: strings.tail
-          }
+          if (tail.isEmpty)  strings = strings.tail
+          else strings = tail +: strings.tail
           return token
         }
       })

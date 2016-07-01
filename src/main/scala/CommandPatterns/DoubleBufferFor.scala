@@ -2,7 +2,6 @@ package CommandPatterns
 
 import Core._
 import Core.OperationalSemantics._
-import Core.PhraseType._
 import Compiling.SubstituteImplementations
 import apart.arithmetic.{ArithExpr, NamedVar, RangeAdd}
 import opencl.generator.OpenCLAST.Block
@@ -21,7 +20,7 @@ case class DoubleBufferFor(n: ArithExpr,
                            C: Phrase[ExpType -> CommandType])
   extends CommandPattern {
 
-  override def typeCheck: Unit = {
+  override def typeCheck(): Unit = {
     import TypeChecker._
     buffer1 checkType t"var[$n.$dt]"
     buffer2 checkType t"var[$n.$dt]"

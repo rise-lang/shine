@@ -1,7 +1,6 @@
 package ExpPatterns
 
 import Core.OperationalSemantics._
-import Core.PhraseType._
 import Core.VisitAndRebuild.fun
 import Core._
 import Compiling.RewriteToImperative
@@ -19,12 +18,12 @@ case class Gather(n: ArithExpr,
 
   override lazy val `type` = exp"[$n.$dt]"
 
-  override def typeCheck: Unit = {
+  override def typeCheck(): Unit = {
     import TypeChecker._
     array checkType exp"[$n.$dt]"
   }
 
-  override def inferTypes(): Gather = {
+  override def inferTypes: Gather = {
     import TypeInference._
     val array_ = TypeInference(array)
     array_.t match {

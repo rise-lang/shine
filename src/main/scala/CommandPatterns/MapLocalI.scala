@@ -1,6 +1,5 @@
 package CommandPatterns
 
-import Core.PhraseType._
 import Core._
 import DSL._
 import Compiling.SubstituteImplementations

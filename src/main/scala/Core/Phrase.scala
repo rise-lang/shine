@@ -7,7 +7,7 @@ import Compiling.SubstituteImplementations
 sealed abstract class Phrase[T <: PhraseType] {
   lazy val t: T = `type`
   def `type`: T = TypeOf(this)
-  def typeCheck: Unit = TypeChecker(this)
+  def typeCheck(): Unit = TypeChecker(this)
 }
 
 final case class IdentPhrase[T <: PhraseType](name: String, override val `type`: T)
@@ -68,8 +68,25 @@ object BinOpPhrase {
 final case class LiteralPhrase(d: OperationalSemantics.Data)
   extends Phrase[ExpType]
 
+object Phrase {
+  // substitutes `phrase` for `for` in `in`
+  def substitute[T1 <: PhraseType, T2 <: PhraseType](phrase: Phrase[T1],
+                                                     `for`: Phrase[T1],
+                                                     in: Phrase[T2]): Phrase[T2] = {
+    case class fun() extends VisitAndRebuild.fun {
+      override def apply[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
+        if (`for` == p) { Stop(phrase.asInstanceOf[Phrase[T]]) } else { Continue(p, this) }
+      }
+    }
+
+    VisitAndRebuild(in, fun())
+  }
+}
+
 abstract class ExpPattern extends Phrase[ExpType] {
-  override def typeCheck: Unit
+  override def `type`: ExpType
+
+  override def typeCheck(): Unit
 
   def inferTypes: ExpPattern
 
@@ -95,7 +112,9 @@ trait ViewExpPattern {
 }
 
 abstract class AccPattern extends Phrase[AccType] {
-  override def typeCheck: Unit
+  override def `type`: AccType
+
+  override def typeCheck(): Unit
 
   def eval(s: OperationalSemantics.Store): OperationalSemantics.AccIdentifier
 
@@ -111,9 +130,9 @@ abstract class AccPattern extends Phrase[AccType] {
 }
 
 abstract class IntermediateCommandPattern extends  Phrase[CommandType] {
-  override lazy val `type` = comm
+  override val `type` = comm
 
-  override def typeCheck: Unit
+  override def typeCheck(): Unit
 
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Store
 

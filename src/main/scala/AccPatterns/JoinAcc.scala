@@ -14,7 +14,7 @@ case class JoinAcc(n: ArithExpr,
 
   override lazy val `type` = acc"[$n.$m.$dt]"
 
-  override def typeCheck: Unit = {
+  override def typeCheck(): Unit = {
     import TypeChecker._
     array checkType acc"[${m * n}.$dt]"
   }

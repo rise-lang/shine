@@ -2,7 +2,6 @@ package ExpPatterns
 
 import CommandPatterns.MapWorkgroupI
 import Core._
-import Core.PhraseType._
 import apart.arithmetic.ArithExpr
 
 case class MapWorkgroup(n: ArithExpr,

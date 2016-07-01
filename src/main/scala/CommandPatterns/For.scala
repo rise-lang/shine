@@ -2,7 +2,6 @@ package CommandPatterns
 
 import Core._
 import Core.OperationalSemantics._
-import Core.PhraseType._
 import Compiling.SubstituteImplementations
 import apart.arithmetic.{ArithExpr, NamedVar, RangeAdd}
 import opencl.generator.OpenCLAST.Block
@@ -14,7 +13,7 @@ case class For(n: ArithExpr,
                body: Phrase[ExpType -> CommandType])
   extends CommandPattern {
 
-  override def typeCheck: Unit = {
+  override def typeCheck(): Unit = {
     import TypeChecker._
     body checkType t"exp[$int] -> comm"
   }
