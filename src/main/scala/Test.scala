@@ -12,6 +12,19 @@ import scala.collection.immutable.HashMap
 
 object Test extends App {
 
+  {
+    val n: ArithExpr = 1024
+    val dt1: DataType = int
+
+    println(t"exp[ $n . $n . $dt1 x $dt1 ]")
+
+    println(exp"[$n.$dt1]")
+
+    println(t"exp[$dt1] -> exp[$dt1]")
+
+    println(t"exp[${Cst(1048576)}.($int x $int)]")
+  }
+
   type Data = OperationalSemantics.Data
 //  val makeData       = OperationalSemantics.makeData
   val makeArrayData  = OperationalSemantics.makeArrayData
@@ -1026,41 +1039,26 @@ object Test extends App {
     println("== test ==")
 
     {
-      import PhraseType._
       val x = NamedVar("x")
       val f: `(nat)->`[ExpType] = x -> ExpType(ArrayType(x, int))
     }
 
     {
-      import PhraseType._
       val n: ArithExpr = NamedVar("n")
       val dt: DataType = float
-      val f: Phrase[ `(nat)->`[ExpType -> ExpType] ] = _Λ_( l =>
+      val f_ : Phrase[ `(nat)->`[ExpType -> ExpType] ] = _Λ_( l =>
         λ(ExpType(ArrayType(l, dt)))( in =>
           mapSeq( reduceSeq(λ(y => λ(acc => acc + y)), 0.0f) ) o split(2) $ in
         )
       )
 
-      println( TypeChecker(f) )
+      val f = TypeInference(f_)
 
+      println( f )
 
-      println( TypeChecker(f(1024)) )
-
+      println( f(1024) )
     }
 
   }
 
-  {
-
-    val n: ArithExpr = 1024
-    val dt1: DataType = int
-
-    println(s"exp[$n.$dt1]")
-
-    val t = t"exp[ $n . $n . $dt1 x $dt1 ]"
-    println(s"t: $t")
-
-    println(exp"[$n.$dt1]")
-
-  }
 }

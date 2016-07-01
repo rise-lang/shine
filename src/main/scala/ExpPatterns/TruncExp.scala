@@ -13,13 +13,14 @@ case class TruncExp(n: ArithExpr,
                     array: Phrase[ExpType])
   extends ExpPattern with ViewExpPattern {
 
-  override def typeCheck(): ExpType = {
+  override lazy val `type` = exp"[$m.$dt]"
+
+  override def typeCheck: Unit = {
     import TypeChecker._
-    array.t =?= exp"[$n.$dt]"
-    exp"[$m.$dt]"
+    array checkType exp"[$n.$dt]"
   }
 
-  override def inferTypes(): TruncExp = {
+  override def inferTypes: TruncExp = {
     import TypeInference._
     val array_ = TypeInference(array)
     array_.t match {

@@ -43,7 +43,6 @@ object PhraseType {
 
     case class fun() extends VisitAndRebuild.fun {
       override def apply[T2 <: PhraseType](p: Phrase[T2]): Result[Phrase[T2]] = {
-        //p.t = substitute(ae, `for`, p.t).asInstanceOf[T2]
         Continue(p, this)
       }
 
@@ -53,6 +52,7 @@ object PhraseType {
     }
 
     val p = VisitAndRebuild(in, fun())
+    println(Core.xmlPrinter.asString(p))
     TypeChecker(p)
     p
 
@@ -80,7 +80,7 @@ object PhraseType {
     (in match {
       case b: BasicType => b
       case a: ArrayType =>
-        ArrayType(ArithExpr.substitute(a.size, Map( (`for`, ae) )),
+        ArrayType(ArithExpr.substitute(a.size, Map((`for`, ae))),
           substitute(ae, `for`, a.elemType))
       case r: RecordType =>
         RecordType(substitute(ae, `for`, r.fst), substitute(ae, `for`, r.snd))
@@ -88,98 +88,171 @@ object PhraseType {
   }
 
   def substitute(ae: ArithExpr, `for`: NamedVar, in: ArithExpr): ArithExpr = {
-   ArithExpr.substitute(in, Map( (`for`, ae) ))
+    ArithExpr.substitute(in, Map((`for`, ae)))
   }
 
   class PhraseTypeParser(val string: String,
-                         var strings: Iterator[String],
-                         val values: Iterator[Any]) {
+                         var strings: Seq[String],
+                         var values: Iterator[Any]) {
+
+    val tokens = Seq("exp", "acc", "comm", "var", "nat", "[", "]", "(", ")", ".", "x", "->", ":")
+
+    def hasToken: Boolean = strings.nonEmpty
+
+    def trim(s: String): String = s.trim
+
+    def nextToken: String = {
+      if (!hasToken) error
+      val head = trim(strings.head)
+      tokens.foreach(token => {
+        if (head.startsWith(token)) {
+          val (_, tail) = head.splitAt(token.length)
+          if (tail.isEmpty) {
+            strings = strings.tail
+          } else {
+            strings = tail +: strings.tail
+          }
+          return token
+        }
+      })
+      error
+    }
+
+    def peakToken: String = {
+      if (!hasToken) error
+      val head = trim(strings.head)
+      tokens.foreach(token => if (head.startsWith(token)) return token)
+      error
+    }
+
+    def error: Nothing = throw new Exception(s"Could not parse `$string' into a PhraseType")
 
     def check(cond: Boolean): Unit = {
-      if (!cond) {
-        throw new Exception(s"Could not parse $string into a PhraseType")
-      }
+      if (!cond) error
     }
 
     def parseArrayType(n: ArithExpr): ArrayType = {
-      if (strings.hasNext) {
-        strings.next.trim match {
-          case "." => ArrayType(n, parseDataType)
-          case _ =>
-            throw new Exception(s"Could not parse $string into a PhraseType")
-        }
-      } else {
-        throw new Exception(s"Could not parse $string into a PhraseType")
+      nextToken match {
+        case "." => ArrayType(n, parseDataType)
+        case _ => error
       }
+
     }
 
     def parseRecordOrBaseType(dt: DataType): DataType = {
-      if (!strings.hasNext) { dt }
+      peakToken match {
+        case "x" => nextToken; RecordType(dt, parseDataType)
+        case "]" => dt
+        case ")" => nextToken; parseRecordOrBaseType(dt)
+        case _ => error
+      }
+    }
 
-      val (iter1, iter2) = strings.duplicate
-      strings = iter1
-
-      iter2.next.trim match {
-        case "x" =>
-          strings.next // consume token
-          RecordType(dt, parseDataType)
-        case _ => dt
+    def parseArrayOrRecordOrBaseType(`null`: Any): DataType = {
+      peakToken match {
+        case "x" => nextToken; RecordType(`null`.asInstanceOf[DataType], parseDataType)
+        case "]" => `null`.asInstanceOf[DataType]
+        case ")" => nextToken; parseRecordOrBaseType(`null`.asInstanceOf[DataType])
+        case "." => nextToken; ArrayType(`null`.asInstanceOf[ArithExpr], parseDataType)
+        case _ => error
       }
     }
 
     def parseDataType: DataType = {
+      peakToken match {
+        case "(" => nextToken
+        case _ =>
+      }
       if (values.hasNext) {
         values.next match {
           case n: ArithExpr => parseArrayType(n)
           case dt: DataType => parseRecordOrBaseType(dt)
-          case null => null.asInstanceOf[DataType]
-          case _ =>
-            throw new Exception(s"Could not parse $string into a PhraseType")
+          case null => parseArrayOrRecordOrBaseType(null)
+          case _ => error
         }
-      } else {
-        throw new Exception(s"Could not parse $string into a PhraseType")
-      }
+      } else error
+    }
+
+    def parseNatDependentFunctionType: PhraseType = {
+      if (values.hasNext) {
+        values.next match {
+          case l: NamedVar =>
+            peakToken match {
+              case ":" => nextToken
+                peakToken match {
+                  case "nat" => nextToken
+                    peakToken match {
+                      case ")" => nextToken
+                        peakToken match {
+                          case "->" => nextToken
+                            NatDependentFunctionType(l, parsePhraseType)
+                          case _ => error
+                        }
+                      case _ => error
+                    }
+                  case _ => error
+                }
+              case _ => error
+            }
+          case _ => error
+        }
+      } else error
     }
 
     def parseBasePhraseType: PhraseType = {
-      if (strings.hasNext) {
-        strings.next.trim match {
-          case "exp[" =>
-            val expType = parseExpType
-            check(strings.hasNext && strings.next().trim == "]")
-            expType
-          case "acc[" =>
-            val accType = parseAccType
-            check(strings.hasNext && strings.next().trim == "]")
-            accType
-          case "var[" =>
-            val dataType = parseDataType
-            val varType = ExpType(dataType) x AccType(dataType)
-            check(strings.hasNext && strings.next().trim == "]")
-            varType
-          case "comm" => CommandType()
-          case _ =>
-            throw new Exception(s"Could not parse $string into a PhraseType")
-        }
-      } else {
-        throw new Exception(s"Could not parse $string into a PhraseType")
+      nextToken match {
+        case "exp" => parseExpType
+        case "acc" => parseAccType
+        case "var" => parseVarType
+        case "comm" => comm
+        case "(" => parseNatDependentFunctionType
+        case _ => error
       }
     }
 
-    def parseExpType: ExpType = ExpType(parseDataType)
+    def parseExpType: ExpType = {
+      nextToken match {
+        case "[" =>
+          val dt = parseDataType
+          nextToken match {
+            case "]" => ExpType(dt)
+            case _ => error
+          }
+        case _ => error
+      }
+    }
 
-    def parseAccType: AccType = AccType(parseDataType)
+    def parseAccType: AccType = {
+      nextToken match {
+        case "[" =>
+          val dt = parseDataType
+          nextToken match {
+            case "]" => AccType(dt)
+            case _ => error
+          }
+        case _ => error
+      }
+    }
+
+    def parseVarType: VarType = {
+      nextToken match {
+        case "[" =>
+          val dt = parseDataType
+          nextToken match {
+            case "]" => ExpType(dt) x AccType(dt)
+            case _ => error
+          }
+        case _ => error
+      }
+    }
 
     def parsePhraseType: PhraseType = {
       val pt1 = parseBasePhraseType
-      if (!strings.hasNext) return pt1
-      strings.next.trim match {
-        case "x" =>
-          PairType(pt1, parsePhraseType)
-        case "->" =>
-          FunctionType(pt1, parsePhraseType)
-        case _ =>
-          throw new Exception(s"Could not parse $string into a PhraseType")
+      if (!hasToken) return pt1
+      nextToken match {
+        case "x" => PairType(pt1, parsePhraseType)
+        case "->" => FunctionType(pt1, parsePhraseType)
+        case _ => error
       }
     }
   }

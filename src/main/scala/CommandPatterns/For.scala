@@ -14,10 +14,9 @@ case class For(n: ArithExpr,
                body: Phrase[ExpType -> CommandType])
   extends CommandPattern {
 
-  override def typeCheck(): CommandType = {
+  override def typeCheck: Unit = {
     import TypeChecker._
-    body.t =?= t"exp[$int] -> comm"
-    comm
+    body checkType t"exp[$int] -> comm"
   }
 
   override def eval(s: Store): Store = {

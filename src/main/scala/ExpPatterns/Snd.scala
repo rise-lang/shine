@@ -14,13 +14,14 @@ case class Snd(dt1: DataType,
                record: Phrase[ExpType])
   extends ExpPattern with ViewExpPattern with GeneratableExpPattern {
 
-  override def typeCheck(): ExpType = {
+  override lazy val `type` = exp"[$dt2]"
+
+  override def typeCheck: Unit = {
     import TypeChecker._
-    record.t =?= exp"[$dt1 x $dt2]"
-    exp"[$dt2]"
+    record checkType exp"[$dt1 x $dt2]"
   }
 
-  override def inferTypes(): Fst = {
+  override def inferTypes: Fst = {
     import TypeInference._
     record.t match {
       case ExpType(RecordType(dt1_, dt2_)) => Fst(dt1_, dt2_, record)

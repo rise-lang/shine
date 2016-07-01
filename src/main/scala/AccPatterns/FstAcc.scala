@@ -11,15 +11,11 @@ case class FstAcc(dt1: DataType,
                   dt2: DataType,
                   record: Phrase[AccType]) extends AccPattern {
 
-  override def typeCheck(): AccType = {
+  override lazy val `type` = acc"[$dt1]"
+
+  override def typeCheck: Unit = {
     import TypeChecker._
-    record.t =?= acc"[$dt1 x $dt2]"
-    acc"[$dt1]"
-//    TypeChecker(record) match {
-//      case AccType(RecordType(fst, snd)) if fst == dt1 && snd == dt2 =>
-//        AccType(fst)
-//      case x => error(x.toString, "Something else")
-//    }
+    record checkType acc"[$dt1 x $dt2]"
   }
 
   override def eval(s: Store): AccIdentifier = {

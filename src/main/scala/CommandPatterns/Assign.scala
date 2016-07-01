@@ -12,20 +12,10 @@ case class Assign(dt: BasicType,
                   rhs: Phrase[ExpType])
   extends CommandPattern {
 
-  override def typeCheck(): CommandType = {
+  override def typeCheck: Unit = {
     import TypeChecker._
-    lhs.t =?= acc"[$dt]"
-    rhs.t =?= exp"[$dt]"
-    comm
-//    (TypeChecker(lhs), TypeChecker(rhs)) match {
-//      case (AccType(d1), ExpType(d2)) =>
-//        if (d1 == d2 && d1.isInstanceOf[BasicType]) {
-//          CommandType()
-//        } else {
-//          error(d1.toString + " and " + d2.toString, expected = "them to match")
-//        }
-//      case x => error(x.toString, "(" + AccType.toString() + "(A)," + ExpType.toString() + "(A))")
-//    }
+    lhs checkType acc"[$dt]"
+    rhs checkType exp"[$dt]"
   }
 
   override def eval(s: Store): Store = {
@@ -67,8 +57,6 @@ case class Assign(dt: BasicType,
   override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = this
 
   override def toOpenCL(block: Block, env: ToOpenCL.Environment): Block = {
-    println("---")
-    println(Core.xmlPrinter.asString(lhs))
     (block: Block) += AssignmentExpression(ToOpenCL.acc(lhs, env), ToOpenCL.exp(rhs, env))
   }
 

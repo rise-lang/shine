@@ -18,11 +18,12 @@ abstract class AbstractMap(n: ArithExpr,
                            makeMapI: (ArithExpr, DataType, DataType, Phrase[AccType], Phrase[AccType -> (ExpType -> CommandType)], Phrase[ExpType]) => AbstractMapI)
   extends ExpPattern {
 
-  override def typeCheck(): ExpType = {
+  override lazy val `type` = exp"[$n.$dt2]"
+
+  override def typeCheck: Unit = {
     import TypeChecker._
-    f.t =?= t"exp[$dt1] -> exp[$dt2]"
-    array.t =?= exp"[$n.$dt1]"
-    exp"[$n.$dt2]"
+    f checkType t"exp[$dt1] -> exp[$dt2]"
+    array checkType exp"[$n.$dt1]"
   }
 
   override def inferTypes(): AbstractMap = {
@@ -30,7 +31,7 @@ abstract class AbstractMap(n: ArithExpr,
     val array_ = TypeInference(array)
     array_.t match {
       case ExpType(ArrayType(n_, dt1_)) =>
-        val f_ = TypeInference.setParamType(f, exp"[$dt1_]")
+        val f_ = TypeInference.setParamAndInferType(f, exp"[$dt1_]")
         f_.t match {
           case FunctionType(ExpType(dt1__), ExpType(dt2_)) =>
             if (dt1_ == dt1__) {
@@ -66,13 +67,13 @@ abstract class AbstractMap(n: ArithExpr,
     val F = f
     val E = array
 
-    exp(E)(λ(ExpType(ArrayType(n, dt1))) { x =>
+    exp(E)(λ( exp"[$n.$dt1]" )( x =>
       makeMapI(n, dt1, dt2, A,
-        λ(AccType(dt2))(o =>
-          λ(ExpType(dt1))(x => acc(F(x))(o))),
+        λ( acc"[$dt2]" )(o =>
+          λ( exp"[$dt1]" )(x => acc(F(x))(o))),
         x
       )
-    })
+    ))
 
   }
 

@@ -20,42 +20,15 @@ case class IterateIAcc(n: ArithExpr,
                        in: Phrase[ExpType])
   extends IntermediateCommandPattern {
 
-  override def typeCheck(): CommandType = {
+  override def typeCheck: Unit = {
     import TypeChecker._
-    out.t =?= acc"[$m.$dt]"
+    out checkType acc"[$m.$dt]"
     f match {
       case NatDependentLambdaPhrase(l, _) =>
-        f.t =?= t"($l : nat) -> acc[${l/^n}.$dt] -> exp[$l.$dt] -> comm"
+        f checkType t"($l : nat) -> acc[${l/^n}.$dt] -> exp[$l.$dt] -> comm"
       case _ => throw new Exception("This should not happen")
     }
-    in.t =?= exp"[${n.pow(k)*m}.$dt]"
-    comm
-
-//    (out.t, in.t) match {
-//      case (AccType(ArrayType(m_, dt1_)), ExpType(ArrayType(nkm_, dt2_)))
-//        if m_ == m && nkm_ == (n.pow(k) * m) && dt1_ == dt && dt2_ == dt =>
-//
-//        f match {
-//          case NatDependentLambdaPhrase(l, body) =>
-//            setParamType(body, AccType(ArrayType(l /^ n, dt)))
-//            setSecondParamType(body, ExpType(ArrayType(l, dt)))
-//            TypeChecker(f) match {
-//              case NatDependentFunctionType(_,
-//                FunctionType(AccType(ArrayType(l_n, dt3_)),
-//                  FunctionType(ExpType(ArrayType(l_, dt4_)), CommandType()))) =>
-//                if (l_n == l /^ n && dt3_ == dt && l_ == l && dt4_ == dt) {
-//                  CommandType()
-//                } else {
-//                  error(s"[$l_n.$dt3_] -> [$l_.$dt4_] -> CommandType",
-//                        s"[${l /^ n}.$dt] -> [$l.$dt] -> CommandType")
-//                }
-//              case ft => error(ft.toString, "FunctionType")
-//            }
-//          case _ => error(f.toString, "NatDependentLambdaPhrase")
-//        }
-//
-//      case t_ => error(t_.toString, "ArrayType")
-//    }
+    in checkType exp"[${n.pow(k)*m}.$dt]"
   }
 
   override def eval(s: Store): Store = ???

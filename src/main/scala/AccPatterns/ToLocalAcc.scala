@@ -10,14 +10,11 @@ import scala.xml.Elem
 case class ToLocalAcc(dt: DataType,
                       p: Phrase[AccType]) extends AccPattern{
 
-  override def typeCheck(): AccType = {
+  override lazy val `type` = acc"[$dt]"
+
+  override def typeCheck: Unit = {
     import TypeChecker._
-    p.t =?= acc"[$dt]"
-    acc"[$dt]"
-//    TypeChecker(p) match {
-//      case AccType(dt) => AccType(dt)
-//      case x => error(x.toString, "AccType")
-//    }
+    p checkType acc"[$dt]"
   }
 
   override def eval(s: Store): AccIdentifier = ???

@@ -17,10 +17,11 @@ case class Join(n: ArithExpr,
                 array: Phrase[ExpType])
   extends ExpPattern with ViewExpPattern {
 
-  override def typeCheck(): ExpType = {
+  override lazy val `type` = exp"[${n * m}.$dt]"
+
+  override def typeCheck: Unit = {
     import TypeChecker._
-    array.t =?= exp"[$n.$m.$dt]"
-    exp"[${n * m}.$dt]"
+    array checkType exp"[$n.$m.$dt]"
   }
 
   override def inferTypes(): Join = {

@@ -10,9 +10,7 @@ object Lift {
     p match {
       case l: NatDependentLambdaPhrase[T] =>
         (arg: ArithExpr) => {
-          val body = VisitAndRebuild.copy(l.body)
-          TypeChecker(body)
-          PhraseType.substitute(arg, `for`=l.x, in=body)
+          PhraseType.substitute(arg, `for`=l.x, in=l.body)
         }
       case app: ApplyPhrase[a, `(nat)->`[T]] =>
         val fun = liftFunction(app.fun)

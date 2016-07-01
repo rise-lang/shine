@@ -2,7 +2,6 @@ package AccPatterns
 
 import Core._
 import Core.OperationalSemantics._
-import Core.PhraseType._
 import apart.arithmetic.{ArithExpr, Cst, NamedVar}
 import opencl.generator.OpenCLAST.{Literal, VarRef}
 
@@ -13,22 +12,22 @@ case class IdxAcc(n: ArithExpr,
                   index: Phrase[ExpType],
                   array: Phrase[AccType]) extends AccPattern {
 
-  override def typeCheck(): AccType = {
-    import TypeChecker._
-    index.t =?= exp"[$int]"
-    array.t =?= acc"[$n.$dt]"
-    acc"[$dt]"
+  override lazy val `type` = acc"[$dt]"
 
-//    check(TypeChecker(index), ExpType(int))
-//    TypeChecker(array) match {
-//      case AccType(ArrayType(n_, dt_)) =>
-//        if (dt == dt_ && n == n_) {
-//          AccType(dt)
-//        } else {
-//          error(acc"[$n_.$dt]", acc"[$n.$dt]")
-//        }
-//      case x => error(x.toString, "ArrayType")
-//    }
+  override def typeCheck: Unit = {
+    import TypeChecker._
+    index checkType exp"[$int]"
+    array checkType acc"[$n.$dt]"
+  }
+
+  def inferTypes: IdxAcc = {
+    import TypeInference._
+    val index_ = TypeInference(index)
+    val array_ = TypeInference(array)
+    array_.t match {
+      case AccType(ArrayType(n_, dt_)) => IdxAcc(n_, dt_, index_, array_)
+      case x => error(x.toString, "ExpType(ArrayType)")
+    }
   }
 
   override def eval(s: Store): AccIdentifier = {

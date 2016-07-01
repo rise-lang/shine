@@ -21,17 +21,16 @@ case class DoubleBufferFor(n: ArithExpr,
                            C: Phrase[ExpType -> CommandType])
   extends CommandPattern {
 
-  override def typeCheck(): CommandType = {
+  override def typeCheck: Unit = {
     import TypeChecker._
-    buffer1.t =?= t"var[$n.$dt]"
-    buffer2.t =?= t"var[$n.$dt]"
+    buffer1 checkType t"var[$n.$dt]"
+    buffer2 checkType t"var[$n.$dt]"
     body match {
       case NatDependentLambdaPhrase(l, _) =>
-        body.t =?= t"($l : nat) -> acc[$n.$dt] -> exp[$n.$dt] -> comm"
+        body checkType t"($l : nat) -> acc[$n.$dt] -> exp[$n.$dt] -> comm"
       case _ => throw new Exception("This should not happen")
     }
-    C.t =?= t"exp[$n.$dt] -> comm"
-    comm
+    C checkType t"exp[$n.$dt] -> comm"
   }
 
   override def toOpenCL(block: Block, env: ToOpenCL.Environment): Block = {

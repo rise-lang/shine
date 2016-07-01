@@ -8,14 +8,16 @@ import scala.xml.Elem
 
 case class Length[T <: BasePhraseTypes](array: Phrase[T]) extends ExpPattern with GeneratableExpPattern {
 
-  override def typeCheck(): ExpType = {
+  override lazy val `type` = exp"[$int]"
+
+  override def typeCheck: Unit = {
     import TypeChecker._
+    array.typeCheck
     array.t match {
-      case ExpType(ArrayType(_, _)) => ExpType(int)
-      case AccType(ArrayType(_, _)) => ExpType(int)
+      case ExpType(ArrayType(_, _)) =>
+      case AccType(ArrayType(_, _)) =>
       case x => error(x.toString, "ArrayType")
     }
-    exp"[$int]"
   }
 
   override def inferTypes(): Length[T] = Length(TypeInference(array))

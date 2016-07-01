@@ -19,17 +19,12 @@ object asum extends App {
   val abs = λ( x => `if`(x < 0.0f, -x, x))
   val add = λ( x => λ( a => x + a))
 
-  val high_level = λ(inputT)(input =>
+  val high_level_ = λ(inputT)(input =>
     reduce(add, 0.0f) o map(abs) $ input
   )
 
-  val high_level_ = TypeInference(high_level)
-
-  TypeChecker(high_level_)
-
-  println(high_level_)
-
-  println(VisitAndRebuild.copy(high_level))
+  val high_level = TypeInference(high_level_)
+  TypeChecker(high_level)
 
   println("High-Level:\n" + PrettyPrinter(high_level))
 
@@ -40,13 +35,14 @@ object asum extends App {
   println("----------------")
 
 
-  val intelDerivedNoWarp1 = λ(inputT)(input =>
+  val intelDerivedNoWarp1_ = λ(inputT)(input =>
     mapWorkgroup(
       /*asScalar() o */ mapLocal(
         reduceSeq(λ(x => λ(a => abs(x) + a)), /* asVector(4) */ 0.0f)
       ) o split(8192) /* o asVector(4) */
     ) o split(32768) $ input
   )
+  val intelDerivedNoWarp1 = TypeInference(intelDerivedNoWarp1_)
   TypeChecker(intelDerivedNoWarp1)
 
   println("-- Intel Derived No Warp 1 --")
@@ -54,13 +50,14 @@ object asum extends App {
     intelDerivedNoWarp1, identifier("input", inputT))))
   println("----------------")
 
-  val intelDerived2 = λ(inputT)(input =>
+  val intelDerived2_ = λ(inputT)(input =>
     mapWorkgroup(
       mapLocal(
         reduceSeq(add, 0.0f)
       ) o split(2048)
     ) o split(2048) $ input
   )
+  val intelDerived2 = TypeInference(intelDerived2_)
   TypeChecker(intelDerived2)
 
   println("-- Intel Derived 2 --")
@@ -68,13 +65,14 @@ object asum extends App {
     intelDerived2, identifier("input", inputT))))
   println("----------------")
 
-  val nvidiaDerived1 = λ(inputT)(input =>
+  val nvidiaDerived1_ = λ(inputT)(input =>
     mapWorkgroup(
       mapLocal(
         reduceSeq(add, 0.0f)
       ) o split(2048) o gather(reorderWithStride(128))
     ) o split(2048 * 128) $ input
   )
+  val nvidiaDerived1 = TypeInference(nvidiaDerived1_)
   TypeChecker(nvidiaDerived1)
 
   println("-- Nvidia Derived 1 --")
@@ -82,7 +80,7 @@ object asum extends App {
     nvidiaDerived1, identifier("input", inputT))))
   println("----------------")
 
-  val nvidiaDerived2 = λ(inputT)(input =>
+  val nvidiaDerived2_ = λ(inputT)(input =>
     mapWorkgroup(
       toLocal(iterate(6,
         mapLocal(reduceSeq(add, 0.0f)) o
@@ -94,6 +92,7 @@ object asum extends App {
       )) o split(128)
     ) o split(8192) $ input
   )
+  val nvidiaDerived2 = TypeInference(nvidiaDerived2_)
   TypeChecker(nvidiaDerived2)
 
   println("-- Nvidia Derived 2 --")
@@ -101,13 +100,14 @@ object asum extends App {
     nvidiaDerived2, identifier("input", inputT))))
   println("----------------")
 
-  val amdDerived1 = λ(inputT)(input =>
+  val amdDerived1_ = λ(inputT)(input =>
     mapWorkgroup(
       asScalar() o mapLocal(
         reduceSeq(λ( x => λ( a => x + a)), vectorize(2, 0.0f))
       ) o split(2048) o gather(reorderWithStride(64)) o asVector(2)
     ) o split(4096 * 128) $ input
   )
+  val amdDerived1 = TypeInference(amdDerived1_)
   TypeChecker(amdDerived1)
 
   println("-- AMD Derived --")

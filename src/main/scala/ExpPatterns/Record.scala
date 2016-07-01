@@ -10,9 +10,11 @@ case class Record(fst: Phrase[ExpType],
                   snd: Phrase[ExpType])
   extends ExpPattern with GeneratableExpPattern {
 
-  override def typeCheck(): ExpType = exp"[${fst.t.dataType} x ${snd.t.dataType}]"
+  override lazy val `type` = exp"[${fst.t.dataType} x ${snd.t.dataType}]"
 
-  override def inferTypes(): Record = Record(TypeInference(fst), TypeInference(snd))
+  override def typeCheck: Unit = {}
+
+  override def inferTypes: Record = Record(TypeInference(fst), TypeInference(snd))
 
   override def eval(s: Store): Data = {
     RecordData(

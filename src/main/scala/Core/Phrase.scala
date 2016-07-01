@@ -6,7 +6,8 @@ import Compiling.SubstituteImplementations
 
 sealed abstract class Phrase[T <: PhraseType] {
   lazy val t: T = `type`
-  def `type`: T = TypeChecker(this)
+  def `type`: T = TypeOf(this)
+  def typeCheck: Unit = TypeChecker(this)
 }
 
 final case class IdentPhrase[T <: PhraseType](name: String, override val `type`: T)
@@ -68,9 +69,9 @@ final case class LiteralPhrase(d: OperationalSemantics.Data)
   extends Phrase[ExpType]
 
 abstract class ExpPattern extends Phrase[ExpType] {
-  def typeCheck(): ExpType
+  override def typeCheck: Unit
 
-  def inferTypes(): ExpPattern
+  def inferTypes: ExpPattern
 
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Data
 
@@ -94,9 +95,7 @@ trait ViewExpPattern {
 }
 
 abstract class AccPattern extends Phrase[AccType] {
-  def typeCheck(): AccType
-
-//  def inferTypes(): AccPattern
+  override def typeCheck: Unit
 
   def eval(s: OperationalSemantics.Store): OperationalSemantics.AccIdentifier
 
@@ -112,9 +111,9 @@ abstract class AccPattern extends Phrase[AccType] {
 }
 
 abstract class IntermediateCommandPattern extends  Phrase[CommandType] {
-  def typeCheck(): CommandType
+  override lazy val `type` = comm
 
-//  def inferTypes(): IntermediateCommandPattern
+  override def typeCheck: Unit
 
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Store
 

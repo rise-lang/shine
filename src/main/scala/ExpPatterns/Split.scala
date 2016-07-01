@@ -16,13 +16,14 @@ case class Split(n: ArithExpr,
                  array: Phrase[ExpType])
   extends ExpPattern with ViewExpPattern {
 
-  override def typeCheck(): ExpType = {
+  override lazy val `type` = exp"[$m.$n.$dt]"
+
+  override def typeCheck: Unit = {
     import TypeChecker._
-    array.t =?= exp"[${m * n}, $dt]"
-    exp"[$m.$n.$dt]"
+    array checkType exp"[${m * n}.$dt]"
   }
 
-  override def inferTypes(): Split = {
+  override def inferTypes: Split = {
     import TypeInference._
     val array_ = TypeInference(array)
     array_.t match {

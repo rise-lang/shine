@@ -16,18 +16,19 @@ case class AsVector(n: ArithExpr,
                     array: Phrase[ExpType])
   extends ExpPattern with ViewExpPattern {
 
-  override def typeCheck(): ExpType = {
+  override lazy val `type` = exp"[$m.${VectorType(n, dt)}]"
+
+  override def typeCheck: Unit = {
     import TypeChecker._
-    array.t =?= exp"[$m.$dt]"
-    exp"[${m /^ n}.${VectorType(n, dt)}]"
+    array checkType exp"[${m*n}.$dt]"
   }
 
   override def inferTypes(): AsVector = {
     import TypeInference._
     val array_ = TypeInference(array)
     array_.t match {
-      case ExpType(ArrayType(mn_, dt_)) if dt.isInstanceOf[BasicType] =>
-        AsVector(n, mn_ /^ n, dt.asInstanceOf[BasicType], array_)
+      case ExpType(ArrayType(mn_, dt_)) if dt_.isInstanceOf[BasicType] =>
+        AsVector(n, mn_ /^ n, dt_.asInstanceOf[BasicType], array_)
       case x => error(x.toString, "ExpType(ArrayType)")
     }
   }

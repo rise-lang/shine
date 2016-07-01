@@ -13,16 +13,11 @@ case class AsVectorAcc(n: ArithExpr,
                        array: Phrase[AccType])
   extends AccPattern {
 
-  override def typeCheck(): AccType = {
+  override lazy val `type` = acc"[${n * m}, dt]"
+
+  override def typeCheck: Unit = {
     import TypeChecker._
-    array.t =?= acc"[$n.${VectorType(m, dt)}]"
-    acc"[${n * m}, dt]"
-//    TypeChecker(array) match {
-//      case AccType(ArrayType(n_, VectorType(m, dt))) =>
-//        n = n_
-//        AccType(ArrayType(n * m, dt))
-//      case x => error(x.toString, "ArrayType(VectorType)")
-//    }
+    array checkType acc"[$n.${VectorType(m, dt)}]"
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[AccType] = {

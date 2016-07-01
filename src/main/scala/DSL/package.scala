@@ -3,7 +3,7 @@ import ExpPatterns._
 import AccPatterns._
 import CommandPatterns._
 import Core.OperationalSemantics.{FloatData, IndexData, VectorData, newName}
-import apart.arithmetic.{?, ArithExpr}
+import apart.arithmetic.ArithExpr
 
 import scala.language.implicitConversions
 
@@ -104,11 +104,11 @@ package object DSL {
 
     def _2 = Snd(null, null, e)
 
-    def `@`(index: Phrase[ExpType]) = Idx(?, null, index, e)
+    def `@`(index: Phrase[ExpType]) = Idx(null, null, index, e).inferTypes
   }
 
   implicit class AccPhraseExtensions(a: Phrase[AccType]) {
-    def `@`(index: Phrase[ExpType]) = IdxAcc(?, null, index, a)
+    def `@`(index: Phrase[ExpType]) = IdxAcc(null, null, index, a).inferTypes
   }
 
   implicit class VarExtensions(v: Phrase[VarType]) {

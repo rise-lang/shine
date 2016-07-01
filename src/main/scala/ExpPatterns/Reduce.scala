@@ -21,21 +21,22 @@ abstract class AbstractReduce(n: ArithExpr,
                               makeReduceIExp: (ArithExpr, DataType, DataType, Phrase[ExpType -> CommandType], Phrase[AccType -> (ExpType -> (ExpType -> CommandType))], Phrase[ExpType], Phrase[ExpType]) => ReduceIExp)
   extends ExpPattern {
 
-  override def typeCheck(): ExpType = {
+  override lazy val `type` = exp"[$dt2]"
+
+  override def typeCheck: Unit = {
     import TypeChecker._
-    f.t =?= t"exp[$dt1] -> exp[$dt2] -> exp[$dt2]"
-    init.t =?= exp"[$dt2]"
-    array.t =?= exp"[$n.$dt1]"
-    exp"[$dt2]"
+    f checkType t"exp[$dt1] -> exp[$dt2] -> exp[$dt2]"
+    init checkType exp"[$dt2]"
+    array checkType exp"[$n.$dt1]"
   }
 
-  override def inferTypes(): AbstractReduce = {
+  override def inferTypes: AbstractReduce = {
     import TypeInference._
     val array_ = TypeInference(array)
     val init_ = TypeInference(init)
     (init_.t, array_.t) match {
       case (ExpType(dt2_), ExpType(ArrayType(n_, dt1_))) =>
-        val f_ = TypeInference.setParamTypes(f, exp"[$dt1_]", exp"[$dt2_]")
+        val f_ = TypeInference.setParamsAndInferTypes(f, exp"[$dt1_]", exp"[$dt2_]")
         f_.t match {
           case FunctionType(ExpType(t1), FunctionType(ExpType(t2), ExpType(t3))) =>
             if (dt1_ == t1 && dt2_ == t2 && dt2_ == t3) {

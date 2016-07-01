@@ -16,10 +16,18 @@ package object Core {
     def apply(dt: DataType) = ExpType(dt) x AccType(dt)
   }
 
-  implicit class SubstituionHelper[T <: PhraseType](t: PhraseType) {
+  implicit class PhraseTypeSubstitutionHelper[T <: PhraseType](t: PhraseType) {
     def `[`(e: ArithExpr) = new {
       def `/`(a: NamedVar) = new {
         def `]` = PhraseType.substitute(e, `for`=a, in=t)
+      }
+    }
+  }
+
+  implicit class PhraseSubstitutionHelper[T1 <: PhraseType](in: Phrase[T1]) {
+    def `[`[T2 <: PhraseType](p: Phrase[T2]) = new {
+      def `/`(`for`: Phrase[T2]) = new {
+        def `]` = OperationalSemantics.substitute(p, `for`, in)
       }
     }
   }
@@ -42,15 +50,15 @@ package object Core {
 
   implicit class PhraseTypeHelper(val sc: StringContext) extends AnyVal {
     def t(args: Any*): PhraseType = {
-      new PhraseTypeParser(sc.s(args:_*), sc.parts.iterator, args.iterator).parsePhraseType
+      new PhraseTypeParser(sc.s(args:_*), sc.parts, args.iterator).parsePhraseType
     }
 
     def exp(args: Any*): ExpType = {
-      new PhraseTypeParser(sc.s(args:_*), sc.parts.iterator.drop(1), args.iterator).parseExpType
+      new PhraseTypeParser("exp" + sc.s(args:_*), sc.parts, args.iterator).parseExpType
     }
 
     def acc(args: Any*): AccType = {
-      new PhraseTypeParser(sc.s(args:_*), sc.parts.iterator.drop(1), args.iterator).parseAccType
+      new PhraseTypeParser("acc" + sc.s(args:_*), sc.parts, args.iterator).parseAccType
     }
   }
 

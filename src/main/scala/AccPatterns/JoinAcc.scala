@@ -12,19 +12,11 @@ case class JoinAcc(n: ArithExpr,
                    dt: DataType,
                    array: Phrase[AccType]) extends AccPattern {
 
-  override def typeCheck(): AccType = {
+  override lazy val `type` = acc"[$n.$m.$dt]"
+
+  override def typeCheck: Unit = {
     import TypeChecker._
-    array.t =?= acc"[${m * n}.$dt]"
-    acc"[$n.$m.$dt]"
-//    TypeChecker(array) match {
-//      case AccType(ArrayType(mn_, dt_)) =>
-//        if (dt_ == dt && mn_ == (m * n)) {
-//          AccType(ArrayType(n, ArrayType(m, dt)))
-//        } else {
-//          error(s"[$mn_.$dt_] -> [$n.${mn_ /^ n}.$dt_]", s"[${m*n}.$dt] -> [$n.$m.$dt]")
-//        }
-//      case x => error(x.toString, "ArrayType")
-//    }
+    array checkType acc"[${m * n}.$dt]"
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[AccType] = {

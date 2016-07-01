@@ -5,7 +5,7 @@ import Core._
 import AccPatterns._
 import ExpPatterns._
 import CommandPatterns._
-import apart.arithmetic.{ArithExpr, NamedVar, ?}
+import apart.arithmetic.{ArithExpr, NamedVar}
 
 object `if` {
   def apply[T <: PhraseType](cond: Phrase[ExpType], thenP: Phrase[T], elseP: Phrase[T]) = {
@@ -146,7 +146,7 @@ object map {
   })
 
   def apply(f: Phrase[ExpType -> ExpType], x: Phrase[ExpType]): Map = {
-    Map(?, null, null, f, x)
+    Map(null, null, null, f, x)
   }
 }
 
@@ -155,7 +155,7 @@ object mapSeq {
     mapSeq(f, x))
 
   def apply(f: Phrase[ExpType -> ExpType], x: Phrase[ExpType]) =
-    MapSeq(?, null, null, f, x)
+    MapSeq(null, null, null, f, x)
 }
 
 object mapWorkgroup {
@@ -164,7 +164,7 @@ object mapWorkgroup {
   )
 
   def apply(f: Phrase[ExpType -> ExpType], x: Phrase[ExpType]) =
-    MapWorkgroup(?, null, null, f, x)
+    MapWorkgroup(null, null, null, f, x)
 }
 
 object mapLocal {
@@ -172,12 +172,12 @@ object mapLocal {
     mapLocal(f, x))
 
   def apply(f: Phrase[ExpType -> ExpType], x: Phrase[ExpType]) =
-    MapLocal(?, null, null, f, x)
+    MapLocal(null, null, null, f, x)
 }
 
 object zip {
   def apply(lhs: Phrase[ExpType], rhs: Phrase[ExpType]) =
-    Zip(?, null, null, lhs, rhs)
+    Zip(null, null, null, lhs, rhs)
 }
 
 object split {
@@ -185,13 +185,13 @@ object split {
     λ(array => split(n, array))
 
   def apply(n: ArithExpr, array: Phrase[ExpType]): Split =
-    Split(n, ?, null, array)
+    Split(n, null, null, array)
 }
 
 object join {
   def apply(): Phrase[ExpType -> ExpType] = λ(array => join(array))
 
-  def apply(array: Phrase[ExpType]): Join = Join(?, ?, null, array)
+  def apply(array: Phrase[ExpType]): Join = Join(null, null, null, array)
 }
 
 object toLocal {
@@ -219,7 +219,7 @@ object reduce {
 
   def apply(f: Phrase[ExpType -> (ExpType -> ExpType)], init: Phrase[ExpType],
             array: Phrase[ExpType]): Reduce = {
-    Reduce(?, null, null, f, init, array)
+    Reduce(null, null, null, f, init, array)
   }
 }
 
@@ -233,17 +233,17 @@ object reduceSeq {
   def apply(f: Phrase[ExpType -> (ExpType -> ExpType)],
             init: Phrase[ExpType],
             array: Phrase[ExpType]) =
-    ReduceSeq(?, null, null, f, init, array)
+    ReduceSeq(null, null, null, f, init, array)
 }
 
 object iterate {
-  def apply(n: ArithExpr, f: Phrase[`(nat)->`[ExpType -> ExpType]]): Phrase[ExpType -> ExpType] =
-    λ(array => iterate(n, f, array))
+  def apply(k: ArithExpr, f: Phrase[`(nat)->`[ExpType -> ExpType]]): Phrase[ExpType -> ExpType] =
+    λ(array => iterate(k, f, array))
 
-  def apply(n: ArithExpr,
+  def apply(k: ArithExpr,
             f: Phrase[`(nat)->`[ExpType -> ExpType]],
             array: Phrase[ExpType]): Iterate = {
-    Iterate(n, ?, ?, null, f, array)
+    Iterate(null, null, k, null, f, array)
   }
 }
 
@@ -253,7 +253,7 @@ object length {
 
 object gather {
   def apply(idxF: (ArithExpr, DataType) => ArithExpr) = λ(array =>
-      Gather(idxF, null, array)
+      Gather(null, null, idxF, array)
   )
 }
 
@@ -261,14 +261,14 @@ object asVector {
   def apply(n: ArithExpr): Phrase[ExpType -> ExpType] = λ(array => asVector(n, array))
 
   def apply(n: ArithExpr, array: Phrase[ExpType]): AsVector =
-      AsVector(n, ?, null, array)
+      AsVector(n, null, null, array)
 }
 
 object asScalar {
   def apply(): Phrase[ExpType -> ExpType] = λ(array => asScalar(array))
 
   def apply(array: Phrase[ExpType]): AsScalar =
-      AsScalar(?, ?, null, array)
+      AsScalar(null, null, null, array)
 }
 
 object vectorize {

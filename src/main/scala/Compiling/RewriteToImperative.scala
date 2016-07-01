@@ -9,13 +9,13 @@ object RewriteToImperative {
 
   def apply(lambda: LambdaPhrase[ExpType, ExpType]): Phrase[CommandType] = {
     val p: Phrase[ExpType] = lambda(identifier("input", lambda.param.t))
-    val outT = TypeChecker(p)
+    val outT = p.t
     val out = identifier("output", AccType(outT.dataType))
     acc(p)(out)
   }
 
   def apply(p: Phrase[ExpType]): Phrase[CommandType] = {
-    val outT = TypeChecker(p)
+    val outT = p.t
     val out = identifier("output", AccType(outT.dataType))
     acc(p)(out)
   }

@@ -22,7 +22,16 @@ object VisitAndRebuild {
       case c: f.Continue[T]@unchecked =>
         val f = c.f
         val res = (c.p match {
-          case _: IdentPhrase[_] => c.p
+          case i: IdentPhrase[_] => {
+            val t = i.t match {
+              case ExpType(dt) => ExpType(f(dt))
+              case AccType(dt) => AccType(f(dt))
+              case PairType(ExpType(dt1), AccType(dt2)) if dt1 == dt2 => VarType(f(dt1))
+              case null => null
+              case x => throw new Exception(s"This should not happen: $x")
+            }
+            IdentPhrase(i.name, t)
+          }
           case _: LiteralPhrase => c.p
           case l: LambdaPhrase[_, _] =>
             val newParam = apply(l.param, f) match {

@@ -15,20 +15,9 @@ case class New(dt: DataType,
                f: Phrase[(ExpType x AccType) -> CommandType])
   extends CommandPattern {
 
-  override def typeCheck(): CommandType = {
+  override def typeCheck: Unit = {
     import TypeChecker._
-    f.t =?= t"var[$dt] -> comm"
-    comm
-//    TypeChecker(f) match {
-//      case FunctionType(PairType(ExpType(d1), AccType(d2)), CommandType()) =>
-//        if (dt == d1 && d1 == d2) {
-//          CommandType()
-//        } else {
-//          error(s"((exp[$d1] x acc[$d2]) -> comm) -> comm",
-//                s"((exp[$dt] x acc[$dt]) -> comm) -> comm")
-//        }
-//      case x => error(x.toString, s"((exp[$dt] x acc[$dt]) -> comm) -> comm")
-//    }
+    f checkType t"var[$dt] -> comm"
   }
 
   override def eval(s: Store): Store = {

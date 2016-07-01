@@ -11,11 +11,10 @@ case class Seq(c1: Phrase[CommandType],
                c2: Phrase[CommandType])
   extends CommandPattern {
 
-  override def typeCheck(): CommandType = {
+  override def typeCheck: Unit = {
     import TypeChecker._
-    c1.t =?= comm
-    c2.t =?= comm
-    comm
+    c1 checkType comm
+    c2 checkType comm
   }
 
   override def eval(s: Store): Store = {

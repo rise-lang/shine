@@ -17,15 +17,22 @@ case class Iterate(n: ArithExpr,
                    array: Phrase[ExpType])
   extends ExpPattern {
 
-  override def typeCheck(): ExpType = {
+  override lazy val `type` = {
+    if (m != null && n != null) {
+      exp"[${m /^ n.pow(k)}.$dt]"
+    } else {
+      exp"[${null}.$dt]"
+    }
+  }
+
+  override def typeCheck: Unit = {
     import TypeChecker._
     f match {
       case NatDependentLambdaPhrase(l, _) =>
-        f.t =?= t"($l : nat) -> exp[$l.$dt] -> exp[${l /^ n}.$dt]"
+        f checkType t"($l : nat) -> exp[$l.$dt] -> exp[${l /^ n}.$dt]"
       case _ => throw new Exception("This should not happen")
     }
-    array.t =?= exp"[$m.$dt]"
-    exp"[${m /^ n.pow(k)}.$dt]"
+    array checkType exp"[$m.$dt]"
   }
 
   override def inferTypes(): Iterate = {
@@ -35,7 +42,8 @@ case class Iterate(n: ArithExpr,
       case ExpType(ArrayType(m_, dt_)) =>
         f match {
           case NatDependentLambdaPhrase(l, body) =>
-            val f_ = f.copy(body=TypeInference.setParamType(body, exp"[$l.$dt_]"))
+            val b = TypeInference.setParamAndInferType(body, exp"[$l.$dt_]")
+            val f_ = NatDependentLambdaPhrase(l, b)//f.copy(body=b)
             f_.t match {
               case NatDependentFunctionType(_,
               FunctionType(ExpType(ArrayType(l_, dt1_)),
@@ -83,7 +91,7 @@ case class Iterate(n: ArithExpr,
       case _ => throw new Exception("This should not happen")
     }
     <iterate n={ToString(n)} m={ToString(m)} k={ToString(k)} dt={ToString(dt)}>
-      <f type={ToString(l -> (ExpType(ArrayType(l, dt)) -> ExpType(ArrayType(l /^ n, dt))))}>
+      <f type={ToString(l -> (ExpType(ArrayType(l, dt)) -> ExpType(ArrayType(if (l != null && n != null) l /^ n else null, dt))))}>
         {Core.xmlPrinter(f)}
       </f>
       <input type={ToString(ExpType(ArrayType(m, dt)))}>
@@ -103,8 +111,8 @@ case class Iterate(n: ArithExpr,
     exp(array)(λ(ExpType(ArrayType(m, dt))) { x =>
       IterateIAcc(n, m = m /^ n.pow(k), k, dt, A,
         _Λ_(l =>
-          λ(null.asInstanceOf[AccType]) { o =>
-            λ(null.asInstanceOf[ExpType]) { x =>
+          λ( acc"[${l /^ n}.$dt]" ) { o =>
+            λ( exp"[$l.$dt]" ) { x =>
               acc(f(l)(x))(o)
             }
           }
@@ -122,8 +130,8 @@ case class Iterate(n: ArithExpr,
     exp(array)(λ(ExpType(ArrayType(m, dt))) { x =>
       IterateIExp(n, m = m /^ n.pow(k), k, dt, C,
         _Λ_(l =>
-          λ(null.asInstanceOf[AccType]) { o =>
-            λ(null.asInstanceOf[ExpType]) { x =>
+          λ( acc"[${l /^ n}.$dt]" ) { o =>
+            λ( exp"[$l.$dt]" ) { x =>
               acc(f(l)(x))(o)
             }
           }

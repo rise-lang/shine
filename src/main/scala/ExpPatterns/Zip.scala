@@ -18,14 +18,15 @@ case class Zip(n: ArithExpr,
                rhs: Phrase[ExpType])
   extends ExpPattern with ViewExpPattern {
 
-  override def typeCheck(): ExpType = {
+  override lazy val `type` = exp"[$n.($dt1 x $dt2)]"
+
+  override def typeCheck: Unit = {
     import TypeChecker._
-    lhs.t =?= exp"[$n.$dt1]"
-    rhs.t =?= exp"[$n.$dt2]"
-    exp"[$n.($dt1 x $dt2)]"
+    lhs checkType exp"[$n.$dt1]"
+    rhs checkType exp"[$n.$dt2]"
   }
 
-  override def inferTypes(): Zip = {
+  override def inferTypes: Zip = {
     import TypeInference._
     val lhs_ = TypeInference(lhs)
     val rhs_ = TypeInference(rhs)

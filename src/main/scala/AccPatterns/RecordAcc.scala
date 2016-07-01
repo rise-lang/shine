@@ -11,10 +11,9 @@ case class RecordAcc(fst: Phrase[AccType],
                      snd: Phrase[AccType])
   extends AccPattern {
 
-  override def typeCheck(): AccType = {
-    acc"[${fst.t.dataType} x ${snd.t.dataType}]"
-//    AccType(RecordType( TypeChecker(fst).dataType, TypeChecker(snd).dataType ))
-  }
+  override lazy val `type` = acc"[${fst.t.dataType} x ${snd.t.dataType}]"
+
+  override def typeCheck: Unit = { }
 
   override def eval(s: Store): AccIdentifier = {
     RecordIdentiers(

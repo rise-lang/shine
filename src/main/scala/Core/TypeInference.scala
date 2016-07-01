@@ -1,5 +1,7 @@
 package Core
 
+import Core.OperationalSemantics.newName
+
 class TypeInferenceException(msg: String) extends TypeException(msg)
 
 object TypeInference {
@@ -56,7 +58,7 @@ object TypeInference {
 
       case BinOpPhrase(op, lhs, rhs) => BinOpPhrase(op, TypeInference(lhs), TypeInference(rhs))
 
-      case p: ExpPattern => p.inferTypes()
+      case p: ExpPattern => p.inferTypes
 
       case p: AccPattern => p
 
@@ -64,106 +66,55 @@ object TypeInference {
     }).asInstanceOf[Phrase[T]]
   }
 
-  def setParamType[T1 <: PhraseType, T2 <: PhraseType](phrase: Phrase[T1 -> T2], t: T1): Phrase[T1 -> T2] = {
+  def setParamAndInferType[T1 <: PhraseType, T2 <: PhraseType](phrase: Phrase[T1 -> T2], t: T1): Phrase[T1 -> T2] = {
     phrase match {
       case l@LambdaPhrase(x, p) =>
-        val newX = x.copy(`type` = t)
-        OperationalSemantics.substitute(newX, `for`=x, in=l)
+        val newX = IdentPhrase(newName(), t)
+        TypeInference(OperationalSemantics.substitute(newX, `for`=x, in=l))
 
       case ApplyPhrase(fun, arg) =>
-        setParamType(Lift.liftFunction(fun)(arg), t)
+        setParamAndInferType(Lift.liftFunction(fun)(arg), t)
 
       case NatDependentApplyPhrase(fun, arg) =>
-        setParamType(Lift.liftNatDependentFunction(fun)(arg), t)
+        setParamAndInferType(Lift.liftNatDependentFunction(fun)(arg), t)
 
       case Proj1Phrase(pair) =>
-        setParamType(Lift.liftPair(pair)._1, t)
+        setParamAndInferType(Lift.liftPair(pair)._1, t)
 
       case Proj2Phrase(pair) =>
-        setParamType(Lift.liftPair(pair)._2, t)
+        setParamAndInferType(Lift.liftPair(pair)._2, t)
 
       case IfThenElsePhrase(cond, thenP, elseP) =>
         IfThenElsePhrase(cond,
-          setParamType(thenP, t),
-          setParamType(elseP, t))
+          setParamAndInferType(thenP, t),
+          setParamAndInferType(elseP, t))
 
       case IdentPhrase(_, _) => throw new Exception("This should never happen")
     }
   }
 
-  def setParamTypes[T1 <: PhraseType, T2 <: PhraseType, T3 <: PhraseType](phrase: Phrase[T1 -> (T2 -> T3)], t1: T1, t2: T2): Phrase[T1 -> (T2 -> T3)] = {
+  def setParamsAndInferTypes[T1 <: PhraseType, T2 <: PhraseType, T3 <: PhraseType](phrase: Phrase[T1 -> (T2 -> T3)], t1: T1, t2: T2): Phrase[T1 -> (T2 -> T3)] = {
     phrase match {
       case LambdaPhrase(x, p) =>
-        LambdaPhrase(x.copy(`type` = t1), setParamType(p, t2))
+        val newX = IdentPhrase(newName(), t1)
+        TypeInference(LambdaPhrase(newX, setParamAndInferType(OperationalSemantics.substitute(newX, `for`=x, in=p), t2)))
 
       case ApplyPhrase(fun, arg) =>
-        setParamTypes(Lift.liftFunction(fun)(arg), t1, t2)
+        setParamsAndInferTypes(Lift.liftFunction(fun)(arg), t1, t2)
 
       case NatDependentApplyPhrase(fun, arg) =>
-        setParamTypes(Lift.liftNatDependentFunction(fun)(arg), t1, t2)
+        setParamsAndInferTypes(Lift.liftNatDependentFunction(fun)(arg), t1, t2)
 
       case Proj1Phrase(pair) =>
-        setParamTypes(Lift.liftPair(pair)._1, t1, t2)
+        setParamsAndInferTypes(Lift.liftPair(pair)._1, t1, t2)
 
       case Proj2Phrase(pair) =>
-        setParamTypes(Lift.liftPair(pair)._2, t1, t2)
+        setParamsAndInferTypes(Lift.liftPair(pair)._2, t1, t2)
 
       case IfThenElsePhrase(cond, thenP, elseP) =>
         IfThenElsePhrase(cond,
-          setParamTypes(thenP, t1, t2),
-          setParamTypes(elseP, t1, t2))
-
-      case IdentPhrase(_, _) => throw new Exception("This should never happen")
-    }
-  }
-
-  def setSecondParamType[T1 <: PhraseType, T2 <: PhraseType, T3 <: PhraseType](phrase: Phrase[T1 -> (T2 -> T3)], t: T2): Phrase[T1 -> (T2 -> T3)] = {
-    phrase match {
-      case LambdaPhrase(x, p) =>
-        LambdaPhrase(x, setParamType(p, t))
-
-      case ApplyPhrase(fun, arg) =>
-        setSecondParamType(Lift.liftFunction(fun)(arg), t)
-
-      case NatDependentApplyPhrase(fun, arg) =>
-        setSecondParamType(Lift.liftNatDependentFunction(fun)(arg), t)
-
-      case Proj1Phrase(pair) =>
-        setSecondParamType(Lift.liftPair(pair)._1, t)
-
-      case Proj2Phrase(pair) =>
-        setSecondParamType(Lift.liftPair(pair)._2, t)
-
-      case IfThenElsePhrase(cond, thenP, elseP) =>
-        IfThenElsePhrase(cond,
-          setSecondParamType(thenP, t),
-          setSecondParamType(elseP, t))
-
-      case IdentPhrase(_, _) => throw new Exception("This should never happen")
-    }
-  }
-
-  def setThirdParamType[T1 <: PhraseType, T2 <: PhraseType, T3 <: PhraseType, T4 <: PhraseType](phrase: Phrase[T1 -> (T2 -> (T3 -> T4))], t: T3): Phrase[T1 -> (T2 -> (T3 -> T4))] = {
-    phrase match {
-      case LambdaPhrase(x, p) =>
-        LambdaPhrase(x, setSecondParamType(p, t))
-
-      case ApplyPhrase(fun, arg) =>
-        setThirdParamType(Lift.liftFunction(fun)(arg), t)
-
-      case NatDependentApplyPhrase(fun, arg) =>
-        setThirdParamType(Lift.liftNatDependentFunction(fun)(arg), t)
-
-      case Proj1Phrase(pair) =>
-        setThirdParamType(Lift.liftPair(pair)._1, t)
-
-      case Proj2Phrase(pair) =>
-        setThirdParamType(Lift.liftPair(pair)._2, t)
-
-      case IfThenElsePhrase(cond, thenP, elseP) =>
-        IfThenElsePhrase(cond,
-          setThirdParamType(thenP, t),
-          setThirdParamType(elseP, t))
+          setParamsAndInferTypes(thenP, t1, t2),
+          setParamsAndInferTypes(elseP, t1, t2))
 
       case IdentPhrase(_, _) => throw new Exception("This should never happen")
     }

@@ -14,14 +14,15 @@ case class Idx(n: ArithExpr,
                array: Phrase[ExpType])
   extends ExpPattern with ViewExpPattern with GeneratableExpPattern {
 
-  override def typeCheck(): ExpType = {
+  override lazy val `type` = exp"[$dt]"
+
+  override def typeCheck: Unit = {
     import TypeChecker._
-    index.t =?= exp"[int]"
-    array.t =?= exp"[$n.$dt]"
-    exp"[$dt]"
+    index checkType exp"[$int]"
+    array checkType exp"[$n.$dt]"
   }
 
-  override def inferTypes(): Idx = {
+  override def inferTypes: Idx = {
     import TypeInference._
     val index_ = TypeInference(index)
     val array_ = TypeInference(array)

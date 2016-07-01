@@ -9,7 +9,7 @@ import scala.xml.Elem
 
 case class Skip() extends CommandPattern {
 
-  override def typeCheck(): CommandType = comm
+  override def typeCheck: Unit = {}
 
   override def eval(s: Store): Store = s
 

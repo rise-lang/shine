@@ -45,23 +45,21 @@ class ToOpenCL(val localSize: ArithExpr, val globalSize: ArithExpr) {
 
   private def make(p: Phrase[ExpType],
                    args: List[IdentPhrase[ExpType]]): Function = {
-    val outT = TypeChecker(p)
+    val p1 = TypeInference(p)
+    xmlPrinter.toFile("/tmp/p1.xml", p1)
+    TypeChecker(p1)
+    val outT = p1.t
     val out = identifier("output", AccType(outT.dataType))
     val params = makeParams(out, args: _*)
-    xmlPrinter.toFile("/tmp/p.xml", p)
 
-    val p2 = RewriteToImperative.acc(p)(out)
-    TypeChecker(p2)
+    val p2 = RewriteToImperative.acc(p1)(out)
     xmlPrinter.toFile("/tmp/p2.xml", p2)
+    TypeChecker(p2)
+
     val p3 = SubstituteImplementations(p2,
       SubstituteImplementations.Environment(immutable.Map[String, AddressSpace]( ("output", GlobalMemory) )))
     xmlPrinter.toFile("/tmp/p3.xml", p3)
     TypeChecker(p3)
-    xmlPrinter.toFile("/tmp/p3.xml", p3)
-
-//    println(PrettyPrinter(p3))
-//    val p4 = AdjustMemoryAllocation(p3)
-//    println(PrettyPrinter(p4))
 
     val body = ToOpenCL.cmd(p3, Block(), ToOpenCL.Environment(localSize, globalSize))
 

@@ -13,21 +13,23 @@ abstract class To(dt1: DataType,
                   f: Phrase[ExpType -> ExpType],
                   input: Phrase[ExpType],
                   addressSpace: AddressSpace,
-                  makeTo: (DataType, DataType, Phrase[ExpType -> ExpType], Phrase[ExpType]) => To) extends ExpPattern {
+                  makeTo: (DataType, DataType, Phrase[ExpType -> ExpType], Phrase[ExpType]) => To)
+  extends ExpPattern {
 
-  override def typeCheck(): ExpType = {
+  override lazy val `type` = exp"[$dt2]"
+
+  override def typeCheck: Unit = {
     import TypeChecker._
-    f.t =?= t"exp[$dt1] -> exp[$dt2]"
-    input.t =?= exp"[$dt1]"
-    exp"[$dt2]"
+    f checkType t"exp[$dt1] -> exp[$dt2]"
+    input checkType exp"[$dt1]"
   }
 
-  override def inferTypes(): To = {
+  override def inferTypes: To = {
     import TypeInference._
     val input_ = TypeInference(input)
     input_.t match {
       case ExpType(dt1_) =>
-        val f_ = TypeInference.setParamType(f, exp"[$dt1_]")
+        val f_ = TypeInference.setParamAndInferType(f, exp"[$dt1_]")
         f_.t match {
           case FunctionType(ExpType(t1_), ExpType(dt2_)) =>
             if (dt1_ == t1_) {
@@ -67,9 +69,9 @@ abstract class To(dt1: DataType,
     assert(dt1 != null && dt2 != null)
     import RewriteToImperative._
 
-    exp(this)(λ(ExpType(dt2)) { x =>
+    exp(this)(λ( exp"[$dt2]" )( x =>
       acc(x)(A)
-    })
+    ))
   }
 
   override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {

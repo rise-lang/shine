@@ -13,17 +13,11 @@ case class SplitAcc(n: ArithExpr,
                     dt: DataType,
                     array: Phrase[AccType]) extends AccPattern {
 
-  override def typeCheck(): AccType = {
+  override lazy val `type` = acc"[${n * m}.$dt]"
+
+  override def typeCheck: Unit = {
     import TypeChecker._
-    array.t =?= acc"[$m.$n.$dt]"
-    acc"[${n * m}.$dt]"
-//    TypeChecker(array) match {
-//      case AccType(ArrayType(m_, ArrayType(n_, dt_)))
-//        if n_ == n && m_ == m && dt == dt_ =>
-//
-//        AccType(ArrayType(n*m, dt))
-//      case x => error(x.toString, "ArrayType(ArrayType)")
-//    }
+    array checkType acc"[$m.$n.$dt]"
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[AccType] = {
