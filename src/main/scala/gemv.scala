@@ -21,9 +21,10 @@ object gemv extends App {
   val matT = ExpType(ArrayType(M, ArrayType(N, dataT)))
 
   def printOpenCLKernel1(name: String,
-                         lambda: Phrase[ExpType ->(ExpType -> (ExpType -> (ExpType -> (ExpType -> ExpType))))]) = {
-    TypeChecker(lambda)
+                         untypedLambda: Phrase[ExpType ->(ExpType -> (ExpType -> (ExpType -> (ExpType -> ExpType))))]) = {
+    val lambda = TypeInference(untypedLambda)
     println(name + ":\n" + PrettyPrinter(lambda))
+    lambda.typeCheck()
 
     println(s"-- $name --")
     println(OpenCLPrinter()((new ToOpenCL(localSize = 128, globalSize = M * 128))(lambda,

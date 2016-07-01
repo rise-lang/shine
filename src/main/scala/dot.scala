@@ -1,8 +1,6 @@
 
 import Core._
 import DSL._
-import Compiling._
-import ExpPatterns._
 import apart.arithmetic._
 import opencl.generator.OpenCLPrinter
 
@@ -20,8 +18,9 @@ object dot extends App {
   val ysT = ExpType(ArrayType(N, float))
 
   def printOpenCLKernel1(name: String,
-                         lambda: Phrase[ExpType ->(ExpType -> ExpType)]) = {
-    TypeChecker(lambda)
+                         untypedLambda: Phrase[ExpType ->(ExpType -> ExpType)]) = {
+    val lambda = TypeInference(untypedLambda)
+    lambda.typeCheck()
     println(name + ":\n" + PrettyPrinter(lambda))
 
     println(s"-- $name --")
@@ -31,9 +30,10 @@ object dot extends App {
   }
 
   def printOpenCLKernel2(name: String,
-                         lambda: Phrase[ExpType -> ExpType]) = {
+                         untypedLambda: Phrase[ExpType -> ExpType]) = {
+    val lambda = TypeInference(untypedLambda)
+    lambda.typeCheck()
     println(name + ":\n" + PrettyPrinter(lambda))
-    println(TypeChecker(lambda))
 
     println(s"-- $name --")
     println(OpenCLPrinter()((new ToOpenCL(localSize = 128, globalSize = N)) (
