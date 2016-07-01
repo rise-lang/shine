@@ -193,7 +193,7 @@ object OperationalSemantics {
               case BinOpPhrase.Op.LT => if (evalIntExp(s, lhs) < evalIntExp(s, rhs)) 1 else 0
             }
 
-          case p: ExpPattern => p.eval(s)
+          case c: ExpCombinator => c.eval(s)
 
           case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
                IfThenElsePhrase(_, _, _) | Proj1Phrase(_) | Proj2Phrase(_) =>
@@ -208,7 +208,7 @@ object OperationalSemantics {
         p match {
           case IdentPhrase(name, _) => NamedIdentifier(name)
 
-          case p: AccPattern => p.eval(s)
+          case c: AccCombinator => c.eval(s)
 
           case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
                IfThenElsePhrase(_, _, _) | Proj1Phrase(_) | Proj2Phrase(_) =>
@@ -223,7 +223,7 @@ object OperationalSemantics {
         p match {
           case IdentPhrase(_, _) => throw new Exception("This should never happen")
 
-          case p: IntermediateCommandPattern => p.eval(s)
+          case c: CommandCombinator => c.eval(s)
 
           case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
                IfThenElsePhrase(_, _, _) | Proj1Phrase(_) | Proj2Phrase(_) =>

@@ -46,9 +46,7 @@ object VisitAndRebuild {
           case i: IfThenElsePhrase[T] => IfThenElsePhrase(apply(i.cond, f), apply(i.thenP, f), apply(i.elseP, f))
           case u: UnaryOpPhrase => UnaryOpPhrase(u.op, apply(u.p, f))
           case b: BinOpPhrase => BinOpPhrase(b.op, apply(b.lhs, f), apply(b.rhs, f))
-          case e: ExpPattern => e.visitAndRebuild(f)
-          case a: AccPattern => a.visitAndRebuild(f)
-          case c: IntermediateCommandPattern => c.visitAndRebuild(f)
+          case c: Combinator[_] => c.visitAndRebuild(f)
         }).asInstanceOf[Phrase[T]]
     }
   }

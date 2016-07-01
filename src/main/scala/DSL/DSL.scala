@@ -2,9 +2,8 @@ package DSL
 
 import Core.OperationalSemantics._
 import Core._
-import AccPatterns._
-import ExpPatterns._
-import CommandPatterns._
+import HighLevelCombinators._
+import LowLevelCombinators._
 import apart.arithmetic.{ArithExpr, NamedVar}
 
 object `if` {
@@ -145,8 +144,8 @@ object map {
     map(f, x)
   })
 
-  def apply(f: Phrase[ExpType -> ExpType], x: Phrase[ExpType]): Map = {
-    Map(null, null, null, f, x)
+  def apply(f: Phrase[ExpType -> ExpType], x: Phrase[ExpType]): HighLevelCombinators.Map = {
+    HighLevelCombinators.Map(null, null, null, f, x)
   }
 }
 
@@ -245,10 +244,6 @@ object iterate {
             array: Phrase[ExpType]): Iterate = {
     Iterate(null, null, k, null, f, array)
   }
-}
-
-object length {
-  def apply[T <: BasePhraseTypes](array: Phrase[T]) = Length(array)
 }
 
 object gather {

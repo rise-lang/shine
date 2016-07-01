@@ -3,7 +3,6 @@ import Core._
 import DSL._
 import Compiling.{RewriteToImperative, SubstituteImplementations}
 import Core.PhraseType._
-import ExpPatterns._
 import apart.arithmetic._
 import opencl.generator.OpenCLPrinter
 

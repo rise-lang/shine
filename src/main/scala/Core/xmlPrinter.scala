@@ -78,11 +78,7 @@ object xmlPrinter {
           <snd type={ToString(snd.t)}>{apply(snd)}</snd>
         </pair>
 
-      case p: ExpPattern => p.xmlPrinter
-
-      case p: AccPattern => p.xmlPrinter
-
-      case p: IntermediateCommandPattern => p.xmlPrinter
+      case c: Combinator[_] => c.xmlPrinter
 
     }
     elem.copy(attributes =

@@ -53,11 +53,7 @@ object TypeOf {
           case _ => lhs.t
         }
 
-      case p: ExpPattern => p.t
-
-      case p: AccPattern => p.t
-
-      case p: IntermediateCommandPattern => p.t
+      case c: Combinator[_] => c.t
     }).asInstanceOf[T]
   }
 }

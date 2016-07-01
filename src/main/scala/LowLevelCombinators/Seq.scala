@@ -1,0 +1,41 @@
+package LowLevelCombinators
+
+import Core.OperationalSemantics._
+import Core._
+import opencl.generator.OpenCLAST.Block
+
+import scala.xml.Elem
+
+case class Seq(c1: Phrase[CommandType],
+               c2: Phrase[CommandType])
+  extends LowLevelCommCombinator {
+
+  override def typeCheck(): Unit = {
+    import TypeChecker._
+    c1 checkType comm
+    c2 checkType comm
+  }
+
+  override def eval(s: Store): Store = {
+    val s1 = OperationalSemantics.eval(s, c1)
+    OperationalSemantics.eval(s1, c2)
+  }
+
+  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[CommandType] = {
+    Seq(VisitAndRebuild(c1, fun), VisitAndRebuild(c2, fun))
+  }
+
+  override def toOpenCL(block: Block, env: ToOpenCL.Environment): Block = {
+    ToOpenCL.cmd(c1, block, env)
+    ToOpenCL.cmd(c2, block, env)
+  }
+
+  override def prettyPrint: String =
+    s"(${PrettyPrinter(c1)}; ${PrettyPrinter(c2)})"
+
+  override def xmlPrinter: Elem =
+    <seq>
+      <c1>{Core.xmlPrinter(c1)}</c1>
+      <c2>{Core.xmlPrinter(c2)}</c2>
+    </seq>
+}

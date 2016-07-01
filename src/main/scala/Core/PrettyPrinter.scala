@@ -29,11 +29,7 @@ object PrettyPrinter {
 
       case PairPhrase(fst, snd) => s"(${apply(fst)}, ${apply(snd)})"
 
-      case p: ExpPattern => p.prettyPrint
-
-      case p: AccPattern => p.prettyPrint
-
-      case p: IntermediateCommandPattern => p.prettyPrint
+      case c: Combinator[_] => c.prettyPrint
     }
   }
 

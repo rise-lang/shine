@@ -1,65 +1,42 @@
 package Compiling
 
 import Core._
+import LowLevelCombinators.New
 
 import scala.collection.immutable
 
 
 object SubstituteImplementations {
 
-  case class Environment(addressspace : immutable.Map[String, AddressSpace])
+  case class Environment(addressSpace: immutable.Map[String, AddressSpace])
 
   object Environment {
     def apply(): Environment = Environment(immutable.Map[String, AddressSpace]())
   }
 
-  def apply(p: Phrase[CommandType], env: Environment): Phrase[CommandType] = {
-    p match {
-      case p : IntermediateCommandPattern   => p.substituteImpl(env)
-      case ApplyPhrase(fun, arg)            => ApplyPhrase(applyFun(fun, env), arg)
-      case NatDependentApplyPhrase(fun,arg) => NatDependentApplyPhrase(applyNatDependentFun(fun, env), arg)
-      case _: IdentPhrase[CommandType]      => p
-      case _: IfThenElsePhrase[CommandType] => p
-      case _: Proj1Phrase[CommandType, _]   => p
-      case _: Proj2Phrase[_, CommandType]   => p
-    }
-  }
+  def apply(phrase: Phrase[CommandType], env: Environment): Phrase[CommandType] = {
 
-  def applyFun[T <: PhraseType](p: Phrase[T -> CommandType],
-                                env: Environment): Phrase[T -> CommandType] = {
-    p match {
-      case LambdaPhrase(param, body) =>
-        LambdaPhrase(param, apply(body, env))
-      case _ => throw new Exception("This should never happen")
-    }
-  }
+    case class fun(env: Environment) extends VisitAndRebuild.fun {
+      override def apply[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
+        p match {
+          case ml: MidLevelCombinator =>
+            Continue(ml.substituteImpl(env).asInstanceOf[Phrase[T]], this)
 
-  def applyNatDependentFun(p: Phrase[`(nat)->`[CommandType]],
-                           env: Environment): Phrase[`(nat)->`[CommandType]] = {
-    p match {
-      case NatDependentLambdaPhrase(x, body) =>
-        NatDependentLambdaPhrase(x, apply(body, env))
-      case _ => throw new Exception("This should neve happen")
-    }
-  }
+          // add the addressSpace of every new variable to the environment
+          case New(dt, addressSpace, f) =>
+            val p = f match {
+              case LambdaPhrase(param, _) => param
+              case _ => throw new Exception("This should not happen")
+            }
+            Continue(New(dt, addressSpace, f).asInstanceOf[Phrase[T]],
+              fun(env.copy(env.addressSpace.updated(p.name, addressSpace))))
 
-
-  def applyBinaryFun[T1 <: PhraseType, T2 <: PhraseType](p: Phrase[T1 -> (T2 -> CommandType)],
-                                                         env: Environment): Phrase[T1 -> (T2 -> CommandType)] = {
-    p match {
-      case LambdaPhrase(p1, body) =>
-        LambdaPhrase(p1, applyFun(body, env))
-      case _ => throw new Exception("This should never happen")
+          case _ => Continue(p, this)
+        }
+      }
     }
-  }
 
-  def applyNatDependentBinaryFun[T1 <: PhraseType, T2 <: PhraseType](p: Phrase[`(nat)->`[T1 -> (T2 -> CommandType)]],
-                                                                     env: Environment): Phrase[`(nat)->`[T1 -> (T2 -> CommandType)]] = {
-    p match {
-      case NatDependentLambdaPhrase(x, body) =>
-        NatDependentLambdaPhrase(x, applyBinaryFun(body, env))
-      case _ => throw new Exception("This should never happen")
-    }
+    VisitAndRebuild(phrase, fun(env))
   }
 
 }

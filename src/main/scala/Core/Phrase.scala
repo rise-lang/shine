@@ -4,7 +4,7 @@ import apart.arithmetic.{ArithExpr, NamedVar}
 import opencl.generator.OpenCLAST.{Block, Expression, VarRef}
 import Compiling.SubstituteImplementations
 
-sealed abstract class Phrase[T <: PhraseType] {
+sealed trait Phrase[T <: PhraseType] {
   lazy val t: T = `type`
   def `type`: T = TypeOf(this)
   def typeCheck(): Unit = TypeChecker(this)
@@ -83,68 +83,73 @@ object Phrase {
   }
 }
 
-abstract class ExpPattern extends Phrase[ExpType] {
-  override def `type`: ExpType
+sealed trait Combinator[T <: PhraseType] extends Phrase[T] {
+  override def `type`: T
 
   override def typeCheck(): Unit
-
-  def inferTypes: ExpPattern
-
-  def eval(s: OperationalSemantics.Store): OperationalSemantics.Data
 
   def prettyPrint: String
 
   def xmlPrinter: xml.Elem
 
+  def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[T]
+}
+
+sealed trait ExpCombinator extends Combinator[ExpType] {
+  def inferTypes: ExpCombinator
+
+  def eval(s: OperationalSemantics.Store): OperationalSemantics.Data
+}
+
+sealed trait AccCombinator extends Combinator[AccType] {
+  def eval(s: OperationalSemantics.Store): OperationalSemantics.AccIdentifier
+}
+
+sealed trait CommandCombinator extends Combinator[CommandType] {
+  override val `type` = comm
+
+  def eval(s: OperationalSemantics.Store): OperationalSemantics.Store
+}
+
+
+abstract class HighLevelCombinator extends ExpCombinator {
   def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType]
 
   def rewriteToImperativeExp(C: Phrase[ExpType -> CommandType]): Phrase[CommandType]
-
-  def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[ExpType]
 }
 
-trait GeneratableExpPattern {
+abstract class MidLevelCombinator extends CommandCombinator {
+  def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType]
+}
+
+abstract class LowLevelExpCombinator extends ExpCombinator {
+  def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType]
+
+  def rewriteToImperativeExp(C: Phrase[ExpType -> CommandType]): Phrase[CommandType]
+}
+
+trait ViewExp {
+  def toOpenCL(env: ToOpenCL.Environment,
+               arrayAccess: List[(ArithExpr, ArithExpr)],
+               tupleAccess: List[ArithExpr], dt: DataType): Expression
+}
+
+trait GeneratableExp {
   def toOpenCL(env: ToOpenCL.Environment): Expression
 }
 
-trait ViewExpPattern {
-  def toOpenCL(env: ToOpenCL.Environment, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr], dt: DataType): Expression
+abstract class LowLevelAccCombinator extends AccCombinator
+
+trait ViewAcc {
+  def toOpenCL(env: ToOpenCL.Environment,
+               arrayAccess: List[(ArithExpr, ArithExpr)],
+               tupleAccess: List[ArithExpr], dt: DataType): VarRef
 }
 
-abstract class AccPattern extends Phrase[AccType] {
-  override def `type`: AccType
-
-  override def typeCheck(): Unit
-
-  def eval(s: OperationalSemantics.Store): OperationalSemantics.AccIdentifier
-
+trait GeneratableAcc {
   def toOpenCL(env: ToOpenCL.Environment): VarRef
-
-  def toOpenCL(env: ToOpenCL.Environment, arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr], dt: DataType): VarRef
-
-  def prettyPrint: String
-
-  def xmlPrinter: xml.Elem
-
-  def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[AccType]
 }
 
-abstract class IntermediateCommandPattern extends  Phrase[CommandType] {
-  override val `type` = comm
-
-  override def typeCheck(): Unit
-
-  def eval(s: OperationalSemantics.Store): OperationalSemantics.Store
-
-  def prettyPrint: String
-
-  def xmlPrinter: xml.Elem
-
-  def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType]
-
-  def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[CommandType]
-}
-
-abstract class CommandPattern extends IntermediateCommandPattern {
+abstract class LowLevelCommCombinator extends CommandCombinator {
   def toOpenCL(block: Block, env: ToOpenCL.Environment): Block
 }

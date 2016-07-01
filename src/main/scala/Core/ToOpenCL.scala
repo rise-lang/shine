@@ -1,15 +1,14 @@
 package Core
 
-import Core.OperationalSemantics._
 import Compiling.{RewriteToImperative, SubstituteImplementations}
+import Core.OperationalSemantics._
+import DSL._
 import apart.arithmetic.{ArithExpr, Cst, Var}
 import ir.{Type, UndefType}
 import opencl.generator.OpenCLAST._
-import DSL._
-
-import scala.collection.immutable.List
 
 import scala.collection._
+import scala.collection.immutable.List
 
 class ToOpenCL(val localSize: ArithExpr, val globalSize: ArithExpr) {
 
@@ -57,7 +56,7 @@ class ToOpenCL(val localSize: ArithExpr, val globalSize: ArithExpr) {
     TypeChecker(p2)
 
     val p3 = SubstituteImplementations(p2,
-      SubstituteImplementations.Environment(immutable.Map[String, AddressSpace]( ("output", GlobalMemory) )))
+      SubstituteImplementations.Environment(immutable.Map[String, AddressSpace](("output", GlobalMemory))))
     xmlPrinter.toFile("/tmp/p3.xml", p3)
     TypeChecker(p3)
 
@@ -155,13 +154,11 @@ object ToOpenCL {
         val falseBlock = cmd(elseP, Block(), env)
         (block: Block) += IfThenElse(exp(condP, env), trueBlock, falseBlock)
 
-      case c: IntermediateCommandPattern => c match {
-        case fc: CommandPattern => fc.toOpenCL(block, env)
-        case _ => throw new Exception(s"This should not happen $c")
-      }
+      case c: LowLevelCommCombinator => c.toOpenCL(block, env)
 
       case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
-           IdentPhrase(_, _) | Proj1Phrase(_) | Proj2Phrase(_) =>
+           IdentPhrase(_, _) | Proj1Phrase(_) | Proj2Phrase(_) |
+           _: MidLevelCombinator =>
         throw new Exception("This should not happen")
     }
   }
@@ -185,13 +182,14 @@ object ToOpenCL {
       case p: Proj2Phrase[_, ExpType] => exp(Lift.liftPair(p.pair)._2, env)
       case UnaryOpPhrase(op, x) =>
         UnaryExpression(op.toString, exp(x, env))
-      case e: ExpPattern => e match {
-        case g: GeneratableExpPattern => g.toOpenCL(env)
+
+      case e: LowLevelExpCombinator => e match {
+        case g: GeneratableExp => g.toOpenCL(env)
         case _ => throw new Exception("This should not happen")
       }
 
       case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
-           IfThenElsePhrase(_, _, _) =>
+           IfThenElsePhrase(_, _, _) | _: HighLevelCombinator =>
         throw new Exception("This should not happen")
     }
   }
@@ -201,7 +199,10 @@ object ToOpenCL {
       case IdentPhrase(name, _) => VarRef(name)
       case p: Proj1Phrase[AccType, _] => acc(Lift.liftPair(p.pair)._1, env)
       case p: Proj2Phrase[_, AccType] => acc(Lift.liftPair(p.pair)._2, env)
-      case a: AccPattern => a.toOpenCL(env)
+      case a: LowLevelAccCombinator => a match {
+        case g: GeneratableAcc => g.toOpenCL(env)
+        case _ => throw new Exception("This should not happen")
+      }
 
       case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
            IfThenElsePhrase(_, _, _) =>
@@ -217,15 +218,23 @@ object ToOpenCL {
     p match {
       case IdentPhrase(name, t) =>
         val i = arrayAccess.map(x => x._1 * x._2).foldLeft(0: ArithExpr)((x, y) => x + y)
-        val index = if (i != Cst(0)) { i } else { null }
+        val index = if (i != Cst(0)) {
+          i
+        } else {
+          null
+        }
 
         val s = tupleAccess.map {
-            case Cst(1) => "._1"
-            case Cst(2) => "._2"
-            case _ => throw new Exception("This should not happen")
-          }.foldLeft("")(_ + _)
+          case Cst(1) => "._1"
+          case Cst(2) => "._2"
+          case _ => throw new Exception("This should not happen")
+        }.foldLeft("")(_ + _)
 
-        val suffix = if (s != "") { s } else { null }
+        val suffix = if (s != "") {
+          s
+        } else {
+          null
+        }
 
         val originalType = t.dataType
         val currentType = dt
@@ -242,14 +251,12 @@ object ToOpenCL {
       case p: Proj1Phrase[ExpType, _] => exp(Lift.liftPair(p.pair)._1, env, arrayAccess, tupleAccess, dt)
       case p: Proj2Phrase[_, ExpType] => exp(Lift.liftPair(p.pair)._2, env, arrayAccess, tupleAccess, dt)
 
-      case e: ExpPattern => e match {
-        case v: ViewExpPattern => v.toOpenCL(env, arrayAccess, tupleAccess, dt)
-        case _ => throw new Exception(s"This should not happen: $e")
-      }
+      case v: ViewExp => v.toOpenCL(env, arrayAccess, tupleAccess, dt)
 
       case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
            BinOpPhrase(_, _, _) | UnaryOpPhrase(_, _) |
-           IfThenElsePhrase(_, _, _) | LiteralPhrase(_) =>
+           IfThenElsePhrase(_, _, _) | LiteralPhrase(_) |
+           _: LowLevelExpCombinator | _: HighLevelCombinator =>
         throw new Exception("This should not happen")
     }
   }
@@ -262,7 +269,11 @@ object ToOpenCL {
     p match {
       case IdentPhrase(name, t) =>
         val i = arrayAccess.map(x => x._1 * x._2).foldLeft(0: ArithExpr)((x, y) => x + y)
-        val index = if (i != Cst(0)) { i } else { null }
+        val index = if (i != Cst(0)) {
+          i
+        } else {
+          null
+        }
 
         val s = tupleAccess.map {
           case Cst(1) => "._1"
@@ -270,7 +281,11 @@ object ToOpenCL {
           case _ => throw new Exception("This should not happen")
         }.foldLeft("")(_ + _)
 
-        val suffix = if (s != "") { s } else { null }
+        val suffix = if (s != "") {
+          s
+        } else {
+          null
+        }
 
         val originalType = t.dataType
         val currentType = dt
@@ -284,13 +299,13 @@ object ToOpenCL {
             VarRef(name, suffix, ArithExpression(index))
         }
 
-      case a: AccPattern => a.toOpenCL(env, arrayAccess, tupleAccess, dt)
+      case v: ViewAcc => v.toOpenCL(env, arrayAccess, tupleAccess, dt)
 
       case p: Proj1Phrase[AccType, _] => acc(Lift.liftPair(p.pair)._1, env, arrayAccess, tupleAccess, dt)
       case p: Proj2Phrase[_, AccType] => acc(Lift.liftPair(p.pair)._2, env, arrayAccess, tupleAccess, dt)
 
       case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
-           IfThenElsePhrase(_, _, _) =>
+           IfThenElsePhrase(_, _, _) | _: LowLevelAccCombinator =>
         throw new Exception("This should not happen")
     }
   }

@@ -1,6 +1,6 @@
 package Core
 
-import CommandPatterns._
+import LowLevelCombinators._
 import apart.arithmetic.ArithExpr
 
 object AdjustMemoryAllocation {

@@ -1,8 +1,6 @@
 import Core._
-import ExpPatterns._
-import AccPatterns._
-import CommandPatterns._
 import Core.OperationalSemantics.{FloatData, IndexData, VectorData, newName}
+import LowLevelCombinators._
 import apart.arithmetic.ArithExpr
 
 import scala.language.implicitConversions
@@ -26,7 +24,7 @@ package object DSL {
     def unary_- = UnaryOpPhrase(UnaryOpPhrase.Op.NEG, lhs)
   }
 
-  implicit class BinOpsPatterns(lhs: ExpPattern) {
+  implicit class BinOpsPatterns(lhs: LowLevelExpCombinator) {
     def +(rhs: Phrase[ExpType]) = BinOpPhrase(BinOpPhrase.Op.ADD, lhs, rhs)
 
     def -(rhs: Phrase[ExpType]) = BinOpPhrase(BinOpPhrase.Op.SUB, lhs, rhs)
@@ -69,9 +67,9 @@ package object DSL {
     def `;`(c2: Phrase[CommandType]): Phrase[CommandType] = Seq(c1, c2)
   }
 
-  implicit class SequentialPatternComposition(c1: IntermediateCommandPattern) {
-    def `;`(c2: Phrase[CommandType]): Phrase[CommandType] = Seq(c1, c2)
-  }
+//  implicit class SequentialPatternComposition(c1: IntermediateCommandPattern) {
+//    def `;`(c2: Phrase[CommandType]): Phrase[CommandType] = Seq(c1, c2)
+//  }
 
   implicit class Assignment(lhs: Phrase[AccType]) {
     def :=(rhs: Phrase[ExpType]) = {
@@ -83,7 +81,7 @@ package object DSL {
     }
   }
 
-  implicit class AssignmentPattern(lhs: AccPattern) {
+  implicit class AssignmentPattern(lhs: LowLevelAccCombinator) {
     def :=(rhs: Phrase[ExpType]) = Assignment(lhs).:=(rhs)
   }
 

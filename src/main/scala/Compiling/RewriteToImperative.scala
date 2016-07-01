@@ -3,7 +3,7 @@ package Compiling
 import Core._
 import Core.PhraseType._
 import DSL._
-import CommandPatterns._
+import MidLevelCombinators.MapI
 
 object RewriteToImperative {
 
@@ -48,7 +48,8 @@ object RewriteToImperative {
           })
         })
 
-      case pattern: ExpPattern => pattern.rewriteToImperativeAcc(A)
+      case hl: HighLevelCombinator => hl.rewriteToImperativeAcc(A)
+      case ll: LowLevelExpCombinator => ll.rewriteToImperativeAcc(A)
 
       // on the fly beta-reduction
       case ApplyPhrase(fun, arg) => acc(Lift.liftFunction(fun)(arg))(A)
@@ -83,7 +84,8 @@ object RewriteToImperative {
         })
 
 
-      case pattern: ExpPattern => pattern.rewriteToImperativeExp(C)
+      case hl: HighLevelCombinator => hl.rewriteToImperativeExp(C)
+      case ll: LowLevelExpCombinator => ll.rewriteToImperativeExp(C)
 
       // on the fly beta-reduction
       case ApplyPhrase(fun, arg) => exp(Lift.liftFunction(fun)(arg))(C)
