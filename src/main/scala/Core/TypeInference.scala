@@ -60,12 +60,9 @@ object TypeInference {
 
       case BinOpPhrase(op, lhs, rhs) => BinOpPhrase(op, TypeInference(lhs), TypeInference(rhs))
 
-      case hl: HighLevelCombinator => hl.inferTypes
-      case ll: LowLevelExpCombinator => ll.inferTypes
-
-      case m: MidLevelCombinator => m
-      case ll: LowLevelAccCombinator => ll
-      case ll: LowLevelCommCombinator => ll
+      case e: ExpCombinator => e.inferTypes
+      case a: AccCombinator => a
+      case c: CommandCombinator => c
     }).asInstanceOf[Phrase[T]]
   }
 
