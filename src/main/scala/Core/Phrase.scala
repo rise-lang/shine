@@ -111,7 +111,6 @@ sealed trait CommandCombinator extends Combinator[CommandType] {
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Store
 }
 
-
 abstract class HighLevelCombinator extends ExpCombinator {
   def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType]
 

@@ -81,9 +81,6 @@ object gemv extends App {
 
       ) ) ) ) )
 
-  TypeChecker(fullMatrixVectorFusedOpenCLAMD)
-  xmlPrinter.toFile("/home/msteuwer/Desktop/fullMatrixVectorFusedOpenCLAMD.xml", fullMatrixVectorFusedOpenCLAMD)
-
   printOpenCLKernel1("fullMatrixVectorFusedOpenCLAMD", fullMatrixVectorFusedOpenCLAMD)
 
   val keplerBest =
@@ -98,9 +95,6 @@ object gemv extends App {
         )) $ zip(mat, ys)
 
       ) ) ) ) )
-
-  TypeChecker(keplerBest)
-  xmlPrinter.toFile("/home/msteuwer/Desktop/keplerBest.xml", keplerBest)
 
   printOpenCLKernel1("keplerBest", keplerBest)
 

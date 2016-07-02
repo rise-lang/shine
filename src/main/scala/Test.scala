@@ -2,10 +2,8 @@
 import Core._
 import DSL._
 import Compiling.{RewriteToImperative, SubstituteImplementations}
-import Core.PhraseType._
 import apart.arithmetic._
 import opencl.generator.OpenCLPrinter
-
 
 import scala.collection.immutable.HashMap
 
@@ -593,7 +591,7 @@ object Test extends App {
 //
 //    println( OperationalSemantics.eval(store, p) )
 //  }
-//
+
 //  {
 //    var store = HashMap[String, Data]()
 //    val x = identifier("x", ExpType(ArrayType(4, int)))
@@ -663,88 +661,89 @@ object Test extends App {
 ////
 ////    println( OperationalSemantics.eval(store, p) )
 //  }
-//
-//  {
-//    val add = λ( x1 => λ( x2 => x1 + x2 ) )
-//    val p = λ(ExpType(ArrayType(4, int)))(inp =>
-//      reduce(add, 0, map(reduce(add, 0), split(2, inp)))
+
+  {
+    val add = λ( x1 => λ( x2 => x1 + x2 ) )
+    val p_ = λ(ExpType(ArrayType(4, int)))(inp =>
+      reduce(add, 0, map(reduce(add, 0), split(2, inp)))
+    )
+    val p = TypeInference(p_).asInstanceOf[LambdaPhrase[ExpType, ExpType]]
+    println("=====")
+    println(p)
+    println("=====")
+
+    val p2 = RewriteToImperative(p)
+    println("=====")
+    println(p2)
+    println("=====")
+    TypeChecker(p2)
+
+// New(λ(tmp,
+//    MapI(tmp.wr, λ(o, λ(x, ReduceIAcc(o, λ(o', λ(x', λ(y, o' := x' + y))), 0, x))), Split(2, x));
+//    ReduceIAcc(out, λ(o, λ(x, λ(y, o := x + y ))), 0, tmp.rd)))
+
+    val p3 = SubstituteImplementations(p2, SubstituteImplementations.Environment())
+    println("=====")
+    println(p3)
+    println("=====")
+    TypeChecker(p3)
+
+// New(λ(tmp,
+//    For( Length( Split(2,input) ),
+//      λ(i,
+//        New(λ(accum,
+//          accum.wr := 0 ;
+//          For( Length( Split(2,input)[i] ),
+//            λ(j,
+//              accum.wr := (Split(2, input))[i][j] + accum.rd ) ) ;
+//          (tmp.wr)[i] := accum.rd ) ) ) ) ;
+//    New(λ(accum,
+//      accum.wr := 0 ;
+//      For( Length(tmp.rd),
+//        λ(tmp5,
+//          accum.wr := (tmp.rd)[tmp5] + accum.rd ) ) ;
+//      output := accum.rd ) ) ) )
+
+    println(PrettyPrinter(p3))
+
+//    new (λ tmp.
+//      for (length (split 2 input))
+//        (λ v101.
+//          new (λ v102.
+//            v102._2 := IntData(0) ;
+//            for (length (split 2 input)[v101])
+//              (λ v103. v102._2 := ((split 2 input)[v101][v103] + v102._1) ) ;
+//            tmp._2[v101] := v102._1
+//          )
+//        ) ;
+//      new (λ v104.
+//        v104._2 := IntData(0) ;
+//        for (length tmp._1)
+//          (λ v105. v104._2 := (tmp._1[v105] + v104._1) ) ;
+//        output := v104._1
+//      )
 //    )
-//    println("=====")
-//    println(p)
-//    println("=====")
-//
-//    val p2 = RewriteToImperative(p)
-//    println("=====")
-//    println(p2)
-//    println("=====")
-//    TypeChecker(p2)
-//
-//// New(λ(tmp,
-////    MapI(tmp.wr, λ(o, λ(x, ReduceIAcc(o, λ(o', λ(x', λ(y, o' := x' + y))), 0, x))), Split(2, x));
-////    ReduceIAcc(out, λ(o, λ(x, λ(y, o := x + y ))), 0, tmp.rd)))
-//
-//    val p3 = SubstituteImplementations(p2, SubstituteImplementations.Environment())
-//    println("=====")
-//    println(p3)
-//    println("=====")
-//    TypeChecker(p3)
-//
-//// New(λ(tmp,
-////    For( Length( Split(2,input) ),
-////      λ(i,
-////        New(λ(accum,
-////          accum.wr := 0 ;
-////          For( Length( Split(2,input)[i] ),
-////            λ(j,
-////              accum.wr := (Split(2, input))[i][j] + accum.rd ) ) ;
-////          (tmp.wr)[i] := accum.rd ) ) ) ) ;
-////    New(λ(accum,
-////      accum.wr := 0 ;
-////      For( Length(tmp.rd),
-////        λ(tmp5,
-////          accum.wr := (tmp.rd)[tmp5] + accum.rd ) ) ;
-////      output := accum.rd ) ) ) )
-//
-//    println(PrettyPrinter(p3))
-//
-////    new (λ tmp.
-////      for (length (split 2 input))
-////        (λ v101.
-////          new (λ v102.
-////            v102._2 := IntData(0) ;
-////            for (length (split 2 input)[v101])
-////              (λ v103. v102._2 := ((split 2 input)[v101][v103] + v102._1) ) ;
-////            tmp._2[v101] := v102._1
-////          )
-////        ) ;
-////      new (λ v104.
-////        v104._2 := IntData(0) ;
-////        for (length tmp._1)
-////          (λ v105. v104._2 := (tmp._1[v105] + v104._1) ) ;
-////        output := v104._1
-////      )
-////    )
-//
-//
-//  }
-//
-//  {
-//    println("== scal ==")
-//    val a: Phrase[ExpType] = 5
-//    val t = ExpType(ArrayType(1048576, int))
-//    val p = λ(t)(inp =>
-//      map(λ( x => x * a )) $ inp
-//    )
-//    println("=====")
-//    println(PrettyPrinter(p))
-//
-//    println("-----")
-//
-//    val ast = (new ToOpenCL(?, ?))(p, identifier("inp", t))
-//    println(OpenCLPrinter()(ast))
-//
-//    println("-----")
-//  }
+
+
+  }
+
+  {
+    println("== scal ==")
+    val a: Phrase[ExpType] = 5
+    val t = ExpType(ArrayType(1048576, int))
+    val p = λ(t)(inp =>
+      map(λ( x => x * a )) $ inp
+    )
+    println("=====")
+    println(PrettyPrinter(p))
+
+    println("-----")
+
+    val ast = (new ToOpenCL(?, ?))(p, identifier("inp", t))
+    println(OpenCLPrinter()(ast))
+
+    println("-----")
+  }
 
   {
     println("== assum ==")
@@ -819,25 +818,26 @@ object Test extends App {
     println("-----")
   }
 
-//  { // TODO: check this again!!!
-//    println("== join split ==")
-//
-//    val xsVectorT = ExpType(ArrayType(1048576, int))
-//
-//    // results in type error after RewriteToImperative
-//    val p = λ(xsVectorT)(inp =>
-//      join() o split(2048) $ inp
-//    )
-//    println("=====")
-//    println(PrettyPrinter(p))
-//
-//    println("-----")
-//
-//    val ast = (new ToOpenCL(?, ?))(p, identifier("xs", xsVectorT))
-//    println(OpenCLPrinter()(ast))
-//
-//    println("-----")
-//  }
+  { // TODO: check generated code!!!
+    println("== join split ==")
+
+    val xsVectorT = ExpType(ArrayType(1048576, int))
+
+    // results in type error after RewriteToImperative
+    val p_ = λ(xsVectorT)(inp =>
+      join() o split(2048) $ inp
+    )
+    val p = TypeInference(p_).asInstanceOf[LambdaPhrase[ExpType, ExpType]]
+    println("=====")
+    println(PrettyPrinter(p))
+
+    println("-----")
+
+    val ast = (new ToOpenCL(?, ?))(p, identifier("xs", xsVectorT))
+    println(OpenCLPrinter()(ast))
+
+    println("-----")
+  }
 
   {
     println("== asum Nvidia ==")
@@ -926,41 +926,6 @@ object Test extends App {
     println(OpenCLPrinter()(ast))
 
     println("-----")
-
-//    {
-//      val mat = identifier("mat", matrixT)
-//      val xs = identifier("xs", xsVectorT)
-//      val ys = identifier("ys", ysVectorT)
-//      val outT = TypeChecker(p(mat)(xs)(ys))
-//      val output = identifier("output", AccType(outT.dataType))
-//      val pp =
-//        ParForWorkgroup( n / 2, output, λ(ExpType(int))(v370 => λ(AccType(ArrayType(1, int)))(v371 =>
-//          `new`(ArrayType(1, int), LocalMemory, v350 =>
-//            ParForLocal(1, π2(v350), λ(ExpType(int))(v372 => λ(AccType(int))(v373 =>
-//              `new`(int, PrivateMemory, v374 =>
-//                (π2 (v374) `:=` LiteralPhrase(0)) `;`
-//                  `for`(n, v375 =>
-//                    π2(v374) `:=` (π1(v374) + (
-//                      ((split(n, zip(xs, (zip(mat, ys) `@` v370)._1)) `@` v372) `@` v375)._1
-//                        * ((split(n, zip(xs, (zip(mat, ys) `@` v370)._1)) `@` v372) `@` v375)._2
-//                      ))
-//                  ) `;`
-//                  (π2(v374) `:=` π1(v374) * LiteralPhrase(5))
-//              )
-//            ))) `;`
-//            ParForLocal(1, v371, λ(ExpType(int))(v377 => λ(AccType(int))(v378 =>
-//              v378 `:=` ( (π1(v350) `@` v377) + (zip(mat, ys) `@` v370)._2 * LiteralPhrase(2) )
-//            )))
-//          )
-//        )))
-//
-//      println(PrettyPrinter(pp))
-//      TypeChecker(pp)
-//
-//      val ast = ToOpenCL.cmd(pp, Block())
-//      println(OpenCLPrinter()(ast))
-//    }
-
   }
 
   {

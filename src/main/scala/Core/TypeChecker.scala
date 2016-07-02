@@ -50,8 +50,13 @@ object TypeChecker {
         lhs.typeCheck()
         rhs.typeCheck()
         (lhs.t, rhs.t) match {
-          case (ExpType(_), ExpType(_)) => check(lhs.t, rhs.t)
-          case x => error(x.toString, "(ExpType, ExpType)")
+          case (ExpType(dt1), ExpType(dt2))
+            if dt1.isInstanceOf[BasicType] && dt2.isInstanceOf[BasicType] =>
+              if (lhs.t != rhs.t) {
+                error(s"${lhs.t} and ${rhs.t}", expected = "them to match")
+              }
+          case (x1, x2) =>
+            error(s"$x1 $op $x2", s"exp[b] $op exp[b]")
         }
 
       case c: Combinator[_] => c.typeCheck()

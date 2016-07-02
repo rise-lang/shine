@@ -1,7 +1,6 @@
 package Compiling
 
 import Core._
-import Core.PhraseType._
 import DSL._
 import MidLevelCombinators.MapI
 
@@ -25,11 +24,11 @@ object RewriteToImperative {
       case x: IdentPhrase[ExpType] =>
         x.t.dataType match {
           case _: BasicType | _: VectorType => A `:=` x
-          case ArrayType(n, dt) => MapI(n, dt, dt, A, λ( AccType(dt) ) { o => λ( ExpType(dt) ) { x => acc(x)(o) } }, x)
+          case ArrayType(n, dt) => MapI(n, dt, dt, A, λ(AccType(dt)) { o => λ(ExpType(dt)) { x => acc(x)(o) } }, x)
           case RecordType(fstT, sndT) => acc(fst(x))(fstAcc(fstT, sndT, A)) `;` acc(snd(x))(sndAcc(fstT, sndT, A))
         }
 
-      case c : LiteralPhrase => A `:=` c
+      case c: LiteralPhrase => A `:=` c
 
       case IfThenElsePhrase(cond, thenP, elseP) =>
         exp(cond)(λ(cond.t) { x =>
@@ -64,7 +63,7 @@ object RewriteToImperative {
     E match {
       case x: IdentPhrase[ExpType] => C(x)
 
-      case c : LiteralPhrase => C(c)
+      case c: LiteralPhrase => C(c)
 
       case UnaryOpPhrase(op, e) =>
         exp(e)(λ(e.t) { x =>

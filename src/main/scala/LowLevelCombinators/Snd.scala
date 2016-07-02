@@ -21,10 +21,10 @@ case class Snd(dt1: DataType,
     record checkType exp"[$dt1 x $dt2]"
   }
 
-  override def inferTypes: Fst = {
+  override def inferTypes: Snd = {
     import TypeInference._
     record.t match {
-      case ExpType(RecordType(dt1_, dt2_)) => Fst(dt1_, dt2_, record)
+      case ExpType(RecordType(dt1_, dt2_)) => Snd(dt1_, dt2_, record)
       case x => error(x.toString, "ExpType(RecordType)")
     }
   }
