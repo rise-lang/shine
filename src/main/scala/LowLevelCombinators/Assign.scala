@@ -1,6 +1,5 @@
 package LowLevelCombinators
 
-import Compiling.SubstituteImplementations
 import Core.OperationalSemantics._
 import Core._
 import opencl.generator.OpenCLAST.{AssignmentExpression, Block}

@@ -1,7 +1,7 @@
 package Compiling
 
 import Core._
-import DSL._
+import DSL.typed._
 import MidLevelCombinators.MapI
 
 object RewriteToImperative {

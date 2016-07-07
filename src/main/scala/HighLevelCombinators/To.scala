@@ -3,7 +3,7 @@ package HighLevelCombinators
 import Compiling.RewriteToImperative
 import Core.OperationalSemantics.{Data, Store}
 import Core._
-import DSL._
+import DSL.typed._
 
 import scala.xml.Elem
 

@@ -2,7 +2,7 @@ package HighLevelCombinators
 
 import Core.OperationalSemantics._
 import Core._
-import DSL._
+import DSL.typed._
 import MidLevelCombinators.{IterateIAcc, IterateIExp}
 import apart.arithmetic._
 

@@ -3,7 +3,7 @@ package HighLevelCombinators
 import Compiling.RewriteToImperative
 import Core.OperationalSemantics._
 import Core._
-import DSL._
+import DSL.typed._
 import LowLevelCombinators.JoinAcc
 import apart.arithmetic.ArithExpr
 import ir.Type

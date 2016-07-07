@@ -6,6 +6,15 @@ import scala.language.reflectiveCalls
 
 package object Core {
 
+  object newName {
+    var counter = 0
+
+    def apply(): String = {
+      counter += 1
+      "v" + counter
+    }
+  }
+
   type x[T1 <: PhraseType, T2 <: PhraseType] = PairType[T1, T2]
   type ->[T1 <: PhraseType, T2 <: PhraseType] = FunctionType[T1, T2]
   type `->p`[T1 <: PhraseType, T2 <: PhraseType] = PassiveFunctionType[T1, T2]

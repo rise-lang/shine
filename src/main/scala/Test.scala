@@ -1,6 +1,6 @@
 
 import Core._
-import DSL._
+import DSL.untyped._
 import Compiling.{RewriteToImperative, SubstituteImplementations}
 import apart.arithmetic._
 import opencl.generator.OpenCLPrinter
@@ -34,7 +34,7 @@ object Test extends App {
     val out = identifier("out", AccType(int))
     store = store + (out.name -> 0)
 
-    val p = `new`(int, PrivateMemory, v =>
+    val p_ = `new`(int, PrivateMemory, v =>
       (π2(v) := LiteralPhrase(42) + LiteralPhrase(1)) `;`
         `new`(int, PrivateMemory, v2 =>
           (π2(v2) := π1(v) + 1) `;`
@@ -45,6 +45,8 @@ object Test extends App {
           elseP = π2(v) := π1(v) + 10) `;`
         (out := π1(v))
     )
+
+    val p = TypeInference(p_)
 
     println(p)
 

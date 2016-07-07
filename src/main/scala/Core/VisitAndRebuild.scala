@@ -12,16 +12,15 @@ object VisitAndRebuild {
     abstract class Result[+T]
     case class Stop[T <: PhraseType](p: Phrase[T]) extends Result[Phrase[T]]
     case class Continue[T <: PhraseType](p: Phrase[T], f: fun) extends Result[Phrase[T]]
-
   }
 
-  def apply[T <: PhraseType](p: Phrase[T], f: fun): Phrase[T] = {
-    f(p) match {
+  def apply[T <: PhraseType](phrase: Phrase[T], f: fun): Phrase[T] = {
+    f(phrase) match {
       case r: f.Stop[T]@unchecked => r.p
       case c: f.Continue[T]@unchecked =>
         val f = c.f
         (c.p match {
-          case i: IdentPhrase[_] =>
+          case i: IdentPhrase[T] =>
             val t = i.t match {
               case ExpType(dt) => ExpType(f(dt))
               case AccType(dt) => AccType(f(dt))
@@ -30,23 +29,38 @@ object VisitAndRebuild {
               case _ => throw new Exception("This should not happen")
             }
             IdentPhrase(i.name, t)
-          case l: LiteralPhrase => l
-          case l: LambdaPhrase[_, _] =>
-            val newParam = apply(l.param, f) match {
-              case p: IdentPhrase[_] => p
+
+          case LambdaPhrase(x, p) =>
+            apply(x, f) match {
+              case newX: IdentPhrase[_] => LambdaPhrase(newX, apply(p, f))
               case _ => throw new Exception("This should not happen")
             }
-            LambdaPhrase(newParam, apply(l.body, f))
-          case l: NatDependentLambdaPhrase[_] => NatDependentLambdaPhrase(l.x, apply(l.body, f))
-          case app: ApplyPhrase[a, T] => ApplyPhrase(apply(app.fun, f), apply(app.arg, f))
-          case app: NatDependentApplyPhrase[T] => NatDependentApplyPhrase(apply(app.fun, f), app.arg)
-          case pair: PairPhrase[_, _] => PairPhrase(apply(pair.fst, f), apply(pair.snd, f))
-          case p: Proj1Phrase[T, b] => Proj1Phrase(apply(p.pair, f))
-          case p: Proj2Phrase[a, T] => Proj2Phrase(apply(p.pair, f))
-          case i: IfThenElsePhrase[T] => IfThenElsePhrase(apply(i.cond, f), apply(i.thenP, f), apply(i.elseP, f))
-          case u: UnaryOpPhrase => UnaryOpPhrase(u.op, apply(u.p, f))
-          case b: BinOpPhrase => BinOpPhrase(b.op, apply(b.lhs, f), apply(b.rhs, f))
-          case c: Combinator[_] => c.visitAndRebuild(f)
+
+          case ApplyPhrase(p, q) =>
+            ApplyPhrase(apply(p, f), apply(q, f))
+
+          case NatDependentLambdaPhrase(a, p) =>
+            NatDependentLambdaPhrase(a, apply(p, f))
+
+          case NatDependentApplyPhrase(p, e) =>
+            NatDependentApplyPhrase(apply(p, f), e)
+
+          case PairPhrase(p, q) => PairPhrase(apply(p, f), apply(q, f))
+
+          case Proj1Phrase(p) => Proj1Phrase(apply(p, f))
+
+          case Proj2Phrase(p) => Proj2Phrase(apply(p, f))
+
+          case IfThenElsePhrase(cond, thenP, elseP) =>
+            IfThenElsePhrase(apply(cond, f), apply(thenP, f), apply(elseP, f))
+
+          case l: LiteralPhrase => l
+
+          case UnaryOpPhrase(op, x) => UnaryOpPhrase(op, apply(x, f))
+
+          case BinOpPhrase(op, lhs, rhs) => BinOpPhrase(op, apply(lhs, f), apply(rhs, f))
+
+          case c: Combinator[T] => c.visitAndRebuild(f)
         }).asInstanceOf[Phrase[T]]
     }
   }

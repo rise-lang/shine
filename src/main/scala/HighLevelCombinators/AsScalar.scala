@@ -3,7 +3,7 @@ package HighLevelCombinators
 import Compiling.RewriteToImperative
 import Core.OperationalSemantics._
 import Core._
-import DSL._
+import DSL.typed._
 import LowLevelCombinators.AsScalarAcc
 import apart.arithmetic.ArithExpr
 import opencl.generator.OpenCLAST.Expression

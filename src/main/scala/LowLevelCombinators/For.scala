@@ -1,9 +1,8 @@
 package LowLevelCombinators
 
-import Compiling.SubstituteImplementations
 import Core.OperationalSemantics._
 import Core._
-import DSL._
+import DSL.typed._
 import apart.arithmetic.{ArithExpr, NamedVar, RangeAdd}
 import opencl.generator.OpenCLAST.Block
 

@@ -5,7 +5,6 @@ import apart.arithmetic._
 import opencl.generator.OpenCLAST._
 import opencl.generator.{get_group_id, get_num_groups}
 
-
 case class ParForWorkgroup(override val n: ArithExpr,
                            override val dt: DataType,
                            override val out: Phrase[AccType],

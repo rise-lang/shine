@@ -2,7 +2,7 @@ package LowLevelCombinators
 
 import Core.OperationalSemantics._
 import Core._
-import DSL.identifier
+import DSL.typed._
 import apart.arithmetic.NamedVar
 import opencl.generator.OpenCLAST.{Block, Comment, VarDecl}
 
@@ -20,7 +20,7 @@ case class New(dt: DataType,
 
   override def eval(s: Store): Store = {
     val f_ = OperationalSemantics.eval(s, f)
-    val arg = identifier.newVar(newName())
+    val arg = identifier(newName(), f.t.inT)
     val newStore = OperationalSemantics.eval(s + (arg.name -> 0), f_(arg))
     newStore - arg.name
   }
@@ -40,7 +40,7 @@ case class New(dt: DataType,
     }
 
     val f_ = Lift.liftFunction(f)
-    val v_ = identifier.newVar(v.name, dt)
+    val v_ = identifier(v.name, f.t.inT)
     ToOpenCL.cmd(f_(v_), block, env)
   }
 

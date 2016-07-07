@@ -1,8 +1,9 @@
 package MidLevelCombinators
 
 import Compiling.SubstituteImplementations
+import Compiling.SubstituteImplementations._
 import Core._
-import DSL._
+import DSL.typed._
 import LowLevelCombinators.ParForGlobal
 import apart.arithmetic.ArithExpr
 
@@ -16,10 +17,10 @@ case class MapGlobalI(n: ArithExpr,
 
   override def makeMapI = MapGlobalI
 
-  override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
-    ParForGlobal(n, dt2, out, λ( ExpType(int) ) { i => λ( AccType(dt2) ) { o =>
-      SubstituteImplementations( f(o)(in `@` i), env )
-    } })
+  override def substituteImpl(env: Environment): Phrase[CommandType] = {
+    ParForGlobal(n, dt2, out, λ(exp"[$int]")( i => λ( acc"[$dt2]" )( o => {
+      SubstituteImplementations(f(o)( in `@` i ), env)
+    })))
   }
 
 }

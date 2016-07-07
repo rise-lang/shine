@@ -57,15 +57,6 @@ object OperationalSemantics {
 
   implicit def IntToIntData(i: Int): IntData = IntData(i)
 
-  object newName {
-    var counter = 0
-
-    def apply(): String = {
-      counter += 1
-      "v" + counter
-    }
-  }
-
   type Store = HashMap[String, Data]
 
   def eval[T <: PhraseType, R](s: Store, p: Phrase[T])

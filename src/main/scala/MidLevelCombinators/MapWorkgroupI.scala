@@ -2,7 +2,7 @@ package MidLevelCombinators
 
 import Compiling.SubstituteImplementations
 import Core._
-import DSL._
+import DSL.typed._
 import LowLevelCombinators.ParForWorkgroup
 import apart.arithmetic.ArithExpr
 

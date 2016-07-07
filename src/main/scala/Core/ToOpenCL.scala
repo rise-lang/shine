@@ -2,7 +2,7 @@ package Core
 
 import Compiling.{RewriteToImperative, SubstituteImplementations}
 import Core.OperationalSemantics._
-import DSL._
+import DSL.typed._
 import apart.arithmetic.{ArithExpr, Cst, Var}
 import ir.{Type, UndefType}
 import opencl.generator.OpenCLAST._
