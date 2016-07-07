@@ -1,6 +1,7 @@
 package DSL.untyped
 
 import Core._
+import LowLevelCombinators.Record
 import apart.arithmetic.NamedVar
 
 object identifier {
@@ -50,4 +51,8 @@ object π1 {
 object π2 {
   def apply[T1 <: PhraseType, T2 <: PhraseType](pair: Phrase[T1 x T2]) =
     Proj2Phrase(pair)
+}
+
+object record {
+  def apply(fst: Phrase[ExpType], snd: Phrase[ExpType]) = Record(fst, snd)
 }

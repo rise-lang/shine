@@ -77,3 +77,5 @@ object sndAcc {
   def apply(fstT: DataType, sndT: DataType, record: Phrase[AccType]) =
     SndAcc(fstT, sndT, record)
 }
+
+object skip extends Skip

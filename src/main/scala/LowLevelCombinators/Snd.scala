@@ -23,8 +23,9 @@ case class Snd(dt1: DataType,
 
   override def inferTypes: Snd = {
     import TypeInference._
-    record.t match {
-      case ExpType(RecordType(dt1_, dt2_)) => Snd(dt1_, dt2_, record)
+    val record_ = TypeInference(record)
+    record_.t match {
+      case ExpType(RecordType(dt1_, dt2_)) => Snd(dt1_, dt2_, record_)
       case x => error(x.toString, "ExpType(RecordType)")
     }
   }

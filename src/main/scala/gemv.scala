@@ -23,7 +23,6 @@ object gemv extends App {
   def printOpenCLKernel1(name: String,
                          untypedLambda: Phrase[ExpType ->(ExpType -> (ExpType -> (ExpType -> (ExpType -> ExpType))))]) = {
     val lambda = TypeInference(untypedLambda)
-    Core.xmlPrinter.toFile("/Users/michel/Desktop/exp.xml", lambda)
     println(name + ":\n" + PrettyPrinter(lambda))
     lambda.typeCheck()
 

@@ -9,12 +9,33 @@ import scala.xml.Elem
 case class Assign(dt: BasicType,
                   lhs: Phrase[AccType],
                   rhs: Phrase[ExpType])
-  extends LowLevelCommCombinator {
+  extends LowLevelCommCombinator with TypeInferable {
 
   override def typeCheck(): Unit = {
     import TypeChecker._
     lhs checkType acc"[$dt]"
     rhs checkType exp"[$dt]"
+  }
+
+  override def inferTypes: Assign = {
+    import TypeInference._
+    val lhs_ = TypeInference(lhs)
+    val rhs_ = TypeInference(rhs)
+    (lhs_.t, rhs_.t) match {
+      case (AccType(dt1), ExpType(dt2)) =>
+        (dt1, dt2) match {
+          case (t1, t2) if t1 == t2 =>
+            t1 match {
+              case bt: BasicType =>
+                Assign(bt, lhs_, rhs_)
+              case _ =>
+                error(s"${t1.toString}", expected = "a basic data type")
+            }
+          case _ =>
+            error(s"${dt1.toString} and ${dt2.toString}", expected = "them to match")
+        }
+      case x => error(x.toString(), "(AccType(dt1), ExpType(dt2))")
+    }
   }
 
   override def eval(s: Store): Store = {
@@ -60,8 +81,12 @@ case class Assign(dt: BasicType,
   override def prettyPrint: String = s"(${PrettyPrinter(lhs)} := ${PrettyPrinter(rhs)})"
 
   override def xmlPrinter: Elem =
-    <assign>
-      <lhs>{Core.xmlPrinter(lhs)}</lhs>
-      <rhs>{Core.xmlPrinter(rhs)}</rhs>
+    <assign dt={ToString(dt)}>
+      <lhs>
+        {Core.xmlPrinter(lhs)}
+      </lhs>
+      <rhs>
+        {Core.xmlPrinter(rhs)}
+      </rhs>
     </assign>
 }

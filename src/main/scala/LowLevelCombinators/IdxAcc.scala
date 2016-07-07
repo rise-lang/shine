@@ -11,7 +11,7 @@ case class IdxAcc(n: ArithExpr,
                   dt: DataType,
                   index: Phrase[ExpType],
                   array: Phrase[AccType])
-  extends LowLevelAccCombinator with ViewAcc with GeneratableAcc {
+  extends LowLevelAccCombinator with ViewAcc with GeneratableAcc with TypeInferable {
 
   override lazy val `type` = acc"[$dt]"
 
@@ -21,8 +21,7 @@ case class IdxAcc(n: ArithExpr,
     array checkType acc"[$n.$dt]"
   }
 
-  // this makes the convenience `@` notation for accessing acc arrays possible
-  def inferTypes: IdxAcc = {
+  override def inferTypes: IdxAcc = {
     import TypeInference._
     val index_ = TypeInference(index)
     val array_ = TypeInference(array)

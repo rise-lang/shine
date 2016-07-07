@@ -1,5 +1,7 @@
 package Core
 
+import LowLevelCombinators.{Assign, IdxAcc}
+
 import scala.language.postfixOps
 import scala.language.reflectiveCalls
 
@@ -29,8 +31,9 @@ object TypeInference {
             case null => error("Found IdentPhrase without proper type")
             case t: PhraseType => Stop(x)
           }
-        case e: ExpCombinator =>
-          Stop(e.inferTypes.asInstanceOf[Phrase[T]])
+        case i: TypeInferable =>
+          Stop(i.inferTypes.asInstanceOf[Phrase[T]])
+
         case _ => Continue(phrase, this)
       }
     }
@@ -43,6 +46,7 @@ object TypeInference {
           val newX = IdentPhrase(newName(), t)
           Continue(l `[` newX  `/` x `]`, typeInference())
         //          case _ => Continue(phrase, this)
+        case _ => throw new Exception("This should not happen")
       }
     }
   }
@@ -57,6 +61,7 @@ object TypeInference {
           val newL = LambdaPhrase(newX, newBody)
           Continue(newL.asInstanceOf[Phrase[T]], typeInference())
         //          case _ => Continue(phrase, this)
+        case _ => throw new Exception("This should not happen")
       }
     }
   }

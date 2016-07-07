@@ -69,7 +69,7 @@ final case class LiteralPhrase(d: OperationalSemantics.Data)
   extends Phrase[ExpType]
 
 object Phrase {
-  // substitutes `phrase` for `for` in `in`
+  // substitutes `phrase` for `for` in `in`, i.e. in [ phrase / for ]
   def substitute[T1 <: PhraseType, T2 <: PhraseType](phrase: Phrase[T1],
                                                      `for`: Phrase[T1],
                                                      in: Phrase[T2]): Phrase[T2] = {
@@ -95,9 +95,7 @@ sealed trait Combinator[T <: PhraseType] extends Phrase[T] {
   def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[T]
 }
 
-sealed trait ExpCombinator extends Combinator[ExpType] {
-  def inferTypes: ExpCombinator
-
+sealed trait ExpCombinator extends Combinator[ExpType] with TypeInferable {
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Data
 }
 
@@ -131,6 +129,10 @@ trait ViewExp {
   def toOpenCL(env: ToOpenCL.Environment,
                arrayAccess: List[(ArithExpr, ArithExpr)],
                tupleAccess: List[ArithExpr], dt: DataType): Expression
+}
+
+trait TypeInferable {
+  def inferTypes: TypeInferable
 }
 
 trait GeneratableExp {

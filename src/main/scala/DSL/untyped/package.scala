@@ -43,7 +43,14 @@ package object untyped {
   }
 
   implicit class Assignment(lhs: Phrase[AccType]) {
-    def :=(rhs: Phrase[ExpType]) = Assign(null, lhs, rhs)
+    def :=(rhs: Phrase[ExpType]) = {
+      (lhs.t, rhs.t) match {
+        case (AccType(dt1), ExpType(dt2))
+          if dt1 == dt2 && dt1.isInstanceOf[BasicType] =>
+          Assign(dt1.asInstanceOf[BasicType], lhs, rhs)
+        case _ => Assign(null, lhs, rhs)
+      }
+    }
   }
 
   implicit def toPair[T1 <: PhraseType, T2 <: PhraseType](pair: (Phrase[T1], Phrase[T2])): PairPhrase[T1, T2] =
@@ -61,12 +68,18 @@ package object untyped {
     def _1 = Fst(null, null, e)
     def _2 = Snd(null, null, e)
 
-    def `@`(index: Phrase[ExpType]) = Idx(null, null, index, e)
+    def `@`(index: Phrase[ExpType]) = e.t match {
+      case ExpType(ArrayType(n, dt)) => Idx(n, dt, index, e)
+      case _ => Idx(null, null, index, e)
+    }
 
   }
 
   implicit class AccPhraseExtensions(a: Phrase[AccType]) {
-    def `@`(index: Phrase[ExpType]) = IdxAcc(null, null, index, a)
+    def `@`(index: Phrase[ExpType]) = a.t match {
+      case AccType(ArrayType(n, dt)) => IdxAcc(n, dt, index, a)
+      case _ => IdxAcc(null, null, index, a)
+    }
   }
 
   implicit class VarExtensions(v: Phrase[VarType]) {
