@@ -2,7 +2,6 @@ package DSL.untyped
 
 import Core._
 import LowLevelCombinators._
-import OpenCL.Core.OpenCLAddressSpace$
 import apart.arithmetic.ArithExpr
 
 object `if` {

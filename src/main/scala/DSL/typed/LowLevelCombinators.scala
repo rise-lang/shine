@@ -3,7 +3,6 @@ package DSL.typed
 import Core.TypeInference._
 import Core._
 import LowLevelCombinators._
-import OpenCL.Core.OpenCLAddressSpace$
 import apart.arithmetic.ArithExpr
 
 object `new` {

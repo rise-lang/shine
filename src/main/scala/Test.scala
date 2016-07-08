@@ -3,6 +3,7 @@ import Core._
 import DSL.untyped._
 import Compiling.{RewriteToImperative, SubstituteImplementations}
 import OpenCL.Core.{PrivateMemory, ToOpenCL}
+import OpenCL.DSL._
 import apart.arithmetic._
 import opencl.generator.OpenCLPrinter
 
