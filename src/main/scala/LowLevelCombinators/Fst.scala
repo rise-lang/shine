@@ -4,15 +4,13 @@ import Compiling.RewriteToImperative
 import Core.OperationalSemantics._
 import Core._
 import DSL.typed._
-import apart.arithmetic.ArithExpr
-import opencl.generator.OpenCLAST.Expression
 
 import scala.xml.Elem
 
 case class Fst(dt1: DataType,
                dt2: DataType,
                record: Phrase[ExpType])
-  extends LowLevelExpCombinator with ViewExp with GeneratableExp {
+  extends LowLevelExpCombinator {
 
   override lazy val `type` = exp"[$dt1]"
 
@@ -39,15 +37,6 @@ case class Fst(dt1: DataType,
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[ExpType] = {
     Fst(fun(dt1), fun(dt2), VisitAndRebuild(record, fun))
-  }
-
-  override def toOpenCL(env: ToOpenCL.Environment): Expression = ToOpenCL.exp(this, env, List(), List(), t.dataType)
-
-  override def toOpenCL(env: ToOpenCL.Environment,
-                        arrayAccess: List[(ArithExpr, ArithExpr)],
-                        tupleAccess: List[ArithExpr],
-                        dt: DataType): Expression = {
-    ToOpenCL.exp(record, env, arrayAccess, 1 :: tupleAccess, dt)
   }
 
   override def prettyPrint: String = s"${PrettyPrinter(record)}._1"

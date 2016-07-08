@@ -1,6 +1,7 @@
-package HighLevelCombinators
+package OpenCL.HighLevelCombinators
 
 import Core._
+import HighLevelCombinators.AbstractMap
 import MidLevelCombinators.MapSeqI
 import apart.arithmetic.ArithExpr
 

@@ -2,13 +2,12 @@ package LowLevelCombinators
 
 import Core.OperationalSemantics._
 import Core._
-import opencl.generator.OpenCLAST.Expression
 
 import scala.xml.Elem
 
 case class Record(fst: Phrase[ExpType],
                   snd: Phrase[ExpType])
-  extends LowLevelExpCombinator with GeneratableExp {
+  extends LowLevelExpCombinator {
 
   override lazy val `type` = exp"[${fst.t.dataType} x ${snd.t.dataType}]"
 
@@ -25,8 +24,6 @@ case class Record(fst: Phrase[ExpType],
   override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[ExpType] = {
     Record(VisitAndRebuild(fst, f), VisitAndRebuild(snd, f))
   }
-
-  override def toOpenCL(env: ToOpenCL.Environment): Expression = ???
 
   override def prettyPrint: String = s"(${PrettyPrinter(fst)}, ${PrettyPrinter(snd)})"
 

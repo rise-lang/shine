@@ -1,9 +1,11 @@
-package MidLevelCombinators
+package OpenCL.MidLevelCombinators
 
 import Compiling.SubstituteImplementations
 import Core._
 import DSL.typed._
-import LowLevelCombinators.ParForWorkgroup
+import MidLevelCombinators.AbstractMapI
+import OpenCL.Core.GlobalMemory
+import OpenCL.LowLevelCombinators.ParForWorkgroup
 import apart.arithmetic.ArithExpr
 
 case class MapWorkgroupI(n: ArithExpr,

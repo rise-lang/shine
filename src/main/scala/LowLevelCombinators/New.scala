@@ -3,8 +3,6 @@ package LowLevelCombinators
 import Core.OperationalSemantics._
 import Core._
 import DSL.typed._
-import apart.arithmetic.NamedVar
-import opencl.generator.OpenCLAST.{Block, Comment, VarDecl}
 
 import scala.xml.Elem
 
@@ -27,21 +25,6 @@ case class New(dt: DataType,
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[CommandType] = {
     New(fun(dt), addressSpace, VisitAndRebuild(f, fun))
-  }
-
-  override def toOpenCL(block: Block, env: ToOpenCL.Environment): Block = {
-    val v = NamedVar(newName())
-
-    if (addressSpace == PrivateMemory) {
-      (block: Block) += VarDecl(v.name, DataType.toType(dt))
-    } else {
-      // TODO: allocate elsewhere
-      (block: Block) += Comment(s"new ${v.name} $dt $addressSpace")
-    }
-
-    val f_ = Lift.liftFunction(f)
-    val v_ = identifier(v.name, f.t.inT)
-    ToOpenCL.cmd(f_(v_), block, env)
   }
 
   override def prettyPrint: String = s"(new $addressSpace ${PrettyPrinter(f)})"

@@ -3,7 +3,6 @@ package LowLevelCombinators
 import Core.OperationalSemantics._
 import Core._
 import apart.arithmetic.ArithExpr
-import opencl.generator.OpenCLAST.VarRef
 
 import scala.xml.Elem
 
@@ -11,7 +10,7 @@ case class JoinAcc(n: ArithExpr,
                    m: ArithExpr,
                    dt: DataType,
                    array: Phrase[AccType])
-  extends LowLevelAccCombinator with ViewAcc with GeneratableAcc {
+  extends LowLevelAccCombinator {
 
   override lazy val `type` = acc"[$n.$m.$dt]"
 
@@ -26,22 +25,6 @@ case class JoinAcc(n: ArithExpr,
 
   override def eval(s: Store): AccIdentifier = ???
 
-  override def toOpenCL(env: ToOpenCL.Environment): VarRef = ???
-
-  override def toOpenCL(env: ToOpenCL.Environment,
-                        arrayAccess: List[(ArithExpr, ArithExpr)],
-                        tupleAccess: List[ArithExpr],
-                        dt: DataType): VarRef = {
-
-    val (firstTwo, rest) = arrayAccess.splitAt(2)
-
-    val chunkId = firstTwo.head
-    val chunkElemId = firstTwo.tail.head
-
-    val newIdx = chunkId._1 * m + chunkElemId._1
-
-    ToOpenCL.acc(array, env, (newIdx, chunkElemId._2) :: rest, tupleAccess, dt)
-  }
 
   override def prettyPrint: String =
     s"(joinAcc ${PrettyPrinter(array)})"

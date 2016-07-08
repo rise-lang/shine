@@ -6,7 +6,6 @@ import Core.VisitAndRebuild.fun
 import Core._
 import DSL.typed._
 import apart.arithmetic.ArithExpr
-import opencl.generator.OpenCLAST.Expression
 
 import scala.xml.Elem
 
@@ -14,7 +13,7 @@ case class Gather(n: ArithExpr,
                   dt: DataType,
                   idxF: (ArithExpr, DataType) => ArithExpr,
                   array: Phrase[ExpType])
-  extends HighLevelCombinator with ViewExp {
+  extends HighLevelCombinator {
 
   override lazy val `type` = exp"[$n.$dt]"
 
@@ -60,20 +59,6 @@ case class Gather(n: ArithExpr,
     exp(array)(λ(array.t) { x =>
       C(Gather(n, dt, idxF, x))
     })
-  }
-
-  override def toOpenCL(env: ToOpenCL.Environment,
-                        arrayAccess: List[(ArithExpr, ArithExpr)],
-                        tupleAccess: List[ArithExpr],
-                        dt: DataType): Expression = {
-
-    val idx = arrayAccess.head
-    val stack = arrayAccess.tail
-
-    val newIdx = idxF(idx._1, array.t.dataType)
-
-    ToOpenCL.exp(array, env, (newIdx, idx._2) :: stack, tupleAccess, dt)
-
   }
 
   override def prettyPrint: String = s"(gather idxF ${PrettyPrinter(array)})"

@@ -1,6 +1,7 @@
-package HighLevelCombinators
+package OpenCL.HighLevelCombinators
 
 import Core._
+import OpenCL.Core.LocalMemory
 
 case class ToLocal(dt1: DataType,
                    dt2: DataType,

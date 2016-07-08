@@ -1,11 +1,15 @@
-package Core
+package OpenCL.Core
 
-import Compiling.{RewriteToImperative, SubstituteImplementations}
+import Compiling._
 import Core.OperationalSemantics._
+import Core._
 import DSL.typed._
-import apart.arithmetic.{ArithExpr, Cst, Var}
+import HighLevelCombinators._
 import ir.{Type, UndefType}
 import opencl.generator.OpenCLAST._
+import LowLevelCombinators._
+import CombinatorsToOpenCL._
+import apart.arithmetic.{ArithExpr, Cst, Var}
 
 import scala.collection._
 import scala.collection.immutable.List
@@ -56,7 +60,7 @@ class ToOpenCL(val localSize: ArithExpr, val globalSize: ArithExpr) {
     TypeChecker(p2)
 
     val p3 = SubstituteImplementations(p2,
-      SubstituteImplementations.Environment(immutable.Map[String, AddressSpace](("output", GlobalMemory))))
+      SubstituteImplementations.Environment(immutable.Map[String, OpenCLAddressSpace](("output", GlobalMemory))))
     xmlPrinter.toFile("/tmp/p3.xml", p3)
     TypeChecker(p3)
 
@@ -154,12 +158,21 @@ object ToOpenCL {
         val falseBlock = cmd(elseP, Block(), env)
         (block: Block) += IfThenElse(exp(condP, env), trueBlock, falseBlock)
 
-      case c: LowLevelCommCombinator => c.toOpenCL(block, env)
+      case c: GeneratableComm => c.toOpenCL(block, env)
+
+      case a: Assign => toOpenCL(a, block, env)
+      case d: DoubleBufferFor => toOpenCL(d, block, env)
+      case f: For => toOpenCL(f, block, env)
+      case n: New => toOpenCL(n, block, env)
+      case s: LowLevelCombinators.Seq => toOpenCL(s, block, env)
+      case s: LowLevelCombinators.Skip => toOpenCL(s, block, env)
+
+      case p: ParFor => toOpenCL(p, block, env)
 
       case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
            IdentPhrase(_, _) | Proj1Phrase(_) | Proj2Phrase(_) |
-           _: MidLevelCombinator =>
-        throw new Exception("This should not happen")
+           _: MidLevelCombinator | _: LowLevelCommCombinator =>
+        throw new Exception(s"Don't know how to generate OpenCL code for $p")
     }
   }
 
@@ -183,30 +196,18 @@ object ToOpenCL {
       case UnaryOpPhrase(op, x) =>
         UnaryExpression(op.toString, exp(x, env))
 
-      case e: LowLevelExpCombinator => e match {
-        case g: GeneratableExp => g.toOpenCL(env)
-        case _ => throw new Exception("This should not happen")
-      }
+      case g: GeneratableExp => g.toOpenCL(env)
+
+      case f: Fst => toOpenCL(f, env, List(), List(), f.t.dataType)
+      case i: Idx => toOpenCL(i, env, List(), List(), i.t.dataType)
+      case r: Record => toOpenCL(r, env, List(), List(), r.t.dataType)
+      case s: Snd => toOpenCL(s, env, List(), List(), s.t.dataType)
+      case t: TruncExp => toOpenCL(t, env, List(), List(), t.t.dataType)
 
       case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
-           IfThenElsePhrase(_, _, _) | _: HighLevelCombinator =>
-        throw new Exception("This should not happen")
-    }
-  }
-
-  def acc(p: Phrase[AccType], env: Environment): VarRef = {
-    p match {
-      case IdentPhrase(name, _) => VarRef(name)
-      case p: Proj1Phrase[AccType, _] => acc(Lift.liftPair(p.pair)._1, env)
-      case p: Proj2Phrase[_, AccType] => acc(Lift.liftPair(p.pair)._2, env)
-      case a: LowLevelAccCombinator => a match {
-        case g: GeneratableAcc => g.toOpenCL(env)
-        case _ => throw new Exception("This should not happen")
-      }
-
-      case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
-           IfThenElsePhrase(_, _, _) =>
-        throw new Exception("This should not happen")
+           IfThenElsePhrase(_, _, _) |
+           _: HighLevelCombinator | _: LowLevelExpCombinator =>
+        throw new Exception(s"Don't know how to generate OpenCL code for $p")
     }
   }
 
@@ -253,11 +254,45 @@ object ToOpenCL {
 
       case v: ViewExp => v.toOpenCL(env, arrayAccess, tupleAccess, dt)
 
+      case g: Gather => toOpenCL(g, env, arrayAccess, tupleAccess, dt)
+      case j: Join => toOpenCL(j, env, arrayAccess, tupleAccess, dt)
+      case s: Split => toOpenCL(s, env, arrayAccess, tupleAccess, dt)
+      case z: Zip => toOpenCL(z, env, arrayAccess, tupleAccess, dt)
+
+      case f: Fst => toOpenCL(f, env, arrayAccess, tupleAccess, dt)
+      case i: Idx => toOpenCL(i, env, arrayAccess, tupleAccess, dt)
+      case r: Record => toOpenCL(r, env, arrayAccess, tupleAccess, dt)
+      case s: Snd => toOpenCL(s, env, arrayAccess, tupleAccess, dt)
+      case t: TruncExp => toOpenCL(t, env, arrayAccess, tupleAccess, dt)
+
       case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
            BinOpPhrase(_, _, _) | UnaryOpPhrase(_, _) |
            IfThenElsePhrase(_, _, _) | LiteralPhrase(_) |
            _: LowLevelExpCombinator | _: HighLevelCombinator =>
-        throw new Exception("This should not happen")
+        throw new Exception(s"Don't know how to generate OpenCL code for $p")
+    }
+  }
+
+
+  def acc(p: Phrase[AccType], env: Environment): VarRef = {
+    p match {
+      case IdentPhrase(name, _) => VarRef(name)
+      case p: Proj1Phrase[AccType, _] => acc(Lift.liftPair(p.pair)._1, env)
+      case p: Proj2Phrase[_, AccType] => acc(Lift.liftPair(p.pair)._2, env)
+
+      case g: GeneratableAcc => g.toOpenCL(env)
+
+      case f: FstAcc => toOpenCL(f, env, List(), List(), f.t.dataType)
+      case i: IdxAcc => toOpenCL(i, env, List(), List(), i.t.dataType)
+      case j: JoinAcc => toOpenCL(j, env, List(), List(), j.t.dataType)
+      case r: RecordAcc => toOpenCL(r, env, List(), List(), r.t.dataType)
+      case s: SndAcc => toOpenCL(s, env, List(), List(), s.t.dataType)
+      case s: SplitAcc => toOpenCL(s, env, List(), List(), s.t.dataType)
+      case t: TruncAcc => toOpenCL(t, env, List(), List(), t.t.dataType)
+
+      case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
+           IfThenElsePhrase(_, _, _) | _: LowLevelAccCombinator =>
+        throw new Exception(s"Don't know how to generate OpenCL code for $p")
     }
   }
 
@@ -301,12 +336,20 @@ object ToOpenCL {
 
       case v: ViewAcc => v.toOpenCL(env, arrayAccess, tupleAccess, dt)
 
+      case f: FstAcc => toOpenCL(f, env, arrayAccess, tupleAccess, dt)
+      case i: IdxAcc => toOpenCL(i, env, arrayAccess, tupleAccess, dt)
+      case j: JoinAcc => toOpenCL(j, env, arrayAccess, tupleAccess, dt)
+      case r: RecordAcc => toOpenCL(r, env, arrayAccess, tupleAccess, dt)
+      case s: SndAcc => toOpenCL(s, env, arrayAccess, tupleAccess, dt)
+      case s: SplitAcc => toOpenCL(s, env, arrayAccess, tupleAccess, dt)
+      case t: TruncAcc => toOpenCL(t, env, arrayAccess, tupleAccess, dt)
+
       case p: Proj1Phrase[AccType, _] => acc(Lift.liftPair(p.pair)._1, env, arrayAccess, tupleAccess, dt)
       case p: Proj2Phrase[_, AccType] => acc(Lift.liftPair(p.pair)._2, env, arrayAccess, tupleAccess, dt)
 
       case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
            IfThenElsePhrase(_, _, _) | _: LowLevelAccCombinator =>
-        throw new Exception("This should not happen")
+        throw new Exception(s"Don't know how to generate OpenCL code for $p")
     }
   }
 

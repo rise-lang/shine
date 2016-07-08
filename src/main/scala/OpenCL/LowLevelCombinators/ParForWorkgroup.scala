@@ -1,6 +1,7 @@
-package LowLevelCombinators
+package OpenCL.LowLevelCombinators
 
 import Core._
+import LowLevelCombinators.AbstractParFor
 import apart.arithmetic._
 import opencl.generator.OpenCLAST._
 import opencl.generator.{get_group_id, get_num_groups}
@@ -9,7 +10,7 @@ case class ParForWorkgroup(override val n: ArithExpr,
                            override val dt: DataType,
                            override val out: Phrase[AccType],
                            override val body: Phrase[ExpType -> (AccType -> CommandType)])
-  extends AbstractParFor(n, dt, out, body) {
+  extends OpenCLParFor(n, dt, out, body) {
 
   lazy val num_groups =
     if (env.globalSize == ? || env.localSize == ?) ?

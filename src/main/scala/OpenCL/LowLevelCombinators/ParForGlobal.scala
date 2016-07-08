@@ -1,6 +1,7 @@
-package LowLevelCombinators
+package OpenCL.LowLevelCombinators
 
 import Core._
+import LowLevelCombinators.AbstractParFor
 import apart.arithmetic.{ArithExpr, RangeAdd}
 import opencl.generator.OpenCLAST._
 import opencl.generator.{get_global_id, get_global_size}
@@ -10,7 +11,7 @@ case class ParForGlobal(override val n: ArithExpr,
                         override val dt: DataType,
                         override val out: Phrase[AccType],
                         override val body: Phrase[ExpType -> (AccType -> CommandType)])
-  extends AbstractParFor(n, dt, out, body) {
+  extends OpenCLParFor(n, dt, out, body) {
 
   override val makeParFor = ParForGlobal
 

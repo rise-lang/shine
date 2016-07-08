@@ -2,7 +2,6 @@ package LowLevelCombinators
 
 import Core.OperationalSemantics._
 import Core._
-import opencl.generator.OpenCLAST.Block
 
 import scala.xml.Elem
 
@@ -23,11 +22,6 @@ case class Seq(c1: Phrase[CommandType],
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[CommandType] = {
     Seq(VisitAndRebuild(c1, fun), VisitAndRebuild(c2, fun))
-  }
-
-  override def toOpenCL(block: Block, env: ToOpenCL.Environment): Block = {
-    ToOpenCL.cmd(c1, block, env)
-    ToOpenCL.cmd(c2, block, env)
   }
 
   override def prettyPrint: String =

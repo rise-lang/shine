@@ -1,6 +1,7 @@
 
 import Core._
 import DSL.untyped._
+import OpenCL.Core.ToOpenCL
 import apart.arithmetic._
 import opencl.generator.OpenCLPrinter
 

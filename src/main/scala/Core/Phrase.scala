@@ -1,8 +1,7 @@
 package Core
 
-import apart.arithmetic.{ArithExpr, NamedVar}
-import opencl.generator.OpenCLAST.{Block, Expression, VarRef}
 import Compiling.SubstituteImplementations
+import apart.arithmetic.{ArithExpr, NamedVar}
 
 sealed trait Phrase[T <: PhraseType] {
   lazy val t: T = `type`
@@ -83,6 +82,10 @@ object Phrase {
   }
 }
 
+trait TypeInferable {
+  def inferTypes: TypeInferable
+}
+
 sealed trait Combinator[T <: PhraseType] extends Phrase[T] {
   override def `type`: T
 
@@ -125,32 +128,6 @@ abstract class LowLevelExpCombinator extends ExpCombinator {
   def rewriteToImperativeExp(C: Phrase[ExpType -> CommandType]): Phrase[CommandType]
 }
 
-trait ViewExp {
-  def toOpenCL(env: ToOpenCL.Environment,
-               arrayAccess: List[(ArithExpr, ArithExpr)],
-               tupleAccess: List[ArithExpr], dt: DataType): Expression
-}
-
-trait TypeInferable {
-  def inferTypes: TypeInferable
-}
-
-trait GeneratableExp {
-  def toOpenCL(env: ToOpenCL.Environment): Expression
-}
-
 abstract class LowLevelAccCombinator extends AccCombinator
 
-trait ViewAcc {
-  def toOpenCL(env: ToOpenCL.Environment,
-               arrayAccess: List[(ArithExpr, ArithExpr)],
-               tupleAccess: List[ArithExpr], dt: DataType): VarRef
-}
-
-trait GeneratableAcc {
-  def toOpenCL(env: ToOpenCL.Environment): VarRef
-}
-
-abstract class LowLevelCommCombinator extends CommandCombinator {
-  def toOpenCL(block: Block, env: ToOpenCL.Environment): Block
-}
+abstract class LowLevelCommCombinator extends CommandCombinator

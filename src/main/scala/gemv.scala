@@ -1,6 +1,7 @@
 
 import Core._
 import DSL.untyped._
+import OpenCL.Core.ToOpenCL
 import apart.arithmetic._
 import opencl.generator.OpenCLPrinter
 
@@ -51,7 +52,11 @@ object gemv extends App {
 
     ) ) ) ) )
 
-    printOpenCLKernel1("high_level", high_level)
+  {
+    val lambda = TypeInference(high_level)
+    println("high_level:\n" + PrettyPrinter(lambda))
+    lambda.typeCheck()
+  }
 
   val fullMatrixVectorFusedOpenCL =
     λ(matT)(mat => λ(xsT)(xs => λ(ysT)(ys =>

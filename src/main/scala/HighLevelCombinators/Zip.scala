@@ -5,8 +5,7 @@ import Core.OperationalSemantics._
 import Core._
 import DSL.typed._
 import MidLevelCombinators.MapI
-import apart.arithmetic.{ArithExpr, Cst}
-import opencl.generator.OpenCLAST.Expression
+import apart.arithmetic.ArithExpr
 
 import scala.xml.Elem
 
@@ -15,7 +14,7 @@ case class Zip(n: ArithExpr,
                dt2: DataType,
                lhs: Phrase[ExpType],
                rhs: Phrase[ExpType])
-  extends HighLevelCombinator with ViewExp {
+  extends HighLevelCombinator {
 
   override lazy val `type` = exp"[$n.($dt1 x $dt2)]"
 
@@ -50,24 +49,6 @@ case class Zip(n: ArithExpr,
 
       case _ => throw new Exception("This should not happen")
     }
-  }
-
-  override def toOpenCL(env: ToOpenCL.Environment,
-                        arrayAccess: List[(ArithExpr, ArithExpr)],
-                        tupleAccess: List[ArithExpr],
-                        dt: DataType): Expression = {
-    val i = tupleAccess.head
-    val rest = tupleAccess.tail
-
-    if (i == Cst(1)) {
-      return ToOpenCL.exp(lhs, env, arrayAccess, rest, dt)
-    }
-
-    if (i == Cst(2)) {
-      return ToOpenCL.exp(rhs, env, arrayAccess, rest, dt)
-    }
-
-    throw new Exception("This should not happen")
   }
 
   override def prettyPrint: String =

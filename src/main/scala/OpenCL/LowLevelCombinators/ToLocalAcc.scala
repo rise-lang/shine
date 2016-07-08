@@ -1,14 +1,16 @@
-package LowLevelCombinators
+package OpenCL.LowLevelCombinators
 
 import Core.OperationalSemantics._
 import Core._
 import apart.arithmetic.ArithExpr
+
 import opencl.generator.OpenCLAST.VarRef
+import OpenCL.Core.{GeneratableAcc, ToOpenCL, ViewAcc}
 
 import scala.xml.Elem
 
-case class ToGlobalAcc(dt: DataType,
-                       p: Phrase[AccType])
+case class ToLocalAcc(dt: DataType,
+                      p: Phrase[AccType])
   extends LowLevelAccCombinator with ViewAcc with GeneratableAcc {
 
   override lazy val `type` = acc"[$dt]"
@@ -27,13 +29,13 @@ case class ToGlobalAcc(dt: DataType,
                         tupleAccess: List[ArithExpr], dt: DataType): VarRef = ???
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[AccType] = {
-    ToGlobalAcc(fun(dt), VisitAndRebuild(p, fun))
+    ToLocalAcc(fun(dt), VisitAndRebuild(p, fun))
   }
 
-  override def prettyPrint: String = s"(toGlobalAcc ${PrettyPrinter(p)})"
+  override def prettyPrint: String = s"(toLocalAcc ${PrettyPrinter(p)})"
 
   override def xmlPrinter: Elem =
-    <toGlobalAcc>
+    <toLocalAcc>
       {Core.xmlPrinter(p)}
-    </toGlobalAcc>
+    </toLocalAcc>
 }

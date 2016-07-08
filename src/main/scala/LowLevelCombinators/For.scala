@@ -3,8 +3,7 @@ package LowLevelCombinators
 import Core.OperationalSemantics._
 import Core._
 import DSL.typed._
-import apart.arithmetic.{ArithExpr, NamedVar, RangeAdd}
-import opencl.generator.OpenCLAST.Block
+import apart.arithmetic.ArithExpr
 
 import scala.xml.Elem
 
@@ -35,34 +34,4 @@ case class For(n: ArithExpr,
     <for n={ToString(n)}>
       {Core.xmlPrinter(body)}
     </for>
-
-  override def toOpenCL(block: Block, env: ToOpenCL.Environment): Block = {
-    import opencl.generator.OpenCLAST._
-
-    val name = newName()
-
-    env.ranges(name) = RangeAdd(0, n, 1)
-
-    val init = VarDecl(name, opencl.ir.Int,
-      init = ArithExpression(0),
-      addressSpace = opencl.ir.PrivateMemory)
-
-    val cond = CondExpression(VarRef(name),
-      ArithExpression(n),
-      CondExpression.Operator.<)
-
-    val v = NamedVar(name)
-    val increment = AssignmentExpression(ArithExpression(v), ArithExpression(v + 1))
-
-    val bodyE = Lift.liftFunction(body)
-    val i = identifier(name, ExpType(int))
-
-    val body_ = ToOpenCL.cmd(bodyE(i), Block(), env)
-
-    (block: Block) += ForLoop(init, cond, increment, body_)
-
-    env.ranges.remove(name)
-
-    block
-  }
 }

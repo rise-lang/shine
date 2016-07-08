@@ -1,6 +1,7 @@
 
 import Core._
 import DSL.untyped._
+import OpenCL.Core.ToOpenCL
 import apart.arithmetic._
 import opencl.generator.OpenCLPrinter
 
@@ -27,12 +28,6 @@ object asum extends App {
   TypeChecker(high_level)
 
   println("High-Level:\n" + PrettyPrinter(high_level))
-
-
-  println("-- high-level --")
-  println(OpenCLPrinter()((new ToOpenCL(localSize = 128, globalSize = N))(
-    high_level, identifier("input", inputT))))
-  println("----------------")
 
 
   val intelDerivedNoWarp1_ = λ(inputT)(input =>

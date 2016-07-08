@@ -1,6 +1,8 @@
-package Core
+package OpenCL.Core
 
+import Core.{AccType, CommandType, DataType, _}
 import LowLevelCombinators._
+import OpenCL.LowLevelCombinators.{ParForGlobal, ParForLocal, ParForWorkgroup}
 import apart.arithmetic.ArithExpr
 
 object AdjustMemoryAllocation {

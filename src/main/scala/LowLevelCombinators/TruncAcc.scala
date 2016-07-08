@@ -3,7 +3,6 @@ package LowLevelCombinators
 import Core.OperationalSemantics._
 import Core._
 import apart.arithmetic.ArithExpr
-import opencl.generator.OpenCLAST.VarRef
 
 import scala.xml.Elem
 
@@ -11,7 +10,7 @@ case class TruncAcc(n: ArithExpr,
                     m: ArithExpr,
                     dt: DataType,
                     array: Phrase[AccType])
-  extends LowLevelAccCombinator with ViewAcc {
+  extends LowLevelAccCombinator {
 
   override lazy val `type` = acc"[$m.$dt]"
 
@@ -24,13 +23,6 @@ case class TruncAcc(n: ArithExpr,
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[AccType] = {
     TruncAcc(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))
-  }
-
-  override def toOpenCL(env: ToOpenCL.Environment,
-                        arrayAccess: List[(ArithExpr, ArithExpr)],
-                        tupleAccess: List[ArithExpr],
-                        dt: DataType): VarRef = {
-    ToOpenCL.acc(array, env, arrayAccess, tupleAccess, dt)
   }
 
   override def prettyPrint: String = s"(truncAcc ${PrettyPrinter(array)})"

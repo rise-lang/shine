@@ -3,7 +3,6 @@ package LowLevelCombinators
 import Core.OperationalSemantics._
 import Core._
 import apart.arithmetic.ArithExpr
-import opencl.generator.OpenCLAST.Expression
 
 import scala.xml.Elem
 
@@ -11,7 +10,7 @@ case class TruncExp(n: ArithExpr,
                     m: ArithExpr,
                     dt: DataType,
                     array: Phrase[ExpType])
-  extends LowLevelExpCombinator with ViewExp {
+  extends LowLevelExpCombinator {
 
   override lazy val `type` = exp"[$m.$dt]"
 
@@ -46,12 +45,5 @@ case class TruncExp(n: ArithExpr,
     </truncExp>
 
   override def prettyPrint: String = s"(truncExp $array)"
-
-  override def toOpenCL(env: ToOpenCL.Environment,
-                        arrayAccess: List[(ArithExpr, ArithExpr)],
-                        tupleAccess: List[ArithExpr],
-                        dt: DataType): Expression = {
-    ToOpenCL.exp(array, env, arrayAccess, tupleAccess, dt)
-  }
 
 }

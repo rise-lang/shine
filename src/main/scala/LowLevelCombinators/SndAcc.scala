@@ -2,15 +2,13 @@ package LowLevelCombinators
 
 import Core.OperationalSemantics._
 import Core._
-import apart.arithmetic.ArithExpr
-import opencl.generator.OpenCLAST.VarRef
 
 import scala.xml.Elem
 
 case class SndAcc(dt1: DataType,
                   dt2: DataType,
                   record: Phrase[AccType])
-  extends LowLevelAccCombinator with ViewAcc with GeneratableAcc {
+  extends LowLevelAccCombinator {
 
   override lazy val `type` = acc"[$dt2]"
 
@@ -29,12 +27,6 @@ case class SndAcc(dt1: DataType,
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[AccType] = {
     SndAcc(fun(dt1), fun(dt2), VisitAndRebuild(record, fun))
   }
-
-  override def toOpenCL(env: ToOpenCL.Environment): VarRef = ???
-
-  override def toOpenCL(env: ToOpenCL.Environment,
-                        arrayAccess: List[(ArithExpr, ArithExpr)],
-                        tupleAccess: List[ArithExpr], dt: DataType): VarRef = ???
 
   override def prettyPrint: String = s"(SndAcc ${PrettyPrinter(record)})"
 

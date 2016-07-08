@@ -3,8 +3,6 @@ package LowLevelCombinators
 import Core.OperationalSemantics._
 import Core._
 import apart.arithmetic.ArithExpr
-import ir.Type
-import opencl.generator.OpenCLAST.VarRef
 
 import scala.xml.Elem
 
@@ -12,7 +10,7 @@ case class SplitAcc(n: ArithExpr,
                     m: ArithExpr,
                     dt: DataType,
                     array: Phrase[AccType])
-  extends LowLevelAccCombinator with ViewAcc with GeneratableAcc {
+  extends LowLevelAccCombinator {
 
   override lazy val `type` = acc"[${n * m}.$dt]"
 
@@ -26,25 +24,6 @@ case class SplitAcc(n: ArithExpr,
   }
 
   override def eval(s: Store): AccIdentifier = ???
-
-  override def toOpenCL(env: ToOpenCL.Environment): VarRef = ???
-
-  override def toOpenCL(env: ToOpenCL.Environment,
-                        arrayAccess: List[(ArithExpr, ArithExpr)],
-                        tupleAccess: List[ArithExpr],
-                        dt: DataType): VarRef = {
-    val idx = arrayAccess.head
-    val stack = arrayAccess.tail
-
-    val chunkId = idx._1 / n
-    val chunkElemId = idx._1 % n
-
-    val l = Type.getLengths( DataType.toType(t.dataType) ).reduce(_*_)
-
-    val newAs = (chunkId, l * n) :: (chunkElemId, l) :: stack
-
-    ToOpenCL.acc(array, env, newAs, tupleAccess, dt)
-  }
 
   override def prettyPrint: String = s"(splitAcc ${PrettyPrinter(array)})"
 

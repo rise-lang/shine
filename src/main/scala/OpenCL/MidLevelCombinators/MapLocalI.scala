@@ -1,9 +1,10 @@
-package MidLevelCombinators
+package OpenCL.MidLevelCombinators
 
 import Compiling.SubstituteImplementations
 import Core._
 import DSL.typed._
-import LowLevelCombinators.ParForLocal
+import MidLevelCombinators.AbstractMapI
+import OpenCL.LowLevelCombinators.ParForLocal
 import apart.arithmetic.ArithExpr
 
 case class MapLocalI(n: ArithExpr,

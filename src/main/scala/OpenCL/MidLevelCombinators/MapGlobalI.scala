@@ -1,10 +1,11 @@
-package MidLevelCombinators
+package OpenCL.MidLevelCombinators
 
 import Compiling.SubstituteImplementations
-import Compiling.SubstituteImplementations._
 import Core._
 import DSL.typed._
-import LowLevelCombinators.ParForGlobal
+import MidLevelCombinators.AbstractMapI
+import SubstituteImplementations._
+import OpenCL.LowLevelCombinators.ParForGlobal
 import apart.arithmetic.ArithExpr
 
 case class MapGlobalI(n: ArithExpr,

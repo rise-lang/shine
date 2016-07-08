@@ -5,6 +5,7 @@ import Core.OperationalSemantics._
 import Core._
 import DSL.typed._
 import MidLevelCombinators.{AbstractMapI, MapI}
+import OpenCL.Core.GlobalMemory
 import apart.arithmetic.ArithExpr
 
 import scala.xml.Elem

@@ -4,15 +4,13 @@ import Compiling.RewriteToImperative
 import Core.OperationalSemantics._
 import Core._
 import DSL.typed._
-import apart.arithmetic.ArithExpr
-import opencl.generator.OpenCLAST.Expression
 
 import scala.xml.Elem
 
 case class Snd(dt1: DataType,
                dt2: DataType,
                record: Phrase[ExpType])
-  extends LowLevelExpCombinator with ViewExp with GeneratableExp {
+  extends LowLevelExpCombinator {
 
   override lazy val `type` = exp"[$dt2]"
 
@@ -39,16 +37,6 @@ case class Snd(dt1: DataType,
 
   override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[ExpType] = {
     Snd(f(dt1), f(dt2), VisitAndRebuild(record, f))
-  }
-
-  override def toOpenCL(env: ToOpenCL.Environment): Expression =
-    ToOpenCL.exp(this, env, List(), List(), t.dataType)
-
-  override def toOpenCL(env: ToOpenCL.Environment,
-                        arrayAccess: List[(ArithExpr, ArithExpr)],
-                        tupleAccess: List[ArithExpr],
-                        dt: DataType): Expression = {
-    ToOpenCL.exp(record, env, arrayAccess, 2 :: tupleAccess, dt)
   }
 
   override def xmlPrinter: Elem = <snd>

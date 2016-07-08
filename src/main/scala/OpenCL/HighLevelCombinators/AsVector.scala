@@ -1,40 +1,42 @@
-package HighLevelCombinators
+package OpenCL.HighLevelCombinators
 
 import Compiling.RewriteToImperative
 import Core.OperationalSemantics._
 import Core._
 import DSL.typed._
-import LowLevelCombinators.AsScalarAcc
+import OpenCL.LowLevelCombinators.AsVectorAcc
 import apart.arithmetic.ArithExpr
+
 import opencl.generator.OpenCLAST.Expression
+import OpenCL.Core.{ToOpenCL, ViewExp}
 
 import scala.xml.Elem
 
-case class AsScalar(n: ArithExpr,
+case class AsVector(n: ArithExpr,
                     m: ArithExpr,
                     dt: BasicType,
                     array: Phrase[ExpType])
   extends HighLevelCombinator with ViewExp {
 
-  override lazy val `type` = exp"[${n * m}.$dt]"
+  override lazy val `type` = exp"[$m.${VectorType(n, dt)}]"
 
   override def typeCheck(): Unit = {
     import TypeChecker._
-    array checkType exp"[$n.${VectorType(m, dt)}]"
+    array checkType exp"[${m*n}.$dt]"
   }
 
-  override def inferTypes: AsScalar = {
+  override def inferTypes: AsVector = {
     import TypeInference._
     val array_ = TypeInference(array)
     array_.t match {
-      case ExpType(ArrayType(n_, VectorType(m_, dt_))) =>
-        AsScalar(n_, m_, dt_, array_)
-      case x => error(x.toString, "ExpType(ArrayType(VectorType))")
+      case ExpType(ArrayType(mn_, dt_)) if dt_.isInstanceOf[BasicType] =>
+        AsVector(n, mn_ /^ n, dt_.asInstanceOf[BasicType], array_)
+      case x => error(x.toString, "ExpType(ArrayType)")
     }
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[ExpType] = {
-    AsScalar(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))
+  override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[ExpType] = {
+    AsVector(f(n), f(m), f(dt), VisitAndRebuild(array, f))
   }
 
   override def eval(s: Store): Data = ???
@@ -43,28 +45,27 @@ case class AsScalar(n: ArithExpr,
                         arrayAccess: List[(ArithExpr, ArithExpr)],
                         tupleAccess: List[ArithExpr],
                         dt: DataType): Expression = {
+
     val top = arrayAccess.head
-    val newAAS = ((top._1 /^ n, top._2) :: arrayAccess.tail).map(x => (x._1, x._2 * n))
+    val newAAS = ((top._1 * n, top._2) :: arrayAccess.tail).map(x => (x._1, x._2 /^ n))
 
     ToOpenCL.exp(array, env, newAAS, tupleAccess, dt)
   }
 
-  override def prettyPrint: String = s"(asScalar ${PrettyPrinter(array)})"
+  override def prettyPrint: String = s"(asVector ${n.toString} ${PrettyPrinter(array)})"
 
   override def xmlPrinter: Elem =
-    <asScalar n={ToString(n)}>
+    <asVector n={ToString(n)}>
       {Core.xmlPrinter(array)}
-    </asScalar>
+    </asVector>
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
-    import RewriteToImperative._
-    acc(array)(AsScalarAcc(n, m, dt, A))
+    RewriteToImperative.acc(array)(AsVectorAcc(n, m, dt, A))
   }
 
   override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
-    import RewriteToImperative._
-    exp(array)(λ(array.t) { x =>
-      C(AsScalar(n, m, dt, x))
+    RewriteToImperative.exp(array)(λ(array.t) { x =>
+      C(AsVector(n, m, dt, x))
     })
   }
 }

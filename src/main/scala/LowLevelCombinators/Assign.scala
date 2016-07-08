@@ -2,7 +2,6 @@ package LowLevelCombinators
 
 import Core.OperationalSemantics._
 import Core._
-import opencl.generator.OpenCLAST.{AssignmentExpression, Block}
 
 import scala.xml.Elem
 
@@ -72,10 +71,6 @@ case class Assign(dt: BasicType,
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[CommandType] = {
     Assign(fun(dt), VisitAndRebuild(lhs, fun), VisitAndRebuild(rhs, fun))
-  }
-
-  override def toOpenCL(block: Block, env: ToOpenCL.Environment): Block = {
-    (block: Block) += AssignmentExpression(ToOpenCL.acc(lhs, env), ToOpenCL.exp(rhs, env))
   }
 
   override def prettyPrint: String = s"(${PrettyPrinter(lhs)} := ${PrettyPrinter(rhs)})"

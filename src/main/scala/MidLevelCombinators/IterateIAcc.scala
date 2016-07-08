@@ -5,6 +5,7 @@ import Core.OperationalSemantics._
 import Core._
 import DSL.typed._
 import LowLevelCombinators.{TruncAcc, TruncExp}
+import OpenCL.Core.ToOpenCL
 import apart.arithmetic._
 
 import scala.xml.Elem

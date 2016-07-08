@@ -1,7 +1,8 @@
-package HighLevelCombinators
+package OpenCL.HighLevelCombinators
 
 import Core._
-import MidLevelCombinators.MapWorkgroupI
+import HighLevelCombinators.AbstractMap
+import OpenCL.MidLevelCombinators.MapWorkgroupI
 import apart.arithmetic.ArithExpr
 
 case class MapWorkGroup(n: ArithExpr,

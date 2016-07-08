@@ -6,8 +6,6 @@ import Core._
 import DSL.typed._
 import LowLevelCombinators.JoinAcc
 import apart.arithmetic.ArithExpr
-import ir.Type
-import opencl.generator.OpenCLAST.Expression
 
 import scala.xml.Elem
 
@@ -15,7 +13,7 @@ case class Join(n: ArithExpr,
                 m: ArithExpr,
                 dt: DataType,
                 array: Phrase[ExpType])
-  extends HighLevelCombinator with ViewExp {
+  extends HighLevelCombinator {
 
   override lazy val `type` = exp"[${n * m}.$dt]"
 
@@ -48,23 +46,6 @@ case class Join(n: ArithExpr,
 
       case _ => throw new Exception("This should not happen")
     }
-  }
-
-  override def toOpenCL(env: ToOpenCL.Environment,
-                        arrayAccess: List[(ArithExpr, ArithExpr)],
-                        tupleAccess: List[ArithExpr],
-                        dt: DataType): Expression = {
-    val idx = arrayAccess.head
-    val stack = arrayAccess.tail
-
-    val chunkId = idx._1 / n
-    val chunkElemId = idx._1 % n
-
-    val l = Type.getLengths(DataType.toType(t.dataType)).reduce(_ * _)
-
-    val newAs = (chunkId, l * n) ::(chunkElemId, l) :: stack
-
-    ToOpenCL.exp(array, env, newAs, tupleAccess, dt)
   }
 
   override def prettyPrint: String = s"(join ${PrettyPrinter(array)})"

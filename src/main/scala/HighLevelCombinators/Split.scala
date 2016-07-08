@@ -6,7 +6,6 @@ import Core._
 import DSL.typed._
 import LowLevelCombinators.SplitAcc
 import apart.arithmetic.ArithExpr
-import opencl.generator.OpenCLAST.Expression
 
 import scala.xml.Elem
 
@@ -14,7 +13,7 @@ case class Split(n: ArithExpr,
                  m: ArithExpr,
                  dt: DataType,
                  array: Phrase[ExpType])
-  extends HighLevelCombinator with ViewExp {
+  extends HighLevelCombinator {
 
   override lazy val `type` = exp"[$m.$n.$dt]"
 
@@ -56,21 +55,6 @@ case class Split(n: ArithExpr,
 
       case _ => throw new Exception("This should not happen")
     }
-  }
-
-  override def toOpenCL(env: ToOpenCL.Environment,
-                        arrayAccess: List[(ArithExpr, ArithExpr)],
-                        tupleAccess: List[ArithExpr],
-                        dt: DataType): Expression = {
-
-    val (firstTwo, rest) = arrayAccess.splitAt(2)
-
-    val chunkId = firstTwo.head
-    val chunkElemId = firstTwo.tail.head
-
-    val newIdx = chunkId._1 * n + chunkElemId._1
-
-    ToOpenCL.exp(array, env, (newIdx, chunkElemId._2) :: rest, tupleAccess, dt)
   }
 
   override def prettyPrint: String = s"(split $n ${PrettyPrinter(array)})"

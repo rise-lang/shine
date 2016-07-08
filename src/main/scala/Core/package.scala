@@ -39,6 +39,12 @@ package object Core {
         def `]` = Phrase.substitute(p, `for`, in)
       }
     }
+
+    def `[`(e: ArithExpr) = new {
+      def `/`(`for`: NamedVar) = new {
+        def `]` = PhraseType.substitute(e, `for`, in)
+      }
+    }
   }
 
   implicit class PairTypeConstructor[T1 <: PhraseType](t1: T1) {

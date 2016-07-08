@@ -2,8 +2,7 @@ package LowLevelCombinators
 
 import Core.OperationalSemantics._
 import Core._
-import apart.arithmetic.{ArithExpr, NamedVar}
-import opencl.generator.OpenCLAST.{Expression, VarRef}
+import apart.arithmetic.ArithExpr
 
 import scala.xml.Elem
 
@@ -11,7 +10,7 @@ case class Idx(n: ArithExpr,
                dt: DataType,
                index: Phrase[ExpType],
                array: Phrase[ExpType])
-  extends LowLevelExpCombinator with ViewExp with GeneratableExp {
+  extends LowLevelExpCombinator {
 
   override lazy val `type` = exp"[$dt]"
 
@@ -40,21 +39,6 @@ case class Idx(n: ArithExpr,
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[ExpType] = {
     Idx(fun(n), fun(dt), VisitAndRebuild(index, fun), VisitAndRebuild(array, fun))
-  }
-
-  override def toOpenCL(env: ToOpenCL.Environment): Expression =
-    ToOpenCL.exp(this, env, List(), List(), t.dataType)
-
-  override def toOpenCL(env: ToOpenCL.Environment,
-                        arrayAccess: List[(ArithExpr, ArithExpr)],
-                        tupleAccess: List[ArithExpr],
-                        dt: DataType): Expression = {
-    val idx: ArithExpr = ToOpenCL.exp(index, env) match {
-      case VarRef(name, _, _) => NamedVar(name, env.ranges(name))
-      case _ => throw new Exception("This should not happen")
-    }
-    val length = DataType.getLengths(dt, tupleAccess, List()).foldLeft(1: ArithExpr)((x, y) => x * y)
-    ToOpenCL.exp(array, env, (idx, length) :: arrayAccess, tupleAccess, dt)
   }
 
   override def prettyPrint: String = s"(${PrettyPrinter(array)})[${PrettyPrinter(index)}]"

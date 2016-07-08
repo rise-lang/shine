@@ -4,6 +4,7 @@ import Compiling.SubstituteImplementations
 import Core.OperationalSemantics._
 import Core._
 import DSL.typed._
+import OpenCL.Core.PrivateMemory
 import apart.arithmetic.ArithExpr
 
 import scala.xml.Elem

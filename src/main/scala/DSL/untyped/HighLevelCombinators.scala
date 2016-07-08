@@ -3,6 +3,7 @@ package DSL.untyped
 import Core.OperationalSemantics._
 import Core._
 import HighLevelCombinators._
+import OpenCL.HighLevelCombinators._
 import apart.arithmetic.ArithExpr
 
 object map {
