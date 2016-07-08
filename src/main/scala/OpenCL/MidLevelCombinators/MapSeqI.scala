@@ -1,11 +1,11 @@
-package MidLevelCombinators
+package OpenCL.MidLevelCombinators
 
 import Compiling.SubstituteImplementations
 import Core._
 import DSL.typed._
-import apart.arithmetic.ArithExpr
+import MidLevelCombinators.AbstractMapI
 
-case class MapSeqI(n: ArithExpr,
+case class MapSeqI(n: Nat,
                    dt1: DataType,
                    dt2: DataType,
                    out: Phrase[AccType],

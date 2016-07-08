@@ -88,6 +88,11 @@ object TypeChecker {
     }
   }
 
+  implicit class ReverseInferenceHelper(pt: PhraseType) {
+    def ::[T <: PhraseType](p: Phrase[T]) = p checkType pt
+    def `:`[T <: PhraseType](p: Phrase[T]) = p checkType pt
+  }
+
   implicit class CheckHelper(p1: PhraseType) {
     def |(p2: PhraseType): (PhraseType => Unit) = (p: PhraseType) => {
       if (!(p == p1 || p == p2)) {

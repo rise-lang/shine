@@ -5,12 +5,11 @@ import Core.OperationalSemantics._
 import Core._
 import DSL.typed._
 import LowLevelCombinators.SplitAcc
-import apart.arithmetic.ArithExpr
 
 import scala.xml.Elem
 
-case class Split(n: ArithExpr,
-                 m: ArithExpr,
+case class Split(n: Nat,
+                 m: Nat,
                  dt: DataType,
                  array: Phrase[ExpType])
   extends HighLevelCombinator {
@@ -19,7 +18,9 @@ case class Split(n: ArithExpr,
 
   override def typeCheck(): Unit = {
     import TypeChecker._
-    array checkType exp"[${m * n}.$dt]"
+    (n: Nat) -> (m: Nat) -> (dt: DataType) ->
+      (array `:` exp"[${m * n}.$dt]") ->
+      `type`
   }
 
   override def inferTypes: Split = {
@@ -40,7 +41,7 @@ case class Split(n: ArithExpr,
     OperationalSemantics.eval(s, array) match {
       case ArrayData(arrayE) =>
 
-        def split[T](n: ArithExpr, vector: Vector[T]): Vector[Vector[T]] = {
+        def split[T](n: Nat, vector: Vector[T]): Vector[Vector[T]] = {
           val builder = Vector.newBuilder[Vector[T]]
           var vec = vector
           for (i <- 0 until vector.length / n.eval) {

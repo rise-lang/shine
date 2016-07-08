@@ -8,9 +8,9 @@ import apart.arithmetic._
 
 import scala.xml.Elem
 
-case class Iterate(n: ArithExpr,
-                   m: ArithExpr,
-                   k: ArithExpr,
+case class Iterate(n: Nat,
+                   m: Nat,
+                   k: Nat,
                    dt: DataType,
                    f: Phrase[`(nat)->`[ExpType -> ExpType]],
                    array: Phrase[ExpType])
@@ -28,10 +28,12 @@ case class Iterate(n: ArithExpr,
     import TypeChecker._
     f match {
       case NatDependentLambdaPhrase(l, _) =>
-        f checkType t"($l : nat) -> exp[$l.$dt] -> exp[${l /^ n}.$dt]"
+        (n: Nat) -> (m: Nat) -> (k: Nat) ->(dt: DataType) ->
+          (f `:` t"($l : nat) -> exp[$l.$dt] -> exp[${l /^ n}.$dt]") ->
+          (array `:` exp"[$m.$dt]") ->
+          `type`
       case _ => throw new Exception("This should not happen")
     }
-    array checkType exp"[$m.$dt]"
   }
 
   override def inferTypes: Iterate = {

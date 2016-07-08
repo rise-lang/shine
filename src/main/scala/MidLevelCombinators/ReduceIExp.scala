@@ -5,11 +5,10 @@ import Core.OperationalSemantics._
 import Core._
 import DSL.typed._
 import OpenCL.Core.PrivateMemory
-import apart.arithmetic.ArithExpr
 
 import scala.xml.Elem
 
-case class ReduceIExp(n: ArithExpr,
+case class ReduceIExp(n: Nat,
                       dt1: DataType,
                       dt2: DataType,
                       out: Phrase[ExpType -> CommandType],
@@ -20,10 +19,12 @@ case class ReduceIExp(n: ArithExpr,
 
   override def typeCheck(): Unit = {
     import TypeChecker._
-    out checkType t"exp[$dt2] -> comm"
-    f checkType t"acc[$dt2] -> exp[$dt1] -> exp[$dt2] -> comm"
-    init checkType exp"[$dt2]"
-    in checkType exp"[$n.$dt1]"
+    (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
+      (out `:` t"exp[$dt2] -> comm") ->
+      (f `:` t"acc[$dt2] -> exp[$dt1] -> exp[$dt2] -> comm") ->
+      (init `:` exp"[$dt2]") ->
+      (in `:` exp"[$n.$dt1]") ->
+      comm
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[CommandType] = {

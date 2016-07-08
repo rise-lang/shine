@@ -4,11 +4,10 @@ import Compiling.SubstituteImplementations
 import Core.OperationalSemantics._
 import Core._
 import DSL.typed._
-import apart.arithmetic.ArithExpr
 
 import scala.xml.Elem
 
-abstract class AbstractMapI(n: ArithExpr,
+abstract class AbstractMapI(n: Nat,
                             dt1: DataType,
                             dt2: DataType,
                             out: Phrase[AccType],
@@ -18,9 +17,11 @@ abstract class AbstractMapI(n: ArithExpr,
 
   override def typeCheck(): Unit = {
     import TypeChecker._
-    out checkType acc"[$n.$dt2]"
-    f checkType t"acc[$dt2] -> exp[$dt1] -> comm"
-    in checkType exp"[$n.$dt1]"
+    (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
+      (out `:` acc"[$n.$dt2]") ->
+      (f `:` t"acc[$dt2] -> exp[$dt1] -> comm") ->
+      (in `:` exp"[$n.$dt1]") ->
+      comm
   }
 
   override def eval(s: Store): Store = {
@@ -42,7 +43,7 @@ abstract class AbstractMapI(n: ArithExpr,
       VisitAndRebuild(in, fun))
   }
 
-  def makeMapI: (ArithExpr, DataType, DataType, Phrase[AccType], Phrase[AccType -> (ExpType -> CommandType)], Phrase[ExpType]) => AbstractMapI
+  def makeMapI: (Nat, DataType, DataType, Phrase[AccType], Phrase[AccType -> (ExpType -> CommandType)], Phrase[ExpType]) => AbstractMapI
 
   override def prettyPrint =
     s"(${this.getClass.getSimpleName} ${PrettyPrinter(out)} ${PrettyPrinter(f)} ${PrettyPrinter(in)})"
@@ -64,7 +65,7 @@ abstract class AbstractMapI(n: ArithExpr,
     })
 }
 
-case class MapI(n: ArithExpr,
+case class MapI(n: Nat,
                 dt1: DataType,
                 dt2: DataType,
                 out: Phrase[AccType],

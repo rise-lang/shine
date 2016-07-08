@@ -2,10 +2,9 @@ package OpenCL.HighLevelCombinators
 
 import Core._
 import HighLevelCombinators.AbstractMap
-import MidLevelCombinators.MapSeqI
-import apart.arithmetic.ArithExpr
+import OpenCL.MidLevelCombinators.MapSeqI
 
-case class MapSeq(n: ArithExpr,
+case class MapSeq(n: Nat,
                   dt1: DataType,
                   dt2: DataType,
                   f: Phrase[ExpType -> ExpType],

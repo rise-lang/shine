@@ -5,12 +5,11 @@ import Core.OperationalSemantics._
 import Core._
 import DSL.typed._
 import LowLevelCombinators.JoinAcc
-import apart.arithmetic.ArithExpr
 
 import scala.xml.Elem
 
-case class Join(n: ArithExpr,
-                m: ArithExpr,
+case class Join(n: Nat,
+                m: Nat,
                 dt: DataType,
                 array: Phrase[ExpType])
   extends HighLevelCombinator {
@@ -19,7 +18,9 @@ case class Join(n: ArithExpr,
 
   override def typeCheck(): Unit = {
     import TypeChecker._
-    array checkType exp"[$n.$m.$dt]"
+    (n: Nat) -> (m: Nat) -> (dt: DataType) ->
+      (array `:` exp"[$n.$m.$dt]") ->
+      `type`
   }
 
   override def inferTypes: Join = {

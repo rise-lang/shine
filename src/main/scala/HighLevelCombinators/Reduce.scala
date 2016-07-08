@@ -5,28 +5,29 @@ import Core.OperationalSemantics._
 import Core._
 import DSL.typed._
 import MidLevelCombinators.{ReduceIAcc, ReduceIExp}
-import apart.arithmetic.ArithExpr
 
 import scala.xml.Elem
 
-abstract class AbstractReduce(n: ArithExpr,
+abstract class AbstractReduce(n: Nat,
                               dt1: DataType,
                               dt2: DataType,
                               f: Phrase[ExpType -> (ExpType -> ExpType)],
                               init: Phrase[ExpType],
                               array: Phrase[ExpType],
-                              makeReduce: (ArithExpr, DataType, DataType, Phrase[ExpType -> (ExpType -> ExpType)], Phrase[ExpType], Phrase[ExpType]) => AbstractReduce,
-                              makeReduceIAcc: (ArithExpr, DataType, DataType, Phrase[AccType], Phrase[AccType -> (ExpType -> (ExpType -> CommandType))], Phrase[ExpType], Phrase[ExpType]) => ReduceIAcc,
-                              makeReduceIExp: (ArithExpr, DataType, DataType, Phrase[ExpType -> CommandType], Phrase[AccType -> (ExpType -> (ExpType -> CommandType))], Phrase[ExpType], Phrase[ExpType]) => ReduceIExp)
+                              makeReduce: (Nat, DataType, DataType, Phrase[ExpType -> (ExpType -> ExpType)], Phrase[ExpType], Phrase[ExpType]) => AbstractReduce,
+                              makeReduceIAcc: (Nat, DataType, DataType, Phrase[AccType], Phrase[AccType -> (ExpType -> (ExpType -> CommandType))], Phrase[ExpType], Phrase[ExpType]) => ReduceIAcc,
+                              makeReduceIExp: (Nat, DataType, DataType, Phrase[ExpType -> CommandType], Phrase[AccType -> (ExpType -> (ExpType -> CommandType))], Phrase[ExpType], Phrase[ExpType]) => ReduceIExp)
   extends HighLevelCombinator {
 
   override lazy val `type` = exp"[$dt2]"
 
   override def typeCheck(): Unit = {
     import TypeChecker._
-    f checkType t"exp[$dt1] -> exp[$dt2] -> exp[$dt2]"
-    init checkType exp"[$dt2]"
-    array checkType exp"[$n.$dt1]"
+    (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
+      (f `:` t"exp[$dt1] -> exp[$dt2] -> exp[$dt2]") ->
+      (init `:` exp"[$dt2]") ->
+      (array `:` exp"[$n.$dt1]") ->
+      `type`
   }
 
   override def inferTypes: AbstractReduce = {
@@ -127,7 +128,7 @@ abstract class AbstractReduce(n: ArithExpr,
     })
 }
 
-case class Reduce(n: ArithExpr,
+case class Reduce(n: Nat,
                   dt1: DataType,
                   dt2: DataType,
                   f: Phrase[ExpType -> (ExpType -> ExpType)],

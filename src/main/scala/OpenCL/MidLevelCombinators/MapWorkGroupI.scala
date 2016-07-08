@@ -8,7 +8,7 @@ import OpenCL.Core.GlobalMemory
 import OpenCL.LowLevelCombinators.ParForWorkgroup
 import apart.arithmetic.ArithExpr
 
-case class MapWorkgroupI(n: ArithExpr,
+case class MapWorkGroupI(n: ArithExpr,
                          dt1: DataType,
                          dt2: DataType,
                          out: Phrase[AccType],
@@ -16,7 +16,7 @@ case class MapWorkgroupI(n: ArithExpr,
                          in: Phrase[ExpType])
   extends AbstractMapI(n, dt1, dt2, out, f, in) {
 
-  override def makeMapI = MapWorkgroupI
+  override def makeMapI = MapWorkGroupI
 
   override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
 

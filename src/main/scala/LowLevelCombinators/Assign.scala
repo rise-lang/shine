@@ -12,8 +12,7 @@ case class Assign(dt: BasicType,
 
   override def typeCheck(): Unit = {
     import TypeChecker._
-    lhs checkType acc"[$dt]"
-    rhs checkType exp"[$dt]"
+    (dt: BasicType) -> (lhs `:` acc"[$dt]") -> (rhs `:` exp"[$dt]") -> comm
   }
 
   override def inferTypes: Assign = {
@@ -65,7 +64,7 @@ case class Assign(dt: BasicType,
     }
 
     evalAssign(s, OperationalSemantics.eval(s, lhs), OperationalSemantics.eval(s, rhs), (s, identifier, value) => {
-      s + (identifier -> value)
+      s + Tuple2(identifier, value)
     })
   }
 

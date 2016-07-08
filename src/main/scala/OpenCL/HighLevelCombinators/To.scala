@@ -20,8 +20,10 @@ abstract class To(dt1: DataType,
 
   override def typeCheck(): Unit = {
     import TypeChecker._
-    f checkType t"exp[$dt1] -> exp[$dt2]"
-    input checkType exp"[$dt1]"
+    (dt1: DataType) -> (dt2: DataType) ->
+      (f `:` t"exp[$dt1] -> exp[$dt2]") ->
+      (input `:` exp"[$dt1]") ->
+      `type`
   }
 
   override def inferTypes: To = {

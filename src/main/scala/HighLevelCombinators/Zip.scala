@@ -5,11 +5,10 @@ import Core.OperationalSemantics._
 import Core._
 import DSL.typed._
 import MidLevelCombinators.MapI
-import apart.arithmetic.ArithExpr
 
 import scala.xml.Elem
 
-case class Zip(n: ArithExpr,
+case class Zip(n: Nat,
                dt1: DataType,
                dt2: DataType,
                lhs: Phrase[ExpType],
@@ -20,8 +19,10 @@ case class Zip(n: ArithExpr,
 
   override def typeCheck(): Unit = {
     import TypeChecker._
-    lhs checkType exp"[$n.$dt1]"
-    rhs checkType exp"[$n.$dt2]"
+    (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
+      (lhs `:` exp"[$n.$dt1]") ->
+      (rhs `:` exp"[$n.$dt2]") ->
+      `type`
   }
 
   override def inferTypes: Zip = {

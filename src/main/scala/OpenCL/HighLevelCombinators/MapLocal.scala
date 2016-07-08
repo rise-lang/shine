@@ -3,9 +3,8 @@ package OpenCL.HighLevelCombinators
 import Core._
 import HighLevelCombinators.AbstractMap
 import OpenCL.MidLevelCombinators.MapLocalI
-import apart.arithmetic.ArithExpr
 
-case class MapLocal(n: ArithExpr,
+case class MapLocal(n: Nat,
                     dt1: DataType,
                     dt2: DataType,
                     f: Phrase[ExpType -> ExpType],

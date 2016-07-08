@@ -6,25 +6,26 @@ import Core._
 import DSL.typed._
 import MidLevelCombinators.{AbstractMapI, MapI}
 import OpenCL.Core.GlobalMemory
-import apart.arithmetic.ArithExpr
 
 import scala.xml.Elem
 
-abstract class AbstractMap(n: ArithExpr,
+abstract class AbstractMap(n: Nat,
                            dt1: DataType,
                            dt2: DataType,
                            f: Phrase[ExpType -> ExpType],
                            array: Phrase[ExpType],
-                           makeMap: (ArithExpr, DataType, DataType, Phrase[ExpType -> ExpType], Phrase[ExpType]) => AbstractMap,
-                           makeMapI: (ArithExpr, DataType, DataType, Phrase[AccType], Phrase[AccType -> (ExpType -> CommandType)], Phrase[ExpType]) => AbstractMapI)
+                           makeMap: (Nat, DataType, DataType, Phrase[ExpType -> ExpType], Phrase[ExpType]) => AbstractMap,
+                           makeMapI: (Nat, DataType, DataType, Phrase[AccType], Phrase[AccType -> (ExpType -> CommandType)], Phrase[ExpType]) => AbstractMapI)
   extends HighLevelCombinator {
 
   override lazy val `type` = exp"[$n.$dt2]"
 
   override def typeCheck(): Unit = {
     import TypeChecker._
-    f checkType t"exp[$dt1] -> exp[$dt2]"
-    array checkType exp"[$n.$dt1]"
+    (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
+      (f `:` t"exp[$dt1] -> exp[$dt2]") ->
+      (array `:` exp"[$n.$dt1]") ->
+      `type`
   }
 
   override def inferTypes: AbstractMap = {
@@ -68,10 +69,10 @@ abstract class AbstractMap(n: ArithExpr,
     val F = f
     val E = array
 
-    exp(E)(λ( exp"[$n.$dt1]" )( x =>
+    exp(E)(λ(exp"[$n.$dt1]")(x =>
       makeMapI(n, dt1, dt2, A,
-        λ( acc"[$dt2]" )(o =>
-          λ( exp"[$dt1]" )(x => acc(F(x))(o))),
+        λ(acc"[$dt2]")(o =>
+          λ(exp"[$dt1]")(x => acc(F(x))(o))),
         x
       )
     ))
@@ -105,7 +106,7 @@ abstract class AbstractMap(n: ArithExpr,
     })
 }
 
-case class Map(n: ArithExpr,
+case class Map(n: Nat,
                dt1: DataType,
                dt2: DataType,
                f: Phrase[ExpType -> ExpType],

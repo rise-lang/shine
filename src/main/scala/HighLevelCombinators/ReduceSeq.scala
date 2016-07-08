@@ -2,9 +2,8 @@ package HighLevelCombinators
 
 import Core._
 import MidLevelCombinators.{ReduceIAcc, ReduceIExp}
-import apart.arithmetic.ArithExpr
 
-case class ReduceSeq(n: ArithExpr,
+case class ReduceSeq(n: Nat,
                      dt1: DataType, dt2: DataType,
                      f: Phrase[ExpType -> (ExpType -> ExpType)],
                      init: Phrase[ExpType],

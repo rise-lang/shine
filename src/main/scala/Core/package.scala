@@ -6,6 +6,8 @@ import scala.language.reflectiveCalls
 
 package object Core {
 
+  type Nat = ArithExpr
+
   object newName {
     var counter = 0
 
@@ -76,5 +78,10 @@ package object Core {
       new PhraseTypeParser("acc" + sc.s(args:_*), sc.parts, args.iterator).parseAccType
     }
   }
+
+//  implicit final class XAssoc[A](private val self: A) extends AnyVal {
+//    @inline def x  [B](y: B): Tuple2[A, B] = Tuple2(self, y)
+//  }
+
 
 }

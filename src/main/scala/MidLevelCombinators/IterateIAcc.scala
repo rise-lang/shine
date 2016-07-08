@@ -6,13 +6,13 @@ import Core._
 import DSL.typed._
 import LowLevelCombinators.{TruncAcc, TruncExp}
 import OpenCL.Core.ToOpenCL
-import apart.arithmetic._
+import apart.arithmetic.{?, Cst}
 
 import scala.xml.Elem
 
-case class IterateIAcc(n: ArithExpr,
-                       m: ArithExpr,
-                       k: ArithExpr,
+case class IterateIAcc(n: Nat,
+                       m: Nat,
+                       k: Nat,
                        dt: DataType,
                        out: Phrase[AccType],
                        f: Phrase[`(nat)->`[AccType -> (ExpType -> CommandType)]],
@@ -21,13 +21,16 @@ case class IterateIAcc(n: ArithExpr,
 
   override def typeCheck(): Unit = {
     import TypeChecker._
-    out checkType acc"[$m.$dt]"
     f match {
       case NatDependentLambdaPhrase(l, _) =>
-        f checkType t"($l : nat) -> acc[${l/^n}.$dt] -> exp[$l.$dt] -> comm"
+        (n: Nat) -> (m: Nat) -> (k: Nat) -> (dt: DataType) ->
+          (out `:` acc"[$m.$dt]") ->
+          (f `:` t"($l : nat) -> acc[${l/^n}.$dt] -> exp[$l.$dt] -> comm") ->
+          (in `:` exp"[${n.pow(k)*m}.$dt]") ->
+          comm
+
       case _ => throw new Exception("This should not happen")
     }
-    in checkType exp"[${n.pow(k)*m}.$dt]"
   }
 
   override def eval(s: Store): Store = ???
@@ -46,11 +49,11 @@ case class IterateIAcc(n: ArithExpr,
 
     val sEnd = n.pow(k)*m
 
-    val iterateLoop = (start: ArithExpr,
-                       end: ArithExpr,
+    val iterateLoop = (start: Nat,
+                       end: Nat,
                        buf1: Phrase[VarType],
                        buf2: Phrase[VarType]) => {
-      val s = (l: ArithExpr) => n.pow(end - l - start) * m
+      val s = (l: Nat) => n.pow(end - l - start) * m
 
       end - start match {
         case Cst(x) if x > 2 =>
@@ -94,7 +97,7 @@ case class IterateIAcc(n: ArithExpr,
       }
     }
 
-    val s = (l: ArithExpr) => n.pow(k-l)*m
+    val s = (l: Nat) => n.pow(k-l)*m
 
     k match {
       case Cst(x) if x > 2 =>

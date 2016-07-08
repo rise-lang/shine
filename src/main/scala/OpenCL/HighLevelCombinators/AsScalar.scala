@@ -5,15 +5,14 @@ import Core.OperationalSemantics._
 import Core._
 import DSL.typed._
 import OpenCL.LowLevelCombinators.AsScalarAcc
-import apart.arithmetic.ArithExpr
 
 import opencl.generator.OpenCLAST.Expression
 import OpenCL.Core.{ToOpenCL, ViewExp}
 
 import scala.xml.Elem
 
-case class AsScalar(n: ArithExpr,
-                    m: ArithExpr,
+case class AsScalar(n: Nat,
+                    m: Nat,
                     dt: BasicType,
                     array: Phrase[ExpType])
   extends HighLevelCombinator with ViewExp {
@@ -22,7 +21,9 @@ case class AsScalar(n: ArithExpr,
 
   override def typeCheck(): Unit = {
     import TypeChecker._
-    array checkType exp"[$n.${VectorType(m, dt)}]"
+    (n: Nat) -> (m: Nat) -> (dt: DataType) ->
+      (array `:` exp"[$n.${VectorType(m, dt)}]") ->
+      `type`
   }
 
   override def inferTypes: AsScalar = {
@@ -42,8 +43,8 @@ case class AsScalar(n: ArithExpr,
   override def eval(s: Store): Data = ???
 
   override def toOpenCL(env: ToOpenCL.Environment,
-                        arrayAccess: List[(ArithExpr, ArithExpr)],
-                        tupleAccess: List[ArithExpr],
+                        arrayAccess: List[(Nat, Nat)],
+                        tupleAccess: List[Nat],
                         dt: DataType): Expression = {
     val top = arrayAccess.head
     val newAAS = ((top._1 /^ n, top._2) :: arrayAccess.tail).map(x => (x._1, x._2 * n))

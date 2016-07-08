@@ -5,11 +5,10 @@ import Core.OperationalSemantics._
 import Core._
 import DSL.typed._
 import OpenCL.Core.PrivateMemory
-import apart.arithmetic.ArithExpr
 
 import scala.xml.Elem
 
-case class ReduceIAcc(n: ArithExpr,
+case class ReduceIAcc(n: Nat,
                       dt1: DataType,
                       dt2: DataType,
                       out: Phrase[AccType],
@@ -20,10 +19,12 @@ case class ReduceIAcc(n: ArithExpr,
 
   override def typeCheck(): Unit = {
     import TypeChecker._
-    out checkType acc"[$dt2]"
-    f checkType t"acc[$dt2] -> exp[$dt1] -> exp[$dt2] -> comm"
-    init checkType exp"[$dt2]"
-    in checkType exp"[$n.$dt1]"
+    (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
+      (out `:` acc"[$dt2]") ->
+      (f `:` t"acc[$dt2] -> exp[$dt1] -> exp[$dt2] -> comm") ->
+      (init `:` exp"[$dt2]") ->
+      (in `:` exp"[$n.$dt1]") ->
+      comm
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[CommandType] = {
@@ -36,12 +37,14 @@ case class ReduceIAcc(n: ArithExpr,
 
   override def eval(s: Store): Store = {
     val fE = OperationalSemantics.eval(s, f)(TrinaryFunctionEvaluator)
-    val n = in.t match { case ExpType(ArrayType(len, _)) => len }
+    val n = in.t match {
+      case ExpType(ArrayType(len, _)) => len
+    }
 
-    (0 until n.eval).foldLeft(s)( (sOld, i) => {
+    (0 until n.eval).foldLeft(s)((sOld, i) => {
       val comm = fE(out)(in `@` LiteralPhrase(i))(init)
       OperationalSemantics.eval(sOld, comm)
-    } )
+    })
   }
 
   override def prettyPrint =
@@ -66,10 +69,10 @@ case class ReduceIAcc(n: ArithExpr,
   override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
     `new`(init.t.dataType, PrivateMemory, accum => {
       (accum.wr `:=` init) `;`
-      `for`(n, i => {
-        SubstituteImplementations( f(accum.wr)(in `@` i)(accum.rd), env )
-      }) `;`
-      (out `:=` accum.rd)
-    } )
+        `for`(n, i => {
+          SubstituteImplementations(f(accum.wr)(in `@` i)(accum.rd), env)
+        }) `;`
+        (out `:=` accum.rd)
+    })
   }
 }

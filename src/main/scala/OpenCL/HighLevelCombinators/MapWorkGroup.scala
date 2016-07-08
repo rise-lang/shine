@@ -2,12 +2,11 @@ package OpenCL.HighLevelCombinators
 
 import Core._
 import HighLevelCombinators.AbstractMap
-import OpenCL.MidLevelCombinators.MapWorkgroupI
-import apart.arithmetic.ArithExpr
+import OpenCL.MidLevelCombinators.MapWorkGroupI
 
-case class MapWorkGroup(n: ArithExpr,
+case class MapWorkGroup(n: Nat,
                         dt1: DataType,
                         dt2: DataType,
                         f: Phrase[ExpType -> ExpType],
                         array: Phrase[ExpType])
-  extends AbstractMap(n, dt1, dt2, f, array, MapWorkGroup, MapWorkgroupI)
+  extends AbstractMap(n, dt1, dt2, f, array, MapWorkGroup, MapWorkGroupI)

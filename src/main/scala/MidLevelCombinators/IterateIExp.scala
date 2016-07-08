@@ -6,13 +6,12 @@ import Core._
 import DSL.typed._
 import LowLevelCombinators.{TruncAcc, TruncExp}
 import OpenCL.Core.GlobalMemory
-import apart.arithmetic._
 
 import scala.xml.Elem
 
-case class IterateIExp(n: ArithExpr,
-                       m: ArithExpr,
-                       k: ArithExpr,
+case class IterateIExp(n: Nat,
+                       m: Nat,
+                       k: Nat,
                        dt: DataType,
                        out: Phrase[ExpType -> CommandType],
                        f: Phrase[`(nat)->`[AccType -> (ExpType -> CommandType)]],
@@ -21,13 +20,16 @@ case class IterateIExp(n: ArithExpr,
 
   override def typeCheck(): Unit = {
     import TypeChecker._
-    out checkType t"(exp[$m.$dt] -> comm)"
     f match {
       case NatDependentLambdaPhrase(l, _) =>
-        f checkType t"($l : nat) -> acc[${l/^n}.$dt] -> exp[$l.$dt] -> comm"
+        (n: Nat) -> (m: Nat) -> (k: Nat) -> (dt: DataType) ->
+          (out `:` t"(exp[$m.$dt] -> comm)") ->
+          (f `:` t"($l : nat) -> acc[${l/^n}.$dt] -> exp[$l.$dt] -> comm") ->
+          (in `:` exp"[${n.pow(k)*m}.$dt]") ->
+          comm
+
       case _ => throw new Exception("This should not happen")
     }
-    in checkType exp"[${n.pow(k)*m}.$dt]"
   }
 
   override def eval(s: Store): Store = ???
@@ -41,7 +43,7 @@ case class IterateIExp(n: ArithExpr,
 
   override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
     val sEnd = n.pow(k)*m
-    val s = (l: ArithExpr) => n.pow(k-l)*m
+    val s = (l: Nat) => n.pow(k-l)*m
 
     val addressSpace = GlobalMemory
 

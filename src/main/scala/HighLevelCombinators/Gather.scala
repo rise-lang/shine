@@ -5,13 +5,12 @@ import Core.OperationalSemantics._
 import Core.VisitAndRebuild.fun
 import Core._
 import DSL.typed._
-import apart.arithmetic.ArithExpr
 
 import scala.xml.Elem
 
-case class Gather(n: ArithExpr,
+case class Gather(n: Nat,
                   dt: DataType,
-                  idxF: (ArithExpr, DataType) => ArithExpr,
+                  idxF: (Nat, DataType) => Nat,
                   array: Phrase[ExpType])
   extends HighLevelCombinator {
 
@@ -19,7 +18,10 @@ case class Gather(n: ArithExpr,
 
   override def typeCheck(): Unit = {
     import TypeChecker._
-    array checkType exp"[$n.$dt]"
+    (n: Nat) -> (dt: DataType) ->
+      (idxF: (Nat, DataType) => Nat) ->
+      (array `:` exp"[$n.$dt]") ->
+      `type`
   }
 
   override def inferTypes: Gather = {
