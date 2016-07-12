@@ -2,11 +2,10 @@ package LowLevelCombinators
 
 import Core.OperationalSemantics._
 import Core._
-import apart.arithmetic.ArithExpr
 
 import scala.xml.Elem
 
-case class Idx(n: ArithExpr,
+case class Idx(n: Nat,
                dt: DataType,
                index: Phrase[ExpType],
                array: Phrase[ExpType])
@@ -16,8 +15,10 @@ case class Idx(n: ArithExpr,
 
   override def typeCheck(): Unit = {
     import TypeChecker._
-    index checkType exp"[$int]"
-    array checkType exp"[$n.$dt]"
+    (n: Nat) -> (dt: DataType) ->
+      (index `:` exp"[$int]") ->
+      (array `:` exp"[$n.$dt]") ->
+      `type`
   }
 
   override def inferTypes: Idx = {

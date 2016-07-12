@@ -2,12 +2,11 @@ package LowLevelCombinators
 
 import Core.OperationalSemantics._
 import Core._
-import apart.arithmetic.ArithExpr
 
 import scala.xml.Elem
 
-case class SplitAcc(n: ArithExpr,
-                    m: ArithExpr,
+case class SplitAcc(n: Nat,
+                    m: Nat,
                     dt: DataType,
                     array: Phrase[AccType])
   extends LowLevelAccCombinator {
@@ -16,7 +15,8 @@ case class SplitAcc(n: ArithExpr,
 
   override def typeCheck(): Unit = {
     import TypeChecker._
-    array checkType acc"[$m.$n.$dt]"
+    (n: Nat) -> (m: Nat) -> (dt: DataType) ->
+      (array `:` acc"[$m.$n.$dt]") -> `type`
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[AccType] = {

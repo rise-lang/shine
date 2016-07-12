@@ -2,30 +2,32 @@ package LowLevelCombinators
 
 import Core.OperationalSemantics._
 import Core._
-import apart.arithmetic.ArithExpr
 
 import scala.xml.Elem
 
-case class DoubleBufferFor(n: ArithExpr,
+case class DoubleBufferFor(n: Nat,
                            dt: DataType,
                            addressSpace: AddressSpace,
                            buffer1: Phrase[VarType],
                            buffer2: Phrase[VarType],
-                           k: ArithExpr,
+                           k: Nat,
                            body: Phrase[`(nat)->`[AccType -> (ExpType -> CommandType)]],
                            C: Phrase[ExpType -> CommandType])
   extends LowLevelCommCombinator {
 
   override def typeCheck(): Unit = {
     import TypeChecker._
-    buffer1 checkType t"var[$n.$dt]"
-    buffer2 checkType t"var[$n.$dt]"
     body match {
       case NatDependentLambdaPhrase(l, _) =>
-        body checkType t"($l : nat) -> acc[$n.$dt] -> exp[$n.$dt] -> comm"
+        (n: Nat) -> (k: Nat) -> (dt: DataType) ->
+          (buffer1 `:` t"var[$n.$dt]") ->
+          (buffer2 `:` t"var[$n.$dt]") ->
+          (body `:` t"($l : nat) -> acc[$n.$dt] -> exp[$n.$dt] -> comm") ->
+          (C `:` t"exp[$n.$dt] -> comm") ->
+          comm
+
       case _ => throw new Exception("This should not happen")
     }
-    C checkType t"exp[$n.$dt] -> comm"
   }
 
   override def eval(s: Store): Store = ???

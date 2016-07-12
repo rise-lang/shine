@@ -3,17 +3,16 @@ package LowLevelCombinators
 import Core.OperationalSemantics._
 import Core._
 import DSL.typed._
-import apart.arithmetic.ArithExpr
 
 import scala.xml.Elem
 
-case class For(n: ArithExpr,
+case class For(n: Nat,
                body: Phrase[ExpType -> CommandType])
   extends LowLevelCommCombinator {
 
   override def typeCheck(): Unit = {
     import TypeChecker._
-    body checkType t"exp[$int] -> comm"
+    (n: Nat) -> (body `:` t"exp[$int] -> comm") -> comm
   }
 
   override def eval(s: Store): Store = {

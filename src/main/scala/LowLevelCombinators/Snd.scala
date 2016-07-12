@@ -16,7 +16,8 @@ case class Snd(dt1: DataType,
 
   override def typeCheck(): Unit = {
     import TypeChecker._
-    record checkType exp"[$dt1 x $dt2]"
+    (dt1: DataType) -> (dt2: DataType) ->
+      (record `:` exp"[$dt1 x $dt2]") -> `type`
   }
 
   override def inferTypes: Snd = {

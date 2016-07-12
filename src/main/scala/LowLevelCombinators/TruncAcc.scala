@@ -2,12 +2,11 @@ package LowLevelCombinators
 
 import Core.OperationalSemantics._
 import Core._
-import apart.arithmetic.ArithExpr
 
 import scala.xml.Elem
 
-case class TruncAcc(n: ArithExpr,
-                    m: ArithExpr,
+case class TruncAcc(n: Nat,
+                    m: Nat,
                     dt: DataType,
                     array: Phrase[AccType])
   extends LowLevelAccCombinator {
@@ -16,7 +15,8 @@ case class TruncAcc(n: ArithExpr,
 
   override def typeCheck(): Unit = {
     import TypeChecker._
-    array checkType acc"[$n.$dt]"
+    (n: Nat) -> (m: Nat) -> (dt: DataType) ->
+      (array `:` acc"[$n.$dt]") -> `type`
   }
 
   override def eval(s: Store): AccIdentifier = ???

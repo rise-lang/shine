@@ -3,11 +3,10 @@ package LowLevelCombinators
 import Core.OperationalSemantics._
 import Core._
 import DSL.typed._
-import apart.arithmetic.ArithExpr
 
 import scala.xml.Elem
 
-abstract class AbstractParFor(val n: ArithExpr,
+abstract class AbstractParFor(val n: Nat,
                               val dt: DataType,
                               val out: Phrase[AccType],
                               val body: Phrase[ExpType -> (AccType -> CommandType)])
@@ -15,8 +14,10 @@ abstract class AbstractParFor(val n: ArithExpr,
 
   override def typeCheck(): Unit = {
     import TypeChecker._
-    out checkType acc"[$n.$dt]"
-    body checkType t"exp[$int] -> acc[$dt] -> comm"
+    (n: Nat) -> (dt: DataType) ->
+      (out `:` acc"[$n.$dt]") ->
+      (body `:` t"exp[$int] -> acc[$dt] -> comm") ->
+      comm
   }
 
   override def eval(s: Store): Store = {
@@ -49,11 +50,11 @@ abstract class AbstractParFor(val n: ArithExpr,
       Character.toLowerCase(name.charAt(0)) + name.substring(1)
     })
 
-  def makeParFor: (ArithExpr, DataType, Phrase[AccType], Phrase[ExpType -> (AccType -> CommandType)]) => AbstractParFor
+  def makeParFor: (Nat, DataType, Phrase[AccType], Phrase[ExpType -> (AccType -> CommandType)]) => AbstractParFor
 
 }
 
-case class ParFor(override val n: ArithExpr,
+case class ParFor(override val n: Nat,
                   override val dt: DataType,
                   override val out: Phrase[AccType],
                   override val body: Phrase[ExpType -> (AccType -> CommandType)])

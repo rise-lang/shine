@@ -14,7 +14,8 @@ case class FstAcc(dt1: DataType,
 
   override def typeCheck(): Unit = {
     import TypeChecker._
-    record checkType acc"[$dt1 x $dt2]"
+    (dt1: DataType) -> (dt2: DataType) ->
+      (record `:` acc"[$dt1 x $dt2]") -> `type`
   }
 
   override def eval(s: Store): AccIdentifier = {

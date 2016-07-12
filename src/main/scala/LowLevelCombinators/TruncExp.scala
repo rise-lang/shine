@@ -2,12 +2,11 @@ package LowLevelCombinators
 
 import Core.OperationalSemantics._
 import Core._
-import apart.arithmetic.ArithExpr
 
 import scala.xml.Elem
 
-case class TruncExp(n: ArithExpr,
-                    m: ArithExpr,
+case class TruncExp(n: Nat,
+                    m: Nat,
                     dt: DataType,
                     array: Phrase[ExpType])
   extends LowLevelExpCombinator {
@@ -16,7 +15,8 @@ case class TruncExp(n: ArithExpr,
 
   override def typeCheck(): Unit = {
     import TypeChecker._
-    array checkType exp"[$n.$dt]"
+    (n: Nat) -> (m: Nat) -> (dt: DataType) ->
+      (array `:` exp"[$n.$dt]") -> `type`
   }
 
   override def inferTypes: TruncExp = {
