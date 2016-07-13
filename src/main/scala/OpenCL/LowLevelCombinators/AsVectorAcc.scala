@@ -4,7 +4,7 @@ import Core.OperationalSemantics._
 import Core._
 
 import opencl.generator.OpenCLAST.VarRef
-import OpenCL.Core.{GeneratableAcc, ToOpenCL, ViewAcc}
+import OpenCL.Core.{ToOpenCL, ViewAcc}
 
 import scala.xml.Elem
 
@@ -12,7 +12,7 @@ final case class AsVectorAcc(n: Nat,
                              m: Nat,
                              dt: BasicType,
                              array: Phrase[AccType])
-  extends LowLevelAccCombinator with ViewAcc with GeneratableAcc {
+  extends LowLevelAccCombinator with ViewAcc {
 
   override lazy val `type` = acc"[${n * m}, dt]"
 
@@ -27,8 +27,6 @@ final case class AsVectorAcc(n: Nat,
   }
 
   override def eval(s: Store): AccIdentifier = ???
-
-  override def toOpenCL(env: ToOpenCL.Environment): VarRef = ???
 
   override def toOpenCL(env: ToOpenCL.Environment,
                         arrayAccess: List[(Nat, Nat)],

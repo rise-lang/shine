@@ -196,8 +196,6 @@ object ToOpenCL {
       case UnaryOpPhrase(op, x) =>
         UnaryExpression(op.toString, exp(x, env))
 
-      case g: GeneratableExp => g.toOpenCL(env)
-
       case f: Fst => toOpenCL(f, env, List(), List(), f.t.dataType)
       case i: Idx => toOpenCL(i, env, List(), List(), i.t.dataType)
       case r: Record => toOpenCL(r, env, List(), List(), r.t.dataType)
@@ -279,8 +277,6 @@ object ToOpenCL {
       case IdentPhrase(name, _) => VarRef(name)
       case p: Proj1Phrase[AccType, _] => acc(Lift.liftPair(p.pair)._1, env)
       case p: Proj2Phrase[_, AccType] => acc(Lift.liftPair(p.pair)._2, env)
-
-      case g: GeneratableAcc => g.toOpenCL(env)
 
       case f: FstAcc => toOpenCL(f, env, List(), List(), f.t.dataType)
       case i: IdxAcc => toOpenCL(i, env, List(), List(), i.t.dataType)

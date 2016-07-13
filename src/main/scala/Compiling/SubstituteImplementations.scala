@@ -24,12 +24,12 @@ object SubstituteImplementations {
 
           // add the addressSpace of every new variable to the environment
           case New(dt, addressSpace, f) =>
-            val p = f match {
-              case LambdaPhrase(param, _) => param
+            val param = f match {
+              case LambdaPhrase(param_, _) => param_
               case _ => throw new Exception("This should not happen")
             }
-            Continue(New(dt, addressSpace, f).asInstanceOf[Phrase[T]],
-              fun(env.copy(env.addressSpace.updated(p.name, addressSpace))))
+            Continue(p,
+              fun(env.copy(env.addressSpace.updated(param.name, addressSpace))))
 
           case _ => Continue(p, this)
         }

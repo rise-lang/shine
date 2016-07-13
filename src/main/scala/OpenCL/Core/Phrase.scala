@@ -16,14 +16,6 @@ trait ViewAcc {
                tupleAccess: List[ArithExpr], dt: DataType): VarRef
 }
 
-trait GeneratableExp {
-  def toOpenCL(env: ToOpenCL.Environment): Expression
-}
-
-trait GeneratableAcc {
-  def toOpenCL(env: ToOpenCL.Environment): VarRef
-}
-
 trait GeneratableComm {
   def toOpenCL(block: Block, env: ToOpenCL.Environment): Block
 }
