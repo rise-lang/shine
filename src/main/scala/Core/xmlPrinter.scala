@@ -70,7 +70,7 @@ object xmlPrinter {
           {apply(body)}
         </Λ>
 
-      case LiteralPhrase(d) => <lit>{d}</lit>
+      case LiteralPhrase(d, _) => <lit>{d}</lit>
 
       case PairPhrase(fst, snd) =>
         <pair>

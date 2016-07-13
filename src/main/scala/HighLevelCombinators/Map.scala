@@ -59,7 +59,7 @@ abstract class AbstractMap(n: Nat,
     val fE = OperationalSemantics.eval(s, f)
     OperationalSemantics.eval(s, array) match {
       case ArrayData(xs) =>
-        ArrayData(xs.map { x => OperationalSemantics.eval(s, fE(LiteralPhrase(x))) })
+        ArrayData(xs.map { x => OperationalSemantics.eval(s, fE(LiteralPhrase(x, x.dataType))) })
 
       case _ => throw new Exception("This should not happen")
     }

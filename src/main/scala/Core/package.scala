@@ -30,7 +30,7 @@ package object Core {
 
   implicit class PhraseTypeSubstitutionHelper[T <: PhraseType](t: PhraseType) {
     def `[`(e: Nat) = new {
-      def `/`(a: NatIdentifier) = new {
+      def `/`(a: Nat) = new {
         def `]` = PhraseType.substitute(e, `for`=a, in=t)
       }
     }
@@ -44,7 +44,7 @@ package object Core {
     }
 
     def `[`(e: Nat) = new {
-      def `/`(`for`: NatIdentifier) = new {
+      def `/`(`for`: Nat) = new {
         def `]` = PhraseType.substitute(e, `for`, in)
       }
     }

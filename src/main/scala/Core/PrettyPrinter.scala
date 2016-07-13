@@ -25,7 +25,7 @@ object PrettyPrinter {
 
       case NatDependentLambdaPhrase(param, body) => s"(Λ ${param.name} . ${apply(body)})"
 
-      case LiteralPhrase(d) => d.toString
+      case LiteralPhrase(d, _) => d.toString
 
       case PairPhrase(fst, snd) => s"(${apply(fst)}, ${apply(snd)})"
 

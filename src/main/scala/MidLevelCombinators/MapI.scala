@@ -31,7 +31,7 @@ abstract class AbstractMapI(n: Nat,
     }
 
     (0 until n.eval).foldLeft(s)((sOld, i) => {
-      val comm = fE(out `@` LiteralPhrase(i))(in `@` LiteralPhrase(i))
+      val comm = fE(out `@` LiteralPhrase(i, IndexType(n)))(in `@` LiteralPhrase(i, IndexType(n)))
       OperationalSemantics.eval(sOld, comm)
     })
   }

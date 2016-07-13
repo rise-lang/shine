@@ -10,23 +10,6 @@ import scala.language.implicitConversions
 
 object asum extends App {
 
-  val reorderWithStride = (s: ArithExpr) => {
-    (i: ArithExpr, t: DataType) => {
-      val n = ir.Type.getLength(DataType.toType(t)) /^ s
-      (i / n) + s * (i % n)
-    }
-  }
-
-  val reorderWithStridePhrase = {
-    _Λ_(s =>
-      _Λ_(n => λ(exp"[idx($n)]")(i => {
-        val j = NamedVar(i.name, ContinuousRange(0, n))
-        val m = n /^ s
-        (j / m) + s * (j % m)
-      }))
-    )
-  }
-
   val N = SizeVar("N")
   val inputT = ExpType(ArrayType(N, float))
 
@@ -81,6 +64,7 @@ object asum extends App {
     ) o split(2048 * 128) $ input
   )
   val nvidiaDerived1 = TypeInference(nvidiaDerived1_)
+  Core.xmlPrinter.toFile("/tmp/p.xml", nvidiaDerived1)
   TypeChecker(nvidiaDerived1)
 
   println("-- Nvidia Derived 1 --")

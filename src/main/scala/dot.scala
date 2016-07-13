@@ -10,23 +10,6 @@ import scala.language.implicitConversions
 
 object dot extends App {
 
-  val reorderWithStride = (s: ArithExpr) => {
-    (i: ArithExpr, t: DataType) => {
-      val n = ir.Type.getLength(DataType.toType(t)) /^ s
-      (i / n) + s * (i % n)
-    }
-  }
-
-  val reorderWithStridePhrase = {
-    implicit def toArithExpr(i: IdentPhrase[ExpType]): NamedVar = NamedVar(i.name)
-    _Λ_(s =>
-      _Λ_(n => λ(exp"[idx($n)]")(i => {
-        val m = n /^ s
-        (i / m) + s * (i % m)
-      }))
-    )
-  }
-
   val N = SizeVar("N")
   val xsT = ExpType(ArrayType(N, float))
   val ysT = ExpType(ArrayType(N, float))

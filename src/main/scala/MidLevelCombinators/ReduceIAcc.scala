@@ -42,7 +42,7 @@ final case class ReduceIAcc(n: Nat,
     }
 
     (0 until n.eval).foldLeft(s)((sOld, i) => {
-      val comm = fE(out)(in `@` LiteralPhrase(i))(init)
+      val comm = fE(out)(in `@` LiteralPhrase(i, IndexType(n)))(init)
       OperationalSemantics.eval(sOld, comm)
     })
   }

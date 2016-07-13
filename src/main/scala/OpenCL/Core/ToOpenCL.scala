@@ -180,7 +180,7 @@ object ToOpenCL {
       case BinOpPhrase(op, lhs, rhs) =>
         BinaryExpression(op.toString, exp(lhs, env), exp(rhs, env))
       case IdentPhrase(name, _) => VarRef(name)
-      case LiteralPhrase(d) =>
+      case LiteralPhrase(d, _) =>
         d match {
           case i: IntData => Literal(i.i.toString)
           case b: BoolData => Literal(b.b.toString)
@@ -264,7 +264,7 @@ object ToOpenCL {
 
       case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
            BinOpPhrase(_, _, _) | UnaryOpPhrase(_, _) |
-           IfThenElsePhrase(_, _, _) | LiteralPhrase(_) |
+           IfThenElsePhrase(_, _, _) | LiteralPhrase(_, _) |
            _: LowLevelExpCombinator | _: HighLevelCombinator =>
         throw new Exception(s"Don't know how to generate OpenCL code for $p")
     }

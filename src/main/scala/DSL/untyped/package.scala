@@ -56,12 +56,10 @@ package object untyped {
   implicit def toPair[T1 <: PhraseType, T2 <: PhraseType](pair: (Phrase[T1], Phrase[T2])): PairPhrase[T1, T2] =
     PairPhrase(pair._1, pair._2)
 
-  implicit def toLiteralIndex(i: Nat): LiteralPhrase = LiteralPhrase(IndexData(i))
-  implicit def toLiteralInt(i: Int): LiteralPhrase = LiteralPhrase(i)
-  implicit def toLiteralFloat(f: Float): LiteralPhrase = LiteralPhrase(FloatData(f))
-  implicit def toLiteralFloat4(v: VectorData): LiteralPhrase = LiteralPhrase(v)
-
-//  implicit def toArithExpr(i: IdentPhrase[ExpType]): NamedVar = NamedVar(i.name)
+  implicit def toLiteralInt(i: Int): LiteralPhrase = LiteralPhrase(i, int)
+  implicit def toLiteralFloat(f: Float): LiteralPhrase = LiteralPhrase(FloatData(f), float)
+  implicit def toLiteralFloat4(v: VectorData): LiteralPhrase =
+    LiteralPhrase(v, VectorType(v.a.length, v.a.head.dataType.asInstanceOf[BasicType]))
 
   implicit def toNatDependentLambda[T <: PhraseType](p: Phrase[T]): NatDependentLambdaPhrase[T] =
     _Λ_( l => p )

@@ -63,8 +63,10 @@ object BinOpPhrase {
 
 }
 
-final case class LiteralPhrase(d: OperationalSemantics.Data)
-  extends Phrase[ExpType]
+final case class LiteralPhrase(d: OperationalSemantics.Data, dt: DataType)
+  extends Phrase[ExpType] {
+  override lazy val t = ExpType(dt)
+}
 
 object Phrase {
   // substitutes `phrase` for `for` in `in`, i.e. in [ phrase / for ]

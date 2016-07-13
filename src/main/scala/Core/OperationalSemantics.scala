@@ -164,7 +164,7 @@ object OperationalSemantics {
         p match {
           case IdentPhrase(name, _) => s(name)
 
-          case LiteralPhrase(d) => d
+          case LiteralPhrase(d, _) => d
 
           case UnaryOpPhrase(op, x) =>
             op match {

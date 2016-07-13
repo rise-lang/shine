@@ -6,11 +6,14 @@ import Core.VisitAndRebuild.fun
 import Core._
 import DSL.typed._
 
+import scala.language.postfixOps
+import scala.language.reflectiveCalls
+
 import scala.xml.Elem
 
 final case class Gather(n: Nat,
                         dt: DataType,
-                        idxF: Phrase[`(nat)->`[ExpType -> ExpType]],
+                        idxF: Phrase[ExpType -> ExpType],
                         array: Phrase[ExpType])
   extends HighLevelCombinator {
 
@@ -18,37 +21,38 @@ final case class Gather(n: Nat,
 
   override def typeCheck(): Unit = {
     import TypeChecker._
-    idxF match {
-      case NatDependentLambdaPhrase(m, _) =>
-        (n: Nat) -> (dt: DataType) ->
-          (idxF `:` t"($m : nat) -> exp[idx($m)] -> exp[idx($m)]") ->
-          (array `:` exp"[$n.$dt]") ->
-          `type`
-      case _ => throw new Exception("This should not happen")
-    }
+    (n: Nat) -> (dt: DataType) ->
+      (idxF `:` t"exp[idx($n)] -> exp[idx($n)]") ->
+      (array `:` exp"[$n.$dt]") ->
+      `type`
   }
 
   override def inferTypes: Gather = {
     import TypeInference._
     val array_ = TypeInference(array)
-    val idxF_ = TypeInference(idxF)
     array_.t match {
-      case ExpType(ArrayType(n_, dt_)) => Gather(n_, dt_, idxF_, array_)
-      case x => error(x.toString, "ExpType(ArrayType)")
+      case ExpType(ArrayType(n_, dt_)) =>
+        val idxF_ = TypeInference(idxF)
+        idxF_.t match {
+          case FunctionType(ExpType(IndexType(m)), _) =>
+            Gather(n_, dt_, idxF_ `[` n_ `/` m `]`, array_)
+          case x => error(x.toString, "exp[idx(n)] -> exp[idx(n)]")
+        }
+      case x => error(x.toString, "exp[n.dt]")
     }
   }
 
   override def eval(s: Store): Data = {
-//    import OperationalSemantics._
-//    OperationalSemantics.eval(s, array) match {
-//      case ArrayData(a) =>
-//        val res = Array[Data](a.length)
-//        for (i <- a.indices) {
-//          res(i) = a(idxF(i, array.t.dataType).eval)
-//        }
-//        ArrayData(res.toVector)
-//      case _ => throw new Exception("This should not happen")
-//    }
+    //    import OperationalSemantics._
+    //    OperationalSemantics.eval(s, array) match {
+    //      case ArrayData(a) =>
+    //        val res = Array[Data](a.length)
+    //        for (i <- a.indices) {
+    //          res(i) = a(idxF(i, array.t.dataType).eval)
+    //        }
+    //        ArrayData(res.toVector)
+    //      case _ => throw new Exception("This should not happen")
+    //    }
     ???
   }
 
@@ -67,7 +71,7 @@ final case class Gather(n: Nat,
 
     val e = array
 
-    exp(e)(λ(exp"[$n.$dt]")( x =>
+    exp(e)(λ(exp"[$n.$dt]")(x =>
       C(Gather(n, dt, idxF, x))
     ))
   }
@@ -75,7 +79,8 @@ final case class Gather(n: Nat,
   override def prettyPrint: String = s"(gather idxF ${PrettyPrinter(array)})"
 
   override def xmlPrinter: Elem =
-    <gather ixdF={ToString(idxF)}>
-      {Core.xmlPrinter(array)}
+    <gather>
+      <idxF>{Core.xmlPrinter(idxF)}</idxF>
+      <input>{Core.xmlPrinter(array)}</input>
     </gather>
 }

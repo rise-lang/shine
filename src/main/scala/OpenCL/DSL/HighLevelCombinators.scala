@@ -83,5 +83,5 @@ object reduceSeq {
 
 object vectorize {
   def apply(len: Int, f: Float) =
-    LiteralPhrase(VectorData(Vector.fill(len)(FloatData(f))))
+    LiteralPhrase(VectorData(Vector.fill(len)(FloatData(f))), VectorType(len, float))
 }

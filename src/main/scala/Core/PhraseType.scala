@@ -38,7 +38,7 @@ final case class NatDependentFunctionType[T <: PhraseType](x: NatIdentifier, t: 
 object PhraseType {
 
   def substitute[T <: PhraseType](ae: Nat,
-                                  `for`: NatIdentifier,
+                                  `for`: Nat,
                                   in: Phrase[T]): Phrase[T] = {
 
     case class fun() extends VisitAndRebuild.fun {
@@ -53,7 +53,7 @@ object PhraseType {
 
   }
 
-  def substitute(ae: Nat, `for`: NatIdentifier, in: PhraseType): PhraseType = {
+  def substitute(ae: Nat, `for`: Nat, in: PhraseType): PhraseType = {
     in match {
       case b: BasePhraseTypes => b match {
         case e: ExpType => ExpType(substitute(ae, `for`, e.dataType))
@@ -71,7 +71,7 @@ object PhraseType {
     }
   }
 
-  def substitute[T <: DataType](ae: Nat, `for`: NatIdentifier, in: T): T = {
+  def substitute[T <: DataType](ae: Nat, `for`: Nat, in: T): T = {
     (in match {
       case i: IndexType => IndexType(ArithExpr.substitute(i.size, Map((`for`, ae))))
       case b: BasicType => b
@@ -83,7 +83,7 @@ object PhraseType {
     }).asInstanceOf[T]
   }
 
-  def substitute(ae: Nat, `for`: NatIdentifier, in: Nat): Nat = {
+  def substitute(ae: Nat, `for`: Nat, in: Nat): Nat = {
     ArithExpr.substitute(in, Map((`for`, ae)))
   }
 

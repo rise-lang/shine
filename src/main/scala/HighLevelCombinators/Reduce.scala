@@ -65,7 +65,8 @@ abstract class AbstractReduce(n: Nat,
     OperationalSemantics.eval(s, array) match {
       case ArrayData(xs) =>
         ArrayData(Vector(xs.fold(initE) {
-          (x, y) => OperationalSemantics.eval(s, fE(LiteralPhrase(x))(LiteralPhrase(y)))
+          (x, y) => OperationalSemantics.eval(s,
+            fE(LiteralPhrase(x, x.dataType))(LiteralPhrase(y, y.dataType)))
         }))
       case _ => throw new Exception("This should not happen")
     }

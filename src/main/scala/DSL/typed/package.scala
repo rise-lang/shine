@@ -77,9 +77,7 @@ package object typed {
     def wr: Proj2Phrase[ExpType, AccType] = π2(v)
   }
 
-  implicit def toLiteralInt(i: Int): LiteralPhrase = LiteralPhrase(i)
-
-//  implicit def toArithExpr(i: IdentPhrase[ExpType]): NamedVar = NamedVar(i.name)
+  implicit def toLiteralInt(i: Int): LiteralPhrase = LiteralPhrase(i, int)
 
 
   implicit def toPair[T1 <: PhraseType, T2 <: PhraseType](pair: (Phrase[T1], Phrase[T2])): PairPhrase[T1, T2] =

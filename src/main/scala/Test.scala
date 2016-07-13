@@ -38,7 +38,7 @@ object Test extends App {
     store = store + (out.name -> 0)
 
     val p_ = `new`(int, PrivateMemory, v =>
-      (π2(v) := LiteralPhrase(42) + LiteralPhrase(1)) `;`
+      (π2(v) := LiteralPhrase(42, int) + LiteralPhrase(1, int)) `;`
         `new`(int, PrivateMemory, v2 =>
           (π2(v2) := π1(v) + 1) `;`
             (π2(v) := π1(v2))
@@ -971,23 +971,6 @@ object Test extends App {
     val ysVectorT = ExpType(ArrayType(n, int))
     val aT = ExpType(int)
     val bT = ExpType(int)
-
-    val reorderWithStride = (s: ArithExpr) => {
-      (i: ArithExpr, t: DataType) => {
-        val n = ir.Type.getLength(DataType.toType(t)) /^ s
-        (i / n) + s * (i % n)
-      }
-    }
-
-    val reorderWithStridePhrase = {
-      implicit def toArithExpr(i: IdentPhrase[ExpType]): NamedVar = NamedVar(i.name)
-      _Λ_(s =>
-        _Λ_(n => λ(exp"[idx($n)]")(i => {
-          val m = n /^ s
-          (i / m) + s * (i % m)
-        }))
-      )
-    }
 
     val p =
       λ(matrixT)(mat => λ(xsVectorT)(xs => λ(ysVectorT)(ys => λ(aT)(a => λ(bT)(b => {

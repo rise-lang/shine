@@ -39,7 +39,7 @@ object TypeOf {
       case IfThenElsePhrase(cond, thenP, elseP) =>
         thenP.t
 
-      case LiteralPhrase(d) => ExpType(d.dataType)
+      case LiteralPhrase(_, t) => t
 
       case UnaryOpPhrase(op, x) =>
         x.t match {

@@ -189,12 +189,7 @@ object CombinatorsToOpenCL {
 
     import DSL.typed._
 
-    val size = g.array.t.dataType match {
-      case ArrayType(n, _) => n
-      case _ => throw new Exception("This should not happen")
-    }
-
-    val newIdx = g.idxF(size)(LiteralPhrase(IndexData(idx._1)))
+    val newIdx = g.idxF(LiteralPhrase(IndexData(idx._1), IndexType(idx._1)))
     val n_ = OperationalSemantics.evalIndexExp(new OperationalSemantics.Store(), newIdx)
 
     ToOpenCL.exp(g.array, env, (n_, idx._2) :: stack, tupleAccess, dt)

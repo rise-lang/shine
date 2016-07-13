@@ -52,7 +52,7 @@ object VisitAndRebuild {
           case IfThenElsePhrase(cond, thenP, elseP) =>
             IfThenElsePhrase(apply(cond, f), apply(thenP, f), apply(elseP, f))
 
-          case l: LiteralPhrase => l
+          case LiteralPhrase(d, t) => LiteralPhrase(d, f(t))
 
           case UnaryOpPhrase(op, x) => UnaryOpPhrase(op, apply(x, f))
 
