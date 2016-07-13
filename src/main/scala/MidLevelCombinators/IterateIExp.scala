@@ -9,13 +9,13 @@ import OpenCL.Core.GlobalMemory
 
 import scala.xml.Elem
 
-case class IterateIExp(n: Nat,
-                       m: Nat,
-                       k: Nat,
-                       dt: DataType,
-                       out: Phrase[ExpType -> CommandType],
-                       f: Phrase[`(nat)->`[AccType -> (ExpType -> CommandType)]],
-                       in: Phrase[ExpType])
+final case class IterateIExp(n: Nat,
+                             m: Nat,
+                             k: Nat,
+                             dt: DataType,
+                             out: Phrase[ExpType -> CommandType],
+                             f: Phrase[`(nat)->`[AccType -> (ExpType -> CommandType)]],
+                             in: Phrase[ExpType])
   extends MidLevelCombinator {
 
   override def typeCheck(): Unit = {
@@ -24,8 +24,8 @@ case class IterateIExp(n: Nat,
       case NatDependentLambdaPhrase(l, _) =>
         (n: Nat) -> (m: Nat) -> (k: Nat) -> (dt: DataType) ->
           (out `:` t"(exp[$m.$dt] -> comm)") ->
-          (f `:` t"($l : nat) -> acc[${l/^n}.$dt] -> exp[$l.$dt] -> comm") ->
-          (in `:` exp"[${n.pow(k)*m}.$dt]") ->
+          (f `:` t"($l : nat) -> acc[${l /^ n}.$dt] -> exp[$l.$dt] -> comm") ->
+          (in `:` exp"[${n.pow(k) * m}.$dt]") ->
           comm
 
       case _ => throw new Exception("This should not happen")
@@ -42,15 +42,15 @@ case class IterateIExp(n: Nat,
   }
 
   override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
-    val sEnd = n.pow(k)*m
-    val s = (l: Nat) => n.pow(k-l)*m
+    val sEnd = n.pow(k) * m
+    val s = (l: Nat) => n.pow(k - l) * m
 
     val addressSpace = GlobalMemory
 
-    `new`( ArrayType(sEnd, dt), addressSpace, buf1 => {
-      `new`( ArrayType(sEnd, dt), addressSpace, buf2 => {
+    `new`(ArrayType(sEnd, dt), addressSpace, buf1 => {
+      `new`(ArrayType(sEnd, dt), addressSpace, buf2 => {
         SubstituteImplementations(MapI(sEnd, dt, dt, buf1.wr,
-          λ( AccType(dt) ) { o => λ( ExpType(dt) ) { x => o `:=` x } }, in), env) `;`
+          λ(AccType(dt)) { o => λ(ExpType(dt)) { x => o `:=` x } }, in), env) `;`
           dblBufFor(sEnd, dt, addressSpace, buf1, buf2, k,
             _Λ_(l => {
               val s_l = s(l)
@@ -63,8 +63,8 @@ case class IterateIExp(n: Nat,
             }),
             out
           )
-      } )
-    } )
+      })
+    })
   }
 
   override def prettyPrint: String = s"(iterateIExp ${PrettyPrinter(out)} ${PrettyPrinter(f)} ${PrettyPrinter(in)})"

@@ -8,12 +8,12 @@ import apart.arithmetic._
 import opencl.generator.OpenCLAST
 import opencl.generator.OpenCLAST.{Block, BlockMember}
 
-abstract class OpenCLParFor(override val n: ArithExpr,
-                            override val dt: DataType,
-                            override val out: Phrase[AccType],
-                            override val body: Phrase[ExpType -> (AccType -> CommandType)]
+abstract class OpenCLParFor(n: ArithExpr,
+                            dt: DataType,
+                            out: Phrase[AccType],
+                            body: Phrase[ExpType -> (AccType -> CommandType)])
+  extends AbstractParFor(n, dt, out, body) with GeneratableComm {
 
-                           ) extends AbstractParFor(n, dt, out, body) with GeneratableComm {
   protected var env: ToOpenCL.Environment = null
 
   protected val name: String = newName()

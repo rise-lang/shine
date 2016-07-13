@@ -65,12 +65,13 @@ abstract class AbstractMapI(n: Nat,
     })
 }
 
-case class MapI(n: Nat,
-                dt1: DataType,
-                dt2: DataType,
-                out: Phrase[AccType],
-                f: Phrase[AccType -> (ExpType -> CommandType)],
-                in: Phrase[ExpType]) extends AbstractMapI(n, dt1, dt2, out, f, in) {
+final case class MapI(n: Nat,
+                      dt1: DataType,
+                      dt2: DataType,
+                      out: Phrase[AccType],
+                      f: Phrase[AccType -> (ExpType -> CommandType)],
+                      in: Phrase[ExpType])
+  extends AbstractMapI(n, dt1, dt2, out, f, in) {
 
   override def makeMapI = MapI
 

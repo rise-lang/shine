@@ -5,10 +5,10 @@ import Core._
 
 import scala.xml.Elem
 
-case class IdxAcc(n: Nat,
-                  dt: DataType,
-                  index: Phrase[ExpType],
-                  array: Phrase[AccType])
+final case class IdxAcc(n: Nat,
+                        dt: DataType,
+                        index: Phrase[ExpType],
+                        array: Phrase[AccType])
   extends LowLevelAccCombinator with TypeInferable {
 
   override lazy val `type` = acc"[$dt]"
@@ -47,7 +47,11 @@ case class IdxAcc(n: Nat,
 
   override def xmlPrinter: Elem =
     <idxAcc n={ToString(n)} dt={ToString(dt)}>
-      <output>{Core.xmlPrinter(array)}</output>
-      <index>{Core.xmlPrinter(index)}</index>
+      <output>
+        {Core.xmlPrinter(array)}
+      </output>
+      <index>
+        {Core.xmlPrinter(index)}
+      </index>
     </idxAcc>
 }

@@ -2,7 +2,7 @@ package OpenCL.Core
 
 import Core.{AccType, CommandType, DataType, _}
 import LowLevelCombinators._
-import OpenCL.LowLevelCombinators.{ParForGlobal, ParForLocal, ParForWorkgroup}
+import OpenCL.LowLevelCombinators.{ParForGlobal, ParForLocal, ParForWorkGroup}
 import apart.arithmetic.ArithExpr
 
 object AdjustMemoryAllocation {
@@ -22,20 +22,20 @@ object AdjustMemoryAllocation {
               case PrivateMemory => Continue(n, this)
             }
 
-          case pf: AbstractParFor =>
-            pf match {
-              case ParForGlobal(_, _, _, _) | ParForWorkgroup(_, _, _, _) =>
-                val t = DataType.toType(pf.out.t.dataType)
-                val len = ir.Type.getMaxLength(t)
-                Continue(pf, fun(numGlb * len, numLcl, numPvt))
-
-              case ParForLocal(_, _, _, _) =>
-                val t = DataType.toType(pf.out.t.dataType)
-                val len = ir.Type.getMaxLength(t)
-                Continue(pf, fun(numGlb * len, numLcl * len, numPvt))
-
-              case _ => Continue(pf, this)
-            }
+//          case pf: AbstractParFor =>
+//            pf match {
+//              case ParForGlobal(_, _, _, _) | ParForWorkgroup(_, _, _, _) =>
+//                val t = DataType.toType(pf.out.t.dataType)
+//                val len = ir.Type.getMaxLength(t)
+//                Continue(pf, fun(numGlb * len, numLcl, numPvt))
+//
+//              case ParForLocal(_, _, _, _) =>
+//                val t = DataType.toType(pf.out.t.dataType)
+//                val len = ir.Type.getMaxLength(t)
+//                Continue(pf, fun(numGlb * len, numLcl * len, numPvt))
+//
+//              case _ => Continue(pf, this)
+//            }
 
           case _ => Continue(p, this)
         }

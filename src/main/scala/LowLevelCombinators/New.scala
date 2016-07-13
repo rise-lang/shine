@@ -6,14 +6,15 @@ import DSL.typed._
 
 import scala.xml.Elem
 
-case class New(dt: DataType,
-               addressSpace: AddressSpace,
-               f: Phrase[(ExpType x AccType) -> CommandType])
+final case class New(dt: DataType,
+                     addressSpace: AddressSpace,
+                     f: Phrase[(ExpType x AccType) -> CommandType])
   extends LowLevelCommCombinator {
 
   override def typeCheck(): Unit = {
     import TypeChecker._
-    (dt: DataType) -> (f `:` t"var[$dt] -> comm") -> comm
+    (dt: DataType) -> /* (addressSpace: AddressSpace) -> */
+      (f `:` t"var[$dt] -> comm") -> comm
   }
 
   override def eval(s: Store): Store = {

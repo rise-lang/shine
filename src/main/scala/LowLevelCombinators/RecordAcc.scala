@@ -5,13 +5,19 @@ import Core._
 
 import scala.xml.Elem
 
-case class RecordAcc(fst: Phrase[AccType],
-                     snd: Phrase[AccType])
+final case class RecordAcc(dt1: DataType,
+                           dt2: DataType,
+                           fst: Phrase[AccType],
+                           snd: Phrase[AccType])
   extends LowLevelAccCombinator {
 
-  override lazy val `type` = acc"[${fst.t.dataType} x ${snd.t.dataType}]"
+  override lazy val `type` = acc"[$dt1 x $dt2]"
 
-  override def typeCheck(): Unit = {}
+  override def typeCheck(): Unit = {
+    import TypeChecker._
+    (dt1: DataType) -> (dt2: DataType) ->
+      (fst `:` acc"[$dt1]") -> (snd `:` acc"[$dt2]") -> `type`
+  }
 
   override def eval(s: Store): AccIdentifier = {
     RecordIdentiers(
@@ -20,7 +26,8 @@ case class RecordAcc(fst: Phrase[AccType],
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[AccType] = {
-    RecordAcc(VisitAndRebuild(fst, fun), VisitAndRebuild(snd, fun))
+    RecordAcc(fun(dt1), fun(dt2),
+      VisitAndRebuild(fst, fun), VisitAndRebuild(snd, fun))
   }
 
   override def prettyPrint: String =

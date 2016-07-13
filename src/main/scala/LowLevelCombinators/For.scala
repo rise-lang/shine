@@ -6,8 +6,8 @@ import DSL.typed._
 
 import scala.xml.Elem
 
-case class For(n: Nat,
-               body: Phrase[ExpType -> CommandType])
+final case class For(n: Nat,
+                     body: Phrase[ExpType -> CommandType])
   extends LowLevelCommCombinator {
 
   override def typeCheck(): Unit = {
@@ -18,9 +18,9 @@ case class For(n: Nat,
   override def eval(s: Store): Store = {
     val nE = evalIndexExp(s, n)
     val bodyE = OperationalSemantics.eval(s, body)
-    (0 until nE.eval).foldLeft(s)( (s1, i) => {
+    (0 until nE.eval).foldLeft(s)((s1, i) =>
       OperationalSemantics.eval(s1, bodyE(LiteralPhrase(i)))
-    } )
+    )
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[CommandType] = {

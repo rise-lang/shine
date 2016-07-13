@@ -5,9 +5,9 @@ import Core._
 
 import scala.xml.Elem
 
-case class Assign(dt: BasicType,
-                  lhs: Phrase[AccType],
-                  rhs: Phrase[ExpType])
+final case class Assign(dt: BasicType,
+                        lhs: Phrase[AccType],
+                        rhs: Phrase[ExpType])
   extends LowLevelCommCombinator with TypeInferable {
 
   override def typeCheck(): Unit = {

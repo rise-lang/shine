@@ -13,7 +13,7 @@ abstract class To(dt1: DataType,
                   f: Phrase[ExpType -> ExpType],
                   input: Phrase[ExpType],
                   addressSpace: OpenCLAddressSpace,
-                  makeTo: (DataType, DataType, Phrase[ExpType -> ExpType], Phrase[ExpType]) => To)
+                  private val makeTo: (DataType, DataType, Phrase[ExpType -> ExpType], Phrase[ExpType]) => To)
   extends HighLevelCombinator {
 
   override lazy val `type` = exp"[$dt2]"

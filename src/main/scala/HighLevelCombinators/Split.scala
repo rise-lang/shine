@@ -8,10 +8,10 @@ import LowLevelCombinators.SplitAcc
 
 import scala.xml.Elem
 
-case class Split(n: Nat,
-                 m: Nat,
-                 dt: DataType,
-                 array: Phrase[ExpType])
+final case class Split(n: Nat,
+                       m: Nat,
+                       dt: DataType,
+                       array: Phrase[ExpType])
   extends HighLevelCombinator {
 
   override lazy val `type` = exp"[$m.$n.$dt]"

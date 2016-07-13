@@ -13,10 +13,12 @@ abstract class AbstractMap(n: Nat,
                            dt1: DataType,
                            dt2: DataType,
                            f: Phrase[ExpType -> ExpType],
-                           array: Phrase[ExpType],
-                           makeMap: (Nat, DataType, DataType, Phrase[ExpType -> ExpType], Phrase[ExpType]) => AbstractMap,
-                           makeMapI: (Nat, DataType, DataType, Phrase[AccType], Phrase[AccType -> (ExpType -> CommandType)], Phrase[ExpType]) => AbstractMapI)
+                           array: Phrase[ExpType])
   extends HighLevelCombinator {
+
+  def makeMap: (Nat, DataType, DataType, Phrase[ExpType -> ExpType], Phrase[ExpType]) => AbstractMap
+  def makeMapI: (Nat, DataType, DataType, Phrase[AccType], Phrase[AccType -> (ExpType -> CommandType)], Phrase[ExpType]) => AbstractMapI
+
 
   override lazy val `type` = exp"[$n.$dt2]"
 
@@ -106,9 +108,12 @@ abstract class AbstractMap(n: Nat,
     })
 }
 
-case class Map(n: Nat,
-               dt1: DataType,
-               dt2: DataType,
-               f: Phrase[ExpType -> ExpType],
-               array: Phrase[ExpType])
-  extends AbstractMap(n, dt1, dt2, f, array, Map, MapI)
+final case class Map(n: Nat,
+                     dt1: DataType,
+                     dt2: DataType,
+                     f: Phrase[ExpType -> ExpType],
+                     array: Phrase[ExpType])
+  extends AbstractMap(n, dt1, dt2, f, array) {
+  override def makeMap = Map
+  override def makeMapI = MapI
+}

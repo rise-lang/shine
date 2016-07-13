@@ -13,11 +13,12 @@ abstract class AbstractReduce(n: Nat,
                               dt2: DataType,
                               f: Phrase[ExpType -> (ExpType -> ExpType)],
                               init: Phrase[ExpType],
-                              array: Phrase[ExpType],
-                              makeReduce: (Nat, DataType, DataType, Phrase[ExpType -> (ExpType -> ExpType)], Phrase[ExpType], Phrase[ExpType]) => AbstractReduce,
-                              makeReduceIAcc: (Nat, DataType, DataType, Phrase[AccType], Phrase[AccType -> (ExpType -> (ExpType -> CommandType))], Phrase[ExpType], Phrase[ExpType]) => ReduceIAcc,
-                              makeReduceIExp: (Nat, DataType, DataType, Phrase[ExpType -> CommandType], Phrase[AccType -> (ExpType -> (ExpType -> CommandType))], Phrase[ExpType], Phrase[ExpType]) => ReduceIExp)
+                              array: Phrase[ExpType])
   extends HighLevelCombinator {
+
+  def makeReduce: (Nat, DataType, DataType, Phrase[ExpType -> (ExpType -> ExpType)], Phrase[ExpType], Phrase[ExpType]) => AbstractReduce
+  def makeReduceIAcc: (Nat, DataType, DataType, Phrase[AccType], Phrase[AccType -> (ExpType -> (ExpType -> CommandType))], Phrase[ExpType], Phrase[ExpType]) => ReduceIAcc
+  def makeReduceIExp: (Nat, DataType, DataType, Phrase[ExpType -> CommandType], Phrase[AccType -> (ExpType -> (ExpType -> CommandType))], Phrase[ExpType], Phrase[ExpType]) => ReduceIExp
 
   override lazy val `type` = exp"[$dt2]"
 
@@ -128,10 +129,17 @@ abstract class AbstractReduce(n: Nat,
     })
 }
 
-case class Reduce(n: Nat,
-                  dt1: DataType,
-                  dt2: DataType,
-                  f: Phrase[ExpType -> (ExpType -> ExpType)],
-                  init: Phrase[ExpType],
-                  array: Phrase[ExpType])
-  extends AbstractReduce(n, dt1, dt2, f, init, array, Reduce, ReduceIAcc, ReduceIExp)
+final case class Reduce(n: Nat,
+                        dt1: DataType,
+                        dt2: DataType,
+                        f: Phrase[ExpType -> (ExpType -> ExpType)],
+                        init: Phrase[ExpType],
+                        array: Phrase[ExpType])
+  extends AbstractReduce(n, dt1, dt2, f, init, array) {
+  override def makeReduce = Reduce
+
+  override def makeReduceIExp = ReduceIExp
+
+  override def makeReduceIAcc = ReduceIAcc
+}
+

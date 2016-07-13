@@ -5,8 +5,8 @@ import Core._
 
 import scala.xml.Elem
 
-case class Seq(c1: Phrase[CommandType],
-               c2: Phrase[CommandType])
+final case class Seq(c1: Phrase[CommandType],
+                     c2: Phrase[CommandType])
   extends LowLevelCommCombinator {
 
   override def typeCheck(): Unit = {
@@ -28,7 +28,11 @@ case class Seq(c1: Phrase[CommandType],
 
   override def xmlPrinter: Elem =
     <seq>
-      <c1>{Core.xmlPrinter(c1)}</c1>
-      <c2>{Core.xmlPrinter(c2)}</c2>
+      <c1>
+        {Core.xmlPrinter(c1)}
+      </c1>
+      <c2>
+        {Core.xmlPrinter(c2)}
+      </c2>
     </seq>
 }

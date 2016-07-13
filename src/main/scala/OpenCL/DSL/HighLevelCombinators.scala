@@ -69,6 +69,19 @@ object asScalar {
     AsScalar(null, null, null, array)
 }
 
+object reduceSeq {
+  def apply(f: Phrase[ExpType -> (ExpType -> ExpType)]): Phrase[(ExpType x ExpType) -> ExpType] =
+    λ((init, array) => reduceSeq(f, init, array))
+
+  def apply(f: Phrase[ExpType -> (ExpType -> ExpType)], init: Phrase[ExpType]): Phrase[ExpType -> ExpType] =
+    λ(array => reduceSeq(f, init, array))
+
+  def apply(f: Phrase[ExpType -> (ExpType -> ExpType)],
+            init: Phrase[ExpType],
+            array: Phrase[ExpType]) =
+    ReduceSeq(null, null, null, f, init, array)
+}
+
 object vectorize {
   def apply(len: Int, f: Float) =
     LiteralPhrase(VectorData(Vector.fill(len)(FloatData(f))))

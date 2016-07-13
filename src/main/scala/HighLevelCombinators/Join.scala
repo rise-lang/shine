@@ -8,10 +8,10 @@ import LowLevelCombinators.JoinAcc
 
 import scala.xml.Elem
 
-case class Join(n: Nat,
-                m: Nat,
-                dt: DataType,
-                array: Phrase[ExpType])
+final case class Join(n: Nat,
+                      m: Nat,
+                      dt: DataType,
+                      array: Phrase[ExpType])
   extends HighLevelCombinator {
 
   override lazy val `type` = exp"[${n * m}.$dt]"

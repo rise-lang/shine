@@ -5,14 +5,14 @@ import Core._
 
 import scala.xml.Elem
 
-case class DoubleBufferFor(n: Nat,
-                           dt: DataType,
-                           addressSpace: AddressSpace,
-                           buffer1: Phrase[VarType],
-                           buffer2: Phrase[VarType],
-                           k: Nat,
-                           body: Phrase[`(nat)->`[AccType -> (ExpType -> CommandType)]],
-                           C: Phrase[ExpType -> CommandType])
+final case class DoubleBufferFor(n: Nat,
+                                 dt: DataType,
+                                 addressSpace: AddressSpace,
+                                 buffer1: Phrase[VarType],
+                                 buffer2: Phrase[VarType],
+                                 k: Nat,
+                                 body: Phrase[`(nat)->`[AccType -> (ExpType -> CommandType)]],
+                                 C: Phrase[ExpType -> CommandType])
   extends LowLevelCommCombinator {
 
   override def typeCheck(): Unit = {

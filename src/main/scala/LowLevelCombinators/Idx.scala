@@ -5,10 +5,10 @@ import Core._
 
 import scala.xml.Elem
 
-case class Idx(n: Nat,
-               dt: DataType,
-               index: Phrase[ExpType],
-               array: Phrase[ExpType])
+final case class Idx(n: Nat,
+                     dt: DataType,
+                     index: Phrase[ExpType],
+                     array: Phrase[ExpType])
   extends LowLevelExpCombinator {
 
   override lazy val `type` = exp"[$dt]"

@@ -8,13 +8,13 @@ import OpenCL.Core.PrivateMemory
 
 import scala.xml.Elem
 
-case class ReduceIAcc(n: Nat,
-                      dt1: DataType,
-                      dt2: DataType,
-                      out: Phrase[AccType],
-                      f: Phrase[AccType -> (ExpType -> (ExpType -> CommandType))],
-                      init: Phrase[ExpType],
-                      in: Phrase[ExpType])
+final case class ReduceIAcc(n: Nat,
+                            dt1: DataType,
+                            dt2: DataType,
+                            out: Phrase[AccType],
+                            f: Phrase[AccType -> (ExpType -> (ExpType -> CommandType))],
+                            init: Phrase[ExpType],
+                            in: Phrase[ExpType])
   extends MidLevelCombinator {
 
   override def typeCheck(): Unit = {

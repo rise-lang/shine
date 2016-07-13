@@ -8,13 +8,13 @@ import OpenCL.Core.PrivateMemory
 
 import scala.xml.Elem
 
-case class ReduceIExp(n: Nat,
-                      dt1: DataType,
-                      dt2: DataType,
-                      out: Phrase[ExpType -> CommandType],
-                      f: Phrase[AccType -> (ExpType -> (ExpType -> CommandType))],
-                      init: Phrase[ExpType],
-                      in: Phrase[ExpType])
+final case class ReduceIExp(n: Nat,
+                            dt1: DataType,
+                            dt2: DataType,
+                            out: Phrase[ExpType -> CommandType],
+                            f: Phrase[AccType -> (ExpType -> (ExpType -> CommandType))],
+                            init: Phrase[ExpType],
+                            in: Phrase[ExpType])
   extends MidLevelCombinator {
 
   override def typeCheck(): Unit = {
@@ -66,10 +66,10 @@ case class ReduceIExp(n: Nat,
     `new`(init.t.dataType, PrivateMemory, accum => {
       (accum.wr `:=` init) `;`
         `for`(n, i => {
-          SubstituteImplementations( f(accum.wr)(in `@` i)(accum.rd), env )
+          SubstituteImplementations(f(accum.wr)(in `@` i)(accum.rd), env)
         }) `;`
         out(accum.rd)
-    } )
+    })
   }
 
 }

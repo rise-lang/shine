@@ -7,9 +7,9 @@ import DSL.typed._
 
 import scala.xml.Elem
 
-case class Fst(dt1: DataType,
-               dt2: DataType,
-               record: Phrase[ExpType])
+final case class Fst(dt1: DataType,
+                     dt2: DataType,
+                     record: Phrase[ExpType])
   extends LowLevelExpCombinator {
 
   override lazy val `type` = exp"[$dt1]"

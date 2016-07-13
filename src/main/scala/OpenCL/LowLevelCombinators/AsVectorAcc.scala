@@ -2,24 +2,24 @@ package OpenCL.LowLevelCombinators
 
 import Core.OperationalSemantics._
 import Core._
-import apart.arithmetic.ArithExpr
 
 import opencl.generator.OpenCLAST.VarRef
 import OpenCL.Core.{GeneratableAcc, ToOpenCL, ViewAcc}
 
 import scala.xml.Elem
 
-case class AsVectorAcc(n: ArithExpr,
-                       m: ArithExpr,
-                       dt: BasicType,
-                       array: Phrase[AccType])
+final case class AsVectorAcc(n: Nat,
+                             m: Nat,
+                             dt: BasicType,
+                             array: Phrase[AccType])
   extends LowLevelAccCombinator with ViewAcc with GeneratableAcc {
 
   override lazy val `type` = acc"[${n * m}, dt]"
 
   override def typeCheck(): Unit = {
     import TypeChecker._
-    array checkType acc"[$n.${VectorType(m, dt)}]"
+    (n: Nat) -> (m: Nat) -> (dt: BasicType) ->
+      (array `:` acc"[$n.${VectorType(m, dt)}]") -> `type`
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[AccType] = {
@@ -31,8 +31,8 @@ case class AsVectorAcc(n: ArithExpr,
   override def toOpenCL(env: ToOpenCL.Environment): VarRef = ???
 
   override def toOpenCL(env: ToOpenCL.Environment,
-                        arrayAccess: List[(ArithExpr, ArithExpr)],
-                        tupleAccess: List[ArithExpr],
+                        arrayAccess: List[(Nat, Nat)],
+                        tupleAccess: List[Nat],
                         dt: DataType): VarRef = {
     val top = arrayAccess.head
     val newAAS = ((top._1 /^ n, top._2) :: arrayAccess.tail).map(x => (x._1, x._2 * n))

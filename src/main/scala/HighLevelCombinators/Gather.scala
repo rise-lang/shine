@@ -8,10 +8,10 @@ import DSL.typed._
 
 import scala.xml.Elem
 
-case class Gather(n: Nat,
-                  dt: DataType,
-                  idxF: (Nat, DataType) => Nat,
-                  array: Phrase[ExpType])
+final case class Gather(n: Nat,
+                        dt: DataType,
+                        idxF: (Nat, DataType) => Nat,
+                        array: Phrase[ExpType])
   extends HighLevelCombinator {
 
   override lazy val `type` = exp"[$n.$dt]"
@@ -39,7 +39,7 @@ case class Gather(n: Nat,
       case ArrayData(a) =>
         val res = Array[Data](a.length)
         for (i <- a.indices) {
-          res(i) =  a( idxF(i, array.t.dataType).eval )
+          res(i) = a(idxF(i, array.t.dataType).eval)
         }
         ArrayData(res.toVector)
       case _ => throw new Exception("This should not happen")

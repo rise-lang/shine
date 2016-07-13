@@ -10,13 +10,13 @@ import apart.arithmetic.{?, Cst}
 
 import scala.xml.Elem
 
-case class IterateIAcc(n: Nat,
-                       m: Nat,
-                       k: Nat,
-                       dt: DataType,
-                       out: Phrase[AccType],
-                       f: Phrase[`(nat)->`[AccType -> (ExpType -> CommandType)]],
-                       in: Phrase[ExpType])
+final case class IterateIAcc(n: Nat,
+                             m: Nat,
+                             k: Nat,
+                             dt: DataType,
+                             out: Phrase[AccType],
+                             f: Phrase[`(nat)->`[AccType -> (ExpType -> CommandType)]],
+                             in: Phrase[ExpType])
   extends MidLevelCombinator {
 
   override def typeCheck(): Unit = {
@@ -25,8 +25,8 @@ case class IterateIAcc(n: Nat,
       case NatDependentLambdaPhrase(l, _) =>
         (n: Nat) -> (m: Nat) -> (k: Nat) -> (dt: DataType) ->
           (out `:` acc"[$m.$dt]") ->
-          (f `:` t"($l : nat) -> acc[${l/^n}.$dt] -> exp[$l.$dt] -> comm") ->
-          (in `:` exp"[${n.pow(k)*m}.$dt]") ->
+          (f `:` t"($l : nat) -> acc[${l /^ n}.$dt] -> exp[$l.$dt] -> comm") ->
+          (in `:` exp"[${n.pow(k) * m}.$dt]") ->
           comm
 
       case _ => throw new Exception("This should not happen")
@@ -47,7 +47,7 @@ case class IterateIAcc(n: Nat,
     val identifier = ToOpenCL.acc(out, ToOpenCL.Environment(?, ?))
     val addressSpace = env.addressSpace(identifier.name)
 
-    val sEnd = n.pow(k)*m
+    val sEnd = n.pow(k) * m
 
     val iterateLoop = (start: Nat,
                        end: Nat,
@@ -97,7 +97,7 @@ case class IterateIAcc(n: Nat,
       }
     }
 
-    val s = (l: Nat) => n.pow(k-l)*m
+    val s = (l: Nat) => n.pow(k - l) * m
 
     k match {
       case Cst(x) if x > 2 =>

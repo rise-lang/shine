@@ -11,10 +11,10 @@ import OpenCL.Core.{ToOpenCL, ViewExp}
 
 import scala.xml.Elem
 
-case class AsVector(n: Nat,
-                    m: Nat,
-                    dt: BasicType,
-                    array: Phrase[ExpType])
+final case class AsVector(n: Nat,
+                          m: Nat,
+                          dt: BasicType,
+                          array: Phrase[ExpType])
   extends HighLevelCombinator with ViewExp {
 
   override lazy val `type` = exp"[$m.${VectorType(n, dt)}]"
@@ -22,7 +22,7 @@ case class AsVector(n: Nat,
   override def typeCheck(): Unit = {
     import TypeChecker._
     (n: Nat) -> (m: Nat) -> (dt: DataType) ->
-      (array `:` exp"[${m*n}.$dt]") ->
+      (array `:` exp"[${m * n}.$dt]") ->
       `type`
   }
 

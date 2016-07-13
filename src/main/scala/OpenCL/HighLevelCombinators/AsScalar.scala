@@ -11,10 +11,10 @@ import OpenCL.Core.{ToOpenCL, ViewExp}
 
 import scala.xml.Elem
 
-case class AsScalar(n: Nat,
-                    m: Nat,
-                    dt: BasicType,
-                    array: Phrase[ExpType])
+final case class AsScalar(n: Nat,
+                          m: Nat,
+                          dt: BasicType,
+                          array: Phrase[ExpType])
   extends HighLevelCombinator with ViewExp {
 
   override lazy val `type` = exp"[${n * m}.$dt]"

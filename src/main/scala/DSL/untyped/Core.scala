@@ -54,5 +54,5 @@ object π2 {
 }
 
 object record {
-  def apply(fst: Phrase[ExpType], snd: Phrase[ExpType]) = Record(fst, snd)
+  def apply(fst: Phrase[ExpType], snd: Phrase[ExpType]) = Record(null, null, fst, snd)
 }

@@ -8,12 +8,12 @@ import apart.arithmetic._
 
 import scala.xml.Elem
 
-case class Iterate(n: Nat,
-                   m: Nat,
-                   k: Nat,
-                   dt: DataType,
-                   f: Phrase[`(nat)->`[ExpType -> ExpType]],
-                   array: Phrase[ExpType])
+final case class Iterate(n: Nat,
+                         m: Nat,
+                         k: Nat,
+                         dt: DataType,
+                         f: Phrase[`(nat)->`[ExpType -> ExpType]],
+                         array: Phrase[ExpType])
   extends HighLevelCombinator {
 
   override lazy val `type` = {
@@ -28,7 +28,7 @@ case class Iterate(n: Nat,
     import TypeChecker._
     f match {
       case NatDependentLambdaPhrase(l, _) =>
-        (n: Nat) -> (m: Nat) -> (k: Nat) ->(dt: DataType) ->
+        (n: Nat) -> (m: Nat) -> (k: Nat) -> (dt: DataType) ->
           (f `:` t"($l : nat) -> exp[$l.$dt] -> exp[${l /^ n}.$dt]") ->
           (array `:` exp"[$m.$dt]") ->
           `type`
@@ -44,7 +44,7 @@ case class Iterate(n: Nat,
         f match {
           case NatDependentLambdaPhrase(l, body) =>
             val b = TypeInference.setParamAndInferType(body, exp"[$l.$dt_]")
-            val f_ = NatDependentLambdaPhrase(l, b)//f.copy(body=b)
+            val f_ = NatDependentLambdaPhrase(l, b) //f.copy(body=b)
             f_.t match {
               case NatDependentFunctionType(_,
               FunctionType(ExpType(ArrayType(l_, dt1_)),
@@ -112,8 +112,8 @@ case class Iterate(n: Nat,
     exp(array)(λ(ExpType(ArrayType(m, dt))) { x =>
       IterateIAcc(n, m = m /^ n.pow(k), k, dt, A,
         _Λ_(l =>
-          λ( acc"[${l /^ n}.$dt]" ) { o =>
-            λ( exp"[$l.$dt]" ) { x =>
+          λ(acc"[${l /^ n}.$dt]") { o =>
+            λ(exp"[$l.$dt]") { x =>
               acc(f(l)(x))(o)
             }
           }
@@ -131,8 +131,8 @@ case class Iterate(n: Nat,
     exp(array)(λ(ExpType(ArrayType(m, dt))) { x =>
       IterateIExp(n, m = m /^ n.pow(k), k, dt, C,
         _Λ_(l =>
-          λ( acc"[${l /^ n}.$dt]" ) { o =>
-            λ( exp"[$l.$dt]" ) { x =>
+          λ(acc"[${l /^ n}.$dt]") { o =>
+            λ(exp"[$l.$dt]") { x =>
               acc(f(l)(x))(o)
             }
           }

@@ -6,10 +6,10 @@ import DSL.typed._
 
 import scala.xml.Elem
 
-abstract class AbstractParFor(val n: Nat,
-                              val dt: DataType,
-                              val out: Phrase[AccType],
-                              val body: Phrase[ExpType -> (AccType -> CommandType)])
+abstract class AbstractParFor(n: Nat,
+                              dt: DataType,
+                              out: Phrase[AccType],
+                              body: Phrase[ExpType -> (AccType -> CommandType)])
   extends LowLevelCommCombinator {
 
   override def typeCheck(): Unit = {
@@ -54,10 +54,10 @@ abstract class AbstractParFor(val n: Nat,
 
 }
 
-case class ParFor(override val n: Nat,
-                  override val dt: DataType,
-                  override val out: Phrase[AccType],
-                  override val body: Phrase[ExpType -> (AccType -> CommandType)])
+final case class ParFor(n: Nat,
+                        dt: DataType,
+                        out: Phrase[AccType],
+                        body: Phrase[ExpType -> (AccType -> CommandType)])
   extends AbstractParFor(n, dt, out, body) {
   override def makeParFor = ParFor
 }

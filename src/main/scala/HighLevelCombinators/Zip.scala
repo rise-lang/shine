@@ -8,11 +8,11 @@ import MidLevelCombinators.MapI
 
 import scala.xml.Elem
 
-case class Zip(n: Nat,
-               dt1: DataType,
-               dt2: DataType,
-               lhs: Phrase[ExpType],
-               rhs: Phrase[ExpType])
+final case class Zip(n: Nat,
+                     dt1: DataType,
+                     dt2: DataType,
+                     lhs: Phrase[ExpType],
+                     rhs: Phrase[ExpType])
   extends HighLevelCombinator {
 
   override lazy val `type` = exp"[$n.($dt1 x $dt2)]"

@@ -5,9 +5,9 @@ import Core._
 
 import scala.xml.Elem
 
-case class FstAcc(dt1: DataType,
-                  dt2: DataType,
-                  record: Phrase[AccType])
+final case class FstAcc(dt1: DataType,
+                        dt2: DataType,
+                        record: Phrase[AccType])
   extends LowLevelAccCombinator {
 
   override lazy val `type` = acc"[$dt1]"

@@ -5,10 +5,10 @@ import Core._
 
 import scala.xml.Elem
 
-case class TruncExp(n: Nat,
-                    m: Nat,
-                    dt: DataType,
-                    array: Phrase[ExpType])
+final case class TruncExp(n: Nat,
+                          m: Nat,
+                          dt: DataType,
+                          array: Phrase[ExpType])
   extends LowLevelExpCombinator {
 
   override lazy val `type` = exp"[$m.$dt]"

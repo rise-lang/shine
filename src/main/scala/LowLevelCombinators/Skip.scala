@@ -7,7 +7,7 @@ import scala.xml.Elem
 
 case class Skip() extends LowLevelCommCombinator {
 
-  override def typeCheck(): Unit = {}
+  override def typeCheck(): Unit = { comm }
 
   override def eval(s: Store): Store = s
 

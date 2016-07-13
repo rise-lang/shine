@@ -5,10 +5,10 @@ import Core._
 
 import scala.xml.Elem
 
-case class JoinAcc(n: Nat,
-                   m: Nat,
-                   dt: DataType,
-                   array: Phrase[AccType])
+final case class JoinAcc(n: Nat,
+                         m: Nat,
+                         dt: DataType,
+                         array: Phrase[AccType])
   extends LowLevelAccCombinator {
 
   override lazy val `type` = acc"[$n.$m.$dt]"

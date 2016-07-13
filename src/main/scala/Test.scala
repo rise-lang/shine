@@ -829,7 +829,7 @@ object Test extends App {
 
     val scal = λ(a => λ(vec =>  mapSeq(λ(x => x * a )) $ vec ))
 
-    val dot = λ(xs => λ(ys => reduceSeq(add, 0) o mapSeq(mult) $ zip(xs, ys) ))
+    val dot = λ(xs => λ(ys => reduce(add, 0) o mapSeq(mult) $ zip(xs, ys) ))
 
     val p =
       λ(matrixT)(mat => λ(xsVectorT)(xs => λ(ysVectorT)(ys => {
