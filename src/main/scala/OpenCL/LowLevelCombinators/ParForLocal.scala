@@ -1,13 +1,12 @@
 package OpenCL.LowLevelCombinators
 
 import Core._
-import LowLevelCombinators.AbstractParFor
-import apart.arithmetic._
+import apart.arithmetic.{?, ContinuousRange, PosInf, RangeAdd}
 import opencl.generator.OpenCLAST._
 import opencl.generator.{get_local_id, get_local_size}
 
 
-final case class ParForLocal(n: ArithExpr,
+final case class ParForLocal(n: Nat,
                              dt: DataType,
                              out: Phrase[AccType],
                              body: Phrase[ExpType -> (AccType -> CommandType)])

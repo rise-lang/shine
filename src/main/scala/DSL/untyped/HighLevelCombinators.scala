@@ -2,7 +2,6 @@ package DSL.untyped
 
 import Core._
 import HighLevelCombinators._
-import apart.arithmetic.ArithExpr
 
 
 object map {
@@ -19,10 +18,10 @@ object zip {
 }
 
 object split {
-  def apply(n: ArithExpr): Phrase[ExpType -> ExpType] =
+  def apply(n: Nat): Phrase[ExpType -> ExpType] =
     λ(array => split(n, array))
 
-  def apply(n: ArithExpr, array: Phrase[ExpType]): Split =
+  def apply(n: Nat, array: Phrase[ExpType]): Split =
     Split(n, null, null, array)
 }
 
@@ -46,17 +45,17 @@ object reduce {
 }
 
 object iterate {
-  def apply(k: ArithExpr, f: Phrase[`(nat)->`[ExpType -> ExpType]]): Phrase[ExpType -> ExpType] =
+  def apply(k: Nat, f: Phrase[`(nat)->`[ExpType -> ExpType]]): Phrase[ExpType -> ExpType] =
     λ(array => iterate(k, f, array))
 
-  def apply(k: ArithExpr,
+  def apply(k: Nat,
             f: Phrase[`(nat)->`[ExpType -> ExpType]],
             array: Phrase[ExpType]): Iterate =
     Iterate(null, null, k, null, f, array)
 }
 
 object gather {
-  def apply(idxF: (ArithExpr, DataType) => ArithExpr) = λ(array =>
+  def apply(idxF: Phrase[`(nat)->`[ExpType -> ExpType]]) = λ(array =>
     Gather(null, null, idxF, array)
   )
 }

@@ -1,7 +1,5 @@
 package Core
 
-import apart.arithmetic.ArithExpr
-
 import scala.collection.immutable.HashMap
 import scala.language.implicitConversions
 import scala.language.postfixOps
@@ -10,7 +8,7 @@ import scala.language.reflectiveCalls
 object OperationalSemantics {
 
   sealed abstract class Data(val dataType: DataType)
-  final case class IndexData(i: ArithExpr) extends Data(int)
+  final case class IndexData(i: Nat) extends Data(IndexType(i))
   final case class BoolData(b: Boolean) extends Data(bool)
   final case class IntData(i: Int) extends Data(int) {
     override def toString = i.toString
@@ -52,7 +50,7 @@ object OperationalSemantics {
 
   sealed trait AccIdentifier
   case class NamedIdentifier(name: String) extends AccIdentifier
-  case class ArrayAccessIdentifier(array: AccIdentifier, index: ArithExpr) extends AccIdentifier
+  case class ArrayAccessIdentifier(array: AccIdentifier, index: Nat) extends AccIdentifier
   case class RecordIdentiers(fst: AccIdentifier, snd: AccIdentifier) extends AccIdentifier
 
   implicit def IntToIntData(i: Int): IntData = IntData(i)
@@ -232,7 +230,7 @@ object OperationalSemantics {
     }
   }
 
-  def evalIndexExp(s: Store, p: Phrase[ExpType]): ArithExpr = {
+  def evalIndexExp(s: Store, p: Phrase[ExpType]): Nat = {
     eval(s, p) match {
       case IndexData(i) => i
       case IntData(i) => i
@@ -245,6 +243,22 @@ object OperationalSemantics {
       case IntData(i) => i
       case IndexData(i) => i.eval
       case _ => throw new Exception("This should never happen")
+    }
+  }
+
+  def evalIntExp(p: Phrase[ExpType]): Int = {
+    evalIntExp(new Store(), p)
+  }
+
+  def toScalaOp(op: BinOpPhrase.Op.Value): (Nat, Nat) => Nat = {
+    op match {
+      case BinOpPhrase.Op.ADD => (x, y) => x + y
+      case BinOpPhrase.Op.SUB => (x, y) => x - y
+      case BinOpPhrase.Op.MUL => (x, y) => x * y
+      case BinOpPhrase.Op.DIV => (x, y) => x / y
+      case BinOpPhrase.Op.MOD => (x, y) => x % y
+      case BinOpPhrase.Op.GT => (x, y) => (x gt y) ?? 1 !! 0
+      case BinOpPhrase.Op.LT => (x, y) => (x lt 0) ?? 1 !! 0
     }
   }
 

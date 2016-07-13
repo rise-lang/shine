@@ -1,16 +1,15 @@
 package Core
 
-import apart.arithmetic.ArithExpr
 import scala.language.postfixOps
 import scala.language.reflectiveCalls
 
 // TODO: Discuss with Bob: this excludes if (as the condition needs to be properly evaluated)
 object Lift {
 
-  def liftNatDependentFunction[T <: PhraseType](p: Phrase[`(nat)->`[T]]): (ArithExpr => Phrase[T]) = {
+  def liftNatDependentFunction[T <: PhraseType](p: Phrase[`(nat)->`[T]]): (Nat => Phrase[T]) = {
     p match {
       case l: NatDependentLambdaPhrase[T] =>
-        (arg: ArithExpr) => l.body `[` arg `/` l.x `]`
+        (arg: Nat) => l.body `[` arg `/` l.x `]`
       case app: ApplyPhrase[a, `(nat)->`[T]] =>
         val fun = liftFunction(app.fun)
         liftNatDependentFunction(fun(app.arg))

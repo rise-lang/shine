@@ -1,5 +1,6 @@
 package OpenCL.Core
 
+import Core.OperationalSemantics.IndexData
 import Core._
 import DSL.typed.identifier
 import HighLevelCombinators._
@@ -186,9 +187,17 @@ object CombinatorsToOpenCL {
     val idx = arrayAccess.head
     val stack = arrayAccess.tail
 
-    val newIdx = g.idxF(idx._1, g.array.t.dataType)
+    import DSL.typed._
 
-    ToOpenCL.exp(g.array, env, (newIdx, idx._2) :: stack, tupleAccess, dt)
+    val size = g.array.t.dataType match {
+      case ArrayType(n, _) => n
+      case _ => throw new Exception("This should not happen")
+    }
+
+    val newIdx = g.idxF(size)(LiteralPhrase(IndexData(idx._1)))
+    val n_ = OperationalSemantics.evalIndexExp(new OperationalSemantics.Store(), newIdx)
+
+    ToOpenCL.exp(g.array, env, (n_, idx._2) :: stack, tupleAccess, dt)
 
   }
 

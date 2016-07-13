@@ -6,6 +6,8 @@ import OpenCL.DSL._
 import apart.arithmetic._
 import opencl.generator.OpenCLPrinter
 
+import scala.language.implicitConversions
+
 object dot extends App {
 
   val reorderWithStride = (s: ArithExpr) => {
@@ -13,6 +15,16 @@ object dot extends App {
       val n = ir.Type.getLength(DataType.toType(t)) /^ s
       (i / n) + s * (i % n)
     }
+  }
+
+  val reorderWithStridePhrase = {
+    implicit def toArithExpr(i: IdentPhrase[ExpType]): NamedVar = NamedVar(i.name)
+    _Λ_(s =>
+      _Λ_(n => λ(exp"[idx($n)]")(i => {
+        val m = n /^ s
+        (i / m) + s * (i % m)
+      }))
+    )
   }
 
   val N = SizeVar("N")
@@ -86,7 +98,7 @@ object dot extends App {
     join() o mapWorkgroup(
       mapLocal(
         reduceSeq(λ( x => λ( a => mult(x) + a)), 0.0f)
-      ) o split(2048) o gather(reorderWithStride(128))
+      ) o split(2048) o gather(reorderWithStridePhrase(128))
     ) o split(2048*128) $ zip(xs, ys)
   ) )
 

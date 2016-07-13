@@ -1,12 +1,11 @@
 package OpenCL.LowLevelCombinators
 
 import Core._
-import LowLevelCombinators.AbstractParFor
-import apart.arithmetic._
+import apart.arithmetic.{?, ContinuousRange, PosInf, RangeAdd}
 import opencl.generator.OpenCLAST._
 import opencl.generator.{get_group_id, get_num_groups}
 
-final case class ParForWorkGroup(n: ArithExpr,
+final case class ParForWorkGroup(n: Nat,
                                  dt: DataType,
                                  out: Phrase[AccType],
                                  body: Phrase[ExpType -> (AccType -> CommandType)])

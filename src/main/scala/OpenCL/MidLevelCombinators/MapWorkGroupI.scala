@@ -7,9 +7,8 @@ import MidLevelCombinators.AbstractMapI
 import SubstituteImplementations._
 import OpenCL.Core.GlobalMemory
 import OpenCL.LowLevelCombinators.ParForWorkGroup
-import apart.arithmetic.ArithExpr
 
-final case class MapWorkGroupI(n: ArithExpr,
+final case class MapWorkGroupI(n: Nat,
                                dt1: DataType,
                                dt2: DataType,
                                out: Phrase[AccType],
@@ -21,7 +20,7 @@ final case class MapWorkGroupI(n: ArithExpr,
 
   override def substituteImpl(env: Environment): Phrase[CommandType] = {
 
-    ParForWorkGroup(n, dt2, out, λ(ExpType(int))(i => λ(AccType(dt2))(o => {
+    ParForWorkGroup(n, dt2, out, λ(exp"[idx($n)]")(i => λ(acc"[$dt2]")(o => {
 
       //      val access = (out `@` 0) `@` 0 // TODO: this is totally not generic ...
       //      TypeChecker(access)

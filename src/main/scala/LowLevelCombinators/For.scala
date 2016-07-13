@@ -12,11 +12,11 @@ final case class For(n: Nat,
 
   override def typeCheck(): Unit = {
     import TypeChecker._
-    (n: Nat) -> (body `:` t"exp[$int] -> comm") -> comm
+    (n: Nat) -> (body `:` t"exp[idx($n)] -> comm") -> comm
   }
 
   override def eval(s: Store): Store = {
-    val nE = evalIndexExp(s, n)
+    val nE = evalIndexExp(s, LiteralPhrase(IndexData(n)))
     val bodyE = OperationalSemantics.eval(s, body)
     (0 until nE.eval).foldLeft(s)((s1, i) =>
       OperationalSemantics.eval(s1, bodyE(LiteralPhrase(i)))

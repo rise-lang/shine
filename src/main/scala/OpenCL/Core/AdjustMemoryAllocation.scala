@@ -1,15 +1,13 @@
 package OpenCL.Core
 
-import Core.{AccType, CommandType, DataType, _}
+import Core._
 import LowLevelCombinators._
-import OpenCL.LowLevelCombinators.{ParForGlobal, ParForLocal, ParForWorkGroup}
-import apart.arithmetic.ArithExpr
 
 object AdjustMemoryAllocation {
 
   def apply[T <: PhraseType](phrase: Phrase[T]): Phrase[T] = {
 
-    case class fun(numGlb: ArithExpr, numLcl: ArithExpr, numPvt: ArithExpr) extends VisitAndRebuild.fun {
+    case class fun(numGlb: Nat, numLcl: Nat, numPvt: Nat) extends VisitAndRebuild.fun {
       override def apply[U <: PhraseType](p: Phrase[U]): Result[Phrase[U]] = {
         p match {
           case n: New =>

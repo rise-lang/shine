@@ -18,7 +18,7 @@ final case class MapLocalI(n: Nat,
   override def makeMapI = MapLocalI
 
   override def substituteImpl(env: Environment): Phrase[CommandType] = {
-    ParForLocal(n, dt2, out, λ(ExpType(int))(i => λ(AccType(dt2))(o =>
+    ParForLocal(n, dt2, out, λ(exp"[idx($n)]")(i => λ(acc"[$dt2]")(o =>
       SubstituteImplementations(f(o)(in `@` i), env)
     )))
   }

@@ -1,6 +1,6 @@
 package Core
 
-import apart.arithmetic.{ArithExpr, NamedVar}
+import apart.arithmetic.ArithExpr
 
 sealed trait PhraseType
 
@@ -31,18 +31,18 @@ final case class FunctionType[T1 <: PhraseType, T2 <: PhraseType](inT: T1, outT:
 final case class PassiveFunctionType[T1 <: PhraseType, T2 <: PhraseType](inT: T1, outT: T2)
   extends PhraseType
 
-final case class NatDependentFunctionType[T <: PhraseType](x: NamedVar, t: T) extends PhraseType {
+final case class NatDependentFunctionType[T <: PhraseType](x: NatIdentifier, t: T) extends PhraseType {
   override def toString = s"($x : Nat) -> $t"
 }
 
 object PhraseType {
 
-  def substitute[T <: PhraseType](ae: ArithExpr,
-                                  `for`: NamedVar,
+  def substitute[T <: PhraseType](ae: Nat,
+                                  `for`: NatIdentifier,
                                   in: Phrase[T]): Phrase[T] = {
 
     case class fun() extends VisitAndRebuild.fun {
-      override def apply(e: ArithExpr) = substitute(ae, `for`, e)
+      override def apply(e: Nat) = substitute(ae, `for`, e)
 
       override def apply[DT <: DataType](dt: DT) = substitute(ae, `for`, dt)
     }
@@ -53,7 +53,7 @@ object PhraseType {
 
   }
 
-  def substitute(ae: ArithExpr, `for`: NamedVar, in: PhraseType): PhraseType = {
+  def substitute(ae: Nat, `for`: NatIdentifier, in: PhraseType): PhraseType = {
     in match {
       case b: BasePhraseTypes => b match {
         case e: ExpType => ExpType(substitute(ae, `for`, e.dataType))
@@ -71,8 +71,9 @@ object PhraseType {
     }
   }
 
-  def substitute[T <: DataType](ae: ArithExpr, `for`: NamedVar, in: T): T = {
+  def substitute[T <: DataType](ae: Nat, `for`: NatIdentifier, in: T): T = {
     (in match {
+      case i: IndexType => IndexType(ArithExpr.substitute(i.size, Map((`for`, ae))))
       case b: BasicType => b
       case a: ArrayType =>
         ArrayType(ArithExpr.substitute(a.size, Map((`for`, ae))),
@@ -82,7 +83,7 @@ object PhraseType {
     }).asInstanceOf[T]
   }
 
-  def substitute(ae: ArithExpr, `for`: NamedVar, in: ArithExpr): ArithExpr = {
+  def substitute(ae: Nat, `for`: NatIdentifier, in: Nat): Nat = {
     ArithExpr.substitute(in, Map((`for`, ae)))
   }
 
@@ -90,7 +91,7 @@ object PhraseType {
                          var strings: Seq[String],
                          var values: Iterator[Any]) {
 
-    val tokens = Seq("exp", "acc", "comm", "var", "nat", "[", "]", "(", ")", ".", "x", "->", ":")
+    val tokens = Seq("exp", "acc", "comm", "var", "nat", "idx", "[", "]", "(", ")", ".", "x", "->", ":")
 
     def hasToken: Boolean = strings.nonEmpty
 
@@ -123,12 +124,34 @@ object PhraseType {
       if (!cond) error
     }
 
-    def parseArrayType(n: ArithExpr): ArrayType = {
+    def parseArrayOrIdxType(n: Nat): DataType = {
+      peakToken match {
+        case "." => parseArrayType(n)
+        case "idx" => parseIdxType(n)
+        case _ => error
+      }
+    }
+
+    def parseArrayType(n: Nat): ArrayType = {
       nextToken match {
         case "." => ArrayType(n, parseDataType)
         case _ => error
       }
+    }
 
+    def parseIdxType(n: Nat): IndexType = {
+      nextToken match {
+        case "idx" =>
+          nextToken match {
+            case "(" =>
+              nextToken match {
+                case ")" => IndexType(n)
+                case _ => error
+              }
+            case _ => error
+          }
+        case _ => error
+      }
     }
 
     def parseRecordOrBaseType(dt: DataType): DataType = {
@@ -140,26 +163,25 @@ object PhraseType {
       }
     }
 
-    def parseArrayOrRecordOrBaseType(`null`: Any): DataType = {
+    def parseArrayOrIdxOrRecordOrBaseType(`null`: Any): DataType = {
       peakToken match {
         case "x" => nextToken; RecordType(`null`.asInstanceOf[DataType], parseDataType)
         case "]" => `null`.asInstanceOf[DataType]
         case ")" => nextToken; parseRecordOrBaseType(`null`.asInstanceOf[DataType])
-        case "." => nextToken; ArrayType(`null`.asInstanceOf[ArithExpr], parseDataType)
+        case "." => nextToken; ArrayType(`null`.asInstanceOf[Nat], parseDataType)
+        case "idx" => parseIdxType(`null`.asInstanceOf[Nat])
         case _ => error
       }
     }
 
     def parseDataType: DataType = {
-      peakToken match {
-        case "(" => nextToken
-        case _ =>
-      }
+      if (peakToken == "(") { nextToken }
+
       if (values.hasNext) {
         values.next match {
-          case n: ArithExpr => parseArrayType(n)
+          case n: Nat => parseArrayOrIdxType(n)
           case dt: DataType => parseRecordOrBaseType(dt)
-          case null => parseArrayOrRecordOrBaseType(null)
+          case null => parseArrayOrIdxOrRecordOrBaseType(null)
           case _ => error
         }
       } else error
@@ -168,7 +190,7 @@ object PhraseType {
     def parseNatDependentFunctionType: PhraseType = {
       if (values.hasNext) {
         values.next match {
-          case l: NamedVar =>
+          case l: NatIdentifier =>
             peakToken match {
               case ":" => nextToken
                 peakToken match {

@@ -72,7 +72,7 @@ final case class IterateIAcc(n: Nat,
             }),
             λ(ExpType(ArrayType(sEnd, dt)))(x =>
               SubstituteImplementations(
-                f(s(end - start - 1))(TruncAcc(m, s(end - start), dt, out))(TruncExp(sEnd, s(end - start - 1), dt, x))
+                f.apply(s(end - start - 1))(TruncAcc(m, s(end - start), dt, out))(TruncExp(sEnd, s(end - start - 1), dt, x))
                 , env))
           )
 

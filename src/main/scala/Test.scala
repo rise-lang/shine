@@ -8,6 +8,7 @@ import apart.arithmetic._
 import opencl.generator.OpenCLPrinter
 
 import scala.collection.immutable.HashMap
+import scala.language.implicitConversions
 
 object Test extends App {
 
@@ -77,71 +78,71 @@ object Test extends App {
   }
 
   // second test
-  {
-    var store = HashMap[String, Data]()
+//  {
+//    var store = HashMap[String, Data]()
+//
+//    val out = identifier("out", AccType(int))
+//    store = store + (out.name -> 0)
+//
+//    val p = `new`(int, PrivateMemory, v =>
+//      (π2(v) := 42 + 1) `;`
+//      `for`(Cst(10), { i =>
+//        π2(v) := i + π1(v)
+//      })  `;` skip `;`
+//      `if`(π1(v) % 2,
+//        thenP = π2(v) := π1(v) + 1,
+//        elseP = π2(v) := π1(v) + 10 ) `;`
+//      (out := π1(v))
+//    )
+//
+//    println(p)
+//
+//    println(TypeChecker(p))
+//
+//    println(OperationalSemantics.eval(store, p))
+//
+//    // same program in scala
+//    {
+//      var out = 0;
+//      {
+//        var v = 42 + 1
+//        for (i <- 0 until 10) {
+//          v = i + v
+//        }
+//        ;
+//        ;
+//        if (v % 2 != 0) {
+//          v = v + 1
+//        } else {
+//          v = v + 10
+//        }
+//        out = v
+//      }
+//      println(out)
+//    }
+//  }
 
-    val out = identifier("out", AccType(int))
-    store = store + (out.name -> 0)
-
-    val p = `new`(int, PrivateMemory, v =>
-      (π2(v) := 42 + 1) `;`
-      `for`(Cst(10), { i =>
-        π2(v) := i + π1(v)
-      })  `;` skip `;`
-      `if`(π1(v) % 2,
-        thenP = π2(v) := π1(v) + 1,
-        elseP = π2(v) := π1(v) + 10 ) `;`
-      (out := π1(v))
-    )
-
-    println(p)
-
-    println(TypeChecker(p))
-
-    println(OperationalSemantics.eval(store, p))
-
-    // same program in scala
-    {
-      var out = 0;
-      {
-        var v = 42 + 1
-        for (i <- 0 until 10) {
-          v = i + v
-        }
-        ;
-        ;
-        if (v % 2 != 0) {
-          v = v + 1
-        } else {
-          v = v + 10
-        }
-        out = v
-      }
-      println(out)
-    }
-  }
-
-  {
-    var store = HashMap[String, Data]()
-    val x = identifier("x", ExpType(ArrayType(4, int)))
-    val y = identifier("y", ExpType(ArrayType(4, int)))
-    val out = identifier("out", AccType(ArrayType(4, int)))
-    store = store + (x.name -> makeArrayData(1, 2, 3, 4))
-    store = store + (y.name -> makeArrayData(2, 3, 4, 5))
-    store = store + (out.name -> makeArrayData(0, 0, 0, 0))
-//    store = makeArrayData(store, x.name, 1, 2, 3, 4)
-//    store = makeArrayData(store, y.name, 2, 3, 4, 5)
-//    store = makeArrayData(store, out.name, 0, 0, 0, 0)
-
-    val p = `for`(Cst(2), { i =>
-      `for`(Cst(2), { j =>
-        out `@` (i*2+j) := x `@` (i*2+j) + y `@` (i*2+j)
-      })
-    })
-    println(TypeChecker(p))
-
-    println(OperationalSemantics.eval(store, p))
-  }
+//  {
+//    var store = HashMap[String, Data]()
+//    val x = identifier("x", ExpType(ArrayType(4, int)))
+//    val y = identifier("y", ExpType(ArrayType(4, int)))
+//    val out = identifier("out", AccType(ArrayType(4, int)))
+//    store = store + (x.name -> makeArrayData(1, 2, 3, 4))
+//    store = store + (y.name -> makeArrayData(2, 3, 4, 5))
+//    store = store + (out.name -> makeArrayData(0, 0, 0, 0))
+////    store = makeArrayData(store, x.name, 1, 2, 3, 4)
+////    store = makeArrayData(store, y.name, 2, 3, 4, 5)
+////    store = makeArrayData(store, out.name, 0, 0, 0, 0)
+//
+//    val p = `for`(Cst(2), { i =>
+//      `for`(Cst(2), { j =>
+//        out `@` (i*2+j) := x `@` (i*2+j) + y `@` (i*2+j)
+//      })
+//    })
+//    println(TypeChecker(p))
+//
+//    println(OperationalSemantics.eval(store, p))
+//  }
 
 //  {
 //    var store = HashMap[String, Data]()
@@ -323,284 +324,284 @@ object Test extends App {
   // for n (λi.
   //    for m (λj.
   //        (λ a e. a := e @ j) (out @ (i*n+j)) (in @ i) ))
-  {
-    var store = HashMap[String, Data]()
-    val x = identifier("x", ExpType(ArrayType(4, int)))
-    val y = identifier("y", ExpType(ArrayType(4, int)))
-    val out = identifier("out", AccType(ArrayType(4, int)))
-    store = store + (x.name -> makeArrayData(1, 2, 3, 4))
-    store = store + (y.name -> makeArrayData(2, 3, 4, 5))
-    store = store + (out.name -> makeArrayData(0, 0, 0, 0))
-//    store = makeArrayData(store, x.name, 1, 2, 3, 4)
-//    store = makeArrayData(store, y.name, 2, 3, 4, 5)
-//    store = makeArrayData(store, out.name, 0, 0, 0, 0)
-
-    val f = λ( x => x._1 + x._2)
-    val g = λ( x => map(f, x) )
-
-    val p_ = `for`(Cst(2), { i =>
-      `for`(Cst(2), { j =>
-        λ( AccType(int) x ExpType(ArrayType(2, int)) ) { p =>
-          π1(p) := π2(p) `@` j
-        }(PairPhrase(out `@` (i*2+j), map(g, split(2, zip(x, y))) `@` i))
-      })
-    })
-
-    val p = TypeInference(p_)
-
-    println( p )
-
-    println( TypeChecker(p) )
-
-    println( OperationalSemantics.eval(store, p) )
-  }
+//  {
+//    var store = HashMap[String, Data]()
+//    val x = identifier("x", ExpType(ArrayType(4, int)))
+//    val y = identifier("y", ExpType(ArrayType(4, int)))
+//    val out = identifier("out", AccType(ArrayType(4, int)))
+//    store = store + (x.name -> makeArrayData(1, 2, 3, 4))
+//    store = store + (y.name -> makeArrayData(2, 3, 4, 5))
+//    store = store + (out.name -> makeArrayData(0, 0, 0, 0))
+////    store = makeArrayData(store, x.name, 1, 2, 3, 4)
+////    store = makeArrayData(store, y.name, 2, 3, 4, 5)
+////    store = makeArrayData(store, out.name, 0, 0, 0, 0)
+//
+//    val f = λ( x => x._1 + x._2)
+//    val g = λ( x => map(f, x) )
+//
+//    val p_ = `for`(Cst(2), { i =>
+//      `for`(Cst(2), { j =>
+//        λ( AccType(int) x ExpType(ArrayType(2, int)) ) { p =>
+//          π1(p) := π2(p) `@` j
+//        }(PairPhrase(out `@` (i*2+j), map(g, split(2, zip(x, y))) `@` i))
+//      })
+//    })
+//
+//    val p = TypeInference(p_)
+//
+//    println( p )
+//
+//    println( TypeChecker(p) )
+//
+//    println( OperationalSemantics.eval(store, p) )
+//  }
   // (λj. (λa e. a := e @ j) (out @ i1) (in @ i2))
   //  =>
   // λj. (out @ i1) := ((in @ i2) @ j)
-  {
-    var store = HashMap[String, Data]()
-    val x = identifier("x", ExpType(ArrayType(4, int)))
-    val y = identifier("y", ExpType(ArrayType(4, int)))
-    val out = identifier("out", AccType(ArrayType(4, int)))
-    store = store + (x.name -> makeArrayData(1, 2, 3, 4))
-    store = store + (y.name -> makeArrayData(2, 3, 4, 5))
-    store = store + (out.name -> makeArrayData(0, 0, 0, 0))
-//    store = makeArrayData(store, x.name, 1, 2, 3, 4)
-//    store = makeArrayData(store, y.name, 2, 3, 4, 5)
-//    store = makeArrayData(store, out.name, 0, 0, 0, 0)
-
-    val f = λ( x => x._1 + x._2)
-    val g = λ( x => map(f, x) )
-
-    val p_ = `for`(2, { i =>
-      `for`(2, { j =>
-        out `@` (i*2+j) := (map(g, split(2, zip(x, y))) `@` i) `@` j
-      })
-    })
-
-    val p = TypeInference(p_)
-
-    println( p )
-
-    println( TypeChecker(p) )
-
-    println( OperationalSemantics.eval(store, p) )
-  }
+//  {
+//    var store = HashMap[String, Data]()
+//    val x = identifier("x", ExpType(ArrayType(4, int)))
+//    val y = identifier("y", ExpType(ArrayType(4, int)))
+//    val out = identifier("out", AccType(ArrayType(4, int)))
+//    store = store + (x.name -> makeArrayData(1, 2, 3, 4))
+//    store = store + (y.name -> makeArrayData(2, 3, 4, 5))
+//    store = store + (out.name -> makeArrayData(0, 0, 0, 0))
+////    store = makeArrayData(store, x.name, 1, 2, 3, 4)
+////    store = makeArrayData(store, y.name, 2, 3, 4, 5)
+////    store = makeArrayData(store, out.name, 0, 0, 0, 0)
+//
+//    val f = λ( x => x._1 + x._2)
+//    val g = λ( x => map(f, x) )
+//
+//    val p_ = `for`(2, { i =>
+//      `for`(2, { j =>
+//        out `@` (i*2+j) := (map(g, split(2, zip(x, y))) `@` i) `@` j
+//      })
+//    })
+//
+//    val p = TypeInference(p_)
+//
+//    println( p )
+//
+//    println( TypeChecker(p) )
+//
+//    println( OperationalSemantics.eval(store, p) )
+//  }
   // map(f, in) @ i
   //  =>
   // f (in @ i)
-  {
-    var store = HashMap[String, Data]()
-    val x = identifier("x", ExpType(ArrayType(4, int)))
-    val y = identifier("y", ExpType(ArrayType(4, int)))
-    val out = identifier("out", AccType(ArrayType(4, int)))
-    store = store + (x.name -> makeArrayData(1, 2, 3, 4))
-    store = store + (y.name -> makeArrayData(2, 3, 4, 5))
-    store = store + (out.name -> makeArrayData(0, 0, 0, 0))
-//    store = makeArrayData(store, x.name, 1, 2, 3, 4)
-//    store = makeArrayData(store, y.name, 2, 3, 4, 5)
-//    store = makeArrayData(store, out.name, 0, 0, 0, 0)
-
-    val f = λ( x => x._1 + x._2)
-    val g = λ( x => map(f, x) )
-
-    val p_ = `for`(2, { i =>
-      `for`(2, { j =>
-        out `@` (i*2+j) := g(split(2, zip(x, y)) `@` i) `@` j
-      })
-    })
-
-    val p = TypeInference(p_)
-
-    println( p )
-
-    println( TypeChecker(p) )
-
-    println( OperationalSemantics.eval(store, p) )
-  }
+//  {
+//    var store = HashMap[String, Data]()
+//    val x = identifier("x", ExpType(ArrayType(4, int)))
+//    val y = identifier("y", ExpType(ArrayType(4, int)))
+//    val out = identifier("out", AccType(ArrayType(4, int)))
+//    store = store + (x.name -> makeArrayData(1, 2, 3, 4))
+//    store = store + (y.name -> makeArrayData(2, 3, 4, 5))
+//    store = store + (out.name -> makeArrayData(0, 0, 0, 0))
+////    store = makeArrayData(store, x.name, 1, 2, 3, 4)
+////    store = makeArrayData(store, y.name, 2, 3, 4, 5)
+////    store = makeArrayData(store, out.name, 0, 0, 0, 0)
+//
+//    val f = λ( x => x._1 + x._2)
+//    val g = λ( x => map(f, x) )
+//
+//    val p_ = `for`(2, { i =>
+//      `for`(2, { j =>
+//        out `@` (i*2+j) := g(split(2, zip(x, y)) `@` i) `@` j
+//      })
+//    })
+//
+//    val p = TypeInference(p_)
+//
+//    println( p )
+//
+//    println( TypeChecker(p) )
+//
+//    println( OperationalSemantics.eval(store, p) )
+//  }
   // beta reduction of g
-  {
-    var store = HashMap[String, Data]()
-    val x = identifier("x", ExpType(ArrayType(4, int)))
-    val y = identifier("y", ExpType(ArrayType(4, int)))
-    val out = identifier("out", AccType(ArrayType(4, int)))
-    store = store + (x.name -> makeArrayData(1, 2, 3, 4))
-    store = store + (y.name -> makeArrayData(2, 3, 4, 5))
-    store = store + (out.name -> makeArrayData(0, 0, 0, 0))
-//    store = makeArrayData(store, x.name, 1, 2, 3, 4)
-//    store = makeArrayData(store, y.name, 2, 3, 4, 5)
-//    store = makeArrayData(store, out.name, 0, 0, 0, 0)
-
-    val f = λ( x => x._1 + x._2)
-
-    val p_ = `for`(2, { i =>
-      `for`(2, { j =>
-        out `@` (i*2+j) := map(f, split(2, zip(x, y)) `@` i) `@` j
-      })
-    })
-
-    val p = TypeInference(p_)
-
-    println( p )
-
-    println( TypeChecker(p) )
-
-    println( OperationalSemantics.eval(store, p) )
-  }
+//  {
+//    var store = HashMap[String, Data]()
+//    val x = identifier("x", ExpType(ArrayType(4, int)))
+//    val y = identifier("y", ExpType(ArrayType(4, int)))
+//    val out = identifier("out", AccType(ArrayType(4, int)))
+//    store = store + (x.name -> makeArrayData(1, 2, 3, 4))
+//    store = store + (y.name -> makeArrayData(2, 3, 4, 5))
+//    store = store + (out.name -> makeArrayData(0, 0, 0, 0))
+////    store = makeArrayData(store, x.name, 1, 2, 3, 4)
+////    store = makeArrayData(store, y.name, 2, 3, 4, 5)
+////    store = makeArrayData(store, out.name, 0, 0, 0, 0)
+//
+//    val f = λ( x => x._1 + x._2)
+//
+//    val p_ = `for`(2, { i =>
+//      `for`(2, { j =>
+//        out `@` (i*2+j) := map(f, split(2, zip(x, y)) `@` i) `@` j
+//      })
+//    })
+//
+//    val p = TypeInference(p_)
+//
+//    println( p )
+//
+//    println( TypeChecker(p) )
+//
+//    println( OperationalSemantics.eval(store, p) )
+//  }
   // map(f, in) @ i
   //  =>
   // f (in @ i)
-  {
-    var store = HashMap[String, Data]()
-    val x = identifier("x", ExpType(ArrayType(4, int)))
-    val y = identifier("y", ExpType(ArrayType(4, int)))
-    val out = identifier("out", AccType(ArrayType(4, int)))
-    store = store + (x.name -> makeArrayData(1, 2, 3, 4))
-    store = store + (y.name -> makeArrayData(2, 3, 4, 5))
-    store = store + (out.name -> makeArrayData(0, 0, 0, 0))
-//    store = makeArrayData(store, x.name, 1, 2, 3, 4)
-//    store = makeArrayData(store, y.name, 2, 3, 4, 5)
-//    store = makeArrayData(store, out.name, 0, 0, 0, 0)
-
-    val f = λ( x => x._1 + x._2)
-
-    val p_ = `for`(2, { i =>
-      `for`(2, { j =>
-        out `@` (i*2+j) := f((split(2, zip(x, y)) `@` i) `@` j)
-      })
-    })
-
-    val p = TypeInference(p_)
-
-    println( p )
-
-    println( TypeChecker(p) )
-
-    println( OperationalSemantics.eval(store, p) )
-  }
+//  {
+//    var store = HashMap[String, Data]()
+//    val x = identifier("x", ExpType(ArrayType(4, int)))
+//    val y = identifier("y", ExpType(ArrayType(4, int)))
+//    val out = identifier("out", AccType(ArrayType(4, int)))
+//    store = store + (x.name -> makeArrayData(1, 2, 3, 4))
+//    store = store + (y.name -> makeArrayData(2, 3, 4, 5))
+//    store = store + (out.name -> makeArrayData(0, 0, 0, 0))
+////    store = makeArrayData(store, x.name, 1, 2, 3, 4)
+////    store = makeArrayData(store, y.name, 2, 3, 4, 5)
+////    store = makeArrayData(store, out.name, 0, 0, 0, 0)
+//
+//    val f = λ( x => x._1 + x._2)
+//
+//    val p_ = `for`(2, { i =>
+//      `for`(2, { j =>
+//        out `@` (i*2+j) := f((split(2, zip(x, y)) `@` i) `@` j)
+//      })
+//    })
+//
+//    val p = TypeInference(p_)
+//
+//    println( p )
+//
+//    println( TypeChecker(p) )
+//
+//    println( OperationalSemantics.eval(store, p) )
+//  }
   // ((split n in) @ i) @ j
   //  =>
   // in @ (i*n+j)
-  {
-    var store = HashMap[String, Data]()
-    val x = identifier("x", ExpType(ArrayType(4, int)))
-    val y = identifier("y", ExpType(ArrayType(4, int)))
-    val out = identifier("out", AccType(ArrayType(4, int)))
-    store = store + (x.name -> makeArrayData(1, 2, 3, 4))
-    store = store + (y.name -> makeArrayData(2, 3, 4, 5))
-    store = store + (out.name -> makeArrayData(0, 0, 0, 0))
-//    store = makeArrayData(store, x.name, 1, 2, 3, 4)
-//    store = makeArrayData(store, y.name, 2, 3, 4, 5)
-//    store = makeArrayData(store, out.name, 0, 0, 0, 0)
-
-    val f = λ( x => x._1 + x._2)
-
-    val p_ = `for`(2, { i =>
-      `for`(2, { j =>
-        out `@` (i*2+j) := f( zip(x, y) `@` (i*2+j) )
-      })
-    })
-
-    val p = TypeInference(p_)
-
-    println( p )
-
-    println( TypeChecker(p) )
-
-    println( OperationalSemantics.eval(store, p) )
-  }
+//  {
+//    var store = HashMap[String, Data]()
+//    val x = identifier("x", ExpType(ArrayType(4, int)))
+//    val y = identifier("y", ExpType(ArrayType(4, int)))
+//    val out = identifier("out", AccType(ArrayType(4, int)))
+//    store = store + (x.name -> makeArrayData(1, 2, 3, 4))
+//    store = store + (y.name -> makeArrayData(2, 3, 4, 5))
+//    store = store + (out.name -> makeArrayData(0, 0, 0, 0))
+////    store = makeArrayData(store, x.name, 1, 2, 3, 4)
+////    store = makeArrayData(store, y.name, 2, 3, 4, 5)
+////    store = makeArrayData(store, out.name, 0, 0, 0, 0)
+//
+//    val f = λ( x => x._1 + x._2)
+//
+//    val p_ = `for`(2, { i =>
+//      `for`(2, { j =>
+//        out `@` (i*2+j) := f( zip(x, y) `@` (i*2+j) )
+//      })
+//    })
+//
+//    val p = TypeInference(p_)
+//
+//    println( p )
+//
+//    println( TypeChecker(p) )
+//
+//    println( OperationalSemantics.eval(store, p) )
+//  }
   // (zip x y) @ i
   //  =>
   // record (x @ i) (y @ i)
-  {
-    var store = HashMap[String, Data]()
-    val x = identifier("x", ExpType(ArrayType(4, int)))
-    val y = identifier("y", ExpType(ArrayType(4, int)))
-    val out = identifier("out", AccType(ArrayType(4, int)))
-    store = store + (x.name -> makeArrayData(1, 2, 3, 4))
-    store = store + (y.name -> makeArrayData(2, 3, 4, 5))
-    store = store + (out.name -> makeArrayData(0, 0, 0, 0))
-//    store = makeArrayData(store, x.name, 1, 2, 3, 4)
-//    store = makeArrayData(store, y.name, 2, 3, 4, 5)
-//    store = makeArrayData(store, out.name, 0, 0, 0, 0)
-
-    val f = λ( x => x._1 + x._2)
-
-    val p_ = `for`(2, { i =>
-      `for`(2, { j =>
-        out `@` (i*2+j) := f( record(x `@` (i*2+j), y `@` (i*2+j)) )
-      })
-    })
-
-    val p = TypeInference(p_)
-
-    println( p )
-
-    println( TypeChecker(p) )
-
-    println( OperationalSemantics.eval(store, p) )
-  }
+//  {
+//    var store = HashMap[String, Data]()
+//    val x = identifier("x", ExpType(ArrayType(4, int)))
+//    val y = identifier("y", ExpType(ArrayType(4, int)))
+//    val out = identifier("out", AccType(ArrayType(4, int)))
+//    store = store + (x.name -> makeArrayData(1, 2, 3, 4))
+//    store = store + (y.name -> makeArrayData(2, 3, 4, 5))
+//    store = store + (out.name -> makeArrayData(0, 0, 0, 0))
+////    store = makeArrayData(store, x.name, 1, 2, 3, 4)
+////    store = makeArrayData(store, y.name, 2, 3, 4, 5)
+////    store = makeArrayData(store, out.name, 0, 0, 0, 0)
+//
+//    val f = λ( x => x._1 + x._2)
+//
+//    val p_ = `for`(2, { i =>
+//      `for`(2, { j =>
+//        out `@` (i*2+j) := f( record(x `@` (i*2+j), y `@` (i*2+j)) )
+//      })
+//    })
+//
+//    val p = TypeInference(p_)
+//
+//    println( p )
+//
+//    println( TypeChecker(p) )
+//
+//    println( OperationalSemantics.eval(store, p) )
+//  }
   // f = λp. p._1 + p._2
   // f (in @ i)
   //  =>
   // ((in @ i)._1) + ((in @ i)._2)
-  {
-    var store = HashMap[String, Data]()
-    val x = identifier("x", ExpType(ArrayType(4, int)))
-    val y = identifier("y", ExpType(ArrayType(4, int)))
-    val out = identifier("out", AccType(ArrayType(4, int)))
-    store = store + (x.name -> makeArrayData(1, 2, 3, 4))
-    store = store + (y.name -> makeArrayData(2, 3, 4, 5))
-    store = store + (out.name -> makeArrayData(0, 0, 0, 0))
-//    store = makeArrayData(store, x.name, 1, 2, 3, 4)
-//    store = makeArrayData(store, y.name, 2, 3, 4, 5)
-//    store = makeArrayData(store, out.name, 0, 0, 0, 0)
-
-    val p_ = `for`(2, { i =>
-      `for`(2, { j =>
-        out `@` (i*2+j) :=
-          record(x `@` (i*2+j), y `@` (i*2+j))._1 +
-            record(x `@` (i*2+j), y `@` (i*2+j))._2
-      })
-    })
-
-    val p = TypeInference(p_)
-
-    println( p )
-
-    println( TypeChecker(p) )
-
-    println( OperationalSemantics.eval(store, p) )
-  }
+//  {
+//    var store = HashMap[String, Data]()
+//    val x = identifier("x", ExpType(ArrayType(4, int)))
+//    val y = identifier("y", ExpType(ArrayType(4, int)))
+//    val out = identifier("out", AccType(ArrayType(4, int)))
+//    store = store + (x.name -> makeArrayData(1, 2, 3, 4))
+//    store = store + (y.name -> makeArrayData(2, 3, 4, 5))
+//    store = store + (out.name -> makeArrayData(0, 0, 0, 0))
+////    store = makeArrayData(store, x.name, 1, 2, 3, 4)
+////    store = makeArrayData(store, y.name, 2, 3, 4, 5)
+////    store = makeArrayData(store, out.name, 0, 0, 0, 0)
+//
+//    val p_ = `for`(2, { i =>
+//      `for`(2, { j =>
+//        out `@` (i*2+j) :=
+//          record(x `@` (i*2+j), y `@` (i*2+j))._1 +
+//            record(x `@` (i*2+j), y `@` (i*2+j))._2
+//      })
+//    })
+//
+//    val p = TypeInference(p_)
+//
+//    println( p )
+//
+//    println( TypeChecker(p) )
+//
+//    println( OperationalSemantics.eval(store, p) )
+//  }
   // (record (x @ i) (y @ i))._1
   //  =>
   // (x @ i)
-  {
-    var store = HashMap[String, Data]()
-    val x = identifier("x", ExpType(ArrayType(4, int)))
-    val y = identifier("y", ExpType(ArrayType(4, int)))
-    val out = identifier("out", AccType(ArrayType(4, int)))
-    store = store + (x.name -> makeArrayData(1, 2, 3, 4))
-    store = store + (y.name -> makeArrayData(2, 3, 4, 5))
-    store = store + (out.name -> makeArrayData(0, 0, 0, 0))
-//    store = makeArrayData(store, x.name, 1, 2, 3, 4)
-//    store = makeArrayData(store, y.name, 2, 3, 4, 5)
-//    store = makeArrayData(store, out.name, 0, 0, 0, 0)
-
-    val p_ = `for`(2, { i =>
-      `for`(2, { j =>
-        out `@` (i*2+j) := x `@` (i*2+j) + y `@` (i*2+j)
-      })
-    })
-
-    val p = TypeInference(p_)
-
-    println( p )
-
-    println( TypeChecker(p) )
-
-    println( OperationalSemantics.eval(store, p) )
-  }
+//  {
+//    var store = HashMap[String, Data]()
+//    val x = identifier("x", ExpType(ArrayType(4, int)))
+//    val y = identifier("y", ExpType(ArrayType(4, int)))
+//    val out = identifier("out", AccType(ArrayType(4, int)))
+//    store = store + (x.name -> makeArrayData(1, 2, 3, 4))
+//    store = store + (y.name -> makeArrayData(2, 3, 4, 5))
+//    store = store + (out.name -> makeArrayData(0, 0, 0, 0))
+////    store = makeArrayData(store, x.name, 1, 2, 3, 4)
+////    store = makeArrayData(store, y.name, 2, 3, 4, 5)
+////    store = makeArrayData(store, out.name, 0, 0, 0, 0)
+//
+//    val p_ = `for`(2, { i =>
+//      `for`(2, { j =>
+//        out `@` (i*2+j) := x `@` (i*2+j) + y `@` (i*2+j)
+//      })
+//    })
+//
+//    val p = TypeInference(p_)
+//
+//    println( p )
+//
+//    println( TypeChecker(p) )
+//
+//    println( OperationalSemantics.eval(store, p) )
+//  }
 //
 //  {
 //    var store = HashMap[String, Data]()
@@ -978,6 +979,16 @@ object Test extends App {
       }
     }
 
+    val reorderWithStridePhrase = {
+      implicit def toArithExpr(i: IdentPhrase[ExpType]): NamedVar = NamedVar(i.name)
+      _Λ_(s =>
+        _Λ_(n => λ(exp"[idx($n)]")(i => {
+          val m = n /^ s
+          (i / m) + s * (i % m)
+        }))
+      )
+    }
+
     val p =
       λ(matrixT)(mat => λ(xsVectorT)(xs => λ(ysVectorT)(ys => λ(aT)(a => λ(bT)(b => {
 
@@ -991,7 +1002,7 @@ object Test extends App {
           o
           toLocal(mapLocal(
             reduceSeq(λ(y => λ(acc => acc + ( y._1 * y._2 ) )), 0)
-          )) o split(m /^ 128) o gather(reorderWithStride(128)) $ zip(xs, t._1)
+          )) o split(m /^ 128) o gather(reorderWithStridePhrase(128)) $ zip(xs, t._1)
 
         )) $ zip(mat, ys)
 

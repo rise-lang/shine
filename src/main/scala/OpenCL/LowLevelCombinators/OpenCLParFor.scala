@@ -4,11 +4,11 @@ import Core._
 import DSL.typed._
 import LowLevelCombinators.AbstractParFor
 import OpenCL.Core.{GeneratableComm, ToOpenCL}
-import apart.arithmetic._
+import apart.arithmetic.{Cst, NamedVar, RangeAdd}
 import opencl.generator.OpenCLAST
 import opencl.generator.OpenCLAST.{Block, BlockMember}
 
-abstract class OpenCLParFor(n: ArithExpr,
+abstract class OpenCLParFor(n: Nat,
                             dt: DataType,
                             out: Phrase[AccType],
                             body: Phrase[ExpType -> (AccType -> CommandType)])
@@ -18,8 +18,8 @@ abstract class OpenCLParFor(n: ArithExpr,
 
   protected val name: String = newName()
 
-  def init: ArithExpr
-  def step: ArithExpr
+  def init: Nat
+  def step: Nat
   def synchronize: OpenCLAST.OclAstNode with BlockMember
 
   override def toOpenCL(block: Block, env: ToOpenCL.Environment): Block = {
@@ -31,7 +31,7 @@ abstract class OpenCLParFor(n: ArithExpr,
 
     env.ranges(name) = range
 
-    val i = identifier(name, ExpType(int))
+    val i = identifier(name, exp"[idx($n)]")
     val body_ = Lift.liftFunction( Lift.liftFunction(body)(i) )
     val out_at_i = out `@` i
     TypeChecker(out_at_i)

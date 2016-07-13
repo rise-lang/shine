@@ -1,10 +1,9 @@
 package DSL
 
-import Core.OperationalSemantics.IndexData
 import Core.TypeInference._
 import Core._
 import LowLevelCombinators.{Assign, Idx, IdxAcc, Seq}
-import apart.arithmetic.ArithExpr
+import apart.arithmetic.{ArithExpr, NamedVar}
 
 import scala.language.implicitConversions
 
@@ -22,16 +21,18 @@ package object typed {
   }
 
   implicit class ExpPhraseExtensions(e: Phrase[ExpType]) {
-    def `@`(index: Phrase[ExpType]) = e.t match {
-      case ExpType(ArrayType(n, dt)) => Idx(n, dt, index, e)
-      case x => error(x.toString, "exp[n.dt]")
+    def `@`(index: Phrase[ExpType]) = (index.t, e.t) match {
+      case (ExpType(IndexType(n1)), ExpType(ArrayType(n2, dt))) if n1 == n2 =>
+        Idx(n1, dt, index, e)
+      case x => error(x.toString, "(exp[idx(n)], exp[n.dt])")
     }
   }
 
   implicit class AccPhraseExtensions(a: Phrase[AccType]) {
-    def `@`(index: Phrase[ExpType]) = a.t match {
-      case AccType(ArrayType(n, dt)) => IdxAcc(n, dt, index, a)
-      case x => error(x.toString, "acc[n.dt]")
+    def `@`(index: Phrase[ExpType]) = (index.t, a.t) match {
+      case (ExpType(IndexType(n1)), AccType(ArrayType(n2, dt))) if n1 == n2 =>
+        IdxAcc(n1, dt, index, a)
+      case x => error(x.toString, "(exp[idx(n)], acc[n.dt])")
     }
   }
 
@@ -54,10 +55,10 @@ package object typed {
   }
 
   implicit class CallNatDependentLambda[T <: PhraseType](fun: Phrase[`(nat)->`[T]]) {
-    def apply(arg: ArithExpr): Phrase[T] =
+    def apply(arg: Nat): Phrase[T] =
       Lift.liftNatDependentFunction(fun)(arg)
 
-    def $(arg: ArithExpr): Phrase[T] = apply(arg)
+    def $(arg: Nat): Phrase[T] = apply(arg)
   }
 
   implicit class FunComp[T1 <: PhraseType, T2 <: PhraseType](f: Phrase[T1 -> T2]) {
@@ -76,9 +77,10 @@ package object typed {
     def wr: Proj2Phrase[ExpType, AccType] = π2(v)
   }
 
-  implicit def toLiteralIndex(i: ArithExpr): LiteralPhrase = LiteralPhrase(IndexData(i))
-
   implicit def toLiteralInt(i: Int): LiteralPhrase = LiteralPhrase(i)
+
+//  implicit def toArithExpr(i: IdentPhrase[ExpType]): NamedVar = NamedVar(i.name)
+
 
   implicit def toPair[T1 <: PhraseType, T2 <: PhraseType](pair: (Phrase[T1], Phrase[T2])): PairPhrase[T1, T2] =
     PairPhrase(pair._1, pair._2)

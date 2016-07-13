@@ -4,7 +4,6 @@ import Core.OperationalSemantics._
 import Core._
 import DSL.untyped.λ
 import OpenCL.HighLevelCombinators._
-import apart.arithmetic.ArithExpr
 
 object mapGlobal {
   def apply(f: Phrase[ExpType -> ExpType]): Phrase[ExpType -> ExpType] =
@@ -55,10 +54,10 @@ object toGlobal {
 }
 
 object asVector {
-  def apply(n: ArithExpr): Phrase[ExpType -> ExpType] =
+  def apply(n: Nat): Phrase[ExpType -> ExpType] =
     λ(array => asVector(n, array))
 
-  def apply(n: ArithExpr, array: Phrase[ExpType]): AsVector =
+  def apply(n: Nat, array: Phrase[ExpType]): AsVector =
     AsVector(n, null, null, array)
 }
 

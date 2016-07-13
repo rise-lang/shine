@@ -7,6 +7,7 @@ import scala.language.reflectiveCalls
 package object Core {
 
   type Nat = ArithExpr
+  type NatIdentifier = NamedVar
 
   object newName {
     var counter = 0
@@ -28,8 +29,8 @@ package object Core {
   }
 
   implicit class PhraseTypeSubstitutionHelper[T <: PhraseType](t: PhraseType) {
-    def `[`(e: ArithExpr) = new {
-      def `/`(a: NamedVar) = new {
+    def `[`(e: Nat) = new {
+      def `/`(a: NatIdentifier) = new {
         def `]` = PhraseType.substitute(e, `for`=a, in=t)
       }
     }
@@ -42,8 +43,8 @@ package object Core {
       }
     }
 
-    def `[`(e: ArithExpr) = new {
-      def `/`(`for`: NamedVar) = new {
+    def `[`(e: Nat) = new {
+      def `/`(`for`: NatIdentifier) = new {
         def `]` = PhraseType.substitute(e, `for`, in)
       }
     }
@@ -61,7 +62,7 @@ package object Core {
     def `->p`[T2 <: PhraseType](t2: T2) = PassiveFunctionType(t1, t2)
   }
 
-  implicit class NatDependentFunctionTypeConstructor(x: NamedVar) {
+  implicit class NatDependentFunctionTypeConstructor(x: NatIdentifier) {
     def ->[T <: PhraseType](outT: T) = NatDependentFunctionType(x, outT)
   }
 

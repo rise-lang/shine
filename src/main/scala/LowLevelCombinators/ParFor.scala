@@ -16,16 +16,16 @@ abstract class AbstractParFor(n: Nat,
     import TypeChecker._
     (n: Nat) -> (dt: DataType) ->
       (out `:` acc"[$n.$dt]") ->
-      (body `:` t"exp[$int] -> acc[$dt] -> comm") ->
+      (body `:` t"exp[idx($n)] -> acc[$dt] -> comm") ->
       comm
   }
 
   override def eval(s: Store): Store = {
-    val nE = evalIndexExp(s, n)
+    val nE = evalIndexExp(s, LiteralPhrase(IndexData(n)))
     val bodyE = OperationalSemantics.eval(s, body)(OperationalSemantics.BinaryFunctionEvaluator)
 
     (0 until nE.eval).foldLeft(s)((s1, i) => {
-      OperationalSemantics.eval(s1, bodyE(LiteralPhrase(i))(out `@` i))
+      OperationalSemantics.eval(s1, bodyE(LiteralPhrase(i))(out `@` LiteralPhrase(i)))
     })
   }
 

@@ -10,7 +10,7 @@ import scala.xml.Elem
 
 final case class Gather(n: Nat,
                         dt: DataType,
-                        idxF: (Nat, DataType) => Nat,
+                        idxF: Phrase[`(nat)->`[ExpType -> ExpType]],
                         array: Phrase[ExpType])
   extends HighLevelCombinator {
 
@@ -18,32 +18,38 @@ final case class Gather(n: Nat,
 
   override def typeCheck(): Unit = {
     import TypeChecker._
-    (n: Nat) -> (dt: DataType) ->
-      (idxF: (Nat, DataType) => Nat) ->
-      (array `:` exp"[$n.$dt]") ->
-      `type`
+    idxF match {
+      case NatDependentLambdaPhrase(m, _) =>
+        (n: Nat) -> (dt: DataType) ->
+          (idxF `:` t"($m : nat) -> exp[idx($m)] -> exp[idx($m)]") ->
+          (array `:` exp"[$n.$dt]") ->
+          `type`
+      case _ => throw new Exception("This should not happen")
+    }
   }
 
   override def inferTypes: Gather = {
     import TypeInference._
     val array_ = TypeInference(array)
+    val idxF_ = TypeInference(idxF)
     array_.t match {
-      case ExpType(ArrayType(n_, dt_)) => Gather(n_, dt_, idxF, array_)
+      case ExpType(ArrayType(n_, dt_)) => Gather(n_, dt_, idxF_, array_)
       case x => error(x.toString, "ExpType(ArrayType)")
     }
   }
 
   override def eval(s: Store): Data = {
-    import OperationalSemantics._
-    OperationalSemantics.eval(s, array) match {
-      case ArrayData(a) =>
-        val res = Array[Data](a.length)
-        for (i <- a.indices) {
-          res(i) = a(idxF(i, array.t.dataType).eval)
-        }
-        ArrayData(res.toVector)
-      case _ => throw new Exception("This should not happen")
-    }
+//    import OperationalSemantics._
+//    OperationalSemantics.eval(s, array) match {
+//      case ArrayData(a) =>
+//        val res = Array[Data](a.length)
+//        for (i <- a.indices) {
+//          res(i) = a(idxF(i, array.t.dataType).eval)
+//        }
+//        ArrayData(res.toVector)
+//      case _ => throw new Exception("This should not happen")
+//    }
+    ???
   }
 
   override def visitAndRebuild(fun: fun): Phrase[ExpType] =

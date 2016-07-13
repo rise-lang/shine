@@ -50,7 +50,19 @@ object TypeOf {
       case BinOpPhrase(op, lhs, rhs) =>
         op match {
           case BinOpPhrase.Op.GT | BinOpPhrase.Op.LT => exp"[$bool]"
-          case _ => lhs.t
+          case _ => (lhs.t.dataType, rhs.t.dataType) match {
+            case (t1, t2) if t1 == t2 => ExpType(t1)
+            case (IndexType(n), `int`) =>
+              ExpType(IndexType(n))
+//              ExpType(IndexType(OperationalSemantics.toScalaOp(op)(n, OperationalSemantics.evalIntExp(rhs))))
+            case (`int`, IndexType(n)) =>
+              ExpType(IndexType(n))
+//              ExpType(IndexType(OperationalSemantics.toScalaOp(op)(OperationalSemantics.evalIntExp(lhs), n)))
+            case (IndexType(n), IndexType(m)) =>
+//              ExpType(IndexType(OperationalSemantics.toScalaOp(op)(n, m)))
+              ExpType(IndexType(n))
+            case (null, null) => null
+          }
         }
 
       case c: Combinator[_] => c.t

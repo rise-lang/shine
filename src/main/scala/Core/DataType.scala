@@ -1,6 +1,5 @@
 package Core
 
-import apart.arithmetic.{ArithExpr, Cst}
 import ir.ScalarType
 
 sealed trait DataType
@@ -13,11 +12,15 @@ object int extends BasicType { override def toString = "int" }
 
 object float extends BasicType { override def toString = "float" }
 
-final case class VectorType(size: ArithExpr, elemType: BasicType) extends BasicType {
+final case class IndexType(size: Nat) extends BasicType {
+  override def toString = s"idx($size)"
+}
+
+final case class VectorType(size: Nat, elemType: BasicType) extends BasicType {
   override def toString = s"$elemType$size"
 }
 
-final case class ArrayType(size: ArithExpr, elemType: DataType) extends DataType {
+final case class ArrayType(size: Nat, elemType: DataType) extends DataType {
   override def toString = s"$size.$elemType"
 }
 
@@ -32,6 +35,7 @@ object DataType {
         case Core.bool => opencl.ir.Int
         case Core.int => opencl.ir.Int
         case Core.float => opencl.ir.Float
+        case i: IndexType => opencl.ir.Int
         case v: VectorType => ir.VectorType(DataType.toType(v.elemType) match {
           case s: ScalarType => s
           case _ => throw new Exception("This should not happen")
@@ -48,6 +52,7 @@ object DataType {
         case Core.bool => opencl.ir.Int
         case Core.int => opencl.ir.Int
         case Core.float => opencl.ir.Float
+        case i: IndexType => opencl.ir.Int
         case v: VectorType => scalarType(v.elemType)
       }
       case a: ArrayType => scalarType(a.elemType)
@@ -60,6 +65,7 @@ object DataType {
       case b: BasicType => b match {
         case Core.bool | Core.int => "int"
         case Core.float => "float"
+        case i: IndexType => "int"
         case v: VectorType => toString(v.elemType) + v.size.toString
       }
       case _: RecordType => ???
@@ -67,12 +73,12 @@ object DataType {
     }
   }
 
-  def getLengths(dt: DataType, tupleAccesss: List[ArithExpr], list: List[ArithExpr]): List[ArithExpr] = {
+  def getLengths(dt: DataType, tupleAccesss: List[Nat], list: List[Nat]): List[Nat] = {
     dt match {
       case _: BasicType => 1 :: list
       case r: RecordType =>
         val t = tupleAccesss.head
-        val elemT = if (t == Cst(1)) { r.fst } else if (t == Cst(2)) { r.snd } else { throw new Exception("This should not happen") }
+        val elemT = if (t == (1: Nat)) { r.fst } else if (t == (2: Nat)) { r.snd } else { throw new Exception("This should not happen") }
         getLengths(elemT, tupleAccesss.tail, list)
       case a: ArrayType => getLengths(a.elemType, tupleAccesss, a.size :: list)
     }
@@ -82,7 +88,7 @@ object DataType {
     def x(dt2: DataType) = RecordType(dt1, dt2)
   }
 
-  implicit class ArrayTypeConstructor(s: ArithExpr) {
+  implicit class ArrayTypeConstructor(s: Nat) {
     def `.`(dt: DataType) = ArrayType(s, dt)
   }
 }

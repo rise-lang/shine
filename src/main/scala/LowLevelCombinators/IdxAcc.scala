@@ -16,7 +16,7 @@ final case class IdxAcc(n: Nat,
   override def typeCheck(): Unit = {
     import TypeChecker._
     (n: Nat) -> (dt: DataType) ->
-      (index `:` exp"[$int]") ->
+      (index `:` exp"[idx($n)]") ->
       (array `:` acc"[$n.$dt]") -> `type`
   }
 
@@ -24,9 +24,10 @@ final case class IdxAcc(n: Nat,
     import TypeInference._
     val index_ = TypeInference(index)
     val array_ = TypeInference(array)
-    array_.t match {
-      case AccType(ArrayType(n_, dt_)) => IdxAcc(n_, dt_, index_, array_)
-      case x => error(x.toString, "ExpType(ArrayType)")
+    (index_.t, array_.t) match {
+      case (ExpType(IndexType(n1)), AccType(ArrayType(n2, dt_))) if n1 == n2 =>
+        IdxAcc(n1, dt_, index_, array_)
+      case x => error(x.toString, "(exp[idx(n)], exp[n.dt])")
     }
   }
 

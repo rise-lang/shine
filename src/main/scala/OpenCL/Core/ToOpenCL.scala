@@ -9,12 +9,11 @@ import ir.{Type, UndefType}
 import opencl.generator.OpenCLAST._
 import LowLevelCombinators._
 import CombinatorsToOpenCL._
-import apart.arithmetic.{ArithExpr, Cst, Var}
 
 import scala.collection._
 import scala.collection.immutable.List
 
-class ToOpenCL(val localSize: ArithExpr, val globalSize: ArithExpr) {
+class ToOpenCL(val localSize: Nat, val globalSize: Nat) {
 
   def apply(p: Phrase[ExpType -> ExpType],
             arg: IdentPhrase[ExpType]): Function =
@@ -127,7 +126,7 @@ class ToOpenCL(val localSize: ArithExpr, val globalSize: ArithExpr) {
 
     val types = args.map(_.t.dataType).+:(out.t.dataType).map(DataType.toType)
     val lengths = types.flatMap(Type.getLengths)
-    val vars = lengths.filter(_.isInstanceOf[Var]).distinct
+    val vars = lengths.filter(_.isInstanceOf[apart.arithmetic.Var]).distinct
 
     val varDecls = vars.map(v =>
       ParamDecl(v.toString, opencl.ir.Int)
@@ -140,12 +139,12 @@ class ToOpenCL(val localSize: ArithExpr, val globalSize: ArithExpr) {
 
 object ToOpenCL {
 
-  case class Environment(localSize: ArithExpr,
-                         globalSize: ArithExpr,
+  case class Environment(localSize: Nat,
+                         globalSize: Nat,
                          ranges: mutable.Map[String, apart.arithmetic.Range])
 
   object Environment {
-    def apply(localSize: ArithExpr, globalSize: ArithExpr): Environment = {
+    def apply(localSize: Nat, globalSize: Nat): Environment = {
       Environment(localSize, globalSize,
         mutable.Map[String, apart.arithmetic.Range]())
     }
@@ -211,21 +210,21 @@ object ToOpenCL {
 
   def exp(p: Phrase[ExpType],
           env: Environment,
-          arrayAccess: List[(ArithExpr, ArithExpr)],
-          tupleAccess: List[ArithExpr],
+          arrayAccess: List[(Nat, Nat)],
+          tupleAccess: List[Nat],
           dt: DataType): Expression = {
     p match {
       case IdentPhrase(name, t) =>
-        val i = arrayAccess.map(x => x._1 * x._2).foldLeft(0: ArithExpr)((x, y) => x + y)
-        val index = if (i != Cst(0)) {
+        val i = arrayAccess.map(x => x._1 * x._2).foldLeft(0: Nat)((x, y) => x + y)
+        val index = if (i != (0: Nat)) {
           i
         } else {
           null
         }
 
         val s = tupleAccess.map {
-          case Cst(1) => "._1"
-          case Cst(2) => "._2"
+          case apart.arithmetic.Cst(1) => "._1"
+          case apart.arithmetic.Cst(2) => "._2"
           case _ => throw new Exception("This should not happen")
         }.foldLeft("")(_ + _)
 
@@ -294,21 +293,21 @@ object ToOpenCL {
 
   def acc(p: Phrase[AccType],
           env: Environment,
-          arrayAccess: List[(ArithExpr, ArithExpr)],
-          tupleAccess: List[ArithExpr],
+          arrayAccess: List[(Nat, Nat)],
+          tupleAccess: List[Nat],
           dt: DataType): VarRef = {
     p match {
       case IdentPhrase(name, t) =>
-        val i = arrayAccess.map(x => x._1 * x._2).foldLeft(0: ArithExpr)((x, y) => x + y)
-        val index = if (i != Cst(0)) {
+        val i = arrayAccess.map(x => x._1 * x._2).foldLeft(0: Nat)((x, y) => x + y)
+        val index = if (i != (0: Nat)) {
           i
         } else {
           null
         }
 
         val s = tupleAccess.map {
-          case Cst(1) => "._1"
-          case Cst(2) => "._2"
+          case apart.arithmetic.Cst(1) => "._1"
+          case apart.arithmetic.Cst(2) => "._2"
           case _ => throw new Exception("This should not happen")
         }.foldLeft("")(_ + _)
 

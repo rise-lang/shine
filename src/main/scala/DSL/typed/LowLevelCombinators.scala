@@ -3,7 +3,6 @@ package DSL.typed
 import Core.TypeInference._
 import Core._
 import LowLevelCombinators._
-import apart.arithmetic.ArithExpr
 
 object `new` {
   def apply(dt: DataType,
@@ -25,26 +24,26 @@ object `if` {
 }
 
 object `for` {
-  def apply(n: ArithExpr,
+  def apply(n: Nat,
             f: (Phrase[ExpType] => Phrase[CommandType])) =
-    For(n, λ(exp"[$int]")( i => f(i) ))
+    For(n, λ(exp"[idx($n)]")( i => f(i) ))
 }
 
 object `parFor` {
-  def apply(n: ArithExpr,
+  def apply(n: Nat,
             dt: DataType,
             out: Phrase[AccType],
             f: (Phrase[ExpType] => Phrase[AccType] => Phrase[CommandType])) =
-    ParFor(n, dt, out, λ(exp"[$int]")( i => λ(acc"[$dt]")( o => f(i)(o) )))
+    ParFor(n, dt, out, λ(exp"[idx($n)]")( i => λ(acc"[$dt]")( o => f(i)(o) )))
 }
 
 object dblBufFor {
-  def apply(n: ArithExpr,
+  def apply(n: Nat,
             dt: DataType,
             addressSpace: AddressSpace,
             buffer1: Phrase[VarType],
             buffer2: Phrase[VarType],
-            k: ArithExpr,
+            k: Nat,
             body: Phrase[`(nat)->`[AccType -> (ExpType -> CommandType)]],
             C: Phrase[ExpType -> CommandType]) =
     DoubleBufferFor(n, dt, addressSpace, buffer1, buffer2, k, body, C)

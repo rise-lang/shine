@@ -6,6 +6,8 @@ import OpenCL.DSL._
 import apart.arithmetic._
 import opencl.generator.OpenCLPrinter
 
+import scala.language.implicitConversions
+
 object gemv extends App {
 
   val reorderWithStride = (s: ArithExpr) => {
@@ -13,6 +15,16 @@ object gemv extends App {
       val n = ir.Type.getLength(DataType.toType(t)) /^ s
       (i / n) + s * (i % n)
     }
+  }
+
+  val reorderWithStridePhrase = {
+    implicit def toArithExpr(i: IdentPhrase[ExpType]): NamedVar = NamedVar(i.name)
+    _Λ_(s =>
+      _Λ_(n => λ(exp"[idx($n)]")(i => {
+        val m = n /^ s
+        (i / m) + s * (i % m)
+      }))
+    )
   }
 
   val N = SizeVar("N")
@@ -81,7 +93,7 @@ object gemv extends App {
           mapLocal(λ(x => (alpha * x) + (t._2 * beta))) o
             mapLocal(reduceSeq(add, 0.0f)) o split(128) o
             toLocal(mapLocal(reduceSeq(λ(x => λ(a => mult(x) + a)), 0.0f)))
-            o split(N /^ 128) o gather(reorderWithStride(128)) $ zip(xs, t._1)
+            o split(N /^ 128) o gather(reorderWithStridePhrase(128)) $ zip(xs, t._1)
         )) $ zip(mat, ys)
 
       ) ) ) ) )
@@ -96,7 +108,7 @@ object gemv extends App {
           λ(x => (x * alpha) + (t._2 * beta)) o
             toLocal(reduceSeq(add, 0.0f)) o
             toLocal(mapLocal(reduceSeq(λ(x => λ(a => mult(x) + a)), 0.0f))) o
-            split(N /^ 128) o gather(reorderWithStride(128)) $ zip(xs, t._1)
+            split(N /^ 128) o gather(reorderWithStridePhrase(128)) $ zip(xs, t._1)
         )) $ zip(mat, ys)
 
       ) ) ) ) )

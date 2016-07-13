@@ -1,7 +1,6 @@
 package Core
 
 import Compiling.SubstituteImplementations
-import apart.arithmetic.{ArithExpr, NamedVar}
 
 sealed trait Phrase[T <: PhraseType] {
   lazy val t: T = `type`
@@ -18,10 +17,10 @@ final case class LambdaPhrase[T1 <: PhraseType, T2 <: PhraseType](param: IdentPh
 final case class ApplyPhrase[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 -> T2], arg: Phrase[T1])
   extends Phrase[T2]
 
-final case class NatDependentLambdaPhrase[T <: PhraseType](x: NamedVar, body: Phrase[T])
+final case class NatDependentLambdaPhrase[T <: PhraseType](x: NatIdentifier, body: Phrase[T])
   extends Phrase[`(nat)->`[T]]
 
-final case class NatDependentApplyPhrase[T <: PhraseType](fun: Phrase[`(nat)->`[T]], arg: ArithExpr)
+final case class NatDependentApplyPhrase[T <: PhraseType](fun: Phrase[`(nat)->`[T]], arg: Nat)
   extends Phrase[T]
 
 final case class PairPhrase[T1 <: PhraseType, T2 <: PhraseType](fst: Phrase[T1], snd: Phrase[T2])

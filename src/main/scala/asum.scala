@@ -6,20 +6,32 @@ import OpenCL.DSL._
 import apart.arithmetic._
 import opencl.generator.OpenCLPrinter
 
+import scala.language.implicitConversions
+
 object asum extends App {
 
   val reorderWithStride = (s: ArithExpr) => {
-      (i: ArithExpr, t: DataType) => {
-        val n = ir.Type.getLength(DataType.toType(t)) /^ s
-        (i / n) + s * (i % n)
-      }
+    (i: ArithExpr, t: DataType) => {
+      val n = ir.Type.getLength(DataType.toType(t)) /^ s
+      (i / n) + s * (i % n)
     }
+  }
+
+  val reorderWithStridePhrase = {
+    _Λ_(s =>
+      _Λ_(n => λ(exp"[idx($n)]")(i => {
+        val j = NamedVar(i.name, ContinuousRange(0, n))
+        val m = n /^ s
+        (j / m) + s * (j % m)
+      }))
+    )
+  }
 
   val N = SizeVar("N")
   val inputT = ExpType(ArrayType(N, float))
 
-  val abs = λ( x => `if`(x < 0.0f, -x, x))
-  val add = λ( x => λ( a => x + a))
+  val abs = λ(x => `if`(x < 0.0f, -x, x))
+  val add = λ(x => λ(a => x + a))
 
   val high_level_ = λ(inputT)(input =>
     reduce(add, 0.0f) o map(abs) $ input
@@ -42,7 +54,7 @@ object asum extends App {
   TypeChecker(intelDerivedNoWarp1)
 
   println("-- Intel Derived No Warp 1 --")
-  println(OpenCLPrinter()((new ToOpenCL(localSize = 128, globalSize = N))(
+  println(OpenCLPrinter()((new ToOpenCL(localSize = 128, globalSize = N)) (
     intelDerivedNoWarp1, identifier("input", inputT))))
   println("----------------")
 
@@ -57,7 +69,7 @@ object asum extends App {
   TypeChecker(intelDerived2)
 
   println("-- Intel Derived 2 --")
-  println(OpenCLPrinter()((new ToOpenCL(localSize = 128, globalSize = N))(
+  println(OpenCLPrinter()((new ToOpenCL(localSize = 128, globalSize = N)) (
     intelDerived2, identifier("input", inputT))))
   println("----------------")
 
@@ -65,14 +77,14 @@ object asum extends App {
     mapWorkgroup(
       mapLocal(
         reduceSeq(add, 0.0f)
-      ) o split(2048) o gather(reorderWithStride(128))
+      ) o split(2048) o gather(reorderWithStridePhrase(128))
     ) o split(2048 * 128) $ input
   )
   val nvidiaDerived1 = TypeInference(nvidiaDerived1_)
   TypeChecker(nvidiaDerived1)
 
   println("-- Nvidia Derived 1 --")
-  println(OpenCLPrinter()((new ToOpenCL(localSize = 128, globalSize = N))(
+  println(OpenCLPrinter()((new ToOpenCL(localSize = 128, globalSize = N)) (
     nvidiaDerived1, identifier("input", inputT))))
   println("----------------")
 
@@ -80,34 +92,34 @@ object asum extends App {
     mapWorkgroup(
       toLocal(iterate(6,
         mapLocal(reduceSeq(add, 0.0f)) o
-        split(2)
+          split(2)
       ))
-      o
-      toLocal(mapLocal(
-        reduceSeq(add, 0.0f)
-      )) o split(128)
+        o
+        toLocal(mapLocal(
+          reduceSeq(add, 0.0f)
+        )) o split(128)
     ) o split(8192) $ input
   )
   val nvidiaDerived2 = TypeInference(nvidiaDerived2_)
   TypeChecker(nvidiaDerived2)
 
   println("-- Nvidia Derived 2 --")
-  println(OpenCLPrinter()((new ToOpenCL(localSize = ?, globalSize = N))(
+  println(OpenCLPrinter()((new ToOpenCL(localSize = ?, globalSize = N)) (
     nvidiaDerived2, identifier("input", inputT))))
   println("----------------")
 
   val amdDerived1_ = λ(inputT)(input =>
     mapWorkgroup(
       asScalar() o mapLocal(
-        reduceSeq(λ( x => λ( a => x + a)), vectorize(2, 0.0f))
-      ) o split(2048) o gather(reorderWithStride(64)) o asVector(2)
+        reduceSeq(λ(x => λ(a => x + a)), vectorize(2, 0.0f))
+      ) o split(2048) o gather(reorderWithStridePhrase(64)) o asVector(2)
     ) o split(4096 * 128) $ input
   )
   val amdDerived1 = TypeInference(amdDerived1_)
   TypeChecker(amdDerived1)
 
   println("-- AMD Derived --")
-  println(OpenCLPrinter()((new ToOpenCL(localSize = 128, globalSize = N))(
+  println(OpenCLPrinter()((new ToOpenCL(localSize = 128, globalSize = N)) (
     amdDerived1, identifier("input", inputT))))
   println("----------------")
 }
