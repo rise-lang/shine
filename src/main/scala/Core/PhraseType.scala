@@ -201,6 +201,17 @@ object PhraseType {
         case _ => error
       }
     }
+    def parseWrappedDataType: DataType = {
+      nextToken match {
+        case "[" =>
+          val dt = parseDataType
+          nextToken match {
+            case "]" => dt
+            case _ => error
+          }
+        case _ => error
+      }
+    }
 
     def parseExpType: ExpType = {
       nextToken match {

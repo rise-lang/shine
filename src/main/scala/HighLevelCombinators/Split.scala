@@ -67,13 +67,19 @@ final case class Split(n: Nat,
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
-    acc(array)(SplitAcc(n, m, dt, A))
+
+    val e = array
+
+    acc(e)(SplitAcc(n, m, dt, A))
   }
 
   override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
     import RewriteToImperative._
-    exp(array)(λ(array.t) { x =>
+
+    val e = array
+
+    exp(e)(λ(exp"[${m * n}.$dt]")( x =>
       C(Split(n, m, dt, x))
-    })
+    ))
   }
 }

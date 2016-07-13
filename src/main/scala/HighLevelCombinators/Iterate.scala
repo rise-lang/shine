@@ -109,18 +109,15 @@ final case class Iterate(n: Nat,
 
     assert(n != null && m != null && k != null && dt != null)
 
-    exp(array)(λ(ExpType(ArrayType(m, dt))) { x =>
+    val e = array
+
+    exp(e)(λ(exp"[$m.$dt]")(x =>
       IterateIAcc(n, m = m /^ n.pow(k), k, dt, A,
-        _Λ_(l =>
-          λ(acc"[${l /^ n}.$dt]") { o =>
-            λ(exp"[$l.$dt]") { x =>
-              acc(f(l)(x))(o)
-            }
-          }
-        ),
+        _Λ_(l => λ(acc"[${l /^ n}.$dt]")(o => λ(exp"[$l.$dt]")(x =>
+          acc(f(l)(x))(o)))),
         x
       )
-    })
+    ))
   }
 
   override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
@@ -128,32 +125,14 @@ final case class Iterate(n: Nat,
 
     assert(n != null && m != null && k != null && dt != null)
 
-    exp(array)(λ(ExpType(ArrayType(m, dt))) { x =>
+    val e = array
+
+    exp(e)(λ(exp"[$m.$dt]")(x =>
       IterateIExp(n, m = m /^ n.pow(k), k, dt, C,
-        _Λ_(l =>
-          λ(acc"[${l /^ n}.$dt]") { o =>
-            λ(exp"[$l.$dt]") { x =>
-              acc(f(l)(x))(o)
-            }
-          }
-        ),
+        _Λ_(l => λ(acc"[${l /^ n}.$dt]")(o => λ(exp"[$l.$dt]")(x =>
+          acc(f(l)(x))(o)))),
         x
       )
-    })
+    ))
   }
-
-  /*
-    exp(array)(λ( ExpType(ArrayType(n, dt1)) ) { x =>
-        makeMapI(A,
-          λ( AccType(dt2) ) { o =>
-            λ( ExpType(dt1) ) { x => acc(f(x))(o) } },
-          x
-        )
-      })
-
-    `new`(ArrayType(n, dt2), GlobalMemory, tmp =>
-        acc(this)(tmp.wr) `;`
-        C(tmp.rd)
-      )
-     */
 }

@@ -17,7 +17,9 @@ abstract class AbstractReduce(n: Nat,
   extends HighLevelCombinator {
 
   def makeReduce: (Nat, DataType, DataType, Phrase[ExpType -> (ExpType -> ExpType)], Phrase[ExpType], Phrase[ExpType]) => AbstractReduce
+
   def makeReduceIAcc: (Nat, DataType, DataType, Phrase[AccType], Phrase[AccType -> (ExpType -> (ExpType -> CommandType))], Phrase[ExpType], Phrase[ExpType]) => ReduceIAcc
+
   def makeReduceIExp: (Nat, DataType, DataType, Phrase[ExpType -> CommandType], Phrase[AccType -> (ExpType -> (ExpType -> CommandType))], Phrase[ExpType], Phrase[ExpType]) => ReduceIExp
 
   override lazy val `type` = exp"[$dt2]"
@@ -76,16 +78,14 @@ abstract class AbstractReduce(n: Nat,
     assert(n != null && dt1 != null && dt2 != null)
     import RewriteToImperative._
 
-    val F = f
-    val I = init
-    val E = array
+    val i = init
+    val e = array
 
-    exp(E)(λ(ExpType(ArrayType(n, dt1)))(x =>
-      exp(I)(λ(ExpType(dt2))(y =>
+    exp(e)(λ(exp"[$n.$dt1]")(x =>
+      exp(i)(λ(exp"[$dt2]")(y =>
         makeReduceIAcc(n, dt1, dt2, A,
-          λ(AccType(dt2))(o =>
-            λ(ExpType(dt1))(x =>
-              λ(ExpType(dt2))(y => acc(F(x)(y))(o)))),
+          λ(acc"[$dt2]")(o => λ(exp"[$dt1]")(x => λ(exp"[$dt2]")(y =>
+            acc(f(x)(y))(o)))),
           y,
           x
         )
@@ -97,19 +97,18 @@ abstract class AbstractReduce(n: Nat,
     assert(n != null && dt1 != null && dt2 != null)
     import RewriteToImperative._
 
-    exp(array)(λ(ExpType(ArrayType(n, dt1))) { x =>
-      exp(init)(λ(ExpType(dt2)) { y =>
+    val e = array
+    val i = init
+
+    exp(e)(λ(exp"[$n.$dt1]")(x =>
+      exp(i)(λ(exp"[$dt2]")(y =>
         makeReduceIExp(n, dt1, dt2, C,
-          λ(AccType(dt2)) { o =>
-            λ(ExpType(dt1)) { x =>
-              λ(ExpType(dt2)) { y => acc(f(x)(y))(o) }
-            }
-          },
-          y,
-          x
+          λ(acc"[$dt2]")(o => λ(exp"[$dt1]")(x => λ(exp"[$dt2]")(y =>
+            acc(f(x)(y))(o)))),
+          y, x
         )
-      })
-    })
+      ))
+    ))
   }
 
   override def xmlPrinter: Elem =

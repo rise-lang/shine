@@ -17,6 +17,7 @@ abstract class AbstractMap(n: Nat,
   extends HighLevelCombinator {
 
   def makeMap: (Nat, DataType, DataType, Phrase[ExpType -> ExpType], Phrase[ExpType]) => AbstractMap
+
   def makeMapI: (Nat, DataType, DataType, Phrase[AccType], Phrase[AccType -> (ExpType -> CommandType)], Phrase[ExpType]) => AbstractMapI
 
 
@@ -68,27 +69,23 @@ abstract class AbstractMap(n: Nat,
     assert(n != null && dt1 != null && dt2 != null)
     import RewriteToImperative._
 
-    val F = f
-    val E = array
+    val e = array
 
-    exp(E)(λ(exp"[$n.$dt1]")(x =>
+    exp(e)(λ(exp"[$n.$dt1]")(x =>
       makeMapI(n, dt1, dt2, A,
-        λ(acc"[$dt2]")(o =>
-          λ(exp"[$dt1]")(x => acc(F(x))(o))),
+        λ(acc"[$dt2]")(o => λ(exp"[$dt1]")(x => acc(f(x))(o))),
         x
       )
     ))
-
   }
 
   override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
     assert(n != null && dt1 != null && dt2 != null)
     import RewriteToImperative._
 
-    `new`(ArrayType(n, dt2), GlobalMemory, tmp =>
-      acc(this)(tmp.wr) `;`
-        C(tmp.rd)
-    )
+    `new`(dt"[$n.$dt2]", GlobalMemory, λ(exp"[$n.$dt2]" x acc"[$n.$dt2]")(tmp =>
+      acc(this)(tmp.wr) `;` C(tmp.rd)
+    ))
   }
 
   override def prettyPrint: String =
@@ -115,5 +112,6 @@ final case class Map(n: Nat,
                      array: Phrase[ExpType])
   extends AbstractMap(n, dt1, dt2, f, array) {
   override def makeMap = Map
+
   override def makeMapI = MapI
 }

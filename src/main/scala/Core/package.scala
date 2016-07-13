@@ -77,6 +77,10 @@ package object Core {
     def acc(args: Any*): AccType = {
       new PhraseTypeParser("acc" + sc.s(args:_*), sc.parts, args.iterator).parseAccType
     }
+
+    def dt(args: Any*): DataType = {
+      new PhraseTypeParser(sc.s(args:_*), sc.parts, args.iterator).parseWrappedDataType
+    }
   }
 
 //  implicit final class XAssoc[A](private val self: A) extends AnyVal {

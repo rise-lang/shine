@@ -51,16 +51,19 @@ final case class Gather(n: Nat,
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
-    exp(this)(λ(array.t) { x =>
+    exp(this)(λ(exp"[$n.$dt]")(x =>
       acc(x)(A)
-    })
+    ))
   }
 
   override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
     import RewriteToImperative._
-    exp(array)(λ(array.t) { x =>
+
+    val e = array
+
+    exp(e)(λ(exp"[$n.$dt]")( x =>
       C(Gather(n, dt, idxF, x))
-    })
+    ))
   }
 
   override def prettyPrint: String = s"(gather idxF ${PrettyPrinter(array)})"
