@@ -8,7 +8,7 @@ import scala.language.reflectiveCalls
 object OperationalSemantics {
 
   sealed abstract class Data(val dataType: DataType)
-  final case class IndexData(i: Nat) extends Data(IndexType(i))
+  final case class IndexData(i: Nat) extends Data(IndexType(i.max))
   final case class BoolData(b: Boolean) extends Data(bool)
   final case class IntData(i: Int) extends Data(int) {
     override def toString = i.toString
@@ -236,6 +236,10 @@ object OperationalSemantics {
       case IntData(i) => i
       case _ => throw new Exception("This should never happen")
     }
+  }
+
+  def evalIndexExp(p: Phrase[ExpType]): Nat = {
+    evalIndexExp(new Store(), p)
   }
 
   def evalIntExp(s: Store, p: Phrase[ExpType]): Int = {

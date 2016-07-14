@@ -1,5 +1,6 @@
 package Core
 
+import Core.OperationalSemantics.IndexData
 import apart.arithmetic.ArithExpr
 
 sealed trait PhraseType
@@ -38,10 +39,22 @@ final case class NatDependentFunctionType[T <: PhraseType](x: NatIdentifier, t: 
 object PhraseType {
 
   def substitute[T <: PhraseType](ae: Nat,
-                                  `for`: Nat,
+                                  `for`: NatIdentifier,
                                   in: Phrase[T]): Phrase[T] = {
 
     case class fun() extends VisitAndRebuild.fun {
+      override def apply[T2 <: PhraseType](p: Phrase[T2]): Result[Phrase[T2]] = {
+        p match {
+          case IdentPhrase(name, t) =>
+            if (`for`.name == name) {
+              Stop(LiteralPhrase(IndexData(ae), IndexType(ae.max)).asInstanceOf[Phrase[T2]])
+            } else {
+              Continue(p, this)
+            }
+          case _ => Continue(p, this)
+        }
+      }
+
       override def apply(e: Nat) = substitute(ae, `for`, e)
 
       override def apply[DT <: DataType](dt: DT) = substitute(ae, `for`, dt)

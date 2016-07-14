@@ -1,5 +1,7 @@
 package Core
 
+import Core.OperationalSemantics.IndexData
+
 object VisitAndRebuild {
 
   class fun {
@@ -52,7 +54,10 @@ object VisitAndRebuild {
           case IfThenElsePhrase(cond, thenP, elseP) =>
             IfThenElsePhrase(apply(cond, f), apply(thenP, f), apply(elseP, f))
 
-          case LiteralPhrase(d, t) => LiteralPhrase(d, f(t))
+          case LiteralPhrase(d, t) => d match {
+            case IndexData(i) => LiteralPhrase(IndexData(f(i)), f(t))
+            case _ => LiteralPhrase(d, f(t))
+          }
 
           case UnaryOpPhrase(op, x) => UnaryOpPhrase(op, apply(x, f))
 

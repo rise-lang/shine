@@ -3,7 +3,6 @@ package DSL
 import Core.TypeInference._
 import Core._
 import LowLevelCombinators.{Assign, Idx, IdxAcc, Seq}
-import apart.arithmetic.{ArithExpr, NamedVar}
 
 import scala.language.implicitConversions
 
@@ -52,6 +51,14 @@ package object typed {
     def apply(arg: Phrase[T1]): Phrase[T2] = Lift.liftFunction(fun)(arg)
 
     def $(arg: Phrase[T1]): Phrase[T2] = apply(arg)
+  }
+
+  implicit class CallExpLambda[T <: PhraseType](fun: Phrase[ExpType -> T]) {
+    def apply(arg: Phrase[ExpType]): Phrase[T] = CallLambda[ExpType, T](fun)(arg)
+    def apply(arg: Nat): Phrase[T] = Lift.liftFunctionToNatLambda(fun)(arg)
+
+    def $(arg: Phrase[ExpType]): Phrase[T] = apply(arg)
+    def $(arg: Nat): Phrase[T] = apply(arg)
   }
 
   implicit class CallNatDependentLambda[T <: PhraseType](fun: Phrase[`(nat)->`[T]]) {

@@ -34,8 +34,10 @@ final case class Gather(n: Nat,
       case ExpType(ArrayType(n_, dt_)) =>
         val idxF_ = TypeInference(idxF)
         idxF_.t match {
-          case FunctionType(ExpType(IndexType(m)), _) =>
+          case FunctionType(ExpType(IndexType(m: NatIdentifier)), _) =>
             Gather(n_, dt_, idxF_ `[` n_ `/` m `]`, array_)
+          case FunctionType(ExpType(IndexType(m1: Nat)), ExpType(IndexType(m2: Nat)))
+            if n_ == m1 && n_ == m2 => Gather(n_, dt_, idxF_, array_)
           case x => error(x.toString, "exp[idx(n)] -> exp[idx(n)]")
         }
       case x => error(x.toString, "exp[n.dt]")

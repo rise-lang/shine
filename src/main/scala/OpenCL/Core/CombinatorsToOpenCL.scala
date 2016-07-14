@@ -183,14 +183,12 @@ object CombinatorsToOpenCL {
                arrayAccess: List[(ArithExpr, ArithExpr)],
                tupleAccess: List[ArithExpr],
                dt: DataType): Expression = {
+    import DSL.typed._
 
     val idx = arrayAccess.head
     val stack = arrayAccess.tail
 
-    import DSL.typed._
-
-    val newIdx = g.idxF(LiteralPhrase(IndexData(idx._1), IndexType(idx._1)))
-    val n_ = OperationalSemantics.evalIndexExp(new OperationalSemantics.Store(), newIdx)
+    val n_ = OperationalSemantics.evalIndexExp(g.idxF(idx._1))
 
     ToOpenCL.exp(g.array, env, (n_, idx._2) :: stack, tupleAccess, dt)
 

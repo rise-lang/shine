@@ -44,7 +44,7 @@ package object Core {
     }
 
     def `[`(e: Nat) = new {
-      def `/`(`for`: Nat) = new {
+      def `/`(`for`: NatIdentifier) = new {
         def `]` = PhraseType.substitute(e, `for`, in)
       }
     }

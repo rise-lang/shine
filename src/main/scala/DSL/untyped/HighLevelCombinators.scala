@@ -58,6 +58,9 @@ object iterate {
 object gather {
 //  def apply(idxF: Phrase[ExpType -> ExpType]) = λ(array => Gather(null, null, idxF, array))
 
-  def apply(idxF: Phrase[`(nat)->`[->[ExpType, ExpType]]]) =
-    λ(array => Gather(null, null, idxF(NamedVar(newName())), array))
+  def apply(idxF: Phrase[`(nat)->`[->[ExpType, ExpType]]]) = {
+    val idxF_ = idxF(NamedVar(newName()))
+    Core.xmlPrinter.toFile("/tmp/s.xml", idxF_)
+    λ(array => Gather(null, null, idxF_, array))
+  }
 }
