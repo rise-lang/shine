@@ -1,8 +1,10 @@
 package DSL
 
+import Core.OperationalSemantics.IndexData
 import Core.TypeInference._
 import Core._
 import LowLevelCombinators.{Assign, Idx, IdxAcc, Seq}
+import apart.arithmetic.{ContinuousRange, NamedVar}
 
 import scala.language.implicitConversions
 
@@ -84,8 +86,18 @@ package object typed {
     def wr: Proj2Phrase[ExpType, AccType] = π2(v)
   }
 
-  implicit def toLiteralInt(i: Int): LiteralPhrase = LiteralPhrase(i, int)
+  implicit class IdentExpPhraseExtensions(i: IdentPhrase[ExpType]) {
+    def asNatIdentifier = NamedVar(i.name)
+    def asNatIdentifier(withUpperBound: Nat) =
+      NamedVar(i.name, ContinuousRange(0, withUpperBound))
+  }
 
+  implicit class NatExtensions(n: Nat) {
+    def asPhrase = LiteralPhrase(IndexData(n), IndexType(n.max))
+    def asPhrase(withType: IndexType) = LiteralPhrase(IndexData(n), withType)
+  }
+
+  implicit def toLiteralInt(i: Int): LiteralPhrase = LiteralPhrase(i, int)
 
   implicit def toPair[T1 <: PhraseType, T2 <: PhraseType](pair: (Phrase[T1], Phrase[T2])): PairPhrase[T1, T2] =
     PairPhrase(pair._1, pair._2)
