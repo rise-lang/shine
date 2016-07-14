@@ -63,13 +63,13 @@ final case class ReduceIExp(n: Nat,
     </reduceIExp>
 
   override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
-    `new`(init.t.dataType, PrivateMemory, accum => {
+    `new`(dt2, PrivateMemory, accum =>
       (accum.wr `:=` init) `;`
-        `for`(n, i => {
+        `for`(n, i =>
           SubstituteImplementations(f(accum.wr)(in `@` i)(accum.rd), env)
-        }) `;`
+        ) `;`
         out(accum.rd)
-    })
+    )
   }
 
 }

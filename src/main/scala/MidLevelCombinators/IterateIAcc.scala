@@ -62,17 +62,17 @@ final case class IterateIAcc(n: Nat,
             _Λ_(l => {
               val s_l = s(l)
               val s_l1 = s(l + 1)
-              λ(AccType(ArrayType(sEnd, dt))) { o =>
-                λ(ExpType(ArrayType(sEnd, dt))) { x =>
+              λ(acc"[$sEnd.$dt]")(a =>
+                λ(exp"[$sEnd.$dt]")(e =>
                   SubstituteImplementations(
-                    f(s_l)(TruncAcc(sEnd, s_l1, dt, o))(TruncExp(sEnd, s_l, dt, x)),
+                    f(s_l)(TruncAcc(sEnd, s_l1, dt, a))(TruncExp(sEnd, s_l, dt, e)),
                     env)
-                }
-              }
+                )
+              )
             }),
-            λ(ExpType(ArrayType(sEnd, dt)))(x =>
+            λ(exp"[$sEnd.$dt]")(e =>
               SubstituteImplementations(
-                f.apply(s(end - start - 1))(TruncAcc(m, s(end - start), dt, out))(TruncExp(sEnd, s(end - start - 1), dt, x))
+                f.apply(s(end - start - 1))(TruncAcc(m, s(end - start), dt, out))(TruncExp(sEnd, s(end - start - 1), dt, e))
                 , env))
           )
 
@@ -82,17 +82,17 @@ final case class IterateIAcc(n: Nat,
             _Λ_(l => {
               val s_l = s(l)
               val s_l1 = s(l + 1)
-              λ(AccType(ArrayType(sEnd, dt))) { o =>
-                λ(ExpType(ArrayType(sEnd, dt))) { x =>
+              λ(acc"[$sEnd.$dt]")(a =>
+                λ(exp"[$sEnd.$dt]")(e =>
                   SubstituteImplementations(
-                    f(s_l)(TruncAcc(sEnd, s_l1, dt, o))(TruncExp(sEnd, s_l, dt, x)),
+                    f(s_l)(TruncAcc(sEnd, s_l1, dt, a))(TruncExp(sEnd, s_l, dt, e)),
                     env)
-                }
-              }
+                )
+              )
             }),
-            λ(ExpType(ArrayType(sEnd, dt)))(x =>
+            λ(exp"[$sEnd.$dt]")(x =>
               SubstituteImplementations(MapI(m, dt, dt, out,
-                λ(AccType(dt)) { o => λ(ExpType(dt)) { x => o `:=` x } }, x), env))
+                λ(acc"[$dt]")(a => λ(exp"[$dt]")(e => a `:=` e)), x), env))
           )
       }
     }
@@ -101,23 +101,23 @@ final case class IterateIAcc(n: Nat,
 
     k match {
       case Cst(x) if x > 2 =>
-        `new`(ArrayType(sEnd, dt), addressSpace, buf1 => {
-          `new`(ArrayType(sEnd, dt), addressSpace, buf2 => {
+        `new`(dt"[$sEnd.dt]", addressSpace, buf1 =>
+          `new`(dt"[$sEnd.dt]", addressSpace, buf2 =>
             SubstituteImplementations(
               f(s(0))(TruncAcc(sEnd, s(1), dt, buf1.wr))(TruncExp(sEnd, s(0), dt, in))
               , env) `;`
               iterateLoop(1, k, buf1, buf2)
-          })
-        })
+          )
+        )
 
       case _ =>
-        `new`(ArrayType(sEnd, dt), addressSpace, buf1 => {
-          `new`(ArrayType(sEnd, dt), addressSpace, buf2 => {
+        `new`(dt"[$sEnd.$dt]", addressSpace, buf1 =>
+          `new`(dt"[$sEnd.$dt]", addressSpace, buf2 =>
             SubstituteImplementations(MapI(sEnd, dt, dt, buf1.wr,
-              λ(AccType(dt)) { o => λ(ExpType(dt)) { x => o `:=` x } }, in), env) `;`
+              λ(acc"[$dt]")(a => λ(exp"[$dt]")(e => a `:=` e)), in), env) `;`
               iterateLoop(0, k, buf1, buf2)
-          })
-        })
+          )
+        )
     }
   }
 

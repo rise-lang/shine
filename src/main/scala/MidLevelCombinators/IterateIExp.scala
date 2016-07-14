@@ -47,19 +47,19 @@ final case class IterateIExp(n: Nat,
 
     val addressSpace = GlobalMemory
 
-    `new`(ArrayType(sEnd, dt), addressSpace, buf1 => {
-      `new`(ArrayType(sEnd, dt), addressSpace, buf2 => {
+    `new`(dt"[$sEnd.$dt]", addressSpace, buf1 => {
+      `new`(dt"[$sEnd.$dt]", addressSpace, buf2 => {
         SubstituteImplementations(MapI(sEnd, dt, dt, buf1.wr,
-          λ(AccType(dt)) { o => λ(ExpType(dt)) { x => o `:=` x } }, in), env) `;`
+          λ(acc"[$dt]")(a => λ(exp"[$dt]")(e => a `:=` e)), in), env) `;`
           dblBufFor(sEnd, dt, addressSpace, buf1, buf2, k,
             _Λ_(l => {
               val s_l = s(l)
               val s_l1 = s(l + 1)
-              λ(AccType(ArrayType(sEnd, dt))) { o =>
-                λ(ExpType(ArrayType(sEnd, dt))) { x =>
-                  SubstituteImplementations(f(s_l)(TruncAcc(sEnd, s_l1, dt, o))(TruncExp(sEnd, s_l, dt, x)), env)
-                }
-              }
+              λ(acc"[$sEnd.$dt]")(a =>
+                λ(exp"[$sEnd.$dt]")(e =>
+                  SubstituteImplementations(f(s_l)(TruncAcc(sEnd, s_l1, dt, a))(TruncExp(sEnd, s_l, dt, e)), env)
+                )
+              )
             }),
             out
           )
