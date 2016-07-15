@@ -3,7 +3,7 @@ import Core.OperationalSemantics.FloatData
 import Core._
 import DSL.untyped._
 import LowLevelCombinators.JoinAcc
-import OpenCL.Core.{GlobalMemory, PrivateMemory, ToOpenCL}
+import OpenCL.Core.{AdjustMemoryAllocation, GlobalMemory, PrivateMemory, ToOpenCL}
 import OpenCL.DSL._
 import apart.arithmetic._
 import ir.UndefType
@@ -162,6 +162,8 @@ object dot extends App {
         )
       )
     )
+
+  Core.xmlPrinter.toFile("/tmp/mem.xml", AdjustMemoryAllocation(dotSimpleImp))
 
   TypeChecker(dotSimpleImp)
 

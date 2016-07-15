@@ -22,7 +22,7 @@ object TypeInference {
   }
 
   case class typeInference() extends VisitAndRebuild.fun {
-    override def apply[T <: PhraseType](phrase: Phrase[T]): Result[Phrase[T]] = {
+    override def pre[T <: PhraseType](phrase: Phrase[T]): Result[Phrase[T]] = {
       phrase match {
         case x: IdentPhrase[T] =>
           x.t match {
@@ -38,7 +38,7 @@ object TypeInference {
   }
 
   case class setParamAndTypeInference(t: PhraseType) extends VisitAndRebuild.fun {
-    override def apply[T <: PhraseType](phrase: Phrase[T]): Result[Phrase[T]] = {
+    override def pre[T <: PhraseType](phrase: Phrase[T]): Result[Phrase[T]] = {
       phrase match {
         case l@LambdaPhrase(x, p) =>
           val newX = IdentPhrase(newName(), t)
@@ -49,7 +49,7 @@ object TypeInference {
   }
 
   case class setParamsAndTypeInference(t1: PhraseType, t2: PhraseType) extends VisitAndRebuild.fun {
-    override def apply[T <: PhraseType](phrase: Phrase[T]): Result[Phrase[T]] = {
+    override def pre[T <: PhraseType](phrase: Phrase[T]): Result[Phrase[T]] = {
       phrase match {
         case LambdaPhrase(x, p) =>
           val newX = IdentPhrase(newName(), t1)

@@ -74,7 +74,7 @@ object Phrase {
                                                      `for`: Phrase[T1],
                                                      in: Phrase[T2]): Phrase[T2] = {
     case class fun() extends VisitAndRebuild.fun {
-      override def apply[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
+      override def pre[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
         if (`for` == p) { Stop(phrase.asInstanceOf[Phrase[T]]) } else { Continue(p, this) }
       }
     }

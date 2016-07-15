@@ -160,10 +160,10 @@ object CombinatorsToOpenCL {
                block: Block,
                env: ToOpenCL.Environment): Block = {
 
-    case class ConcreteOpenCLParFor(n: ArithExpr,
-                                    dt: DataType,
-                                    out: Phrase[AccType],
-                                    body: Phrase[ExpType -> (AccType -> CommandType)])
+    case class ConcreteOpenCLParFor(override val n: ArithExpr,
+                                    override val dt: DataType,
+                                    override val out: Phrase[AccType],
+                                    override val body: Phrase[ExpType -> (AccType -> CommandType)])
       extends OpenCLParFor(n, dt, out, body) {
       override def makeParFor = ConcreteOpenCLParFor
 

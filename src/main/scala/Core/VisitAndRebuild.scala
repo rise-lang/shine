@@ -5,7 +5,8 @@ import Core.OperationalSemantics.IndexData
 object VisitAndRebuild {
 
   class fun {
-    def apply[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = Continue(p, this)
+    def pre[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = Continue(p, this)
+    def post[T <: PhraseType](p: Phrase[T]): Phrase[T] = p
     def apply(ae: Nat): Nat = ae
     def apply[T <: DataType](dt: T): T = dt
 
@@ -15,11 +16,11 @@ object VisitAndRebuild {
   }
 
   def apply[T <: PhraseType](phrase: Phrase[T], f: fun): Phrase[T] = {
-    f(phrase) match {
+    f.pre(phrase) match {
       case r: f.Stop[T]@unchecked => r.p
       case c: f.Continue[T]@unchecked =>
         val f = c.f
-        (c.p match {
+        f.post(c.p match {
           case i: IdentPhrase[T] =>
             val t = i.t match {
               case ExpType(dt) => ExpType(f(dt))

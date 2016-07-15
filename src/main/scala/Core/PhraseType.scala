@@ -43,7 +43,7 @@ object PhraseType {
                                   in: Phrase[T]): Phrase[T] = {
 
     case class fun() extends VisitAndRebuild.fun {
-      override def apply[T2 <: PhraseType](p: Phrase[T2]): Result[Phrase[T2]] = {
+      override def pre[T2 <: PhraseType](p: Phrase[T2]): Result[Phrase[T2]] = {
         p match {
           case IdentPhrase(name, t) =>
             if (`for`.name == name) {

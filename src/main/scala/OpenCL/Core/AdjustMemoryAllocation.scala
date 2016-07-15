@@ -3,44 +3,60 @@ package OpenCL.Core
 import Core._
 import LowLevelCombinators._
 
+import scala.language.postfixOps
+import scala.language.reflectiveCalls
+
 object AdjustMemoryAllocation {
 
   def apply[T <: PhraseType](phrase: Phrase[T]): Phrase[T] = {
 
-    case class fun(numGlb: Nat, numLcl: Nat, numPvt: Nat) extends VisitAndRebuild.fun {
-      override def apply[U <: PhraseType](p: Phrase[U]): Result[Phrase[U]] = {
+    var allocations = List[(DataType, AddressSpace, IdentPhrase[VarType])]()
+
+    case class fun(env: List[(IdentPhrase[ExpType], Nat)]) extends VisitAndRebuild.fun {
+      override def pre[U <: PhraseType](p: Phrase[U]): Result[Phrase[U]] = {
         p match {
-          case n: New =>
-            n.addressSpace match {
-              case GlobalMemory =>
-                n.f.asInstanceOf[LambdaPhrase[(ExpType x AccType), CommandType]].param.name
-                val nn = New(n.dt, GlobalMemory, VisitAndRebuild(n.f, this))
-                Stop(nn.asInstanceOf[Phrase[U]])
-              case LocalMemory => Continue(n, this)
-              case PrivateMemory => Continue(n, this)
+          // remember index var and length for each par for
+          case pf: AbstractParFor =>
+            pf.body match {
+              case LambdaPhrase(param, _) =>
+                Continue(pf, fun((param, pf.n) :: env))
+              case _ => throw new Exception("This should not happen")
             }
-
-//          case pf: AbstractParFor =>
-//            pf match {
-//              case ParForGlobal(_, _, _, _) | ParForWorkgroup(_, _, _, _) =>
-//                val t = DataType.toType(pf.out.t.dataType)
-//                val len = ir.Type.getMaxLength(t)
-//                Continue(pf, fun(numGlb * len, numLcl, numPvt))
-//
-//              case ParForLocal(_, _, _, _) =>
-//                val t = DataType.toType(pf.out.t.dataType)
-//                val len = ir.Type.getMaxLength(t)
-//                Continue(pf, fun(numGlb * len, numLcl * len, numPvt))
-//
-//              case _ => Continue(pf, this)
-//            }
-
           case _ => Continue(p, this)
+        }
+      }
+
+      override def post[U <: PhraseType](p: Phrase[U]): Phrase[U] = {
+        import DSL.typed._
+        p match {
+          case New(dt, addressSpace, f) if addressSpace != PrivateMemory =>
+            val newDt = env.foldLeft(dt)( (dt_, head) =>ArrayType(head._2, dt_))
+            val newParam = IdentPhrase(newName(), VarType(newDt))
+            allocations = (newDt, addressSpace, newParam) :: allocations
+            val p = f(newParam)
+
+            env.foldLeft(p)( (p1, head) => {
+              val (i, n) = head
+              val p2 = Phrase.substitute(π1(newParam) `@` i, `for`=π1(newParam), in=p1)
+              val p3 = Phrase.substitute(π2(newParam) `@` i, `for`=π2(newParam), in=p2)
+              p3
+            }).asInstanceOf[Phrase[U]]
+//            val (i, n) = env.head
+//            val newDt = ArrayType(n, dt)
+//            val newParam = IdentPhrase(newName(), VarType(newDt))
+//            allocations = (newDt, addressSpace, newParam) :: allocations
+//            val p1 = f(newParam) `[` (π1(newParam) `@` i) `/` π1(newParam) `]`
+//            val p2 = Phrase.substitute(π2(newParam) `@` i, `for` = π2(newParam), in = p1)
+//            p2.asInstanceOf[Phrase[U]]
+          case _ => p
         }
       }
     }
 
-    VisitAndRebuild(phrase, fun(1, 1, 1))
+    val body = VisitAndRebuild(phrase, fun(List()))
+    allocations.foldLeft( body.asInstanceOf[Phrase[CommandType]] )((b, alloc) =>
+      New(alloc._1, alloc._2, LambdaPhrase(alloc._3, b))
+    ).asInstanceOf[Phrase[T]]
   }
 
 }
