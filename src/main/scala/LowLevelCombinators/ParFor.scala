@@ -43,7 +43,7 @@ abstract class AbstractParFor(n: Nat,
       <output type={ToString(AccType(ArrayType(n, dt)))}>
         {Core.xmlPrinter(out)}
       </output>
-      <body type={ToString(ExpType(int) -> (AccType(dt) -> CommandType()))}>
+      <body type={ToString(ExpType(IndexType(n)) -> (AccType(dt) -> CommandType()))}>
         {Core.xmlPrinter(body)}
       </body>
     </parFor>.copy(label = {

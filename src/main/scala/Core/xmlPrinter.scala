@@ -36,10 +36,10 @@ object xmlPrinter {
         </natApply>
 
       case p1: Proj1Phrase[a, b] =>
-        <getFst>{apply(p1.pair)}</getFst>
+        <π1>{apply(p1.pair)}</π1>
 
       case p2: Proj2Phrase[a, b] =>
-        <getSnd>{apply(p2.pair)}</getSnd>
+        <π2>{apply(p2.pair)}</π2>
 
       case IfThenElsePhrase(cond, thenP, elseP) =>
         <ifThenElse>

@@ -1,9 +1,13 @@
 
+import Core.OperationalSemantics.FloatData
 import Core._
 import DSL.untyped._
-import OpenCL.Core.ToOpenCL
+import LowLevelCombinators.JoinAcc
+import OpenCL.Core.{GlobalMemory, PrivateMemory, ToOpenCL}
 import OpenCL.DSL._
 import apart.arithmetic._
+import ir.UndefType
+import opencl.generator.OpenCLAST.Block
 import opencl.generator.OpenCLPrinter
 
 import scala.language.implicitConversions
@@ -15,7 +19,7 @@ object dot extends App {
   val ysT = ExpType(ArrayType(N, float))
 
   def printOpenCLKernel1(name: String,
-                         untypedLambda: Phrase[ExpType ->(ExpType -> ExpType)]) = {
+                         untypedLambda: Phrase[ExpType -> (ExpType -> ExpType)]) = {
     val lambda = TypeInference(untypedLambda)
     lambda.typeCheck()
     println(name + ":\n" + PrettyPrinter(lambda))
@@ -38,12 +42,12 @@ object dot extends App {
     println("----------------")
   }
 
-  val mult = λ( x => x._1 * x._2 )
-  val add = λ( x => λ( a => x + a))
+  val mult = λ(x => x._1 * x._2)
+  val add = λ(x => λ(a => x + a))
 
   val high_level = λ(xsT)(xs => λ(ysT)(ys =>
     reduce(add, 0.0f) o map(mult) $ zip(xs, ys)
-  ) )
+  ))
 
   printOpenCLKernel1("High-Level", high_level)
 
@@ -53,48 +57,377 @@ object dot extends App {
         reduceSeq(add, 0.0f) o mapSeq(mult)
       ) o split(4)
     ) o split(1024) $ zip(xs, ys)
-  ) )
+  ))
 
   printOpenCLKernel1("dotSimple", dotSimple)
 
-  val dotCPU1 = λ(xsT)(xs => λ(ysT)(ys =>
-    join() o mapWorkgroup(
-      mapLocal(
-        reduceSeq(λ( x => λ( a => mult(x) + a)), 0.0f)
-      ) o split(2048)
-    ) o split(2048*128) $ zip(xs, ys)
-  ) )
+  val dt = float
 
-  printOpenCLKernel1("dotCPU1", dotCPU1)
+  val xs = IdentPhrase("xs", exp"[$N.$dt]")
+  val ys = IdentPhrase("ys", exp"[$N.$dt]")
+  val output = IdentPhrase("output", acc"[${N /^ 4}.$dt]")
 
-  val dotCPU2 = λ(xsT)(in =>
-    join() o mapWorkgroup(
-      mapLocal(
-        reduceSeq(λ( x => λ( a => x + a)), 0.0f)
-      ) o split(128)
-    ) o split(128) $ in
-  )
+  import HighLevelCombinators._
+  import LowLevelCombinators._
+  import OpenCL.LowLevelCombinators._
 
-  printOpenCLKernel2("dotCPU2", dotCPU2)
+  val dotSimpleImp =
+    ParForWorkGroup(N /^ 1024, dt = dt"[${Cst(256)}.$dt]",
+      out = JoinAcc(n = N /^ 1024, m = 256, dt, output),
+      body = \(exp"[idx(${N /^ 1024})]")(v84 =>
+        \(acc"[${Cst(256)}.$dt]")(v85 =>
+          ParForLocal(n = 256, dt,
+            out = v85,
+            body = \(exp"[idx(${Cst(256)})]")(v86 =>
+              \(acc"[$dt]")(v87 =>
+                New(dt"[${Cst(4)}.$dt]", GlobalMemory,
+                  \(VarType(dt"[${Cst(4)}.$dt]"))(v74 =>
+                    Seq(
+                      For(n = 4, \(exp"[idx(${Cst(4)})]")(v88 =>
+                        Assign(dt,
+                          lhs = IdxAcc(n = 4, dt,
+                            index = v88,
+                            array = Proj2Phrase(v74)
+                          ),
+                          rhs = BinOpPhrase(BinOpPhrase.Op.MUL,
+                            lhs = Fst(dt, dt,
+                              Idx(4, dt x dt,
+                                index = v88,
+                                array = Idx(256, dt"[${Cst(4)}.($dt x $dt)]",
+                                  index = v86,
+                                  array = Split(n = 4, m = 256, dt x dt,
+                                    Idx(N /^ 1024, dt"[${Cst(1024)}.($dt x $dt)]",
+                                      index = v84,
+                                      array = Split(n = 1024, m = N /^ 1024, dt x dt,
+                                        Zip(N, dt, dt, lhs = xs, rhs = ys)
+                                      )
+                                    )
+                                  )
+                                )
+                              )
+                            ),
+                            rhs = Snd(dt, dt,
+                              Idx(4, dt x dt,
+                                index = v88,
+                                array = Idx(256, dt"[${Cst(4)}.($dt x $dt)]",
+                                  index = v86,
+                                  array = Split(n = 4, m = 256, dt x dt,
+                                    Idx(N /^ 1024, dt"[${Cst(1024)}.($dt x $dt)]",
+                                      index = v84,
+                                      array = Split(n = 1024, m = N /^ 1024, dt x dt,
+                                        Zip(N, dt, dt, lhs = xs, rhs = ys)
+                                      )
+                                    )
+                                  )
+                                )
+                              )
+                            )
+                          )
+                        )
+                      )),
+                      New(dt, PrivateMemory,
+                        \(VarType(dt))(v89 =>
+                          Seq(
+                            Seq(
+                              Assign(dt,
+                                lhs = Proj2Phrase(v89),
+                                rhs = LiteralPhrase(FloatData(0.0f), dt)
+                              ),
+                              For(4, \(exp"[idx(${Cst(4)})]")(v90 =>
+                                Assign(dt,
+                                  lhs = Proj2Phrase(v89),
+                                  rhs = BinOpPhrase(BinOpPhrase.Op.ADD,
+                                    lhs = Idx(4, dt,
+                                      index = v90,
+                                      array = Proj1Phrase(v74)
+                                    ),
+                                    rhs = Proj1Phrase(v89)
+                                  )
+                                )
+                              ))
+                            ),
+                            Assign(dt,
+                              lhs = v87,
+                              rhs = Proj1Phrase(v89)
+                            )
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    )
 
-  val dotProduct1 = λ(xsT)(xs => λ(ysT)(ys =>
-    join() o mapWorkgroup(
-      mapLocal(
-        reduceSeq(λ( x => λ( a => mult(x) + a)), 0.0f)
-      ) o split(2048) o gather(reorderWithStridePhrase(128))
-    ) o split(2048*128) $ zip(xs, ys)
-  ) )
+  TypeChecker(dotSimpleImp)
 
-  printOpenCLKernel1("dotProduct1", dotProduct1)
+  Core.xmlPrinter.toFile("/tmp/pp.xml", dotSimpleImp)
 
-  val dotProduct2 = λ(xsT)(in =>
-    join() o mapWorkgroup(
-      iterate(6,
-        toLocal(mapLocal(reduceSeq(add, 0.0f))) o split(2)) o
-      toLocal(mapLocal(reduceSeq(add, 0.0f))) o split(2)
-    ) o split(128) $ in
-  )
+  val body = ToOpenCL.cmd(dotSimpleImp, Block(), ToOpenCL.Environment(128, N))
 
-  printOpenCLKernel2("dotProduct2", dotProduct2)
+  println(OpenCLPrinter()(body))
+
+  val dotSimpleImp2 =
+    ParForWorkGroup(N /^ 1024, dt = dt"[${Cst(256)}.$dt]",
+      out = JoinAcc(n = N /^ 1024, m = 256, dt, output),
+      body = \(exp"[idx(${N /^ 1024})]")(v84 =>
+        \(acc"[${Cst(256)}.$dt]")(v85 =>
+          New(dt"[${Cst(256)}.${Cst(4)}.$dt]", GlobalMemory,
+            \(VarType(dt"[${Cst(256)}.${Cst(4)}.$dt]"))(v74 =>
+              ParForLocal(n = 256, dt,
+                out = v85,
+                body = \(exp"[idx(${Cst(256)})]")(v86 =>
+                  \(acc"[$dt]")(v87 =>
+                    Seq(
+                      For(n = 4, \(exp"[idx(${Cst(4)})]")(v88 =>
+                        Assign(dt,
+                          lhs = IdxAcc(n = 4, dt,
+                            index = v88,
+                            array = IdxAcc(n = 256, dt"[${Cst(4)}.$dt]",
+                              index = v86,
+                              array = Proj2Phrase(v74)
+                            )
+                          ),
+                          rhs = BinOpPhrase(BinOpPhrase.Op.MUL,
+                            lhs = Fst(dt, dt,
+                              Idx(4, dt x dt,
+                                index = v88,
+                                array = Idx(256, dt"[${Cst(4)}.($dt x $dt)]",
+                                  index = v86,
+                                  array = Split(n = 4, m = 256, dt x dt,
+                                    Idx(N /^ 1024, dt"[${Cst(1024)}.($dt x $dt)]",
+                                      index = v84,
+                                      array = Split(n = 1024, m = N /^ 1024, dt x dt,
+                                        Zip(N, dt, dt, lhs = xs, rhs = ys)
+                                      )
+                                    )
+                                  )
+                                )
+                              )
+                            ),
+                            rhs = Snd(dt, dt,
+                              Idx(4, dt x dt,
+                                index = v88,
+                                array = Idx(256, dt"[${Cst(4)}.($dt x $dt)]",
+                                  index = v86,
+                                  array = Split(n = 4, m = 256, dt x dt,
+                                    Idx(N /^ 1024, dt"[${Cst(1024)}.($dt x $dt)]",
+                                      index = v84,
+                                      array = Split(n = 1024, m = N /^ 1024, dt x dt,
+                                        Zip(N, dt, dt, lhs = xs, rhs = ys)
+                                      )
+                                    )
+                                  )
+                                )
+                              )
+                            )
+                          )
+                        )
+                      )),
+                      New(dt, PrivateMemory,
+                        \(VarType(dt))(v89 =>
+                          Seq(
+                            Seq(
+                              Assign(dt,
+                                lhs = Proj2Phrase(v89),
+                                rhs = LiteralPhrase(FloatData(0.0f), dt)
+                              ),
+                              For(4, \(exp"[idx(${Cst(4)})]")(v90 =>
+                                Assign(dt,
+                                  lhs = Proj2Phrase(v89),
+                                  rhs = BinOpPhrase(BinOpPhrase.Op.ADD,
+                                    lhs = Idx(4, dt,
+                                      index = v90,
+                                      array = Idx(n = 256, dt"[${Cst(4)}.$dt]",
+                                        index = v86,
+                                        array = Proj1Phrase(v74)
+                                      )
+                                    ),
+                                    rhs = Proj1Phrase(v89)
+                                  )
+                                )
+                              ))
+                            ),
+                            Assign(dt,
+                              lhs = v87,
+                              rhs = Proj1Phrase(v89)
+                            )
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+
+  TypeChecker(dotSimpleImp2)
+
+  Core.xmlPrinter.toFile("/tmp/ppp.xml", dotSimpleImp2)
+
+  val body2 = ToOpenCL.cmd(dotSimpleImp2, Block(), ToOpenCL.Environment(128, N))
+
+  println(OpenCLPrinter()(body2))
+
+  val dotSimpleImp3 =
+    New(dt"[${N /^ 1024}.${Cst(256)}.${Cst(4)}.$dt]", GlobalMemory,
+      \(VarType(dt"[${N /^ 1024}.${Cst(256)}.${Cst(4)}.$dt]"))(v74 =>
+        ParForWorkGroup(N /^ 1024, dt = dt"[${Cst(256)}.$dt]",
+          out = JoinAcc(n = N /^ 1024, m = 256, dt, output),
+          body = \(exp"[idx(${N /^ 1024})]")(v84 =>
+            \(acc"[${Cst(256)}.$dt]")(v85 =>
+              ParForLocal(n = 256, dt,
+                out = v85,
+                body = \(exp"[idx(${Cst(256)})]")(v86 =>
+                  \(acc"[$dt]")(v87 =>
+                    Seq(
+                      For(n = 4, \(exp"[idx(${Cst(4)})]")(v88 =>
+                        Assign(dt,
+                          lhs = IdxAcc(n = 4, dt,
+                            index = v88,
+                            array = IdxAcc(n = 256, dt"[${Cst(4)}.$dt]",
+                              index = v86,
+                              array = IdxAcc(n = N /^ 1024, dt"[${Cst(256)}.${Cst(4)}.$dt]",
+                                index = v84,
+                                array = Proj2Phrase(v74)
+                              )
+                            )
+                          ),
+                          rhs = BinOpPhrase(BinOpPhrase.Op.MUL,
+                            lhs = Fst(dt, dt,
+                              Idx(4, dt x dt,
+                                index = v88,
+                                array = Idx(256, dt"[${Cst(4)}.($dt x $dt)]",
+                                  index = v86,
+                                  array = Split(n = 4, m = 256, dt x dt,
+                                    Idx(N /^ 1024, dt"[${Cst(1024)}.($dt x $dt)]",
+                                      index = v84,
+                                      array = Split(n = 1024, m = N /^ 1024, dt x dt,
+                                        Zip(N, dt, dt, lhs = xs, rhs = ys)
+                                      )
+                                    )
+                                  )
+                                )
+                              )
+                            ),
+                            rhs = Snd(dt, dt,
+                              Idx(4, dt x dt,
+                                index = v88,
+                                array = Idx(256, dt"[${Cst(4)}.($dt x $dt)]",
+                                  index = v86,
+                                  array = Split(n = 4, m = 256, dt x dt,
+                                    Idx(N /^ 1024, dt"[${Cst(1024)}.($dt x $dt)]",
+                                      index = v84,
+                                      array = Split(n = 1024, m = N /^ 1024, dt x dt,
+                                        Zip(N, dt, dt, lhs = xs, rhs = ys)
+                                      )
+                                    )
+                                  )
+                                )
+                              )
+                            )
+                          )
+                        )
+                      )),
+                      New(dt, PrivateMemory,
+                        \(VarType(dt))(v89 =>
+                          Seq(
+                            Seq(
+                              Assign(dt,
+                                lhs = Proj2Phrase(v89),
+                                rhs = LiteralPhrase(FloatData(0.0f), dt)
+                              ),
+                              For(4, \(exp"[idx(${Cst(4)})]")(v90 =>
+                                Assign(dt,
+                                  lhs = Proj2Phrase(v89),
+                                  rhs = BinOpPhrase(BinOpPhrase.Op.ADD,
+                                    lhs = Idx(4, dt,
+                                      index = v90,
+                                      array = Idx(n = 256, dt"[${Cst(4)}.$dt]",
+                                        index = v86,
+                                        array = Idx(n = N /^ 1024, dt"[${Cst(256)}.${Cst(4)}.$dt]",
+                                          index = v84,
+                                          array = Proj1Phrase(v74)
+                                        )
+                                      )
+                                    ),
+                                    rhs = Proj1Phrase(v89)
+                                  )
+                                )
+                              ))
+                            ),
+                            Assign(dt,
+                              lhs = v87,
+                              rhs = Proj1Phrase(v89)
+                            )
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+
+  TypeChecker(dotSimpleImp3)
+
+  Core.xmlPrinter.toFile("/tmp/pppp.xml", dotSimpleImp3)
+
+  val body3 = ToOpenCL.cmd(dotSimpleImp3, Block(), ToOpenCL.Environment(128, N))
+
+  println(OpenCLPrinter()(body3))
+
+
+  //  val dotCPU1 = λ(xsT)(xs => λ(ysT)(ys =>
+  //    join() o mapWorkgroup(
+  //      mapLocal(
+  //        reduceSeq(λ( x => λ( a => mult(x) + a)), 0.0f)
+  //      ) o split(2048)
+  //    ) o split(2048*128) $ zip(xs, ys)
+  //  ) )
+  //
+  //  printOpenCLKernel1("dotCPU1", dotCPU1)
+  //
+  //  val dotCPU2 = λ(xsT)(in =>
+  //    join() o mapWorkgroup(
+  //      mapLocal(
+  //        reduceSeq(λ( x => λ( a => x + a)), 0.0f)
+  //      ) o split(128)
+  //    ) o split(128) $ in
+  //  )
+  //
+  //  printOpenCLKernel2("dotCPU2", dotCPU2)
+  //
+  //  val dotProduct1 = λ(xsT)(xs => λ(ysT)(ys =>
+  //    join() o mapWorkgroup(
+  //      mapLocal(
+  //        reduceSeq(λ( x => λ( a => mult(x) + a)), 0.0f)
+  //      ) o split(2048) o gather(reorderWithStridePhrase(128))
+  //    ) o split(2048*128) $ zip(xs, ys)
+  //  ) )
+  //
+  //  printOpenCLKernel1("dotProduct1", dotProduct1)
+  //
+  //  val dotProduct2 = λ(xsT)(in =>
+  //    join() o mapWorkgroup(
+  //      iterate(6,
+  //        toLocal(mapLocal(reduceSeq(add, 0.0f))) o split(2)) o
+  //      toLocal(mapLocal(reduceSeq(add, 0.0f))) o split(2)
+  //    ) o split(128) $ in
+  //  )
+  //
+  //  printOpenCLKernel2("dotProduct2", dotProduct2)
 
 }

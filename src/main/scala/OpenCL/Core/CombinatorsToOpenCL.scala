@@ -262,7 +262,8 @@ object CombinatorsToOpenCL {
       case VarRef(name, _, _) => NamedVar(name, env.ranges(name))
       case _ => throw new Exception("This should not happen")
     }
-    val length = DataType.getLengths(dt, tupleAccess, List()).foldLeft(1: ArithExpr)((x, y) => x * y)
+    val length = DataType.getLengths(i.dt, tupleAccess, List()).foldLeft(1: ArithExpr)((x, y) => x * y)
+
     ToOpenCL.exp(i.array, env, (idx, length) :: arrayAccess, tupleAccess, dt)
   }
 
@@ -305,7 +306,7 @@ object CombinatorsToOpenCL {
       case Literal(j) => Cst(j.toInt)
       case _ => throw new Exception("This should not happen")
     }
-    val length = DataType.getLengths(dt, tupleAccess, List()).foldLeft(1: ArithExpr)((x, y) => x * y)
+    val length = DataType.getLengths(i.dt, tupleAccess, List()).foldLeft(1: ArithExpr)((x, y) => x * y)
     ToOpenCL.acc(i.array, env, (idx, length) :: arrayAccess, tupleAccess, dt)
   }
 

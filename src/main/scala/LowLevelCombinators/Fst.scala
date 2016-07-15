@@ -42,9 +42,10 @@ final case class Fst(dt1: DataType,
 
   override def prettyPrint: String = s"${PrettyPrinter(record)}._1"
 
-  override def xmlPrinter: Elem = <fst>
-    {Core.xmlPrinter(record)}
-  </fst>
+  override def xmlPrinter: Elem =
+    <fst dt1={ToString(dt1)} dt2={ToString(dt2)}>
+      {Core.xmlPrinter(record)}
+    </fst>
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] =
     RewriteToImperative.exp(this)(λ(exp"[$dt1]") {
