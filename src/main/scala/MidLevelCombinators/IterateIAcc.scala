@@ -101,8 +101,8 @@ final case class IterateIAcc(n: Nat,
 
     k match {
       case Cst(x) if x > 2 =>
-        `new`(dt"[$sEnd.dt]", addressSpace, buf1 =>
-          `new`(dt"[$sEnd.dt]", addressSpace, buf2 =>
+        `new`(dt"[$sEnd.$dt]", addressSpace, buf1 =>
+          `new`(dt"[$sEnd.$dt]", addressSpace, buf2 =>
             SubstituteImplementations(
               f(s(0))(TruncAcc(sEnd, s(1), dt, buf1.wr))(TruncExp(sEnd, s(0), dt, in))
               , env) `;`
