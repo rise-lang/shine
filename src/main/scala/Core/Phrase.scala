@@ -4,7 +4,9 @@ import Compiling.SubstituteImplementations
 
 sealed trait Phrase[T <: PhraseType] {
   lazy val t: T = `type`
+
   def `type`: T = TypeOf(this)
+
   def typeCheck(): Unit = TypeChecker(this)
 }
 
@@ -73,13 +75,33 @@ object Phrase {
   def substitute[T1 <: PhraseType, T2 <: PhraseType](phrase: Phrase[T1],
                                                      `for`: Phrase[T1],
                                                      in: Phrase[T2]): Phrase[T2] = {
-    case class fun() extends VisitAndRebuild.fun {
+    object fun extends VisitAndRebuild.fun {
       override def pre[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
-        if (`for` == p) { Stop(phrase.asInstanceOf[Phrase[T]]) } else { Continue(p, this) }
+        if (`for` == p) {
+          Stop(phrase.asInstanceOf[Phrase[T]])
+        } else {
+          Continue(p, this)
+        }
       }
     }
 
-    VisitAndRebuild(in, fun())
+    VisitAndRebuild(in, fun)
+  }
+
+  def substitute[T2 <: PhraseType](map: Map[Phrase[_], Phrase[_]],
+                                   in: Phrase[T2]): Phrase[T2] = {
+
+    object fun extends VisitAndRebuild.fun {
+      override def pre[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
+        if (map.isDefinedAt(p)) {
+          Stop(map(p).asInstanceOf[Phrase[T]])
+        } else {
+          Continue(p, this)
+        }
+      }
+    }
+
+    VisitAndRebuild(in, fun)
   }
 }
 

@@ -63,7 +63,11 @@ class ToOpenCL(val localSize: Nat, val globalSize: Nat) {
     xmlPrinter.toFile("/tmp/p3.xml", p3)
     TypeChecker(p3)
 
-    val body = ToOpenCL.cmd(p3, Block(), ToOpenCL.Environment(localSize, globalSize))
+    val p4 = AdjustMemoryAllocation(p3)
+    xmlPrinter.toFile("/tmp/p4.xml", p4)
+    TypeChecker(p4)
+
+    val body = ToOpenCL.cmd(p4, Block(), ToOpenCL.Environment(localSize, globalSize))
 
     Function(name = "KERNEL", ret = UndefType, params = params, body = body, kernel = true)
   }

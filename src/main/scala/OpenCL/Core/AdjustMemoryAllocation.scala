@@ -8,14 +8,14 @@ import scala.language.reflectiveCalls
 
 object AdjustMemoryAllocation {
 
-  def apply[T <: PhraseType](phrase: Phrase[T]): Phrase[T] = {
+  def apply(originalP: Phrase[CommandType]): Phrase[CommandType] = {
 
-    var allocations = List[(DataType, AddressSpace, IdentPhrase[VarType])]()
+    var allocations = List[(AddressSpace, IdentPhrase[VarType])]()
 
     case class fun(env: List[(IdentPhrase[ExpType], Nat)]) extends VisitAndRebuild.fun {
       override def pre[U <: PhraseType](p: Phrase[U]): Result[Phrase[U]] = {
         p match {
-          // remember index var and length for each par for
+          // remember param and length for each `par for`
           case pf: AbstractParFor =>
             pf.body match {
               case LambdaPhrase(param, _) =>
@@ -29,34 +29,48 @@ object AdjustMemoryAllocation {
       override def post[U <: PhraseType](p: Phrase[U]): Phrase[U] = {
         import DSL.typed._
         p match {
+          // for every new ...
           case New(dt, addressSpace, f) if addressSpace != PrivateMemory =>
-            val newDt = env.foldLeft(dt)( (dt_, head) =>ArrayType(head._2, dt_))
-            val newParam = IdentPhrase(newName(), VarType(newDt))
-            allocations = (newDt, addressSpace, newParam) :: allocations
-            val p = f(newParam)
+            // .. investigate the nested lambda, ...
+            f match {
+              case LambdaPhrase(param, body) =>
+                // ... by looking through the information from the `par for`s, ...
+                val (finalParam, finalBody) = env.foldLeft((param, body)) {
+                  // ... to rewrite the new's body given the oldParam, oldBody,
+                  // as well as the index `i` and length `n` of a `par for` ...
+                  case ((oldParam, oldBody), (i, n)) =>
+                    // ... create a newParam with a new type ...
+                    val newDt = ArrayType(n, oldParam.t.t1.dataType)
+                    val newParam = IdentPhrase(oldParam.name, VarType(newDt))
+                    // ... and substitute all occurrences of the oldParam with
+                    // the newParam indexed by the `par for` index, ...
+                    val substitutionMap: Map[Phrase[_], Phrase[_]] = Map(
+                      π1(oldParam) -> (π1(newParam) `@` i),
+                      π2(oldParam) -> (π2(newParam) `@` i)
+                    )
+                    val newBody = Phrase.substitute(substitutionMap, oldBody)
+                    // ... finally, pass the newParam and newBody along.
+                    (newParam, newBody)
+                }
 
-            env.foldLeft(p)( (p1, head) => {
-              val (i, n) = head
-              val p2 = Phrase.substitute(π1(newParam) `@` i, `for`=π1(newParam), in=p1)
-              val p3 = Phrase.substitute(π2(newParam) `@` i, `for`=π2(newParam), in=p2)
-              p3
-            }).asInstanceOf[Phrase[U]]
-//            val (i, n) = env.head
-//            val newDt = ArrayType(n, dt)
-//            val newParam = IdentPhrase(newName(), VarType(newDt))
-//            allocations = (newDt, addressSpace, newParam) :: allocations
-//            val p1 = f(newParam) `[` (π1(newParam) `@` i) `/` π1(newParam) `]`
-//            val p2 = Phrase.substitute(π2(newParam) `@` i, `for` = π2(newParam), in = p1)
-//            p2.asInstanceOf[Phrase[U]]
+                // ... remember the finalParam to regenerate the new at the
+                // outermost scope and return the rewritten finalBody which
+                // replaces the New node
+                allocations = (addressSpace, finalParam) :: allocations
+                finalBody.asInstanceOf[Phrase[U]]
+              case _ => throw new Exception("This should not happen")
+            }
           case _ => p
         }
       }
     }
 
-    val body = VisitAndRebuild(phrase, fun(List()))
-    allocations.foldLeft( body.asInstanceOf[Phrase[CommandType]] )((b, alloc) =>
-      New(alloc._1, alloc._2, LambdaPhrase(alloc._3, b))
-    ).asInstanceOf[Phrase[T]]
+    val rewrittenPhrase = VisitAndRebuild(originalP, fun(List()))
+    // Create a fresh allocation for every replaced New node using initially the
+    // rewrittenPhrase and then the previous New node as its nested body
+    allocations.foldLeft(rewrittenPhrase)((prev, alloc) =>
+      New(alloc._2.t.t1.dataType, alloc._1, LambdaPhrase(alloc._2, prev))
+    )
   }
 
 }
