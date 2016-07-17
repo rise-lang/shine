@@ -26,6 +26,7 @@ object RewriteToImperative {
           case _: BasicType | _: VectorType => A `:=` x
           case ArrayType(n, dt) => MapI(n, dt, dt, A, λ(AccType(dt))(o => λ(ExpType(dt))(x => acc(x)(o))), x)
           case RecordType(dt1, dt2) => acc(fst(x))(fstAcc(dt1, dt2, A)) `;` acc(snd(x))(sndAcc(dt1, dt2, A))
+          case _: DataTypeIdentifier => throw new Exception("This should not happen")
         }
 
       case c: LiteralPhrase => A `:=` c
@@ -48,6 +49,7 @@ object RewriteToImperative {
       // on the fly beta-reduction
       case ApplyPhrase(fun, arg) => acc(Lift.liftFunction(fun)(arg))(A)
       case NatDependentApplyPhrase(fun, arg) => acc(Lift.liftNatDependentFunction(fun)(arg))(A)
+      case TypeDependentApplyPhrase(fun, arg) => acc(Lift.liftTypeDependentFunction(fun)(arg))(A)
 
       case IfThenElsePhrase(cond, thenP, elseP) =>
         exp(cond)(λ(cond.t) { x =>
@@ -83,7 +85,7 @@ object RewriteToImperative {
       // on the fly beta-reduction
       case ApplyPhrase(fun, arg) => exp(Lift.liftFunction(fun)(arg))(C)
       case NatDependentApplyPhrase(fun, arg) => exp(Lift.liftNatDependentFunction(fun)(arg))(C)
-
+      case TypeDependentApplyPhrase(fun, arg) => exp(Lift.liftTypeDependentFunction(fun)(arg))(C)
 
       case IfThenElsePhrase(cond, thenP, elseP) =>
         exp(cond)(λ(cond.t) { x =>

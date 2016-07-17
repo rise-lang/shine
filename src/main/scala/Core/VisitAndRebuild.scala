@@ -43,8 +43,14 @@ object VisitAndRebuild {
           case NatDependentLambdaPhrase(a, p) =>
             NatDependentLambdaPhrase(a, apply(p, f))
 
-          case NatDependentApplyPhrase(p, e) =>
-            NatDependentApplyPhrase(apply(p, f), e)
+          case TypeDependentLambdaPhrase(dt, p) =>
+            TypeDependentLambdaPhrase(dt, apply(p, f))
+
+          case NatDependentApplyPhrase(p, ae) =>
+            NatDependentApplyPhrase(apply(p, f), ae)
+
+          case TypeDependentApplyPhrase(p, dt) =>
+            TypeDependentApplyPhrase(apply(p, f), dt)
 
           case PairPhrase(p, q) => PairPhrase(apply(p, f), apply(q, f))
 

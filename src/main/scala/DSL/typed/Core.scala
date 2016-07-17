@@ -23,16 +23,21 @@ object \ extends funDef
 
 object λ extends funDef
 
-trait natDependentFunDef {
+trait dependentFunDef {
 
-  def apply[T <: PhraseType](f: NamedVar => Phrase[T]): NatDependentLambdaPhrase[T] = {
+  def apply[T <: PhraseType](f: NamedVar => Phrase[T]) = {
     val x = NamedVar(newName())
     NatDependentLambdaPhrase(x, f(x))
   }
 
+  def apply[T <: PhraseType](f: DataTypeIdentifier => Phrase[T]) = {
+    val x = DataTypeIdentifier(newName())
+    TypeDependentLambdaPhrase(x, f(x))
+  }
+
 }
 
-object _Λ_ extends natDependentFunDef
+object _Λ_ extends dependentFunDef
 
 object π1 {
   def apply[T1 <: PhraseType, T2 <: PhraseType](pair: Phrase[T1 x T2]) =

@@ -1,6 +1,6 @@
 package DSL
 
-import Core.OperationalSemantics.IndexData
+import Core.OperationalSemantics.{FloatData, IndexData, IntData}
 import Core.TypeInference._
 import Core._
 import LowLevelCombinators.{Assign, Idx, IdxAcc, Seq}
@@ -70,6 +70,13 @@ package object typed {
     def $(arg: Nat): Phrase[T] = apply(arg)
   }
 
+  implicit class CallTypeDependentLambda[T <: PhraseType](fun: Phrase[`(dt)->`[T]]) {
+    def apply(arg: DataType): Phrase[T] =
+      Lift.liftTypeDependentFunction(fun)(arg)
+
+    def $(arg: DataType): Phrase[T] = apply(arg)
+  }
+
   implicit class FunComp[T1 <: PhraseType, T2 <: PhraseType](f: Phrase[T1 -> T2]) {
     def o[T3 <: PhraseType](g: Phrase[T3 -> T1]): Phrase[T3 -> T2] = {
       typed.λ(g.t.inT)(arg => f(g(arg)))
@@ -97,7 +104,8 @@ package object typed {
     def asPhrase(withType: IndexType) = LiteralPhrase(IndexData(n), withType)
   }
 
-  implicit def toLiteralInt(i: Int): LiteralPhrase = LiteralPhrase(i, int)
+  implicit def toLiteralInt(i: Int): LiteralPhrase = LiteralPhrase(IntData(i), int)
+  implicit def toLiteralFloat(f: Float): LiteralPhrase = LiteralPhrase(FloatData(f), float)
 
   implicit def toPair[T1 <: PhraseType, T2 <: PhraseType](pair: (Phrase[T1], Phrase[T2])): PairPhrase[T1, T2] =
     PairPhrase(pair._1, pair._2)

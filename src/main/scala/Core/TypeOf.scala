@@ -16,9 +16,17 @@ object TypeOf {
 
       case NatDependentLambdaPhrase(a, p) => a -> p.t
 
-      case NatDependentApplyPhrase(p, e) =>
+      case TypeDependentLambdaPhrase(dt, p) => dt -> p.t
+
+      case NatDependentApplyPhrase(p, ae) =>
         p.t match {
-          case NatDependentFunctionType(a, t) => t `[` e `/` a `]`
+          case NatDependentFunctionType(a, t) => t `[` ae `/` a `]`
+          case null => null
+        }
+
+      case TypeDependentApplyPhrase(p, dt) =>
+        p.t match {
+          case TypeDependentFunctionType(a, t) => t `[` dt `/` a `]`
           case null => null
         }
 

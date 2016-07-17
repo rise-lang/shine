@@ -28,6 +28,10 @@ final case class RecordType(fst: DataType, snd: DataType) extends DataType {
   override def toString = s"($fst x $snd)"
 }
 
+final case class DataTypeIdentifier(name: String) extends DataType {
+  override def toString = name
+}
+
 object DataType {
   def toType(dt: DataType): ir.Type = {
     dt match {
@@ -43,6 +47,7 @@ object DataType {
       }
       case a: ArrayType => ir.ArrayType(DataType.toType(a.elemType), a.size)
       case r: RecordType => ir.TupleType(DataType.toType(r.fst), DataType.toType(r.snd))
+      case _: DataTypeIdentifier => throw new Exception("This should not happen")
     }
   }
 
@@ -57,6 +62,7 @@ object DataType {
       }
       case a: ArrayType => scalarType(a.elemType)
       case r: RecordType => ???
+      case _: DataTypeIdentifier => throw new Exception("This should not happen")
     }
   }
 
@@ -70,6 +76,7 @@ object DataType {
       }
       case _: RecordType => ???
       case _: ArrayType => ???
+      case _: DataTypeIdentifier => throw new Exception("This should not happen")
     }
   }
 
@@ -81,6 +88,7 @@ object DataType {
         val elemT = if (t == (1: Nat)) { r.fst } else if (t == (2: Nat)) { r.snd } else { throw new Exception("This should not happen") }
         getLengths(elemT, tupleAccesss.tail, list)
       case a: ArrayType => getLengths(a.elemType, tupleAccesss, a.size :: list)
+      case _: DataTypeIdentifier => throw new Exception("This should not happen")
     }
   }
 

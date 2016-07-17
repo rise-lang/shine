@@ -1035,7 +1035,6 @@ object Test extends App {
     }
 
     {
-      val n: ArithExpr = NamedVar("n")
       val dt: DataType = float
       val f_ : Phrase[ `(nat)->`[ExpType -> ExpType] ] = _Λ_( l =>
         λ(ExpType(ArrayType(l, dt)))( in =>
@@ -1047,7 +1046,24 @@ object Test extends App {
 
       println( f )
 
-      println( f(1024) )
+      println( f.apply(1024) )
+    }
+
+    {
+      val n: ArithExpr = NamedVar("n")
+      val f_ = _Λ_( (dt: DataTypeIdentifier) =>
+        λ(ExpType(ArrayType(n, dt)))( in =>
+          join() o mapSeq( λ(x => x) ) o split(2) $ in
+        )
+      )
+
+      val f = TypeInference(f_)
+
+      println( f )
+
+      Core.xmlPrinter.toFile("/tmp/f1.xml", f)
+
+      println( f(float) )
     }
 
   }

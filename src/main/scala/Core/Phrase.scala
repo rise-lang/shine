@@ -22,7 +22,13 @@ final case class ApplyPhrase[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 
 final case class NatDependentLambdaPhrase[T <: PhraseType](x: NatIdentifier, body: Phrase[T])
   extends Phrase[`(nat)->`[T]]
 
+final case class TypeDependentLambdaPhrase[T <: PhraseType](x: DataTypeIdentifier, body: Phrase[T])
+  extends Phrase[`(dt)->`[T]]
+
 final case class NatDependentApplyPhrase[T <: PhraseType](fun: Phrase[`(nat)->`[T]], arg: Nat)
+  extends Phrase[T]
+
+final case class TypeDependentApplyPhrase[T <: PhraseType](fun: Phrase[`(dt)->`[T]], arg: DataType)
   extends Phrase[T]
 
 final case class PairPhrase[T1 <: PhraseType, T2 <: PhraseType](fst: Phrase[T1], snd: Phrase[T2])

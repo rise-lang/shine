@@ -54,6 +54,7 @@ final case class Fst(dt1: DataType,
           x => A `:=` x
         case _: ArrayType => throw new Exception("This should not happen")
         case _: RecordType => throw new Exception("This should not happen")
+        case _: DataTypeIdentifier => throw new Exception("This should not happen")
       }
     })
 

@@ -53,6 +53,7 @@ final case class Snd(dt1: DataType,
         case _: BasicType | _: VectorType => x => A `:=` x
         case _: ArrayType => throw new Exception("This should not happen")
         case _: RecordType => throw new Exception("This should not happen")
+        case _: DataTypeIdentifier => throw new Exception("This should not happen")
       }
     })
   }

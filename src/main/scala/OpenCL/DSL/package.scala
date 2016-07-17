@@ -6,8 +6,8 @@ import _root_.DSL.typed._
 package object DSL {
 
   val reorderWithStridePhrase = {
-    _Λ_(s =>
-      _Λ_(n => λ(exp"[idx($n)]")(i => {
+    _Λ_((s: Nat) =>
+      _Λ_((n: Nat) => λ(exp"[idx($n)]")(i => {
         val j = i asNatIdentifier (withUpperBound = n)
 
         val newIndex = (j / (n /^ s)) + s * (j % (n /^ s))

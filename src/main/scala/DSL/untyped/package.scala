@@ -32,6 +32,13 @@ package object untyped {
     def $(arg: Nat): Phrase[T] = apply(arg)
   }
 
+  implicit class CallTypeDependentLambda[T <: PhraseType](fun: Phrase[`(dt)->`[T]]) {
+    def apply(arg: DataType): Phrase[T] =
+      Lift.liftTypeDependentFunction(fun)(arg)
+
+    def $(arg: DataType): Phrase[T] = apply(arg)
+  }
+
   implicit class FunComp[T1 <: PhraseType, T2 <: PhraseType](f: Phrase[T1 -> T2]) {
     def o[T3 <: PhraseType](g: Phrase[T3 -> T1]): Phrase[T3 -> T2] = {
       λ(null.asInstanceOf[T3])(arg => f(g(arg)))

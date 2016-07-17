@@ -173,7 +173,8 @@ object ToOpenCL {
       case p: ParFor => toOpenCL(p, block, env)
 
       case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
-           IdentPhrase(_, _) | Proj1Phrase(_) | Proj2Phrase(_) |
+           TypeDependentApplyPhrase(_, _) | IdentPhrase(_, _) |
+           Proj1Phrase(_) | Proj2Phrase(_) |
            _: MidLevelCombinator | _: LowLevelCommCombinator =>
         throw new Exception(s"Don't know how to generate OpenCL code for $p")
     }
@@ -206,7 +207,7 @@ object ToOpenCL {
       case t: TruncExp => toOpenCL(t, env, List(), List(), t.t.dataType)
 
       case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
-           IfThenElsePhrase(_, _, _) |
+           TypeDependentApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) |
            _: HighLevelCombinator | _: LowLevelExpCombinator =>
         throw new Exception(s"Don't know how to generate OpenCL code for $p")
     }
@@ -267,6 +268,7 @@ object ToOpenCL {
       case t: TruncExp => toOpenCL(t, env, arrayAccess, tupleAccess, dt)
 
       case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
+           TypeDependentApplyPhrase(_, _) |
            BinOpPhrase(_, _, _) | UnaryOpPhrase(_, _) |
            IfThenElsePhrase(_, _, _) | LiteralPhrase(_, _) |
            _: LowLevelExpCombinator | _: HighLevelCombinator =>
@@ -290,7 +292,8 @@ object ToOpenCL {
       case t: TruncAcc => toOpenCL(t, env, List(), List(), t.t.dataType)
 
       case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
-           IfThenElsePhrase(_, _, _) | _: LowLevelAccCombinator =>
+           TypeDependentApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) |
+           _: LowLevelAccCombinator =>
         throw new Exception(s"Don't know how to generate OpenCL code for $p")
     }
   }
@@ -347,7 +350,8 @@ object ToOpenCL {
       case p: Proj2Phrase[_, AccType] => acc(Lift.liftPair(p.pair)._2, env, arrayAccess, tupleAccess, dt)
 
       case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
-           IfThenElsePhrase(_, _, _) | _: LowLevelAccCombinator =>
+           TypeDependentApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) |
+           _: LowLevelAccCombinator =>
         throw new Exception(s"Don't know how to generate OpenCL code for $p")
     }
   }
