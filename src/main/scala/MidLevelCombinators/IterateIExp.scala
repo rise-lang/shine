@@ -34,7 +34,7 @@ final case class IterateIExp(n: Nat,
 
   override def eval(s: Store): Store = ???
 
-  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[CommandType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {
     IterateIExp(fun(n), fun(m), fun(k), fun(dt),
       VisitAndRebuild(out, fun),
       VisitAndRebuild(f, fun),

@@ -16,8 +16,8 @@ object SubstituteImplementations {
 
   def apply(phrase: Phrase[CommandType], env: Environment): Phrase[CommandType] = {
 
-    case class fun(env: Environment) extends VisitAndRebuild.fun {
-      override def pre[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
+    case class fun(env: Environment) extends VisitAndRebuild.Visitor {
+      override def apply[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
         p match {
           case ml: MidLevelCombinator =>
             Continue(ml.substituteImpl(env).asInstanceOf[Phrase[T]], this)

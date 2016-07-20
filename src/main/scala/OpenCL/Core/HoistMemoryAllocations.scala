@@ -3,42 +3,38 @@ package OpenCL.Core
 import Core._
 import LowLevelCombinators._
 
-import scala.language.postfixOps
-import scala.language.reflectiveCalls
+object HoistMemoryAllocations {
 
-object AdjustMemoryAllocation {
+  type AllocationInfo = (OpenCLAddressSpace, IdentPhrase[VarType])
 
-  def apply(originalP: Phrase[CommandType]): Phrase[CommandType] = {
+  def apply(originalP: Phrase[CommandType]): (Phrase[CommandType], List[AllocationInfo]) = {
 
-    var allocations = List[(AddressSpace, IdentPhrase[VarType])]()
+    var replacedAllocations = List[AllocationInfo]()
 
-    case class fun(env: List[(IdentPhrase[ExpType], Nat)]) extends VisitAndRebuild.fun {
-      override def pre[U <: PhraseType](p: Phrase[U]): Result[Phrase[U]] = {
+    case class Visitor(parForInfo: List[(IdentPhrase[ExpType], Nat)])
+      extends VisitAndRebuild.Visitor {
+
+      override def apply[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
         p match {
           // remember param and length for each `par for`
           case pf: AbstractParFor =>
             pf.body match {
               case LambdaPhrase(param, _) =>
-                Continue(pf, fun((param, pf.n) :: env))
+                Continue(pf, Visitor((param, pf.n) :: parForInfo))
               case _ => throw new Exception("This should not happen")
             }
-          case _ => Continue(p, this)
-        }
-      }
-
-      override def post[U <: PhraseType](p: Phrase[U]): Phrase[U] = {
-        import DSL.typed._
-        p match {
           // for every new ...
           case New(dt, addressSpace, f) if addressSpace != PrivateMemory =>
             // .. investigate the nested lambda, ...
             f match {
               case LambdaPhrase(param, body) =>
+                println(s"Visiting new with $param and $body")
                 // ... by looking through the information from the `par for`s, ...
-                val (finalParam, finalBody) = env.foldLeft((param, body)) {
+                val (finalParam, finalBody) = parForInfo.foldLeft((param, body)) {
                   // ... to rewrite the new's body given the oldParam, oldBody,
                   // as well as the index `i` and length `n` of a `par for` ...
                   case ((oldParam, oldBody), (i, n)) =>
+                    import DSL.typed._
                     // ... create a newParam with a new type ...
                     val newDt = ArrayType(n, oldParam.t.t1.dataType)
                     val newParam = IdentPhrase(oldParam.name, VarType(newDt))
@@ -56,21 +52,25 @@ object AdjustMemoryAllocation {
                 // ... remember the finalParam to regenerate the new at the
                 // outermost scope and return the rewritten finalBody which
                 // replaces the New node
-                allocations = (addressSpace, finalParam) :: allocations
-                finalBody.asInstanceOf[Phrase[U]]
+                replacedAllocations = (addressSpace.asInstanceOf[OpenCLAddressSpace], finalParam) :: replacedAllocations
+                Stop(VisitAndRebuild(finalBody.asInstanceOf[Phrase[T]], this))
               case _ => throw new Exception("This should not happen")
             }
-          case _ => p
+          case _ => Continue(p, this)
         }
       }
+
     }
 
-    val rewrittenPhrase = VisitAndRebuild(originalP, fun(List()))
-    // Create a fresh allocation for every replaced New node using initially the
-    // rewrittenPhrase and then the previous New node as its nested body
-    allocations.foldLeft(rewrittenPhrase)((prev, alloc) =>
-      New(alloc._2.t.t1.dataType, alloc._1, LambdaPhrase(alloc._2, prev))
-    )
+    val rewrittenPhrase = VisitAndRebuild(originalP, Visitor(List()))
+
+    (rewrittenPhrase, replacedAllocations)
+//    // Create a fresh allocation for every replaced New node using initially the
+//    // rewrittenPhrase and then the previous New node as its nested body
+//    replacedAllocations.foldLeft(rewrittenPhrase)((prev, alloc) => {
+//      val (addressSpace, identifier) = alloc
+//      New(identifier.t.t1.dataType, addressSpace, LambdaPhrase(identifier, prev))
+//    })
   }
 
 }

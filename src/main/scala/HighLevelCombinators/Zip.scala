@@ -37,7 +37,7 @@ final case class Zip(n: Nat,
     }
   }
 
-  override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[ExpType] = {
+  override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     Zip(f(n), f(dt1), f(dt2), VisitAndRebuild(lhs, f), VisitAndRebuild(rhs, f))
   }
 

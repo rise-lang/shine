@@ -40,7 +40,7 @@ final case class IdxAcc(n: Nat,
     ArrayAccessIdentifier(arrayE, indexE)
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[AccType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {
     IdxAcc(fun(n), fun(dt), VisitAndRebuild(index, fun), VisitAndRebuild(array, fun))
   }
 

@@ -25,7 +25,7 @@ final case class FstAcc(dt1: DataType,
     }
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[AccType] =
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] =
     FstAcc(fun(dt1), fun(dt2), VisitAndRebuild(record, fun))
 
 

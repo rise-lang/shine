@@ -63,13 +63,20 @@ class ToOpenCL(val localSize: Nat, val globalSize: Nat) {
     xmlPrinter.toFile("/tmp/p3.xml", p3)
     TypeChecker(p3)
 
-    val p4 = AdjustMemoryAllocation(p3)
+    val (p4, temporaryAllocations) = HoistMemoryAllocations(p3)
     xmlPrinter.toFile("/tmp/p4.xml", p4)
     TypeChecker(p4)
 
+    val paramsForTemporaryBuffers = makeParams(temporaryAllocations)
+
     val body = ToOpenCL.cmd(p4, Block(), ToOpenCL.Environment(localSize, globalSize))
 
-    Function(name = "KERNEL", ret = UndefType, params = params, body = body, kernel = true)
+    val allocationSizes = computeAllocationSizes(args ++ List(out) ++ temporaryAllocations.map(_._2))
+    allocationSizes.foreach { case (name, size) =>
+      println(s"Allocating $size for param $name")
+    }
+
+    Function(name = "KERNEL", ret = UndefType, params = params ++ paramsForTemporaryBuffers, body = body, kernel = true)
   }
 
   private def make(p: Phrase[ExpType -> ExpType],
@@ -137,6 +144,30 @@ class ToOpenCL(val localSize: Nat, val globalSize: Nat) {
     )
 
     List(output) ++ inputs ++ varDecls
+  }
+
+  private def makeParams(allocations: List[HoistMemoryAllocations.AllocationInfo]): List[ParamDecl] = {
+    allocations.map { case (addressSpace, identifier) =>
+      ParamDecl(
+        identifier.name,
+        DataType.toType(identifier.t.t1.dataType),
+        OpenCLAddressSpace.toOpenCL(addressSpace),
+        const = false
+      )
+    }
+  }
+
+  private def computeAllocationSizes(params: List[IdentPhrase[_]]): immutable.Map[String, SizeInByte] = {
+    params.map( i => {
+      val dt = i.t match {
+        case ExpType(dataType) => dataType
+        case AccType(dataType) => dataType
+        case PairType(ExpType(dt1), AccType(dt2)) if dt1 == dt2 => dt1
+        case _ => throw new Exception("This should not happen")
+      }
+      println(s"get size in bytes for $dt")
+      (i.name, DataType.sizeInByte(dt))
+    }).toMap
   }
 
 }

@@ -2,7 +2,7 @@
 import Core.OperationalSemantics.FloatData
 import Core._
 import DSL.untyped._
-import OpenCL.Core.{AdjustMemoryAllocation, GlobalMemory, PrivateMemory, ToOpenCL}
+import OpenCL.Core.{HoistMemoryAllocations, GlobalMemory, PrivateMemory, ToOpenCL}
 import OpenCL.DSL._
 import apart.arithmetic._
 import opencl.generator.OpenCLAST.Block
@@ -24,7 +24,7 @@ object dot extends App {
 
     println(s"-- $name --")
     println(OpenCLPrinter()((new ToOpenCL(localSize = 128, globalSize = N)) (
-      lambda, identifier("xs", xsT), identifier("ysY", ysT))))
+      lambda, identifier("xs", xsT), identifier("ys", ysT))))
     println("----------------")
   }
 
@@ -202,7 +202,7 @@ object dot extends App {
         )
       )
 
-    val dotSimpleImplAdjustedMem = AdjustMemoryAllocation(dotSimpleImp)
+    val (dotSimpleImplAdjustedMem, _) = HoistMemoryAllocations(dotSimpleImp)
     TypeChecker(dotSimpleImplAdjustedMem)
     Core.xmlPrinter.toFile("/tmp/mem.xml", dotSimpleImplAdjustedMem)
 

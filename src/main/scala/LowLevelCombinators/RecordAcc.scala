@@ -25,7 +25,7 @@ final case class RecordAcc(dt1: DataType,
       OperationalSemantics.eval(s, snd))
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[AccType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {
     RecordAcc(fun(dt1), fun(dt2),
       VisitAndRebuild(fst, fun), VisitAndRebuild(snd, fun))
   }

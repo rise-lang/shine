@@ -36,7 +36,7 @@ final case class Snd(dt1: DataType,
     }
   }
 
-  override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[ExpType] = {
+  override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     Snd(f(dt1), f(dt2), VisitAndRebuild(record, f))
   }
 

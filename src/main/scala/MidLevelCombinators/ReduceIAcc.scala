@@ -27,7 +27,7 @@ final case class ReduceIAcc(n: Nat,
       comm
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[CommandType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {
     ReduceIAcc(fun(n), fun(dt1), fun(dt2),
       VisitAndRebuild(out, fun),
       VisitAndRebuild(f, fun),

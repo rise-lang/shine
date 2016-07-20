@@ -99,4 +99,17 @@ object DataType {
   implicit class ArrayTypeConstructor(s: Nat) {
     def `.`(dt: DataType) = ArrayType(s, dt)
   }
+
+  def sizeInByte(dt: DataType): SizeInByte = sizeInByte(toType(dt))
+
+  def sizeInByte(t: ir.Type): SizeInByte = {
+    t match {
+      case s: ir.ScalarType => SizeInByte(s.size)
+      case v: ir.VectorType => sizeInByte(v.scalarT) * v.len
+      case t: ir.TupleType => t.elemsT.map(sizeInByte).reduce(_+_)
+      case a: ir.ArrayType => sizeInByte(a.elemT) * a.len
+      case _: ir.NoType.type | _: ir.UndefType.type =>
+        throw new Exception("This should not happen")
+    }
+  }
 }

@@ -19,7 +19,7 @@ final case class Seq(c1: Phrase[CommandType],
     OperationalSemantics.eval(s1, c2)
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[CommandType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {
     Seq(VisitAndRebuild(c1, fun), VisitAndRebuild(c2, fun))
   }
 

@@ -22,7 +22,7 @@ final case class AsScalarAcc(n: Nat,
       (array `:`  acc"[${m * n}.$dt]") -> `type`
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[AccType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {
     AsScalarAcc(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))
   }
 

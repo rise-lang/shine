@@ -46,12 +46,12 @@ object PhraseType {
                                   `for`: DataTypeIdentifier,
                                   in: Phrase[T]): Phrase[T] = {
 
-    case class fun() extends VisitAndRebuild.fun {
+    object Visitor extends VisitAndRebuild.Visitor {
       override def apply[DT <: DataType](in: DT) = substitute(dt, `for`, in)
     }
 
     println(s"Substituting $dt for ${`for`}")
-    val p = VisitAndRebuild(in, fun())
+    val p = VisitAndRebuild(in, Visitor)
     Core.xmlPrinter.toFile("/tmp/f2.xml", p)
     p.typeCheck()
     p
@@ -94,8 +94,8 @@ object PhraseType {
                                   `for`: NatIdentifier,
                                   in: Phrase[T]): Phrase[T] = {
 
-    case class fun() extends VisitAndRebuild.fun {
-      override def pre[T2 <: PhraseType](p: Phrase[T2]): Result[Phrase[T2]] = {
+    object Visitor extends VisitAndRebuild.Visitor {
+      override def apply[T2 <: PhraseType](p: Phrase[T2]): Result[Phrase[T2]] = {
         p match {
           case IdentPhrase(name, t) =>
             if (`for`.name == name) {
@@ -112,7 +112,7 @@ object PhraseType {
       override def apply[DT <: DataType](dt: DT) = substitute(ae, `for`, dt)
     }
 
-    val p = VisitAndRebuild(in, fun())
+    val p = VisitAndRebuild(in, Visitor)
     p.typeCheck()
     p
 

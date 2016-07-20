@@ -50,7 +50,7 @@ abstract class AbstractMap(n: Nat,
     }
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[ExpType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     makeMap(fun(n), fun(dt1), fun(dt2), VisitAndRebuild(f, fun), VisitAndRebuild(array, fun))
   }
 

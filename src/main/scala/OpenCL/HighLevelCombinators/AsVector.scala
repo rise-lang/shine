@@ -36,7 +36,7 @@ final case class AsVector(n: Nat,
     }
   }
 
-  override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[ExpType] = {
+  override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     AsVector(f(n), f(m), f(dt), VisitAndRebuild(array, f))
   }
 

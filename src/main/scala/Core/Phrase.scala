@@ -81,8 +81,8 @@ object Phrase {
   def substitute[T1 <: PhraseType, T2 <: PhraseType](phrase: Phrase[T1],
                                                      `for`: Phrase[T1],
                                                      in: Phrase[T2]): Phrase[T2] = {
-    object fun extends VisitAndRebuild.fun {
-      override def pre[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
+    object Visitor extends VisitAndRebuild.Visitor {
+      override def apply[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
         if (`for` == p) {
           Stop(phrase.asInstanceOf[Phrase[T]])
         } else {
@@ -91,14 +91,14 @@ object Phrase {
       }
     }
 
-    VisitAndRebuild(in, fun)
+    VisitAndRebuild(in, Visitor)
   }
 
   def substitute[T2 <: PhraseType](map: Map[Phrase[_], Phrase[_]],
                                    in: Phrase[T2]): Phrase[T2] = {
 
-    object fun extends VisitAndRebuild.fun {
-      override def pre[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
+    object Visitor extends VisitAndRebuild.Visitor {
+      override def apply[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
         if (map.isDefinedAt(p)) {
           Stop(map(p).asInstanceOf[Phrase[T]])
         } else {
@@ -107,7 +107,7 @@ object Phrase {
       }
     }
 
-    VisitAndRebuild(in, fun)
+    VisitAndRebuild(in, Visitor)
   }
 }
 
@@ -124,7 +124,7 @@ sealed trait Combinator[T <: PhraseType] extends Phrase[T] {
 
   def xmlPrinter: xml.Elem
 
-  def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[T]
+  def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[T]
 }
 
 sealed trait ExpCombinator extends Combinator[ExpType] with TypeInferable {

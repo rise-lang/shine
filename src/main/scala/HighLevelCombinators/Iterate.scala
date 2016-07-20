@@ -68,7 +68,7 @@ final case class Iterate(n: Nat,
     }
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[ExpType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     Iterate(fun(n), fun(m), k, fun(dt), VisitAndRebuild(f, fun), VisitAndRebuild(array, fun))
   }
 

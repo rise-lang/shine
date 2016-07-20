@@ -30,7 +30,7 @@ abstract class AbstractParFor(val n: Nat,
     })
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[CommandType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {
     makeParFor(fun(n), fun(dt), VisitAndRebuild(out, fun), VisitAndRebuild(body, fun))
   }
 

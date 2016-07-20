@@ -19,7 +19,7 @@ final case class JoinAcc(n: Nat,
       (array `:` acc"[${n * m}.$dt]") -> `type`
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[AccType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {
     JoinAcc(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))
   }
 

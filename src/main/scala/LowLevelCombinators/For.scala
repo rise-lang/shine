@@ -23,7 +23,7 @@ final case class For(n: Nat,
     )
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[CommandType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {
     For(fun(n), VisitAndRebuild(body, fun))
   }
 

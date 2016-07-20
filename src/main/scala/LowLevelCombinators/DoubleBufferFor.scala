@@ -32,7 +32,7 @@ final case class DoubleBufferFor(n: Nat,
 
   override def eval(s: Store): Store = ???
 
-  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[CommandType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {
     DoubleBufferFor(fun(n), fun(dt),
       addressSpace,
       VisitAndRebuild(buffer1, fun),

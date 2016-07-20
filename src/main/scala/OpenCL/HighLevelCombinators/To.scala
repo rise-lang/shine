@@ -47,7 +47,7 @@ abstract class To(dt1: DataType,
 
   override def eval(s: Store): Data = OperationalSemantics.eval(s, input)
 
-  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[ExpType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     makeTo(fun(dt1), fun(dt2), VisitAndRebuild(f, fun), VisitAndRebuild(input, fun))
   }
 
