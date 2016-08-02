@@ -1,9 +1,10 @@
 
-import Core.OperationalSemantics.FloatData
-import Core._
-import DSL.untyped._
-import OpenCL.Core.{HoistMemoryAllocations, ToOpenCL}
-import OpenCL.DSL._
+import idealised._
+import idealised.Core._
+import idealised.Core.OperationalSemantics.FloatData
+import idealised.DSL.untyped._
+import idealised.OpenCL.Core.{HoistMemoryAllocations, ToOpenCL}
+import idealised.OpenCL.DSL._
 import apart.arithmetic._
 import opencl.generator.OpenCLAST.Block
 import opencl.generator.OpenCLPrinter
@@ -100,9 +101,9 @@ object dot extends App {
   printOpenCLKernel2("dotProduct2", dotProduct2)
 
   def dotSimpleDetailed(): Unit = {
-    import HighLevelCombinators._
-    import LowLevelCombinators._
-    import OpenCL.LowLevelCombinators._
+    import idealised.HighLevelCombinators._
+    import idealised.LowLevelCombinators._
+    import idealised.OpenCL.LowLevelCombinators._
 
     val dt = float
 

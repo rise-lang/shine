@@ -1,8 +1,8 @@
 
-import Core._
-import DSL.untyped._
-import OpenCL.Core.ToOpenCL
-import OpenCL.DSL._
+import idealised.Core._
+import idealised.DSL.untyped._
+import idealised.OpenCL.Core.ToOpenCL
+import idealised.OpenCL.DSL._
 import apart.arithmetic._
 import opencl.generator.OpenCLPrinter
 
