@@ -2,7 +2,7 @@
 import Core._
 import DSL.untyped._
 import Compiling.{RewriteToImperative, SubstituteImplementations}
-import OpenCL.Core.{PrivateMemory, ToOpenCL}
+import OpenCL.Core.ToOpenCL
 import OpenCL.DSL._
 import apart.arithmetic._
 import opencl.generator.OpenCLPrinter
@@ -37,9 +37,9 @@ object Test extends App {
     val out = identifier("out", AccType(int))
     store = store + (out.name -> 0)
 
-    val p_ = `new`(int, PrivateMemory, v =>
+    val p_ = `new`(int, OpenCL.PrivateMemory, v =>
       (π2(v) := LiteralPhrase(42, int) + LiteralPhrase(1, int)) `;`
-        `new`(int, PrivateMemory, v2 =>
+        `new`(int, OpenCL.PrivateMemory, v2 =>
           (π2(v2) := π1(v) + 1) `;`
             (π2(v) := π1(v2))
         ) `;`
@@ -1035,7 +1035,6 @@ object Test extends App {
     }
 
     {
-      val n: ArithExpr = NamedVar("n")
       val dt: DataType = float
       val f_ : Phrase[ `(nat)->`[ExpType -> ExpType] ] = _Λ_( l =>
         λ(ExpType(ArrayType(l, dt)))( in =>
@@ -1047,7 +1046,24 @@ object Test extends App {
 
       println( f )
 
-      println( f(1024) )
+      println( f.apply(1024) )
+    }
+
+    {
+      val n: ArithExpr = NamedVar("n")
+      val f_ = _Λ_( (dt: DataTypeIdentifier) =>
+        λ(ExpType(ArrayType(n, dt)))( in =>
+          join() o mapSeq( λ(x => x) ) o split(2) $ in
+        )
+      )
+
+      val f = TypeInference(f_)
+
+      println( f )
+
+      Core.xmlPrinter.toFile("/tmp/f1.xml", f)
+
+      println( f(float) )
     }
 
   }

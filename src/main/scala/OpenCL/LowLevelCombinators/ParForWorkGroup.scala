@@ -5,10 +5,10 @@ import apart.arithmetic.{?, ContinuousRange, PosInf, RangeAdd}
 import opencl.generator.OpenCLAST._
 import opencl.generator.{get_group_id, get_num_groups}
 
-final case class ParForWorkGroup(n: Nat,
-                                 dt: DataType,
-                                 out: Phrase[AccType],
-                                 body: Phrase[ExpType -> (AccType -> CommandType)])
+final case class ParForWorkGroup(override val n: Nat,
+                                 override val dt: DataType,
+                                 override val out: Phrase[AccType],
+                                 override val body: Phrase[ExpType -> (AccType -> CommandType)])
   extends OpenCLParFor(n, dt, out, body) {
 
   lazy val num_groups =
@@ -16,6 +16,8 @@ final case class ParForWorkGroup(n: Nat,
     else env.globalSize /^ env.localSize
 
   override def makeParFor = ParForWorkGroup
+
+  override val parallelismLevel = OpenCL.WorkGroup
 
   override lazy val init = get_group_id(0, RangeAdd(0, num_groups, 1))
 

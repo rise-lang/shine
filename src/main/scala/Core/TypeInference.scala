@@ -21,7 +21,7 @@ object TypeInference {
     }
   }
 
-  case class typeInference() extends VisitAndRebuild.fun {
+  case class typeInference() extends VisitAndRebuild.Visitor {
     override def apply[T <: PhraseType](phrase: Phrase[T]): Result[Phrase[T]] = {
       phrase match {
         case x: IdentPhrase[T] =>
@@ -37,7 +37,7 @@ object TypeInference {
     }
   }
 
-  case class setParamAndTypeInference(t: PhraseType) extends VisitAndRebuild.fun {
+  case class setParamAndTypeInference(t: PhraseType) extends VisitAndRebuild.Visitor {
     override def apply[T <: PhraseType](phrase: Phrase[T]): Result[Phrase[T]] = {
       phrase match {
         case l@LambdaPhrase(x, p) =>
@@ -48,7 +48,7 @@ object TypeInference {
     }
   }
 
-  case class setParamsAndTypeInference(t1: PhraseType, t2: PhraseType) extends VisitAndRebuild.fun {
+  case class setParamsAndTypeInference(t1: PhraseType, t2: PhraseType) extends VisitAndRebuild.Visitor {
     override def apply[T <: PhraseType](phrase: Phrase[T]): Result[Phrase[T]] = {
       phrase match {
         case LambdaPhrase(x, p) =>

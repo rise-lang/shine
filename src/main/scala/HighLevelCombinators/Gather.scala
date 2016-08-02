@@ -2,7 +2,7 @@ package HighLevelCombinators
 
 import Compiling.RewriteToImperative
 import Core.OperationalSemantics._
-import Core.VisitAndRebuild.fun
+import Core.VisitAndRebuild.Visitor
 import Core._
 import DSL.typed._
 
@@ -58,7 +58,7 @@ final case class Gather(n: Nat,
     ???
   }
 
-  override def visitAndRebuild(fun: fun): Phrase[ExpType] =
+  override def visitAndRebuild(fun: Visitor): Phrase[ExpType] =
     Gather(fun(n), fun(dt), idxF, VisitAndRebuild(array, fun))
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {

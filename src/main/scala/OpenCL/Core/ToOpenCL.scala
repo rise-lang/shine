@@ -59,13 +59,24 @@ class ToOpenCL(val localSize: Nat, val globalSize: Nat) {
     TypeChecker(p2)
 
     val p3 = SubstituteImplementations(p2,
-      SubstituteImplementations.Environment(immutable.Map[String, OpenCLAddressSpace](("output", GlobalMemory))))
+      SubstituteImplementations.Environment(immutable.Map[String, OpenCL.AddressSpace](("output", OpenCL.GlobalMemory))))
     xmlPrinter.toFile("/tmp/p3.xml", p3)
     TypeChecker(p3)
 
-    val body = ToOpenCL.cmd(p3, Block(), ToOpenCL.Environment(localSize, globalSize))
+    val (p4, temporaryAllocations) = HoistMemoryAllocations(p3)
+    xmlPrinter.toFile("/tmp/p4.xml", p4)
+    TypeChecker(p4)
 
-    Function(name = "KERNEL", ret = UndefType, params = params, body = body, kernel = true)
+    val paramsForTemporaryBuffers = makeParams(temporaryAllocations)
+
+    val body = ToOpenCL.cmd(p4, Block(), ToOpenCL.Environment(localSize, globalSize))
+
+    val allocationSizes = computeAllocationSizes(args ++ List(out) ++ temporaryAllocations.map(_._2))
+    allocationSizes.foreach { case (name, size) =>
+      println(s"Allocating $size for param $name")
+    }
+
+    Function(name = "KERNEL", ret = UndefType, params = params ++ paramsForTemporaryBuffers, body = body, kernel = true)
   }
 
   private def make(p: Phrase[ExpType -> ExpType],
@@ -135,6 +146,30 @@ class ToOpenCL(val localSize: Nat, val globalSize: Nat) {
     List(output) ++ inputs ++ varDecls
   }
 
+  private def makeParams(allocations: List[HoistMemoryAllocations.AllocationInfo]): List[ParamDecl] = {
+    allocations.map { case (addressSpace, identifier) =>
+      ParamDecl(
+        identifier.name,
+        DataType.toType(identifier.t.t1.dataType),
+        OpenCL.AddressSpace.toOpenCL(addressSpace),
+        const = false
+      )
+    }
+  }
+
+  private def computeAllocationSizes(params: List[IdentPhrase[_]]): immutable.Map[String, SizeInByte] = {
+    params.map( i => {
+      val dt = i.t match {
+        case ExpType(dataType) => dataType
+        case AccType(dataType) => dataType
+        case PairType(ExpType(dt1), AccType(dt2)) if dt1 == dt2 => dt1
+        case _ => throw new Exception("This should not happen")
+      }
+//      println(s"get size in bytes for $dt")
+      (i.name, DataType.sizeInByte(dt))
+    }).toMap
+  }
+
 }
 
 object ToOpenCL {
@@ -169,7 +204,8 @@ object ToOpenCL {
       case p: ParFor => toOpenCL(p, block, env)
 
       case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
-           IdentPhrase(_, _) | Proj1Phrase(_) | Proj2Phrase(_) |
+           TypeDependentApplyPhrase(_, _) | IdentPhrase(_, _) |
+           Proj1Phrase(_) | Proj2Phrase(_) |
            _: MidLevelCombinator | _: LowLevelCommCombinator =>
         throw new Exception(s"Don't know how to generate OpenCL code for $p")
     }
@@ -202,7 +238,7 @@ object ToOpenCL {
       case t: TruncExp => toOpenCL(t, env, List(), List(), t.t.dataType)
 
       case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
-           IfThenElsePhrase(_, _, _) |
+           TypeDependentApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) |
            _: HighLevelCombinator | _: LowLevelExpCombinator =>
         throw new Exception(s"Don't know how to generate OpenCL code for $p")
     }
@@ -263,6 +299,7 @@ object ToOpenCL {
       case t: TruncExp => toOpenCL(t, env, arrayAccess, tupleAccess, dt)
 
       case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
+           TypeDependentApplyPhrase(_, _) |
            BinOpPhrase(_, _, _) | UnaryOpPhrase(_, _) |
            IfThenElsePhrase(_, _, _) | LiteralPhrase(_, _) |
            _: LowLevelExpCombinator | _: HighLevelCombinator =>
@@ -286,7 +323,8 @@ object ToOpenCL {
       case t: TruncAcc => toOpenCL(t, env, List(), List(), t.t.dataType)
 
       case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
-           IfThenElsePhrase(_, _, _) | _: LowLevelAccCombinator =>
+           TypeDependentApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) |
+           _: LowLevelAccCombinator =>
         throw new Exception(s"Don't know how to generate OpenCL code for $p")
     }
   }
@@ -343,7 +381,8 @@ object ToOpenCL {
       case p: Proj2Phrase[_, AccType] => acc(Lift.liftPair(p.pair)._2, env, arrayAccess, tupleAccess, dt)
 
       case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
-           IfThenElsePhrase(_, _, _) | _: LowLevelAccCombinator =>
+           TypeDependentApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) |
+           _: LowLevelAccCombinator =>
         throw new Exception(s"Don't know how to generate OpenCL code for $p")
     }
   }

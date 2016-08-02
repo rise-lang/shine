@@ -5,7 +5,6 @@ import Core._
 import DSL.typed._
 import MidLevelCombinators.AbstractMapI
 import SubstituteImplementations._
-import OpenCL.Core.GlobalMemory
 import OpenCL.LowLevelCombinators.ParForWorkGroup
 
 final case class MapWorkGroupI(n: Nat,
@@ -26,7 +25,7 @@ final case class MapWorkGroupI(n: Nat,
       //      TypeChecker(access)
       //      val identifier = ToOpenCL.acc(access, new ToOpenCL(?, ?))
       //      val addressSpace = env.addressspace(identifier.name)
-      val addressSpace = GlobalMemory
+      val addressSpace = OpenCL.GlobalMemory
 
       SubstituteImplementations(f(o)(in `@` i),
         env.copy(env.addressSpace.updated(o.name, addressSpace)))

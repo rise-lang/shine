@@ -4,7 +4,9 @@ import Compiling.SubstituteImplementations
 
 sealed trait Phrase[T <: PhraseType] {
   lazy val t: T = `type`
+
   def `type`: T = TypeOf(this)
+
   def typeCheck(): Unit = TypeChecker(this)
 }
 
@@ -20,7 +22,13 @@ final case class ApplyPhrase[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 
 final case class NatDependentLambdaPhrase[T <: PhraseType](x: NatIdentifier, body: Phrase[T])
   extends Phrase[`(nat)->`[T]]
 
+final case class TypeDependentLambdaPhrase[T <: PhraseType](x: DataTypeIdentifier, body: Phrase[T])
+  extends Phrase[`(dt)->`[T]]
+
 final case class NatDependentApplyPhrase[T <: PhraseType](fun: Phrase[`(nat)->`[T]], arg: Nat)
+  extends Phrase[T]
+
+final case class TypeDependentApplyPhrase[T <: PhraseType](fun: Phrase[`(dt)->`[T]], arg: DataType)
   extends Phrase[T]
 
 final case class PairPhrase[T1 <: PhraseType, T2 <: PhraseType](fst: Phrase[T1], snd: Phrase[T2])
@@ -73,13 +81,33 @@ object Phrase {
   def substitute[T1 <: PhraseType, T2 <: PhraseType](phrase: Phrase[T1],
                                                      `for`: Phrase[T1],
                                                      in: Phrase[T2]): Phrase[T2] = {
-    case class fun() extends VisitAndRebuild.fun {
+    object Visitor extends VisitAndRebuild.Visitor {
       override def apply[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
-        if (`for` == p) { Stop(phrase.asInstanceOf[Phrase[T]]) } else { Continue(p, this) }
+        if (`for` == p) {
+          Stop(phrase.asInstanceOf[Phrase[T]])
+        } else {
+          Continue(p, this)
+        }
       }
     }
 
-    VisitAndRebuild(in, fun())
+    VisitAndRebuild(in, Visitor)
+  }
+
+  def substitute[T2 <: PhraseType](map: Map[Phrase[_], Phrase[_]],
+                                   in: Phrase[T2]): Phrase[T2] = {
+
+    object Visitor extends VisitAndRebuild.Visitor {
+      override def apply[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
+        if (map.isDefinedAt(p)) {
+          Stop(map(p).asInstanceOf[Phrase[T]])
+        } else {
+          Continue(p, this)
+        }
+      }
+    }
+
+    VisitAndRebuild(in, Visitor)
   }
 }
 
@@ -96,7 +124,7 @@ sealed trait Combinator[T <: PhraseType] extends Phrase[T] {
 
   def xmlPrinter: xml.Elem
 
-  def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[T]
+  def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[T]
 }
 
 sealed trait ExpCombinator extends Combinator[ExpType] with TypeInferable {

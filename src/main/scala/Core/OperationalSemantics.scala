@@ -97,7 +97,8 @@ object OperationalSemantics {
           case l: LambdaPhrase[T1, T2] =>
             (arg: Phrase[T1]) => l.body `[` arg `/` l.param `]`
           case IdentPhrase(_, _) | ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
-               IfThenElsePhrase(_, _, _) | Proj1Phrase(_) | Proj2Phrase(_) =>
+               TypeDependentApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) |
+               Proj1Phrase(_) | Proj2Phrase(_) =>
             throw new Exception("This should never happen")
         }
       }
@@ -114,7 +115,8 @@ object OperationalSemantics {
             eval(s, l.body `[` arg `/` l.param `]` )(UnaryFunctionEvaluator)
 
           case IdentPhrase(_, _) | ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
-               IfThenElsePhrase(_, _, _) | Proj1Phrase(_) | Proj2Phrase(_) =>
+               TypeDependentApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) |
+               Proj1Phrase(_) | Proj2Phrase(_) =>
             throw new Exception("This should never happen")
         }
       }
@@ -132,7 +134,8 @@ object OperationalSemantics {
             eval(s, l.body `[` arg  `/` l.param `]` )(BinaryFunctionEvaluator)
 
           case IdentPhrase(_, _) | ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
-               IfThenElsePhrase(_, _, _) | Proj1Phrase(_) | Proj2Phrase(_) =>
+               TypeDependentApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) |
+               Proj1Phrase(_) | Proj2Phrase(_) =>
             throw new Exception("This should never happen")
         }
       }
@@ -152,7 +155,8 @@ object OperationalSemantics {
             }
           case pair: PairPhrase[T1, T2] => (pair.fst, pair.snd)
           case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
-               IfThenElsePhrase(_, _, _) | Proj1Phrase(_) | Proj2Phrase(_) =>
+               TypeDependentApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) |
+               Proj1Phrase(_) | Proj2Phrase(_) =>
             throw new Exception("This should never happen")
         }
       }
@@ -185,7 +189,8 @@ object OperationalSemantics {
           case c: ExpCombinator => c.eval(s)
 
           case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
-               IfThenElsePhrase(_, _, _) | Proj1Phrase(_) | Proj2Phrase(_) =>
+               TypeDependentApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) |
+               Proj1Phrase(_) | Proj2Phrase(_) =>
             throw new Exception("This should never happen")
         }
       }
@@ -200,7 +205,8 @@ object OperationalSemantics {
           case c: AccCombinator => c.eval(s)
 
           case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
-               IfThenElsePhrase(_, _, _) | Proj1Phrase(_) | Proj2Phrase(_) =>
+               TypeDependentApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) |
+               Proj1Phrase(_) | Proj2Phrase(_) =>
             throw new Exception("This should never happen")
         }
       }
@@ -215,7 +221,8 @@ object OperationalSemantics {
           case c: CommandCombinator => c.eval(s)
 
           case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
-               IfThenElsePhrase(_, _, _) | Proj1Phrase(_) | Proj2Phrase(_) =>
+               TypeDependentApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) |
+               Proj1Phrase(_) | Proj2Phrase(_) =>
             throw new Exception("This should never happen")
         }
       }

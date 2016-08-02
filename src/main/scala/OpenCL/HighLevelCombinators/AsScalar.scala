@@ -36,7 +36,7 @@ final case class AsScalar(n: Nat,
     }
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[ExpType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     AsScalar(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))
   }
 

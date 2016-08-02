@@ -11,7 +11,7 @@ case class Skip() extends LowLevelCommCombinator {
 
   override def eval(s: Store): Store = s
 
-  override def visitAndRebuild(f: VisitAndRebuild.fun): Phrase[CommandType] = this
+  override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[CommandType] = this
 
   override def prettyPrint: String = "skip"
 

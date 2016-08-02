@@ -35,7 +35,7 @@ final case class IterateIAcc(n: Nat,
 
   override def eval(s: Store): Store = ???
 
-  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[CommandType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {
     IterateIAcc(fun(n), fun(m), fun(k), fun(dt),
       VisitAndRebuild(out, fun),
       VisitAndRebuild(f, fun),

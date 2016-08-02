@@ -32,7 +32,7 @@ final case class Record(dt1: DataType,
       OperationalSemantics.eval(s, snd))
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[ExpType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     Record(fun(dt1), fun(dt2),
       VisitAndRebuild(fst, fun), VisitAndRebuild(snd, fun))
   }

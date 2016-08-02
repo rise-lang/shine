@@ -6,13 +6,15 @@ import opencl.generator.OpenCLAST._
 import opencl.generator.{get_local_id, get_local_size}
 
 
-final case class ParForLocal(n: Nat,
-                             dt: DataType,
-                             out: Phrase[AccType],
-                             body: Phrase[ExpType -> (AccType -> CommandType)])
+final case class ParForLocal(override val n: Nat,
+                             override val dt: DataType,
+                             override val out: Phrase[AccType],
+                             override val body: Phrase[ExpType -> (AccType -> CommandType)])
   extends OpenCLParFor(n, dt, out, body) {
 
   override def makeParFor = ParForLocal
+
+  override val parallelismLevel = OpenCL.Local
 
   override lazy val init = get_local_id(0, RangeAdd(0, env.localSize, 1))
 

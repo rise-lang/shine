@@ -22,7 +22,11 @@ object TypeChecker {
 
       case NatDependentLambdaPhrase(_, p) => p.typeCheck()
 
+      case TypeDependentLambdaPhrase(_, p) => p.typeCheck()
+
       case NatDependentApplyPhrase(p, _) => p.typeCheck()
+
+      case TypeDependentApplyPhrase(p, _) => p.typeCheck()
 
       case PairPhrase(p, q) => p.typeCheck(); q.typeCheck()
 

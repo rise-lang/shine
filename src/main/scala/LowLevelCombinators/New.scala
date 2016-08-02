@@ -24,7 +24,7 @@ final case class New(dt: DataType,
     newStore - arg.name
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[CommandType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {
     New(fun(dt), addressSpace, VisitAndRebuild(f, fun))
   }
 

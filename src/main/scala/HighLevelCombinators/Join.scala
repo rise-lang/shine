@@ -32,7 +32,7 @@ final case class Join(n: Nat,
     }
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[ExpType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     Join(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))
   }
 

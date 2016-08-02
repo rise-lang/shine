@@ -36,7 +36,7 @@ final case class Fst(dt1: DataType,
     }
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[ExpType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     Fst(fun(dt1), fun(dt2), VisitAndRebuild(record, fun))
   }
 
@@ -54,6 +54,7 @@ final case class Fst(dt1: DataType,
           x => A `:=` x
         case _: ArrayType => throw new Exception("This should not happen")
         case _: RecordType => throw new Exception("This should not happen")
+        case _: DataTypeIdentifier => throw new Exception("This should not happen")
       }
     })
 

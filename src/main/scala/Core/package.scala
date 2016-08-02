@@ -22,6 +22,7 @@ package object Core {
   type ->[T1 <: PhraseType, T2 <: PhraseType] = FunctionType[T1, T2]
   type `->p`[T1 <: PhraseType, T2 <: PhraseType] = PassiveFunctionType[T1, T2]
   type `(nat)->`[T <: PhraseType] = NatDependentFunctionType[T]
+  type `(dt)->`[T <: PhraseType] = TypeDependentFunctionType[T]
   type VarType = ExpType x AccType
 
   object VarType {
@@ -31,6 +32,12 @@ package object Core {
   implicit class PhraseTypeSubstitutionHelper[T <: PhraseType](t: PhraseType) {
     def `[`(e: Nat) = new {
       def `/`(a: Nat) = new {
+        def `]` = PhraseType.substitute(e, `for`=a, in=t)
+      }
+    }
+
+    def `[`(e: DataType) = new {
+      def `/`(a: DataType) = new {
         def `]` = PhraseType.substitute(e, `for`=a, in=t)
       }
     }
@@ -46,6 +53,12 @@ package object Core {
     def `[`(e: Nat) = new {
       def `/`(`for`: NatIdentifier) = new {
         def `]` = PhraseType.substitute(e, `for`, in)
+      }
+    }
+
+    def `[`(dt: DataType) = new {
+      def `/`(`for`: DataTypeIdentifier) = new {
+        def `]` = PhraseType.substitute(dt, `for`, in)
       }
     }
   }
@@ -64,6 +77,10 @@ package object Core {
 
   implicit class NatDependentFunctionTypeConstructor(x: NatIdentifier) {
     def ->[T <: PhraseType](outT: T) = NatDependentFunctionType(x, outT)
+  }
+
+  implicit class TypeDependentFunctionTypeConstructor(x: DataTypeIdentifier) {
+    def ->[T <: PhraseType](outT: T) = TypeDependentFunctionType(x, outT)
   }
 
   implicit class PhraseTypeHelper(val sc: StringContext) extends AnyVal {

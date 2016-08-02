@@ -22,7 +22,7 @@ final case class AsVectorAcc(n: Nat,
       (array `:` acc"[$n.${VectorType(m, dt)}]") -> `type`
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[AccType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {
     AsVectorAcc(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))
   }
 

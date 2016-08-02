@@ -35,6 +35,12 @@ object xmlPrinter {
           <arg type="Nat">{app.arg}</arg>
         </natApply>
 
+      case app: TypeDependentApplyPhrase[T] =>
+        <typeApply>
+          <fun type={ToString(app.fun.t)}>{apply(app.fun)}</fun>
+          <arg type="Nat">{app.arg}</arg>
+        </typeApply>
+
       case p1: Proj1Phrase[a, b] =>
         <π1>{apply(p1.pair)}</π1>
 
@@ -66,7 +72,12 @@ object xmlPrinter {
         </λ>
 
       case NatDependentLambdaPhrase(param, body) =>
-        <Λ param={param.name}>
+        <Λ param={param.name + " : nat"}>
+          {apply(body)}
+        </Λ>
+
+      case TypeDependentLambdaPhrase(param, body) =>
+        <Λ param={param.name + " : dt"}>
           {apply(body)}
         </Λ>
 

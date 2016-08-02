@@ -5,7 +5,6 @@ import Core.OperationalSemantics._
 import Core._
 import DSL.typed._
 import MidLevelCombinators.{AbstractMapI, MapI}
-import OpenCL.Core.GlobalMemory
 
 import scala.xml.Elem
 
@@ -50,7 +49,7 @@ abstract class AbstractMap(n: Nat,
     }
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[ExpType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     makeMap(fun(n), fun(dt1), fun(dt2), VisitAndRebuild(f, fun), VisitAndRebuild(array, fun))
   }
 
@@ -83,7 +82,7 @@ abstract class AbstractMap(n: Nat,
     assert(n != null && dt1 != null && dt2 != null)
     import RewriteToImperative._
 
-    `new`(dt"[$n.$dt2]", GlobalMemory, λ(exp"[$n.$dt2]" x acc"[$n.$dt2]")(tmp =>
+    `new`(dt"[$n.$dt2]", OpenCL.GlobalMemory, λ(exp"[$n.$dt2]" x acc"[$n.$dt2]")(tmp =>
       acc(this)(tmp.wr) `;` C(tmp.rd)
     ))
   }

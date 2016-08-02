@@ -21,7 +21,7 @@ final case class TruncAcc(n: Nat,
 
   override def eval(s: Store): AccIdentifier = ???
 
-  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[AccType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {
     TruncAcc(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))
   }
 

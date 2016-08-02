@@ -31,7 +31,7 @@ final case class TruncExp(n: Nat,
 
   override def eval(s: Store): Data = ???
 
-  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[ExpType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     TruncExp(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))
   }
 

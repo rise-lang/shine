@@ -25,7 +25,7 @@ final case class SndAcc(dt1: DataType,
     }
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[AccType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {
     SndAcc(fun(dt1), fun(dt2), VisitAndRebuild(record, fun))
   }
 

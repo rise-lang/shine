@@ -36,7 +36,7 @@ abstract class AbstractMapI(n: Nat,
     })
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.fun): Phrase[CommandType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {
     makeMapI(fun(n), fun(dt1), fun(dt2),
       VisitAndRebuild(out, fun),
       VisitAndRebuild(f, fun),
