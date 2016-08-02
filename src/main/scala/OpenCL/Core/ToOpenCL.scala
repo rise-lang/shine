@@ -59,7 +59,7 @@ class ToOpenCL(val localSize: Nat, val globalSize: Nat) {
     TypeChecker(p2)
 
     val p3 = SubstituteImplementations(p2,
-      SubstituteImplementations.Environment(immutable.Map[String, OpenCLAddressSpace](("output", GlobalMemory))))
+      SubstituteImplementations.Environment(immutable.Map[String, OpenCL.AddressSpace](("output", OpenCL.GlobalMemory))))
     xmlPrinter.toFile("/tmp/p3.xml", p3)
     TypeChecker(p3)
 
@@ -151,7 +151,7 @@ class ToOpenCL(val localSize: Nat, val globalSize: Nat) {
       ParamDecl(
         identifier.name,
         DataType.toType(identifier.t.t1.dataType),
-        OpenCLAddressSpace.toOpenCL(addressSpace),
+        OpenCL.AddressSpace.toOpenCL(addressSpace),
         const = false
       )
     }
@@ -165,7 +165,7 @@ class ToOpenCL(val localSize: Nat, val globalSize: Nat) {
         case PairType(ExpType(dt1), AccType(dt2)) if dt1 == dt2 => dt1
         case _ => throw new Exception("This should not happen")
       }
-      println(s"get size in bytes for $dt")
+//      println(s"get size in bytes for $dt")
       (i.name, DataType.sizeInByte(dt))
     }).toMap
   }

@@ -17,6 +17,8 @@ final case class ParForWorkGroup(override val n: Nat,
 
   override def makeParFor = ParForWorkGroup
 
+  override val parallelismLevel = OpenCL.WorkGroup
+
   override lazy val init = get_group_id(0, RangeAdd(0, num_groups, 1))
 
   override lazy val step = get_num_groups(0, num_groups_range)

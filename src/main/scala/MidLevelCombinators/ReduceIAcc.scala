@@ -4,7 +4,6 @@ import Compiling.SubstituteImplementations
 import Core.OperationalSemantics._
 import Core._
 import DSL.typed._
-import OpenCL.Core.PrivateMemory
 
 import scala.xml.Elem
 
@@ -67,7 +66,7 @@ final case class ReduceIAcc(n: Nat,
     </reduceIAcc>
 
   override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
-    `new`(dt2, PrivateMemory, accum =>
+    `new`(dt2, OpenCL.PrivateMemory, accum =>
       (accum.wr `:=` init) `;`
         `for`(n, i =>
           SubstituteImplementations(f(accum.wr)(in `@` i)(accum.rd), env)

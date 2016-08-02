@@ -14,7 +14,9 @@ abstract class OpenCLParFor(n: Nat,
                             body: Phrase[ExpType -> (AccType -> CommandType)])
   extends AbstractParFor(n, dt, out, body) with GeneratableComm {
 
-  protected var env: ToOpenCL.Environment = null
+  def parallelismLevel: OpenCL.ParallelismLevel
+
+  protected var env: ToOpenCL.Environment = _
 
   protected val name: String = newName()
 

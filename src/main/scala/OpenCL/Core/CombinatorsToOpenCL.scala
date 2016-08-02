@@ -1,6 +1,5 @@
 package OpenCL.Core
 
-import Core.OperationalSemantics.IndexData
 import Core._
 import DSL.typed.identifier
 import HighLevelCombinators._
@@ -54,10 +53,10 @@ object CombinatorsToOpenCL {
   def toOpenCL(d: DoubleBufferFor, block: Block, env: ToOpenCL.Environment): Block = {
     import opencl.generator.OpenCLAST._
 
-    val oclAddressSpace = d.addressSpace.asInstanceOf[OpenCLAddressSpace]
+    val oclAddressSpace = d.addressSpace.asInstanceOf[OpenCL.AddressSpace]
 
     val ptrType =
-      new PtrType(DataType.scalarType(d.dt), OpenCLAddressSpace.toOpenCL(oclAddressSpace))
+      new PtrType(DataType.scalarType(d.dt), OpenCL.AddressSpace.toOpenCL(oclAddressSpace))
 
     // in* = buffer1
     val buffer1Name = d.buffer1 match {
@@ -133,10 +132,10 @@ object CombinatorsToOpenCL {
   def toOpenCL(n: New, block: Block, env: ToOpenCL.Environment): Block = {
     val v = NamedVar(newName())
 
-    if (n.addressSpace == PrivateMemory) {
+    if (n.addressSpace == OpenCL.PrivateMemory) {
       (block: Block) += VarDecl(v.name, DataType.toType(n.dt))
     } else {
-      // TODO: allocate elsewhere
+      // TODO: throw exception
       (block: Block) += Comment(s"new ${v.name} ${n.dt} ${n.addressSpace}")
     }
 
@@ -160,12 +159,15 @@ object CombinatorsToOpenCL {
                block: Block,
                env: ToOpenCL.Environment): Block = {
 
-    case class ConcreteOpenCLParFor(override val n: ArithExpr,
-                                    override val dt: DataType,
-                                    override val out: Phrase[AccType],
-                                    override val body: Phrase[ExpType -> (AccType -> CommandType)])
+    // TODO: this is not really a par for if it is done sequentially ...
+    case class OpenCLParForSeq(override val n: ArithExpr,
+                               override val dt: DataType,
+                               override val out: Phrase[AccType],
+                               override val body: Phrase[ExpType -> (AccType -> CommandType)])
       extends OpenCLParFor(n, dt, out, body) {
-      override def makeParFor = ConcreteOpenCLParFor
+      override def makeParFor = OpenCLParForSeq
+
+      override def parallelismLevel = OpenCL.Sequential
 
       override lazy val init = Cst(0)
       override lazy val step = Cst(1)
@@ -173,7 +175,7 @@ object CombinatorsToOpenCL {
       override def synchronize: OclAstNode with BlockMember = OpenCLAST.Skip()
     }
 
-    ConcreteOpenCLParFor(pf.n, pf.dt, pf.out, pf.body).toOpenCL(block, env)
+    OpenCLParForSeq(pf.n, pf.dt, pf.out, pf.body).toOpenCL(block, env)
   }
 
   // ==== generating expressions  ==== //

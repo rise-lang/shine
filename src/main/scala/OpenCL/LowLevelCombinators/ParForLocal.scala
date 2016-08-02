@@ -14,6 +14,8 @@ final case class ParForLocal(override val n: Nat,
 
   override def makeParFor = ParForLocal
 
+  override val parallelismLevel = OpenCL.Local
+
   override lazy val init = get_local_id(0, RangeAdd(0, env.localSize, 1))
 
   override lazy val step = get_local_size(0, local_size_range)

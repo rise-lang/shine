@@ -14,6 +14,8 @@ final case class ParForGlobal(override val n: Nat,
 
   override val makeParFor = ParForGlobal
 
+  override val parallelismLevel = OpenCL.Global
+
   override lazy val init = get_global_id(0, RangeAdd(0, env.globalSize, 1))
 
   override lazy val step = get_global_size(0, RangeAdd(env.globalSize, env.globalSize + 1, 1))

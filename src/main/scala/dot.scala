@@ -2,7 +2,7 @@
 import Core.OperationalSemantics.FloatData
 import Core._
 import DSL.untyped._
-import OpenCL.Core.{HoistMemoryAllocations, GlobalMemory, PrivateMemory, ToOpenCL}
+import OpenCL.Core.{HoistMemoryAllocations, ToOpenCL}
 import OpenCL.DSL._
 import apart.arithmetic._
 import opencl.generator.OpenCLAST.Block
@@ -119,7 +119,7 @@ object dot extends App {
               out = v85,
               body = \(exp"[idx(${Cst(256)})]")(v86 =>
                 \(acc"[$dt]")(v87 =>
-                  New(dt"[${Cst(4)}.$dt]", GlobalMemory,
+                  New(dt"[${Cst(4)}.$dt]", OpenCL.GlobalMemory,
                     \(VarType(dt"[${Cst(4)}.$dt]"))(v74 =>
                       Seq(
                         For(n = 4, \(exp"[idx(${Cst(4)})]")(v88 =>
@@ -164,7 +164,7 @@ object dot extends App {
                             )
                           )
                         )),
-                        New(dt, PrivateMemory,
+                        New(dt, OpenCL.PrivateMemory,
                           \(VarType(dt))(v89 =>
                             Seq(
                               Seq(
@@ -225,7 +225,7 @@ object dot extends App {
         out = JoinAcc(n = N /^ 1024, m = 256, dt, output),
         body = \(exp"[idx(${N /^ 1024})]")(v84 =>
           \(acc"[${Cst(256)}.$dt]")(v85 =>
-            New(dt"[${Cst(256)}.${Cst(4)}.$dt]", GlobalMemory,
+            New(dt"[${Cst(256)}.${Cst(4)}.$dt]", OpenCL.GlobalMemory,
               \(VarType(dt"[${Cst(256)}.${Cst(4)}.$dt]"))(v74 =>
                 ParForLocal(n = 256, dt,
                   out = v85,
@@ -277,7 +277,7 @@ object dot extends App {
                             )
                           )
                         )),
-                        New(dt, PrivateMemory,
+                        New(dt, OpenCL.PrivateMemory,
                           \(VarType(dt))(v89 =>
                             Seq(
                               Seq(
@@ -327,7 +327,7 @@ object dot extends App {
     println(OpenCLPrinter()(body2))
 
     val dotSimpleImp3 =
-      New(dt"[${N /^ 1024}.${Cst(256)}.${Cst(4)}.$dt]", GlobalMemory,
+      New(dt"[${N /^ 1024}.${Cst(256)}.${Cst(4)}.$dt]", OpenCL.GlobalMemory,
         \(VarType(dt"[${N /^ 1024}.${Cst(256)}.${Cst(4)}.$dt]"))(v74 =>
           ParForWorkGroup(N /^ 1024, dt = dt"[${Cst(256)}.$dt]",
             out = JoinAcc(n = N /^ 1024, m = 256, dt, output),
@@ -386,7 +386,7 @@ object dot extends App {
                             )
                           )
                         )),
-                        New(dt, PrivateMemory,
+                        New(dt, OpenCL.PrivateMemory,
                           \(VarType(dt))(v89 =>
                             Seq(
                               Seq(

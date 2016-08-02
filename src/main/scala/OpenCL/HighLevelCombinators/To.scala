@@ -4,7 +4,6 @@ import Compiling.RewriteToImperative
 import Core.OperationalSemantics.{Data, Store}
 import Core._
 import DSL.typed._
-import OpenCL.Core.OpenCLAddressSpace
 
 import scala.xml.Elem
 
@@ -12,7 +11,7 @@ abstract class To(dt1: DataType,
                   dt2: DataType,
                   f: Phrase[ExpType -> ExpType],
                   input: Phrase[ExpType],
-                  addressSpace: OpenCLAddressSpace,
+                  addressSpace: OpenCL.AddressSpace,
                   private val makeTo: (DataType, DataType, Phrase[ExpType -> ExpType], Phrase[ExpType]) => To)
   extends HighLevelCombinator {
 

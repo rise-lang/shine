@@ -4,7 +4,6 @@ import Compiling.SubstituteImplementations
 import Core.OperationalSemantics._
 import Core._
 import DSL.typed._
-import OpenCL.Core.PrivateMemory
 
 import scala.xml.Elem
 
@@ -37,7 +36,7 @@ final case class ReduceIExp(n: Nat,
 
   override def eval(s: Store): Store = {
     val outE = OperationalSemantics.eval(s, out)
-    OperationalSemantics.eval(s, `new`(init.t.dataType, PrivateMemory, accum => {
+    OperationalSemantics.eval(s, `new`(init.t.dataType, OpenCL.PrivateMemory, accum => {
       ReduceIAcc(n, dt1, dt2, π2(accum), f, init, in) `;`
         outE(π1(accum))
     }))
@@ -63,7 +62,7 @@ final case class ReduceIExp(n: Nat,
     </reduceIExp>
 
   override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
-    `new`(dt2, PrivateMemory, accum =>
+    `new`(dt2, OpenCL.PrivateMemory, accum =>
       (accum.wr `:=` init) `;`
         `for`(n, i =>
           SubstituteImplementations(f(accum.wr)(in `@` i)(accum.rd), env)

@@ -5,7 +5,6 @@ import Core.OperationalSemantics._
 import Core._
 import DSL.typed._
 import LowLevelCombinators.{TruncAcc, TruncExp}
-import OpenCL.Core.GlobalMemory
 
 import scala.xml.Elem
 
@@ -45,7 +44,7 @@ final case class IterateIExp(n: Nat,
     val sEnd = n.pow(k) * m
     val s = (l: Nat) => n.pow(k - l) * m
 
-    val addressSpace = GlobalMemory
+    val addressSpace = OpenCL.GlobalMemory
 
     `new`(dt"[$sEnd.$dt]", addressSpace, buf1 => {
       `new`(dt"[$sEnd.$dt]", addressSpace, buf2 => {
