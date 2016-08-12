@@ -69,7 +69,7 @@ object asum extends App {
   TypeChecker(nvidiaDerived1)
 
   println("-- Nvidia Derived 1 --")
-  println(OpenCLPrinter()((new ToOpenCL(localSize = 128, globalSize = N))(nvidiaDerived1)))
+  println(OpenCLPrinter()(ToOpenCL(localSize = 128, globalSize = N).makeKernel(nvidiaDerived1)))
   println("----------------")
 
   val nvidiaDerived2_ = λ(inputT)(input =>

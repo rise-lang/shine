@@ -1,5 +1,10 @@
 package idealised
 
+import idealised.Core.{AccType, ExpType, IdentPhrase, VarType}
+import opencl.generator._
+
+import scala.collection.immutable.List
+
 package object OpenCL {
   sealed trait ParallelismLevel
   case object WorkGroup extends ParallelismLevel
@@ -22,4 +27,10 @@ package object OpenCL {
       }
     }
   }
+
+  case class Kernel(function: OpenCLAST.Function,
+                    outputParam: IdentPhrase[AccType],
+                    inputParams: List[IdentPhrase[ExpType]],
+                    intermediateParams: List[IdentPhrase[VarType]])
+
 }

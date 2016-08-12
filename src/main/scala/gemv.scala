@@ -1,7 +1,7 @@
 
 import idealised.Core._
 import idealised.DSL.untyped._
-import idealised.OpenCL.Core.ToOpenCL
+import idealised.OpenCL.Core._
 import idealised.OpenCL.DSL._
 import apart.arithmetic._
 import opencl.generator.OpenCLPrinter
@@ -24,7 +24,20 @@ object gemv extends App {
     lambda.typeCheck()
 
     println(s"-- $name --")
-    println(OpenCLPrinter()(ToOpenCL(localSize = 128, globalSize = M * 128)(lambda)))
+    val toOpenCL = ToOpenCL(localSize = 128, globalSize = M * 128)
+    val kernel = toOpenCL.makeKernel(lambda)
+    println(OpenCLPrinter()(kernel))
+
+    val fun = toOpenCL.asFunction[(Array[Array[Float]] :+: Array[Float] :+: Array[Float] :+: Float :+: Float :+: HNil.type) =:=> Array[Float]](kernel)
+
+    val mat = Array.tabulate(32, 32)((_, _) => 1.0f)
+    val xs = Array.fill(32)(1.0f)
+    val ys = Array.fill(32)(2.0f)
+
+    val (res, time) = fun(mat :+: xs :+: ys :+: 4.5f :+: 5.6f :+: HNil)
+
+    println(time)
+
     println("----------------")
   }
 

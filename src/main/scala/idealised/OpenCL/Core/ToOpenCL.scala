@@ -7,152 +7,221 @@ import idealised.DSL.typed._
 import idealised.HighLevelCombinators._
 import idealised.LowLevelCombinators._
 import idealised.OpenCL.Core.CombinatorsToOpenCL._
+import idealised.OpenCL.Core.HoistMemoryAllocations.AllocationInfo
 import idealised._
 import ir.{Type, UndefType}
 import opencl.generator.OpenCLAST._
 
 import scala.collection._
 import scala.collection.immutable.List
-import scala.reflect.runtime.universe.TypeTag
+import scala.collection.Seq
 
 case class ToOpenCL(localSize: Nat, globalSize: Nat) {
 
-  def apply[T <: PhraseType : TypeTag](p: Phrase[T]): Function = {
-    import scala.reflect.runtime.universe._
-    apply(p, typeOf[T], List())
-  }
+  def makeKernel[T <: PhraseType](originalPhrase: Phrase[T]): OpenCL.Kernel = {
 
-  private val ftc = scala.reflect.runtime.universe.typeOf[Core.->[_, _]].typeConstructor
-  private val expTy = scala.reflect.runtime.universe.typeOf[ExpType]
-
-  private def apply[T <: PhraseType](p: Phrase[T],
-                                    ty: scala.reflect.runtime.universe.Type,
-                                    params: List[IdentPhrase[ExpType]]): Function = {
-    import scala.reflect.runtime.universe._
-
-    (p, ty) match {
-      case (l: LambdaPhrase[ExpType, _]@unchecked, TypeRef(_, ft, args))
-        if ft.asType.toType.typeConstructor =:= ftc =>
-        apply(l.body, args(1), l.param +: params)
-      case (pe: Phrase[ExpType]@unchecked, t) if t <:< expTy =>
-        make(pe, params)
+    def getPhraseAndParams[_ <: PhraseType](p: Phrase[_],
+                                            ps: List[IdentPhrase[ExpType]]
+                                           ): (Phrase[ExpType], List[IdentPhrase[ExpType]]) = {
+      p match {
+        case l: LambdaPhrase[ExpType, _]@unchecked => getPhraseAndParams(l.body, l.param +: ps)
+        case ep: Phrase[ExpType]@unchecked => (ep, ps)
+      }
     }
+
+    val (phrase, params) = getPhraseAndParams(originalPhrase, List())
+    makeKernel(phrase, params.reverse)
   }
 
   def apply(p: Phrase[ExpType -> ExpType],
-            arg: IdentPhrase[ExpType]): Function =
-    make(p(arg), List(arg))
+            param: IdentPhrase[ExpType]): OpenCL.Kernel =
+    makeKernel(p(param), List(param))
 
   def apply(p: Phrase[ExpType -> (ExpType -> ExpType)],
-            arg0: IdentPhrase[ExpType],
-            arg1: IdentPhrase[ExpType]): Function =
-    make(p(arg0)(arg1), List(arg0, arg1))
+            param0: IdentPhrase[ExpType],
+            param1: IdentPhrase[ExpType]): OpenCL.Kernel =
+    makeKernel(p(param0)(param1), List(param0, param1))
 
   def apply(p: Phrase[ExpType -> (ExpType -> (ExpType -> ExpType))],
-            arg0: IdentPhrase[ExpType],
-            arg1: IdentPhrase[ExpType],
-            arg2: IdentPhrase[ExpType]): Function =
-    make(p(arg0)(arg1)(arg2), List(arg0, arg1, arg2))
+            param0: IdentPhrase[ExpType],
+            param1: IdentPhrase[ExpType],
+            param2: IdentPhrase[ExpType]): OpenCL.Kernel =
+    makeKernel(p(param0)(param1)(param2), List(param0, param1, param2))
 
   def apply(p: Phrase[ExpType -> (ExpType -> (ExpType -> (ExpType -> ExpType)))],
-            arg0: IdentPhrase[ExpType],
-            arg1: IdentPhrase[ExpType],
-            arg2: IdentPhrase[ExpType],
-            arg3: IdentPhrase[ExpType]): Function =
-    make(p(arg0)(arg1)(arg2)(arg3), List(arg0, arg1, arg2, arg3))
+            param0: IdentPhrase[ExpType],
+            param1: IdentPhrase[ExpType],
+            param2: IdentPhrase[ExpType],
+            param3: IdentPhrase[ExpType]): OpenCL.Kernel =
+    makeKernel(p(param0)(param1)(param2)(param3), List(param0, param1, param2, param3))
 
   def apply(p: Phrase[ExpType -> (ExpType -> (ExpType -> (ExpType -> (ExpType -> ExpType))))],
-            arg0: IdentPhrase[ExpType],
-            arg1: IdentPhrase[ExpType],
-            arg2: IdentPhrase[ExpType],
-            arg3: IdentPhrase[ExpType],
-            arg4: IdentPhrase[ExpType]): Function =
-    make(p(arg0)(arg1)(arg2)(arg3)(arg4), List(arg0, arg1, arg2, arg3, arg4))
+            param0: IdentPhrase[ExpType],
+            param1: IdentPhrase[ExpType],
+            param2: IdentPhrase[ExpType],
+            param3: IdentPhrase[ExpType],
+            param4: IdentPhrase[ExpType]): OpenCL.Kernel =
+    makeKernel(p(param0)(param1)(param2)(param3)(param4),
+      List(param0, param1, param2, param3, param4))
 
-  private def make(p: Phrase[ExpType],
-                   args: List[IdentPhrase[ExpType]]): Function = {
+  private def makeKernel(p: Phrase[ExpType], params: List[IdentPhrase[ExpType]]): OpenCL.Kernel = {
+    val p1 = inferTypes(p)
+
+    val outParam = createOutputParam(outT = p1.t)
+
+    val p2 = rewriteToImperative(p1, outParam)
+
+    val p3 = substituteImplementations(p2)
+
+    val (p4, intermediateAllocs) = hoistMemoryAllocations(p3)
+
+//    val allocationSizes = computeAllocationSizes(List(outParam) ++ params ++ intermediateAllocations.map(_._2))
+//    allocationSizes.foreach { case (name, size) =>
+//      println(s"Allocating $size for param $name")
+//    }
+
+    OpenCL.Kernel(
+      function = makeKernelFunction(makeParams(outParam, params, intermediateAllocs), makeBody(p4)),
+      outputParam = outParam,
+      inputParams = params,
+      intermediateParams = intermediateAllocs.map(_._2))
+  }
+
+  private def inferTypes(p: Phrase[ExpType]): Phrase[ExpType] = {
     val p1 = TypeInference(p)
     xmlPrinter.toFile("/tmp/p1.xml", p1)
     TypeChecker(p1)
-    val outT = p1.t
-    val out = identifier("output", AccType(outT.dataType))
+    p1
+  }
 
-    val p2 = RewriteToImperative.acc(p1)(out)
+  private def createOutputParam(outT: ExpType): IdentPhrase[AccType] = {
+    identifier("output", AccType(outT.dataType))
+  }
+
+  private def rewriteToImperative(p: Phrase[ExpType], a: Phrase[AccType]): Phrase[CommandType] = {
+    val p2 = RewriteToImperative.acc(p)(a)
     xmlPrinter.toFile("/tmp/p2.xml", p2)
     TypeChecker(p2)
+    p2
+  }
 
-    val p3 = SubstituteImplementations(p2,
-      SubstituteImplementations.Environment(immutable.Map[String, idealised.OpenCL.AddressSpace](("output", OpenCL.GlobalMemory))))
+  private def substituteImplementations(p: Phrase[CommandType]): Phrase[CommandType] = {
+    import SubstituteImplementations.Environment
+    val p3 = SubstituteImplementations(p, Environment(immutable.Map(("output", OpenCL.GlobalMemory))))
     xmlPrinter.toFile("/tmp/p3.xml", p3)
     TypeChecker(p3)
+    p3
+  }
 
-    val (p4, temporaryAllocations) = HoistMemoryAllocations(p3)
+  private def hoistMemoryAllocations(p: Phrase[CommandType]): (Phrase[CommandType], List[AllocationInfo]) = {
+    val (p4, intermediateAllocations) = HoistMemoryAllocations(p)
     xmlPrinter.toFile("/tmp/p4.xml", p4)
     TypeChecker(p4)
-
-    val paramsForTemporaryBuffers = makeParams(temporaryAllocations)
-
-    val body = ToOpenCL.cmd(p4, Block(), ToOpenCL.Environment(localSize, globalSize))
-
-    val allocationSizes = computeAllocationSizes(args ++ List(out) ++ temporaryAllocations.map(_._2))
-    allocationSizes.foreach { case (name, size) =>
-      println(s"Allocating $size for param $name")
-    }
-
-    val params = makeParams(out, args: _*)
-
-    Function(name = "KERNEL", ret = UndefType, params = params ++ paramsForTemporaryBuffers, body = body, kernel = true)
+    (p4, intermediateAllocations)
   }
 
   private def makeParams(out: IdentPhrase[AccType],
-                         args: IdentPhrase[ExpType]*): List[ParamDecl] = {
-    val output = ParamDecl(
-      out.name,
-      DataType.toType(out.t.dataType),
-      opencl.ir.GlobalMemory,
-      const = false)
-
-    val inputs = args.map(arg =>
-      ParamDecl(
-        arg.name,
-        DataType.toType(arg.t.dataType),
-        opencl.ir.GlobalMemory,
-        const = true)
-    )
-
-    val types = args.map(_.t.dataType).+:(out.t.dataType).map(DataType.toType)
-    val lengths = types.flatMap(Type.getLengths)
-    val vars = lengths.filter(_.isInstanceOf[apart.arithmetic.Var]).distinct
-
-    val varDecls = vars.map(v =>
-      ParamDecl(v.toString, opencl.ir.Int)
-    )
-
-    List(output) ++ inputs ++ varDecls
+                         ins: List[IdentPhrase[ExpType]],
+                         intermediateAllocations: List[AllocationInfo]): List[ParamDecl] = {
+    List(makeGlobalParam(out)) ++ // first the output parameter ...
+      ins.map(makeGlobalParam) ++ // ... then the input parameters ...
+      intermediateAllocations.map(makeParam) ++ // ... then the intermediate buffers ...
+      // ... finally, the parameters for the length information in the type
+      // these can never come from an intermediate buffers, as these types are always derived
+      // from the types of the input parameters.
+      makeLengthParams((List(out.t.dataType) ++ ins.map(_.t.dataType)).map(DataType.toType))
   }
 
-  private def makeParams(allocations: List[HoistMemoryAllocations.AllocationInfo]): List[ParamDecl] = {
-    allocations.map { case (addressSpace, identifier) =>
-      ParamDecl(
-        identifier.name,
-        DataType.toType(identifier.t.t1.dataType),
-        OpenCL.AddressSpace.toOpenCL(addressSpace),
-        const = false
-      )
+  private def makeGlobalParam(i: IdentPhrase[_]): ParamDecl = {
+    ParamDecl(
+      i.name,
+      DataType.toType(getDataType(i)),
+      opencl.ir.GlobalMemory,
+      const = false)
+  }
+
+  private def makeParam(allocInfo: AllocationInfo): ParamDecl = {
+    val (addressSpace, identifier) = allocInfo
+    ParamDecl(
+      identifier.name,
+      DataType.toType(getDataType(identifier)),
+      OpenCL.AddressSpace.toOpenCL(addressSpace),
+      const = false
+    )
+  }
+
+  // returns list of int parameters for each variable in the given types;
+  // sorted by name of the variables
+  private def makeLengthParams(types: List[Type]): List[ParamDecl] = {
+    val lengths = types.flatMap(Type.getLengths)
+    lengths.filter(_.isInstanceOf[apart.arithmetic.Var]).distinct.map(v =>
+      ParamDecl(v.toString, opencl.ir.Int)
+    ).sortBy(_.name)
+  }
+
+  private def makeBody(p: Phrase[CommandType]): Block = {
+    ToOpenCL.cmd(p, Block(), ToOpenCL.Environment(localSize, globalSize))
+  }
+
+  private def makeKernelFunction(params:  List[ParamDecl], body: Block): Function = {
+    Function(name = "KERNEL",
+      ret = UndefType, // should really be void
+      params = params,
+      body = body,
+      kernel = true)
+  }
+
+  private def computeAllocationSizes(params: List[IdentPhrase[_]]): List[(String, SizeInByte)] = {
+    params.map(i => {
+      (i.name, DataType.sizeInByte(getDataType(i)))
+    })
+  }
+
+  private def getDataType(i: IdentPhrase[_]): DataType = {
+    i.t match {
+      case ExpType(dataType) => dataType
+      case AccType(dataType) => dataType
+      case PairType(ExpType(dt1), AccType(dt2)) if dt1 == dt2 => dt1
+      case _ => throw new Exception("This should not happen")
     }
   }
 
-  private def computeAllocationSizes(params: List[IdentPhrase[_]]): immutable.Map[String, SizeInByte] = {
-    params.map(i => {
-      val dt = i.t match {
-        case ExpType(dataType) => dataType
-        case AccType(dataType) => dataType
-        case PairType(ExpType(dt1), AccType(dt2)) if dt1 == dt2 => dt1
-        case _ => throw new Exception("This should not happen")
+  object asFunction {
+
+    def apply[F <: FunctionHelper](kernel: OpenCL.Kernel)
+                                  (implicit ev: F#T <:< HList): (F#T) => (F#R, TimeSpan[Time.ms]) = {
+      type T = F#T
+      type R = F#R
+      (args: T) => {
+        checkParamsAndArgs(kernel.inputParams, args)
+
+        (Array[Float]().asInstanceOf[R], TimeSpan.inMilliseconds(100))
       }
-      //      println(s"get size in bytes for $dt")
-      (i.name, DataType.sizeInByte(dt))
-    }).toMap
+    }
+  }
+
+  private def checkParamsAndArgs(params: Seq[IdentPhrase[ExpType]], args: HList): Unit = {
+    if (params.length != args.length) {
+      throw new Exception(s"Expected ${params.length} arguments, but got ${args.length}")
+    }
+    (params, args.toList).zipped.foreach( (p, a) => checkParamTypeWithArg(p.t.dataType, a) )
+  }
+
+  private def checkParamTypeWithArg(t: DataType, a: Any): Unit = {
+    (t, a) match {
+      case (bt: BasicType, _) => (bt, a) match {
+        case (bool, _: Boolean) =>
+        case (int, _: Int) =>
+        case (float, _: Float) =>
+        case (VectorType(_, ebt), _) => checkParamTypeWithArg(ebt, a)
+        case _ => throw new Exception(s"Expected $bt, but got $a")
+      }
+      case (at: ArrayType, array: Array[_]) => checkParamTypeWithArg(at.elemType, array.head)
+      case (rt: RecordType, tuple: (_, _)) =>
+        checkParamTypeWithArg(rt.fst, tuple._1)
+        checkParamTypeWithArg(rt.snd, tuple._2)
+      case _ => throw new Exception(s"Expected $t but got $a")
+    }
   }
 
 }
