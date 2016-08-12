@@ -1,42 +1,65 @@
 package idealised.OpenCL.Core
 
-import idealised._
-import idealised.Core._
-import idealised.Core.OperationalSemantics._
 import idealised.Compiling._
+import idealised.Core.OperationalSemantics._
+import idealised.Core._
 import idealised.DSL.typed._
 import idealised.HighLevelCombinators._
+import idealised.LowLevelCombinators._
+import idealised.OpenCL.Core.CombinatorsToOpenCL._
+import idealised._
 import ir.{Type, UndefType}
 import opencl.generator.OpenCLAST._
-import idealised.LowLevelCombinators._
-import CombinatorsToOpenCL._
 
 import scala.collection._
 import scala.collection.immutable.List
+import scala.reflect.runtime.universe.TypeTag
 
-class ToOpenCL(val localSize: Nat, val globalSize: Nat) {
+case class ToOpenCL(localSize: Nat, globalSize: Nat) {
+
+  def apply[T <: PhraseType : TypeTag](p: Phrase[T]): Function = {
+    import scala.reflect.runtime.universe._
+    apply(p, typeOf[T], List())
+  }
+
+  private val ftc = scala.reflect.runtime.universe.typeOf[Core.->[_, _]].typeConstructor
+  private val expTy = scala.reflect.runtime.universe.typeOf[ExpType]
+
+  private def apply[T <: PhraseType](p: Phrase[T],
+                                    ty: scala.reflect.runtime.universe.Type,
+                                    params: List[IdentPhrase[ExpType]]): Function = {
+    import scala.reflect.runtime.universe._
+
+    (p, ty) match {
+      case (l: LambdaPhrase[ExpType, _]@unchecked, TypeRef(_, ft, args))
+        if ft.asType.toType.typeConstructor =:= ftc =>
+        apply(l.body, args(1), l.param +: params)
+      case (pe: Phrase[ExpType]@unchecked, t) if t <:< expTy =>
+        make(pe, params)
+    }
+  }
 
   def apply(p: Phrase[ExpType -> ExpType],
             arg: IdentPhrase[ExpType]): Function =
-    make(p, arg, List())
+    make(p(arg), List(arg))
 
   def apply(p: Phrase[ExpType -> (ExpType -> ExpType)],
             arg0: IdentPhrase[ExpType],
             arg1: IdentPhrase[ExpType]): Function =
-    make(p, arg0, arg1, List())
+    make(p(arg0)(arg1), List(arg0, arg1))
 
   def apply(p: Phrase[ExpType -> (ExpType -> (ExpType -> ExpType))],
             arg0: IdentPhrase[ExpType],
             arg1: IdentPhrase[ExpType],
             arg2: IdentPhrase[ExpType]): Function =
-    make(p, arg0, arg1, arg2, List())
+    make(p(arg0)(arg1)(arg2), List(arg0, arg1, arg2))
 
   def apply(p: Phrase[ExpType -> (ExpType -> (ExpType -> (ExpType -> ExpType)))],
             arg0: IdentPhrase[ExpType],
             arg1: IdentPhrase[ExpType],
             arg2: IdentPhrase[ExpType],
             arg3: IdentPhrase[ExpType]): Function =
-    make(p, arg0, arg1, arg2, arg3, List())
+    make(p(arg0)(arg1)(arg2)(arg3), List(arg0, arg1, arg2, arg3))
 
   def apply(p: Phrase[ExpType -> (ExpType -> (ExpType -> (ExpType -> (ExpType -> ExpType))))],
             arg0: IdentPhrase[ExpType],
@@ -44,7 +67,7 @@ class ToOpenCL(val localSize: Nat, val globalSize: Nat) {
             arg2: IdentPhrase[ExpType],
             arg3: IdentPhrase[ExpType],
             arg4: IdentPhrase[ExpType]): Function =
-    make(p, arg0, arg1, arg2, arg3, arg4, List())
+    make(p(arg0)(arg1)(arg2)(arg3)(arg4), List(arg0, arg1, arg2, arg3, arg4))
 
   private def make(p: Phrase[ExpType],
                    args: List[IdentPhrase[ExpType]]): Function = {
@@ -53,7 +76,6 @@ class ToOpenCL(val localSize: Nat, val globalSize: Nat) {
     TypeChecker(p1)
     val outT = p1.t
     val out = identifier("output", AccType(outT.dataType))
-    val params = makeParams(out, args: _*)
 
     val p2 = RewriteToImperative.acc(p1)(out)
     xmlPrinter.toFile("/tmp/p2.xml", p2)
@@ -77,47 +99,9 @@ class ToOpenCL(val localSize: Nat, val globalSize: Nat) {
       println(s"Allocating $size for param $name")
     }
 
+    val params = makeParams(out, args: _*)
+
     Function(name = "KERNEL", ret = UndefType, params = params ++ paramsForTemporaryBuffers, body = body, kernel = true)
-  }
-
-  private def make(p: Phrase[ExpType -> ExpType],
-                   arg: IdentPhrase[ExpType],
-                   args: List[IdentPhrase[ExpType]]): Function = {
-    make(p(arg), arg +: args)
-  }
-
-  private def make(p: Phrase[ExpType -> (ExpType -> ExpType)],
-                   arg0: IdentPhrase[ExpType],
-                   arg1: IdentPhrase[ExpType],
-                   args: List[IdentPhrase[ExpType]]): Function = {
-    make(p(arg0), arg1, arg0 +: args)
-  }
-
-  private def make(p: Phrase[ExpType -> (ExpType -> (ExpType -> ExpType))],
-                   arg0: IdentPhrase[ExpType],
-                   arg1: IdentPhrase[ExpType],
-                   arg2: IdentPhrase[ExpType],
-                   args: List[IdentPhrase[ExpType]]): Function = {
-    make(p(arg0), arg1, arg2, arg0 +: args)
-  }
-
-  private def make(p: Phrase[ExpType -> (ExpType -> (ExpType -> (ExpType -> ExpType)))],
-                   arg0: IdentPhrase[ExpType],
-                   arg1: IdentPhrase[ExpType],
-                   arg2: IdentPhrase[ExpType],
-                   arg3: IdentPhrase[ExpType],
-                   args: List[IdentPhrase[ExpType]]): Function = {
-    make(p(arg0), arg1, arg2, arg3, arg0 +: args)
-  }
-
-  private def make(p: Phrase[ExpType -> (ExpType -> (ExpType -> (ExpType -> (ExpType -> ExpType))))],
-                   arg0: IdentPhrase[ExpType],
-                   arg1: IdentPhrase[ExpType],
-                   arg2: IdentPhrase[ExpType],
-                   arg3: IdentPhrase[ExpType],
-                   arg4: IdentPhrase[ExpType],
-                   args: List[IdentPhrase[ExpType]]): Function = {
-    make(p(arg0), arg1, arg2, arg3, arg4, arg0 +: args)
   }
 
   private def makeParams(out: IdentPhrase[AccType],
@@ -159,14 +143,14 @@ class ToOpenCL(val localSize: Nat, val globalSize: Nat) {
   }
 
   private def computeAllocationSizes(params: List[IdentPhrase[_]]): immutable.Map[String, SizeInByte] = {
-    params.map( i => {
+    params.map(i => {
       val dt = i.t match {
         case ExpType(dataType) => dataType
         case AccType(dataType) => dataType
         case PairType(ExpType(dt1), AccType(dt2)) if dt1 == dt2 => dt1
         case _ => throw new Exception("This should not happen")
       }
-//      println(s"get size in bytes for $dt")
+      //      println(s"get size in bytes for $dt")
       (i.name, DataType.sizeInByte(dt))
     }).toMap
   }

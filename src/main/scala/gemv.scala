@@ -24,13 +24,7 @@ object gemv extends App {
     lambda.typeCheck()
 
     println(s"-- $name --")
-    println(OpenCLPrinter()((new ToOpenCL(localSize = 128, globalSize = M * 128))(lambda,
-      identifier("mat", matT),
-      identifier("xs", xsT),
-      identifier("ys", ysT),
-      identifier("alpha", ExpType(dataT)),
-      identifier("beta", ExpType(dataT))
-      )))
+    println(OpenCLPrinter()(ToOpenCL(localSize = 128, globalSize = M * 128)(lambda)))
     println("----------------")
   }
 
