@@ -1,5 +1,6 @@
 package idealised.OpenCL.Core
 
+import apart.arithmetic.{ArithExpr, Cst, Var}
 import idealised.Compiling._
 import idealised.Core.OperationalSemantics._
 import idealised.Core._
@@ -10,11 +11,15 @@ import idealised.OpenCL.Core.CombinatorsToOpenCL._
 import idealised.OpenCL.Core.HoistMemoryAllocations.AllocationInfo
 import idealised._
 import ir.{Type, UndefType}
+import opencl.executor._
 import opencl.generator.OpenCLAST._
+import opencl.generator.OpenCLPrinter
+import opencl.ir.{Double, Float, GlobalMemory, Int, LocalMemory}
 
 import scala.collection._
 import scala.collection.immutable.List
 import scala.collection.Seq
+import scala.language.implicitConversions
 
 case class ToOpenCL(localSize: Nat, globalSize: Nat) {
 
@@ -75,11 +80,6 @@ case class ToOpenCL(localSize: Nat, globalSize: Nat) {
 
     val (p4, intermediateAllocs) = hoistMemoryAllocations(p3)
 
-//    val allocationSizes = computeAllocationSizes(List(outParam) ++ params ++ intermediateAllocations.map(_._2))
-//    allocationSizes.foreach { case (name, size) =>
-//      println(s"Allocating $size for param $name")
-//    }
-
     OpenCL.Kernel(
       function = makeKernelFunction(makeParams(outParam, params, intermediateAllocs), makeBody(p4)),
       outputParam = outParam,
@@ -127,9 +127,8 @@ case class ToOpenCL(localSize: Nat, globalSize: Nat) {
       ins.map(makeGlobalParam) ++ // ... then the input parameters ...
       intermediateAllocations.map(makeParam) ++ // ... then the intermediate buffers ...
       // ... finally, the parameters for the length information in the type
-      // these can never come from an intermediate buffers, as these types are always derived
-      // from the types of the input parameters.
-      makeLengthParams((List(out.t.dataType) ++ ins.map(_.t.dataType)).map(DataType.toType))
+      // these can only come from the input parameters.
+      makeLengthParams(ins.map(_.t.dataType).map(DataType.toType))
   }
 
   private def makeGlobalParam(i: IdentPhrase[_]): ParamDecl = {
@@ -163,7 +162,7 @@ case class ToOpenCL(localSize: Nat, globalSize: Nat) {
     ToOpenCL.cmd(p, Block(), ToOpenCL.Environment(localSize, globalSize))
   }
 
-  private def makeKernelFunction(params:  List[ParamDecl], body: Block): Function = {
+  private def makeKernelFunction(params: List[ParamDecl], body: Block): Function = {
     Function(name = "KERNEL",
       ret = UndefType, // should really be void
       params = params,
@@ -177,7 +176,7 @@ case class ToOpenCL(localSize: Nat, globalSize: Nat) {
     })
   }
 
-  private def getDataType(i: IdentPhrase[_]): DataType = {
+  implicit private def getDataType(i: IdentPhrase[_]): DataType = {
     i.t match {
       case ExpType(dataType) => dataType
       case AccType(dataType) => dataType
@@ -187,39 +186,145 @@ case class ToOpenCL(localSize: Nat, globalSize: Nat) {
   }
 
   object asFunction {
-
     def apply[F <: FunctionHelper](kernel: OpenCL.Kernel)
                                   (implicit ev: F#T <:< HList): (F#T) => (F#R, TimeSpan[Time.ms]) = {
-      type T = F#T
-      type R = F#R
-      (args: T) => {
-        checkParamsAndArgs(kernel.inputParams, args)
+      (args: F#T) => {
+        val (outputArg, inputArgs) = createKernelArgs(kernel, args)
+        val kernelArgs = (outputArg +: inputArgs).toArray
 
-        (Array[Float]().asInstanceOf[R], TimeSpan.inMilliseconds(100))
+        val runtime = Executor.execute(kernelCode(kernel.function),
+          localSize.eval, 0, 0,
+          globalSize.eval, 0, 0,
+          kernelArgs)
+
+        val output = castToOutputType[F#R](kernel.outputParam.`type`.dataType, outputArg)
+
+        kernelArgs.foreach(_.dispose)
+
+        (output, TimeSpan.inMilliseconds(runtime))
       }
     }
   }
 
-  private def checkParamsAndArgs(params: Seq[IdentPhrase[ExpType]], args: HList): Unit = {
-    if (params.length != args.length) {
-      throw new Exception(s"Expected ${params.length} arguments, but got ${args.length}")
-    }
-    (params, args.toList).zipped.foreach( (p, a) => checkParamTypeWithArg(p.t.dataType, a) )
+  private def kernelCode(function: Function): String = {
+    (new OpenCLPrinter)(function)
   }
 
-  private def checkParamTypeWithArg(t: DataType, a: Any): Unit = {
+  private def createKernelArgs(kernel: OpenCL.Kernel, args: HList) = {
+    val lengthMapping = createLengthMap(kernel.inputParams, args)
+
+    val numberOfKernelArgs = 1 + args.length + kernel.intermediateParams.size + lengthMapping.size
+    assert(kernel.function.params.length == numberOfKernelArgs)
+
+    val outputArg = createGlobalArg(DataType.sizeInByte(kernel.outputParam) `with` lengthMapping)
+    val inputArgs = createInputArgs(args.toList)
+    val intermediateArgs = createIntermediateArgs(kernel, args.length, lengthMapping)
+    val lengthArgs = createLengthArgs(lengthMapping)
+
+    (outputArg, inputArgs ++ intermediateArgs ++ lengthArgs)
+  }
+
+  private def castToOutputType[R](dt: DataType, output: GlobalArg): R = {
+    assert(dt.isInstanceOf[ArrayType])
+    (Type.getBaseType(DataType.toType(dt)) match {
+      case Float  => output.asFloatArray()
+      case Int    => output.asIntArray()
+      case Double => output.asDoubleArray()
+      case _ => throw new IllegalArgumentException("Return type of the given lambda expression " +
+        "not supported: " + dt.toString)
+    }).asInstanceOf[R]
+  }
+
+  private def createLengthArgs(lengthMapping: immutable.Map[Core.Nat, Core.Nat]) = {
+    lengthMapping.map( p => ValueArg.create(p._2.eval) ).toList
+  }
+
+  private def createIntermediateArgs(kernel: OpenCL.Kernel,
+                                     argsLength: Int,
+                                     lengthMapping: immutable.Map[Core.Nat, Core.Nat]) = {
+    val intermediateParamDecls = getIntermediateParamDecls(kernel, argsLength)
+    (intermediateParamDecls, kernel.intermediateParams).zipped.map { case (pDecl, param) =>
+      val size = DataType.sizeInByte(param) `with` lengthMapping
+      pDecl.addressSpace match {
+        case LocalMemory => LocalArg.create(size.value.eval)
+        case GlobalMemory => GlobalArg.createOutput(size.value.eval)
+      }
+    }
+  }
+
+  private def getIntermediateParamDecls(kernel: OpenCL.Kernel, argsLength: Int): List[ParamDecl] = {
+    val startIndex = 1 + argsLength
+    kernel.function.params.slice(startIndex, startIndex + kernel.intermediateParams.size)
+  }
+
+  private def createGlobalArg(size: SizeInByte) = {
+    GlobalArg.createOutput(size.value.eval)
+  }
+
+  private def createInputArgs(args: List[Any]) = {
+    args.map(createInputArg)
+  }
+
+  private def createInputArg(arg: Any) = {
+    arg match {
+      case f: Float => ValueArg.create(f)
+      case af: Array[Float] => GlobalArg.createInput(af)
+      case aaf: Array[Array[Float]] => GlobalArg.createInput(aaf.flatten)
+      case aaaf: Array[Array[Array[Float]]] => GlobalArg.createInput(aaaf.flatten.flatten)
+      case aaaaf: Array[Array[Array[Array[Float]]]] => GlobalArg.createInput(aaaaf.flatten.flatten.flatten)
+
+      case i: Int => ValueArg.create(i)
+      case ai: Array[Int] => GlobalArg.createInput(ai)
+      case aai: Array[Array[Int]] => GlobalArg.createInput(aai.flatten)
+      case aaai: Array[Array[Array[Int]]] => GlobalArg.createInput(aaai.flatten.flatten)
+      case aaaai: Array[Array[Array[Array[Int]]]] => GlobalArg.createInput(aaaai.flatten.flatten.flatten)
+
+      case d: Double => ValueArg.create(d)
+      case ad: Array[Double] => GlobalArg.createInput(ad)
+      case aad: Array[Array[Double]] => GlobalArg.createInput(aad.flatten)
+      case aaad: Array[Array[Array[Double]]] => GlobalArg.createInput(aaad.flatten.flatten)
+      case aaaad: Array[Array[Array[Array[Double]]]] => GlobalArg.createInput(aaaad.flatten.flatten.flatten)
+
+      case _ => throw new IllegalArgumentException("Kernel argument is of unsupported type: " +
+        arg.getClass.toString)
+    }
+  }
+
+  private implicit class SubstitutionsHelper(size: SizeInByte) {
+    def `with`(valueMap: immutable.Map[Core.Nat, Core.Nat]): SizeInByte = {
+      SizeInByte(ArithExpr.substitute(size.value, valueMap))
+    }
+  }
+
+  private def sizeWithSubstitutions(size: SizeInByte,
+                                    valueMap: immutable.Map[Core.Nat, Core.Nat]): SizeInByte = {
+    SizeInByte(ArithExpr.substitute(size.value, valueMap).eval)
+  }
+
+  private def createLengthMap(params: Seq[IdentPhrase[ExpType]],
+                              args: HList): immutable.Map[Core.Nat, Core.Nat] = {
+    val seq = (params, args.toList).zipped.flatMap(createLengthMapping)
+    seq.map(x => (x._1, Cst(x._2))).toMap
+  }
+
+  private def createLengthMapping(p: IdentPhrase[ExpType], a: Any): Seq[(Core.Nat, Int)] = {
+    createLengthMapping(p.t.dataType, a).filter(_._1.isInstanceOf[Var])
+  }
+
+  private def createLengthMapping(t: DataType, a: Any): Seq[(Core.Nat, Int)] = {
     (t, a) match {
       case (bt: BasicType, _) => (bt, a) match {
-        case (bool, _: Boolean) =>
-        case (int, _: Int) =>
-        case (float, _: Float) =>
-        case (VectorType(_, ebt), _) => checkParamTypeWithArg(ebt, a)
+        case (bool, _: Boolean) => Seq()
+        case (int, _: Int) => Seq()
+        case (float, _: Float) => Seq()
+        case (VectorType(_, ebt), _) => createLengthMapping(ebt, a)
         case _ => throw new Exception(s"Expected $bt, but got $a")
       }
-      case (at: ArrayType, array: Array[_]) => checkParamTypeWithArg(at.elemType, array.head)
+      case (at: ArrayType, array: Array[_]) =>
+        Seq((at.size, array.length)) ++ createLengthMapping(at.elemType, array.head)
       case (rt: RecordType, tuple: (_, _)) =>
-        checkParamTypeWithArg(rt.fst, tuple._1)
-        checkParamTypeWithArg(rt.snd, tuple._2)
+        createLengthMapping(rt.fst, tuple._1) ++
+          createLengthMapping(rt.snd, tuple._2)
       case _ => throw new Exception(s"Expected $t but got $a")
     }
   }

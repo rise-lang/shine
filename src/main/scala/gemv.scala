@@ -18,7 +18,7 @@ object gemv extends App {
   val matT = ExpType(ArrayType(M, ArrayType(N, dataT)))
 
   def printOpenCLKernel1(name: String,
-                         untypedLambda: Phrase[ExpType ->(ExpType -> (ExpType -> (ExpType -> (ExpType -> ExpType))))]) = {
+                         untypedLambda: Phrase[ExpType -> (ExpType -> (ExpType -> (ExpType -> (ExpType -> ExpType))))]) = {
     val lambda = TypeInference(untypedLambda)
     println(name + ":\n" + PrettyPrinter(lambda))
     lambda.typeCheck()
@@ -28,13 +28,13 @@ object gemv extends App {
     val kernel = toOpenCL.makeKernel(lambda)
     println(OpenCLPrinter()(kernel))
 
-    val fun = toOpenCL.asFunction[(Array[Array[Float]] :+: Array[Float] :+: Array[Float] :+: Float :+: Float :+: HNil.type) =:=> Array[Float]](kernel)
+    val fun = toOpenCL.asFunction[(Array[Array[Float]]::Array[Float]::Array[Float]::Float::Float::Nil) =:=> Array[Float]](kernel)
 
     val mat = Array.tabulate(32, 32)((_, _) => 1.0f)
     val xs = Array.fill(32)(1.0f)
     val ys = Array.fill(32)(2.0f)
 
-    val (res, time) = fun(mat :+: xs :+: ys :+: 4.5f :+: 5.6f :+: HNil)
+    val (res, time) = fun(mat::xs::ys::4.5f::5.6f)
 
     println(time)
 
