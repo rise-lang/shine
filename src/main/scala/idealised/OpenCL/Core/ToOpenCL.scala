@@ -189,12 +189,14 @@ case class ToOpenCL(localSize: Nat, globalSize: Nat) {
     def apply[F <: FunctionHelper](kernel: OpenCL.Kernel)
                                   (implicit ev: F#T <:< HList): (F#T) => (F#R, TimeSpan[Time.ms]) = {
       (args: F#T) => {
-        val (outputArg, inputArgs) = createKernelArgs(kernel, args)
+        val lengthMapping = createLengthMap(kernel.inputParams, args)
+
+        val (outputArg, inputArgs) = createKernelArgs(kernel, args, lengthMapping)
         val kernelArgs = (outputArg +: inputArgs).toArray
 
         val runtime = Executor.execute(kernelCode(kernel.function),
-          localSize.eval, 0, 0,
-          globalSize.eval, 0, 0,
+          ArithExpr.substitute(localSize, lengthMapping).eval, 1, 1,
+          ArithExpr.substitute(globalSize, lengthMapping).eval, 1, 1,
           kernelArgs)
 
         val output = castToOutputType[F#R](kernel.outputParam.`type`.dataType, outputArg)
@@ -210,9 +212,9 @@ case class ToOpenCL(localSize: Nat, globalSize: Nat) {
     (new OpenCLPrinter)(function)
   }
 
-  private def createKernelArgs(kernel: OpenCL.Kernel, args: HList) = {
-    val lengthMapping = createLengthMap(kernel.inputParams, args)
-
+  private def createKernelArgs(kernel: OpenCL.Kernel,
+                               args: HList,
+                               lengthMapping: immutable.Map[Core.Nat, Core.Nat]) = {
     val numberOfKernelArgs = 1 + args.length + kernel.intermediateParams.size + lengthMapping.size
     assert(kernel.function.params.length == numberOfKernelArgs)
 

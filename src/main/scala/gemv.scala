@@ -4,11 +4,15 @@ import idealised.DSL.untyped._
 import idealised.OpenCL.Core._
 import idealised.OpenCL.DSL._
 import apart.arithmetic._
+import opencl.executor.Executor
 import opencl.generator.OpenCLPrinter
 
 import scala.language.implicitConversions
 
 object gemv extends App {
+
+  Executor.loadLibrary()
+  Executor.init()
 
   val N = SizeVar("N")
   val M = SizeVar("M")
@@ -24,15 +28,17 @@ object gemv extends App {
     lambda.typeCheck()
 
     println(s"-- $name --")
-    val toOpenCL = ToOpenCL(localSize = 128, globalSize = M * 128)
+    val toOpenCL = ToOpenCL(localSize = 32, globalSize = M * 32)
     val kernel = toOpenCL.makeKernel(lambda)
     println(OpenCLPrinter()(kernel))
 
     val fun = toOpenCL.asFunction[(Array[Array[Float]]::Array[Float]::Array[Float]::Float::Float::Nil) =:=> Array[Float]](kernel)
 
-    val mat = Array.tabulate(32, 32)((_, _) => 1.0f)
-    val xs = Array.fill(32)(1.0f)
-    val ys = Array.fill(32)(2.0f)
+    val size = 512
+
+    val mat = Array.tabulate(size, size)((_, _) => 1.0f)
+    val xs = Array.fill(size)(1.0f)
+    val ys = Array.fill(size)(2.0f)
 
     val (res, time) = fun(mat::xs::ys::4.5f::5.6f)
 
@@ -104,5 +110,7 @@ object gemv extends App {
       ) ) ) ) )
 
   printOpenCLKernel1("keplerBest", keplerBest)
+
+  Executor.shutdown()
 
 }
