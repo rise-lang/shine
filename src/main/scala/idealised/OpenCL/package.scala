@@ -31,6 +31,8 @@ package object OpenCL {
   case class Kernel(function: OpenCLAST.Function,
                     outputParam: IdentPhrase[AccType],
                     inputParams: List[IdentPhrase[ExpType]],
-                    intermediateParams: List[IdentPhrase[VarType]])
+                    intermediateParams: List[IdentPhrase[VarType]]) {
+    def code: String = (new OpenCLPrinter)(this)
+  }
 
 }

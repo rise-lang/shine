@@ -94,13 +94,13 @@ object Phrase {
     VisitAndRebuild(in, Visitor)
   }
 
-  def substitute[T2 <: PhraseType](map: Map[Phrase[_], Phrase[_]],
+  def substitute[T2 <: PhraseType](substitutionMap: Map[Phrase[_], Phrase[_]],
                                    in: Phrase[T2]): Phrase[T2] = {
 
     object Visitor extends VisitAndRebuild.Visitor {
       override def apply[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
-        if (map.isDefinedAt(p)) {
-          Stop(map(p).asInstanceOf[Phrase[T]])
+        if (substitutionMap.isDefinedAt(p)) {
+          Stop(substitutionMap(p).asInstanceOf[Phrase[T]])
         } else {
           Continue(p, this)
         }

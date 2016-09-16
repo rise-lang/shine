@@ -78,13 +78,15 @@ case class ToOpenCL(localSize: Nat, globalSize: Nat) {
 
     val p3 = substituteImplementations(p2)
 
-    val (p4, intermediateAllocs) = hoistMemoryAllocations(p3)
+    val (p4, intermediateAllocations) = hoistMemoryAllocations(p3)
 
     OpenCL.Kernel(
-      function = makeKernelFunction(makeParams(outParam, params, intermediateAllocs), makeBody(p4)),
+      function = makeKernelFunction(makeParams(outParam, params, intermediateAllocations),
+                                    makeBody(p4)),
       outputParam = outParam,
       inputParams = params,
-      intermediateParams = intermediateAllocs.map(_._2))
+      intermediateParams = intermediateAllocations.map(_._2)
+    )
   }
 
   private def inferTypes(p: Phrase[ExpType]): Phrase[ExpType] = {
@@ -124,11 +126,21 @@ case class ToOpenCL(localSize: Nat, globalSize: Nat) {
                          ins: List[IdentPhrase[ExpType]],
                          intermediateAllocations: List[AllocationInfo]): List[ParamDecl] = {
     List(makeGlobalParam(out)) ++ // first the output parameter ...
-      ins.map(makeGlobalParam) ++ // ... then the input parameters ...
+      ins.map(makeInputParam) ++ // ... then the input parameters ...
       intermediateAllocations.map(makeParam) ++ // ... then the intermediate buffers ...
       // ... finally, the parameters for the length information in the type
       // these can only come from the input parameters.
       makeLengthParams(ins.map(_.t.dataType).map(DataType.toType))
+  }
+
+  // pass arrays via global and scalars + tuples per value via private memory
+  private def makeInputParam(i: IdentPhrase[_]): ParamDecl = {
+    getDataType(i) match {
+      case a: ArrayType => makeGlobalParam(i)
+      case b: BasicType => makePrivateParam(i)
+      case r: RecordType => makePrivateParam(i)
+      case _: DataTypeIdentifier => throw new Exception("This should not happen")
+    }
   }
 
   private def makeGlobalParam(i: IdentPhrase[_]): ParamDecl = {
@@ -136,6 +148,14 @@ case class ToOpenCL(localSize: Nat, globalSize: Nat) {
       i.name,
       DataType.toType(getDataType(i)),
       opencl.ir.GlobalMemory,
+      const = false)
+  }
+
+  private def makePrivateParam(i: IdentPhrase[_]): ParamDecl = {
+    ParamDecl(
+      i.name,
+      DataType.toType(getDataType(i)),
+      opencl.ir.PrivateMemory,
       const = false)
   }
 
@@ -194,7 +214,7 @@ case class ToOpenCL(localSize: Nat, globalSize: Nat) {
         val (outputArg, inputArgs) = createKernelArgs(kernel, args, lengthMapping)
         val kernelArgs = (outputArg +: inputArgs).toArray
 
-        val runtime = Executor.execute(kernelCode(kernel.function),
+        val runtime = Executor.execute(kernel.code,
           ArithExpr.substitute(localSize, lengthMapping).eval, 1, 1,
           ArithExpr.substitute(globalSize, lengthMapping).eval, 1, 1,
           kernelArgs)
@@ -206,10 +226,6 @@ case class ToOpenCL(localSize: Nat, globalSize: Nat) {
         (output, TimeSpan.inMilliseconds(runtime))
       }
     }
-  }
-
-  private def kernelCode(function: Function): String = {
-    (new OpenCLPrinter)(function)
   }
 
   private def createKernelArgs(kernel: OpenCL.Kernel,

@@ -9,12 +9,28 @@ object HoistMemoryAllocations {
 
   type AllocationInfo = (idealised.OpenCL.AddressSpace, IdentPhrase[VarType])
 
-  def apply(originalP: Phrase[CommandType]): (Phrase[CommandType], List[AllocationInfo]) = {
+  def apply(originalPhrase: Phrase[CommandType]): (Phrase[CommandType], List[AllocationInfo]) = {
+    val visitor = makeVisitor()
 
-    var replacedAllocations = List[AllocationInfo]()
+    val rewrittenPhrase = VisitAndRebuild(originalPhrase, visitor)
+
+    (rewrittenPhrase, visitor.getReplacedAllocations)
+    //    // Create a fresh allocation for every replaced New node using initially the
+    //    // rewrittenPhrase and then the previous New node as its nested body
+    //    replacedAllocations.foldLeft(rewrittenPhrase)((prev, alloc) => {
+    //      val (addressSpace, identifier) = alloc
+    //      New(identifier.t.t1.dataType, addressSpace, LambdaPhrase(identifier, prev))
+    //    })
+  }
+
+  def makeVisitor() = new VisitorScope(List[AllocationInfo]()).Visitor(List())
+
+  class VisitorScope(var replacedAllocations: List[AllocationInfo]) {
 
     case class Visitor(parForInfo: List[(idealised.OpenCL.ParallelismLevel, IdentPhrase[ExpType], Nat)])
       extends VisitAndRebuild.Visitor {
+
+      def getReplacedAllocations = replacedAllocations
 
       override def apply[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
         p match {
@@ -61,9 +77,9 @@ object HoistMemoryAllocations {
             }
         }
 
-        // ... remember the finalParam to regenerate the new at the
+        // ... remember `finalParam' to regenerate the `new' at the
         // outermost scope and return the rewritten finalBody which
-        // replaces the `new` node
+        // replaces the old `new` node
         replacedAllocations = (addressSpace, finalParam) :: replacedAllocations
         Stop(VisitAndRebuild(finalBody, this))
       }
@@ -73,31 +89,23 @@ object HoistMemoryAllocations {
                                  i: IdentPhrase[ExpType],
                                  n: Nat): (IdentPhrase[VarType], Phrase[CommandType]) = {
         import idealised.DSL.typed._
-        // Create a newParam with a new type ...
-        val newDt = ArrayType(n, oldParam.t.t1.dataType)
-        val newParam = IdentPhrase(oldParam.name, VarType(newDt))
+        // Create `newParam' with a new type ...
+        val newParam = IdentPhrase(oldParam.name, VarType(dt=ArrayType(n, oldParam.t.t1.dataType)))
         // ... and substitute all occurrences of the oldParam with
         // the newParam indexed by the `par for` index, ...
-        val substitutionMap: Map[Phrase[_], Phrase[_]] = Map(
-          π1(oldParam) -> (π1(newParam) `@` i),
-          π2(oldParam) -> (π2(newParam) `@` i)
+        val newBody = Phrase.substitute(
+          substitutionMap = Map(
+            π1(oldParam) -> (π1(newParam) `@` i),
+            π2(oldParam) -> (π2(newParam) `@` i)
+          ),
+          in = oldBody
         )
-        val newBody = Phrase.substitute(substitutionMap, oldBody)
-        // ... finally, return the newParam and newBody along.
+        // ... finally, return `newParam' and `newBody'.
         (newParam, newBody)
       }
 
     }
 
-    val rewrittenPhrase = VisitAndRebuild(originalP, Visitor(List()))
-
-    (rewrittenPhrase, replacedAllocations)
-    //    // Create a fresh allocation for every replaced New node using initially the
-    //    // rewrittenPhrase and then the previous New node as its nested body
-    //    replacedAllocations.foldLeft(rewrittenPhrase)((prev, alloc) => {
-    //      val (addressSpace, identifier) = alloc
-    //      New(identifier.t.t1.dataType, addressSpace, LambdaPhrase(identifier, prev))
-    //    })
   }
 
 }
