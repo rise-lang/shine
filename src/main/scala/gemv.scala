@@ -21,8 +21,9 @@ object gemv extends App {
   val ysT = ExpType(ArrayType(M, dataT))
   val matT = ExpType(ArrayType(M, ArrayType(N, dataT)))
 
-  def printOpenCLKernel1(name: String,
-                         untypedLambda: Phrase[ExpType -> (ExpType -> (ExpType -> (ExpType -> (ExpType -> ExpType))))]) = {
+  def runOpenCLKernel(name: String,
+                      untypedLambda: Phrase[ExpType -> (ExpType -> (ExpType -> (ExpType -> (ExpType -> ExpType))))]) = {
+    println("\n----------------")
     val lambda = TypeInference(untypedLambda)
     println(name + ":\n" + PrettyPrinter(lambda))
     lambda.typeCheck()
@@ -32,7 +33,7 @@ object gemv extends App {
     val kernel = toOpenCL.makeKernel(lambda)
     println(OpenCLPrinter()(kernel))
 
-    val fun = toOpenCL.asFunction[(Array[Array[Float]]::Array[Float]::Array[Float]::Float::Float::Nil) =:=> Array[Float]](kernel)
+    val fun = toOpenCL.asFunction[(Array[Array[Float]] :: Array[Float] :: Array[Float] :: Float :: Float :: Nil) =:=> Array[Float]](kernel)
 
     val size = 512
 
@@ -40,26 +41,26 @@ object gemv extends App {
     val xs = Array.fill(size)(1.0f)
     val ys = Array.fill(size)(2.0f)
 
-    val (res, time) = fun(mat::xs::ys::4.5f::5.6f)
+    val (res, time) = fun(mat :: xs :: ys :: 4.5f :: 5.6f)
 
     println(time)
 
-    println("----------------")
+    println("----------------\n")
   }
 
-  val mult = λ( x => x._1 * x._2 )
-  val add = λ( x => λ( a => x + a))
-  val scal = λ(xs => λ(alpha => map(λ( x => alpha * x ), xs) ) )
-  val dot = λ(xs => λ(ys => reduce(add, 0.0f) o map(mult) $ zip(xs, ys) ) )
+  val mult = λ(x => x._1 * x._2)
+  val add = λ(x => λ(a => x + a))
+  val scal = λ(xs => λ(alpha => map(λ(x => alpha * x), xs)))
+  val dot = λ(xs => λ(ys => reduce(add, 0.0f) o map(mult) $ zip(xs, ys)))
 
   val high_level =
     λ(matT)(mat => λ(xsT)(xs => λ(ysT)(ys =>
       λ(ExpType(dataT))(alpha => λ(ExpType(dataT))(beta =>
 
-        map(λ( x => x._1 + x._2 )) $
-        zip(map(λ(row => alpha * dot(row)(xs)), mat), scal(ys)(beta))
+        map(λ(x => x._1 + x._2)) $
+          zip(map(λ(row => alpha * dot(row)(xs)), mat), scal(ys)(beta))
 
-    ) ) ) ) )
+      )))))
 
   {
     val lambda = TypeInference(high_level)
@@ -77,9 +78,9 @@ object gemv extends App {
             o split(N) $ zip(xs, t._1)
         )) $ zip(mat, ys)
 
-      ) ) ) ) )
+      )))))
 
-  printOpenCLKernel1("fullMatrixVectorFusedOpenCL", fullMatrixVectorFusedOpenCL)
+  runOpenCLKernel("fullMatrixVectorFusedOpenCL", fullMatrixVectorFusedOpenCL)
 
   val fullMatrixVectorFusedOpenCLAMD =
     λ(matT)(mat => λ(xsT)(xs => λ(ysT)(ys =>
@@ -92,9 +93,9 @@ object gemv extends App {
             o split(N /^ 128) o gather(reorderWithStridePhrase(128)) $ zip(xs, t._1)
         )) $ zip(mat, ys)
 
-      ) ) ) ) )
+      )))))
 
-  printOpenCLKernel1("fullMatrixVectorFusedOpenCLAMD", fullMatrixVectorFusedOpenCLAMD)
+  runOpenCLKernel("fullMatrixVectorFusedOpenCLAMD", fullMatrixVectorFusedOpenCLAMD)
 
   val keplerBest =
     λ(matT)(mat => λ(xsT)(xs => λ(ysT)(ys =>
@@ -107,9 +108,9 @@ object gemv extends App {
             split(N /^ 128) o gather(reorderWithStridePhrase(128)) $ zip(xs, t._1)
         )) $ zip(mat, ys)
 
-      ) ) ) ) )
+      )))))
 
-  printOpenCLKernel1("keplerBest", keplerBest)
+  runOpenCLKernel("keplerBest", keplerBest)
 
   Executor.shutdown()
 

@@ -264,8 +264,8 @@ case class ToOpenCL(localSize: Nat, globalSize: Nat) {
     (intermediateParamDecls, kernel.intermediateParams).zipped.map { case (pDecl, param) =>
       val size = DataType.sizeInByte(param) `with` lengthMapping
       pDecl.addressSpace match {
-        case LocalMemory => LocalArg.create(size.value.eval)
-        case GlobalMemory => GlobalArg.createOutput(size.value.eval)
+        case LocalMemory => LocalArg.create(size.value.max.eval)
+        case GlobalMemory => GlobalArg.createOutput(size.value.max.eval)
       }
     }
   }

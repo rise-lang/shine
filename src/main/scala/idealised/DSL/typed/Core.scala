@@ -30,6 +30,11 @@ trait dependentFunDef {
     NatDependentLambdaPhrase(x, f(x))
   }
 
+  def apply[T <: PhraseType](f: NamedVar => Phrase[T], range: apart.arithmetic.Range) = {
+    val x = NamedVar(newName(), range)
+    NatDependentLambdaPhrase(x, f(x))
+  }
+
   def apply[T <: PhraseType](f: DataTypeIdentifier => Phrase[T]) = {
     val x = DataTypeIdentifier(newName())
     TypeDependentLambdaPhrase(x, f(x))

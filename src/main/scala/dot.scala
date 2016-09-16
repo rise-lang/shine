@@ -3,15 +3,19 @@ import idealised._
 import idealised.Core._
 import idealised.Core.OperationalSemantics.FloatData
 import idealised.DSL.untyped._
-import idealised.OpenCL.Core.{HoistMemoryAllocations, ToOpenCL}
+import idealised.OpenCL.Core._
 import idealised.OpenCL.DSL._
 import apart.arithmetic._
 import opencl.generator.OpenCLAST.Block
+import opencl.executor.Executor
 import opencl.generator.OpenCLPrinter
 
 import scala.language.implicitConversions
 
 object dot extends App {
+
+  Executor.loadLibrary()
+  Executor.init()
 
   val N = SizeVar("N")
   val xsT = ExpType(ArrayType(N, float))
@@ -20,25 +24,54 @@ object dot extends App {
   def printOpenCLKernel1(name: String,
                          untypedLambda: Phrase[ExpType -> (ExpType -> ExpType)]) = {
     val lambda = TypeInference(untypedLambda)
-    lambda.typeCheck()
     println(name + ":\n" + PrettyPrinter(lambda))
+    lambda.typeCheck()
 
     println(s"-- $name --")
-    println(OpenCLPrinter()((new ToOpenCL(localSize = 128, globalSize = N)) (
-      lambda, identifier("xs", xsT), identifier("ys", ysT))))
-    println("----------------")
+    val toOpenCL = ToOpenCL(localSize = 128, globalSize = N)
+    val kernel = toOpenCL.makeKernel(lambda)
+    println(OpenCLPrinter()(kernel))
+
+    val fun = toOpenCL.asFunction[(Array[Float] :: Array[Float] :: Nil) =:=> Array[Float]](kernel)
+
+    val size = 1024 * 1024
+
+    val xs = Array.fill(size)(1.0f)
+    val ys = Array.fill(size)(2.0f)
+
+    val gold = (xs zip ys).map{ case (x, y) => x * y }.sum
+
+    val (res, time) = fun(xs :: ys)
+
+    println(s"Computed ${res.length} partial results in $time, which add up to ${res.sum} (expected $gold).")
+
+    println("----------------\n")
   }
 
   def printOpenCLKernel2(name: String,
                          untypedLambda: Phrase[ExpType -> ExpType]) = {
     val lambda = TypeInference(untypedLambda)
-    lambda.typeCheck()
     println(name + ":\n" + PrettyPrinter(lambda))
+    lambda.typeCheck()
 
     println(s"-- $name --")
-    println(OpenCLPrinter()((new ToOpenCL(localSize = 128, globalSize = N)) (
-      lambda, identifier("in", xsT))))
-    println("----------------")
+    val toOpenCL = ToOpenCL(localSize = 128, globalSize = N)
+    val kernel = toOpenCL.makeKernel(lambda)
+    println(OpenCLPrinter()(kernel))
+
+    val fun = toOpenCL.asFunction[(Array[Float] :: Nil) =:=> Array[Float]](kernel)
+
+    val size = 512
+
+    val xs = Array.fill(size)(1.0f)
+
+    val gold = xs.sum
+
+    val (res, time) = fun(xs :: HNil)
+
+    println(s"Computed ${res.length} partial results in $time, which add up to ${res.sum} (expected $gold).")
+
+    println("----------------\n")
   }
 
   val mult = λ(x => x._1 * x._2)
@@ -48,7 +81,11 @@ object dot extends App {
     reduce(add, 0.0f) o map(mult) $ zip(xs, ys)
   ))
 
-  printOpenCLKernel1("High-Level", high_level)
+  {
+    val lambda = TypeInference(high_level)
+    println("high_level:\n" + PrettyPrinter(lambda))
+    lambda.typeCheck()
+  }
 
   val dotSimple = λ(xsT)(xs => λ(ysT)(ys =>
     join() o mapWorkgroup(

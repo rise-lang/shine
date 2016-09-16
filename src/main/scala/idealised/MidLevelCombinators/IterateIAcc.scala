@@ -7,7 +7,7 @@ import idealised.Compiling.SubstituteImplementations
 import idealised.DSL.typed._
 import idealised.LowLevelCombinators.{TruncAcc, TruncExp}
 import idealised.OpenCL.Core.ToOpenCL
-import apart.arithmetic.{?, Cst}
+import apart.arithmetic.{?, Cst, RangeAdd}
 
 import scala.xml.Elem
 
@@ -57,29 +57,32 @@ final case class IterateIAcc(n: Nat,
       val s = (l: Nat) => n.pow(end - l - start) * m
 
       end - start match {
-        case Cst(x) if x > 2 =>
-          // unrolling the last iteration
-          dblBufFor(sEnd, dt, addressSpace, buf1, buf2, end - start - 1,
-            _Λ_(l => {
-              val s_l = s(l)
-              val s_l1 = s(l + 1)
-              λ(acc"[$sEnd.$dt]")(a =>
-                λ(exp"[$sEnd.$dt]")(e =>
-                  SubstituteImplementations(
-                    f(s_l)(TruncAcc(sEnd, s_l1, dt, a))(TruncExp(sEnd, s_l, dt, e)),
-                    env)
-                )
-              )
-            }),
-            λ(exp"[$sEnd.$dt]")(e =>
-              SubstituteImplementations(
-                f.apply(s(end - start - 1))(TruncAcc(m, s(end - start), dt, out))(TruncExp(sEnd, s(end - start - 1), dt, e))
-                , env))
-          )
+
+//        case Cst(x) if x > 2 =>
+//          val k = end - start - 1
+//          // unrolling the last iteration
+//          dblBufFor(sEnd, dt, addressSpace, buf1, buf2, k,
+//            _Λ_(l => {
+//              val s_l = s(l)
+//              val s_l1 = s(l + 1)
+//              λ(acc"[$sEnd.$dt]")(a =>
+//                λ(exp"[$sEnd.$dt]")(e =>
+//                  SubstituteImplementations(
+//                    f(s_l)(TruncAcc(sEnd, s_l1, dt, a))(TruncExp(sEnd, s_l, dt, e)),
+//                    env)
+//                )
+//              )
+//            }, RangeAdd(0, k, 1)),
+//            λ(exp"[$sEnd.$dt]")(e =>
+//              SubstituteImplementations(
+//                f.apply(s(end - start - 1))(TruncAcc(m, s(end - start), dt, out))(TruncExp(sEnd, s(end - start - 1), dt, e))
+//                , env))
+//          )
 
         case _ =>
+          val k = end - start
           // extra copy to output
-          dblBufFor(sEnd, dt, addressSpace, buf1, buf2, end - start,
+          dblBufFor(sEnd, dt, addressSpace, buf1, buf2, k,
             _Λ_(l => {
               val s_l = s(l)
               val s_l1 = s(l + 1)
@@ -90,7 +93,7 @@ final case class IterateIAcc(n: Nat,
                     env)
                 )
               )
-            }),
+            }, RangeAdd(0, k, 1)),
             λ(exp"[$sEnd.$dt]")(x =>
               SubstituteImplementations(MapI(m, dt, dt, out,
                 λ(acc"[$dt]")(a => λ(exp"[$dt]")(e => a `:=` e)), x), env))
