@@ -54,7 +54,7 @@ final case class IterateIAcc(n: Nat,
                        end: Nat,
                        buf1: Phrase[VarType],
                        buf2: Phrase[VarType]) => {
-      val s = (l: Nat) => n.pow(end - l - start) * m
+//      val s = (l: Nat) => n.pow(end - l - start) * m
 
       end - start match {
 
@@ -84,8 +84,8 @@ final case class IterateIAcc(n: Nat,
           // extra copy to output
           dblBufFor(sEnd, dt, addressSpace, buf1, buf2, k,
             _Λ_(l => {
-              val s_l = s(l)
-              val s_l1 = s(l + 1)
+              val s_l = n.pow(k - l) * m//s(l)
+              val s_l1 = n.pow(k - l + 1) * m//s(l + 1)
               λ(acc"[$sEnd.$dt]")(a =>
                 λ(exp"[$sEnd.$dt]")(e =>
                   SubstituteImplementations(
@@ -93,7 +93,9 @@ final case class IterateIAcc(n: Nat,
                     env)
                 )
               )
-            }, RangeAdd(0, k, 1)),
+            }
+//              , RangeAdd(0, k, 1)
+            ),
             λ(exp"[$sEnd.$dt]")(x =>
               SubstituteImplementations(MapI(m, dt, dt, out,
                 λ(acc"[$dt]")(a => λ(exp"[$dt]")(e => a `:=` e)), x), env))
@@ -101,18 +103,18 @@ final case class IterateIAcc(n: Nat,
       }
     }
 
-    val s = (l: Nat) => n.pow(k - l) * m
+//    val s = (l: Nat) => n.pow(k - l) * m
 
     k match {
-      case Cst(x) if x > 2 =>
-        `new`(dt"[$sEnd.$dt]", addressSpace, buf1 =>
-          `new`(dt"[$sEnd.$dt]", addressSpace, buf2 =>
-            SubstituteImplementations(
-              f(s(0))(TruncAcc(sEnd, s(1), dt, buf1.wr))(TruncExp(sEnd, s(0), dt, in))
-              , env) `;`
-              iterateLoop(1, k, buf1, buf2)
-          )
-        )
+//      case Cst(x) if x > 2 =>
+//        `new`(dt"[$sEnd.$dt]", addressSpace, buf1 =>
+//          `new`(dt"[$sEnd.$dt]", addressSpace, buf2 =>
+//            SubstituteImplementations(
+//              f(s(0))(TruncAcc(sEnd, s(1), dt, buf1.wr))(TruncExp(sEnd, s(0), dt, in))
+//              , env) `;`
+//              iterateLoop(1, k, buf1, buf2)
+//          )
+//        )
 
       case _ =>
         `new`(dt"[$sEnd.$dt]", addressSpace, buf1 =>
