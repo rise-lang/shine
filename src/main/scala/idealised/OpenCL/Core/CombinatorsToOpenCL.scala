@@ -121,7 +121,7 @@ object CombinatorsToOpenCL {
         ArithExpression(NamedVar(tmp.name)))
 
     // copy result to output
-    val CE = Lift.liftFunction(d.C)(in)
+    val CE = Lift.liftFunction(d.C)(identifier(in.name, ExpType(ArrayType(d.m, d.dt))))
     TypeChecker(CE)
     (block: Block) += ToOpenCL.cmd(CE, Block(), env)
 

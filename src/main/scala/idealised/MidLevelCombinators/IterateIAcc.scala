@@ -48,83 +48,21 @@ final case class IterateIAcc(n: Nat,
     val identifier = ToOpenCL.acc(out, ToOpenCL.Environment(?, ?))
     val addressSpace = env.addressSpace(identifier.name)
 
-    val sEnd = n.pow(k) * m
+    val `n^k*m` = n.pow(k) * m
 
-    val iterateLoop = (start: Nat,
-                       end: Nat,
-                       buf1: Phrase[VarType],
-                       buf2: Phrase[VarType]) => {
-//      val s = (l: Nat) => n.pow(end - l - start) * m
-
-      end - start match {
-
-//        case Cst(x) if x > 2 =>
-//          val k = end - start - 1
-//          // unrolling the last iteration
-//          dblBufFor(sEnd, dt, addressSpace, buf1, buf2, k,
-//            _Λ_(l => {
-//              val s_l = s(l)
-//              val s_l1 = s(l + 1)
-//              λ(acc"[$sEnd.$dt]")(a =>
-//                λ(exp"[$sEnd.$dt]")(e =>
-//                  SubstituteImplementations(
-//                    f(s_l)(TruncAcc(sEnd, s_l1, dt, a))(TruncExp(sEnd, s_l, dt, e)),
-//                    env)
-//                )
-//              )
-//            }, RangeAdd(0, k, 1)),
-//            λ(exp"[$sEnd.$dt]")(e =>
-//              SubstituteImplementations(
-//                f.apply(s(end - start - 1))(TruncAcc(m, s(end - start), dt, out))(TruncExp(sEnd, s(end - start - 1), dt, e))
-//                , env))
-//          )
-
-        case _ =>
-          val k = end - start
-          // extra copy to output
-          dblBufFor(sEnd, dt, addressSpace, buf1, buf2, k,
-            _Λ_(l => {
-              val s_l = n.pow(k - l) * m//s(l)
-              val s_l1 = n.pow(k - l + 1) * m//s(l + 1)
-              λ(acc"[$sEnd.$dt]")(a =>
-                λ(exp"[$sEnd.$dt]")(e =>
-                  SubstituteImplementations(
-                    f(s_l)(TruncAcc(sEnd, s_l1, dt, a))(TruncExp(sEnd, s_l, dt, e)),
-                    env)
-                )
-              )
-            }
-//              , RangeAdd(0, k, 1)
-            ),
-            λ(exp"[$sEnd.$dt]")(x =>
+    `new`(dt"[${`n^k*m`}.$dt]", addressSpace, buf1 =>
+      `new`(dt"[${`n^k*m`}.$dt]", addressSpace, buf2 =>
+        SubstituteImplementations(MapI(`n^k*m`, dt, dt, buf1.wr,
+          λ(acc"[$dt]")(a => λ(exp"[$dt]")(e => a `:=` e)), in), env) `;`
+          dblBufFor(`n^k*m`, m, k, dt, addressSpace, buf1, buf2,
+            _Λ_(l => λ(acc"[${`n^k*m`}.$dt]")(a => λ(exp"[${`n^k*m`}.$dt]")(e =>
+              SubstituteImplementations(
+                f (n.pow(k - l) * m)
+                  (TruncAcc(`n^k*m`, n.pow(k - l - 1) * m, dt, a))
+                  (TruncExp(`n^k*m`, n.pow(k - l    ) * m, dt, e)), env)))),
+            λ(exp"[$m.$dt]")(x =>
               SubstituteImplementations(MapI(m, dt, dt, out,
-                λ(acc"[$dt]")(a => λ(exp"[$dt]")(e => a `:=` e)), x), env))
-          )
-      }
-    }
-
-//    val s = (l: Nat) => n.pow(k - l) * m
-
-    k match {
-//      case Cst(x) if x > 2 =>
-//        `new`(dt"[$sEnd.$dt]", addressSpace, buf1 =>
-//          `new`(dt"[$sEnd.$dt]", addressSpace, buf2 =>
-//            SubstituteImplementations(
-//              f(s(0))(TruncAcc(sEnd, s(1), dt, buf1.wr))(TruncExp(sEnd, s(0), dt, in))
-//              , env) `;`
-//              iterateLoop(1, k, buf1, buf2)
-//          )
-//        )
-
-      case _ =>
-        `new`(dt"[$sEnd.$dt]", addressSpace, buf1 =>
-          `new`(dt"[$sEnd.$dt]", addressSpace, buf2 =>
-            SubstituteImplementations(MapI(sEnd, dt, dt, buf1.wr,
-              λ(acc"[$dt]")(a => λ(exp"[$dt]")(e => a `:=` e)), in), env) `;`
-              iterateLoop(0, k, buf1, buf2)
-          )
-        )
-    }
+                λ(acc"[$dt]")(a => λ(exp"[$dt]")(e => a `:=` e)), x), env)))))
   }
 
   override def prettyPrint: String = s"(iterateIAcc ${PrettyPrinter(out)} ${PrettyPrinter(f)} ${PrettyPrinter(in)})"

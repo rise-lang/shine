@@ -42,29 +42,21 @@ final case class IterateIExp(n: Nat,
   }
 
   override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
-    val sEnd = n.pow(k) * m
-    val s = (l: Nat) => n.pow(k - l) * m
-
     val addressSpace = OpenCL.GlobalMemory
 
-    `new`(dt"[$sEnd.$dt]", addressSpace, buf1 => {
-      `new`(dt"[$sEnd.$dt]", addressSpace, buf2 => {
-        SubstituteImplementations(MapI(sEnd, dt, dt, buf1.wr,
+    val `n^k*m` = n.pow(k) * m
+
+    `new`(dt"[${`n^k*m`}.$dt]", addressSpace, buf1 =>
+      `new`(dt"[${`n^k*m`}.$dt]", addressSpace, buf2 =>
+        SubstituteImplementations(MapI(`n^k*m`, dt, dt, buf1.wr,
           λ(acc"[$dt]")(a => λ(exp"[$dt]")(e => a `:=` e)), in), env) `;`
-          dblBufFor(sEnd, dt, addressSpace, buf1, buf2, k,
-            _Λ_(l => {
-              val s_l = s(l)
-              val s_l1 = s(l + 1)
-              λ(acc"[$sEnd.$dt]")(a =>
-                λ(exp"[$sEnd.$dt]")(e =>
-                  SubstituteImplementations(f(s_l)(TruncAcc(sEnd, s_l1, dt, a))(TruncExp(sEnd, s_l, dt, e)), env)
-                )
-              )
-            }),
-            out
-          )
-      })
-    })
+          dblBufFor(`n^k*m`, m, k, dt, addressSpace, buf1, buf2,
+            _Λ_(l => λ(acc"[${`n^k*m`}.$dt]")(a => λ(exp"[${`n^k*m`}.$dt]")(e =>
+              SubstituteImplementations(
+                f (n.pow(k - l) * m)
+                  (TruncAcc(`n^k*m`, n.pow(k - l - 1) * m, dt, a))
+                  (TruncExp(`n^k*m`, n.pow(k - l    ) * m, dt, e)), env)))),
+            out)))
   }
 
   override def prettyPrint: String = s"(iterateIExp ${PrettyPrinter(out)} ${PrettyPrinter(f)} ${PrettyPrinter(in)})"
