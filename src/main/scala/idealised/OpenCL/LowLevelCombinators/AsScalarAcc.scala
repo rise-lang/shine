@@ -11,7 +11,7 @@ import scala.xml.Elem
 
 final case class AsScalarAcc(n: Nat,
                              m: Nat,
-                             dt: BasicType,
+                             dt: ScalarType,
                              array: Phrase[AccType])
   extends LowLevelAccCombinator with ViewAcc {
 
@@ -19,7 +19,7 @@ final case class AsScalarAcc(n: Nat,
 
   override def typeCheck(): Unit = {
     import TypeChecker._
-    (n: Nat) -> (m: Nat) -> (dt: BasicType) ->
+    (n: Nat) -> (m: Nat) -> (dt: ScalarType) ->
       (array `:`  acc"[${m * n}.$dt]") -> `type`
   }
 
@@ -43,7 +43,7 @@ final case class AsScalarAcc(n: Nat,
   override def prettyPrint = s"(asScalarAcc $n ${PrettyPrinter(array)})"
 
   override def xmlPrinter: Elem =
-    <asScalarAcc n={ToString(n)}>
+    <asScalarAcc n={ToString(n)} m={ToString(m)}>
       {Core.xmlPrinter(array)}
     </asScalarAcc>
 }

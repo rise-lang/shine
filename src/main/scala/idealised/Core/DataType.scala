@@ -1,31 +1,34 @@
 package idealised.Core
 
 import idealised._
-import ir.ScalarType
 
 sealed trait DataType
 
-sealed abstract class BasicType extends DataType
+sealed trait ComposedType extends DataType
 
-object bool extends BasicType { override def toString = "bool" }
+sealed trait BasicType extends DataType
 
-object int extends BasicType { override def toString = "int" }
+sealed trait ScalarType extends BasicType
 
-object float extends BasicType { override def toString = "float" }
+object bool extends ScalarType { override def toString = "bool" }
+
+object int extends ScalarType { override def toString = "int" }
+
+object float extends ScalarType { override def toString = "float" }
 
 final case class IndexType(size: Nat) extends BasicType {
   override def toString = s"idx($size)"
 }
 
-final case class VectorType(size: Nat, elemType: BasicType) extends BasicType {
+final case class VectorType(size: Nat, elemType: ScalarType) extends BasicType {
   override def toString = s"$elemType$size"
 }
 
-final case class ArrayType(size: Nat, elemType: DataType) extends DataType {
+final case class ArrayType(size: Nat, elemType: DataType) extends ComposedType {
   override def toString = s"$size.$elemType"
 }
 
-final case class RecordType(fst: DataType, snd: DataType) extends DataType {
+final case class RecordType(fst: DataType, snd: DataType) extends ComposedType {
   override def toString = s"($fst x $snd)"
 }
 
@@ -42,7 +45,7 @@ object DataType {
         case Core.float => opencl.ir.Float
         case i: IndexType => opencl.ir.Int
         case v: VectorType => ir.VectorType(DataType.toType(v.elemType) match {
-          case s: ScalarType => s
+          case s: ir.ScalarType => s
           case _ => throw new Exception("This should not happen")
         }, v.size)
       }

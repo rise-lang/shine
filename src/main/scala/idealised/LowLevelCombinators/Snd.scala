@@ -47,9 +47,8 @@ final case class Snd(dt1: DataType,
 
   override def prettyPrint: String = s"${PrettyPrinter(record)}._2"
 
-  override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
-    import RewriteToImperative._
-    exp(this)(λ(this.t) {
+  override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] =
+    RewriteToImperative.exp(this)(λ(this.t) {
       this.t.dataType match {
         case _: BasicType | _: VectorType => x => A `:=` x
         case _: ArrayType => throw new Exception("This should not happen")
@@ -57,7 +56,6 @@ final case class Snd(dt1: DataType,
         case _: DataTypeIdentifier => throw new Exception("This should not happen")
       }
     })
-  }
 
   override def rewriteToImperativeExp(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = C(this)
 }

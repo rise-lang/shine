@@ -23,7 +23,7 @@ object RewriteToImperative {
     E match {
       case x: IdentPhrase[ExpType] =>
         x.t.dataType match {
-          case _: BasicType | _: VectorType => A `:=` x
+          case _: BasicType => A `:=` x
           case ArrayType(n, dt) => MapI(n, dt, dt, A, λ(AccType(dt))(o => λ(ExpType(dt))(x => acc(x)(o))), x)
           case RecordType(dt1, dt2) => acc(fst(x))(fstAcc(dt1, dt2, A)) `;` acc(snd(x))(sndAcc(dt1, dt2, A))
           case _: DataTypeIdentifier => throw new Exception("This should not happen")

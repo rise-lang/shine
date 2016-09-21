@@ -11,7 +11,7 @@ import scala.xml.Elem
 
 final case class AsVectorAcc(n: Nat,
                              m: Nat,
-                             dt: BasicType,
+                             dt: ScalarType,
                              array: Phrase[AccType])
   extends LowLevelAccCombinator with ViewAcc {
 
@@ -19,7 +19,7 @@ final case class AsVectorAcc(n: Nat,
 
   override def typeCheck(): Unit = {
     import TypeChecker._
-    (n: Nat) -> (m: Nat) -> (dt: BasicType) ->
+    (n: Nat) -> (m: Nat) -> (dt: ScalarType) ->
       (array `:` acc"[$n.${VectorType(m, dt)}]") -> `type`
   }
 

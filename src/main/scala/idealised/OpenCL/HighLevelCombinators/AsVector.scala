@@ -14,7 +14,7 @@ import scala.xml.Elem
 
 final case class AsVector(n: Nat,
                           m: Nat,
-                          dt: BasicType,
+                          dt: ScalarType,
                           array: Phrase[ExpType])
   extends HighLevelCombinator with ViewExp {
 
@@ -22,7 +22,7 @@ final case class AsVector(n: Nat,
 
   override def typeCheck(): Unit = {
     import TypeChecker._
-    (n: Nat) -> (m: Nat) -> (dt: DataType) ->
+    (n: Nat) -> (m: Nat) -> (dt: ScalarType) ->
       (array `:` exp"[${m * n}.$dt]") ->
       `type`
   }
@@ -31,8 +31,8 @@ final case class AsVector(n: Nat,
     import TypeInference._
     val array_ = TypeInference(array)
     array_.t match {
-      case ExpType(ArrayType(mn_, dt_)) if dt_.isInstanceOf[BasicType] =>
-        AsVector(n, mn_ /^ n, dt_.asInstanceOf[BasicType], array_)
+      case ExpType(ArrayType(mn_, dt_)) if dt_.isInstanceOf[ScalarType] =>
+        AsVector(n, mn_ /^ n, dt_.asInstanceOf[ScalarType], array_)
       case x => error(x.toString, "ExpType(ArrayType)")
     }
   }

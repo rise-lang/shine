@@ -14,7 +14,7 @@ import scala.xml.Elem
 
 final case class AsScalar(n: Nat,
                           m: Nat,
-                          dt: BasicType,
+                          dt: ScalarType,
                           array: Phrase[ExpType])
   extends HighLevelCombinator with ViewExp {
 
@@ -22,7 +22,7 @@ final case class AsScalar(n: Nat,
 
   override def typeCheck(): Unit = {
     import TypeChecker._
-    (n: Nat) -> (m: Nat) -> (dt: DataType) ->
+    (n: Nat) -> (m: Nat) -> (dt: ScalarType) ->
       (array `:` exp"[$n.${VectorType(m, dt)}]") ->
       `type`
   }

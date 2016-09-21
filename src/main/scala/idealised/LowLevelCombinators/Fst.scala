@@ -51,8 +51,7 @@ final case class Fst(dt1: DataType,
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] =
     RewriteToImperative.exp(this)(λ(exp"[$dt1]") {
       this.t.dataType match {
-        case _: BasicType | _: VectorType =>
-          x => A `:=` x
+        case _: BasicType | _: VectorType => x => A `:=` x
         case _: ArrayType => throw new Exception("This should not happen")
         case _: RecordType => throw new Exception("This should not happen")
         case _: DataTypeIdentifier => throw new Exception("This should not happen")

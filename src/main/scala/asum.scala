@@ -39,6 +39,9 @@ object asum extends App {
     val (res, time) = fun(input :: HNil)
 
     println(s"Computed ${res.length} partial results in $time, which add up to ${res.sum} (expected ${input.sum}).")
+    print("[")
+    res.foreach(x => print(s"$x "))
+    println("]")
 
     println("----------------\n")
   }

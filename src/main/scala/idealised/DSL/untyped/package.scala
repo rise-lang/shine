@@ -65,7 +65,7 @@ package object untyped {
   implicit def toLiteralInt(i: Int): LiteralPhrase = LiteralPhrase(i, int)
   implicit def toLiteralFloat(f: Float): LiteralPhrase = LiteralPhrase(FloatData(f), float)
   implicit def toLiteralFloat4(v: VectorData): LiteralPhrase =
-    LiteralPhrase(v, VectorType(v.a.length, v.a.head.dataType.asInstanceOf[BasicType]))
+    LiteralPhrase(v, VectorType(v.a.length, v.a.head.dataType.asInstanceOf[ScalarType]))
 
   implicit def toNatDependentLambda[T <: PhraseType](p: Phrase[T]): NatDependentLambdaPhrase[T] =
     _Λ_( l => p )
