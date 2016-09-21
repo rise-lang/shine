@@ -234,7 +234,8 @@ case class ToOpenCL(localSize: Nat, globalSize: Nat) {
     val numberOfKernelArgs = 1 + args.length + kernel.intermediateParams.size + lengthMapping.size
     assert(kernel.function.params.length == numberOfKernelArgs)
 
-    val outputArg = createGlobalArg(DataType.sizeInByte(kernel.outputParam) `with` lengthMapping)
+    println("Allocations on the host: ")
+    val outputArg = createOutputArg(DataType.sizeInByte(kernel.outputParam) `with` lengthMapping)
     val inputArgs = createInputArgs(args.toList)
     val intermediateArgs = createIntermediateArgs(kernel, args.length, lengthMapping)
     val lengthArgs = createLengthArgs(lengthMapping)
@@ -254,7 +255,10 @@ case class ToOpenCL(localSize: Nat, globalSize: Nat) {
   }
 
   private def createLengthArgs(lengthMapping: immutable.Map[Core.Nat, Core.Nat]) = {
-    lengthMapping.map( p => ValueArg.create(p._2.eval) ).toList
+    lengthMapping.map( p => {
+      println("length (private): 4 bytes")
+      ValueArg.create(p._2.eval)
+    } ).toList
   }
 
   private def createIntermediateArgs(kernel: OpenCL.Kernel,
@@ -262,10 +266,14 @@ case class ToOpenCL(localSize: Nat, globalSize: Nat) {
                                      lengthMapping: immutable.Map[Core.Nat, Core.Nat]) = {
     val intermediateParamDecls = getIntermediateParamDecls(kernel, argsLength)
     (intermediateParamDecls, kernel.intermediateParams).zipped.map { case (pDecl, param) =>
-      val size = DataType.sizeInByte(param) `with` lengthMapping
+      val size = (DataType.sizeInByte(param) `with` lengthMapping).value.max.eval
       pDecl.addressSpace match {
-        case LocalMemory => LocalArg.create(size.value.max.eval)
-        case GlobalMemory => GlobalArg.createOutput(size.value.max.eval)
+        case LocalMemory =>
+          println(s"intermediate (local): $size bytes")
+          LocalArg.create(size)
+        case GlobalMemory =>
+          println(s"intermediate (global): $size bytes")
+          GlobalArg.createOutput(size)
       }
     }
   }
@@ -275,7 +283,8 @@ case class ToOpenCL(localSize: Nat, globalSize: Nat) {
     kernel.function.params.slice(startIndex, startIndex + kernel.intermediateParams.size)
   }
 
-  private def createGlobalArg(size: SizeInByte) = {
+  private def createOutputArg(size: SizeInByte) = {
+    println(s"output (global): $size")
     GlobalArg.createOutput(size.value.eval)
   }
 
@@ -283,40 +292,65 @@ case class ToOpenCL(localSize: Nat, globalSize: Nat) {
     args.map(createInputArg)
   }
 
-  private def createInputArg(arg: Any) = {
+  private def createInputArg(arg: Any): KernelArg = {
     arg match {
-      case f: Float => ValueArg.create(f)
-      case af: Array[Float] => GlobalArg.createInput(af)
-      case aaf: Array[Array[Float]] => GlobalArg.createInput(aaf.flatten)
-      case aaaf: Array[Array[Array[Float]]] => GlobalArg.createInput(aaaf.flatten.flatten)
-      case aaaaf: Array[Array[Array[Array[Float]]]] => GlobalArg.createInput(aaaaf.flatten.flatten.flatten)
+      case f: Float => createInputArg(f)
+      case af: Array[Float] => createInputArg(af)
+      case aaf: Array[Array[Float]] => createInputArg(aaf.flatten)
+      case aaaf: Array[Array[Array[Float]]] => createInputArg(aaaf.flatten.flatten)
+      case aaaaf: Array[Array[Array[Array[Float]]]] => createInputArg(aaaaf.flatten.flatten.flatten)
 
-      case i: Int => ValueArg.create(i)
-      case ai: Array[Int] => GlobalArg.createInput(ai)
-      case aai: Array[Array[Int]] => GlobalArg.createInput(aai.flatten)
-      case aaai: Array[Array[Array[Int]]] => GlobalArg.createInput(aaai.flatten.flatten)
-      case aaaai: Array[Array[Array[Array[Int]]]] => GlobalArg.createInput(aaaai.flatten.flatten.flatten)
+      case i: Int => createInputArg(i)
+      case ai: Array[Int] => createInputArg(ai)
+      case aai: Array[Array[Int]] => createInputArg(aai.flatten)
+      case aaai: Array[Array[Array[Int]]] => createInputArg(aaai.flatten.flatten)
+      case aaaai: Array[Array[Array[Array[Int]]]] => createInputArg(aaaai.flatten.flatten.flatten)
 
-      case d: Double => ValueArg.create(d)
-      case ad: Array[Double] => GlobalArg.createInput(ad)
-      case aad: Array[Array[Double]] => GlobalArg.createInput(aad.flatten)
-      case aaad: Array[Array[Array[Double]]] => GlobalArg.createInput(aaad.flatten.flatten)
-      case aaaad: Array[Array[Array[Array[Double]]]] => GlobalArg.createInput(aaaad.flatten.flatten.flatten)
+      case d: Double => createInputArg(d)
+      case ad: Array[Double] => createInputArg(ad)
+      case aad: Array[Array[Double]] => createInputArg(aad.flatten)
+      case aaad: Array[Array[Array[Double]]] => createInputArg(aaad.flatten.flatten)
+      case aaaad: Array[Array[Array[Array[Double]]]] => createInputArg(aaaad.flatten.flatten.flatten)
 
       case _ => throw new IllegalArgumentException("Kernel argument is of unsupported type: " +
         arg.getClass.toString)
     }
   }
 
+  private def createInputArg(x: Float) = {
+    println(s"value (private): 4 bytes")
+    ValueArg.create(x)
+  }
+
+  private def createInputArg(a: Array[Float]) = {
+    println(s"input (global): ${SizeInByte(a.length * 4)}")
+    GlobalArg.createInput(a)
+  }
+
+  private def createInputArg(x: Int) = {
+    println(s"value (private): 4 bytes")
+    ValueArg.create(x)
+  }
+
+  private def createInputArg(a: Array[Int]) = {
+    println(s"input (global): ${SizeInByte(a.length * 4)}")
+    GlobalArg.createInput(a)
+  }
+
+  private def createInputArg(x: Double) = {
+    println(s"value (private): 4 bytes")
+    ValueArg.create(x)
+  }
+
+  private def createInputArg(a: Array[Double]) = {
+    println(s"input (global): ${SizeInByte(a.length * 4)}")
+    GlobalArg.createInput(a)
+  }
+
   private implicit class SubstitutionsHelper(size: SizeInByte) {
     def `with`(valueMap: immutable.Map[Core.Nat, Core.Nat]): SizeInByte = {
       SizeInByte(ArithExpr.substitute(size.value, valueMap))
     }
-  }
-
-  private def sizeWithSubstitutions(size: SizeInByte,
-                                    valueMap: immutable.Map[Core.Nat, Core.Nat]): SizeInByte = {
-    SizeInByte(ArithExpr.substitute(size.value, valueMap).eval)
   }
 
   private def createLengthMap(params: Seq[IdentPhrase[ExpType]],
