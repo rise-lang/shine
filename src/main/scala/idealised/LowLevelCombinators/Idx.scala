@@ -1,8 +1,11 @@
 package idealised.LowLevelCombinators
 
+import idealised.Compiling.RewriteToImperative
 import idealised._
 import idealised.Core._
 import idealised.Core.OperationalSemantics._
+import idealised.DSL.typed._
+import idealised.MidLevelCombinators.MapI
 
 import scala.xml.Elem
 
@@ -56,7 +59,23 @@ final case class Idx(n: Nat,
       </index>
     </idx>
 
-  override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = ???
+  override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
+    import RewriteToImperative._
+    exp(array)(λ(exp"[$n.$dt]")(e =>
+      dt match {
+        case b: BasicType => A `:=` Idx(n, dt, index, e)
+        case ArrayType(m, dt2) =>
+          MapI(m, dt2, dt2, A, λ(AccType(dt))(a => λ(ExpType(dt))(e => acc(e)(a))), Idx(n, dt, index, e))
+        case RecordType(dt1, dt2) =>
+          acc(fst(Idx(n, dt, index, e)))(fstAcc(dt1, dt2, A)) `;`
+            acc(snd(Idx(n, dt, index, e)))(sndAcc(dt1, dt2, A))
+        case _: DataTypeIdentifier => throw new Exception("This should not happen")
+      }
+    ))
+  }
 
-  override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = ???
+  override def rewriteToImperativeExp(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] =
+    RewriteToImperative.exp(array)(λ(exp"[$n.$dt]")(e =>
+      C(Idx(n, dt, index, e))
+    ))
 }

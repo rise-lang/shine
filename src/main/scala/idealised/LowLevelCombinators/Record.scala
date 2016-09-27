@@ -3,6 +3,8 @@ package idealised.LowLevelCombinators
 import idealised._
 import idealised.Core._
 import idealised.Core.OperationalSemantics._
+import idealised.Compiling.RewriteToImperative
+import idealised.DSL.typed.{fst, snd, _}
 
 import scala.xml.Elem
 
@@ -51,7 +53,18 @@ final case class Record(dt1: DataType,
       </snd>
     </record>
 
-  override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = ???
+  override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
+    import RewriteToImperative._
+    acc(fst)(fstAcc(dt1, dt2, A)) `;`
+      acc(snd)(sndAcc(dt1, dt2, A))
+  }
 
-  override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = ???
+  override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
+    import RewriteToImperative._
+    exp(fst)(λ(exp"[$dt1]")(x =>
+      exp(snd)(λ(exp"[$dt2]")(y =>
+        C(Record(dt1, dt2, x, y))
+      ))
+    ))
+  }
 }
