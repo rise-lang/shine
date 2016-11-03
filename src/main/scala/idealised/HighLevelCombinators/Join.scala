@@ -58,20 +58,17 @@ final case class Join(n: Nat,
     </join>
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
-    assert(n != null && m != null && dt != null)
     import RewriteToImperative._
 
-    val e = array
+    assert(n != null && m != null && dt != null)
 
-    acc(e)(JoinAcc(n, m, dt, A))
+    acc(array)(JoinAcc(n, m, dt, A))
   }
 
-  override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
+  override def rewriteToImperativeExp(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
     import RewriteToImperative._
 
-    val e = array
-
-    exp(e)(λ(exp"[$n.$m.$dt]")(x =>
+    exp(array)(λ(exp"[$n.$m.$dt]")(x =>
       C(Join(n, m, dt, x))
     ))
   }

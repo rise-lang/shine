@@ -21,7 +21,7 @@ final case class FstAcc(dt1: DataType,
 
   override def eval(s: Store): AccIdentifier = {
     OperationalSemantics.eval(s, record) match {
-      case r: RecordIdentiers => r.fst
+      case r: RecordIdentifier => r.fst
       case _ => throw new Exception("This should not happen")
     }
   }

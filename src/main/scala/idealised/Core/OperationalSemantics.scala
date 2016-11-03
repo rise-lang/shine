@@ -51,7 +51,7 @@ object OperationalSemantics {
   sealed trait AccIdentifier
   case class NamedIdentifier(name: String) extends AccIdentifier
   case class ArrayAccessIdentifier(array: AccIdentifier, index: Nat) extends AccIdentifier
-  case class RecordIdentiers(fst: AccIdentifier, snd: AccIdentifier) extends AccIdentifier
+  case class RecordIdentifier(fst: AccIdentifier, snd: AccIdentifier) extends AccIdentifier
 
   implicit def IntToIntData(i: Int): IntData = IntData(i)
 
@@ -133,6 +133,20 @@ object OperationalSemantics {
           case l: LambdaPhrase[T1, T2 -> (T3 -> T4)] => (arg: Phrase[T1]) =>
             eval(s, l.body `[` arg  `/` l.param `]` )(BinaryFunctionEvaluator)
 
+          case IdentPhrase(_, _) | ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
+               TypeDependentApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) |
+               Proj1Phrase(_) | Proj2Phrase(_) =>
+            throw new Exception("This should never happen")
+        }
+      }
+    }
+
+  implicit def NatDependentFunctionEvaluator[T <: PhraseType]: Evaluator[`(nat)->`[T], (NatIdentifier => Phrase[T])] =
+    new Evaluator[`(nat)->`[T], (NatIdentifier => Phrase[T])] {
+      def apply(s: Store, p: Phrase[`(nat)->`[T]]): (NatIdentifier => Phrase[T]) = {
+        p match {
+          case l: NatDependentLambdaPhrase[T] =>
+            (arg: NatIdentifier) => l.body `[` arg `/` l.param `]`
           case IdentPhrase(_, _) | ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
                TypeDependentApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) |
                Proj1Phrase(_) | Proj2Phrase(_) =>

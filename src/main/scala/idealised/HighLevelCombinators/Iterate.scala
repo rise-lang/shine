@@ -74,17 +74,16 @@ final case class Iterate(n: Nat,
   }
 
   override def eval(s: Store): Data = {
-    //    val fE = OperationalSemantics.eval(s, f)
-    //    OperationalSemantics.eval(s, array) match {
-    //      case ArrayData(xs) =>
-    //        var a = array
-    //        for (_ <- 0 until k.eval) {
-    //          a = fE(a)
-    //        }
-    //        OperationalSemantics.eval(s, a)
-    //      case _ => throw new Exception("This should not happen")
-    //    }
-    ???
+    val fE = OperationalSemantics.eval(s, f)
+    OperationalSemantics.eval(s, array) match {
+      case ArrayData(xs) =>
+        var a = array
+        for (_ <- 0 until k.eval) {
+          a = fE(a)
+        }
+        OperationalSemantics.eval(s, a)
+      case _ => throw new Exception("This should not happen")
+    }
   }
 
   override def xmlPrinter: Elem = {
@@ -110,9 +109,7 @@ final case class Iterate(n: Nat,
 
     assert(n != null && m != null && k != null && dt != null)
 
-    val e = array
-
-    exp(e)(λ(exp"[$m.$dt]")(x =>
+    exp(array)(λ(exp"[$m.$dt]")(x =>
       IterateIAcc(n, m = m /^ n.pow(k), k, dt, A,
         _Λ_(l => λ(acc"[${l /^ n}.$dt]")(o => λ(exp"[$l.$dt]")(x =>
           acc(f(l)(x))(o)))),
@@ -121,14 +118,12 @@ final case class Iterate(n: Nat,
     ))
   }
 
-  override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
+  override def rewriteToImperativeExp(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
     import idealised.Compiling.RewriteToImperative._
 
     assert(n != null && m != null && k != null && dt != null)
 
-    val e = array
-
-    exp(e)(λ(exp"[$m.$dt]")(x =>
+    exp(array)(λ(exp"[$m.$dt]")(x =>
       IterateIExp(n, m = m /^ n.pow(k), k, dt, C,
         _Λ_(l => λ(acc"[${l /^ n}.$dt]")(o => λ(exp"[$l.$dt]")(x =>
           acc(f(l)(x))(o)))),

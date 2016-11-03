@@ -59,19 +59,20 @@ abstract class AbstractMap(n: Nat,
     val fE = OperationalSemantics.eval(s, f)
     OperationalSemantics.eval(s, array) match {
       case ArrayData(xs) =>
-        ArrayData(xs.map { x => OperationalSemantics.eval(s, fE(LiteralPhrase(x, x.dataType))) })
+        ArrayData(xs.map { x =>
+          OperationalSemantics.eval(s, fE(LiteralPhrase(x, x.dataType)))
+        })
 
       case _ => throw new Exception("This should not happen")
     }
   }
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
-    assert(n != null && dt1 != null && dt2 != null)
     import RewriteToImperative._
 
-    val e = array
+    assert(n != null && dt1 != null && dt2 != null)
 
-    exp(e)(λ(exp"[$n.$dt1]")(x =>
+    exp(array)(λ(exp"[$n.$dt1]")(x =>
       makeMapI(n, dt1, dt2, A,
         λ(acc"[$dt2]")(o => λ(exp"[$dt1]")(x => acc(f(x))(o))),
         x
@@ -79,9 +80,10 @@ abstract class AbstractMap(n: Nat,
     ))
   }
 
-  override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
-    assert(n != null && dt1 != null && dt2 != null)
+  override def rewriteToImperativeExp(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
     import RewriteToImperative._
+
+    assert(n != null && dt1 != null && dt2 != null)
 
     `new`(dt"[$n.$dt2]", OpenCL.GlobalMemory, λ(exp"[$n.$dt2]" x acc"[$n.$dt2]")(tmp =>
       acc(this)(tmp.wr) `;` C(tmp.rd)
