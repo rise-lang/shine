@@ -15,7 +15,7 @@ final case class New(dt: DataType,
   override def typeCheck(): Unit = {
     import TypeChecker._
     (dt: DataType) -> /* (addressSpace: AddressSpace) -> */
-      (f `:` t"var[$dt] -> comm") -> comm
+      (f :: t"var[$dt] -> comm") -> comm
   }
 
   override def eval(s: Store): Store = {

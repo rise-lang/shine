@@ -13,7 +13,7 @@ final case class Assign(dt: BasicType,
 
   override def typeCheck(): Unit = {
     import TypeChecker._
-    (dt: BasicType) -> (lhs `:` acc"[$dt]") -> (rhs `:` exp"[$dt]") -> comm
+    (dt: BasicType) -> (lhs :: acc"[$dt]") -> (rhs :: exp"[$dt]") -> comm
   }
 
   override def inferTypes: Assign = {

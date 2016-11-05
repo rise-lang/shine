@@ -17,8 +17,8 @@ final case class IdxAcc(n: Nat,
   override def typeCheck(): Unit = {
     import TypeChecker._
     (n: Nat) -> (dt: DataType) ->
-      (index `:` exp"[idx($n)]") ->
-      (array `:` acc"[$n.$dt]") -> `type`
+      (index :: exp"[idx($n)]") ->
+      (array :: acc"[$n.$dt]") -> `type`
   }
 
   override def inferTypes: IdxAcc = {

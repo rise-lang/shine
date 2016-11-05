@@ -2,7 +2,6 @@ package idealised.OpenCL.HighLevelCombinators
 
 import idealised.Core._
 import idealised.HighLevelCombinators.AbstractMap
-import idealised.MidLevelCombinators.AbstractMapI
 import idealised.OpenCL.MidLevelCombinators.MapGlobalI
 
 final case class MapGlobal(n: Nat,

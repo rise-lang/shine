@@ -20,7 +20,7 @@ final case class Join(n: Nat,
   override def typeCheck(): Unit = {
     import TypeChecker._
     (n: Nat) -> (m: Nat) -> (dt: DataType) ->
-      (array `:` exp"[$n.$m.$dt]") ->
+      (array :: exp"[$n.$m.$dt]") ->
       `type`
   }
 

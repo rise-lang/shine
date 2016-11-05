@@ -19,7 +19,7 @@ final case class Fst(dt1: DataType,
   override def typeCheck(): Unit = {
     import TypeChecker._
     (dt1: DataType) -> (dt2: DataType) ->
-      (record `:` exp"[$dt1 x $dt2]") -> `type`
+      (record :: exp"[$dt1 x $dt2]") -> `type`
   }
 
   override def inferTypes: Fst = {

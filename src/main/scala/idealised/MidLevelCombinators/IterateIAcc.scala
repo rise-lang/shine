@@ -25,9 +25,9 @@ final case class IterateIAcc(n: Nat,
     f match {
       case NatDependentLambdaPhrase(l, _) =>
         (n: Nat) -> (m: Nat) -> (k: Nat) -> (dt: DataType) ->
-          (out `:` acc"[$m.$dt]") ->
-          (f `:` t"($l : nat) -> acc[${l /^ n}.$dt] -> exp[$l.$dt] -> comm") ->
-          (in `:` exp"[${n.pow(k) * m}.$dt]") ->
+          (out :: acc"[$m.$dt]") ->
+          (f :: t"($l : nat) -> acc[${l /^ n}.$dt] -> exp[$l.$dt] -> comm") ->
+          (in :: exp"[${n.pow(k) * m}.$dt]") ->
           comm
 
       case _ => throw new Exception("This should not happen")

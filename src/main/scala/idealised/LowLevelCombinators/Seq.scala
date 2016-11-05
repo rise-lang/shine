@@ -12,7 +12,7 @@ final case class Seq(c1: Phrase[CommandType],
 
   override def typeCheck(): Unit = {
     import TypeChecker._
-    (c1 `:` comm) -> (c2 `:` comm) -> comm
+    (c1 :: comm) -> (c2 :: comm) -> comm
   }
 
   override def eval(s: Store): Store = {

@@ -21,8 +21,8 @@ final case class Zip(n: Nat,
   override def typeCheck(): Unit = {
     import TypeChecker._
     (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
-      (lhs `:` exp"[$n.$dt1]") ->
-      (rhs `:` exp"[$n.$dt2]") ->
+      (lhs :: exp"[$n.$dt1]") ->
+      (rhs :: exp"[$n.$dt2]") ->
       `type`
   }
 

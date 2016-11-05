@@ -26,8 +26,8 @@ abstract class AbstractMap(n: Nat,
   override def typeCheck(): Unit = {
     import TypeChecker._
     (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
-      (f `:` t"exp[$dt1] -> exp[$dt2]") ->
-      (array `:` exp"[$n.$dt1]") ->
+      (f :: t"exp[$dt1] -> exp[$dt2]") ->
+      (array :: exp"[$n.$dt1]") ->
       `type`
   }
 

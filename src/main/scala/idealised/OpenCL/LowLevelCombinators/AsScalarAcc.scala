@@ -20,7 +20,7 @@ final case class AsScalarAcc(n: Nat,
   override def typeCheck(): Unit = {
     import TypeChecker._
     (n: Nat) -> (m: Nat) -> (dt: ScalarType) ->
-      (array `:`  acc"[${m * n}.$dt]") -> `type`
+      (array ::  acc"[${m * n}.$dt]") -> `type`
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {

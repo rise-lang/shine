@@ -23,9 +23,9 @@ final case class IterateIExp(n: Nat,
     f match {
       case NatDependentLambdaPhrase(l, _) =>
         (n: Nat) -> (m: Nat) -> (k: Nat) -> (dt: DataType) ->
-          (out `:` t"(exp[$m.$dt] -> comm)") ->
-          (f `:` t"($l : nat) -> acc[${l /^ n}.$dt] -> exp[$l.$dt] -> comm") ->
-          (in `:` exp"[${n.pow(k) * m}.$dt]") ->
+          (out :: t"(exp[$m.$dt] -> comm)") ->
+          (f :: t"($l : nat) -> acc[${l /^ n}.$dt] -> exp[$l.$dt] -> comm") ->
+          (in :: exp"[${n.pow(k) * m}.$dt]") ->
           comm
 
       case _ => throw new Exception("This should not happen")

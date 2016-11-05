@@ -22,10 +22,10 @@ final case class DoubleBufferFor(n: Nat,
     body match {
       case NatDependentLambdaPhrase(l, _) =>
         (n: Nat) -> (m: Nat) -> (k: Nat) -> (dt: DataType) ->
-          (buffer1 `:` t"var[$n.$dt]") ->
-          (buffer2 `:` t"var[$n.$dt]") ->
-          (body `:` t"($l : nat) -> acc[$n.$dt] -> exp[$n.$dt] -> comm") ->
-          (C `:` t"exp[$m.$dt] -> comm") ->
+          (buffer1 :: t"var[$n.$dt]") ->
+          (buffer2 :: t"var[$n.$dt]") ->
+          (body :: t"($l : nat) -> acc[$n.$dt] -> exp[$n.$dt] -> comm") ->
+          (C :: t"exp[$m.$dt] -> comm") ->
           comm
 
       case _ => throw new Exception("This should not happen")

@@ -23,8 +23,8 @@ final case class Gather(n: Nat,
   override def typeCheck(): Unit = {
     import TypeChecker._
     (n: Nat) -> (dt: DataType) ->
-      (idxF `:` t"exp[idx($n)] -> exp[idx($n)]") ->
-      (array `:` exp"[$n.$dt]") ->
+      (idxF :: t"exp[idx($n)] -> exp[idx($n)]") ->
+      (array :: exp"[$n.$dt]") ->
       `type`
   }
 

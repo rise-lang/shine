@@ -20,7 +20,7 @@ final case class Split(n: Nat,
   override def typeCheck(): Unit = {
     import TypeChecker._
     (n: Nat) -> (m: Nat) -> (dt: DataType) ->
-      (array `:` exp"[${m * n}.$dt]") ->
+      (array :: exp"[${m * n}.$dt]") ->
       `type`
   }
 

@@ -20,10 +20,10 @@ final case class ReduceIExp(n: Nat,
   override def typeCheck(): Unit = {
     import TypeChecker._
     (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
-      (out `:` t"exp[$dt2] -> comm") ->
-      (f `:` t"acc[$dt2] -> exp[$dt1] -> exp[$dt2] -> comm") ->
-      (init `:` exp"[$dt2]") ->
-      (in `:` exp"[$n.$dt1]") ->
+      (out :: t"exp[$dt2] -> comm") ->
+      (f :: t"acc[$dt2] -> exp[$dt1] -> exp[$dt2] -> comm") ->
+      (init :: exp"[$dt2]") ->
+      (in :: exp"[$n.$dt1]") ->
       comm
   }
 

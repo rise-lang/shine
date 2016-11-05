@@ -12,7 +12,7 @@ final case class For(n: Nat,
 
   override def typeCheck(): Unit = {
     import TypeChecker._
-    (n: Nat) -> (body `:` t"exp[idx($n)] -> comm") -> comm
+    (n: Nat) -> (body :: t"exp[idx($n)] -> comm") -> comm
   }
 
   override def eval(s: Store): Store = {

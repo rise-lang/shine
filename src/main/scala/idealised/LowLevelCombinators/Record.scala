@@ -4,7 +4,7 @@ import idealised._
 import idealised.Core._
 import idealised.Core.OperationalSemantics._
 import idealised.Compiling.RewriteToImperative
-import idealised.DSL.typed.{fst, snd, _}
+import idealised.DSL.typed._
 
 import scala.xml.Elem
 
@@ -19,11 +19,10 @@ final case class Record(dt1: DataType,
   override def typeCheck(): Unit = {
     import TypeChecker._
     (dt1: DataType) -> (dt2: DataType) ->
-      (fst `:` exp"[$dt1]") -> (snd `:` exp"[$dt2]") -> `type`
+      (fst :: exp"[$dt1]") -> (snd :: exp"[$dt2]") -> `type`
   }
 
   override def inferTypes: Record = {
-    import TypeInference._
     val fst_ = TypeInference(fst)
     val snd_ = TypeInference(snd)
     Record(fst_.t.dataType, snd_.t.dataType, fst_, snd_)

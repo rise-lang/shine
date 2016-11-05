@@ -17,7 +17,7 @@ final case class TruncAcc(n: Nat,
   override def typeCheck(): Unit = {
     import TypeChecker._
     (n: Nat) -> (m: Nat) -> (dt: DataType) ->
-      (array `:` acc"[$n.$dt]") -> `type`
+      (array :: acc"[$n.$dt]") -> `type`
   }
 
   override def eval(s: Store): AccIdentifier = ???

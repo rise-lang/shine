@@ -17,7 +17,7 @@ final case class JoinAcc(n: Nat,
   override def typeCheck(): Unit = {
     import TypeChecker._
     (n: Nat) -> (m: Nat) -> (dt: DataType) ->
-      (array `:` acc"[${n * m}.$dt]") -> `type`
+      (array :: acc"[${n * m}.$dt]") -> `type`
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {

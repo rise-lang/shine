@@ -20,10 +20,10 @@ final case class ReduceIAcc(n: Nat,
   override def typeCheck(): Unit = {
     import TypeChecker._
     (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
-      (out `:` acc"[$dt2]") ->
-      (f `:` t"acc[$dt2] -> exp[$dt1] -> exp[$dt2] -> comm") ->
-      (init `:` exp"[$dt2]") ->
-      (in `:` exp"[$n.$dt1]") ->
+      (out :: acc"[$dt2]") ->
+      (f :: t"acc[$dt2] -> exp[$dt1] -> exp[$dt2] -> comm") ->
+      (init :: exp"[$dt2]") ->
+      (in :: exp"[$n.$dt1]") ->
       comm
   }
 

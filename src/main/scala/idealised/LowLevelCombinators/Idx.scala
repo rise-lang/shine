@@ -20,8 +20,8 @@ final case class Idx(n: Nat,
   override def typeCheck(): Unit = {
     import TypeChecker._
     (n: Nat) -> (dt: DataType) ->
-      (index `:` exp"[idx($n)]") ->
-      (array `:` exp"[$n.$dt]") ->
+      (index :: exp"[idx($n)]") ->
+      (array :: exp"[$n.$dt]") ->
       `type`
   }
 

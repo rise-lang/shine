@@ -20,7 +20,7 @@ final case class TruncExp(n: Nat,
   override def typeCheck(): Unit = {
     import TypeChecker._
     (n: Nat) -> (m: Nat) -> (dt: DataType) ->
-      (array `:` exp"[$n.$dt]") -> `type`
+      (array :: exp"[$n.$dt]") -> `type`
   }
 
   override def inferTypes: TruncExp = {

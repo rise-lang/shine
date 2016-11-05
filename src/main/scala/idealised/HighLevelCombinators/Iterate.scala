@@ -30,8 +30,8 @@ final case class Iterate(n: Nat,
     f match {
       case NatDependentLambdaPhrase(l, _) =>
         (n: Nat) -> (m: Nat) -> (k: Nat) -> (dt: DataType) ->
-          (f `:` t"($l : nat) -> exp[$l.$dt] -> exp[${l /^ n}.$dt]") ->
-          (array `:` exp"[$m.$dt]") ->
+          (f :: t"($l : nat) -> exp[$l.$dt] -> exp[${l /^ n}.$dt]") ->
+          (array :: exp"[$m.$dt]") ->
           `type`
       case _ => throw new Exception("This should not happen")
     }
@@ -74,16 +74,17 @@ final case class Iterate(n: Nat,
   }
 
   override def eval(s: Store): Data = {
-    val fE = OperationalSemantics.eval(s, f)
-    OperationalSemantics.eval(s, array) match {
-      case ArrayData(xs) =>
-        var a = array
-        for (_ <- 0 until k.eval) {
-          a = fE(a)
-        }
-        OperationalSemantics.eval(s, a)
-      case _ => throw new Exception("This should not happen")
-    }
+//    val fE = OperationalSemantics.eval(s, f)
+//    OperationalSemantics.eval(s, array) match {
+//      case ArrayData(xs) =>
+//        var a = array
+//        for (i <- 0 until k.eval) {
+//          a = fE(a)
+//        }
+//        OperationalSemantics.eval(s, a)
+//      case _ => throw new Exception("This should not happen")
+//    }
+    ???
   }
 
   override def xmlPrinter: Elem = {

@@ -41,8 +41,13 @@ package object typed {
     def :=(rhs: Phrase[ExpType]) = {
       (lhs.t, rhs.t) match {
         case (AccType(dt1), ExpType(dt2))
-          if dt1 == dt2 && dt1.isInstanceOf[BasicType] =>
-          Assign(dt1.asInstanceOf[BasicType], lhs, rhs)
+          if dt1 == dt2 =>
+            dt1 match {
+              case bt: BasicType =>
+                Assign(bt, lhs, rhs)
+              case _ =>
+                error(dt1.toString, expected = "it to be a basic type.")
+            }
         case (x1, x2) => error(x1.toString() + " and " + x2.toString(),
           expected = "them to have a matching data type.")
       }

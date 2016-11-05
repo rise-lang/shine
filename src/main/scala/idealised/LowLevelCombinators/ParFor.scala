@@ -16,8 +16,8 @@ abstract class AbstractParFor(val n: Nat,
   override def typeCheck(): Unit = {
     import TypeChecker._
     (n: Nat) -> (dt: DataType) ->
-      (out `:` acc"[$n.$dt]") ->
-      (body `:` t"exp[idx($n)] -> acc[$dt] -> comm") ->
+      (out :: acc"[$n.$dt]") ->
+      (body :: t"exp[idx($n)] -> acc[$dt] -> comm") ->
       comm
   }
 

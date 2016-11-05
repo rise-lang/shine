@@ -23,7 +23,7 @@ final case class AsScalar(n: Nat,
   override def typeCheck(): Unit = {
     import TypeChecker._
     (n: Nat) -> (m: Nat) -> (dt: ScalarType) ->
-      (array `:` exp"[$n.${VectorType(m, dt)}]") ->
+      (array :: exp"[$n.${VectorType(m, dt)}]") ->
       `type`
   }
 
