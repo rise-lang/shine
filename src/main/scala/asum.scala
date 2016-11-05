@@ -1,5 +1,4 @@
 
-import idealised._
 import idealised.Core._
 import idealised.DSL.untyped._
 import idealised.OpenCL.Core._
@@ -9,6 +8,7 @@ import opencl.executor.Executor
 import opencl.generator.OpenCLPrinter
 
 import scala.language.implicitConversions
+import scala.util.Random
 
 object asum extends App {
 
@@ -34,7 +34,7 @@ object asum extends App {
 
     val size = 1024 * 1024
 
-    val input = Array.fill(size)(1.0f)
+    val input = Array.fill(size)(Random.nextInt(10).toFloat)
 
     val (res, time) = fun(input :: HNil)
 

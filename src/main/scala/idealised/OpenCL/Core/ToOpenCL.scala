@@ -442,11 +442,11 @@ object ToOpenCL {
       case UnaryOpPhrase(op, x) =>
         UnaryExpression(op.toString, exp(x, env))
 
-      case f: Fst => toOpenCL(f, env, List(), List(), f.t.dataType)
-      case i: Idx => toOpenCL(i, env, List(), List(), i.t.dataType)
-      case r: Record => toOpenCL(r, env, List(), List(), r.t.dataType)
-      case s: Snd => toOpenCL(s, env, List(), List(), s.t.dataType)
-      case t: TruncExp => toOpenCL(t, env, List(), List(), t.t.dataType)
+      case f: Fst       => toOpenCL(f, env, f.t.dataType, List(), List())
+      case i: Idx       => toOpenCL(i, env, i.t.dataType, List(), List())
+      case r: Record    => toOpenCL(r, env, r.t.dataType, List(), List())
+      case s: Snd       => toOpenCL(s, env, s.t.dataType, List(), List())
+      case t: TruncExp  => toOpenCL(t, env, t.t.dataType, List(), List())
 
       case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
            TypeDependentApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) |
@@ -457,17 +457,13 @@ object ToOpenCL {
 
   def exp(p: Phrase[ExpType],
           env: Environment,
+          dt: DataType,
           arrayAccess: List[(Nat, Nat)],
-          tupleAccess: List[Nat],
-          dt: DataType): Expression = {
+          tupleAccess: List[Nat]): Expression = {
     p match {
       case IdentPhrase(name, t) =>
         val i = arrayAccess.map(x => x._1 * x._2).foldLeft(0: Nat)((x, y) => x + y)
-        val index = if (i != (0: Nat)) {
-          i
-        } else {
-          null
-        }
+        val index = if (i != (0: Nat)) { i } else { null }
 
         val s = tupleAccess.map {
           case apart.arithmetic.Cst(1) => "._1"
@@ -475,11 +471,7 @@ object ToOpenCL {
           case _ => throw new Exception("This should not happen")
         }.foldLeft("")(_ + _)
 
-        val suffix = if (s != "") {
-          s
-        } else {
-          null
-        }
+        val suffix = if (s != "") { s } else { null }
 
         val originalType = t.dataType
         val currentType = dt
@@ -493,8 +485,8 @@ object ToOpenCL {
             VarRef(name, suffix, ArithExpression(index))
         }
 
-      case p: Proj1Phrase[ExpType, _] => exp(Lift.liftPair(p.pair)._1, env, arrayAccess, tupleAccess, dt)
-      case p: Proj2Phrase[_, ExpType] => exp(Lift.liftPair(p.pair)._2, env, arrayAccess, tupleAccess, dt)
+      case p: Proj1Phrase[ExpType, _] => exp(Lift.liftPair(p.pair)._1, env, dt, arrayAccess, tupleAccess)
+      case p: Proj2Phrase[_, ExpType] => exp(Lift.liftPair(p.pair)._2, env, dt, arrayAccess, tupleAccess)
 
       case v: ViewExp => v.toOpenCL(env, arrayAccess, tupleAccess, dt)
 
@@ -503,11 +495,11 @@ object ToOpenCL {
       case s: Split => toOpenCL(s, env, arrayAccess, tupleAccess, dt)
       case z: Zip => toOpenCL(z, env, arrayAccess, tupleAccess, dt)
 
-      case f: Fst => toOpenCL(f, env, arrayAccess, tupleAccess, dt)
-      case i: Idx => toOpenCL(i, env, arrayAccess, tupleAccess, dt)
-      case r: Record => toOpenCL(r, env, arrayAccess, tupleAccess, dt)
-      case s: Snd => toOpenCL(s, env, arrayAccess, tupleAccess, dt)
-      case t: TruncExp => toOpenCL(t, env, arrayAccess, tupleAccess, dt)
+      case f: Fst       => toOpenCL(f, env, dt, arrayAccess, tupleAccess)
+      case i: Idx       => toOpenCL(i, env, dt, arrayAccess, tupleAccess)
+      case r: Record    => toOpenCL(r, env, dt, arrayAccess, tupleAccess)
+      case s: Snd       => toOpenCL(s, env, dt, arrayAccess, tupleAccess)
+      case t: TruncExp  => toOpenCL(t, env, dt, arrayAccess, tupleAccess)
 
       case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
            TypeDependentApplyPhrase(_, _) |
@@ -519,19 +511,29 @@ object ToOpenCL {
   }
 
 
-  def acc(p: Phrase[AccType], env: Environment): VarRef = {
-    p match {
-      case IdentPhrase(name, _) => VarRef(name)
-      case p: Proj1Phrase[AccType, _] => acc(Lift.liftPair(p.pair)._1, env)
-      case p: Proj2Phrase[_, AccType] => acc(Lift.liftPair(p.pair)._2, env)
+  def acc(p: Phrase[AccType], value: Expression, env: Environment): Expression = {
+    def evaluate(t: ((List[(Nat, Nat)], List[Nat]) => Expression,
+      List[(Nat, Nat)],
+      List[Nat])): Expression = {
+      t._1(t._2, t._3)
+    }
 
-      case f: FstAcc => toOpenCL(f, env, List(), List(), f.t.dataType)
-      case i: IdxAcc => toOpenCL(i, env, List(), List(), i.t.dataType)
-      case j: JoinAcc => toOpenCL(j, env, List(), List(), j.t.dataType)
-      case r: RecordAcc => toOpenCL(r, env, List(), List(), r.t.dataType)
-      case s: SndAcc => toOpenCL(s, env, List(), List(), s.t.dataType)
-      case s: SplitAcc => toOpenCL(s, env, List(), List(), s.t.dataType)
-      case t: TruncAcc => toOpenCL(t, env, List(), List(), t.t.dataType)
+    p match {
+      case IdentPhrase(name, t) =>
+        t.dataType match {
+          case b: BasicType => AssignmentExpression(VarRef(name), value)
+          case _ => throw new Exception(s"Don't know how to generate assignment into variable $name of type $t")
+        }
+      case p: Proj1Phrase[AccType, _] => acc(Lift.liftPair(p.pair)._1, value, env)
+      case p: Proj2Phrase[_, AccType] => acc(Lift.liftPair(p.pair)._2, value, env)
+
+      case f: FstAcc    => evaluate(toOpenCL(f, value, env, f.t.dataType))
+      case i: IdxAcc    => evaluate(toOpenCL(i, value, env, i.t.dataType))
+      case j: JoinAcc   => evaluate(toOpenCL(j, value, env, j.t.dataType))
+      case r: RecordAcc => evaluate(toOpenCL(r, value, env, r.t.dataType))
+      case s: SndAcc    => evaluate(toOpenCL(s, value, env, s.t.dataType))
+      case s: SplitAcc  => evaluate(toOpenCL(s, value, env, s.t.dataType))
+      case t: TruncAcc  => evaluate(toOpenCL(t, value, env, t.t.dataType))
 
       case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
            TypeDependentApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) |
@@ -541,55 +543,54 @@ object ToOpenCL {
   }
 
   def acc(p: Phrase[AccType],
+          value: Expression,
           env: Environment,
-          arrayAccess: List[(Nat, Nat)],
-          tupleAccess: List[Nat],
-          dt: DataType): VarRef = {
+          dt: DataType): ((List[(Nat, Nat)], List[Nat]) => Expression, List[(Nat, Nat)], List[Nat]) = {
     p match {
       case IdentPhrase(name, t) =>
-        val i = arrayAccess.map(x => x._1 * x._2).foldLeft(0: Nat)((x, y) => x + y)
-        val index = if (i != (0: Nat)) {
-          i
-        } else {
-          null
-        }
+        ((arrayAccess: List[(ArithExpr, ArithExpr)], tupleAccess: List[ArithExpr]) => {
+          val i = arrayAccess.map(x => x._1 * x._2).foldLeft(0: Nat)((x, y) => x + y)
+          val index = if (i != (0: Nat)) {
+            i
+          } else {
+            null
+          }
 
-        val s = tupleAccess.map {
-          case apart.arithmetic.Cst(1) => "._1"
-          case apart.arithmetic.Cst(2) => "._2"
-          case _ => throw new Exception("This should not happen")
-        }.foldLeft("")(_ + _)
+          val s = tupleAccess.map {
+            case apart.arithmetic.Cst(1) => "._1"
+            case apart.arithmetic.Cst(2) => "._2"
+            case _ => throw new Exception("This should not happen")
+          }.foldLeft("")(_ + _)
 
-        val suffix = if (s != "") {
-          s
-        } else {
-          null
-        }
+          val suffix = if (s != "") {
+            s
+          } else {
+            null
+          }
 
-        val originalType = t.dataType
-        val currentType = dt
+          val originalType = t.dataType
+          val currentType = dt
 
-        (originalType, currentType) match {
-          case (ArrayType(_, st1), VectorType(n, st2)) if st1 == st2 && st1.isInstanceOf[BasicType] =>
-            // TODO: can we turn this into a vload => need the value for this ...
-            // TODO: figure out addressspace of identifier name
-            VarRef(s"((/*the addressspace is hardcoded*/global $currentType*)$name)", suffix, ArithExpression(index))
-          case _ =>
-            VarRef(name, suffix, ArithExpression(index))
-        }
+          (originalType, currentType) match {
+            case (ArrayType(_, st1), VectorType(n, st2)) if DataType.scalarType(st1) == DataType.scalarType(st2) =>
+              VStore(VarRef(name), DataType.toVectorType(VectorType(n, st2)), value, ArithExpression(index))
+            case _ =>
+              AssignmentExpression(VarRef(name, suffix, ArithExpression(index)), value)
+          }
+        }, List(), List())
 
-      case v: ViewAcc => v.toOpenCL(env, arrayAccess, tupleAccess, dt)
+      case v: ViewAcc => v.toOpenCL(env, value, dt)
 
-      case f: FstAcc => toOpenCL(f, env, arrayAccess, tupleAccess, dt)
-      case i: IdxAcc => toOpenCL(i, env, arrayAccess, tupleAccess, dt)
-      case j: JoinAcc => toOpenCL(j, env, arrayAccess, tupleAccess, dt)
-      case r: RecordAcc => toOpenCL(r, env, arrayAccess, tupleAccess, dt)
-      case s: SndAcc => toOpenCL(s, env, arrayAccess, tupleAccess, dt)
-      case s: SplitAcc => toOpenCL(s, env, arrayAccess, tupleAccess, dt)
-      case t: TruncAcc => toOpenCL(t, env, arrayAccess, tupleAccess, dt)
+      case f: FstAcc    => toOpenCL(f, value, env, dt)
+      case i: IdxAcc    => toOpenCL(i, value, env, dt)
+      case j: JoinAcc   => toOpenCL(j, value, env, dt)
+      case r: RecordAcc => toOpenCL(r, value, env, dt)
+      case s: SndAcc    => toOpenCL(s, value, env, dt)
+      case s: SplitAcc  => toOpenCL(s, value, env, dt)
+      case t: TruncAcc  => toOpenCL(t, value, env, dt)
 
-      case p: Proj1Phrase[AccType, _] => acc(Lift.liftPair(p.pair)._1, env, arrayAccess, tupleAccess, dt)
-      case p: Proj2Phrase[_, AccType] => acc(Lift.liftPair(p.pair)._2, env, arrayAccess, tupleAccess, dt)
+      case p: Proj1Phrase[AccType, _] => acc(Lift.liftPair(p.pair)._1, value, env, dt)
+      case p: Proj2Phrase[_, AccType] => acc(Lift.liftPair(p.pair)._2, value, env, dt)
 
       case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
            TypeDependentApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) |

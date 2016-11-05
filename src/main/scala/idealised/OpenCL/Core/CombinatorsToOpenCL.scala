@@ -17,8 +17,8 @@ object CombinatorsToOpenCL {
   // ==== generating blocks  ==== //
 
   def toOpenCL(a: Assign, block: Block, env: ToOpenCL.Environment): Block = {
-    (block: Block) +=
-      AssignmentExpression(ToOpenCL.acc(a.lhs, env), ToOpenCL.exp(a.rhs, env))
+    (block: Block) += ToOpenCL.acc(a.lhs, ToOpenCL.exp(a.rhs, env), env)
+      // AssignmentExpression(ToOpenCL.acc(a.lhs, env), ToOpenCL.exp(a.rhs, env))
   }
 
   def toOpenCL(f: For, block: Block, env: ToOpenCL.Environment): Block = {
@@ -193,7 +193,7 @@ object CombinatorsToOpenCL {
 
     val n_ = OperationalSemantics.evalIndexExp(g.idxF(idx._1))
 
-    ToOpenCL.exp(g.array, env, (n_, idx._2) :: stack, tupleAccess, dt)
+    ToOpenCL.exp(g.array, env, dt, (n_, idx._2) :: stack, tupleAccess)
 
   }
 
@@ -212,7 +212,7 @@ object CombinatorsToOpenCL {
 
     val newAs = (chunkId, l * j.n) ::(chunkElemId, l) :: stack
 
-    ToOpenCL.exp(j.array, env, newAs, tupleAccess, dt)
+    ToOpenCL.exp(j.array, env, dt, newAs, tupleAccess)
   }
 
   def toOpenCL(s: Split,
@@ -228,7 +228,7 @@ object CombinatorsToOpenCL {
 
     val newIdx = chunkId._1 * s.n + chunkElemId._1
 
-    ToOpenCL.exp(s.array, env, (newIdx, chunkElemId._2) :: rest, tupleAccess, dt)
+    ToOpenCL.exp(s.array, env, dt, (newIdx, chunkElemId._2) :: rest, tupleAccess)
   }
 
   def toOpenCL(z: Zip,
@@ -240,84 +240,88 @@ object CombinatorsToOpenCL {
     val rest = tupleAccess.tail
 
     if (i == Cst(1)) {
-      return ToOpenCL.exp(z.lhs, env, arrayAccess, rest, dt)
+      return ToOpenCL.exp(z.lhs, env, dt, arrayAccess, rest)
     }
 
     if (i == Cst(2)) {
-      return ToOpenCL.exp(z.rhs, env, arrayAccess, rest, dt)
+      return ToOpenCL.exp(z.rhs, env, dt, arrayAccess, rest)
     }
 
     throw new Exception("This should not happen")
   }
 
   def toOpenCL(f: Fst, env: ToOpenCL.Environment,
+               dt: DataType,
                arrayAccess: List[(ArithExpr, ArithExpr)],
-               tupleAccess: List[ArithExpr],
-               dt: DataType): Expression = {
-    ToOpenCL.exp(f.record, env, arrayAccess, 1 :: tupleAccess, dt)
+               tupleAccess: List[ArithExpr]): Expression = {
+    ToOpenCL.exp(f.record, env, dt, arrayAccess, 1 :: tupleAccess)
   }
 
   def toOpenCL(i: Idx, env: ToOpenCL.Environment,
+               dt: DataType,
                arrayAccess: List[(ArithExpr, ArithExpr)],
-               tupleAccess: List[ArithExpr],
-               dt: DataType): Expression = {
+               tupleAccess: List[ArithExpr]): Expression = {
     val idx: ArithExpr = ToOpenCL.exp(i.index, env) match {
       case VarRef(name, _, _) => NamedVar(name, env.ranges(name))
       case _ => throw new Exception("This should not happen")
     }
     val length = DataType.getLengths(i.dt, tupleAccess, List()).foldLeft(1: ArithExpr)((x, y) => x * y)
 
-    ToOpenCL.exp(i.array, env, (idx, length) :: arrayAccess, tupleAccess, dt)
+    ToOpenCL.exp(i.array, env, dt, (idx, length) :: arrayAccess, tupleAccess)
   }
 
   def toOpenCL(r: Record,
                env: ToOpenCL.Environment,
+               dt: DataType,
                arrayAccess: List[(ArithExpr, ArithExpr)],
-               tupleAccess: List[ArithExpr],
-               dt: DataType): Expression = ???
+               tupleAccess: List[ArithExpr]): Expression = ???
 
   def toOpenCL(s: Snd,
                env: ToOpenCL.Environment,
+               dt: DataType,
                arrayAccess: List[(ArithExpr, ArithExpr)],
-               tupleAccess: List[ArithExpr],
-               dt: DataType): Expression = {
-    ToOpenCL.exp(s.record, env, arrayAccess, 2 :: tupleAccess, dt)
+               tupleAccess: List[ArithExpr]): Expression = {
+    ToOpenCL.exp(s.record, env, dt, arrayAccess, 2 :: tupleAccess)
   }
 
   def toOpenCL(t: TruncExp,
                env: ToOpenCL.Environment,
+               dt: DataType,
                arrayAccess: List[(ArithExpr, ArithExpr)],
-               tupleAccess: List[ArithExpr],
-               dt: DataType): Expression = {
-    ToOpenCL.exp(t.array, env, arrayAccess, tupleAccess, dt)
+               tupleAccess: List[ArithExpr]): Expression = {
+    ToOpenCL.exp(t.array, env, dt, arrayAccess, tupleAccess)
   }
 
   // ==== generating var refs  ==== //
 
   def toOpenCL(f: FstAcc,
+               value: Expression,
                env: ToOpenCL.Environment,
-               arrayAccess: List[(ArithExpr, ArithExpr)],
-               tupleAccess: List[ArithExpr], dt: DataType): VarRef = ???
+               dt: DataType): ((List[(Nat, Nat)], List[Nat]) => Expression, List[(Nat, Nat)], List[Nat]) = ???
 
   def toOpenCL(i: IdxAcc,
+               value: Expression,
                env: ToOpenCL.Environment,
-               arrayAccess: List[(ArithExpr, ArithExpr)],
-               tupleAccess: List[ArithExpr],
-               dt: DataType): VarRef = {
+               dt: DataType): ((List[(Nat, Nat)], List[Nat]) => Expression, List[(Nat, Nat)], List[Nat]) = {
     val idx: ArithExpr = ToOpenCL.exp(i.index, env) match {
       case VarRef(name, _, _) => NamedVar(name, env.ranges(name))
       case Literal(j) => Cst(j.toInt)
       case _ => throw new Exception("This should not happen")
     }
+
+    val (exp, arrayAccess, tupleAccess) = ToOpenCL.acc(i.array, value, env, dt)
+
     val length = DataType.getLengths(i.dt, tupleAccess, List()).foldLeft(1: ArithExpr)((x, y) => x * y)
-    ToOpenCL.acc(i.array, env, (idx, length) :: arrayAccess, tupleAccess, dt)
+
+    (exp, (idx, length) :: arrayAccess, tupleAccess)
   }
 
   def toOpenCL(j: JoinAcc,
+               value: Expression,
                env: ToOpenCL.Environment,
-               arrayAccess: List[(ArithExpr, ArithExpr)],
-               tupleAccess: List[ArithExpr],
-               dt: DataType): VarRef = {
+               dt: DataType): ((List[(Nat, Nat)], List[Nat]) => Expression, List[(Nat, Nat)], List[Nat]) = {
+
+    val (exp, arrayAccess, tupleAccess) = ToOpenCL.acc(j.array, value, env, dt)
 
     val (firstTwo, rest) = arrayAccess.splitAt(2)
 
@@ -326,24 +330,26 @@ object CombinatorsToOpenCL {
 
     val newIdx = chunkId._1 * j.m + chunkElemId._1
 
-    ToOpenCL.acc(j.array, env, (newIdx, chunkElemId._2) :: rest, tupleAccess, dt)
+    (exp, (newIdx, chunkElemId._2) :: rest, tupleAccess)
   }
 
   def toOpenCL(r: RecordAcc,
+               value: Expression,
                env: ToOpenCL.Environment,
-               arrayAccess: List[(ArithExpr, ArithExpr)],
-               tupleAccess: List[ArithExpr], dt: DataType): VarRef = ???
+               dt: DataType): ((List[(Nat, Nat)], List[Nat]) => Expression, List[(Nat, Nat)], List[Nat]) = ???
 
   def toOpenCL(s: SndAcc,
+               value: Expression,
                env: ToOpenCL.Environment,
-               arrayAccess: List[(ArithExpr, ArithExpr)],
-               tupleAccess: List[ArithExpr], dt: DataType): VarRef = ???
+               dt: DataType): ((List[(Nat, Nat)], List[Nat]) => Expression, List[(Nat, Nat)], List[Nat]) = ???
 
   def toOpenCL(s: SplitAcc,
+               value: Expression,
                env: ToOpenCL.Environment,
-               arrayAccess: List[(ArithExpr, ArithExpr)],
-               tupleAccess: List[ArithExpr],
-               dt: DataType): VarRef = {
+               dt: DataType): ((List[(Nat, Nat)], List[Nat]) => Expression, List[(Nat, Nat)], List[Nat]) = {
+
+    val (exp, arrayAccess, tupleAccess) = ToOpenCL.acc(s.array, value, env, dt)
+
     val idx = arrayAccess.head
     val stack = arrayAccess.tail
 
@@ -354,15 +360,14 @@ object CombinatorsToOpenCL {
 
     val newAs = (chunkId, l * s.n) ::(chunkElemId, l) :: stack
 
-    ToOpenCL.acc(s.array, env, newAs, tupleAccess, dt)
+    (exp, newAs, tupleAccess)
   }
 
   def toOpenCL(t: TruncAcc,
+               value: Expression,
                env: ToOpenCL.Environment,
-               arrayAccess: List[(ArithExpr, ArithExpr)],
-               tupleAccess: List[ArithExpr],
-               dt: DataType): VarRef = {
-    ToOpenCL.acc(t.array, env, arrayAccess, tupleAccess, dt)
+               dt: DataType): ((List[(Nat, Nat)], List[Nat]) => Expression, List[(Nat, Nat)], List[Nat]) = {
+    ToOpenCL.acc(t.array, value, env, dt)
   }
 
 }

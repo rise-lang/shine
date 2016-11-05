@@ -1,7 +1,9 @@
 package idealised.OpenCL.Core
 
 import idealised.Core._
-import opencl.generator.OpenCLAST.{Block, Expression, VarRef}
+import opencl.generator.OpenCLAST.{Block, Expression}
+
+import scala.collection.immutable.List
 
 trait ViewExp {
   def toOpenCL(env: ToOpenCL.Environment,
@@ -11,8 +13,8 @@ trait ViewExp {
 
 trait ViewAcc {
   def toOpenCL(env: ToOpenCL.Environment,
-               arrayAccess: List[(Nat, Nat)],
-               tupleAccess: List[Nat], dt: DataType): VarRef
+               value: Expression,
+               dt: DataType):  ((List[(Nat, Nat)], List[Nat]) => Expression, List[(Nat, Nat)], List[Nat])
 }
 
 trait GeneratableComm {

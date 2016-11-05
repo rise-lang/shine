@@ -51,7 +51,7 @@ final case class AsVector(n: Nat,
     val top = arrayAccess.head
     val newAAS = ((top._1 * n, top._2) :: arrayAccess.tail).map(x => (x._1, x._2 /^ n))
 
-    ToOpenCL.exp(array, env, newAAS, tupleAccess, dt)
+    ToOpenCL.exp(array, env, dt, newAAS, tupleAccess)
   }
 
   override def prettyPrint: String = s"(asVector ${n.toString} ${PrettyPrinter(array)})"

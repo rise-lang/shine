@@ -44,15 +44,19 @@ object DataType {
         case Core.int => opencl.ir.Int
         case Core.float => opencl.ir.Float
         case i: IndexType => opencl.ir.Int
-        case v: VectorType => ir.VectorType(DataType.toType(v.elemType) match {
-          case s: ir.ScalarType => s
-          case _ => throw new Exception("This should not happen")
-        }, v.size)
+        case v: VectorType => toVectorType(v)
       }
       case a: ArrayType => ir.ArrayType(DataType.toType(a.elemType), a.size)
       case r: RecordType => ir.TupleType(DataType.toType(r.fst), DataType.toType(r.snd))
       case _: DataTypeIdentifier => throw new Exception("This should not happen")
     }
+  }
+
+  def toVectorType(v: VectorType): ir.VectorType = {
+    ir.VectorType(DataType.toType(v.elemType) match {
+      case s: ir.ScalarType => s
+      case _ => throw new Exception("This should not happen")
+    }, v.size)
   }
 
   def scalarType(dt: DataType): ir.ScalarType = {

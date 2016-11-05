@@ -8,6 +8,7 @@ import idealised.DSL.typed._
 import idealised.LowLevelCombinators.{TruncAcc, TruncExp}
 import idealised.OpenCL.Core.ToOpenCL
 import apart.arithmetic.{?, Cst, RangeAdd}
+import opencl.ir.GlobalMemory
 
 import scala.xml.Elem
 
@@ -45,8 +46,8 @@ final case class IterateIAcc(n: Nat,
 
   override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
     // infer the address space from the output
-    val identifier = ToOpenCL.acc(out, ToOpenCL.Environment(?, ?))
-    val addressSpace = env.addressSpace(identifier.name)
+//    val identifier = ToOpenCL.acc(out, ToOpenCL.Environment(?, ?))
+    val addressSpace: AddressSpace = idealised.OpenCL.GlobalMemory //env.addressSpace(identifier.name)
 
     k match {
       case Cst(x) if x > 2 => unrollFirstAndLastIteration(env, addressSpace)

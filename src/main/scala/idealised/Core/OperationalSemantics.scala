@@ -146,7 +146,7 @@ object OperationalSemantics {
       def apply(s: Store, p: Phrase[`(nat)->`[T]]): (NatIdentifier => Phrase[T]) = {
         p match {
           case l: NatDependentLambdaPhrase[T] =>
-            (arg: NatIdentifier) => l.body `[` arg `/` l.param `]`
+            (arg: NatIdentifier) => l.body `[` arg `/` l.x `]`
           case IdentPhrase(_, _) | ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
                TypeDependentApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) |
                Proj1Phrase(_) | Proj2Phrase(_) =>
