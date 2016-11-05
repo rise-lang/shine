@@ -14,19 +14,19 @@ object TypeOf {
           case null => null
         }
 
-      case NatDependentLambdaPhrase(a, p) => a -> p.t
+      case NatDependentLambdaPhrase(a, p) => (a: NatIdentifier) -> p.t
 
-      case TypeDependentLambdaPhrase(dt, p) => dt -> p.t
+      case TypeDependentLambdaPhrase(a, p) => (a: DataTypeIdentifier) -> p.t
 
-      case NatDependentApplyPhrase(p, ae) =>
+      case NatDependentApplyPhrase(p, e) =>
         p.t match {
-          case NatDependentFunctionType(a, t) => t `[` ae `/` a `]`
+          case NatDependentFunctionType(a, t) => t `[` e `/` a `]`
           case null => null
         }
 
-      case TypeDependentApplyPhrase(p, dt) =>
+      case TypeDependentApplyPhrase(p, e) =>
         p.t match {
-          case TypeDependentFunctionType(a, t) => t `[` dt `/` a `]`
+          case TypeDependentFunctionType(a, t) => t `[` e `/` a `]`
           case null => null
         }
 
@@ -45,6 +45,7 @@ object TypeOf {
         }
 
       case IfThenElsePhrase(cond, thenP, elseP) =>
+        assert(thenP.t == elseP.t)
         thenP.t
 
       case LiteralPhrase(_, t) => t
