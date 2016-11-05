@@ -46,17 +46,17 @@ final case class Gather(n: Nat,
   }
 
   override def eval(s: Store): Data = {
-    //    import OperationalSemantics._
-    //    OperationalSemantics.eval(s, array) match {
-    //      case ArrayData(a) =>
-    //        val res = Array[Data](a.length)
-    //        for (i <- a.indices) {
-    //          res(i) = a(idxF(i, array.t.dataType).eval)
-    //        }
-    //        ArrayData(res.toVector)
-    //      case _ => throw new Exception("This should not happen")
-    //    }
-    ???
+    import OperationalSemantics._
+    val idxFE = OperationalSemantics.eval(s, idxF)
+    OperationalSemantics.eval(s, array) match {
+      case ArrayData(a) =>
+        val res = new Array[Data](a.length)
+        for (i <- a.indices) {
+          res(i) = a(OperationalSemantics.evalIndexExp(s, idxFE(i)).eval)
+        }
+        ArrayData(res.toVector)
+      case _ => throw new Exception("This should not happen")
+    }
   }
 
   override def visitAndRebuild(fun: Visitor): Phrase[ExpType] =
@@ -64,17 +64,16 @@ final case class Gather(n: Nat,
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
+
     exp(this)(λ(exp"[$n.$dt]")(x =>
       acc(x)(A)
     ))
   }
 
-  override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
+  override def rewriteToImperativeExp(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
     import RewriteToImperative._
 
-    val e = array
-
-    exp(e)(λ(exp"[$n.$dt]")(x =>
+    exp(array)(λ(exp"[$n.$dt]")(x =>
       C(Gather(n, dt, idxF, x))
     ))
   }

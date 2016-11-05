@@ -21,7 +21,7 @@ final case class RecordAcc(dt1: DataType,
   }
 
   override def eval(s: Store): AccIdentifier = {
-    RecordIdentiers(
+    RecordIdentifier(
       OperationalSemantics.eval(s, fst),
       OperationalSemantics.eval(s, snd))
   }

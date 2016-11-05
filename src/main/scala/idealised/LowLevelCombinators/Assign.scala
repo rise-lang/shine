@@ -54,7 +54,7 @@ final case class Assign(dt: BasicType,
             }
           })
 
-        case RecordIdentiers(fstI, sndI) =>
+        case RecordIdentifier(fstI, sndI) =>
           rhs match {
             case RecordData(fstD, sndD) =>
               val s1 = evalAssign(s, fstI, fstD, continuation)
