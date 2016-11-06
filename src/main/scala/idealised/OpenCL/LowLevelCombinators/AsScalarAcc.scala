@@ -30,13 +30,21 @@ final case class AsScalarAcc(n: Nat,
 
   override def toOpenCL(env: ToOpenCL.Environment,
                         value: Expression,
-                        dt: DataType): ((List[(Nat, Nat)], List[Nat]) => Expression, List[(Nat, Nat)], List[Nat]) = {
+                        dt: DataType,
+                        arrayAccess: List[(Nat, Nat)],
+                        tupleAccess: List[Nat]): Expression = {
+    // similar to Split
+    val chunkId = arrayAccess.head
+    val chunkElemId: (Nat, Nat) = (0, 1) // we want to access element 0 and there is only one of it
+    val rest = arrayAccess.tail
 
-    val (exp, arrayAccess, tupleAccess) = ToOpenCL.acc(array, value, env, dt)
+    val newIdx = chunkId._1 * m + chunkElemId._1
 
-    val newAAS = arrayAccess.map(x => (x._1, x._2 /^ m))
+    ToOpenCL.acc(array, value, env, dt, (newIdx, chunkElemId._2) :: rest, tupleAccess)
 
-    (exp, newAAS, tupleAccess)
+//    val newAAS = arrayAccess.map(x => (x._1, x._2 /^ m))
+//
+//    ToOpenCL.acc(array, value, env, dt, newAAS, tupleAccess)
   }
 
   override def prettyPrint = s"(asScalarAcc $n ${PrettyPrinter(array)})"

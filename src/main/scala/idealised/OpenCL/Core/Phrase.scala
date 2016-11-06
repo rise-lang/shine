@@ -14,7 +14,9 @@ trait ViewExp {
 trait ViewAcc {
   def toOpenCL(env: ToOpenCL.Environment,
                value: Expression,
-               dt: DataType):  ((List[(Nat, Nat)], List[Nat]) => Expression, List[(Nat, Nat)], List[Nat])
+               dt: DataType,
+               arrayAccess: List[(Nat, Nat)],
+               tupleAccess: List[Nat]):  Expression
 }
 
 trait GeneratableComm {

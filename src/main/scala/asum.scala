@@ -107,6 +107,13 @@ object asum extends App {
       ) o split(2048) o gather(reorderWithStridePhrase(64)) o asVector(2)
     ) o split(4096 * 128) $ input
   )
+//  val amdDerived1 = λ(inputT)(input =>
+//    mapWorkgroup(
+//      join() o mapLocal(
+//        mapSeq(reduceSeq(λ(x => λ(a => x + a)), 0.0f))
+//      ) o split(2) o split(2048) /*o gather(reorderWithStridePhrase(64)) */
+//    ) o split(4096 * 128) $ input
+//  )
   runOpenCLKernel("amdDerived1", amdDerived1)
 
   Executor.shutdown()

@@ -47,11 +47,15 @@ final case class AsVector(n: Nat,
                         arrayAccess: List[(Nat, Nat)],
                         tupleAccess: List[Nat],
                         dt: DataType): Expression = {
+    // similar to Split
+    val chunkId = arrayAccess.head
+    // we want to access element 0 and there is only one of it
+    val chunkElemId: (Nat, Nat) = (0, 1)
+    val rest = arrayAccess.tail
 
-    val top = arrayAccess.head
-    val newAAS = ((top._1 * n, top._2) :: arrayAccess.tail).map(x => (x._1, x._2 /^ n))
+    val newIdx = chunkId._1 * n + chunkElemId._1
 
-    ToOpenCL.exp(array, env, dt, newAAS, tupleAccess)
+    ToOpenCL.exp(array, env, dt, (newIdx, chunkElemId._2) :: rest, tupleAccess)
   }
 
   override def prettyPrint: String = s"(asVector ${n.toString} ${PrettyPrinter(array)})"

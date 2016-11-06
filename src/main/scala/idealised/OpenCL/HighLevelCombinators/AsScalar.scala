@@ -6,9 +6,9 @@ import idealised.Core.OperationalSemantics._
 import idealised.Compiling.RewriteToImperative
 import idealised.DSL.typed._
 import idealised.OpenCL.LowLevelCombinators.AsScalarAcc
-
 import opencl.generator.OpenCLAST.Expression
 import idealised.OpenCL.Core.{ToOpenCL, ViewExp}
+import ir.Type
 
 import scala.xml.Elem
 
@@ -47,10 +47,25 @@ final case class AsScalar(n: Nat,
                         arrayAccess: List[(Nat, Nat)],
                         tupleAccess: List[Nat],
                         dt: DataType): Expression = {
-    val top = arrayAccess.head
-    val newAAS = ((top._1 /^ n, top._2) :: arrayAccess.tail).map(x => (x._1, x._2 * n))
+    // Similar to Join
+    val idx = arrayAccess.head
+    val stack = arrayAccess.tail
 
-    ToOpenCL.exp(array, env, dt, newAAS, tupleAccess)
+    val chunkId = idx._1 / n
+    // we want to access element 0 ...
+    val chunkElemId: Nat = 0 //idx._1 % n
+    // ... and there is 1 of it.
+    val l = Type.getLengths(DataType.toType(t.dataType)).reduce(_ * _)
+    assert(l == (1: Nat))
+
+    val newAs = (chunkId, l * n) :: (chunkElemId, l) :: stack
+
+    ToOpenCL.exp(array, env, dt, newAs, tupleAccess)
+
+    //    val top = arrayAccess.head
+    //    val newAAS = ((top._1 /^ n, top._2) :: arrayAccess.tail).map(x => (x._1, x._2 * n))
+    //
+    //    ToOpenCL.exp(array, env, dt, newAAS, tupleAccess)
   }
 
   override def prettyPrint: String = s"(asScalar ${PrettyPrinter(array)})"

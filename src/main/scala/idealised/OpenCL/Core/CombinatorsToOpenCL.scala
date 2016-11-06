@@ -205,12 +205,12 @@ object CombinatorsToOpenCL {
     val idx = arrayAccess.head
     val stack = arrayAccess.tail
 
-    val chunkId = idx._1 / j.n
+    val chunkId = idx._1 /^ j.n
     val chunkElemId = idx._1 % j.n
 
     val l = Type.getLengths(DataType.toType(j.t.dataType)).reduce(_ * _)
 
-    val newAs = (chunkId, l * j.n) ::(chunkElemId, l) :: stack
+    val newAs = (chunkId, l * j.n) :: (chunkElemId, l) :: stack
 
     ToOpenCL.exp(j.array, env, dt, newAs, tupleAccess)
   }
@@ -297,32 +297,33 @@ object CombinatorsToOpenCL {
   def toOpenCL(f: FstAcc,
                value: Expression,
                env: ToOpenCL.Environment,
-               dt: DataType): ((List[(Nat, Nat)], List[Nat]) => Expression, List[(Nat, Nat)], List[Nat]) = ???
+               dt: DataType,
+               arrayAccess: List[(Nat, Nat)],
+               tupleAccess: List[Nat]): Expression = ???
 
   def toOpenCL(i: IdxAcc,
                value: Expression,
                env: ToOpenCL.Environment,
-               dt: DataType): ((List[(Nat, Nat)], List[Nat]) => Expression, List[(Nat, Nat)], List[Nat]) = {
+               dt: DataType,
+               arrayAccess: List[(Nat, Nat)],
+               tupleAccess: List[Nat]): Expression = {
     val idx: ArithExpr = ToOpenCL.exp(i.index, env) match {
       case VarRef(name, _, _) => NamedVar(name, env.ranges(name))
       case Literal(j) => Cst(j.toInt)
       case _ => throw new Exception("This should not happen")
     }
 
-    val (exp, arrayAccess, tupleAccess) = ToOpenCL.acc(i.array, value, env, dt)
-
     val length = DataType.getLengths(i.dt, tupleAccess, List()).foldLeft(1: ArithExpr)((x, y) => x * y)
 
-    (exp, (idx, length) :: arrayAccess, tupleAccess)
+    ToOpenCL.acc(i.array, value, env, dt, (idx, length) :: arrayAccess, tupleAccess)
   }
 
   def toOpenCL(j: JoinAcc,
                value: Expression,
                env: ToOpenCL.Environment,
-               dt: DataType): ((List[(Nat, Nat)], List[Nat]) => Expression, List[(Nat, Nat)], List[Nat]) = {
-
-    val (exp, arrayAccess, tupleAccess) = ToOpenCL.acc(j.array, value, env, dt)
-
+               dt: DataType,
+               arrayAccess: List[(Nat, Nat)],
+               tupleAccess: List[Nat]): Expression = {
     val (firstTwo, rest) = arrayAccess.splitAt(2)
 
     val chunkId = firstTwo.head
@@ -330,26 +331,29 @@ object CombinatorsToOpenCL {
 
     val newIdx = chunkId._1 * j.m + chunkElemId._1
 
-    (exp, (newIdx, chunkElemId._2) :: rest, tupleAccess)
+    ToOpenCL.acc(j.array, value, env, dt, (newIdx, chunkElemId._2) :: rest, tupleAccess)
   }
 
   def toOpenCL(r: RecordAcc,
                value: Expression,
                env: ToOpenCL.Environment,
-               dt: DataType): ((List[(Nat, Nat)], List[Nat]) => Expression, List[(Nat, Nat)], List[Nat]) = ???
+               dt: DataType,
+               arrayAccess: List[(Nat, Nat)],
+               tupleAccess: List[Nat]): Expression = ???
 
   def toOpenCL(s: SndAcc,
                value: Expression,
                env: ToOpenCL.Environment,
-               dt: DataType): ((List[(Nat, Nat)], List[Nat]) => Expression, List[(Nat, Nat)], List[Nat]) = ???
+               dt: DataType,
+               arrayAccess: List[(Nat, Nat)],
+               tupleAccess: List[Nat]): Expression = ???
 
   def toOpenCL(s: SplitAcc,
                value: Expression,
                env: ToOpenCL.Environment,
-               dt: DataType): ((List[(Nat, Nat)], List[Nat]) => Expression, List[(Nat, Nat)], List[Nat]) = {
-
-    val (exp, arrayAccess, tupleAccess) = ToOpenCL.acc(s.array, value, env, dt)
-
+               dt: DataType,
+               arrayAccess: List[(Nat, Nat)],
+               tupleAccess: List[Nat]): Expression = {
     val idx = arrayAccess.head
     val stack = arrayAccess.tail
 
@@ -360,14 +364,16 @@ object CombinatorsToOpenCL {
 
     val newAs = (chunkId, l * s.n) ::(chunkElemId, l) :: stack
 
-    (exp, newAs, tupleAccess)
+    ToOpenCL.acc(s.array, value, env, dt, newAs, tupleAccess)
   }
 
   def toOpenCL(t: TruncAcc,
                value: Expression,
                env: ToOpenCL.Environment,
-               dt: DataType): ((List[(Nat, Nat)], List[Nat]) => Expression, List[(Nat, Nat)], List[Nat]) = {
-    ToOpenCL.acc(t.array, value, env, dt)
+               dt: DataType,
+               arrayAccess: List[(Nat, Nat)],
+               tupleAccess: List[Nat]): Expression = {
+    ToOpenCL.acc(t.array, value, env, dt, arrayAccess, tupleAccess)
   }
 
 }
