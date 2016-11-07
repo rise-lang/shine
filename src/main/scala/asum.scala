@@ -4,6 +4,7 @@ import idealised.DSL.untyped._
 import idealised.OpenCL.Core._
 import idealised.OpenCL.DSL._
 import apart.arithmetic._
+import idealised.OpenCL.LowLevelCombinators.UnaryOpenCLFunction
 import opencl.executor.Executor
 import opencl.generator.OpenCLPrinter
 
@@ -46,11 +47,12 @@ object asum extends App {
     println("----------------\n")
   }
 
-  val abs = λ(x => `if`(x < 0.0f, -x, x))
+  //val abs = λ(x => `if`(x < 0.0f, -x, x))
+  def abs(t: DataType) = λ(x => UnaryOpenCLFunction("fabs", t, t, x) )
   val add = λ(x => λ(a => x + a))
 
   val high_level = λ(inputT)(input =>
-    reduce(add, 0.0f) o map(abs) $ input
+    reduce(add, 0.0f) o map(abs(float)) $ input
   )
 
   {
@@ -60,10 +62,10 @@ object asum extends App {
   }
 
   val intelDerivedNoWarp1 = λ(inputT)(input =>
-    mapWorkgroup(
-      /*asScalar() o */ mapLocal(
-        reduceSeq(λ(x => λ(a => abs(x) + a)), /* asVector(4) */ 0.0f)
-      ) o split(8192) /* o asVector(4) */
+    join() o mapWorkgroup(
+      asScalar() o mapLocal(
+        reduceSeq(λ(x => λ(a => abs(float4)(x) + a)), vectorize(4, 0.0f))
+      ) o split(8192) o asVector(4)
     ) o split(32768) $ input
   )
   runOpenCLKernel("intelDerivedNoWarp1", intelDerivedNoWarp1)

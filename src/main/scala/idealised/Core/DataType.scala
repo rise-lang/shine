@@ -20,9 +20,21 @@ final case class IndexType(size: Nat) extends BasicType {
   override def toString = s"idx($size)"
 }
 
-final case class VectorType(size: Nat, elemType: ScalarType) extends BasicType {
+sealed case class VectorType(size: Nat, elemType: ScalarType) extends BasicType {
   override def toString = s"$elemType$size"
 }
+
+object int2 extends VectorType(2, int)
+object int3 extends VectorType(3, int)
+object int4 extends VectorType(4, int)
+object int8 extends VectorType(8, int)
+object int16 extends VectorType(16, int)
+
+object float2 extends VectorType(2, float)
+object float3 extends VectorType(3, float)
+object float4 extends VectorType(4, float)
+object float8 extends VectorType(8, float)
+object float16 extends VectorType(16, float)
 
 final case class ArrayType(size: Nat, elemType: DataType) extends ComposedType {
   override def toString = s"$size.$elemType"

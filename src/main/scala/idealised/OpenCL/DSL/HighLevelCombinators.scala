@@ -4,6 +4,7 @@ import idealised.Core.OperationalSemantics._
 import idealised.Core._
 import idealised.DSL.untyped.λ
 import idealised.OpenCL.HighLevelCombinators._
+import idealised.OpenCL.LowLevelCombinators.VectorFromScalar
 
 object mapGlobal {
   def apply(f: Phrase[ExpType -> ExpType]): Phrase[ExpType -> ExpType] =

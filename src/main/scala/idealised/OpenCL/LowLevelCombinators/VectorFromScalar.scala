@@ -1,13 +1,13 @@
-package idealised.OpenCL.HighLevelCombinators
+package idealised.OpenCL.LowLevelCombinators
 
+import idealised.Compiling.RewriteToImperative
 import idealised.Core
 import idealised.Core.OperationalSemantics.{Data, Store}
 import idealised.Core.VisitAndRebuild.Visitor
 import idealised.Core.{ExpType, Phrase, ScalarType, _}
-import idealised.Compiling.RewriteToImperative
 import idealised.DSL.typed._
-import idealised.OpenCL.Core.{GeneratableExp, ToOpenCL}
 import idealised.OpenCL.Core.ToOpenCL.Environment
+import idealised.OpenCL.Core.{GeneratableExp, ToOpenCL}
 import opencl.generator.OpenCLAST.{Expression, VectorLiteral}
 
 import scala.xml.Elem

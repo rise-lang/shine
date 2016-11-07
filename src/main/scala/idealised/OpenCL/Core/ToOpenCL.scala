@@ -9,7 +9,7 @@ import idealised.HighLevelCombinators._
 import idealised.LowLevelCombinators._
 import idealised.OpenCL.Core.CombinatorsToOpenCL._
 import idealised.OpenCL.Core.HoistMemoryAllocations.AllocationInfo
-import idealised.OpenCL.HighLevelCombinators.VectorFromScalar
+import idealised.OpenCL.LowLevelCombinators.VectorFromScalar
 import idealised._
 import ir.{Type, UndefType}
 import opencl.executor._

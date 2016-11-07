@@ -70,7 +70,7 @@ object scal extends App {
 
   runOpenCLKernel("scalNvidia", scalWgLcl(2048, 1))
 
-  val scalIntelUntyped = λ(inputT)(input => λ(ExpType(dataT))(alpha =>
+  val scalIntel = λ(inputT)(input => λ(ExpType(dataT))(alpha =>
     join() o mapWorkgroup(
       asScalar() o join() o mapLocal(mapSeq(
         λ(x => vectorize(4, alpha) * x)
@@ -78,15 +78,7 @@ object scal extends App {
     ) o split(4 * 128 * 128) $ input
   ))
 
-  val scalIntel = TypeInference(scalIntelUntyped)
-
-  println("scalIntel" + ":\n" + PrettyPrinter(scalIntel))
-  println(TypeChecker(scalIntel))
-
-  println(s"-- scalIntel --")
-  println(OpenCLPrinter()((new ToOpenCL(localSize = 128, globalSize = N)) (
-    scalIntel, identifier("input", inputT), identifier("alpha", ExpType(dataT)))))
-  println("----------------")
+  runOpenCLKernel("scalIntel", scalIntel)
 
   Executor.shutdown()
 }
