@@ -9,6 +9,7 @@ import idealised.HighLevelCombinators._
 import idealised.LowLevelCombinators._
 import idealised.OpenCL.Core.CombinatorsToOpenCL._
 import idealised.OpenCL.Core.HoistMemoryAllocations.AllocationInfo
+import idealised.OpenCL.HighLevelCombinators.VectorFromScalar
 import idealised._
 import ir.{Type, UndefType}
 import opencl.executor._
@@ -439,6 +440,8 @@ object ToOpenCL {
       case r: Record    => toOpenCL(r, env, r.t.dataType, List(), List())
       case s: Snd       => toOpenCL(s, env, s.t.dataType, List(), List())
       case t: TruncExp  => toOpenCL(t, env, t.t.dataType, List(), List())
+
+      case g: GeneratableExp => g.toOpenCL(env)
 
       case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
            TypeDependentApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) |

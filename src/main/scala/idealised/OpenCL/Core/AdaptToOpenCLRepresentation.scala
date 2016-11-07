@@ -111,7 +111,7 @@ class AdaptToOpenCLRepresentation {
       case u: UnaryExpression => u.copy(e = adaptExpression(u.e))
       case c: CondExpression => c.copy(lhs = adaptExpression(c.lhs), rhs = adaptExpression(c.rhs))
       case c: Cast => c.copy(v = adaptVarRef(c.v))
-      case v: VectorLiteral => VectorLiteral(v.t, v.vs.map(adaptVarRef):_*)
+      case v: VectorLiteral => VectorLiteral(v.t, v.vs.map(adaptExpression):_*)
       case s: StructConstructor => s.copy(args = s.args.map(adaptNode))
       case l: Literal => l
       case null => null

@@ -22,3 +22,7 @@ trait ViewAcc {
 trait GeneratableComm {
   def toOpenCL(block: Block, env: ToOpenCL.Environment): Block
 }
+
+trait GeneratableExp {
+  def toOpenCL(env: ToOpenCL.Environment): Expression
+}
