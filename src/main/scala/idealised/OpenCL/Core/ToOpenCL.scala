@@ -13,7 +13,6 @@ import idealised._
 import ir.{Type, UndefType}
 import opencl.executor._
 import opencl.generator.OpenCLAST._
-import opencl.generator.OpenCLPrinter
 import opencl.ir.{Double, Float, GlobalMemory, Int, LocalMemory}
 
 import scala.collection._
@@ -133,7 +132,7 @@ case class ToOpenCL(localSize: Nat, globalSize: Nat) {
       makeLengthParams(ins.map(_.t.dataType).map(DataType.toType))
   }
 
-  // pass arrays via global and scalars + tuples per value via private memory
+  // pass arrays via global and scalar + tuple values via private memory
   private def makeInputParam(i: IdentPhrase[_]): ParamDecl = {
     getDataType(i) match {
       case a: ArrayType => makeGlobalParam(i)
@@ -188,12 +187,6 @@ case class ToOpenCL(localSize: Nat, globalSize: Nat) {
       params = params,
       body = body,
       kernel = true)
-  }
-
-  private def computeAllocationSizes(params: List[IdentPhrase[_]]): List[(String, SizeInByte)] = {
-    params.map(i => {
-      (i.name, DataType.sizeInByte(getDataType(i)))
-    })
   }
 
   implicit private def getDataType(i: IdentPhrase[_]): DataType = {
@@ -294,23 +287,23 @@ case class ToOpenCL(localSize: Nat, globalSize: Nat) {
 
   private def createInputArg(arg: Any): KernelArg = {
     arg match {
-      case f: Float => createInputArg(f)
+      case  f: Float => createInputArg(f)
       case af: Array[Float] => createInputArg(af)
-      case aaf: Array[Array[Float]] => createInputArg(aaf.flatten)
-      case aaaf: Array[Array[Array[Float]]] => createInputArg(aaaf.flatten.flatten)
-      case aaaaf: Array[Array[Array[Array[Float]]]] => createInputArg(aaaaf.flatten.flatten.flatten)
+      case af: Array[Array[Float]] => createInputArg(af.flatten)
+      case af: Array[Array[Array[Float]]] => createInputArg(af.flatten.flatten)
+      case af: Array[Array[Array[Array[Float]]]] => createInputArg(af.flatten.flatten.flatten)
 
-      case i: Int => createInputArg(i)
+      case  i: Int => createInputArg(i)
       case ai: Array[Int] => createInputArg(ai)
-      case aai: Array[Array[Int]] => createInputArg(aai.flatten)
-      case aaai: Array[Array[Array[Int]]] => createInputArg(aaai.flatten.flatten)
-      case aaaai: Array[Array[Array[Array[Int]]]] => createInputArg(aaaai.flatten.flatten.flatten)
+      case ai: Array[Array[Int]] => createInputArg(ai.flatten)
+      case ai: Array[Array[Array[Int]]] => createInputArg(ai.flatten.flatten)
+      case ai: Array[Array[Array[Array[Int]]]] => createInputArg(ai.flatten.flatten.flatten)
 
-      case d: Double => createInputArg(d)
+      case  d: Double => createInputArg(d)
       case ad: Array[Double] => createInputArg(ad)
-      case aad: Array[Array[Double]] => createInputArg(aad.flatten)
-      case aaad: Array[Array[Array[Double]]] => createInputArg(aaad.flatten.flatten)
-      case aaaad: Array[Array[Array[Array[Double]]]] => createInputArg(aaaad.flatten.flatten.flatten)
+      case ad: Array[Array[Double]] => createInputArg(ad.flatten)
+      case ad: Array[Array[Array[Double]]] => createInputArg(ad.flatten.flatten)
+      case ad: Array[Array[Array[Array[Double]]]] => createInputArg(ad.flatten.flatten.flatten)
 
       case _ => throw new IllegalArgumentException("Kernel argument is of unsupported type: " +
         arg.getClass.toString)
@@ -427,15 +420,14 @@ object ToOpenCL {
       case BinOpPhrase(op, lhs, rhs) =>
         BinaryExpression(op.toString, exp(lhs, env), exp(rhs, env))
       case IdentPhrase(name, _) => VarRef(name)
-      case LiteralPhrase(d, _) =>
-        d match {
-          case i: IntData => Literal(i.i.toString)
-          case b: BoolData => Literal(b.b.toString)
-          case f: FloatData => Literal(f.f.toString)
-          case i: IndexData => Literal(i.i.toString)
-          case v: VectorData => Literal(Data.toString(v))
-          case _: RecordData => ???
-          case _: ArrayData => ???
+      case LiteralPhrase(d, _) => d match {
+          case i: IntData     => Literal(i.i.toString)
+          case b: BoolData    => Literal(b.b.toString)
+          case f: FloatData   => Literal(f.f.toString)
+          case i: IndexData   => Literal(i.i.toString)
+          case v: VectorData  => Literal(Data.toString(v))
+          case r: RecordData  => Literal(Data.toString(r))
+          case a: ArrayData   => Literal(Data.toString(a))
         }
       case p: Proj1Phrase[ExpType, _] => exp(Lift.liftPair(p.pair)._1, env)
       case p: Proj2Phrase[_, ExpType] => exp(Lift.liftPair(p.pair)._2, env)
@@ -462,25 +454,29 @@ object ToOpenCL {
           tupleAccess: List[Nat]): Expression = {
     p match {
       case IdentPhrase(name, t) =>
-        val i = arrayAccess.map(x => x._1 * x._2).foldLeft(0: Nat)((x, y) => x + y)
-        val index = if (i != (0: Nat)) { i } else { null }
+        val index = {
+          val i = arrayAccess.map(x => x._1 * x._2).foldLeft(0: Nat)((x, y) => x + y)
+          if (i != (0: Nat)) { i } else { null }
+        }
 
-        val s = tupleAccess.map {
-          case apart.arithmetic.Cst(1) => "._1"
-          case apart.arithmetic.Cst(2) => "._2"
-          case _ => throw new Exception("This should not happen")
-        }.foldLeft("")(_ + _)
+        val suffix = {
+          val s = tupleAccess.map {
+            case apart.arithmetic.Cst(1) => "._1"
+            case apart.arithmetic.Cst(2) => "._2"
+            case _ => throw new Exception("This should not happen")
+          }.foldLeft("")(_ + _)
 
-        val suffix = if (s != "") { s } else { null }
+          if (s != "") { s } else { null }
+        }
 
-        val originalType = t.dataType
-        val currentType = dt
-
+        val (originalType, currentType) = (t.dataType, dt)
         (originalType, currentType) match {
-          case (ArrayType(_, st1), VectorType(n, st2)) if st1 == st2 && st1.isInstanceOf[BasicType] =>
-            VLoad(
-              VarRef(name), DataType.toType(VectorType(n, st2)).asInstanceOf[ir.VectorType],
-              ArithExpression(index /^ n))
+          case (ArrayType(_, st1), VectorType(n, st2))
+            if DataType.scalarType(st1) == DataType.scalarType(st2) =>
+              VLoad(
+                VarRef(name),
+                DataType.toVectorType(VectorType(n, st2)),
+                ArithExpression(index /^ n))
           case _ =>
             VarRef(name, suffix, ArithExpression(index))
         }
@@ -544,33 +540,33 @@ object ToOpenCL {
           tupleAccess: List[Nat]): Expression = {
     p match {
       case IdentPhrase(name, t) =>
-        val i = arrayAccess.map(x => x._1 * x._2).foldLeft(0: Nat)((x, y) => x + y)
-        val index = if (i != (0: Nat)) {
-          i
-        } else {
-          null
+        val index = {
+          val i = arrayAccess.map(x => x._1 * x._2).foldLeft(0: Nat)((x, y) => x + y)
+          if (i != (0: Nat)) { i } else { null }
         }
 
-        val s = tupleAccess.map {
-          case apart.arithmetic.Cst(1) => "._1"
-          case apart.arithmetic.Cst(2) => "._2"
-          case _ => throw new Exception("This should not happen")
-        }.foldLeft("")(_ + _)
-
-        val suffix = if (s != "") {
-          s
-        } else {
-          null
+        val suffix = {
+          val s = tupleAccess.map {
+            case apart.arithmetic.Cst(1) => "._1"
+            case apart.arithmetic.Cst(2) => "._2"
+            case _ => throw new Exception("This should not happen")
+          }.foldLeft("")(_ + _)
+          if (s != "") { s } else { null }
         }
 
-        val originalType = t.dataType
-        val currentType = dt
-
+        val (originalType, currentType) = (t.dataType, dt)
         (originalType, currentType) match {
-          case (ArrayType(_, st1), VectorType(n, st2)) if DataType.scalarType(st1) == DataType.scalarType(st2) =>
-            VStore(VarRef(name), DataType.toVectorType(VectorType(n, st2)), value, ArithExpression(index /^ n))
+          case (ArrayType(_, st1), VectorType(n, st2))
+            if DataType.scalarType(st1) == DataType.scalarType(st2) =>
+              VStore(
+                VarRef(name),
+                DataType.toVectorType(VectorType(n, st2)),
+                value,
+                ArithExpression(index /^ n))
           case _ =>
-            AssignmentExpression(VarRef(name, suffix, ArithExpression(index)), value)
+            AssignmentExpression(
+              VarRef(name, suffix, ArithExpression(index)),
+              value)
         }
 
       case v: ViewAcc => v.toOpenCL(env, value, dt, arrayAccess, tupleAccess)
