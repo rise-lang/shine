@@ -8,12 +8,14 @@ import opencl.executor.Executor
 import opencl.generator.OpenCLPrinter
 
 import scala.language.implicitConversions
+import scala.util.Random
 
 object gemv extends App {
 
   Executor.loadLibrary()
   Executor.init()
 
+  val check = true
   val N = SizeVar("N")
   val M = SizeVar("M")
   val dataT = float
@@ -37,14 +39,24 @@ object gemv extends App {
 
     val size = 512
 
-    val mat = Array.tabulate(size, size)((_, _) => 1.0f)
-    val xs = Array.fill(size)(1.0f)
-    val ys = Array.fill(size)(2.0f)
+    val mat = Array.tabulate(size, size)((_, _) => Random.nextInt(10).toFloat)
+    val xs = Array.fill(size)(Random.nextInt(10).toFloat)
+    val ys = Array.fill(size)(Random.nextInt(10).toFloat)
+    val alpha = Random.nextInt(4).toFloat
+    val beta = Random.nextInt(4).toFloat
 
-    val (res, time) = fun(mat :: xs :: ys :: 4.5f :: 5.6f)
+    val (res, time) = fun(mat :: xs :: ys :: alpha :: beta)
+    println(s"RESULT NAME: $name TIME: $time")
+    if (check) {
+      def dot = (xs: Array[Float], ys: Array[Float]) => (xs zip ys).map{ case (x, y) => x * y }.sum
+      val gold = (mat.map(dot(xs, _) * alpha) zip ys.map(_ * beta)).map{ case (x, y) => x + y }
 
-    println(time)
-
+      if ((res zip gold).forall{ case (x, y) => x == y }) {
+        println(s"Computed result MATCHES with gold solution.")
+      } else {
+        println(s"ERROR computed result differs from gold solution.")
+      }
+    }
     println("----------------\n")
   }
 

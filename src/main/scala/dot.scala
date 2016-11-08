@@ -11,12 +11,14 @@ import opencl.executor.Executor
 import opencl.generator.OpenCLPrinter
 
 import scala.language.implicitConversions
+import scala.util.Random
 
 object dot extends App {
 
   Executor.loadLibrary()
   Executor.init()
 
+  val check = true
   val N = SizeVar("N")
   val xsT = ExpType(ArrayType(N, float))
   val ysT = ExpType(ArrayType(N, float))
@@ -36,14 +38,19 @@ object dot extends App {
 
     val size = 1024 * 1024
 
-    val xs = Array.fill(size)(1.0f)
-    val ys = Array.fill(size)(2.0f)
-
-    val gold = (xs zip ys).map{ case (x, y) => x * y }.sum
+    val xs = Array.fill(size)(Random.nextInt(10).toFloat)
+    val ys = Array.fill(size)(Random.nextInt(10).toFloat)
 
     val (res, time) = fun(xs :: ys)
-
-    println(s"Computed ${res.length} partial results in $time, which add up to ${res.sum} (expected $gold).")
+    println(s"RESULT KERNEL1 NAME: $name TIME: $time")
+    if (check) {
+      val gold = (xs zip ys).map{ case (x, y) => x * y }.sum
+      if (res.sum == gold) {
+        println(s"Computed result MATCHES with gold solution.")
+      } else {
+        println(s"ERROR computed result differs from gold solution.")
+      }
+    }
 
     println("----------------\n")
   }
@@ -63,13 +70,18 @@ object dot extends App {
 
     val size = 512
 
-    val xs = Array.fill(size)(1.0f)
-
-    val gold = xs.sum
+    val xs = Array.fill(size)(Random.nextInt(10).toFloat)
 
     val (res, time) = fun(xs :: HNil)
-
-    println(s"Computed ${res.length} partial results in $time, which add up to ${res.sum} (expected $gold).")
+    println(s"RESULT KERNEL2 NAME: $name TIME: $time")
+    if (check) {
+      val gold = xs.sum
+      if (res.sum == gold) {
+        println(s"Computed result MATCHES with gold solution.")
+      } else {
+        println(s"ERROR computed result differs from gold solution.")
+      }
+    }
 
     println("----------------\n")
   }
@@ -129,8 +141,7 @@ object dot extends App {
 
   val dotProduct2 = λ(xsT)(in =>
     join() o mapWorkgroup(
-      iterate(6,
-        toLocal(mapLocal(reduceSeq(add, 0.0f))) o split(2)) o
+      iterate(6, toLocal(mapLocal(reduceSeq(add, 0.0f))) o split(2)) o
         toLocal(mapLocal(reduceSeq(add, 0.0f))) o split(2)
     ) o split(128) $ in
   )

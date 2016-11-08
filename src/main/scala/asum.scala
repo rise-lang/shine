@@ -16,6 +16,7 @@ object asum extends App {
   Executor.loadLibrary()
   Executor.init()
 
+  val check = true
   val N = SizeVar("N")
   val inputT = ExpType(ArrayType(N, float))
 
@@ -38,11 +39,15 @@ object asum extends App {
     val input = Array.fill(size)(Random.nextInt(10).toFloat)
 
     val (res, time) = fun(input :: HNil)
-
-    println(s"Computed ${res.length} partial results in $time, which add up to ${res.sum} (expected ${input.sum}).")
-    print("[")
-    res.foreach(x => print(s"$x "))
-    println("]")
+    println(s"RESULT NAME: $name TIME: $time")
+    if (check) {
+      val gold = input.map(math.abs).sum
+      if (res.sum == gold) {
+        println(s"Computed result MATCHES with gold solution.")
+      } else {
+        println(s"ERROR computed result differs from gold solution.")
+      }
+    }
 
     println("----------------\n")
   }
@@ -71,7 +76,7 @@ object asum extends App {
   runOpenCLKernel("intelDerivedNoWarp1", intelDerivedNoWarp1)
 
   val intelDerived2 = λ(inputT)(input =>
-    mapWorkgroup(
+    join() o mapWorkgroup(
       mapLocal(
         reduceSeq(add, 0.0f)
       ) o split(2048)
@@ -80,32 +85,29 @@ object asum extends App {
   runOpenCLKernel("intelDerived2", intelDerived2)
 
   val nvidiaDerived1 = λ(inputT)(input =>
-    mapWorkgroup(
+    join() o mapWorkgroup(
       mapLocal(
-        reduceSeq(add, 0.0f)
+        reduceSeq(λ(x => λ(a => abs(float)(x) + a)), 0.0f)
       ) o split(2048) o gather(reorderWithStridePhrase(128))
     ) o split(2048 * 128) $ input
   )
   runOpenCLKernel("nvidiaDerived1", nvidiaDerived1)
 
-  val nvidiaDerived2 = λ(inputT)(input =>
-    mapWorkgroup(
+  val amdNvidiaDerived2 = λ(inputT)(input =>
+    join() o mapWorkgroup(
       toLocal(iterate(6,
-        mapLocal(reduceSeq(add, 0.0f)) o
-          split(2)
-      ))
-        o
-        toLocal(mapLocal(
+        mapLocal(reduceSeq(add, 0.0f)) o split(2)
+      )) o toLocal(mapLocal(
           reduceSeq(add, 0.0f)
         )) o split(128)
     ) o split(8192) $ input
   )
-  runOpenCLKernel("nvidiaDerived2", nvidiaDerived2)
+  runOpenCLKernel("amdNvidiaDerived2", amdNvidiaDerived2)
 
   val amdDerived1 = λ(inputT)(input =>
-    mapWorkgroup(
+    join() o mapWorkgroup(
       asScalar() o mapLocal(
-        reduceSeq(λ(x => λ(a => x + a)), vectorize(2, 0.0f))
+        reduceSeq(λ(x => λ(a => abs(float2)(x) + a)), vectorize(2, 0.0f))
       ) o split(2048) o gather(reorderWithStridePhrase(64)) o asVector(2)
     ) o split(4096 * 128) $ input
   )

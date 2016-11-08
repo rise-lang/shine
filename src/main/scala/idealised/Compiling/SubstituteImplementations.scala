@@ -1,7 +1,7 @@
 package idealised.Compiling
 
 import idealised.Core._
-import idealised.LowLevelCombinators.New
+import idealised.LowLevelCombinators._
 
 import scala.collection.immutable
 
@@ -37,6 +37,27 @@ object SubstituteImplementations {
     }
 
     VisitAndRebuild(phrase, fun(env))
+  }
+
+  def getAddressSpace(phrase: Phrase[AccType], env: Environment): Option[AddressSpace] = {
+    phrase match {
+      case IdentPhrase(name, _) => Some(env.addressSpace(name))
+
+      case p: Proj1Phrase[AccType, _] => getAddressSpace(Lift.liftPair(p.pair)._1, env)
+      case p: Proj2Phrase[_, AccType] => getAddressSpace(Lift.liftPair(p.pair)._2, env)
+
+      case f: FstAcc    => getAddressSpace(f.record, env)
+      case i: IdxAcc    => getAddressSpace(i.array, env)
+      case j: JoinAcc   => getAddressSpace(j.array, env)
+      case r: RecordAcc => ???
+      case s: SndAcc    => getAddressSpace(s.record, env)
+      case s: SplitAcc  => getAddressSpace(s.array, env)
+      case t: TruncAcc  => getAddressSpace(t.array, env)
+
+      case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
+           TypeDependentApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) |
+           _: LowLevelAccCombinator => ???
+    }
   }
 
 }

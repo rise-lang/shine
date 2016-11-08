@@ -16,6 +16,8 @@ object scal extends App {
   println("Platform: " + Executor.getPlatformName)
   println("Device: " + Executor.getDeviceName)
 
+  val check = true
+
   val N = SizeVar("N")
   val dataT = float
   val inputT = ExpType(ArrayType(N, dataT))
@@ -40,8 +42,15 @@ object scal extends App {
     val alpha = Random.nextInt(4).toFloat
 
     val (res, time) = fun(input :: alpha :: HNil)
-    println(s"Computed in $time, which add up to ${res.sum} (expected ${input.sum * alpha}).")
     println(s"RESULT NAME: $name TIME: $time")
+    if (check) {
+      val gold = input.sum * alpha
+      if (res.sum == gold) {
+        println(s"Computed result MATCHES with gold solution.")
+      } else {
+        println(s"ERROR computed result differs from gold solution.")
+      }
+    }
     println("----------------\n")
   }
 

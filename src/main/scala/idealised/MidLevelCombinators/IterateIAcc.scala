@@ -46,12 +46,14 @@ final case class IterateIAcc(n: Nat,
 
   override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
     // infer the address space from the output
-//    val identifier = ToOpenCL.acc(out, ToOpenCL.Environment(?, ?))
-    val addressSpace: AddressSpace = idealised.OpenCL.GlobalMemory //env.addressSpace(identifier.name)
+    val addressSpace = SubstituteImplementations.getAddressSpace(out, env) match {
+      case Some(a) => a
+      case None => idealised.OpenCL.GlobalMemory
+    }
 
     k match {
-      case Cst(x) if x > 2 => unrollFirstAndLastIteration(env, addressSpace)
-      case Cst(x) if x > 1 => unrollFirstIteration(env, addressSpace)
+//      case Cst(x) if x > 2 => unrollFirstAndLastIteration(env, addressSpace)
+//      case Cst(x) if x > 1 => unrollFirstIteration(env, addressSpace)
       case _ => noUnrolling(env, addressSpace)
     }
   }
