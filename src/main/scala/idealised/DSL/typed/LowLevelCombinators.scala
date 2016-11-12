@@ -1,5 +1,6 @@
 package idealised.DSL.typed
 
+import apart.arithmetic.{NamedVar, RangeAdd}
 import idealised.Core.TypeInference._
 import idealised.Core._
 import idealised.LowLevelCombinators._
@@ -46,8 +47,18 @@ object dblBufFor {
             buffer1: Phrase[VarType],
             buffer2: Phrase[VarType],
             body: Phrase[`(nat)->`[AccType -> (ExpType -> CommandType)]],
-            C: Phrase[ExpType -> CommandType]) =
-    DoubleBufferFor(n, m, k, dt, addressSpace, buffer1, buffer2, body, C)
+            C: Phrase[ExpType -> CommandType]) = {
+    body match {
+      case NatDependentLambdaPhrase(x, b) =>
+        // ensure that the nested Nat dependent lambda has the proper range information
+        val newX = NamedVar(x.name, RangeAdd(0, k, 1))
+        val newB = PhraseType.substitute(newX, x, b)
+        DoubleBufferFor(n, m, k, dt, addressSpace, buffer1, buffer2,
+          NatDependentLambdaPhrase(newX, newB),
+          C)
+      case _ => throw new Exception("This should not happen")
+    }
+  }
 }
 
 object fst {

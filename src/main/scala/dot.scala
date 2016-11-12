@@ -18,6 +18,8 @@ object dot extends App {
   Executor.loadLibrary()
   Executor.init()
 
+  val epsilon = 1.0f
+
   val check = true
   val N = SizeVar("N")
   val xsT = ExpType(ArrayType(N, float))
@@ -38,17 +40,18 @@ object dot extends App {
 
     val size = 1024 * 1024
 
-    val xs = Array.fill(size)(Random.nextInt(10).toFloat)
-    val ys = Array.fill(size)(Random.nextInt(10).toFloat)
+    val xs = Array.fill(size)(Random.nextInt(4).toFloat)
+    val ys = Array.fill(size)(Random.nextInt(4).toFloat)
 
     val (res, time) = fun(xs :: ys)
     println(s"RESULT KERNEL1 NAME: $name TIME: $time")
     if (check) {
       val gold = (xs zip ys).map{ case (x, y) => x * y }.sum
-      if (res.sum == gold) {
+      if (res.sum - gold < epsilon) {
         println(s"Computed result MATCHES with gold solution.")
       } else {
         println(s"ERROR computed result differs from gold solution.")
+        println(s"res: ${res.sum} vs. gold: $gold")
       }
     }
 
@@ -76,7 +79,7 @@ object dot extends App {
     println(s"RESULT KERNEL2 NAME: $name TIME: $time")
     if (check) {
       val gold = xs.sum
-      if (res.sum == gold) {
+      if (res.sum - gold < epsilon) {
         println(s"Computed result MATCHES with gold solution.")
       } else {
         println(s"ERROR computed result differs from gold solution.")

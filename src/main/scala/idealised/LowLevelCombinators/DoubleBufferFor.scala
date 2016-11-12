@@ -1,5 +1,6 @@
 package idealised.LowLevelCombinators
 
+import apart.arithmetic.{Cst, RangeAdd}
 import idealised._
 import idealised.Core._
 import idealised.Core.OperationalSemantics._
@@ -16,6 +17,19 @@ final case class DoubleBufferFor(n: Nat,
                                  body: Phrase[`(nat)->`[AccType -> (ExpType -> CommandType)]],
                                  C: Phrase[ExpType -> CommandType])
   extends LowLevelCommCombinator {
+
+  assert(
+    body match {
+      case NatDependentLambdaPhrase(x, _) =>
+        x.range match {
+          case RangeAdd(start, stop, step) =>
+            start == Cst(0) && stop == k && step == Cst(1)
+          case _ => false
+        }
+      case _ => false
+    },
+    s"Range of NatIdentifier of $body does not match RangeAdd(0, $k, 1)"
+  )
 
   override def typeCheck(): Unit = {
     import TypeChecker._
