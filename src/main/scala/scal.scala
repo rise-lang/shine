@@ -4,6 +4,7 @@ import idealised.DSL.untyped._
 import idealised.OpenCL.Core._
 import idealised.OpenCL.DSL._
 import apart.arithmetic._
+import idealised.Core.Time.ms
 import opencl.executor.Executor
 import opencl.generator.OpenCLPrinter
 
@@ -12,11 +13,12 @@ import scala.util.Random
 object scal extends App {
 
   Executor.loadLibrary()
-  Executor.init()
+  Executor.init(1, 0)
   println("Platform: " + Executor.getPlatformName)
   println("Device: " + Executor.getDeviceName)
 
-  val check = true
+  val benchmark = true
+  val iterations = 10
 
   val N = SizeVar("N")
   val dataT = float
@@ -36,14 +38,22 @@ object scal extends App {
 
     val fun = toOpenCL.asFunction[(Array[Float] :: Float :: Nil) =:=> Array[Float]](kernel)
 
-    val size = 1024 * 1024
+    val size = 1024 * 1024 * 16
 
     val input = Array.fill(size)(Random.nextInt(4).toFloat)
     val alpha = Random.nextInt(4).toFloat
 
-    val (res, time) = fun(input :: alpha :: HNil)
-    println(s"RESULT NAME: $name TIME: $time")
-    if (check) {
+    if (benchmark) {
+      var times = Vector[TimeSpan[ms]]()
+      for (i <- 0 to iterations) {
+        val (_, time) = fun(input :: alpha :: HNil)
+        times = times :+ time
+      }
+      val sorted = times.sortBy(_.value)
+      println(s"RESULT NAME: $name MEDIAN: ${sorted(sorted.length/2)} MIN: ${sorted.head} MAX: ${sorted.last}")
+    } else {
+      val (res, time) = fun(input :: alpha :: HNil)
+      println(s"RESULT NAME: $name TIME: $time")
       val gold = input.sum * alpha
       if (res.sum == gold) {
         println(s"Computed result MATCHES with gold solution.")
