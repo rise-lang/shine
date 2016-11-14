@@ -1,5 +1,6 @@
 package idealised.OpenCL.Core
 
+import idealised.Core.{ExpType, IdentPhrase}
 import ir._
 import opencl.generator.OpenCLAST._
 import opencl.ir._
@@ -15,8 +16,8 @@ import scala.collection.mutable
 //
 object AdaptToOpenCLRepresentation {
 
-  def apply(f: Function): Function = {
-    (new AdaptToOpenCLRepresentation).adaptFunction(f)
+  def apply(k: idealised.OpenCL.Kernel): Function = {
+    (new AdaptToOpenCLRepresentation).adaptFunction(k)
   }
 
 }
@@ -24,11 +25,11 @@ object AdaptToOpenCLRepresentation {
 class AdaptToOpenCLRepresentation {
   val varRefReplacements = mutable.Map[String, VarRef]()
 
-  def adaptFunction(f: Function): Function = {
-    f.copy(params = f.params.map(adaptParamDecl), body = adaptBlock(f.body))
+  def adaptFunction(k: idealised.OpenCL.Kernel): Function = {
+    k.function.copy(params = k.function.params.map(adaptParamDecl(k.inputParams)), body = adaptBlock(k.function.body))
   }
 
-  private def adaptParamDecl(paramDecl: ParamDecl): ParamDecl = {
+  private def adaptParamDecl(inputParams: List[IdentPhrase[ExpType]])(paramDecl: ParamDecl): ParamDecl = {
     paramDecl.t match {
       case _: ScalarType =>
         paramDecl.addressSpace match {
@@ -38,6 +39,12 @@ class AdaptToOpenCLRepresentation {
             varRefReplacements(name) = VarRef(name, arrayIndex = ArithExpression(0))
             paramDecl.copy(t = ArrayType(paramDecl.t, 1))
           case _ => paramDecl
+        }
+      case _: ArrayType =>
+        if (inputParams.map(_.name).contains(paramDecl.name)) {
+          paramDecl.copy(const=true)
+        } else {
+          paramDecl
         }
       case _ => paramDecl
     }
@@ -68,9 +75,9 @@ class AdaptToOpenCLRepresentation {
 
   private def adaptDeclaration(decl: Declaration): Declaration = {
     decl match {
-      case f: Function => f.copy(params = f.params.map(adaptParamDecl), body = adaptBlock(f.body))
+      case f: Function => f.copy(params = f.params.map(adaptParamDecl(List())), body = adaptBlock(f.body))
       case v: VarDecl => v.copy(init = adaptNode(v.init))
-      case p: ParamDecl => adaptParamDecl(p)
+      case p: ParamDecl => adaptParamDecl(List())(p)
       case l: Label => l
     }
   }
