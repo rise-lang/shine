@@ -42,9 +42,20 @@ object CombinatorsToOpenCL {
     val bodyE = Lift.liftFunction(f.body)
     val i = identifier(name, ExpType(int))
 
-    val body_ = ToOpenCL.cmd(bodyE(i), Block(), env)
+    f.n match {
+      case Cst(0) =>
+        (block: Block) +=
+          OpenCLAST.Comment("iteration count is 0, no loop emitted")
 
-    (block: Block) += ForLoop(init, cond, increment, body_)
+      case Cst(1) =>
+        (block: Block) +=
+          OpenCLAST.Comment("iteration count is exactly 1, no loop emitted")
+        (block: Block) += ToOpenCL.cmd(bodyE(i), Block(Vector(init)), env)
+
+      case _ =>
+        val body_ = ToOpenCL.cmd(bodyE(i), Block(), env)
+        (block: Block) += ForLoop(init, cond, increment, body_)
+    }
 
     env.ranges.remove(name)
 
