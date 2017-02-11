@@ -2,5 +2,5 @@
 	path = lib/ArithExpr
 	url = git@bitbucket.org:cdubach/arithexpr.git
 [submodule "lib/apart"]
-	path = lib/apart
+	path = lib/lift/apart
 	url = git@bitbucket.org:cdubach/lift.git
