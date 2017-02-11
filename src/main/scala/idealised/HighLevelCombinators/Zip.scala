@@ -31,9 +31,11 @@ final case class Zip(n: Nat,
     val lhs_ = TypeInference(lhs)
     val rhs_ = TypeInference(rhs)
     (lhs_.t, rhs_.t) match {
-      case (ExpType(ArrayType(n_, dt1_)), ExpType(ArrayType(m_, dt2_)))
-        if n_ == m_ =>
-        Zip(n_, dt1_, dt2_, lhs_, rhs_)
+      case (ExpType(ArrayType(n_, dt1_)), ExpType(ArrayType(m_, dt2_))) =>
+        if (n_ == m_)
+          Zip(n_, dt1_, dt2_, lhs_, rhs_)
+        else
+          error(s"Length $n_ and $m_ does not match")
       case x => error(x.toString(), "PairOfArrayTypes")
     }
   }

@@ -136,7 +136,6 @@ int main(int argc, char **argv) {
     }
     std::cout << "Gold test passed\n";
 
-
   } catch (Error error) {
     std::cout << error.what() << "(" << error.err() << ")" << std::endl;
   }
