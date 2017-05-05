@@ -85,7 +85,7 @@ case class ToOpenCL(localSize: Nat, globalSize: Nat) {
                                     makeBody(p4)),
       outputParam = outParam,
       inputParams = params,
-      intermediateParams = intermediateAllocations.map(_._2)
+      intermediateParams = intermediateAllocations.map(_.identifier)
     )
   }
 
@@ -160,11 +160,10 @@ case class ToOpenCL(localSize: Nat, globalSize: Nat) {
   }
 
   private def makeParam(allocInfo: AllocationInfo): ParamDecl = {
-    val (addressSpace, identifier) = allocInfo
     ParamDecl(
-      identifier.name,
-      DataType.toType(getDataType(identifier)),
-      OpenCL.AddressSpace.toOpenCL(addressSpace),
+      allocInfo.identifier.name,
+      DataType.toType(getDataType(allocInfo.identifier)),
+      OpenCL.AddressSpace.toOpenCL(allocInfo.addressSpace),
       const = false
     )
   }
@@ -499,6 +498,8 @@ object ToOpenCL {
       case r: Record    => toOpenCL(r, env, dt, arrayAccess, tupleAccess)
       case s: Snd       => toOpenCL(s, env, dt, arrayAccess, tupleAccess)
       case t: TruncExp  => toOpenCL(t, env, dt, arrayAccess, tupleAccess)
+
+      case g: GeneratableExp => g.toOpenCL(env)
 
       case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
            TypeDependentApplyPhrase(_, _) |

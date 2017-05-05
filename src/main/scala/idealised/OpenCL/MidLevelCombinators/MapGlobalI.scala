@@ -18,7 +18,7 @@ final case class MapGlobalI(n: Nat,
   override def makeMapI = MapGlobalI
 
   override def substituteImpl(env: Environment): Phrase[CommandType] = {
-    ParForGlobal(n, dt2, out, λ(exp"[$int]")(i => λ(acc"[$dt2]")(o =>
+    ParForGlobal(n, dt2, out, λ(exp"[idx($n)]")(i => λ(acc"[$dt2]")(o =>
       SubstituteImplementations(f(o)(in `@` i), env)
     )))
   }

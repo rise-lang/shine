@@ -7,10 +7,11 @@ import idealised.OpenCL.LowLevelCombinators.OpenCLParFor
 
 object HoistMemoryAllocations {
 
-  type AllocationInfo = (idealised.OpenCL.AddressSpace, IdentPhrase[VarType])
+  case class AllocationInfo(addressSpace: idealised.OpenCL.AddressSpace,
+                            identifier: IdentPhrase[VarType])
 
   def apply(originalPhrase: Phrase[CommandType]): (Phrase[CommandType], List[AllocationInfo]) = {
-    val visitor = makeVisitor()
+    val visitor = new VisitorScope(List[AllocationInfo]()).Visitor(List())
 
     val rewrittenPhrase = VisitAndRebuild(originalPhrase, visitor)
 
@@ -23,14 +24,15 @@ object HoistMemoryAllocations {
     //    })
   }
 
-  def makeVisitor() = new VisitorScope(List[AllocationInfo]()).Visitor(List())
+  private class VisitorScope(var replacedAllocations: List[AllocationInfo]) {
 
-  class VisitorScope(var replacedAllocations: List[AllocationInfo]) {
+    case class ParForInfo(parallelismLevel: idealised.OpenCL.ParallelismLevel,
+                          param: IdentPhrase[ExpType],
+                          length: Nat)
 
-    case class Visitor(parForInfo: List[(idealised.OpenCL.ParallelismLevel, IdentPhrase[ExpType], Nat)])
-      extends VisitAndRebuild.Visitor {
+    case class Visitor(parForInfos: List[ParForInfo]) extends VisitAndRebuild.Visitor {
 
-      def getReplacedAllocations = replacedAllocations
+      def getReplacedAllocations: List[AllocationInfo] = replacedAllocations
 
       override def apply[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
         p match {
@@ -38,14 +40,16 @@ object HoistMemoryAllocations {
           case pf: OpenCLParFor =>
             pf.body match {
               case LambdaPhrase(param, _) =>
-                Continue(pf, Visitor((pf.parallelismLevel, param, pf.n) :: parForInfo))
+                Continue(pf,
+                  Visitor(ParForInfo(pf.parallelismLevel, param, pf.n) :: parForInfos))
               case _ => throw new Exception("This should not happen")
             }
-          case New(dt, addressSpace, f) if addressSpace != OpenCL.PrivateMemory =>
+          case New(_, addressSpace, f) if addressSpace != OpenCL.PrivateMemory =>
             f match {
               case LambdaPhrase(param, body) =>
-                replaceNew(addressSpace.asInstanceOf[idealised.OpenCL.AddressSpace],
-                  param, body).asInstanceOf[Result[Phrase[T]]]
+                Stop(
+                  replaceNew(addressSpace.asInstanceOf[idealised.OpenCL.AddressSpace],
+                    param, body)).asInstanceOf[Result[Phrase[T]]]
               case _ => throw new Exception("This should not happen")
             }
           case _ => Continue(p, this)
@@ -54,12 +58,12 @@ object HoistMemoryAllocations {
 
       private def replaceNew(addressSpace: idealised.OpenCL.AddressSpace,
                              param: IdentPhrase[VarType],
-                             body: Phrase[CommandType]): Result[Phrase[CommandType]] = {
+                             body: Phrase[CommandType]): Phrase[CommandType] = {
         // Replace `new` node by looking through the information from the `par for`s, ...
-        val (finalParam, finalBody) = parForInfo.foldLeft((param, body)) {
+        val (finalParam, finalBody) = parForInfos.foldLeft((param, body)) {
           // ... to rewrite the new's body given the oldParam, oldBody,
           // as well as the index `i` and length `n` of a `par for` ...
-          case ((oldParam, oldBody), (parallelismLevel, i, n)) =>
+          case ((oldParam, oldBody), ParForInfo(parallelismLevel, i, n)) =>
             addressSpace match {
               case OpenCL.GlobalMemory =>
                 performRewrite(oldParam, oldBody, i, n)
@@ -80,8 +84,8 @@ object HoistMemoryAllocations {
         // ... remember `finalParam' to regenerate the `new' at the
         // outermost scope and return the rewritten finalBody which
         // replaces the old `new` node
-        replacedAllocations = (addressSpace, finalParam) :: replacedAllocations
-        Stop(VisitAndRebuild(finalBody, this))
+        replacedAllocations = AllocationInfo(addressSpace, finalParam) :: replacedAllocations
+        VisitAndRebuild(finalBody, this)
       }
 
       private def performRewrite(oldParam: IdentPhrase[VarType],

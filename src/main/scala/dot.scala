@@ -26,7 +26,7 @@ object dot extends App {
   val ysT = ExpType(ArrayType(N, float))
 
   def printOpenCLKernel1(name: String,
-                         untypedLambda: Phrase[ExpType -> (ExpType -> ExpType)]) = {
+                         untypedLambda: Phrase[ExpType -> (ExpType -> ExpType)]): Unit = {
     val lambda = TypeInference(untypedLambda)
     println(name + ":\n" + PrettyPrinter(lambda))
     lambda.typeCheck()
@@ -59,7 +59,7 @@ object dot extends App {
   }
 
   def printOpenCLKernel2(name: String,
-                         untypedLambda: Phrase[ExpType -> ExpType]) = {
+                         untypedLambda: Phrase[ExpType -> ExpType]): Unit = {
     val lambda = TypeInference(untypedLambda)
     println(name + ":\n" + PrettyPrinter(lambda))
     lambda.typeCheck()
@@ -92,25 +92,57 @@ object dot extends App {
   val mult = λ(x => x._1 * x._2)
   val add = λ(x => λ(a => x + a))
 
-  val high_level = λ(xsT)(xs => λ(ysT)(ys =>
-    reduce(add, 0.0f) o map(mult) $ zip(xs, ys)
-  ))
+//  val high_level = λ(xsT)(xs => λ(ysT)(ys =>
+//    reduce(add, 0.0f) o map(mult) $ zip(xs, ys)
+//  ))
+//
+//  {
+//    val lambda = TypeInference(high_level)
+//    println("high_level:\n" + PrettyPrinter(lambda))
+//    lambda.typeCheck()
+//
+//    val toOpenCL = ToOpenCL(localSize = 128, globalSize = N)
+//    val kernel = toOpenCL.makeKernel(lambda)
+//    println(OpenCLPrinter()(kernel))
+//  }
+////  sys.exit(1)
+//
+//  val dotSimpler = λ(xsT)(xs => λ(ysT)(ys =>
+//    mapGlobal(
+//      reduceSeq(add, 0.0f) o mapSeq(mult)
+//    ) o split(1024) $ zip(xs, ys)
+//  ))
+//
+//  printOpenCLKernel1("dotSimpler", dotSimpler)
+//
+//  val dotSimple = λ(xsT)(xs => λ(ysT)(ys =>
+//    join() o mapWorkgroup(
+//      mapLocal(
+//        reduceSeq(add, 0.0f) o mapSeq(mult)
+//      ) o split(4)
+//    ) o split(1024) $ zip(xs, ys)
+//  ))
+//
+//  printOpenCLKernel1("dotSimple", dotSimple)
 
-  {
-    val lambda = TypeInference(high_level)
-    println("high_level:\n" + PrettyPrinter(lambda))
-    lambda.typeCheck()
-  }
 
-  val dotSimple = λ(xsT)(xs => λ(ysT)(ys =>
-    join() o mapWorkgroup(
+  val dotCPUVector1 = λ(xsT)(xs => λ(ysT)(ys =>
+    asScalar() o join() o mapWorkgroup(
       mapLocal(
-        reduceSeq(add, 0.0f) o mapSeq(mult)
-      ) o split(4)
-    ) o split(1024) $ zip(xs, ys)
+        reduceSeq(λ(x => λ(a => mult(x) + a)), vectorize(4, 0.0f))
+      ) o split(2048)
+    ) o split(2048 * 64) $ zip(asVector(4) $ xs, asVector(4) $ ys)
   ))
 
-  printOpenCLKernel1("dotSimple", dotSimple)
+  val intelDerivedNoWarpDot1 = λ(xsT)(xs => λ(ysT)(ys =>
+    asScalar() o join() o mapWorkgroup(
+      mapLocal(
+        reduceSeq(λ(x => λ(a => mult(x) + a)), vectorize(4, 0.0f))
+      ) o split(8192)
+    ) o split(8192) $ zip(asVector(4) $ xs, asVector(4) $ ys)
+  ))
+
+  printOpenCLKernel1("intelDerivedNoWarpDot1", dotCPUVector1)
 
   val dotCPU1 = λ(xsT)(xs => λ(ysT)(ys =>
     join() o mapWorkgroup(
