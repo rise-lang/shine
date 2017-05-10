@@ -2,7 +2,7 @@ package idealised.Core
 
 import idealised._
 import idealised.Core.OperationalSemantics.IndexData
-import apart.arithmetic.ArithExpr
+import lift.arithmetic.{ArithExpr, Var}
 
 sealed trait PhraseType
 
@@ -91,6 +91,18 @@ object PhraseType {
     }
   }
 
+  def substitute(ae: Nat, `for`: NatIdentifier, in: Nat): Nat = {
+    in.visitAndRebuild {
+      case v: Var =>
+        if (`for`.name == v.name) {
+          ae
+        } else {
+          v
+        }
+      case e => e
+    }
+  }
+
   def substitute[T <: PhraseType](ae: Nat,
                                   `for`: NatIdentifier,
                                   in: Phrase[T]): Phrase[T] = {
@@ -98,13 +110,18 @@ object PhraseType {
     object Visitor extends VisitAndRebuild.Visitor {
       override def apply[T2 <: PhraseType](p: Phrase[T2]): Result[Phrase[T2]] = {
         p match {
-          case IdentPhrase(name, t) =>
+          case IdentPhrase(name, _) =>
             if (`for`.name == name) {
               Stop(LiteralPhrase(IndexData(ae), IndexType(ae.max)).asInstanceOf[Phrase[T2]])
             } else {
               Continue(p, this)
             }
-          case _ => Continue(p, this)
+          case LiteralPhrase(IndexData(index), IndexType(size)) =>
+            val newIndex = substitute(ae, `for`, in=index)
+            val newSize = substitute(ae, `for`, in=size)
+            Stop(LiteralPhrase(IndexData(newIndex), IndexType(newSize)).asInstanceOf[Phrase[T2]])
+          case _ =>
+            Continue(p, this)
         }
       }
 

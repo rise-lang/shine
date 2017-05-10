@@ -7,7 +7,7 @@ import idealised.Compiling.SubstituteImplementations
 import idealised.DSL.typed._
 import idealised.LowLevelCombinators.{TruncAcc, TruncExp}
 import idealised.OpenCL.Core.ToOpenCL
-import apart.arithmetic.{?, Cst, RangeAdd}
+import lift.arithmetic.{?, Cst, RangeAdd}
 import opencl.ir.GlobalMemory
 
 import scala.xml.Elem

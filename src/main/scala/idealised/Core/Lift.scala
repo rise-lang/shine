@@ -1,6 +1,6 @@
 package idealised.Core
 
-import apart.arithmetic.NamedVar
+import lift.arithmetic.NamedVar
 
 import scala.language.postfixOps
 import scala.language.reflectiveCalls

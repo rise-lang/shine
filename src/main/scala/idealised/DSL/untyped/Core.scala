@@ -2,7 +2,7 @@ package idealised.DSL.untyped
 
 import idealised.Core._
 import idealised.LowLevelCombinators.Record
-import apart.arithmetic.NamedVar
+import lift.arithmetic.NamedVar
 
 object identifier {
   def apply[T <: PhraseType](name: String, t: T) = IdentPhrase(name, t)

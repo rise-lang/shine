@@ -1,7 +1,7 @@
 package idealised
 
 import idealised.Core.PhraseType._
-import apart.arithmetic.{ArithExpr, NamedVar}
+import lift.arithmetic.{ArithExpr, NamedVar}
 
 import scala.language.implicitConversions
 import scala.language.reflectiveCalls

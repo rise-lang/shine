@@ -1,6 +1,6 @@
 package idealised.LowLevelCombinators
 
-import apart.arithmetic.{Cst, RangeAdd}
+import lift.arithmetic.{Cst, RangeAdd}
 import idealised._
 import idealised.Core._
 import idealised.Core.OperationalSemantics._

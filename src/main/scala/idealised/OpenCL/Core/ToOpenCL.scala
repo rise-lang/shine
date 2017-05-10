@@ -1,6 +1,6 @@
 package idealised.OpenCL.Core
 
-import apart.arithmetic.{ArithExpr, Cst, Var}
+import lift.arithmetic.{ArithExpr, Cst, Var}
 import idealised.Compiling._
 import idealised.Core.OperationalSemantics._
 import idealised.Core._
@@ -172,7 +172,7 @@ case class ToOpenCL(localSize: Nat, globalSize: Nat) {
   // sorted by name of the variables
   private def makeLengthParams(types: List[Type]): List[ParamDecl] = {
     val lengths = types.flatMap(Type.getLengths)
-    lengths.filter(_.isInstanceOf[apart.arithmetic.Var]).distinct.map(v =>
+    lengths.filter(_.isInstanceOf[lift.arithmetic.Var]).distinct.map(v =>
       ParamDecl(v.toString, opencl.ir.Int)
     ).sortBy(_.name)
   }
@@ -207,7 +207,9 @@ case class ToOpenCL(localSize: Nat, globalSize: Nat) {
         val (outputArg, inputArgs) = createKernelArgs(kernel, args, lengthMapping)
         val kernelArgs = (outputArg +: inputArgs).toArray
 
-        val runtime = Executor.execute(kernel.code,
+        val kernelJNI = Kernel.create(kernel.code, kernel.function.name, "")
+
+        val runtime = Executor.execute(kernelJNI,
           ArithExpr.substitute(localSize, lengthMapping).eval, 1, 1,
           ArithExpr.substitute(globalSize, lengthMapping).eval, 1, 1,
           kernelArgs)
@@ -215,6 +217,7 @@ case class ToOpenCL(localSize: Nat, globalSize: Nat) {
         val output = castToOutputType[F#R](kernel.outputParam.`type`.dataType, outputArg)
 
         kernelArgs.foreach(_.dispose)
+        kernelJNI.dispose()
 
         (output, TimeSpan.inMilliseconds(runtime))
       }
@@ -380,12 +383,12 @@ object ToOpenCL {
 
   case class Environment(localSize: Nat,
                          globalSize: Nat,
-                         ranges: mutable.Map[String, apart.arithmetic.Range])
+                         ranges: mutable.Map[String, lift.arithmetic.Range])
 
   object Environment {
     def apply(localSize: Nat, globalSize: Nat): Environment = {
       Environment(localSize, globalSize,
-        mutable.Map[String, apart.arithmetic.Range]())
+        mutable.Map[String, lift.arithmetic.Range]())
     }
   }
 
@@ -463,8 +466,8 @@ object ToOpenCL {
 
         val suffix = {
           val s = tupleAccess.map {
-            case apart.arithmetic.Cst(1) => "._1"
-            case apart.arithmetic.Cst(2) => "._2"
+            case lift.arithmetic.Cst(1) => "._1"
+            case lift.arithmetic.Cst(2) => "._2"
             case _ => throw new Exception("This should not happen")
           }.foldLeft("")(_ + _)
 
@@ -551,8 +554,8 @@ object ToOpenCL {
 
         val suffix = {
           val s = tupleAccess.map {
-            case apart.arithmetic.Cst(1) => "._1"
-            case apart.arithmetic.Cst(2) => "._2"
+            case lift.arithmetic.Cst(1) => "._1"
+            case lift.arithmetic.Cst(2) => "._2"
             case _ => throw new Exception("This should not happen")
           }.foldLeft("")(_ + _)
           if (s != "") { s } else { null }

@@ -5,7 +5,7 @@ import idealised.Core.OperationalSemantics.FloatData
 import idealised.DSL.untyped._
 import idealised.OpenCL.Core._
 import idealised.OpenCL.DSL._
-import apart.arithmetic._
+import lift.arithmetic._
 import opencl.generator.OpenCLAST.Block
 import opencl.executor.Executor
 import opencl.generator.OpenCLPrinter

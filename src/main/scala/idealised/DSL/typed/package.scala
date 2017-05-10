@@ -4,7 +4,7 @@ import idealised.Core.OperationalSemantics.{FloatData, IndexData, IntData}
 import idealised.Core.TypeInference._
 import idealised.Core._
 import idealised.LowLevelCombinators.{Assign, Idx, IdxAcc, Seq}
-import apart.arithmetic.{ContinuousRange, NamedVar}
+import lift.arithmetic.{ContinuousRange, NamedVar}
 
 import scala.language.implicitConversions
 

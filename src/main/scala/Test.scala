@@ -5,7 +5,7 @@ import idealised.DSL.untyped._
 import idealised.Compiling.{RewriteToImperative, SubstituteImplementations}
 import idealised.OpenCL.Core.ToOpenCL
 import idealised.OpenCL.DSL._
-import apart.arithmetic._
+import lift.arithmetic._
 import opencl.generator.OpenCLPrinter
 
 import scala.collection.immutable.HashMap

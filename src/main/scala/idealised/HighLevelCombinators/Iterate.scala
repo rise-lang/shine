@@ -5,7 +5,7 @@ import idealised.Core._
 import idealised.Core.OperationalSemantics._
 import idealised.DSL.typed._
 import idealised.MidLevelCombinators.{IterateIAcc, IterateIExp}
-import apart.arithmetic._
+import lift.arithmetic._
 
 import scala.xml.Elem
 

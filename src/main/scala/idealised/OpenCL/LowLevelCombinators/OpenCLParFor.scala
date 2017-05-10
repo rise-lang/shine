@@ -4,7 +4,7 @@ import idealised.Core._
 import idealised.DSL.typed._
 import idealised.LowLevelCombinators.AbstractParFor
 import idealised.OpenCL.Core.{GeneratableComm, ToOpenCL}
-import apart.arithmetic.{Cst, NamedVar, RangeAdd}
+import lift.arithmetic.{Cst, NamedVar, RangeAdd}
 import opencl.generator.OpenCLAST
 import opencl.generator.OpenCLAST.{Block, BlockMember}
 

@@ -6,7 +6,7 @@ import idealised.DSL.typed.identifier
 import idealised.HighLevelCombinators._
 import idealised.LowLevelCombinators._
 import idealised.OpenCL.LowLevelCombinators.OpenCLParFor
-import apart.arithmetic._
+import lift.arithmetic._
 import ir.Type
 import opencl.generator.OpenCLAST
 import opencl.generator.OpenCLAST._

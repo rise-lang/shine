@@ -59,7 +59,7 @@ class AdaptToOpenCLRepresentation {
       case d: Declaration => adaptDeclaration(d)
       case s: Statement => adaptStatement(s)
       case e: Expression => adaptExpression(e)
-      case Comment(_) | OpenCLCode(_) | OpenCLExtension(_) | Skip() => node
+      case Comment(_) | OpenCLCode(_) | OpenCLExtension(_) | Skip() | RequiredWorkGroupSize(_) => node
       case null => null
     }
   }
@@ -98,7 +98,7 @@ class AdaptToOpenCLRepresentation {
         adaptBlock(i.falseBody)
       )
       case ExpressionStatement(e) => ExpressionStatement(adaptExpression(e))
-      case GOTO(_) | Barrier(_) | TypeDef(_) | TupleAlias(_, _) => statement
+      case GOTO(_) | Barrier(_) | TypeDef(_) | TupleAlias(_, _) | Break() => statement
     }
   }
 
@@ -106,6 +106,8 @@ class AdaptToOpenCLRepresentation {
     e match {
       case f: FunctionCall => f.copy(args = f.args.map(adaptNode))
       case v: VarRef => adaptVarRef(v)
+      case l: Load => l.copy(v = adaptVarRef(l.v))
+      case s: Store => s.copy(v = adaptVarRef(s.v), value = adaptNode(s.value))
       case vl: VLoad => vl.copy(v = adaptVarRef(vl.v), offset = adaptExpression(vl.offset))
       case vs: VStore => vs.copy(
         v = adaptVarRef(vs.v),
@@ -117,15 +119,17 @@ class AdaptToOpenCLRepresentation {
       case b: BinaryExpression => b.copy(lhs = adaptExpression(b.lhs), rhs = adaptExpression(b.rhs))
       case u: UnaryExpression => u.copy(e = adaptExpression(u.e))
       case c: CondExpression => c.copy(lhs = adaptExpression(c.lhs), rhs = adaptExpression(c.rhs))
+      case p: PointerCast => p.copy(v = adaptVarRef(p.v))
       case c: Cast => c.copy(v = adaptVarRef(c.v))
       case v: VectorLiteral => VectorLiteral(v.t, v.vs.map(adaptExpression):_*)
       case s: StructConstructor => s.copy(args = s.args.map(adaptNode))
       case l: Literal => l
+      case o: OpenCLExpression => o
       case null => null
     }
   }
 
   private def adaptVarRef(v: VarRef): VarRef = {
-    varRefReplacements.getOrElse(v.name, v.copy(arrayIndex = adaptExpression(v.arrayIndex)))
+    varRefReplacements.getOrElse(v.name, v.copy(arrayIndex = v.arrayIndex))
   }
 }

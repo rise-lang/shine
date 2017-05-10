@@ -1,7 +1,7 @@
 package idealised.DSL.typed
 
 import idealised.Core._
-import apart.arithmetic.NamedVar
+import lift.arithmetic.NamedVar
 
 object identifier {
   def apply[T <: PhraseType](name: String, t: T) = IdentPhrase(name, t)
@@ -30,7 +30,7 @@ trait dependentFunDef {
     NatDependentLambdaPhrase(x, f(x))
   }
 
-  def apply[T <: PhraseType](f: NamedVar => Phrase[T], range: apart.arithmetic.Range) = {
+  def apply[T <: PhraseType](f: NamedVar => Phrase[T], range: lift.arithmetic.Range) = {
     val x = NamedVar(newName(), range)
     NatDependentLambdaPhrase(x, f(x))
   }

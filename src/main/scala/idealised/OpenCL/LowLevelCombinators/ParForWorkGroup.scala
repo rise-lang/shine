@@ -2,7 +2,7 @@ package idealised.OpenCL.LowLevelCombinators
 
 import idealised._
 import idealised.Core._
-import apart.arithmetic.{?, ContinuousRange, PosInf, RangeAdd}
+import lift.arithmetic.{?, ContinuousRange, PosInf, RangeAdd}
 import opencl.generator.OpenCLAST._
 import opencl.generator.{get_group_id, get_num_groups}
 

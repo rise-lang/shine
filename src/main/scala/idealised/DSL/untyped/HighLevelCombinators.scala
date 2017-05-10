@@ -2,7 +2,7 @@ package idealised.DSL.untyped
 
 import idealised.Core._
 import idealised.HighLevelCombinators._
-import apart.arithmetic.NamedVar
+import lift.arithmetic.NamedVar
 
 
 object map {

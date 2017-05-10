@@ -127,8 +127,8 @@ object DataType {
       case s: ir.ScalarType => SizeInByte(s.size)
       case v: ir.VectorType => sizeInByte(v.scalarT) * v.len
       case t: ir.TupleType => t.elemsT.map(sizeInByte).reduce(_+_)
-      case a: ir.ArrayType => sizeInByte(a.elemT) * a.len
-      case _: ir.NoType.type | _: ir.UndefType.type =>
+      case a: ir.ArrayType with ir.Size => sizeInByte(a.elemT) * a.size
+      case _: ir.NoType.type | _: ir.UndefType.type | _: ir.ArrayType /* without Size */ =>
         throw new Exception("This should not happen")
     }
   }

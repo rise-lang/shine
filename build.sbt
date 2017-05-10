@@ -11,6 +11,7 @@ scalacOptions ++= Seq("-Xmax-classfile-name", "100", "-unchecked", "-deprecation
 libraryDependencies += "org.scala-lang" % "scala-reflect" % "2.11.8"
 libraryDependencies += "org.scala-lang" % "scala-compiler" % "2.11.8"
 libraryDependencies += "org.scala-lang" % "scala-library" % "2.11.8"
+libraryDependencies += "com.typesafe.play" %% "play-json" % "2.3.10"
 
 libraryDependencies += "org.scala-lang.modules" % "scala-xml_2.11" % "1.0.4"
 
@@ -35,6 +36,6 @@ libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.4.0"
 unmanagedSourceDirectories in Compile += baseDirectory.value / "lib/ArithExpr/src/main/"
 unmanagedSourceDirectories in Test += baseDirectory.value / "lib/ArithExpr/src/main/"
 
-// Build apart
-unmanagedSourceDirectories in Compile += baseDirectory.value / "lib/apart/src/main/"
-unmanagedSourceDirectories in Test += baseDirectory.value / "lib/apart/src/main/"
+// Build lift
+unmanagedSourceDirectories in Compile += baseDirectory.value / "lib/lift/src/main/"
+unmanagedSourceDirectories in Test += baseDirectory.value / "lib/lift/src/main/"

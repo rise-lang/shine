@@ -3,7 +3,7 @@ import idealised.Core._
 import idealised.DSL.untyped._
 import idealised.OpenCL.Core._
 import idealised.OpenCL.DSL._
-import apart.arithmetic._
+import lift.arithmetic._
 import idealised.OpenCL.LowLevelCombinators.UnaryOpenCLFunction
 import opencl.executor.Executor
 import opencl.generator.OpenCLPrinter

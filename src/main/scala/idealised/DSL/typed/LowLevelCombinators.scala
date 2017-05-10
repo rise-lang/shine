@@ -1,6 +1,6 @@
 package idealised.DSL.typed
 
-import apart.arithmetic.{NamedVar, RangeAdd}
+import lift.arithmetic.{NamedVar, RangeAdd}
 import idealised.Core.TypeInference._
 import idealised.Core._
 import idealised.LowLevelCombinators._
