@@ -5,7 +5,7 @@ import idealised.Core._
 import idealised.Core.OperationalSemantics._
 import idealised.Compiling.RewriteToImperative
 import idealised.DSL.typed._
-import idealised.IntermediatePrimitives.{ReduceIAcc, ReduceIExp}
+import idealised.IntermediatePrimitives.ReduceI
 
 import scala.xml.Elem
 
@@ -19,9 +19,7 @@ abstract class AbstractReduce(n: Nat,
 
   def makeReduce: (Nat, DataType, DataType, Phrase[ExpType -> (ExpType -> ExpType)], Phrase[ExpType], Phrase[ExpType]) => AbstractReduce
 
-  def makeReduceIAcc: (Nat, DataType, DataType, Phrase[AccType], Phrase[AccType -> (ExpType -> (ExpType -> CommandType))], Phrase[ExpType], Phrase[ExpType]) => ReduceIAcc
-
-  def makeReduceIExp: (Nat, DataType, DataType, Phrase[ExpType -> CommandType], Phrase[AccType -> (ExpType -> (ExpType -> CommandType))], Phrase[ExpType], Phrase[ExpType]) => ReduceIExp
+  def makeReduceI: (Nat, DataType, DataType, Phrase[ExpType -> (ExpType -> (AccType -> CommandType))], Phrase[ExpType], Phrase[ExpType], Phrase[ExpType -> CommandType]) => ReduceI
 
   override lazy val `type` = exp"[$dt2]"
 
@@ -83,14 +81,10 @@ abstract class AbstractReduce(n: Nat,
 
     con(array)(λ(exp"[$n.$dt1]")(x =>
       con(init)(λ(exp"[$dt2]")(y =>
-        makeReduceIAcc(n, dt1, dt2, A,
-          λ(acc"[$dt2]")(o => λ(exp"[$dt1]")(x => λ(exp"[$dt2]")(y =>
-            acc(f(x)(y))(o)))),
-          y,
-          x
-        )
-      ))
-    ))
+        makeReduceI(n, dt1, dt2,
+          λ(exp"[$dt1]")(x => λ(exp"[$dt2]")(y => λ(acc"[$dt2]")(o =>
+            acc( f(x)(y) )( o )))),
+          y, x, λ(exp"[$dt2]")(r => acc(r)(A)))))))
   }
 
   override def rewriteToImperativeCon(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
@@ -100,13 +94,10 @@ abstract class AbstractReduce(n: Nat,
 
     con(array)(λ(exp"[$n.$dt1]")(x =>
       con(init)(λ(exp"[$dt2]")(y =>
-        makeReduceIExp(n, dt1, dt2, C,
-          λ(acc"[$dt2]")(o => λ(exp"[$dt1]")(x => λ(exp"[$dt2]")(y =>
-            acc(f(x)(y))(o)))),
-          y, x
-        )
-      ))
-    ))
+        makeReduceI(n, dt1, dt2,
+          λ(exp"[$dt1]")(x => λ(exp"[$dt2]")(y => λ(acc"[$dt2]")(o =>
+            acc( f(x)(y) )( o ) ))),
+          y, x, C)))))
   }
 
   override def xmlPrinter: Elem =
@@ -135,8 +126,6 @@ final case class Reduce(n: Nat,
   extends AbstractReduce(n, dt1, dt2, f, init, array) {
   override def makeReduce = Reduce
 
-  override def makeReduceIExp = ReduceIExp
-
-  override def makeReduceIAcc = ReduceIAcc
+  override def makeReduceI = ReduceI
 }
 

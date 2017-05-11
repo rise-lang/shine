@@ -2,7 +2,7 @@ package idealised.OpenCL.HighLevelPrimitives
 
 import idealised.Core.{->, DataType, ExpType, Nat, Phrase}
 import idealised.FunctionalPrimitives.AbstractReduce
-import idealised.IntermediatePrimitives.{ReduceIAcc, ReduceIExp}
+import idealised.IntermediatePrimitives.ReduceI
 
 final case class ReduceSeq(n: Nat,
                            dt1: DataType, dt2: DataType,
@@ -12,7 +12,5 @@ final case class ReduceSeq(n: Nat,
   extends AbstractReduce(n, dt1, dt2, f, init, array) {
   override def makeReduce = ReduceSeq
 
-  override def makeReduceIExp = ReduceIExp
-
-  override def makeReduceIAcc = ReduceIAcc
+  override def makeReduceI = ReduceI
 }
