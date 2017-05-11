@@ -39,13 +39,13 @@ final case class TruncExp(n: Nat,
     TruncExp(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))
   }
 
-  override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
+  override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
     con(array)(λ(exp"[$n.$dt]")(e =>
       MapI(m, dt, dt, λ(ExpType(dt))(e => λ(AccType(dt))(a => acc(e)(a))), e, A)))
   }
 
-  override def rewriteToImperativeCon(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] =
+  override def continuationTranslation(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] =
     RewriteToImperative.con(array)(λ(exp"[$n.$dt]")(e => C(TruncExp(n, m, dt, e))))
 
   override def xmlPrinter: Elem =

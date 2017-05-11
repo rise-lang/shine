@@ -251,11 +251,11 @@ object PrimitivesToOpenCL {
     val rest = tupleAccess.tail
 
     if (i == Cst(1)) {
-      return ToOpenCL.exp(z.lhs, env, dt, arrayAccess, rest)
+      return ToOpenCL.exp(z.e1, env, dt, arrayAccess, rest)
     }
 
     if (i == Cst(2)) {
-      return ToOpenCL.exp(z.rhs, env, dt, arrayAccess, rest)
+      return ToOpenCL.exp(z.e2, env, dt, arrayAccess, rest)
     }
 
     throw new Exception("This should not happen")

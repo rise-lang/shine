@@ -67,26 +67,22 @@ abstract class AbstractMap(n: Nat,
     }
   }
 
-  override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
+  override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
 
     assert(n != null && dt1 != null && dt2 != null)
 
     con(array)(λ(exp"[$n.$dt1]")(x =>
-      makeMapI(n, dt1, dt2,
-        λ(exp"[$dt1]")(x => λ(acc"[$dt2]")(o => acc(f(x))(o))),
-        x,
-        A)))
+      makeMapI(n, dt1, dt2, λ(exp"[$dt1]")(x => λ(acc"[$dt2]")(o => acc(f(x))(o))), x, A)))
   }
 
-  override def rewriteToImperativeCon(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
     import RewriteToImperative._
 
     assert(n != null && dt1 != null && dt2 != null)
 
     `new`(dt"[$n.$dt2]", OpenCL.GlobalMemory, λ(exp"[$n.$dt2]" x acc"[$n.$dt2]")(tmp =>
-      acc(this)(tmp.wr) `;` C(tmp.rd)
-    ))
+      acc(this)(tmp.wr) `;` C(tmp.rd) ))
   }
 
   override def prettyPrint: String =

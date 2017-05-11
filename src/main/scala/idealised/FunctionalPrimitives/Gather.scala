@@ -62,7 +62,7 @@ final case class Gather(n: Nat,
   override def visitAndRebuild(fun: Visitor): Phrase[ExpType] =
     Gather(fun(n), fun(dt), idxF, VisitAndRebuild(array, fun))
 
-  override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
+  override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
 
     con(this)(λ(exp"[$n.$dt]")(x =>
@@ -70,7 +70,7 @@ final case class Gather(n: Nat,
     ))
   }
 
-  override def rewriteToImperativeCon(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
     import RewriteToImperative._
 
     con(array)(λ(exp"[$n.$dt]")(x =>

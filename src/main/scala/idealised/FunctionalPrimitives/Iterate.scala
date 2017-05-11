@@ -105,7 +105,7 @@ final case class Iterate(n: Nat,
   override def prettyPrint: String =
     s"(iterate $k ${PrettyPhrasePrinter(f)} ${PrettyPhrasePrinter(array)})"
 
-  override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
+  override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
     import idealised.Compiling.RewriteToImperative._
 
     assert(n != null && m != null && k != null && dt != null)
@@ -119,7 +119,7 @@ final case class Iterate(n: Nat,
     ))
   }
 
-  override def rewriteToImperativeCon(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
     import idealised.Compiling.RewriteToImperative._
 
     assert(n != null && m != null && k != null && dt != null)

@@ -222,7 +222,7 @@ object dot extends App {
                                       Idx(N /^ 1024, dt"[${Cst(1024)}.($dt x $dt)]",
                                         index = v84,
                                         array = Split(n = 1024, m = N /^ 1024, dt x dt,
-                                          Zip(N, dt, dt, lhs = xs, rhs = ys)
+                                          Zip(N, dt, dt, e1 = xs, e2 = ys)
                                         )
                                       )
                                     )
@@ -238,7 +238,7 @@ object dot extends App {
                                       Idx(N /^ 1024, dt"[${Cst(1024)}.($dt x $dt)]",
                                         index = v84,
                                         array = Split(n = 1024, m = N /^ 1024, dt x dt,
-                                          Zip(N, dt, dt, lhs = xs, rhs = ys)
+                                          Zip(N, dt, dt, e1 = xs, e2 = ys)
                                         )
                                       )
                                     )
@@ -335,7 +335,7 @@ object dot extends App {
                                       Idx(N /^ 1024, dt"[${Cst(1024)}.($dt x $dt)]",
                                         index = v84,
                                         array = Split(n = 1024, m = N /^ 1024, dt x dt,
-                                          Zip(N, dt, dt, lhs = xs, rhs = ys)
+                                          Zip(N, dt, dt, e1 = xs, e2 = ys)
                                         )
                                       )
                                     )
@@ -351,7 +351,7 @@ object dot extends App {
                                       Idx(N /^ 1024, dt"[${Cst(1024)}.($dt x $dt)]",
                                         index = v84,
                                         array = Split(n = 1024, m = N /^ 1024, dt x dt,
-                                          Zip(N, dt, dt, lhs = xs, rhs = ys)
+                                          Zip(N, dt, dt, e1 = xs, e2 = ys)
                                         )
                                       )
                                     )
@@ -444,7 +444,7 @@ object dot extends App {
                                       Idx(N /^ 1024, dt"[${Cst(1024)}.($dt x $dt)]",
                                         index = v84,
                                         array = Split(n = 1024, m = N /^ 1024, dt x dt,
-                                          Zip(N, dt, dt, lhs = xs, rhs = ys)
+                                          Zip(N, dt, dt, e1 = xs, e2 = ys)
                                         )
                                       )
                                     )
@@ -460,7 +460,7 @@ object dot extends App {
                                       Idx(N /^ 1024, dt"[${Cst(1024)}.($dt x $dt)]",
                                         index = v84,
                                         array = Split(n = 1024, m = N /^ 1024, dt x dt,
-                                          Zip(N, dt, dt, lhs = xs, rhs = ys)
+                                          Zip(N, dt, dt, e1 = xs, e2 = ys)
                                         )
                                       )
                                     )

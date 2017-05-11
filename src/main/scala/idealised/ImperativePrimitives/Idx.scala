@@ -59,7 +59,7 @@ final case class Idx(n: Nat,
       </index>
     </idx>
 
-  override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
+  override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
     con(array)(λ(exp"[$n.$dt]")(e =>
       dt match {
@@ -74,7 +74,7 @@ final case class Idx(n: Nat,
     ))
   }
 
-  override def rewriteToImperativeCon(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] =
+  override def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] =
     RewriteToImperative.con(array)(λ(exp"[$n.$dt]")(e =>
       C(Idx(n, dt, index, e))
     ))

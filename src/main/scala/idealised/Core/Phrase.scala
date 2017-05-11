@@ -122,9 +122,9 @@ sealed trait Primitive[T <: PhraseType] extends Phrase[T] {
 trait ExpPrimitive extends Primitive[ExpType] with TypeInferable[ExpType] {
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Data
 
-  def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType]
+  def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType]
 
-  def rewriteToImperativeCon(C: Phrase[ExpType -> CommandType]): Phrase[CommandType]
+  def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType]
 }
 
 trait AccPrimitive extends Primitive[AccType] {

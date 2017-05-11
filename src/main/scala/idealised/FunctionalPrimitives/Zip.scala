@@ -5,15 +5,15 @@ import idealised.Core._
 import idealised.Core.OperationalSemantics._
 import idealised.Compiling.RewriteToImperative
 import idealised.DSL.typed._
-import idealised.IntermediatePrimitives.MapI
+import idealised.ImperativePrimitives.{ZipAcc1, ZipAcc2}
 
 import scala.xml.Elem
 
 final case class Zip(n: Nat,
                      dt1: DataType,
                      dt2: DataType,
-                     lhs: Phrase[ExpType],
-                     rhs: Phrase[ExpType])
+                     e1: Phrase[ExpType],
+                     e2: Phrase[ExpType])
   extends ExpPrimitive {
 
   override lazy val `type` = exp"[$n.($dt1 x $dt2)]"
@@ -21,15 +21,15 @@ final case class Zip(n: Nat,
   override def typeCheck(): Unit = {
     import TypeChecker._
     (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
-      (lhs :: exp"[$n.$dt1]") ->
-      (rhs :: exp"[$n.$dt2]") ->
+      (e1 :: exp"[$n.$dt1]") ->
+      (e2 :: exp"[$n.$dt2]") ->
       `type`
   }
 
   override def inferTypes: Zip = {
     import TypeInference._
-    val lhs_ = TypeInference(lhs)
-    val rhs_ = TypeInference(rhs)
+    val lhs_ = TypeInference(e1)
+    val rhs_ = TypeInference(e2)
     (lhs_.t, rhs_.t) match {
       case (ExpType(ArrayType(n_, dt1_)), ExpType(ArrayType(m_, dt2_))) =>
         if (n_ == m_)
@@ -41,11 +41,11 @@ final case class Zip(n: Nat,
   }
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    Zip(f(n), f(dt1), f(dt2), VisitAndRebuild(lhs, f), VisitAndRebuild(rhs, f))
+    Zip(f(n), f(dt1), f(dt2), VisitAndRebuild(e1, f), VisitAndRebuild(e2, f))
   }
 
   override def eval(s: Store): Data = {
-    (OperationalSemantics.eval(s, lhs), OperationalSemantics.eval(s, rhs)) match {
+    (OperationalSemantics.eval(s, e1), OperationalSemantics.eval(s, e2)) match {
       case (ArrayData(lhsE), ArrayData(rhsE)) =>
         ArrayData((lhsE zip rhsE) map { p =>
           RecordData(p._1, p._2)
@@ -56,40 +56,29 @@ final case class Zip(n: Nat,
   }
 
   override def prettyPrint: String =
-    s"(zip ${PrettyPhrasePrinter(lhs)} ${PrettyPhrasePrinter(rhs)})"
+    s"(zip ${PrettyPhrasePrinter(e1)} ${PrettyPhrasePrinter(e2)})"
 
   override def xmlPrinter: Elem =
     <zip n={ToString(n)} dt1={ToString(dt1)} dt2={ToString(dt2)}>
       <lhs type={ToString(ExpType(ArrayType(n, dt1)))}>
-        {Core.xmlPrinter(lhs)}
+        {Core.xmlPrinter(e1)}
       </lhs>
       <rhs type={ToString(ExpType(ArrayType(n, dt2)))}>
-        {Core.xmlPrinter(rhs)}
+        {Core.xmlPrinter(e2)}
       </rhs>
     </zip>
 
-  override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
+  override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
 
-    con(lhs)(λ(exp"[$n.$dt1]")(x =>
-      con(rhs)(λ(exp"[$n.$dt2]")(y =>
-        MapI(n, dt1 x dt2, dt1 x dt2,
-          λ(exp"[$dt1 x $dt2]")(x => λ(acc"[$dt1 x $dt2]")(o =>
-            acc(x)(o))),
-          Zip(n, dt1, dt2, x, y),
-          A
-        )
-      ))
-    ))
+    acc(e1)(ZipAcc1(n, dt1, dt2, A)) `;` acc(e2)(ZipAcc2(n, dt1, dt2, A))
   }
 
-  override def rewriteToImperativeCon(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
     import RewriteToImperative._
 
-    con(lhs)(λ(exp"[$n.$dt1]")(x =>
-      con(rhs)(λ(exp"[$n.$dt2]")(y =>
-        C(Zip(n, dt1, dt2, x, y))
-      ))
-    ))
+    con(e1)(λ(exp"[$n.$dt1]")(x =>
+      con(e2)(λ(exp"[$n.$dt2]")(y =>
+        C(Zip(n, dt1, dt2, x, y)) )) ))
   }
 }

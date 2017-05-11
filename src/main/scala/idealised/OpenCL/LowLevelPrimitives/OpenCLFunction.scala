@@ -52,7 +52,7 @@ final case class OpenCLFunction(name: String,
       {args.map(Core.xmlPrinter(_))}
     </OpenCLFunction>
 
-  override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
+  override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
 
     def recurse(ts: Seq[(Phrase[ExpType], DataType)],
@@ -80,7 +80,7 @@ final case class OpenCLFunction(name: String,
     recurse(args zip inTs, Seq(), Seq())
   }
 
-  override def rewriteToImperativeCon(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
     import RewriteToImperative._
 
     def recurse(ts: Seq[(Phrase[ExpType], DataType)],

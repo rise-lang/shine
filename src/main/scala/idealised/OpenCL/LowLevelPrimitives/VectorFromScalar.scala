@@ -54,14 +54,14 @@ final case class VectorFromScalar(n: Nat,
       {Core.xmlPrinter(arg)}
     </makeVector>
 
-  override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
+  override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
     con(arg)(λ(exp"[$dt]")(e =>
       A `:=` VectorFromScalar(n, dt, e)
     ))
   }
 
-  override def rewriteToImperativeCon(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
     RewriteToImperative.con(arg)(λ(exp"[$dt]")(e =>
       C(VectorFromScalar(n, dt, e))
     ))

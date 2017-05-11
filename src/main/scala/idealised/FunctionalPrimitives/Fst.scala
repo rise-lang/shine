@@ -4,8 +4,9 @@ import idealised.Compiling.RewriteToImperative
 import idealised.Core.OperationalSemantics._
 import idealised.Core._
 import idealised.DSL.typed._
-import idealised.IntermediatePrimitives.MapI
 import idealised._
+
+import scala.language.reflectiveCalls
 
 import scala.xml.Elem
 
@@ -49,23 +50,13 @@ final case class Fst(dt1: DataType,
       {Core.xmlPrinter(record)}
     </fst>
 
-  override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
+  override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
-    con(record)(λ(exp"[$dt1 x $dt2]")(e =>
-      dt1 match {
-        case b: BasicType => A `:=` Fst(dt1, dt2, e)
-        case ArrayType(n, dt) =>
-          MapI(n, dt, dt, λ(ExpType(dt))(e => λ(AccType(dt))(a => acc(e)(a))), Fst(dt1, dt2, e), A)
-        case RecordType(dt11, dt12) =>
-          acc(fst(Fst(dt1, dt2, e)))(recordAcc1(dt11, dt12, A)) `;`
-            acc(snd(Fst(dt1, dt2, e)))(recordAcc2(dt11, dt12, A))
-        case _: DataTypeIdentifier => throw new Exception("This should not happen")
-      }
-    ))
+    con(record)(λ(exp"[$dt1 x $dt2]")(x => A :=|dt1| Fst(dt1, dt2, x) ))
   }
 
-  override def rewriteToImperativeCon(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] =
-    RewriteToImperative.con(record)(λ(exp"[$dt1 x $dt2]")(e =>
-      C(Fst(dt1, dt2, e))
-    ))
+  override def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
+    import RewriteToImperative._
+    con(record)(λ(exp"[$dt1 x $dt2]")(x => C(Fst(dt1, dt2, x)) ))
+  }
 }

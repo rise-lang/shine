@@ -50,7 +50,7 @@ final case class UnaryOpenCLFunction(name: String,
       {Core.xmlPrinter(arg)}
     </UnaryOpenCLFunction>
 
-  override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
+  override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
     con(arg)(λ(exp"[$inT]")(e =>
       outT match {
@@ -65,7 +65,7 @@ final case class UnaryOpenCLFunction(name: String,
     ))
   }
 
-  override def rewriteToImperativeCon(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
     RewriteToImperative.con(arg)(λ(exp"[$inT]")(e =>
       C(UnaryOpenCLFunction(name, inT, outT, e))
     ))

@@ -57,7 +57,7 @@ final case class Join(n: Nat,
       {Core.xmlPrinter(array)}
     </join>
 
-  override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
+  override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
 
     assert(n != null && m != null && dt != null)
@@ -65,11 +65,9 @@ final case class Join(n: Nat,
     acc(array)(JoinAcc(n, m, dt, A))
   }
 
-  override def rewriteToImperativeCon(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
     import RewriteToImperative._
 
-    con(array)(λ(exp"[$n.$m.$dt]")(x =>
-      C(Join(n, m, dt, x))
-    ))
+    con(array)(λ(exp"[$n.$m.$dt]")(x => C(Join(n, m, dt, x)) ))
   }
 }

@@ -74,7 +74,7 @@ abstract class AbstractReduce(n: Nat,
   override def prettyPrint: String =
     s"(${this.getClass.getSimpleName} ${PrettyPhrasePrinter(f)} ${PrettyPhrasePrinter(init)} ${PrettyPhrasePrinter(array)})"
 
-  override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
+  override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
 
     assert(n != null && dt1 != null && dt2 != null)
@@ -82,12 +82,11 @@ abstract class AbstractReduce(n: Nat,
     con(array)(λ(exp"[$n.$dt1]")(x =>
       con(init)(λ(exp"[$dt2]")(y =>
         makeReduceI(n, dt1, dt2,
-          λ(exp"[$dt1]")(x => λ(exp"[$dt2]")(y => λ(acc"[$dt2]")(o =>
-            acc( f(x)(y) )( o )))),
+          λ(exp"[$dt1]")(x => λ(exp"[$dt2]")(y => λ(acc"[$dt2]")(o => acc( f(x)(y) )( o )))),
           y, x, λ(exp"[$dt2]")(r => acc(r)(A)))))))
   }
 
-  override def rewriteToImperativeCon(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
     import RewriteToImperative._
 
     assert(n != null && dt1 != null && dt2 != null)
@@ -95,8 +94,7 @@ abstract class AbstractReduce(n: Nat,
     con(array)(λ(exp"[$n.$dt1]")(x =>
       con(init)(λ(exp"[$dt2]")(y =>
         makeReduceI(n, dt1, dt2,
-          λ(exp"[$dt1]")(x => λ(exp"[$dt2]")(y => λ(acc"[$dt2]")(o =>
-            acc( f(x)(y) )( o ) ))),
+          λ(exp"[$dt1]")(x => λ(exp"[$dt2]")(y => λ(acc"[$dt2]")(o => acc( f(x)(y) )( o ) ))),
           y, x, C)))))
   }
 

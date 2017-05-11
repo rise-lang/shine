@@ -64,11 +64,11 @@ final case class AsVector(n: Nat,
       {Core.xmlPrinter(array)}
     </asVector>
 
-  override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
+  override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
     RewriteToImperative.acc(array)(AsVectorAcc(n, m, dt, A))
   }
 
-  override def rewriteToImperativeCon(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
     RewriteToImperative.con(array)(λ(array.t) { x =>
       C(AsVector(n, m, dt, x))
     })

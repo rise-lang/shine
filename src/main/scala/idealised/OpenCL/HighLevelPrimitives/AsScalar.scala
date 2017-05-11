@@ -74,12 +74,12 @@ final case class AsScalar(n: Nat,
       {Core.xmlPrinter(array)}
     </asScalar>
 
-  override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
+  override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
     acc(array)(AsScalarAcc(n, m, dt, A))
   }
 
-  override def rewriteToImperativeCon(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
     import RewriteToImperative._
     con(array)(λ(array.t) { x =>
       C(AsScalar(n, m, dt, x))

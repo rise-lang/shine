@@ -67,7 +67,7 @@ abstract class To(dt1: DataType,
       Character.toLowerCase(name.charAt(0)) + name.substring(1)
     })
 
-  override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
+  override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
     assert(dt1 != null && dt2 != null)
     import RewriteToImperative._
 
@@ -76,7 +76,7 @@ abstract class To(dt1: DataType,
     ))
   }
 
-  override def rewriteToImperativeCon(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
     assert(dt1 != null && dt2 != null)
     import RewriteToImperative._
 

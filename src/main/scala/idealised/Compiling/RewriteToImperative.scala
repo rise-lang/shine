@@ -32,7 +32,7 @@ object RewriteToImperative {
           ))
         ))
 
-      case ep: ExpPrimitive => ep.rewriteToImperativeAcc(A)
+      case ep: ExpPrimitive => ep.acceptorTranslation(A)
 
       // on the fly beta-reduction
       case Apply(fun, arg) => acc(Lifting.liftFunction(fun)(arg))(A)
@@ -67,7 +67,7 @@ object RewriteToImperative {
           ))
         ))
 
-      case ep: ExpPrimitive => ep.rewriteToImperativeCon(C)
+      case ep: ExpPrimitive => ep.continuationTranslation(C)
 
       // on the fly beta-reduction
       case Apply(fun, arg) => con(Lifting.liftFunction(fun)(arg))(C)

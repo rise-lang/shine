@@ -66,17 +66,15 @@ final case class Split(n: Nat,
       {Core.xmlPrinter(array)}
     </split>
 
-  override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
+  override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
 
     acc(array)(SplitAcc(n, m, dt, A))
   }
 
-  override def rewriteToImperativeCon(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
     import RewriteToImperative._
 
-    con(array)(λ(exp"[${m * n}.$dt]")(x =>
-      C(Split(n, m, dt, x))
-    ))
+    con(array)(λ(exp"[${m * n}.$dt]")(x => C(Split(n, m, dt, x)) ))
   }
 }

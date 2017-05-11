@@ -52,18 +52,16 @@ final case class Record(dt1: DataType,
       </snd>
     </record>
 
-  override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
+  override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
-    acc(fst)(recordAcc1(dt1, dt2, A)) `;`
-      acc(snd)(recordAcc2(dt1, dt2, A))
+    acc(fst)(recordAcc1(dt1, dt2, A)) `;` acc(snd)(recordAcc2(dt1, dt2, A))
   }
 
-  override def rewriteToImperativeCon(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
     import RewriteToImperative._
+
     con(fst)(λ(exp"[$dt1]")(x =>
       con(snd)(λ(exp"[$dt2]")(y =>
-        C(Record(dt1, dt2, x, y))
-      ))
-    ))
+        C(Record(dt1, dt2, x, y)) )) ))
   }
 }
