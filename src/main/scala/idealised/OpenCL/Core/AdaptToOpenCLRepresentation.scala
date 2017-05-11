@@ -23,7 +23,7 @@ object AdaptToOpenCLRepresentation {
 }
 
 class AdaptToOpenCLRepresentation {
-  val varRefReplacements = mutable.Map[String, VarRef]()
+  val varRefReplacements: mutable.Map[String, VarRef] = mutable.Map[String, VarRef]()
 
   def adaptFunction(k: idealised.OpenCL.Kernel): Function = {
     k.function.copy(params = k.function.params.map(adaptParamDecl(k.inputParams)), body = adaptBlock(k.function.body))

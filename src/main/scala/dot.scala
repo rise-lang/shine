@@ -184,8 +184,8 @@ object dot extends App {
   printOpenCLKernel2("dotProduct2", dotProduct2)
 
   def dotSimpleDetailed(): Unit = {
-    import idealised.HighLevelPrimitives._
-    import idealised.LowLevelPrimitives._
+    import idealised.FunctionalPrimitives._
+    import idealised.ImperativePrimitives._
     import idealised.OpenCL.LowLevelPrimitives._
 
     val dt = float

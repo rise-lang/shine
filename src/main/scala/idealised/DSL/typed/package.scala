@@ -3,7 +3,7 @@ package idealised.DSL
 import idealised.Core.OperationalSemantics.{FloatData, IndexData, IntData}
 import idealised.Core.TypeInference._
 import idealised.Core._
-import idealised.LowLevelPrimitives.{Assign, Idx, IdxAcc, Seq}
+import idealised.ImperativePrimitives.{Assign, Idx, IdxAcc, Seq}
 import lift.arithmetic.{ContinuousRange, NamedVar}
 
 import scala.language.implicitConversions
@@ -22,7 +22,7 @@ package object typed {
   }
 
   implicit class ExpPhraseExtensions(e: Phrase[ExpType]) {
-    def `@`(index: Phrase[ExpType]) = (index.t, e.t) match {
+    def `@`(index: Phrase[ExpType]): Idx = (index.t, e.t) match {
       case (ExpType(IndexType(n1)), ExpType(ArrayType(n2, dt))) if n1 == n2 =>
         Idx(n1, dt, index, e)
       case x => error(x.toString, "(exp[idx(n)], exp[n.dt])")
@@ -30,7 +30,7 @@ package object typed {
   }
 
   implicit class AccPhraseExtensions(a: Phrase[AccType]) {
-    def `@`(index: Phrase[ExpType]) = (index.t, a.t) match {
+    def `@`(index: Phrase[ExpType]): IdxAcc = (index.t, a.t) match {
       case (ExpType(IndexType(n1)), AccType(ArrayType(n2, dt))) if n1 == n2 =>
         IdxAcc(n1, dt, index, a)
       case x => error(x.toString, "(exp[idx(n)], acc[n.dt])")
@@ -38,7 +38,7 @@ package object typed {
   }
 
   implicit class Assignment(lhs: Phrase[AccType]) {
-    def :=(rhs: Phrase[ExpType]) = {
+    def :=(rhs: Phrase[ExpType]): Assign = {
       (lhs.t, rhs.t) match {
         case (AccType(dt1), ExpType(dt2))
           if dt1 == dt2 =>
@@ -114,7 +114,4 @@ package object typed {
 
   implicit def toPair[T1 <: PhraseType, T2 <: PhraseType](pair: (Phrase[T1], Phrase[T2])): Pair[T1, T2] =
     Pair(pair._1, pair._2)
-
-  implicit def toNatDependentLambda[T <: PhraseType](p: Phrase[T]): NatDependentLambda[T] =
-    _Λ_( l => p )
 }

@@ -1,7 +1,7 @@
 package idealised.OpenCL.HighLevelPrimitives
 
 import idealised.Core._
-import idealised.HighLevelPrimitives.AbstractMap
+import idealised.FunctionalPrimitives.AbstractMap
 import idealised.OpenCL.MidLevelPrimitives.MapSeqI
 
 final case class MapSeq(n: Nat,

@@ -4,7 +4,7 @@ import idealised._
 import idealised.Core._
 import idealised.Compiling.SubstituteImplementations
 import idealised.DSL.typed._
-import idealised.MidLevelPrimitives.AbstractMapI
+import idealised.IntermediatePrimitives.AbstractMapI
 import SubstituteImplementations._
 import idealised.OpenCL.LowLevelPrimitives.ParForWorkGroup
 

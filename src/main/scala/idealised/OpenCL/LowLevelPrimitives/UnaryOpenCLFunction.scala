@@ -6,7 +6,7 @@ import idealised.Core.OperationalSemantics.{Data, Store}
 import idealised.Core.VisitAndRebuild.Visitor
 import idealised.Core._
 import idealised.DSL.typed._
-import idealised.MidLevelPrimitives.MapI
+import idealised.IntermediatePrimitives.MapI
 import idealised.OpenCL.Core.{GeneratableExp, ToOpenCL}
 import idealised.OpenCL.Core.ToOpenCL.Environment
 import opencl.generator.OpenCLAST.{Expression, FunctionCall}
@@ -58,8 +58,8 @@ final case class UnaryOpenCLFunction(name: String,
         case ArrayType(n, dt) =>
           MapI(n, dt, dt, A, λ(AccType(dt))(a => λ(ExpType(dt))(e => acc(e)(a))), UnaryOpenCLFunction(name, inT, outT, e))
         case RecordType(dt11, dt12) =>
-          acc(fst(UnaryOpenCLFunction(name, inT, outT, e)))(fstAcc(dt11, dt12, A)) `;`
-            acc(snd(UnaryOpenCLFunction(name, inT, outT, e)))(sndAcc(dt11, dt12, A))
+          acc(fst(UnaryOpenCLFunction(name, inT, outT, e)))(recordAcc1(dt11, dt12, A)) `;`
+            acc(snd(UnaryOpenCLFunction(name, inT, outT, e)))(recordAcc2(dt11, dt12, A))
         case _: DataTypeIdentifier => throw new Exception("This should not happen")
       }
     ))

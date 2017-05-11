@@ -1,8 +1,8 @@
 package idealised.OpenCL.HighLevelPrimitives
 
 import idealised.Core.{->, DataType, ExpType, Nat, Phrase}
-import idealised.HighLevelPrimitives.AbstractReduce
-import idealised.MidLevelPrimitives.{ReduceIAcc, ReduceIExp}
+import idealised.FunctionalPrimitives.AbstractReduce
+import idealised.IntermediatePrimitives.{ReduceIAcc, ReduceIExp}
 
 final case class ReduceSeq(n: Nat,
                            dt1: DataType, dt2: DataType,

@@ -2,7 +2,7 @@ package idealised.Compiling
 
 import idealised.Core._
 import idealised.DSL.typed._
-import idealised.MidLevelPrimitives.MapI
+import idealised.IntermediatePrimitives.MapI
 
 object RewriteToImperative {
 
@@ -25,7 +25,7 @@ object RewriteToImperative {
         x.t.dataType match {
           case _: BasicType => A `:=` x
           case ArrayType(n, dt) => MapI(n, dt, dt, A, λ(AccType(dt))(o => λ(ExpType(dt))(x => acc(x)(o))), x)
-          case RecordType(dt1, dt2) => acc(fst(x))(fstAcc(dt1, dt2, A)) `;` acc(snd(x))(sndAcc(dt1, dt2, A))
+          case RecordType(dt1, dt2) => acc(fst(x))(recordAcc1(dt1, dt2, A)) `;` acc(snd(x))(recordAcc2(dt1, dt2, A))
           case _: DataTypeIdentifier => throw new Exception("This should not happen")
         }
 

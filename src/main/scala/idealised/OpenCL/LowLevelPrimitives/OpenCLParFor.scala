@@ -2,7 +2,7 @@ package idealised.OpenCL.LowLevelPrimitives
 
 import idealised.Core._
 import idealised.DSL.typed._
-import idealised.LowLevelPrimitives.AbstractParFor
+import idealised.ImperativePrimitives.AbstractParFor
 import idealised.OpenCL.Core.{GeneratableComm, ToOpenCL}
 import lift.arithmetic.{Cst, NamedVar, RangeAdd}
 import opencl.generator.OpenCLAST

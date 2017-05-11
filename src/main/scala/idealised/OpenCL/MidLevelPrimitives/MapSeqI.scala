@@ -3,7 +3,7 @@ package idealised.OpenCL.MidLevelPrimitives
 import idealised.Compiling.SubstituteImplementations
 import idealised.Core._
 import idealised.DSL.typed._
-import idealised.MidLevelPrimitives.AbstractMapI
+import idealised.IntermediatePrimitives.AbstractMapI
 import SubstituteImplementations._
 
 final case class MapSeqI(n: Nat,

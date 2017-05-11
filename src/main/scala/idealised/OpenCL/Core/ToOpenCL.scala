@@ -5,9 +5,9 @@ import idealised.Compiling._
 import idealised.Core.OperationalSemantics._
 import idealised.Core._
 import idealised.DSL.typed._
-import idealised.HighLevelPrimitives._
-import idealised.LowLevelPrimitives._
-import idealised.OpenCL.Core.CombinatorsToOpenCL._
+import idealised.FunctionalPrimitives._
+import idealised.ImperativePrimitives._
+import idealised.OpenCL.Core.PrimitivesToOpenCL._
 import idealised.OpenCL.Core.HoistMemoryAllocations.AllocationInfo
 import idealised._
 import ir.{Type, UndefType}
@@ -405,8 +405,8 @@ object ToOpenCL {
       case d: DoubleBufferFor => toOpenCL(d, block, env)
       case f: For => toOpenCL(f, block, env)
       case n: New => toOpenCL(n, block, env)
-      case s: idealised.LowLevelPrimitives.Seq => toOpenCL(s, block, env)
-      case s: idealised.LowLevelPrimitives.Skip => toOpenCL(s, block, env)
+      case s: idealised.ImperativePrimitives.Seq => toOpenCL(s, block, env)
+      case s: idealised.ImperativePrimitives.Skip => toOpenCL(s, block, env)
 
       case p: ParFor => toOpenCL(p, block, env)
 
@@ -521,11 +521,10 @@ object ToOpenCL {
       case p: Proj1[AccType, _] => acc(Lifting.liftPair(p.pair)._1, value, env)
       case p: Proj2[_, AccType] => acc(Lifting.liftPair(p.pair)._2, value, env)
 
-      case f: FstAcc    => toOpenCL(f, value, env, f.t.dataType, List(), List())
+      case f: RecordAcc1    => toOpenCL(f, value, env, f.t.dataType, List(), List())
       case i: IdxAcc    => toOpenCL(i, value, env, i.t.dataType, List(), List())
       case j: JoinAcc   => toOpenCL(j, value, env, j.t.dataType, List(), List())
-      case r: RecordAcc => toOpenCL(r, value, env, r.t.dataType, List(), List())
-      case s: SndAcc    => toOpenCL(s, value, env, s.t.dataType, List(), List())
+      case s: RecordAcc2    => toOpenCL(s, value, env, s.t.dataType, List(), List())
       case s: SplitAcc  => toOpenCL(s, value, env, s.t.dataType, List(), List())
       case t: TruncAcc  => toOpenCL(t, value, env, t.t.dataType, List(), List())
 
@@ -574,11 +573,10 @@ object ToOpenCL {
 
       case v: ViewAcc => v.toOpenCL(env, value, dt, arrayAccess, tupleAccess)
 
-      case f: FstAcc    => toOpenCL(f, value, env, dt, arrayAccess, tupleAccess)
+      case f: RecordAcc1    => toOpenCL(f, value, env, dt, arrayAccess, tupleAccess)
       case i: IdxAcc    => toOpenCL(i, value, env, dt, arrayAccess, tupleAccess)
       case j: JoinAcc   => toOpenCL(j, value, env, dt, arrayAccess, tupleAccess)
-      case r: RecordAcc => toOpenCL(r, value, env, dt, arrayAccess, tupleAccess)
-      case s: SndAcc    => toOpenCL(s, value, env, dt, arrayAccess, tupleAccess)
+      case s: RecordAcc2    => toOpenCL(s, value, env, dt, arrayAccess, tupleAccess)
       case s: SplitAcc  => toOpenCL(s, value, env, dt, arrayAccess, tupleAccess)
       case t: TruncAcc  => toOpenCL(t, value, env, dt, arrayAccess, tupleAccess)
 

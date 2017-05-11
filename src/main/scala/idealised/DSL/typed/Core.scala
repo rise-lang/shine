@@ -25,17 +25,18 @@ object λ extends funDef
 
 trait dependentFunDef {
 
-  def apply[T <: PhraseType](f: NamedVar => Phrase[T]) = {
+  def apply[T <: PhraseType](f: NamedVar => Phrase[T]): NatDependentLambda[T] = {
     val x = NamedVar(newName())
     NatDependentLambda(x, f(x))
   }
 
-  def apply[T <: PhraseType](f: NamedVar => Phrase[T], range: lift.arithmetic.Range) = {
+  def apply[T <: PhraseType](f: NamedVar => Phrase[T],
+                             range: lift.arithmetic.Range): NatDependentLambda[T] = {
     val x = NamedVar(newName(), range)
     NatDependentLambda(x, f(x))
   }
 
-  def apply[T <: PhraseType](f: DataTypeIdentifier => Phrase[T]) = {
+  def apply[T <: PhraseType](f: DataTypeIdentifier => Phrase[T]): TypeDependentLambda[T] = {
     val x = DataTypeIdentifier(newName())
     TypeDependentLambda(x, f(x))
   }

@@ -2,7 +2,8 @@ package idealised.DSL
 
 import idealised.Core._
 import idealised.Core.OperationalSemantics.{FloatData, VectorData}
-import idealised.LowLevelPrimitives._
+import idealised.FunctionalPrimitives.{Fst, Snd}
+import idealised.ImperativePrimitives._
 
 import scala.language.implicitConversions
 
@@ -25,15 +26,13 @@ package object untyped {
   }
 
   implicit class CallNatDependentLambda[T <: PhraseType](fun: Phrase[`(nat)->`[T]]) {
-    def apply(arg: Nat): Phrase[T] =
-      Lifting.liftNatDependentFunction(fun)(arg)
+    def apply(arg: Nat): Phrase[T] = Lifting.liftNatDependentFunction(fun)(arg)
 
     def $(arg: Nat): Phrase[T] = apply(arg)
   }
 
   implicit class CallTypeDependentLambda[T <: PhraseType](fun: Phrase[`(dt)->`[T]]) {
-    def apply(arg: DataType): Phrase[T] =
-      Lifting.liftTypeDependentFunction(fun)(arg)
+    def apply(arg: DataType): Phrase[T] = Lifting.liftTypeDependentFunction(fun)(arg)
 
     def $(arg: DataType): Phrase[T] = apply(arg)
   }
@@ -49,7 +48,7 @@ package object untyped {
   }
 
   implicit class Assignment(lhs: Phrase[AccType]) {
-    def :=(rhs: Phrase[ExpType]) = {
+    def :=(rhs: Phrase[ExpType]): Assign = {
       (lhs.t, rhs.t) match {
         case (AccType(dt1), ExpType(dt2))
           if dt1 == dt2 && dt1.isInstanceOf[BasicType] =>
@@ -68,13 +67,13 @@ package object untyped {
     Literal(v, VectorType(v.a.length, v.a.head.dataType.asInstanceOf[ScalarType]))
 
   implicit def toNatDependentLambda[T <: PhraseType](p: Phrase[T]): NatDependentLambda[T] =
-    _Λ_( l => p )
+    _Λ_( _ => p )
 
   implicit class ExpPhraseExtensions(e: Phrase[ExpType]) {
     def _1 = Fst(null, null, e)
     def _2 = Snd(null, null, e)
 
-    def `@`(index: Phrase[ExpType]) = (index.t, e.t) match {
+    def `@`(index: Phrase[ExpType]): Idx = (index.t, e.t) match {
       case (ExpType(IndexType(n)), ExpType(ArrayType(n_, dt))) if n == n_ =>
         Idx(n, dt, index, e)
       case _ => Idx(null, null, index, e)
@@ -83,7 +82,7 @@ package object untyped {
   }
 
   implicit class AccPhraseExtensions(a: Phrase[AccType]) {
-    def `@`(index: Phrase[ExpType]) = (index.t, a.t) match {
+    def `@`(index: Phrase[ExpType]): IdxAcc = (index.t, a.t) match {
       case (ExpType(IndexType(n)), AccType(ArrayType(n_, dt))) if n == n_ =>
         IdxAcc(n, dt, index, a)
       case _ => IdxAcc(null, null, index, a)

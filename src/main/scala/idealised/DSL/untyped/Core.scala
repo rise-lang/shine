@@ -1,21 +1,19 @@
 package idealised.DSL.untyped
 
 import idealised.Core._
-import idealised.LowLevelPrimitives.Record
+import idealised.FunctionalPrimitives.Record
 import lift.arithmetic.NamedVar
 
 object identifier {
-  def apply[T <: PhraseType](name: String, t: T) = Identifier(name, t)
+  def apply[T <: PhraseType](name: String, t: T): Identifier[T] = Identifier(name, t)
 }
 
 trait funDef {
-  def apply[T <: PhraseType](f: Identifier[ExpType] => Phrase[T]): Lambda[ExpType, T] = {
+  def apply[T <: PhraseType](f: Identifier[ExpType] => Phrase[T]): Lambda[ExpType, T] =
     apply[ExpType, T](null)(f)
-  }
 
-  def apply[T <: PhraseType](f: (Phrase[ExpType], Phrase[ExpType]) => Phrase[T]): Lambda[ExpType x ExpType, T] = {
+  def apply[T <: PhraseType](f: (Phrase[ExpType], Phrase[ExpType]) => Phrase[T]): Lambda[ExpType x ExpType, T] =
     apply[ExpType x ExpType, T](null)(x => f(π1(x), π2(x)))
-  }
 
   def apply[T1 <: PhraseType, T2 <: PhraseType](t: T1)
                                                (f: Identifier[T1] => Phrase[T2]): Lambda[T1, T2] = {
@@ -49,15 +47,13 @@ trait dependentFunDef {
 object _Λ_ extends dependentFunDef
 
 object π1 {
-  def apply[T1 <: PhraseType, T2 <: PhraseType](pair: Phrase[T1 x T2]) =
-    Proj1(pair)
+  def apply[T1 <: PhraseType, T2 <: PhraseType](pair: Phrase[T1 x T2]): Proj1[T1, T2] = Proj1(pair)
 }
 
 object π2 {
-  def apply[T1 <: PhraseType, T2 <: PhraseType](pair: Phrase[T1 x T2]) =
-    Proj2(pair)
+  def apply[T1 <: PhraseType, T2 <: PhraseType](pair: Phrase[T1 x T2]): Proj2[T1, T2] = Proj2(pair)
 }
 
 object record {
-  def apply(fst: Phrase[ExpType], snd: Phrase[ExpType]) = Record(null, null, fst, snd)
+  def apply(fst: Phrase[ExpType], snd: Phrase[ExpType]): Record = Record(null, null, fst, snd)
 }

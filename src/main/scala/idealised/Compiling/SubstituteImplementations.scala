@@ -1,7 +1,7 @@
 package idealised.Compiling
 
 import idealised.Core._
-import idealised.LowLevelPrimitives._
+import idealised.ImperativePrimitives._
 
 import scala.collection.immutable
 
@@ -45,11 +45,10 @@ object SubstituteImplementations {
       case p: Proj1[AccType, _] => getAddressSpace(Lifting.liftPair(p.pair)._1, env)
       case p: Proj2[_, AccType] => getAddressSpace(Lifting.liftPair(p.pair)._2, env)
 
-      case f: FstAcc    => getAddressSpace(f.record, env)
+      case f: RecordAcc1    => getAddressSpace(f.record, env)
       case i: IdxAcc    => getAddressSpace(i.array, env)
       case j: JoinAcc   => getAddressSpace(j.array, env)
-      case _: RecordAcc => ???
-      case s: SndAcc    => getAddressSpace(s.record, env)
+      case s: RecordAcc2    => getAddressSpace(s.record, env)
       case s: SplitAcc  => getAddressSpace(s.array, env)
       case t: TruncAcc  => getAddressSpace(t.array, env)
 
