@@ -65,15 +65,15 @@ final case class Gather(n: Nat,
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
 
-    exp(this)(λ(exp"[$n.$dt]")(x =>
+    con(this)(λ(exp"[$n.$dt]")(x =>
       acc(x)(A)
     ))
   }
 
-  override def rewriteToImperativeExp(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
+  override def rewriteToImperativeCon(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
     import RewriteToImperative._
 
-    exp(array)(λ(exp"[$n.$dt]")(x =>
+    con(array)(λ(exp"[$n.$dt]")(x =>
       C(Gather(n, dt, idxF, x))
     ))
   }

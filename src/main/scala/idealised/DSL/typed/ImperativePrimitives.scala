@@ -23,6 +23,14 @@ object `if` {
                              thenP: Phrase[T],
                              elseP: Phrase[T]): IfThenElse[T] =
     IfThenElse(cond, thenP, elseP)
+
+  def apply(cond: Phrase[ExpType]) = new {
+    def `then`[T <: PhraseType](thenP: Phrase[T]) = new {
+      def `else`(elseP: Phrase[T]): IfThenElse[T] = {
+        IfThenElse(cond, thenP, elseP)
+      }
+    }
+  }
 }
 
 object `for` {

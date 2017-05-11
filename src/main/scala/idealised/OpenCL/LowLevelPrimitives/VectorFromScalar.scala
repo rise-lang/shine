@@ -56,13 +56,13 @@ final case class VectorFromScalar(n: Nat,
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
-    exp(arg)(λ(exp"[$dt]")(e =>
+    con(arg)(λ(exp"[$dt]")(e =>
       A `:=` VectorFromScalar(n, dt, e)
     ))
   }
 
-  override def rewriteToImperativeExp(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
-    RewriteToImperative.exp(arg)(λ(exp"[$dt]")(e =>
+  override def rewriteToImperativeCon(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
+    RewriteToImperative.con(arg)(λ(exp"[$dt]")(e =>
       C(VectorFromScalar(n, dt, e))
     ))
   }

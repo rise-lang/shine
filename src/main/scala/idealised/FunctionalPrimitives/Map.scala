@@ -18,7 +18,7 @@ abstract class AbstractMap(n: Nat,
 
   def makeMap: (Nat, DataType, DataType, Phrase[ExpType -> ExpType], Phrase[ExpType]) => AbstractMap
 
-  def makeMapI: (Nat, DataType, DataType, Phrase[AccType], Phrase[AccType -> (ExpType -> CommandType)], Phrase[ExpType]) => AbstractMapI
+  def makeMapI: (Nat, DataType, DataType, Phrase[ExpType -> (AccType -> CommandType)], Phrase[ExpType], Phrase[AccType]) => AbstractMapI
 
 
   override lazy val `type` = exp"[$n.$dt2]"
@@ -72,15 +72,14 @@ abstract class AbstractMap(n: Nat,
 
     assert(n != null && dt1 != null && dt2 != null)
 
-    exp(array)(λ(exp"[$n.$dt1]")(x =>
-      makeMapI(n, dt1, dt2, A,
-        λ(acc"[$dt2]")(o => λ(exp"[$dt1]")(x => acc(f(x))(o))),
-        x
-      )
-    ))
+    con(array)(λ(exp"[$n.$dt1]")(x =>
+      makeMapI(n, dt1, dt2,
+        λ(exp"[$dt1]")(x => λ(acc"[$dt2]")(o => acc(f(x))(o))),
+        x,
+        A)))
   }
 
-  override def rewriteToImperativeExp(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
+  override def rewriteToImperativeCon(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
     import RewriteToImperative._
 
     assert(n != null && dt1 != null && dt2 != null)

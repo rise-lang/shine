@@ -72,10 +72,10 @@ final case class Split(n: Nat,
     acc(array)(SplitAcc(n, m, dt, A))
   }
 
-  override def rewriteToImperativeExp(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
+  override def rewriteToImperativeCon(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
     import RewriteToImperative._
 
-    exp(array)(λ(exp"[${m * n}.$dt]")( x =>
+    con(array)(λ(exp"[${m * n}.$dt]")(x =>
       C(Split(n, m, dt, x))
     ))
   }

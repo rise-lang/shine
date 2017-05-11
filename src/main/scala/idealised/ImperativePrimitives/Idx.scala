@@ -61,11 +61,11 @@ final case class Idx(n: Nat,
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
-    exp(array)(λ(exp"[$n.$dt]")(e =>
+    con(array)(λ(exp"[$n.$dt]")(e =>
       dt match {
         case b: BasicType => A `:=` Idx(n, dt, index, e)
         case ArrayType(m, dt2) =>
-          MapI(m, dt2, dt2, A, λ(AccType(dt))(a => λ(ExpType(dt))(e => acc(e)(a))), Idx(n, dt, index, e))
+          MapI(m, dt2, dt2, λ(ExpType(dt))(e => λ(AccType(dt))(a => acc(e)(a))), Idx(n, dt, index, e), A)
         case RecordType(dt1, dt2) =>
           acc(fst(Idx(n, dt, index, e)))(recordAcc1(dt1, dt2, A)) `;`
             acc(snd(Idx(n, dt, index, e)))(recordAcc2(dt1, dt2, A))
@@ -74,8 +74,8 @@ final case class Idx(n: Nat,
     ))
   }
 
-  override def rewriteToImperativeExp(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] =
-    RewriteToImperative.exp(array)(λ(exp"[$n.$dt]")(e =>
+  override def rewriteToImperativeCon(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] =
+    RewriteToImperative.con(array)(λ(exp"[$n.$dt]")(e =>
       C(Idx(n, dt, index, e))
     ))
 }

@@ -79,9 +79,9 @@ final case class AsScalar(n: Nat,
     acc(array)(AsScalarAcc(n, m, dt, A))
   }
 
-  override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
+  override def rewriteToImperativeCon(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
     import RewriteToImperative._
-    exp(array)(λ(array.t) { x =>
+    con(array)(λ(array.t) { x =>
       C(AsScalar(n, m, dt, x))
     })
   }

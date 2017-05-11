@@ -68,8 +68,8 @@ final case class AsVector(n: Nat,
     RewriteToImperative.acc(array)(AsVectorAcc(n, m, dt, A))
   }
 
-  override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
-    RewriteToImperative.exp(array)(λ(array.t) { x =>
+  override def rewriteToImperativeCon(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
+    RewriteToImperative.con(array)(λ(array.t) { x =>
       C(AsVector(n, m, dt, x))
     })
   }

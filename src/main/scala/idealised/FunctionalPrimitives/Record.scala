@@ -58,10 +58,10 @@ final case class Record(dt1: DataType,
       acc(snd)(recordAcc2(dt1, dt2, A))
   }
 
-  override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
+  override def rewriteToImperativeCon(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
     import RewriteToImperative._
-    exp(fst)(λ(exp"[$dt1]")(x =>
-      exp(snd)(λ(exp"[$dt2]")(y =>
+    con(fst)(λ(exp"[$dt1]")(x =>
+      con(snd)(λ(exp"[$dt2]")(y =>
         C(Record(dt1, dt2, x, y))
       ))
     ))

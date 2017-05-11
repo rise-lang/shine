@@ -1,5 +1,6 @@
 package idealised.DSL
 
+import idealised.Compiling.RewriteToImperative
 import idealised.Core.OperationalSemantics.{FloatData, IndexData, IntData}
 import idealised.Core.TypeInference._
 import idealised.Core._
@@ -7,6 +8,7 @@ import idealised.ImperativePrimitives.{Assign, Idx, IdxAcc, Seq}
 import lift.arithmetic.{ContinuousRange, NamedVar}
 
 import scala.language.implicitConversions
+import scala.language.reflectiveCalls
 
 package object typed {
 
@@ -50,6 +52,12 @@ package object typed {
             }
         case (x1, x2) => error(x1.toString() + " and " + x2.toString(),
           expected = "them to have a matching data type.")
+      }
+    }
+
+    def :=|(dt: DataType) = new {
+      def |(rhs: Phrase[ExpType]): Phrase[CommandType] = {
+        RewriteToImperative.compoundAssign(dt, lhs, rhs)
       }
     }
   }

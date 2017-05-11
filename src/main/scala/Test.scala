@@ -707,7 +707,7 @@ object Test extends App {
     println(p)
     println("=====")
 
-    val p2 = RewriteToImperative(p)
+    val p2 = RewriteToImperative(p(identifier("input", p.param.t)))
     println("=====")
     println(p2)
     println("=====")

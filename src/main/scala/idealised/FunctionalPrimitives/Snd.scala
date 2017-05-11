@@ -50,11 +50,11 @@ final case class Snd(dt1: DataType,
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
-    exp(record)(λ(exp"[$dt1 x $dt2]")(e =>
+    con(record)(λ(exp"[$dt1 x $dt2]")(e =>
       dt2 match {
         case b: BasicType => A `:=` Snd(dt1, dt2, e)
         case ArrayType(n, dt) =>
-          MapI(n, dt, dt, A, λ(AccType(dt))(a => λ(ExpType(dt))(e => acc(e)(a))), Snd(dt1, dt2, e))
+          MapI(n, dt, dt, λ(ExpType(dt))(e => λ(AccType(dt))(a => acc(e)(a))), Snd(dt1, dt2, e), A)
         case RecordType(dt11, dt12) =>
           acc(fst(Snd(dt1, dt2, e)))(recordAcc1(dt11, dt12, A)) `;`
             acc(snd(Snd(dt1, dt2, e)))(recordAcc2(dt11, dt12, A))
@@ -63,8 +63,8 @@ final case class Snd(dt1: DataType,
     ))
   }
 
-  override def rewriteToImperativeExp(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] =
-    RewriteToImperative.exp(record)(λ(exp"[$dt1 x $dt2]")(e =>
+  override def rewriteToImperativeCon(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] =
+    RewriteToImperative.con(record)(λ(exp"[$dt1 x $dt2]")(e =>
       C(Snd(dt1, dt2, e))
     ))
 }

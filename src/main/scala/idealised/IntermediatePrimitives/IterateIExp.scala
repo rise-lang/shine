@@ -48,8 +48,8 @@ final case class IterateIExp(n: Nat,
 
     `new`(dt"[${`n^k*m`}.$dt]", addressSpace, buf1 =>
       `new`(dt"[${`n^k*m`}.$dt]", addressSpace, buf2 =>
-        SubstituteImplementations(MapI(`n^k*m`, dt, dt, buf1.wr,
-          λ(acc"[$dt]")(a => λ(exp"[$dt]")(e => a `:=` e)), in), env) `;`
+        SubstituteImplementations(MapI(`n^k*m`, dt, dt,
+          λ(exp"[$dt]")(e => λ(acc"[$dt]")(a => a := e)), in, buf1.wr), env) `;`
           dblBufFor(`n^k*m`, m, k, dt, addressSpace, buf1, buf2,
             _Λ_(l => λ(acc"[${`n^k*m`}.$dt]")(a => λ(exp"[${`n^k*m`}.$dt]")(e =>
               SubstituteImplementations(

@@ -11,17 +11,17 @@ import scala.xml.Elem
 abstract class AbstractMapI(n: Nat,
                             dt1: DataType,
                             dt2: DataType,
-                            out: Phrase[AccType],
-                            f: Phrase[AccType -> (ExpType -> CommandType)],
-                            in: Phrase[ExpType])
+                            f: Phrase[ExpType -> (AccType -> CommandType)],
+                            in: Phrase[ExpType],
+                            out: Phrase[AccType])
   extends CommandPrimitive with Intermediate[CommandType] {
 
   override def typeCheck(): Unit = {
     import TypeChecker._
     (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
-      (out :: acc"[$n.$dt2]") ->
-      (f :: t"acc[$dt2] -> exp[$dt1] -> comm") ->
+      (f :: t"exp[$dt1] -> acc[$dt2] -> comm") ->
       (in :: exp"[$n.$dt1]") ->
+      (out :: acc"[$n.$dt2]") ->
       comm
   }
 
@@ -32,19 +32,19 @@ abstract class AbstractMapI(n: Nat,
     }
 
     (0 until n.eval).foldLeft(s)((sOld, i) => {
-      val comm = fE(out `@` Literal(i, IndexType(n)))(in `@` Literal(i, IndexType(n)))
+      val comm = fE(in `@` Literal(i, IndexType(n)))(out `@` Literal(i, IndexType(n)))
       OperationalSemantics.eval(sOld, comm)
     })
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {
     makeMapI(fun(n), fun(dt1), fun(dt2),
-      VisitAndRebuild(out, fun),
       VisitAndRebuild(f, fun),
-      VisitAndRebuild(in, fun))
+      VisitAndRebuild(in, fun),
+      VisitAndRebuild(out, fun))
   }
 
-  def makeMapI: (Nat, DataType, DataType, Phrase[AccType], Phrase[AccType -> (ExpType -> CommandType)], Phrase[ExpType]) => AbstractMapI
+  def makeMapI: (Nat, DataType, DataType, Phrase[ExpType -> (AccType -> CommandType)], Phrase[ExpType], Phrase[AccType]) => AbstractMapI
 
   override def prettyPrint =
     s"(${this.getClass.getSimpleName} ${PrettyPhrasePrinter(out)} ${PrettyPhrasePrinter(f)} ${PrettyPhrasePrinter(in)})"
@@ -69,16 +69,16 @@ abstract class AbstractMapI(n: Nat,
 final case class MapI(n: Nat,
                       dt1: DataType,
                       dt2: DataType,
-                      out: Phrase[AccType],
-                      f: Phrase[AccType -> (ExpType -> CommandType)],
-                      in: Phrase[ExpType])
-  extends AbstractMapI(n, dt1, dt2, out, f, in) {
+                      f: Phrase[ExpType -> (AccType -> CommandType)],
+                      in: Phrase[ExpType],
+                      out: Phrase[AccType])
+  extends AbstractMapI(n, dt1, dt2, f, in, out) {
 
   override def makeMapI = MapI
 
   override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
     `parFor`(n, dt2, out, i => o =>
-      SubstituteImplementations(f(o)(in `@` i), env)
+      SubstituteImplementations(f(in `@` i)(o), env)
     )
   }
 

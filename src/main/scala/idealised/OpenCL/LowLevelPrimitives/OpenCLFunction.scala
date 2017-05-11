@@ -60,12 +60,12 @@ final case class OpenCLFunction(name: String,
                 inTs: Seq[DataType]): Phrase[CommandType] = {
       ts match {
         case Seq( (arg, inT) ) =>
-          exp(arg)(λ(exp"[$inT]")(e =>
+          con(arg)(λ(exp"[$inT]")(e =>
             outT match {
               case b: BasicType => A `:=` OpenCLFunction(name, inTs :+ inT, outT, es :+ e)
               case ArrayType(n, dt) =>
-                MapI(n, dt, dt, A, λ(AccType(dt))(a => λ(ExpType(dt))(e => acc(e)(a))),
-                  OpenCLFunction(name, inTs :+ inT, outT, es :+ e))
+                MapI(n, dt, dt, λ(ExpType(dt))(e => λ(AccType(dt))(a => acc(e)(a))),
+                  OpenCLFunction(name, inTs :+ inT, outT, es :+ e), A)
               case RecordType(dt11, dt12) =>
                 acc(fst(OpenCLFunction(name, inTs :+ inT, outT, es :+ e)))(recordAcc1(dt11, dt12, A)) `;`
                   acc(snd(OpenCLFunction(name, inTs :+ inT, outT, es :+ e)))(recordAcc2(dt11, dt12, A))
@@ -73,14 +73,14 @@ final case class OpenCLFunction(name: String,
             }
           ))
         case Seq( (arg, inT), tail@_* ) =>
-          exp(arg)(λ(exp"[$inT]")(e => recurse(tail, es :+ e, inTs :+ inT) ))
+          con(arg)(λ(exp"[$inT]")(e => recurse(tail, es :+ e, inTs :+ inT) ))
       }
     }
 
     recurse(args zip inTs, Seq(), Seq())
   }
 
-  override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
+  override def rewriteToImperativeCon(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
     import RewriteToImperative._
 
     def recurse(ts: Seq[(Phrase[ExpType], DataType)],
@@ -88,11 +88,11 @@ final case class OpenCLFunction(name: String,
                 inTs: Seq[DataType]): Phrase[CommandType] = {
       ts match {
         case Seq( (arg, inT) ) =>
-          exp(arg)(λ(exp"[$inT]")(e =>
+          con(arg)(λ(exp"[$inT]")(e =>
             C(OpenCLFunction(name, inTs :+ inT, outT, es :+ e))
           ))
         case Seq( (arg, inT), tail@_* ) =>
-          exp(arg)(λ(exp"[$inT]")(e => recurse(tail, es :+ e, inTs :+ inT) ))
+          con(arg)(λ(exp"[$inT]")(e => recurse(tail, es :+ e, inTs :+ inT) ))
       }
     }
 

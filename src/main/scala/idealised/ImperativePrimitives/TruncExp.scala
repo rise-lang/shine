@@ -41,12 +41,12 @@ final case class TruncExp(n: Nat,
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
-    exp(array)(λ(exp"[$n.$dt]")(e =>
-      MapI(m, dt, dt, A, λ(AccType(dt))(a => λ(ExpType(dt))(e => acc(e)(a))), e)))
+    con(array)(λ(exp"[$n.$dt]")(e =>
+      MapI(m, dt, dt, λ(ExpType(dt))(e => λ(AccType(dt))(a => acc(e)(a))), e, A)))
   }
 
-  override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] =
-    RewriteToImperative.exp(array)(λ(exp"[$n.$dt]")(e => C(TruncExp(n, m, dt, e))))
+  override def rewriteToImperativeCon(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] =
+    RewriteToImperative.con(array)(λ(exp"[$n.$dt]")(e => C(TruncExp(n, m, dt, e))))
 
   override def xmlPrinter: Elem =
     <truncExp n={n.toString} m={m.toString} dt={dt.toString}>

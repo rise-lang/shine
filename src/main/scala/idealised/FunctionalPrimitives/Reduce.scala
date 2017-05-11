@@ -81,8 +81,8 @@ abstract class AbstractReduce(n: Nat,
 
     assert(n != null && dt1 != null && dt2 != null)
 
-    exp(array)(λ(exp"[$n.$dt1]")(x =>
-      exp(init)(λ(exp"[$dt2]")(y =>
+    con(array)(λ(exp"[$n.$dt1]")(x =>
+      con(init)(λ(exp"[$dt2]")(y =>
         makeReduceIAcc(n, dt1, dt2, A,
           λ(acc"[$dt2]")(o => λ(exp"[$dt1]")(x => λ(exp"[$dt2]")(y =>
             acc(f(x)(y))(o)))),
@@ -93,13 +93,13 @@ abstract class AbstractReduce(n: Nat,
     ))
   }
 
-  override def rewriteToImperativeExp(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
+  override def rewriteToImperativeCon(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
     import RewriteToImperative._
 
     assert(n != null && dt1 != null && dt2 != null)
 
-    exp(array)(λ(exp"[$n.$dt1]")(x =>
-      exp(init)(λ(exp"[$dt2]")(y =>
+    con(array)(λ(exp"[$n.$dt1]")(x =>
+      con(init)(λ(exp"[$dt2]")(y =>
         makeReduceIExp(n, dt1, dt2, C,
           λ(acc"[$dt2]")(o => λ(exp"[$dt1]")(x => λ(exp"[$dt2]")(y =>
             acc(f(x)(y))(o)))),

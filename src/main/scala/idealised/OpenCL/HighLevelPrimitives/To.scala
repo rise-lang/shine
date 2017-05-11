@@ -71,12 +71,12 @@ abstract class To(dt1: DataType,
     assert(dt1 != null && dt2 != null)
     import RewriteToImperative._
 
-    exp(this)(λ( exp"[$dt2]" )( x =>
+    con(this)(λ( exp"[$dt2]" )(x =>
       acc(x)(A)
     ))
   }
 
-  override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
+  override def rewriteToImperativeCon(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
     assert(dt1 != null && dt2 != null)
     import RewriteToImperative._
 

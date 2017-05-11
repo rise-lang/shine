@@ -11,10 +11,10 @@ import idealised.OpenCL.LowLevelPrimitives.ParForWorkGroup
 final case class MapWorkGroupI(n: Nat,
                                dt1: DataType,
                                dt2: DataType,
-                               out: Phrase[AccType],
-                               f: Phrase[AccType -> (ExpType -> CommandType)],
-                               in: Phrase[ExpType])
-  extends AbstractMapI(n, dt1, dt2, out, f, in) {
+                               f: Phrase[ExpType -> (AccType -> CommandType)],
+                               in: Phrase[ExpType],
+                               out: Phrase[AccType])
+  extends AbstractMapI(n, dt1, dt2, f, in, out) {
 
   override def makeMapI = MapWorkGroupI
 
@@ -28,7 +28,7 @@ final case class MapWorkGroupI(n: Nat,
       //      val addressSpace = env.addressspace(identifier.name)
       val addressSpace = OpenCL.GlobalMemory
 
-      SubstituteImplementations(f(o)(in `@` i),
+      SubstituteImplementations(f(in `@` i)(o),
         env.copy(env.addressSpace.updated(o.name, addressSpace)))
     })))
 

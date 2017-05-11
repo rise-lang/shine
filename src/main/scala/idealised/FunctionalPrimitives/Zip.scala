@@ -71,22 +71,23 @@ final case class Zip(n: Nat,
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
 
-    exp(lhs)(λ(exp"[$n.$dt1]")(x =>
-      exp(rhs)(λ(exp"[$n.$dt2]")(y =>
-        MapI(n, dt1 x dt2, dt1 x dt2, A,
-          λ(acc"[$dt1 x $dt2]")(o => λ(exp"[$dt1 x $dt2]")(x =>
+    con(lhs)(λ(exp"[$n.$dt1]")(x =>
+      con(rhs)(λ(exp"[$n.$dt2]")(y =>
+        MapI(n, dt1 x dt2, dt1 x dt2,
+          λ(exp"[$dt1 x $dt2]")(x => λ(acc"[$dt1 x $dt2]")(o =>
             acc(x)(o))),
-          Zip(n, dt1, dt2, x, y)
+          Zip(n, dt1, dt2, x, y),
+          A
         )
       ))
     ))
   }
 
-  override def rewriteToImperativeExp(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
+  override def rewriteToImperativeCon(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
     import RewriteToImperative._
 
-    exp(lhs)(λ(exp"[$n.$dt1]")(x =>
-      exp(rhs)(λ(exp"[$n.$dt2]")(y =>
+    con(lhs)(λ(exp"[$n.$dt1]")(x =>
+      con(rhs)(λ(exp"[$n.$dt2]")(y =>
         C(Zip(n, dt1, dt2, x, y))
       ))
     ))

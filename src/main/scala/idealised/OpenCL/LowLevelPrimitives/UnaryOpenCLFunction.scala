@@ -52,11 +52,11 @@ final case class UnaryOpenCLFunction(name: String,
 
   override def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
-    exp(arg)(λ(exp"[$inT]")(e =>
+    con(arg)(λ(exp"[$inT]")(e =>
       outT match {
         case b: BasicType => A `:=` UnaryOpenCLFunction(name, inT, outT, e)
         case ArrayType(n, dt) =>
-          MapI(n, dt, dt, A, λ(AccType(dt))(a => λ(ExpType(dt))(e => acc(e)(a))), UnaryOpenCLFunction(name, inT, outT, e))
+          MapI(n, dt, dt, λ(ExpType(dt))(e => λ(AccType(dt))(a => acc(e)(a))), UnaryOpenCLFunction(name, inT, outT, e), A)
         case RecordType(dt11, dt12) =>
           acc(fst(UnaryOpenCLFunction(name, inT, outT, e)))(recordAcc1(dt11, dt12, A)) `;`
             acc(snd(UnaryOpenCLFunction(name, inT, outT, e)))(recordAcc2(dt11, dt12, A))
@@ -65,8 +65,8 @@ final case class UnaryOpenCLFunction(name: String,
     ))
   }
 
-  override def rewriteToImperativeExp(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
-    RewriteToImperative.exp(arg)(λ(exp"[$inT]")(e =>
+  override def rewriteToImperativeCon(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
+    RewriteToImperative.con(arg)(λ(exp"[$inT]")(e =>
       C(UnaryOpenCLFunction(name, inT, outT, e))
     ))
   }

@@ -9,16 +9,16 @@ import SubstituteImplementations._
 final case class MapSeqI(n: Nat,
                          dt1: DataType,
                          dt2: DataType,
-                         out: Phrase[AccType],
-                         f: Phrase[AccType -> (ExpType -> CommandType)],
-                         in: Phrase[ExpType])
-  extends AbstractMapI(n, dt1, dt2, out, f, in) {
+                         f: Phrase[ExpType -> (AccType -> CommandType)],
+                         in: Phrase[ExpType],
+                         out: Phrase[AccType])
+  extends AbstractMapI(n, dt1, dt2, f, in, out) {
 
   override def makeMapI = MapSeqI
 
   override def substituteImpl(env: Environment): Phrase[CommandType] = {
     `for`(n, i =>
-      SubstituteImplementations(f(out `@` i)(in `@` i), env)
+      SubstituteImplementations(f(in `@` i)(out `@` i), env)
     )
   }
 

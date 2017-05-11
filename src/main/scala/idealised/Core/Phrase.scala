@@ -124,7 +124,7 @@ trait ExpPrimitive extends Primitive[ExpType] with TypeInferable[ExpType] {
 
   def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType]
 
-  def rewriteToImperativeExp(C: Phrase[ExpType -> CommandType]): Phrase[CommandType]
+  def rewriteToImperativeCon(C: Phrase[ExpType -> CommandType]): Phrase[CommandType]
 }
 
 trait AccPrimitive extends Primitive[AccType] {
