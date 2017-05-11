@@ -27,7 +27,7 @@ object gemv extends App {
                       untypedLambda: Phrase[ExpType -> (ExpType -> (ExpType -> (ExpType -> (ExpType -> ExpType))))]) = {
     println("\n----------------")
     val lambda = TypeInference(untypedLambda)
-    println(name + ":\n" + PrettyPrinter(lambda))
+    println(name + ":\n" + PrettyPhrasePrinter(lambda))
     lambda.typeCheck()
 
     println(s"-- $name --")
@@ -76,7 +76,7 @@ object gemv extends App {
 
   {
     val lambda = TypeInference(high_level)
-    println("high_level:\n" + PrettyPrinter(lambda))
+    println("high_level:\n" + PrettyPhrasePrinter(lambda))
     lambda.typeCheck()
   }
 

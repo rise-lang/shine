@@ -5,14 +5,14 @@ import idealised.Compiling._
 import idealised.Core.OperationalSemantics._
 import idealised.Core._
 import idealised.DSL.typed._
-import idealised.HighLevelCombinators._
-import idealised.LowLevelCombinators._
+import idealised.HighLevelPrimitives._
+import idealised.LowLevelPrimitives._
 import idealised.OpenCL.Core.CombinatorsToOpenCL._
 import idealised.OpenCL.Core.HoistMemoryAllocations.AllocationInfo
-import idealised.OpenCL.LowLevelCombinators.VectorFromScalar
 import idealised._
 import ir.{Type, UndefType}
 import opencl.executor._
+import opencl.generator.OpenCLAST
 import opencl.generator.OpenCLAST._
 import opencl.ir.{Double, Float, GlobalMemory, Int, LocalMemory}
 
@@ -26,10 +26,10 @@ case class ToOpenCL(localSize: Nat, globalSize: Nat) {
   def makeKernel[T <: PhraseType](originalPhrase: Phrase[T]): OpenCL.Kernel = {
 
     def getPhraseAndParams[_ <: PhraseType](p: Phrase[_],
-                                            ps: List[IdentPhrase[ExpType]]
-                                           ): (Phrase[ExpType], List[IdentPhrase[ExpType]]) = {
+                                            ps: List[Identifier[ExpType]]
+                                           ): (Phrase[ExpType], List[Identifier[ExpType]]) = {
       p match {
-        case l: LambdaPhrase[ExpType, _]@unchecked => getPhraseAndParams(l.body, l.param +: ps)
+        case l: Lambda[ExpType, _]@unchecked => getPhraseAndParams(l.body, l.param +: ps)
         case ep: Phrase[ExpType]@unchecked => (ep, ps)
       }
     }
@@ -39,37 +39,37 @@ case class ToOpenCL(localSize: Nat, globalSize: Nat) {
   }
 
   def apply(p: Phrase[ExpType -> ExpType],
-            param: IdentPhrase[ExpType]): OpenCL.Kernel =
+            param: Identifier[ExpType]): OpenCL.Kernel =
     makeKernel(p(param), List(param))
 
   def apply(p: Phrase[ExpType -> (ExpType -> ExpType)],
-            param0: IdentPhrase[ExpType],
-            param1: IdentPhrase[ExpType]): OpenCL.Kernel =
+            param0: Identifier[ExpType],
+            param1: Identifier[ExpType]): OpenCL.Kernel =
     makeKernel(p(param0)(param1), List(param0, param1))
 
   def apply(p: Phrase[ExpType -> (ExpType -> (ExpType -> ExpType))],
-            param0: IdentPhrase[ExpType],
-            param1: IdentPhrase[ExpType],
-            param2: IdentPhrase[ExpType]): OpenCL.Kernel =
+            param0: Identifier[ExpType],
+            param1: Identifier[ExpType],
+            param2: Identifier[ExpType]): OpenCL.Kernel =
     makeKernel(p(param0)(param1)(param2), List(param0, param1, param2))
 
   def apply(p: Phrase[ExpType -> (ExpType -> (ExpType -> (ExpType -> ExpType)))],
-            param0: IdentPhrase[ExpType],
-            param1: IdentPhrase[ExpType],
-            param2: IdentPhrase[ExpType],
-            param3: IdentPhrase[ExpType]): OpenCL.Kernel =
+            param0: Identifier[ExpType],
+            param1: Identifier[ExpType],
+            param2: Identifier[ExpType],
+            param3: Identifier[ExpType]): OpenCL.Kernel =
     makeKernel(p(param0)(param1)(param2)(param3), List(param0, param1, param2, param3))
 
   def apply(p: Phrase[ExpType -> (ExpType -> (ExpType -> (ExpType -> (ExpType -> ExpType))))],
-            param0: IdentPhrase[ExpType],
-            param1: IdentPhrase[ExpType],
-            param2: IdentPhrase[ExpType],
-            param3: IdentPhrase[ExpType],
-            param4: IdentPhrase[ExpType]): OpenCL.Kernel =
+            param0: Identifier[ExpType],
+            param1: Identifier[ExpType],
+            param2: Identifier[ExpType],
+            param3: Identifier[ExpType],
+            param4: Identifier[ExpType]): OpenCL.Kernel =
     makeKernel(p(param0)(param1)(param2)(param3)(param4),
       List(param0, param1, param2, param3, param4))
 
-  private def makeKernel(p: Phrase[ExpType], params: List[IdentPhrase[ExpType]]): OpenCL.Kernel = {
+  private def makeKernel(p: Phrase[ExpType], params: List[Identifier[ExpType]]): OpenCL.Kernel = {
     val p1 = inferTypes(p)
 
     val outParam = createOutputParam(outT = p1.t)
@@ -96,7 +96,7 @@ case class ToOpenCL(localSize: Nat, globalSize: Nat) {
     p1
   }
 
-  private def createOutputParam(outT: ExpType): IdentPhrase[AccType] = {
+  private def createOutputParam(outT: ExpType): Identifier[AccType] = {
     identifier("output", AccType(outT.dataType))
   }
 
@@ -122,8 +122,8 @@ case class ToOpenCL(localSize: Nat, globalSize: Nat) {
     (p4, intermediateAllocations)
   }
 
-  private def makeParams(out: IdentPhrase[AccType],
-                         ins: List[IdentPhrase[ExpType]],
+  private def makeParams(out: Identifier[AccType],
+                         ins: List[Identifier[ExpType]],
                          intermediateAllocations: List[AllocationInfo]): List[ParamDecl] = {
     List(makeGlobalParam(out)) ++ // first the output parameter ...
       ins.map(makeInputParam) ++ // ... then the input parameters ...
@@ -134,7 +134,7 @@ case class ToOpenCL(localSize: Nat, globalSize: Nat) {
   }
 
   // pass arrays via global and scalar + tuple values via private memory
-  private def makeInputParam(i: IdentPhrase[_]): ParamDecl = {
+  private def makeInputParam(i: Identifier[_]): ParamDecl = {
     getDataType(i) match {
       case a: ArrayType => makeGlobalParam(i)
       case b: BasicType => makePrivateParam(i)
@@ -143,7 +143,7 @@ case class ToOpenCL(localSize: Nat, globalSize: Nat) {
     }
   }
 
-  private def makeGlobalParam(i: IdentPhrase[_]): ParamDecl = {
+  private def makeGlobalParam(i: Identifier[_]): ParamDecl = {
     ParamDecl(
       i.name,
       DataType.toType(getDataType(i)),
@@ -151,7 +151,7 @@ case class ToOpenCL(localSize: Nat, globalSize: Nat) {
       const = false)
   }
 
-  private def makePrivateParam(i: IdentPhrase[_]): ParamDecl = {
+  private def makePrivateParam(i: Identifier[_]): ParamDecl = {
     ParamDecl(
       i.name,
       DataType.toType(getDataType(i)),
@@ -189,7 +189,7 @@ case class ToOpenCL(localSize: Nat, globalSize: Nat) {
       kernel = true)
   }
 
-  implicit private def getDataType(i: IdentPhrase[_]): DataType = {
+  implicit private def getDataType(i: Identifier[_]): DataType = {
     i.t match {
       case ExpType(dataType) => dataType
       case AccType(dataType) => dataType
@@ -349,13 +349,13 @@ case class ToOpenCL(localSize: Nat, globalSize: Nat) {
     }
   }
 
-  private def createLengthMap(params: Seq[IdentPhrase[ExpType]],
+  private def createLengthMap(params: Seq[Identifier[ExpType]],
                               args: HList): immutable.Map[Core.Nat, Core.Nat] = {
     val seq = (params, args.toList).zipped.flatMap(createLengthMapping)
     seq.map(x => (x._1, Cst(x._2))).toMap
   }
 
-  private def createLengthMapping(p: IdentPhrase[ExpType], a: Any): Seq[(Core.Nat, Int)] = {
+  private def createLengthMapping(p: Identifier[ExpType], a: Any): Seq[(Core.Nat, Int)] = {
     createLengthMapping(p.t.dataType, a).filter(_._1.isInstanceOf[Var])
   }
 
@@ -394,10 +394,10 @@ object ToOpenCL {
 
   def cmd(p: Phrase[CommandType], block: Block, env: Environment): Block = {
     p match {
-      case IfThenElsePhrase(condP, thenP, elseP) =>
+      case Core.IfThenElse(condP, thenP, elseP) =>
         val trueBlock = cmd(thenP, Block(), env)
         val falseBlock = cmd(elseP, Block(), env)
-        (block: Block) += IfThenElse(exp(condP, env), trueBlock, falseBlock)
+        (block: Block) += OpenCLAST.IfThenElse(exp(condP, env), trueBlock, falseBlock)
 
       case c: GeneratableComm => c.toOpenCL(block, env)
 
@@ -405,36 +405,35 @@ object ToOpenCL {
       case d: DoubleBufferFor => toOpenCL(d, block, env)
       case f: For => toOpenCL(f, block, env)
       case n: New => toOpenCL(n, block, env)
-      case s: idealised.LowLevelCombinators.Seq => toOpenCL(s, block, env)
-      case s: idealised.LowLevelCombinators.Skip => toOpenCL(s, block, env)
+      case s: idealised.LowLevelPrimitives.Seq => toOpenCL(s, block, env)
+      case s: idealised.LowLevelPrimitives.Skip => toOpenCL(s, block, env)
 
       case p: ParFor => toOpenCL(p, block, env)
 
-      case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
-           TypeDependentApplyPhrase(_, _) | IdentPhrase(_, _) |
-           Proj1Phrase(_) | Proj2Phrase(_) |
-           _: MidLevelCombinator | _: LowLevelCommCombinator =>
+      case Apply(_, _) | NatDependentApply(_, _) |
+           TypeDependentApply(_, _) | Identifier(_, _) |
+           Proj1(_) | Proj2(_) | _: CommandPrimitive =>
         throw new Exception(s"Don't know how to generate idealised.OpenCL code for $p")
     }
   }
 
   def exp(p: Phrase[ExpType], env: Environment): Expression = {
     p match {
-      case BinOpPhrase(op, lhs, rhs) =>
+      case BinOp(op, lhs, rhs) =>
         BinaryExpression(op.toString, exp(lhs, env), exp(rhs, env))
-      case IdentPhrase(name, _) => VarRef(name)
-      case LiteralPhrase(d, _) => d match {
-          case i: IntData     => Literal(i.i.toString)
-          case b: BoolData    => Literal(b.b.toString)
-          case f: FloatData   => Literal(f.f.toString)
-          case i: IndexData   => Literal(i.i.toString)
-          case v: VectorData  => Literal(Data.toString(v))
-          case r: RecordData  => Literal(Data.toString(r))
-          case a: ArrayData   => Literal(Data.toString(a))
+      case Identifier(name, _) => VarRef(name)
+      case Core.Literal(d, _) => d match {
+          case i: IntData     => OpenCLAST.Literal(i.i.toString)
+          case b: BoolData    => OpenCLAST.Literal(b.b.toString)
+          case f: FloatData   => OpenCLAST.Literal(f.f.toString)
+          case i: IndexData   => OpenCLAST.Literal(i.i.toString)
+          case v: VectorData  => OpenCLAST.Literal(toString(v))
+          case r: RecordData  => OpenCLAST.Literal(toString(r))
+          case a: ArrayData   => OpenCLAST.Literal(toString(a))
         }
-      case p: Proj1Phrase[ExpType, _] => exp(Lift.liftPair(p.pair)._1, env)
-      case p: Proj2Phrase[_, ExpType] => exp(Lift.liftPair(p.pair)._2, env)
-      case UnaryOpPhrase(op, x) =>
+      case p: Proj1[ExpType, _] => exp(Lifting.liftPair(p.pair)._1, env)
+      case p: Proj2[_, ExpType] => exp(Lifting.liftPair(p.pair)._2, env)
+      case UnaryOp(op, x) =>
         UnaryExpression(op.toString, exp(x, env))
 
       case f: Fst       => toOpenCL(f, env, f.t.dataType, List(), List())
@@ -445,9 +444,8 @@ object ToOpenCL {
 
       case g: GeneratableExp => g.toOpenCL(env)
 
-      case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
-           TypeDependentApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) |
-           _: HighLevelCombinator | _: LowLevelExpCombinator =>
+      case Apply(_, _) | NatDependentApply(_, _) |
+           TypeDependentApply(_, _) | Core.IfThenElse(_, _, _) | _: ExpPrimitive =>
         throw new Exception(s"Don't know how to generate idealised.OpenCL code for $p")
     }
   }
@@ -458,7 +456,7 @@ object ToOpenCL {
           arrayAccess: List[(Nat, Nat)],
           tupleAccess: List[Nat]): Expression = {
     p match {
-      case IdentPhrase(name, t) =>
+      case Identifier(name, t) =>
         val index = {
           val i = arrayAccess.map(x => x._1 * x._2).foldLeft(0: Nat)((x, y) => x + y)
           if (i != (0: Nat)) { i } else { null }
@@ -486,8 +484,8 @@ object ToOpenCL {
             VarRef(name, suffix, ArithExpression(index))
         }
 
-      case p: Proj1Phrase[ExpType, _] => exp(Lift.liftPair(p.pair)._1, env, dt, arrayAccess, tupleAccess)
-      case p: Proj2Phrase[_, ExpType] => exp(Lift.liftPair(p.pair)._2, env, dt, arrayAccess, tupleAccess)
+      case p: Proj1[ExpType, _] => exp(Lifting.liftPair(p.pair)._1, env, dt, arrayAccess, tupleAccess)
+      case p: Proj2[_, ExpType] => exp(Lifting.liftPair(p.pair)._2, env, dt, arrayAccess, tupleAccess)
 
       case v: ViewExp => v.toOpenCL(env, arrayAccess, tupleAccess, dt)
 
@@ -504,11 +502,10 @@ object ToOpenCL {
 
       case g: GeneratableExp => g.toOpenCL(env)
 
-      case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
-           TypeDependentApplyPhrase(_, _) |
-           BinOpPhrase(_, _, _) | UnaryOpPhrase(_, _) |
-           IfThenElsePhrase(_, _, _) | LiteralPhrase(_, _) |
-           _: LowLevelExpCombinator | _: HighLevelCombinator =>
+      case Apply(_, _) | NatDependentApply(_, _) |
+           TypeDependentApply(_, _) |
+           BinOp(_, _, _) | UnaryOp(_, _) |
+           Core.IfThenElse(_, _, _) | Core.Literal(_, _) | _: ExpPrimitive =>
         throw new Exception(s"Don't know how to generate idealised.OpenCL code for $p")
     }
   }
@@ -516,13 +513,13 @@ object ToOpenCL {
 
   def acc(p: Phrase[AccType], value: Expression, env: Environment): Expression = {
     p match {
-      case IdentPhrase(name, t) =>
+      case Identifier(name, t) =>
         t.dataType match {
           case b: BasicType => AssignmentExpression(VarRef(name), value)
           case _ => throw new Exception(s"Don't know how to generate assignment into variable $name of type $t")
         }
-      case p: Proj1Phrase[AccType, _] => acc(Lift.liftPair(p.pair)._1, value, env)
-      case p: Proj2Phrase[_, AccType] => acc(Lift.liftPair(p.pair)._2, value, env)
+      case p: Proj1[AccType, _] => acc(Lifting.liftPair(p.pair)._1, value, env)
+      case p: Proj2[_, AccType] => acc(Lifting.liftPair(p.pair)._2, value, env)
 
       case f: FstAcc    => toOpenCL(f, value, env, f.t.dataType, List(), List())
       case i: IdxAcc    => toOpenCL(i, value, env, i.t.dataType, List(), List())
@@ -532,9 +529,8 @@ object ToOpenCL {
       case s: SplitAcc  => toOpenCL(s, value, env, s.t.dataType, List(), List())
       case t: TruncAcc  => toOpenCL(t, value, env, t.t.dataType, List(), List())
 
-      case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
-           TypeDependentApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) |
-           _: LowLevelAccCombinator =>
+      case Apply(_, _) | NatDependentApply(_, _) |
+           TypeDependentApply(_, _) | Core.IfThenElse(_, _, _) | _: AccPrimitive =>
         throw new Exception(s"Don't know how to generate idealised.OpenCL code for $p")
     }
   }
@@ -546,7 +542,7 @@ object ToOpenCL {
           arrayAccess: List[(Nat, Nat)],
           tupleAccess: List[Nat]): Expression = {
     p match {
-      case IdentPhrase(name, t) =>
+      case Identifier(name, t) =>
         val index = {
           val i = arrayAccess.map(x => x._1 * x._2).foldLeft(0: Nat)((x, y) => x + y)
           if (i != (0: Nat)) { i } else { null }
@@ -586,13 +582,44 @@ object ToOpenCL {
       case s: SplitAcc  => toOpenCL(s, value, env, dt, arrayAccess, tupleAccess)
       case t: TruncAcc  => toOpenCL(t, value, env, dt, arrayAccess, tupleAccess)
 
-      case p: Proj1Phrase[AccType, _] => acc(Lift.liftPair(p.pair)._1, value, env, dt, arrayAccess, tupleAccess)
-      case p: Proj2Phrase[_, AccType] => acc(Lift.liftPair(p.pair)._2, value, env, dt, arrayAccess, tupleAccess)
+      case p: Proj1[AccType, _] => acc(Lifting.liftPair(p.pair)._1, value, env, dt, arrayAccess, tupleAccess)
+      case p: Proj2[_, AccType] => acc(Lifting.liftPair(p.pair)._2, value, env, dt, arrayAccess, tupleAccess)
 
-      case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
-           TypeDependentApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) |
-           _: LowLevelAccCombinator =>
+      case Apply(_, _) | NatDependentApply(_, _) |
+           TypeDependentApply(_, _) | Core.IfThenElse(_, _, _) | _: AccPrimitive =>
         throw new Exception(s"Don't know how to generate idealised.OpenCL code for $p")
+    }
+  }
+
+  def toString(d: Data): String = {
+    d match {
+      case i: IntData => i.i.toString
+      case b: BoolData => b.b.toString
+      case f: FloatData => f.f.toString
+      case i: IndexData => i.i.toString
+      //          case i: Int4Data => Literal(s"(int4)(${i.i0.toString}, ${i.i1.toString}, ${i.i2.toString}, ${i.i3.toString})")
+      case v: VectorData => v.a.length match {
+        case 2 | 3 | 4 | 8 | 16 =>
+          val dt = toString(v.a.head.dataType)
+          val n = v.a.length
+          s"($dt$n)(" + v.a.map(x => toString(x)).reduce(_ + ", " + _) + ")"
+      }
+      case _: RecordData => ???
+      case _: ArrayData => ???
+    }
+  }
+
+  def toString(dt: DataType): String = {
+    dt match {
+      case b: BasicType => b match {
+        case Core.bool | Core.int => "int"
+        case Core.float => "float"
+        case _: IndexType => "int"
+        case v: VectorType => toString(v.elemType) + v.size.toString
+      }
+      case _: RecordType => ???
+      case _: ArrayType => ???
+      case _: DataTypeIdentifier => throw new Exception("This should not happen")
     }
   }
 

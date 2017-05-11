@@ -3,7 +3,7 @@ package idealised.DSL.typed
 import lift.arithmetic.{NamedVar, RangeAdd}
 import idealised.Core.TypeInference._
 import idealised.Core._
-import idealised.LowLevelCombinators._
+import idealised.LowLevelPrimitives._
 
 object `new` {
   def apply(dt: DataType,
@@ -21,7 +21,7 @@ object `if` {
   def apply[T <: PhraseType](cond: Phrase[ExpType],
                              thenP: Phrase[T],
                              elseP: Phrase[T]) =
-    IfThenElsePhrase(cond, thenP, elseP)
+    IfThenElse(cond, thenP, elseP)
 }
 
 object `for` {
@@ -49,12 +49,12 @@ object dblBufFor {
             body: Phrase[`(nat)->`[AccType -> (ExpType -> CommandType)]],
             C: Phrase[ExpType -> CommandType]) = {
     body match {
-      case NatDependentLambdaPhrase(x, b) =>
+      case NatDependentLambda(x, b) =>
         // ensure that the nested Nat dependent lambda has the proper range information
         val newX = NamedVar(x.name, RangeAdd(0, k, 1))
         val newB = PhraseType.substitute(newX, x, b)
         DoubleBufferFor(n, m, k, dt, addressSpace, buffer1, buffer2,
-          NatDependentLambdaPhrase(newX, newB),
+          NatDependentLambda(newX, newB),
           C)
       case _ => throw new Exception("This should not happen")
     }

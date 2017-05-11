@@ -18,78 +18,78 @@ object xmlPrinter {
   }
 
   def asString[T <: PhraseType](p: Phrase[T]): String = {
-    <expression p={PrettyPrinter(p)}>{apply(p)}</expression>.toString()
+    <expression p={PrettyPhrasePrinter(p)}>{apply(p)}</expression>.toString()
   }
 
   def apply[T <: PhraseType](p: Phrase[T]): xml.Elem = {
     val elem = p match {
-      case app: ApplyPhrase[a, T] =>
+      case app: Apply[a, T] =>
         <apply>
           <fun type={ToString(app.fun.t)}>{apply(app.fun)}</fun>
           <arg type={ToString(app.arg.t)}>{apply(app.arg)}</arg>
         </apply>
 
-      case app: NatDependentApplyPhrase[T] =>
+      case app: NatDependentApply[T] =>
         <natApply>
           <fun type={ToString(app.fun.t)}>{apply(app.fun)}</fun>
           <arg type="Nat">{app.arg}</arg>
         </natApply>
 
-      case app: TypeDependentApplyPhrase[T] =>
+      case app: TypeDependentApply[T] =>
         <typeApply>
           <fun type={ToString(app.fun.t)}>{apply(app.fun)}</fun>
           <arg type="Nat">{app.arg}</arg>
         </typeApply>
 
-      case p1: Proj1Phrase[a, b] =>
+      case p1: Proj1[a, b] =>
         <π1>{apply(p1.pair)}</π1>
 
-      case p2: Proj2Phrase[a, b] =>
+      case p2: Proj2[a, b] =>
         <π2>{apply(p2.pair)}</π2>
 
-      case IfThenElsePhrase(cond, thenP, elseP) =>
+      case IfThenElse(cond, thenP, elseP) =>
         <ifThenElse>
           <if type={ToString(cond.t)}>{apply(cond)}</if>
           <then type={ToString(thenP.t)}>{apply(thenP)}</then>
           <else type={ToString(elseP.t)}>{apply(elseP)}</else>
         </ifThenElse>
 
-      case UnaryOpPhrase(op, x) =>
+      case UnaryOp(op, x) =>
         <unary op={op.toString}>{apply(x)}</unary>
 
-      case BinOpPhrase(op, lhs, rhs) =>
+      case BinOp(op, lhs, rhs) =>
         <binary op={op.toString}>
           <lhs type={ToString(lhs.t)}>{apply(lhs)}</lhs>
           <rhs type={ToString(rhs.t)}>{apply(rhs)}</rhs>
         </binary>
 
-      case IdentPhrase(name, _) =>
+      case Identifier(name, _) =>
         <identifier name={name} />
 
-      case LambdaPhrase(param, body) =>
+      case Lambda(param, body) =>
         <λ param={param.name}>
           {apply(body)}
         </λ>
 
-      case NatDependentLambdaPhrase(param, body) =>
+      case NatDependentLambda(param, body) =>
         <Λ param={param.name + " : nat"}>
           {apply(body)}
         </Λ>
 
-      case TypeDependentLambdaPhrase(param, body) =>
+      case TypeDependentLambda(param, body) =>
         <Λ param={param.name + " : dt"}>
           {apply(body)}
         </Λ>
 
-      case LiteralPhrase(d, _) => <lit>{d}</lit>
+      case Literal(d, _) => <lit>{d}</lit>
 
-      case PairPhrase(fst, snd) =>
+      case Pair(fst, snd) =>
         <pair>
           <fst type={ToString(fst.t)}>{apply(fst)}</fst>
           <snd type={ToString(snd.t)}>{apply(snd)}</snd>
         </pair>
 
-      case c: Combinator[_] => c.xmlPrinter
+      case c: Primitive[_] => c.xmlPrinter
 
     }
     elem.copy(attributes =

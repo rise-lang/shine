@@ -39,7 +39,7 @@ object Test extends App {
     store = store + (out.name -> 0)
 
     val p_ = `new`(int, OpenCL.PrivateMemory, v =>
-      (π2(v) := LiteralPhrase(42, int) + LiteralPhrase(1, int)) `;`
+      (π2(v) := Literal(42, int) + Literal(1, int)) `;`
         `new`(int, OpenCL.PrivateMemory, v2 =>
           (π2(v2) := π1(v) + 1) `;`
             (π2(v) := π1(v2))
@@ -192,7 +192,7 @@ object Test extends App {
     val p_ = `for`(5, { i =>
       λ(AccType(int) x ExpType(RecordType(int, int))) {
         p => π1(p) := f(π2(p))
-      }(PairPhrase(out `@` i, zip(in1, in2) `@` i))
+      }(Pair(out `@` i, zip(in1, in2) `@` i))
     })
 
     val p = TypeInference(p_)
@@ -702,7 +702,7 @@ object Test extends App {
     val p_ = λ(ExpType(ArrayType(4, int)))(inp =>
       reduce(add, 0, map(reduce(add, 0), split(2, inp)))
     )
-    val p = TypeInference(p_).asInstanceOf[LambdaPhrase[ExpType, ExpType]]
+    val p = TypeInference(p_).asInstanceOf[Lambda[ExpType, ExpType]]
     println("=====")
     println(p)
     println("=====")
@@ -739,7 +739,7 @@ object Test extends App {
 //          accum.wr := (tmp.rd)[tmp5] + accum.rd ) ) ;
 //      output := accum.rd ) ) ) )
 
-    println(PrettyPrinter(p3))
+    println(PrettyPhrasePrinter(p3))
 
 //    new (λ tmp.
 //      for (length (split 2 input))
@@ -770,7 +770,7 @@ object Test extends App {
       map(λ( x => x * a )) $ inp
     )
     println("=====")
-    println(PrettyPrinter(p))
+    println(PrettyPhrasePrinter(p))
 
     println("-----")
 
@@ -787,7 +787,7 @@ object Test extends App {
       reduce(λ( x1 => λ( x2 => x1 + x2 ) ), 0, map(λ( x => `if`(x < 0, -x, x) ), inp))
     )
     println("=====")
-    println(PrettyPrinter(p))
+    println(PrettyPhrasePrinter(p))
 
     println("-----")
 
@@ -805,7 +805,7 @@ object Test extends App {
         reduce(λ(x1 => λ(x2 => x1 + x2 )), 0) o map(λ(p => p._1 * p._2 )) $ zip(xs, ys)
       ) )
     println("=====")
-    println(PrettyPrinter(p))
+    println(PrettyPhrasePrinter(p))
 
     println("-----")
 
@@ -841,7 +841,7 @@ object Test extends App {
       }) ) )
 
     println("=====")
-    println(PrettyPrinter(p))
+    println(PrettyPhrasePrinter(p))
 
     println("-----")
 
@@ -862,9 +862,9 @@ object Test extends App {
     val p_ = λ(xsVectorT)(inp =>
       join() o split(2048) $ inp
     )
-    val p = TypeInference(p_).asInstanceOf[LambdaPhrase[ExpType, ExpType]]
+    val p = TypeInference(p_).asInstanceOf[Lambda[ExpType, ExpType]]
     println("=====")
-    println(PrettyPrinter(p))
+    println(PrettyPhrasePrinter(p))
 
     println("-----")
 
@@ -887,7 +887,7 @@ object Test extends App {
       ) o split(128) o split(2048) $ inp
     )
     println("=====")
-    println(PrettyPrinter(p))
+    println(PrettyPhrasePrinter(p))
 
     println("-----")
 
@@ -915,7 +915,7 @@ object Test extends App {
       }) )
 
     println("=====")
-    println(PrettyPrinter(p))
+    println(PrettyPhrasePrinter(p))
 
     println("-----")
 
@@ -953,7 +953,7 @@ object Test extends App {
       }) ) )
 
     println("=====")
-    println(PrettyPrinter(p))
+    println(PrettyPhrasePrinter(p))
 
     println("-----")
 
@@ -993,7 +993,7 @@ object Test extends App {
       }) ) ) ) )
 
     println("=====")
-    println(PrettyPrinter(p))
+    println(PrettyPhrasePrinter(p))
 
     println("-----")
 
@@ -1017,7 +1017,7 @@ object Test extends App {
       )
 
     println("=====")
-    println(PrettyPrinter(p))
+    println(PrettyPhrasePrinter(p))
 
     println("-----")
 

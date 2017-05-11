@@ -1,7 +1,7 @@
 package idealised.Core
 
 case class TimeSpan[U <: Time.Unit](value: Double, unit: Time.Unit) {
-  override def toString = value.toString + " " + unit.toString
+  override def toString: String = value.toString + " " + unit.toString
 }
 
 object TimeSpan {

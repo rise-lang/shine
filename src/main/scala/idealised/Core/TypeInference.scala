@@ -24,13 +24,13 @@ object TypeInference {
   case class typeInference() extends VisitAndRebuild.Visitor {
     override def apply[T <: PhraseType](phrase: Phrase[T]): Result[Phrase[T]] = {
       phrase match {
-        case x: IdentPhrase[T] =>
+        case x: Identifier[T] =>
           x.t match {
             case null => error("Found IdentPhrase without proper type")
-            case t: PhraseType => Stop(x)
+            case _: PhraseType => Stop(x)
           }
-        case i: TypeInferable =>
-          Stop(i.inferTypes.asInstanceOf[Phrase[T]])
+        case i: TypeInferable[T]@unchecked =>
+          Stop(i.inferTypes)
 
         case _ => Continue(phrase, this)
       }
@@ -40,8 +40,8 @@ object TypeInference {
   case class setParamAndTypeInference(t: PhraseType) extends VisitAndRebuild.Visitor {
     override def apply[T <: PhraseType](phrase: Phrase[T]): Result[Phrase[T]] = {
       phrase match {
-        case l@LambdaPhrase(x, p) =>
-          val newX = IdentPhrase(newName(), t)
+        case l@Lambda(x, p) =>
+          val newX = Identifier(newName(), t)
           Continue(l `[` newX  `/` x `]`, typeInference())
         case _ => throw new Exception("This should not happen")
       }
@@ -51,11 +51,11 @@ object TypeInference {
   case class setParamsAndTypeInference(t1: PhraseType, t2: PhraseType) extends VisitAndRebuild.Visitor {
     override def apply[T <: PhraseType](phrase: Phrase[T]): Result[Phrase[T]] = {
       phrase match {
-        case LambdaPhrase(x, p) =>
-          val newX = IdentPhrase(newName(), t1)
+        case Lambda(x, p) =>
+          val newX = Identifier(newName(), t1)
           val b1 = p `[` newX `/` x `]`
           val newBody = VisitAndRebuild(b1, setParamAndTypeInference(t2))
-          val newL = LambdaPhrase(newX, newBody)
+          val newL = Lambda(newX, newBody)
           Continue(newL.asInstanceOf[Phrase[T]], typeInference())
         case _ => throw new Exception("This should not happen")
       }

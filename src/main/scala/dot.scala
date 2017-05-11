@@ -28,7 +28,7 @@ object dot extends App {
   def printOpenCLKernel1(name: String,
                          untypedLambda: Phrase[ExpType -> (ExpType -> ExpType)]): Unit = {
     val lambda = TypeInference(untypedLambda)
-    println(name + ":\n" + PrettyPrinter(lambda))
+    println(name + ":\n" + PrettyPhrasePrinter(lambda))
     lambda.typeCheck()
 
     println(s"-- $name --")
@@ -61,7 +61,7 @@ object dot extends App {
   def printOpenCLKernel2(name: String,
                          untypedLambda: Phrase[ExpType -> ExpType]): Unit = {
     val lambda = TypeInference(untypedLambda)
-    println(name + ":\n" + PrettyPrinter(lambda))
+    println(name + ":\n" + PrettyPhrasePrinter(lambda))
     lambda.typeCheck()
 
     println(s"-- $name --")
@@ -184,15 +184,15 @@ object dot extends App {
   printOpenCLKernel2("dotProduct2", dotProduct2)
 
   def dotSimpleDetailed(): Unit = {
-    import idealised.HighLevelCombinators._
-    import idealised.LowLevelCombinators._
-    import idealised.OpenCL.LowLevelCombinators._
+    import idealised.HighLevelPrimitives._
+    import idealised.LowLevelPrimitives._
+    import idealised.OpenCL.LowLevelPrimitives._
 
     val dt = float
 
-    val xs = IdentPhrase("xs", exp"[$N.$dt]")
-    val ys = IdentPhrase("ys", exp"[$N.$dt]")
-    val output = IdentPhrase("output", acc"[${N /^ 4}.$dt]")
+    val xs = Identifier("xs", exp"[$N.$dt]")
+    val ys = Identifier("ys", exp"[$N.$dt]")
+    val output = Identifier("output", acc"[${N /^ 4}.$dt]")
 
     val dotSimpleImp: Phrase[CommandType] =
       ParForWorkGroup(N /^ 1024, dt = dt"[${Cst(256)}.$dt]",
@@ -210,9 +210,9 @@ object dot extends App {
                           Assign(dt,
                             lhs = IdxAcc(n = 4, dt,
                               index = v88,
-                              array = Proj2Phrase(v74)
+                              array = Proj2(v74)
                             ),
-                            rhs = BinOpPhrase(BinOpPhrase.Op.MUL,
+                            rhs = BinOp(BinOp.Op.MUL,
                               lhs = Fst(dt, dt,
                                 Idx(4, dt x dt,
                                   index = v88,
@@ -253,25 +253,25 @@ object dot extends App {
                             Seq(
                               Seq(
                                 Assign(dt,
-                                  lhs = Proj2Phrase(v89),
-                                  rhs = LiteralPhrase(FloatData(0.0f), dt)
+                                  lhs = Proj2(v89),
+                                  rhs = Literal(FloatData(0.0f), dt)
                                 ),
                                 For(4, \(exp"[idx(${Cst(4)})]")(v90 =>
                                   Assign(dt,
-                                    lhs = Proj2Phrase(v89),
-                                    rhs = BinOpPhrase(BinOpPhrase.Op.ADD,
+                                    lhs = Proj2(v89),
+                                    rhs = BinOp(BinOp.Op.ADD,
                                       lhs = Idx(4, dt,
                                         index = v90,
-                                        array = Proj1Phrase(v74)
+                                        array = Proj1(v74)
                                       ),
-                                      rhs = Proj1Phrase(v89)
+                                      rhs = Proj1(v89)
                                     )
                                   )
                                 ))
                               ),
                               Assign(dt,
                                 lhs = v87,
-                                rhs = Proj1Phrase(v89)
+                                rhs = Proj1(v89)
                               )
                             )
                           )
@@ -322,10 +322,10 @@ object dot extends App {
                               index = v88,
                               array = IdxAcc(n = 256, dt"[${Cst(4)}.$dt]",
                                 index = v86,
-                                array = Proj2Phrase(v74)
+                                array = Proj2(v74)
                               )
                             ),
-                            rhs = BinOpPhrase(BinOpPhrase.Op.MUL,
+                            rhs = BinOp(BinOp.Op.MUL,
                               lhs = Fst(dt, dt,
                                 Idx(4, dt x dt,
                                   index = v88,
@@ -366,28 +366,28 @@ object dot extends App {
                             Seq(
                               Seq(
                                 Assign(dt,
-                                  lhs = Proj2Phrase(v89),
-                                  rhs = LiteralPhrase(FloatData(0.0f), dt)
+                                  lhs = Proj2(v89),
+                                  rhs = Literal(FloatData(0.0f), dt)
                                 ),
                                 For(4, \(exp"[idx(${Cst(4)})]")(v90 =>
                                   Assign(dt,
-                                    lhs = Proj2Phrase(v89),
-                                    rhs = BinOpPhrase(BinOpPhrase.Op.ADD,
+                                    lhs = Proj2(v89),
+                                    rhs = BinOp(BinOp.Op.ADD,
                                       lhs = Idx(4, dt,
                                         index = v90,
                                         array = Idx(n = 256, dt"[${Cst(4)}.$dt]",
                                           index = v86,
-                                          array = Proj1Phrase(v74)
+                                          array = Proj1(v74)
                                         )
                                       ),
-                                      rhs = Proj1Phrase(v89)
+                                      rhs = Proj1(v89)
                                     )
                                   )
                                 ))
                               ),
                               Assign(dt,
                                 lhs = v87,
-                                rhs = Proj1Phrase(v89)
+                                rhs = Proj1(v89)
                               )
                             )
                           )
@@ -430,11 +430,11 @@ object dot extends App {
                                 index = v86,
                                 array = IdxAcc(n = N /^ 1024, dt"[${Cst(256)}.${Cst(4)}.$dt]",
                                   index = v84,
-                                  array = Proj2Phrase(v74)
+                                  array = Proj2(v74)
                                 )
                               )
                             ),
-                            rhs = BinOpPhrase(BinOpPhrase.Op.MUL,
+                            rhs = BinOp(BinOp.Op.MUL,
                               lhs = Fst(dt, dt,
                                 Idx(4, dt x dt,
                                   index = v88,
@@ -475,31 +475,31 @@ object dot extends App {
                             Seq(
                               Seq(
                                 Assign(dt,
-                                  lhs = Proj2Phrase(v89),
-                                  rhs = LiteralPhrase(FloatData(0.0f), dt)
+                                  lhs = Proj2(v89),
+                                  rhs = Literal(FloatData(0.0f), dt)
                                 ),
                                 For(4, \(exp"[idx(${Cst(4)})]")(v90 =>
                                   Assign(dt,
-                                    lhs = Proj2Phrase(v89),
-                                    rhs = BinOpPhrase(BinOpPhrase.Op.ADD,
+                                    lhs = Proj2(v89),
+                                    rhs = BinOp(BinOp.Op.ADD,
                                       lhs = Idx(4, dt,
                                         index = v90,
                                         array = Idx(n = 256, dt"[${Cst(4)}.$dt]",
                                           index = v86,
                                           array = Idx(n = N /^ 1024, dt"[${Cst(256)}.${Cst(4)}.$dt]",
                                             index = v84,
-                                            array = Proj1Phrase(v74)
+                                            array = Proj1(v74)
                                           )
                                         )
                                       ),
-                                      rhs = Proj1Phrase(v89)
+                                      rhs = Proj1(v89)
                                     )
                                   )
                                 ))
                               ),
                               Assign(dt,
                                 lhs = v87,
-                                rhs = Proj1Phrase(v89)
+                                rhs = Proj1(v89)
                               )
                             )
                           )

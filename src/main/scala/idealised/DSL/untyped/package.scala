@@ -2,38 +2,38 @@ package idealised.DSL
 
 import idealised.Core._
 import idealised.Core.OperationalSemantics.{FloatData, VectorData}
-import idealised.LowLevelCombinators._
+import idealised.LowLevelPrimitives._
 
 import scala.language.implicitConversions
 
 package object untyped {
   implicit class BinOps(lhs: Phrase[ExpType]) {
-    def +(rhs: Phrase[ExpType]) = BinOpPhrase(BinOpPhrase.Op.ADD, lhs, rhs)
-    def -(rhs: Phrase[ExpType]) = BinOpPhrase(BinOpPhrase.Op.SUB, lhs, rhs)
-    def *(rhs: Phrase[ExpType]) = BinOpPhrase(BinOpPhrase.Op.MUL, lhs, rhs)
-    def /(rhs: Phrase[ExpType]) = BinOpPhrase(BinOpPhrase.Op.DIV, lhs, rhs)
-    def %(rhs: Phrase[ExpType]) = BinOpPhrase(BinOpPhrase.Op.MOD, lhs, rhs)
-    def >(rhs: Phrase[ExpType]) = BinOpPhrase(BinOpPhrase.Op.GT, lhs, rhs)
-    def <(rhs: Phrase[ExpType]) = BinOpPhrase(BinOpPhrase.Op.LT, lhs, rhs)
-    def unary_- = UnaryOpPhrase(UnaryOpPhrase.Op.NEG, lhs)
+    def +(rhs: Phrase[ExpType]) = BinOp(BinOp.Op.ADD, lhs, rhs)
+    def -(rhs: Phrase[ExpType]) = BinOp(BinOp.Op.SUB, lhs, rhs)
+    def *(rhs: Phrase[ExpType]) = BinOp(BinOp.Op.MUL, lhs, rhs)
+    def /(rhs: Phrase[ExpType]) = BinOp(BinOp.Op.DIV, lhs, rhs)
+    def %(rhs: Phrase[ExpType]) = BinOp(BinOp.Op.MOD, lhs, rhs)
+    def >(rhs: Phrase[ExpType]) = BinOp(BinOp.Op.GT, lhs, rhs)
+    def <(rhs: Phrase[ExpType]) = BinOp(BinOp.Op.LT, lhs, rhs)
+    def unary_- = UnaryOp(UnaryOp.Op.NEG, lhs)
   }
 
   implicit class CallLambda[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 -> T2]) {
-    def apply(arg: Phrase[T1]): Phrase[T2] = Lift.liftFunction(fun)(arg)
+    def apply(arg: Phrase[T1]): Phrase[T2] = Lifting.liftFunction(fun)(arg)
 
     def $(arg: Phrase[T1]): Phrase[T2] = apply(arg)
   }
 
   implicit class CallNatDependentLambda[T <: PhraseType](fun: Phrase[`(nat)->`[T]]) {
     def apply(arg: Nat): Phrase[T] =
-      Lift.liftNatDependentFunction(fun)(arg)
+      Lifting.liftNatDependentFunction(fun)(arg)
 
     def $(arg: Nat): Phrase[T] = apply(arg)
   }
 
   implicit class CallTypeDependentLambda[T <: PhraseType](fun: Phrase[`(dt)->`[T]]) {
     def apply(arg: DataType): Phrase[T] =
-      Lift.liftTypeDependentFunction(fun)(arg)
+      Lifting.liftTypeDependentFunction(fun)(arg)
 
     def $(arg: DataType): Phrase[T] = apply(arg)
   }
@@ -59,15 +59,15 @@ package object untyped {
     }
   }
 
-  implicit def toPair[T1 <: PhraseType, T2 <: PhraseType](pair: (Phrase[T1], Phrase[T2])): PairPhrase[T1, T2] =
-    PairPhrase(pair._1, pair._2)
+  implicit def toPair[T1 <: PhraseType, T2 <: PhraseType](pair: (Phrase[T1], Phrase[T2])): Pair[T1, T2] =
+    Pair(pair._1, pair._2)
 
-  implicit def toLiteralInt(i: Int): LiteralPhrase = LiteralPhrase(i, int)
-  implicit def toLiteralFloat(f: Float): LiteralPhrase = LiteralPhrase(FloatData(f), float)
-  implicit def toLiteralFloat4(v: VectorData): LiteralPhrase =
-    LiteralPhrase(v, VectorType(v.a.length, v.a.head.dataType.asInstanceOf[ScalarType]))
+  implicit def toLiteralInt(i: Int): Literal = Literal(i, int)
+  implicit def toLiteralFloat(f: Float): Literal = Literal(FloatData(f), float)
+  implicit def toLiteralFloat4(v: VectorData): Literal =
+    Literal(v, VectorType(v.a.length, v.a.head.dataType.asInstanceOf[ScalarType]))
 
-  implicit def toNatDependentLambda[T <: PhraseType](p: Phrase[T]): NatDependentLambdaPhrase[T] =
+  implicit def toNatDependentLambda[T <: PhraseType](p: Phrase[T]): NatDependentLambda[T] =
     _Λ_( l => p )
 
   implicit class ExpPhraseExtensions(e: Phrase[ExpType]) {
@@ -91,7 +91,7 @@ package object untyped {
   }
 
   implicit class VarExtensions(v: Phrase[VarType]) {
-    def rd: Proj1Phrase[ExpType, AccType] = π1(v)
-    def wr: Proj2Phrase[ExpType, AccType] = π2(v)
+    def rd: Proj1[ExpType, AccType] = π1(v)
+    def wr: Proj2[ExpType, AccType] = π2(v)
   }
 }

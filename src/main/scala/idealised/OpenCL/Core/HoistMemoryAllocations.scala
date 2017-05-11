@@ -2,13 +2,13 @@ package idealised.OpenCL.Core
 
 import idealised._
 import idealised.Core._
-import idealised.LowLevelCombinators._
-import idealised.OpenCL.LowLevelCombinators.OpenCLParFor
+import idealised.LowLevelPrimitives._
+import idealised.OpenCL.LowLevelPrimitives.OpenCLParFor
 
 object HoistMemoryAllocations {
 
   case class AllocationInfo(addressSpace: idealised.OpenCL.AddressSpace,
-                            identifier: IdentPhrase[VarType])
+                            identifier: Identifier[VarType])
 
   def apply(originalPhrase: Phrase[CommandType]): (Phrase[CommandType], List[AllocationInfo]) = {
     val visitor = new VisitorScope(List[AllocationInfo]()).Visitor(List())
@@ -27,7 +27,7 @@ object HoistMemoryAllocations {
   private class VisitorScope(var replacedAllocations: List[AllocationInfo]) {
 
     case class ParForInfo(parallelismLevel: idealised.OpenCL.ParallelismLevel,
-                          param: IdentPhrase[ExpType],
+                          param: Identifier[ExpType],
                           length: Nat)
 
     case class Visitor(parForInfos: List[ParForInfo]) extends VisitAndRebuild.Visitor {
@@ -39,14 +39,14 @@ object HoistMemoryAllocations {
           // remember param and length for each `par for`
           case pf: OpenCLParFor =>
             pf.body match {
-              case LambdaPhrase(param, _) =>
+              case Lambda(param, _) =>
                 Continue(pf,
                   Visitor(ParForInfo(pf.parallelismLevel, param, pf.n) :: parForInfos))
               case _ => throw new Exception("This should not happen")
             }
           case New(_, addressSpace, f) if addressSpace != OpenCL.PrivateMemory =>
             f match {
-              case LambdaPhrase(param, body) =>
+              case Lambda(param, body) =>
                 Stop(
                   replaceNew(addressSpace.asInstanceOf[idealised.OpenCL.AddressSpace],
                     param, body)).asInstanceOf[Result[Phrase[T]]]
@@ -57,7 +57,7 @@ object HoistMemoryAllocations {
       }
 
       private def replaceNew(addressSpace: idealised.OpenCL.AddressSpace,
-                             param: IdentPhrase[VarType],
+                             param: Identifier[VarType],
                              body: Phrase[CommandType]): Phrase[CommandType] = {
         // Replace `new` node by looking through the information from the `par for`s, ...
         val (finalParam, finalBody) = parForInfos.foldLeft((param, body)) {
@@ -88,13 +88,13 @@ object HoistMemoryAllocations {
         VisitAndRebuild(finalBody, this)
       }
 
-      private def performRewrite(oldParam: IdentPhrase[VarType],
+      private def performRewrite(oldParam: Identifier[VarType],
                                  oldBody: Phrase[CommandType],
-                                 i: IdentPhrase[ExpType],
-                                 n: Nat): (IdentPhrase[VarType], Phrase[CommandType]) = {
+                                 i: Identifier[ExpType],
+                                 n: Nat): (Identifier[VarType], Phrase[CommandType]) = {
         import idealised.DSL.typed._
         // Create `newParam' with a new type ...
-        val newParam = IdentPhrase(oldParam.name, VarType(dt=ArrayType(n, oldParam.t.t1.dataType)))
+        val newParam = Identifier(oldParam.name, VarType(dt=ArrayType(n, oldParam.t.t1.dataType)))
         // ... and substitute all occurrences of the oldParam with
         // the newParam indexed by the `par for` index, ...
         val newBody = Phrase.substitute(

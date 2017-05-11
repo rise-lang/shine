@@ -20,7 +20,7 @@ object VisitAndRebuild {
       case c: v.Continue[T]@unchecked =>
         val v = c.v
         (c.p match {
-          case i: IdentPhrase[T] =>
+          case i: Identifier[T] =>
             val t = i.t match {
               case ExpType(dt) => ExpType(v(dt))
               case AccType(dt) => AccType(v(dt))
@@ -28,48 +28,48 @@ object VisitAndRebuild {
               case null => null
               case _ => throw new Exception("This should not happen")
             }
-            IdentPhrase(i.name, t)
+            Identifier(i.name, t)
 
-          case LambdaPhrase(x, p) =>
+          case Lambda(x, p) =>
             apply(x, v) match {
-              case newX: IdentPhrase[_] => LambdaPhrase(newX, apply(p, v))
+              case newX: Identifier[_] => Lambda(newX, apply(p, v))
               case _ => throw new Exception("This should not happen")
             }
 
-          case ApplyPhrase(p, q) =>
-            ApplyPhrase(apply(p, v), apply(q, v))
+          case Apply(p, q) =>
+            Apply(apply(p, v), apply(q, v))
 
-          case NatDependentLambdaPhrase(a, p) =>
-            NatDependentLambdaPhrase(a, apply(p, v))
+          case NatDependentLambda(a, p) =>
+            NatDependentLambda(a, apply(p, v))
 
-          case TypeDependentLambdaPhrase(dt, p) =>
-            TypeDependentLambdaPhrase(dt, apply(p, v))
+          case TypeDependentLambda(dt, p) =>
+            TypeDependentLambda(dt, apply(p, v))
 
-          case NatDependentApplyPhrase(p, ae) =>
-            NatDependentApplyPhrase(apply(p, v), ae)
+          case NatDependentApply(p, ae) =>
+            NatDependentApply(apply(p, v), ae)
 
-          case TypeDependentApplyPhrase(p, dt) =>
-            TypeDependentApplyPhrase(apply(p, v), dt)
+          case TypeDependentApply(p, dt) =>
+            TypeDependentApply(apply(p, v), dt)
 
-          case PairPhrase(p, q) => PairPhrase(apply(p, v), apply(q, v))
+          case Pair(p, q) => Pair(apply(p, v), apply(q, v))
 
-          case Proj1Phrase(p) => Proj1Phrase(apply(p, v))
+          case Proj1(p) => Proj1(apply(p, v))
 
-          case Proj2Phrase(p) => Proj2Phrase(apply(p, v))
+          case Proj2(p) => Proj2(apply(p, v))
 
-          case IfThenElsePhrase(cond, thenP, elseP) =>
-            IfThenElsePhrase(apply(cond, v), apply(thenP, v), apply(elseP, v))
+          case IfThenElse(cond, thenP, elseP) =>
+            IfThenElse(apply(cond, v), apply(thenP, v), apply(elseP, v))
 
-          case LiteralPhrase(d, t) => d match {
-            case IndexData(i) => LiteralPhrase(IndexData(v(i)), v(t))
-            case _ => LiteralPhrase(d, v(t))
+          case Literal(d, t) => d match {
+            case IndexData(i) => Literal(IndexData(v(i)), v(t))
+            case _ => Literal(d, v(t))
           }
 
-          case UnaryOpPhrase(op, x) => UnaryOpPhrase(op, apply(x, v))
+          case UnaryOp(op, x) => UnaryOp(op, apply(x, v))
 
-          case BinOpPhrase(op, lhs, rhs) => BinOpPhrase(op, apply(lhs, v), apply(rhs, v))
+          case BinOp(op, lhs, rhs) => BinOp(op, apply(lhs, v), apply(rhs, v))
 
-          case c: Combinator[T] => c.visitAndRebuild(v)
+          case c: Primitive[T] => c.visitAndRebuild(v)
         }).asInstanceOf[Phrase[T]]
     }
   }

@@ -1,6 +1,6 @@
 package idealised.OpenCL.Core
 
-import idealised.Core.{ExpType, IdentPhrase}
+import idealised.Core.{ExpType, Identifier}
 import ir._
 import opencl.generator.OpenCLAST._
 import opencl.ir._
@@ -29,7 +29,7 @@ class AdaptToOpenCLRepresentation {
     k.function.copy(params = k.function.params.map(adaptParamDecl(k.inputParams)), body = adaptBlock(k.function.body))
   }
 
-  private def adaptParamDecl(inputParams: List[IdentPhrase[ExpType]])(paramDecl: ParamDecl): ParamDecl = {
+  private def adaptParamDecl(inputParams: List[Identifier[ExpType]])(paramDecl: ParamDecl): ParamDecl = {
     paramDecl.t match {
       case _: ScalarType =>
         paramDecl.addressSpace match {

@@ -24,26 +24,6 @@ object OperationalSemantics {
   final case class ArrayData(a: Vector[Data]) extends Data(ArrayType(a.length, a.head.dataType))
   final case class RecordData(fst: Data, snd: Data) extends Data(RecordType(fst.dataType, snd.dataType))
 
-  object Data {
-    def toString(d: Data): String = {
-      d match {
-        case i: IntData => i.i.toString
-        case b: BoolData => b.b.toString
-        case f: FloatData => f.f.toString
-        case i: IndexData => i.i.toString
-        //          case i: Int4Data => Literal(s"(int4)(${i.i0.toString}, ${i.i1.toString}, ${i.i2.toString}, ${i.i3.toString})")
-        case v: VectorData => v.a.length match {
-          case 2 | 3 | 4 | 8 | 16 =>
-            val dt = DataType.toString(v.a.head.dataType)
-            val n = v.a.length
-            s"($dt$n)(" + v.a.map(x => toString(x)).reduce( _ + ", " + _ ) + ")"
-        }
-        case _: RecordData => ???
-        case _: ArrayData => ???
-      }
-    }
-  }
-
   object makeArrayData {
     def apply(seq: Data*) = ArrayData(Vector(seq: _*))
   }
@@ -60,19 +40,19 @@ object OperationalSemantics {
   def eval[T <: PhraseType, R](s: Store, p: Phrase[T])
                               (implicit evaluator: Evaluator[T, R]): R = {
     p match {
-      case app: ApplyPhrase[a, T] =>
+      case app: Apply[a, T] =>
         val fun: (Phrase[a]) => Phrase[T] = eval(s, app.fun)
         eval(s, fun(app.arg))
 
-      case p1: Proj1Phrase[a, b] =>
+      case p1: Proj1[a, b] =>
         val pair: (Phrase[a], Phrase[b]) = eval(s, p1.pair)
         eval(s, pair._1)
 
-      case p2: Proj2Phrase[a, b] =>
+      case p2: Proj2[a, b] =>
         val pair: (Phrase[a], Phrase[b]) = eval(s, p2.pair)
         eval(s, pair._2)
 
-      case IfThenElsePhrase(cond, thenP, elseP) =>
+      case IfThenElse(cond, thenP, elseP) =>
         if (evalCondExp(s, cond)) {
           eval(s, thenP)
         } else {
@@ -94,11 +74,11 @@ object OperationalSemantics {
     new Evaluator[T1 -> T2, (Phrase[T1] => Phrase[T2])] {
       def apply(s: Store, p: Phrase[T1 -> T2]): (Phrase[T1] => Phrase[T2]) = {
         p match {
-          case l: LambdaPhrase[T1, T2] =>
+          case l: Lambda[T1, T2] =>
             (arg: Phrase[T1]) => l.body `[` arg `/` l.param `]`
-          case IdentPhrase(_, _) | ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
-               TypeDependentApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) |
-               Proj1Phrase(_) | Proj2Phrase(_) =>
+          case Identifier(_, _) | Apply(_, _) | NatDependentApply(_, _) |
+               TypeDependentApply(_, _) | IfThenElse(_, _, _) |
+               Proj1(_) | Proj2(_) =>
             throw new Exception("This should never happen")
         }
       }
@@ -111,12 +91,12 @@ object OperationalSemantics {
     new Evaluator[T1 -> (T2 -> T3), (Phrase[T1] => Phrase[T2] => Phrase[T3])] {
       def apply(s: Store, p: Phrase[T1 -> (T2 -> T3)]): (Phrase[T1] => Phrase[T2] => Phrase[T3]) = {
         p match {
-          case l: LambdaPhrase[T1, T2 -> T3] => (arg: Phrase[T1]) =>
+          case l: Lambda[T1, T2 -> T3] => (arg: Phrase[T1]) =>
             eval(s, l.body `[` arg `/` l.param `]` )(UnaryFunctionEvaluator)
 
-          case IdentPhrase(_, _) | ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
-               TypeDependentApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) |
-               Proj1Phrase(_) | Proj2Phrase(_) =>
+          case Identifier(_, _) | Apply(_, _) | NatDependentApply(_, _) |
+               TypeDependentApply(_, _) | IfThenElse(_, _, _) |
+               Proj1(_) | Proj2(_) =>
             throw new Exception("This should never happen")
         }
       }
@@ -130,12 +110,12 @@ object OperationalSemantics {
     new Evaluator[T1 -> (T2 -> (T3 -> T4)), (Phrase[T1] => Phrase[T2] => Phrase[T3] => Phrase[T4])] {
       def apply(s: Store, p: Phrase[T1 -> (T2 -> (T3 -> T4))]): (Phrase[T1] => Phrase[T2] => Phrase[T3] => Phrase[T4]) = {
         p match {
-          case l: LambdaPhrase[T1, T2 -> (T3 -> T4)] => (arg: Phrase[T1]) =>
+          case l: Lambda[T1, T2 -> (T3 -> T4)] => (arg: Phrase[T1]) =>
             eval(s, l.body `[` arg  `/` l.param `]` )(BinaryFunctionEvaluator)
 
-          case IdentPhrase(_, _) | ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
-               TypeDependentApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) |
-               Proj1Phrase(_) | Proj2Phrase(_) =>
+          case Identifier(_, _) | Apply(_, _) | NatDependentApply(_, _) |
+               TypeDependentApply(_, _) | IfThenElse(_, _, _) |
+               Proj1(_) | Proj2(_) =>
             throw new Exception("This should never happen")
         }
       }
@@ -145,11 +125,11 @@ object OperationalSemantics {
     new Evaluator[`(nat)->`[T], (NatIdentifier => Phrase[T])] {
       def apply(s: Store, p: Phrase[`(nat)->`[T]]): (NatIdentifier => Phrase[T]) = {
         p match {
-          case l: NatDependentLambdaPhrase[T] =>
+          case l: NatDependentLambda[T] =>
             (arg: NatIdentifier) => l.body `[` arg `/` l.x `]`
-          case IdentPhrase(_, _) | ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
-               TypeDependentApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) |
-               Proj1Phrase(_) | Proj2Phrase(_) =>
+          case Identifier(_, _) | Apply(_, _) | NatDependentApply(_, _) |
+               TypeDependentApply(_, _) | IfThenElse(_, _, _) |
+               Proj1(_) | Proj2(_) =>
             throw new Exception("This should never happen")
         }
       }
@@ -159,18 +139,18 @@ object OperationalSemantics {
     new Evaluator[T1 x T2, (Phrase[T1], Phrase[T2])] {
       def apply(s: Store, p: Phrase[T1 x T2]): (Phrase[T1], Phrase[T2]) = {
         p match {
-          case i: IdentPhrase[T1 x T2] =>
+          case i: Identifier[T1 x T2] =>
             if (i.t == null) {
               val t1 = null.asInstanceOf[T1]
               val t2 = null.asInstanceOf[T2]
-              (IdentPhrase[T1](i.name, t1), IdentPhrase[T2](i.name, t2))
+              (Identifier[T1](i.name, t1), Identifier[T2](i.name, t2))
             } else {
-              (IdentPhrase[T1](i.name, i.t.t1), IdentPhrase[T2](i.name, i.t.t2))
+              (Identifier[T1](i.name, i.t.t1), Identifier[T2](i.name, i.t.t2))
             }
-          case pair: PairPhrase[T1, T2] => (pair.fst, pair.snd)
-          case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
-               TypeDependentApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) |
-               Proj1Phrase(_) | Proj2Phrase(_) =>
+          case pair: Pair[T1, T2] => (pair.fst, pair.snd)
+          case Apply(_, _) | NatDependentApply(_, _) |
+               TypeDependentApply(_, _) | IfThenElse(_, _, _) |
+               Proj1(_) | Proj2(_) =>
             throw new Exception("This should never happen")
         }
       }
@@ -180,31 +160,31 @@ object OperationalSemantics {
     new Evaluator[ExpType, Data] {
       def apply(s: Store, p: Phrase[ExpType]): Data = {
         p match {
-          case IdentPhrase(name, _) => s(name)
+          case Identifier(name, _) => s(name)
 
-          case LiteralPhrase(d, _) => d
+          case Literal(d, _) => d
 
-          case UnaryOpPhrase(op, x) =>
+          case UnaryOp(op, x) =>
             op match {
-              case UnaryOpPhrase.Op.NEG => - evalIntExp(s, x)
+              case UnaryOp.Op.NEG => - evalIntExp(s, x)
             }
 
-          case BinOpPhrase(op, lhs, rhs) =>
+          case BinOp(op, lhs, rhs) =>
             op match {
-              case BinOpPhrase.Op.ADD => evalIntExp(s, lhs) + evalIntExp(s, rhs)
-              case BinOpPhrase.Op.SUB => evalIntExp(s, lhs) - evalIntExp(s, rhs)
-              case BinOpPhrase.Op.MUL => evalIntExp(s, lhs) * evalIntExp(s, rhs)
-              case BinOpPhrase.Op.DIV => evalIntExp(s, lhs) / evalIntExp(s, rhs)
-              case BinOpPhrase.Op.MOD => evalIntExp(s, lhs) % evalIntExp(s, rhs)
-              case BinOpPhrase.Op.GT => if (evalIntExp(s, lhs) > evalIntExp(s, rhs)) 1 else 0
-              case BinOpPhrase.Op.LT => if (evalIntExp(s, lhs) < evalIntExp(s, rhs)) 1 else 0
+              case BinOp.Op.ADD => evalIntExp(s, lhs) + evalIntExp(s, rhs)
+              case BinOp.Op.SUB => evalIntExp(s, lhs) - evalIntExp(s, rhs)
+              case BinOp.Op.MUL => evalIntExp(s, lhs) * evalIntExp(s, rhs)
+              case BinOp.Op.DIV => evalIntExp(s, lhs) / evalIntExp(s, rhs)
+              case BinOp.Op.MOD => evalIntExp(s, lhs) % evalIntExp(s, rhs)
+              case BinOp.Op.GT => if (evalIntExp(s, lhs) > evalIntExp(s, rhs)) 1 else 0
+              case BinOp.Op.LT => if (evalIntExp(s, lhs) < evalIntExp(s, rhs)) 1 else 0
             }
 
-          case c: ExpCombinator => c.eval(s)
+          case c: ExpPrimitive => c.eval(s)
 
-          case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
-               TypeDependentApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) |
-               Proj1Phrase(_) | Proj2Phrase(_) =>
+          case Apply(_, _) | NatDependentApply(_, _) |
+               TypeDependentApply(_, _) | IfThenElse(_, _, _) |
+               Proj1(_) | Proj2(_) =>
             throw new Exception("This should never happen")
         }
       }
@@ -214,13 +194,13 @@ object OperationalSemantics {
     new Evaluator[AccType, AccIdentifier] {
       def apply(s: Store, p: Phrase[AccType]): AccIdentifier = {
         p match {
-          case IdentPhrase(name, _) => NamedIdentifier(name)
+          case Identifier(name, _) => NamedIdentifier(name)
 
-          case c: AccCombinator => c.eval(s)
+          case c: AccPrimitive => c.eval(s)
 
-          case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
-               TypeDependentApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) |
-               Proj1Phrase(_) | Proj2Phrase(_) =>
+          case Apply(_, _) | NatDependentApply(_, _) |
+               TypeDependentApply(_, _) | IfThenElse(_, _, _) |
+               Proj1(_) | Proj2(_) =>
             throw new Exception("This should never happen")
         }
       }
@@ -230,13 +210,13 @@ object OperationalSemantics {
     new Evaluator[CommandType, Store] {
       def apply(s: Store, p: Phrase[CommandType]): Store = {
         p match {
-          case IdentPhrase(_, _) => throw new Exception("This should never happen")
+          case Identifier(_, _) => throw new Exception("This should never happen")
 
-          case c: CommandCombinator => c.eval(s)
+          case c: CommandPrimitive => c.eval(s)
 
-          case ApplyPhrase(_, _) | NatDependentApplyPhrase(_, _) |
-               TypeDependentApplyPhrase(_, _) | IfThenElsePhrase(_, _, _) |
-               Proj1Phrase(_) | Proj2Phrase(_) =>
+          case Apply(_, _) | NatDependentApply(_, _) |
+               TypeDependentApply(_, _) | IfThenElse(_, _, _) |
+               Proj1(_) | Proj2(_) =>
             throw new Exception("This should never happen")
         }
       }
@@ -275,15 +255,15 @@ object OperationalSemantics {
     evalIntExp(new Store(), p)
   }
 
-  def toScalaOp(op: BinOpPhrase.Op.Value): (Nat, Nat) => Nat = {
+  def toScalaOp(op: BinOp.Op.Value): (Nat, Nat) => Nat = {
     op match {
-      case BinOpPhrase.Op.ADD => (x, y) => x + y
-      case BinOpPhrase.Op.SUB => (x, y) => x - y
-      case BinOpPhrase.Op.MUL => (x, y) => x * y
-      case BinOpPhrase.Op.DIV => (x, y) => x / y
-      case BinOpPhrase.Op.MOD => (x, y) => x % y
-      case BinOpPhrase.Op.GT => (x, y) => (x gt y) ?? 1 !! 0
-      case BinOpPhrase.Op.LT => (x, y) => (x lt 0) ?? 1 !! 0
+      case BinOp.Op.ADD => (x, y) => x + y
+      case BinOp.Op.SUB => (x, y) => x - y
+      case BinOp.Op.MUL => (x, y) => x * y
+      case BinOp.Op.DIV => (x, y) => x / y
+      case BinOp.Op.MOD => (x, y) => x % y
+      case BinOp.Op.GT => (x, y) => (x gt y) ?? 1 !! 0
+      case BinOp.Op.LT => (x, y) => (x lt 0) ?? 1 !! 0
     }
   }
 

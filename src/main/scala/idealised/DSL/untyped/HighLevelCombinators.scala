@@ -1,7 +1,7 @@
 package idealised.DSL.untyped
 
 import idealised.Core._
-import idealised.HighLevelCombinators._
+import idealised.HighLevelPrimitives._
 import lift.arithmetic.NamedVar
 
 

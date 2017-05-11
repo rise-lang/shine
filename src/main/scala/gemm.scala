@@ -13,8 +13,8 @@ import scala.util.Random
 
 object gemm extends App {
 
-//  Executor.loadLibrary()
-//  Executor.init()
+  Executor.loadLibrary()
+  Executor.init()
 
   val epsilon = 1.0f
 
@@ -28,9 +28,9 @@ object gemm extends App {
   val cT = exp"[$M.$N.$dt]"
 
   def printOpenCLKernel(name: String,
-                        untypedLambda: Phrase[ExpType -> (ExpType -> ExpType)]) = {
+                        untypedLambda: Phrase[ExpType -> (ExpType -> ExpType)]): Unit = {
     val lambda = TypeInference(untypedLambda)
-    println(name + ":\n" + PrettyPrinter(lambda))
+    println(name + ":\n" + PrettyPhrasePrinter(lambda))
     lambda.typeCheck()
 
     println(s"-- $name --")
@@ -67,7 +67,7 @@ object gemm extends App {
   val v3 = 2
   val v4 = 2
 
-  val zeros = LiteralPhrase(
+  val zeros = Literal(
     ArrayData(Vector.fill(v4)(ArrayData(Vector.fill(v3)(FloatData(0.0f))))),
     ArrayType(v4, ArrayType(v3, float)))
 
@@ -103,7 +103,7 @@ object gemm extends App {
 
   {
     val lambda = TypeInference(maliGEMM)
-    println("maliGEMM:\n" + PrettyPrinter(lambda))
+    println("maliGEMM:\n" + PrettyPhrasePrinter(lambda))
     lambda.typeCheck()
   }
 

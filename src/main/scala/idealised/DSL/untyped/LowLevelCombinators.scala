@@ -1,13 +1,13 @@
 package idealised.DSL.untyped
 
 import idealised.Core._
-import idealised.LowLevelCombinators._
+import idealised.LowLevelPrimitives._
 
 object `if` {
   def apply[T <: PhraseType](cond: Phrase[ExpType],
                              thenP: Phrase[T],
                              elseP: Phrase[T]) =
-    IfThenElsePhrase(cond, thenP, elseP)
+    IfThenElse(cond, thenP, elseP)
 }
 
 object `for` {

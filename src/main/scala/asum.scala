@@ -4,7 +4,7 @@ import idealised.DSL.untyped._
 import idealised.OpenCL.Core._
 import idealised.OpenCL.DSL._
 import lift.arithmetic._
-import idealised.OpenCL.LowLevelCombinators.UnaryOpenCLFunction
+import idealised.OpenCL.LowLevelPrimitives.UnaryOpenCLFunction
 import opencl.executor.Executor
 import opencl.generator.OpenCLPrinter
 
@@ -24,7 +24,7 @@ object asum extends App {
                       untypedLambda: Phrase[ExpType -> ExpType]) = {
     println("\n----------------")
     val lambda = TypeInference(untypedLambda)
-    println(name + ":\n" + PrettyPrinter(lambda))
+    println(name + ":\n" + PrettyPhrasePrinter(lambda))
     lambda.typeCheck()
 
     println(s"-- $name --")
@@ -62,7 +62,7 @@ object asum extends App {
 
   {
     val lambda = TypeInference(high_level)
-    println("high_level:\n" + PrettyPrinter(lambda))
+    println("high_level:\n" + PrettyPhrasePrinter(lambda))
     lambda.typeCheck()
   }
 

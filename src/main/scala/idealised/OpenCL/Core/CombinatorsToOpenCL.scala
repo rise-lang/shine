@@ -3,9 +3,9 @@ package idealised.OpenCL.Core
 import idealised._
 import idealised.Core._
 import idealised.DSL.typed.identifier
-import idealised.HighLevelCombinators._
-import idealised.LowLevelCombinators._
-import idealised.OpenCL.LowLevelCombinators.OpenCLParFor
+import idealised.HighLevelPrimitives._
+import idealised.LowLevelPrimitives._
+import idealised.OpenCL.LowLevelPrimitives.OpenCLParFor
 import lift.arithmetic._
 import ir.Type
 import opencl.generator.OpenCLAST
@@ -39,7 +39,7 @@ object CombinatorsToOpenCL {
     val v = NamedVar(name)
     val increment = AssignmentExpression(ArithExpression(v), ArithExpression(v + 1))
 
-    val bodyE = Lift.liftFunction(f.body)
+    val bodyE = Lifting.liftFunction(f.body)
     val i = identifier(name, ExpType(int))
 
     f.n match {
@@ -72,7 +72,7 @@ object CombinatorsToOpenCL {
 
     // in* = buffer1
     val buffer1Name = d.buffer1 match {
-      case i: IdentPhrase[VarType] => i.name
+      case i: Identifier[VarType] => i.name
       case _ => throw new Exception("This should not happen")
     }
     val in = identifier(newName(), ExpType(ArrayType(d.n, d.dt)))
@@ -82,7 +82,7 @@ object CombinatorsToOpenCL {
 
     // out* = buffer2
     val buffer2Name = d.buffer2 match {
-      case i: IdentPhrase[VarType] => i.name
+      case i: Identifier[VarType] => i.name
       case _ => throw new Exception("This should not happen")
     }
     val out = identifier(newName(), AccType(ArrayType(d.n, d.dt)))
@@ -105,9 +105,9 @@ object CombinatorsToOpenCL {
     val increment = AssignmentExpression(
       ArithExpression(loopVar), ArithExpression(loopVar + 1))
 
-    val bodyE = Lift.liftNatDependentFunction(d.body)
-    val bodyEE = Lift.liftFunction(bodyE(loopVar))
-    val bodyEEE = Lift.liftFunction(bodyEE(out))
+    val bodyE = Lifting.liftNatDependentFunction(d.body)
+    val bodyEE = Lifting.liftFunction(bodyE(loopVar))
+    val bodyEEE = Lifting.liftFunction(bodyEE(out))
 
     val nestedBlock = Block()
     val body_ = ToOpenCL.cmd(bodyEEE(in), nestedBlock, env)
@@ -132,7 +132,7 @@ object CombinatorsToOpenCL {
         ArithExpression(NamedVar(tmp.name)))
 
     // copy result to output
-    val CE = Lift.liftFunction(d.C)(identifier(in.name, ExpType(ArrayType(d.m, d.dt))))
+    val CE = Lifting.liftFunction(d.C)(identifier(in.name, ExpType(ArrayType(d.m, d.dt))))
     TypeChecker(CE)
     (block: Block) += ToOpenCL.cmd(CE, Block(), env)
 
@@ -151,19 +151,19 @@ object CombinatorsToOpenCL {
       (block: Block) += Comment(s"new ${v.name} ${n.dt} ${n.addressSpace}")
     }
 
-    val f_ = Lift.liftFunction(n.f)
+    val f_ = Lifting.liftFunction(n.f)
     val v_ = identifier(v.name, n.f.t.inT)
     ToOpenCL.cmd(f_(v_), block, env)
   }
 
-  def toOpenCL(s: idealised.LowLevelCombinators.Seq,
+  def toOpenCL(s: idealised.LowLevelPrimitives.Seq,
                block: Block,
                env: ToOpenCL.Environment): Block = {
     ToOpenCL.cmd(s.c1, block, env)
     ToOpenCL.cmd(s.c2, block, env)
   }
 
-  def toOpenCL(s: idealised.LowLevelCombinators.Skip,
+  def toOpenCL(s: idealised.LowLevelPrimitives.Skip,
                block: Block,
                env: ToOpenCL.Environment): Block = block
 
@@ -320,7 +320,7 @@ object CombinatorsToOpenCL {
                tupleAccess: List[Nat]): Expression = {
     val idx: ArithExpr = ToOpenCL.exp(i.index, env) match {
       case VarRef(name, _, _) => NamedVar(name, env.ranges(name))
-      case Literal(j) => Cst(j.toInt)
+      case OpenCLAST.Literal(j) => Cst(j.toInt)
       case _ => throw new Exception("This should not happen")
     }
 

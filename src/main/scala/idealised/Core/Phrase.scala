@@ -10,68 +10,46 @@ sealed trait Phrase[T <: PhraseType] {
   def typeCheck(): Unit = TypeChecker(this)
 }
 
-final case class IdentPhrase[T <: PhraseType](name: String, override val `type`: T)
+final case class Identifier[T <: PhraseType](name: String, override val `type`: T)
   extends Phrase[T]
 
-final case class LambdaPhrase[T1 <: PhraseType, T2 <: PhraseType](param: IdentPhrase[T1], body: Phrase[T2])
+final case class Lambda[T1 <: PhraseType, T2 <: PhraseType](param: Identifier[T1], body: Phrase[T2])
   extends Phrase[T1 -> T2]
 
-final case class ApplyPhrase[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 -> T2], arg: Phrase[T1])
+final case class Apply[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 -> T2], arg: Phrase[T1])
   extends Phrase[T2]
 
-final case class NatDependentLambdaPhrase[T <: PhraseType](x: NatIdentifier, body: Phrase[T])
+final case class NatDependentLambda[T <: PhraseType](x: NatIdentifier, body: Phrase[T])
   extends Phrase[`(nat)->`[T]]
 
-final case class TypeDependentLambdaPhrase[T <: PhraseType](x: DataTypeIdentifier, body: Phrase[T])
+final case class TypeDependentLambda[T <: PhraseType](x: DataTypeIdentifier, body: Phrase[T])
   extends Phrase[`(dt)->`[T]]
 
-final case class NatDependentApplyPhrase[T <: PhraseType](fun: Phrase[`(nat)->`[T]], arg: Nat)
+final case class NatDependentApply[T <: PhraseType](fun: Phrase[`(nat)->`[T]], arg: Nat)
   extends Phrase[T]
 
-final case class TypeDependentApplyPhrase[T <: PhraseType](fun: Phrase[`(dt)->`[T]], arg: DataType)
+final case class TypeDependentApply[T <: PhraseType](fun: Phrase[`(dt)->`[T]], arg: DataType)
   extends Phrase[T]
 
-final case class PairPhrase[T1 <: PhraseType, T2 <: PhraseType](fst: Phrase[T1], snd: Phrase[T2])
+final case class Pair[T1 <: PhraseType, T2 <: PhraseType](fst: Phrase[T1], snd: Phrase[T2])
   extends Phrase[T1 x T2]
 
-final case class Proj1Phrase[T1 <: PhraseType, T2 <: PhraseType](pair: Phrase[T1 x T2])
+final case class Proj1[T1 <: PhraseType, T2 <: PhraseType](pair: Phrase[T1 x T2])
   extends Phrase[T1]
 
-final case class Proj2Phrase[T1 <: PhraseType, T2 <: PhraseType](pair: Phrase[T1 x T2])
+final case class Proj2[T1 <: PhraseType, T2 <: PhraseType](pair: Phrase[T1 x T2])
   extends Phrase[T2]
 
-final case class IfThenElsePhrase[T <: PhraseType](cond: Phrase[ExpType], thenP: Phrase[T], elseP: Phrase[T])
+final case class IfThenElse[T <: PhraseType](cond: Phrase[ExpType], thenP: Phrase[T], elseP: Phrase[T])
   extends Phrase[T]
 
-final case class UnaryOpPhrase(op: UnaryOpPhrase.Op.Value, p: Phrase[ExpType])
+final case class UnaryOp(op: UnaryOp.Op.Value, p: Phrase[ExpType])
   extends Phrase[ExpType]
 
-object UnaryOpPhrase {
-
-  object Op extends Enumeration {
-    val NEG = Value("-")
-  }
-
-}
-
-final case class BinOpPhrase(op: BinOpPhrase.Op.Value, lhs: Phrase[ExpType], rhs: Phrase[ExpType])
+final case class BinOp(op: BinOp.Op.Value, lhs: Phrase[ExpType], rhs: Phrase[ExpType])
   extends Phrase[ExpType]
 
-object BinOpPhrase {
-
-  object Op extends Enumeration {
-    val ADD = Value("+")
-    val SUB = Value("-")
-    val MUL = Value("*")
-    val DIV = Value("/")
-    val MOD = Value("%")
-    val GT = Value(">")
-    val LT = Value("<")
-  }
-
-}
-
-final case class LiteralPhrase(d: OperationalSemantics.Data, dt: DataType)
+final case class Literal(d: OperationalSemantics.Data, dt: DataType)
   extends Phrase[ExpType] {
   override lazy val t = ExpType(dt)
 }
@@ -111,11 +89,25 @@ object Phrase {
   }
 }
 
-trait TypeInferable {
-  def inferTypes: TypeInferable
+object UnaryOp {
+  object Op extends Enumeration {
+    val NEG = Value("-")
+  }
 }
 
-sealed trait Combinator[T <: PhraseType] extends Phrase[T] {
+object BinOp {
+  object Op extends Enumeration {
+    val ADD = Value("+")
+    val SUB = Value("-")
+    val MUL = Value("*")
+    val DIV = Value("/")
+    val MOD = Value("%")
+    val GT = Value(">")
+    val LT = Value("<")
+  }
+}
+
+sealed trait Primitive[T <: PhraseType] extends Phrase[T] {
   override def `type`: T
 
   override def typeCheck(): Unit
@@ -127,36 +119,28 @@ sealed trait Combinator[T <: PhraseType] extends Phrase[T] {
   def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[T]
 }
 
-sealed trait ExpCombinator extends Combinator[ExpType] with TypeInferable {
+trait ExpPrimitive extends Primitive[ExpType] with TypeInferable[ExpType] {
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Data
+
+  def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType]
+
+  def rewriteToImperativeExp(C: Phrase[ExpType -> CommandType]): Phrase[CommandType]
 }
 
-sealed trait AccCombinator extends Combinator[AccType] {
+trait AccPrimitive extends Primitive[AccType] {
   def eval(s: OperationalSemantics.Store): OperationalSemantics.AccIdentifier
 }
 
-sealed trait CommandCombinator extends Combinator[CommandType] {
-  override val `type` = comm
+trait CommandPrimitive extends Primitive[CommandType] {
+  override val `type`: CommandType = comm
 
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Store
 }
 
-abstract class HighLevelCombinator extends ExpCombinator {
-  def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType]
-
-  def rewriteToImperativeExp(C: Phrase[ExpType -> CommandType]): Phrase[CommandType]
+trait Intermediate[T <: PhraseType] {
+  def substituteImpl(env: SubstituteImplementations.Environment): Phrase[T]
 }
 
-abstract class MidLevelCombinator extends CommandCombinator {
-  def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType]
+trait TypeInferable[T <: PhraseType] {
+  def inferTypes: Primitive[T]
 }
-
-abstract class LowLevelExpCombinator extends ExpCombinator {
-  def rewriteToImperativeAcc(A: Phrase[AccType]): Phrase[CommandType]
-
-  def rewriteToImperativeExp(C: Phrase[ExpType -> CommandType]): Phrase[CommandType]
-}
-
-abstract class LowLevelAccCombinator extends AccCombinator
-
-abstract class LowLevelCommCombinator extends CommandCombinator

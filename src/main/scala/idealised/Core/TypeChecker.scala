@@ -6,51 +6,51 @@ object TypeChecker {
 
   def apply[T <: PhraseType](phrase: Phrase[T]): Unit = {
     phrase match {
-      case IdentPhrase(_, t) =>
+      case Identifier(_, t) =>
         if (t == null) { error("null", expected = "a valid type") }
 
-      case LambdaPhrase(x, p) => x.typeCheck(); p.typeCheck()
+      case Lambda(x, p) => x.typeCheck(); p.typeCheck()
 
-      case ApplyPhrase(p, q) =>
+      case Apply(p, q) =>
         p.typeCheck()
         q.typeCheck()
         p.t match {
-          case FunctionType(t1, t2) =>
+          case FunctionType(t1, _) =>
             check(t1, q.t)
           case x => error(x.toString, FunctionType.toString)
         }
 
-      case NatDependentLambdaPhrase(_, p) => p.typeCheck()
+      case NatDependentLambda(_, p) => p.typeCheck()
 
-      case TypeDependentLambdaPhrase(_, p) => p.typeCheck()
+      case TypeDependentLambda(_, p) => p.typeCheck()
 
-      case NatDependentApplyPhrase(p, _) => p.typeCheck()
+      case NatDependentApply(p, _) => p.typeCheck()
 
-      case TypeDependentApplyPhrase(p, _) => p.typeCheck()
+      case TypeDependentApply(p, _) => p.typeCheck()
 
-      case PairPhrase(p, q) => p.typeCheck(); q.typeCheck()
+      case Pair(p, q) => p.typeCheck(); q.typeCheck()
 
-      case Proj1Phrase(p) => p.typeCheck()
+      case Proj1(p) => p.typeCheck()
 
-      case Proj2Phrase(p) => p.typeCheck()
+      case Proj2(p) => p.typeCheck()
 
-      case IfThenElsePhrase(cond, thenP, elseP) =>
+      case IfThenElse(cond, thenP, elseP) =>
         cond.typeCheck()
         thenP.typeCheck()
         elseP.typeCheck()
         check(cond.t, exp"[$int]" | exp"[$bool]")
         check(thenP.t, elseP.t)
 
-      case LiteralPhrase(_, _) =>
+      case Literal(_, _) =>
 
-      case UnaryOpPhrase(op, x) =>
+      case UnaryOp(op, x) =>
         x.typeCheck()
         x.t match {
           case ExpType(_) =>
-          case y => error(y.toString, ExpType.toString)
+          case y => error(y.toString, s"$op ${ExpType.toString}")
         }
 
-      case BinOpPhrase(op, lhs, rhs) =>
+      case BinOp(op, lhs, rhs) =>
         lhs.typeCheck()
         rhs.typeCheck()
         (lhs.t, rhs.t) match {
@@ -63,7 +63,7 @@ object TypeChecker {
             error(s"$x1 $op $x2", s"exp[b] $op exp[b]")
         }
 
-      case c: Combinator[_] => c.typeCheck()
+      case c: Primitive[_] => c.typeCheck()
     }
   }
 
@@ -93,8 +93,8 @@ object TypeChecker {
   }
 
   implicit class ReverseInferenceHelper(pt: PhraseType) {
-    def ::[T <: PhraseType](p: Phrase[T]) = p checkType pt
-    def `:`[T <: PhraseType](p: Phrase[T]) = p checkType pt
+    def ::[T <: PhraseType](p: Phrase[T]): Unit = p checkType pt
+    def `:`[T <: PhraseType](p: Phrase[T]): Unit = p checkType pt
   }
 
   implicit class CheckHelper(p1: PhraseType) {

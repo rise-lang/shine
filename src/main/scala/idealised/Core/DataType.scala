@@ -10,18 +10,26 @@ sealed trait BasicType extends DataType
 
 sealed trait ScalarType extends BasicType
 
-object bool extends ScalarType { override def toString = "bool" }
+object bool extends ScalarType { override def toString: String = "bool" }
 
-object int extends ScalarType { override def toString = "int" }
+object int extends ScalarType { override def toString: String = "int" }
 
-object float extends ScalarType { override def toString = "float" }
+object float extends ScalarType { override def toString: String = "float" }
 
 final case class IndexType(size: Nat) extends BasicType {
-  override def toString = s"idx($size)"
+  override def toString: String = s"idx($size)"
+}
+
+final case class ArrayType(size: Nat, elemType: DataType) extends ComposedType {
+  override def toString: String = s"$size.$elemType"
+}
+
+final case class RecordType(fst: DataType, snd: DataType) extends ComposedType {
+  override def toString: String = s"($fst x $snd)"
 }
 
 sealed case class VectorType(size: Nat, elemType: ScalarType) extends BasicType {
-  override def toString = s"$elemType$size"
+  override def toString: String = s"$elemType$size"
 }
 
 object int2 extends VectorType(2, int)
@@ -36,16 +44,8 @@ object float4 extends VectorType(4, float)
 object float8 extends VectorType(8, float)
 object float16 extends VectorType(16, float)
 
-final case class ArrayType(size: Nat, elemType: DataType) extends ComposedType {
-  override def toString = s"$size.$elemType"
-}
-
-final case class RecordType(fst: DataType, snd: DataType) extends ComposedType {
-  override def toString = s"($fst x $snd)"
-}
-
 final case class DataTypeIdentifier(name: String) extends DataType {
-  override def toString = name
+  override def toString: String = name
 }
 
 object DataType {
@@ -55,7 +55,7 @@ object DataType {
         case Core.bool => opencl.ir.Int
         case Core.int => opencl.ir.Int
         case Core.float => opencl.ir.Float
-        case i: IndexType => opencl.ir.Int
+        case _: IndexType => opencl.ir.Int
         case v: VectorType => toVectorType(v)
       }
       case a: ArrayType => ir.ArrayType(DataType.toType(a.elemType), a.size)
@@ -77,25 +77,11 @@ object DataType {
         case Core.bool => opencl.ir.Int
         case Core.int => opencl.ir.Int
         case Core.float => opencl.ir.Float
-        case i: IndexType => opencl.ir.Int
+        case _: IndexType => opencl.ir.Int
         case v: VectorType => scalarType(v.elemType)
       }
       case a: ArrayType => scalarType(a.elemType)
-      case r: RecordType => ???
-      case _: DataTypeIdentifier => throw new Exception("This should not happen")
-    }
-  }
-
-  def toString(dt: DataType): String = {
-    dt match {
-      case b: BasicType => b match {
-        case Core.bool | Core.int => "int"
-        case Core.float => "float"
-        case i: IndexType => "int"
-        case v: VectorType => toString(v.elemType) + v.size.toString
-      }
       case _: RecordType => ???
-      case _: ArrayType => ???
       case _: DataTypeIdentifier => throw new Exception("This should not happen")
     }
   }

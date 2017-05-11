@@ -1,6 +1,6 @@
 package idealised
 
-import idealised.Core.{AccType, ExpType, IdentPhrase, VarType}
+import idealised.Core.{AccType, ExpType, Identifier, VarType}
 import opencl.generator._
 
 import scala.collection.immutable.List
@@ -29,9 +29,9 @@ package object OpenCL {
   }
 
   case class Kernel(function: OpenCLAST.Function,
-                    outputParam: IdentPhrase[AccType],
-                    inputParams: List[IdentPhrase[ExpType]],
-                    intermediateParams: List[IdentPhrase[VarType]]) {
+                    outputParam: Identifier[AccType],
+                    inputParams: List[Identifier[ExpType]],
+                    intermediateParams: List[Identifier[VarType]]) {
     def code: String = (new OpenCLPrinter)(this)
   }
 

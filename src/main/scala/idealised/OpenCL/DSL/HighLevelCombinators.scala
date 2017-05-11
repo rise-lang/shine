@@ -3,8 +3,8 @@ package idealised.OpenCL.DSL
 import idealised.Core.OperationalSemantics._
 import idealised.Core._
 import idealised.DSL.untyped.λ
-import idealised.OpenCL.HighLevelCombinators._
-import idealised.OpenCL.LowLevelCombinators.VectorFromScalar
+import idealised.OpenCL.HighLevelPrimitives._
+import idealised.OpenCL.LowLevelPrimitives.VectorFromScalar
 
 object mapGlobal {
   def apply(f: Phrase[ExpType -> ExpType]): Phrase[ExpType -> ExpType] =
@@ -84,7 +84,7 @@ object reduceSeq {
 
 object vectorize {
   def apply(len: Int, f: Float) =
-    LiteralPhrase(VectorData(Vector.fill(len)(FloatData(f))), VectorType(len, float))
+    Literal(VectorData(Vector.fill(len)(FloatData(f))), VectorType(len, float))
 
   def apply(len: Nat, e: Phrase[ExpType]) = VectorFromScalar(len, null, e)
 }

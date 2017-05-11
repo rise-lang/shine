@@ -1,6 +1,5 @@
 package idealised
 
-import idealised.Core.PhraseType._
 import lift.arithmetic.{ArithExpr, NamedVar}
 
 import scala.language.implicitConversions
@@ -28,19 +27,19 @@ package object Core {
   type VarType = ExpType x AccType
 
   object VarType {
-    def apply(dt: DataType) = ExpType(dt) x AccType(dt)
+    def apply(dt: DataType): PairType[ExpType, AccType] = ExpType(dt) x AccType(dt)
   }
 
   implicit class PhraseTypeSubstitutionHelper[T <: PhraseType](t: PhraseType) {
     def `[`(e: Nat) = new {
       def `/`(a: Nat) = new {
-        def `]` = PhraseType.substitute(e, `for`=a, in=t)
+        def `]`: PhraseType = PhraseType.substitute(e, `for`=a, in=t)
       }
     }
 
     def `[`(e: DataType) = new {
       def `/`(a: DataType) = new {
-        def `]` = PhraseType.substitute(e, `for`=a, in=t)
+        def `]`: PhraseType = PhraseType.substitute(e, `for`=a, in=t)
       }
     }
   }
@@ -48,19 +47,19 @@ package object Core {
   implicit class PhraseSubstitutionHelper[T1 <: PhraseType](in: Phrase[T1]) {
     def `[`[T2 <: PhraseType](p: Phrase[T2]) = new {
       def `/`(`for`: Phrase[T2]) = new {
-        def `]` = Phrase.substitute(p, `for`, in)
+        def `]`: Phrase[T1] = Phrase.substitute(p, `for`, in)
       }
     }
 
     def `[`(e: Nat) = new {
       def `/`(`for`: NatIdentifier) = new {
-        def `]` = PhraseType.substitute(e, `for`, in)
+        def `]`: Phrase[T1] = PhraseType.substitute(e, `for`, in)
       }
     }
 
     def `[`(dt: DataType) = new {
       def `/`(`for`: DataTypeIdentifier) = new {
-        def `]` = PhraseType.substitute(dt, `for`, in)
+        def `]`: Phrase[T1] = PhraseType.substitute(dt, `for`, in)
       }
     }
   }

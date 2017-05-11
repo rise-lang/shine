@@ -6,59 +6,59 @@ import scala.language.reflectiveCalls
 object TypeOf {
   def apply[T <: PhraseType](phrase: Phrase[T]): T = {
     (phrase match {
-      case x: IdentPhrase[T] => x.t
-      case LambdaPhrase(x, p) => x.t -> p.t
-      case ApplyPhrase(p, q) =>
+      case x: Identifier[T] => x.t
+      case Lambda(x, p) => x.t -> p.t
+      case Apply(p, q) =>
         p.t match {
           case FunctionType(_, t2) => t2
           case null => null
         }
 
-      case NatDependentLambdaPhrase(a, p) => (a: NatIdentifier) -> p.t
+      case NatDependentLambda(a, p) => (a: NatIdentifier) -> p.t
 
-      case TypeDependentLambdaPhrase(a, p) => (a: DataTypeIdentifier) -> p.t
+      case TypeDependentLambda(a, p) => (a: DataTypeIdentifier) -> p.t
 
-      case NatDependentApplyPhrase(p, e) =>
+      case NatDependentApply(p, e) =>
         p.t match {
           case NatDependentFunctionType(a, t) => t `[` e `/` a `]`
           case null => null
         }
 
-      case TypeDependentApplyPhrase(p, e) =>
+      case TypeDependentApply(p, e) =>
         p.t match {
           case TypeDependentFunctionType(a, t) => t `[` e `/` a `]`
           case null => null
         }
 
-      case PairPhrase(p, q) => p.t x q.t
+      case Pair(p, q) => p.t x q.t
 
-      case Proj1Phrase(p) =>
+      case Proj1(p) =>
         p.t match {
           case PairType(t1, _) => t1
           case null => null
         }
 
-      case Proj2Phrase(p) =>
+      case Proj2(p) =>
         p.t match {
           case PairType(_, t2) => t2
           case null => null
         }
 
-      case IfThenElsePhrase(cond, thenP, elseP) =>
+      case IfThenElse(cond, thenP, elseP) =>
         assert(thenP.t == elseP.t)
         thenP.t
 
-      case LiteralPhrase(_, t) => t
+      case Literal(_, t) => t
 
-      case UnaryOpPhrase(op, x) =>
+      case UnaryOp(op, x) =>
         x.t match {
           case ExpType(dt) => x.t
           case null => null
         }
 
-      case BinOpPhrase(op, lhs, rhs) =>
+      case BinOp(op, lhs, rhs) =>
         op match {
-          case BinOpPhrase.Op.GT | BinOpPhrase.Op.LT => exp"[$bool]"
+          case BinOp.Op.GT | BinOp.Op.LT => exp"[$bool]"
           case _ => (lhs.t.dataType, rhs.t.dataType) match {
             case (t1, t2) if t1 == t2 => ExpType(t1)
             case (IndexType(n), `int`) =>
@@ -74,7 +74,7 @@ object TypeOf {
           }
         }
 
-      case c: Combinator[_] => c.t
+      case c: Primitive[_] => c.t
     }).asInstanceOf[T]
   }
 }
