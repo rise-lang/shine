@@ -5,7 +5,8 @@ import idealised._
 import idealised.Core._
 import idealised.Core.OperationalSemantics._
 import idealised.DSL.typed._
-import idealised.IntermediatePrimitives.MapI
+
+import scala.language.reflectiveCalls
 
 import scala.xml.Elem
 
@@ -41,12 +42,13 @@ final case class TruncExp(n: Nat,
 
   override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
-    con(array)(λ(exp"[$n.$dt]")(e =>
-      MapI(m, dt, dt, λ(ExpType(dt))(e => λ(AccType(dt))(a => acc(e)(a))), e, A)))
+    con(array)(λ(exp"[$n.$dt]")(e => A :=|ArrayType(m, dt)| TruncExp(n, m, dt, e)) )
   }
 
-  override def continuationTranslation(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] =
-    RewriteToImperative.con(array)(λ(exp"[$n.$dt]")(e => C(TruncExp(n, m, dt, e))))
+  override def continuationTranslation(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
+    import RewriteToImperative._
+    con(array)(λ(exp"[$n.$dt]")(x => C(TruncExp(n, m, dt, x))))
+  }
 
   override def xmlPrinter: Elem =
     <truncExp n={n.toString} m={m.toString} dt={dt.toString}>

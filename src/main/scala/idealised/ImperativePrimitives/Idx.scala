@@ -5,7 +5,8 @@ import idealised._
 import idealised.Core._
 import idealised.Core.OperationalSemantics._
 import idealised.DSL.typed._
-import idealised.IntermediatePrimitives.MapI
+
+import scala.language.reflectiveCalls
 
 import scala.xml.Elem
 
@@ -61,21 +62,11 @@ final case class Idx(n: Nat,
 
   override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
-    con(array)(λ(exp"[$n.$dt]")(e =>
-      dt match {
-        case b: BasicType => A `:=` Idx(n, dt, index, e)
-        case ArrayType(m, dt2) =>
-          MapI(m, dt2, dt2, λ(ExpType(dt))(e => λ(AccType(dt))(a => acc(e)(a))), Idx(n, dt, index, e), A)
-        case RecordType(dt1, dt2) =>
-          acc(fst(Idx(n, dt, index, e)))(recordAcc1(dt1, dt2, A)) `;`
-            acc(snd(Idx(n, dt, index, e)))(recordAcc2(dt1, dt2, A))
-        case _: DataTypeIdentifier => throw new Exception("This should not happen")
-      }
-    ))
+    con(array)(λ(exp"[$n.$dt]")(x => A :=| dt | Idx(n, dt, index, x)))
   }
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] =
-    RewriteToImperative.con(array)(λ(exp"[$n.$dt]")(e =>
-      C(Idx(n, dt, index, e))
-    ))
+  override def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
+    import RewriteToImperative._
+    con(array)(λ(exp"[$n.$dt]")(e => C(Idx(n, dt, index, e))))
+  }
 }
