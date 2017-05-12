@@ -8,7 +8,7 @@ import idealised.DSL.typed._
 import idealised.OpenCL.ImperativePrimitives.AsVectorAcc
 
 import opencl.generator.OpenCLAST.Expression
-import idealised.OpenCL.Core.{ToOpenCL, ViewExp}
+import idealised.OpenCL.Core.{CodeGenerator, ViewExp}
 
 import scala.xml.Elem
 
@@ -42,7 +42,7 @@ final case class AsVector(n: Nat,
 
   override def eval(s: Store): Data = ???
 
-  override def toOpenCL(env: ToOpenCL.Environment,
+  override def toOpenCL(env: CodeGenerator.Environment,
                         arrayAccess: List[(Nat, Nat)],
                         tupleAccess: List[Nat],
                         dt: DataType): Expression = {
@@ -54,7 +54,7 @@ final case class AsVector(n: Nat,
 
     val newIdx = chunkId._1 * n + chunkElemId._1
 
-    ToOpenCL.exp(array, env, dt, (newIdx, chunkElemId._2) :: rest, tupleAccess)
+    CodeGenerator.exp(array, env, dt, (newIdx, chunkElemId._2) :: rest, tupleAccess)
   }
 
   override def prettyPrint: String = s"(asVector ${n.toString} ${PrettyPhrasePrinter(array)})"

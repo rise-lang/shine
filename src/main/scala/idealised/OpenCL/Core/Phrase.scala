@@ -6,13 +6,13 @@ import opencl.generator.OpenCLAST.{Block, Expression}
 import scala.collection.immutable.List
 
 trait ViewExp {
-  def toOpenCL(env: ToOpenCL.Environment,
+  def toOpenCL(env: CodeGenerator.Environment,
                arrayAccess: List[(Nat, Nat)],
                tupleAccess: List[Nat], dt: DataType): Expression
 }
 
 trait ViewAcc {
-  def toOpenCL(env: ToOpenCL.Environment,
+  def toOpenCL(env: CodeGenerator.Environment,
                value: Expression,
                dt: DataType,
                arrayAccess: List[(Nat, Nat)],
@@ -20,9 +20,9 @@ trait ViewAcc {
 }
 
 trait GeneratableComm {
-  def toOpenCL(block: Block, env: ToOpenCL.Environment): Block
+  def toOpenCL(block: Block, env: CodeGenerator.Environment): Block
 }
 
 trait GeneratableExp {
-  def toOpenCL(env: ToOpenCL.Environment): Expression
+  def toOpenCL(env: CodeGenerator.Environment): Expression
 }

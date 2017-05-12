@@ -4,7 +4,7 @@ import idealised._
 import idealised.Core._
 import idealised.Core.OperationalSemantics._
 import opencl.generator.OpenCLAST.Expression
-import idealised.OpenCL.Core.{ToOpenCL, ViewAcc}
+import idealised.OpenCL.Core.{CodeGenerator, ViewAcc}
 
 import scala.xml.Elem
 
@@ -28,7 +28,7 @@ final case class AsScalarAcc(n: Nat,
 
   override def eval(s: Store): AccIdentifier = ???
 
-  override def toOpenCL(env: ToOpenCL.Environment,
+  override def toOpenCL(env: CodeGenerator.Environment,
                         value: Expression,
                         dt: DataType,
                         arrayAccess: List[(Nat, Nat)],
@@ -40,7 +40,7 @@ final case class AsScalarAcc(n: Nat,
 
     val newIdx = chunkId._1 * m + chunkElemId._1
 
-    ToOpenCL.acc(array, value, env, dt, (newIdx, chunkElemId._2) :: rest, tupleAccess)
+    CodeGenerator.acc(array, value, env, dt, (newIdx, chunkElemId._2) :: rest, tupleAccess)
 
 //    val newAAS = arrayAccess.map(x => (x._1, x._2 /^ m))
 //

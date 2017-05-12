@@ -32,7 +32,7 @@ object dot extends App {
     lambda.typeCheck()
 
     println(s"-- $name --")
-    val toOpenCL = ToOpenCL(localSize = 128, globalSize = N)
+    val toOpenCL = CodeGenerator(localSize = 128, globalSize = N)
     val kernel = toOpenCL.makeKernel(lambda)
     println(OpenCLPrinter()(kernel))
 
@@ -65,7 +65,7 @@ object dot extends App {
     lambda.typeCheck()
 
     println(s"-- $name --")
-    val toOpenCL = ToOpenCL(localSize = 128, globalSize = N)
+    val toOpenCL = CodeGenerator(localSize = 128, globalSize = N)
     val kernel = toOpenCL.makeKernel(lambda)
     println(OpenCLPrinter()(kernel))
 
@@ -290,7 +290,7 @@ object dot extends App {
     TypeChecker(dotSimpleImplAdjustedMem)
     Core.xmlPrinter.toFile("/tmp/mem.xml", dotSimpleImplAdjustedMem)
 
-    val bodyAdjustedMem = ToOpenCL.cmd(dotSimpleImplAdjustedMem, Block(), ToOpenCL.Environment(128, N))
+    val bodyAdjustedMem = CodeGenerator.cmd(dotSimpleImplAdjustedMem, Block(), CodeGenerator.Environment(128, N))
 
     println("============")
     println(OpenCLPrinter()(bodyAdjustedMem))
@@ -300,7 +300,7 @@ object dot extends App {
 
     Core.xmlPrinter.toFile("/tmp/pp.xml", dotSimpleImp)
 
-    val body = ToOpenCL.cmd(dotSimpleImp, Block(), ToOpenCL.Environment(128, N))
+    val body = CodeGenerator.cmd(dotSimpleImp, Block(), CodeGenerator.Environment(128, N))
 
     println(OpenCLPrinter()(body))
 
@@ -406,7 +406,7 @@ object dot extends App {
 
     Core.xmlPrinter.toFile("/tmp/ppp.xml", dotSimpleImp2)
 
-    val body2 = ToOpenCL.cmd(dotSimpleImp2, Block(), ToOpenCL.Environment(128, N))
+    val body2 = CodeGenerator.cmd(dotSimpleImp2, Block(), CodeGenerator.Environment(128, N))
 
     println(OpenCLPrinter()(body2))
 
@@ -518,7 +518,7 @@ object dot extends App {
 
     Core.xmlPrinter.toFile("/tmp/pppp.xml", dotSimpleImp3)
 
-    val body3 = ToOpenCL.cmd(dotSimpleImp3, Block(), ToOpenCL.Environment(128, N))
+    val body3 = CodeGenerator.cmd(dotSimpleImp3, Block(), CodeGenerator.Environment(128, N))
 
     println(OpenCLPrinter()(body3))
   }

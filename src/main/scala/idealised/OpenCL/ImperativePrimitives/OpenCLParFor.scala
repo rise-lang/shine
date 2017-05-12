@@ -3,7 +3,7 @@ package idealised.OpenCL.ImperativePrimitives
 import idealised.Core._
 import idealised.DSL.typed._
 import idealised.ImperativePrimitives.AbstractParFor
-import idealised.OpenCL.Core.{GeneratableComm, ToOpenCL}
+import idealised.OpenCL.Core.{GeneratableComm, CodeGenerator}
 import lift.arithmetic.{Cst, NamedVar, RangeAdd}
 import opencl.generator.OpenCLAST
 import opencl.generator.OpenCLAST.{Block, BlockMember}
@@ -16,7 +16,7 @@ abstract class OpenCLParFor(n: Nat,
 
   def parallelismLevel: idealised.OpenCL.ParallelismLevel
 
-  protected var env: ToOpenCL.Environment = _
+  protected var env: CodeGenerator.Environment = _
 
   protected val name: String = newName()
 
@@ -24,7 +24,7 @@ abstract class OpenCLParFor(n: Nat,
   def step: Nat
   def synchronize: OpenCLAST.OclAstNode with BlockMember
 
-  override def toOpenCL(block: Block, env: ToOpenCL.Environment): Block = {
+  override def toOpenCL(block: Block, env: CodeGenerator.Environment): Block = {
     import opencl.generator.OpenCLAST._
 
     this.env = env
@@ -52,7 +52,7 @@ abstract class OpenCLParFor(n: Nat,
       AssignmentExpression(ArithExpression(v), ArithExpression(v + step))
     }
 
-    val bodyBlock = (b: Block) => ToOpenCL.cmd(body_(out_at_i), b, env)
+    val bodyBlock = (b: Block) => CodeGenerator.cmd(body_(out_at_i), b, env)
 
     range.numVals match {
       case Cst(0) =>

@@ -7,7 +7,7 @@ import idealised.Core._
 import idealised.DSL.typed._
 import idealised.FunctionalPrimitives._
 import idealised.ImperativePrimitives._
-import idealised.OpenCL.Core.PrimitivesToOpenCL._
+import idealised.OpenCL.Core.PrimitivesCodeGenerator._
 import idealised.OpenCL.Core.HoistMemoryAllocations.AllocationInfo
 import idealised._
 import ir.{Type, UndefType}
@@ -21,7 +21,7 @@ import scala.collection.immutable.List
 import scala.collection.Seq
 import scala.language.implicitConversions
 
-case class ToOpenCL(localSize: Nat, globalSize: Nat) {
+case class CodeGenerator(localSize: Nat, globalSize: Nat) {
 
   def makeKernel[T <: PhraseType](originalPhrase: Phrase[T]): OpenCL.Kernel = {
 
@@ -178,7 +178,7 @@ case class ToOpenCL(localSize: Nat, globalSize: Nat) {
   }
 
   private def makeBody(p: Phrase[CommandType]): Block = {
-    ToOpenCL.cmd(p, Block(), ToOpenCL.Environment(localSize, globalSize))
+    CodeGenerator.cmd(p, Block(), CodeGenerator.Environment(localSize, globalSize))
   }
 
   private def makeKernelFunction(params: List[ParamDecl], body: Block): Function = {
@@ -362,9 +362,9 @@ case class ToOpenCL(localSize: Nat, globalSize: Nat) {
   private def createLengthMapping(t: DataType, a: Any): Seq[(Core.Nat, Int)] = {
     (t, a) match {
       case (bt: BasicType, _) => (bt, a) match {
-        case (bool, _: Boolean) => Seq()
-        case (int, _: Int) => Seq()
-        case (float, _: Float) => Seq()
+        case (`bool`, _: Boolean) => Seq()
+        case (`int`, _: Int) => Seq()
+        case (`float`, _: Float) => Seq()
         case (VectorType(_, ebt), _) => createLengthMapping(ebt, a)
         case _ => throw new Exception(s"Expected $bt, but got $a")
       }
@@ -379,7 +379,7 @@ case class ToOpenCL(localSize: Nat, globalSize: Nat) {
 
 }
 
-object ToOpenCL {
+object CodeGenerator {
 
   case class Environment(localSize: Nat,
                          globalSize: Nat,
@@ -515,7 +515,7 @@ object ToOpenCL {
     p match {
       case Identifier(name, t) =>
         t.dataType match {
-          case b: BasicType => AssignmentExpression(VarRef(name), value)
+          case _: BasicType => AssignmentExpression(VarRef(name), value)
           case _ => throw new Exception(s"Don't know how to generate assignment into variable $name of type $t")
         }
       case p: Proj1[AccType, _] => acc(Lifting.liftPair(p.pair)._1, value, env)

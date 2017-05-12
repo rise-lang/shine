@@ -7,7 +7,7 @@ import idealised.Compiling.RewriteToImperative
 import idealised.DSL.typed._
 import idealised.OpenCL.ImperativePrimitives.AsScalarAcc
 import opencl.generator.OpenCLAST.Expression
-import idealised.OpenCL.Core.{ToOpenCL, ViewExp}
+import idealised.OpenCL.Core.{CodeGenerator, ViewExp}
 import ir.Type
 
 import scala.xml.Elem
@@ -42,7 +42,7 @@ final case class AsScalar(n: Nat,
 
   override def eval(s: Store): Data = ???
 
-  override def toOpenCL(env: ToOpenCL.Environment,
+  override def toOpenCL(env: CodeGenerator.Environment,
                         arrayAccess: List[(Nat, Nat)],
                         tupleAccess: List[Nat],
                         dt: DataType): Expression = {
@@ -59,7 +59,7 @@ final case class AsScalar(n: Nat,
 
     val newAs = (chunkId, l * n) :: (chunkElemId, l) :: stack
 
-    ToOpenCL.exp(array, env, dt, newAs, tupleAccess)
+    CodeGenerator.exp(array, env, dt, newAs, tupleAccess)
 
     //    val top = arrayAccess.head
     //    val newAAS = ((top._1 /^ n, top._2) :: arrayAccess.tail).map(x => (x._1, x._2 * n))

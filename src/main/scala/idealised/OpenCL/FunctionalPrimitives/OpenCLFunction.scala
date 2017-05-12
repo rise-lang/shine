@@ -6,8 +6,8 @@ import idealised.Core.OperationalSemantics.{Data, Store}
 import idealised.Core.VisitAndRebuild.Visitor
 import idealised.Core._
 import idealised.DSL.typed._
-import idealised.OpenCL.Core.ToOpenCL.Environment
-import idealised.OpenCL.Core.{GeneratableExp, ToOpenCL}
+import idealised.OpenCL.Core.CodeGenerator.Environment
+import idealised.OpenCL.Core.{GeneratableExp, CodeGenerator}
 import opencl.generator.OpenCLAST.{Expression, FunctionCall}
 
 import scala.language.reflectiveCalls
@@ -41,7 +41,7 @@ final case class OpenCLFunction(name: String,
   }
 
   override def toOpenCL(env: Environment): Expression = {
-    FunctionCall(name, args.map(ToOpenCL.exp(_, env)).toList)
+    FunctionCall(name, args.map(CodeGenerator.exp(_, env)).toList)
   }
 
   override def eval(s: Store): Data = ???

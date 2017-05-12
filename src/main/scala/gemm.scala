@@ -34,7 +34,7 @@ object gemm extends App {
     lambda.typeCheck()
 
     println(s"-- $name --")
-    val toOpenCL = ToOpenCL(localSize = 128, globalSize = N)
+    val toOpenCL = CodeGenerator(localSize = 128, globalSize = N)
     val kernel = toOpenCL.makeKernel(lambda)
     println(OpenCLPrinter()(kernel))
 
