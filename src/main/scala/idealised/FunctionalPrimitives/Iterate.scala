@@ -17,7 +17,7 @@ final case class Iterate(n: Nat,
                          array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override lazy val `type` = {
+  override lazy val `type`: ExpType = {
     if (m != null && n != null) {
       exp"[${m /^ n.pow(k)}.$dt]"
     } else {
@@ -112,11 +112,8 @@ final case class Iterate(n: Nat,
 
     con(array)(λ(exp"[$m.$dt]")(x =>
       IterateIAcc(n, m = m /^ n.pow(k), k, dt, A,
-        _Λ_(l => λ(acc"[${l /^ n}.$dt]")(o => λ(exp"[$l.$dt]")(x =>
-          acc(f(l)(x))(o)))),
-        x
-      )
-    ))
+        _Λ_(l => λ(acc"[${l /^ n}.$dt]")(o => λ(exp"[$l.$dt]")(x => acc(f(l)(x))(o)))),
+        x) ))
   }
 
   override def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
@@ -126,10 +123,7 @@ final case class Iterate(n: Nat,
 
     con(array)(λ(exp"[$m.$dt]")(x =>
       IterateIExp(n, m = m /^ n.pow(k), k, dt, C,
-        _Λ_(l => λ(acc"[${l /^ n}.$dt]")(o => λ(exp"[$l.$dt]")(x =>
-          acc(f(l)(x))(o)))),
-        x
-      )
-    ))
+        _Λ_(l => λ(acc"[${l /^ n}.$dt]")(o => λ(exp"[$l.$dt]")(x => acc(f(l)(x))(o)))),
+        x) ))
   }
 }

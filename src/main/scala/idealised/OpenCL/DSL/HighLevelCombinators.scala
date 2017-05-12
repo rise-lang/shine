@@ -3,8 +3,7 @@ package idealised.OpenCL.DSL
 import idealised.Core.OperationalSemantics._
 import idealised.Core._
 import idealised.DSL.untyped.λ
-import idealised.OpenCL.HighLevelPrimitives._
-import idealised.OpenCL.LowLevelPrimitives.VectorFromScalar
+import idealised.OpenCL.FunctionalPrimitives._
 
 object mapGlobal {
   def apply(f: Phrase[ExpType -> ExpType]): Phrase[ExpType -> ExpType] =
@@ -87,4 +86,12 @@ object vectorize {
     Literal(VectorData(Vector.fill(len)(FloatData(f))), VectorType(len, float))
 
   def apply(len: Nat, e: Phrase[ExpType]) = VectorFromScalar(len, null, e)
+}
+
+object oclFun {
+  def apply(name: String, inT: DataType, outT: DataType, arg: Phrase[ExpType]) =
+    OpenCLFunction(name, Seq(inT), outT, Seq(arg))
+
+  def apply(name: String, inTs: Seq[DataType], outT: DataType, args: Seq[Phrase[ExpType]]) =
+    OpenCLFunction(name, inTs, outT, args)
 }

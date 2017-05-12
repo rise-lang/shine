@@ -1,11 +1,11 @@
-package idealised.OpenCL.MidLevelPrimitives
+package idealised.OpenCL.IntermediatePrimitives
 
 import idealised.Compiling.SubstituteImplementations
 import idealised.Core._
 import idealised.DSL.typed._
 import idealised.IntermediatePrimitives.AbstractMapI
 import SubstituteImplementations._
-import idealised.OpenCL.LowLevelPrimitives.ParForLocal
+import idealised.OpenCL.ImperativePrimitives.ParForLocal
 
 final case class MapLocalI(n: Nat,
                            dt1: DataType,
@@ -18,8 +18,8 @@ final case class MapLocalI(n: Nat,
   override def makeMapI = MapLocalI
 
   override def substituteImpl(env: Environment): Phrase[CommandType] = {
-    ParForLocal(n, dt2, out, λ(exp"[idx($n)]")(i => λ(acc"[$dt2]")(o =>
-      SubstituteImplementations(f(in `@` i)(o), env)
+    ParForLocal(n, dt2, out, λ(exp"[idx($n)]")(i => λ(acc"[$dt2]")(a =>
+      SubstituteImplementations(f(in `@` i)(a), env)
     )))
   }
 

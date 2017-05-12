@@ -4,7 +4,6 @@ import idealised.DSL.untyped._
 import idealised.OpenCL.Core._
 import idealised.OpenCL.DSL._
 import lift.arithmetic._
-import idealised.OpenCL.LowLevelPrimitives.UnaryOpenCLFunction
 import opencl.executor.Executor
 import opencl.generator.OpenCLPrinter
 
@@ -21,7 +20,7 @@ object asum extends App {
   val inputT = ExpType(ArrayType(N, float))
 
   def runOpenCLKernel(name: String,
-                      untypedLambda: Phrase[ExpType -> ExpType]) = {
+                      untypedLambda: Phrase[ExpType -> ExpType]): Unit = {
     println("\n----------------")
     val lambda = TypeInference(untypedLambda)
     println(name + ":\n" + PrettyPhrasePrinter(lambda))
@@ -53,7 +52,7 @@ object asum extends App {
   }
 
   //val abs = λ(x => `if`(x < 0.0f, -x, x))
-  def abs(t: DataType) = λ(x => UnaryOpenCLFunction("fabs", t, t, x) )
+  val abs = (t: DataType) => λ(x => oclFun("fabs", t, t, x)  )
   val add = λ(x => λ(a => x + a))
 
   val high_level = λ(inputT)(input =>

@@ -1,4 +1,4 @@
-package idealised.OpenCL.HighLevelPrimitives
+package idealised.OpenCL.FunctionalPrimitives
 
 import idealised._
 import idealised.Core._

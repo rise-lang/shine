@@ -18,7 +18,8 @@ abstract class AbstractMap(n: Nat,
 
   def makeMap: (Nat, DataType, DataType, Phrase[ExpType -> ExpType], Phrase[ExpType]) => AbstractMap
 
-  def makeMapI: (Nat, DataType, DataType, Phrase[ExpType -> (AccType -> CommandType)], Phrase[ExpType], Phrase[AccType]) => AbstractMapI
+  def makeMapI: (Nat, DataType, DataType,
+    Phrase[ExpType -> (AccType -> CommandType)], Phrase[ExpType], Phrase[AccType]) => AbstractMapI
 
 
   override lazy val `type` = exp"[$n.$dt2]"

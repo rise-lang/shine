@@ -28,6 +28,7 @@ package object OpenCL {
     }
   }
 
+
   case class Kernel(function: OpenCLAST.Function,
                     outputParam: Identifier[AccType],
                     inputParams: List[Identifier[ExpType]],

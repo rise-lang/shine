@@ -6,6 +6,8 @@ import idealised.Core.OperationalSemantics._
 import idealised.Compiling.SubstituteImplementations
 import idealised.DSL.typed._
 
+import scala.language.reflectiveCalls
+
 import scala.xml.Elem
 
 final case class ReduceI(n: Nat,
@@ -72,12 +74,13 @@ final case class ReduceI(n: Nat,
     </reduceIExp>
 
   override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
-    `new`(dt2, OpenCL.PrivateMemory, accum =>
-      (accum.wr `:=` init) `;`
+    // TODO: generalise allocation
+    `new`(dt2, OpenCL.PrivateMemory, acc =>
+      (acc.wr :=|dt2| init) `;`
         `for`(n, i =>
-          SubstituteImplementations(f(in `@` i)(accum.rd)(accum.wr), env)
+          SubstituteImplementations(f(in `@` i)(acc.rd)(acc.wr), env)
         ) `;`
-        out(accum.rd)
+        out(acc.rd)
     )
   }
 

@@ -1,4 +1,4 @@
-package idealised.OpenCL.HighLevelPrimitives
+package idealised.OpenCL.FunctionalPrimitives
 
 import idealised.Core.{->, DataType, ExpType, Nat, Phrase}
 import idealised.FunctionalPrimitives.AbstractReduce

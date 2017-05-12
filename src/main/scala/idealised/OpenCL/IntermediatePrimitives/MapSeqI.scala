@@ -1,4 +1,4 @@
-package idealised.OpenCL.MidLevelPrimitives
+package idealised.OpenCL.IntermediatePrimitives
 
 import idealised.Compiling.SubstituteImplementations
 import idealised.Core._

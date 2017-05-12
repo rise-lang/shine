@@ -186,7 +186,7 @@ object dot extends App {
   def dotSimpleDetailed(): Unit = {
     import idealised.FunctionalPrimitives._
     import idealised.ImperativePrimitives._
-    import idealised.OpenCL.LowLevelPrimitives._
+    import idealised.OpenCL.ImperativePrimitives._
 
     val dt = float
 

@@ -1,10 +1,10 @@
-package idealised.OpenCL.LowLevelPrimitives
+package idealised.OpenCL.ImperativePrimitives
 
 import idealised._
 import idealised.Core._
 import lift.arithmetic.{?, ContinuousRange, PosInf, RangeAdd}
 import opencl.generator.OpenCLAST._
-import opencl.generator.{get_local_id, get_local_size}
+import opencl.generator.{OclFunction, get_local_id, get_local_size}
 
 
 final case class ParForLocal(override val n: Nat,
@@ -17,11 +17,11 @@ final case class ParForLocal(override val n: Nat,
 
   override val parallelismLevel = OpenCL.Local
 
-  override lazy val init = get_local_id(0, RangeAdd(0, env.localSize, 1))
+  override lazy val init: OclFunction = get_local_id(0, RangeAdd(0, env.localSize, 1))
 
-  override lazy val step = get_local_size(0, local_size_range)
+  override lazy val step: OclFunction = get_local_size(0, local_size_range)
 
-  lazy val local_size_range =
+  lazy val local_size_range: RangeAdd =
     if (env.localSize == ?) ContinuousRange(1, PosInf)
     else RangeAdd(env.localSize, env.localSize + 1, 1)
 

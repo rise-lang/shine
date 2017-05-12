@@ -1,4 +1,4 @@
-package idealised.OpenCL.LowLevelPrimitives
+package idealised.OpenCL.FunctionalPrimitives
 
 import idealised.Compiling.RewriteToImperative
 import idealised.Core
@@ -6,10 +6,11 @@ import idealised.Core.OperationalSemantics.{Data, Store}
 import idealised.Core.VisitAndRebuild.Visitor
 import idealised.Core._
 import idealised.DSL.typed._
-import idealised.IntermediatePrimitives.MapI
-import idealised.OpenCL.Core.{GeneratableExp, ToOpenCL}
 import idealised.OpenCL.Core.ToOpenCL.Environment
+import idealised.OpenCL.Core.{GeneratableExp, ToOpenCL}
 import opencl.generator.OpenCLAST.{Expression, FunctionCall}
+
+import scala.language.reflectiveCalls
 
 import scala.xml.Elem
 
@@ -56,24 +57,16 @@ final case class OpenCLFunction(name: String,
     import RewriteToImperative._
 
     def recurse(ts: Seq[(Phrase[ExpType], DataType)],
-                es: Seq[Phrase[ExpType]],
+                exps: Seq[Phrase[ExpType]],
                 inTs: Seq[DataType]): Phrase[CommandType] = {
       ts match {
+        // with only one argument left to process return the assignment of the OpenCLFunction call
         case Seq( (arg, inT) ) =>
           con(arg)(λ(exp"[$inT]")(e =>
-            outT match {
-              case b: BasicType => A `:=` OpenCLFunction(name, inTs :+ inT, outT, es :+ e)
-              case ArrayType(n, dt) =>
-                MapI(n, dt, dt, λ(ExpType(dt))(e => λ(AccType(dt))(a => acc(e)(a))),
-                  OpenCLFunction(name, inTs :+ inT, outT, es :+ e), A)
-              case RecordType(dt11, dt12) =>
-                acc(fst(OpenCLFunction(name, inTs :+ inT, outT, es :+ e)))(recordAcc1(dt11, dt12, A)) `;`
-                  acc(snd(OpenCLFunction(name, inTs :+ inT, outT, es :+ e)))(recordAcc2(dt11, dt12, A))
-              case _: DataTypeIdentifier => throw new Exception("This should not happen")
-            }
-          ))
+            A :=|outT| OpenCLFunction(name, inTs :+ inT, outT, exps :+ e) ))
+        // with a `tail` of arguments left, recurse
         case Seq( (arg, inT), tail@_* ) =>
-          con(arg)(λ(exp"[$inT]")(e => recurse(tail, es :+ e, inTs :+ inT) ))
+          con(arg)(λ(exp"[$inT]")(e => recurse(tail, exps :+ e, inTs :+ inT) ))
       }
     }
 
@@ -87,10 +80,10 @@ final case class OpenCLFunction(name: String,
                 es: Seq[Phrase[ExpType]],
                 inTs: Seq[DataType]): Phrase[CommandType] = {
       ts match {
+        // with only one argument left to process continue with the OpenCLFunction call
         case Seq( (arg, inT) ) =>
-          con(arg)(λ(exp"[$inT]")(e =>
-            C(OpenCLFunction(name, inTs :+ inT, outT, es :+ e))
-          ))
+          con(arg)(λ(exp"[$inT]")(e => C(OpenCLFunction(name, inTs :+ inT, outT, es :+ e)) ))
+        // with a `tail` of arguments left, recurse
         case Seq( (arg, inT), tail@_* ) =>
           con(arg)(λ(exp"[$inT]")(e => recurse(tail, es :+ e, inTs :+ inT) ))
       }

@@ -1,4 +1,4 @@
-package idealised.OpenCL.LowLevelPrimitives
+package idealised.OpenCL.ImperativePrimitives
 
 import idealised.Core._
 import idealised.DSL.typed._

@@ -1,29 +1,30 @@
-package idealised.OpenCL.LowLevelPrimitives
+package idealised.OpenCL.ImperativePrimitives
 
 import idealised._
 import idealised.Core._
 import idealised.Core.OperationalSemantics._
 import opencl.generator.OpenCLAST.Expression
 import idealised.OpenCL.Core.{ToOpenCL, ViewAcc}
+import ir.Type
 
 import scala.xml.Elem
 
-final case class AsScalarAcc(n: Nat,
+final case class AsVectorAcc(n: Nat,
                              m: Nat,
                              dt: ScalarType,
                              array: Phrase[AccType])
   extends AccPrimitive with ViewAcc {
 
-  override lazy val `type` = acc"[$n.${VectorType(m, dt)}]"
+  override lazy val `type` = acc"[${n * m}.$dt]"
 
   override def typeCheck(): Unit = {
     import TypeChecker._
     (n: Nat) -> (m: Nat) -> (dt: ScalarType) ->
-      (array :: acc"[${m * n}.$dt]") -> `type`
+      (array :: acc"[$n.${VectorType(m, dt)}]") -> `type`
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {
-    AsScalarAcc(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))
+    AsVectorAcc(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): AccIdentifier = ???
@@ -33,24 +34,31 @@ final case class AsScalarAcc(n: Nat,
                         dt: DataType,
                         arrayAccess: List[(Nat, Nat)],
                         tupleAccess: List[Nat]): Expression = {
-    // similar to Split
-    val chunkId = arrayAccess.head
-    val chunkElemId: (Nat, Nat) = (0, 1) // we want to access element 0 and there is only one of it
-    val rest = arrayAccess.tail
+    // Similar to Join
+    val idx = arrayAccess.head
+    val stack = arrayAccess.tail
 
-    val newIdx = chunkId._1 * m + chunkElemId._1
+    val chunkId = idx._1 / n
+    // we want to access element 0 ...
+    val chunkElemId: Nat = 0 //idx._1 % n
+    // ... and there is 1 of it.
+    val l = Type.getLengths(DataType.toType(t.dataType)).reduce(_ * _)
+    assert(l == (1: Nat))
 
-    ToOpenCL.acc(array, value, env, dt, (newIdx, chunkElemId._2) :: rest, tupleAccess)
+    val newAs = (chunkId, l * n) ::(chunkElemId, l) :: stack
 
-//    val newAAS = arrayAccess.map(x => (x._1, x._2 /^ m))
+    ToOpenCL.acc(array, value, env, dt, newAs, tupleAccess)
+
+//    val top = arrayAccess.head
+//    val newAAS = ((top._1 /^ n, top._2) :: arrayAccess.tail).map(x => (x._1, x._2 * n))
 //
 //    ToOpenCL.acc(array, value, env, dt, newAAS, tupleAccess)
   }
 
-  override def prettyPrint = s"(asScalarAcc $n ${PrettyPhrasePrinter(array)})"
+  override def prettyPrint: String = s"(asVectorAcc ${PrettyPhrasePrinter(array)})"
 
   override def xmlPrinter: Elem =
-    <asScalarAcc n={ToString(n)} m={ToString(m)}>
+    <asVectorAcc n={ToString(n)}>
       {Core.xmlPrinter(array)}
-    </asScalarAcc>
+    </asVectorAcc>
 }

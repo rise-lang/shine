@@ -1,8 +1,8 @@
-package idealised.OpenCL.HighLevelPrimitives
+package idealised.OpenCL.FunctionalPrimitives
 
 import idealised.Core._
 import idealised.FunctionalPrimitives.AbstractMap
-import idealised.OpenCL.MidLevelPrimitives.MapWorkGroupI
+import idealised.OpenCL.IntermediatePrimitives.MapWorkGroupI
 
 final case class MapWorkGroup(n: Nat,
                               dt1: DataType,

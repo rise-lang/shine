@@ -1,4 +1,4 @@
-package idealised.OpenCL.LowLevelPrimitives
+package idealised.OpenCL.FunctionalPrimitives
 
 import idealised.Compiling.RewriteToImperative
 import idealised.Core
@@ -56,14 +56,11 @@ final case class VectorFromScalar(n: Nat,
 
   override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
-    con(arg)(λ(exp"[$dt]")(e =>
-      A `:=` VectorFromScalar(n, dt, e)
-    ))
+    con(arg)(λ(exp"[$dt]")(e => A := VectorFromScalar(n, dt, e) ))
   }
 
   override def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
-    RewriteToImperative.con(arg)(λ(exp"[$dt]")(e =>
-      C(VectorFromScalar(n, dt, e))
-    ))
+    import RewriteToImperative._
+    con(arg)(λ(exp"[$dt]")(e => C(VectorFromScalar(n, dt, e)) ))
   }
 }

@@ -1,4 +1,4 @@
-package idealised.OpenCL.MidLevelPrimitives
+package idealised.OpenCL.IntermediatePrimitives
 
 import idealised._
 import idealised.Core._
@@ -6,7 +6,7 @@ import idealised.Compiling.SubstituteImplementations
 import idealised.DSL.typed._
 import idealised.IntermediatePrimitives.AbstractMapI
 import SubstituteImplementations._
-import idealised.OpenCL.LowLevelPrimitives.ParForWorkGroup
+import idealised.OpenCL.ImperativePrimitives.ParForWorkGroup
 
 final case class MapWorkGroupI(n: Nat,
                                dt1: DataType,
@@ -20,7 +20,7 @@ final case class MapWorkGroupI(n: Nat,
 
   override def substituteImpl(env: Environment): Phrase[CommandType] = {
 
-    ParForWorkGroup(n, dt2, out, λ(exp"[idx($n)]")(i => λ(acc"[$dt2]")(o => {
+    ParForWorkGroup(n, dt2, out, λ(exp"[idx($n)]")(i => λ(acc"[$dt2]")(a => {
 
       //      val access = (out `@` 0) `@` 0 // TODO: this is totally not generic ...
       //      TypeChecker(access)
@@ -28,8 +28,8 @@ final case class MapWorkGroupI(n: Nat,
       //      val addressSpace = env.addressspace(identifier.name)
       val addressSpace = OpenCL.GlobalMemory
 
-      SubstituteImplementations(f(in `@` i)(o),
-        env.copy(env.addressSpace.updated(o.name, addressSpace)))
+      SubstituteImplementations(f(in `@` i)(a),
+        env.copy(env.addressSpace.updated(a.name, addressSpace)))
     })))
 
   }

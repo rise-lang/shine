@@ -1,4 +1,4 @@
-package idealised.OpenCL.HighLevelPrimitives
+package idealised.OpenCL.FunctionalPrimitives
 
 import idealised._
 import idealised.Core._
@@ -13,7 +13,8 @@ abstract class To(dt1: DataType,
                   f: Phrase[ExpType -> ExpType],
                   input: Phrase[ExpType],
                   addressSpace: idealised.OpenCL.AddressSpace,
-                  private val makeTo: (DataType, DataType, Phrase[ExpType -> ExpType], Phrase[ExpType]) => To)
+                  private val makeTo: (DataType, DataType,
+                    Phrase[ExpType -> ExpType], Phrase[ExpType]) => To)
   extends ExpPrimitive {
 
   override lazy val `type` = exp"[$dt2]"
@@ -71,17 +72,13 @@ abstract class To(dt1: DataType,
     assert(dt1 != null && dt2 != null)
     import RewriteToImperative._
 
-    con(this)(λ( exp"[$dt2]" )(x =>
-      acc(x)(A)
-    ))
+    con(this)(λ( exp"[$dt2]" )(x => acc(x)(A) ))
   }
 
   override def continuationTranslation(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
     assert(dt1 != null && dt2 != null)
     import RewriteToImperative._
 
-    `new`(dt2, addressSpace, tmp =>
-      acc(f(input))(tmp.wr) `;` C(tmp.rd)
-    )
+    `new`(dt2, addressSpace, tmp => acc(f(input))(tmp.wr) `;` C(tmp.rd) )
   }
 }

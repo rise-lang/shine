@@ -5,7 +5,7 @@ import idealised.Core._
 import idealised.DSL.typed.identifier
 import idealised.FunctionalPrimitives._
 import idealised.ImperativePrimitives._
-import idealised.OpenCL.LowLevelPrimitives.OpenCLParFor
+import idealised.OpenCL.ImperativePrimitives.OpenCLParFor
 import lift.arithmetic._
 import ir.Type
 import opencl.generator.OpenCLAST

@@ -17,9 +17,12 @@ abstract class AbstractReduce(n: Nat,
                               array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  def makeReduce: (Nat, DataType, DataType, Phrase[ExpType -> (ExpType -> ExpType)], Phrase[ExpType], Phrase[ExpType]) => AbstractReduce
+  def makeReduce: (Nat, DataType, DataType,
+    Phrase[ExpType -> (ExpType -> ExpType)], Phrase[ExpType], Phrase[ExpType]) => AbstractReduce
 
-  def makeReduceI: (Nat, DataType, DataType, Phrase[ExpType -> (ExpType -> (AccType -> CommandType))], Phrase[ExpType], Phrase[ExpType], Phrase[ExpType -> CommandType]) => ReduceI
+  def makeReduceI: (Nat, DataType, DataType,
+    Phrase[ExpType -> (ExpType -> (AccType -> CommandType))],
+    Phrase[ExpType], Phrase[ExpType], Phrase[ExpType -> CommandType]) => ReduceI
 
   override lazy val `type` = exp"[$dt2]"
 
@@ -55,7 +58,8 @@ abstract class AbstractReduce(n: Nat,
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    makeReduce(fun(n), fun(dt1), fun(dt2), VisitAndRebuild(f, fun), VisitAndRebuild(init, fun), VisitAndRebuild(array, fun))
+    makeReduce(fun(n), fun(dt1), fun(dt2),
+      VisitAndRebuild(f, fun), VisitAndRebuild(init, fun), VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): Data = {
@@ -72,7 +76,8 @@ abstract class AbstractReduce(n: Nat,
   }
 
   override def prettyPrint: String =
-    s"(${this.getClass.getSimpleName} ${PrettyPhrasePrinter(f)} ${PrettyPhrasePrinter(init)} ${PrettyPhrasePrinter(array)})"
+    s"(${this.getClass.getSimpleName} ${PrettyPhrasePrinter(f)} " +
+      s"${PrettyPhrasePrinter(init)} ${PrettyPhrasePrinter(array)})"
 
   override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._

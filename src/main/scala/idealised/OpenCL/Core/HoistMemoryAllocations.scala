@@ -3,7 +3,7 @@ package idealised.OpenCL.Core
 import idealised._
 import idealised.Core._
 import idealised.ImperativePrimitives._
-import idealised.OpenCL.LowLevelPrimitives.OpenCLParFor
+import idealised.OpenCL.ImperativePrimitives.OpenCLParFor
 
 object HoistMemoryAllocations {
 

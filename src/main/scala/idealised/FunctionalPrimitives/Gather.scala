@@ -65,17 +65,13 @@ final case class Gather(n: Nat,
   override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
 
-    con(this)(λ(exp"[$n.$dt]")(x =>
-      acc(x)(A)
-    ))
+    con(this)(λ(exp"[$n.$dt]")(x => acc(x)(A) ))
   }
 
   override def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
     import RewriteToImperative._
 
-    con(array)(λ(exp"[$n.$dt]")(x =>
-      C(Gather(n, dt, idxF, x))
-    ))
+    con(array)(λ(exp"[$n.$dt]")(x => C(Gather(n, dt, idxF, x)) ))
   }
 
   override def prettyPrint: String = s"(gather idxF ${PrettyPhrasePrinter(array)})"

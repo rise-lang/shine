@@ -1,8 +1,8 @@
-package idealised.OpenCL.HighLevelPrimitives
+package idealised.OpenCL.FunctionalPrimitives
 
 import idealised.Core._
 import idealised.FunctionalPrimitives.AbstractMap
-import idealised.OpenCL.MidLevelPrimitives.MapLocalI
+import idealised.OpenCL.IntermediatePrimitives.MapLocalI
 
 final case class MapLocal(n: Nat,
                           dt1: DataType,

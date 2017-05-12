@@ -1,11 +1,11 @@
-package idealised.OpenCL.HighLevelPrimitives
+package idealised.OpenCL.FunctionalPrimitives
 
 import idealised._
 import idealised.Core._
 import idealised.Core.OperationalSemantics._
 import idealised.Compiling.RewriteToImperative
 import idealised.DSL.typed._
-import idealised.OpenCL.LowLevelPrimitives.AsVectorAcc
+import idealised.OpenCL.ImperativePrimitives.AsVectorAcc
 
 import opencl.generator.OpenCLAST.Expression
 import idealised.OpenCL.Core.{ToOpenCL, ViewExp}
@@ -69,8 +69,6 @@ final case class AsVector(n: Nat,
   }
 
   override def continuationTranslation(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
-    RewriteToImperative.con(array)(λ(array.t) { x =>
-      C(AsVector(n, m, dt, x))
-    })
+    RewriteToImperative.con(array)(λ(array.t)(x => C(AsVector(n, m, dt, x)) ))
   }
 }

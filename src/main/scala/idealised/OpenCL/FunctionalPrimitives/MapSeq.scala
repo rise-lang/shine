@@ -1,8 +1,8 @@
-package idealised.OpenCL.HighLevelPrimitives
+package idealised.OpenCL.FunctionalPrimitives
 
 import idealised.Core._
 import idealised.FunctionalPrimitives.AbstractMap
-import idealised.OpenCL.MidLevelPrimitives.MapSeqI
+import idealised.OpenCL.IntermediatePrimitives.MapSeqI
 
 final case class MapSeq(n: Nat,
                         dt1: DataType,
