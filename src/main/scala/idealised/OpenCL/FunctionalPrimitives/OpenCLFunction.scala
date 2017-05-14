@@ -6,12 +6,12 @@ import idealised.Core.OperationalSemantics.{Data, Store}
 import idealised.Core.VisitAndRebuild.Visitor
 import idealised.Core._
 import idealised.DSL.typed._
-import idealised.OpenCL.Core.CodeGenerator.Environment
-import idealised.OpenCL.Core.{GeneratableExp, CodeGenerator}
+import idealised.OpenCL.CodeGenerator
+import idealised.OpenCL.CodeGenerator.Environment
+import idealised.OpenCL.Core.GeneratableExp
 import opencl.generator.OpenCLAST.{Expression, FunctionCall}
 
 import scala.language.reflectiveCalls
-
 import scala.xml.Elem
 
 
@@ -40,7 +40,7 @@ final case class OpenCLFunction(name: String,
     OpenCLFunction(name, inTs.map(f(_)), f(outT), args.map(VisitAndRebuild(_, f)))
   }
 
-  override def toOpenCL(env: Environment): Expression = {
+  override def codeGenExp(env: Environment): Expression = {
     FunctionCall(name, args.map(CodeGenerator.exp(_, env)).toList)
   }
 

@@ -1,10 +1,11 @@
-package idealised.OpenCL.Core
+package idealised.OpenCL.CodeGeneration
 
 import idealised._
 import idealised.Core._
 import idealised.DSL.typed.identifier
 import idealised.FunctionalPrimitives._
 import idealised.ImperativePrimitives._
+import idealised.OpenCL.CodeGenerator
 import idealised.OpenCL.ImperativePrimitives.OpenCLParFor
 import lift.arithmetic._
 import ir.Type
@@ -189,7 +190,7 @@ object PrimitivesCodeGenerator {
       override def synchronize: OclAstNode with BlockMember = OpenCLAST.Skip()
     }
 
-    OpenCLParForSeq(pf.n, pf.dt, pf.out, pf.body).toOpenCL(block, env)
+    OpenCLParForSeq(pf.n, pf.dt, pf.out, pf.body).codeGenCmd(block, env)
   }
 
   // ==== generating expressions  ==== //

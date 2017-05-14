@@ -1,7 +1,7 @@
 
 import idealised.Core._
 import idealised.DSL.untyped._
-import idealised.OpenCL.Core._
+import idealised.OpenCL._
 import idealised.OpenCL.DSL._
 import lift.arithmetic._
 import opencl.executor.Executor
@@ -31,11 +31,10 @@ object gemv extends App {
     lambda.typeCheck()
 
     println(s"-- $name --")
-    val toOpenCL = CodeGenerator(localSize = 32, globalSize = M * 32)
-    val kernel = toOpenCL.makeKernel(lambda)
-    println(OpenCLPrinter()(kernel))
+    val kernel = CodeGenerator.makeKernel(lambda, localSize = 32, globalSize =  M * 32)
+    println(kernel.code)
 
-    val fun = toOpenCL.asFunction[(Array[Array[Float]] :: Array[Float] :: Array[Float] :: Float :: Float :: Nil) =:=> Array[Float]](kernel)
+    val fun = kernel.asFunction[(Array[Array[Float]] :: Array[Float] :: Array[Float] :: Float :: Float :: Nil) =:=> Array[Float]]
 
     val size = 512
 

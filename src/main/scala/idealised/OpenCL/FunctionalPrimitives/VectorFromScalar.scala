@@ -6,8 +6,9 @@ import idealised.Core.OperationalSemantics.{Data, Store}
 import idealised.Core.VisitAndRebuild.Visitor
 import idealised.Core.{ExpType, Phrase, ScalarType, _}
 import idealised.DSL.typed._
-import idealised.OpenCL.Core.CodeGenerator.Environment
-import idealised.OpenCL.Core.{GeneratableExp, CodeGenerator}
+import idealised.OpenCL.CodeGenerator
+import idealised.OpenCL.CodeGenerator.Environment
+import idealised.OpenCL.Core.GeneratableExp
 import opencl.generator.OpenCLAST.{Expression, VectorLiteral}
 
 import scala.xml.Elem
@@ -39,7 +40,7 @@ final case class VectorFromScalar(n: Nat,
     VectorFromScalar(f(n), f(dt), VisitAndRebuild(arg, f))
   }
 
-  override def toOpenCL(env: Environment): Expression = {
+  override def codeGenExp(env: Environment): Expression = {
     VectorLiteral(
       DataType.toVectorType(VectorType(n, dt)),
       CodeGenerator.exp(arg, env))

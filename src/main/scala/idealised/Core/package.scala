@@ -102,9 +102,4 @@ package object Core {
     }
   }
 
-//  implicit final class XAssoc[A](private val self: A) extends AnyVal {
-//    @inline def x  [B](y: B): Tuple2[A, B] = Tuple2(self, y)
-//  }
-
-
 }

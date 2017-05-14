@@ -12,7 +12,7 @@ object ToString {
 
 object xmlPrinter {
 
-  def toFile[T <: PhraseType](filename: String, p: Phrase[T]): Unit = {
+  def writeToFile[T <: PhraseType](filename: String, p: Phrase[T]): Unit = {
     val pw = new PrintWriter(new File(filename))
     try pw.write(asString(p)) finally pw.close()
   }

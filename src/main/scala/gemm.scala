@@ -1,12 +1,12 @@
 
 import idealised.Core._
 import idealised.DSL.untyped._
-import idealised.OpenCL.Core._
+import idealised.OpenCL._
 import idealised.OpenCL.DSL._
 import lift.arithmetic._
 import idealised.Core.OperationalSemantics._
+import idealised.OpenCL.CodeGenerator
 import opencl.executor.Executor
-import opencl.generator.OpenCLPrinter
 
 import scala.language.implicitConversions
 import scala.util.Random
@@ -34,11 +34,10 @@ object gemm extends App {
     lambda.typeCheck()
 
     println(s"-- $name --")
-    val toOpenCL = CodeGenerator(localSize = 128, globalSize = N)
-    val kernel = toOpenCL.makeKernel(lambda)
-    println(OpenCLPrinter()(kernel))
+    val kernel = CodeGenerator.makeKernel(lambda, localSize = 128, globalSize = N)
+    println(kernel.code)
 
-    val fun = toOpenCL.asFunction[(Array[Float] :: Array[Float] :: Nil) =:=> Array[Float]](kernel)
+    val fun = kernel.asFunction[(Array[Float] :: Array[Float] :: Nil) =:=> Array[Float]]
 
     val size = 1024 * 1024
 

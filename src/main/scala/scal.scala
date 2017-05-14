@@ -1,12 +1,11 @@
 
 import idealised.Core._
 import idealised.DSL.untyped._
-import idealised.OpenCL.Core._
+import idealised.OpenCL._
 import idealised.OpenCL.DSL._
 import lift.arithmetic._
 import idealised.Core.Time.ms
 import opencl.executor.Executor
-import opencl.generator.OpenCLPrinter
 
 import scala.util.Random
 
@@ -25,18 +24,17 @@ object scal extends App {
   val inputT = ExpType(ArrayType(N, dataT))
 
   def runOpenCLKernel(name: String,
-                      untypedLambda: Phrase[ExpType ->(ExpType -> ExpType)]) = {
+                      untypedLambda: Phrase[ExpType ->(ExpType -> ExpType)]): Unit = {
     println("\n----------------")
     val lambda = TypeInference(untypedLambda)
     println(name + ":\n" + PrettyPhrasePrinter(lambda))
     lambda.typeCheck()
 
     println(s"-- $name --")
-    val toOpenCL = CodeGenerator(localSize = 128, globalSize = N)
-    val kernel = toOpenCL.makeKernel(lambda)
-    println(OpenCLPrinter()(kernel))
+    val kernel = CodeGenerator.makeKernel(lambda, localSize = 128, globalSize = N)
+    println(kernel.code)
 
-    val fun = toOpenCL.asFunction[(Array[Float] :: Float :: Nil) =:=> Array[Float]](kernel)
+    val fun = kernel.asFunction[(Array[Float] :: Float :: Nil) =:=> Array[Float]]
 
     val size = 1024 * 1024 * 16
 
@@ -45,7 +43,7 @@ object scal extends App {
 
     if (benchmark) {
       var times = Vector[TimeSpan[ms]]()
-      for (i <- 0 to iterations) {
+      for (_ <- 0 to iterations) {
         val (_, time) = fun(input :: alpha :: HNil)
         times = times :+ time
       }

@@ -3,7 +3,7 @@ import idealised._
 import idealised.Core._
 import idealised.Core.OperationalSemantics.FloatData
 import idealised.DSL.untyped._
-import idealised.OpenCL.Core._
+import idealised.OpenCL._
 import idealised.OpenCL.DSL._
 import lift.arithmetic._
 import opencl.generator.OpenCLAST.Block
@@ -32,11 +32,11 @@ object dot extends App {
     lambda.typeCheck()
 
     println(s"-- $name --")
-    val toOpenCL = CodeGenerator(localSize = 128, globalSize = N)
-    val kernel = toOpenCL.makeKernel(lambda)
-    println(OpenCLPrinter()(kernel))
 
-    val fun = toOpenCL.asFunction[(Array[Float] :: Array[Float] :: Nil) =:=> Array[Float]](kernel)
+    val kernel = CodeGenerator.makeKernel(lambda, localSize = 128, globalSize = N)
+    println(kernel.code)
+
+    val fun = kernel.asFunction[(Array[Float] :: Array[Float] :: Nil) =:=> Array[Float]]
 
     val size = 1024 * 1024
 
@@ -65,11 +65,10 @@ object dot extends App {
     lambda.typeCheck()
 
     println(s"-- $name --")
-    val toOpenCL = CodeGenerator(localSize = 128, globalSize = N)
-    val kernel = toOpenCL.makeKernel(lambda)
-    println(OpenCLPrinter()(kernel))
+    val kernel = CodeGenerator.makeKernel(lambda, localSize = 128, globalSize = N)
+    println(kernel.code)
 
-    val fun = toOpenCL.asFunction[(Array[Float] :: Nil) =:=> Array[Float]](kernel)
+    val fun = kernel.asFunction[(Array[Float] :: Nil) =:=> Array[Float]]
 
     val size = 512
 
@@ -286,9 +285,9 @@ object dot extends App {
         )
       )
 
-    val (dotSimpleImplAdjustedMem, _) = HoistMemoryAllocations(dotSimpleImp)
+    val (dotSimpleImplAdjustedMem, _) = CodeGeneration.HoistMemoryAllocations(dotSimpleImp)
     TypeChecker(dotSimpleImplAdjustedMem)
-    Core.xmlPrinter.toFile("/tmp/mem.xml", dotSimpleImplAdjustedMem)
+    xmlPrinter.writeToFile("/tmp/mem.xml", dotSimpleImplAdjustedMem)
 
     val bodyAdjustedMem = CodeGenerator.cmd(dotSimpleImplAdjustedMem, Block(), CodeGenerator.Environment(128, N))
 
@@ -298,7 +297,7 @@ object dot extends App {
 
     TypeChecker(dotSimpleImp)
 
-    Core.xmlPrinter.toFile("/tmp/pp.xml", dotSimpleImp)
+    xmlPrinter.writeToFile("/tmp/pp.xml", dotSimpleImp)
 
     val body = CodeGenerator.cmd(dotSimpleImp, Block(), CodeGenerator.Environment(128, N))
 
@@ -404,7 +403,7 @@ object dot extends App {
 
     TypeChecker(dotSimpleImp2)
 
-    Core.xmlPrinter.toFile("/tmp/ppp.xml", dotSimpleImp2)
+    xmlPrinter.writeToFile("/tmp/ppp.xml", dotSimpleImp2)
 
     val body2 = CodeGenerator.cmd(dotSimpleImp2, Block(), CodeGenerator.Environment(128, N))
 
@@ -516,7 +515,7 @@ object dot extends App {
 
     TypeChecker(dotSimpleImp3)
 
-    Core.xmlPrinter.toFile("/tmp/pppp.xml", dotSimpleImp3)
+    xmlPrinter.writeToFile("/tmp/pppp.xml", dotSimpleImp3)
 
     val body3 = CodeGenerator.cmd(dotSimpleImp3, Block(), CodeGenerator.Environment(128, N))
 

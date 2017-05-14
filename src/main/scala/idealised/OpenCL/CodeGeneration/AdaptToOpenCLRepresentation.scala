@@ -1,4 +1,4 @@
-package idealised.OpenCL.Core
+package idealised.OpenCL.CodeGeneration
 
 import idealised.Core.{ExpType, Identifier}
 import ir._

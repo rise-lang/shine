@@ -3,7 +3,7 @@ import idealised._
 import idealised.Core._
 import idealised.DSL.untyped._
 import idealised.Compiling.{RewriteToImperative, SubstituteImplementations}
-import idealised.OpenCL.Core.CodeGenerator
+import idealised.OpenCL.CodeGenerator
 import idealised.OpenCL.DSL._
 import lift.arithmetic._
 import opencl.generator.OpenCLPrinter
@@ -770,8 +770,8 @@ object Test extends App {
 
     println("-----")
 
-    val ast = (new CodeGenerator(?, ?))(p, identifier("inp", t))
-    println(OpenCLPrinter()(ast))
+    val kernel = CodeGenerator.makeKernel(p(identifier("inp", t)), ?, ?)
+    println(kernel.code)
 
     println("-----")
   }
@@ -787,8 +787,8 @@ object Test extends App {
 
     println("-----")
 
-    val ast = (new CodeGenerator(?, ?))(p, identifier("inp", t))
-    println(OpenCLPrinter()(ast))
+    val kernel = CodeGenerator.makeKernel(p(identifier("inp", t)), ?, ?)
+    println(kernel.code)
 
     println("-----")
   }
@@ -805,8 +805,8 @@ object Test extends App {
 
     println("-----")
 
-    val ast = (new CodeGenerator(?, ?))(p, identifier("xs", t), identifier("ys", t))
-    println(OpenCLPrinter()(ast))
+    val kernel = CodeGenerator.makeKernel(p(identifier("xs", t))(identifier("ys", t)), ?, ?)
+    println(kernel.code)
 
     println("-----")
   }
@@ -841,10 +841,10 @@ object Test extends App {
 
     println("-----")
 
-    val toOpenCL = new CodeGenerator(localSize = 128, globalSize = m)
-
-    val ast = toOpenCL(p, identifier("mat", matrixT), identifier("xs", xsVectorT), identifier("ys", ysVectorT))
-    println(OpenCLPrinter()(ast))
+    val kernel = CodeGenerator.makeKernel(
+      p(identifier("mat", matrixT))(identifier("xs", xsVectorT))(identifier("ys", ysVectorT)),
+      localSize = 128, globalSize = m)
+    println(kernel.code)
 
     println("-----")
   }
@@ -864,8 +864,8 @@ object Test extends App {
 
     println("-----")
 
-    val ast = (new CodeGenerator(?, ?))(p, identifier("xs", xsVectorT))
-    println(OpenCLPrinter()(ast))
+    val kernel = CodeGenerator.makeKernel(p(identifier("xs", xsVectorT)), ?, ?)
+    println(kernel.code)
 
     println("-----")
   }
@@ -887,8 +887,8 @@ object Test extends App {
 
     println("-----")
 
-    val ast = (new CodeGenerator(128, ?))(p, identifier("xs", xsVectorT))
-    println(OpenCLPrinter()(ast))
+    val kernel = CodeGenerator.makeKernel(p(identifier("xs", xsVectorT)), localSize = 128, ?)
+    println(kernel.code)
 
     println("-----")
   }
@@ -915,8 +915,9 @@ object Test extends App {
 
     println("-----")
 
-    val ast = (new CodeGenerator(128, ?))(p, identifier("xs", xsVectorT), identifier("ys", ysVectorT))
-    println(OpenCLPrinter()(ast))
+    val kernel = CodeGenerator.makeKernel(
+      p(identifier("xs", xsVectorT))(identifier("ys", ysVectorT)), localSize = 128, ?)
+    println(kernel.code)
 
     println("-----")
   }
@@ -953,8 +954,9 @@ object Test extends App {
 
     println("-----")
 
-    val ast = (new CodeGenerator(?, ?))(p, identifier("mat", matrixT), identifier("xs", xsVectorT), identifier("ys", ysVectorT))
-    println(OpenCLPrinter()(ast))
+    val kernel = CodeGenerator.makeKernel(
+      p(identifier("mat", matrixT))(identifier("xs", xsVectorT))(identifier("ys", ysVectorT)), ?, ?)
+    println(kernel.code)
 
     println("-----")
   }
@@ -993,10 +995,12 @@ object Test extends App {
 
     println("-----")
 
-    val toOpenCL = new CodeGenerator(localSize = 128, globalSize = n)
-
-    val ast = toOpenCL(p, identifier("mat", matrixT), identifier("xs", xsVectorT), identifier("ys", ysVectorT), identifier("alpha", aT), identifier("beta", bT))
-    println(OpenCLPrinter()(ast))
+    val kernel = CodeGenerator.makeKernel(
+      p(identifier("mat", matrixT))(identifier("xs", xsVectorT))(identifier("ys", ysVectorT))
+        (identifier("alpha", aT))(identifier("beta", bT)),
+      localSize = 128, globalSize = n
+    )
+    println(kernel.code)
 
     println("-----")
   }
@@ -1017,8 +1021,8 @@ object Test extends App {
 
     println("-----")
 
-    val ast = (new CodeGenerator(128, ?))(p, identifier("xs", xsVectorT))
-    println(OpenCLPrinter()(ast))
+    val kernel = CodeGenerator.makeKernel( p(identifier("xs", xsVectorT)), localSize = 128, ? )
+    println(kernel.code)
 
     println("-----")
   }
@@ -1058,7 +1062,7 @@ object Test extends App {
 
       println( f )
 
-      Core.xmlPrinter.toFile("/tmp/f1.xml", f)
+      Core.xmlPrinter.writeToFile("/tmp/f1.xml", f)
 
       println( f(float) )
     }

@@ -5,9 +5,10 @@ import idealised.Core._
 import idealised.Core.OperationalSemantics._
 import idealised.Compiling.RewriteToImperative
 import idealised.DSL.typed._
+import idealised.OpenCL.CodeGenerator
+import idealised.OpenCL.Core.ViewExp
 import idealised.OpenCL.ImperativePrimitives.AsScalarAcc
 import opencl.generator.OpenCLAST.Expression
-import idealised.OpenCL.Core.{CodeGenerator, ViewExp}
 import ir.Type
 
 import scala.xml.Elem

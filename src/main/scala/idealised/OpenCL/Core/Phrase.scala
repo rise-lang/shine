@@ -1,6 +1,7 @@
 package idealised.OpenCL.Core
 
 import idealised.Core._
+import idealised.OpenCL.CodeGenerator
 import opencl.generator.OpenCLAST.{Block, Expression}
 
 import scala.collection.immutable.List
@@ -20,9 +21,9 @@ trait ViewAcc {
 }
 
 trait GeneratableComm {
-  def toOpenCL(block: Block, env: CodeGenerator.Environment): Block
+  def codeGenCmd(block: Block, env: CodeGenerator.Environment): Block
 }
 
 trait GeneratableExp {
-  def toOpenCL(env: CodeGenerator.Environment): Expression
+  def codeGenExp(env: CodeGenerator.Environment): Expression
 }

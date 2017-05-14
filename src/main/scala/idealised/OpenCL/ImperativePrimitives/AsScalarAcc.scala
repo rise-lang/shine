@@ -3,8 +3,9 @@ package idealised.OpenCL.ImperativePrimitives
 import idealised._
 import idealised.Core._
 import idealised.Core.OperationalSemantics._
+import idealised.OpenCL.CodeGenerator
+import idealised.OpenCL.Core.ViewAcc
 import opencl.generator.OpenCLAST.Expression
-import idealised.OpenCL.Core.{CodeGenerator, ViewAcc}
 
 import scala.xml.Elem
 

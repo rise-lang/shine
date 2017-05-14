@@ -3,7 +3,8 @@ package idealised.OpenCL.ImperativePrimitives
 import idealised.Core._
 import idealised.DSL.typed._
 import idealised.ImperativePrimitives.AbstractParFor
-import idealised.OpenCL.Core.{GeneratableComm, CodeGenerator}
+import idealised.OpenCL.CodeGenerator
+import idealised.OpenCL.Core.GeneratableComm
 import lift.arithmetic.{Cst, NamedVar, RangeAdd}
 import opencl.generator.OpenCLAST
 import opencl.generator.OpenCLAST.{Block, BlockMember}
@@ -24,7 +25,7 @@ abstract class OpenCLParFor(n: Nat,
   def step: Nat
   def synchronize: OpenCLAST.OclAstNode with BlockMember
 
-  override def toOpenCL(block: Block, env: CodeGenerator.Environment): Block = {
+  override def codeGenCmd(block: Block, env: CodeGenerator.Environment): Block = {
     import opencl.generator.OpenCLAST._
 
     this.env = env
