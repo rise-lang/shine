@@ -1,18 +1,19 @@
 package idealised.OpenCL
 
 import idealised.Core._
-import idealised.OpenCL.AST.{FunctionDecl, ParmVarDecl}
 import ir.Type
 import lift.arithmetic.{ArithExpr, Cst, Var}
 import opencl.executor._
+import opencl.generator.OpenCLAST.ParamDecl
 import opencl.generator.OpenCLPrinter
+import opencl.generator._
 import opencl.ir.{Double, Float, Int}
 
 import scala.collection.{Seq, immutable}
 import scala.collection.immutable.List
 import scala.language.implicitConversions
 
-case class Kernel(function: FunctionDecl,
+case class Kernel(function: OpenCLAST.Function,
                   outputParam: Identifier[AccType],
                   inputParams: List[Identifier[ExpType]],
                   intermediateParams: List[Identifier[VarType]],
@@ -125,17 +126,17 @@ case class Kernel(function: FunctionDecl,
     (intermediateParamDecls, intermediateParams).zipped.map { case (pDecl, param) =>
       val size = (DataType.sizeInByte(param) `with` lengthMapping).value.max.eval
       pDecl.addressSpace match {
-        case LocalMemory =>
+        case opencl.ir.LocalMemory =>
           println(s"intermediate (local): $size bytes")
           LocalArg.create(size)
-        case GlobalMemory =>
+        case opencl.ir.GlobalMemory =>
           println(s"intermediate (global): $size bytes")
           GlobalArg.createOutput(size)
       }
     }
   }
 
-  private def getIntermediateParamDecls(argsLength: Int): List[ParmVarDecl] = {
+  private def getIntermediateParamDecls(argsLength: Int): List[ParamDecl] = {
     val startIndex = 1 + argsLength
     function.params.slice(startIndex, startIndex + intermediateParams.size)
   }
