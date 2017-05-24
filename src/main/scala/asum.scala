@@ -19,9 +19,9 @@ object asum extends App {
   val inputT = ExpType(ArrayType(N, float))
 
   def runOpenCLKernel(name: String,
-                      untypedLambda: Phrase[ExpType -> ExpType]): Unit = {
+                      untypedLambda: Expr[ExpType -> ExpType]): Unit = {
     println("\n----------------")
-    val lambda = TypeInference(untypedLambda)
+    val lambda = ExpressionToPhrase(untypedLambda, Map())
     println(name + ":\n" + PrettyPhrasePrinter(lambda))
     lambda.typeCheck()
 
@@ -49,7 +49,6 @@ object asum extends App {
     println("----------------\n")
   }
 
-  //val abs = λ(x => `if`(x < 0.0f, -x, x))
   val abs = (t: DataType) => λ(x => oclFun("fabs", t, t, x)  )
   val add = λ(x => λ(a => x + a))
 
@@ -58,7 +57,7 @@ object asum extends App {
   )
 
   {
-    val lambda = TypeInference(high_level)
+    val lambda = ExpressionToPhrase(high_level, Map())
     println("high_level:\n" + PrettyPhrasePrinter(lambda))
     lambda.typeCheck()
   }

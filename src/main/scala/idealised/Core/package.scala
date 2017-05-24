@@ -1,5 +1,6 @@
 package idealised
 
+import idealised.DSL.untyped.Expr
 import lift.arithmetic.{ArithExpr, NamedVar}
 
 import scala.language.implicitConversions
@@ -60,6 +61,26 @@ package object Core {
     def `[`(dt: DataType) = new {
       def `/`(`for`: DataTypeIdentifier) = new {
         def `]`: Phrase[T1] = PhraseType.substitute(dt, `for`, in)
+      }
+    }
+  }
+
+  implicit class ExprSubstitutionHelper[T1 <: PhraseType](in: Expr[T1]) {
+    def `[`[T2 <: PhraseType](e: Expr[T2]) = new {
+      def `/`(`for`: Expr[T2]) = new {
+        def `]`: Expr[T1] = Expr.substitute(e, `for`, in)
+      }
+    }
+
+    def `[`(e: Nat) = new {
+      def `/`(`for`: NatIdentifier) = new {
+        def `]`: Expr[T1] = PhraseType.substitute(e, `for`, in)
+      }
+    }
+
+    def `[`(dt: DataType) = new {
+      def `/`(`for`: DataTypeIdentifier) = new {
+        def `]`: Expr[T1] = PhraseType.substitute(dt, `for`, in)
       }
     }
   }

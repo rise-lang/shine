@@ -24,9 +24,9 @@ object scal extends App {
   val inputT = ExpType(ArrayType(N, dataT))
 
   def runOpenCLKernel(name: String,
-                      untypedLambda: Phrase[ExpType ->(ExpType -> ExpType)]): Unit = {
+                      untypedLambda: Expr[ExpType ->(ExpType -> ExpType)]): Unit = {
     println("\n----------------")
-    val lambda = TypeInference(untypedLambda)
+    val lambda = ExpressionToPhrase(untypedLambda, Map())
     println(name + ":\n" + PrettyPhrasePrinter(lambda))
     lambda.typeCheck()
 
@@ -67,7 +67,7 @@ object scal extends App {
   ) )
 
   {
-    val lambda = TypeInference(high_level)
+    val lambda = ExpressionToPhrase(high_level, Map())
     println("high_level:\n" + PrettyPhrasePrinter(lambda))
     lambda.typeCheck()
   }

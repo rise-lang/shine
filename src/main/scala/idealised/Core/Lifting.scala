@@ -1,5 +1,6 @@
 package idealised.Core
 
+import idealised.DSL.untyped._
 import lift.arithmetic.NamedVar
 
 import scala.language.postfixOps
@@ -132,6 +133,62 @@ object Lifting {
         val pair = liftPair(p2.pair)
         liftPair(pair._2)
       case Identifier(_, _) | IfThenElse(_, _, _) =>
+        throw new Exception("This should never happen")
+    }
+  }
+
+
+
+  def liftNatDependentFunctionExpr[T <: PhraseType](p: Expr[`(nat)->`[T]]): (Nat => Expr[T]) = {
+    p match {
+      case l: NatDependentLambdaExpr[T] =>
+        (arg: Nat) => l.body `[` arg `/` l.x `]`
+      case app: ApplyExpr[`(nat)->`[T]] =>
+        val fun = liftFunctionExpr(app.fun)
+        liftNatDependentFunctionExpr(fun(app.arg))
+      case app: NatDependentApplyExpr[`(nat)->`[T]] =>
+        val fun = liftNatDependentFunctionExpr(app.fun)
+        liftNatDependentFunctionExpr(fun(app.arg))
+      case app: TypeDependentApplyExpr[`(nat)->`[T]] =>
+        val fun = liftTypeDependentFunctionExpr(app.fun)
+        liftNatDependentFunctionExpr(fun(app.arg))
+      case IfThenElseExpr(_, _, _) =>
+        throw new Exception("This should never happen")
+    }
+  }
+
+  def liftTypeDependentFunctionExpr[T <: PhraseType](p: Expr[`(dt)->`[T]]): (DataType => Expr[T]) = {
+    p match {
+      case l: TypeDependentLambdaExpr[T] =>
+        (arg: DataType) => l.body `[` arg `/` l.x `]`
+      case app: ApplyExpr[`(dt)->`[T]] =>
+        val fun = liftFunctionExpr(app.fun)
+        liftTypeDependentFunctionExpr(fun(app.arg))
+      case app: NatDependentApplyExpr[`(dt)->`[T]] =>
+        val fun = liftNatDependentFunctionExpr(app.fun)
+        liftTypeDependentFunctionExpr(fun(app.arg))
+      case app: TypeDependentApplyExpr[`(dt)->`[T]] =>
+        val fun = liftTypeDependentFunctionExpr(app.fun)
+        liftTypeDependentFunctionExpr(fun(app.arg))
+      case IfThenElseExpr(_, _, _) =>
+        throw new Exception("This should never happen")
+    }
+  }
+
+  def liftFunctionExpr[T <: PhraseType](p: Expr[ExpType -> T]): (DataExpr => Expr[T]) = {
+    p match {
+      case l: LambdaExpr[T] =>
+        (arg: DataExpr) => l.body `[` arg  `/` l.param `]`
+      case app: ApplyExpr[ExpType -> T] =>
+        val fun = liftFunctionExpr(app.fun)
+        liftFunctionExpr(fun(app.arg))
+      case app: NatDependentApplyExpr[ExpType -> T] =>
+        val fun = liftNatDependentFunctionExpr(app.fun)
+        liftFunctionExpr(fun(app.arg))
+      case app: TypeDependentApplyExpr[ExpType -> T] =>
+        val fun = liftTypeDependentFunctionExpr(app.fun)
+        liftFunctionExpr(fun(app.arg))
+      case IfThenElseExpr(_, _, _) =>
         throw new Exception("This should never happen")
     }
   }

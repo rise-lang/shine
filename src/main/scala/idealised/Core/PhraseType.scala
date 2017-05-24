@@ -1,6 +1,7 @@
 package idealised.Core
 
 import idealised.Core.OperationalSemantics.IndexData
+import idealised.DSL.untyped.{Expr, IdentifierExpr, LiteralExpr}
 import lift.arithmetic.{ArithExpr, Var}
 
 sealed trait PhraseType
@@ -59,6 +60,18 @@ object PhraseType {
     val p = VisitAndRebuild(in, Visitor)
     p.typeCheck()
     p
+
+  }
+
+  def substitute[T <: PhraseType](dt: DataType,
+                                  `for`: DataTypeIdentifier,
+                                  in: Expr[T]): Expr[T] = {
+
+    object Visitor extends idealised.DSL.untyped.VisitAndRebuild.Visitor {
+      override def apply[DT <: DataType](in: DT): DT = substitute(dt, `for`, in)
+    }
+
+    idealised.DSL.untyped.VisitAndRebuild(in, Visitor)
 
   }
 
@@ -124,6 +137,37 @@ object PhraseType {
     val p = VisitAndRebuild(in, Visitor)
     p.typeCheck()
     p
+
+  }
+
+  def substitute[T <: PhraseType](ae: Nat,
+                                  `for`: NatIdentifier,
+                                  in: Expr[T]): Expr[T] = {
+
+    object Visitor extends idealised.DSL.untyped.VisitAndRebuild.Visitor {
+      override def apply[T2 <: PhraseType](e: Expr[T2]): Result[Expr[T2]] = {
+        e match {
+          case IdentifierExpr(name, _) =>
+            if (`for`.name == name) {
+              Stop(LiteralExpr(IndexData(ae), IndexType(ae.max)).asInstanceOf[Expr[T2]])
+            } else {
+              Continue(e, this)
+            }
+          case LiteralExpr(IndexData(index), IndexType(size)) =>
+            val newIndex = substitute(ae, `for`, in = index)
+            val newSize = substitute(ae, `for`, in = size)
+            Stop(LiteralExpr(IndexData(newIndex), IndexType(newSize)).asInstanceOf[Expr[T2]])
+          case _ =>
+            Continue(e, this)
+        }
+      }
+
+      override def apply(e: Nat): Nat = substitute(ae, `for`, e)
+
+      override def apply[DT <: DataType](dt: DT): DT = substitute(ae, `for`, dt)
+    }
+
+    idealised.DSL.untyped.VisitAndRebuild(in, Visitor)
 
   }
 

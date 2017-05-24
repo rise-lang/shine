@@ -5,6 +5,7 @@ import idealised.Core._
 import idealised.Core.OperationalSemantics.{Data, Store}
 import idealised.Compiling.RewriteToImperative
 import idealised.DSL.typed._
+import idealised.OpenCL.AddressSpace
 
 import scala.xml.Elem
 
@@ -12,7 +13,7 @@ abstract class To(dt1: DataType,
                   dt2: DataType,
                   f: Phrase[ExpType -> ExpType],
                   input: Phrase[ExpType],
-                  addressSpace: idealised.OpenCL.AddressSpace,
+                  addressSpace: AddressSpace,
                   private val makeTo: (DataType, DataType,
                     Phrase[ExpType -> ExpType], Phrase[ExpType]) => To)
   extends ExpPrimitive {

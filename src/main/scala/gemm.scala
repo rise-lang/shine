@@ -28,8 +28,8 @@ object gemm extends App {
   val cT = exp"[$M.$N.$dt]"
 
   def printOpenCLKernel(name: String,
-                        untypedLambda: Phrase[ExpType -> (ExpType -> ExpType)]): Unit = {
-    val lambda = TypeInference(untypedLambda)
+                        untypedLambda: Expr[ExpType -> (ExpType -> ExpType)]): Unit = {
+    val lambda = ExpressionToPhrase(untypedLambda, Map())
     println(name + ":\n" + PrettyPhrasePrinter(lambda))
     lambda.typeCheck()
 
@@ -66,7 +66,7 @@ object gemm extends App {
   val v3 = 2
   val v4 = 2
 
-  val zeros = Literal(
+  val zeros = LiteralExpr(
     ArrayData(Vector.fill(v4)(ArrayData(Vector.fill(v3)(FloatData(0.0f))))),
     ArrayType(v4, ArrayType(v3, float)))
 
@@ -90,8 +90,8 @@ object gemm extends App {
           mapSeq(λ(p54 =>
             join() o mapSeq(λ(p157 =>
               reduceSeq(add, p157._1) o
-              mapSeq(dot) $
-              zip(asVector(4) $ p54._2, asVector(4) $ p157._2)
+                mapSeq(dot) $
+                zip(asVector(4) $ p54._2, asVector(4) $ p157._2)
             )) $ zip(p54._1, transpose $ p236._2)
           )) $ zip(p67, transpose $ p236._1)
         )), zeros) $
@@ -101,7 +101,7 @@ object gemm extends App {
   )))))
 
   {
-    val lambda = TypeInference(maliGEMM)
+    val lambda = ExpressionToPhrase(maliGEMM, Map())
     println("maliGEMM:\n" + PrettyPhrasePrinter(lambda))
     lambda.typeCheck()
   }
