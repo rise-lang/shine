@@ -3,7 +3,8 @@ package idealised.DPIA.Phrases
 import idealised.DPIA.Compilation.SubstituteImplementations
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Types._
-import idealised.DPIA.{->, Nat, NatIdentifier, `(dt)->`, `(nat)->`, x}
+import idealised.DPIA._
+import idealised.SurfaceLanguage
 
 sealed trait Phrase[T <: PhraseType] {
   lazy val t: T = `type`
@@ -46,10 +47,10 @@ final case class Proj2[T1 <: PhraseType, T2 <: PhraseType](pair: Phrase[T1 x T2]
 final case class IfThenElse[T <: PhraseType](cond: Phrase[ExpType], thenP: Phrase[T], elseP: Phrase[T])
   extends Phrase[T]
 
-final case class UnaryOp(op: UnaryOp.Op.Value, p: Phrase[ExpType])
+final case class UnaryOp(op: SurfaceLanguage.Operators.Unary.Value, p: Phrase[ExpType])
   extends Phrase[ExpType]
 
-final case class BinOp(op: BinOp.Op.Value, lhs: Phrase[ExpType], rhs: Phrase[ExpType])
+final case class BinOp(op: SurfaceLanguage.Operators.Binary.Value, lhs: Phrase[ExpType], rhs: Phrase[ExpType])
   extends Phrase[ExpType]
 
 final case class Literal(d: OperationalSemantics.Data, dt: DataType)
@@ -89,24 +90,6 @@ object Phrase {
     }
 
     VisitAndRebuild(in, Visitor)
-  }
-}
-
-object UnaryOp {
-  object Op extends Enumeration {
-    val NEG = Value("-")
-  }
-}
-
-object BinOp {
-  object Op extends Enumeration {
-    val ADD = Value("+")
-    val SUB = Value("-")
-    val MUL = Value("*")
-    val DIV = Value("/")
-    val MOD = Value("%")
-    val GT = Value(">")
-    val LT = Value("<")
   }
 }
 

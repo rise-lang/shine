@@ -7,9 +7,7 @@ import idealised.DPIA.Types.PhraseType
 import scala.xml._
 
 object ToString {
-  def apply(a: Any): String = {
-    if (a == null) { "null" } else { a.toString }
-  }
+  def apply(a: Any): String = a.toString
 }
 
 object xmlPrinter {

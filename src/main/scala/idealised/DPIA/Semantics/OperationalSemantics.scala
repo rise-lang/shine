@@ -1,9 +1,9 @@
 package idealised.DPIA.Semantics
 
-import idealised.utils._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types._
 import idealised.DPIA._
+import idealised.SurfaceLanguage.Operators
 
 import scala.collection.immutable.HashMap
 import scala.language.{implicitConversions, postfixOps, reflectiveCalls}
@@ -14,11 +14,11 @@ object OperationalSemantics {
   final case class IndexData(i: Nat) extends Data(IndexType(i.max))
   final case class BoolData(b: Boolean) extends Data(bool)
   final case class IntData(i: Int) extends Data(int) {
-    override def toString = i.toString
+    override def toString: String = i.toString
   }
 //  final case class Int4Data(i0: Int, i1: Int, i2: Int, i3: Int) extends Data(int4)
   final case class FloatData(f: Float) extends Data(float) {
-    override def toString = f.toString + "f"
+    override def toString: String = f.toString + "f"
   }
   final case class VectorData(a: Vector[Data]) extends Data(VectorType(a.length, a.head.dataType match {
     case b: ScalarType => b
@@ -143,13 +143,7 @@ object OperationalSemantics {
       def apply(s: Store, p: Phrase[T1 x T2]): (Phrase[T1], Phrase[T2]) = {
         p match {
           case i: Identifier[T1 x T2] =>
-            if (i.t == null) {
-              val t1 = null.asInstanceOf[T1]
-              val t2 = null.asInstanceOf[T2]
-              (Identifier[T1](i.name, t1), Identifier[T2](i.name, t2))
-            } else {
-              (Identifier[T1](i.name, i.t.t1), Identifier[T2](i.name, i.t.t2))
-            }
+            (Identifier[T1](i.name, i.t.t1), Identifier[T2](i.name, i.t.t2))
           case pair: Pair[T1, T2] => (pair.fst, pair.snd)
           case Apply(_, _) | NatDependentApply(_, _) |
                TypeDependentApply(_, _) | IfThenElse(_, _, _) |
@@ -169,18 +163,18 @@ object OperationalSemantics {
 
           case UnaryOp(op, x) =>
             op match {
-              case UnaryOp.Op.NEG => - evalIntExp(s, x)
+              case Operators.Unary.NEG => - evalIntExp(s, x)
             }
 
           case BinOp(op, lhs, rhs) =>
             op match {
-              case BinOp.Op.ADD => evalIntExp(s, lhs) + evalIntExp(s, rhs)
-              case BinOp.Op.SUB => evalIntExp(s, lhs) - evalIntExp(s, rhs)
-              case BinOp.Op.MUL => evalIntExp(s, lhs) * evalIntExp(s, rhs)
-              case BinOp.Op.DIV => evalIntExp(s, lhs) / evalIntExp(s, rhs)
-              case BinOp.Op.MOD => evalIntExp(s, lhs) % evalIntExp(s, rhs)
-              case BinOp.Op.GT => if (evalIntExp(s, lhs) > evalIntExp(s, rhs)) 1 else 0
-              case BinOp.Op.LT => if (evalIntExp(s, lhs) < evalIntExp(s, rhs)) 1 else 0
+              case Operators.Binary.ADD => evalIntExp(s, lhs) + evalIntExp(s, rhs)
+              case Operators.Binary.SUB => evalIntExp(s, lhs) - evalIntExp(s, rhs)
+              case Operators.Binary.MUL => evalIntExp(s, lhs) * evalIntExp(s, rhs)
+              case Operators.Binary.DIV => evalIntExp(s, lhs) / evalIntExp(s, rhs)
+              case Operators.Binary.MOD => evalIntExp(s, lhs) % evalIntExp(s, rhs)
+              case Operators.Binary.GT => if (evalIntExp(s, lhs) > evalIntExp(s, rhs)) 1 else 0
+              case Operators.Binary.LT => if (evalIntExp(s, lhs) < evalIntExp(s, rhs)) 1 else 0
             }
 
           case c: ExpPrimitive => c.eval(s)
@@ -258,15 +252,15 @@ object OperationalSemantics {
     evalIntExp(new Store(), p)
   }
 
-  def toScalaOp(op: BinOp.Op.Value): (Nat, Nat) => Nat = {
+  def toScalaOp(op: Operators.Binary.Value): (Nat, Nat) => Nat = {
     op match {
-      case BinOp.Op.ADD => (x, y) => x + y
-      case BinOp.Op.SUB => (x, y) => x - y
-      case BinOp.Op.MUL => (x, y) => x * y
-      case BinOp.Op.DIV => (x, y) => x / y
-      case BinOp.Op.MOD => (x, y) => x % y
-      case BinOp.Op.GT => (x, y) => (x gt y) ?? 1 !! 0
-      case BinOp.Op.LT => (x, y) => (x lt 0) ?? 1 !! 0
+      case Operators.Binary.ADD => (x, y) => x + y
+      case Operators.Binary.SUB => (x, y) => x - y
+      case Operators.Binary.MUL => (x, y) => x * y
+      case Operators.Binary.DIV => (x, y) => x / y
+      case Operators.Binary.MOD => (x, y) => x % y
+      case Operators.Binary.GT => (x, y) => (x gt y) ?? 1 !! 0
+      case Operators.Binary.LT => (x, y) => (x lt y) ?? 1 !! 0
     }
   }
 

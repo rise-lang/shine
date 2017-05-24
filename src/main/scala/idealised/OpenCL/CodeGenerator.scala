@@ -11,6 +11,7 @@ import idealised.DPIA.ImperativePrimitives._
 import idealised.OpenCL.CodeGeneration.HoistMemoryAllocations.AllocationInfo
 import idealised.OpenCL.CodeGeneration.PrimitivesCodeGenerator._
 import idealised.OpenCL.CodeGeneration.HoistMemoryAllocations
+import idealised.SurfaceLanguage.Expr
 import idealised.{DPIA, _}
 import ir.{Type, UndefType}
 import opencl.generator.OpenCLAST
@@ -22,8 +23,11 @@ import scala.language.implicitConversions
 
 object CodeGenerator {
 
-  def makeKernel[T <: PhraseType](originalPhrase: Phrase[T],
-                                  localSize: Nat, globalSize: Nat): OpenCL.Kernel = {
+  def makeKernel[T <: PhraseType](expr: Expr[T], localSize: Nat, globalSize: Nat): OpenCL.Kernel = {
+    makeKernel(TypeInference(expr, scala.collection.Map()), localSize, globalSize)
+  }
+
+  def makeKernel[T <: PhraseType](originalPhrase: Phrase[T], localSize: Nat, globalSize: Nat): OpenCL.Kernel = {
 
     def getPhraseAndParams[_ <: PhraseType](p: Phrase[_],
                                             ps: List[Identifier[ExpType]]
@@ -40,9 +44,9 @@ object CodeGenerator {
 
   private def makeKernel(p: Phrase[ExpType], params: List[Identifier[ExpType]],
                          localSize: Nat, globalSize: Nat): OpenCL.Kernel = {
-    val p1 = checkTypes(p)
+    val outParam = createOutputParam(outT = p.t)
 
-    val outParam = createOutputParam(outT = p1.t)
+    val p1 = checkTypes(p)
 
     val p2 = rewriteToImperative(p1, outParam)
 
@@ -56,8 +60,7 @@ object CodeGenerator {
       outputParam = outParam,
       inputParams = params,
       intermediateParams = intermediateAllocations.map(_.identifier),
-      localSize, globalSize
-    )
+      localSize, globalSize)
   }
 
   private def checkTypes(p1: Phrase[ExpType]): Phrase[ExpType] = {
@@ -134,8 +137,7 @@ object CodeGenerator {
       allocInfo.identifier.name,
       DataType.toType(getDataType(allocInfo.identifier)),
       OpenCL.AddressSpace.toOpenCL(allocInfo.addressSpace),
-      const = false
-    )
+      const = false)
   }
 
   // returns list of int parameters for each variable in the given types;
@@ -143,8 +145,7 @@ object CodeGenerator {
   private def makeLengthParams(types: List[Type]): List[ParamDecl] = {
     val lengths = types.flatMap(Type.getLengths)
     lengths.filter(_.isInstanceOf[lift.arithmetic.Var]).distinct.map(v =>
-      ParamDecl(v.toString, opencl.ir.Int)
-    ).sortBy(_.name)
+      ParamDecl(v.toString, opencl.ir.Int) ).sortBy(_.name)
   }
 
   private def makeBody(p: Phrase[CommandType], localSize: Nat, globalSize: Nat): Block = {
@@ -168,9 +169,14 @@ object CodeGenerator {
     }
   }
 
+  type Ranges = immutable.Map[String, lift.arithmetic.Range]
+
   case class Environment(localSize: Nat,
                          globalSize: Nat,
-                         ranges: mutable.Map[String, lift.arithmetic.Range] = mutable.Map[String, lift.arithmetic.Range]())
+                         ranges: Ranges = immutable.Map[String, lift.arithmetic.Range]()) {
+    def updatedRanges(key: String, value: lift.arithmetic.Range): Environment =
+      copy(ranges = ranges.updated(key, value))
+  }
 
   def cmd(p: Phrase[CommandType], block: Block, env: Environment): Block = {
     p match {

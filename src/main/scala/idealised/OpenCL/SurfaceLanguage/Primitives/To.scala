@@ -1,7 +1,7 @@
 package idealised.OpenCL.SurfaceLanguage.Primitives
 
 import idealised.DPIA.Phrases._
-import idealised.DPIA.Types.{ExpressionToPhrase, _}
+import idealised.DPIA.Types.{TypeInference, _}
 import idealised.DPIA._
 import idealised.OpenCL.AddressSpace
 import idealised.SurfaceLanguage
@@ -16,22 +16,22 @@ abstract class To(f: Expr[ExpType -> ExpType],
                    Phrase[ExpType -> ExpType], Phrase[ExpType]) => idealised.OpenCL.FunctionalPrimitives.To)
   extends PrimitiveExpr {
 
-  override def inferTypes(subs: ExpressionToPhrase.SubstitutionMap): Primitive[ExpType] = {
-    import ExpressionToPhrase._
-    val input_ = ExpressionToPhrase(input, subs)
+  override def inferTypes(subs: TypeInference.SubstitutionMap): Primitive[ExpType] = {
+    import TypeInference._
+    val input_ = TypeInference(input, subs)
     input_.t match {
       case ExpType(dt1_) =>
-        val f_ = ExpressionToPhrase.setParamAndInferType(f, exp"[$dt1_]", subs)
+        val f_ = TypeInference.setParamAndInferType(f, exp"[$dt1_]", subs)
         f_.t match {
           case FunctionType(ExpType(t1_), ExpType(dt2_)) =>
             if (dt1_ == t1_) {
               makeToPhrase(dt1_, dt2_, f_, input_)
             } else {
-              error(dt1_.toString + " and " + t1_.toString, expected = "them to match")
+              error(this, dt1_.toString + " and " + t1_.toString, expected = "them to match")
             }
-          case x => error(x.toString, "FunctionType")
+          case x => error(this, x.toString, "exp[dt1] -> exp[dt2]")
         }
-      case x => error(x.toString, "ExpType")
+      case x => error(this, x.toString, "exp[dt]")
     }
   }
 

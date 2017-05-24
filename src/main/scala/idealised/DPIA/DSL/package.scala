@@ -4,6 +4,7 @@ import idealised.DPIA.Semantics.OperationalSemantics.{FloatData, IndexData, IntD
 import idealised.DPIA.Phrases.{BinOp, Identifier, Literal, Pair, Phrase, Proj1, Proj2, UnaryOp}
 import idealised.DPIA.Types._
 import idealised.DPIA.ImperativePrimitives.{Assign, Idx, IdxAcc, Seq}
+import idealised.SurfaceLanguage.Operators
 import lift.arithmetic.{ContinuousRange, NamedVar}
 
 import scala.language.implicitConversions
@@ -12,14 +13,14 @@ import scala.language.reflectiveCalls
 package object DSL {
 
   implicit class BinOps(lhs: Phrase[ExpType]) {
-    def +(rhs: Phrase[ExpType]) = BinOp(BinOp.Op.ADD, lhs, rhs)
-    def -(rhs: Phrase[ExpType]) = BinOp(BinOp.Op.SUB, lhs, rhs)
-    def *(rhs: Phrase[ExpType]) = BinOp(BinOp.Op.MUL, lhs, rhs)
-    def /(rhs: Phrase[ExpType]) = BinOp(BinOp.Op.DIV, lhs, rhs)
-    def %(rhs: Phrase[ExpType]) = BinOp(BinOp.Op.MOD, lhs, rhs)
-    def >(rhs: Phrase[ExpType]) = BinOp(BinOp.Op.GT, lhs, rhs)
-    def <(rhs: Phrase[ExpType]) = BinOp(BinOp.Op.LT, lhs, rhs)
-    def unary_- = UnaryOp(UnaryOp.Op.NEG, lhs)
+    def +(rhs: Phrase[ExpType]) = BinOp(Operators.Binary.ADD, lhs, rhs)
+    def -(rhs: Phrase[ExpType]) = BinOp(Operators.Binary.SUB, lhs, rhs)
+    def *(rhs: Phrase[ExpType]) = BinOp(Operators.Binary.MUL, lhs, rhs)
+    def /(rhs: Phrase[ExpType]) = BinOp(Operators.Binary.DIV, lhs, rhs)
+    def %(rhs: Phrase[ExpType]) = BinOp(Operators.Binary.MOD, lhs, rhs)
+    def >(rhs: Phrase[ExpType]) = BinOp(Operators.Binary.GT, lhs, rhs)
+    def <(rhs: Phrase[ExpType]) = BinOp(Operators.Binary.LT, lhs, rhs)
+    def unary_- = UnaryOp(Operators.Unary.NEG, lhs)
   }
 
   implicit class ExpPhraseExtensions(e: Phrase[ExpType]) {

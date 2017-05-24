@@ -4,16 +4,16 @@ import idealised.DPIA.{Phrases, _}
 import idealised.DPIA.Phrases._
 import idealised.SurfaceLanguage._
 
-class TypeInferenceException(msg: String) extends TypeException("Failed to infer types:\n" + msg)
+class TypeInferenceException(expr: Expr[_], msg: String) extends TypeException(s"Failed to infer type for: $expr\n" + msg)
 
-object ExpressionToPhrase {
+object TypeInference {
 
-  def error(found: String, expected: String): Nothing = {
-    throw new TypeInferenceException(s"Found $found but expected $expected")
+  def error(expr: Expr[_], found: String, expected: String): Nothing = {
+    throw new TypeInferenceException(expr, s"Found $found but expected $expected")
   }
 
-  def error(msg: String): Nothing = {
-    throw new TypeInferenceException(msg)
+  def error(expr: Expr[_], msg: String): Nothing = {
+    throw new TypeInferenceException(expr, msg)
   }
 
   type SubstitutionMap = scala.collection.Map[Expr[_], Phrase[_]]
@@ -22,15 +22,15 @@ object ExpressionToPhrase {
     inferType(e, subs)
   }
 
-  private def inferType[T <: PhraseType](e: Expr[T],
+  private def inferType[T <: PhraseType](expr: Expr[T],
                                          subs: SubstitutionMap): Phrase[T] = {
-    e match {
+    (expr match {
       case i@IdentifierExpr(name, t) =>
         if (subs.contains(i)) {
           subs(i).asInstanceOf[Phrase[T]]
         } else {
           t match {
-            case None => error(s"Found Identifier $name without type")
+            case None => error(i, s"Found Identifier $name without type")
             case Some(dt) => Phrases.Identifier(name, ExpType(dt))
           }
         }
@@ -66,7 +66,7 @@ object ExpressionToPhrase {
       case LiteralExpr(d, dt) => Literal(d, dt)
 
       case p: PrimitiveExpr => p.inferTypes(subs)
-    }
+    }).asInstanceOf[Phrase[T]]
   }
 
   def setParamAndInferType[T <: PhraseType](f: Expr[ExpType -> T],

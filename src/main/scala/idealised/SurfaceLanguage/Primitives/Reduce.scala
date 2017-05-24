@@ -17,10 +17,10 @@ abstract class AbstractReduce(f: Expr[ExpType -> (ExpType -> ExpType)],
     Phrase[ExpType -> (ExpType -> ExpType)], Phrase[ExpType], Phrase[ExpType]) =>
       idealised.DPIA.FunctionalPrimitives.AbstractReduce
 
-  override def inferTypes(subs: ExpressionToPhrase.SubstitutionMap): idealised.DPIA.FunctionalPrimitives.AbstractReduce = {
-    import ExpressionToPhrase._
-    val array_ = ExpressionToPhrase(array, subs)
-    val init_ = ExpressionToPhrase(init, subs)
+  override def inferTypes(subs: TypeInference.SubstitutionMap): idealised.DPIA.FunctionalPrimitives.AbstractReduce = {
+    import TypeInference._
+    val array_ = TypeInference(array, subs)
+    val init_ = TypeInference(init, subs)
     (init_.t, array_.t) match {
       case (ExpType(dt2_), ExpType(ArrayType(n_, dt1_))) =>
         val f_ = setParamsAndInferTypes(f, exp"[$dt1_]", exp"[$dt2_]", subs)
@@ -29,13 +29,14 @@ abstract class AbstractReduce(f: Expr[ExpType -> (ExpType -> ExpType)],
             if (dt1_ == t1 && dt2_ == t2 && dt2_ == t3) {
               makePhraseReduce(n_, dt1_, dt2_, f_, init_, array_)
             } else {
-              error(dt1_.toString + ", " + t1.toString + " as well as " +
+              error(this,
+                dt1_.toString + ", " + t1.toString + " as well as " +
                 dt2_.toString + ", " + t2.toString + " and " + t3.toString,
                 expected = "them to match")
             }
-          case x => error(x.toString, "FunctionType")
+          case x => error(this, x.toString, "exp[dt1] -> (exp[dt2] -> exp[dt3])")
         }
-      case x => error(x.toString, "(ExpType, ArrayType)")
+      case x => error(this, x.toString, "(exp[dt1], exp[n.dt2])")
     }
   }
 

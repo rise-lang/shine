@@ -1,7 +1,6 @@
 package idealised.SurfaceLanguage
 
 import idealised.DPIA.Semantics.OperationalSemantics.{FloatData, IndexData, VectorData}
-import idealised.DPIA.Phrases.{BinOp, UnaryOp}
 import idealised.DPIA.Types._
 import idealised.DPIA._
 import idealised.SurfaceLanguage.Primitives.{Fst, Snd}
@@ -13,14 +12,14 @@ package object DSL {
   type DataExpr = Expr[ExpType]
 
   implicit class BinOps(lhs: DataExpr) {
-    def +(rhs: DataExpr) = BinOpExpr(BinOp.Op.ADD, lhs, rhs)
-    def -(rhs: DataExpr) = BinOpExpr(BinOp.Op.SUB, lhs, rhs)
-    def *(rhs: DataExpr) = BinOpExpr(BinOp.Op.MUL, lhs, rhs)
-    def /(rhs: DataExpr) = BinOpExpr(BinOp.Op.DIV, lhs, rhs)
-    def %(rhs: DataExpr) = BinOpExpr(BinOp.Op.MOD, lhs, rhs)
-    def >(rhs: DataExpr) = BinOpExpr(BinOp.Op.GT, lhs, rhs)
-    def <(rhs: DataExpr) = BinOpExpr(BinOp.Op.LT, lhs, rhs)
-    def unary_- = UnaryOpExpr(UnaryOp.Op.NEG, lhs)
+    def +(rhs: DataExpr) = BinOpExpr(Operators.Binary.ADD, lhs, rhs)
+    def -(rhs: DataExpr) = BinOpExpr(Operators.Binary.SUB, lhs, rhs)
+    def *(rhs: DataExpr) = BinOpExpr(Operators.Binary.MUL, lhs, rhs)
+    def /(rhs: DataExpr) = BinOpExpr(Operators.Binary.DIV, lhs, rhs)
+    def %(rhs: DataExpr) = BinOpExpr(Operators.Binary.MOD, lhs, rhs)
+    def >(rhs: DataExpr) = BinOpExpr(Operators.Binary.GT, lhs, rhs)
+    def <(rhs: DataExpr) = BinOpExpr(Operators.Binary.LT, lhs, rhs)
+    def unary_- = UnaryOpExpr(Operators.Unary.NEG, lhs)
   }
 
   implicit class CallLambdaExpr[T <: PhraseType](fun: Expr[ExpType -> T]) {
@@ -47,24 +46,6 @@ package object DSL {
     }
   }
 
-//  implicit class SequentialComposition(c1: Phrase[CommandType]) {
-//    def `;`(c2: Phrase[CommandType]): Phrase[CommandType] = Seq(c1, c2)
-//  }
-//
-//  implicit class Assignment(lhs: Phrase[AccType]) {
-//    def :=(rhs: Phrase[ExpType]): Assign = {
-//      (lhs.t, rhs.t) match {
-//        case (AccType(dt1), ExpType(dt2))
-//          if dt1 == dt2 && dt1.isInstanceOf[BasicType] =>
-//          Assign(dt1.asInstanceOf[BasicType], lhs, rhs)
-//        case _ => Assign(null, lhs, rhs)
-//      }
-//    }
-//  }
-//
-//  implicit def toPair[T1 <: PhraseType, T2 <: PhraseType](pair: (Phrase[T1], Phrase[T2])): Pair[T1, T2] =
-//    Pair(pair._1, pair._2)
-
   implicit def toLiteralInt(i: Int): LiteralExpr = LiteralExpr(i, int)
   implicit def toLiteralFloat(f: Float): LiteralExpr = LiteralExpr(FloatData(f), float)
   implicit def toLiteralFloat4(v: VectorData): LiteralExpr =
@@ -87,25 +68,5 @@ package object DSL {
   implicit class ExpPhraseExtensions(e: DataExpr) {
     def _1 = Fst(e)
     def _2 = Snd(e)
-
-//    def `@`(index: Phrase[ExpType]): Idx = (index.t, e.t) match {
-//      case (ExpType(IndexType(n)), ExpType(ArrayType(n_, dt))) if n == n_ =>
-//        Idx(n, dt, index, e)
-//      case _ => Idx(null, null, index, e)
-//    }
-
   }
-
-//  implicit class AccPhraseExtensions(a: Phrase[AccType]) {
-//    def `@`(index: Phrase[ExpType]): IdxAcc = (index.t, a.t) match {
-//      case (ExpType(IndexType(n)), AccType(ArrayType(n_, dt))) if n == n_ =>
-//        IdxAcc(n, dt, index, a)
-//      case _ => IdxAcc(null, null, index, a)
-//    }
-//  }
-
-//  implicit class VarExtensions(v: Phrase[VarType]) {
-//    def rd: Proj1[ExpType, AccType] = π1(v)
-//    def wr: Proj2[ExpType, AccType] = π2(v)
-//  }
 }

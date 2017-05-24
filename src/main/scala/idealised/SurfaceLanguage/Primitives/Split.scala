@@ -1,6 +1,6 @@
 package idealised.SurfaceLanguage.Primitives
 
-import idealised.DPIA.Types.{ExpressionToPhrase, _}
+import idealised.DPIA.Types.{TypeInference, _}
 import idealised.DPIA._
 import idealised.DPIA.Phrases.Primitive
 import idealised.{DPIA, SurfaceLanguage}
@@ -9,13 +9,13 @@ import idealised.SurfaceLanguage.PrimitiveExpr
 
 final case class Split(n: Nat, array: DataExpr) extends PrimitiveExpr {
 
-  override def inferTypes(subs: ExpressionToPhrase.SubstitutionMap): Primitive[ExpType] = {
-    import ExpressionToPhrase._
-    val array_ = ExpressionToPhrase(array, subs)
+  override def inferTypes(subs: TypeInference.SubstitutionMap): Primitive[ExpType] = {
+    import TypeInference._
+    val array_ = TypeInference(array, subs)
     array_.t match {
       case ExpType(ArrayType(mn_, dt_)) =>
         DPIA.FunctionalPrimitives.Split(n, mn_ /^ n, dt_, array_)
-      case x => error(x.toString, "ArrayType")
+      case x => error(this, x.toString, "exp[n.dt]")
     }
   }
 

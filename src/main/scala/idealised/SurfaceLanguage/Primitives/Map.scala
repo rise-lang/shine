@@ -15,9 +15,9 @@ abstract class AbstractMap(f: Expr[ExpType -> ExpType], array: DataExpr)
   def makePhraseMap: (Nat, DataType, DataType, Phrase[ExpType -> ExpType], Phrase[ExpType]) =>
     idealised.DPIA.FunctionalPrimitives.AbstractMap
 
-  override def inferTypes(subs: ExpressionToPhrase.SubstitutionMap): Primitive[ExpType] = {
-    import ExpressionToPhrase._
-    val array_ = ExpressionToPhrase(array, subs)
+  override def inferTypes(subs: TypeInference.SubstitutionMap): Primitive[ExpType] = {
+    import TypeInference._
+    val array_ = TypeInference(array, subs)
     array_.t match {
       case ExpType(ArrayType(n_, dt1_)) =>
         val f_ = setParamAndInferType(f, exp"[$dt1_]", subs)
@@ -26,11 +26,11 @@ abstract class AbstractMap(f: Expr[ExpType -> ExpType], array: DataExpr)
             if (dt1_ == dt1__) {
               makePhraseMap(n_, dt1_, dt2_, f_, array_)
             } else {
-              error(s"$dt1__", s"$dt1_")
+              error(this, s"$dt1__", s"$dt1_")
             }
-          case x => error(x.toString, "FunctionType")
+          case x => error(this, x.toString, "exp[dt1] -> exp[dt2]")
         }
-      case x => error(x.toString, "ArrayType")
+      case x => error(this, x.toString, "exp[n.dt]")
     }
   }
 

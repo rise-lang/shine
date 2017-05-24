@@ -1,7 +1,7 @@
 
 import idealised.DPIA.Phrases.PrettyPhrasePrinter
 import idealised.DPIA._
-import idealised.DPIA.Types.{ArrayType, ExpType, ExpressionToPhrase, float}
+import idealised.DPIA.Types.{ArrayType, ExpType, TypeInference, float}
 import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.OpenCL._
 import idealised.OpenCL.SurfaceLanguage._
@@ -27,13 +27,12 @@ object dot extends App {
 
   def printOpenCLKernel1(name: String,
                          untypedLambda: Expr[ExpType -> (ExpType -> ExpType)]): Unit = {
-    val lambda = ExpressionToPhrase(untypedLambda, Map())
-    println(name + ":\n" + PrettyPhrasePrinter(lambda))
-    lambda.typeCheck()
+//    val lambda = TypeInference(untypedLambda, Map())
+//    println(name + ":\n" + PrettyPhrasePrinter(lambda))
+//
+//    println(s"-- $name --")
 
-    println(s"-- $name --")
-
-    val kernel = CodeGenerator.makeKernel(lambda, localSize = 128, globalSize = N)
+    val kernel = CodeGenerator.makeKernel(untypedLambda, localSize = 128, globalSize = N)
     println(kernel.code)
 
     val fun = kernel.asFunction[(Array[Float] :: Array[Float] :: Nil) =:=> Array[Float]]
@@ -60,7 +59,7 @@ object dot extends App {
 
   def printOpenCLKernel2(name: String,
                          untypedLambda: Expr[ExpType -> ExpType]): Unit = {
-    val lambda = ExpressionToPhrase(untypedLambda, Map())
+    val lambda = TypeInference(untypedLambda, Map())
     println(name + ":\n" + PrettyPhrasePrinter(lambda))
     lambda.typeCheck()
 
@@ -89,7 +88,7 @@ object dot extends App {
   }
 
   val mult = λ(x => x._1 * x._2)
-  val add = λ(x => λ(a => x + a))
+  val add = λ((x, a) => x + a)
 
 //  val high_level = λ(xsT)(xs => λ(ysT)(ys =>
 //    reduce(add, 0.0f) o map(mult) $ zip(xs, ys)

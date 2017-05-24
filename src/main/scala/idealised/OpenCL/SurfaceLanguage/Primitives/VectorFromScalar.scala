@@ -3,20 +3,20 @@ package idealised.OpenCL.SurfaceLanguage.Primitives
 import idealised.utils._
 import idealised.DPIA._
 import idealised.DPIA.Phrases.Primitive
-import idealised.DPIA.Types.{ExpType, ExpressionToPhrase, ScalarType}
+import idealised.DPIA.Types.{ExpType, TypeInference, ScalarType}
 import idealised.SurfaceLanguage
 import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.SurfaceLanguage.PrimitiveExpr
 
 final case class VectorFromScalar(n: Nat, arg: DataExpr) extends PrimitiveExpr {
 
-  override def inferTypes(subs: ExpressionToPhrase.SubstitutionMap): Primitive[ExpType] = {
-    import ExpressionToPhrase._
-    val arg_ = ExpressionToPhrase(arg, subs)
+  override def inferTypes(subs: TypeInference.SubstitutionMap): Primitive[ExpType] = {
+    import TypeInference._
+    val arg_ = TypeInference(arg, subs)
     arg_.t match {
       case ExpType(dt_) if dt_.isInstanceOf[ScalarType] =>
         idealised.OpenCL.FunctionalPrimitives.VectorFromScalar(n, dt_.asInstanceOf[ScalarType], arg_)
-      case x => error(x.toString, "ExpType(ScalarType)")
+      case x => error(this, x.toString, "exp[st]")
     }
   }
 

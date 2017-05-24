@@ -111,13 +111,7 @@ object Lifting {
   def liftPair[T1 <: PhraseType, T2 <: PhraseType](p: Phrase[T1 x T2]): (Phrase[T1], Phrase[T2]) = {
     p match {
       case i: Identifier[T1 x T2] =>
-        if (i.t == null) {
-          val t1 = null.asInstanceOf[T1]
-          val t2 = null.asInstanceOf[T2]
-          (Identifier[T1](i.name, t1), Identifier[T2](i.name, t2))
-        } else {
-          (Identifier[T1](i.name, i.t.t1), Identifier[T2](i.name, i.t.t2))
-        }
+        (Identifier[T1](i.name, i.t.t1), Identifier[T2](i.name, i.t.t2))
       case pair: Pair[T1, T2] => (pair.fst, pair.snd)
       case app: Apply[_, T1 x T2] =>
         val fun = liftFunction(app.fun)

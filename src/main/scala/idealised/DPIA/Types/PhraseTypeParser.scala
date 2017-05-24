@@ -78,16 +78,16 @@ class PhraseTypeParser(val string: String,
     }
   }
 
-  def parseArrayOrIdxOrRecordOrBaseType(`null`: Any): DataType = {
-    peakToken match {
-      case "x" => nextToken; RecordType(`null`.asInstanceOf[DataType], parseDataType)
-      case "]" => `null`.asInstanceOf[DataType]
-      case ")" => nextToken; parseRecordOrBaseType(`null`.asInstanceOf[DataType])
-      case "." => nextToken; ArrayType(`null`.asInstanceOf[Nat], parseDataType)
-      case "idx" => parseIdxType(`null`.asInstanceOf[Nat])
-      case _ => error
-    }
-  }
+//  def parseArrayOrIdxOrRecordOrBaseType(`null`: Any): DataType = {
+//    peakToken match {
+//      case "x" => nextToken; RecordType(`null`.asInstanceOf[DataType], parseDataType)
+//      case "]" => `null`.asInstanceOf[DataType]
+//      case ")" => nextToken; parseRecordOrBaseType(`null`.asInstanceOf[DataType])
+//      case "." => nextToken; ArrayType(`null`.asInstanceOf[Nat], parseDataType)
+//      case "idx" => parseIdxType(`null`.asInstanceOf[Nat])
+//      case _ => error
+//    }
+//  }
 
   def parseDataType: DataType = {
     if (peakToken == "(") {
@@ -98,7 +98,7 @@ class PhraseTypeParser(val string: String,
       values.next match {
         case n: Nat => parseArrayOrIdxType(n)
         case dt: DataType => parseRecordOrBaseType(dt)
-        case null => parseArrayOrIdxOrRecordOrBaseType(null)
+        //case null => parseArrayOrIdxOrRecordOrBaseType(null)
         case _ => error
       }
     } else error

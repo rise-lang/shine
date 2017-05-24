@@ -53,14 +53,12 @@ abstract class To(dt1: DataType,
     })
 
   override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
-    assert(dt1 != null && dt2 != null)
     import RewriteToImperative._
 
     con(this)(λ( exp"[$dt2]" )(x => acc(x)(A) ))
   }
 
   override def continuationTranslation(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
-    assert(dt1 != null && dt2 != null)
     import RewriteToImperative._
 
     `new`(dt2, addressSpace, tmp => acc(f(input))(tmp.wr) `;` C(tmp.rd) )

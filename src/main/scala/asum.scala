@@ -25,7 +25,7 @@ object asum extends App {
   def runOpenCLKernel(name: String,
                       untypedLambda: Expr[ExpType -> ExpType]): Unit = {
     println("\n----------------")
-    val lambda = ExpressionToPhrase(untypedLambda, Map())
+    val lambda = TypeInference(untypedLambda, Map())
     println(name + ":\n" + PrettyPhrasePrinter(lambda))
     lambda.typeCheck()
 
@@ -61,7 +61,7 @@ object asum extends App {
   )
 
   {
-    val lambda = ExpressionToPhrase(high_level, Map())
+    val lambda = TypeInference(high_level, Map())
     println("high_level:\n" + PrettyPhrasePrinter(lambda))
     lambda.typeCheck()
   }

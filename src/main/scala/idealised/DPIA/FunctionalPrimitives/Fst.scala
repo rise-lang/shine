@@ -2,13 +2,11 @@ package idealised.DPIA.FunctionalPrimitives
 
 import idealised.DPIA.Compilation.RewriteToImperative
 import idealised.DPIA.Semantics.OperationalSemantics._
-import idealised.utils._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
-import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType}
+import idealised.DPIA.Types._
 import idealised.DPIA._
 import idealised.DPIA.DSL._
-import idealised._
 
 import scala.language.reflectiveCalls
 import scala.xml.Elem
@@ -21,7 +19,7 @@ final case class Fst(dt1: DataType,
   override lazy val `type` = exp"[$dt1]"
 
   override def typeCheck(): Unit = {
-    import idealised.DPIA.Types.TypeChecker._
+    import TypeChecker._
     (dt1: DataType) -> (dt2: DataType) ->
       (record :: exp"[$dt1 x $dt2]") -> `type`
   }

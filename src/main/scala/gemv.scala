@@ -1,7 +1,7 @@
 
 import idealised.DPIA.Phrases.PrettyPhrasePrinter
 import idealised.DPIA._
-import idealised.DPIA.Types.{ArrayType, ExpType, ExpressionToPhrase, float}
+import idealised.DPIA.Types.{ArrayType, ExpType, TypeInference, float}
 import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.OpenCL._
 import idealised.SurfaceLanguage.DSL._
@@ -28,7 +28,7 @@ object gemv extends App {
   def runOpenCLKernel(name: String,
                       untypedLambda: Expr[ExpType -> (ExpType -> (ExpType -> (ExpType -> (ExpType -> ExpType))))]): Unit = {
     println("\n----------------")
-    val lambda = ExpressionToPhrase(untypedLambda, Map())
+    val lambda = TypeInference(untypedLambda, Map())
     println(name + ":\n" + PrettyPhrasePrinter(lambda))
     lambda.typeCheck()
 
@@ -76,7 +76,7 @@ object gemv extends App {
       )))))
 
   {
-    val lambda = ExpressionToPhrase(high_level, Map())
+    val lambda = TypeInference(high_level, Map())
     println("high_level:\n" + PrettyPhrasePrinter(lambda))
     lambda.typeCheck()
   }

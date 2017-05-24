@@ -1,10 +1,9 @@
 package idealised.SurfaceLanguage
 
-import idealised.DPIA.Phrases._
-import idealised.DPIA.Semantics.OperationalSemantics
-import idealised.DPIA.Types._
 import idealised.DPIA._
+import idealised.DPIA.Types._
 import idealised.SurfaceLanguage.DSL.DataExpr
+import idealised.DPIA.Semantics.OperationalSemantics
 
 sealed trait Expr[T <: PhraseType]
 
@@ -24,14 +23,14 @@ final case class TypeDependentApplyExpr[T <: PhraseType](fun: Expr[`(dt)->`[T]],
 
 final case class IfThenElseExpr[T <: PhraseType](cond: DataExpr, thenE: Expr[T], elseE: Expr[T]) extends Expr[T]
 
-final case class UnaryOpExpr(op: UnaryOp.Op.Value, e: DataExpr) extends DataExpr
+final case class UnaryOpExpr(op: Operators.Unary.Value, e: DataExpr) extends DataExpr
 
-final case class BinOpExpr(op: BinOp.Op.Value, lhs: DataExpr, rhs: DataExpr) extends DataExpr
+final case class BinOpExpr(op: Operators.Binary.Value, lhs: DataExpr, rhs: DataExpr) extends DataExpr
 
 final case class LiteralExpr(d: OperationalSemantics.Data, dt: DataType) extends DataExpr
 
 trait PrimitiveExpr extends DataExpr {
-  def inferTypes(subs: ExpressionToPhrase.SubstitutionMap): Primitive[ExpType]
+  def inferTypes(subs: TypeInference.SubstitutionMap): Phrases.Primitive[ExpType]
 
   def visitAndRebuild(f: VisitAndRebuild.Visitor): DataExpr
 }
@@ -52,5 +51,21 @@ object Expr {
     }
 
     VisitAndRebuild(in, Visitor)
+  }
+}
+
+object Operators {
+  object Unary extends Enumeration {
+    val NEG = Value("-")
+  }
+
+  object Binary extends Enumeration {
+    val ADD = Value("+")
+    val SUB = Value("-")
+    val MUL = Value("*")
+    val DIV = Value("/")
+    val MOD = Value("%")
+    val GT = Value(">")
+    val LT = Value("<")
   }
 }

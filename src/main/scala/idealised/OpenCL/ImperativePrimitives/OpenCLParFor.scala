@@ -34,7 +34,7 @@ abstract class OpenCLParFor(n: Nat,
 
     val range = RangeAdd(init, n, step)
 
-    env.ranges(name) = range
+    val updatedEnv = env.updatedRanges(name, range)
 
     val i = identifier(name, exp"[idx($n)]")
     val body_ = Lifting.liftFunction( Lifting.liftFunction(body)(i) )
@@ -55,7 +55,7 @@ abstract class OpenCLParFor(n: Nat,
       AssignmentExpression(ArithExpression(v), ArithExpression(v + step))
     }
 
-    val bodyBlock = (b: Block) => CodeGenerator.cmd(body_(out_at_i), b, env)
+    val bodyBlock = (b: Block) => CodeGenerator.cmd(body_(out_at_i), b, updatedEnv)
 
     range.numVals match {
       case Cst(0) =>
@@ -84,8 +84,6 @@ abstract class OpenCLParFor(n: Nat,
         }
 
     }
-
-    env.ranges.remove(name)
 
     (block: Block) += synchronize
   }

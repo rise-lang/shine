@@ -27,7 +27,6 @@ object VisitAndRebuild {
               case ExpType(dt) => ExpType(v(dt))
               case AccType(dt) => AccType(v(dt))
               case PairType(ExpType(dt1), AccType(dt2)) if dt1 == dt2 => VarType(v(dt1))
-              case null => null
               case _ => throw new Exception("This should not happen")
             }
             Identifier(i.name, t)

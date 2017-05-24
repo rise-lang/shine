@@ -62,8 +62,6 @@ abstract class AbstractReduce(n: Nat,
   override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
 
-    assert(n != null && dt1 != null && dt2 != null)
-
     con(array)(λ(exp"[$n.$dt1]")(x =>
       con(init)(λ(exp"[$dt2]")(y =>
         makeReduceI(n, dt1, dt2,
@@ -73,8 +71,6 @@ abstract class AbstractReduce(n: Nat,
 
   override def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
     import RewriteToImperative._
-
-    assert(n != null && dt1 != null && dt2 != null)
 
     con(array)(λ(exp"[$n.$dt1]")(x =>
       con(init)(λ(exp"[$dt2]")(y =>

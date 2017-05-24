@@ -53,8 +53,6 @@ final case class Join(n: Nat,
   override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
 
-    assert(n != null && m != null && dt != null)
-
     acc(array)(JoinAcc(n, m, dt, A))
   }
 

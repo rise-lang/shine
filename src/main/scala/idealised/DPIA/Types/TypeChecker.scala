@@ -9,8 +9,7 @@ object TypeChecker {
 
   def apply[T <: PhraseType](phrase: Phrase[T]): Unit = {
     phrase match {
-      case Identifier(_, t) =>
-        if (t == null) { error("null", expected = "a valid type") }
+      case Identifier(_, _) =>
 
       case Lambda(x, p) => x.typeCheck(); p.typeCheck()
 

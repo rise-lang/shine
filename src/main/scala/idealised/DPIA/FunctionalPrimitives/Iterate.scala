@@ -17,13 +17,7 @@ final case class Iterate(n: Nat,
                          array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override lazy val `type`: ExpType = {
-    if (m != null && n != null) {
-      exp"[${m /^ n.pow(k)}.$dt]"
-    } else {
-      exp"[${null}.$dt]"
-    }
-  }
+  override lazy val `type`: ExpType = exp"[${m /^ n.pow(k)}.$dt]"
 
   override def typeCheck(): Unit = {
     import TypeChecker._
@@ -61,7 +55,7 @@ final case class Iterate(n: Nat,
       case _ => throw new Exception("This should not happen")
     }
     <iterate n={ToString(n)} m={ToString(m)} k={ToString(k)} dt={ToString(dt)}>
-      <f type={ToString(l -> (ExpType(ArrayType(l, dt)) -> ExpType(ArrayType(if (l != null && n != null) l /^ n else null, dt))))}>
+      <f type={ToString(l -> (ExpType(ArrayType(l, dt)) -> ExpType(ArrayType(l /^ n, dt))))}>
         {Phrases.xmlPrinter(f)}
       </f>
       <input type={ToString(ExpType(ArrayType(m, dt)))}>
@@ -76,8 +70,6 @@ final case class Iterate(n: Nat,
   override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
     import idealised.DPIA.Compilation.RewriteToImperative._
 
-    assert(n != null && m != null && k != null && dt != null)
-
     con(array)(λ(exp"[$m.$dt]")(x =>
       IterateIAcc(n, m = m /^ n.pow(k), k, dt, A,
         _Λ_(l => λ(acc"[${l /^ n}.$dt]")(o => λ(exp"[$l.$dt]")(x => acc(f(l)(x))(o)))),
@@ -86,8 +78,6 @@ final case class Iterate(n: Nat,
 
   override def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
     import idealised.DPIA.Compilation.RewriteToImperative._
-
-    assert(n != null && m != null && k != null && dt != null)
 
     con(array)(λ(exp"[$m.$dt]")(x =>
       IterateIExp(n, m = m /^ n.pow(k), k, dt, C,

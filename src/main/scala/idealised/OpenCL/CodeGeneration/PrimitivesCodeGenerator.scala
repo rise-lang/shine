@@ -30,7 +30,7 @@ object PrimitivesCodeGenerator {
 
     val name = newName()
 
-    env.ranges(name) = RangeAdd(0, f.n, 1)
+    val updatedEnv = env.updatedRanges(name, RangeAdd(0, f.n, 1))
 
     val init = VarDecl(name, opencl.ir.Int,
       init = ArithExpression(0),
@@ -54,14 +54,12 @@ object PrimitivesCodeGenerator {
       case Cst(1) =>
         (block: Block) +=
           OpenCLAST.Comment("iteration count is exactly 1, no loop emitted")
-        (block: Block) += CodeGenerator.cmd(bodyE(i), Block(Vector(init)), env)
+        (block: Block) += CodeGenerator.cmd(bodyE(i), Block(Vector(init)), updatedEnv)
 
       case _ =>
-        val body_ = CodeGenerator.cmd(bodyE(i), Block(), env)
+        val body_ = CodeGenerator.cmd(bodyE(i), Block(), updatedEnv)
         (block: Block) += ForLoop(init, cond, increment, body_)
     }
-
-    env.ranges.remove(name)
 
     block
   }
@@ -96,7 +94,7 @@ object PrimitivesCodeGenerator {
 
     // for ...
     val loopVar = NamedVar(newName())
-    env.ranges(loopVar.name) = RangeAdd(0, d.k, 1)
+    val updatedEnv = env.updatedRanges(loopVar.name, RangeAdd(0, d.k, 1))
 
     val init = VarDecl(loopVar.name, opencl.ir.Int,
       init = ArithExpression(0),
@@ -114,7 +112,7 @@ object PrimitivesCodeGenerator {
     val bodyEEE = Lifting.liftFunction(bodyEE(out))
 
     val nestedBlock = Block()
-    val body_ = CodeGenerator.cmd(bodyEEE(in), nestedBlock, env)
+    val body_ = CodeGenerator.cmd(bodyEEE(in), nestedBlock, updatedEnv)
 
     (block: Block) += ForLoop(init, cond, increment, body_)
 
@@ -138,9 +136,7 @@ object PrimitivesCodeGenerator {
     // copy result to output
     val CE = Lifting.liftFunction(d.C)(identifier(in.name, ExpType(ArrayType(d.m, d.dt))))
     TypeChecker(CE)
-    (block: Block) += CodeGenerator.cmd(CE, Block(), env)
-
-    env.ranges.remove(loopVar.name)
+    (block: Block) += CodeGenerator.cmd(CE, Block(), updatedEnv)
 
     block
   }

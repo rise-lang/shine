@@ -5,7 +5,7 @@ import idealised.OpenCL.SurfaceLanguage._
 import lift.arithmetic._
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA._
-import idealised.DPIA.Types.{ArrayType, ExpType, ExpressionToPhrase, float}
+import idealised.DPIA.Types.{ArrayType, ExpType, TypeInference, float}
 import idealised.OpenCL.CodeGenerator
 import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.DSL._
@@ -33,7 +33,7 @@ object gemm extends App {
 
   def printOpenCLKernel(name: String,
                         untypedLambda: Expr[ExpType -> (ExpType -> ExpType)]): Unit = {
-    val lambda = ExpressionToPhrase(untypedLambda, Map())
+    val lambda = TypeInference(untypedLambda, Map())
     println(name + ":\n" + PrettyPhrasePrinter(lambda))
     lambda.typeCheck()
 
@@ -105,7 +105,7 @@ object gemm extends App {
   )))))
 
   {
-    val lambda = ExpressionToPhrase(maliGEMM, Map())
+    val lambda = TypeInference(maliGEMM, Map())
     println("maliGEMM:\n" + PrettyPhrasePrinter(lambda))
     lambda.typeCheck()
   }

@@ -5,7 +5,7 @@ import idealised.OpenCL.SurfaceLanguage._
 import lift.arithmetic._
 import idealised.utils.Time.ms
 import idealised.DPIA.Phrases.PrettyPhrasePrinter
-import idealised.DPIA.Types.{ExpressionToPhrase, _}
+import idealised.DPIA.Types.{TypeInference, _}
 import idealised.DPIA._
 import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.DSL._
@@ -31,7 +31,7 @@ object scal extends App {
   def runOpenCLKernel(name: String,
                       untypedLambda: Expr[ExpType ->(ExpType -> ExpType)]): Unit = {
     println("\n----------------")
-    val lambda = ExpressionToPhrase(untypedLambda, Map())
+    val lambda = TypeInference(untypedLambda, Map())
     println(name + ":\n" + PrettyPhrasePrinter(lambda))
     lambda.typeCheck()
 
@@ -72,7 +72,7 @@ object scal extends App {
   ) )
 
   {
-    val lambda = ExpressionToPhrase(high_level, Map())
+    val lambda = TypeInference(high_level, Map())
     println("high_level:\n" + PrettyPhrasePrinter(lambda))
     lambda.typeCheck()
   }
