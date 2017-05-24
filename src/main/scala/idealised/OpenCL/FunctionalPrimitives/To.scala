@@ -1,10 +1,12 @@
 package idealised.OpenCL.FunctionalPrimitives
 
-import idealised._
-import idealised.Core._
-import idealised.Core.OperationalSemantics.{Data, Store}
-import idealised.Compiling.RewriteToImperative
-import idealised.DSL.typed._
+import idealised.DPIA.Semantics.OperationalSemantics.{Data, Store}
+import idealised.DPIA.Compilation.RewriteToImperative
+import idealised.DPIA.Phrases._
+import idealised.DPIA.Semantics.OperationalSemantics
+import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType}
+import idealised.DPIA.{Phrases, _}
+import idealised.DPIA.DSL._
 import idealised.OpenCL.AddressSpace
 
 import scala.xml.Elem
@@ -21,30 +23,11 @@ abstract class To(dt1: DataType,
   override lazy val `type` = exp"[$dt2]"
 
   override def typeCheck(): Unit = {
-    import TypeChecker._
+    import idealised.DPIA.Types.TypeChecker._
     (dt1: DataType) -> (dt2: DataType) ->
       (f :: t"exp[$dt1] -> exp[$dt2]") ->
       (input :: exp"[$dt1]") ->
       `type`
-  }
-
-  override def inferTypes: To = {
-    import TypeInference._
-    val input_ = TypeInference(input)
-    input_.t match {
-      case ExpType(dt1_) =>
-        val f_ = TypeInference.setParamAndInferType(f, exp"[$dt1_]")
-        f_.t match {
-          case FunctionType(ExpType(t1_), ExpType(dt2_)) =>
-            if (dt1_ == t1_) {
-              makeTo(dt1_, dt2_, f_, input_)
-            } else {
-              error(dt1_.toString + " and " + t1_.toString, expected = "them to match")
-            }
-          case x => error(x.toString, "FunctionType")
-        }
-      case x => error(x.toString, "ExpType")
-    }
   }
 
   override def eval(s: Store): Data = OperationalSemantics.eval(s, input)
@@ -59,10 +42,10 @@ abstract class To(dt1: DataType,
   override def xmlPrinter: Elem =
     <to dt1={ToString(dt1)} dt2={ToString(dt2)}>
       <f type={ToString(ExpType(dt1) -> ExpType(dt2))}>
-        {Core.xmlPrinter(f)}
+        {Phrases.xmlPrinter(f)}
       </f>
       <input type={ToString(ExpType(dt1))}>
-        {Core.xmlPrinter(input)}
+        {Phrases.xmlPrinter(input)}
       </input>
     </to>.copy(label = {
       val name = this.getClass.getSimpleName

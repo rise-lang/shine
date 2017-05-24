@@ -1,6 +1,9 @@
 package idealised.OpenCL
 
-import idealised.Core._
+import idealised.utils._
+import idealised.DPIA.Phrases.Identifier
+import idealised.DPIA.Types._
+import idealised.DPIA._
 import ir.Type
 import lift.arithmetic.{ArithExpr, Cst, Var}
 import opencl.executor._

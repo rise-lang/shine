@@ -1,8 +1,11 @@
 package idealised.OpenCL.CodeGeneration
 
 import idealised._
-import idealised.Core._
-import idealised.ImperativePrimitives._
+import idealised.DPIA.Phrases.{VisitAndRebuild, _}
+import idealised.DPIA.Types._
+import idealised.DPIA._
+import idealised.DPIA.DSL._
+import idealised.DPIA.ImperativePrimitives._
 import idealised.OpenCL.ImperativePrimitives.OpenCLParFor
 
 object HoistMemoryAllocations {
@@ -92,7 +95,6 @@ object HoistMemoryAllocations {
                                  oldBody: Phrase[CommandType],
                                  i: Identifier[ExpType],
                                  n: Nat): (Identifier[VarType], Phrase[CommandType]) = {
-        import idealised.DSL.typed._
         // Create `newParam' with a new type ...
         val newParam = Identifier(oldParam.name, VarType(dt=ArrayType(n, oldParam.t.t1.dataType)))
         // ... and substitute all occurrences of the oldParam with

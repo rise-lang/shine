@@ -1,10 +1,13 @@
 package idealised.OpenCL.CodeGeneration
 
 import idealised._
-import idealised.Core._
-import idealised.DSL.typed.identifier
-import idealised.FunctionalPrimitives._
-import idealised.ImperativePrimitives._
+import idealised.DPIA.Phrases.{Identifier, Phrase}
+import idealised.DPIA.Semantics.OperationalSemantics
+import idealised.DPIA.Types._
+import idealised.DPIA._
+import idealised.DPIA.DSL._
+import idealised.DPIA.FunctionalPrimitives._
+import idealised.DPIA.ImperativePrimitives._
 import idealised.OpenCL.CodeGenerator
 import idealised.OpenCL.ImperativePrimitives.OpenCLParFor
 import lift.arithmetic._
@@ -157,14 +160,14 @@ object PrimitivesCodeGenerator {
     CodeGenerator.cmd(f_(v_), block, env)
   }
 
-  def toOpenCL(s: idealised.ImperativePrimitives.Seq,
+  def toOpenCL(s: idealised.DPIA.ImperativePrimitives.Seq,
                block: Block,
                env: CodeGenerator.Environment): Block = {
     CodeGenerator.cmd(s.c1, block, env)
     CodeGenerator.cmd(s.c2, block, env)
   }
 
-  def toOpenCL(s: idealised.ImperativePrimitives.Skip,
+  def toOpenCL(s: idealised.DPIA.ImperativePrimitives.Skip,
                block: Block,
                env: CodeGenerator.Environment): Block = {
     (block: Block) += OpenCLAST.Comment("skip")
@@ -200,7 +203,6 @@ object PrimitivesCodeGenerator {
                arrayAccess: List[(ArithExpr, ArithExpr)],
                tupleAccess: List[ArithExpr],
                dt: DataType): Expression = {
-    import idealised.DSL.typed._
 
     val idx = arrayAccess.head
     val stack = arrayAccess.tail

@@ -1,14 +1,14 @@
 package idealised.OpenCL.FunctionalPrimitives
 
-import idealised.Compiling.RewriteToImperative
-import idealised.Core
-import idealised.Core.OperationalSemantics.{Data, Store}
-import idealised.Core.VisitAndRebuild.Visitor
-import idealised.Core._
-import idealised.DSL.typed._
-import idealised.OpenCL.CodeGenerator
+import idealised.DPIA.Compilation.RewriteToImperative
+import idealised.DPIA.Semantics.OperationalSemantics.{Data, Store}
+import idealised.DPIA.Phrases.VisitAndRebuild.Visitor
+import idealised.DPIA.Phrases._
+import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType}
+import idealised.DPIA._
+import idealised.DPIA.DSL._
+import idealised.OpenCL.{CodeGenerator, GeneratableExp}
 import idealised.OpenCL.CodeGenerator.Environment
-import idealised.OpenCL.Core.GeneratableExp
 import opencl.generator.OpenCLAST.{Expression, FunctionCall}
 
 import scala.language.reflectiveCalls
@@ -24,16 +24,10 @@ final case class OpenCLFunction(name: String,
   override lazy val `type` = exp"[$outT]"
 
   override def typeCheck(): Unit = {
-    import TypeChecker._
+    import idealised.DPIA.Types.TypeChecker._
     (inTs zip args).foreach{
       case (inT, arg) => arg :: exp"[$inT]"
     }
-  }
-
-  override def inferTypes: OpenCLFunction = {
-    val args_ = args.map(TypeInference(_))
-    val dts = args_.map(_.t.dataType)
-    OpenCLFunction(name, dts, outT, args_)
   }
 
   override def visitAndRebuild(f: Visitor): Phrase[ExpType] = {
@@ -50,7 +44,7 @@ final case class OpenCLFunction(name: String,
 
   override def xmlPrinter: Elem =
     <OpenCLFunction name={ToString(name)} inTs={ToString(inTs)} outT={ToString(outT)}>
-      {args.map(Core.xmlPrinter(_))}
+      {args.map(Phrases.xmlPrinter(_))}
     </OpenCLFunction>
 
   override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {

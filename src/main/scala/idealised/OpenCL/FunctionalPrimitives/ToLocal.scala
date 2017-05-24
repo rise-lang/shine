@@ -1,7 +1,9 @@
 package idealised.OpenCL.FunctionalPrimitives
 
-import idealised._
-import idealised.Core._
+import idealised.DPIA.Types._
+import idealised.DPIA._
+import idealised.DPIA.Phrases.Phrase
+import idealised.OpenCL
 
 final case class ToLocal(dt1: DataType,
                          dt2: DataType,

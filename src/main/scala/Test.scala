@@ -1,10 +1,10 @@
 
 import idealised._
-import idealised.Core._
-import idealised.DSL.untyped._
-import idealised.Compiling.{RewriteToImperative, SubstituteImplementations}
+import idealised.utils._
+
+import idealised.DPIA.Compilation.{RewriteToImperative, SubstituteImplementations}
 import idealised.OpenCL.CodeGenerator
-import idealised.OpenCL.DSL._
+import idealised.OpenCL.SurfaceLanguage._
 import lift.arithmetic._
 import opencl.generator.OpenCLPrinter
 

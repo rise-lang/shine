@@ -1,11 +1,13 @@
 
-import idealised.Core._
-import idealised.DSL.untyped._
+import idealised.DPIA.Phrases.PrettyPhrasePrinter
+import idealised.DPIA._
+import idealised.DPIA.Types.{ArrayType, ExpType, ExpressionToPhrase, float}
+import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.OpenCL._
-import idealised.OpenCL.DSL._
+import idealised.SurfaceLanguage.DSL._
+import idealised.SurfaceLanguage.Expr
 import lift.arithmetic._
 import opencl.executor.Executor
-import opencl.generator.OpenCLPrinter
 
 import scala.language.implicitConversions
 import scala.util.Random
@@ -24,7 +26,7 @@ object gemv extends App {
   val matT = ExpType(ArrayType(M, ArrayType(N, dataT)))
 
   def runOpenCLKernel(name: String,
-                      untypedLambda: Expr[ExpType -> (ExpType -> (ExpType -> (ExpType -> (ExpType -> ExpType))))]) = {
+                      untypedLambda: Expr[ExpType -> (ExpType -> (ExpType -> (ExpType -> (ExpType -> ExpType))))]): Unit = {
     println("\n----------------")
     val lambda = ExpressionToPhrase(untypedLambda, Map())
     println(name + ":\n" + PrettyPhrasePrinter(lambda))

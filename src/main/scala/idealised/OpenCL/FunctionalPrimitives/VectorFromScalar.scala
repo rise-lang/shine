@@ -1,14 +1,13 @@
 package idealised.OpenCL.FunctionalPrimitives
 
-import idealised.Compiling.RewriteToImperative
-import idealised.Core
-import idealised.Core.OperationalSemantics.{Data, Store}
-import idealised.Core.VisitAndRebuild.Visitor
-import idealised.Core.{ExpType, Phrase, ScalarType, _}
-import idealised.DSL.typed._
-import idealised.OpenCL.CodeGenerator
+import idealised.DPIA.Compilation.RewriteToImperative
+import idealised.DPIA.Phrases.{VisitAndRebuild, _}
+import idealised.DPIA.Semantics.OperationalSemantics.{Data, Store}
+import idealised.DPIA.Types._
+import idealised.DPIA._
+import idealised.DPIA.DSL._
+import idealised.OpenCL.{CodeGenerator, GeneratableExp}
 import idealised.OpenCL.CodeGenerator.Environment
-import idealised.OpenCL.Core.GeneratableExp
 import opencl.generator.OpenCLAST.{Expression, VectorLiteral}
 
 import scala.xml.Elem
@@ -26,17 +25,7 @@ final case class VectorFromScalar(n: Nat,
       (arg :: exp"[$dt]") -> `type`
   }
 
-  override def inferTypes: VectorFromScalar = {
-    import TypeInference._
-    val arg_ = TypeInference(arg)
-    arg_.t match {
-      case ExpType(dt_) if dt_.isInstanceOf[ScalarType] =>
-        VectorFromScalar(n, dt_.asInstanceOf[ScalarType], arg_)
-      case x => error(x.toString, "ExpType(ScalarType)")
-    }
-  }
-
-  override def visitAndRebuild(f: Visitor): Phrase[ExpType] = {
+  override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     VectorFromScalar(f(n), f(dt), VisitAndRebuild(arg, f))
   }
 
@@ -52,7 +41,7 @@ final case class VectorFromScalar(n: Nat,
 
   override def xmlPrinter: Elem =
     <makeVector n={ToString(n)}>
-      {Core.xmlPrinter(arg)}
+      {Phrases.xmlPrinter(arg)}
     </makeVector>
 
   override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {

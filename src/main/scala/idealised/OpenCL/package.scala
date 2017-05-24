@@ -8,7 +8,7 @@ package object OpenCL {
   case object Sequential extends ParallelismLevel
 
 
-  sealed trait AddressSpace extends idealised.Core.AddressSpace
+  sealed trait AddressSpace extends DPIA.AddressSpace
   case object GlobalMemory extends AddressSpace
   case object LocalMemory extends AddressSpace
   case object PrivateMemory extends AddressSpace

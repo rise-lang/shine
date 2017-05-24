@@ -1,16 +1,17 @@
 package idealised.OpenCL
 
-import idealised.Compiling._
-import idealised.Core.OperationalSemantics._
-import idealised.Core._
-import idealised.DSL.typed._
-import idealised.FunctionalPrimitives._
-import idealised.ImperativePrimitives._
+import idealised.DPIA.Compilation._
+import idealised.DPIA.Semantics.OperationalSemantics._
+import idealised.DPIA.Phrases._
+import idealised.DPIA.Types._
+import idealised.DPIA._
+import idealised.DPIA.DSL._
+import idealised.DPIA.FunctionalPrimitives._
+import idealised.DPIA.ImperativePrimitives._
 import idealised.OpenCL.CodeGeneration.HoistMemoryAllocations.AllocationInfo
 import idealised.OpenCL.CodeGeneration.PrimitivesCodeGenerator._
 import idealised.OpenCL.CodeGeneration.HoistMemoryAllocations
-import idealised.OpenCL.Core.{GeneratableComm, GeneratableExp, ViewAcc, ViewExp}
-import idealised._
+import idealised.{DPIA, _}
 import ir.{Type, UndefType}
 import opencl.generator.OpenCLAST
 import opencl.generator.OpenCLAST._
@@ -39,7 +40,7 @@ object CodeGenerator {
 
   private def makeKernel(p: Phrase[ExpType], params: List[Identifier[ExpType]],
                          localSize: Nat, globalSize: Nat): OpenCL.Kernel = {
-    val p1 = inferTypes(p)
+    val p1 = checkTypes(p)
 
     val outParam = createOutputParam(outT = p1.t)
 
@@ -59,8 +60,9 @@ object CodeGenerator {
     )
   }
 
-  private def inferTypes(p: Phrase[ExpType]): Phrase[ExpType] = {
-    val p1 = TypeInference(p)
+  private def checkTypes(p: Phrase[ExpType]): Phrase[ExpType] = {
+    val p1 = p
+//    val p1 = TypeInference(p)
     xmlPrinter.writeToFile("/tmp/p1.xml", p1)
     TypeChecker(p1)
     p1
@@ -174,7 +176,7 @@ object CodeGenerator {
 
   def cmd(p: Phrase[CommandType], block: Block, env: Environment): Block = {
     p match {
-      case idealised.Core.IfThenElse(condP, thenP, elseP) =>
+      case DPIA.Phrases.IfThenElse(condP, thenP, elseP) =>
         val trueBlock = cmd(thenP, Block(), env)
         val falseBlock = cmd(elseP, Block(), env)
         (block: Block) += OpenCLAST.IfThenElse(exp(condP, env), trueBlock, falseBlock)
@@ -185,8 +187,8 @@ object CodeGenerator {
       case d: DoubleBufferFor => toOpenCL(d, block, env)
       case f: For => toOpenCL(f, block, env)
       case n: New => toOpenCL(n, block, env)
-      case s: idealised.ImperativePrimitives.Seq => toOpenCL(s, block, env)
-      case s: idealised.ImperativePrimitives.Skip => toOpenCL(s, block, env)
+      case s: idealised.DPIA.ImperativePrimitives.Seq => toOpenCL(s, block, env)
+      case s: idealised.DPIA.ImperativePrimitives.Skip => toOpenCL(s, block, env)
 
       case p: ParFor => toOpenCL(p, block, env)
 
@@ -202,7 +204,7 @@ object CodeGenerator {
       case BinOp(op, lhs, rhs) =>
         BinaryExpression(op.toString, exp(lhs, env), exp(rhs, env))
       case Identifier(name, _) => VarRef(name)
-      case idealised.Core.Literal(d, _) => d match {
+      case DPIA.Phrases.Literal(d, _) => d match {
           case i: IntData     => OpenCLAST.Literal(i.i.toString)
           case b: BoolData    => OpenCLAST.Literal(b.b.toString)
           case f: FloatData   => OpenCLAST.Literal(f.f.toString)
@@ -225,7 +227,7 @@ object CodeGenerator {
       case g: GeneratableExp => g.codeGenExp(env)
 
       case Apply(_, _) | NatDependentApply(_, _) |
-           TypeDependentApply(_, _) | idealised.Core.IfThenElse(_, _, _) | _: ExpPrimitive =>
+           TypeDependentApply(_, _) | DPIA.Phrases.IfThenElse(_, _, _) | _: ExpPrimitive =>
         throw new Exception(s"Don't know how to generate idealised.OpenCL code for $p")
     }
   }
@@ -285,7 +287,7 @@ object CodeGenerator {
       case Apply(_, _) | NatDependentApply(_, _) |
            TypeDependentApply(_, _) |
            BinOp(_, _, _) | UnaryOp(_, _) |
-           idealised.Core.IfThenElse(_, _, _) | idealised.Core.Literal(_, _) | _: ExpPrimitive =>
+           DPIA.Phrases.IfThenElse(_, _, _) | DPIA.Phrases.Literal(_, _) | _: ExpPrimitive =>
         throw new Exception(s"Don't know how to generate idealised.OpenCL code for $p")
     }
   }
@@ -309,7 +311,7 @@ object CodeGenerator {
       case t: TruncAcc  => toOpenCL(t, value, env, t.t.dataType, List(), List())
 
       case Apply(_, _) | NatDependentApply(_, _) |
-           TypeDependentApply(_, _) | idealised.Core.IfThenElse(_, _, _) | _: AccPrimitive =>
+           TypeDependentApply(_, _) | DPIA.Phrases.IfThenElse(_, _, _) | _: AccPrimitive =>
         throw new Exception(s"Don't know how to generate idealised.OpenCL code for $p")
     }
   }
@@ -364,7 +366,7 @@ object CodeGenerator {
       case p: Proj2[_, AccType] => acc(Lifting.liftPair(p.pair)._2, value, env, dt, arrayAccess, tupleAccess)
 
       case Apply(_, _) | NatDependentApply(_, _) |
-           TypeDependentApply(_, _) | idealised.Core.IfThenElse(_, _, _) | _: AccPrimitive =>
+           TypeDependentApply(_, _) | DPIA.Phrases.IfThenElse(_, _, _) | _: AccPrimitive =>
         throw new Exception(s"Don't know how to generate idealised.OpenCL code for $p")
     }
   }
@@ -390,8 +392,8 @@ object CodeGenerator {
   def toString(dt: DataType): String = {
     dt match {
       case b: BasicType => b match {
-        case idealised.Core.bool | idealised.Core.int => "int"
-        case idealised.Core.float => "float"
+        case Types.bool | Types.int => "int"
+        case Types.float => "float"
         case _: IndexType => "int"
         case v: VectorType => toString(v.elemType) + v.size.toString
       }

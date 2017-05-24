@@ -1,8 +1,13 @@
 
-import idealised.Core._
-import idealised.DSL.untyped._
+import idealised.utils._
+import idealised.DPIA.Phrases.PrettyPhrasePrinter
+import idealised.DPIA.Types._
+import idealised.DPIA._
+import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.OpenCL._
-import idealised.OpenCL.DSL._
+import idealised.OpenCL.SurfaceLanguage._
+import idealised.SurfaceLanguage.DSL._
+import idealised.SurfaceLanguage.Expr
 import lift.arithmetic._
 import opencl.executor.Executor
 

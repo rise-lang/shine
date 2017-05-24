@@ -1,10 +1,12 @@
 package idealised.OpenCL.ImperativePrimitives
 
-import idealised.Core._
-import idealised.DSL.typed._
-import idealised.ImperativePrimitives.AbstractParFor
-import idealised.OpenCL.CodeGenerator
-import idealised.OpenCL.Core.GeneratableComm
+import idealised.DPIA.Phrases.Phrase
+import idealised.DPIA.Types._
+import idealised.DPIA._
+import idealised.DPIA.DSL.identifier
+import idealised.DPIA.DSL._
+import idealised.DPIA.ImperativePrimitives.AbstractParFor
+import idealised.OpenCL.{CodeGenerator, GeneratableComm}
 import lift.arithmetic.{Cst, NamedVar, RangeAdd}
 import opencl.generator.OpenCLAST
 import opencl.generator.OpenCLAST.{Block, BlockMember}

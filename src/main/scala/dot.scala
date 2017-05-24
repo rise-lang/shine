@@ -1,14 +1,14 @@
 
-import idealised._
-import idealised.Core._
-import idealised.Core.OperationalSemantics.FloatData
-import idealised.DSL.untyped._
+import idealised.DPIA.Phrases.PrettyPhrasePrinter
+import idealised.DPIA._
+import idealised.DPIA.Types.{ArrayType, ExpType, ExpressionToPhrase, float}
+import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.OpenCL._
-import idealised.OpenCL.DSL._
+import idealised.OpenCL.SurfaceLanguage._
+import idealised.SurfaceLanguage.DSL._
+import idealised.SurfaceLanguage.Expr
 import lift.arithmetic._
-import opencl.generator.OpenCLAST.Block
 import opencl.executor.Executor
-import opencl.generator.OpenCLPrinter
 
 import scala.language.implicitConversions
 import scala.util.Random

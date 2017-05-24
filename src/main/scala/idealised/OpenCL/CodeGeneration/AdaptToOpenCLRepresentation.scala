@@ -1,6 +1,7 @@
 package idealised.OpenCL.CodeGeneration
 
-import idealised.Core.{ExpType, Identifier}
+import idealised.DPIA.Phrases.Identifier
+import idealised.DPIA.Types.ExpType
 import ir._
 import opencl.generator.OpenCLAST._
 import opencl.ir._

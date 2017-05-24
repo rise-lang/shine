@@ -1,10 +1,10 @@
 package idealised.OpenCL.ImperativePrimitives
 
-import idealised._
-import idealised.Core._
-import idealised.Core.OperationalSemantics._
-import idealised.OpenCL.CodeGenerator
-import idealised.OpenCL.Core.ViewAcc
+import idealised.DPIA.Phrases._
+import idealised.DPIA.Semantics.OperationalSemantics._
+import idealised.DPIA.Types._
+import idealised.DPIA._
+import idealised.OpenCL.{CodeGenerator, ViewAcc}
 import opencl.generator.OpenCLAST.Expression
 
 import scala.xml.Elem
@@ -18,7 +18,7 @@ final case class AsScalarAcc(n: Nat,
   override lazy val `type` = acc"[$n.${VectorType(m, dt)}]"
 
   override def typeCheck(): Unit = {
-    import TypeChecker._
+    import idealised.DPIA.Types.TypeChecker._
     (n: Nat) -> (m: Nat) -> (dt: ScalarType) ->
       (array :: acc"[${m * n}.$dt]") -> `type`
   }
@@ -52,6 +52,6 @@ final case class AsScalarAcc(n: Nat,
 
   override def xmlPrinter: Elem =
     <asScalarAcc n={ToString(n)} m={ToString(m)}>
-      {Core.xmlPrinter(array)}
+      {Phrases.xmlPrinter(array)}
     </asScalarAcc>
 }

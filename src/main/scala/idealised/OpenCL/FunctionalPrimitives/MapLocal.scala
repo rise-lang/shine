@@ -1,7 +1,9 @@
 package idealised.OpenCL.FunctionalPrimitives
 
-import idealised.Core._
-import idealised.FunctionalPrimitives.AbstractMap
+import idealised.DPIA._
+import idealised.DPIA.Types.{DataType, ExpType}
+import idealised.DPIA.Phrases.Phrase
+import idealised.DPIA.FunctionalPrimitives.AbstractMap
 import idealised.OpenCL.IntermediatePrimitives.MapLocalI
 
 final case class MapLocal(n: Nat,

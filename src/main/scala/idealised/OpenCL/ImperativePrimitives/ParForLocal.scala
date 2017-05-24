@@ -1,7 +1,10 @@
 package idealised.OpenCL.ImperativePrimitives
 
 import idealised._
-import idealised.Core._
+import idealised.utils._
+import idealised.DPIA.Phrases.Phrase
+import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType}
+import idealised.DPIA._
 import lift.arithmetic.{?, ContinuousRange, PosInf, RangeAdd}
 import opencl.generator.OpenCLAST._
 import opencl.generator.{OclFunction, get_local_id, get_local_size}

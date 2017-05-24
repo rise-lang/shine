@@ -1,12 +1,12 @@
 package idealised.OpenCL.FunctionalPrimitives
 
-import idealised._
-import idealised.Core._
-import idealised.Core.OperationalSemantics._
-import idealised.Compiling.RewriteToImperative
-import idealised.DSL.typed._
-import idealised.OpenCL.CodeGenerator
-import idealised.OpenCL.Core.ViewExp
+import idealised.DPIA.Semantics.OperationalSemantics._
+import idealised.DPIA.Compilation.RewriteToImperative
+import idealised.DPIA.Phrases._
+import idealised.DPIA.Types._
+import idealised.DPIA._
+import idealised.DPIA.DSL._
+import idealised.OpenCL.{CodeGenerator, ViewExp}
 import idealised.OpenCL.ImperativePrimitives.AsScalarAcc
 import opencl.generator.OpenCLAST.Expression
 import ir.Type
@@ -25,16 +25,6 @@ final case class AsScalar(n: Nat,
     import TypeChecker._
     (n: Nat) -> (m: Nat) -> (dt: ScalarType) ->
       (array :: exp"[$n.${VectorType(m, dt)}]") -> `type`
-  }
-
-  override def inferTypes: AsScalar = {
-    import TypeInference._
-    val array_ = TypeInference(array)
-    array_.t match {
-      case ExpType(ArrayType(n_, VectorType(m_, dt_))) =>
-        AsScalar(n_, m_, dt_, array_)
-      case x => error(x.toString, "ExpType(ArrayType(VectorType))")
-    }
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
@@ -72,7 +62,7 @@ final case class AsScalar(n: Nat,
 
   override def xmlPrinter: Elem =
     <asScalar n={ToString(n)}>
-      {Core.xmlPrinter(array)}
+      {Phrases.xmlPrinter(array)}
     </asScalar>
 
   override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
