@@ -60,9 +60,7 @@ object CodeGenerator {
     )
   }
 
-  private def checkTypes(p: Phrase[ExpType]): Phrase[ExpType] = {
-    val p1 = p
-//    val p1 = TypeInference(p)
+  private def checkTypes(p1: Phrase[ExpType]): Phrase[ExpType] = {
     xmlPrinter.writeToFile("/tmp/p1.xml", p1)
     TypeChecker(p1)
     p1
@@ -75,7 +73,7 @@ object CodeGenerator {
   private def rewriteToImperative(p: Phrase[ExpType], a: Phrase[AccType]): Phrase[CommandType] = {
     val p2 = RewriteToImperative.acc(p)(a)
     xmlPrinter.writeToFile("/tmp/p2.xml", p2)
-    TypeChecker(p2)
+    TypeChecker(p2) // TODO: only in debug
     p2
   }
 
@@ -83,14 +81,14 @@ object CodeGenerator {
     val p3 = SubstituteImplementations(p,
       SubstituteImplementations.Environment(immutable.Map(("output", OpenCL.GlobalMemory))))
     xmlPrinter.writeToFile("/tmp/p3.xml", p3)
-    TypeChecker(p3)
+    TypeChecker(p3) // TODO: only in debug
     p3
   }
 
   private def hoistMemoryAllocations(p: Phrase[CommandType]): (Phrase[CommandType], List[AllocationInfo]) = {
     val (p4, intermediateAllocations) = HoistMemoryAllocations(p)
     xmlPrinter.writeToFile("/tmp/p4.xml", p4)
-    TypeChecker(p4)
+    TypeChecker(p4) // TODO: only in debug
     (p4, intermediateAllocations)
   }
 
