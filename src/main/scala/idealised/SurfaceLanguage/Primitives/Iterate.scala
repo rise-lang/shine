@@ -29,18 +29,18 @@ final case class Iterate(k: Nat,
 
                   val n_ = l_n match {
                     case Prod(l__ :: Pow(n1_, Cst(-1)) :: Nil) if l__.equals(l) => n1_
-                    case _ => error(this, "???")//error(s"$l_n", s"${l_ / n}")
+                    case _ => error(this.toString, l_n.toString, "l / n")
                   }
 
                   DPIA.FunctionalPrimitives.Iterate(n_, m_, k, dt_, f_, array_)
                 } else {
-                  error(this, s"expected $l == $l_ && $dt1_ == $dt_ && $dt2_ == $dt_")
+                  error(this.toString, s"expected $l == $l_ && $dt1_ == $dt_ && $dt2_ == $dt_")
                 }
-              case ft => error(this, ft.toString, "(x : Nat) -> (exp[n.dt1] -> exp[m.dt2])")
+              case ft => error(this.toString, s"`${ft.toString}'", "(x : Nat) -> (exp[n.dt1] -> exp[m.dt2])")
             }
-          case _ => error(this, f.toString, NatDependentLambdaExpr.toString)
+          case _ => error(this.toString, s"`${f.toString}'", NatDependentLambdaExpr.toString)
         }
-      case t_ => error(this, t_.toString, "exp[n.dt]")
+      case t_ => error(this.toString, s"`${t_.toString}'", "exp[n.dt]")
     }
   }
 

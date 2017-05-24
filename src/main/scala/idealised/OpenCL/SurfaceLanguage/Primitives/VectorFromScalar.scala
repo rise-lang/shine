@@ -16,7 +16,7 @@ final case class VectorFromScalar(n: Nat, arg: DataExpr) extends PrimitiveExpr {
     arg_.t match {
       case ExpType(dt_) if dt_.isInstanceOf[ScalarType] =>
         idealised.OpenCL.FunctionalPrimitives.VectorFromScalar(n, dt_.asInstanceOf[ScalarType], arg_)
-      case x => error(this, x.toString, "exp[st]")
+      case x => error(this.toString, s"`${x.toString}'", "exp[st]")
     }
   }
 

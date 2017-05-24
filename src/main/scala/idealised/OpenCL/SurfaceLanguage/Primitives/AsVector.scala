@@ -15,7 +15,7 @@ final case class AsVector(n: Nat, array: DataExpr) extends PrimitiveExpr {
     array_.t match {
       case ExpType(ArrayType(mn_, dt_)) if dt_.isInstanceOf[ScalarType] =>
         idealised.OpenCL.FunctionalPrimitives.AsVector(n, mn_ /^ n, dt_.asInstanceOf[ScalarType], array_)
-      case x => error(this, x.toString, "exp[n.st]")
+      case x => error(this.toString, s"`${x.toString}'", "exp[n.st]")
     }
   }
 

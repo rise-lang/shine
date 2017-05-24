@@ -16,7 +16,7 @@ final case class Snd(record: DataExpr) extends PrimitiveExpr {
       case ExpType(RecordType(dt1_, dt2_)) =>
         DPIA.FunctionalPrimitives.Snd(dt1_, dt2_, record_)
 
-      case x => error(this, x.toString, "exp[dt1 x dt2]")
+      case x => error(this.toString, s"`${x.toString}'", "exp[dt1 x dt2]")
     }
   }
 

@@ -29,14 +29,14 @@ abstract class AbstractReduce(f: Expr[ExpType -> (ExpType -> ExpType)],
             if (dt1_ == t1 && dt2_ == t2 && dt2_ == t3) {
               makePhraseReduce(n_, dt1_, dt2_, f_, init_, array_)
             } else {
-              error(this,
+              error(this.toString,
                 dt1_.toString + ", " + t1.toString + " as well as " +
                 dt2_.toString + ", " + t2.toString + " and " + t3.toString,
                 expected = "them to match")
             }
-          case x => error(this, x.toString, "exp[dt1] -> (exp[dt2] -> exp[dt3])")
+          case x => error(this.toString, s"`${x.toString}'", "exp[dt1] -> (exp[dt2] -> exp[dt3])")
         }
-      case x => error(this, x.toString, "(exp[dt1], exp[n.dt2])")
+      case x => error(this.toString, s"`${x.toString}'", "(exp[dt1], exp[n.dt2])")
     }
   }
 

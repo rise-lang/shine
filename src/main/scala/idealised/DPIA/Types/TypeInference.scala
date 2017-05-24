@@ -4,15 +4,16 @@ import idealised.DPIA.{Phrases, _}
 import idealised.DPIA.Phrases._
 import idealised.SurfaceLanguage._
 
-class TypeInferenceException(expr: Expr[_], msg: String) extends TypeException(s"Failed to infer type for: $expr\n" + msg)
+class TypeInferenceException(expr: String, msg: String)
+  extends TypeException(s"Failed to infer type for `$expr'. $msg.")
 
 object TypeInference {
 
-  def error(expr: Expr[_], found: String, expected: String): Nothing = {
+  def error(expr: String, found: String, expected: String): Nothing = {
     throw new TypeInferenceException(expr, s"Found $found but expected $expected")
   }
 
-  def error(expr: Expr[_], msg: String): Nothing = {
+  def error(expr: String, msg: String): Nothing = {
     throw new TypeInferenceException(expr, msg)
   }
 
@@ -30,7 +31,7 @@ object TypeInference {
           subs(i).asInstanceOf[Phrase[T]]
         } else {
           t match {
-            case None => error(i, s"Found Identifier $name without type")
+            case None => error(i.toString, s"Found Identifier $name without type")
             case Some(dt) => Phrases.Identifier(name, ExpType(dt))
           }
         }

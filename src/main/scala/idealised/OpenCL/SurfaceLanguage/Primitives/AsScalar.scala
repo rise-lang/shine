@@ -14,7 +14,7 @@ final case class AsScalar(array: DataExpr) extends PrimitiveExpr {
     array_.t match {
       case ExpType(ArrayType(n_, VectorType(m_, dt_))) =>
         idealised.OpenCL.FunctionalPrimitives.AsScalar(n_, m_, dt_, array_)
-      case x => error(this, x.toString, "exp[n.<m.dt>]")
+      case x => error(this.toString, s"`${x.toString}'", "exp[n.<m.dt>]")
     }
   }
 

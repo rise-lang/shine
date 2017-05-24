@@ -26,11 +26,11 @@ abstract class AbstractMap(f: Expr[ExpType -> ExpType], array: DataExpr)
             if (dt1_ == dt1__) {
               makePhraseMap(n_, dt1_, dt2_, f_, array_)
             } else {
-              error(this, s"$dt1__", s"$dt1_")
+              error(this.toString, s"`$dt1__'", s"`$dt1_'")
             }
-          case x => error(this, x.toString, "exp[dt1] -> exp[dt2]")
+          case x => error(this.toString, s"`${x.toString}'", "exp[dt1] -> exp[dt2]")
         }
-      case x => error(this, x.toString, "exp[n.dt]")
+      case x => error(this.toString, s"`${x.toString}'", "exp[n.dt]")
     }
   }
 

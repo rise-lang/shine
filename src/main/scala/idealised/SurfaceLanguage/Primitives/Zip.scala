@@ -18,8 +18,8 @@ final case class Zip(e1: DataExpr,
         if (n_ == m_)
           DPIA.FunctionalPrimitives.Zip(n_, dt1_, dt2_, lhs_, rhs_)
         else
-          error(this, s"Array length $n_ and $m_ does not match")
-      case x => error(this, x.toString(), "(exp[n.dt1], exp[m.dt2])")
+          error(this.toString, s"Array length $n_ and $m_ does not match")
+      case x => error(this.toString, s"`${x.toString}'", "(exp[n.dt1], exp[m.dt2])")
     }
   }
 

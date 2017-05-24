@@ -54,6 +54,9 @@ object TypeOf {
             case (IndexType(n), IndexType(_)) =>
 //              ExpType(IndexType(OperationalSemantics.toScalaOp(op)(n, m)))
               ExpType(IndexType(n))
+
+            case (lhsT, rhsT) =>
+              TypeInference.error(phrase.toString, s"`$lhsT' and `$rhsT'", expected = "them to match.")
           }
         }
 

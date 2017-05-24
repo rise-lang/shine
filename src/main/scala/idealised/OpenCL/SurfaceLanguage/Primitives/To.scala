@@ -27,11 +27,12 @@ abstract class To(f: Expr[ExpType -> ExpType],
             if (dt1_ == t1_) {
               makeToPhrase(dt1_, dt2_, f_, input_)
             } else {
-              error(this, dt1_.toString + " and " + t1_.toString, expected = "them to match")
+              error(this.toString,
+                s"`${dt1_.toString}' and `${t1_.toString}'", expected = "them to match")
             }
-          case x => error(this, x.toString, "exp[dt1] -> exp[dt2]")
+          case x => error(this.toString, s"`${x.toString}'", "exp[dt1] -> exp[dt2]")
         }
-      case x => error(this, x.toString, "exp[dt]")
+      case x => error(this.toString, s"`${x.toString}'", "exp[dt]")
     }
   }
 
