@@ -1,46 +1,99 @@
 
+import idealised.DPIA._
+import idealised.DPIA.Types._
+import idealised.DPIA.DSL._
+import idealised.DPIA.Phrases._
+import idealised.DPIA.Semantics.OperationalSemantics
+import idealised.OpenCL
+import lift.arithmetic._
+
+import scala.collection.immutable.HashMap
 import scala.language.implicitConversions
 
 object Test extends App {
 
-//  {
-//    val n: ArithExpr = 1024
-//    val dt1: DataType = int
-//
-//    println(t"exp[ $n . $n . $dt1 x $dt1 ]")
-//
-//    println(exp"[$n.$dt1]")
-//
-//    println(t"exp[$dt1] -> exp[$dt1]")
-//
-//    println(t"exp[${Cst(1048576)}.($int x $int)]")
-//  }
-//
-//  type Data = OperationalSemantics.Data
-////  val makeData       = OperationalSemantics.makeData
-//  val makeArrayData  = OperationalSemantics.makeArrayData
-////  val makeMatrixData = OperationalSemantics.makeMatrixData
-//
-//  // first test
+  {
+    val n: ArithExpr = 1024
+    val dt1: DataType = int
+
+    println(t"exp[ $n . $n . $dt1 x $dt1 ]")
+
+    println(exp"[$n.$dt1]")
+
+    println(t"exp[$dt1] -> exp[$dt1]")
+
+    println(t"exp[${Cst(1048576)}.($int x $int)]")
+  }
+
+  type Data = OperationalSemantics.Data
+//  val makeData       = OperationalSemantics.makeData
+  val makeArrayData  = OperationalSemantics.makeArrayData
+//  val makeMatrixData = OperationalSemantics.makeMatrixData
+
+  // first test
+  {
+    var store = HashMap[String, Data]()
+
+    val out = identifier("out", AccType(int))
+    store = store + (out.name -> 0)
+
+    val p = `new`(int, OpenCL.PrivateMemory, v =>
+      (π2(v) := Literal(42, int) + Literal(1, int)) `;`
+        `new`(int, OpenCL.PrivateMemory, v2 =>
+          (π2(v2) := π1(v) + 1) `;`
+            (π2(v) := π1(v2))
+        ) `;`
+        `if`(π1(v) % 2,
+          thenP = π2(v) := π1(v) + 1,
+          elseP = π2(v) := π1(v) + 10) `;`
+        (out := π1(v))
+    )
+
+    println(TypeChecker(p))
+
+    println(OperationalSemantics.eval(store, p))
+
+    // same program in scala
+    {
+      var out = 0;
+      {
+        var v = 0
+        v = 42 + 1;
+        {
+          var v2 = 0
+          v2 = v + 1
+          v = v2
+        }
+        if (v % 2 != 0) {
+          v = v + 1
+        } else {
+          v = v + 10
+        }
+        out = v
+      }
+      println(out)
+    }
+  }
+
+  // second test
 //  {
 //    var store = HashMap[String, Data]()
 //
 //    val out = identifier("out", AccType(int))
 //    store = store + (out.name -> 0)
 //
-//    val p_ = `new`(int, OpenCL.PrivateMemory, v =>
-//      (π2(v) := Literal(42, int) + Literal(1, int)) `;`
-//        `new`(int, OpenCL.PrivateMemory, v2 =>
-//          (π2(v2) := π1(v) + 1) `;`
-//            (π2(v) := π1(v2))
-//        ) `;`
-//        `if`(π1(v) % 2,
-//          thenP = π2(v) := π1(v) + 1,
-//          elseP = π2(v) := π1(v) + 10) `;`
-//        (out := π1(v))
+//    val p = `new`(int, PrivateMemory, v =>
+//      (π2(v) := 42 + 1) `;`
+//      `for`(Cst(10), { i =>
+//        π2(v) := i + π1(v)
+//      })  `;` skip `;`
+//      `if`(π1(v) % 2,
+//        thenP = π2(v) := π1(v) + 1,
+//        elseP = π2(v) := π1(v) + 10 ) `;`
+//      (out := π1(v))
 //    )
 //
-//    val p = TypeInference(p_)
+//    println(p)
 //
 //    println(TypeChecker(p))
 //
@@ -50,13 +103,12 @@ object Test extends App {
 //    {
 //      var out = 0;
 //      {
-//        var v = 0
-//        v = 42 + 1;
-//        {
-//          var v2 = 0
-//          v2 = v + 1
-//          v = v2
+//        var v = 42 + 1
+//        for (i <- 0 until 10) {
+//          v = i + v
 //        }
+//        ;
+//        ;
 //        if (v % 2 != 0) {
 //          v = v + 1
 //        } else {
@@ -67,100 +119,55 @@ object Test extends App {
 //      println(out)
 //    }
 //  }
+
+//  {
+//    var store = HashMap[String, Data]()
+//    val x = identifier("x", ExpType(ArrayType(4, int)))
+//    val y = identifier("y", ExpType(ArrayType(4, int)))
+//    val out = identifier("out", AccType(ArrayType(4, int)))
+//    store = store + (x.name -> makeArrayData(1, 2, 3, 4))
+//    store = store + (y.name -> makeArrayData(2, 3, 4, 5))
+//    store = store + (out.name -> makeArrayData(0, 0, 0, 0))
+////    store = makeArrayData(store, x.name, 1, 2, 3, 4)
+////    store = makeArrayData(store, y.name, 2, 3, 4, 5)
+////    store = makeArrayData(store, out.name, 0, 0, 0, 0)
 //
-//  // second test
-////  {
-////    var store = HashMap[String, Data]()
-////
-////    val out = identifier("out", AccType(int))
-////    store = store + (out.name -> 0)
-////
-////    val p = `new`(int, PrivateMemory, v =>
-////      (π2(v) := 42 + 1) `;`
-////      `for`(Cst(10), { i =>
-////        π2(v) := i + π1(v)
-////      })  `;` skip `;`
-////      `if`(π1(v) % 2,
-////        thenP = π2(v) := π1(v) + 1,
-////        elseP = π2(v) := π1(v) + 10 ) `;`
-////      (out := π1(v))
-////    )
-////
-////    println(p)
-////
-////    println(TypeChecker(p))
-////
-////    println(OperationalSemantics.eval(store, p))
-////
-////    // same program in scala
-////    {
-////      var out = 0;
-////      {
-////        var v = 42 + 1
-////        for (i <- 0 until 10) {
-////          v = i + v
-////        }
-////        ;
-////        ;
-////        if (v % 2 != 0) {
-////          v = v + 1
-////        } else {
-////          v = v + 10
-////        }
-////        out = v
-////      }
-////      println(out)
-////    }
-////  }
+//    val p = `for`(Cst(2), { i =>
+//      `for`(Cst(2), { j =>
+//        out `@` (i*2+j) := x `@` (i*2+j) + y `@` (i*2+j)
+//      })
+//    })
+//    println(TypeChecker(p))
 //
-////  {
-////    var store = HashMap[String, Data]()
-////    val x = identifier("x", ExpType(ArrayType(4, int)))
-////    val y = identifier("y", ExpType(ArrayType(4, int)))
-////    val out = identifier("out", AccType(ArrayType(4, int)))
-////    store = store + (x.name -> makeArrayData(1, 2, 3, 4))
-////    store = store + (y.name -> makeArrayData(2, 3, 4, 5))
-////    store = store + (out.name -> makeArrayData(0, 0, 0, 0))
-//////    store = makeArrayData(store, x.name, 1, 2, 3, 4)
-//////    store = makeArrayData(store, y.name, 2, 3, 4, 5)
-//////    store = makeArrayData(store, out.name, 0, 0, 0, 0)
-////
-////    val p = `for`(Cst(2), { i =>
-////      `for`(Cst(2), { j =>
-////        out `@` (i*2+j) := x `@` (i*2+j) + y `@` (i*2+j)
-////      })
-////    })
-////    println(TypeChecker(p))
-////
-////    println(OperationalSemantics.eval(store, p))
-////  }
+//    println(OperationalSemantics.eval(store, p))
+//  }
+
+//  {
+//    var store = HashMap[String, Data]()
 //
-////  {
-////    var store = HashMap[String, Data]()
-////
-////    val in1 = identifier("in1", ExpType(ArrayType(5, int)))
-////    val in2 = identifier("in2", ExpType(ArrayType(5, int)))
-////    val out = identifier("out", AccType(ArrayType(5, int)))
-////    store = store + (in1.name -> makeArrayData(1, 2, 3, 4, 5))
-////    store = store + (in2.name -> makeArrayData(2, 3, 4, 5, 6))
-////    store = store + (out.name -> makeArrayData(0, 0, 0, 0, 0))
-//////    store = makeArrayData(store, in1.name, 1, 2, 3, 4, 5)
-//////    store = makeArrayData(store, in2.name, 2, 3, 4, 5, 6)
-//////    store = makeArrayData(store, out.name, 0, 0, 0, 0, 0)
-////
-////    val f = λ( x => x._1 + x._2 )
-////
-////    // this should not type check
-////    val p_ = out := map(f, zip(in1, in2))
-////
-////    val p = TypeInference(p_)
-////
-////    println(p)
-////
-////    println(TypeChecker(p))
-////
-////    println(OperationalSemantics.eval(store, p))
-////  }
+//    val in1 = identifier("in1", ExpType(ArrayType(5, int)))
+//    val in2 = identifier("in2", ExpType(ArrayType(5, int)))
+//    val out = identifier("out", AccType(ArrayType(5, int)))
+//    store = store + (in1.name -> makeArrayData(1, 2, 3, 4, 5))
+//    store = store + (in2.name -> makeArrayData(2, 3, 4, 5, 6))
+//    store = store + (out.name -> makeArrayData(0, 0, 0, 0, 0))
+////    store = makeArrayData(store, in1.name, 1, 2, 3, 4, 5)
+////    store = makeArrayData(store, in2.name, 2, 3, 4, 5, 6)
+////    store = makeArrayData(store, out.name, 0, 0, 0, 0, 0)
+//
+//    val f = λ( x => x._1 + x._2 )
+//
+//    // this should not type check
+//    val p_ = out := map(f, zip(in1, in2))
+//
+//    val p = TypeInference(p_)
+//
+//    println(p)
+//
+//    println(TypeChecker(p))
+//
+//    println(OperationalSemantics.eval(store, p))
+//  }
 //  // out := map f in
 //  //  =>
 //  // for (length in) ( λi. (λa e. a := f e) (out @ i) (in @ i) )
@@ -177,15 +184,13 @@ object Test extends App {
 ////    store = makeArrayData(store, in2.name, 2, 3, 4, 5, 6)
 ////    store = makeArrayData(store, out.name, 0, 0, 0, 0, 0)
 //
-//    val f = λ( x => x._1 + x._2 )
+//    val f = λ(x => x._1 + x._2 )
 //
-//    val p_ = `for`(5, { i =>
+//    val p = `for`(5, { i =>
 //      λ(AccType(int) x ExpType(RecordType(int, int))) {
 //        p => π1(p) := f(π2(p))
 //      }(Pair(out `@` i, zip(in1, in2) `@` i))
 //    })
-//
-//    val p = TypeInference(p_)
 //
 //    println(p)
 //

@@ -7,7 +7,14 @@ import idealised.SurfaceLanguage.DSL.DataExpr
 
 sealed trait Expr[T <: PhraseType]
 
-final case class IdentifierExpr(name: String, `type`: Option[DataType]) extends DataExpr
+final case class IdentifierExpr(name: String, `type`: Option[DataType]) extends DataExpr {
+  override def toString: String = {
+    `type` match {
+      case None => s"$name: NoType"
+      case Some(dt) => s"$name: $dt"
+    }
+  }
+}
 
 final case class LambdaExpr[T <: PhraseType](param: IdentifierExpr, body: Expr[T]) extends Expr[ExpType ->T]
 

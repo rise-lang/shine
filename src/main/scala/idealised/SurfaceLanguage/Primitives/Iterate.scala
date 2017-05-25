@@ -34,13 +34,17 @@ final case class Iterate(k: Nat,
 
                   DPIA.FunctionalPrimitives.Iterate(n_, m_, k, dt_, f_, array_)
                 } else {
-                  error(this.toString, s"expected $l == $l_ && $dt1_ == $dt_ && $dt2_ == $dt_")
+                  error(expr = s"Iterate($k, $f_, $array_)",
+                    msg = s"expected $l == $l_ && $dt1_ == $dt_ && $dt2_ == $dt_")
                 }
-              case ft => error(this.toString, s"`${ft.toString}'", "(x : Nat) -> (exp[n.dt1] -> exp[m.dt2])")
+              case ft => error(expr = s"Iterate($k, $f_, $array_)",
+                found = s"`${ft.toString}'", expected = "(x : Nat) -> (exp[n.dt1] -> exp[m.dt2])")
             }
-          case _ => error(this.toString, s"`${f.toString}'", NatDependentLambdaExpr.toString)
+          case _ => error(expr = s"Iterate($k, $f, $array_)",
+            found = s"`${f.toString}'", expected = NatDependentLambdaExpr.toString)
         }
-      case t_ => error(this.toString, s"`${t_.toString}'", "exp[n.dt]")
+      case t_ => error(expr = s"Iterate($k, $f, $array_)",
+        found = s"`${t_.toString}'", expected = "exp[n.dt]")
     }
   }
 

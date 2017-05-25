@@ -20,17 +20,11 @@ object asum extends App {
 
   val check = true
   val N = SizeVar("N")
-  val inputT = ExpType(ArrayType(N, float))
+  val inputT = ArrayType(N, float)
 
-  def runOpenCLKernel(name: String,
-                      untypedLambda: Expr[ExpType -> ExpType]): Unit = {
-    println("\n----------------")
-    val lambda = TypeInference(untypedLambda, Map())
-    println(name + ":\n" + PrettyPhrasePrinter(lambda))
-    lambda.typeCheck()
-
+  def runOpenCLKernel(name: String, expr: Expr[ExpType -> ExpType]): Unit = {
     println(s"-- $name --")
-    val kernel = CodeGenerator.makeKernel(lambda, localSize = 128, globalSize = N)
+    val kernel = CodeGenerator.makeKernel(expr, localSize = 128, globalSize = N)
     println(kernel.code)
 
     val fun = kernel.as[ScalaFunction `(` Array[Float] `)=>` Array[Float]]
@@ -46,7 +40,7 @@ object asum extends App {
       if (res.sum == gold) {
         println(s"Computed result MATCHES with gold solution.")
       } else {
-        println(s"ERROR computed result differs from gold solution.")
+        println(s"ERROR computed result (${res.sum}) differs from gold ($gold) solution.")
       }
     }
 

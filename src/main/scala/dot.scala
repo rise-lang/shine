@@ -21,17 +21,13 @@ object dot extends App {
 
   val check = true
   val N = SizeVar("N")
-  val xsT = ExpType(ArrayType(N, float))
-  val ysT = ExpType(ArrayType(N, float))
+  val xsT = ArrayType(N, float)
+  val ysT = ArrayType(N, float)
 
-  def printOpenCLKernel1(name: String,
-                         untypedLambda: Expr[ExpType -> (ExpType -> ExpType)]): Unit = {
-//    val lambda = TypeInference(untypedLambda, Map())
-//    println(name + ":\n" + PrettyPhrasePrinter(lambda))
-//
-//    println(s"-- $name --")
+  def printOpenCLKernel1(name: String, expr: Expr[ExpType -> (ExpType -> ExpType)]): Unit = {
+    println(s"-- $name --")
 
-    val kernel = CodeGenerator.makeKernel(untypedLambda, localSize = 128, globalSize = N)
+    val kernel = CodeGenerator.makeKernel(expr, localSize = 128, globalSize = N)
     println(kernel.code)
 
     val fun = kernel.as[ScalaFunction `(` Array[Float] `,` Array[Float] `)=>` Array[Float]]
@@ -56,14 +52,9 @@ object dot extends App {
     println("----------------\n")
   }
 
-  def printOpenCLKernel2(name: String,
-                         untypedLambda: Expr[ExpType -> ExpType]): Unit = {
-    val lambda = TypeInference(untypedLambda, Map())
-    println(name + ":\n" + PrettyPhrasePrinter(lambda))
-    lambda.typeCheck()
-
+  def printOpenCLKernel2(name: String, expr: Expr[ExpType -> ExpType]): Unit = {
     println(s"-- $name --")
-    val kernel = CodeGenerator.makeKernel(lambda, localSize = 128, globalSize = N)
+    val kernel = CodeGenerator.makeKernel(expr, localSize = 128, globalSize = N)
     println(kernel.code)
 
     val fun = kernel.as[ScalaFunction `(` Array[Float] `)=>` Array[Float]]

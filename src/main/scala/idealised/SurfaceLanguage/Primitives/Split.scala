@@ -15,7 +15,8 @@ final case class Split(n: Nat, array: DataExpr) extends PrimitiveExpr {
     array_.t match {
       case ExpType(ArrayType(mn_, dt_)) =>
         DPIA.FunctionalPrimitives.Split(n, mn_ /^ n, dt_, array_)
-      case x => error(this.toString, s"`${x.toString}'", "exp[n.dt]")
+      case x => error(expr = s"Split($n, $array_)",
+        found = s"`${x.toString}'", expected = "exp[n.dt]")
     }
   }
 

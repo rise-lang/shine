@@ -34,9 +34,11 @@ abstract class AbstractReduce(f: Expr[ExpType -> (ExpType -> ExpType)],
                 dt2_.toString + ", " + t2.toString + " and " + t3.toString,
                 expected = "them to match")
             }
-          case x => error(this.toString, s"`${x.toString}'", "exp[dt1] -> (exp[dt2] -> exp[dt3])")
+          case x => error(expr = s"${this.getClass.getSimpleName}($f_, $init_, $array_)",
+            found = s"`${x.toString}'", expected = "exp[dt1] -> (exp[dt2] -> exp[dt3])")
         }
-      case x => error(this.toString, s"`${x.toString}'", "(exp[dt1], exp[n.dt2])")
+      case x => error(expr = s"${this.getClass.getSimpleName}($f, $init_, $array_)",
+        found = s"`${x.toString}'", expected = "(exp[dt1], exp[n.dt2])")
     }
   }
 

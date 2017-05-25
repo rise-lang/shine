@@ -25,9 +25,11 @@ final case class Gather(idxF: Expr[ExpType -> ExpType],
           case FunctionType(ExpType(IndexType(m1: Nat)), ExpType(IndexType(m2: Nat)))
             if n_ == m1 && n_ == m2 =>
             DPIA.FunctionalPrimitives.Gather(n_, dt_, idxF_, array_)
-          case x => error(this.toString, s"`${x.toString}'", "exp[idx(n)] -> exp[idx(n)]")
+          case x => error(expr = s"Gather($idxF_, $array_)",
+            found = s"`${x.toString}'", expected = "exp[idx(n)] -> exp[idx(n)]")
         }
-      case x => error(this.toString, s"`${x.toString}'", "exp[n.dt]")
+      case x => error(expr = s"Gather($idxF, $array_)",
+        found = s"`${x.toString}'", expected = "exp[n.dt]")
     }
   }
 

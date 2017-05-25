@@ -14,7 +14,8 @@ final case class Join(array: DataExpr) extends PrimitiveExpr {
     array_.t match {
       case ExpType(ArrayType(n_, ArrayType(m_, dt_))) =>
         DPIA.FunctionalPrimitives.Join(n_, m_, dt_, array_)
-      case x => error(this.toString, s"`${x.toString}'", "exp[n.m.dt]")
+      case x => error(expr = s"Join(array_)",
+        found = s"`${x.toString}'", expected = "exp[n.m.dt]")
     }
   }
 

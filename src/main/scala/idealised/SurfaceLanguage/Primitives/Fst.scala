@@ -15,7 +15,8 @@ final case class Fst(record: DataExpr) extends PrimitiveExpr {
       case ExpType(RecordType(dt1_, dt2_)) =>
         DPIA.FunctionalPrimitives.Fst(dt1_, dt2_, record_)
 
-      case x => error(this.toString, s"`${x.toString}'", "exp[dt1 x dt2]")
+      case x => error(expr = s"Fst($record_)",
+        found = s"`${x.toString}'", expected = "exp[dt1 x dt2]")
     }
   }
 

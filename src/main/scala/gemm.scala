@@ -25,9 +25,9 @@ object gemm extends App {
   val M = SizeVar("M")
   val N = SizeVar("N")
   val dt = float
-  val aT = exp"[$M.$K.$dt]"
-  val bT = exp"[$N.$K.$dt]"
-  val cT = exp"[$M.$N.$dt]"
+  val aT = dt"[$M.$K.$dt]"
+  val bT = dt"[$N.$K.$dt]"
+  val cT = dt"[$M.$N.$dt]"
 
   def printOpenCLKernel(name: String,
                         untypedLambda: Expr[ExpType -> (ExpType -> ExpType)]): Unit = {
