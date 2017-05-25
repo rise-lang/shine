@@ -56,8 +56,8 @@ abstract class AbstractReduce(n: Nat,
   }
 
   override def prettyPrint: String =
-    s"(${this.getClass.getSimpleName} ${PrettyPhrasePrinter(f)} " +
-      s"${PrettyPhrasePrinter(init)} ${PrettyPhrasePrinter(array)})"
+    s"${this.getClass.getSimpleName} (${PrettyPhrasePrinter(f)}) " +
+      s"(${PrettyPhrasePrinter(init)}) (${PrettyPhrasePrinter(array)})"
 
   override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._

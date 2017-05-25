@@ -53,6 +53,10 @@ object asum extends App {
   val high_level = λ(inputT)(input =>
     reduce(add, 0.0f) o map(abs(float)) $ input)
 
+  println("\n\n")
+  println(high_level.toString)
+  println("\n\n")
+
   {
     val lambda = TypeInference(high_level, Map())
     println("high_level:\n" + PrettyPhrasePrinter(lambda))

@@ -21,4 +21,6 @@ final case class OpenCLFunction(name: String,
     OpenCLFunction(name, inTs.map(dt => f(dt)), f(outT), args.map(SurfaceLanguage.VisitAndRebuild(_, f)))
   }
 
+  override def toString: String = s"$name(${args.map(_.toString).mkString(",")})"
+
 }

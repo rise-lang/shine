@@ -40,7 +40,7 @@ final case class OpenCLFunction(name: String,
 
   override def eval(s: Store): Data = ???
 
-  override def prettyPrint: String = s"(__${name}__ ${args.map(PrettyPhrasePrinter(_))})"
+  override def prettyPrint: String = s"$name(${args.map(PrettyPhrasePrinter(_)).mkString(",")})"
 
   override def xmlPrinter: Elem =
     <OpenCLFunction name={ToString(name)} inTs={ToString(inTs)} outT={ToString(outT)}>

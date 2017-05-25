@@ -8,33 +8,55 @@ import idealised.SurfaceLanguage.DSL.DataExpr
 sealed trait Expr[T <: PhraseType]
 
 final case class IdentifierExpr(name: String, `type`: Option[DataType]) extends DataExpr {
+  override def toString: String = name
+}
+
+final case class LambdaExpr[T <: PhraseType](param: IdentifierExpr, body: Expr[T]) extends Expr[ExpType ->T] {
   override def toString: String = {
-    `type` match {
-      case None => s"$name: NoType"
-      case Some(dt) => s"$name: $dt"
+    val pName = param.name
+    val pType = param.`type` match {
+      case None => "NoType"
+      case Some(dt) => dt.toString
     }
+    s"λ $pName: $pType -> $body"
   }
 }
 
-final case class LambdaExpr[T <: PhraseType](param: IdentifierExpr, body: Expr[T]) extends Expr[ExpType ->T]
+final case class ApplyExpr[T <: PhraseType](fun: Expr[ExpType -> T], arg: DataExpr) extends Expr[T] {
+  override def toString: String = s"($fun)($arg)"
+}
 
-final case class ApplyExpr[T <: PhraseType](fun: Expr[ExpType -> T], arg: DataExpr) extends Expr[T]
+final case class NatDependentLambdaExpr[T <: PhraseType](x: NatIdentifier, body: Expr[T]) extends Expr[`(nat)->`[T]] {
+  override def toString: String = s"Λ ($x : nat) -> $body"
+}
 
-final case class NatDependentLambdaExpr[T <: PhraseType](x: NatIdentifier, body: Expr[T]) extends Expr[`(nat)->`[T]]
+final case class NatDependentApplyExpr[T <: PhraseType](fun: Expr[`(nat)->`[T]], arg: Nat) extends Expr[T] {
+  override def toString: String = s"($fun)($arg)"
+}
 
-final case class NatDependentApplyExpr[T <: PhraseType](fun: Expr[`(nat)->`[T]], arg: Nat) extends Expr[T]
+final case class TypeDependentLambdaExpr[T <: PhraseType](x: DataTypeIdentifier, body: Expr[T]) extends Expr[`(dt)->`[T]] {
+  override def toString: String = s"Λ ($x : dt) -> $body"
+}
 
-final case class TypeDependentLambdaExpr[T <: PhraseType](x: DataTypeIdentifier, body: Expr[T]) extends Expr[`(dt)->`[T]]
+final case class TypeDependentApplyExpr[T <: PhraseType](fun: Expr[`(dt)->`[T]], arg: DataType) extends Expr[T] {
+  override def toString: String = s"($fun)($arg)"
+}
 
-final case class TypeDependentApplyExpr[T <: PhraseType](fun: Expr[`(dt)->`[T]], arg: DataType) extends Expr[T]
+final case class IfThenElseExpr[T <: PhraseType](cond: DataExpr, thenE: Expr[T], elseE: Expr[T]) extends Expr[T] {
+  override def toString: String = s"if ($cond) then ($thenE) else ($elseE)"
+}
 
-final case class IfThenElseExpr[T <: PhraseType](cond: DataExpr, thenE: Expr[T], elseE: Expr[T]) extends Expr[T]
+final case class UnaryOpExpr(op: Operators.Unary.Value, e: DataExpr) extends DataExpr {
+  override def toString: String = s"$op $e"
+}
 
-final case class UnaryOpExpr(op: Operators.Unary.Value, e: DataExpr) extends DataExpr
+final case class BinOpExpr(op: Operators.Binary.Value, lhs: DataExpr, rhs: DataExpr) extends DataExpr {
+  override def toString: String = s"$lhs $op $rhs"
+}
 
-final case class BinOpExpr(op: Operators.Binary.Value, lhs: DataExpr, rhs: DataExpr) extends DataExpr
-
-final case class LiteralExpr(d: OperationalSemantics.Data, dt: DataType) extends DataExpr
+final case class LiteralExpr(d: OperationalSemantics.Data, dt: DataType) extends DataExpr {
+  override def toString: String = s"$d"
+}
 
 trait PrimitiveExpr extends DataExpr {
   def inferTypes(subs: TypeInference.SubstitutionMap): Phrases.Primitive[ExpType]

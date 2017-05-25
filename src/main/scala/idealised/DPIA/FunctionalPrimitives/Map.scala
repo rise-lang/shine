@@ -67,7 +67,7 @@ abstract class AbstractMap(n: Nat,
   }
 
   override def prettyPrint: String =
-    s"(${this.getClass.getSimpleName} ${PrettyPhrasePrinter(f)} ${PrettyPhrasePrinter(array)})"
+    s"${this.getClass.getSimpleName} (${PrettyPhrasePrinter(f)}) (${PrettyPhrasePrinter(array)})"
 
   override def xmlPrinter: Elem =
     <map n={ToString(n)} dt1={ToString(dt1)} dt2={ToString(dt2)}>

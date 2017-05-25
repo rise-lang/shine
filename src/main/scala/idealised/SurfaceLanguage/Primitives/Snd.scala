@@ -24,4 +24,6 @@ final case class Snd(record: DataExpr) extends PrimitiveExpr {
     Snd(SurfaceLanguage.VisitAndRebuild(record, f))
   }
 
+  override def toString: String = s"$record._2"
+
 }
