@@ -1,10 +1,9 @@
 package idealised.DPIA.Compilation
 
-import idealised.utils._
+import idealised.DPIA.ImperativePrimitives._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types.{AccType, CommandType, PhraseType}
 import idealised.DPIA._
-import idealised.DPIA.ImperativePrimitives._
 
 import scala.collection.immutable
 

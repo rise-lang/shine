@@ -3,9 +3,9 @@ package idealised.SurfaceLanguage.Primitives
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types.{TypeInference, _}
 import idealised.DPIA._
-import idealised.{DPIA, SurfaceLanguage}
 import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.SurfaceLanguage.{Expr, NatDependentLambdaExpr, PrimitiveExpr}
+import idealised.{DPIA, SurfaceLanguage}
 import lift.arithmetic._
 
 final case class Iterate(k: Nat,

@@ -1,15 +1,15 @@
 package idealised.DPIA.ImperativePrimitives
 
-import idealised.DPIA._
-import idealised.DPIA.Types._
 import idealised.DPIA.DSL._
+import idealised.DPIA.IntermediatePrimitives.MapI
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
-import idealised.DPIA.IntermediatePrimitives.MapI
+import idealised.DPIA.Types._
+import idealised.DPIA._
 
-import scala.xml.Elem
 import scala.language.reflectiveCalls
+import scala.xml.Elem
 
 final case class Assign(dt: BasicType,
                         lhs: Phrase[AccType],

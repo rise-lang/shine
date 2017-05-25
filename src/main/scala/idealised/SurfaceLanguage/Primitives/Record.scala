@@ -1,11 +1,11 @@
 package idealised.SurfaceLanguage.Primitives
 
-import idealised.DPIA.Types.{ExpType, TypeInference}
-import idealised.DPIA.Types.TypeInference.SubstitutionMap
 import idealised.DPIA.Phrases.Primitive
-import idealised.{DPIA, SurfaceLanguage}
+import idealised.DPIA.Types.TypeInference.SubstitutionMap
+import idealised.DPIA.Types.{ExpType, TypeInference}
 import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.SurfaceLanguage.PrimitiveExpr
+import idealised.{DPIA, SurfaceLanguage}
 
 final case class Record(fst: DataExpr, snd: DataExpr) extends PrimitiveExpr {
 

@@ -1,16 +1,16 @@
 package idealised.OpenCL
 
 import idealised.DPIA.Compilation._
-import idealised.DPIA.Semantics.OperationalSemantics._
-import idealised.DPIA.Phrases._
-import idealised.DPIA.Types._
-import idealised.DPIA._
 import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives._
 import idealised.DPIA.ImperativePrimitives._
+import idealised.DPIA.Phrases._
+import idealised.DPIA.Semantics.OperationalSemantics._
+import idealised.DPIA.Types._
+import idealised.DPIA._
+import idealised.OpenCL.CodeGeneration.HoistMemoryAllocations
 import idealised.OpenCL.CodeGeneration.HoistMemoryAllocations.AllocationInfo
 import idealised.OpenCL.CodeGeneration.PrimitivesCodeGenerator._
-import idealised.OpenCL.CodeGeneration.HoistMemoryAllocations
 import idealised.SurfaceLanguage.Expr
 import idealised.{DPIA, _}
 import ir.{Type, UndefType}

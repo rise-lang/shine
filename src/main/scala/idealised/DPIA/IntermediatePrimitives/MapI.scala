@@ -1,12 +1,12 @@
 package idealised.DPIA.IntermediatePrimitives
 
-import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Compilation.SubstituteImplementations
+import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
+import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised.DPIA.DSL._
 
 import scala.xml.Elem
 

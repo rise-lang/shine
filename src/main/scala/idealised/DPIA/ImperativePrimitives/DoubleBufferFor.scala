@@ -1,10 +1,10 @@
 package idealised.DPIA.ImperativePrimitives
 
-import lift.arithmetic.{Cst, RangeAdd}
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA.{Phrases, _}
+import lift.arithmetic.{Cst, RangeAdd}
 
 import scala.xml.Elem
 

@@ -1,7 +1,7 @@
 package idealised.DPIA.Types
 
-import idealised.DPIA.{Phrases, _}
 import idealised.DPIA.Phrases._
+import idealised.DPIA.{Phrases, _}
 import idealised.SurfaceLanguage._
 
 class TypeInferenceException(expr: String, msg: String)

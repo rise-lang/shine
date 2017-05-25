@@ -1,13 +1,12 @@
 package idealised.OpenCL.IntermediatePrimitives
 
 import idealised.DPIA.Compilation.SubstituteImplementations
-import idealised.DPIA.DSL._
+import idealised.DPIA.Compilation.SubstituteImplementations._
+import idealised.DPIA.DSL.{λ, _}
 import idealised.DPIA.IntermediatePrimitives.AbstractMapI
-import SubstituteImplementations._
 import idealised.DPIA.Phrases.Phrase
 import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType}
 import idealised.DPIA._
-import idealised.DPIA.DSL.λ
 import idealised.OpenCL.ImperativePrimitives.ParForGlobal
 
 final case class MapGlobalI(n: Nat,

@@ -1,10 +1,10 @@
 package idealised.SurfaceLanguage.Primitives
 
-import idealised.DPIA.Types.{TypeInference, _}
 import idealised.DPIA.Phrases.Primitive
-import idealised.{DPIA, SurfaceLanguage}
+import idealised.DPIA.Types.{TypeInference, _}
 import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.SurfaceLanguage.PrimitiveExpr
+import idealised.{DPIA, SurfaceLanguage}
 
 final case class Join(array: DataExpr) extends PrimitiveExpr {
 

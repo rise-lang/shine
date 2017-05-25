@@ -1,8 +1,8 @@
 package idealised.SurfaceLanguage
 
 import idealised.DPIA.Semantics.OperationalSemantics.IndexData
-import idealised.DPIA._
 import idealised.DPIA.Types.{DataType, PhraseType}
+import idealised.DPIA._
 
 object VisitAndRebuild {
 

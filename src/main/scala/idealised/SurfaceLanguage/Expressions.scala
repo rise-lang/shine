@@ -1,9 +1,9 @@
 package idealised.SurfaceLanguage
 
-import idealised.DPIA._
-import idealised.DPIA.Types._
-import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.DPIA.Semantics.OperationalSemantics
+import idealised.DPIA.Types._
+import idealised.DPIA._
+import idealised.SurfaceLanguage.DSL.DataExpr
 
 sealed trait Expr[T <: PhraseType]
 

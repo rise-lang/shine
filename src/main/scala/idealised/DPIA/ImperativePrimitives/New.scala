@@ -1,11 +1,11 @@
 package idealised.DPIA.ImperativePrimitives
 
+import idealised.DPIA.DSL.identifier
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised.DPIA.DSL.identifier
 
 import scala.xml.Elem
 

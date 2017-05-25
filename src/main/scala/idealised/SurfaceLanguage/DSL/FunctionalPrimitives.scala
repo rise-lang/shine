@@ -1,9 +1,9 @@
 package idealised.SurfaceLanguage.DSL
 
-import idealised.DPIA._
 import idealised.DPIA.Types.ExpType
-import idealised.SurfaceLanguage.Primitives._
+import idealised.DPIA._
 import idealised.SurfaceLanguage.Expr
+import idealised.SurfaceLanguage.Primitives._
 import lift.arithmetic.NamedVar
 
 

@@ -1,10 +1,10 @@
 package idealised.DPIA.ImperativePrimitives
 
+import idealised.DPIA.Phrases
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types.{CommandType, comm}
-import idealised.DPIA.{Phrases, _}
 
 import scala.xml.Elem
 

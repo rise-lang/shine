@@ -1,7 +1,7 @@
 package idealised.OpenCL.SurfaceLanguage.Primitives
 
-import idealised.DPIA._
 import idealised.DPIA.Types.ExpType
+import idealised.DPIA._
 import idealised.OpenCL
 import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.SurfaceLanguage.Expr

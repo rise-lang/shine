@@ -1,12 +1,12 @@
 package idealised.DPIA.FunctionalPrimitives
 
 import idealised.DPIA.Compilation.RewriteToImperative
-import idealised.DPIA.Semantics.OperationalSemantics._
+import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
+import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised.DPIA.DSL._
 
 import scala.language.reflectiveCalls
 import scala.xml.Elem

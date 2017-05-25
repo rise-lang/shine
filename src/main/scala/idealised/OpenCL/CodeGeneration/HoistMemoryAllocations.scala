@@ -1,12 +1,12 @@
 package idealised.OpenCL.CodeGeneration
 
-import idealised._
+import idealised.DPIA.DSL._
+import idealised.DPIA.ImperativePrimitives._
 import idealised.DPIA.Phrases.{VisitAndRebuild, _}
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised.DPIA.DSL._
-import idealised.DPIA.ImperativePrimitives._
 import idealised.OpenCL.ImperativePrimitives.OpenCLParFor
+import idealised._
 
 object HoistMemoryAllocations {
 

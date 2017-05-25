@@ -1,9 +1,9 @@
 package idealised.OpenCL.FunctionalPrimitives
 
-import idealised.DPIA._
-import idealised.DPIA.Types.{DataType, ExpType}
-import idealised.DPIA.Phrases.Phrase
 import idealised.DPIA.FunctionalPrimitives.AbstractMap
+import idealised.DPIA.Phrases.Phrase
+import idealised.DPIA.Types.{DataType, ExpType}
+import idealised.DPIA._
 import idealised.OpenCL.IntermediatePrimitives.MapWorkGroupI
 
 final case class MapWorkGroup(n: Nat,

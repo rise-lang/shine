@@ -1,11 +1,11 @@
 package idealised.SurfaceLanguage.Primitives
 
-import idealised.DPIA._
-import idealised.DPIA.Types._
 import idealised.DPIA.Phrases.Phrase
-import idealised.{DPIA, SurfaceLanguage}
+import idealised.DPIA.Types._
+import idealised.DPIA._
 import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.SurfaceLanguage.{Expr, PrimitiveExpr}
+import idealised.{DPIA, SurfaceLanguage}
 
 abstract class AbstractReduce(f: Expr[ExpType -> (ExpType -> ExpType)],
                               init: DataExpr, array: DataExpr)

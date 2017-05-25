@@ -1,15 +1,14 @@
 package idealised.OpenCL.IntermediatePrimitives
 
-import idealised._
 import idealised.DPIA.Compilation.SubstituteImplementations
 import idealised.DPIA.Compilation.SubstituteImplementations._
-import idealised.DPIA.DSL._
+import idealised.DPIA.DSL.{λ, _}
 import idealised.DPIA.IntermediatePrimitives.AbstractMapI
 import idealised.DPIA.Phrases.Phrase
 import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType}
 import idealised.DPIA._
-import idealised.DPIA.DSL.λ
 import idealised.OpenCL.ImperativePrimitives.ParForWorkGroup
+import idealised._
 
 final case class MapWorkGroupI(n: Nat,
                                dt1: DataType,

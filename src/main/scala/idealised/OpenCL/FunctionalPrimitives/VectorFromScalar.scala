@@ -1,13 +1,13 @@
 package idealised.OpenCL.FunctionalPrimitives
 
 import idealised.DPIA.Compilation.RewriteToImperative
+import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases.{VisitAndRebuild, _}
 import idealised.DPIA.Semantics.OperationalSemantics.{Data, Store}
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised.DPIA.DSL._
-import idealised.OpenCL.{CodeGenerator, GeneratableExp}
 import idealised.OpenCL.CodeGenerator.Environment
+import idealised.OpenCL.{CodeGenerator, GeneratableExp}
 import opencl.generator.OpenCLAST.{Expression, VectorLiteral}
 
 import scala.xml.Elem

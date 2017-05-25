@@ -1,14 +1,4 @@
 
-import idealised._
-import idealised.utils._
-
-import idealised.DPIA.Compilation.{RewriteToImperative, SubstituteImplementations}
-import idealised.OpenCL.CodeGenerator
-import idealised.OpenCL.SurfaceLanguage._
-import lift.arithmetic._
-import opencl.generator.OpenCLPrinter
-
-import scala.collection.immutable.HashMap
 import scala.language.implicitConversions
 
 object Test extends App {

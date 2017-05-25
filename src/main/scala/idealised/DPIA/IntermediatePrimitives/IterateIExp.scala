@@ -1,12 +1,12 @@
 package idealised.DPIA.IntermediatePrimitives
 
-import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Compilation.SubstituteImplementations
-import idealised.DPIA.Phrases._
-import idealised.DPIA.Types._
-import idealised.DPIA.{Phrases, _}
 import idealised.DPIA.DSL._
 import idealised.DPIA.ImperativePrimitives.{TruncAcc, TruncExp}
+import idealised.DPIA.Phrases._
+import idealised.DPIA.Semantics.OperationalSemantics._
+import idealised.DPIA.Types._
+import idealised.DPIA.{Phrases, _}
 import idealised.OpenCL
 
 import scala.xml.Elem

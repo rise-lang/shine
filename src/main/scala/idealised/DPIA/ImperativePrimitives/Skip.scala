@@ -1,10 +1,8 @@
 package idealised.DPIA.ImperativePrimitives
 
-import idealised.DPIA.Semantics.OperationalSemantics._
-import idealised.utils._
 import idealised.DPIA.Phrases.{CommandPrimitive, Phrase, VisitAndRebuild}
+import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types.{CommandType, comm}
-import idealised.DPIA._
 
 import scala.xml.Elem
 

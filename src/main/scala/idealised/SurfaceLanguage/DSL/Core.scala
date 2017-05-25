@@ -1,7 +1,7 @@
 package idealised.SurfaceLanguage.DSL
 
-import idealised.DPIA._
 import idealised.DPIA.Types._
+import idealised.DPIA._
 import idealised.SurfaceLanguage._
 import lift.arithmetic.NamedVar
 

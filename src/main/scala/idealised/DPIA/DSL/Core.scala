@@ -1,6 +1,5 @@
 package idealised.DPIA.DSL
 
-import idealised.utils._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types.{DataTypeIdentifier, PhraseType}
 import idealised.DPIA._

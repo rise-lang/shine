@@ -1,9 +1,8 @@
 package idealised.OpenCL.SurfaceLanguage.Primitives
 
-import idealised.utils._
-import idealised.DPIA._
 import idealised.DPIA.Phrases.Primitive
-import idealised.DPIA.Types.{ExpType, TypeInference, ScalarType}
+import idealised.DPIA.Types.{ExpType, ScalarType, TypeInference}
+import idealised.DPIA._
 import idealised.SurfaceLanguage
 import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.SurfaceLanguage.PrimitiveExpr

@@ -1,15 +1,13 @@
 
 import idealised.DPIA.Phrases.PrettyPhrasePrinter
-import idealised.OpenCL._
-import idealised.OpenCL.SurfaceLanguage._
-import lift.arithmetic._
 import idealised.DPIA.Semantics.OperationalSemantics._
-import idealised.DPIA._
 import idealised.DPIA.Types.{ArrayType, ExpType, TypeInference, float}
-import idealised.OpenCL.CodeGenerator
+import idealised.DPIA._
 import idealised.OpenCL.SurfaceLanguage.DSL._
+import idealised.OpenCL.{CodeGenerator, _}
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.{Expr, LiteralExpr}
+import lift.arithmetic._
 import opencl.executor.Executor
 
 import scala.language.implicitConversions

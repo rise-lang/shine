@@ -1,14 +1,13 @@
 package idealised.DPIA
 
-import idealised.DPIA.Semantics.OperationalSemantics.{FloatData, IndexData, IntData}
-import idealised.DPIA.Phrases.{BinOp, Identifier, Literal, Pair, Phrase, Proj1, Proj2, UnaryOp}
-import idealised.DPIA.Types._
 import idealised.DPIA.ImperativePrimitives.{Assign, Idx, IdxAcc, Seq}
+import idealised.DPIA.Phrases.{BinOp, Identifier, Literal, Pair, Phrase, Proj1, Proj2, UnaryOp}
+import idealised.DPIA.Semantics.OperationalSemantics.{FloatData, IndexData, IntData}
+import idealised.DPIA.Types._
 import idealised.SurfaceLanguage.Operators
 import lift.arithmetic.{ContinuousRange, NamedVar}
 
-import scala.language.implicitConversions
-import scala.language.reflectiveCalls
+import scala.language.{implicitConversions, reflectiveCalls}
 
 package object DSL {
 

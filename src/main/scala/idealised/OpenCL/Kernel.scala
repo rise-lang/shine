@@ -1,19 +1,18 @@
 package idealised.OpenCL
 
-import idealised.utils._
 import idealised.DPIA.Phrases.Identifier
 import idealised.DPIA.Types._
 import idealised.DPIA._
+import idealised.utils._
 import ir.Type
 import lift.arithmetic.{ArithExpr, Cst, Var}
 import opencl.executor._
 import opencl.generator.OpenCLAST.ParamDecl
-import opencl.generator.OpenCLPrinter
-import opencl.generator._
+import opencl.generator.{OpenCLPrinter, _}
 import opencl.ir.{Double, Float, Int}
 
-import scala.collection.{Seq, immutable}
 import scala.collection.immutable.List
+import scala.collection.{Seq, immutable}
 import scala.language.implicitConversions
 
 case class Kernel(function: OpenCLAST.Function,

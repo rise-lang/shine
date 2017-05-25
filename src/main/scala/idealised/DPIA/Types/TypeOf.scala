@@ -1,7 +1,7 @@
 package idealised.DPIA.Types
 
-import idealised.DPIA._
 import idealised.DPIA.Phrases._
+import idealised.DPIA._
 import idealised.SurfaceLanguage.Operators
 
 import scala.language.{postfixOps, reflectiveCalls}

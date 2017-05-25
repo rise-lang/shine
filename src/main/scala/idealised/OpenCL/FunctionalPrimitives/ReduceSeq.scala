@@ -1,10 +1,10 @@
 package idealised.OpenCL.FunctionalPrimitives
 
-import idealised.DPIA._
-import idealised.DPIA.Types.{DataType, ExpType}
-import idealised.DPIA.Phrases.Phrase
 import idealised.DPIA.FunctionalPrimitives.AbstractReduce
 import idealised.DPIA.IntermediatePrimitives.ReduceI
+import idealised.DPIA.Phrases.Phrase
+import idealised.DPIA.Types.{DataType, ExpType}
+import idealised.DPIA._
 
 final case class ReduceSeq(n: Nat,
                            dt1: DataType, dt2: DataType,

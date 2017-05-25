@@ -5,8 +5,8 @@ import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types.{AccType, DataType, ScalarType, VectorType}
 import idealised.DPIA._
 import idealised.OpenCL.{CodeGenerator, ViewAcc}
-import opencl.generator.OpenCLAST.Expression
 import ir.Type
+import opencl.generator.OpenCLAST.Expression
 
 import scala.xml.Elem
 

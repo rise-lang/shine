@@ -1,8 +1,8 @@
 package idealised.OpenCL.SurfaceLanguage.Primitives
 
+import idealised.DPIA.Phrases.Phrase
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised.DPIA.Phrases.Phrase
 import idealised.OpenCL
 import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.SurfaceLanguage.Expr

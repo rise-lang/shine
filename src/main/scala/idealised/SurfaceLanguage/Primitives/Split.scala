@@ -1,11 +1,11 @@
 package idealised.SurfaceLanguage.Primitives
 
+import idealised.DPIA.Phrases.Primitive
 import idealised.DPIA.Types.{TypeInference, _}
 import idealised.DPIA._
-import idealised.DPIA.Phrases.Primitive
-import idealised.{DPIA, SurfaceLanguage}
 import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.SurfaceLanguage.PrimitiveExpr
+import idealised.{DPIA, SurfaceLanguage}
 
 final case class Split(n: Nat, array: DataExpr) extends PrimitiveExpr {
 

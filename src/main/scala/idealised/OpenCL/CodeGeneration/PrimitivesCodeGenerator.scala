@@ -1,17 +1,17 @@
 package idealised.OpenCL.CodeGeneration
 
-import idealised._
+import idealised.DPIA.DSL._
+import idealised.DPIA.FunctionalPrimitives._
+import idealised.DPIA.ImperativePrimitives._
 import idealised.DPIA.Phrases.{Identifier, Phrase}
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised.DPIA.DSL._
-import idealised.DPIA.FunctionalPrimitives._
-import idealised.DPIA.ImperativePrimitives._
 import idealised.OpenCL.CodeGenerator
 import idealised.OpenCL.ImperativePrimitives.OpenCLParFor
-import lift.arithmetic._
+import idealised._
 import ir.Type
+import lift.arithmetic._
 import opencl.generator.OpenCLAST
 import opencl.generator.OpenCLAST._
 import opencl.ir.PtrType

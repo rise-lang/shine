@@ -1,15 +1,14 @@
 
-import idealised.utils._
-import idealised.OpenCL._
-import idealised.OpenCL.SurfaceLanguage._
-import lift.arithmetic._
-import idealised.utils.Time.ms
 import idealised.DPIA.Phrases.PrettyPhrasePrinter
 import idealised.DPIA.Types.{TypeInference, _}
 import idealised.DPIA._
 import idealised.OpenCL.SurfaceLanguage.DSL._
+import idealised.OpenCL._
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Expr
+import idealised.utils.Time.ms
+import idealised.utils._
+import lift.arithmetic._
 import opencl.executor.Executor
 
 import scala.util.Random

@@ -1,8 +1,7 @@
 package idealised.DPIA.Types
 
-import idealised.utils.SizeInByte
-import idealised.DPIA
 import idealised.DPIA.{Nat, Types}
+import idealised.utils.SizeInByte
 
 sealed trait DataType
 

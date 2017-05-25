@@ -1,11 +1,11 @@
 package idealised.DPIA.FunctionalPrimitives
 
+import idealised.DPIA.DSL._
+import idealised.DPIA.IntermediatePrimitives.{IterateIAcc, IterateIExp}
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA.{Phrases, _}
-import idealised.DPIA.DSL._
-import idealised.DPIA.IntermediatePrimitives.{IterateIAcc, IterateIExp}
 
 import scala.xml.Elem
 

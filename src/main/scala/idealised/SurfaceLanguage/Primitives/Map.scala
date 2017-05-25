@@ -1,11 +1,11 @@
 package idealised.SurfaceLanguage.Primitives
 
-import idealised.{DPIA, SurfaceLanguage}
-import idealised.DPIA._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types._
+import idealised.DPIA._
 import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.SurfaceLanguage.{Expr, PrimitiveExpr}
+import idealised.{DPIA, SurfaceLanguage}
 
 abstract class AbstractMap(f: Expr[ExpType -> ExpType], array: DataExpr)
   extends PrimitiveExpr {

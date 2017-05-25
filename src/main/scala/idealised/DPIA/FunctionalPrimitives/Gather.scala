@@ -1,16 +1,15 @@
 package idealised.DPIA.FunctionalPrimitives
 
-import idealised.DPIA.Semantics.OperationalSemantics._
-import idealised.DPIA.Phrases.VisitAndRebuild.Visitor
 import idealised.DPIA.Compilation.RewriteToImperative
+import idealised.DPIA.DSL._
+import idealised.DPIA.Phrases.VisitAndRebuild.Visitor
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
+import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType}
 import idealised.DPIA.{Phrases, _}
-import idealised.DPIA.DSL._
 
-import scala.language.postfixOps
-import scala.language.reflectiveCalls
+import scala.language.{postfixOps, reflectiveCalls}
 import scala.xml.Elem
 
 final case class Gather(n: Nat,

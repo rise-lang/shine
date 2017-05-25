@@ -1,14 +1,13 @@
 package idealised.SurfaceLanguage.Primitives
 
-import idealised.DPIA._
-import idealised.DPIA.Types.{TypeInference, _}
 import idealised.DPIA.Phrases._
-import idealised.{DPIA, SurfaceLanguage}
+import idealised.DPIA.Types.{TypeInference, _}
+import idealised.DPIA._
 import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.SurfaceLanguage.{Expr, PrimitiveExpr}
+import idealised.{DPIA, SurfaceLanguage}
 
-import scala.language.postfixOps
-import scala.language.reflectiveCalls
+import scala.language.{postfixOps, reflectiveCalls}
 
 final case class Gather(idxF: Expr[ExpType -> ExpType],
                         array: DataExpr) extends PrimitiveExpr {

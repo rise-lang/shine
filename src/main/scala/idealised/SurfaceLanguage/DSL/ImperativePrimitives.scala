@@ -1,7 +1,7 @@
 package idealised.SurfaceLanguage.DSL
 
-import idealised.DPIA.Types.PhraseType
 import idealised.DPIA.ImperativePrimitives._
+import idealised.DPIA.Types.PhraseType
 import idealised.SurfaceLanguage.{Expr, IfThenElseExpr}
 
 object `if` {
