@@ -23,8 +23,25 @@ case class Kernel(function: OpenCLAST.Function,
 
   def code: String = (new OpenCLPrinter)(this)
 
+  // This method will return a Scala function which executed the kernel via OpenCL and returns its
+  // result and the time it took to execute the kernel.
+  //
+  // A type annotation `F` has to be provided which specifies the type of the Scala function.
+  // The following syntax is used for this (which implementation can be found in
+  // OpenCL/package.scala):
+  //
+  // <kernel>.as[ScalaFunction `(` <Arg1Type> `,` <Arg2Type> `,` <...> `)=>` <ReturnType> ]
+  //
+  // where all text in < > is to be replaced with the appropriate Scala terms.
+  // An example for the dot product which takes two arrays of floats and returns an array of float
+  // would be:
+  //
+  // dotKernel.as[ScalaFunction `(` Array[Float] `,` Array[Float] `)=>` Array[Float]]
+  //
   def as[F <: FunctionHelper](implicit ev: F#T <:< HList): (F#T) => (F#R, TimeSpan[Time.ms]) = {
-    (args: F#T) => {
+    (hArgs: F#T) => {
+      val args: List[Any] = hArgs.toList
+
       val lengthMapping = createLengthMap(inputParams, args)
 
       val (outputArg, inputArgs) = createKernelArgs(args, lengthMapping)
@@ -47,8 +64,8 @@ case class Kernel(function: OpenCLAST.Function,
   }
 
   private def createLengthMap(params: Seq[Identifier[ExpType]],
-                              args: HList): immutable.Map[Nat, Nat] = {
-    val seq = (params, args.toList).zipped.flatMap(createLengthMapping)
+                              args: List[Any]): immutable.Map[Nat, Nat] = {
+    val seq = (params, args).zipped.flatMap(createLengthMapping)
     seq.map(x => (x._1, Cst(x._2))).toMap
   }
 
@@ -74,14 +91,13 @@ case class Kernel(function: OpenCLAST.Function,
     }
   }
 
-  private def createKernelArgs(args: HList,
-                               lengthMapping: immutable.Map[Nat, Nat]) = {
+  private def createKernelArgs(args: List[Any], lengthMapping: immutable.Map[Nat, Nat]) = {
     val numberOfKernelArgs = 1 + args.length + intermediateParams.size + lengthMapping.size
     assert(function.params.length == numberOfKernelArgs)
 
     println("Allocations on the host: ")
     val outputArg = createOutputArg(DataType.sizeInByte(outputParam) `with` lengthMapping)
-    val inputArgs = createInputArgs(args.toList)
+    val inputArgs = args.map(createInputArg)
     val intermediateArgs = createIntermediateArgs(args.length, lengthMapping)
     val lengthArgs = createLengthArgs(lengthMapping)
 
@@ -91,10 +107,6 @@ case class Kernel(function: OpenCLAST.Function,
   private def createOutputArg(size: SizeInByte) = {
     println(s"output (global): $size")
     GlobalArg.createOutput(size.value.eval)
-  }
-
-  private def createInputArgs(args: List[Any]) = {
-    args.map(createInputArg)
   }
 
   private def createInputArg(arg: Any): KernelArg = {
@@ -122,8 +134,7 @@ case class Kernel(function: OpenCLAST.Function,
     }
   }
 
-  private def createIntermediateArgs(argsLength: Int,
-                                     lengthMapping: immutable.Map[Nat, Nat]) = {
+  private def createIntermediateArgs(argsLength: Int, lengthMapping: immutable.Map[Nat, Nat]) = {
     val intermediateParamDecls = getIntermediateParamDecls(argsLength)
     (intermediateParamDecls, intermediateParams).zipped.map { case (pDecl, param) =>
       val size = (DataType.sizeInByte(param) `with` lengthMapping).value.max.eval
