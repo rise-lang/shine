@@ -29,33 +29,38 @@ package object OpenCL {
     type F = T => R
   }
 
-  type =:=>[TT, RR] = FunctionHelper { type T = TT; type R = RR }
+
+  type `)=>`[TT, RR] = FunctionHelper { type T = TT; type R = RR }
 
   sealed trait HList {
     def length: Int
     def toList: List[Any]
   }
 
-  case class HCons[+H, +T <: HList](head: H, tail: T) extends HList {
-    def :: [V](v: V) = HCons(v, this)
+  case class HCons[+L <: HList, +N](list: L, node: N) extends HList {
+    def `,`[V](v: V) = HCons(this, v)
 
-    override def length: Int = tail.length + 1
-    override def toList: List[Any] = List(head) ++ tail.toList
+    override def length: Int = list.length + 1
+    override def toList: List[Any] = list.toList :+ node
   }
 
   case object HNil extends HList {
-    def ::[V](v: V) = HCons(v, this)
+    def `,`[V](v: V) = HCons(this, v)
 
     override def length: Int = 0
     override def toList: List[Nothing] = List()
   }
 
+  type `,`[L <: HList, N] = HCons[L, N]
+
+  type `(`[L <: ScalaFunction, N] = HCons[L, N]
+
   implicit class HNilHelper[V](v1: V) {
-    def ::[V2](v2: V2) = HCons(v1, HCons(v2, HNil))
+    def `,`[V2](v2: V2) = HCons(HCons(HNil, v1), v2)
+
+    def `;` = HCons(HNil, v1)
   }
 
-  type ::[H, T <: HList] = HCons[H, T]
-
-  type Nil = HNil.type
+  type ScalaFunction = HNil.type
 
 }

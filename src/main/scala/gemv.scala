@@ -2,10 +2,13 @@
 import idealised.DPIA.Phrases.PrettyPhrasePrinter
 import idealised.DPIA.Types.{ArrayType, ExpType, TypeInference, float}
 import idealised.DPIA._
+import idealised.OpenCL
 import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.OpenCL._
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Expr
+import idealised.utils.Time.ms
+import idealised.utils.TimeSpan
 import lift.arithmetic._
 import opencl.executor.Executor
 
@@ -36,7 +39,7 @@ object gemv extends App {
     val kernel = CodeGenerator.makeKernel(lambda, localSize = 32, globalSize =  M * 32)
     println(kernel.code)
 
-    val fun = kernel.asFunction[(Array[Array[Float]] :: Array[Float] :: Array[Float] :: Float :: Float :: Nil) =:=> Array[Float]]
+    val fun = kernel.as[ScalaFunction `(` Array[Array[Float]] `,` Array[Float] `,` Array[Float] `,` Float `,` Float `)=>` Array[Float]]
 
     val size = 512
 
@@ -46,7 +49,8 @@ object gemv extends App {
     val alpha = Random.nextInt(2).toFloat
     val beta = Random.nextInt(2).toFloat
 
-    val (res, time) = fun(mat :: xs :: ys :: alpha :: beta)
+    val args = mat `,` xs `,` ys `,` alpha `,` beta
+    val (res, time) = fun(args)
     println(s"RESULT NAME: $name TIME: $time")
     if (check) {
       def dot = (xs: Array[Float], ys: Array[Float]) => (xs zip ys).map{ case (x, y) => x * y }.sum

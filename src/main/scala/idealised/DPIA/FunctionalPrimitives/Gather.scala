@@ -43,7 +43,7 @@ final case class Gather(n: Nat,
   }
 
   override def visitAndRebuild(fun: Visitor): Phrase[ExpType] =
-    Gather(fun(n), fun(dt), idxF, VisitAndRebuild(array, fun))
+    Gather(fun(n), fun(dt), VisitAndRebuild(idxF, fun), VisitAndRebuild(array, fun))
 
   override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._

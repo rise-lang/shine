@@ -39,14 +39,14 @@ object gemm extends App {
     val kernel = CodeGenerator.makeKernel(lambda, localSize = 128, globalSize = N)
     println(kernel.code)
 
-    val fun = kernel.asFunction[(Array[Float] :: Array[Float] :: Nil) =:=> Array[Float]]
+    val fun = kernel.as[ScalaFunction `(` Array[Float] `,` Array[Float] `)=>` Array[Float]]
 
     val size = 1024 * 1024
 
     val xs = Array.fill(size)(Random.nextInt(4).toFloat)
     val ys = Array.fill(size)(Random.nextInt(4).toFloat)
 
-    val (res, time) = fun(xs :: ys)
+    val (res, time) = fun(xs `,` ys)
     println(s"RESULT KERNEL1 NAME: $name TIME: $time")
     if (check) {
       val gold = (xs zip ys).map{ case (x, y) => x * y }.sum

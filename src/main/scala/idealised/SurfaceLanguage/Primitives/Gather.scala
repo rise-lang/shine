@@ -4,8 +4,8 @@ import idealised.DPIA.Phrases._
 import idealised.DPIA.Types.{TypeInference, _}
 import idealised.DPIA._
 import idealised.SurfaceLanguage.DSL.DataExpr
-import idealised.SurfaceLanguage.{Expr, PrimitiveExpr}
-import idealised.{DPIA, SurfaceLanguage}
+import idealised.SurfaceLanguage.{VisitAndRebuild, Expr, PrimitiveExpr}
+import idealised.DPIA
 
 import scala.language.{postfixOps, reflectiveCalls}
 
@@ -31,7 +31,7 @@ final case class Gather(idxF: Expr[ExpType -> ExpType],
     }
   }
 
-  override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): DataExpr = {
-    Gather(SurfaceLanguage.VisitAndRebuild(idxF, f), SurfaceLanguage.VisitAndRebuild(array, f))
+  override def visitAndRebuild(f: VisitAndRebuild.Visitor): DataExpr = {
+    Gather(VisitAndRebuild(idxF, f), VisitAndRebuild(array, f))
   }
 }

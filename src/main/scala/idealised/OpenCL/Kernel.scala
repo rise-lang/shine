@@ -23,7 +23,7 @@ case class Kernel(function: OpenCLAST.Function,
 
   def code: String = (new OpenCLPrinter)(this)
 
-  def asFunction[F <: FunctionHelper](implicit ev: F#T <:< HList): (F#T) => (F#R, TimeSpan[Time.ms]) = {
+  def as[F <: FunctionHelper](implicit ev: F#T <:< HList): (F#T) => (F#R, TimeSpan[Time.ms]) = {
     (args: F#T) => {
       val lengthMapping = createLengthMap(inputParams, args)
 

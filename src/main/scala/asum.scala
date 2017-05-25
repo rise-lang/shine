@@ -10,6 +10,7 @@ import lift.arithmetic._
 import opencl.executor.Executor
 
 import scala.language.implicitConversions
+import scala.language.postfixOps
 import scala.util.Random
 
 object asum extends App {
@@ -32,13 +33,13 @@ object asum extends App {
     val kernel = CodeGenerator.makeKernel(lambda, localSize = 128, globalSize = N)
     println(kernel.code)
 
-    val fun = kernel.asFunction[(Array[Float] :: Nil) =:=> Array[Float]]
+    val fun = kernel.as[ScalaFunction `(` Array[Float] `)=>` Array[Float]]
 
     val size = 1024 * 1024
 
     val input = Array.fill(size)(Random.nextInt(10).toFloat)
 
-    val (res, time) = fun(input :: HNil)
+    val (res, time) = fun(input `;`)
     println(s"RESULT NAME: $name TIME: $time")
     if (check) {
       val gold = input.map(math.abs).sum

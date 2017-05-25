@@ -6,7 +6,6 @@ import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.OpenCL._
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Expr
-import idealised.utils.Time.ms
 import idealised.utils._
 import lift.arithmetic._
 import opencl.executor.Executor
@@ -38,7 +37,7 @@ object scal extends App {
     val kernel = CodeGenerator.makeKernel(lambda, localSize = 128, globalSize = N)
     println(kernel.code)
 
-    val fun = kernel.asFunction[(Array[Float] :: Float :: Nil) =:=> Array[Float]]
+    val fun = kernel.as[ScalaFunction `(` Array[Float] `,` Float `)=>` Array[Float]]
 
     val size = 1024 * 1024 * 16
 
@@ -46,15 +45,15 @@ object scal extends App {
     val alpha = Random.nextInt(4).toFloat
 
     if (benchmark) {
-      var times = Vector[TimeSpan[ms]]()
+      var times = Vector[TimeSpan[Time.ms]]()
       for (_ <- 0 to iterations) {
-        val (_, time) = fun(input :: alpha :: HNil)
+        val (_, time) = fun(input `,` alpha)
         times = times :+ time
       }
       val sorted = times.sortBy(_.value)
       println(s"RESULT NAME: $name MEDIAN: ${sorted(sorted.length/2)} MIN: ${sorted.head} MAX: ${sorted.last}")
     } else {
-      val (res, time) = fun(input :: alpha :: HNil)
+      val (res, time) = fun(input `,` alpha)
       println(s"RESULT NAME: $name TIME: $time")
       val gold = input.sum * alpha
       if (res.sum == gold) {
