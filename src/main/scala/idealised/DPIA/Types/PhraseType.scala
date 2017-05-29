@@ -3,8 +3,6 @@ package idealised.DPIA.Types
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics.IndexData
 import idealised.DPIA._
-import idealised.SurfaceLanguage
-import idealised.SurfaceLanguage._
 import lift.arithmetic.{ArithExpr, Var}
 
 sealed trait PhraseType
@@ -63,18 +61,6 @@ object PhraseType {
     val p = Phrases.VisitAndRebuild(in, Visitor)
     p.typeCheck()
     p
-
-  }
-
-  def substitute[T <: PhraseType](dt: DataType,
-                                  `for`: DataTypeIdentifier,
-                                  in: Expr[T]): Expr[T] = {
-
-    object Visitor extends SurfaceLanguage.VisitAndRebuild.Visitor {
-      override def apply[DT <: DataType](in: DT): DT = substitute(dt, `for`, in)
-    }
-
-    SurfaceLanguage.VisitAndRebuild(in, Visitor)
 
   }
 
@@ -140,37 +126,6 @@ object PhraseType {
     val p = Phrases.VisitAndRebuild(in, Visitor)
     p.typeCheck()
     p
-
-  }
-
-  def substitute[T <: PhraseType](ae: Nat,
-                                  `for`: NatIdentifier,
-                                  in: Expr[T]): Expr[T] = {
-
-    object Visitor extends SurfaceLanguage.VisitAndRebuild.Visitor {
-      override def apply[T2 <: PhraseType](e: Expr[T2]): Result[Expr[T2]] = {
-        e match {
-          case IdentifierExpr(name, _) =>
-            if (`for`.name == name) {
-              Stop(LiteralExpr(IndexData(ae), IndexType(ae.max)).asInstanceOf[Expr[T2]])
-            } else {
-              Continue(e, this)
-            }
-          case LiteralExpr(IndexData(index), IndexType(size)) =>
-            val newIndex = substitute(ae, `for`, in = index)
-            val newSize = substitute(ae, `for`, in = size)
-            Stop(LiteralExpr(IndexData(newIndex), IndexType(newSize)).asInstanceOf[Expr[T2]])
-          case _ =>
-            Continue(e, this)
-        }
-      }
-
-      override def apply(e: Nat): Nat = substitute(ae, `for`, e)
-
-      override def apply[DT <: DataType](dt: DT): DT = substitute(ae, `for`, dt)
-    }
-
-    SurfaceLanguage.VisitAndRebuild(in, Visitor)
 
   }
 

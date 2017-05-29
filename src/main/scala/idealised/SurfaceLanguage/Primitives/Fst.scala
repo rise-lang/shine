@@ -1,29 +1,38 @@
 package idealised.SurfaceLanguage.Primitives
 
-import idealised.DPIA.Phrases.Primitive
-import idealised.DPIA.Types.{TypeInference, _}
 import idealised.SurfaceLanguage.DSL.DataExpr
-import idealised.SurfaceLanguage.PrimitiveExpr
-import idealised.{DPIA, SurfaceLanguage}
+import idealised.SurfaceLanguage.{PrimitiveExpr, ToDPIA}
+import idealised.{DPIA, OpenCL, SurfaceLanguage}
+import idealised.SurfaceLanguage.Types._
 
-final case class Fst(record: DataExpr) extends PrimitiveExpr {
+final case class Fst(tuple: DataExpr, override val `type`: Option[DataType] = None)
+  extends PrimitiveExpr
+{
 
-  override def inferTypes(subs: TypeInference.SubstitutionMap): Primitive[ExpType] = {
-    import idealised.DPIA.Types.TypeInference._
-    val record_ = TypeInference(record, subs)
-    record_.t match {
-      case ExpType(RecordType(dt1_, dt2_)) =>
-        DPIA.FunctionalPrimitives.Fst(dt1_, dt2_, record_)
 
-      case x => error(expr = s"Fst($record_)",
-        found = s"`${x.toString}'", expected = "exp[dt1 x dt2]")
+  override def toDPIA: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
+    tuple.`type` match {
+      case Some(TupleType(dt1, dt2)) =>
+        DPIA.FunctionalPrimitives.Fst(dt1, dt2, ToDPIA(tuple))
+      case _ => throw new Exception("")
+    }
+  }
+
+  override def inferType(subs: TypeInference.SubstitutionMap): Fst = {
+    import TypeInference._
+    val tuple_ = TypeInference(tuple, subs)
+    tuple_.`type` match {
+      case Some(TupleType(dt1_, dt2_)) =>
+        Fst(tuple_, Some(dt1_))
+
+      case x => error(expr = s"Fst($tuple_)",
+        found = s"`${x.toString}'", expected = "(dt1, dt2)")
     }
   }
 
   override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): DataExpr = {
-    Fst(SurfaceLanguage.VisitAndRebuild(record, f))
+    Fst(SurfaceLanguage.VisitAndRebuild(tuple, f), `type`.map(f(_)))
   }
 
-  override def toString: String = s"$record._1"
-
+  override def toString: String = s"$tuple._1"
 }

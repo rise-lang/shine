@@ -1,17 +1,28 @@
 package idealised.SurfaceLanguage
 
-import idealised.DPIA.Semantics.OperationalSemantics
-import idealised.DPIA.Types._
-import idealised.DPIA._
+import idealised.SurfaceLanguage.Semantics.Data
 import idealised.SurfaceLanguage.DSL.DataExpr
+import idealised.SurfaceLanguage.Types._
 
-sealed trait Expr[T <: PhraseType]
+sealed abstract class Expr[T <: Type] {
+  def `type`: Option[T]
+}
 
-final case class IdentifierExpr(name: String, `type`: Option[DataType]) extends DataExpr {
+final case class IdentifierExpr(name: String,
+                                override val `type`: Option[DataType] = None)
+  extends DataExpr
+{
   override def toString: String = name
 }
 
-final case class LambdaExpr[T <: PhraseType](param: IdentifierExpr, body: Expr[T]) extends Expr[ExpType ->T] {
+final case class LambdaExpr[T <: Type](param: IdentifierExpr, body: Expr[T])
+  extends Expr[DataType ->T]
+{
+  override lazy val `type`: Option[DataType -> T] = (param.`type`, body.`type`) match {
+    case (Some(pt), Some(bt)) => Some(pt -> bt)
+    case _ => None
+  }
+
   override def toString: String = {
     val pName = param.name
     val pType = param.`type` match {
@@ -22,55 +33,113 @@ final case class LambdaExpr[T <: PhraseType](param: IdentifierExpr, body: Expr[T
   }
 }
 
-final case class ApplyExpr[T <: PhraseType](fun: Expr[ExpType -> T], arg: DataExpr) extends Expr[T] {
+final case class ApplyExpr[T <: Type](fun: Expr[DataType -> T], arg: DataExpr)
+  extends Expr[T]
+{
+  override lazy val `type`: Option[T] = fun.`type` match {
+    case Some(FunctionType(_, t)) => Some(t)
+    case None => None
+  }
+
   override def toString: String = s"($fun)($arg)"
 }
 
-final case class NatDependentLambdaExpr[T <: PhraseType](x: NatIdentifier, body: Expr[T]) extends Expr[`(nat)->`[T]] {
+final case class NatDependentLambdaExpr[T <: Type](x: NatIdentifier, body: Expr[T])
+  extends Expr[`(nat)->`[T]]
+{
+  override lazy val `type`: Option[`(nat)->`[T]] = body.`type` match {
+    case Some(t) => Some(NatDependentFunctionType(x, t))
+    case None => None
+  }
+
   override def toString: String = s"Λ ($x : nat) -> $body"
 }
 
-final case class NatDependentApplyExpr[T <: PhraseType](fun: Expr[`(nat)->`[T]], arg: Nat) extends Expr[T] {
+final case class NatDependentApplyExpr[T <: Type](fun: Expr[`(nat)->`[T]], arg: Nat)
+  extends Expr[T]
+{
+  override lazy val `type`: Option[T] = fun.`type` match {
+    case Some(NatDependentFunctionType(_, t)) => Some(t)
+    case None => None
+  }
+
   override def toString: String = s"($fun)($arg)"
 }
 
-final case class TypeDependentLambdaExpr[T <: PhraseType](x: DataTypeIdentifier, body: Expr[T]) extends Expr[`(dt)->`[T]] {
+final case class TypeDependentLambdaExpr[T <: Type](x: DataTypeIdentifier, body: Expr[T])
+  extends Expr[`(dt)->`[T]]
+{
+  override lazy val `type`: Option[`(dt)->`[T]] = body.`type` match {
+    case Some(t) => Some(TypeDependentFunctionType(x, t))
+    case _ => None
+  }
+
   override def toString: String = s"Λ ($x : dt) -> $body"
 }
 
-final case class TypeDependentApplyExpr[T <: PhraseType](fun: Expr[`(dt)->`[T]], arg: DataType) extends Expr[T] {
+final case class TypeDependentApplyExpr[T <: Type](fun: Expr[`(dt)->`[T]], arg: DataType)
+  extends Expr[T]
+{
+  override lazy val `type`: Option[T] = fun.`type` match {
+    case Some(TypeDependentFunctionType(_, t)) => Some(t)
+    case None => None
+  }
+
   override def toString: String = s"($fun)($arg)"
 }
 
-final case class IfThenElseExpr[T <: PhraseType](cond: DataExpr, thenE: Expr[T], elseE: Expr[T]) extends Expr[T] {
+final case class IfThenElseExpr[T <: Type](cond: DataExpr, thenE: Expr[T], elseE: Expr[T])
+  extends Expr[T]
+{
+  override lazy val `type`: Option[T] = (thenE.`type`, elseE.`type`) match {
+    case (Some(tT), Some(eT)) if tT == eT => Some(tT)
+    case _ => None
+  }
+
   override def toString: String = s"if ($cond) then ($thenE) else ($elseE)"
 }
 
-final case class UnaryOpExpr(op: Operators.Unary.Value, e: DataExpr) extends DataExpr {
+final case class UnaryOpExpr(op: Operators.Unary.Value, e: DataExpr)
+  extends DataExpr
+{
+  override lazy val `type`: Option[DataType] = e.`type`
+
   override def toString: String = s"$op $e"
 }
 
-final case class BinOpExpr(op: Operators.Binary.Value, lhs: DataExpr, rhs: DataExpr) extends DataExpr {
+final case class BinOpExpr(op: Operators.Binary.Value, lhs: DataExpr, rhs: DataExpr)
+  extends DataExpr
+{
+  override lazy val `type`: Option[DataType] = (lhs.`type`, rhs.`type`) match {
+    case (Some(lhsT), Some(rhsT)) if lhsT == rhsT => Some(lhsT)
+    case _ => None
+  }
+
   override def toString: String = s"$lhs $op $rhs"
 }
 
-final case class LiteralExpr(d: OperationalSemantics.Data, dt: DataType) extends DataExpr {
+final case class LiteralExpr(d: Data, dt: DataType)
+  extends DataExpr
+{
+  override lazy val `type`: Option[DataType] = Some(dt)
   override def toString: String = s"$d"
 }
 
-trait PrimitiveExpr extends DataExpr {
-  def inferTypes(subs: TypeInference.SubstitutionMap): Phrases.Primitive[ExpType]
+abstract class PrimitiveExpr extends DataExpr {
+  def inferType(subs: Types.TypeInference.SubstitutionMap): DataExpr
 
   def visitAndRebuild(f: VisitAndRebuild.Visitor): DataExpr
+
+  def toDPIA: idealised.DPIA.Phrases.Phrase[idealised.DPIA.Types.ExpType]
 }
 
 object Expr {
   // substitutes `phrase` for `for` in `in`, i.e. in [ phrase / for ]
-  def substitute[T1 <: PhraseType, T2 <: PhraseType](expr: Expr[T1],
-                                                     `for`: Expr[T1],
-                                                     in: Expr[T2]): Expr[T2] = {
+  def substitute[T1 <: Type, T2 <: Type](expr: Expr[T1],
+                                         `for`: Expr[T1],
+                                         in: Expr[T2]): Expr[T2] = {
     object Visitor extends VisitAndRebuild.Visitor {
-      override def apply[T <: PhraseType](e: Expr[T]): Result[Expr[T]] = {
+      override def apply[T <: Type](e: Expr[T]): Result[Expr[T]] = {
         if (`for` == e) {
           Stop(expr.asInstanceOf[Expr[T]])
         } else {

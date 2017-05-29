@@ -1,35 +1,63 @@
 package idealised.SurfaceLanguage.Primitives
 
-import idealised.DPIA.Phrases._
-import idealised.DPIA.Types.{TypeInference, _}
-import idealised.DPIA._
-import idealised.SurfaceLanguage.DSL.DataExpr
-import idealised.SurfaceLanguage.{VisitAndRebuild, Expr, PrimitiveExpr}
 import idealised.DPIA
+import idealised.SurfaceLanguage.DSL.DataExpr
+import idealised.SurfaceLanguage.Types.TypeInference
+import idealised.SurfaceLanguage.Types._
+import idealised.SurfaceLanguage._
 
 import scala.language.{postfixOps, reflectiveCalls}
 
-final case class Gather(idxF: Expr[ExpType -> ExpType],
-                        array: DataExpr) extends PrimitiveExpr {
+final case class Gather(idxF: Expr[`(nat)->`[DataType ->DataType]],
+                        array: DataExpr,
+                        override val `type`: Option[DataType] = None)
+  extends PrimitiveExpr
+{
 
-  override def inferTypes(subs: TypeInference.SubstitutionMap): Primitive[ExpType] = {
+
+  override def toDPIA: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
+    array.`type` match {
+      case Some(ArrayType(n, dt)) =>
+        DPIA.FunctionalPrimitives.Gather(n, dt, ToDPIA(idxF), ToDPIA(array))
+      case _ => throw new Exception("")
+    }
+  }
+
+  override def inferType(subs: TypeInference.SubstitutionMap): DataExpr = {
     import TypeInference._
-
     val array_ = TypeInference(array, subs)
-    array_.t match {
-      case ExpType(ArrayType(n_, dt_)) =>
+    array_.`type` match {
+      case Some(ArrayType(n, dt)) =>
         val idxF_ = TypeInference(idxF, subs)
-        idxF_.t match {
-          case FunctionType(ExpType(IndexType(m: NatIdentifier)), _) =>
-            DPIA.FunctionalPrimitives.Gather(n_, dt_, idxF_ `[` n_ `/` m `]`, array_)
-          case FunctionType(ExpType(IndexType(m1: Nat)), ExpType(IndexType(m2: Nat)))
-            if n_ == m1 && n_ == m2 =>
-            DPIA.FunctionalPrimitives.Gather(n_, dt_, idxF_, array_)
+        val lifted = Lifting.liftNatDependentFunctionExpr(idxF_)
+        println(n)
+        println(lifted(n))
+        lifted(n).`type` match {
+          case Some(FunctionType(IndexType(m1), IndexType(m2))) =>
+            if (n == m1 && n == m2) {
+              Gather(idxF_, array_, array_.`type`)
+            } else {
+              error(expr = s"Gather($idxF_, $array_)",
+                found = s"`$n', `$m1' and `$m2'", expected = "them to match")
+            }
+//          case Some(NatDependentFunctionType(x, FunctionType(IndexType(m1_), IndexType(m2_)))) =>
+//            val m1 = m1_ `[` n `/` x `]`
+//            val m2 = m2_ `[` n `/` x `]`
+//
+//            println(m1_)
+//            println(m2_)
+//
+//            if (n == m1 && n == m2) {
+//              Gather(idxF_, array_, array_.`type`)
+//            } else {
+//              error(expr = s"Gather($idxF_, $array_)",
+//                found = s"`$n', `$m1' and `$m2'", expected = "them to match")
+//            }
           case x => error(expr = s"Gather($idxF_, $array_)",
-            found = s"`${x.toString}'", expected = "exp[idx(n)] -> exp[idx(n)]")
+            found = s"`${x.toString}'", expected = "idx(_) -> idx(_)")
         }
       case x => error(expr = s"Gather($idxF, $array_)",
-        found = s"`${x.toString}'", expected = "exp[n.dt]")
+        found = s"`${x.toString}'", expected = "n.dt")
     }
   }
 

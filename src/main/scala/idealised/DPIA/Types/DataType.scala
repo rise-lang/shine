@@ -1,7 +1,11 @@
 package idealised.DPIA.Types
 
 import idealised.DPIA.{Nat, Types}
+import idealised.SurfaceLanguage
+import idealised.SurfaceLanguage.Types.TupleType
 import idealised.utils.SizeInByte
+
+import scala.language.implicitConversions
 
 sealed trait DataType
 
@@ -49,7 +53,34 @@ final case class DataTypeIdentifier(name: String) extends DataType {
   override def toString: String = name
 }
 
+object ScalarType {
+  implicit def apply(st: SurfaceLanguage.Types.ScalarType): ScalarType = {
+    st match {
+      case SurfaceLanguage.Types.bool => bool
+      case SurfaceLanguage.Types.int => int
+      case SurfaceLanguage.Types.float => float
+    }
+  }
+}
+
 object DataType {
+  implicit def apply(dt: SurfaceLanguage.Types.DataType): DataType = {
+    dt match {
+      case bt: SurfaceLanguage.Types.BasicType => bt match {
+        case st: SurfaceLanguage.Types.ScalarType => ScalarType(st)
+        case vt: SurfaceLanguage.Types.VectorType => VectorType(vt.size, ScalarType(vt.elemType))
+        case it: SurfaceLanguage.Types.IndexType => IndexType(it.size)
+      }
+      case ct: SurfaceLanguage.Types.ComposedType => ct match {
+        case at: SurfaceLanguage.Types.ArrayType => ArrayType(at.size, DataType(at.elemType))
+        case tt: SurfaceLanguage.Types.TupleType => {
+          assert(tt.elemTypes.size == 2)
+          RecordType(DataType(tt.elemTypes(0)), DataType(tt.elemTypes(1)))
+        }
+      }
+    }
+  }
+
   def toType(dt: DataType): ir.Type = {
     dt match {
       case b: BasicType => b match {

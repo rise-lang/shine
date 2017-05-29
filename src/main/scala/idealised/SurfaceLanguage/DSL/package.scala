@@ -1,15 +1,14 @@
 package idealised.SurfaceLanguage
 
-import idealised.DPIA.Semantics.OperationalSemantics.{FloatData, IndexData, VectorData}
-import idealised.DPIA.Types._
-import idealised.DPIA._
 import idealised.SurfaceLanguage.Primitives.{Fst, Snd}
+import idealised.SurfaceLanguage.Semantics._
+import idealised.SurfaceLanguage.Types._
 import lift.arithmetic.{ContinuousRange, NamedVar}
 
 import scala.language.implicitConversions
 
 package object DSL {
-  type DataExpr = Expr[ExpType]
+  type DataExpr = Expr[DataType]
 
   implicit class BinOps(lhs: DataExpr) {
     def +(rhs: DataExpr) = BinOpExpr(Operators.Binary.ADD, lhs, rhs)
@@ -22,36 +21,36 @@ package object DSL {
     def unary_- = UnaryOpExpr(Operators.Unary.NEG, lhs)
   }
 
-  implicit class CallLambdaExpr[T <: PhraseType](fun: Expr[ExpType -> T]) {
+  implicit class CallLambdaExpr[T <: Type](fun: Expr[DataType -> T]) {
     def apply(arg: DataExpr): Expr[T] = Lifting.liftFunctionExpr(fun)(arg)
 
     def $(arg: DataExpr): Expr[T] = apply(arg)
   }
 
-  implicit class CallNatDependentLambdaExpr[T <: PhraseType](fun: Expr[`(nat)->`[T]]) {
+  implicit class CallNatDependentLambdaExpr[T <: Type](fun: Expr[`(nat)->`[T]]) {
     def apply(arg: Nat): Expr[T] = Lifting.liftNatDependentFunctionExpr(fun)(arg)
 
     def $(arg: Nat): Expr[T] = apply(arg)
   }
 
-  implicit class CallTypeDependentLambdaExpr[T <: PhraseType](fun: Expr[`(dt)->`[T]]) {
+  implicit class CallTypeDependentLambdaExpr[T <: Type](fun: Expr[`(dt)->`[T]]) {
     def apply(arg: DataType): Expr[T] = Lifting.liftTypeDependentFunctionExpr(fun)(arg)
 
     def $(arg: DataType): Expr[T] = apply(arg)
   }
 
-  implicit class FunComp[T <: PhraseType](f: Expr[ExpType -> T]) {
-    def o(g: Expr[ExpType -> ExpType]): Expr[ExpType -> T] = {
+  implicit class FunComp[T <: Type](f: Expr[DataType -> T]) {
+    def o(g: Expr[DataType -> DataType]): Expr[DataType -> T] = {
       λ(arg => f( g(arg) ) )
     }
   }
 
-  implicit def toLiteralInt(i: Int): LiteralExpr = LiteralExpr(i, int)
+  implicit def toLiteralInt(i: Int): LiteralExpr = LiteralExpr(IntData(i), int)
   implicit def toLiteralFloat(f: Float): LiteralExpr = LiteralExpr(FloatData(f), float)
   implicit def toLiteralFloat4(v: VectorData): LiteralExpr =
-    LiteralExpr(v, VectorType(v.a.length, v.a.head.dataType.asInstanceOf[ScalarType]))
+    LiteralExpr(v, VectorType(v.v.length, v.v.head.dataType))
 
-  implicit def toNatDependentLambda[T <: PhraseType](p: Expr[T]): NatDependentLambdaExpr[T] =
+  implicit def toNatDependentLambda[T <: Type](p: Expr[T]): NatDependentLambdaExpr[T] =
     _Λ_( _ => p )
 
   implicit class IdentExpPhraseExtensions(i: IdentifierExpr) {

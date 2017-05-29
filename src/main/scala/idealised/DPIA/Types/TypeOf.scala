@@ -56,7 +56,8 @@ object TypeOf {
               ExpType(IndexType(n))
 
             case (lhsT, rhsT) =>
-              TypeInference.error(phrase.toString, s"`$lhsT' and `$rhsT'", expected = "them to match.")
+              throw new TypeException(s"Failed type checking: found" +
+                s"`$lhsT' and `$rhsT', but expected them to match.")
           }
         }
 

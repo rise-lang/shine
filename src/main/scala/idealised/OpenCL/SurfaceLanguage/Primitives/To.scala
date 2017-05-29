@@ -1,43 +1,56 @@
 package idealised.OpenCL.SurfaceLanguage.Primitives
 
-import idealised.DPIA.Phrases._
-import idealised.DPIA.Types.{TypeInference, _}
-import idealised.DPIA._
+import idealised.DPIA
 import idealised.OpenCL.AddressSpace
-import idealised.SurfaceLanguage
+import idealised.SurfaceLanguage._
+import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.SurfaceLanguage.{Expr, PrimitiveExpr}
 
-abstract class To(f: Expr[ExpType -> ExpType],
+abstract class To(f: Expr[DataType -> DataType],
                   input: DataExpr,
                   addressSpace: AddressSpace,
-                  private val makeTo: (Expr[ExpType -> ExpType], DataExpr) => To,
-                  private val makeToPhrase: (DataType, DataType,
-                   Phrase[ExpType -> ExpType], Phrase[ExpType]) => idealised.OpenCL.FunctionalPrimitives.To)
-  extends PrimitiveExpr {
+                  private val makeTo: (Expr[DataType -> DataType], DataExpr, Option[DataType]) => To,
+                  private val makeToDPIA: (DPIA.Types.DataType, DPIA.Types.DataType,
+                    DPIA.Phrases.Phrase[DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]],
+                    DPIA.Phrases.Phrase[DPIA.Types.ExpType]) => idealised.OpenCL.FunctionalPrimitives.To
+                 )
+  extends PrimitiveExpr
+{
 
-  override def inferTypes(subs: TypeInference.SubstitutionMap): Primitive[ExpType] = {
-    import TypeInference._
-    val input_ = TypeInference(input, subs)
-    input_.t match {
-      case ExpType(dt1_) =>
-        val f_ = TypeInference.setParamAndInferType(f, exp"[$dt1_]", subs)
-        f_.t match {
-          case FunctionType(ExpType(t1_), ExpType(dt2_)) =>
-            if (dt1_ == t1_) {
-              makeToPhrase(dt1_, dt2_, f_, input_)
-            } else {
-              error(this.toString,
-                s"`${dt1_.toString}' and `${t1_.toString}'", expected = "them to match")
-            }
-          case x => error(this.toString, s"`${x.toString}'", "exp[dt1] -> exp[dt2]")
-        }
-      case x => error(this.toString, s"`${x.toString}'", "exp[dt]")
+
+  override def toDPIA: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
+    (f.`type`, input.`type`) match {
+      case (Some(FunctionType(dt1, dt2)), Some(t1)) if dt1 == t1 =>
+        makeToDPIA(dt1, dt2,
+          ToDPIA(f).asInstanceOf[DPIA.Phrases.Phrase[DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]]],
+          ToDPIA(input))
+      case _ => throw new Exception("")
     }
   }
 
-  override def visitAndRebuild(fun: SurfaceLanguage.VisitAndRebuild.Visitor): DataExpr = {
-    makeTo(SurfaceLanguage.VisitAndRebuild(f, fun), SurfaceLanguage.VisitAndRebuild(input, fun))
+  override def inferType(subs: TypeInference.SubstitutionMap): To = {
+    import TypeInference._
+    val input_ = TypeInference(input, subs)
+    input_.`type` match {
+      case Some(dt1) =>
+        val f_ = TypeInference.setParamAndInferType(f, dt1, subs)
+        f_.`type` match {
+          case Some(FunctionType(t1, dt2)) =>
+            if (dt1 == t1) {
+              makeTo(f_, input_, Some(dt1))
+            } else {
+              error(this.toString,
+                s"`${dt1.toString}' and `${t1.toString}'", expected = "them to match")
+            }
+          case x => error(this.toString, s"`${x.toString}'", " -> dt2")
+        }
+      case x => error(this.toString, s"`${x.toString}'", "dt")
+    }
+  }
+
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): DataExpr = {
+    makeTo(VisitAndRebuild(f, fun), VisitAndRebuild(input, fun), `type`.map(fun(_)))
   }
 
 }

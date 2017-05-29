@@ -6,6 +6,11 @@ scalaVersion := "2.11.8"
 
 scalacOptions ++= Seq("-Xmax-classfile-name", "100", "-unchecked", "-deprecation", "-feature")
 
+resolvers ++= Seq(
+  Resolver.sonatypeRepo("releases"),
+  Resolver.sonatypeRepo("snapshots")
+)
+
 
 // Scala libraries
 libraryDependencies += "org.scala-lang" % "scala-reflect" % "2.11.8"
@@ -31,6 +36,8 @@ libraryDependencies += "org.clapper" %% "argot" % "1.0.3"
 // Logging
 libraryDependencies += "ch.qos.logback" %  "logback-classic" % "1.1.7"
 libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.4.0"
+
+libraryDependencies += "com.chuusai" %% "shapeless" % "2.3.2"
 
 // Build ArithExpr
 unmanagedSourceDirectories in Compile += baseDirectory.value / "lib/ArithExpr/src/main/"

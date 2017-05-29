@@ -1,26 +1,37 @@
 package idealised.OpenCL.SurfaceLanguage.Primitives
 
-import idealised.DPIA.Phrases.Primitive
-import idealised.DPIA.Types.{ExpType, ScalarType, TypeInference}
-import idealised.DPIA._
-import idealised.SurfaceLanguage
+import idealised.{DPIA, OpenCL}
 import idealised.SurfaceLanguage.DSL.DataExpr
-import idealised.SurfaceLanguage.PrimitiveExpr
+import idealised.SurfaceLanguage._
+import idealised.SurfaceLanguage.Types._
+import idealised.SurfaceLanguage.{Nat, PrimitiveExpr}
 
-final case class VectorFromScalar(n: Nat, arg: DataExpr) extends PrimitiveExpr {
+final case class VectorFromScalar(n: Nat, arg: DataExpr,
+                                  override val `type`: Option[DataType] = None)
+  extends PrimitiveExpr
+{
 
-  override def inferTypes(subs: TypeInference.SubstitutionMap): Primitive[ExpType] = {
-    import TypeInference._
-    val arg_ = TypeInference(arg, subs)
-    arg_.t match {
-      case ExpType(dt_) if dt_.isInstanceOf[ScalarType] =>
-        idealised.OpenCL.FunctionalPrimitives.VectorFromScalar(n, dt_.asInstanceOf[ScalarType], arg_)
-      case x => error(this.toString, s"`${x.toString}'", "exp[st]")
+
+  override def toDPIA: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
+    arg.`type` match {
+      case Some(dt: ScalarType) =>
+        OpenCL.FunctionalPrimitives.VectorFromScalar(n, dt, ToDPIA(arg))
+      case _ => throw new Exception("")
     }
   }
 
-  override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): DataExpr = {
-    VectorFromScalar(f(n), SurfaceLanguage.VisitAndRebuild(arg, f))
+  override def inferType(subs: TypeInference.SubstitutionMap): VectorFromScalar = {
+    import TypeInference._
+    val arg_ = TypeInference(arg, subs)
+    arg_.`type` match {
+      case Some(dt: ScalarType) =>
+        VectorFromScalar(n, arg_, Some(VectorType(n, dt)))
+      case x => error(this.toString, s"`${x.toString}'", "st")
+    }
+  }
+
+  override def visitAndRebuild(f: VisitAndRebuild.Visitor): DataExpr = {
+    VectorFromScalar(f(n), VisitAndRebuild(arg, f), `type`.map(f(_)))
   }
 
 }

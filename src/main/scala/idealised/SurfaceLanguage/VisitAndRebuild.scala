@@ -1,22 +1,21 @@
 package idealised.SurfaceLanguage
 
-import idealised.DPIA.Semantics.OperationalSemantics.IndexData
-import idealised.DPIA.Types.{DataType, PhraseType}
-import idealised.DPIA._
+import idealised.SurfaceLanguage.Types._
+import idealised.SurfaceLanguage.Semantics._
 
 object VisitAndRebuild {
 
   class Visitor {
-    def apply[T <: PhraseType](e: Expr[T]): Result[Expr[T]] = Continue(e, this)
+    def apply[T <: Type](e: Expr[T]): Result[Expr[T]] = Continue(e, this)
     def apply(ae: Nat): Nat = ae
     def apply[T <: DataType](dt: T): T = dt
 
     abstract class Result[+T]
-    case class Stop[T <: PhraseType](p: Expr[T]) extends Result[Expr[T]]
-    case class Continue[T <: PhraseType](p: Expr[T], v: Visitor) extends Result[Expr[T]]
+    case class Stop[T <: Type](p: Expr[T]) extends Result[Expr[T]]
+    case class Continue[T <: Type](p: Expr[T], v: Visitor) extends Result[Expr[T]]
   }
 
-  def apply[T <: PhraseType](e: Expr[T], v: Visitor): Expr[T] = {
+  def apply[T <: Type](e: Expr[T], v: Visitor): Expr[T] = {
     v(e) match {
       case r: v.Stop[T]@unchecked => r.p
       case c: v.Continue[T]@unchecked =>

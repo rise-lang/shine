@@ -1,52 +1,94 @@
 package idealised.SurfaceLanguage.Primitives
 
-import idealised.DPIA.Phrases._
-import idealised.DPIA.Types._
-import idealised.DPIA._
+import idealised.DPIA
 import idealised.SurfaceLanguage.DSL.DataExpr
-import idealised.SurfaceLanguage.{Expr, PrimitiveExpr}
-import idealised.{DPIA, SurfaceLanguage}
+import idealised.SurfaceLanguage.Types._
+import idealised.SurfaceLanguage.Types.TypeInference.SubstitutionMap
+import idealised.SurfaceLanguage._
 
-abstract class AbstractMap(f: Expr[ExpType -> ExpType], array: DataExpr)
-  extends PrimitiveExpr {
+abstract class AbstractMap(f: Expr[DataType -> DataType],
+                           array: DataExpr,
+                           override val `type`: Option[DataType])
+  extends PrimitiveExpr
+{
 
-  def makeMap: (Expr[ExpType -> ExpType], DataExpr) => AbstractMap
+  def makeMap: (Expr[DataType -> DataType], DataExpr, Option[DataType]) => AbstractMap
 
-  def makePhraseMap: (Nat, DataType, DataType, Phrase[ExpType -> ExpType], Phrase[ExpType]) =>
-    idealised.DPIA.FunctionalPrimitives.AbstractMap
+  def makeDPIAMap: (
+    DPIA.Nat,
+    DPIA.Types.DataType,
+    DPIA.Types.DataType,
+    DPIA.Phrases.Phrase[DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]],
+    DPIA.Phrases.Phrase[DPIA.Types.ExpType]
+    ) => DPIA.FunctionalPrimitives.AbstractMap
 
-  override def inferTypes(subs: TypeInference.SubstitutionMap): Primitive[ExpType] = {
-    import TypeInference._
-    val array_ = TypeInference(array, subs)
-    array_.t match {
-      case ExpType(ArrayType(n_, dt1_)) =>
-        val f_ = setParamAndInferType(f, exp"[$dt1_]", subs)
-        f_.t match {
-          case FunctionType(ExpType(dt1__), ExpType(dt2_)) =>
-            if (dt1_ == dt1__) {
-              makePhraseMap(n_, dt1_, dt2_, f_, array_)
-            } else {
-              error(expr = s"${this.getClass.getSimpleName}($f_, $array_)",
-                found = s"`$dt1__'", expected = s"`$dt1_'")
-            }
-          case x => error(expr = s"${this.getClass.getSimpleName}($f_, $array_)",
-            found = s"`${x.toString}'", expected = "exp[dt1] -> exp[dt2]")
-        }
-      case x => error(expr = s"${this.getClass.getSimpleName}($f, $array_)",
-        found = s"`${x.toString}'", expected = "exp[n.dt]")
+
+  override def toDPIA: DPIA.FunctionalPrimitives.AbstractMap = {
+    (f.`type`, array.`type`) match {
+      case (Some(FunctionType(dt1, dt2)), Some(ArrayType(n, dt1_))) if dt1 == dt1_ =>
+        makeDPIAMap(n, dt1, dt2,
+          ToDPIA(f).asInstanceOf[DPIA.Phrases.Phrase[DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]]],
+          ToDPIA(array)
+        )
+      case _ => throw new Exception("")
     }
   }
 
-  override def visitAndRebuild(fun: SurfaceLanguage.VisitAndRebuild.Visitor): DataExpr = {
-    makeMap(SurfaceLanguage.VisitAndRebuild(f, fun), SurfaceLanguage.VisitAndRebuild(array, fun))
+  override def inferType(subs: SubstitutionMap): DataExpr = {
+    import TypeInference._
+    val array_ = TypeInference(array, subs)
+    array_.`type` match {
+      case Some(ArrayType(n, dt1)) =>
+        val f_ = setParamAndInferType(f, dt1, subs)
+        f_.`type` match {
+          case Some(FunctionType(dt1_, dt2)) =>
+            if (dt1 == dt1_) {
+              makeMap(f_, array_, Some(ArrayType(n, dt2)))
+            } else {
+              error(expr = s"${this.getClass.getSimpleName}($f_, $array_)",
+                found = s"`$dt1_'", expected = s"`$dt1'")
+            }
+          case x => error(expr = s"${this.getClass.getSimpleName}($f_, $array_)",
+                      found = s"`${x.toString}'", expected = "dt1 -> dt2")
+        }
+      case x =>  error(expr = s"${this.getClass.getSimpleName}($f, $array_)",
+        found = s"`${x.toString}'", expected = "n.dt")
+    }
+  }
+
+//  override def inferTypes(subs: TypeInference.SubstitutionMap): Primitive[ExpType] = {
+//    import TypeInference._
+//    val array_ = TypeInference(array, subs)
+//    array_.t match {
+//      case ExpType(ArrayType(n_, dt1_)) =>
+//        val f_ = setParamAndInferType(f, exp"[$dt1_]", subs)
+//        f_.t match {
+//          case FunctionType(ExpType(dt1__), ExpType(dt2_)) =>
+//            if (dt1_ == dt1__) {
+//              makePhraseMap(n_, dt1_, dt2_, f_, array_)
+//            } else {
+//              error(expr = s"${this.getClass.getSimpleName}($f_, $array_)",
+//                found = s"`$dt1__'", expected = s"`$dt1_'")
+//            }
+//          case x => error(expr = s"${this.getClass.getSimpleName}($f_, $array_)",
+//            found = s"`${x.toString}'", expected = "exp[dt1] -> exp[dt2]")
+//        }
+//      case x => error(expr = s"${this.getClass.getSimpleName}($f, $array_)",
+//        found = s"`${x.toString}'", expected = "exp[n.dt]")
+//    }
+//  }
+
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): DataExpr = {
+    makeMap(VisitAndRebuild(f, fun), VisitAndRebuild(array, fun), `type`.map(fun(_)))
   }
 
 }
 
-final case class Map(f: Expr[ExpType -> ExpType], array: DataExpr)
-  extends AbstractMap(f, array) {
+final case class Map(f: Expr[DataType -> DataType], array: DataExpr,
+                     override val `type`: Option[DataType] = None)
+  extends AbstractMap(f, array, `type`) {
 
-  override def makePhraseMap = DPIA.FunctionalPrimitives.Map
+  override def makeDPIAMap = DPIA.FunctionalPrimitives.Map
 
   override def makeMap = Map
 }

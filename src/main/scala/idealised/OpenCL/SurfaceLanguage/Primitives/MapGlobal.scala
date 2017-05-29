@@ -1,17 +1,16 @@
 package idealised.OpenCL.SurfaceLanguage.Primitives
 
-import idealised.DPIA.Phrases.Phrase
-import idealised.DPIA.Types.{DataType, ExpType}
-import idealised.DPIA._
-import idealised.OpenCL
+import idealised.SurfaceLanguage._
 import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.SurfaceLanguage.Expr
 import idealised.SurfaceLanguage.Primitives.AbstractMap
+import idealised.SurfaceLanguage.Types._
 
-final case class MapGlobal(f: Expr[ExpType -> ExpType],
-                          array: DataExpr) extends AbstractMap(f, array) {
-  override def makeMap: (Expr[->[ExpType, ExpType]], DataExpr) => AbstractMap = MapGlobal
+final case class MapGlobal(f: Expr[DataType -> DataType], array: DataExpr,
+                           override val `type`: Option[DataType] = None)
+  extends AbstractMap(f, array, `type`)
+{
+  override def makeMap: (Expr[DataType -> DataType], DataExpr, Option[DataType]) => AbstractMap = MapGlobal
 
-  override def makePhraseMap: (Nat, DataType, DataType, Phrase[->[ExpType, ExpType]], Phrase[ExpType]) =>
-    idealised.DPIA.FunctionalPrimitives.AbstractMap = OpenCL.FunctionalPrimitives.MapGlobal
+  override def makeDPIAMap = idealised.OpenCL.FunctionalPrimitives.MapGlobal
 }

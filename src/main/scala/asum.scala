@@ -1,13 +1,15 @@
 
-import idealised.DPIA.Phrases.PrettyPhrasePrinter
-import idealised.DPIA.Types._
-import idealised.DPIA._
+import idealised.DPIA.Phrases.Phrase
+import idealised.DPIA.Types.ExpType
 import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.OpenCL._
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Expr
+import idealised.SurfaceLanguage._
+import idealised.SurfaceLanguage.Types._
 import lift.arithmetic._
 import opencl.executor.Executor
+import shapeless.Lazy
 
 import scala.language.implicitConversions
 import scala.language.postfixOps
@@ -22,9 +24,10 @@ object asum extends App {
   val N = SizeVar("N")
   val inputT = ArrayType(N, float)
 
-  def runOpenCLKernel(name: String, expr: Expr[ExpType -> ExpType]): Unit = {
+  def runOpenCLKernel(name: String, expr: Expr[DataType -> DataType]): Unit = {
+
     println(s"-- $name --")
-    val kernel = CodeGenerator.makeKernel(expr, localSize = 128, globalSize = N)
+    val kernel = CodeGenerator.makeKernel(ToDPIA(TypeInference(expr, Map())), localSize = 128, globalSize = N)
     println(kernel.code)
 
     val fun = kernel.as[ScalaFunction `(` Array[Float] `)=>` Array[Float]]
@@ -53,14 +56,15 @@ object asum extends App {
   val high_level = λ(inputT)(input =>
     reduce(add, 0.0f) o map(abs(float)) $ input)
 
+//  val dpia_high_level = ToDPIA(high_level)
+
   println("\n\n")
   println(high_level.toString)
   println("\n\n")
 
   {
     val lambda = TypeInference(high_level, Map())
-    println("high_level:\n" + PrettyPhrasePrinter(lambda))
-    lambda.typeCheck()
+    println("high_level:\n" + lambda)
   }
 
   val intelDerivedNoWarp1 = λ(inputT)(input =>
@@ -80,6 +84,8 @@ object asum extends App {
     ) o split(2048) $ input
   )
   runOpenCLKernel("intelDerived2", intelDerived2)
+
+  println(reorderWithStridePhrase(128))
 
   val nvidiaDerived1 = λ(inputT)(input =>
     join() o mapWorkgroup(

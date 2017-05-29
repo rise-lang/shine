@@ -5,6 +5,7 @@ import idealised.DPIA.FunctionalPrimitives._
 import idealised.DPIA.ImperativePrimitives._
 import idealised.DPIA.Phrases.{Identifier, Phrase}
 import idealised.DPIA.Semantics.OperationalSemantics
+import idealised.DPIA.Semantics.OperationalSemantics.IndexData
 import idealised.DPIA.Types._
 import idealised.DPIA._
 import idealised.OpenCL.CodeGenerator
@@ -203,7 +204,9 @@ object PrimitivesCodeGenerator {
     val idx = arrayAccess.head
     val stack = arrayAccess.tail
 
-    val n_ = OperationalSemantics.evalIndexExp(g.idxF(idx._1))
+    val d = IndexData(idx._1)
+
+    val n_ = OperationalSemantics.evalIndexExp(g.idxF.apply(g.n)(Phrases.Literal(d, d.dataType)))
 
     CodeGenerator.exp(g.array, env, dt, (n_, idx._2) :: stack, tupleAccess)
 

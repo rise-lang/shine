@@ -11,9 +11,7 @@ import idealised.DPIA._
 import idealised.OpenCL.CodeGeneration.HoistMemoryAllocations
 import idealised.OpenCL.CodeGeneration.HoistMemoryAllocations.AllocationInfo
 import idealised.OpenCL.CodeGeneration.PrimitivesCodeGenerator._
-import idealised.SurfaceLanguage.Expr
 import idealised.{DPIA, _}
-import ir.{Type, UndefType}
 import opencl.generator.OpenCLAST
 import opencl.generator.OpenCLAST._
 
@@ -22,10 +20,6 @@ import scala.collection.immutable.List
 import scala.language.implicitConversions
 
 object CodeGenerator {
-
-  def makeKernel[T <: PhraseType](expr: Expr[T], localSize: Nat, globalSize: Nat): OpenCL.Kernel = {
-    makeKernel(TypeInference(expr, scala.collection.Map()), localSize, globalSize)
-  }
 
   def makeKernel[T <: PhraseType](originalPhrase: Phrase[T], localSize: Nat, globalSize: Nat): OpenCL.Kernel = {
 
@@ -142,8 +136,8 @@ object CodeGenerator {
 
   // returns list of int parameters for each variable in the given types;
   // sorted by name of the variables
-  private def makeLengthParams(types: List[Type]): List[ParamDecl] = {
-    val lengths = types.flatMap(Type.getLengths)
+  private def makeLengthParams(types: List[ir.Type]): List[ParamDecl] = {
+    val lengths = types.flatMap(ir.Type.getLengths)
     lengths.filter(_.isInstanceOf[lift.arithmetic.Var]).distinct.map(v =>
       ParamDecl(v.toString, opencl.ir.Int) ).sortBy(_.name)
   }
@@ -154,7 +148,7 @@ object CodeGenerator {
 
   private def makeKernelFunction(params: List[ParamDecl], body: Block): Function = {
     Function(name = "KERNEL",
-      ret = UndefType, // should really be void
+      ret = ir.UndefType, // should really be void
       params = params,
       body = body,
       kernel = true)

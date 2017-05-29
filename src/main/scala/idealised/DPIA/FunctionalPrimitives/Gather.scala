@@ -14,7 +14,7 @@ import scala.xml.Elem
 
 final case class Gather(n: Nat,
                         dt: DataType,
-                        idxF: Phrase[ExpType -> ExpType],
+                        idxF: Phrase[`(nat)->`[ExpType -> ExpType]],
                         array: Phrase[ExpType])
   extends ExpPrimitive {
 
@@ -29,17 +29,18 @@ final case class Gather(n: Nat,
   }
 
   override def eval(s: Store): Data = {
-    import idealised.DPIA.Semantics.OperationalSemantics._
-    val idxFE = OperationalSemantics.eval(s, idxF)
-    OperationalSemantics.eval(s, array) match {
-      case ArrayData(a) =>
-        val res = new Array[Data](a.length)
-        for (i <- a.indices) {
-          res(i) = a(OperationalSemantics.evalIndexExp(s, idxFE(i)).eval)
-        }
-        ArrayData(res.toVector)
-      case _ => throw new Exception("This should not happen")
-    }
+//    import idealised.DPIA.Semantics.OperationalSemantics._
+//    val idxFE = OperationalSemantics.eval(s, idxF)
+//    OperationalSemantics.eval(s, array) match {
+//      case ArrayData(a) =>
+//        val res = new Array[Data](a.length)
+//        for (i <- a.indices) {
+//          res(i) = a(OperationalSemantics.evalIndexExp(s, idxFE(i)).eval)
+//        }
+//        ArrayData(res.toVector)
+//      case _ => throw new Exception("This should not happen")
+//    }
+    ???
   }
 
   override def visitAndRebuild(fun: Visitor): Phrase[ExpType] =

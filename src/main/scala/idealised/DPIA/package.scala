@@ -2,7 +2,6 @@ package idealised
 
 import idealised.DPIA.Phrases.Phrase
 import idealised.DPIA.Types.{PhraseTypeParser, _}
-import idealised.SurfaceLanguage.Expr
 import lift.arithmetic.{ArithExpr, NamedVar}
 
 import scala.language.{implicitConversions, reflectiveCalls}
@@ -66,26 +65,6 @@ package object DPIA {
     def `[`(dt: DataType) = new {
       def `/`(`for`: DataTypeIdentifier) = new {
         def `]`: Phrase[T1] = PhraseType.substitute(dt, `for`, in)
-      }
-    }
-  }
-
-  implicit class ExprSubstitutionHelper[T1 <: PhraseType](in: Expr[T1]) {
-    def `[`[T2 <: PhraseType](e: Expr[T2]) = new {
-      def `/`(`for`: Expr[T2]) = new {
-        def `]`: Expr[T1] = Expr.substitute(e, `for`, in)
-      }
-    }
-
-    def `[`(e: Nat) = new {
-      def `/`(`for`: NatIdentifier) = new {
-        def `]`: Expr[T1] = PhraseType.substitute(e, `for`, in)
-      }
-    }
-
-    def `[`(dt: DataType) = new {
-      def `/`(`for`: DataTypeIdentifier) = new {
-        def `]`: Expr[T1] = PhraseType.substitute(dt, `for`, in)
       }
     }
   }
