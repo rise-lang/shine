@@ -38,7 +38,7 @@ abstract class To(f: Expr[DataType -> DataType],
         f_.`type` match {
           case Some(FunctionType(t1, dt2)) =>
             if (dt1 == t1) {
-              makeTo(f_, input_, Some(dt1))
+              makeTo(f_, input_, Some(dt2))
             } else {
               error(this.toString,
                 s"`${dt1.toString}' and `${t1.toString}'", expected = "them to match")

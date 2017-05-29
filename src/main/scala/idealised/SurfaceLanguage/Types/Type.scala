@@ -2,7 +2,7 @@ package idealised.SurfaceLanguage.Types
 
 import idealised.SurfaceLanguage._
 import idealised.SurfaceLanguage.Semantics._
-import lift.arithmetic.{ArithExpr, Var}
+import lift.arithmetic.{ArithExpr, NamedVar}
 
 sealed trait Type
 
@@ -14,10 +14,13 @@ final case class DataTypeIdentifier(name: String) extends DataType
 
 sealed trait ComposedType extends DataType
 
-final case class ArrayType(size: Nat, elemType: DataType) extends ComposedType
+final case class ArrayType(size: Nat, elemType: DataType) extends ComposedType {
+  override def toString: String = s"$size.$elemType"
+}
 
 final case class TupleType(elemTypes: DataType*) extends ComposedType {
   assert(elemTypes.size == 2)
+  override def toString: String = elemTypes.map(_.toString).mkString("(", ", ", ")")
 }
 
 
@@ -26,16 +29,18 @@ sealed trait BasicType extends DataType
 
 sealed trait ScalarType extends BasicType
 
-object bool extends ScalarType
+object bool extends ScalarType { override def toString: String = "bool" }
 
-object int extends ScalarType
+object int extends ScalarType { override def toString: String = "int" }
 
-object float extends ScalarType
+object float extends ScalarType { override def toString: String = "float" }
 
 final case class IndexType(size: Nat) extends BasicType
 
 
-sealed case class VectorType(size: Nat, elemType: ScalarType) extends BasicType
+sealed case class VectorType(size: Nat, elemType: ScalarType) extends BasicType {
+  override def toString: String = s"$elemType$size"
+}
 
 object int2 extends VectorType(2, int)
 object int3 extends VectorType(3, int)
@@ -116,7 +121,8 @@ object Type {
 
   private def substitute[T <: DataType](ae: Nat, `for`: NatIdentifier, in: T): T = {
     (in match {
-      case IndexType(size) => IndexType(substitute(ae, `for`, size))
+      case IndexType(size) =>
+        IndexType(substitute(ae, `for`, size))
       case b: BasicType => b
       case ArrayType(size, elemType) =>
         ArrayType(ArithExpr.substitute(size, Map((`for`, ae))), substitute(ae, `for`, elemType))
@@ -126,9 +132,8 @@ object Type {
 
   private def substitute(ae: Nat, `for`: NatIdentifier, in: Nat): Nat = {
     in.visitAndRebuild {
-      case v: Var =>
+      case v: NamedVar =>
         if (`for`.name == v.name) {
-          println("SUB")
           ae
         } else {
           v

@@ -14,7 +14,7 @@ final case class AsVector(n: Nat, array: DataExpr,
     array.`type` match {
       case Some(ArrayType(mn, st: ScalarType)) =>
         FunctionalPrimitives.AsVector(n, mn /^ n, st, ToDPIA(array))
-      case None => throw new Exception("")
+      case _ => throw new Exception("")
     }
   }
 

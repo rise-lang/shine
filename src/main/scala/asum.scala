@@ -1,6 +1,4 @@
 
-import idealised.DPIA.Phrases.Phrase
-import idealised.DPIA.Types.ExpType
 import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.OpenCL._
 import idealised.SurfaceLanguage.DSL._
@@ -9,7 +7,6 @@ import idealised.SurfaceLanguage._
 import idealised.SurfaceLanguage.Types._
 import lift.arithmetic._
 import opencl.executor.Executor
-import shapeless.Lazy
 
 import scala.language.implicitConversions
 import scala.language.postfixOps
@@ -17,8 +14,8 @@ import scala.util.Random
 
 object asum extends App {
 
-  Executor.loadLibrary()
-  Executor.init()
+//  Executor.loadLibrary()
+//  Executor.init()
 
   val check = true
   val N = SizeVar("N")
@@ -36,16 +33,16 @@ object asum extends App {
 
     val input = Array.fill(size)(Random.nextInt(10).toFloat)
 
-    val (res, time) = fun(input `;`)
-    println(s"RESULT NAME: $name TIME: $time")
-    if (check) {
-      val gold = input.map(math.abs).sum
-      if (res.sum == gold) {
-        println(s"Computed result MATCHES with gold solution.")
-      } else {
-        println(s"ERROR computed result (${res.sum}) differs from gold ($gold) solution.")
-      }
-    }
+//    val (res, time) = fun(input `;`)
+//    println(s"RESULT NAME: $name TIME: $time")
+//    if (check) {
+//      val gold = input.map(math.abs).sum
+//      if (res.sum == gold) {
+//        println(s"Computed result MATCHES with gold solution.")
+//      } else {
+//        println(s"ERROR computed result (${res.sum}) differs from gold ($gold) solution.")
+//      }
+//    }
 
     println("----------------\n")
   }
@@ -85,7 +82,7 @@ object asum extends App {
   )
   runOpenCLKernel("intelDerived2", intelDerived2)
 
-  println(reorderWithStridePhrase(128))
+  println(reorderWithStridePhrase.apply(128))
 
   val nvidiaDerived1 = λ(inputT)(input =>
     join() o mapWorkgroup(
@@ -99,11 +96,13 @@ object asum extends App {
   val amdNvidiaDerived2 = λ(inputT)(input =>
     join() o mapWorkgroup(
       toLocal(iterate(6,
-        mapLocal(reduceSeq(add, 0.0f)) o split(2)
-      )) o toLocal(mapLocal(
+        mapLocal(
           reduceSeq(add, 0.0f)
-        )) o split(128)
-    ) o split(8192) $ input
+        ) o split(2)
+      )) o toLocal(mapLocal(
+        reduceSeq(add, 0.0f)
+      )) o split(128)
+    ) o split(8192) $  input
   )
   runOpenCLKernel("amdNvidiaDerived2", amdNvidiaDerived2)
 
@@ -123,5 +122,5 @@ object asum extends App {
 //  )
   runOpenCLKernel("amdDerived1", amdDerived1)
 
-  Executor.shutdown()
+//  Executor.shutdown()
 }

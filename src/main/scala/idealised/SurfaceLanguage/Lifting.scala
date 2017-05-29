@@ -4,18 +4,14 @@ import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.SurfaceLanguage.Types._
 
 import scala.language.postfixOps
+import scala.language.reflectiveCalls
 
 object Lifting {
 
   def liftNatDependentFunctionExpr[T <: Type](p: Expr[`(nat)->`[T]]): (Nat => Expr[T]) = {
     p match {
       case l: NatDependentLambdaExpr[T] =>
-        (arg: Nat) => {
-          println("ARG: " + arg)
-          println("BODY: " + l.body)
-          println("X: " + l.x)
-          l.body `[` arg `/` l.x `]`
-        }
+        (arg: Nat) => l.body `[` arg `/` l.x `]`
       case app: ApplyExpr[`(nat)->`[T]] =>
         val fun = liftFunctionExpr(app.fun)
         liftNatDependentFunctionExpr(fun(app.arg))

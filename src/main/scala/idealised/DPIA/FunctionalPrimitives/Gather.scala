@@ -6,7 +6,7 @@ import idealised.DPIA.Phrases.VisitAndRebuild.Visitor
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
-import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType}
+import idealised.DPIA.Types._
 import idealised.DPIA.{Phrases, _}
 
 import scala.language.{postfixOps, reflectiveCalls}
@@ -22,10 +22,14 @@ final case class Gather(n: Nat,
 
   override def typeCheck(): Unit = {
     import idealised.DPIA.Types.TypeChecker._
-    (n: Nat) -> (dt: DataType) ->
-      (idxF :: t"exp[idx($n)] -> exp[idx($n)]") ->
-      (array :: exp"[$n.$dt]") ->
-      `type`
+    idxF match {
+      case NatDependentLambda(l, _) =>
+        (n: Nat) -> (dt: DataType) ->
+          (idxF :: t"($l : nat) -> exp[idx($l)] -> exp[idx($l)]") ->
+          (array :: exp"[$n.$dt]") ->
+          `type`
+      case _ => throw new Exception("This should not happen")
+    }
   }
 
   override def eval(s: Store): Data = {

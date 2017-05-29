@@ -14,7 +14,7 @@ final case class AsScalar(array: DataExpr, override val `type`: Option[DataType]
     array.`type` match {
       case Some(ArrayType(n, VectorType(m, dt))) =>
         FunctionalPrimitives.AsScalar(n, m, dt, ToDPIA(array))
-      case None => throw new Exception("")
+      case _ => throw new Exception("")
     }
   }
 

@@ -1,21 +1,20 @@
 //
-//import idealised.DPIA.Phrases.PrettyPhrasePrinter
-//import idealised.DPIA.Types.{ArrayType, ExpType, TypeInference, float}
-//import idealised.DPIA._
 //import idealised.OpenCL.SurfaceLanguage.DSL._
 //import idealised.OpenCL._
 //import idealised.SurfaceLanguage.DSL._
-//import idealised.SurfaceLanguage.Expr
+//import idealised.SurfaceLanguage._
+//import idealised.SurfaceLanguage.Types._
 //import lift.arithmetic._
 //import opencl.executor.Executor
 //
 //import scala.language.implicitConversions
+//import scala.language.postfixOps
 //import scala.util.Random
 //
 //object dot extends App {
 //
-//  Executor.loadLibrary()
-//  Executor.init()
+////  Executor.loadLibrary()
+////  Executor.init()
 //
 //  val epsilon = 1.0f
 //
@@ -24,10 +23,10 @@
 //  val xsT = ArrayType(N, float)
 //  val ysT = ArrayType(N, float)
 //
-//  def printOpenCLKernel1(name: String, expr: Expr[ExpType -> (ExpType -> ExpType)]): Unit = {
+//  def printOpenCLKernel1(name: String, expr: Expr[DataType -> (DataType -> DataType)]): Unit = {
 //    println(s"-- $name --")
 //
-//    val kernel = CodeGenerator.makeKernel(expr, localSize = 128, globalSize = N)
+//    val kernel = CodeGenerator.makeKernel(ToDPIA(TypeInference(expr, Map())), localSize = 128, globalSize = N)
 //    println(kernel.code)
 //
 //    val fun = kernel.as[ScalaFunction `(` Array[Float] `,` Array[Float] `)=>` Array[Float]]
@@ -37,24 +36,24 @@
 //    val xs = Array.fill(size)(Random.nextInt(4).toFloat)
 //    val ys = Array.fill(size)(Random.nextInt(4).toFloat)
 //
-//    val (res, time) = fun(xs `,` ys)
-//    println(s"RESULT KERNEL1 NAME: $name TIME: $time")
-//    if (check) {
-//      val gold = (xs zip ys).map{ case (x, y) => x * y }.sum
-//      if (res.sum - gold < epsilon) {
-//        println(s"Computed result MATCHES with gold solution.")
-//      } else {
-//        println(s"ERROR computed result differs from gold solution.")
-//        println(s"res: ${res.sum} vs. gold: $gold")
-//      }
-//    }
+////    val (res, time) = fun(xs `,` ys)
+////    println(s"RESULT KERNEL1 NAME: $name TIME: $time")
+////    if (check) {
+////      val gold = (xs zip ys).map{ case (x, y) => x * y }.sum
+////      if (res.sum - gold < epsilon) {
+////        println(s"Computed result MATCHES with gold solution.")
+////      } else {
+////        println(s"ERROR computed result differs from gold solution.")
+////        println(s"res: ${res.sum} vs. gold: $gold")
+////      }
+////    }
 //
 //    println("----------------\n")
 //  }
 //
-//  def printOpenCLKernel2(name: String, expr: Expr[ExpType -> ExpType]): Unit = {
+//  def printOpenCLKernel2(name: String, expr: Expr[DataType -> DataType]): Unit = {
 //    println(s"-- $name --")
-//    val kernel = CodeGenerator.makeKernel(expr, localSize = 128, globalSize = N)
+//    val kernel = CodeGenerator.makeKernel(ToDPIA(TypeInference(expr, Map())), localSize = 128, globalSize = N)
 //    println(kernel.code)
 //
 //    val fun = kernel.as[ScalaFunction `(` Array[Float] `)=>` Array[Float]]

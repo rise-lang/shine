@@ -64,3 +64,8 @@ object gather {
 object tuple {
   def apply(fst: DataExpr, snd: DataExpr): Tuple = Tuple(fst, snd)
 }
+
+object printType {
+  def apply(): Expr[DataType -> DataType] = λ(x => PrintType(x, ""))
+  def apply(msg: String): Expr[DataType -> DataType] = λ(x => PrintType(x, msg))
+}

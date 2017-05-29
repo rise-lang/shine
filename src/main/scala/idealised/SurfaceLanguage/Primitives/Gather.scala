@@ -29,10 +29,7 @@ final case class Gather(idxF: Expr[`(nat)->`[DataType ->DataType]],
     array_.`type` match {
       case Some(ArrayType(n, dt)) =>
         val idxF_ = TypeInference(idxF, subs)
-        val lifted = Lifting.liftNatDependentFunctionExpr(idxF_)
-        println(n)
-        println(lifted(n))
-        lifted(n).`type` match {
+        Lifting.liftNatDependentFunctionExpr(idxF_)(n).`type` match {
           case Some(FunctionType(IndexType(m1), IndexType(m2))) =>
             if (n == m1 && n == m2) {
               Gather(idxF_, array_, array_.`type`)

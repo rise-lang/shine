@@ -78,6 +78,7 @@ object DataType {
           RecordType(DataType(tt.elemTypes(0)), DataType(tt.elemTypes(1)))
         }
       }
+      case i: SurfaceLanguage.Types.DataTypeIdentifier => DataTypeIdentifier(i.name)
     }
   }
 

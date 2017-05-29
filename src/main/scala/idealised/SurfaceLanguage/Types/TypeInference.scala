@@ -2,6 +2,8 @@ package idealised.SurfaceLanguage.Types
 
 import idealised.SurfaceLanguage._
 
+import scala.language.existentials
+
 class TypeInferenceException(expr: String, msg: String)
   extends TypeException(s"Failed to infer type for `$expr'. $msg.")
 

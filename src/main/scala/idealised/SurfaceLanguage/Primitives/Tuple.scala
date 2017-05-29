@@ -24,7 +24,7 @@ final case class Tuple(fst: DataExpr, snd: DataExpr,
     val snd_ = TypeInference(snd, subs)
     (fst_.`type`, snd_.`type`) match {
       case (Some(ft), Some(st)) => Tuple(fst_, snd_, Some(TupleType(ft, st)))
-      case _ => error("")
+      case _ => TypeInference.error(this.toString, "")
     }
   }
 

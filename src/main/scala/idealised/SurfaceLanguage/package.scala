@@ -1,7 +1,7 @@
 package idealised
 
 import idealised.SurfaceLanguage.Types._
-import lift.arithmetic.{ArithExpr, NamedVar, Var}
+import lift.arithmetic.{ArithExpr, NamedVar}
 
 package object SurfaceLanguage {
 
@@ -45,12 +45,12 @@ package object SurfaceLanguage {
     def ->[T <: Type](t: T) = FunctionType(dt, t)
   }
 
-  implicit class NatSubstituionHelpfer(in: Nat) {
+  implicit class NatSubstituionHelper(in: Nat) {
     def `[`(ae: Nat) = new {
       def `/`(`for`: NatIdentifier) = new {
         def `]`: Nat = {
           in.visitAndRebuild {
-            case v: Var =>
+            case v: NamedVar =>
               if (`for`.name == v.name) {
                 ae
               } else {
