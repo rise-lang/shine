@@ -14,7 +14,7 @@ final case class Iterate(k: Nat,
   extends PrimitiveExpr
 {
 
-  override def toDPIA: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
+  override def convertToPhrase: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
     (f.`type`, array.`type`) match {
       case (Some(NatDependentFunctionType(_,
         FunctionType(ArrayType(l, dt1), ArrayType(l_n, dt2)))), Some(ArrayType(m, dt)))
@@ -24,11 +24,11 @@ final case class Iterate(k: Nat,
               case _ => throw new Exception("")
             }
             DPIA.FunctionalPrimitives.Iterate(n, m, k, dt,
-              ToDPIA(f),
+              f.toPhrase[DPIA.Types.NatDependentFunctionType[DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]]],
 //              .asInstanceOf[DPIA.Phrases.Phrase[DPIA.Types.NatDependentFunctionType[
 //              DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]]]]
 
-              ToDPIA(array)
+              array.toPhrase[DPIA.Types.ExpType]
             )
       case _ => throw new Exception("")
     }

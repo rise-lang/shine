@@ -14,8 +14,8 @@ import scala.util.Random
 
 object asum extends App {
 
-//  Executor.loadLibrary()
-//  Executor.init()
+  Executor.loadLibrary()
+  Executor.init()
 
   val check = true
   val N = SizeVar("N")
@@ -24,7 +24,8 @@ object asum extends App {
   def runOpenCLKernel(name: String, expr: Expr[DataType -> DataType]): Unit = {
 
     println(s"-- $name --")
-    val kernel = CodeGenerator.makeKernel(ToDPIA(TypeInference(expr, Map())), localSize = 128, globalSize = N)
+    val phrase = TypeInference(expr, Map()).convertToPhrase
+    val kernel = CodeGenerator.makeKernel(phrase, localSize = 128, globalSize = N)
     println(kernel.code)
 
     val fun = kernel.as[ScalaFunction `(` Array[Float] `)=>` Array[Float]]
@@ -33,16 +34,16 @@ object asum extends App {
 
     val input = Array.fill(size)(Random.nextInt(10).toFloat)
 
-//    val (res, time) = fun(input `;`)
-//    println(s"RESULT NAME: $name TIME: $time")
-//    if (check) {
-//      val gold = input.map(math.abs).sum
-//      if (res.sum == gold) {
-//        println(s"Computed result MATCHES with gold solution.")
-//      } else {
-//        println(s"ERROR computed result (${res.sum}) differs from gold ($gold) solution.")
-//      }
-//    }
+    val (res, time) = fun(input `;`)
+    println(s"RESULT NAME: $name TIME: $time")
+    if (check) {
+      val gold = input.map(math.abs).sum
+      if (res.sum == gold) {
+        println(s"Computed result MATCHES with gold solution.")
+      } else {
+        println(s"ERROR computed result (${res.sum}) differs from gold ($gold) solution.")
+      }
+    }
 
     println("----------------\n")
   }
@@ -122,5 +123,5 @@ object asum extends App {
 //  )
   runOpenCLKernel("amdDerived1", amdDerived1)
 
-//  Executor.shutdown()
+  Executor.shutdown()
 }

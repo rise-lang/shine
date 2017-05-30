@@ -11,10 +11,10 @@ final case class Split(n: Nat, array: DataExpr,
 {
 
 
-  override def toDPIA: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
+  override def convertToPhrase: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
     array.`type` match {
       case Some(ArrayType(mn, dt)) =>
-        DPIA.FunctionalPrimitives.Split(n, mn /^ n, dt, ToDPIA(array))
+        DPIA.FunctionalPrimitives.Split(n, mn /^ n, dt, array.toPhrase[DPIA.Types.ExpType])
       case _ => throw new Exception("")
     }
   }

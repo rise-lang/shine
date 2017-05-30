@@ -1,7 +1,7 @@
 package idealised.SurfaceLanguage.Primitives
 
 import idealised.SurfaceLanguage.DSL.DataExpr
-import idealised.SurfaceLanguage.{PrimitiveExpr, ToDPIA}
+import idealised.SurfaceLanguage.PrimitiveExpr
 import idealised.{DPIA, SurfaceLanguage}
 import idealised.SurfaceLanguage.Types._
 
@@ -9,10 +9,12 @@ final case class Zip(e1: DataExpr, e2: DataExpr,
                      override val `type`: Option[DataType] = None)
   extends PrimitiveExpr
 {
-  override def toDPIA: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
+  override def convertToPhrase: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
     (e1.`type`, e2.`type`) match {
       case (Some(ArrayType(n, dt1)), Some(ArrayType(m, dt2))) if n == m =>
-        DPIA.FunctionalPrimitives.Zip(n, dt1, dt2, ToDPIA(e1), ToDPIA(e2))
+        DPIA.FunctionalPrimitives.Zip(n, dt1, dt2,
+          e1.toPhrase[DPIA.Types.ExpType],
+          e2.toPhrase[DPIA.Types.ExpType])
       case _ => throw new Exception("")
     }
   }

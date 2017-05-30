@@ -2,7 +2,7 @@ package idealised.OpenCL.SurfaceLanguage.Primitives
 
 import idealised.SurfaceLanguage
 import idealised.SurfaceLanguage.DSL.DataExpr
-import idealised.SurfaceLanguage.{PrimitiveExpr, ToDPIA}
+import idealised.SurfaceLanguage.PrimitiveExpr
 import idealised.SurfaceLanguage.Types._
 
 final case class OpenCLFunction(name: String,
@@ -13,10 +13,11 @@ final case class OpenCLFunction(name: String,
   override val `type`: Option[DataType] = Some(outT)
 
 
-  override def toDPIA: idealised.OpenCL.FunctionalPrimitives.OpenCLFunction = {
+  override def convertToPhrase: idealised.OpenCL.FunctionalPrimitives.OpenCLFunction = {
     import idealised.DPIA.Types.DataType
     idealised.OpenCL.FunctionalPrimitives.OpenCLFunction(
-      name, inTs.map(DataType(_)), DataType(outT), args.map(ToDPIA(_)))
+      name, inTs.map(DataType(_)), DataType(outT),
+      args.map(_.toPhrase[idealised.DPIA.Types.ExpType]))
   }
 
   override def inferType(subs: TypeInference.SubstitutionMap): OpenCLFunction = {

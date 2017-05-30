@@ -58,10 +58,10 @@ package object DSL {
 
   implicit class CallExpLambda[T <: PhraseType](fun: Phrase[ExpType -> T]) {
     def apply(arg: Phrase[ExpType]): Phrase[T] = CallLambda[ExpType, T](fun)(arg)
-//    def apply(arg: Nat): Phrase[T] = Lifting.liftFunctionToNatLambda(fun)(arg)
+    def apply(arg: Nat): Phrase[T] = Lifting.liftFunctionToNatLambda(fun)(arg)
 
     def $(arg: Phrase[ExpType]): Phrase[T] = apply(arg)
-//    def $(arg: Nat): Phrase[T] = apply(arg)
+    def $(arg: Nat): Phrase[T] = apply(arg)
   }
 
   implicit class CallNatDependentLambda[T <: PhraseType](fun: Phrase[`(nat)->`[T]]) {

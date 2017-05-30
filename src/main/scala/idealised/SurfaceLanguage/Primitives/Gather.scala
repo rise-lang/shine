@@ -8,17 +8,19 @@ import idealised.SurfaceLanguage._
 
 import scala.language.{postfixOps, reflectiveCalls}
 
-final case class Gather(idxF: Expr[`(nat)->`[DataType ->DataType]],
+final case class Gather(idxF: Expr[DataType ->DataType],
                         array: DataExpr,
                         override val `type`: Option[DataType] = None)
   extends PrimitiveExpr
 {
 
 
-  override def toDPIA: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
+  override def convertToPhrase: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
     array.`type` match {
       case Some(ArrayType(n, dt)) =>
-        DPIA.FunctionalPrimitives.Gather(n, dt, ToDPIA(idxF), ToDPIA(array))
+        DPIA.FunctionalPrimitives.Gather(n, dt,
+          idxF.toPhrase[DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]],
+          array.toPhrase[DPIA.Types.ExpType])
       case _ => throw new Exception("")
     }
   }
@@ -29,7 +31,9 @@ final case class Gather(idxF: Expr[`(nat)->`[DataType ->DataType]],
     array_.`type` match {
       case Some(ArrayType(n, dt)) =>
         val idxF_ = TypeInference(idxF, subs)
-        Lifting.liftNatDependentFunctionExpr(idxF_)(n).`type` match {
+        idxF_.`type` match {
+          case Some(FunctionType(IndexType(m: NatIdentifier), _)) =>
+            Gather(idxF_ `[` n `/` m `]`, array_, array_.`type`)
           case Some(FunctionType(IndexType(m1), IndexType(m2))) =>
             if (n == m1 && n == m2) {
               Gather(idxF_, array_, array_.`type`)
@@ -37,19 +41,6 @@ final case class Gather(idxF: Expr[`(nat)->`[DataType ->DataType]],
               error(expr = s"Gather($idxF_, $array_)",
                 found = s"`$n', `$m1' and `$m2'", expected = "them to match")
             }
-//          case Some(NatDependentFunctionType(x, FunctionType(IndexType(m1_), IndexType(m2_)))) =>
-//            val m1 = m1_ `[` n `/` x `]`
-//            val m2 = m2_ `[` n `/` x `]`
-//
-//            println(m1_)
-//            println(m2_)
-//
-//            if (n == m1 && n == m2) {
-//              Gather(idxF_, array_, array_.`type`)
-//            } else {
-//              error(expr = s"Gather($idxF_, $array_)",
-//                found = s"`$n', `$m1' and `$m2'", expected = "them to match")
-//            }
           case x => error(expr = s"Gather($idxF_, $array_)",
             found = s"`${x.toString}'", expected = "idx(_) -> idx(_)")
         }

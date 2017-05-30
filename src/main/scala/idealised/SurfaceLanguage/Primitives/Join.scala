@@ -1,17 +1,17 @@
 package idealised.SurfaceLanguage.Primitives
 
 import idealised.SurfaceLanguage.DSL.DataExpr
-import idealised.SurfaceLanguage.{PrimitiveExpr, ToDPIA}
+import idealised.SurfaceLanguage.PrimitiveExpr
 import idealised.{DPIA, SurfaceLanguage}
 import idealised.SurfaceLanguage.Types._
 
 final case class Join(array: DataExpr, override val `type`: Option[DataType] = None)
   extends PrimitiveExpr
 {
-  override def toDPIA: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
+  override def convertToPhrase: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
     array.`type` match {
       case Some(ArrayType(n, ArrayType(m, dt))) =>
-        DPIA.FunctionalPrimitives.Join(n, m, dt, ToDPIA(array))
+        DPIA.FunctionalPrimitives.Join(n, m, dt, array.toPhrase[DPIA.Types.ExpType])
       case _ => throw new Exception("")
     }
   }

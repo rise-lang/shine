@@ -1,7 +1,7 @@
 package idealised.OpenCL.SurfaceLanguage.Primitives
 
 import idealised.OpenCL.FunctionalPrimitives
-import idealised.SurfaceLanguage
+import idealised.{DPIA, SurfaceLanguage}
 import idealised.SurfaceLanguage._
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage.DSL.DataExpr
@@ -10,10 +10,10 @@ final case class AsVector(n: Nat, array: DataExpr,
                           override val `type`: Option[DataType] = None)
   extends PrimitiveExpr
 {
-  override def toDPIA: FunctionalPrimitives.AsVector = {
+  override def convertToPhrase: FunctionalPrimitives.AsVector = {
     array.`type` match {
       case Some(ArrayType(mn, st: ScalarType)) =>
-        FunctionalPrimitives.AsVector(n, mn /^ n, st, ToDPIA(array))
+        FunctionalPrimitives.AsVector(n, mn /^ n, st, array.toPhrase[DPIA.Types.ExpType])
       case _ => throw new Exception("")
     }
   }

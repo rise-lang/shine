@@ -204,9 +204,7 @@ object PrimitivesCodeGenerator {
     val idx = arrayAccess.head
     val stack = arrayAccess.tail
 
-    val d = IndexData(idx._1)
-
-    val n_ = OperationalSemantics.evalIndexExp(g.idxF.apply(g.n)(Phrases.Literal(d, d.dataType)))
+    val n_ = OperationalSemantics.evalIndexExp(g.idxF(idx._1))
 
     CodeGenerator.exp(g.array, env, dt, (n_, idx._2) :: stack, tupleAccess)
 

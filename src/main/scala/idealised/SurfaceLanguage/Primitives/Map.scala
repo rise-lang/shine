@@ -23,12 +23,12 @@ abstract class AbstractMap(f: Expr[DataType -> DataType],
     ) => DPIA.FunctionalPrimitives.AbstractMap
 
 
-  override def toDPIA: DPIA.FunctionalPrimitives.AbstractMap = {
+  override def convertToPhrase: DPIA.FunctionalPrimitives.AbstractMap = {
     (f.`type`, array.`type`) match {
       case (Some(FunctionType(dt1, dt2)), Some(ArrayType(n, dt1_))) if dt1 == dt1_ =>
         makeDPIAMap(n, dt1, dt2,
-          ToDPIA(f).asInstanceOf[DPIA.Phrases.Phrase[DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]]],
-          ToDPIA(array)
+          f.toPhrase[DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]],
+          array.toPhrase[DPIA.Types.ExpType]
         )
       case _ => throw new Exception("")
     }

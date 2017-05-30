@@ -12,10 +12,10 @@ final case class VectorFromScalar(n: Nat, arg: DataExpr,
 {
 
 
-  override def toDPIA: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
+  override def convertToPhrase: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
     arg.`type` match {
       case Some(dt: ScalarType) =>
-        OpenCL.FunctionalPrimitives.VectorFromScalar(n, dt, ToDPIA(arg))
+        OpenCL.FunctionalPrimitives.VectorFromScalar(n, dt, arg.toPhrase[DPIA.Types.ExpType])
       case _ => throw new Exception("")
     }
   }

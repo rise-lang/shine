@@ -1,7 +1,7 @@
 package idealised.SurfaceLanguage.Primitives
 
 import idealised.SurfaceLanguage.DSL.DataExpr
-import idealised.SurfaceLanguage.{PrimitiveExpr, ToDPIA}
+import idealised.SurfaceLanguage.PrimitiveExpr
 import idealised.{DPIA, OpenCL, SurfaceLanguage}
 import idealised.SurfaceLanguage.Types._
 
@@ -10,10 +10,10 @@ final case class Fst(tuple: DataExpr, override val `type`: Option[DataType] = No
 {
 
 
-  override def toDPIA: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
+  override def convertToPhrase: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
     tuple.`type` match {
       case Some(TupleType(dt1, dt2)) =>
-        DPIA.FunctionalPrimitives.Fst(dt1, dt2, ToDPIA(tuple))
+        DPIA.FunctionalPrimitives.Fst(dt1, dt2, tuple.toPhrase[DPIA.Types.ExpType])
       case _ => throw new Exception("")
     }
   }

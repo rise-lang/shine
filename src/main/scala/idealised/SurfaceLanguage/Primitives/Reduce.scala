@@ -23,15 +23,14 @@ abstract class AbstractReduce(f: Expr[DataType -> (DataType -> DataType)],
     ) => DPIA.FunctionalPrimitives.AbstractReduce
 
 
-  override def toDPIA: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
+  override def convertToPhrase: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
     (f.`type`, init.`type`, array.`type`) match {
       case (Some(FunctionType(t1, FunctionType(t2, t3))), Some(dt2), Some(ArrayType(n, dt1)))
         if dt1 == t1 && dt2 == t2 && dt2 == t3 =>
           makeDPIAReduce(n, dt1, dt2,
-            ToDPIA(f),
-            // .asInstanceOf[DPIA.Phrases.Phrase[DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]]]]
-            ToDPIA(init),
-            ToDPIA(array))
+            f.toPhrase[DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]]],
+            init.toPhrase[DPIA.Types.ExpType],
+            array.toPhrase[DPIA.Types.ExpType])
       case _ => throw new Exception("")
     }
 

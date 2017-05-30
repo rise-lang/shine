@@ -19,12 +19,12 @@ abstract class To(f: Expr[DataType -> DataType],
 {
 
 
-  override def toDPIA: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
+  override def convertToPhrase: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
     (f.`type`, input.`type`) match {
       case (Some(FunctionType(dt1, dt2)), Some(t1)) if dt1 == t1 =>
         makeToDPIA(dt1, dt2,
-          ToDPIA(f).asInstanceOf[DPIA.Phrases.Phrase[DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]]],
-          ToDPIA(input))
+          f.toPhrase[DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]],
+          input.toPhrase[DPIA.Types.ExpType])
       case _ => throw new Exception("")
     }
   }

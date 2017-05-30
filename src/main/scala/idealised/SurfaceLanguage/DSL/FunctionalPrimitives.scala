@@ -56,8 +56,8 @@ object iterate {
 
 object gather {
   def apply(idxF: Expr[`(nat)->`[DataType ->DataType]]): Expr[DataType -> DataType] = {
-//    val x: Expr[->[DataType, DataType]] = idxF(NamedVar(newName()))
-    λ(array => Gather(idxF, array))
+    val idxF_ = idxF(NamedVar(newName()))
+    λ(array => Gather(idxF_, array))
   }
 }
 
