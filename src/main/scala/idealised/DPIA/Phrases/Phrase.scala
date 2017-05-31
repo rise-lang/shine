@@ -94,9 +94,8 @@ object Phrase {
 }
 
 sealed trait Primitive[T <: PhraseType] extends Phrase[T] {
+  final override def typeCheck(): Unit = `type`
   override def `type`: T
-
-  override def typeCheck(): Unit
 
   def prettyPrint: String
 
@@ -105,7 +104,7 @@ sealed trait Primitive[T <: PhraseType] extends Phrase[T] {
   def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[T]
 }
 
-trait ExpPrimitive extends Primitive[ExpType] /*with TypeInferable[ExpType]*/ {
+trait ExpPrimitive extends Primitive[ExpType] {
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Data
 
   def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType]
@@ -118,8 +117,6 @@ trait AccPrimitive extends Primitive[AccType] {
 }
 
 trait CommandPrimitive extends Primitive[CommandType] {
-  override val `type`: CommandType = comm
-
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Store
 }
 

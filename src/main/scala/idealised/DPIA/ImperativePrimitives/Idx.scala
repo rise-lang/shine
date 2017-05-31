@@ -17,15 +17,11 @@ final case class Idx(n: Nat,
                      array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override lazy val `type` = exp"[$dt]"
-
-  override def typeCheck(): Unit = {
-    import TypeChecker._
+  override val `type`: ExpType =
     (n: Nat) -> (dt: DataType) ->
       (index :: exp"[idx($n)]") ->
-      (array :: exp"[$n.$dt]") ->
-      `type`
-  }
+        (array :: exp"[$n.$dt]") ->
+          exp"[$dt]"
 
 //  override def inferTypes: Idx = {
 //    import TypeInference._

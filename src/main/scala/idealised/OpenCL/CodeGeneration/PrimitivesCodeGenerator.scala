@@ -45,7 +45,7 @@ object PrimitivesCodeGenerator {
     val increment = AssignmentExpression(ArithExpression(v), ArithExpression(v + 1))
 
     val bodyE = Lifting.liftFunction(f.body)
-    val i = identifier(name, ExpType(int))
+    val i = identifier(name, ExpType(IndexType(f.n)))
 
     f.n match {
       case Cst(0) =>

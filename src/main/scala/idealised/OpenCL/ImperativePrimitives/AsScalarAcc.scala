@@ -15,13 +15,10 @@ final case class AsScalarAcc(n: Nat,
                              array: Phrase[AccType])
   extends AccPrimitive with ViewAcc {
 
-  override lazy val `type` = acc"[$n.${VectorType(m, dt)}]"
-
-  override def typeCheck(): Unit = {
-    import idealised.DPIA.Types.TypeChecker._
+  override lazy val `type`: AccType =
     (n: Nat) -> (m: Nat) -> (dt: ScalarType) ->
-      (array :: acc"[${m * n}.$dt]") -> `type`
-  }
+      (array :: acc"[${m * n}.$dt]") ->
+        acc"[$n.${VectorType(m, dt)}]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {
     AsScalarAcc(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))

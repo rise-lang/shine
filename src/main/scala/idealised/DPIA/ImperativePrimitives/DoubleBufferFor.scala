@@ -32,8 +32,7 @@ final case class DoubleBufferFor(n: Nat,
     s"Range of NatIdentifier of $body does not match RangeAdd(0, $k, 1)"
   )
 
-  override def typeCheck(): Unit = {
-    import TypeChecker._
+  override val `type`: CommandType =
     body match {
       case NatDependentLambda(l, _) =>
         (n: Nat) -> (m: Nat) -> (k: Nat) -> (dt: DataType) ->
@@ -45,7 +44,6 @@ final case class DoubleBufferFor(n: Nat,
 
       case _ => throw new Exception("This should not happen")
     }
-  }
 
   override def eval(s: Store): Store = ???
 

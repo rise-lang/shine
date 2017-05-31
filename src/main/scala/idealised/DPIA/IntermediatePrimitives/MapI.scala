@@ -18,14 +18,12 @@ abstract class AbstractMapI(n: Nat,
                             out: Phrase[AccType])
   extends CommandPrimitive with Intermediate[CommandType] {
 
-  override def typeCheck(): Unit = {
-    import TypeChecker._
+  override val `type`: CommandType =
     (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
       (f :: t"exp[$dt1] -> acc[$dt2] -> comm") ->
-      (in :: exp"[$n.$dt1]") ->
-      (out :: acc"[$n.$dt2]") ->
-      comm
-  }
+        (in :: exp"[$n.$dt1]") ->
+          (out :: acc"[$n.$dt2]") ->
+            comm
 
   override def eval(s: Store): Store = {
     val fE = OperationalSemantics.eval(s, f)(BinaryFunctionEvaluator)

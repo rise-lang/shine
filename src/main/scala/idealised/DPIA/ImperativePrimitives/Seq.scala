@@ -4,7 +4,7 @@ import idealised.DPIA.Phrases
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
-import idealised.DPIA.Types.{CommandType, comm}
+import idealised.DPIA.Types._
 
 import scala.xml.Elem
 
@@ -12,10 +12,8 @@ final case class Seq(c1: Phrase[CommandType],
                      c2: Phrase[CommandType])
   extends CommandPrimitive {
 
-  override def typeCheck(): Unit = {
-    import idealised.DPIA.Types.TypeChecker._
+  override val `type`: CommandType =
     (c1 :: comm) -> (c2 :: comm) -> comm
-  }
 
   override def eval(s: Store): Store = {
     val s1 = OperationalSemantics.eval(s, c1)

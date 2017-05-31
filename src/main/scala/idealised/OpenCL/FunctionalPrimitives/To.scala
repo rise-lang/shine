@@ -5,7 +5,7 @@ import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics.{Data, Store}
-import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType}
+import idealised.DPIA.Types._
 import idealised.DPIA.{Phrases, _}
 import idealised.OpenCL.AddressSpace
 
@@ -20,15 +20,11 @@ abstract class To(dt1: DataType,
                     Phrase[ExpType -> ExpType], Phrase[ExpType]) => To)
   extends ExpPrimitive {
 
-  override lazy val `type` = exp"[$dt2]"
-
-  override def typeCheck(): Unit = {
-    import idealised.DPIA.Types.TypeChecker._
+  override lazy val `type`: ExpType =
     (dt1: DataType) -> (dt2: DataType) ->
       (f :: t"exp[$dt1] -> exp[$dt2]") ->
-      (input :: exp"[$dt1]") ->
-      `type`
-  }
+        (input :: exp"[$dt1]") ->
+          exp"[$dt2]"
 
   override def eval(s: Store): Data = OperationalSemantics.eval(s, input)
 

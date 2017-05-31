@@ -3,7 +3,7 @@ package idealised.DPIA.ImperativePrimitives
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
-import idealised.DPIA.Types.{CommandType, ExpType, IndexType, comm}
+import idealised.DPIA.Types._
 import idealised.DPIA._
 
 import scala.xml.Elem
@@ -12,10 +12,8 @@ final case class For(n: Nat,
                      body: Phrase[ExpType -> CommandType])
   extends CommandPrimitive {
 
-  override def typeCheck(): Unit = {
-    import idealised.DPIA.Types.TypeChecker._
+  override val `type`: CommandType =
     (n: Nat) -> (body :: t"exp[idx($n)] -> comm") -> comm
-  }
 
   override def eval(s: Store): Store = {
     val nE = evalIndexExp(s, Literal(IndexData(n), IndexType(n)))

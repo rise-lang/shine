@@ -16,13 +16,9 @@ final case class TruncExp(n: Nat,
                           array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override lazy val `type` = exp"[$m.$dt]"
-
-  override def typeCheck(): Unit = {
-    import TypeChecker._
+  override val `type`: ExpType =
     (n: Nat) -> (m: Nat) -> (dt: DataType) ->
-      (array :: exp"[$n.$dt]") -> `type`
-  }
+      (array :: exp"[$n.$dt]") -> exp"[$m.$dt]"
 
 //  override def inferTypes: TruncExp = {
 //    import TypeInference._

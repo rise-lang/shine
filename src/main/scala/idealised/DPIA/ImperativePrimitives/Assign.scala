@@ -16,10 +16,8 @@ final case class Assign(dt: BasicType,
                         rhs: Phrase[ExpType])
   extends CommandPrimitive {
 
-  override def typeCheck(): Unit = {
-    import TypeChecker._
+  override val `type`: CommandType =
     (dt: BasicType) -> (lhs :: acc"[$dt]") -> (rhs :: exp"[$dt]") -> comm
-  }
 
   override def eval(s: Store): Store = {
     def evalAssign(s: Store, lhs: AccIdentifier, rhs: Data,

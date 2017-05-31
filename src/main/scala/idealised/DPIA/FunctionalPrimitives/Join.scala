@@ -6,7 +6,7 @@ import idealised.DPIA.ImperativePrimitives.JoinAcc
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
-import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType}
+import idealised.DPIA.Types._
 import idealised.DPIA._
 
 import scala.xml.Elem
@@ -17,14 +17,9 @@ final case class Join(n: Nat,
                       array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override lazy val `type` = exp"[${n * m}.$dt]"
-
-  override def typeCheck(): Unit = {
-    import idealised.DPIA.Types.TypeChecker._
+  override val `type`: ExpType =
     (n: Nat) -> (m: Nat) -> (dt: DataType) ->
-      (array :: exp"[$n.$m.$dt]") ->
-      `type`
-  }
+      (array :: exp"[$n.$m.$dt]") -> exp"[${n * m}.$dt]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     Join(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))

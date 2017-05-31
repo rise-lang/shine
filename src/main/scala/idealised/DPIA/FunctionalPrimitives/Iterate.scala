@@ -17,19 +17,15 @@ final case class Iterate(n: Nat,
                          array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override lazy val `type`: ExpType = exp"[${m /^ n.pow(k)}.$dt]"
-
-  override def typeCheck(): Unit = {
-    import TypeChecker._
+  override val `type`: ExpType =
     f match {
       case NatDependentLambda(l, _) =>
         (n: Nat) -> (m: Nat) -> (k: Nat) -> (dt: DataType) ->
           (f :: t"($l : nat) -> exp[$l.$dt] -> exp[${l /^ n}.$dt]") ->
-          (array :: exp"[$m.$dt]") ->
-          `type`
+          (array :: exp"[$m.$dt]") -> exp"[${m /^ n.pow(k)}.$dt]"
+
       case _ => throw new Exception("This should not happen")
     }
-  }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     Iterate(fun(n), fun(m), k, fun(dt), VisitAndRebuild(f, fun), VisitAndRebuild(array, fun))

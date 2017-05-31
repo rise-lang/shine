@@ -14,14 +14,11 @@ final case class IdxAcc(n: Nat,
                         array: Phrase[AccType])
   extends AccPrimitive {
 
-  override lazy val `type` = acc"[$dt]"
-
-  override def typeCheck(): Unit = {
-    import idealised.DPIA.Types.TypeChecker._
+  override val `type`: AccType =
     (n: Nat) -> (dt: DataType) ->
       (index :: exp"[idx($n)]") ->
-      (array :: acc"[$n.$dt]") -> `type`
-  }
+        (array :: acc"[$n.$dt]") ->
+          acc"[$dt]"
 
   override def eval(s: Store): AccIdentifier = {
     val arrayE = OperationalSemantics.eval(s, array)

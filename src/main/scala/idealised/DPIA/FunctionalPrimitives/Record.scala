@@ -5,7 +5,7 @@ import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
-import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType}
+import idealised.DPIA.Types._
 import idealised.DPIA._
 
 import scala.xml.Elem
@@ -16,13 +16,9 @@ final case class Record(dt1: DataType,
                         snd: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override lazy val `type` = exp"[$dt1 x $dt2]"
-
-  override def typeCheck(): Unit = {
-    import idealised.DPIA.Types.TypeChecker._
+  override val `type`: ExpType =
     (dt1: DataType) -> (dt2: DataType) ->
-      (fst :: exp"[$dt1]") -> (snd :: exp"[$dt2]") -> `type`
-  }
+      (fst :: exp"[$dt1]") -> (snd :: exp"[$dt2]") -> exp"[$dt1 x $dt2]"
 
   override def eval(s: Store): Data = {
     RecordData(

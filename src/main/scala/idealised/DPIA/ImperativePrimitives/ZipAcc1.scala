@@ -2,7 +2,7 @@ package idealised.DPIA.ImperativePrimitives
 
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics._
-import idealised.DPIA.Types.{AccType, DataType}
+import idealised.DPIA.Types._
 import idealised.DPIA._
 
 import scala.xml.Elem
@@ -13,13 +13,9 @@ final case class ZipAcc1(n: Nat,
                          array: Phrase[AccType])
   extends AccPrimitive {
 
-  override lazy val `type`: AccType = acc"[$n.$dt1]"
-
-  override def typeCheck(): Unit = {
-    import idealised.DPIA.Types.TypeChecker._
+  override val `type`: AccType =
     (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
-      (array :: acc"[$n.($dt1 x $dt2)]") -> `type`
-  }
+      (array :: acc"[$n.($dt1 x $dt2)]") -> acc"[$n.$dt1]"
 
   override def eval(s: Store): AccIdentifier = ???
 

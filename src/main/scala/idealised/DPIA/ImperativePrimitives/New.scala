@@ -14,11 +14,9 @@ final case class New(dt: DataType,
                      f: Phrase[(ExpType x AccType) -> CommandType])
   extends CommandPrimitive {
 
-  override def typeCheck(): Unit = {
-    import TypeChecker._
+  override val `type`: CommandType =
     (dt: DataType) -> /* (addressSpace: AddressSpace) -> */
       (f :: t"var[$dt] -> comm") -> comm
-  }
 
   override def eval(s: Store): Store = {
     val f_ = OperationalSemantics.eval(s, f)

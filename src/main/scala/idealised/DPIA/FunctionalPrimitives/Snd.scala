@@ -5,7 +5,7 @@ import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
-import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType}
+import idealised.DPIA.Types._
 import idealised.DPIA._
 
 import scala.language.reflectiveCalls
@@ -16,13 +16,9 @@ final case class Snd(dt1: DataType,
                      record: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override lazy val `type` = exp"[$dt2]"
-
-  override def typeCheck(): Unit = {
-    import idealised.DPIA.Types.TypeChecker._
+  override val `type`: ExpType =
     (dt1: DataType) -> (dt2: DataType) ->
-      (record :: exp"[$dt1 x $dt2]") -> `type`
-  }
+      (record :: exp"[$dt1 x $dt2]") -> exp"[$dt2]"
 
   override def eval(s: Store): Data = {
     OperationalSemantics.eval(s, record) match {

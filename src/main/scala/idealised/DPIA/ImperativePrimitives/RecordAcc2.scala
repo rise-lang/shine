@@ -3,7 +3,7 @@ package idealised.DPIA.ImperativePrimitives
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
-import idealised.DPIA.Types.{AccType, DataType}
+import idealised.DPIA.Types._
 import idealised.DPIA._
 
 import scala.xml.Elem
@@ -13,13 +13,10 @@ final case class RecordAcc2(dt1: DataType,
                             record: Phrase[AccType])
   extends AccPrimitive {
 
-  override lazy val `type` = acc"[$dt2]"
-
-  override def typeCheck(): Unit = {
-    import idealised.DPIA.Types.TypeChecker._
+  override val `type`: AccType =
     (dt1: DataType) -> (dt2: DataType) ->
-      (record :: acc"[$dt1 x $dt2]") -> `type`
-  }
+      (record :: acc"[$dt1 x $dt2]") ->
+        acc"[$dt2]"
 
   override def eval(s: Store): AccIdentifier = {
     OperationalSemantics.eval(s, record) match {

@@ -2,7 +2,7 @@ package idealised.OpenCL.ImperativePrimitives
 
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics._
-import idealised.DPIA.Types.{AccType, DataType, ScalarType, VectorType}
+import idealised.DPIA.Types._
 import idealised.DPIA._
 import idealised.OpenCL.{CodeGenerator, ViewAcc}
 import ir.Type
@@ -16,13 +16,10 @@ final case class AsVectorAcc(n: Nat,
                              array: Phrase[AccType])
   extends AccPrimitive with ViewAcc {
 
-  override lazy val `type` = acc"[${n * m}.$dt]"
-
-  override def typeCheck(): Unit = {
-    import idealised.DPIA.Types.TypeChecker._
+  override lazy val `type`: AccType =
     (n: Nat) -> (m: Nat) -> (dt: ScalarType) ->
-      (array :: acc"[$n.${VectorType(m, dt)}]") -> `type`
-  }
+      (array :: acc"[$n.${VectorType(m, dt)}]") ->
+        acc"[${n * m}.$dt]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {
     AsVectorAcc(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))

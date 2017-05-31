@@ -19,13 +19,11 @@ final case class AsScalar(n: Nat,
                           array: Phrase[ExpType])
   extends ExpPrimitive with ViewExp {
 
-  override lazy val `type` = exp"[${n * m}.$dt]"
-
-  override def typeCheck(): Unit = {
-    import TypeChecker._
+  override lazy val `type`: ExpType =
     (n: Nat) -> (m: Nat) -> (dt: ScalarType) ->
-      (array :: exp"[$n.${VectorType(m, dt)}]") -> `type`
-  }
+      (array :: exp"[$n.${VectorType(m, dt)}]") ->
+        exp"[${n * m}.$dt]"
+
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     AsScalar(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))

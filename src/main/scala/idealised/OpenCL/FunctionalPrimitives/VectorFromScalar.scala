@@ -17,13 +17,10 @@ final case class VectorFromScalar(n: Nat,
                                   arg: Phrase[ExpType])
   extends ExpPrimitive with GeneratableExp {
 
-  override lazy val `type` = exp"[${VectorType(n, dt)}]"
-
-  override def typeCheck(): Unit = {
-    import TypeChecker._
+  override lazy val `type`: ExpType =
     (n: Nat) -> (dt: ScalarType) ->
-      (arg :: exp"[$dt]") -> `type`
-  }
+      (arg :: exp"[$dt]") ->
+        exp"[${VectorType(n, dt)}]"
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     VectorFromScalar(f(n), f(dt), VisitAndRebuild(arg, f))

@@ -18,13 +18,10 @@ final case class AsVector(n: Nat,
                           array: Phrase[ExpType])
   extends ExpPrimitive with ViewExp {
 
-  override lazy val `type` = exp"[$m.${VectorType(n, dt)}]"
-
-  override def typeCheck(): Unit = {
-    import TypeChecker._
+  override lazy val `type`: ExpType =
     (n: Nat) -> (m: Nat) -> (dt: ScalarType) ->
-      (array :: exp"[${m * n}.$dt]") -> `type`
-  }
+      (array :: exp"[${m * n}.$dt]") ->
+        exp"[$m.${VectorType(n, dt)}]"
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     AsVector(f(n), f(m), f(dt), VisitAndRebuild(array, f))

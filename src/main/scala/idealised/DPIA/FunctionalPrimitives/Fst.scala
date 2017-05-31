@@ -13,16 +13,13 @@ import scala.xml.Elem
 
 final case class Fst(dt1: DataType,
                      dt2: DataType,
-                     record: Phrase[ExpType])
-  extends ExpPrimitive {
+                     record: Phrase[ExpType]) extends ExpPrimitive
+{
 
-  override lazy val `type` = exp"[$dt1]"
-
-  override def typeCheck(): Unit = {
-    import TypeChecker._
+  override val `type`: ExpType =
     (dt1: DataType) -> (dt2: DataType) ->
-      (record :: exp"[$dt1 x $dt2]") -> `type`
-  }
+      (record :: exp"[$dt1 x $dt2]") -> exp"[$dt1]"
+
 
   override def eval(s: Store): Data = {
     OperationalSemantics.eval(s, record) match {

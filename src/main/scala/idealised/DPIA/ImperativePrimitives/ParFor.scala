@@ -15,13 +15,11 @@ abstract class AbstractParFor(val n: Nat,
                               val body: Phrase[ExpType -> (AccType -> CommandType)])
   extends CommandPrimitive {
 
-  override def typeCheck(): Unit = {
-    import TypeChecker._
+  override val `type`: CommandType =
     (n: Nat) -> (dt: DataType) ->
       (out :: acc"[$n.$dt]") ->
-      (body :: t"exp[idx($n)] -> acc[$dt] -> comm") ->
-      comm
-  }
+        (body :: t"exp[idx($n)] -> acc[$dt] -> comm") ->
+          comm
 
   override def eval(s: Store): Store = {
     val nE = evalIndexExp(s, Literal(IndexData(n), IndexType(n)))

@@ -5,7 +5,7 @@ import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases.VisitAndRebuild.Visitor
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics.{Data, Store}
-import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType}
+import idealised.DPIA.Types._
 import idealised.DPIA._
 import idealised.OpenCL.CodeGenerator.Environment
 import idealised.OpenCL.{CodeGenerator, GeneratableExp}
@@ -21,14 +21,10 @@ final case class OpenCLFunction(name: String,
                                 args: Seq[Phrase[ExpType]])
   extends ExpPrimitive with GeneratableExp {
 
-  override lazy val `type` = exp"[$outT]"
-
-  override def typeCheck(): Unit = {
-    import idealised.DPIA.Types.TypeChecker._
+  override lazy val `type`: ExpType =
     (inTs zip args).foreach{
       case (inT, arg) => arg :: exp"[$inT]"
-    }
-  }
+    } -> exp"[$outT]"
 
   override def visitAndRebuild(f: Visitor): Phrase[ExpType] = {
     OpenCLFunction(name, inTs.map(f(_)), f(outT), args.map(VisitAndRebuild(_, f)))

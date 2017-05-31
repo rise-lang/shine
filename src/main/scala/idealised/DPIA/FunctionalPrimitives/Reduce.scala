@@ -26,16 +26,11 @@ abstract class AbstractReduce(n: Nat,
     Phrase[ExpType -> (ExpType -> (AccType -> CommandType))],
     Phrase[ExpType], Phrase[ExpType], Phrase[ExpType -> CommandType]) => ReduceI
 
-  override lazy val `type` = exp"[$dt2]"
-
-  override def typeCheck(): Unit = {
-    import TypeChecker._
+  override val `type`: ExpType =
     (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
       (f :: t"exp[$dt1] -> exp[$dt2] -> exp[$dt2]") ->
-      (init :: exp"[$dt2]") ->
-      (array :: exp"[$n.$dt1]") ->
-      `type`
-  }
+        (init :: exp"[$dt2]") ->
+          (array :: exp"[$n.$dt1]") -> exp"[$dt2]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     makeReduce(fun(n), fun(dt1), fun(dt2),

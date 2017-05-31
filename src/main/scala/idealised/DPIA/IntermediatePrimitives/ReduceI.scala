@@ -21,15 +21,13 @@ final case class ReduceI(n: Nat,
                          out: Phrase[ExpType -> CommandType])
   extends CommandPrimitive with Intermediate[CommandType] {
 
-  override def typeCheck(): Unit = {
-    import TypeChecker._
+  override val `type`: CommandType =
     (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
       (f :: t"exp[$dt1] -> exp[$dt2] -> acc[$dt2] -> comm") ->
-      (init :: exp"[$dt2]") ->
-      (in :: exp"[$n.$dt1]") ->
-      (out :: t"exp[$dt2] -> comm") ->
-      comm
-  }
+        (init :: exp"[$dt2]") ->
+          (in :: exp"[$n.$dt1]") ->
+            (out :: t"exp[$dt2] -> comm") ->
+              comm
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {
     ReduceI(fun(n), fun(dt1), fun(dt2),

@@ -18,15 +18,11 @@ final case class Gather(n: Nat,
                         array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override lazy val `type` = exp"[$n.$dt]"
-
-  override def typeCheck(): Unit = {
-    import idealised.DPIA.Types.TypeChecker._
+  override val `type`: ExpType =
     (n: Nat) -> (dt: DataType) ->
       (idxF :: t"exp[idx($n)] -> exp[idx($n)]") ->
-      (array :: exp"[$n.$dt]") ->
-      `type`
-  }
+        (array :: exp"[$n.$dt]") ->
+          exp"[$n.$dt]"
 
   override def eval(s: Store): Data = {
     import idealised.DPIA.Semantics.OperationalSemantics._

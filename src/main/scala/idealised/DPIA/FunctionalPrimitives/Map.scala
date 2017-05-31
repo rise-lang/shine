@@ -25,15 +25,10 @@ abstract class AbstractMap(n: Nat,
     Phrase[ExpType -> (AccType -> CommandType)], Phrase[ExpType], Phrase[AccType]) => AbstractMapI
 
 
-  override lazy val `type` = exp"[$n.$dt2]"
-
-  override def typeCheck(): Unit = {
-    import TypeChecker._
+  override val `type`: ExpType =
     (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
       (f :: t"exp[$dt1] -> exp[$dt2]") ->
-      (array :: exp"[$n.$dt1]") ->
-      `type`
-  }
+        (array :: exp"[$n.$dt1]") -> exp"[$n.$dt2]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     makeMap(fun(n), fun(dt1), fun(dt2), VisitAndRebuild(f, fun), VisitAndRebuild(array, fun))
