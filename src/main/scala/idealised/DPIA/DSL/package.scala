@@ -102,7 +102,7 @@ package object DSL {
 
   implicit class NatExtensions(n: Nat) {
     def asPhrase = Literal(IndexData(n), IndexType(n.max))
-    def asPhrase(withType: IndexType) = Literal(IndexData(n), withType)
+    def asPhrase(withType: IndexType): Phrase[ExpType] = Literal(IndexData(n), withType)
   }
 
   implicit def toLiteralInt(i: Int): Literal = Literal(IntData(i), int)

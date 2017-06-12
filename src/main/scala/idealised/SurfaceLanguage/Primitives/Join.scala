@@ -22,7 +22,7 @@ final case class Join(array: DataExpr, override val `type`: Option[DataType] = N
     array_.`type` match {
       case Some(ArrayType(n, ArrayType(m, dt))) =>
         Join(array_, Some(ArrayType(n * m, dt)))
-      case x => error(expr = s"Join(array_)",
+      case x => error(expr = s"Join($array_)",
         found = s"`${x.toString}'", expected = "n.m.dt")
     }
   }

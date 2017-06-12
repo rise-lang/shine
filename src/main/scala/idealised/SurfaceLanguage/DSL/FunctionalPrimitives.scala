@@ -61,6 +61,12 @@ object gather {
   }
 }
 
+object transpose {
+  def apply(): Expr[DataType -> DataType] = λ(array => transpose(array))
+
+  def apply(array: DataExpr): Transpose = Transpose(array)
+}
+
 object tuple {
   def apply(fst: DataExpr, snd: DataExpr): Tuple = Tuple(fst, snd)
 }
@@ -68,4 +74,5 @@ object tuple {
 object printType {
   def apply(): Expr[DataType -> DataType] = λ(x => PrintType(x, ""))
   def apply(msg: String): Expr[DataType -> DataType] = λ(x => PrintType(x, msg))
+  def apply(msg: String, x: Expr[DataType]) = PrintType(x, msg)
 }

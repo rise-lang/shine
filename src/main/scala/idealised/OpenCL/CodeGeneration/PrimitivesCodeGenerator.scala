@@ -305,6 +305,31 @@ object PrimitivesCodeGenerator {
     CodeGenerator.exp(t.array, env, dt, arrayAccess, tupleAccess)
   }
 
+  def toOpenCL(l: DPIA.Phrases.Literal,
+               env: CodeGenerator.Environment,
+               dt: DataType,
+               arrayAccess: List[(ArithExpr, ArithExpr)],
+               tupleAccess: List[ArithExpr]): Expression = {
+    import OperationalSemantics._
+
+    l.dt match {
+      case _: BasicType =>
+        l.d match {
+          case i: IntData => OpenCLAST.Literal(i.i.toString)
+          case b: BoolData => OpenCLAST.Literal(b.b.toString)
+          case f: FloatData => OpenCLAST.Literal(f.f.toString)
+          case i: IndexData => OpenCLAST.Literal(i.i.toString)
+        }
+      case ct: ComposedType => (ct, l.d) match {
+        case (at: ArrayType, ad: ArrayData) =>
+          val nestedLiteral = DPIA.Phrases.Literal(ad.a(0), at.elemType)
+          CodeGenerator.exp(nestedLiteral, env, at.elemType, arrayAccess.tail, tupleAccess)
+        case (rt: RecordType, rd: RecordData) =>
+          ???
+      }
+    }
+  }
+
   // ==== generating var refs  ==== //
 
   def toOpenCL(f: RecordAcc1,

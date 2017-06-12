@@ -264,6 +264,8 @@ object CodeGenerator {
             VarRef(name, suffix, ArithExpression(index))
         }
 
+      case l: DPIA.Phrases.Literal => toOpenCL(l, env, dt, arrayAccess, tupleAccess)
+
       case p: Proj1[ExpType, _] => exp(Lifting.liftPair(p.pair)._1, env, dt, arrayAccess, tupleAccess)
       case p: Proj2[_, ExpType] => exp(Lifting.liftPair(p.pair)._2, env, dt, arrayAccess, tupleAccess)
 
@@ -285,7 +287,7 @@ object CodeGenerator {
       case Apply(_, _) | NatDependentApply(_, _) |
            TypeDependentApply(_, _) |
            BinOp(_, _, _) | UnaryOp(_, _) |
-           DPIA.Phrases.IfThenElse(_, _, _) | DPIA.Phrases.Literal(_, _) | _: ExpPrimitive =>
+           DPIA.Phrases.IfThenElse(_, _, _) | _: ExpPrimitive =>
         throw new Exception(s"Don't know how to generate idealised.OpenCL code for $p")
     }
   }
