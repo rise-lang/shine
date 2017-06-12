@@ -12,6 +12,7 @@ import idealised.OpenCL.CodeGenerator
 import idealised.OpenCL.ImperativePrimitives.OpenCLParFor
 import idealised._
 import ir.Type
+import ir.ast.ArrayAccess
 import lift.arithmetic._
 import opencl.generator.OpenCLAST
 import opencl.generator.OpenCLAST._
@@ -405,6 +406,20 @@ object PrimitivesCodeGenerator {
                arrayAccess: List[(Nat, Nat)],
                tupleAccess: List[Nat]): Expression = {
     CodeGenerator.acc(t.array, value, env, dt, arrayAccess, tupleAccess)
+  }
+
+  def toOpenCL(s: ScatterAcc,
+               value: Expression,
+               env: CodeGenerator.Environment,
+               dt: DataType,
+               arrayAccess: List[(Nat, Nat)],
+               tupleAccess: List[Nat]): Expression = {
+    val idx = arrayAccess.head
+    val stack = arrayAccess.tail
+
+    val n_ = OperationalSemantics.evalIndexExp(s.idxF(idx._1))
+
+    CodeGenerator.acc(s.array, value, env, dt, (n_, idx._2) :: stack, tupleAccess)
   }
 
 }

@@ -67,6 +67,12 @@ object transpose {
   def apply(array: DataExpr): Transpose = Transpose(array)
 }
 
+object transposeW {
+  def apply(): Expr[DataType -> DataType] = λ(array => transposeW(array))
+
+  def apply(array: DataExpr): TransposeOnWrite = TransposeOnWrite(array)
+}
+
 object tuple {
   def apply(fst: DataExpr, snd: DataExpr): Tuple = Tuple(fst, snd)
 }

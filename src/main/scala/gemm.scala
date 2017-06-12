@@ -15,8 +15,8 @@ import scala.util.Random
 
 object gemm extends App {
 
-  Executor.loadLibrary()
-  Executor.init()
+//  Executor.loadLibrary()
+//  Executor.init()
 
   val epsilon = 1.0f
 
@@ -39,24 +39,24 @@ object gemm extends App {
     val kernel = CodeGenerator.makeKernel(lambda, localSize = 128, globalSize = N)
     println(kernel.code)
 
-    val fun = kernel.as[ScalaFunction `(` Array[Float] `,` Array[Float] `)=>` Array[Float]]
-
-    val size = 1024 * 1024
-
-    val xs = Array.fill(size)(Random.nextInt(4).toFloat)
-    val ys = Array.fill(size)(Random.nextInt(4).toFloat)
-
-    val (res, time) = fun(xs `,` ys)
-    println(s"RESULT KERNEL1 NAME: $name TIME: $time")
-    if (check) {
-      val gold = (xs zip ys).map{ case (x, y) => x * y }.sum
-      if (res.sum - gold < epsilon) {
-        println(s"Computed result MATCHES with gold solution.")
-      } else {
-        println(s"ERROR computed result differs from gold solution.")
-        println(s"res: ${res.sum} vs. gold: $gold")
-      }
-    }
+//    val fun = kernel.as[ScalaFunction `(` Array[Float] `,` Array[Float] `)=>` Array[Float]]
+//
+//    val size = 1024 * 1024
+//
+//    val xs = Array.fill(size)(Random.nextInt(4).toFloat)
+//    val ys = Array.fill(size)(Random.nextInt(4).toFloat)
+//
+//    val (res, time) = fun(xs `,` ys)
+//    println(s"RESULT KERNEL1 NAME: $name TIME: $time")
+//    if (check) {
+//      val gold = (xs zip ys).map{ case (x, y) => x * y }.sum
+//      if (res.sum - gold < epsilon) {
+//        println(s"Computed result MATCHES with gold solution.")
+//      } else {
+//        println(s"ERROR computed result differs from gold solution.")
+//        println(s"res: ${res.sum} vs. gold: $gold")
+//      }
+//    }
 
     println("----------------\n")
   }
@@ -77,7 +77,7 @@ object gemm extends App {
   val maliGEMM =
     λ(aT)(a => λ(bT)(b => λ(cT)(c => λ(dt)(alpha => λ(dt)(beta =>
       join() o mapGlobal(λ(ac =>
-        transpose() o join() o
+        transposeW() o join() o
         mapGlobal(λ(bc =>
           transpose() o toGlobal(λ(p235 =>
               mapSeq(λ(p237 =>

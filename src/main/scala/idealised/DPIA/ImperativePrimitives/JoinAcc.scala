@@ -11,7 +11,8 @@ final case class JoinAcc(n: Nat,
                          m: Nat,
                          dt: DataType,
                          array: Phrase[AccType])
-  extends AccPrimitive {
+  extends AccPrimitive
+{
 
   override val `type`: AccType =
     (n: Nat) -> (m: Nat) -> (dt: DataType) ->

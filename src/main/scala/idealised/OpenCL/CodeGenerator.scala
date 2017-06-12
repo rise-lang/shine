@@ -361,6 +361,7 @@ object CodeGenerator {
       case s: RecordAcc2    => toOpenCL(s, value, env, dt, arrayAccess, tupleAccess)
       case s: SplitAcc  => toOpenCL(s, value, env, dt, arrayAccess, tupleAccess)
       case t: TruncAcc  => toOpenCL(t, value, env, dt, arrayAccess, tupleAccess)
+      case s: ScatterAcc => toOpenCL(s, value, env, dt, arrayAccess, tupleAccess)
 
       case p: Proj1[AccType, _] => acc(Lifting.liftPair(p.pair)._1, value, env, dt, arrayAccess, tupleAccess)
       case p: Proj2[_, AccType] => acc(Lifting.liftPair(p.pair)._2, value, env, dt, arrayAccess, tupleAccess)

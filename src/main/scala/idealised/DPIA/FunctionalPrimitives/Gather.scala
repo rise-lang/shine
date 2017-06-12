@@ -16,7 +16,8 @@ final case class Gather(n: Nat,
                         dt: DataType,
                         idxF: Phrase[ExpType -> ExpType],
                         array: Phrase[ExpType])
-  extends ExpPrimitive {
+  extends ExpPrimitive
+{
 
   override val `type`: ExpType =
     (n: Nat) -> (dt: DataType) ->
@@ -44,7 +45,7 @@ final case class Gather(n: Nat,
   override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
 
-    con(this)(λ(exp"[$n.$dt]")(x => acc(x)(A) ))
+    con(this)(λ(exp"[$n.$dt]")(x => A :=|dt"[$n.$dt]"| x ))
   }
 
   override def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
