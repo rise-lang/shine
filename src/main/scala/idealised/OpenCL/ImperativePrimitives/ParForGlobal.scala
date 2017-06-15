@@ -19,6 +19,8 @@ final case class ParForGlobal(override val n: Nat,
 
   override val parallelismLevel = OpenCL.Global
 
+  override val name: String = freshName("gl_id_")
+
   override lazy val init: OclFunction = get_global_id(0, RangeAdd(0, env.globalSize, 1))
 
   override lazy val step: OclFunction = get_global_size(0, RangeAdd(env.globalSize, env.globalSize + 1, 1))

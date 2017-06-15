@@ -15,12 +15,12 @@ package object DPIA {
   type Nat = ArithExpr
   type NatIdentifier = NamedVar
 
-  object newName {
+  object freshName {
     var counter = 0
 
-    def apply(): String = {
+    def apply(prefix: String = "v"): String = {
       counter += 1
-      "v" + counter
+      prefix + counter
     }
   }
 

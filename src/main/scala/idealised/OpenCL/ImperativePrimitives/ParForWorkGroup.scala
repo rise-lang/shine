@@ -22,6 +22,8 @@ final case class ParForWorkGroup(override val n: Nat,
 
   override val parallelismLevel = OpenCL.WorkGroup
 
+  override val name: String = freshName("wg_id_")
+
   override lazy val init: OclFunction = get_group_id(0, RangeAdd(0, num_groups, 1))
 
   override lazy val step: OclFunction = get_num_groups(0, num_groups_range)

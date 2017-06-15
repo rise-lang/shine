@@ -3,7 +3,7 @@ package idealised.OpenCL.CodeGeneration
 import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives._
 import idealised.DPIA.ImperativePrimitives._
-import idealised.DPIA.Phrases.{Identifier, Phrase}
+import idealised.DPIA.Phrases.{Identifier, Lambda, Phrase}
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics.IndexData
 import idealised.DPIA.Types._
@@ -30,7 +30,7 @@ object PrimitivesCodeGenerator {
   def toOpenCL(f: For, block: Block, env: CodeGenerator.Environment): Block = {
     import opencl.generator.OpenCLAST._
 
-    val name = newName()
+    val name = freshName("i_")
 
     val updatedEnv = env.updatedRanges(name, RangeAdd(0, f.n, 1))
 
@@ -79,7 +79,7 @@ object PrimitivesCodeGenerator {
       case i: Identifier[VarType] => i.name
       case _ => throw new Exception("This should not happen")
     }
-    val in = identifier(newName(), ExpType(ArrayType(d.n, d.dt)))
+    val in = identifier(freshName("in_"), ExpType(ArrayType(d.n, d.dt)))
 
     (block: Block) += VarDecl(in.name, ptrType,
       init = VarRef(buffer1Name), addressSpace = opencl.ir.PrivateMemory)
@@ -89,13 +89,13 @@ object PrimitivesCodeGenerator {
       case i: Identifier[VarType] => i.name
       case _ => throw new Exception("This should not happen")
     }
-    val out = identifier(newName(), AccType(ArrayType(d.n, d.dt)))
+    val out = identifier(freshName("out_"), AccType(ArrayType(d.n, d.dt)))
 
     (block: Block) += VarDecl(out.name, ptrType,
       init = VarRef(buffer2Name), addressSpace = opencl.ir.PrivateMemory)
 
     // for ...
-    val loopVar = NamedVar(newName())
+    val loopVar = NamedVar(freshName("i_"))
     val updatedEnv = env.updatedRanges(loopVar.name, RangeAdd(0, d.k, 1))
 
     val init = VarDecl(loopVar.name, opencl.ir.Int,
@@ -118,7 +118,7 @@ object PrimitivesCodeGenerator {
 
     (block: Block) += ForLoop(init, cond, increment, body_)
 
-    val tmp = NamedVar(newName())
+    val tmp = NamedVar(freshName("tmp_"))
     // tmp = in
     nestedBlock += VarDecl(tmp.name, ptrType,
       init = VarRef(in.name), addressSpace = opencl.ir.PrivateMemory)
@@ -144,10 +144,18 @@ object PrimitivesCodeGenerator {
   }
 
   def toOpenCL(n: New, block: Block, env: CodeGenerator.Environment): Block = {
-    val v = NamedVar(newName())
+    val v = NamedVar(n.f match {
+      case Lambda(x, _) => x.name
+      case _ => ???
+    })
 
     if (n.addressSpace == OpenCL.PrivateMemory) {
-      (block: Block) += VarDecl(v.name, DataType.toType(n.dt))
+      val unrolledNames = unrollName(v.name, n.dt, collection.Seq())
+      val unrolldTypes = unrollType(n.dt, collection.Seq())
+      (unrolledNames zip unrolldTypes).foreach {
+        case (name, dt) => (block: Block) += VarDecl(name, DataType.toType(dt))
+      }
+//      allocationInPrivateMemory(n.dt, v.name, block)
     } else {
       // TODO: throw exception
       (block: Block) += Comment(s"new ${v.name} ${n.dt} ${n.addressSpace}")
@@ -156,6 +164,51 @@ object PrimitivesCodeGenerator {
     val f_ = Lifting.liftFunction(n.f)
     val v_ = identifier(v.name, n.f.t.inT)
     CodeGenerator.cmd(f_(v_), block, env)
+  }
+
+//  def allocationInPrivateMemory(dt: DataType, name: String, block: Block): Block = {
+//    dt match {
+//      case _: BasicType =>
+//        (block: Block) += VarDecl(name, DataType.toType(dt))
+//      case ct: ComposedType => ct match {
+//        case ArrayType(size, et) =>
+//          // array in private memory is unrolled ...
+//          for (i <- 0 until size.evalInt) {
+//            allocationInPrivateMemory(et, s"${name}_$i", block)
+//          }
+//          block
+//        case rt: RecordType => ???
+//      }
+//      case _: DataTypeIdentifier => ???
+//    }
+//  }
+
+  def unrollName(name: String, dt: DataType, seq: collection.Seq[String]): collection.Seq[String] = {
+    dt match {
+      case _: BasicType => seq :+ name
+      case ct: ComposedType => ct match {
+        case ArrayType(size, et) =>
+          (0 until size.evalInt).foldLeft(seq){
+            (names, i) => unrollName(s"${name}_$i", et, names)
+          }
+        case rt: RecordType => ???
+      }
+      case _: DataTypeIdentifier => ???
+    }
+  }
+
+  def unrollType(dt: DataType, seq: collection.Seq[DataType]): collection.Seq[DataType] = {
+    dt match {
+      case _: BasicType => seq :+ dt
+      case ct: ComposedType => ct match {
+        case ArrayType(size, et) =>
+          (0 until size.evalInt).foldLeft(seq){
+            (types, _) => unrollType(et, types)
+          }
+        case rt: RecordType => ???
+      }
+      case _: DataTypeIdentifier => ???
+    }
   }
 
   def toOpenCL(s: idealised.DPIA.ImperativePrimitives.Seq,
@@ -184,6 +237,8 @@ object PrimitivesCodeGenerator {
       override def makeParFor = OpenCLParForSeq
 
       override def parallelismLevel = OpenCL.Sequential
+
+      override val name: String = freshName("i_")
 
       override lazy val init = Cst(0)
       override lazy val step = Cst(1)

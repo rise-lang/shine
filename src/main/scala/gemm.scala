@@ -76,16 +76,17 @@ object gemm extends App {
 
   val maliGEMM =
     λ(aT)(a => λ(bT)(b => λ(cT)(c => λ(dt)(alpha => λ(dt)(beta =>
+      printType("output") o
       join() o mapGlobal(λ(ac =>
         transposeW() o join() o
         mapGlobal(λ(bc =>
-          transpose() o toGlobal(λ(p235 =>
+          transpose() o λ(p235 =>
               mapSeq(λ(p237 =>
                 mapSeq(λ(p64 =>
                   add(mult(p64._1)(alpha))(mult(p64._2)(beta))
                 ), zip(p237._1, p237._2))
               )) $ zip(p235, transpose() $ bc._2)
-          )) o
+          ) o
           reduceSeq(λ(p236 => λ(p67 =>
             mapSeq(λ(p54 =>
               mapSeq(λ(p157 =>

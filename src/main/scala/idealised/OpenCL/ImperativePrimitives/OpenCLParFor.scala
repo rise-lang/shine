@@ -20,7 +20,7 @@ abstract class OpenCLParFor(n: Nat,
 
   protected var env: CodeGenerator.Environment = _
 
-  protected val name: String = newName()
+  protected def name: String
 
   def init: Nat
   def step: Nat
