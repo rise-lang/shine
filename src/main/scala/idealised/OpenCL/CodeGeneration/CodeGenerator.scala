@@ -89,19 +89,24 @@ object CodeGenerator {
           tupleAccess: List[Nat]): Expression = {
     p match {
       case Identifier(name, t) =>
-        val index = {
-          val i = arrayAccess.map(x => x._1 * x._2).foldLeft(0: Nat)((x, y) => x + y)
-          if (i != (0: Nat)) { i } else { null }
+        val index: Nat = {
+          if (arrayAccess.nonEmpty) {
+            arrayAccess.map(x => x._1 * x._2).foldLeft(0: Nat)((x, y) => x + y)
+          } else {
+            null
+          }
         }
 
         val suffix = {
-          val s = tupleAccess.map {
-            case lift.arithmetic.Cst(1) => "._1"
-            case lift.arithmetic.Cst(2) => "._2"
-            case _ => throw new Exception("This should not happen")
-          }.foldLeft("")(_ + _)
-
-          if (s != "") { s } else { null }
+          if (tupleAccess.nonEmpty) {
+            tupleAccess.map {
+              case lift.arithmetic.Cst(1) => "._1"
+              case lift.arithmetic.Cst(2) => "._2"
+              case _ => throw new Exception("This should not happen")
+            }.foldLeft("")(_ + _)
+          } else {
+            null
+          }
         }
 
         val (originalType, currentType) = (t.dataType, dt)

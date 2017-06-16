@@ -81,17 +81,17 @@ object gemm extends App {
         transposeW() o join() o
         mapGlobal(λ(bc =>
           transpose() o λ(p235 =>
-              mapSeq(λ(p237 =>
+            mapSeq(λ(p237 =>
                 mapSeq(λ(p64 =>
                   add(mult(p64._1)(alpha))(mult(p64._2)(beta))
-                ), zip(p237._1, p237._2))
+                )) $ zip(p237._1, p237._2)
               )) $ zip(p235, transpose() $ bc._2)
           ) o
           reduceSeq(λ(p236 => λ(p67 =>
             mapSeq(λ(p54 =>
+              join() o
               mapSeq(λ(p157 =>
-                reduceSeq(add, p157._1) o
-                  mapSeq(dot) $
+                mapSeq(λ(x => p157._1 + dot(x))) $
                   zip(asVector(4) $ p54._2, asVector(4) $ p157._2)
               )) $ zip(p54._1, transpose() $ p236._2)
             )) $ zip(p67, transpose() $  p236._1)
@@ -105,4 +105,32 @@ object gemm extends App {
 
   printOpenCLKernel("maliGEMM", maliGEMM)
 
+  val maliGEMM_variation_b =
+    λ(aT)(a => λ(bT)(b => λ(cT)(c => λ(dt)(alpha => λ(dt)(beta =>
+      printType("output") o
+        join() o mapGlobal(λ(ac =>
+        transposeW() o join() o
+          mapGlobal(λ(bc =>
+            transpose() o λ(p235 =>
+              mapSeq(λ(p237 =>
+                mapSeq(λ(p64 =>
+                  add(mult(p64._1)(alpha))(mult(p64._2)(beta))
+                ), zip(p237._1, p237._2))
+              )) $ zip(p235, transpose() $ bc._2)
+            ) o
+              reduceSeq(λ(p236 => λ(p67 =>
+                mapSeq(λ(p54 =>
+                    mapSeq(λ(p157 =>
+                      reduceSeq(add, p157._1) o
+                        toPrivate(mapSeq(dot)) $
+                          zip(asVector(4) $ p54._2, asVector(4) $ p157._2)
+                    )) $ zip(p54._1, transpose() $ p236._2)
+                )) $ zip(p67, transpose() $  p236._1)
+              )), zeros) $
+              zip(
+                split(p3) o transpose() $  ac._1,
+                split(p3) o transpose() $  bc._1)
+          )) $ zip(split(p1) $ b, split(p1) o transpose() $ ac._2)
+      )) $ zip(split(p2) $ a, split(p2) $ c)
+    )))))
 }

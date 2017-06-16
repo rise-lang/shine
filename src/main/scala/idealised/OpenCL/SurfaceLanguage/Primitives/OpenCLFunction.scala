@@ -23,6 +23,16 @@ final case class OpenCLFunction(name: String,
   override def inferType(subs: TypeInference.SubstitutionMap): OpenCLFunction = {
     val args_ = args.map(TypeInference(_, subs))
     val dts = args_.flatMap(_.`type`)
+    var i = 0
+    (inTs zip dts) foreach {
+      case (expectedT, foundT) =>
+        if (expectedT != foundT) {
+          TypeInference.error(expr = s"$name(${args.mkString(",")})",
+            found = s"`$foundT'", expected = s"`$expectedT' for argument $i")
+        }
+        i = i+1
+      case _ =>
+    }
     OpenCLFunction(name, dts, outT, args_)
   }
 

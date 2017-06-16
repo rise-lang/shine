@@ -55,6 +55,14 @@ object toGlobal {
     ToGlobal(f, x)
 }
 
+object toPrivate {
+  def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] =
+    λ(x => toPrivate(f, x))
+
+  def apply(f: Expr[DataType -> DataType], x: DataExpr): ToPrivate =
+    ToPrivate(f, x)
+}
+
 object asVector {
   def apply(n: Nat): Expr[DataType -> DataType] =
     λ(array => asVector(n, array))
@@ -91,9 +99,9 @@ object vectorize {
 }
 
 object oclFun {
-  def apply(name: String, inT: DataType, outT: DataType, arg: DataExpr) =
+  def apply(name: String, inT: DataType, outT: DataType, arg: DataExpr): OpenCLFunction =
     OpenCLFunction(name, Seq(inT), outT, Seq(arg))
 
-  def apply(name: String, inTs: Seq[DataType], outT: DataType, args: Seq[DataExpr]) =
+  def apply(name: String, inTs: Seq[DataType], outT: DataType, args: Seq[DataExpr]): OpenCLFunction =
     OpenCLFunction(name, inTs, outT, args)
 }

@@ -5,18 +5,15 @@ import idealised.DPIA.FunctionalPrimitives._
 import idealised.DPIA.ImperativePrimitives._
 import idealised.DPIA.Phrases.{Identifier, Lambda, Phrase}
 import idealised.DPIA.Semantics.OperationalSemantics
-import idealised.DPIA.Semantics.OperationalSemantics.IndexData
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised.OpenCL.KernelGenerator
 import idealised.OpenCL.ImperativePrimitives.OpenCLParFor
 import idealised._
 import ir.Type
-import ir.ast.ArrayAccess
 import lift.arithmetic._
 import opencl.generator.OpenCLAST
 import opencl.generator.OpenCLAST._
-import opencl.ir.PtrType
+import opencl.ir.{PrivateMemory, PtrType}
 
 object PrimitivesCodeGenerator {
 
@@ -150,12 +147,12 @@ object PrimitivesCodeGenerator {
     })
 
     if (n.addressSpace == OpenCL.PrivateMemory) {
-      val unrolledNames = unrollName(v.name, n.dt, collection.Seq())
-      val unrolldTypes = unrollType(n.dt, collection.Seq())
-      (unrolledNames zip unrolldTypes).foreach {
-        case (name, dt) => (block: Block) += VarDecl(name, DataType.toType(dt))
-      }
-//      allocationInPrivateMemory(n.dt, v.name, block)
+//      val unrolledNames = unrollName(v.name, n.dt, collection.Seq())
+//      val unrolldTypes = unrollType(n.dt, collection.Seq())
+//      (unrolledNames zip unrolldTypes).foreach {
+//        case (name, dt) => (block: Block) += VarDecl(name, DataType.toType(dt))
+//      }
+      (block: Block) += VarDecl(v.name, DataType.toType(n.dt), addressSpace = PrivateMemory)
     } else {
       // TODO: throw exception
       (block: Block) += Comment(s"new ${v.name} ${n.dt} ${n.addressSpace}")
@@ -165,23 +162,6 @@ object PrimitivesCodeGenerator {
     val v_ = identifier(v.name, n.f.t.inT)
     CodeGenerator.cmd(f_(v_), block, env)
   }
-
-//  def allocationInPrivateMemory(dt: DataType, name: String, block: Block): Block = {
-//    dt match {
-//      case _: BasicType =>
-//        (block: Block) += VarDecl(name, DataType.toType(dt))
-//      case ct: ComposedType => ct match {
-//        case ArrayType(size, et) =>
-//          // array in private memory is unrolled ...
-//          for (i <- 0 until size.evalInt) {
-//            allocationInPrivateMemory(et, s"${name}_$i", block)
-//          }
-//          block
-//        case rt: RecordType => ???
-//      }
-//      case _: DataTypeIdentifier => ???
-//    }
-//  }
 
   def unrollName(name: String, dt: DataType, seq: collection.Seq[String]): collection.Seq[String] = {
     dt match {
