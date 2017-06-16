@@ -8,7 +8,7 @@ import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics.IndexData
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised.OpenCL.CodeGenerator
+import idealised.OpenCL.KernelGenerator
 import idealised.OpenCL.ImperativePrimitives.OpenCLParFor
 import idealised._
 import ir.Type

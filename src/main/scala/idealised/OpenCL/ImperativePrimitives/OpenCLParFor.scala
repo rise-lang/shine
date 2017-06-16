@@ -5,7 +5,8 @@ import idealised.DPIA.ImperativePrimitives.AbstractParFor
 import idealised.DPIA.Phrases.Phrase
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised.OpenCL.{CodeGenerator, GeneratableComm}
+import idealised.OpenCL.CodeGeneration.CodeGenerator
+import idealised.OpenCL.GeneratableComm
 import lift.arithmetic.{Cst, NamedVar, RangeAdd}
 import opencl.generator.OpenCLAST
 import opencl.generator.OpenCLAST.{Block, BlockMember}

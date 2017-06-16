@@ -36,7 +36,7 @@ object gemm extends App {
     lambda.typeCheck()
 
     println(s"-- $name --")
-    val kernel = CodeGenerator.makeKernel(lambda, localSize = 128, globalSize = N)
+    val kernel = KernelGenerator.makeKernel(lambda, localSize = 128, globalSize = N)
     println(kernel.code)
 
 //    val fun = kernel.as[ScalaFunction `(` Array[Float] `,` Array[Float] `)=>` Array[Float]]

@@ -17,8 +17,8 @@ import scala.language.implicitConversions
 
 case class Kernel(function: OpenCLAST.Function,
                   outputParam: Identifier[AccType],
-                  inputParams: List[Identifier[ExpType]],
-                  intermediateParams: List[Identifier[VarType]],
+                  inputParams: Seq[Identifier[ExpType]],
+                  intermediateParams: Seq[Identifier[VarType]],
                   localSize: Nat, globalSize: Nat) {
 
   def code: String = (new OpenCLPrinter)(this)
@@ -149,7 +149,7 @@ case class Kernel(function: OpenCLAST.Function,
     }
   }
 
-  private def getIntermediateParamDecls(argsLength: Int): List[ParamDecl] = {
+  private def getIntermediateParamDecls(argsLength: Int): collection.Seq[ParamDecl] = {
     val startIndex = 1 + argsLength
     function.params.slice(startIndex, startIndex + intermediateParams.size)
   }

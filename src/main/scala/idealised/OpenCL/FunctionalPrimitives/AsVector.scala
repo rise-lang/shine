@@ -6,8 +6,9 @@ import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA._
+import idealised.OpenCL.CodeGeneration.CodeGenerator
 import idealised.OpenCL.ImperativePrimitives.AsVectorAcc
-import idealised.OpenCL.{CodeGenerator, ViewExp}
+import idealised.OpenCL.ViewExp
 import opencl.generator.OpenCLAST.Expression
 
 import scala.xml.Elem

@@ -26,7 +26,7 @@ object dot extends App {
   def printOpenCLKernel1(name: String, expr: Expr[DataType -> (DataType -> DataType)]): Unit = {
     println(s"-- $name --")
 
-    val kernel = CodeGenerator.makeKernel(TypeInference(expr, Map()).toPhrase, localSize = 128, globalSize = N)
+    val kernel = KernelGenerator.makeKernel(TypeInference(expr, Map()).toPhrase, localSize = 128, globalSize = N)
     println(kernel.code)
 
     val fun = kernel.as[ScalaFunction `(` Array[Float] `,` Array[Float] `)=>` Array[Float]]
@@ -53,7 +53,7 @@ object dot extends App {
 
   def printOpenCLKernel2(name: String, expr: Expr[DataType -> DataType]): Unit = {
     println(s"-- $name --")
-    val kernel = CodeGenerator.makeKernel(TypeInference(expr, Map()).toPhrase, localSize = 128, globalSize = N)
+    val kernel = KernelGenerator.makeKernel(TypeInference(expr, Map()).toPhrase, localSize = 128, globalSize = N)
     println(kernel.code)
 
     val fun = kernel.as[ScalaFunction `(` Array[Float] `)=>` Array[Float]]

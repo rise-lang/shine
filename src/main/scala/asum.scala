@@ -25,7 +25,7 @@ object asum extends App {
 
     println(s"-- $name --")
     val phrase = TypeInference(expr, Map()).convertToPhrase
-    val kernel = CodeGenerator.makeKernel(phrase, localSize = 128, globalSize = N)
+    val kernel = KernelGenerator.makeKernel(phrase, localSize = 128, globalSize = N)
     println(kernel.code)
 
     val fun = kernel.as[ScalaFunction `(` Array[Float] `)=>` Array[Float]]
@@ -48,21 +48,17 @@ object asum extends App {
     println("----------------\n")
   }
 
-  val abs = (t: DataType) => λ(x => oclFun("fabs", t, t, x)  )
+  val abs = (t: DataType) => λ(x => oclFun("fabs", t, t, x))
   val add = λ(x => λ(a => x + a))
 
   val high_level = λ(inputT)(input =>
     reduce(add, 0.0f) o map(abs(float)) $ input)
 
-//  val dpia_high_level = ToDPIA(high_level)
-
-  println("\n\n")
-  println(high_level.toString)
-  println("\n\n")
-
   {
-    val lambda = TypeInference(high_level, Map())
-    println("high_level:\n" + lambda)
+    println(s"-- high level --")
+    val phrase = TypeInference(high_level, Map()).convertToPhrase
+    val kernel = KernelGenerator.makeKernel(phrase, localSize = 128, globalSize = N)
+    println(kernel.code)
   }
 
   val intelDerivedNoWarp1 = λ(inputT)(input =>

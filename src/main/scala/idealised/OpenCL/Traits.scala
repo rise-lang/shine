@@ -2,6 +2,7 @@ package idealised.OpenCL
 
 import idealised.DPIA.Nat
 import idealised.DPIA.Types.DataType
+import idealised.OpenCL.CodeGeneration.CodeGenerator
 import opencl.generator.OpenCLAST.{Block, Expression}
 
 import scala.collection.immutable.List
