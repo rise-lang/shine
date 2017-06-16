@@ -6,7 +6,7 @@ import idealised.DPIA.Compilation._
 import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types._
-import idealised.OpenCL.CodeGeneration.{AdaptKernelParameters, HoistMemoryAllocations, CodeGenerator}
+import idealised.OpenCL.CodeGeneration.{AdaptKernelBody, AdaptKernelParameters, CodeGenerator, HoistMemoryAllocations}
 import idealised.OpenCL.CodeGeneration.HoistMemoryAllocations.AllocationInfo
 import opencl.generator.OpenCLAST._
 
@@ -48,7 +48,7 @@ object KernelGenerator {
     val (p5, kernelParams) = adaptKernelParameters(p4,
       makeParams(outParam, inputParams, intermediateAllocations), inputParams)
 
-    val kernelBody = makeBody(p5, localSize, globalSize)
+    val kernelBody = adaptKernelBody(makeBody(p5, localSize, globalSize))
 
     OpenCL.Kernel(
       function = makeKernelFunction(kernelParams, kernelBody),
@@ -88,16 +88,6 @@ object KernelGenerator {
     xmlPrinter.writeToFile("/tmp/p4.xml", p4)
     TypeChecker(p4) // TODO: only in debug
     (p4, intermediateAllocations)
-  }
-
-  private def adaptKernelParameters(p: Phrase[CommandType],
-                                    params: Seq[ParamDecl],
-                                    inputParams: Seq[Identifier[ExpType]]
-                                   ): (Phrase[CommandType], Seq[ParamDecl]) = {
-    val (p5, newParams) = AdaptKernelParameters(p, params, inputParams)
-    xmlPrinter.writeToFile("/tmp/p5.xml", p5)
-    TypeChecker(p5) // TODO: only in debug
-    (p5, newParams)
   }
 
   private def makeParams(out: Identifier[AccType],
@@ -153,8 +143,23 @@ object KernelGenerator {
       ParamDecl(v.toString, opencl.ir.Int) ).sortBy(_.name)
   }
 
+  private def adaptKernelParameters(p: Phrase[CommandType],
+                                    params: Seq[ParamDecl],
+                                    inputParams: Seq[Identifier[ExpType]]
+                                   ): (Phrase[CommandType], Seq[ParamDecl]) = {
+    val (p5, newParams) = AdaptKernelParameters(p, params, inputParams)
+    xmlPrinter.writeToFile("/tmp/p5.xml", p5)
+    TypeChecker(p5) // TODO: only in debug
+    (p5, newParams)
+  }
+
   private def makeBody(p: Phrase[CommandType], localSize: Nat, globalSize: Nat): Block = {
     CodeGenerator.cmd(p, Block(), CodeGenerator.Environment(localSize, globalSize))
+  }
+
+  private def adaptKernelBody(body: Block): Block = {
+    body
+//    AdaptKernelBody(body)
   }
 
   private def makeKernelFunction(params: Seq[ParamDecl], body: Block): Function = {
