@@ -50,7 +50,7 @@ abstract class OpenCLParFor(n: Nat,
       CondExpression.Operator.<)
 
 
-    val increment: Expression = {
+    val increment = {
       val v = NamedVar(name)
       AssignmentExpression(ArithExpression(v), ArithExpression(v + step))
     }

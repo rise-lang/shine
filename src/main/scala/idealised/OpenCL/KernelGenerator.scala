@@ -158,8 +158,7 @@ object KernelGenerator {
   }
 
   private def adaptKernelBody(body: Block): Block = {
-    body
-//    AdaptKernelBody(body)
+    AdaptKernelBody(body)
   }
 
   private def makeKernelFunction(params: Seq[ParamDecl], body: Block): Function = {
