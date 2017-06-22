@@ -10,13 +10,15 @@ import idealised.SurfaceLanguage.Semantics._
 import lift.arithmetic._
 import opencl.executor.Executor
 
+import org.junit.Assert._
+
 import scala.language.implicitConversions
 import scala.util.Random
 
 object gemm extends App {
 
-//  Executor.loadLibrary()
-//  Executor.init()
+  Executor.loadLibrary()
+  Executor.init()
 
   val epsilon = 1.0f
 
@@ -29,6 +31,38 @@ object gemm extends App {
   val bT = ArrayType(N, ArrayType(K, dt))
   val cT = ArrayType(M, ArrayType(N, dt))
 
+  def matrixMatrixMultiply(A: Array[Array[Float]],
+                           B: Array[Array[Float]],
+                           C: Array[Array[Float]],
+                           alpha: Float,
+                           beta: Float) :  Array[Array[Float]] = {
+    val aCols = A(0).length
+    val aRows = A.length
+    val bCols = B(0).length
+    val res =  Array.ofDim[Float](aRows, bCols)
+
+    if (A.head.length != B.length)
+      throw new IllegalArgumentException
+
+    @inline def computeRow(row: Int): Unit = {
+      // while statements are much faster than for statements
+      var col = 0
+      while(col < bCols) { var i = 0; var sum = 0.0f
+        while(i < aCols) {
+          sum += A(row)(i) * B(i)(col)
+          i += 1
+        }
+
+        res(row)(col) =  alpha * sum + C(row)(col) * beta
+        col += 1
+      }
+    }
+
+    (0 until aRows).par.foreach( computeRow )
+
+    res
+  }
+
   def printOpenCLKernel(name: String,
                         untypedLambda: Expr[DataType -> (DataType -> (DataType -> (DataType -> (DataType -> DataType))))]): Unit = {
     val lambda = TypeInference(untypedLambda, Map()).convertToPhrase
@@ -39,24 +73,33 @@ object gemm extends App {
     val kernel = KernelGenerator.makeKernel(lambda, localSize = 128, globalSize = N)
     println(kernel.code)
 
-//    val fun = kernel.as[ScalaFunction `(` Array[Float] `,` Array[Float] `)=>` Array[Float]]
-//
-//    val size = 1024 * 1024
-//
-//    val xs = Array.fill(size)(Random.nextInt(4).toFloat)
-//    val ys = Array.fill(size)(Random.nextInt(4).toFloat)
-//
-//    val (res, time) = fun(xs `,` ys)
-//    println(s"RESULT KERNEL1 NAME: $name TIME: $time")
-//    if (check) {
-//      val gold = (xs zip ys).map{ case (x, y) => x * y }.sum
+    val fun = kernel.as[
+      ScalaFunction `(`
+        Array[Array[Float]] `,`
+        Array[Array[Float]] `,`
+        Array[Array[Float]] `,`
+        Float `,` Float `)=>` Array[Array[Float]] ]
+
+    val size = 1024
+
+    val A = Array.tabulate(size, size)((_, _) => Random.nextInt(2).toFloat)
+    val B = Array.tabulate(size, size)((_, _) => Random.nextInt(2).toFloat)
+    val C = Array.tabulate(size, size)((_, _) => Random.nextInt(2).toFloat)
+    val alpha = Random.nextInt(2).toFloat
+    val beta = Random.nextInt(2).toFloat
+
+    val (res, time) = fun(A `,` B `,` C `,` alpha `,` beta)
+    println(s"RESULT KERNEL1 NAME: $name TIME: $time")
+    if (check) {
+      val gold = matrixMatrixMultiply(A, B, C, alpha, beta)
+      assertArrayEquals(gold.flatten, res.flatten, 0.0001f)
 //      if (res.sum - gold < epsilon) {
 //        println(s"Computed result MATCHES with gold solution.")
 //      } else {
 //        println(s"ERROR computed result differs from gold solution.")
 //        println(s"res: ${res.sum} vs. gold: $gold")
 //      }
-//    }
+    }
 
     println("----------------\n")
   }

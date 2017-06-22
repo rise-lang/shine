@@ -183,7 +183,7 @@ object CodeGenerator {
       case Identifier(name, t) =>
         val index: Nat = {
           if (arrayAccess.nonEmpty) {
-            arrayAccess.map(x => x._1 * x._2).foldLeft(0: Nat)((x, y) => x + y)
+            arrayAccess.map(x => x._1 /* * x._2 */).foldLeft(0: Nat)((x, y) => x + y)
           } else {
             null
           }

@@ -81,18 +81,24 @@ object AdaptKernelBody {
 
       override def visitExpression(expr: Expression): ExpressionVisitor.Result = expr match {
         // perform the substitutions in the arithmetic expressions
-        case v: VarRef if privateArrayVars.contains(v.name) =>
+        case v: VarRef =>
           v.arrayIndex match {
             case ArithExpression(ae) =>
               ArithExpr.substitute(ae, map) match {
-                // when the arithmetic expression is reduced to a constant (i.e. all variables have been substituted)
-                // append the index as a suffix
-                case Cst(i) => ExpressionVisitor.Stop(VarRef(v.name, s"_$i", null))
-                case newAe => ExpressionVisitor.Stop(VarRef(v.name, v.suffix, ArithExpression(newAe)))
+                // append the index as a suffix when the arithmetic expression is reduced to a
+                // constant (i.e. all variables have been substituted)
+                case Cst(i) if privateArrayVars.contains(v.name) =>
+                  ExpressionVisitor.Stop(VarRef(v.name, s"_$i", null))
+                case newAe =>
+                  ExpressionVisitor.Stop(VarRef(v.name, v.suffix, ArithExpression(newAe)))
               }
             case _ =>
               ExpressionVisitor.Continue(expr, this)
            }
+        case v: VLoad =>
+           ExpressionVisitor.Stop(
+             VLoad(v.v, v.t, ArithExpression(ArithExpr.substitute(v.offset.content, map))))
+
         case _ => ExpressionVisitor.Continue(expr, this)
       }
     }
@@ -161,7 +167,7 @@ object VisitBlockAndRebuild {
           case vl: VLoad => VLoad(visitVarRef(vl.v, visitor), vl.t, vl.offset)
           case f: FunctionCall => FunctionCall(f.name, f.args.map(visitExpression(_, visitor)))
           case vs: VStore => VStore(visitVarRef(vs.v, visitor), vs.t,
-            visitExpression(vs.value, visitor), visitExpression(vs.offset, visitor))
+            visitExpression(vs.value, visitor), vs.offset)
           case c: Cast => Cast(visitVarRef(c.v, visitor), c.t)
           case pc: PointerCast => PointerCast(visitVarRef(pc.v, visitor), pc.t, pc.addressSpace)
           case s: Store => Store(
