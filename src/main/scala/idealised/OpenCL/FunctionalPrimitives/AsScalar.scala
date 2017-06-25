@@ -10,6 +10,7 @@ import idealised.OpenCL.CodeGeneration.CodeGenerator
 import idealised.OpenCL.ImperativePrimitives.AsScalarAcc
 import idealised.OpenCL.ViewExp
 import ir.Type
+import lift.arithmetic.Cst
 import opencl.generator.OpenCLAST.Expression
 
 import scala.xml.Elem
@@ -33,28 +34,24 @@ final case class AsScalar(n: Nat,
   override def eval(s: Store): Data = ???
 
   override def toOpenCL(env: CodeGenerator.Environment,
-                        arrayAccess: List[(Nat, Nat)],
+                        arrayAccess: List[Nat],
                         tupleAccess: List[Nat],
                         dt: DataType): Expression = {
-    // Similar to Join
-    val idx = arrayAccess.head
-    val stack = arrayAccess.tail
+    val i :: is = arrayAccess
 
-    val chunkId = idx._1 / n
-    // we want to access element 0 ...
-    val chunkElemId: Nat = 0 //idx._1 % n
-    // ... and there is 1 of it.
-    val l = Type.getLengths(DataType.toType(t.dataType)).reduce(_ * _)
-    assert(l == (1: Nat))
-
-    val newAs = (chunkId, l * n) :: (chunkElemId, l) :: stack
-
-    CodeGenerator.exp(array, env, dt, newAs, tupleAccess)
-
-    //    val top = arrayAccess.head
-    //    val newAAS = ((top._1 /^ n, top._2) :: arrayAccess.tail).map(x => (x._1, x._2 * n))
-    //
-    //    ToOpenCL.exp(array, env, dt, newAAS, tupleAccess)
+    CodeGenerator.exp(array, env, dt, (i / n) :: is, tupleAccess)
+//    // Similar to Join
+//    val idx = arrayAccess.head
+//    val stack = arrayAccess.tail
+//
+//    val chunkId = idx._1 / n
+//    // we want to access element 0 ...
+//    val chunkElemId: Nat = 0 //idx._1 % n
+//    // ... and there is 1 of it.
+//    val l = Type.getLengths(DataType.toType(t.dataType)).reduce(_ * _)
+//    assert(l == (1: Nat))
+//
+//    val newAs = (chunkId, l * n) :: (chunkElemId, l) :: stack
   }
 
   override def prettyPrint: String = s"(asScalar ${PrettyPhrasePrinter(array)})"

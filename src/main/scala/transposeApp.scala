@@ -49,7 +49,7 @@ object transposeApp extends App {
     val (res, time) = fun(matrix `;`)
 
     println("res:")
-    myPrint(res.grouped(Msize).toArray)
+    myPrint(res.grouped(Nsize).toArray)
     println("")
 
     println(s"RESULT KERNEL1 NAME: $name TIME: $time")
@@ -62,8 +62,8 @@ object transposeApp extends App {
 
   val p = λ(ArrayType(N, ArrayType(M, float)))(x =>
 //    join(x)
-   split(M, join(x))
-//   transpose(x)
+//   split(M, join(x))
+   transpose(x)
 //   x
    )
 

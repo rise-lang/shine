@@ -31,18 +31,21 @@ final case class AsVector(n: Nat,
   override def eval(s: Store): Data = ???
 
   override def toOpenCL(env: CodeGenerator.Environment,
-                        arrayAccess: List[(Nat, Nat)],
+                        arrayAccess: List[Nat],
                         tupleAccess: List[Nat],
                         dt: DataType): Expression = {
-    // similar to Split
-    val chunkId = arrayAccess.head
-    // we want to access element 0 and there is only one of it
-    val chunkElemId: (Nat, Nat) = (0, 1)
-    val rest = arrayAccess.tail
-
-    val newIdx = chunkId._1 * n + chunkElemId._1
-
-    CodeGenerator.exp(array, env, dt, (newIdx, chunkElemId._2) :: rest, tupleAccess)
+    val i :: is = arrayAccess
+    println(s"asVector: ${i * n}")
+    CodeGenerator.exp(array, env, dt, (i * n) :: is, tupleAccess)
+//    // similar to Split
+//    val chunkId = arrayAccess.head
+//    // we want to access element 0 and there is only one of it
+//    val chunkElemId: (Nat, Nat) = (0, 1)
+//    val rest = arrayAccess.tail
+//
+//    val newIdx = chunkId._1 * n + chunkElemId._1
+//
+//    CodeGenerator.exp(array, env, dt, (newIdx, chunkElemId._2) :: rest, tupleAccess)
   }
 
   override def prettyPrint: String = s"(asVector ${n.toString} ${PrettyPhrasePrinter(array)})"

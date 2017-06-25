@@ -58,10 +58,11 @@ object CodeGenerator {
         case i: IntData     => OpenCLAST.Literal(i.i.toString)
         case b: BoolData    => OpenCLAST.Literal(b.b.toString)
         case f: FloatData   => OpenCLAST.Literal(f.f.toString)
-        case i: IndexData   => OpenCLAST.Literal(i.i.toString)
         case v: VectorData  => OpenCLAST.Literal(toString(v))
         case r: RecordData  => OpenCLAST.Literal(toString(r))
         case a: ArrayData   => OpenCLAST.Literal(toString(a))
+
+        case i: IndexData   => OpenCLAST.ArithExpression(i.i)
       }
       case p: Proj1[ExpType, _] => exp(Lifting.liftPair(p.pair)._1, env)
       case p: Proj2[_, ExpType] => exp(Lifting.liftPair(p.pair)._2, env)
@@ -82,16 +83,29 @@ object CodeGenerator {
     }
   }
 
+  def computeIndex(dt: DataType, arrayIndices: List[Nat], tupleIndices: List[Nat], idx: Nat): Nat = {
+    dt match {
+      case _: BasicType => idx
+      case ArrayType(n, et) =>
+        val i :: is = arrayIndices
+        computeIndex(et, is, tupleIndices, (idx * n) + i)
+      case RecordType(lhs, rhs) => ???
+      case _: DataTypeIdentifier => ???
+    }
+  }
+
   def exp(p: Phrase[ExpType],
           env: Environment,
           dt: DataType,
-          arrayAccess: List[(Nat, Nat)],
+          arrayAccess: List[Nat],
           tupleAccess: List[Nat]): Expression = {
     p match {
       case Identifier(name, t) =>
+
         val index: Nat = {
           if (arrayAccess.nonEmpty) {
-            arrayAccess.map(x => x._1 * x._2).foldLeft(0: Nat)((x, y) => x + y)
+//            println(s"computeIndex: ${t.dataType}, ${arrayAccess}")
+            computeIndex(t.dataType, arrayAccess, tupleAccess, 0)
           } else {
             null
           }
@@ -177,13 +191,13 @@ object CodeGenerator {
           value: Expression,
           env: Environment,
           dt: DataType,
-          arrayAccess: List[(Nat, Nat)],
+          arrayAccess: List[Nat],
           tupleAccess: List[Nat]): Expression = {
     p match {
       case Identifier(name, t) =>
         val index: Nat = {
           if (arrayAccess.nonEmpty) {
-            arrayAccess.map(x => x._1 /* * x._2 */).foldLeft(0: Nat)((x, y) => x + y)
+            computeIndex(t.dataType, arrayAccess, tupleAccess, 0)
           } else {
             null
           }

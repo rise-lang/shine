@@ -9,15 +9,16 @@ import scala.collection.immutable.List
 
 trait ViewExp {
   def toOpenCL(env: CodeGenerator.Environment,
-               arrayAccess: List[(Nat, Nat)],
-               tupleAccess: List[Nat], dt: DataType): Expression
+               arrayAccess: List[Nat],
+               tupleAccess: List[Nat],
+               dt: DataType): Expression
 }
 
 trait ViewAcc {
   def toOpenCL(env: CodeGenerator.Environment,
                value: Expression,
                dt: DataType,
-               arrayAccess: List[(Nat, Nat)],
+               arrayAccess: List[Nat],
                tupleAccess: List[Nat]):  Expression
 }
 

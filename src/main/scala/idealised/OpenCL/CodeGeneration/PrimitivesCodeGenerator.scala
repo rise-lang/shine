@@ -233,102 +233,86 @@ object PrimitivesCodeGenerator {
 
   def toOpenCL(g: Gather,
                env: CodeGenerator.Environment,
-               arrayAccess: List[(ArithExpr, ArithExpr)],
+               arrayAccess: List[ArithExpr],
                tupleAccess: List[ArithExpr],
                dt: DataType): Expression = {
-
-    val idx = arrayAccess.head
-    val stack = arrayAccess.tail
-
-    val n_ = OperationalSemantics.evalIndexExp(g.idxF(idx._1))
-
-    CodeGenerator.exp(g.array, env, dt, (n_, idx._2) :: stack, tupleAccess)
-
+    val i :: is = arrayAccess
+    val j = OperationalSemantics.evalIndexExp(g.idxF(i))
+    println(s"gather: $i -> $j")
+    CodeGenerator.exp(g.array, env, dt, j :: is, tupleAccess)
   }
 
   def toOpenCL(j: Join,
                env: CodeGenerator.Environment,
-               arrayAccess: List[(ArithExpr, ArithExpr)],
+               arrayAccess: List[ArithExpr],
                tupleAccess: List[ArithExpr],
                dt: DataType): Expression = {
-    val idx = arrayAccess.head
-    val stack = arrayAccess.tail
-
-    val chunkId = idx._1 /^ j.n
-    val chunkElemId = idx._1 % j.n
-
-    val l = Type.getLengths(DataType.toType(j.t.dataType)).reduce(_ * _)
-
-    val newAs = (chunkId, l * j.n) :: (chunkElemId, l) :: stack
-
-    CodeGenerator.exp(j.array, env, dt, newAs, tupleAccess)
+    val i :: is = arrayAccess
+    println(s"join ${j.m} $i")
+    CodeGenerator.exp(j.array, env, dt, (i / j.m) :: (i % j.m) :: is, tupleAccess)
   }
 
   def toOpenCL(s: Split,
                env: CodeGenerator.Environment,
-               arrayAccess: List[(ArithExpr, ArithExpr)],
+               arrayAccess: List[ArithExpr],
                tupleAccess: List[ArithExpr],
                dt: DataType): Expression = {
-
-    val (firstTwo, rest) = arrayAccess.splitAt(2)
-
-    val chunkId = firstTwo.head
-    val chunkElemId = firstTwo.tail.head
-
-    val newIdx = chunkId._1 * s.n + chunkElemId._1
-
-    CodeGenerator.exp(s.array, env, dt, (newIdx, chunkElemId._2) :: rest, tupleAccess)
+    val i :: j :: is = arrayAccess
+    println(s"split: ${s.n} $i $j")
+    CodeGenerator.exp(s.array, env, dt, ((i * s.n) + j) :: is, tupleAccess)
   }
 
   def toOpenCL(z: Zip,
                env: CodeGenerator.Environment,
-               arrayAccess: List[(ArithExpr, ArithExpr)],
+               arrayAccess: List[ArithExpr],
                tupleAccess: List[ArithExpr],
                dt: DataType): Expression = {
-    val i = tupleAccess.head
-    val rest = tupleAccess.tail
+    val xj :: xs = tupleAccess
 
-    if (i == Cst(1)) {
-      return CodeGenerator.exp(z.e1, env, dt, arrayAccess, rest)
+    if (xj == Cst(1)) {
+      return CodeGenerator.exp(z.e1, env, dt, arrayAccess, xs)
     }
 
-    if (i == Cst(2)) {
-      return CodeGenerator.exp(z.e2, env, dt, arrayAccess, rest)
+    if (xj == Cst(2)) {
+      return CodeGenerator.exp(z.e2, env, dt, arrayAccess, xs)
     }
 
     throw new Exception("This should not happen")
   }
 
-  def toOpenCL(f: Fst, env: CodeGenerator.Environment,
+  def toOpenCL(f: Fst,
+               env: CodeGenerator.Environment,
                dt: DataType,
-               arrayAccess: List[(ArithExpr, ArithExpr)],
+               arrayAccess: List[ArithExpr],
                tupleAccess: List[ArithExpr]): Expression = {
     CodeGenerator.exp(f.record, env, dt, arrayAccess, 1 :: tupleAccess)
   }
 
-  def toOpenCL(i: Idx, env: CodeGenerator.Environment,
+  def toOpenCL(i: Idx,
+               env: CodeGenerator.Environment,
                dt: DataType,
-               arrayAccess: List[(ArithExpr, ArithExpr)],
+               arrayAccess: List[ArithExpr],
                tupleAccess: List[ArithExpr]): Expression = {
+
     val idx: ArithExpr = CodeGenerator.exp(i.index, env) match {
       case VarRef(name, _, _) => NamedVar(name, env.ranges(name))
+      case ArithExpression(ae) => ae
       case _ => throw new Exception("This should not happen")
     }
-    val length = DataType.getLengths(i.dt, tupleAccess, List()).foldLeft(1: ArithExpr)((x, y) => x * y)
 
-    CodeGenerator.exp(i.array, env, dt, (idx, length) :: arrayAccess, tupleAccess)
+    CodeGenerator.exp(i.array, env, dt, idx :: arrayAccess, tupleAccess)
   }
 
   def toOpenCL(r: Record,
                env: CodeGenerator.Environment,
                dt: DataType,
-               arrayAccess: List[(ArithExpr, ArithExpr)],
+               arrayAccess: List[ArithExpr],
                tupleAccess: List[ArithExpr]): Expression = ???
 
   def toOpenCL(s: Snd,
                env: CodeGenerator.Environment,
                dt: DataType,
-               arrayAccess: List[(ArithExpr, ArithExpr)],
+               arrayAccess: List[ArithExpr],
                tupleAccess: List[ArithExpr]): Expression = {
     CodeGenerator.exp(s.record, env, dt, arrayAccess, 2 :: tupleAccess)
   }
@@ -336,7 +320,7 @@ object PrimitivesCodeGenerator {
   def toOpenCL(t: TruncExp,
                env: CodeGenerator.Environment,
                dt: DataType,
-               arrayAccess: List[(ArithExpr, ArithExpr)],
+               arrayAccess: List[ArithExpr],
                tupleAccess: List[ArithExpr]): Expression = {
     CodeGenerator.exp(t.array, env, dt, arrayAccess, tupleAccess)
   }
@@ -344,7 +328,7 @@ object PrimitivesCodeGenerator {
   def toOpenCL(l: DPIA.Phrases.Literal,
                env: CodeGenerator.Environment,
                dt: DataType,
-               arrayAccess: List[(ArithExpr, ArithExpr)],
+               arrayAccess: List[ArithExpr],
                tupleAccess: List[ArithExpr]): Expression = {
     import OperationalSemantics._
 
@@ -354,7 +338,7 @@ object PrimitivesCodeGenerator {
           case i: IntData => OpenCLAST.Literal(i.i.toString)
           case b: BoolData => OpenCLAST.Literal(b.b.toString)
           case f: FloatData => OpenCLAST.Literal(f.f.toString)
-          case i: IndexData => OpenCLAST.Literal(i.i.toString)
+          case i: IndexData => OpenCLAST.ArithExpression(i.i)
         }
       case ct: ComposedType => (ct, l.d) match {
         case (at: ArrayType, ad: ArrayData) =>
@@ -372,73 +356,56 @@ object PrimitivesCodeGenerator {
                value: Expression,
                env: CodeGenerator.Environment,
                dt: DataType,
-               arrayAccess: List[(Nat, Nat)],
+               arrayAccess: List[Nat],
                tupleAccess: List[Nat]): Expression = ???
 
   def toOpenCL(i: IdxAcc,
                value: Expression,
                env: CodeGenerator.Environment,
                dt: DataType,
-               arrayAccess: List[(Nat, Nat)],
+               arrayAccess: List[Nat],
                tupleAccess: List[Nat]): Expression = {
     val idx: ArithExpr = CodeGenerator.exp(i.index, env) match {
       case VarRef(name, _, _) => NamedVar(name, env.ranges(name))
-      case OpenCLAST.Literal(j) => Cst(j.toInt)
-      case _ => throw new Exception("This should not happen")
+      case ArithExpression(ae) => ae
     }
 
-    val length = DataType.getLengths(i.dt, tupleAccess, List()).foldLeft(1: ArithExpr)((x, y) => x * y)
-
-    CodeGenerator.acc(i.array, value, env, dt, (idx, length) :: arrayAccess, tupleAccess)
+    CodeGenerator.acc(i.array, value, env, dt, idx :: arrayAccess, tupleAccess)
   }
 
-  def toOpenCL(j: JoinAcc,
+  def toOpenCL(join: JoinAcc,
                value: Expression,
                env: CodeGenerator.Environment,
                dt: DataType,
-               arrayAccess: List[(Nat, Nat)],
+               arrayAccess: List[Nat],
                tupleAccess: List[Nat]): Expression = {
-    val (firstTwo, rest) = arrayAccess.splitAt(2)
+    val i :: j :: is = arrayAccess
 
-    val chunkId = firstTwo.head
-    val chunkElemId = firstTwo.tail.head
-
-    val newIdx = chunkId._1 * j.m + chunkElemId._1
-
-    CodeGenerator.acc(j.array, value, env, dt, (newIdx, chunkElemId._2) :: rest, tupleAccess)
+    CodeGenerator.acc(join.array, value, env, dt, ((i * join.m) + j) :: is, tupleAccess)
   }
 
   def toOpenCL(s: RecordAcc2,
                value: Expression,
                env: CodeGenerator.Environment,
                dt: DataType,
-               arrayAccess: List[(Nat, Nat)],
+               arrayAccess: List[Nat],
                tupleAccess: List[Nat]): Expression = ???
 
   def toOpenCL(s: SplitAcc,
                value: Expression,
                env: CodeGenerator.Environment,
                dt: DataType,
-               arrayAccess: List[(Nat, Nat)],
+               arrayAccess: List[Nat],
                tupleAccess: List[Nat]): Expression = {
-    val idx = arrayAccess.head
-    val stack = arrayAccess.tail
-
-    val chunkId = idx._1 / s.n
-    val chunkElemId = idx._1 % s.n
-
-    val l = Type.getLengths(DataType.toType(s.t.dataType)).reduce(_ * _)
-
-    val newAs = (chunkId, l * s.n) ::(chunkElemId, l) :: stack
-
-    CodeGenerator.acc(s.array, value, env, dt, newAs, tupleAccess)
+    val i :: is = arrayAccess
+    CodeGenerator.acc(s.array, value, env, dt, (i / s.n) :: (i % s.n) :: is, tupleAccess)
   }
 
   def toOpenCL(t: TruncAcc,
                value: Expression,
                env: CodeGenerator.Environment,
                dt: DataType,
-               arrayAccess: List[(Nat, Nat)],
+               arrayAccess: List[Nat],
                tupleAccess: List[Nat]): Expression = {
     CodeGenerator.acc(t.array, value, env, dt, arrayAccess, tupleAccess)
   }
@@ -447,14 +414,13 @@ object PrimitivesCodeGenerator {
                value: Expression,
                env: CodeGenerator.Environment,
                dt: DataType,
-               arrayAccess: List[(Nat, Nat)],
+               arrayAccess: List[Nat],
                tupleAccess: List[Nat]): Expression = {
-    val idx = arrayAccess.head
-    val stack = arrayAccess.tail
+    val i :: is = arrayAccess
 
-    val n_ = OperationalSemantics.evalIndexExp(s.idxF(idx._1))
+    val j = OperationalSemantics.evalIndexExp(s.idxF(i))
 
-    CodeGenerator.acc(s.array, value, env, dt, (n_, idx._2) :: stack, tupleAccess)
+    CodeGenerator.acc(s.array, value, env, dt, j :: is, tupleAccess)
   }
 
 }

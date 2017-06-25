@@ -78,13 +78,13 @@ object gemm extends App {
         Array[Array[Float]] `,`
         Array[Array[Float]] `,`
         Array[Array[Float]] `,`
-        Float `,` Float `)=>` Array[Array[Float]] ]
+        Float `,` Float `)=>` Array[Float] ]
 
     val size = 1024
 
-    val A = Array.tabulate(size, size)((_, _) => Random.nextInt(2).toFloat)
-    val B = Array.tabulate(size, size)((_, _) => Random.nextInt(2).toFloat)
-    val C = Array.tabulate(size, size)((_, _) => Random.nextInt(2).toFloat)
+    val A: Array[Array[Float]] = Array.tabulate(size, size)((_, _) => Random.nextInt(2).toFloat)
+    val B: Array[Array[Float]] = Array.tabulate(size, size)((_, _) => Random.nextInt(2).toFloat)
+    val C: Array[Array[Float]] = Array.tabulate(size, size)((_, _) => Random.nextInt(2).toFloat)
     val alpha = Random.nextInt(2).toFloat
     val beta = Random.nextInt(2).toFloat
 
@@ -92,7 +92,7 @@ object gemm extends App {
     println(s"RESULT KERNEL1 NAME: $name TIME: $time")
     if (check) {
       val gold = matrixMatrixMultiply(A, B, C, alpha, beta)
-      assertArrayEquals(gold.flatten, res.flatten, 0.0001f)
+      assertArrayEquals(gold.flatten, res, 0.0001f)
 //      if (res.sum - gold < epsilon) {
 //        println(s"Computed result MATCHES with gold solution.")
 //      } else {
