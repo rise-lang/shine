@@ -38,8 +38,8 @@ final case class AsScalar(n: Nat,
                         tupleAccess: List[Nat],
                         dt: DataType): Expression = {
     val i :: is = arrayAccess
-
-    CodeGenerator.exp(array, env, dt, (i / n) :: is, tupleAccess)
+    println(s"asSclar: ${(i /^ n)}")
+    CodeGenerator.exp(array, env, dt, (i /^ n) :: is, tupleAccess)
 //    // Similar to Join
 //    val idx = arrayAccess.head
 //    val stack = arrayAccess.tail

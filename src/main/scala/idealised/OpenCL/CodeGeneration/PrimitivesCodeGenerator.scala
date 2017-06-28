@@ -5,11 +5,11 @@ import idealised.DPIA.FunctionalPrimitives._
 import idealised.DPIA.ImperativePrimitives._
 import idealised.DPIA.Phrases.{Identifier, Lambda, Phrase}
 import idealised.DPIA.Semantics.OperationalSemantics
+import idealised.DPIA.Semantics.OperationalSemantics.IndexData
 import idealised.DPIA.Types._
 import idealised.DPIA._
 import idealised.OpenCL.ImperativePrimitives.OpenCLParFor
 import idealised._
-import ir.Type
 import lift.arithmetic._
 import opencl.generator.OpenCLAST
 import opencl.generator.OpenCLAST._
@@ -27,23 +27,7 @@ object PrimitivesCodeGenerator {
   def toOpenCL(f: For, block: Block, env: CodeGenerator.Environment): Block = {
     import opencl.generator.OpenCLAST._
 
-    val name = freshName("i_")
-
-    val updatedEnv = env.updatedRanges(name, RangeAdd(0, f.n, 1))
-
-    val init = VarDecl(name, opencl.ir.Int,
-      init = ArithExpression(0),
-      addressSpace = opencl.ir.PrivateMemory)
-
-    val cond = CondExpression(VarRef(name),
-      ArithExpression(f.n),
-      CondExpression.Operator.<)
-
-    val v = NamedVar(name)
-    val increment = AssignmentExpression(ArithExpression(v), ArithExpression(v + 1))
-
     val bodyE = Lifting.liftFunction(f.body)
-    val i = identifier(name, ExpType(IndexType(f.n)))
 
     f.n match {
       case Cst(0) =>
@@ -53,10 +37,27 @@ object PrimitivesCodeGenerator {
       case Cst(1) =>
         (block: Block) +=
           OpenCLAST.Comment("iteration count is exactly 1, no loop emitted")
-        (block: Block) += CodeGenerator.cmd(bodyE(i), Block(Vector(init)), updatedEnv)
+        val zero = Phrases.Literal(IndexData(0), IndexType(1))
+        (block: Block) += CodeGenerator.cmd(bodyE(zero), Block(Vector()), env)
 
       case _ =>
-        val body_ = CodeGenerator.cmd(bodyE(i), Block(), updatedEnv)
+        val name = freshName("i_")
+        val range = RangeAdd(0, f.n, 1)
+
+        val init = VarDecl(name, opencl.ir.Int,
+          init = ArithExpression(0),
+          addressSpace = opencl.ir.PrivateMemory)
+
+        val cond = CondExpression(VarRef(name),
+          ArithExpression(f.n),
+          CondExpression.Operator.<)
+
+        val i = identifier(name, ExpType(IndexType(f.n)))
+
+        val v = NamedVar(name, range)
+        val increment = AssignmentExpression(ArithExpression(v), ArithExpression(v + 1))
+
+        val body_ = CodeGenerator.cmd(bodyE(i), Block(), env.updatedRanges(name, range))
         (block: Block) += ForLoop(init, cond, increment, body_)
     }
 

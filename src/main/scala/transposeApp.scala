@@ -63,7 +63,7 @@ object transposeApp extends App {
   val p = λ(ArrayType(N, ArrayType(M, float)))(x =>
 //    join(x)
 //   split(M, join(x))
-   transpose(x)
+   join(transpose(x))
 //   x
    )
 

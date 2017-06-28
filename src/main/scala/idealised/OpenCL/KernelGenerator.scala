@@ -1,5 +1,7 @@
 package idealised.OpenCL
 
+import java.io.{File, PrintWriter}
+
 import idealised._
 import idealised.DPIA._
 import idealised.DPIA.Compilation._
@@ -9,6 +11,7 @@ import idealised.DPIA.Types._
 import idealised.OpenCL.CodeGeneration.{AdaptKernelBody, AdaptKernelParameters, CodeGenerator, HoistMemoryAllocations}
 import idealised.OpenCL.CodeGeneration.HoistMemoryAllocations.AllocationInfo
 import opencl.generator.OpenCLAST._
+import opencl.generator.OpenCLPrinter
 
 import scala.collection._
 import scala.language.implicitConversions
@@ -158,6 +161,8 @@ object KernelGenerator {
   }
 
   private def adaptKernelBody(body: Block): Block = {
+    val pw = new PrintWriter(new File("/tmp/p6.cl"))
+    try pw.write(OpenCLPrinter()(body)) finally pw.close()
     AdaptKernelBody(body)
   }
 

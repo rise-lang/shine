@@ -25,7 +25,7 @@ object OperationalSemantics {
   }
 
   sealed abstract class Data(val dataType: DataType)
-  final case class IndexData(i: Nat) extends Data(IndexType(i.max))
+  final case class IndexData(i: Nat) extends Data(IndexType(i.max + 1))
   final case class BoolData(b: Boolean) extends Data(bool)
   final case class IntData(i: Int) extends Data(int) {
     override def toString: String = i.toString
