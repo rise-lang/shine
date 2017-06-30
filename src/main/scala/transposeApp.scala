@@ -34,7 +34,7 @@ object transposeApp extends App {
     println(s"Type: ${lambda.`type`}")
 
     println(s"-- $name --")
-    val kernel = KernelGenerator.makeKernel(lambda, localSize = 32, globalSize = Nsize * Msize)
+    val kernel = KernelGenerator.makeKernel(lambda, localSize = 1, globalSize = 1)
     println(kernel.code)
 
     val fun = kernel.as[ScalaFunction `(` Array[Array[Float]] `)=>` Array[Float] ]
@@ -52,8 +52,12 @@ object transposeApp extends App {
     myPrint(res.grouped(Nsize).toArray)
     println("")
 
+    println("gold:")
+    myPrint(gold)
+    println("")
+
     println(s"RESULT KERNEL1 NAME: $name TIME: $time")
-    //assertArrayEquals(gold.flatten, res, 0.01f)
+    assertArrayEquals(gold.flatten, res, 0.01f)
     println("----------------\n")
   }
 
@@ -63,7 +67,9 @@ object transposeApp extends App {
   val p = λ(ArrayType(N, ArrayType(M, float)))(x =>
 //    join(x)
 //   split(M, join(x))
-   join(transpose(x))
+//   join(
+     transpose(x)
+//   )
 //   x
    )
 

@@ -239,7 +239,6 @@ object PrimitivesCodeGenerator {
                dt: DataType): Expression = {
     val i :: is = arrayAccess
     val j = OperationalSemantics.evalIndexExp(g.idxF(i))
-    println(s"gather: $i -> $j")
     CodeGenerator.exp(g.array, env, dt, j :: is, tupleAccess)
   }
 
@@ -249,7 +248,6 @@ object PrimitivesCodeGenerator {
                tupleAccess: List[ArithExpr],
                dt: DataType): Expression = {
     val i :: is = arrayAccess
-    println(s"join ${j.m} $i")
     CodeGenerator.exp(j.array, env, dt, (i / j.m) :: (i % j.m) :: is, tupleAccess)
   }
 
@@ -259,7 +257,6 @@ object PrimitivesCodeGenerator {
                tupleAccess: List[ArithExpr],
                dt: DataType): Expression = {
     val i :: j :: is = arrayAccess
-    println(s"split: ${s.n} $i $j")
     CodeGenerator.exp(s.array, env, dt, ((i * s.n) + j) :: is, tupleAccess)
   }
 

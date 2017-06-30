@@ -105,7 +105,6 @@ case class Kernel(function: OpenCLAST.Function,
   }
 
   private def createOutputArg(size: SizeInByte) = {
-    println(s"output (global): $size")
     GlobalArg.createOutput(size.value.eval)
   }
 
@@ -166,10 +165,10 @@ case class Kernel(function: OpenCLAST.Function,
   }
 
   private def createLengthArgs(lengthMapping: immutable.Map[Nat, Nat]) = {
-    lengthMapping.map( p => {
-      println("length (private): 4 bytes")
-      ValueArg.create(p._2.eval)
-    } ).toList
+    // create length args sorted by names (cmp. KernelGenerator.makeLengthParams)
+    lengthMapping.toList.map({
+      case (v: Var, n) => (v.name,  ValueArg.create(n.eval))
+    }).sortBy(_._1).map(_._2)
   }
 
   private implicit class SubstitutionsHelper(size: SizeInByte) {

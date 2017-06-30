@@ -84,7 +84,6 @@ object CodeGenerator {
   }
 
   def computeIndex(dt: DataType, arrayIndices: List[Nat], tupleIndices: List[Nat], idx: Nat): Nat = {
-    println(s"computeIndex idx: $idx arrayIndices: $arrayIndices")
     dt match {
       case _: BasicType => idx
       case ArrayType(n, et) =>
@@ -105,7 +104,6 @@ object CodeGenerator {
 
         val index: Nat = {
           if (arrayAccess.nonEmpty) {
-//            println(s"computeIndex: ${t.dataType}, ${arrayAccess}")
             computeIndex(t.dataType, arrayAccess, tupleAccess, 0)
           } else {
             null

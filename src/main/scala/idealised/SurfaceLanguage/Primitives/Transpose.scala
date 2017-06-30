@@ -19,14 +19,8 @@ final case class Transpose(array: DataExpr,
         val transposeFunction =
           λ(ExpType(IndexType(n * m)))(i => {
             val j = i asNatIdentifier(withUpperBound = n * m)
-            println(s"Transpose in: $j")
-            println(s"  innerSize: $n")
-            println(s"  outerSize: $m")
             val col = (j % n) * m
             val row = j / n
-
-            println(s"Transpose out: row ($row) + col ($col)")
-
             (row + col) asPhrase(withType = IndexType(n * m))
           })
 
