@@ -8,11 +8,16 @@ import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage.Semantics._
 
 object mapGlobal {
-  def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] =
-    λ(x => mapGlobal(f, x))
+  def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] = mapGlobal(0)(f)
+  def apply(f: Expr[DataType -> DataType], x: DataExpr): MapGlobal = mapGlobal(0)(f, x)
 
-  def apply(f: Expr[DataType -> DataType], x: DataExpr) =
-    MapGlobal(f, x)
+  def apply(dim: Int) = new {
+    def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] =
+      λ(x => MapGlobal(dim)(f, x))
+
+    def apply(f: Expr[DataType -> DataType], x: DataExpr): MapGlobal =
+      MapGlobal(dim)(f, x)
+  }
 }
 
 object mapSeq {

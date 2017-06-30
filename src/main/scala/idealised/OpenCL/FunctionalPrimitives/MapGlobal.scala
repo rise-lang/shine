@@ -6,13 +6,13 @@ import idealised.DPIA.Types.{DataType, ExpType}
 import idealised.DPIA._
 import idealised.OpenCL.IntermediatePrimitives.MapGlobalI
 
-final case class MapGlobal(n: Nat,
-                           dt1: DataType,
-                           dt2: DataType,
-                           f: Phrase[ExpType -> ExpType],
-                           array: Phrase[ExpType])
+final case class MapGlobal(dim: Int)(n: Nat,
+                                     dt1: DataType,
+                                     dt2: DataType,
+                                     f: Phrase[ExpType -> ExpType],
+                                     array: Phrase[ExpType])
   extends AbstractMap(n, dt1, dt2, f, array) {
-  override def makeMap = MapGlobal
+  override def makeMap = MapGlobal(dim)
 
-  override def makeMapI = MapGlobalI
+  override def makeMapI = MapGlobalI(dim)
 }

@@ -93,12 +93,7 @@ object gemm extends App {
     if (check) {
       val gold = matrixMatrixMultiply(A, B, C, alpha, beta)
       assertArrayEquals(gold.flatten, res, 0.0001f)
-//      if (res.sum - gold < epsilon) {
-//        println(s"Computed result MATCHES with gold solution.")
-//      } else {
-//        println(s"ERROR computed result differs from gold solution.")
-//        println(s"res: ${res.sum} vs. gold: $gold")
-//      }
+      println(s"time: $time")
     }
 
     println("----------------\n")
@@ -120,9 +115,9 @@ object gemm extends App {
   val maliGEMM =
     λ(aT)(a => λ(bT)(b => λ(cT)(c => λ(dt)(alpha => λ(dt)(beta =>
       printType("output") o
-      join() o mapGlobal(λ(ac =>
+      join() o mapGlobal(0)(λ(ac =>
         transposeW() o join() o
-        mapGlobal(λ(bc =>
+        mapGlobal(1)(λ(bc =>
           transpose() o λ(p235 =>
             mapSeq(λ(p237 =>
                 mapSeq(λ(p64 =>
@@ -151,9 +146,9 @@ object gemm extends App {
   val maliGEMM_variation_b =
     λ(aT)(a => λ(bT)(b => λ(cT)(c => λ(dt)(alpha => λ(dt)(beta =>
       printType("output") o
-        join() o mapGlobal(λ(ac =>
+        join() o mapGlobal(0)(λ(ac =>
         transposeW() o join() o
-          mapGlobal(λ(bc =>
+          mapGlobal(1)(λ(bc =>
             transpose() o λ(p235 =>
               mapSeq(λ(p237 =>
                 mapSeq(λ(p64 =>
