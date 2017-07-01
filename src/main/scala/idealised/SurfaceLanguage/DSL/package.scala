@@ -1,6 +1,6 @@
 package idealised.SurfaceLanguage
 
-import idealised.SurfaceLanguage.Primitives.{Fst, Snd}
+import idealised.SurfaceLanguage.Primitives.{Fst, Snd, Zip}
 import idealised.SurfaceLanguage.Semantics._
 import idealised.SurfaceLanguage.Types._
 import lift.arithmetic.{ContinuousRange, NamedVar}
@@ -21,28 +21,48 @@ package object DSL {
     def unary_- = UnaryOpExpr(Operators.Unary.NEG, lhs)
   }
 
-  implicit class CallLambdaExpr[T <: Type](fun: Expr[DataType -> T]) {
-    def apply(arg: DataExpr): Expr[T] = Lifting.liftFunctionExpr(fun)(arg)
-
+  implicit class FunCall[T <: Type](f: Expr[DataType -> T]) {
+    def apply(arg: DataExpr): Expr[T] = Lifting.liftFunctionExpr(f)(arg)
     def $(arg: DataExpr): Expr[T] = apply(arg)
   }
 
-  implicit class CallNatDependentLambdaExpr[T <: Type](fun: Expr[`(nat)->`[T]]) {
-    def apply(arg: Nat): Expr[T] = Lifting.liftNatDependentFunctionExpr(fun)(arg)
+  implicit class FunCallExpr(arg: Expr[DataType]) {
+    def :>>[T <: Type](f: Expr[DataType -> T]): Expr[T] = f(arg)
+    def <<:[T <: Type](f: Expr[DataType -> T]): Expr[T] = f(arg)
+  }
 
+  implicit class FunCallExprPair(args: (Expr[DataType], Expr[DataType])) {
+    def :>>(z: (DataExpr, DataExpr) => Zip): Zip = z(args._1, args._2)
+    def <<:(z: (DataExpr, DataExpr) => Zip): Zip = z(args._1, args._2)
+  }
+
+  implicit class CallNatDependentLambda[T <: Type](f: Expr[`(nat)->`[T]]) {
+    def apply(arg: Nat): Expr[T] = Lifting.liftNatDependentFunctionExpr(f)(arg)
     def $(arg: Nat): Expr[T] = apply(arg)
   }
 
-  implicit class CallTypeDependentLambdaExpr[T <: Type](fun: Expr[`(dt)->`[T]]) {
-    def apply(arg: DataType): Expr[T] = Lifting.liftTypeDependentFunctionExpr(fun)(arg)
+  implicit class CallNatDependentLambdaExpr(arg: Nat) {
+    def :>>[T <: Type](f: Expr[`(nat)->`[T]]): Expr[T] = f(arg)
+    def <<:[T <: Type](f: Expr[`(nat)->`[T]]): Expr[T] = f(arg)
+  }
 
+  implicit class CallTypeDependentLambda[T <: Type](f: Expr[`(dt)->`[T]]) {
+    def apply(arg: DataType): Expr[T] = Lifting.liftTypeDependentFunctionExpr(f)(arg)
     def $(arg: DataType): Expr[T] = apply(arg)
   }
 
+  implicit class CallTypeDependentLambdaExpr(arg: DataType) {
+    def :>>[T <: Type](f: Expr[`(dt)->`[T]]): Expr[T] = f(arg)
+    def <<:[T <: Type](f: Expr[`(dt)->`[T]]): Expr[T] = f(arg)
+  }
+
   implicit class FunComp[T <: Type](f: Expr[DataType -> T]) {
-    def o(g: Expr[DataType -> DataType]): Expr[DataType -> T] = {
-      λ(arg => f( g(arg) ) )
-    }
+    def o(g: Expr[DataType -> DataType]): Expr[DataType -> T] = λ(arg => f( g(arg) ) )
+    def >>>(g: Expr[DataType -> DataType]): Expr[DataType -> T] = f o g
+  }
+
+  implicit class RevFunComp(f: Expr[DataType -> DataType]) {
+    def <<<[T <: Type](g: Expr[DataType -> T]): Expr[DataType -> T] = g o f
   }
 
   implicit def toLiteralInt(i: Int): LiteralExpr = LiteralExpr(IntData(i), int)

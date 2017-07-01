@@ -15,6 +15,9 @@ object map {
 
 object zip {
   def apply(lhs: DataExpr, rhs: DataExpr): Zip = Zip(lhs, rhs)
+
+  def apply(): (DataExpr, DataExpr) => Zip =
+    (lhs: DataExpr, rhs: DataExpr) => Zip(lhs, rhs)
 }
 
 object split {
