@@ -29,19 +29,29 @@ object mapSeq {
 }
 
 object mapWorkgroup {
-  def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] =
-    λ(x => mapWorkgroup(f, x))
+  def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] = mapWorkgroup(0)(f)
+  def apply(f: Expr[DataType -> DataType], x: DataExpr): MapWorkGroup = mapWorkgroup(0)(f, x)
 
-  def apply(f: Expr[DataType -> DataType], x: DataExpr) =
-    MapWorkGroup(f, x)
+  def apply(dim: Int) = new {
+    def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] =
+      λ(x => MapWorkGroup(dim)(f, x))
+
+    def apply(f: Expr[DataType -> DataType], x: DataExpr): MapWorkGroup =
+      MapWorkGroup(dim)(f, x)
+  }
 }
 
 object mapLocal {
-  def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] =
-    λ(x => mapLocal(f, x))
+  def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] = mapLocal(0)(f)
+  def apply(f: Expr[DataType -> DataType], x: DataExpr): MapLocal = mapLocal(0)(f, x)
 
-  def apply(f: Expr[DataType -> DataType], x: DataExpr) =
-    MapLocal(f, x)
+  def apply(dim: Int) = new {
+    def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] =
+      λ(x => MapLocal(dim)(f, x))
+
+    def apply(f: Expr[DataType -> DataType], x: DataExpr): MapLocal =
+      MapLocal(dim)(f, x)
+  }
 }
 
 object toLocal {

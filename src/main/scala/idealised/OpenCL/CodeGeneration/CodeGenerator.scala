@@ -89,7 +89,9 @@ object CodeGenerator {
       case ArrayType(n, et) =>
         val i :: is = arrayIndices
         computeIndex(et, is, tupleIndices, (idx * n) + i)
-      case RecordType(lhs, rhs) => ???
+      case RecordType(lhs, rhs) =>
+        // TODO: FIX THIS
+        computeIndex(lhs, arrayIndices, tupleIndices, idx)
       case _: DataTypeIdentifier => ???
     }
   }
@@ -145,6 +147,7 @@ object CodeGenerator {
       case j: Join => toOpenCL(j, env, arrayAccess, tupleAccess, dt)
       case s: Split => toOpenCL(s, env, arrayAccess, tupleAccess, dt)
       case z: Zip => toOpenCL(z, env, arrayAccess, tupleAccess, dt)
+      case u: Unzip => toOpenCL(u, env, arrayAccess, tupleAccess, dt)
 
       case f: Fst       => toOpenCL(f, env, dt, arrayAccess, tupleAccess)
       case i: Idx       => toOpenCL(i, env, dt, arrayAccess, tupleAccess)
@@ -238,6 +241,7 @@ object CodeGenerator {
       case s: SplitAcc  => toOpenCL(s, value, env, dt, arrayAccess, tupleAccess)
       case t: TruncAcc  => toOpenCL(t, value, env, dt, arrayAccess, tupleAccess)
       case s: ScatterAcc => toOpenCL(s, value, env, dt, arrayAccess, tupleAccess)
+      case u: UnzipAcc => toOpenCL(u, value, env, dt, arrayAccess, tupleAccess)
 
       case p: Proj1[AccType, _] => acc(Lifting.liftPair(p.pair)._1, value, env, dt, arrayAccess, tupleAccess)
       case p: Proj2[_, AccType] => acc(Lifting.liftPair(p.pair)._2, value, env, dt, arrayAccess, tupleAccess)

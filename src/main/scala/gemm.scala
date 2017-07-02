@@ -26,10 +26,6 @@ object gemm extends App {
   val K = SizeVar("K")
   val M = SizeVar("M")
   val N = SizeVar("N")
-  val dt = float
-  val aT = ArrayType(M, ArrayType(K, dt))
-  val bT = ArrayType(N, ArrayType(K, dt))
-  val cT = ArrayType(M, ArrayType(N, dt))
 
   def myPrint(m: Array[Array[Float]]): Unit = {
     m.foreach( r => {
@@ -123,6 +119,7 @@ object gemm extends App {
 
   val mult = λ(x => λ(a => x * a))
   val add  = λ(x => λ(a => x + a))
+  val id  = λ(x => x)
 
   val p1 = 2
   val p2 = 2
@@ -135,7 +132,12 @@ object gemm extends App {
   val dot  = λ(x => oclFun("dot", Seq(float4, float4), float, Seq(x._1, x._2)))
 
   val maliGEMM =
-    λ(aT)(a => λ(bT)(b => λ(cT)(c => λ(dt)(alpha => λ(dt)(beta =>
+    λ(ArrayType(M, ArrayType(K, float)))(a =>
+      λ(ArrayType(N, ArrayType(K, float)))(b =>
+        λ(ArrayType(M, ArrayType(N, float)))(c =>
+          λ(float)(alpha =>
+            λ(float)(beta =>
+
       join() o mapGlobal(0)(λ(ac =>
         transposeW() o
         join() o
@@ -167,7 +169,12 @@ object gemm extends App {
   printOpenCLKernel("maliGEMM", maliGEMM)
 
   val maliGEMM_ =
-    λ(aT)(a => λ(bT)(b => λ(cT)(c => λ(dt)(alpha => λ(dt)(beta =>
+    λ(ArrayType(M, ArrayType(K, float)))(a =>
+      λ(ArrayType(N, ArrayType(K, float)))(b =>
+        λ(ArrayType(M, ArrayType(N, float)))(c =>
+          λ(float)(alpha =>
+            λ(float)(beta =>
+
       zip(a :>> split(p2),
           c :>> split(p2) ) :>>
       mapGlobal(0)(λ(ac =>
@@ -200,4 +207,97 @@ object gemm extends App {
     )))))
 
   printOpenCLKernel("maliGEMM_", maliGEMM_)
+
+  {
+    val v3 = 128
+    val v4 = 4
+    val v5 = 8
+    val v6 = 64
+    val v7 = 8
+
+    def tile(x: Nat, y: Nat): Expr[DataType -> DataType] =
+      map(map(transpose()) o split(y) o transpose()) o split(x)
+
+    val zeros = LiteralExpr(
+      ArrayData(Vector.fill(v6 * 1 / v5)(
+        ArrayData(Vector.fill(v3 * 1 / v4)(
+          ArrayData(Vector.fill(v5)(
+            ArrayData(Vector.fill(v4)(
+              FloatData(0.0f))))))))),
+      ArrayType(v6 * Cst(1) /^ v5,
+        ArrayType(v3 * Cst(1) /^ v4,
+          ArrayType(v5,
+            ArrayType(v4,
+              float)))))
+
+    val keplerBest =
+      λ(ArrayType(K, ArrayType(M, float)))(a =>
+        λ(ArrayType(K, ArrayType(N, float)))(b =>
+          λ(ArrayType(M, ArrayType(N, float)))(c =>
+            λ(float)(alpha =>
+              λ(float)(beta =>
+
+        zip(a :>> map(split(v6)) :>> split(v7) :>> map(transpose()) :>> transpose(),
+            c :>> tile(v6, v3)) :>>
+          mapWorkgroup(1)(λ(p_2 =>
+            zip(b :>> map(split(v3)) :>> split(v7) :>> map(transpose()) :>> transpose(),
+                p_2._2) :>>
+              mapWorkgroup(0)(λ(p_3 =>
+                zip(p_2._1, p_3._1) :>>
+                reduceSeq(λ(p_15 => λ(p_14 =>
+                  p_15 :>> toLocal(λ(p_30 =>
+                    zip(p_30._1, p_30._2) :>>
+                    mapLocal(1)(λ(p_31 =>
+                      tuple(p_31._1 :>> mapLocal(0)(id),
+                            p_31._2 :>> mapLocal(0)(id)))) :>>
+                    unzip()
+                    )) :>>
+                  λ(p_16 =>
+                    zip(p_14,
+                        p_16._1 :>> transpose() :>> split(v5)) :>>
+                    mapLocal(1)(λ(p_17 =>
+                      zip(p_17._1,
+                          p_16._2 :>> transpose() :>>
+                            gather(reorderWithStridePhrase(v3 / v4)) :>> split(v4)) :>>
+                      mapLocal(0)(λ(p_18 =>
+                        zip(p_17._2 :>> transpose(), p_18._2 :>> transpose()) :>>
+                        reduceSeq(λ(p_21 => λ(p_20 =>
+                          p_21 :>> toPrivate(λ(p_25 =>
+                            tuple(p_25._1 :>> mapSeq(id),
+                                  p_25._2 :>> mapSeq(id))
+                          )) :>>
+                          λ(p_22 =>
+                            zip(p_20, p_22._1) :>>
+                            mapSeq(λ(p_23 =>
+                              zip(p_23._1, p_22._2) :>>
+                              mapSeq(λ(p_24 =>
+                                p_24._1 + (p_23._2 * p_24._2)))))
+                          ))),
+                          p_18._1)))))
+                  ))),
+                  zeros :>> mapLocal(1)(mapLocal(0)(mapSeq(mapSeq(λ(x => x)))))
+                ) :>> printType("afterReduceSeq") :>>
+                toGlobal(λ(x =>
+                  zip(x, p_3._2 :>> split(v5)) :>>
+                  mapLocal(1)(λ(y =>
+                    zip(y._1, y._2 :>> transpose() :>> gather(reorderWithStridePhrase(v3 / v4)) :>> split(4)) :>>
+                    mapLocal(0)(λ(z =>
+                      zip(z._1, z._2 :>> transpose()) :>>
+                      mapSeq(λ(a =>
+                        zip(a._1, a._2) :>>
+                        mapSeq(λ(b =>
+                          toPrivate(mult(b._1))(alpha) + toPrivate(mult(b._2))(beta) )))))))))) :>>
+                transposeW() :>>
+                map(id) :>> // might need more transposes
+                join() :>>
+                transposeW()
+              )) :>>
+              join()
+          )) :>>
+          join() :>> printType("output")
+
+      )))))
+
+    printOpenCLKernel("keplerBest", keplerBest)
+  }
 }

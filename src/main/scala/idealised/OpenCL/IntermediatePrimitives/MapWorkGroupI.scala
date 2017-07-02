@@ -10,19 +10,19 @@ import idealised.DPIA._
 import idealised.OpenCL.ImperativePrimitives.ParForWorkGroup
 import idealised._
 
-final case class MapWorkGroupI(n: Nat,
-                               dt1: DataType,
-                               dt2: DataType,
-                               f: Phrase[ExpType -> (AccType -> CommandType)],
-                               in: Phrase[ExpType],
-                               out: Phrase[AccType])
+final case class MapWorkGroupI(dim: Int)(n: Nat,
+                                         dt1: DataType,
+                                         dt2: DataType,
+                                         f: Phrase[ExpType -> (AccType -> CommandType)],
+                                         in: Phrase[ExpType],
+                                         out: Phrase[AccType])
   extends AbstractMapI(n, dt1, dt2, f, in, out) {
 
-  override def makeMapI = MapWorkGroupI
+  override def makeMapI = MapWorkGroupI(dim)
 
   override def substituteImpl(env: Environment): Phrase[CommandType] = {
 
-    ParForWorkGroup(n, dt2, out, λ(exp"[idx($n)]")(i => λ(acc"[$dt2]")(a => {
+    ParForWorkGroup(dim)(n, dt2, out, λ(exp"[idx($n)]")(i => λ(acc"[$dt2]")(a => {
 
       //      val access = (out `@` 0) `@` 0 // TODO: this is totally not generic ...
       //      TypeChecker(access)

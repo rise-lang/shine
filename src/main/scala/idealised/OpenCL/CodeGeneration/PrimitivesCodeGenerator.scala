@@ -278,6 +278,14 @@ object PrimitivesCodeGenerator {
     throw new Exception("This should not happen")
   }
 
+  def toOpenCL(u: Unzip,
+               env: CodeGenerator.Environment,
+               arrayAccess: List[ArithExpr],
+               tupleAccess: List[ArithExpr],
+               dt: DataType): Expression = {
+    ???
+  }
+
   def toOpenCL(f: Fst,
                env: CodeGenerator.Environment,
                dt: DataType,
@@ -350,12 +358,14 @@ object PrimitivesCodeGenerator {
 
   // ==== generating var refs  ==== //
 
-  def toOpenCL(f: RecordAcc1,
+  def toOpenCL(r: RecordAcc1,
                value: Expression,
                env: CodeGenerator.Environment,
                dt: DataType,
                arrayAccess: List[Nat],
-               tupleAccess: List[Nat]): Expression = ???
+               tupleAccess: List[Nat]): Expression = {
+    CodeGenerator.acc(r.record, value, env, dt, arrayAccess, 1 :: tupleAccess)
+  }
 
   def toOpenCL(i: IdxAcc,
                value: Expression,
@@ -382,12 +392,14 @@ object PrimitivesCodeGenerator {
     CodeGenerator.acc(join.array, value, env, dt, ((i * join.m) + j) :: is, tupleAccess)
   }
 
-  def toOpenCL(s: RecordAcc2,
+  def toOpenCL(r: RecordAcc2,
                value: Expression,
                env: CodeGenerator.Environment,
                dt: DataType,
                arrayAccess: List[Nat],
-               tupleAccess: List[Nat]): Expression = ???
+               tupleAccess: List[Nat]): Expression = {
+    CodeGenerator.acc(r.record, value, env, dt, arrayAccess, 2 :: tupleAccess)
+  }
 
   def toOpenCL(s: SplitAcc,
                value: Expression,
@@ -419,6 +431,16 @@ object PrimitivesCodeGenerator {
     val j = OperationalSemantics.evalIndexExp(s.idxF(i))
 
     CodeGenerator.acc(s.array, value, env, dt, j :: is, tupleAccess)
+  }
+
+  def toOpenCL(u: UnzipAcc,
+               value: Expression,
+               env: CodeGenerator.Environment,
+               dt: DataType,
+               arrayAccess: List[Nat],
+               tupleAccess: List[Nat]): Expression = {
+    // TODO: FIX THIS
+    CodeGenerator.acc(u.a, value, env, dt, arrayAccess, tupleAccess)
   }
 
 }

@@ -20,6 +20,11 @@ object zip {
     (lhs: DataExpr, rhs: DataExpr) => Zip(lhs, rhs)
 }
 
+object unzip {
+  def apply(e: DataExpr): Unzip = Unzip(e)
+  def apply(): Expr[DataType -> DataType] = λ(e => unzip(e))
+}
+
 object split {
   def apply(n: Nat): Expr[DataType -> DataType] =
     λ(array => split(n, array))
