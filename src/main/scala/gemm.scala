@@ -33,12 +33,12 @@ object gemm extends App {
 
   def myPrint(m: Array[Array[Float]]): Unit = {
     m.foreach( r => {
-      println(r.map(x => f"$x%2.0f").reduce(_ + " " + _))
+      println(r.map(x => f"$x%4.0f").reduce(_ + " " + _))
     } )
   }
 
   def myPrint(m: Array[Float]): Unit = {
-    println(m.map(x => f"$x%2.0f").reduce(_ + " " + _))
+    println(m.map(x => f"$x%4.0f").reduce(_ + " " + _))
   }
 
   def matrixMatrixMultiply(A: Array[Array[Float]],
@@ -92,28 +92,19 @@ object gemm extends App {
 
     val size = 8
 
-    val A: Array[Array[Float]] = Array.tabulate(size, size)((c, _) => c) // ((r, c) => c * 1.0f + r * 0.5f)
+    val A: Array[Array[Float]] = Array.tabulate(size, size)((c, _) => c + 1.0f) // ((r, c) => c * 1.0f + r * 0.5f)
     //((_, _) => (Random.nextInt(5)+1).toFloat)
-    val B: Array[Array[Float]] = Array.tabulate(size, size)((_, r) => r) //((r, c) => c * 1.0f + r * 0.5f)
+    val B: Array[Array[Float]] = Array.tabulate(size, size)((_, r) => r + 1.5f) //((r, c) => c * 1.0f + r * 0.5f)
     //((_, _) => (Random.nextInt(5)+1).toFloat)
     val C: Array[Array[Float]] = Array.tabulate(size, size)((_, _) => 1.0f)
     //((_, _) => (Random.nextInt(5)+1).toFloat)
     val alpha = 1.0f //(Random.nextInt(5)+1).toFloat
     val beta = 0.0f //(Random.nextInt(5)+1).toFloat
 
-    println("A")
-    myPrint(A)
-
-    println("B")
-    myPrint(B)
-
-    println("C")
-    myPrint(C)
-
     println(s"alpha: $alpha")
     println(s"beta: $beta")
 
-    val (res, time) = fun(A `,` B `,` C `,` alpha `,` beta)
+    val (res, time) = fun(A `,` B.transpose `,` C `,` alpha `,` beta)
 
     println("res")
     myPrint(res.grouped(size).toArray)
@@ -146,15 +137,14 @@ object gemm extends App {
   val maliGEMM =
     λ(aT)(a => λ(bT)(b => λ(cT)(c => λ(dt)(alpha => λ(dt)(beta =>
       join() o mapGlobal(0)(λ(ac =>
-//        transposeW() o
+        transposeW() o
         join() o
         mapGlobal(1)(λ(bc =>
-//          transposeW() o
+          transposeW() o
           λ(p235 =>
             mapSeq(λ(p237 =>
                 mapSeq(λ(p64 =>
-                  p64._1
-                  //add(mult(p64._1)(alpha))(mult(p64._2)(beta))
+                  (p64._1 * alpha) + (p64._2 * beta)
                 )) $ zip(p237._1, p237._2)
               )) $ zip(p235, transpose() $ bc._2)
           ) o
@@ -176,38 +166,38 @@ object gemm extends App {
 
   printOpenCLKernel("maliGEMM", maliGEMM)
 
-//  val maliGEMM_ =
-//    λ(aT)(a => λ(bT)(b => λ(cT)(c => λ(dt)(alpha => λ(dt)(beta =>
-//      zip(a :>> split(p2),
-//          c :>> split(p2) ) :>>
-//      mapGlobal(0)(λ(ac =>
-//        zip(b :>> split(p2),
-//            ac._2 :>> transpose() :>> split(p1) ) :>>
-//        mapGlobal(1)(λ(bc =>
-//          zip(ac._1 :>> transpose() :>> split(p3),
-//              bc._1 :>> transpose() :>> split(p3) ) :>>
-//          reduceSeq(λ(p236 => λ(p67 =>
-//            zip(p67,
-//                p236._1 :>> transpose() ) :>>
-//            mapSeq(λ(p54 =>
-//              zip(p54._1,
-//                  p236._2 :>> transpose() ) :>>
-//              mapSeq(λ(p157 =>
-//                zip(p54._2 :>> asVector(4),
-//                    p157._2 :>> asVector(4) ) :>>
-//                mapSeq(λ(x => p157._1 + dot(x)))
-//              )) :>> join()))
-//          )), zeros) :>>
-//          λ(p235 =>
-//            zip(p235, bc._2 :>> transpose()) :>>
-//            mapSeq(λ(p237 =>
-//              zip(p237._1, p237._2) :>>
-//              mapSeq(λ(p64 =>
-//                add(mult(p64._1)(alpha))(mult(p64._2)(beta))))))
-//          ) :>> transpose()
-//        )) :>> join() :>> transposeW()
-//      )) :>> join()
-//    )))))
-//
-//  printOpenCLKernel("maliGEMM_", maliGEMM_)
+  val maliGEMM_ =
+    λ(aT)(a => λ(bT)(b => λ(cT)(c => λ(dt)(alpha => λ(dt)(beta =>
+      zip(a :>> split(p2),
+          c :>> split(p2) ) :>>
+      mapGlobal(0)(λ(ac =>
+        zip(b :>> split(p2),
+            ac._2 :>> transpose() :>> split(p1) ) :>>
+        mapGlobal(1)(λ(bc =>
+          zip(ac._1 :>> transpose() :>> split(p3),
+              bc._1 :>> transpose() :>> split(p3) ) :>>
+          reduceSeq(λ(p236 => λ(p67 =>
+            zip(p67,
+                p236._1 :>> transpose() ) :>>
+            mapSeq(λ(p54 =>
+              zip(p54._1,
+                  p236._2 :>> transpose() ) :>>
+              mapSeq(λ(p157 =>
+                zip(p54._2 :>> asVector(4),
+                    p157._2 :>> asVector(4) ) :>>
+                mapSeq(λ(x => p157._1 + dot(x)))
+              )) :>> join()))
+          )), zeros) :>>
+          λ(p235 =>
+            zip(p235, bc._2 :>> transpose()) :>>
+            mapSeq(λ(p237 =>
+              zip(p237._1, p237._2) :>>
+              mapSeq(λ(p64 =>
+                (p64._1 * alpha) + (p64._2 * beta)))))
+          ) :>> transpose()
+        )) :>> join() :>> transposeW()
+      )) :>> join()
+    )))))
+
+  printOpenCLKernel("maliGEMM_", maliGEMM_)
 }

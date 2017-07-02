@@ -68,14 +68,10 @@ object transposeApp extends App {
 //    join(x)
 //   split(M, join(x))
 //   join(
-     transpose(x)
+     transposeW(x)
 //   )
 //   x
    )
-
-//  val p = λ(ArrayType(N*M, float))(x =>
-//    split(M, x)
-//  )
 
   printOpenCLKernel("transpose", p)
 

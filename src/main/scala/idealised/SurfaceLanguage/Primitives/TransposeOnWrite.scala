@@ -16,12 +16,11 @@ final case class TransposeOnWrite(array: DataExpr,
         import idealised.DPIA.DSL._
         import idealised.DPIA.Types._
 
-        // TODO: double check this version of the transpose function
         val transposeFunction =
           λ(ExpType(IndexType(n * m)))(i => {
             val j = i asNatIdentifier(withUpperBound = n * m)
-            val col = (j % n) * m
-            val row = j / n
+            val col = (j % m) * n
+            val row = j / m
 
             row + col asPhrase(withType = IndexType(n * m))
           })
