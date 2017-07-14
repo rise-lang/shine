@@ -11,13 +11,13 @@ import idealised.DPIA._
 import scala.language.reflectiveCalls
 import scala.xml.Elem
 
-final case class Assign(dt: BasicType,
-                        lhs: Phrase[AccType],
-                        rhs: Phrase[ExpType])
+final class Assign(val dt: DataType,
+                   val lhs: Phrase[AccType],
+                   val rhs: Phrase[ExpType])
   extends CommandPrimitive {
 
   override val `type`: CommandType =
-    (dt: BasicType) -> (lhs :: acc"[$dt]") -> (rhs :: exp"[$dt]") -> comm
+    (dt: DataType) -> (lhs :: acc"[$dt]") -> (rhs :: exp"[$dt]") -> comm
 
   override def eval(s: Store): Store = {
     def evalAssign(s: Store, lhs: AccIdentifier, rhs: Data,
@@ -76,8 +76,8 @@ object Assign {
         (dt1, dt2) match {
           case (t1, t2) if t1 == t2 =>
             t1 match {
-              case bt: BasicType =>
-                Assign(bt, lhs, rhs)
+              case _: BasicType | _: RecordType => // TODO: think about this more
+                new Assign(t1, lhs, rhs)
               case _ =>
                 error(s"${t1.toString}", expected = "a basic data type")
             }
@@ -92,13 +92,14 @@ object Assign {
             A: Phrase[AccType],
             E: Phrase[ExpType]): Phrase[CommandType] = {
     dt match {
-      case _: BasicType => A := E
+      // TODO: think about this more, but records (structs) are values ...
+      case _: BasicType | _: RecordType => A := E
 
       case ArrayType(n, et) =>
         MapI(n, et, et, λ(ExpType(et))(x => λ(AccType(et))(a => a :=|et| x )), E, A)
 
-      case RecordType(dt1, dt2) =>
-        (recordAcc1(dt1, dt2, A) :=|dt1| E) `;` (recordAcc2(dt1, dt2, A) :=|dt2| E)
+//      case RecordType(dt1, dt2) =>
+//        (recordAcc1(dt1, dt2, A) :=|dt1| fst(E)) `;` (recordAcc2(dt1, dt2, A) :=|dt2| snd(E))
 
       case _: DataTypeIdentifier => throw new Exception("This should not happen")
     }

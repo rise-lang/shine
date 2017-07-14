@@ -1,7 +1,8 @@
 package idealised.OpenCL.CodeGeneration
 
 import ir.{ArrayType, Type}
-import lift.arithmetic.{ArithExpr, Cst, NamedVar, Var}
+import lift.arithmetic.{IfThenElse => _, _}
+import opencl.generator.OclFunction
 import opencl.generator.OpenCLAST._
 import opencl.ir.PrivateMemory
 
@@ -109,18 +110,33 @@ object AdaptKernelBody {
   // compute the number of iterations to be performed by the given loop
   private def inferLoopTripCount(loop: ForLoop): Int = {
     val start = loop.init.init match {
-      case ArithExpression(ae) => ae.evalInt
+      case ArithExpression(ae) => ae match {
+        case oclF: OclFunction => oclF.min.evalInt
+        case _ => ae.evalInt
+      }
       case _ => throw new Exception("")
     }
     val stop = loop.cond match {
-      case CondExpression(_, ArithExpression(ae), CondExpression.Operator.<) =>
-        ae.evalInt
+      case CondExpression(_, ArithExpression(ae), CondExpression.Operator.<) => ae match {
+        case oclF: OclFunction => oclF.max.evalInt
+        case _ => ae.evalInt
+      }
       case _ => throw new Exception("")
     }
     val step = loop.increment match {
       // assuming steps of the form: i = i + 1
       case AssignmentExpression(ArithExpression(lhs: Var), ArithExpression(rhs)) =>
-        ArithExpr.substitute(rhs, Map(lhs -> Cst(0))).evalInt
+        val ae = ArithExpr.substitute(rhs, Map(lhs -> Cst(0)))
+        ae match {
+            // TODO: generallise this
+          case oclF: OclFunction =>
+            oclF.range match {
+              case RangeAdd(min, max, s) if (min.evalInt + 1) == max.evalInt && s.evalInt == 1 =>
+                min.evalInt
+              case _ => throw new Exception("")
+            }
+          case _ => ae.evalInt
+        }
       case _ => throw new Exception("")
     }
     (stop - start) / step

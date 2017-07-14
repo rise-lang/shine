@@ -69,6 +69,13 @@ object gather {
   }
 }
 
+object scatter {
+  def apply(idxF: Expr[`(nat)->`[DataType ->DataType]]): Expr[DataType -> DataType] = {
+    val idxF_ = idxF(NamedVar(newName()))
+    λ(array => Scatter(idxF_, array))
+  }
+}
+
 object transpose {
   def apply(): Expr[DataType -> DataType] = λ(array => transpose(array))
 
@@ -86,7 +93,6 @@ object tuple {
 }
 
 object printType {
-  def apply(): Expr[DataType -> DataType] = λ(x => PrintType(x, ""))
-  def apply(msg: String): Expr[DataType -> DataType] = λ(x => PrintType(x, msg))
+  def apply(msg: String = ""): Expr[DataType -> DataType] = λ(x => PrintType(x, msg))
   def apply(msg: String, x: Expr[DataType]) = PrintType(x, msg)
 }

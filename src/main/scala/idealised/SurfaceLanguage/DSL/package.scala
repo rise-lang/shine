@@ -58,11 +58,11 @@ package object DSL {
 
   implicit class FunComp[T <: Type](f: Expr[DataType -> T]) {
     def o(g: Expr[DataType -> DataType]): Expr[DataType -> T] = λ(arg => f( g(arg) ) )
-    def >>>(g: Expr[DataType -> DataType]): Expr[DataType -> T] = f o g
+    def <<<(g: Expr[DataType -> DataType]): Expr[DataType -> T] = f o g
   }
 
   implicit class RevFunComp(f: Expr[DataType -> DataType]) {
-    def <<<[T <: Type](g: Expr[DataType -> T]): Expr[DataType -> T] = g o f
+    def >>>[T <: Type](g: Expr[DataType -> T]): Expr[DataType -> T] = g o f
   }
 
   implicit def toLiteralInt(i: Int): LiteralExpr = LiteralExpr(IntData(i), int)
@@ -88,4 +88,12 @@ package object DSL {
     def _1 = Fst(e)
     def _2 = Snd(e)
   }
+
+//  implicit class ExpPhraseExtensions(e: DataExpr) {
+//    def `@`(index: DataExpr): Idx = (index.t, e.t) match {
+//      case (ExpType(IndexType(n1)), ExpType(ArrayType(n2, dt))) if n1 == n2 =>
+//        Idx(n1, dt, index, e)
+//      case x => error(x.toString, "(exp[idx(n)], exp[n.dt])")
+//    }
+//  }
 }

@@ -440,7 +440,7 @@ object PrimitivesCodeGenerator {
                arrayAccess: List[Nat],
                tupleAccess: List[Nat]): Expression = {
     // TODO: FIX THIS
-    CodeGenerator.acc(u.a, value, env, dt, arrayAccess, tupleAccess)
+    ???
   }
 
 }

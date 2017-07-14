@@ -89,9 +89,7 @@ object CodeGenerator {
       case ArrayType(n, et) =>
         val i :: is = arrayIndices
         computeIndex(et, is, tupleIndices, (idx * n) + i)
-      case RecordType(lhs, rhs) =>
-        // TODO: FIX THIS
-        computeIndex(lhs, arrayIndices, tupleIndices, idx)
+      case RecordType(_, _) => idx // TODO: think about this more ...
       case _: DataTypeIdentifier => ???
     }
   }
@@ -177,11 +175,11 @@ object CodeGenerator {
       case p: Proj2[_, AccType] => acc(Lifting.liftPair(p.pair)._2, value, env)
 
       case f: RecordAcc1    => toOpenCL(f, value, env, f.t.dataType, List(), List())
-      case i: IdxAcc    => toOpenCL(i, value, env, i.t.dataType, List(), List())
-      case j: JoinAcc   => toOpenCL(j, value, env, j.t.dataType, List(), List())
+      case i: IdxAcc        => toOpenCL(i, value, env, i.t.dataType, List(), List())
+      case j: JoinAcc       => toOpenCL(j, value, env, j.t.dataType, List(), List())
       case s: RecordAcc2    => toOpenCL(s, value, env, s.t.dataType, List(), List())
-      case s: SplitAcc  => toOpenCL(s, value, env, s.t.dataType, List(), List())
-      case t: TruncAcc  => toOpenCL(t, value, env, t.t.dataType, List(), List())
+      case s: SplitAcc      => toOpenCL(s, value, env, s.t.dataType, List(), List())
+      case t: TruncAcc      => toOpenCL(t, value, env, t.t.dataType, List(), List())
 
       case Apply(_, _) | NatDependentApply(_, _) |
            TypeDependentApply(_, _) | DPIA.Phrases.IfThenElse(_, _, _) | _: AccPrimitive =>
@@ -235,13 +233,13 @@ object CodeGenerator {
       case v: ViewAcc => v.toOpenCL(env, value, dt, arrayAccess, tupleAccess)
 
       case f: RecordAcc1    => toOpenCL(f, value, env, dt, arrayAccess, tupleAccess)
-      case i: IdxAcc    => toOpenCL(i, value, env, dt, arrayAccess, tupleAccess)
-      case j: JoinAcc   => toOpenCL(j, value, env, dt, arrayAccess, tupleAccess)
+      case i: IdxAcc        => toOpenCL(i, value, env, dt, arrayAccess, tupleAccess)
+      case j: JoinAcc       => toOpenCL(j, value, env, dt, arrayAccess, tupleAccess)
       case s: RecordAcc2    => toOpenCL(s, value, env, dt, arrayAccess, tupleAccess)
-      case s: SplitAcc  => toOpenCL(s, value, env, dt, arrayAccess, tupleAccess)
-      case t: TruncAcc  => toOpenCL(t, value, env, dt, arrayAccess, tupleAccess)
-      case s: ScatterAcc => toOpenCL(s, value, env, dt, arrayAccess, tupleAccess)
-      case u: UnzipAcc => toOpenCL(u, value, env, dt, arrayAccess, tupleAccess)
+      case s: SplitAcc      => toOpenCL(s, value, env, dt, arrayAccess, tupleAccess)
+      case t: TruncAcc      => toOpenCL(t, value, env, dt, arrayAccess, tupleAccess)
+      case s: ScatterAcc    => toOpenCL(s, value, env, dt, arrayAccess, tupleAccess)
+      case u: UnzipAcc      => toOpenCL(u, value, env, dt, arrayAccess, tupleAccess)
 
       case p: Proj1[AccType, _] => acc(Lifting.liftPair(p.pair)._1, value, env, dt, arrayAccess, tupleAccess)
       case p: Proj2[_, AccType] => acc(Lifting.liftPair(p.pair)._2, value, env, dt, arrayAccess, tupleAccess)

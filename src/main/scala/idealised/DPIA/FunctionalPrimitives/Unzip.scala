@@ -55,7 +55,9 @@ final case class Unzip(n: Nat,
   override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
 
-    acc(e)(UnzipAcc(n, dt1, dt2, A))
+    con(e)(λ(exp"[$n.($dt1 x $dt2)]")(x =>
+      A :=|RecordType(ArrayType(n, dt1), ArrayType(n, dt2))| Unzip(n, dt1, dt2, x)
+    ))
   }
 
   override def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
