@@ -106,6 +106,19 @@ object reduceSeq {
     ReduceSeq(f, init, array)
 }
 
+object scanSeq {
+  def apply(f: Expr[DataType -> (DataType -> DataType)]): Expr[DataType -> (DataType -> DataType)] =
+    λ((init, array) => scanSeq(f, init, array))
+
+  def apply(f: Expr[DataType -> (DataType -> DataType)], init: Expr[DataType]): Expr[DataType -> DataType] =
+    λ(array => scanSeq(f, init, array))
+
+  def apply(f: Expr[DataType -> (DataType -> DataType)],
+            init: DataExpr,
+            array: DataExpr) =
+    ScanSeq(f, init, array)
+}
+
 object vectorize {
   def apply(len: Int, f: Float) =
     LiteralExpr(VectorData(Vector.fill(len)(FloatData(f))), VectorType(len, float))
