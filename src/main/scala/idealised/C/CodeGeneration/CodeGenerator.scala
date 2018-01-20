@@ -9,7 +9,6 @@ import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.C._
-import idealised.C.CodeGeneration.PrimitivesCodeGenerator.toC
 import idealised.C.AST._
 
 import scala.collection.immutable
@@ -17,28 +16,35 @@ import scala.collection.immutable
 object CodeGenerator {
   type Ranges = immutable.Map[String, lift.arithmetic.Range]
 
-  case class Environment(ranges: Ranges = immutable.Map[String, lift.arithmetic.Range]()) {
-    def updatedRanges(key: String, value: lift.arithmetic.Range): Environment =
-      copy(ranges = ranges.updated(key, value))
+  def apply(p: Phrase[CommandType], primitiveCodeGen: PrimitiveCodeGen): Block = {
+    val gen = CodeGenerator(primitiveCodeGen)
+    gen.cmd(p, Block(immutable.Seq()), gen)
   }
+}
 
-  def cmd(p: Phrase[CommandType], block: Block, env: Environment): Block = {
+case class CodeGenerator(primitiveCodeGen: PrimitiveCodeGen,
+                         ranges: CodeGenerator.Ranges = immutable.Map[String, lift.arithmetic.Range]()) {
+
+  def updatedRanges(key: String, value: lift.arithmetic.Range): CodeGenerator =
+    copy(ranges= ranges.updated(key, value))
+
+  def cmd(p: Phrase[CommandType], block: Block, gen: CodeGenerator): Block = {
     p match {
       case DPIA.Phrases.IfThenElse(condP, thenP, elseP) =>
-        val trueBlock = cmd(thenP, Block(), env)
-        val falseBlock = cmd(elseP, Block(), env)
-        block + idealised.C.AST.IfThenElse(exp(condP, env), trueBlock, Some(falseBlock))
+        val trueBlock = cmd(thenP, Block(), gen)
+        val falseBlock = cmd(elseP, Block(), gen)
+        block + idealised.C.AST.IfThenElse(exp(condP, gen), trueBlock, Some(falseBlock))
 
-      case c: GeneratableComm => c.codeGenCmd(block, env)
+      case c: GeneratableComm => c.codeGen(block, gen)
 
-      case a: Assign => toC(a, block, env)
-      case d: DoubleBufferFor => toC(d, block, env)
-      case f: For => toC(f, block, env)
-      case n: New => toC(n, block, env)
-      case s: idealised.DPIA.ImperativePrimitives.Seq => toC(s, block, env)
-      case s: idealised.DPIA.ImperativePrimitives.Skip => toC(s, block, env)
+      case a: Assign => primitiveCodeGen.codeGen(a, block, gen)
+      case d: DoubleBufferFor => primitiveCodeGen.codeGen(d, block, gen)
+      case f: For => primitiveCodeGen.codeGen(f, block, gen)
+      case n: New => primitiveCodeGen.codeGen(n, block, gen)
+      case s: idealised.DPIA.ImperativePrimitives.Seq => primitiveCodeGen.codeGen(s, block, gen)
+      case s: idealised.DPIA.ImperativePrimitives.Skip => primitiveCodeGen.codeGen(s, block, gen)
 
-      case p: ParFor => toC(p, block, env)
+      case p: ParFor => primitiveCodeGen.codeGen(p, block, gen)
 
       case Apply(_, _) | NatDependentApply(_, _) |
            TypeDependentApply(_, _) | Identifier(_, _) |
@@ -47,10 +53,10 @@ object CodeGenerator {
     }
   }
 
-  def exp(p: Phrase[ExpType], env: Environment): Expr = {
+  def exp(p: Phrase[ExpType], gen: CodeGenerator): Expr = {
     p match {
       case BinOp(op, lhs, rhs) =>
-        BinaryExpr(exp(lhs, env), convertBinaryOp(op), exp(rhs, env))
+        BinaryExpr(exp(lhs, gen), convertBinaryOp(op), exp(rhs, gen))
       case Identifier(name, _) => DeclRef(name)
       case DPIA.Phrases.Literal(d, _) => d match {
         case i: IntData     => idealised.C.AST.Literal(i.i.toString)
@@ -62,17 +68,17 @@ object CodeGenerator {
 
         case i: IndexData   => ArithmeticExpr(i.i)
       }
-      case p: Proj1[ExpType, _] => exp(Lifting.liftPair(p.pair)._1, env)
-      case p: Proj2[_, ExpType] => exp(Lifting.liftPair(p.pair)._2, env)
-      case UnaryOp(op, x)       => UnaryExpr(convertUnaryOp(op), exp(x, env))
+      case p: Proj1[ExpType, _] => exp(Lifting.liftPair(p.pair)._1, gen)
+      case p: Proj2[_, ExpType] => exp(Lifting.liftPair(p.pair)._2, gen)
+      case UnaryOp(op, x)       => UnaryExpr(convertUnaryOp(op), exp(x, gen))
 
-      case f: Fst       => toC(f, env, f.t.dataType, List(), List())
-      case i: Idx       => toC(i, env, i.t.dataType, List(), List())
-      case r: Record    => toC(r, env, r.t.dataType, List(), List())
-      case s: Snd       => toC(s, env, s.t.dataType, List(), List())
-      case t: TruncExp  => toC(t, env, t.t.dataType, List(), List())
+      case f: Fst       => primitiveCodeGen.codeGen(f, gen, f.t.dataType, List(), List())
+      case i: Idx       => primitiveCodeGen.codeGen(i, gen, i.t.dataType, List(), List())
+      case r: Record    => primitiveCodeGen.codeGen(r, gen, r.t.dataType, List(), List())
+      case s: Snd       => primitiveCodeGen.codeGen(s, gen, s.t.dataType, List(), List())
+      case t: TruncExp  => primitiveCodeGen.codeGen(t, gen, t.t.dataType, List(), List())
 
-      case g: GeneratableExp => g.codeGenExp(env)
+      case g: GeneratableExp => g.codeGen(gen)
 
       case Apply(_, _) | NatDependentApply(_, _) |
            TypeDependentApply(_, _) | DPIA.Phrases.IfThenElse(_, _, _) | _: ExpPrimitive =>
@@ -91,11 +97,7 @@ object CodeGenerator {
     }
   }
 
-  def exp(p: Phrase[ExpType],
-          env: Environment,
-          dt: DataType,
-          arrayAccess: List[Nat],
-          tupleAccess: List[Nat]): Expr = {
+  def exp(p: Phrase[ExpType], gen: CodeGenerator, dt: DataType, arrayAccess: List[Nat], tupleAccess: List[Nat]): Expr = {
     p match {
       case Identifier(name, t) =>
 
@@ -127,26 +129,26 @@ object CodeGenerator {
             ArraySubscript(DeclRef(name + suffix), ArithmeticExpr(index))
         }
 
-      case l: DPIA.Phrases.Literal => toC(l, env, dt, arrayAccess, tupleAccess)
+      case l: DPIA.Phrases.Literal => primitiveCodeGen.codeGen(l, gen, dt, arrayAccess, tupleAccess)
 
-      case p: Proj1[ExpType, _] => exp(Lifting.liftPair(p.pair)._1, env, dt, arrayAccess, tupleAccess)
-      case p: Proj2[_, ExpType] => exp(Lifting.liftPair(p.pair)._2, env, dt, arrayAccess, tupleAccess)
+      case p: Proj1[ExpType, _] => exp(Lifting.liftPair(p.pair)._1, gen, dt, arrayAccess, tupleAccess)
+      case p: Proj2[_, ExpType] => exp(Lifting.liftPair(p.pair)._2, gen, dt, arrayAccess, tupleAccess)
 
-      case v: ViewExp => v.toOpenMP(env, arrayAccess, tupleAccess, dt)
+      case v: ViewExp => v.codeGen(gen, dt, arrayAccess, tupleAccess)
 
-      case g: Gather => toC(g, env, arrayAccess, tupleAccess, dt)
-      case j: Join => toC(j, env, arrayAccess, tupleAccess, dt)
-      case s: Split => toC(s, env, arrayAccess, tupleAccess, dt)
-      case z: Zip => toC(z, env, arrayAccess, tupleAccess, dt)
-      case u: Unzip => toC(u, env, arrayAccess, tupleAccess, dt)
+      case g: Gather => primitiveCodeGen.codeGen(g, gen, dt, arrayAccess, tupleAccess)
+      case j: Join => primitiveCodeGen.codeGen(j, gen, dt, arrayAccess, tupleAccess)
+      case s: Split => primitiveCodeGen.codeGen(s, gen, dt, arrayAccess, tupleAccess)
+      case z: Zip => primitiveCodeGen.codeGen(z, gen, dt, arrayAccess, tupleAccess)
+      case u: Unzip => primitiveCodeGen.codeGen(u, gen, dt, arrayAccess, tupleAccess)
 
-      case f: Fst       => toC(f, env, dt, arrayAccess, tupleAccess)
-      case i: Idx       => toC(i, env, dt, arrayAccess, tupleAccess)
-      case r: Record    => toC(r, env, dt, arrayAccess, tupleAccess)
-      case s: Snd       => toC(s, env, dt, arrayAccess, tupleAccess)
-      case t: TruncExp  => toC(t, env, dt, arrayAccess, tupleAccess)
+      case f: Fst       => primitiveCodeGen.codeGen(f, gen, dt, arrayAccess, tupleAccess)
+      case i: Idx       => primitiveCodeGen.codeGen(i, gen, dt, arrayAccess, tupleAccess)
+      case r: Record    => primitiveCodeGen.codeGen(r, gen, dt, arrayAccess, tupleAccess)
+      case s: Snd       => primitiveCodeGen.codeGen(s, gen, dt, arrayAccess, tupleAccess)
+      case t: TruncExp  => primitiveCodeGen.codeGen(t, gen, dt, arrayAccess, tupleAccess)
 
-      case g: GeneratableExp => g.codeGenExp(env)
+      case g: GeneratableExp => g.codeGen(gen)
 
       case Apply(_, _) | NatDependentApply(_, _) |
            TypeDependentApply(_, _) |
@@ -157,22 +159,22 @@ object CodeGenerator {
   }
 
 
-  def acc(p: Phrase[AccType], value: Expr, env: Environment): Expr = {
+  def acc(p: Phrase[AccType], value: Expr, gen: CodeGenerator): Expr = {
     p match {
       case Identifier(name, t) =>
         t.dataType match {
           case _: DPIA.Types.BasicType => Assignment(DeclRef(name), value)
           case _ => throw new Exception(s"Don't know how to generate assignment into variable $name of type $t")
         }
-      case p: Proj1[AccType, _] => acc(Lifting.liftPair(p.pair)._1, value, env)
-      case p: Proj2[_, AccType] => acc(Lifting.liftPair(p.pair)._2, value, env)
+      case p: Proj1[AccType, _] => acc(Lifting.liftPair(p.pair)._1, value, gen)
+      case p: Proj2[_, AccType] => acc(Lifting.liftPair(p.pair)._2, value, gen)
 
-      case f: RecordAcc1    => toC(f, value, env, f.t.dataType, List(), List())
-      case i: IdxAcc        => toC(i, value, env, i.t.dataType, List(), List())
-      case j: JoinAcc       => toC(j, value, env, j.t.dataType, List(), List())
-      case s: RecordAcc2    => toC(s, value, env, s.t.dataType, List(), List())
-      case s: SplitAcc      => toC(s, value, env, s.t.dataType, List(), List())
-      case t: TruncAcc      => toC(t, value, env, t.t.dataType, List(), List())
+      case f: RecordAcc1    => primitiveCodeGen.codeGen(f, value, gen, f.t.dataType, List(), List())
+      case i: IdxAcc        => primitiveCodeGen.codeGen(i, value, gen, i.t.dataType, List(), List())
+      case j: JoinAcc       => primitiveCodeGen.codeGen(j, value, gen, j.t.dataType, List(), List())
+      case s: RecordAcc2    => primitiveCodeGen.codeGen(s, value, gen, s.t.dataType, List(), List())
+      case s: SplitAcc      => primitiveCodeGen.codeGen(s, value, gen, s.t.dataType, List(), List())
+      case t: TruncAcc      => primitiveCodeGen.codeGen(t, value, gen, t.t.dataType, List(), List())
 
       case Apply(_, _) | NatDependentApply(_, _) |
            TypeDependentApply(_, _) | DPIA.Phrases.IfThenElse(_, _, _) | _: AccPrimitive =>
@@ -180,12 +182,7 @@ object CodeGenerator {
     }
   }
 
-  def acc(p: Phrase[AccType],
-          value: Expr,
-          env: Environment,
-          dt: DataType,
-          arrayAccess: List[Nat],
-          tupleAccess: List[Nat]): Expr = {
+  def acc(p: Phrase[AccType], value: Expr, gen: CodeGenerator, dt: DataType, arrayAccess: List[Nat], tupleAccess: List[Nat]): Expr = {
     p match {
       case Identifier(name, t) =>
         val index: Nat = {
@@ -218,19 +215,19 @@ object CodeGenerator {
               value)
         }
 
-      case v: ViewAcc => v.toOpenMP(env, value, dt, arrayAccess, tupleAccess)
+      case v: ViewAcc => v.codeGen(gen, value, dt, arrayAccess, tupleAccess)
 
-      case f: RecordAcc1    => toC(f, value, env, dt, arrayAccess, tupleAccess)
-      case i: IdxAcc        => toC(i, value, env, dt, arrayAccess, tupleAccess)
-      case j: JoinAcc       => toC(j, value, env, dt, arrayAccess, tupleAccess)
-      case s: RecordAcc2    => toC(s, value, env, dt, arrayAccess, tupleAccess)
-      case s: SplitAcc      => toC(s, value, env, dt, arrayAccess, tupleAccess)
-      case t: TruncAcc      => toC(t, value, env, dt, arrayAccess, tupleAccess)
-      case s: ScatterAcc    => toC(s, value, env, dt, arrayAccess, tupleAccess)
-      case u: UnzipAcc      => toC(u, value, env, dt, arrayAccess, tupleAccess)
+      case f: RecordAcc1    => primitiveCodeGen.codeGen(f, value, gen, dt, arrayAccess, tupleAccess)
+      case i: IdxAcc        => primitiveCodeGen.codeGen(i, value, gen, dt, arrayAccess, tupleAccess)
+      case j: JoinAcc       => primitiveCodeGen.codeGen(j, value, gen, dt, arrayAccess, tupleAccess)
+      case s: RecordAcc2    => primitiveCodeGen.codeGen(s, value, gen, dt, arrayAccess, tupleAccess)
+      case s: SplitAcc      => primitiveCodeGen.codeGen(s, value, gen, dt, arrayAccess, tupleAccess)
+      case t: TruncAcc      => primitiveCodeGen.codeGen(t, value, gen, dt, arrayAccess, tupleAccess)
+      case s: ScatterAcc    => primitiveCodeGen.codeGen(s, value, gen, dt, arrayAccess, tupleAccess)
+      case u: UnzipAcc      => primitiveCodeGen.codeGen(u, value, gen, dt, arrayAccess, tupleAccess)
 
-      case p: Proj1[AccType, _] => acc(Lifting.liftPair(p.pair)._1, value, env, dt, arrayAccess, tupleAccess)
-      case p: Proj2[_, AccType] => acc(Lifting.liftPair(p.pair)._2, value, env, dt, arrayAccess, tupleAccess)
+      case p: Proj1[AccType, _] => acc(Lifting.liftPair(p.pair)._1, value, gen, dt, arrayAccess, tupleAccess)
+      case p: Proj2[_, AccType] => acc(Lifting.liftPair(p.pair)._2, value, gen, dt, arrayAccess, tupleAccess)
 
       case Apply(_, _) | NatDependentApply(_, _) |
            TypeDependentApply(_, _) | DPIA.Phrases.IfThenElse(_, _, _) | _: AccPrimitive =>

@@ -5,9 +5,6 @@ import idealised.DPIA.Compilation._
 import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types._
-import OpenMP.CodeGeneration.CodeGenerator
-
-import opencl.generator.OpenCLAST._
 
 import scala.collection._
 
@@ -38,10 +35,11 @@ object ProgramGenerator {
 
     val p3 = substituteImplementations(p2)
 
-    val code = CodeGenerator.cmd(p3, Block(), CodeGenerator.Environment())
+    val code = C.CodeGeneration.CodeGenerator(p3, new CodeGeneration.PrimitivesToOpenMP)
 
     OpenMP.Program(
-      function = makeFunction(makeParams(outParam, inputParams), code),
+      function = C.ProgramGenerator.makeFunction(
+        C.ProgramGenerator.makeParams(outParam, inputParams), code),
       outputParam = outParam,
       inputParams = inputParams)
   }
@@ -69,35 +67,6 @@ object ProgramGenerator {
     xmlPrinter.writeToFile("/tmp/p3.xml", p3)
     TypeChecker(p3) // TODO: only in debug
     p3
-  }
-
-  private def makeFunction(params: Seq[ParamDecl], body: Block): Function = {
-    Function(name = "foo",
-      ret = ir.NoType,
-      params = params,
-      body = body,
-      kernel = false)
-  }
-
-  private def makeParams(out: Identifier[AccType],
-                         ins: Seq[Identifier[ExpType]]): Seq[ParamDecl] = {
-    Seq(makeParam(out)) ++ ins.map(makeParam)
-  }
-
-  private def makeParam(i: Identifier[_]): ParamDecl = {
-    ParamDecl(
-      i.name,
-      DataType.toType(getDataType(i)),
-      opencl.ir.PrivateMemory)
-  }
-
-  private def getDataType(i: Identifier[_]): DataType = {
-    i.t match {
-      case ExpType(dataType) => dataType
-      case AccType(dataType) => dataType
-      case PairType(ExpType(dt1), AccType(dt2)) if dt1 == dt2 => dt1
-      case _ => throw new Exception("This should not happen")
-    }
   }
 
 }

@@ -44,6 +44,8 @@ case class DeclStmt(decl: Decl) extends Stmt
 
 case class Comment(string: String) extends Stmt
 
+case class Code(string: String) extends Stmt
+
 
 abstract class Expr extends Stmt
 

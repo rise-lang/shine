@@ -37,7 +37,7 @@ object ProgramGenerator {
 
     val p3 = substituteImplementations(p2)
 
-    val code = CodeGenerator.cmd(p3, AST.Block(Seq()), CodeGenerator.Environment())
+    val code = CodeGenerator(p3, new CodeGeneration.PrimitivesToC)
 
     C.Program(
       function = makeFunction(makeParams(outParam, inputParams), code),
@@ -70,16 +70,16 @@ object ProgramGenerator {
     p3
   }
 
-  private def makeFunction(params: Seq[VarDecl], body: Block): FunDecl = {
+  def makeFunction(params: Seq[VarDecl], body: Block): FunDecl = {
     FunDecl(name = "foo", returnType = Type.void, params, body)
   }
 
-  private def makeParams(out: Identifier[AccType],
+  def makeParams(out: Identifier[AccType],
                          ins: Seq[Identifier[ExpType]]): Seq[VarDecl] = {
     Seq(makeParam(out)) ++ ins.map(makeParam)
   }
 
-  private def makeParam(i: Identifier[_]): VarDecl = {
+  def makeParam(i: Identifier[_]): VarDecl = {
     VarDecl(i.name, Type.fromDataType(getDataType(i)))
   }
 

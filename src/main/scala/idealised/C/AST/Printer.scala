@@ -37,15 +37,6 @@ class Printer {
     }
   }
 
-//  private def printBlock(code: => Unit): Unit = {
-//    indent += 1
-//    println("{")
-//    code
-//    indent -= 1
-//    moveCursorBack(tabSize)
-//    print("}")
-//  }
-
   private def print(n: Node): Unit = n match {
     case d: Decl => print(d)
     case s: Stmt => print(s)
@@ -69,6 +60,7 @@ class Printer {
     case r: Return => print(r)
     case d: DeclStmt => print(d)
     case c: Comment => print(c)
+    case c: Code => print(c)
     case e: Expr =>
       print(e)
       print(";")
@@ -186,6 +178,10 @@ class Printer {
 
   private def print(c: Comment): Unit = {
     print(s"/* ${c.string} */")
+  }
+
+  private def print(c: Code): Unit = {
+    print(c.string)
   }
 
   // Exprs
