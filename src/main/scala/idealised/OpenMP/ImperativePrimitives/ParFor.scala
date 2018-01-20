@@ -11,14 +11,14 @@ import idealised.C.GeneratableComm
 import lift.arithmetic.{Cst, NamedVar, RangeAdd}
 import idealised.C.AST._
 
-case class OpenMPParFor(override val n: Nat,
-                        override val dt: DataType,
-                        override val out: Phrase[AccType],
-                        override val body: Phrase[ExpType -> (AccType -> CommandType)])
+case class ParFor(override val n: Nat,
+                  override val dt: DataType,
+                  override val out: Phrase[AccType],
+                  override val body: Phrase[ExpType -> (AccType -> CommandType)])
   extends AbstractParFor(n, dt, out, body) with GeneratableComm {
 
   override def makeParFor:
-    (Nat, DataType, Phrase[AccType], Phrase[->[ExpType, ->[AccType, CommandType]]]) => OpenMPParFor = OpenMPParFor
+    (Nat, DataType, Phrase[AccType], Phrase[->[ExpType, ->[AccType, CommandType]]]) => ParFor = ParFor
 
   override def codeGen(block: Block, gen: CodeGenerator): Block = {
     val name: String = freshName("i_")
