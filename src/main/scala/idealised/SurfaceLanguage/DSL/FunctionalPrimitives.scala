@@ -15,19 +15,14 @@ object map {
 
 object zip {
   def apply(lhs: DataExpr, rhs: DataExpr): Zip = Zip(lhs, rhs)
-
-  def apply(): (DataExpr, DataExpr) => Zip =
-    (lhs: DataExpr, rhs: DataExpr) => Zip(lhs, rhs)
 }
 
 object unzip {
   def apply(e: DataExpr): Unzip = Unzip(e)
-  def apply(): Expr[DataType -> DataType] = fun(e => unzip(e))
 }
 
 object split {
-  def apply(n: Nat): Expr[DataType -> DataType] =
-    fun(array => split(n, array))
+  def apply(n: Nat): Expr[DataType -> DataType] = fun(array => split(n, array))
 
   def apply(n: Nat, array: DataExpr): Split = Split(n, array)
 }

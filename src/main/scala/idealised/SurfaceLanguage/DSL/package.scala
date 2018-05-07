@@ -70,12 +70,11 @@ package object DSL {
   implicit def toLiteralFloat4(v: VectorData): LiteralExpr = LiteralExpr(v)
 
   implicit def toNatDependentLambda[T <: Type](p: Expr[T]): NatDependentLambdaExpr[T] =
-    dFun(_ => p )
+    dFun(_ => p)
 
   implicit class IdentExpPhraseExtensions(i: IdentifierExpr) {
     def asNatIdentifier = NamedVar(i.name)
-    def asNatIdentifier(withUpperBound: Nat) =
-      NamedVar(i.name, ContinuousRange(0, withUpperBound))
+    def asNatIdentifier(withUpperBound: Nat) = NamedVar(i.name, ContinuousRange(0, withUpperBound))
   }
 
   implicit class NatExtensions(n: Nat) {
