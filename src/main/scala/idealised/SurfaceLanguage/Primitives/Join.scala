@@ -18,13 +18,11 @@ final case class Join(array: DataExpr, override val t: Option[DataType] = None)
 
   override def inferType(subs: TypeInference.SubstitutionMap): Join = {
     import TypeInference._
-    val array_ = TypeInference(array, subs)
-    array_.t match {
-      case Some(ArrayType(n, ArrayType(m, dt))) =>
-        Join(array_, Some(ArrayType(n * m, dt)))
-      case x => error(expr = s"Join($array_)",
-        found = s"`${x.toString}'", expected = "n.m.dt")
-    }
+    TypeInference(array, subs) |> (array =>
+      array.t match {
+        case Some(ArrayType(n, ArrayType(m, dt))) => Join(array, Some(ArrayType(n * m, dt)))
+        case x => error(expr = s"Join($array)", found = s"`${x.toString}'", expected = "n.m.dt")
+      })
   }
 
   override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): DataExpr = {

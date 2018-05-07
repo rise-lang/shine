@@ -2,7 +2,7 @@ package idealised.SurfaceLanguage.Primitives
 
 import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.SurfaceLanguage.PrimitiveExpr
-import idealised.{DPIA, OpenCL, SurfaceLanguage}
+import idealised.{DPIA, SurfaceLanguage}
 import idealised.SurfaceLanguage.Types._
 
 final case class Fst(tuple: DataExpr, override val t: Option[DataType] = None)
@@ -19,14 +19,12 @@ final case class Fst(tuple: DataExpr, override val t: Option[DataType] = None)
 
   override def inferType(subs: TypeInference.SubstitutionMap): Fst = {
     import TypeInference._
-    val tuple_ = TypeInference(tuple, subs)
-    tuple_.t match {
-      case Some(TupleType(dt1_, dt2_)) =>
-        Fst(tuple_, Some(dt1_))
-
-      case x => error(expr = s"Fst($tuple_)",
-        found = s"`${x.toString}'", expected = "(dt1, dt2)")
-    }
+    TypeInference(tuple, subs) |> (tuple =>
+      tuple.t match {
+        case Some(TupleType(dt1, _)) => Fst(tuple, Some(dt1))
+        case x => error(expr = s"Fst($tuple)",
+          found = s"`${x.toString}'", expected = "(dt1, dt2)")
+      })
   }
 
   override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): DataExpr = {

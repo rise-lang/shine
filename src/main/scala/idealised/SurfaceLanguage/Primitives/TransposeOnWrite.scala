@@ -35,13 +35,11 @@ final case class TransposeOnWrite(array: DataExpr,
 
   override def inferType(subs: TypeInference.SubstitutionMap): TransposeOnWrite = {
     import TypeInference._
-    val array_ = TypeInference(array, subs)
-    array_.t match {
-      case Some(ArrayType(n, ArrayType(m, dt))) =>
-        TransposeOnWrite(array_, Some(ArrayType(m, ArrayType(n, dt))))
-      case x => error(expr = s"TransposeOnWrite($array_)",
-        found = s"`${x.toString}'", expected = "n.m.dt")
-    }
+    TypeInference(array, subs) |> (array =>
+      array.t match {
+        case Some(ArrayType(n, ArrayType(m, dt))) => TransposeOnWrite(array, Some(ArrayType(m, ArrayType(n, dt))))
+        case x => error(expr = s"TransposeOnWrite($array)", found = s"`${x.toString}'", expected = "n.m.dt")
+      })
   }
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): DataExpr =

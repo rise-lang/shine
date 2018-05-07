@@ -22,12 +22,12 @@ final case class Tuple(fst: DataExpr, snd: DataExpr,
   }
 
   override def inferType(subs: TypeInference.SubstitutionMap): Tuple = {
-    val fst_ = TypeInference(fst, subs)
-    val snd_ = TypeInference(snd, subs)
-    (fst_.t, snd_.t) match {
-      case (Some(ft), Some(st)) => Tuple(fst_, snd_, Some(TupleType(ft, st)))
-      case _ => TypeInference.error(this.toString, "")
-    }
+    TypeInference(fst, subs) |> (fst =>
+    TypeInference(snd, subs) |> (snd =>
+      (fst.t, snd.t) match {
+        case (Some(ft), Some(st)) => Tuple(fst, snd, Some(TupleType(ft, st)))
+        case _ => TypeInference.error(this.toString, "")
+      }))
   }
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): DataExpr = {

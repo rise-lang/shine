@@ -21,13 +21,11 @@ final case class Split(n: Nat, array: DataExpr,
 
   override def inferType(subs: TypeInference.SubstitutionMap): Split = {
     import TypeInference._
-    val array_ = TypeInference(array, subs)
-    array_.t match {
-      case Some(ArrayType(mn, dt)) =>
-        Split(n, array_, Some(ArrayType(mn /^ n, ArrayType(n, dt))))
-      case x => error(expr = s"Split($n, $array_)",
-        found = s"`${x.toString}'", expected = "n.dt")
-    }
+    TypeInference(array, subs) |> (array =>
+      array.t match {
+        case Some(ArrayType(mn, dt)) => Split(n, array, Some(ArrayType(mn /^ n, ArrayType(n, dt))))
+        case x => error(expr = s"Split($n, $array)", found = s"`${x.toString}'", expected = "n.dt")
+      })
   }
 
   override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): DataExpr = {

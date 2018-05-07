@@ -21,14 +21,12 @@ final case class Snd(tuple: DataExpr,
 
   override def inferType(subs: TypeInference.SubstitutionMap): Snd = {
     import TypeInference._
-    val tuple_ = TypeInference(tuple, subs)
-    tuple_.t match {
-      case Some(TupleType(dt1_, dt2_)) =>
-        Snd(tuple_, Some(dt2_))
-
-      case x => error(expr = s"Snd($tuple_)",
-        found = s"`${x.toString}'", expected = "(dt1, dt2)")
-    }
+    TypeInference(tuple, subs) |> (tuple =>
+      tuple.t match {
+        case Some(TupleType(_, dt2)) => Snd(tuple, Some(dt2))
+        case x => error(expr = s"Snd($tuple)",
+          found = s"`${x.toString}'", expected = "(dt1, dt2)")
+      })
   }
 
   override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): DataExpr = {
