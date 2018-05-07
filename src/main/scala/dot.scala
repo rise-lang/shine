@@ -6,6 +6,7 @@ import idealised.SurfaceLanguage._
 import idealised.SurfaceLanguage.Types._
 import lift.arithmetic._
 import opencl.executor.Executor
+import idealised._
 
 import scala.language.implicitConversions
 import scala.language.postfixOps
@@ -79,10 +80,26 @@ object dot extends App {
   val mult = λ(x => x._1 * x._2)
   val add = λ((x, a) => x + a)
 
-//  val high_level = λ(xsT)(xs => λ(ysT)(ys =>
-//    reduce(add, 0.0f) o map(mult) $ zip(xs, ys)
-//  ))
-//
+  val high_level = λ(xsT)(xs => λ(ysT)(ys =>
+    reduce(add, 0.0f) o map(mult) $ zip(xs, ys)
+  ))
+
+  {
+    println(s"-- high level --")
+    val phrase = TypeInference(high_level, Map()).convertToPhrase
+    val program = OpenMP.ProgramGenerator.makeCode(phrase)
+    println(program.code)
+  }
+
+  {
+    println(s"-- high level --")
+    val phrase = TypeInference(high_level, Map()).convertToPhrase
+    val program = C.ProgramGenerator.makeCode(phrase)
+    println(program.code)
+  }
+
+  sys.exit(1)
+
 //  {
 //    val lambda = TypeInference(high_level)
 //    println("high_level:\n" + PrettyPrinter(lambda))

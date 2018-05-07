@@ -1,0 +1,89 @@
+package idealised.C.AST
+
+sealed trait Node
+
+abstract class Decl extends Node
+
+case class FunDecl(name: String,
+                   returnType: Type,
+                   params: Seq[VarDecl],
+                   body: Stmt) extends Decl
+
+case class VarDecl(name: String, t: Type, init: Option[Expr] = None) extends Decl
+
+case class LabelDecl(name: String) extends Decl
+
+case class TypedefDecl(t: Type, alias: String) extends Decl
+
+
+abstract class Stmt extends Node
+
+case class Block(body: Seq[Stmt] = Seq()) extends Stmt {
+  def +(s: Stmt): Block = Block(body :+ s)
+  def add(s: Stmt): Block = this + s
+
+  def ++ (s: Seq[Stmt]): Block = Block(body ++ s)
+  def add(s: Seq[Stmt]): Block = this.++(s)
+}
+
+case class ForLoop(init: Stmt, cond: Expr, increment: Expr, body: Stmt) extends Stmt
+
+case class WhileLoop(cond: Expr,body: Stmt) extends Stmt
+
+case class IfThenElse(cond: Expr, trueBody: Stmt, falseBody: Option[Stmt]) extends Stmt
+
+case class GOTO(label: String) extends Stmt
+
+case class Break() extends Stmt
+
+case class Continue() extends Stmt
+
+case class Return() extends Stmt
+
+case class DeclStmt(decl: Decl) extends Stmt
+
+case class Comment(string: String) extends Stmt
+
+case class Code(string: String) extends Stmt
+
+
+abstract class Expr extends Stmt
+
+case class Assignment(lvalue: Expr, rvalue: Expr) extends Expr
+
+case class DeclRef(name: String) extends Expr
+
+case class FunCall(fun: DeclRef, args: Seq[Expr]) extends Expr
+
+case class ArraySubscript(v: DeclRef, index: Expr) extends Expr
+
+case class UnaryExpr(op: UnaryOperator.Value, e: Expr) extends Expr
+
+object UnaryOperator extends Enumeration {
+  val ! : UnaryOperator.Value = Value("!")
+  val - : UnaryOperator.Value = Value("-")
+  val * : UnaryOperator.Value = Value("*")
+}
+
+case class BinaryExpr(lhs: Expr, op: BinaryOperator.Value, rhs: Expr) extends Expr
+
+object BinaryOperator extends Enumeration {
+  val + : BinaryOperator.Value = Value("+")
+  val - : BinaryOperator.Value = Value("-")
+  val * : BinaryOperator.Value = Value("*")
+  val / : BinaryOperator.Value = Value("/")
+  val < : BinaryOperator.Value = Value("<")
+  val > : BinaryOperator.Value = Value(">")
+  val <= : BinaryOperator.Value = Value("<=")
+  val >= : BinaryOperator.Value = Value(">=")
+  val != : BinaryOperator.Value = Value("!=")
+  val == : BinaryOperator.Value = Value("==")
+  val && : BinaryOperator.Value = Value("&&")
+  val || : BinaryOperator.Value = Value("||")
+}
+
+case class Cast(v: DeclRef, t: Type) extends Expr
+
+case class Literal(code: String) extends Expr
+
+case class ArithmeticExpr(ae: lift.arithmetic.ArithExpr) extends Expr
