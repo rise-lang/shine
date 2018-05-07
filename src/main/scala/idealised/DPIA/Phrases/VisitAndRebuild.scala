@@ -61,9 +61,9 @@ object VisitAndRebuild {
           case IfThenElse(cond, thenP, elseP) =>
             IfThenElse(apply(cond, v), apply(thenP, v), apply(elseP, v))
 
-          case Literal(d, t) => d match {
-            case IndexData(i) => Literal(IndexData(v(i)), v(t))
-            case _ => Literal(d, v(t))
+          case Literal(d) => d match {
+            case IndexData(i, t) => Literal(IndexData(v(i), v(t)))
+            case _ => Literal(d)
           }
 
           case UnaryOp(op, x) => UnaryOp(op, apply(x, v))

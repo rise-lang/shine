@@ -2,13 +2,12 @@ package idealised.OpenCL.CodeGeneration
 
 import idealised.DPIA
 import idealised.DPIA.Phrases._
-import idealised.DPIA.Types.{AccType, CommandType, ExpType, IndexType, PairType, PhraseType}
+import idealised.DPIA.Types.{AccType, CommandType, ExpType, PairType, PhraseType}
 import idealised.DPIA.DSL._
 import idealised.DPIA.Semantics.OperationalSemantics.IndexData
 import idealised.OpenCL.FunctionalPrimitives.OpenCLFunction
 import ir.{ArrayType, ScalarType}
-import lift.arithmetic.Cst
-import opencl.generator.OpenCLAST.{ParamDecl, VarRef}
+import opencl.generator.OpenCLAST.ParamDecl
 import opencl.ir.{GlobalMemory, LocalMemory}
 
 import scala.collection.mutable
@@ -63,7 +62,7 @@ object AdaptKernelParameters {
   private case class Visitor(scalarParamsInGlobalOrLocalMemory: Set[String])
     extends VisitAndRebuild.Visitor
   {
-    val zero = Literal(IndexData(0), IndexType(1))
+    val zero = Literal(IndexData(0))
 
     override def apply[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
       p match {

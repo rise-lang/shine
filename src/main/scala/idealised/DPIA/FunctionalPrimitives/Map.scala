@@ -40,7 +40,7 @@ abstract class AbstractMap(n: Nat,
     OperationalSemantics.eval(s, array) match {
       case ArrayData(xs) =>
         ArrayData(xs.map { x =>
-          OperationalSemantics.eval(s, fE(Literal(x, x.dataType)))
+          OperationalSemantics.eval(s, fE(Literal(x)))
         })
 
       case _ => throw new Exception("This should not happen")

@@ -105,14 +105,14 @@ object PhraseType {
         p match {
           case Identifier(name, _) =>
             if (`for`.name == name) {
-              Stop(Literal(IndexData(ae), IndexType(ae.max)).asInstanceOf[Phrase[T2]])
+              Stop(Literal(IndexData(ae, IndexType(ae.max))).asInstanceOf[Phrase[T2]])
             } else {
               Continue(p, this)
             }
-          case Literal(IndexData(index), IndexType(size)) =>
+          case Literal(IndexData(index, IndexType(size))) =>
             val newIndex = substitute(ae, `for`, in = index)
             val newSize = substitute(ae, `for`, in = size)
-            Stop(Literal(IndexData(newIndex), IndexType(newSize)).asInstanceOf[Phrase[T2]])
+            Stop(Literal(IndexData(newIndex, IndexType(newSize))).asInstanceOf[Phrase[T2]])
           case _ =>
             Continue(p, this)
         }

@@ -9,7 +9,7 @@ object identifier {
   def apply(name: String, dt: DataType): IdentifierExpr = IdentifierExpr(name, Some(dt))
 }
 
-trait funDef {
+object fun {
   def apply[T <: Type](f: IdentifierExpr => Expr[T]): Expr[DataType -> T] = {
     val param = identifier(newName())
     LambdaExpr(param, f(param))
@@ -29,14 +29,8 @@ trait funDef {
 
 }
 
-object fun extends funDef
 
-object \ extends funDef
-
-object λ extends funDef
-
-
-trait dependentFunDef {
+object dFun {
 
   def apply[T <: Type](f: NamedVar => Expr[T]): NatDependentLambdaExpr[T] = {
     val x = NamedVar(newName())
@@ -49,6 +43,3 @@ trait dependentFunDef {
   }
 
 }
-
-object _Λ_ extends dependentFunDef
-

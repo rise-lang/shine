@@ -7,6 +7,8 @@ import lift.arithmetic.SizeVar
 import opencl.executor.Executor
 import org.junit.Assert.assertArrayEquals
 
+import scala.language.postfixOps
+
 object transposeApp extends App {
 
   def myPrint(m: Array[Array[Float]]): Unit = {
@@ -64,7 +66,7 @@ object transposeApp extends App {
   val N = SizeVar("N")
   val M = SizeVar("M")
 
-  val p = λ(ArrayType(N, ArrayType(M, float)))(x =>
+  val p = fun(ArrayType(N, ArrayType(M, float)))(x =>
 //    join(x)
 //   split(M, join(x))
 //   join(

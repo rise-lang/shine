@@ -37,7 +37,7 @@ object PrimitivesCodeGenerator {
       case Cst(1) =>
         (block: Block) +=
           OpenCLAST.Comment("iteration count is exactly 1, no loop emitted")
-        val zero = Phrases.Literal(IndexData(0), IndexType(1))
+        val zero = Phrases.Literal(IndexData(0))
         (block: Block) += CodeGenerator.cmd(bodyE(zero), Block(Vector()), env)
 
       case _ =>
@@ -338,21 +338,14 @@ object PrimitivesCodeGenerator {
                tupleAccess: List[ArithExpr]): Expression = {
     import OperationalSemantics._
 
-    l.dt match {
-      case _: BasicType =>
-        l.d match {
-          case i: IntData => OpenCLAST.Literal(i.i.toString)
-          case b: BoolData => OpenCLAST.Literal(b.b.toString)
-          case f: FloatData => OpenCLAST.Literal(f.f.toString)
-          case i: IndexData => OpenCLAST.ArithExpression(i.i)
-        }
-      case ct: ComposedType => (ct, l.d) match {
-        case (at: ArrayType, ad: ArrayData) =>
-          val nestedLiteral = DPIA.Phrases.Literal(ad.a(0), at.elemType)
-          CodeGenerator.exp(nestedLiteral, env, at.elemType, arrayAccess.tail, tupleAccess)
-        case (rt: RecordType, rd: RecordData) =>
-          ???
-      }
+    l.d match {
+      case i: IntData => OpenCLAST.Literal(i.i.toString)
+      case b: BoolData => OpenCLAST.Literal(b.b.toString)
+      case f: FloatData => OpenCLAST.Literal(f.f.toString)
+      case i: IndexData => OpenCLAST.ArithExpression(i.n)
+      case ad: ArrayData =>
+        val nestedLiteral = DPIA.Phrases.Literal(ad.a(0))
+        CodeGenerator.exp(nestedLiteral, env, nestedLiteral.d.dataType, arrayAccess.tail, tupleAccess)
     }
   }
 

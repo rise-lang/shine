@@ -43,7 +43,7 @@ object TypeChecker {
         check(cond.t, exp"[$int]" | exp"[$bool]")
         check(thenP.t, elseP.t)
 
-      case Literal(_, _) =>
+      case Literal(_) =>
 
       case UnaryOp(op, x) =>
         x.typeCheck()

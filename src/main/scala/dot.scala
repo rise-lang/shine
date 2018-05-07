@@ -77,10 +77,10 @@ object dot extends App {
     println("----------------\n")
   }
 
-  val mult = λ(x => x._1 * x._2)
-  val add = λ((x, a) => x + a)
+  val mult = fun(x => x._1 * x._2)
+  val add = fun((x, a) => x + a)
 
-  val high_level = λ(xsT)(xs => λ(ysT)(ys =>
+  val high_level = fun(xsT)(xs => fun(ysT)(ys =>
     reduce(add, 0.0f) o map(mult) $ zip(xs, ys)
   ))
 
@@ -130,55 +130,55 @@ object dot extends App {
 //  printOpenCLKernel1("dotSimple", dotSimple)
 
 
-  val dotCPUVector1 = λ(xsT)(xs => λ(ysT)(ys =>
+  val dotCPUVector1 = fun(xsT)(xs => fun(ysT)(ys =>
     asScalar() o join() o mapWorkgroup(
       mapLocal(
-        reduceSeq(λ(x => λ(a => mult(x) + a)), vectorize(4, 0.0f))
+        reduceSeq(fun(x => fun(a => mult(x) + a)), vectorize(4, 0.0f))
       ) o split(2048)
     ) o split(2048 * 64) $ zip(asVector(4) $ xs, asVector(4) $ ys)
   ))
 
-  val intelDerivedNoWarpDot1 = λ(xsT)(xs => λ(ysT)(ys =>
+  val intelDerivedNoWarpDot1 = fun(xsT)(xs => fun(ysT)(ys =>
     asScalar() o join() o mapWorkgroup(
       mapLocal(
-        reduceSeq(λ(x => λ(a => mult(x) + a)), vectorize(4, 0.0f))
+        reduceSeq(fun(x => fun(a => mult(x) + a)), vectorize(4, 0.0f))
       ) o split(8192)
     ) o split(8192) $ zip(asVector(4) $ xs, asVector(4) $ ys)
   ))
 
   printOpenCLKernel1("intelDerivedNoWarpDot1", dotCPUVector1)
 
-  val dotCPU1 = λ(xsT)(xs => λ(ysT)(ys =>
+  val dotCPU1 = fun(xsT)(xs => fun(ysT)(ys =>
     join() o mapWorkgroup(
       mapLocal(
-        reduceSeq(λ(x => λ(a => mult(x) + a)), 0.0f)
+        reduceSeq(fun(x => fun(a => mult(x) + a)), 0.0f)
       ) o split(2048)
     ) o split(2048 * 128) $ zip(xs, ys)
   ))
 
   printOpenCLKernel1("dotCPU1", dotCPU1)
 
-  val dotCPU2 = λ(xsT)(in =>
+  val dotCPU2 = fun(xsT)(in =>
     join() o mapWorkgroup(
       mapLocal(
-        reduceSeq(λ(x => λ(a => x + a)), 0.0f)
+        reduceSeq(fun(x => fun(a => x + a)), 0.0f)
       ) o split(128)
     ) o split(128) $ in
   )
 
   printOpenCLKernel2("dotCPU2", dotCPU2)
 
-  val dotProduct1 = λ(xsT)(xs => λ(ysT)(ys =>
+  val dotProduct1 = fun(xsT)(xs => fun(ysT)(ys =>
     join() o mapWorkgroup(
       mapLocal(
-        reduceSeq(λ(x => λ(a => mult(x) + a)), 0.0f)
+        reduceSeq(fun(x => fun(a => mult(x) + a)), 0.0f)
       ) o split(2048) o gather(reorderWithStridePhrase(128))
     ) o split(2048 * 128) $ zip(xs, ys)
   ))
 
   printOpenCLKernel1("dotProduct1", dotProduct1)
 
-  val dotProduct2 = λ(xsT)(in =>
+  val dotProduct2 = fun(xsT)(in =>
     join() o mapWorkgroup(
       iterate(6, toLocal(mapLocal(reduceSeq(add, 0.0f))) o split(2)) o
         toLocal(mapLocal(reduceSeq(add, 0.0f))) o split(2)

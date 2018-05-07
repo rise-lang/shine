@@ -17,6 +17,10 @@ final case class IntData(i: Int) extends ScalarData(int)
 
 final case class FloatData(f: Float) extends ScalarData(float)
 
-final case class IndexData(n: Nat) extends Data(IndexType(n.max))
+final case class IndexData(n: Nat, indexType: IndexType) extends Data(indexType)
+
+object IndexData {
+  def apply(n: Nat): IndexData = IndexData(n, IndexType(n.max + 1))
+}
 
 final case class VectorData(v: Seq[ScalarData]) extends Data(VectorType(v.length, v.head.dataType))

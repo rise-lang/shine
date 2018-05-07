@@ -101,12 +101,12 @@ package object DSL {
   }
 
   implicit class NatExtensions(n: Nat) {
-    def asPhrase = Literal(IndexData(n), IndexType(n.max))
-    def asPhrase(withType: IndexType): Phrase[ExpType] = Literal(IndexData(n), withType)
+    def asPhrase = Literal(IndexData(n, IndexType(n.max)))
+    def asPhrase(withType: IndexType): Phrase[ExpType] = Literal(IndexData(n, withType))
   }
 
-  implicit def toLiteralInt(i: Int): Literal = Literal(IntData(i), int)
-  implicit def toLiteralFloat(f: Float): Literal = Literal(FloatData(f), float)
+  implicit def toLiteralInt(i: Int): Literal = Literal(IntData(i))
+  implicit def toLiteralFloat(f: Float): Literal = Literal(FloatData(f))
 
   implicit def toPair[T1 <: PhraseType, T2 <: PhraseType](pair: (Phrase[T1], Phrase[T2])): Pair[T1, T2] =
     Phrases.Pair(pair._1, pair._2)

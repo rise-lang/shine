@@ -54,7 +54,7 @@ object CodeGenerator {
       case BinOp(op, lhs, rhs) =>
         BinaryExpression(op.toString, exp(lhs, env), exp(rhs, env))
       case Identifier(name, _) => VarRef(name)
-      case DPIA.Phrases.Literal(d, _) => d match {
+      case DPIA.Phrases.Literal(d) => d match {
         case i: IntData     => OpenCLAST.Literal(i.i.toString)
         case b: BoolData    => OpenCLAST.Literal(b.b.toString)
         case f: FloatData   => OpenCLAST.Literal(f.f.toString)
@@ -62,7 +62,7 @@ object CodeGenerator {
         case r: RecordData  => OpenCLAST.Literal(toString(r))
         case a: ArrayData   => OpenCLAST.Literal(toString(a))
 
-        case i: IndexData   => OpenCLAST.ArithExpression(i.i)
+        case i: IndexData   => OpenCLAST.ArithExpression(i.n)
       }
       case p: Proj1[ExpType, _] => exp(Lifting.liftPair(p.pair)._1, env)
       case p: Proj2[_, ExpType] => exp(Lifting.liftPair(p.pair)._2, env)
@@ -255,7 +255,7 @@ object CodeGenerator {
       case i: IntData => i.i.toString
       case b: BoolData => b.b.toString
       case f: FloatData => f.f.toString
-      case i: IndexData => i.i.toString
+      case i: IndexData => i.n.toString
       //          case i: Int4Data => Literal(s"(int4)(${i.i0.toString}, ${i.i1.toString}, ${i.i2.toString}, ${i.i3.toString})")
       case v: VectorData => v.a.length match {
         case 2 | 3 | 4 | 8 | 16 =>

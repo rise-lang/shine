@@ -22,12 +22,12 @@ abstract class AbstractParFor(val n: Nat,
           comm
 
   override def eval(s: Store): Store = {
-    val nE = evalIndexExp(s, Literal(IndexData(n), IndexType(n)))
+    val nE = evalIndexExp(s, Literal(IndexData(n, IndexType(n))))
     val bodyE = OperationalSemantics.eval(s, body)(OperationalSemantics.BinaryFunctionEvaluator)
 
     (0 until nE.eval).foldLeft(s)((s1, i) => {
       OperationalSemantics.eval(s1,
-        bodyE(Literal(i, IndexType(n)))(out `@` Literal(i, IndexType(n))))
+        bodyE(Literal(i))(out `@` Literal(i)))
     })
   }
 

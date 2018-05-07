@@ -58,7 +58,7 @@ case class CodeGenerator(primitiveCodeGen: PrimitiveCodeGen,
       case BinOp(op, lhs, rhs) =>
         BinaryExpr(exp(lhs, gen), convertBinaryOp(op), exp(rhs, gen))
       case Identifier(name, _) => DeclRef(name)
-      case DPIA.Phrases.Literal(d, _) => d match {
+      case DPIA.Phrases.Literal(d) => d match {
         case i: IntData     => idealised.C.AST.Literal(i.i.toString)
         case b: BoolData    => idealised.C.AST.Literal(b.b.toString)
         case f: FloatData   => idealised.C.AST.Literal(f.f.toString)
@@ -66,7 +66,7 @@ case class CodeGenerator(primitiveCodeGen: PrimitiveCodeGen,
         case r: RecordData  => idealised.C.AST.Literal(toString(r))
         case a: ArrayData   => idealised.C.AST.Literal(toString(a))
 
-        case i: IndexData   => ArithmeticExpr(i.i)
+        case i: IndexData   => ArithmeticExpr(i.n)
       }
       case p: Proj1[ExpType, _] => exp(Lifting.liftPair(p.pair)._1, gen)
       case p: Proj2[_, ExpType] => exp(Lifting.liftPair(p.pair)._2, gen)
@@ -240,7 +240,7 @@ case class CodeGenerator(primitiveCodeGen: PrimitiveCodeGen,
       case i: IntData => i.i.toString
       case b: BoolData => b.b.toString
       case f: FloatData => f.f.toString
-      case i: IndexData => i.i.toString
+      case i: IndexData => i.n.toString
       case v: VectorData => ???
       case _: RecordData => ???
       case _: ArrayData => ???

@@ -16,7 +16,7 @@ object OperationalSemantics {
         case idealised.SurfaceLanguage.Semantics.BoolData(b) => BoolData(b)
         case idealised.SurfaceLanguage.Semantics.IntData(i) => IntData(i)
         case idealised.SurfaceLanguage.Semantics.FloatData(f) => FloatData(f)
-        case idealised.SurfaceLanguage.Semantics.IndexData(n) => IndexData(n)
+        case idealised.SurfaceLanguage.Semantics.IndexData(n, t) => IndexData(n, IndexType(t.size))
         case idealised.SurfaceLanguage.Semantics.TupleData(t @_*) => RecordData( Data(t(0)), Data(t(1)) )
         case idealised.SurfaceLanguage.Semantics.ArrayData(a) => ArrayData(a.map(Data(_)).toVector)
         case idealised.SurfaceLanguage.Semantics.VectorData(v) => VectorData(v.map(Data(_)).toVector)
@@ -25,7 +25,10 @@ object OperationalSemantics {
   }
 
   sealed abstract class Data(val dataType: DataType)
-  final case class IndexData(i: Nat) extends Data(IndexType(i.max + 1))
+  final case class IndexData(n: Nat, indexType: IndexType) extends Data(indexType)
+  object IndexData {
+    def apply(n: Nat): IndexData = IndexData(n, IndexType(n.max + 1))
+  }
   final case class BoolData(b: Boolean) extends Data(bool)
   final case class IntData(i: Int) extends Data(int) {
     override def toString: String = i.toString
@@ -58,7 +61,7 @@ object OperationalSemantics {
                               (implicit evaluator: Evaluator[T, R]): R = {
     p match {
       case app: Apply[a, T] =>
-        val fun: (Phrase[a]) => Phrase[T] = eval(s, app.fun)
+        val fun: Phrase[a] => Phrase[T] = eval(s, app.fun)
         eval(s, fun(app.arg))
 
       case p1: Proj1[a, b] =>
@@ -173,7 +176,7 @@ object OperationalSemantics {
         p match {
           case Identifier(name, _) => s(name)
 
-          case Literal(d, _) => d
+          case Literal(d) => d
 
           case UnaryOp(op, x) =>
             op match {
@@ -244,7 +247,7 @@ object OperationalSemantics {
 
   def evalIndexExp(s: Store, p: Phrase[ExpType]): Nat = {
     eval(s, p) match {
-      case IndexData(i) => i
+      case IndexData(i, _) => i
       case IntData(i) => i
       case _ => throw new Exception("This should never happen")
     }
@@ -257,7 +260,7 @@ object OperationalSemantics {
   def evalIntExp(s: Store, p: Phrase[ExpType]): Int = {
     eval(s, p) match {
       case IntData(i) => i
-      case IndexData(i) => i.eval
+      case IndexData(i, _) => i.eval
       case _ => throw new Exception("This should never happen")
     }
   }

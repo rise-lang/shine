@@ -85,14 +85,14 @@ object Type {
         e match {
           case IdentifierExpr(name, _) =>
             if (`for`.name == name) {
-              Stop(LiteralExpr(IndexData(ae), IndexType(ae.max)).asInstanceOf[Expr[T2]])
+              Stop(LiteralExpr(IndexData(ae)).asInstanceOf[Expr[T2]])
             } else {
               Continue(e, this)
             }
-          case LiteralExpr(IndexData(index), IndexType(size)) =>
+          case LiteralExpr(IndexData(index, IndexType(size))) =>
             val newIndex = substitute(ae, `for`, in = index)
             val newSize = substitute(ae, `for`, in = size)
-            Stop(LiteralExpr(IndexData(newIndex), IndexType(newSize)).asInstanceOf[Expr[T2]])
+            Stop(LiteralExpr(IndexData(newIndex, IndexType(newSize))).asInstanceOf[Expr[T2]])
           case _ =>
             Continue(e, this)
         }

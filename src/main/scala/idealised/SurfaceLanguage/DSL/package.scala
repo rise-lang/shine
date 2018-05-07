@@ -57,7 +57,7 @@ package object DSL {
   }
 
   implicit class FunComp[T <: Type](f: Expr[DataType -> T]) {
-    def o(g: Expr[DataType -> DataType]): Expr[DataType -> T] = λ(arg => f( g(arg) ) )
+    def o(g: Expr[DataType -> DataType]): Expr[DataType -> T] = fun(arg => f( g(arg) ) )
     def <<<(g: Expr[DataType -> DataType]): Expr[DataType -> T] = f o g
   }
 
@@ -65,13 +65,12 @@ package object DSL {
     def >>>[T <: Type](g: Expr[DataType -> T]): Expr[DataType -> T] = g o f
   }
 
-  implicit def toLiteralInt(i: Int): LiteralExpr = LiteralExpr(IntData(i), int)
-  implicit def toLiteralFloat(f: Float): LiteralExpr = LiteralExpr(FloatData(f), float)
-  implicit def toLiteralFloat4(v: VectorData): LiteralExpr =
-    LiteralExpr(v, VectorType(v.v.length, v.v.head.dataType))
+  implicit def toLiteralInt(i: Int): LiteralExpr = LiteralExpr(IntData(i))
+  implicit def toLiteralFloat(f: Float): LiteralExpr = LiteralExpr(FloatData(f))
+  implicit def toLiteralFloat4(v: VectorData): LiteralExpr = LiteralExpr(v)
 
   implicit def toNatDependentLambda[T <: Type](p: Expr[T]): NatDependentLambdaExpr[T] =
-    _Λ_( _ => p )
+    dFun(_ => p )
 
   implicit class IdentExpPhraseExtensions(i: IdentifierExpr) {
     def asNatIdentifier = NamedVar(i.name)
@@ -80,8 +79,8 @@ package object DSL {
   }
 
   implicit class NatExtensions(n: Nat) {
-    def asExpr = LiteralExpr(IndexData(n), IndexType(n.max))
-    def asExpr(withType: IndexType) = LiteralExpr(IndexData(n), withType)
+    def asExpr = LiteralExpr(IndexData(n))
+    def asExpr(withType: IndexType) = LiteralExpr(IndexData(n, withType))
   }
 
   implicit class ExpPhraseExtensions(e: DataExpr) {

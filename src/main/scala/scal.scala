@@ -64,8 +64,8 @@ object scal extends App {
     println("----------------\n")
   }
 
-  val high_level = λ(inputT)(input => λ(float)(alpha =>
-    map(λ( x => alpha * x ), input)
+  val high_level = fun(inputT)(input => fun(float)(alpha =>
+    map(fun(x => alpha * x ), input)
   ) )
 
   {
@@ -75,10 +75,10 @@ object scal extends App {
   }
 
   val scalWgLcl = (fst: ArithExpr, snd: ArithExpr) =>
-    λ(inputT)(input => λ(float)(alpha =>
+    fun(inputT)(input => fun(float)(alpha =>
       join() o mapWorkgroup(
         join() o mapLocal(mapSeq(
-          λ(x => alpha * x)
+          fun(x => alpha * x)
         )) o split(snd)
       ) o split(fst) $ input
     ))
@@ -89,10 +89,10 @@ object scal extends App {
 
   runOpenCLKernel("scalNvidia", scalWgLcl(2048, 1))
 
-  val scalIntel = λ(inputT)(input => λ(float)(alpha =>
+  val scalIntel = fun(inputT)(input => fun(float)(alpha =>
     join() o mapWorkgroup(
       asScalar() o join() o mapLocal(mapSeq(
-        λ(x => vectorize(4, alpha) * x)
+        fun(x => vectorize(4, alpha) * x)
       )) o split(128) o asVector(4)
     ) o split(4 * 128 * 128) $ input
   ))

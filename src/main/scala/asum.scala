@@ -48,10 +48,10 @@ object asum extends App {
     println("----------------\n")
   }
 
-  val abs = (t: DataType) => λ(x => oclFun("fabs", t, t, x))
-  val add = λ(x => λ(a => x + a))
+  val abs = (t: DataType) => fun(x => oclFun("fabs", t, t, x))
+  val add = fun(x => fun(a => x + a))
 
-  val high_level = λ(inputT)(input =>
+  val high_level = fun(inputT)(input =>
     reduce(add, 0.0f) o map(abs(float)) $ input)
 
   {
@@ -61,16 +61,16 @@ object asum extends App {
     println(kernel.code)
   }
 
-  val intelDerivedNoWarp1 = λ(inputT)(input =>
+  val intelDerivedNoWarp1 = fun(inputT)(input =>
     join() o mapWorkgroup(
       asScalar() o mapLocal(
-        reduceSeq(λ(x => λ(a => abs(float4)(x) + a)), vectorize(4, 0.0f))
+        reduceSeq(fun(x => fun(a => abs(float4)(x) + a)), vectorize(4, 0.0f))
       ) o split(8192) o asVector(4)
     ) o split(32768) $ input
   )
   runOpenCLKernel("intelDerivedNoWarp1", intelDerivedNoWarp1)
 
-  val intelDerived2 = λ(inputT)(input =>
+  val intelDerived2 = fun(inputT)(input =>
     join() o mapWorkgroup(
       mapLocal(
         reduceSeq(add, 0.0f)
@@ -81,16 +81,16 @@ object asum extends App {
 
   println(reorderWithStridePhrase.apply(128))
 
-  val nvidiaDerived1 = λ(inputT)(input =>
+  val nvidiaDerived1 = fun(inputT)(input =>
     join() o mapWorkgroup(
       mapLocal(
-        reduceSeq(λ(x => λ(a => abs(float)(x) + a)), 0.0f)
+        reduceSeq(fun(x => fun(a => abs(float)(x) + a)), 0.0f)
       ) o split(2048) o gather(reorderWithStridePhrase(128))
     ) o split(2048 * 128) $ input
   )
   runOpenCLKernel("nvidiaDerived1", nvidiaDerived1)
 
-  val amdNvidiaDerived2 = λ(inputT)(input =>
+  val amdNvidiaDerived2 = fun(inputT)(input =>
     join() o mapWorkgroup(
       toLocal(iterate(6,
         mapLocal(
@@ -103,10 +103,10 @@ object asum extends App {
   )
   runOpenCLKernel("amdNvidiaDerived2", amdNvidiaDerived2)
 
-  val amdDerived1 = λ(inputT)(input =>
+  val amdDerived1 = fun(inputT)(input =>
     join() o mapWorkgroup(
       asScalar() o mapLocal(
-        reduceSeq(λ(x => λ(a => abs(float2)(x) + a)), vectorize(2, 0.0f))
+        reduceSeq(fun(x => fun(a => abs(float2)(x) + a)), vectorize(2, 0.0f))
       ) o split(2048) o gather(reorderWithStridePhrase(64)) o asVector(2)
     ) o split(4096 * 128) $ input
   )

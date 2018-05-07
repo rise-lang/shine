@@ -9,6 +9,8 @@ import idealised.DPIA.Types._
 import idealised.DPIA._
 import idealised._
 
+import scala.language.reflectiveCalls
+
 import scala.xml.Elem
 
 /**

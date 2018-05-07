@@ -51,9 +51,9 @@ object VisitAndRebuild {
           case IfThenElseExpr(cond, thenP, elseP) =>
             IfThenElseExpr(apply(cond, v), apply(thenP, v), apply(elseP, v))
 
-          case LiteralExpr(d, t) => d match {
-            case IndexData(i) => LiteralExpr(IndexData(v(i)), v(t))
-            case _ => LiteralExpr(d, v(t))
+          case LiteralExpr(d) => d match {
+            case IndexData(i, t) => LiteralExpr(IndexData(v(i), v(t)))
+            case _ => LiteralExpr(d)
           }
 
           case UnaryOpExpr(op, x) => UnaryOpExpr(op, apply(x, v))

@@ -176,13 +176,13 @@ final case class BinOpExpr(op: Operators.Binary.Value, lhs: DataExpr, rhs: DataE
   override def toString: String = s"$lhs $op $rhs"
 }
 
-final case class LiteralExpr(d: Data, dt: DataType)
+final case class LiteralExpr(d: Data)
   extends DataExpr
 {
-  override lazy val `type`: Option[DataType] = Some(dt)
+  override lazy val `type`: Option[DataType] = Some(d.dataType)
 
   override def convertToPhrase: DPIA.Phrases.Literal = {
-    DPIA.Phrases.Literal(DPIA.Semantics.OperationalSemantics.Data(d), DPIA.Types.DataType(dt))
+    DPIA.Phrases.Literal(DPIA.Semantics.OperationalSemantics.Data(d))
   }
 
   override def toString: String = s"$d"

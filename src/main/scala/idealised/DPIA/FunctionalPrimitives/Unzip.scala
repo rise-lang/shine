@@ -9,6 +9,8 @@ import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA.{Phrases, _}
 
+import scala.language.reflectiveCalls
+
 import scala.xml.Elem
 
 final case class Unzip(n: Nat,

@@ -13,6 +13,7 @@ import opencl.executor.Executor
 import org.junit.Assert._
 
 import scala.language.implicitConversions
+import scala.language.reflectiveCalls
 import scala.util.Random
 
 object gemm extends App {
@@ -117,44 +118,43 @@ object gemm extends App {
     println("----------------\n")
   }
 
-  val mult = λ(x => λ(a => x * a))
-  val add  = λ(x => λ(a => x + a))
-  val id  = λ(x => x)
+  val mult = fun(x => fun(a => x * a))
+  val add  = fun(x => fun(a => x + a))
+  val id  = fun(x => x)
 
   val p1 = 2
   val p2 = 2
   val p3 = 4
 
   val zeros = LiteralExpr(
-    ArrayData(Vector.fill(p2)(ArrayData(Vector.fill(p1)(FloatData(0.0f))))),
-    ArrayType(p2, ArrayType(p1, float)))
+    ArrayData(Vector.fill(p2)(ArrayData(Vector.fill(p1)(FloatData(0.0f))))))
 
-  val dot  = λ(x => oclFun("dot", Seq(float4, float4), float, Seq(x._1, x._2)))
+  val dot  = fun(x => oclFun("dot", Seq(float4, float4), float, Seq(x._1, x._2)))
 
   val maliGEMM =
-    λ(ArrayType(M, ArrayType(K, float)))(a =>
-      λ(ArrayType(N, ArrayType(K, float)))(b =>
-        λ(ArrayType(M, ArrayType(N, float)))(c =>
-          λ(float)(alpha =>
-            λ(float)(beta =>
+    fun(ArrayType(M, ArrayType(K, float)))(a =>
+      fun(ArrayType(N, ArrayType(K, float)))(b =>
+        fun(ArrayType(M, ArrayType(N, float)))(c =>
+          fun(float)(alpha =>
+            fun(float)(beta =>
 
-      join() o mapGlobal(0)(λ(ac =>
+      join() o mapGlobal(0)(fun(ac =>
         transposeW() o
         join() o
-        mapGlobal(1)(λ(bc =>
+        mapGlobal(1)(fun(bc =>
           transposeW() o
-          λ(p235 =>
-            mapSeq(λ(p237 =>
-                mapSeq(λ(p64 =>
+          fun(p235 =>
+            mapSeq(fun(p237 =>
+                mapSeq(fun(p64 =>
                   (p64._1 * alpha) + (p64._2 * beta)
                 )) $ zip(p237._1, p237._2)
               )) $ zip(p235, transpose() $ bc._2)
           ) o
-          reduceSeq(λ(p236 => λ(p67 =>
-            mapSeq(λ(p54 =>
+          reduceSeq(fun(p236 => fun(p67 =>
+            mapSeq(fun(p54 =>
               join() o
-              mapSeq(λ(p157 =>
-                mapSeq(λ(x => p157._1 + dot(x))) $
+              mapSeq(fun(p157 =>
+                mapSeq(fun(x => p157._1 + dot(x))) $
                   zip(asVector(4) $ p54._2, asVector(4) $ p157._2)
               )) $ zip(p54._1, transpose() $ p236._2)
             )) $ zip(p67, transpose() $  p236._1)
@@ -169,37 +169,37 @@ object gemm extends App {
   printOpenCLKernel("maliGEMM", maliGEMM)
 
   val maliGEMM_ =
-    λ(ArrayType(M, ArrayType(K, float)))(a =>
-      λ(ArrayType(N, ArrayType(K, float)))(b =>
-        λ(ArrayType(M, ArrayType(N, float)))(c =>
-          λ(float)(alpha =>
-            λ(float)(beta =>
+    fun(ArrayType(M, ArrayType(K, float)))(a =>
+      fun(ArrayType(N, ArrayType(K, float)))(b =>
+        fun(ArrayType(M, ArrayType(N, float)))(c =>
+          fun(float)(alpha =>
+            fun(float)(beta =>
 
       zip(a :>> split(p2),
           c :>> split(p2) ) :>>
-      mapGlobal(0)(λ(ac =>
+      mapGlobal(0)(fun(ac =>
         zip(b :>> split(p2),
             ac._2 :>> transpose() :>> split(p1) ) :>>
-        mapGlobal(1)(λ(bc =>
+        mapGlobal(1)(fun(bc =>
           zip(ac._1 :>> transpose() :>> split(p3),
               bc._1 :>> transpose() :>> split(p3) ) :>>
-          reduceSeq(λ(p236 => λ(p67 =>
+          reduceSeq(fun(p236 => fun(p67 =>
             zip(p67,
                 p236._1 :>> transpose() ) :>>
-            mapSeq(λ(p54 =>
+            mapSeq(fun(p54 =>
               zip(p54._1,
                   p236._2 :>> transpose() ) :>>
-              mapSeq(λ(p157 =>
+              mapSeq(fun(p157 =>
                 zip(p54._2 :>> asVector(4),
                     p157._2 :>> asVector(4) ) :>>
-                mapSeq(λ(x => p157._1 + dot(x)))
+                mapSeq(fun(x => p157._1 + dot(x)))
               )) :>> join()))
           )), zeros) :>>
-          λ(p235 =>
+          fun(p235 =>
             zip(p235, bc._2 :>> transpose()) :>>
-            mapSeq(λ(p237 =>
+            mapSeq(fun(p237 =>
               zip(p237._1, p237._2) :>>
-              mapSeq(λ(p64 =>
+              mapSeq(fun(p64 =>
                 (p64._1 * alpha) + (p64._2 * beta)))))
           ) :>> transposeW()
         )) :>> join() :>> transposeW()

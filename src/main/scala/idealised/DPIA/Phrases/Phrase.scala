@@ -53,9 +53,9 @@ final case class UnaryOp(op: SurfaceLanguage.Operators.Unary.Value, p: Phrase[Ex
 final case class BinOp(op: SurfaceLanguage.Operators.Binary.Value, lhs: Phrase[ExpType], rhs: Phrase[ExpType])
   extends Phrase[ExpType]
 
-final case class Literal(d: OperationalSemantics.Data, dt: DataType)
+final case class Literal(d: OperationalSemantics.Data)
   extends Phrase[ExpType] {
-  override lazy val t = ExpType(dt)
+  override lazy val t = ExpType(d.dataType)
 }
 
 object Phrase {

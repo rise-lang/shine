@@ -81,7 +81,7 @@ object xmlPrinter {
           {apply(body)}
         </Λ>
 
-      case Literal(d, _) => <lit>{d}</lit>
+      case Literal(d) => <lit>{d}</lit>
 
       case Pair(fst, snd) =>
         <pair>

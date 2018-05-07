@@ -32,7 +32,7 @@ class PrimitivesToC extends PrimitiveCodeGen {
         block + Comment("iteration count is 0, no loop emitted")
 
       case Cst(1) =>
-        val zero = Phrases.Literal(IndexData(0), IndexType(1))
+        val zero = Phrases.Literal(IndexData(0))
         block ++ immutable.Seq(
           Comment("iteration count is exactly 1, no loop emitted"),
           gen.cmd(bodyE(zero), Block(Vector()), gen)
@@ -204,21 +204,14 @@ class PrimitivesToC extends PrimitiveCodeGen {
   def codeGen(l: DPIA.Phrases.Literal, gen: CodeGenerator, dt: DataType, arrayAccess: List[ArithExpr], tupleAccess: List[ArithExpr]): Expr = {
     import OperationalSemantics._
 
-    l.dt match {
-      case _: DPIA.Types.BasicType =>
-        l.d match {
-          case i: IntData => idealised.C.AST.Literal(i.i.toString)
-          case b: BoolData => idealised.C.AST.Literal(b.b.toString)
-          case f: FloatData => idealised.C.AST.Literal(f.f.toString)
-          case i: IndexData => ArithmeticExpr(i.i)
-        }
-      case ct: DPIA.Types.ComposedType => (ct, l.d) match {
-        case (at: DPIA.Types.ArrayType, ad: ArrayData) =>
-          val nestedLiteral = DPIA.Phrases.Literal(ad.a(0), at.elemType)
-          gen.exp(nestedLiteral, gen, at.elemType, arrayAccess.tail, tupleAccess)
-        case (rt: DPIA.Types.RecordType, rd: RecordData) =>
-          ???
-      }
+    l.d match {
+      case i: IntData => idealised.C.AST.Literal(i.i.toString)
+      case b: BoolData => idealised.C.AST.Literal(b.b.toString)
+      case f: FloatData => idealised.C.AST.Literal(f.f.toString)
+      case i: IndexData => ArithmeticExpr(i.n)
+      case ad: ArrayData =>
+        val nestedLiteral = DPIA.Phrases.Literal(ad.a(0))
+        gen.exp(nestedLiteral, gen, nestedLiteral.d.dataType, arrayAccess.tail, tupleAccess)
     }
   }
 

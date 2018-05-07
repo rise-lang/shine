@@ -1,11 +1,13 @@
 package idealised.OpenCL.SurfaceLanguage.DSL
 
 import idealised.OpenCL.SurfaceLanguage.Primitives._
-import idealised.SurfaceLanguage.DSL.{DataExpr, λ}
+import idealised.SurfaceLanguage.DSL.{DataExpr, fun}
 import idealised.SurfaceLanguage.Expr
 import idealised.SurfaceLanguage._
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage.Semantics._
+
+import scala.language.reflectiveCalls
 
 object mapGlobal {
   def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] = mapGlobal(0)(f)
@@ -13,7 +15,7 @@ object mapGlobal {
 
   def apply(dim: Int) = new {
     def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] =
-      λ(x => MapGlobal(dim)(f, x))
+      fun(x => MapGlobal(dim)(f, x))
 
     def apply(f: Expr[DataType -> DataType], x: DataExpr): MapGlobal =
       MapGlobal(dim)(f, x)
@@ -22,7 +24,7 @@ object mapGlobal {
 
 object mapSeq {
   def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] =
-    λ(x => mapSeq(f, x))
+    fun(x => mapSeq(f, x))
 
   def apply(f: Expr[DataType -> DataType], x: DataExpr) =
     MapSeq(f, x)
@@ -34,7 +36,7 @@ object mapWorkgroup {
 
   def apply(dim: Int) = new {
     def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] =
-      λ(x => MapWorkGroup(dim)(f, x))
+      fun(x => MapWorkGroup(dim)(f, x))
 
     def apply(f: Expr[DataType -> DataType], x: DataExpr): MapWorkGroup =
       MapWorkGroup(dim)(f, x)
@@ -47,7 +49,7 @@ object mapLocal {
 
   def apply(dim: Int) = new {
     def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] =
-      λ(x => MapLocal(dim)(f, x))
+      fun(x => MapLocal(dim)(f, x))
 
     def apply(f: Expr[DataType -> DataType], x: DataExpr): MapLocal =
       MapLocal(dim)(f, x)
@@ -56,7 +58,7 @@ object mapLocal {
 
 object toLocal {
   def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] =
-    λ(x => toLocal(f, x))
+    fun(x => toLocal(f, x))
 
   def apply(f: Expr[DataType -> DataType], x: DataExpr): ToLocal =
     ToLocal(f, x)
@@ -64,7 +66,7 @@ object toLocal {
 
 object toGlobal {
   def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] =
-    λ(x => toGlobal(f, x))
+    fun(x => toGlobal(f, x))
 
   def apply(f: Expr[DataType -> DataType], x: DataExpr): ToGlobal =
     ToGlobal(f, x)
@@ -72,7 +74,7 @@ object toGlobal {
 
 object toPrivate {
   def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] =
-    λ(x => toPrivate(f, x))
+    fun(x => toPrivate(f, x))
 
   def apply(f: Expr[DataType -> DataType], x: DataExpr): ToPrivate =
     ToPrivate(f, x)
@@ -80,14 +82,14 @@ object toPrivate {
 
 object asVector {
   def apply(n: Nat): Expr[DataType -> DataType] =
-    λ(array => asVector(n, array))
+    fun(array => asVector(n, array))
 
   def apply(n: Nat, array: DataExpr): AsVector =
     AsVector(n, array)
 }
 
 object asScalar {
-  def apply(): Expr[DataType -> DataType] = λ(array => asScalar(array))
+  def apply(): Expr[DataType -> DataType] = fun(array => asScalar(array))
 
   def apply(array: DataExpr): AsScalar =
     AsScalar(array)
@@ -95,10 +97,10 @@ object asScalar {
 
 object reduceSeq {
   def apply(f: Expr[DataType -> (DataType -> DataType)]): Expr[DataType -> (DataType -> DataType)] =
-    λ((init, array) => reduceSeq(f, init, array))
+    fun((init, array) => reduceSeq(f, init, array))
 
   def apply(f: Expr[DataType -> (DataType -> DataType)], init: Expr[DataType]): Expr[DataType -> DataType] =
-    λ(array => reduceSeq(f, init, array))
+    fun(array => reduceSeq(f, init, array))
 
   def apply(f: Expr[DataType -> (DataType -> DataType)],
             init: DataExpr,
@@ -108,10 +110,10 @@ object reduceSeq {
 
 object scanSeq {
   def apply(f: Expr[DataType -> (DataType -> DataType)]): Expr[DataType -> (DataType -> DataType)] =
-    λ((init, array) => scanSeq(f, init, array))
+    fun((init, array) => scanSeq(f, init, array))
 
   def apply(f: Expr[DataType -> (DataType -> DataType)], init: Expr[DataType]): Expr[DataType -> DataType] =
-    λ(array => scanSeq(f, init, array))
+    fun(array => scanSeq(f, init, array))
 
   def apply(f: Expr[DataType -> (DataType -> DataType)],
             init: DataExpr,
@@ -121,7 +123,7 @@ object scanSeq {
 
 object vectorize {
   def apply(len: Int, f: Float) =
-    LiteralExpr(VectorData(Vector.fill(len)(FloatData(f))), VectorType(len, float))
+    LiteralExpr(VectorData(Vector.fill(len)(FloatData(f))))
 
   def apply(len: Nat, e: DataExpr) = VectorFromScalar(len, e)
 }

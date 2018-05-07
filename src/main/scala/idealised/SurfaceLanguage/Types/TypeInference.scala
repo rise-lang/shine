@@ -64,7 +64,7 @@ object TypeInference {
 
       case BinOpExpr(op, lhs, rhs) => BinOpExpr(op, inferType(lhs, subs), inferType(rhs, subs))
 
-      case LiteralExpr(d, dt) => LiteralExpr(d, dt)
+      case LiteralExpr(d) => LiteralExpr(d)
 
       case p: PrimitiveExpr => p.inferType(subs)
     }).asInstanceOf[Expr[T]]

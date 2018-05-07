@@ -8,7 +8,7 @@ import lift.arithmetic.NamedVar
 
 
 object map {
-  def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] = λ(x => map(f, x))
+  def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] = fun(x => map(f, x))
 
   def apply(f: Expr[DataType -> DataType], x: DataExpr): Map = Map(f, x)
 }
@@ -22,29 +22,29 @@ object zip {
 
 object unzip {
   def apply(e: DataExpr): Unzip = Unzip(e)
-  def apply(): Expr[DataType -> DataType] = λ(e => unzip(e))
+  def apply(): Expr[DataType -> DataType] = fun(e => unzip(e))
 }
 
 object split {
   def apply(n: Nat): Expr[DataType -> DataType] =
-    λ(array => split(n, array))
+    fun(array => split(n, array))
 
   def apply(n: Nat, array: DataExpr): Split = Split(n, array)
 }
 
 object join {
-  def apply(): Expr[DataType -> DataType] = λ(array => join(array))
+  def apply(): Expr[DataType -> DataType] = fun(array => join(array))
 
   def apply(array: DataExpr): Join = Join(array)
 }
 
 object reduce {
   def apply(f: Expr[DataType -> (DataType -> DataType)]): Expr[DataType -> (DataType -> DataType)] =
-    λ((init, array) => reduce(f, init, array))
+    fun((init, array) => reduce(f, init, array))
 
   def apply(f: Expr[DataType -> (DataType -> DataType)],
             init: DataExpr): Expr[DataType -> DataType] =
-    λ(array => reduce(f, init, array))
+    fun(array => reduce(f, init, array))
 
   def apply(f: Expr[DataType -> (DataType -> DataType)],
             init: DataExpr,
@@ -54,7 +54,7 @@ object reduce {
 
 object iterate {
   def apply(k: Nat, f: Expr[`(nat)->`[DataType -> DataType]]): Expr[DataType -> DataType] =
-    λ(array => iterate(k, f, array))
+    fun(array => iterate(k, f, array))
 
   def apply(k: Nat,
             f: Expr[`(nat)->`[DataType -> DataType]],
@@ -65,25 +65,25 @@ object iterate {
 object gather {
   def apply(idxF: Expr[`(nat)->`[DataType ->DataType]]): Expr[DataType -> DataType] = {
     val idxF_ = idxF(NamedVar(newName()))
-    λ(array => Gather(idxF_, array))
+    fun(array => Gather(idxF_, array))
   }
 }
 
 object scatter {
   def apply(idxF: Expr[`(nat)->`[DataType ->DataType]]): Expr[DataType -> DataType] = {
     val idxF_ = idxF(NamedVar(newName()))
-    λ(array => Scatter(idxF_, array))
+    fun(array => Scatter(idxF_, array))
   }
 }
 
 object transpose {
-  def apply(): Expr[DataType -> DataType] = λ(array => transpose(array))
+  def apply(): Expr[DataType -> DataType] = fun(array => transpose(array))
 
   def apply(array: DataExpr): Transpose = Transpose(array)
 }
 
 object transposeW {
-  def apply(): Expr[DataType -> DataType] = λ(array => transposeW(array))
+  def apply(): Expr[DataType -> DataType] = fun(array => transposeW(array))
 
   def apply(array: DataExpr): TransposeOnWrite = TransposeOnWrite(array)
 }
@@ -93,6 +93,6 @@ object tuple {
 }
 
 object printType {
-  def apply(msg: String = ""): Expr[DataType -> DataType] = λ(x => PrintType(x, msg))
+  def apply(msg: String = ""): Expr[DataType -> DataType] = fun(x => PrintType(x, msg))
   def apply(msg: String, x: Expr[DataType]) = PrintType(x, msg)
 }

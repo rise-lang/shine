@@ -31,7 +31,7 @@ object PrettyPhrasePrinter {
 
       case TypeDependentLambda(param, body) => s"Λ (${param.name}: dt) -> ${apply(body)}"
 
-      case Literal(d, _) => d.toString
+      case Literal(d) => d.toString
 
       case Pair(fst, snd) => s"(${apply(fst)}, ${apply(snd)})"
 

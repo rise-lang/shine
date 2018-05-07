@@ -35,7 +35,7 @@ object TypeOf {
         assert(thenP.t == elseP.t)
         thenP.t
 
-      case Literal(_, t) => t
+      case Literal(l) => l.dataType
 
       case UnaryOp(_, x) => x.t
 
