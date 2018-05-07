@@ -8,6 +8,8 @@ import idealised.C.AST._
 
 class PrimitivesToOpenMP extends PrimitivesToC {
 
+  override val name: String = "OpenMP"
+
   override def codeGen(pf: DPIA.ParFor, block: Block, gen: CodeGenerator): Block = {
     OpenMP.ParFor(pf.n, pf.dt, pf.out, pf.body).codeGen(block, gen)
   }

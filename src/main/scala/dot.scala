@@ -87,48 +87,67 @@ object dot extends App {
   {
     println(s"-- high level --")
     val phrase = TypeInference(high_level, Map()).convertToPhrase
+    val program = C.ProgramGenerator.makeCode(phrase)
+    println(program.code)
+  }
+
+  // OpenMP specific stuff
+
+  {
+    println(s"-- high level --")
+    val phrase = TypeInference(high_level, Map()).convertToPhrase
+    val program = OpenMP.ProgramGenerator.makeCode(phrase)
+    println(program.code)
+  }
+
+//  {
+//    import idealised.OpenMP.SurfaceLanguage.DSL._
+//
+//    // TODO: think about support for vectorization in C / OpenMP
+//    val intelDerivedNoWarpDot1 = fun(xsT)(xs => fun(ysT)(ys =>
+//      asScalar() o join() o mapPar(
+//        mapSeq(
+//          reduceSeq(fun(x => fun(a => mult(x) + a)), vectorize(4, 0.0f))
+//        ) o split(8192)
+//      ) o split(8192) $ zip(asVector(4) $ xs, asVector(4) $ ys)
+//    ))
+//    val phrase = TypeInference(intelDerivedNoWarpDot1, Map()).toPhrase
+//    val program = OpenMP.ProgramGenerator.makeCode(phrase)
+//    println(program.code)
+//  }
+
+  {
+    import idealised.OpenMP.SurfaceLanguage.DSL._
+
+    val dotCPU1 = fun(xsT)(xs => fun(ysT)(ys =>
+      join() o mapPar(
+        mapSeq(
+          reduceSeq(fun(x => fun(a => mult(x) + a)), 0.0f)
+        ) o split(2048)
+      ) o split(2048 * 128) $ zip(xs, ys)
+    ))
+    val phrase = TypeInference(dotCPU1, Map()).toPhrase
     val program = OpenMP.ProgramGenerator.makeCode(phrase)
     println(program.code)
   }
 
   {
-    println(s"-- high level --")
-    val phrase = TypeInference(high_level, Map()).convertToPhrase
-    val program = C.ProgramGenerator.makeCode(phrase)
+    import idealised.OpenMP.SurfaceLanguage.DSL._
+    val dotCPU2 = fun(xsT)(in =>
+      join() o mapPar(
+        mapSeq(
+          reduceSeq(fun(x => fun(a => x + a)), 0.0f)
+        ) o split(128)
+      ) o split(128) $ in
+    )
+    val phrase = TypeInference(dotCPU2, Map()).toPhrase
+    val program = OpenMP.ProgramGenerator.makeCode(phrase)
     println(program.code)
   }
 
   sys.exit(1)
 
-//  {
-//    val lambda = TypeInference(high_level)
-//    println("high_level:\n" + PrettyPrinter(lambda))
-//    lambda.typeCheck()
-//
-//    val toOpenCL = ToOpenCL(localSize = 128, globalSize = N)
-//    val kernel = toOpenCL.makeKernel(lambda)
-//    println(OpenCLPrinter()(kernel))
-//  }
-////  sys.exit(1)
-//
-//  val dotSimpler = λ(xsT)(xs => λ(ysT)(ys =>
-//    mapGlobal(
-//      reduceSeq(add, 0.0f) o mapSeq(mult)
-//    ) o split(1024) $ zip(xs, ys)
-//  ))
-//
-//  printOpenCLKernel1("dotSimpler", dotSimpler)
-//
-//  val dotSimple = λ(xsT)(xs => λ(ysT)(ys =>
-//    join() o mapWorkgroup(
-//      mapLocal(
-//        reduceSeq(add, 0.0f) o mapSeq(mult)
-//      ) o split(4)
-//    ) o split(1024) $ zip(xs, ys)
-//  ))
-//
-//  printOpenCLKernel1("dotSimple", dotSimple)
-
+  // OpenCL specific stuff
 
   val dotCPUVector1 = fun(xsT)(xs => fun(ysT)(ys =>
     asScalar() o join() o mapWorkgroup(
@@ -146,7 +165,7 @@ object dot extends App {
     ) o split(8192) $ zip(asVector(4) $ xs, asVector(4) $ ys)
   ))
 
-  printOpenCLKernel1("intelDerivedNoWarpDot1", dotCPUVector1)
+  printOpenCLKernel1("intelDerivedNoWarpDot1", intelDerivedNoWarpDot1)
 
   val dotCPU1 = fun(xsT)(xs => fun(ysT)(ys =>
     join() o mapWorkgroup(
@@ -186,346 +205,6 @@ object dot extends App {
   )
 
   printOpenCLKernel2("dotProduct2", dotProduct2)
-
-//  def dotSimpleDetailed(): Unit = {
-//    import idealised.FunctionalPrimitives._
-//    import idealised.ImperativePrimitives._
-//    import idealised.OpenCL.ImperativePrimitives._
-//
-//    val dt = float
-//
-//    val xs = Identifier("xs", exp"[$N.$dt]")
-//    val ys = Identifier("ys", exp"[$N.$dt]")
-//    val output = Identifier("output", acc"[${N /^ 4}.$dt]")
-//
-//    val dotSimpleImp: Phrase[CommandType] =
-//      ParForWorkGroup(N /^ 1024, dt = dt"[${Cst(256)}.$dt]",
-//        out = JoinAcc(n = N /^ 1024, m = 256, dt, output),
-//        body = \(exp"[idx(${N /^ 1024})]")(v84 =>
-//          \(acc"[${Cst(256)}.$dt]")(v85 =>
-//            ParForLocal(n = 256, dt,
-//              out = v85,
-//              body = \(exp"[idx(${Cst(256)})]")(v86 =>
-//                \(acc"[$dt]")(v87 =>
-//                  New(dt"[${Cst(4)}.$dt]", OpenCL.GlobalMemory,
-//                    \(VarType(dt"[${Cst(4)}.$dt]"))(v74 =>
-//                      Seq(
-//                        For(n = 4, \(exp"[idx(${Cst(4)})]")(v88 =>
-//                          Assign(dt,
-//                            lhs = IdxAcc(n = 4, dt,
-//                              index = v88,
-//                              array = Proj2(v74)
-//                            ),
-//                            rhs = BinOp(BinOp.Op.MUL,
-//                              lhs = Fst(dt, dt,
-//                                Idx(4, dt x dt,
-//                                  index = v88,
-//                                  array = Idx(256, dt"[${Cst(4)}.($dt x $dt)]",
-//                                    index = v86,
-//                                    array = Split(n = 4, m = 256, dt x dt,
-//                                      Idx(N /^ 1024, dt"[${Cst(1024)}.($dt x $dt)]",
-//                                        index = v84,
-//                                        array = Split(n = 1024, m = N /^ 1024, dt x dt,
-//                                          Zip(N, dt, dt, e1 = xs, e2 = ys)
-//                                        )
-//                                      )
-//                                    )
-//                                  )
-//                                )
-//                              ),
-//                              rhs = Snd(dt, dt,
-//                                Idx(4, dt x dt,
-//                                  index = v88,
-//                                  array = Idx(256, dt"[${Cst(4)}.($dt x $dt)]",
-//                                    index = v86,
-//                                    array = Split(n = 4, m = 256, dt x dt,
-//                                      Idx(N /^ 1024, dt"[${Cst(1024)}.($dt x $dt)]",
-//                                        index = v84,
-//                                        array = Split(n = 1024, m = N /^ 1024, dt x dt,
-//                                          Zip(N, dt, dt, e1 = xs, e2 = ys)
-//                                        )
-//                                      )
-//                                    )
-//                                  )
-//                                )
-//                              )
-//                            )
-//                          )
-//                        )),
-//                        New(dt, OpenCL.PrivateMemory,
-//                          \(VarType(dt))(v89 =>
-//                            Seq(
-//                              Seq(
-//                                Assign(dt,
-//                                  lhs = Proj2(v89),
-//                                  rhs = Literal(FloatData(0.0f), dt)
-//                                ),
-//                                For(4, \(exp"[idx(${Cst(4)})]")(v90 =>
-//                                  Assign(dt,
-//                                    lhs = Proj2(v89),
-//                                    rhs = BinOp(BinOp.Op.ADD,
-//                                      lhs = Idx(4, dt,
-//                                        index = v90,
-//                                        array = Proj1(v74)
-//                                      ),
-//                                      rhs = Proj1(v89)
-//                                    )
-//                                  )
-//                                ))
-//                              ),
-//                              Assign(dt,
-//                                lhs = v87,
-//                                rhs = Proj1(v89)
-//                              )
-//                            )
-//                          )
-//                        )
-//                      )
-//                    )
-//                  )
-//                )
-//              )
-//            )
-//          )
-//        )
-//      )
-//
-//    val (dotSimpleImplAdjustedMem, _) = CodeGeneration.HoistMemoryAllocations(dotSimpleImp)
-//    TypeChecker(dotSimpleImplAdjustedMem)
-//    xmlPrinter.writeToFile("/tmp/mem.xml", dotSimpleImplAdjustedMem)
-//
-//    val bodyAdjustedMem = CodeGenerator.cmd(dotSimpleImplAdjustedMem, Block(), CodeGenerator.Environment(128, N))
-//
-//    println("============")
-//    println(OpenCLPrinter()(bodyAdjustedMem))
-//    println("============")
-//
-//    TypeChecker(dotSimpleImp)
-//
-//    xmlPrinter.writeToFile("/tmp/pp.xml", dotSimpleImp)
-//
-//    val body = CodeGenerator.cmd(dotSimpleImp, Block(), CodeGenerator.Environment(128, N))
-//
-//    println(OpenCLPrinter()(body))
-//
-//    val dotSimpleImp2 =
-//      ParForWorkGroup(N /^ 1024, dt = dt"[${Cst(256)}.$dt]",
-//        out = JoinAcc(n = N /^ 1024, m = 256, dt, output),
-//        body = \(exp"[idx(${N /^ 1024})]")(v84 =>
-//          \(acc"[${Cst(256)}.$dt]")(v85 =>
-//            New(dt"[${Cst(256)}.${Cst(4)}.$dt]", OpenCL.GlobalMemory,
-//              \(VarType(dt"[${Cst(256)}.${Cst(4)}.$dt]"))(v74 =>
-//                ParForLocal(n = 256, dt,
-//                  out = v85,
-//                  body = \(exp"[idx(${Cst(256)})]")(v86 =>
-//                    \(acc"[$dt]")(v87 =>
-//                      Seq(
-//                        For(n = 4, \(exp"[idx(${Cst(4)})]")(v88 =>
-//                          Assign(dt,
-//                            lhs = IdxAcc(n = 4, dt,
-//                              index = v88,
-//                              array = IdxAcc(n = 256, dt"[${Cst(4)}.$dt]",
-//                                index = v86,
-//                                array = Proj2(v74)
-//                              )
-//                            ),
-//                            rhs = BinOp(BinOp.Op.MUL,
-//                              lhs = Fst(dt, dt,
-//                                Idx(4, dt x dt,
-//                                  index = v88,
-//                                  array = Idx(256, dt"[${Cst(4)}.($dt x $dt)]",
-//                                    index = v86,
-//                                    array = Split(n = 4, m = 256, dt x dt,
-//                                      Idx(N /^ 1024, dt"[${Cst(1024)}.($dt x $dt)]",
-//                                        index = v84,
-//                                        array = Split(n = 1024, m = N /^ 1024, dt x dt,
-//                                          Zip(N, dt, dt, e1 = xs, e2 = ys)
-//                                        )
-//                                      )
-//                                    )
-//                                  )
-//                                )
-//                              ),
-//                              rhs = Snd(dt, dt,
-//                                Idx(4, dt x dt,
-//                                  index = v88,
-//                                  array = Idx(256, dt"[${Cst(4)}.($dt x $dt)]",
-//                                    index = v86,
-//                                    array = Split(n = 4, m = 256, dt x dt,
-//                                      Idx(N /^ 1024, dt"[${Cst(1024)}.($dt x $dt)]",
-//                                        index = v84,
-//                                        array = Split(n = 1024, m = N /^ 1024, dt x dt,
-//                                          Zip(N, dt, dt, e1 = xs, e2 = ys)
-//                                        )
-//                                      )
-//                                    )
-//                                  )
-//                                )
-//                              )
-//                            )
-//                          )
-//                        )),
-//                        New(dt, OpenCL.PrivateMemory,
-//                          \(VarType(dt))(v89 =>
-//                            Seq(
-//                              Seq(
-//                                Assign(dt,
-//                                  lhs = Proj2(v89),
-//                                  rhs = Literal(FloatData(0.0f), dt)
-//                                ),
-//                                For(4, \(exp"[idx(${Cst(4)})]")(v90 =>
-//                                  Assign(dt,
-//                                    lhs = Proj2(v89),
-//                                    rhs = BinOp(BinOp.Op.ADD,
-//                                      lhs = Idx(4, dt,
-//                                        index = v90,
-//                                        array = Idx(n = 256, dt"[${Cst(4)}.$dt]",
-//                                          index = v86,
-//                                          array = Proj1(v74)
-//                                        )
-//                                      ),
-//                                      rhs = Proj1(v89)
-//                                    )
-//                                  )
-//                                ))
-//                              ),
-//                              Assign(dt,
-//                                lhs = v87,
-//                                rhs = Proj1(v89)
-//                              )
-//                            )
-//                          )
-//                        )
-//                      )
-//                    )
-//                  )
-//                )
-//              )
-//            )
-//          )
-//        )
-//      )
-//
-//    TypeChecker(dotSimpleImp2)
-//
-//    xmlPrinter.writeToFile("/tmp/ppp.xml", dotSimpleImp2)
-//
-//    val body2 = CodeGenerator.cmd(dotSimpleImp2, Block(), CodeGenerator.Environment(128, N))
-//
-//    println(OpenCLPrinter()(body2))
-//
-//    val dotSimpleImp3 =
-//      New(dt"[${N /^ 1024}.${Cst(256)}.${Cst(4)}.$dt]", OpenCL.GlobalMemory,
-//        \(VarType(dt"[${N /^ 1024}.${Cst(256)}.${Cst(4)}.$dt]"))(v74 =>
-//          ParForWorkGroup(N /^ 1024, dt = dt"[${Cst(256)}.$dt]",
-//            out = JoinAcc(n = N /^ 1024, m = 256, dt, output),
-//            body = \(exp"[idx(${N /^ 1024})]")(v84 =>
-//              \(acc"[${Cst(256)}.$dt]")(v85 =>
-//                ParForLocal(n = 256, dt,
-//                  out = v85,
-//                  body = \(exp"[idx(${Cst(256)})]")(v86 =>
-//                    \(acc"[$dt]")(v87 =>
-//                      Seq(
-//                        For(n = 4, \(exp"[idx(${Cst(4)})]")(v88 =>
-//                          Assign(dt,
-//                            lhs = IdxAcc(n = 4, dt,
-//                              index = v88,
-//                              array = IdxAcc(n = 256, dt"[${Cst(4)}.$dt]",
-//                                index = v86,
-//                                array = IdxAcc(n = N /^ 1024, dt"[${Cst(256)}.${Cst(4)}.$dt]",
-//                                  index = v84,
-//                                  array = Proj2(v74)
-//                                )
-//                              )
-//                            ),
-//                            rhs = BinOp(BinOp.Op.MUL,
-//                              lhs = Fst(dt, dt,
-//                                Idx(4, dt x dt,
-//                                  index = v88,
-//                                  array = Idx(256, dt"[${Cst(4)}.($dt x $dt)]",
-//                                    index = v86,
-//                                    array = Split(n = 4, m = 256, dt x dt,
-//                                      Idx(N /^ 1024, dt"[${Cst(1024)}.($dt x $dt)]",
-//                                        index = v84,
-//                                        array = Split(n = 1024, m = N /^ 1024, dt x dt,
-//                                          Zip(N, dt, dt, e1 = xs, e2 = ys)
-//                                        )
-//                                      )
-//                                    )
-//                                  )
-//                                )
-//                              ),
-//                              rhs = Snd(dt, dt,
-//                                Idx(4, dt x dt,
-//                                  index = v88,
-//                                  array = Idx(256, dt"[${Cst(4)}.($dt x $dt)]",
-//                                    index = v86,
-//                                    array = Split(n = 4, m = 256, dt x dt,
-//                                      Idx(N /^ 1024, dt"[${Cst(1024)}.($dt x $dt)]",
-//                                        index = v84,
-//                                        array = Split(n = 1024, m = N /^ 1024, dt x dt,
-//                                          Zip(N, dt, dt, e1 = xs, e2 = ys)
-//                                        )
-//                                      )
-//                                    )
-//                                  )
-//                                )
-//                              )
-//                            )
-//                          )
-//                        )),
-//                        New(dt, OpenCL.PrivateMemory,
-//                          \(VarType(dt))(v89 =>
-//                            Seq(
-//                              Seq(
-//                                Assign(dt,
-//                                  lhs = Proj2(v89),
-//                                  rhs = Literal(FloatData(0.0f), dt)
-//                                ),
-//                                For(4, \(exp"[idx(${Cst(4)})]")(v90 =>
-//                                  Assign(dt,
-//                                    lhs = Proj2(v89),
-//                                    rhs = BinOp(BinOp.Op.ADD,
-//                                      lhs = Idx(4, dt,
-//                                        index = v90,
-//                                        array = Idx(n = 256, dt"[${Cst(4)}.$dt]",
-//                                          index = v86,
-//                                          array = Idx(n = N /^ 1024, dt"[${Cst(256)}.${Cst(4)}.$dt]",
-//                                            index = v84,
-//                                            array = Proj1(v74)
-//                                          )
-//                                        )
-//                                      ),
-//                                      rhs = Proj1(v89)
-//                                    )
-//                                  )
-//                                ))
-//                              ),
-//                              Assign(dt,
-//                                lhs = v87,
-//                                rhs = Proj1(v89)
-//                              )
-//                            )
-//                          )
-//                        )
-//                      )
-//                    )
-//                  )
-//                )
-//              )
-//            )
-//          )
-//        )
-//      )
-//
-//    TypeChecker(dotSimpleImp3)
-//
-//    xmlPrinter.writeToFile("/tmp/pppp.xml", dotSimpleImp3)
-//
-//    val body3 = CodeGenerator.cmd(dotSimpleImp3, Block(), CodeGenerator.Environment(128, N))
-//
-//    println(OpenCLPrinter()(body3))
-//  }
 
 }
 

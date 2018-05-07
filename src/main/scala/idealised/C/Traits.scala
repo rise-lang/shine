@@ -29,6 +29,8 @@ trait ViewAcc {
 }
 
 trait PrimitiveCodeGen {
+  def name: String
+
   def codeGen(a: Assign, block: Block, gen: CodeGenerator): Block
 
   def codeGen(f: For, block: Block, gen: CodeGenerator): Block

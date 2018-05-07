@@ -12,7 +12,6 @@ final case class ReduceSeq(f: Expr[DataType -> (DataType -> DataType)],
                            override val t: Option[DataType] = None)
   extends AbstractReduce(f, init, array, t)
 {
-
   override def makeReduce: (Expr[DataType -> (DataType -> DataType)], DataExpr, DataExpr, Option[DataType]) =>
     AbstractReduce = ReduceSeq
 

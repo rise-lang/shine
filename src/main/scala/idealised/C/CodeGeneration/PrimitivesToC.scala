@@ -17,6 +17,8 @@ import scala.collection.immutable
 
 class PrimitivesToC extends PrimitiveCodeGen {
 
+  override val name: String = "C"
+
   // ==== generating blocks  ==== //
 
   def codeGen(a: Assign, block: Block, gen: CodeGenerator): Block = {

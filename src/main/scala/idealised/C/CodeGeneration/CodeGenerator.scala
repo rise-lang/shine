@@ -49,7 +49,7 @@ case class CodeGenerator(primitiveCodeGen: PrimitiveCodeGen,
       case Apply(_, _) | NatDependentApply(_, _) |
            TypeDependentApply(_, _) | Identifier(_, _) |
            Proj1(_) | Proj2(_) | _: CommandPrimitive =>
-        throw new Exception(s"Don't know how to generate idealised.OpenCL code for $p")
+        throw new Exception(s"Don't know how to generate code for $p with code generator for ${primitiveCodeGen.name}")
     }
   }
 

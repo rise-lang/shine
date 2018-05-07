@@ -70,8 +70,8 @@ object ProgramGenerator {
     p3
   }
 
-  def makeFunction(params: Seq[VarDecl], body: Block): FunDecl = {
-    FunDecl(name = "foo", returnType = Type.void, params, body)
+  def makeFunction(params: Seq[VarDecl], body: Block, name: String = "foo"): FunDecl = {
+    FunDecl(name, returnType = Type.void, params, body)
   }
 
   def makeParams(out: Identifier[AccType],
