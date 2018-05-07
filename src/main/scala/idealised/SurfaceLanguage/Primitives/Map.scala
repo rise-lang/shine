@@ -8,7 +8,7 @@ import idealised.SurfaceLanguage._
 
 abstract class AbstractMap(f: Expr[DataType -> DataType],
                            array: DataExpr,
-                           override val `type`: Option[DataType])
+                           override val t: Option[DataType])
   extends PrimitiveExpr
 {
 
@@ -24,7 +24,7 @@ abstract class AbstractMap(f: Expr[DataType -> DataType],
 
 
   override def convertToPhrase: DPIA.FunctionalPrimitives.AbstractMap = {
-    (f.`type`, array.`type`) match {
+    (f.t, array.t) match {
       case (Some(FunctionType(dt1, dt2)), Some(ArrayType(n, dt1_))) if dt1 == dt1_ =>
         makeDPIAMap(n, dt1, dt2,
           f.toPhrase[DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]],
@@ -37,10 +37,10 @@ abstract class AbstractMap(f: Expr[DataType -> DataType],
   override def inferType(subs: SubstitutionMap): DataExpr = {
     import TypeInference._
     val array_ = TypeInference(array, subs)
-    array_.`type` match {
+    array_.t match {
       case Some(ArrayType(n, dt1)) =>
         val f_ = setParamAndInferType(f, dt1, subs)
-        f_.`type` match {
+        f_.t match {
           case Some(FunctionType(dt1_, dt2)) =>
             if (dt1 == dt1_) {
               makeMap(f_, array_, Some(ArrayType(n, dt2)))
@@ -79,14 +79,14 @@ abstract class AbstractMap(f: Expr[DataType -> DataType],
 //  }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): DataExpr = {
-    makeMap(VisitAndRebuild(f, fun), VisitAndRebuild(array, fun), `type`.map(fun(_)))
+    makeMap(VisitAndRebuild(f, fun), VisitAndRebuild(array, fun), t.map(fun(_)))
   }
 
 }
 
 final case class Map(f: Expr[DataType -> DataType], array: DataExpr,
-                     override val `type`: Option[DataType] = None)
-  extends AbstractMap(f, array, `type`) {
+                     override val t: Option[DataType] = None)
+  extends AbstractMap(f, array, t) {
 
   override def makeDPIAMap = DPIA.FunctionalPrimitives.Map
 

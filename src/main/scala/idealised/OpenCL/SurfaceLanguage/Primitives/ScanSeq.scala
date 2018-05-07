@@ -11,8 +11,8 @@ import idealised.SurfaceLanguage.{Expr, _}
 
 final case class ScanSeq(f: Expr[DataType -> (DataType -> DataType)],
                            init: DataExpr, array: DataExpr,
-                           override val `type`: Option[DataType] = None)
-  extends AbstractScan(f, init, array, `type`)
+                           override val t: Option[DataType] = None)
+  extends AbstractScan(f, init, array, t)
 {
 
   override def makeScan: (Expr[DataType -> (DataType -> DataType)], DataExpr, DataExpr, Option[DataType]) =>

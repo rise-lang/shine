@@ -6,11 +6,11 @@ import idealised.{DPIA, SurfaceLanguage}
 import idealised.SurfaceLanguage.Types._
 
 final case class Unzip(e: DataExpr,
-                       override val `type`: Option[DataType] = None)
+                       override val t: Option[DataType] = None)
   extends PrimitiveExpr
 {
   override def convertToPhrase: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
-    e.`type` match {
+    e.t match {
       case Some(ArrayType(n, TupleType(dt1, dt2))) =>
         DPIA.FunctionalPrimitives.Unzip(n, dt1, dt2, e.toPhrase[DPIA.Types.ExpType])
       case _ => throw new Exception("")
@@ -20,7 +20,7 @@ final case class Unzip(e: DataExpr,
   override def inferType(subs: TypeInference.SubstitutionMap): Unzip = {
     import TypeInference._
     val e_ = TypeInference(e, subs)
-    e_.`type` match {
+    e_.t match {
       case Some(ArrayType(n, TupleType(dt1, dt2))) =>
         Unzip(e_, Some(TupleType(ArrayType(n, dt1), ArrayType(n, dt2))))
       case x =>
@@ -30,6 +30,6 @@ final case class Unzip(e: DataExpr,
   }
 
   override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): DataExpr = {
-    Unzip(SurfaceLanguage.VisitAndRebuild(e, f), `type`.map(f(_)))
+    Unzip(SurfaceLanguage.VisitAndRebuild(e, f), t.map(f(_)))
   }
 }

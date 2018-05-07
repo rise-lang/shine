@@ -9,8 +9,8 @@ import idealised.SurfaceLanguage.Primitives.AbstractReduce
 
 final case class ReduceSeq(f: Expr[DataType -> (DataType -> DataType)],
                            init: DataExpr, array: DataExpr,
-                           override val `type`: Option[DataType] = None)
-  extends AbstractReduce(f, init, array, `type`)
+                           override val t: Option[DataType] = None)
+  extends AbstractReduce(f, init, array, t)
 {
 
   override def makeReduce: (Expr[DataType -> (DataType -> DataType)], DataExpr, DataExpr, Option[DataType]) =>

@@ -6,11 +6,11 @@ import idealised.{DPIA, SurfaceLanguage}
 import idealised.SurfaceLanguage.Types._
 
 final case class Zip(e1: DataExpr, e2: DataExpr,
-                     override val `type`: Option[DataType] = None)
+                     override val t: Option[DataType] = None)
   extends PrimitiveExpr
 {
   override def convertToPhrase: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
-    (e1.`type`, e2.`type`) match {
+    (e1.t, e2.t) match {
       case (Some(ArrayType(n, dt1)), Some(ArrayType(m, dt2))) if n == m =>
         DPIA.FunctionalPrimitives.Zip(n, dt1, dt2,
           e1.toPhrase[DPIA.Types.ExpType],
@@ -23,7 +23,7 @@ final case class Zip(e1: DataExpr, e2: DataExpr,
     import TypeInference._
     val lhs_ = TypeInference(e1, subs)
     val rhs_ = TypeInference(e2, subs)
-    (lhs_.`type`, rhs_.`type`) match {
+    (lhs_.t, rhs_.t) match {
       case (Some(ArrayType(n, dt1)), Some(ArrayType(m, dt2))) =>
         if (n == m)
           Zip(lhs_, rhs_, Some(ArrayType(n, TupleType(dt1, dt2))))
@@ -39,6 +39,6 @@ final case class Zip(e1: DataExpr, e2: DataExpr,
   override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): DataExpr = {
     Zip(SurfaceLanguage.VisitAndRebuild(e1, f),
       SurfaceLanguage.VisitAndRebuild(e2, f),
-      `type`.map(f(_)))
+      t.map(f(_)))
   }
 }

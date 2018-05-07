@@ -16,7 +16,7 @@ object TypeInference {
     throw new TypeInferenceException(expr, msg)
   }
 
-  type SubstitutionMap = scala.collection.Map[Expr[_], Expr[_]]
+  type SubstitutionMap = scala.collection.Map[Expr[_ <: Type], Expr[_ <: Type]]
 
   def apply[T <: Type](expr: Expr[T], subs: SubstitutionMap): Expr[T] = {
     inferType(expr, subs)
@@ -24,14 +24,14 @@ object TypeInference {
 
   private def inferType[T <: Type](expr: Expr[T], subs: SubstitutionMap): Expr[T] = {
     (expr match {
-      case i@IdentifierExpr(name, t) =>
+      case i@IdentifierExpr(name, _) =>
         val identifier =
           if (subs.contains(i)) {
             subs(i)
           } else {
             i
           }
-        identifier.`type` match {
+        identifier.t match {
           case Some(_) => identifier
           case None => error(identifier.toString, s"Found Identifier $name without type")
         }

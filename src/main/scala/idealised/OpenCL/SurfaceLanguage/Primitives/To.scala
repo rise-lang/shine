@@ -20,7 +20,7 @@ abstract class To(f: Expr[DataType -> DataType],
 
 
   override def convertToPhrase: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
-    (f.`type`, input.`type`) match {
+    (f.t, input.t) match {
       case (Some(FunctionType(dt1, dt2)), Some(t1)) if dt1 == t1 =>
         makeToDPIA(dt1, dt2,
           f.toPhrase[DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]],
@@ -32,10 +32,10 @@ abstract class To(f: Expr[DataType -> DataType],
   override def inferType(subs: TypeInference.SubstitutionMap): To = {
     import TypeInference._
     val input_ = TypeInference(input, subs)
-    input_.`type` match {
+    input_.t match {
       case Some(dt1) =>
         val f_ = TypeInference.setParamAndInferType(f, dt1, subs)
-        f_.`type` match {
+        f_.t match {
           case Some(FunctionType(t1, dt2)) =>
             if (dt1 == t1) {
               makeTo(f_, input_, Some(dt2))
@@ -50,7 +50,7 @@ abstract class To(f: Expr[DataType -> DataType],
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): DataExpr = {
-    makeTo(VisitAndRebuild(f, fun), VisitAndRebuild(input, fun), `type`.map(fun(_)))
+    makeTo(VisitAndRebuild(f, fun), VisitAndRebuild(input, fun), t.map(fun(_)))
   }
 
 }

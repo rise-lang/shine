@@ -83,7 +83,7 @@ object TypeChecker {
     }
   }
 
-  def check(found: PhraseType, test: (PhraseType => Unit)): Unit = {
+  def check(found: PhraseType, test: PhraseType => Unit): Unit = {
     test(found)
   }
 

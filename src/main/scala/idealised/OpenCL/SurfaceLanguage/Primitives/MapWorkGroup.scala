@@ -8,8 +8,8 @@ import idealised.SurfaceLanguage.Primitives.AbstractMap
 
 final case class MapWorkGroup(dim: Int)(f: Expr[DataType -> DataType],
                                         array: DataExpr,
-                                        override val `type`: Option[DataType] = None)
-  extends AbstractMap(f, array, `type`)
+                                        override val t: Option[DataType] = None)
+  extends AbstractMap(f, array, t)
 {
   override def makeMap = MapWorkGroup(dim)
 

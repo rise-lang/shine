@@ -7,5 +7,5 @@ import idealised.SurfaceLanguage._
 import idealised._
 
 final case class ToLocal(f: Expr[DataType -> DataType], input: DataExpr,
-                          override val `type`: Option[DataType] = None)
+                          override val t: Option[DataType] = None)
   extends To(f, input, OpenCL.LocalMemory, ToLocal, OpenCL.FunctionalPrimitives.ToLocal)

@@ -26,7 +26,7 @@ package object DSL {
     def $(arg: DataExpr): Expr[T] = apply(arg)
   }
 
-  implicit class FunCallExpr(arg: Expr[DataType]) {
+  implicit class FunCallExpr(arg: DataExpr) {
     def :>>[T <: Type](f: Expr[DataType -> T]): Expr[T] = f(arg)
     def <<:[T <: Type](f: Expr[DataType -> T]): Expr[T] = f(arg)
   }

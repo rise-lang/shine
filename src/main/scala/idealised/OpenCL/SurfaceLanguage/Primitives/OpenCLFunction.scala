@@ -10,7 +10,7 @@ final case class OpenCLFunction(name: String,
                                 outT: DataType,
                                 args: Seq[DataExpr]) extends PrimitiveExpr {
 
-  override val `type`: Option[DataType] = Some(outT)
+  override val t: Option[DataType] = Some(outT)
 
 
   override def convertToPhrase: idealised.OpenCL.FunctionalPrimitives.OpenCLFunction = {
@@ -22,7 +22,7 @@ final case class OpenCLFunction(name: String,
 
   override def inferType(subs: TypeInference.SubstitutionMap): OpenCLFunction = {
     val args_ = args.map(TypeInference(_, subs))
-    val dts = args_.flatMap(_.`type`)
+    val dts = args_.flatMap(_.t)
     var i = 0
     (inTs zip dts) foreach {
       case (expectedT, foundT) =>

@@ -10,12 +10,12 @@ import lift.arithmetic._
 final case class Iterate(k: Nat,
                          f: Expr[`(nat)->`[DataType -> DataType]],
                          array: DataExpr,
-                         override val `type`: Option[DataType] = None)
+                         override val t: Option[DataType] = None)
   extends PrimitiveExpr
 {
 
   override def convertToPhrase: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
-    (f.`type`, array.`type`) match {
+    (f.t, array.t) match {
       case (Some(NatDependentFunctionType(_,
         FunctionType(ArrayType(l, dt1), ArrayType(l_n, dt2)))), Some(ArrayType(m, dt)))
           if dt1 == dt && dt2 == dt =>
@@ -37,13 +37,13 @@ final case class Iterate(k: Nat,
   override def inferType(subs: SubstitutionMap): Iterate = {
     import TypeInference._
     val array_ = TypeInference(array, subs)
-    array_.`type` match {
+    array_.t match {
       case Some(ArrayType(m, dt)) =>
         f match {
           case NatDependentLambdaExpr(l, body: Expr[DataType -> DataType]) =>
             val b = setParamAndInferType(body, ArrayType(l, dt), subs)
             val f_ = NatDependentLambdaExpr(l, b)
-            f_.`type` match {
+            f_.t match {
               case Some(NatDependentFunctionType(_,
                 FunctionType(ArrayType(l_, dt1), ArrayType(l_n, dt2)))) =>
                 if (l == l_ && dt1 == dt && dt2 == dt) {
@@ -107,7 +107,7 @@ final case class Iterate(k: Nat,
     Iterate(fun(k),
       VisitAndRebuild(f, fun),
       VisitAndRebuild(array, fun),
-      `type`.map(fun(_)))
+      t.map(fun(_)))
   }
 
 }

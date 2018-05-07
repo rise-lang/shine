@@ -8,7 +8,7 @@ import idealised.SurfaceLanguage.Types._
 
 abstract class AbstractReduce(f: Expr[DataType -> (DataType -> DataType)],
                               init: DataExpr, array: DataExpr,
-                              override val `type`: Option[DataType])
+                              override val t: Option[DataType])
   extends PrimitiveExpr {
 
   def makeReduce: (Expr[DataType -> (DataType -> DataType)], DataExpr, DataExpr, Option[DataType]) => AbstractReduce
@@ -24,7 +24,7 @@ abstract class AbstractReduce(f: Expr[DataType -> (DataType -> DataType)],
 
 
   override def convertToPhrase: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
-    (f.`type`, init.`type`, array.`type`) match {
+    (f.t, init.t, array.t) match {
       case (Some(FunctionType(t1, FunctionType(t2, t3))), Some(dt2), Some(ArrayType(n, dt1)))
         if dt1 == t1 && dt2 == t2 && dt2 == t3 =>
           makeDPIAReduce(n, dt1, dt2,
@@ -40,10 +40,10 @@ abstract class AbstractReduce(f: Expr[DataType -> (DataType -> DataType)],
     import TypeInference._
     val array_ = TypeInference(array, subs)
     val init_ = TypeInference(init, subs)
-    (init_.`type`, array_.`type`) match {
+    (init_.t, array_.t) match {
       case (Some(dt2), Some(ArrayType(n, dt1))) =>
         val f_ = setParamsAndInferTypes(f, dt1, dt2, subs)
-        f_.`type` match {
+        f_.t match {
           case Some(FunctionType(t1, FunctionType(t2, t3))) =>
             if (dt1 == t1 && dt2 == t2 && dt2 == t3) {
               makeReduce(f_, init_, array_, Some(dt2))
@@ -90,7 +90,7 @@ abstract class AbstractReduce(f: Expr[DataType -> (DataType -> DataType)],
     makeReduce(VisitAndRebuild(f, fun),
       VisitAndRebuild(init, fun),
       VisitAndRebuild(array, fun),
-      `type`.map(fun(_)))
+      t.map(fun(_)))
   }
 
 }
@@ -98,8 +98,8 @@ abstract class AbstractReduce(f: Expr[DataType -> (DataType -> DataType)],
 final case class Reduce(f: Expr[DataType -> (DataType -> DataType)],
                         init: DataExpr,
                         array: DataExpr,
-                        override val `type`: Option[DataType] = None)
-  extends AbstractReduce(f, init, array, `type`) {
+                        override val t: Option[DataType] = None)
+  extends AbstractReduce(f, init, array, t) {
 
   override def makeDPIAReduce = DPIA.FunctionalPrimitives.Reduce
 

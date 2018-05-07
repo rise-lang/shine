@@ -7,5 +7,5 @@ import idealised.SurfaceLanguage._
 import idealised._
 
 final case class ToPrivate(f: Expr[DataType -> DataType], input: DataExpr,
-                         override val `type`: Option[DataType] = None)
+                         override val t: Option[DataType] = None)
   extends To(f, input, OpenCL.PrivateMemory, ToPrivate, OpenCL.FunctionalPrimitives.ToPrivate)

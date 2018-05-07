@@ -8,8 +8,8 @@ import idealised.SurfaceLanguage.Types._
 
 final case class MapGlobal(dim: Int)(f: Expr[DataType -> DataType],
                                      array: DataExpr,
-                                     override val `type`: Option[DataType] = None)
-  extends AbstractMap(f, array, `type`)
+                                     override val t: Option[DataType] = None)
+  extends AbstractMap(f, array, t)
 {
   override def makeMap = MapGlobal(dim)
 

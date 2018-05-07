@@ -22,7 +22,7 @@ object VisitAndRebuild {
         val v = c.v
         (c.p match {
           case i: IdentifierExpr =>
-            IdentifierExpr(i.name, i.`type` match {
+            IdentifierExpr(i.name, i.t match {
               case None => None
               case Some(dt) => Some(v(dt))
             })

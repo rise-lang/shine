@@ -7,7 +7,7 @@ import idealised.SurfaceLanguage.Types._
 
 final case class PrintType(input: DataExpr,
                            msg: String,
-                           override val `type`: Option[DataType] = None)
+                           override val t: Option[DataType] = None)
   extends PrimitiveExpr
 {
 
@@ -15,15 +15,15 @@ final case class PrintType(input: DataExpr,
 
   override def inferType(subs: TypeInference.SubstitutionMap): PrintType = {
     val input_ = TypeInference(input, subs)
-    println(s"Type $msg: ${input_.`type` match {
+    println(s"Type $msg: ${input_.t match {
       case None => "NoType"
       case Some(dt) => dt.toString
     }}")
-    PrintType(input_, msg, input_.`type`)
+    PrintType(input_, msg, input_.t)
   }
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): DataExpr = {
-    PrintType(VisitAndRebuild(input, f), msg, `type`.map(f(_)))
+    PrintType(VisitAndRebuild(input, f), msg, t.map(f(_)))
   }
 
   override def toString: String = ""

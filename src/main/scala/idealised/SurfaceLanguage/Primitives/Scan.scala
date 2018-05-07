@@ -14,7 +14,7 @@ import idealised.SurfaceLanguage._
 abstract class AbstractScan(f:Expr[DataType -> (DataType -> DataType)],
                             init:DataExpr,
                             array:DataExpr,
-                            override val `type`:Option[DataType]) extends PrimitiveExpr{
+                            override val t: Option[DataType]) extends PrimitiveExpr{
 
   def makeScan:(Expr[DataType -> (DataType -> DataType)], DataExpr, DataExpr, Option[DataType]) => AbstractScan
 
@@ -34,10 +34,10 @@ abstract class AbstractScan(f:Expr[DataType -> (DataType -> DataType)],
     import TypeInference._
     val array_ = TypeInference(array, subs)
     val init_ = TypeInference(init, subs)
-    (init_.`type`, array_.`type`) match {
+    (init_.t, array_.t) match {
       case (Some(dt2), Some(ArrayType(n, dt1))) =>
         val f_ = setParamsAndInferTypes(f, dt1, dt2, subs)
-        f_.`type` match {
+        f_.t match {
           case Some(FunctionType(t1, FunctionType(t2, t3))) =>
             if (dt1 == t1 && dt2 == t2 && dt2 == t3) {
               makeScan(f_, init_, array_, Some(dt2))
@@ -56,10 +56,10 @@ abstract class AbstractScan(f:Expr[DataType -> (DataType -> DataType)],
   }
 
   override def visitAndRebuild(fun: Visitor): DataExpr =
-    makeScan(VisitAndRebuild(this.f, fun), VisitAndRebuild(this.init, fun), VisitAndRebuild(this.array, fun), this.`type`.map(fun(_)))
+    makeScan(VisitAndRebuild(this.f, fun), VisitAndRebuild(this.init, fun), VisitAndRebuild(this.array, fun), this.t.map(fun(_)))
 
   override def convertToPhrase:DPIA.FunctionalPrimitives.AbstractScan = {
-    (f.`type`, array.`type`) match {
+    (f.t, array.t) match {
       case (Some(FunctionType(dt1, FunctionType(dt2, _))), Some(ArrayType(n, dt1_))) if dt1 == dt1_ =>
         makeDPIAScan(n, dt1, dt2,
           f.toPhrase[DPIABinaryFunctionType],
@@ -72,8 +72,8 @@ abstract class AbstractScan(f:Expr[DataType -> (DataType -> DataType)],
 }
 
 final case class Scan(f: Expr[DataType -> (DataType -> DataType)], init:DataExpr, array: DataExpr,
-                     override val `type`: Option[DataType] = None)
-  extends AbstractScan(f, init, array, `type`) {
+                     override val t: Option[DataType] = None)
+  extends AbstractScan(f, init, array, t) {
 
   override def makeDPIAScan = DPIA.FunctionalPrimitives.Scan
 
