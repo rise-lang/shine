@@ -37,9 +37,9 @@ object ProgramGenerator {
 
     val p3 = substituteImplementations(p2)
 
-    val code = CodeGenerator(p3, new CodeGeneration.PrimitivesToC)
+    val (decls, code) = CodeGenerator(p3, new CodeGeneration.PrimitivesToC)
 
-    C.Program(
+    C.Program(decls,
       function = makeFunction(makeParams(outParam, inputParams), code),
       outputParam = outParam,
       inputParams = inputParams)

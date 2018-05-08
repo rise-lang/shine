@@ -38,7 +38,7 @@ package object DSL {
     }
   }
 
-  implicit class Assignment(lhs: Phrase[AccType]) {
+  implicit class AssignmentHelper(lhs: Phrase[AccType]) {
     def :=(rhs: Phrase[ExpType]): Assign = {
       Assign(lhs, rhs)
     }

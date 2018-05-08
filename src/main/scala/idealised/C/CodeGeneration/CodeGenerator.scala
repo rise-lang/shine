@@ -16,17 +16,27 @@ import scala.collection.immutable
 object CodeGenerator {
   type Ranges = immutable.Map[String, lift.arithmetic.Range]
 
-  def apply(p: Phrase[CommandType], primitiveCodeGen: PrimitiveCodeGen): Block = {
-    val gen = CodeGenerator(primitiveCodeGen)
-    gen.cmd(p, Block(immutable.Seq()), gen)
+  def apply(p: Phrase[CommandType], primitiveCodeGen: PrimitiveCodeGen): (scala.collection.Seq[Decl], Block) = {
+    val gen = CodeGenerator(primitiveCodeGen, scala.collection.mutable.ListBuffer[Decl](), immutable.Map[String, lift.arithmetic.Range]())
+    val b = gen.cmd(p, Block(immutable.Seq()), gen)
+    (gen.decls, b)
   }
 }
 
 case class CodeGenerator(primitiveCodeGen: PrimitiveCodeGen,
-                         ranges: CodeGenerator.Ranges = immutable.Map[String, lift.arithmetic.Range]()) {
+                         decls: scala.collection.mutable.ListBuffer[Decl],
+                         ranges: CodeGenerator.Ranges) {
+
+  def addDeclaration(decl: Decl): Unit = {
+    if ( decls.exists( _.name == decl.name ) ) {
+      println(s"warning: declaration with name ${decl.name} already defined")
+    } else {
+      decls += decl
+    }
+  }
 
   def updatedRanges(key: String, value: lift.arithmetic.Range): CodeGenerator =
-    copy(ranges= ranges.updated(key, value))
+    copy(ranges = ranges.updated(key, value))
 
   def cmd(p: Phrase[CommandType], block: Block, gen: CodeGenerator): Block = {
     p match {

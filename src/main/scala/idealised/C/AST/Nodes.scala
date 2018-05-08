@@ -2,18 +2,18 @@ package idealised.C.AST
 
 sealed trait Node
 
-abstract class Decl extends Node
+abstract class Decl(val name: String) extends Node
 
-case class FunDecl(name: String,
+case class FunDecl(override val name: String,
                    returnType: Type,
                    params: Seq[VarDecl],
-                   body: Stmt) extends Decl
+                   body: Stmt) extends Decl(name)
 
-case class VarDecl(name: String, t: Type, init: Option[Expr] = None) extends Decl
+case class VarDecl(override val name: String, t: Type, init: Option[Expr] = None) extends Decl(name)
 
-case class LabelDecl(name: String) extends Decl
+case class LabelDecl(override val name: String) extends Decl(name)
 
-case class TypedefDecl(t: Type, alias: String) extends Decl
+case class TypedefDecl(t: Type, override val name: String) extends Decl(name)
 
 
 abstract class Stmt extends Node

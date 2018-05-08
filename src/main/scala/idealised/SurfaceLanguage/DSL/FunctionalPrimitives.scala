@@ -87,6 +87,21 @@ object tuple {
   def apply(fst: DataExpr, snd: DataExpr): Tuple = Tuple(fst, snd)
 }
 
+object foreignFunction {
+  def apply(returnT: DataType, name: String, param: (String, DataType), body: String) =
+    fun(arg =>
+      ForeignFunction(ForeignFunctionDeclaration(name, Seq(param._1), body),
+        Seq(param._2), returnT, Seq(arg)))
+
+  def apply(returnT: DataType, name: String, param: (String, DataType), body: String, arg: DataExpr) =
+    ForeignFunction(ForeignFunctionDeclaration(name, Seq(param._1), body),
+      Seq(param._2), returnT, Seq(arg))
+
+  def apply(returnT: DataType, name: String, params: Seq[(String, DataType)], body: String, args: Seq[DataExpr]) =
+    ForeignFunction(ForeignFunctionDeclaration(name, params.map(_._1), body),
+      params.map(_._2), returnT, args)
+}
+
 object printType {
   def apply(msg: String = ""): Expr[DataType -> DataType] = fun(x => PrintType(x, msg))
   def apply(msg: String, x: Expr[DataType]) = PrintType(x, msg)
