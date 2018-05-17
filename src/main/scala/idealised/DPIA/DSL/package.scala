@@ -1,6 +1,6 @@
 package idealised.DPIA
 
-import idealised.DPIA.ImperativePrimitives.{Assign, Idx, IdxAcc, Seq}
+import idealised.DPIA.ImperativePrimitives._
 import idealised.DPIA.Phrases.{BinOp, Identifier, Literal, Pair, Phrase, Proj1, Proj2, UnaryOp}
 import idealised.DPIA.Semantics.OperationalSemantics.{FloatData, IndexData, IntData}
 import idealised.DPIA.Types._
@@ -28,12 +28,24 @@ package object DSL {
         Idx(n1, dt, index, e)
       case x => error(x.toString, "(exp[idx(n)], exp[n.dt])")
     }
+
+    def `@v`(index: Phrase[ExpType]): IdxVec = (index.t, e.t) match {
+      case (ExpType(IndexType(n1)), ExpType(VectorType(n2, st))) if n1 == n2 =>
+        IdxVec(n1, st, index, e)
+      case x => error(x.toString, "(exp[idx(n)], exp[st<n>])")
+    }
   }
 
   implicit class AccPhraseExtensions(a: Phrase[AccType]) {
     def `@`(index: Phrase[ExpType]): IdxAcc = (index.t, a.t) match {
       case (ExpType(IndexType(n1)), AccType(ArrayType(n2, dt))) if n1 == n2 =>
         IdxAcc(n1, dt, index, a)
+      case x => error(x.toString, "(exp[idx(n)], acc[n.dt])")
+    }
+
+    def `@v`(index: Phrase[ExpType]): IdxVecAcc = (index.t, a.t) match {
+      case (ExpType(IndexType(n1)), AccType(VectorType(n2, st))) if n1 == n2 =>
+        IdxVecAcc(n1, st, index, a)
       case x => error(x.toString, "(exp[idx(n)], acc[n.dt])")
     }
   }

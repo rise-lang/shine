@@ -56,6 +56,8 @@ case class CodeGenerator(primitiveCodeGen: PrimitiveCodeGen,
 
       case p: ParFor => primitiveCodeGen.codeGen(p, block, gen)
 
+      case p: ParForVec => primitiveCodeGen.codeGen(p, block, gen)
+
       case Apply(_, _) | NatDependentApply(_, _) |
            TypeDependentApply(_, _) | Identifier(_, _) |
            Proj1(_) | Proj2(_) | _: CommandPrimitive =>
@@ -84,6 +86,7 @@ case class CodeGenerator(primitiveCodeGen: PrimitiveCodeGen,
 
       case f: Fst       => primitiveCodeGen.codeGen(f, gen, f.t.dataType, List(), List())
       case i: Idx       => primitiveCodeGen.codeGen(i, gen, i.t.dataType, List(), List())
+      case i: IdxVec    => primitiveCodeGen.codeGen(i, gen, i.t.dataType, List(), List())
       case r: Record    => primitiveCodeGen.codeGen(r, gen, r.t.dataType, List(), List())
       case s: Snd       => primitiveCodeGen.codeGen(s, gen, s.t.dataType, List(), List())
       case t: TruncExp  => primitiveCodeGen.codeGen(t, gen, t.t.dataType, List(), List())
@@ -154,6 +157,7 @@ case class CodeGenerator(primitiveCodeGen: PrimitiveCodeGen,
 
       case f: Fst       => primitiveCodeGen.codeGen(f, gen, dt, arrayAccess, tupleAccess)
       case i: Idx       => primitiveCodeGen.codeGen(i, gen, dt, arrayAccess, tupleAccess)
+      case i: IdxVec    => primitiveCodeGen.codeGen(i, gen, dt, arrayAccess, tupleAccess)
       case r: Record    => primitiveCodeGen.codeGen(r, gen, dt, arrayAccess, tupleAccess)
       case s: Snd       => primitiveCodeGen.codeGen(s, gen, dt, arrayAccess, tupleAccess)
       case t: TruncExp  => primitiveCodeGen.codeGen(t, gen, dt, arrayAccess, tupleAccess)
@@ -181,6 +185,7 @@ case class CodeGenerator(primitiveCodeGen: PrimitiveCodeGen,
 
       case f: RecordAcc1    => primitiveCodeGen.codeGen(f, value, gen, f.t.dataType, List(), List())
       case i: IdxAcc        => primitiveCodeGen.codeGen(i, value, gen, i.t.dataType, List(), List())
+      case i: IdxVecAcc     => primitiveCodeGen.codeGen(i, value, gen, i.t.dataType, List(), List())
       case j: JoinAcc       => primitiveCodeGen.codeGen(j, value, gen, j.t.dataType, List(), List())
       case s: RecordAcc2    => primitiveCodeGen.codeGen(s, value, gen, s.t.dataType, List(), List())
       case s: SplitAcc      => primitiveCodeGen.codeGen(s, value, gen, s.t.dataType, List(), List())
@@ -229,6 +234,7 @@ case class CodeGenerator(primitiveCodeGen: PrimitiveCodeGen,
 
       case f: RecordAcc1    => primitiveCodeGen.codeGen(f, value, gen, dt, arrayAccess, tupleAccess)
       case i: IdxAcc        => primitiveCodeGen.codeGen(i, value, gen, dt, arrayAccess, tupleAccess)
+      case i: IdxVecAcc     => primitiveCodeGen.codeGen(i, value, gen, dt, arrayAccess, tupleAccess)
       case j: JoinAcc       => primitiveCodeGen.codeGen(j, value, gen, dt, arrayAccess, tupleAccess)
       case s: RecordAcc2    => primitiveCodeGen.codeGen(s, value, gen, dt, arrayAccess, tupleAccess)
       case s: SplitAcc      => primitiveCodeGen.codeGen(s, value, gen, dt, arrayAccess, tupleAccess)

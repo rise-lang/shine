@@ -14,8 +14,8 @@ import scala.util.Random
 
 object dot extends App {
 
-  Executor.loadLibrary()
-  Executor.init()
+//  Executor.loadLibrary()
+//  Executor.init()
 
   val epsilon = 1.0f
 
@@ -100,21 +100,21 @@ object dot extends App {
     println(program.code)
   }
 
-//  {
-//    import idealised.OpenMP.SurfaceLanguage.DSL._
-//
-//    // TODO: think about support for vectorization in C / OpenMP
-//    val intelDerivedNoWarpDot1 = fun(xsT)(xs => fun(ysT)(ys =>
-//      asScalar() o join() o mapPar(
-//        mapSeq(
-//          reduceSeq(fun(x => fun(a => mult(x) + a)), vectorize(4, 0.0f))
-//        ) o split(8192)
-//      ) o split(8192) $ zip(asVector(4) $ xs, asVector(4) $ ys)
-//    ))
-//    val phrase = TypeInference(intelDerivedNoWarpDot1, Map()).toPhrase
-//    val program = OpenMP.ProgramGenerator.makeCode(phrase)
-//    println(program.code)
-//  }
+  {
+    import idealised.OpenMP.SurfaceLanguage.DSL._
+
+    // TODO: think about support for vectorization in C / OpenMP
+    val intelDerivedNoWarpDot1 = fun(xsT)(xs => fun(ysT)(ys =>
+      asScalar() o join() o mapPar(
+        mapSeq(
+          reduceSeq(fun(x => fun(a => mult(x) + a)), vectorize(4, 0.0f))
+        ) o split(8192)
+      ) o split(8192) $ zip(asVector(4) $ xs, asVector(4) $ ys)
+    ))
+    val phrase = TypeInference(intelDerivedNoWarpDot1, Map()).toPhrase
+    val program = OpenMP.ProgramGenerator.makeCode(phrase)
+    println(program.code)
+  }
 
   {
     import idealised.OpenMP.SurfaceLanguage.DSL._

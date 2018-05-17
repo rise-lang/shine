@@ -45,6 +45,8 @@ trait PrimitiveCodeGen {
 
   def codeGen(pf: ParFor, block: Block, gen: CodeGenerator): Block
 
+  def codeGen(pf: ParForVec, block: Block, gen: CodeGenerator): Block
+
   def codeGen(g: Gather, gen: CodeGenerator, dt: DataType, arrayAccess: List[ArithExpr], tupleAccess: List[ArithExpr]): Expr
 
   def codeGen(j: Join, gen: CodeGenerator, dt: DataType, arrayAccess: List[ArithExpr], tupleAccess: List[ArithExpr]): Expr
@@ -59,6 +61,8 @@ trait PrimitiveCodeGen {
 
   def codeGen(i: Idx, gen: CodeGenerator, dt: DataType, arrayAccess: List[ArithExpr], tupleAccess: List[ArithExpr]): Expr
 
+  def codeGen(i: IdxVec, gen: CodeGenerator, dt: DataType, arrayAccess: List[ArithExpr], tupleAccess: List[ArithExpr]): Expr
+
   def codeGen(r: Record, gen: CodeGenerator, dt: DataType, arrayAccess: List[ArithExpr], tupleAccess: List[ArithExpr]): Expr
 
   def codeGen(s: Snd, gen: CodeGenerator, dt: DataType, arrayAccess: List[ArithExpr], tupleAccess: List[ArithExpr]): Expr
@@ -70,6 +74,8 @@ trait PrimitiveCodeGen {
   def codeGen(r: RecordAcc1, value: Expr, gen: CodeGenerator, dt: DataType, arrayAccess: List[Nat], tupleAccess: List[Nat]): Expr
 
   def codeGen(i: IdxAcc, value: Expr, gen: CodeGenerator, dt: DataType, arrayAccess: List[Nat], tupleAccess: List[Nat]): Expr
+
+  def codeGen(i: IdxVecAcc, value: Expr, gen: CodeGenerator, dt: DataType, arrayAccess: List[Nat], tupleAccess: List[Nat]): Expr
 
   def codeGen(join: JoinAcc, value: Expr, gen: CodeGenerator, dt: DataType, arrayAccess: List[Nat], tupleAccess: List[Nat]): Expr
 

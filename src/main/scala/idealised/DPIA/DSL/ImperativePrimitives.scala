@@ -36,7 +36,7 @@ object `if` {
 
 object `for` {
   def apply(n: Nat,
-            f: (Phrase[ExpType] => Phrase[CommandType])): For =
+            f: Phrase[ExpType] => Phrase[CommandType]): For =
     For(n, λ(exp"[idx($n)]")( i => f(i) ))
 }
 
@@ -44,8 +44,16 @@ object `parFor` {
   def apply(n: Nat,
             dt: DataType,
             out: Phrase[AccType],
-            f: (Phrase[ExpType] => Phrase[AccType] => Phrase[CommandType])): ParFor =
+            f: Phrase[ExpType] => Phrase[AccType] => Phrase[CommandType]): ParFor =
     ParFor(n, dt, out, λ(exp"[idx($n)]")( i => λ(acc"[$dt]")( o => f(i)(o) )))
+}
+
+object `parForVec` {
+  def apply(n: Nat,
+            st: ScalarType,
+            out: Phrase[AccType],
+            f: Phrase[ExpType] => Phrase[AccType] => Phrase[CommandType]): ParForVec =
+    ParForVec(n, st, out, λ(exp"[idx($n)]")( i => λ(acc"[$st]")( o => f(i)(o) )))
 }
 
 object dblBufFor {

@@ -53,7 +53,8 @@ object Type {
         case idealised.DPIA.Types.int => Type.int
         case idealised.DPIA.Types.float => Type.float
         case _: idealised.DPIA.Types.IndexType => Type.int
-        case _: idealised.DPIA.Types.VectorType => throw new Exception("Vector types are not supported in plain C")
+        case v: idealised.DPIA.Types.VectorType => ArrayType(fromDataType(v.elemType), Some(v.size))
+          //throw new Exception("Vector types are not supported in plain C")
       }
       case a: idealised.DPIA.Types.ArrayType => ArrayType(fromDataType(a.elemType), Some(a.size))
       case r: idealised.DPIA.Types.RecordType => StructType(Seq(fromDataType(r.fst), fromDataType(r.snd)))

@@ -142,6 +142,11 @@ class PrimitivesToC extends PrimitiveCodeGen {
     codeGen(For(pf.n, λ(exp"[idx(${pf.n})]")( i => pf.body(i)(pf.out `@` i) )), block, gen)
   }
 
+  def codeGen(pf: ParForVec, block: Block, gen: CodeGenerator): Block = {
+    // rewrite parallel for into sequential for
+    codeGen(For(pf.n, λ(exp"[idx(${pf.n})]")( i => pf.body(i)(pf.out `@v` i) )), block, gen)
+  }
+
   // ==== generating expressions  ==== //
 
   def codeGen(g: Gather, gen: CodeGenerator, dt: DataType, arrayAccess: List[ArithExpr], tupleAccess: List[ArithExpr]): Expr = {
@@ -193,6 +198,17 @@ class PrimitivesToC extends PrimitiveCodeGen {
     gen.exp(i.array, gen, dt, idx :: arrayAccess, tupleAccess)
   }
 
+  def codeGen(i: IdxVec, gen: CodeGenerator, dt: DataType, arrayAccess: List[ArithExpr], tupleAccess: List[ArithExpr]): Expr = {
+
+    val idx: ArithExpr = gen.exp(i.index, gen) match {
+      case DeclRef(name) => NamedVar(name, gen.ranges(name))
+      case ArithmeticExpr(ae) => ae
+      case _ => throw new Exception("This should not happen")
+    }
+
+    gen.exp(i.vector, gen, dt, idx :: arrayAccess, tupleAccess)
+  }
+
  def codeGen(r: Record, gen: CodeGenerator, dt: DataType, arrayAccess: List[ArithExpr], tupleAccess: List[ArithExpr]): Expr = ???
 
   def codeGen(s: Snd, gen: CodeGenerator, dt: DataType, arrayAccess: List[ArithExpr], tupleAccess: List[ArithExpr]): Expr = {
@@ -211,6 +227,7 @@ class PrimitivesToC extends PrimitiveCodeGen {
       case b: BoolData => idealised.C.AST.Literal(b.b.toString)
       case f: FloatData => idealised.C.AST.Literal(f.f.toString)
       case i: IndexData => ArithmeticExpr(i.n)
+      case vd: VectorData => idealised.C.AST.Literal(vd.a(0).toString)
       case ad: ArrayData =>
         val nestedLiteral = DPIA.Phrases.Literal(ad.a(0))
         gen.exp(nestedLiteral, gen, nestedLiteral.d.dataType, arrayAccess.tail, tupleAccess)
@@ -230,6 +247,15 @@ class PrimitivesToC extends PrimitiveCodeGen {
     }
 
     gen.acc(i.array, value, gen, dt, idx :: arrayAccess, tupleAccess)
+  }
+
+  def codeGen(i: IdxVecAcc, value: Expr, gen: CodeGenerator, dt: DataType, arrayAccess: List[Nat], tupleAccess: List[Nat]): Expr = {
+    val idx: ArithExpr = gen.exp(i.index, gen) match {
+      case DeclRef(name) => NamedVar(name, gen.ranges(name))
+      case ArithmeticExpr(ae) => ae
+    }
+
+    gen.acc(i.vector, value, gen, dt, idx :: arrayAccess, tupleAccess)
   }
 
   def codeGen(join: JoinAcc, value: Expr, gen: CodeGenerator, dt: DataType, arrayAccess: List[Nat], tupleAccess: List[Nat]): Expr = {

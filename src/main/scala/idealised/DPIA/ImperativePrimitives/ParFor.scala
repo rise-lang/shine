@@ -9,13 +9,13 @@ import idealised.DPIA._
 
 import scala.xml.Elem
 
-abstract class AbstractParFor(val n: Nat,
-                              val dt: DataType,
-                              val out: Phrase[AccType],
-                              val body: Phrase[ExpType -> (AccType -> CommandType)])
+abstract class AbstractParFor[T <: DataType](val n: Nat,
+                                             val dt: T,
+                                             val out: Phrase[AccType],
+                                             val body: Phrase[ExpType -> (AccType -> CommandType)])
   extends CommandPrimitive {
 
-  override val `type`: CommandType =
+  override lazy val `type`: CommandType =
     (n: Nat) -> (dt: DataType) ->
       (out :: acc"[$n.$dt]") ->
         (body :: t"exp[idx($n)] -> acc[$dt] -> comm") ->
@@ -52,7 +52,7 @@ abstract class AbstractParFor(val n: Nat,
       Character.toLowerCase(name.charAt(0)) + name.substring(1)
     })
 
-  def makeParFor: (Nat, DataType, Phrase[AccType], Phrase[ExpType -> (AccType -> CommandType)]) => AbstractParFor
+  def makeParFor: (Nat, T, Phrase[AccType], Phrase[ExpType -> (AccType -> CommandType)]) => AbstractParFor[T]
 
 }
 
@@ -60,6 +60,7 @@ final case class ParFor(override val n: Nat,
                         override val dt: DataType,
                         override val out: Phrase[AccType],
                         override val body: Phrase[ExpType -> (AccType -> CommandType)])
-  extends AbstractParFor(n, dt, out, body) {
+  extends AbstractParFor[DataType](n, dt, out, body) {
+
   override def makeParFor = ParFor
 }

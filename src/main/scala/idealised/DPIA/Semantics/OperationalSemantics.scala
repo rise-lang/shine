@@ -51,6 +51,7 @@ object OperationalSemantics {
   sealed trait AccIdentifier
   case class NamedIdentifier(name: String) extends AccIdentifier
   case class ArrayAccessIdentifier(array: AccIdentifier, index: Nat) extends AccIdentifier
+  case class VectorAccessIdentifier(vector: AccIdentifier, index: Nat) extends AccIdentifier
   case class RecordIdentifier(fst: AccIdentifier, snd: AccIdentifier) extends AccIdentifier
 
   implicit def IntToIntData(i: Int): IntData = IntData(i)

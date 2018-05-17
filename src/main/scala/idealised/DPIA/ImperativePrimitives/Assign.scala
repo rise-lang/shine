@@ -1,7 +1,7 @@
 package idealised.DPIA.ImperativePrimitives
 
 import idealised.DPIA.DSL._
-import idealised.DPIA.IntermediatePrimitives.MapI
+import idealised.DPIA.IntermediatePrimitives.{MapI, MapVecI}
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
@@ -92,6 +92,9 @@ object Assign {
             A: Phrase[AccType],
             E: Phrase[ExpType]): Phrase[CommandType] = {
     dt match {
+      case VectorType(n, st) =>
+        MapVecI(n, st, st, λ(ExpType(st))(x => λ(AccType(st))(a => a := x )), E, A)
+
       // TODO: think about this more, but records (structs) are values ...
       case _: BasicType | _: RecordType => A := E
 
