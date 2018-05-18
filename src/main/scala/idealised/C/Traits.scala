@@ -1,41 +1,23 @@
 package idealised.C
 
-import idealised.DPIA
-import idealised.C.AST.{Block, Expr, Stmt}
+import idealised.C.AST.{Expr, Stmt}
 import idealised.DPIA.{Nat, x}
 import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType}
-import idealised.DPIA.FunctionalPrimitives._
-import idealised.DPIA.ImperativePrimitives._
 import idealised.C.CodeGeneration.CodeGenerator
 import idealised.DPIA.Phrases.{Identifier, Phrase}
-import lift.arithmetic._
-
-import scala.collection.immutable.List
-
-trait GeneratableComm {
-  def codeGen(block: Block, gen: CodeGenerator): Block
-}
 
 trait GeneratableExp {
-  def codeGen(gen: CodeGenerator): Expr
-}
-
-trait ViewExp {
-  def codeGen(gen: CodeGenerator, dt: DataType, arrayAccess: List[Nat], tupleAccess: List[Nat]): Expr
-}
-
-trait ViewAcc {
-  def codeGen(gen: CodeGenerator, value: Expr, dt: DataType, arrayAccess: List[Nat], tupleAccess: List[Nat]):  Expr
+  def codeGen(env: CodeGenerator.Environment, path: CodeGenerator.Path)(implicit gen: CodeGenerator): Expr
 }
 
 trait PrimitiveCodeGen {
   def name: String
 
-  def codeGen(s: DPIA.ImperativePrimitives.Skip, env: CodeGenerator.Environment)(implicit gen: CodeGenerator): Stmt
+  def codeGenSkip: Stmt
 
-  def codeGen(s: DPIA.ImperativePrimitives.Seq, env: CodeGenerator.Environment)(implicit gen: CodeGenerator): Stmt
+  def codeGenSeq(p1: Phrase[CommandType], p2: Phrase[CommandType], env: CodeGenerator.Environment)(implicit gen: CodeGenerator): Stmt
 
-  def codeGen(a: Assign, env: CodeGenerator.Environment)(implicit gen: CodeGenerator): Stmt
+  def codeGenAssign(a: Phrase[AccType], e: Phrase[ExpType], env: CodeGenerator.Environment)(implicit gen: CodeGenerator): Stmt
 
   def codeGenNew(dt: DataType, v: Identifier[ExpType x AccType], p: Phrase[CommandType], env: CodeGenerator.Environment)(implicit gen: CodeGenerator): Stmt
 

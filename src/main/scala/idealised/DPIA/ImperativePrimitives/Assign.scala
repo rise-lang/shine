@@ -104,4 +104,8 @@ object Assign {
       case _: DataTypeIdentifier => throw new Exception("This should not happen")
     }
   }
+
+  def unapply(arg: Assign): Option[(DataType, Phrase[AccType], Phrase[ExpType])] = {
+    Some( (arg.dt, arg.lhs, arg.rhs) )
+  }
 }

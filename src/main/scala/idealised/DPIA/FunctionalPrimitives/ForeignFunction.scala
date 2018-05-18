@@ -2,6 +2,7 @@ package idealised.DPIA.FunctionalPrimitives
 
 import idealised.C.AST._
 import idealised.C.CodeGeneration.CodeGenerator
+import idealised.C.CodeGeneration.CodeGenerator.{Environment, Path}
 import idealised.C.GeneratableExp
 import idealised.DPIA.Compilation.RewriteToImperative
 import idealised.DPIA.DSL._
@@ -48,14 +49,14 @@ final case class ForeignFunction(funDecl: ForeignFunctionDeclaration,
     recurse(args zip inTs, Seq(), Seq())
   }
 
-  override def codeGen(gen: CodeGenerator): Expr = {
+  override def codeGen(env: Environment, path: Path)(implicit gen: CodeGenerator): Expr = {
     gen.addDeclaration(
       FunDecl(funDecl.name,
         returnType = Type.fromDataType(outT),
         params = (funDecl.argNames zip inTs).map { case (name, dt) => VarDecl(name, Type.fromDataType(dt)) },
         body = Code(funDecl.body)))
 
-    FunCall(DeclRef(funDecl.name), args.map(gen.exp(_, gen)))
+    FunCall(DeclRef(funDecl.name), args.map(gen.exp(_, env, path)))
   }
 
   override def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {

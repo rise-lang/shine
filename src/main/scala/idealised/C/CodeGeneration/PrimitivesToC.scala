@@ -22,16 +22,20 @@ class PrimitivesToC extends PrimitiveCodeGen {
 
   // ==== generating C Statements ==== //
 
-  override def codeGen(s: Skip, env: Environment)(implicit gen: CodeGenerator): Stmt =
-    Comment("skip")
+  override def codeGenSkip: Stmt = Comment("skip")
 
-  override def codeGen(s: Seq, env: Environment)(implicit gen: CodeGenerator): Stmt =
-    Stmts(gen.cmd(s.c1, env), gen.cmd(s.c2, env))
+  override def codeGenSeq(p1: Phrase[CommandType],
+                          p2: Phrase[CommandType],
+                          env: Environment)
+                         (implicit gen: CodeGenerator): Stmt = {
+    Stmts(gen.cmd(p1, env), gen.cmd(p2, env))
+  }
 
-  override def codeGen(a: Assign, env: Environment)(implicit gen: CodeGenerator): Stmt = {
-    val lhs: Expr = gen.acc(a.lhs, env, List())
-    val rhs: Expr = gen.exp(a.rhs, env, List())
-    Assignment(lhs, rhs)
+  override def codeGenAssign(a: Phrase[AccType],
+                             e: Phrase[ExpType],
+                             env: Environment)
+                            (implicit gen: CodeGenerator): Stmt = {
+    Assignment(gen.acc(a, env, List()), gen.exp(e, env, List()))
   }
 
   override def codeGenNew(dt: DataType,
@@ -71,16 +75,8 @@ class PrimitivesToC extends PrimitiveCodeGen {
                              p: Phrase[CommandType],
                              env: Environment)
                             (implicit gen: CodeGenerator): Stmt = {
-    val i_ = freshName("i_")
-    val range = RangeAdd(0, n, 1)
-    val updatedGen = gen.updatedRanges(i_, range)
-
-    val init = VarDecl(i_, Type.int, init = Some(ArithmeticExpr(0)))
-    val cond = BinaryExpr(DeclRef(i_), BinaryOperator.<, ArithmeticExpr(n))
-    val increment = idealised.C.AST.Assignment(DeclRef(i_), ArithmeticExpr(NamedVar(i_, range) + 1))
-
-    ForLoop(DeclStmt(init), cond, increment,
-      Block(immutable.Seq(updatedGen.cmd(Phrase.substitute(a `@` i, `for`=o, `in`=p), env + (i.name -> i_)))))
+    // in C the parFor is implemented sequentially
+    codeGenFor(n, i, Phrase.substitute(a `@` i, `for`=o, `in`=p), env)
   }
 
   // ==== generating blocks  ==== //

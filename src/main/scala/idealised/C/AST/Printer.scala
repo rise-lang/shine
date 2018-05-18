@@ -229,7 +229,9 @@ class Printer {
   private def print(b: BinaryExpr): Unit = {
     print("(")
     print(b.lhs)
+    print(" ")
     print(b.op.toString)
+    print(" ")
     print(b.rhs)
     print(")")
   }

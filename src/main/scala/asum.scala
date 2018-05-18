@@ -1,6 +1,7 @@
 
 import dot.high_level
 import idealised.C
+import idealised.OpenMP
 import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.OpenCL._
 import idealised.SurfaceLanguage.DSL._
@@ -60,7 +61,8 @@ object asum extends App {
   {
     println(s"-- high level --")
     val phrase = TypeInference(high_level, Map()).convertToPhrase
-    val program = C.ProgramGenerator.makeCode(phrase)
+//    val program = C.ProgramGenerator.makeCode(phrase)
+    val program = OpenMP.ProgramGenerator.makeCode(phrase)
     println(program.code)
   }
 

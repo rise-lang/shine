@@ -10,9 +10,11 @@ import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.C._
 import idealised.C.AST._
-import lift.arithmetic.{Cst, NamedVar, SizeVar}
+import lift.arithmetic.{Cst, NamedVar}
 
 import scala.collection.immutable
+import scala.collection.mutable
+import scala.language.implicitConversions
 
 object CodeGenerator {
   type Environment = immutable.Map[String, String]
@@ -23,7 +25,7 @@ object CodeGenerator {
   def apply(p: Phrase[CommandType],
             env: CodeGenerator.Environment,
             primitiveCodeGen: PrimitiveCodeGen): (scala.collection.Seq[Decl], Block) = {
-    val gen = CodeGenerator(primitiveCodeGen, scala.collection.mutable.ListBuffer[Decl](), immutable.Map[String, lift.arithmetic.Range]())
+    val gen = CodeGenerator(primitiveCodeGen, mutable.ListBuffer[Decl](), immutable.Map[String, lift.arithmetic.Range]())
     val b = Block(immutable.Seq(gen.cmd(p, env)(gen)))
     (gen.decls, b)
   }
@@ -53,22 +55,20 @@ case class CodeGenerator(primitiveCodeGen: PrimitiveCodeGen,
   def cmd(phrase: Phrase[CommandType], env: CodeGenerator.Environment)
          (implicit gen: CodeGenerator): Stmt = {
     phrase match {
-      case s: idealised.DPIA.ImperativePrimitives.Skip => primitiveCodeGen.codeGen(s, env)
-      case s: idealised.DPIA.ImperativePrimitives.Seq => primitiveCodeGen.codeGen(s, env)
-      case a: Assign => primitiveCodeGen.codeGen(a, env)
-      case New(dt, _, f) =>
-        f match { case Lambda(v, p) => primitiveCodeGen.codeGenNew(dt, v, p, env) }
-      case For(n, f) =>
-        f match { case Lambda(i, p) => primitiveCodeGen.codeGenFor(n, i, p, env) }
-      case ParFor(n, dt, a, f) =>
-        f match { case Lambda(i, Lambda(o, p)) => primitiveCodeGen.codeGenParFor(n, dt, a, i, o, p, env) }
+      case _: Skip =>                               primitiveCodeGen.codeGenSkip
+      case Seq(p1, p2) =>                           primitiveCodeGen.codeGenSeq(p1, p2, env)
+      case Assign(_, a, e) =>                       primitiveCodeGen.codeGenAssign(a, e, env)
+      case New(dt, _, Lambda(v, p)) =>              primitiveCodeGen.codeGenNew(dt, v, p, env)
+      case For(n, Lambda(i, p)) =>                  primitiveCodeGen.codeGenFor(n, i, p, env)
+      case ParFor(n, dt, a, Lambda(i, Lambda(o, p))) =>
+                                                    primitiveCodeGen.codeGenParFor(n, dt, a, i, o, p, env)
     }
   }
 
   def acc(p: Phrase[AccType], env: CodeGenerator.Environment, path: CodeGenerator.Path)
          (implicit gen: CodeGenerator): Expr = {
     (p, path) match {
-      case (Identifier(x, _),     ps) =>            computeIndex(env(x), ps.reverse)
+      case (Identifier(x, _),     ps) =>            generateAccess(env(x), ps.reverse)
       case (IdxAcc(_, _, i, a),   ps) =>
         gen.exp(i, env, List()) match {
           case ArithmeticExpr(j) =>                 gen.acc(a, env, j :: ps)
@@ -87,43 +87,51 @@ case class CodeGenerator(primitiveCodeGen: PrimitiveCodeGen,
     }
   }
 
-  def exp(p: Phrase[ExpType], env: CodeGenerator.Environment, path: CodeGenerator.Path)
+  def exp(p: Phrase[ExpType], env: CodeGenerator.Environment, ps: CodeGenerator.Path)
          (implicit gen: CodeGenerator): Expr = {
-    (p, path) match {
-      case (Identifier(x, _), ps) =>                computeIndex(env.getOrElse(x, x), ps.reverse)
-      case (DPIA.Phrases.Literal(n), List()) =>     idealised.C.AST.Literal(n.toString)
-      case (UnaryOp(op, e), List()) =>              UnaryExpr(convertUnaryOp(op), gen.exp(e, env, List()))
-      case (BinOp(op, e1, e2), List()) =>           BinaryExpr(gen.exp(e1, env, List()), convertBinaryOp(op), gen.exp(e2, env, List()))
-      case (Zip(_, _, _, e1, e2), i :: xj :: ps) =>
-        xj match {
-          case Cst(1) =>                            gen.exp(e1, env, i :: ps)
-          case Cst(2) =>                            gen.exp(e2, env, i :: ps)
-        }
-      case (Split(n, _, _, e), i :: j :: ps) =>     gen.exp(e, env, i * n + j :: ps)
-      case (Join(n, _, _, e), i :: ps) =>           gen.exp(e, env, i / n :: i % n :: ps)
-      case (Record(_, _, e1, e2), xj :: ps) =>
-        xj match {
-          case Cst(1) =>                            gen.exp(e1, env, ps)
-          case Cst(2) =>                            gen.exp(e2, env, ps)
-        }
-      case (Fst(_, _, e), ps) =>                    gen.exp(e, env, Cst(1) :: ps)
-      case (Snd(_, _, e), ps) =>                    gen.exp(e, env, Cst(2) :: ps)
-      case (Idx(_, _, i, e), ps) =>
+    p match {
+      case Identifier(x, _) =>                generateAccess(env.getOrElse(x, x), ps.reverse)
+      case Phrases.Literal(n) => ps match {
+        case List() =>                        idealised.C.AST.Literal(n.toString)
+      }
+      case UnaryOp(op, e) => ps match {
+        case List() =>                        UnaryExpr(op, gen.exp(e, env, List()))
+      }
+      case BinOp(op, e1, e2) => ps match {
+        case List() =>                        BinaryExpr(gen.exp(e1, env, List()), op, gen.exp(e2, env, List()))
+      }
+      case Zip(_, _, _, e1, e2) => ps match {
+        case i :: Cst(1) :: ps =>             gen.exp(e1, env, i :: ps)
+        case i :: Cst(2) :: ps =>             gen.exp(e2, env, i :: ps)
+      }
+      case Split(n, _, _, e) => ps match {
+        case i :: j :: ps =>                  gen.exp(e, env, i * n + j :: ps)
+      }
+      case Join(n, _, _, e) => ps match {
+        case i :: ps =>                       gen.exp(e, env, i / n :: i % n :: ps)
+      }
+      case Record(_, _, e1, e2) => ps match {
+        case Cst(1) :: ps =>                  gen.exp(e1, env, ps)
+        case Cst(2) :: ps =>                  gen.exp(e2, env, ps)
+      }
+      case Fst(_, _, e) =>                    gen.exp(e, env, Cst(1) :: ps)
+      case Snd(_, _, e) =>                    gen.exp(e, env, Cst(2) :: ps)
+      case Idx(_, _, i, e) =>
         gen.exp(i, env, List()) match {
-          case ArithmeticExpr(j) =>                 gen.exp(e, env, j :: ps)
-          case DeclRef(j) =>                        gen.exp(e, env, NamedVar(j) :: ps)
-          case idealised.C.AST.Literal(j) =>        gen.exp(e, env, NamedVar(j) :: ps)
+          case ArithmeticExpr(j) =>           gen.exp(e, env, j :: ps)
+          case DeclRef(j) =>                  gen.exp(e, env, NamedVar(j) :: ps)
+          case idealised.C.AST.Literal(j) =>  gen.exp(e, env, NamedVar(j) :: ps)
         }
 
-      case (Proj1(pair), ps) => gen.exp(Lifting.liftPair(pair)._1, env, ps)
-      case (Proj2(pair), ps) => gen.exp(Lifting.liftPair(pair)._2, env, ps)
+      case Proj1(pair) =>                     gen.exp(Lifting.liftPair(pair)._1, env, ps)
+      case Proj2(pair) =>                     gen.exp(Lifting.liftPair(pair)._2, env, ps)
     }
   }
 
-  def computeIndex(identifier: String, paths: CodeGenerator.Path): Expr = {
+  def generateAccess(identifier: String, paths: CodeGenerator.Path): Expr = {
     paths match {
       case List() => DeclRef(identifier)
-      case ps => idealised.C.AST.Literal( identifier + ps.mkString("[", " ", "]") )
+      case List(idx) => ArraySubscript(DeclRef(identifier), ArithmeticExpr(idx))
     }
   }
 
@@ -360,7 +368,7 @@ case class CodeGenerator(primitiveCodeGen: PrimitiveCodeGen,
 //    }
 //  }
 
-  def convertBinaryOp(op: idealised.SurfaceLanguage.Operators.Binary.Value): idealised.C.AST.BinaryOperator.Value = {
+  private implicit def convertBinaryOp(op: idealised.SurfaceLanguage.Operators.Binary.Value): idealised.C.AST.BinaryOperator.Value = {
     import idealised.SurfaceLanguage.Operators.Binary._
     op match {
       case ADD => BinaryOperator.+
@@ -373,7 +381,7 @@ case class CodeGenerator(primitiveCodeGen: PrimitiveCodeGen,
     }
   }
 
-  def convertUnaryOp(op: idealised.SurfaceLanguage.Operators.Unary.Value): idealised.C.AST.UnaryOperator.Value = {
+  private implicit def convertUnaryOp(op: idealised.SurfaceLanguage.Operators.Unary.Value): idealised.C.AST.UnaryOperator.Value = {
     import idealised.SurfaceLanguage.Operators.Unary._
     op match {
       case NEG => UnaryOperator.-
