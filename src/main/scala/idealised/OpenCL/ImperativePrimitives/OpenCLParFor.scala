@@ -1,5 +1,6 @@
 package idealised.OpenCL.ImperativePrimitives
 
+import idealised.DPIA.Compilation.CodeGenerator
 import idealised.DPIA.DSL.{identifier, _}
 import idealised.DPIA.ImperativePrimitives.AbstractParFor
 import idealised.DPIA.Phrases.Phrase
@@ -87,4 +88,6 @@ abstract class OpenCLParFor(n: Nat,
 
     (block: Block) += synchronize
   }
+
+  override def codeGen(gen: CodeGenerator)(env: gen.Environment): gen.Stmt = ???
 }

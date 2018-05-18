@@ -1,5 +1,6 @@
 package idealised.OpenCL.CodeGeneration
 
+import idealised.DPIA.Compilation.CodeGenerator
 import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives._
 import idealised.DPIA.ImperativePrimitives._
@@ -218,6 +219,9 @@ object PrimitivesCodeGenerator {
       override def makeParFor = OpenCLParForSeq
 
       override def parallelismLevel = OpenCL.Sequential
+
+
+      override def codeGen(gen: CodeGenerator)(env: gen.Environment): gen.Stmt = ???
 
       override val name: String = freshName("i_")
 

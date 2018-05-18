@@ -7,7 +7,7 @@ import idealised.C.CodeGeneration.CodeGenerator
 import idealised.DPIA.Phrases.{Identifier, Phrase}
 
 trait GeneratableExp {
-  def codeGen(env: CodeGenerator.Environment, path: CodeGenerator.Path)(implicit gen: CodeGenerator): Expr
+  def codeGen(gen: CodeGenerator)(env: CodeGenerator.Environment, path: CodeGenerator.Path): Expr
 }
 
 trait PrimitiveCodeGen {

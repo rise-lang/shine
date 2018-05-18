@@ -1,5 +1,6 @@
 package idealised.DPIA.ImperativePrimitives
 
+import idealised.DPIA.Compilation.CodeGenerator
 import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
@@ -13,7 +14,7 @@ abstract class AbstractParFor(val n: Nat,
                               val dt: DataType,
                               val out: Phrase[AccType],
                               val body: Phrase[ExpType -> (AccType -> CommandType)])
-  extends CommandPrimitive {
+  extends CommandPrimitive with GeneratableCommand {
 
   override val `type`: CommandType =
     (n: Nat) -> (dt: DataType) ->
@@ -62,4 +63,10 @@ final case class ParFor(override val n: Nat,
                         override val body: Phrase[ExpType -> (AccType -> CommandType)])
   extends AbstractParFor(n, dt, out, body) {
   override def makeParFor = ParFor
+
+  override def codeGen(gen: CodeGenerator)(env: gen.Environment): gen.Stmt = {
+    body match {
+      case Lambda(i, Lambda(o, p)) => gen.primitiveCodeGen.codeGenParFor(n, dt, out, i, o, p, env, gen)
+    }
+  }
 }

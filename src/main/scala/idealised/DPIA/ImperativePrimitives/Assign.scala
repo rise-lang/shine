@@ -1,5 +1,6 @@
 package idealised.DPIA.ImperativePrimitives
 
+import idealised.DPIA.Compilation.CodeGenerator
 import idealised.DPIA.DSL._
 import idealised.DPIA.IntermediatePrimitives.MapI
 import idealised.DPIA.Phrases._
@@ -14,7 +15,7 @@ import scala.xml.Elem
 final class Assign(val dt: DataType,
                    val lhs: Phrase[AccType],
                    val rhs: Phrase[ExpType])
-  extends CommandPrimitive {
+  extends CommandPrimitive with GeneratableCommand {
 
   override val `type`: CommandType =
     (dt: DataType) -> (lhs :: acc"[$dt]") -> (rhs :: exp"[$dt]") -> comm
@@ -49,6 +50,11 @@ final class Assign(val dt: DataType,
     evalAssign(s, OperationalSemantics.eval(s, lhs), OperationalSemantics.eval(s, rhs), (s, identifier, value) => {
       s + Tuple2(identifier, value)
     })
+  }
+
+
+  override def codeGen(gen: CodeGenerator)(env: gen.Environment): gen.Stmt = {
+    gen.primitiveCodeGen.codeGenAssign(lhs, rhs, env, gen)
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {

@@ -75,7 +75,7 @@ class PrimitivesToC extends PrimitiveCodeGen {
                              p: Phrase[CommandType],
                              env: Environment)
                             (implicit gen: CodeGenerator): Stmt = {
-    // in C the parFor is implemented sequentially
+    // in C the parFor is impl
     codeGenFor(n, i, Phrase.substitute(a `@` i, `for`=o, `in`=p), env)
   }
 

@@ -1,12 +1,10 @@
 package idealised.C.CodeGeneration
 
-
-import idealised.DPIA
+import idealised._
 import idealised.DPIA._
 import idealised.DPIA.FunctionalPrimitives._
 import idealised.DPIA.ImperativePrimitives._
 import idealised.DPIA.Phrases._
-import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.C._
 import idealised.C.AST._
@@ -16,10 +14,80 @@ import scala.collection.immutable
 import scala.collection.mutable
 import scala.language.implicitConversions
 
-object CodeGenerator {
+object CCodeGen {
   type Environment = immutable.Map[String, String]
   type Path = immutable.List[Nat]
 
+  type Declarations = mutable.ListBuffer[Decl]
+  type Ranges = immutable.Map[String, lift.arithmetic.Range]
+
+  type CPrimitiveCodeGen = DPIA.Compilation.PrimitiveCodeGen[Environment, Path, C.AST.Stmt, C.AST.Expr]
+
+  def apply(p: Phrase[CommandType],
+            env: CCodeGen.Environment,
+            primitiveCodeGen: CCodeGen.CPrimitiveCodeGen): CCodeGen =
+    apply(p, env, primitiveCodeGen, mutable.ListBuffer[Decl](), immutable.Map[String, lift.arithmetic.Range]())
+}
+
+case class CCodeGen(p: Phrase[CommandType],
+                    env: CCodeGen.Environment,
+                    primitiveCodeGen: CCodeGen.CPrimitiveCodeGen,
+                    decls: CCodeGen.Declarations,
+                    ranges: CCodeGen.Ranges) extends DPIA.Compilation.CodeGenerator {
+  override type Environment = CCodeGen.Environment
+  override type Path = CCodeGen.Path
+
+  override type Stmt = C.AST.Stmt
+  override type Decl = C.AST.Decl
+  override type Expr = C.AST.Expr
+
+  def addDeclaration(decl: Decl): Unit = {
+    if ( decls.exists( _.name == decl.name ) ) {
+      println(s"warning: declaration with name ${decl.name} already defined")
+    } else {
+      decls += decl
+    }
+  }
+
+  def updatedRanges(key: String, value: lift.arithmetic.Range): CCodeGen =
+    copy(ranges = ranges.updated(key, value))
+
+  override def generate: (scala.Seq[Decl], Stmt) = {
+    val stmt = cmd(p, env)
+    (decls, Block(immutable.Seq(stmt)))
+  }
+
+  override def cmd(phrase: Phrase[CommandType], env: Environment): Stmt = {
+    phrase match {
+      case c: GeneratableCommand => c.codeGen(this)(env)
+      case Apply(_, _) | NatDependentApply(_, _) | TypeDependentApply(_, _) |
+           Phrases.IfThenElse(_, _, _) | Identifier(_, _) |
+           Proj1(_) | Proj2(_) | _: CommandPrimitive =>
+        error(s"Don't know how to generate code for $p")
+    }
+  }
+
+  override def acc(phrase: Phrase[AccType], env: Environment, ps: Path): Expr = {
+    phrase match {
+      case a: GeneratableAcc => a.codeGen(this)(env, ps)
+    }
+  }
+
+  override def exp(phrase: Phrase[ExpType], env: Environment, ps: Path): Expr = {
+    phrase match {
+      case e: GeneratableExpr => e.codeGen(this)(env, ps)
+    }
+  }
+}
+
+
+
+
+
+object CodeGenerator {
+  type Environment = immutable.Map[String, String]
+  type Path = immutable.List[Nat]
+  type Declarations = mutable.ListBuffer[Decl]
   type Ranges = immutable.Map[String, lift.arithmetic.Range]
 
   def apply(p: Phrase[CommandType],
@@ -38,7 +106,7 @@ object CodeGenerator {
 }
 
 case class CodeGenerator(primitiveCodeGen: PrimitiveCodeGen,
-                         decls: scala.collection.mutable.ListBuffer[Decl],
+                         decls: CodeGenerator.Declarations,
                          ranges: CodeGenerator.Ranges) {
 
   def addDeclaration(decl: Decl): Unit = {
@@ -77,21 +145,30 @@ case class CodeGenerator(primitiveCodeGen: PrimitiveCodeGen,
         }
       case SplitAcc(_, m, _, a) => ps match {
         case i :: ps =>                       gen.acc(a, env, i / m :: i % m :: ps)
+        case Nil =>                           error(s"Expected path to be not empty")
       }
       case JoinAcc(_, m, _, a) => ps match {
         case  i :: j :: ps =>                 gen.acc(a, env, i * m + j :: ps)
+        case _ :: Nil | Nil =>                error(s"Expected path to contain at least two elements")
       }
       case RecordAcc1(_, _, a) =>             gen.acc(a, env, Cst(1) :: ps)
       case RecordAcc2(_, _, a) =>             gen.acc(a, env, Cst(2) :: ps)
       case ZipAcc1(_, _, _, a) => ps match {
         case i :: ps =>                       gen.acc(a, env, i :: Cst(1) :: ps)
+        case Nil =>                           error(s"Expected path to be not empty")
       }
       case ZipAcc2(_, _, _, a) => ps match {
         case i :: ps =>                       gen.acc(a, env, i :: Cst(2) :: ps)
+        case Nil =>                           error(s"Expected path to be not empty")
       }
+
+      // TODO: investigate why still required
       case Proj1(pair) =>                     gen.acc(Lifting.liftPair(pair)._1, env, ps)
       case Proj2(pair) =>                     gen.acc(Lifting.liftPair(pair)._2, env, ps)
 
+      case Apply(_, _) | NatDependentApply(_, _) | TypeDependentApply(_, _) |
+           Phrases.IfThenElse(_, _, _) | _: AccPrimitive =>
+        error(s"Don't know how to generate code for $p")
     }
   }
 
@@ -100,27 +177,36 @@ case class CodeGenerator(primitiveCodeGen: PrimitiveCodeGen,
     p match {
       case Identifier(x, _) =>                generateAccess(env.getOrElse(x, x), ps.reverse)
       case Phrases.Literal(n) => ps match {
-        case List() =>                        idealised.C.AST.Literal(n.toString)
+        case Nil =>                           idealised.C.AST.Literal(n.toString)
+        case _ =>                             error(s"Expected path to be empty")
       }
       case UnaryOp(op, e) => ps match {
-        case List() =>                        UnaryExpr(op, gen.exp(e, env, List()))
+        case Nil =>                           UnaryExpr(op, gen.exp(e, env, List()))
+        case _ =>                             error(s"Expected path to be empty")
       }
       case BinOp(op, e1, e2) => ps match {
-        case List() =>                        BinaryExpr(gen.exp(e1, env, List()), op, gen.exp(e2, env, List()))
+        case Nil =>                           BinaryExpr(gen.exp(e1, env, List()), op, gen.exp(e2, env, List()))
+        case _ =>                             error(s"Expected path to be empty")
       }
       case Zip(_, _, _, e1, e2) => ps match {
         case i :: Cst(1) :: ps =>             gen.exp(e1, env, i :: ps)
         case i :: Cst(2) :: ps =>             gen.exp(e2, env, i :: ps)
+        case _ =>                             error(s"Expected path to have at least two values and contain " +
+                                                    s"1 or 2 as second value.")
       }
       case Split(n, _, _, e) => ps match {
         case i :: j :: ps =>                  gen.exp(e, env, i * n + j :: ps)
+        case _ :: Nil | Nil =>                error(s"Expected path to contain at least two elements")
       }
       case Join(n, _, _, e) => ps match {
         case i :: ps =>                       gen.exp(e, env, i / n :: i % n :: ps)
+        case Nil =>                           error(s"Expected path to be not empty")
       }
       case Record(_, _, e1, e2) => ps match {
         case Cst(1) :: ps =>                  gen.exp(e1, env, ps)
         case Cst(2) :: ps =>                  gen.exp(e2, env, ps)
+        case _ =>                             error(s"Expected path to have at least two values and contain " +
+                                                    s"1 or 2 as second value.")
       }
       case Fst(_, _, e) =>                    gen.exp(e, env, Cst(1) :: ps)
       case Snd(_, _, e) =>                    gen.exp(e, env, Cst(2) :: ps)
@@ -131,8 +217,13 @@ case class CodeGenerator(primitiveCodeGen: PrimitiveCodeGen,
           case idealised.C.AST.Literal(j) =>  gen.exp(e, env, NamedVar(j) :: ps)
         }
 
+      // TODO: investigate why still required
       case Proj1(pair) =>                     gen.exp(Lifting.liftPair(pair)._1, env, ps)
       case Proj2(pair) =>                     gen.exp(Lifting.liftPair(pair)._2, env, ps)
+
+      case Apply(_, _) | NatDependentApply(_, _) | TypeDependentApply(_, _) |
+           Phrases.IfThenElse(_, _, _) | _: ExpPrimitive =>
+        error(s"Don't know how to generate code for $p")
     }
   }
 

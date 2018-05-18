@@ -1,5 +1,6 @@
 package idealised.DPIA.ImperativePrimitives
 
+import idealised.DPIA.Compilation.CodeGenerator
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
@@ -17,7 +18,7 @@ final case class DoubleBufferFor(n: Nat,
                                  buffer2: Phrase[VarType],
                                  body: Phrase[`(nat)->`[AccType -> (ExpType -> CommandType)]],
                                  C: Phrase[ExpType -> CommandType])
-  extends CommandPrimitive {
+  extends CommandPrimitive with GeneratableCommand {
 
   assert(
     body match {
@@ -46,6 +47,9 @@ final case class DoubleBufferFor(n: Nat,
     }
 
   override def eval(s: Store): Store = ???
+
+
+  override def codeGen(gen: CodeGenerator)(env: gen.Environment): gen.Stmt = ???
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {
     DoubleBufferFor(fun(n), fun(m), fun(k), fun(dt),
