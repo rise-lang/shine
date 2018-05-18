@@ -55,35 +55,43 @@ case class CodeGenerator(primitiveCodeGen: PrimitiveCodeGen,
   def cmd(phrase: Phrase[CommandType], env: CodeGenerator.Environment)
          (implicit gen: CodeGenerator): Stmt = {
     phrase match {
-      case _: Skip =>                               primitiveCodeGen.codeGenSkip
-      case Seq(p1, p2) =>                           primitiveCodeGen.codeGenSeq(p1, p2, env)
-      case Assign(_, a, e) =>                       primitiveCodeGen.codeGenAssign(a, e, env)
-      case New(dt, _, Lambda(v, p)) =>              primitiveCodeGen.codeGenNew(dt, v, p, env)
-      case For(n, Lambda(i, p)) =>                  primitiveCodeGen.codeGenFor(n, i, p, env)
+      case _: Skip =>                         primitiveCodeGen.codeGenSkip
+      case Seq(p1, p2) =>                     primitiveCodeGen.codeGenSeq(p1, p2, env)
+      case Assign(_, a, e) =>                 primitiveCodeGen.codeGenAssign(a, e, env)
+      case New(dt, _, Lambda(v, p)) =>        primitiveCodeGen.codeGenNew(dt, v, p, env)
+      case For(n, Lambda(i, p)) =>            primitiveCodeGen.codeGenFor(n, i, p, env)
       case ParFor(n, dt, a, Lambda(i, Lambda(o, p))) =>
-                                                    primitiveCodeGen.codeGenParFor(n, dt, a, i, o, p, env)
+                                              primitiveCodeGen.codeGenParFor(n, dt, a, i, o, p, env)
     }
   }
 
-  def acc(p: Phrase[AccType], env: CodeGenerator.Environment, path: CodeGenerator.Path)
+  def acc(p: Phrase[AccType], env: CodeGenerator.Environment, ps: CodeGenerator.Path)
          (implicit gen: CodeGenerator): Expr = {
-    (p, path) match {
-      case (Identifier(x, _),     ps) =>            generateAccess(env(x), ps.reverse)
-      case (IdxAcc(_, _, i, a),   ps) =>
+    p match {
+      case Identifier(x, _) =>                generateAccess(env(x), ps.reverse)
+      case IdxAcc(_, _, i, a) =>
         gen.exp(i, env, List()) match {
-          case ArithmeticExpr(j) =>                 gen.acc(a, env, j :: ps)
-          case DeclRef(j) =>                        gen.acc(a, env, NamedVar(j) :: ps)
-          case idealised.C.AST.Literal(j) =>        gen.acc(a, env, NamedVar(j) :: ps)
+          case ArithmeticExpr(j) =>           gen.acc(a, env, j :: ps)
+          case DeclRef(j) =>                  gen.acc(a, env, NamedVar(j) :: ps)
+          case idealised.C.AST.Literal(j) =>  gen.acc(a, env, NamedVar(j) :: ps)
         }
-      case (SplitAcc(_, m, _, a), i :: ps) =>       gen.acc(a, env, i / m :: i % m :: ps)
-      case (JoinAcc(_, m, _, a),  i :: j :: ps) =>  gen.acc(a, env, i * m + j :: ps)
-      case (RecordAcc1(_, _, a),  ps) =>            gen.acc(a, env, Cst(1) :: ps)
-      case (RecordAcc2(_, _, a),  ps) =>            gen.acc(a, env, Cst(2) :: ps)
-      case (ZipAcc1(_, _, _, a),  i :: ps) =>       gen.acc(a, env, i :: Cst(1) :: ps)
-      case (ZipAcc2(_, _, _, a),  i :: ps) =>       gen.acc(a, env, i :: Cst(2) :: ps)
+      case SplitAcc(_, m, _, a) => ps match {
+        case i :: ps =>                       gen.acc(a, env, i / m :: i % m :: ps)
+      }
+      case JoinAcc(_, m, _, a) => ps match {
+        case  i :: j :: ps =>                 gen.acc(a, env, i * m + j :: ps)
+      }
+      case RecordAcc1(_, _, a) =>             gen.acc(a, env, Cst(1) :: ps)
+      case RecordAcc2(_, _, a) =>             gen.acc(a, env, Cst(2) :: ps)
+      case ZipAcc1(_, _, _, a) => ps match {
+        case i :: ps =>                       gen.acc(a, env, i :: Cst(1) :: ps)
+      }
+      case ZipAcc2(_, _, _, a) => ps match {
+        case i :: ps =>                       gen.acc(a, env, i :: Cst(2) :: ps)
+      }
+      case Proj1(pair) =>                     gen.acc(Lifting.liftPair(pair)._1, env, ps)
+      case Proj2(pair) =>                     gen.acc(Lifting.liftPair(pair)._2, env, ps)
 
-      case (Proj1(pair), ps) => gen.acc(Lifting.liftPair(pair)._1, env, ps)
-      case (Proj2(pair), ps) => gen.acc(Lifting.liftPair(pair)._2, env, ps)
     }
   }
 
