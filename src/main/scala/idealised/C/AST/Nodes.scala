@@ -26,6 +26,8 @@ case class Block(body: Seq[Stmt] = Seq()) extends Stmt {
   def add(s: Seq[Stmt]): Block = this.++(s)
 }
 
+case class Stmts(fst: Stmt, snd: Stmt) extends Stmt
+
 case class ForLoop(init: Stmt, cond: Expr, increment: Expr, body: Stmt) extends Stmt
 
 case class WhileLoop(cond: Expr,body: Stmt) extends Stmt

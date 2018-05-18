@@ -35,7 +35,9 @@ object ProgramGenerator {
 
     val p3 = substituteImplementations(p2)
 
-    val (decls, code) = C.CodeGeneration.CodeGenerator(p3, new CodeGeneration.PrimitivesToOpenMP)
+    val env = (outParam +: inputParams).map(p => p.name -> p.name ).toMap
+
+    val (decls, code) = C.CodeGeneration.CodeGenerator(p3, env, new CodeGeneration.PrimitivesToOpenMP)
 
     OpenMP.Program(
       decls,

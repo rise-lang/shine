@@ -1,4 +1,6 @@
 
+import dot.high_level
+import idealised.C
 import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.OpenCL._
 import idealised.SurfaceLanguage.DSL._
@@ -14,8 +16,8 @@ import scala.util.Random
 
 object asum extends App {
 
-  Executor.loadLibrary()
-  Executor.init()
+//  Executor.loadLibrary()
+//  Executor.init()
 
   val check = true
   val N = SizeVar("N")
@@ -28,31 +30,41 @@ object asum extends App {
     val kernel = KernelGenerator.makeKernel(phrase, localSize = 128, globalSize = N)
     println(kernel.code)
 
-    val fun = kernel.as[ScalaFunction `(` Array[Float] `)=>` Array[Float]]
-
-    val size = 1024 * 1024
-
-    val input = Array.fill(size)(Random.nextInt(10).toFloat)
-
-    val (res, time) = fun(input `;`)
-    println(s"RESULT NAME: $name TIME: $time")
-    if (check) {
-      val gold = input.map(math.abs).sum
-      if (res.sum == gold) {
-        println(s"Computed result MATCHES with gold solution.")
-      } else {
-        println(s"ERROR computed result (${res.sum}) differs from gold ($gold) solution.")
-      }
-    }
-
+//    val fun = kernel.as[ScalaFunction `(` Array[Float] `)=>` Array[Float]]
+//
+//    val size = 1024 * 1024
+//
+//    val input = Array.fill(size)(Random.nextInt(10).toFloat)
+//
+//    val (res, time) = fun(input `;`)
+//    println(s"RESULT NAME: $name TIME: $time")
+//    if (check) {
+//      val gold = input.map(math.abs).sum
+//      if (res.sum == gold) {
+//        println(s"Computed result MATCHES with gold solution.")
+//      } else {
+//        println(s"ERROR computed result (${res.sum}) differs from gold ($gold) solution.")
+//      }
+//    }
+//
     println("----------------\n")
   }
 
-  val abs = (t: DataType) => fun(x => oclFun("fabs", t, t, x))
+  //val abs = (t: DataType) => fun(x => oclFun("fabs", t, t, x))
+  val abs = (t: DataType) => fun(x => x)
   val add = fun(x => fun(a => x + a))
 
   val high_level = fun(inputT)(input =>
     reduce(add, 0.0f) o map(abs(float)) $ input)
+
+  {
+    println(s"-- high level --")
+    val phrase = TypeInference(high_level, Map()).convertToPhrase
+    val program = C.ProgramGenerator.makeCode(phrase)
+    println(program.code)
+  }
+
+  System.exit(1)
 
   {
     println(s"-- high level --")
@@ -119,5 +131,5 @@ object asum extends App {
 //  )
   runOpenCLKernel("amdDerived1", amdDerived1)
 
-  Executor.shutdown()
+//  Executor.shutdown()
 }
