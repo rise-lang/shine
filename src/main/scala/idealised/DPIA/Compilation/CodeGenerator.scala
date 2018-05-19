@@ -18,6 +18,7 @@ trait CodeGenerator[Environment, Path, Stmt, Expr, Decl] {
 
   def exp(phrase: Phrase[ExpType], env: Environment, ps: Path): Expr
 
+  // generate code interface for commands
   def codeGenSkip: Stmt
 
   def codeGenSeq(p1: Phrase[CommandType],
@@ -51,12 +52,14 @@ trait CodeGenerator[Environment, Path, Stmt, Expr, Decl] {
                     env: Environment,
                     gen: this.type): Stmt
 
+  // generate code interface for acceptors
   def codeGenIdxAcc(i: Phrase[ExpType],
                     a: Phrase[AccType],
                     env: Environment,
                     ps: Path,
                     gen: this.type): Expr
 
+  // generate code interface for expressions
   def codeGenLiteral(d: OperationalSemantics.Data): Expr
 
   def codeGenUnaryOp(op: SurfaceLanguage.Operators.Unary.Value,

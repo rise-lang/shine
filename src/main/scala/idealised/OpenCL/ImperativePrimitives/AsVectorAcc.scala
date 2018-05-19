@@ -4,7 +4,7 @@ import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised.OpenCL.CodeGeneration.CodeGenerator
+import idealised.OpenCL.CodeGeneration.OpenCLOldCodeGenerator
 import idealised.OpenCL.ViewAcc
 import ir.Type
 import lift.arithmetic.Cst
@@ -29,13 +29,13 @@ final case class AsVectorAcc(n: Nat,
 
   override def eval(s: Store): AccIdentifier = ???
 
-  override def toOpenCL(env: CodeGenerator.Environment,
+  override def toOpenCL(env: OpenCLOldCodeGenerator.Environment,
                         value: Expression,
                         dt: DataType,
                         arrayAccess: List[Nat],
                         tupleAccess: List[Nat]): Expression = {
     val i :: is = arrayAccess
-    CodeGenerator.acc(array, value, env, dt, (i / n) :: is, tupleAccess)
+    OpenCLOldCodeGenerator.acc(array, value, env, dt, (i / n) :: is, tupleAccess)
 //    // Similar to Join
 //    val idx = arrayAccess.head
 //    val stack = arrayAccess.tail

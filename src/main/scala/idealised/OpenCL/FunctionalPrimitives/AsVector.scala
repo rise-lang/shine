@@ -6,7 +6,7 @@ import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised.OpenCL.CodeGeneration.CodeGenerator
+import idealised.OpenCL.CodeGeneration.OpenCLOldCodeGenerator
 import idealised.OpenCL.ImperativePrimitives.AsVectorAcc
 import idealised.OpenCL.ViewExp
 import opencl.generator.OpenCLAST.Expression
@@ -30,13 +30,13 @@ final case class AsVector(n: Nat,
 
   override def eval(s: Store): Data = ???
 
-  override def toOpenCL(env: CodeGenerator.Environment,
+  override def toOpenCL(env: OpenCLOldCodeGenerator.Environment,
                         arrayAccess: List[Nat],
                         tupleAccess: List[Nat],
                         dt: DataType): Expression = {
     val i :: is = arrayAccess
     println(s"asVector: ${i * n}")
-    CodeGenerator.exp(array, env, dt, (i * n) :: is, tupleAccess)
+    OpenCLOldCodeGenerator.exp(array, env, dt, (i * n) :: is, tupleAccess)
 //    // similar to Split
 //    val chunkId = arrayAccess.head
 //    // we want to access element 0 and there is only one of it

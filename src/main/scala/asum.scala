@@ -61,8 +61,8 @@ object asum extends App {
   {
     println(s"-- high level --")
     val phrase = TypeInference(high_level, Map()).convertToPhrase
-    val program = C.ProgramGenerator.makeCode(phrase)
-//    val program = OpenMP.ProgramGenerator.makeCode(phrase)
+//    val program = C.ProgramGenerator.makeCode(phrase)
+    val program = OpenMP.ProgramGenerator.makeCode(phrase)
     println(program.code)
   }
 

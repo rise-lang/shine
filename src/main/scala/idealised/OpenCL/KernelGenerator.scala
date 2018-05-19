@@ -8,7 +8,7 @@ import idealised.DPIA.Compilation._
 import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types._
-import idealised.OpenCL.CodeGeneration.{AdaptKernelBody, AdaptKernelParameters, CodeGenerator, HoistMemoryAllocations}
+import idealised.OpenCL.CodeGeneration.{AdaptKernelBody, AdaptKernelParameters, OpenCLOldCodeGenerator, HoistMemoryAllocations}
 import idealised.OpenCL.CodeGeneration.HoistMemoryAllocations.AllocationInfo
 import opencl.generator.OpenCLAST._
 import opencl.generator.OpenCLPrinter
@@ -157,7 +157,7 @@ object KernelGenerator {
   }
 
   private def makeBody(p: Phrase[CommandType], localSize: Nat, globalSize: Nat): Block = {
-    CodeGenerator.cmd(p, Block(), CodeGenerator.Environment(localSize, globalSize))
+    OpenCLOldCodeGenerator.cmd(p, Block(), OpenCLOldCodeGenerator.Environment(localSize, globalSize))
   }
 
   private def adaptKernelBody(body: Block): Block = {

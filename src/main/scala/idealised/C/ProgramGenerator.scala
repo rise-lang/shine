@@ -4,7 +4,7 @@ import idealised.DPIA.Compilation._
 import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types.{PhraseType, ExpType, AccType, CommandType, DataType, TypeChecker, PairType}
-import idealised.C.CodeGeneration.CodeGenerator
+//import idealised.C.CodeGeneration.CodeGenerator
 import idealised.C.AST._
 import idealised._
 
@@ -39,8 +39,7 @@ object ProgramGenerator {
 
     val env = (outParam +: inputParams).map(p => p.name -> p.name ).toMap
 
-//    val (decls, code) = CodeGenerator(p3, env, new CodeGeneration.PrimitivesToC)
-    val (decls, code) = C.CodeGeneration.CCodeGen(p3, env).generate
+    val (decls, code) = C.CodeGeneration.CodeGenerator(p3, env).generate
 
     C.Program(decls,
       function = makeFunction(makeParams(outParam, inputParams), Block(Seq(code))),

@@ -6,7 +6,7 @@ import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised.OpenCL.CodeGeneration.CodeGenerator
+import idealised.OpenCL.CodeGeneration.OpenCLOldCodeGenerator
 import idealised.OpenCL.ImperativePrimitives.AsScalarAcc
 import idealised.OpenCL.ViewExp
 import ir.Type
@@ -33,13 +33,13 @@ final case class AsScalar(n: Nat,
 
   override def eval(s: Store): Data = ???
 
-  override def toOpenCL(env: CodeGenerator.Environment,
+  override def toOpenCL(env: OpenCLOldCodeGenerator.Environment,
                         arrayAccess: List[Nat],
                         tupleAccess: List[Nat],
                         dt: DataType): Expression = {
     val i :: is = arrayAccess
     println(s"asSclar: ${(i /^ n)}")
-    CodeGenerator.exp(array, env, dt, (i /^ n) :: is, tupleAccess)
+    OpenCLOldCodeGenerator.exp(array, env, dt, (i /^ n) :: is, tupleAccess)
 //    // Similar to Join
 //    val idx = arrayAccess.head
 //    val stack = arrayAccess.tail
