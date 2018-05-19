@@ -22,7 +22,7 @@ final case class Seq(c1: Phrase[CommandType],
   }
 
   override def codeGen[Environment, Path, Stmt, Expr, Decl](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl])(env: Environment): Stmt = {
-    gen.primitiveCodeGen.codeGenSeq(c1, c2, env, gen)
+    gen.codeGenSeq(c1, c2, env, gen)
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {

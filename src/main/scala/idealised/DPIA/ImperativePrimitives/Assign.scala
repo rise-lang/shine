@@ -53,7 +53,7 @@ final class Assign(val dt: DataType,
   }
 
   override def codeGen[Environment, Path, Stmt, Expr, Decl](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl])(env: Environment): Stmt = {
-    gen.primitiveCodeGen.codeGenAssign(lhs, rhs, env, gen)
+    gen.codeGenAssign(lhs, rhs, env, gen)
   }
 
 //  override def codeGen[Gen <: CodeGenerator](gen: Gen)(env: Gen#Environment): Gen#Stmt = {

@@ -1,7 +1,7 @@
 package idealised.DPIA.ImperativePrimitives
 
 import idealised.DPIA.Compilation.CodeGenerator
-import idealised.DPIA.Phrases.{CommandPrimitive, GeneratableCommand, Phrase, VisitAndRebuild}
+import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 
@@ -16,7 +16,7 @@ case class Skip() extends CommandPrimitive with GeneratableCommand {
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[CommandType] = this
 
-  override def codeGen[Environment, Path, Stmt, Expr, Decl](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl])(env: Environment): Stmt = gen.primitiveCodeGen.codeGenSkip
+  override def codeGen[Environment, Path, Stmt, Expr, Decl](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl])(env: Environment): Stmt = gen.codeGenSkip
 
   override def prettyPrint: String = "skip"
 

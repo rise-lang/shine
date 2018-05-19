@@ -46,14 +46,7 @@ final case class ForeignFunction(funDecl: ForeignFunctionDeclaration,
   }
 
   override def codeGen[Environment, Path, Stmt, Expr, Decl](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl])(env: Environment, path: Path): Expr = {
-//    gen.addDeclaration(
-//      FunDecl(funDecl.name,
-//        returnType = Type.fromDataType(outT),
-//        params = (funDecl.argNames zip inTs).map { case (name, dt) => VarDecl(name, Type.fromDataType(dt)) },
-//        body = Code(funDecl.body)))
-//
-//    FunCall(DeclRef(funDecl.name), args.map(gen.exp(_, env, path)(gen)))
-    ???
+    gen.codeGenForeignFunction(funDecl, inTs, outT, args, env, path, gen)
   }
 
   override def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {

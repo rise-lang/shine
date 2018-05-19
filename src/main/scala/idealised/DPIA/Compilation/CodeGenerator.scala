@@ -5,45 +5,42 @@ import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType}
 import idealised.DPIA.{Nat, x}
 import idealised.SurfaceLanguage
+import idealised.SurfaceLanguage.Primitives.ForeignFunctionDeclaration
 
 trait CodeGenerator[Environment, Path, Stmt, Expr, Decl] {
-  def generate: (Seq[Decl], Stmt)
+  def name: String
 
-  def primitiveCodeGen: PrimitiveCodeGen[Environment, Path, Stmt, Expr, Decl]
+  def generate: (Seq[Decl], Stmt)
 
   def cmd(phrase: Phrase[CommandType], env: Environment): Stmt
 
   def acc(phrase: Phrase[AccType], env: Environment, ps: Path): Expr
 
   def exp(phrase: Phrase[ExpType], env: Environment, ps: Path): Expr
-}
-
-trait PrimitiveCodeGen[Environment, Path, Stmt, Expr, Decl] {
-  def name: String
 
   def codeGenSkip: Stmt
 
   def codeGenSeq(p1: Phrase[CommandType],
                  p2: Phrase[CommandType],
                  env: Environment,
-                 gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl]): Stmt
+                 gen: this.type): Stmt
 
   def codeGenAssign(a: Phrase[AccType],
                     e: Phrase[ExpType],
                     env: Environment,
-                    gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl]): Stmt
+                    gen: this.type): Stmt
 
   def codeGenNew(dt: DataType,
                  v: Identifier[ExpType x AccType],
                  p: Phrase[CommandType],
                  env: Environment,
-                 gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl]): Stmt
+                 gen: this.type): Stmt
 
   def codeGenFor(n: Nat,
                  i: Identifier[ExpType],
                  p: Phrase[CommandType],
                  env: Environment,
-                 gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl]): Stmt
+                 gen: this.type): Stmt
 
   def codeGenParFor(n: Nat,
                     dt: DataType,
@@ -52,13 +49,13 @@ trait PrimitiveCodeGen[Environment, Path, Stmt, Expr, Decl] {
                     o: Phrase[AccType],
                     p: Phrase[CommandType],
                     env: Environment,
-                    gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl]): Stmt
+                    gen: this.type): Stmt
 
   def codeGenIdxAcc(i: Phrase[ExpType],
                     a: Phrase[AccType],
                     env: Environment,
                     ps: Path,
-                    gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl]): Expr
+                    gen: this.type): Expr
 
   def codeGenLiteral(d: OperationalSemantics.Data): Expr
 
@@ -72,7 +69,15 @@ trait PrimitiveCodeGen[Environment, Path, Stmt, Expr, Decl] {
                  e: Phrase[ExpType],
                  env: Environment,
                  ps: Path,
-                 gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl]): Expr
+                 gen: this.type): Expr
+
+  def codeGenForeignFunction(funDecl: ForeignFunctionDeclaration,
+                             inTs: Seq[DataType],
+                             outT: DataType,
+                             args: Seq[Phrase[ExpType]],
+                             env: Environment,
+                             ps: Path,
+                             gen: this.type): Expr
 
   def generateAccess(identifier: String, paths: Path): Expr
 }

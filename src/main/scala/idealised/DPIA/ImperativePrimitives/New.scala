@@ -28,7 +28,7 @@ final case class New(dt: DataType,
 
   override def codeGen[Environment, Path, Stmt, Expr, Decl](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl])(env: Environment): Stmt = {
     f match {
-      case Lambda(v, p) => gen.primitiveCodeGen.codeGenNew(dt, v, p, env, gen)
+      case Lambda(v, p) => gen.codeGenNew(dt, v, p, env, gen)
     }
   }
 

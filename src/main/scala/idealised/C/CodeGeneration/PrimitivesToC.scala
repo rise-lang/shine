@@ -1,125 +1,14 @@
 package idealised.C.CodeGeneration
 
+import idealised.C.AST._
+import idealised.C.PrimitiveCodeGen
 import idealised.DPIA.DSL._
-import idealised.DPIA.FunctionalPrimitives._
-import idealised.DPIA.ImperativePrimitives._
 import idealised.DPIA.Phrases._
-import idealised.DPIA.Semantics.OperationalSemantics
-import idealised.DPIA.Semantics.OperationalSemantics.IndexData
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised._
 import lift.arithmetic._
-import idealised.C.PrimitiveCodeGen
-import idealised.C.AST._
-import idealised.C.CodeGeneration.CCodeGen.{Environment, Path}
-import idealised.SurfaceLanguage.Operators
 
 import scala.collection.immutable
-
-class CPrimitivesToC extends DPIA.Compilation.PrimitiveCodeGen[CCodeGen.Environment, CCodeGen.Path, C.AST.Stmt, C.AST.Expr, C.AST.Decl] {
-  override def name: String = "C"
-
-  override def codeGenSkip: Stmt = Comment("skip")
-
-  override def codeGenSeq(p1: Phrase[CommandType],
-                          p2: Phrase[CommandType],
-                          env: Environment,
-                          gen: Compilation.CodeGenerator[Environment, Path, Stmt, Expr, Decl]): Stmt = {
-    ???
-  }
-//  override def codeGenSeq(p1: Phrase[CommandType],
-//                          p2: Phrase[CommandType],
-//                          env: Environment,
-//                          gen: CCodeGen): Stmt = {
-//    Stmts(gen.cmd(p1, env), gen.cmd(p2, env))
-//  }
-//
-//  override def codeGenAssign(a: Phrase[AccType],
-//                             e: Phrase[ExpType],
-//                             env: Environment,
-//                             gen: CCodeGen): Stmt = {
-//    Assignment(gen.acc(a, env, List()), gen.exp(e, env, List()))
-//  }
-//
-//  override def codeGenNew(dt: DataType,
-//                          v: Identifier[ExpType x AccType],
-//                          p: Phrase[CommandType],
-//                          env: Environment,
-//                          gen: CCodeGen): Stmt = {
-//    Block(immutable.Seq(
-//      DeclStmt(VarDecl(v.name, Type.fromDataType(dt))),
-//      gen.cmd( Phrase.substitute(Pair(π1(v), π2(v)), `for`=v, `in`=p),
-//        env + ( v.name -> v.name, v.name -> v.name ) )
-//    ))
-//  }
-//
-  override def codeGenFor(n: Nat,
-                          i: Identifier[ExpType],
-                          p: Phrase[CommandType],
-                          env: Environment,
-                          gen: Compilation.CodeGenerator[Environment, Path, Stmt, Expr, Decl]): Stmt = {
-//    val i_ = freshName("i_")
-//    val range = RangeAdd(0, n, 1)
-//    val updatedGen = gen.updatedRanges(i_, range)
-//
-//    val init = VarDecl(i_, Type.int, init = Some(ArithmeticExpr(0)))
-//    val cond = BinaryExpr(DeclRef(i_), BinaryOperator.<, ArithmeticExpr(n))
-//    val increment = idealised.C.AST.Assignment(DeclRef(i_), ArithmeticExpr(NamedVar(i_, range) + 1))
-//
-//    ForLoop(DeclStmt(init), cond, increment,
-//      Block(immutable.Seq(updatedGen.cmd(p, env + (i.name -> i_)))))
-    ???
-  }
-//
-//  override def codeGenParFor(n: Nat,
-//                             dt: DataType,
-//                             a: Phrase[AccType],
-//                             i: Identifier[ExpType],
-//                             o: Phrase[AccType],
-//                             p: Phrase[CommandType],
-//                             env: Environment,
-//                             gen: CCodeGen): Stmt = {
-//???
-//  }
-//
-//  override def codeGenIdxAcc(i: Phrase[ExpType],
-//                             a: Phrase[AccType],
-//                             env: Environment,
-//                             ps: Path,
-//                             gen: CCodeGen): Expr = {
-//???
-//  }
-//
-//  override def codeGenLiteral(d: OperationalSemantics.Data): Expr = ???
-//
-//  override def codeGenUnaryOp(op: Operators.Unary.Value, e: Expr): Expr = ???
-//
-//  override def codeGenBinaryOp(op: Operators.Binary.Value, e1: Expr, e2: Expr): Expr = ???
-//
-//  override def codeGenIdx(i: Phrase[ExpType], e: Phrase[ExpType], env: Environment, ps: Path, gen: CCodeGen): Expr = ???
-//
-//  override def generateAccess(identifier: String, paths: Path): Expr = ???
-  override def codeGenAssign(a: Phrase[AccType], e: Phrase[ExpType], env: Environment, gen: Compilation.CodeGenerator[Environment, Path, Stmt, Expr, Decl]): Stmt = ???
-
-  override def codeGenNew(dt: DataType, v: Identifier[x[ExpType, AccType]], p: Phrase[CommandType], env: Environment, gen: Compilation.CodeGenerator[Environment, Path, Stmt, Expr, Decl]): Stmt = ???
-
-//  override def codeGenFor(n: Nat, i: Identifier[ExpType], p: Phrase[CommandType], env: Environment, gen: Compilation.CodeGenerator[Environment, Path, Stmt, Expr, Decl]): Stmt = ???
-
-  override def codeGenParFor(n: Nat, dt: DataType, a: Phrase[AccType], i: Identifier[ExpType], o: Phrase[AccType], p: Phrase[CommandType], env: Environment, gen: Compilation.CodeGenerator[Environment, Path, Stmt, Expr, Decl]): Stmt = ???
-
-  override def codeGenIdxAcc(i: Phrase[ExpType], a: Phrase[AccType], env: Environment, ps: Path, gen: Compilation.CodeGenerator[Environment, Path, Stmt, Expr, Decl]): Expr = ???
-
-  override def codeGenLiteral(d: OperationalSemantics.Data): Expr = ???
-
-  override def codeGenUnaryOp(op: Operators.Unary.Value, e: Expr): Expr = ???
-
-  override def codeGenBinaryOp(op: Operators.Binary.Value, e1: Expr, e2: Expr): Expr = ???
-
-  override def codeGenIdx(i: Phrase[ExpType], e: Phrase[ExpType], env: Environment, ps: Path, gen: Compilation.CodeGenerator[Environment, Path, Stmt, Expr, Decl]): Expr = ???
-
-  override def generateAccess(identifier: String, paths: Path): Expr = ???
-}
 
 class PrimitivesToC extends PrimitiveCodeGen {
   import idealised.C.CodeGeneration.CodeGenerator.Environment

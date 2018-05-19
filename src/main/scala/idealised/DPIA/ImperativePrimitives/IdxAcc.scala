@@ -31,7 +31,7 @@ final case class IdxAcc(n: Nat,
   }
 
   override def codeGen[Environment, Path, Stmt, Expr, Decl](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl])(env: Environment, path: Path): Expr = {
-    gen.primitiveCodeGen.codeGenIdxAcc(index, array, env, path, gen)
+    gen.codeGenIdxAcc(index, array, env, path, gen)
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {

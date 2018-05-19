@@ -52,7 +52,7 @@ object asum extends App {
   }
 
   //val abs = (t: DataType) => fun(x => oclFun("fabs", t, t, x))
-  val abs = (t: DataType) => fun(x => x)
+  val abs = (t: DataType) => foreignFunction(t, "abs", ("y", t), "{ return fabs(y); }")
   val add = fun(x => fun(a => x + a))
 
   val high_level = fun(inputT)(input =>
@@ -61,8 +61,8 @@ object asum extends App {
   {
     println(s"-- high level --")
     val phrase = TypeInference(high_level, Map()).convertToPhrase
-//    val program = C.ProgramGenerator.makeCode(phrase)
-    val program = OpenMP.ProgramGenerator.makeCode(phrase)
+    val program = C.ProgramGenerator.makeCode(phrase)
+//    val program = OpenMP.ProgramGenerator.makeCode(phrase)
     println(program.code)
   }
 

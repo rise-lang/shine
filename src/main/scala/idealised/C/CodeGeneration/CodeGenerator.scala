@@ -7,8 +7,12 @@ import idealised.DPIA.ImperativePrimitives._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types._
 import idealised.C._
-import idealised.C.AST._
-import lift.arithmetic.{Cst, NamedVar}
+import idealised.SurfaceLanguage.Primitives.ForeignFunctionDeclaration
+//import idealised.C.AST._
+import idealised.DPIA.DSL._
+import idealised.DPIA.Semantics.OperationalSemantics
+import idealised.SurfaceLanguage.Operators
+import lift.arithmetic._
 
 import scala.collection.immutable
 import scala.collection.mutable
@@ -18,20 +22,16 @@ object CCodeGen {
   type Environment = immutable.Map[String, String]
   type Path = immutable.List[Nat]
 
-  type Declarations = mutable.ListBuffer[Decl]
+  type Declarations = mutable.ListBuffer[C.AST.Decl]
   type Ranges = immutable.Map[String, lift.arithmetic.Range]
 
-  type CPrimitiveCodeGen = DPIA.Compilation.PrimitiveCodeGen[Environment, Path, C.AST.Stmt, C.AST.Expr, C.AST.Decl]
-
   def apply(p: Phrase[CommandType],
-            env: CCodeGen.Environment,
-            primitiveCodeGen: CCodeGen.CPrimitiveCodeGen): CCodeGen =
-    apply(p, env, primitiveCodeGen, mutable.ListBuffer[Decl](), immutable.Map[String, lift.arithmetic.Range]())
+            env: CCodeGen.Environment): CCodeGen =
+    apply(p, env, mutable.ListBuffer[C.AST.Decl](), immutable.Map[String, lift.arithmetic.Range]())
 }
 
 case class CCodeGen(p: Phrase[CommandType],
                     env: CCodeGen.Environment,
-                    primitiveCodeGen: CCodeGen.CPrimitiveCodeGen,
                     decls: CCodeGen.Declarations,
                     ranges: CCodeGen.Ranges)
   extends DPIA.Compilation.CodeGenerator[CCodeGen.Environment, CCodeGen.Path, C.AST.Stmt, C.AST.Expr, C.AST.Decl]
@@ -41,6 +41,8 @@ case class CCodeGen(p: Phrase[CommandType],
   type Stmt = C.AST.Stmt
   type Decl = C.AST.Decl
   type Expr = C.AST.Expr
+
+  override def name: String = "C"
 
   def addDeclaration(decl: Decl): Unit = {
     if ( decls.exists( _.name == decl.name ) ) {
@@ -55,7 +57,7 @@ case class CCodeGen(p: Phrase[CommandType],
 
   override def generate: (scala.Seq[Decl], Stmt) = {
     val stmt = cmd(p, env)
-    (decls, Block(immutable.Seq(stmt)))
+    (decls, stmt)
   }
 
   override def cmd(phrase: Phrase[CommandType], env: Environment): Stmt = {
@@ -71,7 +73,7 @@ case class CCodeGen(p: Phrase[CommandType],
 
   override def acc(phrase: Phrase[AccType], env: Environment, ps: Path): Expr = {
     phrase match {
-      case Identifier(x, _) =>  primitiveCodeGen.generateAccess(env(x), ps.reverse)
+      case Identifier(x, _) =>  generateAccess(env(x), ps.reverse)
       case SplitAcc(_, m, _, a) => ps match {
         case i :: ps =>                       acc(a, env, i / m :: i % m :: ps)
         case Nil =>                           error(s"Expected path to be not empty")
@@ -104,17 +106,17 @@ case class CCodeGen(p: Phrase[CommandType],
 
   override def exp(phrase: Phrase[ExpType], env: Environment, ps: Path): Expr = {
     phrase match {
-      case Identifier(x, _) =>  primitiveCodeGen.generateAccess(env(x), ps.reverse)
+      case Identifier(x, _) =>  generateAccess(env(x), ps.reverse)
       case Phrases.Literal(n) => ps match {
-        case Nil =>             primitiveCodeGen.codeGenLiteral(n)
+        case Nil =>             codeGenLiteral(n)
         case _ =>               error(s"Expected path to be empty")
       }
       case UnaryOp(op, e) => ps match {
-        case Nil =>             primitiveCodeGen.codeGenUnaryOp(op, exp(e, env, List()))
+        case Nil =>             codeGenUnaryOp(op, exp(e, env, List()))
         case _ =>               error(s"Expected path to be empty")
       }
       case BinOp(op, e1, e2) => ps match {
-        case Nil =>             primitiveCodeGen.codeGenBinaryOp(op, exp(e1, env, List()), exp(e2, env, List()))
+        case Nil =>             codeGenBinaryOp(op, exp(e1, env, List()), exp(e2, env, List()))
         case _ =>               error(s"Expected path to be empty")
       }
       case Zip(_, _, _, e1, e2) => ps match {
@@ -151,11 +153,152 @@ case class CCodeGen(p: Phrase[CommandType],
         error(s"Don't know how to generate code for $p")
     }
   }
+
+  override def codeGenSkip: Stmt = C.AST.Comment("skip")
+
+  override def codeGenSeq(p1: Phrase[CommandType],
+                                    p2: Phrase[CommandType],
+                                    env: Environment,
+                                    gen: CCodeGen.this.type): Stmt = {
+    C.AST.Stmts(gen.cmd(p1, env), gen.cmd(p2, env))
+  }
+
+  override def codeGenAssign(a: Phrase[AccType],
+                             e: Phrase[ExpType],
+                             env: Environment,
+                             gen: CCodeGen.this.type): Stmt = {
+    C.AST.Assignment(gen.acc(a, env, List()), gen.exp(e, env, List()))
+  }
+
+  override def codeGenNew(dt: DataType,
+                          v: Identifier[ExpType x AccType],
+                          p: Phrase[CommandType],
+                          env: Environment,
+                          gen: CCodeGen.this.type): Stmt = {
+    C.AST.Block(immutable.Seq(
+      C.AST.DeclStmt(C.AST.VarDecl(v.name, C.AST.Type.fromDataType(dt))),
+      gen.cmd( Phrase.substitute(Pair(π1(v), π2(v)), `for`=v, `in`=p),
+        env + ( v.name -> v.name, v.name -> v.name ) )
+    ))
+  }
+
+  override def codeGenFor(n: Nat,
+                          i: Identifier[ExpType],
+                          p: Phrase[CommandType],
+                          env: Environment,
+                          gen: CCodeGen.this.type): Stmt = {
+    val i_ = freshName("i_")
+    val range = RangeAdd(0, n, 1)
+    val updatedGen = gen.updatedRanges(i_, range)
+
+    val init = C.AST.VarDecl(i_, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0)))
+    val cond = C.AST.BinaryExpr(C.AST.DeclRef(i_), C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
+    val increment = C.AST.Assignment(C.AST.DeclRef(i_), C.AST.ArithmeticExpr(NamedVar(i_, range) + 1))
+
+    C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
+      C.AST.Block(immutable.Seq(updatedGen.cmd(p, env + (i.name -> i_)))))
+  }
+
+  override def codeGenParFor(n: Nat,
+                             dt: DataType,
+                             a: Phrase[AccType],
+                             i: Identifier[ExpType],
+                             o: Phrase[AccType],
+                             p: Phrase[CommandType],
+                             env: Environment,
+                             gen: CCodeGen.this.type): Stmt = {
+    // in C the parFor is impl
+    codeGenFor(n, i, Phrase.substitute(a `@` i, `for`=o, `in`=p), env, gen)
+  }
+
+  override def codeGenIdxAcc(i: Phrase[ExpType],
+                             a: Phrase[AccType],
+                             env: Environment,
+                             ps: Path,
+                             gen: CCodeGen.this.type): Expr = {
+    val idx: ArithExpr = gen.exp(i, env, List()) match {
+      case C.AST.DeclRef(name) => NamedVar(name, gen.ranges(name))
+      case C.AST.ArithmeticExpr(ae) => ae
+    }
+
+    gen.acc(a, env, idx :: ps)
+  }
+
+  override def codeGenLiteral(d: OperationalSemantics.Data): Expr = {
+    C.AST.Literal(d.toString)
+  }
+
+  override def codeGenUnaryOp(op: Operators.Unary.Value, e: Expr): Expr = {
+    C.AST.UnaryExpr(op, e)
+  }
+
+  override def codeGenBinaryOp(op: Operators.Binary.Value,
+                               e1: Expr,
+                               e2: Expr): Expr = {
+    C.AST.BinaryExpr(e1, op, e2)
+  }
+
+  override def codeGenIdx(i: Phrase[ExpType],
+                          e: Phrase[ExpType],
+                          env: Environment,
+                          ps: Path,
+                          gen: CCodeGen.this.type): Expr = {
+    val idx: ArithExpr = gen.exp(i, env, List()) match {
+      case C.AST.DeclRef(name) => NamedVar(name, gen.ranges(name))
+      case C.AST.ArithmeticExpr(ae) => ae
+    }
+
+    gen.exp(e, env, idx :: ps)
+  }
+
+  override def codeGenForeignFunction(funDecl: ForeignFunctionDeclaration,
+                                      inTs: collection.Seq[DataType],
+                                      outT: DataType,
+                                      args: collection.Seq[Phrase[ExpType]],
+                                      env: Environment,
+                                      ps: Path,
+                                      gen: CCodeGen.this.type): Expr = {
+    gen.addDeclaration(
+      C.AST.FunDecl(funDecl.name,
+        returnType = C.AST.Type.fromDataType(outT),
+        params = (funDecl.argNames zip inTs).map {
+          case (name, dt) => C.AST.VarDecl(name, C.AST.Type.fromDataType(dt)) },
+        body = C.AST.Code(funDecl.body)))
+
+    C.AST.FunCall(C.AST.DeclRef(funDecl.name), args.map(gen.exp(_, env, ps)))
+  }
+
+  override def generateAccess(identifier: String, paths: Path): Expr = {
+    paths match {
+      case List() => C.AST.DeclRef(identifier)
+      case List(idx) => C.AST.ArraySubscript(C.AST.DeclRef(identifier), C.AST.ArithmeticExpr(idx))
+    }
+  }
+
+  private implicit def convertBinaryOp(op: idealised.SurfaceLanguage.Operators.Binary.Value): idealised.C.AST.BinaryOperator.Value = {
+    import idealised.SurfaceLanguage.Operators.Binary._
+    op match {
+      case ADD => C.AST.BinaryOperator.+
+      case SUB => C.AST.BinaryOperator.-
+      case MUL => C.AST.BinaryOperator.*
+      case DIV => C.AST.BinaryOperator./
+      case MOD => ???
+      case GT  => C.AST.BinaryOperator.>
+      case LT  => C.AST.BinaryOperator.<
+    }
+  }
+
+  private implicit def convertUnaryOp(op: idealised.SurfaceLanguage.Operators.Unary.Value): idealised.C.AST.UnaryOperator.Value = {
+    import idealised.SurfaceLanguage.Operators.Unary._
+    op match {
+      case NEG => C.AST.UnaryOperator.-
+    }
+  }
 }
 
 
 
-
+import idealised.C.AST._
 
 object CodeGenerator {
   type Environment = immutable.Map[String, String]
