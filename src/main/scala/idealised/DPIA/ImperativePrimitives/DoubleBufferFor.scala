@@ -48,8 +48,7 @@ final case class DoubleBufferFor(n: Nat,
 
   override def eval(s: Store): Store = ???
 
-
-  override def codeGen(gen: CodeGenerator)(env: gen.Environment): gen.Stmt = ???
+  override def codeGen[Environment, Path, Stmt, Expr, Decl](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl])(env: Environment): Stmt = ???
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {
     DoubleBufferFor(fun(n), fun(m), fun(k), fun(dt),

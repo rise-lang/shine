@@ -39,10 +39,11 @@ object ProgramGenerator {
 
     val env = (outParam +: inputParams).map(p => p.name -> p.name ).toMap
 
-    val (decls, code) = CodeGenerator(p3, env, new CodeGeneration.PrimitivesToC)
+//    val (decls, code) = CodeGenerator(p3, env, new CodeGeneration.PrimitivesToC)
+    val (decls, code) = C.CodeGeneration.CCodeGen(p3, env, new CodeGeneration.CPrimitivesToC).generate
 
     C.Program(decls,
-      function = makeFunction(makeParams(outParam, inputParams), code),
+      function = makeFunction(makeParams(outParam, inputParams), Block(Seq(code))),
       outputParam = outParam,
       inputParams = inputParams)
   }

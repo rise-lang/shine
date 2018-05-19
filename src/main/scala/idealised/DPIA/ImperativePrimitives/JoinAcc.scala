@@ -1,5 +1,6 @@
 package idealised.DPIA.ImperativePrimitives
 
+import idealised.DPIA.Compilation.CodeGenerator
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
@@ -24,7 +25,6 @@ final case class JoinAcc(n: Nat,
   }
 
   override def eval(s: Store): AccIdentifier = ???
-
 
   override def prettyPrint: String =
     s"(joinAcc ${PrettyPhrasePrinter(array)})"

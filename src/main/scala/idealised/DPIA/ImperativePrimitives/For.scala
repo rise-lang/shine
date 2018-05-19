@@ -24,7 +24,8 @@ final case class For(n: Nat,
     )
   }
 
-  override def codeGen(gen: CodeGenerator)(env: gen.Environment): gen.Stmt = {
+
+  override def codeGen[Environment, Path, Stmt, Expr, Decl](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl])(env: Environment): Stmt = {
     body match {
       case Lambda(i, p) => gen.primitiveCodeGen.codeGenFor(n, i, p, env, gen)
     }

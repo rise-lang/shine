@@ -16,7 +16,7 @@ case class Skip() extends CommandPrimitive with GeneratableCommand {
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[CommandType] = this
 
-  override def codeGen(gen: CodeGenerator)(env: gen.Environment): gen.Stmt = gen.primitiveCodeGen.codeGenSkip
+  override def codeGen[Environment, Path, Stmt, Expr, Decl](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl])(env: Environment): Stmt = gen.primitiveCodeGen.codeGenSkip
 
   override def prettyPrint: String = "skip"
 

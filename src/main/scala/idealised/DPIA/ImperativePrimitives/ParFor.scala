@@ -64,7 +64,7 @@ final case class ParFor(override val n: Nat,
   extends AbstractParFor(n, dt, out, body) {
   override def makeParFor = ParFor
 
-  override def codeGen(gen: CodeGenerator)(env: gen.Environment): gen.Stmt = {
+  override def codeGen[Environment, Path, Stmt, Expr, Decl](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl])(env: Environment): Stmt = {
     body match {
       case Lambda(i, Lambda(o, p)) => gen.primitiveCodeGen.codeGenParFor(n, dt, out, i, o, p, env, gen)
     }

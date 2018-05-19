@@ -6,9 +6,9 @@ import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType}
 import idealised.C.CodeGeneration.CodeGenerator
 import idealised.DPIA.Phrases.{Identifier, Phrase}
 
-trait GeneratableExp {
-  def codeGen(gen: CodeGenerator)(env: CodeGenerator.Environment, path: CodeGenerator.Path): Expr
-}
+//trait GeneratableExp {
+//  def codeGen(gen: CodeGenerator)(env: CodeGenerator.Environment, path: CodeGenerator.Path): Expr
+//}
 
 trait PrimitiveCodeGen {
   def name: String

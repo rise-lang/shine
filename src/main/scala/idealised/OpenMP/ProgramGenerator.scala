@@ -38,6 +38,7 @@ object ProgramGenerator {
     val env = (outParam +: inputParams).map(p => p.name -> p.name ).toMap
 
     val (decls, code) = C.CodeGeneration.CodeGenerator(p3, env, new CodeGeneration.PrimitivesToOpenMP)
+//    val (decls, code) = C.CodeGeneration.CCodeGen(p3, env, new CodeGeneration.PrimitivesToOpenMP)
 
     OpenMP.Program(
       decls,

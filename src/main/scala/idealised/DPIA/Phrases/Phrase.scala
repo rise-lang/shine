@@ -113,8 +113,8 @@ trait ExpPrimitive extends Primitive[ExpType] {
   def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType]
 }
 
-trait GeneratableExpr {
-  def codeGen(gen: CodeGenerator)(env: gen.Environment, path: gen.Path): gen.Expr
+trait GeneratableExp {
+  def codeGen[Environment, Path, Stmt, Expr, Decl](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl])(env: Environment, path: Path): Expr
 }
 
 trait AccPrimitive extends Primitive[AccType] {
@@ -122,7 +122,7 @@ trait AccPrimitive extends Primitive[AccType] {
 }
 
 trait GeneratableAcc {
-  def codeGen(gen: CodeGenerator)(env: gen.Environment, path: gen.Path): gen.Expr
+  def codeGen[Environment, Path, Stmt, Expr, Decl](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl])(env: Environment, path: Path): Expr
 }
 
 trait CommandPrimitive extends Primitive[CommandType] {
@@ -134,5 +134,5 @@ trait Intermediate[T <: PhraseType] {
 }
 
 trait GeneratableCommand {
-  def codeGen(gen: CodeGenerator)(env: gen.Environment): gen.Stmt
+  def codeGen[Environment, Path, Stmt, Expr, Decl](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl])(env: Environment): Stmt
 }

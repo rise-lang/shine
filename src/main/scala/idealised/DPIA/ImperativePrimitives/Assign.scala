@@ -52,10 +52,17 @@ final class Assign(val dt: DataType,
     })
   }
 
-
-  override def codeGen(gen: CodeGenerator)(env: gen.Environment): gen.Stmt = {
+  override def codeGen[Environment, Path, Stmt, Expr, Decl](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl])(env: Environment): Stmt = {
     gen.primitiveCodeGen.codeGenAssign(lhs, rhs, env, gen)
   }
+
+//  override def codeGen[Gen <: CodeGenerator](gen: Gen)(env: Gen#Environment): Gen#Stmt = {
+//    gen.primitiveCodeGen.codeGenAssign(lhs, rhs, env, gen)
+//  }
+
+//  override def codeGen[Gen <: CodeGenerator[_]](gen: Gen)(env: Gen#Environment): Gen#Stmt = {
+//    gen.primitiveCodeGen.codeGenAssign(lhs, rhs, env, gen)
+//  }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {
     Assign(fun(dt), VisitAndRebuild(lhs, fun), VisitAndRebuild(rhs, fun))

@@ -21,7 +21,7 @@ object CCodeGen {
   type Declarations = mutable.ListBuffer[Decl]
   type Ranges = immutable.Map[String, lift.arithmetic.Range]
 
-  type CPrimitiveCodeGen = DPIA.Compilation.PrimitiveCodeGen[Environment, Path, C.AST.Stmt, C.AST.Expr]
+  type CPrimitiveCodeGen = DPIA.Compilation.PrimitiveCodeGen[Environment, Path, C.AST.Stmt, C.AST.Expr, C.AST.Decl]
 
   def apply(p: Phrase[CommandType],
             env: CCodeGen.Environment,
@@ -33,13 +33,14 @@ case class CCodeGen(p: Phrase[CommandType],
                     env: CCodeGen.Environment,
                     primitiveCodeGen: CCodeGen.CPrimitiveCodeGen,
                     decls: CCodeGen.Declarations,
-                    ranges: CCodeGen.Ranges) extends DPIA.Compilation.CodeGenerator {
-  override type Environment = CCodeGen.Environment
-  override type Path = CCodeGen.Path
-
-  override type Stmt = C.AST.Stmt
-  override type Decl = C.AST.Decl
-  override type Expr = C.AST.Expr
+                    ranges: CCodeGen.Ranges)
+  extends DPIA.Compilation.CodeGenerator[CCodeGen.Environment, CCodeGen.Path, C.AST.Stmt, C.AST.Expr, C.AST.Decl]
+{
+  type Environment = CCodeGen.Environment
+  type Path = CCodeGen.Path
+  type Stmt = C.AST.Stmt
+  type Decl = C.AST.Decl
+  type Expr = C.AST.Expr
 
   def addDeclaration(decl: Decl): Unit = {
     if ( decls.exists( _.name == decl.name ) ) {
@@ -60,6 +61,7 @@ case class CCodeGen(p: Phrase[CommandType],
   override def cmd(phrase: Phrase[CommandType], env: Environment): Stmt = {
     phrase match {
       case c: GeneratableCommand => c.codeGen(this)(env)
+
       case Apply(_, _) | NatDependentApply(_, _) | TypeDependentApply(_, _) |
            Phrases.IfThenElse(_, _, _) | Identifier(_, _) |
            Proj1(_) | Proj2(_) | _: CommandPrimitive =>
@@ -69,13 +71,84 @@ case class CCodeGen(p: Phrase[CommandType],
 
   override def acc(phrase: Phrase[AccType], env: Environment, ps: Path): Expr = {
     phrase match {
+      case Identifier(x, _) =>  primitiveCodeGen.generateAccess(env(x), ps.reverse)
+      case SplitAcc(_, m, _, a) => ps match {
+        case i :: ps =>                       acc(a, env, i / m :: i % m :: ps)
+        case Nil =>                           error(s"Expected path to be not empty")
+      }
+      case JoinAcc(_, m, _, a) => ps match {
+        case  i :: j :: ps =>                 acc(a, env, i * m + j :: ps)
+        case _ :: Nil | Nil =>                error(s"Expected path to contain at least two elements")
+      }
+      case RecordAcc1(_, _, a) =>             acc(a, env, Cst(1) :: ps)
+      case RecordAcc2(_, _, a) =>             acc(a, env, Cst(2) :: ps)
+      case ZipAcc1(_, _, _, a) => ps match {
+        case i :: ps =>                       acc(a, env, i :: Cst(1) :: ps)
+        case Nil =>                           error(s"Expected path to be not empty")
+      }
+      case ZipAcc2(_, _, _, a) => ps match {
+        case i :: ps =>                       acc(a, env, i :: Cst(2) :: ps)
+        case Nil =>                           error(s"Expected path to be not empty")
+      }
+
       case a: GeneratableAcc => a.codeGen(this)(env, ps)
+
+      case Proj1(pair) =>       acc(Lifting.liftPair(pair)._1, env, ps)
+      case Proj2(pair) =>       acc(Lifting.liftPair(pair)._2, env, ps)
+
+      case Apply(_, _) | NatDependentApply(_, _) | TypeDependentApply(_, _) |
+           Phrases.IfThenElse(_, _, _) | _: AccPrimitive =>
+        error(s"Don't know how to generate code for $p")
     }
   }
 
   override def exp(phrase: Phrase[ExpType], env: Environment, ps: Path): Expr = {
     phrase match {
-      case e: GeneratableExpr => e.codeGen(this)(env, ps)
+      case Identifier(x, _) =>  primitiveCodeGen.generateAccess(env(x), ps.reverse)
+      case Phrases.Literal(n) => ps match {
+        case Nil =>             primitiveCodeGen.codeGenLiteral(n)
+        case _ =>               error(s"Expected path to be empty")
+      }
+      case UnaryOp(op, e) => ps match {
+        case Nil =>             primitiveCodeGen.codeGenUnaryOp(op, exp(e, env, List()))
+        case _ =>               error(s"Expected path to be empty")
+      }
+      case BinOp(op, e1, e2) => ps match {
+        case Nil =>             primitiveCodeGen.codeGenBinaryOp(op, exp(e1, env, List()), exp(e2, env, List()))
+        case _ =>               error(s"Expected path to be empty")
+      }
+      case Zip(_, _, _, e1, e2) => ps match {
+        case i :: Cst(1) :: ps =>             exp(e1, env, i :: ps)
+        case i :: Cst(2) :: ps =>             exp(e2, env, i :: ps)
+        case _ =>                             error(s"Expected path to have at least two values and contain " +
+          s"1 or 2 as second value.")
+      }
+      case Split(n, _, _, e) => ps match {
+        case i :: j :: ps =>                  exp(e, env, i * n + j :: ps)
+        case _ :: Nil | Nil =>                error(s"Expected path to contain at least two elements")
+      }
+      case Join(n, _, _, e) => ps match {
+        case i :: ps =>                       exp(e, env, i / n :: i % n :: ps)
+        case Nil =>                           error(s"Expected path to be not empty")
+      }
+      case Record(_, _, e1, e2) => ps match {
+        case Cst(1) :: ps =>                  exp(e1, env, ps)
+        case Cst(2) :: ps =>                  exp(e2, env, ps)
+        case _ =>                             error(s"Expected path to have at least two values and contain " +
+          s"1 or 2 as second value.")
+      }
+      case Fst(_, _, e) =>                    exp(e, env, Cst(1) :: ps)
+      case Snd(_, _, e) =>                    exp(e, env, Cst(2) :: ps)
+
+      case e: GeneratableExp => e.codeGen(this)(env, ps)
+
+      // TODO: investigate why still required
+      case Proj1(pair) =>                     exp(Lifting.liftPair(pair)._1, env, ps)
+      case Proj2(pair) =>                     exp(Lifting.liftPair(pair)._2, env, ps)
+
+      case Apply(_, _) | NatDependentApply(_, _) | TypeDependentApply(_, _) |
+           Phrases.IfThenElse(_, _, _) | _: ExpPrimitive =>
+        error(s"Don't know how to generate code for $p")
     }
   }
 }

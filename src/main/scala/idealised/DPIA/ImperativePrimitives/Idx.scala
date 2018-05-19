@@ -1,6 +1,6 @@
 package idealised.DPIA.ImperativePrimitives
 
-import idealised.DPIA.Compilation.RewriteToImperative
+import idealised.DPIA.Compilation.{CodeGenerator, RewriteToImperative}
 import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
@@ -15,7 +15,7 @@ final case class Idx(n: Nat,
                      dt: DataType,
                      index: Phrase[ExpType],
                      array: Phrase[ExpType])
-  extends ExpPrimitive {
+  extends ExpPrimitive with GeneratableExp {
 
   override val `type`: ExpType =
     (n: Nat) -> (dt: DataType) ->
@@ -39,6 +39,10 @@ final case class Idx(n: Nat,
       case (ArrayData(xs), IntData(i)) => xs(i)
       case _ => throw new Exception("This should not happen")
     }
+  }
+
+  override def codeGen[Environment, Path, Stmt, Expr, Decl](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl])(env: Environment, path: Path): Expr = {
+    gen.primitiveCodeGen.codeGenIdx(index, array, env, path, gen)
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
