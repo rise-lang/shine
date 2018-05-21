@@ -9,8 +9,9 @@ import idealised.DPIA.Types._
 import idealised.SurfaceLanguage.Primitives.ForeignFunctionDeclaration
 import idealised.DPIA.DSL._
 import idealised.DPIA.Semantics.OperationalSemantics
-import idealised.DPIA.Semantics.OperationalSemantics.{ArrayData, VectorData}
+import idealised.DPIA.Semantics.OperationalSemantics.{ArrayData, FloatData, IndexData, IntData, VectorData}
 import idealised.SurfaceLanguage.Operators
+import idealised.SurfaceLanguage.Semantics.ScalarData
 import lift.arithmetic._
 
 import scala.collection.immutable
@@ -119,9 +120,8 @@ class CodeGenerator(val p: Phrase[CommandType],
 
       case Phrases.Literal(n) => (path, n.dataType) match {
         case (Nil, _: ScalarType) =>        codeGenLiteral(n)
-        case (i :: Nil, _: VectorType) => // ???
-          n match {
-            case VectorData(v) => codeGenLiteral(v.head)
+        case (i :: Nil, _: VectorType) => n match {
+            case _: VectorData =>           C.AST.ArraySubscript(codeGenLiteral(n), C.AST.ArithmeticExpr(i))
           }
         case _ =>                 error(s"Expected path to be empty")
       }
@@ -290,7 +290,12 @@ class CodeGenerator(val p: Phrase[CommandType],
   }
 
   override def codeGenLiteral(d: OperationalSemantics.Data): Expr = {
-    C.AST.Literal(d.toString)
+    d match {
+      case _: IntData | _: FloatData | _: IndexData => C.AST.Literal(d.toString)
+      case VectorData(vector) => d.dataType match {
+        case VectorType(n, st) => C.AST.Literal( "(" + s"($st[$n])" + vector.mkString("{", ",", "}") + ")" )
+      }
+    }
   }
 
   override def codeGenUnaryOp(op: Operators.Unary.Value, e: Expr): Expr = {

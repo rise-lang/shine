@@ -57,7 +57,7 @@ case class DeclRef(name: String) extends Expr
 
 case class FunCall(fun: DeclRef, args: Seq[Expr]) extends Expr
 
-case class ArraySubscript(v: DeclRef, index: Expr) extends Expr
+case class ArraySubscript(v: Expr, index: Expr) extends Expr
 
 case class UnaryExpr(op: UnaryOperator.Value, e: Expr) extends Expr
 
