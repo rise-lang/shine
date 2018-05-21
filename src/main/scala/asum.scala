@@ -52,7 +52,7 @@ object asum extends App {
   }
 
   //val abs = (t: DataType) => fun(x => oclFun("fabs", t, t, x))
-  val abs = (t: DataType) => foreignFunction(t, "abs", ("y", t), "{ return fabs(y); }")
+  val abs = (t: DataType) => fun(x => foreignFun(t, "abs", (t, "y"), "{ return fabs(y); }", x))
   val add = fun(x => fun(a => x + a))
 
   val high_level = fun(inputT)(input =>

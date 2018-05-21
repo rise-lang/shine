@@ -40,7 +40,7 @@ object `for` {
     For(n, λ(exp"[idx($n)]")( i => f(i) ))
 }
 
-object `parFor` {
+object parFor {
   def apply(n: Nat,
             dt: DataType,
             out: Phrase[AccType],

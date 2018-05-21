@@ -6,8 +6,8 @@ import lift.arithmetic.SizeVar
 object nbody extends App {
 
   val update = fun(pos => fun(vel => fun(deltaT => fun(acceleration =>
-    foreignFunction(
-      TupleType(float, float), "update", Seq(("pos", float), ("vel", float), ("deltaT", float), ("acceleration", float)),
+    foreignFun(
+      TupleType(float, float), "update", Seq((float, "pos"), (float, "vel"), (float, "deltaT"), (float, "acceleration")),
     """|{
        |  float4 newPos;
        |  newPos.xyz = pos.xyz + vel.xyz * deltaT + 0.5f * acceleration.xyz * deltaT * deltaT;

@@ -64,7 +64,7 @@ class CodeGenerator(val p: Phrase[CommandType],
       case Apply(_, _) | NatDependentApply(_, _) | TypeDependentApply(_, _) |
            Phrases.IfThenElse(_, _, _) | Identifier(_, _) |
            Proj1(_) | Proj2(_) | _: CommandPrimitive =>
-        error(s"Don't know how to generate code for $p")
+        error(s"Don't know how to generate code for $phrase")
     }
   }
 
@@ -108,7 +108,7 @@ class CodeGenerator(val p: Phrase[CommandType],
 
       case Apply(_, _) | NatDependentApply(_, _) | TypeDependentApply(_, _) |
            Phrases.IfThenElse(_, _, _) | _: AccPrimitive =>
-        error(s"Don't know how to generate code for $p")
+        error(s"Don't know how to generate code for $phrase")
     }
   }
 
@@ -171,7 +171,7 @@ class CodeGenerator(val p: Phrase[CommandType],
 
       case Apply(_, _) | NatDependentApply(_, _) | TypeDependentApply(_, _) |
            Phrases.IfThenElse(_, _, _) | _: ExpPrimitive =>
-        error(s"Don't know how to generate code for $p")
+        error(s"Don't know how to generate code for $phrase")
     }
   }
 

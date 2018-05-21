@@ -106,7 +106,12 @@ object Assign {
             E: Phrase[ExpType]): Phrase[CommandType] = {
     dt match {
       // TODO: think about this more, but records (structs) are values ...
-      case _: BasicType | _: RecordType => A := E
+
+      case _: ScalarType | _: RecordType => A := E
+
+      case VectorType(n, st) =>
+//        MapVecI(n, st, st, λ(ExpType(st))(x => λ(AccType(st))(a => a :=|st| x )), E, A)
+        ???
 
       case ArrayType(n, et) =>
         MapI(n, et, et, λ(ExpType(et))(x => λ(AccType(et))(a => a :=|et| x )), E, A)

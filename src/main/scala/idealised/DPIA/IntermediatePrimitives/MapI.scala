@@ -18,7 +18,7 @@ abstract class AbstractMapI(n: Nat,
                             out: Phrase[AccType])
   extends CommandPrimitive with Intermediate[CommandType] {
 
-  override val `type`: CommandType =
+  override lazy val `type`: CommandType =
     (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
       (f :: t"exp[$dt1] -> acc[$dt2] -> comm") ->
         (in :: exp"[$n.$dt1]") ->
