@@ -16,12 +16,12 @@ final case class MapParI(n: Nat,
                          out: Phrase[AccType])
   extends AbstractMapI(n, dt1, dt2, f, in, out) {
 
-    override def makeMapI = MapParI
+  override def makeMapI = MapParI
 
-    override def substituteImpl(env: Environment): Phrase[CommandType] = {
-      `parFor`(n, dt2, out, i => a =>
-        SubstituteImplementations(f(in `@` i)(a), env)
-      )
-    }
-
+  override def substituteImpl(env: Environment): Phrase[CommandType] = {
+    `parFor`(n, dt2, out, i => a =>
+      SubstituteImplementations(f(in `@` i)(a), env)
+    )
   }
+
+}

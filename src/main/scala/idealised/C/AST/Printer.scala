@@ -50,6 +50,7 @@ class Printer {
   }
 
   private def print(s: Stmt): Unit = s match {
+    case s: Stmts => print(s)
     case b: Block => print(b)
     case f: ForLoop => print(f)
     case w: WhileLoop => print(w)
@@ -112,6 +113,12 @@ class Printer {
   private def print(t: TypedefDecl): Unit = ???
 
   // Smts
+  private def print(s: Stmts): Unit = {
+    print(s.fst)
+    println("")
+    print(s.snd)
+  }
+
   private def print(b: Block): Unit = {
     indent += 1
     println("{")
@@ -222,7 +229,9 @@ class Printer {
   private def print(b: BinaryExpr): Unit = {
     print("(")
     print(b.lhs)
+    print(" ")
     print(b.op.toString)
+    print(" ")
     print(b.rhs)
     print(")")
   }

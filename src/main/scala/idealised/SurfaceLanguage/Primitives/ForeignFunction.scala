@@ -8,9 +8,7 @@ import idealised.SurfaceLanguage.{PrimitiveExpr, VisitAndRebuild}
 
 final case class ForeignFunctionDeclaration(name: String,
                                             argNames: Seq[String],
-                                            body: String) {
-
-}
+                                            body: String)
 
 final case class ForeignFunction(funDecl: ForeignFunctionDeclaration,
                                  inTs: Seq[DataType],

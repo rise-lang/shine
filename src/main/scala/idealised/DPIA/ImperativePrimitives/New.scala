@@ -1,5 +1,6 @@
 package idealised.DPIA.ImperativePrimitives
 
+import idealised.DPIA.Compilation.CodeGenerator
 import idealised.DPIA.DSL.identifier
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
@@ -12,7 +13,7 @@ import scala.xml.Elem
 final case class New(dt: DataType,
                      addressSpace: AddressSpace,
                      f: Phrase[(ExpType x AccType) -> CommandType])
-  extends CommandPrimitive {
+  extends CommandPrimitive with GeneratableCommand {
 
   override val `type`: CommandType =
     (dt: DataType) -> /* (addressSpace: AddressSpace) -> */
@@ -23,6 +24,12 @@ final case class New(dt: DataType,
     val arg = identifier(freshName(), f.t.inT)
     val newStore = OperationalSemantics.eval(s + (arg.name -> 0), f_(arg))
     newStore - arg.name
+  }
+
+  override def codeGen[Environment, Path, Stmt, Expr, Decl](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl])(env: Environment): Stmt = {
+    f match {
+      case Lambda(v, p) => gen.codeGenNew(dt, v, p, env, gen)
+    }
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {

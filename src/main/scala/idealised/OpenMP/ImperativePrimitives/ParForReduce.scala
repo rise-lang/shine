@@ -2,7 +2,6 @@ package idealised.OpenMP.ImperativePrimitives
 
 import idealised.C.AST._
 import idealised.C.CodeGeneration.CodeGenerator
-import idealised.C.GeneratableComm
 import idealised.DPIA.DSL.{identifier, _}
 import idealised.DPIA.ImperativePrimitives.AbstractParFor
 import idealised.DPIA.Phrases.Phrase

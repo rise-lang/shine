@@ -1,5 +1,6 @@
 package idealised.DPIA.ImperativePrimitives
 
+import idealised.DPIA.Compilation.CodeGenerator
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
@@ -10,7 +11,7 @@ import scala.xml.Elem
 
 final case class For(n: Nat,
                      body: Phrase[ExpType -> CommandType])
-  extends CommandPrimitive {
+  extends CommandPrimitive with GeneratableCommand {
 
   override val `type`: CommandType =
     (n: Nat) -> (body :: t"exp[idx($n)] -> comm") -> comm
@@ -21,6 +22,13 @@ final case class For(n: Nat,
     (0 until nE.eval).foldLeft(s)((s1, i) =>
       OperationalSemantics.eval(s1, bodyE(Literal(i)))
     )
+  }
+
+
+  override def codeGen[Environment, Path, Stmt, Expr, Decl](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl])(env: Environment): Stmt = {
+    body match {
+      case Lambda(i, p) => gen.codeGenFor(n, i, p, env, gen)
+    }
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {

@@ -6,8 +6,8 @@ import idealised.DPIA.Phrases.{VisitAndRebuild, _}
 import idealised.DPIA.Semantics.OperationalSemantics.{Data, Store}
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised.OpenCL.CodeGeneration.CodeGenerator
-import idealised.OpenCL.CodeGeneration.CodeGenerator.Environment
+import idealised.OpenCL.CodeGeneration.OpenCLOldCodeGenerator
+import idealised.OpenCL.CodeGeneration.OpenCLOldCodeGenerator.Environment
 import idealised.OpenCL.GeneratableExp
 import opencl.generator.OpenCLAST.{Expression, VectorLiteral}
 
@@ -30,7 +30,7 @@ final case class VectorFromScalar(n: Nat,
   override def codeGenExp(env: Environment): Expression = {
     VectorLiteral(
       DataType.toVectorType(VectorType(n, dt)),
-      CodeGenerator.exp(arg, env))
+      OpenCLOldCodeGenerator.exp(arg, env))
   }
 
   override def eval(s: Store): Data = ???

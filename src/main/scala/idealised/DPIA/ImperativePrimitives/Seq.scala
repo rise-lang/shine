@@ -1,5 +1,6 @@
 package idealised.DPIA.ImperativePrimitives
 
+import idealised.DPIA.Compilation.CodeGenerator
 import idealised.DPIA.Phrases
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
@@ -10,7 +11,7 @@ import scala.xml.Elem
 
 final case class Seq(c1: Phrase[CommandType],
                      c2: Phrase[CommandType])
-  extends CommandPrimitive {
+  extends CommandPrimitive with GeneratableCommand {
 
   override val `type`: CommandType =
     (c1 :: comm) -> (c2 :: comm) -> comm
@@ -18,6 +19,10 @@ final case class Seq(c1: Phrase[CommandType],
   override def eval(s: Store): Store = {
     val s1 = OperationalSemantics.eval(s, c1)
     OperationalSemantics.eval(s1, c2)
+  }
+
+  override def codeGen[Environment, Path, Stmt, Expr, Decl](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl])(env: Environment): Stmt = {
+    gen.codeGenSeq(c1, c2, env, gen)
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {

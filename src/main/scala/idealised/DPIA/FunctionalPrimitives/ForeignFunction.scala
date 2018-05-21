@@ -1,9 +1,6 @@
 package idealised.DPIA.FunctionalPrimitives
 
-import idealised.C.AST._
-import idealised.C.CodeGeneration.CodeGenerator
-import idealised.C.GeneratableExp
-import idealised.DPIA.Compilation.RewriteToImperative
+import idealised.DPIA.Compilation.{CodeGenerator, RewriteToImperative}
 import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases.VisitAndRebuild.Visitor
 import idealised.DPIA.Phrases._
@@ -22,7 +19,7 @@ final case class ForeignFunction(funDecl: ForeignFunctionDeclaration,
   extends ExpPrimitive with GeneratableExp {
 
   override lazy val `type`: ExpType =
-    (inTs zip args).foreach{
+    (inTs zip args).foreach {
       case (inT, arg) => arg :: exp"[$inT]"
     } -> exp"[$outT]"
 
@@ -36,26 +33,20 @@ final case class ForeignFunction(funDecl: ForeignFunctionDeclaration,
                 inTs: Seq[DataType]): Phrase[CommandType] = {
       ts match {
         // with only one argument left to process return the assignment of the OpenCLFunction call
-        case Seq( (arg, inT) ) =>
+        case Seq((arg, inT)) =>
           con(arg)(λ(exp"[$inT]")(e =>
-            A :=|outT| ForeignFunction(funDecl, inTs :+ inT, outT, exps :+ e) ))
+            A :=| outT | ForeignFunction(funDecl, inTs :+ inT, outT, exps :+ e)))
         // with a `tail` of arguments left, recurse
-        case Seq( (arg, inT), tail@_* ) =>
-          con(arg)(λ(exp"[$inT]")(e => recurse(tail, exps :+ e, inTs :+ inT) ))
+        case Seq((arg, inT), tail@_*) =>
+          con(arg)(λ(exp"[$inT]")(e => recurse(tail, exps :+ e, inTs :+ inT)))
       }
     }
 
     recurse(args zip inTs, Seq(), Seq())
   }
 
-  override def codeGen(gen: CodeGenerator): Expr = {
-    gen.addDeclaration(
-      FunDecl(funDecl.name,
-        returnType = Type.fromDataType(outT),
-        params = (funDecl.argNames zip inTs).map { case (name, dt) => VarDecl(name, Type.fromDataType(dt)) },
-        body = Code(funDecl.body)))
-
-    FunCall(DeclRef(funDecl.name), args.map(gen.exp(_, gen)))
+  override def codeGen[Environment, Path, Stmt, Expr, Decl](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl])(env: Environment, path: Path): Expr = {
+    gen.codeGenForeignFunction(funDecl, inTs, outT, args, env, path, gen)
   }
 
   override def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {

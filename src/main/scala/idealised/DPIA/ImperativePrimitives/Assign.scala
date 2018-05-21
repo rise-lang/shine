@@ -1,5 +1,6 @@
 package idealised.DPIA.ImperativePrimitives
 
+import idealised.DPIA.Compilation.CodeGenerator
 import idealised.DPIA.DSL._
 import idealised.DPIA.IntermediatePrimitives.{MapI, MapVecI}
 import idealised.DPIA.Phrases._
@@ -14,7 +15,7 @@ import scala.xml.Elem
 final class Assign(val dt: DataType,
                    val lhs: Phrase[AccType],
                    val rhs: Phrase[ExpType])
-  extends CommandPrimitive {
+  extends CommandPrimitive with GeneratableCommand {
 
   override val `type`: CommandType =
     (dt: DataType) -> (lhs :: acc"[$dt]") -> (rhs :: exp"[$dt]") -> comm
@@ -50,6 +51,18 @@ final class Assign(val dt: DataType,
       s + Tuple2(identifier, value)
     })
   }
+
+  override def codeGen[Environment, Path, Stmt, Expr, Decl](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl])(env: Environment): Stmt = {
+    gen.codeGenAssign(lhs, rhs, env, gen)
+  }
+
+//  override def codeGen[Gen <: CodeGenerator](gen: Gen)(env: Gen#Environment): Gen#Stmt = {
+//    gen.primitiveCodeGen.codeGenAssign(lhs, rhs, env, gen)
+//  }
+
+//  override def codeGen[Gen <: CodeGenerator[_]](gen: Gen)(env: Gen#Environment): Gen#Stmt = {
+//    gen.primitiveCodeGen.codeGenAssign(lhs, rhs, env, gen)
+//  }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {
     Assign(fun(dt), VisitAndRebuild(lhs, fun), VisitAndRebuild(rhs, fun))
@@ -96,7 +109,12 @@ object Assign {
         MapVecI(n, st, st, λ(ExpType(st))(x => λ(AccType(st))(a => a := x )), E, A)
 
       // TODO: think about this more, but records (structs) are values ...
-      case _: BasicType | _: RecordType => A := E
+
+      case _: ScalarType | _: RecordType => A := E
+
+      case VectorType(n, st) =>
+//        MapVecI(n, st, st, λ(ExpType(st))(x => λ(AccType(st))(a => a :=|st| x )), E, A)
+        ???
 
       case ArrayType(n, et) =>
         MapI(n, et, et, λ(ExpType(et))(x => λ(AccType(et))(a => a :=|et| x )), E, A)
@@ -106,5 +124,9 @@ object Assign {
 
       case _: DataTypeIdentifier => throw new Exception("This should not happen")
     }
+  }
+
+  def unapply(arg: Assign): Option[(DataType, Phrase[AccType], Phrase[ExpType])] = {
+    Some( (arg.dt, arg.lhs, arg.rhs) )
   }
 }

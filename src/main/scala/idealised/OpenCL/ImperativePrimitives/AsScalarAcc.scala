@@ -4,7 +4,7 @@ import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised.OpenCL.CodeGeneration.CodeGenerator
+import idealised.OpenCL.CodeGeneration.OpenCLOldCodeGenerator
 import idealised.OpenCL.ViewAcc
 import opencl.generator.OpenCLAST.Expression
 
@@ -27,14 +27,14 @@ final case class AsScalarAcc(n: Nat,
 
   override def eval(s: Store): AccIdentifier = ???
 
-  override def toOpenCL(env: CodeGenerator.Environment,
+  override def toOpenCL(env: OpenCLOldCodeGenerator.Environment,
                         value: Expression,
                         dt: DataType,
                         arrayAccess: List[Nat],
                         tupleAccess: List[Nat]): Expression = {
     val i :: is = arrayAccess
 
-    CodeGenerator.acc(array, value, env, dt, (i * m + 0) :: is, tupleAccess)
+    OpenCLOldCodeGenerator.acc(array, value, env, dt, (i * m + 0) :: is, tupleAccess)
 //    // similar to Split
 //    val chunkId = arrayAccess.head
 //    val chunkElemId: (Nat, Nat) = (0, 1) // we want to access element 0 and there is only one of it

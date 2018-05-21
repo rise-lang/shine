@@ -103,7 +103,6 @@ object dot extends App {
   {
     import idealised.OpenMP.SurfaceLanguage.DSL._
 
-    // TODO: think about support for vectorization in C / OpenMP
     val intelDerivedNoWarpDot1 = fun(xsT)(xs => fun(ysT)(ys =>
       asScalar() o join() o mapPar(
         mapSeq(
@@ -114,6 +113,8 @@ object dot extends App {
     val phrase = TypeInference(intelDerivedNoWarpDot1, Map()).toPhrase
     val program = OpenMP.ProgramGenerator.makeCode(phrase)
     println(program.code)
+
+    System.exit(-1)
   }
 
   {

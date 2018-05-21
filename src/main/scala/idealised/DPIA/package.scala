@@ -12,6 +12,10 @@ package object DPIA {
     throw new TypeException(s"Found $found but expected $expected")
   }
 
+  def error(msg: String): Nothing = {
+    throw new Exception(msg)
+  }
+
   type Nat = ArithExpr
   type NatIdentifier = NamedVar
 

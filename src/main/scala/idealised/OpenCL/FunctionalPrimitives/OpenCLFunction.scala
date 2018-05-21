@@ -7,8 +7,8 @@ import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics.{Data, Store}
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised.OpenCL.CodeGeneration.CodeGenerator
-import idealised.OpenCL.CodeGeneration.CodeGenerator.Environment
+import idealised.OpenCL.CodeGeneration.OpenCLOldCodeGenerator
+import idealised.OpenCL.CodeGeneration.OpenCLOldCodeGenerator.Environment
 import idealised.OpenCL.GeneratableExp
 import opencl.generator.OpenCLAST.{Expression, FunctionCall}
 
@@ -32,7 +32,7 @@ final case class OpenCLFunction(name: String,
   }
 
   override def codeGenExp(env: Environment): Expression = {
-    FunctionCall(name, args.map(CodeGenerator.exp(_, env)).toList)
+    FunctionCall(name, args.map(OpenCLOldCodeGenerator.exp(_, env)).toList)
   }
 
   override def eval(s: Store): Data = ???

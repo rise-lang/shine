@@ -1,6 +1,6 @@
 package idealised.DPIA.IntermediatePrimitives
 
-import idealised.DPIA.Compilation.SubstituteImplementations
+import idealised.DPIA.Compilation.{CodeGenerator, SubstituteImplementations}
 import idealised.DPIA.DSL._
 import idealised.DPIA.ImperativePrimitives.{TruncAcc, TruncExp}
 import idealised.DPIA.Phrases._

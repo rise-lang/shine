@@ -1,6 +1,6 @@
 package idealised.DPIA.FunctionalPrimitives
 
-import idealised.DPIA.Compilation.RewriteToImperative
+import idealised.DPIA.Compilation.{CodeGenerator, RewriteToImperative}
 import idealised.DPIA.DSL._
 import idealised.DPIA.ImperativePrimitives.SplitAcc
 import idealised.DPIA.Phrases._

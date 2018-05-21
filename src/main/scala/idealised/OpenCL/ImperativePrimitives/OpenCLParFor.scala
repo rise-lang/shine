@@ -1,11 +1,12 @@
 package idealised.OpenCL.ImperativePrimitives
 
+import idealised.DPIA.Compilation.CodeGenerator
 import idealised.DPIA.DSL.{identifier, _}
 import idealised.DPIA.ImperativePrimitives.AbstractParFor
 import idealised.DPIA.Phrases.Phrase
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised.OpenCL.CodeGeneration.CodeGenerator
+import idealised.OpenCL.CodeGeneration.OpenCLOldCodeGenerator
 import idealised.OpenCL.GeneratableComm
 import lift.arithmetic.{Cst, NamedVar, RangeAdd}
 import opencl.generator.OpenCLAST
@@ -19,7 +20,7 @@ abstract class OpenCLParFor(n: Nat,
 
   def parallelismLevel: idealised.OpenCL.ParallelismLevel
 
-  protected var env: CodeGenerator.Environment = _
+  protected var env: OpenCLOldCodeGenerator.Environment = _
 
   protected def name: String
 
@@ -27,7 +28,7 @@ abstract class OpenCLParFor(n: Nat,
   def step: Nat
   def synchronize: OpenCLAST.OclAstNode with BlockMember
 
-  override def codeGenCmd(block: Block, env: CodeGenerator.Environment): Block = {
+  override def codeGenCmd(block: Block, env: OpenCLOldCodeGenerator.Environment): Block = {
     import opencl.generator.OpenCLAST._
 
     this.env = env
@@ -55,7 +56,7 @@ abstract class OpenCLParFor(n: Nat,
       AssignmentExpression(ArithExpression(v), ArithExpression(v + step))
     }
 
-    val bodyBlock = (b: Block) => CodeGenerator.cmd(body_(out_at_i), b, updatedEnv)
+    val bodyBlock = (b: Block) => OpenCLOldCodeGenerator.cmd(body_(out_at_i), b, updatedEnv)
 
     range.numVals match {
       case Cst(0) =>
@@ -87,4 +88,6 @@ abstract class OpenCLParFor(n: Nat,
 
     (block: Block) += synchronize
   }
+
+  override def codeGen[Environment, Path, Stmt, Expr, Decl](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl])(env: Environment): Stmt = ???
 }

@@ -9,6 +9,8 @@ case class Program(decls: Seq[Decl],
                    outputParam: Identifier[AccType],
                    inputParams: Seq[Identifier[ExpType]]) {
 
-  def code: String = decls.map(idealised.C.AST.Printer(_)).mkString("\n") + idealised.C.AST.Printer(function)
+  def code: String = decls.map(idealised.C.AST.Printer(_)).mkString("\n") +
+    "\n\n" +
+    idealised.C.AST.Printer(function)
 
 }
