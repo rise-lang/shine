@@ -75,4 +75,26 @@ class CodeGenerator(override val p: Phrase[CommandType],
       C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
         C.AST.Block(immutable.Seq(updatedGen.cmd(Phrase.substitute(a `@` i, `for`=o, `in`=p), env + (i.name -> i_))))))
   }
+
+  override def codeGenParForVec(n: Nat,
+                                dt: DataType,
+                                a: Phrase[AccType],
+                                i: Identifier[ExpType],
+                                o: Phrase[AccType],
+                                p: Phrase[CommandType],
+                                env: Environment,
+                                gen: CodeGenerator.this.type): Stmt = {
+    val i_ = freshName("i_")
+    val range = RangeAdd(0, n, 1)
+    val updatedGen = gen.updatedRanges(i_, range)
+
+    val init = C.AST.VarDecl(i_, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0)))
+    val cond = C.AST.BinaryExpr(C.AST.DeclRef(i_), C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
+    val increment = idealised.C.AST.Assignment(C.AST.DeclRef(i_), C.AST.ArithmeticExpr(NamedVar(i_, range) + 1))
+
+    C.AST.Stmts(
+      C.AST.Code("#pragma omp simd"),
+      C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
+        C.AST.Block(immutable.Seq(updatedGen.cmd(Phrase.substitute(a `@v` i, `for`=o, `in`=p), env + (i.name -> i_))))))
+  }
 }

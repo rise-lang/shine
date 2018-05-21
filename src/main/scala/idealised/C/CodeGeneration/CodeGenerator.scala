@@ -9,6 +9,7 @@ import idealised.DPIA.Types._
 import idealised.SurfaceLanguage.Primitives.ForeignFunctionDeclaration
 import idealised.DPIA.DSL._
 import idealised.DPIA.Semantics.OperationalSemantics
+import idealised.DPIA.Semantics.OperationalSemantics.{ArrayData, VectorData}
 import idealised.SurfaceLanguage.Operators
 import lift.arithmetic._
 
@@ -61,8 +62,6 @@ class CodeGenerator(val p: Phrase[CommandType],
     phrase match {
       case c: GeneratableCommand => c.codeGen(this)(env)
 
-// case p: ParForVec => primitiveCodeGen.codeGen(p, block, gen)
-
       case Apply(_, _) | NatDependentApply(_, _) | TypeDependentApply(_, _) |
            Phrases.IfThenElse(_, _, _) | Identifier(_, _) |
            Proj1(_) | Proj2(_) | _: CommandPrimitive =>
@@ -105,8 +104,6 @@ class CodeGenerator(val p: Phrase[CommandType],
 
       case a: GeneratableAcc =>   a.codeGen(this)(env, path)
 
-// case i: IdxVec    => primitiveCodeGen.codeGen(i, gen, i.t.dataType, List(), List())
-
       case Proj1(pair) =>         acc(Lifting.liftPair(pair)._1, env, path)
       case Proj2(pair) =>         acc(Lifting.liftPair(pair)._2, env, path)
 
@@ -120,18 +117,35 @@ class CodeGenerator(val p: Phrase[CommandType],
     phrase match {
       case Identifier(x, _) =>    generateAccess(env(x), path.reverse)
 
-      case Phrases.Literal(n) => path match {
-        case Nil =>               codeGenLiteral(n)
+      case Phrases.Literal(n) => (path, n.dataType) match {
+        case (Nil, _: ScalarType) =>        codeGenLiteral(n)
+        case (i :: Nil, _: VectorType) => // ???
+          n match {
+            case VectorData(v) => codeGenLiteral(v.head)
+          }
         case _ =>                 error(s"Expected path to be empty")
       }
 
-      case UnaryOp(op, e) => path match {
-        case Nil =>               codeGenUnaryOp(op, exp(e, env, List()))
-        case _ =>                 error(s"Expected path to be empty")
+      case UnaryOp(op, e) => phrase.t.dataType match {
+        case _: ScalarType => path match {
+          case Nil =>             codeGenUnaryOp(op, exp(e, env, List()))
+          case _ =>               error(s"Expected path to be empty")
+        }
+        case _: VectorType => path match {
+          case i :: ps =>         codeGenUnaryOp(op, exp(e, env, i :: ps))
+          case _ =>               error(s"Expected path to be not empty")
+        }
       }
-      case BinOp(op, e1, e2) => path match {
-        case Nil =>               codeGenBinaryOp(op, exp(e1, env, List()), exp(e2, env, List()))
-        case _ =>                 error(s"Expected path to be empty")
+
+      case BinOp(op, e1, e2) => phrase.t.dataType match {
+        case _: ScalarType => path match {
+          case Nil =>             codeGenBinaryOp(op, exp(e1, env, List()), exp(e2, env, List()))
+          case _ =>               error(s"Expected path to be empty")
+        }
+        case _: VectorType => path match {
+          case i :: ps =>         codeGenBinaryOp(op, exp(e1, env, i :: ps), exp(e2, env, i :: ps))
+          case _ =>               error(s"Expected path to be not empty")
+        }
       }
 
       case Split(n, _, _, e) => path match {
@@ -237,11 +251,36 @@ class CodeGenerator(val p: Phrase[CommandType],
     codeGenFor(n, i, Phrase.substitute(a `@` i, `for`=o, `in`=p), env, gen)
   }
 
+  override def codeGenParForVec(n: Nat,
+                                dt: DataType,
+                                a: Phrase[AccType],
+                                i: Identifier[ExpType],
+                                o: Phrase[AccType],
+                                p: Phrase[CommandType],
+                                env: Environment,
+                                gen: CodeGenerator.this.type): Stmt = {
+    // in C the parFor is impl
+    codeGenFor(n, i, Phrase.substitute(a `@v` i, `for`=o, `in`=p), env, gen)
+  }
+
   override def codeGenIdxAcc(i: Phrase[ExpType],
                              a: Phrase[AccType],
                              env: Environment,
                              ps: Path,
                              gen: CodeGenerator.this.type): Expr = {
+    val idx: ArithExpr = gen.exp(i, env, List()) match {
+      case C.AST.DeclRef(name) => NamedVar(name, gen.ranges(name))
+      case C.AST.ArithmeticExpr(ae) => ae
+    }
+
+    gen.acc(a, env, idx :: ps)
+  }
+
+  override def codeGenIdxVecAcc(i: Phrase[ExpType],
+                                a: Phrase[AccType],
+                                env: Environment,
+                                ps: Path,
+                                gen: CodeGenerator.this.type): Expr = {
     val idx: ArithExpr = gen.exp(i, env, List()) match {
       case C.AST.DeclRef(name) => NamedVar(name, gen.ranges(name))
       case C.AST.ArithmeticExpr(ae) => ae
@@ -277,6 +316,19 @@ class CodeGenerator(val p: Phrase[CommandType],
     gen.exp(e, env, idx :: ps)
   }
 
+  override def codeGenIdxVec(i: Phrase[ExpType],
+                             e: Phrase[ExpType],
+                             env: Environment,
+                             ps: Path,
+                             gen: CodeGenerator.this.type): Expr = {
+    val idx: ArithExpr = gen.exp(i, env, List()) match {
+      case C.AST.DeclRef(name) => NamedVar(name, gen.ranges(name))
+      case C.AST.ArithmeticExpr(ae) => ae
+    }
+
+    gen.exp(e, env, idx :: ps)
+  }
+
   override def codeGenForeignFunction(funDecl: ForeignFunctionDeclaration,
                                       inTs: collection.Seq[DataType],
                                       outT: DataType,
@@ -298,6 +350,8 @@ class CodeGenerator(val p: Phrase[CommandType],
     paths match {
       case List() => C.AST.DeclRef(identifier)
       case List(idx) => C.AST.ArraySubscript(C.AST.DeclRef(identifier), C.AST.ArithmeticExpr(idx))
+      // TODO: is this natural ...
+      case List(vecIdx, arrayIdx) => C.AST.ArraySubscript(C.AST.DeclRef(identifier), C.AST.ArithmeticExpr(arrayIdx + vecIdx))
     }
   }
 

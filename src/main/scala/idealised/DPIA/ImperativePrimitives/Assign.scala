@@ -112,10 +112,6 @@ object Assign {
 
       case _: ScalarType | _: RecordType => A := E
 
-      case VectorType(n, st) =>
-//        MapVecI(n, st, st, λ(ExpType(st))(x => λ(AccType(st))(a => a :=|st| x )), E, A)
-        ???
-
       case ArrayType(n, et) =>
         MapI(n, et, et, λ(ExpType(et))(x => λ(AccType(et))(a => a :=|et| x )), E, A)
 

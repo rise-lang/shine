@@ -1,6 +1,5 @@
 package idealised.OpenCL.CodeGeneration
 
-import idealised.DPIA.Compilation.CodeGenerator
 import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives._
 import idealised.DPIA.ImperativePrimitives._

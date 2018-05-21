@@ -4,7 +4,6 @@ import idealised.DPIA.Compilation._
 import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types.{PhraseType, ExpType, AccType, CommandType, DataType, TypeChecker, PairType}
-//import idealised.C.CodeGeneration.CodeGenerator
 import idealised.C.AST._
 import idealised._
 

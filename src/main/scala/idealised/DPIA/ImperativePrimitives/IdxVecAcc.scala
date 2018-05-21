@@ -1,5 +1,6 @@
 package idealised.DPIA.ImperativePrimitives
 
+import idealised.DPIA.Compilation.CodeGenerator
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
@@ -12,7 +13,7 @@ final case class IdxVecAcc(n: Nat,
                            st: ScalarType,
                            index: Phrase[ExpType],
                            vector: Phrase[AccType])
-  extends AccPrimitive {
+  extends AccPrimitive with GeneratableAcc {
 
   override val `type`: AccType =
     (n: Nat) -> (st: ScalarType) ->
@@ -27,6 +28,10 @@ final case class IdxVecAcc(n: Nat,
       case _ => throw new Exception("This should not happen")
     }
     VectorAccessIdentifier(vectorE, indexE)
+  }
+
+  override def codeGen[Environment, Path, Stmt, Expr, Decl](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl])(env: Environment, path: Path): Expr = {
+    gen.codeGenIdxVecAcc(index, vector, env, path, gen)
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {

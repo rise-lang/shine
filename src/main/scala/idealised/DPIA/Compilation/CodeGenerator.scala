@@ -52,12 +52,27 @@ trait CodeGenerator[Environment, Path, Stmt, Expr, Decl] {
                     env: Environment,
                     gen: this.type): Stmt
 
+  def codeGenParForVec(n: Nat,
+                       dt: DataType,
+                       a: Phrase[AccType],
+                       i: Identifier[ExpType],
+                       o: Phrase[AccType],
+                       p: Phrase[CommandType],
+                       env: Environment,
+                       gen: this.type): Stmt
+
   // generate code interface for acceptors
   def codeGenIdxAcc(i: Phrase[ExpType],
                     a: Phrase[AccType],
                     env: Environment,
                     ps: Path,
                     gen: this.type): Expr
+
+  def codeGenIdxVecAcc(i: Phrase[ExpType],
+                       a: Phrase[AccType],
+                       env: Environment,
+                       ps: Path,
+                       gen: this.type): Expr
 
   // generate code interface for expressions
   def codeGenLiteral(d: OperationalSemantics.Data): Expr
@@ -73,6 +88,12 @@ trait CodeGenerator[Environment, Path, Stmt, Expr, Decl] {
                  env: Environment,
                  ps: Path,
                  gen: this.type): Expr
+
+  def codeGenIdxVec(i: Phrase[ExpType],
+                    e: Phrase[ExpType],
+                    env: Environment,
+                    ps: Path,
+                    gen: this.type): Expr
 
   def codeGenForeignFunction(funDecl: ForeignFunctionDeclaration,
                              inTs: Seq[DataType],
