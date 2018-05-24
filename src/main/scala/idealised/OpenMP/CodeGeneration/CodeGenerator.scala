@@ -7,7 +7,7 @@ import idealised.DPIA.{Nat, error, freshName}
 import idealised.DPIA.Phrases.{Identifier, Phrase}
 import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType}
 import idealised.DPIA.DSL._
-import idealised.OpenCL.FunctionalPrimitives.AsVector
+import idealised.OpenCL.FunctionalPrimitives.{AsScalar, AsVector}
 import idealised.OpenCL.ImperativePrimitives.{AsScalarAcc, AsVectorAcc}
 import lift.arithmetic
 import lift.arithmetic._
@@ -15,7 +15,6 @@ import lift.arithmetic._
 import scala.collection.{immutable, mutable}
 
 object CodeGenerator {
-
   def apply(p: Phrase[CommandType], env: CCodeGenerator.Environment): CodeGenerator =
     new CodeGenerator(p, env, mutable.ListBuffer[Decl](), immutable.Map[String, arithmetic.Range]())
 }
@@ -37,7 +36,7 @@ class CodeGenerator(override val p: Phrase[CommandType],
         case _ =>           error(s"Expected path to be not empty")
       }
       case AsScalarAcc(_, m, _, a) => path match {
-        case i :: ps =>     acc(a, env, (i * m + 0) :: ps)
+        case i :: ps =>     acc(a, env, (i * m) :: ps)
         case _ =>           error(s"Expected path to be not empty")
       }
       case _ =>             super.acc(phrase, env, path)
@@ -48,6 +47,10 @@ class CodeGenerator(override val p: Phrase[CommandType],
     phrase match {
       case AsVector(n, _, _, e) => path match {
         case i :: ps =>     exp(e, env, (i * n) :: ps)
+        case _ =>           error(s"Expected path to be not empty")
+      }
+      case AsScalar(_, m, _m, e) => path match {
+        case i :: ps =>     exp(e, env, (i / m) :: ps)
         case _ =>           error(s"Expected path to be not empty")
       }
       case _ =>             super.exp(phrase, env, path)

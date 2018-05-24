@@ -24,6 +24,7 @@ final case class ParForVec(override val n: Nat,
                                                            (env: Environment): Stmt = {
     body match {
       case Lambda(i, Lambda(o, p)) => gen.codeGenParForVec(n, dt, out, i, o, p, env, gen)
+      case _ => error(s"Expected two nested lambdas")
     }
   }
 }

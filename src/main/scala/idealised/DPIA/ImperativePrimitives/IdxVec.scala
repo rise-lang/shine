@@ -30,7 +30,8 @@ final case class IdxVec(n: Nat,
     }
   }
 
-  override def codeGen[Environment, Path, Stmt, Expr, Decl](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl])(env: Environment, path: Path): Expr = {
+  override def codeGen[Environment, Path, Stmt, Expr, Decl](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl])
+                                                           (env: Environment, path: Path): Expr = {
     gen.codeGenIdxVec(index, vector, env, path, gen)
   }
 

@@ -1,6 +1,7 @@
 package idealised.SurfaceLanguage
 
 import idealised.DPIA
+import idealised.DPIA.error
 import idealised.SurfaceLanguage.Semantics.Data
 import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.SurfaceLanguage.Types._
@@ -22,6 +23,7 @@ final case class IdentifierExpr(name: String,
   override def convertToPhrase: DPIA.Phrases.Identifier[DPIA.Types.ExpType] = {
     t match {
       case Some(dt) => DPIA.Phrases.Identifier(name, DPIA.Types.ExpType(DPIA.Types.DataType(dt)))
+      case None =>     error(s"Expected identifier to have type")
     }
   }
 

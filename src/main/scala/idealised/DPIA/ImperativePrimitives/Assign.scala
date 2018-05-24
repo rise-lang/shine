@@ -109,7 +109,6 @@ object Assign {
         MapVecI(n, st, st, λ(ExpType(st))(x => λ(AccType(st))(a => a := x )), E, A)
 
       // TODO: think about this more, but records (structs) are values ...
-
       case _: ScalarType | _: RecordType => A := E
 
       case ArrayType(n, et) =>

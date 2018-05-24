@@ -9,9 +9,8 @@ import idealised.DPIA.Types._
 import idealised.SurfaceLanguage.Primitives.ForeignFunctionDeclaration
 import idealised.DPIA.DSL._
 import idealised.DPIA.Semantics.OperationalSemantics
-import idealised.DPIA.Semantics.OperationalSemantics.{ArrayData, FloatData, IndexData, IntData, VectorData}
+import idealised.DPIA.Semantics.OperationalSemantics.{FloatData, IndexData, IntData, VectorData, BoolData}
 import idealised.SurfaceLanguage.Operators
-import idealised.SurfaceLanguage.Semantics.ScalarData
 import lift.arithmetic._
 
 import scala.collection.immutable
@@ -120,10 +119,8 @@ class CodeGenerator(val p: Phrase[CommandType],
 
       case Phrases.Literal(n) => (path, n.dataType) match {
         case (Nil, _: ScalarType) =>        codeGenLiteral(n)
-        case (i :: Nil, _: VectorType) => n match {
-            case _: VectorData =>           C.AST.ArraySubscript(codeGenLiteral(n), C.AST.ArithmeticExpr(i))
-          }
-        case _ =>                 error(s"Expected path to be empty")
+        case (i :: Nil, _: VectorType) =>   C.AST.ArraySubscript(codeGenLiteral(n), C.AST.ArithmeticExpr(i))
+        case _ =>                 error(s"Unexpected")
       }
 
       case UnaryOp(op, e) => phrase.t.dataType match {
@@ -135,6 +132,7 @@ class CodeGenerator(val p: Phrase[CommandType],
           case i :: ps =>         codeGenUnaryOp(op, exp(e, env, i :: ps))
           case _ =>               error(s"Expected path to be not empty")
         }
+        case _ =>                 error(s"Expected scalar or vector types")
       }
 
       case BinOp(op, e1, e2) => phrase.t.dataType match {
@@ -146,6 +144,7 @@ class CodeGenerator(val p: Phrase[CommandType],
           case i :: ps =>         codeGenBinaryOp(op, exp(e1, env, i :: ps), exp(e2, env, i :: ps))
           case _ =>               error(s"Expected path to be not empty")
         }
+        case _ =>                 error(s"Expected scalar or vector types")
       }
 
       case Split(n, _, _, e) => path match {
@@ -182,7 +181,6 @@ class CodeGenerator(val p: Phrase[CommandType],
       }
 
       case e: GeneratableExp =>   e.codeGen(this)(env, path)
-// case i: IdxVec    => primitiveCodeGen.codeGen(i, gen, dt, arrayAccess, tupleAccess)
 
       // TODO: investigate why still required
       case Proj1(pair) =>         exp(Lifting.liftPair(pair)._1, env, path)
@@ -291,10 +289,12 @@ class CodeGenerator(val p: Phrase[CommandType],
 
   override def codeGenLiteral(d: OperationalSemantics.Data): Expr = {
     d match {
-      case _: IntData | _: FloatData | _: IndexData => C.AST.Literal(d.toString)
+      case _: IntData | _: FloatData | _: IndexData | _: BoolData => C.AST.Literal(d.toString)
       case VectorData(vector) => d.dataType match {
         case VectorType(n, st) => C.AST.Literal( "(" + s"($st[$n])" + vector.mkString("{", ",", "}") + ")" )
+        case _ =>                 error(s"Expected vector type")
       }
+      case _ =>                   error(s"Expected scalar or vector types")
     }
   }
 

@@ -345,9 +345,11 @@ object PrimitivesCodeGenerator {
       case b: BoolData => OpenCLAST.Literal(b.b.toString)
       case f: FloatData => OpenCLAST.Literal(f.f.toString)
       case i: IndexData => OpenCLAST.ArithExpression(i.n)
+      case _: VectorData => ???
       case ad: ArrayData =>
         val nestedLiteral = DPIA.Phrases.Literal(ad.a(0))
         OpenCLOldCodeGenerator.exp(nestedLiteral, env, nestedLiteral.d.dataType, arrayAccess.tail, tupleAccess)
+      case _: RecordData => ???
     }
   }
 
@@ -371,6 +373,7 @@ object PrimitivesCodeGenerator {
     val idx: ArithExpr = OpenCLOldCodeGenerator.exp(i.index, env) match {
       case VarRef(name, _, _) => NamedVar(name, env.ranges(name))
       case ArithExpression(ae) => ae
+      case _ => ???
     }
 
     OpenCLOldCodeGenerator.acc(i.array, value, env, dt, idx :: arrayAccess, tupleAccess)
