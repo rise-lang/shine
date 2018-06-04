@@ -39,6 +39,7 @@ class Printer {
 
   private def print(n: Node): Unit = n match {
     case d: Decl => print(d)
+    case e: Expr => print(e)
     case s: Stmt => print(s)
   }
 
@@ -103,6 +104,12 @@ class Printer {
         case Some(s) => s
       } }]")
       case p: PointerType => print(s"${p.valueType}* ${v.name}")
+    }
+    v.init match {
+      case None =>
+      case Some(init) =>
+        print(" = ")
+        print(init)
     }
   }
 

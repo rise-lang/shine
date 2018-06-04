@@ -2,6 +2,7 @@
 import idealised.DPIA.Phrases.PrettyPhrasePrinter
 import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.OpenCL._
+import idealised.OpenMP
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Expr
 import idealised.SurfaceLanguage._
@@ -14,8 +15,8 @@ import scala.util.Random
 
 object gemv extends App {
 
-  Executor.loadLibrary()
-  Executor.init()
+//  Executor.loadLibrary()
+//  Executor.init()
 
   val check = false // the floating point comparisons are killing the comparison (it passes with integer values)
   val N = SizeVar("N")
@@ -94,7 +95,7 @@ object gemv extends App {
 
       )))))
 
-  runOpenCLKernel("fullMatrixVectorFusedOpenCL", fullMatrixVectorFusedOpenCL)
+//  runOpenCLKernel("fullMatrixVectorFusedOpenCL", fullMatrixVectorFusedOpenCL)
 
   val fullMatrixVectorFusedOpenCLAMD =
     fun(matT)(mat => fun(xsT)(xs => fun(ysT)(ys =>
@@ -109,7 +110,7 @@ object gemv extends App {
 
       )))))
 
-  runOpenCLKernel("fullMatrixVectorFusedOpenCLAMD", fullMatrixVectorFusedOpenCLAMD)
+//  runOpenCLKernel("fullMatrixVectorFusedOpenCLAMD", fullMatrixVectorFusedOpenCLAMD)
 
   val keplerBest =
     fun(matT)(mat => fun(xsT)(xs => fun(ysT)(ys =>
@@ -124,8 +125,28 @@ object gemv extends App {
 
       )))))
 
-  runOpenCLKernel("keplerBest", keplerBest)
+//  runOpenCLKernel("keplerBest", keplerBest)
 
-  Executor.shutdown()
+//  Executor.shutdown()
+
+  {
+    import idealised.OpenMP.SurfaceLanguage.DSL._
+
+    val fullMatrixVectorFusedOpenCL =
+      fun(matT)(mat => fun(xsT)(xs => fun(ysT)(ys =>
+        fun(dataT)(alpha => fun(dataT)(beta =>
+
+          join() o mapPar(fun(t =>
+            mapSeq(fun(x => (alpha * x) + (t._2 * beta))) o
+              toLocal(mapSeq(reduceSeq(fun(x => fun(a => mult(x) + a)), 0.0f)))
+              o split(N) $ zip(xs, t._1)
+          )) $ zip(mat, ys)
+
+        )))))
+
+    val phrase = TypeInference(fullMatrixVectorFusedOpenCL, Map()).toPhrase
+    val program = OpenMP.ProgramGenerator.makeCode(phrase)
+    println(program.code)
+  }
 
 }

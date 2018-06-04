@@ -14,10 +14,10 @@ import scala.util.Random
 
 object scal extends App {
 
-  Executor.loadLibrary()
-  Executor.init(0, 0)
-  println("Platform: " + Executor.getPlatformName)
-  println("Device: " + Executor.getDeviceName)
+//  Executor.loadLibrary()
+//  Executor.init(0, 0)
+//  println("Platform: " + Executor.getPlatformName)
+//  println("Device: " + Executor.getDeviceName)
 
   val benchmark = true
   val iterations = 10
@@ -83,11 +83,11 @@ object scal extends App {
       ) o split(fst) $ input
     ))
 
-  runOpenCLKernel("vectorScal", scalWgLcl(1024, 4))
-
-  runOpenCLKernel("scalAMD", scalWgLcl(128, 1))
-
-  runOpenCLKernel("scalNvidia", scalWgLcl(2048, 1))
+//  runOpenCLKernel("vectorScal", scalWgLcl(1024, 4))
+//
+//  runOpenCLKernel("scalAMD", scalWgLcl(128, 1))
+//
+//  runOpenCLKernel("scalNvidia", scalWgLcl(2048, 1))
 
   val scalIntel = fun(inputT)(input => fun(float)(alpha =>
     join() o mapWorkgroup(
@@ -97,7 +97,23 @@ object scal extends App {
     ) o split(4 * 128 * 128) $ input
   ))
 
-  runOpenCLKernel("scalIntel", scalIntel)
+//  runOpenCLKernel("scalIntel", scalIntel)
 
-  Executor.shutdown()
+  {
+    import idealised.OpenMP.SurfaceLanguage.DSL._
+
+    val scalIntel = fun(inputT)(input => fun(float)(alpha =>
+      join() o mapPar(
+        asScalar() o join() o mapSeq(mapSeq(
+          fun(x => vectorize(4, alpha) * x)
+        )) o split(128) o asVector(4)
+      ) o split(4 * 128 * 128) $ input
+    ))
+
+    val phrase = TypeInference(scalIntel, Map()).toPhrase
+    val program = idealised.OpenMP.ProgramGenerator.makeCode(phrase)
+    println(program.code)
+  }
+
+//  Executor.shutdown()
 }

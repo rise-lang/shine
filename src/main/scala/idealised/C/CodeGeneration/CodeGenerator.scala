@@ -9,7 +9,8 @@ import idealised.DPIA.Types._
 import idealised.SurfaceLanguage.Primitives.ForeignFunctionDeclaration
 import idealised.DPIA.DSL._
 import idealised.DPIA.Semantics.OperationalSemantics
-import idealised.DPIA.Semantics.OperationalSemantics.{FloatData, IndexData, IntData, VectorData, BoolData}
+import idealised.DPIA.Semantics.OperationalSemantics.{BoolData, FloatData, IndexData, IntData, VectorData}
+import idealised.OpenCL.FunctionalPrimitives.VectorFromScalar
 import idealised.SurfaceLanguage.Operators
 import lift.arithmetic._
 
@@ -120,6 +121,7 @@ class CodeGenerator(val p: Phrase[CommandType],
       case Phrases.Literal(n) => (path, n.dataType) match {
         case (Nil, _: ScalarType) =>        codeGenLiteral(n)
         case (i :: Nil, _: VectorType) =>   C.AST.ArraySubscript(codeGenLiteral(n), C.AST.ArithmeticExpr(i))
+        case (_ :: _ :: Nil, _: ArrayType) => C.AST.Literal("0.0f") // TODO: (used in gemm like this) !!!!!!!
         case _ =>                 error(s"Unexpected")
       }
 
@@ -179,6 +181,13 @@ class CodeGenerator(val p: Phrase[CommandType],
         case i :: ps =>           exp(a, env, OperationalSemantics.evalIndexExp(idxF(i)) :: ps)
         case Nil =>               error(s"Expected path to be not empty")
       }
+
+        // TODO: this has to be refactored
+      case VectorFromScalar(n, st, e) =>
+        val e1 = exp(e, env, path)
+        val str = C.AST.Printer(e1)
+//        val vector = List.fill(n.evalInt)(str)
+        C.AST.Literal( "(" + s"($st[$n]){" + str + "})" )
 
       case e: GeneratableExp =>   e.codeGen(this)(env, path)
 
@@ -289,12 +298,18 @@ class CodeGenerator(val p: Phrase[CommandType],
 
   override def codeGenLiteral(d: OperationalSemantics.Data): Expr = {
     d match {
-      case _: IntData | _: FloatData | _: IndexData | _: BoolData => C.AST.Literal(d.toString)
+      case _: IntData | _: FloatData | _: IndexData | _: BoolData =>
+        C.AST.Literal(d.toString)
       case VectorData(vector) => d.dataType match {
-        case VectorType(n, st) => C.AST.Literal( "(" + s"($st[$n])" + vector.mkString("{", ",", "}") + ")" )
-        case _ =>                 error(s"Expected vector type")
+        case VectorType(n, st) =>
+          if (vector.distinct.length == 1) {
+            C.AST.Literal( "(" + s"($st[$n]){" + vector.head  + "})" )
+          } else {
+            C.AST.Literal( "(" + s"($st[$n])" + vector.mkString("{", ",", "}") + ")" )
+          }
+        case _ => error(s"Expected vector type")
       }
-      case _ =>                   error(s"Expected scalar or vector types")
+      case _ =>   error(s"Expected scalar or vector types")
     }
   }
 

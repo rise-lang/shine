@@ -84,18 +84,33 @@ object dot extends App {
     reduce(add, 0.0f) o map(mult) $ zip(xs, ys)
   ))
 
-  {
-    println(s"-- high level --")
-    val phrase = TypeInference(high_level, Map()).convertToPhrase
-    val program = C.ProgramGenerator.makeCode(phrase)
-    println(program.code)
-  }
+//  {
+//    println(s"-- high level --")
+//    val phrase = TypeInference(high_level, Map()).convertToPhrase
+//    val program = C.ProgramGenerator.makeCode(phrase)
+//    println(program.code)
+//  }
 
   // OpenMP specific stuff
 
   {
     println(s"-- high level --")
     val phrase = TypeInference(high_level, Map()).convertToPhrase
+    val program = OpenMP.ProgramGenerator.makeCode(phrase)
+    println(program.code)
+  }
+
+  {
+    import idealised.OpenMP.SurfaceLanguage.DSL._
+
+    val dotCPUVector1 = fun(xsT)(xs => fun(ysT)(ys =>
+      asScalar() o join() o mapPar(
+        mapSeq(
+          reduceSeq(fun(x => fun(a => mult(x) + a)), vectorize(4, 0.0f))
+        ) o split(2048)
+      ) o split(2048 * 64) $ zip(asVector(4) $ xs, asVector(4) $ ys)
+    ))
+    val phrase = TypeInference(dotCPUVector1, Map()).toPhrase
     val program = OpenMP.ProgramGenerator.makeCode(phrase)
     println(program.code)
   }
@@ -113,8 +128,6 @@ object dot extends App {
     val phrase = TypeInference(intelDerivedNoWarpDot1, Map()).toPhrase
     val program = OpenMP.ProgramGenerator.makeCode(phrase)
     println(program.code)
-
-    System.exit(-1)
   }
 
   {

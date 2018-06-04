@@ -66,6 +66,34 @@ object asum extends App {
     println(program.code)
   }
 
+  {
+    import idealised.OpenMP.SurfaceLanguage.DSL._
+
+    val intelDerivedNoWarp1 = fun(inputT)(input =>
+      join() o mapPar(
+        asScalar() o mapSeq(
+          reduceSeq(fun(x => fun(a => abs(float4)(x) + a)), vectorize(4, 0.0f))
+        ) o split(8192) o asVector(4)
+      ) o split(32768) $ input
+    )
+    val phrase = TypeInference(intelDerivedNoWarp1, Map()).convertToPhrase
+    val program = OpenMP.ProgramGenerator.makeCode(phrase)
+    println(program.code)
+  }
+
+  {
+    import idealised.OpenMP.SurfaceLanguage.DSL._
+
+    val intelDerived2 = fun(inputT)(input =>
+      join() o mapPar(
+        mapSeq(reduceSeq(add, 0.0f)) o split(2048)
+      ) o split(2048) $ input
+    )
+    val phrase = TypeInference(intelDerived2, Map()).convertToPhrase
+    val program = OpenMP.ProgramGenerator.makeCode(phrase)
+    println(program.code)
+  }
+
   System.exit(1)
 
   {
