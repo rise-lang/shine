@@ -80,42 +80,42 @@ object gemm extends App {
     val kernel = KernelGenerator.makeKernel(lambda, localSize = 8, globalSize = N)
     println(kernel.code)
 
-    val fun = kernel.as[
-      ScalaFunction `(`
-        Array[Array[Float]] `,`
-        Array[Array[Float]] `,`
-        Array[Array[Float]] `,`
-        Float `,` Float `)=>` Array[Float] ]
-
-    val size = 8
-
-    val A: Array[Array[Float]] = Array.tabulate(size, size)((c, _) => c + 1.0f) // ((r, c) => c * 1.0f + r * 0.5f)
-    //((_, _) => (Random.nextInt(5)+1).toFloat)
-    val B: Array[Array[Float]] = Array.tabulate(size, size)((_, r) => r + 1.5f) //((r, c) => c * 1.0f + r * 0.5f)
-    //((_, _) => (Random.nextInt(5)+1).toFloat)
-    val C: Array[Array[Float]] = Array.tabulate(size, size)((_, _) => 1.0f)
-    //((_, _) => (Random.nextInt(5)+1).toFloat)
-    val alpha = 1.0f //(Random.nextInt(5)+1).toFloat
-    val beta = 0.0f //(Random.nextInt(5)+1).toFloat
-
-    println(s"alpha: $alpha")
-    println(s"beta: $beta")
-
-    val (res, time) = fun(A `,` B.transpose `,` C `,` alpha `,` beta)
-
-    println("res")
-    myPrint(res.grouped(size).toArray)
-
-    if (check) {
-      val gold = matrixMatrixMultiply(A, B, C, alpha, beta)
-
-      println("gold")
-      myPrint(gold)
-      assertArrayEquals(gold.flatten, res, 0.0001f)
-    }
-    println(s"RESULT KERNEL NAME: $name TIME: $time")
-
-    println("----------------\n")
+//    val fun = kernel.as[
+//      ScalaFunction `(`
+//        Array[Array[Float]] `,`
+//        Array[Array[Float]] `,`
+//        Array[Array[Float]] `,`
+//        Float `,` Float `)=>` Array[Float] ]
+//
+//    val size = 8
+//
+//    val A: Array[Array[Float]] = Array.tabulate(size, size)((c, _) => c + 1.0f) // ((r, c) => c * 1.0f + r * 0.5f)
+//    //((_, _) => (Random.nextInt(5)+1).toFloat)
+//    val B: Array[Array[Float]] = Array.tabulate(size, size)((_, r) => r + 1.5f) //((r, c) => c * 1.0f + r * 0.5f)
+//    //((_, _) => (Random.nextInt(5)+1).toFloat)
+//    val C: Array[Array[Float]] = Array.tabulate(size, size)((_, _) => 1.0f)
+//    //((_, _) => (Random.nextInt(5)+1).toFloat)
+//    val alpha = 1.0f //(Random.nextInt(5)+1).toFloat
+//    val beta = 0.0f //(Random.nextInt(5)+1).toFloat
+//
+//    println(s"alpha: $alpha")
+//    println(s"beta: $beta")
+//
+//    val (res, time) = fun(A `,` B.transpose `,` C `,` alpha `,` beta)
+//
+//    println("res")
+//    myPrint(res.grouped(size).toArray)
+//
+//    if (check) {
+//      val gold = matrixMatrixMultiply(A, B, C, alpha, beta)
+//
+//      println("gold")
+//      myPrint(gold)
+//      assertArrayEquals(gold.flatten, res, 0.0001f)
+//    }
+//    println(s"RESULT KERNEL NAME: $name TIME: $time")
+//
+//    println("----------------\n")
   }
 
   val mult = fun(x => fun(a => x * a))
@@ -129,8 +129,8 @@ object gemm extends App {
   val zeros = LiteralExpr(
     ArrayData(Vector.fill(p2)(ArrayData(Vector.fill(p1)(FloatData(0.0f))))))
 
-  //val dot  = fun(x => oclFun("dot", Seq(float4, float4), float, Seq(x._1, x._2)))
-  val dot = fun(x => foreignFun(float, "dot", Seq((float4, "x"), (float4, "y")),
+  val dot  = fun(x => oclFun("dot", Seq(float4, float4), float, Seq(x._1, x._2)))
+  val dotFF = fun(x => foreignFun(float, "dot", Seq((float4, "x"), (float4, "y")),
     "{ return fdot(x, y); }", Seq(x._1, x._2)))
 
   val maliGEMM =
@@ -208,7 +208,7 @@ object gemm extends App {
       )) :>> join()
     )))))
 
-//  printOpenCLKernel("maliGEMM_", maliGEMM_)
+  printOpenCLKernel("maliGEMM_", maliGEMM_)
 
   {
     import idealised.OpenMP.SurfaceLanguage.DSL._
@@ -221,23 +221,23 @@ object gemm extends App {
               fun(float)(beta =>
 
                 zip(a :>> split(p2),
-                  c :>> split(p2) ) :>>
+                    c :>> split(p2) ) :>>
                   mapPar(fun(ac =>
                     zip(b :>> split(p2),
-                      ac._2 :>> transpose() :>> split(p1) ) :>>
+                        ac._2 :>> transpose() :>> split(p1) ) :>>
                       mapPar(fun(bc =>
                         zip(ac._1 :>> transpose() :>> split(p3),
-                          bc._1 :>> transpose() :>> split(p3) ) :>>
+                            bc._1 :>> transpose() :>> split(p3) ) :>>
                           reduceSeq(fun(p236 => fun(p67 =>
                             zip(p67,
-                              p236._1 :>> transpose() ) :>>
+                                p236._1 :>> transpose() ) :>>
                               mapSeq(fun(p54 =>
                                 zip(p54._1,
-                                  p236._2 :>> transpose() ) :>>
+                                    p236._2 :>> transpose() ) :>>
                                   mapSeq(fun(p157 =>
                                     zip(p54._2 :>> asVector(4),
-                                      p157._2 :>> asVector(4) ) :>>
-                                      mapSeq(fun(x => p157._1 + dot(x)))
+                                        p157._2 :>> asVector(4) ) :>>
+                                      mapSeq(fun(x => p157._1 + dotFF(x)))
                                   )) :>> join()))
                           )), zeros) :>>
                           fun(p235 =>

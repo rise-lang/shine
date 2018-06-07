@@ -6,10 +6,12 @@ abstract class Decl(val name: String) extends Node
 
 case class FunDecl(override val name: String,
                    returnType: Type,
-                   params: Seq[VarDecl],
+                   params: Seq[ParamDecl],
                    body: Stmt) extends Decl(name)
 
 case class VarDecl(override val name: String, t: Type, init: Option[Expr] = None) extends Decl(name)
+
+case class ParamDecl(override val name: String, t: Type) extends Decl(name)
 
 case class LabelDecl(override val name: String) extends Decl(name)
 

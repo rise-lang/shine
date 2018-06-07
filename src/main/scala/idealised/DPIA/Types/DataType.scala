@@ -131,6 +131,15 @@ object DataType {
     }
   }
 
+  def getBaseDataType(dt: DataType): DataType = {
+    dt match {
+      case _: BasicType => dt
+      case _: RecordType => dt
+      case _: DataTypeIdentifier => dt
+      case ArrayType(_, dt) => getBaseDataType(dt)
+    }
+  }
+
   implicit class RecordTypeConstructor(dt1: DataType) {
     def x(dt2: DataType) = RecordType(dt1, dt2)
   }

@@ -46,6 +46,7 @@ class Printer {
   private def print(d: Decl): Unit = d match {
     case f: FunDecl => print(f)
     case v: VarDecl => print(v)
+    case p: ParamDecl => print(p)
     case l: LabelDecl => print(l)
     case t: TypedefDecl => print(t)
   }
@@ -110,6 +111,21 @@ class Printer {
       case Some(init) =>
         print(" = ")
         print(init)
+    }
+  }
+
+  private def print(p: ParamDecl): Unit = {
+    if (p.t.const) print("const ")
+    p.t match {
+      case b: BasicType => print(s"${b.name} ${p.name}")
+      case s: StructType => ???
+      case u: UnionType => ???
+      case a: ArrayType =>
+        print(s"${a.elemType} ${p.name}[${ a.size match {
+          case None => ""
+          case Some(s) => s
+        } }]")
+      case pt: PointerType => print(s"${pt.valueType}* ${p.name}")
     }
   }
 

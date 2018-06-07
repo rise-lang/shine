@@ -238,12 +238,26 @@ class CodeGenerator(val p: Phrase[CommandType],
     val range = RangeAdd(0, n, 1)
     val updatedGen = gen.updatedRanges(i_, range)
 
-    val init = C.AST.VarDecl(i_, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0)))
-    val cond = C.AST.BinaryExpr(C.AST.DeclRef(i_), C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
-    val increment = C.AST.Assignment(C.AST.DeclRef(i_), C.AST.ArithmeticExpr(NamedVar(i_, range) + 1))
+    range.numVals match {
+      // iteration count is 0 => skip body; no code to be emitted
+      case Cst(0) => C.AST.Comment("iteration count is 0, no loop emitted")
 
-    C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
-      C.AST.Block(immutable.Seq(updatedGen.cmd(p, env + (i.name -> i_)))))
+      // iteration count is 1 => no loop
+      case Cst(1) =>
+        C.AST.Stmts(C.AST.Stmts(
+          C.AST.Comment("iteration count is exactly 1, no loop emitted"),
+          C.AST.DeclStmt(C.AST.VarDecl(i_, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0)))) ),
+          updatedGen.cmd(p, env + (i.name -> i_)) )
+
+      case _ =>
+        // default case
+        val init = C.AST.VarDecl(i_, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0)))
+        val cond = C.AST.BinaryExpr(C.AST.DeclRef(i_), C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
+        val increment = C.AST.Assignment(C.AST.DeclRef(i_), C.AST.ArithmeticExpr(NamedVar(i_, range) + 1))
+
+        C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
+          C.AST.Block(immutable.Seq(updatedGen.cmd(p, env + (i.name -> i_)))))
+    }
   }
 
   override def codeGenParFor(n: Nat,
@@ -360,7 +374,7 @@ class CodeGenerator(val p: Phrase[CommandType],
       C.AST.FunDecl(funDecl.name,
         returnType = C.AST.Type.fromDataType(outT),
         params = (funDecl.argNames zip inTs).map {
-          case (name, dt) => C.AST.VarDecl(name, C.AST.Type.fromDataType(dt)) },
+          case (name, dt) => C.AST.ParamDecl(name, C.AST.Type.fromDataType(dt)) },
         body = C.AST.Code(funDecl.body)))
 
     C.AST.FunCall(C.AST.DeclRef(funDecl.name), args.map(gen.exp(_, env, ps)))

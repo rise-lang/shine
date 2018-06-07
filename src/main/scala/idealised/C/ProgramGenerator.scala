@@ -3,9 +3,10 @@ package idealised.C
 import idealised.DPIA.Compilation._
 import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
-import idealised.DPIA.Types.{PhraseType, ExpType, AccType, CommandType, DataType, TypeChecker, PairType}
+import idealised.DPIA.Types.{AccType, CommandType, DataType, DataTypeIdentifier, ExpType, PairType, PhraseType, RecordType, TypeChecker}
 import idealised.C.AST._
 import idealised._
+import lift.arithmetic.{NamedVar, Var}
 
 import scala.collection._
 
@@ -71,17 +72,48 @@ object ProgramGenerator {
     p3
   }
 
-  def makeFunction(params: Seq[VarDecl], body: Block, name: String = "foo"): FunDecl = {
+  def makeFunction(params: Seq[ParamDecl], body: Block, name: String = "foo"): FunDecl = {
     FunDecl(name, returnType = Type.void, params, body)
   }
 
   def makeParams(out: Identifier[AccType],
-                         ins: Seq[Identifier[ExpType]]): Seq[VarDecl] = {
-    Seq(makeParam(out)) ++ ins.map(makeParam)
+                 ins: Seq[Identifier[ExpType]]): Seq[ParamDecl] = {
+    val sizes = collectSizes(out.`type`.dataType
+      +: ins.map(_.`type`.dataType)).toSeq.sortBy(_.toString)
+    Seq(makeParam(out)) ++ ins.map(makeParam) ++ sizes.map(makeSizeParam)
   }
 
-  def makeParam(i: Identifier[_]): VarDecl = {
-    VarDecl(i.name, Type.fromDataType(getDataType(i)))
+  def collectSizes(ts: Seq[DataType]): Set[Var] = {
+    import DPIA.Types.{ArrayType, RecordType, BasicType}
+    ts.foldLeft(Set[Var]())( (s, t) => {
+      s ++ (t match {
+        case _: BasicType => Set()
+        case ArrayType(size, dt) =>
+          size.varList ++ collectSizes(Seq(dt))
+        case RecordType(fst, snd) =>
+          collectSizes(Seq(fst)) ++ collectSizes(Seq(snd))
+        case _: DataTypeIdentifier => ???
+      })
+    })
+  }
+
+  def makeParam(i: Identifier[_]): ParamDecl = {
+    import DPIA.Types.{ArrayType, RecordType, BasicType}
+    // Turn array types into pointer types
+
+    val paramType = getDataType(i) match {
+      case ArrayType(_, dt) =>
+        val baseDt = DataType.getBaseDataType(dt)
+        PointerType(Type.fromDataType(baseDt))
+      case r : RecordType => Type.fromDataType(r)
+      case t : BasicType => Type.fromDataType(t)
+      case _: DataTypeIdentifier => ???
+    }
+    ParamDecl(i.name, paramType)
+  }
+
+  def makeSizeParam(v: Var): ParamDecl = {
+    ParamDecl(v.toString, Type.const_int)
   }
 
   private def getDataType(i: Identifier[_]): DataType = {
