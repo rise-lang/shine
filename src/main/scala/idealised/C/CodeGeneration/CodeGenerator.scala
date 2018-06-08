@@ -72,7 +72,7 @@ class CodeGenerator(val p: Phrase[CommandType],
 
   override def acc(phrase: Phrase[AccType], env: Environment, path: Path): Expr = {
     phrase match {
-      case Identifier(x, _) =>    generateAccess(env(x), path.reverse)
+      case Identifier(x, AccType(dt)) => generateAccess(dt, env(x), path.reverse)
 
       case SplitAcc(_, m, _, a) => path match {
         case i :: ps =>           acc(a, env, i / m :: i % m :: ps)
@@ -116,13 +116,14 @@ class CodeGenerator(val p: Phrase[CommandType],
 
   override def exp(phrase: Phrase[ExpType], env: Environment, path: Path): Expr = {
     phrase match {
-      case Identifier(x, _) =>    generateAccess(env(x), path.reverse)
+      case Identifier(x, ExpType(dt)) => generateAccess(dt, env(x), path.reverse)
 
       case Phrases.Literal(n) => (path, n.dataType) match {
+        case (Nil, _: IndexType)  =>        codeGenLiteral(n)
         case (Nil, _: ScalarType) =>        codeGenLiteral(n)
         case (i :: Nil, _: VectorType) =>   C.AST.ArraySubscript(codeGenLiteral(n), C.AST.ArithmeticExpr(i))
         case (_ :: _ :: Nil, _: ArrayType) => C.AST.Literal("0.0f") // TODO: (used in gemm like this) !!!!!!!
-        case _ =>                 error(s"Unexpected")
+        case _ =>                 error(s"Unexpected: $n $path")
       }
 
       case UnaryOp(op, e) => phrase.t.dataType match {
@@ -183,11 +184,18 @@ class CodeGenerator(val p: Phrase[CommandType],
       }
 
         // TODO: this has to be refactored
-      case VectorFromScalar(n, st, e) =>
-        val e1 = exp(e, env, path)
-        val str = C.AST.Printer(e1)
-//        val vector = List.fill(n.evalInt)(str)
-        C.AST.Literal( "(" + s"($st[$n]){" + str + "})" )
+      case VectorFromScalar(n, st, e) => path match {
+        case i :: ps =>
+          // in this case we index straight into the vector build from a single scalar
+          // it is equivalent to return the scalar `e' without boxing and unboxing it
+          exp(e, env, ps)
+//          C.AST.ArraySubscript(
+//            C.AST.Literal( "(" + s"($st[$n]){" + C.AST.Printer(exp(e, env, ps)) + "})" ),
+//            C.AST.ArithmeticExpr(i))
+
+        case Nil =>
+          C.AST.Literal( "(" + s"($st[$n]){" + C.AST.Printer(exp(e, env, Nil)) + "})" )
+      }
 
       case e: GeneratableExp =>   e.codeGen(this)(env, path)
 
@@ -312,7 +320,9 @@ class CodeGenerator(val p: Phrase[CommandType],
 
   override def codeGenLiteral(d: OperationalSemantics.Data): Expr = {
     d match {
-      case _: IntData | _: FloatData | _: IndexData | _: BoolData =>
+      case i: IndexData =>
+        C.AST.ArithmeticExpr(i.n)
+      case _: IntData | _: FloatData | _: BoolData =>
         C.AST.Literal(d.toString)
       case VectorData(vector) => d.dataType match {
         case VectorType(n, st) =>
@@ -380,12 +390,24 @@ class CodeGenerator(val p: Phrase[CommandType],
     C.AST.FunCall(C.AST.DeclRef(funDecl.name), args.map(gen.exp(_, env, ps)))
   }
 
-  override def generateAccess(identifier: String, paths: Path): Expr = {
-    paths match {
-      case List() => C.AST.DeclRef(identifier)
-      case List(idx) => C.AST.ArraySubscript(C.AST.DeclRef(identifier), C.AST.ArithmeticExpr(idx))
+  override def generateAccess(dt: DataType,
+                              identifier: String,
+                              path: Path): Expr = {
+    (dt, path) match {
+      case (_: BasicType, List()) =>  C.AST.DeclRef(identifier)
+
+      case (_: VectorType, List(idx)) =>
+        C.AST.ArraySubscript(C.AST.DeclRef(identifier), C.AST.ArithmeticExpr(idx))
+
+      case (_: ArrayType, List(idx)) =>
+        C.AST.ArraySubscript(C.AST.DeclRef(identifier), C.AST.ArithmeticExpr(idx))
+
       // TODO: is this natural ...
-      case List(vecIdx, arrayIdx) => C.AST.ArraySubscript(C.AST.DeclRef(identifier), C.AST.ArithmeticExpr(arrayIdx + vecIdx))
+      case (_: ArrayType, List(vecIdx, arrayIdx)) =>
+        C.AST.ArraySubscript(C.AST.DeclRef(identifier), C.AST.ArithmeticExpr(arrayIdx + vecIdx))
+
+      case (_, _) =>
+        throw new Exception(s"Can't generate access for `$dt' and `${path.mkString("[", "::", "]")}'")
     }
   }
 

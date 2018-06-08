@@ -103,5 +103,5 @@ trait CodeGenerator[Environment, Path, Stmt, Expr, Decl] {
                              ps: Path,
                              gen: this.type): Expr
 
-  def generateAccess(identifier: String, paths: Path): Expr
+  def generateAccess(dt: DataType, identifier: String, paths: Path): Expr
 }

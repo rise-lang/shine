@@ -111,7 +111,23 @@ object scal extends App {
     ))
 
     val phrase = TypeInference(scalIntel, Map()).toPhrase
-    val program = idealised.OpenMP.ProgramGenerator.makeCode(phrase)
+    val program = idealised.OpenMP.ProgramGenerator.makeCode(phrase, "scalIntel")
+    println(program.code)
+  }
+
+  {
+    import idealised.OpenMP.SurfaceLanguage.DSL._
+
+    val scalIntel2 = fun(inputT)(input => fun(float)(alpha =>
+      join() o mapPar(
+        asScalar() o mapSeq(
+          fun(x => vectorize(4, alpha) * x)
+        ) o asVector(4)
+      ) o split(4 * 128 * 128) $ input
+    ))
+
+    val phrase = TypeInference(scalIntel2, Map()).toPhrase
+    val program = idealised.OpenMP.ProgramGenerator.makeCode(phrase, "scalIntel2")
     println(program.code)
   }
 

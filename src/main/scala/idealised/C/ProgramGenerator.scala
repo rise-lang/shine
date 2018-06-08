@@ -6,7 +6,7 @@ import idealised.DPIA.Phrases._
 import idealised.DPIA.Types.{AccType, CommandType, DataType, DataTypeIdentifier, ExpType, PairType, PhraseType, RecordType, TypeChecker}
 import idealised.C.AST._
 import idealised._
-import lift.arithmetic.{NamedVar, Var}
+import lift.arithmetic.{Cst, NamedVar, Var}
 
 import scala.collection._
 
@@ -28,7 +28,9 @@ object ProgramGenerator {
     makeCode(phrase, params.reverse)
   }
 
-  private def makeCode(p: Phrase[ExpType], inputParams: Seq[Identifier[ExpType]]): Program = {
+  private def makeCode(p: Phrase[ExpType],
+                       inputParams: Seq[Identifier[ExpType]],
+                       name: String = "foo"): Program = {
     val outParam = createOutputParam(outT = p.t)
 
     val p1 = checkTypes(p)
@@ -39,16 +41,24 @@ object ProgramGenerator {
 
     val env = (outParam +: inputParams).map(p => p.name -> p.name ).toMap
 
-    val (decls, code) = C.CodeGeneration.CodeGenerator(p3, env).generate
+    val (declarations, code) = C.CodeGeneration.CodeGenerator(p3, env).generate
 
-    C.Program(decls,
-      function = makeFunction(makeParams(outParam, inputParams), Block(Seq(code))),
+    C.Program(
+      declarations,
+      function    = makeFunction(makeParams(outParam, inputParams), Block(Seq(code)), name),
       outputParam = outParam,
       inputParams = inputParams)
   }
 
   private def createOutputParam(outT: ExpType): Identifier[AccType] = {
-    identifier("output", AccType(outT.dataType))
+    outT.dataType match {
+      case _: DPIA.Types.BasicType =>
+        identifier("output", AccType(DPIA.Types.ArrayType(Cst(1), outT.dataType)))
+      case _: DPIA.Types.ArrayType =>
+        identifier("output", AccType(outT.dataType))
+      case _: DPIA.Types.RecordType => ???
+      case _: DPIA.Types.DataTypeIdentifier => ???
+    }
   }
 
   private def checkTypes(p1: Phrase[ExpType]): Phrase[ExpType] = {
@@ -58,7 +68,14 @@ object ProgramGenerator {
   }
 
   private def rewriteToImperative(p: Phrase[ExpType], a: Phrase[AccType]): Phrase[CommandType] = {
-    val p2 = RewriteToImperative.acc(p)(a)
+    val output = (a.t.dataType, p.t.dataType) match {
+      case (lhsT, rhsT) if lhsT == rhsT => a
+      case (DPIA.Types.ArrayType(Cst(1), lhsT), rhsT) if lhsT == rhsT =>
+        a `@` (Cst(0) asPhrase DPIA.Types.IndexType(Cst(1)))
+      case (lhsT, rhsT) => throw new Exception(s" $lhsT and $rhsT should match")
+    }
+
+    val p2 = RewriteToImperative.acc(p)(output)
     xmlPrinter.writeToFile("/tmp/p2.xml", p2)
     TypeChecker(p2) // TODO: only in debug
     p2
@@ -72,7 +89,7 @@ object ProgramGenerator {
     p3
   }
 
-  def makeFunction(params: Seq[ParamDecl], body: Block, name: String = "foo"): FunDecl = {
+  def makeFunction(params: Seq[ParamDecl], body: Block, name: String): FunDecl = {
     FunDecl(name, returnType = Type.void, params, body)
   }
 
