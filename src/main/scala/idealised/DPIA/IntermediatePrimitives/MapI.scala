@@ -77,8 +77,12 @@ final case class MapI(n: Nat,
   override def makeMapI = MapI
 
   override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
-    `parFor`(n, dt2, out, i => a =>
-      SubstituteImplementations(f(in `@` i)(a), env)
+    // TODO: WE MAKE A DECISION HERE
+//    `parFor`(n, dt2, out, i => a =>
+//      SubstituteImplementations(f(in `@` i)(a), env)
+//    )
+    `for`(n, i =>
+      SubstituteImplementations(f(in `@` i)(out `@` i), env)
     )
   }
 

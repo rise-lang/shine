@@ -98,12 +98,14 @@ class Printer {
     if (v.t.const) print("const ")
     v.t match {
       case b: BasicType => print(s"${b.name} ${v.name}")
-      case s: StructType => ???
+      case s: StructType => print(s"struct ${s.name} ${v.name}")
       case u: UnionType => ???
-      case a: ArrayType => print(s"${a.elemType} ${v.name}[${ a.size match {
-        case None => ""
-        case Some(s) => s
-      } }]")
+      case a: ArrayType =>
+        // float name[s];
+        print(s"${a.getBaseType} ${v.name}[${ a.getSizes match {
+          case None => ""
+          case Some(s) => s
+        } }]")
       case p: PointerType => print(s"${p.valueType}* ${v.name}")
     }
     v.init match {
@@ -118,10 +120,10 @@ class Printer {
     if (p.t.const) print("const ")
     p.t match {
       case b: BasicType => print(s"${b.name} ${p.name}")
-      case s: StructType => ???
+      case s: StructType => print(s"struct ${s.name} ${p.name}")
       case u: UnionType => ???
       case a: ArrayType =>
-        print(s"${a.elemType} ${p.name}[${ a.size match {
+        print(s"${a.getBaseType} ${p.name}[${ a.getSizes match {
           case None => ""
           case Some(s) => s
         } }]")
@@ -260,8 +262,10 @@ class Printer {
   }
 
   private def print(c: Cast): Unit = {
+    print("(")
     print(s"(${c.t})")
-    print(c.v)
+    print(c.e)
+    print(")")
   }
 
   private def print(l: Literal): Unit = {

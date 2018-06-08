@@ -86,7 +86,7 @@ object BinaryOperator extends Enumeration {
   val || : BinaryOperator.Value = Value("||")
 }
 
-case class Cast(v: DeclRef, t: Type) extends Expr
+case class Cast(t: Type, e: Expr) extends Expr
 
 case class Literal(code: String) extends Expr
 

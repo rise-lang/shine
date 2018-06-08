@@ -1,11 +1,11 @@
 package idealised.OpenMP.CodeGeneration
 
 import idealised.C
-import idealised.C.AST.Decl
+import idealised.C.AST.{ArraySubscript, Decl}
 import idealised.C.CodeGeneration.{CodeGenerator => CCodeGenerator}
 import idealised.DPIA.{Nat, error, freshName}
 import idealised.DPIA.Phrases.{Identifier, Phrase}
-import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType}
+import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType, VectorType}
 import idealised.DPIA.DSL._
 import idealised.OpenCL.FunctionalPrimitives.{AsScalar, AsVector}
 import idealised.OpenCL.ImperativePrimitives.{AsScalarAcc, AsVectorAcc}
@@ -45,11 +45,17 @@ class CodeGenerator(override val p: Phrase[CommandType],
 
   override def exp(phrase: Phrase[ExpType], env: Environment, path: Path): Expr = {
     phrase match {
-      case AsVector(n, _, _, e) => path match {
-        case i :: ps =>     exp(e, env, (i * n) :: ps)
+      case AsVector(n, _, dt, e) => path match {
+        case i :: ps =>
+          exp(e, env, (i * n) :: ps) match {
+            case ArraySubscript(v, idx) =>
+              // emit something like: ((struct float4 *)v)[idx]
+              val ptrType = C.AST.PointerType(C.AST.Type.fromDataType(VectorType(n, dt)))
+              C.AST.ArraySubscript(C.AST.Cast(ptrType, v), idx)
+          }
         case _ =>           error(s"Expected path to be not empty")
       }
-      case AsScalar(_, m, _m, e) => path match {
+      case AsScalar(_, m, _, e) => path match {
         case i :: ps =>     exp(e, env, (i / m) :: ps)
         case _ =>           error(s"Expected path to be not empty")
       }

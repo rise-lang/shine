@@ -1,5 +1,6 @@
 package idealised.C.AST
 
+import idealised.DPIA.Types.{DataTypeIdentifier, RecordType}
 import lift.arithmetic._
 
 sealed abstract class Type(val const: Boolean) {
@@ -14,8 +15,9 @@ case class BasicType(name: String, override val const: Boolean = false) extends 
   override def print: String = name
 }
 
-case class StructType(fields: Seq[Type], override val const: Boolean = false) extends Type(const) {
-  override def print: String = "struct {" + fields.map(_.print).mkString("; ") + "}"
+case class StructType(name: String, fields: Seq[Type], override val const: Boolean = false) extends Type(const) {
+  //  override def print: String = s"struct $name {${fields.map(_.print).mkString("; ")} }"
+  override def print: String = s"struct $name"
 }
 
 case class ArrayType(elemType: Type, size: Option[ArithExpr], override val const: Boolean = false) extends Type(const) {
@@ -23,6 +25,30 @@ case class ArrayType(elemType: Type, size: Option[ArithExpr], override val const
     case Some(n) => s"$n"
     case None => ""
   }) + "]"
+
+  def getBaseType: Type = {
+    elemType match {
+      case _: BasicType => elemType
+      case _: StructType => elemType
+      case _: PointerType => elemType
+      case _: UnionType => elemType
+      case a: ArrayType => a.getBaseType
+    }
+  }
+
+  def getSizes: Option[ArithExpr] = {
+    size match {
+      case None     =>  None
+      case Some(s)  => elemType match {
+        case a: ArrayType =>
+          a.getSizes match {
+            case None => Some(s)
+            case Some(s2) => Some(s * s2)
+          }
+        case _ => Some(s)
+      }
+    }
+  }
 }
 
 case class PointerType(valueType: Type, override val const: Boolean = false) extends Type(const) {
@@ -53,11 +79,16 @@ object Type {
         case idealised.DPIA.Types.int => Type.int
         case idealised.DPIA.Types.float => Type.float
         case _: idealised.DPIA.Types.IndexType => Type.int
-        case v: idealised.DPIA.Types.VectorType => ArrayType(fromDataType(v.elemType), Some(v.size))
-          //throw new Exception("Vector types are not supported in plain C")
+        case v: idealised.DPIA.Types.VectorType =>
+          // this sets the representation of vector types in C:
+          // struct float4 {
+          //    float data[4];
+          // };
+          StructType(v.toString, Seq(ArrayType(fromDataType(v.elemType), Some(v.size))))
       }
       case a: idealised.DPIA.Types.ArrayType => ArrayType(fromDataType(a.elemType), Some(a.size))
-      case r: idealised.DPIA.Types.RecordType => StructType(Seq(fromDataType(r.fst), fromDataType(r.snd)))
+      case r: idealised.DPIA.Types.RecordType =>
+        StructType(r.fst.toString + "_" + r.snd.toString, Seq(fromDataType(r.fst), fromDataType(r.snd)))
       case _: idealised.DPIA.Types.DataTypeIdentifier => throw new Exception("This should not happen")
     }
   }

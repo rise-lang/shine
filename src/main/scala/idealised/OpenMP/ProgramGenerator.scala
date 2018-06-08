@@ -3,7 +3,6 @@ package idealised.OpenMP
 import idealised._
 import idealised.DPIA.Compilation._
 import idealised.DPIA.DSL._
-import idealised.DPIA.ImperativePrimitives.IdxAcc
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types._
 import lift.arithmetic.Cst
