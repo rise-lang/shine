@@ -73,6 +73,7 @@ class Printer {
     case a: Assignment => print(a)
     case d: DeclRef => print(d)
     case f: FunCall => print(f)
+    case s: StructMemberAccess => print(s)
     case a: ArraySubscript => print(a)
     case u: UnaryExpr => print(u)
     case b: BinaryExpr => print(b)
@@ -238,10 +239,16 @@ class Printer {
   }
 
   private def print(a: ArraySubscript): Unit = {
-    print(a.v)
+    print(a.array)
     print("[")
     print(a.index)
     print("]")
+  }
+
+  private def print(s: StructMemberAccess): Unit = {
+    print(s.struct)
+    print(".")
+    print(s.member)
   }
 
   private def print(u: UnaryExpr): Unit = {

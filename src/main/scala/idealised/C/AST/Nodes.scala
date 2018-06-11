@@ -59,7 +59,9 @@ case class DeclRef(name: String) extends Expr
 
 case class FunCall(fun: DeclRef, args: Seq[Expr]) extends Expr
 
-case class ArraySubscript(v: Expr, index: Expr) extends Expr
+case class ArraySubscript(array: Expr, index: Expr) extends Expr
+
+case class StructMemberAccess(struct: Expr, member: DeclRef) extends Expr
 
 case class UnaryExpr(op: UnaryOperator.Value, e: Expr) extends Expr
 

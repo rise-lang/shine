@@ -131,7 +131,7 @@ object gemm extends App {
 
   val dot  = fun(x => oclFun("dot", Seq(float4, float4), float, Seq(x._1, x._2)))
   val dotFF = fun(x => foreignFun(float, "dot", Seq((float4, "x"), (float4, "y")),
-    "{ return fdot(x, y); }", Seq(x._1, x._2)))
+    "{ return x.data[0]*y.data[0] + x.data[1]*y.data[1] + x.data[2]*y.data[2] + x.data[3]*y.data[3]; }", Seq(x._1, x._2)))
 
   val maliGEMM =
     fun(ArrayType(M, ArrayType(K, float)))(a =>

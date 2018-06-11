@@ -1,5 +1,6 @@
 package idealised.C.CodeGeneration
 
+import idealised.C.AST.DeclRef
 import idealised._
 import idealised.DPIA._
 import idealised.DPIA.FunctionalPrimitives._
@@ -397,7 +398,8 @@ class CodeGenerator(val p: Phrase[CommandType],
       case (_: BasicType, List()) =>  C.AST.DeclRef(identifier)
 
       case (_: VectorType, List(idx)) =>
-        C.AST.ArraySubscript(C.AST.DeclRef(identifier), C.AST.ArithmeticExpr(idx))
+        val data = C.AST.StructMemberAccess(C.AST.DeclRef(identifier), DeclRef("data"))
+        C.AST.ArraySubscript(data, C.AST.ArithmeticExpr(idx))
 
       case (_: ArrayType, List(idx)) =>
         C.AST.ArraySubscript(C.AST.DeclRef(identifier), C.AST.ArithmeticExpr(idx))

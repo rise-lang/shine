@@ -15,7 +15,7 @@ case class BasicType(name: String, override val const: Boolean = false) extends 
   override def print: String = name
 }
 
-case class StructType(name: String, fields: Seq[Type], override val const: Boolean = false) extends Type(const) {
+case class StructType(name: String, fields: Seq[(Type, String)], override val const: Boolean = false) extends Type(const) {
   //  override def print: String = s"struct $name {${fields.map(_.print).mkString("; ")} }"
   override def print: String = s"struct $name"
 }
@@ -84,11 +84,14 @@ object Type {
           // struct float4 {
           //    float data[4];
           // };
-          StructType(v.toString, Seq(ArrayType(fromDataType(v.elemType), Some(v.size))))
+          StructType(v.toString,
+            Seq((ArrayType(fromDataType(v.elemType), Some(v.size)), "data")))
       }
       case a: idealised.DPIA.Types.ArrayType => ArrayType(fromDataType(a.elemType), Some(a.size))
       case r: idealised.DPIA.Types.RecordType =>
-        StructType(r.fst.toString + "_" + r.snd.toString, Seq(fromDataType(r.fst), fromDataType(r.snd)))
+        StructType(r.fst.toString + "_" + r.snd.toString, Seq(
+            (fromDataType(r.fst), "fst"),
+            (fromDataType(r.snd), "snd")))
       case _: idealised.DPIA.Types.DataTypeIdentifier => throw new Exception("This should not happen")
     }
   }

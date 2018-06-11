@@ -46,8 +46,14 @@ class CodeGenerator(override val p: Phrase[CommandType],
   override def exp(phrase: Phrase[ExpType], env: Environment, path: Path): Expr = {
     phrase match {
       case AsVector(n, _, dt, e) => path match {
-        case i :: ps =>
-          exp(e, env, (i * n) :: ps) match {
+        // TODO:
+        // I wonder if it is sufficient to distinguish the cases only by
+        // number of indices on the path ...
+        case i :: j :: ps =>
+          exp(e, env, (i * n) + j :: ps)
+
+        case i :: Nil =>
+          exp(e, env, (i * n) :: Nil) match {
             case ArraySubscript(v, idx) =>
               // emit something like: ((struct float4 *)v)[idx]
               val ptrType = C.AST.PointerType(C.AST.Type.fromDataType(VectorType(n, dt)))
