@@ -33,6 +33,12 @@ object join {
   def apply(array: DataExpr): Join = Join(array)
 }
 
+object slide {
+  def apply(s1: Nat, s2: Nat): Expr[DataType -> DataType] = fun(array => slide(s1, s2, array))
+
+  def apply(s1: Nat, s2: Nat, array: DataExpr): Slide = Slide(s1, s2, array)
+}
+
 object reduce {
   def apply(f: Expr[DataType -> (DataType -> DataType)]): Expr[DataType -> (DataType -> DataType)] =
     fun((init, array) => reduce(f, init, array))

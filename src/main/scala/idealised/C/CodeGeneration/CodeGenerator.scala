@@ -104,6 +104,8 @@ class CodeGenerator(val p: Phrase[CommandType],
         case Nil =>               error(s"Expected path to be not empty")
       }
 
+      case SlideAcc(_, _, _, _, a) => ???
+
       case a: GeneratableAcc =>   a.codeGen(this)(env, path)
 
       case Proj1(pair) =>         acc(Lifting.liftPair(pair)._1, env, path)
@@ -182,6 +184,11 @@ class CodeGenerator(val p: Phrase[CommandType],
       case Gather(_, _, idxF, a) => path match {
         case i :: ps =>           exp(a, env, OperationalSemantics.evalIndexExp(idxF(i)) :: ps)
         case Nil =>               error(s"Expected path to be not empty")
+      }
+
+      case Slide(_, _, s2, _, e) => path match {
+        case i :: j :: ps =>      exp(e, env, i * s2 + j :: ps)
+        case _ :: Nil | Nil =>    error(s"Expected path to contain at least two elements")
       }
 
         // TODO: this has to be refactored
