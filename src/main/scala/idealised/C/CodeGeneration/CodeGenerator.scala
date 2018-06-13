@@ -104,8 +104,6 @@ class CodeGenerator(val p: Phrase[CommandType],
         case Nil =>               error(s"Expected path to be not empty")
       }
 
-      case SlideAcc(_, _, _, _, a) => ???
-
       case a: GeneratableAcc =>   a.codeGen(this)(env, path)
 
       case Proj1(pair) =>         acc(Lifting.liftPair(pair)._1, env, path)
@@ -402,21 +400,32 @@ class CodeGenerator(val p: Phrase[CommandType],
                               identifier: String,
                               path: Path): Expr = {
     (dt, path) match {
-      case (_: BasicType, List()) =>  C.AST.DeclRef(identifier)
+      case (_: BasicType, Nil) =>  C.AST.DeclRef(identifier)
 
-      case (_: VectorType, List(idx)) =>
+      case (_: VectorType, i :: Nil) =>
         val data = C.AST.StructMemberAccess(C.AST.DeclRef(identifier), DeclRef("data"))
-        C.AST.ArraySubscript(data, C.AST.ArithmeticExpr(idx))
+        C.AST.ArraySubscript(data, C.AST.ArithmeticExpr(i))
 
-      case (_: ArrayType, List(idx)) =>
-        C.AST.ArraySubscript(C.AST.DeclRef(identifier), C.AST.ArithmeticExpr(idx))
+      case (at: ArrayType, _) => generateArrayAccess(at, identifier, path, 0)
 
-      // TODO: is this natural ...
-      case (_: ArrayType, List(vecIdx, arrayIdx)) =>
-        C.AST.ArraySubscript(C.AST.DeclRef(identifier), C.AST.ArithmeticExpr(arrayIdx + vecIdx))
+      case _ =>
+        throw new Exception(s"Can't generate access for `$dt' with `${path.mkString("[", "::", "]")}'")
+    }
+  }
 
-      case (_, _) =>
-        throw new Exception(s"Can't generate access for `$dt' and `${path.mkString("[", "::", "]")}'")
+  private def generateArrayAccess(at: ArrayType, identifier: String, path: Path, index: Nat): Expr = {
+    (at, path) match {
+      case (ArrayType(_, bt: BasicType), i :: Nil) =>
+        C.AST.ArraySubscript(generateAccess(bt, identifier, Nil), C.AST.ArithmeticExpr(i + index))
+
+      case (ArrayType(_, vt: VectorType), i :: j :: Nil) =>
+        C.AST.ArraySubscript(generateAccess(vt, identifier, j :: Nil), C.AST.ArithmeticExpr(i + index))
+
+      case (ArrayType(_, et@ArrayType(s, _)), i :: ps) =>
+        generateArrayAccess(et, identifier, ps, (i * s) + index)
+
+      case _ =>
+        throw new Exception(s"Can't generate access for `$at' with `${path.mkString("[", "::", "]")}'")
     }
   }
 

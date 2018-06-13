@@ -2,13 +2,13 @@ package idealised.DPIA.FunctionalPrimitives
 
 import idealised.DPIA.Compilation.RewriteToImperative
 import idealised.DPIA.DSL._
-import idealised.DPIA.ImperativePrimitives.SlideAcc
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics.Store
 import idealised.DPIA.Types._
 import idealised.DPIA._
 
+import scala.language.{postfixOps, reflectiveCalls}
 import scala.xml.Elem
 
 final case class Slide(n: Nat,
@@ -18,9 +18,11 @@ final case class Slide(n: Nat,
                        array: Phrase[ExpType])
   extends ExpPrimitive
 {
+  private val inputSize = s2 * n + s1 - s2
+
   override def `type`: ExpType =
     (n: Nat) -> (s1: Nat) -> (s2: Nat) -> (dt: DataType) ->
-      (array :: exp"[${s2 * n + s1 - s2}.$dt]") ->
+      (array :: exp"[$inputSize.$dt]") ->
         exp"[$n.$s1.$dt]"
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
@@ -39,12 +41,12 @@ final case class Slide(n: Nat,
   override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
 
-    acc(array)(SlideAcc(n, s1, s2, dt, A))
+    con(this)(λ(exp"[$inputSize.$dt]")(x => A :=|dt"[$n.$s1.$dt]"| x ))
   }
 
   override def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
     import RewriteToImperative._
 
-    con(array)(λ(exp"[${s2 * n + s1 - s2}.$dt]")(x => C(Slide(n, s1, s2, dt, x)) ))
+    con(array)(λ(exp"[$inputSize.$dt]")(x => C(Slide(n, s1, s2, dt, x)) ))
   }
 }

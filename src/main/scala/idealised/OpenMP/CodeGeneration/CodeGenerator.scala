@@ -35,8 +35,17 @@ class CodeGenerator(override val p: Phrase[CommandType],
         case i :: ps =>     acc(a, env, (i / n) :: ps)
         case _ =>           error(s"Expected path to be not empty")
       }
-      case AsScalarAcc(_, m, _, a) => path match {
-        case i :: ps =>     acc(a, env, (i * m) :: ps)
+      case AsScalarAcc(_, m, dt, a) => path match {
+        case i :: j :: ps =>
+          acc(a, env, (i * m) + j :: ps)
+
+        case i :: Nil =>
+          acc(a, env, (i * m) :: Nil) match {
+            case ArraySubscript(v, idx) =>
+              // emit something like: ((struct float4 *)v)[idx]
+              val ptrType = C.AST.PointerType(C.AST.Type.fromDataType(VectorType(m, dt)))
+              C.AST.ArraySubscript(C.AST.Cast(ptrType, v), idx)
+          }
         case _ =>           error(s"Expected path to be not empty")
       }
       case _ =>             super.acc(phrase, env, path)
@@ -46,9 +55,6 @@ class CodeGenerator(override val p: Phrase[CommandType],
   override def exp(phrase: Phrase[ExpType], env: Environment, path: Path): Expr = {
     phrase match {
       case AsVector(n, _, dt, e) => path match {
-        // TODO:
-        // I wonder if it is sufficient to distinguish the cases only by
-        // number of indices on the path ...
         case i :: j :: ps =>
           exp(e, env, (i * n) + j :: ps)
 
