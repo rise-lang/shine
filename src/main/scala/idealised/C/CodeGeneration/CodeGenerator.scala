@@ -232,15 +232,26 @@ class CodeGenerator(val p: Phrase[CommandType],
   }
 
   override def codeGenNew(dt: DataType,
-                          v: Identifier[ExpType x AccType],
+                          v: Identifier[VarType],
                           p: Phrase[CommandType],
                           env: Environment,
                           gen: CodeGenerator.this.type): Stmt = {
     C.AST.Block(immutable.Seq(
       C.AST.DeclStmt(C.AST.VarDecl(v.name, C.AST.Type.fromDataType(dt))),
-      gen.cmd( Phrase.substitute(Pair(π1(v), π2(v)), `for`=v, `in`=p),
+      gen.cmd( Phrase.substitute(Pair(v.rd, v.wr), `for`=v, `in`=p),
         env + ( v.name -> v.name, v.name -> v.name ) )
     ))
+  }
+
+  override def codeGenNewDoubleBuffer(dt: DataType,
+                                      ps: Identifier[VarType x CommandType x CommandType],
+                                      p: Phrase[CommandType],
+                                      env: Environment,
+                                      gen: CodeGenerator.this.type): Stmt = {
+    val v = ps._1._1
+    val swap = ps._1._2
+    val done = ps._2
+    ???
   }
 
   override def codeGenFor(n: Nat,

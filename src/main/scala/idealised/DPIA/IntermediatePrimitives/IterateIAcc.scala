@@ -56,6 +56,10 @@ final case class IterateIAcc(n: Nat,
 
   private def noUnrolling(env: SubstituteImplementations.Environment,
                            addressSpace: AddressSpace): Phrase[CommandType] = {
+
+
+
+
     val `n^k*m` = n.pow(k) * m
 
     `new`(dt"[${`n^k*m`}.$dt]", addressSpace, buf1 =>

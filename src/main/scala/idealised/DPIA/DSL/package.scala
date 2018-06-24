@@ -106,6 +106,11 @@ package object DSL {
     def wr: Proj2[ExpType, AccType] = π2(v)
   }
 
+  implicit class PairExtensions[T1 <: PhraseType, T2 <: PhraseType](v: Phrase[T1 x T2]) {
+    def _1: Proj1[T1, T2] = π1(v)
+    def _2: Proj2[T1, T2] = π2(v)
+  }
+
   implicit class IdentExpPhraseExtensions(i: Identifier[ExpType]) {
     def asNatIdentifier = NamedVar(i.name)
     def asNatIdentifier(withUpperBound: Nat) =

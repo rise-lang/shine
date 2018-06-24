@@ -12,7 +12,7 @@ import scala.xml.Elem
 
 final case class New(dt: DataType,
                      addressSpace: AddressSpace,
-                     f: Phrase[(ExpType x AccType) -> CommandType])
+                     f: Phrase[VarType -> CommandType])
   extends CommandPrimitive with GeneratableCommand {
 
   override val `type`: CommandType =

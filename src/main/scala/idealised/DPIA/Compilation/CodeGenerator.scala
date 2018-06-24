@@ -3,7 +3,7 @@ package idealised.DPIA.Compilation
 import idealised.DPIA.Phrases.{Identifier, Phrase}
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType}
-import idealised.DPIA.{Nat, x}
+import idealised.DPIA.{Nat, VarType, x}
 import idealised.SurfaceLanguage
 import idealised.SurfaceLanguage.Primitives.ForeignFunctionDeclaration
 
@@ -32,10 +32,16 @@ trait CodeGenerator[Environment, Path, Stmt, Expr, Decl] {
                     gen: this.type): Stmt
 
   def codeGenNew(dt: DataType,
-                 v: Identifier[ExpType x AccType],
+                 v: Identifier[VarType],
                  p: Phrase[CommandType],
                  env: Environment,
                  gen: this.type): Stmt
+
+  def codeGenNewDoubleBuffer(dt: DataType,
+                             ps: Identifier[VarType x CommandType x CommandType],
+                             p: Phrase[CommandType],
+                             env: Environment,
+                             gen: this.type): Stmt
 
   def codeGenFor(n: Nat,
                  i: Identifier[ExpType],
@@ -60,6 +66,12 @@ trait CodeGenerator[Environment, Path, Stmt, Expr, Decl] {
                        p: Phrase[CommandType],
                        env: Environment,
                        gen: this.type): Stmt
+
+//  def codeGenDoubleBufFor(n: Nat,
+//                          i: Identifier[ExpType],
+//                          p: Phrase[CommandType],
+//                          env: Environment,
+//                          gen: this.type): Stmt
 
   // generate code interface for acceptors
   def codeGenIdxAcc(i: Phrase[ExpType],

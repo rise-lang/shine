@@ -10,13 +10,32 @@ import lift.arithmetic.{NamedVar, RangeAdd}
 object `new` {
   def apply(dt: DataType,
             addressSpace: AddressSpace,
-            f: Phrase[(ExpType x AccType) -> CommandType]): New =
+            f: Phrase[VarType -> CommandType]): New =
     New(dt, addressSpace, f)
 
   def apply(dt: DataType,
             addressSpace: AddressSpace,
-            f: Phrase[ExpType x AccType] => Phrase[CommandType]): New =
+            f: Phrase[VarType] => Phrase[CommandType]): New =
     New(dt, addressSpace, λ(exp"[$dt]" x acc"[$dt]")( v => f(v) ))
+}
+
+object newDoubleBuffer {
+  def apply(dt: DataType,
+            in: Phrase[ExpType],
+            out: Phrase[AccType],
+            f: Phrase[VarType x CommandType x CommandType -> CommandType]): NewDoubleBuffer =
+    NewDoubleBuffer(dt, in, out, f)
+
+  def apply(dt: DataType,
+            in: Phrase[ExpType],
+            out: Phrase[AccType],
+            f: (Phrase[VarType], Phrase[CommandType], Phrase[CommandType]) => Phrase[CommandType]) =
+    NewDoubleBuffer(dt, in, out, λ(VarType(dt) x CommandType() x CommandType())(ps => {
+      val    v: Phrase[VarType]     = ps._1._1
+      val swap: Phrase[CommandType] = ps._1._2
+      val done: Phrase[CommandType] = ps._2
+      f(v, swap, done)
+    }))
 }
 
 object `if` {
