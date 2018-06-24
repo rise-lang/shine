@@ -231,5 +231,6 @@ object Operators {
     val MOD: Binary.Value = Value("%")
     val GT: Binary.Value = Value(">")
     val LT: Binary.Value = Value("<")
+    val EQ: Binary.Value = Value("==")
   }
 }

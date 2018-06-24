@@ -64,9 +64,16 @@ class CodeGenerator(val p: Phrase[CommandType],
     phrase match {
       case c: GeneratableCommand => c.codeGen(this)(env)
 
+      case Phrases.IfThenElse(cond, thenP, elseP) =>
+        C.AST.IfThenElse(
+          exp(cond, env, Nil), cmd(thenP, env), Some(cmd(elseP, env)))
+
+      case i: Identifier[CommandType] => C.AST.Comment(s"$i")
+      case p@Proj1(_) => C.AST.Comment(s"$p")
+      case p@Proj2(_) => C.AST.Comment(s"$p")
+
       case Apply(_, _) | NatDependentApply(_, _) | TypeDependentApply(_, _) |
-           Phrases.IfThenElse(_, _, _) | Identifier(_, _) |
-           Proj1(_) | Proj2(_) | _: CommandPrimitive =>
+           _: CommandPrimitive =>
         error(s"Don't know how to generate code for $phrase")
     }
   }
@@ -251,7 +258,13 @@ class CodeGenerator(val p: Phrase[CommandType],
     val v = ps._1._1
     val swap = ps._1._2
     val done = ps._2
-    ???
+
+    C.AST.Stmts(
+      C.AST.Comment(s"$v; $swap; $done;"),
+      gen.cmd(
+        p,//Phrase.substitute(Pair(v.rd, v.wr), `for`=v, `in`=p),
+        env + (ps.name -> ps.name) )
+    )
   }
 
   override def codeGenFor(n: Nat,
@@ -450,6 +463,7 @@ class CodeGenerator(val p: Phrase[CommandType],
       case MOD => ???
       case GT  => C.AST.BinaryOperator.>
       case LT  => C.AST.BinaryOperator.<
+      case EQ  => C.AST.BinaryOperator.==
     }
   }
 

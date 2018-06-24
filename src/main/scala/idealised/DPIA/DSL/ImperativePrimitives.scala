@@ -2,7 +2,7 @@ package idealised.DPIA.DSL
 
 import idealised.DPIA.FunctionalPrimitives.{Fst, Snd}
 import idealised.DPIA.ImperativePrimitives._
-import idealised.DPIA.Phrases.{IfThenElse, NatDependentLambda, Phrase}
+import idealised.DPIA.Phrases.{Identifier, IfThenElse, NatDependentLambda, Phrase}
 import idealised.DPIA.Types._
 import idealised.DPIA._
 import lift.arithmetic.{NamedVar, RangeAdd}
@@ -20,17 +20,19 @@ object `new` {
 }
 
 object newDoubleBuffer {
-  def apply(dt: DataType,
+  def apply(dt1: DataType,
+            dt2: DataType,
             in: Phrase[ExpType],
             out: Phrase[AccType],
             f: Phrase[VarType x CommandType x CommandType -> CommandType]): NewDoubleBuffer =
-    NewDoubleBuffer(dt, in, out, f)
+    NewDoubleBuffer(dt1, dt2, in, out, f)
 
-  def apply(dt: DataType,
+  def apply(dt1: DataType,
+            dt2: DataType,
             in: Phrase[ExpType],
             out: Phrase[AccType],
             f: (Phrase[VarType], Phrase[CommandType], Phrase[CommandType]) => Phrase[CommandType]) =
-    NewDoubleBuffer(dt, in, out, λ(VarType(dt) x CommandType() x CommandType())(ps => {
+    NewDoubleBuffer(dt1, dt2, in, out, λ(VarType(dt1) x CommandType() x CommandType())(ps => {
       val    v: Phrase[VarType]     = ps._1._1
       val swap: Phrase[CommandType] = ps._1._2
       val done: Phrase[CommandType] = ps._2
@@ -55,7 +57,7 @@ object `if` {
 
 object `for` {
   def apply(n: Nat,
-            f: Phrase[ExpType] => Phrase[CommandType]): For =
+            f: Identifier[ExpType] => Phrase[CommandType]): For =
     For(n, λ(exp"[idx($n)]")( i => f(i) ))
 }
 

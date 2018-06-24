@@ -7,6 +7,7 @@ import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA.{Phrases, _}
+import lift.arithmetic.NamedVar
 
 import scala.xml.Elem
 
@@ -41,17 +42,39 @@ final case class IterateIAcc(n: Nat,
   }
 
   override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
-    // infer the address space from the output
-    val addressSpace = SubstituteImplementations.getAddressSpace(out, env) match {
-      case Some(a) => a
-      case None => idealised.OpenCL.GlobalMemory
-    }
 
-    k match {
-//      case Cst(x) if x > 2 => unrollFirstAndLastIteration(env, addressSpace)
-//      case Cst(x) if x > 1 => unrollFirstIteration(env, addressSpace)
-      case _ => noUnrolling(env, addressSpace)
-    }
+    newDoubleBufferImpl(env)
+
+//    // infer the address space from the output
+//    val addressSpace = SubstituteImplementations.getAddressSpace(out, env) match {
+//      case Some(a) => a
+//      case None => idealised.OpenCL.GlobalMemory
+//    }
+//
+//    k match {
+////      case Cst(x) if x > 2 => unrollFirstAndLastIteration(env, addressSpace)
+////      case Cst(x) if x > 1 => unrollFirstIteration(env, addressSpace)
+//      case _ => noUnrolling(env, addressSpace)
+//    }
+  }
+
+  private def newDoubleBufferImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
+    val `n^k*m` = n.pow(k) * m
+
+    newDoubleBuffer(dt"[${`n^k*m`}.$dt]", dt"[$m.$dt]", in, out,
+      (v: Phrase[VarType],
+       swap: Phrase[CommandType],
+       done: Phrase[CommandType]) => {
+        `for`(k, lp => {
+          val l = NamedVar(lp.name)
+
+          SubstituteImplementations(
+            f.apply(n.pow(k - l) * m)
+             .apply(TruncAcc(`n^k*m`, n.pow(k - l - 1) * m, dt, v.wr))
+             .apply(TruncExp(`n^k*m`, n.pow(k - l) * m, dt, v.rd)), env) `;`
+          IfThenElse(lp =:= Literal(IndexData(k)), done, swap)
+        })
+      })
   }
 
   private def noUnrolling(env: SubstituteImplementations.Environment,

@@ -7,7 +7,7 @@ import lift.arithmetic.{ArithExpr, Var}
 
 sealed trait PhraseType
 
-abstract class BasePhraseTypes extends PhraseType
+sealed abstract class BasePhraseTypes extends PhraseType
 
 final case class ExpType(dataType: DataType) extends BasePhraseTypes {
   override def toString = s"exp[$dataType]"

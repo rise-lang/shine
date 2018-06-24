@@ -19,6 +19,7 @@ package object DSL {
     def %(rhs: Phrase[ExpType]) = BinOp(Operators.Binary.MOD, lhs, rhs)
     def >(rhs: Phrase[ExpType]) = BinOp(Operators.Binary.GT, lhs, rhs)
     def <(rhs: Phrase[ExpType]) = BinOp(Operators.Binary.LT, lhs, rhs)
+    def =:=(rhs: Phrase[ExpType]) = BinOp(Operators.Binary.EQ, lhs, rhs)
     def unary_- = UnaryOp(Operators.Unary.NEG, lhs)
   }
 

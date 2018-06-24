@@ -23,13 +23,7 @@ object VisitAndRebuild {
         val v = c.v
         (c.p match {
           case i: Identifier[T] =>
-            val t = i.t match {
-              case ExpType(dt) => ExpType(v(dt))
-              case AccType(dt) => AccType(v(dt))
-              case PairType(ExpType(dt1), AccType(dt2)) if dt1 == dt2 => VarType(v(dt1))
-              case _ => throw new Exception("This should not happen")
-            }
-            Identifier(i.name, t)
+            Identifier(i.name, visitAndRebuild(i.t, v))
 
           case Lambda(x, p) =>
             apply(x, v) match {
@@ -72,6 +66,19 @@ object VisitAndRebuild {
 
           case c: Primitive[T] => c.visitAndRebuild(v)
         }).asInstanceOf[Phrase[T]]
+    }
+  }
+
+  private def visitAndRebuild(t: PhraseType, v: Visitor): PhraseType = {
+    t match {
+      case ExpType(dt) => ExpType(v(dt))
+      case AccType(dt) => AccType(v(dt))
+      case CommandType() => CommandType()
+      case PairType(t1, t2) => PairType(visitAndRebuild(t1, v), visitAndRebuild(t2, v))
+      case FunctionType(inT, outT) => FunctionType(visitAndRebuild(inT, v), visitAndRebuild(outT, v))
+      case PassiveFunctionType(inT, outT) => PassiveFunctionType(visitAndRebuild(inT, v), visitAndRebuild(outT, v))
+      case NatDependentFunctionType(x, t) => NatDependentFunctionType(x, visitAndRebuild(t, v))
+      case TypeDependentFunctionType(x, t) => TypeDependentFunctionType(x, visitAndRebuild(t, v))
     }
   }
 

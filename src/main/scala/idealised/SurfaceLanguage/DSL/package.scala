@@ -18,6 +18,7 @@ package object DSL {
     def %(rhs: DataExpr) = BinOpExpr(Operators.Binary.MOD, lhs, rhs)
     def >(rhs: DataExpr) = BinOpExpr(Operators.Binary.GT, lhs, rhs)
     def <(rhs: DataExpr) = BinOpExpr(Operators.Binary.LT, lhs, rhs)
+    def =:=(rhs: DataExpr) = BinOpExpr(Operators.Binary.EQ, lhs, rhs)
     def unary_- = UnaryOpExpr(Operators.Unary.NEG, lhs)
   }
 

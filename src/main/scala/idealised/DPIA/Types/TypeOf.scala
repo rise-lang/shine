@@ -41,7 +41,9 @@ object TypeOf {
 
       case BinOp(op, lhs, rhs) =>
         op match {
-          case Operators.Binary.GT | Operators.Binary.LT => exp"[$bool]"
+          case Operators.Binary.GT |
+               Operators.Binary.LT |
+               Operators.Binary.EQ => exp"[$bool]"
           case _ => (lhs.t.dataType, rhs.t.dataType) match {
             case (t1, t2) if t1 == t2 => ExpType(t1)
             // TODO: Think about this more thoroughly ...
