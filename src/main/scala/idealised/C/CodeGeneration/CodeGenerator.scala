@@ -293,7 +293,7 @@ class CodeGenerator(val p: Phrase[CommandType],
       DeclStmt(
         VarDecl(in_ptr.name,
           PointerType(Type.fromDataType(dt.elemType)),
-          Some(UnaryExpr(UnaryOperator.&, gen.exp(in `@` 0, env, Nil))))),
+          Some(UnaryExpr(UnaryOperator.&, gen.exp(in, env, 0 :: Nil))))),
       // create pointer to `tmp1'
       DeclStmt(
         VarDecl(out_ptr.name,
@@ -317,7 +317,7 @@ class CodeGenerator(val p: Phrase[CommandType],
             updatedCommEnv  (done -> {
               Block(immutable.Seq(
                 Assignment( in_ptr, TernaryExpr(flag, tmp1, tmp2)),
-                Assignment(out_ptr, UnaryExpr(UnaryOperator.&, gen.acc(out `@` 0, env, Nil)))
+                Assignment(out_ptr, UnaryExpr(UnaryOperator.&, gen.acc(out, env, 0 :: Nil)))
               ))
             }))
     ))
@@ -331,6 +331,8 @@ class CodeGenerator(val p: Phrase[CommandType],
     val i_ = C.AST.DeclRef(freshName("i_"))
     val range = RangeAdd(0, n, 1)
     val updatedGen = gen.updatedRanges(i_.name, range)
+
+    val n_ = applySubstitutions(n, env.identEnv)
 
     range.numVals match {
       // iteration count is 0 => skip body; no code to be emitted
@@ -346,7 +348,7 @@ class CodeGenerator(val p: Phrase[CommandType],
       case _ =>
         // default case
         val init = C.AST.VarDecl(i_.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0)))
-        val cond = C.AST.BinaryExpr(i_, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
+        val cond = C.AST.BinaryExpr(i_, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n_))
         val increment = C.AST.Assignment(i_, C.AST.ArithmeticExpr(NamedVar(i_.name, range) + 1))
 
         C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
@@ -528,6 +530,17 @@ class CodeGenerator(val p: Phrase[CommandType],
     op match {
       case NEG => C.AST.UnaryOperator.-
     }
+  }
+
+  private def applySubstitutions(n: Nat,
+                                 identEnv: immutable.Map[Identifier[_ <: BasePhraseTypes], C.AST.DeclRef]): Nat = {
+    // lift the substitutions from the Phrase level to the ArithExpr level
+    val substitionMap = identEnv.filter(_._1.t match {
+      case ExpType(IndexType(_)) => true
+      case AccType(IndexType(_)) => true
+      case _ => false
+    }).map(i => (NamedVar(i._1.name), NamedVar(i._2.name)) ).toMap[ArithExpr, ArithExpr]
+    ArithExpr.substitute(n, substitionMap)
   }
 }
 
