@@ -114,7 +114,7 @@ trait ExpPrimitive extends Primitive[ExpType] {
 }
 
 trait GeneratableExp {
-  def codeGen[Environment, Path, Stmt, Expr, Decl](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl])(env: Environment, path: Path): Expr
+  def codeGen[Environment, Path, Stmt, Expr, Decl, Ident](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl, Ident])(env: Environment, path: Path): Expr
 }
 
 trait AccPrimitive extends Primitive[AccType] {
@@ -122,7 +122,7 @@ trait AccPrimitive extends Primitive[AccType] {
 }
 
 trait GeneratableAcc {
-  def codeGen[Environment, Path, Stmt, Expr, Decl](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl])(env: Environment, path: Path): Expr
+  def codeGen[Environment, Path, Stmt, Expr, Decl, Ident](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl, Ident])(env: Environment, path: Path): Expr
 }
 
 trait CommandPrimitive extends Primitive[CommandType] {
@@ -134,5 +134,5 @@ trait Intermediate[T <: PhraseType] {
 }
 
 trait GeneratableCommand {
-  def codeGen[Environment, Path, Stmt, Expr, Decl](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl])(env: Environment): Stmt
+  def codeGen[Environment, Path, Stmt, Expr, Decl, Ident](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl, Ident])(env: Environment): Stmt
 }

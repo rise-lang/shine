@@ -77,6 +77,7 @@ class Printer {
     case a: ArraySubscript => print(a)
     case u: UnaryExpr => print(u)
     case b: BinaryExpr => print(b)
+    case t: TernaryExpr => print(t)
     case c: Cast => print(c)
     case l: Literal => print(l)
     case a: ArithmeticExpr => print(a)
@@ -254,8 +255,9 @@ class Printer {
   private def print(u: UnaryExpr): Unit = {
     print("(")
     print(u.op.toString)
+    print("(")
     print(u.e)
-    print(")")
+    print("))")
   }
 
   private def print(b: BinaryExpr): Unit = {
@@ -265,6 +267,16 @@ class Printer {
     print(b.op.toString)
     print(" ")
     print(b.rhs)
+    print(")")
+  }
+
+  private def print(t: TernaryExpr): Unit = {
+    print("(")
+    print(t.cond)
+    print(") ? (")
+    print(t.thenE)
+    print(") : (")
+    print(t.elseE)
     print(")")
   }
 

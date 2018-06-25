@@ -21,7 +21,7 @@ final case class Seq(c1: Phrase[CommandType],
     OperationalSemantics.eval(s1, c2)
   }
 
-  override def codeGen[Environment, Path, Stmt, Expr, Decl](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl])(env: Environment): Stmt = {
+  override def codeGen[Environment, Path, Stmt, Expr, Decl, Ident](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl, Ident])(env: Environment): Stmt = {
     gen.codeGenSeq(c1, c2, env, gen)
   }
 

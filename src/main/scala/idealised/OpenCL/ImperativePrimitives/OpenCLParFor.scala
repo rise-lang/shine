@@ -89,5 +89,5 @@ abstract class OpenCLParFor(n: Nat,
     (block: Block) += synchronize
   }
 
-  override def codeGen[Environment, Path, Stmt, Expr, Decl](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl])(env: Environment): Stmt = ???
+  override def codeGen[Environment, Path, Stmt, Expr, Decl, Ident](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl, Ident])(env: Environment): Stmt = ???
 }

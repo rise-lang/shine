@@ -219,7 +219,7 @@ object PrimitivesCodeGenerator {
 
       override def parallelismLevel = OpenCL.Sequential
 
-      override def codeGen[Environment, Path, Stmt, Expr, Decl](gen: idealised.DPIA.Compilation.CodeGenerator[Environment, Path, Stmt, Expr, Decl])(env: Environment): Stmt = ???
+      override def codeGen[Environment, Path, Stmt, Expr, Decl, Ident](gen: idealised.DPIA.Compilation.CodeGenerator[Environment, Path, Stmt, Expr, Decl, Ident])(env: Environment): Stmt = ???
 
       override val name: String = freshName("i_")
 

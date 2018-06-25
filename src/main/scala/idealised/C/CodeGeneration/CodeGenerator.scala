@@ -1,6 +1,5 @@
 package idealised.C.CodeGeneration
 
-import idealised.C.AST.DeclRef
 import idealised._
 import idealised.DPIA._
 import idealised.DPIA.FunctionalPrimitives._
@@ -20,7 +19,17 @@ import scala.collection.mutable
 import scala.language.implicitConversions
 
 object CodeGenerator {
-  type Environment = immutable.Map[String, String]
+  final case class Environment(identEnv: immutable.Map[Identifier[_ <: BasePhraseTypes], C.AST.DeclRef],
+                               commEnv: immutable.Map[Identifier[CommandType], C.AST.Stmt]) {
+    def updatedIdentEnv(kv: (Identifier[_ <: BasePhraseTypes], C.AST.DeclRef)): Environment = {
+      this.copy(identEnv = identEnv + kv)
+    }
+
+    def updatedCommEnv(kv: (Identifier[CommandType], C.AST.Stmt)): Environment = {
+      this.copy(commEnv = commEnv + kv)
+    }
+  }
+
   type Path = immutable.List[Nat]
 
   type Declarations = mutable.ListBuffer[C.AST.Decl]
@@ -34,13 +43,14 @@ class CodeGenerator(val p: Phrase[CommandType],
                     val env: CodeGenerator.Environment,
                     val decls: CodeGenerator.Declarations,
                     val ranges: CodeGenerator.Ranges)
-  extends DPIA.Compilation.CodeGenerator[CodeGenerator.Environment, CodeGenerator.Path, C.AST.Stmt, C.AST.Expr, C.AST.Decl]
+  extends DPIA.Compilation.CodeGenerator[CodeGenerator.Environment, CodeGenerator.Path, C.AST.Stmt, C.AST.Expr, C.AST.Decl, C.AST.DeclRef]
 {
   type Environment = CodeGenerator.Environment
   type Path = CodeGenerator.Path
   type Stmt = C.AST.Stmt
   type Decl = C.AST.Decl
   type Expr = C.AST.Expr
+  type Ident = C.AST.DeclRef
 
   override def name: String = "C"
 
@@ -68,9 +78,10 @@ class CodeGenerator(val p: Phrase[CommandType],
         C.AST.IfThenElse(
           exp(cond, env, Nil), cmd(thenP, env), Some(cmd(elseP, env)))
 
-      case i: Identifier[CommandType] => C.AST.Comment(s"$i")
-      case p@Proj1(_) => C.AST.Comment(s"$p")
-      case p@Proj2(_) => C.AST.Comment(s"$p")
+      case i: Identifier[CommandType] => env.commEnv(i)
+
+      case Proj1(pair) => cmd(Lifting.liftPair(pair)._1, env)
+      case Proj2(pair) => cmd(Lifting.liftPair(pair)._2, env)
 
       case Apply(_, _) | NatDependentApply(_, _) | TypeDependentApply(_, _) |
            _: CommandPrimitive =>
@@ -80,7 +91,7 @@ class CodeGenerator(val p: Phrase[CommandType],
 
   override def acc(phrase: Phrase[AccType], env: Environment, path: Path): Expr = {
     phrase match {
-      case Identifier(x, AccType(dt)) => generateAccess(dt, env(x), path.reverse)
+      case i@Identifier(_, AccType(dt)) => generateAccess(dt, env.identEnv.applyOrElse(i, (_: Phrase[_]) => { println(i); println(env); ??? }), path.reverse)
 
       case SplitAcc(_, m, _, a) => path match {
         case i :: ps =>           acc(a, env, i / m :: i % m :: ps)
@@ -124,7 +135,7 @@ class CodeGenerator(val p: Phrase[CommandType],
 
   override def exp(phrase: Phrase[ExpType], env: Environment, path: Path): Expr = {
     phrase match {
-      case Identifier(x, ExpType(dt)) => generateAccess(dt, env(x), path.reverse)
+      case i@Identifier(_, ExpType(dt)) => generateAccess(dt, env.identEnv.applyOrElse(i, (_: Phrase[_]) => { println(i); println(env); ??? }), path.reverse)
 
       case Phrases.Literal(n) => (path, n.dataType) match {
         case (Nil, _: IndexType)  =>        codeGenLiteral(n)
@@ -212,7 +223,6 @@ class CodeGenerator(val p: Phrase[CommandType],
 
       case e: GeneratableExp =>   e.codeGen(this)(env, path)
 
-      // TODO: investigate why still required
       case Proj1(pair) =>         exp(Lifting.liftPair(pair)._1, env, path)
       case Proj2(pair) =>         exp(Lifting.liftPair(pair)._2, env, path)
 
@@ -243,28 +253,74 @@ class CodeGenerator(val p: Phrase[CommandType],
                           p: Phrase[CommandType],
                           env: Environment,
                           gen: CodeGenerator.this.type): Stmt = {
+    val ve = Identifier(s"${v.name}_e", v.t.t1)
+    val va = Identifier(s"${v.name}_a", v.t.t2)
+    val vC = C.AST.DeclRef(v.name)
+
     C.AST.Block(immutable.Seq(
-      C.AST.DeclStmt(C.AST.VarDecl(v.name, C.AST.Type.fromDataType(dt))),
-      gen.cmd( Phrase.substitute(Pair(v.rd, v.wr), `for`=v, `in`=p),
-        env + ( v.name -> v.name, v.name -> v.name ) )
-    ))
+      C.AST.DeclStmt(C.AST.VarDecl(vC.name, C.AST.Type.fromDataType(dt))),
+      gen.cmd( Phrase.substitute(Pair(ve, va), `for`=v, `in`=p),
+        env updatedIdentEnv (ve -> vC)
+            updatedIdentEnv (va -> vC) ) ))
   }
 
-  override def codeGenNewDoubleBuffer(dt: DataType,
+  override def codeGenNewDoubleBuffer(dt: ArrayType,
+                                      in: Phrase[ExpType],
+                                      out: Phrase[AccType],
                                       ps: Identifier[VarType x CommandType x CommandType],
                                       p: Phrase[CommandType],
                                       env: Environment,
                                       gen: CodeGenerator.this.type): Stmt = {
-    val v = ps._1._1
-    val swap = ps._1._2
-    val done = ps._2
+    import C.AST._
 
-    C.AST.Stmts(
-      C.AST.Comment(s"$v; $swap; $done;"),
+    val   ve = Identifier(s"${ps.name}_e", ps.t.t1.t1.t1)
+    val   va = Identifier(s"${ps.name}_a", ps.t.t1.t1.t2)
+    val done = Identifier(s"${ps.name}_swap", ps.t.t1.t2)
+    val swap = Identifier(s"${ps.name}_done", ps.t.t2)
+
+    val    tmp1 = DeclRef(freshName("tmp1_"))
+    val    tmp2 = DeclRef(freshName("tmp2_"))
+    val  in_ptr = DeclRef(freshName("in_ptr_"))
+    val out_ptr = DeclRef(freshName("out_ptr_"))
+    val    flag = DeclRef(freshName("flag_"))
+
+    Block(immutable.Seq(
+      // allocate `tmp1'
+      DeclStmt(VarDecl(tmp1.name, Type.fromDataType(dt))),
+      // allocate `tmp2'
+      DeclStmt(VarDecl(tmp2.name, Type.fromDataType(dt))),
+      // create pointer to `in'
+      DeclStmt(
+        VarDecl(in_ptr.name,
+          PointerType(Type.fromDataType(dt.elemType)),
+          Some(UnaryExpr(UnaryOperator.&, gen.exp(in `@` 0, env, Nil))))),
+      // create pointer to `tmp1'
+      DeclStmt(
+        VarDecl(out_ptr.name,
+          PointerType(Type.fromDataType(dt.elemType)),
+          Some(tmp1))),
+      // create boolean flag
+      DeclStmt(VarDecl(flag.name, Type.uchar, Some(Literal("1")))),
+      // generate body
       gen.cmd(
-        p,//Phrase.substitute(Pair(v.rd, v.wr), `for`=v, `in`=p),
-        env + (ps.name -> ps.name) )
-    )
+        Phrase.substitute(Pair(Pair(Pair(ve, va), swap), done), `for`=ps, `in`=p),
+        env updatedIdentEnv (ve -> in_ptr)
+            updatedIdentEnv (va -> out_ptr)
+            updatedCommEnv  (swap -> {
+              Block(immutable.Seq(
+                Assignment( in_ptr, TernaryExpr(flag, tmp1, tmp2)),
+                Assignment(out_ptr, TernaryExpr(flag, tmp2, tmp1)),
+                // toggle flag with xor
+                Assignment(   flag, BinaryExpr(flag, BinaryOperator.^, Literal("1")))
+              ))
+            })
+            updatedCommEnv  (done -> {
+              Block(immutable.Seq(
+                Assignment( in_ptr, TernaryExpr(flag, tmp1, tmp2)),
+                Assignment(out_ptr, UnaryExpr(UnaryOperator.&, gen.acc(out `@` 0, env, Nil)))
+              ))
+            }))
+    ))
   }
 
   override def codeGenFor(n: Nat,
@@ -272,9 +328,9 @@ class CodeGenerator(val p: Phrase[CommandType],
                           p: Phrase[CommandType],
                           env: Environment,
                           gen: CodeGenerator.this.type): Stmt = {
-    val i_ = freshName("i_")
+    val i_ = C.AST.DeclRef(freshName("i_"))
     val range = RangeAdd(0, n, 1)
-    val updatedGen = gen.updatedRanges(i_, range)
+    val updatedGen = gen.updatedRanges(i_.name, range)
 
     range.numVals match {
       // iteration count is 0 => skip body; no code to be emitted
@@ -284,17 +340,17 @@ class CodeGenerator(val p: Phrase[CommandType],
       case Cst(1) =>
         C.AST.Stmts(C.AST.Stmts(
           C.AST.Comment("iteration count is exactly 1, no loop emitted"),
-          C.AST.DeclStmt(C.AST.VarDecl(i_, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0)))) ),
-          updatedGen.cmd(p, env + (i.name -> i_)) )
+          C.AST.DeclStmt(C.AST.VarDecl(i_.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0)))) ),
+          updatedGen.cmd(p, env updatedIdentEnv (i -> i_)) )
 
       case _ =>
         // default case
-        val init = C.AST.VarDecl(i_, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0)))
-        val cond = C.AST.BinaryExpr(C.AST.DeclRef(i_), C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
-        val increment = C.AST.Assignment(C.AST.DeclRef(i_), C.AST.ArithmeticExpr(NamedVar(i_, range) + 1))
+        val init = C.AST.VarDecl(i_.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0)))
+        val cond = C.AST.BinaryExpr(i_, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
+        val increment = C.AST.Assignment(i_, C.AST.ArithmeticExpr(NamedVar(i_.name, range) + 1))
 
         C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
-          C.AST.Block(immutable.Seq(updatedGen.cmd(p, env + (i.name -> i_)))))
+          C.AST.Block(immutable.Seq(updatedGen.cmd(p, env updatedIdentEnv (i -> i_)))))
     }
   }
 
@@ -421,13 +477,13 @@ class CodeGenerator(val p: Phrase[CommandType],
   }
 
   override def generateAccess(dt: DataType,
-                              identifier: String,
+                              identifier: Ident,
                               path: Path): Expr = {
     (dt, path) match {
-      case (_: BasicType, Nil) =>  C.AST.DeclRef(identifier)
+      case (_: BasicType, Nil) =>  identifier
 
       case (_: VectorType, i :: Nil) =>
-        val data = C.AST.StructMemberAccess(C.AST.DeclRef(identifier), DeclRef("data"))
+        val data = C.AST.StructMemberAccess(identifier, C.AST.DeclRef("data"))
         C.AST.ArraySubscript(data, C.AST.ArithmeticExpr(i))
 
       case (at: ArrayType, _) => generateArrayAccess(at, identifier, path, 0)
@@ -437,7 +493,7 @@ class CodeGenerator(val p: Phrase[CommandType],
     }
   }
 
-  private def generateArrayAccess(at: ArrayType, identifier: String, path: Path, index: Nat): Expr = {
+  private def generateArrayAccess(at: ArrayType, identifier: C.AST.DeclRef, path: Path, index: Nat): Expr = {
     (at, path) match {
       case (ArrayType(_, bt: BasicType), i :: Nil) =>
         C.AST.ArraySubscript(generateAccess(bt, identifier, Nil), C.AST.ArithmeticExpr(i + index))

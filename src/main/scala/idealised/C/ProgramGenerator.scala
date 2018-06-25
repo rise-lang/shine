@@ -3,7 +3,7 @@ package idealised.C
 import idealised.DPIA.Compilation._
 import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
-import idealised.DPIA.Types.{AccType, CommandType, DataType, DataTypeIdentifier, ExpType, PairType, PhraseType, RecordType, TypeChecker}
+import idealised.DPIA.Types.{AccType, BasePhraseTypes, CommandType, DataType, DataTypeIdentifier, ExpType, PairType, PhraseType, RecordType, TypeChecker}
 import idealised.C.AST._
 import idealised._
 import lift.arithmetic.{Cst, NamedVar, Var}
@@ -39,7 +39,8 @@ object ProgramGenerator {
 
     val p3 = substituteImplementations(p2)
 
-    val env = (outParam +: inputParams).map(p => p.name -> p.name ).toMap
+    val env = C.CodeGeneration.CodeGenerator.Environment(
+      (outParam +: inputParams).map(p => p -> C.AST.DeclRef(p.name) ).toMap, Map.empty)
 
     val (declarations, code) = C.CodeGeneration.CodeGenerator(p3, env).generate
 

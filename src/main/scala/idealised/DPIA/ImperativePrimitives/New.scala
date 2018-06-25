@@ -26,7 +26,7 @@ final case class New(dt: DataType,
     newStore - arg.name
   }
 
-  override def codeGen[Environment, Path, Stmt, Expr, Decl](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl])(env: Environment): Stmt = {
+  override def codeGen[Environment, Path, Stmt, Expr, Decl, Ident](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl, Ident])(env: Environment): Stmt = {
     f match {
       case Lambda(v, p) => gen.codeGenNew(dt, v, p, env, gen)
       case _ => error(s"Expected lambda")

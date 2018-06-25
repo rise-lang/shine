@@ -69,6 +69,7 @@ object UnaryOperator extends Enumeration {
   val ! : UnaryOperator.Value = Value("!")
   val - : UnaryOperator.Value = Value("-")
   val * : UnaryOperator.Value = Value("*")
+  val & : UnaryOperator.Value = Value("&")
 }
 
 case class BinaryExpr(lhs: Expr, op: BinaryOperator.Value, rhs: Expr) extends Expr
@@ -86,7 +87,10 @@ object BinaryOperator extends Enumeration {
   val == : BinaryOperator.Value = Value("==")
   val && : BinaryOperator.Value = Value("&&")
   val || : BinaryOperator.Value = Value("||")
+  val ^ : BinaryOperator.Value = Value("^")
 }
+
+case class TernaryExpr(cond: Expr, thenE: Expr, elseE: Expr) extends Expr
 
 case class Cast(t: Type, e: Expr) extends Expr
 

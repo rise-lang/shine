@@ -38,7 +38,8 @@ object ProgramGenerator {
 
     val p3 = substituteImplementations(p2)
 
-    val env = (outParam +: inputParams).map(p => p.name -> p.name ).toMap
+    val env = C.CodeGeneration.CodeGenerator.Environment(
+      (outParam +: inputParams).map(p => p -> C.AST.DeclRef(p.name) ).toMap, Map.empty)
 
     val (declarations, code) = OpenMP.CodeGeneration.CodeGenerator(p3, env).generate
 

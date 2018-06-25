@@ -22,17 +22,19 @@ object `new` {
 object newDoubleBuffer {
   def apply(dt1: DataType,
             dt2: DataType,
+            dt3: ArrayType,
             in: Phrase[ExpType],
             out: Phrase[AccType],
             f: Phrase[VarType x CommandType x CommandType -> CommandType]): NewDoubleBuffer =
-    NewDoubleBuffer(dt1, dt2, in, out, f)
+    NewDoubleBuffer(dt1, dt2, dt3.elemType, dt3.size, in, out, f)
 
   def apply(dt1: DataType,
             dt2: DataType,
+            dt3: ArrayType,
             in: Phrase[ExpType],
             out: Phrase[AccType],
             f: (Phrase[VarType], Phrase[CommandType], Phrase[CommandType]) => Phrase[CommandType]) =
-    NewDoubleBuffer(dt1, dt2, in, out, λ(VarType(dt1) x CommandType() x CommandType())(ps => {
+    NewDoubleBuffer(dt1, dt2, dt3.elemType, dt3.size, in, out, λ(VarType(dt1) x CommandType() x CommandType())(ps => {
       val    v: Phrase[VarType]     = ps._1._1
       val swap: Phrase[CommandType] = ps._1._2
       val done: Phrase[CommandType] = ps._2

@@ -2,12 +2,12 @@ package idealised.DPIA.Compilation
 
 import idealised.DPIA.Phrases.{Identifier, Phrase}
 import idealised.DPIA.Semantics.OperationalSemantics
-import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType}
+import idealised.DPIA.Types.{AccType, ArrayType, CommandType, DataType, ExpType}
 import idealised.DPIA.{Nat, VarType, x}
 import idealised.SurfaceLanguage
 import idealised.SurfaceLanguage.Primitives.ForeignFunctionDeclaration
 
-trait CodeGenerator[Environment, Path, Stmt, Expr, Decl] {
+trait CodeGenerator[Environment, Path, Stmt, Expr, Decl, Ident] {
   def name: String
 
   def generate: (Seq[Decl], Stmt)
@@ -37,7 +37,9 @@ trait CodeGenerator[Environment, Path, Stmt, Expr, Decl] {
                  env: Environment,
                  gen: this.type): Stmt
 
-  def codeGenNewDoubleBuffer(dt: DataType,
+  def codeGenNewDoubleBuffer(dt: ArrayType,
+                             in: Phrase[ExpType],
+                             out: Phrase[AccType],
                              ps: Identifier[VarType x CommandType x CommandType],
                              p: Phrase[CommandType],
                              env: Environment,
@@ -115,5 +117,5 @@ trait CodeGenerator[Environment, Path, Stmt, Expr, Decl] {
                              ps: Path,
                              gen: this.type): Expr
 
-  def generateAccess(dt: DataType, identifier: String, paths: Path): Expr
+  def generateAccess(dt: DataType, identifier: Ident, paths: Path): Expr
 }

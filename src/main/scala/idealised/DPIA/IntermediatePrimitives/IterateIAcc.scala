@@ -61,7 +61,7 @@ final case class IterateIAcc(n: Nat,
   private def newDoubleBufferImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
     val `n^k*m` = n.pow(k) * m
 
-    newDoubleBuffer(dt"[${`n^k*m`}.$dt]", dt"[$m.$dt]", in, out,
+    newDoubleBuffer(dt"[${`n^k*m`}.$dt]", dt"[$m.$dt]", ArrayType(`n^k*m`, dt), in, out,
       (v: Phrase[VarType],
        swap: Phrase[CommandType],
        done: Phrase[CommandType]) => {
@@ -72,7 +72,7 @@ final case class IterateIAcc(n: Nat,
             f.apply(n.pow(k - l) * m)
              .apply(TruncAcc(`n^k*m`, n.pow(k - l - 1) * m, dt, v.wr))
              .apply(TruncExp(`n^k*m`, n.pow(k - l) * m, dt, v.rd)), env) `;`
-          IfThenElse(lp =:= Literal(IndexData(k)), done, swap)
+          IfThenElse(lp < Literal(IndexData(k - 1, IndexType(k))), swap, done)
         })
       })
   }

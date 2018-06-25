@@ -45,7 +45,7 @@ final case class ForeignFunction(funDecl: ForeignFunctionDeclaration,
     recurse(args zip inTs, Seq(), Seq())
   }
 
-  override def codeGen[Environment, Path, Stmt, Expr, Decl](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl])(env: Environment, path: Path): Expr = {
+  override def codeGen[Environment, Path, Stmt, Expr, Decl, Ident](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl, Ident])(env: Environment, path: Path): Expr = {
     gen.codeGenForeignFunction(funDecl, inTs, outT, args, env, path, gen)
   }
 
