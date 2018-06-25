@@ -271,7 +271,7 @@ class CodeGenerator(val p: Phrase[CommandType],
                                       p: Phrase[CommandType],
                                       env: Environment,
                                       gen: CodeGenerator.this.type): Stmt = {
-    import C.AST._
+    import C.AST._; import UnaryOperator._; import BinaryOperator._
 
     val   ve = Identifier(s"${ps.name}_e", ps.t.t1.t1.t1)
     val   va = Identifier(s"${ps.name}_a", ps.t.t1.t1.t2)
@@ -285,41 +285,27 @@ class CodeGenerator(val p: Phrase[CommandType],
     val    flag = DeclRef(freshName("flag_"))
 
     Block(immutable.Seq(
-      // allocate `tmp1'
+      // create variables: `tmp1', `tmp2`, `in_ptr', and `out_ptr'
       DeclStmt(VarDecl(tmp1.name, Type.fromDataType(dt))),
-      // allocate `tmp2'
       DeclStmt(VarDecl(tmp2.name, Type.fromDataType(dt))),
-      // create pointer to `in'
-      DeclStmt(
-        VarDecl(in_ptr.name,
-          PointerType(Type.fromDataType(dt.elemType)),
-          Some(UnaryExpr(UnaryOperator.&, gen.exp(in, env, 0 :: Nil))))),
-      // create pointer to `tmp1'
-      DeclStmt(
-        VarDecl(out_ptr.name,
-          PointerType(Type.fromDataType(dt.elemType)),
-          Some(tmp1))),
-      // create boolean flag
+      makePointerDecl(in_ptr.name, dt.elemType, UnaryExpr(&, gen.exp(in, env, List(0)))),
+      makePointerDecl(out_ptr.name, dt.elemType, tmp1),
+      // create boolean flag used for swapping
       DeclStmt(VarDecl(flag.name, Type.uchar, Some(Literal("1")))),
       // generate body
       gen.cmd(
         Phrase.substitute(Pair(Pair(Pair(ve, va), swap), done), `for`=ps, `in`=p),
-        env updatedIdentEnv (ve -> in_ptr)
-            updatedIdentEnv (va -> out_ptr)
+        env updatedIdentEnv (ve -> in_ptr) updatedIdentEnv (va -> out_ptr)
             updatedCommEnv  (swap -> {
               Block(immutable.Seq(
                 Assignment( in_ptr, TernaryExpr(flag, tmp1, tmp2)),
                 Assignment(out_ptr, TernaryExpr(flag, tmp2, tmp1)),
                 // toggle flag with xor
-                Assignment(   flag, BinaryExpr(flag, BinaryOperator.^, Literal("1")))
-              ))
-            })
+                Assignment( flag, BinaryExpr(flag, ^, Literal("1"))) )) })
             updatedCommEnv  (done -> {
               Block(immutable.Seq(
                 Assignment( in_ptr, TernaryExpr(flag, tmp1, tmp2)),
-                Assignment(out_ptr, UnaryExpr(UnaryOperator.&, gen.acc(out, env, 0 :: Nil)))
-              ))
-            }))
+                Assignment(out_ptr, UnaryExpr(&, gen.acc(out, env, List(0)))) )) }))
     ))
   }
 
@@ -541,6 +527,14 @@ class CodeGenerator(val p: Phrase[CommandType],
       case _ => false
     }).map(i => (NamedVar(i._1.name), NamedVar(i._2.name)) ).toMap[ArithExpr, ArithExpr]
     ArithExpr.substitute(n, substitionMap)
+  }
+
+  private def makePointerDecl(name: String,
+                              elemType: DataType,
+                              expr: Expr): Stmt = {
+    import C.AST._
+    DeclStmt(
+      VarDecl(name, PointerType(Type.fromDataType(elemType)), Some(expr)))
   }
 }
 
