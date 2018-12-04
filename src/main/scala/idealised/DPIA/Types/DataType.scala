@@ -82,6 +82,7 @@ object DataType {
     }
   }
 
+  // TODO: should not be in this file
   def toType(dt: DataType): ir.Type = {
     dt match {
       case b: BasicType => b match {
@@ -97,6 +98,7 @@ object DataType {
     }
   }
 
+  // TODO: should not be in this file
   def toVectorType(v: VectorType): ir.VectorType = {
     ir.VectorType(DataType.toType(v.elemType) match {
       case s: ir.ScalarType => s
@@ -104,6 +106,7 @@ object DataType {
     }, v.size)
   }
 
+  // TODO: should not be in this file
   def scalarType(dt: DataType): ir.ScalarType = {
     dt match {
       case b: BasicType => b match {
@@ -148,8 +151,10 @@ object DataType {
     def `.`(dt: DataType) = ArrayType(s, dt)
   }
 
+  // TODO: should not be in this file
   def sizeInByte(dt: DataType): SizeInByte = sizeInByte(toType(dt))
 
+  // TODO: should not be in this file
   def sizeInByte(t: ir.Type): SizeInByte = {
     t match {
       case s: ir.ScalarType => SizeInByte(s.size)

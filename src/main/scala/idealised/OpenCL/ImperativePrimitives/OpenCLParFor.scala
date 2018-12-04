@@ -40,7 +40,7 @@ abstract class OpenCLParFor(n: Nat,
     val i = identifier(name, exp"[idx($n)]")
     val body_ = Lifting.liftFunction( Lifting.liftFunction(body)(i) )
     val out_at_i = out `@` i
-    TypeChecker(out_at_i)
+    TypeCheck(out_at_i)
 
     val initDecl = VarDecl(name, opencl.ir.Int,
       init = ArithExpression(init),

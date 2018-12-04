@@ -16,7 +16,6 @@ import opencl.generator.OpenCLAST._
 import opencl.ir.{PrivateMemory, PtrType}
 
 object PrimitivesCodeGenerator {
-
   // ==== generating blocks  ==== //
 
   def toOpenCL(a: Assign, block: Block, env: OpenCLOldCodeGenerator.Environment): Block = {
@@ -135,7 +134,7 @@ object PrimitivesCodeGenerator {
 
     // copy result to output
     val CE = Lifting.liftFunction(d.C)(identifier(in.name, ExpType(ArrayType(d.m, d.dt))))
-    TypeChecker(CE)
+    TypeCheck(CE)
     (block: Block) += OpenCLOldCodeGenerator.cmd(CE, Block(), updatedEnv)
 
     block
@@ -440,5 +439,4 @@ object PrimitivesCodeGenerator {
     // TODO: FIX THIS
     ???
   }
-
 }

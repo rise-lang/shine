@@ -9,7 +9,7 @@ import scala.language.{postfixOps, reflectiveCalls}
 object TypeOf {
   def apply[T <: PhraseType](phrase: Phrase[T]): T = {
     (phrase match {
-      case x: Identifier[T] => x.t
+      case Identifier(_, t) => t
       case Lambda(x, p) => x.t -> p.t
       case Apply(p, q) =>
         assert(p.t.outT == q.t)
@@ -35,7 +35,7 @@ object TypeOf {
         assert(thenP.t == elseP.t)
         thenP.t
 
-      case Literal(l) => l.dataType
+      case Literal(l) => ExpType(l.dataType)
 
       case UnaryOp(_, x) => x.t
 
@@ -63,7 +63,7 @@ object TypeOf {
           }
         }
 
-      case c: Primitive[_] => c.t
+      case c: Primitive[_] => c.`type`
     }).asInstanceOf[T]
   }
 }

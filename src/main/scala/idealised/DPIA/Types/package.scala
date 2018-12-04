@@ -1,6 +1,6 @@
 package idealised.DPIA
 
-import idealised.DPIA.Types.TypeChecker._
+import idealised.DPIA.Types.TypeCheck._
 import idealised.DPIA.Phrases.{Phrase, ToString}
 
 

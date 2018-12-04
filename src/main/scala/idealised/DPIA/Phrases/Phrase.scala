@@ -8,14 +8,10 @@ import idealised.DPIA._
 import idealised.SurfaceLanguage
 
 sealed trait Phrase[T <: PhraseType] {
-  lazy val t: T = `type`
-
-  def `type`: T = TypeOf(this)
-
-  def typeCheck(): Unit = TypeChecker(this)
+  final lazy val t: T = TypeOf(this)
 }
 
-final case class Identifier[T <: PhraseType](name: String, override val `type`: T)
+final case class Identifier[T <: PhraseType](name: String, `type`: T)
   extends Phrase[T]
 
 final case class Lambda[T1 <: PhraseType, T2 <: PhraseType](param: Identifier[T1], body: Phrase[T2])
@@ -55,9 +51,7 @@ final case class BinOp(op: SurfaceLanguage.Operators.Binary.Value, lhs: Phrase[E
   extends Phrase[ExpType]
 
 final case class Literal(d: OperationalSemantics.Data)
-  extends Phrase[ExpType] {
-  override lazy val t = ExpType(d.dataType)
-}
+  extends Phrase[ExpType]
 
 object Phrase {
   // substitutes `phrase` for `for` in `in`, i.e. in [ phrase / for ]
@@ -95,8 +89,7 @@ object Phrase {
 }
 
 sealed trait Primitive[T <: PhraseType] extends Phrase[T] {
-  final override def typeCheck(): Unit = `type`
-  override def `type`: T
+  def `type`: T
 
   def prettyPrint: String
 
