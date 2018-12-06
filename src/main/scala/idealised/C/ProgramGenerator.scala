@@ -3,7 +3,7 @@ package idealised.C
 import idealised.DPIA.Compilation._
 import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
-import idealised.DPIA.Types.{AccType, BasePhraseTypes, CommandType, DataType, DataTypeIdentifier, ExpType, PairType, PhraseType, RecordType, TypeChecker}
+import idealised.DPIA.Types.{AccType, BasePhraseTypes, CommandType, DataType, DataTypeIdentifier, ExpType, PairType, PhraseType, RecordType, TypeCheck}
 import idealised.C.AST._
 import idealised._
 import lift.arithmetic.{Cst, NamedVar, Var}
@@ -64,7 +64,7 @@ object ProgramGenerator {
 
   private def checkTypes(p1: Phrase[ExpType]): Phrase[ExpType] = {
     xmlPrinter.writeToFile("/tmp/p1.xml", p1)
-    TypeChecker(p1)
+    TypeCheck(p1)
     p1
   }
 
@@ -78,7 +78,7 @@ object ProgramGenerator {
 
     val p2 = RewriteToImperative.acc(p)(output)
     xmlPrinter.writeToFile("/tmp/p2.xml", p2)
-    TypeChecker(p2) // TODO: only in debug
+    TypeCheck(p2) // TODO: only in debug
     p2
   }
 
@@ -86,7 +86,7 @@ object ProgramGenerator {
     val p3 = SubstituteImplementations(p,
       SubstituteImplementations.Environment(immutable.Map(("output", OpenCL.GlobalMemory))))
     xmlPrinter.writeToFile("/tmp/p3.xml", p3)
-    TypeChecker(p3) // TODO: only in debug
+    TypeCheck(p3) // TODO: only in debug
     p3
   }
 

@@ -5,56 +5,56 @@ import idealised.DPIA._
 
 class TypeException(msg: String) extends Exception(msg)
 
-object TypeChecker {
+object TypeCheck {
 
   def apply[T <: PhraseType](phrase: Phrase[T]): Unit = {
     phrase match {
       case Identifier(_, _) =>
 
-      case Lambda(x, p) => x.typeCheck(); p.typeCheck()
+      case Lambda(x, p) => TypeCheck(x); TypeCheck(p)
 
       case Apply(p, q) =>
-        p.typeCheck()
-        q.typeCheck()
+        TypeCheck(p)
+        TypeCheck(q)
         p.t match {
           case FunctionType(t1, _) =>
             check(t1, q.t)
           case x => error(x.toString, FunctionType.toString)
         }
 
-      case NatDependentLambda(_, p) => p.typeCheck()
+      case NatDependentLambda(_, p) => TypeCheck(p)
 
-      case TypeDependentLambda(_, p) => p.typeCheck()
+      case TypeDependentLambda(_, p) => TypeCheck(p)
 
-      case NatDependentApply(p, _) => p.typeCheck()
+      case NatDependentApply(p, _) => TypeCheck(p)
 
-      case TypeDependentApply(p, _) => p.typeCheck()
+      case TypeDependentApply(p, _) => TypeCheck(p)
 
-      case Pair(p, q) => p.typeCheck(); q.typeCheck()
+      case Pair(p, q) => TypeCheck(p); TypeCheck(q)
 
-      case Proj1(p) => p.typeCheck()
+      case Proj1(p) => TypeCheck(p)
 
-      case Proj2(p) => p.typeCheck()
+      case Proj2(p) => TypeCheck(p)
 
       case IfThenElse(cond, thenP, elseP) =>
-        cond.typeCheck()
-        thenP.typeCheck()
-        elseP.typeCheck()
+        TypeCheck(cond)
+        TypeCheck(thenP)
+        TypeCheck(elseP)
         check(cond.t, exp"[$int]" | exp"[$bool]")
         check(thenP.t, elseP.t)
 
       case Literal(_) =>
 
       case UnaryOp(op, x) =>
-        x.typeCheck()
+        TypeCheck(x)
         x.t match {
           case ExpType(_) =>
           case y => error(y.toString, s"$op ${ExpType.toString}")
         }
 
       case BinOp(op, lhs, rhs) =>
-        lhs.typeCheck()
-        rhs.typeCheck()
+        TypeCheck(lhs)
+        TypeCheck(rhs)
         (lhs.t, rhs.t) match {
           case (ExpType(dt1), ExpType(dt2))
             if dt1.isInstanceOf[BasicType] && dt2.isInstanceOf[BasicType] =>
@@ -65,7 +65,7 @@ object TypeChecker {
             error(s"$x1 $op $x2", s"exp[b] $op exp[b]")
         }
 
-      case c: Primitive[_] => c.typeCheck()
+      case c: Primitive[_] => c.`type`
     }
   }
 
@@ -89,7 +89,7 @@ object TypeChecker {
 
   implicit class InferenceHelper[T <: PhraseType](p: Phrase[T]) {
     def checkType(pt: PhraseType): Unit = {
-      p.typeCheck()
+      TypeCheck(p)
       check(p.t, pt)
     }
   }

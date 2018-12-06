@@ -62,5 +62,4 @@ package object OpenCL {
   }
 
   type ScalaFunction = HNil.type
-
 }

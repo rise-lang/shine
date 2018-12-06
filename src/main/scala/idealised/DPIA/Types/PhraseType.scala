@@ -59,7 +59,7 @@ object PhraseType {
     }
 
     val p = Phrases.VisitAndRebuild(in, Visitor)
-    p.typeCheck()
+    TypeCheck(p)
     p
 
   }
@@ -124,7 +124,7 @@ object PhraseType {
     }
 
     val p = Phrases.VisitAndRebuild(in, Visitor)
-    p.typeCheck()
+    TypeCheck(p)
     p
 
   }

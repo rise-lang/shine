@@ -1,5 +1,6 @@
 
 import idealised.DPIA.Phrases.PrettyPhrasePrinter
+import idealised.DPIA.Types.TypeCheck
 import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.OpenCL._
 import idealised.SurfaceLanguage.DSL._
@@ -30,7 +31,7 @@ object scal extends App {
     println("\n----------------")
     val lambda = TypeInference(untypedLambda, Map()).convertToPhrase
     println(name + ":\n" + PrettyPhrasePrinter(lambda))
-    lambda.typeCheck()
+    TypeCheck(lambda)
 
     println(s"-- $name --")
     val kernel = KernelGenerator.makeKernel(lambda, localSize = 128, globalSize = N)
@@ -71,7 +72,7 @@ object scal extends App {
   {
     val lambda = TypeInference(high_level, Map()).convertToPhrase
     println("high_level:\n" + PrettyPhrasePrinter(lambda))
-    lambda.typeCheck()
+    TypeCheck(lambda)
   }
 
   val scalWgLcl = (fst: ArithExpr, snd: ArithExpr) =>
