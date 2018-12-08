@@ -1,5 +1,3 @@
-# Lift 2.0 #
-
 This repository contains an implementation of DPIA (Data Parallel Idealised Algol)
 which is used as the future foundation of the lift project (www.lift-project.org).
 
