@@ -1,9 +1,10 @@
 package idealised.DPIA.Types
 
-import idealised.DPIA.{Nat, Types}
+import idealised.DPIA.{Nat, Types, freshName}
 import idealised.SurfaceLanguage
-import idealised.SurfaceLanguage.Types.TupleType
+import idealised.SurfaceLanguage.NatIdentifier
 import idealised.utils.SizeInByte
+import lift.arithmetic.{ArithExpr, NamedVar}
 
 import scala.language.implicitConversions
 
@@ -29,8 +30,21 @@ final case class ArrayType(size: Nat, elemType: DataType) extends ComposedType {
   override def toString: String = s"$size.$elemType"
 }
 
-final case class DepArrayType(size:Nat, elemType:NatDependentFunctionType[ExpType]) extends ComposedType {
-  override def toString: String = s"$size.$elemType"
+final case class DepArrayType(size:Nat, i: NatIdentifier, elemType: DataType) extends ComposedType {
+  override def toString: String = s"$size.($i : Nat) -> $elemType"
+
+  override def equals(that: Any): Boolean = that match {
+    case DepArrayType(size_, i_, elemType_) =>
+      size == size_ && elemType == DataType.substitute(i, `for`=i_, elemType_)
+    case _ => false
+  }
+}
+
+object DepArrayType {
+  def apply(size: Nat, f: Nat => DataType): DepArrayType = {
+    val newName = NamedVar(freshName())
+    DepArrayType(size, newName, f(newName))
+  }
 }
 
 final case class RecordType(fst: DataType, snd: DataType) extends ComposedType {
@@ -68,6 +82,31 @@ object ScalarType {
 }
 
 object DataType {
+
+  def substitute[T <: DataType](dt: DataType, `for`: DataType, in: T): T = {
+    if (`for` == in) {
+      dt.asInstanceOf[T]
+    } else {
+      (in match {
+        case _: BasicType => in
+        case a: ArrayType => ArrayType(a.size, substitute(dt, `for`, a.elemType))
+        case r: RecordType => RecordType(substitute(dt, `for`, r.fst), substitute(dt, `for`, r.snd))
+      }).asInstanceOf[T]
+    }
+  }
+
+  def substitute[T <: DataType](ae: Nat, `for`: Nat, in: T): T = {
+    (in match {
+      case i: IndexType => IndexType(ArithExpr.substitute(i.size, Map((`for`, ae))))
+      case b: BasicType => b
+      case a: ArrayType =>
+        ArrayType(ArithExpr.substitute(a.size, Map((`for`, ae))),
+          substitute(ae, `for`, a.elemType))
+      case r: RecordType =>
+        RecordType(substitute(ae, `for`, r.fst), substitute(ae, `for`, r.snd))
+    }).asInstanceOf[T]
+  }
+
   implicit def apply(dt: SurfaceLanguage.Types.DataType): DataType = {
     dt match {
       case bt: SurfaceLanguage.Types.BasicType => bt match {
@@ -78,7 +117,7 @@ object DataType {
       case ct: SurfaceLanguage.Types.ComposedType => ct match {
         case at: SurfaceLanguage.Types.ArrayType => ArrayType(at.size, DataType(at.elemType))
         case dat:SurfaceLanguage.Types.DepArrayType =>
-          DepArrayType(dat.size, NatDependentFunctionType(dat.elemType.x, ExpType(DataType(dat.elemType.t))))
+          DepArrayType(dat.size, dat.elemType.x, DataType(dat.elemType.t))
         case tt: SurfaceLanguage.Types.TupleType => {
           assert(tt.elemTypes.size == 2)
           RecordType(DataType(tt.elemTypes(0)), DataType(tt.elemTypes(1)))
@@ -99,7 +138,7 @@ object DataType {
         case v: VectorType => toVectorType(v)
       }
       case a: ArrayType => ir.ArrayType(DataType.toType(a.elemType), a.size)
-      case a: DepArrayType => ir.ArrayType(DataType.toType(a.elemType.t.dataType), a.size)
+      case a: DepArrayType => ir.ArrayType(DataType.toType(a.elemType), a.size)
       case r: RecordType => ir.TupleType(DataType.toType(r.fst), DataType.toType(r.snd))
       case _: DataTypeIdentifier => throw new Exception("This should not happen")
     }
@@ -124,7 +163,7 @@ object DataType {
         case v: VectorType => scalarType(v.elemType)
       }
       case a: ArrayType => scalarType(a.elemType)
-      case a: DepArrayType => scalarType(a.elemType.t.dataType)
+      case a: DepArrayType => scalarType(a.elemType)
       case _: RecordType => ???
       case _: DataTypeIdentifier => throw new Exception("This should not happen")
     }
@@ -138,7 +177,7 @@ object DataType {
         val elemT = if (t == (1: Nat)) { r.fst } else if (t == (2: Nat)) { r.snd } else { throw new Exception("This should not happen") }
         getLengths(elemT, tupleAccesss.tail, list)
       case a: ArrayType => getLengths(a.elemType, tupleAccesss, a.size :: list)
-      case dep: DepArrayType => getLengths(dep.elemType.t.dataType, tupleAccesss, dep.size::list) //TODO: Probably wrong
+      case dep: DepArrayType => ??? //getLengths(dep.elemType, tupleAccesss, dep.size::list) //TODO: Probably wrong
       case _: DataTypeIdentifier => throw new Exception("This should not happen")
     }
   }
@@ -149,7 +188,7 @@ object DataType {
       case _: RecordType => dt
       case _: DataTypeIdentifier => dt
       case ArrayType(_, dt) => getBaseDataType(dt)
-      case DepArrayType(_, elemT) => elemT.t.dataType
+      case DepArrayType(_, _, _) => ??? // TODO: variable would escape scope
     }
   }
 

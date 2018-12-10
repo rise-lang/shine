@@ -1,10 +1,12 @@
 package idealised.SurfaceLanguage.Primitives
 
 import idealised.DPIA
+import idealised.DPIA.freshName
 import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.SurfaceLanguage.Types.TypeInference.SubstitutionMap
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
+import lift.arithmetic.NamedVar
 
 abstract class AbstractDepMap(df: Expr[`(nat)->`[DataType -> DataType]],
                               array: DataExpr,
@@ -16,17 +18,27 @@ abstract class AbstractDepMap(df: Expr[`(nat)->`[DataType -> DataType]],
 
   def makeDPIAMap: (
     DPIA.Nat,
+    DPIA.Nat,
     DPIA.Types.DataType,
+    DPIA.Nat,
     DPIA.Types.DataType,
-    DPIA.Phrases.Phrase[DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]],
+    DPIA.Phrases.Phrase[DPIA.Types.NatDependentFunctionType[DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]]],
     DPIA.Phrases.Phrase[DPIA.Types.ExpType]
-    ) => DPIA.FunctionalPrimitives.AbstractMap
+    ) => DPIA.FunctionalPrimitives.AbstractDepMap
 
 
-  override def convertToPhrase: DPIA.FunctionalPrimitives.AbstractMap = {
+  override def convertToPhrase: DPIA.FunctionalPrimitives.AbstractDepMap = {
     (df.t, array.t) match {
-      case (Some(NatDependentFunctionType(idx, FunctionType(dt1, dt2))), Some(ArrayType(n, dt1_))) if dt1 == dt1_ =>
-        ???
+      case (Some(NatDependentFunctionType(k, FunctionType(df1_k: DataType, df2_k: DataType))), Some(DepArrayType(n, NatDependentFunctionType(_, _)))) =>
+        val i1 = NamedVar(freshName())
+        val dt1: DataType = Type.substitute(i1, `for`=k, in=df1_k)
+
+        val i2 = NamedVar(freshName())
+        val dt2: DataType = Type.substitute(i2, `for`=k, in=df2_k)
+
+        makeDPIAMap(n, i1, dt1, i2, dt2,
+          df.toPhrase[DPIA.Types.NatDependentFunctionType[DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]]],
+          array.toPhrase[DPIA.Types.ExpType])
       case _ => throw new Exception("")
     }
   }
@@ -45,7 +57,7 @@ abstract class AbstractDepMap(df: Expr[`(nat)->`[DataType -> DataType]],
     import TypeInference._
     TypeInference(array, subs) |> (array =>
       array.t match {
-        case Some(DepArrayType(n, NatDependentFunctionType(j: NatIdentifier, df1))) =>
+        case Some(DepArrayType(n, NatDependentFunctionType(j, df1))) =>
 
           setParamsAndInferTypes(df, Type.substitute(_, `for`=j, in=df1), subs) |> (df =>
             df.t match {
@@ -70,7 +82,7 @@ final case class DepMap(df: Expr[`(nat)->`[DataType -> DataType]], array: DataEx
                         override val t: Option[DataType] = None)
   extends AbstractDepMap(df, array, t) {
 
-  override def makeDPIAMap = ???
+  override def makeDPIAMap = DPIA.FunctionalPrimitives.DepMap
 
   override def makeMap = DepMap
 }
