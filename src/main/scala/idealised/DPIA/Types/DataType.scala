@@ -29,6 +29,10 @@ final case class ArrayType(size: Nat, elemType: DataType) extends ComposedType {
   override def toString: String = s"$size.$elemType"
 }
 
+final case class DepArrayType(size:Nat, elemType:NatDependentFunctionType[ExpType]) extends ComposedType {
+  override def toString: String = s"$size.$elemType"
+}
+
 final case class RecordType(fst: DataType, snd: DataType) extends ComposedType {
   override def toString: String = s"($fst x $snd)"
 }
@@ -73,6 +77,8 @@ object DataType {
       }
       case ct: SurfaceLanguage.Types.ComposedType => ct match {
         case at: SurfaceLanguage.Types.ArrayType => ArrayType(at.size, DataType(at.elemType))
+        case dat:SurfaceLanguage.Types.DepArrayType =>
+          DepArrayType(dat.size, NatDependentFunctionType(dat.elemType.x, ExpType(DataType(dat.elemType.t))))
         case tt: SurfaceLanguage.Types.TupleType => {
           assert(tt.elemTypes.size == 2)
           RecordType(DataType(tt.elemTypes(0)), DataType(tt.elemTypes(1)))
@@ -93,6 +99,7 @@ object DataType {
         case v: VectorType => toVectorType(v)
       }
       case a: ArrayType => ir.ArrayType(DataType.toType(a.elemType), a.size)
+      case a: DepArrayType => ir.ArrayType(DataType.toType(a.elemType.t.dataType), a.size)
       case r: RecordType => ir.TupleType(DataType.toType(r.fst), DataType.toType(r.snd))
       case _: DataTypeIdentifier => throw new Exception("This should not happen")
     }
@@ -117,6 +124,7 @@ object DataType {
         case v: VectorType => scalarType(v.elemType)
       }
       case a: ArrayType => scalarType(a.elemType)
+      case a: DepArrayType => scalarType(a.elemType.t.dataType)
       case _: RecordType => ???
       case _: DataTypeIdentifier => throw new Exception("This should not happen")
     }
@@ -130,6 +138,7 @@ object DataType {
         val elemT = if (t == (1: Nat)) { r.fst } else if (t == (2: Nat)) { r.snd } else { throw new Exception("This should not happen") }
         getLengths(elemT, tupleAccesss.tail, list)
       case a: ArrayType => getLengths(a.elemType, tupleAccesss, a.size :: list)
+      case dep: DepArrayType => getLengths(dep.elemType.t.dataType, tupleAccesss, dep.size::list) //TODO: Probably wrong
       case _: DataTypeIdentifier => throw new Exception("This should not happen")
     }
   }
@@ -140,6 +149,7 @@ object DataType {
       case _: RecordType => dt
       case _: DataTypeIdentifier => dt
       case ArrayType(_, dt) => getBaseDataType(dt)
+      case DepArrayType(_, elemT) => elemT.t.dataType
     }
   }
 

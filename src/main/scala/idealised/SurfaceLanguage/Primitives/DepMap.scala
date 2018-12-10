@@ -4,7 +4,7 @@ import idealised.DPIA
 import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.SurfaceLanguage.Types.TypeInference.SubstitutionMap
 import idealised.SurfaceLanguage.Types._
-import idealised.SurfaceLanguage._
+import idealised.SurfaceLanguage.{Types, _}
 
 abstract class AbstractDepMap(df: Expr[`(nat)->`[DataType -> DataType]],
                               array: DataExpr,
@@ -35,14 +35,15 @@ abstract class AbstractDepMap(df: Expr[`(nat)->`[DataType -> DataType]],
     import TypeInference._
     TypeInference(array, subs) |> (array =>
       this.df match {
-        case NatDependentLambdaExpr(l, f) =>
+        case NatDependentLambdaExpr(i, f) =>
           array.t match {
             case Some(ArrayType(n, dt1)) =>
               setParamAndInferType(f, dt1, subs) |> (f =>
                 f.t match {
                   case Some(FunctionType(dt1_, dt2)) =>
                     if (dt1 == dt1_) {
-                      makeMap(NatDependentLambdaExpr(l, f), array, Some(ArrayType(n, dt2)))
+                      //TODO:Maybe some sort of substitution here in dt2? I am reusing the identifier...
+                      makeMap(NatDependentLambdaExpr(i, f), array, Some(Types.DepArrayType(n, NatDependentFunctionType(i, dt2))))
                     } else {
                       error(expr = s"${this.getClass.getSimpleName}($f, $array)",
                         found = s"`$dt1_'", expected = s"`$dt1'")
