@@ -1,6 +1,7 @@
 package idealised.DPIA.FunctionalPrimitives
 
-import idealised.DPIA.IntermediatePrimitives.AbstractMapI
+import idealised.DPIA.DSL.{_Λ_, λ}
+import idealised.DPIA.IntermediatePrimitives.{AbstractDepMapI, DepMapI}
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
@@ -17,10 +18,24 @@ abstract class AbstractDepMap(n: Nat,
   extends ExpPrimitive {
 
 
+  override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
+    import idealised.DPIA.Compilation.RewriteToImperative._
+    import idealised.DPIA._
+
+    // TODO: fix array type to be DepArray Type and stuff
+    con(array)(λ(exp"[$n.$dt1]")(x =>
+      makeMapI(n, i1, dt1, i2, dt2, _Λ_((k: NatIdentifier) => λ(exp"[$dt1]")(x => λ(acc"[$dt2]")(o => {
+        val ff: Phrase[ExpType -> ExpType] = Lifting.liftNatDependentFunction(f)(k)
+        val fff = Lifting.liftFunction(ff)(x)
+        acc(fff)(o)
+      }))), x, A)))
+  }
+
+
+
   def makeMap: (Nat, Nat, DataType, Nat, DataType, Phrase[`(nat)->`[ExpType -> ExpType]], Phrase[ExpType]) => AbstractDepMap
 
-  def makeMapI: (Nat, DataType, DataType,
-    Phrase[ExpType -> (AccType -> CommandType)], Phrase[ExpType], Phrase[AccType]) => AbstractMapI
+  def makeMapI: (Nat, Nat, DataType, Nat, DataType, Phrase[`(nat)->`[ExpType -> (AccType -> CommandType)]], Phrase[ExpType], Phrase[AccType]) => AbstractDepMapI
 
 
   override val `type`: ExpType = {
@@ -40,13 +55,6 @@ abstract class AbstractDepMap(n: Nat,
   }
 
   override def eval(s: Store): Data = ???
-
-  override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = { ???
-//    import RewriteToImperative._
-//
-//    con(array)(λ(exp"[$n.$dt1]")(x =>
-//      makeMapI(n, dt1, dt2, λ(exp"[$dt1]")(x => λ(acc"[$dt2]")(o => acc(f(x))(o))), x, A)))
-  }
 
   override def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = ???
 
@@ -80,5 +88,5 @@ final case class DepMap(n: Nat,
   extends AbstractDepMap(n, i1, dt1, i2, dt2, f, array) {
   override def makeMap = DepMap
 
-  override def makeMapI = ???
+  override def makeMapI = DepMapI
 }
