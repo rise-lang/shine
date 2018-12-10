@@ -4,7 +4,7 @@ import idealised.DPIA
 import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.SurfaceLanguage.Types.TypeInference.SubstitutionMap
 import idealised.SurfaceLanguage.Types._
-import idealised.SurfaceLanguage.{Types, _}
+import idealised.SurfaceLanguage._
 
 abstract class AbstractDepMap(df: Expr[`(nat)->`[DataType -> DataType]],
                               array: DataExpr,
@@ -31,31 +31,32 @@ abstract class AbstractDepMap(df: Expr[`(nat)->`[DataType -> DataType]],
     }
   }
 
+  def dfI: NatIdentifier = df match {
+    case NatDependentLambdaExpr(i, _) => i
+    case x => TypeInference.error(expr = this.toString, found= x.toString, expected = NatDependentLambdaExpr.toString)
+  }
+
+  def dfF: Expr[->[DataType, DataType]] = df match {
+    case NatDependentLambdaExpr(_, f) => f
+    case x => TypeInference.error(expr = this.toString, found= x.toString, expected = NatDependentLambdaExpr.toString)
+  }
+
   override def inferType(subs: SubstitutionMap): DataExpr = {
     import TypeInference._
     TypeInference(array, subs) |> (array =>
-      this.df match {
-        case NatDependentLambdaExpr(i, f) =>
-          array.t match {
-            case Some(ArrayType(n, dt1)) =>
-              setParamAndInferType(f, dt1, subs) |> (f =>
-                f.t match {
-                  case Some(FunctionType(dt1_, dt2)) =>
-                    if (dt1 == dt1_) {
-                      //TODO:Maybe some sort of substitution here in dt2? I am reusing the identifier...
-                      makeMap(NatDependentLambdaExpr(i, f), array, Some(Types.DepArrayType(n, NatDependentFunctionType(i, dt2))))
-                    } else {
-                      error(expr = s"${this.getClass.getSimpleName}($f, $array)",
-                        found = s"`$dt1_'", expected = s"`$dt1'")
-                    }
-                  case x => error(expr = s"${this.getClass.getSimpleName}($f, $array)",
-                    found = s"`${x.toString}'", expected = "dt1 -> dt2")
-                })
-            case x => error(expr = s"${this.getClass.getSimpleName}($f, $array)",
-              found = s"`${x.toString}'", expected = "n.dt")
-          }
-        case _ => error(expr = s"${this.getClass.getSimpleName}($df, $array)",
-          found = s"`${df.toString}'", expected = NatDependentLambdaExpr.toString)
+      array.t match {
+        case Some(DepArrayType(n, NatDependentFunctionType(j: NatIdentifier, df1))) =>
+
+          setParamsAndInferTypes(df, Type.substitute(_, `for`=j, in=df1), subs) |> (df =>
+            df.t match {
+              case Some(NatDependentFunctionType(i, FunctionType(_, df2))) =>
+                makeMap(df, array, Some(DepArrayType(n, Type.substitute(_, `for`=i, `in`=df2))))
+              case x => error(expr = s"${this.getClass.getSimpleName}($df, $array)",
+                              found = s"`${x.toString}'", expected = "(nat) -> df1 -> df2")
+            }
+          )
+        case x => error(expr = s"${this.getClass.getSimpleName}($df, $array)",
+          found = s"`${x.toString}'", expected = "n.(j:nat -> dft)")
       })
   }
 

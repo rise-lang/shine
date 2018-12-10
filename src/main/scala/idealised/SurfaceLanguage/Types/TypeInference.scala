@@ -99,4 +99,20 @@ object TypeInference {
       case _ => throw new Exception("This should not happen")
     }
   }
+
+  def setParamsAndInferTypes[T <: Type](f: Expr[`(nat)->`[DataType -> T]],
+                                        makeDt: NatIdentifier => DataType,
+                                        subs: SubstitutionMap): Expr[`(nat)->`[DataType -> T]] = {
+    f match {
+      case NatDependentLambdaExpr(i, e1) =>
+        e1 match {
+          case LambdaExpr(x, e2) =>
+            val newX = IdentifierExpr(newName(), Some(makeDt(i)))
+            val newE = inferType(e2, subs.updated(x, newX))
+            NatDependentLambdaExpr(i, LambdaExpr(newX, newE))
+        }
+
+      case _ => throw new Exception("This should not happen")
+    }
+  }
 }

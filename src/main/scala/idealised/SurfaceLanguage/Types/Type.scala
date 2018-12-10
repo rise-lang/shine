@@ -1,5 +1,6 @@
 package idealised.SurfaceLanguage.Types
 
+import idealised.DPIA.freshName
 import idealised.SurfaceLanguage._
 import idealised.SurfaceLanguage.Semantics._
 import lift.arithmetic.{ArithExpr, NamedVar}
@@ -18,8 +19,15 @@ final case class ArrayType(size: Nat, elemType: DataType) extends ComposedType {
   override def toString: String = s"$size.$elemType"
 }
 
-final case class DepArrayType(size:Nat, elemType:NatDependentFunctionType[DataType]) extends ComposedType {
+final case class DepArrayType(size:Nat, elemType: `(nat)->dt`) extends ComposedType {
   override def toString: String = s"$size.$elemType"
+}
+
+object DepArrayType {
+  def apply(size:Nat, f:Nat => DataType): DepArrayType = {
+    val newName = NamedVar(freshName())
+    DepArrayType(size, NatDependentFunctionType(newName, f(newName)))
+  }
 }
 
 final case class TupleType(elemTypes: DataType*) extends ComposedType {
@@ -66,6 +74,13 @@ final case class TypeDependentFunctionType[T <: Type](x: DataTypeIdentifier, t: 
 
 final case class NatDependentFunctionType[T <: Type](x: NatIdentifier, t: T) extends Type
 
+object NatDependentFunctionType {
+  def apply[T <: Type](f: NatIdentifier => T): NatDependentFunctionType[T] = {
+    val newX = NamedVar(freshName())
+    NatDependentFunctionType(newX, f(newX))
+  }
+}
+
 object Type {
 
   def substitute[T <: Type](dt: DataType,
@@ -111,7 +126,7 @@ object Type {
 
   }
 
-  private def substitute[T <: DataType](dt: DataType, `for`: DataType, in: T): T = {
+  def substitute[T <: DataType](dt: DataType, `for`: DataType, in: T): T = {
     if (`for` == in) {
       dt.asInstanceOf[T]
     } else {
@@ -123,7 +138,7 @@ object Type {
     }
   }
 
-  private def substitute[T <: DataType](ae: Nat, `for`: NatIdentifier, in: T): T = {
+  def substitute[T <: DataType](ae: Nat, `for`: NatIdentifier, in: T): T = {
     (in match {
       case IndexType(size) =>
         IndexType(substitute(ae, `for`, size))
