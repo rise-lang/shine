@@ -18,6 +18,10 @@ final case class ArrayType(size: Nat, elemType: DataType) extends ComposedType {
   override def toString: String = s"$size.$elemType"
 }
 
+final case class DepArrayType(size:Nat, elemType:NatDependentFunctionType[DataType]) extends ComposedType {
+  override def toString: String = s"$size.$elemType"
+}
+
 final case class TupleType(elemTypes: DataType*) extends ComposedType {
   assert(elemTypes.size == 2)
   override def toString: String = elemTypes.map(_.toString).mkString("(", ", ", ")")
