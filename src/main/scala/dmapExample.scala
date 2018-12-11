@@ -1,10 +1,8 @@
-import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.OpenCL._
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Primitives.DepMap
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
-import opencl.executor.Executor
 
 import scala.language.{implicitConversions, postfixOps}
 

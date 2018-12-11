@@ -62,7 +62,7 @@ object Lifting {
   def liftFunction[T1 <: PhraseType, T2 <: PhraseType](p: Phrase[T1 -> T2]): (Phrase[T1] => Phrase[T2]) = {
     p match {
       case l: Lambda[T1, T2] =>
-        (arg: Phrase[T1]) => l.body `[` arg  `/` l.param `]`
+        (arg: Phrase[T1]) =>l.body `[` arg  `/` l.param `]`
       case app: Apply[_, T1 -> T2] =>
         val fun = liftFunction(app.fun)
         liftFunction(fun(app.arg))

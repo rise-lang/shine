@@ -18,12 +18,14 @@ abstract class AbstractDepMapI(n: Nat,
                                out: Phrase[AccType])
   extends CommandPrimitive with Intermediate[CommandType] {
 
-  override lazy val `type`: CommandType =
-    (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
-      (f :: t"exp[$dt1] -> acc[$dt2] -> comm") ->
-        (in :: exp"[$n.$dt1]") ->
-          (out :: acc"[$n.$dt2]") ->
-            comm
+  override lazy val `type`: CommandType = {
+    val k = f.t.x
+    (n: Nat) -> (i1: Nat) -> (dt1: DataType) -> (i2: Nat) -> (dt2: DataType) ->
+      (f :: t"($k:nat) -> exp[$dt1] -> acc[$dt2] -> comm") ->
+      (in :: exp"[${DepArrayType(n, DataType.substitute(_, `for`=i1, `in`=dt1))}]") ->
+      (out :: acc"[${DepArrayType(n, DataType.substitute(_, `for`=i1, `in`=dt1))}]") ->
+      comm
+  }
 
   override def eval(s: Store): Store = {
 //    val fE = OperationalSemantics.eval(s, f)(BinaryFunctionEvaluator)
