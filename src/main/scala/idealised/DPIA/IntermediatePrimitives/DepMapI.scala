@@ -18,12 +18,15 @@ abstract class AbstractDepMapI(n: Nat,
                                out: Phrase[AccType])
   extends CommandPrimitive with Intermediate[CommandType] {
 
+  private def makeDt1(x:Nat):DataType = DataType.substitute(x, `for`=i1, `in`=dt1)
+  private def makeDt2(x:Nat):DataType = DataType.substitute(x, `for`=i2, `in`=dt2)
+
   override lazy val `type`: CommandType = {
     val k = f.t.x
     (n: Nat) -> (i1: Nat) -> (dt1: DataType) -> (i2: Nat) -> (dt2: DataType) ->
-      (f :: t"($k:nat) -> exp[$dt1] -> acc[$dt2] -> comm") ->
-      (in :: exp"[${DepArrayType(n, DataType.substitute(_, `for`=i1, `in`=dt1))}]") ->
-      (out :: acc"[${DepArrayType(n, DataType.substitute(_, `for`=i1, `in`=dt1))}]") ->
+      (f :: t"($k:nat) -> exp[${makeDt1(k)}] -> acc[${makeDt2(k)}] -> comm") ->
+      (in :: exp"[${DepArrayType(n, makeDt1)}]") ->
+      (out :: acc"[${DepArrayType(n, makeDt2)}]") ->
       comm
   }
 
