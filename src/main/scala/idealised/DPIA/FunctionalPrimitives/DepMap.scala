@@ -17,14 +17,17 @@ abstract class AbstractDepMap(n: Nat,
                               array: Phrase[ExpType])
   extends ExpPrimitive {
 
+  private def makeDt1(x:Nat):DataType = DataType.substitute(x, `for`=i1, `in`=dt1)
+  private def makeDt2(x:Nat):DataType = DataType.substitute(x, `for`=i2, `in`=dt2)
 
   override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
     import idealised.DPIA.Compilation.RewriteToImperative._
     import idealised.DPIA._
 
+
     // TODO: fix array type to be DepArray Type and stuff
-    con(array)(λ(exp"[$n.$dt1]")(x =>
-      makeMapI(n, i1, dt1, i2, dt2, _Λ_((k: NatIdentifier) => λ(exp"[$dt1]")(x => λ(acc"[$dt2]")(o => {
+    con(array)(λ(exp"[${DepArrayType(n, makeDt1)}]")(x =>
+      makeMapI(n, i1, dt1, i2, dt2, _Λ_((k: NatIdentifier) => λ(exp"[${makeDt1(k)}]")(x => λ(acc"[${makeDt2(k)}]")(o => {
         val ff: Phrase[ExpType -> ExpType] = Lifting.liftNatDependentFunction(f)(k)
         val fff = Lifting.liftFunction(ff)(x)
         acc(fff)(o)
@@ -42,9 +45,9 @@ abstract class AbstractDepMap(n: Nat,
     f match {
       case NatDependentLambda(k, _) =>
         (n: Nat) -> (i1: Nat) -> (dt1: DataType) -> (i2: Nat) -> (dt2: DataType) ->
-          (f :: t"($k : nat) -> exp[${ DataType.substitute(k, `for`=i1, in=dt1) }] -> exp[${ DataType.substitute(k, `for`=i2, in=dt2) }]")
-            (array :: exp"[${DepArrayType(n, DataType.substitute(_, `for`=i1, in=dt1))}]") ->
-              exp"[${DepArrayType(n, DataType.substitute(_, `for`=i2, in=dt2))}]"
+          (f :: t"($k : nat) -> exp[${ makeDt1(k) }] -> exp[${ makeDt2(k) }]")
+            (array :: exp"[${DepArrayType(n, makeDt1)}]") ->
+              exp"[${DepArrayType(n, makeDt2)}]"
 
       case _ => throw new Exception("This should not happen")
     }
