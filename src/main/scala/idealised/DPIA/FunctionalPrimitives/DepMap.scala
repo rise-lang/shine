@@ -1,11 +1,14 @@
 package idealised.DPIA.FunctionalPrimitives
 
-import idealised.DPIA.DSL.{_Λ_, λ}
+import idealised.DPIA.Compilation.RewriteToImperative
+import idealised.DPIA.Compilation.RewriteToImperative.acc
+import idealised.DPIA.DSL._
 import idealised.DPIA.IntermediatePrimitives.{AbstractDepMapI, DepMapI}
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA._
+import idealised.OpenCL
 
 import scala.xml.Elem
 
@@ -24,16 +27,18 @@ abstract class AbstractDepMap(n: Nat,
     import idealised.DPIA.Compilation.RewriteToImperative._
     import idealised.DPIA._
 
-
-    // TODO: fix array type to be DepArray Type and stuff
     con(array)(λ(exp"[${DepArrayType(n, makeDt1)}]")(x =>
       makeMapI(n, i1, dt1, i2, dt2, _Λ_((k: NatIdentifier) => λ(exp"[${makeDt1(k)}]")(x => λ(acc"[${makeDt2(k)}]")(o => {
-        val ff: Phrase[ExpType -> ExpType] = Lifting.liftNatDependentFunction(f)(k)
-        val fff = Lifting.liftFunction(ff)(x)
-        acc(fff)(o)
+        acc(f(k)(x))(o)
       }))), x, A)))
   }
 
+  override def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
+    import RewriteToImperative._
+
+    `new`(dt"[${DepArrayType(n, makeDt2)}]", OpenCL.GlobalMemory, λ(exp"[${DepArrayType(n, makeDt2)}]" x acc"[${DepArrayType(n, makeDt2)}]")(tmp =>
+      acc(this)(tmp.wr) `;` C(tmp.rd) ))
+  }
 
 
   def makeMap: (Nat, NatIdentifier, DataType, NatIdentifier, DataType, Phrase[`(nat)->`[ExpType -> ExpType]], Phrase[ExpType]) => AbstractDepMap
@@ -58,8 +63,6 @@ abstract class AbstractDepMap(n: Nat,
   }
 
   override def eval(s: Store): Data = ???
-
-  override def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = ???
 
   override def prettyPrint: String =
     s"${this.getClass.getSimpleName} (${PrettyPhrasePrinter(f)}) (${PrettyPhrasePrinter(array)})"
