@@ -3,7 +3,7 @@ package idealised.SurfaceLanguage.Types
 import idealised.DPIA.freshName
 import idealised.SurfaceLanguage._
 import idealised.SurfaceLanguage.Semantics._
-import lift.arithmetic.{ArithExpr, NamedVar}
+import lift.arithmetic.{ArithExpr, NamedVar, RangeAdd}
 
 sealed trait Type
 
@@ -25,7 +25,7 @@ final case class DepArrayType(size:Nat, elemType: `(nat)->dt`) extends ComposedT
 
 object DepArrayType {
   def apply(size:Nat, f:Nat => DataType): DepArrayType = {
-    val newName = NamedVar(freshName())
+    val newName = NamedVar(freshName(), RangeAdd(0, size, 1))
     DepArrayType(size, NatDependentFunctionType(newName, f(newName)))
   }
 }

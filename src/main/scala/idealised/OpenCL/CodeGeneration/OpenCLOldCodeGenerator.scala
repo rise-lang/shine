@@ -286,6 +286,7 @@ object OpenCLOldCodeGenerator {
       }
       case _: RecordType => ???
       case _: ArrayType => ???
+      case _: DepArrayType => ???
       case _: DataTypeIdentifier => throw new Exception("This should not happen")
     }
   }

@@ -85,9 +85,10 @@ final case class DepMapI(n: Nat,
   override def makeMapI = DepMapI
 
   override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
-    For(n, λ(exp"[idx($n)]")( i =>
-      SubstituteImplementations(f(NamedVar(i.name, RangeAdd(0, n, 1)))(in `@d` i)(out `@d` i), env)
-    ))
+    For(n, λ(exp"[idx($n)]")( i => {
+      val iVar = NamedVar(i.name, RangeAdd(0, n, 1))
+      SubstituteImplementations(f(iVar)(in `@d` i)(out `@d` i), env)
+    }))
 //    `for`(n, i =>
 //      SubstituteImplementations(f(i)(in `@` i)(out `@` i), env)
 //    )
