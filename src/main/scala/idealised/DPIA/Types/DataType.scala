@@ -102,6 +102,9 @@ object DataType {
       case a: ArrayType =>
         ArrayType(ArithExpr.substitute(a.size, Map((`for`, ae))),
           substitute(ae, `for`, a.elemType))
+      case a: DepArrayType =>
+        val subMap = Map((`for`,ae))
+        DepArrayType(ArithExpr.substitute(a.size, subMap), ArithExpr.substitute(a.i, subMap).asInstanceOf[NatIdentifier], substitute(ae, `for`, `in`=a.elemType))
       case r: RecordType =>
         RecordType(substitute(ae, `for`, r.fst), substitute(ae, `for`, r.snd))
     }).asInstanceOf[T]
@@ -138,7 +141,7 @@ object DataType {
         case v: VectorType => toVectorType(v)
       }
       case a: ArrayType => ir.ArrayType(DataType.toType(a.elemType), a.size)
-      case a: DepArrayType => ir.ArrayType(DataType.toType(a.elemType), a.size)
+      case a: DepArrayType => ir.ArrayType(DataType.toType(a.elemType), a.size) //TODO: Compute the proper size
       case r: RecordType => ir.TupleType(DataType.toType(r.fst), DataType.toType(r.snd))
       case _: DataTypeIdentifier => throw new Exception("This should not happen")
     }

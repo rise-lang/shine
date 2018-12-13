@@ -6,7 +6,7 @@ import idealised.DPIA.ImperativePrimitives._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics.{ArrayData, BoolData, Data, FloatData, IndexData, IntData, RecordData, VectorData}
 import idealised.DPIA.{Lifting, Nat, Types}
-import idealised.DPIA.Types.{AccType, ArrayType, BasicType, CommandType, DataType, DataTypeIdentifier, ExpType, IndexType, RecordType, VectorType}
+import idealised.DPIA.Types.{AccType, ArrayType, BasicType, CommandType, DataType, DataTypeIdentifier, DepArrayType, ExpType, IndexType, RecordType, VectorType}
 import idealised.OpenCL.CodeGeneration.PrimitivesCodeGenerator.toOpenCL
 import idealised.OpenCL.{GeneratableComm, GeneratableExp, ViewAcc, ViewExp}
 import opencl.generator.OpenCLAST
@@ -71,6 +71,7 @@ object OpenCLOldCodeGenerator {
 
       case f: Fst       => toOpenCL(f, env, f.t.dataType, List(), List())
       case i: Idx       => toOpenCL(i, env, i.t.dataType, List(), List())
+      case i: DepIdx    => toOpenCL(i, env, i.t.dataType, List(), List())
       case r: Record    => toOpenCL(r, env, r.t.dataType, List(), List())
       case s: Snd       => toOpenCL(s, env, s.t.dataType, List(), List())
       case t: TruncExp  => toOpenCL(t, env, t.t.dataType, List(), List())
@@ -87,6 +88,10 @@ object OpenCLOldCodeGenerator {
     dt match {
       case _: BasicType => idx
       case ArrayType(n, et) =>
+        val i :: is = arrayIndices
+        computeIndex(et, is, tupleIndices, (idx * n) + i)
+      case DepArrayType(n, i, et) =>
+        //TODO: Lies! We need the big sum here
         val i :: is = arrayIndices
         computeIndex(et, is, tupleIndices, (idx * n) + i)
       case RecordType(_, _) => idx // TODO: think about this more ...
@@ -149,6 +154,7 @@ object OpenCLOldCodeGenerator {
 
       case f: Fst       => toOpenCL(f, env, dt, arrayAccess, tupleAccess)
       case i: Idx       => toOpenCL(i, env, dt, arrayAccess, tupleAccess)
+      case i: DepIdx    => toOpenCL(i, env, dt, arrayAccess, tupleAccess)
       case r: Record    => toOpenCL(r, env, dt, arrayAccess, tupleAccess)
       case s: Snd       => toOpenCL(s, env, dt, arrayAccess, tupleAccess)
       case t: TruncExp  => toOpenCL(t, env, dt, arrayAccess, tupleAccess)
@@ -176,6 +182,7 @@ object OpenCLOldCodeGenerator {
 
       case f: RecordAcc1    => toOpenCL(f, value, env, f.t.dataType, List(), List())
       case i: IdxAcc        => toOpenCL(i, value, env, i.t.dataType, List(), List())
+      case i: DepIdxAcc     => toOpenCL(i, value, env, i.t.dataType, List(), List())
       case j: JoinAcc       => toOpenCL(j, value, env, j.t.dataType, List(), List())
       case s: RecordAcc2    => toOpenCL(s, value, env, s.t.dataType, List(), List())
       case s: SplitAcc      => toOpenCL(s, value, env, s.t.dataType, List(), List())
@@ -234,6 +241,7 @@ object OpenCLOldCodeGenerator {
 
       case f: RecordAcc1    => toOpenCL(f, value, env, dt, arrayAccess, tupleAccess)
       case i: IdxAcc        => toOpenCL(i, value, env, dt, arrayAccess, tupleAccess)
+      case i: DepIdxAcc     => toOpenCL(i, value, env, dt, arrayAccess, tupleAccess)
       case j: JoinAcc       => toOpenCL(j, value, env, dt, arrayAccess, tupleAccess)
       case s: RecordAcc2    => toOpenCL(s, value, env, dt, arrayAccess, tupleAccess)
       case s: SplitAcc      => toOpenCL(s, value, env, dt, arrayAccess, tupleAccess)

@@ -108,6 +108,7 @@ object KernelGenerator {
   private def makeInputParam(i: Identifier[_]): ParamDecl = {
     getDataType(i) match {
       case _: ArrayType => makeGlobalParam(i)
+      case _: DepArrayType => makeGlobalParam(i)
       case _: BasicType => makePrivateParam(i)
       case _: RecordType => makePrivateParam(i)
       case _: DataTypeIdentifier => throw new Exception("This should not happen")

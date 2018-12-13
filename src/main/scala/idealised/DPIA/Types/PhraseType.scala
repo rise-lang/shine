@@ -98,15 +98,15 @@ object PhraseType {
               Continue(p, this)
             }
           case Literal(IndexData(index, IndexType(size))) =>
-            val newIndex = substitute(ae, `for`, in = index)
-            val newSize = substitute(ae, `for`, in = size)
+            val newIndex = Nat.substitute(ae, `for`, in = index)
+            val newSize = Nat.substitute(ae, `for`, in = size)
             Stop(Literal(IndexData(newIndex, IndexType(newSize))).asInstanceOf[Phrase[T2]])
           case _ =>
             Continue(p, this)
         }
       }
 
-      override def apply(e: Nat): Nat = substitute(ae, `for`, e)
+      override def apply(e: Nat): Nat = Nat.substitute(ae, `for`, e)
 
       override def apply[DT <: DataType](dt: DT): DT = DataType.substitute(ae, `for`, dt)
     }
@@ -117,17 +117,6 @@ object PhraseType {
 
   }
 
-  private def substitute(ae: Nat, `for`: NatIdentifier, in: Nat): Nat = {
-    in.visitAndRebuild {
-      case v: Var =>
-        if (`for`.name == v.name) {
-          ae
-        } else {
-          v
-        }
-      case e => e
-    }
-  }
 
   def substitute(ae: Nat, `for`: Nat, in: PhraseType): PhraseType = {
     in match {

@@ -310,6 +310,22 @@ object PrimitivesCodeGenerator {
     OpenCLOldCodeGenerator.exp(i.array, env, dt, idx :: arrayAccess, tupleAccess)
   }
 
+  def toOpenCL(i:DepIdx,
+               env: OpenCLOldCodeGenerator.Environment,
+               dt:DataType,
+               arrayAccess: List[ArithExpr],
+               tupleAccess: List[ArithExpr]):Expression = {
+
+    val idx: ArithExpr = OpenCLOldCodeGenerator.exp(i.index, env) match {
+      case VarRef(name, _, _) => NamedVar(name, env.ranges(name))
+      case ArithExpression(ae) => ae
+      case _ => throw new Exception("This should not happen")
+    }
+
+    OpenCLOldCodeGenerator.exp(i.array, env, dt, idx :: arrayAccess, tupleAccess)
+  }
+
+
   def toOpenCL(r: Record,
                env: OpenCLOldCodeGenerator.Environment,
                dt: DataType,
@@ -364,6 +380,21 @@ object PrimitivesCodeGenerator {
   }
 
   def toOpenCL(i: IdxAcc,
+               value: Expression,
+               env: OpenCLOldCodeGenerator.Environment,
+               dt: DataType,
+               arrayAccess: List[Nat],
+               tupleAccess: List[Nat]): Expression = {
+    val idx: ArithExpr = OpenCLOldCodeGenerator.exp(i.index, env) match {
+      case VarRef(name, _, _) => NamedVar(name, env.ranges(name))
+      case ArithExpression(ae) => ae
+      case _ => ???
+    }
+
+    OpenCLOldCodeGenerator.acc(i.array, value, env, dt, idx :: arrayAccess, tupleAccess)
+  }
+
+  def toOpenCL(i: DepIdxAcc,
                value: Expression,
                env: OpenCLOldCodeGenerator.Environment,
                dt: DataType,
