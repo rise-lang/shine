@@ -18,9 +18,9 @@ abstract class AbstractDepMap(df: Expr[`(nat)->`[DataType -> DataType]],
 
   def makeDPIAMap: (
     DPIA.Nat,
-    DPIA.Nat,
+    DPIA.NatIdentifier,
     DPIA.Types.DataType,
-    DPIA.Nat,
+    DPIA.NatIdentifier,
     DPIA.Types.DataType,
     DPIA.Phrases.Phrase[DPIA.Types.NatDependentFunctionType[DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]]],
     DPIA.Phrases.Phrase[DPIA.Types.ExpType]

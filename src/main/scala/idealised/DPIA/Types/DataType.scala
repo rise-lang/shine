@@ -41,7 +41,7 @@ final case class DepArrayType(size:Nat, i: NatIdentifier, elemType: DataType) ex
 }
 
 object DepArrayType {
-  def apply(size: Nat, f: Nat => DataType): DepArrayType = {
+  def apply(size: Nat, f: NatIdentifier => DataType): DepArrayType = {
     val newName = NamedVar(freshName())
     DepArrayType(size, newName, f(newName))
   }

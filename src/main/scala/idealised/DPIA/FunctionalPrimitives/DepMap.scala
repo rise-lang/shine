@@ -11,8 +11,8 @@ import scala.xml.Elem
 
 
 abstract class AbstractDepMap(n: Nat,
-                              i1: Nat, dt1: DataType,
-                              i2: Nat, dt2: DataType,
+                              i1: NatIdentifier, dt1: DataType,
+                              i2: NatIdentifier, dt2: DataType,
                               f: Phrase[`(nat)->`[ExpType -> ExpType]],
                               array: Phrase[ExpType])
   extends ExpPrimitive {
@@ -36,9 +36,9 @@ abstract class AbstractDepMap(n: Nat,
 
 
 
-  def makeMap: (Nat, Nat, DataType, Nat, DataType, Phrase[`(nat)->`[ExpType -> ExpType]], Phrase[ExpType]) => AbstractDepMap
+  def makeMap: (Nat, NatIdentifier, DataType, NatIdentifier, DataType, Phrase[`(nat)->`[ExpType -> ExpType]], Phrase[ExpType]) => AbstractDepMap
 
-  def makeMapI: (Nat, Nat, DataType, Nat, DataType, Phrase[`(nat)->`[ExpType -> (AccType -> CommandType)]], Phrase[ExpType], Phrase[AccType]) => AbstractDepMapI
+  def makeMapI: (Nat, NatIdentifier, DataType, NatIdentifier, DataType, Phrase[`(nat)->`[ExpType -> (AccType -> CommandType)]], Phrase[ExpType], Phrase[AccType]) => AbstractDepMapI
 
 
   override val `type`: ExpType = {
@@ -54,7 +54,7 @@ abstract class AbstractDepMap(n: Nat,
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    makeMap(fun(n), fun(i1), fun(dt1), fun(i2), fun(dt2), VisitAndRebuild(f, fun), VisitAndRebuild(array, fun))
+    makeMap(fun(n), fun(i1).asInstanceOf[NatIdentifier], fun(dt1), fun(i2).asInstanceOf[NatIdentifier], fun(dt2), VisitAndRebuild(f, fun), VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): Data = ???
@@ -84,8 +84,8 @@ abstract class AbstractDepMap(n: Nat,
 }
 
 final case class DepMap(n: Nat,
-                        i1: Nat, dt1: DataType,
-                        i2: Nat, dt2: DataType,
+                        i1: NatIdentifier, dt1: DataType,
+                        i2: NatIdentifier, dt2: DataType,
                      f: Phrase[`(nat)->`[ExpType -> ExpType]],
                      array: Phrase[ExpType])
   extends AbstractDepMap(n, i1, dt1, i2, dt2, f, array) {

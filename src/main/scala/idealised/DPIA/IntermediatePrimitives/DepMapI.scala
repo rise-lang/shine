@@ -2,17 +2,19 @@ package idealised.DPIA.IntermediatePrimitives
 
 import idealised.DPIA.Compilation.SubstituteImplementations
 import idealised.DPIA.DSL._
+import idealised.DPIA.ImperativePrimitives.For
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA._
+import lift.arithmetic.{NamedVar, RangeAdd}
 
 import scala.xml.Elem
 
 abstract class AbstractDepMapI(n: Nat,
-                               i1: Nat, dt1: DataType,
-                               i2: Nat, dt2: DataType,
+                               i1: NatIdentifier, dt1: DataType,
+                               i2: NatIdentifier, dt2: DataType,
                                f: Phrase[`(nat)->`[ExpType -> (AccType -> CommandType)]],
                                in: Phrase[ExpType],
                                out: Phrase[AccType])
@@ -44,26 +46,26 @@ abstract class AbstractDepMapI(n: Nat,
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {
-    makeMapI(fun(n), fun(i1), fun(dt1), fun(i2), fun(dt2),
+    makeMapI(fun(n), fun(i1).asInstanceOf[NatIdentifier], fun(dt1), fun(i2).asInstanceOf[NatIdentifier], fun(dt2),
       VisitAndRebuild(f, fun),
       VisitAndRebuild(in, fun),
       VisitAndRebuild(out, fun))
   }
 
-  def makeMapI: (Nat, Nat, DataType, Nat, DataType, Phrase[`(nat)->`[ExpType -> (AccType -> CommandType)]], Phrase[ExpType], Phrase[AccType]) => AbstractDepMapI
+  def makeMapI: (Nat, NatIdentifier, DataType, NatIdentifier, DataType, Phrase[`(nat)->`[ExpType -> (AccType -> CommandType)]], Phrase[ExpType], Phrase[AccType]) => AbstractDepMapI
 
   override def prettyPrint =
     s"(${this.getClass.getSimpleName} ${PrettyPhrasePrinter(out)} ${PrettyPhrasePrinter(f)} ${PrettyPhrasePrinter(in)})"
 
   override def xmlPrinter: Elem =
-    <depMapI n={ToString(n)} dt1={ToString(dt1)} dt2={ToString(dt2)}>
-      <output type={ToString(AccType(ArrayType(n, dt2)))}>
+    <depMapI n={ToString(n)} i1={ToString(i1)} dt1={ToString(dt1)} i2={ToString(i2)} dt2={ToString(dt2)}>
+      <output type={ToString(out.t)}>
         {Phrases.xmlPrinter(out)}
       </output>
-      <f type={ToString(AccType(dt2) -> (ExpType(dt1) -> CommandType()))}>
+      <f type={ToString(f.t)}>
         {Phrases.xmlPrinter(f)}
       </f>
-      <input type={ToString(ExpType(ArrayType(n, dt1)))}>
+      <input type={ToString(in.t)}>
         {Phrases.xmlPrinter(in)}
       </input>
     </depMapI>.copy(label = {
@@ -73,8 +75,8 @@ abstract class AbstractDepMapI(n: Nat,
 }
 
 final case class DepMapI(n: Nat,
-                         i1: Nat, dt1: DataType,
-                         i2: Nat, dt2: DataType,
+                         i1: NatIdentifier, dt1: DataType,
+                         i2: NatIdentifier, dt2: DataType,
                          f: Phrase[`(nat)->`[ExpType -> (AccType -> CommandType)]],
                          in: Phrase[ExpType],
                          out: Phrase[AccType])
@@ -83,10 +85,13 @@ final case class DepMapI(n: Nat,
   override def makeMapI = DepMapI
 
   override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
+    For(n, λ(exp"[idx($n)]")( i =>
+      SubstituteImplementations(f(NamedVar(i.name, RangeAdd(0, n, 1)))(in `@d` i)(out `@d` i), env)
+    ))
 //    `for`(n, i =>
-//      SubstituteImplementations(f(in `@` i)(out `@` i), env)
+//      SubstituteImplementations(f(i)(in `@` i)(out `@` i), env)
 //    )
-    ???
+
   }
 
 }
