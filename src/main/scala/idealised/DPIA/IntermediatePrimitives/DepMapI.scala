@@ -27,9 +27,9 @@ abstract class AbstractDepMapI(n: Nat,
     val k = f.t.x
     (n: Nat) -> (i1: Nat) -> (dt1: DataType) -> (i2: Nat) -> (dt2: DataType) ->
       (f :: t"($k:nat) -> exp[${makeDt1(k)}] -> acc[${makeDt2(k)}] -> comm") ->
-      (in :: exp"[${DepArrayType(n, makeDt1)}]") ->
-      (out :: acc"[${DepArrayType(n, makeDt2)}]") ->
-      comm
+        (in :: exp"[${DepArrayType(n, makeDt1)}]") ->
+          (out :: acc"[${DepArrayType(n, makeDt2)}]") ->
+            comm
   }
 
   override def eval(s: Store): Store = {
@@ -86,8 +86,8 @@ final case class DepMapI(n: Nat,
 
   override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
     For(n, λ(exp"[idx($n)]")( i => {
-      val iVar = NamedVar(i.name, RangeAdd(0, n, 1))
-      SubstituteImplementations(f(iVar)(in `@d` i)(out `@d` i), env)
+      val `i'` = NamedVar(i.name, RangeAdd(0, n, 1))
+      SubstituteImplementations(f(`i'`)(in `@d` `i'`)(out `@d` `i'`), env)
     }))
 //    `for`(n, i =>
 //      SubstituteImplementations(f(i)(in `@` i)(out `@` i), env)

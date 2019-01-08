@@ -47,15 +47,11 @@ abstract class AbstractDepMap(n: Nat,
 
 
   override val `type`: ExpType = {
-    f match {
-      case NatDependentLambda(k, _) =>
-        (n: Nat) -> (i1: Nat) -> (dt1: DataType) -> (i2: Nat) -> (dt2: DataType) ->
-          (f :: t"($k : nat) -> exp[${ makeDt1(k) }] -> exp[${ makeDt2(k) }]")
-            (array :: exp"[${DepArrayType(n, makeDt1)}]") ->
-              exp"[${DepArrayType(n, makeDt2)}]"
-
-      case _ => throw new Exception("This should not happen")
-    }
+    val k = f.t.x
+    (n: Nat) -> (i1: Nat) -> (dt1: DataType) -> (i2: Nat) -> (dt2: DataType) ->
+      (f :: t"($k : nat) -> exp[${ makeDt1(k) }] -> exp[${ makeDt2(k) }]")
+        (array :: exp"[${DepArrayType(n, makeDt1)}]") ->
+          exp"[${DepArrayType(n, makeDt2)}]"
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {

@@ -68,27 +68,27 @@ object Phrase {
         }
       }
 
-      override def apply(ae: Nat):Nat = (phrase, `for`) match {
-        case (
-          Identifier(pName, ExpType(IndexType(pN))),
-          Identifier(forName, ExpType(IndexType(forN)))
-          ) =>
-          val pVar = NamedVar(pName, RangeAdd(0, pN, 1))
-          val forVar = NamedVar(forName, RangeAdd(0, forN, 1))
-          Nat.substitute(pVar, `for`=forVar, `in` = ae)
-        case _ => ae
-      }
-
-      override def apply[T <: DataType](dt: T):T = (phrase, `for`) match {
-        case (
-          Identifier(pName, ExpType(IndexType(pN))),
-          Identifier(forName, ExpType(IndexType(forN)))
-          ) =>
-          val pVar = NamedVar(pName, RangeAdd(0, pN, 1))
-          val forVar = NamedVar(forName, RangeAdd(0, forN, 1))
-          DataType.substitute(pVar, `for`=forVar, `in`=dt)
-        case _ => dt
-      }
+//      override def apply(ae: Nat):Nat = (phrase, `for`) match {
+//        case (
+//          Identifier(pName, ExpType(IndexType(pN))),
+//          Identifier(forName, ExpType(IndexType(forN)))
+//          ) =>
+//          val pVar = NamedVar(pName, RangeAdd(0, pN, 1))
+//          val forVar = NamedVar(forName, RangeAdd(0, forN, 1))
+//          Nat.substitute(pVar, `for`=forVar, `in` = ae)
+//        case _ => ae
+//      }
+//
+//      override def apply[T <: DataType](dt: T):T = (phrase, `for`) match {
+//        case (
+//          Identifier(pName, ExpType(IndexType(pN))),
+//          Identifier(forName, ExpType(IndexType(forN)))
+//          ) =>
+//          val pVar = NamedVar(pName, RangeAdd(0, pN, 1))
+//          val forVar = NamedVar(forName, RangeAdd(0, forN, 1))
+//          DataType.substitute(pVar, `for`=forVar, `in`=dt)
+//        case _ => dt
+//      }
     }
 
     VisitAndRebuild(in, Visitor)

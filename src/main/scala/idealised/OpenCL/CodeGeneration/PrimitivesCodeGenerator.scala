@@ -316,11 +316,12 @@ object PrimitivesCodeGenerator {
                arrayAccess: List[ArithExpr],
                tupleAccess: List[ArithExpr]):Expression = {
 
-    val idx: ArithExpr = OpenCLOldCodeGenerator.exp(i.index, env) match {
-      case VarRef(name, _, _) => NamedVar(name, env.ranges(name))
-      case ArithExpression(ae) => ae
-      case _ => throw new Exception("This should not happen")
-    }
+    val idx: ArithExpr = i.index
+//      OpenCLOldCodeGenerator.exp(i.index, env) match {
+//      case VarRef(name, _, _) => NamedVar(name, env.ranges(name))
+//      case ArithExpression(ae) => ae
+//      case _ => throw new Exception("This should not happen")
+//    }
 
     OpenCLOldCodeGenerator.exp(i.array, env, dt, idx :: arrayAccess, tupleAccess)
   }
@@ -400,11 +401,12 @@ object PrimitivesCodeGenerator {
                dt: DataType,
                arrayAccess: List[Nat],
                tupleAccess: List[Nat]): Expression = {
-    val idx: ArithExpr = OpenCLOldCodeGenerator.exp(i.index, env) match {
-      case VarRef(name, _, _) => NamedVar(name, env.ranges(name))
-      case ArithExpression(ae) => ae
-      case _ => ???
-    }
+    val idx: ArithExpr = i.index
+//      OpenCLOldCodeGenerator.exp(i.index, env) match {
+//      case VarRef(name, _, _) => NamedVar(name, env.ranges(name))
+//      case ArithExpression(ae) => ae
+//      case _ => ???
+//    }
 
     OpenCLOldCodeGenerator.acc(i.array, value, env, dt, idx :: arrayAccess, tupleAccess)
   }

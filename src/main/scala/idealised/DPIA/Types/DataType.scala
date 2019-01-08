@@ -31,7 +31,7 @@ final case class ArrayType(size: Nat, elemType: DataType) extends ComposedType {
 }
 
 final case class DepArrayType(size:Nat, i: NatIdentifier, elemType: DataType) extends ComposedType {
-  override def toString: String = s"$size.($i : Nat) -> $elemType"
+  override def toString: String = s"$size.($i -> $elemType)"
 
   override def equals(that: Any): Boolean = that match {
     case DepArrayType(size_, i_, elemType_) =>
