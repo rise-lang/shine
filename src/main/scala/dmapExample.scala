@@ -1,3 +1,4 @@
+import idealised.OpenCL.SurfaceLanguage.DSL.reduceSeq
 import idealised.OpenCL._
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Primitives.DepMap
@@ -16,13 +17,15 @@ object dmapExample extends App{
 
   val xsT = DepArrayType(8, i => ArrayType(i + 1, int))
 
-  val f = fun(xsT)(array => DepMap(dFun(_ => fun(x => map(fun(y => y + 1), x) )), array))
+  val addOne = fun(xsT)(array => DepMap(dFun(_ => fun(x => map(fun(y => y + 1), x) )), array))
 
-  val typed_f = TypeInference(f, Map())
+  val reduceByRow = fun(xsT)(array => DepMap(dFun(_ => fun(x => reduceSeq(fun(y => fun(z => y + z)), 0, x) )), array))
+
+  val typed_f = TypeInference(reduceByRow, Map())
 
   typed_f.t
 
-  printKernel(f)
+  printKernel(reduceByRow)
 
   def printKernel(expr: Expr[DataType -> DataType]) {
     val kernel = KernelGenerator.makeKernel(TypeInference(expr, Map()).toPhrase, localSize = 8, globalSize = 8)
