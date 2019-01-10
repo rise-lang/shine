@@ -7,8 +7,8 @@ import idealised.utils._
 import ir.Type
 import lift.arithmetic.{ArithExpr, Cst, Var}
 import opencl.executor._
+import opencl.generator.OpenCLAST
 import opencl.generator.OpenCLAST.ParamDecl
-import opencl.generator.{OpenCLPrinter, _}
 import opencl.ir.{Double, Float, Int}
 
 import scala.collection.immutable.List

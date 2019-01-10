@@ -342,6 +342,8 @@ class CodeGenerator(val p: Phrase[CommandType],
     }
   }
 
+  override def codeGenForNat(n: Nat, i: NatIdentifier, p: Phrase[CommandType], env: Environment, gen: CodeGenerator.this.type) = ???
+
   override def codeGenParFor(n: Nat,
                              dt: DataType,
                              a: Phrase[AccType],

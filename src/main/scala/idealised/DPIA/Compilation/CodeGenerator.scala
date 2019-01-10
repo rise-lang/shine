@@ -3,7 +3,7 @@ package idealised.DPIA.Compilation
 import idealised.DPIA.Phrases.{Identifier, Phrase}
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Types.{AccType, ArrayType, CommandType, DataType, ExpType}
-import idealised.DPIA.{Nat, VarType, x}
+import idealised.DPIA.{Nat, NatIdentifier, VarType, x}
 import idealised.SurfaceLanguage
 import idealised.SurfaceLanguage.Primitives.ForeignFunctionDeclaration
 
@@ -50,6 +50,12 @@ trait CodeGenerator[Environment, Path, Stmt, Expr, Decl, Ident] {
                  p: Phrase[CommandType],
                  env: Environment,
                  gen: this.type): Stmt
+
+  def codeGenForNat(n:Nat,
+                    i:NatIdentifier,
+                    p:Phrase[CommandType],
+                    env:Environment,
+                    gen: this.type ):Stmt
 
   def codeGenParFor(n: Nat,
                     dt: DataType,

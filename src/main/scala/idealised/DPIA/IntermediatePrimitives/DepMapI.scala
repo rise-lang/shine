@@ -2,9 +2,8 @@ package idealised.DPIA.IntermediatePrimitives
 
 import idealised.DPIA.Compilation.SubstituteImplementations
 import idealised.DPIA.DSL._
-import idealised.DPIA.ImperativePrimitives.For
+import idealised.DPIA.ImperativePrimitives.{For, ForNat}
 import idealised.DPIA.Phrases._
-import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA._
@@ -85,14 +84,9 @@ final case class DepMapI(n: Nat,
   override def makeMapI = DepMapI
 
   override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
-    For(n, λ(exp"[idx($n)]")( i => {
-      val `i'` = NamedVar(i.name, RangeAdd(0, n, 1))
-      SubstituteImplementations(f(`i'`)(in `@d` `i'`)(out `@d` `i'`), env)
-    }))
-//    `for`(n, i =>
-//      SubstituteImplementations(f(i)(in `@` i)(out `@` i), env)
-//    )
-
+    ForNat(n, _Λ_( i =>
+      SubstituteImplementations(f(i)(in `@d` i)(out `@d` i), env)
+      , RangeAdd(0, n, 1))
+    )
   }
-
 }

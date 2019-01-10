@@ -63,6 +63,43 @@ object PrimitivesCodeGenerator {
     block
   }
 
+  def toOpenCL(f: ForNat, block: Block, env: OpenCLOldCodeGenerator.Environment): Block = {
+    import opencl.generator.OpenCLAST._
+
+    val bodyE = Lifting.liftNatDependentFunction(f.body)
+
+    f.n match {
+      case Cst(0) =>
+        (block: Block) +=
+          OpenCLAST.Comment("iteration count is 0, no loop emitted")
+
+      case Cst(1) =>
+        (block: Block) +=
+          OpenCLAST.Comment("iteration count is exactly 1, no loop emitted")
+        (block: Block) += OpenCLOldCodeGenerator.cmd(bodyE(0), Block(Vector()), env)
+
+      case _ =>
+        val name = freshName("i_")
+        val range = RangeAdd(0, f.n, 1)
+
+        val init = VarDecl(name, opencl.ir.Int,
+          init = ArithExpression(0),
+          addressSpace = opencl.ir.PrivateMemory)
+
+        val cond = CondExpression(VarRef(name),
+          ArithExpression(f.n),
+          CondExpression.Operator.<)
+
+        val v = NamedVar(name, range)
+        val increment = AssignmentExpression(ArithExpression(v), ArithExpression(v + 1))
+
+        val body_ = OpenCLOldCodeGenerator.cmd(bodyE(v), Block(), env.updatedRanges(name, range))
+        (block: Block) += ForLoop(init, cond, increment, body_)
+    }
+
+    block
+  }
+
   def toOpenCL(d: DoubleBufferFor, block: Block, env: OpenCLOldCodeGenerator.Environment): Block = {
     import opencl.generator.OpenCLAST._
 

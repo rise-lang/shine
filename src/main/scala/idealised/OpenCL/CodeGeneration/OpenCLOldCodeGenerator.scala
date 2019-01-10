@@ -5,10 +5,11 @@ import idealised.DPIA.FunctionalPrimitives._
 import idealised.DPIA.ImperativePrimitives._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics.{ArrayData, BoolData, Data, FloatData, IndexData, IntData, RecordData, VectorData}
-import idealised.DPIA.{Lifting, Nat, Types}
 import idealised.DPIA.Types.{AccType, ArrayType, BasicType, CommandType, DataType, DataTypeIdentifier, DepArrayType, ExpType, IndexType, RecordType, VectorType}
+import idealised.DPIA.{Lifting, Nat, Types}
 import idealised.OpenCL.CodeGeneration.PrimitivesCodeGenerator.toOpenCL
 import idealised.OpenCL.{GeneratableComm, GeneratableExp, ViewAcc, ViewExp}
+import lift.arithmetic.BigSum
 import opencl.generator.OpenCLAST
 import opencl.generator.OpenCLAST.{ArithExpression, AssignmentExpression, BinaryExpression, Block, Expression, UnaryExpression, VLoad, VStore, VarRef}
 
@@ -36,6 +37,7 @@ object OpenCLOldCodeGenerator {
       case a: Assign => toOpenCL(a, block, env)
       case d: DoubleBufferFor => toOpenCL(d, block, env)
       case f: For => toOpenCL(f, block, env)
+      case f: ForNat => toOpenCL(f, block, env)
       case n: New => toOpenCL(n, block, env)
       case s: idealised.DPIA.ImperativePrimitives.Seq => toOpenCL(s, block, env)
       case s: idealised.DPIA.ImperativePrimitives.Skip => toOpenCL(s, block, env)
@@ -84,17 +86,28 @@ object OpenCLOldCodeGenerator {
     }
   }
 
-  def computeIndex(dt: DataType, arrayIndices: List[Nat], tupleIndices: List[Nat], idx: Nat): Nat = {
+  def computeIndex(dt: DataType, arrayIndices: List[Nat], tupleIndices: List[Nat]): Nat = {
     dt match {
-      case _: BasicType => idx
-      case ArrayType(n, et) =>
+      case _: BasicType => ???
+      case ArrayType(_, _:BasicType) | DepArrayType(_, _, _:BasicType) =>
+        val i :: Nil = arrayIndices
+        i
+
+      case ArrayType(_, et) =>
         val i :: is = arrayIndices
-        computeIndex(et, is, tupleIndices, (idx * n) + i)
-      case DepArrayType(n, i, et) =>
-        //TODO: Lies! We need the big sum here
+        val colIdx = computeIndex(et, is, tupleIndices)
+        val rowIdx = i * DataType.getLength(et, tupleIndices)
+
+        rowIdx + colIdx
+
+      case DepArrayType(_, k, et) =>
         val i :: is = arrayIndices
-        computeIndex(et, is, tupleIndices, (idx * n) + i)
-      case RecordType(_, _) => idx // TODO: think about this more ...
+        val colIdx = computeIndex(et, is, tupleIndices)
+        val rowIdx = BigSum(from = 0, upTo = i - 1, `for`=k, `in`=DataType.getLength(et, tupleIndices))
+
+        rowIdx + colIdx
+
+      case RecordType(_, _) => ??? // TODO: think about this more ...
       case _: DataTypeIdentifier => ???
     }
   }
@@ -109,7 +122,7 @@ object OpenCLOldCodeGenerator {
 
         val index: Nat = {
           if (arrayAccess.nonEmpty) {
-            computeIndex(t.dataType, arrayAccess, tupleAccess, 0)
+            computeIndex(t.dataType, arrayAccess, tupleAccess)
           } else {
             null
           }
@@ -204,7 +217,7 @@ object OpenCLOldCodeGenerator {
       case Identifier(name, t) =>
         val index: Nat = {
           if (arrayAccess.nonEmpty) {
-            computeIndex(t.dataType, arrayAccess, tupleAccess, 0)
+            computeIndex(t.dataType, arrayAccess, tupleAccess)
           } else {
             null
           }

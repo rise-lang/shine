@@ -4,7 +4,7 @@ import idealised.DPIA.{Nat, Types, freshName}
 import idealised.SurfaceLanguage
 import idealised.SurfaceLanguage.NatIdentifier
 import idealised.utils.SizeInByte
-import lift.arithmetic.{ArithExpr, NamedVar, RangeAdd}
+import lift.arithmetic.{ArithExpr, BigSum, NamedVar, RangeAdd}
 
 import scala.language.implicitConversions
 
@@ -172,15 +172,15 @@ object DataType {
     }
   }
 
-  def getLengths(dt: DataType, tupleAccesss: List[Nat], list: List[Nat]): List[Nat] = {
+  def getLength(dt: DataType, tupleAccesss: List[Nat]): Nat = {
     dt match {
-      case _: BasicType => 1 :: list
+      case _: BasicType => 1
       case r: RecordType =>
         val t = tupleAccesss.head
         val elemT = if (t == (1: Nat)) { r.fst } else if (t == (2: Nat)) { r.snd } else { throw new Exception("This should not happen") }
-        getLengths(elemT, tupleAccesss.tail, list)
-      case a: ArrayType => getLengths(a.elemType, tupleAccesss, a.size :: list)
-      case dep: DepArrayType => ??? //getLengths(dep.elemType, tupleAccesss, dep.size::list) //TODO: Probably wrong
+        getLength(elemT, tupleAccesss.tail)
+      case a: ArrayType => getLength(a.elemType, tupleAccesss) * a.size
+      case a: DepArrayType => BigSum(from = 0, upTo = a.size - 1, `for` = a.i, `in` = getLength(a.elemType, tupleAccesss))
       case _: DataTypeIdentifier => throw new Exception("This should not happen")
     }
   }
