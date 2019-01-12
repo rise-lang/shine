@@ -13,7 +13,7 @@ import scala.xml.Elem
 final case class New(dt: DataType,
                      addressSpace: AddressSpace,
                      f: Phrase[VarType -> CommandType])
-  extends CommandPrimitive with GeneratableCommand {
+  extends CommandPrimitive {
 
   override val `type`: CommandType =
     (dt: DataType) -> /* (addressSpace: AddressSpace) -> */
@@ -24,13 +24,6 @@ final case class New(dt: DataType,
     val arg = identifier(freshName(), f.t.inT)
     val newStore = OperationalSemantics.eval(s + (arg.name -> 0), f_(arg))
     newStore - arg.name
-  }
-
-  override def codeGen[Environment, Path, Stmt, Expr, Decl, Ident](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl, Ident])(env: Environment): Stmt = {
-    f match {
-      case Lambda(v, p) => gen.codeGenNew(dt, v, p, env, gen)
-      case _ => error(s"Expected lambda")
-    }
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {

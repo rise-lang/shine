@@ -6,22 +6,22 @@ import idealised.DPIA._
 import idealised.utils._
 import ir.Type
 import lift.arithmetic.{ArithExpr, Cst, Var}
+import idealised.OpenCL
+
 import opencl.executor._
-import opencl.generator.OpenCLAST
-import opencl.generator.OpenCLAST.ParamDecl
 import opencl.ir.{Double, Float, Int}
 
 import scala.collection.immutable.List
 import scala.collection.{Seq, immutable}
 import scala.language.implicitConversions
 
-case class Kernel(function: OpenCLAST.Function,
+case class Kernel(kernel: OpenCL.AST.KernelDecl,
                   outputParam: Identifier[AccType],
                   inputParams: Seq[Identifier[ExpType]],
                   intermediateParams: Seq[Identifier[VarType]],
                   localSize: Nat, globalSize: Nat) {
 
-  def code: String = (new OpenCLPrinter)(this)
+  def code: String = idealised.C.AST.Printer(kernel)
 
   // This method will return a Scala function which executed the kernel via OpenCL and returns its
   // result and the time it took to execute the kernel.
@@ -47,7 +47,7 @@ case class Kernel(function: OpenCLAST.Function,
       val (outputArg, inputArgs) = createKernelArgs(args, lengthMapping)
       val kernelArgs = (outputArg +: inputArgs).toArray
 
-      val kernelJNI = opencl.executor.Kernel.create(code, function.name, "")
+      val kernelJNI = opencl.executor.Kernel.create(code, kernel.name, "")
 
       val runtime = Executor.execute(kernelJNI,
         ArithExpr.substitute(localSize, lengthMapping).eval, 1, 1,
@@ -93,7 +93,7 @@ case class Kernel(function: OpenCLAST.Function,
 
   private def createKernelArgs(args: List[Any], lengthMapping: immutable.Map[Nat, Nat]) = {
     val numberOfKernelArgs = 1 + args.length + intermediateParams.size + lengthMapping.size
-    assert(function.params.length == numberOfKernelArgs)
+    assert(kernel.params.length == numberOfKernelArgs)
 
     println("Allocations on the host: ")
     val outputArg = createOutputArg(DataType.sizeInByte(outputParam) `with` lengthMapping)
@@ -138,19 +138,20 @@ case class Kernel(function: OpenCLAST.Function,
     (intermediateParamDecls, intermediateParams).zipped.map { case (pDecl, param) =>
       val size = (DataType.sizeInByte(param) `with` lengthMapping).value.max.eval
       pDecl.addressSpace match {
-        case opencl.ir.LocalMemory =>
+        case OpenCL.LocalMemory =>
           println(s"intermediate (local): $size bytes")
           LocalArg.create(size)
-        case opencl.ir.GlobalMemory =>
+        case OpenCL.GlobalMemory =>
           println(s"intermediate (global): $size bytes")
           GlobalArg.createOutput(size)
+        case OpenCL.PrivateMemory => ???
       }
     }
   }
 
-  private def getIntermediateParamDecls(argsLength: Int): collection.Seq[ParamDecl] = {
+  private def getIntermediateParamDecls(argsLength: Int): collection.Seq[OpenCL.AST.ParamDecl] = {
     val startIndex = 1 + argsLength
-    function.params.slice(startIndex, startIndex + intermediateParams.size)
+    kernel.params.slice(startIndex, startIndex + intermediateParams.size)
   }
 
   private def castToOutputType[R](dt: DataType, output: GlobalArg): R = {

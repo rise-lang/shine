@@ -13,7 +13,7 @@ final case class DepIdxAcc(n: Nat,
                            dt: DataType,
                            index: Nat,
                            array: Phrase[AccType])
-  extends AccPrimitive with GeneratableAcc {
+  extends AccPrimitive {
 
   private def makeDt(x:Nat):DataType = DataType.substitute(x, `for`=i, `in`=dt)
 
@@ -29,11 +29,6 @@ final case class DepIdxAcc(n: Nat,
 //      case _ => throw new Exception("This should not happen")
 //    }
 //    ArrayAccessIdentifier(arrayE, indexE)
-    ???
-  }
-
-  override def codeGen[Environment, Path, Stmt, Expr, Decl, Ident](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl, Ident])(env: Environment, path: Path): Expr = {
-//    gen.codeGenIdxAcc(index, array, env, path, gen)
     ???
   }
 

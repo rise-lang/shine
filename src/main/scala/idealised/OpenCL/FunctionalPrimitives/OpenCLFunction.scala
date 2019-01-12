@@ -7,9 +7,6 @@ import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics.{Data, Store}
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised.OpenCL.CodeGeneration.OpenCLOldCodeGenerator
-import idealised.OpenCL.CodeGeneration.OpenCLOldCodeGenerator.Environment
-import idealised.OpenCL.GeneratableExp
 import opencl.generator.OpenCLAST.{Expression, FunctionCall}
 
 import scala.language.reflectiveCalls
@@ -20,7 +17,7 @@ final case class OpenCLFunction(name: String,
                                 inTs: Seq[DataType],
                                 outT: DataType,
                                 args: Seq[Phrase[ExpType]])
-  extends ExpPrimitive with GeneratableExp {
+  extends ExpPrimitive {
 
   override lazy val `type`: ExpType =
     (inTs zip args).foreach{
@@ -31,9 +28,9 @@ final case class OpenCLFunction(name: String,
     OpenCLFunction(name, inTs.map(f(_)), f(outT), args.map(VisitAndRebuild(_, f)))
   }
 
-  override def codeGenExp(env: Environment): Expression = {
-    FunctionCall(name, args.map(OpenCLOldCodeGenerator.exp(_, env)).toList)
-  }
+//  override def codeGenExp(env: Environment): Expression = {
+//    FunctionCall(name, args.map(OpenCLOldCodeGenerator.exp(_, env)).toList)
+//  }
 
   override def eval(s: Store): Data = ???
 

@@ -159,7 +159,7 @@ object dot extends App {
     println(program.code)
   }
 
-  sys.exit(1)
+//  sys.exit(1)
 
   // OpenCL specific stuff
 

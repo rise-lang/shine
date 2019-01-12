@@ -18,7 +18,7 @@ final case class DoubleBufferFor(n: Nat,
                                  buffer2: Phrase[VarType],
                                  body: Phrase[`(nat)->`[AccType -> (ExpType -> CommandType)]],
                                  C: Phrase[ExpType -> CommandType])
-  extends CommandPrimitive with GeneratableCommand {
+  extends CommandPrimitive {
 
   assert(
     body match {
@@ -47,8 +47,6 @@ final case class DoubleBufferFor(n: Nat,
     }
 
   override def eval(s: Store): Store = ???
-
-  override def codeGen[Environment, Path, Stmt, Expr, Decl, Ident](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl, Ident])(env: Environment): Stmt = ???
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {
     DoubleBufferFor(fun(n), fun(m), fun(k), fun(dt),

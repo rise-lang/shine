@@ -15,7 +15,7 @@ final case class IdxVec(n: Nat,
                         st: ScalarType,
                         index: Phrase[ExpType],
                         vector: Phrase[ExpType])
-  extends ExpPrimitive with GeneratableExp {
+  extends ExpPrimitive {
 
   override val `type`: ExpType =
     (n: Nat) -> (st: ScalarType) ->
@@ -28,11 +28,6 @@ final case class IdxVec(n: Nat,
       case (VectorData(xs), IntData(i)) => xs(i)
       case _ => throw new Exception("This should not happen")
     }
-  }
-
-  override def codeGen[Environment, Path, Stmt, Expr, Decl, Ident](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl, Ident])
-                                                                  (env: Environment, path: Path): Expr = {
-    gen.codeGenIdxVec(index, vector, env, path, gen)
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {

@@ -11,7 +11,7 @@ import scala.xml.Elem
 
 final case class For(n: Nat,
                      body: Phrase[ExpType -> CommandType])
-  extends CommandPrimitive with GeneratableCommand {
+  extends CommandPrimitive {
 
   override val `type`: CommandType =
     (n: Nat) -> (body :: t"exp[idx($n)] -> comm") -> comm
@@ -22,14 +22,6 @@ final case class For(n: Nat,
     (0 until nE.eval).foldLeft(s)((s1, i) =>
       OperationalSemantics.eval(s1, bodyE(Literal(i)))
     )
-  }
-
-
-  override def codeGen[Environment, Path, Stmt, Expr, Decl, Ident](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl, Ident])(env: Environment): Stmt = {
-    body match {
-      case Lambda(i, p) => gen.codeGenFor(n, i, p, env, gen)
-      case _ => error(s"Expected lambda")
-    }
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {

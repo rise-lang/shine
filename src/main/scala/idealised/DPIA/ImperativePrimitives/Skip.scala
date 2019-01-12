@@ -8,15 +8,13 @@ import idealised.DPIA.Types._
 import scala.xml.Elem
 
 // not final because of DSL.typed.skip
-case class Skip() extends CommandPrimitive with GeneratableCommand {
+case class Skip() extends CommandPrimitive {
 
   override val `type`: CommandType = comm
 
   override def eval(s: Store): Store = s
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[CommandType] = this
-
-  override def codeGen[Environment, Path, Stmt, Expr, Decl, Ident](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl, Ident])(env: Environment): Stmt = gen.codeGenSkip
 
   override def prettyPrint: String = "skip"
 

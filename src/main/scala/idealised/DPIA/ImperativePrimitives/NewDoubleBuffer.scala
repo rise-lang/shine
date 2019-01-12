@@ -15,7 +15,7 @@ final case class NewDoubleBuffer(dt1: DataType,
                                  in: Phrase[ExpType],
                                  out: Phrase[AccType],
                                  f: Phrase[ExpType x AccType x CommandType x CommandType -> CommandType])
-  extends CommandPrimitive with GeneratableCommand {
+  extends CommandPrimitive {
 
   override val `type`: CommandType =
     (dt1: DataType) -> (dt2: DataType) -> (dt3: DataType) -> (n: Nat) ->
@@ -24,13 +24,6 @@ final case class NewDoubleBuffer(dt1: DataType,
           (f :: FunctionType(PairType(PairType(VarType(ArrayType(n, dt3)), comm), comm), comm) ) -> comm
 
   override def eval(s: Store): Store = ???
-
-  override def codeGen[Environment, Path, Stmt, Expr, Decl, Ident](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl, Ident])(env: Environment): Stmt = {
-    f match {
-      case Lambda(ps, p) => gen.codeGenNewDoubleBuffer(ArrayType(n, dt3), in, out, ps, p, env, gen)
-      case _ => error(s"Expected lambda")
-    }
-  }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {
     NewDoubleBuffer(fun(dt1), fun(dt2), fun(dt3), fun(n), VisitAndRebuild(in, fun), VisitAndRebuild(out, fun), VisitAndRebuild(f, fun))

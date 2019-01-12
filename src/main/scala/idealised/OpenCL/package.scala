@@ -1,5 +1,7 @@
 package idealised
 
+import lift.arithmetic.ArithExpr
+
 package object OpenCL {
   sealed trait ParallelismLevel
   case object WorkGroup extends ParallelismLevel
@@ -22,6 +24,8 @@ package object OpenCL {
       }
     }
   }
+
+  case class NDRange(x: ArithExpr, y: ArithExpr, z: ArithExpr)
 
   trait FunctionHelper {
     type T

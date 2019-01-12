@@ -14,7 +14,7 @@ final case class DepIdx(n: Nat,
                         dt: DataType,
                         index: Nat,
                         array: Phrase[ExpType])
-  extends ExpPrimitive with GeneratableExp {
+  extends ExpPrimitive {
 
   private def makeDt(x:Nat):DataType = DataType.substitute(x, `for`=i, `in`=dt)
 
@@ -39,11 +39,6 @@ final case class DepIdx(n: Nat,
 //      case (ArrayData(xs), IntData(i)) => xs(i)
 //      case _ => throw new Exception("This should not happen")
 //    }
-    ???
-  }
-
-  override def codeGen[Environment, Path, Stmt, Expr, Decl, Ident](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl, Ident])(env: Environment, path: Path): Expr = {
-    //gen.codeGenIdx(index, array, env, path, gen)
     ???
   }
 

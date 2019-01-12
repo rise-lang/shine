@@ -16,7 +16,7 @@ final case class ForeignFunction(funDecl: ForeignFunctionDeclaration,
                                  inTs: Seq[DataType],
                                  outT: DataType,
                                  args: Seq[Phrase[ExpType]])
-  extends ExpPrimitive with GeneratableExp {
+  extends ExpPrimitive {
 
   override lazy val `type`: ExpType =
     (inTs zip args).foreach {
@@ -43,10 +43,6 @@ final case class ForeignFunction(funDecl: ForeignFunctionDeclaration,
     }
 
     recurse(args zip inTs, Seq(), Seq())
-  }
-
-  override def codeGen[Environment, Path, Stmt, Expr, Decl, Ident](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl, Ident])(env: Environment, path: Path): Expr = {
-    gen.codeGenForeignFunction(funDecl, inTs, outT, args, env, path, gen)
   }
 
   override def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {

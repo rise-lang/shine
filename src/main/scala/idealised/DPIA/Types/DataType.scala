@@ -185,6 +185,16 @@ object DataType {
     }
   }
 
+  def getLength(dt: DataType): Nat = {
+    dt match {
+      case _: BasicType => 1
+      case r: RecordType => ???
+      case a: ArrayType => getLength(a.elemType) * a.size
+      case a: DepArrayType => BigSum(from = 0, upTo = a.size - 1, `for` = a.i, `in` = getLength(a.elemType))
+      case _: DataTypeIdentifier => throw new Exception("This should not happen")
+    }
+  }
+
   def getBaseDataType(dt: DataType): DataType = {
     dt match {
       case _: BasicType => dt

@@ -1,11 +1,11 @@
 package idealised.OpenCL.ImperativePrimitives
 
+import idealised.C.AST._
 import idealised.DPIA.Phrases.Phrase
 import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType}
 import idealised.DPIA._
 import idealised._
 import lift.arithmetic.{?, ContinuousRange, PosInf, RangeAdd}
-import opencl.generator.OpenCLAST._
 import opencl.generator.{OclFunction, get_group_id, get_num_groups}
 
 final case class ParForWorkGroup(dim: Int)(override val n: Nat,
@@ -14,9 +14,9 @@ final case class ParForWorkGroup(dim: Int)(override val n: Nat,
                                            override val body: Phrase[ExpType -> (AccType -> CommandType)])
   extends OpenCLParFor(n, dt, out, body) {
 
-  lazy val num_groups: Nat =
-    if (env.globalSize == ? || env.localSize == ?) ?
-    else env.globalSize /^ env.localSize
+  lazy val num_groups: Nat = ?
+//    if (env.globalSize == ? || env.localSize == ?) ?
+//    else env.globalSize /^ env.localSize
 
   override def makeParFor = ParForWorkGroup(dim)
 
@@ -32,6 +32,6 @@ final case class ParForWorkGroup(dim: Int)(override val n: Nat,
     if (num_groups == ?) ContinuousRange(1, PosInf)
     else RangeAdd(num_groups, num_groups + 1, 1)
 
-  override def synchronize: OclAstNode with BlockMember = Comment("par for workgroup sync")
+  override def synchronize: Stmt = Comment("par for workgroup sync")
 
 }

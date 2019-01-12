@@ -15,7 +15,7 @@ import scala.xml.Elem
 final class Assign(val dt: DataType,
                    val lhs: Phrase[AccType],
                    val rhs: Phrase[ExpType])
-  extends CommandPrimitive with GeneratableCommand {
+  extends CommandPrimitive {
 
   override val `type`: CommandType =
     (dt: DataType) -> (lhs :: acc"[$dt]") -> (rhs :: exp"[$dt]") -> comm
@@ -51,18 +51,6 @@ final class Assign(val dt: DataType,
       s + Tuple2(identifier, value)
     })
   }
-
-  override def codeGen[Environment, Path, Stmt, Expr, Decl, Ident](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl, Ident])(env: Environment): Stmt = {
-    gen.codeGenAssign(lhs, rhs, env, gen)
-  }
-
-//  override def codeGen[Gen <: CodeGenerator](gen: Gen)(env: Gen#Environment): Gen#Stmt = {
-//    gen.primitiveCodeGen.codeGenAssign(lhs, rhs, env, gen)
-//  }
-
-//  override def codeGen[Gen <: CodeGenerator[_]](gen: Gen)(env: Gen#Environment): Gen#Stmt = {
-//    gen.primitiveCodeGen.codeGenAssign(lhs, rhs, env, gen)
-//  }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {
     Assign(fun(dt), VisitAndRebuild(lhs, fun), VisitAndRebuild(rhs, fun))

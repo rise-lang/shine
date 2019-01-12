@@ -33,20 +33,22 @@ object ProgramGenerator {
                        name: String = "foo"): Program = {
     val outParam = createOutputParam(outT = p.t)
 
+    val env = C.CodeGeneration.CodeGenerator.Environment(
+      (outParam +: inputParams).map(p => p -> C.AST.DeclRef(p.name) ).toMap, Map.empty, Map.empty)
+
+    val gen = C.CodeGeneration.CodeGenerator(env)
+
     val p1 = checkTypes(p)
 
     val p2 = rewriteToImperative(p1, outParam)
 
     val p3 = substituteImplementations(p2)
 
-    val env = C.CodeGeneration.CodeGenerator.Environment(
-      (outParam +: inputParams).map(p => p -> C.AST.DeclRef(p.name) ).toMap, Map.empty)
-
-    val (declarations, code) = C.CodeGeneration.CodeGenerator(p3, env).generate
+    val (declarations, code) = gen.generate(p3)
 
     C.Program(
       declarations,
-      function    = makeFunction(makeParams(outParam, inputParams), Block(Seq(code)), name),
+      function    = makeFunction(makeParams(outParam, inputParams, gen), Block(Seq(code)), name),
       outputParam = outParam,
       inputParams = inputParams)
   }
@@ -95,10 +97,11 @@ object ProgramGenerator {
   }
 
   def makeParams(out: Identifier[AccType],
-                 ins: Seq[Identifier[ExpType]]): Seq[ParamDecl] = {
+                 ins: Seq[Identifier[ExpType]],
+                 gen: CodeGeneration.CodeGenerator): Seq[ParamDecl] = {
     val sizes = collectSizes(out.`type`.dataType
       +: ins.map(_.`type`.dataType)).toSeq.sortBy(_.toString)
-    Seq(makeParam(out)) ++ ins.map(makeParam) ++ sizes.map(makeSizeParam)
+    Seq(makeParam(out, gen)) ++ ins.map(makeParam(_, gen)) ++ sizes.map(makeSizeParam)
   }
 
   def collectSizes(ts: Seq[DataType]): Set[Var] = {
@@ -115,16 +118,16 @@ object ProgramGenerator {
     })
   }
 
-  def makeParam(i: Identifier[_]): ParamDecl = {
+  def makeParam(i: Identifier[_], gen: CodeGeneration.CodeGenerator): ParamDecl = {
     import DPIA.Types.{ArrayType, RecordType, BasicType}
     // Turn array types into pointer types
 
     val paramType = getDataType(i) match {
       case ArrayType(_, dt) =>
         val baseDt = DataType.getBaseDataType(dt)
-        PointerType(Type.fromDataType(baseDt))
-      case r : RecordType => Type.fromDataType(r)
-      case t : BasicType => Type.fromDataType(t)
+        PointerType(gen.typ(baseDt))
+      case r : RecordType => gen.typ(r)
+      case t : BasicType => gen.typ(t)
       case _: DataTypeIdentifier => ???
     }
     ParamDecl(i.name, paramType)

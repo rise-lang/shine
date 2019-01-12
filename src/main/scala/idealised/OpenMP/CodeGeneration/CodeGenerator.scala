@@ -4,9 +4,10 @@ import idealised.C
 import idealised.C.AST.{ArraySubscript, Decl}
 import idealised.C.CodeGeneration.{CodeGenerator => CCodeGenerator}
 import idealised.DPIA.{Nat, error, freshName}
-import idealised.DPIA.Phrases.{Identifier, Phrase}
+import idealised.DPIA.Phrases.{Identifier, Lambda, Phrase}
 import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType, VectorType}
 import idealised.DPIA.DSL._
+import idealised.DPIA.ImperativePrimitives.{ParFor, ParForVec}
 import idealised.OpenCL.FunctionalPrimitives.{AsScalar, AsVector}
 import idealised.OpenCL.ImperativePrimitives.{AsScalarAcc, AsVectorAcc}
 import lift.arithmetic
@@ -15,19 +16,28 @@ import lift.arithmetic._
 import scala.collection.{immutable, mutable}
 
 object CodeGenerator {
-  def apply(p: Phrase[CommandType], env: CCodeGenerator.Environment): CodeGenerator =
-    new CodeGenerator(p, env, mutable.ListBuffer[Decl](), immutable.Map[String, arithmetic.Range]())
+  def apply(env: CCodeGenerator.Environment): CodeGenerator =
+    new CodeGenerator(env, mutable.ListBuffer[Decl](), immutable.Map[String, arithmetic.Range]())
 }
 
-class CodeGenerator(override val p: Phrase[CommandType],
-                    override val env: CCodeGenerator.Environment,
+class CodeGenerator(override val env: CCodeGenerator.Environment,
                     override val decls: CCodeGenerator.Declarations,
                     override val ranges: CCodeGenerator.Ranges)
-  extends CCodeGenerator(p, env, decls, ranges)
+  extends CCodeGenerator(env, decls, ranges)
 {
+  override def name: String = "OpenMP"
 
   override def updatedRanges(key: String, value: lift.arithmetic.Range): CodeGenerator =
-    new CodeGenerator(p, env, decls, ranges.updated(key, value))
+    new CodeGenerator(env, decls, ranges.updated(key, value))
+
+
+  override def cmd(phrase: Phrase[CommandType], env: Environment): Stmt = {
+    phrase match {
+      case ParFor(n, dt, a, Lambda(i, Lambda(o, p))) => codeGenParFor(n, dt, a, i, o, p, env)
+      case ParForVec(n, dt, a, Lambda(i, Lambda(o, p))) => codeGenParForVec(n, dt, a, i, o, p, env)
+      case _ => super.cmd(phrase, env)
+    }
+  }
 
   override def acc(phrase: Phrase[AccType], env: Environment, path: Path): Expr = {
     phrase match {
@@ -43,7 +53,7 @@ class CodeGenerator(override val p: Phrase[CommandType],
           acc(a, env, (i * m) :: Nil) match {
             case ArraySubscript(v, idx) =>
               // emit something like: ((struct float4 *)v)[idx]
-              val ptrType = C.AST.PointerType(C.AST.Type.fromDataType(VectorType(m, dt)))
+              val ptrType = C.AST.PointerType(typ(VectorType(m, dt)))
               C.AST.ArraySubscript(C.AST.Cast(ptrType, v), idx)
           }
         case _ =>           error(s"Expected path to be not empty")
@@ -62,7 +72,7 @@ class CodeGenerator(override val p: Phrase[CommandType],
           exp(e, env, (i * n) :: Nil) match {
             case ArraySubscript(v, idx) =>
               // emit something like: ((struct float4 *)v)[idx]
-              val ptrType = C.AST.PointerType(C.AST.Type.fromDataType(VectorType(n, dt)))
+              val ptrType = C.AST.PointerType(typ(VectorType(n, dt)))
               C.AST.ArraySubscript(C.AST.Cast(ptrType, v), idx)
           }
         case _ =>           error(s"Expected path to be not empty")
@@ -75,17 +85,16 @@ class CodeGenerator(override val p: Phrase[CommandType],
     }
   }
 
-  override def codeGenParFor(n: Nat,
-                             dt: DataType,
-                             a: Phrase[AccType],
-                             i: Identifier[ExpType],
-                             o: Phrase[AccType],
-                             p: Phrase[CommandType],
-                             env: Environment,
-                             gen: CodeGenerator.this.type): Stmt = {
+  private def codeGenParFor(n: Nat,
+                            dt: DataType,
+                            a: Phrase[AccType],
+                            i: Identifier[ExpType],
+                            o: Phrase[AccType],
+                            p: Phrase[CommandType],
+                            env: Environment): Stmt = {
     val i_ = C.AST.DeclRef(freshName("i_"))
     val range = RangeAdd(0, n, 1)
-    val updatedGen = gen.updatedRanges(i_.name, range)
+    val updatedGen = updatedRanges(i_.name, range)
 
     val init = C.AST.VarDecl(i_.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0)))
     val cond = C.AST.BinaryExpr(i_, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
@@ -97,17 +106,16 @@ class CodeGenerator(override val p: Phrase[CommandType],
         C.AST.Block(immutable.Seq(updatedGen.cmd(Phrase.substitute(a `@` i, `for`=o, `in`=p), env updatedIdentEnv (i -> i_))))))
   }
 
-  override def codeGenParForVec(n: Nat,
-                                dt: DataType,
-                                a: Phrase[AccType],
-                                i: Identifier[ExpType],
-                                o: Phrase[AccType],
-                                p: Phrase[CommandType],
-                                env: Environment,
-                                gen: CodeGenerator.this.type): Stmt = {
+  private def codeGenParForVec(n: Nat,
+                               dt: DataType,
+                               a: Phrase[AccType],
+                               i: Identifier[ExpType],
+                               o: Phrase[AccType],
+                               p: Phrase[CommandType],
+                               env: Environment): Stmt = {
     val i_ = C.AST.DeclRef(freshName("i_"))
     val range = RangeAdd(0, n, 1)
-    val updatedGen = gen.updatedRanges(i_.name, range)
+    val updatedGen = updatedRanges(i_.name, range)
 
     val init = C.AST.VarDecl(i_.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0)))
     val cond = C.AST.BinaryExpr(i_, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))

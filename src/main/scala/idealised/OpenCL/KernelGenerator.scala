@@ -8,10 +8,8 @@ import idealised.DPIA.Compilation._
 import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types._
-import idealised.OpenCL.CodeGeneration.{AdaptKernelBody, AdaptKernelParameters, OpenCLOldCodeGenerator, HoistMemoryAllocations}
+import idealised.OpenCL.CodeGeneration.{AdaptKernelBody, AdaptKernelParameters, HoistMemoryAllocations}
 import idealised.OpenCL.CodeGeneration.HoistMemoryAllocations.AllocationInfo
-import opencl.generator.OpenCLAST._
-import opencl.generator.OpenCLPrinter
 
 import scala.collection._
 import scala.language.implicitConversions
@@ -40,6 +38,11 @@ object KernelGenerator {
                          localSize: Nat, globalSize: Nat): OpenCL.Kernel = {
     val outParam = createOutputParam(outT = p.t)
 
+    val env = C.CodeGeneration.CodeGenerator.Environment(
+      (outParam +: inputParams).map(p => p -> C.AST.DeclRef(p.name) ).toMap, Map.empty, Map.empty)
+
+    val gen = OpenCL.CodeGeneration.CodeGenerator(env, localSize, globalSize)
+
     val p1 = checkTypes(p)
 
     val p2 = rewriteToImperative(p1, outParam)
@@ -49,12 +52,12 @@ object KernelGenerator {
     val (p4, intermediateAllocations) = hoistMemoryAllocations(p3)
 
     val (p5, kernelParams) = adaptKernelParameters(p4,
-      makeParams(outParam, inputParams, intermediateAllocations), inputParams)
+      makeParams(outParam, inputParams, intermediateAllocations, gen), inputParams)
 
-    val kernelBody = adaptKernelBody(makeBody(p5, localSize, globalSize))
+    val (declarations, code) = gen.generate(p5)
 
     OpenCL.Kernel(
-      function = makeKernelFunction(kernelParams, kernelBody),
+      kernel = makeKernelFunction(kernelParams, adaptKernelBody(C.AST.Block(Seq(code)))),
       outputParam = outParam,
       inputParams = inputParams,
       intermediateParams = intermediateAllocations.map(_.identifier),
@@ -95,84 +98,78 @@ object KernelGenerator {
 
   private def makeParams(out: Identifier[AccType],
                          ins: Seq[Identifier[ExpType]],
-                         intermediateAllocations: Seq[AllocationInfo]): Seq[ParamDecl] = {
-    Seq(makeGlobalParam(out)) ++ // first the output parameter ...
-      ins.map(makeInputParam) ++ // ... then the input parameters ...
-      intermediateAllocations.map(makeParam) ++ // ... then the intermediate buffers ...
+                         intermediateAllocations: Seq[AllocationInfo],
+                         gen: CodeGeneration.CodeGenerator): Seq[OpenCL.AST.ParamDecl] = {
+    Seq(makeGlobalParam(out, gen)) ++ // first the output parameter ...
+      ins.map(makeInputParam(_, gen)) ++ // ... then the input parameters ...
+      intermediateAllocations.map(makeParam(_, gen)) ++ // ... then the intermediate buffers ...
       // ... finally, the parameters for the length information in the type
       // these can only come from the input parameters.
       makeLengthParams(ins.map(_.t.dataType).map(DataType.toType))
   }
 
   // pass arrays via global and scalar + tuple values via private memory
-  private def makeInputParam(i: Identifier[_]): ParamDecl = {
+  private def makeInputParam(i: Identifier[_], gen: CodeGeneration.CodeGenerator): OpenCL.AST.ParamDecl = {
     getDataType(i) match {
-      case _: ArrayType => makeGlobalParam(i)
-      case _: DepArrayType => makeGlobalParam(i)
-      case _: BasicType => makePrivateParam(i)
-      case _: RecordType => makePrivateParam(i)
+      case _: ArrayType => makeGlobalParam(i, gen)
+      case _: DepArrayType => makeGlobalParam(i, gen)
+      case _: BasicType => makePrivateParam(i, gen)
+      case _: RecordType => makePrivateParam(i, gen)
       case _: DataTypeIdentifier => throw new Exception("This should not happen")
     }
   }
 
-  private def makeGlobalParam(i: Identifier[_]): ParamDecl = {
-    ParamDecl(
+  private def makeGlobalParam(i: Identifier[_], gen: CodeGeneration.CodeGenerator): OpenCL.AST.ParamDecl = {
+    OpenCL.AST.ParamDecl(
       i.name,
-      DataType.toType(getDataType(i)),
-      opencl.ir.GlobalMemory,
-      const = false)
+      gen.typ(getDataType(i)),
+      OpenCL.GlobalMemory)
   }
 
-  private def makePrivateParam(i: Identifier[_]): ParamDecl = {
-    ParamDecl(
+  private def makePrivateParam(i: Identifier[_], gen: CodeGeneration.CodeGenerator): OpenCL.AST.ParamDecl = {
+    OpenCL.AST.ParamDecl(
       i.name,
-      DataType.toType(getDataType(i)),
-      opencl.ir.PrivateMemory,
-      const = false)
+      gen.typ(getDataType(i)),
+      OpenCL.PrivateMemory)
   }
 
-  private def makeParam(allocInfo: AllocationInfo): ParamDecl = {
-    ParamDecl(
+  private def makeParam(allocInfo: AllocationInfo, gen: CodeGeneration.CodeGenerator): OpenCL.AST.ParamDecl = {
+    OpenCL.AST.ParamDecl(
       allocInfo.identifier.name,
-      DataType.toType(getDataType(allocInfo.identifier)),
-      OpenCL.AddressSpace.toOpenCL(allocInfo.addressSpace),
-      const = false)
+      gen.typ(getDataType(allocInfo.identifier)),
+      allocInfo.addressSpace)
   }
 
   // returns list of int parameters for each variable in the given types;
   // sorted by name of the variables
-  private def makeLengthParams(types: Seq[ir.Type]): Seq[ParamDecl] = {
+  private def makeLengthParams(types: Seq[ir.Type]): Seq[OpenCL.AST.ParamDecl] = {
     val lengths = types.flatMap(ir.Type.getLengths)
     lengths.filter(_.isInstanceOf[lift.arithmetic.Var]).distinct.map(v =>
-      ParamDecl(v.toString, opencl.ir.Int) ).sortBy(_.name)
+      OpenCL.AST.ParamDecl(v.toString, C.AST.Type.int, OpenCL.PrivateMemory) ).sortBy(_.name)
   }
 
   private def adaptKernelParameters(p: Phrase[CommandType],
-                                    params: Seq[ParamDecl],
+                                    params: Seq[OpenCL.AST.ParamDecl],
                                     inputParams: Seq[Identifier[ExpType]]
-                                   ): (Phrase[CommandType], Seq[ParamDecl]) = {
+                                   ): (Phrase[CommandType], Seq[OpenCL.AST.ParamDecl]) = {
     val (p5, newParams) = AdaptKernelParameters(p, params, inputParams)
     xmlPrinter.writeToFile("/tmp/p5.xml", p5)
     TypeCheck(p5) // TODO: only in debug
     (p5, newParams)
   }
 
-  private def makeBody(p: Phrase[CommandType], localSize: Nat, globalSize: Nat): Block = {
-    OpenCLOldCodeGenerator.cmd(p, Block(), OpenCLOldCodeGenerator.Environment(localSize, globalSize))
-  }
-
-  private def adaptKernelBody(body: Block): Block = {
+  private def adaptKernelBody(body: C.AST.Block): C.AST.Block = {
     val pw = new PrintWriter(new File("/tmp/p6.cl"))
-    try pw.write(OpenCLPrinter()(body)) finally pw.close()
+    try pw.write(idealised.C.AST.Printer(body)) finally pw.close()
     AdaptKernelBody(body)
   }
 
-  private def makeKernelFunction(params: Seq[ParamDecl], body: Block): Function = {
-    Function(name = "KERNEL",
-      ret = ir.UndefType, // should really be void
+  private def makeKernelFunction(params: Seq[OpenCL.AST.ParamDecl], body: C.AST.Block): OpenCL.AST.KernelDecl = {
+    OpenCL.AST.KernelDecl(name = "KERNEL",
+      returnType = C.AST.Type.void,
       params = params,
       body = body,
-      kernel = true)
+      attribute = None)
   }
 
   implicit private def getDataType(i: Identifier[_]): DataType = {

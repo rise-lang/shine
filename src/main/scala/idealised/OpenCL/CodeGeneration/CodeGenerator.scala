@@ -1,35 +1,105 @@
 package idealised.OpenCL.CodeGeneration
 
-import idealised.C
-import idealised.C.AST.Decl
+import idealised.{C, OpenCL}
+import idealised.C.AST.{ArraySubscript, Decl}
 import idealised.C.CodeGeneration.{CodeGenerator => CCodeGenerator}
-import idealised.DPIA.{Nat, freshName}
-import idealised.DPIA.Phrases.{Identifier, Phrase}
-import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType}
-import idealised.DPIA.DSL._
+import idealised.DPIA.{Nat, error}
+import idealised.DPIA.Phrases.{Identifier, Lambda, Phrase}
+import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType, VectorType}
+import idealised.OpenCL.FunctionalPrimitives.{AsScalar, AsVector}
+import idealised.OpenCL.ImperativePrimitives.{AsScalarAcc, AsVectorAcc, OpenCLParFor}
 import lift.arithmetic
 import lift.arithmetic._
 
 import scala.collection.{immutable, mutable}
 
 object CodeGenerator {
-  type Environment = CCodeGenerator.Environment
-  type Path = CCodeGenerator.Path
-  type Expr = C.AST.Expr
-  type Decl = C.AST.Decl
-  type Stmt = C.AST.Stmt
-
-  def apply(p: Phrase[CommandType], env: Environment): CodeGenerator =
-    new CodeGenerator(p, env)
+  def apply(env: CCodeGenerator.Environment, localSize: Nat, globalSize: Nat): CodeGenerator =
+    new CodeGenerator(env, mutable.ListBuffer[Decl](), immutable.Map[String, arithmetic.Range](), localSize, globalSize)
 }
 
-class CodeGenerator(override val p: Phrase[CommandType],
-                    override val env: CCodeGenerator.Environment)
-  extends CCodeGenerator(p, env, mutable.ListBuffer[Decl](), immutable.Map[String, arithmetic.Range]())
+class CodeGenerator(override val env: CCodeGenerator.Environment,
+                    override val decls: CCodeGenerator.Declarations,
+                    override val ranges: CCodeGenerator.Ranges,
+                    localSize: Nat,
+                    globalSize: Nat)
+  extends CCodeGenerator(env, decls, ranges)
 {
-  override def cmd(phrase: Phrase[CommandType], env: Environment): Stmt = super.cmd(phrase, env)
+  override def name: String = "OpenCL"
 
-  override def acc(phrase: Phrase[AccType], env: Environment, path: Path): Expr = super.acc(phrase, env, path)
+  override def updatedRanges(key: String, value: lift.arithmetic.Range): CodeGenerator =
+    new CodeGenerator(env, decls, ranges.updated(key, value), localSize, globalSize)
 
-  override def exp(phrase: Phrase[ExpType], env: Environment, path: Path): Expr = super.exp(phrase, env, path)
+  override def cmd(phrase: Phrase[CommandType], env: Environment): Stmt = {
+    phrase match {
+      case f@OpenCLParFor(n, dt, a, Lambda(i, Lambda(o, p))) => codeGenOpenCLParFor(f, n, dt, a, i, o, p, env)
+
+      case _ => super.cmd(phrase, env)
+    }
+  }
+
+  override def acc(phrase: Phrase[AccType], env: Environment, path: Path): Expr = {
+    phrase match {
+      case AsVectorAcc(n, _, _, a) => ???
+      case AsScalarAcc(_, m, dt, a) => ???
+
+      case _ => super.acc(phrase, env, path)
+    }
+  }
+
+  override def exp(phrase: Phrase[ExpType], env: Environment, path: Path): Expr = {
+    phrase match {
+      case AsVector(n, _, _, e) => path match {
+        case i :: j :: ps => exp(e, env, (i * n) + j :: ps)
+      }
+      case AsScalar(_, m, _, e) => ???
+
+      case _ => super.exp(phrase, env, path)
+    }
+  }
+
+
+  override def typ(dt: DataType): Type = dt match {
+    case v: idealised.DPIA.Types.VectorType => C.AST.BasicType("float4")
+    case _ => super.typ(dt)
+  }
+
+  private def codeGenOpenCLParFor(f: OpenCLParFor,
+                                  n: Nat,
+                                  dt: DataType,
+                                  a: Phrase[AccType],
+                                  i: Identifier[ExpType],
+                                  o: Phrase[AccType],
+                                  p: Phrase[CommandType],
+                                  env: Environment): Stmt = {
+    val i_ = C.AST.DeclRef(f.name)
+    val range = RangeAdd(f.init, n, f.step)
+    val updatedGen = updatedRanges(i_.name, range)
+
+    val n_ = applySubstitutions(n, env.identEnv)
+
+    range.numVals match {
+      // iteration count is 0 => skip body; no code to be emitted
+      case Cst(0) => C.AST.Comment("iteration count is 0, no loop emitted")
+
+      // iteration count is 1 => no loop
+      case Cst(1) =>
+        C.AST.Stmts(C.AST.Stmts(
+          C.AST.Comment("iteration count is exactly 1, no loop emitted"),
+          C.AST.DeclStmt(C.AST.VarDecl(i_.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0))))),
+          updatedGen.cmd(p, env updatedIdentEnv (i -> i_)))
+
+      case _ =>
+        // default case
+        val init = OpenCL.AST.VarDecl(i_.name, C.AST.Type.int, OpenCL.PrivateMemory, init = Some(C.AST.ArithmeticExpr(f.init)))
+        val cond = C.AST.BinaryExpr(i_, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n_))
+        val increment = C.AST.Assignment(i_, C.AST.ArithmeticExpr(NamedVar(i_.name, range) + f.step))
+
+        C.AST.Stmts(
+          C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
+            C.AST.Block(immutable.Seq(updatedGen.cmd(p, env updatedIdentEnv (i -> i_))))),
+          f.synchronize
+        )
+    }
+  }
 }

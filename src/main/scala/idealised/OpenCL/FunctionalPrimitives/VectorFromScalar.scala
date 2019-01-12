@@ -6,9 +6,6 @@ import idealised.DPIA.Phrases.{VisitAndRebuild, _}
 import idealised.DPIA.Semantics.OperationalSemantics.{Data, Store}
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised.OpenCL.CodeGeneration.OpenCLOldCodeGenerator
-import idealised.OpenCL.CodeGeneration.OpenCLOldCodeGenerator.Environment
-import idealised.OpenCL.GeneratableExp
 import opencl.generator.OpenCLAST.{Expression, VectorLiteral}
 
 import scala.xml.Elem
@@ -16,7 +13,7 @@ import scala.xml.Elem
 final case class VectorFromScalar(n: Nat,
                                   dt: ScalarType,
                                   arg: Phrase[ExpType])
-  extends ExpPrimitive with GeneratableExp {
+  extends ExpPrimitive {
 
   override lazy val `type`: ExpType =
     (n: Nat) -> (dt: ScalarType) ->
@@ -27,11 +24,11 @@ final case class VectorFromScalar(n: Nat,
     VectorFromScalar(f(n), f(dt), VisitAndRebuild(arg, f))
   }
 
-  override def codeGenExp(env: Environment): Expression = {
-    VectorLiteral(
-      DataType.toVectorType(VectorType(n, dt)),
-      OpenCLOldCodeGenerator.exp(arg, env))
-  }
+//  override def codeGenExp(env: Environment): Expression = {
+//    VectorLiteral(
+//      DataType.toVectorType(VectorType(n, dt)),
+//      OpenCLOldCodeGenerator.exp(arg, env))
+//  }
 
   override def eval(s: Store): Data = ???
 

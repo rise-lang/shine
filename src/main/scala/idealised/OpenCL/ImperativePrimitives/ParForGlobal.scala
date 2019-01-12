@@ -4,9 +4,10 @@ import idealised.DPIA.Phrases.Phrase
 import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType}
 import idealised.DPIA._
 import idealised._
-import lift.arithmetic.RangeAdd
-import opencl.generator.OpenCLAST._
+import lift.arithmetic.{?, RangeAdd}
 import opencl.generator.{OclFunction, get_global_id, get_global_size}
+import idealised.{C, OpenCL}
+import idealised.C.AST._
 
 
 final case class ParForGlobal(dim: Int)(override val n: Nat,
@@ -21,9 +22,13 @@ final case class ParForGlobal(dim: Int)(override val n: Nat,
 
   override val name: String = freshName("gl_id_")
 
-  override lazy val init: OclFunction = get_global_id(dim, RangeAdd(0, env.globalSize, 1))
+//  override lazy val init: OclFunction = get_global_id(dim, RangeAdd(0, env.globalSize, 1))
+//
+//  override lazy val step: OclFunction = get_global_size(dim, RangeAdd(env.globalSize, env.globalSize + 1, 1))
 
-  override lazy val step: OclFunction = get_global_size(dim, RangeAdd(env.globalSize, env.globalSize + 1, 1))
+  override lazy val init: OclFunction = get_global_id(dim, RangeAdd(0, ?, 1))
 
-  override def synchronize: OclAstNode with BlockMember = Comment("par for global sync")
+  override lazy val step: OclFunction = get_global_size(dim, RangeAdd(?, ? + 1, 1))
+
+  override def synchronize: Stmt = Comment("par for global sync")
 }

@@ -13,7 +13,7 @@ final case class IdxVecAcc(n: Nat,
                            st: ScalarType,
                            index: Phrase[ExpType],
                            vector: Phrase[AccType])
-  extends AccPrimitive with GeneratableAcc {
+  extends AccPrimitive {
 
   override val `type`: AccType =
     (n: Nat) -> (st: ScalarType) ->
@@ -28,10 +28,6 @@ final case class IdxVecAcc(n: Nat,
       case _ => throw new Exception("This should not happen")
     }
     VectorAccessIdentifier(vectorE, indexE)
-  }
-
-  override def codeGen[Environment, Path, Stmt, Expr, Decl, Ident](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl, Ident])(env: Environment, path: Path): Expr = {
-    gen.codeGenIdxVecAcc(index, vector, env, path, gen)
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {

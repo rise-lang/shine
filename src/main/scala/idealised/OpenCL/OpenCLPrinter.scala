@@ -75,7 +75,8 @@ object OpenCLPrinter {
 class OpenCLPrinter {
 
   def apply(kernel: idealised.OpenCL.Kernel): String = {
-    apply(kernel.function)
+    //apply(kernel.function)
+    ???
   }
 
   /**
