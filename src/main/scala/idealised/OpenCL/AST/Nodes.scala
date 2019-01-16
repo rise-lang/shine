@@ -10,14 +10,13 @@ case class RequiredWorkGroupSize(localSize: OpenCL.NDRange) extends Attribute {
 }
 
 case class KernelDecl(override val name: String,
-                      override val returnType: Type,
                       override val params: Seq[ParamDecl],
                       override val body: Stmt,
                       attribute: Option[Attribute])
-  extends FunDecl(name, returnType, params, body)
+  extends FunDecl(name, C.AST.Type.void, params, body)
 {
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): KernelDecl =
-    KernelDecl(name, v(returnType), params.map(VisitAndRebuild(_, v)),
+    KernelDecl(name, params.map(VisitAndRebuild(_, v)),
       VisitAndRebuild(body, v), attribute.map(VisitAndRebuild(_, v)))
 }
 

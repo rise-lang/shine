@@ -166,7 +166,6 @@ object KernelGenerator {
 
   private def makeKernelFunction(params: Seq[OpenCL.AST.ParamDecl], body: C.AST.Block): OpenCL.AST.KernelDecl = {
     OpenCL.AST.KernelDecl(name = "KERNEL",
-      returnType = C.AST.Type.void,
       params = params,
       body = body,
       attribute = None)

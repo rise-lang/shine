@@ -306,7 +306,10 @@ class Printer {
     e match {
       case Cst(c) => c.toString
       case Pow(b, ex) =>
-        "(int)pow((float)" + toString(b) + ", " + toString(ex) + ")"
+        ex match {
+          case Cst(2) => s"(${toString(b)} * ${toString(b)})"
+          case _ => "(int)pow((float)" + toString (b) + ", " + toString (ex) + ")"
+        }
       case Log(b, x) => "(int)log"+b+"((float)"+toString(x)+")"
       case Prod(es) => "(" + es.foldLeft("1")( (s: String, e: ArithExpr) => {
         s + (e match {
