@@ -21,11 +21,15 @@ object dmapExample extends App{
 
   val reduceByRow = fun(xsT)(array => DepMap(dFun(_ => fun(x => reduceSeq(fun(y => fun(z => y + z)), 0, x) )), array))
 
-  val typed_f = TypeInference(reduceByRow, Map())
+  val takeAndDrop = fun(ArrayType(8, int))(array => map(fun(x => x), take(2, drop(3, array))))
+
+  val fInUse = takeAndDrop
+
+  val typed_f = TypeInference(fInUse, Map())
 
   typed_f.t
 
-  printKernel(reduceByRow)
+  printKernel(fInUse)
 
   def printKernel(expr: Expr[DataType -> DataType]) {
     val kernel = KernelGenerator.makeKernel(TypeInference(expr, Map()).toPhrase, localSize = 8, globalSize = 8)

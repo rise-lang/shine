@@ -39,6 +39,18 @@ object slide {
   def apply(s1: Nat, s2: Nat, array: DataExpr): Slide = Slide(s1, s2, array)
 }
 
+object take {
+  def apply(n:Nat): Expr[DataType -> DataType] = fun(array => take(n, array))
+
+  def apply(n:Nat, array:DataExpr):Take = Take(n, array)
+}
+
+object drop {
+  def apply(n:Nat): Expr[DataType -> DataType] = fun(array => drop(n, array))
+
+  def apply(n:Nat, array:DataExpr):Drop = Drop(n, array)
+}
+
 object reduce {
   def apply(f: Expr[DataType -> (DataType -> DataType)]): Expr[DataType -> (DataType -> DataType)] =
     fun((init, array) => reduce(f, init, array))

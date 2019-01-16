@@ -52,7 +52,7 @@ object SubstituteImplementations {
       case j: JoinAcc   => getAddressSpace(j.array, env)
       case s: RecordAcc2    => getAddressSpace(s.record, env)
       case s: SplitAcc  => getAddressSpace(s.array, env)
-      case t: TruncAcc  => getAddressSpace(t.array, env)
+      case t: TakeAcc  => getAddressSpace(t.array, env)
 
       case Apply(_, _) | NatDependentApply(_, _) |
            TypeDependentApply(_, _) | IfThenElse(_, _, _) | _: AccPrimitive => ???

@@ -141,7 +141,11 @@ class CodeGenerator(val env: CodeGenerator.Environment,
       }
       case UnzipAcc(_, _, _, _) => ???
 
-      case TruncAcc(_, _, _, a) => acc(a, env, path)
+      case TakeAcc(_, _, _, a) => acc(a, env, path)
+      case DropAcc(n, _, _, a) => path match {
+        case i :: ps => acc(a, env, (i + n)::ps)
+        case Nil => error(s"Expected path to be not empty")
+      }
 
       case ScatterAcc(_, _, idxF, a) => path match {
         case i :: ps => acc(a, env, OperationalSemantics.evalIndexExp(idxF(i)) :: ps)
@@ -228,7 +232,12 @@ class CodeGenerator(val env: CodeGenerator.Environment,
       case Fst(_, _, e) => exp(e, env, Cst(1) :: path)
       case Snd(_, _, e) => exp(e, env, Cst(2) :: path)
 
-      case TruncExp(_, _, _, e) => exp(e, env, path) // ???
+      case Take(_, _, _, e) => exp(e, env, path)
+
+      case Drop(n, _, _, e) => path match {
+          case i :: ps => exp(e, env, (i + n)::ps)
+          case Nil => error(s"Expected path to be not empty")
+        }
 
       case Gather(_, _, idxF, a) => path match {
         case i :: ps => exp(a, env, OperationalSemantics.evalIndexExp(idxF(i)) :: ps)

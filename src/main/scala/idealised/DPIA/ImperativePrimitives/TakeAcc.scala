@@ -7,10 +7,10 @@ import idealised.DPIA._
 
 import scala.xml.Elem
 
-final case class TruncAcc(n: Nat,
-                          m: Nat,
-                          dt: DataType,
-                          array: Phrase[AccType])
+final case class TakeAcc(n: Nat,
+                         m: Nat,
+                         dt: DataType,
+                         array: Phrase[AccType])
   extends AccPrimitive {
 
   override val `type`: AccType =
@@ -20,7 +20,7 @@ final case class TruncAcc(n: Nat,
   override def eval(s: Store): AccIdentifier = ???
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {
-    TruncAcc(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))
+    TakeAcc(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))
   }
 
   override def prettyPrint: String = s"(truncAcc ${PrettyPhrasePrinter(array)})"
