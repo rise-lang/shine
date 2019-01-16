@@ -21,18 +21,13 @@ import scala.language.implicitConversions
 object CodeGenerator {
 
   final case class Environment(identEnv: immutable.Map[Identifier[_ <: BasePhraseTypes], C.AST.DeclRef],
-                               commEnv: immutable.Map[Identifier[CommandType], C.AST.Stmt],
-                               natIdentEnv: immutable.Map[NatIdentifier, C.AST.DeclRef]) {
+                               commEnv: immutable.Map[Identifier[CommandType], C.AST.Stmt]) {
     def updatedIdentEnv(kv: (Identifier[_ <: BasePhraseTypes], C.AST.DeclRef)): Environment = {
       this.copy(identEnv = identEnv + kv)
     }
 
     def updatedCommEnv(kv: (Identifier[CommandType], C.AST.Stmt)): Environment = {
       this.copy(commEnv = commEnv + kv)
-    }
-
-    def updatedNatIdentEnv(kv: (NatIdentifier, C.AST.DeclRef)): Environment = {
-      this.copy(natIdentEnv = natIdentEnv + kv)
     }
   }
 
@@ -116,7 +111,7 @@ class CodeGenerator(val env: CodeGenerator.Environment,
     phrase match {
       case i@Identifier(_, AccType(dt)) => generateAccess(dt,
         env.identEnv.applyOrElse(i, (_: Phrase[_]) => {
-          println(i); println(env); C.AST.DeclRef("??????????????")
+          println(i); println(env); ???
         }), path.reverse, env)
 
       case SplitAcc(_, m, _, a) => path match {
@@ -419,7 +414,7 @@ class CodeGenerator(val env: CodeGenerator.Environment,
         C.AST.Stmts(C.AST.Stmts(
           C.AST.Comment("iteration count is exactly 1, no loop emitted"),
           C.AST.DeclStmt(C.AST.VarDecl(i_.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0))))),
-          updatedGen.cmd(p, env updatedNatIdentEnv(i, i_)))
+          updatedGen.cmd(p, env))
 
       case _ =>
         // default case
@@ -428,7 +423,8 @@ class CodeGenerator(val env: CodeGenerator.Environment,
         val increment = C.AST.Assignment(i_, C.AST.ArithmeticExpr(NamedVar(i_.name, range) + 1))
 
         C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
-          C.AST.Block(immutable.Seq(updatedGen.cmd(p, env updatedNatIdentEnv(i, i_)))))
+          C.AST.Block(immutable.Seq(updatedGen.cmd(PhraseType.substitute(NamedVar(i_.name, range), `for` = i, in = p),
+            env ))))
     }
   }
 
@@ -542,11 +538,7 @@ class CodeGenerator(val env: CodeGenerator.Environment,
 
       case (_: ArrayType, _) | (_: DepArrayType, _) =>
         val idx = computeArrayIndex(dt, path)
-        // perform substitutions of NatIdentifiers -> DeclRefs
-        val index = C.AST.ArithmeticExpr(ArithExpr.substitute(idx, env.natIdentEnv.map {
-          case (n, C.AST.DeclRef(name)) => (n, NamedVar(name))
-        }))
-        C.AST.ArraySubscript(identifier, index)
+        C.AST.ArraySubscript(identifier, C.AST.ArithmeticExpr(idx))
 
       case _ =>
         throw new Exception(s"Can't generate access for `$dt' with `${path.mkString("[", "::", "]")}'")

@@ -1,5 +1,6 @@
 package idealised.SurfaceLanguage.Types
 
+import idealised.SurfaceLanguage.DSL.Macros
 import idealised.SurfaceLanguage._
 
 import scala.language.existentials
@@ -16,7 +17,7 @@ object TypeInference {
     throw new TypeInferenceException(expr, msg)
   }
 
-  type SubstitutionMap = scala.collection.Map[Expr[_ <: Type], Expr[_ <: Type]]
+  type SubstitutionMap = scala.collection.Map[IdentifierExpr, IdentifierExpr]
 
   def apply[T <: Type](expr: Expr[T], subs: SubstitutionMap): Expr[T] = {
     inferType(expr, subs)
@@ -66,7 +67,7 @@ object TypeInference {
 
       case LiteralExpr(d) => LiteralExpr(d)
 
-      case p: PrimitiveExpr => p.inferType(subs)
+      case p: PrimitiveExpr => VisitAndRebuild(p.inferType(subs), GetLengthVisitor(subs))
     }).asInstanceOf[Expr[T]]
   }
 
@@ -114,5 +115,20 @@ object TypeInference {
 
       case _ => throw new Exception("This should not happen")
     }
+  }
+
+  private case class GetLengthVisitor(substitutionMap: SubstitutionMap) extends VisitAndRebuild.Visitor {
+
+
+    override def apply(ae: Nat) = ae match {
+      case expr@Macros.GetLength(x) => substitutionMap(x).t match {
+        case Some(ArrayType(size, _)) => size
+        case Some(t) => error(expr.toString, t.toString, expected = "ArrayType(size, _)")
+        case None => error(expr.toString, s"Unknown identifier ${expr.x}")
+      }
+      case _ => ae
+    }
+
+    override def apply[T <: DataType](dt: T): T = Type.rebuild(this.apply, dt)
   }
 }

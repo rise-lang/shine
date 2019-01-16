@@ -39,7 +39,7 @@ object KernelGenerator {
     val outParam = createOutputParam(outT = p.t)
 
     val env = C.CodeGeneration.CodeGenerator.Environment(
-      (outParam +: inputParams).map(p => p -> C.AST.DeclRef(p.name) ).toMap, Map.empty, Map.empty)
+      (outParam +: inputParams).map(p => p -> C.AST.DeclRef(p.name) ).toMap, Map.empty)
 
     val gen = OpenCL.CodeGeneration.CodeGenerator(env, localSize, globalSize)
 

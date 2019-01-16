@@ -161,4 +161,16 @@ object Type {
     }
   }
 
+  def rebuild[T <: Type](f:Nat => Nat, in:T): T = {
+    (in match {
+      case IndexType(size) => IndexType(f(size))
+      case b:BasicType => b
+      case ArrayType(size, elemType) => ArrayType(f(size), rebuild(f, elemType))
+      case DepArrayType(size, elemType) => DepArrayType(f(size), rebuild(f, elemType))
+      case TupleType(ts @ _*) => TupleType(ts.map(t => rebuild(f, t)):_*)
+      case FunctionType(inT, outT) => FunctionType(rebuild(f, inT), rebuild(f, outT))
+      case NatDependentFunctionType(ident, outT) => NatDependentFunctionType(f(ident).asInstanceOf[NatIdentifier], rebuild(f, outT))
+      case TypeDependentFunctionType(ident, outT) => TypeDependentFunctionType(ident, rebuild(f, outT))
+    }).asInstanceOf[T]
+  }
 }

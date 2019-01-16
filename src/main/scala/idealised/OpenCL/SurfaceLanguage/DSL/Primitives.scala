@@ -1,8 +1,9 @@
 package idealised.OpenCL.SurfaceLanguage.DSL
 
 import idealised.OpenCL.SurfaceLanguage.Primitives._
-import idealised.SurfaceLanguage.DSL.{DataExpr, fun}
+import idealised.SurfaceLanguage.DSL.{DataExpr, dFun, fun}
 import idealised.SurfaceLanguage.Expr
+import idealised.SurfaceLanguage.Primitives.DepMap
 import idealised.SurfaceLanguage._
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage.Semantics._
@@ -54,6 +55,12 @@ object mapLocal {
     def apply(f: Expr[DataType -> DataType], x: DataExpr): MapLocal =
       MapLocal(dim)(f, x)
   }
+}
+
+object depMap {
+  def apply(f: Expr[DataType -> DataType]):Expr[DataType -> DataType] = fun(x => depMap(f, x))
+
+  def apply(f: Expr[DataType -> DataType], x: DataExpr): DepMap = DepMap(dFun(_ => f), x)
 }
 
 object toLocal {

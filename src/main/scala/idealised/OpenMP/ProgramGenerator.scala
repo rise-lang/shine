@@ -39,7 +39,7 @@ object ProgramGenerator {
     val p3 = substituteImplementations(p2)
 
     val env = C.CodeGeneration.CodeGenerator.Environment(
-      (outParam +: inputParams).map(p => p -> C.AST.DeclRef(p.name) ).toMap, Map.empty, Map.empty)
+      (outParam +: inputParams).map(p => p -> C.AST.DeclRef(p.name) ).toMap, Map.empty)
 
     val gen = OpenMP.CodeGeneration.CodeGenerator(env)
 
@@ -59,6 +59,8 @@ object ProgramGenerator {
       case _: BasicType =>
         identifier("output", AccType(ArrayType(Cst(1), outT.dataType)))
       case _: ArrayType =>
+        identifier("output", AccType(outT.dataType))
+      case _: DPIA.Types.DepArrayType =>
         identifier("output", AccType(outT.dataType))
       case _: RecordType => ???
       case _: DataTypeIdentifier => ???

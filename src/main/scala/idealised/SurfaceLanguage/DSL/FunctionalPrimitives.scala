@@ -51,6 +51,10 @@ object drop {
   def apply(n:Nat, array:DataExpr):Drop = Drop(n, array)
 }
 
+object slice {
+  def apply(start:Nat, length:Nat): Expr[DataType -> DataType] = drop(start) >>> take(length)
+}
+
 object reduce {
   def apply(f: Expr[DataType -> (DataType -> DataType)]): Expr[DataType -> (DataType -> DataType)] =
     fun((init, array) => reduce(f, init, array))

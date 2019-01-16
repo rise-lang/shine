@@ -3,7 +3,7 @@ package idealised.C
 import idealised.DPIA.Compilation._
 import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
-import idealised.DPIA.Types.{AccType, BasePhraseTypes, CommandType, DataType, DataTypeIdentifier, ExpType, PairType, PhraseType, RecordType, TypeCheck}
+import idealised.DPIA.Types.{AccType, BasePhraseTypes, CommandType, DataType, DataTypeIdentifier, DepArrayType, ExpType, NatDependentFunctionType, PairType, PhraseType, RecordType, TypeCheck}
 import idealised.C.AST._
 import idealised._
 import lift.arithmetic.{Cst, NamedVar, Var}
@@ -34,7 +34,7 @@ object ProgramGenerator {
     val outParam = createOutputParam(outT = p.t)
 
     val env = C.CodeGeneration.CodeGenerator.Environment(
-      (outParam +: inputParams).map(p => p -> C.AST.DeclRef(p.name) ).toMap, Map.empty, Map.empty)
+      (outParam +: inputParams).map(p => p -> C.AST.DeclRef(p.name) ).toMap, Map.empty)
 
     val gen = C.CodeGeneration.CodeGenerator(env)
 
@@ -58,6 +58,8 @@ object ProgramGenerator {
       case _: DPIA.Types.BasicType =>
         identifier("output", AccType(DPIA.Types.ArrayType(Cst(1), outT.dataType)))
       case _: DPIA.Types.ArrayType =>
+        identifier("output", AccType(outT.dataType))
+      case _: DPIA.Types.DepArrayType =>
         identifier("output", AccType(outT.dataType))
       case _: DPIA.Types.RecordType => ???
       case _: DPIA.Types.DataTypeIdentifier => ???
@@ -111,6 +113,8 @@ object ProgramGenerator {
         case _: BasicType => Set()
         case ArrayType(size, dt) =>
           size.varList ++ collectSizes(Seq(dt))
+        case DepArrayType(size, _, et) =>
+          size.varList ++ collectSizes(Seq(et))
         case RecordType(fst, snd) =>
           collectSizes(Seq(fst)) ++ collectSizes(Seq(snd))
         case _: DataTypeIdentifier => ???
@@ -124,6 +128,9 @@ object ProgramGenerator {
 
     val paramType = getDataType(i) match {
       case ArrayType(_, dt) =>
+        val baseDt = DataType.getBaseDataType(dt)
+        PointerType(gen.typ(baseDt))
+      case DepArrayType(_, _, dt) =>
         val baseDt = DataType.getBaseDataType(dt)
         PointerType(gen.typ(baseDt))
       case r : RecordType => gen.typ(r)
