@@ -17,15 +17,12 @@ final case class Iterate(n: Nat,
                          array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override val `type`: ExpType =
-    f match {
-      case NatDependentLambda(l, _) =>
-        (n: Nat) -> (m: Nat) -> (k: Nat) -> (dt: DataType) ->
-          (f :: t"($l : nat) -> exp[$l.$dt] -> exp[${l /^ n}.$dt]") ->
-          (array :: exp"[$m.$dt]") -> exp"[${m /^ n.pow(k)}.$dt]"
-
-      case _ => throw new Exception("This should not happen")
-    }
+  override val `type`: ExpType = {
+    val l = f.t.x
+    (n: Nat) -> (m: Nat) -> (k: Nat) -> (dt: DataType) ->
+      (f :: t"($l : nat) -> exp[$l.$dt] -> exp[${l /^ n}.$dt]") ->
+      (array :: exp"[$m.$dt]") -> exp"[${m /^ n.pow(k)}.$dt]"
+  }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     Iterate(fun(n), fun(m), k, fun(dt), VisitAndRebuild(f, fun), VisitAndRebuild(array, fun))

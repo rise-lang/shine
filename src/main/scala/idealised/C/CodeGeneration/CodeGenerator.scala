@@ -422,9 +422,10 @@ class CodeGenerator(val env: CodeGenerator.Environment,
         val cond = C.AST.BinaryExpr(i_, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n_))
         val increment = C.AST.Assignment(i_, C.AST.ArithmeticExpr(NamedVar(i_.name, range) + 1))
 
+        val pSub = PhraseType.substitute(NamedVar(i_.name, range), `for` = i, in = p)
+
         C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
-          C.AST.Block(immutable.Seq(updatedGen.cmd(PhraseType.substitute(NamedVar(i_.name, range), `for` = i, in = p),
-            env ))))
+          C.AST.Block(immutable.Seq(updatedGen.cmd(pSub, env ))))
     }
   }
 

@@ -1,7 +1,7 @@
 package idealised.OpenMP.SurfaceLanguage.DSL
 
 import idealised.OpenMP.SurfaceLanguage.Primitives._
-import idealised.SurfaceLanguage.DSL.{DataExpr, fun}
+import idealised.SurfaceLanguage.DSL.{DataExpr, dFun, fun}
 import idealised.SurfaceLanguage.Expr
 import idealised.SurfaceLanguage._
 import idealised.SurfaceLanguage.Types._
@@ -14,6 +14,11 @@ object mapPar {
 object mapSeq {
   def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] = fun(x => MapSeq(f, x))
   def apply(f: Expr[DataType -> DataType], x: DataExpr): MapSeq = MapSeq(f, x)
+}
+
+object depMapPar {
+  def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] = fun(x => depMapPar(f, x))
+  def apply(f: Expr[DataType -> DataType], x:DataExpr): DepMapPar = DepMapPar(dFun(_ => f), x)
 }
 
 object reducePar {

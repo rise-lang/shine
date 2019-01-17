@@ -19,8 +19,8 @@ abstract class AbstractDepMapI(n: Nat,
                                out: Phrase[AccType])
   extends CommandPrimitive with Intermediate[CommandType] {
 
-  private def makeDt1(x:Nat):DataType = DataType.substitute(x, `for`=i1, `in`=dt1)
-  private def makeDt2(x:Nat):DataType = DataType.substitute(x, `for`=i2, `in`=dt2)
+  protected def makeDt1(x:Nat):DataType = DataType.substitute(x, `for`=i1, `in`=dt1)
+  protected def makeDt2(x:Nat):DataType = DataType.substitute(x, `for`=i2, `in`=dt2)
 
   override lazy val `type`: CommandType = {
     val k = f.t.x

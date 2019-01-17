@@ -1,4 +1,5 @@
 import idealised.OpenCL.SurfaceLanguage.DSL.{depMap, reduceSeq}
+import idealised.OpenMP.SurfaceLanguage.DSL.depMapPar
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Primitives.DepMap
 import idealised.SurfaceLanguage.Types._
@@ -38,13 +39,22 @@ object dmapExample extends App{
       )
     )
 
-  val fInUse = triangleVectorMult
+  val parTriangleVectorMult: Expr[DataType -> (DataType -> DataType)] =
+    fun(DepArrayType(8, i => ArrayType(i + 1, int)))(triangle =>
+      fun(ArrayType(8, int))(vector =>
+        depMapPar(fun(row => zip(row, take(Macros.GetLength(row), vector))
+          :>> map(mult) :>> reduce(add, 0)
+        ), triangle)
+      )
+    )
+
+  val fInUse = parTriangleVectorMult
 
   val typed_f = TypeInference(fInUse, Map())
 
   typed_f.t
 
-  printKernel(triangleVectorMult)
+  printKernel(fInUse)
 
   def printKernel(expr: Expr[DataType -> (DataType -> DataType)]) {
     val kernel = idealised.OpenMP.ProgramGenerator.makeCode(TypeInference(expr, Map()).toPhrase)
