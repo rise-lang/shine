@@ -16,9 +16,9 @@ import scala.language.implicitConversions
 
 object KernelGenerator {
 
-  def makeKernel[T <: PhraseType](originalPhrase: Phrase[T],
-                                  localSize: Nat,
-                                  globalSize: Nat): OpenCL.Kernel = {
+  def makeCode[T <: PhraseType](originalPhrase: Phrase[T],
+                                localSize: Nat,
+                                globalSize: Nat): OpenCL.Kernel = {
 
     def getPhraseAndParams[_ <: PhraseType](p: Phrase[_],
                                             ps: Seq[Identifier[ExpType]]

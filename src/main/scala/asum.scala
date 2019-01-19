@@ -28,7 +28,7 @@ object asum extends App {
 
     println(s"-- $name --")
     val phrase = TypeInference(expr, Map()).convertToPhrase
-    val kernel = KernelGenerator.makeKernel(phrase, localSize = 128, globalSize = N)
+    val kernel = KernelGenerator.makeCode(phrase, localSize = 128, globalSize = N)
     println(kernel.code)
 
 //    val fun = kernel.as[ScalaFunction `(` Array[Float] `)=>` Array[Float]]
@@ -124,7 +124,7 @@ object asum extends App {
     {
       println(s"-- high level --")
       val phrase = TypeInference(high_level, Map()).convertToPhrase
-      val kernel = KernelGenerator.makeKernel(phrase, localSize = 128, globalSize = N)
+      val kernel = KernelGenerator.makeCode(phrase, localSize = 128, globalSize = N)
       println(kernel.code)
     }
 
