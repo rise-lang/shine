@@ -44,7 +44,6 @@ class triangleVectorMult extends idealised.Tests {
 
   test("Basic triangle vector multiplication compiles to syntactically correct OpenCL") {
     val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(triangleVectorMult, Map()).toPhrase, ?, ?)
-    println(kernel.code)
     SyntaxChecker(kernel.code)
   }
 

@@ -67,6 +67,8 @@ final class Assign(val dt: DataType,
         {Phrases.xmlPrinter(rhs)}
       </rhs>
     </assign>
+
+  override def toString: String = s"Assign(${dt.toString}, ${lhs.toString}, ${rhs.toString})"
 }
 
 object Assign {

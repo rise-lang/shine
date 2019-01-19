@@ -1,12 +1,12 @@
 package idealised.C
 
+import idealised.C.AST._
 import idealised.DPIA.Compilation._
 import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
-import idealised.DPIA.Types.{AccType, BasePhraseTypes, CommandType, DataType, DataTypeIdentifier, DepArrayType, ExpType, NatDependentFunctionType, PairType, PhraseType, RecordType, TypeCheck}
-import idealised.C.AST._
+import idealised.DPIA.Types.{AccType, CommandType, DataType, DataTypeIdentifier, DepArrayType, ExpType, PairType, PhraseType, TypeCheck}
 import idealised._
-import lift.arithmetic.{Cst, NamedVar, Var}
+import lift.arithmetic.{Cst, Var}
 
 import scala.collection._
 
@@ -33,10 +33,7 @@ object ProgramGenerator {
                        name: String = "foo"): Program = {
     val outParam = createOutputParam(outT = p.t)
 
-    val env = C.CodeGeneration.CodeGenerator.Environment(
-      (outParam +: inputParams).map(p => p -> C.AST.DeclRef(p.name) ).toMap, Map.empty)
-
-    val gen = C.CodeGeneration.CodeGenerator(env)
+    val gen = C.CodeGeneration.CodeGenerator()
 
     val p1 = checkTypes(p)
 
@@ -44,7 +41,10 @@ object ProgramGenerator {
 
     val p3 = substituteImplementations(p2)
 
-    val (declarations, code) = gen.generate(p3)
+    val env = C.CodeGeneration.CodeGenerator.Environment(
+      (outParam +: inputParams).map(p => p -> C.AST.DeclRef(p.name) ).toMap, Map.empty)
+
+    val (declarations, code) = gen.generate(p3, env)
 
     C.Program(
       declarations,
@@ -107,7 +107,7 @@ object ProgramGenerator {
   }
 
   def collectSizes(ts: Seq[DataType]): Set[Var] = {
-    import DPIA.Types.{ArrayType, RecordType, BasicType}
+    import DPIA.Types.{ArrayType, BasicType, RecordType}
     ts.foldLeft(Set[Var]())( (s, t) => {
       s ++ (t match {
         case _: BasicType => Set()
@@ -123,7 +123,7 @@ object ProgramGenerator {
   }
 
   def makeParam(i: Identifier[_], gen: CodeGeneration.CodeGenerator): ParamDecl = {
-    import DPIA.Types.{ArrayType, RecordType, BasicType}
+    import DPIA.Types.{ArrayType, BasicType, RecordType}
     // Turn array types into pointer types
 
     val paramType = getDataType(i) match {

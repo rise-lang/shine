@@ -2,6 +2,7 @@ package idealised.OpenCL
 
 import java.io.{File, PrintWriter}
 
+import idealised.C.AST.DeclRef
 import idealised._
 import idealised.DPIA._
 import idealised.DPIA.Compilation._
@@ -38,10 +39,7 @@ object KernelGenerator {
                          localSize: Nat, globalSize: Nat): OpenCL.Kernel = {
     val outParam = createOutputParam(outT = p.t)
 
-    val env = C.CodeGeneration.CodeGenerator.Environment(
-      (outParam +: inputParams).map(p => p -> C.AST.DeclRef(p.name) ).toMap, Map.empty)
-
-    val gen = OpenCL.CodeGeneration.CodeGenerator(env, localSize, globalSize)
+    val gen = OpenCL.CodeGeneration.CodeGenerator(localSize, globalSize)
 
     val p1 = checkTypes(p)
 
@@ -49,12 +47,22 @@ object KernelGenerator {
 
     val p3 = substituteImplementations(p2)
 
-    val (p4, intermediateAllocations) = hoistMemoryAllocations(p3)
+    val (p4, intermediateAllocations) = (p3, Seq[AllocationInfo]()) //hoistMemoryAllocations(p3)
 
     val (p5, kernelParams) = adaptKernelParameters(p4,
       makeParams(outParam, inputParams, intermediateAllocations, gen), inputParams)
 
-    val (declarations, code) = gen.generate(p5)
+    val identMap: Predef.Map[Identifier[_ <: BasePhraseTypes], DeclRef] =
+      (outParam +: inputParams).map( p => p -> C.AST.DeclRef(p.name) ).toMap
+
+    val intermediateIdentMap: Predef.Map[Identifier[_ <: BasePhraseTypes], DeclRef] =
+        intermediateAllocations.flatMap( p =>
+          Seq(Identifier(s"${p.identifier.name}_1", p.identifier.`type`.t1) -> C.AST.DeclRef(p.identifier.name),
+              Identifier(s"${p.identifier.name}_2", p.identifier.`type`.t2) -> C.AST.DeclRef(p.identifier.name) ) ).toMap
+
+    val env = C.CodeGeneration.CodeGenerator.Environment(identMap ++ intermediateIdentMap, Map.empty)
+
+    val (declarations, code) = gen.generate(p5, env)
 
     OpenCL.Kernel(
       kernel = makeKernelFunction(kernelParams, adaptKernelBody(C.AST.Block(Seq(code)))),

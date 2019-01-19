@@ -1,21 +1,20 @@
 package idealised.C.CodeGeneration
 
-import idealised._
-import idealised.DPIA._
+import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives._
 import idealised.DPIA.ImperativePrimitives._
 import idealised.DPIA.Phrases._
-import idealised.DPIA.Types._
-import idealised.SurfaceLanguage.Primitives.ForeignFunctionDeclaration
-import idealised.DPIA.DSL._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics.{BoolData, FloatData, IndexData, IntData, VectorData}
+import idealised.DPIA.Types._
+import idealised.DPIA._
 import idealised.OpenCL.FunctionalPrimitives.VectorFromScalar
 import idealised.SurfaceLanguage.Operators
+import idealised.SurfaceLanguage.Primitives.ForeignFunctionDeclaration
+import idealised._
 import lift.arithmetic._
 
-import scala.collection.immutable
-import scala.collection.mutable
+import scala.collection.{immutable, mutable}
 import scala.language.implicitConversions
 
 object CodeGenerator {
@@ -36,12 +35,11 @@ object CodeGenerator {
   type Declarations = mutable.ListBuffer[C.AST.Decl]
   type Ranges = immutable.Map[String, lift.arithmetic.Range]
 
-  def apply(env: CodeGenerator.Environment): CodeGenerator =
-    new CodeGenerator(env, mutable.ListBuffer[C.AST.Decl](), immutable.Map[String, lift.arithmetic.Range]())
+  def apply(): CodeGenerator =
+    new CodeGenerator(mutable.ListBuffer[C.AST.Decl](), immutable.Map[String, lift.arithmetic.Range]())
 }
 
-class CodeGenerator(val env: CodeGenerator.Environment,
-                    val decls: CodeGenerator.Declarations,
+class CodeGenerator(val decls: CodeGenerator.Declarations,
                     val ranges: CodeGenerator.Ranges)
   extends DPIA.Compilation.CodeGenerator[CodeGenerator.Environment, CodeGenerator.Path, C.AST.Stmt, C.AST.Expr, C.AST.Decl, C.AST.DeclRef, C.AST.Type] {
   type Environment = CodeGenerator.Environment
@@ -63,9 +61,9 @@ class CodeGenerator(val env: CodeGenerator.Environment,
   }
 
   def updatedRanges(key: String, value: lift.arithmetic.Range): CodeGenerator =
-    new CodeGenerator(env, decls, ranges.updated(key, value))
+    new CodeGenerator(decls, ranges.updated(key, value))
 
-  override def generate(phrase: Phrase[CommandType]): (scala.Seq[Decl], Stmt) = {
+  override def generate(phrase: Phrase[CommandType], env: CodeGenerator.Environment): (scala.Seq[Decl], Stmt) = {
     val stmt = cmd(phrase, env)
     (decls, stmt)
   }
@@ -111,7 +109,8 @@ class CodeGenerator(val env: CodeGenerator.Environment,
     phrase match {
       case i@Identifier(_, AccType(dt)) => generateAccess(dt,
         env.identEnv.applyOrElse(i, (_: Phrase[_]) => {
-          println(i); println(env); ???
+          println(i); println(env);
+          ???
         }), path.reverse, env)
 
       case SplitAcc(_, m, _, a) => path match {
@@ -321,9 +320,9 @@ class CodeGenerator(val env: CodeGenerator.Environment,
                                      ps: Identifier[VarType x CommandType x CommandType],
                                      p: Phrase[CommandType],
                                      env: Environment): Stmt = {
-    import C.AST._;
-    import UnaryOperator._;
+    import C.AST._
     import BinaryOperator._
+    import UnaryOperator._
 
     val ve = Identifier(s"${ps.name}_e", ps.t.t1.t1.t1)
     val va = Identifier(s"${ps.name}_a", ps.t.t1.t1.t2)

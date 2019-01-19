@@ -17,19 +17,18 @@ import lift.arithmetic._
 import scala.collection.{immutable, mutable}
 
 object CodeGenerator {
-  def apply(env: CCodeGenerator.Environment): CodeGenerator =
-    new CodeGenerator(env, mutable.ListBuffer[Decl](), immutable.Map[String, arithmetic.Range]())
+  def apply(): CodeGenerator =
+    new CodeGenerator(mutable.ListBuffer[Decl](), immutable.Map[String, arithmetic.Range]())
 }
 
-class CodeGenerator(override val env: CCodeGenerator.Environment,
-                    override val decls: CCodeGenerator.Declarations,
+class CodeGenerator(override val decls: CCodeGenerator.Declarations,
                     override val ranges: CCodeGenerator.Ranges)
-  extends CCodeGenerator(env, decls, ranges)
+  extends CCodeGenerator(decls, ranges)
 {
   override def name: String = "OpenMP"
 
   override def updatedRanges(key: String, value: lift.arithmetic.Range): CodeGenerator =
-    new CodeGenerator(env, decls, ranges.updated(key, value))
+    new CodeGenerator(decls, ranges.updated(key, value))
 
 
   override def cmd(phrase: Phrase[CommandType], env: Environment): Stmt = {
