@@ -19,7 +19,7 @@ class triangleVectorMult extends idealised.Tests {
     fun(DepArrayType(8, i => ArrayType(i + 1, int)))(triangle =>
       fun(ArrayType(8, int))(vector =>
         depMap(fun(row => zip(row, take(Macros.GetLength(row), vector))
-          :>> map(mult) :>> reduce(add, 0)
+          :>> mapSeq(mult) :>> reduce(add, 0)
         ), triangle)
       )
     )

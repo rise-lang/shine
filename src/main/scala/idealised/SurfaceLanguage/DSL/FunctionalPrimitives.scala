@@ -7,6 +7,12 @@ import idealised.SurfaceLanguage.Types._
 import lift.arithmetic.NamedVar
 
 
+object mapSeq {
+  def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] = fun(x => mapSeq(f, x))
+
+  def apply(f: Expr[DataType -> DataType], x: DataExpr): MapSeq = MapSeq(f, x)
+}
+
 object map {
   def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] = fun(x => map(f, x))
 

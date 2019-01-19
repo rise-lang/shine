@@ -81,7 +81,7 @@ object dot extends App {
   val add = fun((x, a) => x + a)
 
   val high_level = fun(xsT)(xs => fun(ysT)(ys =>
-    reduce(add, 0.0f) o map(mult) $ zip(xs, ys)
+    reduce(add, 0.0f) o mapSeq(mult) $ zip(xs, ys)
   ))
 
 //  {

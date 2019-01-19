@@ -17,13 +17,13 @@ object dmapExample extends App{
 
   val xsT = DepArrayType(8, i => ArrayType(i + 1, int))
 
-  val addOne = fun(xsT)(array => DepMap(dFun(_ => fun(x => map(fun(y => y + 1), x) )), array))
+  val addOne = fun(xsT)(array => DepMap(dFun(_ => fun(x => mapSeq(fun(y => y + 1), x) )), array))
 
   val reduceByRow = fun(xsT)(array => depMap(fun(x => reduceSeq(fun(y => fun(z => y + z)), 0, x) ), array))
 
-  val takeAndDrop = fun(ArrayType(8, int))(array => map(fun(x => x), take(2, drop(3, array))))
+  val takeAndDrop = fun(ArrayType(8, int))(array => mapSeq(fun(x => x), take(2, drop(3, array))))
 
-  val sliceTest = fun(ArrayType(8, int))(array => map(fun(x => x), array :>> slice(3, 2) ))
+  val sliceTest = fun(ArrayType(8, int))(array => mapSeq(fun(x => x), array :>> slice(3, 2) ))
 
 
   val mult = fun(x => x._1 * x._2)
@@ -34,7 +34,7 @@ object dmapExample extends App{
     fun(DepArrayType(8, i => ArrayType(i + 1, int)))(triangle =>
       fun(ArrayType(8, int))(vector =>
         depMap(fun(row => zip(row, take(Macros.GetLength(row), vector))
-          :>> map(mult) :>> reduce(add, 0)
+          :>> mapSeq(mult) :>> reduce(add, 0)
         ), triangle)
       )
     )
@@ -43,7 +43,7 @@ object dmapExample extends App{
     fun(DepArrayType(8, i => ArrayType(i + 1, int)))(triangle =>
       fun(ArrayType(8, int))(vector =>
         depMapPar(fun(row => zip(row, take(Macros.GetLength(row), vector))
-          :>> map(mult) :>> reduce(add, 0)
+          :>> mapSeq(mult) :>> reduce(add, 0)
         ), triangle)
       )
     )

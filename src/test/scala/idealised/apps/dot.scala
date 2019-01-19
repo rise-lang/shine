@@ -16,7 +16,7 @@ class dot extends idealised.Tests {
   val add = fun((x, a) => x + a)
 
   val high_level: Expr[DataType -> (DataType -> DataType)] = fun(xsT)(xs => fun(ysT)(ys =>
-    reduce(add, 0.0f) o map(mult) $ zip(xs, ys)
+    reduce(add, 0.0f) o mapSeq(mult) $ zip(xs, ys)
   ))
 
   test("High level dot product type inference works") {

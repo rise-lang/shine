@@ -88,7 +88,7 @@ final case class IterateIAcc(n: Nat,
 
     `new`(dt"[${`n^k*m`}.$dt]", addressSpace, buf1 =>
       `new`(dt"[${`n^k*m`}.$dt]", addressSpace, buf2 =>
-        SubstituteImplementations(MapI(`n^k*m`, dt, dt,
+        SubstituteImplementations(MapSeqI(`n^k*m`, dt, dt,
           λ(exp"[$dt]")(e => λ(acc"[$dt]")(a => a := e)), in, buf1.wr), env) `;`
           dblBufFor(`n^k*m`, m, k, dt, addressSpace, buf1, buf2,
             _Λ_(l => λ(acc"[${`n^k*m`}.$dt]")(a => λ(exp"[${`n^k*m`}.$dt]")(e =>
@@ -97,7 +97,7 @@ final case class IterateIAcc(n: Nat,
                   (TakeAcc(`n^k*m`, n.pow(k - l - 1) * m, dt, a))
                   (Take(`n^k*m`, n.pow(k - l    ) * m, dt, e)), env)))),
             λ(exp"[$m.$dt]")(x =>
-              SubstituteImplementations(MapI(m, dt, dt,
+              SubstituteImplementations(MapSeqI(m, dt, dt,
                 λ(exp"[$dt]")(e => λ(acc"[$dt]")(a => a := e)), x, out), env)))))
   }
 
@@ -116,7 +116,7 @@ final case class IterateIAcc(n: Nat,
                 (TakeAcc(`n^(k-1)*m`, n.pow(k - (l + 1) - 1) * m, dt, a))
                 (Take(`n^(k-1)*m`, n.pow(k - (l + 1)    ) * m, dt, e)), env)))),
           λ(exp"[$m.$dt]")(x =>
-            SubstituteImplementations(MapI(m, dt, dt,
+            SubstituteImplementations(MapSeqI(m, dt, dt,
               λ(exp"[$dt]")(e => λ(acc"[$dt]")(a => a := e)), x, out), env)))))
   }
 

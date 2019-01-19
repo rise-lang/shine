@@ -23,7 +23,7 @@ object nbody extends App {
 
   {
     val f = fun(ArrayType(SizeVar("N"), float))(input =>
-      map( update(1.0f)(2.0f)(3.0f) ) $ input
+      mapSeq( update(1.0f)(2.0f)(3.0f) ) $ input
     )
     val phrase = TypeInference(f, Map()).convertToPhrase
     val program = C.ProgramGenerator.makeCode(phrase)

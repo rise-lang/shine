@@ -12,7 +12,7 @@ import idealised.OpenCL.FunctionalPrimitives.VectorFromScalar
 import idealised.SurfaceLanguage.Operators
 import idealised.SurfaceLanguage.Primitives.ForeignFunctionDeclaration
 import idealised._
-import lift.arithmetic._
+import lift.arithmetic.{NamedVar, _}
 
 import scala.collection.{immutable, mutable}
 import scala.language.implicitConversions
@@ -109,9 +109,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     phrase match {
       case i@Identifier(_, AccType(dt)) => generateAccess(dt,
         env.identEnv.applyOrElse(i, (_: Phrase[_]) => {
-          println(i); println(env);
-          ???
-        }), path.reverse, env)
+          println(i); println(env); ???
+        }), path, env)
 
       case SplitAcc(_, m, _, a) => path match {
         case i :: ps => acc(a, env, i / m :: i % m :: ps)
@@ -166,7 +165,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case i@Identifier(_, ExpType(dt)) => generateAccess(dt,
         env.identEnv.applyOrElse(i, (_: Phrase[_]) => {
           println(i); println(env); ???
-        }), path.reverse, env)
+        }), path, env)
 
       case Phrases.Literal(n) => (path, n.dataType) match {
         case (Nil, _: IndexType) => codeGenLiteral(n)
@@ -255,6 +254,11 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
         case Nil =>
           C.AST.Literal("(" + s"($st[$n]){" + C.AST.Printer(exp(e, env, Nil)) + "})")
+      }
+
+      case Map(n, dt, _, f, e) => path match {
+        case i :: ps =>  exp( f( Idx(n, dt, Literal(IndexData(i, IndexType(n))), e) ), env, ps )
+        case Nil => error(s"Expected path to be not empty")
       }
 
       case Idx(_, _, i, e) => codeGenIdx(i, e, env, path)

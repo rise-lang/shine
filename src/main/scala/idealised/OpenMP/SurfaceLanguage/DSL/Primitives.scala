@@ -11,11 +11,6 @@ object mapPar {
   def apply(f: Expr[DataType -> DataType], x: DataExpr): MapPar = MapPar(f, x)
 }
 
-object mapSeq {
-  def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] = fun(x => MapSeq(f, x))
-  def apply(f: Expr[DataType -> DataType], x: DataExpr): MapSeq = MapSeq(f, x)
-}
-
 object depMapPar {
   def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] = fun(x => depMapPar(f, x))
   def apply(f: Expr[DataType -> DataType], x:DataExpr): DepMapPar = DepMapPar(dFun(_ => f), x)

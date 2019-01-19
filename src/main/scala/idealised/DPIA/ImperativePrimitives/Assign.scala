@@ -2,7 +2,7 @@ package idealised.DPIA.ImperativePrimitives
 
 import idealised.DPIA.Compilation.CodeGenerator
 import idealised.DPIA.DSL._
-import idealised.DPIA.IntermediatePrimitives.{MapI, MapVecI}
+import idealised.DPIA.IntermediatePrimitives.{MapSeqI, MapVecI}
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
@@ -102,7 +102,7 @@ object Assign {
       case _: ScalarType | _: RecordType => A := E
 
       case ArrayType(n, et) =>
-        MapI(n, et, et, λ(ExpType(et))(x => λ(AccType(et))(a => a :=|et| x )), E, A)
+        MapSeqI(n, et, et, λ(ExpType(et))(x => λ(AccType(et))(a => a :=|et| x )), E, A)
 
 //      case RecordType(dt1, dt2) =>
 //        (recordAcc1(dt1, dt2, A) :=|dt1| fst(E)) `;` (recordAcc2(dt1, dt2, A) :=|dt2| snd(E))

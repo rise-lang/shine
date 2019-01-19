@@ -2,11 +2,10 @@ package idealised.OpenCL.SurfaceLanguage.DSL
 
 import idealised.OpenCL.SurfaceLanguage.Primitives._
 import idealised.SurfaceLanguage.DSL.{DataExpr, dFun, fun}
-import idealised.SurfaceLanguage.Expr
 import idealised.SurfaceLanguage.Primitives.DepMap
-import idealised.SurfaceLanguage._
-import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage.Semantics._
+import idealised.SurfaceLanguage.Types._
+import idealised.SurfaceLanguage.{Expr, _}
 
 import scala.language.reflectiveCalls
 
@@ -21,14 +20,6 @@ object mapGlobal {
     def apply(f: Expr[DataType -> DataType], x: DataExpr): MapGlobal =
       MapGlobal(dim)(f, x)
   }
-}
-
-object mapSeq {
-  def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] =
-    fun(x => mapSeq(f, x))
-
-  def apply(f: Expr[DataType -> DataType], x: DataExpr) =
-    MapSeq(f, x)
 }
 
 object mapWorkgroup {
