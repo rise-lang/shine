@@ -2,7 +2,8 @@ package idealised.DPIA.FunctionalPrimitives
 
 import idealised.DPIA.Compilation.RewriteToImperative
 import idealised.DPIA.DSL._
-import idealised.DPIA.IntermediatePrimitives.{AbstractMapI, MapI}
+import idealised.DPIA.ImperativePrimitives.MapAcc
+import idealised.DPIA.IntermediatePrimitives.{AbstractMapI, MapSeqI}
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
@@ -78,13 +79,36 @@ abstract class AbstractMap(n: Nat,
     })
 }
 
+final case class MapSeq(n: Nat,
+                        dt1: DataType,
+                        dt2: DataType,
+                        f: Phrase[ExpType -> ExpType],
+                        array: Phrase[ExpType])
+  extends AbstractMap(n, dt1, dt2, f, array) {
+  override def makeMap: (Nat, DataType, DataType, Phrase[ExpType -> ExpType], Phrase[ExpType]) => MapSeq = MapSeq
+
+  override def makeMapI: (Nat, DataType, DataType, Phrase[ExpType -> (AccType -> CommandType)], Phrase[ExpType], Phrase[AccType]) => MapSeqI = MapSeqI
+}
+
 final case class Map(n: Nat,
                      dt1: DataType,
                      dt2: DataType,
                      f: Phrase[ExpType -> ExpType],
                      array: Phrase[ExpType])
   extends AbstractMap(n, dt1, dt2, f, array) {
-  override def makeMap = Map
+  override def makeMap: (Nat, DataType, DataType, Phrase[ExpType -> ExpType], Phrase[ExpType]) => AbstractMap = Map
 
-  override def makeMapI = MapI
+  override def makeMapI: (Nat, DataType, DataType, Phrase[ExpType -> (AccType -> CommandType)], Phrase[ExpType], Phrase[AccType]) => AbstractMapI = ???
+
+  override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
+    import RewriteToImperative._
+
+    ??? //acc(array)(MapAcc(n, dt1, dt2, λ(acc"[$dt1]")(x => x), A))
+  }
+
+  override def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
+    import RewriteToImperative._
+
+    con(array)(λ(exp"[$n.$dt1]")(x => C( Map(n, dt1, dt2, f, x) )))
+  }
 }

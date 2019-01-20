@@ -5,7 +5,8 @@ import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType}
 import idealised.DPIA._
 import idealised._
 import lift.arithmetic.{?, ContinuousRange, PosInf, RangeAdd}
-import opencl.generator.OpenCLAST._
+import idealised.C.AST._
+import idealised.OpenCL.AST._
 import opencl.generator.{OclFunction, get_local_id, get_local_size}
 
 
@@ -21,15 +22,16 @@ final case class ParForLocal(dim: Int)(override val n: Nat,
 
   override val name: String = freshName("l_id_")
 
-  override lazy val init: OclFunction = get_local_id(dim, RangeAdd(0, env.localSize, 1))
+//  override lazy val init: OclFunction = get_local_id(dim, RangeAdd(0, env.localSize, 1))
+
+  override lazy val init: OclFunction = get_local_id(dim, RangeAdd(0, ?, 1))
 
   override lazy val step: OclFunction = get_local_size(dim, local_size_range)
 
-  lazy val local_size_range: RangeAdd =
-    if (env.localSize == ?) ContinuousRange(1, PosInf)
-    else RangeAdd(env.localSize, env.localSize + 1, 1)
+  lazy val local_size_range: RangeAdd = ContinuousRange(1, PosInf)
+//    if (env.localSize == ?) ContinuousRange(1, PosInf)
+//    else RangeAdd(env.localSize, env.localSize + 1, 1)
 
-  override def synchronize: OclAstNode with BlockMember =
-    OpenCLCode("barrier(CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE);")
+  override def synchronize: Stmt = Barrier(local = true, global = true)
 
 }

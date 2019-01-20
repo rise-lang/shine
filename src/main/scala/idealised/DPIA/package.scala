@@ -2,7 +2,7 @@ package idealised
 
 import idealised.DPIA.Phrases.Phrase
 import idealised.DPIA.Types.{PhraseTypeParser, _}
-import lift.arithmetic.{ArithExpr, NamedVar}
+import lift.arithmetic.{ArithExpr, NamedVar, Var}
 
 import scala.language.{implicitConversions, reflectiveCalls}
 
@@ -18,6 +18,20 @@ package object DPIA {
 
   type Nat = ArithExpr
   type NatIdentifier = NamedVar
+
+  object Nat {
+    def substitute(ae: Nat, `for`: NatIdentifier, in: Nat): Nat = {
+      in.visitAndRebuild {
+        case v: Var =>
+          if (`for`.name == v.name) {
+            ae
+          } else {
+            v
+          }
+        case e => e
+      }
+    }
+  }
 
   object freshName {
     var counter = 0

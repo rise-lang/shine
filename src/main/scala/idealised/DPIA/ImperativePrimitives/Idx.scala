@@ -15,7 +15,7 @@ final case class Idx(n: Nat,
                      dt: DataType,
                      index: Phrase[ExpType],
                      array: Phrase[ExpType])
-  extends ExpPrimitive with GeneratableExp {
+  extends ExpPrimitive {
 
   override val `type`: ExpType =
     (n: Nat) -> (dt: DataType) ->
@@ -39,10 +39,6 @@ final case class Idx(n: Nat,
       case (ArrayData(xs), IntData(i)) => xs(i)
       case _ => throw new Exception("This should not happen")
     }
-  }
-
-  override def codeGen[Environment, Path, Stmt, Expr, Decl, Ident](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl, Ident])(env: Environment, path: Path): Expr = {
-    gen.codeGenIdx(index, array, env, path, gen)
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {

@@ -62,6 +62,15 @@ abstract class AbstractMap(f: Expr[DataType -> DataType],
 
 }
 
+final case class MapSeq(f: Expr[DataType -> DataType], array: DataExpr,
+                        override val t: Option[DataType] = None)
+  extends AbstractMap(f, array, t) {
+
+  override def makeDPIAMap = DPIA.FunctionalPrimitives.MapSeq
+
+  override def makeMap = MapSeq
+}
+
 final case class Map(f: Expr[DataType -> DataType], array: DataExpr,
                      override val t: Option[DataType] = None)
   extends AbstractMap(f, array, t) {

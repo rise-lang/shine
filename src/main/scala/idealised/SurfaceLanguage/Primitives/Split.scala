@@ -6,7 +6,7 @@ import idealised.{DPIA, SurfaceLanguage}
 import idealised.SurfaceLanguage.Types._
 
 final case class Split(n: Nat, array: DataExpr,
-                       override val t: Option[DataType] = None)
+                       override val t: Option[DataType])
   extends PrimitiveExpr
 {
 

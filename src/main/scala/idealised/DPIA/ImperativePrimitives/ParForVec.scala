@@ -19,12 +19,4 @@ final case class ParForVec(override val n: Nat,
 
   override def makeParFor:
   (Nat, ScalarType, Phrase[AccType], Phrase[->[ExpType, ->[AccType, CommandType]]]) => ParForVec = ParForVec
-
-  override def codeGen[Environment, Path, Stmt, Expr, Decl, Ident](gen: Compilation.CodeGenerator[Environment, Path, Stmt, Expr, Decl, Ident])
-                                                                  (env: Environment): Stmt = {
-    body match {
-      case Lambda(i, Lambda(o, p)) => gen.codeGenParForVec(n, dt, out, i, o, p, env, gen)
-      case _ => error(s"Expected two nested lambdas")
-    }
-  }
 }

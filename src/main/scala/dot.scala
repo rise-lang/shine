@@ -27,7 +27,7 @@ object dot extends App {
   def printOpenCLKernel1(name: String, expr: Expr[DataType -> (DataType -> DataType)]): Unit = {
     println(s"-- $name --")
 
-    val kernel = KernelGenerator.makeKernel(TypeInference(expr, Map()).toPhrase, localSize = 128, globalSize = N)
+    val kernel = KernelGenerator.makeCode(TypeInference(expr, Map()).toPhrase, localSize = 128, globalSize = N)
     println(kernel.code)
 
     val fun = kernel.as[ScalaFunction `(` Array[Float] `,` Array[Float] `)=>` Array[Float]]
@@ -54,7 +54,7 @@ object dot extends App {
 
   def printOpenCLKernel2(name: String, expr: Expr[DataType -> DataType]): Unit = {
     println(s"-- $name --")
-    val kernel = KernelGenerator.makeKernel(TypeInference(expr, Map()).toPhrase, localSize = 128, globalSize = N)
+    val kernel = KernelGenerator.makeCode(TypeInference(expr, Map()).toPhrase, localSize = 128, globalSize = N)
     println(kernel.code)
 
     val fun = kernel.as[ScalaFunction `(` Array[Float] `)=>` Array[Float]]
@@ -81,7 +81,7 @@ object dot extends App {
   val add = fun((x, a) => x + a)
 
   val high_level = fun(xsT)(xs => fun(ysT)(ys =>
-    reduce(add, 0.0f) o map(mult) $ zip(xs, ys)
+    reduce(add, 0.0f) o mapSeq(mult) $ zip(xs, ys)
   ))
 
 //  {
@@ -159,7 +159,7 @@ object dot extends App {
     println(program.code)
   }
 
-  sys.exit(1)
+//  sys.exit(1)
 
   // OpenCL specific stuff
 

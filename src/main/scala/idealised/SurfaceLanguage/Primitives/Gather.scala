@@ -10,11 +10,9 @@ import scala.language.{postfixOps, reflectiveCalls}
 
 final case class Gather(idxF: Expr[DataType ->DataType],
                         array: DataExpr,
-                        override val t: Option[DataType] = None)
+                        override val t: Option[DataType])
   extends PrimitiveExpr
 {
-
-
   override def convertToPhrase: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
     array.t match {
       case Some(ArrayType(n, dt)) =>
@@ -34,8 +32,7 @@ final case class Gather(idxF: Expr[DataType ->DataType],
           TypeInference(idxF, subs) |> (idxF =>
             idxF.t match {
               case Some(FunctionType(IndexType(m: NatIdentifier), _)) =>
-                val idxF_ = Type.substitute(n, `for` = m, in = idxF)
-                Gather(idxF_, array, array.t)
+                Gather(Type.substitute(n, `for` = m, in = idxF), array, array.t)
               case Some(FunctionType(IndexType(m1), IndexType(m2))) =>
                 if (n == m1 && n == m2) {
                   Gather(idxF, array, array.t)
@@ -52,6 +49,6 @@ final case class Gather(idxF: Expr[DataType ->DataType],
   }
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): DataExpr = {
-    Gather(VisitAndRebuild(idxF, f), VisitAndRebuild(array, f))
+    Gather(VisitAndRebuild(idxF, f), VisitAndRebuild(array, f), t)
   }
 }

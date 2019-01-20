@@ -34,7 +34,7 @@ object scal extends App {
     TypeCheck(lambda)
 
     println(s"-- $name --")
-    val kernel = KernelGenerator.makeKernel(lambda, localSize = 128, globalSize = N)
+    val kernel = KernelGenerator.makeCode(lambda, localSize = 128, globalSize = N)
     println(kernel.code)
 
     val fun = kernel.as[ScalaFunction `(` Array[Float] `,` Float `)=>` Array[Float]]
@@ -66,7 +66,7 @@ object scal extends App {
   }
 
   val high_level = fun(inputT)(input => fun(float)(alpha =>
-    map(fun(x => alpha * x ), input)
+    mapSeq(fun(x => alpha * x ), input)
   ) )
 
   {

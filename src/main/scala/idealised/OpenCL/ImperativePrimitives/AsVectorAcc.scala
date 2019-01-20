@@ -4,8 +4,6 @@ import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised.OpenCL.CodeGeneration.OpenCLOldCodeGenerator
-import idealised.OpenCL.ViewAcc
 import ir.Type
 import lift.arithmetic.Cst
 import opencl.generator.OpenCLAST.Expression
@@ -16,7 +14,7 @@ final case class AsVectorAcc(n: Nat,
                              m: Nat,
                              dt: ScalarType,
                              array: Phrase[AccType])
-  extends AccPrimitive with ViewAcc {
+  extends AccPrimitive {
 
   override lazy val `type`: AccType =
     (n: Nat) -> (m: Nat) -> (dt: ScalarType) ->
@@ -29,28 +27,28 @@ final case class AsVectorAcc(n: Nat,
 
   override def eval(s: Store): AccIdentifier = ???
 
-  override def toOpenCL(env: OpenCLOldCodeGenerator.Environment,
-                        value: Expression,
-                        dt: DataType,
-                        arrayAccess: List[Nat],
-                        tupleAccess: List[Nat]): Expression = {
-    val i :: is = arrayAccess
-    OpenCLOldCodeGenerator.acc(array, value, env, dt, (i / n) :: is, tupleAccess)
-//    // Similar to Join
-//    val idx = arrayAccess.head
-//    val stack = arrayAccess.tail
-//
-//    val chunkId = idx._1 / n
-//    // we want to access element 0 ...
-//    val chunkElemId: Nat = 0 //idx._1 % n
-//    // ... and there is 1 of it.
-//    val l = Type.getLengths(DataType.toType(t.dataType)).reduce(_ * _)
-//    assert(l == (1: Nat))
-//
-//    val newAs = (chunkId, l * n) ::(chunkElemId, l) :: stack
-//
-//    CodeGenerator.acc(array, value, env, dt, newAs, tupleAccess)
-  }
+//  override def toOpenCL(env: OpenCLOldCodeGenerator.Environment,
+//                        value: Expression,
+//                        dt: DataType,
+//                        arrayAccess: List[Nat],
+//                        tupleAccess: List[Nat]): Expression = {
+//    val i :: is = arrayAccess
+//    OpenCLOldCodeGenerator.acc(array, value, env, dt, (i / n) :: is, tupleAccess)
+////    // Similar to Join
+////    val idx = arrayAccess.head
+////    val stack = arrayAccess.tail
+////
+////    val chunkId = idx._1 / n
+////    // we want to access element 0 ...
+////    val chunkElemId: Nat = 0 //idx._1 % n
+////    // ... and there is 1 of it.
+////    val l = Type.getLengths(DataType.toType(t.dataType)).reduce(_ * _)
+////    assert(l == (1: Nat))
+////
+////    val newAs = (chunkId, l * n) ::(chunkElemId, l) :: stack
+////
+////    CodeGenerator.acc(array, value, env, dt, newAs, tupleAccess)
+//  }
 
   override def prettyPrint: String = s"(asVectorAcc ${PrettyPhrasePrinter(array)})"
 

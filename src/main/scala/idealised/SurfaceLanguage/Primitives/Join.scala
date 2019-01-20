@@ -5,7 +5,7 @@ import idealised.SurfaceLanguage.PrimitiveExpr
 import idealised.{DPIA, SurfaceLanguage}
 import idealised.SurfaceLanguage.Types._
 
-final case class Join(array: DataExpr, override val t: Option[DataType] = None)
+final case class Join(array: DataExpr, override val t: Option[DataType])
   extends PrimitiveExpr
 {
   override def convertToPhrase: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {

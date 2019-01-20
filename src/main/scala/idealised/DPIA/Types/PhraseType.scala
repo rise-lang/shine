@@ -3,7 +3,7 @@ package idealised.DPIA.Types
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics.IndexData
 import idealised.DPIA._
-import lift.arithmetic.{ArithExpr, Var}
+import lift.arithmetic.Var
 
 sealed trait PhraseType
 
@@ -55,7 +55,7 @@ object PhraseType {
                                   in: Phrase[T]): Phrase[T] = {
 
     object Visitor extends Phrases.VisitAndRebuild.Visitor {
-      override def apply[DT <: DataType](in: DT): DT = substitute(dt, `for`, in)
+      override def apply[DT <: DataType](in: DT): DT = DataType.substitute(dt, `for`, in)
     }
 
     val p = Phrases.VisitAndRebuild(in, Visitor)
@@ -64,23 +64,11 @@ object PhraseType {
 
   }
 
-  private def substitute[T <: DataType](dt: DataType, `for`: DataType, in: T): T = {
-    if (`for` == in) {
-      dt.asInstanceOf[T]
-    } else {
-      (in match {
-        case _: BasicType => in
-        case a: ArrayType => ArrayType(a.size, substitute(dt, `for`, a.elemType))
-        case r: RecordType => RecordType(substitute(dt, `for`, r.fst), substitute(dt, `for`, r.snd))
-      }).asInstanceOf[T]
-    }
-  }
-
   def substitute(dt: DataType, `for`: DataType, in: PhraseType): PhraseType = {
     in match {
       case b: BasePhraseTypes => b match {
-        case e: ExpType => ExpType(substitute(dt, `for`, e.dataType))
-        case a: AccType => AccType(substitute(dt, `for`, a.dataType))
+        case e: ExpType => ExpType(DataType.substitute(dt, `for`, e.dataType))
+        case a: AccType => AccType(DataType.substitute(dt, `for`, a.dataType))
       }
       case c: CommandType => c
       case p: PairType[_, _] =>
@@ -110,17 +98,17 @@ object PhraseType {
               Continue(p, this)
             }
           case Literal(IndexData(index, IndexType(size))) =>
-            val newIndex = substitute(ae, `for`, in = index)
-            val newSize = substitute(ae, `for`, in = size)
+            val newIndex = Nat.substitute(ae, `for`, in = index)
+            val newSize = Nat.substitute(ae, `for`, in = size)
             Stop(Literal(IndexData(newIndex, IndexType(newSize))).asInstanceOf[Phrase[T2]])
           case _ =>
             Continue(p, this)
         }
       }
 
-      override def apply(e: Nat): Nat = substitute(ae, `for`, e)
+      override def apply(e: Nat): Nat = Nat.substitute(ae, `for`, e)
 
-      override def apply[DT <: DataType](dt: DT): DT = substitute(ae, `for`, dt)
+      override def apply[DT <: DataType](dt: DT): DT = DataType.substitute(ae, `for`, dt)
     }
 
     val p = Phrases.VisitAndRebuild(in, Visitor)
@@ -129,35 +117,12 @@ object PhraseType {
 
   }
 
-  private def substitute[T <: DataType](ae: Nat, `for`: Nat, in: T): T = {
-    (in match {
-      case i: IndexType => IndexType(ArithExpr.substitute(i.size, Map((`for`, ae))))
-      case b: BasicType => b
-      case a: ArrayType =>
-        ArrayType(ArithExpr.substitute(a.size, Map((`for`, ae))),
-          substitute(ae, `for`, a.elemType))
-      case r: RecordType =>
-        RecordType(substitute(ae, `for`, r.fst), substitute(ae, `for`, r.snd))
-    }).asInstanceOf[T]
-  }
-
-  private def substitute(ae: Nat, `for`: NatIdentifier, in: Nat): Nat = {
-    in.visitAndRebuild {
-      case v: Var =>
-        if (`for`.name == v.name) {
-          ae
-        } else {
-          v
-        }
-      case e => e
-    }
-  }
 
   def substitute(ae: Nat, `for`: Nat, in: PhraseType): PhraseType = {
     in match {
       case b: BasePhraseTypes => b match {
-        case e: ExpType => ExpType(substitute(ae, `for`, e.dataType))
-        case a: AccType => AccType(substitute(ae, `for`, a.dataType))
+        case e: ExpType => ExpType(DataType.substitute(ae, `for`, e.dataType))
+        case a: AccType => AccType(DataType.substitute(ae, `for`, a.dataType))
       }
       case c: CommandType => c
       case p: PairType[_, _] =>

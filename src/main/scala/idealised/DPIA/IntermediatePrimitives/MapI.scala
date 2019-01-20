@@ -66,21 +66,17 @@ abstract class AbstractMapI(n: Nat,
     })
 }
 
-final case class MapI(n: Nat,
-                      dt1: DataType,
-                      dt2: DataType,
-                      f: Phrase[ExpType -> (AccType -> CommandType)],
-                      in: Phrase[ExpType],
-                      out: Phrase[AccType])
+final case class MapSeqI(n: Nat,
+                         dt1: DataType,
+                         dt2: DataType,
+                         f: Phrase[ExpType -> (AccType -> CommandType)],
+                         in: Phrase[ExpType],
+                         out: Phrase[AccType])
   extends AbstractMapI(n, dt1, dt2, f, in, out) {
 
-  override def makeMapI = MapI
+  override def makeMapI = MapSeqI
 
   override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
-    // TODO: WE MAKE A DECISION HERE
-//    `parFor`(n, dt2, out, i => a =>
-//      SubstituteImplementations(f(in `@` i)(a), env)
-//    )
     `for`(n, i =>
       SubstituteImplementations(f(in `@` i)(out `@` i), env)
     )

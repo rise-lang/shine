@@ -78,7 +78,7 @@ object gemm extends App {
     TypeCheck(lambda)
 
     println(s"-- $name --")
-    val kernel = KernelGenerator.makeKernel(lambda, localSize = 8, globalSize = N)
+    val kernel = KernelGenerator.makeCode(lambda, localSize = 8, globalSize = N)
     println(kernel.code)
 
 //    val fun = kernel.as[

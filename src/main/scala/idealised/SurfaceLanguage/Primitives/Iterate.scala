@@ -10,7 +10,7 @@ import lift.arithmetic._
 final case class Iterate(k: Nat,
                          f: Expr[`(nat)->`[DataType -> DataType]],
                          array: DataExpr,
-                         override val t: Option[DataType] = None)
+                         override val t: Option[DataType])
   extends PrimitiveExpr
 {
 

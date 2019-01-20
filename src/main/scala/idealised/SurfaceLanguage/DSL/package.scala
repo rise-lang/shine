@@ -84,8 +84,8 @@ package object DSL {
   }
 
   implicit class ExpPhraseExtensions(e: DataExpr) {
-    def _1 = Fst(e)
-    def _2 = Snd(e)
+    def _1 = Fst(e, None)
+    def _2 = Snd(e, None)
   }
 
 //  implicit class ExpPhraseExtensions(e: DataExpr) {

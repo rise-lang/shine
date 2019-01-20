@@ -1,8 +1,9 @@
 package idealised.SurfaceLanguage.Types
 
+import idealised.DPIA.freshName
 import idealised.SurfaceLanguage._
 import idealised.SurfaceLanguage.Semantics._
-import lift.arithmetic.{ArithExpr, NamedVar}
+import lift.arithmetic.{ArithExpr, NamedVar, RangeAdd}
 
 sealed trait Type
 
@@ -16,6 +17,17 @@ sealed trait ComposedType extends DataType
 
 final case class ArrayType(size: Nat, elemType: DataType) extends ComposedType {
   override def toString: String = s"$size.$elemType"
+}
+
+final case class DepArrayType(size:Nat, elemType: `(nat)->dt`) extends ComposedType {
+  override def toString: String = s"$size.$elemType"
+}
+
+object DepArrayType {
+  def apply(size:Nat, f:Nat => DataType): DepArrayType = {
+    val newName = NamedVar(freshName(), RangeAdd(0, size, 1))
+    DepArrayType(size, NatDependentFunctionType(newName, f(newName)))
+  }
 }
 
 final case class TupleType(elemTypes: DataType*) extends ComposedType {
@@ -62,6 +74,13 @@ final case class TypeDependentFunctionType[T <: Type](x: DataTypeIdentifier, t: 
 
 final case class NatDependentFunctionType[T <: Type](x: NatIdentifier, t: T) extends Type
 
+object NatDependentFunctionType {
+  def apply[T <: Type](f: NatIdentifier => T): NatDependentFunctionType[T] = {
+    val newX = NamedVar(freshName())
+    NatDependentFunctionType(newX, f(newX))
+  }
+}
+
 object Type {
 
   def substitute[T <: Type](dt: DataType,
@@ -107,7 +126,7 @@ object Type {
 
   }
 
-  private def substitute[T <: DataType](dt: DataType, `for`: DataType, in: T): T = {
+  def substitute[T <: DataType](dt: DataType, `for`: DataType, in: T): T = {
     if (`for` == in) {
       dt.asInstanceOf[T]
     } else {
@@ -119,7 +138,7 @@ object Type {
     }
   }
 
-  private def substitute[T <: DataType](ae: Nat, `for`: NatIdentifier, in: T): T = {
+  def substitute[T <: DataType](ae: Nat, `for`: NatIdentifier, in: T): T = {
     (in match {
       case IndexType(size) =>
         IndexType(substitute(ae, `for`, size))
@@ -142,4 +161,16 @@ object Type {
     }
   }
 
+  def rebuild[T <: Type](f:Nat => Nat, in:T): T = {
+    (in match {
+      case IndexType(size) => IndexType(f(size))
+      case b:BasicType => b
+      case ArrayType(size, elemType) => ArrayType(f(size), rebuild(f, elemType))
+      case DepArrayType(size, elemType) => DepArrayType(f(size), rebuild(f, elemType))
+      case TupleType(ts @ _*) => TupleType(ts.map(t => rebuild(f, t)):_*)
+      case FunctionType(inT, outT) => FunctionType(rebuild(f, inT), rebuild(f, outT))
+      case NatDependentFunctionType(ident, outT) => NatDependentFunctionType(f(ident).asInstanceOf[NatIdentifier], rebuild(f, outT))
+      case TypeDependentFunctionType(ident, outT) => TypeDependentFunctionType(ident, rebuild(f, outT))
+    }).asInstanceOf[T]
+  }
 }

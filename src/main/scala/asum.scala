@@ -28,7 +28,7 @@ object asum extends App {
 
     println(s"-- $name --")
     val phrase = TypeInference(expr, Map()).convertToPhrase
-    val kernel = KernelGenerator.makeKernel(phrase, localSize = 128, globalSize = N)
+    val kernel = KernelGenerator.makeCode(phrase, localSize = 128, globalSize = N)
     println(kernel.code)
 
 //    val fun = kernel.as[ScalaFunction `(` Array[Float] `)=>` Array[Float]]
@@ -56,7 +56,7 @@ object asum extends App {
   val add = fun(x => fun(a => x + a))
 
   val high_level = fun(inputT)(input =>
-    reduce(add, 0.0f) o map(abs(float)) $ input)
+    reduce(add, 0.0f) o mapSeq(abs(float)) $ input)
 
   {
     println(s"-- high level --")
@@ -119,12 +119,12 @@ object asum extends App {
   {
     val abs = (t: DataType) => fun(x => oclFun("fabs", t, t, x))
     val high_level = fun(inputT)(input =>
-      reduce(add, 0.0f) o map(abs(float)) $ input)
+      reduce(add, 0.0f) o mapSeq(abs(float)) $ input)
 
     {
       println(s"-- high level --")
       val phrase = TypeInference(high_level, Map()).convertToPhrase
-      val kernel = KernelGenerator.makeKernel(phrase, localSize = 128, globalSize = N)
+      val kernel = KernelGenerator.makeCode(phrase, localSize = 128, globalSize = N)
       println(kernel.code)
     }
 

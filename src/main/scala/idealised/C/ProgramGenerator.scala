@@ -1,12 +1,12 @@
 package idealised.C
 
+import idealised.C.AST._
 import idealised.DPIA.Compilation._
 import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
-import idealised.DPIA.Types.{AccType, BasePhraseTypes, CommandType, DataType, DataTypeIdentifier, ExpType, PairType, PhraseType, RecordType, TypeCheck}
-import idealised.C.AST._
+import idealised.DPIA.Types.{AccType, CommandType, DataType, DataTypeIdentifier, DepArrayType, ExpType, PairType, PhraseType, TypeCheck}
 import idealised._
-import lift.arithmetic.{Cst, NamedVar, Var}
+import lift.arithmetic.{Cst, Var}
 
 import scala.collection._
 
@@ -33,6 +33,8 @@ object ProgramGenerator {
                        name: String = "foo"): Program = {
     val outParam = createOutputParam(outT = p.t)
 
+    val gen = C.CodeGeneration.CodeGenerator()
+
     val p1 = checkTypes(p)
 
     val p2 = rewriteToImperative(p1, outParam)
@@ -42,11 +44,11 @@ object ProgramGenerator {
     val env = C.CodeGeneration.CodeGenerator.Environment(
       (outParam +: inputParams).map(p => p -> C.AST.DeclRef(p.name) ).toMap, Map.empty)
 
-    val (declarations, code) = C.CodeGeneration.CodeGenerator(p3, env).generate
+    val (declarations, code) = gen.generate(p3, env)
 
     C.Program(
       declarations,
-      function    = makeFunction(makeParams(outParam, inputParams), Block(Seq(code)), name),
+      function    = makeFunction(makeParams(outParam, inputParams, gen), Block(Seq(code)), name),
       outputParam = outParam,
       inputParams = inputParams)
   }
@@ -56,6 +58,8 @@ object ProgramGenerator {
       case _: DPIA.Types.BasicType =>
         identifier("output", AccType(DPIA.Types.ArrayType(Cst(1), outT.dataType)))
       case _: DPIA.Types.ArrayType =>
+        identifier("output", AccType(outT.dataType))
+      case _: DPIA.Types.DepArrayType =>
         identifier("output", AccType(outT.dataType))
       case _: DPIA.Types.RecordType => ???
       case _: DPIA.Types.DataTypeIdentifier => ???
@@ -95,19 +99,22 @@ object ProgramGenerator {
   }
 
   def makeParams(out: Identifier[AccType],
-                 ins: Seq[Identifier[ExpType]]): Seq[ParamDecl] = {
+                 ins: Seq[Identifier[ExpType]],
+                 gen: CodeGeneration.CodeGenerator): Seq[ParamDecl] = {
     val sizes = collectSizes(out.`type`.dataType
       +: ins.map(_.`type`.dataType)).toSeq.sortBy(_.toString)
-    Seq(makeParam(out)) ++ ins.map(makeParam) ++ sizes.map(makeSizeParam)
+    Seq(makeParam(out, gen)) ++ ins.map(makeParam(_, gen)) ++ sizes.map(makeSizeParam)
   }
 
   def collectSizes(ts: Seq[DataType]): Set[Var] = {
-    import DPIA.Types.{ArrayType, RecordType, BasicType}
+    import DPIA.Types.{ArrayType, BasicType, RecordType}
     ts.foldLeft(Set[Var]())( (s, t) => {
       s ++ (t match {
         case _: BasicType => Set()
         case ArrayType(size, dt) =>
           size.varList ++ collectSizes(Seq(dt))
+        case DepArrayType(size, _, et) =>
+          size.varList ++ collectSizes(Seq(et))
         case RecordType(fst, snd) =>
           collectSizes(Seq(fst)) ++ collectSizes(Seq(snd))
         case _: DataTypeIdentifier => ???
@@ -115,16 +122,19 @@ object ProgramGenerator {
     })
   }
 
-  def makeParam(i: Identifier[_]): ParamDecl = {
-    import DPIA.Types.{ArrayType, RecordType, BasicType}
+  def makeParam(i: Identifier[_], gen: CodeGeneration.CodeGenerator): ParamDecl = {
+    import DPIA.Types.{ArrayType, BasicType, RecordType}
     // Turn array types into pointer types
 
     val paramType = getDataType(i) match {
       case ArrayType(_, dt) =>
         val baseDt = DataType.getBaseDataType(dt)
-        PointerType(Type.fromDataType(baseDt))
-      case r : RecordType => Type.fromDataType(r)
-      case t : BasicType => Type.fromDataType(t)
+        PointerType(gen.typ(baseDt))
+      case DepArrayType(_, _, dt) =>
+        val baseDt = DataType.getBaseDataType(dt)
+        PointerType(gen.typ(baseDt))
+      case r : RecordType => gen.typ(r)
+      case t : BasicType => gen.typ(t)
       case _: DataTypeIdentifier => ???
     }
     ParamDecl(i.name, paramType)

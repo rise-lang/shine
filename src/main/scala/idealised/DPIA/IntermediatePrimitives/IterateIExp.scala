@@ -2,7 +2,8 @@ package idealised.DPIA.IntermediatePrimitives
 
 import idealised.DPIA.Compilation.{CodeGenerator, SubstituteImplementations}
 import idealised.DPIA.DSL._
-import idealised.DPIA.ImperativePrimitives.{TruncAcc, TruncExp}
+import idealised.DPIA.FunctionalPrimitives.Take
+import idealised.DPIA.ImperativePrimitives.TakeAcc
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
@@ -48,14 +49,14 @@ final case class IterateIExp(n: Nat,
 
     `new`(dt"[${`n^k*m`}.$dt]", addressSpace, buf1 =>
       `new`(dt"[${`n^k*m`}.$dt]", addressSpace, buf2 =>
-        SubstituteImplementations(MapI(`n^k*m`, dt, dt,
+        SubstituteImplementations(MapSeqI(`n^k*m`, dt, dt,
           λ(exp"[$dt]")(e => λ(acc"[$dt]")(a => a := e)), in, buf1.wr), env) `;`
           dblBufFor(`n^k*m`, m, k, dt, addressSpace, buf1, buf2,
             _Λ_(l => λ(acc"[${`n^k*m`}.$dt]")(a => λ(exp"[${`n^k*m`}.$dt]")(e =>
               SubstituteImplementations(
                 f (n.pow(k - l) * m)
-                  (TruncAcc(`n^k*m`, n.pow(k - l - 1) * m, dt, a))
-                  (TruncExp(`n^k*m`, n.pow(k - l    ) * m, dt, e)), env)))),
+                  (TakeAcc(`n^k*m`, n.pow(k - l - 1) * m, dt, a))
+                  (Take(`n^k*m`, n.pow(k - l    ) * m, dt, e)), env)))),
             out)))
   }
 

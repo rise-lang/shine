@@ -14,7 +14,7 @@ abstract class AbstractParFor[T <: DataType](val n: Nat,
                                              val dt: T,
                                              val out: Phrase[AccType],
                                              val body: Phrase[ExpType -> (AccType -> CommandType)])
-  extends CommandPrimitive with GeneratableCommand {
+  extends CommandPrimitive {
 
   override lazy val `type`: CommandType =
     (n: Nat) -> (dt: DataType) ->
@@ -63,11 +63,4 @@ final case class ParFor(override val n: Nat,
                         override val body: Phrase[ExpType -> (AccType -> CommandType)])
   extends AbstractParFor[DataType](n, dt, out, body) {
   override def makeParFor = ParFor
-
-  override def codeGen[Environment, Path, Stmt, Expr, Decl, Ident](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl, Ident])(env: Environment): Stmt = {
-    body match {
-      case Lambda(i, Lambda(o, p)) => gen.codeGenParFor(n, dt, out, i, o, p, env, gen)
-      case _ => error(s"Expected two nested lambdas")
-    }
-  }
 }

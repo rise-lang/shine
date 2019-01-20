@@ -1,6 +1,5 @@
 package idealised.DPIA.Phrases
 
-import idealised.DPIA.Compilation.CodeGenerator
 import idealised.DPIA.Compilation.SubstituteImplementations
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Types._
@@ -106,16 +105,8 @@ trait ExpPrimitive extends Primitive[ExpType] {
   def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType]
 }
 
-trait GeneratableExp {
-  def codeGen[Environment, Path, Stmt, Expr, Decl, Ident](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl, Ident])(env: Environment, path: Path): Expr
-}
-
 trait AccPrimitive extends Primitive[AccType] {
   def eval(s: OperationalSemantics.Store): OperationalSemantics.AccIdentifier
-}
-
-trait GeneratableAcc {
-  def codeGen[Environment, Path, Stmt, Expr, Decl, Ident](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl, Ident])(env: Environment, path: Path): Expr
 }
 
 trait CommandPrimitive extends Primitive[CommandType] {
@@ -124,8 +115,4 @@ trait CommandPrimitive extends Primitive[CommandType] {
 
 trait Intermediate[T <: PhraseType] {
   def substituteImpl(env: SubstituteImplementations.Environment): Phrase[T]
-}
-
-trait GeneratableCommand {
-  def codeGen[Environment, Path, Stmt, Expr, Decl, Ident](gen: CodeGenerator[Environment, Path, Stmt, Expr, Decl, Ident])(env: Environment): Stmt
 }

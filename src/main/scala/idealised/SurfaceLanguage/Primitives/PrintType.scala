@@ -7,7 +7,7 @@ import idealised.SurfaceLanguage.Types._
 
 final case class PrintType(input: DataExpr,
                            msg: String,
-                           override val t: Option[DataType] = None)
+                           override val t: Option[DataType])
   extends PrimitiveExpr
 {
 

@@ -1,7 +1,8 @@
 package idealised.C.AST
 
+import idealised.OpenCL.AST.Barrier
 import lift.arithmetic._
-import ir.view.AccessVar
+import opencl.generator.OclFunction
 
 object Printer {
   def apply(n: Node): String = (new Printer)(n)
@@ -67,6 +68,9 @@ class Printer {
     case e: Expr =>
       print(e)
       print(";")
+
+    case b: Barrier =>
+      print("barrier();")
   }
 
   private def print(e: Expr): Unit = e match {
@@ -302,7 +306,10 @@ class Printer {
     e match {
       case Cst(c) => c.toString
       case Pow(b, ex) =>
-        "(int)pow((float)" + toString(b) + ", " + toString(ex) + ")"
+        ex match {
+          case Cst(2) => s"(${toString(b)} * ${toString(b)})"
+          case _ => "(int)pow((float)" + toString (b) + ", " + toString (ex) + ")"
+        }
       case Log(b, x) => "(int)log"+b+"((float)"+toString(x)+")"
       case Prod(es) => "(" + es.foldLeft("1")( (s: String, e: ArithExpr) => {
         s + (e match {
@@ -312,7 +319,7 @@ class Printer {
       } ).drop(4) + ")" // drop(4) removes the initial "1 * "
       case Sum(es) => "(" + es.map(toString).reduce( _ + " + " + _  ) + ")"
       case Mod(a,n) => "(" + toString(a) + " % " + toString(n) + ")"
-//      case of: OclFunction => of.toOCLString
+      case of: OclFunction => of.toOCLString
 //      case ai: AccessVar => ai.array + "[" + toString(ai.idx.content) + "]"
       case v: Var => v.toString
       case IntDiv(n, d) => "(" + toString(n) + " / " + toString(d) + ")"

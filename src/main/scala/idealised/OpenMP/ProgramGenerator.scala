@@ -32,6 +32,8 @@ object ProgramGenerator {
                        name: String): OpenMP.Program = {
     val outParam = createOutputParam(outT = p.t)
 
+    val gen = OpenMP.CodeGeneration.CodeGenerator()
+
     val p1 = checkTypes(p)
 
     val p2 = rewriteToImperative(p1, outParam)
@@ -41,9 +43,9 @@ object ProgramGenerator {
     val env = C.CodeGeneration.CodeGenerator.Environment(
       (outParam +: inputParams).map(p => p -> C.AST.DeclRef(p.name) ).toMap, Map.empty)
 
-    val (declarations, code) = OpenMP.CodeGeneration.CodeGenerator(p3, env).generate
+    val (declarations, code) = gen.generate(p3, env)
 
-    val params = C.ProgramGenerator.makeParams(outParam, inputParams)
+    val params = C.ProgramGenerator.makeParams(outParam, inputParams, gen)
 
     OpenMP.Program(
       declarations,
@@ -57,6 +59,8 @@ object ProgramGenerator {
       case _: BasicType =>
         identifier("output", AccType(ArrayType(Cst(1), outT.dataType)))
       case _: ArrayType =>
+        identifier("output", AccType(outT.dataType))
+      case _: DPIA.Types.DepArrayType =>
         identifier("output", AccType(outT.dataType))
       case _: RecordType => ???
       case _: DataTypeIdentifier => ???

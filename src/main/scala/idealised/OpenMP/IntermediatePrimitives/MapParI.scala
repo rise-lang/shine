@@ -2,7 +2,7 @@ package idealised.OpenMP.IntermediatePrimitives
 
 import idealised.DPIA.Compilation.SubstituteImplementations
 import idealised.DPIA.Compilation.SubstituteImplementations._
-import idealised.DPIA.DSL.{`for`, _}
+import idealised.DPIA.DSL._
 import idealised.DPIA.IntermediatePrimitives.AbstractMapI
 import idealised.DPIA.Phrases.Phrase
 import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType}

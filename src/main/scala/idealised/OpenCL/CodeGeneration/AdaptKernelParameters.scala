@@ -6,9 +6,8 @@ import idealised.DPIA.Types.{AccType, CommandType, ExpType, PairType, PhraseType
 import idealised.DPIA.DSL._
 import idealised.DPIA.Semantics.OperationalSemantics.IndexData
 import idealised.OpenCL.FunctionalPrimitives.OpenCLFunction
-import ir.{ArrayType, ScalarType}
-import opencl.generator.OpenCLAST.ParamDecl
-import opencl.ir.{GlobalMemory, LocalMemory}
+import idealised.{C, OpenCL}
+import idealised.OpenCL.AST.ParamDecl
 
 import scala.collection.mutable
 
@@ -36,19 +35,20 @@ object AdaptKernelParameters {
 
     val newParams = params.map(paramDecl => {
       paramDecl.t match {
-        case _: ScalarType =>
+        case _: C.AST.BasicType =>
           paramDecl.addressSpace match {
-            case GlobalMemory | LocalMemory =>
+            case OpenCL.GlobalMemory | OpenCL.LocalMemory =>
               // remember scalar parameters in global or local memory and change their type to an
               // array of size 1
               scalarParamsInGlobalOrLocalMemory.add(paramDecl.name)
-              paramDecl.copy(t = ArrayType(paramDecl.t, 1))
+              paramDecl.copy(t = C.AST.ArrayType(paramDecl.t, Some(1)))
             case _ => paramDecl
           }
-        case _: ArrayType =>
+        case at: C.AST.ArrayType =>
           // make input parameters const
           if (inputParams.map(_.name).contains(paramDecl.name)) {
-            paramDecl.copy(const = true)
+            //paramDecl.copy(const = true)
+            paramDecl.copy(t = C.AST.ArrayType(at.elemType, at.size, const = true))
           } else {
             paramDecl
           }
