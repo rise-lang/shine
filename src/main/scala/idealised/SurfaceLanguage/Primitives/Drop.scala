@@ -6,7 +6,7 @@ import idealised.SurfaceLanguage._
 import idealised.{DPIA, SurfaceLanguage}
 
 final case class Drop(n: Nat, array: DataExpr,
-                       override val t: Option[DataType] = None)
+                       override val t: Option[DataType])
   extends PrimitiveExpr
 {
 

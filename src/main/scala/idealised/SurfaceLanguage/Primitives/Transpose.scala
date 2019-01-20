@@ -6,7 +6,7 @@ import idealised.SurfaceLanguage.{PrimitiveExpr, VisitAndRebuild}
 import idealised.SurfaceLanguage.Types.{ArrayType, DataType, TypeInference}
 
 final case class Transpose(array: DataExpr,
-                           override val t: Option[DataType] = None)
+                           override val t: Option[DataType])
   extends PrimitiveExpr
 {
   override def convertToPhrase: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
@@ -42,5 +42,5 @@ final case class Transpose(array: DataExpr,
   }
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): DataExpr =
-    Transpose(VisitAndRebuild(array, f))
+    Transpose(VisitAndRebuild(array, f), t)
 }

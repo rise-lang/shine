@@ -1,6 +1,5 @@
 package idealised.apps
 
-import idealised.OpenCL.SurfaceLanguage.DSL.depMap
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._

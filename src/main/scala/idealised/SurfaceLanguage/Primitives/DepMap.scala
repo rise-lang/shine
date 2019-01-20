@@ -79,7 +79,7 @@ abstract class AbstractDepMap(df: Expr[`(nat)->`[DataType -> DataType]],
 }
 
 final case class DepMap(df: Expr[`(nat)->`[DataType -> DataType]], array: DataExpr,
-                        override val t: Option[DataType] = None)
+                        override val t: Option[DataType])
   extends AbstractDepMap(df, array, t) {
 
   override def makeDPIAMap = DPIA.FunctionalPrimitives.DepMap

@@ -145,6 +145,11 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case Nil => error(s"Expected path to be not empty")
       }
 
+      case MapAcc(n, dt, _, f, a) => path match {
+        case i :: ps =>  acc( f( IdxAcc(n, dt, Literal(IndexData(i, IndexType(n))), a) ), env, ps )
+        case Nil => error(s"Expected path to be not empty")
+      }
+
       case IdxAcc(_, _, i, a) => codeGenIdxAcc(i, a, env, path)
 
       case DepIdxAcc(_, _, _, i, a) => acc(a, env, i :: path)

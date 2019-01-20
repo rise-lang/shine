@@ -1,7 +1,6 @@
-import idealised.OpenCL.SurfaceLanguage.DSL.{depMap, reduceSeq}
+import idealised.OpenCL.SurfaceLanguage.DSL.reduceSeq
 import idealised.OpenMP.SurfaceLanguage.DSL.depMapPar
 import idealised.SurfaceLanguage.DSL._
-import idealised.SurfaceLanguage.Primitives.DepMap
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
 
@@ -17,7 +16,7 @@ object dmapExample extends App{
 
   val xsT = DepArrayType(8, i => ArrayType(i + 1, int))
 
-  val addOne = fun(xsT)(array => DepMap(dFun(_ => fun(x => mapSeq(fun(y => y + 1), x) )), array))
+  val addOne = fun(xsT)(array => depMap(fun(x => mapSeq(fun(y => y + 1), x) ), array))
 
   val reduceByRow = fun(xsT)(array => depMap(fun(x => reduceSeq(fun(y => fun(z => y + z)), 0, x) ), array))
 

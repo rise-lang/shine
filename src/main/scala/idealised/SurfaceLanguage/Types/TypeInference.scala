@@ -120,7 +120,7 @@ object TypeInference {
   private case class GetLengthVisitor(substitutionMap: SubstitutionMap) extends VisitAndRebuild.Visitor {
 
 
-    override def apply(ae: Nat) = ae match {
+    override def apply(ae: Nat): Nat = ae match {
       case expr@Macros.GetLength(x) => substitutionMap(x).t match {
         case Some(ArrayType(size, _)) => size
         case Some(t) => error(expr.toString, t.toString, expected = "ArrayType(size, _)")

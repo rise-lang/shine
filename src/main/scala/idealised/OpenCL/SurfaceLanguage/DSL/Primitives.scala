@@ -48,12 +48,6 @@ object mapLocal {
   }
 }
 
-object depMap {
-  def apply(f: Expr[DataType -> DataType]):Expr[DataType -> DataType] = fun(x => depMap(f, x))
-
-  def apply(f: Expr[DataType -> DataType], x: DataExpr): DepMap = DepMap(dFun(_ => f), x)
-}
-
 object toLocal {
   def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] =
     fun(x => toLocal(f, x))

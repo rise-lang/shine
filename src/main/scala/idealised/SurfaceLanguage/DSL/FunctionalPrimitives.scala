@@ -6,6 +6,11 @@ import idealised.SurfaceLanguage.Primitives._
 import idealised.SurfaceLanguage.Types._
 import lift.arithmetic.NamedVar
 
+object depMap {
+  def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] = fun(x => depMap(f, x))
+
+  def apply(f: Expr[DataType -> DataType], x: DataExpr): DepMap = DepMap(dFun(_ => f), x, None)
+}
 
 object mapSeq {
   def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] = fun(x => mapSeq(f, x))
@@ -20,41 +25,41 @@ object map {
 }
 
 object zip {
-  def apply(lhs: DataExpr, rhs: DataExpr): Zip = Zip(lhs, rhs)
+  def apply(lhs: DataExpr, rhs: DataExpr): Zip = Zip(lhs, rhs, None)
 }
 
 object unzip {
-  def apply(e: DataExpr): Unzip = Unzip(e)
+  def apply(e: DataExpr): Unzip = Unzip(e, None)
 }
 
 object split {
   def apply(n: Nat): Expr[DataType -> DataType] = fun(array => split(n, array))
 
-  def apply(n: Nat, array: DataExpr): Split = Split(n, array)
+  def apply(n: Nat, array: DataExpr): Split = Split(n, array, None)
 }
 
 object join {
   def apply(): Expr[DataType -> DataType] = fun(array => join(array))
 
-  def apply(array: DataExpr): Join = Join(array)
+  def apply(array: DataExpr): Join = Join(array, None)
 }
 
 object slide {
   def apply(s1: Nat, s2: Nat): Expr[DataType -> DataType] = fun(array => slide(s1, s2, array))
 
-  def apply(s1: Nat, s2: Nat, array: DataExpr): Slide = Slide(s1, s2, array)
+  def apply(s1: Nat, s2: Nat, array: DataExpr): Slide = Slide(s1, s2, array, None)
 }
 
 object take {
   def apply(n:Nat): Expr[DataType -> DataType] = fun(array => take(n, array))
 
-  def apply(n:Nat, array:DataExpr):Take = Take(n, array)
+  def apply(n:Nat, array:DataExpr):Take = Take(n, array, None)
 }
 
 object drop {
   def apply(n:Nat): Expr[DataType -> DataType] = fun(array => drop(n, array))
 
-  def apply(n:Nat, array:DataExpr):Drop = Drop(n, array)
+  def apply(n:Nat, array:DataExpr):Drop = Drop(n, array, None)
 }
 
 object slice {
@@ -72,7 +77,7 @@ object reduce {
   def apply(f: Expr[DataType -> (DataType -> DataType)],
             init: DataExpr,
             array: DataExpr): Reduce =
-    Reduce(f, init, array)
+    Reduce(f, init, array, None)
 }
 
 object iterate {
@@ -82,37 +87,37 @@ object iterate {
   def apply(k: Nat,
             f: Expr[`(nat)->`[DataType -> DataType]],
             array: DataExpr): Iterate =
-    Iterate(k, f, array)
+    Iterate(k, f, array, None)
 }
 
 object gather {
   def apply(idxF: Expr[`(nat)->`[DataType ->DataType]]): Expr[DataType -> DataType] = {
     val idxF_ = idxF(NamedVar(newName()))
-    fun(array => Gather(idxF_, array))
+    fun(array => Gather(idxF_, array, None))
   }
 }
 
 object scatter {
   def apply(idxF: Expr[`(nat)->`[DataType ->DataType]]): Expr[DataType -> DataType] = {
     val idxF_ = idxF(NamedVar(newName()))
-    fun(array => Scatter(idxF_, array))
+    fun(array => Scatter(idxF_, array, None))
   }
 }
 
 object transpose {
   def apply(): Expr[DataType -> DataType] = fun(array => transpose(array))
 
-  def apply(array: DataExpr): Transpose = Transpose(array)
+  def apply(array: DataExpr): Transpose = Transpose(array, None)
 }
 
 object transposeW {
   def apply(): Expr[DataType -> DataType] = fun(array => transposeW(array))
 
-  def apply(array: DataExpr): TransposeOnWrite = TransposeOnWrite(array)
+  def apply(array: DataExpr): TransposeOnWrite = TransposeOnWrite(array, None)
 }
 
 object tuple {
-  def apply(fst: DataExpr, snd: DataExpr): Tuple = Tuple(fst, snd)
+  def apply(fst: DataExpr, snd: DataExpr): Tuple = Tuple(fst, snd, None)
 }
 
 object foreignFun {
@@ -126,6 +131,6 @@ object foreignFun {
 }
 
 object printType {
-  def apply(msg: String = ""): Expr[DataType -> DataType] = fun(x => PrintType(x, msg))
-  def apply(msg: String, x: Expr[DataType]) = PrintType(x, msg)
+  def apply(msg: String = ""): Expr[DataType -> DataType] = fun(x => PrintType(x, msg, None))
+  def apply(msg: String, x: Expr[DataType]) = PrintType(x, msg, None)
 }

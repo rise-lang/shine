@@ -72,7 +72,7 @@ abstract class AbstractScan(f:Expr[DataType -> (DataType -> DataType)],
 }
 
 final case class Scan(f: Expr[DataType -> (DataType -> DataType)], init:DataExpr, array: DataExpr,
-                     override val t: Option[DataType] = None)
+                     override val t: Option[DataType])
   extends AbstractScan(f, init, array, t) {
 
   override def makeDPIAScan = DPIA.FunctionalPrimitives.Scan

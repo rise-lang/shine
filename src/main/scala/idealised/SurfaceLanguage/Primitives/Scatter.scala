@@ -10,7 +10,7 @@ import scala.language.{postfixOps, reflectiveCalls}
 
 final case class Scatter(idxF: Expr[DataType ->DataType],
                          array: DataExpr,
-                         override val t: Option[DataType] = None)
+                         override val t: Option[DataType])
   extends PrimitiveExpr
 {
 
@@ -50,6 +50,6 @@ final case class Scatter(idxF: Expr[DataType ->DataType],
   }
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Scatter = {
-    Scatter(VisitAndRebuild(idxF, f), VisitAndRebuild(array, f))
+    Scatter(VisitAndRebuild(idxF, f), VisitAndRebuild(array, f), t)
   }
 }

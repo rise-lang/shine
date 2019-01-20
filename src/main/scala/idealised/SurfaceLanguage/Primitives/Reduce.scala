@@ -73,7 +73,7 @@ abstract class AbstractReduce(f: Expr[DataType -> (DataType -> DataType)],
 final case class Reduce(f: Expr[DataType -> (DataType -> DataType)],
                         init: DataExpr,
                         array: DataExpr,
-                        override val t: Option[DataType] = None)
+                        override val t: Option[DataType])
   extends AbstractReduce(f, init, array, t) {
 
   override def makeDPIAReduce = DPIA.FunctionalPrimitives.Reduce
