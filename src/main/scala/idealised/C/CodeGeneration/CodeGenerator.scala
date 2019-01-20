@@ -8,7 +8,6 @@ import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics.{BoolData, FloatData, IndexData, IntData, VectorData}
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised.OpenCL.FunctionalPrimitives.VectorFromScalar
 import idealised.SurfaceLanguage.Operators
 import idealised._
 import lift.arithmetic.{NamedVar, _}

@@ -1,10 +1,10 @@
-package idealised.OpenCL.SurfaceLanguage.Primitives
+package idealised.SurfaceLanguage.Primitives
 
-import idealised.{DPIA, OpenCL}
+import idealised.DPIA
+import idealised.DPIA.FunctionalPrimitives
 import idealised.SurfaceLanguage.DSL.DataExpr
-import idealised.SurfaceLanguage._
-import idealised.SurfaceLanguage.Types._
-import idealised.SurfaceLanguage.{Nat, PrimitiveExpr}
+import idealised.SurfaceLanguage.Types.{DataType, ScalarType, TypeInference, VectorType}
+import idealised.SurfaceLanguage.{Nat, PrimitiveExpr, VisitAndRebuild}
 
 final case class VectorFromScalar(n: Nat, arg: DataExpr,
                                   override val t: Option[DataType] = None)
@@ -15,7 +15,7 @@ final case class VectorFromScalar(n: Nat, arg: DataExpr,
   override def convertToPhrase: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
     arg.t match {
       case Some(dt: ScalarType) =>
-        OpenCL.FunctionalPrimitives.VectorFromScalar(n, dt, arg.toPhrase[DPIA.Types.ExpType])
+        FunctionalPrimitives.VectorFromScalar(n, dt, arg.toPhrase[DPIA.Types.ExpType])
       case _ => throw new Exception("")
     }
   }

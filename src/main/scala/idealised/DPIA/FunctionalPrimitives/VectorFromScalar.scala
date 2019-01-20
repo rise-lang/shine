@@ -1,12 +1,11 @@
-package idealised.OpenCL.FunctionalPrimitives
+package idealised.DPIA.FunctionalPrimitives
 
 import idealised.DPIA.Compilation.RewriteToImperative
 import idealised.DPIA.DSL._
-import idealised.DPIA.Phrases.{VisitAndRebuild, _}
-import idealised.DPIA.Semantics.OperationalSemantics.{Data, Store}
+import idealised.DPIA.Phrases._
+import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import opencl.generator.OpenCLAST.{Expression, VectorLiteral}
 
 import scala.xml.Elem
 
@@ -23,12 +22,6 @@ final case class VectorFromScalar(n: Nat,
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     VectorFromScalar(f(n), f(dt), VisitAndRebuild(arg, f))
   }
-
-//  override def codeGenExp(env: Environment): Expression = {
-//    VectorLiteral(
-//      DataType.toVectorType(VectorType(n, dt)),
-//      OpenCLOldCodeGenerator.exp(arg, env))
-//  }
 
   override def eval(s: Store): Data = ???
 

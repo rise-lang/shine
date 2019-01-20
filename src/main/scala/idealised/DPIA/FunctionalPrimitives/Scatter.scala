@@ -3,13 +3,11 @@ package idealised.DPIA.FunctionalPrimitives
 import idealised.DPIA.Compilation.RewriteToImperative
 import idealised.DPIA.DSL._
 import idealised.DPIA.ImperativePrimitives.ScatterAcc
-import idealised.DPIA.Phrases.VisitAndRebuild.Visitor
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA.{Phrases, _}
-import idealised.OpenCL
 
 import scala.xml.Elem
 
@@ -36,7 +34,7 @@ final case class Scatter(n: Nat,
   override def continuationTranslation(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
     import RewriteToImperative._
 
-    `new`(dt"[$n.$dt]", OpenCL.GlobalMemory, λ(exp"[$n.$dt]" x acc"[$n.$dt]")(tmp =>
+    `new`(dt"[$n.$dt]", idealised.OpenCL.GlobalMemory, λ(exp"[$n.$dt]" x acc"[$n.$dt]")(tmp =>
       acc(this)(tmp.wr) `;` C(tmp.rd) ))
   }
 

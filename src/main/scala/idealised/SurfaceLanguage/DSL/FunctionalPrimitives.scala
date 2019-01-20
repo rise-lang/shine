@@ -1,9 +1,9 @@
 package idealised.SurfaceLanguage.DSL
 
-import idealised.SurfaceLanguage._
-import idealised.SurfaceLanguage.Expr
 import idealised.SurfaceLanguage.Primitives._
+import idealised.SurfaceLanguage.Semantics._
 import idealised.SurfaceLanguage.Types._
+import idealised.SurfaceLanguage.{Expr, _}
 import lift.arithmetic.NamedVar
 
 object depMapSeq {
@@ -80,6 +80,19 @@ object reduceSeq {
     ReduceSeq(f, init, array, None)
 }
 
+object scanSeq {
+  def apply(f: Expr[DataType -> (DataType -> DataType)]): Expr[DataType -> (DataType -> DataType)] =
+    fun((init, array) => scanSeq(f, init, array))
+
+  def apply(f: Expr[DataType -> (DataType -> DataType)], init: Expr[DataType]): Expr[DataType -> DataType] =
+    fun(array => scanSeq(f, init, array))
+
+  def apply(f: Expr[DataType -> (DataType -> DataType)],
+            init: DataExpr,
+            array: DataExpr) =
+    ScanSeq(f, init, array, None)
+}
+
 object iterate {
   def apply(k: Nat, f: Expr[`(nat)->`[DataType -> DataType]]): Expr[DataType -> DataType] =
     fun(array => iterate(k, f, array))
@@ -118,6 +131,28 @@ object transposeW {
 
 object tuple {
   def apply(fst: DataExpr, snd: DataExpr): Tuple = Tuple(fst, snd, None)
+}
+
+object asVector {
+  def apply(n: Nat): Expr[DataType -> DataType] =
+    fun(array => asVector(n, array))
+
+  def apply(n: Nat, array: DataExpr): AsVector =
+    AsVector(n, array)
+}
+
+object asScalar {
+  def apply(): Expr[DataType -> DataType] = fun(array => asScalar(array))
+
+  def apply(array: DataExpr): AsScalar =
+    AsScalar(array)
+}
+
+object vectorize {
+  def apply(len: Int, f: Float) =
+    LiteralExpr(VectorData(Vector.fill(len)(FloatData(f))))
+
+  def apply(len: Nat, e: DataExpr) = VectorFromScalar(len, e)
 }
 
 object foreignFun {

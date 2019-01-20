@@ -1,10 +1,9 @@
-package idealised.OpenCL.ImperativePrimitives
+package idealised.DPIA.ImperativePrimitives
 
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import opencl.generator.OpenCLAST.Expression
 
 import scala.xml.Elem
 
@@ -24,24 +23,6 @@ final case class AsScalarAcc(n: Nat,
   }
 
   override def eval(s: Store): AccIdentifier = ???
-
-//  override def toOpenCL(env: OpenCLOldCodeGenerator.Environment,
-//                        value: Expression,
-//                        dt: DataType,
-//                        arrayAccess: List[Nat],
-//                        tupleAccess: List[Nat]): Expression = {
-//    val i :: is = arrayAccess
-//
-//    OpenCLOldCodeGenerator.acc(array, value, env, dt, (i * m + 0) :: is, tupleAccess)
-////    // similar to Split
-////    val chunkId = arrayAccess.head
-////    val chunkElemId: (Nat, Nat) = (0, 1) // we want to access element 0 and there is only one of it
-////    val rest = arrayAccess.tail
-////
-////    val newIdx = chunkId._1 * m + chunkElemId._1
-////
-////    CodeGenerator.acc(array, value, env, dt, (newIdx, chunkElemId._2) :: rest, tupleAccess)
-//  }
 
   override def prettyPrint = s"(asScalarAcc $n ${PrettyPhrasePrinter(array)})"
 

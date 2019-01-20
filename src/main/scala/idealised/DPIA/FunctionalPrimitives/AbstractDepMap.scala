@@ -8,7 +8,6 @@ import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised.OpenCL
 
 import scala.xml.Elem
 
@@ -36,7 +35,7 @@ abstract class AbstractDepMap(n: Nat,
   override def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
     import RewriteToImperative._
 
-    `new`(dt"[${DepArrayType(n, makeDt2)}]", OpenCL.GlobalMemory, λ(exp"[${DepArrayType(n, makeDt2)}]" x acc"[${DepArrayType(n, makeDt2)}]")(tmp =>
+    `new`(dt"[${DepArrayType(n, makeDt2)}]", idealised.OpenCL.GlobalMemory, λ(exp"[${DepArrayType(n, makeDt2)}]" x acc"[${DepArrayType(n, makeDt2)}]")(tmp =>
       acc(this)(tmp.wr) `;` C(tmp.rd) ))
   }
 

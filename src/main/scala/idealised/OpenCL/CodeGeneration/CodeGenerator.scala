@@ -2,12 +2,12 @@ package idealised.OpenCL.CodeGeneration
 
 import idealised.C.AST.Decl
 import idealised.C.CodeGeneration.{CodeGenerator => CCodeGenerator}
-import idealised.DPIA.ImperativePrimitives.ForNat
+import idealised.DPIA.FunctionalPrimitives.{AsScalar, AsVector}
+import idealised.DPIA.ImperativePrimitives.{AsScalarAcc, AsVectorAcc, ForNat}
 import idealised.DPIA.Phrases.{Identifier, Lambda, NatDependentLambda, Phrase}
 import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType, PhraseType}
 import idealised.DPIA.{Nat, NatIdentifier, freshName}
-import idealised.OpenCL.FunctionalPrimitives.{AsScalar, AsVector}
-import idealised.OpenCL.ImperativePrimitives.{AsScalarAcc, AsVectorAcc, OpenCLParFor}
+import idealised.OpenCL.ImperativePrimitives.OpenCLParFor
 import idealised.{C, OpenCL}
 import lift.arithmetic
 import lift.arithmetic._

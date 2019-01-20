@@ -17,8 +17,8 @@ final case class MapVecI(n: Nat,
                          f: Phrase[ExpType -> (AccType -> CommandType)],
                          in: Phrase[ExpType],
                          out: Phrase[AccType])
-  extends CommandPrimitive with Intermediate[CommandType] {
-
+  extends CommandPrimitive with Intermediate[CommandType]
+{
   override val `type`: CommandType =
     (n: Nat) -> (st1: DataType) -> (st2: DataType) ->
       (f :: t"exp[$st1] -> acc[$st2] -> comm") ->

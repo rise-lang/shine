@@ -6,7 +6,6 @@ import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised._
 
 import scala.language.reflectiveCalls
 import scala.xml.Elem
@@ -61,7 +60,7 @@ final case class ScanSeqI(n: Nat,
 
   override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
     // TODO: generalise allocation
-    `new`(dt2, OpenCL.PrivateMemory, acc =>
+    `new`(dt2, idealised.OpenCL.PrivateMemory, acc =>
       (acc.wr :=| dt2 | init) `;`
         `for`(n, i =>
           SubstituteImplementations(f(in `@` i)(acc.rd)(acc.wr), env) `;`

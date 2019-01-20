@@ -1,6 +1,7 @@
 package idealised.OpenMP.DSL
 
 import idealised.DPIA.DSL._
+import idealised.DPIA.ImperativePrimitives.ForVec
 import idealised.DPIA.Phrases.Phrase
 import idealised.DPIA.Types._
 import idealised.DPIA._
@@ -19,8 +20,8 @@ object `parForVec` {
   def apply(n: Nat,
             st: ScalarType,
             out: Phrase[AccType],
-            f: Phrase[ExpType] => Phrase[AccType] => Phrase[CommandType]): ParForVec =
-    ParForVec(n, st, out, λ(exp"[idx($n)]")( i => λ(acc"[$st]")( o => f(i)(o) )))
+            f: Phrase[ExpType] => Phrase[AccType] => Phrase[CommandType]): ForVec =
+    ForVec(n, st, out, λ(exp"[idx($n)]")(i => λ(acc"[$st]")(o => f(i)(o) )))
 }
 
 object parForNat {

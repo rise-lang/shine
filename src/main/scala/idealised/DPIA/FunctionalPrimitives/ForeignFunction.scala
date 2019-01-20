@@ -35,7 +35,7 @@ final case class ForeignFunction(funDecl: ForeignFunction.Declaration,
                 exps: Seq[Phrase[ExpType]],
                 inTs: Seq[DataType]): Phrase[CommandType] = {
       ts match {
-        // with only one argument left to process return the assignment of the OpenCLFunction call
+        // with only one argument left to process return the assignment of the function call
         case Seq((arg, inT)) =>
           con(arg)(λ(exp"[$inT]")(e =>
             A :=| outT | ForeignFunction(funDecl, inTs :+ inT, outT, exps :+ e)))
@@ -55,7 +55,7 @@ final case class ForeignFunction(funDecl: ForeignFunction.Declaration,
                 exps: Seq[Phrase[ExpType]],
                 inTs: Seq[DataType]): Phrase[CommandType] = {
       ts match {
-        // with only one argument left to process return the assignment of the OpenCLFunction call
+        // with only one argument left to process return the assignment of the function call
         case Seq( (arg, inT) ) =>
           con(arg)(λ(exp"[$inT]")(e =>
             C( ForeignFunction(funDecl, inTs :+ inT, outT, exps :+ e) )) )

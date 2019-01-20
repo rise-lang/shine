@@ -1,7 +1,7 @@
 package idealised.DPIA.FunctionalPrimitives
 
 import idealised.DPIA.DSL._
-import idealised.DPIA.IntermediatePrimitives.{IterateIAcc, IterateIExp}
+import idealised.DPIA.IntermediatePrimitives.IterateIAcc
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
@@ -72,9 +72,6 @@ final case class Iterate(n: Nat,
   override def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
     import idealised.DPIA.Compilation.RewriteToImperative._
 
-    con(array)(λ(exp"[$m.$dt]")(x =>
-      IterateIExp(n, m = m /^ n.pow(k), k, dt, C,
-        _Λ_(l => λ(acc"[${l /^ n}.$dt]")(o => λ(exp"[$l.$dt]")(x => acc(f(l)(x))(o)))),
-        x) ))
+    ???
   }
 }

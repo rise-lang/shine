@@ -8,7 +8,6 @@ import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised.OpenCL
 
 import scala.xml.Elem
 /**
@@ -60,7 +59,7 @@ abstract  class AbstractScan(n: Nat,
   override def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
     import RewriteToImperative._
 
-    `new`(dt"[$n.$dt2]", OpenCL.GlobalMemory, λ(exp"[$n.$dt2]" x acc"[$n.$dt2]")(tmp =>
+    `new`(dt"[$n.$dt2]", idealised.OpenCL.GlobalMemory, λ(exp"[$n.$dt2]" x acc"[$n.$dt2]")(tmp =>
       acc(this)(tmp.wr) `;` C(tmp.rd) ))
   }
 

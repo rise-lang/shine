@@ -7,7 +7,6 @@ import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised._
 
 import scala.language.reflectiveCalls
 import scala.xml.Elem
@@ -45,7 +44,7 @@ final case class ReduceSeqI(n: Nat,
       case ExpType(ArrayType(len, _)) => len
     }
 
-    OperationalSemantics.eval(s, `new`(init.t.dataType, OpenCL.PrivateMemory, accum => {
+    OperationalSemantics.eval(s, `new`(init.t.dataType, idealised.OpenCL.PrivateMemory, accum => {
       (accum.wr `:=` init) `;`
         `for`(n, i =>
           fE(in `@` i)(accum.rd)(accum.wr)
@@ -75,7 +74,7 @@ final case class ReduceSeqI(n: Nat,
 
   override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
     // TODO: generalise allocation
-    `new`(dt2, OpenCL.PrivateMemory, acc =>
+    `new`(dt2, idealised.OpenCL.PrivateMemory, acc =>
       (acc.wr :=|dt2| init) `;`
         `for`(n, i =>
           SubstituteImplementations(f(in `@` i)(acc.rd)(acc.wr), env)
