@@ -3,7 +3,6 @@ package idealised.DPIA.IntermediatePrimitives
 import idealised.DPIA.Compilation.SubstituteImplementations
 import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
-import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA._
@@ -12,50 +11,37 @@ import idealised._
 import scala.language.reflectiveCalls
 import scala.xml.Elem
 
-final case class ReduceI(n: Nat,
-                         dt1: DataType,
-                         dt2: DataType,
-                         f: Phrase[ExpType -> (ExpType -> (AccType -> CommandType))],
-                         init: Phrase[ExpType],
-                         in: Phrase[ExpType],
-                         out: Phrase[ExpType -> CommandType])
+/**
+  * Created by federico on 13/01/18.
+  */
+final case class ScanSeqI(n: Nat,
+                          dt1: DataType,
+                          dt2: DataType,
+                          f: Phrase[ExpType -> (ExpType -> (AccType -> CommandType))],
+                          init: Phrase[ExpType],
+                          in: Phrase[ExpType],
+                          out: Phrase[AccType])
   extends CommandPrimitive with Intermediate[CommandType] {
 
   override val `type`: CommandType =
     (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
       (f :: t"exp[$dt1] -> exp[$dt2] -> acc[$dt2] -> comm") ->
-        (init :: exp"[$dt2]") ->
-          (in :: exp"[$n.$dt1]") ->
-            (out :: t"exp[$dt2] -> comm") ->
-              comm
+        (in :: exp"[$n.$dt1]") ->
+          (out :: acc"[$n.$dt2]") ->
+            comm
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {
-    ReduceI(fun(n), fun(dt1), fun(dt2),
+    ScanSeqI(fun(n), fun(dt1), fun(dt2),
       VisitAndRebuild(f, fun),
       VisitAndRebuild(init, fun),
       VisitAndRebuild(in, fun),
-        VisitAndRebuild(out, fun))
+      VisitAndRebuild(out, fun))
   }
 
-  override def eval(s: Store): Store = {
-    val outE = OperationalSemantics.eval(s, out)
-
-    val fE = OperationalSemantics.eval(s, f)(TrinaryFunctionEvaluator)
-    val n = in.t match {
-      case ExpType(ArrayType(len, _)) => len
-    }
-
-    OperationalSemantics.eval(s, `new`(init.t.dataType, OpenCL.PrivateMemory, accum => {
-      (accum.wr `:=` init) `;`
-        `for`(n, i =>
-          fE(in `@` i)(accum.rd)(accum.wr)
-        ) `;`
-        outE(π1(accum))
-    }))
-  }
+  override def eval(s: Store): Store = ???
 
   override def prettyPrint =
-    s"(reduceIExp ${PrettyPhrasePrinter(out)} ${PrettyPhrasePrinter(f)} ${PrettyPhrasePrinter(init)} ${PrettyPhrasePrinter(in)})"
+    s"(scanIExp ${PrettyPhrasePrinter(out)} ${PrettyPhrasePrinter(f)} ${PrettyPhrasePrinter(init)} ${PrettyPhrasePrinter(in)})"
 
   override def xmlPrinter: Elem =
     <reduceIExp n={ToString(n)} dt1={ToString(dt1)} dt2={ToString(dt2)}>
@@ -76,12 +62,11 @@ final case class ReduceI(n: Nat,
   override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
     // TODO: generalise allocation
     `new`(dt2, OpenCL.PrivateMemory, acc =>
-      (acc.wr :=|dt2| init) `;`
+      (acc.wr :=| dt2 | init) `;`
         `for`(n, i =>
-          SubstituteImplementations(f(in `@` i)(acc.rd)(acc.wr), env)
-        ) `;`
-        out(acc.rd)
+          SubstituteImplementations(f(in `@` i)(acc.rd)(acc.wr), env) `;`
+            ((out `@` i) :=| dt2 | acc.rd)
+        )
     )
   }
-
 }

@@ -2,7 +2,7 @@ package idealised.OpenCL.SurfaceLanguage.DSL
 
 import idealised.OpenCL.SurfaceLanguage.Primitives._
 import idealised.SurfaceLanguage.DSL.{DataExpr, dFun, fun}
-import idealised.SurfaceLanguage.Primitives.DepMap
+import idealised.SurfaceLanguage.Primitives.DepMapSeq
 import idealised.SurfaceLanguage.Semantics._
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage.{Expr, _}
@@ -85,19 +85,6 @@ object asScalar {
 
   def apply(array: DataExpr): AsScalar =
     AsScalar(array)
-}
-
-object reduceSeq {
-  def apply(f: Expr[DataType -> (DataType -> DataType)]): Expr[DataType -> (DataType -> DataType)] =
-    fun((init, array) => reduceSeq(f, init, array))
-
-  def apply(f: Expr[DataType -> (DataType -> DataType)], init: Expr[DataType]): Expr[DataType -> DataType] =
-    fun(array => reduceSeq(f, init, array))
-
-  def apply(f: Expr[DataType -> (DataType -> DataType)],
-            init: DataExpr,
-            array: DataExpr) =
-    ReduceSeq(f, init, array)
 }
 
 object scanSeq {

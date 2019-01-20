@@ -1,8 +1,9 @@
 package idealised.DPIA.FunctionalPrimitives
 
+
 import idealised.DPIA.Compilation.RewriteToImperative
 import idealised.DPIA.DSL._
-import idealised.DPIA.IntermediatePrimitives.ScanI
+import idealised.DPIA.IntermediatePrimitives.ScanSeqI
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
@@ -24,7 +25,7 @@ abstract  class AbstractScan(n: Nat,
   def makeScan: (Nat, DataType, DataType, Phrase[ExpType -> (ExpType -> ExpType)], Phrase[ExpType], Phrase[ExpType]) => AbstractScan
 
   def makeScanI: (Nat, DataType, DataType,
-    Phrase[ExpType -> (ExpType -> (AccType -> CommandType))], Phrase[ExpType], Phrase[ExpType], Phrase[AccType]) => ScanI
+    Phrase[ExpType -> (ExpType -> (AccType -> CommandType))], Phrase[ExpType], Phrase[ExpType], Phrase[AccType]) => ScanSeqI
 
   override val `type`: ExpType =
     (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
@@ -79,15 +80,4 @@ abstract  class AbstractScan(n: Nat,
       Character.toLowerCase(name.charAt(0)) + name.substring(1)
     })
 
-}
-
-final case class Scan(n: Nat,
-                      dt1: DataType,
-                      dt2: DataType,
-                      f: Phrase[ExpType -> (ExpType -> ExpType)],
-                      init:Phrase[ExpType],
-                      array: Phrase[ExpType])
-  extends AbstractScan(n, dt1, dt2, f, init, array) {
-  override def makeScan = Scan
-  override def makeScanI = ScanI
 }

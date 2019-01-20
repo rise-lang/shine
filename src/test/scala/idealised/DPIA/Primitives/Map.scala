@@ -1,11 +1,11 @@
-package idealised.DPIA
+package idealised.DPIA.Primitives
 
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
 import idealised.util.SyntaxChecker
 import lift.arithmetic._
 
-class Map extends idealised.Tests {
+class Map extends idealised.util.Tests {
 
   test("Simple 1D map example should generate syntactic valid C code with one for loop") {
     val slideExample = fun(ArrayType(SizeVar("N"), float))(xs => xs :>> mapSeq(fun(x => x)))

@@ -1,8 +1,9 @@
-package idealised.DPIA.ImperativePrimitives
+package idealised.OpenMP.ImperativePrimitives
 
-import idealised.DPIA.Phrases._
-import idealised.DPIA.Types._
 import idealised.DPIA._
+import idealised.DPIA.Phrases.Phrase
+import idealised.DPIA.Types._
+import idealised.DPIA.{->, Nat}
 
 final case class ParForVec(override val n: Nat,
                            override val dt: ScalarType,

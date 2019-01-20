@@ -1,8 +1,8 @@
 package idealised.DPIA.FunctionalPrimitives
 
+
 import idealised.DPIA.Compilation.RewriteToImperative
 import idealised.DPIA.DSL._
-import idealised.DPIA.IntermediatePrimitives.ReduceI
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
@@ -29,8 +29,8 @@ abstract class AbstractReduce(n: Nat,
   override val `type`: ExpType =
     (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
       (f :: t"exp[$dt1] -> exp[$dt2] -> exp[$dt2]") ->
-        (init :: exp"[$dt2]") ->
-          (array :: exp"[$n.$dt1]") -> exp"[$dt2]"
+      (init :: exp"[$dt2]") ->
+      (array :: exp"[$n.$dt1]") -> exp"[$dt2]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     makeReduce(fun(n), fun(dt1), fun(dt2),
@@ -90,16 +90,3 @@ abstract class AbstractReduce(n: Nat,
       Character.toLowerCase(name.charAt(0)) + name.substring(1)
     })
 }
-
-final case class Reduce(n: Nat,
-                        dt1: DataType,
-                        dt2: DataType,
-                        f: Phrase[ExpType -> (ExpType -> ExpType)],
-                        init: Phrase[ExpType],
-                        array: Phrase[ExpType])
-  extends AbstractReduce(n, dt1, dt2, f, init, array) {
-  override def makeReduce = Reduce
-
-  override def makeReduceI = ReduceI
-}
-

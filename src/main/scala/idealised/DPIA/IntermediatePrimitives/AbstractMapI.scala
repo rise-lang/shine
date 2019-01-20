@@ -1,6 +1,6 @@
 package idealised.DPIA.IntermediatePrimitives
 
-import idealised.DPIA.Compilation.SubstituteImplementations
+
 import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
@@ -21,9 +21,9 @@ abstract class AbstractMapI(n: Nat,
   override lazy val `type`: CommandType =
     (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
       (f :: t"exp[$dt1] -> acc[$dt2] -> comm") ->
-        (in :: exp"[$n.$dt1]") ->
-          (out :: acc"[$n.$dt2]") ->
-            comm
+      (in :: exp"[$n.$dt1]") ->
+      (out :: acc"[$n.$dt2]") ->
+      comm
 
   override def eval(s: Store): Store = {
     val fE = OperationalSemantics.eval(s, f)(BinaryFunctionEvaluator)
@@ -64,22 +64,4 @@ abstract class AbstractMapI(n: Nat,
       val name = this.getClass.getSimpleName
       Character.toLowerCase(name.charAt(0)) + name.substring(1)
     })
-}
-
-final case class MapSeqI(n: Nat,
-                         dt1: DataType,
-                         dt2: DataType,
-                         f: Phrase[ExpType -> (AccType -> CommandType)],
-                         in: Phrase[ExpType],
-                         out: Phrase[AccType])
-  extends AbstractMapI(n, dt1, dt2, f, in, out) {
-
-  override def makeMapI = MapSeqI
-
-  override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
-    `for`(n, i =>
-      SubstituteImplementations(f(in `@` i)(out `@` i), env)
-    )
-  }
-
 }

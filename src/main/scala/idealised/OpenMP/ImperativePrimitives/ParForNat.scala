@@ -1,4 +1,4 @@
-package idealised.DPIA.ImperativePrimitives
+package idealised.OpenMP.ImperativePrimitives
 
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics._
@@ -11,7 +11,7 @@ abstract class AbstractParForNat[T <: DataType](val n: Nat,
                                                 val i: NatIdentifier,
                                                 val dt: T,
                                                 val out: Phrase[AccType],
-                                                val body: Phrase[`(nat)->`[(AccType -> CommandType)]])
+                                                val body: Phrase[`(nat)->`[AccType -> CommandType]])
   extends CommandPrimitive {
 
   override lazy val `type`: CommandType = {
@@ -43,7 +43,7 @@ abstract class AbstractParForNat[T <: DataType](val n: Nat,
       Character.toLowerCase(name.charAt(0)) + name.substring(1)
     })
 
-  def makeParForNat: (Nat, NatIdentifier, T, Phrase[AccType], Phrase[`(nat)->`[(AccType -> CommandType)]]) => AbstractParForNat[T]
+  def makeParForNat: (Nat, NatIdentifier, T, Phrase[AccType], Phrase[`(nat)->`[AccType -> CommandType]]) => AbstractParForNat[T]
 
 }
 
@@ -51,7 +51,7 @@ final case class ParForNat(override val n: Nat,
                            override val i: NatIdentifier,
                            override val dt: DataType,
                            override val out: Phrase[AccType],
-                           override val body: Phrase[`(nat)->`[(AccType -> CommandType)]])
+                           override val body: Phrase[`(nat)->`[AccType -> CommandType]])
   extends AbstractParForNat[DataType](n, i, dt, out, body) {
   override def makeParForNat = ParForNat
 }

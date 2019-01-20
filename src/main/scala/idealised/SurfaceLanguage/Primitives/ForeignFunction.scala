@@ -2,15 +2,15 @@ package idealised.SurfaceLanguage.Primitives
 
 import idealised.DPIA
 import idealised.SurfaceLanguage.DSL.DataExpr
-import idealised.SurfaceLanguage.Types.{DataType, TypeInference}
 import idealised.SurfaceLanguage.Types.TypeInference.SubstitutionMap
+import idealised.SurfaceLanguage.Types.{DataType, TypeInference}
 import idealised.SurfaceLanguage.{PrimitiveExpr, VisitAndRebuild}
 
-final case class ForeignFunctionDeclaration(name: String,
-                                            argNames: Seq[String],
-                                            body: String)
+object ForeignFunction {
+  final case class Declaration(name: String, argNames: Seq[String], body: String)
+}
 
-final case class ForeignFunction(funDecl: ForeignFunctionDeclaration,
+final case class ForeignFunction(funDecl: ForeignFunction.Declaration,
                                  inTs: Seq[DataType],
                                  outT: DataType,
                                  args: Seq[DataExpr]) extends PrimitiveExpr
@@ -38,7 +38,8 @@ final case class ForeignFunction(funDecl: ForeignFunctionDeclaration,
   override def convertToPhrase: DPIA.FunctionalPrimitives.ForeignFunction = {
     import DPIA.Types.DataType
     DPIA.FunctionalPrimitives.ForeignFunction(
-      funDecl, inTs.map(DataType(_)), DataType(outT),
+      DPIA.FunctionalPrimitives.ForeignFunction.Declaration(funDecl.name, funDecl.argNames, funDecl.body),
+      inTs.map(DataType(_)), DataType(outT),
       args.map(_.toPhrase[DPIA.Types.ExpType])
     )
   }

@@ -10,7 +10,6 @@ import idealised.DPIA.Types._
 import idealised.DPIA._
 import idealised.OpenCL.FunctionalPrimitives.VectorFromScalar
 import idealised.SurfaceLanguage.Operators
-import idealised.SurfaceLanguage.Primitives.ForeignFunctionDeclaration
 import idealised._
 import lift.arithmetic.{NamedVar, _}
 
@@ -89,12 +88,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case For(n, Lambda(i, p)) => codeGenFor(n, i, p, env)
 
       case ForNat(n, NatDependentLambda(i, p)) => codeGenForNat(n, i, p, env)
-
-      case ParFor(n, dt, a, Lambda(i, Lambda(o, p))) =>
-        codeGenFor(n, i, Phrase.substitute(a `@` i, `for` = o, `in` = p), env)
-
-      case ParForVec(n, dt, a, Lambda(i, Lambda(o, p))) =>
-        codeGenFor(n, i, Phrase.substitute(a `@v` i, `for` = o, `in` = p), env)
 
       case Proj1(pair) => cmd(Lifting.liftPair(pair)._1, env)
       case Proj2(pair) => cmd(Lifting.liftPair(pair)._2, env)
@@ -514,7 +507,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     exp(e, env, idx :: ps)
   }
 
-  private def codeGenForeignFunction(funDecl: ForeignFunctionDeclaration,
+  private def codeGenForeignFunction(funDecl: ForeignFunction.Declaration,
                                      inTs: collection.Seq[DataType],
                                      outT: DataType,
                                      args: collection.Seq[Phrase[ExpType]],

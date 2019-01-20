@@ -1,13 +1,10 @@
 package idealised.DPIA.IntermediatePrimitives
 
-import idealised.DPIA.Compilation.SubstituteImplementations
-import idealised.DPIA.DSL._
-import idealised.DPIA.ImperativePrimitives.{For, ForNat}
+
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import lift.arithmetic.{NamedVar, RangeAdd}
 
 import scala.xml.Elem
 
@@ -26,21 +23,21 @@ abstract class AbstractDepMapI(n: Nat,
     val k = f.t.x
     (n: Nat) -> (i1: Nat) -> (dt1: DataType) -> (i2: Nat) -> (dt2: DataType) ->
       (f :: t"($k:nat) -> exp[${makeDt1(k)}] -> acc[${makeDt2(k)}] -> comm") ->
-        (in :: exp"[${DepArrayType(n, makeDt1)}]") ->
-          (out :: acc"[${DepArrayType(n, makeDt2)}]") ->
-            comm
+      (in :: exp"[${DepArrayType(n, makeDt1)}]") ->
+      (out :: acc"[${DepArrayType(n, makeDt2)}]") ->
+      comm
   }
 
   override def eval(s: Store): Store = {
-//    val fE = OperationalSemantics.eval(s, f)(BinaryFunctionEvaluator)
-//    val n = in.t match {
-//      case ExpType(ArrayType(len, _)) => len
-//    }
-//
-//    (0 until n.eval).foldLeft(s)((sOld, i) => {
-//      val comm = fE(in `@` Literal(i))(out `@` Literal(i))
-//      OperationalSemantics.eval(sOld, comm)
-//    })
+    //    val fE = OperationalSemantics.eval(s, f)(BinaryFunctionEvaluator)
+    //    val n = in.t match {
+    //      case ExpType(ArrayType(len, _)) => len
+    //    }
+    //
+    //    (0 until n.eval).foldLeft(s)((sOld, i) => {
+    //      val comm = fE(in `@` Literal(i))(out `@` Literal(i))
+    //      OperationalSemantics.eval(sOld, comm)
+    //    })
     ???
   }
 
@@ -71,22 +68,4 @@ abstract class AbstractDepMapI(n: Nat,
       val name = this.getClass.getSimpleName
       Character.toLowerCase(name.charAt(0)) + name.substring(1)
     })
-}
-
-final case class DepMapI(n: Nat,
-                         i1: NatIdentifier, dt1: DataType,
-                         i2: NatIdentifier, dt2: DataType,
-                         f: Phrase[`(nat)->`[ExpType -> (AccType -> CommandType)]],
-                         in: Phrase[ExpType],
-                         out: Phrase[AccType])
-  extends AbstractDepMapI(n, i1, dt1, i2, dt2, f, in, out) {
-
-  override def makeMapI = DepMapI
-
-  override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
-    ForNat(n, _Λ_( i =>
-      SubstituteImplementations(f(i)(in `@d` i)(out `@d` i), env)
-      , RangeAdd(0, n, 1))
-    )
-  }
 }

@@ -42,11 +42,6 @@ package object DSL {
       case x => error(x.toString, "(exp[idx(n)], exp[st<n>])")
     }
 
-//    def `@d`(index: Phrase[ExpType]):DepIdx = (index.t, e.t) match {
-//      case (ExpType(IndexType(n1)), ExpType(DepArrayType(n2, i, dt))) if n1 == n2 =>
-//        DepIdx(n1, i, dt, index, e)
-//      case x => error(x.toString, "(exp[idx(n)], exp[n.(i:Nat) -> dt])")
-//    }
     def `@d`(index: Nat):DepIdx = e.t match {
       case ExpType(DepArrayType(n, i, dt)) => DepIdx(n, i, dt, index, e)
       case x => error(x.toString, "(exp[idx(n)], exp[n.(i:Nat) -> dt])")
@@ -72,11 +67,6 @@ package object DSL {
       case x => error(x.toString, "(exp[idx(n)], acc[n.dt])")
     }
 
-//    def `@d`(index: Phrase[ExpType]):DepIdxAcc = (index.t, a.t) match {
-//      case (ExpType(IndexType(n1)), AccType(DepArrayType(n2, i, dt))) if n1 == n2 =>
-//        DepIdxAcc(n1, i, dt, index, a)
-//      case x => error(x.toString, "(exp[idx(n)], acc[n.(i:Nat) -> dt])")
-//    }
     def `@d`(index: Nat):DepIdxAcc = a.t match {
       case AccType(DepArrayType(n, i, dt)) => DepIdxAcc(n, i, dt, index, a)
       case x => error(x.toString, "(exp[idx(n)], acc[n.(i:Nat) -> dt])")

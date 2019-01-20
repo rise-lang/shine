@@ -67,7 +67,7 @@ object gemv extends App {
   val mult = fun(x => x._1 * x._2)
   val add = fun(x => fun(a => x + a))
   val scal = fun(xs => fun(alpha => mapSeq(fun(x => alpha * x), xs)))
-  val dot = fun(xs => fun(ys => reduce(add, 0.0f) o mapSeq(mult) $ zip(xs, ys)))
+  val dot = fun(xs => fun(ys => reduceSeq(add, 0.0f) o mapSeq(mult) $ zip(xs, ys)))
 
   val high_level =
     fun(matT)(mat => fun(xsT)(xs => fun(ysT)(ys =>

@@ -18,12 +18,12 @@ abstract class AbstractDepMap(df: Expr[`(nat)->`[DataType -> DataType]],
 
   def makeDPIAMap: (
     DPIA.Nat,
-    DPIA.NatIdentifier,
-    DPIA.Types.DataType,
-    DPIA.NatIdentifier,
-    DPIA.Types.DataType,
-    DPIA.Phrases.Phrase[DPIA.Types.NatDependentFunctionType[DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]]],
-    DPIA.Phrases.Phrase[DPIA.Types.ExpType]
+      DPIA.NatIdentifier,
+      DPIA.Types.DataType,
+      DPIA.NatIdentifier,
+      DPIA.Types.DataType,
+      DPIA.Phrases.Phrase[DPIA.Types.NatDependentFunctionType[DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]]],
+      DPIA.Phrases.Phrase[DPIA.Types.ExpType]
     ) => DPIA.FunctionalPrimitives.AbstractDepMap
 
 
@@ -64,9 +64,9 @@ abstract class AbstractDepMap(df: Expr[`(nat)->`[DataType -> DataType]],
               case Some(NatDependentFunctionType(i, FunctionType(_, df2))) =>
                 makeMap(df, array, Some(DepArrayType(n, Type.substitute(_, `for`=i, `in`=df2))))
               case x => error(expr = s"${this.getClass.getSimpleName}($df, $array)",
-                              found = s"`${x.toString}'", expected = "(nat) -> df1 -> df2")
+                found = s"`${x.toString}'", expected = "(nat) -> df1 -> df2")
             }
-          )
+            )
         case x => error(expr = s"${this.getClass.getSimpleName}($df, $array)",
           found = s"`${x.toString}'", expected = "n.(j:nat -> dft)")
       })
@@ -76,13 +76,4 @@ abstract class AbstractDepMap(df: Expr[`(nat)->`[DataType -> DataType]],
     makeMap(VisitAndRebuild(df, fun), VisitAndRebuild(array, fun), t.map(fun(_)))
   }
 
-}
-
-final case class DepMap(df: Expr[`(nat)->`[DataType -> DataType]], array: DataExpr,
-                        override val t: Option[DataType])
-  extends AbstractDepMap(df, array, t) {
-
-  override def makeDPIAMap = DPIA.FunctionalPrimitives.DepMap
-
-  override def makeMap = DepMap
 }

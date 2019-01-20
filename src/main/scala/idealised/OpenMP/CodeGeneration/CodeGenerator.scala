@@ -7,9 +7,9 @@ import idealised.DPIA.{Nat, error, freshName}
 import idealised.DPIA.Phrases.{Identifier, Lambda, NatDependentLambda, Phrase}
 import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType, PhraseType, VectorType}
 import idealised.DPIA.DSL._
-import idealised.DPIA.ImperativePrimitives.{ParFor, ParForNat, ParForVec}
 import idealised.OpenCL.FunctionalPrimitives.{AsScalar, AsVector}
 import idealised.OpenCL.ImperativePrimitives.{AsScalarAcc, AsVectorAcc}
+import idealised.OpenMP.ImperativePrimitives.{ParFor, ParForVec, ParForNat}
 import idealised.SurfaceLanguage.NatIdentifier
 import lift.arithmetic
 import lift.arithmetic._

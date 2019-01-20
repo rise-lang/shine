@@ -56,7 +56,7 @@ object asum extends App {
   val add = fun(x => fun(a => x + a))
 
   val high_level = fun(inputT)(input =>
-    reduce(add, 0.0f) o mapSeq(abs(float)) $ input)
+    reduceSeq(add, 0.0f) o mapSeq(abs(float)) $ input)
 
   {
     println(s"-- high level --")
@@ -119,7 +119,7 @@ object asum extends App {
   {
     val abs = (t: DataType) => fun(x => oclFun("fabs", t, t, x))
     val high_level = fun(inputT)(input =>
-      reduce(add, 0.0f) o mapSeq(abs(float)) $ input)
+      reduceSeq(add, 0.0f) o mapSeq(abs(float)) $ input)
 
     {
       println(s"-- high level --")

@@ -1,6 +1,5 @@
-package idealised.DPIA.ImperativePrimitives
+package idealised.OpenMP.ImperativePrimitives
 
-import idealised.DPIA.Compilation.CodeGenerator
 import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics

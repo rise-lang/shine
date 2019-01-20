@@ -1,9 +1,9 @@
 package idealised.DPIA.FunctionalPrimitives
 
+
 import idealised.DPIA.Compilation.RewriteToImperative
-import idealised.DPIA.Compilation.RewriteToImperative.acc
 import idealised.DPIA.DSL._
-import idealised.DPIA.IntermediatePrimitives.{AbstractDepMapI, DepMapI}
+import idealised.DPIA.IntermediatePrimitives.AbstractDepMapI
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
@@ -50,8 +50,8 @@ abstract class AbstractDepMap(n: Nat,
     val k = f.t.x
     (n: Nat) -> (i1: Nat) -> (dt1: DataType) -> (i2: Nat) -> (dt2: DataType) ->
       (f :: t"($k : nat) -> exp[${ makeDt1(k) }] -> exp[${ makeDt2(k) }]")
-        (array :: exp"[${DepArrayType(n, makeDt1)}]") ->
-          exp"[${DepArrayType(n, makeDt2)}]"
+    (array :: exp"[${DepArrayType(n, makeDt1)}]") ->
+      exp"[${DepArrayType(n, makeDt2)}]"
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
@@ -80,15 +80,4 @@ abstract class AbstractDepMap(n: Nat,
       Character.toLowerCase(name.charAt(0)) + name.substring(1)
     })
   }
-}
-
-final case class DepMap(n: Nat,
-                        i1: NatIdentifier, dt1: DataType,
-                        i2: NatIdentifier, dt2: DataType,
-                     f: Phrase[`(nat)->`[ExpType -> ExpType]],
-                     array: Phrase[ExpType])
-  extends AbstractDepMap(n, i1, dt1, i2, dt2, f, array) {
-  override def makeMap = DepMap
-
-  override def makeMapI = DepMapI
 }

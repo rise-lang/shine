@@ -26,14 +26,3 @@ object reducePar {
   def apply(f: Expr[DataType -> (DataType -> DataType)], init: DataExpr, array: DataExpr) =
     ReducePar(f, init, array)
 }
-
-object reduceSeq {
-  def apply(f: Expr[DataType -> (DataType -> DataType)]): Expr[DataType -> (DataType -> DataType)] =
-    fun((init, array) => reduceSeq(f, init, array))
-
-  def apply(f: Expr[DataType -> (DataType -> DataType)], init: Expr[DataType]): Expr[DataType -> DataType] =
-    fun(array => reduceSeq(f, init, array))
-
-  def apply(f: Expr[DataType -> (DataType -> DataType)], init: DataExpr, array: DataExpr) =
-    ReduceSeq(f, init, array)
-}

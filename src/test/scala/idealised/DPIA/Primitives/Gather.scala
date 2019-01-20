@@ -1,4 +1,4 @@
-package idealised.DPIA
+package idealised.DPIA.Primitives
 
 import idealised.OpenCL.SurfaceLanguage.DSL.reorderWithStridePhrase
 import idealised.SurfaceLanguage.DSL._
@@ -6,10 +6,10 @@ import idealised.SurfaceLanguage.Types._
 import idealised.util.SyntaxChecker
 import lift.arithmetic._
 
-class Scatter extends idealised.Tests {
+class Gather extends idealised.util.Tests {
 
   test("Simple scatter example should generate syntactic valid C code with two one loops") {
-    val slideExample = fun(ArrayType(SizeVar("N"), float))(xs => xs :>> mapSeq(fun(x => x)) :>> scatter(reorderWithStridePhrase(128)) )
+    val slideExample = fun(ArrayType(SizeVar("N"), float))(xs => xs :>> gather(reorderWithStridePhrase(128)) :>> mapSeq(fun(x => x)) )
 
     val p = idealised.C.ProgramGenerator.makeCode(TypeInference(slideExample, Map()).toPhrase)
     val code = p.code
@@ -21,7 +21,7 @@ class Scatter extends idealised.Tests {
 
   test("Simple 2D scatter example should generate syntactic valid C code with two two loops") {
     val slideExample = fun(ArrayType(SizeVar("N"), ArrayType(SizeVar("M"), float)))(xs =>
-      xs :>> mapSeq(mapSeq(fun(x => x))) :>> map(scatter(reorderWithStridePhrase(128))) )
+      xs :>> map(gather(reorderWithStridePhrase(128))) :>> mapSeq(mapSeq(fun(x => x))) )
 
     val p = idealised.C.ProgramGenerator.makeCode(TypeInference(slideExample, Map()).toPhrase)
     val code = p.code

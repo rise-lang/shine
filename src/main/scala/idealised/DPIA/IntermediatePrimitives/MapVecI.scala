@@ -7,6 +7,7 @@ import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA._
+import idealised.OpenMP.DSL.parForVec
 
 import scala.xml.Elem
 
@@ -38,7 +39,7 @@ final case class MapVecI(n: Nat,
   }
 
   override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
-    `parForVec`(n, st2, out, i => a =>
+    parForVec(n, st2, out, i => a =>
       SubstituteImplementations(f(in `@v` i)(a), env)
     )
   }
