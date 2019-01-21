@@ -63,52 +63,6 @@ object `for` {
     For(n, λ(exp"[idx($n)]")( i => f(i) ))
 }
 
-object parFor {
-  def apply(n: Nat,
-            dt: DataType,
-            out: Phrase[AccType],
-            f: Phrase[ExpType] => Phrase[AccType] => Phrase[CommandType]): ParFor =
-    ParFor(n, dt, out, λ(exp"[idx($n)]")( i => λ(acc"[$dt]")( o => f(i)(o) )))
-}
-
-object `parForVec` {
-  def apply(n: Nat,
-            st: ScalarType,
-            out: Phrase[AccType],
-            f: Phrase[ExpType] => Phrase[AccType] => Phrase[CommandType]): ParForVec =
-    ParForVec(n, st, out, λ(exp"[idx($n)]")( i => λ(acc"[$st]")( o => f(i)(o) )))
-}
-
-object parForNat {
-  def apply(n:Nat, i:NatIdentifier, dt:DataType, out:Phrase[AccType], f:NatIdentifier => Phrase[AccType] => Phrase[CommandType]):ParForNat = {
-    def makeDt(x:Nat) = DataType.substitute(x, `for`=i, `in`=dt)
-    ParForNat(n, i,  dt, out, _Λ_(idx => λ(acc"[${makeDt(idx)}]")(o => f(idx)(o)), RangeAdd(0, n, 1)))
-  }
-}
-
-object dblBufFor {
-  def apply(n: Nat,
-            m: Nat,
-            k: Nat,
-            dt: DataType,
-            addressSpace: AddressSpace,
-            buffer1: Phrase[VarType],
-            buffer2: Phrase[VarType],
-            body: Phrase[`(nat)->`[AccType -> (ExpType -> CommandType)]],
-            C: Phrase[ExpType -> CommandType]): DoubleBufferFor = {
-    body match {
-      case NatDependentLambda(x, b) =>
-        // ensure that the nested Nat dependent lambda has the proper range information
-        val newX = NamedVar(x.name, RangeAdd(0, k, 1))
-        val newB = PhraseType.substitute(newX, x, b)
-        DoubleBufferFor(n, m, k, dt, addressSpace, buffer1, buffer2,
-          NatDependentLambda(newX, newB),
-          C)
-      case _ => throw new Exception("This should not happen")
-    }
-  }
-}
-
 object fst {
   def apply(record: Phrase[ExpType]): Fst = {
     record.t match {

@@ -7,6 +7,7 @@ import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA._
+import idealised.OpenMP.DSL.parForVec
 
 import scala.xml.Elem
 
@@ -16,8 +17,8 @@ final case class MapVecI(n: Nat,
                          f: Phrase[ExpType -> (AccType -> CommandType)],
                          in: Phrase[ExpType],
                          out: Phrase[AccType])
-  extends CommandPrimitive with Intermediate[CommandType] {
-
+  extends CommandPrimitive with Intermediate[CommandType]
+{
   override val `type`: CommandType =
     (n: Nat) -> (st1: DataType) -> (st2: DataType) ->
       (f :: t"exp[$st1] -> acc[$st2] -> comm") ->
@@ -38,7 +39,7 @@ final case class MapVecI(n: Nat,
   }
 
   override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
-    `parForVec`(n, st2, out, i => a =>
+    parForVec(n, st2, out, i => a =>
       SubstituteImplementations(f(in `@v` i)(a), env)
     )
   }

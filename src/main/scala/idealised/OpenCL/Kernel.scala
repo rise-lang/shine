@@ -169,6 +169,7 @@ case class Kernel(kernel: OpenCL.AST.KernelDecl,
     // create length args sorted by names (cmp. KernelGenerator.makeLengthParams)
     lengthMapping.toList.map({
       case (v: Var, n) => (v.name,  ValueArg.create(n.eval))
+      case _ => ???
     }).sortBy(_._1).map(_._2)
   }
 

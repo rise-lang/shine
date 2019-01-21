@@ -7,9 +7,9 @@ import idealised.DPIA.{Nat, error, freshName}
 import idealised.DPIA.Phrases.{Identifier, Lambda, NatDependentLambda, Phrase}
 import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType, PhraseType, VectorType}
 import idealised.DPIA.DSL._
-import idealised.DPIA.ImperativePrimitives.{ParFor, ParForNat, ParForVec}
-import idealised.OpenCL.FunctionalPrimitives.{AsScalar, AsVector}
-import idealised.OpenCL.ImperativePrimitives.{AsScalarAcc, AsVectorAcc}
+import idealised.DPIA.FunctionalPrimitives.{AsScalar, AsVector}
+import idealised.DPIA.ImperativePrimitives.{AsScalarAcc, AsVectorAcc, ForVec}
+import idealised.OpenMP.ImperativePrimitives.{ParFor, ParForNat}
 import idealised.SurfaceLanguage.NatIdentifier
 import lift.arithmetic
 import lift.arithmetic._
@@ -34,7 +34,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
   override def cmd(phrase: Phrase[CommandType], env: Environment): Stmt = {
     phrase match {
       case ParFor(n, dt, a, Lambda(i, Lambda(o, p))) => codeGenParFor(n, dt, a, i, o, p, env)
-      case ParForVec(n, dt, a, Lambda(i, Lambda(o, p))) => codeGenParForVec(n, dt, a, i, o, p, env)
+      case ForVec(n, dt, a, Lambda(i, Lambda(o, p))) => codeGenParForVec(n, dt, a, i, o, p, env)
       case ParForNat(n, i_dt, dt, a, NatDependentLambda(i, Lambda(o, p))) => codeGenParForNat(n, i_dt, dt, a, i, o, p, env)
       case _ => super.cmd(phrase, env)
     }

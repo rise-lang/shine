@@ -1,18 +1,21 @@
 package idealised.DPIA.FunctionalPrimitives
 
-import idealised.DPIA.Compilation.{CodeGenerator, RewriteToImperative}
+import idealised.DPIA.Compilation.RewriteToImperative
 import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases.VisitAndRebuild.Visitor
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics.{Data, Store}
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised.SurfaceLanguage.Primitives.ForeignFunctionDeclaration
 
 import scala.language.reflectiveCalls
 import scala.xml.Elem
 
-final case class ForeignFunction(funDecl: ForeignFunctionDeclaration,
+object ForeignFunction {
+  final case class Declaration(name: String, argNames: Seq[String], body: String)
+}
+
+final case class ForeignFunction(funDecl: ForeignFunction.Declaration,
                                  inTs: Seq[DataType],
                                  outT: DataType,
                                  args: Seq[Phrase[ExpType]])
@@ -32,7 +35,7 @@ final case class ForeignFunction(funDecl: ForeignFunctionDeclaration,
                 exps: Seq[Phrase[ExpType]],
                 inTs: Seq[DataType]): Phrase[CommandType] = {
       ts match {
-        // with only one argument left to process return the assignment of the OpenCLFunction call
+        // with only one argument left to process return the assignment of the function call
         case Seq((arg, inT)) =>
           con(arg)(λ(exp"[$inT]")(e =>
             A :=| outT | ForeignFunction(funDecl, inTs :+ inT, outT, exps :+ e)))
@@ -52,7 +55,7 @@ final case class ForeignFunction(funDecl: ForeignFunctionDeclaration,
                 exps: Seq[Phrase[ExpType]],
                 inTs: Seq[DataType]): Phrase[CommandType] = {
       ts match {
-        // with only one argument left to process return the assignment of the OpenCLFunction call
+        // with only one argument left to process return the assignment of the function call
         case Seq( (arg, inT) ) =>
           con(arg)(λ(exp"[$inT]")(e =>
             C( ForeignFunction(funDecl, inTs :+ inT, outT, exps :+ e) )) )

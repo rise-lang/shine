@@ -1,15 +1,15 @@
 package idealised.SurfaceLanguage.DSL
 
-import idealised.SurfaceLanguage._
-import idealised.SurfaceLanguage.Expr
 import idealised.SurfaceLanguage.Primitives._
+import idealised.SurfaceLanguage.Semantics._
 import idealised.SurfaceLanguage.Types._
+import idealised.SurfaceLanguage.{Expr, _}
 import lift.arithmetic.NamedVar
 
-object depMap {
-  def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] = fun(x => depMap(f, x))
+object depMapSeq {
+  def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] = fun(x => depMapSeq(f, x))
 
-  def apply(f: Expr[DataType -> DataType], x: DataExpr): DepMap = DepMap(dFun(_ => f), x, None)
+  def apply(f: Expr[DataType -> DataType], x: DataExpr): DepMapSeq = DepMapSeq(dFun(_ => f), x, None)
 }
 
 object mapSeq {
@@ -66,18 +66,31 @@ object slice {
   def apply(start:Nat, length:Nat): Expr[DataType -> DataType] = drop(start) >>> take(length)
 }
 
-object reduce {
+object reduceSeq {
   def apply(f: Expr[DataType -> (DataType -> DataType)]): Expr[DataType -> (DataType -> DataType)] =
-    fun((init, array) => reduce(f, init, array))
+    fun((init, array) => reduceSeq(f, init, array))
 
   def apply(f: Expr[DataType -> (DataType -> DataType)],
             init: DataExpr): Expr[DataType -> DataType] =
-    fun(array => reduce(f, init, array))
+    fun(array => reduceSeq(f, init, array))
 
   def apply(f: Expr[DataType -> (DataType -> DataType)],
             init: DataExpr,
-            array: DataExpr): Reduce =
-    Reduce(f, init, array, None)
+            array: DataExpr): ReduceSeq =
+    ReduceSeq(f, init, array, None)
+}
+
+object scanSeq {
+  def apply(f: Expr[DataType -> (DataType -> DataType)]): Expr[DataType -> (DataType -> DataType)] =
+    fun((init, array) => scanSeq(f, init, array))
+
+  def apply(f: Expr[DataType -> (DataType -> DataType)], init: Expr[DataType]): Expr[DataType -> DataType] =
+    fun(array => scanSeq(f, init, array))
+
+  def apply(f: Expr[DataType -> (DataType -> DataType)],
+            init: DataExpr,
+            array: DataExpr) =
+    ScanSeq(f, init, array, None)
 }
 
 object iterate {
@@ -120,13 +133,35 @@ object tuple {
   def apply(fst: DataExpr, snd: DataExpr): Tuple = Tuple(fst, snd, None)
 }
 
+object asVector {
+  def apply(n: Nat): Expr[DataType -> DataType] =
+    fun(array => asVector(n, array))
+
+  def apply(n: Nat, array: DataExpr): AsVector =
+    AsVector(n, array)
+}
+
+object asScalar {
+  def apply(): Expr[DataType -> DataType] = fun(array => asScalar(array))
+
+  def apply(array: DataExpr): AsScalar =
+    AsScalar(array)
+}
+
+object vectorize {
+  def apply(len: Int, f: Float) =
+    LiteralExpr(VectorData(Vector.fill(len)(FloatData(f))))
+
+  def apply(len: Nat, e: DataExpr) = VectorFromScalar(len, e)
+}
+
 object foreignFun {
   def apply(returnT: DataType, name: String, param: (DataType, String), body: String, arg: DataExpr) =
-    ForeignFunction(ForeignFunctionDeclaration(name, Seq(param._2), body),
+    ForeignFunction(ForeignFunction.Declaration(name, Seq(param._2), body),
       Seq(param._1), returnT, Seq(arg))
 
   def apply(returnT: DataType, name: String, params: Seq[(DataType, String)], body: String, args: Seq[DataExpr]) =
-    ForeignFunction(ForeignFunctionDeclaration(name, params.map(_._2), body),
+    ForeignFunction(ForeignFunction.Declaration(name, params.map(_._2), body),
       params.map(_._1), returnT, args)
 }
 

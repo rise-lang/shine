@@ -1,0 +1,44 @@
+package idealised.DPIA.FunctionalPrimitives
+
+import idealised.DPIA.Compilation.RewriteToImperative
+import idealised.DPIA.DSL._
+import idealised.DPIA.ImperativePrimitives.AsVectorAcc
+import idealised.DPIA.Phrases._
+import idealised.DPIA.Semantics.OperationalSemantics._
+import idealised.DPIA.Types._
+import idealised.DPIA._
+
+import scala.xml.Elem
+
+final case class AsVector(n: Nat,
+                          m: Nat,
+                          dt: ScalarType,
+                          array: Phrase[ExpType])
+  extends ExpPrimitive {
+
+  override lazy val `type`: ExpType =
+    (n: Nat) -> (m: Nat) -> (dt: ScalarType) ->
+      (array :: exp"[${m * n}.$dt]") ->
+        exp"[$m.${VectorType(n, dt)}]"
+
+  override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
+    AsVector(f(n), f(m), f(dt), VisitAndRebuild(array, f))
+  }
+
+  override def eval(s: Store): Data = ???
+
+  override def prettyPrint: String = s"(asVector ${n.toString} ${PrettyPhrasePrinter(array)})"
+
+  override def xmlPrinter: Elem =
+    <asVector n={ToString(n)}>
+      {Phrases.xmlPrinter(array)}
+    </asVector>
+
+  override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
+    RewriteToImperative.acc(array)(AsVectorAcc(n, m, dt, A))
+  }
+
+  override def continuationTranslation(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
+    RewriteToImperative.con(array)(λ(array.t)(x => C(AsVector(n, m, dt, x)) ))
+  }
+}

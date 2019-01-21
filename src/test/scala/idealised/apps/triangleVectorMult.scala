@@ -8,7 +8,7 @@ import lift.arithmetic.?
 
 import scala.language.{implicitConversions, postfixOps}
 
-class triangleVectorMult extends idealised.Tests {
+class triangleVectorMult extends idealised.util.Tests {
 
   val mult = fun(x => x._1 * x._2)
 
@@ -17,8 +17,8 @@ class triangleVectorMult extends idealised.Tests {
   val triangleVectorMult: Expr[DataType -> (DataType -> DataType)] =
     fun(DepArrayType(8, i => ArrayType(i + 1, int)))(triangle =>
       fun(ArrayType(8, int))(vector =>
-        depMap(fun(row => zip(row, take(Macros.GetLength(row), vector))
-          :>> mapSeq(mult) :>> reduce(add, 0)
+        depMapSeq(fun(row => zip(row, take(Macros.GetLength(row), vector))
+          :>> mapSeq(mult) :>> reduceSeq(add, 0)
         ), triangle)
       )
     )

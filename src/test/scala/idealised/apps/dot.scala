@@ -6,7 +6,7 @@ import idealised.SurfaceLanguage.Types._
 import idealised.util.SyntaxChecker
 import lift.arithmetic._
 
-class dot extends idealised.Tests {
+class dot extends idealised.util.Tests {
 
   val N = SizeVar("N")
   val xsT = ArrayType(N, float)
@@ -16,7 +16,7 @@ class dot extends idealised.Tests {
   val add = fun((x, a) => x + a)
 
   val high_level: Expr[DataType -> (DataType -> DataType)] = fun(xsT)(xs => fun(ysT)(ys =>
-    reduce(add, 0.0f) o mapSeq(mult) $ zip(xs, ys)
+    reduceSeq(add, 0.0f) o mapSeq(mult) $ zip(xs, ys)
   ))
 
   test("High level dot product type inference works") {

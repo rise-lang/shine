@@ -2,7 +2,7 @@ package idealised.OpenCL.SurfaceLanguage.DSL
 
 import idealised.OpenCL.SurfaceLanguage.Primitives._
 import idealised.SurfaceLanguage.DSL.{DataExpr, dFun, fun}
-import idealised.SurfaceLanguage.Primitives.DepMap
+import idealised.SurfaceLanguage.Primitives.{AsScalar, AsVector, DepMapSeq}
 import idealised.SurfaceLanguage.Semantics._
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage.{Expr, _}
@@ -70,54 +70,6 @@ object toPrivate {
 
   def apply(f: Expr[DataType -> DataType], x: DataExpr): ToPrivate =
     ToPrivate(f, x)
-}
-
-object asVector {
-  def apply(n: Nat): Expr[DataType -> DataType] =
-    fun(array => asVector(n, array))
-
-  def apply(n: Nat, array: DataExpr): AsVector =
-    AsVector(n, array)
-}
-
-object asScalar {
-  def apply(): Expr[DataType -> DataType] = fun(array => asScalar(array))
-
-  def apply(array: DataExpr): AsScalar =
-    AsScalar(array)
-}
-
-object reduceSeq {
-  def apply(f: Expr[DataType -> (DataType -> DataType)]): Expr[DataType -> (DataType -> DataType)] =
-    fun((init, array) => reduceSeq(f, init, array))
-
-  def apply(f: Expr[DataType -> (DataType -> DataType)], init: Expr[DataType]): Expr[DataType -> DataType] =
-    fun(array => reduceSeq(f, init, array))
-
-  def apply(f: Expr[DataType -> (DataType -> DataType)],
-            init: DataExpr,
-            array: DataExpr) =
-    ReduceSeq(f, init, array)
-}
-
-object scanSeq {
-  def apply(f: Expr[DataType -> (DataType -> DataType)]): Expr[DataType -> (DataType -> DataType)] =
-    fun((init, array) => scanSeq(f, init, array))
-
-  def apply(f: Expr[DataType -> (DataType -> DataType)], init: Expr[DataType]): Expr[DataType -> DataType] =
-    fun(array => scanSeq(f, init, array))
-
-  def apply(f: Expr[DataType -> (DataType -> DataType)],
-            init: DataExpr,
-            array: DataExpr) =
-    ScanSeq(f, init, array)
-}
-
-object vectorize {
-  def apply(len: Int, f: Float) =
-    LiteralExpr(VectorData(Vector.fill(len)(FloatData(f))))
-
-  def apply(len: Nat, e: DataExpr) = VectorFromScalar(len, e)
 }
 
 object oclFun {

@@ -1,7 +1,7 @@
 package idealised.OpenCL.ImperativePrimitives
 
 import idealised.C.AST.Stmt
-import idealised.DPIA.ImperativePrimitives.AbstractParFor
+import idealised.OpenMP.ImperativePrimitives.AbstractParFor
 import idealised.DPIA.Phrases.Phrase
 import idealised.DPIA.Types._
 import idealised.DPIA._

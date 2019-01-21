@@ -1,4 +1,3 @@
-import idealised.OpenCL.SurfaceLanguage.DSL.reduceSeq
 import idealised.OpenMP.SurfaceLanguage.DSL.depMapPar
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
@@ -16,9 +15,9 @@ object dmapExample extends App{
 
   val xsT = DepArrayType(8, i => ArrayType(i + 1, int))
 
-  val addOne = fun(xsT)(array => depMap(fun(x => mapSeq(fun(y => y + 1), x) ), array))
+  val addOne = fun(xsT)(array => depMapSeq(fun(x => mapSeq(fun(y => y + 1), x) ), array))
 
-  val reduceByRow = fun(xsT)(array => depMap(fun(x => reduceSeq(fun(y => fun(z => y + z)), 0, x) ), array))
+  val reduceByRow = fun(xsT)(array => depMapSeq(fun(x => reduceSeq(fun(y => fun(z => y + z)), 0, x) ), array))
 
   val takeAndDrop = fun(ArrayType(8, int))(array => mapSeq(fun(x => x), take(2, drop(3, array))))
 
@@ -32,8 +31,8 @@ object dmapExample extends App{
   val triangleVectorMult: Expr[DataType -> (DataType -> DataType)] =
     fun(DepArrayType(8, i => ArrayType(i + 1, int)))(triangle =>
       fun(ArrayType(8, int))(vector =>
-        depMap(fun(row => zip(row, take(Macros.GetLength(row), vector))
-          :>> mapSeq(mult) :>> reduce(add, 0)
+        depMapSeq(fun(row => zip(row, take(Macros.GetLength(row), vector))
+          :>> mapSeq(mult) :>> reduceSeq(add, 0)
         ), triangle)
       )
     )
@@ -42,7 +41,7 @@ object dmapExample extends App{
     fun(DepArrayType(8, i => ArrayType(i + 1, int)))(triangle =>
       fun(ArrayType(8, int))(vector =>
         depMapPar(fun(row => zip(row, take(Macros.GetLength(row), vector))
-          :>> mapSeq(mult) :>> reduce(add, 0)
+          :>> mapSeq(mult) :>> reduceSeq(add, 0)
         ), triangle)
       )
     )
