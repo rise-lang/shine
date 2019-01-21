@@ -11,7 +11,7 @@ import idealised.DPIA.{->, Nat, Phrases, _}
 import scala.language.reflectiveCalls
 import scala.xml.Elem
 
-// this drops n many elements from an array of m elements
+// this takes n many elements from an array of m elements
 final case class Take(n: Nat,
                       m: Nat,
                       dt: DataType,
@@ -39,9 +39,9 @@ final case class Take(n: Nat,
   }
 
   override def xmlPrinter: Elem =
-    <truncExp n={n.toString} m={m.toString} dt={dt.toString}>
+    <take n={n.toString} m={m.toString} dt={dt.toString}>
       {Phrases.xmlPrinter(array)}
-    </truncExp>
+    </take>
 
   override def prettyPrint: String = s"(take $array)"
 

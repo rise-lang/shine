@@ -39,9 +39,9 @@ final case class Drop(n: Nat,
   }
 
   override def xmlPrinter: Elem =
-    <truncExp n={n.toString} m={m.toString} dt={dt.toString}>
+    <drop n={n.toString} m={m.toString} dt={dt.toString}>
       {Phrases.xmlPrinter(array)}
-    </truncExp>
+    </drop>
 
   override def prettyPrint: String = s"(drop $array)"
 

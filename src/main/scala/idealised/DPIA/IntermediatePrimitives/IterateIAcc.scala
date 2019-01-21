@@ -49,14 +49,14 @@ final case class IterateIAcc(n: Nat,
       (v: Phrase[VarType],
        swap: Phrase[CommandType],
        done: Phrase[CommandType]) => {
-        `for`(k, lp => {
-          val l = NamedVar(lp.name)
+        `for`(k, ip => {
+          val i = NamedVar(ip.name)
 
           SubstituteImplementations(
-            f.apply(n.pow(k - l) * m)
-              .apply(TakeAcc(`n^k*m`, n.pow(k - l - 1) * m, dt, v.wr))
-              .apply(Take(`n^k*m`, n.pow(k - l) * m, dt, v.rd)), env) `;`
-            IfThenElse(lp < Literal(IndexData(k - 1, IndexType(k))), swap, done)
+            f.apply(n.pow(k - i) * m)
+              .apply(TakeAcc(n.pow(k - i - 1) * m, `n^k*m`, dt, v.wr))
+              .apply(Take(n.pow(k - i) * m, `n^k*m`, dt, v.rd)), env) `;`
+            IfThenElse(ip < Literal(IndexData(k - 1, IndexType(k))), swap, done)
         })
       })
   }
