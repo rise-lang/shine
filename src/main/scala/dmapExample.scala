@@ -1,3 +1,4 @@
+import idealised.OpenCL.KernelGenerator
 import idealised.OpenMP.SurfaceLanguage.DSL.depMapPar
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
@@ -56,7 +57,7 @@ object dmapExample extends App{
 
   def printKernel(expr: Expr[DataType -> (DataType -> DataType)]) {
     val kernel = idealised.OpenMP.ProgramGenerator.makeCode(TypeInference(expr, Map()).toPhrase)
-    //val kernel = KernelGenerator.makeKernel(TypeInference(expr, Map()).toPhrase, localSize = 8, globalSize = 8)
+    //tval kernel = KernelGenerator.makeCode(TypeInference(expr, Map()).toPhrase, localSize = 8, globalSize = 8)
     println(kernel.code)
   }
 }
