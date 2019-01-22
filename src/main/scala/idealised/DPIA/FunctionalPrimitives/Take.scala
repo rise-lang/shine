@@ -30,7 +30,7 @@ final case class Take(n: Nat,
 
   override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
-    acc(array)(TakeAcc(n, m, dt, A))
+    ???
   }
 
   override def continuationTranslation(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
