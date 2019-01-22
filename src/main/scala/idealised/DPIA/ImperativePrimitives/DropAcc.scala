@@ -27,7 +27,7 @@ final case class DropAcc(n: Nat,
   override def prettyPrint: String = s"(dropAcc ${PrettyPhrasePrinter(array)})"
 
   override def xmlPrinter: Elem =
-    <truncAcc n={ToString(n)} m={ToString(m)} dt={ToString(dt)}>
+    <dropAcc n={ToString(n)} m={ToString(m)} dt={ToString(dt)}>
       {Phrases.xmlPrinter(array)}
-    </truncAcc>
+    </dropAcc>
 }

@@ -27,9 +27,10 @@ class asum extends idealised.util.Tests {
   test("High level asum compiles to syntactically correct C") {
     val p = idealised.C.ProgramGenerator.makeCode(TypeInference(high_level, Map()).toPhrase)
     SyntaxChecker(p.code)
+    println(p.code)
   }
 
-  test("Intel derived no warp compiles to syntacically correct OpenMP code") {
+  test("Intel derived no warp compiles to syntactically correct OpenMP code") {
     import idealised.OpenMP.SurfaceLanguage.DSL._
     import idealised.OpenCL.SurfaceLanguage.DSL._
 

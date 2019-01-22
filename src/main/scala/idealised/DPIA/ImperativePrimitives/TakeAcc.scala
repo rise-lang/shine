@@ -15,7 +15,7 @@ final case class TakeAcc(n: Nat,
 
   override val `type`: AccType =
     (n: Nat) -> (m: Nat) -> (dt: DataType) ->
-      (array :: acc"[$n.$dt]") -> acc"[$m.$dt]"
+      (array :: acc"[$m.$dt]") -> acc"[$n.$dt]"
 
   override def eval(s: Store): AccIdentifier = ???
 
@@ -23,10 +23,10 @@ final case class TakeAcc(n: Nat,
     TakeAcc(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))
   }
 
-  override def prettyPrint: String = s"(truncAcc ${PrettyPhrasePrinter(array)})"
+  override def prettyPrint: String = s"(takeAcc ${PrettyPhrasePrinter(array)})"
 
   override def xmlPrinter: Elem =
-    <truncAcc n={ToString(n)} m={ToString(m)} dt={ToString(dt)}>
+    <takeAcc n={ToString(n)} m={ToString(m)} dt={ToString(dt)}>
       {Phrases.xmlPrinter(array)}
-    </truncAcc>
+    </takeAcc>
 }
