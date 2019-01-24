@@ -29,7 +29,7 @@ object dmapExample extends App{
 
   val add = fun(x => fun(y => x + y))
 
-  val triangleVectorMult: Expr[DataType -> (DataType -> DataType)] =
+  val triangleVectorMultSeq: Expr[DataType -> (DataType -> DataType)] =
     fun(DepArrayType(8, i => ArrayType(i + 1, int)))(triangle =>
       fun(ArrayType(8, int))(vector =>
         depMapSeq(fun(row => zip(row, take(Macros.GetLength(row), vector))
@@ -38,7 +38,7 @@ object dmapExample extends App{
       )
     )
 
-  val parTriangleVectorMult: Expr[DataType -> (DataType -> DataType)] =
+  val triangleVectorMultPar: Expr[DataType -> (DataType -> DataType)] =
     fun(DepArrayType(8, i => ArrayType(i + 1, int)))(triangle =>
       fun(ArrayType(8, int))(vector =>
         depMapPar(fun(row => zip(row, take(Macros.GetLength(row), vector))
@@ -47,7 +47,7 @@ object dmapExample extends App{
       )
     )
 
-  val fInUse = parTriangleVectorMult
+  val fInUse = triangleVectorMultSeq
 
   val typed_f = TypeInference(fInUse, Map())
 
@@ -56,8 +56,8 @@ object dmapExample extends App{
   printKernel(fInUse)
 
   def printKernel(expr: Expr[DataType -> (DataType -> DataType)]) {
-    //val kernel = idealised.OpenMP.ProgramGenerator.makeCode(TypeInference(expr, Map()).toPhrase)
-    val kernel = KernelGenerator.makeCode(TypeInference(expr, Map()).toPhrase, localSize = 8, globalSize = 8)
-    println(kernel.code)
+    //def generate(e:Expr[DataType -> (DataType -> DataType)]) = idealised.OpenMP.ProgramGenerator.makeCode(TypeInference(e, Map()).toPhrase)
+    def generate(e:Expr[DataType -> (DataType -> DataType)]) = KernelGenerator.makeCode(TypeInference(e, Map()).toPhrase, localSize = 8, globalSize = 8)
+    println(generate(expr).code)
   }
 }
