@@ -16,6 +16,28 @@ trait Printer {
   def toString(e: ArithExpr) : String
 
   protected val sb: StringBuilder = new StringBuilder
+  protected var indent: Int = 0
+
+  protected def print(s: String): Unit = {
+    sb ++= s
+  }
+
+  protected  def println(s: String): Unit = {
+    sb ++= s + "\n" + tab()
+  }
+
+  protected  val tabSize = 2
+
+  protected  def tab(): String = {
+    lazy val whiteSpace: String = " " * tabSize
+    whiteSpace * indent
+  }
+
+  protected  def moveCursorBack(size: Int): Unit = {
+    for (_ <- 1 to size) {
+      if (sb.last.isWhitespace) { sb.deleteCharAt(sb.size - 1) }
+    }
+  }
 }
 
 object Printer {
@@ -27,7 +49,6 @@ class CPrinter extends Printer {
   override def printNode(n: Node): String = {
 
     n match {
-      case _: Attribute =>
       case d: Decl => printDecl(d)
       case e: Expr => printExpr(e)
       case s: Stmt => printStmt(s)
@@ -76,35 +97,12 @@ class CPrinter extends Printer {
       print(";")
   }
 
-  private var indent: Int = 0
-
-  private def print(s: String): Unit = {
-    sb ++= s
-  }
-
-  private def println(s: String): Unit = {
-    sb ++= s + "\n" + tab()
-  }
-
-  private val tabSize = 2
-
-  private def tab() = {
-    lazy val whiteSpace: String = " " * tabSize
-    whiteSpace * indent
-  }
-
-  private def moveCursorBack(size: Int): Unit = {
-    for (_ <- 1 to size) {
-      if (sb.last.isWhitespace) { sb.deleteCharAt(sb.size - 1) }
-    }
-  }
-
   // Decls
   private def printFunDecl(f: FunDecl): Unit = {
     print(typeName(f.returnType))
     print(s" ${f.name}(")
     f.params.foreach(p => {
-      printParamDecl(p)
+      printDecl(p)
       if (!p.eq(f.params.last)) print(", ")
     })
     print(")")
