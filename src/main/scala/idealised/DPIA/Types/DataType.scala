@@ -35,7 +35,8 @@ final case class DepArrayType(size:Nat, i: NatIdentifier, elemType: DataType) ex
 
   override def equals(that: Any): Boolean = that match {
     case DepArrayType(size_, i_, elemType_) =>
-      size == size_ && elemType == DataType.substitute(i, `for`=i_, elemType_)
+      val eq = size == size_ && elemType == DataType.substitute(i, `for`=i_, elemType_)
+      eq
     case _ => false
   }
 }

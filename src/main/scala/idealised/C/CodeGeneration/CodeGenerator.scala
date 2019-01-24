@@ -99,8 +99,9 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
   override def acc(phrase: Phrase[AccType], env: Environment, path: Path): Expr = {
     phrase match {
-      case i@Identifier(_, AccType(dt)) => generateAccess(dt,
-        env.identEnv.applyOrElse(i, (_: Phrase[_]) => {
+      case i@Identifier(_, AccType(dt)) =>
+        generateAccess(dt,
+          env.identEnv.applyOrElse(i, (_: Phrase[_]) => {
           println(i); println(env); ???
         }), path, env)
 

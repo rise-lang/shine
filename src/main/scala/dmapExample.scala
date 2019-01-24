@@ -56,8 +56,8 @@ object dmapExample extends App{
   printKernel(fInUse)
 
   def printKernel(expr: Expr[DataType -> (DataType -> DataType)]) {
-    val kernel = idealised.OpenMP.ProgramGenerator.makeCode(TypeInference(expr, Map()).toPhrase)
-    //tval kernel = KernelGenerator.makeCode(TypeInference(expr, Map()).toPhrase, localSize = 8, globalSize = 8)
+    //val kernel = idealised.OpenMP.ProgramGenerator.makeCode(TypeInference(expr, Map()).toPhrase)
+    val kernel = KernelGenerator.makeCode(TypeInference(expr, Map()).toPhrase, localSize = 8, globalSize = 8)
     println(kernel.code)
   }
 }
