@@ -5,7 +5,7 @@ import idealised.DPIA.FunctionalPrimitives._
 import idealised.DPIA.ImperativePrimitives._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
-import idealised.DPIA.Semantics.OperationalSemantics.{BoolData, FloatData, IndexData, IntData, VectorData}
+import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA._
 import idealised.SurfaceLanguage.Operators
@@ -132,6 +132,11 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case Nil => error(s"Expected path to be not empty")
       }
 
+      case CycleAcc(_, m, _, a) => path match {
+        case i :: ps => acc(a, env, i % m :: ps)
+        case _ => error(s"Expected path to be not empty")
+      }
+
       case ScatterAcc(_, _, idxF, a) => path match {
         case i :: ps => acc(a, env, OperationalSemantics.evalIndexExp(idxF(i)) :: ps)
         case Nil => error(s"Expected path to be not empty")
@@ -168,7 +173,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case (Nil, _: IndexType) => codeGenLiteral(n)
         case (Nil, _: ScalarType) => codeGenLiteral(n)
         case (i :: Nil, _: VectorType) => C.AST.ArraySubscript(codeGenLiteral(n), C.AST.ArithmeticExpr(i))
-        case (_ :: _ :: Nil, _: ArrayType) => C.AST.Literal("0.0f") // TODO: (used in gemm like this) !!!!!!!
+        // case (_ :: _ :: Nil, _: ArrayType) => C.AST.Literal("0.0f") // TODO: (used in gemm like this) !!!!!!!
+        case (i :: Nil, _: ArrayType) => C.AST.ArraySubscript(codeGenLiteral(n), C.AST.ArithmeticExpr(i))
         case _ => error(s"Unexpected: $n $path")
       }
 
@@ -228,6 +234,11 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           case i :: ps => exp(e, env, (i + n)::ps)
           case Nil => error(s"Expected path to be not empty")
         }
+
+      case Cycle(_, m, _, e) => path match {
+        case i :: ps => exp(e, env, i % m :: ps)
+        case _ => error(s"Expected path to be not empty")
+      }
 
       case Gather(_, _, idxF, a) => path match {
         case i :: ps => exp(a, env, OperationalSemantics.evalIndexExp(idxF(i)) :: ps)
@@ -468,7 +479,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           }
         case _ => error(s"Expected vector type")
       }
-      case _ => error(s"Expected scalar or vector types")
+      case ArrayData(vector) => codeGenLiteral(VectorData(vector))
+      case _ => error(s"Expected scalar, vector or array types")
     }
   }
 
