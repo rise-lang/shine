@@ -10,9 +10,9 @@ object SyntaxChecker {
   case class Exception(msg: String) extends Throwable
 
   @throws[SyntaxChecker.Exception]("if code doesn't pass the syntax check")
-  def apply(code: String): Unit = {
+  def apply(code: String, extension: String = ".c"): Unit = {
     try {
-      s"clang -fsyntax-only ${writeToTempFile(code).getAbsolutePath}" !!
+      s"clang -fsyntax-only ${writeToTempFile(code, extension).getAbsolutePath}" !!
     } catch {
       case _: Throwable =>
         Console.err.println("==========")
@@ -23,8 +23,8 @@ object SyntaxChecker {
     }
   }
 
-  private def writeToTempFile(content: String): File = {
-    val tmp = File.createTempFile("code-", ".c")
+  private def writeToTempFile(content: String, extension: String): File = {
+    val tmp = File.createTempFile("code-", extension)
     tmp.deleteOnExit()
     new PrintWriter(tmp) {
       try {
