@@ -22,6 +22,20 @@ object mapGlobal {
   }
 }
 
+object depMapGlobal {
+  def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] = depMapGlobal(0)(f)
+  def apply(f: Expr[DataType -> DataType], x: DataExpr): DepMapGlobal = depMapGlobal(0)(f, x)
+
+
+  def apply(dim: Int) = new {
+    def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] =
+      fun(x => DepMapGlobal(dim)(dFun(_ => f), x))
+
+    def apply(f: Expr[DataType -> DataType], x: DataExpr): DepMapGlobal =
+      DepMapGlobal(dim)(dFun(_ => f), x)
+  }
+}
+
 object mapWorkgroup {
   def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] = mapWorkgroup(0)(f)
   def apply(f: Expr[DataType -> DataType], x: DataExpr): MapWorkGroup = mapWorkgroup(0)(f, x)

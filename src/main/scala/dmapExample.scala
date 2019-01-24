@@ -1,4 +1,5 @@
 import idealised.OpenCL.KernelGenerator
+import idealised.OpenCL.SurfaceLanguage.DSL.depMapGlobal
 import idealised.OpenMP.SurfaceLanguage.DSL.depMapPar
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
@@ -13,7 +14,6 @@ object dmapExample extends App{
 //  Executor.loadLibrary()
 //  Executor.init()
 
-
   val xsT = DepArrayType(8, i => ArrayType(i + 1, int))
 
   val addOne = fun(xsT)(array => depMapSeq(fun(x => mapSeq(fun(y => y + 1), x) ), array))
@@ -24,10 +24,11 @@ object dmapExample extends App{
 
   val sliceTest = fun(ArrayType(8, int))(array => mapSeq(fun(x => x), array :>> slice(3, 2) ))
 
-
   val mult = fun(x => x._1 * x._2)
 
   val add = fun(x => fun(y => x + y))
+
+  val addOneGlobal = fun(xsT)(array => depMapPar(fun(x => mapSeq(fun(y => y + 1), x) ), array))
 
   val triangleVectorMultSeq: Expr[DataType -> (DataType -> DataType)] =
     fun(DepArrayType(8, i => ArrayType(i + 1, int)))(triangle =>
@@ -55,9 +56,9 @@ object dmapExample extends App{
 
   printKernel(fInUse)
 
-  def printKernel(expr: Expr[DataType -> (DataType -> DataType)]) {
-    //def generate(e:Expr[DataType -> (DataType -> DataType)]) = idealised.OpenMP.ProgramGenerator.makeCode(TypeInference(e, Map()).toPhrase)
-    def generate(e:Expr[DataType -> (DataType -> DataType)]) = KernelGenerator.makeCode(TypeInference(e, Map()).toPhrase, localSize = 8, globalSize = 8)
+  def printKernel[T <: Type](expr: Expr[T]) {
+    //def generate(e:Expr[T]) = idealised.OpenMP.ProgramGenerator.makeCode(TypeInference(e, Map()).toPhrase)
+    def generate(e:Expr[T]) = KernelGenerator.makeCode(TypeInference(e, Map()).toPhrase, localSize = 8, globalSize = 8)
     println(generate(expr).code)
   }
 }

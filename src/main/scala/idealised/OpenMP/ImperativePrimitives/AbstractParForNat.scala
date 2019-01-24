@@ -15,10 +15,12 @@ abstract class AbstractParForNat[T <: DataType](val n: Nat,
                                                 val body: Phrase[`(nat)->`[AccType -> CommandType]])
   extends CommandPrimitive {
 
+  private def makeDt(x:Nat):DataType = DataType.substitute(x, `for`=i, `in`=dt)
+
   override lazy val `type`: CommandType = {
     (n: Nat) -> (dt: DataType) ->
       (out :: acc"[${DepArrayType(n, i, dt)}]") ->
-      (body :: t"(${body.t.x}:nat) -> acc[$dt] -> comm") ->
+      (body :: t"(${body.t.x}:nat) -> acc[${makeDt(body.t.x)}] -> comm") ->
       comm
   }
   override def eval(s: Store): Store = ???
