@@ -5,6 +5,7 @@ import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
 
+
 import scala.language.{implicitConversions, postfixOps}
 
 /**
@@ -48,7 +49,7 @@ object dmapExample extends App{
       )
     )
 
-  val fInUse = triangleVectorMultSeq
+  val fInUse = addOneGlobal
 
   val typed_f = TypeInference(fInUse, Map())
 
@@ -57,8 +58,8 @@ object dmapExample extends App{
   printKernel(fInUse)
 
   def printKernel[T <: Type](expr: Expr[T]) {
-    //def generate(e:Expr[T]) = idealised.OpenMP.ProgramGenerator.makeCode(TypeInference(e, Map()).toPhrase)
-    def generate(e:Expr[T]) = KernelGenerator.makeCode(TypeInference(e, Map()).toPhrase, localSize = 8, globalSize = 8)
+    def generate(e:Expr[T]) = idealised.OpenMP.ProgramGenerator.makeCode(TypeInference(e, Map()).toPhrase)
+    //def generate(e:Expr[T]) = KernelGenerator.makeCode(TypeInference(e, Map()).toPhrase, localSize = 8, globalSize = 8)
     println(generate(expr).code)
   }
 }

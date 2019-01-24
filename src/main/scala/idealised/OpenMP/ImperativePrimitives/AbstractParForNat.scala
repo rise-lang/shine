@@ -30,7 +30,7 @@ abstract class AbstractParForNat[T <: DataType](val n: Nat,
   }
 
   override def prettyPrint: String =
-    s"(${this.getClass.getSimpleName} $n ${PrettyPhrasePrinter(out)} ${PrettyPhrasePrinter(body)})"
+    s"(parForNat $n $i $dt ${PrettyPhrasePrinter(out)} ${PrettyPhrasePrinter(body)})"
 
 
   override def xmlPrinter: Elem =
@@ -38,7 +38,7 @@ abstract class AbstractParForNat[T <: DataType](val n: Nat,
       <output type={ToString(AccType(ArrayType(n, dt)))}>
         {Phrases.xmlPrinter(out)}
       </output>
-      <body type={ToString(body.t.x -> (AccType(dt) -> CommandType()))}>
+      <body type={ToString(body.t.x -> (AccType({makeDt(body.t.x)}) -> CommandType()))}>
         {Phrases.xmlPrinter(body)}
       </body>
     </parForNat>.copy(label = {
