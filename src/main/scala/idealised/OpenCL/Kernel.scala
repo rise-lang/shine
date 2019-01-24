@@ -21,7 +21,7 @@ case class Kernel(kernel: OpenCL.AST.KernelDecl,
                   intermediateParams: Seq[Identifier[VarType]],
                   localSize: Nat, globalSize: Nat) {
 
-  def code: String = idealised.C.AST.Printer(kernel)
+  def code: String = idealised.OpenCL.AST.Printer(kernel)
 
   // This method will return a Scala function which executed the kernel via OpenCL and returns its
   // result and the time it took to execute the kernel.

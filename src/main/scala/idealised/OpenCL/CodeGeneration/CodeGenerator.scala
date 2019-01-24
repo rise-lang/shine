@@ -39,7 +39,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       case ParForNat(n, i, _, out, body) =>
         val newBody = body(i)(out `@d` i)
 
-        //In new body, all body.t.x varialbes (the nat identifier) need to be substituted with i
+        //In new body, all body.t.x variables (the nat identifier) need to be substituted with i
         val newIdentEnv = env.identEnv.map {
           case (Identifier(name, AccType(dt)), declRef) =>
             (Identifier(name, AccType(DataType.substitute(i, `for` = body.t.x, in=dt))), declRef)
@@ -78,7 +78,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
 
   override def typ(dt: DataType): Type = dt match {
-    case v: idealised.DPIA.Types.VectorType => C.AST.BasicType("float4")
+    case _: idealised.DPIA.Types.VectorType => C.AST.BasicType("float4")
     case _ => super.typ(dt)
   }
 
