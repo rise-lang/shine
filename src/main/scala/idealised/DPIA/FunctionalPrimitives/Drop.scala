@@ -30,7 +30,7 @@ final case class Drop(n: Nat,
 
   override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
-    acc(array)(DropAcc(n, m, dt, A))
+    ???
   }
 
   override def continuationTranslation(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
@@ -39,9 +39,9 @@ final case class Drop(n: Nat,
   }
 
   override def xmlPrinter: Elem =
-    <truncExp n={n.toString} m={m.toString} dt={dt.toString}>
+    <drop n={n.toString} m={m.toString} dt={dt.toString}>
       {Phrases.xmlPrinter(array)}
-    </truncExp>
+    </drop>
 
   override def prettyPrint: String = s"(drop $array)"
 
