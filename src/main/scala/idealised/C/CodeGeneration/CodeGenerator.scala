@@ -5,7 +5,7 @@ import idealised.DPIA.FunctionalPrimitives._
 import idealised.DPIA.ImperativePrimitives._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
-import idealised.DPIA.Semantics.OperationalSemantics.{BoolData, FloatData, IndexData, IntData, VectorData}
+import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA._
 import idealised.SurfaceLanguage.Operators
@@ -84,6 +84,9 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case NewDoubleBuffer(_, _, dt, n, in, out, Lambda(ps, p)) =>
         codeGenNewDoubleBuffer(ArrayType(n, dt), in, out, ps, p, env)
 
+      case NewRegRot(n, dt, Lambda(registers, Lambda(rotate, body))) =>
+        codeGenNewRegRot(n, dt, registers, rotate, body, env)
+
       case For(n, Lambda(i, p)) => codeGenFor(n, i, p, env)
 
       case ForNat(n, NatDependentLambda(i, p)) => codeGenForNat(n, i, p, env)
@@ -132,6 +135,11 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case Nil => error(s"Expected path to be not empty")
       }
 
+      case CycleAcc(_, m, _, a) => path match {
+        case i :: ps => acc(a, env, i % m :: ps)
+        case _ => error(s"Expected path to be not empty")
+      }
+
       case ScatterAcc(_, _, idxF, a) => path match {
         case i :: ps => acc(a, env, OperationalSemantics.evalIndexExp(idxF(i)) :: ps)
         case Nil => error(s"Expected path to be not empty")
@@ -168,7 +176,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case (Nil, _: IndexType) => codeGenLiteral(n)
         case (Nil, _: ScalarType) => codeGenLiteral(n)
         case (i :: Nil, _: VectorType) => C.AST.ArraySubscript(codeGenLiteral(n), C.AST.ArithmeticExpr(i))
-        case (_ :: _ :: Nil, _: ArrayType) => C.AST.Literal("0.0f") // TODO: (used in gemm like this) !!!!!!!
+        // case (_ :: _ :: Nil, _: ArrayType) => C.AST.Literal("0.0f") // TODO: (used in gemm like this) !!!!!!!
+        case (i :: Nil, _: ArrayType) => C.AST.ArraySubscript(codeGenLiteral(n), C.AST.ArithmeticExpr(i))
         case _ => error(s"Unexpected: $n $path")
       }
 
@@ -228,6 +237,11 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           case i :: ps => exp(e, env, (i + n)::ps)
           case Nil => error(s"Expected path to be not empty")
         }
+
+      case Cycle(_, m, _, e) => path match {
+        case i :: ps => exp(e, env, i % m :: ps)
+        case _ => error(s"Expected path to be not empty")
+      }
 
       case Gather(_, _, idxF, a) => path match {
         case i :: ps => exp(a, env, OperationalSemantics.evalIndexExp(idxF(i)) :: ps)
@@ -363,6 +377,39 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     ))
   }
 
+  def codeGenNewRegRot(n: Nat,
+                       dt: DataType,
+                       registers: Identifier[VarType],
+                       rotate: Identifier[CommandType],
+                       body: Phrase[CommandType],
+                       env: Environment): Stmt = {
+    import C.AST._
+
+    val re = Identifier(s"${registers.name}_e", registers.t.t1)
+    val ra = Identifier(s"${registers.name}_a", registers.t.t2)
+    val rot = Identifier(s"${rotate.name}_rotate", rotate.t)
+
+    val registerCount = n.eval // FIXME: this is a quick solution
+    // TODO: variable array
+    // val rs = (0 until registerCount).map(i => DeclRef(freshName(s"r${i}_"))).toArray
+
+    val rs = DeclRef(freshName(s"rs_"))
+    val rst = DPIA.Types.ArrayType(n, dt)
+
+    Block(
+      // rs.map(r => DeclStmt(VarDecl(r.name, typ(dt))))
+      Array(DeclStmt(VarDecl(rs.name, typ(rst))))
+        :+ cmd(
+          Phrase.substitute(immutable.Map(registers -> Pair(re, ra), rotate -> rot), `in` = body),
+          env updatedIdentEnv (re -> rs) updatedIdentEnv (ra -> rs)
+            updatedCommEnv (rot -> Block(
+              // (1 until registerCount).map(i => Assignment(rs(i-1), rs(i)))
+              (1 until registerCount).map(i => Assignment(generateAccess(rst, rs, (i-1) :: Nil, env), generateAccess(rst, rs, i :: Nil, env)))
+            ))
+        )
+    )
+  }
+
   private def codeGenFor(n: Nat,
                          i: Identifier[ExpType],
                          p: Phrase[CommandType],
@@ -459,16 +506,20 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         C.AST.ArithmeticExpr(i.n)
       case _: IntData | _: FloatData | _: BoolData =>
         C.AST.Literal(d.toString)
-      case VectorData(vector) => d.dataType match {
-        case VectorType(n, st) =>
-          if (vector.distinct.length == 1) {
-            C.AST.Literal("(" + s"($st[$n]){" + vector.head + "})")
-          } else {
-            C.AST.Literal("(" + s"($st[$n])" + vector.mkString("{", ",", "}") + ")")
+      case VectorData(vector) => codeGenLiteral(ArrayData(vector))
+      case ArrayData(a) => d.dataType match {
+        case ArrayType(n, st) =>
+          a.head match {
+            case IntData(0) | FloatData(0.0f) | BoolData(false)
+              if a.distinct.length == 1 => {
+              C.AST.Literal("(" + s"($st[$n]){" + a.head + "})")
+            }
+            case _ => {
+              C.AST.Literal("(" + s"($st[$n])" + a.mkString("{", ",", "}") + ")")
+            }
           }
-        case _ => error(s"Expected vector type")
       }
-      case _ => error(s"Expected scalar or vector types")
+      case _ => error(s"Expected scalar, vector or array types")
     }
   }
 
