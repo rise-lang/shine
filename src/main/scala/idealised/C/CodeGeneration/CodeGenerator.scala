@@ -400,7 +400,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       // rs.map(r => DeclStmt(VarDecl(r.name, typ(dt))))
       Array(DeclStmt(VarDecl(rs.name, typ(rst))))
         :+ cmd(
-          Phrase.substitute(immutable.Map(registers -> Pair(re, ra), rotate -> rot), body),
+          Phrase.substitute(immutable.Map(registers -> Pair(re, ra), rotate -> rot), `in` = body),
           env updatedIdentEnv (re -> rs) updatedIdentEnv (ra -> rs)
             updatedCommEnv (rot -> Block(
               // (1 until registerCount).map(i => Assignment(rs(i-1), rs(i)))
@@ -506,16 +506,19 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         C.AST.ArithmeticExpr(i.n)
       case _: IntData | _: FloatData | _: BoolData =>
         C.AST.Literal(d.toString)
-      case VectorData(vector) => d.dataType match {
-        case VectorType(n, st) =>
-          if (vector.distinct.length == 1) {
-            C.AST.Literal("(" + s"($st[$n]){" + vector.head + "})")
-          } else {
-            C.AST.Literal("(" + s"($st[$n])" + vector.mkString("{", ",", "}") + ")")
+      case VectorData(vector) => codeGenLiteral(ArrayData(vector))
+      case ArrayData(a) => d.dataType match {
+        case ArrayType(n, st) =>
+          a.head match {
+            case IntData(0) | FloatData(0.0f) | BoolData(false)
+              if a.distinct.length == 1 => {
+              C.AST.Literal("(" + s"($st[$n]){" + a.head + "})")
+            }
+            case _ => {
+              C.AST.Literal("(" + s"($st[$n])" + a.mkString("{", ",", "}") + ")")
+            }
           }
-        case _ => error(s"Expected vector type")
       }
-      case ArrayData(vector) => codeGenLiteral(VectorData(vector))
       case _ => error(s"Expected scalar, vector or array types")
     }
   }
