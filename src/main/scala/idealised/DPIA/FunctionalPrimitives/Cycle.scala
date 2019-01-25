@@ -5,8 +5,10 @@ import idealised.DPIA._
 import idealised.DPIA.DSL._
 import idealised.DPIA.Types._
 import idealised.DPIA.Phrases._
-import idealised.DPIA.Semantics.OperationalSemantics.{Data, Store}
+import idealised.DPIA.Semantics.OperationalSemantics
+import idealised.DPIA.Semantics.OperationalSemantics.{Store, Data, ArrayData}
 
+// cycles on the m elements of an array (modulo indexing) to produce an array of n elements
 final case class Cycle(n: Nat,
                        m: Nat,
                        dt: DataType,
@@ -16,7 +18,14 @@ final case class Cycle(n: Nat,
   override val `type`: ExpType =
     (n: Nat) -> (m: Nat) -> (dt: DataType) -> (input :: exp"[$m.$dt]") -> exp"[$n.$dt]"
 
-  override def eval(s: Store): Data = ???
+  override def eval(s: Store): Data = {
+    OperationalSemantics.eval(s, input) match {
+      case ArrayData(a) =>
+        val N = n.eval
+        ArrayData(Stream.continually(a).flatten.take(N).toVector)
+      case _ => throw new Exception("this should not happen")
+    }
+  }
 
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] =
     Cycle(v(n), v(m), v(dt), VisitAndRebuild(input, v))

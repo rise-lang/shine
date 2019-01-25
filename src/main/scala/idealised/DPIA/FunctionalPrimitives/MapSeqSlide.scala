@@ -7,9 +7,10 @@ import idealised.DPIA.Types._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Phrases.ExpPrimitive
 import idealised.DPIA.Semantics.OperationalSemantics
-import idealised.DPIA.Semantics.OperationalSemantics.Store
+import idealised.DPIA.Semantics.OperationalSemantics.{Store, Data}
 import idealised.OpenCL.GlobalMemory
 
+// performs a slide followed by mapSeq while taking advantage of the space/time overlapping reuse opportunity
 final case class MapSeqSlide(n: Nat,
                              size: Nat,
                              step: Nat,
@@ -34,7 +35,10 @@ final case class MapSeqSlide(n: Nat,
       VisitAndRebuild(input, v))
   }
 
-  override def eval(s: Store): OperationalSemantics.Data = ???
+  override def eval(s: Store): Data = {
+    val slide = OperationalSemantics.eval(s, Slide(n, size, step, dt1, input))
+    OperationalSemantics.eval(s, Map(n, ArrayType(size, dt1), dt2, f, Literal(slide)))
+  }
 
   override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
