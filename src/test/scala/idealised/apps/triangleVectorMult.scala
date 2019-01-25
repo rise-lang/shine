@@ -53,26 +53,31 @@ class triangleVectorMult extends idealised.util.Tests {
 
   test("Basic sequential triangle vector multiplication compiles to syntactically correct C") {
     val p = idealised.C.ProgramGenerator.makeCode(TypeInference(triangleVectorMultSeq, Map()).toPhrase)
+    println(p.code)
     SyntaxChecker(p.code)
   }
 
   test("Basic sequential triangle vector multiplication compiles to syntactically correct OpenMP") {
     val p = idealised.OpenMP.ProgramGenerator.makeCode(TypeInference(triangleVectorMultSeq, Map()).toPhrase)
+    println(p.code)
     SyntaxChecker(p.code)
   }
 
   test("Basic parallel triangle vector multiplication compiles to syntactically correct OpenMP") {
     val p = idealised.OpenMP.ProgramGenerator.makeCode(TypeInference(triangleVectorMultPar, Map()).toPhrase)
+    println(p.code)
     SyntaxChecker(p.code)
   }
 
   test("Basic sequential triangle vector multiplication compiles to syntactically correct OpenCL") {
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(triangleVectorMultSeq, Map()).toPhrase, ?, ?)
-    SyntaxChecker(kernel.code, ".cl")
+    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(triangleVectorMultSeq, Map()).toPhrase, ?, ?)
+    println(p.code)
+    SyntaxChecker(p.code, ".cl")
   }
 
   test("Basic parallel triangle vector multiplication compiles to syntactically correct OpenCL") {
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(triangleVectorMultGlobal, Map()).toPhrase, ?, ?)
-    SyntaxChecker(kernel.code, ".cl")
+    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(triangleVectorMultGlobal, Map()).toPhrase, ?, ?)
+    println(p.code)
+    SyntaxChecker(p.code, ".cl")
   }
 }
