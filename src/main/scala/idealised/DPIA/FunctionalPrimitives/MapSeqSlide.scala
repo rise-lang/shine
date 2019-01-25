@@ -38,10 +38,10 @@ final case class MapSeqSlide(n: Nat,
 
   override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
     import RewriteToImperative._
-    import idealised.DPIA.IntermediatePrimitives.MapSeqSlideICircular
+    import idealised.DPIA.IntermediatePrimitives.{MapSeqSlideIRegRot => I} // TODO: making a choice here
 
     con(input)(fun(exp"[$inputSize.$dt1]")(x =>
-      MapSeqSlideICircular(n, size, dt1, dt2,
+      I(n, size, dt1, dt2,
         fun(exp"[$size.$dt1]")(x =>
           fun(acc"[$dt2]")(o => acc(f(x))(o))),
         x, A

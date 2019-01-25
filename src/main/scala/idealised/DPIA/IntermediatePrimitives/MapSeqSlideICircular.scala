@@ -10,13 +10,13 @@ import idealised.DPIA.FunctionalPrimitives.{Cycle, Drop, Take}
 import idealised.DPIA.ImperativePrimitives.{CycleAcc, DropAcc, ForNat, TakeAcc}
 
 final case class MapSeqSlideICircular(n: Nat,
-                              size: Nat,
-                              // step: Nat,
-                              dt1: DataType,
-                              dt2: DataType,
-                              f: Phrase[ExpType -> (AccType -> CommandType)],
-                              input: Phrase[ExpType],
-                              output: Phrase[AccType])
+                                      size: Nat,
+                                      // step: Nat,
+                                      dt1: DataType,
+                                      dt2: DataType,
+                                      f: Phrase[ExpType -> (AccType -> CommandType)],
+                                      input: Phrase[ExpType],
+                                      output: Phrase[AccType])
   extends CommandPrimitive with Intermediate[CommandType]
 {
   private val step = 1

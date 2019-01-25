@@ -84,6 +84,9 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case NewDoubleBuffer(_, _, dt, n, in, out, Lambda(ps, p)) =>
         codeGenNewDoubleBuffer(ArrayType(n, dt), in, out, ps, p, env)
 
+      case NewRegRot(n, dt, Lambda(registers, Lambda(rotate, body))) =>
+        codeGenNewRegRot(n, dt, registers, rotate, body, env)
+
       case For(n, Lambda(i, p)) => codeGenFor(n, i, p, env)
 
       case ForNat(n, NatDependentLambda(i, p)) => codeGenForNat(n, i, p, env)
@@ -372,6 +375,39 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             Assignment(out_ptr, UnaryExpr(&, acc(out, env, List(0))))))
         }))
     ))
+  }
+
+  def codeGenNewRegRot(n: Nat,
+                       dt: DataType,
+                       registers: Identifier[VarType],
+                       rotate: Identifier[CommandType],
+                       body: Phrase[CommandType],
+                       env: Environment): Stmt = {
+    import C.AST._
+
+    val re = Identifier(s"${registers.name}_e", registers.t.t1)
+    val ra = Identifier(s"${registers.name}_a", registers.t.t2)
+    val rot = Identifier(s"${rotate.name}_rotate", rotate.t)
+
+    val registerCount = n.eval // FIXME: this is a quick solution
+    // TODO: variable array
+    // val rs = (0 until registerCount).map(i => DeclRef(freshName(s"r${i}_"))).toArray
+
+    val rs = DeclRef(freshName(s"rs_"))
+    val rst = DPIA.Types.ArrayType(n, dt)
+
+    Block(
+      // rs.map(r => DeclStmt(VarDecl(r.name, typ(dt))))
+      Array(DeclStmt(VarDecl(rs.name, typ(rst))))
+        :+ cmd(
+          Phrase.substitute(immutable.Map(registers -> Pair(re, ra), rotate -> rot), body),
+          env updatedIdentEnv (re -> rs) updatedIdentEnv (ra -> rs)
+            updatedCommEnv (rot -> Block(
+              // (1 until registerCount).map(i => Assignment(rs(i-1), rs(i)))
+              (1 until registerCount).map(i => Assignment(generateAccess(rst, rs, (i-1) :: Nil, env), generateAccess(rst, rs, i :: Nil, env)))
+            ))
+        )
+    )
   }
 
   private def codeGenFor(n: Nat,
