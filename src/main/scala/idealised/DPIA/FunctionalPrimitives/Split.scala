@@ -29,18 +29,17 @@ final case class Split(n: Nat,
     OperationalSemantics.eval(s, array) match {
       case ArrayData(arrayE) =>
 
-        def split[T](n: Nat, vector: Vector[T]): Vector[Vector[T]] = {
+        def split[T](n: Int, vector: Vector[T]): Vector[Vector[T]] = {
           val builder = Vector.newBuilder[Vector[T]]
           var vec = vector
-          for (i <- 0 until vector.length / n.eval) {
-            val (head, tail) = vec splitAt n.eval
-            vec = tail
-            builder += head
+          while (vec.nonEmpty) {
+            builder += vec.take(n)
+            vec = vec.drop(n)
           }
           builder.result()
         }
 
-        ArrayData(split(n, arrayE).map(ArrayData))
+        ArrayData(split(n.eval, arrayE).map(ArrayData))
 
       case _ => throw new Exception("This should not happen")
     }
