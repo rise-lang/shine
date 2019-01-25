@@ -13,3 +13,4 @@ final case class DepMapGlobal(dim:Int)(f: Expr[`(nat)->`[DataType -> DataType]],
 
   override def makeDPIAMap = idealised.OpenCL.FunctionalPrimitives.DepMapGlobal(dim)
 }
+

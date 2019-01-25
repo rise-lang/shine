@@ -11,8 +11,14 @@ object SyntaxChecker {
 
   @throws[SyntaxChecker.Exception]("if code doesn't pass the syntax check")
   def apply(code: String, extension: String = ".c"): Unit = {
+    val platformSpecificOptions = {
+      extension match {
+        case ".cl" => ""
+        case _ => ""
+      }
+    }
     try {
-      s"clang -fsyntax-only ${writeToTempFile(code, extension).getAbsolutePath}" !!
+      s"clang  $platformSpecificOptions  -fsyntax-only ${writeToTempFile(code, extension).getAbsolutePath}" !!
     } catch {
       case _: Throwable =>
         Console.err.println("==========")
