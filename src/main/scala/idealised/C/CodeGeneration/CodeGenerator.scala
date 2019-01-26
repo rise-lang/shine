@@ -102,8 +102,9 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
   override def acc(phrase: Phrase[AccType], env: Environment, path: Path): Expr = {
     phrase match {
-      case i@Identifier(_, AccType(dt)) => generateAccess(dt,
-        env.identEnv.applyOrElse(i, (_: Phrase[_]) => {
+      case i@Identifier(_, AccType(dt)) =>
+        generateAccess(dt,
+          env.identEnv.applyOrElse(i, (_: Phrase[_]) => {
           println(i); println(env); ???
         }), path, env)
 
@@ -305,7 +306,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             immutable.Seq((C.AST.ArrayType(typ(v.elemType), Some(v.size)), "data")))
       }
       case a: idealised.DPIA.Types.ArrayType => C.AST.ArrayType(typ(a.elemType), Some(a.size))
-      case a: idealised.DPIA.Types.DepArrayType => C.AST.ArrayType(typ(a.elemType), None) // TODO: be more precise with the size?
+      case a: idealised.DPIA.Types.DepArrayType => C.AST.ArrayType(typ(a.elemType), Some(a.size)) // TODO: be more precise with the size?
       case r: idealised.DPIA.Types.RecordType =>
         C.AST.StructType(r.fst.toString + "_" + r.snd.toString, immutable.Seq(
           (typ(r.fst), "fst"),

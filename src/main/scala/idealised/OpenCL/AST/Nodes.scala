@@ -5,19 +5,17 @@ import idealised.C.AST.Nodes.VisitAndRebuild
 import idealised.C.AST._
 import idealised.OpenCL
 
-case class RequiredWorkGroupSize(localSize: OpenCL.NDRange) extends Attribute {
-  override def visitAndRebuild(v: VisitAndRebuild.Visitor): Node = this
-}
+case class RequiredWorkGroupSize(localSize: OpenCL.NDRange)
 
 case class KernelDecl(override val name: String,
                       override val params: Seq[ParamDecl],
                       override val body: Stmt,
-                      attribute: Option[Attribute])
+                      attribute: Option[RequiredWorkGroupSize])
   extends FunDecl(name, C.AST.Type.void, params, body)
 {
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): KernelDecl =
     KernelDecl(name, params.map(VisitAndRebuild(_, v)),
-      VisitAndRebuild(body, v), attribute.map(VisitAndRebuild(_, v)))
+      VisitAndRebuild(body, v), attribute)
 }
 
 case class VarDecl(override val name: String,

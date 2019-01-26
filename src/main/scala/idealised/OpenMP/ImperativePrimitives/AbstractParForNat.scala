@@ -15,10 +15,12 @@ abstract class AbstractParForNat[T <: DataType](val n: Nat,
                                                 val body: Phrase[`(nat)->`[AccType -> CommandType]])
   extends CommandPrimitive {
 
+  private def makeDt(x:Nat):DataType = DataType.substitute(x, `for`=i, `in`=dt)
+
   override lazy val `type`: CommandType = {
     (n: Nat) -> (dt: DataType) ->
       (out :: acc"[${DepArrayType(n, i, dt)}]") ->
-      (body :: t"(${body.t.x}:nat) -> acc[$dt] -> comm") ->
+      (body :: t"(${body.t.x}:nat) -> acc[${makeDt(body.t.x)}] -> comm") ->
       comm
   }
   override def eval(s: Store): Store = ???
@@ -28,7 +30,7 @@ abstract class AbstractParForNat[T <: DataType](val n: Nat,
   }
 
   override def prettyPrint: String =
-    s"(${this.getClass.getSimpleName} $n ${PrettyPhrasePrinter(out)} ${PrettyPhrasePrinter(body)})"
+    s"(parForNat $n $i $dt ${PrettyPhrasePrinter(out)} ${PrettyPhrasePrinter(body)})"
 
 
   override def xmlPrinter: Elem =
@@ -36,7 +38,7 @@ abstract class AbstractParForNat[T <: DataType](val n: Nat,
       <output type={ToString(AccType(ArrayType(n, dt)))}>
         {Phrases.xmlPrinter(out)}
       </output>
-      <body type={ToString(body.t.x -> (AccType(dt) -> CommandType()))}>
+      <body type={ToString(body.t.x -> (AccType({makeDt(body.t.x)}) -> CommandType()))}>
         {Phrases.xmlPrinter(body)}
       </body>
     </parForNat>.copy(label = {

@@ -2,14 +2,12 @@
 import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.OpenCL._
 import idealised.SurfaceLanguage.DSL._
-import idealised.SurfaceLanguage._
 import idealised.SurfaceLanguage.Types._
-import lift.arithmetic._
-import opencl.executor.Executor
+import idealised.SurfaceLanguage._
 import idealised._
+import lift.arithmetic._
 
-import scala.language.implicitConversions
-import scala.language.postfixOps
+import scala.language.{implicitConversions, postfixOps}
 import scala.util.Random
 
 object dot extends App {

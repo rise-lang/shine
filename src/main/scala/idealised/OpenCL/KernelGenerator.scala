@@ -47,7 +47,7 @@ object KernelGenerator {
 
     val p3 = substituteImplementations(p2)
 
-    val (p4, intermediateAllocations) = (p3, Seq[AllocationInfo]()) //hoistMemoryAllocations(p3)
+    val (p4, intermediateAllocations) = hoistMemoryAllocations(p3)
 
     val (p5, kernelParams) = adaptKernelParameters(p4,
       makeParams(outParam, inputParams, intermediateAllocations, gen), inputParams)

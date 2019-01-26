@@ -1,106 +1,116 @@
 package idealised.C.AST
 
-import idealised.OpenCL.AST.Barrier
 import lift.arithmetic._
-import opencl.generator.OclFunction
 
-object Printer {
-  def apply(n: Node): String = (new Printer)(n)
-}
+trait Printer {
+  def printNode(n: Node): String
 
-class Printer {
-  def apply(n: Node): String = {
-    print(n)
-    sb.toString()
-  }
+  def printDecl(d: Decl): Unit
 
-  private val sb: StringBuilder = new StringBuilder
-  private var indent: Int = 0
+  def printExpr(e: Expr): Unit
 
-  private def print(s: String): Unit = {
+  def printStmt(s: Stmt): Unit
+
+  def typeName(t: Type): String
+
+  def toString(e: ArithExpr) : String
+
+  protected val sb: StringBuilder = new StringBuilder
+  protected var indent: Int = 0
+
+  protected def print(s: String): Unit = {
     sb ++= s
   }
 
-  private def println(s: String): Unit = {
+  protected  def println(s: String): Unit = {
     sb ++= s + "\n" + tab()
   }
 
-  private val tabSize = 2
+  protected  val tabSize = 2
 
-  private def tab() = {
+  protected  def tab(): String = {
     lazy val whiteSpace: String = " " * tabSize
     whiteSpace * indent
   }
 
-  private def moveCursorBack(size: Int): Unit = {
+  protected  def moveCursorBack(size: Int): Unit = {
     for (_ <- 1 to size) {
       if (sb.last.isWhitespace) { sb.deleteCharAt(sb.size - 1) }
     }
   }
+}
 
-  private def print(n: Node): Unit = n match {
-    case d: Decl => print(d)
-    case e: Expr => print(e)
-    case s: Stmt => print(s)
+object Printer {
+  def apply(n: Node): String = (new CPrinter).printNode(n)
+}
+
+class CPrinter extends Printer {
+
+  override def printNode(n: Node): String = {
+
+    n match {
+      case d: Decl => printDecl(d)
+      case e: Expr => printExpr(e)
+      case s: Stmt => printStmt(s)
+    }
+
+    sb.toString()
   }
 
-  private def print(d: Decl): Unit = d match {
-    case f: FunDecl => print(f)
-    case v: VarDecl => print(v)
-    case p: ParamDecl => print(p)
-    case l: LabelDecl => print(l)
-    case t: TypedefDecl => print(t)
+  override def printDecl(d: Decl): Unit = d match {
+    case f: FunDecl => printFunDecl(f)
+    case v: VarDecl => printVarDecl(v)
+    case p: ParamDecl => printParamDecl(p)
+    case l: LabelDecl => printLabelDecl(l)
+    case t: TypedefDecl => printTypedefDecl(t)
   }
 
-  private def print(s: Stmt): Unit = s match {
-    case s: Stmts => print(s)
-    case b: Block => print(b)
-    case f: ForLoop => print(f)
-    case w: WhileLoop => print(w)
-    case i: IfThenElse => print(i)
-    case g: GOTO => print(g)
-    case b: Break => print(b)
-    case c: Continue => print(c)
-    case r: Return => print(r)
-    case d: DeclStmt => print(d)
-    case c: Comment => print(c)
-    case c: Code => print(c)
+  override def printExpr(e: Expr): Unit = e match {
+    case a: Assignment => printAssignment(a)
+    case d: DeclRef => printDeclRef(d)
+    case f: FunCall => printFunCall(f)
+    case s: StructMemberAccess => printStructMemberAccess(s)
+    case a: ArraySubscript => printArraySubscript(a)
+    case u: UnaryExpr => printUnaryExpr(u)
+    case b: BinaryExpr => printBinaryExpr(b)
+    case t: TernaryExpr => printTernaryExpr(t)
+    case c: Cast => printCast(c)
+    case l: Literal => printLiteral(l)
+    case a: ArithmeticExpr => printArithmeticExpr(a)
+  }
+
+  override def printStmt(s: Stmt): Unit = s match {
+    case s: Stmts => printStmts(s)
+    case b: Block => printBlock(b)
+    case f: ForLoop => printForLoop(f)
+    case w: WhileLoop => printWhileLoop(w)
+    case i: IfThenElse => printIfThenElse(i)
+    case g: GOTO => printGOTO(g)
+    case b: Break => printBreak(b)
+    case c: Continue => printContinue(c)
+    case r: Return => printReturn(r)
+    case d: DeclStmt => printDeclStmt(d)
+    case c: Comment => printComment(c)
+    case c: Code => printCode(c)
     case e: Expr =>
-      print(e)
+      printExpr(e)
       print(";")
-
-    case b: Barrier =>
-      print("barrier();")
-  }
-
-  private def print(e: Expr): Unit = e match {
-    case a: Assignment => print(a)
-    case d: DeclRef => print(d)
-    case f: FunCall => print(f)
-    case s: StructMemberAccess => print(s)
-    case a: ArraySubscript => print(a)
-    case u: UnaryExpr => print(u)
-    case b: BinaryExpr => print(b)
-    case t: TernaryExpr => print(t)
-    case c: Cast => print(c)
-    case l: Literal => print(l)
-    case a: ArithmeticExpr => print(a)
   }
 
   // Decls
-  private def print(f: FunDecl): Unit = {
+  private def printFunDecl(f: FunDecl): Unit = {
     print(typeName(f.returnType))
     print(s" ${f.name}(")
     f.params.foreach(p => {
-      print(p)
+      printDecl(p)
       if (!p.eq(f.params.last)) print(", ")
     })
     print(")")
 
-    print(f.body)
+    printStmt(f.body)
   }
 
-  private def print(v: VarDecl): Unit = {
+  private def printVarDecl(v: VarDecl): Unit = {
     if (v.t.const) print("const ")
     v.t match {
       case b: BasicType => print(s"${b.name} ${v.name}")
@@ -118,11 +128,11 @@ class Printer {
       case None =>
       case Some(init) =>
         print(" = ")
-        print(init)
+        printExpr(init)
     }
   }
 
-  private def print(p: ParamDecl): Unit = {
+  private def printParamDecl(p: ParamDecl): Unit = {
     if (p.t.const) print("const ")
     p.t match {
       case b: BasicType => print(s"${b.name} ${p.name}")
@@ -137,24 +147,24 @@ class Printer {
     }
   }
 
-  private def print(l: LabelDecl): Unit = {
+  private def printLabelDecl(l: LabelDecl): Unit = {
     println(l.name + ": ;")
   }
 
-  private def print(t: TypedefDecl): Unit = ???
+  private def printTypedefDecl(t: TypedefDecl): Unit = ???
 
   // Smts
-  private def print(s: Stmts): Unit = {
-    print(s.fst)
+  private def printStmts(s: Stmts): Unit = {
+    printStmt(s.fst)
     println("")
-    print(s.snd)
+    printStmt(s.snd)
   }
 
-  private def print(b: Block): Unit = {
+  private def printBlock(b: Block): Unit = {
     indent += 1
     println("{")
     b.body.foreach( (s: Stmt) => {
-      print(s)
+      printStmt(s)
       println("")
     })
     indent -= 1
@@ -162,147 +172,147 @@ class Printer {
     println("}")
   }
 
-  private def print(f: ForLoop): Unit = {
+  private def printForLoop(f: ForLoop): Unit = {
     print("for (")
-    print(f.init)
-    print(f.cond)
+    printDeclStmt(f.init)
+    printExpr(f.cond)
     print(";")
-    print(f.increment)
+    printExpr(f.increment)
     print(") ")
-    print(f.body)
+    printBlock(f.body)
   }
 
-  private def print(w: WhileLoop): Unit = {
+  private def printWhileLoop(w: WhileLoop): Unit = {
     print("while (")
-    print(w.cond)
+    printExpr(w.cond)
     print(") ")
-    print(w.body)
+    printStmt(w.body)
   }
 
-  private def print(i: IfThenElse): Unit = {
+  private def printIfThenElse(i: IfThenElse): Unit = {
     print("if (")
-    print(i.cond)
+    printExpr(i.cond)
     print(") ")
-    print(i.trueBody)
+    printStmt(i.trueBody)
 
     i.falseBody match {
       case Some(falseBody) =>
         print(" else ")
-        print(falseBody)
+        printStmt(falseBody)
       case None =>
     }
   }
 
-  private def print(g: GOTO): Unit = {
+  private def printGOTO(g: GOTO): Unit = {
     println("goto " + g.label + ";")
   }
 
-  private def print(b: Break): Unit = {
+  private def printBreak(b: Break): Unit = {
     println("break;")
   }
 
-  private def print(c: Continue): Unit = {
+  private def printContinue(c: Continue): Unit = {
     println("continue;")
   }
 
-  private def print(r: Return): Unit = {
+  private def printReturn(r: Return): Unit = {
     println("return;")
   }
 
-  private def print(d: DeclStmt): Unit = {
-    print(d.decl)
+  private def printDeclStmt(d: DeclStmt): Unit = {
+    printDecl(d.decl)
     print(";")
   }
 
-  private def print(c: Comment): Unit = {
+  private def printComment(c: Comment): Unit = {
     print(s"/* ${c.string} */")
   }
 
-  private def print(c: Code): Unit = {
+  private def printCode(c: Code): Unit = {
     print(c.string)
   }
 
   // Exprs
-  private def print(a: Assignment): Unit = {
-    print(a.lvalue)
+  private def printAssignment(a: Assignment): Unit = {
+    printExpr(a.lvalue)
     print(" = ")
-    print(a.rvalue)
+    printExpr(a.rvalue)
   }
 
-  private def print(d: DeclRef): Unit = {
+  private def printDeclRef(d: DeclRef): Unit = {
     print(d.name)
   }
 
-  private def print(f: FunCall): Unit = {
-    print(f.fun)
+  private def printFunCall(f: FunCall): Unit = {
+    printDeclRef(f.fun)
     print("(")
     f.args.foreach(a => {
-      print(a)
+      printExpr(a)
       if (!a.eq(f.args.last)) print(", ")
     })
     print(")")
   }
 
-  private def print(a: ArraySubscript): Unit = {
-    print(a.array)
+  private def printArraySubscript(a: ArraySubscript): Unit = {
+    printExpr(a.array)
     print("[")
-    print(a.index)
+    printExpr(a.index)
     print("]")
   }
 
-  private def print(s: StructMemberAccess): Unit = {
-    print(s.struct)
+  private def printStructMemberAccess(s: StructMemberAccess): Unit = {
+    printExpr(s.struct)
     print(".")
-    print(s.member)
+    printDeclRef(s.member)
   }
 
-  private def print(u: UnaryExpr): Unit = {
+  private def printUnaryExpr(u: UnaryExpr): Unit = {
     print("(")
     print(u.op.toString)
     print("(")
-    print(u.e)
+    printExpr(u.e)
     print("))")
   }
 
-  private def print(b: BinaryExpr): Unit = {
+  private def printBinaryExpr(b: BinaryExpr): Unit = {
     print("(")
-    print(b.lhs)
+    printExpr(b.lhs)
     print(" ")
     print(b.op.toString)
     print(" ")
-    print(b.rhs)
+    printExpr(b.rhs)
     print(")")
   }
 
-  private def print(t: TernaryExpr): Unit = {
+  private def printTernaryExpr(t: TernaryExpr): Unit = {
     print("(")
-    print(t.cond)
+    printExpr(t.cond)
     print(") ? (")
-    print(t.thenE)
+    printExpr(t.thenE)
     print(") : (")
-    print(t.elseE)
+    printExpr(t.elseE)
     print(")")
   }
 
-  private def print(c: Cast): Unit = {
+  private def printCast(c: Cast): Unit = {
     print("(")
     print(s"(${c.t})")
-    print(c.e)
+    printExpr(c.e)
     print(")")
   }
 
-  private def print(l: Literal): Unit = {
+  private def printLiteral(l: Literal): Unit = {
     print(l.code)
   }
 
-  private def print(a: ArithmeticExpr): Unit = {
+  private def printArithmeticExpr(a: ArithmeticExpr): Unit = {
     print(toString(a.ae))
   }
 
   // Types
-  private def typeName(t: Type): String = t.toString
+  def typeName(t: Type): String = t.toString
 
-  private def toString(e: ArithExpr) : String = {
+  def toString(e: ArithExpr) : String = {
     e match {
       case Cst(c) => c.toString
       case Pow(b, ex) =>
@@ -319,8 +329,6 @@ class Printer {
       } ).drop(4) + ")" // drop(4) removes the initial "1 * "
       case Sum(es) => "(" + es.map(toString).reduce( _ + " + " + _  ) + ")"
       case Mod(a,n) => "(" + toString(a) + " % " + toString(n) + ")"
-      case of: OclFunction => of.toOCLString
-//      case ai: AccessVar => ai.array + "[" + toString(ai.idx.content) + "]"
       case v: Var => v.toString
       case IntDiv(n, d) => "(" + toString(n) + " / " + toString(d) + ")"
       case lu: Lookup => "lookup" + lu.id + "(" + toString(lu.index) + ")"

@@ -42,6 +42,13 @@ package object DSL {
       case x => error(x.toString, "(exp[idx(n)], acc[n.dt])")
     }
 
+    def `@`(index: Nat): Idx = e.t match {
+      case ExpType(ArrayType(n, dt)) =>
+        Idx(n, dt, Literal(IndexData(index, IndexType(n))), e)
+      case x => error(x.toString, "(exp[idx(n)], exp[n.dt])")
+    }
+
+
     def `@v`(index: Phrase[ExpType]): IdxVec = (index.t, e.t) match {
       case (ExpType(IndexType(n1)), ExpType(VectorType(n2, st))) if n1 == n2 =>
         IdxVec(n1, st, index, e)
@@ -72,6 +79,13 @@ package object DSL {
       case AccType(ArrayType(n, dt)) => IdxAcc(n, dt, Literal(IndexData(index, IndexType(n))), a)
       case x => error(x.toString, "(exp[idx(n)], acc[n.dt])")
     }
+
+    def `@`(index: Nat): IdxAcc = a.t match {
+      case AccType(ArrayType(n, dt)) =>
+        IdxAcc(n, dt, Literal(IndexData(index, IndexType(n))), a)
+      case x => error(x.toString, "(exp[idx(n)], exp[n.dt])")
+    }
+
 
     def `@v`(index: Phrase[ExpType]): IdxVecAcc = (index.t, a.t) match {
       case (ExpType(IndexType(n1)), AccType(VectorType(n2, st))) if n1 == n2 =>
