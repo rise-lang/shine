@@ -8,6 +8,7 @@ import idealised._
 import lift.arithmetic.{?, ContinuousRange, PosInf, RangeAdd}
 import idealised.OpenCL._
 
+//noinspection TypeAnnotation
 final case class ParForWorkGroup(dim: Int)(override val n: Nat,
                                            override val dt: DataType,
                                            override val out: Phrase[AccType],

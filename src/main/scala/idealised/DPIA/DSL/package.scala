@@ -75,6 +75,7 @@ package object DSL {
     }
   }
 
+  //noinspection TypeAnnotation
   implicit class AssignmentHelper(lhs: Phrase[AccType]) {
     def :=(rhs: Phrase[ExpType]): Assign = {
       Assign(lhs, rhs)

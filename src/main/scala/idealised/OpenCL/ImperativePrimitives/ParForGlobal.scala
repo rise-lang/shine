@@ -9,6 +9,7 @@ import idealised.OpenCL._
 import lift.arithmetic.{?, RangeAdd}
 
 
+//noinspection TypeAnnotation,ConvertibleToMethodValue
 final case class ParForGlobal(dim: Int)(override val n: Nat,
                                         override val dt: DataType,
                                         override val out: Phrase[AccType],

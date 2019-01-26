@@ -25,9 +25,9 @@ final case class MapSeqSlide(size: Nat,
   override def inferType(subs: SubstitutionMap): DataExpr = {
     // TODO? reuse Map and Slide type inference here
     TypeInference(input, subs) |> (input => {
-      val (inputSize, dt1, n) = inputInfo(input.t)
+      val (_, dt1, n) = inputInfo(input.t)
       setParamAndInferType(f, ArrayType(size, dt1), subs) |> (f => {
-        val (size_, dt1_, dt2) = fInfo(f.t)
+        val (_, dt1_, dt2) = fInfo(f.t)
         if (dt1 == dt1_) {
           MapSeqSlide(size, step, f, input, Some(ArrayType(n, dt2)))
         } else {
@@ -39,7 +39,7 @@ final case class MapSeqSlide(size: Nat,
     })
   }
 
-  def fInfo(t: Option[Type]) = {
+  def fInfo(t: Option[Type]): (Nat, DataType, DataType) = {
     t match {
       case Some(FunctionType(ArrayType(size_, dt1), dt2 : DataType)) => (size_, dt1, dt2)
       case x => error(
@@ -49,7 +49,7 @@ final case class MapSeqSlide(size: Nat,
     }
   }
 
-  def inputInfo(t: Option[DataType]) = {
+  def inputInfo(t: Option[DataType]): (Nat, DataType, Nat) = {
     t match {
       case Some(ArrayType(in, dt)) => (in, dt, (in - size + step) /^ step)
       case x => error(

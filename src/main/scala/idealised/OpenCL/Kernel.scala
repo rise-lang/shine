@@ -191,7 +191,7 @@ case class Kernel(kernel: OpenCL.AST.KernelDecl,
     case v: VectorType  => sizeInByte(v.elemType) * v.size
     case r: RecordType  => sizeInByte(r.fst) + sizeInByte(r.snd)
     case a: ArrayType   => sizeInByte(a.elemType) * a.size
-    case d: DepArrayType => ???
+    case _: DepArrayType => ???
     case _: DataTypeIdentifier => throw new Exception("This should not happen")
   }
 

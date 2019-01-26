@@ -115,7 +115,7 @@ class CPrinter extends Printer {
     v.t match {
       case b: BasicType => print(s"${b.name} ${v.name}")
       case s: StructType => print(s"struct ${s.name} ${v.name}")
-      case u: UnionType => ???
+      case _: UnionType => ???
       case a: ArrayType =>
         // float name[s];
         print(s"${a.getBaseType} ${v.name}[${ a.getSizes match {
@@ -137,7 +137,7 @@ class CPrinter extends Printer {
     p.t match {
       case b: BasicType => print(s"${b.name} ${p.name}")
       case s: StructType => print(s"struct ${s.name} ${p.name}")
-      case u: UnionType => ???
+      case _: UnionType => ???
       case a: ArrayType =>
         print(s"${a.getBaseType} ${p.name}[${ a.getSizes match {
           case None => ""

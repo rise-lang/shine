@@ -6,6 +6,7 @@ import idealised.DPIA.Phrases.Phrase
 import idealised.DPIA.Types.{DataType, ExpType}
 import idealised.DPIA._
 
+//noinspection TypeAnnotation
 final case class ReducePar(n: Nat,
                            dt1: DataType, dt2: DataType,
                            f: Phrase[ExpType -> (ExpType -> ExpType)],

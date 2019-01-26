@@ -59,7 +59,7 @@ class Printer extends idealised.C.AST.CPrinter {
     p.t match {
       case b: BasicType => print(s"${b.name} ${p.name}")
       case s: StructType => print(s"struct ${s.name} ${p.name}")
-      case u: UnionType => ???
+      case _: UnionType => ???
       case a: ArrayType =>
         print(s"${a.getBaseType} ${p.name}[${ a.getSizes match {
           case None => ""

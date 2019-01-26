@@ -6,7 +6,7 @@ import idealised.DPIA.FunctionalPrimitives.{AsScalar, AsVector}
 import idealised.DPIA.ImperativePrimitives.{AsScalarAcc, AsVectorAcc, ForNat}
 import idealised.DPIA.Phrases.{Identifier, Lambda, NatDependentLambda, Phrase}
 import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType, PhraseType}
-import idealised.DPIA.{Nat, NatIdentifier, freshName}
+import idealised.DPIA.{Nat, NatIdentifier, error, freshName}
 import idealised.OpenCL.ImperativePrimitives.OpenCLParFor
 import idealised.OpenMP.ImperativePrimitives.ParForNat
 import idealised.{C, OpenCL}
@@ -58,7 +58,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
   override def acc(phrase: Phrase[AccType], env: Environment, path: Path): Expr = {
     phrase match {
-      case AsVectorAcc(n, _, _, a) => ???
+      case AsVectorAcc(_, _, _, _) => ???
       case AsScalarAcc(_, m, dt, a) => ???
 
       case _ => super.acc(phrase, env, path)
@@ -69,8 +69,9 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
     phrase match {
       case AsVector(n, _, _, e) => path match {
         case i :: j :: ps => exp(e, env, (i * n) + j :: ps)
+        case _ :: Nil | Nil => error(s"Expected path to have two elements")
       }
-      case AsScalar(_, m, _, e) => ???
+      case AsScalar(_, _, _, _) => ???
 
       case _ => super.exp(phrase, env, path)
     }

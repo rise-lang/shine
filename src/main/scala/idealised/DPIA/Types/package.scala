@@ -11,7 +11,7 @@ package object Types {
   }
 
   implicit class CheckHelper(p1: PhraseType) {
-    def |(p2: PhraseType): (PhraseType => Unit) = (p: PhraseType) => {
+    def |(p2: PhraseType): PhraseType => Unit = (p: PhraseType) => {
       if (!(p == p1 || p == p2)) {
         error(ToString(p), expected = ToString(p1) + " or " + ToString(p2))
       }

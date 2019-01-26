@@ -10,6 +10,7 @@ import idealised.OpenCL.AST._
 import idealised.OpenCL._
 
 
+//noinspection TypeAnnotation
 final case class ParForLocal(dim: Int)(override val n: Nat,
                                        override val dt: DataType,
                                        override val out: Phrase[AccType],

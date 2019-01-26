@@ -48,6 +48,7 @@ object `if` {
                              elseP: Phrase[T]): IfThenElse[T] =
     IfThenElse(cond, thenP, elseP)
 
+  //noinspection TypeAnnotation
   def apply(cond: Phrase[ExpType]) = new {
     def `then`[T <: PhraseType](thenP: Phrase[T]) = new {
       def `else`(elseP: Phrase[T]): IfThenElse[T] = {

@@ -9,6 +9,7 @@ import idealised.DPIA._
 import idealised.OpenMP.DSL.parForNat
 
 
+//noinspection TypeAnnotation
 final case class DepMapParI(n: Nat,
                             i1: NatIdentifier, dt1: DataType,
                             i2: NatIdentifier, dt2: DataType,

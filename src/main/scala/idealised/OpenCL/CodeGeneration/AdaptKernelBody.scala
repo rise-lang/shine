@@ -63,7 +63,7 @@ object AdaptKernelBody {
                 ArithExpr.substitute(ae, map) match {
                   // append the index as a suffix when the arithmetic expression is reduced to a
                   // constant (i.e. all variables have been substituted)
-                  case Cst(i) if privateArrayVars.contains(name) => Stop(DeclRef(s"${name}_i"))
+                  case Cst(_) if privateArrayVars.contains(name) => Stop(DeclRef(s"${name}_i"))
                   case newAe => Stop(ArraySubscript(DeclRef(name), ArithmeticExpr(newAe)))
                 }
               case _ => Continue(n, this)
@@ -122,7 +122,7 @@ object AdaptKernelBody {
       case Assignment(DeclRef(name), ArithmeticExpr(rhs)) =>
         val ae = ArithExpr.substitute(rhs, Map(NamedVar(name) -> Cst(0)))
         ae match {
-          // TODO: generallise this
+          // TODO: generalise this
           case ArithExprFunction(_, range) => range match {
             case RangeAdd(min, max, s) if (min.evalInt + 1) == max.evalInt && s.evalInt == 1 =>
               min.evalInt

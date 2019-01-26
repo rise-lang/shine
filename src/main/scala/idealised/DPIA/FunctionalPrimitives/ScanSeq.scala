@@ -5,6 +5,7 @@ import idealised.DPIA.Phrases._
 import idealised.DPIA.Types._
 import idealised.DPIA._
 
+//noinspection TypeAnnotation
 final case class ScanSeq(n: Nat,
                          dt1: DataType,
                          dt2: DataType,

@@ -123,29 +123,29 @@ object DataType {
         case at: SurfaceLanguage.Types.ArrayType => ArrayType(at.size, DataType(at.elemType))
         case dat:SurfaceLanguage.Types.DepArrayType =>
           DepArrayType(dat.size, dat.elemType.x, DataType(dat.elemType.t))
-        case tt: SurfaceLanguage.Types.TupleType => {
+        case tt: SurfaceLanguage.Types.TupleType =>
           assert(tt.elemTypes.size == 2)
+          //noinspection ZeroIndexToHead
           RecordType(DataType(tt.elemTypes(0)), DataType(tt.elemTypes(1)))
-        }
       }
       case i: SurfaceLanguage.Types.DataTypeIdentifier => DataTypeIdentifier(i.name)
     }
   }
 
-  def getLength(dt: DataType, tupleAccesss: List[Nat]): Nat = dt match {
+  def getLength(dt: DataType, tupleAccess: List[Nat]): Nat = dt match {
     case _: BasicType => 1
     case r: RecordType =>
-      val t = tupleAccesss.head
+      val t = tupleAccess.head
       val elemT = if (t == (1: Nat)) { r.fst } else if (t == (2: Nat)) { r.snd } else { throw new Exception("This should not happen") }
-      getLength(elemT, tupleAccesss.tail)
-    case a: ArrayType => getLength(a.elemType, tupleAccesss) * a.size
-    case a: DepArrayType => BigSum(from = 0, upTo = a.size - 1, `for` = a.i, `in` = getLength(a.elemType, tupleAccesss))
+      getLength(elemT, tupleAccess.tail)
+    case a: ArrayType => getLength(a.elemType, tupleAccess) * a.size
+    case a: DepArrayType => BigSum(from = 0, upTo = a.size - 1, `for` = a.i, `in` = getLength(a.elemType, tupleAccess))
     case _: DataTypeIdentifier => throw new Exception("This should not happen")
   }
 
   def getLength(dt: DataType): Nat = dt match {
     case _: BasicType => 1
-    case r: RecordType => ???
+    case _: RecordType => ???
     case a: ArrayType => getLength(a.elemType) * a.size
     case a: DepArrayType => BigSum(from = 0, upTo = a.size - 1, `for` = a.i, `in` = getLength(a.elemType))
     case _: DataTypeIdentifier => throw new Exception("This should not happen")
@@ -170,7 +170,7 @@ object DataType {
     case _: BasicType => dt
     case _: RecordType => dt
     case _: DataTypeIdentifier => dt
-    case ArrayType(_, dt) => getBaseDataType(dt)
+    case ArrayType(_, elemType) => getBaseDataType(elemType)
     case DepArrayType(_, _, _) => ??? // TODO: variable would escape scope
   }
 

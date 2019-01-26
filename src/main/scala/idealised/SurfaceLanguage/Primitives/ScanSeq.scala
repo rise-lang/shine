@@ -5,6 +5,7 @@ import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
 
+//noinspection TypeAnnotation
 final case class ScanSeq(f: Expr[DataType -> (DataType -> DataType)], init:DataExpr, array: DataExpr,
                          override val t: Option[DataType])
   extends AbstractScan(f, init, array, t) {
