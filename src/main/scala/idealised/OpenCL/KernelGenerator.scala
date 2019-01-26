@@ -113,7 +113,7 @@ object KernelGenerator {
       intermediateAllocations.map(makeParam(_, gen)) ++ // ... then the intermediate buffers ...
       // ... finally, the parameters for the length information in the type
       // these can only come from the input parameters.
-      makeLengthParams(ins.map(_.t.dataType).map(DataType.toType))
+      makeLengthParams(ins.map(_.t.dataType))
   }
 
   // pass arrays via global and scalar + tuple values via private memory
@@ -150,8 +150,8 @@ object KernelGenerator {
 
   // returns list of int parameters for each variable in the given types;
   // sorted by name of the variables
-  private def makeLengthParams(types: Seq[ir.Type]): Seq[OpenCL.AST.ParamDecl] = {
-    val lengths = types.flatMap(ir.Type.getLengths)
+  private def makeLengthParams(types: Seq[DataType]): Seq[OpenCL.AST.ParamDecl] = {
+    val lengths: Seq[Nat] = types.flatMap(DataType.getSizes)
     lengths.filter(_.isInstanceOf[lift.arithmetic.Var]).distinct.map(v =>
       OpenCL.AST.ParamDecl(v.toString, C.AST.Type.int, OpenCL.PrivateMemory) ).sortBy(_.name)
   }

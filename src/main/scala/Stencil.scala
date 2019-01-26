@@ -1,6 +1,5 @@
 
 import idealised.DPIA.Phrases.{PrettyPhrasePrinter, xmlPrinter}
-import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
 import idealised._

@@ -30,22 +30,10 @@ package object DSL {
       case x => error(x.toString, "(exp[idx(n)], exp[n.dt])")
     }
 
-//    def `@`(index: Int): Idx = e.t match {
-//      case ExpType(ArrayType(n, dt)) =>
-//        Idx(n, dt, Literal(IndexData(index, IndexType(n))), e)
-//      case x => error(x.toString, "(exp[idx(n)], exp[n.dt])")
-//    }
-
-    // TODO: think about this and Nat -> Phrase embedding
-    def `@`(index: Nat): Idx = e.t match {
-      case ExpType(ArrayType(n, dt)) => Idx(n, dt, Literal(IndexData(index, IndexType(n))), e)
-      case x => error(x.toString, "(exp[idx(n)], acc[n.dt])")
-    }
-
     def `@`(index: Nat): Idx = e.t match {
       case ExpType(ArrayType(n, dt)) =>
         Idx(n, dt, Literal(IndexData(index, IndexType(n))), e)
-      case x => error(x.toString, "(exp[idx(n)], exp[n.dt])")
+      case x => error(x.toString, "(exp[idx(n)], acc[n.dt])")
     }
 
 
@@ -65,18 +53,6 @@ package object DSL {
     def `@`(index: Phrase[ExpType]): IdxAcc = (index.t, a.t) match {
       case (ExpType(IndexType(n1)), AccType(ArrayType(n2, dt))) if n1 == n2 =>
         IdxAcc(n1, dt, index, a)
-      case x => error(x.toString, "(exp[idx(n)], acc[n.dt])")
-    }
-
-//    def `@`(index: Int): IdxAcc = a.t match {
-//      case AccType(ArrayType(n, dt)) =>
-//        IdxAcc(n, dt, Literal(IndexData(index, IndexType(n))), a)
-//      case x => error(x.toString, "(exp[idx(n)], exp[n.dt])")
-//    }
-
-    // TODO: think about this and Nat -> Phrase embedding
-    def `@`(index: Nat): IdxAcc = a.t match {
-      case AccType(ArrayType(n, dt)) => IdxAcc(n, dt, Literal(IndexData(index, IndexType(n))), a)
       case x => error(x.toString, "(exp[idx(n)], acc[n.dt])")
     }
 

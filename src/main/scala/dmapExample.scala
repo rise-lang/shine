@@ -1,10 +1,7 @@
-import idealised.OpenCL.KernelGenerator
-import idealised.OpenCL.SurfaceLanguage.DSL.depMapGlobal
 import idealised.OpenMP.SurfaceLanguage.DSL.depMapPar
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
-
 
 import scala.language.{implicitConversions, postfixOps}
 

@@ -1,9 +1,8 @@
 package idealised.DPIA.Types
 
-import idealised.DPIA.{Nat, Types, freshName}
+import idealised.DPIA.{Nat, freshName}
 import idealised.SurfaceLanguage
 import idealised.SurfaceLanguage.NatIdentifier
-import idealised.utils.SizeInByte
 import lift.arithmetic.{ArithExpr, BigSum, NamedVar, RangeAdd}
 
 import scala.language.implicitConversions
@@ -21,6 +20,8 @@ object bool extends ScalarType { override def toString: String = "bool" }
 object int extends ScalarType { override def toString: String = "int" }
 
 object float extends ScalarType { override def toString: String = "float" }
+
+object double extends ScalarType { override def toString: String = "double" }
 
 final case class IndexType(size: Nat) extends BasicType {
   override def toString: String = s"idx($size)"
@@ -131,79 +132,46 @@ object DataType {
     }
   }
 
-  // TODO: should not be in this file
-  def toType(dt: DataType): ir.Type = {
-    dt match {
-      case b: BasicType => b match {
-        case Types.bool => opencl.ir.Int
-        case Types.int => opencl.ir.Int
-        case Types.float => opencl.ir.Float
-        case _: IndexType => opencl.ir.Int
-        case v: VectorType => toVectorType(v)
-      }
-      case a: ArrayType => ir.ArrayType(DataType.toType(a.elemType), a.size)
-      case a: DepArrayType => ir.ArrayType(DataType.toType(a.elemType), a.size) //TODO: Compute the proper size
-      case r: RecordType => ir.TupleType(DataType.toType(r.fst), DataType.toType(r.snd))
-      case _: DataTypeIdentifier => throw new Exception("This should not happen")
-    }
+  def getLength(dt: DataType, tupleAccesss: List[Nat]): Nat = dt match {
+    case _: BasicType => 1
+    case r: RecordType =>
+      val t = tupleAccesss.head
+      val elemT = if (t == (1: Nat)) { r.fst } else if (t == (2: Nat)) { r.snd } else { throw new Exception("This should not happen") }
+      getLength(elemT, tupleAccesss.tail)
+    case a: ArrayType => getLength(a.elemType, tupleAccesss) * a.size
+    case a: DepArrayType => BigSum(from = 0, upTo = a.size - 1, `for` = a.i, `in` = getLength(a.elemType, tupleAccesss))
+    case _: DataTypeIdentifier => throw new Exception("This should not happen")
   }
 
-  // TODO: should not be in this file
-  def toVectorType(v: VectorType): ir.VectorType = {
-    ir.VectorType(DataType.toType(v.elemType) match {
-      case s: ir.ScalarType => s
-      case _ => throw new Exception("This should not happen")
-    }, v.size)
+  def getLength(dt: DataType): Nat = dt match {
+    case _: BasicType => 1
+    case r: RecordType => ???
+    case a: ArrayType => getLength(a.elemType) * a.size
+    case a: DepArrayType => BigSum(from = 0, upTo = a.size - 1, `for` = a.i, `in` = getLength(a.elemType))
+    case _: DataTypeIdentifier => throw new Exception("This should not happen")
   }
 
-  // TODO: should not be in this file
-  def scalarType(dt: DataType): ir.ScalarType = {
-    dt match {
-      case b: BasicType => b match {
-        case Types.bool => opencl.ir.Int
-        case Types.int => opencl.ir.Int
-        case Types.float => opencl.ir.Float
-        case _: IndexType => opencl.ir.Int
-        case v: VectorType => scalarType(v.elemType)
-      }
-      case a: ArrayType => scalarType(a.elemType)
-      case a: DepArrayType => scalarType(a.elemType)
-      case _: RecordType => ???
-      case _: DataTypeIdentifier => throw new Exception("This should not happen")
-    }
+  def getSize(dt: DataType): Nat = dt match {
+    case _: IndexType | _: ScalarType => 1
+    case _: RecordType => 1 // TODO: is this correct?
+    case VectorType(size, _) => size
+    case ArrayType(size, _) => size
+    case DepArrayType(size, _, _) => size
+    case _: DataTypeIdentifier => throw new Exception("This should not happen")
   }
 
-  def getLength(dt: DataType, tupleAccesss: List[Nat]): Nat = {
-    dt match {
-      case _: BasicType => 1
-      case r: RecordType =>
-        val t = tupleAccesss.head
-        val elemT = if (t == (1: Nat)) { r.fst } else if (t == (2: Nat)) { r.snd } else { throw new Exception("This should not happen") }
-        getLength(elemT, tupleAccesss.tail)
-      case a: ArrayType => getLength(a.elemType, tupleAccesss) * a.size
-      case a: DepArrayType => BigSum(from = 0, upTo = a.size - 1, `for` = a.i, `in` = getLength(a.elemType, tupleAccesss))
-      case _: DataTypeIdentifier => throw new Exception("This should not happen")
-    }
+  def getSizes(dt: DataType): Seq[Nat] = dt match {
+    case ArrayType(size, elemType) => Seq(size) ++ getSizes(elemType)
+    case DepArrayType(size, _, elemType) => Seq(size) ++ getSizes(elemType) // TODO: is this correct?
+    case _ => Seq(getSize(dt))
   }
 
-  def getLength(dt: DataType): Nat = {
-    dt match {
-      case _: BasicType => 1
-      case r: RecordType => ???
-      case a: ArrayType => getLength(a.elemType) * a.size
-      case a: DepArrayType => BigSum(from = 0, upTo = a.size - 1, `for` = a.i, `in` = getLength(a.elemType))
-      case _: DataTypeIdentifier => throw new Exception("This should not happen")
-    }
-  }
-
-  def getBaseDataType(dt: DataType): DataType = {
-    dt match {
-      case _: BasicType => dt
-      case _: RecordType => dt
-      case _: DataTypeIdentifier => dt
-      case ArrayType(_, dt) => getBaseDataType(dt)
-      case DepArrayType(_, _, _) => ??? // TODO: variable would escape scope
-    }
+  def getBaseDataType(dt: DataType): DataType = dt match {
+    case _: BasicType => dt
+    case _: RecordType => dt
+    case _: DataTypeIdentifier => dt
+    case ArrayType(_, dt) => getBaseDataType(dt)
+    case DepArrayType(_, _, _) => ??? // TODO: variable would escape scope
   }
 
   implicit class RecordTypeConstructor(dt1: DataType) {
@@ -212,20 +180,5 @@ object DataType {
 
   implicit class ArrayTypeConstructor(s: Nat) {
     def `.`(dt: DataType) = ArrayType(s, dt)
-  }
-
-  // TODO: should not be in this file
-  def sizeInByte(dt: DataType): SizeInByte = sizeInByte(toType(dt))
-
-  // TODO: should not be in this file
-  def sizeInByte(t: ir.Type): SizeInByte = {
-    t match {
-      case s: ir.ScalarType => SizeInByte(s.size)
-      case v: ir.VectorType => sizeInByte(v.scalarT) * v.len
-      case t: ir.TupleType => t.elemsT.map(sizeInByte).reduce(_+_)
-      case a: ir.ArrayType with ir.Size => sizeInByte(a.elemT) * a.size
-      case _: ir.NoType.type | _: ir.UndefType.type | _: ir.ArrayType /* without Size */ =>
-        throw new Exception("This should not happen")
-    }
   }
 }
