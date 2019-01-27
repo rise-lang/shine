@@ -6,6 +6,8 @@ import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage.{Expr, _}
 import lift.arithmetic.NamedVar
 
+import scala.language.implicitConversions
+
 object depMapSeq {
   def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] = fun(x => depMapSeq(f, x))
 
@@ -42,6 +44,8 @@ object join {
   def apply(): Expr[DataType -> DataType] = fun(array => join(array))
 
   def apply(array: DataExpr): Join = Join(array, None)
+
+  implicit def toJoin(j: join.type): Expr[DataType -> DataType] = join()
 }
 
 object slide {
@@ -129,12 +133,16 @@ object transpose {
   def apply(): Expr[DataType -> DataType] = fun(array => transpose(array))
 
   def apply(array: DataExpr): Transpose = Transpose(array, None)
+
+  implicit def toTranspose(t: transpose.type): Expr[DataType -> DataType] = transpose()
 }
 
 object transposeW {
   def apply(): Expr[DataType -> DataType] = fun(array => transposeW(array))
 
   def apply(array: DataExpr): TransposeOnWrite = TransposeOnWrite(array, None)
+
+  implicit def toTransposeW(t: transposeW.type): Expr[DataType -> DataType] = transposeW()
 }
 
 object tuple {
@@ -152,8 +160,9 @@ object asVector {
 object asScalar {
   def apply(): Expr[DataType -> DataType] = fun(array => asScalar(array))
 
-  def apply(array: DataExpr): AsScalar =
-    AsScalar(array)
+  def apply(array: DataExpr): AsScalar = AsScalar(array)
+
+  implicit def toAsScalar(a: asScalar.type): Expr[DataType -> DataType] = asScalar()
 }
 
 object vectorize {

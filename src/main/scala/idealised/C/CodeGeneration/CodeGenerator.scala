@@ -104,7 +104,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     phrase match {
       case i@Identifier(_, AccType(dt)) => generateAccess(dt,
         env.identEnv.applyOrElse(i, (_: Phrase[_]) => {
-          println(i); println(env); ???
+          throw new Exception(s"Expected to find `$i' in the environment: `${env.identEnv}'")
         }), path, env)
 
       case SplitAcc(_, m, _, a) => path match {
@@ -169,7 +169,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     phrase match {
       case i@Identifier(_, ExpType(dt)) => generateAccess(dt,
         env.identEnv.applyOrElse(i, (_: Phrase[_]) => {
-          println(i); println(env); ???
+          throw new Exception(s"Expected to find `$i' in the environment: `${env.identEnv}'")
         }), path, env)
 
       case Phrases.Literal(n) => (path, n.dataType) match {
