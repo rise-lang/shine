@@ -170,7 +170,22 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case i :: ps =>  acc( f( IdxAcc(n, dt, Literal(IndexData(i, IndexType(n))), a) ), env, ps, cont )
         case Nil => error(s"Expected path to be not empty")
       }
+/*
+      case MapWrite(n, dt1, dt2, f, a) => path match {
+        case i :: ps => {
+          val continue_cmd =
+            Identifier[AccType -> CommandType](s"continue_${freshName}",
+              FunctionType(AccType(dt1), comm))
 
+          cmd(f(
+            IdxAcc(n, dt2, Literal(IndexData(i, IndexType(n))), a)
+          )(
+            continue_cmd
+          ), env updatedContEnv (continue_cmd -> (a => env => acc(a, env, ps, cont))))
+        }
+        case Nil => error(s"Expected path to be not empty")
+      }
+*/
       case IdxAcc(_, _, i, a) => codeGenIdxAcc(i, a, env, path, cont)
 
       case DepIdxAcc(_, _, _, i, a) => acc(a, env, i :: path, cont)
@@ -299,24 +314,17 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             cont(C.AST.Literal("(" + s"($st[$n]){" + C.AST.Printer(e) + "})")))
       }
 
-      case Map(n, dt1, dt2, f, e) => path match {
+      case MapRead(n, dt1, dt2, f, e) => path match {
         case i :: ps => {
-          import idealised.DPIA.Compilation.RewriteToImperative
-
           val continue_cmd =
             Identifier[ExpType -> CommandType](s"continue_${freshName}",
               FunctionType(ExpType(dt2), comm))
 
-          cmd(
-            {
-              val exp = f(Idx(n, dt1, Literal(IndexData(i, IndexType(n))), e))
-              val tmp = RewriteToImperative.con(exp)(
-                fun(exp"[$dt2]")(x => Apply(continue_cmd, x)))
-              val res = SubstituteImplementations(tmp, SubstituteImplementations.Environment())
-              res
-            },
-            env updatedContEnv (continue_cmd -> (e => env => exp(e, env, ps, cont)))
-          )
+          cmd(f(
+            Idx(n, dt1, Literal(IndexData(i, IndexType(n))), e)
+          )(
+            continue_cmd
+          ), env updatedContEnv (continue_cmd -> (e => env => exp(e, env, ps, cont))))
         }
         case Nil => error(s"Expected path to be not empty")
       }

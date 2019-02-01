@@ -24,6 +24,12 @@ object map {
   def apply(f: Expr[DataType -> DataType], x: DataExpr): Map = Map(f, x)
 }
 
+object mapOut {
+  def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] = fun(x => mapOut(f, x))
+
+  def apply(f: Expr[DataType -> DataType], x: DataExpr): MapOut = MapOut(f, x)
+}
+
 object zip {
   def apply(lhs: DataExpr, rhs: DataExpr): Zip = Zip(lhs, rhs, None)
 }
