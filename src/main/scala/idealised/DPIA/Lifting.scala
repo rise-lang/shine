@@ -62,7 +62,7 @@ object Lifting {
   }
 
   def liftFunction[T1 <: PhraseType, T2 <: PhraseType](p: Phrase[T1 -> T2]): (Phrase[T1] => Phrase[T2]) = {
-    p match {
+    val r = p match { // FIXME: identifier conflicts
       case l: Lambda[T1, T2] =>
         (arg: Phrase[T1]) =>l.body `[` arg  `/` l.param `]`
       case app: Apply[_, T1 -> T2] =>
@@ -83,6 +83,7 @@ object Lifting {
       case Identifier(_, _) | IfThenElse(_, _, _) =>
         throw new Exception("This should never happen")
     }
+    r
   }
 
   def liftFunctionToNatLambda[T <: PhraseType](p: Phrase[ExpType -> T]): (Nat => Phrase[T]) = {
