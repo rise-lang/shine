@@ -56,24 +56,30 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
     }
   }
 
-  override def acc(phrase: Phrase[AccType], env: Environment, path: Path): Expr = {
+  override def acc(phrase: Phrase[AccType],
+                   env: Environment,
+                   path: Path,
+                   cont: Expr => Stmt): Stmt = {
     phrase match {
       case AsVectorAcc(_, _, _, _) => ???
       case AsScalarAcc(_, m, dt, a) => ???
 
-      case _ => super.acc(phrase, env, path)
+      case _ => super.acc(phrase, env, path, cont)
     }
   }
 
-  override def exp(phrase: Phrase[ExpType], env: Environment, path: Path): Expr = {
+  override def exp(phrase: Phrase[ExpType],
+                   env: Environment,
+                   path: Path,
+                   cont: Expr => Stmt): Stmt = {
     phrase match {
       case AsVector(n, _, _, e) => path match {
-        case i :: j :: ps => exp(e, env, (i * n) + j :: ps)
+        case i :: j :: ps => exp(e, env, (i * n) + j :: ps, cont)
         case _ :: Nil | Nil => error(s"Expected path to have two elements")
       }
       case AsScalar(_, _, _, _) => ???
 
-      case _ => super.exp(phrase, env, path)
+      case _ => super.exp(phrase, env, path, cont)
     }
   }
 

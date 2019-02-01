@@ -39,49 +39,55 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
     }
   }
 
-  override def acc(phrase: Phrase[AccType], env: Environment, path: Path): Expr = {
+  override def acc(phrase: Phrase[AccType],
+                   env: Environment,
+                   path: Path,
+                   cont: Expr => Stmt): Stmt = {
     phrase match {
       case AsVectorAcc(n, _, _, a) => path match {
-        case i :: ps =>     acc(a, env, (i / n) :: ps)
+        case i :: ps =>     acc(a, env, (i / n) :: ps, cont)
         case _ =>           error(s"Expected path to be not empty")
       }
       case AsScalarAcc(_, m, dt, a) => path match {
         case i :: j :: ps =>
-          acc(a, env, (i * m) + j :: ps)
+          acc(a, env, (i * m) + j :: ps, cont)
 
         case i :: Nil =>
-          acc(a, env, (i * m) :: Nil) match {
+          acc(a, env, (i * m) :: Nil, a => a match {
             case ArraySubscript(v, idx) =>
               // emit something like: ((struct float4 *)v)[idx]
               val ptrType = C.AST.PointerType(typ(VectorType(m, dt)))
               C.AST.ArraySubscript(C.AST.Cast(ptrType, v), idx)
-          }
+          })
         case _ =>           error(s"Expected path to be not empty")
       }
-      case _ =>             super.acc(phrase, env, path)
+      case _ =>             super.acc(phrase, env, path, cont)
     }
   }
 
-  override def exp(phrase: Phrase[ExpType], env: Environment, path: Path): Expr = {
+  override def exp(phrase: Phrase[ExpType],
+                   env: Environment,
+                   path: Path,
+                   cont: Expr => Stmt): Stmt = {
     phrase match {
       case AsVector(n, _, dt, e) => path match {
         case i :: j :: ps =>
-          exp(e, env, (i * n) + j :: ps)
+          exp(e, env, (i * n) + j :: ps, cont)
 
         case i :: Nil =>
-          exp(e, env, (i * n) :: Nil) match {
+          exp(e, env, (i * n) :: Nil, e => e match {
             case ArraySubscript(v, idx) =>
               // emit something like: ((struct float4 *)v)[idx]
               val ptrType = C.AST.PointerType(typ(VectorType(n, dt)))
               C.AST.ArraySubscript(C.AST.Cast(ptrType, v), idx)
-          }
+          })
         case _ =>           error(s"Expected path to be not empty")
       }
       case AsScalar(_, m, _, e) => path match {
-        case i :: ps =>     exp(e, env, (i / m) :: ps)
+        case i :: ps =>     exp(e, env, (i / m) :: ps, cont)
         case _ =>           error(s"Expected path to be not empty")
       }
-      case _ =>             super.exp(phrase, env, path)
+      case _ =>             super.exp(phrase, env, path, cont)
     }
   }
 
