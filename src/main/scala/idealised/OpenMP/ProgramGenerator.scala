@@ -45,10 +45,12 @@ object ProgramGenerator {
 
     val (declarations, code) = gen.generate(p3, env)
 
+    val typeDeclarations = C.ProgramGenerator.collectTypeDeclarations(code)
+
     val params = C.ProgramGenerator.makeParams(outParam, inputParams, gen)
 
     OpenMP.Program(
-      declarations,
+      typeDeclarations ++ declarations,
       function    = C.ProgramGenerator.makeFunction(params, C.AST.Block(Seq(code)), name),
       outputParam = outParam,
       inputParams = inputParams)

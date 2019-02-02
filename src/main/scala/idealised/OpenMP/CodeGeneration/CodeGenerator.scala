@@ -5,12 +5,11 @@ import idealised.C.AST.{ArraySubscript, Decl}
 import idealised.C.CodeGeneration.{CodeGenerator => CCodeGenerator}
 import idealised.DPIA.{Nat, NatIdentifier, error, freshName}
 import idealised.DPIA.Phrases.{Identifier, Lambda, NatDependentLambda, Phrase}
-import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType, PhraseType, VectorType}
+import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType, PhraseType, ScalarType, VectorType}
 import idealised.DPIA.DSL._
-import idealised.DPIA.FunctionalPrimitives.{AsScalar, AsVector}
+import idealised.DPIA.FunctionalPrimitives.{AsScalar, AsVector, ForeignFunction}
 import idealised.DPIA.ImperativePrimitives.{AsScalarAcc, AsVectorAcc, ForVec}
 import idealised.OpenMP.ImperativePrimitives.{ParFor, ParForNat}
-import idealised.SurfaceLanguage.Types.IndexType
 import lift.arithmetic
 import lift.arithmetic._
 

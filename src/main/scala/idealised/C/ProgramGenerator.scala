@@ -46,8 +46,10 @@ object ProgramGenerator {
 
     val (declarations, code) = gen.generate(p3, env)
 
+    val typeDeclarations = collectTypeDeclarations(code)
+
     C.Program(
-      declarations,
+      typeDeclarations ++ declarations,
       function    = makeFunction(makeParams(outParam, inputParams, gen), Block(Seq(code)), name),
       outputParam = outParam,
       inputParams = inputParams)
@@ -142,6 +144,28 @@ object ProgramGenerator {
 
   def makeSizeParam(v: Var): ParamDecl = {
     ParamDecl(v.toString, Type.const_int)
+  }
+
+  def collectTypeDeclarations(code: Stmt): Seq[Decl] = {
+    val typeDecls = mutable.ListBuffer[Decl]()
+
+    code.visitAndRebuild(new Nodes.VisitAndRebuild.Visitor {
+      def collect(t: Type): Unit = t match {
+        case _: BasicType =>
+        case s: StructType =>
+          typeDecls append C.AST.StructTypeDecl(
+            s.print,
+            s.fields.map{ case (ty, name) => VarDecl(name, ty) }
+          )
+        case at: ArrayType => collect(at.elemType)
+        case pt: PointerType => collect(pt.valueType)
+        case ut: UnionType => ut.fields.foreach(collect)
+      }
+
+      override def apply(t: Type): Type = { collect(t) ; t }
+    })
+
+    typeDecls
   }
 
   private def getDataType(i: Identifier[_]): DataType = {

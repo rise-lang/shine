@@ -10,7 +10,7 @@ class asum extends idealised.util.Tests {
 
   val N = SizeVar("N")
   val inputT = ArrayType(N, float)
-  val abs = (t: DataType) => fun(x => foreignFun(t, "abs", (t, "y"), "{ return fabs(y); }", x))
+  val abs = (t: DataType) => fun(x => foreignFun(t, "my_abs", (t, "y"), "{ return fabs(y); }", x))
   val fabs = abs(float)
   val add = fun(x => fun(a => x + a))
 

@@ -563,15 +563,37 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                                      args: collection.Seq[Phrase[ExpType]],
                                      env: Environment,
                                      ps: Path): Expr = {
-    addDeclaration(
-      C.AST.FunDecl(funDecl.name,
-        returnType = typ(outT),
-        params = (funDecl.argNames zip inTs).map {
-          case (name, dt) => C.AST.ParamDecl(name, typ(dt))
-        },
-        body = C.AST.Code(funDecl.body)))
+    (outT, ps) match {
+      case (_: ScalarType, Nil) =>
+        addDeclaration(
+          C.AST.FunDecl(funDecl.name,
+            returnType = typ(outT),
+            params = (funDecl.argNames zip inTs).map {
+              case (name, dt) => C.AST.ParamDecl(name, typ(dt))
+            },
+            body = C.AST.Code(funDecl.body)))
 
-    C.AST.FunCall(C.AST.DeclRef(funDecl.name), args.map(exp(_, env, ps)))
+        C.AST.FunCall(C.AST.DeclRef(funDecl.name), args.map(exp(_, env, ps)))
+
+      // This has to be generalised at some point ...
+      case (VectorType(_, elemType), i :: Nil) =>
+        // this is not really generic, to treat all arguments the same ...
+        val inTs_ = inTs.map{ case VectorType(_, et) => et }
+        addDeclaration(
+          C.AST.FunDecl(funDecl.name,
+            returnType = typ(elemType),
+            params = (funDecl.argNames zip inTs_).map {
+              case (name, dt) => C.AST.ParamDecl(name, typ(dt))
+            },
+            body = C.AST.Code(funDecl.body)
+          )
+        )
+
+        C.AST.FunCall(C.AST.DeclRef(funDecl.name), args.map(exp(_, env, i :: Nil)))
+
+      case _ =>
+        throw new Exception(s"Can not generate fun call to $funDecl with current path $ps")
+    }
   }
 
   private def generateAccess(dt: DataType,
