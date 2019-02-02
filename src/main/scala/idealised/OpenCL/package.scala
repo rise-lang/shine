@@ -18,6 +18,8 @@ package object OpenCL {
 
   case class NDRange(x: Nat, y: Nat, z: Nat)
 
+  // This class models OpenCL built in functions that can appear inside of arithmetic expressions
+  // examples are get_global_size(0), or get_local_id(1), but also OpenCL math functions, e.g., ceil or sin
   class BuiltInFunction private(name: String, val param: Int, range: Range)
     extends ArithExprFunction(name, range) {
 

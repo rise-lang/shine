@@ -33,7 +33,7 @@ package object DSL {
     def `@`(index: Nat): Idx = e.t match {
       case ExpType(ArrayType(n, dt)) =>
         Idx(n, dt, Literal(IndexData(index, IndexType(n))), e)
-      case x => error(x.toString, "(exp[idx(n)], acc[n.dt])")
+      case x => error(x.toString, "exp[n.dt]")
     }
 
 
@@ -45,7 +45,7 @@ package object DSL {
 
     def `@d`(index: Nat):DepIdx = e.t match {
       case ExpType(DepArrayType(n, i, dt)) => DepIdx(n, i, dt, index, e)
-      case x => error(x.toString, "(exp[idx(n)], exp[n.(i:Nat) -> dt])")
+      case x => error(x.toString, "exp[n.(i:Nat) -> dt]")
     }
   }
 
@@ -59,7 +59,7 @@ package object DSL {
     def `@`(index: Nat): IdxAcc = a.t match {
       case AccType(ArrayType(n, dt)) =>
         IdxAcc(n, dt, Literal(IndexData(index, IndexType(n))), a)
-      case x => error(x.toString, "(exp[idx(n)], exp[n.dt])")
+      case x => error(x.toString, "acc[n.dt]")
     }
 
 
@@ -71,7 +71,7 @@ package object DSL {
 
     def `@d`(index: Nat):DepIdxAcc = a.t match {
       case AccType(DepArrayType(n, i, dt)) => DepIdxAcc(n, i, dt, index, a)
-      case x => error(x.toString, "(exp[idx(n)], acc[n.(i:Nat) -> dt])")
+      case x => error(x.toString, "acc[n.(i:Nat) -> dt]")
     }
   }
 
