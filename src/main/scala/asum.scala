@@ -1,19 +1,13 @@
 
-import dot.high_level
-import idealised.C
-import idealised.OpenMP
 import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.OpenCL._
+import idealised.OpenMP
 import idealised.SurfaceLanguage.DSL._
-import idealised.SurfaceLanguage.Expr
-import idealised.SurfaceLanguage._
 import idealised.SurfaceLanguage.Types._
+import idealised.SurfaceLanguage.{Expr, _}
 import lift.arithmetic._
-import opencl.executor.Executor
 
-import scala.language.implicitConversions
-import scala.language.postfixOps
-import scala.util.Random
+import scala.language.{implicitConversions, postfixOps}
 
 object asum extends App {
 

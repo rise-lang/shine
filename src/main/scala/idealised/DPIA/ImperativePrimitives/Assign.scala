@@ -1,13 +1,13 @@
 package idealised.DPIA.ImperativePrimitives
 
-import idealised.DPIA.Compilation.CodeGenerator
 import idealised.DPIA.DSL._
-import idealised.DPIA.IntermediatePrimitives.{MapSeqI, MapVecI}
+import idealised.DPIA.IntermediatePrimitives.{DepMapSeqI, MapSeqI, MapVecI}
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA._
+import lift.arithmetic.NamedVar
 
 import scala.language.reflectiveCalls
 import scala.xml.Elem
@@ -33,6 +33,15 @@ final class Assign(val dt: DataType,
             assert(s.contains(arrayName))
             s(arrayName) match {
               case ArrayData(vec) => continuation(s, arrayName, ArrayData(vec.updated(index.eval, rhsValue)))
+              case _ => throw new Exception("This should not happen")
+            }
+          })
+
+        case VectorAccessIdentifier(vector, index) =>
+          evalAssign(s, vector, rhs, (s, vectorName, rhsValue) => {
+            assert(s.contains(vectorName))
+            s(vectorName) match {
+              case ArrayData(vec) => continuation(s, vectorName, ArrayData(vec.updated(index.eval, rhsValue)))
               case _ => throw new Exception("This should not happen")
             }
           })
@@ -99,12 +108,22 @@ object Assign {
         MapVecI(n, st, st, λ(ExpType(st))(x => λ(AccType(st))(a => a := x )), E, A)
 
       // TODO: think about this more, but records (structs) are values ...
-      case _: ScalarType | _: RecordType => A := E
+      case _: ScalarType | _: RecordType | _: IndexType => A := E
 
       case ArrayType(n, et) =>
         MapSeqI(n, et, et, λ(ExpType(et))(x => λ(AccType(et))(a => a :=|et| x )), E, A)
 
-//      case RecordType(dt1, dt2) =>
+      case DepArrayType(n, i, et) =>
+        val i_ = NamedVar(freshName())
+        val et_ = DataType.substitute(i_, `for`=i, in=et)
+        val k = NamedVar(freshName())
+        val etk = DataType.substitute(k, `for`=i, in=et)
+        DepMapSeqI(n, i_, et_, i_, et_,
+          NatDependentLambda(k,
+            λ(ExpType( etk ))(x => λ(AccType( etk ))(a => a :=| etk | x))),
+          E, A)
+
+      //      case RecordType(dt1, dt2) =>
 //        (recordAcc1(dt1, dt2, A) :=|dt1| fst(E)) `;` (recordAcc2(dt1, dt2, A) :=|dt2| snd(E))
 
       case _: DataTypeIdentifier => throw new Exception("This should not happen")

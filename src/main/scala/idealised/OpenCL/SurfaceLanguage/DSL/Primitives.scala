@@ -2,13 +2,12 @@ package idealised.OpenCL.SurfaceLanguage.DSL
 
 import idealised.OpenCL.SurfaceLanguage.Primitives._
 import idealised.SurfaceLanguage.DSL.{DataExpr, dFun, fun}
-import idealised.SurfaceLanguage.Primitives.{AsScalar, AsVector, DepMapSeq}
-import idealised.SurfaceLanguage.Semantics._
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage.{Expr, _}
 
 import scala.language.reflectiveCalls
 
+//noinspection TypeAnnotation
 object mapGlobal {
   def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] = mapGlobal(0)(f)
   def apply(f: Expr[DataType -> DataType], x: DataExpr): MapGlobal = mapGlobal(0)(f, x)
@@ -22,6 +21,22 @@ object mapGlobal {
   }
 }
 
+//noinspection TypeAnnotation
+object depMapGlobal {
+  def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] = depMapGlobal(0)(f)
+  def apply(f: Expr[DataType -> DataType], x: DataExpr): DepMapGlobal = depMapGlobal(0)(f, x)
+
+
+  def apply(dim: Int) = new {
+    def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] =
+      fun(x => DepMapGlobal(dim)(dFun(_ => f), x))
+
+    def apply(f: Expr[DataType -> DataType], x: DataExpr): DepMapGlobal =
+      DepMapGlobal(dim)(dFun(_ => f), x)
+  }
+}
+
+//noinspection TypeAnnotation
 object mapWorkgroup {
   def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] = mapWorkgroup(0)(f)
   def apply(f: Expr[DataType -> DataType], x: DataExpr): MapWorkGroup = mapWorkgroup(0)(f, x)
@@ -35,6 +50,7 @@ object mapWorkgroup {
   }
 }
 
+//noinspection TypeAnnotation
 object mapLocal {
   def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] = mapLocal(0)(f)
   def apply(f: Expr[DataType -> DataType], x: DataExpr): MapLocal = mapLocal(0)(f, x)

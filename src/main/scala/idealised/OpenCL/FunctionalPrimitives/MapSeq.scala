@@ -6,6 +6,7 @@ import idealised.DPIA.Types.{DataType, ExpType}
 import idealised.DPIA._
 import idealised.OpenCL.IntermediatePrimitives.MapSeqI
 
+//noinspection TypeAnnotation
 final case class MapSeq(n: Nat,
                         dt1: DataType,
                         dt2: DataType,

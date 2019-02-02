@@ -76,6 +76,9 @@ object Type {
   val float = BasicType("float")
   val const_float = BasicType("float", const = true)
 
+  val double = BasicType("double")
+  val const_double = BasicType("double", const = true)
+
 //  def fromDataType(dt: idealised.DPIA.Types.DataType): Type = {
 //    dt match {
 //      case b: idealised.DPIA.Types.BasicType => b match {

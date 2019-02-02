@@ -41,8 +41,6 @@ sealed trait Node {
   def visitAndRebuild(v: Nodes.VisitAndRebuild.Visitor): Node
 }
 
-abstract class Attribute extends Node
-
 abstract class Decl(val name: String) extends Node
 
 abstract class FunDecl(override val name: String,

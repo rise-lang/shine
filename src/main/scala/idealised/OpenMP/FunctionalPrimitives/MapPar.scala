@@ -6,6 +6,7 @@ import idealised.DPIA.Types.{DataType, ExpType}
 import idealised.DPIA._
 import idealised.OpenMP.IntermediatePrimitives.MapParI
 
+//noinspection TypeAnnotation
 final case class MapPar(n: Nat,
                         dt1: DataType,
                         dt2: DataType,

@@ -5,11 +5,9 @@ import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.OpenCL._
 import idealised.OpenMP
 import idealised.SurfaceLanguage.DSL._
-import idealised.SurfaceLanguage.Expr
-import idealised.SurfaceLanguage._
 import idealised.SurfaceLanguage.Types._
+import idealised.SurfaceLanguage.{Expr, _}
 import lift.arithmetic._
-import opencl.executor.Executor
 
 import scala.language.implicitConversions
 import scala.util.Random

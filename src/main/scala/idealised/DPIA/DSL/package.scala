@@ -30,17 +30,12 @@ package object DSL {
       case x => error(x.toString, "(exp[idx(n)], exp[n.dt])")
     }
 
-//    def `@`(index: Int): Idx = e.t match {
-//      case ExpType(ArrayType(n, dt)) =>
-//        Idx(n, dt, Literal(IndexData(index, IndexType(n))), e)
-//      case x => error(x.toString, "(exp[idx(n)], exp[n.dt])")
-//    }
-
-    // TODO: think about this and Nat -> Phrase embedding
     def `@`(index: Nat): Idx = e.t match {
-      case ExpType(ArrayType(n, dt)) => Idx(n, dt, Literal(IndexData(index, IndexType(n))), e)
-      case x => error(x.toString, "(exp[idx(n)], acc[n.dt])")
+      case ExpType(ArrayType(n, dt)) =>
+        Idx(n, dt, Literal(IndexData(index, IndexType(n))), e)
+      case x => error(x.toString, "exp[n.dt]")
     }
+
 
     def `@v`(index: Phrase[ExpType]): IdxVec = (index.t, e.t) match {
       case (ExpType(IndexType(n1)), ExpType(VectorType(n2, st))) if n1 == n2 =>
@@ -50,7 +45,7 @@ package object DSL {
 
     def `@d`(index: Nat):DepIdx = e.t match {
       case ExpType(DepArrayType(n, i, dt)) => DepIdx(n, i, dt, index, e)
-      case x => error(x.toString, "(exp[idx(n)], exp[n.(i:Nat) -> dt])")
+      case x => error(x.toString, "exp[n.(i:Nat) -> dt]")
     }
   }
 
@@ -61,17 +56,12 @@ package object DSL {
       case x => error(x.toString, "(exp[idx(n)], acc[n.dt])")
     }
 
-//    def `@`(index: Int): IdxAcc = a.t match {
-//      case AccType(ArrayType(n, dt)) =>
-//        IdxAcc(n, dt, Literal(IndexData(index, IndexType(n))), a)
-//      case x => error(x.toString, "(exp[idx(n)], exp[n.dt])")
-//    }
-
-    // TODO: think about this and Nat -> Phrase embedding
     def `@`(index: Nat): IdxAcc = a.t match {
-      case AccType(ArrayType(n, dt)) => IdxAcc(n, dt, Literal(IndexData(index, IndexType(n))), a)
-      case x => error(x.toString, "(exp[idx(n)], acc[n.dt])")
+      case AccType(ArrayType(n, dt)) =>
+        IdxAcc(n, dt, Literal(IndexData(index, IndexType(n))), a)
+      case x => error(x.toString, "acc[n.dt]")
     }
+
 
     def `@v`(index: Phrase[ExpType]): IdxVecAcc = (index.t, a.t) match {
       case (ExpType(IndexType(n1)), AccType(VectorType(n2, st))) if n1 == n2 =>
@@ -81,10 +71,11 @@ package object DSL {
 
     def `@d`(index: Nat):DepIdxAcc = a.t match {
       case AccType(DepArrayType(n, i, dt)) => DepIdxAcc(n, i, dt, index, a)
-      case x => error(x.toString, "(exp[idx(n)], acc[n.(i:Nat) -> dt])")
+      case x => error(x.toString, "acc[n.(i:Nat) -> dt]")
     }
   }
 
+  //noinspection TypeAnnotation
   implicit class AssignmentHelper(lhs: Phrase[AccType]) {
     def :=(rhs: Phrase[ExpType]): Assign = {
       Assign(lhs, rhs)

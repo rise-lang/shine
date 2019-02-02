@@ -9,6 +9,8 @@ import idealised.DPIA.Types._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics.Store
 
+import scala.language.reflectiveCalls
+
 // TODO: factorise with MapSeqSlideICircular?
 final case class MapSeqSlideIRegRot(n: Nat,
                                     size: Nat,

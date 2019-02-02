@@ -4,12 +4,10 @@ import idealised.DPIA.Types.TypeCheck
 import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.OpenCL._
 import idealised.SurfaceLanguage.DSL._
-import idealised.SurfaceLanguage.Expr
-import idealised.SurfaceLanguage._
 import idealised.SurfaceLanguage.Types._
+import idealised.SurfaceLanguage.{Expr, _}
 import idealised.utils.{Time, TimeSpan}
 import lift.arithmetic._
-import opencl.executor.Executor
 
 import scala.util.Random
 

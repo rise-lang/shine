@@ -9,9 +9,9 @@ object SyntaxChecker {
   case class Exception(msg: String) extends Throwable
 
   @throws[SyntaxChecker.Exception]("if code doesn't pass the syntax check")
-  def apply(code: String): Unit = {
+  def apply(code: String, extension: String = ".c"): Unit = {
     try {
-      s"clang -fsyntax-only ${writeToTempFile("code-", ".c", code).getAbsolutePath}" !!
+      s"clang -fsyntax-only ${writeToTempFile("code-", extension, code).getAbsolutePath}" !!
     } catch {
       case _: Throwable =>
         Console.err.println("==========")

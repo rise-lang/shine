@@ -8,6 +8,7 @@ import idealised.DPIA.Phrases.Phrase
 import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType}
 import idealised.DPIA._
 
+//noinspection TypeAnnotation
 final case class MapSeqI(n: Nat,
                          dt1: DataType,
                          dt2: DataType,

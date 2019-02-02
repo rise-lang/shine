@@ -6,11 +6,13 @@ import idealised.DPIA.FunctionalPrimitives.{AsScalar, AsVector}
 import idealised.DPIA.ImperativePrimitives.{AsScalarAcc, AsVectorAcc, ForNat}
 import idealised.DPIA.Phrases.{Identifier, Lambda, NatDependentLambda, Phrase}
 import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType, PhraseType}
-import idealised.DPIA.{Nat, NatIdentifier, freshName}
+import idealised.DPIA.{Nat, NatIdentifier, error, freshName}
 import idealised.OpenCL.ImperativePrimitives.OpenCLParFor
+import idealised.OpenMP.ImperativePrimitives.ParForNat
 import idealised.{C, OpenCL}
 import lift.arithmetic
 import lift.arithmetic._
+import idealised.DPIA.DSL._
 
 import scala.collection.{immutable, mutable}
 
@@ -34,6 +36,20 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
     phrase match {
       case f@OpenCLParFor(n, dt, a, Lambda(i, Lambda(o, p))) => codeGenOpenCLParFor(f, n, dt, a, i, o, p, env)
 
+      case ParForNat(n, i, _, out, body) =>
+        val newBody = body(i)(out `@d` i)
+
+        //In new body, all body.t.x variables (the nat identifier) need to be substituted with i
+        val newIdentEnv = env.identEnv.map {
+          case (Identifier(name, AccType(dt)), declRef) =>
+            (Identifier(name, AccType(DataType.substitute(i, `for` = body.t.x, in=dt))), declRef)
+          case (Identifier(name, ExpType(dt)), declRef) =>
+            (Identifier(name, ExpType(DataType.substitute(i, `for` = body.t.x, in=dt))), declRef)
+          case x => x
+        }
+
+        codeGenForNat(n, i, newBody, env.copy(identEnv = newIdentEnv))
+
       case ForNat(n, NatDependentLambda(i, p)) => codeGenForNat(n, i, p, env)
 
       case _ => super.cmd(phrase, env)
@@ -42,7 +58,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
   override def acc(phrase: Phrase[AccType], env: Environment, path: Path): Expr = {
     phrase match {
-      case AsVectorAcc(n, _, _, a) => ???
+      case AsVectorAcc(_, _, _, _) => ???
       case AsScalarAcc(_, m, dt, a) => ???
 
       case _ => super.acc(phrase, env, path)
@@ -53,8 +69,9 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
     phrase match {
       case AsVector(n, _, _, e) => path match {
         case i :: j :: ps => exp(e, env, (i * n) + j :: ps)
+        case _ :: Nil | Nil => error(s"Expected path to have two elements")
       }
-      case AsScalar(_, m, _, e) => ???
+      case AsScalar(_, _, _, _) => ???
 
       case _ => super.exp(phrase, env, path)
     }
@@ -62,7 +79,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
 
   override def typ(dt: DataType): Type = dt match {
-    case v: idealised.DPIA.Types.VectorType => C.AST.BasicType("float4")
+    case _: idealised.DPIA.Types.VectorType => C.AST.BasicType("float4")
     case _ => super.typ(dt)
   }
 

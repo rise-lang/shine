@@ -3,14 +3,14 @@ package idealised.OpenMP.CodeGeneration
 import idealised.C
 import idealised.C.AST.{ArraySubscript, Decl}
 import idealised.C.CodeGeneration.{CodeGenerator => CCodeGenerator}
-import idealised.DPIA.{Nat, error, freshName}
+import idealised.DPIA.{Nat, NatIdentifier, error, freshName}
 import idealised.DPIA.Phrases.{Identifier, Lambda, NatDependentLambda, Phrase}
 import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType, PhraseType, VectorType}
 import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives.{AsScalar, AsVector}
 import idealised.DPIA.ImperativePrimitives.{AsScalarAcc, AsVectorAcc, ForVec}
 import idealised.OpenMP.ImperativePrimitives.{ParFor, ParForNat}
-import idealised.SurfaceLanguage.NatIdentifier
+import idealised.SurfaceLanguage.Types.IndexType
 import lift.arithmetic
 import lift.arithmetic._
 
@@ -125,12 +125,15 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
     val cond = C.AST.BinaryExpr(i_, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
     val increment = idealised.C.AST.Assignment(i_, C.AST.ArithmeticExpr(NamedVar(i_.name, range) + 1))
 
-    val pSub = PhraseType.substitute(NamedVar(i_.name, range), `for` = i, in = p)
+    //FIRST we must substitute in the indexing of o in the phrase
+    val pSub = Phrase.substitute(a `@d` i, `for`=o, `in` = p)
+    //THEN and only THEN we can change the type to use the new index var
+    val pSub2 = PhraseType.substitute(NamedVar(i_.name, range), `for` = i, in = pSub)
 
     C.AST.Stmts(
       C.AST.Code("#pragma omp parallel for"),
       C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
-        C.AST.Block(immutable.Seq(updatedGen.cmd(Phrase.substitute(a `@d` i, `for`=o, `in`=pSub), env)))))
+        C.AST.Block(immutable.Seq(updatedGen.cmd(pSub2, env)))))
   }
 
   private def codeGenParForVec(n: Nat,

@@ -5,6 +5,7 @@ import idealised.DPIA.Phrases._
 import idealised.DPIA.Types._
 import idealised.DPIA._
 
+//noinspection TypeAnnotation
 final case class DepMapSeq(n: Nat,
                            i1: NatIdentifier, dt1: DataType,
                            i2: NatIdentifier, dt2: DataType,
