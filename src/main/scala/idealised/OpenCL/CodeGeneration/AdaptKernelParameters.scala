@@ -45,13 +45,11 @@ object AdaptKernelParameters {
             case _ => paramDecl
           }
         case at: C.AST.ArrayType =>
-          // make input parameters const
-          if (inputParams.map(_.name).contains(paramDecl.name)) {
-            //paramDecl.copy(const = true)
-            paramDecl.copy(t = C.AST.ArrayType(at.elemType, at.size, const = true))
-          } else {
-            paramDecl
-          }
+          // turn array types into flat pointers
+          paramDecl.copy(t = C.AST.PointerType(at.getBaseType,
+            // ... and make input parameters const
+            const = inputParams.map(_.name).contains(paramDecl.name)))
+
         case _ => paramDecl
       }
     })

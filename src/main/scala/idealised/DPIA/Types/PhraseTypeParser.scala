@@ -6,7 +6,7 @@ class PhraseTypeParser(val string: String,
                        var strings: Seq[String],
                        var values: Iterator[Any]) {
 
-  val tokens = Seq("exp", "acc", "comm", "var", "nat", "idx", "[", "]", "(", ")", ".", "x", "->", ":")
+  val tokens: Seq[String] = Seq("exp", "acc", "comm", "var", "nat", "idx", "[", "]", "(", ")", ".", "x", "->", ":")
 
   def hasToken: Boolean = strings.nonEmpty
 

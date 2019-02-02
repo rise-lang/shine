@@ -9,6 +9,8 @@ import idealised.DPIA.Semantics.OperationalSemantics.Store
 import idealised.DPIA.FunctionalPrimitives.{Cycle, Drop, Take}
 import idealised.DPIA.ImperativePrimitives.{CycleAcc, DropAcc, ForNat, TakeAcc}
 
+import scala.language.reflectiveCalls
+
 final case class MapSeqSlideICircular(n: Nat,
                                       size: Nat,
                                       // step: Nat,

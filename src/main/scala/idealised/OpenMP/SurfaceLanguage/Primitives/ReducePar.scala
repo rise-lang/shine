@@ -5,6 +5,7 @@ import idealised.SurfaceLanguage.{->, Expr}
 import idealised.SurfaceLanguage.Primitives.AbstractReduce
 import idealised.SurfaceLanguage.Types.DataType
 
+//noinspection TypeAnnotation
 final case class ReducePar(f: Expr[DataType -> (DataType -> DataType)],
                            init: DataExpr, array: DataExpr,
                            override val t: Option[DataType] = None)

@@ -2,7 +2,7 @@ name := "idealised-OpenCL"
 
 version := "1.0"
 
-scalaVersion := "2.11.8"
+scalaVersion := "2.11.12"
 
 scalacOptions ++= Seq("-Xmax-classfile-name", "100", "-unchecked", "-deprecation", "-feature")
 
@@ -13,9 +13,9 @@ resolvers ++= Seq(
 
 
 // Scala libraries
-libraryDependencies += "org.scala-lang" % "scala-reflect" % "2.11.8"
-libraryDependencies += "org.scala-lang" % "scala-compiler" % "2.11.8"
-libraryDependencies += "org.scala-lang" % "scala-library" % "2.11.8"
+libraryDependencies += "org.scala-lang" % "scala-reflect" % "2.11.12"
+libraryDependencies += "org.scala-lang" % "scala-compiler" % "2.11.12"
+libraryDependencies += "org.scala-lang" % "scala-library" % "2.11.12"
 libraryDependencies += "com.typesafe.play" %% "play-json" % "2.3.10"
 
 libraryDependencies += "org.scala-lang.modules" % "scala-xml_2.11" % "1.0.4"

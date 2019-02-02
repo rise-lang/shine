@@ -255,7 +255,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       // TODO: this has to be refactored
       case VectorFromScalar(n, st, e) => path match {
-        case i :: ps =>
+        case _ :: ps =>
           // in this case we index straight into the vector build from a single scalar
           // it is equivalent to return the scalar `e' without boxing and unboxing it
           exp(e, env, ps)
@@ -295,6 +295,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case idealised.DPIA.Types.bool => C.AST.Type.int
         case idealised.DPIA.Types.int => C.AST.Type.int
         case idealised.DPIA.Types.float => C.AST.Type.float
+        case idealised.DPIA.Types.double => C.AST.Type.double
         case _: idealised.DPIA.Types.IndexType => C.AST.Type.int
         case v: idealised.DPIA.Types.VectorType =>
           // this sets the representation of vector types in C:
@@ -305,7 +306,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             immutable.Seq((C.AST.ArrayType(typ(v.elemType), Some(v.size)), "data")))
       }
       case a: idealised.DPIA.Types.ArrayType => C.AST.ArrayType(typ(a.elemType), Some(a.size))
-      case a: idealised.DPIA.Types.DepArrayType => C.AST.ArrayType(typ(a.elemType), None) // TODO: be more precise with the size?
+      case a: idealised.DPIA.Types.DepArrayType => C.AST.ArrayType(typ(a.elemType), Some(a.size)) // TODO: be more precise with the size?
       case r: idealised.DPIA.Types.RecordType =>
         C.AST.StructType(r.fst.toString + "_" + r.snd.toString, immutable.Seq(
           (typ(r.fst), "fst"),
@@ -511,15 +512,14 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case ArrayType(n, st) =>
           a.head match {
             case IntData(0) | FloatData(0.0f) | BoolData(false)
-              if a.distinct.length == 1 => {
+              if a.distinct.length == 1 =>
               C.AST.Literal("(" + s"($st[$n]){" + a.head + "})")
-            }
-            case _ => {
+            case _ =>
               C.AST.Literal("(" + s"($st[$n])" + a.mkString("{", ",", "}") + ")")
-            }
           }
+        case _ => error("This should not happen")
       }
-      case _ => error(s"Expected scalar, vector or array types")
+      case _ => error("Expected scalar, vector or array types")
     }
   }
 
