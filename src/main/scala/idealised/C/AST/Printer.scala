@@ -63,6 +63,7 @@ class CPrinter extends Printer {
     case p: ParamDecl => printParamDecl(p)
     case l: LabelDecl => printLabelDecl(l)
     case t: TypedefDecl => printTypedefDecl(t)
+    case s: StructTypeDecl => printStructTypeDecl(s)
   }
 
   override def printExpr(e: Expr): Unit = e match {
@@ -152,6 +153,17 @@ class CPrinter extends Printer {
   }
 
   private def printTypedefDecl(t: TypedefDecl): Unit = ???
+
+  private def printStructTypeDecl(decl: StructTypeDecl): Unit = {
+    print(decl.name) // struct name
+    println(" {")
+    decl.fields.foreach(field => {
+      print("  ")
+      printDeclStmt(DeclStmt(field))
+      println("")
+    })
+    println("};")
+  }
 
   // Smts
   private def printStmts(s: Stmts): Unit = {
