@@ -1,6 +1,6 @@
 package idealised.OpenMP.IntermediatePrimitives
 
-import idealised.DPIA.Compilation.SubstituteImplementations
+import idealised.DPIA.Compilation.{TranslationContext, SubstituteImplementations}
 import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
@@ -45,13 +45,14 @@ final case class ReduceParI(n: Nat,
       case ExpType(ArrayType(len, _)) => len
     }
 
-    OperationalSemantics.eval(s, `new`(init.t.dataType, OpenCL.PrivateMemory, accum => {
-      (accum.wr `:=` init) `;`
-        `for`(n, i =>
-          fE(in `@` i)(accum.rd)(accum.wr)
-        ) `;`
-        outE(π1(accum))
-    }))
+//    OperationalSemantics.eval(s, `new`(init.t.dataType, OpenCL.PrivateMemory, accum => {
+//      (accum.wr `:=` init) `;`
+//        `for`(n, i =>
+//          fE(in `@` i)(accum.rd)(accum.wr)
+//        ) `;`
+//        outE(π1(accum))
+//    }))
+    ???
   }
 
   override def prettyPrint =
@@ -73,7 +74,8 @@ final case class ReduceParI(n: Nat,
       </input>
     </reduceIExp>
 
-  override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
+  override def substituteImpl(env: SubstituteImplementations.Environment)
+                             (implicit context: TranslationContext): Phrase[CommandType] = {
 //    `new`(dt2, OpenCL.PrivateMemory, acc =>
 //      (acc.wr :=|dt2| init) `;`
 //        `for`(n, i =>

@@ -2,9 +2,8 @@ package idealised.OpenCL.AST
 
 import idealised.C.AST._
 import idealised.OpenCL
-import idealised.OpenCL.NDRange
+import idealised.OpenCL.{NDRange, BuiltInFunction}
 import lift.arithmetic.ArithExpr
-import opencl.generator.OclFunction
 
 object Printer {
   def apply(n: Node): String = (new Printer).printNode(n)
@@ -33,7 +32,7 @@ class Printer extends idealised.C.AST.CPrinter {
   override def typeName(t: Type): String = super.typeName(t)
 
   override def toString(e: ArithExpr): String = e match {
-    case of: OclFunction => of.toOCLString
+    case of: BuiltInFunction => of.toOCLString
 
     case _ => super.toString(e)
   }
@@ -60,7 +59,7 @@ class Printer extends idealised.C.AST.CPrinter {
     p.t match {
       case b: BasicType => print(s"${b.name} ${p.name}")
       case s: StructType => print(s"struct ${s.name} ${p.name}")
-      case u: UnionType => ???
+      case _: UnionType => ???
       case a: ArrayType =>
         print(s"${a.getBaseType} ${p.name}[${ a.getSizes match {
           case None => ""

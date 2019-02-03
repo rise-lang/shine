@@ -11,6 +11,7 @@ object TimeSpan {
   def inNanoseconds(value: Double): TimeSpan[Time.ns] = TimeSpan(value, Time.ns)
 }
 
+//noinspection TypeAnnotation
 object Time {
   sealed trait Unit
   case object Second extends Unit { override def toString = "s" }

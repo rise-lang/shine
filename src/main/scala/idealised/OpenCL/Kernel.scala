@@ -3,25 +3,25 @@ package idealised.OpenCL
 import idealised.DPIA.Phrases.Identifier
 import idealised.DPIA.Types._
 import idealised.DPIA._
+import idealised.{C, OpenCL}
 import idealised.utils._
-import ir.Type
 import lift.arithmetic.{ArithExpr, Cst, Var}
-import idealised.OpenCL
-
 import opencl.executor._
-import opencl.ir.{Double, Float, Int}
 
 import scala.collection.immutable.List
 import scala.collection.{Seq, immutable}
 import scala.language.implicitConversions
 
-case class Kernel(kernel: OpenCL.AST.KernelDecl,
+case class Kernel(decls: Seq[C.AST.Decl],
+                  kernel: OpenCL.AST.KernelDecl,
                   outputParam: Identifier[AccType],
                   inputParams: Seq[Identifier[ExpType]],
                   intermediateParams: Seq[Identifier[VarType]],
                   localSize: Nat, globalSize: Nat) {
 
-  def code: String = idealised.OpenCL.AST.Printer(kernel)
+  def code: String = decls.map(OpenCL.AST.Printer(_)).mkString("\n") +
+    "\n\n" +
+    OpenCL.AST.Printer(kernel)
 
   // This method will return a Scala function which executed the kernel via OpenCL and returns its
   // result and the time it took to execute the kernel.
@@ -38,8 +38,8 @@ case class Kernel(kernel: OpenCL.AST.KernelDecl,
   //
   // dotKernel.as[ScalaFunction `(` Array[Float] `,` Array[Float] `)=>` Array[Float]]
   //
-  def as[F <: FunctionHelper](implicit ev: F#T <:< HList): (F#T) => (F#R, TimeSpan[Time.ms]) = {
-    (hArgs: F#T) => {
+  def as[F <: FunctionHelper](implicit ev: F#T <:< HList): F#T => (F#R, TimeSpan[Time.ms]) = {
+    hArgs: F#T => {
       val args: List[Any] = hArgs.toList
 
       val lengthMapping = createLengthMap(inputParams, args)
@@ -91,12 +91,12 @@ case class Kernel(kernel: OpenCL.AST.KernelDecl,
     }
   }
 
-  private def createKernelArgs(args: List[Any], lengthMapping: immutable.Map[Nat, Nat]) = {
+  private def createKernelArgs(args: List[Any], lengthMapping: immutable.Map[Nat, Nat]): (GlobalArg, List[KernelArg]) = {
     val numberOfKernelArgs = 1 + args.length + intermediateParams.size + lengthMapping.size
     assert(kernel.params.length == numberOfKernelArgs)
 
     println("Allocations on the host: ")
-    val outputArg = createOutputArg(DataType.sizeInByte(outputParam) `with` lengthMapping)
+    val outputArg = createOutputArg(sizeInByte(outputParam) `with` lengthMapping)
     val inputArgs = args.map(createInputArg)
     val intermediateArgs = createIntermediateArgs(args.length, lengthMapping)
     val lengthArgs = createLengthArgs(lengthMapping)
@@ -104,7 +104,7 @@ case class Kernel(kernel: OpenCL.AST.KernelDecl,
     (outputArg, inputArgs ++ intermediateArgs ++ lengthArgs)
   }
 
-  private def createOutputArg(size: SizeInByte) = {
+  private def createOutputArg(size: SizeInByte): GlobalArg = {
     GlobalArg.createOutput(size.value.eval)
   }
 
@@ -133,10 +133,10 @@ case class Kernel(kernel: OpenCL.AST.KernelDecl,
     }
   }
 
-  private def createIntermediateArgs(argsLength: Int, lengthMapping: immutable.Map[Nat, Nat]) = {
+  private def createIntermediateArgs(argsLength: Int, lengthMapping: immutable.Map[Nat, Nat]): Seq[KernelArg] = {
     val intermediateParamDecls = getIntermediateParamDecls(argsLength)
     (intermediateParamDecls, intermediateParams).zipped.map { case (pDecl, param) =>
-      val size = (DataType.sizeInByte(param) `with` lengthMapping).value.max.eval
+      val size = (sizeInByte(param) `with` lengthMapping).value.max.eval
       pDecl.addressSpace match {
         case OpenCL.LocalMemory =>
           println(s"intermediate (local): $size bytes")
@@ -144,7 +144,8 @@ case class Kernel(kernel: OpenCL.AST.KernelDecl,
         case OpenCL.GlobalMemory =>
           println(s"intermediate (global): $size bytes")
           GlobalArg.createOutput(size)
-        case OpenCL.PrivateMemory => ???
+        case OpenCL.PrivateMemory =>
+          throw new Exception("Intermediate argument can not be in private memory")
       }
     }
   }
@@ -156,27 +157,21 @@ case class Kernel(kernel: OpenCL.AST.KernelDecl,
 
   private def castToOutputType[R](dt: DataType, output: GlobalArg): R = {
     assert(dt.isInstanceOf[ArrayType])
-    (Type.getBaseType(DataType.toType(dt)) match {
-      case Float  => output.asFloatArray()
-      case Int    => output.asIntArray()
-      case Double => output.asDoubleArray()
+    (DataType.getBaseDataType(dt) match {
+      case idealised.DPIA.Types.float  => output.asFloatArray()
+      case idealised.DPIA.Types.int    => output.asIntArray()
+      case idealised.DPIA.Types.double => output.asDoubleArray()
       case _ => throw new IllegalArgumentException("Return type of the given lambda expression " +
         "not supported: " + dt.toString)
     }).asInstanceOf[R]
   }
 
-  private def createLengthArgs(lengthMapping: immutable.Map[Nat, Nat]) = {
+  private def createLengthArgs(lengthMapping: immutable.Map[Nat, Nat]): immutable.Seq[ValueArg] = {
     // create length args sorted by names (cmp. KernelGenerator.makeLengthParams)
     lengthMapping.toList.map({
       case (v: Var, n) => (v.name,  ValueArg.create(n.eval))
-      case _ => ???
+      case _ => throw new Exception("length mapping should only contain variables")
     }).sortBy(_._1).map(_._2)
-  }
-
-  private implicit class SubstitutionsHelper(size: SizeInByte) {
-    def `with`(valueMap: immutable.Map[Nat, Nat]): SizeInByte = {
-      SizeInByte(ArithExpr.substitute(size.value, valueMap))
-    }
   }
 
   private implicit def getDataType(i: Identifier[_]): DataType = {
@@ -185,6 +180,27 @@ case class Kernel(kernel: OpenCL.AST.KernelDecl,
       case AccType(dataType) => dataType
       case PairType(ExpType(dt1), AccType(dt2)) if dt1 == dt2 => dt1
       case _ => throw new Exception("This should not happen")
+    }
+  }
+
+  private def sizeInByte(dt: DataType): SizeInByte = dt match {
+    case s: ScalarType => s match {
+      case idealised.DPIA.Types.bool    => SizeInByte(1)
+      case idealised.DPIA.Types.int     => SizeInByte(4)
+      case idealised.DPIA.Types.float   => SizeInByte(4)
+      case idealised.DPIA.Types.double  => SizeInByte(8)
+    }
+    case _: IndexType   => SizeInByte(4) // == sizeof(int)
+    case v: VectorType  => sizeInByte(v.elemType) * v.size
+    case r: RecordType  => sizeInByte(r.fst) + sizeInByte(r.snd)
+    case a: ArrayType   => sizeInByte(a.elemType) * a.size
+    case _: DepArrayType => ???
+    case _: DataTypeIdentifier => throw new Exception("This should not happen")
+  }
+
+  private implicit class SubstitutionsHelper(size: SizeInByte) {
+    def `with`(valueMap: immutable.Map[Nat, Nat]): SizeInByte = {
+      SizeInByte(ArithExpr.substitute(size.value, valueMap))
     }
   }
 }

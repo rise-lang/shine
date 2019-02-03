@@ -12,7 +12,7 @@ object TypeOf {
       case Identifier(_, t) => t
       case Lambda(x, p) => x.t -> p.t
       case Apply(p, q) =>
-        assert(p.t.outT == q.t)
+        assert(p.t.inT == q.t)
         p.t.outT
 
       case NatDependentLambda(a, p) => (a: NatIdentifier) -> p.t

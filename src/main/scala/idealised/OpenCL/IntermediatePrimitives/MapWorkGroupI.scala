@@ -1,6 +1,6 @@
 package idealised.OpenCL.IntermediatePrimitives
 
-import idealised.DPIA.Compilation.SubstituteImplementations
+import idealised.DPIA.Compilation.{TranslationContext, SubstituteImplementations}
 import idealised.DPIA.Compilation.SubstituteImplementations._
 import idealised.DPIA.DSL.{λ, _}
 import idealised.DPIA.IntermediatePrimitives.AbstractMapI
@@ -20,7 +20,8 @@ final case class MapWorkGroupI(dim: Int)(n: Nat,
 
   override def makeMapI = MapWorkGroupI(dim)
 
-  override def substituteImpl(env: Environment): Phrase[CommandType] = {
+  override def substituteImpl(env: Environment)
+                             (implicit context: TranslationContext): Phrase[CommandType] = {
 
     ParForWorkGroup(dim)(n, dt2, out, λ(exp"[idx($n)]")(i => λ(acc"[$dt2]")(a => {
 

@@ -58,6 +58,9 @@ abstract class LabelDecl(override val name: String) extends Decl(name)
 
 abstract class TypedefDecl(val t: Type, override val name: String) extends Decl(name)
 
+abstract class StructTypeDecl(override val name: String,
+                              val fields: Seq[VarDecl]) extends Decl(name)
+
 
 abstract class Stmt extends Node
 
@@ -189,6 +192,11 @@ object LabelDecl {
 object TypedefDecl {
   def apply(t: Type, name: String): TypedefDecl  = DefaultImplementations.TypedefDecl(t, name)
   def unapply(arg: TypedefDecl): Option[(Type, String)] = Some(arg.t, arg.name)
+}
+
+object StructTypeDecl {
+  def apply(name: String, fields: Seq[VarDecl]): StructTypeDecl = DefaultImplementations.StructTypeDecl(name, fields)
+  def unapply(arg: StructTypeDecl): Option[(String, Seq[VarDecl])] = Some(arg.name, arg.fields)
 }
 
 object Block {
@@ -343,6 +351,14 @@ object DefaultImplementations {
     extends C.AST.TypedefDecl(t, name)
   {
     override def visitAndRebuild(v: VisitAndRebuild.Visitor): TypedefDecl = TypedefDecl(v(t), name)
+  }
+
+  case class StructTypeDecl(override val name: String,
+                            override val fields: Seq[C.AST.VarDecl])
+    extends C.AST.StructTypeDecl(name, fields)
+  {
+    override def visitAndRebuild(v: VisitAndRebuild.Visitor): StructTypeDecl =
+      StructTypeDecl(name, fields.map(VisitAndRebuild(_, v)))
   }
 
   case class Block(override val body: Seq[Stmt] = Seq())

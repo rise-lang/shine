@@ -2,7 +2,6 @@ import idealised.OpenCL._
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
-import opencl.executor.Executor
 
 import scala.language.{implicitConversions, postfixOps}
 
@@ -10,8 +9,8 @@ import scala.language.{implicitConversions, postfixOps}
   * Created by federico on 13/01/18.
   */
 object scan extends App{
-  Executor.loadLibrary()
-  Executor.init()
+//  Executor.loadLibrary()
+//  Executor.init()
 
 
   val xsT = ArrayType(8, float)

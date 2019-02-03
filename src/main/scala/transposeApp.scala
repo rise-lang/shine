@@ -2,10 +2,9 @@ import idealised.DPIA.Phrases.PrettyPhrasePrinter
 import idealised.DPIA.Types.TypeCheck
 import idealised.OpenCL._
 import idealised.SurfaceLanguage.DSL._
-import idealised.SurfaceLanguage.{->, Expr}
 import idealised.SurfaceLanguage.Types.{ArrayType, DataType, TypeInference, float}
+import idealised.SurfaceLanguage.{->, Expr}
 import lift.arithmetic.SizeVar
-import opencl.executor.Executor
 import org.junit.Assert.assertArrayEquals
 
 import scala.language.postfixOps
@@ -22,8 +21,8 @@ object transposeApp extends App {
     println(m.map(x => f"$x%2.0f").reduce(_ + " " + _))
   }
 
-  Executor.loadLibrary()
-  Executor.init()
+//  Executor.loadLibrary()
+//  Executor.init()
 
   val Nsize = 12
   val Msize = 8

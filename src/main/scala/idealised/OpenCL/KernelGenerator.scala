@@ -60,11 +60,12 @@ object KernelGenerator {
           Seq(Identifier(s"${p.identifier.name}_1", p.identifier.`type`.t1) -> C.AST.DeclRef(p.identifier.name),
               Identifier(s"${p.identifier.name}_2", p.identifier.`type`.t2) -> C.AST.DeclRef(p.identifier.name) ) ).toMap
 
-    val env = C.CodeGeneration.CodeGenerator.Environment(identMap ++ intermediateIdentMap, Map.empty)
+    val env = C.CodeGeneration.CodeGenerator.Environment(identMap ++ intermediateIdentMap, Map.empty, Map.empty)
 
     val (declarations, code) = gen.generate(p5, env)
 
     OpenCL.Kernel(
+      declarations,
       kernel = makeKernelFunction(kernelParams, adaptKernelBody(C.AST.Block(Seq(code)))),
       outputParam = outParam,
       inputParams = inputParams,
@@ -83,7 +84,7 @@ object KernelGenerator {
   }
 
   private def rewriteToImperative(p: Phrase[ExpType], a: Phrase[AccType]): Phrase[CommandType] = {
-    val p2 = RewriteToImperative.acc(p)(a)
+    val p2 = TranslationToImperative.acc(p)(a)(new idealised.OpenCL.TranslationContext)
     xmlPrinter.writeToFile("/tmp/p2.xml", p2)
     TypeCheck(p2) // TODO: only in debug
     p2
@@ -91,7 +92,7 @@ object KernelGenerator {
 
   private def substituteImplementations(p: Phrase[CommandType]): Phrase[CommandType] = {
     val p3 = SubstituteImplementations(p,
-      SubstituteImplementations.Environment(immutable.Map(("output", OpenCL.GlobalMemory))))
+      SubstituteImplementations.Environment(immutable.Map(("output", OpenCL.GlobalMemory))))(new idealised.OpenCL.TranslationContext)
     xmlPrinter.writeToFile("/tmp/p3.xml", p3)
     TypeCheck(p3) // TODO: only in debug
     p3
@@ -113,7 +114,7 @@ object KernelGenerator {
       intermediateAllocations.map(makeParam(_, gen)) ++ // ... then the intermediate buffers ...
       // ... finally, the parameters for the length information in the type
       // these can only come from the input parameters.
-      makeLengthParams(ins.map(_.t.dataType).map(DataType.toType))
+      makeLengthParams(ins.map(_.t.dataType))
   }
 
   // pass arrays via global and scalar + tuple values via private memory
@@ -150,8 +151,8 @@ object KernelGenerator {
 
   // returns list of int parameters for each variable in the given types;
   // sorted by name of the variables
-  private def makeLengthParams(types: Seq[ir.Type]): Seq[OpenCL.AST.ParamDecl] = {
-    val lengths = types.flatMap(ir.Type.getLengths)
+  private def makeLengthParams(types: Seq[DataType]): Seq[OpenCL.AST.ParamDecl] = {
+    val lengths: Seq[Nat] = types.flatMap(DataType.getSizes)
     lengths.filter(_.isInstanceOf[lift.arithmetic.Var]).distinct.map(v =>
       OpenCL.AST.ParamDecl(v.toString, C.AST.Type.int, OpenCL.PrivateMemory) ).sortBy(_.name)
   }
@@ -168,7 +169,7 @@ object KernelGenerator {
 
   private def adaptKernelBody(body: C.AST.Block): C.AST.Block = {
     val pw = new PrintWriter(new File("/tmp/p6.cl"))
-    try pw.write(idealised.C.AST.Printer(body)) finally pw.close()
+    try pw.write(idealised.OpenCL.AST.Printer(body)) finally pw.close()
     AdaptKernelBody(body)
   }
 

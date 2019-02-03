@@ -5,9 +5,10 @@ import idealised.DPIA.Phrases.Phrase
 import idealised.DPIA.Types.{AccType, CommandType, DataType}
 import idealised.DPIA.{->, Nat, NatIdentifier, `(nat)->`, freshName}
 import idealised.OpenCL
+import idealised.OpenCL._
 import lift.arithmetic.{?, RangeAdd}
-import opencl.generator.{OclFunction, get_global_id, get_global_size}
 
+//noinspection TypeAnnotation,ConvertibleToMethodValue
 final case class ParForNatGlobal(dim:Int)(override val n:Nat,
                                           override val i:NatIdentifier,
                                           override val dt:DataType,
@@ -24,9 +25,9 @@ final case class ParForNatGlobal(dim:Int)(override val n:Nat,
   //
   //  override lazy val step: OclFunction = get_global_size(dim, RangeAdd(env.globalSize, env.globalSize + 1, 1))
 
-  override lazy val init: OclFunction = get_global_id(dim, RangeAdd(0, ?, 1))
+  override lazy val init: BuiltInFunction = get_global_id(dim, RangeAdd(0, ?, 1))
 
-  override lazy val step: OclFunction = get_global_size(dim, RangeAdd(?, ? + 1, 1))
+  override lazy val step: BuiltInFunction = get_global_size(dim, RangeAdd(?, ? + 1, 1))
 
   override def synchronize: Stmt = Comment("par for global sync")
 }

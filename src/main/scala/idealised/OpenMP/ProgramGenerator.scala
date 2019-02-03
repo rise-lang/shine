@@ -41,14 +41,16 @@ object ProgramGenerator {
     val p3 = substituteImplementations(p2)
 
     val env = C.CodeGeneration.CodeGenerator.Environment(
-      (outParam +: inputParams).map(p => p -> C.AST.DeclRef(p.name) ).toMap, Map.empty)
+      (outParam +: inputParams).map(p => p -> C.AST.DeclRef(p.name) ).toMap, Map.empty, Map.empty)
 
     val (declarations, code) = gen.generate(p3, env)
+
+    val typeDeclarations = C.ProgramGenerator.collectTypeDeclarations(code).toSeq
 
     val params = C.ProgramGenerator.makeParams(outParam, inputParams, gen)
 
     OpenMP.Program(
-      declarations,
+      typeDeclarations ++ declarations,
       function    = C.ProgramGenerator.makeFunction(params, C.AST.Block(Seq(code)), name),
       outputParam = outParam,
       inputParams = inputParams)
@@ -82,7 +84,7 @@ object ProgramGenerator {
       case (lhsT, rhsT) => throw new Exception(s" $lhsT and $rhsT should match")
     }
 
-    val p2 = RewriteToImperative.acc(p)(output)
+    val p2 = TranslationToImperative.acc(p)(output)(new idealised.OpenMP.TranslationContext)
     xmlPrinter.writeToFile("/tmp/p2.xml", p2)
     TypeCheck(p2) // TODO: only in debug
     p2
@@ -90,7 +92,7 @@ object ProgramGenerator {
 
   private def substituteImplementations(p: Phrase[CommandType]): Phrase[CommandType] = {
     val p3 = SubstituteImplementations(p,
-      SubstituteImplementations.Environment(immutable.Map(("output", OpenCL.GlobalMemory))))
+      SubstituteImplementations.Environment(immutable.Map(("output", OpenCL.GlobalMemory))))(new idealised.OpenMP.TranslationContext)
     xmlPrinter.writeToFile("/tmp/p3.xml", p3)
     TypeCheck(p3) // TODO: only in debug
     p3

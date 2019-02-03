@@ -53,6 +53,7 @@ package object DPIA {
     def apply(dt: DataType): PairType[ExpType, AccType] = ExpType(dt) x AccType(dt)
   }
 
+  //noinspection TypeAnnotation
   implicit class PhraseTypeSubstitutionHelper[T <: PhraseType](t: PhraseType) {
     def `[`(e: Nat) = new {
       def `/`(a: Nat) = new {
@@ -67,6 +68,7 @@ package object DPIA {
     }
   }
 
+  //noinspection TypeAnnotation
   implicit class PhraseSubstitutionHelper[T1 <: PhraseType](in: Phrase[T1]) {
     def `[`[T2 <: PhraseType](p: Phrase[T2]) = new {
       def `/`(`for`: Phrase[T2]) = new {

@@ -1,5 +1,6 @@
 package idealised.DPIA
 
+import idealised.DPIA.Compilation.TranslationContext
 import idealised.DPIA.ImperativePrimitives._
 import idealised.DPIA.Phrases.{BinOp, Identifier, Literal, Pair, Phrase, Proj1, Proj2, UnaryOp}
 import idealised.DPIA.Semantics.OperationalSemantics.{FloatData, IndexData, IntData}
@@ -30,16 +31,10 @@ package object DSL {
       case x => error(x.toString, "(exp[idx(n)], exp[n.dt])")
     }
 
-    def `@`(index: Int): Idx = e.t match {
-      case ExpType(ArrayType(n, dt)) =>
-        Idx(n, dt, Literal(IndexData(index, IndexType(n))), e)
-      case x => error(x.toString, "(exp[idx(n)], exp[n.dt])")
-    }
-
     def `@`(index: Nat): Idx = e.t match {
       case ExpType(ArrayType(n, dt)) =>
         Idx(n, dt, Literal(IndexData(index, IndexType(n))), e)
-      case x => error(x.toString, "(exp[idx(n)], exp[n.dt])")
+      case x => error(x.toString, "exp[n.dt]")
     }
 
 
@@ -51,7 +46,7 @@ package object DSL {
 
     def `@d`(index: Nat):DepIdx = e.t match {
       case ExpType(DepArrayType(n, i, dt)) => DepIdx(n, i, dt, index, e)
-      case x => error(x.toString, "(exp[idx(n)], exp[n.(i:Nat) -> dt])")
+      case x => error(x.toString, "exp[n.(i:Nat) -> dt]")
     }
   }
 
@@ -62,16 +57,10 @@ package object DSL {
       case x => error(x.toString, "(exp[idx(n)], acc[n.dt])")
     }
 
-    def `@`(index: Int): IdxAcc = a.t match {
-      case AccType(ArrayType(n, dt)) =>
-        IdxAcc(n, dt, Literal(IndexData(index, IndexType(n))), a)
-      case x => error(x.toString, "(exp[idx(n)], exp[n.dt])")
-    }
-
     def `@`(index: Nat): IdxAcc = a.t match {
       case AccType(ArrayType(n, dt)) =>
         IdxAcc(n, dt, Literal(IndexData(index, IndexType(n))), a)
-      case x => error(x.toString, "(exp[idx(n)], exp[n.dt])")
+      case x => error(x.toString, "acc[n.dt]")
     }
 
 
@@ -83,18 +72,16 @@ package object DSL {
 
     def `@d`(index: Nat):DepIdxAcc = a.t match {
       case AccType(DepArrayType(n, i, dt)) => DepIdxAcc(n, i, dt, index, a)
-      case x => error(x.toString, "(exp[idx(n)], acc[n.(i:Nat) -> dt])")
+      case x => error(x.toString, "acc[n.(i:Nat) -> dt]")
     }
   }
 
+  //noinspection TypeAnnotation
   implicit class AssignmentHelper(lhs: Phrase[AccType]) {
-    def :=(rhs: Phrase[ExpType]): Assign = {
-      Assign(lhs, rhs)
-    }
-
     def :=|(dt: DataType) = new {
-      def |(rhs: Phrase[ExpType]): Phrase[CommandType] = {
-        Assign(dt, lhs, rhs)
+      def |(rhs: Phrase[ExpType])
+           (implicit context: TranslationContext): Phrase[CommandType] = {
+        context.assign(dt, lhs, rhs)
       }
     }
   }

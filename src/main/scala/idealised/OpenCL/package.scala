@@ -1,6 +1,7 @@
 package idealised
 
-import lift.arithmetic.ArithExpr
+import idealised.DPIA.Nat
+import lift.arithmetic._
 
 package object OpenCL {
   sealed trait ParallelismLevel
@@ -15,17 +16,76 @@ package object OpenCL {
   case object LocalMemory extends AddressSpace
   case object PrivateMemory extends AddressSpace
 
-  object AddressSpace {
-    def toOpenCL(addressSpace: AddressSpace): opencl.ir.OpenCLAddressSpace = {
-      addressSpace match {
-        case GlobalMemory => opencl.ir.GlobalMemory
-        case LocalMemory => opencl.ir.LocalMemory
-        case PrivateMemory => opencl.ir.PrivateMemory
-      }
+  case class NDRange(x: Nat, y: Nat, z: Nat)
+
+  // This class models OpenCL built in functions that can appear inside of arithmetic expressions
+  // examples are get_global_size(0), or get_local_id(1), but also OpenCL math functions, e.g., ceil or sin
+  class BuiltInFunction private(name: String, val param: Int, range: Range)
+    extends ArithExprFunction(name, range) {
+
+    lazy val toOCLString = s"$name($param)"
+
+    override lazy val digest: Int = HashSeed ^ /*range.digest() ^*/ name.hashCode ^ param
+
+    override val HashSeed = 0x31111111
+
+    override def equals(that: Any): Boolean = that match {
+      case f: BuiltInFunction => this.name.equals(f.name) && this.param == f.param
+      case _ => false
     }
+
+    override lazy val (min : Nat, max: Nat) = (range.min.min, range.max.max)
+    override lazy val sign: Sign.Value = Sign.Positive
+
+    override def visitAndRebuild(f: Nat => Nat): Nat =
+      f(new BuiltInFunction(name, param, range.visitAndRebuild(f)))
+
   }
 
-  case class NDRange(x: ArithExpr, y: ArithExpr, z: ArithExpr)
+  object BuiltInFunction {
+    def apply(name: String, param: Int, range: Range = RangeUnknown) : BuiltInFunction =
+      new BuiltInFunction(name, param, range)
+  }
+
+  object get_num_groups {
+    def apply(param:Int, range : Range = ContinuousRange(1, PosInf)) =
+      BuiltInFunction("get_num_groups", param, range)
+  }
+
+  object get_global_size {
+    def apply(param: Int, range : Range = ContinuousRange(1, PosInf)) =
+      BuiltInFunction("get_global_size", param, range)
+  }
+
+  object get_local_size {
+    def apply(param: Int, range : Range = ContinuousRange(1, PosInf)) =
+      BuiltInFunction("get_local_size", param, range)
+  }
+
+  object get_local_id {
+    def apply(param:Int, range : Range) =
+      BuiltInFunction("get_local_id", param, range)
+
+    def apply(param:Int) =
+      BuiltInFunction("get_local_id", param, ContinuousRange(0, get_local_size(param)))
+  }
+
+  object get_global_id {
+    def apply(param:Int, range : Range) =
+      BuiltInFunction("get_global_id", param, range)
+
+    def apply(param:Int) =
+      BuiltInFunction("get_global_id", param, ContinuousRange(0, get_global_size(param)))
+  }
+
+  object get_group_id {
+    def apply(param:Int, range : Range) =
+      BuiltInFunction("get_group_id", param, range)
+
+    def apply(param:Int) =
+      BuiltInFunction("get_group_id", param, ContinuousRange(0, get_num_groups(param)))
+
+  }
 
   trait FunctionHelper {
     type T

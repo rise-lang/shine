@@ -63,6 +63,7 @@ class CPrinter extends Printer {
     case p: ParamDecl => printParamDecl(p)
     case l: LabelDecl => printLabelDecl(l)
     case t: TypedefDecl => printTypedefDecl(t)
+    case s: StructTypeDecl => printStructTypeDecl(s)
   }
 
   override def printExpr(e: Expr): Unit = e match {
@@ -115,7 +116,7 @@ class CPrinter extends Printer {
     v.t match {
       case b: BasicType => print(s"${b.name} ${v.name}")
       case s: StructType => print(s"struct ${s.name} ${v.name}")
-      case u: UnionType => ???
+      case _: UnionType => ???
       case a: ArrayType =>
         // float name[s];
         print(s"${a.getBaseType} ${v.name}[${ a.getSizes match {
@@ -137,7 +138,7 @@ class CPrinter extends Printer {
     p.t match {
       case b: BasicType => print(s"${b.name} ${p.name}")
       case s: StructType => print(s"struct ${s.name} ${p.name}")
-      case u: UnionType => ???
+      case _: UnionType => ???
       case a: ArrayType =>
         print(s"${a.getBaseType} ${p.name}[${ a.getSizes match {
           case None => ""
@@ -152,6 +153,17 @@ class CPrinter extends Printer {
   }
 
   private def printTypedefDecl(t: TypedefDecl): Unit = ???
+
+  private def printStructTypeDecl(decl: StructTypeDecl): Unit = {
+    print(decl.name) // struct name
+    println(" {")
+    decl.fields.foreach(field => {
+      print("  ")
+      printDeclStmt(DeclStmt(field))
+      println("")
+    })
+    println("};")
+  }
 
   // Smts
   private def printStmts(s: Stmts): Unit = {
@@ -312,7 +324,7 @@ class CPrinter extends Printer {
   // Types
   def typeName(t: Type): String = t.toString
 
-  def toString(e: ArithExpr) : String = {
+  override def toString(e: ArithExpr) : String = {
     e match {
       case Cst(c) => c.toString
       case Pow(b, ex) =>
@@ -340,6 +352,7 @@ class CPrinter extends Printer {
         println("Cannot print:")
         println(node.toString)
         ???
+      case otherwise => throw new Exception(s"Don't know how to print $otherwise")
     }
   }
 

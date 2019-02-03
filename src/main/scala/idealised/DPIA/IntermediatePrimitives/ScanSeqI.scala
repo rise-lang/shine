@@ -1,6 +1,6 @@
 package idealised.DPIA.IntermediatePrimitives
 
-import idealised.DPIA.Compilation.SubstituteImplementations
+import idealised.DPIA.Compilation.{TranslationContext, SubstituteImplementations}
 import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics._
@@ -58,7 +58,8 @@ final case class ScanSeqI(n: Nat,
       </input>
     </reduceIExp>
 
-  override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
+  override def substituteImpl(env: SubstituteImplementations.Environment)
+                             (implicit context: TranslationContext): Phrase[CommandType] = {
     // TODO: generalise allocation
     `new`(dt2, idealised.OpenCL.PrivateMemory, acc =>
       (acc.wr :=| dt2 | init) `;`

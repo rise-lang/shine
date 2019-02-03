@@ -1,6 +1,6 @@
 package idealised.DPIA.IntermediatePrimitives
 
-import idealised.DPIA.Compilation.SubstituteImplementations
+import idealised.DPIA.Compilation.{TranslationContext, SubstituteImplementations}
 import idealised.DPIA.DSL._
 import idealised.DPIA.ImperativePrimitives.ForNat
 import idealised.DPIA.Phrases._
@@ -18,7 +18,8 @@ final case class DepMapSeqI(n: Nat,
 
   override def makeMapI: (Nat, NatIdentifier, DataType, NatIdentifier, DataType, Phrase[`(nat)->`[ExpType -> (AccType -> CommandType)]], Phrase[ExpType], Phrase[AccType]) => DepMapSeqI = DepMapSeqI
 
-  override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
+  override def substituteImpl(env: SubstituteImplementations.Environment)
+                             (implicit context: TranslationContext): Phrase[CommandType] = {
     ForNat(n, _Λ_( i =>
       SubstituteImplementations(f(i)(in `@d` i)(out `@d` i), env)
       , RangeAdd(0, n, 1))

@@ -13,7 +13,7 @@ import scala.language.{postfixOps, reflectiveCalls}
 // TODO: Discuss with Bob: this excludes if (as the condition needs to be properly evaluated)
 object Lifting {
 
-  def liftNatDependentFunction[T <: PhraseType](p: Phrase[`(nat)->`[T]]): (Nat => Phrase[T]) = {
+  def liftNatDependentFunction[T <: PhraseType](p: Phrase[`(nat)->`[T]]): Nat => Phrase[T] = {
     p match {
       case l: NatDependentLambda[T] =>
         (arg: Nat) => l.body `[` arg `/` l.x `]`
@@ -37,7 +37,7 @@ object Lifting {
     }
   }
 
-  def liftTypeDependentFunction[T <: PhraseType](p: Phrase[`(dt)->`[T]]): (DataType => Phrase[T]) = {
+  def liftTypeDependentFunction[T <: PhraseType](p: Phrase[`(dt)->`[T]]): DataType => Phrase[T] = {
     p match {
       case l: TypeDependentLambda[T] =>
         (arg: DataType) => l.body `[` arg `/` l.x `]`
@@ -62,7 +62,7 @@ object Lifting {
   }
 
   def liftFunction[T1 <: PhraseType, T2 <: PhraseType](p: Phrase[T1 -> T2]): (Phrase[T1] => Phrase[T2]) = {
-    p match {
+    val r = p match { // FIXME: identifier conflicts
       case l: Lambda[T1, T2] =>
         (arg: Phrase[T1]) =>l.body `[` arg  `/` l.param `]`
       case app: Apply[_, T1 -> T2] =>
@@ -83,9 +83,10 @@ object Lifting {
       case Identifier(_, _) | IfThenElse(_, _, _) =>
         throw new Exception("This should never happen")
     }
+    r
   }
 
-  def liftFunctionToNatLambda[T <: PhraseType](p: Phrase[ExpType -> T]): (Nat => Phrase[T]) = {
+  def liftFunctionToNatLambda[T <: PhraseType](p: Phrase[ExpType -> T]): Nat => Phrase[T] = {
     p match {
       case l: Lambda[ExpType, T] =>
         (arg: Nat) => l.body `[` arg  `/` NamedVar(l.param.name) `]`
@@ -135,7 +136,7 @@ object Lifting {
     }
   }
 
-  def liftIndexExpr(p:Phrase[ExpType]):Nat = {
+  def liftIndexExpr(p: Phrase[ExpType]):Nat = {
     p.t match {
       case ExpType(IndexType(n)) =>
         p match {
@@ -144,14 +145,14 @@ object Lifting {
           case BinOp(op, lhs, rhs) => binOpToNat(op, liftIndexExpr(lhs), liftIndexExpr(rhs))
           case IfThenElse(_, _, _) => ???
           case Literal(lit) => lit match {
-            case IndexData(n, _) => n
+            case i: IndexData => i.n
             case _ => throw new Exception("This should never happen")
           }
           case NatDependentApply(fun, arg) => liftIndexExpr(liftNatDependentFunction(fun)(arg))
           case Proj1(pair) => liftIndexExpr(liftPair(pair)._1)
           case Proj2(pair) => liftIndexExpr(liftPair(pair)._2)
           case TypeDependentApply(fun, arg) => liftIndexExpr(liftTypeDependentFunction(fun)(arg))
-          case UnaryOp(op, p) => unOpToNat(op, liftIndexExpr(p))
+          case UnaryOp(op, e) => unOpToNat(op, liftIndexExpr(e))
           case _:ExpPrimitive => ???
         }
       case _ => throw new Exception("This should never happen")

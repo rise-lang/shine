@@ -1,13 +1,12 @@
 package idealised.OpenCL.FunctionalPrimitives
 
-import idealised.DPIA.Compilation.RewriteToImperative
+import idealised.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases.VisitAndRebuild.Visitor
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics.{Data, Store}
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import opencl.generator.OpenCLAST.{Expression, FunctionCall}
 
 import scala.language.reflectiveCalls
 import scala.xml.Elem
@@ -41,8 +40,9 @@ final case class OpenCLFunction(name: String,
       {args.map(Phrases.xmlPrinter(_))}
     </OpenCLFunction>
 
-  override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
-    import RewriteToImperative._
+  override def acceptorTranslation(A: Phrase[AccType])
+                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+    import TranslationToImperative._
 
     def recurse(ts: Seq[(Phrase[ExpType], DataType)],
                 exps: Seq[Phrase[ExpType]],
@@ -61,8 +61,9 @@ final case class OpenCLFunction(name: String,
     recurse(args zip inTs, Seq(), Seq())
   }
 
-  override def continuationTranslation(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
-    import RewriteToImperative._
+  override def continuationTranslation(C: Phrase[->[ExpType, CommandType]])
+                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+    import TranslationToImperative._
 
     def recurse(ts: Seq[(Phrase[ExpType], DataType)],
                 es: Seq[Phrase[ExpType]],

@@ -1,6 +1,5 @@
 package idealised.util
 
-import java.io.{ File, PrintWriter }
 import sys.process._
 
 import scala.language.postfixOps
@@ -10,15 +9,9 @@ object SyntaxChecker {
   case class Exception(msg: String) extends Throwable
 
   @throws[SyntaxChecker.Exception]("if code doesn't pass the syntax check")
-  def apply(code: String, extension: String = ".c"): Unit = {
-    val platformSpecificOptions = {
-      extension match {
-        case ".cl" => ""
-        case _ => ""
-      }
-    }
+  def apply(code: String, extension: String = ".c", options: String = "-Werror -Wno-implicit-function-declaration"): Unit = {
     try {
-      s"clang  $platformSpecificOptions  -fsyntax-only ${writeToTempFile(code, extension).getAbsolutePath}" !!
+      s"clang -fsyntax-only ${options} ${writeToTempFile("code-", extension, code).getAbsolutePath}" !!
     } catch {
       case _: Throwable =>
         Console.err.println("==========")
@@ -29,17 +22,8 @@ object SyntaxChecker {
     }
   }
 
-  private def writeToTempFile(content: String, extension: String): File = {
-    val tmp = File.createTempFile("code-", extension)
-    tmp.deleteOnExit()
-    new PrintWriter(tmp) {
-      try {
-        write(content)
-      } finally {
-        close()
-      }
-    }
-    tmp
+  @throws[SyntaxChecker.Exception]("if code doesn't pass the OpenCL syntax check")
+  def checkOpenCL(code: String): Unit = {
+    apply(code, ".cl", "-Xclang -finclude-default-header -cl-std=CL1.2")
   }
-
 }

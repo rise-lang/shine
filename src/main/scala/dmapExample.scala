@@ -1,5 +1,5 @@
 import idealised.OpenCL.KernelGenerator
-import idealised.OpenCL.SurfaceLanguage.DSL.{depMapGlobal, depMapLocal, depMapWorkgroup}
+import idealised.OpenCL.SurfaceLanguage.DSL.{depMapGlobal, depMapWorkgroup}
 import idealised.OpenMP.SurfaceLanguage.DSL.depMapPar
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._

@@ -1,5 +1,7 @@
 package idealised
 
+import java.io.{File, PrintWriter}
+
 import opencl.executor.Executor
 import org.scalatest.{BeforeAndAfter, FunSuite, Matchers}
 
@@ -14,5 +16,23 @@ package object util {
     after {
       Executor.shutdown()
     }
+  }
+
+  def createTempFile(prefix: String, suffix: String): File = {
+    val tmp = File.createTempFile(prefix, suffix)
+    tmp.deleteOnExit()
+    tmp
+  }
+
+  def writeToTempFile(prefix: String, suffix: String, content: String): File = {
+    val tmp = createTempFile(prefix, suffix)
+    new PrintWriter(tmp) {
+      try {
+        write(content)
+      } finally {
+        close()
+      }
+    }
+    tmp
   }
 }

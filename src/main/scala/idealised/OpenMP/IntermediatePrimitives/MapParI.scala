@@ -1,6 +1,6 @@
 package idealised.OpenMP.IntermediatePrimitives
 
-import idealised.DPIA.Compilation.SubstituteImplementations
+import idealised.DPIA.Compilation.{TranslationContext, SubstituteImplementations}
 import idealised.DPIA.Compilation.SubstituteImplementations._
 import idealised.DPIA.DSL._
 import idealised.DPIA.IntermediatePrimitives.AbstractMapI
@@ -19,7 +19,8 @@ final case class MapParI(n: Nat,
 
   override def makeMapI: (Nat, DataType, DataType, Phrase[ExpType -> (AccType -> CommandType)], Phrase[ExpType], Phrase[AccType]) => MapParI = MapParI
 
-  override def substituteImpl(env: Environment): Phrase[CommandType] = {
+  override def substituteImpl(env: Environment)
+                             (implicit context: TranslationContext): Phrase[CommandType] = {
     parFor(n, dt2, out, i => a =>
       SubstituteImplementations(f(in `@` i)(a), env)
     )

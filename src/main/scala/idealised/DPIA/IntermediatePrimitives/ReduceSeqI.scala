@@ -1,6 +1,6 @@
 package idealised.DPIA.IntermediatePrimitives
 
-import idealised.DPIA.Compilation.SubstituteImplementations
+import idealised.DPIA.Compilation.{TranslationContext, SubstituteImplementations}
 import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
@@ -44,13 +44,14 @@ final case class ReduceSeqI(n: Nat,
       case ExpType(ArrayType(len, _)) => len
     }
 
-    OperationalSemantics.eval(s, `new`(init.t.dataType, idealised.OpenCL.PrivateMemory, accum => {
-      (accum.wr `:=` init) `;`
-        `for`(n, i =>
-          fE(in `@` i)(accum.rd)(accum.wr)
-        ) `;`
-        outE(π1(accum))
-    }))
+//    OperationalSemantics.eval(s, `new`(init.t.dataType, idealised.OpenCL.PrivateMemory, accum => {
+//      (accum.wr `:=` init) `;`
+//        `for`(n, i =>
+//          fE(in `@` i)(accum.rd)(accum.wr)
+//        ) `;`
+//        outE(π1(accum))
+//    }))
+    ???
   }
 
   override def prettyPrint =
@@ -72,7 +73,8 @@ final case class ReduceSeqI(n: Nat,
       </input>
     </reduceIExp>
 
-  override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
+  override def substituteImpl(env: SubstituteImplementations.Environment)
+                             (implicit context: TranslationContext): Phrase[CommandType] = {
     // TODO: generalise allocation
     `new`(dt2, idealised.OpenCL.PrivateMemory, acc =>
       (acc.wr :=|dt2| init) `;`
@@ -82,5 +84,4 @@ final case class ReduceSeqI(n: Nat,
         out(acc.rd)
     )
   }
-
 }

@@ -42,12 +42,14 @@ object ProgramGenerator {
     val p3 = substituteImplementations(p2)
 
     val env = C.CodeGeneration.CodeGenerator.Environment(
-      (outParam +: inputParams).map(p => p -> C.AST.DeclRef(p.name) ).toMap, Map.empty)
+      (outParam +: inputParams).map(p => p -> C.AST.DeclRef(p.name) ).toMap, Map.empty, Map.empty)
 
     val (declarations, code) = gen.generate(p3, env)
 
+    val typeDeclarations = collectTypeDeclarations(code).toSeq
+
     C.Program(
-      declarations,
+      typeDeclarations ++ declarations,
       function    = makeFunction(makeParams(outParam, inputParams, gen), Block(Seq(code)), name),
       outputParam = outParam,
       inputParams = inputParams)
@@ -80,7 +82,7 @@ object ProgramGenerator {
       case (lhsT, rhsT) => throw new Exception(s" $lhsT and $rhsT should match")
     }
 
-    val p2 = RewriteToImperative.acc(p)(output)
+    val p2 = TranslationToImperative.acc(p)(output)(new idealised.C.TranslationContext)
     xmlPrinter.writeToFile("/tmp/p2.xml", p2)
     TypeCheck(p2) // TODO: only in debug
     p2
@@ -88,7 +90,7 @@ object ProgramGenerator {
 
   private def substituteImplementations(p: Phrase[CommandType]): Phrase[CommandType] = {
     val p3 = SubstituteImplementations(p,
-      SubstituteImplementations.Environment(immutable.Map(("output", OpenCL.GlobalMemory))))
+      SubstituteImplementations.Environment(immutable.Map(("output", OpenCL.GlobalMemory))))(new idealised.C.TranslationContext)
     xmlPrinter.writeToFile("/tmp/p3.xml", p3)
     TypeCheck(p3) // TODO: only in debug
     p3
@@ -142,6 +144,28 @@ object ProgramGenerator {
 
   def makeSizeParam(v: Var): ParamDecl = {
     ParamDecl(v.toString, Type.const_int)
+  }
+
+  def collectTypeDeclarations(code: Stmt): immutable.Set[Decl] = {
+    val typeDecls = mutable.Set[Decl]()
+
+    code.visitAndRebuild(new Nodes.VisitAndRebuild.Visitor {
+      def collect(t: Type): Unit = t match {
+        case _: BasicType =>
+        case s: StructType =>
+          typeDecls += C.AST.StructTypeDecl(
+            s.print,
+            s.fields.map{ case (ty, name) => VarDecl(name, ty) }
+          )
+        case at: ArrayType => collect(at.elemType)
+        case pt: PointerType => collect(pt.valueType)
+        case ut: UnionType => ut.fields.foreach(collect)
+      }
+
+      override def apply(t: Type): Type = { collect(t) ; t }
+    })
+
+    typeDecls.toSet
   }
 
   private def getDataType(i: Identifier[_]): DataType = {
