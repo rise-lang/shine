@@ -1,5 +1,6 @@
 package idealised.DPIA.IntermediatePrimitives
 
+import idealised.DPIA.Compilation.TranslationContext
 import idealised.DPIA._
 import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives.Take
@@ -16,7 +17,8 @@ object IterateIAcc {
     dt: DataType,
     out: Phrase[AccType],
     f: Phrase[`(nat)->`[AccType -> (ExpType -> CommandType)]],
-    in: Phrase[ExpType]): Phrase[CommandType] =
+    in: Phrase[ExpType])
+           (implicit context: TranslationContext): Phrase[CommandType] =
   {
     val `n^k*m` = n.pow(k) * m
 

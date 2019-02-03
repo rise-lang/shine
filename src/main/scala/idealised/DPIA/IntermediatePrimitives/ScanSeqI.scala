@@ -1,5 +1,6 @@
 package idealised.DPIA.IntermediatePrimitives
 
+import idealised.DPIA.Compilation.TranslationContext
 import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types._
@@ -12,8 +13,11 @@ object ScanSeqI {
             f: Phrase[ExpType -> (ExpType -> (AccType -> CommandType))],
             init: Phrase[ExpType],
             in: Phrase[ExpType],
-            out: Phrase[AccType]): Phrase[CommandType] =
+            out: Phrase[AccType])
+           (context: TranslationContext): Phrase[CommandType] =
   {
+    implicit val c = context
+
     // TODO: generalise allocation
     `new`(dt2, idealised.OpenCL.PrivateMemory, acc =>
       (acc.wr :=| dt2 | init) `;`

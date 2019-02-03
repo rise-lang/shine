@@ -1,20 +1,17 @@
 package idealised.DPIA.ImperativePrimitives
 
-import idealised.DPIA.DSL._
-import idealised.DPIA.IntermediatePrimitives.{DepMapSeqI, MapSeqI, MapVecI}
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import lift.arithmetic.NamedVar
 
 import scala.language.reflectiveCalls
 import scala.xml.Elem
 
-final class Assign(val dt: DataType,
-                   val lhs: Phrase[AccType],
-                   val rhs: Phrase[ExpType])
+case class Assign(dt: DataType,
+                  lhs: Phrase[AccType],
+                  rhs: Phrase[ExpType])
   extends CommandPrimitive {
 
   override val `type`: CommandType =
@@ -80,57 +77,3 @@ final class Assign(val dt: DataType,
   override def toString: String = s"Assign(${dt.toString}, ${lhs.toString}, ${rhs.toString})"
 }
 
-object Assign {
-  def apply(lhs: Phrase[AccType],
-            rhs: Phrase[ExpType]): Assign = {
-    (lhs.t, rhs.t) match {
-      case (AccType(dt1), ExpType(dt2)) =>
-        (dt1, dt2) match {
-          case (t1, t2) if t1 == t2 =>
-            t1 match {
-              case _: BasicType | _: RecordType => // TODO: think about this more
-                new Assign(t1, lhs, rhs)
-              case _ =>
-                error(s"${t1.toString}", expected = "a basic data type")
-            }
-          case _ =>
-            error(s"${dt1.toString} and ${dt2.toString}", expected = "them to match")
-        }
-      case x => error(x.toString(), "(AccType(dt1), ExpType(dt2))")
-    }
-  }
-
-  def apply(dt: DataType,
-            A: Phrase[AccType],
-            E: Phrase[ExpType]): Phrase[CommandType] = {
-    dt match {
-      case VectorType(n, st) =>
-        MapVecI(n, st, st, λ(ExpType(st))(x => λ(AccType(st))(a => a := x )), E, A)
-
-      // TODO: think about this more, but records (structs) are values ...
-      case _: ScalarType | _: RecordType | _: IndexType => A := E
-
-      case ArrayType(n, et) =>
-        MapSeqI(n, et, et, λ(ExpType(et))(x => λ(AccType(et))(a => a :=|et| x )), E, A)
-
-      case DepArrayType(n, i, et) =>
-        val i_ = NamedVar(freshName())
-        val et_ = DataType.substitute(i_, `for`=i, in=et)
-        val k = NamedVar(freshName())
-        val etk = DataType.substitute(k, `for`=i, in=et)
-        DepMapSeqI(n, i_, et_, i_, et_,
-          NatDependentLambda(k,
-            λ(ExpType( etk ))(x => λ(AccType( etk ))(a => a :=| etk | x))),
-          E, A)
-
-      //      case RecordType(dt1, dt2) =>
-//        (recordAcc1(dt1, dt2, A) :=|dt1| fst(E)) `;` (recordAcc2(dt1, dt2, A) :=|dt2| snd(E))
-
-      case _: DataTypeIdentifier => throw new Exception("This should not happen")
-    }
-  }
-
-  def unapply(arg: Assign): Option[(DataType, Phrase[AccType], Phrase[ExpType])] = {
-    Some( (arg.dt, arg.lhs, arg.rhs) )
-  }
-}

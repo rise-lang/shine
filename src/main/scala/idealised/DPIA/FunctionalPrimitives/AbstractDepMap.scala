@@ -1,7 +1,7 @@
 package idealised.DPIA.FunctionalPrimitives
 
 
-import idealised.DPIA.Compilation.RewriteToImperative
+import idealised.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics._
@@ -21,8 +21,9 @@ abstract class AbstractDepMap(n: Nat,
   private def makeDt1(x:Nat):DataType = DataType.substitute(x, `for`=i1, `in`=dt1)
   private def makeDt2(x:Nat):DataType = DataType.substitute(x, `for`=i2, `in`=dt2)
 
-  override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
-    import idealised.DPIA.Compilation.RewriteToImperative._
+  override def acceptorTranslation(A: Phrase[AccType])
+                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+    import idealised.DPIA.Compilation.TranslationToImperative._
     import idealised.DPIA._
 
     con(array)(λ(exp"[${DepArrayType(n, makeDt1)}]")(x =>
@@ -31,8 +32,9 @@ abstract class AbstractDepMap(n: Nat,
       }))), x, A)))
   }
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
-    import RewriteToImperative._
+  override def continuationTranslation(C: Phrase[ExpType -> CommandType])
+                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+    import TranslationToImperative._
 
     `new`(dt"[${DepArrayType(n, makeDt2)}]", idealised.OpenCL.GlobalMemory, λ(exp"[${DepArrayType(n, makeDt2)}]" x acc"[${DepArrayType(n, makeDt2)}]")(tmp =>
       acc(this)(tmp.wr) `;` C(tmp.rd) ))
@@ -41,9 +43,13 @@ abstract class AbstractDepMap(n: Nat,
 
   def makeMap: (Nat, NatIdentifier, DataType, NatIdentifier, DataType, Phrase[`(nat)->`[ExpType -> ExpType]], Phrase[ExpType]) => AbstractDepMap
 
-  def makeMapI: (Nat, NatIdentifier, DataType, NatIdentifier, DataType,
-    Phrase[`(nat)->`[ExpType -> (AccType -> CommandType)]],
-    Phrase[ExpType], Phrase[AccType]) => Phrase[CommandType]
+  def makeMapI(n: Nat,
+               i1: NatIdentifier, dt1: DataType,
+               i2: NatIdentifier, dt2: DataType,
+               f: Phrase[`(nat)->`[ExpType -> (AccType -> CommandType)]],
+               array: Phrase[ExpType],
+               out: Phrase[AccType])
+              (implicit context: TranslationContext): Phrase[CommandType]
 
   override val `type`: ExpType = {
     val k = f.t.x

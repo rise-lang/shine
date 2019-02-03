@@ -1,13 +1,13 @@
 package idealised.DPIA.FunctionalPrimitives
 
-import idealised.DPIA.Compilation.RewriteToImperative
+import idealised.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import idealised.DPIA._
 import idealised.DPIA.DSL._
 import idealised.DPIA.Types._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Phrases.ExpPrimitive
 import idealised.DPIA.Semantics.OperationalSemantics
-import idealised.DPIA.Semantics.OperationalSemantics.{Store, Data}
+import idealised.DPIA.Semantics.OperationalSemantics.{Data, Store}
 import idealised.OpenCL.GlobalMemory
 
 // performs a slide followed by mapSeq while taking advantage of the space/time overlapping reuse opportunity
@@ -40,8 +40,9 @@ final case class MapSeqSlide(n: Nat,
     OperationalSemantics.eval(s, Map(n, ArrayType(size, dt1), dt2, f, Literal(slide)))
   }
 
-  override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
-    import RewriteToImperative._
+  override def acceptorTranslation(A: Phrase[AccType])
+                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+    import TranslationToImperative._
     import idealised.DPIA.IntermediatePrimitives.{MapSeqSlideIRegRot => I} // TODO: making a choice here
 
     con(input)(fun(exp"[$inputSize.$dt1]")(x =>
@@ -52,8 +53,9 @@ final case class MapSeqSlide(n: Nat,
       )))
   }
 
-  override def continuationTranslation(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
-    import RewriteToImperative._
+  override def continuationTranslation(C: Phrase[->[ExpType, CommandType]])
+                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+    import TranslationToImperative._
 
     `new`(dt"[$n.$dt2]", GlobalMemory, fun(exp"[$n.$dt2]" x acc"[$n.$dt2]")(tmp =>
       acc(this)(tmp.wr) `;` C(tmp.rd)

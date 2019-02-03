@@ -1,6 +1,6 @@
 package idealised.DPIA.FunctionalPrimitives
 
-import idealised.DPIA.Compilation.RewriteToImperative
+import idealised.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
@@ -39,13 +39,15 @@ final case class Fst(dt1: DataType,
       {Phrases.xmlPrinter(record)}
     </fst>
 
-  override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
-    import RewriteToImperative._
+  override def acceptorTranslation(A: Phrase[AccType])
+                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+    import TranslationToImperative._
     con(record)(λ(exp"[$dt1 x $dt2]")(x => A :=|dt1| Fst(dt1, dt2, x) ))
   }
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
-    import RewriteToImperative._
+  override def continuationTranslation(C: Phrase[ExpType -> CommandType])
+                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+    import TranslationToImperative._
     con(record)(λ(exp"[$dt1 x $dt2]")(x => C(Fst(dt1, dt2, x)) ))
   }
 }

@@ -15,5 +15,5 @@ final case class ReducePar(n: Nat,
   extends AbstractReduce(n, dt1, dt2, f, init, array)
 {
   override def makeReduce = ReducePar
-  override def makeReduceI = ReduceParI
+  override def makeReduceI = ReduceParI.apply
 }
