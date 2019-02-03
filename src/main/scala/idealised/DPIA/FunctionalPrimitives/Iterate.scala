@@ -1,5 +1,6 @@
 package idealised.DPIA.FunctionalPrimitives
 
+import idealised.DPIA.Compilation.TranslationContext
 import idealised.DPIA.DSL._
 import idealised.DPIA.IntermediatePrimitives.IterateIAcc
 import idealised.DPIA.Phrases._
@@ -60,8 +61,9 @@ final case class Iterate(n: Nat,
   override def prettyPrint: String =
     s"(iterate $k ${PrettyPhrasePrinter(f)} ${PrettyPhrasePrinter(array)})"
 
-  override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
-    import idealised.DPIA.Compilation.RewriteToImperative._
+  override def acceptorTranslation(A: Phrase[AccType])
+                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+    import idealised.DPIA.Compilation.TranslationToImperative._
 
     con(array)(λ(exp"[$m.$dt]")(x =>
       IterateIAcc(n, m = m /^ n.pow(k), k, dt, A,
@@ -69,8 +71,9 @@ final case class Iterate(n: Nat,
         x) ))
   }
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
-    import idealised.DPIA.Compilation.RewriteToImperative._
+  override def continuationTranslation(C: Phrase[ExpType -> CommandType])
+                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+    import idealised.DPIA.Compilation.TranslationToImperative._
 
     ???
   }

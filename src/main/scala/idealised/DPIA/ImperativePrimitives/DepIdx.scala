@@ -1,6 +1,6 @@
 package idealised.DPIA.ImperativePrimitives
 
-import idealised.DPIA.Compilation.CodeGenerator
+import idealised.DPIA.Compilation.{CodeGenerator, TranslationContext}
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
@@ -55,13 +55,15 @@ final case class DepIdx(n: Nat,
       </input>
     </depIdx>
 
-  override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
+  override def acceptorTranslation(A: Phrase[AccType])
+                                  (implicit context: TranslationContext): Phrase[CommandType] = {
 //    import RewriteToImperative._
 //    con(array)(λ(exp"[$n.$dt]")(x => A :=| dt | Idx(n, dt, index, x)))
     ???
   }
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[ExpType -> CommandType])
+                                      (implicit context: TranslationContext): Phrase[CommandType] = {
 //    import RewriteToImperative._
 //    con(array)(λ(exp"[$n.$dt]")(e => C(Idx(n, dt, index, e))))
     ???

@@ -1,6 +1,6 @@
 package idealised.DPIA.IntermediatePrimitives
 
-import idealised.DPIA.Compilation.SubstituteImplementations
+import idealised.DPIA.Compilation.{TranslationContext, SubstituteImplementations}
 import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives.Take
 import idealised.DPIA.ImperativePrimitives.TakeAcc
@@ -42,7 +42,8 @@ final case class IterateIAcc(n: Nat,
       VisitAndRebuild(in, fun))
   }
 
-  override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
+  override def substituteImpl(env: SubstituteImplementations.Environment)
+                             (implicit context: TranslationContext): Phrase[CommandType] = {
     val `n^k*m` = n.pow(k) * m
 
     newDoubleBuffer(dt"[${`n^k*m`}.$dt]", dt"[$m.$dt]", ArrayType(`n^k*m`, dt), in, out,

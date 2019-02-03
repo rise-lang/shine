@@ -1,6 +1,6 @@
 package idealised.OpenCL.IntermediatePrimitives
 
-import idealised.DPIA.Compilation.SubstituteImplementations
+import idealised.DPIA.Compilation.{TranslationContext, SubstituteImplementations}
 import idealised.DPIA.Compilation.SubstituteImplementations._
 import idealised.DPIA.DSL.{`for`, _}
 import idealised.DPIA.IntermediatePrimitives.AbstractMapI
@@ -19,7 +19,8 @@ final case class MapSeqI(n: Nat,
 
   override def makeMapI = MapSeqI
 
-  override def substituteImpl(env: Environment): Phrase[CommandType] = {
+  override def substituteImpl(env: Environment)
+                             (implicit context: TranslationContext): Phrase[CommandType] = {
     `for`(n, i =>
       SubstituteImplementations(f(in `@` i)(out `@` i), env)
     )

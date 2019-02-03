@@ -1,5 +1,6 @@
 package idealised.DPIA
 
+import idealised.DPIA.Compilation.TranslationContext
 import idealised.DPIA.ImperativePrimitives._
 import idealised.DPIA.Phrases.{BinOp, Identifier, Literal, Pair, Phrase, Proj1, Proj2, UnaryOp}
 import idealised.DPIA.Semantics.OperationalSemantics.{FloatData, IndexData, IntData}
@@ -77,13 +78,10 @@ package object DSL {
 
   //noinspection TypeAnnotation
   implicit class AssignmentHelper(lhs: Phrase[AccType]) {
-    def :=(rhs: Phrase[ExpType]): Assign = {
-      Assign(lhs, rhs)
-    }
-
     def :=|(dt: DataType) = new {
-      def |(rhs: Phrase[ExpType]): Phrase[CommandType] = {
-        Assign(dt, lhs, rhs)
+      def |(rhs: Phrase[ExpType])
+           (implicit context: TranslationContext): Phrase[CommandType] = {
+        context.assign(dt, lhs, rhs)
       }
     }
   }

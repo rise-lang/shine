@@ -1,6 +1,6 @@
 package idealised.DPIA.FunctionalPrimitives
 
-import idealised.DPIA.Compilation.RewriteToImperative
+import idealised.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import idealised.DPIA.DSL.{λ, _}
 import idealised.DPIA.ImperativePrimitives.TakeAcc
 import idealised.DPIA.Phrases.{ExpPrimitive, Phrase, VisitAndRebuild}
@@ -28,13 +28,15 @@ final case class Take(n: Nat,
     Take(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))
   }
 
-  override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
-    import RewriteToImperative._
+  override def acceptorTranslation(A: Phrase[AccType])
+                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+    import TranslationToImperative._
     ???
   }
 
-  override def continuationTranslation(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
-    import RewriteToImperative._
+  override def continuationTranslation(C: Phrase[->[ExpType, CommandType]])
+                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+    import TranslationToImperative._
     con(array)(λ(exp"[$m.$dt]")(x => C(Take(n, m, dt, x))))
   }
 

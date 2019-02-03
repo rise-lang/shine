@@ -1,6 +1,6 @@
 package idealised.DPIA.IntermediatePrimitives
 
-import idealised.DPIA.Compilation.SubstituteImplementations
+import idealised.DPIA.Compilation.{TranslationContext, SubstituteImplementations}
 import idealised.DPIA._
 import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives.{Drop, Take}
@@ -42,7 +42,8 @@ final case class MapSeqSlideIRegRot(n: Nat,
       VisitAndRebuild(output, v))
   }
 
-  override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
+  override def substituteImpl(env: SubstituteImplementations.Environment)
+                             (implicit context: TranslationContext): Phrase[CommandType] = {
     NewRegRot(size, dt1,
       fun(exp"[$size.$dt1]" x acc"[$size.$dt1]")(rs =>
         fun(comm : CommandType)(rotate => {

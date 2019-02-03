@@ -1,6 +1,6 @@
 package idealised.DPIA.Phrases
 
-import idealised.DPIA.Compilation.SubstituteImplementations
+import idealised.DPIA.Compilation.{TranslationContext, SubstituteImplementations}
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Types._
 import idealised.DPIA._
@@ -100,9 +100,11 @@ sealed trait Primitive[T <: PhraseType] extends Phrase[T] {
 trait ExpPrimitive extends Primitive[ExpType] {
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Data
 
-  def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType]
+  def acceptorTranslation(A: Phrase[AccType])
+                         (implicit context: TranslationContext): Phrase[CommandType]
 
-  def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType]
+  def continuationTranslation(C: Phrase[ExpType -> CommandType])
+                             (implicit context: TranslationContext): Phrase[CommandType]
 }
 
 trait AccPrimitive extends Primitive[AccType] {
@@ -114,5 +116,6 @@ trait CommandPrimitive extends Primitive[CommandType] {
 }
 
 trait Intermediate[T <: PhraseType] {
-  def substituteImpl(env: SubstituteImplementations.Environment): Phrase[T]
+  def substituteImpl(env: SubstituteImplementations.Environment)
+                    (implicit context: TranslationContext): Phrase[T]
 }

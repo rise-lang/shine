@@ -1,6 +1,6 @@
 package idealised.DPIA.FunctionalPrimitives
 
-import idealised.DPIA.Compilation.RewriteToImperative
+import idealised.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import idealised.DPIA.DSL._
 import idealised.DPIA.ImperativePrimitives.ScatterAcc
 import idealised.DPIA.Phrases._
@@ -25,14 +25,16 @@ final case class Scatter(n: Nat,
 
   override def eval(s: Store): OperationalSemantics.Data = ???
 
-  override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
-    import RewriteToImperative._
+  override def acceptorTranslation(A: Phrase[AccType])
+                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+    import TranslationToImperative._
 
     acc(array)(ScatterAcc(n, dt, idxF, A))
   }
 
-  override def continuationTranslation(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
-    import RewriteToImperative._
+  override def continuationTranslation(C: Phrase[->[ExpType, CommandType]])
+                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+    import TranslationToImperative._
 
     `new`(dt"[$n.$dt]", idealised.OpenCL.GlobalMemory, λ(exp"[$n.$dt]" x acc"[$n.$dt]")(tmp =>
       acc(this)(tmp.wr) `;` C(tmp.rd) ))

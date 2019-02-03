@@ -16,7 +16,8 @@ object SubstituteImplementations {
     def apply(): Environment = Environment(immutable.Map[String, AddressSpace]())
   }
 
-  def apply(phrase: Phrase[CommandType], env: Environment): Phrase[CommandType] = {
+  def apply(phrase: Phrase[CommandType], env: Environment)
+           (implicit context: TranslationContext): Phrase[CommandType] = {
 
     case class fun(env: Environment) extends VisitAndRebuild.Visitor {
       override def apply[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {

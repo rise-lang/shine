@@ -1,6 +1,6 @@
 package idealised.DPIA.FunctionalPrimitives
 
-import idealised.DPIA.Compilation.RewriteToImperative
+import idealised.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import idealised.DPIA.DSL._
 import idealised.DPIA.IntermediatePrimitives.MapVecI
 import idealised.DPIA.Phrases._
@@ -40,15 +40,17 @@ final case class MapVec(n: Nat,
     }
   }
 
-  override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
-    import RewriteToImperative._
+  override def acceptorTranslation(A: Phrase[AccType])
+                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+    import TranslationToImperative._
 
     con(array)(λ(exp"[${VectorType(n, dt1)}]")(x =>
       MapVecI(n, dt1, dt2, λ(exp"[$dt1]")(x => λ(acc"[$dt2]")(o => acc(f(x))(o))), x, A)))
   }
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
-    import RewriteToImperative._
+  override def continuationTranslation(C: Phrase[ExpType -> CommandType])
+                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+    import TranslationToImperative._
 
     `new`(dt"[${VectorType(n, dt2)}]", idealised.OpenCL.GlobalMemory,
       λ(exp"[${VectorType(n, dt2)}]" x acc"[${VectorType(n, dt2)}]")(tmp =>

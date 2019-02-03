@@ -83,7 +83,7 @@ object KernelGenerator {
   }
 
   private def rewriteToImperative(p: Phrase[ExpType], a: Phrase[AccType]): Phrase[CommandType] = {
-    val p2 = RewriteToImperative.acc(p)(a)
+    val p2 = TranslationToImperative.acc(p)(a)(new idealised.OpenCL.TranslationContext)
     xmlPrinter.writeToFile("/tmp/p2.xml", p2)
     TypeCheck(p2) // TODO: only in debug
     p2
@@ -91,7 +91,7 @@ object KernelGenerator {
 
   private def substituteImplementations(p: Phrase[CommandType]): Phrase[CommandType] = {
     val p3 = SubstituteImplementations(p,
-      SubstituteImplementations.Environment(immutable.Map(("output", OpenCL.GlobalMemory))))
+      SubstituteImplementations.Environment(immutable.Map(("output", OpenCL.GlobalMemory))))(new idealised.OpenCL.TranslationContext)
     xmlPrinter.writeToFile("/tmp/p3.xml", p3)
     TypeCheck(p3) // TODO: only in debug
     p3

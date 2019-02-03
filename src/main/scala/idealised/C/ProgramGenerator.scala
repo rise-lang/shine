@@ -82,7 +82,7 @@ object ProgramGenerator {
       case (lhsT, rhsT) => throw new Exception(s" $lhsT and $rhsT should match")
     }
 
-    val p2 = RewriteToImperative.acc(p)(output)
+    val p2 = TranslationToImperative.acc(p)(output)(new idealised.C.TranslationContext)
     xmlPrinter.writeToFile("/tmp/p2.xml", p2)
     TypeCheck(p2) // TODO: only in debug
     p2
@@ -90,7 +90,7 @@ object ProgramGenerator {
 
   private def substituteImplementations(p: Phrase[CommandType]): Phrase[CommandType] = {
     val p3 = SubstituteImplementations(p,
-      SubstituteImplementations.Environment(immutable.Map(("output", OpenCL.GlobalMemory))))
+      SubstituteImplementations.Environment(immutable.Map(("output", OpenCL.GlobalMemory))))(new idealised.C.TranslationContext)
     xmlPrinter.writeToFile("/tmp/p3.xml", p3)
     TypeCheck(p3) // TODO: only in debug
     p3

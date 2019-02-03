@@ -1,6 +1,6 @@
 package idealised.OpenCL.IntermediatePrimitives
 
-import idealised.DPIA.Compilation.SubstituteImplementations
+import idealised.DPIA.Compilation.{TranslationContext, SubstituteImplementations}
 import idealised.DPIA.DSL._
 import idealised.DPIA.IntermediatePrimitives.AbstractDepMapI
 import idealised.DPIA.Phrases.Phrase
@@ -23,7 +23,8 @@ final case class DepMapGlobalI(dim:Int)(n: Nat,
     Phrase[`(nat)->`[ExpType -> (AccType -> CommandType)]],
     Phrase[ExpType], Phrase[AccType]) => DepMapGlobalI = DepMapGlobalI(dim)
 
-  override def substituteImpl(env: SubstituteImplementations.Environment): Phrase[CommandType] = {
+  override def substituteImpl(env: SubstituteImplementations.Environment)
+                             (implicit context: TranslationContext): Phrase[CommandType] = {
     parForNatGlobal(dim)(n, i2, dt2, out, idx => a => SubstituteImplementations(f(idx)(in `@d` idx)(a), env))
   }
 }
