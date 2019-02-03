@@ -65,6 +65,7 @@ object KernelGenerator {
     val (declarations, code) = gen.generate(p5, env)
 
     OpenCL.Kernel(
+      declarations,
       kernel = makeKernelFunction(kernelParams, adaptKernelBody(C.AST.Block(Seq(code)))),
       outputParam = outParam,
       inputParams = inputParams,
@@ -168,7 +169,7 @@ object KernelGenerator {
 
   private def adaptKernelBody(body: C.AST.Block): C.AST.Block = {
     val pw = new PrintWriter(new File("/tmp/p6.cl"))
-    try pw.write(idealised.C.AST.Printer(body)) finally pw.close()
+    try pw.write(idealised.OpenCL.AST.Printer(body)) finally pw.close()
     AdaptKernelBody(body)
   }
 

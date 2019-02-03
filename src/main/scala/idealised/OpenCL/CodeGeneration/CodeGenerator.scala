@@ -2,9 +2,12 @@ package idealised.OpenCL.CodeGeneration
 
 import idealised.C.AST.{ArraySubscript, Decl}
 import idealised.C.CodeGeneration.{CodeGenerator => CCodeGenerator}
+import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives.{AsScalar, AsVector}
 import idealised.DPIA.ImperativePrimitives.{AsScalarAcc, AsVectorAcc, ForNat}
 import idealised.DPIA.Phrases._
+import idealised.DPIA.Semantics.OperationalSemantics
+import idealised.DPIA.Semantics.OperationalSemantics.VectorData
 import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType, PhraseType, VectorType}
 import idealised.DPIA.{Nat, NatIdentifier, Phrases, error, freshName}
 import idealised.OpenCL.ImperativePrimitives.OpenCLParFor
@@ -12,9 +15,6 @@ import idealised.OpenMP.ImperativePrimitives.ParForNat
 import idealised.{C, OpenCL}
 import lift.arithmetic
 import lift.arithmetic._
-import idealised.DPIA.DSL._
-import idealised.DPIA.Semantics.OperationalSemantics
-import idealised.DPIA.Semantics.OperationalSemantics.{ArrayData, VectorData}
 
 import scala.collection.{immutable, mutable}
 
@@ -60,8 +60,25 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
   override def acc(phrase: Phrase[AccType], env: Environment, path: Path): Expr = {
     phrase match {
-      case AsVectorAcc(_, _, _, _) => ???
-      case AsScalarAcc(_, m, dt, a) => ???
+      case AsVectorAcc(n, _, _, a) => path match {
+        case i :: ps =>     acc(a, env, (i / n) :: ps)
+        case _ =>           error(s"Expected path to be not empty")
+      }
+      case AsScalarAcc(_, m, dt, a) => path match {
+        case i :: j :: ps =>
+          acc(a, env, (i * m) + j :: ps)
+
+        case i :: Nil =>
+          acc(a, env, (i * m) :: Nil) match {
+            case ArraySubscript(v, idx) =>
+              // emit a vstore
+              // TODO: This needs the continuation code gen to generate a vstore
+              // This is the translation from OpenMP and incorrect for OpenCL ...
+              val ptrType = C.AST.PointerType(typ(VectorType(m, dt)))
+              C.AST.ArraySubscript(C.AST.Cast(ptrType, v), idx)
+          }
+        case _ =>           error(s"Expected path to be not empty")
+      }
 
       case _ => super.acc(phrase, env, path)
     }
@@ -94,15 +111,15 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         case i :: Nil =>
           exp(e, env, (i * n) :: Nil) match {
             case ArraySubscript(v, idx) =>
-              // emit a vload
-              C.AST.Comment("vload")
-              // in OpenMP something like: ((struct float4 *)v)[idx] is emitted
-              val ptrType = C.AST.PointerType(typ(VectorType(n, dt)))
-              C.AST.ArraySubscript(C.AST.Cast(ptrType, v), idx)
+              // TODO: check that idx is the right offset ...
+              C.AST.FunCall(C.AST.DeclRef(s"vload$n"), Seq(idx, v))
           }
         case Nil => error(s"Expected path to have two elements")
       }
-      case AsScalar(_, _, _, _) => ???
+      case AsScalar(_, m, _, e) => path match {
+        case i :: ps =>     exp(e, env, (i / m) :: ps)
+        case _ =>           error(s"Expected path to be not empty")
+      }
 
       case _ => super.exp(phrase, env, path)
     }
@@ -138,7 +155,8 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
           C.AST.Stmts(C.AST.Stmts(
             C.AST.Comment("iteration count is exactly 1, no loop emitted"),
             C.AST.DeclStmt(C.AST.VarDecl(i_.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0))))),
-            updatedGen.cmd(p, env updatedIdentEnv (i -> i_)))
+            updatedGen.cmd(Phrase.substitute(a `@` i, `for` = o, `in` = p),
+              env updatedIdentEnv (i -> i_)))
 
         case _ =>
           // default case
@@ -148,7 +166,8 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
           C.AST.Stmts(
             C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
-              C.AST.Block(immutable.Seq(updatedGen.cmd(p, env updatedIdentEnv (i -> i_))))),
+              C.AST.Block(immutable.Seq(updatedGen.cmd(Phrase.substitute(a `@` i, `for` = o, `in` = p),
+                env updatedIdentEnv (i -> i_))))),
             f.synchronize
           )
       }

@@ -3,8 +3,8 @@ import idealised.DPIA.DSL.λ
 import idealised.DPIA.ImperativePrimitives.Assign
 import idealised.DPIA.IntermediatePrimitives.{DepMapSeqI, MapSeqI}
 import idealised.DPIA.Phrases.{NatDependentLambda, Phrase}
-import idealised.DPIA.Types.{AccType, ArrayType, BasicType, CommandType, DataType, DataTypeIdentifier, DepArrayType, ExpType, IndexType, RecordType, ScalarType, VectorType}
-import idealised.DPIA.{error, freshName}
+import idealised.DPIA.Types.{AccType, ArrayType, CommandType, DataType, DepArrayType, ExpType, ScalarType}
+import idealised.DPIA.freshName
 import lift.arithmetic.NamedVar
 
 class TranslationContext() extends idealised.DPIA.Compilation.TranslationContext {

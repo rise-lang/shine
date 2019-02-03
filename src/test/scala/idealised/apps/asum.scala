@@ -108,7 +108,7 @@ class asum extends idealised.util.Tests {
     val phrase = TypeInference(intelDerivedNoWarp1, Map()).convertToPhrase
     val p = OpenCL.KernelGenerator.makeCode(phrase, localSize = 128, globalSize = N)
     println(p.code)
-    SyntaxChecker(p.code)
+    SyntaxChecker.checkOpenCL(p.code)
   }
 
   test("Second kernel of Intel derived compiles to syntactically correct OpenCL code") {
@@ -125,7 +125,7 @@ class asum extends idealised.util.Tests {
     val phrase = TypeInference(intelDerived2, Map()).convertToPhrase
     val p = OpenCL.KernelGenerator.makeCode(phrase, localSize = 128, globalSize = N)
     println(p.code)
-    SyntaxChecker(p.code)
+    SyntaxChecker.checkOpenCL(p.code)
   }
 
   test("Nvidia kernel derived compiles to syntactically correct OpenCL code") {
@@ -145,7 +145,7 @@ class asum extends idealised.util.Tests {
     val phrase = TypeInference(nvidiaDerived1, Map()).convertToPhrase
     val p = OpenCL.KernelGenerator.makeCode(phrase, localSize = 128, globalSize = N)
     println(p.code)
-    SyntaxChecker(p.code)
+    SyntaxChecker.checkOpenCL(p.code)
   }
 
   test("AMD/Nvidia second kernel derived compiles to syntactically correct OpenCL code") {
@@ -166,7 +166,7 @@ class asum extends idealised.util.Tests {
     val phrase = TypeInference(amdNvidiaDerived2, Map()).convertToPhrase
     val p = OpenCL.KernelGenerator.makeCode(phrase, localSize = 128, globalSize = N)
     println(p.code)
-    SyntaxChecker(p.code)
+    SyntaxChecker.checkOpenCL(p.code)
   }
 
   test("AMD kernel derived compiles to syntactically correct OpenCL code") {
@@ -187,7 +187,7 @@ class asum extends idealised.util.Tests {
     val phrase = TypeInference(amdDerived1, Map()).convertToPhrase
     val p = OpenCL.KernelGenerator.makeCode(phrase, localSize = 128, globalSize = N)
     println(p.code)
-    SyntaxChecker(p.code)
+    SyntaxChecker.checkOpenCL(p.code)
   }
 
 }

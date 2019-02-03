@@ -3,7 +3,7 @@ package idealised.OpenCL
 import idealised.DPIA.Phrases.Identifier
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised.OpenCL
+import idealised.{C, OpenCL}
 import idealised.utils._
 import lift.arithmetic.{ArithExpr, Cst, Var}
 import opencl.executor._
@@ -12,13 +12,16 @@ import scala.collection.immutable.List
 import scala.collection.{Seq, immutable}
 import scala.language.implicitConversions
 
-case class Kernel(kernel: OpenCL.AST.KernelDecl,
+case class Kernel(decls: Seq[C.AST.Decl],
+                  kernel: OpenCL.AST.KernelDecl,
                   outputParam: Identifier[AccType],
                   inputParams: Seq[Identifier[ExpType]],
                   intermediateParams: Seq[Identifier[VarType]],
                   localSize: Nat, globalSize: Nat) {
 
-  def code: String = idealised.OpenCL.AST.Printer(kernel)
+  def code: String = decls.map(OpenCL.AST.Printer(_)).mkString("\n") +
+    "\n\n" +
+    OpenCL.AST.Printer(kernel)
 
   // This method will return a Scala function which executed the kernel via OpenCL and returns its
   // result and the time it took to execute the kernel.
