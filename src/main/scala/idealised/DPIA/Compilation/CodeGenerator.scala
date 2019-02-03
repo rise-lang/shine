@@ -10,9 +10,15 @@ trait CodeGenerator[Environment, Path, Stmt, Expr, Decl, Ident, Type] {
 
   def cmd(phrase: Phrase[CommandType], env: Environment): Stmt
 
-  def acc(phrase: Phrase[AccType], env: Environment, ps: Path): Expr
+  def acc(phrase: Phrase[AccType],
+          env: Environment,
+          ps: Path,
+          C: Expr => Stmt): Stmt
 
-  def exp(phrase: Phrase[ExpType], env: Environment, ps: Path): Expr
+  def exp(phrase: Phrase[ExpType],
+          env: Environment,
+          ps: Path,
+          C: Expr => Stmt): Stmt
 
   def typ(dt: DataType): Type
 }

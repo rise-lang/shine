@@ -1,9 +1,9 @@
 package idealised.apps
 
-import idealised.{C, OpenMP, OpenCL}
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
 import idealised.util.SyntaxChecker
+import idealised.{C, OpenCL, OpenMP}
 import lift.arithmetic._
 
 class asum extends idealised.util.Tests {
@@ -148,7 +148,7 @@ class asum extends idealised.util.Tests {
     SyntaxChecker.checkOpenCL(p.code)
   }
 
-  test("AMD/Nvidia second kernel derived compiles to syntactically correct OpenCL code") {
+  ignore("AMD/Nvidia second kernel derived compiles to syntactically correct OpenCL code") {
     import OpenCL.SurfaceLanguage.DSL._
 
     val amdNvidiaDerived2 = fun(inputT)(input =>

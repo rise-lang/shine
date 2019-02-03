@@ -9,7 +9,7 @@ object SyntaxChecker {
   case class Exception(msg: String) extends Throwable
 
   @throws[SyntaxChecker.Exception]("if code doesn't pass the syntax check")
-  def apply(code: String, extension: String = ".c", options: String = ""): Unit = {
+  def apply(code: String, extension: String = ".c", options: String = "-Werror -Wno-implicit-function-declaration"): Unit = {
     try {
       s"clang -fsyntax-only ${options} ${writeToTempFile("code-", extension, code).getAbsolutePath}" !!
     } catch {

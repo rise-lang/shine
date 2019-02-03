@@ -63,11 +63,11 @@ class separableBlur extends idealised.util.Tests {
       )
     )
   })
-  println("----- SEPARATED BLUR, FUSED ROTATION -----")
+  println("----- SEPARATED BLUR, REGISTER ROTATION -----")
   generate({
     fun(ArrayType(H, ArrayType(W, float)))(input =>
       input :>> slide(3, 1) :>> mapSeq(
-        transpose() >>> /* mapSeq(dot(weights1d)) >>> */ mapSeqSlide(3, 1, mapSeq(dot(weights1d)) >>> dot(weights1d))
+        transpose() >>> map(dot(weights1d)) >>> mapSeqSlide(3, 1, dot(weights1d))
       )
     )
   })

@@ -58,22 +58,18 @@ abstract class AbstractReduce(n: Nat,
                                   (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    con(array)(λ(exp"[$n.$dt1]")(x =>
-      con(init)(λ(exp"[$dt2]")(y =>
-        makeReduceI(n, dt1, dt2,
-          λ(exp"[$dt1]")(x => λ(exp"[$dt2]")(y => λ(acc"[$dt2]")(o => acc( f(x)(y) )( o )))),
-          y, x, λ(exp"[$dt2]")(r => acc(r)(A)))))))
+    con(this)(λ(exp"[$dt2]")(r => acc(r)(A)))
   }
 
   override def continuationTranslation(C: Phrase[ExpType -> CommandType])
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    con(array)(λ(exp"[$n.$dt1]")(x =>
-      con(init)(λ(exp"[$dt2]")(y =>
+    con(array)(λ(exp"[$n.$dt1]")(X =>
+      con(init)(λ(exp"[$dt2]")(Y =>
         makeReduceI(n, dt1, dt2,
-          λ(exp"[$dt1]")(x => λ(exp"[$dt2]")(y => λ(acc"[$dt2]")(o => acc( f(x)(y) )( o ) ))),
-          y, x, C)))))
+          λ(exp"[$dt1]")(x => λ(exp"[$dt2]")(y => λ(acc"[$dt2]")(o => acc( f(x)(y) )( o )))),
+          Y, X, C)))))
   }
 
   override def xmlPrinter: Elem =

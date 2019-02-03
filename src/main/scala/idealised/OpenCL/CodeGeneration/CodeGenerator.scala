@@ -1,10 +1,10 @@
 package idealised.OpenCL.CodeGeneration
 
-import idealised.C.AST.{ArraySubscript, Decl}
+import idealised.C.AST.{ArraySubscript, BasicType, Decl}
 import idealised.C.CodeGeneration.{CodeGenerator => CCodeGenerator}
 import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives.{AsScalar, AsVector}
-import idealised.DPIA.ImperativePrimitives.{AsScalarAcc, AsVectorAcc, ForNat}
+import idealised.DPIA.ImperativePrimitives.{AsScalarAcc, AsVectorAcc, Assign, ForNat}
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics.VectorData
@@ -54,80 +54,105 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
       case ForNat(n, NatDependentLambda(i, p)) => OpenCLCodeGen.codeGenForNat(n, i, p, env)
 
+      case Assign(dt, a, e) => dt match {
+        case VectorType(_, _) =>
+          //noinspection VariablePatternShadow
+          exp(e, env, Nil, e =>
+            acc(a, env, Nil, {
+              case C.AST.FunCall(C.AST.DeclRef(name), Seq(idx, v))
+                if name.startsWith("vstore") =>
+                  C.AST.FunCall(C.AST.DeclRef(name), Seq(e, idx, v))
+              case a => C.AST.Assignment(a, e)
+            }))
+        case _ => super.cmd(phrase, env)
+      }
+
       case _ => super.cmd(phrase, env)
     }
   }
 
-  override def acc(phrase: Phrase[AccType], env: Environment, path: Path): Expr = {
+  override def acc(phrase: Phrase[AccType],
+                   env: Environment,
+                   path: Path,
+                   cont: Expr => Stmt): Stmt = {
     phrase match {
       case AsVectorAcc(n, _, _, a) => path match {
-        case i :: ps =>     acc(a, env, (i / n) :: ps)
+        case i :: ps =>     acc(a, env, (i / n) :: ps, cont)
         case _ =>           error(s"Expected path to be not empty")
       }
       case AsScalarAcc(_, m, dt, a) => path match {
         case i :: j :: ps =>
-          acc(a, env, (i * m) + j :: ps)
+          acc(a, env, (i * m) + j :: ps, cont)
 
         case i :: Nil =>
-          acc(a, env, (i * m) :: Nil) match {
+
+          acc(a, env, (i * m) :: Nil, {
             case ArraySubscript(v, idx) =>
-              // emit a vstore
-              // TODO: This needs the continuation code gen to generate a vstore
-              // This is the translation from OpenMP and incorrect for OpenCL ...
-              val ptrType = C.AST.PointerType(typ(VectorType(m, dt)))
-              C.AST.ArraySubscript(C.AST.Cast(ptrType, v), idx)
-          }
+              // the continuation has to add the value ...
+              cont( C.AST.FunCall(C.AST.DeclRef(s"vstore$m"), Seq(idx, v)) )
+          })
         case _ =>           error(s"Expected path to be not empty")
       }
 
-      case _ => super.acc(phrase, env, path)
+      case _ => super.acc(phrase, env, path, cont)
     }
   }
 
-  override def exp(phrase: Phrase[ExpType], env: Environment, path: Path): Expr = {
+  override def exp(phrase: Phrase[ExpType],
+                   env: Environment,
+                   path: Path,
+                   cont: Expr => Stmt): Stmt = {
     phrase match {
       case Phrases.Literal(n) => (path, n.dataType) match {
-        case (Nil, _: VectorType) => OpenCLCodeGen.codeGenLiteral(n)
-        case (i :: Nil, _: VectorType) => ???
-        case _ => super.exp(phrase, env, path)
+        case (Nil, _: VectorType)       => cont( OpenCLCodeGen.codeGenLiteral(n) )
+        case (i :: Nil, _: VectorType)  => ???
+        case _ => super.exp(phrase, env, path, cont)
       }
       case UnaryOp(op, e) => phrase.t.dataType match {
         case _: VectorType => path match {
-          case i :: ps => CCodeGen.codeGenUnaryOp(op, exp(e, env, i :: ps))
+          case i :: ps => exp(e, env, i :: ps, e =>
+            cont(CCodeGen.codeGenUnaryOp(op, e)))
           case _ => error(s"Expected path to be not empty")
         }
-        case _ => super.exp(phrase, env, path)
+        case _ => super.exp(phrase, env, path, cont)
       }
       case BinOp(op, e1, e2) => phrase.t.dataType match {
         case _: VectorType => path match {
-          case Nil => CCodeGen.codeGenBinaryOp(op, exp(e1, env, Nil), exp(e2, env, Nil))
-          case i :: ps => CCodeGen.codeGenBinaryOp(op, exp(e1, env, i :: ps), exp(e2, env, i :: ps))
+          case Nil =>
+            exp(e1, env, Nil, e1 =>
+              exp(e2, env, Nil, e2 =>
+                cont(CCodeGen.codeGenBinaryOp(op, e1, e2))))
+          case i :: ps =>
+            exp(e1, env, i :: ps, e1 =>
+              exp(e2, env, i :: ps, e2 =>
+                cont(CCodeGen.codeGenBinaryOp(op, e1, e2))))
           case _ => error(s"Expected path to be not empty")
         }
-        case _ => super.exp(phrase, env, path)
+        case _ => super.exp(phrase, env, path, cont)
       }
-      case AsVector(n, _, dt, e) => path match {
-        case i :: j :: ps => exp(e, env, (i * n) + j :: ps)
+      case AsVector(n, _, _, e) => path match {
+        case i :: j :: ps => exp(e, env, (i * n) + j :: ps, cont)
         case i :: Nil =>
-          exp(e, env, (i * n) :: Nil) match {
+          exp(e, env, (i * n) :: Nil, {
             case ArraySubscript(v, idx) =>
               // TODO: check that idx is the right offset ...
-              C.AST.FunCall(C.AST.DeclRef(s"vload$n"), Seq(idx, v))
-          }
+              cont( C.AST.FunCall(C.AST.DeclRef(s"vload$n"), Seq(idx, v)) )
+          })
         case Nil => error(s"Expected path to have two elements")
       }
       case AsScalar(_, m, _, e) => path match {
-        case i :: ps =>     exp(e, env, (i / m) :: ps)
+        case i :: ps =>     exp(e, env, (i / m) :: ps, cont)
         case _ =>           error(s"Expected path to be not empty")
       }
 
-      case _ => super.exp(phrase, env, path)
+      case _ => super.exp(phrase, env, path, cont)
     }
   }
 
 
   override def typ(dt: DataType): Type = dt match {
-    case _: idealised.DPIA.Types.VectorType => C.AST.BasicType("float4")
+    case VectorType(n, elemType) =>
+      OpenCL.AST.VectorType(n, super.typ(elemType).asInstanceOf[BasicType])
     case _ => super.typ(dt)
   }
 

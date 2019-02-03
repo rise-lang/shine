@@ -42,11 +42,11 @@ object ProgramGenerator {
     val p3 = substituteImplementations(p2)
 
     val env = C.CodeGeneration.CodeGenerator.Environment(
-      (outParam +: inputParams).map(p => p -> C.AST.DeclRef(p.name) ).toMap, Map.empty)
+      (outParam +: inputParams).map(p => p -> C.AST.DeclRef(p.name) ).toMap, Map.empty, Map.empty)
 
     val (declarations, code) = gen.generate(p3, env)
 
-    val typeDeclarations = collectTypeDeclarations(code)
+    val typeDeclarations = collectTypeDeclarations(code).toSeq
 
     C.Program(
       typeDeclarations ++ declarations,
@@ -146,14 +146,14 @@ object ProgramGenerator {
     ParamDecl(v.toString, Type.const_int)
   }
 
-  def collectTypeDeclarations(code: Stmt): Seq[Decl] = {
-    val typeDecls = mutable.ListBuffer[Decl]()
+  def collectTypeDeclarations(code: Stmt): immutable.Set[Decl] = {
+    val typeDecls = mutable.Set[Decl]()
 
     code.visitAndRebuild(new Nodes.VisitAndRebuild.Visitor {
       def collect(t: Type): Unit = t match {
         case _: BasicType =>
         case s: StructType =>
-          typeDecls append C.AST.StructTypeDecl(
+          typeDecls += C.AST.StructTypeDecl(
             s.print,
             s.fields.map{ case (ty, name) => VarDecl(name, ty) }
           )
@@ -165,7 +165,7 @@ object ProgramGenerator {
       override def apply(t: Type): Type = { collect(t) ; t }
     })
 
-    typeDecls
+    typeDecls.toSet
   }
 
   private def getDataType(i: Identifier[_]): DataType = {

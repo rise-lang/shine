@@ -84,5 +84,4 @@ final case class ReduceSeqI(n: Nat,
         out(acc.rd)
     )
   }
-
 }
