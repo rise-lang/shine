@@ -16,7 +16,7 @@ class triangleVectorMult extends idealised.util.Tests {
 
   val add = fun(x => fun(y => x + y))
 
-  val multSumAcc = fun(x => fun(y => (x._1 + x._2) + y))
+  val multSumAcc = fun(x => fun(y => (x._1 * x._2) + y))
 
 
   val triangleVectorMultSeq: Expr[DataType -> (DataType -> DataType)] =
