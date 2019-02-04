@@ -8,5 +8,6 @@ image: bitbucketpipelines/scala-sbt:scala-2.12
 pipelines:
   default:
     - step:
-        script: # Modify the commands below to build your repository.
+        script:
+          - git submodule update --init
           - sbt test
