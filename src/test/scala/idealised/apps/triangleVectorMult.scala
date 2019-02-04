@@ -16,6 +16,9 @@ class triangleVectorMult extends idealised.util.Tests {
 
   val add = fun(x => fun(y => x + y))
 
+  val multSumAcc = fun(x => fun(y => (x._1 + x._2) + y))
+
+
   val triangleVectorMultSeq: Expr[DataType -> (DataType -> DataType)] =
     fun(DepArrayType(8, i => ArrayType(i + 1, int)))(triangle =>
       fun(ArrayType(8, int))(vector =>
@@ -39,6 +42,14 @@ class triangleVectorMult extends idealised.util.Tests {
       fun(ArrayType(8, int))(vector =>
         depMapGlobal(fun(row => zip(row, take(Macros.GetLength(row), vector))
           :>> mapSeq(mult) :>> reduceSeq(add, 0)
+        ), triangle)
+      )
+    )
+
+  val triangleVectorMultGlobalFused: Expr[DataType -> (DataType -> DataType)] =
+    fun(DepArrayType(8, i => ArrayType(i + 1, int)))(triangle =>
+      fun(ArrayType(8, int))(vector =>
+        depMapGlobal(fun(row => zip(row, take(Macros.GetLength(row), vector)) :>> reduceSeq(multSumAcc, 0)
         ), triangle)
       )
     )
@@ -76,7 +87,7 @@ class triangleVectorMult extends idealised.util.Tests {
   }
 
   test("Basic parallel triangle vector multiplication compiles to syntactically correct OpenCL") {
-    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(triangleVectorMultGlobal, Map()).toPhrase, ?, ?)
+    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(triangleVectorMultGlobalFused, Map()).toPhrase, ?, ?)
     println(p.code)
     SyntaxChecker.checkOpenCL(p.code)
   }
