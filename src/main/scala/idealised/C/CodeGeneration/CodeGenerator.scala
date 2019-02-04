@@ -7,7 +7,7 @@ import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
-import idealised.DPIA._
+import idealised.DPIA.{Phrases, _}
 import idealised.SurfaceLanguage.Operators
 import idealised._
 import lift.arithmetic.{NamedVar, _}
@@ -285,6 +285,30 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case Gather(_, _, idxF, a) => path match {
         case i :: ps => exp(a, env, OperationalSemantics.evalIndexExp(idxF(i)) :: ps, cont)
+        case Nil => error(s"Expected path to be not empty")
+      }
+
+      case Pad(n, l, _, _, pad, array) => path match {
+        case i :: ps =>
+
+          exp(pad, env, List(), padExpr => {
+            exp(array, env, (i - l)::ps, arrayExpr => {
+              val e = C.AST.TernaryExpr(
+                //i < l ?
+                C.AST.BinaryExpr(C.AST.ArithmeticExpr(i), C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(l)),
+                padExpr,
+                //i < l + n ?
+                C.AST.TernaryExpr(
+                  C.AST.BinaryExpr(C.AST.ArithmeticExpr(i), C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(l + n)),
+                  arrayExpr,
+                  padExpr
+                )
+              )
+              cont(e)
+            })
+          })
+
+
         case Nil => error(s"Expected path to be not empty")
       }
 

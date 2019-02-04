@@ -37,7 +37,7 @@ final case class DepSplit(n: Nat,
   override def prettyPrint: String = s"(depSplit $n ${PrettyPhrasePrinter(array)})"
 
   override def xmlPrinter: Elem =
-    <depSplit n={ToString(n)} m={ToString(m)} dt={ToString(dt)}>
+    <depSplit n={ToString(n)} m={ToString(m)} dt_i = {ToString(dt_i)} dt={ToString(dt)}>
       {Phrases.xmlPrinter(array)}
     </depSplit>
 
