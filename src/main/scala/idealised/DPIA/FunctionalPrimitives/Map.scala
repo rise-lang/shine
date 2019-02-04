@@ -15,9 +15,6 @@ final case class Map(n: Nat,
 {
   override def makeMap: (Nat, DataType, DataType, Phrase[ExpType -> ExpType], Phrase[ExpType]) => AbstractMap = Map
 
-  def makeMapI: (Nat, DataType, DataType,
-    Phrase[ExpType -> (AccType -> CommandType)], Phrase[ExpType], Phrase[AccType]) => Phrase[CommandType] = ???
-
   override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
 
     ??? //acc(array)(MapAcc(n, dt1, dt2, λ(acc"[$dt1]")(x => x), A))
