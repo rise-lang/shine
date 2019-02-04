@@ -11,8 +11,8 @@ final case class DepMapSeq(n: Nat,
                            i2: NatIdentifier, dt2: DataType,
                            f: Phrase[`(nat)->`[ExpType -> ExpType]],
                            array: Phrase[ExpType])
-  extends AbstractDepMap(n, i1, dt1, i2, dt2, f, array) {
+  extends AbstractDepMap(n, i1, dt1, i2, dt2, f, array)
+{
   override def makeMap = DepMapSeq
-
-  override def makeMapI = DepMapSeqI
+  override def makeMapI = DepMapSeqI.apply
 }

@@ -39,12 +39,10 @@ object ProgramGenerator {
 
     val p2 = rewriteToImperative(p1, outParam)
 
-    val p3 = substituteImplementations(p2)
-
     val env = C.CodeGeneration.CodeGenerator.Environment(
       (outParam +: inputParams).map(p => p -> C.AST.DeclRef(p.name) ).toMap, Map.empty)
 
-    val (declarations, code) = gen.generate(p3, env)
+    val (declarations, code) = gen.generate(p2, env)
 
     val typeDeclarations = collectTypeDeclarations(code)
 
@@ -86,14 +84,6 @@ object ProgramGenerator {
     xmlPrinter.writeToFile("/tmp/p2.xml", p2)
     TypeCheck(p2) // TODO: only in debug
     p2
-  }
-
-  private def substituteImplementations(p: Phrase[CommandType]): Phrase[CommandType] = {
-    val p3 = SubstituteImplementations(p,
-      SubstituteImplementations.Environment(immutable.Map(("output", OpenCL.GlobalMemory))))
-    xmlPrinter.writeToFile("/tmp/p3.xml", p3)
-    TypeCheck(p3) // TODO: only in debug
-    p3
   }
 
   def makeFunction(params: Seq[ParamDecl], body: Block, name: String): FunDecl = {

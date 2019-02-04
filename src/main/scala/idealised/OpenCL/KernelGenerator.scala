@@ -45,7 +45,7 @@ object KernelGenerator {
 
     val p2 = rewriteToImperative(p1, outParam)
 
-    val p3 = substituteImplementations(p2)
+    val p3 = p2 // TODO: tedious naming?
 
     val (p4, intermediateAllocations) = hoistMemoryAllocations(p3)
 
@@ -87,14 +87,6 @@ object KernelGenerator {
     xmlPrinter.writeToFile("/tmp/p2.xml", p2)
     TypeCheck(p2) // TODO: only in debug
     p2
-  }
-
-  private def substituteImplementations(p: Phrase[CommandType]): Phrase[CommandType] = {
-    val p3 = SubstituteImplementations(p,
-      SubstituteImplementations.Environment(immutable.Map(("output", OpenCL.GlobalMemory))))
-    xmlPrinter.writeToFile("/tmp/p3.xml", p3)
-    TypeCheck(p3) // TODO: only in debug
-    p3
   }
 
   private def hoistMemoryAllocations(p: Phrase[CommandType]): (Phrase[CommandType], List[AllocationInfo]) = {

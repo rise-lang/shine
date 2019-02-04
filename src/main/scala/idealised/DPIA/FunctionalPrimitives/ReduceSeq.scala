@@ -11,9 +11,9 @@ final case class ReduceSeq(n: Nat,
                            f: Phrase[ExpType -> (ExpType -> ExpType)],
                            init: Phrase[ExpType],
                            array: Phrase[ExpType])
-  extends AbstractReduce(n, dt1, dt2, f, init, array) {
-  override def makeReduce: (Nat, DataType, DataType, Phrase[ExpType -> (ExpType -> ExpType)], Phrase[ExpType], Phrase[ExpType]) => ReduceSeq = ReduceSeq
-
-  override def makeReduceI: (Nat, DataType, DataType, Phrase[ExpType -> (ExpType -> (AccType -> CommandType))], Phrase[ExpType], Phrase[ExpType], Phrase[ExpType -> CommandType]) => ReduceSeqI = ReduceSeqI
+  extends AbstractReduce(n, dt1, dt2, f, init, array)
+{
+  override def makeReduce = ReduceSeq
+  override def makeReduceI = ReduceSeqI.apply
 }
 

@@ -11,8 +11,8 @@ final case class MapLocal(dim: Int)(n: Nat,
                                     dt2: DataType,
                                     f: Phrase[ExpType -> ExpType],
                                     array: Phrase[ExpType])
-  extends AbstractMap(n, dt1, dt2, f, array) {
+  extends AbstractMap(n, dt1, dt2, f, array)
+{
   override def makeMap = MapLocal(dim)
-
-  override def makeMapI = MapLocalI(dim)
+  override def makeMapI = MapLocalI(dim).apply
 }

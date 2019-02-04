@@ -11,8 +11,8 @@ final case class MapGlobal(dim: Int)(n: Nat,
                                      dt2: DataType,
                                      f: Phrase[ExpType -> ExpType],
                                      array: Phrase[ExpType])
-  extends AbstractMap(n, dt1, dt2, f, array) {
+  extends AbstractMap(n, dt1, dt2, f, array)
+{
   override def makeMap = MapGlobal(dim)
-
-  override def makeMapI = MapGlobalI(dim)
+  override def makeMapI = MapGlobalI(dim).apply
 }
