@@ -34,9 +34,17 @@ package object DPIA {
   }
 
   object freshName {
-    var counter = 0
+    private var counter = 0
 
-    def apply(prefix: String = "v"): String = {
+    /**Note: I changed the default prefix from v to x. This is because, v is also the prefix used by ArithExpr variables
+      * This lead to a situation wherein it was possible, by sheer chance, that a namedVar with the default name had the
+      * same .name value as another, non NamedVar variable, which happened to just have a clashing id.
+      *
+      * Maybe should we push this naming function into the ArithExpr? Or use the var id instead of a non-shared global
+      * counter?
+      * */
+
+    def apply(prefix: String = "x"): String = {
       counter += 1
       prefix + counter
     }

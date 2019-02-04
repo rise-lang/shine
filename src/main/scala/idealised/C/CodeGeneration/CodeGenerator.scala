@@ -674,7 +674,11 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           rowIdx + colIdx
 
         case (DepArrayType(_, k, et), i :: is) =>
-          val colIdx = computeArrayIndex(et, is)
+          val colIdx = {
+            //The column index might also depend on k
+            val rawColIdx = computeArrayIndex(et, is)
+            ArithExpr.substitute(rawColIdx, scala.collection.Map((k, i)))
+          }
           val rowIdx = BigSum(from = 0, upTo = i - 1, `for` = k, `in` = DataType.getLength(et))
           rowIdx + colIdx
 

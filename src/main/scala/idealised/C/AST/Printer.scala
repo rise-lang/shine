@@ -348,6 +348,7 @@ class CPrinter extends Printer {
         s"( (${toString(i.test.lhs)} ${i.test.op} ${toString(i.test.rhs)}) ? " +
           s"${toString(i.t)} : ${toString(i.e)} )"
       case aeFun:ArithExprFunction => aeFun.name
+      case bs:BigSum => bs.toString
       case node =>
         println("Cannot print:")
         println(node.toString)
