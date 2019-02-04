@@ -248,6 +248,12 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case Nil => error(s"Expected path to be not empty")
       }
 
+      case DepSplit(n, _, _, _, e) => path match {
+        case i :: j :: ps =>
+          exp(e, env, i * n + j :: ps, cont)
+        case Nil => error(s"Expected path to be not empty")
+      }
+
       case Zip(_, _, _, e1, e2) => path match {
         case i :: Cst(1) :: ps => exp(e1, env, i :: ps, cont)
         case i :: Cst(2) :: ps => exp(e2, env, i :: ps, cont)
