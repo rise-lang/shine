@@ -6,8 +6,8 @@ import idealised.DPIA.Types.{AccType, CommandType, DataType}
 import idealised.DPIA.{->, Nat, NatIdentifier, `(nat)->`, freshName}
 import idealised.OpenCL
 import idealised.OpenCL.AST.Barrier
+import idealised.OpenCL.{BuiltInFunction, get_local_id, get_local_size}
 import lift.arithmetic.{?, ContinuousRange, PosInf, RangeAdd}
-import opencl.generator.{OclFunction, get_local_id, get_local_size}
 
 final case class ParForNatLocal(dim:Int)(override val n:Nat,
                                           override val i:NatIdentifier,
@@ -23,9 +23,9 @@ final case class ParForNatLocal(dim:Int)(override val n:Nat,
 
   //  override lazy val init: OclFunction = get_local_id(dim, RangeAdd(0, env.localSize, 1))
 
-  override lazy val init: OclFunction = get_local_id(dim, RangeAdd(0, ?, 1))
+  override lazy val init: BuiltInFunction = get_local_id(dim, RangeAdd(0, ?, 1))
 
-  override lazy val step: OclFunction = get_local_size(dim, local_size_range)
+  override lazy val step: BuiltInFunction = get_local_size(dim, local_size_range)
 
   lazy val local_size_range: RangeAdd = ContinuousRange(1, PosInf)
   //    if (env.localSize == ?) ContinuousRange(1, PosInf)

@@ -5,8 +5,9 @@ import idealised.DPIA.Phrases.Phrase
 import idealised.DPIA.Types.{AccType, CommandType, DataType}
 import idealised.DPIA.{->, Nat, NatIdentifier, `(nat)->`, freshName}
 import idealised.OpenCL
+import idealised.OpenCL.{BuiltInFunction, get_group_id, get_num_groups}
 import lift.arithmetic.{?, ContinuousRange, PosInf, RangeAdd}
-import opencl.generator.{OclFunction, get_group_id, get_num_groups}
+import opencl.generator.OclFunction
 
 final case class ParForNatWorkGroup(dim:Int)(override val n:Nat,
                                          override val i:NatIdentifier,
@@ -24,9 +25,9 @@ final case class ParForNatWorkGroup(dim:Int)(override val n:Nat,
 
   override val name: String = freshName("wg_id_")
 
-  override lazy val init: OclFunction = get_group_id(dim, RangeAdd(0, num_groups, 1))
+  override lazy val init: BuiltInFunction = get_group_id(dim, RangeAdd(0, num_groups, 1))
 
-  override lazy val step: OclFunction = get_num_groups(dim, num_groups_range)
+  override lazy val step: BuiltInFunction = get_num_groups(dim, num_groups_range)
 
   lazy val num_groups_range: RangeAdd =
     if (num_groups == ?) ContinuousRange(1, PosInf)

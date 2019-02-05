@@ -6,7 +6,7 @@ import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
 import idealised.util.SyntaxChecker
-import lift.arithmetic.{?, SizeVar}
+import lift.arithmetic.{?, Cst, SizeVar}
 
 import scala.language.{implicitConversions, postfixOps}
 
@@ -95,7 +95,7 @@ class triangleVectorMult extends idealised.util.Tests {
   test("Parallel OpenCL triangle vector partial multiplication (padding the row up to vector) (PLDI '19 submission listing 5)") {
     val f: Expr[DataType -> (DataType -> DataType)] = {
       val N = SizeVar("N")
-      val SPLIT_SIZE = SizeVar("SPLIT_SIZE")
+      val SPLIT_SIZE = Cst(32)
       fun(DepArrayType(N, i => ArrayType(i + 1, float)))(triangle =>
         fun(ArrayType(N, float))(vector =>
           depMapWorkgroup.withIndex(dFun(rowIndex => fun(row =>
