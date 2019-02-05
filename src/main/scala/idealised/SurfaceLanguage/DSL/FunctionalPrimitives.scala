@@ -80,6 +80,13 @@ object drop {
   def apply(n:Nat, array:DataExpr):Drop = Drop(n, array, None)
 }
 
+object pad {
+
+  def apply(l:Nat, r:Nat, pad:DataExpr):Expr[DataType -> DataType] = fun(array => Pad(l, r, pad, array, None))
+
+  def apply(l:Nat, r:Nat, pad:DataExpr, array:DataExpr):Pad = Pad(l, r, pad, array, None)
+}
+
 object slice {
   def apply(start:Nat, length:Nat): Expr[DataType -> DataType] = drop(start) >>> take(length)
 }
