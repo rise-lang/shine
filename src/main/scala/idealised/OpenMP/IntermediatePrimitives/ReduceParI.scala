@@ -14,7 +14,7 @@ object ReduceParI {
             init: Phrase[ExpType],
             in: Phrase[ExpType],
             out: Phrase[ExpType -> CommandType])
-           (context: TranslationContext): Phrase[CommandType] =
+           (implicit context: TranslationContext): Phrase[CommandType] =
   {
 //    `new`(dt2, OpenCL.PrivateMemory, acc =>
 //      (acc.wr :=|dt2| init) `;`

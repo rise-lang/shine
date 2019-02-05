@@ -22,10 +22,14 @@ abstract class AbstractReduce(n: Nat,
   def makeReduce: (Nat, DataType, DataType,
     Phrase[ExpType -> (ExpType -> ExpType)], Phrase[ExpType], Phrase[ExpType]) => AbstractReduce
 
-  def makeReduceI: (Nat, DataType, DataType,
-    Phrase[ExpType -> (ExpType -> (AccType -> CommandType))],
-    Phrase[ExpType], Phrase[ExpType], Phrase[ExpType -> CommandType])
-    => TranslationContext => Phrase[CommandType]
+  def makeReduceI(n: Nat,
+                  dt1: DataType,
+                  dt2: DataType,
+                  f: Phrase[ExpType -> (ExpType -> (AccType -> CommandType))],
+                  init: Phrase[ExpType],
+                  array: Phrase[ExpType],
+                  out: Phrase[ExpType -> CommandType])
+                 (implicit context: TranslationContext): Phrase[CommandType]
 
   override val `type`: ExpType =
     (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->

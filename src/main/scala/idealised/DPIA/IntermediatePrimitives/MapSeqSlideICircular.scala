@@ -27,7 +27,7 @@ object MapSeqSlideICircular {
     `new`(ArrayType(size, dt1), DefaultAddressSpace, buffer => {
       MapSeqI(size - 1, dt1, dt1, fun(ExpType(dt1))(exp => fun(AccType(dt1))(acc => acc :=| dt1 | exp)),
         Take(size - 1, inputSize, dt1, input),
-        TakeAcc(size - 1, size, dt1, buffer.wr))(context) `;`
+        TakeAcc(size - 1, size, dt1, buffer.wr)) `;`
         ForNat(n, _Λ_(i => {
           ((DropAcc(size - 1, size - 1 + n, dt1,
             CycleAcc(size - 1 + n, size, dt1, buffer.wr)) `@` i) :=| dt1 |

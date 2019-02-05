@@ -14,10 +14,8 @@ object ReduceSeqI {
             init: Phrase[ExpType],
             in: Phrase[ExpType],
             out: Phrase[ExpType -> CommandType])
-           (context: TranslationContext): Phrase[CommandType] =
+           (implicit context: TranslationContext): Phrase[CommandType] =
   {
-    implicit val c = context
-      
     // TODO: generalise allocation
     `new`(dt2, idealised.OpenCL.PrivateMemory, acc =>
       (acc.wr :=|dt2| init) `;`

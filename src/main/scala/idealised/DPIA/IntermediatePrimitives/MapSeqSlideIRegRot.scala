@@ -30,7 +30,7 @@ object MapSeqSlideIRegRot {
           // prologue initialisation
           MapSeqI(size - 1, dt1, dt1, fun(ExpType(dt1))(exp => fun(AccType(dt1))(acc => acc :=|dt1| exp)),
             Take(size - 1, inputSize, dt1, input),
-            TakeAcc(size - 1, size, dt1, rs.wr))(context) `;`
+            TakeAcc(size - 1, size, dt1, rs.wr)) `;`
           // core loop
           ForNat(n, _Λ_(i => {
             // load current value
