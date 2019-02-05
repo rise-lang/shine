@@ -24,7 +24,7 @@ abstract  class AbstractScan(n: Nat,
   def makeScan: (Nat, DataType, DataType, Phrase[ExpType -> (ExpType -> ExpType)], Phrase[ExpType], Phrase[ExpType]) => AbstractScan
 
   def makeScanI: (Nat, DataType, DataType,
-    Phrase[ExpType -> (ExpType -> (AccType -> CommandType))], Phrase[ExpType], Phrase[ExpType], Phrase[AccType]) => ScanSeqI
+    Phrase[ExpType -> (ExpType -> (AccType -> CommandType))], Phrase[ExpType], Phrase[ExpType], Phrase[AccType]) => Phrase[CommandType]
 
   override val `type`: ExpType =
     (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->

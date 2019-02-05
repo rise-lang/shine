@@ -24,7 +24,7 @@ abstract class AbstractReduce(n: Nat,
 
   def makeReduceI: (Nat, DataType, DataType,
     Phrase[ExpType -> (ExpType -> (AccType -> CommandType))],
-    Phrase[ExpType], Phrase[ExpType], Phrase[ExpType -> CommandType]) => CommandPrimitive with Intermediate[CommandType]
+    Phrase[ExpType], Phrase[ExpType], Phrase[ExpType -> CommandType]) => Phrase[CommandType]
 
   override val `type`: ExpType =
     (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->

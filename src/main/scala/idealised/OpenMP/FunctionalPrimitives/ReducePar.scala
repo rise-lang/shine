@@ -12,8 +12,8 @@ final case class ReducePar(n: Nat,
                            f: Phrase[ExpType -> (ExpType -> ExpType)],
                            init: Phrase[ExpType],
                            array: Phrase[ExpType])
-  extends AbstractReduce(n, dt1, dt2, f, init, array) {
-    override def makeReduce = ReducePar
-
-    override def makeReduceI = ReduceParI
-  }
+  extends AbstractReduce(n, dt1, dt2, f, init, array)
+{
+  override def makeReduce = ReducePar
+  override def makeReduceI = ReduceParI
+}

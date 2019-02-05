@@ -1,6 +1,6 @@
 package idealised.OpenCL.FunctionalPrimitives
 
-import idealised.DPIA.FunctionalPrimitives.AbstractMap
+import idealised.DPIA.FunctionalPrimitives.AbstractMapLoop
 import idealised.DPIA.Phrases.Phrase
 import idealised.DPIA.Types.{DataType, ExpType}
 import idealised.DPIA._
@@ -11,8 +11,8 @@ final case class MapWorkGroup(dim: Int)(n: Nat,
                                         dt2: DataType,
                                         f: Phrase[ExpType -> ExpType],
                                         array: Phrase[ExpType])
-  extends AbstractMap(n, dt1, dt2, f, array) {
+  extends AbstractMapLoop(n, dt1, dt2, f, array)
+{
   override def makeMap = MapWorkGroup(dim)
-
-  override def makeMapI = MapWorkGroupI(dim)
+  override def makeMapI = MapWorkGroupI(dim).apply
 }
