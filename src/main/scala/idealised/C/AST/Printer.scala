@@ -347,7 +347,8 @@ class CPrinter extends Printer {
       case i: lift.arithmetic.IfThenElse =>
         s"( (${toString(i.test.lhs)} ${i.test.op} ${toString(i.test.rhs)}) ? " +
           s"${toString(i.t)} : ${toString(i.e)} )"
-      case aeFun:ArithExprFunction => aeFun.name
+      case aeFun:ArithExprFunction =>
+        aeFun.name
       case bs:BigSum => bs.toString
       case node =>
         println("Cannot print:")

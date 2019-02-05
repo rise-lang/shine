@@ -9,6 +9,10 @@ import lift.arithmetic.NamedVar
 import scala.language.implicitConversions
 
 object depMapSeq {
+
+  def withIndex(f: Expr[`(nat)->`[DataType -> DataType]]): Expr[DataType -> DataType] = fun(x => withIndex(f,x))
+  def withIndex(f: Expr[`(nat)->`[DataType -> DataType]], x:DataExpr): DepMapSeq= DepMapSeq(f, x, None)
+
   def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] = fun(x => depMapSeq(f, x))
 
   def apply(f: Expr[DataType -> DataType], x: DataExpr): DepMapSeq = DepMapSeq(dFun(_ => f), x, None)

@@ -1,12 +1,12 @@
 package idealised.apps
 
-import idealised.OpenCL.SurfaceLanguage.DSL.depMapGlobal
+import idealised.OpenCL.SurfaceLanguage.DSL.{depMapGlobal, depMapWorkgroup, mapLocal}
 import idealised.OpenMP.SurfaceLanguage.DSL.depMapPar
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
 import idealised.util.SyntaxChecker
-import lift.arithmetic.?
+import lift.arithmetic.{?, SizeVar}
 
 import scala.language.{implicitConversions, postfixOps}
 
@@ -88,6 +88,23 @@ class triangleVectorMult extends idealised.util.Tests {
 
   test("Basic parallel triangle vector multiplication compiles to syntactically correct OpenCL") {
     val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(triangleVectorMultGlobalFused, Map()).toPhrase, ?, ?)
+    println(p.code)
+    SyntaxChecker.checkOpenCL(p.code)
+  }
+
+  test("Parallel OpenCL triangle vector partial multiplication (padding the row up to vector) (PLDI '19 submission listing 5)") {
+    val f: Expr[DataType -> (DataType -> DataType)] = {
+      val N = SizeVar("N")
+      val SPLIT_SIZE = SizeVar("SPLIT_SIZE")
+      fun(DepArrayType(N, i => ArrayType(i + 1, float)))(triangle =>
+        fun(ArrayType(N, float))(vector =>
+          depMapWorkgroup.withIndex(dFun(rowIndex => fun(row =>
+            zip(pad(0, N - rowIndex - 1, 0.0f, row), vector) :>> split(SPLIT_SIZE) :>> mapLocal(reduceSeq(multSumAcc, 0.0f))
+          )), triangle)
+        )
+      )
+    }
+    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase, ?, ?)
     println(p.code)
     SyntaxChecker.checkOpenCL(p.code)
   }
