@@ -288,21 +288,34 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case Nil => error(s"Expected path to be not empty")
       }
 
-      case Pad(n, l, _, _, pad, array) => path match {
+      case Pad(n, l, r, _, pad, array) => path match {
         case i :: ps =>
           exp(pad, env, List(), padExpr => {
             exp(array, env, (i - l)::ps, arrayExpr => {
-              cont(C.AST.TernaryExpr(
+
+              def generateLeftSide(rest:Expr):Expr = {
                 //i < l ?
-                C.AST.BinaryExpr(C.AST.ArithmeticExpr(i), C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(l)),
-                padExpr,
-                //i < l + n ?
+                C.AST.TernaryExpr(
+                  C.AST.BinaryExpr(C.AST.ArithmeticExpr(i), C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(l)),
+                  padExpr, rest)
+              }
+
+              def generateRightSide = {
                 C.AST.TernaryExpr(
                   C.AST.BinaryExpr(C.AST.ArithmeticExpr(i), C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(l + n)),
                   arrayExpr,
                   padExpr
                 )
-              ))
+              }
+
+              val result = l match {
+                case Cst(0) => generateRightSide
+                case _ => r match {
+                  case Cst(0) => generateLeftSide(arrayExpr)
+                  case _ => generateLeftSide(generateRightSide)
+                }
+              }
+              cont(result)
             })
           })
 

@@ -40,4 +40,26 @@ class Pad extends idealised.util.Tests {
     SyntaxChecker.checkOpenCL(code)
     println(code)
   }
+
+  test("OpenCL Pad only left") {
+    val f = fun(ArrayType(SizeVar("N"), float))( xs =>
+      xs :>> pad(2, 0, 5.0f) :>> mapGlobal(fun(x => x))
+    )
+
+    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase, ?, ?)
+    val code = p.code
+    SyntaxChecker.checkOpenCL(code)
+    println(code)
+  }
+
+  test("OpenCL Pad only right") {
+    val f = fun(ArrayType(SizeVar("N"), float))( xs =>
+      xs :>> pad(0, 3, 5.0f) :>> mapGlobal(fun(x => x))
+    )
+
+    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase, ?, ?)
+    val code = p.code
+    SyntaxChecker.checkOpenCL(code)
+    println(code)
+  }
 }
