@@ -247,6 +247,12 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case i :: ps => exp(e, env, i / n :: i % n :: ps, cont)
         case Nil => error(s"Expected path to be not empty")
       }
+      case part@Partition(_, _, _, _, _, e) => path match {
+        case i :: j :: ps =>
+          val newIdx = BigSum(0, i, x => part.lenF(x)) + j
+          exp(e, env, newIdx :: ps, cont)
+        case _ :: Nil | Nil => error(s"Expected path to contain at least two elements")
+      }
 
       case DepSplit(n, _, _, _, e) => path match {
         case i :: j :: ps =>

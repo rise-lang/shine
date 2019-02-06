@@ -58,6 +58,16 @@ object join {
   implicit def toJoin(j: join.type): Expr[DataType -> DataType] = join()
 }
 
+object partition {
+  def apply(m: Nat, f:NatIdentifier => Nat): Expr[DataType -> DataType] = fun(array => partition(m, f, array))
+
+  def apply(m:Nat, f:NatIdentifier => Nat, array: DataExpr): Partition = {
+    val ident = NamedVar("p")
+    Partition(m, ident, f(ident), array, None)
+  }
+}
+
+
 object slide {
   def apply(s1: Nat, s2: Nat): Expr[DataType -> DataType] = fun(array => slide(s1, s2, array))
 
