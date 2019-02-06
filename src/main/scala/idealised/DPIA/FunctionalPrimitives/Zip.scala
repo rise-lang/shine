@@ -1,6 +1,6 @@
 package idealised.DPIA.FunctionalPrimitives
 
-import idealised.DPIA.Compilation.{CodeGenerator, RewriteToImperative}
+import idealised.DPIA.Compilation.{CodeGenerator, TranslationContext, TranslationToImperative}
 import idealised.DPIA.DSL._
 import idealised.DPIA.ImperativePrimitives.{ZipAcc1, ZipAcc2}
 import idealised.DPIA.Phrases._
@@ -51,14 +51,16 @@ final case class Zip(n: Nat,
       </rhs>
     </zip>
 
-  override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
-    import RewriteToImperative._
+  override def acceptorTranslation(A: Phrase[AccType])
+                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+    import TranslationToImperative._
 
     acc(e1)(ZipAcc1(n, dt1, dt2, A)) `;` acc(e2)(ZipAcc2(n, dt1, dt2, A))
   }
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
-    import RewriteToImperative._
+  override def continuationTranslation(C: Phrase[ExpType -> CommandType])
+                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+    import TranslationToImperative._
 
     con(e1)(λ(exp"[$n.$dt1]")(x =>
       con(e2)(λ(exp"[$n.$dt2]")(y =>

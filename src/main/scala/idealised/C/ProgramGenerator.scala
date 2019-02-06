@@ -80,7 +80,7 @@ object ProgramGenerator {
       case (lhsT, rhsT) => throw new Exception(s" $lhsT and $rhsT should match")
     }
 
-    val p2 = RewriteToImperative.acc(p)(output)
+    val p2 = TranslationToImperative.acc(p)(output)(new idealised.C.TranslationContext)
     xmlPrinter.writeToFile("/tmp/p2.xml", p2)
     TypeCheck(p2) // TODO: only in debug
     p2

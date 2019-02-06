@@ -1,5 +1,6 @@
 package idealised.DPIA.FunctionalPrimitives
 
+import idealised.DPIA.Compilation.TranslationContext
 import idealised.DPIA.IntermediatePrimitives.MapSeqI
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types._
@@ -13,5 +14,11 @@ final case class MapSeq(n: Nat,
   extends AbstractMapLoop(n, dt1, dt2, f, array)
 {
   override def makeMap = MapSeq
-  override def makeMapI = MapSeqI.apply
+
+  override def makeMapI(n: Nat, dt1: DataType, dt2: DataType,
+                        f: Phrase[->[ExpType, ->[AccType, CommandType]]],
+                        array: Phrase[ExpType],
+                        out: Phrase[AccType])
+                       (implicit context: TranslationContext): Phrase[CommandType] =
+    MapSeqI(n, dt1, dt2, f, array, out)
 }

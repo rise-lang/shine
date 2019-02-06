@@ -1,6 +1,6 @@
 package idealised.DPIA.FunctionalPrimitives
 
-import idealised.DPIA.Compilation.RewriteToImperative
+import idealised.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import idealised.DPIA.DSL._
 import idealised.DPIA.ImperativePrimitives.UnzipAcc
 import idealised.DPIA.Phrases._
@@ -10,7 +10,6 @@ import idealised.DPIA.Types._
 import idealised.DPIA.{Phrases, _}
 
 import scala.language.reflectiveCalls
-
 import scala.xml.Elem
 
 final case class Unzip(n: Nat,
@@ -54,16 +53,18 @@ final case class Unzip(n: Nat,
       </e>
     </unzip>
 
-  override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
-    import RewriteToImperative._
+  override def acceptorTranslation(A: Phrase[AccType])
+                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+    import TranslationToImperative._
 
     con(e)(λ(exp"[$n.($dt1 x $dt2)]")(x =>
       A :=|RecordType(ArrayType(n, dt1), ArrayType(n, dt2))| Unzip(n, dt1, dt2, x)
     ))
   }
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
-    import RewriteToImperative._
+  override def continuationTranslation(C: Phrase[ExpType -> CommandType])
+                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+    import TranslationToImperative._
 
     con(e)(λ(exp"[$n.($dt1 x $dt2)]")(x =>
       C(Unzip(n, dt1, dt2, x)) ))

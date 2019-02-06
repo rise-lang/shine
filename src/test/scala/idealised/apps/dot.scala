@@ -63,7 +63,7 @@ class dot extends idealised.util.Tests {
     ))
 
     val phrase = TypeInference(dotCPUVector1, Map()).toPhrase
-    val p = idealised.C.ProgramGenerator.makeCode(phrase)
+    val p = idealised.OpenMP.ProgramGenerator.makeCode(phrase)
     println(p.code)
     SyntaxChecker(p.code)
   }
@@ -86,7 +86,7 @@ class dot extends idealised.util.Tests {
     ))
 
     val phrase = TypeInference(intelDerivedNoWarpDot1, Map()).toPhrase
-    val p = idealised.C.ProgramGenerator.makeCode(phrase)
+    val p = idealised.OpenMP.ProgramGenerator.makeCode(phrase)
     println(p.code)
     SyntaxChecker(p.code)
   }
@@ -106,7 +106,7 @@ class dot extends idealised.util.Tests {
     ))
 
     val phrase = TypeInference(dotCPU1, Map()).toPhrase
-    val p = idealised.C.ProgramGenerator.makeCode(phrase)
+    val p = idealised.OpenMP.ProgramGenerator.makeCode(phrase)
     println(p.code)
     SyntaxChecker(p.code)
   }
@@ -126,7 +126,7 @@ class dot extends idealised.util.Tests {
     )
 
     val phrase = TypeInference(dotCPU2, Map()).toPhrase
-    val p = idealised.C.ProgramGenerator.makeCode(phrase)
+    val p = idealised.OpenMP.ProgramGenerator.makeCode(phrase)
     println(p.code)
     SyntaxChecker(p.code)
   }

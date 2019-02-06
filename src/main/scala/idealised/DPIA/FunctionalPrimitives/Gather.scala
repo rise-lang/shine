@@ -1,6 +1,6 @@
 package idealised.DPIA.FunctionalPrimitives
 
-import idealised.DPIA.Compilation.RewriteToImperative
+import idealised.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases.VisitAndRebuild.Visitor
 import idealised.DPIA.Phrases._
@@ -42,14 +42,16 @@ final case class Gather(n: Nat,
   override def visitAndRebuild(fun: Visitor): Phrase[ExpType] =
     Gather(fun(n), fun(dt), VisitAndRebuild(idxF, fun), VisitAndRebuild(array, fun))
 
-  override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
-    import RewriteToImperative._
+  override def acceptorTranslation(A: Phrase[AccType])
+                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+    import TranslationToImperative._
 
     con(this)(λ(exp"[$n.$dt]")(x => A :=|dt"[$n.$dt]"| x ))
   }
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
-    import RewriteToImperative._
+  override def continuationTranslation(C: Phrase[ExpType -> CommandType])
+                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+    import TranslationToImperative._
 
     con(array)(λ(exp"[$n.$dt]")(x => C(Gather(n, dt, idxF, x)) ))
   }

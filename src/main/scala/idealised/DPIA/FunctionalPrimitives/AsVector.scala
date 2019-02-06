@@ -1,6 +1,6 @@
 package idealised.DPIA.FunctionalPrimitives
 
-import idealised.DPIA.Compilation.RewriteToImperative
+import idealised.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import idealised.DPIA.DSL._
 import idealised.DPIA.ImperativePrimitives.AsVectorAcc
 import idealised.DPIA.Phrases._
@@ -34,11 +34,13 @@ final case class AsVector(n: Nat,
       {Phrases.xmlPrinter(array)}
     </asVector>
 
-  override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
-    RewriteToImperative.acc(array)(AsVectorAcc(n, m, dt, A))
+  override def acceptorTranslation(A: Phrase[AccType])
+                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+    TranslationToImperative.acc(array)(AsVectorAcc(n, m, dt, A))
   }
 
-  override def continuationTranslation(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
-    RewriteToImperative.con(array)(λ(array.t)(x => C(AsVector(n, m, dt, x)) ))
+  override def continuationTranslation(C: Phrase[->[ExpType, CommandType]])
+                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+    TranslationToImperative.con(array)(λ(array.t)(x => C(AsVector(n, m, dt, x)) ))
   }
 }

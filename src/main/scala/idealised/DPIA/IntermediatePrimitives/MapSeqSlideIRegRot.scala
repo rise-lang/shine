@@ -1,5 +1,6 @@
 package idealised.DPIA.IntermediatePrimitives
 
+import idealised.DPIA.Compilation.TranslationContext
 import idealised.DPIA._
 import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives.{Drop, Take}
@@ -17,7 +18,8 @@ object MapSeqSlideIRegRot {
             dt2: DataType,
             f: Phrase[ExpType -> (AccType -> CommandType)],
             input: Phrase[ExpType],
-            output: Phrase[AccType]): Phrase[CommandType] =
+            output: Phrase[AccType])
+           (implicit context: TranslationContext): Phrase[CommandType] =
   {
     val step = 1
     val inputSize = step * n + size - step

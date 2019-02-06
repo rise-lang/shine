@@ -1,5 +1,6 @@
 package idealised.DPIA.IntermediatePrimitives
 
+import idealised.DPIA.Compilation.TranslationContext
 import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types._
@@ -12,7 +13,8 @@ object ReduceSeqI {
             f: Phrase[ExpType -> (ExpType -> (AccType -> CommandType))],
             init: Phrase[ExpType],
             in: Phrase[ExpType],
-            out: Phrase[ExpType -> CommandType]): Phrase[CommandType] =
+            out: Phrase[ExpType -> CommandType])
+           (implicit context: TranslationContext): Phrase[CommandType] =
   {
     // TODO: generalise allocation
     `new`(dt2, idealised.OpenCL.PrivateMemory, acc =>

@@ -1,12 +1,12 @@
 package idealised.DPIA.FunctionalPrimitives
 
-import idealised.DPIA.Compilation.RewriteToImperative
+import idealised.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import idealised.DPIA._
 import idealised.DPIA.DSL._
 import idealised.DPIA.Types._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
-import idealised.DPIA.Semantics.OperationalSemantics.{Store, Data, ArrayData}
+import idealised.DPIA.Semantics.OperationalSemantics.{ArrayData, Data, Store}
 
 // cycles on the m elements of an array (modulo indexing) to produce an array of n elements
 final case class Cycle(n: Nat,
@@ -30,10 +30,12 @@ final case class Cycle(n: Nat,
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] =
     Cycle(v(n), v(m), v(dt), VisitAndRebuild(input, v))
 
-  override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = ???
+  override def acceptorTranslation(A: Phrase[AccType])
+                                  (implicit context: TranslationContext): Phrase[CommandType] = ???
 
-  override def continuationTranslation(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
-    import RewriteToImperative._
+  override def continuationTranslation(C: Phrase[->[ExpType, CommandType]])
+                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+    import TranslationToImperative._
     con(input)(fun(exp"[$m.$dt")(x => C(Cycle(n, m, dt, x))))
   }
 

@@ -7,15 +7,18 @@ import idealised.DPIA._
 
 import scala.language.reflectiveCalls
 
-object RewriteToImperative {
+object TranslationToImperative {
 
-  def apply(p: Phrase[ExpType]): Phrase[CommandType] = {
+  def apply(p: Phrase[ExpType])
+           (implicit context: TranslationContext): Phrase[CommandType] = {
     val outT = p.t
     val out = identifier("output", AccType(outT.dataType))
     acc(p)(out)
   }
 
-  def acc(E: Phrase[ExpType])(A: Phrase[AccType]): Phrase[CommandType] = {
+  def acc(E: Phrase[ExpType])
+         (A: Phrase[AccType])
+         (implicit context: TranslationContext): Phrase[CommandType] = {
     E match {
       case x: Identifier[ExpType] => A :=|x.t.dataType| x
 
@@ -23,13 +26,13 @@ object RewriteToImperative {
 
       case u@UnaryOp(op, e) =>
         con(e)(λ(u.t)(x =>
-          A := UnaryOp(op, x)
+          A :=|u.t.dataType| UnaryOp(op, x)
         ))
 
       case b@BinOp(op, e1, e2) =>
         con(e1)(λ(b.t)(x =>
           con(e2)(λ(b.t)(y =>
-            A := BinOp(op, x, y)
+            A :=|b.t.dataType| BinOp(op, x, y)
           ))
         ))
 
@@ -50,7 +53,9 @@ object RewriteToImperative {
     }
   }
 
-  def con(E: Phrase[ExpType])(C: Phrase[ExpType -> CommandType]): Phrase[CommandType] = {
+  def con(E: Phrase[ExpType])
+         (C: Phrase[ExpType -> CommandType])
+         (implicit context: TranslationContext): Phrase[CommandType] = {
     E match {
       case x: Identifier[ExpType] => C(x)
 

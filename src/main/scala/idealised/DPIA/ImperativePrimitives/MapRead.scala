@@ -1,5 +1,6 @@
 package idealised.DPIA.ImperativePrimitives
 
+import idealised.DPIA.Compilation.TranslationContext
 import idealised.DPIA._
 import idealised.DPIA.DSL._
 import idealised.DPIA.Types._
@@ -26,11 +27,13 @@ final case class MapRead(n: Nat,
 
   override def eval(s: Store): Data = ???
 
-  override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] =
+  override def acceptorTranslation(A: Phrase[AccType])
+                                  (implicit context: TranslationContext): Phrase[CommandType] =
     throw new Exception("This should not happen")
 
-  override def continuationTranslation(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] =
-    throw new Exception("This should not happen")
+  override def continuationTranslation(C: Phrase[->[ExpType, CommandType]])
+                                      (implicit context: TranslationContext): Phrase[CommandType] =
+      throw new Exception("This should not happen")
 
   override def prettyPrint: String = s"(mapRead $f $input)"
 

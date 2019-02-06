@@ -1,6 +1,6 @@
 package idealised.OpenCL.FunctionalPrimitives
 
-import idealised.DPIA.Compilation.RewriteToImperative
+import idealised.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
@@ -48,14 +48,16 @@ abstract class To(dt1: DataType,
       Character.toLowerCase(name.charAt(0)) + name.substring(1)
     })
 
-  override def acceptorTranslation(A: Phrase[AccType]): Phrase[CommandType] = {
-    import RewriteToImperative._
+  override def acceptorTranslation(A: Phrase[AccType])
+                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+    import TranslationToImperative._
 
     con(this)(λ( exp"[$dt2]" )(x => acc(x)(A) ))
   }
 
-  override def continuationTranslation(C: Phrase[->[ExpType, CommandType]]): Phrase[CommandType] = {
-    import RewriteToImperative._
+  override def continuationTranslation(C: Phrase[->[ExpType, CommandType]])
+                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+    import TranslationToImperative._
 
     `new`(dt2, addressSpace, tmp => acc(f(input))(tmp.wr) `;` C(tmp.rd) )
   }
