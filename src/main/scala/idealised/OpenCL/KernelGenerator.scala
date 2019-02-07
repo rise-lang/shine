@@ -3,18 +3,19 @@ package idealised.OpenCL
 import java.io.{File, PrintWriter}
 
 import idealised.C.AST.DeclRef
-import idealised._
-import idealised.DPIA._
 import idealised.DPIA.Compilation._
 import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types._
-import idealised.OpenCL.CodeGeneration.{AdaptKernelBody, AdaptKernelParameters, HoistMemoryAllocations}
+import idealised.DPIA._
 import idealised.OpenCL.CodeGeneration.HoistMemoryAllocations.AllocationInfo
+import idealised.OpenCL.CodeGeneration.{AdaptKernelBody, AdaptKernelParameters, HoistMemoryAllocations}
+import idealised._
 
 import scala.collection._
 import scala.language.implicitConversions
 
+//noinspection VariablePatternShadow
 object KernelGenerator {
 
   def makeCode[T <: PhraseType](originalPhrase: Phrase[T],
@@ -41,16 +42,14 @@ object KernelGenerator {
 
     val gen = OpenCL.CodeGeneration.CodeGenerator(localSize, globalSize)
 
-    val p1 = checkTypes(p)
+    checkTypes(p) |> (p =>
 
-    val p2 = rewriteToImperative(p1, outParam)
+    rewriteToImperative(p, outParam) |> (p =>
 
-    val p3 = p2 // TODO: tedious naming?
+    hoistMemoryAllocations(p) |> { case (p, intermediateAllocations) =>
 
-    val (p4, intermediateAllocations) = hoistMemoryAllocations(p3)
-
-    val (p5, kernelParams) = adaptKernelParameters(p4,
-      makeParams(outParam, inputParams, intermediateAllocations, gen), inputParams)
+    adaptKernelParameters(p,
+      makeParams(outParam, inputParams, intermediateAllocations, gen), inputParams) |> { case (p, kernelParams) =>
 
     val identMap: Predef.Map[Identifier[_ <: BasePhraseTypes], DeclRef] =
       (outParam +: inputParams).map( p => p -> C.AST.DeclRef(p.name) ).toMap
@@ -62,7 +61,7 @@ object KernelGenerator {
 
     val env = C.CodeGeneration.CodeGenerator.Environment(identMap ++ intermediateIdentMap, Map.empty, Map.empty)
 
-    val (declarations, code) = gen.generate(p5, env)
+    val (declarations, code) = gen.generate(p, env)
 
     OpenCL.Kernel(
       declarations,
@@ -71,12 +70,13 @@ object KernelGenerator {
       inputParams = inputParams,
       intermediateParams = intermediateAllocations.map(_.identifier),
       localSize, globalSize)
+    }}))
   }
 
-  private def checkTypes(p1: Phrase[ExpType]): Phrase[ExpType] = {
-    xmlPrinter.writeToFile("/tmp/p1.xml", p1)
-    TypeCheck(p1)
-    p1
+  private def checkTypes(p: Phrase[ExpType]): Phrase[ExpType] = {
+    xmlPrinter.writeToFile("/tmp/p1.xml", p)
+    TypeCheck(p)
+    p
   }
 
   private def createOutputParam(outT: ExpType): Identifier[AccType] = {
@@ -84,17 +84,19 @@ object KernelGenerator {
   }
 
   private def rewriteToImperative(p: Phrase[ExpType], a: Phrase[AccType]): Phrase[CommandType] = {
-    val p2 = TranslationToImperative.acc(p)(a)(new idealised.OpenCL.TranslationContext)
-    xmlPrinter.writeToFile("/tmp/p2.xml", p2)
-    TypeCheck(p2) // TODO: only in debug
-    p2
+    TranslationToImperative.acc(p)(a)(new idealised.OpenCL.TranslationContext) |> (p => {
+      xmlPrinter.writeToFile("/tmp/p2.xml", p)
+      TypeCheck(p) // TODO: only in debug
+      p
+    })
   }
 
   private def hoistMemoryAllocations(p: Phrase[CommandType]): (Phrase[CommandType], List[AllocationInfo]) = {
-    val (p4, intermediateAllocations) = HoistMemoryAllocations(p)
-    xmlPrinter.writeToFile("/tmp/p4.xml", p4)
-    TypeCheck(p4) // TODO: only in debug
-    (p4, intermediateAllocations)
+    HoistMemoryAllocations(p) |> { case (p, intermediateAllocations) =>
+      xmlPrinter.writeToFile("/tmp/p4.xml", p)
+      TypeCheck(p) // TODO: only in debug
+      (p, intermediateAllocations)
+    }
   }
 
   private def makeParams(out: Identifier[AccType],
@@ -153,10 +155,11 @@ object KernelGenerator {
                                     params: Seq[OpenCL.AST.ParamDecl],
                                     inputParams: Seq[Identifier[ExpType]]
                                    ): (Phrase[CommandType], Seq[OpenCL.AST.ParamDecl]) = {
-    val (p5, newParams) = AdaptKernelParameters(p, params, inputParams)
-    xmlPrinter.writeToFile("/tmp/p5.xml", p5)
-    TypeCheck(p5) // TODO: only in debug
-    (p5, newParams)
+    AdaptKernelParameters(p, params, inputParams) |> { case (p, newParams) =>
+      xmlPrinter.writeToFile("/tmp/p5.xml", p)
+      TypeCheck(p) // TODO: only in debug
+      (p, newParams)
+    }
   }
 
   private def adaptKernelBody(body: C.AST.Block): C.AST.Block = {
