@@ -57,7 +57,7 @@ abstract  class AbstractScan(n: Nat,
       con(init)(λ(exp"[$dt2]")(y =>
         makeScanI(n, dt1, dt2,
           λ(exp"[$dt1]")(x => λ(exp"[$dt2]")(y => λ(acc"[$dt2]")(o => acc(f(x)(y))(o)))),
-          y, x, A)(context)
+          y, x, A)
       )
       ))
     )

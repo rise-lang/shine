@@ -10,6 +10,6 @@ final case class ParForNat(override val n: Nat,
                            override val dt: DataType,
                            override val out: Phrase[AccType],
                            override val body: Phrase[`(nat)->`[AccType -> CommandType]])
-  extends AbstractParForNat[DataType](n, i, dt, out, body) {
+  extends AbstractParForNat(n, i, dt, out, body) {
   override def makeParForNat = ParForNat
 }

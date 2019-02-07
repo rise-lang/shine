@@ -34,14 +34,14 @@ object ProgramGenerator {
 
     val gen = OpenMP.CodeGeneration.CodeGenerator()
 
-    val p1 = checkTypes(p)
+    checkTypes(p) |> (p =>
 
-    val p2 = rewriteToImperative(p1, outParam)
+    rewriteToImperative(p, outParam) |> (p => {
 
     val env = C.CodeGeneration.CodeGenerator.Environment(
       (outParam +: inputParams).map(p => p -> C.AST.DeclRef(p.name) ).toMap, Map.empty, Map.empty)
 
-    val (declarations, code) = gen.generate(p2, env)
+    val (declarations, code) = gen.generate(p, env)
 
     val typeDeclarations = C.ProgramGenerator.collectTypeDeclarations(code)
 
@@ -52,6 +52,7 @@ object ProgramGenerator {
       function    = C.ProgramGenerator.makeFunction(params, C.AST.Block(Seq(code)), name),
       outputParam = outParam,
       inputParams = inputParams)
+    }))
   }
 
   private def createOutputParam(outT: ExpType): Identifier[AccType] = {
@@ -67,10 +68,10 @@ object ProgramGenerator {
     }
   }
 
-  private def checkTypes(p1: Phrase[ExpType]): Phrase[ExpType] = {
-    xmlPrinter.writeToFile("/tmp/p1.xml", p1)
-    TypeCheck(p1)
-    p1
+  private def checkTypes(p: Phrase[ExpType]): Phrase[ExpType] = {
+    xmlPrinter.writeToFile("/tmp/p1.xml", p)
+    TypeCheck(p)
+    p
   }
 
   private def rewriteToImperative(p: Phrase[ExpType],
@@ -82,9 +83,10 @@ object ProgramGenerator {
       case (lhsT, rhsT) => throw new Exception(s" $lhsT and $rhsT should match")
     }
 
-    val p2 = TranslationToImperative.acc(p)(output)(new idealised.OpenMP.TranslationContext)
-    xmlPrinter.writeToFile("/tmp/p2.xml", p2)
-    TypeCheck(p2) // TODO: only in debug
-    p2
+    TranslationToImperative.acc(p)(output)(new idealised.OpenMP.TranslationContext) |> (p => {
+      xmlPrinter.writeToFile("/tmp/p2.xml", p)
+      TypeCheck(p) // TODO: only in debug
+      p
+    })
   }
 }

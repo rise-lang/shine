@@ -23,3 +23,8 @@ abstract class OpenCLParForNat(n: Nat,
   def step: Nat
   def synchronize: Stmt
 }
+
+object OpenCLParForNat {
+  def unapply(arg: OpenCLParForNat): Option[(Nat, NatIdentifier, DataType, Phrase[AccType], Phrase[`(nat)->`[AccType -> CommandType]])] =
+    Some(arg.n, arg.i, arg.dt, arg.out, arg.body)
+}
