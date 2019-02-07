@@ -9,7 +9,6 @@ import lift.arithmetic._
 
 class Partition extends idealised.util.Tests {
   test("Simple partition into a triangle C") {
-
     val N = SizeVar("N")
     val lenF = (i:NatIdentifier) => i + 1
 

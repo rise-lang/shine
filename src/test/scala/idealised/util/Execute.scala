@@ -1,5 +1,6 @@
 package idealised.util
 
+import idealised.OpenCL._
 import idealised.SurfaceLanguage.DSL.{fun, mapSeq, _}
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage.{->, Expr}
@@ -36,7 +37,10 @@ class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
     println(kernel.code)
     SyntaxChecker.checkOpenCL(kernel.code)
 
-    val (result, time) = kernel.executeWeaklyTyped[Array[Int]] (List(Array.fill(8)(0)))
+    val kernelF = kernel.as[ScalaFunction`(`Array[Int]`)=>`Array[Int]]
+    val xs = Array.fill(8)(0)
+
+    val (result, time) =  kernelF(xs `;`)
     println(result)
     println(time)
   }

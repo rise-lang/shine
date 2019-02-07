@@ -10,7 +10,7 @@ import lift.arithmetic.{?, Cst, SizeVar}
 
 import scala.language.{implicitConversions, postfixOps}
 
-class triangleVectorMult extends idealised.util.Tests {
+class triangleVectorMult extends idealised.util.TestsWithExecutor {
 
   val mult = fun(x => x._1 * x._2)
 
@@ -87,12 +87,13 @@ class triangleVectorMult extends idealised.util.Tests {
   }
 
   test("Basic parallel triangle vector multiplication compiles to syntactically correct OpenCL") {
-    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(triangleVectorMultGlobalFused, Map()).toPhrase, ?, ?)
-    println(p.code)
-    SyntaxChecker.checkOpenCL(p.code)
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(triangleVectorMultGlobalFused, Map()).toPhrase, ?, ?)
+    println(kernel.code)
+    SyntaxChecker.checkOpenCL(kernel.code)
   }
 
   test("Parallel OpenCL triangle vector partial multiplication (padding the row up to vector) (PLDI '19 submission listing 5)") {
+    import idealised.OpenCL._
     val f: Expr[DataType -> (DataType -> DataType)] = {
       val N = SizeVar("N")
       val SPLIT_SIZE = Cst(32)
@@ -104,8 +105,18 @@ class triangleVectorMult extends idealised.util.Tests {
         )
       )
     }
-    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase, ?, ?)
-    println(p.code)
-    SyntaxChecker.checkOpenCL(p.code)
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase, 1, 1)
+    println(kernel.code)
+    SyntaxChecker.checkOpenCL(kernel.code)
+
+    val actualN = 1024
+    val inputVector = Array.tabulate(actualN)(id => id + 1.0f)
+    val inputMatrix = Array.tabulate(actualN)(rowIndex => Array.tabulate(rowIndex + 1)(colIndex => if(colIndex == rowIndex) 1.0f else 0.0f))
+
+    val kernelFun = kernel.as[ScalaFunction `(` Array[Array[Float]] `,` Array[Float] `)=>` Array[Float]]
+
+    val (output, time) = kernelFun(inputMatrix `,` inputVector)
+
+    println(time)
   }
 }
