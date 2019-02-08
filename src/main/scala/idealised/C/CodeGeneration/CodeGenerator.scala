@@ -207,21 +207,21 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           throw new Exception(s"Expected to find `$i' in the environment: `${env.identEnv}'")
         }), path, env))
 
-      case Phrases.Literal(n) => path match {
+      case Phrases.Literal(n) => cont(path match {
         case Nil =>
           n.dataType match {
-            case _: IndexType => cont(CCodeGen.codeGenLiteral(n))
-            case _: ScalarType => cont(CCodeGen.codeGenLiteral(n))
+            case _: IndexType => CCodeGen.codeGenLiteral(n)
+            case _: ScalarType => CCodeGen.codeGenLiteral(n)
             case _ => error("Expected an IndexType or ScalarType.")
           }
-          /*TODO why do we need this? why is i on the stack and used to generate a literal?
-          case (i :: _, _: VectorType) => C.AST.ArraySubscript(codeGenLiteral(n), C.AST.ArithmeticExpr(i))
-          // case (_ :: _ :: Nil, _: ArrayType) => C.AST.Literal("0.0f") // TODO: (used in gemm like this) !!!!!!!
-          case (i :: Nil, _: ArrayType) => cont(C.AST.ArraySubscript(CCodeGen.codeGenLiteral(n), C.AST.ArithmeticExpr(i)))
-          case _ => error(s"Unexpected: $n $path")
-          */
-        case _ => error("Expected path to be empty.")
-      }
+        case (i : CIntExpr) :: Nil =>
+          n.dataType match {
+            case _: ArrayType => C.AST.ArraySubscript(CCodeGen.codeGenLiteral(n), C.AST.ArithmeticExpr(i))
+            case _ => error("Expected an ArrayType.")
+          }
+        // case (_ :: _ :: Nil, _: ArrayType) => C.AST.Literal("0.0f") // TODO: (used in gemm like this) !!!!!!!
+        case _ => error(s"Unexpected: $n $path")
+      })
 
       case uop@UnaryOp(op, e) => uop.t.dataType match {
         case _: ScalarType => path match {
@@ -669,30 +669,36 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                        env: Environment): Expr = {
       path match {
         case Nil => accuExpr
-        case (xj: TupleAccess) :: ps => {
+        case (xj: TupleAccess) :: ps =>
           val tuAccPos = xj match {
             case FstAcc => "_fst"
             case SndAcc => "_snd"
           }
           generateAccess(dt, C.AST.StructMemberAccess(accuExpr, C.AST.DeclRef(tuAccPos)), ps, env)
-        }
-        case (_: CIntExpr) :: _ => {
-          val (i, ps) = dt match {
-            case at: ArrayType => flattenArrayIndices(at, path)
+        case (i: CIntExpr) :: _ =>
+          dt match {
+            case at: ArrayType =>
+              val (k, ps) = flattenArrayIndices(at, path)
+              generateAccess(dt, C.AST.ArraySubscript(accuExpr, C.AST.ArithmeticExpr(k)), ps, env)
+            case _: VectorType =>
+              val data = C.AST.StructMemberAccess(accuExpr, C.AST.DeclRef("data"))
+              C.AST.ArraySubscript(data, C.AST.ArithmeticExpr(i))
+            case dat: DepArrayType =>
+              val (k, ps) = flattenArrayIndices(dat, path)
+              generateAccess(dt, C.AST.ArraySubscript(accuExpr, C.AST.ArithmeticExpr(k)), ps, env)
             case _ => throw new Exception("Expected an ArrayType that is accessed by the index.")
           }
-          generateAccess(dt, C.AST.ArraySubscript(accuExpr, C.AST.ArithmeticExpr(i)), ps, env)
-        }
+        case _ => ???
+          /*
 
+        */
         /*
-      case (_: VectorType, i :: Nil) =>
-        val data = C.AST.StructMemberAccess(identifier, C.AST.DeclRef("data"))
-        C.AST.ArraySubscript(data, C.AST.ArithmeticExpr(i))
 
+        //TODO is this still needed?
         case (ArrayType(_, vt: VectorType), i :: j :: Nil) =>
           C.AST.ArraySubscript(generateAccess(vt, identifier, j :: Nil, env), C.AST.ArithmeticExpr(i))
 
-      case (_: ArrayType, _) /*| (_: DepArrayType, _) */ =>
+      case (_: ArrayType, _) | (_: DepArrayType, _) =>
         val idx = computeArrayIndex(dt, path)
         C.AST.ArraySubscript(identifier, C.AST.ArithmeticExpr(idx))
        */
@@ -701,31 +707,46 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           throw new Exception(s"Can't generate access for `$dt' with `${path.mkString("[", "::", "]")}'")
       }
     }
-
-    def flattenArrayIndices(at: ArrayType, path: Path): (Nat, Path) = {
+    //BigSum(from = 0, upTo = i - 1, `for` = k, `in` = DataType.getLength(et))
+    def flattenArrayIndices(at: DataType, path: Path): (Nat, Path) = {
       val dimList = extractDimensionSizesFromArrayType(at).drop(1)
       val rowSizes = dimList.scanRight(1: Nat)((a: Nat, b: Nat) => a * b)
       assert(dimList.size + 1 == rowSizes.size)
 
       val (indices, rest) = path.splitAt(rowSizes.size)
       indices.foreach(i => assert(i.isInstanceOf[CIntExpr]))
-      assert(rest.isEmpty || !rest.head.isInstanceOf[CIntExpr])
+      //assert(rest.isEmpty || !rest.head.isInstanceOf[CIntExpr])
 
-      val summands = rowSizes.zip(indices).map {
-        case (rs, idx: CIntExpr) => rs * idx.num
-        case _ => error("This should never happen.")
+      val summands = at match {
+        case _: ArrayType =>
+          rowSizes.zip(indices).map {
+            case (rs, idx: CIntExpr) => rs * idx.num
+            case _ => error ("This should never happen.")
+          }
+        case DepArrayType(_, k, _) =>
+          rowSizes.zip(indices).map {
+            case (rs, idx: CIntExpr) => BigSum(from = 0, upTo = idx - 1, `for` = k, `in` = rs) * idx.num
+          }
       }
       val accessExpr = summands.reduce(_ + _)
 
       (accessExpr, rest)
     }
 
-    private def extractDimensionSizesFromArrayType(at: ArrayType): List[Nat] = {
-      at.elemType match {
-        case et: ArrayType => {
-          at.size :: extractDimensionSizesFromArrayType(et)
-        }
-        case _ => at.size :: Nil
+    private def extractDimensionSizesFromArrayType(at: DataType): List[Nat] = {
+      at match {
+        case arrt : ArrayType =>
+          arrt.elemType match {
+            case et: ArrayType =>
+              arrt.size :: extractDimensionSizesFromArrayType (et)
+            case _ => arrt.size :: Nil
+          }
+        case deparrt : DepArrayType =>
+          deparrt.elemType match {
+            case et: DepArrayType =>
+              deparrt.size :: extractDimensionSizesFromArrayType(et)
+            case _ => deparrt.size :: Nil
+          }
       }
     }
 
