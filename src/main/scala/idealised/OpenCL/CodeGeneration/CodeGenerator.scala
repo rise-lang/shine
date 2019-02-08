@@ -2,6 +2,7 @@ package idealised.OpenCL.CodeGeneration
 
 import idealised.C.AST.{ArraySubscript, BasicType, Decl}
 import idealised.C.CodeGeneration.{CodeGenerator => CCodeGenerator}
+import idealised.C.CodeGeneration.CodeGenerator.CIntExpr
 import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives.{AsScalar, AsVector}
 import idealised.DPIA.ImperativePrimitives.{AsScalarAcc, AsVectorAcc, Assign}
@@ -65,18 +66,19 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
                    cont: Expr => Stmt): Stmt = {
     phrase match {
       case AsVectorAcc(n, _, _, a) => path match {
-        case i :: ps =>     acc(a, env, (i / n) :: ps, cont)
+        case (i : CIntExpr) :: ps =>     acc(a, env, CIntExpr(i / n) :: ps, cont)
         case _ =>           error(s"Expected path to be not empty")
       }
-      case AsScalarAcc(_, m, _, a) => path match {
-        case i :: j :: ps =>
-          acc(a, env, (i * m) + j :: ps, cont)
+      case AsScalarAcc(_, m, dt, a) => path match {
+        case (i : CIntExpr) :: (j : CIntExpr) :: ps =>
+          acc(a, env, CIntExpr((i * m) + j) :: ps, cont)
 
-        case i :: Nil =>
-          acc(a, env, (i * m) :: Nil, {
+        case (i : CIntExpr) :: Nil =>
+
+          acc(a, env, CIntExpr(i * m) :: Nil, {
             case ArraySubscript(v, idx) =>
               // the continuation has to add the value ...
-              cont(C.AST.FunCall(C.AST.DeclRef(s"vstore$m"), Seq(idx, v)))
+              cont( C.AST.FunCall(C.AST.DeclRef(s"vstore$m"), Seq(idx, v)) )
           })
         case _ =>           error(s"Expected path to be not empty")
       }
@@ -91,8 +93,8 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
                    cont: Expr => Stmt): Stmt = {
     phrase match {
       case Phrases.Literal(n) => (path, n.dataType) match {
-        case (Nil, _: VectorType) => cont(OpenCLCodeGen.codeGenLiteral(n))
-        case (i :: Nil, _: VectorType) => ???
+        case (Nil, _: VectorType)       => cont( OpenCLCodeGen.codeGenLiteral(n) )
+        case (i :: Nil, _: VectorType)  => ???
         case _ => super.exp(phrase, env, path, cont)
       }
       case UnaryOp(op, e) => phrase.t.dataType match {
@@ -104,25 +106,31 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         case _ => super.exp(phrase, env, path, cont)
       }
       case BinOp(op, e1, e2) => phrase.t.dataType match {
-        case _: VectorType =>
-          exp(e1, env, path, e1 =>
-            exp(e2, env, path, e2 =>
-              CCodeGen.codeGenBinaryOp(op, e1, e2)
-          ))
+        case _: VectorType => path match {
+          case Nil =>
+            exp(e1, env, Nil, e1 =>
+              exp(e2, env, Nil, e2 =>
+                cont(CCodeGen.codeGenBinaryOp(op, e1, e2))))
+          case i :: ps =>
+            exp(e1, env, i :: ps, e1 =>
+              exp(e2, env, i :: ps, e2 =>
+                cont(CCodeGen.codeGenBinaryOp(op, e1, e2))))
+          case _ => error(s"Expected path to be not empty")
+        }
         case _ => super.exp(phrase, env, path, cont)
       }
       case AsVector(n, _, _, e) => path match {
-        case i :: j :: ps => exp(e, env, (i * n) + j :: ps, cont)
-        case i :: Nil =>
-          exp(e, env, (i * n) :: Nil, {
+        case (i : CIntExpr) :: (j : CIntExpr) :: ps => exp(e, env, CIntExpr((i * n) + j) :: ps, cont)
+        case (i : CIntExpr) :: Nil =>
+          exp(e, env, CIntExpr(i * n) :: Nil, {
             case ArraySubscript(v, idx) =>
               // TODO: check that idx is the right offset ...
-              cont(C.AST.FunCall(C.AST.DeclRef(s"vload$n"), Seq(idx, v)))
+              cont( C.AST.FunCall(C.AST.DeclRef(s"vload$n"), Seq(idx, v)) )
           })
-        case Nil => error(s"Expected path not to be empty")
+        case Nil => error(s"Expected path to have two elements")
       }
       case AsScalar(_, m, _, e) => path match {
-        case i :: ps =>     exp(e, env, (i / m) :: ps, cont)
+        case (i : CIntExpr) :: ps =>     exp(e, env, CIntExpr(i / m) :: ps, cont)
         case _ =>           error(s"Expected path to be not empty")
       }
 

@@ -106,6 +106,7 @@ abstract class FunCall(val fun: DeclRef, val args: Seq[Expr]) extends Expr
 abstract class ArraySubscript(val array: Expr, val index: Expr) extends Expr
 
 abstract class StructMemberAccess(val struct: Expr, val member: DeclRef) extends Expr
+//abstract class StructInitExpr(val )
 
 abstract class UnaryExpr(val op: UnaryOperator.Value, val e: Expr) extends Expr
 
@@ -132,6 +133,7 @@ object BinaryOperator extends Enumeration {
   val && : BinaryOperator.Value = Value("&&")
   val || : BinaryOperator.Value = Value("||")
   val ^ : BinaryOperator.Value = Value("^")
+  val % : BinaryOperator.Value = Value("%")
 }
 
 abstract class TernaryExpr(val cond: Expr, val thenE: Expr, val elseE: Expr) extends Expr
