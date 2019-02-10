@@ -707,82 +707,45 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           throw new Exception(s"Can't generate access for `$dt' with `${path.mkString("[", "::", "]")}'")
       }
     }
-    //BigSum(from = 0, upTo = i - 1, `for` = k, `in` = DataType.getLength(et))
-    def flattenArrayIndices(dt: DataType, path: Path): (Nat, Path) = {
-      val (size, elemT) = dt match {
-        case ArrayType(s, t) => (s, t)
-        case DepArrayType(s, _, t) => (s, t)
-      }
-      val dimList = extractDimensionSizes(elemT, size).drop(1)
-      val rowSizes = dimList.scanRight(1: Nat)((a: Nat, b: Nat) => a * b)
-      assert(dimList.size + 1 == rowSizes.size)
 
-      val (indices, rest) = path.splitAt(rowSizes.size)
+    def flattenArrayIndices(dt: DataType, path: Path): (Nat, Path) = {
+      assert(dt.isInstanceOf[ArrayType] || dt.isInstanceOf[DepArrayType])
+      val elemT = dt match {
+        case ArrayType(_, t) => t
+        case DepArrayType(_, _, t) => t
+      }
+      val dimensionSizes = extractDimensionSizes(1)(elemT).reverse
+
+      val (indices, rest) = path.splitAt(dimensionSizes.size)
       indices.foreach(i => assert(i.isInstanceOf[CIntExpr]))
       assert(rest.isEmpty || !rest.head.isInstanceOf[CIntExpr])
 
-      val summands = dt match {
-        case _: ArrayType =>
-          rowSizes.zip(indices).map {
-            case (rs, idx: CIntExpr) => rs * idx.num
-            case _ => error ("This should never happen.")
-          }
-        case DepArrayType(_, k, _) =>
-          rowSizes.zip(indices).map {
-            case (rs, idx: CIntExpr) => BigSum(from = 0, upTo = idx - 1, `for` = k, `in` = rs) * idx.num
-          }
-      }
-      val accessExpr = summands.reduce(_ + _)
+      val flattenedIndices = buildSummands(dt, dimensionSizes, indices).reduce(_ + _)
 
-      (accessExpr, rest)
+      (flattenedIndices, rest)
     }
 
-    private def extractDimensionSizes(dt: DataType, size: Nat): List[Nat] = {
+    private def extractDimensionSizes(z: Nat)(dt: DataType): List[Nat] = {
       dt match {
-        case et: ArrayType =>
-          size :: extractDimensionSizes(et.elemType, et.size)
-        case et : DepArrayType =>
-          size :: extractDimensionSizes(et.elemType, et.size)
-        case _ => size :: Nil
+        case ArrayType(size, elemType) =>
+          z :: extractDimensionSizes(z * size)(elemType)
+        case DepArrayType(size, i, elemType) =>
+          z :: extractDimensionSizes(BigSum(from = 0, upTo = size - 1, `for` = i, `in` = z))(elemType)
+        case _ => z :: Nil
       }
     }
 
-//    private def extractDimensionSizesFromArrayType(dt: DataType): List[Nat] = {
-//      dt match {
-//        case at : ArrayType =>
-//          at.elemType match {
-//            case et: ArrayType =>
-//              at.size :: extractDimensionSizesFromArrayType(et)
-//            case et : DepArrayType =>
-//              at.size :: extractDimensionSizesFromArrayType(et)
-//            case _ => at.size :: Nil
-//          }
-//        case dat : DepArrayType =>
-//          dat.elemType match {
-//            case et: ArrayType =>
-//              dat.size :: extractDimensionSizesFromArrayType(et)
-//            case et: DepArrayType =>
-//              dat.size :: extractDimensionSizesFromArrayType(et)
-//            case _ => dat.size :: Nil
-//          }
-//      }
-//    }
-
-    //  private def generateArrayAccess(at: ArrayType, identifier: C.AST.DeclRef, path: Path, index: Nat): Expr = {
-    //    (at, path) match {
-    //      case (ArrayType(_, bt: BasicType), i :: Nil) =>
-    //        C.AST.ArraySubscript(generateAccess(bt, identifier, Nil), C.AST.ArithmeticExpr(i + index))
-    //
-    //      case (ArrayType(_, vt: VectorType), i :: j :: Nil) =>
-    //        C.AST.ArraySubscript(generateAccess(vt, identifier, j :: Nil), C.AST.ArithmeticExpr(i + index))
-    //
-    //      case (ArrayType(_, et@ArrayType(s, _)), i :: ps) =>
-    //        generateArrayAccess(et, identifier, ps, (i * s) + index)
-    //
-    //      case _ =>
-    //        throw new Exception(s"Can't generate access for `$at' with `${path.mkString("[", "::", "]")}'")
-    //    }
-    //  }
+    private def buildSummands(dt: DataType,
+                              dimensionSizes: immutable.Seq[Nat],
+                              indices: immutable.Seq[PathExpr]): List[Nat] = {
+      (dt, dimensionSizes, indices) match {
+        case (_, Nil, Nil) => Nil
+        case (ArrayType(_, elemType), rs :: dimRest, CIntExpr(idx) :: idxRest) =>
+          (rs * idx) :: buildSummands(elemType, dimRest, idxRest)
+        case (DepArrayType(_, k, elemType), rs :: dimRest, CIntExpr(idx) :: idxRest) =>
+          BigSum(from = 0, upTo = idx - 1, `for` = k, `in` = rs) :: buildSummands(elemType, dimRest, idxRest)
+      }
+    }
 
     implicit def convertBinaryOp(op: idealised.SurfaceLanguage.Operators.Binary.Value): idealised.C.AST.BinaryOperator.Value = {
       import idealised.SurfaceLanguage.Operators.Binary._
