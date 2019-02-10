@@ -677,12 +677,12 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           generateAccess(dt, C.AST.StructMemberAccess(accuExpr, C.AST.DeclRef(tuAccPos)), ps, env)
         case (i: CIntExpr) :: _ =>
           dt match {
-            case at: ArrayType =>
-              val (k, ps) = flattenArrayIndices(at, path)
-              generateAccess(dt, C.AST.ArraySubscript(accuExpr, C.AST.ArithmeticExpr(k)), ps, env)
             case _: VectorType =>
               val data = C.AST.StructMemberAccess(accuExpr, C.AST.DeclRef("data"))
               C.AST.ArraySubscript(data, C.AST.ArithmeticExpr(i))
+            case at: ArrayType =>
+              val (k, ps) = flattenArrayIndices(at, path)
+              generateAccess(dt, C.AST.ArraySubscript(accuExpr, C.AST.ArithmeticExpr(k)), ps, env)
             case dat: DepArrayType =>
               val (k, ps) = flattenArrayIndices(dat, path)
               generateAccess(dt, C.AST.ArraySubscript(accuExpr, C.AST.ArithmeticExpr(k)), ps, env)
@@ -708,16 +708,20 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       }
     }
     //BigSum(from = 0, upTo = i - 1, `for` = k, `in` = DataType.getLength(et))
-    def flattenArrayIndices(at: DataType, path: Path): (Nat, Path) = {
-      val dimList = extractDimensionSizesFromArrayType(at).drop(1)
+    def flattenArrayIndices(dt: DataType, path: Path): (Nat, Path) = {
+      val (size, elemT) = dt match {
+        case ArrayType(s, t) => (s, t)
+        case DepArrayType(s, _, t) => (s, t)
+      }
+      val dimList = extractDimensionSizes(elemT, size).drop(1)
       val rowSizes = dimList.scanRight(1: Nat)((a: Nat, b: Nat) => a * b)
       assert(dimList.size + 1 == rowSizes.size)
 
       val (indices, rest) = path.splitAt(rowSizes.size)
       indices.foreach(i => assert(i.isInstanceOf[CIntExpr]))
-      //assert(rest.isEmpty || !rest.head.isInstanceOf[CIntExpr])
+      assert(rest.isEmpty || !rest.head.isInstanceOf[CIntExpr])
 
-      val summands = at match {
+      val summands = dt match {
         case _: ArrayType =>
           rowSizes.zip(indices).map {
             case (rs, idx: CIntExpr) => rs * idx.num
@@ -733,22 +737,36 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       (accessExpr, rest)
     }
 
-    private def extractDimensionSizesFromArrayType(at: DataType): List[Nat] = {
-      at match {
-        case arrt : ArrayType =>
-          arrt.elemType match {
-            case et: ArrayType =>
-              arrt.size :: extractDimensionSizesFromArrayType (et)
-            case _ => arrt.size :: Nil
-          }
-        case deparrt : DepArrayType =>
-          deparrt.elemType match {
-            case et: DepArrayType =>
-              deparrt.size :: extractDimensionSizesFromArrayType(et)
-            case _ => deparrt.size :: Nil
-          }
+    private def extractDimensionSizes(dt: DataType, size: Nat): List[Nat] = {
+      dt match {
+        case et: ArrayType =>
+          size :: extractDimensionSizes(et.elemType, et.size)
+        case et : DepArrayType =>
+          size :: extractDimensionSizes(et.elemType, et.size)
+        case _ => size :: Nil
       }
     }
+
+//    private def extractDimensionSizesFromArrayType(dt: DataType): List[Nat] = {
+//      dt match {
+//        case at : ArrayType =>
+//          at.elemType match {
+//            case et: ArrayType =>
+//              at.size :: extractDimensionSizesFromArrayType(et)
+//            case et : DepArrayType =>
+//              at.size :: extractDimensionSizesFromArrayType(et)
+//            case _ => at.size :: Nil
+//          }
+//        case dat : DepArrayType =>
+//          dat.elemType match {
+//            case et: ArrayType =>
+//              dat.size :: extractDimensionSizesFromArrayType(et)
+//            case et: DepArrayType =>
+//              dat.size :: extractDimensionSizesFromArrayType(et)
+//            case _ => dat.size :: Nil
+//          }
+//      }
+//    }
 
     //  private def generateArrayAccess(at: ArrayType, identifier: C.AST.DeclRef, path: Path, index: Nat): Expr = {
     //    (at, path) match {
