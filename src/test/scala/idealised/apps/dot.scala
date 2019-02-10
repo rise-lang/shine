@@ -131,4 +131,109 @@ class dot extends idealised.util.Tests {
     SyntaxChecker(p.code)
   }
 
+  test("Intel derived no warp dot product 1 compiles to syntactically correct OpenCL") {
+    import idealised.OpenCL.SurfaceLanguage.DSL._
+
+    val intelDerivedNoWarpDot1 = fun(xsT)(xs => fun(ysT)(ys =>
+      zip(
+        xs :>> asVector(4),
+        ys:>> asVector(4)
+      ) :>>
+        split(8192) :>>
+        mapWorkgroup(
+          split(8192) >>>
+            mapLocal(
+              reduceSeq(fun(x => fun(a => mult(x) + a)), vectorize(4, 0.0f))
+            )
+        ) :>> join :>> asScalar
+    ))
+
+    val phrase = TypeInference(intelDerivedNoWarpDot1, Map()).toPhrase
+    val p = idealised.OpenCL.KernelGenerator.makeCode(phrase, ?, ?)
+    println(p.code)
+    SyntaxChecker.checkOpenCL(p.code)
+  }
+
+  test("Dot product CPU 1 compiles to syntactically correct OpenCL") {
+    import idealised.OpenCL.SurfaceLanguage.DSL._
+
+    val dotCPU1 = fun(xsT)(xs => fun(ysT)(ys =>
+      zip(xs, ys) :>>
+        split(2048 * 128) :>>
+        mapWorkgroup(
+          split(2048) >>>
+            mapLocal(
+              reduceSeq(fun(x => fun(a => mult(x) + a)), 0.0f)
+            )
+        ) :>> join
+    ))
+
+    val phrase = TypeInference(dotCPU1, Map()).toPhrase
+    val p = idealised.OpenCL.KernelGenerator.makeCode(phrase, ?, ?)
+    println(p.code)
+    SyntaxChecker.checkOpenCL(p.code)
+  }
+
+  test("Dot product CPU 2 compiles to syntactically correct OpenCL") {
+    import idealised.OpenCL.SurfaceLanguage.DSL._
+
+    val dotCPU2 = fun(xsT)(in =>
+      in :>>
+        split(128) :>>
+        mapWorkgroup(
+          split(128) >>>
+            mapLocal(
+              reduceSeq(fun(x => fun(a => x + a)), 0.0f)
+            )
+        ) :>> join
+    )
+
+    val phrase = TypeInference(dotCPU2, Map()).toPhrase
+    val p = idealised.OpenCL.KernelGenerator.makeCode(phrase, ?, ?)
+    println(p.code)
+    SyntaxChecker.checkOpenCL(p.code)
+  }
+
+  test("Dot product 1 compiles to syntactically correct OpenCL") {
+    import idealised.OpenCL.SurfaceLanguage.DSL._
+
+    val dotProduct1 = fun(xsT)(xs => fun(ysT)(ys =>
+      zip(xs, ys) :>>
+        split(2048 * 128) :>>
+        mapWorkgroup(
+          gather(reorderWithStridePhrase(128)) >>>
+            split(2048) >>>
+            mapLocal(
+              reduceSeq(fun(x => fun(a => mult(x) + a)), 0.0f)
+            )
+        ) :>> join
+    ))
+
+    val phrase = TypeInference(dotProduct1, Map()).toPhrase
+    val p = idealised.OpenCL.KernelGenerator.makeCode(phrase, ?, ?)
+    println(p.code)
+    SyntaxChecker.checkOpenCL(p.code)
+  }
+
+  ignore ("Dot product 2 compiles to syntactically correct OpenCL") {
+    import idealised.OpenCL.SurfaceLanguage.DSL._
+
+    val dotProduct2 = fun(xsT)(in =>
+      in :>>
+        split(128) :>>
+        mapWorkgroup(
+          split(2) >>>
+          toLocal(mapLocal(reduceSeq(add, 0.0f))) >>>
+          iterate(6,
+            split(2) >>> toLocal(mapLocal(reduceSeq(add, 0.0f)))
+          )
+        ) :>> join
+    )
+
+    val phrase = TypeInference(dotProduct2, Map()).toPhrase
+    val p = idealised.OpenCL.KernelGenerator.makeCode(phrase, ?, ?)
+    println(p.code)
+    SyntaxChecker.checkOpenCL(p.code)
+  }
+
 }

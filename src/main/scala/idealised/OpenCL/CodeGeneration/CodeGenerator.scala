@@ -3,7 +3,7 @@ package idealised.OpenCL.CodeGeneration
 import idealised.C.AST.{ArraySubscript, BasicType, Decl}
 import idealised.C.CodeGeneration.{CodeGenerator => CCodeGenerator}
 import idealised.DPIA.DSL._
-import idealised.DPIA.FunctionalPrimitives.{AsScalar, AsVector}
+import idealised.DPIA.FunctionalPrimitives.{AsScalar, AsVector, VectorFromScalar}
 import idealised.DPIA.ImperativePrimitives.{AsScalarAcc, AsVectorAcc, Assign}
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
@@ -48,8 +48,8 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
             acc(a, env, Nil, {
               case C.AST.FunCall(C.AST.DeclRef(name), Seq(idx, v))
                 if name.startsWith("vstore") =>
-                  C.AST.FunCall(C.AST.DeclRef(name), Seq(e, idx, v))
-              case a => C.AST.Assignment(a, e)
+                C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef(name), Seq(e, idx, v)))
+              case a => C.AST.ExprStmt(C.AST.Assignment(a, e))
             }))
 
         case _ => super.cmd(phrase, env)
@@ -107,7 +107,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         case _: VectorType =>
           exp(e1, env, path, e1 =>
             exp(e2, env, path, e2 =>
-              CCodeGen.codeGenBinaryOp(op, e1, e2)
+              cont(CCodeGen.codeGenBinaryOp(op, e1, e2))
           ))
         case _ => super.exp(phrase, env, path, cont)
       }
@@ -125,7 +125,16 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         case i :: ps =>     exp(e, env, (i / m) :: ps, cont)
         case _ =>           error(s"Expected path to be not empty")
       }
+      case VectorFromScalar(n, st, e) => path match {
+        case _ :: ps =>
+          // in this case we index straight into the vector build from a single scalar
+          // it is equivalent to return the scalar `e' without boxing and unboxing it
+          exp(e, env, ps, cont)
 
+        case Nil =>
+          exp(e, env, Nil, e =>
+            cont(C.AST.Literal(s"($st$n)(" + C.AST.Printer(e) + ")")))
+      }
       case _ => super.exp(phrase, env, path, cont)
     }
   }

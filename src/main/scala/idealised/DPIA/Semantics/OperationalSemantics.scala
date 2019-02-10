@@ -28,7 +28,6 @@ object OperationalSemantics {
   final case class IndexData(n: Nat, indexType: IndexType) extends Data(indexType)
   object IndexData {
     def apply(n: Nat): IndexData = IndexData(n, IndexType(n.max))
-    // def apply(n: Nat): IndexData = IndexData(n, IndexType(n.max + 1))
   }
   final case class BoolData(b: Boolean) extends Data(bool)
   final case class IntData(i: Int) extends Data(int) {

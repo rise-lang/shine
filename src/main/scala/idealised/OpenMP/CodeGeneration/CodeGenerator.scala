@@ -4,7 +4,7 @@ import idealised._
 import idealised.C.AST.{ArraySubscript, Decl}
 import idealised.C.CodeGeneration.{CodeGenerator => CCodeGenerator}
 import idealised.DPIA.DSL._
-import idealised.DPIA.FunctionalPrimitives.{AsScalar, AsVector, ForeignFunction}
+import idealised.DPIA.FunctionalPrimitives.{AsScalar, AsVector, ForeignFunction, VectorFromScalar}
 import idealised.DPIA.ImperativePrimitives.{AsScalarAcc, AsVectorAcc, ForVec}
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
@@ -115,6 +115,17 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       case AsScalar(_, m, _, e) => path match {
         case i :: ps =>     exp(e, env, (i / m) :: ps, cont)
         case _ =>           error(s"Expected path to be not empty")
+      }
+      // TODO: this has to be refactored
+      case VectorFromScalar(n, st, e) => path match {
+        case _ :: ps =>
+          // in this case we index straight into the vector build from a single scalar
+          // it is equivalent to return the scalar `e' without boxing and unboxing it
+          exp(e, env, ps, cont)
+
+        case Nil =>
+          exp(e, env, Nil, e =>
+            cont(C.AST.Literal("(" + s"($st[$n]){" + C.AST.Printer(e) + "})")))
       }
       case _ =>             super.exp(phrase, env, path, cont)
     }
