@@ -189,8 +189,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case DepIdxAcc(_, _, _, i, a) => acc(a, env, i :: path, cont)
 
-      case IdxVecAcc(_, _, i, a) => CCodeGen.codeGenIdxVecAcc(i, a, env, path, cont)
-
       case Proj1(pair) => acc(Lifting.liftPair(pair)._1, env, path, cont)
       case Proj2(pair) => acc(Lifting.liftPair(pair)._2, env, path, cont)
 
@@ -304,14 +302,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case DepIdx(_, _, _, i, e) => exp(e, env, i :: path, cont)
 
-      case IdxVec(_, _, i, e) => CCodeGen.codeGenIdxVec(i, e, env, path, cont)
-
       case ForeignFunction(f, inTs, outT, args) =>
-        path match {
-          case Nil =>
-            CCodeGen.codeGenForeignFunction(f, inTs, outT, args, env, path, cont)
-          case _ => error("Expected path to be empty")
-        }
+        CCodeGen.codeGenForeignFunction(f, inTs, outT, args, env, path, cont)
 
       case Proj1(pair) => exp(Lifting.liftPair(pair)._1, env, path, cont)
       case Proj2(pair) => exp(Lifting.liftPair(pair)._2, env, path, cont)
@@ -528,21 +520,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       })
     }
 
-    def codeGenIdxVecAcc(i: Phrase[ExpType],
-                         a: Phrase[AccType],
-                         env: Environment,
-                         ps: Path,
-                         cont: Expr => Stmt): Stmt = {
-      exp(i, env, Nil, i => {
-        val idx: ArithExpr = i match {
-          case C.AST.DeclRef(name) => NamedVar(name, ranges(name))
-          case C.AST.ArithmeticExpr(ae) => ae
-        }
-
-        acc(a, env, idx :: ps, cont)
-      })
-    }
-
     def codeGenLiteral(d: OperationalSemantics.Data): Expr = {
       d match {
         case i: IndexData =>
@@ -573,21 +550,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                    env: Environment,
                    ps: Path,
                    cont: Expr => Stmt): Stmt = {
-      exp(i, env, Nil, i => {
-        val idx: ArithExpr = i match {
-          case C.AST.DeclRef(name) => NamedVar(name, ranges(name))
-          case C.AST.ArithmeticExpr(ae) => ae
-        }
-
-        exp(e, env, idx :: ps, cont)
-      })
-    }
-
-    def codeGenIdxVec(i: Phrase[ExpType],
-                      e: Phrase[ExpType],
-                      env: Environment,
-                      ps: Path,
-                      cont: Expr => Stmt): Stmt = {
       exp(i, env, Nil, i => {
         val idx: ArithExpr = i match {
           case C.AST.DeclRef(name) => NamedVar(name, ranges(name))

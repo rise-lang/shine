@@ -5,7 +5,7 @@ import idealised.C.AST.{ArraySubscript, Decl}
 import idealised.C.CodeGeneration.{CodeGenerator => CCodeGenerator}
 import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives.{AsScalar, AsVector, ForeignFunction, VectorFromScalar}
-import idealised.DPIA.ImperativePrimitives.{AsScalarAcc, AsVectorAcc, ForVec}
+import idealised.DPIA.ImperativePrimitives._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics.{ArrayData, VectorData}
@@ -64,6 +64,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
           })
         case _ => error(s"Expected path to be not empty")
       }
+      case IdxVecAcc(_, _, i, a) => CCodeGen.codeGenIdxAcc(i, a, env, path, cont)
       case _ => super.acc(phrase, env, path, cont)
     }
   }
@@ -127,6 +128,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
           exp(e, env, Nil, e =>
             cont(C.AST.Literal("(" + s"($st[$n]){" + C.AST.Printer(e) + "})")))
       }
+      case IdxVec(_, _, i, e) => CCodeGen.codeGenIdx(i, e, env, path, cont)
       case _ =>             super.exp(phrase, env, path, cont)
     }
   }
