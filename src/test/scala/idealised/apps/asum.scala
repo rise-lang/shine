@@ -1,9 +1,9 @@
 package idealised.apps
 
-import idealised.{C, OpenMP, OpenCL}
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
 import idealised.util.SyntaxChecker
+import idealised.{C, OpenCL, OpenMP}
 import lift.arithmetic._
 
 class asum extends idealised.util.Tests {

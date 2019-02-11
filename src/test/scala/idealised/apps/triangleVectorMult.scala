@@ -53,6 +53,7 @@ class triangleVectorMult extends idealised.util.Tests {
 
   test("Basic sequential triangle vector multiplication compiles to syntactically correct C") {
     val p = idealised.C.ProgramGenerator.makeCode(TypeInference(triangleVectorMultSeq, Map()).toPhrase)
+    println(p.code)
     SyntaxChecker(p.code)
   }
 

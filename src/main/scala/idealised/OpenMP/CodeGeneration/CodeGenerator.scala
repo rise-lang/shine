@@ -3,6 +3,7 @@ package idealised.OpenMP.CodeGeneration
 import idealised._
 import idealised.C.AST.{ArraySubscript, Decl}
 import idealised.C.CodeGeneration.{CodeGenerator => CCodeGenerator}
+import idealised.C.CodeGeneration.CodeGenerator.CIntExpr
 import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives.{AsScalar, AsVector, ForeignFunction}
 import idealised.DPIA.ImperativePrimitives.{AsScalarAcc, AsVectorAcc, ForVec}
@@ -48,23 +49,23 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
                    cont: Expr => Stmt): Stmt = {
     phrase match {
       case AsVectorAcc(n, _, _, a) => path match {
-        case i :: ps => acc(a, env, (i / n) :: ps, cont)
-        case _ => error(s"Expected path to be not empty")
+        case (i : CIntExpr) :: ps =>     acc(a, env, CIntExpr(i / n) :: ps, cont)
+        case _ =>           error(s"Expected path to be not empty")
       }
       case AsScalarAcc(_, m, dt, a) => path match {
-        case i :: j :: ps =>
-          acc(a, env, (i * m) + j :: ps, cont)
+        case (i : CIntExpr) :: (j : CIntExpr) :: ps =>
+          acc(a, env, CIntExpr((i * m) + j) :: ps, cont)
 
-        case i :: Nil =>
-          acc(a, env, (i * m) :: Nil, {
+        case (i : CIntExpr) :: Nil =>
+          acc(a, env, CIntExpr(i * m) :: Nil, {
             case ArraySubscript(v, idx) =>
               // emit something like: ((struct float4 *)v)[idx]
               val ptrType = C.AST.PointerType(typ(VectorType(m, dt)))
-              cont(C.AST.ArraySubscript(C.AST.Cast(ptrType, v), idx))
+              cont( C.AST.ArraySubscript(C.AST.Cast(ptrType, v), idx) )
           })
-        case _ => error(s"Expected path to be not empty")
+        case _ =>           error(s"Expected path to be not empty")
       }
-      case _ => super.acc(phrase, env, path, cont)
+      case _ =>             super.acc(phrase, env, path, cont)
     }
   }
 
@@ -74,15 +75,14 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
                    cont: Expr => Stmt): Stmt = {
     phrase match {
       case Phrases.Literal(n) => (path, n.dataType) match {
-        case (Nil, _: VectorType) => cont(OpenMPCodeGen.codeGenLiteral(n))
-        case (i :: Nil, _: VectorType) =>
+        case (Nil, _: VectorType)       => cont(OpenMPCodeGen.codeGenLiteral(n))
+        case ((i : CIntExpr) :: Nil, _: VectorType) =>
           cont(C.AST.ArraySubscript(OpenMPCodeGen.codeGenLiteral(n), C.AST.ArithmeticExpr(i)))
         case _ => super.exp(phrase, env, path, cont)
       }
       case UnaryOp(op, e) => phrase.t.dataType match {
         case _: VectorType => path match {
-          case i :: ps => exp(e, env, i :: ps, e =>
-            cont(CCodeGen.codeGenUnaryOp(op, e)))
+          case i :: ps => exp(e, env, i :: ps, e => cont(CCodeGen.codeGenUnaryOp(op, e)))
           case _ => error(s"Expected path to be not empty")
         }
         case _ => super.exp(phrase, env, path, cont)
@@ -100,20 +100,20 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       case ForeignFunction(f, inTs, outT, args) =>
         OpenMPCodeGen.codeGenForeignFunction(f, inTs, outT, args, env, path, cont)
       case AsVector(n, _, dt, e) => path match {
-        case i :: j :: ps =>
-          exp(e, env, (i * n) + j :: ps, cont)
+        case (i : CIntExpr) :: (j : CIntExpr) :: ps =>
+          exp(e, env, CIntExpr((i * n) + j) :: ps, cont)
 
-        case i :: Nil =>
-          exp(e, env, (i * n) :: Nil, {
+        case (i : CIntExpr) :: Nil =>
+          exp(e, env, CIntExpr(i * n) :: Nil, {
             case ArraySubscript(v, idx) =>
               // emit something like: ((struct float4 *)v)[idx]
               val ptrType = C.AST.PointerType(typ(VectorType(n, dt)))
-              cont(C.AST.ArraySubscript(C.AST.Cast(ptrType, v), idx))
+              cont( C.AST.ArraySubscript(C.AST.Cast(ptrType, v), idx) )
           })
         case _ =>           error(s"Expected path to be not empty")
       }
       case AsScalar(_, m, _, e) => path match {
-        case i :: ps =>     exp(e, env, (i / m) :: ps, cont)
+        case (i: CIntExpr) :: ps =>     exp(e, env, CIntExpr(i / m) :: ps, cont)
         case _ =>           error(s"Expected path to be not empty")
       }
       case _ =>             super.exp(phrase, env, path, cont)
