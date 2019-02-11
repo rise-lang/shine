@@ -298,11 +298,13 @@ class CPrinter extends Printer {
 
   private def printTernaryExpr(t: TernaryExpr): Unit = {
     print("(")
-    printExpr(t.cond)
-    print(") ? (")
-    printExpr(t.thenE)
-    print(") : (")
-    printExpr(t.elseE)
+      print("(")
+        printExpr(t.cond)
+      print(") ? (")
+        printExpr(t.thenE)
+      print(") : (")
+        printExpr(t.elseE)
+      print(")")
     print(")")
   }
 
