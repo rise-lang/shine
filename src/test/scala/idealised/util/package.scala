@@ -11,7 +11,7 @@ package object util {
   abstract class TestsWithExecutor extends Tests with BeforeAndAfter {
     before {
       Executor.loadLibrary()
-      Executor.init()
+      Executor.init(1, 0)
     }
 
     after {

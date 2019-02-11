@@ -6,9 +6,11 @@ import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
 import idealised.util.SyntaxChecker
-import lift.arithmetic.{?, ArithExpr, Cst}
+import lift.arithmetic.{?, ArithExpr, Cst, SizeVar}
+import opencl.executor.Executor
 
 import scala.language.{implicitConversions, postfixOps}
+import scala.util.Random
 
 class triangleVectorMult extends idealised.util.TestsWithExecutor {
 
@@ -47,8 +49,9 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
     )
 
   def generateInputs(n:Int):(Array[Array[Float]], Array[Float]) = {
+    val rng = new Random()
     val inputVector = Array.tabulate(n)(id => id + 1.0f)
-    val inputMatrix = Array.tabulate(n)(rowIndex => Array.tabulate(rowIndex + 1)(colIndex => if(colIndex == rowIndex) 1.0f else 0.0f))
+    val inputMatrix = Array.tabulate(n)(rowIndex => Array.tabulate(rowIndex + 1)(colIndex => if (rowIndex == colIndex) 1.0f else 0.0f))
 
     (inputMatrix, inputVector)
   }
@@ -99,12 +102,21 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
     SyntaxChecker.checkOpenCL(p.code)
   }
 
-  test("Basic parallel triangle vector multiplication compiles to syntactically correct OpenCL") {
-    import idealised.OpenCL._
-    val actualN = 64
+  case class TriangleMatrixConfResult(inputSize:Int, splitSize:Int, localSize:Int, globalSize:Int, runtime:Double, correct:Boolean, code:String) {
+    def printout(): Unit = {
+      println(s"input = $inputSize; splitSize = $splitSize; localSize = $localSize; globalSize = $globalSize; runtime:$runtime correct:$correct")
+    }
+  }
 
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(triangleVectorMultGlobalFused(actualN), Map()).toPhrase, 1, 1)
-    println(kernel.code)
+
+  private def triangleMatrixBasic(inputSize:Int, localSize:Int, globalSize:Int):TriangleMatrixConfResult = {
+    import idealised.OpenCL._
+    val actualN = inputSize
+    val f = triangleVectorMultGlobalFused(actualN)
+
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase, localSize, globalSize)
+    //println(kernel.code)
+
     val(inputMatrix, inputVector) = generateInputs(actualN)
 
     val kernelFun = kernel.as[ScalaFunction `(` Array[Array[Float]] `,` Array[Float] `)=>` Array[Float]]
@@ -113,18 +125,30 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
 
     val scalaOutput = scalaMatrixVector(inputMatrix, inputVector)
 
-    assert(output sameElements scalaOutput)
+    val correct = output.zip(scalaOutput).forall{case (x,y) => Math.abs(x - y) < 0.01}
 
-    println(time)
+    TriangleMatrixConfResult(inputSize, 0, localSize, globalSize, time.value, correct, kernel.code)
+
   }
 
-  test("Parallel OpenCL triangle vector partial multiplication (padding the row up to vector) (PLDI '19 submission listing 5)") {
+  test("Basic parallel triangle vector multiplication compiles to syntactically correct OpenCL") {
+    val inputSize = 4096
+    val results = for(
+      localSize <- Seq(4, 8, 16, 32, 64, 128, 256, 512)
+    ) yield {
+      triangleMatrixBasic(inputSize, localSize, inputSize)
+    }
+    results.filter(_.correct).sortBy(_.runtime).foreach(_.printout())
+  }
+
+
+  private def triangleMatrixPadSplit(inputSize:Int, splitSize:Int, localSize:Int, globalSize:Int):TriangleMatrixConfResult = {
     import idealised.OpenCL._
-    val actualN = 64
-    val splitN = 32
+    val actualN = inputSize
+    val splitN = splitSize
     val f: Expr[DataType -> (DataType -> DataType)] = {
 
-      val N:ArithExpr = Cst(actualN)
+      val N:ArithExpr = SizeVar("N")
       val SPLIT_SIZE = Cst(splitN)
       fun(DepArrayType(N, i => ArrayType(i + 1, float)))(triangle =>
         fun(ArrayType(N, float))(vector =>
@@ -134,8 +158,8 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
         )
       )
     }
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase, 1, 1)
-    println(kernel.code)
+
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase, localSize, globalSize)
 
     val(inputMatrix, inputVector) = generateInputs(actualN)
     val scalaOutput = scalaMatrixVector(inputMatrix, inputVector)
@@ -146,8 +170,24 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
 
     val finalOutput = partialOutput.grouped(actualN/splitN).map(_.sum).toArray
 
-    assert(finalOutput sameElements scalaOutput)
+    val correct = finalOutput.zip(scalaOutput).forall{case (x,y) => Math.abs(x - y) < 0.01}
 
-    println(time)
+    TriangleMatrixConfResult(
+      inputSize, splitSize, localSize, globalSize, time.value, correct, kernel.code
+    )
+  }
+
+  test("Parallel OpenCL triangle vector partial multiplication (padding the row up to vector) (PLDI '19 submission listing 5)") {
+    val inputSize = 4096
+    println(Executor.getPlatformName)
+    println(Executor.getDeviceName)
+
+    val results = for(localSize <- Seq(4, 8, 16, 32, 64, 128, 256, 512);
+      splitSize <- Seq(4, 8, 16, 32, 64, 128, 256, 512)
+    ) yield {
+      triangleMatrixPadSplit(inputSize, splitSize, localSize, inputSize)
+    }
+
+    results.sortBy(_.runtime).foreach(_.printout())
   }
 }

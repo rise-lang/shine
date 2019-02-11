@@ -80,7 +80,8 @@ case class Kernel(decls: Seq[C.AST.Decl],
     val (outputArg, inputArgs) = createKernelArgs(args, lengthMapping)
     val kernelArgs = (outputArg +: inputArgs).toArray
 
-    val kernelJNI = opencl.executor.Kernel.create(code, kernel.name, "")
+    val c = code
+    val kernelJNI = opencl.executor.Kernel.create(c, kernel.name, "")
 
     val runtime = Executor.execute(kernelJNI,
       ArithExpr.substitute(localSize, lengthMapping).eval, 1, 1,
@@ -171,7 +172,8 @@ case class Kernel(decls: Seq[C.AST.Decl],
   private def createIntermediateArgs(argsLength: Int, lengthMapping: immutable.Map[Nat, Nat]): Seq[KernelArg] = {
     val intermediateParamDecls = getIntermediateParamDecls(argsLength)
     (intermediateParamDecls, intermediateParams).zipped.map { case (pDecl, param) =>
-      val size = (sizeInByte(param) `with` lengthMapping).value.max.eval
+      val sizeMax = (sizeInByte(param) `with` lengthMapping).value.max
+      val size = sizeMax.eval
       pDecl.addressSpace match {
         case OpenCL.LocalMemory =>
           println(s"intermediate (local): $size bytes")
