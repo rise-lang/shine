@@ -13,7 +13,6 @@ import scala.language.{implicitConversions, postfixOps}
 import scala.util.Random
 
 class triangleVectorMult extends idealised.util.TestsWithExecutor {
-
   val mult = fun(x => x._1 * x._2)
 
   val add = fun(x => fun(y => x + y))
