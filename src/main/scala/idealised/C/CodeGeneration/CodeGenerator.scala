@@ -690,15 +690,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           }
         case _ =>
           throw new Exception(s"Can't generate access for `$dt' with `${path.mkString("[", "::", "]")}'")
-        /*
-        //TODO is this still needed?
-        case (ArrayType(_, vt: VectorType), i :: j :: Nil) =>
-          C.AST.ArraySubscript(generateAccess(vt, identifier, j :: Nil, env), C.AST.ArithmeticExpr(i))
-
-        case (_: ArrayType, _) | (_: DepArrayType, _) =>
-        val idx = computeArrayIndex(dt, path)
-        C.AST.ArraySubscript(identifier, C.AST.ArithmeticExpr(idx))
-        */
       }
     }
 
