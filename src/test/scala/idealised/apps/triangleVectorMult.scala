@@ -6,7 +6,7 @@ import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
 import idealised.util.SyntaxChecker
-import lift.arithmetic.{?, Cst, SizeVar}
+import lift.arithmetic.{?, ArithExpr, Cst, SizeVar}
 
 import scala.language.{implicitConversions, postfixOps}
 
@@ -87,15 +87,27 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
   }
 
   test("Basic parallel triangle vector multiplication compiles to syntactically correct OpenCL") {
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(triangleVectorMultGlobalFused, Map()).toPhrase, ?, ?)
+    import idealised.OpenCL._
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(triangleVectorMultGlobalFused, Map()).toPhrase, 1, 1)
     println(kernel.code)
-    SyntaxChecker.checkOpenCL(kernel.code)
+
+    val actualN = 64
+    val inputVector = Array.tabulate(actualN)(id => id + 1.0f)
+    val inputMatrix = Array.tabulate(actualN)(rowIndex => Array.tabulate(rowIndex + 1)(colIndex => if(colIndex == rowIndex) 1.0f else 0.0f))
+
+    val kernelFun = kernel.as[ScalaFunction `(` Array[Array[Float]] `,` Array[Float] `)=>` Array[Float]]
+
+    val (output, time) = kernelFun(inputMatrix `,` inputVector)
+
+    output.foreach(x => print(x))
   }
 
   test("Parallel OpenCL triangle vector partial multiplication (padding the row up to vector) (PLDI '19 submission listing 5)") {
     import idealised.OpenCL._
+    val actualN = 256
     val f: Expr[DataType -> (DataType -> DataType)] = {
-      val N = SizeVar("N")
+
+      val N:ArithExpr = actualN
       val SPLIT_SIZE = Cst(32)
       fun(DepArrayType(N, i => ArrayType(i + 1, float)))(triangle =>
         fun(ArrayType(N, float))(vector =>
@@ -107,15 +119,18 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
     }
     val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase, 1, 1)
     println(kernel.code)
-    SyntaxChecker.checkOpenCL(kernel.code)
 
-    val actualN = 1024
     val inputVector = Array.tabulate(actualN)(id => id + 1.0f)
     val inputMatrix = Array.tabulate(actualN)(rowIndex => Array.tabulate(rowIndex + 1)(colIndex => if(colIndex == rowIndex) 1.0f else 0.0f))
 
     val kernelFun = kernel.as[ScalaFunction `(` Array[Array[Float]] `,` Array[Float] `)=>` Array[Float]]
 
     val (output, time) = kernelFun(inputMatrix `,` inputVector)
+
+    output.grouped(actualN).foreach(row => {
+      row.foreach(println)
+      println()
+    })
 
     println(time)
   }
