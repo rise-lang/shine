@@ -106,17 +106,11 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         case _ => super.exp(phrase, env, path, cont)
       }
       case BinOp(op, e1, e2) => phrase.t.dataType match {
-        case _: VectorType => path match {
-          case Nil =>
-            exp(e1, env, Nil, e1 =>
-              exp(e2, env, Nil, e2 =>
-                cont(CCodeGen.codeGenBinaryOp(op, e1, e2))))
-          case i :: ps =>
-            exp(e1, env, i :: ps, e1 =>
-              exp(e2, env, i :: ps, e2 =>
-                cont(CCodeGen.codeGenBinaryOp(op, e1, e2))))
-          case _ => error(s"Expected path to be not empty")
-        }
+        case _: VectorType =>
+          exp(e1, env, path, e1 =>
+            exp(e2, env, path, e2 =>
+              cont(CCodeGen.codeGenBinaryOp(op, e1, e2))
+          ))
         case _ => super.exp(phrase, env, path, cont)
       }
       case AsVector(n, _, _, e) => path match {

@@ -36,8 +36,8 @@ object CodeGenerator {
 
   sealed trait PathExpr
   sealed trait TupleAccess extends PathExpr
-  final case object FstAcc extends TupleAccess
-  final case object SndAcc extends TupleAccess
+  final case object FstMember extends TupleAccess
+  final case object SndMember extends TupleAccess
   final case class CIntExpr(num: Nat) extends PathExpr
   implicit def cIntExprToNat(cexpr: CIntExpr): Nat = cexpr.num
 
@@ -147,15 +147,15 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error(s"Expected two C-Integer-Expressions on the path.")
       }
 
-      case RecordAcc1(_, _, a) => acc(a, env, FstAcc :: path, cont)
-      case RecordAcc2(_, _, a) => acc(a, env, SndAcc :: path, cont)
+      case RecordAcc1(_, _, a) => acc(a, env, FstMember :: path, cont)
+      case RecordAcc2(_, _, a) => acc(a, env, SndMember :: path, cont)
 
       case ZipAcc1(_, _, _, a) => path match {
-        case (i : CIntExpr) :: ps => acc(a, env, i :: FstAcc :: ps, cont)
+        case (i : CIntExpr) :: ps => acc(a, env, i :: FstMember :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
       case ZipAcc2(_, _, _, a) => path match {
-        case (i : CIntExpr) :: ps => acc(a, env, i :: SndAcc :: ps, cont)
+        case (i : CIntExpr) :: ps => acc(a, env, i :: SndMember :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
       case UnzipAcc(_, _, _, _) => ???
@@ -253,8 +253,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case Zip(_, _, _, e1, e2) => path match {
         case (i: CIntExpr) :: (xj : TupleAccess) :: ps => xj match {
-          case FstAcc => exp(e1, env, i :: ps, cont)
-          case SndAcc => exp(e2, env, i :: ps, cont)
+          case FstMember => exp(e1, env, i :: ps, cont)
+          case SndMember => exp(e2, env, i :: ps, cont)
         }
         case _ => error("Expected a C-Integer-Expression followed by a tuple access on the path.")
       }
@@ -262,13 +262,13 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case Record(_, _, e1, e2) => path match {
         case (xj : TupleAccess) :: ps => xj match {
-          case FstAcc => exp(e1, env, ps, cont)
-          case SndAcc => exp(e2, env, ps, cont)
+          case FstMember => exp(e1, env, ps, cont)
+          case SndMember => exp(e2, env, ps, cont)
         }
         case _ => error("Expected a tuple access on the path.")
       }
-      case Fst(_, _, e) => exp(e, env, FstAcc :: path, cont)
-      case Snd(_, _, e) => exp(e, env, SndAcc :: path, cont)
+      case Fst(_, _, e) => exp(e, env, FstMember :: path, cont)
+      case Snd(_, _, e) => exp(e, env, SndMember :: path, cont)
 
       case Take(_, _, _, e) => exp(e, env, path, cont)
 
@@ -671,8 +671,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case Nil => accuExpr
         case (xj: TupleAccess) :: ps =>
           val tuAccPos = xj match {
-            case FstAcc => "_fst"
-            case SndAcc => "_snd"
+            case FstMember => "_fst"
+            case SndMember => "_snd"
           }
           generateAccess(dt, C.AST.StructMemberAccess(accuExpr, C.AST.DeclRef(tuAccPos)), ps, env)
         case (i: CIntExpr) :: _ =>
@@ -688,23 +688,17 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
               generateAccess(dt, C.AST.ArraySubscript(accuExpr, C.AST.ArithmeticExpr(k)), ps, env)
             case _ => throw new Exception("Expected an ArrayType that is accessed by the index.")
           }
-        case _ => ???
-          /*
-
-        */
+        case _ =>
+          throw new Exception(s"Can't generate access for `$dt' with `${path.mkString("[", "::", "]")}'")
         /*
-
         //TODO is this still needed?
         case (ArrayType(_, vt: VectorType), i :: j :: Nil) =>
           C.AST.ArraySubscript(generateAccess(vt, identifier, j :: Nil, env), C.AST.ArithmeticExpr(i))
 
-      case (_: ArrayType, _) | (_: DepArrayType, _) =>
+        case (_: ArrayType, _) | (_: DepArrayType, _) =>
         val idx = computeArrayIndex(dt, path)
         C.AST.ArraySubscript(identifier, C.AST.ArithmeticExpr(idx))
-       */
-
-        case _ =>
-          throw new Exception(s"Can't generate access for `$dt' with `${path.mkString("[", "::", "]")}'")
+        */
       }
     }
 
