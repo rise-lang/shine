@@ -47,6 +47,8 @@ object int extends ScalarType { override def toString: String = "int" }
 
 object float extends ScalarType { override def toString: String = "float" }
 
+object double extends ScalarType { override def toString: String = "double" }
+
 final case class IndexType(size: Nat) extends BasicType
 
 

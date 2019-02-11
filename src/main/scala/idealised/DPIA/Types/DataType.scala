@@ -79,6 +79,7 @@ object ScalarType {
       case SurfaceLanguage.Types.bool => bool
       case SurfaceLanguage.Types.int => int
       case SurfaceLanguage.Types.float => float
+      case SurfaceLanguage.Types.double => double
     }
   }
 }

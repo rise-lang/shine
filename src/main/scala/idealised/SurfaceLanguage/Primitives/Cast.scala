@@ -5,16 +5,16 @@ import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.SurfaceLanguage.PrimitiveExpr
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
+import idealised.SurfaceLanguage
 
-final case class Cast(dt: BasicType, e: Expr[BasicType], override val t: Option[DataType] = None)
+//TODO it would be nice to allow e: Expr[BasicType] only
+final case class Cast(dt: BasicType, e: DataExpr, override val t: Option[DataType] = None)
   extends PrimitiveExpr
 {
   override def convertToPhrase: DPIA.FunctionalPrimitives.Cast = {
     e.t match {
-      case Some(IndexType(n)) =>
-        DPIA.FunctionalPrimitives.Cast(DPIA.Types.IndexType(n), dt, e.toPhrase[DPIA.Types.ExpType])
-      case Some(bool) =>
-        DPIA.FunctionalPrimitives.Cast(DPIA.Types.bool, dt, e.toPhrase[DPIA.Types.ExpType])
+      case Some(edt) =>
+        DPIA.FunctionalPrimitives.Cast(toDPIABasicType(edt), toDPIABasicType(dt), e.toPhrase[DPIA.Types.ExpType])
       case _ => throw new Exception("")
     }
   }
@@ -31,5 +31,16 @@ final case class Cast(dt: BasicType, e: Expr[BasicType], override val t: Option[
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): DataExpr = {
     Cast(fun(dt), VisitAndRebuild(e, fun), t.map(fun(_)))
+  }
+
+  private def toDPIABasicType(bt: DataType): DPIA.Types.BasicType = {
+    bt match {
+      case SurfaceLanguage.Types.IndexType(n) => DPIA.Types.IndexType(n)
+      case SurfaceLanguage.Types.bool => DPIA.Types.bool
+      case SurfaceLanguage.Types.int => DPIA.Types.int
+      case SurfaceLanguage.Types.float => DPIA.Types.float
+      case SurfaceLanguage.Types.double => DPIA.Types.double
+      case dt => throw new Exception(s"Expected BasicType but found $dt")
+    }
   }
 }

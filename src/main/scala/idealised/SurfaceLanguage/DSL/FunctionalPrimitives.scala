@@ -13,7 +13,7 @@ object generate {
 }
 
 object cast {
-  def apply(dt: BasicType, e: Expr[BasicType]): Cast = Cast(dt, e)
+  def apply(dt: BasicType, e: DataExpr): Cast = Cast(dt, e)
 }
 
 object depMapSeq {

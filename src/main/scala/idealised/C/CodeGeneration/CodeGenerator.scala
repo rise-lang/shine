@@ -239,7 +239,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                 cont(CCodeGen.codeGenBinaryOp(op, e1, e2))))
           case _ => error(s"Expected path to be empty")
         }
-        case _ => error(s"Expected scalar types")
+        case x => error(s"Expected scalar types")
       }
 
       case Cast(_, dt, e) => path match {
@@ -761,6 +761,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
               deparrt.size :: extractDimensionSizesFromArrayType(et)
             case _ => deparrt.size :: Nil
           }
+        case _ => ???
       }
     }
 
