@@ -242,10 +242,24 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error(s"Expected scalar types")
       }
 
+      case Cast(_, dt, e) => path match {
+        case Nil =>
+          exp(e, env, Nil, e =>
+            cont(C.AST.Cast(typ(dt), e)))
+      }
+
+      case Generate(n, _, natl@NatDependentLambda(_, _)) => path match {
+        case (i : CIntExpr) :: ps =>
+          val evaledNatLam = Lifting.liftNatDependentFunction(natl)(n)
+          val evaledLam = Lifting.liftFunction(evaledNatLam)(Literal(IndexData(i, IndexType(n))))
+          exp(evaledLam, env, ps, cont)
+      }
+
       case Split(n, _, _, e) => path match {
         case (i : CIntExpr) :: (j : CIntExpr) :: ps => exp(e, env, CIntExpr(i * n + j) :: ps, cont)
         case _ => error(s"Expected two C-Integer-Expressions on the path.")
       }
+
       case Join(n, _, _, e) => path match {
         case (i : CIntExpr) :: ps => exp(e, env, CIntExpr(i / n) :: CIntExpr(i % n) :: ps, cont)
         case _ => error(s"Expected two C-Integer-Expressions on the path.")

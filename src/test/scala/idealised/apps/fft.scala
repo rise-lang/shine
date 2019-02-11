@@ -6,6 +6,21 @@ import idealised.OpenMP.SurfaceLanguage.DSL._
 import idealised.util.SyntaxChecker
 
 class fft extends idealised.util.Tests {
+  test("One dimensional generator generates syntactically correct code.") {
+    val N = 8
+
+    val add = fun(x => x._1 + x._2)
+    val simpleMap = fun(ArrayType(N, float))(in =>
+      zip(in, generate(N, dFun(n => fun(IndexType(N))(i => cast(float, i))))) :>> mapSeq(add)
+    )
+
+    val phrase = TypeInference(simpleMap, Map()).convertToPhrase
+    val program = idealised.C.ProgramGenerator.makeCode(phrase)
+    println(program.code)
+
+    SyntaxChecker(program.code)
+  }
+
   test("Correct FFT code can be generated.") {
     val N = 8
     val LPrevIter = 1
@@ -27,16 +42,16 @@ class fft extends idealised.util.Tests {
 
     val fftiter =
       fun(reorderedBT)(reorderedB =>
-      fun(ArrayType(N, TupleType(float, float)))(x =>
-        join() o transpose() o map(join() o transpose()) o
-          split(LPrevIter) o
-          join() o mapPar(mapSeq(fun(yChunkWithBrow => {
+        fun(ArrayType(N, TupleType(float, float)))(x =>
+          join() o transpose() o map(join() o transpose()) o
+            split(LPrevIter) o
+              join() o mapPar(mapSeq(fun(yChunkWithBrow => {
 
-            val yChunk = yChunkWithBrow._1
-            val Brow = yChunkWithBrow._2
-            mapSeq(fun(Bchunk => reduceSeq(cmultandsum, tuple(0.0f, 0.0f)) $ zip(yChunk, Bchunk)
+                val yChunk = yChunkWithBrow._1
+                val Brow = yChunkWithBrow._2
+                mapSeq(fun(Bchunk => reduceSeq(cmultandsum, tuple(0.0f, 0.0f)) $ zip(yChunk, Bchunk)
 
-            )) $ Brow
+                )) $ Brow
 
         }))) o map(fun(yChunkRow => zip(yChunkRow, reorderedB))) o map(transpose() o split(LPrevIter)) o createY $ x)
     )
@@ -45,9 +60,6 @@ class fft extends idealised.util.Tests {
     val kernel = idealised.OpenMP.ProgramGenerator.makeCode(phrase)
     println(kernel.code)
 
-    SyntaxChecker(
-      //TODO remove from test
-      //s"struct float_float { float _fst; float _snd; };" +
-      kernel.code)
+    SyntaxChecker(kernel.code)
   }
 }

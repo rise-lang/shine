@@ -8,6 +8,14 @@ import lift.arithmetic.NamedVar
 
 import scala.language.implicitConversions
 
+object generate {
+  def apply(n: Nat, f: Expr[`(nat)->`[DataType -> DataType]]): Generate = Generate(n, f)
+}
+
+object cast {
+  def apply(dt: BasicType, e: Expr[BasicType]): Cast = Cast(dt, e)
+}
+
 object depMapSeq {
   def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] = fun(x => depMapSeq(f, x))
 
