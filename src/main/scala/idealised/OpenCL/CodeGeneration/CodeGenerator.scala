@@ -5,13 +5,14 @@ import idealised.C.CodeGeneration.{CodeGenerator => CCodeGenerator}
 import idealised.C.CodeGeneration.CodeGenerator.CIntExpr
 import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives.{AsScalar, AsVector}
-import idealised.DPIA.ImperativePrimitives.{AsScalarAcc, AsVectorAcc, Assign}
+import idealised.DPIA.ImperativePrimitives.{AsScalarAcc, AsVectorAcc, Assign, New}
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics.VectorData
 import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType, PhraseType, VectorType}
-import idealised.DPIA.{Nat, NatIdentifier, Phrases, error}
-import idealised.OpenCL.ImperativePrimitives.{OpenCLParFor, OpenCLParForNat}
+import idealised.DPIA.{Nat, NatIdentifier, Phrases, VarType, error}
+import idealised.OpenCL.AddressSpace
+import idealised.OpenCL.ImperativePrimitives.{OpenCLNew, OpenCLParFor, OpenCLParForNat}
 import idealised._
 import lift.arithmetic
 import lift.arithmetic._
@@ -55,6 +56,10 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
         case _ => super.cmd(phrase, env)
       }
+
+      case OpenCLNew(dt, addrSpace, Lambda(v, p)) => OpenCLCodeGen.codeGenOpenCLNew(dt, addrSpace, v, p, env)
+
+      case _: New => throw new Exception("New without address space found in OpenCL program.")
 
       case _ => super.cmd(phrase, env)
     }
@@ -145,6 +150,23 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
   }
 
   protected object OpenCLCodeGen {
+    def codeGenOpenCLNew(dt: DataType,
+     //TODO generate addressSpace
+                   addressSpace: AddressSpace,
+                   v: Identifier[VarType],
+                   p: Phrase[CommandType],
+                   env: Environment): Stmt = {
+      val ve = Identifier(s"${v.name}_e", v.t.t1)
+      val va = Identifier(s"${v.name}_a", v.t.t2)
+      val vC = C.AST.DeclRef(v.name)
+
+      C.AST.Block(immutable.Seq(
+        C.AST.DeclStmt(C.AST.VarDecl(vC.name, typ(dt))),
+        cmd(Phrase.substitute(Pair(ve, va), `for` = v, `in` = p),
+          env updatedIdentEnv (ve -> vC)
+            updatedIdentEnv (va -> vC))))
+    }
+
     def codeGenOpenCLParFor(f: OpenCLParFor,
                             n: Nat,
                             dt: DataType,

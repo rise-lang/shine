@@ -36,7 +36,7 @@ abstract class AbstractDepMap(n: Nat,
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    `new`(dt"[${DepArrayType(n, makeDt2)}]", idealised.OpenCL.GlobalMemory, λ(exp"[${DepArrayType(n, makeDt2)}]" x acc"[${DepArrayType(n, makeDt2)}]")(tmp =>
+    `new`(dt"[${DepArrayType(n, makeDt2)}]", λ(exp"[${DepArrayType(n, makeDt2)}]" x acc"[${DepArrayType(n, makeDt2)}]")(tmp =>
       acc(this)(tmp.wr) `;` C(tmp.rd) ))
   }
 

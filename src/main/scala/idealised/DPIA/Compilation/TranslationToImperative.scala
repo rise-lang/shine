@@ -1,6 +1,7 @@
 package idealised.DPIA.Compilation
 
 import idealised.DPIA.DSL._
+import idealised.DPIA.FunctionalPrimitives.AbstractMap
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types._
 import idealised.DPIA._

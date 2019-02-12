@@ -52,7 +52,7 @@ final case class MapVec(n: Nat,
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    `new`(dt"[${VectorType(n, dt2)}]", idealised.OpenCL.GlobalMemory,
+    `new`(dt"[${VectorType(n, dt2)}]",
       λ(exp"[${VectorType(n, dt2)}]" x acc"[${VectorType(n, dt2)}]")(tmp =>
         acc(this)(tmp.wr) `;`
           C(tmp.rd) )

@@ -101,7 +101,7 @@ class asum extends idealised.util.Tests {
           asVector(4) >>>
             split(8192) >>>
             mapLocal(
-              reduceSeq(fun(x => fun(a => abs(float4)(x) + a) ), vectorize(4, 0.0f))
+              clReduceSeq(fun(x => fun(a => abs(float4)(x) + a) ), vectorize(4, 0.0f), OpenCL.PrivateMemory)
             ) >>> asScalar
         ) :>> join
     )
@@ -119,7 +119,7 @@ class asum extends idealised.util.Tests {
         split(2048) :>>
         mapWorkgroup(
           split(2048) >>>
-            mapLocal(reduceSeq(add, 0.0f))
+            mapLocal(clReduceSeq(add, 0.0f, OpenCL.PrivateMemory))
         ) :>> join
     )
     val phrase = TypeInference(intelDerived2, Map()).convertToPhrase
@@ -138,7 +138,7 @@ class asum extends idealised.util.Tests {
           gather(reorderWithStridePhrase(128)) >>>
             split(2048) >>>
             mapLocal(
-              reduceSeq(fun(x => fun(a => abs(float)(x) + a)), 0.0f)
+              clReduceSeq(fun(x => fun(a => abs(float)(x) + a)), 0.0f, OpenCL.PrivateMemory)
             )
         ) :>> join
     )
@@ -180,7 +180,7 @@ class asum extends idealised.util.Tests {
           gather(reorderWithStridePhrase(64)) >>>
             split(2048) >>>
             mapLocal(
-              reduceSeq(fun(x => fun(a => abs(float2)(x) + a)), vectorize(2, 0.0f))
+              clReduceSeq(fun(x => fun(a => abs(float2)(x) + a)), vectorize(2, 0.0f), OpenCL.PrivateMemory)
             ) >>> asScalar
         ) :>> join
     )

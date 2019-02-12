@@ -3,7 +3,7 @@ import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases.Phrase
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised.OpenCL.ImperativePrimitives.ParForNatGlobal
+import idealised.OpenCL.ImperativePrimitives.{OpenCLNew, ParForNatGlobal}
 import lift.arithmetic.RangeAdd
 package object DSL {
   object parForNatGlobal {
@@ -11,5 +11,17 @@ package object DSL {
       def makeDt(x:Nat) = DataType.substitute(x, `for`=i, `in`=dt)
       ParForNatGlobal(dim)(n, i,  dt, out, _Λ_(idx => λ(acc"[${makeDt(idx)}]")(o => f(idx)(o)), RangeAdd(0, n, 1)))
     }
+  }
+
+  object `new` {
+    def apply(dt: DataType,
+              addressSpace: AddressSpace,
+              f: Phrase[VarType -> CommandType]): OpenCLNew =
+      OpenCLNew(dt, addressSpace, f)
+
+    def apply(dt: DataType,
+              addressSpace: AddressSpace,
+              f: Phrase[VarType] => Phrase[CommandType]): OpenCLNew =
+      OpenCLNew(dt, addressSpace, λ(exp"[$dt]" x acc"[$dt]")(v => f(v) ))
   }
 }

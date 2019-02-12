@@ -57,7 +57,7 @@ final case class MapSeqSlide(n: Nat,
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    `new`(dt"[$n.$dt2]", GlobalMemory, fun(exp"[$n.$dt2]" x acc"[$n.$dt2]")(tmp =>
+    `new`(dt"[$n.$dt2]", fun(exp"[$n.$dt2]" x acc"[$n.$dt2]")(tmp =>
       acc(this)(tmp.wr) `;` C(tmp.rd)
     ))
   }
