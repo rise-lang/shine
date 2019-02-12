@@ -18,5 +18,6 @@ pipelines:
           - ln -s /usr/bin/clang++-8 /usr/bin/g++
           - apt-add-repository non-free
           - apt-get update && apt-get install -y amd-opencl-dev
+          - (cd lib/lift; ./buildEXECUTOR.sh)
           - sbt test
 
