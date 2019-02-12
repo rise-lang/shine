@@ -130,7 +130,7 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
 
   }
 
-  test("Basic parallel triangle vector multiplication compiles to syntactically correct OpenCL") {
+  ignore ("Basic parallel triangle vector multiplication compiles to syntactically correct OpenCL") {
     val inputSize = 4096
     val results = for(
       localSize <- Seq(4, 8, 16, 32, 64, 128, 256, 512)
@@ -176,7 +176,7 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
     )
   }
 
-  test("Parallel OpenCL triangle vector partial multiplication (padding the row up to vector) (PLDI '19 submission listing 5)") {
+  ignore ("Parallel OpenCL triangle vector partial multiplication (padding the row up to vector) (PLDI '19 submission listing 5)") {
     val inputSize = 4096
     println(Executor.getPlatformName)
     println(Executor.getDeviceName)
