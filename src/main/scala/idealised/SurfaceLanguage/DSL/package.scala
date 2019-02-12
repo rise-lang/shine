@@ -74,8 +74,13 @@ package object DSL {
     dFun(_ => p)
 
   implicit class IdentExpPhraseExtensions(i: IdentifierExpr) {
-    def asNatIdentifier = NamedVar(i.name)
-    def asNatIdentifier(withUpperBound: Nat) = NamedVar(i.name, ContinuousRange(0, withUpperBound))
+    def asNatIdentifier: Nat = NamedVar(i.name)
+    def asNatIdentifier(withUpperBound: Nat): Nat = NamedVar(i.name, ContinuousRange(0, withUpperBound))
+  }
+
+  def toNatIdentifier(i: IdentifierExpr): NamedVar = i.t match {
+    case Some(IndexType(n)) => NamedVar(i.name, ContinuousRange(0, n))
+    case _ => throw new Exception(s"Couldn't convert identifier ${i.name} with type ${i.t} to Nat.")
   }
 
   implicit class NatExtensions(n: Nat) {
