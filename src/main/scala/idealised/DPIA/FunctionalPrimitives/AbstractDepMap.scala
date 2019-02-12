@@ -3,7 +3,6 @@ package idealised.DPIA.FunctionalPrimitives
 
 import idealised.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import idealised.DPIA.DSL._
-import idealised.DPIA.IntermediatePrimitives.AbstractDepMapI
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
@@ -44,8 +43,13 @@ abstract class AbstractDepMap(n: Nat,
 
   def makeMap: (Nat, NatIdentifier, DataType, NatIdentifier, DataType, Phrase[`(nat)->`[ExpType -> ExpType]], Phrase[ExpType]) => AbstractDepMap
 
-  def makeMapI: (Nat, NatIdentifier, DataType, NatIdentifier, DataType, Phrase[`(nat)->`[ExpType -> (AccType -> CommandType)]], Phrase[ExpType], Phrase[AccType]) => AbstractDepMapI
-
+  def makeMapI(n: Nat,
+               i1: NatIdentifier, dt1: DataType,
+               i2: NatIdentifier, dt2: DataType,
+               f: Phrase[`(nat)->`[ExpType -> (AccType -> CommandType)]],
+               array: Phrase[ExpType],
+               out: Phrase[AccType])
+              (implicit context: TranslationContext): Phrase[CommandType]
 
   override val `type`: ExpType = {
     val k = f.t.x

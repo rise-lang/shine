@@ -1,0 +1,18 @@
+# This is a sample build configuration for Scala.
+# Check our guides at https://confluence.atlassian.com/x/5Q4SMw for more examples.
+# Only use spaces to indent your .yml configuration.
+# -----
+# You can specify a custom docker image from Docker Hub as your build environment.
+image: bitbucketpipelines/scala-sbt:scala-2.12
+
+pipelines:
+  default:
+    - step:
+        script:
+          - git submodule update --init
+          - echo "deb http://apt.llvm.org/jessie/ llvm-toolchain-jessie-8 main" >> /etc/apt/sources.list
+          - echo "deb-src http://apt.llvm.org/jessie/ llvm-toolchain-jessie-8 main" >> /etc/apt/sources.list
+          - wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key| apt-key add -
+          - apt-get update && apt-get install -y clang-8
+          - ln -s /usr/bin/clang-8 /usr/bin/clang
+          - sbt test

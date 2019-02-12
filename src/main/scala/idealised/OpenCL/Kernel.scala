@@ -28,7 +28,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
   //
   // A type annotation `F` has to be provided which specifies the type of the Scala function.
   // The following syntax is used for this (which implementation can be found in
-  // OpenCL/package.scala):
+  // OpenCL/Types.scala):
   //
   // <kernel>.as[ScalaFunction `(` <Arg1Type> `,` <Arg2Type> `,` <...> `)=>` <ReturnType> ]
   //

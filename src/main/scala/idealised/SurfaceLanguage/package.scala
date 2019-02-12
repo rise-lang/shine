@@ -4,12 +4,6 @@ import idealised.SurfaceLanguage.Types._
 import lift.arithmetic.{ArithExpr, NamedVar}
 
 package object SurfaceLanguage {
-
-  // reverse function application in the style of F#
-  implicit class Pipe[A](val a: A) extends AnyVal {
-    def |>[B](f: A => B): B = f(a)
-  }
-
   object newName {
     var counter = 0
 

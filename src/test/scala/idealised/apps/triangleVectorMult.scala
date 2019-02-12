@@ -181,12 +181,17 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
     println(Executor.getPlatformName)
     println(Executor.getDeviceName)
 
-    val results = for(localSize <- Seq(4, 8, 16, 32, 64, 128, 256, 512);
-      splitSize <- Seq(4, 8, 16, 32, 64, 128, 256, 512)
+    val results = for (localSize <- Seq(4, 8, 16, 32, 64, 128, 256, 512);
+                       splitSize <- Seq(4, 8, 16, 32, 64, 128, 256, 512)
     ) yield {
       triangleMatrixPadSplit(inputSize, splitSize, localSize, inputSize)
     }
 
     results.sortBy(_.runtime).foreach(_.printout())
+  }
+
+  test("Parallel triangle vector multiplication with global threads compiles to syntactically correct OpenCL") {
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(triangleVectorMultGlobal, Map()).toPhrase, ?, ?)
+    SyntaxChecker.checkOpenCL(kernel.code)
   }
 }

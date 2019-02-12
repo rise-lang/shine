@@ -22,9 +22,14 @@ abstract class AbstractReduce(n: Nat,
   def makeReduce: (Nat, DataType, DataType,
     Phrase[ExpType -> (ExpType -> ExpType)], Phrase[ExpType], Phrase[ExpType]) => AbstractReduce
 
-  def makeReduceI: (Nat, DataType, DataType,
-    Phrase[ExpType -> (ExpType -> (AccType -> CommandType))],
-    Phrase[ExpType], Phrase[ExpType], Phrase[ExpType -> CommandType]) => CommandPrimitive with Intermediate[CommandType]
+  def makeReduceI(n: Nat,
+                  dt1: DataType,
+                  dt2: DataType,
+                  f: Phrase[ExpType -> (ExpType -> (AccType -> CommandType))],
+                  init: Phrase[ExpType],
+                  array: Phrase[ExpType],
+                  out: Phrase[ExpType -> CommandType])
+                 (implicit context: TranslationContext): Phrase[CommandType]
 
   override val `type`: ExpType =
     (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
@@ -68,7 +73,7 @@ abstract class AbstractReduce(n: Nat,
     con(array)(λ(exp"[$n.$dt1]")(X =>
       con(init)(λ(exp"[$dt2]")(Y =>
         makeReduceI(n, dt1, dt2,
-          λ(exp"[$dt1]")(x => λ(exp"[$dt2]")(y => λ(acc"[$dt2]")(o => acc( f(x)(y) )( o )))),
+          λ(exp"[$dt1]")(x => λ(exp"[$dt2]")(y => λ(acc"[$dt2]")(o => acc( f(x)(y) )( o ) ))),
           Y, X, C)))))
   }
 

@@ -1,23 +1,18 @@
 package idealised.OpenCL.CodeGeneration
 
 import idealised.C.AST.{ArraySubscript, BasicType, Decl}
+import idealised.C.CodeGeneration.CodeGenerator.CIntExpr
 import idealised.C.CodeGeneration.{CodeGenerator => CCodeGenerator}
-import idealised.DPIA.DSL._
-import idealised.DPIA.FunctionalPrimitives.{AsScalar, AsVector}
-import idealised.DPIA.ImperativePrimitives.{AsScalarAcc, AsVectorAcc, ForNat}
-import idealised.DPIA.Phrases.{Identifier, Lambda, NatDependentLambda, Phrase}
-import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType, PhraseType}
-import idealised.DPIA.{Nat, NatIdentifier, freshName}
-import idealised.OpenCL.ImperativePrimitives.{OpenCLParFor, OpenCLParForNat}
-import idealised.DPIA.ImperativePrimitives.{AsScalarAcc, AsVectorAcc, Assign, ForNat}
+import idealised.DPIA.FunctionalPrimitives._
+import idealised.DPIA.ImperativePrimitives._
 import idealised.DPIA.Phrases._
+import idealised.DPIA.DSL._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics.VectorData
-import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType, PhraseType, VectorType}
-import idealised.DPIA.{Nat, NatIdentifier, Phrases, error, freshName}
-import idealised.OpenCL.ImperativePrimitives.OpenCLParFor
-import idealised.OpenMP.ImperativePrimitives.ParForNat
-import idealised.{C, OpenCL}
+import idealised.DPIA.Types._
+import idealised.DPIA._
+import idealised.OpenCL.ImperativePrimitives._
+import idealised._
 import lift.arithmetic
 import lift.arithmetic._
 
@@ -40,37 +35,23 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
   override def cmd(phrase: Phrase[CommandType], env: Environment): Stmt = {
     phrase match {
-      case f@OpenCLParFor(n, dt, a, Lambda(i, Lambda(o, p))) => OpenCLCodeGen.codeGenOpenCLParFor(f, n, dt, a, i, o, p, env)
+      case f@OpenCLParFor(n, dt, a, Lambda(i, Lambda(o, p))) =>
+        OpenCLCodeGen.codeGenOpenCLParFor(f, n, dt, a, i, o, p, env)
 
-      case f@OpenCLParForNat(n, dt_i, dt, a, NatDependentLambda(idx, Lambda(o, p))) =>
-        OpenCLCodeGen.codeGenOpenCLParForNat(f, n, dt_i, dt, a, idx, o, p, env)
-
-      case ParForNat(n, i, _, out, body) =>
-        val newBody = body(i)(out `@d` i)
-
-        //In new body, all body.t.x variables (the nat identifier) need to be substituted with i
-        val newIdentEnv = env.identEnv.map {
-          case (Identifier(name, AccType(dt)), declRef) =>
-            (Identifier(name, AccType(DataType.substitute(i, `for` = body.t.x, in = dt))), declRef)
-          case (Identifier(name, ExpType(dt)), declRef) =>
-            (Identifier(name, ExpType(DataType.substitute(i, `for` = body.t.x, in = dt))), declRef)
-          case x => x
-        }
-
-        OpenCLCodeGen.codeGenForNat(n, i, newBody, env.copy(identEnv = newIdentEnv))
-
-      case ForNat(n, NatDependentLambda(i, p)) => OpenCLCodeGen.codeGenForNat(n, i, p, env)
+      case f@OpenCLParForNat(n, _, _, a, NatDependentLambda(i, Lambda(o, p))) =>
+        OpenCLCodeGen.codeGenOpenCLParForNat(f, n, a, i, o, p, env)
 
       case Assign(dt, a, e) => dt match {
         case VectorType(_, _) =>
           //noinspection VariablePatternShadow
           exp(e, env, Nil, e =>
             acc(a, env, Nil, {
-              case C.AST.FunCall(C.AST.DeclRef(name), Seq(idx, v))
+              case C.AST.FunCall(C.AST.DeclRef(name), immutable.Seq(idx, v))
                 if name.startsWith("vstore") =>
-                C.AST.FunCall(C.AST.DeclRef(name), Seq(e, idx, v))
+                  C.AST.FunCall(C.AST.DeclRef(name), immutable.Seq(e, idx, v))
               case a => C.AST.Assignment(a, e)
             }))
+
         case _ => super.cmd(phrase, env)
       }
 
@@ -84,21 +65,21 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
                    cont: Expr => Stmt): Stmt = {
     phrase match {
       case AsVectorAcc(n, _, _, a) => path match {
-        case i :: ps => acc(a, env, (i / n) :: ps, cont)
-        case _ => error(s"Expected path to be not empty")
+        case (i : CIntExpr) :: ps =>     acc(a, env, CIntExpr(i / n) :: ps, cont)
+        case _ =>           error(s"Expected path to be not empty")
       }
       case AsScalarAcc(_, m, dt, a) => path match {
-        case i :: j :: ps =>
-          acc(a, env, (i * m) + j :: ps, cont)
+        case (i : CIntExpr) :: (j : CIntExpr) :: ps =>
+          acc(a, env, CIntExpr((i * m) + j) :: ps, cont)
 
-        case i :: Nil =>
+        case (i : CIntExpr) :: Nil =>
 
-          acc(a, env, (i * m) :: Nil, {
+          acc(a, env, CIntExpr(i * m) :: Nil, {
             case ArraySubscript(v, idx) =>
               // the continuation has to add the value ...
-              cont(C.AST.FunCall(C.AST.DeclRef(s"vstore$m"), Seq(idx, v)))
+              cont( C.AST.FunCall(C.AST.DeclRef(s"vstore$m"), immutable.Seq(idx, v)) )
           })
-        case _ => error(s"Expected path to be not empty")
+        case _ =>           error(s"Expected path to be not empty")
       }
 
       case _ => super.acc(phrase, env, path, cont)
@@ -111,8 +92,8 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
                    cont: Expr => Stmt): Stmt = {
     phrase match {
       case Phrases.Literal(n) => (path, n.dataType) match {
-        case (Nil, _: VectorType) => cont(OpenCLCodeGen.codeGenLiteral(n))
-        case (i :: Nil, _: VectorType) => ???
+        case (Nil, _: VectorType)       => cont( OpenCLCodeGen.codeGenLiteral(n) )
+        case (i :: Nil, _: VectorType)  => ???
         case _ => super.exp(phrase, env, path, cont)
       }
       case UnaryOp(op, e) => phrase.t.dataType match {
@@ -124,38 +105,31 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         case _ => super.exp(phrase, env, path, cont)
       }
       case BinOp(op, e1, e2) => phrase.t.dataType match {
-        case _: VectorType => path match {
-          case Nil =>
-            exp(e1, env, Nil, e1 =>
-              exp(e2, env, Nil, e2 =>
-                cont(CCodeGen.codeGenBinaryOp(op, e1, e2))))
-          case i :: ps =>
-            exp(e1, env, i :: ps, e1 =>
-              exp(e2, env, i :: ps, e2 =>
-                cont(CCodeGen.codeGenBinaryOp(op, e1, e2))))
-          case _ => error(s"Expected path to be not empty")
-        }
+        case _: VectorType =>
+          exp(e1, env, path, e1 =>
+            exp(e2, env, path, e2 =>
+              cont(CCodeGen.codeGenBinaryOp(op, e1, e2))
+          ))
         case _ => super.exp(phrase, env, path, cont)
       }
       case AsVector(n, _, _, e) => path match {
-        case i :: j :: ps => exp(e, env, (i * n) + j :: ps, cont)
-        case i :: Nil =>
-          exp(e, env, (i * n) :: Nil, {
+        case (i : CIntExpr) :: (j : CIntExpr) :: ps => exp(e, env, CIntExpr((i * n) + j) :: ps, cont)
+        case (i : CIntExpr) :: Nil =>
+          exp(e, env, CIntExpr(i * n) :: Nil, {
             case ArraySubscript(v, idx) =>
               // TODO: check that idx is the right offset ...
-              cont(C.AST.FunCall(C.AST.DeclRef(s"vload$n"), Seq(idx, v)))
+              cont( C.AST.FunCall(C.AST.DeclRef(s"vload$n"), immutable.Seq(idx, v)) )
           })
         case Nil => error(s"Expected path to have two elements")
       }
       case AsScalar(_, m, _, e) => path match {
-        case i :: ps => exp(e, env, (i / m) :: ps, cont)
-        case _ => error(s"Expected path to be not empty")
+        case (i : CIntExpr) :: ps =>     exp(e, env, CIntExpr(i / m) :: ps, cont)
+        case _ =>           error(s"Expected path to be not empty")
       }
 
       case _ => super.exp(phrase, env, path, cont)
     }
   }
-
 
   override def typ(dt: DataType): Type = dt match {
     case VectorType(n, elemType) =>
@@ -172,146 +146,85 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
                             o: Phrase[AccType],
                             p: Phrase[CommandType],
                             env: Environment): Stmt = {
-      val i_ = C.AST.DeclRef(f.name)
+      val cI = C.AST.DeclRef(f.name)
       val range = RangeAdd(f.init, n, f.step)
-      val updatedGen = updatedRanges(i_.name, range)
+      val updatedGen = updatedRanges(cI.name, range)
 
-      val n_ = applySubstitutions(n, env.identEnv)
+      applySubstitutions(n, env.identEnv) |> (n => {
+
+      val init = OpenCL.AST.VarDecl(cI.name, C.AST.Type.int, OpenCL.PrivateMemory, init = Some(C.AST.ArithmeticExpr(f.init)))
+      val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
+      val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + f.step))
+
+      Phrase.substitute(a `@` i, `for` = o, `in` = p) |> (p =>
+
+      env.updatedIdentEnv(i -> cI) |> (env =>
 
       range.numVals match {
         // iteration count is 0 => skip body; no code to be emitted
         case Cst(0) => C.AST.Comment("iteration count is 0, no loop emitted")
-
         // iteration count is 1 => no loop
         case Cst(1) =>
           C.AST.Stmts(C.AST.Stmts(
             C.AST.Comment("iteration count is exactly 1, no loop emitted"),
-            C.AST.DeclStmt(C.AST.VarDecl(i_.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0))))),
-            updatedGen.cmd(Phrase.substitute(a `@` i, `for` = o, `in` = p),
-              env updatedIdentEnv (i -> i_)))
-
+            C.AST.DeclStmt(C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0))))),
+            updatedGen.cmd(p, env))
+        // default case
         case _ =>
-          // default case
-          val init = OpenCL.AST.VarDecl(i_.name, C.AST.Type.int, OpenCL.PrivateMemory, init = Some(C.AST.ArithmeticExpr(f.init)))
-          val cond = C.AST.BinaryExpr(i_, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n_))
-          val increment = C.AST.Assignment(i_, C.AST.ArithmeticExpr(NamedVar(i_.name, range) + f.step))
-
           C.AST.Stmts(
             C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
-              C.AST.Block(immutable.Seq(updatedGen.cmd(Phrase.substitute(a `@` i, `for` = o, `in` = p),
-                env updatedIdentEnv (i -> i_))))),
-            f.synchronize
-          )
-      }
+              C.AST.Block(immutable.Seq(updatedGen.cmd(p, env)))),
+            f.synchronize)
+      }))})
     }
 
     def codeGenOpenCLParForNat(f: OpenCLParForNat,
                                n: Nat,
-                               dt_i: NatIdentifier,
-                               dt: DataType,
                                a: Phrase[AccType],
                                i: NatIdentifier,
                                o: Phrase[AccType],
                                p: Phrase[CommandType],
                                env: Environment): Stmt = {
-      val i_ = C.AST.DeclRef(f.name)
+      val cI = C.AST.DeclRef(f.name)
       val range = RangeAdd(f.init, n, f.step)
-      val updatedGen = updatedRanges(i_.name, range)
+      val updatedGen = updatedRanges(cI.name, range)
 
-      val n_ = applySubstitutions(n, env.identEnv)
+      applySubstitutions(n, env.identEnv) |> (n => {
 
-      def substitutionWithIndex(indexAE: Nat): (Phrase[CommandType], Environment) = {
-        val pSub1 = Phrase.substitute(a `@d` indexAE, `for` = o, `in` = p)
-        val pSub2 = PhraseType.substitute(NamedVar(i_.name, range), `for` = i, in = pSub1)
+        val init = OpenCL.AST.VarDecl(cI.name, C.AST.Type.int, OpenCL.PrivateMemory, init = Some(C.AST.ArithmeticExpr(f.init)))
+        val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
+        val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + f.step))
 
+        // FIRST we must substitute in the indexing of o in the phrase
+        Phrase.substitute(a `@d` i, `for` = o, `in` = p) |> (p =>
+          // THEN and only THEN we can change the type to use the new index var
+          PhraseType.substitute(NamedVar(cI.name, range), `for` = i, in = p) |> (p =>
 
-        val newIdentEnv = env.identEnv.map {
-          case (Identifier(name, AccType(t)), declRef) =>
-            (Identifier(name, AccType(DataType.substitute(NamedVar(i_.name, range), `for` = i, in = t))), declRef)
-          case (Identifier(name, ExpType(t)), declRef) =>
-            (Identifier(name, ExpType(DataType.substitute(NamedVar(i_.name, range), `for` = i, in = t))), declRef)
-          case x => x
-        }
+            env.copy(identEnv = env.identEnv.map {
+              case (Identifier(name, AccType(dt)), declRef) =>
+                (Identifier(name, AccType(DataType.substitute(NamedVar(cI.name, range), `for` = i, in = dt))), declRef)
+              case (Identifier(name, ExpType(dt)), declRef) =>
+                (Identifier(name, ExpType(DataType.substitute(NamedVar(cI.name, range), `for` = i, in = dt))), declRef)
+              case x => x
+            }) |> (env =>
 
-        (pSub2, env.copy(identEnv = newIdentEnv))
-      }
-
-      range.numVals match {
-        // iteration count is 0 => skip body; no code to be emitted
-        case Cst(0) => C.AST.Comment("iteration count is 0, no loop emitted")
-
-        // iteration count is 1 => no loop
-        case Cst(1) =>
-          val (pSub, newEnv) = substitutionWithIndex(Cst(1))
-          C.AST.Stmts(C.AST.Stmts(
-            C.AST.Comment("iteration count is exactly 1, no loop emitted"),
-            C.AST.DeclStmt(C.AST.VarDecl(i_.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0))))),
-            updatedGen.cmd(pSub, newEnv))
-
-        case _ =>
-          val (pSub, newEnv) = substitutionWithIndex(i)
-          // default case
-          val init = OpenCL.AST.VarDecl(i_.name, C.AST.Type.int, OpenCL.PrivateMemory, init = Some(C.AST.ArithmeticExpr(f.init)))
-          val cond = C.AST.BinaryExpr(i_, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n_))
-          val increment = C.AST.Assignment(i_, C.AST.ArithmeticExpr(NamedVar(i_.name, range) + f.step))
-
-          C.AST.Stmts(
-            C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
-              C.AST.Block(immutable.Seq(updatedGen.cmd(pSub, newEnv)))),
-            f.synchronize
-          )
-      }
-    }
-
-    def codeGenForNat(n: Nat,
-                      i: NatIdentifier,
-                      p: Phrase[CommandType],
-                      env: Environment): Stmt = {
-      val i_ = C.AST.DeclRef(freshName("i_"))
-      val range = RangeAdd(0, n, 1)
-      val updatedGen = updatedRanges(i_.name, range)
-
-      val n_ = applySubstitutions(n, env.identEnv)
-
-      def substitutionWithIndex(indexAE: Nat): (Phrase[CommandType], Environment) = {
-        val pSub = PhraseType.substitute(NamedVar(i_.name, range), `for` = i, in = p)
-
-
-        val newIdentEnv = env.identEnv.map {
-          case (Identifier(name, AccType(t)), declRef) =>
-            (Identifier(name, AccType(DataType.substitute(NamedVar(i_.name, range), `for` = i, in = t))), declRef)
-          case (Identifier(name, ExpType(t)), declRef) =>
-            (Identifier(name, ExpType(DataType.substitute(NamedVar(i_.name, range), `for` = i, in = t))), declRef)
-          case x => x
-        }
-
-        (pSub, env.copy(identEnv = newIdentEnv))
-      }
-
-
-      range.numVals match {
-        // iteration count is 0 => skip body; no code to be emitted
-        case Cst(0) => C.AST.Comment("iteration count is 0, no loop emitted")
-
-        // iteration count is 1 => no loop
-        case Cst(1) =>
-          val (pSub, newEnv) = substitutionWithIndex(1)
-          C.AST.Stmts(C.AST.Stmts(
-            C.AST.Comment("iteration count is exactly 1, no loop emitted"),
-            C.AST.DeclStmt(C.AST.VarDecl(i_.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0))))),
-            updatedGen.cmd(pSub, newEnv))
-
-        case _ =>
-          // default case
-          val init = C.AST.VarDecl(i_.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0)))
-          val cond = C.AST.BinaryExpr(i_, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n_))
-          val increment = C.AST.Assignment(i_, C.AST.ArithmeticExpr(NamedVar(i_.name, range) + 1))
-
-          val (pSub, newEnv) = substitutionWithIndex(i)
-
-          C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
-            C.AST.Block(immutable.Seq(updatedGen.cmd(pSub, newEnv))))
-      }
+              range.numVals match {
+                // iteration count is 0 => skip body; no code to be emitted
+                case Cst(0) => C.AST.Comment("iteration count is 0, no loop emitted")
+                  // TODO: substitute a `@d` Cst(0) earlier ...
+//                // iteration count is 1 => no loop
+//                case Cst(1) =>
+//                  C.AST.Stmts(C.AST.Stmts(
+//                    C.AST.Comment("iteration count is exactly 1, no loop emitted"),
+//                    C.AST.DeclStmt(C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0))))),
+//                    updatedGen.cmd(p, env))
+                // default case
+                case _ =>
+                  C.AST.Stmts(
+                    C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
+                      C.AST.Block(immutable.Seq(updatedGen.cmd(p, env)))),
+                    f.synchronize)
+              })))})
     }
 
     def codeGenLiteral(d: OperationalSemantics.Data): Expr = {
