@@ -6,6 +6,9 @@ scalaVersion := "2.11.12"
 
 scalacOptions ++= Seq("-Xmax-classfile-name", "100", "-unchecked", "-deprecation", "-feature")
 
+fork := true
+javaOptions += "-Djava.library.path=lib/lift/lib/Executor/build"
+
 resolvers ++= Seq(
   Resolver.sonatypeRepo("releases"),
   Resolver.sonatypeRepo("snapshots")
