@@ -47,53 +47,27 @@ case class Kernel(decls: Seq[C.AST.Decl],
   def as[F <: FunctionHelper](implicit ev: F#T <:< HList): F#T => (F#R, TimeSpan[Time.ms]) = {
     hArgs: F#T => {
       val args: List[Any] = hArgs.toList
-      /*** I can't seem to handle this, even following the instructions!
-        * so instead, I make a "run weakly typed" by ripping out the internals
-        * of this function, an using as and the type-magic just as the outside shell **/
-      executeWeaklyTyped[F#R](args)
-      /*
-    val lengthMapping = createLengthMap(inputParams, args)
 
-    val (outputArg, inputArgs) = createKernelArgs(args, lengthMapping)
-    val kernelArgs = (outputArg +: inputArgs).toArray
+      val lengthMapping = createLengthMap(inputParams, args)
 
-    val kernelJNI = opencl.executor.Kernel.create(code, kernel.name, "")
+      val (outputArg, inputArgs) = createKernelArgs(args, lengthMapping)
+      val kernelArgs = (outputArg +: inputArgs).toArray
 
-    val runtime = Executor.execute(kernelJNI,
-      ArithExpr.substitute(localSize, lengthMapping).eval, 1, 1,
-      ArithExpr.substitute(globalSize, lengthMapping).eval, 1, 1,
-      kernelArgs)
+      val c = code
+      val kernelJNI = opencl.executor.Kernel.create(c, kernel.name, "")
 
-    val output = castToOutputType[F#R](outputParam.`type`.dataType, outputArg)
+      val runtime = Executor.execute(kernelJNI,
+        ArithExpr.substitute(localSize, lengthMapping).eval, 1, 1,
+        ArithExpr.substitute(globalSize, lengthMapping).eval, 1, 1,
+        kernelArgs)
 
-    kernelArgs.foreach(_.dispose)
-    kernelJNI.dispose()
+      val output = castToOutputType[F#R](outputParam.`type`.dataType, outputArg)
 
+      kernelArgs.foreach(_.dispose)
+      kernelJNI.dispose()
 
-    (output, TimeSpan.inMilliseconds(runtime)) */
+      (output, TimeSpan.inMilliseconds(runtime))
     }
-  }
-
-  def executeWeaklyTyped[OutputType](args:List[Any]) = {
-    val lengthMapping = createLengthMap(inputParams, args)
-
-    val (outputArg, inputArgs) = createKernelArgs(args, lengthMapping)
-    val kernelArgs = (outputArg +: inputArgs).toArray
-
-    val c = code
-    val kernelJNI = opencl.executor.Kernel.create(c, kernel.name, "")
-
-    val runtime = Executor.execute(kernelJNI,
-      ArithExpr.substitute(localSize, lengthMapping).eval, 1, 1,
-      ArithExpr.substitute(globalSize, lengthMapping).eval, 1, 1,
-      kernelArgs)
-
-    val output = castToOutputType[OutputType](outputParam.`type`.dataType, outputArg)
-
-    kernelArgs.foreach(_.dispose)
-    kernelJNI.dispose()
-
-    (output, TimeSpan.inMilliseconds(runtime))
   }
 
   private def createLengthMap(params: Seq[Identifier[ExpType]],
@@ -140,8 +114,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
   }
 
   private def createOutputArg(size: SizeInByte): GlobalArg = {
-    val numBytes = size.value.eval
-    GlobalArg.createOutput(numBytes)
+    GlobalArg.createOutput(size.value.eval)
   }
 
   private def createInputArg(arg: Any): KernelArg = {
@@ -172,8 +145,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
   private def createIntermediateArgs(argsLength: Int, lengthMapping: immutable.Map[Nat, Nat]): Seq[KernelArg] = {
     val intermediateParamDecls = getIntermediateParamDecls(argsLength)
     (intermediateParamDecls, intermediateParams).zipped.map { case (pDecl, param) =>
-      val sizeMax = (sizeInByte(param) `with` lengthMapping).value.max
-      val size = sizeMax.eval
+      val size = (sizeInByte(param) `with` lengthMapping).value.max.eval
       pDecl.addressSpace match {
         case OpenCL.LocalMemory =>
           println(s"intermediate (local): $size bytes")

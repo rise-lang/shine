@@ -24,7 +24,6 @@ final case class Pad(l:Nat, r:Nat, padExpr:DataExpr, array: DataExpr,
       TypeInference(padExpr, subs) |> (padExpr =>
         array.t match {
           case Some(ArrayType(n, dt)) => Pad(l, r, padExpr, array, Some(ArrayType(l + n + r, dt)))
-          //TODO: Check that n < m
           case x => error(expr = s"Pad($array)", found = s"`${x.toString}'", expected = "n.dt")
         })
       )
