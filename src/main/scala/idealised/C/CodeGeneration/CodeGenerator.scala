@@ -178,7 +178,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case MapAcc(n, dt, _, f, a) => path match {
         case (i : CIntExpr) :: ps => acc( f( IdxAcc(n, dt, Phrases.Literal(IndexData(i, IndexType(n))), a) ), env, ps, cont)
-        case Nil => error(s"Expected a C-Integer-Expression on the path.")
+        case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
 
       case IdxAcc(_, _, i, a) => CCodeGen.codeGenIdxAcc(i, a, env, path, cont)
@@ -256,13 +256,13 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case (i: CIntExpr) :: (j: CIntExpr) :: ps =>
           val newIdx = BigSum(0, i, x => part.lenF(x)) + j
           exp(e, env, CIntExpr(newIdx) :: ps, cont)
-        case _ :: Nil | Nil => error(s"Expected path to contain at least two elements")
+        case _ => error(s"Expected path to contain at least two elements")
       }
 
       case DepSplit(n, _, _, _, e) => path match {
         case (i: CIntExpr) :: (j: CIntExpr) :: ps =>
           exp(e, env, CIntExpr(i * n + j) :: ps, cont)
-        case Nil => error(s"Expected path to be not empty")
+        case _ => error(s"Expected path to be not empty")
       }
 
       case Zip(_, _, _, e1, e2) => path match {
@@ -332,7 +332,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             })
           })
 
-        case Nil => error(s"Expected path to be not empty")
+        case _ => error(s"Expected path to be not empty")
       }
 
       case Slide(_, _, s2, _, e) => path match {
