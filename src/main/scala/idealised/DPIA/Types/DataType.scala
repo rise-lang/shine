@@ -172,7 +172,7 @@ object DataType {
     case _: RecordType => dt
     case _: DataTypeIdentifier => dt
     case ArrayType(_, elemType) => getBaseDataType(elemType)
-    case DepArrayType(_, _, _) => ??? // TODO: variable would escape scope
+    case DepArrayType(_, _, elemType) => getBaseDataType(elemType)
   }
 
   implicit class RecordTypeConstructor(dt1: DataType) {

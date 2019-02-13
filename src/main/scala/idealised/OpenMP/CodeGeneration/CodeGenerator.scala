@@ -1,7 +1,7 @@
 package idealised.OpenMP.CodeGeneration
 
 import idealised._
-import idealised.C.AST.{ArraySubscript, Decl}
+import idealised.C.AST.{ArraySubscript, Assignment, Decl}
 import idealised.C.CodeGeneration.{CodeGenerator => CCodeGenerator}
 import idealised.C.CodeGeneration.CodeGenerator.CIntExpr
 import idealised.DPIA.DSL._
@@ -16,6 +16,7 @@ import idealised.OpenMP.ImperativePrimitives.{ParFor, ParForNat}
 import lift.arithmetic
 import lift.arithmetic._
 
+import scala.collection.immutable.VectorBuilder
 import scala.collection.{immutable, mutable}
 
 object CodeGenerator {
@@ -165,15 +166,15 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
             C.AST.DeclStmt(C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0))))),
             updatedGen.cmd(p, env))
         // default case
-        case _ =>
-          C.AST.Stmts(
-            C.AST.Code("#pragma omp parallel for"),
-            C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
-              C.AST.Block(immutable.Seq(updatedGen.cmd(p, env)))))
+        case _ =>C.AST.Stmts(
+        C.AST.Code("#pragma omp parallel for"),
+        C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
+          C.AST.Block(immutable.Seq(updatedGen.cmd( p, env)))))
       }))})
     }
 
     def codeGenParForNat(n: Nat,
+
                          a: Phrase[AccType],
                          i: NatIdentifier,
                          o: Phrase[AccType],
@@ -190,10 +191,10 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
       val increment = idealised.C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + 1))
 
-      // FIRST we must substitute in the indexing of o in the phrase
-      Phrase.substitute(a `@d` i, `for` = o, `in` = p) |> (p =>
-      // THEN and only THEN we can change the type to use the new index var
-      PhraseType.substitute(NamedVar(cI.name, range), `for` = i, in = p) |> (p =>
+      //FIRST we must substitute in the indexing of o in the phrase
+       Phrase.substitute(a `@d` i, `for` = o, `in` = p) |> (p =>
+      //THEN and only THEN we can change the type to use the new index var
+       PhraseType.substitute(NamedVar(cI.name, range), `for` = i, in = p) |> (p =>
 
       env.copy(identEnv = env.identEnv.map {
         case (Identifier(name, AccType(dt)), declRef) =>
@@ -207,19 +208,17 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         // iteration count is 0 => skip body; no code to be emitted
         case Cst(0) => C.AST.Comment("iteration count is 0, no loop emitted")
         // iteration count is 1 => no loop
-        case Cst(1) =>
-          C.AST.Stmts(C.AST.Stmts(
-            C.AST.Comment("iteration count is exactly 1, no loop emitted"),
-            C.AST.DeclStmt(C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0))))),
-            updatedGen.cmd(p, env))
+//        case Cst(1) =>
+//          C.AST.Stmts(C.AST.Stmts(
+//            C.AST.Comment("iteration count is exactly 1, no loop emitted"),
+//            C.AST.DeclStmt(C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0))))),
+//            updatedGen.cmd(p, env))
         // default case
-        case _ =>
-          C.AST.Stmts(
-            C.AST.Code("#pragma omp parallel for"),
-            C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
-              C.AST.Block(immutable.Seq(updatedGen.cmd(p, env)))))
-
-      })))})
+        case _ =>C.AST.Stmts(
+        C.AST.Code("#pragma omp parallel for"),
+        C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
+          C.AST.Block(immutable.Seq(updatedGen.cmd(p, env)))))
+  })))})
     }
 
     def codeGenParForVec(n: Nat,

@@ -298,11 +298,13 @@ class CPrinter extends Printer {
 
   private def printTernaryExpr(t: TernaryExpr): Unit = {
     print("(")
-    printExpr(t.cond)
-    print(") ? (")
-    printExpr(t.thenE)
-    print(") : (")
-    printExpr(t.elseE)
+      print("(")
+        printExpr(t.cond)
+      print(") ? (")
+        printExpr(t.thenE)
+      print(") : (")
+        printExpr(t.elseE)
+      print(")")
     print(")")
   }
 
@@ -347,6 +349,8 @@ class CPrinter extends Printer {
       case i: lift.arithmetic.IfThenElse =>
         s"( (${toString(i.test.lhs)} ${i.test.op} ${toString(i.test.rhs)}) ? " +
           s"${toString(i.t)} : ${toString(i.e)} )"
+//      case aeFun:ArithExprFunction => aeFun.name
+//      case bs:BigSum => bs.toString
       case otherwise => throw new Exception(s"Don't know how to print $otherwise")
     }
   }

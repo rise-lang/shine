@@ -1,17 +1,17 @@
 package idealised.OpenCL.CodeGeneration
 
 import idealised.C.AST.{ArraySubscript, BasicType, Decl}
-import idealised.C.CodeGeneration.{CodeGenerator => CCodeGenerator}
 import idealised.C.CodeGeneration.CodeGenerator.CIntExpr
-import idealised.DPIA.DSL._
-import idealised.DPIA.FunctionalPrimitives.{AsScalar, AsVector}
-import idealised.DPIA.ImperativePrimitives.{AsScalarAcc, AsVectorAcc, Assign}
+import idealised.C.CodeGeneration.{CodeGenerator => CCodeGenerator}
+import idealised.DPIA.FunctionalPrimitives._
+import idealised.DPIA.ImperativePrimitives._
 import idealised.DPIA.Phrases._
+import idealised.DPIA.DSL._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics.VectorData
-import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType, PhraseType, VectorType}
-import idealised.DPIA.{Nat, NatIdentifier, Phrases, error}
-import idealised.OpenCL.ImperativePrimitives.{OpenCLParFor, OpenCLParForNat}
+import idealised.DPIA.Types._
+import idealised.DPIA._
+import idealised.OpenCL.ImperativePrimitives._
 import idealised._
 import lift.arithmetic
 import lift.arithmetic._
@@ -27,8 +27,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
                     override val ranges: CCodeGenerator.Ranges,
                     localSize: Nat,
                     globalSize: Nat)
-  extends CCodeGenerator(decls, ranges)
-{
+  extends CCodeGenerator(decls, ranges) {
   override def name: String = "OpenCL"
 
   override def updatedRanges(key: String, value: lift.arithmetic.Range): CodeGenerator =
@@ -47,9 +46,9 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
           //noinspection VariablePatternShadow
           exp(e, env, Nil, e =>
             acc(a, env, Nil, {
-              case C.AST.FunCall(C.AST.DeclRef(name), Seq(idx, v))
+              case C.AST.FunCall(C.AST.DeclRef(name), immutable.Seq(idx, v))
                 if name.startsWith("vstore") =>
-                  C.AST.FunCall(C.AST.DeclRef(name), Seq(e, idx, v))
+                  C.AST.FunCall(C.AST.DeclRef(name), immutable.Seq(e, idx, v))
               case a => C.AST.Assignment(a, e)
             }))
 
@@ -78,7 +77,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
           acc(a, env, CIntExpr(i * m) :: Nil, {
             case ArraySubscript(v, idx) =>
               // the continuation has to add the value ...
-              cont( C.AST.FunCall(C.AST.DeclRef(s"vstore$m"), Seq(idx, v)) )
+              cont( C.AST.FunCall(C.AST.DeclRef(s"vstore$m"), immutable.Seq(idx, v)) )
           })
         case _ =>           error(s"Expected path to be not empty")
       }
@@ -106,17 +105,11 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         case _ => super.exp(phrase, env, path, cont)
       }
       case BinOp(op, e1, e2) => phrase.t.dataType match {
-        case _: VectorType => path match {
-          case Nil =>
-            exp(e1, env, Nil, e1 =>
-              exp(e2, env, Nil, e2 =>
-                cont(CCodeGen.codeGenBinaryOp(op, e1, e2))))
-          case i :: ps =>
-            exp(e1, env, i :: ps, e1 =>
-              exp(e2, env, i :: ps, e2 =>
-                cont(CCodeGen.codeGenBinaryOp(op, e1, e2))))
-          case _ => error(s"Expected path to be not empty")
-        }
+        case _: VectorType =>
+          exp(e1, env, path, e1 =>
+            exp(e2, env, path, e2 =>
+              cont(CCodeGen.codeGenBinaryOp(op, e1, e2))
+          ))
         case _ => super.exp(phrase, env, path, cont)
       }
       case AsVector(n, _, _, e) => path match {
@@ -125,7 +118,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
           exp(e, env, CIntExpr(i * n) :: Nil, {
             case ArraySubscript(v, idx) =>
               // TODO: check that idx is the right offset ...
-              cont( C.AST.FunCall(C.AST.DeclRef(s"vload$n"), Seq(idx, v)) )
+              cont( C.AST.FunCall(C.AST.DeclRef(s"vload$n"), immutable.Seq(idx, v)) )
           })
         case Nil => error(s"Expected path to have two elements")
       }
@@ -198,39 +191,40 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
       applySubstitutions(n, env.identEnv) |> (n => {
 
-      val init = OpenCL.AST.VarDecl(cI.name, C.AST.Type.int, OpenCL.PrivateMemory, init = Some(C.AST.ArithmeticExpr(f.init)))
-      val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
-      val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + f.step))
+        val init = OpenCL.AST.VarDecl(cI.name, C.AST.Type.int, OpenCL.PrivateMemory, init = Some(C.AST.ArithmeticExpr(f.init)))
+        val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
+        val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + f.step))
 
-      // FIRST we must substitute in the indexing of o in the phrase
-      Phrase.substitute(a `@d` i, `for` = o, `in` = p) |> (p =>
-      // THEN and only THEN we can change the type to use the new index var
-      PhraseType.substitute(NamedVar(cI.name, range), `for` = i, in = p) |> (p =>
+        // FIRST we must substitute in the indexing of o in the phrase
+        Phrase.substitute(a `@d` i, `for` = o, `in` = p) |> (p =>
+          // THEN and only THEN we can change the type to use the new index var
+          PhraseType.substitute(NamedVar(cI.name, range), `for` = i, in = p) |> (p =>
 
-      env.copy(identEnv = env.identEnv.map {
-        case (Identifier(name, AccType(dt)), declRef) =>
-          (Identifier(name, AccType(DataType.substitute(NamedVar(cI.name, range), `for` = i, in = dt))), declRef)
-        case (Identifier(name, ExpType(dt)), declRef) =>
-          (Identifier(name, ExpType(DataType.substitute(NamedVar(cI.name, range), `for` = i, in = dt))), declRef)
-        case x => x
-      }) |> (env =>
+            env.copy(identEnv = env.identEnv.map {
+              case (Identifier(name, AccType(dt)), declRef) =>
+                (Identifier(name, AccType(DataType.substitute(NamedVar(cI.name, range), `for` = i, in = dt))), declRef)
+              case (Identifier(name, ExpType(dt)), declRef) =>
+                (Identifier(name, ExpType(DataType.substitute(NamedVar(cI.name, range), `for` = i, in = dt))), declRef)
+              case x => x
+            }) |> (env =>
 
-      range.numVals match {
-        // iteration count is 0 => skip body; no code to be emitted
-        case Cst(0) => C.AST.Comment("iteration count is 0, no loop emitted")
-        // iteration count is 1 => no loop
-        case Cst(1) =>
-          C.AST.Stmts(C.AST.Stmts(
-            C.AST.Comment("iteration count is exactly 1, no loop emitted"),
-            C.AST.DeclStmt(C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0))))),
-            updatedGen.cmd(p, env))
-        // default case
-        case _ =>
-          C.AST.Stmts(
-            C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
-              C.AST.Block(immutable.Seq(updatedGen.cmd(p, env)))),
-            f.synchronize)
-      })))})
+              range.numVals match {
+                // iteration count is 0 => skip body; no code to be emitted
+                case Cst(0) => C.AST.Comment("iteration count is 0, no loop emitted")
+                  // TODO: substitute a `@d` Cst(0) earlier ...
+//                // iteration count is 1 => no loop
+//                case Cst(1) =>
+//                  C.AST.Stmts(C.AST.Stmts(
+//                    C.AST.Comment("iteration count is exactly 1, no loop emitted"),
+//                    C.AST.DeclStmt(C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0))))),
+//                    updatedGen.cmd(p, env))
+                // default case
+                case _ =>
+                  C.AST.Stmts(
+                    C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
+                      C.AST.Block(immutable.Seq(updatedGen.cmd(p, env)))),
+                    f.synchronize)
+              })))})
     }
 
     def codeGenLiteral(d: OperationalSemantics.Data): Expr = {
@@ -244,4 +238,5 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       }
     }
   }
+
 }

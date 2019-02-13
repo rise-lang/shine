@@ -43,7 +43,7 @@ object ProgramGenerator {
 
     val (declarations, code) = gen.generate(p, env)
 
-    val typeDeclarations = C.ProgramGenerator.collectTypeDeclarations(code)
+    val typeDeclarations = C.ProgramGenerator.collectTypeDeclarations(code).toSeq
 
     val params = C.ProgramGenerator.makeParams(outParam, inputParams, gen)
 

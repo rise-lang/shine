@@ -37,8 +37,8 @@ object CodeGenerator {
 
   sealed trait PathExpr
   sealed trait TupleAccess extends PathExpr
-  final case object FstAcc extends TupleAccess
-  final case object SndAcc extends TupleAccess
+  final case object FstMember extends TupleAccess
+  final case object SndMember extends TupleAccess
   final case class CIntExpr(num: Nat) extends PathExpr
   implicit def cIntExprToNat(cexpr: CIntExpr): Nat = cexpr.num
 
@@ -148,15 +148,15 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error(s"Expected two C-Integer-Expressions on the path.")
       }
 
-      case RecordAcc1(_, _, a) => acc(a, env, FstAcc :: path, cont)
-      case RecordAcc2(_, _, a) => acc(a, env, SndAcc :: path, cont)
+      case RecordAcc1(_, _, a) => acc(a, env, FstMember :: path, cont)
+      case RecordAcc2(_, _, a) => acc(a, env, SndMember :: path, cont)
 
       case ZipAcc1(_, _, _, a) => path match {
-        case (i : CIntExpr) :: ps => acc(a, env, i :: FstAcc :: ps, cont)
+        case (i : CIntExpr) :: ps => acc(a, env, i :: FstMember :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
       case ZipAcc2(_, _, _, a) => path match {
-        case (i : CIntExpr) :: ps => acc(a, env, i :: SndAcc :: ps, cont)
+        case (i : CIntExpr) :: ps => acc(a, env, i :: SndMember :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
       case UnzipAcc(_, _, _, _) => ???
@@ -226,7 +226,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case uop@UnaryOp(op, e) => uop.t.dataType match {
         case _: ScalarType => path match {
-          case Nil => exp(e, env, Nil, e => cont(CCodeGen.codeGenUnaryOp(op, e)))
+          case Nil => exp(e, env, Nil, e =>
+            cont(CCodeGen.codeGenUnaryOp(op, e)))
           case _ => error(s"Expected path to be empty")
         }
         case _ => error(s"Expected scalar types")
@@ -266,10 +267,23 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error(s"Expected two C-Integer-Expressions on the path.")
       }
 
+      case part@Partition(_, _, _, _, _, e) => path match {
+        case (i: CIntExpr) :: (j: CIntExpr) :: ps =>
+          val newIdx = BigSum(0, i, x => part.lenF(x)) + j
+          exp(e, env, CIntExpr(newIdx) :: ps, cont)
+        case _ => error(s"Expected path to contain at least two elements")
+      }
+
+      case DepSplit(n, _, _, _, e) => path match {
+        case (i: CIntExpr) :: (j: CIntExpr) :: ps =>
+          exp(e, env, CIntExpr(i * n + j) :: ps, cont)
+        case _ => error(s"Expected path to be not empty")
+      }
+
       case Zip(_, _, _, e1, e2) => path match {
         case (i: CIntExpr) :: (xj : TupleAccess) :: ps => xj match {
-          case FstAcc => exp(e1, env, i :: ps, cont)
-          case SndAcc => exp(e2, env, i :: ps, cont)
+          case FstMember => exp(e1, env, i :: ps, cont)
+          case SndMember => exp(e2, env, i :: ps, cont)
         }
         case _ => error("Expected a C-Integer-Expression followed by a tuple access on the path.")
       }
@@ -277,13 +291,13 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case Record(_, _, e1, e2) => path match {
         case (xj : TupleAccess) :: ps => xj match {
-          case FstAcc => exp(e1, env, ps, cont)
-          case SndAcc => exp(e2, env, ps, cont)
+          case FstMember => exp(e1, env, ps, cont)
+          case SndMember => exp(e2, env, ps, cont)
         }
         case _ => error("Expected a tuple access on the path.")
       }
-      case Fst(_, _, e) => exp(e, env, FstAcc :: path, cont)
-      case Snd(_, _, e) => exp(e, env, SndAcc :: path, cont)
+      case Fst(_, _, e) => exp(e, env, FstMember :: path, cont)
+      case Snd(_, _, e) => exp(e, env, SndMember :: path, cont)
 
       case Take(_, _, _, e) => exp(e, env, path, cont)
 
@@ -300,6 +314,40 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case Gather(_, _, idxF, a) => path match {
         case (i : CIntExpr) :: ps => exp(a, env, CIntExpr(OperationalSemantics.evalIndexExp(idxF(i))) :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
+      }
+
+      case Pad(n, l, r, _, pad, array) => path match {
+        case (i: CIntExpr) :: ps =>
+          exp(pad, env, List(), padExpr => {
+            exp(array, env, CIntExpr(i - l) ::ps, arrayExpr => {
+
+              def generateLeftSide(rest:Expr):Expr = {
+                //i < l ?
+                C.AST.TernaryExpr(
+                  C.AST.BinaryExpr(C.AST.ArithmeticExpr(i), C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(l)),
+                  padExpr, rest)
+              }
+
+              def generateRightSide = {
+                C.AST.TernaryExpr(
+                  C.AST.BinaryExpr(C.AST.ArithmeticExpr(i), C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(l + n)),
+                  arrayExpr,
+                  padExpr
+                )
+              }
+
+              val result = l match {
+                case Cst(0) => generateRightSide
+                case _ => r match {
+                  case Cst(0) => generateLeftSide(arrayExpr)
+                  case _ => generateLeftSide(generateRightSide)
+                }
+              }
+              cont(result)
+            })
+          })
+
+        case _ => error(s"Expected path to be not empty")
       }
 
       case Slide(_, _, s2, _, e) => path match {
@@ -485,7 +533,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       val range = RangeAdd(0, n, 1)
       val updatedGen = updatedRanges(cI.name, range)
 
-      applySubstitutions(n, env.identEnv) |> (n => {
+       applySubstitutions(n, env.identEnv) |> (n => {
 
       range.numVals match {
         // iteration count is 0 => skip body; no code to be emitted
@@ -597,9 +645,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
               case _ =>
                 C.AST.Literal("(" + s"($st[$n])" + a.mkString("{", ",", "}") + ")")
             }
-          case _ => error("This should not happen")
+          case _ => error("Expected scalar or array types")
         }
-        case _ => error("Expected scalar or array types")
       }
     }
 
@@ -689,101 +736,87 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case Nil => accuExpr
         case (xj: TupleAccess) :: ps =>
           val tuAccPos = xj match {
-            case FstAcc => "_fst"
-            case SndAcc => "_snd"
+            case FstMember => "_fst"
+            case SndMember => "_snd"
           }
           generateAccess(dt, C.AST.StructMemberAccess(accuExpr, C.AST.DeclRef(tuAccPos)), ps, env)
         case (i: CIntExpr) :: _ =>
           dt match {
-            case at: ArrayType =>
-              val (k, ps) = flattenArrayIndices(at, path)
-              generateAccess(dt, C.AST.ArraySubscript(accuExpr, C.AST.ArithmeticExpr(k)), ps, env)
             case _: VectorType =>
               val data = C.AST.StructMemberAccess(accuExpr, C.AST.DeclRef("data"))
               C.AST.ArraySubscript(data, C.AST.ArithmeticExpr(i))
+            case at: ArrayType =>
+              val (k, ps) = flattenArrayIndices(at, path)
+              generateAccess(dt, C.AST.ArraySubscript(accuExpr, C.AST.ArithmeticExpr(k)), ps, env)
+
             case dat: DepArrayType =>
               val (k, ps) = flattenArrayIndices(dat, path)
               generateAccess(dt, C.AST.ArraySubscript(accuExpr, C.AST.ArithmeticExpr(k)), ps, env)
             case x => throw new Exception(s"Expected an ArrayType that is accessed by the index but found $x instead.")
           }
-        case _ => ???
-          /*
-
-        */
-        /*
-
-        //TODO is this still needed?
-        case (ArrayType(_, vt: VectorType), i :: j :: Nil) =>
-          C.AST.ArraySubscript(generateAccess(vt, identifier, j :: Nil, env), C.AST.ArithmeticExpr(i))
-
-      case (_: ArrayType, _) | (_: DepArrayType, _) =>
-        val idx = computeArrayIndex(dt, path)
-        C.AST.ArraySubscript(identifier, C.AST.ArithmeticExpr(idx))
-       */
-
         case _ =>
           throw new Exception(s"Can't generate access for `$dt' with `${path.mkString("[", "::", "]")}'")
       }
     }
-    //BigSum(from = 0, upTo = i - 1, `for` = k, `in` = DataType.getLength(et))
-    def flattenArrayIndices(at: DataType, path: Path): (Nat, Path) = {
-      val dimList = extractDimensionSizesFromArrayType(at).drop(1)
-      val rowSizes = dimList.scanRight(1: Nat)((a: Nat, b: Nat) => a * b)
-      assert(dimList.size + 1 == rowSizes.size)
 
-      val (indices, rest) = path.splitAt(rowSizes.size)
+    def flattenArrayIndices(dt: DataType, path: Path): (Nat, Path) = {
+      assert(dt.isInstanceOf[ArrayType] || dt.isInstanceOf[DepArrayType])
+      val elemT = dt match {
+        case ArrayType(_, t) => t
+        case DepArrayType(_, _, t) => t
+      }
+      val dimensionSizes = extractDimensionSizes(1)(elemT).reverse
+
+
+      val (indices, rest) = path.splitAt(dimensionSizes.size)
       indices.foreach(i => assert(i.isInstanceOf[CIntExpr]))
-      //assert(rest.isEmpty || !rest.head.isInstanceOf[CIntExpr])
+      assert(rest.isEmpty || !rest.head.isInstanceOf[CIntExpr])
 
-      val summands = at match {
-        case _: ArrayType =>
-          rowSizes.zip(indices).map {
-            case (rs, idx: CIntExpr) => rs * idx.num
-            case _ => error ("This should never happen.")
-          }
-        case DepArrayType(_, k, _) =>
-          rowSizes.zip(indices).map {
-            case (rs, idx: CIntExpr) => BigSum(from = 0, upTo = idx - 1, `for` = k, `in` = rs) * idx.num
-          }
-      }
-      val accessExpr = summands.reduce(_ + _)
+      val flattenedIndices = buildSummands(dt, dimensionSizes, indices).reduce(_ + _)
 
-      (accessExpr, rest)
+      val subMap = buildSubMap(dt, indices)
+
+      (ArithExpr.substitute(flattenedIndices, subMap), rest)
     }
 
-    private def extractDimensionSizesFromArrayType(at: DataType): List[Nat] = {
-      at match {
-        case arrt : ArrayType =>
-          arrt.elemType match {
-            case et: ArrayType =>
-              arrt.size :: extractDimensionSizesFromArrayType (et)
-            case _ => arrt.size :: Nil
-          }
-        case deparrt : DepArrayType =>
-          deparrt.elemType match {
-            case et: DepArrayType =>
-              deparrt.size :: extractDimensionSizesFromArrayType(et)
-            case _ => deparrt.size :: Nil
-          }
-        case _ => ???
+    private def extractDimensionSizes(z: Nat)(dt: DataType): List[Nat] = {
+      dt match {
+        case ArrayType(size, elemType) =>
+          z :: extractDimensionSizes(z * size)(elemType)
+        case DepArrayType(size, i, elemType) =>
+          z :: extractDimensionSizes(BigSum(from = 0, upTo = size - 1, `for` = i, `in` = z))(elemType)
+        case _ => z :: Nil
       }
     }
 
-    //  private def generateArrayAccess(at: ArrayType, identifier: C.AST.DeclRef, path: Path, index: Nat): Expr = {
-    //    (at, path) match {
-    //      case (ArrayType(_, bt: BasicType), i :: Nil) =>
-    //        C.AST.ArraySubscript(generateAccess(bt, identifier, Nil), C.AST.ArithmeticExpr(i + index))
-    //
-    //      case (ArrayType(_, vt: VectorType), i :: j :: Nil) =>
-    //        C.AST.ArraySubscript(generateAccess(vt, identifier, j :: Nil), C.AST.ArithmeticExpr(i + index))
-    //
-    //      case (ArrayType(_, et@ArrayType(s, _)), i :: ps) =>
-    //        generateArrayAccess(et, identifier, ps, (i * s) + index)
-    //
-    //      case _ =>
-    //        throw new Exception(s"Can't generate access for `$at' with `${path.mkString("[", "::", "]")}'")
-    //    }
-    //  }
+    private def buildSummands(dt: DataType,
+                              dimensionSizes: immutable.Seq[Nat],
+                              indices: immutable.Seq[PathExpr]): List[Nat] = {
+      (dt, dimensionSizes, indices) match {
+        case (_, Nil, Nil) => Nil
+        case (ArrayType(_, elemType), rs :: dimRest, CIntExpr(idx) :: idxRest) =>
+          (rs * idx) :: buildSummands(elemType, dimRest, idxRest)
+        case (DepArrayType(_, k, elemType), rs :: dimRest, CIntExpr(idx) :: idxRest) =>
+          BigSum(from = 0, upTo = idx - 1, `for` = k, `in` = rs) :: buildSummands(elemType, dimRest, idxRest)
+      }
+    }
+
+    private def getIndexVariablesScopes(dt:DataType):List[Option[NatIdentifier]] = {
+      dt match {
+        case ArrayType(_ , et) => None::getIndexVariablesScopes(et)
+        case DepArrayType(_, i, et) => Some(i)::getIndexVariablesScopes(et)
+        case _ => Nil
+      }
+    }
+
+    private def buildSubMap(dt: DataType,
+                            indices: immutable.Seq[PathExpr]): Predef.Map[Nat, Nat]  = {
+      val bindings = getIndexVariablesScopes(dt)
+      bindings.zip(indices).map({
+        case (Some(binder), CIntExpr(index)) => Some((binder, index))
+        case _ => None
+      }).filter(_.isDefined).map(_.get).toMap[Nat, Nat]
+    }
 
     implicit def convertBinaryOp(op: idealised.SurfaceLanguage.Operators.Binary.Value): idealised.C.AST.BinaryOperator.Value = {
       import idealised.SurfaceLanguage.Operators.Binary._
