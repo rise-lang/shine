@@ -1,15 +1,13 @@
 package idealised.apps
 
-import idealised.DPIA.Nat
+import idealised.OpenCL.SurfaceLanguage.DSL.oclFun
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage.Semantics._
 import idealised.OpenMP.SurfaceLanguage.DSL._
-import idealised.SurfaceLanguage.{->, Expr, IdentifierExpr, LiteralExpr}
+import idealised.SurfaceLanguage.{->, Expr, LiteralExpr}
 import idealised.util.SyntaxChecker
-import lift.arithmetic.{NamedVar, RangeAdd}
-import opencl.executor.Execute
-import org.scalatest._
+import lift.arithmetic.SizeVar
 
 class fft extends idealised.util.Tests {
 
@@ -22,33 +20,17 @@ class fft extends idealised.util.Tests {
       tuple(lres, rres)
     }))
 
-    //val reorderedB = Array3DFromUserFunGenerator(
-    //  genReorderedTwiddleWithDFTUserFun(complexConjugate = inverse), TypeOfB)
-    /*
-    def genReorderedTwiddleWithDFTUserFun(complexConjugate: Boolean = false): UserFun = {
-      val signString = if (complexConjugate) "" else "-"
-      UserFun("genTwiddleWithDFT",
-        Array("j", "k", "l", "LPrevIter", "pheight", "pwidth"),
-        "{ Tuple2_double_double twiddleWithDFT;\n" +
-          "\tdouble exponent = " + signString + "2.0 * (k * LPrevIter + j) * l / (pheight * LPrevIter);\n" +
-          "\ttwiddleWithDFT._0 = cospi(exponent);\n" +
-          "\ttwiddleWithDFT._1 = sinpi(exponent);\n" +
-          "\treturn twiddleWithDFT;}",
-        Seq(Int, Int, Int, Int, Int, Int),
-        TupleType(Double, Double)
-      )
-    }*/
     val reorderedB =
       generate(LPrevIter, dFun(m => fun(IndexType(LPrevIter))(i =>
         generate(p, dFun(n => fun(IndexType(p))(j =>
           generate(p, dFun(_ => fun(IndexType(p))(k => {
             val exponentWoMinus2 = (toNatIdentifier(j) * m + toNatIdentifier(i)) * toNatIdentifier(k) / (n * m)
             val exponent = LiteralExpr(DoubleData(-2.0)) * cast(double, LiteralExpr(IndexData(exponentWoMinus2)))
-            tuple(foreignFun(double, "callCos", (double, "x"), "{ return cospi(x); }", exponent),
-              foreignFun(double, "callSin", (double, "x"), "{ return sinpi(x); }", exponent))
+            tuple(cast(float, oclFun("cospi", double, double, exponent)),
+              cast(float, oclFun("sinpi", double, double, exponent)))
           })))))))))
 
-    val reorderedBT = ArrayType(LPrevIter, ArrayType(p, ArrayType(p, TupleType(float, float))))
+    //val reorderedBT = ArrayType(LPrevIter, ArrayType(p, ArrayType(p, TupleType(float, float))))
 
     val modPReorder = join() o transpose() o split(p)
     val createY = transpose() o modPReorder o split(r)
@@ -120,6 +102,43 @@ class fft extends idealised.util.Tests {
     val program = idealised.C.ProgramGenerator.makeCode(phrase)
     println(program.code)
 
+    SyntaxChecker(program.code)
+  }
+
+  test("Program with tuple output and no tuple inputs, can be generated in C.") {
+    val tuplz = fun(x => tuple(x, 1.0f))
+    val tupleOut = fun(ArrayType(SizeVar("N"), float))(xs =>
+      xs :>> mapSeq(tuplz)
+    )
+
+    val phrase = TypeInference(tupleOut, Map()).convertToPhrase
+    val program = idealised.C.ProgramGenerator.makeCode(phrase)
+    println(program.code)
+    SyntaxChecker(program.code)
+  }
+
+  test("Correct code for complex Generate can be generated in C.") {
+    val N = 8
+    val LPrevIter = 1
+    val p = 2
+
+    val reorderedB =
+      generate(LPrevIter, dFun(m => fun(IndexType(LPrevIter))(i =>
+        generate(p, dFun(n => fun(IndexType(p))(j =>
+          generate(p, dFun(_ => fun(IndexType(p))(k => {
+            val exponentWoMinus2 = (toNatIdentifier(j) * m + toNatIdentifier(i)) * toNatIdentifier(k) / (n * m)
+            val exponent = LiteralExpr(DoubleData(-2.0)) * cast(double, LiteralExpr(IndexData(exponentWoMinus2)))
+            tuple(cast(float, oclFun("cospi", double, double, exponent)),
+              cast(float, oclFun("sinpi", double, double, exponent)))
+          })))))))))
+
+    val id = fun(x => x)
+    val generateSth = fun(ArrayType(N, float))(_ =>
+      reorderedB :>> mapSeq(mapSeq(mapSeq(id))))
+
+    val phrase = TypeInference(generateSth, Map()).convertToPhrase
+    val program = idealised.C.ProgramGenerator.makeCode(phrase)
+    println(program.code)
     SyntaxChecker(program.code)
   }
 

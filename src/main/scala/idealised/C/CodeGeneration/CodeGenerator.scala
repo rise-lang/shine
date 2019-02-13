@@ -8,6 +8,7 @@ import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA._
+import idealised.OpenCL.FunctionalPrimitives.OpenCLFunction
 import idealised.SurfaceLanguage.Operators
 import idealised._
 import lift.arithmetic.{NamedVar, _}
@@ -351,6 +352,9 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case Proj1(pair) => exp(Lifting.liftPair(pair)._1, env, path, cont)
       case Proj2(pair) => exp(Lifting.liftPair(pair)._2, env, path, cont)
 
+      case OpenCLFunction(name, _, _, args) =>
+        CCodeGen.codeGenForeignCall(name, args, env, Nil, cont)
+
       case Apply(_, _) | NatDependentApply(_, _) | TypeDependentApply(_, _) |
            Phrases.IfThenElse(_, _, _) | _: ExpPrimitive =>
         error(s"Don't know how to generate code for $phrase")
@@ -582,7 +586,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       d match {
         case i: IndexData =>
           C.AST.ArithmeticExpr(i.n)
-        case _: IntData | _: FloatData | _: BoolData =>
+        case _: IntData | _: FloatData | _: DoubleData | _: BoolData =>
           C.AST.Literal(d.toString)
         case ArrayData(a) => d.dataType match {
           case ArrayType(n, st) =>
@@ -649,10 +653,10 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           },
           body = C.AST.Code(funDecl.body)))
 
-      codeGenForeignCall(funDecl, args, env, Nil, cont)
+      codeGenForeignCall(funDecl.name, args, env, Nil, cont)
     }
 
-    def codeGenForeignCall(funDecl: ForeignFunction.Declaration,
+    def codeGenForeignCall(name: String,
                            args: collection.Seq[Phrase[ExpType]],
                            env: Environment,
                            args_ps: Path,
@@ -664,7 +668,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           case a +: args =>
             exp(a, env, args_ps, a => iter(args, res += a))
           case _ => cont(
-            C.AST.FunCall(C.AST.DeclRef(funDecl.name), res.result()))
+            C.AST.FunCall(C.AST.DeclRef(name), res.result()))
         }
       }
 
@@ -700,7 +704,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             case dat: DepArrayType =>
               val (k, ps) = flattenArrayIndices(dat, path)
               generateAccess(dt, C.AST.ArraySubscript(accuExpr, C.AST.ArithmeticExpr(k)), ps, env)
-            case _ => throw new Exception("Expected an ArrayType that is accessed by the index.")
+            case x => throw new Exception(s"Expected an ArrayType that is accessed by the index but found $x instead.")
           }
         case _ => ???
           /*
