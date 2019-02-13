@@ -65,7 +65,7 @@ class Printer extends idealised.C.AST.CPrinter {
           case None => ""
           case Some(s) => s
         } }]")
-      case pt: PointerType => print(s"${toString(p.addressSpace)} ${pt.valueType}* ${p.name}")
+      case pt: PointerType => print(s"${toString(p.addressSpace)} ${pt.valueType}* restrict ${p.name}")
     }
   }
 

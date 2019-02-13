@@ -7,7 +7,7 @@ import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
-import idealised.DPIA._
+import idealised.DPIA.{Phrases, _}
 import idealised.SurfaceLanguage.Operators
 import idealised._
 import lift.arithmetic.{NamedVar, _}
@@ -225,7 +225,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case uop@UnaryOp(op, e) => uop.t.dataType match {
         case _: ScalarType => path match {
-          case Nil => exp(e, env, Nil, e => cont(CCodeGen.codeGenUnaryOp(op, e)))
+          case Nil => exp(e, env, Nil, e =>
+            cont(CCodeGen.codeGenUnaryOp(op, e)))
           case _ => error(s"Expected path to be empty")
         }
         case _ => error(s"Expected scalar types")
@@ -249,6 +250,19 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case Join(n, _, _, e) => path match {
         case (i : CIntExpr) :: ps => exp(e, env, CIntExpr(i / n) :: CIntExpr(i % n) :: ps, cont)
         case _ => error(s"Expected two C-Integer-Expressions on the path.")
+      }
+
+      case part@Partition(_, _, _, _, _, e) => path match {
+        case (i: CIntExpr) :: (j: CIntExpr) :: ps =>
+          val newIdx = BigSum(0, i, x => part.lenF(x)) + j
+          exp(e, env, CIntExpr(newIdx) :: ps, cont)
+        case _ => error(s"Expected path to contain at least two elements")
+      }
+
+      case DepSplit(n, _, _, _, e) => path match {
+        case (i: CIntExpr) :: (j: CIntExpr) :: ps =>
+          exp(e, env, CIntExpr(i * n + j) :: ps, cont)
+        case _ => error(s"Expected path to be not empty")
       }
 
       case Zip(_, _, _, e1, e2) => path match {
@@ -285,6 +299,40 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case Gather(_, _, idxF, a) => path match {
         case (i : CIntExpr) :: ps => exp(a, env, CIntExpr(OperationalSemantics.evalIndexExp(idxF(i))) :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
+      }
+
+      case Pad(n, l, r, _, pad, array) => path match {
+        case (i: CIntExpr) :: ps =>
+          exp(pad, env, List(), padExpr => {
+            exp(array, env, CIntExpr(i - l) ::ps, arrayExpr => {
+
+              def generateLeftSide(rest:Expr):Expr = {
+                //i < l ?
+                C.AST.TernaryExpr(
+                  C.AST.BinaryExpr(C.AST.ArithmeticExpr(i), C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(l)),
+                  padExpr, rest)
+              }
+
+              def generateRightSide = {
+                C.AST.TernaryExpr(
+                  C.AST.BinaryExpr(C.AST.ArithmeticExpr(i), C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(l + n)),
+                  arrayExpr,
+                  padExpr
+                )
+              }
+
+              val result = l match {
+                case Cst(0) => generateRightSide
+                case _ => r match {
+                  case Cst(0) => generateLeftSide(arrayExpr)
+                  case _ => generateLeftSide(generateRightSide)
+                }
+              }
+              cont(result)
+            })
+          })
+
+        case _ => error(s"Expected path to be not empty")
       }
 
       case Slide(_, _, s2, _, e) => path match {
@@ -467,7 +515,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       val range = RangeAdd(0, n, 1)
       val updatedGen = updatedRanges(cI.name, range)
 
-      applySubstitutions(n, env.identEnv) |> (n => {
+       applySubstitutions(n, env.identEnv) |> (n => {
 
       range.numVals match {
         // iteration count is 0 => skip body; no code to be emitted
@@ -579,9 +627,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
               case _ =>
                 C.AST.Literal("(" + s"($st[$n])" + a.mkString("{", ",", "}") + ")")
             }
-          case _ => error("This should not happen")
+          case _ => error("Expected scalar or array types")
         }
-        case _ => error("Expected scalar or array types")
       }
     }
 
@@ -683,6 +730,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             case at: ArrayType =>
               val (k, ps) = flattenArrayIndices(at, path)
               generateAccess(dt, C.AST.ArraySubscript(accuExpr, C.AST.ArithmeticExpr(k)), ps, env)
+
             case dat: DepArrayType =>
               val (k, ps) = flattenArrayIndices(dat, path)
               generateAccess(dt, C.AST.ArraySubscript(accuExpr, C.AST.ArithmeticExpr(k)), ps, env)
@@ -701,13 +749,16 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       }
       val dimensionSizes = extractDimensionSizes(1)(elemT).reverse
 
+
       val (indices, rest) = path.splitAt(dimensionSizes.size)
       indices.foreach(i => assert(i.isInstanceOf[CIntExpr]))
       assert(rest.isEmpty || !rest.head.isInstanceOf[CIntExpr])
 
       val flattenedIndices = buildSummands(dt, dimensionSizes, indices).reduce(_ + _)
 
-      (flattenedIndices, rest)
+      val subMap = buildSubMap(dt, indices)
+
+      (ArithExpr.substitute(flattenedIndices, subMap), rest)
     }
 
     private def extractDimensionSizes(z: Nat)(dt: DataType): List[Nat] = {
@@ -730,6 +781,23 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case (DepArrayType(_, k, elemType), rs :: dimRest, CIntExpr(idx) :: idxRest) =>
           BigSum(from = 0, upTo = idx - 1, `for` = k, `in` = rs) :: buildSummands(elemType, dimRest, idxRest)
       }
+    }
+
+    private def getIndexVariablesScopes(dt:DataType):List[Option[NatIdentifier]] = {
+      dt match {
+        case ArrayType(_ , et) => None::getIndexVariablesScopes(et)
+        case DepArrayType(_, i, et) => Some(i)::getIndexVariablesScopes(et)
+        case _ => Nil
+      }
+    }
+
+    private def buildSubMap(dt: DataType,
+                            indices: immutable.Seq[PathExpr]): Predef.Map[Nat, Nat]  = {
+      val bindings = getIndexVariablesScopes(dt)
+      bindings.zip(indices).map({
+        case (Some(binder), CIntExpr(index)) => Some((binder, index))
+        case _ => None
+      }).filter(_.isDefined).map(_.get).toMap[Nat, Nat]
     }
 
     implicit def convertBinaryOp(op: idealised.SurfaceLanguage.Operators.Binary.Value): idealised.C.AST.BinaryOperator.Value = {

@@ -36,9 +36,12 @@ abstract class AbstractDepMap(df: Expr[`(nat)->`[DataType -> DataType]],
         val i2 = NamedVar(freshName())
         val dt2: DataType = Type.substitute(i2, `for`=k, in=df2_k)
 
-        makeDPIAMap(n, i1, dt1, i2, dt2,
-          df.toPhrase[DPIA.Types.NatDependentFunctionType[DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]]],
-          array.toPhrase[DPIA.Types.ExpType])
+        val fPhrase = df.toPhrase[DPIA.Types.NatDependentFunctionType[DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]]]
+        val inputPhrase = array.toPhrase[DPIA.Types.ExpType]
+
+    makeDPIAMap(n, i1, dt1, i2, dt2,
+          fPhrase,
+      inputPhrase)
       case _ => throw new Exception("")
     }
   }
