@@ -12,6 +12,7 @@ import idealised.DPIA.Semantics.OperationalSemantics.VectorData
 import idealised.DPIA.Types._
 import idealised.DPIA._
 import idealised.OpenCL.ImperativePrimitives._
+import idealised.OpenCL._
 import idealised._
 import lift.arithmetic
 import lift.arithmetic._
