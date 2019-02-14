@@ -1,6 +1,6 @@
 package idealised.apps
 
-import idealised.OpenCL.SurfaceLanguage.DSL.{clReduceSeq, depMapGlobal, toGlobal, toPrivate}
+import idealised.OpenCL.SurfaceLanguage.DSL.{oclReduceSeq, depMapGlobal, toGlobal, toPrivate}
 import idealised.OpenMP.SurfaceLanguage.DSL.depMapPar
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
@@ -39,7 +39,7 @@ class triangleVectorMult extends idealised.util.Tests {
     fun(DepArrayType(8, i => ArrayType(i + 1, int)))(triangle =>
       fun(ArrayType(8, int))(vector =>
         depMapSeq(fun(row => zip(row, take(Macros.GetLength(row), vector))
-          :>> toGlobal(mapSeq(mult)) :>> clReduceSeq(add, 0, PrivateMemory)
+          :>> toGlobal(mapSeq(mult)) :>> oclReduceSeq(add, 0, PrivateMemory)
         ), triangle)
       )
     )
@@ -48,7 +48,7 @@ class triangleVectorMult extends idealised.util.Tests {
     fun(DepArrayType(8, i => ArrayType(i + 1, int)))(triangle =>
       fun(ArrayType(8, int))(vector =>
         depMapGlobal(fun(row => zip(row, take(Macros.GetLength(row), vector))
-          :>> toGlobal(mapSeq(mult)) :>> clReduceSeq(add, 0, PrivateMemory)
+          :>> toGlobal(mapSeq(mult)) :>> oclReduceSeq(add, 0, PrivateMemory)
         ), triangle)
       )
     )
