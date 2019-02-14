@@ -33,7 +33,7 @@ final case class MapRead(n: Nat,
 
   override def continuationTranslation(C: Phrase[->[ExpType, CommandType]])
                                       (implicit context: TranslationContext): Phrase[CommandType] =
-      throw new Exception("This should not happen")
+    throw new Exception("This should not happen")
 
   override def prettyPrint: String = s"(mapRead $f $input)"
 

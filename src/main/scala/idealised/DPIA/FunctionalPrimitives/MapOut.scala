@@ -1,8 +1,6 @@
 package idealised.DPIA.FunctionalPrimitives
 
-import idealised.DPIA.Compilation.{TranslationContext, TranslationToImperative}
-import idealised.DPIA.DSL._
-import idealised.DPIA.ImperativePrimitives.MapWrite
+import idealised.DPIA.Compilation.TranslationContext
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types._
 import idealised.DPIA._
@@ -18,7 +16,6 @@ final case class MapOut(n: Nat,
 
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommandType] = {
-    import TranslationToImperative._
 
     ???
     // acc(input)(MapWrite(n, dt2, dt1, λ(acc"[$dt1]")(o => acc(f(input))(o)), A))
@@ -26,7 +23,6 @@ final case class MapOut(n: Nat,
 
   override def continuationTranslation(C: Phrase[ExpType -> CommandType])
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
-    import TranslationToImperative._
 
     ???
   }

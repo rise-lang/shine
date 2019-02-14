@@ -9,6 +9,10 @@ import lift.arithmetic.NamedVar
 import scala.language.implicitConversions
 
 object depMapSeq {
+
+  def withIndex(f: Expr[`(nat)->`[DataType -> DataType]]): Expr[DataType -> DataType] = fun(x => withIndex(f,x))
+  def withIndex(f: Expr[`(nat)->`[DataType -> DataType]], x:DataExpr): DepMapSeq= DepMapSeq(f, x, None)
+
   def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] = fun(x => depMapSeq(f, x))
 
   def apply(f: Expr[DataType -> DataType], x: DataExpr): DepMapSeq = DepMapSeq(dFun(_ => f), x, None)
@@ -54,6 +58,16 @@ object join {
   implicit def toJoin(j: join.type): Expr[DataType -> DataType] = join()
 }
 
+object partition {
+  def apply(m: Nat, f:NatIdentifier => Nat): Expr[DataType -> DataType] = fun(array => partition(m, f, array))
+
+  def apply(m:Nat, f:NatIdentifier => Nat, array: DataExpr): Partition = {
+    val ident = NamedVar("p")
+    Partition(m, ident, f(ident), array, None)
+  }
+}
+
+
 object slide {
   def apply(s1: Nat, s2: Nat): Expr[DataType -> DataType] = fun(array => slide(s1, s2, array))
 
@@ -78,6 +92,13 @@ object drop {
   def apply(n:Nat): Expr[DataType -> DataType] = fun(array => drop(n, array))
 
   def apply(n:Nat, array:DataExpr):Drop = Drop(n, array, None)
+}
+
+object pad {
+
+  def apply(l:Nat, r:Nat, pad:DataExpr):Expr[DataType -> DataType] = fun(array => Pad(l, r, pad, array, None))
+
+  def apply(l:Nat, r:Nat, pad:DataExpr, array:DataExpr):Pad = Pad(l, r, pad, array, None)
 }
 
 object slice {

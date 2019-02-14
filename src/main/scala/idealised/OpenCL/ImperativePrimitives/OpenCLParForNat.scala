@@ -4,6 +4,7 @@ import idealised.C.AST.Stmt
 import idealised.DPIA.Phrases.Phrase
 import idealised.DPIA.Types.{AccType, CommandType, DataType}
 import idealised.DPIA.{->, Nat, NatIdentifier, `(nat)->`}
+import idealised.OpenCL.BuiltInFunction
 import idealised.OpenMP.ImperativePrimitives.AbstractParForNat
 
 abstract class OpenCLParForNat(n: Nat,
@@ -19,12 +20,14 @@ abstract class OpenCLParForNat(n: Nat,
 
   def name: String
 
-  def init: Nat
-  def step: Nat
+  def init: BuiltInFunction
+  def step: BuiltInFunction
   def synchronize: Stmt
 }
 
-object OpenCLParForNat {
-  def unapply(arg: OpenCLParForNat): Option[(Nat, NatIdentifier, DataType, Phrase[AccType], Phrase[`(nat)->`[AccType -> CommandType]])] =
+object OpenCLParForNat
+{
+  def unapply(arg: OpenCLParForNat): Option[(Nat, NatIdentifier, DataType, Phrase[AccType], Phrase[`(nat)->`[AccType -> CommandType]])] = {
     Some(arg.n, arg.i, arg.dt, arg.out, arg.body)
+  }
 }

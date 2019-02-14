@@ -44,7 +44,7 @@ object ProgramGenerator {
 
     val (declarations, code) = gen.generate(p, env)
 
-    val typeDeclarations = collectTypeDeclarations(code)
+    val typeDeclarations = collectTypeDeclarations(code).toSeq
 
     C.Program(
       typeDeclarations ++ declarations,

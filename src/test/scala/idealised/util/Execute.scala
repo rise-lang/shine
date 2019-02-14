@@ -1,14 +1,14 @@
 package idealised.util
 
-import sys.process._
-
 import scala.language.postfixOps
+import scala.sys.process._
 
 object Execute {
   case class Exception(msg: String) extends Throwable
 
+  //noinspection ScalaUnnecessaryParentheses
   @throws[Exception]
-  def apply(code: String) = {
+  def apply(code: String): String = {
     try {
       val src = writeToTempFile("code-", ".c", code).getAbsolutePath
       val bin = createTempFile("bin-", "").getAbsolutePath
@@ -24,3 +24,4 @@ object Execute {
     }
   }
 }
+

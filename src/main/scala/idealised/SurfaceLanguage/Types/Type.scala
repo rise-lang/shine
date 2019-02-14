@@ -145,6 +145,9 @@ object Type {
       case b: BasicType => b
       case ArrayType(size, elemType) =>
         ArrayType(ArithExpr.substitute(size, Map((`for`, ae))), substitute(ae, `for`, elemType))
+      case DepArrayType(size, NatDependentFunctionType(x, elemT)) =>
+        val innerT = NatDependentFunctionType(x, substitute(ae, `for`, elemT))
+        DepArrayType(ArithExpr.substitute(size, Map((`for`, ae))), innerT)
       case TupleType(ts @ _*) => TupleType(ts.map(substitute(ae, `for`, _)):_*)
     }).asInstanceOf[T]
   }

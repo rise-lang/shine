@@ -27,6 +27,9 @@ object depMapGlobal {
   def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] = depMapGlobal(0)(f)
   def apply(f: Expr[DataType -> DataType], x: DataExpr): DepMapGlobal = depMapGlobal(0)(f, x)
 
+  def withIndex(f: Expr[`(nat)->`[DataType -> DataType]]): Expr[DataType -> DataType] = fun(x => withIndex(f,x))
+  def withIndex(f: Expr[`(nat)->`[DataType -> DataType]], x:DataExpr): DepMapGlobal= DepMapGlobal(0)(f, x)
+
 
   def apply(dim: Int) = new {
     def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] =
@@ -51,10 +54,29 @@ object mapWorkgroup {
   }
 }
 
+object depMapWorkgroup {
+  def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] = depMapWorkgroup(0)(f)
+  def apply(f: Expr[DataType -> DataType], x: DataExpr): DepMapWorkGroup = depMapWorkgroup(0)(f, x)
+
+  def withIndex(f: Expr[`(nat)->`[DataType -> DataType]]): Expr[DataType -> DataType] = fun(x => withIndex(f,x))
+  def withIndex(f: Expr[`(nat)->`[DataType -> DataType]], x:DataExpr): DepMapWorkGroup= DepMapWorkGroup(0)(f, x)
+
+  def apply(dim: Int) = new {
+    def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] =
+      fun(x => DepMapWorkGroup(dim)(dFun(_ => f), x))
+
+    def apply(f: Expr[DataType -> DataType], x: DataExpr): DepMapWorkGroup =
+      DepMapWorkGroup(dim)(dFun(_ => f), x)
+  }
+}
+
 //noinspection TypeAnnotation
 object mapLocal {
   def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] = mapLocal(0)(f)
   def apply(f: Expr[DataType -> DataType], x: DataExpr): MapLocal = mapLocal(0)(f, x)
+
+  def withIndex(f: Expr[`(nat)->`[DataType -> DataType]]): Expr[DataType -> DataType] = fun(x => withIndex(f,x))
+  def withIndex(f: Expr[`(nat)->`[DataType -> DataType]], x:DataExpr): DepMapLocal= DepMapLocal(0)(f, x)
 
   def apply(dim: Int) = new {
     def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] =
@@ -64,6 +86,21 @@ object mapLocal {
       MapLocal(dim)(f, x)
   }
 }
+
+object depMapLocal {
+  def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] = depMapLocal(0)(f)
+  def apply(f: Expr[DataType -> DataType], x: DataExpr): DepMapLocal = depMapLocal(0)(f, x)
+
+
+  def apply(dim: Int) = new {
+    def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] =
+      fun(x => DepMapLocal(dim)(dFun(_ => f), x))
+
+    def apply(f: Expr[DataType -> DataType], x: DataExpr): DepMapLocal =
+      DepMapLocal(dim)(dFun(_ => f), x)
+  }
+}
+
 
 object toLocal {
   def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] =

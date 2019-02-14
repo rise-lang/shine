@@ -5,7 +5,7 @@ import idealised.DPIA.Types._
 import idealised.DPIA._
 import idealised.{C, OpenCL}
 import idealised.utils._
-import lift.arithmetic.{ArithExpr, Cst, Var}
+import lift.arithmetic.{ArithExpr, BigSum, Cst, Var}
 import opencl.executor._
 
 import scala.collection.immutable.List
@@ -23,7 +23,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
     "\n\n" +
     OpenCL.AST.Printer(kernel)
 
-  // This method will return a Scala function which executed the kernel via OpenCL and returns its
+  /** This method will return a Scala function which executed the kernel via OpenCL and returns its
   // result and the time it took to execute the kernel.
   //
   // A type annotation `F` has to be provided which specifies the type of the Scala function.
@@ -37,7 +37,13 @@ case class Kernel(decls: Seq[C.AST.Decl],
   // would be:
   //
   // dotKernel.as[ScalaFunction `(` Array[Float] `,` Array[Float] `)=>` Array[Float]]
-  //
+
+    NB: If the kernel takes a single argument, then the invocation must use this syntax
+    (Example with a kernel of type Array[Float] => Array[Float]
+
+    val kernelF = kernel.as[ScalaFunction`(`Array[Float]`)=>`Array[Float]]
+    val (result, time) = kernelF(xs `;`)
+    */
   def as[F <: FunctionHelper](implicit ev: F#T <:< HList): F#T => (F#R, TimeSpan[Time.ms]) = {
     hArgs: F#T => {
       val args: List[Any] = hArgs.toList
@@ -47,7 +53,8 @@ case class Kernel(decls: Seq[C.AST.Decl],
       val (outputArg, inputArgs) = createKernelArgs(args, lengthMapping)
       val kernelArgs = (outputArg +: inputArgs).toArray
 
-      val kernelJNI = opencl.executor.Kernel.create(code, kernel.name, "")
+      val c = code
+      val kernelJNI = opencl.executor.Kernel.create(c, kernel.name, "")
 
       val runtime = Executor.execute(kernelJNI,
         ArithExpr.substitute(localSize, lengthMapping).eval, 1, 1,
@@ -83,6 +90,8 @@ case class Kernel(decls: Seq[C.AST.Decl],
         case _ => throw new Exception(s"Expected $bt, but got $a")
       }
       case (at: ArrayType, array: Array[_]) =>
+        Seq((at.size, array.length)) ++ createLengthMapping(at.elemType, array.head)
+      case (at: DepArrayType, array:Array[_]) =>
         Seq((at.size, array.length)) ++ createLengthMapping(at.elemType, array.head)
       case (rt: RecordType, tuple: (_, _)) =>
         createLengthMapping(rt.fst, tuple._1) ++
@@ -156,7 +165,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
   }
 
   private def castToOutputType[R](dt: DataType, output: GlobalArg): R = {
-    assert(dt.isInstanceOf[ArrayType])
+    assert(dt.isInstanceOf[ArrayType] || dt.isInstanceOf[DepArrayType])
     (DataType.getBaseDataType(dt) match {
       case idealised.DPIA.Types.float  => output.asFloatArray()
       case idealised.DPIA.Types.int    => output.asIntArray()
@@ -194,7 +203,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
     case v: VectorType  => sizeInByte(v.elemType) * v.size
     case r: RecordType  => sizeInByte(r.fst) + sizeInByte(r.snd)
     case a: ArrayType   => sizeInByte(a.elemType) * a.size
-    case _: DepArrayType => ???
+    case a: DepArrayType => SizeInByte(BigSum(Cst(0), a.size - 1, `for`=a.i, in=sizeInByte(a.elemType).value))
     case _: DataTypeIdentifier => throw new Exception("This should not happen")
   }
 
