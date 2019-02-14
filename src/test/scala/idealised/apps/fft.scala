@@ -45,9 +45,6 @@ class fft extends idealised.util.Tests {
     val kernel = idealised.OpenMP.ProgramGenerator.makeCode(phrase)
     println(kernel.code)
 
-    SyntaxChecker(
-      //TODO remove from test
-      //s"struct float_float { float _fst; float _snd; };" +
-      kernel.code)
+    SyntaxChecker(kernel.code)
   }
 }
