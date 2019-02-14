@@ -153,7 +153,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       val vC = C.AST.DeclRef(v.name)
 
       C.AST.Block(immutable.Seq(
-        C.AST.DeclStmt(C.AST.VarDecl(vC.name, typ(dt))),
+        C.AST.DeclStmt(OpenCL.AST.VarDecl(vC.name, typ(dt), addressSpace)),
         cmd(Phrase.substitute(Pair(ve, va), `for` = v, `in` = p),
           env updatedIdentEnv (ve -> vC)
             updatedIdentEnv (va -> vC))))

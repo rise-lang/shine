@@ -46,6 +46,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
     */
   def as[F <: FunctionHelper](implicit ev: F#T <:< HList): F#T => (F#R, TimeSpan[Time.ms]) = {
     hArgs: F#T => {
+      // assert(this.localSize == localSize)
       val args: List[Any] = hArgs.toList
 
       val lengthMapping = createLengthMap(inputParams, args)
@@ -55,6 +56,8 @@ case class Kernel(decls: Seq[C.AST.Decl],
 
       val c = code
       val kernelJNI = opencl.executor.Kernel.create(c, kernel.name, "")
+
+      assert(localSize.isEvaluable && globalSize.isEvaluable)
 
       val runtime = Executor.execute(kernelJNI,
         ArithExpr.substitute(localSize, lengthMapping).eval, 1, 1,
@@ -96,7 +99,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
       case (rt: RecordType, tuple: (_, _)) =>
         createLengthMapping(rt.fst, tuple._1) ++
           createLengthMapping(rt.snd, tuple._2)
-      case _ => throw new Exception(s"Expected $t but got $a")
+      case x => throw new Exception(s"Expected $t but got $a")
     }
   }
 
