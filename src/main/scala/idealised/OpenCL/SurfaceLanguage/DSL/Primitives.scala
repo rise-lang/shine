@@ -89,7 +89,7 @@ object toPrivate {
     ToPrivate(f, x)
 }
 
-object clReduceSeq {
+object oclReduceSeq {
   /* TODO how can we do this?
   def apply(f: Expr[DataType -> (DataType -> DataType)]): Expr[DataType -> (DataType -> DataType)] =
     fun((init, array) => reduceSeq(f, init, array))
@@ -98,7 +98,7 @@ object clReduceSeq {
   def apply(f: Expr[DataType -> (DataType -> DataType)],
             init: DataExpr,
             initAddrSpace: AddressSpace): Expr[DataType -> DataType] =
-    fun(array => clReduceSeq(f, init, initAddrSpace, array))
+    fun(array => oclReduceSeq(f, init, initAddrSpace, array))
 
   def apply(f: Expr[DataType -> (DataType -> DataType)],
             init: DataExpr,
