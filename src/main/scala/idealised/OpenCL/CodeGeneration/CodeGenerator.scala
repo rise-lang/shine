@@ -144,7 +144,6 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
   protected object OpenCLCodeGen {
     def codeGenOpenCLNew(dt: DataType,
-     //TODO generate addressSpace
                    addressSpace: AddressSpace,
                    v: Identifier[VarType],
                    p: Phrase[CommandType],
