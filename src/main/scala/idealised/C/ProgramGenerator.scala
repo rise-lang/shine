@@ -4,7 +4,7 @@ import idealised.C.AST._
 import idealised.DPIA.Compilation._
 import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
-import idealised.DPIA.Types.{AccType, CommandType, DataType, DataTypeIdentifier, DepArrayType, ExpType, PairType, PhraseType, TypeCheck}
+import idealised.DPIA.Types.{AccType, CommandType, DataType, DataTypeIdentifier, DepArrayType, ExpType, PairType, PhraseType, TypeCheck, int}
 import idealised._
 import lift.arithmetic.{Cst, Var}
 
@@ -19,6 +19,7 @@ object ProgramGenerator {
                                            ): (Phrase[ExpType], Seq[Identifier[ExpType]]) = {
       p match {
         case l: Lambda[ExpType, _]@unchecked => getPhraseAndParams(l.body, l.param +: ps)
+        case ndl: NatDependentLambda[_] => getPhraseAndParams(ndl.body, Identifier(ndl.x.name, ExpType(int)) +: ps)
         case ep: Phrase[ExpType]@unchecked => (ep, ps)
       }
     }
@@ -44,7 +45,7 @@ object ProgramGenerator {
 
     val (declarations, code) = gen.generate(p, env)
 
-    val typeDeclarations = collectTypeDeclarations(code).toSeq
+    val typeDeclarations = collectTypeDeclarations(code)
 
     C.Program(
       typeDeclarations ++ declarations,

@@ -27,6 +27,7 @@ object KernelGenerator {
                                            ): (Phrase[ExpType], Seq[Identifier[ExpType]]) = {
       p match {
         case l: Lambda[ExpType, _]@unchecked => getPhraseAndParams(l.body, l.param +: ps)
+        case ndl: NatDependentLambda[_] => getPhraseAndParams(ndl.body, Identifier(ndl.x.name, ExpType(int)) +: ps)
         case ep: Phrase[ExpType]@unchecked => (ep, ps)
       }
     }
@@ -105,10 +106,11 @@ object KernelGenerator {
                          gen: CodeGeneration.CodeGenerator): Seq[OpenCL.AST.ParamDecl] = {
     Seq(makeGlobalParam(out, gen)) ++ // first the output parameter ...
       ins.map(makeInputParam(_, gen)) ++ // ... then the input parameters ...
-      intermediateAllocations.map(makeParam(_, gen)) ++ // ... then the intermediate buffers ...
+      intermediateAllocations.map(makeParam(_, gen)) //++  ... then the intermediate buffers ...
       // ... finally, the parameters for the length information in the type
       // these can only come from the input parameters.
-      makeLengthParams(ins.map(_.t.dataType))
+      // TODO clarify whether we can rely on Nat-dependent lambdas only
+      //makeLengthParams(ins.map(_.t.dataType))
   }
 
   // pass arrays via global and scalar + tuple values via private memory
