@@ -57,7 +57,8 @@ case class Kernel(decls: Seq[C.AST.Decl],
       val c = code
       val kernelJNI = opencl.executor.Kernel.create(c, kernel.name, "")
 
-      assert(localSize.isEvaluable && globalSize.isEvaluable)
+      assert(localSize.isEvaluable && globalSize.isEvaluable,
+        "Local and Global Size must be evaluable and set before executing the kernel.")
 
       val runtime = Executor.execute(kernelJNI,
         ArithExpr.substitute(localSize, lengthMapping).eval, 1, 1,
@@ -99,7 +100,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
       case (rt: RecordType, tuple: (_, _)) =>
         createLengthMapping(rt.fst, tuple._1) ++
           createLengthMapping(rt.snd, tuple._2)
-      case x => throw new Exception(s"Expected $t but got $a")
+      case _ => throw new Exception(s"Expected $t but got $a")
     }
   }
 
