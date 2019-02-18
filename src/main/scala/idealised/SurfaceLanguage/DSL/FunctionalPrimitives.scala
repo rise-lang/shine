@@ -4,7 +4,7 @@ import idealised.SurfaceLanguage.Primitives._
 import idealised.SurfaceLanguage.Semantics._
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage.{Expr, _}
-import lift.arithmetic.NamedVar
+import lift.arithmetic.{Cst, InclusiveIndexVar, NamedVar}
 
 import scala.language.implicitConversions
 
@@ -59,10 +59,11 @@ object join {
 }
 
 object partition {
+
   def apply(m: Nat, f:NatIdentifier => Nat): Expr[DataType -> DataType] = fun(array => partition(m, f, array))
 
   def apply(m:Nat, f:NatIdentifier => Nat, array: DataExpr): Partition = {
-    val ident = NamedVar("p")
+    val ident = InclusiveIndexVar("p", Cst(0), m)
     Partition(m, ident, f(ident), array, None)
   }
 }

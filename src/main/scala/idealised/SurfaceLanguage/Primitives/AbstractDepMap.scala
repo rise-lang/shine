@@ -30,10 +30,10 @@ abstract class AbstractDepMap(df: Expr[`(nat)->`[DataType -> DataType]],
   override def convertToPhrase: DPIA.FunctionalPrimitives.AbstractDepMap = {
     (df.t, array.t) match {
       case (Some(NatDependentFunctionType(k, FunctionType(df1_k: DataType, df2_k: DataType))), Some(DepArrayType(n, NatDependentFunctionType(_, _)))) =>
-        val i1 = NamedVar(freshName())
+        val i1 = NamedVar(freshName(), k.range)
         val dt1: DataType = Type.substitute(i1, `for`=k, in=df1_k)
 
-        val i2 = NamedVar(freshName())
+        val i2 = NamedVar(freshName(), k.range)
         val dt2: DataType = Type.substitute(i2, `for`=k, in=df2_k)
 
         val fPhrase = df.toPhrase[DPIA.Types.NatDependentFunctionType[DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]]]
