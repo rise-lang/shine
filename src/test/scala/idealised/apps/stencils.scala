@@ -124,6 +124,6 @@ class stencils extends Tests {
   }
 
   test("Partitioned stencil") {
-    PartitionedStencil(1024, 5, 128).compileAndPrintCode(localSize = 1, globalSize = 1)
+    PartitionedStencil(1024, 4, 128).compileAndPrintCode(localSize = 1, globalSize = 1)
   }
 }

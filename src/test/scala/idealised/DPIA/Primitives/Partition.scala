@@ -29,9 +29,9 @@ class Partition extends idealised.util.Tests {
       pad(3, 3,0.0f) :>>
       partition(3, lenF) :>> depMapSeq(fun(x => x)))
 
-    val p = idealised.C.ProgramGenerator.makeCode(TypeInference(padAndPartition, Map()).toPhrase)
+    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(padAndPartition, Map()).toPhrase, localSize = 1, globalSize = 1)
     val code = p.code
-    SyntaxChecker(code)
+    SyntaxChecker.checkOpenCL(code)
     println(code)
   }
 }
