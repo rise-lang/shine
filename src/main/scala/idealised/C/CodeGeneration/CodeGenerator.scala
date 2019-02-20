@@ -308,6 +308,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             exp(array, env, CIntExpr(i - l) ::ps, arrayExpr => {
 
               def genBranch(bound:ArithExpr, taken:Expr, notTaken:Expr):Expr = {
+                val x = i
                 BranchPrediction(i, Predicate.Operator.<, bound) match {
                   case BranchPrediction.AlwaysTaken => taken
                   case BranchPrediction.NeverTaken => notTaken

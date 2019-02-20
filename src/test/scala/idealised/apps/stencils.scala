@@ -107,7 +107,7 @@ class stencils extends Tests {
       fun(ArrayType(N, float))(input =>
         input :>> pad(padSize, padSize, 0.0f) :>>
           partition(3, m => SteppedCase(m, Seq(padSize, N, padSize))) :>>
-          depMapSeq(fun(chunk => slide(stencilSize, 1, chunk) :>> mapGlobal(fun(nbh => reduceSeq(add, 0.0f, nbh)))))
+          depMapSeqUnroll(fun(chunk => slide(stencilSize, 1, chunk) :>> mapGlobal(fun(nbh => reduceSeq(add, 0.0f, nbh)))))
       )
     }
 
@@ -124,6 +124,6 @@ class stencils extends Tests {
   }
 
   test("Partitioned stencil") {
-    PartitionedStencil(1024, 4, 128).compileAndPrintCode(localSize = 1, globalSize = 1)
+    PartitionedStencil(1024, 45, 128).compileAndPrintCode(localSize = 1, globalSize = 1)
   }
 }
