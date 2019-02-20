@@ -254,7 +254,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case part@Partition(_, _, _, _, _, e) => path match {
         case (i: CIntExpr) :: (j: CIntExpr) :: ps =>
-          val newIdx = BigSum(0, i, x => part.lenF(x)) + j
+          val newIdx = BigSum(0, i - 1, x => part.lenF(x)) + j
           exp(e, env, CIntExpr(newIdx) :: ps, cont)
         case _ => error(s"Expected path to contain at least two elements")
       }

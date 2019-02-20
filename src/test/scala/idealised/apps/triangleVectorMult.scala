@@ -176,7 +176,16 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
     )
   }
 
-  ignore ("Parallel OpenCL triangle vector partial multiplication (padding the row up to vector) (PLDI '19 submission listing 5)") {
+  test ("Parallel OpenCL triangle vector partial multiplication (padding the row up to vector) (PLDI '19 submission listing 5)") {
+    val inputSize = 4096
+    println(Executor.getPlatformName)
+    println(Executor.getDeviceName)
+
+    val result = triangleMatrixPadSplit(inputSize, 8, 8, inputSize)
+    assert(result.correct)
+  }
+
+  ignore ("Explore Parallel OpenCL triangle vector partial multiplication (padding the row up to vector) (PLDI '19 submission listing 5)") {
     val inputSize = 4096
     println(Executor.getPlatformName)
     println(Executor.getDeviceName)
