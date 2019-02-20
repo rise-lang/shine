@@ -1,6 +1,6 @@
 package idealised.C.CodeGeneration
 
-import idealised.C.AST.{Node, Nodes}
+import idealised.C.AST.{Block, Node, Nodes}
 import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives._
 import idealised.DPIA.ImperativePrimitives._
@@ -307,29 +307,18 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           exp(pad, env, List(), padExpr => {
             exp(array, env, CIntExpr(i - l) ::ps, arrayExpr => {
 
-              def generateLeftSide(rest:Expr):Expr = {
-                //i < l ?
-                C.AST.TernaryExpr(
-                  C.AST.BinaryExpr(C.AST.ArithmeticExpr(i), C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(l)),
-                  padExpr, rest)
-              }
-
-              def generateRightSide = {
-                C.AST.TernaryExpr(
-                  C.AST.BinaryExpr(C.AST.ArithmeticExpr(i), C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(l + n)),
-                  arrayExpr,
-                  padExpr
-                )
-              }
-
-              val result = l match {
-                case Cst(0) => generateRightSide
-                case _ => r match {
-                  case Cst(0) => generateLeftSide(arrayExpr)
-                  case _ => generateLeftSide(generateRightSide)
+              def genBranch(bound:ArithExpr, taken:Expr, notTaken:Expr):Expr = {
+                BranchPrediction(i, Predicate.Operator.<, bound) match {
+                  case BranchPrediction.AlwaysTaken => taken
+                  case BranchPrediction.NeverTaken => notTaken
+                  case BranchPrediction.Unknown =>
+                    C.AST.TernaryExpr(
+                      C.AST.BinaryExpr(C.AST.ArithmeticExpr(i), C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(bound)),
+                      taken, notTaken)
                 }
               }
-              cont(result)
+
+              cont(genBranch(l, padExpr, genBranch(l + n, arrayExpr, padExpr)))
             })
           })
 
@@ -568,57 +557,51 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
           val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + 1))
 
-          PhraseType.substitute(NamedVar(cI.name, range), `for` = i, in = p) |> (p => {
-
-            val newIdentEnv = env.identEnv.map {
-              case (Identifier(name, AccType(dt)), declRef) =>
-                (Identifier(name, AccType(DataType.substitute(NamedVar(cI.name, range), `for` = i, in = dt))), declRef)
-              case (Identifier(name, ExpType(dt)), declRef) =>
-                (Identifier(name, ExpType(DataType.substitute(NamedVar(cI.name, range), `for` = i, in = dt))), declRef)
-              case x => x
+          if(unroll) {
+            val statements = for (index <- rangeAddToScalaRange(range)) yield {
+              generateNatDependentBody(`for` = i, `phrase`=p, at = Cst(index), updatedGen, env).body
             }
-
-            val forLoop = C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
-              C.AST.Block(immutable.Seq(updatedGen.cmd(p, env.copy(identEnv = newIdentEnv))))
+            C.AST.Block(
+              C.AST.Comment(s"Unrolling from ${range.start} until ${range.stop} by increments of ${range.step}") +:
+              statements.flatten
             )
-            if(unroll) {
-              unrollForLoop(forLoop, range)
-            } else {
-              forLoop
-            }
-          })
+          } else {
+            val body = generateNatDependentBody(`for` = i, `phrase` = p, at = NamedVar(cI.name, range), updatedGen, env)
+
+            C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
+              body
+            )
+          }
       }})
     }
 
     /**
-      * Unrolls a for loop. Requries the correct range to be passed in as an arithmetic expression.
-      * While it's possible to fish out the range from the for loop itself, at the point of usage
-      * in the generating functions the range is also already available.
-      * Throws an exception if the for loop cannot be unrolled.
-      * @param forLoop
-      * @param loopRange
+      * This function takes a phrase with a nat dependent free variable `for`, and it generates a block
+      * where `for` is bound to the arithmetic expression at.
+      * @param `for` The free nat variable to substitute
+      * @param phrase The phrase to to generate
+      * @param at The arithmetic expression we are generating phrase at
+      * @param generator Up-to-date code generator
+      * @param env Up-to-date environment
       * @return
       */
-    private def unrollForLoop(forLoop:C.AST.ForLoop, loopRange:RangeAdd):C.AST.Block = {
-      val iterVarName = forLoop.init.decl.name
-      val range = rangeAddToScalaRange(loopRange)
-      val body = forLoop.body
-      val statements = for (i <- range) yield {
-        body.visitAndRebuild(new Nodes.VisitAndRebuild.Visitor {
-          override def post(n: Node): Node = {
-            n match {
-              case C.AST.DeclRef(varName)  if varName == iterVarName =>
-                C.AST.ArithmeticExpr(Cst(i))
-              case C.AST.ArithmeticExpr(ae) =>
-                val relevantVars = ArithExpr.freeVariables(ae).filter(_.name == iterVarName)
-                val subs = relevantVars.map(x => (x, Cst(i))).toMap[ArithExpr, ArithExpr]
-                C.AST.ArithmeticExpr(ArithExpr.substitute(ae, subs))
-              case other => other
-            }
-          }
-        }).asInstanceOf[C.AST.Block].body
-      }
-      C.AST.Block(C.AST.Comment(s"Unrolling from ${range.start} until ${range.end} by increments of ${range.step}") +: statements.flatten)
+    private def generateNatDependentBody(
+                                          `for`:NatIdentifier,
+                                          phrase:Phrase[CommandType],
+                                          at:ArithExpr,
+                                          generator:CodeGenerator,
+                                          env:Environment):Block = {
+      PhraseType.substitute(at, `for`, in = phrase) |> (p => {
+
+        val newIdentEnv = env.identEnv.map {
+          case (Identifier(name, AccType(dt)), declRef) =>
+            (Identifier(name, AccType(DataType.substitute(at, `for`, in = dt))), declRef)
+          case (Identifier(name, ExpType(dt)), declRef) =>
+            (Identifier(name, ExpType(DataType.substitute(at, `for`, in = dt))), declRef)
+          case x => x
+        }
+          C.AST.Block(immutable.Seq(generator.cmd(p, env.copy(identEnv = newIdentEnv))))
+      })
     }
 
     private def rangeAddToScalaRange(range:RangeAdd) = {
