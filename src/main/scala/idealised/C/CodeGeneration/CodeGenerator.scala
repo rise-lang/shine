@@ -316,11 +316,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                       C.AST.BinaryExpr(C.AST.ArithmeticExpr(i), C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(bound)),
                       taken, notTaken)
                 }
-                C.AST.TernaryExpr(
-                  C.AST.BinaryExpr(C.AST.ArithmeticExpr(i), C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(bound)),
-                  taken, notTaken)
               }
-
               cont(genBranch(l, padExpr, genBranch(l + n, arrayExpr, padExpr)))
             })
           })
