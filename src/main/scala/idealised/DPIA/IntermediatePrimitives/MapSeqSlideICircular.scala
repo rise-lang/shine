@@ -33,7 +33,7 @@ object MapSeqSlideICircular {
             CycleAcc(size - 1 + n, size, dt1, buffer.wr)) `@` i) :=| dt1 |
             (Drop(size - 1, inputSize, dt1, input) `@` i)) `;`
             f(Take(3, n - i, dt1, Drop(i, n, dt1, Cycle(n, size, dt1, buffer.rd))))(output `@` i)
-        }))
+        }), unroll = false)
     })
   }
 }

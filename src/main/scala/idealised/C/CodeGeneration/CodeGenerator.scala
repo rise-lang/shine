@@ -1,5 +1,6 @@
 package idealised.C.CodeGeneration
 
+import idealised.C.AST.{Node, Nodes}
 import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives._
 import idealised.DPIA.ImperativePrimitives._
@@ -117,7 +118,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case For(n, Lambda(i, p)) => CCodeGen.codeGenFor(n, i, p, env)
 
-      case ForNat(n, NatDependentLambda(i, p)) => CCodeGen.codeGenForNat(n, i, p, env)
+      case ForNat(n, NatDependentLambda(i, p), unroll) => CCodeGen.codeGenForNat(n, i, p, unroll, env)
 
       case Proj1(pair) => cmd(Lifting.liftPair(pair)._1, env)
       case Proj2(pair) => cmd(Lifting.liftPair(pair)._2, env)
@@ -542,6 +543,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     def codeGenForNat(n: Nat,
                       i: NatIdentifier,
                       p: Phrase[CommandType],
+                      unroll:Boolean,
                       env: Environment): Stmt = {
       val cI = C.AST.DeclRef(freshName("i_"))
       val range = RangeAdd(0, n, 1)
@@ -576,10 +578,58 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
               case x => x
             }
 
-            C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
-              C.AST.Block(immutable.Seq(updatedGen.cmd(p, env.copy(identEnv = newIdentEnv)))))
+            val forLoop = C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
+              C.AST.Block(immutable.Seq(updatedGen.cmd(p, env.copy(identEnv = newIdentEnv))))
+            )
+            if(unroll) {
+              unrollForLoop(forLoop, range)
+            } else {
+              forLoop
+            }
           })
       }})
+    }
+
+    /**
+      * Unrolls a for loop. Requries the correct range to be passed in as an arithmetic expression.
+      * While it's possible to fish out the range from the for loop itself, at the point of usage
+      * in the generating functions the range is also already available.
+      * Throws an exception if the for loop cannot be unrolled.
+      * @param forLoop
+      * @param loopRange
+      * @return
+      */
+    private def unrollForLoop(forLoop:C.AST.ForLoop, loopRange:RangeAdd):C.AST.Block = {
+      val iterVarName = forLoop.init.decl.name
+      val range = rangeAddToScalaRange(loopRange)
+      val body = forLoop.body
+      val statements = for (i <- range) yield {
+        body.visitAndRebuild(new Nodes.VisitAndRebuild.Visitor {
+          override def post(n: Node): Node = {
+            n match {
+              case C.AST.DeclRef(varName)  if varName == iterVarName =>
+                C.AST.ArithmeticExpr(Cst(i))
+              case C.AST.ArithmeticExpr(ae) =>
+                val relevantVars = ArithExpr.freeVariables(ae).filter(_.name == iterVarName)
+                val subs = relevantVars.map(x => (x, Cst(i))).toMap[ArithExpr, ArithExpr]
+                C.AST.ArithmeticExpr(ArithExpr.substitute(ae, subs))
+              case other => other
+            }
+          }
+        }).asInstanceOf[C.AST.Block].body
+      }
+      C.AST.Block(C.AST.Comment(s"Unrolling from ${range.start} until ${range.end} by increments of ${range.step}") +: statements.flatten)
+    }
+
+    private def rangeAddToScalaRange(range:RangeAdd) = {
+      val (start,stop,step) = {
+        try {
+          (range.start.evalLong, range.stop.evalLong, range.step.evalLong)
+        } catch {
+          case nev:NotEvaluableException => throw new Exception(s"Cannot evaluate range $range in loop unrolling")
+        }
+      }
+      start until stop by step
     }
 
     def codeGenIdxAcc(i: Phrase[ExpType],
