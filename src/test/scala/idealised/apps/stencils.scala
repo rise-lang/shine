@@ -13,9 +13,8 @@ import scala.util.Random
 class stencils extends Tests {
   val add = fun(x => fun(y => x + y))
 
-  private case class Stencil1DResult(inputSize:Int,
+  private case class StencilResult(inputSize:Int,
                                      stencilSize:Int,
-                                     tileSize:Int,
                                      localSize:Int,
                                      globalSize:Int,
                                      code:String,
@@ -26,7 +25,6 @@ class stencils extends Tests {
       println(
         s"inputSize = $inputSize, " +
         s"stencilSize = $stencilSize, " +
-        s"tileSize =$tileSize, " +
         s"localSize = $localSize, " +
         s"globalSize = $globalSize, " +
         s"code = $code, " +
@@ -35,13 +33,21 @@ class stencils extends Tests {
       )
   }
 
-  private trait StencilAlgorithm {
-    def dpiaProgram:Expr[DataType -> DataType]
-    def scalaProgram:Array[Float] => Array[Float]
+  private sealed trait StencilBaseAlgorithm {
+    type Input
+    type Output
 
     def inputSize:Int
     def stencilSize:Int
-    def tileSize:Int
+
+
+    def dpiaProgram:Expr[DataType -> DataType]
+
+    protected def makeInput(random:Random):Input
+
+    protected def runScalaProgram(input:Input):Output
+
+    protected def flattenOutput(output: Output):Array[Float]
 
 
     private def compile(localSize:ArithExpr, globalSize:ArithExpr):Kernel = {
@@ -53,28 +59,30 @@ class stencils extends Tests {
       println(kernel.code)
     }
 
-    final def run(localSize:Int, globalSize:Int):Stencil1DResult = {
+    final def run(localSize:Int, globalSize:Int):StencilResult = {
       opencl.executor.Executor.loadAndInit()
 
       val rand = new Random()
-      val input = Array.tabulate(inputSize)(_ => rand.nextFloat())
-      val scalaOutput = scalaProgram(input).toArray
+      val input = makeInput(rand)
+      val scalaOutput = runScalaProgram(input)
 
       import idealised.OpenCL.{ScalaFunction, `(`, `)=>`, _}
 
       val kernel = this.compile(localSize, globalSize)
-      val kernelFun = kernel.as[ScalaFunction`(`Array[Float]`)=>`Array[Float]]
+      val kernelFun = kernel.as[ScalaFunction`(`Input`)=>`Array[Float]]
       val (kernelOutput, time) = kernelFun(input `;`)
 
       opencl.executor.Executor.shutdown()
 
-      val correct = kernelOutput.zip(scalaOutput).forall{case (x,y) => Math.abs(x - y) < 0.01}
-      Stencil1DResult(
+      val flattenedScalaOutput = flattenOutput(scalaOutput)
+
+      val correct = kernelOutput.zip(flattenedScalaOutput).forall{case (x,y) => Math.abs(x - y) < 0.01}
+
+      StencilResult(
         inputSize = inputSize,
-        stencilSize = stencilSize,
-        tileSize = tileSize,
         localSize = localSize,
         globalSize = globalSize,
+        stencilSize = stencilSize,
         code = kernel.code,
         runtimeMs = time.value,
         correct = correct
@@ -82,8 +90,31 @@ class stencils extends Tests {
     }
   }
 
-  private case class BasicStencil(inputSize:Int, stencilSize:Int, tileSize:Int) extends StencilAlgorithm {
-    private val padSize = stencilSize/2
+  private trait Stencil1DAlgorithm extends StencilBaseAlgorithm {
+    def inputSize:Int
+    def stencilSize:Int
+    final val padSize = stencilSize/2
+
+    final override type Input = Array[Float]
+    final override type Output = Array[Float]
+
+    def dpiaProgram:Expr[DataType -> DataType]
+
+    final def scalaProgram: Array[Float] => Array[Float] = (xs:Array[Float]) => {
+      val pad = Array.fill(padSize)(0.0f)
+      val paddedXs = pad ++ xs ++ pad
+      paddedXs.sliding(stencilSize, 1).map(nbh => nbh.foldLeft(0.0f)(_ + _))
+    }.toArray
+
+    final override protected def makeInput(random: Random) = Array.fill(inputSize)(random.nextFloat())
+
+    final override protected def flattenOutput(output: Array[Float]) = output
+
+    final override protected def runScalaProgram(input: Array[Float]) = scalaProgram(input)
+
+  }
+
+  private case class BasicStencil1D(inputSize:Int, stencilSize:Int) extends Stencil1DAlgorithm {
 
     override def dpiaProgram: Expr[DataType -> DataType] = {
       val N = SizeVar("N")
@@ -93,16 +124,9 @@ class stencils extends Tests {
           ))
       )
     }
-
-    override def scalaProgram: Array[Float] => Array[Float] = (xs:Array[Float]) => {
-      val pad = Array.fill(padSize)(0.0f)
-      val paddedXs = pad ++ xs ++ pad
-      paddedXs.sliding(stencilSize, 1).map(nbh => nbh.foldLeft(0.0f)(_ + _))
-    }.toArray
   }
 
-  private case class PartitionedStencil(inputSize:Int, stencilSize:Int, tileSize:Int) extends StencilAlgorithm {
-    private val padSize = stencilSize/2
+  private case class PartitionedStencil1D(inputSize:Int, stencilSize:Int) extends Stencil1DAlgorithm {
 
     override def dpiaProgram: Expr[DataType -> DataType] = {
       val N = SizeVar("N")
@@ -113,20 +137,51 @@ class stencils extends Tests {
           depMapSeqUnroll(mapGlobal(fun(nbh => reduceSeq(add, 0.0f, nbh))))
       )
     }
-
-    override def scalaProgram: Array[Float] => Array[Float] = (xs:Array[Float]) => {
-      val pad = Array.fill(padSize)(0.0f)
-      val paddedXs = pad ++ xs ++ pad
-      paddedXs.sliding(stencilSize, 1).map(nbh => nbh.foldLeft(0.0f)(_ + _))
-    }.toArray
   }
 
 
-  test("Basic stencil") {
-    assert(BasicStencil(1024, 5, 128).run(localSize = 1, globalSize = 1).correct)
+  private sealed trait Stencil2DAlgorithm extends StencilBaseAlgorithm {
+    def inputSize:Int
+    def stencilSize:Int
+
+    override type Input = Array[Array[Float]]
+    override type Output = Array[Array[Float]]
+
+    private val padSize = stencilSize/2
+
+    def dpiaProgram:Expr[DataType -> DataType]
+
+    final override protected def flattenOutput(output: Array[Array[Float]]) = output.flatten
+
+    final override protected def makeInput(random: Random) = Array.fill(inputSize)(Array.fill(inputSize)(random.nextFloat()))
+
+    final override protected def runScalaProgram(input: Array[Array[Float]]) = scalaProgram(input)
+
+    private def pad2D(input:Array[Array[Float]]):Array[Array[Float]] = {
+      val pad1D = Array.fill(padSize)(0.0f)
+      val pad2D = Array.fill(inputSize)(0.0f)
+
+      Array(pad2D) ++ input.map(row => pad1D ++ row ++ pad1D) ++ Array(pad2D)
+    }
+
+    private def slide2D(input:Array[Array[Float]]): Array[Array[Array[Array[Float]]]] = {
+      input.map(_.sliding(stencilSize, 1).toArray).sliding(stencilSize, 1).map(x => x.transpose).toArray
+    }
+
+    private def scalaTileStencil(input:Array[Array[Float]]):Float = {
+      input.flatten.reduceOption(_ + _).getOrElse(0.0f)
+    }
+
+    final def scalaProgram: Array[Array[Float]] => Array[Array[Float]] = (grid:Array[Array[Float]]) => {
+      slide2D(pad2D(grid)).map(_.map(scalaTileStencil))
+    }
   }
 
-  test("Partitioned stencil") {
-    assert(PartitionedStencil(1024, 5, 128).run(localSize = 1, globalSize = 1).correct)
+  test("Basic 1D addition stencil") {
+    assert(BasicStencil1D(1024, 5).run(localSize = 1, globalSize = 1).correct)
+  }
+
+  test("Partitioned 1D addition stencil, with specialised area handling") {
+    assert(PartitionedStencil1D(1024, 5).run(localSize = 1, globalSize = 1).correct)
   }
 }

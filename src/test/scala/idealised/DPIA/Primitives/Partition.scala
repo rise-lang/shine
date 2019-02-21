@@ -20,22 +20,28 @@ class Partition extends idealised.util.Tests {
     println(code)
   }
 
-  test("Partition threeway with pad") {
+  test("Partition threeway with pad and unrolling") {
     opencl.executor.Executor.loadAndInit()
     import idealised.OpenCL.{ScalaFunction, `(`, `)=>`, _}
 
     val N = SizeVar("N")
+    val padAmount = 3
 
     val lenF =  SteppedCase(3, N, 3) _
 
     val padAndPartition = fun(ArrayType(N, float))(xs => xs :>>
-      pad(3, 3,1.0f) :>>
-      partition(3, lenF) :>> depMapSeqUnroll(mapSeq(fun(x => x + 1.0f))))
+      pad(padAmount, padAmount,0.0f) :>>
+      partition(3, lenF) :>>
+      depMapSeqUnroll(mapSeq(fun(x => x + 1.0f))))
 
     val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(padAndPartition, Map()).toPhrase, localSize = 1, globalSize = 1)
     val kernelF = p.as[ScalaFunction`(`Array[Float]`)=>`Array[Float]]
     val input = Array.fill(128)(5.0f)
     val (output, time) = kernelF(input `;`)
+
+    val scalaOutput = (Array.fill(padAmount)(0.0f) ++ input ++ Array.fill(padAmount)(0.0f)).map(x => x + 1.0f)
+
+    assert(output.zip(scalaOutput).forall{ case (x,y) => x - y < 0.01 })
 
     val code = p.code
     SyntaxChecker.checkOpenCL(code)
