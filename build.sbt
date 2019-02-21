@@ -4,25 +4,17 @@ version := "1.0"
 
 scalaVersion := "2.11.12"
 
-compile := ((compile in Compile) dependsOn (updateSubmodules, compileExecutor)).value
+compile := ((compile in Compile) dependsOn setupSubmodules).value
 
-lazy val updateSubmodules = taskKey[Unit]("Update the submodules")
+lazy val setupSubmodules = taskKey[Unit]("Sets up the submodules")
 
-updateSubmodules := {
+setupSubmodules := {
   import scala.language.postfixOps
   import scala.sys.process._
   //noinspection PostfixMethodCall
-  "echo y" #| "./updateSubmodules.sh" !
+  "echo y" #| "./setupSubmodules.sh" !
 }
 
-lazy val compileExecutor = taskKey[Unit]("Builds the Executor.")
-
-compileExecutor := {
-  import scala.language.postfixOps
-  import scala.sys.process._
-  //noinspection PostfixMethodCall
-  "echo y" #| "./buildExecutor.sh" !
-}
 
 scalacOptions ++= Seq("-Xmax-classfile-name", "100", "-unchecked", "-deprecation", "-feature")
 
