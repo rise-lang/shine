@@ -3,7 +3,7 @@ package idealised.DPIA.DSL
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types.{DataTypeIdentifier, PhraseType}
 import idealised.DPIA._
-import lift.arithmetic.NamedVar
+import lift.arithmetic.PosVar
 
 object identifier {
   def apply[T <: PhraseType](name: String, t: T) = Identifier(name, t)
@@ -27,14 +27,14 @@ object λ extends funDef
 
 trait dependentFunDef {
 
-  def apply[T <: PhraseType](f: NamedVar => Phrase[T]): NatDependentLambda[T] = {
-    val x = NamedVar(freshName())
+  def apply[T <: PhraseType](f: PosVar => Phrase[T]): NatDependentLambda[T] = {
+    val x = PosVar(freshName())
     NatDependentLambda(x, f(x))
   }
 
-  def apply[T <: PhraseType](f: NamedVar => Phrase[T],
+  def apply[T <: PhraseType](f: PosVar => Phrase[T],
                              range: lift.arithmetic.Range): NatDependentLambda[T] = {
-    val x = NamedVar(freshName(), range)
+    val x = PosVar(freshName(), range)
     NatDependentLambda(x, f(x))
   }
 

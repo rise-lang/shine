@@ -1,27 +1,28 @@
 package idealised.apps
 
+import idealised.DPIA.Phrases.Phrase
 import idealised.SurfaceLanguage.DSL._
+import idealised.SurfaceLanguage.NatIdentifier
 import idealised.SurfaceLanguage.Types._
 import idealised.util.SyntaxChecker
-import lift.arithmetic._
 
 class dot extends idealised.util.Tests {
 
-  private val N = SizeVar("N")
-  private val xsT = ArrayType(N, float)
-  private val ysT = ArrayType(N, float)
+  private def xsT(N : NatIdentifier) = ArrayType(N, float)
+  private def ysT(N : NatIdentifier) = ArrayType(N, float)
 
   private val mult = fun(x => x._1 * x._2)
   private val add = fun((x, a) => x + a)
 
-  private val simpleDotProduct = fun(xsT)(xs => fun(ysT)(ys =>
+  private val simpleDotProduct = dFun((n : NatIdentifier) => fun(xsT(n))(xs => fun(ysT(n))(ys =>
     zip(xs, ys) :>> mapSeq(mult) :>> reduceSeq(add, 0.0f)
-  ))
+  )))
 
   test("Simple dot product type inference works") {
     val typed = TypeInference(simpleDotProduct, Map())
 
-    assertResult(FunctionType(xsT, FunctionType(ysT, float))) {
+    val N = Phrase.natIdentParams(typed.toPhrase).head
+    assertResult(NatDependentFunctionType(N, FunctionType(xsT(N), FunctionType(ysT(N), float)))) {
       typed.t.get
     }
   }
@@ -31,8 +32,9 @@ class dot extends idealised.util.Tests {
     import idealised.DPIA._
     val phrase = TypeInference(simpleDotProduct, Map()).convertToPhrase
 
+    val N = Phrase.natIdentParams(phrase).head
     val dt = float
-    assertResult(exp"[$N.$dt]" -> (exp"[$N.$dt]" -> exp"[$dt]")) {
+    assertResult(N -> (exp"[$N.$dt]" -> (exp"[$N.$dt]" -> exp"[$dt]"))) {
       phrase.t
     }
   }
@@ -48,7 +50,7 @@ class dot extends idealised.util.Tests {
   test("Dot product CPU vector 1 compiles to syntactically correct OpenMP") {
     import idealised.OpenMP.SurfaceLanguage.DSL._
 
-    val dotCPUVector1 = fun(xsT)(xs => fun(ysT)(ys =>
+    val dotCPUVector1 = dFun((n : NatIdentifier) => fun(xsT(n))(xs => fun(ysT(n))(ys =>
       zip(
         xs :>> asVector(4),
         ys:>> asVector(4)
@@ -60,7 +62,7 @@ class dot extends idealised.util.Tests {
               reduceSeq(fun(x => fun(a => mult(x) + a)), vectorize(4, 0.0f))
             )
         ) :>> join :>> asScalar
-    ))
+    )))
 
     val phrase = TypeInference(dotCPUVector1, Map()).toPhrase
     val p = idealised.OpenMP.ProgramGenerator.makeCode(phrase)
@@ -71,19 +73,20 @@ class dot extends idealised.util.Tests {
   test("Intel derived no warp dot product 1 compiles to syntactically correct OpenMP") {
     import idealised.OpenMP.SurfaceLanguage.DSL._
 
-    val intelDerivedNoWarpDot1 = fun(xsT)(xs => fun(ysT)(ys =>
-      zip(
-        xs :>> asVector(4),
-        ys:>> asVector(4)
-      ) :>>
-        split(8192) :>>
-        mapPar(
-          split(8192) >>>
-            mapSeq(
-              reduceSeq(fun(x => fun(a => mult(x) + a)), vectorize(4, 0.0f))
-            )
-        ) :>> join :>> asScalar
-    ))
+    val intelDerivedNoWarpDot1 = dFun((n : NatIdentifier) =>
+      fun(xsT(n))(xs => fun(ysT(n))(ys =>
+        zip(
+          xs :>> asVector(4),
+          ys:>> asVector(4)
+        ) :>>
+          split(8192) :>>
+          mapPar(
+            split(8192) >>>
+              mapSeq(
+                reduceSeq(fun(x => fun(a => mult(x) + a)), vectorize(4, 0.0f))
+              )
+          ) :>> join :>> asScalar
+      )))
 
     val phrase = TypeInference(intelDerivedNoWarpDot1, Map()).toPhrase
     val p = idealised.OpenMP.ProgramGenerator.makeCode(phrase)
@@ -94,7 +97,7 @@ class dot extends idealised.util.Tests {
   test("Dot product CPU 1 compiles to syntactically correct OpenMP") {
     import idealised.OpenMP.SurfaceLanguage.DSL._
 
-    val dotCPU1 = fun(xsT)(xs => fun(ysT)(ys =>
+    val dotCPU1 = dFun((n : NatIdentifier) => fun(xsT(n))(xs => fun(ysT(n))(ys =>
       zip(xs, ys) :>>
         split(2048 * 128) :>>
         mapPar(
@@ -103,7 +106,7 @@ class dot extends idealised.util.Tests {
               reduceSeq(fun(x => fun(a => mult(x) + a)), 0.0f)
             )
         ) :>> join
-    ))
+    )))
 
     val phrase = TypeInference(dotCPU1, Map()).toPhrase
     val p = idealised.OpenMP.ProgramGenerator.makeCode(phrase)
@@ -114,7 +117,7 @@ class dot extends idealised.util.Tests {
   test("Dot product CPU 2 compiles to syntactically correct OpenMP") {
     import idealised.OpenMP.SurfaceLanguage.DSL._
 
-    val dotCPU2 = fun(xsT)(in =>
+    val dotCPU2 = dFun((n : NatIdentifier) => fun(xsT(n))(in =>
       in :>>
         split(128) :>>
         mapPar(
@@ -123,7 +126,7 @@ class dot extends idealised.util.Tests {
               reduceSeq(fun(x => fun(a => x + a)), 0.0f)
             )
         ) :>> join
-    )
+    ))
 
     val phrase = TypeInference(dotCPU2, Map()).toPhrase
     val p = idealised.OpenMP.ProgramGenerator.makeCode(phrase)

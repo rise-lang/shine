@@ -2,7 +2,7 @@ package idealised
 
 import idealised.DPIA.Phrases.Phrase
 import idealised.DPIA.Types.{PhraseTypeParser, _}
-import lift.arithmetic.{ArithExpr, NamedVar, Var}
+import lift.arithmetic._
 
 import scala.language.{implicitConversions, reflectiveCalls}
 
@@ -17,7 +17,7 @@ package object DPIA {
   }
 
   type Nat = ArithExpr
-  type NatIdentifier = NamedVar
+  type NatIdentifier = PosVar
 
   object Nat {
     def substitute(ae: Nat, `for`: NatIdentifier, in: Nat): Nat = {

@@ -85,6 +85,18 @@ object Phrase {
 
     VisitAndRebuild(in, Visitor)
   }
+
+  def natIdentParams[T <: PhraseType](phrase: Phrase[T]): List[NatIdentifier] = {
+    def natIdentParamsHelper[T <: PhraseType](phrase: Phrase[T],
+                                              params: List[NatIdentifier]): List[NatIdentifier] = {
+      phrase match {
+        case NatDependentLambda(x, body) => natIdentParamsHelper(body, x :: params)
+        case _ => params.reverse
+      }
+    }
+
+    natIdentParamsHelper(phrase, Nil)
+  }
 }
 
 sealed trait Primitive[T <: PhraseType] extends Phrase[T] {

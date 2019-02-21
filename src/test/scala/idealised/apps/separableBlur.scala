@@ -15,9 +15,6 @@ class separableBlur extends idealised.util.Tests {
   // 2 4 2 ~ 2 x 1 2 1
   // 1 2 1   1
 
-  val W = SizeVar("W")
-  val H = SizeVar("H")
-
   val mul2 = fun(t => t._1 * t._2)
   val add = fun(x => fun(a => x + a))
   val dot = fun(a => fun(b => zip(a, b) :>> map(mul2) :>> reduceSeq(add, 0.0f)))
@@ -37,9 +34,9 @@ class separableBlur extends idealised.util.Tests {
     val slide2d = map(slide(3, 1)) >>> slide(3, 1) >>> map(transpose())
     val map2d = mapSeq(mapSeq(fun(nbh => dot(weights2d)(join(nbh)))))
 
-    fun(ArrayType(H, ArrayType(W, float)))(input =>
+    dFun((h : NatIdentifier) => dFun((w: NatIdentifier) => fun(ArrayType(h, ArrayType(w, float)))(input =>
       input :>> /* pad2d >>> */ slide2d :>> map2d
-    )
+    )))
   }
 
   println("----- BLUR -----")
@@ -48,28 +45,28 @@ class separableBlur extends idealised.util.Tests {
   val separated_blur = {
     val horizontal = mapSeq(slide(3, 1) >>> mapSeq(dot(weights1d)))
     val vertical = slide(3, 1) >>> mapSeq(transpose() >>> mapSeq(dot(weights1d)))
-    fun(ArrayType(H, ArrayType(W, float)))(input =>
+    dFun((h: NatIdentifier) => dFun((w: NatIdentifier) => fun(ArrayType(h, ArrayType(w, float)))(input =>
       input :>> vertical :>> horizontal
-    )
+    )))
   }
 
   println("----- SEPARATED BLUR -----")
   generate(separated_blur)
   println("----- SEPARATED BLUR, FUSED -----")
   generate({
-    fun(ArrayType(H, ArrayType(W, float)))(input =>
+    dFun((h: NatIdentifier) => dFun((w: NatIdentifier) => fun(ArrayType(h, ArrayType(w, float)))(input =>
       input :>> slide(3, 1) :>> mapSeq(
         transpose() >>> slide(3, 1) >>> mapSeq(mapSeq(dot(weights1d)) >>> dot(weights1d))
       )
-    )
+    )))
   })
   println("----- SEPARATED BLUR, REGISTER ROTATION -----")
   generate({
-    fun(ArrayType(H, ArrayType(W, float)))(input =>
+    dFun((h: NatIdentifier) => dFun((w: NatIdentifier) => fun(ArrayType(h, ArrayType(w, float)))(input =>
       input :>> slide(3, 1) :>> mapSeq(
         transpose() >>> map(dot(weights1d)) >>> mapSeqSlide(3, 1, dot(weights1d))
       )
-    )
+    )))
   })
 
   // need to detect overlap and reuse opportunity

@@ -7,7 +7,10 @@ import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
 import idealised.util.SyntaxChecker
-import lift.arithmetic.{NamedVar, SizeVar}
+import lift.arithmetic.SizeVar
+
+import scala.language.postfixOps
+import scala.language.reflectiveCalls
 
 class transpose extends idealised.util.TestsWithExecutor {
   val id = fun(x => x)
@@ -17,7 +20,8 @@ class transpose extends idealised.util.TestsWithExecutor {
     val natDepProg =
       dFun((x : NatIdentifier) =>
         dFun((y : NatIdentifier) =>
-          fun(ArrayType(SizeVar("N"), float))(in => in :>> split(x) :>> map(split(y)) :>> mapGlobal(mapSeq(mapSeq(id))))))
+          dFun((n : NatIdentifier) =>
+            fun(ArrayType(n, float))(in => in :>> split(x) :>> map(split(y)) :>> mapGlobal(mapSeq(mapSeq(id)))))))
 
     val compiledProg =
       idealised.OpenCL.KernelGenerator.makeCode(TypeInference(natDepProg, Map()).toPhrase, 8, 32)
@@ -27,10 +31,11 @@ class transpose extends idealised.util.TestsWithExecutor {
 
   test("Generate code for top-level nat-dependent lambdas in C") {
    val natDepProg =
-    //dFun((x : NatIdentifier) =>
-      //dFun((y : NatIdentifier) =>
-        fun(ArrayType(SizeVar("N"), float))(in => in :>> split(NamedVar("x")) :>> map(split(NamedVar("y"))) :>>
-          mapSeq(mapSeq(mapSeq(id))) :>> join() :>> join)//))
+    dFun((x : NatIdentifier) =>
+      dFun((y : NatIdentifier) =>
+        dFun((n : NatIdentifier) =>
+          fun(ArrayType(n, float))(in => in :>> split(x) :>> map(split(y)) :>>
+            mapSeq(mapSeq(mapSeq(id))) :>> join() :>> join))))
 
     val compiledProg =
       idealised.C.ProgramGenerator.makeCode(TypeInference(natDepProg, Map()).toPhrase)
@@ -86,6 +91,6 @@ class transpose extends idealised.util.TestsWithExecutor {
     val nSplit = 2
     val xs = Array.tabulate(M)(i => Array.fill(N)(1.0f * i))
 
-    val (result, time) =  kernelF((M`;`) `,` N `,` mSplit `,` nSplit `,` xs)
+    //val (result, time) =  kernelF((M`;`) `,` N `,` mSplit `,` nSplit `,` xs)
   }
 }

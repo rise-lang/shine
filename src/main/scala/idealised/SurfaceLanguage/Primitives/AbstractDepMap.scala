@@ -6,7 +6,7 @@ import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.SurfaceLanguage.Types.TypeInference.SubstitutionMap
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
-import lift.arithmetic.NamedVar
+import lift.arithmetic.PosVar
 
 abstract class AbstractDepMap(df: Expr[`(nat)->`[DataType -> DataType]],
                               array: DataExpr,
@@ -30,10 +30,10 @@ abstract class AbstractDepMap(df: Expr[`(nat)->`[DataType -> DataType]],
   override def convertToPhrase: DPIA.FunctionalPrimitives.AbstractDepMap = {
     (df.t, array.t) match {
       case (Some(NatDependentFunctionType(k, FunctionType(df1_k: DataType, df2_k: DataType))), Some(DepArrayType(n, NatDependentFunctionType(_, _)))) =>
-        val i1 = NamedVar(freshName())
+        val i1 = PosVar(freshName())
         val dt1: DataType = Type.substitute(i1, `for`=k, in=df1_k)
 
-        val i2 = NamedVar(freshName())
+        val i2 = PosVar(freshName())
         val dt2: DataType = Type.substitute(i2, `for`=k, in=df2_k)
 
         val fPhrase = df.toPhrase[DPIA.Types.NatDependentFunctionType[DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]]]

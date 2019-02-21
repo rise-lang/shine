@@ -5,7 +5,7 @@ import idealised.DPIA.IntermediatePrimitives.{DepMapSeqI, MapSeqI}
 import idealised.DPIA.Phrases.{NatDependentLambda, Phrase}
 import idealised.DPIA.Types.{AccType, ArrayType, CommandType, DataType, DepArrayType, ExpType, RecordType, ScalarType}
 import idealised.DPIA.freshName
-import lift.arithmetic.NamedVar
+import lift.arithmetic.PosVar
 
 class TranslationContext() extends idealised.DPIA.Compilation.TranslationContext {
   override def assign(dt: DataType,
@@ -21,9 +21,9 @@ class TranslationContext() extends idealised.DPIA.Compilation.TranslationContext
         MapSeqI(n, et, et, λ(ExpType(et))(x => λ(AccType(et))(a => assign(et, a, x) )), rhs, lhs)(this)
 
       case DepArrayType(n, i, et) =>
-        val i_ = NamedVar(freshName())
+        val i_ = PosVar(freshName())
         val et_ = DataType.substitute(i_, `for`=i, in=et)
-        val k = NamedVar(freshName())
+        val k = PosVar(freshName())
         val etk = DataType.substitute(k, `for`=i, in=et)
         DepMapSeqI(n, i_, et_, i_, et_,
           NatDependentLambda(k,

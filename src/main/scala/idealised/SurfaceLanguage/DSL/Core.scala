@@ -2,7 +2,7 @@ package idealised.SurfaceLanguage.DSL
 
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
-import lift.arithmetic.NamedVar
+import lift.arithmetic.PosVar
 
 object identifier {
   def apply(name: String): IdentifierExpr = IdentifierExpr(name, None)
@@ -32,8 +32,8 @@ object fun {
 
 object dFun {
 
-  def apply[T <: Type](f: NamedVar => Expr[T]): NatDependentLambdaExpr[T] = {
-    val x = NamedVar(newName())
+  def apply[T <: Type](f: NatIdentifier => Expr[T]): NatDependentLambdaExpr[T] = {
+    val x = PosVar(newName())
     NatDependentLambdaExpr(x, f(x))
   }
 

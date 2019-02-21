@@ -96,9 +96,9 @@ object ProgramGenerator {
   def makeParams(out: Identifier[AccType],
                  ins: Seq[Identifier[ExpType]],
                  gen: CodeGeneration.CodeGenerator): Seq[ParamDecl] = {
-    val sizes = collectSizes(out.`type`.dataType
-      +: ins.map(_.`type`.dataType)).toSeq.sortBy(_.toString)
-    Seq(makeParam(out, gen)) ++ ins.map(makeParam(_, gen)) ++ sizes.map(makeSizeParam)
+    //val sizes = collectSizes(out.`type`.dataType
+      //+: ins.map(_.`type`.dataType)).toSeq.sortBy(_.toString)
+    Seq(makeParam(out, gen)) ++ ins.map(makeParam(_, gen))// ++ sizes.map(makeSizeParam)
   }
 
   def collectSizes(ts: Seq[DataType]): Set[Var] = {

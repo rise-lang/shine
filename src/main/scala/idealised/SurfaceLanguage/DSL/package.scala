@@ -3,7 +3,7 @@ package idealised.SurfaceLanguage
 import idealised.SurfaceLanguage.Primitives.{Fst, Snd, Zip}
 import idealised.SurfaceLanguage.Semantics._
 import idealised.SurfaceLanguage.Types._
-import lift.arithmetic.{ContinuousRange, NamedVar}
+import lift.arithmetic.{ContinuousRange, PosVar}
 
 import scala.language.implicitConversions
 
@@ -74,8 +74,8 @@ package object DSL {
     dFun(_ => p)
 
   implicit class IdentExpPhraseExtensions(i: IdentifierExpr) {
-    def asNatIdentifier = NamedVar(i.name)
-    def asNatIdentifier(withUpperBound: Nat) = NamedVar(i.name, ContinuousRange(0, withUpperBound))
+    def asNatIdentifier = PosVar(i.name)
+    def asNatIdentifier(withUpperBound: Nat) = PosVar(i.name, ContinuousRange(0, withUpperBound))
   }
 
   implicit class NatExtensions(n: Nat) {

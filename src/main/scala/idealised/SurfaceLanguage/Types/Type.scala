@@ -3,7 +3,7 @@ package idealised.SurfaceLanguage.Types
 import idealised.DPIA.freshName
 import idealised.SurfaceLanguage._
 import idealised.SurfaceLanguage.Semantics._
-import lift.arithmetic.{ArithExpr, NamedVar, RangeAdd}
+import lift.arithmetic.{ArithExpr, PosVar, RangeAdd, SizeVar}
 
 sealed trait Type
 
@@ -25,7 +25,7 @@ final case class DepArrayType(size:Nat, elemType: `(nat)->dt`) extends ComposedT
 
 object DepArrayType {
   def apply(size:Nat, f:Nat => DataType): DepArrayType = {
-    val newName = NamedVar(freshName(), RangeAdd(0, size, 1))
+    val newName = PosVar(freshName(), RangeAdd(0, size, 1))
     DepArrayType(size, NatDependentFunctionType(newName, f(newName)))
   }
 }
@@ -76,7 +76,7 @@ final case class NatDependentFunctionType[T <: Type](x: NatIdentifier, t: T) ext
 
 object NatDependentFunctionType {
   def apply[T <: Type](f: NatIdentifier => T): NatDependentFunctionType[T] = {
-    val newX = NamedVar(freshName())
+    val newX = PosVar(freshName())
     NatDependentFunctionType(newX, f(newX))
   }
 }
@@ -154,7 +154,9 @@ object Type {
 
   private def substitute(ae: Nat, `for`: NatIdentifier, in: Nat): Nat = {
     in.visitAndRebuild {
-      case v: NamedVar =>
+      case v: PosVar =>
+        //TODO I am not sure about checking name equality anymore.
+        //TODO Var (and with this PosVar) checks equality based on .id, while NamedVar checks it based on .name
         if (`for`.name == v.name) {
           ae
         } else {
