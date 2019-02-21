@@ -5,6 +5,7 @@ version := "1.0"
 scalaVersion := "2.11.12"
 
 compile := ((compile in Compile) dependsOn setup).value
+test := ((test in Test) dependsOn setup).value
 
 lazy val setup = taskKey[Unit]("Sets up the submodules")
 
