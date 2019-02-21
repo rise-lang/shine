@@ -21,6 +21,7 @@ class stencils extends Tests {
                                      runtimeMs:Double,
                                      correct:Boolean
                                     ) {
+
     def printout():Unit =
       println(
         s"inputSize = $inputSize, " +
@@ -40,6 +41,8 @@ class stencils extends Tests {
     def inputSize:Int
     def stencilSize:Int
 
+    private val verbose:Boolean = true
+
 
     def dpiaProgram:Expr[DataType -> DataType]
 
@@ -51,12 +54,12 @@ class stencils extends Tests {
 
 
     private def compile(localSize:ArithExpr, globalSize:ArithExpr):Kernel = {
-      idealised.OpenCL.KernelGenerator.makeCode(TypeInference(this.dpiaProgram, Map()).toPhrase, localSize, globalSize)
-    }
+      val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(this.dpiaProgram, Map()).toPhrase, localSize, globalSize)
 
-    final def compileAndPrintCode(localSize:ArithExpr, globalSize:ArithExpr):Unit = {
-      val kernel = this.compile(localSize, globalSize)
-      println(kernel.code)
+      if(verbose) {
+        println(kernel.code)
+      }
+      kernel
     }
 
     final def run(localSize:Int, globalSize:Int):StencilResult = {
@@ -133,7 +136,7 @@ class stencils extends Tests {
       fun(ArrayType(N, float))(input =>
         input :>> pad(padSize, padSize, 0.0f) :>>
           slide(stencilSize, 1) :>>
-          partition(3, m => SteppedCase(m, Seq(padSize, N, padSize))) :>>
+          partition(3, m => SteppedCase(m, Seq(padSize + stencilSize, N - 2*stencilSize, padSize + stencilSize))) :>>
           depMapSeqUnroll(mapGlobal(fun(nbh => reduceSeq(add, 0.0f, nbh))))
       )
     }
