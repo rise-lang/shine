@@ -12,7 +12,7 @@ updateSubmodules := {
   import scala.language.postfixOps
   import scala.sys.process._
   //noinspection PostfixMethodCall
-  "echo y" #| "./lib/lift/updateSubmodules.sh" !
+  "echo y" #| "./updateSubmodules.sh" !
 }
 
 lazy val compileExecutor = taskKey[Unit]("Builds the Executor.")
