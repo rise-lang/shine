@@ -4,15 +4,15 @@ version := "1.0"
 
 scalaVersion := "2.11.12"
 
-compile := ((compile in Compile) dependsOn setupSubmodules).value
+compile := ((compile in Compile) dependsOn setup).value
 
-lazy val setupSubmodules = taskKey[Unit]("Sets up the submodules")
+lazy val setup = taskKey[Unit]("Sets up the submodules")
 
-setupSubmodules := {
+setup := {
   import scala.language.postfixOps
   import scala.sys.process._
   //noinspection PostfixMethodCall
-  "echo y" #| "./setupSubmodules.sh" !
+  "echo y" #| "./setup.sh" !
 }
 
 
