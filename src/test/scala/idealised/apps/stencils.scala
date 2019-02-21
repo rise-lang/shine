@@ -3,9 +3,9 @@ package idealised.apps
 import idealised.OpenCL.Kernel
 import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.DSL.{fun, _}
-import idealised.SurfaceLanguage.{->, Expr}
 import idealised.SurfaceLanguage.Types._
-import idealised.util.{Tests, TestsWithExecutor}
+import idealised.SurfaceLanguage.{->, Expr}
+import idealised.util.Tests
 import lift.arithmetic.{ArithExpr, SizeVar, SteppedCase}
 
 import scala.util.Random
@@ -54,6 +54,7 @@ class stencils extends Tests {
     }
 
     final def run(localSize:Int, globalSize:Int):Stencil1DResult = {
+      opencl.executor.Executor.loadAndInit()
 
       val rand = new Random()
       val input = Array.tabulate(inputSize)(_ => rand.nextFloat())
@@ -65,8 +66,9 @@ class stencils extends Tests {
       val kernelFun = kernel.as[ScalaFunction`(`Array[Float]`)=>`Array[Float]]
       val (kernelOutput, time) = kernelFun(input `;`)
 
-      val correct = kernelOutput.zip(scalaOutput).forall{case (x,y) => Math.abs(x - y) < 0.01}
+      opencl.executor.Executor.shutdown()
 
+      val correct = kernelOutput.zip(scalaOutput).forall{case (x,y) => Math.abs(x - y) < 0.01}
       Stencil1DResult(
         inputSize = inputSize,
         stencilSize = stencilSize,
@@ -106,24 +108,25 @@ class stencils extends Tests {
       val N = SizeVar("N")
       fun(ArrayType(N, float))(input =>
         input :>> pad(padSize, padSize, 0.0f) :>>
+          slide(stencilSize, 1) :>>
           partition(3, m => SteppedCase(m, Seq(padSize, N, padSize))) :>>
-          depMapSeqUnroll(fun(chunk => slide(stencilSize, 1, chunk) :>> mapGlobal(fun(nbh => reduceSeq(add, 0.0f, nbh)))))
+          depMapSeqUnroll(mapGlobal(fun(nbh => reduceSeq(add, 0.0f, nbh))))
       )
     }
 
     override def scalaProgram: Array[Float] => Array[Float] = (xs:Array[Float]) => {
       val pad = Array.fill(padSize)(0.0f)
-      val paddedXs = Array(pad,xs,pad)
-      paddedXs.flatMap(_.sliding(stencilSize, 1).map(nbh => nbh.foldLeft(0.0f)(_ + _)))
-    }
+      val paddedXs = pad ++ xs ++ pad
+      paddedXs.sliding(stencilSize, 1).map(nbh => nbh.foldLeft(0.0f)(_ + _))
+    }.toArray
   }
 
 
   test("Basic stencil") {
-    BasicStencil(1024, 5, 128).compileAndPrintCode(localSize = 1, globalSize = 1)
+    assert(BasicStencil(1024, 5, 128).run(localSize = 1, globalSize = 1).correct)
   }
 
   test("Partitioned stencil") {
-    PartitionedStencil(1024, 45, 128).compileAndPrintCode(localSize = 1, globalSize = 1)
+    assert(PartitionedStencil(1024, 5, 128).run(localSize = 1, globalSize = 1).correct)
   }
 }
