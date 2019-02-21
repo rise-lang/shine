@@ -150,10 +150,10 @@ class stencils extends Tests {
     def inputSize:Int
     def stencilSize:Int
 
-    override type Input = Array[Array[Float]]
-    override type Output = Array[Array[Float]]
+    final override type Input = Array[Array[Float]]
+    final override type Output = Array[Array[Float]]
 
-    private val padSize = stencilSize/2
+    protected val padSize = stencilSize/2
 
     def dpiaProgram:Expr[DataType -> DataType]
 
@@ -165,9 +165,10 @@ class stencils extends Tests {
 
     private def pad2D(input:Array[Array[Float]]):Array[Array[Float]] = {
       val pad1D = Array.fill(padSize)(0.0f)
-      val pad2D = Array.fill(inputSize)(0.0f)
+      val pad2D = Array.fill(padSize * 2 + inputSize)(0.0f)
 
-      Array(pad2D) ++ input.map(row => pad1D ++ row ++ pad1D) ++ Array(pad2D)
+      val data = Array(pad2D) ++ input.map(row => pad1D ++ row ++ pad1D) ++ Array(pad2D)
+      data
     }
 
     private def slide2D(input:Array[Array[Float]]): Array[Array[Array[Array[Float]]]] = {
@@ -181,6 +182,30 @@ class stencils extends Tests {
     final def scalaProgram: Array[Array[Float]] => Array[Array[Float]] = (grid:Array[Array[Float]]) => {
       slide2D(pad2D(grid)).map(_.map(tileStencil))
     }
+
+    protected def slide2D(size:ArithExpr, step:ArithExpr):Expr[DataType -> DataType] = {
+      fun(xs => xs :>> map(slide(size,step)) :>> slide(size, step) :>> map(transpose))
+    }
+
+    protected def pad2D(n:ArithExpr, l:ArithExpr, r:ArithExpr):Expr[DataType -> DataType] = {
+      val innerAT = ArrayType(l + r + n,float)
+      val ff = foreignFun(innerAT, "constArry", scala.collection.Seq(),"{ return 0.0f }", scala.collection.Seq())
+      fun(xs =>  xs :>> map(pad(l, r, 0.0f)) :>> pad(l, r, ff))
+    }
+
+    protected def tileStencil:Expr[DataType -> DataType] = {
+      fun(xs => xs :>> join :>> reduceSeq(add, 0.0f))
+    }
+  }
+
+  private case class BasicStencil2D(inputSize:Int, stencilSize:Int) extends Stencil2DAlgorithm {
+    override def dpiaProgram = {
+      val N = NamedVar("N",StartFromRange(stencilSize))
+      fun(ArrayType(N, float))(input =>
+        input :>> pad2D(N, padSize, padSize) :>>
+          slide2D(stencilSize, 1) :>> mapGlobal(mapGlobal(fun(nbh => reduceSeq(add, 0.0f, nbh))))
+      )
+    }
   }
 
   test("Basic 1D addition stencil") {
@@ -189,5 +214,9 @@ class stencils extends Tests {
 
   test("Partitioned 1D addition stencil, with specialised area handling") {
     assert(PartitionedStencil1D(1024, 5).run(localSize = 1, globalSize = 1).correct)
+  }
+
+  test("Basic 2D addition stencil") {
+    //assert(BasicStencil2D(128, 5).run(localSize = 1, globalSize = 1).correct)
   }
 }
