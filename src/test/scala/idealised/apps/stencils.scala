@@ -6,7 +6,7 @@ import idealised.SurfaceLanguage.DSL.{fun, _}
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage.{->, Expr}
 import idealised.util.Tests
-import lift.arithmetic.{ArithExpr, SizeVar, SteppedCase}
+import lift.arithmetic._
 
 import scala.util.Random
 
@@ -96,8 +96,11 @@ class stencils extends Tests {
   private trait Stencil1DAlgorithm extends StencilBaseAlgorithm {
     def inputSize:Int
     def stencilSize:Int
+    val inputMinRange = stencilSize //Used for `starts with` simplification
+
     final val padSize = stencilSize/2
 
+    assert(inputSize > inputMinRange)
     final override type Input = Array[Float]
     final override type Output = Array[Float]
 
@@ -120,7 +123,7 @@ class stencils extends Tests {
   private case class BasicStencil1D(inputSize:Int, stencilSize:Int) extends Stencil1DAlgorithm {
 
     override def dpiaProgram: Expr[DataType -> DataType] = {
-      val N = SizeVar("N")
+      val N = NamedVar("N",StartFromRange(inputMinRange))
       fun(ArrayType(N, float))(input =>
         input :>> pad(padSize, padSize, 0.0f) :>> slide(stencilSize, 1) :>> mapGlobal(
           fun(nbh => reduceSeq(add, 0.0f, nbh)
@@ -132,7 +135,7 @@ class stencils extends Tests {
   private case class PartitionedStencil1D(inputSize:Int, stencilSize:Int) extends Stencil1DAlgorithm {
 
     override def dpiaProgram: Expr[DataType -> DataType] = {
-      val N = SizeVar("N")
+      val N = NamedVar("N",StartFromRange(inputMinRange))
       fun(ArrayType(N, float))(input =>
         input :>> pad(padSize, padSize, 0.0f) :>>
           slide(stencilSize, 1) :>>
@@ -171,12 +174,12 @@ class stencils extends Tests {
       input.map(_.sliding(stencilSize, 1).toArray).sliding(stencilSize, 1).map(x => x.transpose).toArray
     }
 
-    private def scalaTileStencil(input:Array[Array[Float]]):Float = {
+    private def tileStencil(input:Array[Array[Float]]):Float = {
       input.flatten.reduceOption(_ + _).getOrElse(0.0f)
     }
 
     final def scalaProgram: Array[Array[Float]] => Array[Array[Float]] = (grid:Array[Array[Float]]) => {
-      slide2D(pad2D(grid)).map(_.map(scalaTileStencil))
+      slide2D(pad2D(grid)).map(_.map(tileStencil))
     }
   }
 
