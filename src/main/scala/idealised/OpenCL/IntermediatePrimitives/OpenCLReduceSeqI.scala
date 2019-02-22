@@ -19,7 +19,7 @@ object OpenCLReduceSeqI {
             out: Phrase[ExpType -> CommandType])
            (implicit context: TranslationContext): Phrase[CommandType] =
   {
-    `new`(dt2, initAddrSpace, acc =>
+    newWithAddrSpace(dt2, initAddrSpace, acc =>
       (acc.wr :=|dt2| init) `;`
         `for`(n, i => f(in `@` i)(acc.rd)(acc.wr)) `;`
         out(acc.rd)

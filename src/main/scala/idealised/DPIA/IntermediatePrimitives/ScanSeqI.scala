@@ -16,7 +16,6 @@ object ScanSeqI {
             out: Phrase[AccType])
            (implicit context: TranslationContext): Phrase[CommandType] =
   {
-    // TODO: generalise allocation
     `new`(dt2, acc =>
       (acc.wr :=| dt2 | init) `;`
         `for`(n, i =>

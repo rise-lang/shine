@@ -31,7 +31,7 @@ package object DSL {
     }
   }
 
-  object `new` {
+  object newWithAddrSpace {
     def apply(dt: DataType,
               addressSpace: AddressSpace,
               f: Phrase[VarType -> CommandType]): OpenCLNew =

@@ -60,6 +60,6 @@ abstract class To(dt1: DataType,
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    `new`(dt2, addressSpace, tmp => acc(f(input))(tmp.wr) `;` C(tmp.rd) )
+    newWithAddrSpace(dt2, addressSpace, tmp => acc(f(input))(tmp.wr) `;` C(tmp.rd) )
   }
 }
