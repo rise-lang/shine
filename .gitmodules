@@ -3,4 +3,4 @@
 	url = git@bitbucket.org:cdubach/arithexpr.git
 [submodule "lib/executor"]
 	path = lib/executor
-	url = git@github.com:lift-project/executor.git
+	url = git@bitbucket.org:fedepiz/executor.git
