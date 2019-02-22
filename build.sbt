@@ -4,6 +4,19 @@ version := "1.0"
 
 scalaVersion := "2.11.12"
 
+compile := ((compile in Compile) dependsOn setup).value
+test := ((test in Test) dependsOn setup).value
+
+lazy val setup = taskKey[Unit]("Sets up the submodules")
+
+setup := {
+  import scala.language.postfixOps
+  import scala.sys.process._
+  //noinspection PostfixMethodCall
+  "echo y" #| "./setup.sh" !
+}
+
+
 scalacOptions ++= Seq("-Xmax-classfile-name", "100", "-unchecked", "-deprecation", "-feature")
 
 fork := true
