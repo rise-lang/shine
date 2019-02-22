@@ -210,15 +210,19 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case Phrases.Literal(n) => cont(path match {
         case Nil =>
-          n.dataType match {
-            case _: IndexType => CCodeGen.codeGenLiteral(n)
-            case _: ScalarType => CCodeGen.codeGenLiteral(n)
-            case _ => error("Expected an IndexType or ScalarType.")
+            n.dataType match {
+              case _: IndexType => CCodeGen.codeGenLiteral (n)
+              case _: ScalarType => CCodeGen.codeGenLiteral (n)
+              case _ => error ("Expected an IndexType or ScalarType.")
           }
         case (i : CIntExpr) :: Nil =>
-          n.dataType match {
-            case _: ArrayType => C.AST.ArraySubscript(CCodeGen.codeGenLiteral(n), C.AST.ArithmeticExpr(i))
-            case _ => error("Expected an ArrayType.")
+          n match {
+            case SingletonArrayData(_, a) => CCodeGen.codeGenLiteral(a)
+            case _ =>
+              n.dataType match {
+                case _: ArrayType => C.AST.ArraySubscript(CCodeGen.codeGenLiteral(n), C.AST.ArithmeticExpr(i))
+                case _ => error("Expected an ArrayType.")
+              }
           }
         // case (_ :: _ :: Nil, _: ArrayType) => C.AST.Literal("0.0f") // TODO: (used in gemm like this) !!!!!!!
         case _ => error(s"Unexpected: $n $path")
@@ -304,7 +308,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case Pad(n, l, r, _, pad, array) => path match {
         case (i: CIntExpr) :: ps =>
-          exp(pad, env, List(), padExpr => {
+          exp(pad, env, ps, padExpr => {
             exp(array, env, CIntExpr(i - l) ::ps, arrayExpr => {
 
               def genBranch(bound:ArithExpr, taken:Expr, notTaken:Expr):Expr = {

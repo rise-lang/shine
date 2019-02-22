@@ -4,6 +4,7 @@ import idealised.DPIA.Phrases._
 import idealised.DPIA.Types._
 import idealised.DPIA._
 import idealised.SurfaceLanguage.Operators
+import lift.arithmetic.ArithExpr
 
 import scala.collection.immutable.HashMap
 import scala.language.{implicitConversions, postfixOps, reflectiveCalls}
@@ -19,6 +20,7 @@ object OperationalSemantics {
         case idealised.SurfaceLanguage.Semantics.IndexData(n, t) => IndexData(n, IndexType(t.size))
         case idealised.SurfaceLanguage.Semantics.TupleData(t @_*) => RecordData( Data(t(0)), Data(t(1)) )
         case idealised.SurfaceLanguage.Semantics.ArrayData(a) => ArrayData(a.map(Data(_)).toVector)
+        case idealised.SurfaceLanguage.Semantics.SingletonArrayData(n, a) => SingletonArrayData(n, Data(a))
         case idealised.SurfaceLanguage.Semantics.VectorData(v) => VectorData(v.map(Data(_)).toVector)
       }
     }
@@ -43,6 +45,7 @@ object OperationalSemantics {
     case _ => throw new Exception("This should not happen")
   }))
   final case class ArrayData(a: Vector[Data]) extends Data(ArrayType(a.length, a.head.dataType))
+  final case class SingletonArrayData(length:ArithExpr, a:Data) extends Data(ArrayType(length, a.dataType))
   final case class RecordData(fst: Data, snd: Data) extends Data(RecordType(fst.dataType, snd.dataType))
 
   object makeArrayData {
