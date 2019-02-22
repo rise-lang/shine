@@ -281,8 +281,8 @@ object OperationalSemantics {
       case Operators.Binary.MUL => (x, y) => x * y
       case Operators.Binary.DIV => (x, y) => x / y
       case Operators.Binary.MOD => (x, y) => x % y
-      case Operators.Binary.GT => (x, y) => (x gt y) ?? 1 !! 0
-      case Operators.Binary.LT => (x, y) => (x lt y) ?? 1 !! 0
+      case Operators.Binary.GT => (x, y) => ArithExpr.ifThenElse(x gt y, 1 , 0)
+      case Operators.Binary.LT => (x, y) => ArithExpr.ifThenElse(x lt y, 1,  0)
     }
   }
 

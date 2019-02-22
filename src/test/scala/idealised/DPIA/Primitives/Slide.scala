@@ -41,5 +41,4 @@ class Slide extends idealised.util.Tests {
 
     "for".r.findAllIn(code).length shouldBe 3
   }
-
 }

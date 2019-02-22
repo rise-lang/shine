@@ -312,15 +312,13 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             exp(array, env, CIntExpr(i - l) ::ps, arrayExpr => {
 
               def genBranch(bound:ArithExpr, taken:Expr, notTaken:Expr):Expr = {
-                BranchPrediction(Predicate(i, bound, Predicate.Operator.<)) match {
-                  case BranchPrediction.AlwaysTaken =>
-                    taken
-                  case BranchPrediction.NeverTaken =>
-                    notTaken
-                  case BranchPrediction.Unknown =>
-                    C.AST.TernaryExpr(
-                      C.AST.BinaryExpr(C.AST.ArithmeticExpr(i), C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(bound)),
-                      taken, notTaken)
+                import BoolExpr._
+                arithPredicate(i, bound, ArithPredicate.Operator.<) match {
+                  case True => taken
+                  case False => notTaken
+                  case _ => C.AST.TernaryExpr(
+                    C.AST.BinaryExpr(C.AST.ArithmeticExpr(i), C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(bound)),
+                    taken, notTaken)
                 }
               }
               cont(genBranch(l, padExpr, genBranch(l + n, arrayExpr, padExpr)))
