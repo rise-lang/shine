@@ -71,7 +71,8 @@ class fft extends idealised.util.Tests {
     val add = fun(x => x._1 + x._2)
     val simpleMap = fun(ArrayType(N, double))(in =>
       zip(in, generate(N, dFun(n => fun(IndexType(N))(i =>
-        foreignFun(double, "callCos", (double, "x"), "{ return cos(x); }", cast(double, i))
+        foreignFun(double, "callCos", (double, "x"), "{ return cos(x); }",
+          cast(double, LiteralExpr(IndexData(toNatIdentifier(i)+n))))
       )))) :>> mapSeq(add)
     )
 
