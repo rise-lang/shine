@@ -4,6 +4,5 @@ git submodule init
 git submodule update
 git submodule status
 
-cd lib/lift
-./updateSubmodules.sh
+cd lib/executor
 ./buildExecutor.sh

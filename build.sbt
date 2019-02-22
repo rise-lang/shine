@@ -20,7 +20,7 @@ setup := {
 scalacOptions ++= Seq("-Xmax-classfile-name", "100", "-unchecked", "-deprecation", "-feature")
 
 fork := true
-javaOptions += "-Djava.library.path=lib/lift/lib/Executor/build"
+javaOptions += "-Djava.library.path=lib/executor/lib/Executor/build"
 
 resolvers ++= Seq(
   Resolver.sonatypeRepo("releases"),
@@ -63,6 +63,6 @@ libraryDependencies += "com.chuusai" %% "shapeless" % "2.3.2"
 unmanagedSourceDirectories in Compile += baseDirectory.value / "lib/ArithExpr/src/main/"
 unmanagedSourceDirectories in Test += baseDirectory.value / "lib/ArithExpr/src/main/"
 
-// Build lift
-unmanagedSourceDirectories in Compile += baseDirectory.value / "lib/lift/src/main/"
-unmanagedSourceDirectories in Test += baseDirectory.value / "lib/lift/src/main/"
+// Build executor
+unmanagedSourceDirectories in Compile += baseDirectory.value / "lib/executor/src/main/"
+unmanagedSourceDirectories in Test += baseDirectory.value / "lib/executor/src/main/"
