@@ -1,11 +1,9 @@
 package idealised.DPIA.Primitives
 
-import idealised.SurfaceLanguage.{->, Expr}
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
 import idealised.util.SyntaxChecker
 import lift.arithmetic._
-import opencl.executor.Executor.ExecutorFailureException
 
 import scala.util.Random
 
@@ -46,20 +44,16 @@ class Slide extends idealised.util.Tests {
     "for".r.findAllIn(code).length shouldBe 3
   }
 
-  def slide2D(size:Int, step:Int,input:Array[Array[Float]]): Array[Float]= {
-    input.map(_.sliding(size, step).toArray).sliding(size, step).toArray.map(_.transpose).flatten.flatten.flatten
-  }
-  def slide2D(size:ArithExpr, step:ArithExpr):Expr[DataType -> DataType] = {
-    fun(xs => xs :>> map(slide(size,step)) :>> slide(size, step) :>> mapSeq(transpose))
-  }
-
   test("Two dimensional slide test") {
     import idealised.OpenCL.{ScalaFunction, `(`, `)=>`, _}
     opencl.executor.Executor.loadAndInit()
 
+    val slideSize = 3
+    val slideStep = 1
+
     val N = NamedVar("N", StartFromRange(1))
     val M = NamedVar("M", StartFromRange(1))
-    val f = fun(ArrayType(N, ArrayType(M, float)))(xs => xs  :>> slide2D(3, 1))
+    val f = fun(ArrayType(N, ArrayType(M, float)))(xs => xs  :>> slide2D(slideSize, slideStep) :>> mapSeq(fun(x => x)))
 
     val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase, 1, 1)
     val kernelF = kernel.as[ScalaFunction`(`Array[Array[Float]]`)=>`Array[Float]]
@@ -71,7 +65,8 @@ class Slide extends idealised.util.Tests {
 
     val (kernelOutput, _) = kernelF(input `;`)
 
-    val scalaOutput =  slide2D(3, 1, input)
+    val scalaOutput = input.map(_.sliding(slideSize, slideStep).toArray).sliding(slideSize, slideStep).toArray.map(_.transpose).flatten.flatten.flatten
+
 
     println(kernel.code)
     opencl.executor.Executor.shutdown()

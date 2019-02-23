@@ -264,12 +264,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error(s"Expected path to contain at least two elements")
       }
 
-      case DepSplit(_, m, _, _, e) => path match {
-        case (i: CIntExpr) :: (j: CIntExpr) :: ps =>
-          exp(e, env, CIntExpr(i * m + j) :: ps, cont)
-        case _ => error(s"Expected path to be not empty")
-      }
-
       case Zip(_, _, _, e1, e2) => path match {
         case (i: CIntExpr) :: (xj : TupleAccess) :: ps => xj match {
           case FstMember => exp(e1, env, i :: ps, cont)

@@ -15,8 +15,6 @@ final case class Split(n: Nat, array: DataExpr,
     array.t match {
       case Some(ArrayType(mn, dt)) =>
         DPIA.FunctionalPrimitives.Split(n, mn /^ n, dt, array.toPhrase[DPIA.Types.ExpType])
-      case Some(DepArrayType(mn, dtF)) =>
-        DPIA.FunctionalPrimitives.DepSplit(n, mn /^ n, dtF.x, dtF.t, array.toPhrase[DPIA.Types.ExpType])
       case _ => throw new Exception("")
     }
   }
