@@ -154,7 +154,7 @@ class stencils extends Tests {
     final override type Input = Array[Array[Float]]
     final override type Output = Array[Array[Float]]
 
-    protected val padSize = stencilSize/2
+    protected val padSize = 1
 
     def dpiaProgram:Expr[DataType -> DataType]
 
@@ -184,8 +184,6 @@ class stencils extends Tests {
       slide2D(pad2D(grid)).map(_.map(tileStencil))
     }
 
-
-
     protected def tileStencil:Expr[DataType -> DataType] = {
       fun(xs => xs :>> join :>> reduceSeq(add, 0.0f))
     }
@@ -201,6 +199,22 @@ class stencils extends Tests {
     }
   }
 
+  private case class PartitionedStencil2D(inputSize:Int, stencilSize:Int) extends Stencil2DAlgorithm {
+    override def dpiaProgram = {
+      val N = NamedVar("N",StartFromRange(stencilSize))
+      fun(ArrayType(N, ArrayType(N, float)))(input =>
+        input :>> pad2D(N, padSize, padSize, FloatData(0.0f)) :>>
+          slide2D(stencilSize, 1) :>>
+          partition(3, m => SteppedCase(m, Seq(padSize + stencilSize, N - 2*stencilSize, padSize + stencilSize))) :>>
+          depMapSeqUnroll(fun(inner =>
+            inner :>>
+              partition(3, m => SteppedCase(m, Seq(padSize + stencilSize, N - 2*stencilSize, padSize + stencilSize))) :>>
+              depMapSeqUnroll(mapGlobal(mapGlobal(fun(nbh => join(nbh) :>> reduceSeq(add, 0.0f)))))
+          ))
+      )
+    }
+  }
+
   test("Basic 1D addition stencil") {
     assert(BasicStencil1D(1024, 5).run(localSize = 1, globalSize = 1).correct)
   }
@@ -210,6 +224,10 @@ class stencils extends Tests {
   }
 
   test("Basic 2D addition stencil") {
-    //assert(BasicStencil2D(9, 3).run(localSize = 1, globalSize = 1).correct)
+    assert(BasicStencil2D(128, 5).run(localSize = 1, globalSize = 1).correct)
+  }
+
+  test("Partitioned 2D addition stencil") {
+    assert(PartitionedStencil2D(128, 5).run(localSize = 1, globalSize = 1).correct)
   }
 }

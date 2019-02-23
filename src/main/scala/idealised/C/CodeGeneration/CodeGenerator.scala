@@ -839,7 +839,10 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       val indices = indicesAsPathElements.map(_.asInstanceOf[CIntExpr].num)
       assert(rest.isEmpty || !rest.head.isInstanceOf[CIntExpr])
 
-      (flattenIndices(dt, indices), rest)
+
+      val subMap = buildSubMap(dt, indices)
+
+      (ArithExpr.substitute(flattenIndices(dt, indices), subMap), rest)
     }
 
     def countArrayLayers(dataType: DataType):Int = {
@@ -868,6 +871,23 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
     def sizeAtOffset(dt:DepArrayType, at:Nat):Nat = {
       BigSum(from=0, upTo = at-1, `for`=dt.i, DataType.getTotalNumberOfElements(dt.elemType))
+    }
+
+    private def getIndexVariablesScopes(dt:DataType):List[Option[NatIdentifier]] = {
+      dt match {
+        case ArrayType(_ , et) => None::getIndexVariablesScopes(et)
+        case DepArrayType(_, i, et) => Some(i)::getIndexVariablesScopes(et)
+        case _ => Nil
+      }
+    }
+
+    private def buildSubMap(dt: DataType,
+                            indices: immutable.Seq[Nat]): Predef.Map[Nat, Nat]  = {
+      val bindings = getIndexVariablesScopes(dt)
+      bindings.zip(indices).map({
+        case (Some(binder), index) => Some((binder, index))
+        case _ => None
+      }).filter(_.isDefined).map(_.get).toMap[Nat, Nat]
     }
 
     implicit def convertBinaryOp(op: idealised.SurfaceLanguage.Operators.Binary.Value): idealised.C.AST.BinaryOperator.Value = {
