@@ -184,13 +184,7 @@ class stencils extends Tests {
       slide2D(pad2D(grid)).map(_.map(tileStencil))
     }
 
-    protected def slide2D(size:ArithExpr, step:ArithExpr):Expr[DataType -> DataType] = {
-      fun(xs => xs :>> map(slide(size,step)) :>> slide(size, step) :>> map(transpose))
-    }
 
-    protected def pad2D(n:ArithExpr, l:ArithExpr, r:ArithExpr):Expr[DataType -> DataType] = {
-      fun(xs =>  xs :>> map(pad(l, r, 0.0f)) :>> pad(l, r, LiteralExpr(SingletonArrayData(l + r + n, FloatData(0.0f)))))
-    }
 
     protected def tileStencil:Expr[DataType -> DataType] = {
       fun(xs => xs :>> join :>> reduceSeq(add, 0.0f))
@@ -201,7 +195,7 @@ class stencils extends Tests {
     override def dpiaProgram = {
       val N = NamedVar("N",StartFromRange(stencilSize))
       fun(ArrayType(N, ArrayType(N, float)))(input =>
-        input :>> pad2D(N, padSize, padSize) :>>
+        input :>> pad2D(N, padSize, padSize, FloatData(0.0f)) :>>
           slide2D(stencilSize, 1) :>> mapGlobal(mapGlobal(fun(nbh => join(nbh) :>> reduceSeq(add, 0.0f))))
       )
     }

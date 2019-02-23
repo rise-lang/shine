@@ -1,6 +1,7 @@
 package idealised.SurfaceLanguage.DSL
 
-import idealised.SurfaceLanguage.{->, Expr}
+import idealised.SurfaceLanguage.Semantics.{Data, SingletonArrayData}
+import idealised.SurfaceLanguage.{->, Expr, LiteralExpr}
 import idealised.SurfaceLanguage.Types.DataType
 import lift.arithmetic.ArithExpr
 
@@ -11,5 +12,15 @@ object slide2D {
 }
 
 object pad2D {
-
+  /**
+    *
+    * @param n The inner dimension of the input array
+    * @param l The amount of left-pad
+    * @param r The amount of right-pad
+    * @param data The inlineable data for the pad
+    * @return
+    */
+  def apply(n:ArithExpr, l:ArithExpr, r:ArithExpr, data:Data):Expr[DataType -> DataType] = {
+    fun(xs =>  xs :>> map(pad(l, r, LiteralExpr(data))) :>> pad(l, r, LiteralExpr(SingletonArrayData(l + r + n, data))))
+  }
 }

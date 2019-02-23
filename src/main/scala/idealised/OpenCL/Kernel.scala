@@ -5,7 +5,7 @@ import idealised.DPIA.Types._
 import idealised.DPIA._
 import idealised.{C, OpenCL}
 import idealised.utils._
-import lift.arithmetic.{ArithExpr, BigSum, Cst, Var}
+import lift.arithmetic._
 import opencl.executor._
 
 import scala.collection.immutable.List
@@ -55,6 +55,19 @@ case class Kernel(decls: Seq[C.AST.Decl],
 
       val c = code
       val kernelJNI = opencl.executor.Kernel.create(c, kernel.name, "")
+
+      List(localSize match {
+        case ? => Some("OpenCL local size not specified\n")
+        case _ => None
+      }, globalSize match {
+        case ? => Some("OpenCL global size ot specified\n")
+        case _ => None
+      }).filter(_.isDefined).map(_.get) match {
+        case Nil =>
+        case problems =>
+          val errorMessage = "Cannot run kernel:\n" ++ problems.reduce(_ ++ _)
+          throw new Exception(errorMessage)
+      }
 
       val runtime = Executor.execute(kernelJNI,
         ArithExpr.substitute(localSize, lengthMapping).eval, 1, 1,
