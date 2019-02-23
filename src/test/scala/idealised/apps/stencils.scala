@@ -3,8 +3,9 @@ package idealised.apps
 import idealised.OpenCL.Kernel
 import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.DSL.{fun, _}
+import idealised.SurfaceLanguage.Semantics.{FloatData, SingletonArrayData}
 import idealised.SurfaceLanguage.Types._
-import idealised.SurfaceLanguage.{->, Expr}
+import idealised.SurfaceLanguage.{->, Expr, LiteralExpr}
 import idealised.util.Tests
 import lift.arithmetic._
 
@@ -188,9 +189,7 @@ class stencils extends Tests {
     }
 
     protected def pad2D(n:ArithExpr, l:ArithExpr, r:ArithExpr):Expr[DataType -> DataType] = {
-      val innerAT = ArrayType(l + r + n,float)
-      val ff = foreignFun(innerAT, "constArry", scala.collection.Seq(),"{ return 0.0f }", scala.collection.Seq())
-      fun(xs =>  xs :>> map(pad(l, r, 0.0f)) :>> pad(l, r, ff))
+      fun(xs =>  xs :>> map(pad(l, r, 0.0f)) :>> pad(l, r, LiteralExpr(SingletonArrayData(l + r + n, FloatData(0.0f)))))
     }
 
     protected def tileStencil:Expr[DataType -> DataType] = {
@@ -201,9 +200,9 @@ class stencils extends Tests {
   private case class BasicStencil2D(inputSize:Int, stencilSize:Int) extends Stencil2DAlgorithm {
     override def dpiaProgram = {
       val N = NamedVar("N",StartFromRange(stencilSize))
-      fun(ArrayType(N, float))(input =>
+      fun(ArrayType(N, ArrayType(N, float)))(input =>
         input :>> pad2D(N, padSize, padSize) :>>
-          slide2D(stencilSize, 1) :>> mapGlobal(mapGlobal(fun(nbh => reduceSeq(add, 0.0f, nbh))))
+          slide2D(stencilSize, 1) :>> mapGlobal(mapGlobal(fun(nbh => join(nbh) :>> reduceSeq(add, 0.0f))))
       )
     }
   }
@@ -217,6 +216,6 @@ class stencils extends Tests {
   }
 
   test("Basic 2D addition stencil") {
-    //assert(BasicStencil2D(128, 5).run(localSize = 1, globalSize = 1).correct)
+    //assert(BasicStencil2D(9, 3).run(localSize = 1, globalSize = 1).correct)
   }
 }

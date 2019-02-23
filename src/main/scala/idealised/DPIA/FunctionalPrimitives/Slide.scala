@@ -18,7 +18,7 @@ final case class Slide(n: Nat,
                        array: Phrase[ExpType])
   extends ExpPrimitive
 {
-  private val inputSize = sp * n + sz - sp
+  val inputSize = sp * n + sz - sp
 
   override def `type`: ExpType =
     (n: Nat) -> (sz: Nat) -> (sp: Nat) -> (dt: DataType) ->
@@ -60,13 +60,15 @@ final case class Slide(n: Nat,
                                   (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    con(this)(λ(exp"[$inputSize.$dt]")(x => A :=|dt"[$n.$sz.$dt]"| x ))
+    con(this)(λ(exp"[$n.$sz.$dt]")(x => A :=|dt"[$n.$sz.$dt]"| x ))
   }
 
   override def continuationTranslation(C: Phrase[ExpType -> CommandType])
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    con(array)(λ(exp"[$inputSize.$dt]")(x => C(Slide(n, sz, sp, dt, x)) ))
+    con(array)(λ(exp"[$inputSize.$dt]")(x =>
+      C(Slide(n, sz, sp, dt, x)
+      )))
   }
 }

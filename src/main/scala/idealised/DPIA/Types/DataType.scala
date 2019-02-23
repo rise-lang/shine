@@ -132,22 +132,11 @@ object DataType {
     }
   }
 
-  def getLength(dt: DataType, tupleAccess: List[Nat]): Nat = dt match {
-    case _: BasicType => 1
-    case r: RecordType =>
-      val t = tupleAccess.head
-      val elemT = if (t == (1: Nat)) { r.fst } else if (t == (2: Nat)) { r.snd } else { throw new Exception("This should not happen") }
-      getLength(elemT, tupleAccess.tail)
-    case a: ArrayType => getLength(a.elemType, tupleAccess) * a.size
-    case a: DepArrayType => BigSum(from = 0, upTo = a.size - 1, `for` = a.i, `in` = getLength(a.elemType, tupleAccess))
-    case _: DataTypeIdentifier => throw new Exception("This should not happen")
-  }
-
-  def getLength(dt: DataType): Nat = dt match {
+  def getTotalNumberOfElements(dt: DataType): Nat = dt match {
     case _: BasicType => 1
     case _: RecordType => 1
-    case a: ArrayType => getLength(a.elemType) * a.size
-    case a: DepArrayType => BigSum(from = 0, upTo = a.size - 1, `for` = a.i, `in` = getLength(a.elemType))
+    case a: ArrayType => getTotalNumberOfElements(a.elemType) * a.size
+    case a: DepArrayType => BigSum(from = 0, upTo = a.size - 1, `for` = a.i, `in` = getTotalNumberOfElements(a.elemType))
     case _: DataTypeIdentifier => throw new Exception("This should not happen")
   }
 
