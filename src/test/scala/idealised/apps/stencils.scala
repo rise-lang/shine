@@ -67,9 +67,8 @@ class stencils extends Tests {
     def dpiaProgram:Expr[DataType -> DataType]
 
     final def scalaProgram: Array[Float] => Array[Float] = (xs:Array[Float]) => {
-      val pad = Array.fill(padSize)(0.0f)
-      val paddedXs = pad ++ xs ++ pad
-      paddedXs.sliding(stencilSize, 1).map(nbh => nbh.foldLeft(0.0f)(_ + _))
+      import idealised.util.ScalaImplementations.pad
+      pad(xs, padSize, 0.0f).sliding(stencilSize, 1).map(nbh => nbh.foldLeft(0.0f)(_ + _))
     }.toArray
 
     final override protected def makeInput(random: Random): Array[Float] = Array.fill(inputSize)(random.nextFloat())
@@ -103,45 +102,6 @@ class stencils extends Tests {
     }
   }
 
-
-  private case class JustPadSlide2DAlgorithm(inputSize:Int, stencilSize:Int) extends StencilBaseAlgorithm {
-    final override type Input = Array[Array[Float]]
-
-    protected val padSize = stencilSize/2
-
-    def dpiaProgram:Expr[DataType -> DataType] = {
-      val N = NamedVar("N",StartFromRange(stencilSize))
-      fun(ArrayType(N, ArrayType(N, float)))(input =>
-        input :>>
-          printType("Input") :>>
-          idealised.SurfaceLanguage.DSL.pad2D(N, padSize, padSize, FloatData(0.0f)) :>>
-          printType(s"Padded with $padSize") :>>
-          idealised.SurfaceLanguage.DSL.slide2D(stencilSize, 1) :>> mapSeq(fun(x => x))
-      )
-    }
-
-
-    final override protected def makeInput(random: Random): Array[Array[Float]] = Array.fill(inputSize)(Array.fill(inputSize)(random.nextFloat()))
-
-    final override protected def runScalaProgram(input: Array[Array[Float]]): Array[Float] = scalaProgram(input).flatten
-
-    private def pad2D(input:Array[Array[Float]]):Array[Array[Float]] = {
-      val pad1D = Array.fill(padSize)(0.0f)
-      val pad2D = Array.fill(padSize * 2 + inputSize)(0.0f)
-
-      val data = Array(pad2D) ++ input.map(row => pad1D ++ row ++ pad1D) ++ Array(pad2D)
-      data
-    }
-
-    private def slide2D(input:Array[Array[Float]]): Array[Array[Array[Array[Float]]]] = {
-      input.map(_.sliding(stencilSize, 1).toArray).sliding(stencilSize, 1).map(x => x.transpose).toArray
-    }
-
-    final def scalaProgram: Array[Array[Float]] => Array[Array[Float]] = (grid:Array[Array[Float]]) => {
-      slide2D(pad2D(grid)).flatten.flatten
-    }
-  }
-
   private sealed trait Stencil2DAlgorithm extends StencilBaseAlgorithm {
     def inputSize:Int
     def stencilSize:Int
@@ -157,24 +117,14 @@ class stencils extends Tests {
 
     final override protected def runScalaProgram(input: Array[Array[Float]]) = scalaProgram(input).flatten
 
-    private def pad2D(input:Array[Array[Float]]):Array[Array[Float]] = {
-      val pad1D = Array.fill(padSize)(0.0f)
-      val pad2D = Array.fill(padSize * 2 + inputSize)(0.0f)
-
-      val data = Array(pad2D) ++ input.map(row => pad1D ++ row ++ pad1D) ++ Array(pad2D)
-      data
-    }
-
-    private def slide2D(input:Array[Array[Float]]): Array[Array[Array[Array[Float]]]] = {
-      input.map(_.sliding(stencilSize, 1).toArray).sliding(stencilSize, 1).map(x => x.transpose).toArray
-    }
 
     private def tileStencil(input:Array[Array[Float]]):Float = {
       input.flatten.reduceOption(_ + _).getOrElse(0.0f)
     }
 
     final def scalaProgram: Array[Array[Float]] => Array[Array[Float]] = (grid:Array[Array[Float]]) => {
-      slide2D(pad2D(grid)).map(_.map(tileStencil))
+      import idealised.util.ScalaImplementations._
+      slide2D(pad2D(grid, padSize, 0.0f), stencilSize).map(_.map(tileStencil))
     }
 
     protected def tileStencil:Expr[DataType -> DataType] = {
@@ -187,11 +137,8 @@ class stencils extends Tests {
       val N = NamedVar("N",StartFromRange(stencilSize))
       fun(ArrayType(N, ArrayType(N, float)))(input =>
         input :>>
-          printType("Input") :>>
           pad2D(N, padSize, padSize, FloatData(0.0f)) :>>
-          printType(s"Padded with $padSize") :>>
           slide2D(stencilSize, 1) :>>
-          printType(s"Slided with $stencilSize") :>>
           mapGlobal(mapGlobal(fun(nbh => join(nbh) :>> reduceSeq(add, 0.0f))))
       )
     }
@@ -229,12 +176,8 @@ class stencils extends Tests {
     PartitionedStencil1D(1024, 5).run(localSize = 1, globalSize = 1).correctness.check()
   }
 
-  test("Just 2D pad and slide") {
-    JustPadSlide2DAlgorithm(9, 4).run(localSize = 1, globalSize = 1).correctness.check()
-  }
-
   test("Basic 2D addition stencil") {
-    BasicStencil2D(9, 3).run(localSize = 1, globalSize = 1).correctness.check()
+    BasicStencil2D(128, 5).run(localSize = 1, globalSize = 1).correctness.check()
   }
 
   test("Partitioned 2D addition stencil") {

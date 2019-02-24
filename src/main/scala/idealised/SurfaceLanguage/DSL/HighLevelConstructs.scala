@@ -21,6 +21,6 @@ object pad2D {
     * @return
     */
   def apply(n:ArithExpr, l:ArithExpr, r:ArithExpr, data:Data):Expr[DataType -> DataType] = {
-    fun(xs =>  xs :>> map(pad(l, r, LiteralExpr(data))) :>> pad(l, r, LiteralExpr(SingletonArrayData(l + r + n, data))))
+    fun(xs =>  xs :>> pad(l, r, LiteralExpr(SingletonArrayData(n, data))) :>> map(pad(l, r, LiteralExpr(data))) :>> printType("PaddedType"))
   }
 }
