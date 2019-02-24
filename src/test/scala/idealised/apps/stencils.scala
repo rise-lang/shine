@@ -155,7 +155,7 @@ class stencils extends Tests {
     }
 
     override def dpiaProgram = {
-      val N = NamedVar("N",StartFromRange(stencilSize))
+      val N = NamedVar("N",StartFromRange(stencilSize*200))
       fun(ArrayType(N, ArrayType(N, float)))(input =>
         input :>>
           pad2D(N, padSize, padSize, FloatData(0.0f)) :>>
@@ -163,7 +163,7 @@ class stencils extends Tests {
           printType(s"Slided with $stencilSize") :>>
           partition2D(padSize, N - stencilSize + 1)
           :>> printType("After partition2D") :>>
-              depMapSeqUnroll(mapGlobal(depMapSeqUnroll(mapGlobal(fun(nbh => join(nbh) :>> reduceSeq(add, 0.0f))))))
+              depMapSeqUnroll(fun(xs => xs :>> mapGlobal(depMapSeqUnroll(mapGlobal(fun(nbh => join(nbh) :>> reduceSeq(add, 0.0f)))))))
       )
     }
   }

@@ -327,6 +327,11 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error(s"Expected two C-Integer-Expressions on the path.")
       }
 
+      case TransposeArrayDep(_, _, _, _, e) => path match {
+        case (i : CIntExpr)::(j : CIntExpr) :: ps => exp(e, env, CIntExpr(j) :: CIntExpr(i) :: ps , cont)
+        case _ => error(s"Expected two C-Integer-Expressions on the path.")
+      }
+
       // TODO: this has to be refactored
       case VectorFromScalar(n, st, e) => path match {
         case (_: CIntExpr) :: ps =>
