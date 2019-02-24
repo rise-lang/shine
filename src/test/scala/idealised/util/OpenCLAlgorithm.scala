@@ -18,24 +18,29 @@ sealed trait Correctness {
         if(wrongValue) {
           println("Value is wrong!")
         }
-        if(wrongSize) {
-          println("Size is wrong!")
+        wrongSize match {
+          case None =>
+          case Some(SizePair(actualOutputSize, expectedOutputSize)) =>
+            println(s"Size is wrong! Expected $expectedOutputSize, found $actualOutputSize")
         }
     }
     assert(this.isCorrect)
   }
 }
+
+case class SizePair(actualOutputSize:Int, expectedOutputSize:Int)
+
 case object Correct extends Correctness
-final case class Wrong(wrongValue:Boolean, wrongSize:Boolean) extends Correctness
+final case class Wrong(wrongValue:Boolean, wrongSize:Option[SizePair]) extends Correctness
 
 object Correctness {
   def apply(kernelOutput:Array[Float], scalaOutput:Array[Float]):Correctness = {
     if(kernelOutput.length == scalaOutput.length) {
-      if(isSame(kernelOutput, scalaOutput)) Correct else Wrong(wrongValue = true, wrongSize = false)
+      if(isSame(kernelOutput, scalaOutput)) Correct else Wrong(wrongValue = true, wrongSize = None)
     } else {
       val (kOut, sOut) = matchSize(kernelOutput, scalaOutput)
       val valueCorrect = isSame(kOut, sOut)
-      Wrong(wrongValue = !valueCorrect, wrongSize = true)
+      Wrong(wrongValue = !valueCorrect, wrongSize = Some(SizePair(kernelOutput.length, scalaOutput.length)))
     }
   }
 

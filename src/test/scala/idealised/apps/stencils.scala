@@ -95,9 +95,11 @@ class stencils extends Tests {
       val N = NamedVar("N",StartFromRange(inputMinRange))
       fun(ArrayType(N, float))(input =>
         input :>> pad(padSize, padSize, 0.0f) :>>
+          printType(s"After padding with $padSize") :>>
           slide(stencilSize, 1) :>>
-          partition(3, m => SteppedCase(m, Seq(padSize + stencilSize, N - 2*stencilSize, padSize + stencilSize))) :>>
-          depMapSeqUnroll(mapGlobal(fun(nbh => reduceSeq(add, 0.0f, nbh))))
+          printType(s"After sliding with $stencilSize") :>>
+          partition(3, m => SteppedCase(m, Seq(padSize, N - stencilSize + 1, padSize))) :>>
+          depMapSeqUnroll(mapGlobal(fun(nbh => reduceSeq(add, 0.0f, nbh)))) :>> printType()
       )
     }
   }
@@ -155,12 +157,12 @@ class stencils extends Tests {
           printType(s"Padded with $padSize") :>>
           slide2D(stencilSize, 1) :>>
           printType(s"Slided with $stencilSize") :>>
-          partition(3, m => SteppedCase(m, Seq(padSize + stencilSize, N - 2*stencilSize, padSize + stencilSize))) :>>
+          partition(3, m => SteppedCase(m, Seq(padSize, N - stencilSize + 1, padSize))) :>>
           printType("With outer partition") :>>
           depMapSeqUnroll(fun(inner =>
             inner :>>
               printType("Inner sizes") :>>
-              partition(3, m => SteppedCase(m, Seq(padSize + stencilSize, N - 2*stencilSize, padSize + stencilSize))) :>>
+              partition(3, m => SteppedCase(m, Seq(padSize, N - stencilSize + 1, padSize))) :>>
               printType("After partition") :>>
               depMapSeqUnroll(mapGlobal(mapGlobal(fun(nbh => join(nbh) :>> reduceSeq(add, 0.0f)))))
           ))
@@ -173,7 +175,7 @@ class stencils extends Tests {
   }
 
   test("Partitioned 1D addition stencil, with specialised area handling") {
-    PartitionedStencil1D(1024, 5).run(localSize = 1, globalSize = 1).correctness.check()
+    PartitionedStencil1D(256, 13).run(localSize = 4, globalSize = 32).correctness.check()
   }
 
   test("Basic 2D addition stencil") {
