@@ -148,24 +148,22 @@ class stencils extends Tests {
 
   private case class PartitionedStencil2D(inputSize:Int, stencilSize:Int) extends Stencil2DAlgorithm {
 
+    def partition2D(outerSize:ArithExpr, innerSize:ArithExpr):Expr[DataType -> DataType] = {
+      map(
+          partition(3, m => SteppedCase(m, Seq(outerSize, innerSize, outerSize)))
+      ) >>> partition(3, m => SteppedCase(m, Seq(outerSize, innerSize, outerSize)))
+    }
+
     override def dpiaProgram = {
       val N = NamedVar("N",StartFromRange(stencilSize))
       fun(ArrayType(N, ArrayType(N, float)))(input =>
         input :>>
-          printType("Input") :>>
           pad2D(N, padSize, padSize, FloatData(0.0f)) :>>
-          printType(s"Padded with $padSize") :>>
           slide2D(stencilSize, 1) :>>
           printType(s"Slided with $stencilSize") :>>
-          partition(3, m => SteppedCase(m, Seq(padSize, N - stencilSize + 1, padSize))) :>>
-          printType("With outer partition") :>>
-          depMapSeqUnroll(fun(inner =>
-            inner :>>
-              printType("Inner sizes") :>>
-              partition(3, m => SteppedCase(m, Seq(padSize, N - stencilSize + 1, padSize))) :>>
-              printType("After partition") :>>
-              depMapSeqUnroll(mapGlobal(mapGlobal(fun(nbh => join(nbh) :>> reduceSeq(add, 0.0f)))))
-          ))
+          partition2D(padSize, N - stencilSize + 1)
+          :>> printType("After partition2D") :>>
+              depMapSeqUnroll(mapGlobal(depMapSeqUnroll(mapGlobal(fun(nbh => join(nbh) :>> reduceSeq(add, 0.0f))))))
       )
     }
   }
@@ -183,6 +181,6 @@ class stencils extends Tests {
   }
 
   test("Partitioned 2D addition stencil") {
-    PartitionedStencil2D(128, 5).run(localSize = 1, globalSize = 1).correctness.check()
+    PartitionedStencil2D(256, 8).run(localSize = 1, globalSize = 1).correctness.check()
   }
 }

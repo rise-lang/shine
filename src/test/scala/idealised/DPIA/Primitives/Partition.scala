@@ -1,7 +1,8 @@
 package idealised.DPIA.Primitives
 
-import idealised.DPIA.NatIdentifier
+import idealised.DPIA.{Nat, NatIdentifier}
 import idealised.SurfaceLanguage.DSL._
+import idealised.SurfaceLanguage.{->, Expr}
 import idealised.SurfaceLanguage.Types._
 import idealised.util.SyntaxChecker
 import lift.arithmetic._
@@ -46,6 +47,41 @@ class Partition extends idealised.util.Tests {
     val code = p.code
     SyntaxChecker.checkOpenCL(code)
     println(code)
+    opencl.executor.Executor.shutdown()
+  }
+
+  test("Partition 2D") {
+    opencl.executor.Executor.loadAndInit()
+    import idealised.OpenCL.{ScalaFunction, `(`, `)=>`, _}
+
+    def partition2D(size:ArithExpr, lenF:NatIdentifier => Nat):Expr[DataType -> DataType] = {
+      map(
+        partition(size, lenF)
+      ) >>> partition(size, lenF)
+    }
+
+    val N = SizeVar("N")
+
+    val lenF:NatIdentifier => Nat = (m:NatIdentifier) => SteppedCase(1, N-2, 1)(m)
+    val f = fun(ArrayType(N, ArrayType(N, float)))(xs =>
+        xs :>> partition2D(Cst(3), lenF) :>> depMapSeq(mapSeq(depMapSeq(mapSeq(fun(x => x)))))
+      )
+    val actualN = 128
+
+    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase, localSize = 1, globalSize = 1)
+    println(p.code)
+    val kernelF = p.as[ScalaFunction`(`Array[Array[Float]]`)=>`Array[Float]]
+    val input = Array.fill(actualN)(Array.fill(actualN)(1.0f))
+    val (output, _) = kernelF(input `;`)
+
+
+    val scalaOutput = input.flatten
+
+    assert(output.zip(scalaOutput).forall{ case (x,y) => x - y < 0.01 })
+
+    val code = p.code
+    SyntaxChecker.checkOpenCL(code)
+
     opencl.executor.Executor.shutdown()
   }
 }
