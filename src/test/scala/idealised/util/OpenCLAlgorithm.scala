@@ -50,8 +50,10 @@ object Correctness {
 
 
 trait OpenCLAlgorithm {
+  //The Scala type representing the input data
   type Input
-  type Output
+  //The scala type representing the final result of running the algorithm
+  type Result
 
   private val verbose:Boolean = true
 
@@ -59,7 +61,7 @@ trait OpenCLAlgorithm {
 
   protected def makeInput(random:Random):Input
 
-  def makeOutput(localSize:Int, globalSize:Int, code:String, runtimeMs:Double, correctness: Correctness):Output
+  def makeOutput(localSize:Int, globalSize:Int, code:String, runtimeMs:Double, correctness: Correctness):Result
 
   protected def runScalaProgram(input:Input):Array[Float]
 
@@ -72,7 +74,7 @@ trait OpenCLAlgorithm {
     kernel
   }
 
-  final def run(localSize:Int, globalSize:Int):Output = {
+  final def run(localSize:Int, globalSize:Int):Result = {
     opencl.executor.Executor.loadAndInit()
 
     val rand = new Random()

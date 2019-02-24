@@ -37,7 +37,7 @@ class stencils extends Tests {
   }
 
   private sealed trait StencilBaseAlgorithm extends OpenCLAlgorithm {
-    final type Output = StencilResult
+    final type Result = StencilResult
 
     def inputSize:Int
     def stencilSize:Int
