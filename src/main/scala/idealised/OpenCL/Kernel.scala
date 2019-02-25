@@ -117,7 +117,6 @@ case class Kernel(decls: Seq[C.AST.Decl],
     val numberOfKernelArgs = 1 + args.length + intermediateParams.size + lengthMapping.size
     assert(kernel.params.length == numberOfKernelArgs)
 
-    println("Allocations on the host: ")
     val outputArg = createOutputArg(sizeInByte(outputParam) `with` lengthMapping)
     val inputArgs = args.map(createInputArg)
     val intermediateArgs = createIntermediateArgs(args.length, lengthMapping)

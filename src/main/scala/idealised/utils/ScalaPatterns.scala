@@ -1,8 +1,8 @@
-package idealised.util
+package idealised.utils
 
 import scala.reflect.ClassTag
 
-object ScalaImplementations {
+object ScalaPatterns {
 
   def pad[T:ClassTag](input:Array[T], padSize:Int, padValue:T):Array[T] = {
     val pad = Array.fill[T](padSize)(padValue)

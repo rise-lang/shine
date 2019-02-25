@@ -5,7 +5,8 @@ import idealised.OpenMP.SurfaceLanguage.DSL.mapPar
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Semantics.FloatData
 import idealised.SurfaceLanguage.Types._
-import idealised.util.{ScalaImplementations, SyntaxChecker}
+import idealised.util.SyntaxChecker
+import idealised.utils.ScalaPatterns
 import lift.arithmetic._
 
 import scala.util.Random
@@ -88,7 +89,7 @@ class Pad extends idealised.util.Tests {
     val actualN = 2
     val actualM = 2
     val input = Array.fill(actualN)(Array.fill(actualM)(random.nextFloat()))
-    val scalaOutput = ScalaImplementations.pad2D(input, padAmount, 0.0f).flatten
+    val scalaOutput = ScalaPatterns.pad2D(input, padAmount, 0.0f).flatten
 
     val (kernelOutput, _) = kernelF(input `;`)
     opencl.executor.Executor.shutdown()

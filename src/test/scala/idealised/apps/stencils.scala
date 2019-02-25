@@ -1,12 +1,13 @@
 package idealised.apps
 
+import benchmarks.{Correctness, OpenCLAlgorithm}
 import idealised.OpenCL.Kernel
 import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.DSL.{fun, _}
 import idealised.SurfaceLanguage.Semantics.{FloatData, SingletonArrayData}
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage.{->, Expr, LiteralExpr}
-import idealised.util.{Correctness, OpenCLAlgorithm, Tests}
+import idealised.util.Tests
 import lift.arithmetic._
 
 import scala.util.Random
@@ -67,7 +68,7 @@ class stencils extends Tests {
     def dpiaProgram:Expr[DataType -> DataType]
 
     final def scalaProgram: Array[Float] => Array[Float] = (xs:Array[Float]) => {
-      import idealised.util.ScalaImplementations.pad
+      import idealised.utils.ScalaPatterns.pad
       pad(xs, padSize, 0.0f).sliding(stencilSize, 1).map(nbh => nbh.foldLeft(0.0f)(_ + _))
     }.toArray
 
@@ -125,7 +126,7 @@ class stencils extends Tests {
     }
 
     final def scalaProgram: Array[Array[Float]] => Array[Array[Float]] = (grid:Array[Array[Float]]) => {
-      import idealised.util.ScalaImplementations._
+      import idealised.utils.ScalaPatterns._
       slide2D(pad2D(grid, padSize, 0.0f), stencilSize).map(_.map(tileStencil))
     }
 
@@ -141,35 +142,28 @@ class stencils extends Tests {
         input :>>
           pad2D(N, padSize, padSize, FloatData(0.0f)) :>>
           slide2D(stencilSize, 1) :>>
-          mapGlobal(mapGlobal(fun(nbh => join(nbh) :>> reduceSeq(add, 0.0f))))
+          mapGlobal(0)(mapGlobal(1)(fun(nbh => join(nbh) :>> reduceSeq(add, 0.0f))))
       )
     }
   }
 
   private case class PartitionedStencil2D(inputSize:Int, stencilSize:Int) extends Stencil2DAlgorithm {
 
-    def partition2D(outerSize:ArithExpr, innerSize:ArithExpr):Expr[DataType -> DataType] = {
-      map(
-          partition(3, m => SteppedCase(m, Seq(outerSize, innerSize, outerSize)))
-      ) >>> partition(3, m => SteppedCase(m, Seq(outerSize, innerSize, outerSize)))
-    }
-
     override def dpiaProgram = {
-      val N = NamedVar("N",StartFromRange(stencilSize*200))
+      val N = NamedVar("N",StartFromRange(stencilSize*stencilSize*2))
       fun(ArrayType(N, ArrayType(N, float)))(input =>
         input :>>
           pad2D(N, padSize, padSize, FloatData(0.0f)) :>>
           slide2D(stencilSize, 1) :>>
           printType(s"Slided with $stencilSize") :>>
           partition2D(padSize, N - stencilSize + 1)
-          :>> printType("After partition2D") :>>
-              depMapSeqUnroll(fun(xs => xs :>> mapGlobal(depMapSeqUnroll(mapGlobal(fun(nbh => join(nbh) :>> reduceSeq(add, 0.0f)))))))
+          :>> depMapSeqUnroll(fun(xs => xs :>> mapGlobal(0)(depMapSeqUnroll(mapGlobal(1)(fun(nbh => join(nbh) :>> reduceSeq(add, 0.0f)))))))
       )
     }
   }
 
   test("Basic 1D addition stencil") {
-    BasicStencil1D(1024, 5).run(localSize = 1, globalSize = 1).correctness.check()
+    BasicStencil1D(1024, 5).run(localSize = 4, globalSize = 4).correctness.check()
   }
 
   test("Partitioned 1D addition stencil, with specialised area handling") {
@@ -177,10 +171,10 @@ class stencils extends Tests {
   }
 
   test("Basic 2D addition stencil") {
-    BasicStencil2D(128, 5).run(localSize = 1, globalSize = 1).correctness.check()
+    BasicStencil2D(128, 5).run(localSize = 4, globalSize = 32).correctness.check()
   }
 
   test("Partitioned 2D addition stencil") {
-    PartitionedStencil2D(256, 8).run(localSize = 1, globalSize = 1).correctness.check()
+    PartitionedStencil2D(256, 8).run(localSize = 4, globalSize = 32).correctness.check()
   }
 }
