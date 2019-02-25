@@ -125,5 +125,8 @@ object stencil {
     results.foreach(_.printout())
     val csv = StencilResult.toCsv(results)
     println(csv)
+    import java.io.PrintWriter
+    new PrintWriter("~/results.csv") { write(csv); close }
+
   }
 }
