@@ -71,7 +71,7 @@ object stencil {
         input :>>
           pad2D(N, padSize, padSize, FloatData(0.0f)) :>>
           slide2D(stencilSize, 1) :>>
-          partition2D(padSize, N - stencilSize + 1)
+          partition2D(padSize, N - stencilSize)
           :>> depMapSeqUnroll(fun(xs => xs :>> mapGlobal(0)(depMapSeqUnroll(mapGlobal(1)(fun(nbh => join(nbh) :>> reduceSeq(add, 0.0f)))))))
       )
     }
@@ -111,9 +111,9 @@ object stencil {
   private def explore():Unit = {
     val results = (for {
       inputSize <- Seq(512, 1024, 2048, 4096)
-      stencilSize <- Seq(2, 4, 6, 8, 10)
-      globalSize <- Seq(inputSize/4, inputSize/2, inputSize)
-      localSize <- Seq(32, 64, 128, 256)
+      stencilSize <- Seq(4, 6, 8, 10)
+      globalSize <- Seq(inputSize/2, inputSize)
+      localSize <- Seq(16, 32, 64, 128, 256)
       if globalSize > localSize
     } yield {
       println(s"Benchmarking inputSize: $inputSize, stencilSize=$stencilSize, globalSize = $globalSize, localSize = $localSize")
@@ -127,6 +127,5 @@ object stencil {
     println(csv)
     import java.io.PrintWriter
     new PrintWriter("~/results.csv") { write(csv); close }
-
   }
 }

@@ -61,7 +61,7 @@ class stencils extends Tests {
     val inputMinRange = stencilSize //Used for `starts with` simplification
 
     final val padSize = stencilSize/2
-
+    println(stencilSize)
     assert(inputSize > inputMinRange)
     final override type Input = Array[Float]
 
@@ -96,9 +96,7 @@ class stencils extends Tests {
       val N = NamedVar("N",StartFromRange(inputMinRange))
       fun(ArrayType(N, float))(input =>
         input :>> pad(padSize, padSize, 0.0f) :>>
-          printType(s"After padding with $padSize") :>>
           slide(stencilSize, 1) :>>
-          printType(s"After sliding with $stencilSize") :>>
           partition(3, m => SteppedCase(m, Seq(padSize, N - stencilSize + 1, padSize))) :>>
           depMapSeqUnroll(mapGlobal(fun(nbh => reduceSeq(add, 0.0f, nbh)))) :>> printType()
       )
@@ -112,7 +110,6 @@ class stencils extends Tests {
     final override type Input = Array[Array[Float]]
 
     protected val padSize = stencilSize/2
-
     def dpiaProgram:Expr[DataType -> DataType]
 
 
@@ -150,12 +147,11 @@ class stencils extends Tests {
   private case class PartitionedStencil2D(inputSize:Int, stencilSize:Int) extends Stencil2DAlgorithm {
 
     override def dpiaProgram = {
-      val N = NamedVar("N",StartFromRange(stencilSize*stencilSize*2))
+      val N = NamedVar("N",StartFromRange(1))
       fun(ArrayType(N, ArrayType(N, float)))(input =>
         input :>>
           pad2D(N, padSize, padSize, FloatData(0.0f)) :>>
           slide2D(stencilSize, 1) :>>
-          printType(s"Slided with $stencilSize") :>>
           partition2D(padSize, N - stencilSize + 1)
           :>> depMapSeqUnroll(fun(xs => xs :>> mapGlobal(0)(depMapSeqUnroll(mapGlobal(1)(fun(nbh => join(nbh) :>> reduceSeq(add, 0.0f)))))))
       )
@@ -167,7 +163,7 @@ class stencils extends Tests {
   }
 
   test("Partitioned 1D addition stencil, with specialised area handling") {
-    PartitionedStencil1D(256, 13).run(localSize = 4, globalSize = 32).correctness.check()
+    PartitionedStencil1D(256, 6).run(localSize = 4, globalSize = 32).correctness.check()
   }
 
   test("Basic 2D addition stencil") {
@@ -175,6 +171,6 @@ class stencils extends Tests {
   }
 
   test("Partitioned 2D addition stencil") {
-    PartitionedStencil2D(256, 8).run(localSize = 4, globalSize = 32).correctness.check()
+    PartitionedStencil2D(64, 5).run(localSize = 1, globalSize = 1).correctness.check()
   }
 }
