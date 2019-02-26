@@ -1,6 +1,7 @@
 package idealised.apps
 
-import benchmarks.{Correctness, OpenCLAlgorithm}
+import benchmarks.OpenCLAlgorithm
+import benchmarks.core.Correctness
 import idealised.OpenCL.Kernel
 import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.DSL.{fun, _}
