@@ -33,7 +33,7 @@ class stencils extends Tests {
         s"globalSize = $globalSize, " +
         s"code = $code, " +
         s"runtime = $runtimeMs," +
-        s" correct = $correctness"
+        s" correct = ${correctness.printoutText}"
       )
   }
 
@@ -171,6 +171,6 @@ class stencils extends Tests {
   }
 
   test("Partitioned 2D addition stencil") {
-    PartitionedStencil2D(64, 5).run(localSize = 1, globalSize = 1).correctness.check()
+    PartitionedStencil2D(512, 2).run(localSize = 32, globalSize = 512).correctness.check()
   }
 }
