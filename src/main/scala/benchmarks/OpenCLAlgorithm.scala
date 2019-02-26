@@ -150,6 +150,7 @@ abstract class OpenCLBenchmark(val verbose:Boolean, val runsPerProgram:Int) {
                 localSizeParam:Parameter,
                 paramMap:Map[String, Int]):Seq[Result] = {
     inputSizeParam.values.flatMap(inputSize => {
+      println(s"For input size:$inputSize")
       val rand = new Random()
       val input = makeInput(inputSize, rand)
       val scalaOutput = runScalaProgram(input, paramMap)
@@ -158,7 +159,7 @@ abstract class OpenCLBenchmark(val verbose:Boolean, val runsPerProgram:Int) {
         val configuration = Configuration(inputSize, localSize, globalSize, paramMap)
         println("Running configuration")
         configuration.printOut()
-        run(input, scalaOutput, configuration)
+        runWithConfiguration(input, scalaOutput, configuration)
       })
     })
   }
@@ -169,7 +170,7 @@ abstract class OpenCLBenchmark(val verbose:Boolean, val runsPerProgram:Int) {
     }
   }
 
-  private def run(input:Input,
+  private def runWithConfiguration(input:Input,
                   scalaOutput:Array[Float],
                   conf: Configuration):Seq[Result] = {
 
@@ -197,7 +198,7 @@ abstract class OpenCLBenchmark(val verbose:Boolean, val runsPerProgram:Int) {
         }
         (time.value, makeOutput(dpiaProgram.name, conf.paramMap, conf.inputSize, conf.localSize, conf.globalSize, kernel.code, time, correct))
       }
-      
+
       val median = tenRuns.sortBy(_._1).apply(runsPerProgram/2)._2
       resultPrintout(median).foreach(string => println(s"Median result: $string"))
       median
