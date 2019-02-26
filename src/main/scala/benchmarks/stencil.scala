@@ -1,6 +1,7 @@
 package benchmarks
 
-import benchmarks.OpenCLBenchmark.{DpiaProgram, Parameter}
+import benchmarks.core.{Correctness, OpenCLBenchmark}
+import benchmarks.core.OpenCLBenchmark.{DpiaProgram, Parameter}
 import idealised.OpenCL.SurfaceLanguage.DSL.mapGlobal
 import idealised.SurfaceLanguage.DSL.{DataExpr, fun, join, pad2D, reduceSeq, slide2D, _}
 import idealised.SurfaceLanguage.Semantics.FloatData
@@ -127,7 +128,8 @@ object stencil {
     val results = BenchmarkStencil().explore(
       Parameter("inputSize", Seq(2048, 4096, 8192, 16384)),
       Parameter("localSize", Seq(32, 64, 128, 256)),
-      Set(Parameter(BenchmarkStencil.STENCIL_SIZE, Seq(2, 3, 4, 5, 6, 7, 8, 9, 10)))
+      Set(Parameter(BenchmarkStencil.STENCIL_SIZE, Seq(2, 3, 4, 5, 6, 7, 8, 9, 10))),
+      checkCorrectness = false
     )
 
     results.foreach(_.printout())
