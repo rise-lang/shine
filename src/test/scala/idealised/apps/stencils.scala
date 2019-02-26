@@ -98,7 +98,8 @@ class stencils extends Tests {
       fun(ArrayType(N, float))(input =>
         input :>> pad(padSize, padSize, 0.0f) :>>
           slide(stencilSize, 1) :>>
-          partition(3, m => SteppedCase(m, Seq(padSize, N - stencilSize + 1, padSize))) :>>
+
+          partition(3, m => SteppedCase(m, Seq(padSize,  N - 2*padSize + ((1 + stencilSize) % 2), padSize))) :>>
           depMapSeqUnroll(mapGlobal(fun(nbh => reduceSeq(add, 0.0f, nbh)))) :>> printType()
       )
     }
@@ -177,6 +178,6 @@ class stencils extends Tests {
   }
 
   test("Partitioned 2D addition stencil") {
-    PartitionedStencil2D(8, 4).run(localSize = 1, globalSize = 1).correctness.check()
+    PartitionedStencil2D(inputSize = 8, stencilSize = 3).run(localSize = 1, globalSize = 1).correctness.check()
   }
 }
