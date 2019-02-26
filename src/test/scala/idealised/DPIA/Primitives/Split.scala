@@ -41,15 +41,4 @@ class Split extends idealised.util.Tests {
 
     "for".r.findAllIn(code).length shouldBe 3
   }
-
-  test("Simple 2D dependent split should generated syntactic valid OpenCL code") {
-    val splitExample = fun(DepArrayType(SizeVar("N"), i => ArrayType(i + 1, float)))(xs =>
-      xs :>> split(4) :>> depMapSeq(fun(row => depMapSeq(fun(col => mapSeq(fun(x => x + 1.0f), col)), row)))
-    )
-
-    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(splitExample, Map()).toPhrase, ?, ?)
-    val code = p.code
-    SyntaxChecker.checkOpenCL(code)
-    println(code)
-  }
 }

@@ -139,8 +139,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           throw new Exception(s"Expected to find `$i' in the environment: `${env.identEnv}'")
         }), path, env))
 
-      case SplitAcc(_, m, _, a) => path match {
-        case (i : CIntExpr) :: ps  => acc(a, env, CIntExpr(i / m) :: CIntExpr(i % m) :: ps, cont)
+      case SplitAcc(n, _, _, a) => path match {
+        case (i : CIntExpr) :: ps  => acc(a, env, CIntExpr(i / n) :: CIntExpr(i % n) :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
       case JoinAcc(_, m, _, a) => path match {
@@ -249,11 +249,11 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       }
 
       case Split(n, _, _, e) => path match {
-        case (i : CIntExpr) :: (j : CIntExpr) :: ps => exp(e, env, CIntExpr(i * n + j) :: ps, cont)
+        case (i : CIntExpr) :: (j : CIntExpr) :: ps => exp(e, env, CIntExpr(n * i + j) :: ps, cont)
         case _ => error(s"Expected two C-Integer-Expressions on the path.")
       }
-      case Join(n, _, _, e) => path match {
-        case (i : CIntExpr) :: ps => exp(e, env, CIntExpr(i / n) :: CIntExpr(i % n) :: ps, cont)
+      case Join(_, m, _, e) => path match {
+        case (i : CIntExpr) :: ps => exp(e, env, CIntExpr(i / m) :: CIntExpr(i % m) :: ps, cont)
         case _ => error(s"Expected two C-Integer-Expressions on the path.")
       }
 
@@ -262,12 +262,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           val newIdx = BigSum(0, i - 1, x => part.lenF(x)) + j
           exp(e, env, CIntExpr(newIdx) :: ps, cont)
         case _ => error(s"Expected path to contain at least two elements")
-      }
-
-      case DepSplit(n, _, _, _, e) => path match {
-        case (i: CIntExpr) :: (j: CIntExpr) :: ps =>
-          exp(e, env, CIntExpr(i * n + j) :: ps, cont)
-        case _ => error(s"Expected path to be not empty")
       }
 
       case Zip(_, _, _, e1, e2) => path match {
@@ -330,6 +324,11 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case Slide(_, _, s2, _, e) => path match {
         case (i : CIntExpr) :: (j : CIntExpr) :: ps => exp(e, env, CIntExpr(i * s2 + j) :: ps, cont)
+        case _ => error(s"Expected two C-Integer-Expressions on the path.")
+      }
+
+      case TransposeArrayDep(_, _, _, _, e) => path match {
+        case (i : CIntExpr)::(j : CIntExpr) :: ps => exp(e, env, CIntExpr(j) :: CIntExpr(i) :: ps , cont)
         case _ => error(s"Expected two C-Integer-Expressions on the path.")
       }
 
@@ -776,8 +775,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           throw new Exception(s"Can't generate access for `$dt' with `${path.mkString("[", "::", "]")}'")
       }
     }
-
-    def flattenArrayIndices(dt: DataType, path: Path): (Nat, Path) = {
+    /*
+    def flattenArrayIndices2(dt: DataType, path: Path): (Nat, Path) = {
       assert(dt.isInstanceOf[ArrayType] || dt.isInstanceOf[DepArrayType])
       val elemT = dt match {
         case ArrayType(_, t) => t
@@ -832,6 +831,66 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       val bindings = getIndexVariablesScopes(dt)
       bindings.zip(indices).map({
         case (Some(binder), CIntExpr(index)) => Some((binder, index))
+        case _ => None
+      }).filter(_.isDefined).map(_.get).toMap[Nat, Nat]
+    }*/
+
+
+    def flattenArrayIndices(dt: DataType, path: Path): (Nat, Path) = {
+      assert(dt.isInstanceOf[ArrayType] || dt.isInstanceOf[DepArrayType])
+
+      val (indicesAsPathElements, rest) = path.splitAt(countArrayLayers(dt))
+      indicesAsPathElements.foreach(i => assert(i.isInstanceOf[CIntExpr]))
+      val indices = indicesAsPathElements.map(_.asInstanceOf[CIntExpr].num)
+      assert(rest.isEmpty || !rest.head.isInstanceOf[CIntExpr])
+
+
+      val subMap = buildSubMap(dt, indices)
+
+      (ArithExpr.substitute(flattenIndices(dt, indices), subMap), rest)
+    }
+
+    def countArrayLayers(dataType: DataType):Int = {
+      dataType match {
+        case ArrayType(_, et) => 1 + countArrayLayers(et)
+        case DepArrayType(_, _, et) => 1 + countArrayLayers(et)
+        case _ => 0
+      }
+    }
+
+    def flattenIndices(dataType: DataType, indicies:List[Nat]):Nat = {
+      (dataType, indicies) match {
+        case (array:ArrayType, index::rest) =>
+          sizeAtOffset(array, index) + flattenIndices(array.elemType, rest)
+        case (array:DepArrayType, index::rest) =>
+          sizeAtOffset(array, index) + flattenIndices(array.elemType, rest)
+        case (_,  Nil) => 0
+        case t => throw new Exception(s"This should not happen, pair $t")
+      }
+    }
+
+    //Computes the total number of element in an array at a given offset
+    def sizeAtOffset(dt:ArrayType, at:Nat):Nat = {
+      DataType.getTotalNumberOfElements(dt.elemType)*at
+    }
+
+    def sizeAtOffset(dt:DepArrayType, at:Nat):Nat = {
+      BigSum(from=0, upTo = at-1, `for`=dt.i, DataType.getTotalNumberOfElements(dt.elemType))
+    }
+
+    private def getIndexVariablesScopes(dt:DataType):List[Option[NatIdentifier]] = {
+      dt match {
+        case ArrayType(_ , et) => None::getIndexVariablesScopes(et)
+        case DepArrayType(_, i, et) => Some(i)::getIndexVariablesScopes(et)
+        case _ => Nil
+      }
+    }
+
+    private def buildSubMap(dt: DataType,
+                            indices: immutable.Seq[Nat]): Predef.Map[Nat, Nat]  = {
+      val bindings = getIndexVariablesScopes(dt)
+      bindings.zip(indices).map({
+        case (Some(binder), index) => Some((binder, index))
         case _ => None
       }).filter(_.isDefined).map(_.get).toMap[Nat, Nat]
     }

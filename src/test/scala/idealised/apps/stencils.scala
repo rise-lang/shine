@@ -1,10 +1,13 @@
 package idealised.apps
 
+import benchmarks.OpenCLAlgorithm
+import benchmarks.core.Correctness
 import idealised.OpenCL.Kernel
 import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.DSL.{fun, _}
+import idealised.SurfaceLanguage.Semantics.{FloatData, SingletonArrayData}
 import idealised.SurfaceLanguage.Types._
-import idealised.SurfaceLanguage.{->, Expr}
+import idealised.SurfaceLanguage.{->, Expr, LiteralExpr}
 import idealised.util.Tests
 import lift.arithmetic._
 
@@ -13,13 +16,14 @@ import scala.util.Random
 class stencils extends Tests {
   val add = fun(x => fun(y => x + y))
 
+
   private case class StencilResult(inputSize:Int,
                                      stencilSize:Int,
                                      localSize:Int,
                                      globalSize:Int,
                                      code:String,
                                      runtimeMs:Double,
-                                     correct:Boolean
+                                     correctness:Correctness
                                     ) {
 
     def printout():Unit =
@@ -30,93 +34,48 @@ class stencils extends Tests {
         s"globalSize = $globalSize, " +
         s"code = $code, " +
         s"runtime = $runtimeMs," +
-        s" correct = $correct"
+        s" correct = ${correctness.printoutText}"
       )
   }
 
-  private sealed trait StencilBaseAlgorithm {
-    type Input
-    type Output
+  private sealed trait StencilBaseAlgorithm extends OpenCLAlgorithm {
+    final type Result = StencilResult
 
     def inputSize:Int
     def stencilSize:Int
 
-    private val verbose:Boolean = true
-
-
-    def dpiaProgram:Expr[DataType -> DataType]
-
-    protected def makeInput(random:Random):Input
-
-    protected def runScalaProgram(input:Input):Output
-
-    protected def flattenOutput(output: Output):Array[Float]
-
-
-    private def compile(localSize:ArithExpr, globalSize:ArithExpr):Kernel = {
-      val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(this.dpiaProgram, Map()).toPhrase, localSize, globalSize)
-
-      if(verbose) {
-        println(kernel.code)
-      }
-      kernel
-    }
-
-    final def run(localSize:Int, globalSize:Int):StencilResult = {
-      opencl.executor.Executor.loadAndInit()
-
-      val rand = new Random()
-      val input = makeInput(rand)
-      val scalaOutput = runScalaProgram(input)
-
-      import idealised.OpenCL.{ScalaFunction, `(`, `)=>`, _}
-
-      val kernel = this.compile(localSize, globalSize)
-      val kernelFun = kernel.as[ScalaFunction`(`Input`)=>`Array[Float]]
-      val (kernelOutput, time) = kernelFun(input `;`)
-
-      opencl.executor.Executor.shutdown()
-
-      val flattenedScalaOutput = flattenOutput(scalaOutput)
-
-      val correct = kernelOutput.zip(flattenedScalaOutput).forall{case (x,y) => Math.abs(x - y) < 0.01}
-
+    override def makeOutput(localSize: Int, globalSize: Int, code: String, runtimeMs: Double, correctness: Correctness): StencilResult = {
       StencilResult(
         inputSize = inputSize,
+        stencilSize = stencilSize,
         localSize = localSize,
         globalSize = globalSize,
-        stencilSize = stencilSize,
-        code = kernel.code,
-        runtimeMs = time.value,
-        correct = correct
+        code = code,
+        runtimeMs = runtimeMs,
+        correctness = correctness
       )
     }
   }
 
   private trait Stencil1DAlgorithm extends StencilBaseAlgorithm {
-    def inputSize:Int
-    def stencilSize:Int
+
     val inputMinRange = stencilSize //Used for `starts with` simplification
 
     final val padSize = stencilSize/2
-
+    println(stencilSize)
     assert(inputSize > inputMinRange)
     final override type Input = Array[Float]
-    final override type Output = Array[Float]
 
     def dpiaProgram:Expr[DataType -> DataType]
 
     final def scalaProgram: Array[Float] => Array[Float] = (xs:Array[Float]) => {
-      val pad = Array.fill(padSize)(0.0f)
-      val paddedXs = pad ++ xs ++ pad
-      paddedXs.sliding(stencilSize, 1).map(nbh => nbh.foldLeft(0.0f)(_ + _))
+      import idealised.utils.ScalaPatterns.pad
+      pad(xs, padSize, 0.0f).sliding(stencilSize, 1).map(nbh => nbh.foldLeft(0.0f)(_ + _))
     }.toArray
 
-    final override protected def makeInput(random: Random) = Array.fill(inputSize)(random.nextFloat())
+    final override protected def makeInput(random: Random): Array[Float] = Array.fill(inputSize)(random.nextFloat())
 
-    final override protected def flattenOutput(output: Array[Float]) = output
-
-    final override protected def runScalaProgram(input: Array[Float]) = scalaProgram(input)
+    final override protected def runScalaProgram(input: Array[Float]): Array[Float] = scalaProgram(input)
 
   }
 
@@ -139,58 +98,34 @@ class stencils extends Tests {
       fun(ArrayType(N, float))(input =>
         input :>> pad(padSize, padSize, 0.0f) :>>
           slide(stencilSize, 1) :>>
-          partition(3, m => SteppedCase(m, Seq(padSize + stencilSize, N - 2*stencilSize, padSize + stencilSize))) :>>
-          depMapSeqUnroll(mapGlobal(fun(nbh => reduceSeq(add, 0.0f, nbh))))
+          partition(3, m => SteppedCase(m, Seq(padSize, N - stencilSize + 1, padSize))) :>>
+          depMapSeqUnroll(mapGlobal(fun(nbh => reduceSeq(add, 0.0f, nbh)))) :>> printType()
       )
     }
   }
-
 
   private sealed trait Stencil2DAlgorithm extends StencilBaseAlgorithm {
     def inputSize:Int
     def stencilSize:Int
 
     final override type Input = Array[Array[Float]]
-    final override type Output = Array[Array[Float]]
 
     protected val padSize = stencilSize/2
-
     def dpiaProgram:Expr[DataType -> DataType]
 
-    final override protected def flattenOutput(output: Array[Array[Float]]) = output.flatten
 
-    final override protected def makeInput(random: Random) = Array.fill(inputSize)(Array.fill(inputSize)(random.nextFloat()))
+    final override protected def makeInput(random: Random): Array[Array[Float]] = Array.fill(inputSize)(Array.fill(inputSize)(random.nextFloat()))
 
-    final override protected def runScalaProgram(input: Array[Array[Float]]) = scalaProgram(input)
+    final override protected def runScalaProgram(input: Array[Array[Float]]) = scalaProgram(input).flatten
 
-    private def pad2D(input:Array[Array[Float]]):Array[Array[Float]] = {
-      val pad1D = Array.fill(padSize)(0.0f)
-      val pad2D = Array.fill(padSize * 2 + inputSize)(0.0f)
-
-      val data = Array(pad2D) ++ input.map(row => pad1D ++ row ++ pad1D) ++ Array(pad2D)
-      data
-    }
-
-    private def slide2D(input:Array[Array[Float]]): Array[Array[Array[Array[Float]]]] = {
-      input.map(_.sliding(stencilSize, 1).toArray).sliding(stencilSize, 1).map(x => x.transpose).toArray
-    }
 
     private def tileStencil(input:Array[Array[Float]]):Float = {
       input.flatten.reduceOption(_ + _).getOrElse(0.0f)
     }
 
     final def scalaProgram: Array[Array[Float]] => Array[Array[Float]] = (grid:Array[Array[Float]]) => {
-      slide2D(pad2D(grid)).map(_.map(tileStencil))
-    }
-
-    protected def slide2D(size:ArithExpr, step:ArithExpr):Expr[DataType -> DataType] = {
-      fun(xs => xs :>> map(slide(size,step)) :>> slide(size, step) :>> map(transpose))
-    }
-
-    protected def pad2D(n:ArithExpr, l:ArithExpr, r:ArithExpr):Expr[DataType -> DataType] = {
-      val innerAT = ArrayType(l + r + n,float)
-      val ff = foreignFun(innerAT, "constArry", scala.collection.Seq(),"{ return 0.0f }", scala.collection.Seq())
-      fun(xs =>  xs :>> map(pad(l, r, 0.0f)) :>> pad(l, r, ff))
+      import idealised.utils.ScalaPatterns._
+      slide2D(pad2D(grid, padSize, 0.0f), stencilSize).map(_.map(tileStencil))
     }
 
     protected def tileStencil:Expr[DataType -> DataType] = {
@@ -201,22 +136,42 @@ class stencils extends Tests {
   private case class BasicStencil2D(inputSize:Int, stencilSize:Int) extends Stencil2DAlgorithm {
     override def dpiaProgram = {
       val N = NamedVar("N",StartFromRange(stencilSize))
-      fun(ArrayType(N, float))(input =>
-        input :>> pad2D(N, padSize, padSize) :>>
-          slide2D(stencilSize, 1) :>> mapGlobal(mapGlobal(fun(nbh => reduceSeq(add, 0.0f, nbh))))
+      fun(ArrayType(N, ArrayType(N, float)))(input =>
+        input :>>
+          pad2D(N, padSize, padSize, FloatData(0.0f)) :>>
+          slide2D(stencilSize, 1) :>>
+          mapGlobal(0)(mapGlobal(1)(fun(nbh => join(nbh) :>> reduceSeq(add, 0.0f))))
+      )
+    }
+  }
+
+  private case class PartitionedStencil2D(inputSize:Int, stencilSize:Int) extends Stencil2DAlgorithm {
+
+    override def dpiaProgram = {
+      val N = NamedVar("N",StartFromRange(1))
+      fun(ArrayType(N, ArrayType(N, float)))(input =>
+        input :>>
+          pad2D(N, padSize, padSize, FloatData(0.0f)) :>>
+          slide2D(stencilSize, 1) :>>
+          partition2D(padSize, N - stencilSize + 1)
+          :>> depMapSeqUnroll(fun(xs => xs :>> mapGlobal(0)(depMapSeqUnroll(mapGlobal(1)(fun(nbh => join(nbh) :>> reduceSeq(add, 0.0f)))))))
       )
     }
   }
 
   test("Basic 1D addition stencil") {
-    assert(BasicStencil1D(1024, 5).run(localSize = 1, globalSize = 1).correct)
+    BasicStencil1D(1024, 5).run(localSize = 4, globalSize = 4).correctness.check()
   }
 
   test("Partitioned 1D addition stencil, with specialised area handling") {
-    assert(PartitionedStencil1D(1024, 5).run(localSize = 1, globalSize = 1).correct)
+    PartitionedStencil1D(256, 6).run(localSize = 4, globalSize = 32).correctness.check()
   }
 
   test("Basic 2D addition stencil") {
-    //assert(BasicStencil2D(128, 5).run(localSize = 1, globalSize = 1).correct)
+    BasicStencil2D(128, 5).run(localSize = 4, globalSize = 32).correctness.check()
+  }
+
+  test("Partitioned 2D addition stencil") {
+    PartitionedStencil2D(512, 2).run(localSize = 32, globalSize = 512).correctness.check()
   }
 }
