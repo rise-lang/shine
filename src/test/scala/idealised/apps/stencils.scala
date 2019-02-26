@@ -98,7 +98,8 @@ class stencils extends Tests {
       fun(ArrayType(N, float))(input =>
         input :>> pad(padSize, padSize, 0.0f) :>>
           slide(stencilSize, 1) :>>
-          partition(3, m => SteppedCase(m, Seq(padSize, N - stencilSize + 1, padSize))) :>>
+
+          partition(3, m => SteppedCase(m, Seq(padSize,  N - 2*padSize + ((1 + stencilSize) % 2), padSize))) :>>
           depMapSeqUnroll(mapGlobal(fun(nbh => reduceSeq(add, 0.0f, nbh)))) :>> printType()
       )
     }
@@ -151,10 +152,15 @@ class stencils extends Tests {
       val N = NamedVar("N",StartFromRange(1))
       fun(ArrayType(N, ArrayType(N, float)))(input =>
         input :>>
+          printType() :>>
           pad2D(N, padSize, padSize, FloatData(0.0f)) :>>
+          printType() :>>
           slide2D(stencilSize, 1) :>>
-          partition2D(padSize, N - stencilSize + 1)
-          :>> depMapSeqUnroll(fun(xs => xs :>> mapGlobal(0)(depMapSeqUnroll(mapGlobal(1)(fun(nbh => join(nbh) :>> reduceSeq(add, 0.0f)))))))
+          printType() :>>
+          partition2D(padSize, N - 2*padSize + ((1 + stencilSize) % 2)) :>>
+          printType() :>>
+          depMapSeqUnroll(fun(xs => xs :>> mapGlobal(0)(depMapSeqUnroll(mapGlobal(1)(fun(nbh => join(nbh) :>> reduceSeq(add, 0.0f)))))))
+
       )
     }
   }
@@ -164,14 +170,14 @@ class stencils extends Tests {
   }
 
   test("Partitioned 1D addition stencil, with specialised area handling") {
-    PartitionedStencil1D(256, 6).run(localSize = 4, globalSize = 32).correctness.check()
+    PartitionedStencil1D(256, 3).run(localSize = 4, globalSize = 32).correctness.check()
   }
 
   test("Basic 2D addition stencil") {
-    BasicStencil2D(128, 5).run(localSize = 4, globalSize = 32).correctness.check()
+    BasicStencil2D(6, 4).run(localSize = 2, globalSize = 4).correctness.check()
   }
 
   test("Partitioned 2D addition stencil") {
-    PartitionedStencil2D(512, 2).run(localSize = 32, globalSize = 512).correctness.check()
+    PartitionedStencil2D(inputSize = 8, stencilSize = 3).run(localSize = 1, globalSize = 1).correctness.check()
   }
 }

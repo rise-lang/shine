@@ -64,9 +64,9 @@ class Partition extends idealised.util.Tests {
 
     val N = SizeVar("N")
 
-    val lenF:NatIdentifier => Nat = (m:NatIdentifier) => SteppedCase(1, N-2, 1)(m)
+    val lenF:NatIdentifier => Nat = (m:NatIdentifier) => SteppedCase(2, N-4, 2)(m)
     val f = fun(ArrayType(N, ArrayType(N, float)))(xs =>
-        xs :>> partition2D(Cst(3), lenF) :>> depMapSeq(mapSeq(depMapSeq(mapSeq(fun(x => x)))))
+        xs :>> partition2D(Cst(3), lenF) :>> depMapSeqUnroll(mapSeq(depMapSeqUnroll(mapSeq(fun(x => x)))))
       )
     val actualN = 128
 

@@ -5,7 +5,7 @@ import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
 import idealised.{DPIA, SurfaceLanguage}
-import lift.arithmetic.ArithExpr
+import lift.arithmetic.{ArithExpr, BigSum}
 
 final case class Partition(m:Nat, lenID:NatIdentifier, lenBody:Nat, array: DataExpr,
                        override val t: Option[DataType])
@@ -26,7 +26,8 @@ final case class Partition(m:Nat, lenID:NatIdentifier, lenBody:Nat, array: DataE
     import TypeInference._
     val typed = TypeInference(array, subs) |> (array =>
       array.t match {
-        case Some(ArrayType(_, dt)) =>
+        case Some(ArrayType(n, dt)) =>
+          //assert(BigSum(from=0, upTo = m-1, `for`=lenID, lenBody) == n)
           Partition(m, lenID, lenBody, array, Some(DepArrayType(m, i => ArrayType(lenF(i), dt))))
         case x => error(expr = s"Partition($m, $lenID => $lenBody $array)", found = s"`${x.toString}'", expected = "n.dt")
       })

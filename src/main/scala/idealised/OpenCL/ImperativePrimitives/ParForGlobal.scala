@@ -6,7 +6,7 @@ import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType}
 import idealised.DPIA._
 import idealised.OpenCL
 import idealised.OpenCL._
-import lift.arithmetic.{?, RangeAdd}
+import lift.arithmetic.{?, RangeAdd, StartFromRange}
 
 
 //noinspection TypeAnnotation,ConvertibleToMethodValue
@@ -26,9 +26,9 @@ final case class ParForGlobal(dim: Int)(override val n: Nat,
 //
 //  override lazy val step: OclFunction = get_global_size(dim, RangeAdd(env.globalSize, env.globalSize + 1, 1))
 
-  override lazy val init: BuiltInFunction = get_global_id(dim, RangeAdd(0, ?, 1))
+  override lazy val init: BuiltInFunction = get_global_id(dim, StartFromRange(1))
 
-  override lazy val step: BuiltInFunction = get_global_size(dim, RangeAdd(?, ? + 1, 1))
+  override lazy val step: BuiltInFunction = get_global_size(dim, StartFromRange(1))
 
   override def synchronize: Stmt = Comment("par for global sync")
 }
