@@ -125,9 +125,9 @@ object stencil {
 
   private def explore():Unit = {
     val results = BenchmarkStencil().explore(
-      Parameter("inputSize", Seq(512)),
-      Parameter("localSize", Seq(32, 64, 128)),
-      Set(Parameter(BenchmarkStencil.STENCIL_SIZE, Seq(2, 3, 4)))
+      Parameter("inputSize", Seq(2048, 4096, 8192, 16384)),
+      Parameter("localSize", Seq(32, 64, 128, 256)),
+      Set(Parameter(BenchmarkStencil.STENCIL_SIZE, Seq(2, 3, 4, 5, 6, 7, 8, 9, 10)))
     )
 
     results.foreach(_.printout())

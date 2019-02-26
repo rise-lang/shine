@@ -179,14 +179,16 @@ abstract class OpenCLBenchmark(val verbose:Boolean, val runsPerProgram:Int) {
     import idealised.OpenCL.{ScalaFunction, `(`, `)=>`, _}
 
     val results = for(dpiaProgram <- this.dpiaPrograms) yield {
+      print(s"Running '${dpiaProgram.name}'")
+      val dpiaSource = dpiaProgram.makeProgram(conf.paramMap)
+      val kernel = this.compile(dpiaSource, conf.localSize, conf.globalSize)
+      val kernelFun = kernel.as[ScalaFunction `(` Input `)=>` Array[Float]]
+
       val tenRuns = for(runNum <- 0 until runsPerProgram) yield {
-        print(s"$runNum: Running '${dpiaProgram.name}'")
-        val dpiaSource = dpiaProgram.makeProgram(conf.paramMap)
-        val kernel = this.compile(dpiaSource, conf.localSize, conf.globalSize)
-        val kernelFun = kernel.as[ScalaFunction `(` Input `)=>` Array[Float]]
+        print(s"$runNum:'")
         kernelFun(input `;`)
         val (kernelOutput, time) = kernelFun(input `;`)
-        println(s"; runtime is $time")
+        println(s"runtime is $time")
         val correct = Correctness(kernelOutput, scalaOutput)
         if (verbose) {
           println(s"For program:${dpiaProgram.name}")
@@ -195,6 +197,7 @@ abstract class OpenCLBenchmark(val verbose:Boolean, val runsPerProgram:Int) {
         }
         (time.value, makeOutput(dpiaProgram.name, conf.paramMap, conf.inputSize, conf.localSize, conf.globalSize, kernel.code, time, correct))
       }
+      
       val median = tenRuns.sortBy(_._1).apply(runsPerProgram/2)._2
       resultPrintout(median).foreach(string => println(s"Median result: $string"))
       median
