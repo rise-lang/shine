@@ -116,7 +116,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case NewRegRot(n, dt, Lambda(registers, Lambda(rotate, body))) =>
         CCodeGen.codeGenNewRegRot(n, dt, registers, rotate, body, env)
 
-      case For(n, Lambda(i, p)) => CCodeGen.codeGenFor(n, i, p, env)
+      case For(n, Lambda(i, p), unroll) => CCodeGen.codeGenFor(n, i, p, unroll, env)
 
       case ForNat(n, NatDependentLambda(i, p), unroll) => CCodeGen.codeGenForNat(n, i, p, unroll, env)
 
@@ -259,7 +259,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case part@Partition(_, _, _, _, _, e) => path match {
         case (i: CIntExpr) :: (j: CIntExpr) :: ps =>
-          val newIdx = BigSum(0, i - 1, x => part.lenF(x)) + j
+          val bs = BigSum(0, i - 1, x => part.lenF(x))
+          val newIdx = j.num + bs
           exp(e, env, CIntExpr(newIdx) :: ps, cont)
         case _ => error(s"Expected path to contain at least two elements")
       }
@@ -502,6 +503,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     def codeGenFor(n: Nat,
                    i: Identifier[ExpType],
                    p: Phrase[CommandType],
+                   unroll:Boolean,
                    env: Environment): Stmt = {
       val cI = C.AST.DeclRef(freshName("i_"))
       val range = RangeAdd(0, n, 1)
@@ -521,13 +523,25 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             updatedGen.cmd(p, env updatedIdentEnv (i -> cI)))
 
         case _ =>
-          // default case
-          val init = C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0)))
-          val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
-          val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + 1))
+          if(unroll) {
+            val statements = for(index <- rangeAddToScalaRange(range)) yield {
+              val indexPhrase = Literal(IndexData(Cst(index), IndexType(n)))
+              val newPhrase = Phrase.substitute(phrase=indexPhrase,`for`=i, in=p)
+              immutable.Seq(updatedGen.cmd(newPhrase, env))
+            }
+            C.AST.Block(
+              C.AST.Comment(s"Unrolling from ${range.start} until ${range.stop} by increments of ${range.step}") +:
+                statements.flatten
+            )
+          } else {
+            // default case
+            val init = C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0)))
+            val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
+            val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + 1))
 
-          C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
-            C.AST.Block(immutable.Seq(updatedGen.cmd(p, env updatedIdentEnv (i -> cI)))))
+            C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
+              C.AST.Block(immutable.Seq(updatedGen.cmd(p, env updatedIdentEnv (i -> cI)))))
+          }
       }})
     }
 

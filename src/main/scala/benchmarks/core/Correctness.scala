@@ -10,7 +10,7 @@ sealed trait Correctness {
   }
 
   def printoutText:String = {
-    def wrongValueText(wrongValue:Boolean):String = if(wrongValue) { "Values are wrong;" } else ""
+    def wrongValueText(wrongValue:Int):String = if(wrongValue > 0) { s"$wrongValue values are wrong;" } else ""
     def wrongSizeText(sp: Option[SizePair]):String = sp.map(
       {
         case SizePair(actual, expected) => s"Size wrong: expected $expected but $actual found;"
@@ -28,21 +28,23 @@ case class SizePair(actualOutputSize:Int, expectedOutputSize:Int)
 
 case object Correct extends Correctness
 case object Unchecked extends Correctness
-final case class Wrong(wrongValue:Boolean, wrongSize:Option[SizePair]) extends Correctness
+final case class Wrong(numberWrong:Int, wrongSize:Option[SizePair]) extends Correctness
 
 object Correctness {
   def apply(kernelOutput:Array[Float], scalaOutput:Array[Float]):Correctness = {
     if(kernelOutput.length == scalaOutput.length) {
-      if(isSame(kernelOutput, scalaOutput)) Correct else Wrong(wrongValue = true, wrongSize = None)
+      val numWrong = countWrong(kernelOutput, scalaOutput)
+      if(numWrong == 0) Correct else Wrong(numWrong, wrongSize = None)
     } else {
       val (kOut, sOut) = matchSize(kernelOutput, scalaOutput)
-      val valueCorrect = isSame(kOut, sOut)
-      Wrong(wrongValue = !valueCorrect, wrongSize = Some(SizePair(kernelOutput.length, scalaOutput.length)))
+      val wrongCount = countWrong(kOut, sOut)
+      Wrong(wrongCount, wrongSize = Some(SizePair(kernelOutput.length, scalaOutput.length)))
     }
   }
 
-  private def isSame(a:Array[Float], b:Array[Float]):Boolean = {
-    a.zip(b).forall{case (x,y) => Math.abs(x - y) < 0.01}
+  private def countWrong(a:Array[Float], b:Array[Float]):Int = {
+    a.zip(b).zipWithIndex.filter(x => Math.abs(x._1._1 - x._1._2) > 0.1).foreach(x => println(x._2))
+    a.zip(b).count{case (x,y) => Math.abs(x - y) > 0.01}
   }
 
   private def matchSize(a:Array[Float], b:Array[Float]):(Array[Float], Array[Float]) = {
