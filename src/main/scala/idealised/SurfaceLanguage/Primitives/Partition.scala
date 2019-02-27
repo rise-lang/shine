@@ -27,8 +27,10 @@ final case class Partition(m:Nat, lenID:NatIdentifier, lenBody:Nat, array: DataE
     val typed = TypeInference(array, subs) |> (array =>
       array.t match {
         case Some(ArrayType(n, dt)) =>
-          //assert(BigSum(from=0, upTo = m-1, `for`=lenID, lenBody) == n)
-          Partition(m, lenID, lenBody, array, Some(DepArrayType(m, i => ArrayType(lenF(i), dt))))
+          assert(BigSum(from=0, upTo = m-1, `for`=lenID, lenBody) == n,
+            s"${BigSum(from=0, upTo = m-1, `for`=lenID, lenBody)} != $n")
+          Partition(m, lenID, lenBody, array,
+            Some(DepArrayType(m, i => ArrayType(lenF(i), dt))))
         case x => error(expr = s"Partition($m, $lenID => $lenBody $array)", found = s"`${x.toString}'", expected = "n.dt")
       })
     typed

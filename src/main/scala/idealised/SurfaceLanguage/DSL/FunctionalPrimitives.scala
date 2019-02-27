@@ -131,6 +131,20 @@ object reduceSeq {
     ReduceSeq(f, init, array, None)
 }
 
+object reduceSeqUnroll {
+  def apply(f: Expr[DataType -> (DataType -> DataType)]): Expr[DataType -> (DataType -> DataType)] =
+    fun((init, array) => reduceSeqUnroll(f, init, array))
+
+  def apply(f: Expr[DataType -> (DataType -> DataType)],
+            init: DataExpr): Expr[DataType -> DataType] =
+    fun(array => reduceSeqUnroll(f, init, array))
+
+  def apply(f: Expr[DataType -> (DataType -> DataType)],
+            init: DataExpr,
+            array: DataExpr): ReduceSeqUnroll =
+    ReduceSeqUnroll(f, init, array, None)
+}
+
 object scanSeq {
   def apply(f: Expr[DataType -> (DataType -> DataType)]): Expr[DataType -> (DataType -> DataType)] =
     fun((init, array) => scanSeq(f, init, array))

@@ -147,6 +147,11 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case (i : CIntExpr) :: (j : CIntExpr) :: ps => acc(a, env, CIntExpr(i * m + j) :: ps, cont)
         case _ => error(s"Expected two C-Integer-Expressions on the path.")
       }
+      case depJ@DepJoinAcc(_, _, _, _, a) => path match {
+        case (i : CIntExpr) :: (j : CIntExpr) :: ps =>
+          acc(a, env, CIntExpr(BigSum(0, i - 1, x => depJ.lenF(x)) + j) :: ps, cont)
+        case _ => error(s"Expected two C-Integer-Expressions on the path.")
+      }
 
       case RecordAcc1(_, _, a) => acc(a, env, FstMember :: path, cont)
       case RecordAcc2(_, _, a) => acc(a, env, SndMember :: path, cont)
@@ -259,9 +264,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case part@Partition(_, _, _, _, _, e) => path match {
         case (i: CIntExpr) :: (j: CIntExpr) :: ps =>
-          val bs = BigSum(0, i - 1, x => part.lenF(x))
-          val newIdx = j.num + bs
-          exp(e, env, CIntExpr(newIdx) :: ps, cont)
+          exp(e, env, CIntExpr(BigSum(0, i - 1, x => part.lenF(x)) + j) :: ps, cont)
         case _ => error(s"Expected path to contain at least two elements")
       }
 
@@ -601,14 +604,12 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       * @param env Up-to-date environment
       * @return
       */
-    private def generateNatDependentBody(
-                                          `for`:NatIdentifier,
-                                          phrase:Phrase[CommandType],
-                                          at:ArithExpr,
-                                          generator:CodeGenerator,
-                                          env:Environment):Block = {
+    private def generateNatDependentBody(`for`: NatIdentifier,
+                                         phrase: Phrase[CommandType],
+                                         at: ArithExpr,
+                                         generator: CodeGenerator,
+                                         env: Environment): Block = {
       PhraseType.substitute(at, `for`, in = phrase) |> (p => {
-
         val newIdentEnv = env.identEnv.map {
           case (Identifier(name, AccType(dt)), declRef) =>
             (Identifier(name, AccType(DataType.substitute(at, `for`, in = dt))), declRef)
@@ -616,7 +617,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             (Identifier(name, ExpType(DataType.substitute(at, `for`, in = dt))), declRef)
           case x => x
         }
-          C.AST.Block(immutable.Seq(generator.cmd(p, env.copy(identEnv = newIdentEnv))))
+        C.AST.Block(immutable.Seq(generator.cmd(p, env.copy(identEnv = newIdentEnv))))
       })
     }
 

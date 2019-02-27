@@ -84,9 +84,14 @@ class stencils extends Tests {
     override def dpiaProgram: Expr[DataType -> DataType] = {
       val N = NamedVar("N",StartFromRange(inputMinRange))
       fun(ArrayType(N, float))(input =>
-        input :>> pad(padSize, padSize, 0.0f) :>> slide(stencilSize, 1) :>> mapGlobal(
-          fun(nbh => reduceSeq(add, 0.0f, nbh)
-          ))
+        input :>>
+          printType("1") :>>
+          pad(padSize, padSize, 0.0f) :>>
+          printType("2") :>>
+          slide(stencilSize, 1) :>>
+          printType("3") :>>
+          mapGlobal(fun(nbh => reduceSeq(add, 0.0f, nbh))) :>>
+          printType("4")
       )
     }
   }
@@ -96,11 +101,18 @@ class stencils extends Tests {
     override def dpiaProgram: Expr[DataType -> DataType] = {
       val N = NamedVar("N",StartFromRange(inputMinRange))
       fun(ArrayType(N, float))(input =>
-        input :>> pad(padSize, padSize, 0.0f) :>>
+        input :>>
+          printType("1") :>>
+          pad(padSize, padSize, 0.0f) :>>
+          printType("2") :>>
           slide(stencilSize, 1) :>>
-
+          printType("3") :>>
           partition(3, m => SteppedCase(m, Seq(padSize,  N - 2*padSize + ((1 + stencilSize) % 2), padSize))) :>>
-          depMapSeqUnroll(mapGlobal(fun(nbh => reduceSeq(add, 0.0f, nbh)))) :>> printType()
+          printType("4") :>>
+          depMapSeqUnroll(mapGlobal(fun(nbh => reduceSeq(add, 0.0f, nbh)))) :>>
+          printType("5") :>>
+          join :>>
+          printType("6")
       )
     }
   }
@@ -139,9 +151,13 @@ class stencils extends Tests {
       val N = NamedVar("N",StartFromRange(stencilSize))
       fun(ArrayType(N, ArrayType(N, float)))(input =>
         input :>>
+          printType("1") :>>
           pad2D(N, padSize, padSize, FloatData(0.0f)) :>>
+          printType("2") :>>
           slide2D(stencilSize, 1) :>>
-          mapGlobal(0)(mapGlobal(1)(fun(nbh => join(nbh) :>> reduceSeq(add, 0.0f))))
+          printType("3") :>>
+          mapGlobal(0)(mapGlobal(1)(fun(nbh => join(nbh) :>> reduceSeq(add, 0.0f)))) :>>
+          printType("4")
       )
     }
   }
@@ -149,18 +165,24 @@ class stencils extends Tests {
   private case class PartitionedStencil2D(inputSize:Int, stencilSize:Int) extends Stencil2DAlgorithm {
 
     override def dpiaProgram = {
-      val N = NamedVar("N",StartFromRange(1))
+      val N = NamedVar("N",StartFromRange(stencilSize))
       fun(ArrayType(N, ArrayType(N, float)))(input =>
         input :>>
-          printType() :>>
+          printType("1") :>>
           pad2D(N, padSize, padSize, FloatData(0.0f)) :>>
-          printType() :>>
+          printType("2") :>>
           slide2D(stencilSize, 1) :>>
-          printType() :>>
-          partition2D(padSize, N - 2*padSize + ((1 + stencilSize) % 2)) :>>
-          printType() :>>
-          depMapSeqUnroll(fun(xs => xs :>> mapGlobal(0)(depMapSeqUnroll(mapGlobal(1)(fun(nbh => join(nbh) :>> reduceSeq(add, 0.0f)))))))
-
+          printType("3") :>>
+            //partition2D(padSize, N - 2*padSize + ((1 + stencilSize) % 2)) :>>
+          partition(3, m => SteppedCase(m, Seq(padSize, N - 2*padSize + ((1 + stencilSize) % 2), padSize))) :>>
+          printType("4") :>>
+          depMapSeqUnroll(
+            //mapGlobal(0)(depMapSeqUnroll(mapGlobal(1)(join() >>> reduceSeq(add, 0.0f))))
+            mapGlobal(0)(mapGlobal(1)(join() >>> reduceSeqUnroll(add, 0.0f)))
+          ) :>>
+          printType("5") :>>
+          join :>>
+          printType("6")
       )
     }
   }
@@ -174,7 +196,7 @@ class stencils extends Tests {
   }
 
   test("Basic 2D addition stencil") {
-    BasicStencil2D(6, 4).run(localSize = 2, globalSize = 4).correctness.check()
+    BasicStencil2D(8, stencilSize = 3).run(localSize = 2, globalSize = 4).correctness.check()
   }
 
   test("Partitioned 2D addition stencil") {

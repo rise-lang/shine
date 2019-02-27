@@ -10,13 +10,12 @@ import lift.arithmetic.ArithExpr
 
 import scala.xml.Elem
 
-final case class Partition(
-                            n: Nat,
-                            m: Nat,
-                            lenID:NatIdentifier,
-                            lenBody:Nat,
-                            dt: DataType,
-                            array: Phrase[ExpType])
+final case class Partition(n: Nat,
+                           m: Nat,
+                           lenID: NatIdentifier,
+                           lenBody: Nat,
+                           dt: DataType,
+                           array: Phrase[ExpType])
   extends ExpPrimitive {
 
   val lenF:Nat => Nat = (x:Nat) => ArithExpr.substitute(lenBody, scala.collection.Map((lenID, x)))

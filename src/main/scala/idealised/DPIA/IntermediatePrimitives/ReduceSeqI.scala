@@ -13,13 +13,14 @@ object ReduceSeqI {
             f: Phrase[ExpType -> (ExpType -> (AccType -> CommandType))],
             init: Phrase[ExpType],
             in: Phrase[ExpType],
-            out: Phrase[ExpType -> CommandType])
+            out: Phrase[ExpType -> CommandType],
+            unroll: Boolean = false)
            (implicit context: TranslationContext): Phrase[CommandType] =
   {
     // TODO: generalise allocation
     `new`(dt2, idealised.OpenCL.PrivateMemory, acc =>
       (acc.wr :=|dt2| init) `;`
-        `for`(n, i => f(in `@` i)(acc.rd)(acc.wr), unroll = false) `;`
+        `for`(n, i => f(in `@` i)(acc.rd)(acc.wr), unroll) `;`
         out(acc.rd)
     )
   }
