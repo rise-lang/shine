@@ -1,7 +1,7 @@
 package benchmarks
 
 import benchmarks.core.{Correctness, OpenCLBenchmark}
-import benchmarks.core.OpenCLBenchmark.{DpiaProgram, Parameter}
+import benchmarks.core.OpenCLBenchmark.{Configuration, DpiaProgram, Parameter}
 import idealised.OpenCL.SurfaceLanguage.DSL.mapGlobal
 import idealised.SurfaceLanguage.DSL.{DataExpr, fun, join, pad2D, reduceSeq, slide2D, _}
 import idealised.SurfaceLanguage.Semantics.FloatData
@@ -9,7 +9,7 @@ import idealised.SurfaceLanguage.Types.{ArrayType, DataType, float}
 import idealised.SurfaceLanguage.{->, Expr}
 import idealised.utils.Time.ms
 import idealised.utils.TimeSpan
-import lift.arithmetic.{NamedVar, StartFromRange}
+import lift.arithmetic.{NamedVar, StartFromRange, SteppedCase}
 
 import scala.util.Random
 
@@ -63,10 +63,10 @@ object stencil {
 
     //private val padSize = stencilSize/2
 
-    private def stencil2Dbasic(paramMap:Map[String,Int]) = {
-      val stencilSize = paramMap(STENCIL_SIZE)
+    private def baseline(config:Configuration) = {
+      val stencilSize = config.paramMap(STENCIL_SIZE)
       val padSize = stencilSize/2
-      val N = NamedVar("N",StartFromRange(stencilSize))
+      val N = config.inputSize//NamedVar("N",StartFromRange(stencilSize))
       fun(ArrayType(N, ArrayType(N, float)))(input =>
         input :>>
           pad2D(N, padSize, padSize, FloatData(0.0f)) :>>
@@ -75,22 +75,46 @@ object stencil {
       )
     }
 
-    private def stencil2DPartitioned(paramMap:Map[String, Int]) = {
-      val stencilSize = paramMap(STENCIL_SIZE)
+    private def partitioned1D(config: Configuration) = {
+      val stencilSize = config.paramMap(STENCIL_SIZE)
       val padSize = stencilSize/2
-      val N = NamedVar("N",StartFromRange(stencilSize*stencilSize*2))
+      val N = config.inputSize
       fun(ArrayType(N, ArrayType(N, float)))(input =>
         input :>>
           pad2D(N, padSize, padSize, FloatData(0.0f)) :>>
           slide2D(stencilSize, 1) :>>
-          partition2D(padSize, N - stencilSize + 1)
-          :>> depMapSeqUnroll(fun(xs => xs :>> mapGlobal(0)(depMapSeqUnroll(mapGlobal(1)(fun(nbh => join(nbh) :>> reduceSeq(add, 0.0f)))))))
+          partition(3, m => SteppedCase(m, Seq(padSize, N - 2*padSize + ((1 + stencilSize) % 2), padSize))) :>>
+          depMapSeqUnroll(
+            mapGlobal(0)(mapGlobal(1)(join() >>> reduceSeqUnroll(add, 0.0f)))
+          ) :>>
+          join
+      )
+    }
+
+    private def partitoned2D(config: Configuration) = {
+      val stencilSize = config.paramMap(STENCIL_SIZE)
+      val padSize = stencilSize/2
+      val N =  config.inputSize
+      fun(ArrayType(N, ArrayType(N, float)))(input =>
+        input :>>
+          pad2D(N, padSize, padSize, FloatData(0.0f)) :>>
+          slide2D(stencilSize, 1) :>>
+          partition(3, m => SteppedCase(m, Seq(padSize, N - 2*padSize + ((1 + stencilSize) % 2), padSize))) :>>
+          depMapSeqUnroll(
+            mapGlobal(0)(fun(
+              inner =>
+                inner:>>
+                  partition(3, m => SteppedCase(m, Seq(padSize, N-2*padSize  + ((1 + stencilSize) % 2), padSize))) :>>
+                  depMapSeqUnroll(mapGlobal(1)(join() >>> reduceSeqUnroll(add, 0.0f)))))
+          ) :>>
+          join
       )
     }
 
     override def dpiaPrograms: Seq[DpiaProgram] = Seq(
-      DpiaProgram("Pad on the fly", stencil2Dbasic),
-      DpiaProgram("Pad with partition", stencil2DPartitioned)
+      DpiaProgram("Baseline", baseline),
+      DpiaProgram("Partitioned 1D", partitioned1D),
+      DpiaProgram("Partitioned 2D", partitoned2D)
     )
 
     override def makeOutput(name: String, paramMap:Map[String,Int], inputSize:Int, localSize: Int, globalSize: Int, code: String, runtimeMs: TimeSpan[ms], correctness: Correctness): StencilResult = {

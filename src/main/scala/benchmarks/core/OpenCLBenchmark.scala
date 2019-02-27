@@ -1,9 +1,9 @@
 package benchmarks.core
 
-import benchmarks.core.OpenCLBenchmark.{DpiaProgram, Parameter}
+import benchmarks.core.OpenCLBenchmark.{Configuration, DpiaProgram, Parameter}
 import idealised.OpenCL.Kernel
 import idealised.SurfaceLanguage.{->, Expr}
-import idealised.SurfaceLanguage.Types.{DataType, TypeInference}
+import idealised.SurfaceLanguage.Types.{DataType, Type, TypeInference}
 import idealised.utils.{Time, TimeSpan}
 import lift.arithmetic.ArithExpr
 
@@ -21,7 +21,13 @@ object OpenCLBenchmark {
     }
   }
 
-  case class DpiaProgram(name:String, makeProgram:Map[String,Int] => Expr[DataType -> DataType])
+  case class Configuration(inputSize:Int, localSize:Int, globalSize:Int, paramMap:Map[String,Int]) {
+    def printOut(): Unit = {
+      println(s"{ inputSize = $inputSize, localSize = $localSize, globalSize = $globalSize, paramMap = $paramMap })")
+    }
+  }
+
+  case class DpiaProgram(name:String, makeProgram:Configuration => Expr[DataType -> DataType])
 }
 
 abstract class OpenCLBenchmark(val verbose:Boolean, val runsPerProgram:Int) {
@@ -40,8 +46,8 @@ abstract class OpenCLBenchmark(val verbose:Boolean, val runsPerProgram:Int) {
 
   protected def runScalaProgram(input:Input, params:Map[String,Int]):Array[Float]
 
-  private def compile(dpiaProgram:Expr[DataType -> DataType], localSize:ArithExpr, globalSize:ArithExpr):Kernel = {
-    idealised.OpenCL.KernelGenerator.makeCode(TypeInference(dpiaProgram, Map()).toPhrase, localSize, globalSize)
+  private def compile(dpiaProgram:Expr[DataType -> DataType], configuration: Configuration):Kernel = {
+    idealised.OpenCL.KernelGenerator.makeCode(TypeInference(dpiaProgram, Map()).toPhrase, configuration.localSize, configuration.globalSize)
   }
 
   final def explore(inputSize:Parameter, localSizeParam:Parameter, customParams:Set[Parameter], checkCorrectness:Boolean):Seq[Result] = {
@@ -69,12 +75,6 @@ abstract class OpenCLBenchmark(val verbose:Boolean, val runsPerProgram:Int) {
     })
   }
 
-  case class Configuration(inputSize:Int, localSize:Int, globalSize:Int, paramMap:Map[String,Int]) {
-    def printOut(): Unit = {
-      println(s"{ inputSize = $inputSize, localSize = $localSize, globalSize = $globalSize, paramMap = $paramMap })")
-    }
-  }
-
   private def runWithConfiguration(input:Input,
                                    scalaOutput:Option[Array[Float]],
                                    conf: Configuration):Seq[Result] = {
@@ -86,8 +86,8 @@ abstract class OpenCLBenchmark(val verbose:Boolean, val runsPerProgram:Int) {
 
     val results = for(dpiaProgram <- this.dpiaPrograms) yield {
       print(s"Running '${dpiaProgram.name}'")
-      val dpiaSource = dpiaProgram.makeProgram(conf.paramMap)
-      val kernel = this.compile(dpiaSource, conf.localSize, conf.globalSize)
+      val dpiaSource = dpiaProgram.makeProgram(conf)
+      val kernel = this.compile(dpiaSource, conf)
       val kernelFun = kernel.as[ScalaFunction `(` Input `)=>` Array[Float]]
 
       val tenRuns = for(runNum <- 0 until runsPerProgram) yield {

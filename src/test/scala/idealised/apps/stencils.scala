@@ -187,6 +187,27 @@ class stencils extends Tests {
     }
   }
 
+  private case class PartitionedStencil2DBoth(inputSize:Int, stencilSize:Int) extends Stencil2DAlgorithm {
+
+    override def dpiaProgram = {
+      val N = inputSize
+      fun(ArrayType(N, ArrayType(N, float)))(input =>
+        input :>>
+          pad2D(N, padSize, padSize, FloatData(0.0f)) :>>
+          slide2D(stencilSize, 1) :>>
+          partition(3, m => SteppedCase(m, Seq(padSize, N - 2*padSize + ((1 + stencilSize) % 2), padSize))) :>>
+          depMapSeqUnroll(
+            mapGlobal(0)(fun(
+              inner =>
+                inner:>>
+                  partition(3, m => SteppedCase(m, Seq(padSize, N-2*padSize  + ((1 + stencilSize) % 2), padSize))) :>>
+                  depMapSeqUnroll(mapGlobal(1)(join() >>> reduceSeqUnroll(add, 0.0f)))))
+          ) :>>
+          join
+      )
+    }
+  }
+
   test("Basic 1D addition stencil") {
     BasicStencil1D(1024, 5).run(localSize = 4, globalSize = 4).correctness.check()
   }
@@ -201,5 +222,9 @@ class stencils extends Tests {
 
   test("Partitioned 2D addition stencil") {
     PartitionedStencil2D(inputSize = 8, stencilSize = 3).run(localSize = 1, globalSize = 1).correctness.check()
+  }
+
+  test("Partitioned 2D both dimensions addition stencil") {
+    PartitionedStencil2DBoth(inputSize = 12, stencilSize = 5).run(localSize = 4, globalSize = 4).correctness.check()
   }
 }
