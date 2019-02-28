@@ -23,6 +23,7 @@ object pad2D {
   def apply(n:ArithExpr, l:ArithExpr, r:ArithExpr, data:Data):Expr[DataType -> DataType] = {
     fun(xs =>  xs :>> pad(l, r, LiteralExpr(SingletonArrayData(n, data))) :>> map(pad(l, r, LiteralExpr(data))))
   }
+
 }
 
 object partition2D {

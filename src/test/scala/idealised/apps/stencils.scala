@@ -174,7 +174,7 @@ class stencils extends Tests {
           slide2D(stencilSize, 1) :>>
           printType("3") :>>
             //partition2D(padSize, N - 2*padSize + ((1 + stencilSize) % 2)) :>>
-          partition(3, m => SteppedCase(m, Seq(padSize, N - 2*padSize + ((1 + stencilSize) % 2), padSize))) :>>
+          partition(3, m => SteppedCase(m, Seq(padSize, N - 2*padSize, padSize))) :>>
           printType("4") :>>
           depMapSeqUnroll(
             //mapGlobal(0)(depMapSeqUnroll(mapGlobal(1)(join() >>> reduceSeq(add, 0.0f))))
@@ -187,23 +187,35 @@ class stencils extends Tests {
     }
   }
 
-  private case class PartitionedStencil2DBoth(inputSize:Int, stencilSize:Int) extends Stencil2DAlgorithm {
-
+  private case class BasicStencil2DInjected(inputSize:Int, stencilSize:Int) extends Stencil2DAlgorithm {
     override def dpiaProgram = {
       val N = inputSize
       fun(ArrayType(N, ArrayType(N, float)))(input =>
         input :>>
           pad2D(N, padSize, padSize, FloatData(0.0f)) :>>
           slide2D(stencilSize, 1) :>>
-          partition(3, m => SteppedCase(m, Seq(padSize, N - 2*padSize + ((1 + stencilSize) % 2), padSize))) :>>
+          mapGlobal(0)(mapGlobal(1)(fun(nbh => join(nbh) :>> reduceSeq(add, 0.0f))))
+      )
+    }
+  }
+
+  private case class PartitionedStencil2DBoth(inputSize:Int, stencilSize:Int) extends Stencil2DAlgorithm {
+
+    override def dpiaProgram = {
+      val N = inputSize//NamedVar("N", StartFromRange(stencilSize))
+      val M = inputSize//NamedVar("M", StartFromRange(stencilSize))
+      fun(ArrayType(N, ArrayType(M, float)))(input =>
+        input :>>
+          pad2D(M, padSize, padSize, FloatData(0.0f)) :>>
+          slide2D(stencilSize, 1) :>>
+          partition(3, m => SteppedCase(m, Seq(padSize, N - 2*padSize + 1, padSize))) :>>
           depMapSeqUnroll(
-            mapGlobal(0)(fun(
+            mapGlobal(1)(fun(
               inner =>
                 inner:>>
-                  partition(3, m => SteppedCase(m, Seq(padSize, N-2*padSize  + ((1 + stencilSize) % 2), padSize))) :>>
-                  depMapSeqUnroll(mapGlobal(1)(join() >>> reduceSeqUnroll(add, 0.0f)))))
-          ) :>>
-          join
+                  partition(3, m => SteppedCase(m, Seq(padSize, M-2*padSize + 1, padSize))) :>>
+                  depMapSeqUnroll(mapGlobal(0)(join() >>> reduceSeqUnroll(add, 0.0f)))))
+          ) :>> join
       )
     }
   }
@@ -217,14 +229,18 @@ class stencils extends Tests {
   }
 
   test("Basic 2D addition stencil") {
-    BasicStencil2D(8, stencilSize = 3).run(localSize = 2, globalSize = 4).correctness.check()
+    BasicStencil2D(8, stencilSize = 4).run(localSize = 2, globalSize = 4).correctness.check()
   }
 
   test("Partitioned 2D addition stencil") {
     PartitionedStencil2D(inputSize = 8, stencilSize = 3).run(localSize = 1, globalSize = 1).correctness.check()
   }
 
+  test("Basic 2D  injected addition stencil") {
+    BasicStencil2DInjected(8, stencilSize = 3).run(localSize = 2, globalSize = 4).correctness.check()
+  }
+
   test("Partitioned 2D both dimensions addition stencil") {
-    PartitionedStencil2DBoth(inputSize = 12, stencilSize = 5).run(localSize = 4, globalSize = 4).correctness.check()
+    PartitionedStencil2DBoth(inputSize = 1024, stencilSize = 6).run(localSize = 4, globalSize = 4).correctness.check()
   }
 }
