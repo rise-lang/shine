@@ -12,6 +12,7 @@ import idealised.DPIA.Semantics.OperationalSemantics.VectorData
 import idealised.DPIA.Types._
 import idealised.DPIA._
 import idealised.OpenCL.ImperativePrimitives._
+import idealised.OpenCL._
 import idealised._
 import lift.arithmetic
 import lift.arithmetic._
@@ -54,6 +55,10 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
         case _ => super.cmd(phrase, env)
       }
+
+      case OpenCLNew(dt, addrSpace, Lambda(v, p)) => OpenCLCodeGen.codeGenOpenCLNew(dt, addrSpace, v, p, env)
+
+      case _: New => throw new Exception("New without address space found in OpenCL program.")
 
       case _ => super.cmd(phrase, env)
     }
@@ -138,6 +143,22 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
   }
 
   protected object OpenCLCodeGen {
+    def codeGenOpenCLNew(dt: DataType,
+                   addressSpace: AddressSpace,
+                   v: Identifier[VarType],
+                   p: Phrase[CommandType],
+                   env: Environment): Stmt = {
+      val ve = Identifier(s"${v.name}_e", v.t.t1)
+      val va = Identifier(s"${v.name}_a", v.t.t2)
+      val vC = C.AST.DeclRef(v.name)
+
+      C.AST.Block(immutable.Seq(
+        C.AST.DeclStmt(OpenCL.AST.VarDecl(vC.name, typ(dt), addressSpace)),
+        cmd(Phrase.substitute(Pair(ve, va), `for` = v, `in` = p),
+          env updatedIdentEnv (ve -> vC)
+            updatedIdentEnv (va -> vC))))
+    }
+
     def codeGenOpenCLParFor(f: OpenCLParFor,
                             n: Nat,
                             dt: DataType,

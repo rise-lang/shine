@@ -3,7 +3,7 @@ import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases.Phrase
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised.OpenCL.ImperativePrimitives.{ParForNatGlobal, ParForNatLocal, ParForNatWorkGroup}
+import idealised.OpenCL.ImperativePrimitives.{ParForNatGlobal, ParForNatLocal, ParForNatWorkGroup, OpenCLNew}
 import lift.arithmetic.RangeAdd
 
 package object DSL {
@@ -29,5 +29,17 @@ package object DSL {
     def apply(dim:Int)(n:Nat, i:NatIdentifier, dt:DataType, out:Phrase[AccType], f:NatIdentifier => Phrase[AccType] => Phrase[CommandType]):ParForNatLocal = {
       ParForNatLocal(dim)(n, i,  dt, out,  parForBodyFunction(n, i, dt, f))
     }
+  }
+
+  object newWithAddrSpace {
+    def apply(dt: DataType,
+              addressSpace: AddressSpace,
+              f: Phrase[VarType -> CommandType]): OpenCLNew =
+      OpenCLNew(dt, addressSpace, f)
+
+    def apply(dt: DataType,
+              addressSpace: AddressSpace,
+              f: Phrase[VarType] => Phrase[CommandType]): OpenCLNew =
+      OpenCLNew(dt, addressSpace, λ(exp"[$dt]" x acc"[$dt]")(v => f(v) ))
   }
 }
