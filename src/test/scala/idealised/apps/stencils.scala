@@ -156,7 +156,7 @@ class stencils extends Tests {
           printType("2") :>>
           slide2D(stencilSize, 1) :>>
           printType("3") :>>
-          mapGlobal(0)(mapGlobal(1)(fun(nbh => join(nbh) :>> reduceSeq(add, 0.0f)))) :>>
+          mapGlobal(1)(mapGlobal(0)(fun(nbh => join(nbh) :>> reduceSeqUnroll(add, 0.0f)))) :>>
           printType("4")
       )
     }
@@ -178,7 +178,7 @@ class stencils extends Tests {
           printType("4") :>>
           depMapSeqUnroll(
             //mapGlobal(0)(depMapSeqUnroll(mapGlobal(1)(join() >>> reduceSeq(add, 0.0f))))
-            mapGlobal(0)(mapGlobal(1)(join() >>> reduceSeqUnroll(add, 0.0f)))
+            mapGlobal(1)(mapGlobal(0)(join() >>> reduceSeqUnroll(add, 0.0f)))
           ) :>>
           printType("5") :>>
           join :>>
@@ -202,7 +202,7 @@ class stencils extends Tests {
   private case class PartitionedStencil2DBoth(inputSize:Int, stencilSize:Int) extends Stencil2DAlgorithm {
 
     override def dpiaProgram = {
-      val N = inputSize//NamedVar("N", StartFromRange(stencilSize))
+      val N =NamedVar("N", StartFromRange(stencilSize))
       val M = inputSize//NamedVar("M", StartFromRange(stencilSize))
       fun(ArrayType(N, ArrayType(M, float)))(input =>
         input :>>
@@ -229,11 +229,11 @@ class stencils extends Tests {
   }
 
   test("Basic 2D addition stencil") {
-    BasicStencil2D(8, stencilSize = 4).run(localSize = 2, globalSize = 4).correctness.check()
+    BasicStencil2D(256, stencilSize = 11).run(localSize = 2, globalSize = 4).correctness.check()
   }
 
   test("Partitioned 2D addition stencil") {
-    PartitionedStencil2D(inputSize = 8, stencilSize = 3).run(localSize = 1, globalSize = 1).correctness.check()
+    PartitionedStencil2D(inputSize = 1024, stencilSize = 11).run(localSize = 4, globalSize = 1024).correctness.check()
   }
 
   test("Basic 2D  injected addition stencil") {
@@ -241,6 +241,6 @@ class stencils extends Tests {
   }
 
   test("Partitioned 2D both dimensions addition stencil") {
-    PartitionedStencil2DBoth(inputSize = 1024, stencilSize = 6).run(localSize = 4, globalSize = 4).correctness.check()
+    PartitionedStencil2DBoth(inputSize = 128, stencilSize = 6).run(localSize = 4, globalSize = 4).correctness.check()
   }
 }

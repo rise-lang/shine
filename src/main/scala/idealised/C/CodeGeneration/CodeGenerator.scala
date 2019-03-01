@@ -1,5 +1,7 @@
 package idealised.C.CodeGeneration
 
+import java.util.function.Predicate
+
 import idealised.C.AST.{Block, Node, Nodes}
 import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives._
@@ -11,6 +13,7 @@ import idealised.DPIA.Types._
 import idealised.DPIA.{Phrases, _}
 import idealised.SurfaceLanguage.Operators
 import idealised._
+import lift.arithmetic.BoolExpr.{ArithPredicate, False, True}
 import lift.arithmetic.{NamedVar, _}
 
 import scala.collection.immutable.VectorBuilder
@@ -309,17 +312,24 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           exp(pad, env, ps, padExpr => {
             exp(array, env, CIntExpr(i - l) ::ps, arrayExpr => {
 
-              def genBranch(bound:ArithExpr, taken:Expr, notTaken:Expr):Expr = {
+              def cOperator(op:ArithPredicate.Operator.Value):C.AST.BinaryOperator.Value = op match {
+                case ArithPredicate.Operator.< => C.AST.BinaryOperator.<
+                case ArithPredicate.Operator.> => C.AST.BinaryOperator.>
+                case ArithPredicate.Operator.>= => C.AST.BinaryOperator.>=
+                case _ => null
+              }
+
+              def genBranch(lhs:ArithExpr, rhs:ArithExpr, operator:ArithPredicate.Operator.Value, taken:Expr, notTaken:Expr):Expr = {
                 import BoolExpr._
-                arithPredicate(i, bound, ArithPredicate.Operator.<) match {
+                arithPredicate(lhs, rhs, operator) match {
                   case True => taken
                   case False => notTaken
                   case _ => C.AST.TernaryExpr(
-                    C.AST.BinaryExpr(C.AST.ArithmeticExpr(i), C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(bound)),
+                    C.AST.BinaryExpr(C.AST.ArithmeticExpr(i), cOperator(operator), C.AST.ArithmeticExpr(rhs)),
                     taken, notTaken)
                 }
               }
-              cont(genBranch(l, padExpr, genBranch(l + n, arrayExpr, padExpr)))
+              cont(genBranch(i, l, ArithPredicate.Operator.<, padExpr, genBranch(i, l + n, ArithPredicate.Operator.<, arrayExpr, padExpr)))
             })
           })
 
@@ -335,6 +345,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case (i : CIntExpr)::(j : CIntExpr) :: ps => exp(e, env, CIntExpr(j) :: CIntExpr(i) :: ps , cont)
         case _ => error(s"Expected two C-Integer-Expressions on the path.")
       }
+
+      case WithIndex(_, _, e) => exp(e, env, path, cont)
 
       // TODO: this has to be refactored
       case VectorFromScalar(n, st, e) => path match {
@@ -526,6 +538,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             updatedGen.cmd(p, env updatedIdentEnv (i -> cI)))
 
         case _ =>
+
           if(unroll) {
             val statements = for(index <- rangeAddToScalaRange(range)) yield {
               val indexPhrase = Literal(IndexData(Cst(index), IndexType(n)))

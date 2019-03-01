@@ -158,8 +158,11 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
       Phrase.substitute(a `@` i, `for` = o, `in` = p) |> (p =>
 
-      env.updatedIdentEnv(i -> cI) |> (env =>
+      env.updatedIdentEnv(i -> cI) |> (env => {
 
+        val test = range.numVals
+        val min = test.min
+        val max = test.max
       range.numVals match {
         // iteration count is 0 => skip body; no code to be emitted
         case Cst(0) => C.AST.Comment("iteration count is 0, no loop emitted")
@@ -169,13 +172,18 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
             C.AST.Comment("iteration count is exactly 1, no loop emitted"),
             C.AST.DeclStmt(C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0))))),
             updatedGen.cmd(p, env))
+        case _ if range.numVals.min == NegInf && range.numVals.max == Cst(1) =>
+          C.AST.Stmts(
+            C.AST.DeclStmt(init),
+            C.AST.IfThenElse(cond, updatedGen.cmd(p, env) , None)
+          )
         // default case
         case _ =>
           C.AST.Stmts(
             C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
               C.AST.Block(immutable.Seq(updatedGen.cmd(p, env)))),
             f.synchronize)
-      }))})
+      }}))})
     }
 
     def codeGenOpenCLParForNat(f: OpenCLParForNat,

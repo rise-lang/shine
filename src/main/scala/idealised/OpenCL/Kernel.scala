@@ -69,9 +69,12 @@ case class Kernel(decls: Seq[C.AST.Decl],
           throw new Exception(errorMessage)
       }
 
+      val lclSize = ArithExpr.substitute(localSize, lengthMapping).eval
+      val glbSize = ArithExpr.substitute(globalSize, lengthMapping).eval
+
       val runtime = Executor.execute(kernelJNI,
-        ArithExpr.substitute(localSize, lengthMapping).eval, 1, 1,
-        ArithExpr.substitute(globalSize, lengthMapping).eval, 1, 1,
+        lclSize, lclSize, 1,
+        glbSize, glbSize, 1,
         kernelArgs)
 
       val output = castToOutputType[F#R](outputParam.`type`.dataType, outputArg)
