@@ -46,6 +46,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
     */
   def as[F <: FunctionHelper](implicit ev: F#T <:< HList): F#T => (F#R, TimeSpan[Time.ms]) = {
     hArgs: F#T => {
+      // assert(this.localSize == localSize)
       val args: List[Any] = hArgs.toList
 
       val lengthMapping = createLengthMap(inputParams, args)
@@ -55,6 +56,9 @@ case class Kernel(decls: Seq[C.AST.Decl],
 
       val c = code
       val kernelJNI = opencl.executor.Kernel.create(c, kernel.name, "")
+
+      assert(localSize.isEvaluable && globalSize.isEvaluable,
+        "Local and Global Size must be evaluable and set before executing the kernel.")
 
       val runtime = Executor.execute(kernelJNI,
         ArithExpr.substitute(localSize, lengthMapping).eval, 1, 1,

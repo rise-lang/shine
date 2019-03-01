@@ -11,7 +11,7 @@ package object OpenCL {
   case object Sequential extends ParallelismLevel
 
 
-  sealed trait AddressSpace extends DPIA.AddressSpace
+  sealed trait AddressSpace
   case object GlobalMemory extends AddressSpace
   case object LocalMemory extends AddressSpace
   case object PrivateMemory extends AddressSpace

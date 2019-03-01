@@ -8,14 +8,12 @@ import idealised.DPIA._
 
 object `new` {
   def apply(dt: DataType,
-            addressSpace: AddressSpace,
             f: Phrase[VarType -> CommandType]): New =
-    New(dt, addressSpace, f)
+    New(dt, f)
 
   def apply(dt: DataType,
-            addressSpace: AddressSpace,
             f: Phrase[VarType] => Phrase[CommandType]): New =
-    New(dt, addressSpace, λ(exp"[$dt]" x acc"[$dt]")( v => f(v) ))
+    New(dt, λ(exp"[$dt]" x acc"[$dt]")( v => f(v) ))
 }
 
 object newDoubleBuffer {
