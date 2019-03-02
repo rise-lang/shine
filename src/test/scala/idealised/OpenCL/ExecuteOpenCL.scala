@@ -17,11 +17,13 @@ class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
     println(kernel.code)
     SyntaxChecker.checkOpenCL(kernel.code)
 
-    val kernelF = kernel.as[ScalaFunction`(`Array[Int]`)=>`Array[Int]]
+    val kernelF = kernel.as[ScalaFunction`(`Int`,`Array[Int]`)=>`Array[Int]]
     val xs = Array.fill(8)(0)
 
-    val (result, time) =  kernelF(xs `;`)
-    println(result)
+    val (result, time) =  kernelF(8`,`xs)
     println(time)
+
+    val gold = Array.fill(8)(1)
+    assertResult(gold)(result)
   }
 }

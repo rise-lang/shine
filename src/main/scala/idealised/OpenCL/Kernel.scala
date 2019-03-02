@@ -81,7 +81,13 @@ case class Kernel(decls: Seq[C.AST.Decl],
   }
 
   private def createLengthMapping(p: Identifier[ExpType], a: Any): Seq[(Nat, Int)] = {
-    createLengthMapping(p.t.dataType, a).filter(_._1.isInstanceOf[Var])
+    val completeLengthMapping = createLengthMapping(p.t.dataType, a)
+
+    //TODO cover case where ArithExpr cannot be evaluated
+    completeLengthMapping.filter(!_._1.isInstanceOf[Var])
+      .foreach {case (typeSize: Nat, argSize: Int) => assert(typeSize.eval == argSize) }
+
+    completeLengthMapping.filter(_._1.isInstanceOf[Var])
   }
 
   private def createLengthMapping(t: DataType, a: Any): Seq[(Nat, Int)] = {
@@ -105,16 +111,15 @@ case class Kernel(decls: Seq[C.AST.Decl],
   }
 
   private def createKernelArgs(args: List[Any], lengthMapping: immutable.Map[Nat, Nat]): (GlobalArg, List[KernelArg]) = {
-    val numberOfKernelArgs = 1 + args.length + intermediateParams.size + lengthMapping.size
+    val numberOfKernelArgs = 1 + args.length + intermediateParams.size
     assert(kernel.params.length == numberOfKernelArgs)
 
     println("Allocations on the host: ")
     val outputArg = createOutputArg(sizeInByte(outputParam) `with` lengthMapping)
     val inputArgs = args.map(createInputArg)
     val intermediateArgs = createIntermediateArgs(args.length, lengthMapping)
-    val lengthArgs = createLengthArgs(lengthMapping)
 
-    (outputArg, inputArgs ++ intermediateArgs ++ lengthArgs)
+    (outputArg, inputArgs ++ intermediateArgs)
   }
 
   private def createOutputArg(size: SizeInByte): GlobalArg = {

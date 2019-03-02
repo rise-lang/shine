@@ -45,9 +45,11 @@ class transpose extends idealised.util.TestsWithExecutor {
 
   test("Generate code for top-level nat-dependent lambdas in OpenMP") {
    val natDepProg =
-    dFun((x : NatIdentifier) =>
-      dFun((y : NatIdentifier) =>
-        fun(ArrayType(SizeVar("N"), float))(in => in :>> split(x) :>> map(split(y)) :>> mapPar(mapSeq(mapSeq(id))))))
+     dFun((n: NatIdentifier) =>
+       dFun((x : NatIdentifier) =>
+         dFun((y : NatIdentifier) =>
+           fun(ArrayType(n, float))(in =>
+             in :>> split(x) :>> map(split(y)) :>> mapPar(mapSeq(mapSeq(id)))))))
 
     val compiledProg =
       idealised.OpenMP.ProgramGenerator.makeCode(TypeInference(natDepProg, Map()).toPhrase)
