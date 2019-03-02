@@ -6,7 +6,7 @@ import idealised.DPIA.Semantics.OperationalSemantics.IndexData
 import idealised.DPIA.Types.{DataType, ExpType, IndexType, PhraseType}
 import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.SurfaceLanguage._
-import lift.arithmetic.{PosVar, RangeAdd}
+import lift.arithmetic.{NamedVar, RangeAdd}
 
 import scala.language.{postfixOps, reflectiveCalls}
 
@@ -88,7 +88,7 @@ object Lifting {
   def liftFunctionToNatLambda[T <: PhraseType](p: Phrase[ExpType -> T]): Nat => Phrase[T] = {
     p match {
       case l: Lambda[ExpType, T] =>
-        (arg: Nat) => l.body `[` arg  `/` PosVar(l.param.name) `]`
+        (arg: Nat) => l.body `[` arg  `/` NamedVar(l.param.name) `]`
       case app: Apply[_, ExpType -> T] =>
         val fun = liftFunction(app.fun)
         liftFunctionToNatLambda(fun(app.arg))
@@ -139,7 +139,7 @@ object Lifting {
     p.t match {
       case ExpType(IndexType(n)) =>
         p match {
-          case i:Identifier[ExpType] => PosVar(i.name, RangeAdd(0, n, 1))
+          case i:Identifier[ExpType] => NamedVar(i.name, RangeAdd(0, n, 1))
           case Apply(fun, arg) => liftIndexExpr(liftFunction(fun)(arg))
           case BinOp(op, lhs, rhs) => binOpToNat(op, liftIndexExpr(lhs), liftIndexExpr(rhs))
           case IfThenElse(_, _, _) => ???

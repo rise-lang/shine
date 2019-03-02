@@ -4,7 +4,7 @@ import idealised.SurfaceLanguage.Primitives._
 import idealised.SurfaceLanguage.Semantics._
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage.{Expr, _}
-import lift.arithmetic.PosVar
+import lift.arithmetic.NamedVar
 
 import scala.language.implicitConversions
 
@@ -62,7 +62,7 @@ object partition {
   def apply(m: Nat, f:NatIdentifier => Nat): Expr[DataType -> DataType] = fun(array => partition(m, f, array))
 
   def apply(m:Nat, f:NatIdentifier => Nat, array: DataExpr): Partition = {
-    val ident = PosVar("p")
+    val ident = NamedVar("p")
     Partition(m, ident, f(ident), array, None)
   }
 }
@@ -144,14 +144,14 @@ object iterate {
 
 object gather {
   def apply(idxF: Expr[`(nat)->`[DataType ->DataType]]): Expr[DataType -> DataType] = {
-    val idxF_ = idxF(PosVar(newName()))
+    val idxF_ = idxF(NamedVar(newName()))
     fun(array => Gather(idxF_, array, None))
   }
 }
 
 object scatter {
   def apply(idxF: Expr[`(nat)->`[DataType ->DataType]]): Expr[DataType -> DataType] = {
-    val idxF_ = idxF(PosVar(newName()))
+    val idxF_ = idxF(NamedVar(newName()))
     fun(array => Scatter(idxF_, array, None))
   }
 }

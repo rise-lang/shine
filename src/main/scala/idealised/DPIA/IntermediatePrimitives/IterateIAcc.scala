@@ -8,7 +8,7 @@ import idealised.DPIA.ImperativePrimitives.TakeAcc
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
-import lift.arithmetic.PosVar
+import lift.arithmetic.NamedVar
 
 object IterateIAcc {
   def apply(n: Nat,
@@ -27,7 +27,7 @@ object IterateIAcc {
        swap: Phrase[CommandType],
        done: Phrase[CommandType]) => {
         `for`(k, ip => {
-          val i = PosVar(ip.name)
+          val i = NamedVar(ip.name)
 
           f.apply(n.pow(k - i) * m)
             .apply(TakeAcc(n.pow(k - i - 1) * m, `n^k*m`, dt, v.wr))

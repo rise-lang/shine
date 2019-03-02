@@ -564,15 +564,15 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           // default case
           val init = C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0)))
           val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
-          val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(PosVar(cI.name, range) + 1))
+          val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + 1))
 
-          PhraseType.substitute(PosVar(cI.name, range), `for` = i, in = p) |> (p => {
+          PhraseType.substitute(NamedVar(cI.name, range), `for` = i, in = p) |> (p => {
 
             val newIdentEnv = env.identEnv.map {
               case (Identifier(name, AccType(dt)), declRef) =>
-                (Identifier(name, AccType(DataType.substitute(PosVar(cI.name, range), `for` = i, in = dt))), declRef)
+                (Identifier(name, AccType(DataType.substitute(NamedVar(cI.name, range), `for` = i, in = dt))), declRef)
               case (Identifier(name, ExpType(dt)), declRef) =>
-                (Identifier(name, ExpType(DataType.substitute(PosVar(cI.name, range), `for` = i, in = dt))), declRef)
+                (Identifier(name, ExpType(DataType.substitute(NamedVar(cI.name, range), `for` = i, in = dt))), declRef)
               case x => x
             }
 

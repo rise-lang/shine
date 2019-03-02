@@ -1,6 +1,5 @@
 package idealised.DPIA.Primitives
 
-import lift.arithmetic._
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
 import idealised.util.SyntaxChecker

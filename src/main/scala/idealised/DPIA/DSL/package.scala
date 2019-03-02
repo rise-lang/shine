@@ -6,7 +6,7 @@ import idealised.DPIA.Phrases.{BinOp, Identifier, Literal, Pair, Phrase, Proj1, 
 import idealised.DPIA.Semantics.OperationalSemantics.{FloatData, IndexData, IntData}
 import idealised.DPIA.Types._
 import idealised.SurfaceLanguage.Operators
-import lift.arithmetic.{ContinuousRange, PosVar}
+import lift.arithmetic.{ContinuousRange, NamedVar}
 
 import scala.language.{implicitConversions, reflectiveCalls}
 
@@ -136,9 +136,9 @@ package object DSL {
   }
 
   implicit class IdentExpPhraseExtensions(i: Identifier[ExpType]) {
-    def asNatIdentifier = PosVar(i.name)
+    def asNatIdentifier = NamedVar(i.name)
     def asNatIdentifier(withUpperBound: Nat) =
-      PosVar(i.name, ContinuousRange(0, withUpperBound))
+      NamedVar(i.name, ContinuousRange(0, withUpperBound))
   }
 
   implicit class NatExtensions(n: Nat) {
