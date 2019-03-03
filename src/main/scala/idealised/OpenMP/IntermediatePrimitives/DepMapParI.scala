@@ -9,12 +9,12 @@ import idealised.OpenMP.DSL.parForNat
 //noinspection TypeAnnotation
 object DepMapParI {
   def apply(n: Nat,
-            i1: NatIdentifier, dt1: DataType,
-            i2: NatIdentifier, dt2: DataType,
+            ft1:NatDataTypeFunction,
+            ft2:NatDataTypeFunction,
             f: Phrase[`(nat)->`[ExpType -> (AccType -> CommandType)]],
             in: Phrase[ExpType],
             out: Phrase[AccType]): Phrase[CommandType] =
   {
-    parForNat(n, i2, dt2, out, idx => a => f(idx)(in `@d` idx)(a))
+    parForNat(n, ft2.x, ft2.body, out, idx => a => f(idx)(in `@d` idx)(a))
   }
 }

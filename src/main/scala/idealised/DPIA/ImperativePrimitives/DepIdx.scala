@@ -20,7 +20,7 @@ final case class DepIdx(n: Nat,
 
   override val `type`: ExpType =
     (n: Nat) -> (i: Nat) -> (dt: DataType) -> (index: Nat) ->
-      (array :: exp"[${DepArrayType(n, makeDt)}]") ->
+      (array :: exp"[${DepArrayType(n, makeDt _)}]") ->
         exp"[${makeDt(index)}]"
 
   //  override def inferTypes: Idx = {

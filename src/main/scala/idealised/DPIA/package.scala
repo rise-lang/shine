@@ -2,7 +2,7 @@ package idealised
 
 import idealised.DPIA.Phrases.Phrase
 import idealised.DPIA.Types.{PhraseTypeParser, _}
-import lift.arithmetic.{ArithExpr, NamedVar, Var}
+import lift.arithmetic._
 
 import scala.language.{implicitConversions, reflectiveCalls}
 
@@ -18,6 +18,23 @@ package object DPIA {
 
   type Nat = ArithExpr
   type NatIdentifier = NamedVar
+
+  case class NatNatTypeFunction(x:NatIdentifier, body:Nat) {
+    def apply(n:Nat):Nat = ArithExpr.substitute(body, Map((x,n)))
+  }
+
+  case class NatDataTypeFunction private (x:NatIdentifier, body:DataType) {
+    def apply(n:Nat):DataType = DataType.substitute(n, `for`=x, `in`=body)
+  }
+
+  object NatDataTypeFunction {
+    def apply(upperBound:Nat, f:NatIdentifier => DataType):NatDataTypeFunction = apply(RangeAdd(0, upperBound, 1), f)
+
+    private def apply(range:Range, f:NatIdentifier => DataType):NatDataTypeFunction = {
+      val x = NamedVar("x", range)
+      NatDataTypeFunction(x, f(x))
+    }
+  }
 
   object Nat {
     def substitute(ae: Nat, `for`: NatIdentifier, in: Nat): Nat = {

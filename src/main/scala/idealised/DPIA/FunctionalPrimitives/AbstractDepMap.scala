@@ -12,22 +12,20 @@ import scala.xml.Elem
 
 
 abstract class AbstractDepMap(n: Nat,
-                              i1: NatIdentifier, dt1: DataType,
-                              i2: NatIdentifier, dt2: DataType,
+                              ft1:NatDataTypeFunction,
+                              ft2: NatDataTypeFunction,
                               f: Phrase[`(nat)->`[ExpType -> ExpType]],
                               array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  private def makeDt1(x:Nat):DataType = DataType.substitute(x, `for`=i1, `in`=dt1)
-  private def makeDt2(x:Nat):DataType = DataType.substitute(x, `for`=i2, `in`=dt2)
 
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommandType] = {
     import idealised.DPIA.Compilation.TranslationToImperative._
     import idealised.DPIA._
 
-    con(array)(λ(exp"[${DepArrayType(n, makeDt1)}]")(x =>
-      makeMapI(n, i1, dt1, i2, dt2, _Λ_((k: NatIdentifier) => λ(exp"[${makeDt1(k)}]")(x => λ(acc"[${makeDt2(k)}]")(o => {
+    con(array)(λ(exp"[${DepArrayType(n, ft1)}]")(x =>
+      makeMapI(n, ft1, ft2, _Λ_((k: NatIdentifier) => λ(exp"[${ft1(k)}]")(x => λ(acc"[${ft2(k)}]")(o => {
         acc(f(k)(x))(o)
       }))), x, A)))
   }
@@ -36,16 +34,16 @@ abstract class AbstractDepMap(n: Nat,
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    `new`(dt"[${DepArrayType(n, makeDt2)}]", idealised.OpenCL.GlobalMemory, λ(exp"[${DepArrayType(n, makeDt2)}]" x acc"[${DepArrayType(n, makeDt2)}]")(tmp =>
+    `new`(dt"[${DepArrayType(n, ft2)}]", idealised.OpenCL.GlobalMemory, λ(exp"[${DepArrayType(n, ft2)}]" x acc"[${DepArrayType(n, ft2)}]")(tmp =>
       acc(this)(tmp.wr) `;` C(tmp.rd) ))
   }
 
 
-  def makeMap: (Nat, NatIdentifier, DataType, NatIdentifier, DataType, Phrase[`(nat)->`[ExpType -> ExpType]], Phrase[ExpType]) => AbstractDepMap
+  def makeMap: (Nat, NatDataTypeFunction, NatDataTypeFunction, Phrase[`(nat)->`[ExpType -> ExpType]], Phrase[ExpType]) => AbstractDepMap
 
   def makeMapI(n: Nat,
-               i1: NatIdentifier, dt1: DataType,
-               i2: NatIdentifier, dt2: DataType,
+               ft1:NatDataTypeFunction,
+               ft2:NatDataTypeFunction,
                f: Phrase[`(nat)->`[ExpType -> (AccType -> CommandType)]],
                array: Phrase[ExpType],
                out: Phrase[AccType])
@@ -53,14 +51,14 @@ abstract class AbstractDepMap(n: Nat,
 
   override val `type`: ExpType = {
     val k = f.t.x
-    (n: Nat) -> (i1: Nat) -> (dt1: DataType) -> (i2: Nat) -> (dt2: DataType) ->
-      (f :: t"($k : nat) -> exp[${ makeDt1(k) }] -> exp[${ makeDt2(k) }]")
-    (array :: exp"[${DepArrayType(n, makeDt1)}]") ->
-      exp"[${DepArrayType(n, makeDt2)}]"
+    (n: Nat) -> (ft1:NatDataTypeFunction) -> (ft2:NatDataTypeFunction) ->
+      (f :: t"($k : nat) -> exp[${ ft1(k) }] -> exp[${ ft2(k) }]")
+    (array :: exp"[${DepArrayType(n, ft1)}]") ->
+      exp"[${DepArrayType(n, ft2)}]"
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    makeMap(fun(n), fun(i1).asInstanceOf[NatIdentifier], fun(dt1), fun(i2).asInstanceOf[NatIdentifier], fun(dt2), VisitAndRebuild(f, fun), VisitAndRebuild(array, fun))
+    makeMap(fun(n), fun(ft1), fun(ft2), VisitAndRebuild(f, fun), VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): Data = ???
@@ -73,11 +71,11 @@ abstract class AbstractDepMap(n: Nat,
       case NatDependentLambda(k_, _) => k_
       case _ => throw new Exception("This should not happen")
     }
-    <map n={ToString(n)} i1={ToString(i1)} dt1={ToString(dt1)} i2={ToString(i2)} dt2={ToString(dt2)}>
-      <f type={ToString(k -> (ExpType(DataType.substitute(k, `for` = i1, in = dt1)) -> ExpType(DataType.substitute(k, `for` = i2, in = dt2))))}>
+    <map n={ToString(n)} ft1={ToString(ft1)} ft2={ToString(ft2)}>
+      <f type={ToString(k -> (ExpType(ft1(k)) -> ExpType(ft2(k))))}>
         {Phrases.xmlPrinter(f)}
       </f>
-      <input type={ToString(ExpType(DepArrayType(n, DataType.substitute(_, `for` = i1, in = dt1))))}>
+      <input type={ToString(ExpType(DepArrayType(n, ft1)))}>
         {Phrases.xmlPrinter(array)}
       </input>
     </map>.copy(label = {

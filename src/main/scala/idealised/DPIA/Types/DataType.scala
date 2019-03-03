@@ -1,6 +1,6 @@
 package idealised.DPIA.Types
 
-import idealised.DPIA.{Nat, freshName}
+import idealised.DPIA.{Nat, NatDataTypeFunction, freshName}
 import idealised.SurfaceLanguage
 import idealised.SurfaceLanguage.NatIdentifier
 import lift.arithmetic.{ArithExpr, BigSum, NamedVar, RangeAdd}
@@ -43,6 +43,10 @@ final case class DepArrayType(size:Nat, i: NatIdentifier, elemType: DataType) ex
 }
 
 object DepArrayType {
+  def apply(size:Nat, ft:NatDataTypeFunction):DepArrayType = {
+    DepArrayType(size, id => ft(id))
+  }
+
   def apply(size: Nat, f: NatIdentifier => DataType): DepArrayType = {
     val newName = NamedVar(freshName(), RangeAdd(0, size, 1))
     DepArrayType(size, newName, f(newName))

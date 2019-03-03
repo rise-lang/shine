@@ -8,40 +8,40 @@ import idealised.DPIA._
 
 //noinspection TypeAnnotation
 final case class DepMapSeq(n: Nat,
-                           i1: NatIdentifier, dt1: DataType,
-                           i2: NatIdentifier, dt2: DataType,
+                           ft1:NatDataTypeFunction,
+                           ft2: NatDataTypeFunction,
                            f: Phrase[`(nat)->`[ExpType -> ExpType]],
                            array: Phrase[ExpType])
-  extends AbstractDepMap(n, i1, dt1, i2, dt2, f, array)
+  extends AbstractDepMap(n, ft1, ft2, f, array)
 {
   override def makeMap = DepMapSeq
 
   override def makeMapI(n: Nat,
-                        i1: NatIdentifier, dt1: DataType,
-                        i2: NatIdentifier, dt2: DataType,
+                        ft1:NatDataTypeFunction,
+                        ft2: NatDataTypeFunction,
                         f: Phrase[`(nat)->`[->[ExpType, ->[AccType, CommandType]]]],
                         array: Phrase[ExpType],
                         out: Phrase[AccType])
                        (implicit context: TranslationContext) =
-    DepMapSeqI(n, i1, dt1, i2, dt2, f, array, out)
+    DepMapSeqI(n, ft1, ft2, f, array, out)
 }
 
 //noinspection TypeAnnotation
 final case class DepMapSeqUnroll(n: Nat,
-                           i1: NatIdentifier, dt1: DataType,
-                           i2: NatIdentifier, dt2: DataType,
+                                 ft1:NatDataTypeFunction,
+                                 ft2: NatDataTypeFunction,
                            f: Phrase[`(nat)->`[ExpType -> ExpType]],
                            array: Phrase[ExpType])
-  extends AbstractDepMap(n, i1, dt1, i2, dt2, f, array)
+  extends AbstractDepMap(n, ft1, ft2, f, array)
 {
   override def makeMap = DepMapSeqUnroll
 
   override def makeMapI(n: Nat,
-                        i1: NatIdentifier, dt1: DataType,
-                        i2: NatIdentifier, dt2: DataType,
+                        ft1:NatDataTypeFunction,
+                        ft2: NatDataTypeFunction,
                         f: Phrase[`(nat)->`[->[ExpType, ->[AccType, CommandType]]]],
                         array: Phrase[ExpType],
                         out: Phrase[AccType])
                        (implicit context: TranslationContext) =
-    DepMapSeqIUnroll(n, i1, dt1, i2, dt2, f, array, out)
+    DepMapSeqIUnroll(n, ft1, ft2, f, array, out)
 }

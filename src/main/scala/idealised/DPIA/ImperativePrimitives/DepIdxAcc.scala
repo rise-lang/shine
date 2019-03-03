@@ -19,7 +19,7 @@ final case class DepIdxAcc(n: Nat,
 
   override val `type`: AccType =
     (n: Nat) -> (i: Nat) -> (dt: DataType) -> (index: Nat) ->
-      (array :: acc"[${DepArrayType(n, makeDt)}]") ->
+      (array :: acc"[${DepArrayType(n, makeDt _)}]") ->
         acc"[${makeDt(index)}]"
 
   override def eval(s: Store): AccIdentifier = {
