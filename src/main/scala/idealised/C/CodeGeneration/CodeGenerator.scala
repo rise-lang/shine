@@ -150,7 +150,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case (i : CIntExpr) :: (j : CIntExpr) :: ps => acc(a, env, CIntExpr(i * m + j) :: ps, cont)
         case _ => error(s"Expected two C-Integer-Expressions on the path.")
       }
-      case depJ@DepJoinAcc(_, _, _, _, a) => path match {
+      case depJ@DepJoinAcc(_, _, _, a) => path match {
         case (i : CIntExpr) :: (j : CIntExpr) :: ps =>
           acc(a, env, CIntExpr(BigSum(0, i - 1, x => depJ.lenF(x)) + j) :: ps, cont)
         case _ => error(s"Expected two C-Integer-Expressions on the path.")

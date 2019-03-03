@@ -9,22 +9,20 @@ import lift.arithmetic.{ArithExpr, BigSum}
 import scala.xml.Elem
 
 final case class DepJoinAcc(n: Nat,
-                            lenID: NatIdentifier,
-                            lenBody: Nat,
+                            lenF:NatNatTypeFunction,
                             dt: DataType,
                             array: Phrase[AccType])
   extends AccPrimitive
 {
 
-  val lenF:Nat => Nat = (x:Nat) => ArithExpr.substitute(lenBody, scala.collection.Map((lenID, x)))
 
   override val `type`: AccType =
-    (n: Nat) -> (lenBody: Nat) -> (dt: DataType) ->
-      (array :: acc"[${BigSum(from=0, upTo = n-1, `for`=lenID, lenBody)}.$dt]") ->
+    (n: Nat) -> (lenF: NatNatTypeFunction) ->
+      (array :: acc"[${BigSum(from=0, upTo = n-1, `for`=lenF.x, lenF.body)}.$dt]") ->
       acc"[${DepArrayType(n, i => ArrayType(lenF(i), dt))}]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {
-    DepJoinAcc(fun(n), fun(lenID).asInstanceOf[NatIdentifier], fun(lenBody), fun(dt), VisitAndRebuild(array, fun))
+    DepJoinAcc(fun(n), fun(lenF), fun(dt), VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): AccIdentifier = ???
@@ -33,7 +31,7 @@ final case class DepJoinAcc(n: Nat,
     s"(joinAcc ${PrettyPhrasePrinter(array)})"
 
   override def xmlPrinter: Elem =
-    <joinAcc n={ToString(n)} lenID={ToString(lenID)} lenBody={ToString(lenBody)} dt={ToString(dt)}>
+    <joinAcc n={ToString(n)} lenF={ToString(lenF)} dt={ToString(dt)}>
       {Phrases.xmlPrinter(array)}
     </joinAcc>
 }

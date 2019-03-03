@@ -13,21 +13,19 @@ import lift.arithmetic.{ArithExpr, BigSum}
 import scala.xml.Elem
 
 final case class DepJoin(n: Nat,
-                         lenID: NatIdentifier,
-                         lenBody: Nat,
+                         lenF:NatNatTypeFunction,
                          dt: DataType,
                          array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  val lenF:Nat => Nat = (x:Nat) => ArithExpr.substitute(lenBody, scala.collection.Map((lenID, x)))
 
   override val `type`: ExpType =
-          (n: Nat) -> (lenBody: Nat) -> (dt: DataType) ->
+          (n: Nat) -> (lenF: NatNatTypeFunction) ->
             (array :: exp"[${DepArrayType(n, i => ArrayType(lenF(i), dt))}]") ->
-              exp"[${BigSum(from=0, upTo = n-1, `for`=lenID, lenBody)}.$dt]"
+              exp"[${BigSum(from=0, upTo = n-1, `for`=lenF.x, lenF.body)}.$dt]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    DepJoin(fun(n), fun(lenID).asInstanceOf[NatIdentifier], fun(lenBody), fun(dt), VisitAndRebuild(array, fun))
+    DepJoin(fun(n), fun(lenF), fun(dt), VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): Data = {
@@ -46,7 +44,7 @@ final case class DepJoin(n: Nat,
   override def prettyPrint: String = s"(depJoin ${PrettyPhrasePrinter(array)})"
 
   override def xmlPrinter: Elem =
-    <join n={ToString(n)} lenID={ToString(lenID)} lenBody={ToString(lenBody)} dt={ToString(dt)}>
+    <join n={ToString(n)} lenF={ToString(lenF)} dt={ToString(dt)}>
       {Phrases.xmlPrinter(array)}
     </join>
 
@@ -54,7 +52,7 @@ final case class DepJoin(n: Nat,
                                   (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    acc(array)(DepJoinAcc(n, lenID, lenBody, dt, A))
+    acc(array)(DepJoinAcc(n, lenF, dt, A))
   }
 
   override def continuationTranslation(C: Phrase[ExpType -> CommandType])
@@ -62,6 +60,6 @@ final case class DepJoin(n: Nat,
     import TranslationToImperative._
 
     con(array)(λ(exp"[${DepArrayType(n, i => ArrayType(lenF(i), dt))}]")(x =>
-      C(DepJoin(n, lenID, lenBody, dt, x)) ))
+      C(DepJoin(n, lenF, dt, x)) ))
   }
 }

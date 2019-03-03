@@ -1,5 +1,6 @@
 package idealised.SurfaceLanguage.Primitives
 
+import idealised.DPIA.NatNatTypeFunction
 import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.SurfaceLanguage.PrimitiveExpr
 import idealised.{DPIA, SurfaceLanguage}
@@ -16,7 +17,7 @@ final case class Join(array: DataExpr, override val t: Option[DataType])
       case Some(ArrayType(n, DepArrayType(m, NatDependentFunctionType(i, dt)))) =>
         ???
       case Some(DepArrayType(n, NatDependentFunctionType(d_i, ArrayType(d_n, dt)))) =>
-        DPIA.FunctionalPrimitives.DepJoin(n, d_i, d_n, dt, array.toPhrase[DPIA.Types.ExpType])
+        DPIA.FunctionalPrimitives.DepJoin(n, NatNatTypeFunction(n, d_i, d_n), dt, array.toPhrase[DPIA.Types.ExpType])
       case Some(DepArrayType(n, NatDependentFunctionType(i, DepArrayType(m, NatDependentFunctionType(j, dt))))) =>
         ???
       case _ => throw new Exception("")
