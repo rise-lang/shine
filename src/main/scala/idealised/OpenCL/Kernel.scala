@@ -73,8 +73,8 @@ case class Kernel(decls: Seq[C.AST.Decl],
       val glbSize = ArithExpr.substitute(globalSize, lengthMapping).eval
 
       val runtime = Executor.execute(kernelJNI,
-        lclSize, lclSize, 1,
-        glbSize, glbSize, 1,
+        ArithExpr.substitute(localSize, lengthMapping).eval, 1, 1,
+        ArithExpr.substitute(globalSize, lengthMapping).eval, 1, 1,
         kernelArgs)
 
       val output = castToOutputType[F#R](outputParam.`type`.dataType, outputArg)

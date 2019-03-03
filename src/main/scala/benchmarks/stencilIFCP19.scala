@@ -13,7 +13,7 @@ import lift.arithmetic.{NamedVar, StartFromRange, SteppedCase}
 
 import scala.util.Random
 
-object stencil {
+object stencilIFCP19 {
   private case class StencilResult(name:String,
                                    inputSize:Int,
                                    stencilSize:Int,

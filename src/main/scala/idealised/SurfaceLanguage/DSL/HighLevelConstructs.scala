@@ -26,7 +26,9 @@ object pad2D {
 
 }
 
+
 object partition2D {
+  //TODO: Investiage. this might be wrong
   def apply(outerSize:ArithExpr, innerSize:ArithExpr):Expr[DataType -> DataType] = {
     map(
       partition(3, m => SteppedCase(m, Seq(outerSize, innerSize, outerSize)))
