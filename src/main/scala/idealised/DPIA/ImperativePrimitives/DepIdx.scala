@@ -1,7 +1,16 @@
 package idealised.DPIA.ImperativePrimitives
 
-import idealised.DPIA.Compilation.{CodeGenerator, TranslationContext}
+import idealised.DPIA.Compilation.TranslationToImperative.con
+import idealised.DPIA.Compilation.{CodeGenerator, TranslationContext, TranslationToImperative}
+import idealised.DPIA.DSL.λ
 import idealised.DPIA.Phrases._
+import idealised.DPIA.Semantics.OperationalSemantics._
+import idealised.DPIA.Types._
+import idealised.DPIA.{Phrases, _}
+import idealised.DPIA.Compilation.{CodeGenerator, TranslationContext, TranslationToImperative}
+import idealised.DPIA.DSL._
+import idealised.DPIA.Phrases._
+import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA.{Phrases, _}
@@ -10,18 +19,17 @@ import scala.language.reflectiveCalls
 import scala.xml.Elem
 
 final case class DepIdx(n: Nat,
-                        i: NatIdentifier,
-                        dt: DataType,
+                        ft:NatDataTypeFunction,
                         index: Nat,
                         array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  private def makeDt(x:Nat):DataType = DataType.substitute(x, `for`=i, `in`=dt)
+  private def makeDt(x:Nat):DataType = ft(x)
 
   override val `type`: ExpType =
-    (n: Nat) -> (i: Nat) -> (dt: DataType) -> (index: Nat) ->
-      (array :: exp"[${DepArrayType(n, makeDt _)}]") ->
-        exp"[${makeDt(index)}]"
+    (n: Nat) -> (ft: NatDataTypeFunction) -> (index: Nat) ->
+      (array :: exp"[${DepArrayType(n, ft)}]") ->
+        exp"[${ft(index)}]"
 
   //  override def inferTypes: Idx = {
   //    import TypeInference._
@@ -43,13 +51,13 @@ final case class DepIdx(n: Nat,
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    DepIdx(fun(n), fun(i).asInstanceOf[NatIdentifier], fun(dt), fun(index), VisitAndRebuild(array, fun))
+    DepIdx(fun(n), fun(ft), fun(index), VisitAndRebuild(array, fun))
   }
 
   override def prettyPrint: String = s"(${PrettyPhrasePrinter(array)})[$index]"
 
   override def xmlPrinter: Elem =
-    <depIdx n={ToString(n)} i={ToString(i)} dt={ToString(dt)} index={ToString(index)}>
+    <depIdx n={ToString(n)} ft={ToString(ft)} index={ToString(index)}>
       <input type={ToString(array.t)}>
         {Phrases.xmlPrinter(array)}
       </input>
@@ -57,15 +65,14 @@ final case class DepIdx(n: Nat,
 
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommandType] = {
-//    import RewriteToImperative._
-//    con(array)(λ(exp"[$n.$dt]")(x => A :=| dt | Idx(n, dt, index, x)))
-    ???
+    import TranslationToImperative._
+    con(array)(λ(exp"[${DepArrayType(n, ft)}]")(x => A :=| {ft(index)} | DepIdx(n, ft, index, x)))
+
   }
 
   override def continuationTranslation(C: Phrase[ExpType -> CommandType])
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
-//    import RewriteToImperative._
-//    con(array)(λ(exp"[$n.$dt]")(e => C(Idx(n, dt, index, e))))
-    ???
+    import TranslationToImperative._
+    con(array)(λ(exp"[${DepArrayType(n, ft)}]")(e => C(DepIdx(n, ft, index, e))))
   }
 }

@@ -40,6 +40,8 @@ final case class DepArrayType(size:Nat, i: NatIdentifier, elemType: DataType) ex
       eq
     case _ => false
   }
+
+  def elemFType:NatDataTypeFunction = NatDataTypeFunction(size, DataType.substitute(_, `for`=i, elemType))
 }
 
 object DepArrayType {
