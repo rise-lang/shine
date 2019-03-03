@@ -40,7 +40,6 @@ final case class DepArrayType(size:Nat, elemFType: NatDataTypeFunction) extends 
       eq
     case _ => false
   }
-
 }
 
 object DepArrayType {

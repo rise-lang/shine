@@ -20,6 +20,15 @@ package object DPIA {
   type NatIdentifier = NamedVar
 
   case class NatNatTypeFunction private (x:NatIdentifier, body:Nat) {
+    //NatNatTypeFunction have an interesting comparison behavior, as we do not define
+    //equality for them as simple syntactic equality: we just want to make sure their bodies
+    //are equal up-to renaming of the binder.
+
+    //However, just updating equals is not sufficient, as many data structures, such as HashMaps,
+    //use hashCodes as proxy for equality. In order to make sure this property is respected, we ignore
+    //the identifier variable, and just take the hash of the body evaluated at a known point
+    override def hashCode(): Int = this(0).hashCode()
+
     def apply(n: Nat): Nat = ArithExpr.substitute(body, Map((x, n)))
 
     override def toString: String = s"($x:nat) -> $body"
@@ -45,13 +54,19 @@ package object DPIA {
   }
 
   case class NatDataTypeFunction private (x:NatIdentifier, body:DataType) {
+    //See hash code of NatNatTypeFunction
+    override def hashCode(): Int = this(0).hashCode()
+
     def apply(n:Nat):DataType = DataType.substitute(n, `for`=x, `in`=body)
 
     override def toString: String = s"($x:nat) -> $body"
 
     override def equals(obj: Any): Boolean = {
       obj match {
-        case other:NatDataTypeFunction => body == other(x)
+        case other:NatDataTypeFunction =>
+          val subbedOther = other(x)
+          val eq = body == subbedOther
+          eq
         case _ => false
       }
     }

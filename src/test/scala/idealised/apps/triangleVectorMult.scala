@@ -12,7 +12,7 @@ import opencl.executor.Executor
 import scala.language.{implicitConversions, postfixOps}
 import scala.util.Random
 
-class triangleVectorMult extends idealised.util.TestsWithExecutor {
+class triangleVectorMult extends idealised.util.Tests {
   val mult = fun(x => x._1 * x._2)
 
   val add = fun(x => fun(y => x + y))
@@ -109,6 +109,7 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
 
 
   private def triangleMatrixBasic(inputSize:Int, localSize:Int, globalSize:Int):TriangleMatrixConfResult = {
+    Executor.loadAndInit()
     import idealised.OpenCL._
     val actualN = inputSize
     val f = triangleVectorMultGlobalFused(actualN)
@@ -126,8 +127,8 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
 
     val correct = output.zip(scalaOutput).forall{case (x,y) => Math.abs(x - y) < 0.01}
 
+    Executor.shutdown()
     TriangleMatrixConfResult(inputSize, 0, localSize, globalSize, time.value, correct, kernel.code)
-
   }
 
   ignore ("Basic parallel triangle vector multiplication compiles to syntactically correct OpenCL") {
@@ -142,6 +143,7 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
 
 
   private def triangleMatrixPadSplit(inputSize:Int, splitSize:Int, localSize:Int, globalSize:Int):TriangleMatrixConfResult = {
+    Executor.loadAndInit()
     import idealised.OpenCL._
     val actualN = inputSize
     val splitN = splitSize
@@ -171,6 +173,7 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
 
     val correct = finalOutput.zip(scalaOutput).forall{case (x,y) => Math.abs(x - y) < 0.01}
 
+    Executor.shutdown()
     TriangleMatrixConfResult(
       inputSize, splitSize, localSize, globalSize, time.value, correct, kernel.code
     )
