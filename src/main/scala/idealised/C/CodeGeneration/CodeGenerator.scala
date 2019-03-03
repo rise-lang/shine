@@ -192,7 +192,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case IdxAcc(_, _, i, a) => CCodeGen.codeGenIdxAcc(i, a, env, path, cont)
 
-      case DepIdxAcc(_, _, _, i, a) => acc(a, env, CIntExpr(i) :: path, cont)
+      case DepIdxAcc(_, _, i, a) => acc(a, env, CIntExpr(i) :: path, cont)
 
       case IdxVecAcc(_, _, i, a) => CCodeGen.codeGenIdxVecAcc(i, a, env, path, cont)
 
@@ -379,7 +379,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case Idx(_, _, i, e) => CCodeGen.codeGenIdx(i, e, env, path, cont)
 
-      case DepIdx(_, _, _, i, e) => exp(e, env, CIntExpr(i) :: path, cont)
+      case DepIdx(_, _, i, e) => exp(e, env, CIntExpr(i) :: path, cont)
 
       case IdxVec(_, _, i, e) => CCodeGen.codeGenIdxVec(i, e, env, path, cont)
 
