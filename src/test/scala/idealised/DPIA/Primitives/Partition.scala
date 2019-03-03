@@ -12,7 +12,7 @@ import scala.util.Random
 
 class Partition extends idealised.util.Tests {
   test("Simple partition into a triangle C") {
-    val N = SizeVar("N")
+    val N = Cst(6)
     val lenF = (i:NatIdentifier) => i + 1
 
     val slideExample = fun(ArrayType(N, float))(xs => xs :>> partition(3, lenF) :>> depMapSeq(mapSeq(fun(x => x + 1.0f))))
