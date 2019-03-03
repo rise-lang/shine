@@ -19,19 +19,28 @@ package object DPIA {
   type Nat = ArithExpr
   type NatIdentifier = NamedVar
 
-  case class NatNatTypeFunction(x:NatIdentifier, body:Nat) {
-    def apply(n:Nat):Nat = ArithExpr.substitute(body, Map((x,n)))
+  case class NatNatTypeFunction private (x:NatIdentifier, body:Nat) {
+    def apply(n: Nat): Nat = ArithExpr.substitute(body, Map((x, n)))
+
+    override def toString: String = s"($x:nat) -> $body"
+  }
+
+  object NatNatTypeFunction {
+    def apply(upperBound:Nat, f:NatIdentifier => Nat):NatNatTypeFunction = {
+      val x = NamedVar("x", RangeAdd(0, upperBound, 1))
+      NatNatTypeFunction(x, f(x))
+    }
   }
 
   case class NatDataTypeFunction private (x:NatIdentifier, body:DataType) {
     def apply(n:Nat):DataType = DataType.substitute(n, `for`=x, `in`=body)
+
+    override def toString: String = s"($x:nat) -> $body"
   }
 
   object NatDataTypeFunction {
-    def apply(upperBound:Nat, f:NatIdentifier => DataType):NatDataTypeFunction = apply(RangeAdd(0, upperBound, 1), f)
-
-    private def apply(range:Range, f:NatIdentifier => DataType):NatDataTypeFunction = {
-      val x = NamedVar("x", range)
+    def apply(upperBound:Nat, f:NatIdentifier => DataType):NatDataTypeFunction = {
+      val x = NamedVar("x", RangeAdd(0, upperBound, 1))
       NatDataTypeFunction(x, f(x))
     }
   }

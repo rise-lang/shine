@@ -1,5 +1,6 @@
 package idealised.SurfaceLanguage.DSL
 
+import idealised.DPIA.NatNatTypeFunction
 import idealised.SurfaceLanguage.Primitives._
 import idealised.SurfaceLanguage.Semantics._
 import idealised.SurfaceLanguage.Types._
@@ -74,8 +75,7 @@ object partition {
   def apply(m: Nat, f:NatIdentifier => Nat): Expr[DataType -> DataType] = fun(array => partition(m, f, array))
 
   def apply(m:Nat, f:NatIdentifier => Nat, array: DataExpr): Partition = {
-    val ident = InclusiveIndexVar("p", Cst(0), m)
-    Partition(m, ident, f(ident), array, None)
+    Partition(m, NatNatTypeFunction(m, f), array, None)
   }
 }
 
