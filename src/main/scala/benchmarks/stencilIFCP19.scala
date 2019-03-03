@@ -2,7 +2,8 @@ package benchmarks
 
 import benchmarks.core.{Correctness, OpenCLBenchmark}
 import benchmarks.core.OpenCLBenchmark.{Configuration, DpiaProgram, Parameter}
-import idealised.OpenCL.SurfaceLanguage.DSL.mapGlobal
+import idealised.OpenCL.PrivateMemory
+import idealised.OpenCL.SurfaceLanguage.DSL.{mapGlobal, oclReduceSeq}
 import idealised.SurfaceLanguage.DSL.{DataExpr, fun, join, pad2D, reduceSeq, slide2D, _}
 import idealised.SurfaceLanguage.Semantics.FloatData
 import idealised.SurfaceLanguage.Types.{ArrayType, DataType, float}
@@ -13,7 +14,7 @@ import lift.arithmetic.{NamedVar, StartFromRange, SteppedCase}
 
 import scala.util.Random
 
-object stencilIFCP19 {
+object stencilICPF19 {
   private case class StencilResult(name:String,
                                    inputSize:Int,
                                    stencilSize:Int,
@@ -71,7 +72,7 @@ object stencilIFCP19 {
         input :>>
           pad2D(N, padSize, padSize, FloatData(0.0f)) :>>
           slide2D(stencilSize, 1) :>>
-          mapGlobal(0)(mapGlobal(1)(fun(nbh => join(nbh) :>> reduceSeq(add, 0.0f))))
+          mapGlobal(0)(mapGlobal(1)(fun(nbh => join(nbh) :>> oclReduceSeq(add, 0.0f, PrivateMemory))))
       )
     }
 
@@ -85,7 +86,7 @@ object stencilIFCP19 {
           slide2D(stencilSize, 1) :>>
           partition(3, m => SteppedCase(m, Seq(padSize, N - 2*padSize + ((1 + stencilSize) % 2), padSize))) :>>
           depMapSeqUnroll(
-            mapGlobal(0)(mapGlobal(1)(join() >>> reduceSeqUnroll(add, 0.0f)))
+            mapGlobal(0)(mapGlobal(1)(join() >>> oclReduceSeq(add, 0.0f, PrivateMemory)))
           ) :>>
           join
       )
@@ -105,7 +106,7 @@ object stencilIFCP19 {
               inner =>
                 inner:>>
                   partition(3, m => SteppedCase(m, Seq(padSize, N-2*padSize  + ((1 + stencilSize) % 2), padSize))) :>>
-                  depMapSeqUnroll(mapGlobal(1)(join() >>> reduceSeqUnroll(add, 0.0f)))))
+                  depMapSeqUnroll(mapGlobal(1)(join() >>> oclReduceSeq(add, 0.0f, PrivateMemory)))))
           ) :>>
           join
       )

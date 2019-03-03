@@ -2,7 +2,7 @@ package idealised.apps
 
 import benchmarks.OpenCLAlgorithm
 import benchmarks.core.Correctness
-import idealised.OpenCL.Kernel
+import idealised.OpenCL.{Kernel, PrivateMemory}
 import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.DSL.{fun, _}
 import idealised.SurfaceLanguage.Semantics.{FloatData, SingletonArrayData}
@@ -102,17 +102,11 @@ class stencils extends Tests {
       val N = NamedVar("N",StartFromRange(inputMinRange))
       fun(ArrayType(N, float))(input =>
         input :>>
-          printType("1") :>>
           pad(padSize, padSize, 0.0f) :>>
-          printType("2") :>>
           slide(stencilSize, 1) :>>
-          printType("3") :>>
           partition(3, m => SteppedCase(m, Seq(padSize,  N - 2*padSize + ((1 + stencilSize) % 2), padSize))) :>>
-          printType("4") :>>
-          depMapSeqUnroll(mapGlobal(fun(nbh => reduceSeq(add, 0.0f, nbh)))) :>>
-          printType("5") :>>
-          join :>>
-          printType("6")
+          depMapSeqUnroll(mapGlobal(fun(nbh => oclReduceSeq(add, 0.0f, PrivateMemory)(nbh)))) :>>
+          join
       )
     }
   }
@@ -153,7 +147,7 @@ class stencils extends Tests {
         input :>>
           pad2D(N, padSize, padSize, FloatData(0.0f)) :>>
           slide2D(stencilSize, 1) :>>
-          mapGlobal(1)(mapGlobal(0)(fun(nbh => join(nbh) :>> reduceSeqUnroll(add, 0.0f))))
+          mapGlobal(1)(mapGlobal(0)(fun(nbh => join(nbh) :>> oclReduceSeq(add, 0.0f, PrivateMemory))))
       )
     }
   }
@@ -170,7 +164,7 @@ class stencils extends Tests {
           partition(3, m => SteppedCase(m, Seq(padSize, N - 2*padSize, padSize))) :>>
           depMapSeqUnroll(
             //mapGlobal(0)(depMapSeqUnroll(mapGlobal(1)(join() >>> reduceSeq(add, 0.0f))))
-            mapGlobal(1)(mapGlobal(0)(join() >>> reduceSeqUnroll(add, 0.0f)))
+            mapGlobal(1)(mapGlobal(0)(join() >>> oclReduceSeq(add, 0.0f, PrivateMemory)))
           ) :>>
           join
       )
@@ -204,7 +198,7 @@ class stencils extends Tests {
               inner =>
                 inner:>>
                   partition(3, m => SteppedCase(m, Seq(padSize, M-2*padSize + 1, padSize))) :>>
-                  depMapSeqUnroll(mapGlobal(0)(join() >>> reduceSeqUnroll(add, 0.0f)))))
+                  depMapSeqUnroll(mapGlobal(0)(join() >>> oclReduceSeq(add, 0.0f, PrivateMemory)))))
           ) :>> join
       )
     }

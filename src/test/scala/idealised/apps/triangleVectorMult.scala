@@ -161,7 +161,7 @@ class triangleVectorMultNoExecutor extends idealised.util.Tests {
       fun(DepArrayType(N, i => ArrayType(i + 1, float)))(triangle =>
         fun(ArrayType(N, float))(vector =>
           depMapWorkgroup.withIndex(dFun(rowIndex => fun(row =>
-            zip(pad(0, N - rowIndex - 1, 0.0f, row), vector) :>> split(SPLIT_SIZE) :>> mapLocal(reduceSeq(multSumAcc, 0.0f))
+            zip(pad(0, N - rowIndex - 1, 0.0f, row), vector) :>> split(SPLIT_SIZE) :>> mapLocal(oclReduceSeq(multSumAcc, 0.0f, PrivateMemory))
           )), triangle)
         )
       )
