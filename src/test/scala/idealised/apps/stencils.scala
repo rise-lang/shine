@@ -38,7 +38,7 @@ class stencils extends Tests {
       )
   }
 
-  private sealed trait StencilBaseAlgorithm extends OpenCLAlgorithm {
+  private sealed abstract class StencilBaseAlgorithm extends OpenCLAlgorithm(verbose = false) {
     final type Result = StencilResult
 
     def inputSize:Int
@@ -151,13 +151,9 @@ class stencils extends Tests {
       val N = NamedVar("N",StartFromRange(stencilSize))
       fun(ArrayType(N, ArrayType(N, float)))(input =>
         input :>>
-          printType("1") :>>
           pad2D(N, padSize, padSize, FloatData(0.0f)) :>>
-          printType("2") :>>
           slide2D(stencilSize, 1) :>>
-          printType("3") :>>
-          mapGlobal(1)(mapGlobal(0)(fun(nbh => join(nbh) :>> reduceSeqUnroll(add, 0.0f)))) :>>
-          printType("4")
+          mapGlobal(1)(mapGlobal(0)(fun(nbh => join(nbh) :>> reduceSeqUnroll(add, 0.0f))))
       )
     }
   }
@@ -168,21 +164,15 @@ class stencils extends Tests {
       val N = NamedVar("N",StartFromRange(stencilSize))
       fun(ArrayType(N, ArrayType(N, float)))(input =>
         input :>>
-          printType("1") :>>
           pad2D(N, padSize, padSize, FloatData(0.0f)) :>>
-          printType("2") :>>
           slide2D(stencilSize, 1) :>>
-          printType("3") :>>
             //partition2D(padSize, N - 2*padSize + ((1 + stencilSize) % 2)) :>>
           partition(3, m => SteppedCase(m, Seq(padSize, N - 2*padSize, padSize))) :>>
-          printType("4") :>>
           depMapSeqUnroll(
             //mapGlobal(0)(depMapSeqUnroll(mapGlobal(1)(join() >>> reduceSeq(add, 0.0f))))
             mapGlobal(1)(mapGlobal(0)(join() >>> reduceSeqUnroll(add, 0.0f)))
           ) :>>
-          printType("5") :>>
-          join :>>
-          printType("6")
+          join
       )
     }
   }

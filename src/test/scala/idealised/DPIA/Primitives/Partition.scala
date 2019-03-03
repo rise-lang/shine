@@ -20,7 +20,6 @@ class Partition extends idealised.util.Tests {
     val p = idealised.C.ProgramGenerator.makeCode(TypeInference(slideExample, Map()).toPhrase)
     val code = p.code
     SyntaxChecker(code)
-    println(code)
   }
 
   test("Partition threeway with pad and unrolling") {
@@ -48,82 +47,6 @@ class Partition extends idealised.util.Tests {
 
     val code = p.code
     SyntaxChecker.checkOpenCL(code)
-    println(code)
     opencl.executor.Executor.shutdown()
   }
-
-  test("Partition 2D") {
-    opencl.executor.Executor.loadAndInit()
-    import idealised.OpenCL.{ScalaFunction, `(`, `)=>`, _}
-
-    def partition2D(size:ArithExpr, lenF:NatIdentifier => Nat):Expr[DataType -> DataType] = {
-      map(
-        partition(size, lenF)
-      ) >>> partition(size, lenF)
-    }
-
-    val N = SizeVar("N")
-
-    val lenF:NatIdentifier => Nat = (m:NatIdentifier) => SteppedCase(2, N-4, 2)(m)
-    val f = fun(ArrayType(N, ArrayType(N, float)))(xs =>
-        xs :>> partition2D(Cst(3), lenF) :>> depMapSeqUnroll(mapSeq(depMapSeqUnroll(mapSeq(fun(x => x)))))
-      )
-    val actualN = 128
-
-    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase, localSize = 1, globalSize = 1)
-    println(p.code)
-    val kernelF = p.as[ScalaFunction`(`Array[Array[Float]]`)=>`Array[Float]]
-    val input = Array.fill(actualN)(Array.fill(actualN)(1.0f))
-    val (output, _) = kernelF(input `;`)
-
-
-    val scalaOutput = input.flatten
-
-    assert(output.zip(scalaOutput).forall{ case (x,y) => x - y < 0.01 })
-
-    val code = p.code
-    SyntaxChecker.checkOpenCL(code)
-
-    opencl.executor.Executor.shutdown()
-  }
-
-  /*test("Partition 2D transposed") {
-    opencl.executor.Executor.loadAndInit()
-    import idealised.OpenCL.{ScalaFunction, `(`, `)=>`, _}
-
-    def partition2D(size:ArithExpr, lenF:NatIdentifier => Nat):Expr[DataType -> DataType] = {
-      map(
-        partition(size, lenF)
-      ) >>> partition(size, lenF)
-    }
-
-    val N = SizeVar("N")
-
-    val outerSize = 3
-    val lenF:NatIdentifier => Nat = (m:NatIdentifier) => SteppedCase(outerSize, N-outerSize*2, outerSize)(m)
-    val f = fun(ArrayType(N, ArrayType(N, float)))(xs =>
-      xs :>> partition2D(Cst(3), lenF) :>> depMapSeqUnroll(fun(inner => inner :>> transpose :>> depMapSeqUnroll(mapSeq(mapSeq(fun(x => x))))))
-    )
-    val actualN = 16
-
-    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase, localSize = 1, globalSize = 1)
-    println(p.code)
-    val kernelF = p.as[ScalaFunction`(`Array[Array[Float]]`)=>`Array[Float]]
-    val rand = new Random()
-    val input = Array.tabulate(actualN)(i => Array.tabulate(actualN)(j => i + j + 0.0f))
-    val (output, _) = kernelF(input `;`)
-
-
-    val scalaOutput = input.flatten
-
-    val correct = output.zip(scalaOutput).forall{ case (x,y) =>
-      x - y < 0.01
-    }
-
-    assert(correct)
-    val code = p.code
-    SyntaxChecker.checkOpenCL(code)
-
-    opencl.executor.Executor.shutdown()
-  }*/
 }

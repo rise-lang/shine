@@ -9,14 +9,12 @@ import scala.util.Random
 
 
 
-trait OpenCLAlgorithm {
+abstract class OpenCLAlgorithm(val verbose:Boolean) {
   import idealised.SurfaceLanguage._
   //The Scala type representing the input data
   type Input
   //The scala type representing the final result of running the algorithm
   type Result
-
-  private val verbose:Boolean = true
 
   def dpiaProgram:Expr[DataType -> DataType]
 
