@@ -85,13 +85,9 @@ class stencils extends Tests {
       val N = NamedVar("N",StartFromRange(inputMinRange))
       fun(ArrayType(N, float))(input =>
         input :>>
-          printType("1") :>>
           pad(padSize, padSize, 0.0f) :>>
-          printType("2") :>>
           slide(stencilSize, 1) :>>
-          printType("3") :>>
-          mapGlobal(fun(nbh => reduceSeq(add, 0.0f, nbh))) :>>
-          printType("4")
+          mapGlobal(oclReduceSeq(add, 0.0f, PrivateMemory))
       )
     }
   }
