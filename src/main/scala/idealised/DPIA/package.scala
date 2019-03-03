@@ -34,12 +34,12 @@ package object DPIA {
 
   object NatNatTypeFunction {
     def apply(upperBound:Nat, f:NatIdentifier => Nat):NatNatTypeFunction = {
-      val x = NamedVar("x", RangeAdd(0, upperBound, 1))
+      val x = NamedVar(freshName(), RangeAdd(0, upperBound, 1))
       NatNatTypeFunction(x, f(x))
     }
 
     def apply(upperBound:Nat, id:NatIdentifier, body:Nat):NatNatTypeFunction = {
-      val x = NamedVar("x", RangeAdd(0, upperBound, 1))
+      val x = NamedVar(freshName(), RangeAdd(0, upperBound, 1))
       NatNatTypeFunction(x, x => ArithExpr.substitute(body, Map((id, x))))
     }
   }
@@ -59,12 +59,12 @@ package object DPIA {
 
   object NatDataTypeFunction {
     def apply(upperBound:Nat, f:NatIdentifier => DataType):NatDataTypeFunction = {
-      val x = NamedVar("x", RangeAdd(0, upperBound, 1))
+      val x = NamedVar(freshName(), RangeAdd(0, upperBound, 1))
       NatDataTypeFunction(x, f(x))
     }
 
     def apply(upperBound:Nat, id:NatIdentifier, body:DataType):NatDataTypeFunction = {
-      val x = NamedVar("x", RangeAdd(0, upperBound, 1))
+      val x = NamedVar(freshName(), RangeAdd(0, upperBound, 1))
       NatDataTypeFunction(x, x => DataType.substitute(x, `for`=id, `in`=body))
     }
   }
