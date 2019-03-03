@@ -20,7 +20,7 @@ final case class DepJoin(n: Nat,
 
   override val `type`: ExpType = {
     (n: Nat) -> (lenF: NatNatTypeFunction) ->
-      (array :: exp"[$n.${i:NatIdentifier => ArrayType(lenF(i), dt)}]") ->
+      (array :: exp"[$n.${NatDataTypeFunction(n, (i:NatIdentifier) => ArrayType(lenF(i), dt))}]") ->
       exp"[${BigSum(from = 0, upTo = n - 1, `for` = lenF.x, lenF.body)}.$dt]"
   }
 
@@ -59,7 +59,7 @@ final case class DepJoin(n: Nat,
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    con(array)(λ(exp"[$n.${i:NatIdentifier => ArrayType(lenF(i), dt)}]")(x =>
+    con(array)(λ(exp"[$n.${NatDataTypeFunction(n, (i:NatIdentifier) => ArrayType(lenF(i), dt))}]")(x =>
       C(DepJoin(n, lenF, dt, x)) ))
   }
 }

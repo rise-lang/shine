@@ -50,7 +50,7 @@ class PhraseTypeParser(val string: String,
   def parseArrayType(n: Nat): DataType = {
     nextToken match {
       case "." =>
-        parseDataTypeOrNatDataTypeFunction(n) match {
+        parseDataTypeOrNatDataTypeFunction match {
           case Left(dt) => ArrayType(n, dt)
           case Right(ft) => DepArrayType(n, ft)
         }
@@ -93,7 +93,7 @@ class PhraseTypeParser(val string: String,
 //    }
 //  }
 
-  def parseDataTypeOrNatDataTypeFunction(n:Nat):Either[DataType, NatDataTypeFunction] = {
+  def parseDataTypeOrNatDataTypeFunction:Either[DataType, NatDataTypeFunction] = {
     if (peakToken == "(") {
       nextToken
     }
@@ -104,7 +104,6 @@ class PhraseTypeParser(val string: String,
         case dt: DataType => Left(parseRecordOrBaseType(dt))
         case ndt:NatDataTypeFunction =>
           Right(ndt)
-        case scalaNdt: (NatIdentifier => DataType) => Right(NatDataTypeFunction(n, scalaNdt))
         //case null => parseArrayOrIdxOrRecordOrBaseType(null)
         case _ => error
       }
@@ -112,7 +111,7 @@ class PhraseTypeParser(val string: String,
   }
 
   def parseDataType: DataType = {
-    parseDataTypeOrNatDataTypeFunction(null) match {
+    parseDataTypeOrNatDataTypeFunction match {
       case Left(dt) => dt
       case Right(_) => error
     }

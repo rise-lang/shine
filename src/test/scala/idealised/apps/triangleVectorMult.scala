@@ -12,7 +12,7 @@ import opencl.executor.Executor
 import scala.language.{implicitConversions, postfixOps}
 import scala.util.Random
 
-class triangleVectorMult extends idealised.util.Tests {
+class triangleVectorMultNoExecutor extends idealised.util.Tests {
   val mult = fun(x => x._1 * x._2)
 
   val add = fun(x => fun(y => x + y))
@@ -176,11 +176,14 @@ class triangleVectorMult extends idealised.util.Tests {
   }
 
   test ("Parallel OpenCL triangle vector partial multiplication (padding the row up to vector) (PLDI '19 submission listing 5)") {
+    Executor.loadAndInit()
     val inputSize = 4096
     println(Executor.getPlatformName)
     println(Executor.getDeviceName)
 
     val result = triangleMatrixPadSplit(inputSize, 8, 8, inputSize)
+    Executor.shutdown()
+
     assert(result.correct)
   }
 
