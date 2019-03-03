@@ -27,7 +27,7 @@ package object DPIA {
     //However, just updating equals is not sufficient, as many data structures, such as HashMaps,
     //use hashCodes as proxy for equality. In order to make sure this property is respected, we ignore
     //the identifier variable, and just take the hash of the body evaluated at a known point
-    override def hashCode(): Int = this(0).hashCode()
+    override def hashCode(): Int = this(NamedVar("comparisonDummy")).hashCode()
 
     def apply(n: Nat): Nat = ArithExpr.substitute(body, Map((x, n)))
 
@@ -55,7 +55,7 @@ package object DPIA {
 
   case class NatDataTypeFunction private (x:NatIdentifier, body:DataType) {
     //See hash code of NatNatTypeFunction
-    override def hashCode(): Int = this(0).hashCode()
+    override def hashCode(): Int = this(NamedVar("ComparisonDummy")).hashCode()
 
     def apply(n:Nat):DataType = DataType.substitute(n, `for`=x, `in`=body)
 
