@@ -8,26 +8,25 @@ import lift.arithmetic.RangeAdd
 
 package object DSL {
 
-  private def parForBodyFunction(n:Nat, i:NatIdentifier, dt:DataType, f:NatIdentifier => Phrase[AccType] => Phrase[CommandType]) = {
-    def makeDt(x:Nat) = DataType.substitute(x, `for`=i, `in`=dt)
-    _Λ_(idx => λ(acc"[${makeDt(idx)}]")(o => f(idx)(o)), RangeAdd(0, n, 1))
+  private def parForBodyFunction(n:Nat, ft:NatDataTypeFunction, f:NatIdentifier => Phrase[AccType] => Phrase[CommandType]) = {
+    _Λ_(idx => λ(acc"[${ft(idx)}]")(o => f(idx)(o)), RangeAdd(0, n, 1))
   }
 
   object parForNatGlobal {
-    def apply(dim:Int)(n:Nat, i:NatIdentifier, dt:DataType, out:Phrase[AccType], f:NatIdentifier => Phrase[AccType] => Phrase[CommandType]):ParForNatGlobal = {
-      ParForNatGlobal(dim)(n, i,  dt, out, parForBodyFunction(n, i, dt, f))
+    def apply(dim:Int)(n:Nat, ft:NatDataTypeFunction, out:Phrase[AccType], f:NatIdentifier => Phrase[AccType] => Phrase[CommandType]):ParForNatGlobal = {
+      ParForNatGlobal(dim)(n, ft, out, parForBodyFunction(n, ft, f))
     }
   }
 
   object parForNatWorkGroup {
-    def apply(dim:Int)(n:Nat, i:NatIdentifier, dt:DataType, out:Phrase[AccType], f:NatIdentifier => Phrase[AccType] => Phrase[CommandType]):ParForNatWorkGroup = {
-      ParForNatWorkGroup(dim)(n, i,  dt, out, parForBodyFunction(n, i, dt, f))
+    def apply(dim:Int)(n:Nat, ft:NatDataTypeFunction, out:Phrase[AccType], f:NatIdentifier => Phrase[AccType] => Phrase[CommandType]):ParForNatWorkGroup = {
+      ParForNatWorkGroup(dim)(n, ft, out, parForBodyFunction(n, ft, f))
     }
   }
 
   object parForNatLocal {
-    def apply(dim:Int)(n:Nat, i:NatIdentifier, dt:DataType, out:Phrase[AccType], f:NatIdentifier => Phrase[AccType] => Phrase[CommandType]):ParForNatLocal = {
-      ParForNatLocal(dim)(n, i,  dt, out,  parForBodyFunction(n, i, dt, f))
+    def apply(dim:Int)(n:Nat, ft:NatDataTypeFunction, out:Phrase[AccType], f:NatIdentifier => Phrase[AccType] => Phrase[CommandType]):ParForNatLocal = {
+      ParForNatLocal(dim)(n, ft, out,  parForBodyFunction(n, ft, f))
     }
   }
 }

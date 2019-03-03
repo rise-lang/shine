@@ -38,7 +38,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       case f@OpenCLParFor(n, dt, a, Lambda(i, Lambda(o, p))) =>
         OpenCLCodeGen.codeGenOpenCLParFor(f, n, dt, a, i, o, p, env)
 
-      case f@OpenCLParForNat(n, _, _, a, NatDependentLambda(i, Lambda(o, p))) =>
+      case f@OpenCLParForNat(n, _, a, NatDependentLambda(i, Lambda(o, p))) =>
         OpenCLCodeGen.codeGenOpenCLParForNat(f, n, a, i, o, p, env)
 
       case Assign(dt, a, e) => dt match {

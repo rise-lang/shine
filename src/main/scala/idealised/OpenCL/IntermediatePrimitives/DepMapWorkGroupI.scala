@@ -13,6 +13,6 @@ final case class DepMapWorkGroupI(dim:Int) {
             in: Phrase[ExpType],
             out: Phrase[AccType]): Phrase[CommandType] =
   {
-    parForNatWorkGroup(dim)(n, ft2.x, ft2.body, out, idx => a => f(idx)(in `@d` idx)(a))
+    parForNatWorkGroup(dim)(n, ft2, out, idx => a => f(idx)(in `@d` idx)(a))
   }
 }

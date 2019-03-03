@@ -15,6 +15,6 @@ object DepMapParI {
             in: Phrase[ExpType],
             out: Phrase[AccType]): Phrase[CommandType] =
   {
-    parForNat(n, ft2.x, ft2.body, out, idx => a => f(idx)(in `@d` idx)(a))
+    parForNat(n, ft2, out, idx => a => f(idx)(in `@d` idx)(a))
   }
 }

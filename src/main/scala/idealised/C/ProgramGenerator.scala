@@ -3,6 +3,7 @@ package idealised.C
 import idealised.C.AST._
 import idealised.DPIA.Compilation._
 import idealised.DPIA.DSL._
+import idealised.DPIA.NatDataTypeFunction
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types.{AccType, CommandType, DataType, DataTypeIdentifier, DepArrayType, ExpType, PairType, PhraseType, TypeCheck}
 import idealised._
@@ -107,7 +108,7 @@ object ProgramGenerator {
         case _: BasicType => Set()
         case ArrayType(size, dt) =>
           size.varList ++ collectSizes(Seq(dt))
-        case DepArrayType(size, _, et) =>
+        case DepArrayType(size, NatDataTypeFunction(_, et)) =>
           size.varList ++ collectSizes(Seq(et))
         case RecordType(fst, snd) =>
           collectSizes(Seq(fst)) ++ collectSizes(Seq(snd))
@@ -124,7 +125,7 @@ object ProgramGenerator {
       case ArrayType(_, dt) =>
         val baseDt = DataType.getBaseDataType(dt)
         PointerType(gen.typ(baseDt))
-      case DepArrayType(_, _, dt) =>
+      case DepArrayType(_, NatDataTypeFunction(_, dt)) =>
         val baseDt = DataType.getBaseDataType(dt)
         PointerType(gen.typ(baseDt))
       case r : RecordType => gen.typ(r)

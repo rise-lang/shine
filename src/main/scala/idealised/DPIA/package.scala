@@ -23,6 +23,13 @@ package object DPIA {
     def apply(n: Nat): Nat = ArithExpr.substitute(body, Map((x, n)))
 
     override def toString: String = s"($x:nat) -> $body"
+
+    override def equals(obj: Any): Boolean = {
+      obj match {
+        case other:NatNatTypeFunction => body == other(x)
+        case _ => false
+      }
+    }
   }
 
   object NatNatTypeFunction {
@@ -41,6 +48,13 @@ package object DPIA {
     def apply(n:Nat):DataType = DataType.substitute(n, `for`=x, `in`=body)
 
     override def toString: String = s"($x:nat) -> $body"
+
+    override def equals(obj: Any): Boolean = {
+      obj match {
+        case other:NatDataTypeFunction => body == other(x)
+        case _ => false
+      }
+    }
   }
 
   object NatDataTypeFunction {

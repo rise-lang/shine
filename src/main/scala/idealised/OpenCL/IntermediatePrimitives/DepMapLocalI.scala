@@ -15,6 +15,6 @@ final case class DepMapLocalI(dim:Int) {
             out: Phrase[AccType])
            (implicit context: TranslationContext): Phrase[CommandType] =
   {
-    parForNatLocal(dim)(n, ft2.x, ft2.body, out, idx => a => f(idx)(in `@d` idx)(a))
+    parForNatLocal(dim)(n, ft2, out, idx => a => f(idx)(in `@d` idx)(a))
   }
 }

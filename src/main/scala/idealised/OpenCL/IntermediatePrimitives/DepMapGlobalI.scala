@@ -14,7 +14,7 @@ final case class DepMapGlobalI(dim:Int) {
             in: Phrase[ExpType],
             out: Phrase[AccType]): Phrase[CommandType] =
   {
-    parForNatGlobal(dim)(n, ft2.x, ft2.body, out, idx => a => f(idx)(in `@d` idx)(a))
+    parForNatGlobal(dim)(n, ft2, out, idx => a => f(idx)(in `@d` idx)(a))
   }
 }
 

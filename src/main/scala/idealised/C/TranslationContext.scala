@@ -21,18 +21,13 @@ class TranslationContext() extends idealised.DPIA.Compilation.TranslationContext
       case ArrayType(n, et) =>
         MapSeqI(n, et, et, λ(ExpType(et))(x => λ(AccType(et))(a => assign(et, a, x) )), rhs, lhs)(this)
 
-      case DepArrayType(n, i, et) =>
-        //val i_ = NamedVar(freshName())
-        //val et_ = DataType.substitute(i_, `for`=i, in=et)
+      case DepArrayType(n, ft) =>
+
         val k = NamedVar(freshName())
-        //val etk = DataType.substitute(k, `for`=i, in=et)
 
-        val ft1 = NatDataTypeFunction(n, (x:NatIdentifier) => DataType.substitute(x, `for`=i, in=et))
-        val ft2 = NatDataTypeFunction(n, (x:NatIdentifier) => DataType.substitute(x, `for`=i, in=et))
-
-        DepMapSeqI(n, ft1, ft2,
+        DepMapSeqI(n, ft, ft,
           NatDependentLambda(k,
-            λ(ExpType( ft2(k) ))(x => λ(AccType( ft2(k) ))(a => assign(ft2(k), a, x) ))),
+            λ(ExpType( ft(k) ))(x => λ(AccType( ft(k) ))(a => assign(ft(k), a, x) ))),
           rhs, lhs)(this)
 
       case _ => throw new Exception("This should not happen")

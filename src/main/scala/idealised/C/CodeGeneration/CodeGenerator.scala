@@ -409,7 +409,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _: idealised.DPIA.Types.IndexType => C.AST.Type.int
       }
       case a: idealised.DPIA.Types.ArrayType => C.AST.ArrayType(typ(a.elemType), Some(a.size))
-      case a: idealised.DPIA.Types.DepArrayType => C.AST.ArrayType(typ(a.elemType), Some(a.size)) // TODO: be more precise with the size?
+      case a: idealised.DPIA.Types.DepArrayType => C.AST.ArrayType(typ(a.elemFType.body), Some(a.size)) // TODO: be more precise with the size?
       case r: idealised.DPIA.Types.RecordType =>
         C.AST.StructType(r.fst.toString + "_" + r.snd.toString, immutable.Seq(
           (typ(r.fst), "_fst"),
@@ -881,7 +881,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     def countArrayLayers(dataType: DataType):Int = {
       dataType match {
         case ArrayType(_, et) => 1 + countArrayLayers(et)
-        case DepArrayType(_, _, et) => 1 + countArrayLayers(et)
+        case DepArrayType(_, NatDataTypeFunction(_ ,et)) => 1 + countArrayLayers(et)
         case _ => 0
       }
     }
@@ -891,7 +891,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case (array:ArrayType, index::rest) =>
           sizeAtOffset(array, index) + flattenIndices(array.elemType, rest)
         case (array:DepArrayType, index::rest) =>
-          sizeAtOffset(array, index) + flattenIndices(array.elemType, rest)
+          sizeAtOffset(array, index) + flattenIndices(array.elemFType.body, rest)
         case (_,  Nil) => 0
         case t => throw new Exception(s"This should not happen, pair $t")
       }
@@ -903,13 +903,13 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     }
 
     def sizeAtOffset(dt:DepArrayType, at:Nat):Nat = {
-      BigSum(from=0, upTo = at-1, `for`=dt.i, DataType.getTotalNumberOfElements(dt.elemType))
+      BigSum(from=0, upTo = at-1, `for`=dt.elemFType.x, DataType.getTotalNumberOfElements(dt.elemFType.body))
     }
 
     private def getIndexVariablesScopes(dt:DataType):List[Option[NatIdentifier]] = {
       dt match {
         case ArrayType(_ , et) => None::getIndexVariablesScopes(et)
-        case DepArrayType(_, i, et) => Some(i)::getIndexVariablesScopes(et)
+        case DepArrayType(_, NatDataTypeFunction(i, et)) => Some(i)::getIndexVariablesScopes(et)
         case _ => Nil
       }
     }
