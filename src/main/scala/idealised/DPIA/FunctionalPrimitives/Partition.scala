@@ -20,7 +20,7 @@ final case class Partition(n: Nat,
 
   override val `type`: ExpType =
     (n: Nat) -> (m: Nat) -> (dt: DataType) ->
-      (array :: exp"[$n.$dt]") -> exp"[${DepArrayType(m, i => ArrayType(lenF(i), dt))}]"
+      (array :: exp"[$n.$dt]") -> exp"[$m.${i:NatIdentifier => ArrayType(lenF(i), dt)}]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     Partition(fun(n), fun(m), fun(lenF), fun(dt), VisitAndRebuild(array, fun))

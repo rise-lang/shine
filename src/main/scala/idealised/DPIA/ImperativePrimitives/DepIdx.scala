@@ -24,11 +24,9 @@ final case class DepIdx(n: Nat,
                         array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  private def makeDt(x:Nat):DataType = ft(x)
-
   override val `type`: ExpType =
     (n: Nat) -> (ft: NatDataTypeFunction) -> (index: Nat) ->
-      (array :: exp"[${DepArrayType(n, ft)}]") ->
+      (array :: exp"[$n.$ft]") ->
         exp"[${ft(index)}]"
 
   //  override def inferTypes: Idx = {
@@ -66,13 +64,13 @@ final case class DepIdx(n: Nat,
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
-    con(array)(λ(exp"[${DepArrayType(n, ft)}]")(x => A :=| {ft(index)} | DepIdx(n, ft, index, x)))
+    con(array)(λ(exp"[$n.$ft]")(x => A :=| {ft(index)} | DepIdx(n, ft, index, x)))
 
   }
 
   override def continuationTranslation(C: Phrase[ExpType -> CommandType])
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
-    con(array)(λ(exp"[${DepArrayType(n, ft)}]")(e => C(DepIdx(n, ft, index, e))))
+    con(array)(λ(exp"[$n.$ft]")(e => C(DepIdx(n, ft, index, e))))
   }
 }

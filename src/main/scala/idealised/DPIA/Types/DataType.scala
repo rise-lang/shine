@@ -31,7 +31,10 @@ final case class ArrayType(size: Nat, elemType: DataType) extends ComposedType {
   override def toString: String = s"$size.$elemType"
 }
 
-final case class DepArrayType(size:Nat, elemFType: NatDataTypeFunction) extends ComposedType {
+final case class DepArrayType private (size:Nat, elemFType: NatDataTypeFunction) extends ComposedType {
+  private val correctRange = RangeAdd(0, size, 1)
+  assert(elemFType.x.range == correctRange, s"Inconsistent range for element type function in $this: $correctRange expected but ${elemFType.x.range} found ")
+
   override def toString: String = s"$size.$elemFType"
 
   override def equals(that: Any): Boolean = that match {
@@ -124,7 +127,7 @@ object DataType {
       case ct: SurfaceLanguage.Types.ComposedType => ct match {
         case at: SurfaceLanguage.Types.ArrayType => ArrayType(at.size, DataType(at.elemType))
         case dat:SurfaceLanguage.Types.DepArrayType =>
-          DepArrayType(dat.size, NatDataTypeFunction(dat.size, dat.elemType.x, DataType(dat.elemType.t)))
+          DepArrayType(dat.size, x => DataType.substitute(x, `for`= dat.elemType.x, in=DataType(dat.elemType.t)))
         case tt: SurfaceLanguage.Types.TupleType =>
           assert(tt.elemTypes.size == 2)
           //noinspection ZeroIndexToHead

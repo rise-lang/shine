@@ -18,11 +18,11 @@ final case class DepJoin(n: Nat,
                          array: Phrase[ExpType])
   extends ExpPrimitive {
 
-
-  override val `type`: ExpType =
-          (n: Nat) -> (lenF: NatNatTypeFunction) ->
-            (array :: exp"[${DepArrayType(n, i => ArrayType(lenF(i), dt))}]") ->
-              exp"[${BigSum(from=0, upTo = n-1, `for`=lenF.x, lenF.body)}.$dt]"
+  override val `type`: ExpType = {
+    (n: Nat) -> (lenF: NatNatTypeFunction) ->
+      (array :: exp"[$n.${i:NatIdentifier => ArrayType(lenF(i), dt)}]") ->
+      exp"[${BigSum(from = 0, upTo = n - 1, `for` = lenF.x, lenF.body)}.$dt]"
+  }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     DepJoin(fun(n), fun(lenF), fun(dt), VisitAndRebuild(array, fun))
@@ -59,7 +59,7 @@ final case class DepJoin(n: Nat,
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    con(array)(λ(exp"[${DepArrayType(n, i => ArrayType(lenF(i), dt))}]")(x =>
+    con(array)(λ(exp"[$n.${i:NatIdentifier => ArrayType(lenF(i), dt)}]")(x =>
       C(DepJoin(n, lenF, dt, x)) ))
   }
 }

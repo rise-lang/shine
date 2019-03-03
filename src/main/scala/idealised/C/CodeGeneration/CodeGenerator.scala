@@ -639,7 +639,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         try {
           (range.start.evalLong, range.stop.evalLong, range.step.evalLong)
         } catch {
-          case nev:NotEvaluableException => throw new Exception(s"Cannot evaluate range $range in loop unrolling")
+          case _:NotEvaluableException => throw new Exception(s"Cannot evaluate range $range in loop unrolling")
         }
       }
       start until stop by step
@@ -803,66 +803,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           throw new Exception(s"Can't generate access for `$dt' with `${path.mkString("[", "::", "]")}'")
       }
     }
-    /*
-    def flattenArrayIndices2(dt: DataType, path: Path): (Nat, Path) = {
-      assert(dt.isInstanceOf[ArrayType] || dt.isInstanceOf[DepArrayType])
-      val elemT = dt match {
-        case ArrayType(_, t) => t
-        case DepArrayType(_, _, t) => t
-      }
-      val dimensionSizes = extractDimensionSizes(1)(elemT).reverse
-
-
-      val (indices, rest) = path.splitAt(dimensionSizes.size)
-      indices.foreach(i => assert(i.isInstanceOf[CIntExpr]))
-      assert(rest.isEmpty || !rest.head.isInstanceOf[CIntExpr])
-
-      val flattenedIndices = buildSummands(dt, dimensionSizes, indices).reduce(_ + _)
-
-      val subMap = buildSubMap(dt, indices)
-
-      (ArithExpr.substitute(flattenedIndices, subMap), rest)
-    }
-
-    private def extractDimensionSizes(z: Nat)(dt: DataType): List[Nat] = {
-      dt match {
-        case ArrayType(size, elemType) =>
-          z :: extractDimensionSizes(z * size)(elemType)
-        case DepArrayType(size, i, elemType) =>
-          z :: extractDimensionSizes(BigSum(from = 0, upTo = size - 1, `for` = i, `in` = z))(elemType)
-        case _ => z :: Nil
-      }
-    }
-
-    private def buildSummands(dt: DataType,
-                              dimensionSizes: immutable.Seq[Nat],
-                              indices: immutable.Seq[PathExpr]): List[Nat] = {
-      (dt, dimensionSizes, indices) match {
-        case (_, Nil, Nil) => Nil
-        case (ArrayType(_, elemType), rs :: dimRest, CIntExpr(idx) :: idxRest) =>
-          (rs * idx) :: buildSummands(elemType, dimRest, idxRest)
-        case (DepArrayType(_, k, elemType), rs :: dimRest, CIntExpr(idx) :: idxRest) =>
-          BigSum(from = 0, upTo = idx - 1, `for` = k, `in` = rs) :: buildSummands(elemType, dimRest, idxRest)
-      }
-    }
-
-    private def getIndexVariablesScopes(dt:DataType):List[Option[NatIdentifier]] = {
-      dt match {
-        case ArrayType(_ , et) => None::getIndexVariablesScopes(et)
-        case DepArrayType(_, i, et) => Some(i)::getIndexVariablesScopes(et)
-        case _ => Nil
-      }
-    }
-
-    private def buildSubMap(dt: DataType,
-                            indices: immutable.Seq[PathExpr]): Predef.Map[Nat, Nat]  = {
-      val bindings = getIndexVariablesScopes(dt)
-      bindings.zip(indices).map({
-        case (Some(binder), CIntExpr(index)) => Some((binder, index))
-        case _ => None
-      }).filter(_.isDefined).map(_.get).toMap[Nat, Nat]
-    }*/
-
 
     def flattenArrayIndices(dt: DataType, path: Path): (Nat, Path) = {
       assert(dt.isInstanceOf[ArrayType] || dt.isInstanceOf[DepArrayType])

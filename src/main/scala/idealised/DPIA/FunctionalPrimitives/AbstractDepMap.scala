@@ -24,7 +24,7 @@ abstract class AbstractDepMap(n: Nat,
     import idealised.DPIA.Compilation.TranslationToImperative._
     import idealised.DPIA._
 
-    con(array)(λ(exp"[${DepArrayType(n, ft1)}]")(x =>
+    con(array)(λ(exp"[$n.$ft1]")(x =>
       makeMapI(n, ft1, ft2, _Λ_((k: NatIdentifier) => λ(exp"[${ft1(k)}]")(x => λ(acc"[${ft2(k)}]")(o => {
         acc(f(k)(x))(o)
       }))), x, A)))
@@ -34,7 +34,7 @@ abstract class AbstractDepMap(n: Nat,
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    `new`(dt"[${DepArrayType(n, ft2)}]", idealised.OpenCL.GlobalMemory, λ(exp"[${DepArrayType(n, ft2)}]" x acc"[${DepArrayType(n, ft2)}]")(tmp =>
+    `new`(dt"[$n.$ft2]", idealised.OpenCL.GlobalMemory, λ(exp"[$n.$ft2]" x acc"[$n.$ft2]")(tmp =>
       acc(this)(tmp.wr) `;` C(tmp.rd) ))
   }
 
@@ -53,8 +53,8 @@ abstract class AbstractDepMap(n: Nat,
     val k = f.t.x
     (n: Nat) -> (ft1:NatDataTypeFunction) -> (ft2:NatDataTypeFunction) ->
       (f :: t"($k : nat) -> exp[${ ft1(k) }] -> exp[${ ft2(k) }]")
-    (array :: exp"[${DepArrayType(n, ft1)}]") ->
-      exp"[${DepArrayType(n, ft2)}]"
+    (array :: exp"[$n.$ft1]") ->
+      exp"[$n.$ft2]"
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
