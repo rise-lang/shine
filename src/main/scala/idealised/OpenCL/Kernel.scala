@@ -58,9 +58,11 @@ case class Kernel(decls: Seq[C.AST.Decl],
 
       List(localSize match {
         case ? => Some("OpenCL local size not specified\n")
-        case _ => None
+        case x if !x.isEvaluable => Some(s"OpenCL local size is not evaluable (currently set to $x)")
+        case x => None
       }, globalSize match {
         case ? => Some("OpenCL global size ot specified\n")
+        case x if !x.isEvaluable => Some(s"OpenCL local size is not evaluable (currently set to $x)")
         case _ => None
       }).filter(_.isDefined).map(_.get) match {
         case Nil =>
@@ -68,9 +70,6 @@ case class Kernel(decls: Seq[C.AST.Decl],
           val errorMessage = "Cannot run kernel:\n" ++ problems.reduce(_ ++ _)
           throw new Exception(errorMessage)
       }
-
-      val lclSize = ArithExpr.substitute(localSize, lengthMapping).eval
-      val glbSize = ArithExpr.substitute(globalSize, lengthMapping).eval
 
       val runtime = Executor.execute(kernelJNI,
         ArithExpr.substitute(localSize, lengthMapping).eval, 1, 1,

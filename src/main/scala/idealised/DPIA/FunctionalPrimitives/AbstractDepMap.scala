@@ -34,7 +34,7 @@ abstract class AbstractDepMap(n: Nat,
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    `new`(dt"[$n.$ft2]", idealised.OpenCL.GlobalMemory, λ(exp"[$n.$ft2]" x acc"[$n.$ft2]")(tmp =>
+    `new`(dt"[$n.$ft2]", λ(exp"[$n.$ft2]" x acc"[$n.$ft2]")(tmp =>
       acc(this)(tmp.wr) `;` C(tmp.rd) ))
   }
 

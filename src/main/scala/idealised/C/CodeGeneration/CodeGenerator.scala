@@ -111,7 +111,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           acc(a, env, Nil, a =>
             C.AST.Assignment(a, e)))
 
-      case New(dt, _, Lambda(v, p)) => CCodeGen.codeGenNew(dt, v, p, env)
+      case New(dt, Lambda(v, p)) => CCodeGen.codeGenNew(dt, v, p, env)
 
       case NewDoubleBuffer(_, _, dt, n, in, out, Lambda(ps, p)) =>
         CCodeGen.codeGenNewDoubleBuffer(ArrayType(n, dt), in, out, ps, p, env)

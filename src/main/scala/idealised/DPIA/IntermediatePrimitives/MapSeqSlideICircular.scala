@@ -24,7 +24,7 @@ object MapSeqSlideICircular {
     val step = 1
     val inputSize = step * n + size - step
 
-    `new`(ArrayType(size, dt1), DefaultAddressSpace, buffer => {
+    `new`(ArrayType(size, dt1), buffer => {
       MapSeqI(size - 1, dt1, dt1, fun(ExpType(dt1))(exp => fun(AccType(dt1))(acc => acc :=| dt1 | exp)),
         Take(size - 1, inputSize, dt1, input),
         TakeAcc(size - 1, size, dt1, buffer.wr)) `;`

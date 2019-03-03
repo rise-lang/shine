@@ -17,8 +17,7 @@ object ReduceSeqI {
             unroll: Boolean = false)
            (implicit context: TranslationContext): Phrase[CommandType] =
   {
-    // TODO: generalise allocation
-    `new`(dt2, idealised.OpenCL.PrivateMemory, acc =>
+    `new`(dt2, acc =>
       (acc.wr :=|dt2| init) `;`
         `for`(n, i => f(in `@` i)(acc.rd)(acc.wr), unroll) `;`
         out(acc.rd)

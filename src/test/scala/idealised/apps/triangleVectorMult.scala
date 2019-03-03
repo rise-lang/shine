@@ -1,10 +1,11 @@
 package idealised.apps
 
-import idealised.OpenCL.SurfaceLanguage.DSL.{depMapGlobal, depMapWorkgroup, mapLocal}
+import idealised.OpenCL.SurfaceLanguage.DSL.{oclReduceSeq, depMapGlobal, toGlobal, toPrivate, mapLocal, depMapWorkgroup}
 import idealised.OpenMP.SurfaceLanguage.DSL.depMapPar
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
+import idealised.OpenCL._
 import idealised.util.SyntaxChecker
 import lift.arithmetic.{?, ArithExpr, Cst, SizeVar}
 import opencl.executor.Executor
@@ -38,11 +39,20 @@ class triangleVectorMultNoExecutor extends idealised.util.Tests {
       )
     )
 
+  val triangleVectorMultSeqOpenCL: Expr[DataType -> (DataType -> DataType)] =
+    fun(DepArrayType(8, i => ArrayType(i + 1, int)))(triangle =>
+      fun(ArrayType(8, int))(vector =>
+        depMapSeq(fun(row => zip(row, take(Macros.GetLength(row), vector))
+          :>> toGlobal(mapSeq(mult)) :>> oclReduceSeq(add, 0, PrivateMemory)
+        ), triangle)
+      )
+    )
+
   val triangleVectorMultGlobal: Expr[DataType -> (DataType -> DataType)] =
     fun(DepArrayType(8, i => ArrayType(i + 1, int)))(triangle =>
       fun(ArrayType(8, int))(vector =>
         depMapGlobal(fun(row => zip(row, take(Macros.GetLength(row), vector))
-          :>> mapSeq(mult) :>> reduceSeq(add, 0)
+          :>> toGlobal(mapSeq(mult)) :>> oclReduceSeq(add, 0, PrivateMemory)
         ), triangle)
       )
     )
@@ -96,7 +106,7 @@ class triangleVectorMultNoExecutor extends idealised.util.Tests {
   }
 
   test("Basic sequential triangle vector multiplication compiles to syntactically correct OpenCL") {
-    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(triangleVectorMultSeq, Map()).toPhrase, ?, ?)
+    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(triangleVectorMultSeqOpenCL, Map()).toPhrase, ?, ?)
     println(p.code)
     SyntaxChecker.checkOpenCL(p.code)
   }

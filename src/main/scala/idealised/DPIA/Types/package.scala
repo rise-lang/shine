@@ -2,6 +2,7 @@ package idealised.DPIA
 
 import idealised.DPIA.Types.TypeCheck._
 import idealised.DPIA.Phrases.{Phrase, ToString}
+import idealised.OpenCL.AddressSpace
 
 
 package object Types {
@@ -24,6 +25,11 @@ package object Types {
   }
 
   implicit final class ArrowNat(private val self: Nat) {
+    @inline def -> [B](y: B): B = y
+    def →[B](y: B): B = ->(y)
+  }
+
+  implicit final class ArrowAddressSpace(private val self: AddressSpace) {
     @inline def -> [B](y: B): B = y
     def →[B](y: B): B = ->(y)
   }
