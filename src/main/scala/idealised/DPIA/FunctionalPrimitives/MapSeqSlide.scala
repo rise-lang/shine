@@ -16,6 +16,7 @@ final case class MapSeqSlide(n: Nat,
                              step: Nat,
                              dt1: DataType,
                              dt2: DataType,
+                             // TODO: remove f
                              f: Phrase[ExpType -> ExpType],
                              input: Phrase[ExpType])
   extends ExpPrimitive
@@ -42,13 +43,18 @@ final case class MapSeqSlide(n: Nat,
 
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommandType] = {
+    mapAcceptorTranslation(A, fun(exp"[$inputSize.$dt1]")(x => x))
+  }
+
+  override def mapAcceptorTranslation(A: Phrase[AccType], g: Phrase[ExpType -> ExpType])
+                                     (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
     import idealised.DPIA.IntermediatePrimitives.{MapSeqSlideIRegRot => I} // TODO: making a choice here
 
     con(input)(fun(exp"[$inputSize.$dt1]")(x =>
       I(n, size, dt1, dt2,
         fun(exp"[$size.$dt1]")(x =>
-          fun(acc"[$dt2]")(o => acc(f(x))(o))),
+          fun(acc"[$dt2]")(o => acc(g(f(x)))(AccExt(o)))),
         x, A
       )))
   }
@@ -58,7 +64,7 @@ final case class MapSeqSlide(n: Nat,
     import TranslationToImperative._
 
     `new`(dt"[$n.$dt2]", fun(exp"[$n.$dt2]" x acc"[$n.$dt2]")(tmp =>
-      acc(this)(tmp.wr) `;` C(tmp.rd)
+      acc(this)(AccExt(tmp.wr)) `;` C(tmp.rd)
     ))
   }
 

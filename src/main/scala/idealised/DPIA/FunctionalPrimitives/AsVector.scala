@@ -36,7 +36,9 @@ final case class AsVector(n: Nat,
 
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommandType] = {
-    TranslationToImperative.acc(array)(AsVectorAcc(n, m, dt, A))
+    import TranslationToImperative._
+
+    acc(array)(AccExt(AsVectorAcc(n, m, dt, A)))
   }
 
   override def continuationTranslation(C: Phrase[->[ExpType, CommandType]])

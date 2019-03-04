@@ -53,13 +53,13 @@ abstract class To(dt1: DataType,
                                   (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    con(this)(λ( exp"[$dt2]" )(x => acc(x)(A) ))
+    con(this)(λ( exp"[$dt2]" )(x => acc(x)(AccExt(A)) ))
   }
 
   override def continuationTranslation(C: Phrase[->[ExpType, CommandType]])
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    newWithAddrSpace(dt2, addressSpace, tmp => acc(f(input))(tmp.wr) `;` C(tmp.rd) )
+    newWithAddrSpace(dt2, addressSpace, tmp => acc(f(input))(AccExt(tmp.wr)) `;` C(tmp.rd) )
   }
 }

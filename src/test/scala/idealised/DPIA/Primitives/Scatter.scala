@@ -19,9 +19,9 @@ class Scatter extends idealised.util.Tests {
     "for".r.findAllIn(code).length shouldBe 1
   }
 
-  ignore ("Simple 2D scatter example should generate syntactic valid C code with two two loops") {
+  test("Simple 2D scatter example should generate syntactic valid C code with two two loops") {
     val slideExample = fun(ArrayType(SizeVar("N"), ArrayType(SizeVar("M"), float)))(xs =>
-      xs :>> mapSeq(mapSeq(fun(x => x))) :>> mapOut(scatter(reorderWithStridePhrase(128))) )
+      xs :>> mapSeq(mapSeq(fun(x => x))) :>> map(scatter(reorderWithStridePhrase(128))) )
 
     val p = idealised.C.ProgramGenerator.makeCode(TypeInference(slideExample, Map()).toPhrase)
     val code = p.code

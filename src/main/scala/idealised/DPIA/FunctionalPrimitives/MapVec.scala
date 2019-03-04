@@ -45,7 +45,7 @@ final case class MapVec(n: Nat,
     import TranslationToImperative._
 
     con(array)(λ(exp"[${VectorType(n, dt1)}]")(x =>
-      MapVecI(n, dt1, dt2, λ(exp"[$dt1]")(x => λ(acc"[$dt2]")(o => acc(f(x))(o))), x, A)))
+      MapVecI(n, dt1, dt2, λ(exp"[$dt1]")(x => λ(acc"[$dt2]")(o => acc(f(x))(AccExt(o)))), x, A)))
   }
 
   override def continuationTranslation(C: Phrase[ExpType -> CommandType])
@@ -54,7 +54,7 @@ final case class MapVec(n: Nat,
 
     `new`(dt"[${VectorType(n, dt2)}]",
       λ(exp"[${VectorType(n, dt2)}]" x acc"[${VectorType(n, dt2)}]")(tmp =>
-        acc(this)(tmp.wr) `;`
+        acc(this)(AccExt(tmp.wr)) `;`
           C(tmp.rd) )
       )
   }

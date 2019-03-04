@@ -83,7 +83,8 @@ object ProgramGenerator {
       case (lhsT, rhsT) => throw new Exception(s" $lhsT and $rhsT should match")
     }
 
-    TranslationToImperative.acc(p)(output)(new idealised.OpenMP.TranslationContext) |> (p => {
+    TranslationToImperative.acc(p)(TranslationToImperative.AccExt(output))(
+      new idealised.OpenMP.TranslationContext) |> (p => {
       xmlPrinter.writeToFile("/tmp/p2.xml", p)
       TypeCheck(p) // TODO: only in debug
       p

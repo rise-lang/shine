@@ -84,7 +84,8 @@ object KernelGenerator {
   }
 
   private def rewriteToImperative(p: Phrase[ExpType], a: Phrase[AccType]): Phrase[CommandType] = {
-    TranslationToImperative.acc(p)(a)(new idealised.OpenCL.TranslationContext) |> (p => {
+    TranslationToImperative.acc(p)(TranslationToImperative.AccExt(a))(
+      new idealised.OpenCL.TranslationContext) |> (p => {
       xmlPrinter.writeToFile("/tmp/p2.xml", p)
       TypeCheck(p) // TODO: only in debug
       p

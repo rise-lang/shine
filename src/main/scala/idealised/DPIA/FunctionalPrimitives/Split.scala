@@ -56,8 +56,10 @@ final case class Split(n: Nat,
                                   (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    acc(array)(SplitAcc(n, m, dt, A))
+    acc(array)(AccExt(SplitAcc(n, m, dt, A)))
   }
+
+  // TODO? mapAcceptorTranslation
 
   override def continuationTranslation(C: Phrase[ExpType -> CommandType])
                                       (implicit context: TranslationContext): Phrase[CommandType] = {

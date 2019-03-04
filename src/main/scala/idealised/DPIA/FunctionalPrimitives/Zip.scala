@@ -55,8 +55,11 @@ final case class Zip(n: Nat,
                                   (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    acc(e1)(ZipAcc1(n, dt1, dt2, A)) `;` acc(e2)(ZipAcc2(n, dt1, dt2, A))
+    acc(e1)(AccExt(ZipAcc1(n, dt1, dt2, A))) `;`
+      acc(e2)(AccExt(ZipAcc2(n, dt1, dt2, A)))
   }
+
+  // TODO? mapAcceptorTranslation
 
   override def continuationTranslation(C: Phrase[ExpType -> CommandType])
                                       (implicit context: TranslationContext): Phrase[CommandType] = {

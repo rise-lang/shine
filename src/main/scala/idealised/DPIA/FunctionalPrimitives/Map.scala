@@ -2,7 +2,7 @@ package idealised.DPIA.FunctionalPrimitives
 
 import idealised.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import idealised.DPIA.DSL._
-import idealised.DPIA.ImperativePrimitives.MapRead
+import idealised.DPIA.ImperativePrimitives.{MapRead, MapWrite}
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types._
 import idealised.DPIA._
@@ -16,10 +16,11 @@ final case class Map(n: Nat,
 {
   override def makeMap: (Nat, DataType, DataType, Phrase[ExpType -> ExpType], Phrase[ExpType]) => AbstractMap = Map
 
-  override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+  override def mapAcceptorTranslation(A: Phrase[AccType], g: Phrase[ExpType -> ExpType])
+                                     (implicit context: TranslationContext): Phrase[CommandType] = {
+    import TranslationToImperative._
 
-    ??? //acc(array)(MapAcc(n, dt1, dt2, λ(acc"[$dt1]")(x => x), A))
+    acc(array)(MapAcceptor(A, f o g))
   }
 
   override def continuationTranslation(C: Phrase[ExpType -> CommandType])

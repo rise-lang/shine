@@ -40,8 +40,6 @@ final case class Partition(
 
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommandType] = {
-
-    ///acc(array)(SplitAcc(n, m, dt, A))
     ???
   }
 

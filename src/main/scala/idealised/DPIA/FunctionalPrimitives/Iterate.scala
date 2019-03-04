@@ -67,9 +67,11 @@ final case class Iterate(n: Nat,
 
     con(array)(λ(exp"[$m.$dt]")(x =>
       IterateIAcc(n, m = m /^ n.pow(k), k, dt, A,
-        _Λ_(l => λ(acc"[${l /^ n}.$dt]")(o => λ(exp"[$l.$dt]")(x => acc(f(l)(x))(o)))),
+        _Λ_(l => λ(acc"[${l /^ n}.$dt]")(o => λ(exp"[$l.$dt]")(x => acc(f(l)(x))(AccExt(o))))),
         x) ))
   }
+
+  // TODO: mapAcceptorTranslation
 
   override def continuationTranslation(C: Phrase[ExpType -> CommandType])
                                       (implicit context: TranslationContext): Phrase[CommandType] = {

@@ -27,9 +27,14 @@ final case class Scatter(n: Nat,
 
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommandType] = {
+    mapAcceptorTranslation(A, fun(exp"[$n.$dt]")(x => x))
+  }
+
+  override def mapAcceptorTranslation(A: Phrase[AccType], g: Phrase[ExpType -> ExpType])
+                                     (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    acc(array)(ScatterAcc(n, dt, idxF, A))
+    acc(array)(MapAcceptor(ScatterAcc(n, dt, idxF, A), g))
   }
 
   override def continuationTranslation(C: Phrase[->[ExpType, CommandType]])
@@ -37,7 +42,7 @@ final case class Scatter(n: Nat,
     import TranslationToImperative._
 
     `new`(dt"[$n.$dt]", λ(exp"[$n.$dt]" x acc"[$n.$dt]")(tmp =>
-      acc(this)(tmp.wr) `;` C(tmp.rd) ))
+      acc(this)(AccExt(tmp.wr)) `;` C(tmp.rd) ))
   }
 
 
