@@ -57,7 +57,7 @@ class transpose extends idealised.util.TestsWithExecutor {
     SyntaxChecker(compiledProg.code)
   }
 
-  test("Generates correct code for local memory transpose in OpenCL") {
+  ignore("Generates correct code for local memory transpose in OpenCL") {
     val id = fun(x => x)
 
     val tile =
@@ -75,10 +75,9 @@ class transpose extends idealised.util.TestsWithExecutor {
               x :>> tile(tileRows)(tileColumns) :>>
                 mapWorkgroup(1)(mapWorkgroup(0)(fun(tile =>
                   tile :>>
-                    toLocal(mapLocal(1)(mapLocal(0)(id))) :>>
-                      transpose() :>>
-                        mapLocal(1)(mapLocal(0)(id))))) :>>
-                transposeW())))))// :>> untile2D)))
+                    toGlobal(mapLocal(1)(mapLocal(0)(toLocal(id))) >>>
+                      transpose()) :>>
+                transposeW()))))))))// :>> untile2D)))
 
     val kernel =
       idealised.OpenCL.KernelGenerator.makeCode(TypeInference(prog, Map()).toPhrase)
