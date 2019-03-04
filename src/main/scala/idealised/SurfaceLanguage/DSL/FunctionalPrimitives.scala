@@ -68,12 +68,12 @@ object slide {
   def apply(s1: Nat, s2: Nat, array: DataExpr): Slide = Slide(s1, s2, array, None)
 }
 
-object mapSeqSlide {
-  def apply(size: Nat, step: Nat, f: Expr[DataType -> DataType]): Expr[DataType -> DataType] =
-    fun(x => mapSeqSlide(size, step, f, x))
+object slideSeq {
+  def apply(size: Nat, step: Nat): Expr[DataType -> DataType] =
+    fun(x => slideSeq(size, step, x))
 
-  def apply(size: Nat, step: Nat, f: Expr[DataType -> DataType], x: DataExpr): MapSeqSlide =
-    MapSeqSlide(size, step, f, x, None)
+  def apply(size: Nat, step: Nat, x: DataExpr): SlideSeq =
+    SlideSeq(size, step, x, None)
 }
 
 object take {
