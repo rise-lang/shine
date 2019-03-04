@@ -51,10 +51,10 @@ abstract  class AbstractScan(n: Nat,
 
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommandType] = {
-    mapAcceptorTranslation(A, fun(exp"[$dt1]")(x => x))
+    mapAcceptorTranslation(fun(exp"[$dt1]")(x => x), A)
   }
 
-  override def mapAcceptorTranslation(A: Phrase[AccType], g: Phrase[ExpType -> ExpType])
+  override def mapAcceptorTranslation(g: Phrase[ExpType -> ExpType], A: Phrase[AccType])
                                      (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
@@ -62,7 +62,7 @@ abstract  class AbstractScan(n: Nat,
       con(init)(λ(exp"[$dt2]")(y =>
         makeScanI(n, dt1, dt2,
           λ(exp"[$dt1]")(x => λ(exp"[$dt2]")(y => λ(acc"[$dt2]")(o =>
-            acc(g(f(x)(y)))(AccExt(o))))),
+            acc(g(f(x)(y)))(o)))),
           y, x, A)
       )
       ))
@@ -74,7 +74,7 @@ abstract  class AbstractScan(n: Nat,
     import TranslationToImperative._
 
     `new`(dt"[$n.$dt2]", λ(exp"[$n.$dt2]" x acc"[$n.$dt2]")(tmp =>
-      acc(this)(AccExt(tmp.wr)) `;` C(tmp.rd) ))
+      acc(this)(tmp.wr) `;` C(tmp.rd) ))
   }
 
   override def xmlPrinter: Elem =

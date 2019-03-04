@@ -64,7 +64,7 @@ abstract class AbstractReduce(n: Nat,
                                   (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    con(this)(λ(exp"[$dt2]")(r => acc(r)(AccExt(A))))
+    con(this)(λ(exp"[$dt2]")(r => acc(r)(A)))
   }
 
   override def continuationTranslation(C: Phrase[ExpType -> CommandType])
@@ -74,7 +74,7 @@ abstract class AbstractReduce(n: Nat,
     con(array)(λ(exp"[$n.$dt1]")(X =>
       con(init)(λ(exp"[$dt2]")(Y =>
         makeReduceI(n, dt1, dt2,
-          λ(exp"[$dt1]")(x => λ(exp"[$dt2]")(y => λ(acc"[$dt2]")(o => acc( f(x)(y) )( AccExt(o) ) ))),
+          λ(exp"[$dt1]")(x => λ(exp"[$dt2]")(y => λ(acc"[$dt2]")(o => acc( f(x)(y) )( o ) ))),
           Y, X, C)))))
   }
 

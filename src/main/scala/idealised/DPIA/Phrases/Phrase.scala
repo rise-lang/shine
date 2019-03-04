@@ -101,10 +101,10 @@ trait ExpPrimitive extends Primitive[ExpType] {
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Data
 
   def acceptorTranslation(A: Phrase[AccType])
-                              (implicit context: TranslationContext): Phrase[CommandType]
+                         (implicit context: TranslationContext): Phrase[CommandType]
 
-  def mapAcceptorTranslation(A: Phrase[AccType],
-                             elem: Phrase[ExpType -> ExpType])
+  def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType],
+                             A: Phrase[AccType])
                             (implicit context: TranslationContext): Phrase[CommandType] =
     ???
 /*

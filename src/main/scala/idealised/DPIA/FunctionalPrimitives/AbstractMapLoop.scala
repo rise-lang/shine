@@ -19,12 +19,12 @@ abstract class AbstractMapLoop(n: Nat,
                out: Phrase[AccType])
               (implicit context: TranslationContext): Phrase[CommandType]
 
-  override def mapAcceptorTranslation(A: Phrase[AccType], g: Phrase[ExpType -> ExpType])
+  override def mapAcceptorTranslation(g: Phrase[ExpType -> ExpType], A: Phrase[AccType])
                                      (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
     con(array)(λ(exp"[$n.$dt1]")(x =>
-      makeMapI(n, dt1, dt2, λ(exp"[$dt1]")(x => λ(acc"[$dt2]")(o => acc(g(f(x)))(AccExt(o)))), x, A)(context)))
+      makeMapI(n, dt1, dt2, λ(exp"[$dt1]")(x => λ(acc"[$dt2]")(o => acc(g(f(x)))(o))), x, A)(context)))
   }
 
   override def continuationTranslation(C: Phrase[ExpType -> CommandType])
@@ -32,6 +32,6 @@ abstract class AbstractMapLoop(n: Nat,
     import TranslationToImperative._
 
     `new`(dt"[$n.$dt2]", λ(exp"[$n.$dt2]" x acc"[$n.$dt2]")(tmp =>
-      acc(this)(AccExt(tmp.wr)) `;` C(tmp.rd) ))
+      acc(this)(tmp.wr) `;` C(tmp.rd) ))
   }
 }

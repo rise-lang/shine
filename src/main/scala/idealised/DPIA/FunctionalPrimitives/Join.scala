@@ -49,15 +49,15 @@ final case class Join(n: Nat,
                                   (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    acc(array)(AccExt(JoinAcc(n, m, dt, A)))
+    acc(array)(JoinAcc(n, m, dt, A))
   }
 
-  override def mapAcceptorTranslation(A: Phrase[AccType], g: Phrase[ExpType -> ExpType])
+  override def mapAcceptorTranslation(g: Phrase[ExpType -> ExpType], A: Phrase[AccType])
                                      (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    acc(array)(MapAcceptor(JoinAcc(n, m, dt, A),
-      fun(exp"[$m.$dt]")(x => Map(m, dt, g.t.outT.dataType, g, x))))
+    mapAcc(fun(exp"[$m.$dt]")(x => Map(m, dt, g.t.outT.dataType, g, x)), array)(
+      JoinAcc(n, m, dt, A))
   }
 
   override def continuationTranslation(C: Phrase[ExpType -> CommandType])

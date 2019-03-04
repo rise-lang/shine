@@ -37,7 +37,7 @@ final case class AsScalar(n: Nat,
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
-    acc(array)(AccExt(AsScalarAcc(n, m, dt, A)))
+    acc(array)(AsScalarAcc(n, m, dt, A))
   }
 
   override def continuationTranslation(C: Phrase[->[ExpType, CommandType]])

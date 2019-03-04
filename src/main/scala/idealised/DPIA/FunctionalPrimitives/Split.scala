@@ -56,7 +56,7 @@ final case class Split(n: Nat,
                                   (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    acc(array)(AccExt(SplitAcc(n, m, dt, A)))
+    acc(array)(SplitAcc(n, m, dt, A))
   }
 
   // TODO? mapAcceptorTranslation

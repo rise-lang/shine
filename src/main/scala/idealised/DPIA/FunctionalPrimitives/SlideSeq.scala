@@ -26,10 +26,10 @@ final case class SlideSeq(n: Nat,
 
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommandType] = {
-    mapAcceptorTranslation(A, fun(exp"[$sz.$dt]")(x => x))
+    mapAcceptorTranslation(fun(exp"[$sz.$dt]")(x => x), A)
   }
 
-  override def mapAcceptorTranslation(A: Phrase[AccType], g: Phrase[ExpType -> ExpType])
+  override def mapAcceptorTranslation(g: Phrase[ExpType -> ExpType], A: Phrase[AccType])
                                      (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
     import idealised.DPIA.IntermediatePrimitives.{MapSeqSlideIRegRot => I} // TODO: making a choice here
@@ -37,7 +37,7 @@ final case class SlideSeq(n: Nat,
     con(input)(fun(exp"[$inputSize.$dt]")(x =>
       I(n, sz, dt, g.t.outT.dataType,
         fun(exp"[$sz.$dt]")(x =>
-          fun(acc"[${g.t.outT.dataType}]")(o => acc(g(x))(AccExt(o)))),
+          fun(acc"[${g.t.outT.dataType}]")(o => acc(g(x))(o))),
         x, A
       )))
   }
@@ -47,7 +47,7 @@ final case class SlideSeq(n: Nat,
     import TranslationToImperative._
 
     `new`(dt"[$n.$dt]", fun(exp"[$n.$dt]" x acc"[$n.$dt]")(tmp =>
-      acc(this)(AccExt(tmp.wr)) `;` C(tmp.rd)
+      acc(this)(tmp.wr) `;` C(tmp.rd)
     ))
   }
 }

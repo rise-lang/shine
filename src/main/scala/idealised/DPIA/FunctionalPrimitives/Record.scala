@@ -48,8 +48,8 @@ final case class Record(dt1: DataType,
                                   (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    acc(fst)(AccExt(recordAcc1(dt1, dt2, A))) `;`
-      acc(snd)(AccExt(recordAcc2(dt1, dt2, A)))
+    acc(fst)(recordAcc1(dt1, dt2, A)) `;`
+      acc(snd)(recordAcc2(dt1, dt2, A))
   }
 
   /*

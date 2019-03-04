@@ -28,18 +28,18 @@ abstract class AbstractDepMap(n: Nat,
 
     con(array)(λ(exp"[${DepArrayType(n, makeDt1)}]")(x =>
       makeMapI(n, i1, dt1, i2, dt2, _Λ_((k: NatIdentifier) => λ(exp"[${makeDt1(k)}]")(x => λ(acc"[${makeDt2(k)}]")(o => {
-        acc(f(k)(x))(AccExt(o))
+        acc(f(k)(x))(o)
       }))), x, A)))
   }
 
-  override def mapAcceptorTranslation(A: Phrase[AccType], g: Phrase[ExpType -> ExpType])
+  override def mapAcceptorTranslation(g: Phrase[ExpType -> ExpType], A: Phrase[AccType])
                                      (implicit context: TranslationContext): Phrase[CommandType] = {
     import idealised.DPIA.Compilation.TranslationToImperative._
     import idealised.DPIA._
 
     con(array)(λ(exp"[${DepArrayType(n, makeDt1)}]")(x =>
       makeMapI(n, i1, dt1, i2, dt2, _Λ_((k: NatIdentifier) => λ(exp"[${makeDt1(k)}]")(x => λ(acc"[${makeDt2(k)}]")(o => {
-        acc(g(f(k)(x)))(AccExt(o))
+        acc(g(f(k)(x)))(o)
       }))), x, A)))
   }
 
@@ -48,7 +48,7 @@ abstract class AbstractDepMap(n: Nat,
     import TranslationToImperative._
 
     `new`(dt"[${DepArrayType(n, makeDt2)}]", λ(exp"[${DepArrayType(n, makeDt2)}]" x acc"[${DepArrayType(n, makeDt2)}]")(tmp =>
-      acc(this)(AccExt(tmp.wr)) `;` C(tmp.rd) ))
+      acc(this)(tmp.wr) `;` C(tmp.rd) ))
   }
 
 
