@@ -23,14 +23,14 @@ class MemAccess extends idealised.util.TestsWithExecutor {
 
   def runWithMatrixInput(kernel: KernelNoSizes): Array[Float] = {
     val input = Array.tabulate(8, 8) {(i, j) => 1.0f * i}
-    val kernelFun = kernel.as[ScalaFunction `(` Array[Array[Float]] `)=>` Array[Float]](4, 8)
-    kernelFun(input `;`)._1
+    val kernelFun = kernel.as[ScalaFunction `(` Array[Array[Float]] `)=>` Array[Float]]
+    kernelFun(4, 8)(input `;`)._1
   }
 
   def runWithVectorInput(kernel: KernelNoSizes): Array[Float] = {
     val input = Array.tabulate(8) { i => 1.0f * i}
-    val kernelFun = kernel.as[ScalaFunction `(` Array[Float] `)=>` Array[Float]](4, 8)
-    kernelFun(input `;`)._1
+    val kernelFun = kernel.as[ScalaFunction `(` Array[Float] `)=>` Array[Float]]
+    kernelFun(4,8)(input `;`)._1
   }
 
   val M = SizeVar("M")

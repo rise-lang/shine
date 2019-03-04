@@ -13,6 +13,7 @@ import scala.collection.{Seq, immutable}
 
 import scala.language.implicitConversions
 
+//noinspection ScalaDocParserErrorInspection
 case class Kernel(decls: Seq[C.AST.Decl],
                   kernel: OpenCL.AST.KernelDecl,
                   outputParam: Identifier[AccType],
@@ -78,7 +79,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
     }
   }
 
-  protected def createLengthMap(params: Seq[Identifier[ExpType]],
+  private def createLengthMap(params: Seq[Identifier[ExpType]],
                                 args: List[Any]): immutable.Map[Nat, Nat] = {
     val seq = (params, args).zipped.flatMap(createLengthMapping)
     seq.map(x => (x._1, Cst(x._2))).toMap
@@ -114,7 +115,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
     }
   }
 
-  protected def createKernelArgs(args: List[Any], lengthMapping: immutable.Map[Nat, Nat]): (GlobalArg, List[KernelArg]) = {
+  private def createKernelArgs(args: List[Any], lengthMapping: immutable.Map[Nat, Nat]): (GlobalArg, List[KernelArg]) = {
     val numberOfKernelArgs = 1 + args.length + intermediateParams.size
     assert(kernel.params.length == numberOfKernelArgs)
 
@@ -177,7 +178,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
     kernel.params.slice(startIndex, startIndex + intermediateParams.size)
   }
 
-  protected def castToOutputType[R](dt: DataType, output: GlobalArg): R = {
+  private def castToOutputType[R](dt: DataType, output: GlobalArg): R = {
     assert(dt.isInstanceOf[ArrayType] || dt.isInstanceOf[DepArrayType])
     (DataType.getBaseDataType(dt) match {
       case idealised.DPIA.Types.float  => output.asFloatArray()
@@ -186,14 +187,6 @@ case class Kernel(decls: Seq[C.AST.Decl],
       case _ => throw new IllegalArgumentException("Return type of the given lambda expression " +
         "not supported: " + dt.toString)
     }).asInstanceOf[R]
-  }
-
-  private def createLengthArgs(lengthMapping: immutable.Map[Nat, Nat]): immutable.Seq[ValueArg] = {
-    // create length args sorted by names (cmp. KernelGenerator.makeLengthParams)
-    lengthMapping.toList.map({
-      case (v: Var, n) => (v.name,  ValueArg.create(n.eval))
-      case _ => throw new Exception("length mapping should only contain variables")
-    }).sortBy(_._1).map(_._2)
   }
 
   private implicit def getDataType(i: Identifier[_]): DataType = {
@@ -237,9 +230,14 @@ sealed case class KernelWithSizes(kernel: Kernel,
 }
 
 sealed case class KernelNoSizes(kernel: Kernel) {
-  def as[F <: FunctionHelper](localSize: NDRange, globalSize: NDRange)
-                             (implicit ev: F#T <:< HList): F#T => (F#R, TimeSpan[Time.ms]) =
-    kernel.as[F](localSize, globalSize)
+  //noinspection TypeAnnotation
+  def as[F <: FunctionHelper](implicit ev: F#T <:< HList) = new {
+    def apply(localSize: NDRange, globalSize: NDRange): F#T => (F#R, TimeSpan[Time.ms]) =
+      kernel.as[F](localSize, globalSize)
+
+    def withSizes(localSize: NDRange, globalSize: NDRange): F#T => (F#R, TimeSpan[Time.ms]) =
+      kernel.as[F](localSize, globalSize)
+  }
 
   def code: String= kernel.code
 }

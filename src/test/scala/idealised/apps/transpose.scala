@@ -86,13 +86,13 @@ class transpose extends idealised.util.TestsWithExecutor {
     SyntaxChecker.checkOpenCL(kernel.code)
 
     val kernelF = kernel
-      .as[ScalaFunction`(`Int`,`Int`,`Int`,`Int`,`Array[Array[Float]]`)=>`Array[Float]](1, 1)
+      .as[ScalaFunction`(`Int`,`Int`,`Int`,`Int`,`Array[Array[Float]]`)=>`Array[Float]]
     val M = 4
     val N = 4
     val mSplit = 2
     val nSplit = 2
     val xs = Array.tabulate(M)(i => Array.fill(N)(1.0f * i))
 
-    val (result, time) =  kernelF((M`;`) `,` N `,` mSplit `,` nSplit `,` xs)
+    val (result, time) =  kernelF(1,1)((M`;`) `,` N `,` mSplit `,` nSplit `,` xs)
   }
 }

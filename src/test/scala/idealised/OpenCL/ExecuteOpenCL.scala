@@ -7,6 +7,7 @@ import idealised.SurfaceLanguage.{->, Expr, NatIdentifier, `(nat)->`}
 import idealised.util.SyntaxChecker
 
 import scala.language.postfixOps
+import scala.language.reflectiveCalls
 
 
 class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
@@ -18,7 +19,7 @@ class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
     println(kernel.code)
     SyntaxChecker.checkOpenCL(kernel.code)
 
-    val kernelF = kernel.as[ScalaFunction`(`Int`,`Array[Int]`)=>`Array[Int]](1, 1)
+    val kernelF = kernel.as[ScalaFunction`(`Int`,`Array[Int]`)=>`Array[Int]].withSizes(1, 1)
     val xs = Array.fill(8)(0)
 
     val (result, time) = kernelF(8`,`xs)
@@ -37,7 +38,7 @@ class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
     println(kernel.code)
     SyntaxChecker.checkOpenCL(kernel.code)
 
-    val kernelF = kernel.as[ScalaFunction`(`Array[Int]`)=>`Array[Int]](1, 1)
+    val kernelF = kernel.as[ScalaFunction`(`Array[Int]`)=>`Array[Int]].apply(1, 1)
     val xs = Array.fill(n)(0)
 
     val (result, time) = kernelF(xs`;`)
@@ -60,7 +61,7 @@ class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
     println(kernel.code)
     SyntaxChecker.checkOpenCL(kernel.code)
 
-    val kernelF = kernel.as[ScalaFunction`(`Int`,`Int`,`Array[Array[Int]]`)=>`Array[Int]](1, 1)
+    val kernelF = kernel.as[ScalaFunction`(`Int`,`Int`,`Array[Array[Int]]`)=>`Array[Int]].apply(1, 1)
     val xs = Array.fill(m)(Array.fill(n)(0))
 
     val (result, time) =  kernelF(m`,`n`,`xs)
@@ -84,10 +85,10 @@ class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
     println(kernel.code)
     SyntaxChecker.checkOpenCL(kernel.code)
 
-    val kernelF = kernel.as[ScalaFunction`(`Int`,`Array[Int]`,`Int`)=>`Array[Int]](1, 1)
+    val kernelF = kernel.as[ScalaFunction`(`Int`,`Array[Int]`,`Int`)=>`Array[Int]]//(1, 1)
 
     val xs = Array.fill(n)(2)
-    val (result, time) =  kernelF(n`,`xs`,`s)
+    val (result, time) =  kernelF(1,1)(n`,`xs`,`s)
 
     val gold = xs.map(x => x + 1)
     assertResult(gold)(result)
@@ -102,7 +103,7 @@ class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
     println(kernel.code)
     SyntaxChecker.checkOpenCL(kernel.code)
 
-    val kernelF = kernel.as[ScalaFunction`(`Array[Int]`)=>`Array[Int]](1, 1)
+    val kernelF = kernel.as[ScalaFunction`(`Array[Int]`)=>`Array[Int]].withSizes(1, 1)
     val xs = Array.fill(n)(0)
 
     val (result, time) =  kernelF(xs`;`)
