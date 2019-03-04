@@ -1,6 +1,6 @@
 package benchmarks
 
-import benchmarks.core.{Correctness, OpenCLBenchmark}
+import benchmarks.core.{CorrectnessCheck, OpenCLBenchmark}
 import benchmarks.core.OpenCLBenchmark.{Configuration, DpiaProgram, Parameter}
 import idealised.OpenCL.PrivateMemory
 import idealised.OpenCL.SurfaceLanguage.DSL.{mapGlobal, oclReduceSeq}
@@ -22,7 +22,7 @@ object stencilICPF19 {
                                    globalSize:Int,
                                    code:String,
                                    runtimeMs:TimeSpan[ms],
-                                   correctness:Correctness
+                                   correctness:CorrectnessCheck
                                   ) {
 
     def printoutText:String =
@@ -118,7 +118,7 @@ object stencilICPF19 {
       DpiaProgram("Partitioned 2D", partitoned2D)
     )
 
-    override def makeOutput(name: String, paramMap:Map[String,Int], inputSize:Int, localSize: Int, globalSize: Int, code: String, runtimeMs: TimeSpan[ms], correctness: Correctness): StencilResult = {
+    override def makeOutput(name: String, paramMap:Map[String,Int], inputSize:Int, localSize: Int, globalSize: Int, code: String, runtimeMs: TimeSpan[ms], correctness: CorrectnessCheck): StencilResult = {
       StencilResult(name, inputSize, paramMap(BenchmarkStencil.STENCIL_SIZE), localSize, globalSize, code, runtimeMs, correctness)
     }
 

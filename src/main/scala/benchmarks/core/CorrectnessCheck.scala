@@ -1,6 +1,6 @@
 package benchmarks.core
 
-sealed trait Correctness {
+sealed trait CorrectnessCheck {
   final def isCorrect:Boolean = this == Correct
 
   def check():Unit = {
@@ -26,12 +26,12 @@ sealed trait Correctness {
 
 case class SizePair(actualOutputSize:Int, expectedOutputSize:Int)
 
-case object Correct extends Correctness
-case object Unchecked extends Correctness
-final case class Wrong(numberWrong:Int, wrongSize:Option[SizePair]) extends Correctness
+case object Correct extends CorrectnessCheck
+case object Unchecked extends CorrectnessCheck
+final case class Wrong(numberWrong:Int, wrongSize:Option[SizePair]) extends CorrectnessCheck
 
-object Correctness {
-  def apply(kernelOutput:Array[Float], scalaOutput:Array[Float]):Correctness = {
+object CorrectnessCheck {
+  def apply(kernelOutput:Array[Float], scalaOutput:Array[Float]):CorrectnessCheck = {
     if(kernelOutput.length == scalaOutput.length) {
       val numWrong = countWrong(kernelOutput, scalaOutput)
       if(numWrong == 0) Correct else Wrong(numWrong, wrongSize = None)

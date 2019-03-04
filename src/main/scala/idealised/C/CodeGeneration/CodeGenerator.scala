@@ -418,6 +418,32 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     }
   }
 
+  /**
+    * This function takes a phrase with a nat dependent free variable `for`, and it generates a block
+    * where `for` is bound to the arithmetic expression at.
+    * @param `for` The free nat variable to substitute
+    * @param phrase The phrase to generate
+    * @param at The arithmetic expression we are generating phrase at
+    * @param generator Up-to-date code generator
+    * @param env Up-to-date environment
+    * @return
+    */
+  protected def generateNatDependentBody(`for`: NatIdentifier,
+                                       phrase: Phrase[CommandType],
+                                       at: ArithExpr,
+                                       env: Environment): Block = {
+    PhraseType.substitute(at, `for`, in = phrase) |> (p => {
+      val newIdentEnv = env.identEnv.map {
+        case (Identifier(name, AccType(dt)), declRef) =>
+          (Identifier(name, AccType(DataType.substitute(at, `for`, in = dt))), declRef)
+        case (Identifier(name, ExpType(dt)), declRef) =>
+          (Identifier(name, ExpType(DataType.substitute(at, `for`, in = dt))), declRef)
+        case x => x
+      }
+      C.AST.Block(immutable.Seq(this.cmd(p, env.copy(identEnv = newIdentEnv))))
+    })
+  }
+
   protected object CCodeGen {
     def codeGenNew(dt: DataType,
                    v: Identifier[VarType],
@@ -591,14 +617,14 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
           if(unroll) {
             val statements = for (index <- rangeAddToScalaRange(range)) yield {
-              generateNatDependentBody(`for` = i, `phrase`=p, at = Cst(index), updatedGen, env).body
+              updatedGen.generateNatDependentBody(`for` = i, `phrase`=p, at = Cst(index), env).body
             }
             C.AST.Block(
               C.AST.Comment(s"Unrolling from ${range.start} until ${range.stop} by increments of ${range.step}") +:
               statements.flatten
             )
           } else {
-            val body = generateNatDependentBody(`for` = i, `phrase` = p, at = NamedVar(cI.name, range), updatedGen, env)
+            val body = updatedGen.generateNatDependentBody(`for` = i, `phrase` = p, at = NamedVar(cI.name, range), env)
 
             C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
               body
@@ -607,32 +633,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       }})
     }
 
-    /**
-      * This function takes a phrase with a nat dependent free variable `for`, and it generates a block
-      * where `for` is bound to the arithmetic expression at.
-      * @param `for` The free nat variable to substitute
-      * @param phrase The phrase to to generate
-      * @param at The arithmetic expression we are generating phrase at
-      * @param generator Up-to-date code generator
-      * @param env Up-to-date environment
-      * @return
-      */
-    private def generateNatDependentBody(`for`: NatIdentifier,
-                                         phrase: Phrase[CommandType],
-                                         at: ArithExpr,
-                                         generator: CodeGenerator,
-                                         env: Environment): Block = {
-      PhraseType.substitute(at, `for`, in = phrase) |> (p => {
-        val newIdentEnv = env.identEnv.map {
-          case (Identifier(name, AccType(dt)), declRef) =>
-            (Identifier(name, AccType(DataType.substitute(at, `for`, in = dt))), declRef)
-          case (Identifier(name, ExpType(dt)), declRef) =>
-            (Identifier(name, ExpType(DataType.substitute(at, `for`, in = dt))), declRef)
-          case x => x
-        }
-        C.AST.Block(immutable.Seq(generator.cmd(p, env.copy(identEnv = newIdentEnv))))
-      })
-    }
 
     private def rangeAddToScalaRange(range:RangeAdd) = {
       val (start,stop,step) = {
