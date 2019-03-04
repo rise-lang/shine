@@ -203,7 +203,7 @@ object dot extends App {
     join() o mapWorkgroup(
       mapLocal(
         reduceSeq(fun(x => fun(a => mult(x) + a)), 0.0f)
-      ) o split(2048) o gather(reorderWithStridePhrase(128))
+      ) o split(2048) o reorderWithStride(128)
     ) o split(2048 * 128) $ zip(xs, ys)
   ))
 

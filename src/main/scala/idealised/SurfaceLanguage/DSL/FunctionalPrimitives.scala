@@ -136,17 +136,13 @@ object iterate {
     Iterate(k, f, array, None)
 }
 
-object gather {
-  def apply(idxF: Expr[`(nat)->`[DataType ->DataType]]): Expr[DataType -> DataType] = {
+object reorder {
+  def apply(idxF: Expr[`(nat)->`[DataType ->DataType]],
+            idxFinv: Expr[`(nat)->`[DataType ->DataType]]
+           ): Expr[DataType -> DataType] = {
     val idxF_ = idxF(NamedVar(newName()))
-    fun(array => Gather(idxF_, array, None))
-  }
-}
-
-object scatter {
-  def apply(idxF: Expr[`(nat)->`[DataType ->DataType]]): Expr[DataType -> DataType] = {
-    val idxF_ = idxF(NamedVar(newName()))
-    fun(array => Scatter(idxF_, array, None))
+    val idxFinv_ = idxF(NamedVar(newName()))
+    fun(array => Reorder(idxF_, idxFinv_, array, None))
   }
 }
 
@@ -156,14 +152,6 @@ object transpose {
   def apply(array: DataExpr): Transpose = Transpose(array, None)
 
   implicit def toTranspose(t: transpose.type): Expr[DataType -> DataType] = transpose()
-}
-
-object transposeW {
-  def apply(): Expr[DataType -> DataType] = fun(array => transposeW(array))
-
-  def apply(array: DataExpr): TransposeOnWrite = TransposeOnWrite(array, None)
-
-  implicit def toTransposeW(t: transposeW.type): Expr[DataType -> DataType] = transposeW()
 }
 
 object tuple {

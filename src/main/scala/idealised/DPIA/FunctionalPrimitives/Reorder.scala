@@ -2,33 +2,40 @@ package idealised.DPIA.FunctionalPrimitives
 
 import idealised.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import idealised.DPIA.DSL._
-import idealised.DPIA.Phrases.VisitAndRebuild.Visitor
+import idealised.DPIA.ImperativePrimitives.ReorderAcc
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA.{Phrases, _}
 
-import scala.language.{postfixOps, reflectiveCalls}
 import scala.xml.Elem
 
-final case class Gather(n: Nat,
-                        dt: DataType,
-                        idxF: Phrase[ExpType -> ExpType],
-                        array: Phrase[ExpType])
+final case class Reorder(n: Nat,
+                         dt: DataType,
+                         idxF: Phrase[ExpType -> ExpType],
+                         idxFinv: Phrase[ExpType -> ExpType],
+                         input: Phrase[ExpType])
   extends ExpPrimitive
 {
-
   override val `type`: ExpType =
     (n: Nat) -> (dt: DataType) ->
       (idxF :: t"exp[idx($n)] -> exp[idx($n)]") ->
-        (array :: exp"[$n.$dt]") ->
-          exp"[$n.$dt]"
+      (idxFinv :: t"exp[idx($n)] -> exp[idx($n)]") ->
+      (input :: exp"[$n.$dt]") ->
+      exp"[$n.$dt]"
+
+  override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
+    Reorder(f(n), f(dt),
+      VisitAndRebuild(idxF, f),
+      VisitAndRebuild(idxFinv, f),
+      VisitAndRebuild(input, f))
+  }
 
   override def eval(s: Store): Data = {
     import idealised.DPIA.Semantics.OperationalSemantics._
     val idxFE = OperationalSemantics.eval(s, idxF)
-    OperationalSemantics.eval(s, array) match {
+    OperationalSemantics.eval(s, input) match {
       case ArrayData(a) =>
         val res = new Array[Data](a.length)
         for (i <- a.indices) {
@@ -39,28 +46,33 @@ final case class Gather(n: Nat,
     }
   }
 
-  override def visitAndRebuild(fun: Visitor): Phrase[ExpType] =
-    Gather(fun(n), fun(dt), VisitAndRebuild(idxF, fun), VisitAndRebuild(array, fun))
-
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    con(this)(λ(exp"[$n.$dt]")(x => A :=|dt"[$n.$dt]"| x ))
+    acc(input)(AccExt(ReorderAcc(n, dt, idxFinv, A)))
+  }
+
+  override def mapAcceptorTranslation(A: Phrase[AccType], g: Phrase[ExpType -> ExpType])
+                                     (implicit context: TranslationContext): Phrase[CommandType] = {
+    import TranslationToImperative._
+
+    acc(input)(MapAcceptor(ReorderAcc(n, dt, idxFinv, A), g))
   }
 
   override def continuationTranslation(C: Phrase[ExpType -> CommandType])
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    con(array)(λ(exp"[$n.$dt]")(x => C(Gather(n, dt, idxF, x)) ))
+    con(input)(λ(exp"[$n.$dt]")(x => C(Reorder(n, dt, idxF, idxFinv, x)) ))
   }
 
-  override def prettyPrint: String = s"(gather idxF ${PrettyPhrasePrinter(array)})"
+  override def prettyPrint: String = s"(reorder idxF ${PrettyPhrasePrinter(input)})"
 
   override def xmlPrinter: Elem =
-    <gather>
+    <reorder>
       <idxF>{Phrases.xmlPrinter(idxF)}</idxF>
-      <input>{Phrases.xmlPrinter(array)}</input>
-    </gather>
+      <idxFinv>{Phrases.xmlPrinter(idxFinv)}</idxFinv>
+      <input>{Phrases.xmlPrinter(input)}</input>
+    </reorder>
 }
