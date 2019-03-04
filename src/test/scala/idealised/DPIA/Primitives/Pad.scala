@@ -36,7 +36,7 @@ class Pad extends idealised.util.Tests {
       xs :>> pad(2, 3, 5.0f) :>> mapGlobal(fun(x => x))
     ))
 
-    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase, ?, ?)
+    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase)
     val code = p.code
     SyntaxChecker.checkOpenCL(code)
     println(code)
@@ -47,7 +47,7 @@ class Pad extends idealised.util.Tests {
       xs :>> pad(2, 0, 5.0f) :>> mapGlobal(fun(x => x))
     ))
 
-    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase, ?, ?)
+    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase)
     val code = p.code
     SyntaxChecker.checkOpenCL(code)
     println(code)
@@ -58,7 +58,7 @@ class Pad extends idealised.util.Tests {
       xs :>> pad(0, 3, 5.0f) :>> mapGlobal(fun(x => x))
     ))
 
-    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase, ?, ?)
+    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase)
     val code = p.code
     SyntaxChecker.checkOpenCL(code)
     println(code)

@@ -24,7 +24,7 @@ class transpose extends idealised.util.TestsWithExecutor {
             fun(ArrayType(n, float))(in => in :>> split(x) :>> map(split(y)) :>> mapGlobal(mapSeq(mapSeq(id)))))))
 
     val compiledProg =
-      idealised.OpenCL.KernelGenerator.makeCode(TypeInference(natDepProg, Map()).toPhrase, 8, 32)
+      idealised.OpenCL.KernelGenerator.makeCode(8, 32)(TypeInference(natDepProg, Map()).toPhrase)
     println(compiledProg.code)
     SyntaxChecker.checkOpenCL(compiledProg.code)
   }
@@ -81,18 +81,19 @@ class transpose extends idealised.util.TestsWithExecutor {
                 transposeW())))))// :>> untile2D)))
 
     val kernel =
-      idealised.OpenCL.KernelGenerator.makeCode(TypeInference(prog, Map()).toPhrase, 8, 32)
+      idealised.OpenCL.KernelGenerator.makeCode(TypeInference(prog, Map()).toPhrase)
     println(kernel.code)
 
     SyntaxChecker.checkOpenCL(kernel.code)
 
-    val kernelF = kernel.as[ScalaFunction`(`Int`,`Int`,`Int`,`Int`,`Array[Array[Float]]`)=>`Array[Float]]
+    val kernelF = kernel
+      .as[ScalaFunction`(`Int`,`Int`,`Int`,`Int`,`Array[Array[Float]]`)=>`Array[Float]](1, 1)
     val M = 4
     val N = 4
     val mSplit = 2
     val nSplit = 2
     val xs = Array.tabulate(M)(i => Array.fill(N)(1.0f * i))
 
-    //val (result, time) =  kernelF((M`;`) `,` N `,` mSplit `,` nSplit `,` xs)
+    val (result, time) =  kernelF((M`;`) `,` N `,` mSplit `,` nSplit `,` xs)
   }
 }

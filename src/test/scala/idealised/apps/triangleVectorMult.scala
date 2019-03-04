@@ -106,7 +106,7 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
   }
 
   test("Basic sequential triangle vector multiplication compiles to syntactically correct OpenCL") {
-    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(triangleVectorMultSeqOpenCL, Map()).toPhrase, ?, ?)
+    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(triangleVectorMultSeqOpenCL, Map()).toPhrase)
     println(p.code)
     SyntaxChecker.checkOpenCL(p.code)
   }
@@ -123,7 +123,7 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
     val actualN = inputSize
     val f = triangleVectorMultGlobalFused(actualN)
 
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase, localSize, globalSize)
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(localSize, globalSize)(TypeInference(f, Map()).toPhrase)
     //println(kernel.code)
 
     val(inputMatrix, inputVector) = generateInputs(actualN)
@@ -168,7 +168,7 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
       )
     }
 
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase, localSize, globalSize)
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(localSize, globalSize)(TypeInference(f, Map()).toPhrase)
 
     val(inputMatrix, inputVector) = generateInputs(actualN)
     val scalaOutput = scalaMatrixVector(inputMatrix, inputVector)
@@ -201,7 +201,7 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
   }
 
   test("Parallel triangle vector multiplication with global threads compiles to syntactically correct OpenCL") {
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(triangleVectorMultGlobal, Map()).toPhrase, ?, ?)
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(triangleVectorMultGlobal, Map()).toPhrase)
     SyntaxChecker.checkOpenCL(kernel.code)
   }
 }

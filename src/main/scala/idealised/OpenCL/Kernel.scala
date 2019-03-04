@@ -10,14 +10,14 @@ import opencl.executor._
 
 import scala.collection.immutable.List
 import scala.collection.{Seq, immutable}
+
 import scala.language.implicitConversions
 
 case class Kernel(decls: Seq[C.AST.Decl],
                   kernel: OpenCL.AST.KernelDecl,
                   outputParam: Identifier[AccType],
                   inputParams: Seq[Identifier[ExpType]],
-                  intermediateParams: Seq[Identifier[VarType]],
-                  localSize: Nat, globalSize: Nat) {
+                  intermediateParams: Seq[Identifier[VarType]]) {
 
   def code: String = decls.map(OpenCL.AST.Printer(_)).mkString("\n") +
     "\n\n" +
@@ -44,9 +44,9 @@ case class Kernel(decls: Seq[C.AST.Decl],
     val kernelF = kernel.as[ScalaFunction`(`Array[Float]`)=>`Array[Float]]
     val (result, time) = kernelF(xs `;`)
     */
-  def as[F <: FunctionHelper](implicit ev: F#T <:< HList): F#T => (F#R, TimeSpan[Time.ms]) = {
-    hArgs: F#T => {
-      // assert(this.localSize == localSize)
+  def as[F <: FunctionHelper](localSize: NDRange, globalSize: NDRange)
+                             (implicit ev: F#T <:< HList): F#T => (F#R, TimeSpan[Time.ms]) = {
+    hArgs: F#T  => {
       val args: List[Any] = hArgs.toList
 
       val lengthMapping = createLengthMap(inputParams, args)
@@ -61,8 +61,12 @@ case class Kernel(decls: Seq[C.AST.Decl],
         "Local and Global Size must be evaluable and set before executing the kernel.")
 
       val runtime = Executor.execute(kernelJNI,
-        ArithExpr.substitute(localSize, lengthMapping).eval, 1, 1,
-        ArithExpr.substitute(globalSize, lengthMapping).eval, 1, 1,
+        ArithExpr.substitute(localSize.x, lengthMapping).eval,
+        ArithExpr.substitute(localSize.y, lengthMapping).eval,
+        ArithExpr.substitute(localSize.z, lengthMapping).eval,
+        ArithExpr.substitute(globalSize.y, lengthMapping).eval,
+        ArithExpr.substitute(globalSize.y, lengthMapping).eval,
+        ArithExpr.substitute(globalSize.z, lengthMapping).eval,
         kernelArgs)
 
       val output = castToOutputType[F#R](outputParam.`type`.dataType, outputArg)
@@ -74,8 +78,8 @@ case class Kernel(decls: Seq[C.AST.Decl],
     }
   }
 
-  private def createLengthMap(params: Seq[Identifier[ExpType]],
-                              args: List[Any]): immutable.Map[Nat, Nat] = {
+  protected def createLengthMap(params: Seq[Identifier[ExpType]],
+                                args: List[Any]): immutable.Map[Nat, Nat] = {
     val seq = (params, args).zipped.flatMap(createLengthMapping)
     seq.map(x => (x._1, Cst(x._2))).toMap
   }
@@ -110,7 +114,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
     }
   }
 
-  private def createKernelArgs(args: List[Any], lengthMapping: immutable.Map[Nat, Nat]): (GlobalArg, List[KernelArg]) = {
+  protected def createKernelArgs(args: List[Any], lengthMapping: immutable.Map[Nat, Nat]): (GlobalArg, List[KernelArg]) = {
     val numberOfKernelArgs = 1 + args.length + intermediateParams.size
     assert(kernel.params.length == numberOfKernelArgs)
 
@@ -173,7 +177,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
     kernel.params.slice(startIndex, startIndex + intermediateParams.size)
   }
 
-  private def castToOutputType[R](dt: DataType, output: GlobalArg): R = {
+  protected def castToOutputType[R](dt: DataType, output: GlobalArg): R = {
     assert(dt.isInstanceOf[ArrayType] || dt.isInstanceOf[DepArrayType])
     (DataType.getBaseDataType(dt) match {
       case idealised.DPIA.Types.float  => output.asFloatArray()
@@ -221,4 +225,21 @@ case class Kernel(decls: Seq[C.AST.Decl],
       SizeInByte(ArithExpr.substitute(size.value, valueMap))
     }
   }
+}
+
+sealed case class KernelWithSizes(kernel: Kernel,
+                                  localSize: NDRange,
+                                  globalSize: NDRange) {
+  def as[F <: FunctionHelper](implicit ev: F#T <:< HList): F#T => (F#R, TimeSpan[Time.ms]) =
+    kernel.as[F](localSize, globalSize)
+
+  def code: String= kernel.code
+}
+
+sealed case class KernelNoSizes(kernel: Kernel) {
+  def as[F <: FunctionHelper](localSize: NDRange, globalSize: NDRange)
+                             (implicit ev: F#T <:< HList): F#T => (F#R, TimeSpan[Time.ms]) =
+    kernel.as[F](localSize, globalSize)
+
+  def code: String= kernel.code
 }

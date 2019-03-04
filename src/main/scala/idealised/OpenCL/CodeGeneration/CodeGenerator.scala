@@ -20,14 +20,15 @@ import lift.arithmetic._
 import scala.collection.{immutable, mutable}
 
 object CodeGenerator {
-  def apply(localSize: Nat, globalSize: Nat): CodeGenerator =
+  def apply(localSize: Option[NDRange], globalSize: Option[NDRange]): CodeGenerator =
     new CodeGenerator(mutable.ListBuffer[Decl](), immutable.Map[String, arithmetic.Range](), localSize, globalSize)
 }
 
+//TODO inject local and global size
 class CodeGenerator(override val decls: CCodeGenerator.Declarations,
                     override val ranges: CCodeGenerator.Ranges,
-                    localSize: Nat,
-                    globalSize: Nat)
+                    localSize: Option[NDRange],
+                    globalSize: Option[NDRange])
   extends CCodeGenerator(decls, ranges) {
   override def name: String = "OpenCL"
 

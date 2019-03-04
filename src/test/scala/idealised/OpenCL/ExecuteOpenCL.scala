@@ -14,14 +14,14 @@ class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
     val f: Expr[`(nat)->`[DataType -> DataType]] =
       dFun((n: NatIdentifier) => fun(ArrayType(n, int))(xs => xs :>> mapSeq(fun(x => x + 1))))
 
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase, 1, 1)
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase)
     println(kernel.code)
     SyntaxChecker.checkOpenCL(kernel.code)
 
-    val kernelF = kernel.as[ScalaFunction`(`Int`,`Array[Int]`)=>`Array[Int]]
+    val kernelF = kernel.as[ScalaFunction`(`Int`,`Array[Int]`)=>`Array[Int]](1, 1)
     val xs = Array.fill(8)(0)
 
-    val (result, time) =  kernelF(8`,`xs)
+    val (result, time) = kernelF(8`,`xs)
     println(time)
 
     val gold = Array.fill(8)(1)
@@ -33,14 +33,14 @@ class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
     val f: Expr[DataType -> DataType] =
       fun(ArrayType(n, int))(xs => xs :>> mapSeq(fun(x => x + 1)))
 
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase, 1, 1)
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase)
     println(kernel.code)
     SyntaxChecker.checkOpenCL(kernel.code)
 
-    val kernelF = kernel.as[ScalaFunction`(`Array[Int]`)=>`Array[Int]]
+    val kernelF = kernel.as[ScalaFunction`(`Array[Int]`)=>`Array[Int]](1, 1)
     val xs = Array.fill(n)(0)
 
-    val (result, time) =  kernelF(xs`;`)
+    val (result, time) = kernelF(xs`;`)
     println(time)
 
     val gold = Array.fill(n)(1)
@@ -56,11 +56,11 @@ class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
           fun(ArrayType(m, ArrayType(n, int)))(xs =>
             xs :>> mapSeq(mapSeq(fun(x => x + 1))))))
 
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase, 1, 1)
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase)
     println(kernel.code)
     SyntaxChecker.checkOpenCL(kernel.code)
 
-    val kernelF = kernel.as[ScalaFunction`(`Int`,`Int`,`Array[Array[Int]]`)=>`Array[Int]]
+    val kernelF = kernel.as[ScalaFunction`(`Int`,`Int`,`Array[Array[Int]]`)=>`Array[Int]](1, 1)
     val xs = Array.fill(m)(Array.fill(n)(0))
 
     val (result, time) =  kernelF(m`,`n`,`xs)
@@ -80,11 +80,11 @@ class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
           dFun((s: NatIdentifier) =>
             xs :>> split(s) :>> mapSeq(mapSeq(fun(x => x + 1))) :>> join())))
 
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase, 1, 1)
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase)
     println(kernel.code)
     SyntaxChecker.checkOpenCL(kernel.code)
 
-    val kernelF = kernel.as[ScalaFunction`(`Int`,`Array[Int]`,`Int`)=>`Array[Int]]
+    val kernelF = kernel.as[ScalaFunction`(`Int`,`Array[Int]`,`Int`)=>`Array[Int]](1, 1)
 
     val xs = Array.fill(n)(2)
     val (result, time) =  kernelF(n`,`xs`,`s)
@@ -98,11 +98,11 @@ class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
     val f: Expr[DataType -> DataType] =
       fun(ArrayType(n, int))(xs => xs :>> mapGlobal(fun(x => x + 1)))
 
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase, 1, 4)
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase)
     println(kernel.code)
     SyntaxChecker.checkOpenCL(kernel.code)
 
-    val kernelF = kernel.as[ScalaFunction`(`Array[Int]`)=>`Array[Int]]
+    val kernelF = kernel.as[ScalaFunction`(`Array[Int]`)=>`Array[Int]](1, 1)
     val xs = Array.fill(n)(0)
 
     val (result, time) =  kernelF(xs`;`)

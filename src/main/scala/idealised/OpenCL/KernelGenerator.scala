@@ -17,28 +17,46 @@ import scala.language.implicitConversions
 
 //noinspection VariablePatternShadow
 object KernelGenerator {
+  def makeCode[T <: PhraseType](localSize: Nat, globalSize: Nat): Phrase[T] => OpenCL.KernelWithSizes =
+    makeCode((localSize, 1), (globalSize, 1))
 
-  def makeCode[T <: PhraseType](originalPhrase: Phrase[T],
-                                localSize: Nat,
-                                globalSize: Nat): OpenCL.Kernel = {
+  def makeCode[T <: PhraseType](localSize: (Nat, Nat), globalSize: (Nat, Nat)): Phrase[T] => OpenCL.KernelWithSizes =
+    makeCode((localSize._1, localSize._2, 1), (globalSize._1, globalSize._2, 1))
 
-    def getPhraseAndParams[_ <: PhraseType](p: Phrase[_],
-                                            ps: Seq[Identifier[ExpType]]
-                                           ): (Phrase[ExpType], Seq[Identifier[ExpType]]) = {
-      p match {
-        case l: Lambda[ExpType, _]@unchecked => getPhraseAndParams(l.body, l.param +: ps)
-        case ndl: NatDependentLambda[_] => getPhraseAndParams(ndl.body, Identifier(ndl.x.name, ExpType(int)) +: ps)
-        case ep: Phrase[ExpType]@unchecked => (ep, ps)
-      }
-    }
-
-    val (phrase, params) = getPhraseAndParams(originalPhrase, Seq())
-
-    makeKernel(phrase, params.reverse, localSize, globalSize)
+  def makeCode[T <: PhraseType](localSize: (Nat, Nat, Nat),
+                                globalSize: (Nat, Nat, Nat)): Phrase[T] => OpenCL.KernelWithSizes = {
+    originalPhrase: Phrase[T] =>
+      makeCode(originalPhrase,
+               NDRange(localSize._1, localSize._2, localSize._3),
+               NDRange(globalSize._1, globalSize._2, globalSize._3))
   }
 
-  private def makeKernel(p: Phrase[ExpType], inputParams: Seq[Identifier[ExpType]],
-                         localSize: Nat, globalSize: Nat): OpenCL.Kernel = {
+  def makeCode[T <: PhraseType](originalPhrase: Phrase[T],
+                                localSize: NDRange, globalSize: NDRange): OpenCL.KernelWithSizes = {
+    val (phrase, params) = getPhraseAndParams(originalPhrase, Seq())
+    makeKernel(phrase, params.reverse, Some(localSize), Some(globalSize)).right.get
+  }
+
+  def makeCode[T <: PhraseType](originalPhrase: Phrase[T]): OpenCL.KernelNoSizes = {
+    val (phrase, params) = getPhraseAndParams(originalPhrase, Seq())
+    makeKernel(phrase, params.reverse, None, None).left.get
+  }
+
+  private def getPhraseAndParams[_ <: PhraseType](p: Phrase[_],
+                                                  ps: Seq[Identifier[ExpType]]
+                                                 ): (Phrase[ExpType], Seq[Identifier[ExpType]]) = {
+    p match {
+      case l: Lambda[ExpType, _]@unchecked => getPhraseAndParams(l.body, l.param +: ps)
+      case ndl: NatDependentLambda[_] => getPhraseAndParams(ndl.body, Identifier(ndl.x.name, ExpType(int)) +: ps)
+      case ep: Phrase[ExpType]@unchecked => (ep, ps)
+    }
+  }
+
+  private def makeKernel(p: Phrase[ExpType],
+                         inputParams: Seq[Identifier[ExpType]],
+                         localSize: Option[NDRange],
+                         globalSize: Option[NDRange]): Either[OpenCL.KernelNoSizes, OpenCL.KernelWithSizes] = {
+
     val outParam = createOutputParam(outT = p.t)
 
     val gen = OpenCL.CodeGeneration.CodeGenerator(localSize, globalSize)
@@ -52,25 +70,29 @@ object KernelGenerator {
     adaptKernelParameters(p,
       makeParams(outParam, inputParams, intermediateAllocations, gen), inputParams) |> { case (p, kernelParams) =>
 
-    val identMap: Predef.Map[Identifier[_ <: BasePhraseTypes], DeclRef] =
-      (outParam +: inputParams).map( p => p -> C.AST.DeclRef(p.name) ).toMap
+      val identMap: Predef.Map[Identifier[_ <: BasePhraseTypes], DeclRef] =
+        (outParam +: inputParams).map( p => p -> C.AST.DeclRef(p.name) ).toMap
 
-    val intermediateIdentMap: Predef.Map[Identifier[_ <: BasePhraseTypes], DeclRef] =
-        intermediateAllocations.flatMap( p =>
-          Seq(Identifier(s"${p.identifier.name}_1", p.identifier.`type`.t1) -> C.AST.DeclRef(p.identifier.name),
-              Identifier(s"${p.identifier.name}_2", p.identifier.`type`.t2) -> C.AST.DeclRef(p.identifier.name) ) ).toMap
+      val intermediateIdentMap: Predef.Map[Identifier[_ <: BasePhraseTypes], DeclRef] =
+          intermediateAllocations.flatMap( p =>
+            Seq(Identifier(s"${p.identifier.name}_1", p.identifier.`type`.t1) -> C.AST.DeclRef(p.identifier.name),
+                Identifier(s"${p.identifier.name}_2", p.identifier.`type`.t2) -> C.AST.DeclRef(p.identifier.name) ) ).toMap
 
-    val env = C.CodeGeneration.CodeGenerator.Environment(identMap ++ intermediateIdentMap, Map.empty, Map.empty)
+      val env = C.CodeGeneration.CodeGenerator.Environment(identMap ++ intermediateIdentMap, Map.empty, Map.empty)
 
-    val (declarations, code) = gen.generate(p, env)
+      val (declarations, code) = gen.generate(p, env)
 
-    OpenCL.Kernel(
-      declarations,
-      kernel = makeKernelFunction(kernelParams, adaptKernelBody(C.AST.Block(Seq(code)))),
-      outputParam = outParam,
-      inputParams = inputParams,
-      intermediateParams = intermediateAllocations.map(_.identifier),
-      localSize, globalSize)
+      val oclKernel = OpenCL.Kernel(declarations,
+            kernel = makeKernelFunction (kernelParams, adaptKernelBody (C.AST.Block (Seq (code) ) ) ),
+            outputParam = outParam,
+            inputParams = inputParams,
+            intermediateParams = intermediateAllocations.map (_.identifier))
+
+      (localSize, globalSize) match {
+        case (None, None) => Left(KernelNoSizes(oclKernel))
+        case (Some(localSize_), Some(globalSize_)) => Right(KernelWithSizes(oclKernel,localSize_, globalSize_))
+        case _ => throw new Exception("At the moment, we assume that local and global size are always provided together.")
+      }
     }}))
   }
 

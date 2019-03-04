@@ -56,7 +56,7 @@ class Split extends idealised.util.Tests {
           xs :>> split(4) :>> depMapSeq(fun(row => depMapSeq(fun(col => mapSeq(fun(x => x + 1.0f), col)), row)))
       ))
 
-    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(splitExample, Map()).toPhrase, ?, ?)
+    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(splitExample, Map()).toPhrase)
     val code = p.code
     SyntaxChecker.checkOpenCL(code)
     println(code)

@@ -12,24 +12,24 @@ import scala.language.postfixOps
 import scala.language.reflectiveCalls
 
 class MemAccess extends idealised.util.TestsWithExecutor {
-  def printSyntaxCheckAnd[T <: Type](exec: Kernel => Array[Float], prog: Expr[T]): Array[Float] = {
+  def printSyntaxCheckAnd[T <: Type](exec: KernelNoSizes => Array[Float], prog: Expr[T]): Array[Float] = {
      val kernel = idealised.OpenCL.KernelGenerator
-      .makeCode(TypeInference(prog, Map()).toPhrase, 8, 32)
+      .makeCode(TypeInference(prog, Map()).toPhrase)
     println(kernel.code)
     SyntaxChecker.checkOpenCL(kernel.code)
 
     exec(kernel)
   }
 
-  def runWithMatrixInput(kernel: Kernel): Array[Float] = {
+  def runWithMatrixInput(kernel: KernelNoSizes): Array[Float] = {
     val input = Array.tabulate(8, 8) {(i, j) => 1.0f * i}
-    val kernelFun = kernel.as[ScalaFunction `(` Array[Array[Float]] `)=>` Array[Float]]
+    val kernelFun = kernel.as[ScalaFunction `(` Array[Array[Float]] `)=>` Array[Float]](4, 8)
     kernelFun(input `;`)._1
   }
 
-  def runWithVectorInput(kernel: Kernel): Array[Float] = {
+  def runWithVectorInput(kernel: KernelNoSizes): Array[Float] = {
     val input = Array.tabulate(8) { i => 1.0f * i}
-    val kernelFun = kernel.as[ScalaFunction `(` Array[Float] `)=>` Array[Float]]
+    val kernelFun = kernel.as[ScalaFunction `(` Array[Float] `)=>` Array[Float]](4, 8)
     kernelFun(input `;`)._1
   }
 
