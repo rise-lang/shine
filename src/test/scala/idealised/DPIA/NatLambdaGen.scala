@@ -14,9 +14,9 @@ class NatLambdaGen extends idealised.util.TestsWithExecutor {
 
   test("Generate code for top-level nat-dependent lambdas in OpenCL") {
     val natDepProg =
-      dFun((x : NatIdentifier) =>
-        dFun((y : NatIdentifier) =>
-          dFun((n : NatIdentifier) =>
+      nFun(x =>
+        nFun(y =>
+          nFun(n =>
             fun(ArrayType(n, float))(in => in :>> split(x) :>> map(split(y)) :>> mapGlobal(mapSeq(mapSeq(id)))))))
 
     val compiledProg =
@@ -27,9 +27,9 @@ class NatLambdaGen extends idealised.util.TestsWithExecutor {
 
   test("Generate code for top-level nat-dependent lambdas in C") {
    val natDepProg =
-    dFun((x : NatIdentifier) =>
-      dFun((y : NatIdentifier) =>
-        dFun((n : NatIdentifier) =>
+    nFun(x =>
+      nFun(y =>
+        nFun(n =>
           fun(ArrayType(n, float))(in => in :>> split(x) :>> map(split(y)) :>>
             mapSeq(mapSeq(mapSeq(id))) :>> join() :>> join))))
 
@@ -41,9 +41,9 @@ class NatLambdaGen extends idealised.util.TestsWithExecutor {
 
   test("Generate code for top-level nat-dependent lambdas in OpenMP") {
    val natDepProg =
-     dFun((n: NatIdentifier) =>
-       dFun((x : NatIdentifier) =>
-         dFun((y : NatIdentifier) =>
+     nFun(n =>
+       nFun(x =>
+         nFun(y =>
            fun(ArrayType(n, float))(in =>
              in :>> split(x) :>> map(split(y)) :>> mapPar(mapSeq(mapSeq(id)))))))
 
@@ -57,16 +57,16 @@ class NatLambdaGen extends idealised.util.TestsWithExecutor {
     val id = fun(x => x)
 
     val tile =
-      dFun((rows : NatIdentifier) =>
-        dFun((columns : NatIdentifier) =>
+      nFun(rows =>
+        nFun(columns =>
           map(map(transpose()) o split(columns) o transpose()) o split(rows)))
 
     //val untile2D = join() o map(map(join()) o transposeW())
 
     val prog =
-      dFun((m : NatIdentifier) => dFun((n : NatIdentifier) =>
-        dFun((tileRows : NatIdentifier) =>
-          dFun((tileColumns : NatIdentifier) =>
+      nFun(m => nFun(n =>
+        nFun(tileRows =>
+          nFun(tileColumns =>
             fun(ArrayType(m, ArrayType(n, float)))(x =>
               x :>> tile(tileRows)(tileColumns) :>>
                 mapWorkgroup(1)(mapWorkgroup(0)(fun(tile =>

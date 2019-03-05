@@ -7,7 +7,7 @@ import idealised.util.{Execute, SyntaxChecker}
 
 class MapSeqSlide extends idealised.util.Tests {
   test("Simple example should generate C code producing the expected result on a test") {
-    val e = dFun((n: NatIdentifier) =>fun(ArrayType(n, int))(a =>
+    val e = nFun(n =>fun(ArrayType(n, int))(a =>
       a :>> mapSeqSlide(3, 1, reduceSeq(fun(_ + _), 0))))
     val p = idealised.C.ProgramGenerator.makeCode(TypeInference(e, Map()).toPhrase)
     val code = p.code

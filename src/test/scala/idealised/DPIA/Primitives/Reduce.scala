@@ -10,7 +10,7 @@ class Reduce extends idealised.util.Tests {
 
   test("Simple example should generate syntactic valid C code with one loop") {
     val e =
-      dFun((n: NatIdentifier) =>
+      nFun(n =>
         fun(ArrayType(n, float))(a => a :>> reduceSeq(add, 0.0f)))
 
     val p = idealised.C.ProgramGenerator.makeCode(TypeInference(e, Map()).toPhrase)
@@ -23,7 +23,7 @@ class Reduce extends idealised.util.Tests {
 
   test("Folding a reduce into a map should generate syntactic valide C code") {
     val e =
-      dFun((h: NatIdentifier) => dFun((w: NatIdentifier) =>
+      nFun(h => nFun(w =>
         fun(ArrayType(h, ArrayType(w, float)))(a =>
           a :>> map(reduceSeq(add, 0.0f)) :>> mapSeq(fun(x => x))
         )))
@@ -36,7 +36,7 @@ class Reduce extends idealised.util.Tests {
 
   test("Folding a reduce into another should generate syntactic valid C code with two loops") {
     val e =
-      dFun((h: NatIdentifier) => dFun((w: NatIdentifier) =>
+      nFun(h => nFun(w =>
         fun(ArrayType(h, ArrayType(w, float)))(a =>
         a :>> map(reduceSeq(add, 0.0f)) :>> reduceSeq(add, 0.0f)
       )))

@@ -33,7 +33,7 @@ class separableBlur extends idealised.util.Tests {
     val slide2d = map(slide(3, 1)) >>> slide(3, 1) >>> map(transpose())
     val map2d = mapSeq(mapSeq(fun(nbh => dot(weights2d)(join(nbh)))))
 
-    dFun((h : NatIdentifier) => dFun((w: NatIdentifier) => fun(ArrayType(h, ArrayType(w, float)))(input =>
+    nFun(h => nFun(w => fun(ArrayType(h, ArrayType(w, float)))(input =>
       input :>> /* pad2d >>> */ slide2d :>> map2d
     )))
   }
@@ -44,7 +44,7 @@ class separableBlur extends idealised.util.Tests {
   val separated_blur = {
     val horizontal = mapSeq(slide(3, 1) >>> mapSeq(dot(weights1d)))
     val vertical = slide(3, 1) >>> mapSeq(transpose() >>> mapSeq(dot(weights1d)))
-    dFun((h: NatIdentifier) => dFun((w: NatIdentifier) => fun(ArrayType(h, ArrayType(w, float)))(input =>
+    nFun(h => nFun(w => fun(ArrayType(h, ArrayType(w, float)))(input =>
       input :>> vertical :>> horizontal
     )))
   }
@@ -53,7 +53,7 @@ class separableBlur extends idealised.util.Tests {
   generate(separated_blur)
   println("----- SEPARATED BLUR, FUSED -----")
   generate({
-    dFun((h: NatIdentifier) => dFun((w: NatIdentifier) => fun(ArrayType(h, ArrayType(w, float)))(input =>
+    nFun(h => nFun(w => fun(ArrayType(h, ArrayType(w, float)))(input =>
       input :>> slide(3, 1) :>> mapSeq(
         transpose() >>> slide(3, 1) >>> mapSeq(mapSeq(dot(weights1d)) >>> dot(weights1d))
       )
@@ -61,7 +61,7 @@ class separableBlur extends idealised.util.Tests {
   })
   println("----- SEPARATED BLUR, REGISTER ROTATION -----")
   generate({
-    dFun((h: NatIdentifier) => dFun((w: NatIdentifier) => fun(ArrayType(h, ArrayType(w, float)))(input =>
+    nFun(h => nFun(w => fun(ArrayType(h, ArrayType(w, float)))(input =>
       input :>> slide(3, 1) :>> mapSeq(
         transpose() >>> map(dot(weights1d)) >>> mapSeqSlide(3, 1, dot(weights1d))
       )

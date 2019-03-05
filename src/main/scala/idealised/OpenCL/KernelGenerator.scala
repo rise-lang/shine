@@ -2,6 +2,7 @@ package idealised.OpenCL
 
 import java.io.{File, PrintWriter}
 
+import idealised._
 import idealised.C.AST.DeclRef
 import idealised.DPIA.Compilation._
 import idealised.DPIA.DSL._
@@ -10,29 +11,14 @@ import idealised.DPIA.Types._
 import idealised.DPIA._
 import idealised.OpenCL.CodeGeneration.HoistMemoryAllocations.AllocationInfo
 import idealised.OpenCL.CodeGeneration.{AdaptKernelBody, AdaptKernelParameters, HoistMemoryAllocations}
-import idealised._
 
 import scala.collection._
 import scala.language.implicitConversions
 
 //noinspection VariablePatternShadow
 object KernelGenerator {
-  def makeCode[T <: PhraseType](localSize: Nat, globalSize: Nat): Phrase[T] => OpenCL.KernelWithSizes =
-    makeCode((localSize, 1), (globalSize, 1))
-
-  def makeCode[T <: PhraseType](localSize: (Nat, Nat), globalSize: (Nat, Nat)): Phrase[T] => OpenCL.KernelWithSizes =
-    makeCode((localSize._1, localSize._2, 1), (globalSize._1, globalSize._2, 1))
-
-  def makeCode[T <: PhraseType](localSize: (Nat, Nat, Nat),
-                                globalSize: (Nat, Nat, Nat)): Phrase[T] => OpenCL.KernelWithSizes = {
-    originalPhrase: Phrase[T] =>
-      makeCode(originalPhrase,
-               NDRange(localSize._1, localSize._2, localSize._3),
-               NDRange(globalSize._1, globalSize._2, globalSize._3))
-  }
-
-  def makeCode[T <: PhraseType](originalPhrase: Phrase[T],
-                                localSize: NDRange, globalSize: NDRange): OpenCL.KernelWithSizes = {
+  def makeCode[T <: PhraseType, L, G](localSize: L, globalSize: G)(originalPhrase: Phrase[T])
+                                     (implicit toLRange: L => NDRange, toGRange: G => NDRange): OpenCL.KernelWithSizes = {
     val (phrase, params) = getPhraseAndParams(originalPhrase, Seq())
     makeKernel(phrase, params.reverse, Some(localSize), Some(globalSize)).right.get
   }

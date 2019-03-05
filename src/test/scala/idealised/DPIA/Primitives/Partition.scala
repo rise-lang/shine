@@ -12,7 +12,7 @@ class Partition extends idealised.util.Tests {
     val lenF = (i:NatIdentifier) => i + 1
 
     val slideExample =
-      dFun((n: NatIdentifier) =>
+      nFun(n =>
         fun(ArrayType(n, float))(xs => xs :>> partition(3, lenF) :>> depMapSeq(mapSeq(fun(x => x)))))
 
     val p = idealised.C.ProgramGenerator.makeCode(TypeInference(slideExample, Map()).toPhrase)

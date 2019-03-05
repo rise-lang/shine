@@ -11,7 +11,7 @@ class Scatter extends idealised.util.Tests {
 
   test("Simple scatter example should generate syntactic valid C code with two one loops") {
     val slideExample =
-      dFun((n: NatIdentifier) =>
+      nFun(n =>
         fun(ArrayType(n, float))(xs =>
           xs :>> mapSeq(fun(x => x)) :>> scatter(reorderWithStridePhrase(128)) ))
 
@@ -25,7 +25,7 @@ class Scatter extends idealised.util.Tests {
 
   ignore ("Simple 2D scatter example should generate syntactic valid C code with two two loops") {
     val slideExample =
-      dFun((n: NatIdentifier) => dFun((m: NatIdentifier) =>
+      nFun(n => nFun(m =>
         fun(ArrayType(SizeVar("N"), ArrayType(SizeVar("M"), float)))(xs =>
           xs :>> mapSeq(mapSeq(fun(x => x))) :>> mapOut(scatter(reorderWithStridePhrase(128))) )))
 

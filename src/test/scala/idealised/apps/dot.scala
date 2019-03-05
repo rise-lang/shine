@@ -14,7 +14,7 @@ class dot extends idealised.util.Tests {
   private val mult = fun(x => x._1 * x._2)
   private val add = fun((x, a) => x + a)
 
-  private val simpleDotProduct = dFun((n : NatIdentifier) => fun(xsT(n))(xs => fun(ysT(n))(ys =>
+  private val simpleDotProduct = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
     zip(xs, ys) :>> mapSeq(mult) :>> reduceSeq(add, 0.0f)
   )))
 
@@ -50,7 +50,7 @@ class dot extends idealised.util.Tests {
   test("Dot product CPU vector 1 compiles to syntactically correct OpenMP") {
     import idealised.OpenMP.SurfaceLanguage.DSL._
 
-    val dotCPUVector1 = dFun((n : NatIdentifier) => fun(xsT(n))(xs => fun(ysT(n))(ys =>
+    val dotCPUVector1 = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
       zip(
         xs :>> asVector(4),
         ys:>> asVector(4)
@@ -73,7 +73,7 @@ class dot extends idealised.util.Tests {
   test("Intel derived no warp dot product 1 compiles to syntactically correct OpenMP") {
     import idealised.OpenMP.SurfaceLanguage.DSL._
 
-    val intelDerivedNoWarpDot1 = dFun((n : NatIdentifier) =>
+    val intelDerivedNoWarpDot1 = nFun(n =>
       fun(xsT(n))(xs => fun(ysT(n))(ys =>
         zip(
           xs :>> asVector(4),
@@ -97,7 +97,7 @@ class dot extends idealised.util.Tests {
   test("Dot product CPU 1 compiles to syntactically correct OpenMP") {
     import idealised.OpenMP.SurfaceLanguage.DSL._
 
-    val dotCPU1 = dFun((n : NatIdentifier) => fun(xsT(n))(xs => fun(ysT(n))(ys =>
+    val dotCPU1 = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
       zip(xs, ys) :>>
         split(2048 * 128) :>>
         mapPar(
@@ -117,7 +117,7 @@ class dot extends idealised.util.Tests {
   test("Dot product CPU 2 compiles to syntactically correct OpenMP") {
     import idealised.OpenMP.SurfaceLanguage.DSL._
 
-    val dotCPU2 = dFun((n : NatIdentifier) => fun(xsT(n))(in =>
+    val dotCPU2 = nFun(n => fun(xsT(n))(in =>
       in :>>
         split(128) :>>
         mapPar(

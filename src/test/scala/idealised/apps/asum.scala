@@ -9,12 +9,12 @@ import idealised.{C, OpenCL, OpenMP}
 
 class asum extends idealised.util.Tests {
 
-  def inputT(N : NatIdentifier) = ArrayType(N, float)
+  def inputT(n : NatIdentifier) = ArrayType(n, float)
   val abs = (t: DataType) => fun(x => foreignFun(t, "my_abs", (t, "y"), "{ return fabs(y); }", x))
   val fabs = abs(float)
   val add = fun(x => fun(a => x + a))
 
-  val high_level = dFun((N : NatIdentifier) => fun(inputT(N))(input =>
+  val high_level = nFun(n => fun(inputT(n))(input =>
     input :>> map(fabs) :>> reduceSeq(add, 0.0f) ))
 
   test("High level asum type inference works") {
@@ -37,7 +37,7 @@ class asum extends idealised.util.Tests {
   test("Intel derived no warp compiles to syntactically correct OpenMP code") {
     import OpenMP.SurfaceLanguage.DSL._
 
-    val intelDerivedNoWarp1 = dFun((N : NatIdentifier) => fun(inputT(N))(input =>
+    val intelDerivedNoWarp1 = nFun(n => fun(inputT(n))(input =>
       input :>>
         split(32768) :>>
         mapPar(
@@ -57,7 +57,7 @@ class asum extends idealised.util.Tests {
   test("Second kernel of Intel derived compiles to syntactically correct OpenMP code") {
     import OpenMP.SurfaceLanguage.DSL._
 
-    val intelDerived2 = dFun((N : NatIdentifier) => fun(inputT(N))(input =>
+    val intelDerived2 = nFun(n => fun(inputT(n))(input =>
       input :>>
         split(2048) :>>
         mapPar(
@@ -73,7 +73,7 @@ class asum extends idealised.util.Tests {
   test("AMD/Nvidia second kernel derived compiles to syntactically correct OpenMP code") {
     import OpenMP.SurfaceLanguage.DSL._
 
-    val amdNvidiaDerived2 = dFun((N : NatIdentifier) => fun(inputT(N))(input =>
+    val amdNvidiaDerived2 = nFun(n => fun(inputT(n))(input =>
       input :>>
         split(8192) :>>
         mapPar(
@@ -95,7 +95,7 @@ class asum extends idealised.util.Tests {
   test("Intel derived no warp compiles to syntactically correct OpenCL code") {
     import OpenCL.SurfaceLanguage.DSL._
 
-    val intelDerivedNoWarp1 = dFun((N : NatIdentifier) => fun(inputT(N))(input =>
+    val intelDerivedNoWarp1 = nFun(n => fun(inputT(n))(input =>
       input :>>
         split(32768) :>>
         mapWorkgroup(
@@ -116,7 +116,7 @@ class asum extends idealised.util.Tests {
   test("Second kernel of Intel derived compiles to syntactically correct OpenCL code") {
     import OpenCL.SurfaceLanguage.DSL._
 
-    val intelDerived2 = dFun((N : NatIdentifier) => fun(inputT(N))(input =>
+    val intelDerived2 = nFun(n => fun(inputT(n))(input =>
       input :>>
         split(2048) :>>
         mapWorkgroup(
@@ -134,7 +134,7 @@ class asum extends idealised.util.Tests {
   test("Nvidia kernel derived compiles to syntactically correct OpenCL code") {
     import OpenCL.SurfaceLanguage.DSL._
 
-    val nvidiaDerived1 = dFun((N : NatIdentifier) => fun(inputT(N))(input =>
+    val nvidiaDerived1 = nFun(n => fun(inputT(n))(input =>
       input :>>
         split(2048 * 128) :>>
         mapWorkgroup(
@@ -155,7 +155,7 @@ class asum extends idealised.util.Tests {
   ignore("AMD/Nvidia second kernel derived compiles to syntactically correct OpenCL code") {
     import OpenCL.SurfaceLanguage.DSL._
 
-    val amdNvidiaDerived2 = dFun((N : NatIdentifier) => fun(inputT(N))(input =>
+    val amdNvidiaDerived2 = nFun(n => fun(inputT(n))(input =>
       input :>>
         split(8192) :>>
         mapWorkgroup(
@@ -177,7 +177,7 @@ class asum extends idealised.util.Tests {
   test("AMD kernel derived compiles to syntactically correct OpenCL code") {
     import OpenCL.SurfaceLanguage.DSL._
 
-    val amdDerived1 = dFun((N : NatIdentifier) => fun(inputT(N))(input =>
+    val amdDerived1 = nFun(n => fun(inputT(n))(input =>
       input :>>
         split(4096 * 128) :>>
         mapWorkgroup(

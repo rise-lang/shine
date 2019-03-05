@@ -159,7 +159,7 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
       val SPLIT_SIZE = Cst(splitN)
       fun(DepArrayType(N, i => ArrayType(i + 1, float)))(triangle =>
         fun(ArrayType(N, float))(vector =>
-          depMapWorkgroup.withIndex(dFun(rowIndex => fun(row =>
+          depMapWorkgroup.withIndex(nFun(rowIndex => fun(row =>
             zip(pad(0, N - rowIndex - 1, 0.0f, row), vector) :>> split(SPLIT_SIZE) :>> mapLocal(reduceSeq(multSumAcc, 0.0f))
           )), triangle)
         )

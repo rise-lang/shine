@@ -29,14 +29,14 @@ object fun {
 
 }
 
-
-object dFun {
-
+object nFun {
   def apply[T <: Type](f: NamedVar => Expr[T]): NatDependentLambdaExpr[T] = {
     val x = NamedVar(newName())
     NatDependentLambdaExpr(x, f(x))
   }
+}
 
+object tFun {
   def apply[T <: Type](f: DataTypeIdentifier => Expr[T]): TypeDependentLambdaExpr[T] = {
     val x = DataTypeIdentifier(newName())
     TypeDependentLambdaExpr(x, f(x))

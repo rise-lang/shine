@@ -10,7 +10,7 @@ class Slide extends idealised.util.Tests {
 
   test("Simple slide example should generate syntactic valid C code with two for loops") {
     val slideExample =
-      dFun((n: NatIdentifier) =>
+      nFun(n =>
         fun(ArrayType(n, float))(xs => xs :>> slide(3, 1) :>> mapSeq(mapSeq(fun(x => x)))))
 
     val p = idealised.C.ProgramGenerator.makeCode(TypeInference(slideExample, Map()).toPhrase)
@@ -23,7 +23,7 @@ class Slide extends idealised.util.Tests {
 
   test("Simple 2D slide example with separate maps should generate syntactic valid OpenMP code with three for loops") {
     val slideExample =
-      dFun((n: NatIdentifier) => dFun((m: NatIdentifier) =>
+      nFun(n => nFun(m =>
         fun(ArrayType(n, ArrayType(m, float)))( xs =>
           xs :>> map(slide(3, 1)) :>> mapSeq(mapSeq(mapSeq(fun(x => x)))) )))
 
@@ -37,7 +37,7 @@ class Slide extends idealised.util.Tests {
 
   test("Simple 2D slide example with merged maps should generate syntactic valid OpenMP code with three for loops") {
     val slideExample =
-      dFun((n: NatIdentifier) => dFun((m: NatIdentifier) =>
+      nFun(n => nFun(m =>
         fun(ArrayType(n, ArrayType(m, float)))( xs =>
           xs :>> mapSeq(slide(3, 1) >>> mapSeq(mapSeq(fun(x => x)))) )))
 

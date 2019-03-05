@@ -13,7 +13,7 @@ import scala.language.reflectiveCalls
 class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
   test("Running a simple kernel with generic input size") {
     val f: Expr[`(nat)->`[DataType -> DataType]] =
-      dFun((n: NatIdentifier) => fun(ArrayType(n, int))(xs => xs :>> mapSeq(fun(x => x + 1))))
+      nFun(n => fun(ArrayType(n, int))(xs => xs :>> mapSeq(fun(x => x + 1))))
 
     val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase)
     println(kernel.code)
@@ -51,7 +51,7 @@ class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
   test("Running a simple kernel with nat-dependent split") {
     val n = 8
     val f: Expr[DataType -> `(nat)->`[DataType]] =
-      fun(ArrayType(n, int))(xs => dFun((s : NatIdentifier) => xs :>> split(s) :>> mapSeq(mapSeq(fun(x => x + 1))) :>> join))
+      fun(ArrayType(n, int))(xs => nFun(s => xs :>> split(s) :>> mapSeq(mapSeq(fun(x => x + 1))) :>> join))
 
     val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase)
     println(kernel.code)
@@ -70,8 +70,8 @@ class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
     val m = 4
     val n = 8
     val f: Expr[`(nat)->`[`(nat)->`[DataType -> DataType]]] =
-      dFun((m: NatIdentifier) =>
-        dFun((n: NatIdentifier) =>
+      nFun(m =>
+        nFun(n =>
           fun(ArrayType(m, ArrayType(n, int)))(xs =>
             xs :>> mapSeq(mapSeq(fun(x => x + 1))))))
 
@@ -93,9 +93,9 @@ class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
     val n = 8
     val s = 2
     val f: Expr[`(nat)->`[DataType -> `(nat)->`[DataType]]] =
-      dFun((n: NatIdentifier) =>
+      nFun(n =>
         fun(ArrayType(n, int))(xs =>
-          dFun((s: NatIdentifier) =>
+          nFun(s =>
             xs :>> split(s) :>> mapSeq(mapSeq(fun(x => x + 1))) :>> join())))
 
     val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase)

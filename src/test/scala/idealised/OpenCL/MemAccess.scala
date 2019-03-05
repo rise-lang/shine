@@ -93,15 +93,15 @@ class MemAccess extends idealised.util.TestsWithExecutor {
 
   ignore("Generates correct code for local memory transpose in OpenCL") {
     val tile =
-      dFun((rows : NatIdentifier) =>
-        dFun((columns : NatIdentifier) =>
+      nFun(rows =>
+        nFun(columns =>
           map(map(transpose()) o split(columns) o transpose()) o split(rows)))
 
     val untile2D = join() o map(map(join()) o transpose())
 
     val prog =
-      dFun((tileRows : NatIdentifier) =>
-        dFun((tileColumns : NatIdentifier) =>
+      nFun(tileRows =>
+        nFun(tileColumns=>
           fun(ArrayType(M, ArrayType(N, float)))(x =>
             x :>> tile(tileRows)(tileColumns) :>>
               mapWorkgroup(1)(mapWorkgroup(0)(fun(tile =>

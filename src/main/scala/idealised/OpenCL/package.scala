@@ -22,13 +22,12 @@ package object OpenCL {
     def isEvaluable: Boolean = x.isEvaluable && y.isEvaluable && z.isEvaluable
     def ==(other: NDRange): Boolean = x == other.x && y == other.y && z == other.z
   }
-  implicit def intToCst(v: Int): Nat = Cst(v)
-  implicit def valToNatTuple[V](v: V)(implicit vToN: V => Nat): (Nat, Nat, Nat) = (v, 1, 1)
-  implicit def pairToNatTuple[A,B](t: (A, B))(implicit aToN: A => Nat, bToN: B => Nat): (Nat, Nat, Nat) =
-    (t._1, t._2, 1)
+  implicit def valToNatTuple[V](v: V)(implicit vToN: V => Nat): NDRange = NDRange(v, 1, 1)
+  implicit def pairToNatTuple[A,B](t: (A, B))(implicit aToN: A => Nat, bToN: B => Nat): NDRange =
+    NDRange(t._1, t._2, 1)
   implicit def tripleToNatTuple[T,U,V](t: (T, U, V))
-                                 (implicit aToN: T => Nat, bToN: U => Nat, cToN: V => Nat): (Nat, Nat, Nat) =
-    (t._1, t._2, t._3)
+                                      (implicit aToN: T => Nat, bToN: U => Nat, cToN: V => Nat): NDRange =
+    NDRange(t._1, t._2, t._3)
   implicit def tupleToNDRange[R](ndRange: R)
                                 (implicit intToNat: R => (Nat, Nat, Nat)): NDRange =
     NDRange(ndRange._1, ndRange._2, ndRange._3)
