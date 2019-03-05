@@ -6,7 +6,6 @@ import idealised.SurfaceLanguage.NatIdentifier
 import idealised.SurfaceLanguage.Types._
 import idealised.util.SyntaxChecker
 import idealised.{C, OpenCL, OpenMP}
-import lift.arithmetic.Cst
 
 class asum extends idealised.util.Tests {
 

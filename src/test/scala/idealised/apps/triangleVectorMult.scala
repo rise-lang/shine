@@ -1,17 +1,16 @@
 package idealised.apps
 
-import idealised.OpenCL.SurfaceLanguage.DSL.{oclReduceSeq, depMapGlobal, toGlobal, toPrivate, mapLocal, depMapWorkgroup}
+import idealised.OpenCL.SurfaceLanguage.DSL.{oclReduceSeq, depMapGlobal, toGlobal, mapLocal, depMapWorkgroup}
 import idealised.OpenMP.SurfaceLanguage.DSL.depMapPar
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
 import idealised.OpenCL._
 import idealised.util.SyntaxChecker
-import lift.arithmetic.{?, ArithExpr, Cst, SizeVar}
+import lift.arithmetic.{ArithExpr, Cst, SizeVar}
 import opencl.executor.Executor
 
 import scala.language.{implicitConversions, postfixOps}
-import scala.util.Random
 
 class triangleVectorMult extends idealised.util.TestsWithExecutor {
   val mult = fun(x => x._1 * x._2)
@@ -58,7 +57,6 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
     )
 
   def generateInputs(n:Int):(Array[Array[Float]], Array[Float]) = {
-    val rng = new Random()
     val inputVector = Array.tabulate(n)(id => id + 1.0f)
     val inputMatrix = Array.tabulate(n)(rowIndex => Array.tabulate(rowIndex + 1)(colIndex => if (rowIndex == colIndex) 1.0f else 0.0f))
 
@@ -75,7 +73,7 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
 
   def scalaMultSumAcc(acc:Float, item:(Float,Float)):Float = acc + (item._1 * item._2)
 
-  def scalaMatrixVector(matrix:Array[Array[Float]], vector:Array[Float]) = {
+  def scalaMatrixVector(matrix:Array[Array[Float]], vector:Array[Float]): Array[Float] = {
     matrix.map(row => row.zip(vector.take(row.length)).foldLeft(0.0f)(scalaMultSumAcc))
   }
 

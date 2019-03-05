@@ -7,7 +7,6 @@ import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
 import idealised.util.SyntaxChecker
-import lift.arithmetic.SizeVar
 
 import scala.language.postfixOps
 import scala.language.reflectiveCalls
@@ -65,7 +64,7 @@ class transpose extends idealised.util.TestsWithExecutor {
         dFun((columns : NatIdentifier) =>
           map(map(transpose()) o split(columns) o transpose()) o split(rows)))
 
-    val untile2D = join() o map(map(join()) o transposeW())
+    //val untile2D = join() o map(map(join()) o transposeW())
 
     val prog =
       dFun((m : NatIdentifier) => dFun((n : NatIdentifier) =>
@@ -93,6 +92,6 @@ class transpose extends idealised.util.TestsWithExecutor {
     val nSplit = 2
     val xs = Array.tabulate(M)(i => Array.fill(N)(1.0f * i))
 
-    val (result, time) =  kernelF(1,1)((M`;`) `,` N `,` mSplit `,` nSplit `,` xs)
+    kernelF(1,1)((M`;`) `,` N `,` mSplit `,` nSplit `,` xs)
   }
 }

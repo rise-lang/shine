@@ -111,6 +111,6 @@ class MemAccess extends idealised.util.TestsWithExecutor {
                       mapLocal(1)(mapLocal(0)(id))))) :>>
               map(transposeW()) :>> untile2D)))
 
-    val output = printSyntaxCheckAnd(runWithMatrixInput, prog)
+    printSyntaxCheckAnd(runWithMatrixInput, prog)
   }
 }

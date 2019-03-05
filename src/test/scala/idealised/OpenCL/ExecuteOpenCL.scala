@@ -74,7 +74,6 @@ class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
   test("Running a simple kernel mixing nat-dependent with normal functions") {
     val n = 8
     val s = 2
-    val mult = fun(t => t._1 * t._2)
     val f: Expr[`(nat)->`[DataType -> `(nat)->`[DataType]]] =
       dFun((n: NatIdentifier) =>
         fun(ArrayType(n, int))(xs =>
@@ -85,10 +84,10 @@ class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
     println(kernel.code)
     SyntaxChecker.checkOpenCL(kernel.code)
 
-    val kernelF = kernel.as[ScalaFunction`(`Int`,`Array[Int]`,`Int`)=>`Array[Int]]//(1, 1)
+    val kernelF = kernel.as[ScalaFunction`(`Int`,`Array[Int]`,`Int`)=>`Array[Int]]
 
     val xs = Array.fill(n)(2)
-    val (result, time) =  kernelF(1,1)(n`,`xs`,`s)
+    val (result, _) =  kernelF(1,1)(n`,`xs`,`s)
 
     val gold = xs.map(x => x + 1)
     assertResult(gold)(result)

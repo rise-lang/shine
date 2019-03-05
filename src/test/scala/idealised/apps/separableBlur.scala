@@ -6,7 +6,6 @@ import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage.Semantics._
 import idealised.util.SyntaxChecker
-import lift.arithmetic._
 
 class separableBlur extends idealised.util.Tests {
   // Separable Convolution:
