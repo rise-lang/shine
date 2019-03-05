@@ -87,20 +87,19 @@ object Phrase {
   }
 
   /**
-   * Allows access to the nat-identifiers of in a lambda, e.g.,
-   * in order to inject them as sizes during code generation.
+   * Return all the Nat parameters used in the (curried) function that is expressed by the phrase.
    */
-  def natIdentParams[T <: PhraseType](phrase: Phrase[T]): List[NatIdentifier] = {
-    def natIdentParamsHelper[T <: PhraseType](phrase: Phrase[T],
-                                              params: List[NatIdentifier]): List[NatIdentifier] = {
+  def natParamsOfUncurriedFunction[T <: PhraseType](phrase: Phrase[T]): List[NatIdentifier] = {
+    def recurseWithResultList[T <: PhraseType](phrase: Phrase[T],
+                                               params: List[NatIdentifier]): List[NatIdentifier] = {
       phrase match {
-        case NatDependentLambda(x, body) => natIdentParamsHelper(body, x :: params)
-        case Lambda(x, body) => natIdentParamsHelper(body, params)
+        case NatDependentLambda(x, body) => recurseWithResultList(body, x :: params)
+        case Lambda(x, body) => recurseWithResultList(body, params)
         case _ => params.reverse
       }
     }
 
-    natIdentParamsHelper(phrase, Nil)
+    recurseWithResultList(phrase, Nil)
   }
 }
 

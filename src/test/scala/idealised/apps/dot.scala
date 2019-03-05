@@ -21,7 +21,7 @@ class dot extends idealised.util.Tests {
   test("Simple dot product type inference works") {
     val typed = TypeInference(simpleDotProduct, Map())
 
-    val N = Phrase.natIdentParams(typed.toPhrase).head
+    val N = Phrase.natParamsOfUncurriedFunction(typed.toPhrase).head
     assertResult(NatDependentFunctionType(N, FunctionType(xsT(N), FunctionType(ysT(N), float)))) {
       typed.t.get
     }
@@ -32,7 +32,7 @@ class dot extends idealised.util.Tests {
     import idealised.DPIA._
     val phrase = TypeInference(simpleDotProduct, Map()).convertToPhrase
 
-    val N = Phrase.natIdentParams(phrase).head
+    val N = Phrase.natParamsOfUncurriedFunction(phrase).head
     val dt = float
     assertResult(N -> (exp"[$N.$dt]" -> (exp"[$N.$dt]" -> exp"[$dt]"))) {
       phrase.t
