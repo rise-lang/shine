@@ -1,19 +1,16 @@
-package idealised.apps
+package idealised.DPIA
 
-import idealised.OpenCL._
 import idealised.OpenCL.SurfaceLanguage.DSL._
+import idealised.OpenCL._
 import idealised.OpenMP.SurfaceLanguage.DSL.mapPar
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
-import idealised.SurfaceLanguage._
 import idealised.util.SyntaxChecker
 
-import scala.language.postfixOps
-import scala.language.reflectiveCalls
+import scala.language.{postfixOps, reflectiveCalls}
 
-class transpose extends idealised.util.TestsWithExecutor {
+class NatLambdaGen extends idealised.util.TestsWithExecutor {
   val id = fun(x => x)
-
 
   test("Generate code for top-level nat-dependent lambdas in OpenCL") {
     val natDepProg =

@@ -86,11 +86,16 @@ object Phrase {
     VisitAndRebuild(in, Visitor)
   }
 
+  /**
+   * Allows access to the nat-identifiers of in a lambda, e.g.,
+   * in order to inject them as sizes during code generation.
+   */
   def natIdentParams[T <: PhraseType](phrase: Phrase[T]): List[NatIdentifier] = {
     def natIdentParamsHelper[T <: PhraseType](phrase: Phrase[T],
                                               params: List[NatIdentifier]): List[NatIdentifier] = {
       phrase match {
         case NatDependentLambda(x, body) => natIdentParamsHelper(body, x :: params)
+        case Lambda(x, body) => natIdentParamsHelper(body, params)
         case _ => params.reverse
       }
     }

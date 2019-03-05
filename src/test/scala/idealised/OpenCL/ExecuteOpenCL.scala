@@ -48,6 +48,24 @@ class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
     assertResult(gold)(result)
   }
 
+  test("Running a simple kernel with nat-dependent split") {
+    val n = 8
+    val f: Expr[DataType -> `(nat)->`[DataType]] =
+      fun(ArrayType(n, int))(xs => dFun((s : NatIdentifier) => xs :>> split(s) :>> mapSeq(mapSeq(fun(x => x + 1))) :>> join))
+
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase)
+    println(kernel.code)
+    SyntaxChecker.checkOpenCL(kernel.code)
+
+    val kernelF = kernel.as[ScalaFunction`(`Array[Int]`,`Int`)=>`Array[Int]]
+    val xs = Array.fill(n)(0)
+
+    val (result, _) = kernelF(1, 1)(xs`,`n)
+
+    val gold = Array.fill(n)(1)
+    assertResult(gold)(result)
+  }
+
   test("Running a simple kernel with multiple generic input sizes") {
     val m = 4
     val n = 8

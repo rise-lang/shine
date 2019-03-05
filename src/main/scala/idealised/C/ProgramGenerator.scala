@@ -96,25 +96,7 @@ object ProgramGenerator {
   def makeParams(out: Identifier[AccType],
                  ins: Seq[Identifier[ExpType]],
                  gen: CodeGeneration.CodeGenerator): Seq[ParamDecl] = {
-    //val sizes = collectSizes(out.`type`.dataType
-      //+: ins.map(_.`type`.dataType)).toSeq.sortBy(_.toString)
-    Seq(makeParam(out, gen)) ++ ins.map(makeParam(_, gen))// ++ sizes.map(makeSizeParam)
-  }
-
-  def collectSizes(ts: Seq[DataType]): Set[Var] = {
-    import DPIA.Types.{ArrayType, BasicType, RecordType}
-    ts.foldLeft(Set[Var]())( (s, t) => {
-      s ++ (t match {
-        case _: BasicType => Set()
-        case ArrayType(size, dt) =>
-          size.varList ++ collectSizes(Seq(dt))
-        case DepArrayType(size, _, et) =>
-          size.varList ++ collectSizes(Seq(et))
-        case RecordType(fst, snd) =>
-          collectSizes(Seq(fst)) ++ collectSizes(Seq(snd))
-        case _: DataTypeIdentifier => ???
-      })
-    })
+    Seq(makeParam(out, gen)) ++ ins.map(makeParam(_, gen))
   }
 
   def makeParam(i: Identifier[_], gen: CodeGeneration.CodeGenerator): ParamDecl = {

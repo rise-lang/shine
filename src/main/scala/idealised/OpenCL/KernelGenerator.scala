@@ -129,10 +129,6 @@ object KernelGenerator {
     Seq(makeGlobalParam(out, gen)) ++ // first the output parameter ...
       ins.map(makeInputParam(_, gen)) ++ // ... then the input parameters ...
       intermediateAllocations.map(makeParam(_, gen)) //++  ... then the intermediate buffers ...
-      // ... finally, the parameters for the length information in the type
-      // these can only come from the input parameters.
-      // TODO clarify whether we can rely on Nat-dependent lambdas only
-      //makeLengthParams(ins.map(_.t.dataType))
   }
 
   // pass arrays via global and scalar + tuple values via private memory

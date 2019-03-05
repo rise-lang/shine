@@ -47,7 +47,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
     */
   def as[F <: FunctionHelper](localSize: NDRange, globalSize: NDRange)
                              (implicit ev: F#T <:< HList): F#T => (F#R, TimeSpan[Time.ms]) = {
-    hArgs: F#T  => {
+    hArgs: F#T => {
       val args: List[Any] = hArgs.toList
 
       val lengthMapping = createLengthMap(inputParams, args)
@@ -80,7 +80,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
   }
 
   private def createLengthMap(params: Seq[Identifier[ExpType]],
-                                args: List[Any]): immutable.Map[Nat, Nat] = {
+                              args: List[Any]): immutable.Map[Nat, Nat] = {
     val seq = (params, args).zipped.flatMap(createLengthMapping)
     seq.map(x => (x._1, Cst(x._2))).toMap
   }
@@ -90,7 +90,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
 
     //TODO cover case where ArithExpr cannot be evaluated
     completeLengthMapping.filter(!_._1.isInstanceOf[Var])
-      .foreach {case (typeSize: Nat, argSize: Int) => assert(typeSize.eval == argSize) }
+      .foreach { case (typeSize: Nat, argSize: Int) => assert(typeSize.eval == argSize) }
 
     completeLengthMapping.filter(_._1.isInstanceOf[Var])
   }
