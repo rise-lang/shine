@@ -107,13 +107,7 @@ trait ExpPrimitive extends Primitive[ExpType] {
                              A: Phrase[AccType])
                             (implicit context: TranslationContext): Phrase[CommandType] =
     ???
-/*
-  def recordAcceptorTranslation(A: Phrase[AccType],
-                                fst: Phrase[ExpType -> ExpType],
-                                snd: Phrase[ExpType -> ExpType])
-                               (implicit context: TranslationContext): Phrase[CommandType] =
-    ???
-*/
+
   def continuationTranslation(C: Phrase[ExpType -> CommandType])
                              (implicit context: TranslationContext): Phrase[CommandType]
 }

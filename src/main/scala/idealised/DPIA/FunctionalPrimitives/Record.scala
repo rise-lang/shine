@@ -52,18 +52,6 @@ final case class Record(dt1: DataType,
       acc(snd)(recordAcc2(dt1, dt2, A))
   }
 
-  /*
-  override def recordAcceptorTranslation(A: Phrase[AccType],
-                                         f_fst: Phrase[ExpType -> ExpType],
-                                         f_snd: Phrase[ExpType -> ExpType])
-                                        (implicit context: TranslationContext): Phrase[CommandType] = {
-    import TranslationToImperative._
-
-    acc(f_fst(fst))(AccExt(recordAcc1(dt1, dt2, A))) `;`
-      acc(f_snd(snd))(AccExt(recordAcc2(dt1, dt2, A)))
-  }
-  */
-
   override def continuationTranslation(C: Phrase[->[ExpType, CommandType]])
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._

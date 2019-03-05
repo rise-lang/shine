@@ -52,4 +52,14 @@ class Split extends idealised.util.Tests {
     SyntaxChecker.checkOpenCL(code)
     println(code)
   }
+
+  ignore("Split mapAcc translation could work with functions working on independent elements") {
+    val e = fun(ArrayType(SizeVar("N"), float))(xs =>
+      xs :>> mapSeq(fun(x => x)) :>> split(8) :>> map(fun(x => x)))
+
+    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(e, Map()).toPhrase, ?, ?)
+    val code = p.code
+    SyntaxChecker.checkOpenCL(code)
+    println(code)
+  }
 }
