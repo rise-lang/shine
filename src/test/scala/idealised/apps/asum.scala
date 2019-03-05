@@ -1,26 +1,27 @@
 package idealised.apps
 
+import idealised.DPIA.Phrases.Phrase
 import idealised.SurfaceLanguage.DSL._
+import idealised.SurfaceLanguage.NatIdentifier
 import idealised.SurfaceLanguage.Types._
 import idealised.util.SyntaxChecker
 import idealised.{C, OpenCL, OpenMP}
-import lift.arithmetic._
 
 class asum extends idealised.util.Tests {
 
-  val N = SizeVar("N")
-  val inputT = ArrayType(N, float)
+  def inputT(n : NatIdentifier) = ArrayType(n, float)
   val abs = (t: DataType) => fun(x => foreignFun(t, "my_abs", (t, "y"), "{ return fabs(y); }", x))
   val fabs = abs(float)
   val add = fun(x => fun(a => x + a))
 
-  val high_level = fun(inputT)(input =>
-    input :>> map(fabs) :>> reduceSeq(add, 0.0f) )
+  val high_level = nFun(n => fun(inputT(n))(input =>
+    input :>> map(fabs) :>> reduceSeq(add, 0.0f) ))
 
   test("High level asum type inference works") {
     val typed = TypeInference(high_level, Map())
 
-    assertResult(FunctionType(inputT, float)) {
+    val N = Phrase.natParamsOfUncurriedFunction(typed.toPhrase).head
+    assertResult(NatDependentFunctionType(N, FunctionType(inputT(N), float))) {
       typed.t.get
     }
   }
@@ -36,7 +37,7 @@ class asum extends idealised.util.Tests {
   test("Intel derived no warp compiles to syntactically correct OpenMP code") {
     import OpenMP.SurfaceLanguage.DSL._
 
-    val intelDerivedNoWarp1 = fun(inputT)(input =>
+    val intelDerivedNoWarp1 = nFun(n => fun(inputT(n))(input =>
       input :>>
         split(32768) :>>
         mapPar(
@@ -46,7 +47,7 @@ class asum extends idealised.util.Tests {
             reduceSeq(fun(x => fun(a => abs(float4)(x) + a) ), vectorize(4, 0.0f))
           ) >>> asScalar
         ) :>> join
-    )
+    ))
     val phrase = TypeInference(intelDerivedNoWarp1, Map()).convertToPhrase
     val p = OpenMP.ProgramGenerator.makeCode(phrase)
     println(p.code)
@@ -56,13 +57,13 @@ class asum extends idealised.util.Tests {
   test("Second kernel of Intel derived compiles to syntactically correct OpenMP code") {
     import OpenMP.SurfaceLanguage.DSL._
 
-    val intelDerived2 = fun(inputT)(input =>
+    val intelDerived2 = nFun(n => fun(inputT(n))(input =>
       input :>>
         split(2048) :>>
         mapPar(
           split(2048) >>> mapSeq(reduceSeq(add, 0.0f))
         ) :>> join
-    )
+    ))
     val phrase = TypeInference(intelDerived2, Map()).convertToPhrase
     val p = OpenMP.ProgramGenerator.makeCode(phrase)
     println(p.code)
@@ -72,7 +73,7 @@ class asum extends idealised.util.Tests {
   test("AMD/Nvidia second kernel derived compiles to syntactically correct OpenMP code") {
     import OpenMP.SurfaceLanguage.DSL._
 
-    val amdNvidiaDerived2 = fun(inputT)(input =>
+    val amdNvidiaDerived2 = nFun(n => fun(inputT(n))(input =>
       input :>>
         split(8192) :>>
         mapPar(
@@ -83,7 +84,7 @@ class asum extends idealised.util.Tests {
                 mapSeq(reduceSeq(add, 0.0f))
             )
         ) :>> join
-    )
+    ))
     val phrase = TypeInference(amdNvidiaDerived2, Map()).convertToPhrase
     val p = OpenMP.ProgramGenerator.makeCode(phrase)
     println(p.code)
@@ -94,7 +95,7 @@ class asum extends idealised.util.Tests {
   test("Intel derived no warp compiles to syntactically correct OpenCL code") {
     import OpenCL.SurfaceLanguage.DSL._
 
-    val intelDerivedNoWarp1 = fun(inputT)(input =>
+    val intelDerivedNoWarp1 = nFun(n => fun(inputT(n))(input =>
       input :>>
         split(32768) :>>
         mapWorkgroup(
@@ -104,9 +105,10 @@ class asum extends idealised.util.Tests {
               oclReduceSeq(fun(x => fun(a => abs(float4)(x) + a) ), vectorize(4, 0.0f), OpenCL.PrivateMemory)
             ) >>> asScalar
         ) :>> join
-    )
+    ))
     val phrase = TypeInference(intelDerivedNoWarp1, Map()).convertToPhrase
-    val p = OpenCL.KernelGenerator.makeCode(phrase, localSize = 128, globalSize = N)
+    val N = Phrase.natParamsOfUncurriedFunction(phrase).head
+    val p = OpenCL.KernelGenerator.makeCode(localSize = 128, globalSize = N)(phrase)
     println(p.code)
     SyntaxChecker.checkOpenCL(p.code)
   }
@@ -114,16 +116,17 @@ class asum extends idealised.util.Tests {
   test("Second kernel of Intel derived compiles to syntactically correct OpenCL code") {
     import OpenCL.SurfaceLanguage.DSL._
 
-    val intelDerived2 = fun(inputT)(input =>
+    val intelDerived2 = nFun(n => fun(inputT(n))(input =>
       input :>>
         split(2048) :>>
         mapWorkgroup(
           split(2048) >>>
             mapLocal(oclReduceSeq(add, 0.0f, OpenCL.PrivateMemory))
         ) :>> join
-    )
+    ))
     val phrase = TypeInference(intelDerived2, Map()).convertToPhrase
-    val p = OpenCL.KernelGenerator.makeCode(phrase, localSize = 128, globalSize = N)
+    val N = Phrase.natParamsOfUncurriedFunction(phrase).head
+    val p = OpenCL.KernelGenerator.makeCode(localSize = 128, globalSize = N)(phrase)
     println(p.code)
     SyntaxChecker.checkOpenCL(p.code)
   }
@@ -131,7 +134,7 @@ class asum extends idealised.util.Tests {
   test("Nvidia kernel derived compiles to syntactically correct OpenCL code") {
     import OpenCL.SurfaceLanguage.DSL._
 
-    val nvidiaDerived1 = fun(inputT)(input =>
+    val nvidiaDerived1 = nFun(n => fun(inputT(n))(input =>
       input :>>
         split(2048 * 128) :>>
         mapWorkgroup(
@@ -141,9 +144,10 @@ class asum extends idealised.util.Tests {
               oclReduceSeq(fun(x => fun(a => abs(float)(x) + a)), 0.0f, OpenCL.PrivateMemory)
             )
         ) :>> join
-    )
+    ))
     val phrase = TypeInference(nvidiaDerived1, Map()).convertToPhrase
-    val p = OpenCL.KernelGenerator.makeCode(phrase, localSize = 128, globalSize = N)
+    val N = Phrase.natParamsOfUncurriedFunction(phrase).head
+    val p = OpenCL.KernelGenerator.makeCode(localSize = 128, globalSize = N)(phrase)
     println(p.code)
     SyntaxChecker.checkOpenCL(p.code)
   }
@@ -151,7 +155,7 @@ class asum extends idealised.util.Tests {
   ignore("AMD/Nvidia second kernel derived compiles to syntactically correct OpenCL code") {
     import OpenCL.SurfaceLanguage.DSL._
 
-    val amdNvidiaDerived2 = fun(inputT)(input =>
+    val amdNvidiaDerived2 = nFun(n => fun(inputT(n))(input =>
       input :>>
         split(8192) :>>
         mapWorkgroup(
@@ -162,9 +166,10 @@ class asum extends idealised.util.Tests {
                 toLocal(mapLocal(reduceSeq(add, 0.0f)))
             )
         ) :>> join
-    )
+    ))
     val phrase = TypeInference(amdNvidiaDerived2, Map()).convertToPhrase
-    val p = OpenCL.KernelGenerator.makeCode(phrase, localSize = 128, globalSize = N)
+    val N = Phrase.natParamsOfUncurriedFunction(phrase).head
+    val p = OpenCL.KernelGenerator.makeCode(localSize = 128, globalSize = N)(phrase)
     println(p.code)
     SyntaxChecker.checkOpenCL(p.code)
   }
@@ -172,7 +177,7 @@ class asum extends idealised.util.Tests {
   test("AMD kernel derived compiles to syntactically correct OpenCL code") {
     import OpenCL.SurfaceLanguage.DSL._
 
-    val amdDerived1 = fun(inputT)(input =>
+    val amdDerived1 = nFun(n => fun(inputT(n))(input =>
       input :>>
         split(4096 * 128) :>>
         mapWorkgroup(
@@ -183,11 +188,11 @@ class asum extends idealised.util.Tests {
               oclReduceSeq(fun(x => fun(a => abs(float2)(x) + a)), vectorize(2, 0.0f), OpenCL.PrivateMemory)
             ) >>> asScalar
         ) :>> join
-    )
+    ))
     val phrase = TypeInference(amdDerived1, Map()).convertToPhrase
-    val p = OpenCL.KernelGenerator.makeCode(phrase, localSize = 128, globalSize = N)
+    val N = Phrase.natParamsOfUncurriedFunction(phrase).head
+    val p = OpenCL.KernelGenerator.makeCode(localSize = 128, globalSize = N)(phrase)
     println(p.code)
     SyntaxChecker.checkOpenCL(p.code)
   }
-
 }

@@ -7,9 +7,12 @@ import lift.arithmetic._
 class DependentArrays extends idealised.util.Tests {
 
   test("Simple depMapSeq test") {
-    val f = fun(DepArrayType(SizeVar("N"), i => ArrayType(i + 1, int)))(array => depMapSeq(fun(x => mapSeq(fun(y => y + 1), x) ), array))
+    val f =
+      nFun(n =>
+        fun(DepArrayType(n, i =>
+          ArrayType(i + 1, int)))(array => depMapSeq(fun(x => mapSeq(fun(y => y + 1), x) ), array)))
 
-    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase, ?, ?)
+    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase)
 
     val code = p.code
     SyntaxChecker.checkOpenCL(code)
@@ -17,11 +20,13 @@ class DependentArrays extends idealised.util.Tests {
   }
 
   test("Nested dep arrays") {
-    val splitExample = fun(DepArrayType(SizeVar("N"), i => DepArrayType(4, j => ArrayType(i + 1, float))))(xs =>
-      xs :>> depMapSeq(fun(row => depMapSeq(fun(col => mapSeq(fun(x => x + 1.0f), col)), row)))
-    )
+    val splitExample =
+      nFun(n =>
+        fun(DepArrayType(n, i => DepArrayType(4, j => ArrayType(i + 1, float))))(xs =>
+          xs :>> depMapSeq(fun(row => depMapSeq(fun(col => mapSeq(fun(x => x + 1.0f), col)), row)))
+    ))
 
-    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(splitExample, Map()).toPhrase, ?, ?)
+    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(splitExample, Map()).toPhrase)
     val code = p.code
     SyntaxChecker.checkOpenCL(code)
     println(code)

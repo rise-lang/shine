@@ -23,7 +23,7 @@ object depMapSeq {
 
   def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] = fun(x => depMapSeq(f, x))
 
-  def apply(f: Expr[DataType -> DataType], x: DataExpr): DepMapSeq = DepMapSeq(dFun(_ => f), x, None)
+  def apply(f: Expr[DataType -> DataType], x: DataExpr): DepMapSeq = DepMapSeq(nFun(_ => f), x, None)
 }
 
 object mapSeq {
