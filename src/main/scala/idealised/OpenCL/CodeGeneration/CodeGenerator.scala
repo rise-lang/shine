@@ -24,9 +24,9 @@ object CodeGenerator {
     new CodeGenerator(mutable.ListBuffer[Decl](), immutable.Map[String, arithmetic.Range](), localSize, globalSize)
 }
 
-//TODO inject local and global size
 class CodeGenerator(override val decls: CCodeGenerator.Declarations,
                     override val ranges: CCodeGenerator.Ranges,
+                    //TODO Use information about sizes. Sizes are currently not used in the CodeGenerator.
                     localSize: Option[NDRange],
                     globalSize: Option[NDRange])
   extends CCodeGenerator(decls, ranges) {
