@@ -7,7 +7,6 @@ import idealised.DPIA.{->, Nat, NatIdentifier, `(nat)->`, freshName}
 import idealised.OpenCL
 import idealised.OpenCL.{BuiltInFunction, get_group_id, get_num_groups}
 import lift.arithmetic.{?, ContinuousRange, PosInf, RangeAdd}
-import opencl.generator.OclFunction
 
 final case class ParForNatWorkGroup(dim:Int)(override val n:Nat,
                                          override val i:NatIdentifier,

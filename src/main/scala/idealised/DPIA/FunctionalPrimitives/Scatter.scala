@@ -36,7 +36,7 @@ final case class Scatter(n: Nat,
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    `new`(dt"[$n.$dt]", idealised.OpenCL.GlobalMemory, λ(exp"[$n.$dt]" x acc"[$n.$dt]")(tmp =>
+    `new`(dt"[$n.$dt]", λ(exp"[$n.$dt]" x acc"[$n.$dt]")(tmp =>
       acc(this)(tmp.wr) `;` C(tmp.rd) ))
   }
 

@@ -5,7 +5,7 @@ import idealised.DPIA.ImperativePrimitives._
 import idealised.DPIA.Phrases.{VisitAndRebuild, _}
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised.OpenCL.ImperativePrimitives.OpenCLParFor
+import idealised.OpenCL.ImperativePrimitives.{OpenCLNew, OpenCLParFor}
 import idealised.OpenMP.ImperativePrimitives.ParForNat
 import idealised._
 
@@ -72,7 +72,7 @@ object HoistMemoryAllocations {
                   Visitor(ParForInfo(pf.parallelismLevel, Left(loopIndex), pf.n) :: parForInfos))
               case _ => throw new Exception("This should not happen")
             }
-          case New(_, addressSpace, Lambda(variable, body)) if addressSpace != OpenCL.PrivateMemory =>
+          case OpenCLNew(_, addressSpace, Lambda(variable, body))  if addressSpace != OpenCL.PrivateMemory =>
             Stop(
               replaceNew(addressSpace.asInstanceOf[idealised.OpenCL.AddressSpace],
                 variable, body)).asInstanceOf[Result[Phrase[T]]]

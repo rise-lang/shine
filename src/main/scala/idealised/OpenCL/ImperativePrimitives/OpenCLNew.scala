@@ -1,4 +1,4 @@
-package idealised.DPIA.ImperativePrimitives
+package idealised.OpenCL.ImperativePrimitives
 
 import idealised.DPIA.DSL.identifier
 import idealised.DPIA.Phrases._
@@ -6,15 +6,16 @@ import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA._
+import idealised.OpenCL.AddressSpace
 
 import scala.xml.Elem
 
-final case class New(dt: DataType,
-                     f: Phrase[VarType -> CommandType])
-  extends CommandPrimitive {
+final case class OpenCLNew(dt: DataType,
+                           addressSpace: AddressSpace,
+                           f: Phrase[VarType -> CommandType]) extends CommandPrimitive {
 
   override val `type`: CommandType =
-    (dt: DataType) -> /* (addressSpace: AddressSpace) -> */
+    (dt: DataType) -> (addressSpace: AddressSpace) ->
       (f :: t"var[$dt] -> comm") -> comm
 
   override def eval(s: Store): Store = {
@@ -25,13 +26,13 @@ final case class New(dt: DataType,
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {
-    New(fun(dt), VisitAndRebuild(f, fun))
+    OpenCLNew(fun(dt), addressSpace, VisitAndRebuild(f, fun))
   }
 
   override def prettyPrint: String = s"(new ${PrettyPhrasePrinter(f)})"
 
   override def xmlPrinter: Elem =
-    <new dt={ToString(dt)}>
+    <new dt={ToString(dt)} addressSpace={ToString(addressSpace)}>
       {Phrases.xmlPrinter(f)}
     </new>
 }

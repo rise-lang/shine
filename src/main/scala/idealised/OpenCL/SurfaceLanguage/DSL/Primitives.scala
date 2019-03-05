@@ -1,5 +1,6 @@
 package idealised.OpenCL.SurfaceLanguage.DSL
 
+import idealised.OpenCL.AddressSpace
 import idealised.OpenCL.SurfaceLanguage.Primitives._
 import idealised.SurfaceLanguage.DSL.{DataExpr, dFun, fun}
 import idealised.SurfaceLanguage.Types._
@@ -123,6 +124,24 @@ object toPrivate {
 
   def apply(f: Expr[DataType -> DataType], x: DataExpr): ToPrivate =
     ToPrivate(f, x)
+}
+
+object oclReduceSeq {
+  /* TODO how can we do this?
+  def apply(f: Expr[DataType -> (DataType -> DataType)]): Expr[DataType -> (DataType -> DataType)] =
+    fun((init, array) => reduceSeq(f, init, array))
+  */
+
+  def apply(f: Expr[DataType -> (DataType -> DataType)],
+            init: DataExpr,
+            initAddrSpace: AddressSpace): Expr[DataType -> DataType] =
+    fun(array => oclReduceSeq(f, init, initAddrSpace, array))
+
+  def apply(f: Expr[DataType -> (DataType -> DataType)],
+            init: DataExpr,
+            initAddrSpace: AddressSpace,
+            array: DataExpr): OpenCLReduceSeq =
+    OpenCLReduceSeq(f, init, initAddrSpace, array, None)
 }
 
 object oclFun {
