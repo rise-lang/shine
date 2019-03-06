@@ -2,7 +2,7 @@ pipelines:
   default:
     - step:
         name: "Build documentation"
-        image: sharelatex/sharelatex
+        image: blang/latex:ubuntu
         script:
           - (cd doc/latex; latexmk -pdf main.tex)
         artifacts:
