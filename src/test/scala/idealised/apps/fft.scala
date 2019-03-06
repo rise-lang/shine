@@ -7,10 +7,10 @@ import idealised.SurfaceLanguage.Semantics._
 import idealised.OpenMP.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.{->, Expr, LiteralExpr}
 import idealised.util.SyntaxChecker
-import lift.arithmetic.SizeVar
 
 class fft extends idealised.util.Tests {
 
+  /*
   def createStockhamIterationLambda(p: Int, LPrevIter: Int, N: Int): Expr[DataType -> DataType] = {
     val r = N / (LPrevIter * p)
 
@@ -21,9 +21,9 @@ class fft extends idealised.util.Tests {
     }))
 
     val reorderedB =
-      generate(LPrevIter, dFun(m => fun(IndexType(LPrevIter))(i =>
-        generate(p, dFun(n => fun(IndexType(p))(j =>
-          generate(p, dFun(_ => fun(IndexType(p))(k => {
+      generate(LPrevIter, nFun(m => fun(IndexType(LPrevIter))(i =>
+        generate(p, nFun(n => fun(IndexType(p))(j =>
+          generate(p, nFun(_ => fun(IndexType(p))(k => {
             val exponentWoMinus2 = (toNatIdentifier(j) * m + toNatIdentifier(i)) * toNatIdentifier(k) / (n * m)
             val exponent = LiteralExpr(DoubleData(-2.0)) * cast(double, LiteralExpr(IndexData(exponentWoMinus2)))
             tuple(cast(float, oclFun("cospi", double, double, exponent)),
@@ -64,14 +64,50 @@ class fft extends idealised.util.Tests {
           (-2.34314575050762, -5.65685424949238),
           (0.00000000000000, -8.00000000000000),
           (5.65685424949238, -13.65685424949238))
+  */
 
-  test("One-dimensional generator generates syntactically correct code in C.") {
+  test("Very simple one-dimensional generate generates syntactically correct code in C.") {
+    val id = fun(x => x)
+    val simpleGenerate = nFun(n => generate(fun(IndexType(n))(i => cast(double, i) + 1.0)) :>> mapSeq(id))
+    val program = idealised.C.ProgramGenerator.makeCode(TypeInference(simpleGenerate, Map()).convertToPhrase)
+
+    println(program.code)
+    SyntaxChecker(program.code)
+  }
+
+  test("Nat can be used as DataType inside of an expression in C.") {
+    val simpleGenerate = fun(NatType)(i => cast(double, i) + 1.0)
+    val program = idealised.C.ProgramGenerator.makeCode(TypeInference(simpleGenerate, Map()).convertToPhrase)
+
+    println(program.code)
+    SyntaxChecker(program.code)
+  }
+
+  test("Cast from IndexType(n:Nat) to Nat and plus operation generates syntactically correct code in C.") {
+    val simpleGenerate = nFun(n => fun(IndexType(n))(i => cast(NatType, i) + LiteralExpr(NatData(n))))
+    val program = idealised.C.ProgramGenerator.makeCode(TypeInference(simpleGenerate, Map()).convertToPhrase)
+
+    println(program.code)
+    SyntaxChecker(program.code)
+  }
+
+  test("Most simplistic generate, generates syntactically correct code in C.") {
+    val simpleGenerate = nFun(n => generate(fun(IndexType(n))(i => cast(int, cast(NatType, i)) + 1)))
+    val program = idealised.C.ProgramGenerator.makeCode(TypeInference(simpleGenerate, Map()).convertToPhrase)
+
+    println(program.code)
+    SyntaxChecker(program.code)
+  }
+
+  /*
+  test("One-dimensional generate generates syntactically correct code in C.") {
     val N = 8
 
     val add = fun(x => x._1 + x._2)
     val simpleMap = fun(ArrayType(N, double))(in =>
-      zip(in, generate(N, dFun(n => fun(IndexType(N))(i =>
+      zip(in, generate(N, nFun(n => fun(IndexType(N))(i =>
         foreignFun(double, "callCos", (double, "x"), "{ return cos(x); }",
+          //
           cast(double, LiteralExpr(IndexData(toNatIdentifier(i)+n))))
       )))) :>> mapSeq(add)
     )
@@ -83,15 +119,15 @@ class fft extends idealised.util.Tests {
     SyntaxChecker(program.code)
   }
 
-  test("Two-dimensional generator generates syntactically correct code in C.") {
+  test("Two-dimensional generate generates syntactically correct code in C.") {
     val M = 8
     val N = 8
 
     val add = fun(x => x._1 + x._2)
     val simpleMap = fun(ArrayType(M, ArrayType(N, double)))(in =>
       zip(in,
-        generate(M, dFun(m => fun(IndexType(M))(i =>
-          generate(N, dFun(n => fun(IndexType(N))(j =>
+        generate(M, nFun(m => fun(IndexType(M))(i =>
+          generate(N, nFun(n => fun(IndexType(N))(j =>
             foreignFun(double, "callCos", (double, "x"), "{ return cos(x); }",
               cast(double, LiteralExpr(IndexData(toNatIdentifier(j)+n))) *
                 cast(double, LiteralExpr(IndexData(toNatIdentifier(i)+m))))
@@ -108,9 +144,9 @@ class fft extends idealised.util.Tests {
 
   test("Program with tuple output and no tuple inputs, can be generated in C.") {
     val tuplz = fun(x => tuple(x, 1.0f))
-    val tupleOut = fun(ArrayType(SizeVar("N"), float))(xs =>
+    val tupleOut = nFun(n => fun(ArrayType(n, float))(xs =>
       xs :>> mapSeq(tuplz)
-    )
+    ))
 
     val phrase = TypeInference(tupleOut, Map()).convertToPhrase
     val program = idealised.C.ProgramGenerator.makeCode(phrase)
@@ -124,9 +160,9 @@ class fft extends idealised.util.Tests {
     val p = 2
 
     val reorderedB =
-      generate(LPrevIter, dFun(m => fun(IndexType(LPrevIter))(i =>
-        generate(p, dFun(n => fun(IndexType(p))(j =>
-          generate(p, dFun(_ => fun(IndexType(p))(k => {
+      generate(LPrevIter, nFun(m => fun(IndexType(LPrevIter))(i =>
+        generate(p, nFun(n => fun(IndexType(p))(j =>
+          generate(p, nFun(_ => fun(IndexType(p))(k => {
             val exponentWoMinus2 = (toNatIdentifier(j) * m + toNatIdentifier(i)) * toNatIdentifier(k) / (n * m)
             val exponent = LiteralExpr(DoubleData(-2.0)) * cast(double, LiteralExpr(IndexData(exponentWoMinus2)))
             tuple(cast(float, oclFun("cospi", double, double, exponent)),
@@ -170,5 +206,6 @@ class fft extends idealised.util.Tests {
     output.size shouldBe GOLD_STOCK_ITER_P2_LPREV4_N8.size
     for (i <- 0 until output.size) output(i) should be (GOLD_STOCK_ITER_P2_LPREV4_N8(i) +- 1e-13)
   }
+  */
   */
 }

@@ -68,6 +68,7 @@ package object DSL {
 
   implicit def toLiteralInt(i: Int): LiteralExpr = LiteralExpr(IntData(i))
   implicit def toLiteralFloat(f: Float): LiteralExpr = LiteralExpr(FloatData(f))
+  implicit def toLiteralDouble(d: Double): LiteralExpr = LiteralExpr(DoubleData(d))
   implicit def toLiteralFloatN(v: VectorData): LiteralExpr = LiteralExpr(v)
 
   implicit def toNatDependentLambda[T <: Type](p: Expr[T]): NatDependentLambdaExpr[T] =

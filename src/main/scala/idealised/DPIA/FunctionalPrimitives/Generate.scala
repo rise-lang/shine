@@ -11,30 +11,23 @@ import scala.xml.Elem
 
 final case class Generate(n: Nat,
                           dt: DataType,
-                          f : Phrase[`(nat)->`[ExpType -> ExpType]])
+                          f : Phrase[ExpType -> ExpType])
   extends ExpPrimitive {
 
-  override val `type`: ExpType = {
-    val l = f.t.x
+  override val `type`: ExpType =
     (n: Nat) -> (dt: DataType) ->
-      (f :: t"($l : nat) -> exp[${IndexType(n)}] -> exp[$dt]") ->
+      (f :: t"exp[${IndexType(n)}] -> exp[$dt]") ->
         exp"[$n.$dt]"
-  }
 
   def prettyPrint: String =
     s"${this.getClass.getSimpleName} (${PrettyPhrasePrinter(f)})"
 
-  override def xmlPrinter: Elem = {
-    val k = f match {
-      case NatDependentLambda(k_, _) => k_
-      case _ => throw new Exception("This should not happen")
-    }
+  override def xmlPrinter: Elem =
     <generate n={ToString(n)} dt={ToString(dt)}>
-      <f type={ToString(k -> (ExpType(IndexType(k)) -> ExpType(dt)))}>
+      <f type={ToString(ExpType(IndexType(n)) -> ExpType(dt))}>
        {Phrases.xmlPrinter(f)}
       </f>
     </generate>
-  }
 
   def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] =
     Generate(fun(n), fun(dt), VisitAndRebuild(f, fun))

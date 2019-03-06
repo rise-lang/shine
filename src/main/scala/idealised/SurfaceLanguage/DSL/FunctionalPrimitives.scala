@@ -9,7 +9,8 @@ import lift.arithmetic.NamedVar
 import scala.language.implicitConversions
 
 object generate {
-  def apply(n: Nat, f: Expr[`(nat)->`[DataType -> DataType]]): Generate = Generate(n, f)
+  // TODO use IndexType as input type
+  def apply(f: Expr[DataType -> DataType]): Generate = Generate(f)
 }
 
 object cast {

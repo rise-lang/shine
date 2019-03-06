@@ -250,10 +250,9 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             cont(C.AST.Cast(typ(dt), e)))
       }
 
-      case Generate(n, _, natl@NatDependentLambda(_, _)) => path match {
+      case Generate(n, _, lam@Lambda(_, _)) => path match {
         case (i : CIntExpr) :: ps =>
-          val evaledNatLam = Lifting.liftNatDependentFunction(natl)(n)
-          val evaledLam = Lifting.liftFunction(evaledNatLam)(Literal(IndexData(i, IndexType(n))))
+          val evaledLam = Lifting.liftFunction(lam)(Literal(IndexData(i, IndexType(n))))
           exp(evaledLam, env, ps, cont)
       }
 
@@ -413,7 +412,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     dt match {
       case b: idealised.DPIA.Types.BasicType => b match {
         case idealised.DPIA.Types.bool => C.AST.Type.int
-        case idealised.DPIA.Types.int => C.AST.Type.int
+        case idealised.DPIA.Types.int | idealised.DPIA.Types.NatType => C.AST.Type.int
         case idealised.DPIA.Types.float => C.AST.Type.float
         case idealised.DPIA.Types.double => C.AST.Type.double
         case _: idealised.DPIA.Types.IndexType => C.AST.Type.int
@@ -634,6 +633,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       d match {
         case i: IndexData =>
           C.AST.ArithmeticExpr(i.n)
+        case n: NatData =>
+          C.AST.ArithmeticExpr(n.n)
         case _: IntData | _: FloatData | _: DoubleData | _: BoolData =>
           C.AST.Literal(d.toString)
         case ArrayData(a) => d.dataType match {

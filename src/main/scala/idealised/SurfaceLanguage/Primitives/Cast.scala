@@ -35,6 +35,7 @@ final case class Cast(dt: BasicType, e: DataExpr, override val t: Option[DataTyp
 
   private def toDPIABasicType(bt: DataType): DPIA.Types.BasicType = {
     bt match {
+      case SurfaceLanguage.Types.NatType => DPIA.Types.NatType
       case SurfaceLanguage.Types.IndexType(n) => DPIA.Types.IndexType(n)
       case SurfaceLanguage.Types.bool => DPIA.Types.bool
       case SurfaceLanguage.Types.int => DPIA.Types.int

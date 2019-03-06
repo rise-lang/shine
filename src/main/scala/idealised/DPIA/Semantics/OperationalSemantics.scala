@@ -18,6 +18,7 @@ object OperationalSemantics {
         case idealised.SurfaceLanguage.Semantics.FloatData(f) => FloatData(f)
         case idealised.SurfaceLanguage.Semantics.DoubleData(f) => DoubleData(f)
         case idealised.SurfaceLanguage.Semantics.IndexData(n, t) => IndexData(n, IndexType(t.size))
+        case idealised.SurfaceLanguage.Semantics.NatData(n) => NatData(n)
         case idealised.SurfaceLanguage.Semantics.TupleData(t @_*) => RecordData( Data(t(0)), Data(t(1)) )
         case idealised.SurfaceLanguage.Semantics.ArrayData(a) => ArrayData(a.map(Data(_)).toVector)
         case idealised.SurfaceLanguage.Semantics.VectorData(v) => VectorData(v.map(Data(_)).toVector)
@@ -31,6 +32,7 @@ object OperationalSemantics {
     def apply(n: Nat): IndexData = IndexData(n, IndexType(n.max))
     // def apply(n: Nat): IndexData = IndexData(n, IndexType(n.max + 1))
   }
+  final case class NatData(n: Nat) extends Data(NatType)
   final case class BoolData(b: Boolean) extends Data(bool)
   final case class IntData(i: Int) extends Data(int) {
     override def toString: String = i.toString

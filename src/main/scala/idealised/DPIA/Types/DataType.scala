@@ -23,6 +23,8 @@ object float extends ScalarType { override def toString: String = "float" }
 
 object double extends ScalarType { override def toString: String = "double" }
 
+object NatType extends ScalarType { override def toString: String = "nat" }
+
 final case class IndexType(size: Nat) extends BasicType {
   override def toString: String = s"idx($size)"
 }
@@ -76,6 +78,7 @@ final case class DataTypeIdentifier(name: String) extends DataType {
 object ScalarType {
   implicit def apply(st: SurfaceLanguage.Types.ScalarType): ScalarType = {
     st match {
+      case SurfaceLanguage.Types.NatType => NatType
       case SurfaceLanguage.Types.bool => bool
       case SurfaceLanguage.Types.int => int
       case SurfaceLanguage.Types.float => float
