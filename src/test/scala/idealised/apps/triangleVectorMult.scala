@@ -153,17 +153,16 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
     import idealised.OpenCL._
     val actualN = inputSize
     val splitN = splitSize
-    val f: Expr[DataType -> (DataType -> DataType)] = {
+    val f: Expr[`(nat)->`[DataType -> (DataType -> DataType)]] = {
 
-      val N:ArithExpr = SizeVar("N")
       val SPLIT_SIZE = Cst(splitN)
-      fun(DepArrayType(N, i => ArrayType(i + 1, float)))(triangle =>
-        fun(ArrayType(N, float))(vector =>
+      nFun(n => fun(DepArrayType(n, i => ArrayType(i + 1, float)))(triangle =>
+        fun(ArrayType(n, float))(vector =>
           depMapWorkgroup.withIndex(nFun(rowIndex => fun(row =>
-            zip(pad(0, N - rowIndex - 1, 0.0f, row), vector) :>> split(SPLIT_SIZE) :>> mapLocal(reduceSeq(multSumAcc, 0.0f))
+            zip(pad(0, n - rowIndex - 1, 0.0f, row), vector) :>> split(SPLIT_SIZE) :>> mapLocal(reduceSeq(multSumAcc, 0.0f))
           )), triangle)
         )
-      )
+      ))
     }
 
     val kernel = idealised.OpenCL.KernelGenerator.makeCode(localSize, globalSize)(TypeInference(f, Map()).toPhrase)
@@ -171,9 +170,9 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
     val(inputMatrix, inputVector) = generateInputs(actualN)
     val scalaOutput = scalaMatrixVector(inputMatrix, inputVector)
 
-    val kernelFun = kernel.as[ScalaFunction `(` Array[Array[Float]] `,` Array[Float] `)=>` Array[Float]]
+    val kernelFun = kernel.as[ScalaFunction `(` Int `,` Array[Array[Float]] `,` Array[Float] `)=>` Array[Float]]
 
-    val (partialOutput, time) = kernelFun(inputMatrix `,` inputVector)
+    val (partialOutput, time) = kernelFun(actualN `,` inputMatrix `,` inputVector)
 
     val finalOutput = partialOutput.grouped(actualN/splitN).map(_.sum).toArray
 
