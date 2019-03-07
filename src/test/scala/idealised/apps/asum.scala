@@ -1,6 +1,7 @@
 package idealised.apps
 
-import idealised.DPIA.Phrases.Phrase
+import idealised.DPIA._
+import idealised.DPIA.Types.ExpType
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.NatIdentifier
 import idealised.SurfaceLanguage.Types._
@@ -20,7 +21,7 @@ class asum extends idealised.util.Tests {
   test("High level asum type inference works") {
     val typed = TypeInference(high_level, Map())
 
-    val N = Phrase.natParamsOfUncurriedFunction(typed.toPhrase).head
+    val N = typed.t.get.n
     assertResult(NatDependentFunctionType(N, FunctionType(inputT(N), float))) {
       typed.t.get
     }
@@ -106,8 +107,10 @@ class asum extends idealised.util.Tests {
             ) >>> asScalar
         ) :>> join
     ))
-    val phrase = TypeInference(intelDerivedNoWarp1, Map()).convertToPhrase
-    val N = Phrase.natParamsOfUncurriedFunction(phrase).head
+    val typed = TypeInference(intelDerivedNoWarp1, Map())
+    val phrase = typed.convertToPhrase
+    val N = typed.t.get.n
+    assert(N == phrase.t.asInstanceOf[`(nat)->`[ExpType]].n)
     val p = OpenCL.KernelGenerator.makeCode(localSize = 128, globalSize = N)(phrase)
     println(p.code)
     SyntaxChecker.checkOpenCL(p.code)
@@ -125,7 +128,7 @@ class asum extends idealised.util.Tests {
         ) :>> join
     ))
     val phrase = TypeInference(intelDerived2, Map()).convertToPhrase
-    val N = Phrase.natParamsOfUncurriedFunction(phrase).head
+    val N = phrase.t.asInstanceOf[`(nat)->`[ExpType]].n
     val p = OpenCL.KernelGenerator.makeCode(localSize = 128, globalSize = N)(phrase)
     println(p.code)
     SyntaxChecker.checkOpenCL(p.code)
@@ -146,7 +149,7 @@ class asum extends idealised.util.Tests {
         ) :>> join
     ))
     val phrase = TypeInference(nvidiaDerived1, Map()).convertToPhrase
-    val N = Phrase.natParamsOfUncurriedFunction(phrase).head
+    val N = phrase.t.asInstanceOf[`(nat)->`[ExpType]].n
     val p = OpenCL.KernelGenerator.makeCode(localSize = 128, globalSize = N)(phrase)
     println(p.code)
     SyntaxChecker.checkOpenCL(p.code)
@@ -168,7 +171,7 @@ class asum extends idealised.util.Tests {
         ) :>> join
     ))
     val phrase = TypeInference(amdNvidiaDerived2, Map()).convertToPhrase
-    val N = Phrase.natParamsOfUncurriedFunction(phrase).head
+    val N = phrase.t.asInstanceOf[`(nat)->`[ExpType]].n
     val p = OpenCL.KernelGenerator.makeCode(localSize = 128, globalSize = N)(phrase)
     println(p.code)
     SyntaxChecker.checkOpenCL(p.code)
@@ -190,7 +193,7 @@ class asum extends idealised.util.Tests {
         ) :>> join
     ))
     val phrase = TypeInference(amdDerived1, Map()).convertToPhrase
-    val N = Phrase.natParamsOfUncurriedFunction(phrase).head
+    val N = phrase.t.asInstanceOf[`(nat)->`[ExpType]].n
     val p = OpenCL.KernelGenerator.makeCode(localSize = 128, globalSize = N)(phrase)
     println(p.code)
     SyntaxChecker.checkOpenCL(p.code)
