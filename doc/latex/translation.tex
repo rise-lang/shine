@@ -1,0 +1,288 @@
+\subsection{Translation Stage I: Higher-order Functional to Higher-order Imperative}
+\label{sec:translation-i}
+
+The use of assignment at compound data types is defined by:
+\begin{displaymath}
+  \begin{array}{lcl}
+    A :=_{\num} E
+    &=& A := E \\
+    A :=_{N.\delta} E
+    &=& \prim{mapParI}~N~\delta~\delta~(\lambda x~a.a :=_\delta x)~E~A \\
+    A :=_{\delta_1 \times \delta_2} E
+    &=& \prim{pairAcc_1}~A :=_{\delta_1} \prim{fst}~E;
+        \prim{pairAcc_2}~A :=_{\delta_2} \prim{snd}~E
+  \end{array}
+\end{displaymath}
+
+It is important that these translations satisfy the following equivalences.
+{\small\begin{mathpar}
+  \semA{E}_\delta(A) \simeq A :=_\delta E
+
+  \semE{E}_\delta(C) \simeq C(E)
+\end{mathpar}}
+
+\begin{figure}[H]
+  \begin{minipage}{1.0\linewidth}
+    \begin{displaymath}
+      \begin{array}{lcl}
+        \semA{x}_\delta(A)
+        &=& A :=_\delta x \medskip\\
+        \semA{\underline{\ell}}_{\num}(A)
+        &=& A := \underline{\ell} \\
+        \semA{\prim{negate}~E}_{\num}(A)
+        &=& \semE{E}_{\num}(\lambda x.~A := \prim{negate}~x) \\
+        \semA{E_1 + E_2}_{\num}(A)
+        &=& \semE{E_1}_{\num}(\lambda x.~\semE{E_2}_{\num}(\lambda y.~A := x + y))\medskip\\
+
+        \semA{\prim{mapPar}~N~\delta_1~\delta_2~F~E}_{N.\delta_2}(A)
+        &=& \semE{E}_{N.\delta_1}(\lambda x.~\prim{mapParI}~N~\delta_1~\delta_2~(\lambda x~o. \semA{F~x}_{\delta_2}(o))~x~A) \\
+        \semA{\prim{mapSeq}~N~\delta_1~\delta_2~F~E}_{N.\delta_2}(A)
+        &=& \semE{E}_{N.\delta_1}(\lambda x.~\prim{mapSeqI}~N~\delta_1~\delta_2~(\lambda x~o. \semA{F~x}_{\delta_2}(o))~x~A) \\
+        \semA{\prim{reduceSeq}~N~\delta_1~\delta_2~F~I~E}_{\delta_2}(A)
+        &=& \begin{array}[t]{@{}l}
+              \semE{E}_{N.\delta_1}(\lambda x.~\semE{I}_{\delta_2}(\lambda y.\\
+              \quad\quad \prim{reduceSeqI}~N~\delta_1~\delta_2~(\lambda x~y~o. \semA{F~x~y}_{\delta_2}(o))~y~x~(\lambda r. \semA{r}(A))))
+            \end{array} \medskip\\
+
+        \semA{\prim{zip}~N~\delta_1~\delta_2~E_1~E_2}_{N.\delta_1\times\delta_2}(A)
+        &=& \semA{E_1}_{N.\delta_1}(\prim{zipAcc}_1~N~\delta_1~\delta_2~A);
+            \semA{E_2}_{N.\delta_2}(\prim{zipAcc}_2~N~\delta_1~\delta_2~A)
+        \\
+        \semA{\prim{split}~N~M~\delta~E}_{N.M.\delta}(A)
+        &=& \semA{E}_{NM.\delta}(\prim{splitAcc}~N~M~\delta~A)
+        \\
+        \semA{\prim{join}~N~M~\delta~E}_{NM.\delta}(A)
+        &=& \semA{E}_{N.M.\delta}(\prim{joinAcc}~N~M~\delta~A)
+        \\
+        \semA{\prim{pair}~\delta_1~\delta_2~E_1~E_2}_{\delta_1\times\delta_2}(A)
+        &=& \semA{E_1}_{\delta_1}(\prim{pairAcc_1}~\delta_1~\delta_2~A);
+            \semA{E_2}_{\delta_2}(\prim{pairAcc_2}~\delta_1~\delta_2~A)
+        \\
+        \semA{\prim{fst}~{\delta_1}~{\delta_2}~E}_{\delta_1}(A)
+        &=& \semE{E}_{\delta_1\times\delta_2}(\lambda x.~A :=_{\delta_1} \prim{fst}~{\delta_1}~{\delta_2}~x)
+        \\
+        \semA{\prim{snd}~{\delta_1}~{\delta_2}~E}_{\delta_2}(A)
+        &=& \semE{E}_{\delta_1\times\delta_2}(\lambda x.~A :=_{\delta_2} \prim{snd}~{\delta_1}~{\delta_2}~x)
+      \end{array}
+    \end{displaymath}
+    \subcaption{Acceptor-passing Translation}\label{fig:transone}
+  \end{minipage}
+  \begin{minipage}{1.0\linewidth}
+    \begin{displaymath}
+      \begin{array}{lcl}
+        \semE{x}_\delta(C)
+        &=& C(x)
+        \medskip\\
+        \semE{\underline{\ell}}_{\num}(C)
+        &=& C(\underline{\ell})
+        \\
+        \semE{\prim{negate}~E}_{\num}(C)
+        &=& \semE{E}_{\num}(\lambda x.~C(\prim{negate}~x))
+        \\
+        \semE{E_1 + E_2}_{\num}(C)
+        &=& \semE{E_1}_{\num}(\lambda x.~\semE{E_2}_{\num}(\lambda y.~C(x+y)~)~)
+        \medskip\\
+        \semE{\prim{mapPar}~N~\delta_1~\delta_2~F~E}_{N.\delta_2}(C)
+        &=& \prim{new}~(N.\delta_2)~(\lambda \mathit{tmp}.~\semA{\prim{mapPar}~N~\delta_1~\delta_2~F~E}_{N.\delta_2}(\mathit{tmp}.2);~C(\mathit{tmp}.1)~)
+        \\
+        \semE{\prim{mapSeq}~N~\delta_1~\delta_2~F~E}_{N.\delta_2}(C)
+        &=& \prim{new}~(N.\delta_2)~(\lambda \mathit{tmp}.~\semA{\prim{mapSeq}~N~\delta_1~\delta_2~F~E}_{N.\delta_2}(\mathit{tmp}.2);~C(\mathit{tmp}.1)~)
+        \\
+        \semE{\prim{reduceSeq}~N~\delta_1~\delta_2~F~I~E}_{\delta_2}(C)
+        &=& \begin{array}[t]{@{}l}
+              \semE{E}_{N.\delta_1}(\lambda x.~
+              \semE{I}_{\delta_2}(\lambda y.~\prim{reduceSeqI}~N~\delta_1~\delta_2~(\lambda x~y~o.~\semA{F~x~y}_{\delta_2}(o))~y~x)~C)
+            \end{array}
+        \medskip\\
+        \semE{\prim{zip}~N~\delta_1~\delta_2~E_1~E_2}_{N.\delta_1 \times \delta_2}(C)
+        &=& \semE{E_1}_{N.\delta_1}(\lambda x.~\semE{E_2}_{N.\delta_2}(\lambda y.~C(\prim{zip}~N~\delta_1~\delta_2~x~y)~)~)
+        \\
+        \semE{\prim{split}~N~M~\delta~E}_{N.M.\delta}(C)
+        &=& \semE{E}_{NM.\delta}(\lambda x.~C(\prim{split}~N~M~\delta~x)~)
+        \\
+        \semE{\prim{join}~N~M~\delta~E}_{NM.\delta}(C)
+        &=& \semE{E}_{N.M.\delta}(\lambda x.~C(\prim{join}~N~M~\delta~x)~)
+        \\
+        \semE{\prim{pair}~\delta_1~\delta_2~E_1~E_2}_{\delta_1\times\delta_2}(C)
+        &=& \semE{E_1}_{\delta_1}(\lambda x.~\semE{E_2}_{\delta_2}(\lambda y.~C(\prim{pair}~\delta_1~\delta_2~x~y)~)~)
+        \\
+        \semE{\prim{fst}~\delta_1~\delta_2~E}_{\delta_1}(C)
+        &=& \semE{E}_{\delta_1\times\delta_2}(\lambda x.~C(\prim{fst}~\delta_1~\delta_2~x)~)
+        \\
+        \semE{\prim{snd}~\delta_1~\delta_2~E}_{\delta_2}(C)
+        &=& \semE{E}_{\delta_1\times\delta_2}(\lambda x.~C(\prim{snd}~\delta_1~\delta_2~x)~)
+        \\
+      \end{array}
+    \end{displaymath}
+    \subcaption{Continuation-passing Translation}\label{fig:transtwo}
+  \end{minipage}
+  \caption{Acceptor and Continuation-passing Translations}
+\end{figure}
+
+\clearpage
+
+\subsection{Translation Stage II: Higher-order Imperative to For-loops}
+\label{sec:translation-ii}
+
+\newcommand{\ei}{\prim{idx}~n~\dtone~\mathit{xs}~i}
+\newcommand{\ea}{\prim{idxAcc}~n~\dttwo~\mathit{out}~i}
+
+\begin{displaymath}
+  \prim{mapParI}
+  =
+  \Lambda n~\dtone~\dttwo.\lambda f\,\mathit{xs}~\mathit{out}.~
+  \prim{parfor}~n~\dttwo~\mathit{out}~(\lambda i~o.~f\,(\ei)~o)
+\end{displaymath}
+\begin{displaymath}
+  \prim{mapSeqI}
+  =
+  \Lambda n~\dtone~\dttwo.\lambda f\,\mathit{xs}~\mathit{out}.~
+  \prim{for}~n~(\lambda~i.~f\,(\ei)~(\ea)\ )
+\end{displaymath}
+\begin{displaymath}
+  \prim{reduceSeqI}
+  =
+  \Lambda n~\dtone~\dttwo.\lambda f\,\mathit{init}~\mathit{xs}~c.~\prim{new}~\dttwo~(\lambda \mathit{acc}.~
+    \begin{array}[t]{@{}l}
+    \projtwo{acc} :=_{\dtone} \mathit{init};\\
+    \prim{for}~n~(\lambda i.~f\,(\ei)~(\projtwo{acc})~(\projone{acc})\ );\\
+    c~(\projone{acc})\ )
+    \end{array}
+\end{displaymath}
+
+\clearpage
+
+\subsection{Translation Stage III: For-loops to Parallel Pseudo-C}
+\label{sec:translation-iii}
+
+\newcommand{\codegenComm}[1]{\textsc{CodeGen}_{\mathsf{comm}}(#1)}
+\newcommand{\codegenAcc}[2]{\textsc{CodeGen}_{\mathsf{acc}[#1]}(#2)}
+\newcommand{\codegenExp}[2]{\textsc{CodeGen}_{\mathsf{exp}[#1]}(#2)}
+\newcommand{\codegenData}[1]{\textsc{CodeGen}_{\mathsf{\datatype}}(#1)}
+
+\begin{figure}[H]
+  \begin{minipage}{1.0\linewidth}
+    \begin{displaymath}
+      \begin{array}{l@{\hspace{0.4em}}c@{\hspace{0.4em}}l}
+        \codegenComm{\prim{skip}, \eta}
+        &=& \texttt{/* skip */}
+        \\
+        \codegenComm{P_1; P_2, \eta}
+        &=& \begin{array}[t]{@{}l}
+              \codegenComm{P_1, \eta}~\codegenComm{P_2, \eta}
+            \end{array}
+        \\
+        \codegenComm{A := E, \eta}
+        &=& \codegenAcc{\num}{A, \eta, []}\texttt{ = }\codegenExp{\num}{E, \eta, []}\texttt{;}
+        \\
+        \codegenComm{\prim{new}~\delta~(\lambda v.~P), \eta}
+        &=& \texttt{\{}~
+            \begin{array}[t]{@{}l}
+              \codegenData{\delta}~\texttt{v;} \\
+              \codegenComm{P[(v_a,v_e)/v], \eta[v_a \mapsto \texttt{v}, v_e \mapsto \texttt{v}]}\ \texttt{\}}
+            \end{array}
+        \\
+        \codegenComm{\prim{for}~n~(\lambda i.~P), \eta}
+        &=& \begin{array}[t]{@{}l}
+              \texttt{for(int i = 0; i < $n$; i += 1) \{} \\
+              \quad \codegenComm{P, \eta[i \mapsto \texttt{i}]} \ \texttt{\}}
+            \end{array}
+        \\
+        \codegenComm{\prim{parfor}~n~\delta~A~(\lambda i~o.~P)~E, \eta}
+        &=& \begin{array}[t]{@{}l}
+              \texttt{\#pragma omp parallel for}\\
+              \texttt{for(int i = 0; i < $n$; i += 1) \{ }\\
+              \quad \codegenComm{P[\prim{idxAcc}~n~\delta~A~i/o], \eta[i \mapsto \texttt{i}]}\ \texttt{\}}
+            \end{array}
+      \end{array}
+    \end{displaymath}
+    \subcaption{\DPIA commands to OpenMP C statements}\label{fig:codegen-comm}
+  \end{minipage}
+
+  \bigskip
+
+  \begin{minipage}{1.0\linewidth}
+    \begin{displaymath}
+      \begin{array}{@{}l@{~}c@{~}l@{}}
+        \codegenAcc{\delta}{x, \eta, \mathit{ps}}
+        &=& \eta(x)(\mathit{reverse}~\mathit{ps})
+        \\
+        \codegenAcc{\mathsf{\delta}}{\prim{idxAcc}~N~\delta~A~I, \eta, \mathit{ps}}
+        &=& \begin{array}[t]{@{}l}
+          \codegenAcc{N.\delta}{A, \eta,\\ \quad\codegenExp{\mathsf{idx}[n]}{I, \eta, []} :: \mathit{ps})}
+        \end{array}
+        \\
+        \codegenAcc{NM.\delta}{\prim{splitAcc}~N~M~\delta~A, \eta, \texttt{i} :: \mathit{ps}}
+        &=& \codegenAcc{N.M.\delta}{A, \eta, \texttt{i/}M :: \texttt{i\%}M :: \mathit{ps}}
+        \\
+        \codegenAcc{N.M.\delta}{\prim{joinAcc}~n~M~\delta~A, \eta, \texttt{i} :: \texttt{j} :: \mathit{ps}}
+        &=& \codegenAcc{NM.\delta}{A, \eta, \texttt{i*}M\texttt{+j} :: \mathit{ps}}
+        \\
+        \codegenAcc{\delta_1}{\prim{pairAcc_1}~\delta_1~\delta_2~A, \eta, \mathit{ps}}
+        &=& \codegenAcc{\delta_1\times\delta_2}{A, \eta, \texttt{.x1} :: \mathit{ps}}
+        \\
+        \codegenAcc{\delta_2}{\prim{pairAcc_2}~\delta_1~\delta_2~A, \eta, \mathit{ps}}
+        &=& \codegenAcc{\delta_1\times\delta_2}{A, \eta, \texttt{.x2} :: \mathit{ps}}
+        \\
+        \codegenAcc{N.\delta_1}{\prim{zipAcc_1}~N~\delta_1~\delta_2~A, \eta, \texttt{i} :: \mathit{ps}}
+        &=& \codegenAcc{N.(\delta_1\times\delta_2)}{A, \eta, \texttt{i} :: \texttt{.x1} :: \mathit{ps}}
+        \\
+        \codegenAcc{N.\delta_2}{\prim{zipAcc_2}~N~\delta_1~\delta_2~A, \eta, \texttt{i} :: \mathit{ps}}
+        &=& \codegenAcc{N.(\delta_1\times\delta_2)}{A, \eta, \texttt{i} :: \texttt{.x2} :: \mathit{ps}}
+      \end{array}
+    \end{displaymath}
+    \subcaption{\DPIA acceptors to C l-values}\label{fig:codegen-acc}
+  \end{minipage}
+
+  \bigskip
+
+  \begin{minipage}{1.0\linewidth}
+    \begin{displaymath}
+      \begin{array}{@{}l@{~}c@{~}l@{}}
+        \codegenExp{\delta}{x, \eta, \mathit{ps}}
+        &=& \eta(x)(\mathit{reverse}~\mathit{ps})
+        \\
+        \codegenExp{\num}{\underline{\ell}, \eta, []}
+        &=& \ell
+        \\
+        \codegenExp{\num}{\prim{negate}~E, \eta, []}
+        &=& \texttt{(}\texttt{-}~\codegenExp{\num}{E, \eta, []}\texttt{)}
+        \\
+        \codegenExp{\num}{E_1 + E_2, \eta, []}
+        &=& \texttt{(}
+        \begin{array}[t]{@{}l}
+          \codegenExp{\num}{E_1, \eta, []}\\
+          \texttt{+ }\codegenExp{\num}{E_2, \eta, []}\texttt{)}
+        \end{array}
+        \\
+        \codegenExp{N.(\delta_1 \times \delta_2)}{\prim{zip}~N~\delta_1~\delta_2~E_1~E_2, \eta, \texttt{i} :: \texttt{.x}j :: \mathit{ps}}
+        &=& \codegenExp{N.\delta_j}{E_j, \eta, \texttt{i} :: \mathit{ps}}
+        \\
+        \codegenExp{M.N.\delta}{\prim{split}~N~M~\delta~E, \eta, \texttt{i} :: \texttt{j} :: \mathit{ps}}
+        &=& \codegenExp{MN.\delta}{E, \eta, \texttt{i*}n\texttt{+j} :: \mathit{ps}}
+        \\
+        \codegenExp{MN.\delta}{\prim{join}~N~M~\delta~E, \eta, \texttt{i} :: \mathit{ps}}
+        &=& \codegenExp{M.N.\delta}{E, \eta, \texttt{i/}n :: \texttt{i\%}n :: \mathit{ps}}
+        \\
+        \codegenExp{\delta_1 \times \delta_2}{\prim{pair}~\delta_1~\delta_2~E_1~E_2, \eta, \texttt{.x}j :: \mathit{ps}}
+        &=& \codegenExp{\delta_j}{E_j, \eta, \mathit{ps}}
+        \\
+        \codegenExp{\delta_1}{\prim{fst}~\delta_1~\delta_2~E, \eta, \mathit{ps}}
+        &=& \codegenExp{\delta_1 \times \delta_2}{E, \eta, \texttt{.x1} :: \mathit{ps}}
+        \\
+        \codegenExp{\delta_2}{\prim{snd}~\delta_1~\delta_2~E, \eta, \mathit{ps}}
+        &=& \codegenExp{\delta_1 \times \delta_2}{E, \eta, \texttt{.x2} :: \mathit{ps}}
+        \\
+        \codegenExp{\delta}{\prim{idx}~N~\delta~E~I, \eta, \mathit{ps}}
+        &=&
+        \begin{array}[t]{@{}l}
+          \textsc{CodeGen}_{\mathsf{exp}[N.\delta]}(E, \eta,\\ \quad\codegenExp{\mathsf{idx}[N]}{I, \eta, []} :: \mathit{ps})
+        \end{array}
+      \end{array}
+    \end{displaymath}
+    \subcaption{\DPIA expressions to C r-values}\label{fig:codegen-exp}
+  \end{minipage}
+
+  \caption{Translation of Purely Imperative \DPIA to parallel OpenMP C}
+  \label{fig:codegen}
+\end{figure}
