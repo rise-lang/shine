@@ -7,7 +7,6 @@ import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
 import idealised.SurfaceLanguage
 
-//TODO it would be nice to allow e: Expr[BasicType] only
 final case class Cast(dt: BasicType, e: DataExpr, override val t: Option[DataType] = None)
   extends PrimitiveExpr
 {

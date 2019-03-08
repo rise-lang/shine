@@ -1,11 +1,9 @@
 package idealised.apps
 
-import idealised.OpenCL.SurfaceLanguage.DSL.oclFun
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage.Semantics._
-import idealised.OpenMP.SurfaceLanguage.DSL._
-import idealised.SurfaceLanguage.{->, Expr, LiteralExpr}
+import idealised.SurfaceLanguage.{LiteralExpr, NatExpr}
 import idealised.util.SyntaxChecker
 
 class fft extends idealised.util.Tests {
@@ -66,6 +64,39 @@ class fft extends idealised.util.Tests {
           (5.65685424949238, -13.65685424949238))
   */
 
+  test("Nat can be used as DataType inside of an expression in C.") {
+    val simpleGenerate = fun(NatType)(i => i + NatExpr(NatData(1)))
+    val program = idealised.C.ProgramGenerator.makeCode(TypeInference(simpleGenerate, Map()).convertToPhrase)
+
+    println(program.code)
+    SyntaxChecker(program.code)
+  }
+
+  test("Type inference for AsNat fails if not passed value of IndexType.") {
+    val simpleGenerate = fun(int)(i => asNat(i))
+
+    assertThrows[TypeInferenceException] {
+      TypeInference(simpleGenerate, Map())
+    }
+  }
+
+  test("AsNat and plus operation generates syntactically correct code in C.") {
+    val simpleGenerate = nFun(n => fun(IndexType(n))(i => asNat(i) + NatExpr(NatData(n))))
+    val program = idealised.C.ProgramGenerator.makeCode(TypeInference(simpleGenerate, Map()).convertToPhrase)
+
+    println(program.code)
+    SyntaxChecker(program.code)
+  }
+
+  test("Nat is implicitly converted to NatExpr in an expression.") {
+    //TODO make asNat(i: IdentifierExpr) implicit? This would then fail for every IdentifierExpr not of type IndexType
+    val simpleGenerate = nFun(n => fun(IndexType(n))(i => asNat(i) + n))
+    val program = idealised.C.ProgramGenerator.makeCode(TypeInference(simpleGenerate, Map()).convertToPhrase)
+
+    println(program.code)
+    SyntaxChecker(program.code)
+  }
+
   test("Very simple one-dimensional generate generates syntactically correct code in C.") {
     val id = fun(x => x)
     val simpleGenerate = nFun(n => generate(fun(IndexType(n))(i => cast(double, i) + 1.0)) :>> mapSeq(id))
@@ -75,42 +106,26 @@ class fft extends idealised.util.Tests {
     SyntaxChecker(program.code)
   }
 
-  test("Nat can be used as DataType inside of an expression in C.") {
-    val simpleGenerate = fun(NatType)(i => cast(double, i) + 1.0)
+  test("Very simplistic generate, using index and maximum index size" +
+    "generates syntactically correct code in C.") {
+    val id = fun(x => x)
+    val simpleGenerate =
+      nFun(n => generate(fun(IndexType(n))(i => asNat(i) + n)) :>> mapSeq(id))
     val program = idealised.C.ProgramGenerator.makeCode(TypeInference(simpleGenerate, Map()).convertToPhrase)
 
     println(program.code)
     SyntaxChecker(program.code)
   }
 
-  test("Cast from IndexType(n:Nat) to Nat and plus operation generates syntactically correct code in C.") {
-    val simpleGenerate = nFun(n => fun(IndexType(n))(i => cast(NatType, i) + LiteralExpr(NatData(n))))
-    val program = idealised.C.ProgramGenerator.makeCode(TypeInference(simpleGenerate, Map()).convertToPhrase)
-
-    println(program.code)
-    SyntaxChecker(program.code)
-  }
-
-  test("Most simplistic generate, generates syntactically correct code in C.") {
-    val simpleGenerate = nFun(n => generate(fun(IndexType(n))(i => cast(int, cast(NatType, i)) + 1)))
-    val program = idealised.C.ProgramGenerator.makeCode(TypeInference(simpleGenerate, Map()).convertToPhrase)
-
-    println(program.code)
-    SyntaxChecker(program.code)
-  }
-
-  /*
   test("One-dimensional generate generates syntactically correct code in C.") {
-    val N = 8
-
     val add = fun(x => x._1 + x._2)
-    val simpleMap = fun(ArrayType(N, double))(in =>
-      zip(in, generate(N, nFun(n => fun(IndexType(N))(i =>
-        foreignFun(double, "callCos", (double, "x"), "{ return cos(x); }",
-          //
-          cast(double, LiteralExpr(IndexData(toNatIdentifier(i)+n))))
-      )))) :>> mapSeq(add)
-    )
+    val simpleMap = nFun(n => fun(ArrayType(n, double))(in =>
+      zip(in,
+        generate(fun(IndexType(n))(i =>
+          foreignFun(double, "callCos", (double, "x"), "{ return cos(x); }",
+            cast(double, cast(NatType, i) + NatExpr(NatData(n)))))
+      )) :>>
+        mapSeq(add)))
 
     val phrase = TypeInference(simpleMap, Map()).convertToPhrase
     val program = idealised.C.ProgramGenerator.makeCode(phrase)
@@ -120,18 +135,18 @@ class fft extends idealised.util.Tests {
   }
 
   test("Two-dimensional generate generates syntactically correct code in C.") {
-    val M = 8
-    val N = 8
+    val m = 8
+    val n = 8
 
     val add = fun(x => x._1 + x._2)
-    val simpleMap = fun(ArrayType(M, ArrayType(N, double)))(in =>
+    val simpleMap = fun(ArrayType(m, ArrayType(n, double)))(in =>
       zip(in,
-        generate(M, nFun(m => fun(IndexType(M))(i =>
-          generate(N, nFun(n => fun(IndexType(N))(j =>
+        generate(fun(IndexType(m))(i =>
+          generate(fun(IndexType(n))(j =>
             foreignFun(double, "callCos", (double, "x"), "{ return cos(x); }",
-              cast(double, LiteralExpr(IndexData(toNatIdentifier(j)+n))) *
-                cast(double, LiteralExpr(IndexData(toNatIdentifier(i)+m))))
-            )))))))
+              cast(double, cast(NatType, j) + NatExpr(NatData(n)) *
+                cast(NatType, i) + NatExpr(NatData(m))))
+            )))))
         :>> mapSeq(fun(t => zip(t._1, t._2) :>> mapSeq(add)))
     )
 
@@ -144,16 +159,18 @@ class fft extends idealised.util.Tests {
 
   test("Program with tuple output and no tuple inputs, can be generated in C.") {
     val tuplz = fun(x => tuple(x, 1.0f))
-    val tupleOut = nFun(n => fun(ArrayType(n, float))(xs =>
-      xs :>> mapSeq(tuplz)
-    ))
+    val id = fun(x => x)
+    val tupleOut = fun(ArrayType(8, TupleType(float, float)))(xs =>
+      xs :>> mapSeq(id)
+    )
 
     val phrase = TypeInference(tupleOut, Map()).convertToPhrase
-    val program = idealised.C.ProgramGenerator.makeCode(phrase)
+    val program = idealised.OpenCL.KernelGenerator.makeCode(phrase)
     println(program.code)
-    SyntaxChecker(program.code)
+    SyntaxChecker.checkOpenCL(program.code)
   }
 
+  /*
   test("Correct code for complex Generate can be generated in C.") {
     val N = 8
     val LPrevIter = 1

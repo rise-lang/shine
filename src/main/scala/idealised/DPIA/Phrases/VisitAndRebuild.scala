@@ -60,6 +60,9 @@ object VisitAndRebuild {
             case _ => Literal(d)
           }
 
+          //TODO check whether anything needs to be visited
+          case NatArith(n) => NatArith(n)
+
           case UnaryOp(op, x) => UnaryOp(op, apply(x, v))
 
           case BinOp(op, lhs, rhs) => BinOp(op, apply(lhs, v), apply(rhs, v))

@@ -21,7 +21,6 @@ object fun {
     LambdaExpr(p1, LambdaExpr(p2, f(p1, p2)))
   }
 
-  // TODO make generic for dt
   def apply[T <: Type](dt: DataType)
                       (f: IdentifierExpr => Expr[T]): Expr[DataType -> T] = {
     val param = identifier(newName(), dt)

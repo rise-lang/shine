@@ -71,6 +71,8 @@ package object DSL {
   implicit def toLiteralDouble(d: Double): LiteralExpr = LiteralExpr(DoubleData(d))
   implicit def toLiteralFloatN(v: VectorData): LiteralExpr = LiteralExpr(v)
 
+  implicit def toNatExprNat(n: Nat): NatExpr = NatExpr(NatData(n))
+
   implicit def toNatDependentLambda[T <: Type](p: Expr[T]): NatDependentLambdaExpr[T] =
     nFun(_ => p)
 
@@ -79,10 +81,12 @@ package object DSL {
     def asNatIdentifier(withUpperBound: Nat): Nat = NamedVar(i.name, ContinuousRange(0, withUpperBound))
   }
 
+  /*
   def toNatIdentifier(i: IdentifierExpr): NamedVar = i.t match {
     case Some(IndexType(n)) => NamedVar(i.name, ContinuousRange(0, n))
     case _ => throw new Exception(s"Couldn't convert identifier ${i.name} with type ${i.t} to Nat.")
   }
+  */
 
   implicit class NatExtensions(n: Nat) {
     def asExpr = LiteralExpr(IndexData(n))

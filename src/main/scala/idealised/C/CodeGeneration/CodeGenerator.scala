@@ -224,6 +224,11 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error(s"Unexpected: $n $path")
       })
 
+      case Phrases.NatArith(n) => cont(path match {
+        case Nil => C.AST.ArithmeticExpr(n.n)
+        case _ => error(s"Expected the path to be empty.")
+      })
+
       case uop@UnaryOp(op, e) => uop.t.dataType match {
         case _: ScalarType => path match {
           case Nil => exp(e, env, Nil, e =>
@@ -249,6 +254,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           exp(e, env, Nil, e =>
             cont(C.AST.Cast(typ(dt), e)))
       }
+
+      case AsNat(_, e) => exp(e, env, path, cont)
 
       case Generate(n, _, lam@Lambda(_, _)) => path match {
         case (i : CIntExpr) :: ps =>
@@ -633,8 +640,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       d match {
         case i: IndexData =>
           C.AST.ArithmeticExpr(i.n)
-        case n: NatData =>
-          C.AST.ArithmeticExpr(n.n)
         case _: IntData | _: FloatData | _: DoubleData | _: BoolData =>
           C.AST.Literal(d.toString)
         case ArrayData(a) => d.dataType match {

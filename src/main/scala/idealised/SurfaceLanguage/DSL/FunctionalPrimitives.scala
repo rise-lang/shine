@@ -9,8 +9,11 @@ import lift.arithmetic.NamedVar
 import scala.language.implicitConversions
 
 object generate {
-  // TODO use IndexType as input type
   def apply(f: Expr[DataType -> DataType]): Generate = Generate(f)
+}
+
+object asNat {
+  def apply(e: DataExpr): AsNat = AsNat(e)
 }
 
 object cast {
@@ -18,7 +21,6 @@ object cast {
 }
 
 object depMapSeq {
-
   def withIndex(f: Expr[`(nat)->`[DataType -> DataType]]): Expr[DataType -> DataType] = fun(x => withIndex(f,x))
   def withIndex(f: Expr[`(nat)->`[DataType -> DataType]], x:DataExpr): DepMapSeq= DepMapSeq(f, x, None)
 

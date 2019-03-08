@@ -19,8 +19,6 @@ final case class FloatData(f: Float) extends ScalarData(float)
 
 final case class DoubleData(d: Double) extends ScalarData(double)
 
-final case class NatData(n: Nat) extends ScalarData(NatType)
-
 final case class IndexData(n: Nat, indexType: IndexType) extends Data(indexType)
 
 object IndexData {
@@ -28,3 +26,6 @@ object IndexData {
 }
 
 final case class VectorData(v: Seq[ScalarData]) extends Data(VectorType(v.length, v.head.dataType))
+
+//TODO where should this go? This is describing a value of type DataType, but is not allowed to be passed to LiteralExpr for example
+final case class NatData(n: Nat)
