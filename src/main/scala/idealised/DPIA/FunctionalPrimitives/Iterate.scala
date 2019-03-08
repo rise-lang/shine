@@ -19,7 +19,7 @@ final case class Iterate(n: Nat,
   extends ExpPrimitive {
 
   override val `type`: ExpType = {
-    val l = f.t.x
+    val l = f.t.n
     (n: Nat) -> (m: Nat) -> (k: Nat) -> (dt: DataType) ->
       (f :: t"($l : nat) -> exp[$l.$dt] -> exp[${l /^ n}.$dt]") ->
       (array :: exp"[$m.$dt]") -> exp"[${m /^ n.pow(k)}.$dt]"

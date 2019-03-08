@@ -1,17 +1,16 @@
 package idealised.apps
 
-import idealised.OpenCL.SurfaceLanguage.DSL.{oclReduceSeq, depMapGlobal, toGlobal, toPrivate, mapLocal, depMapWorkgroup}
+import idealised.OpenCL.SurfaceLanguage.DSL.{oclReduceSeq, depMapGlobal, toGlobal, mapLocal, depMapWorkgroup}
 import idealised.OpenMP.SurfaceLanguage.DSL.depMapPar
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
 import idealised.OpenCL._
 import idealised.util.SyntaxChecker
-import lift.arithmetic.{?, ArithExpr, Cst, SizeVar}
+import lift.arithmetic.{ArithExpr, Cst, SizeVar}
 import opencl.executor.Executor
 
 import scala.language.{implicitConversions, postfixOps}
-import scala.util.Random
 
 class triangleVectorMult extends idealised.util.TestsWithExecutor {
   val mult = fun(x => x._1 * x._2)
@@ -58,7 +57,6 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
     )
 
   def generateInputs(n:Int):(Array[Array[Float]], Array[Float]) = {
-    val rng = new Random()
     val inputVector = Array.tabulate(n)(id => id + 1.0f)
     val inputMatrix = Array.tabulate(n)(rowIndex => Array.tabulate(rowIndex + 1)(colIndex => if (rowIndex == colIndex) 1.0f else 0.0f))
 
@@ -75,7 +73,7 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
 
   def scalaMultSumAcc(acc:Float, item:(Float,Float)):Float = acc + (item._1 * item._2)
 
-  def scalaMatrixVector(matrix:Array[Array[Float]], vector:Array[Float]) = {
+  def scalaMatrixVector(matrix:Array[Array[Float]], vector:Array[Float]): Array[Float] = {
     matrix.map(row => row.zip(vector.take(row.length)).foldLeft(0.0f)(scalaMultSumAcc))
   }
 
@@ -106,7 +104,7 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
   }
 
   test("Basic sequential triangle vector multiplication compiles to syntactically correct OpenCL") {
-    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(triangleVectorMultSeqOpenCL, Map()).toPhrase, ?, ?)
+    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(triangleVectorMultSeqOpenCL, Map()).toPhrase)
     println(p.code)
     SyntaxChecker.checkOpenCL(p.code)
   }
@@ -123,7 +121,7 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
     val actualN = inputSize
     val f = triangleVectorMultGlobalFused(actualN)
 
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase, localSize, globalSize)
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(localSize, globalSize)(TypeInference(f, Map()).toPhrase)
     //println(kernel.code)
 
     val(inputMatrix, inputVector) = generateInputs(actualN)
@@ -155,27 +153,26 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
     import idealised.OpenCL._
     val actualN = inputSize
     val splitN = splitSize
-    val f: Expr[DataType -> (DataType -> DataType)] = {
+    val f: Expr[`(nat)->`[DataType -> (DataType -> DataType)]] = {
 
-      val N:ArithExpr = SizeVar("N")
       val SPLIT_SIZE = Cst(splitN)
-      fun(DepArrayType(N, i => ArrayType(i + 1, float)))(triangle =>
-        fun(ArrayType(N, float))(vector =>
-          depMapWorkgroup.withIndex(dFun(rowIndex => fun(row =>
-            zip(pad(0, N - rowIndex - 1, 0.0f, row), vector) :>> split(SPLIT_SIZE) :>> mapLocal(reduceSeq(multSumAcc, 0.0f))
+      nFun(n => fun(DepArrayType(n, i => ArrayType(i + 1, float)))(triangle =>
+        fun(ArrayType(n, float))(vector =>
+          depMapWorkgroup.withIndex(nFun(rowIndex => fun(row =>
+            zip(pad(0, n - rowIndex - 1, 0.0f, row), vector) :>> split(SPLIT_SIZE) :>> mapLocal(reduceSeq(multSumAcc, 0.0f))
           )), triangle)
         )
-      )
+      ))
     }
 
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase, localSize, globalSize)
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(localSize, globalSize)(TypeInference(f, Map()).toPhrase)
 
     val(inputMatrix, inputVector) = generateInputs(actualN)
     val scalaOutput = scalaMatrixVector(inputMatrix, inputVector)
 
-    val kernelFun = kernel.as[ScalaFunction `(` Array[Array[Float]] `,` Array[Float] `)=>` Array[Float]]
+    val kernelFun = kernel.as[ScalaFunction `(` Int `,` Array[Array[Float]] `,` Array[Float] `)=>` Array[Float]]
 
-    val (partialOutput, time) = kernelFun(inputMatrix `,` inputVector)
+    val (partialOutput, time) = kernelFun(actualN `,` inputMatrix `,` inputVector)
 
     val finalOutput = partialOutput.grouped(actualN/splitN).map(_.sum).toArray
 
@@ -201,7 +198,7 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
   }
 
   test("Parallel triangle vector multiplication with global threads compiles to syntactically correct OpenCL") {
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(triangleVectorMultGlobal, Map()).toPhrase, ?, ?)
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(triangleVectorMultGlobal, Map()).toPhrase)
     SyntaxChecker.checkOpenCL(kernel.code)
   }
 }
