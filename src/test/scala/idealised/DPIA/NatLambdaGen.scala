@@ -14,10 +14,8 @@ class NatLambdaGen extends idealised.util.TestsWithExecutor {
 
   test("Generate code for top-level nat-dependent lambdas in OpenCL") {
     val natDepProg =
-      nFun(x =>
-        nFun(y =>
-          nFun(n =>
-            fun(ArrayType(n, float))(in => in :>> split(x) :>> map(split(y)) :>> mapGlobal(mapSeq(mapSeq(id)))))))
+      nFun((x, y, n) =>
+        fun(ArrayType(n, float))(in => in :>> split(x) :>> map(split(y)) :>> mapGlobal(mapSeq(mapSeq(id)))))
 
     val compiledProg =
       idealised.OpenCL.KernelGenerator.makeCode(8, 32)(TypeInference(natDepProg, Map()).toPhrase)
@@ -27,11 +25,9 @@ class NatLambdaGen extends idealised.util.TestsWithExecutor {
 
   test("Generate code for top-level nat-dependent lambdas in C") {
    val natDepProg =
-    nFun(x =>
-      nFun(y =>
-        nFun(n =>
-          fun(ArrayType(n, float))(in => in :>> split(x) :>> map(split(y)) :>>
-            mapSeq(mapSeq(mapSeq(id))) :>> join() :>> join))))
+    nFun((x, y, n) =>
+      fun(ArrayType(n, float))(in => in :>> split(x) :>> map(split(y)) :>>
+        mapSeq(mapSeq(mapSeq(id))) :>> join() :>> join))
 
     val compiledProg =
       idealised.C.ProgramGenerator.makeCode(TypeInference(natDepProg, Map()).toPhrase)
@@ -41,11 +37,9 @@ class NatLambdaGen extends idealised.util.TestsWithExecutor {
 
   test("Generate code for top-level nat-dependent lambdas in OpenMP") {
    val natDepProg =
-     nFun(n =>
-       nFun(x =>
-         nFun(y =>
+     nFun((n, x, y) =>
            fun(ArrayType(n, float))(in =>
-             in :>> split(x) :>> map(split(y)) :>> mapPar(mapSeq(mapSeq(id)))))))
+             in :>> split(x) :>> map(split(y)) :>> mapPar(mapSeq(mapSeq(id)))))
 
     val compiledProg =
       idealised.OpenMP.ProgramGenerator.makeCode(TypeInference(natDepProg, Map()).toPhrase)
@@ -57,9 +51,8 @@ class NatLambdaGen extends idealised.util.TestsWithExecutor {
     val id = fun(x => x)
 
     val tile =
-      nFun(rows =>
-        nFun(columns =>
-          map(map(transpose()) o split(columns) o transpose()) o split(rows)))
+      nFun((rows, columns) =>
+          map(map(transpose()) o split(columns) o transpose()) o split(rows))
 
     //val untile2D = join() o map(map(join()) o transposeW())
 

@@ -1,5 +1,6 @@
 package idealised.SurfaceLanguage.DSL
 
+import idealised.SurfaceLanguage
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
 import lift.arithmetic.NamedVar
@@ -30,7 +31,42 @@ object fun {
 }
 
 object nFun {
-  def apply[T <: Type](f: NamedVar => Expr[T]): NatDependentLambdaExpr[T] = {
+  def apply[T <: Type](f: (NatIdentifier, NatIdentifier, NatIdentifier, NatIdentifier, NatIdentifier) => Expr[T])
+                                                    : Expr[`(nat)->`[`(nat)->`[`(nat)->`[`(nat)->`[`(nat)->`[T]]]]]] = {
+    val p1 = NamedVar(newName())
+    val p2 = NamedVar(newName())
+    val p3 = NamedVar(newName())
+    val p4 = NamedVar(newName())
+    val p5 = NamedVar(newName())
+    NatDependentLambdaExpr(p1, NatDependentLambdaExpr(p2,
+      NatDependentLambdaExpr(p3, NatDependentLambdaExpr(p4, NatDependentLambdaExpr(p5, f(p1, p2, p3, p4, p5))))))
+  }
+
+  def apply[T <: Type](f: (NatIdentifier, NatIdentifier, NatIdentifier, NatIdentifier) => Expr[T])
+                                                              : Expr[`(nat)->`[`(nat)->`[`(nat)->`[`(nat)->`[T]]]]] = {
+    val p1 = NamedVar(newName())
+    val p2 = NamedVar(newName())
+    val p3 = NamedVar(newName())
+    val p4 = NamedVar(newName())
+    NatDependentLambdaExpr(p1, NatDependentLambdaExpr(p2,
+      NatDependentLambdaExpr(p3, NatDependentLambdaExpr(p4, f(p1, p2, p3, p4)))))
+  }
+
+  def apply[T <: Type](f: (NatIdentifier, NatIdentifier, NatIdentifier) => Expr[T])
+                                                     : Expr[`(nat)->`[`(nat)->`[`(nat)->`[T]]]] = {
+    val p1 = NamedVar(newName())
+    val p2 = NamedVar(newName())
+    val p3 = NamedVar(newName())
+    NatDependentLambdaExpr(p1, NatDependentLambdaExpr(p2, NatDependentLambdaExpr(p3, f(p1, p2, p3))))
+  }
+
+  def apply[T <: Type](f: (NatIdentifier, NatIdentifier) => Expr[T]): Expr[`(nat)->`[`(nat)->`[T]]] = {
+    val p1 = NamedVar(newName())
+    val p2 = NamedVar(newName())
+    NatDependentLambdaExpr(p1, NatDependentLambdaExpr(p2, f(p1, p2)))
+  }
+
+  def apply[T <: Type](f: NatIdentifier => Expr[T]): NatDependentLambdaExpr[T] = {
     val x = NamedVar(newName())
     NatDependentLambdaExpr(x, f(x))
   }
