@@ -146,7 +146,7 @@ object ProgramGenerator {
     val paramTypeDecls = mutable.Set[Decl]()
     params.foreach(_.visitAndRebuild(visitor(paramTypeDecls)))
 
-    allocTypeDecls.toSeq ++ paramTypeDecls.toSeq
+    (allocTypeDecls ++ paramTypeDecls).toSeq
   }
 
   private def getDataType(i: Identifier[_]): DataType = {
