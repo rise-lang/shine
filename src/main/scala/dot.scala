@@ -1,6 +1,6 @@
 
-import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.OpenCL._
+import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
@@ -25,7 +25,7 @@ object dot extends App {
   def printOpenCLKernel1(name: String, expr: Expr[DataType -> (DataType -> DataType)]): Unit = {
     println(s"-- $name --")
 
-    val kernel = KernelGenerator.makeCode(TypeInference(expr, Map()).toPhrase, localSize = 128, globalSize = N)
+    val kernel = KernelGenerator.makeCode(localSize = 128, globalSize = N)(TypeInference(expr, Map()).toPhrase)
     println(kernel.code)
 
     val fun = kernel.as[ScalaFunction `(` Array[Float] `,` Array[Float] `)=>` Array[Float]]
@@ -52,7 +52,7 @@ object dot extends App {
 
   def printOpenCLKernel2(name: String, expr: Expr[DataType -> DataType]): Unit = {
     println(s"-- $name --")
-    val kernel = KernelGenerator.makeCode(TypeInference(expr, Map()).toPhrase, localSize = 128, globalSize = N)
+    val kernel = KernelGenerator.makeCode(localSize = 128, globalSize = N)(TypeInference(expr, Map()).toPhrase)
     println(kernel.code)
 
     val fun = kernel.as[ScalaFunction `(` Array[Float] `)=>` Array[Float]]

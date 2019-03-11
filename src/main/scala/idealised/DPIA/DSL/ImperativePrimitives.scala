@@ -2,10 +2,9 @@ package idealised.DPIA.DSL
 
 import idealised.DPIA.FunctionalPrimitives.{Fst, Snd}
 import idealised.DPIA.ImperativePrimitives._
-import idealised.DPIA.Phrases.{Identifier, IfThenElse, NatDependentLambda, Phrase}
+import idealised.DPIA.Phrases.{Identifier, IfThenElse, Phrase}
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import lift.arithmetic.{NamedVar, RangeAdd}
 
 object `new` {
   def apply(dt: DataType,

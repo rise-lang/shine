@@ -6,9 +6,9 @@ import idealised.SurfaceLanguage.Types._
 
 package object DSL {
   val reorderWithStride: Expr[`(nat)->`[DataType -> DataType]] = {
-    dFun((s: Nat) => {
+    nFun(s => {
       val f =
-        dFun((n: Nat) =>
+        nFun(n =>
           fun(IndexType(n))(i => {
             val j = i asNatIdentifier (withUpperBound = n)
             (j / (n /^ s)) + s * (j % (n /^ s)) asExpr (withType = IndexType(n))
