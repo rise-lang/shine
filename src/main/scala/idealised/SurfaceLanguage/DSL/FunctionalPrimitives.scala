@@ -26,7 +26,7 @@ object depMapSeqUnroll {
 
   def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] = fun(x => depMapSeqUnroll(f, x))
 
-  def apply(f: Expr[DataType -> DataType], x: DataExpr): DepMapSeqUnroll = DepMapSeqUnroll(dFun(_ => f), x, None)
+  def apply(f: Expr[DataType -> DataType], x: DataExpr): DepMapSeqUnroll = DepMapSeqUnroll(nFun(_ => f), x, None)
 }
 
 

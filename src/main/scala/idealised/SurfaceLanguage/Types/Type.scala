@@ -20,7 +20,7 @@ final case class ArrayType(size: Nat, elemType: DataType) extends ComposedType {
 }
 
 final case class DepArrayType(size:Nat, elemType: `(nat)->dt`) extends ComposedType {
-  override def toString: String = s"$size.${elemType.x} -> ${elemType.t}"
+  override def toString: String = s"$size.${elemType.n} -> ${elemType.t}"
 }
 
 object DepArrayType {

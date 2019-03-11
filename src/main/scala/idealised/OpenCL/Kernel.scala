@@ -59,11 +59,9 @@ case class Kernel(decls: Seq[C.AST.Decl],
       val kernelJNI = opencl.executor.Kernel.create(c, kernel.name, "")
 
       List(localSize match {
-        case ? => Some("OpenCL local size not specified\n")
         case x if !x.isEvaluable => Some(s"OpenCL local size is not evaluable (currently set to $x)")
-        case x => None
+        case _ => None
       }, globalSize match {
-        case ? => Some("OpenCL global size ot specified\n")
         case x if !x.isEvaluable => Some(s"OpenCL local size is not evaluable (currently set to $x)")
         case _ => None
       }).filter(_.isDefined).map(_.get) match {

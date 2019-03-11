@@ -79,8 +79,8 @@ class Pad extends idealised.util.Tests {
     val f = fun(ArrayType(N, ArrayType(M, float)))(xs => xs :>> pad2D(M, Cst(padAmount), Cst(padAmount), FloatData(padValue)) :>> mapSeq(mapSeq(fun(x => x))))
 
 
-    val p = idealised.OpenCL.KernelGenerator.makeCode(1,1)(TypeInference(f, Map()).toPhrase).kernel
-    val kernelF = p.as[ScalaFunction`(`Array[Array[Float]]`)=>`Array[Float]](1,1)
+    val p = idealised.OpenCL.KernelGenerator.makeCode(1,1)(TypeInference(f, Map()).toPhrase)
+    val kernelF = p.as[ScalaFunction`(`Array[Array[Float]]`)=>`Array[Float]]
     val code = p.code
     SyntaxChecker.checkOpenCL(code)
     println(code)

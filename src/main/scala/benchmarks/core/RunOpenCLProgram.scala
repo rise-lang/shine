@@ -1,6 +1,6 @@
 package benchmarks.core
 
-import idealised.OpenCL.Kernel
+import idealised.OpenCL.{Kernel, KernelWithSizes}
 import idealised.SurfaceLanguage.Types.{DataType, TypeInference}
 import lift.arithmetic.ArithExpr
 
@@ -22,8 +22,8 @@ abstract class RunOpenCLProgram(val verbose:Boolean) {
 
   protected def runScalaProgram(input:Input):Array[Float]
 
-  private def compile(localSize:ArithExpr, globalSize:ArithExpr):Kernel = {
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(this.dpiaProgram, Map()).toPhrase, localSize, globalSize)
+  private def compile(localSize:ArithExpr, globalSize:ArithExpr):KernelWithSizes = {
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(localSize, globalSize)(TypeInference(this.dpiaProgram, Map()).toPhrase)
 
     if(verbose) {
       println(kernel.code)

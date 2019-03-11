@@ -39,8 +39,8 @@ class Partition extends idealised.util.Tests {
       partition(3, lenF) :>>
       depMapSeqUnroll(mapSeq(fun(x => x + 1.0f))))
 
-    val p = idealised.OpenCL.KernelGenerator.makeCode(1,1)(TypeInference(padAndPartition, Map()).toPhrase).kernel
-    val kernelF = p.as[ScalaFunction`(`Array[Float]`)=>`Array[Float]](1,1)
+    val p = idealised.OpenCL.KernelGenerator.makeCode(1,1)(TypeInference(padAndPartition, Map()).toPhrase)
+    val kernelF = p.as[ScalaFunction`(`Array[Float]`)=>`Array[Float]]
     val input = Array.fill(128)(5.0f)
     val (output, time) = kernelF(input `;`)
 
