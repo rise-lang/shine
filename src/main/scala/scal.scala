@@ -32,7 +32,7 @@ object scal extends App {
     TypeCheck(lambda)
 
     println(s"-- $name --")
-    val kernel = KernelGenerator.makeCode(lambda, localSize = 128, globalSize = N)
+    val kernel = KernelGenerator.makeCode(localSize = 128, globalSize = N)(lambda)
     println(kernel.code)
 
     val fun = kernel.as[ScalaFunction `(` Array[Float] `,` Float `)=>` Array[Float]]

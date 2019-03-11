@@ -2,7 +2,7 @@ package idealised.OpenCL.SurfaceLanguage.DSL
 
 import idealised.OpenCL.AddressSpace
 import idealised.OpenCL.SurfaceLanguage.Primitives._
-import idealised.SurfaceLanguage.DSL.{DataExpr, dFun, fun}
+import idealised.SurfaceLanguage.DSL.{DataExpr, nFun, fun}
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage.{Expr, _}
 
@@ -33,10 +33,10 @@ object depMapGlobal {
 
   def apply(dim: Int) = new {
     def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] =
-      fun(x => DepMapGlobal(dim)(dFun(_ => f), x))
+      fun(x => DepMapGlobal(dim)(nFun(_ => f), x))
 
     def apply(f: Expr[DataType -> DataType], x: DataExpr): DepMapGlobal =
-      DepMapGlobal(dim)(dFun(_ => f), x)
+      DepMapGlobal(dim)(nFun(_ => f), x)
   }
 }
 
@@ -63,10 +63,10 @@ object depMapWorkgroup {
 
   def apply(dim: Int) = new {
     def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] =
-      fun(x => DepMapWorkGroup(dim)(dFun(_ => f), x))
+      fun(x => DepMapWorkGroup(dim)(nFun(_ => f), x))
 
     def apply(f: Expr[DataType -> DataType], x: DataExpr): DepMapWorkGroup =
-      DepMapWorkGroup(dim)(dFun(_ => f), x)
+      DepMapWorkGroup(dim)(nFun(_ => f), x)
   }
 }
 
@@ -94,10 +94,10 @@ object depMapLocal {
 
   def apply(dim: Int) = new {
     def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] =
-      fun(x => DepMapLocal(dim)(dFun(_ => f), x))
+      fun(x => DepMapLocal(dim)(nFun(_ => f), x))
 
     def apply(f: Expr[DataType -> DataType], x: DataExpr): DepMapLocal =
-      DepMapLocal(dim)(dFun(_ => f), x)
+      DepMapLocal(dim)(nFun(_ => f), x)
   }
 }
 
