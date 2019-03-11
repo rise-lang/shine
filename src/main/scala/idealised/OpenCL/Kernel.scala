@@ -1,16 +1,16 @@
 package idealised.OpenCL
 
+import idealised.OpenCL.AST.ParamDecl
 import idealised.DPIA.Phrases.Identifier
 import idealised.DPIA.Types._
 import idealised.DPIA._
 import idealised.{C, OpenCL}
 import idealised.utils._
-import lift.arithmetic.{ArithExpr, BigSum, Cst, Var}
+import lift.arithmetic._
 import opencl.executor._
 
 import scala.collection.immutable.List
 import scala.collection.{Seq, immutable}
-
 import scala.language.implicitConversions
 
 //noinspection ScalaDocParserErrorInspection
@@ -50,10 +50,8 @@ case class Kernel(decls: Seq[C.AST.Decl],
     hArgs: F#T => {
       val args: List[Any] = hArgs.toList
 
-      val lengthMapping = createLengthMap(inputParams, args)
-
-      val (outputArg, inputArgs) = createKernelArgs(args, lengthMapping)
-      val kernelArgs = (outputArg +: inputArgs).toArray
+      val (sizeVarMap, outputArg, inputArgs) = createKernelArgs(inputParams, args)
+      val kernelArgs = outputArg::inputArgs
 
       val c = code
       val kernelJNI = opencl.executor.Kernel.create(c, kernel.name, "")
@@ -61,14 +59,16 @@ case class Kernel(decls: Seq[C.AST.Decl],
       assert(localSize.isEvaluable && globalSize.isEvaluable,
         "Local and Global Size must be evaluable and set before executing the kernel.")
 
+      val lengthMapping = sizeVarMap.asInstanceOf[Map[Nat,Nat]]
       val runtime = Executor.execute(kernelJNI,
         ArithExpr.substitute(localSize.x, lengthMapping).eval,
         ArithExpr.substitute(localSize.y, lengthMapping).eval,
         ArithExpr.substitute(localSize.z, lengthMapping).eval,
-        ArithExpr.substitute(globalSize.y, lengthMapping).eval,
+        ArithExpr.substitute(globalSize.x, lengthMapping).eval,
         ArithExpr.substitute(globalSize.y, lengthMapping).eval,
         ArithExpr.substitute(globalSize.z, lengthMapping).eval,
-        kernelArgs)
+        kernelArgs.toArray
+        )
 
       val output = castToOutputType[F#R](outputParam.`type`.dataType, outputArg)
 
@@ -79,59 +79,84 @@ case class Kernel(decls: Seq[C.AST.Decl],
     }
   }
 
-  private def createLengthMap(params: Seq[Identifier[ExpType]],
-                              args: List[Any]): immutable.Map[Nat, Nat] = {
-    val seq = (params, args).zipped.flatMap(createLengthMapping)
-    seq.map(x => (x._1, Cst(x._2))).toMap
-  }
+  private case class Argument(dpiaParameter:Identifier[ExpType], openCLParameter:ParamDecl, scalaValue:Option[Any])
 
-  private def createLengthMapping(p: Identifier[ExpType], a: Any): Seq[(Nat, Int)] = {
-    val completeLengthMapping = createLengthMapping(p.t.dataType, a)
-
-    //TODO cover case where ArithExpr cannot be evaluated
-    completeLengthMapping.filter(!_._1.isInstanceOf[Var])
-      .foreach { case (typeSize: Nat, argSize: Int) => assert(typeSize.eval == argSize) }
-
-    completeLengthMapping.filter(_._1.isInstanceOf[Var])
-  }
-
-  private def createLengthMapping(t: DataType, a: Any): Seq[(Nat, Int)] = {
-    (t, a) match {
-      case (bt: BasicType, _) => (bt, a) match {
-        case (`bool`, _: Boolean) => Seq()
-        case (`int`, _: Int) => Seq()
-        case (`float`, _: Float) => Seq()
-        case (VectorType(_, ebt), _) => createLengthMapping(ebt, a)
-        case _ => throw new Exception(s"Expected $bt, but got $a")
+  private def constructArguments(params:Seq[Identifier[ExpType]], scalaArgs:List[Any], oclParams:Seq[ParamDecl]):List[Argument] = {
+      params.headOption match {
+        case None =>
+          assert(scalaArgs.isEmpty && oclParams.isEmpty)
+          Nil
+        case Some(param) =>
+          assert(oclParams.nonEmpty, "Not enough opencl parameters")
+          Argument(param, oclParams.head, scalaArgs.headOption) :: constructArguments(params.tail, scalaArgs.tail, oclParams.tail)
       }
-      case (at: ArrayType, array: Array[_]) =>
-        Seq((at.size, array.length)) ++ createLengthMapping(at.elemType, array.head)
-      case (at: DepArrayType, array:Array[_]) =>
-        Seq((at.size, array.length)) ++ createLengthMapping(at.elemType, array.head)
-      case (rt: RecordType, tuple: (_, _)) =>
-        createLengthMapping(rt.fst, tuple._1) ++
-          createLengthMapping(rt.snd, tuple._2)
-      case _ => throw new Exception(s"Expected $t but got $a")
+  }
+
+  private def createKernelArgs(params:Seq[Identifier[ExpType]], args:List[Any]):(Map[NatIdentifier, Nat], GlobalArg, List[KernelArg]) = {
+    //Match up corresponding dpia parameter/intermediate parameter/scala argument (when present) in a covenience
+    //structure
+    val arguments = constructArguments(params, args, this.kernel.params.tail)
+    //First, we want to find all the parameter mappings
+    val sizeVarMapping = collectSizeVars(arguments, Map())
+    //Now generate the input kernel args
+    val kernelArguments = createInputKernelArgs(arguments, sizeVarMapping)
+    //Finally, create the output
+    val kernelOutput = createOutputKernelArg(sizeVarMapping)
+
+    (sizeVarMapping, kernelOutput, kernelArguments)
+  }
+
+  private def collectSizeVars(arguments:List[Argument], sizeVariables:Map[NatIdentifier, Nat]):Map[NatIdentifier, Nat] = {
+    def recordSizeVariable( sizeVariables:Map[NatIdentifier, Nat], arg:Argument) = {
+      arg.dpiaParameter.t match {
+        case ExpType(idealised.DPIA.Types.int) =>
+          arg.scalaValue match {
+            case Some(i:Int) => sizeVariables + ((NamedVar(arg.dpiaParameter.name), Cst(i)))
+            case Some(num) =>
+              throw new Exception(s"Int value for kernel argument ${arg.dpiaParameter.name} expected but $num (of type ${num.getClass.getName} found")
+            case None =>
+              throw new Exception("Int kernel parameter needs a value")
+          }
+        case _ => sizeVariables
+      }
+    }
+
+    arguments.foldLeft(Map[NatIdentifier, Nat]())(recordSizeVariable)
+  }
+
+  private def createInputKernelArgs(arguments:List[Argument], sizeVariables:Map[NatIdentifier, Nat]):List[KernelArg] = {
+
+    def createIntermediateArg(arg:Argument, sizeVariables:Map[NatIdentifier, Nat]):KernelArg = {
+      val rawSize = sizeInByte(arg.dpiaParameter.t.dataType)
+      val cleanSize = ArithExpr.substitute(rawSize.value, sizeVariables.asInstanceOf[Map[Nat, Nat]])
+      val actualSize = cleanSize.evalLong
+      arg.openCLParameter.addressSpace match {
+        case PrivateMemory => throw new Exception("'Private memory' is an invalid memory for opencl parameter")
+        case LocalMemory => LocalArg.create(actualSize)
+        case GlobalMemory => GlobalArg.createOutput(actualSize)
+      }
+    }
+
+    arguments match {
+      case Nil => Nil
+      case arg::remainingArgs =>
+        val kernelArg = arg.scalaValue match {
+            //We have the scala value - this is an input argument
+          case Some(scalaValue) => createInputArgFromScalaValue(scalaValue)
+          case None => createIntermediateArg(arg, sizeVariables)
+        }
+        kernelArg::createInputKernelArgs(remainingArgs, sizeVariables)
     }
   }
 
-  private def createKernelArgs(args: List[Any], lengthMapping: immutable.Map[Nat, Nat]): (GlobalArg, List[KernelArg]) = {
-    val numberOfKernelArgs = 1 + args.length + intermediateParams.size
-    assert(kernel.params.length == numberOfKernelArgs)
-
-    println("Allocations on the host: ")
-    val outputArg = createOutputArg(sizeInByte(outputParam) `with` lengthMapping)
-    val inputArgs = args.map(createInputArg)
-    val intermediateArgs = createIntermediateArgs(args.length, lengthMapping)
-
-    (outputArg, inputArgs ++ intermediateArgs)
+  private def createOutputKernelArg(sizeVariables:Map[NatIdentifier,Nat]):GlobalArg = {
+    val rawSize = sizeInByte(this.outputParam.t.dataType).value
+    val cleanSize = ArithExpr.substitute(rawSize, sizeVariables.asInstanceOf[Map[Nat,Nat]])
+    val actualSize = cleanSize.evalLong
+    GlobalArg.createOutput(actualSize)
   }
 
-  private def createOutputArg(size: SizeInByte): GlobalArg = {
-    GlobalArg.createOutput(size.value.eval)
-  }
-
-  private def createInputArg(arg: Any): KernelArg = {
+  private def createInputArgFromScalaValue(arg: Any): KernelArg = {
     arg match {
       case  f: Float => ValueArg.create(f)
       case af: Array[Float] => GlobalArg.createInput(af)
@@ -154,28 +179,6 @@ case class Kernel(decls: Seq[C.AST.Decl],
       case _ => throw new IllegalArgumentException("Kernel argument is of unsupported type: " +
         arg.getClass.toString)
     }
-  }
-
-  private def createIntermediateArgs(argsLength: Int, lengthMapping: immutable.Map[Nat, Nat]): Seq[KernelArg] = {
-    val intermediateParamDecls = getIntermediateParamDecls(argsLength)
-    (intermediateParamDecls, intermediateParams).zipped.map { case (pDecl, param) =>
-      val size = (sizeInByte(param) `with` lengthMapping).value.max.eval
-      pDecl.addressSpace match {
-        case OpenCL.LocalMemory =>
-          println(s"intermediate (local): $size bytes")
-          LocalArg.create(size)
-        case OpenCL.GlobalMemory =>
-          println(s"intermediate (global): $size bytes")
-          GlobalArg.createOutput(size)
-        case OpenCL.PrivateMemory =>
-          throw new Exception("Intermediate argument can not be in private memory")
-      }
-    }
-  }
-
-  private def getIntermediateParamDecls(argsLength: Int): collection.Seq[OpenCL.AST.ParamDecl] = {
-    val startIndex = 1 + argsLength
-    kernel.params.slice(startIndex, startIndex + intermediateParams.size)
   }
 
   private def castToOutputType[R](dt: DataType, output: GlobalArg): R = {
