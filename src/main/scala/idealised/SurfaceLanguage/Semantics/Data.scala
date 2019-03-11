@@ -26,6 +26,3 @@ object IndexData {
 }
 
 final case class VectorData(v: Seq[ScalarData]) extends Data(VectorType(v.length, v.head.dataType))
-
-//TODO where should this go? This is describing a value of type DataType, but is not allowed to be passed to LiteralExpr for example
-final case class NatData(n: Nat)

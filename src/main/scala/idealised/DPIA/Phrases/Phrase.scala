@@ -52,8 +52,7 @@ final case class BinOp(op: SurfaceLanguage.Operators.Binary.Value, lhs: Phrase[E
 final case class Literal(d: OperationalSemantics.Data)
   extends Phrase[ExpType]
 
-final case class NatArith(d: OperationalSemantics.NatValue)
-  extends Phrase[ExpType]
+final case class Natural(d: Nat) extends Phrase[ExpType]
 
 object Phrase {
   // substitutes `phrase` for `for` in `in`, i.e. in [ phrase / for ]

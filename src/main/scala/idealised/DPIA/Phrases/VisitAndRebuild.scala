@@ -61,7 +61,7 @@ object VisitAndRebuild {
           }
 
           //TODO check whether anything needs to be visited
-          case NatArith(n) => NatArith(n)
+          case Natural(n) => Natural(n)
 
           case UnaryOp(op, x) => UnaryOp(op, apply(x, v))
 

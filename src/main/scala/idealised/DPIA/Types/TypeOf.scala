@@ -37,7 +37,7 @@ object TypeOf {
 
       case Literal(l) => ExpType(l.dataType)
 
-      case NatArith(n) => ExpType(NatType)
+      case Natural(n) => ExpType(NatType)
 
       case UnaryOp(_, x) => x.t
 

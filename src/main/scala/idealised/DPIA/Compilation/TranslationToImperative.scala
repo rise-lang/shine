@@ -25,7 +25,7 @@ object TranslationToImperative {
 
       case c: Literal => A :=|c.t.dataType| c
 
-      case n: NatArith => A :=|n.t.dataType| n
+      case n: Natural => A :=|n.t.dataType| n
 
       case u@UnaryOp(op, e) =>
         con(e)(λ(u.t)(x =>
@@ -64,7 +64,7 @@ object TranslationToImperative {
 
       case c: Literal => C(c)
 
-      case n: NatArith => C(n)
+      case n: Natural => C(n)
 
       case u@UnaryOp(op, e) =>
         con(e)(λ(u.t)(x =>

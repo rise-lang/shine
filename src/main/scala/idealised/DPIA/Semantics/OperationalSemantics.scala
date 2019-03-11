@@ -25,17 +25,6 @@ object OperationalSemantics {
     }
   }
 
-  /*
-  object NatValue {
-    def apply(d: idealised.SurfaceLanguage.Semantics.NatData): NatValue = {
-
-    }
-  }
-  */
-
-  final case class NatValue(n: Nat)
-  //case idealised.SurfaceLanguage.Semantics.NatData(n) => NatData(n)
-
   sealed abstract class Data(val dataType: DataType)
   final case class IndexData(n: Nat, indexType: IndexType) extends Data(indexType)
   object IndexData {

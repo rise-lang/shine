@@ -65,7 +65,7 @@ class fft extends idealised.util.Tests {
   */
 
   test("Nat can be used as DataType inside of an expression in C.") {
-    val simpleGenerate = fun(NatType)(i => i + NatExpr(NatData(1)))
+    val simpleGenerate = fun(NatType)(i => i + NatExpr(1))
     val program = idealised.C.ProgramGenerator.makeCode(TypeInference(simpleGenerate, Map()).convertToPhrase)
 
     println(program.code)
@@ -81,7 +81,7 @@ class fft extends idealised.util.Tests {
   }
 
   test("AsNat and plus operation generates syntactically correct code in C.") {
-    val simpleGenerate = nFun(n => fun(IndexType(n))(i => asNat(i) + NatExpr(NatData(n))))
+    val simpleGenerate = nFun(n => fun(IndexType(n))(i => asNat(i) + NatExpr(n)))
     val program = idealised.C.ProgramGenerator.makeCode(TypeInference(simpleGenerate, Map()).convertToPhrase)
 
     println(program.code)
@@ -123,7 +123,7 @@ class fft extends idealised.util.Tests {
       zip(in,
         generate(fun(IndexType(n))(i =>
           foreignFun(double, "callCos", (double, "x"), "{ return cos(x); }",
-            cast(double, cast(NatType, i) + NatExpr(NatData(n)))))
+            cast(double, asNat(i) + n)))
       )) :>>
         mapSeq(add)))
 
@@ -135,20 +135,17 @@ class fft extends idealised.util.Tests {
   }
 
   test("Two-dimensional generate generates syntactically correct code in C.") {
-    val m = 8
-    val n = 8
-
     val add = fun(x => x._1 + x._2)
-    val simpleMap = fun(ArrayType(m, ArrayType(n, double)))(in =>
+    val simpleMap = nFun((m, n) => fun(ArrayType(m, ArrayType(n, double)))(in =>
       zip(in,
         generate(fun(IndexType(m))(i =>
           generate(fun(IndexType(n))(j =>
             foreignFun(double, "callCos", (double, "x"), "{ return cos(x); }",
-              cast(double, cast(NatType, j) + NatExpr(NatData(n)) *
-                cast(NatType, i) + NatExpr(NatData(m))))
+              // TODO how to implicitly cast with Nat on the lhs of a binary op?
+              cast(double, (asNat(j) + n) * (asNat(i) + m)))
             )))))
         :>> mapSeq(fun(t => zip(t._1, t._2) :>> mapSeq(add)))
-    )
+    ))
 
     val phrase = TypeInference(simpleMap, Map()).convertToPhrase
     val program = idealised.C.ProgramGenerator.makeCode(phrase)

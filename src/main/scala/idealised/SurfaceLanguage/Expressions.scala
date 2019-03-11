@@ -2,7 +2,7 @@ package idealised.SurfaceLanguage
 
 import idealised.DPIA
 import idealised.DPIA.error
-import idealised.SurfaceLanguage.Semantics.{Data, NatData}
+import idealised.SurfaceLanguage.Semantics.Data
 import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.SurfaceLanguage.Types._
 
@@ -191,13 +191,13 @@ final case class LiteralExpr(d: Data)
   override def toString: String = s"$d"
 }
 
-final case class NatExpr(n: NatData)
+final case class NatExpr(n: Nat)
   extends DataExpr
 {
   override lazy val t: Option[DataType] = Some(NatType)
 
-  override def convertToPhrase: DPIA.Phrases.NatArith =
-    DPIA.Phrases.NatArith(DPIA.Semantics.OperationalSemantics.NatValue(n.n))
+  override def convertToPhrase: DPIA.Phrases.Natural =
+    DPIA.Phrases.Natural(n)
 
   override def toString: String = s"$n"
 }

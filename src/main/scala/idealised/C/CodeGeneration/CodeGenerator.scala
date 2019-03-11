@@ -224,8 +224,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error(s"Unexpected: $n $path")
       })
 
-      case Phrases.NatArith(n) => cont(path match {
-        case Nil => C.AST.ArithmeticExpr(n.n)
+      case Phrases.Natural(n) => cont(path match {
+        case Nil => C.AST.ArithmeticExpr(n)
         case _ => error(s"Expected the path to be empty.")
       })
 

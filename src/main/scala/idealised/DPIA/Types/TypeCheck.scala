@@ -45,7 +45,7 @@ object TypeCheck {
 
       case Literal(_) =>
 
-      case NatArith(_) =>
+      case Natural(_) =>
 
       case UnaryOp(op, x) =>
         TypeCheck(x)
