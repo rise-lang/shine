@@ -159,7 +159,7 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
       nFun(n => fun(DepArrayType(n, i => ArrayType(i + 1, float)))(triangle =>
         fun(ArrayType(n, float))(vector =>
           depMapWorkgroup.withIndex(nFun(rowIndex => fun(row =>
-            zip(pad(0, n - rowIndex - 1, 0.0f, row), vector) :>> split(SPLIT_SIZE) :>> mapLocal(reduceSeq(multSumAcc, 0.0f))
+            zip(pad(0, n - rowIndex - 1, 0.0f, row), vector) :>> split(SPLIT_SIZE) :>> mapLocal(oclReduceSeq(multSumAcc, 0.0f, PrivateMemory))
           )), triangle)
         )
       ))
@@ -183,22 +183,18 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
     )
   }
 
-  ignore ("Parallel OpenCL triangle vector partial multiplication (padding the row up to vector) (PLDI '19 submission listing 5)") {
+  test("Parallel triangle vector multiplication with global threads compiles to syntactically correct OpenCL") {
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(triangleVectorMultGlobal, Map()).toPhrase)
+    SyntaxChecker.checkOpenCL(kernel.code)
+  }
+
+  test ("Parallel OpenCL triangle vector partial multiplication (padding the row up to vector) (PLDI '19 submission listing 5)") {
     val inputSize = 4096
     println(Executor.getPlatformName)
     println(Executor.getDeviceName)
 
-    val results = for (localSize <- Seq(4, 8, 16, 32, 64, 128, 256, 512);
-                       splitSize <- Seq(4, 8, 16, 32, 64, 128, 256, 512)
-    ) yield {
-      triangleMatrixPadSplit(inputSize, splitSize, localSize, inputSize)
-    }
+    val result = triangleMatrixPadSplit(inputSize, 8, 8, inputSize)
 
-    results.sortBy(_.runtime).foreach(_.printout())
-  }
-
-  test("Parallel triangle vector multiplication with global threads compiles to syntactically correct OpenCL") {
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(triangleVectorMultGlobal, Map()).toPhrase)
-    SyntaxChecker.checkOpenCL(kernel.code)
+    assert(result.correct)
   }
 }
