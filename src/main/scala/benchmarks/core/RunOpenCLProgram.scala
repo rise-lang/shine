@@ -1,6 +1,5 @@
-package benchmarks
+package benchmarks.core
 
-import benchmarks.core.Correctness
 import idealised.OpenCL.Kernel
 import idealised.SurfaceLanguage.Types.{DataType, TypeInference}
 import lift.arithmetic.ArithExpr
@@ -8,19 +7,18 @@ import lift.arithmetic.ArithExpr
 import scala.util.Random
 
 
-
-abstract class OpenCLAlgorithm(val verbose:Boolean) {
+abstract class RunOpenCLProgram(val verbose:Boolean) {
   import idealised.SurfaceLanguage._
   //The Scala type representing the input data
   type Input
-  //The scala type representing the final result of running the algorithm
-  type Result
+  //The type of the summary structure recording data about the runs
+  type Summary
 
   def dpiaProgram:Expr[DataType -> DataType]
 
   protected def makeInput(random:Random):Input
 
-  def makeOutput(localSize:Int, globalSize:Int, code:String, runtimeMs:Double, correctness: Correctness):Result
+  def makeSummary(localSize:Int, globalSize:Int, code:String, runtimeMs:Double, correctness: CorrectnessCheck):Summary
 
   protected def runScalaProgram(input:Input):Array[Float]
 
@@ -33,7 +31,7 @@ abstract class OpenCLAlgorithm(val verbose:Boolean) {
     kernel
   }
 
-  final def run(localSize:Int, globalSize:Int):Result = {
+  final def run(localSize:Int, globalSize:Int):Summary = {
     opencl.executor.Executor.loadAndInit()
 
     val rand = new Random()
@@ -48,8 +46,8 @@ abstract class OpenCLAlgorithm(val verbose:Boolean) {
 
     opencl.executor.Executor.shutdown()
 
-    val correct = Correctness(kernelOutput, scalaOutput)
+    val correct = CorrectnessCheck(kernelOutput, scalaOutput)
 
-    makeOutput(localSize, globalSize, kernel.code, time.value, correct)
+    makeSummary(localSize, globalSize, kernel.code, time.value, correct)
   }
 }

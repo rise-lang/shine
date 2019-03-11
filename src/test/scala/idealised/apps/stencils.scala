@@ -1,7 +1,6 @@
 package idealised.apps
 
-import benchmarks.OpenCLAlgorithm
-import benchmarks.core.Correctness
+import benchmarks.core.{CorrectnessCheck, RunOpenCLProgram}
 import idealised.OpenCL.{Kernel, PrivateMemory}
 import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.DSL.{fun, _}
@@ -23,7 +22,7 @@ class stencils extends Tests {
                                      globalSize:Int,
                                      code:String,
                                      runtimeMs:Double,
-                                     correctness:Correctness
+                                     correctness:CorrectnessCheck
                                     ) {
 
     def printout():Unit =
@@ -38,13 +37,13 @@ class stencils extends Tests {
       )
   }
 
-  private sealed abstract class StencilBaseAlgorithm extends OpenCLAlgorithm(verbose = false) {
-    final type Result = StencilResult
+  private sealed abstract class StencilBaseProgramRun extends RunOpenCLProgram(verbose = false) {
+    final type Summary = StencilResult
 
     def inputSize:Int
     def stencilSize:Int
 
-    override def makeOutput(localSize: Int, globalSize: Int, code: String, runtimeMs: Double, correctness: Correctness): StencilResult = {
+    override def makeSummary(localSize: Int, globalSize: Int, code: String, runtimeMs: Double, correctness: CorrectnessCheck): StencilResult = {
       StencilResult(
         inputSize = inputSize,
         stencilSize = stencilSize,
@@ -57,7 +56,7 @@ class stencils extends Tests {
     }
   }
 
-  private trait Stencil1DAlgorithm extends StencilBaseAlgorithm {
+  private trait Stencil1DProgramRun extends StencilBaseProgramRun {
 
     val inputMinRange = stencilSize //Used for `starts with` simplification
 
@@ -79,7 +78,7 @@ class stencils extends Tests {
 
   }
 
-  private case class BasicStencil1D(inputSize:Int, stencilSize:Int) extends Stencil1DAlgorithm {
+  private case class BasicStencil1D(inputSize:Int, stencilSize:Int) extends Stencil1DProgramRun {
 
     override def dpiaProgram: Expr[DataType -> DataType] = {
       val N = NamedVar("N",StartFromRange(inputMinRange))
@@ -92,7 +91,7 @@ class stencils extends Tests {
     }
   }
 
-  private case class PartitionedStencil1D(inputSize:Int, stencilSize:Int) extends Stencil1DAlgorithm {
+  private case class PartitionedStencil1D(inputSize:Int, stencilSize:Int) extends Stencil1DProgramRun {
 
     override def dpiaProgram: Expr[DataType -> DataType] = {
       val N = NamedVar("N",StartFromRange(inputMinRange))
@@ -107,7 +106,7 @@ class stencils extends Tests {
     }
   }
 
-  private sealed trait Stencil2DAlgorithm extends StencilBaseAlgorithm {
+  private sealed trait Stencil2DProgramRun extends StencilBaseProgramRun {
     def inputSize:Int
     def stencilSize:Int
 
@@ -136,7 +135,7 @@ class stencils extends Tests {
     }
   }
 
-  private case class BasicStencil2D(inputSize:Int, stencilSize:Int) extends Stencil2DAlgorithm {
+  private case class BasicStencil2D(inputSize:Int, stencilSize:Int) extends Stencil2DProgramRun {
     override def dpiaProgram = {
       val N = NamedVar("N",StartFromRange(stencilSize))
       fun(ArrayType(N, ArrayType(N, float)))(input =>
@@ -148,7 +147,7 @@ class stencils extends Tests {
     }
   }
 
-  private case class PartitionedStencil2D(inputSize:Int, stencilSize:Int) extends Stencil2DAlgorithm {
+  private case class PartitionedStencil2D(inputSize:Int, stencilSize:Int) extends Stencil2DProgramRun {
 
     override def dpiaProgram = {
       val N = NamedVar("N",StartFromRange(stencilSize))
@@ -167,7 +166,7 @@ class stencils extends Tests {
     }
   }
 
-  private case class BasicStencil2DInjected(inputSize:Int, stencilSize:Int) extends Stencil2DAlgorithm {
+  private case class BasicStencil2DInjected(inputSize:Int, stencilSize:Int) extends Stencil2DProgramRun {
     override def dpiaProgram = {
       val N = inputSize
       fun(ArrayType(N, ArrayType(N, float)))(input =>
@@ -179,7 +178,7 @@ class stencils extends Tests {
     }
   }
 
-  private case class PartitionedStencil2DBoth(inputSize:Int, stencilSize:Int) extends Stencil2DAlgorithm {
+  private case class PartitionedStencil2DBoth(inputSize:Int, stencilSize:Int) extends Stencil2DProgramRun {
 
     override def dpiaProgram = {
       val N =NamedVar("N", StartFromRange(stencilSize))

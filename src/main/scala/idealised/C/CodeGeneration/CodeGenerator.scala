@@ -829,20 +829,20 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     def flattenIndices(dataType: DataType, indicies:List[Nat]):Nat = {
       (dataType, indicies) match {
         case (array:ArrayType, index::rest) =>
-          sizeAtOffset(array, index) + flattenIndices(array.elemType, rest)
+          numberOfElementsUntil(array, index) + flattenIndices(array.elemType, rest)
         case (array:DepArrayType, index::rest) =>
-          sizeAtOffset(array, index) + flattenIndices(array.elemFType.body, rest)
+          numberOfElementsUntil(array, index) + flattenIndices(array.elemFType.body, rest)
         case (_,  Nil) => 0
         case t => throw new Exception(s"This should not happen, pair $t")
       }
     }
 
     //Computes the total number of element in an array at a given offset
-    def sizeAtOffset(dt:ArrayType, at:Nat):Nat = {
+    def numberOfElementsUntil(dt:ArrayType, at:Nat):Nat = {
       DataType.getTotalNumberOfElements(dt.elemType)*at
     }
 
-    def sizeAtOffset(dt:DepArrayType, at:Nat):Nat = {
+    def numberOfElementsUntil(dt:DepArrayType, at:Nat):Nat = {
       BigSum(from=0, upTo = at-1, `for`=dt.elemFType.x, DataType.getTotalNumberOfElements(dt.elemFType.body))
     }
 
