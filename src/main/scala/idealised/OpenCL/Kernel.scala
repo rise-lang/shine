@@ -12,6 +12,7 @@ import opencl.executor._
 import scala.collection.immutable.List
 import scala.collection.{Seq, immutable}
 import scala.language.implicitConversions
+import scala.util.{Failure, Success, Try}
 
 //noinspection ScalaDocParserErrorInspection
 case class Kernel(decls: Seq[C.AST.Decl],
@@ -79,23 +80,37 @@ case class Kernel(decls: Seq[C.AST.Decl],
     }
   }
 
+  /**
+    * A helper class to group together the various bits of related information that make up a parameter
+    * @param dpiaParameter The dpia identifier representing the parameter in the dpia source
+    * @param openCLParameter The OpenCL parameter as appearing in the generated kernel
+    * @param scalaValue For non-intermediate input parameters, this carries the scala value to pass in the executor
+    */
   private case class Argument(dpiaParameter:Identifier[ExpType], openCLParameter:ParamDecl, scalaValue:Option[Any])
 
-  private def constructArguments(params:Seq[Identifier[ExpType]], scalaArgs:List[Any], oclParams:Seq[ParamDecl]):List[Argument] = {
-      params.headOption match {
+  private def constructArguments(dpiaParams:Seq[Identifier[ExpType]], scalaArgs:List[Any], oclParams:Seq[ParamDecl]):List[Argument] = {
+    //For each dpia parameter...
+      dpiaParams.headOption match {
+          //If we have no more, we should also be out of scalaArguments and openCl parameters
         case None =>
           assert(scalaArgs.isEmpty && oclParams.isEmpty)
           Nil
-        case Some(param) =>
+        case Some(dpiaParam) =>
+          //We must have an openCl parameter
           assert(oclParams.nonEmpty, "Not enough opencl parameters")
-          Argument(param, oclParams.head, scalaArgs.headOption) :: constructArguments(params.tail, scalaArgs.tail, oclParams.tail)
+          //We may or may not have a scala argument as well. We won't for intermediate parameters
+          Argument(dpiaParam, oclParams.head, scalaArgs.headOption) :: constructArguments(dpiaParams.tail, scalaArgs.tail, oclParams.tail)
       }
   }
 
-  private def createKernelArgs(params:Seq[Identifier[ExpType]], args:List[Any]):(Map[NatIdentifier, Nat], GlobalArg, List[KernelArg]) = {
+  /**
+    * From the dpia paramters and the scala arguments, returns a Map of identifiers to sizes for "size vars",
+    * the output kernel argument, and all the input kernel arguments
+   */
+  private def createKernelArgs(dpiaParams:Seq[Identifier[ExpType]], scalaArgs:List[Any]):(Map[NatIdentifier, Nat], GlobalArg, List[KernelArg]) = {
     //Match up corresponding dpia parameter/intermediate parameter/scala argument (when present) in a covenience
     //structure
-    val arguments = constructArguments(params, args, this.kernel.params.tail)
+    val arguments = constructArguments(dpiaParams, scalaArgs, this.kernel.params.tail)
     //First, we want to find all the parameter mappings
     val sizeVarMapping = collectSizeVars(arguments, Map())
     //Now generate the input kernel args
@@ -106,6 +121,10 @@ case class Kernel(decls: Seq[C.AST.Decl],
     (sizeVarMapping, kernelOutput, kernelArguments)
   }
 
+  /**
+   * Iterates through all the input arguments, collecting the values of all int-typed input parameters, which may appear
+    * in the sizes of the other arguments.
+   */
   private def collectSizeVars(arguments:List[Argument], sizeVariables:Map[NatIdentifier, Nat]):Map[NatIdentifier, Nat] = {
     def recordSizeVariable( sizeVariables:Map[NatIdentifier, Nat], arg:Argument) = {
       arg.dpiaParameter.t match {
@@ -124,16 +143,29 @@ case class Kernel(decls: Seq[C.AST.Decl],
     arguments.foldLeft(Map[NatIdentifier, Nat]())(recordSizeVariable)
   }
 
+  /**
+    * Generates the input kernel args
+    * @param arguments
+    * @param sizeVariables
+    * @return
+    */
   private def createInputKernelArgs(arguments:List[Argument], sizeVariables:Map[NatIdentifier, Nat]):List[KernelArg] = {
 
+    //Helper for the creation of intermdiate arguments
     def createIntermediateArg(arg:Argument, sizeVariables:Map[NatIdentifier, Nat]):KernelArg = {
+      //Get the size of bytes, potentially with free variables
       val rawSize = sizeInByte(arg.dpiaParameter.t.dataType)
+      //Try to substitue away all the free variables
       val cleanSize = ArithExpr.substitute(rawSize.value, sizeVariables.asInstanceOf[Map[Nat, Nat]])
-      val actualSize = cleanSize.evalLong
-      arg.openCLParameter.addressSpace match {
-        case PrivateMemory => throw new Exception("'Private memory' is an invalid memory for opencl parameter")
-        case LocalMemory => LocalArg.create(actualSize)
-        case GlobalMemory => GlobalArg.createOutput(actualSize)
+      Try(cleanSize.evalLong) match {
+        case Success(actualSize) =>
+          //And create the parameter
+          arg.openCLParameter.addressSpace match {
+            case PrivateMemory => throw new Exception ("'Private memory' is an invalid memory for opencl parameter")
+            case LocalMemory => LocalArg.create (actualSize)
+            case GlobalMemory => GlobalArg.createOutput(actualSize) //Despite the strange name, createOutput is the same as create.
+          }
+        case Failure(_) => throw new Exception(s"Could not evaluate $cleanSize")
       }
     }
 
@@ -141,8 +173,9 @@ case class Kernel(decls: Seq[C.AST.Decl],
       case Nil => Nil
       case arg::remainingArgs =>
         val kernelArg = arg.scalaValue match {
-            //We have the scala value - this is an input argument
+            //We have a scala value - this is an input argument
           case Some(scalaValue) => createInputArgFromScalaValue(scalaValue)
+            //No scala value - this is an intermediate argument
           case None => createIntermediateArg(arg, sizeVariables)
         }
         kernelArg::createInputKernelArgs(remainingArgs, sizeVariables)
@@ -152,8 +185,10 @@ case class Kernel(decls: Seq[C.AST.Decl],
   private def createOutputKernelArg(sizeVariables:Map[NatIdentifier,Nat]):GlobalArg = {
     val rawSize = sizeInByte(this.outputParam.t.dataType).value
     val cleanSize = ArithExpr.substitute(rawSize, sizeVariables.asInstanceOf[Map[Nat,Nat]])
-    val actualSize = cleanSize.evalLong
-    GlobalArg.createOutput(actualSize)
+    Try(cleanSize.evalLong) match {
+      case Success(actualSize) => GlobalArg.createOutput (actualSize)
+      case Failure(_) => throw new Exception(s"Could not evaluate $cleanSize")
+    }
   }
 
   private def createInputArgFromScalaValue(arg: Any): KernelArg = {
