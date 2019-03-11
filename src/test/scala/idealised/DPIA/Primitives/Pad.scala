@@ -69,18 +69,20 @@ class Pad extends idealised.util.Tests {
   }
 
   test("Pad 2D (OpenCL)") {
-    import idealised.OpenCL.{ScalaFunction, `(`, `)=>`, _}
-    val N = SizeVar("N")
-    val M = SizeVar("M")
+    import idealised.OpenCL._
 
     val padAmount = 2
     val padValue = 0.0f
 
-    val f = fun(ArrayType(N, ArrayType(M, float)))(xs => xs :>> pad2D(M, Cst(padAmount), Cst(padAmount), FloatData(padValue)) :>> mapSeq(mapSeq(fun(x => x))))
+    val f = nFun(
+      n => nFun(m =>
+        fun(ArrayType(n, ArrayType(m, float)))(xs => xs :>> pad2D(m, Cst(padAmount), Cst(padAmount), FloatData(padValue)) :>> mapSeq(mapSeq(fun(x => x))))
+      )
+    )
 
 
     val p = idealised.OpenCL.KernelGenerator.makeCode(1,1)(TypeInference(f, Map()).toPhrase)
-    val kernelF = p.as[ScalaFunction`(`Array[Array[Float]]`)=>`Array[Float]]
+    val kernelF = p.as[ScalaFunction`(`Int `,` Int `,` Array[Array[Float]]`)=>`Array[Float]]
     val code = p.code
     SyntaxChecker.checkOpenCL(code)
     println(code)
@@ -92,7 +94,7 @@ class Pad extends idealised.util.Tests {
     val input = Array.fill(actualN)(Array.fill(actualM)(random.nextFloat()))
     val scalaOutput = ScalaPatterns.pad2D(input, padAmount, 0.0f).flatten
 
-    val (kernelOutput, _) = kernelF(input `;`)
+    val (kernelOutput, _) = kernelF(actualN `,` actualM `,` input)
     opencl.executor.Executor.shutdown()
 
     assert(kernelOutput sameElements scalaOutput)

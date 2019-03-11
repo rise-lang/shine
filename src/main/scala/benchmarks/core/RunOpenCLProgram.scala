@@ -14,7 +14,9 @@ abstract class RunOpenCLProgram(val verbose:Boolean) {
   //The type of the summary structure recording data about the runs
   type Summary
 
-  def dpiaProgram:Expr[DataType -> DataType]
+  def inputSize:Int
+
+  def dpiaProgram:Expr[`(nat)->`[DataType -> DataType]]
 
   protected def makeInput(random:Random):Input
 
@@ -41,8 +43,8 @@ abstract class RunOpenCLProgram(val verbose:Boolean) {
     import idealised.OpenCL.{ScalaFunction, `(`, `)=>`, _}
 
     val kernel = this.compile(localSize, globalSize)
-    val kernelFun = kernel.as[ScalaFunction`(`Input`)=>`Array[Float]]
-    val (kernelOutput, time) = kernelFun(input `;`)
+    val kernelFun = kernel.as[ScalaFunction`(`Int`,` Input`)=>`Array[Float]]
+    val (kernelOutput, time) = kernelFun(inputSize `,` input)
 
     opencl.executor.Executor.shutdown()
 

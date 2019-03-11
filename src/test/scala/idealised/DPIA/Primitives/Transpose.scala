@@ -1,6 +1,6 @@
 package idealised.DPIA.Primitives
 
-import idealised.OpenCL.{ScalaFunction, `(`, `)=>`}
+import idealised.OpenCL.`,`
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types.{ArrayType, DepArrayType, TypeInference, float}
 import lift.arithmetic.{NamedVar, StartFromRange}
@@ -12,12 +12,11 @@ class Transpose extends idealised.util.Tests {
     import idealised.OpenCL.{ScalaFunction, `(`, `)=>`, _}
     opencl.executor.Executor.loadAndInit()
 
-    val N = NamedVar("N", StartFromRange(1))
-    val M = NamedVar("M", StartFromRange(1))
-    val f = fun(ArrayType(N, ArrayType(M, float)))(xs => xs :>> join :>> split(M))
+
+    val f = nFun(n => nFun(m => fun(ArrayType(n, ArrayType(m, float)))(xs => xs :>> join :>> split(m))))
 
     val kernel = idealised.OpenCL.KernelGenerator.makeCode(1,1)(TypeInference(f, Map()).toPhrase)
-    val kernelF = kernel.as[ScalaFunction`(`Array[Array[Float]]`)=>`Array[Float]]
+    val kernelF = kernel.as[ScalaFunction`(`Int `,` Int `,` Array[Array[Float]]`)=>`Array[Float]]
 
     val random = new Random()
     val actualN = 9
@@ -25,7 +24,7 @@ class Transpose extends idealised.util.Tests {
     val input = Array.fill(actualN)(Array.fill(actualM)(random.nextFloat()))
     val scalaOutput = input.flatten
 
-    val (kernelOutput, _) = kernelF(input `;`)
+    val (kernelOutput, _) = kernelF(actualN `,` actualM `,` input)
 
     println(kernel.code)
     opencl.executor.Executor.shutdown()
@@ -37,12 +36,11 @@ class Transpose extends idealised.util.Tests {
     import idealised.OpenCL.{ScalaFunction, `(`, `)=>`, _}
     opencl.executor.Executor.loadAndInit()
 
-    val N = NamedVar("N", StartFromRange(1))
-    val M = NamedVar("M", StartFromRange(1))
-    val f = fun(ArrayType(N, ArrayType(M, float)))(xs => xs :>> transpose)
+
+    val f = nFun(n => nFun(m => fun(ArrayType(n, ArrayType(m, float)))(xs => xs :>> transpose)))
 
     val kernel = idealised.OpenCL.KernelGenerator.makeCode(1,1)(TypeInference(f, Map()).toPhrase)
-    val kernelF = kernel.as[ScalaFunction`(`Array[Array[Float]]`)=>`Array[Float]]
+    val kernelF = kernel.as[ScalaFunction`(`Int `,` Int `,` Array[Array[Float]]`)=>`Array[Float]]
 
     val random = new Random()
     val actualN = 9
@@ -50,7 +48,7 @@ class Transpose extends idealised.util.Tests {
     val input = Array.fill(actualN)(Array.fill(actualM)(random.nextFloat()))
     val scalaOutput = input.transpose.flatten
 
-    val (kernelOutput, _) = kernelF(input `;`)
+    val (kernelOutput, _) = kernelF(actualN `,` actualM `,` input)
 
     println(kernel.code)
     opencl.executor.Executor.shutdown()

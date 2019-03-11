@@ -29,20 +29,20 @@ class Partition extends idealised.util.Tests {
     opencl.executor.Executor.loadAndInit()
     import idealised.OpenCL.{ScalaFunction, `(`, `)=>`, _}
 
-    val N = SizeVar("N")
     val padAmount = 3
 
-    val lenF =  SteppedCase(3, N, 3) _
+    def lenF(n:Nat) =  SteppedCase(3, n, 3) _
 
-    val padAndPartition = fun(ArrayType(N, float))(xs => xs :>>
+    val padAndPartition = nFun(n =>
+      fun(ArrayType(n, float))(xs => xs :>>
       pad(padAmount, padAmount,0.0f) :>>
-      partition(3, lenF) :>>
-      depMapSeqUnroll(mapSeq(fun(x => x + 1.0f))))
+      partition(3, lenF(n)) :>>
+      depMapSeqUnroll(mapSeq(fun(x => x + 1.0f)))))
 
     val p = idealised.OpenCL.KernelGenerator.makeCode(1,1)(TypeInference(padAndPartition, Map()).toPhrase)
-    val kernelF = p.as[ScalaFunction`(`Array[Float]`)=>`Array[Float]]
+    val kernelF = p.as[ScalaFunction`(`Int `,` Array[Float]`)=>`Array[Float]]
     val input = Array.fill(128)(5.0f)
-    val (output, time) = kernelF(input `;`)
+    val (output, time) = kernelF(128 `,` input)
 
     val scalaOutput = (Array.fill(padAmount)(0.0f) ++ input ++ Array.fill(padAmount)(0.0f)).map(x => x + 1.0f)
 
