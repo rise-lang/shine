@@ -70,10 +70,9 @@ class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
     val m = 4
     val n = 8
     val f: Expr[`(nat)->`[`(nat)->`[DataType -> DataType]]] =
-      nFun(m =>
-        nFun(n =>
+      nFun((m, n) =>
           fun(ArrayType(m, ArrayType(n, int)))(xs =>
-            xs :>> mapSeq(mapSeq(fun(x => x + 1))))))
+            xs :>> mapSeq(mapSeq(fun(x => x + 1)))))
 
     val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase)
     println(kernel.code)

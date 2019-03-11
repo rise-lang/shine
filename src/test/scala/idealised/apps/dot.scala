@@ -1,6 +1,6 @@
 package idealised.apps
 
-import idealised.DPIA.Phrases.Phrase
+import idealised.DPIA.Types.ExpType
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.NatIdentifier
 import idealised.SurfaceLanguage.Types._
@@ -21,7 +21,7 @@ class dot extends idealised.util.Tests {
   test("Simple dot product type inference works") {
     val typed = TypeInference(simpleDotProduct, Map())
 
-    val N = Phrase.natParamsOfUncurriedFunction(typed.toPhrase).head
+    val N = typed.t.get.n
     assertResult(NatDependentFunctionType(N, FunctionType(xsT(N), FunctionType(ysT(N), float)))) {
       typed.t.get
     }
@@ -32,7 +32,7 @@ class dot extends idealised.util.Tests {
     import idealised.DPIA._
     val phrase = TypeInference(simpleDotProduct, Map()).convertToPhrase
 
-    val N = Phrase.natParamsOfUncurriedFunction(phrase).head
+    val N = phrase.t.asInstanceOf[`(nat)->`[ExpType -> ExpType]].n
     val dt = float
     assertResult(N -> (exp"[$N.$dt]" -> (exp"[$N.$dt]" -> exp"[$dt]"))) {
       phrase.t

@@ -20,7 +20,7 @@ abstract class AbstractParForNat[T <: DataType](val n: Nat,
   override lazy val `type`: CommandType = {
     (n: Nat) -> (dt: DataType) ->
       (out :: acc"[${DepArrayType(n, i, dt)}]") ->
-      (body :: t"(${body.t.x}:nat) -> acc[${makeDt(body.t.x)}] -> comm") ->
+      (body :: t"(${body.t.n}:nat) -> acc[${makeDt(body.t.n)}] -> comm") ->
       comm
   }
   override def eval(s: Store): Store = ???
@@ -38,7 +38,7 @@ abstract class AbstractParForNat[T <: DataType](val n: Nat,
       <output type={ToString(AccType(ArrayType(n, dt)))}>
         {Phrases.xmlPrinter(out)}
       </output>
-      <body type={ToString(body.t.x -> (AccType({makeDt(body.t.x)}) -> CommandType()))}>
+      <body type={ToString(body.t.n -> (AccType({makeDt(body.t.n)}) -> CommandType()))}>
         {Phrases.xmlPrinter(body)}
       </body>
     </parForNat>.copy(label = {
