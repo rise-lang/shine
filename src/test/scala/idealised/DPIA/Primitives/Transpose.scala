@@ -16,7 +16,7 @@ class Transpose extends idealised.util.Tests {
     val M = NamedVar("M", StartFromRange(1))
     val f = fun(ArrayType(N, ArrayType(M, float)))(xs => xs :>> join :>> split(M))
 
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase, 1, 1)
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(1,1)(TypeInference(f, Map()).toPhrase)
     val kernelF = kernel.as[ScalaFunction`(`Array[Array[Float]]`)=>`Array[Float]]
 
     val random = new Random()
@@ -41,7 +41,7 @@ class Transpose extends idealised.util.Tests {
     val M = NamedVar("M", StartFromRange(1))
     val f = fun(ArrayType(N, ArrayType(M, float)))(xs => xs :>> transpose)
 
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase, 1, 1)
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(1,1)(TypeInference(f, Map()).toPhrase)
     val kernelF = kernel.as[ScalaFunction`(`Array[Array[Float]]`)=>`Array[Float]]
 
     val random = new Random()

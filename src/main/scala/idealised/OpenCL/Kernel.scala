@@ -10,14 +10,15 @@ import opencl.executor._
 
 import scala.collection.immutable.List
 import scala.collection.{Seq, immutable}
+
 import scala.language.implicitConversions
 
+//noinspection ScalaDocParserErrorInspection
 case class Kernel(decls: Seq[C.AST.Decl],
                   kernel: OpenCL.AST.KernelDecl,
                   outputParam: Identifier[AccType],
                   inputParams: Seq[Identifier[ExpType]],
-                  intermediateParams: Seq[Identifier[VarType]],
-                  localSize: Nat, globalSize: Nat) {
+                  intermediateParams: Seq[Identifier[VarType]]) {
 
   def code: String = decls.map(OpenCL.AST.Printer(_)).mkString("\n") +
     "\n\n" +
@@ -44,7 +45,8 @@ case class Kernel(decls: Seq[C.AST.Decl],
     val kernelF = kernel.as[ScalaFunction`(`Array[Float]`)=>`Array[Float]]
     val (result, time) = kernelF(xs `;`)
     */
-  def as[F <: FunctionHelper](implicit ev: F#T <:< HList): F#T => (F#R, TimeSpan[Time.ms]) = {
+  def as[F <: FunctionHelper](localSize: NDRange, globalSize: NDRange)
+                             (implicit ev: F#T <:< HList): F#T => (F#R, TimeSpan[Time.ms]) = {
     hArgs: F#T => {
       val args: List[Any] = hArgs.toList
 
@@ -72,8 +74,12 @@ case class Kernel(decls: Seq[C.AST.Decl],
       }
 
       val runtime = Executor.execute(kernelJNI,
-        ArithExpr.substitute(localSize, lengthMapping).eval, 1, 1,
-        ArithExpr.substitute(globalSize, lengthMapping).eval, 1, 1,
+        ArithExpr.substitute(localSize.x, lengthMapping).eval,
+        ArithExpr.substitute(localSize.y, lengthMapping).eval,
+        ArithExpr.substitute(localSize.z, lengthMapping).eval,
+        ArithExpr.substitute(globalSize.y, lengthMapping).eval,
+        ArithExpr.substitute(globalSize.y, lengthMapping).eval,
+        ArithExpr.substitute(globalSize.z, lengthMapping).eval,
         kernelArgs)
 
       val output = castToOutputType[F#R](outputParam.`type`.dataType, outputArg)
@@ -92,7 +98,13 @@ case class Kernel(decls: Seq[C.AST.Decl],
   }
 
   private def createLengthMapping(p: Identifier[ExpType], a: Any): Seq[(Nat, Int)] = {
-    createLengthMapping(p.t.dataType, a).filter(_._1.isInstanceOf[Var])
+    val completeLengthMapping = createLengthMapping(p.t.dataType, a)
+
+    //TODO cover case where ArithExpr cannot be evaluated
+    completeLengthMapping.filter(!_._1.isInstanceOf[Var])
+      .foreach { case (typeSize: Nat, argSize: Int) => assert(typeSize.eval == argSize) }
+
+    completeLengthMapping.filter(_._1.isInstanceOf[Var])
   }
 
   private def createLengthMapping(t: DataType, a: Any): Seq[(Nat, Int)] = {
@@ -116,15 +128,14 @@ case class Kernel(decls: Seq[C.AST.Decl],
   }
 
   private def createKernelArgs(args: List[Any], lengthMapping: immutable.Map[Nat, Nat]): (GlobalArg, List[KernelArg]) = {
-    val numberOfKernelArgs = 1 + args.length + intermediateParams.size + lengthMapping.size
+    val numberOfKernelArgs = 1 + args.length + intermediateParams.size
     assert(kernel.params.length == numberOfKernelArgs)
 
     val outputArg = createOutputArg(sizeInByte(outputParam) `with` lengthMapping)
     val inputArgs = args.map(createInputArg)
     val intermediateArgs = createIntermediateArgs(args.length, lengthMapping)
-    val lengthArgs = createLengthArgs(lengthMapping)
 
-    (outputArg, inputArgs ++ intermediateArgs ++ lengthArgs)
+    (outputArg, inputArgs ++ intermediateArgs)
   }
 
   private def createOutputArg(size: SizeInByte): GlobalArg = {
@@ -189,14 +200,6 @@ case class Kernel(decls: Seq[C.AST.Decl],
     }).asInstanceOf[R]
   }
 
-  private def createLengthArgs(lengthMapping: immutable.Map[Nat, Nat]): immutable.Seq[ValueArg] = {
-    // create length args sorted by names (cmp. KernelGenerator.makeLengthParams)
-    lengthMapping.toList.map({
-      case (v: Var, n) => (v.name,  ValueArg.create(n.eval))
-      case _ => throw new Exception("length mapping should only contain variables")
-    }).sortBy(_._1).map(_._2)
-  }
-
   private implicit def getDataType(i: Identifier[_]): DataType = {
     i.t match {
       case ExpType(dataType) => dataType
@@ -226,4 +229,26 @@ case class Kernel(decls: Seq[C.AST.Decl],
       SizeInByte(ArithExpr.substitute(size.value, valueMap))
     }
   }
+}
+
+sealed case class KernelWithSizes(kernel: Kernel,
+                                  localSize: NDRange,
+                                  globalSize: NDRange) {
+  def as[F <: FunctionHelper](implicit ev: F#T <:< HList): F#T => (F#R, TimeSpan[Time.ms]) =
+    kernel.as[F](localSize, globalSize)
+
+  def code: String= kernel.code
+}
+
+sealed case class KernelNoSizes(kernel: Kernel) {
+  //noinspection TypeAnnotation
+  def as[F <: FunctionHelper](implicit ev: F#T <:< HList) = new {
+    def apply(localSize: NDRange, globalSize: NDRange): F#T => (F#R, TimeSpan[Time.ms]) =
+      kernel.as[F](localSize, globalSize)
+
+    def withSizes(localSize: NDRange, globalSize: NDRange): F#T => (F#R, TimeSpan[Time.ms]) =
+      kernel.as[F](localSize, globalSize)
+  }
+
+  def code: String= kernel.code
 }

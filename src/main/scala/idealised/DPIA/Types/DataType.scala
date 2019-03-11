@@ -127,7 +127,7 @@ object DataType {
       case ct: SurfaceLanguage.Types.ComposedType => ct match {
         case at: SurfaceLanguage.Types.ArrayType => ArrayType(at.size, DataType(at.elemType))
         case dat:SurfaceLanguage.Types.DepArrayType =>
-          DepArrayType(dat.size, x => DataType.substitute(x, `for`= dat.elemType.x, in=DataType(dat.elemType.t)))
+          DepArrayType(dat.size, x => DataType.substitute(x, `for`= dat.elemType.n, in=DataType(dat.elemType.t)))
         case tt: SurfaceLanguage.Types.TupleType =>
           assert(tt.elemTypes.size == 2)
           //noinspection ZeroIndexToHead

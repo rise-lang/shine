@@ -1,10 +1,10 @@
+import idealised.OpenCL._
 import idealised.OpenCL.KernelGenerator
 import idealised.OpenCL.SurfaceLanguage.DSL.{depMapGlobal, depMapWorkgroup}
 import idealised.OpenMP.SurfaceLanguage.DSL.depMapPar
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
-import lift.arithmetic.?
 import opencl.executor.Executor
 
 import scala.language.{implicitConversions, postfixOps}
@@ -62,7 +62,8 @@ object dmapExample extends App{
 
   def printKernel[T <: Type](expr: Expr[T]) {
     //def generate(e:Expr[T]) = idealised.OpenMP.ProgramGenerator.makeCode(TypeInference(e, Map()).toPhrase)
-    def generate(e:Expr[T]) = KernelGenerator.makeCode(TypeInference(e, Map()).toPhrase, localSize = 8, globalSize = 8)
+    def generate(e:Expr[T]) =
+      KernelGenerator.makeCode(localSize = 8, globalSize = 8)(TypeInference(e, Map()).toPhrase)
     println(generate(expr).code)
   }
 
@@ -80,7 +81,8 @@ object dmapExample extends App{
 
   Executor.loadAndInit()
   import idealised.OpenCL._
-  val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(triangleVectorMultGlobalFused(actualN), Map()).toPhrase, 1, 1)
+  val kernel = idealised.OpenCL.KernelGenerator
+    .makeCode(localSize = 1, globalSize = 1)(TypeInference(triangleVectorMultGlobalFused(actualN), Map()).toPhrase)
   println(kernel.code)
 
   val inputVector = Array.tabulate(actualN)(id => id + 1.0f)

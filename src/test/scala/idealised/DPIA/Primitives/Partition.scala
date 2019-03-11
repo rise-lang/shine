@@ -13,9 +13,12 @@ import scala.util.Random
 class Partition extends idealised.util.Tests {
   test("Simple partition into a triangle C") {
     val N = Cst(6)
+
     val lenF = (i:NatIdentifier) => i + 1
 
-    val slideExample = fun(ArrayType(N, float))(xs => xs :>> partition(3, lenF) :>> depMapSeq(mapSeq(fun(x => x + 1.0f))))
+    val slideExample =
+      nFun(n =>
+        fun(ArrayType(n, float))(xs => xs :>> partition(3, lenF) :>> depMapSeq(mapSeq(fun(x => x)))))
 
     val p = idealised.C.ProgramGenerator.makeCode(TypeInference(slideExample, Map()).toPhrase)
     val code = p.code
@@ -36,8 +39,8 @@ class Partition extends idealised.util.Tests {
       partition(3, lenF) :>>
       depMapSeqUnroll(mapSeq(fun(x => x + 1.0f))))
 
-    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(padAndPartition, Map()).toPhrase, localSize = 1, globalSize = 1)
-    val kernelF = p.as[ScalaFunction`(`Array[Float]`)=>`Array[Float]]
+    val p = idealised.OpenCL.KernelGenerator.makeCode(1,1)(TypeInference(padAndPartition, Map()).toPhrase).kernel
+    val kernelF = p.as[ScalaFunction`(`Array[Float]`)=>`Array[Float]](1,1)
     val input = Array.fill(128)(5.0f)
     val (output, time) = kernelF(input `;`)
 

@@ -12,25 +12,25 @@ import scala.language.postfixOps
 import scala.language.reflectiveCalls
 
 class MemAccess extends idealised.util.TestsWithExecutor {
-  def printSyntaxCheckAnd[T <: Type](exec: Kernel => Array[Float], prog: Expr[T]): Array[Float] = {
+  def printSyntaxCheckAnd[T <: Type](exec: KernelNoSizes => Array[Float], prog: Expr[T]): Array[Float] = {
      val kernel = idealised.OpenCL.KernelGenerator
-      .makeCode(TypeInference(prog, Map()).toPhrase, 8, 32)
+      .makeCode(TypeInference(prog, Map()).toPhrase)
     println(kernel.code)
     SyntaxChecker.checkOpenCL(kernel.code)
 
     exec(kernel)
   }
 
-  def runWithMatrixInput(kernel: Kernel): Array[Float] = {
+  def runWithMatrixInput(kernel: KernelNoSizes): Array[Float] = {
     val input = Array.tabulate(8, 8) {(i, j) => 1.0f * i}
     val kernelFun = kernel.as[ScalaFunction `(` Array[Array[Float]] `)=>` Array[Float]]
-    kernelFun(input `;`)._1
+    kernelFun(4, 8)(input `;`)._1
   }
 
-  def runWithVectorInput(kernel: Kernel): Array[Float] = {
+  def runWithVectorInput(kernel: KernelNoSizes): Array[Float] = {
     val input = Array.tabulate(8) { i => 1.0f * i}
     val kernelFun = kernel.as[ScalaFunction `(` Array[Float] `)=>` Array[Float]]
-    kernelFun(input `;`)._1
+    kernelFun(4,8)(input `;`)._1
   }
 
   val M = SizeVar("M")
@@ -93,15 +93,15 @@ class MemAccess extends idealised.util.TestsWithExecutor {
 
   ignore("Generates correct code for local memory transpose in OpenCL") {
     val tile =
-      dFun((rows : NatIdentifier) =>
-        dFun((columns : NatIdentifier) =>
+      nFun(rows =>
+        nFun(columns =>
           map(map(transpose()) o split(columns) o transpose()) o split(rows)))
 
     val untile2D = join() o map(map(join()) o transpose())
 
     val prog =
-      dFun((tileRows : NatIdentifier) =>
-        dFun((tileColumns : NatIdentifier) =>
+      nFun(tileRows =>
+        nFun(tileColumns=>
           fun(ArrayType(M, ArrayType(N, float)))(x =>
             x :>> tile(tileRows)(tileColumns) :>>
               mapWorkgroup(1)(mapWorkgroup(0)(fun(tile =>
@@ -111,6 +111,6 @@ class MemAccess extends idealised.util.TestsWithExecutor {
                       mapLocal(1)(mapLocal(0)(id))))) :>>
               map(transposeW()) :>> untile2D)))
 
-    val output = printSyntaxCheckAnd(runWithMatrixInput, prog)
+    printSyntaxCheckAnd(runWithMatrixInput, prog)
   }
 }

@@ -50,7 +50,7 @@ abstract class AbstractDepMap(n: Nat,
               (implicit context: TranslationContext): Phrase[CommandType]
 
   override val `type`: ExpType = {
-    val k = f.t.x
+    val k = f.t.n
     (n: Nat) -> (ft1:NatDataTypeFunction) -> (ft2:NatDataTypeFunction) ->
       (f :: t"($k : nat) -> exp[${ ft1(k) }] -> exp[${ ft2(k) }]")
     (array :: exp"[$n.$ft1]") ->
