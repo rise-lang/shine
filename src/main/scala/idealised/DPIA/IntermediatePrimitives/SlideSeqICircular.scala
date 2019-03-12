@@ -10,7 +10,7 @@ import idealised.DPIA.ImperativePrimitives.{CycleAcc, DropAcc, ForNat, TakeAcc}
 
 import scala.language.reflectiveCalls
 
-object MapSeqSlideICircular {
+object SlideSeqICircular {
   def apply(n: Nat,
             size: Nat,
             // step: Nat,

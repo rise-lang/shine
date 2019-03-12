@@ -84,7 +84,7 @@ To facilitate interference control, we identify a subset of phrase types which a
 
       \inferrule*
       {\Delta \vdash N : \natkind}
-      {\Delta \vdash \mathsf{idx}[N] : \datatype}
+      {\Delta \vdash \tyidx[N] : \datatype}
 
       \inferrule*
       {\Delta \vdash N : \natkind \\\\ \Delta \vdash \delta : \datatype}
@@ -170,7 +170,7 @@ To facilitate interference control, we identify a subset of phrase types which a
 
 We extend SCIR with both data type and size polymorphism, so we need a kind system. \autoref{fig:types} presents the kinding rules for \DPIA types. The kinds $\kappa$ of \DPIA include the major classifications into data types ($\datatype$) and phrase types ($\phrasetype$), along with the kind of type-level natural numbers ($\natkind$). Types may contain variables, so we use a kinding judgement $\Delta \vdash \tau : \kappa$, which states that type $\tau$ has kind $\kappa$ in kinding context $\Delta$. \autoref{fig:structural-kinding} gives the variable rule that permits the use of type variables in well-kinded types. \autoref{fig:natural-number-kinding} presents the rules for type-level natural numbers: either numeric literals $\underline{\ell}$, addition $M + N$, or multiplication $M * N$ (where $M$ and $N$ range over terms of kind $\natkind$). We write $M N$ as syntactic sugar for $M * N$.
 
-The rules for data types are presented in \autoref{fig:data-type-kinding}. We use $\delta$ to range over data types. The base types are $\mathsf{num}$ for numbers; and a data type of array indexes $\mathsf{idx}[M]$, parameterised by the size of the array. There are two compound types of data. For any data type $\delta$ and natural number term $M$, $M.\delta$ is the data type of homogeneous arrays of $\delta$s of size $M$. We opt for a concise notation for array types as they are pervasive in data parallel programming. Heterogeneous compound data types (records) are built using the rule for $\delta_1 \times \delta_2$.
+The rules for data types are presented in \autoref{fig:data-type-kinding}. We use $\delta$ to range over data types. The base types are $\mathsf{num}$ for numbers; and a data type of array indexes $\tyidx[M]$, parameterised by the size of the array. There are two compound types of data. For any data type $\delta$ and natural number term $M$, $M.\delta$ is the data type of homogeneous arrays of $\delta$s of size $M$. We opt for a concise notation for array types as they are pervasive in data parallel programming. Heterogeneous compound data types (records) are built using the rule for $\delta_1 \times \delta_2$.
 
 The phrase types of \DPIA are given in \autoref{fig:phrase-type-kinding}. We use $\theta$ to range over phrase types. For each data type $\delta$, there are phrase types $\mathsf{exp}[\delta]$ for \emph{expression} phrases that produce data of type $\delta$, and $\mathsf{acc}[\delta]$ for \emph{acceptor} phrases that consume data of type $\delta$. The $\mathsf{comm}$ phrase type classifies \emph{command} phrases that may modify the store. Phrases that can be used in two different ways, $\theta_1$ or $\theta_2$, are classified using the phrase product type $\theta_1 \times \theta_2$. This type is distinct from the \emph{data} product type $\delta_1 \times \delta_2$: the data type represents a pair of data values; the phrase type represents an ``interface'' that offers two possible ``methods''.
 The final three phrase types are all variants of parameterised phrase types. The phrase types $\theta_1 \to \theta_2$ and $\theta_1 \pureto \theta_2$ classify phrase functions. The $\mathrm{p}$ subscript denotes passive functions. The phrase type $(x\mathord:\kappa) \to \theta$ classifies a phrase that is parameterised either by a data type or a natural number. We find it convenient to allow lowercase letters to range over both term variables and type variables.
@@ -289,6 +289,8 @@ The typing rules of \DPIA are given in \autoref{fig:typing-rules}. These rules d
 \subsection{Data Parallel Programming Primitives}
 \label{sec:dpia-prims}
 
+% TODO: should we move OpenMP primitives elsewhere?
+
 \begin{figure}[H]
   \footnotesize
   \begin{minipage}{1.0\linewidth} \begin{tabular*}{\linewidth}{>{$}l<{$}@{\hspace{0.4em}}>{$}c<{$}>{$}l<{$}}
@@ -305,13 +307,18 @@ The typing rules of \DPIA are given in \autoref{fig:typing-rules}. These rules d
         \prim{reduceSeq}&:&(n : \natkind) \to (\dtone~\dttwo : \datatype) \to
         (\tyexp[\dtone] \to \tyexp[\dttwo] \to \tyexp[\dttwo]) \to \tyexp[\dttwo] \to \tyexp[n.\dtone] \to \tyexp[\dttwo]\bigskip\\
 
-        \prim{zip}&:&(n : \natkind) \to (\dtone~\dttwo : \datatype) \to \tyexp[n.\dtone] \to \tyexp[n.\dttwo] \to \tyexp[n.(\dtone \times \dttwo)] \\
         \prim{split}&:&(n~m : \natkind) \to (\dt : \datatype) \to \tyexp[nm.\dt] \to \tyexp[m.n.\dt] \\
         \prim{join}&:&(n~m : \natkind) \to (\dt : \datatype) \to \tyexp[n.m.\dt] \to \tyexp[nm.\dt] \\
+        \prim{reorder}&:&(n : \natkind) \to (\dt : \datatype) \to (\tyexp[\tyidx[n]] \to \tyexp[\tyidx[n]]) \to (\tyexp[\tyidx[n]] \to \tyexp[\tyidx[n]]) \to \tyexp[n.\dt] \to \tyexp[n.\dt] \\
+        \prim{drop}&:&(n~m : \natkind) \to (\dt : \datatype) \to \tyexp[(m + n).\dt] \to \tyexp[m.\dt] \\ % TODO? differs from implementation
+        \prim{take}&:&(n~m : \natkind) \to (\dt : \datatype) \to \tyexp[m.\dt] \to \tyexp[n.\dt] \\ % TODO? ensure n <= m by using addition instead?
+        \prim{pad}&:&(n~l~r : \natkind) \to (\dt : \datatype) \to \tyexp[\dt] \to \tyexp[n.\dt] \to \tyexp[(l + n + r).\dt] \\
+        \prim{slide}&:&(n~sz~sp : \natkind) \to (\dt : \datatype) \to \tyexp[(sp \times n + sz - sp).\dt] \to \tyexp[n.sz.\dt] \\
+        \prim{zip}&:&(n : \natkind) \to (\dtone~\dttwo : \datatype) \to \tyexp[n.\dtone] \to \tyexp[n.\dttwo] \to \tyexp[n.(\dtone \times \dttwo)] \\
         \prim{pair}&:&(\dtone~\dttwo: \datatype) \to \tyexp[\dtone] \to \tyexp[\dttwo] \to \tyexp[\dtone \times \dttwo]\\
         \prim{fst}&:&(\dtone~\dttwo : \datatype) \to \tyexp[\dtone \times \dttwo] \to \tyexp[\dtone] \\
         \prim{snd}&:&(\dtone~\dttwo : \datatype) \to \tyexp[\dtone \times \dttwo] \to \tyexp[\dttwo] \\
-        \prim{idx} &:&(n : \natkind) \to (\dt : \datatype) \to \tyexp[n.\dt] \to \tyexp[\mathsf{idx}[n]] \to \tyexp[\dt] \\
+        \prim{idx} &:&(n : \natkind) \to (\dt : \datatype) \to \tyexp[n.\dt] \to \tyexp[\tyidx[n]] \to \tyexp[\dt] \\ % TODO? order differs from implementation, and is inside imperative primitives
     \end{tabular*}
     \subcaption{Functional primitives}\label{fig:func-prim}
   \end{minipage}
@@ -325,16 +332,19 @@ The typing rules of \DPIA are given in \autoref{fig:typing-rules}. These rules d
         \prim{new}&:&(\dt : \datatype) \to (\tyvar[\dt] \to \tycomm) \to \tycomm
         \qquad (\text{where }\mathsf{var}[\dt] = \mathsf{acc}[\dt] \times \mathsf{exp}[\dt] : \phrasetype) \\
         (:=)&:&\tyacc[\mathsf{num}] \times \tyexp[\mathsf{num}] \to \tycomm \\
-        \prim{for}&:&(n : \natkind) \to (\tyexp[\mathsf{idx}[n]] \to \tycomm) \to \tycomm \\
-        \prim{parfor}&:&(n : \natkind) \to (\dt : \datatype) \to \tyacc[n.\dt] \to (\tyexp[\mathsf{idx}[n]] \to \tyacc[\dt] \pureto \tycomm) \to \tycomm \bigskip\\
+        \prim{for}&:&(n : \natkind) \to (\tyexp[\tyidx[n]] \to \tycomm) \to \tycomm \\
+        \prim{parfor}&:&(n : \natkind) \to (\dt : \datatype) \to \tyacc[n.\dt] \to (\tyexp[\tyidx[n]] \to \tyacc[\dt] \pureto \tycomm) \to \tycomm \bigskip\\
 
-        \prim{zipAcc_1} &:& (n : \natkind) \to (\dtone~\dttwo : \datatype) \to \tyacc[n.\dtone \times \dttwo] \to \tyacc[n.\dtone] \\
-        \prim{zipAcc_2} &:& (n : \natkind) \to (\dtone~\dttwo : \datatype) \to \tyacc[n.\dtone \times \dttwo] \to \tyacc[n.\dttwo] \\
         \prim{splitAcc}&:&(n~m : \natkind) \to (\dt : \datatype) \to \tyacc[m.n.\dt] \to \tyacc[nm.\dt] \\
         \prim{joinAcc}&:&(n~m : \natkind) \to (\dt : \datatype) \to \tyacc[nm.\dt] \to \tyacc[n.m.\dt] \\
+        \prim{reorderAcc}&:&(n : \natkind) \to (\dt : \datatype) \to (\tyexp[\tyidx[n]] \to \tyexp[\tyidx[n]]) \to \tyacc[n.\dt] \to \tyacc[n.dt] \\
+        \prim{zipAcc_1} &:& (n : \natkind) \to (\dtone~\dttwo : \datatype) \to \tyacc[n.\dtone \times \dttwo] \to \tyacc[n.\dtone] \\
+        \prim{zipAcc_2} &:& (n : \natkind) \to (\dtone~\dttwo : \datatype) \to \tyacc[n.\dtone \times \dttwo] \to \tyacc[n.\dttwo] \\
         \prim{pairAcc_1}&:&(\dtone~\dttwo : \datatype) \to \tyacc[\dtone \times \dttwo] \to \tyacc[\dtone] \\
         \prim{pairAcc_2}&:&(\dtone~\dttwo : \datatype) \to \tyacc[\dtone \times \dttwo] \to \tyacc[\dttwo] \\
-        \prim{idxAcc} &:&(n : \natkind) \to (\dt : \datatype) \to \tyacc[n.\dt] \to \tyexp[\mathsf{idx}[n]] \to \tyacc[\dt] \bigskip\\
+        \prim{idxAcc} &:&(n : \natkind) \to (\dt : \datatype) \to \tyacc[n.\dt] \to \tyexp[\tyidx[n]] \to \tyacc[\dt] \bigskip\\
+
+        \prim{mapRead}&:&(n : \natkind) \to (\dtone~\dttwo : \datatype) \to (\tyexp[\dtone] \to (\tyexp[\dttwo] \to \tycomm) \to \tycomm) \to \tyexp[n.\dtone] \to \tyexp[n.\dttwo] \\
     \end{tabular*}
     \subcaption{Imperative primitives}\label{fig:imp-prim}
   \end{minipage}
