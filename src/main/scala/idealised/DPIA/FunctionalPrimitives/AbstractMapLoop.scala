@@ -25,7 +25,7 @@ abstract class AbstractMapLoop(n: Nat,
 
     con(array)(λ(exp"[$n.$dt1]")(x =>
       makeMapI(n, dt1, dt2,
-        λ(exp"[$dt1]")(x => λ(acc"[${g.t.outT.dataType}")(o => acc(g(f(x)))(o))),
+        λ(exp"[$dt1]")(x => λ(acc"[${g.t.outT.dataType}]")(o => acc(g(f(x)))(o))),
         x, A)))
   }
 

@@ -86,7 +86,7 @@ It is important that these translations satisfy the following equivalences.
   \begin{displaymath}
     \begin{array}{lcl}
       \semM{G}{\prim{map}~N~\delta_1~\delta_2~F~E}_{N.\delta_3}(A)
-      &=& \semM{\lambda x.~F~(G~x)}{E}_{N.\delta_3}(A) % TODO? composition symbol
+      &=& \semM{\lambda x.~G~(F~x)}{E}_{N.\delta_3}(A) % TODO? composition symbol
       \\
       \semM{G}{\prim{mapPar}~N~\delta_1~\delta_2~F~E}_{N.\delta_3}(A)
       &=& \semE{E}_{N.\delta_1}(\lambda x.~\prim{mapParI}~N~\delta_1~\delta_2~(\lambda x~o. \semA{G~(F~x)}_{\delta_3}(o))~x~A)
