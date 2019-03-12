@@ -24,7 +24,7 @@ abstract class AbstractMapLoop(n: Nat,
     import TranslationToImperative._
 
     con(array)(λ(exp"[$n.$dt1]")(x =>
-      makeMapI(n, dt1, dt2, λ(exp"[$dt1]")(x => λ(acc"[$dt2]")(o => acc(g(f(x)))(o))), x, A)(context)))
+      makeMapI(n, dt1, dt2, λ(exp"[$dt1]")(x => λ(acc"[$dt2]")(o => acc(g(f(x)))(o))), x, A)))
   }
 
   override def continuationTranslation(C: Phrase[ExpType -> CommandType])

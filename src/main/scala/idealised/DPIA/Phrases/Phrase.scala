@@ -105,8 +105,7 @@ trait ExpPrimitive extends Primitive[ExpType] {
 
   def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType],
                              A: Phrase[AccType])
-                            (implicit context: TranslationContext): Phrase[CommandType] =
-    ???
+                            (implicit context: TranslationContext): Phrase[CommandType]
 
   def continuationTranslation(C: Phrase[ExpType -> CommandType])
                              (implicit context: TranslationContext): Phrase[CommandType]

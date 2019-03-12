@@ -3,8 +3,7 @@ package idealised.DPIA.Primitives
 import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
-import idealised.util.SyntaxChecker
-import lift.arithmetic._
+import idealised.util.{Execute, SyntaxChecker}
 
 class Reorder extends idealised.util.Tests {
   test("Simple gather example should generate syntactic valid C code with two one loops") {

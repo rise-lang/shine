@@ -141,7 +141,7 @@ object reorder {
             idxFinv: Expr[`(nat)->`[DataType ->DataType]]
            ): Expr[DataType -> DataType] = {
     val idxF_ = idxF(NamedVar(newName()))
-    val idxFinv_ = idxF(NamedVar(newName()))
+    val idxFinv_ = idxFinv(NamedVar(newName()))
     fun(array => Reorder(idxF_, idxFinv_, array, None))
   }
 }

@@ -42,7 +42,7 @@ final case class SlideSeq(n: Nat,
       )))
   }
 
-  override def continuationTranslation(C: Phrase[->[ExpType, CommandType]])
+  override def continuationTranslation(C: Phrase[ExpType -> CommandType])
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
