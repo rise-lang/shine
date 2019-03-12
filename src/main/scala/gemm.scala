@@ -137,10 +137,10 @@ object gemm extends App {
             fun(float)(beta =>
 
       join() o mapGlobal(0)(fun(ac =>
-        transposeW() o
+        transpose() o
         join() o
         mapGlobal(1)(fun(bc =>
-          transposeW() o
+          transpose() o
           fun(p235 =>
             mapSeq(fun(p237 =>
                 mapSeq(fun(p64 =>
@@ -199,8 +199,8 @@ object gemm extends App {
               zip(p237._1, p237._2) :>>
               mapSeq(fun(p64 =>
                 (p64._1 * alpha) + (p64._2 * beta)))))
-          ) :>> transposeW()
-        )) :>> join() :>> transposeW()
+          ) :>> transpose()
+        )) :>> join() :>> transpose()
       )) :>> join()
     )))))
 
@@ -242,8 +242,8 @@ object gemm extends App {
                                 zip(p237._1, p237._2) :>>
                                   mapSeq(fun(p64 =>
                                     (p64._1 * alpha) + (p64._2 * beta)))))
-                          ) :>> transposeW()
-                      )) :>> join() :>> transposeW()
+                          ) :>> transpose()
+                      )) :>> join() :>> transpose()
                   )) :>> join()
               )))))
 

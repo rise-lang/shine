@@ -41,6 +41,11 @@ abstract class AbstractMap(n: Nat,
     }
   }
 
+  override def acceptorTranslation(A: Phrase[AccType])
+                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+    mapAcceptorTranslation(fun(exp"[$dt1]")(x => x), A)
+  }
+
   override def prettyPrint: String =
     s"${this.getClass.getSimpleName} (${PrettyPhrasePrinter(f)}) (${PrettyPhrasePrinter(array)})"
 

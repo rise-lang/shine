@@ -109,7 +109,7 @@ class MemAccess extends idealised.util.TestsWithExecutor {
                   toLocal(mapLocal(1)(mapLocal(0)(id))) :>>
                     transpose() :>>
                       mapLocal(1)(mapLocal(0)(id))))) :>>
-              map(transposeW()) :>> untile2D)))
+              map(transpose()) :>> untile2D)))
 
     printSyntaxCheckAnd(runWithMatrixInput, prog)
   }

@@ -141,7 +141,7 @@ class asum extends idealised.util.Tests {
       input :>>
         split(2048 * 128) :>>
         mapWorkgroup(
-          gather(reorderWithStridePhrase(128)) >>>
+          reorderWithStride(128) >>>
             split(2048) >>>
             mapLocal(
               oclReduceSeq(fun(x => fun(a => abs(float)(x) + a)), 0.0f, OpenCL.PrivateMemory)
@@ -185,7 +185,7 @@ class asum extends idealised.util.Tests {
         split(4096 * 128) :>>
         mapWorkgroup(
           asVector(2) >>>
-          gather(reorderWithStridePhrase(64)) >>>
+          reorderWithStride(64) >>>
             split(2048) >>>
             mapLocal(
               oclReduceSeq(fun(x => fun(a => abs(float2)(x) + a)), vectorize(2, 0.0f), OpenCL.PrivateMemory)

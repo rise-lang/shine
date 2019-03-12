@@ -63,6 +63,10 @@ final case class Idx(n: Nat,
     con(array)(λ(exp"[$n.$dt]")(x => A :=| dt | Idx(n, dt, index, x)))
   }
 
+  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
+                                     (implicit context: TranslationContext): Phrase[CommandType] =
+    ???
+
   override def continuationTranslation(C: Phrase[ExpType -> CommandType])
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._

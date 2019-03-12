@@ -31,6 +31,11 @@ class fft extends idealised.util.Tests {
     val modPReorder = join() o transpose() o split(p)
     val createY = transpose() o modPReorder o split(r)
 
+    val fftiter =
+      fun(reorderedBT)(reorderedB =>
+      fun(ArrayType(N, TupleType(float, float)))(x =>
+        join() o transpose() o mapSeq(join() o transpose()) o // FIXME: could fuse with split mapAcc translation
+          split(LPrevIter) o
     fun(ArrayType(N, TupleType(float, float)))(x =>
       join() o transpose() o map(join() o transpose()) o
         split(LPrevIter) o

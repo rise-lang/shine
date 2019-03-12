@@ -49,6 +49,10 @@ final case class ForeignFunction(funDecl: ForeignFunction.Declaration,
     recurse(args zip inTs, Seq(), Seq())
   }
 
+  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
+                                     (implicit context: TranslationContext): Phrase[CommandType] =
+    ???
+
   override def continuationTranslation(C: Phrase[ExpType -> CommandType])
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
