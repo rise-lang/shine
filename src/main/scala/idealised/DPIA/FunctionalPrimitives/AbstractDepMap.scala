@@ -32,6 +32,17 @@ abstract class AbstractDepMap(n: Nat,
       }))), x, A)))
   }
 
+  override def mapAcceptorTranslation(g: Phrase[ExpType -> ExpType], A: Phrase[AccType])
+                                     (implicit context: TranslationContext): Phrase[CommandType] = {
+    import idealised.DPIA.Compilation.TranslationToImperative._
+    import idealised.DPIA._
+
+    con(array)(λ(exp"[${DepArrayType(n, makeDt1)}]")(x =>
+      makeMapI(n, i1, dt1, i2, dt2, _Λ_((k: NatIdentifier) => λ(exp"[${makeDt1(k)}]")(x => λ(acc"[${makeDt2(k)}]")(o => {
+        acc(g(f(k)(x)))(o)
+      }))), x, A)))
+  }
+
   override def continuationTranslation(C: Phrase[ExpType -> CommandType])
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._

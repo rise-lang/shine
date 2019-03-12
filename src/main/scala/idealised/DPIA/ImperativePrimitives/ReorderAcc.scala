@@ -7,7 +7,7 @@ import idealised.DPIA._
 
 import scala.xml.Elem
 
-final case class ScatterAcc(n: Nat,
+final case class ReorderAcc(n: Nat,
                             dt: DataType,
                             idxF: Phrase[ExpType -> ExpType],
                             array: Phrase[AccType])
@@ -22,14 +22,14 @@ final case class ScatterAcc(n: Nat,
   override def eval(s: Store): AccIdentifier = ???
 
   override def prettyPrint: String =
-    s"(scatterAcc ${PrettyPhrasePrinter(idxF)} ${PrettyPhrasePrinter(array)})"
+    s"(reorderAcc ${PrettyPhrasePrinter(idxF)} ${PrettyPhrasePrinter(array)})"
 
   override def xmlPrinter: Elem =
-    <scatterAcc n={ToString(n)} dt={ToString(dt)}>
+    <reorderAcc n={ToString(n)} dt={ToString(dt)}>
       <idxF>{Phrases.xmlPrinter(idxF)}</idxF>
       <input>{Phrases.xmlPrinter(array)}</input>
-    </scatterAcc>
+    </reorderAcc>
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[AccType] =
-    ScatterAcc(f(n), f(dt), VisitAndRebuild(idxF, f), VisitAndRebuild(array, f))
+    ReorderAcc(f(n), f(dt), VisitAndRebuild(idxF, f), VisitAndRebuild(array, f))
 }

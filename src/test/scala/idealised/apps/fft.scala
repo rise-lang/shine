@@ -28,7 +28,7 @@ class fft extends idealised.util.Tests {
     val fftiter =
       fun(reorderedBT)(reorderedB =>
       fun(ArrayType(N, TupleType(float, float)))(x =>
-        join() o transpose() o map(join() o transpose()) o
+        join() o transpose() o mapSeq(join() o transpose()) o // FIXME: could fuse with split mapAcc translation
           split(LPrevIter) o
           join() o mapPar(mapSeq(fun(yChunkWithBrow => {
 

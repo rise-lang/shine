@@ -30,12 +30,6 @@ object map {
   def apply(f: Expr[DataType -> DataType], x: DataExpr): Map = Map(f, x)
 }
 
-object mapOut {
-  def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] = fun(x => mapOut(f, x))
-
-  def apply(f: Expr[DataType -> DataType], x: DataExpr): MapOut = MapOut(f, x)
-}
-
 object zip {
   def apply(lhs: DataExpr, rhs: DataExpr): Zip = Zip(lhs, rhs, None)
 }
@@ -74,12 +68,12 @@ object slide {
   def apply(s1: Nat, s2: Nat, array: DataExpr): Slide = Slide(s1, s2, array, None)
 }
 
-object mapSeqSlide {
-  def apply(size: Nat, step: Nat, f: Expr[DataType -> DataType]): Expr[DataType -> DataType] =
-    fun(x => mapSeqSlide(size, step, f, x))
+object slideSeq {
+  def apply(size: Nat, step: Nat): Expr[DataType -> DataType] =
+    fun(x => slideSeq(size, step, x))
 
-  def apply(size: Nat, step: Nat, f: Expr[DataType -> DataType], x: DataExpr): MapSeqSlide =
-    MapSeqSlide(size, step, f, x, None)
+  def apply(size: Nat, step: Nat, x: DataExpr): SlideSeq =
+    SlideSeq(size, step, x, None)
 }
 
 object take {
@@ -142,17 +136,13 @@ object iterate {
     Iterate(k, f, array, None)
 }
 
-object gather {
-  def apply(idxF: Expr[`(nat)->`[DataType ->DataType]]): Expr[DataType -> DataType] = {
+object reorder {
+  def apply(idxF: Expr[`(nat)->`[DataType ->DataType]],
+            idxFinv: Expr[`(nat)->`[DataType ->DataType]]
+           ): Expr[DataType -> DataType] = {
     val idxF_ = idxF(NamedVar(newName()))
-    fun(array => Gather(idxF_, array, None))
-  }
-}
-
-object scatter {
-  def apply(idxF: Expr[`(nat)->`[DataType ->DataType]]): Expr[DataType -> DataType] = {
-    val idxF_ = idxF(NamedVar(newName()))
-    fun(array => Scatter(idxF_, array, None))
+    val idxFinv_ = idxFinv(NamedVar(newName()))
+    fun(array => Reorder(idxF_, idxFinv_, array, None))
   }
 }
 
@@ -162,14 +152,6 @@ object transpose {
   def apply(array: DataExpr): Transpose = Transpose(array, None)
 
   implicit def toTranspose(t: transpose.type): Expr[DataType -> DataType] = transpose()
-}
-
-object transposeW {
-  def apply(): Expr[DataType -> DataType] = fun(array => transposeW(array))
-
-  def apply(array: DataExpr): TransposeOnWrite = TransposeOnWrite(array, None)
-
-  implicit def toTransposeW(t: transposeW.type): Expr[DataType -> DataType] = transposeW()
 }
 
 object tuple {

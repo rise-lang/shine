@@ -66,7 +66,7 @@ class NatLambdaGen extends idealised.util.TestsWithExecutor {
                   tile :>>
                     toGlobal(mapLocal(1)(mapLocal(0)(toLocal(id))) >>>
                       transpose()) :>>
-                transposeW()))))))))// :>> untile2D)))
+                transpose()))))))))// :>> untile2D)))
 
     val kernel =
       idealised.OpenCL.KernelGenerator.makeCode(TypeInference(prog, Map()).toPhrase)
