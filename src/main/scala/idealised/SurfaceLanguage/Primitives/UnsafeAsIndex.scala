@@ -20,7 +20,7 @@ final case class UnsafeAsIndex(n: Nat, e: DataExpr, override val t: Option[DataT
     import TypeInference._
     TypeInference(e, subs) |> (e =>
       e.t match {
-        //TODO lift e to n: Nat and use n.max to create IndexType or at least to check bounds
+        //TODO lift e to n: Nat and use n.max to create IndexType or at least to check bounds?
         case Some(NatType) => UnsafeAsIndex(n, e, Some(IndexType(n)))
         case x => error(expr = s"AsIndex($e)", found = s"`${x.toString}'", expected = "expr[nat]")
       }

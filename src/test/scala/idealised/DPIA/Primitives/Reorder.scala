@@ -8,7 +8,9 @@ import idealised.util.{Execute, SyntaxChecker}
 class Reorder extends idealised.util.Tests {
   test("Simple gather example should generate syntactic valid C code with two one loops") {
     val e = nFun(n => fun(ArrayType(n, float))(xs =>
-      xs :>> reorderWithStride(128) :>> mapSeq(fun(x => x))
+      xs :>>
+        reorderWithStride(128) :>>
+        mapSeq(fun(x => x))
     ))
 
     val p = idealised.C.ProgramGenerator.makeCode(TypeInference(e, Map()).toPhrase)

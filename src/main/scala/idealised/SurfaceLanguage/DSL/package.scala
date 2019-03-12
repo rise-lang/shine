@@ -70,28 +70,16 @@ package object DSL {
   implicit def toLiteralFloat(f: Float): LiteralExpr = LiteralExpr(FloatData(f))
   implicit def toLiteralDouble(d: Double): LiteralExpr = LiteralExpr(DoubleData(d))
   implicit def toLiteralFloatN(v: VectorData): LiteralExpr = LiteralExpr(v)
-
   implicit def toNatExprNat(n: Nat): NatExpr = NatExpr(n)
+
+  def treatNatExprAsNat(natExpr: DataExpr, f: Nat => Nat): NatExpr = {
+    val liftedNat = Lifting.liftNatExpr(natExpr)
+    val res = f(liftedNat)
+    NatExpr(res)
+  }
 
   implicit def toNatDependentLambda[T <: Type](p: Expr[T]): NatDependentLambdaExpr[T] =
     nFun(_ => p)
-
-  implicit class IdentExpPhraseExtensions(i: IdentifierExpr) {
-    def asNatIdentifier: Nat = NamedVar(i.name)
-    def asNatIdentifier(withUpperBound: Nat): Nat = NamedVar(i.name, ContinuousRange(0, withUpperBound))
-  }
-
-  /*
-  def toNatIdentifier(i: IdentifierExpr): NamedVar = i.t match {
-    case Some(IndexType(n)) => NamedVar(i.name, ContinuousRange(0, n))
-    case _ => throw new Exception(s"Couldn't convert identifier ${i.name} with type ${i.t} to Nat.")
-  }
-  */
-
-  implicit class NatExtensions(n: Nat) {
-    def asExpr = LiteralExpr(IndexData(n))
-    def asExpr(withType: IndexType) = LiteralExpr(IndexData(n, withType))
-  }
 
   implicit class ExpPhraseExtensions(e: DataExpr) {
     def _1 = Fst(e, None)

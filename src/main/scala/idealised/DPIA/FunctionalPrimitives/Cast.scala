@@ -33,6 +33,9 @@ final case class Cast(dt1: BasicType, dt2: BasicType, e: Phrase[ExpType])
   def acceptorTranslation(A: Phrase[AccType])
                          (implicit context: TranslationContext): Phrase[CommandType] = ???
 
+  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
+                                     (implicit context: TranslationContext): Phrase[CommandType] = ???
+
   def continuationTranslation(C: Phrase[ExpType -> CommandType])
                              (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._

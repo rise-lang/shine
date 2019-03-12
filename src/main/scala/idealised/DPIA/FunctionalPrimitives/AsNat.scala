@@ -38,6 +38,9 @@ final case class AsNat(n: Nat, e : Phrase[ExpType])
       A :=|NatType| AsNat(n, x)))
   }
 
+  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
+                                     (implicit context: TranslationContext): Phrase[CommandType] = ???
+
   def continuationTranslation(C: Phrase[ExpType -> CommandType])
                              (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._

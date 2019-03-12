@@ -2,11 +2,10 @@ package idealised.DPIA
 
 import idealised.DPIA.Compilation.TranslationContext
 import idealised.DPIA.ImperativePrimitives._
-import idealised.DPIA.Phrases.{BinOp, Identifier, Literal, Natural, Pair, Phrase, Proj1, Proj2, UnaryOp}
+import idealised.DPIA.Phrases.{BinOp, Literal, Natural, Pair, Phrase, Proj1, Proj2, UnaryOp}
 import idealised.DPIA.Semantics.OperationalSemantics.{FloatData, IndexData, IntData}
 import idealised.DPIA.Types._
 import idealised.SurfaceLanguage.Operators
-import lift.arithmetic.{ContinuousRange, NamedVar}
 
 import scala.language.{implicitConversions, reflectiveCalls}
 
@@ -94,10 +93,8 @@ package object DSL {
 
   implicit class CallExpLambda[T <: PhraseType](fun: Phrase[ExpType -> T]) {
     def apply(arg: Phrase[ExpType]): Phrase[T] = CallLambda[ExpType, T](fun)(arg)
-    def apply(arg: Nat): Phrase[T] = Lifting.liftFunctionToNatLambda(fun)(arg)
 
     def $(arg: Phrase[ExpType]): Phrase[T] = apply(arg)
-    def $(arg: Nat): Phrase[T] = apply(arg)
   }
 
   implicit class CallNatDependentLambda[T <: PhraseType](fun: Phrase[`(nat)->`[T]]) {
@@ -139,11 +136,6 @@ package object DSL {
     val liftedNat = Lifting.liftNatExpr(natExpr)
     val res = f(liftedNat)
     Natural(res)
-  }
-
-  implicit class IdentExpPhraseExtensions(i: Identifier[ExpType]) {
-    def asNatIdentifier(withUpperBound: Nat) =
-      NamedVar(i.name, ContinuousRange(0, withUpperBound))
   }
 
   //TODO remove and use new conversions

@@ -10,8 +10,8 @@ package object DSL {
       val f =
         nFun(n =>
           fun(IndexType(n))(i => {
-            val j = i asNatIdentifier (withUpperBound = n)
-            (j / (n /^ s)) + s * (j % (n /^ s)) asExpr (withType = IndexType(n))
+            unsafeAsIndex(n, treatNatExprAsNat(asNat(i), j =>
+              (j / (n /^ s)) + s * (j % (n /^ s))))
           }))
       reorder(f, f)
     })

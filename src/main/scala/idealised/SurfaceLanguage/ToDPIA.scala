@@ -53,6 +53,8 @@ object ToPhraseType {
           case LiteralExpr(d) =>
             DPIA.Phrases.Literal(DPIA.Semantics.OperationalSemantics.Data(d)) // , DPIAType.DataType(d.dataType)
 
+          case NatExpr(n) => DPIA.Phrases.Natural(n)
+
           case p: PrimitiveExpr => p.toPhrase
         }
       }

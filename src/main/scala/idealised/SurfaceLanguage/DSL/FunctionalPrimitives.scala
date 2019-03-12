@@ -17,7 +17,7 @@ object asNat {
 }
 
 object unsafeAsIndex {
-  def apply(n: Nat, e: DataExpr): UnsafeAsIndex = UnsafeAsIndex(n, e)
+  def apply(n: Nat, e: DataExpr): UnsafeAsIndex = UnsafeAsIndex(n, e, Some(IndexType(n)))
 }
 
 object cast {

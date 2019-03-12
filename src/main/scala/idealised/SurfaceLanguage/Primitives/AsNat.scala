@@ -5,7 +5,7 @@ import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage.{PrimitiveExpr, _}
 import idealised.DPIA
 
-final case class AsNat(e: DataExpr, override val t: Option[DataType] = None)
+final case class AsNat(e: DataExpr, override val t: Option[DataType] = Some(NatType))
   extends PrimitiveExpr
 {
   override def convertToPhrase: DPIA.FunctionalPrimitives.AsNat = {

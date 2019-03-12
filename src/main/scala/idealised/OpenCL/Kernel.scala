@@ -239,7 +239,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
   private def sizeInByte(dt: DataType): SizeInByte = dt match {
     case s: ScalarType => s match {
       case idealised.DPIA.Types.bool    => SizeInByte(1)
-      case idealised.DPIA.Types.int     => SizeInByte(4)
+      case idealised.DPIA.Types.int | idealised.DPIA.Types.NatType => SizeInByte(4)
       case idealised.DPIA.Types.float   => SizeInByte(4)
       case idealised.DPIA.Types.double  => SizeInByte(8)
     }
