@@ -6,8 +6,9 @@ import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.DSL.{fun, _}
 import idealised.SurfaceLanguage.Semantics.{FloatData, SingletonArrayData}
 import idealised.SurfaceLanguage.Types._
-import idealised.SurfaceLanguage.{`(nat)->`,->, Expr, LiteralExpr}
+import idealised.SurfaceLanguage.{->, Expr, LiteralExpr, `(nat)->`}
 import idealised.util.Tests
+import idealised.utils.Display
 import lift.arithmetic._
 
 import scala.util.Random
@@ -23,18 +24,16 @@ class stencils extends Tests {
                                      code:String,
                                      runtimeMs:Double,
                                      correctness:CorrectnessCheck
-                                    ) {
+                                    ) extends Display{
 
-    def printout():Unit =
-      println(
+    def display:String =
         s"inputSize = $inputSize, " +
         s"stencilSize = $stencilSize, " +
         s"localSize = $localSize, " +
         s"globalSize = $globalSize, " +
         s"code = $code, " +
         s"runtime = $runtimeMs," +
-        s" correct = ${correctness.printoutText}"
-      )
+        s" correct = ${correctness.display}"
   }
 
   private sealed abstract class StencilBaseProgramRun extends RunOpenCLProgram(verbose = false) {

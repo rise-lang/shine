@@ -1,15 +1,17 @@
 package benchmarks.core
 
-sealed trait CorrectnessCheck {
+import idealised.utils.Display
+
+sealed trait CorrectnessCheck extends Display{
   final def isCorrect:Boolean = this == Correct
 
   def check():Unit = {
     println("Correctness check:")
-    println(this.printoutText)
+    println(this.display)
     assert(this.isCorrect)
   }
 
-  def printoutText:String = {
+  def display:String = {
     def wrongValueText(wrongValue:Int):String = if(wrongValue > 0) { s"$wrongValue values are wrong;" } else ""
     def wrongSizeText(sp: Option[SizePair]):String = sp.map(
       {

@@ -1,12 +1,13 @@
 package idealised.apps
 
-import idealised.OpenCL.SurfaceLanguage.DSL.{oclReduceSeq, depMapGlobal, toGlobal, mapLocal, depMapWorkgroup}
+import idealised.OpenCL.SurfaceLanguage.DSL.{depMapGlobal, depMapWorkgroup, mapLocal, oclReduceSeq, toGlobal}
 import idealised.OpenMP.SurfaceLanguage.DSL.depMapPar
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
 import idealised.OpenCL._
 import idealised.util.SyntaxChecker
+import idealised.utils.Display
 import lift.arithmetic.{ArithExpr, Cst, SizeVar}
 import opencl.executor.Executor
 
@@ -109,9 +110,15 @@ class triangleVectorMultNoExecutor extends idealised.util.Tests {
     SyntaxChecker.checkOpenCL(p.code)
   }
 
-  case class TriangleMatrixConfResult(inputSize:Int, splitSize:Int, localSize:Int, globalSize:Int, runtime:Double, correct:Boolean, code:String) {
-    def printout(): Unit = {
-      println(s"input = $inputSize; splitSize = $splitSize; localSize = $localSize; globalSize = $globalSize; runtime:$runtime correct:$correct")
+  case class TriangleMatrixConfResult(inputSize:Int,
+                                      splitSize:Int,
+                                      localSize:Int,
+                                      globalSize:Int,
+                                      runtime:Double,
+                                      correct:Boolean,
+                                      code:String) extends Display {
+    def display:String = {
+      s"input = $inputSize; splitSize = $splitSize; localSize = $localSize; globalSize = $globalSize; runtime:$runtime correct:$correct"
     }
   }
 
@@ -144,7 +151,7 @@ class triangleVectorMultNoExecutor extends idealised.util.Tests {
     ) yield {
       triangleMatrixBasic(inputSize, localSize, inputSize)
     }
-    results.filter(_.correct).sortBy(_.runtime).foreach(_.printout())
+    results.filter(_.correct).sortBy(_.runtime).foreach(x => println(x.display))
   }
 
 
