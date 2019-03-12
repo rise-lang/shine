@@ -104,7 +104,7 @@ object gemv extends App {
           mapLocal(fun(x => (alpha * x) + (t._2 * beta))) o
             toLocal(mapLocal(reduceSeq(add, 0.0f))) o split(128) o
             toLocal(mapLocal(reduceSeq(fun(x => fun(a => mult(x) + a)), 0.0f)))
-            o split(N /^ 128) o gather(reorderWithStridePhrase(128)) $ zip(xs, t._1)
+            o split(N /^ 128) o reorderWithStride(128) $ zip(xs, t._1)
         )) $ zip(mat, ys)
 
       )))))
@@ -119,7 +119,7 @@ object gemv extends App {
           fun(x => (x * alpha) + (t._2 * beta)) o
             toLocal(reduceSeq(add, 0.0f)) o
             toLocal(mapLocal(reduceSeq(fun(x => fun(a => mult(x) + a)), 0.0f))) o
-            split(N /^ 128) o gather(reorderWithStridePhrase(128)) $ zip(xs, t._1)
+            split(N /^ 128) o reorderWithStride(128) $ zip(xs, t._1)
         )) $ zip(mat, ys)
 
       )))))

@@ -26,6 +26,8 @@ case class WithIndex(n:Nat, dt:DataType, array:Phrase[ExpType]) extends ExpPrimi
     con(this)(λ(exp"[${DepArrayType(n, _ => dt)}]")(x => A :=|dt"[${DepArrayType(n, _ => dt)}]"| x ))
   }
 
+  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])(implicit context: TranslationContext): Phrase[CommandType] = ???
+
   override def continuationTranslation(C: Phrase[ExpType -> CommandType])(implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
     

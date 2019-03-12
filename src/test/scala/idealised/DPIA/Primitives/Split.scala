@@ -48,4 +48,16 @@ class Split extends idealised.util.Tests {
 
     "for".r.findAllIn(code).length shouldBe 3
   }
+
+
+  ignore("Split mapAcc translation could work with functions working on independent elements") {
+    val e = nFun(n => fun(ArrayType(n, float))(xs =>
+      xs :>> mapSeq(fun(x => x)) :>> split(8) :>> map(fun(x => x))
+    ))
+
+    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(e, Map()).toPhrase)
+    val code = p.code
+    SyntaxChecker.checkOpenCL(code)
+    println(code)
+  }
 }

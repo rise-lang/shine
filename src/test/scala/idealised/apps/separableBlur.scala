@@ -63,7 +63,7 @@ class separableBlur extends idealised.util.Tests {
   generate({
     nFun(h => nFun(w => fun(ArrayType(h, ArrayType(w, float)))(input =>
       input :>> slide(3, 1) :>> mapSeq(
-        transpose() >>> map(dot(weights1d)) >>> mapSeqSlide(3, 1, dot(weights1d))
+        transpose() >>> map(dot(weights1d)) >>> slideSeq(3, 1) >>> map(dot(weights1d))
       )
     )))
   })

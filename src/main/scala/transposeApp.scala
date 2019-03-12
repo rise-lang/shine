@@ -70,7 +70,7 @@ object transposeApp extends App {
 //    join(x)
 //   split(M, join(x))
 //   join(
-     transposeW(x)
+     transpose(x)
 //   )
 //   x
    )

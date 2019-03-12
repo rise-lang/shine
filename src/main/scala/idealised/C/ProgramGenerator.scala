@@ -46,11 +46,13 @@ object ProgramGenerator {
 
     val (declarations, code) = gen.generate(p, env)
 
-    val typeDeclarations = collectTypeDeclarations(code)
+    val params = makeParams(outParam, inputParams, gen)
+
+    val typeDeclarations = collectTypeDeclarations(code, params)
 
     C.Program(
       typeDeclarations ++ declarations,
-      function    = makeFunction(makeParams(outParam, inputParams, gen), Block(Seq(code)), name),
+      function    = makeFunction(params, Block(Seq(code)), name),
       outputParam = outParam,
       inputParams = inputParams)
     }))
@@ -83,7 +85,8 @@ object ProgramGenerator {
       case (lhsT, rhsT) => throw new Exception(s" $lhsT and $rhsT should match")
     }
 
-    TranslationToImperative.acc(p)(output)(new idealised.C.TranslationContext) |> (p => {
+    TranslationToImperative.acc(p)(output)(
+      new idealised.C.TranslationContext) |> (p => {
       xmlPrinter.writeToFile("/tmp/p2.xml", p)
       TypeCheck(p) // TODO: only in debug
       p
@@ -122,14 +125,12 @@ object ProgramGenerator {
     ParamDecl(v.toString, Type.const_int)
   }
 
-  def collectTypeDeclarations(code: Stmt): Seq[Decl] = {
-    val typeDecls = mutable.Set[Decl]()
-
-    code.visitAndRebuild(new Nodes.VisitAndRebuild.Visitor {
+  def collectTypeDeclarations(code: Stmt, params: Seq[ParamDecl]): Seq[Decl] = {
+    def visitor(decls: mutable.Set[Decl]): Nodes.VisitAndRebuild.Visitor = new Nodes.VisitAndRebuild.Visitor {
       def collect(t: Type): Unit = t match {
         case _: BasicType =>
         case s: StructType =>
-          typeDecls += C.AST.StructTypeDecl(
+          decls += C.AST.StructTypeDecl(
             s.print,
             s.fields.map{ case (ty, name) => VarDecl(name, ty) }
           )
@@ -139,9 +140,15 @@ object ProgramGenerator {
       }
 
       override def apply(t: Type): Type = { collect(t) ; t }
-    })
+    }
 
-    typeDecls.toSeq
+    val allocTypeDecls = mutable.Set[Decl]()
+    code.visitAndRebuild(visitor(allocTypeDecls))
+
+    val paramTypeDecls = mutable.Set[Decl]()
+    params.foreach(_.visitAndRebuild(visitor(paramTypeDecls)))
+
+    (allocTypeDecls ++ paramTypeDecls).toSeq
   }
 
   private def getDataType(i: Identifier[_]): DataType = {

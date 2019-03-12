@@ -44,9 +44,9 @@ object ProgramGenerator {
 
     val (declarations, code) = gen.generate(p, env)
 
-    val typeDeclarations = C.ProgramGenerator.collectTypeDeclarations(code).toSeq
-
     val params = C.ProgramGenerator.makeParams(outParam, inputParams, gen)
+
+    val typeDeclarations = C.ProgramGenerator.collectTypeDeclarations(code, params)
 
     OpenMP.Program(
       typeDeclarations ++ declarations,
@@ -84,7 +84,8 @@ object ProgramGenerator {
       case (lhsT, rhsT) => throw new Exception(s" $lhsT and $rhsT should match")
     }
 
-    TranslationToImperative.acc(p)(output)(new idealised.OpenMP.TranslationContext) |> (p => {
+    TranslationToImperative.acc(p)(output)(
+      new idealised.OpenMP.TranslationContext) |> (p => {
       xmlPrinter.writeToFile("/tmp/p2.xml", p)
       TypeCheck(p) // TODO: only in debug
       p

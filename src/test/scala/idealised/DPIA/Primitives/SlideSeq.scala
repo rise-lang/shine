@@ -5,10 +5,10 @@ import idealised.SurfaceLanguage.NatIdentifier
 import idealised.SurfaceLanguage.Types._
 import idealised.util.{Execute, SyntaxChecker}
 
-class MapSeqSlide extends idealised.util.Tests {
+class SlideSeq extends idealised.util.Tests {
   test("Simple example should generate C code producing the expected result on a test") {
-    val e = nFun(n =>fun(ArrayType(n, int))(a =>
-      a :>> mapSeqSlide(3, 1, reduceSeq(fun(_ + _), 0))))
+    val e = nFun(n => fun(ArrayType(n, int))(a =>
+      a :>> slideSeq(3, 1) :>> map(reduceSeq(fun(_ + _), 0))))
     val p = idealised.C.ProgramGenerator.makeCode(TypeInference(e, Map()).toPhrase)
     val code = p.code
     SyntaxChecker(code)

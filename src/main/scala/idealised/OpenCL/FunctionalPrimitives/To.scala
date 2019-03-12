@@ -56,6 +56,13 @@ abstract class To(dt1: DataType,
     con(this)(λ( exp"[$dt2]" )(x => acc(x)(A) ))
   }
 
+  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
+                                     (implicit context: TranslationContext): Phrase[CommandType] = {
+    import TranslationToImperative._
+
+    con(this)(λ( exp"[$dt2]" )(x => mapAcc(f, x)(A) ))
+  }
+
   override def continuationTranslation(C: Phrase[->[ExpType, CommandType]])
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._

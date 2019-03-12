@@ -68,7 +68,9 @@ object KernelGenerator {
 
       val (declarations, code) = gen.generate(p, env)
 
-      val oclKernel = OpenCL.Kernel(declarations,
+      val typeDeclarations = C.ProgramGenerator.collectTypeDeclarations(code, kernelParams)
+
+      val oclKernel = OpenCL.Kernel(declarations ++ typeDeclarations,
             kernel = makeKernelFunction (kernelParams, adaptKernelBody (C.AST.Block (Seq (code) ) ) ),
             outputParam = outParam,
             inputParams = inputParams,
@@ -93,7 +95,8 @@ object KernelGenerator {
   }
 
   private def rewriteToImperative(p: Phrase[ExpType], a: Phrase[AccType]): Phrase[CommandType] = {
-    TranslationToImperative.acc(p)(a)(new idealised.OpenCL.TranslationContext) |> (p => {
+    TranslationToImperative.acc(p)(a)(
+      new idealised.OpenCL.TranslationContext) |> (p => {
       xmlPrinter.writeToFile("/tmp/p2.xml", p)
       TypeCheck(p) // TODO: only in debug
       p

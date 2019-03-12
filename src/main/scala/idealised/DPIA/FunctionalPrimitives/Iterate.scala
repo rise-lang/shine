@@ -71,6 +71,11 @@ final case class Iterate(n: Nat,
         x) ))
   }
 
+  // TODO
+  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
+                                     (implicit context: TranslationContext): Phrase[CommandType] =
+    ???
+
   override def continuationTranslation(C: Phrase[ExpType -> CommandType])
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import idealised.DPIA.Compilation.TranslationToImperative._
