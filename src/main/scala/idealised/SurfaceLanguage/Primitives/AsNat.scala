@@ -12,7 +12,7 @@ final case class AsNat(e: DataExpr, override val t: Option[DataType] = None)
     e.t match {
       case Some(IndexType(n)) =>
         DPIA.FunctionalPrimitives.AsNat(n, e.toPhrase[DPIA.Types.ExpType])
-      case _ => throw new Exception("")
+      case _ => throw new Exception("The expression given to AsNat must be of type expr[idx[_]].")
     }
   }
 

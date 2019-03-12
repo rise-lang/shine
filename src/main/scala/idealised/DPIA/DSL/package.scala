@@ -2,7 +2,7 @@ package idealised.DPIA
 
 import idealised.DPIA.Compilation.TranslationContext
 import idealised.DPIA.ImperativePrimitives._
-import idealised.DPIA.Phrases.{BinOp, Identifier, Literal, Pair, Phrase, Proj1, Proj2, UnaryOp}
+import idealised.DPIA.Phrases.{BinOp, Identifier, Literal, Natural, Pair, Phrase, Proj1, Proj2, UnaryOp}
 import idealised.DPIA.Semantics.OperationalSemantics.{FloatData, IndexData, IntData}
 import idealised.DPIA.Types._
 import idealised.SurfaceLanguage.Operators
@@ -135,14 +135,19 @@ package object DSL {
     def _2: Proj2[T1, T2] = π2(v)
   }
 
+  def treatNatExprAsNat(natExpr: Phrase[ExpType], f: Nat => Nat): Phrase[ExpType] = {
+    val liftedNat = Lifting.liftNatExpr(natExpr)
+    val res = f(liftedNat)
+    Natural(res)
+  }
+
   implicit class IdentExpPhraseExtensions(i: Identifier[ExpType]) {
-    def asNatIdentifier = NamedVar(i.name)
     def asNatIdentifier(withUpperBound: Nat) =
       NamedVar(i.name, ContinuousRange(0, withUpperBound))
   }
 
+  //TODO remove and use new conversions
   implicit class NatExtensions(n: Nat) {
-    def asPhrase = Literal(IndexData(n, IndexType(n.max)))
     def asPhrase(withType: IndexType): Phrase[ExpType] = Literal(IndexData(n, withType))
   }
 

@@ -1,12 +1,11 @@
 package idealised.DPIA
 
+import idealised.DPIA.FunctionalPrimitives.{AsNat, UnsafeAsIndex}
 import idealised.DPIA.Phrases._
-import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics.IndexData
-import idealised.DPIA.Types.{DataType, ExpType, IndexType, PhraseType}
-import idealised.SurfaceLanguage.DSL.DataExpr
+import idealised.DPIA.Types.{DataType, ExpType, IndexType, NatType, PhraseType}
 import idealised.SurfaceLanguage._
-import lift.arithmetic.{NamedVar, RangeAdd}
+import lift.arithmetic.{NamedVar, RangeAdd, StartFromRange}
 
 import scala.language.{postfixOps, reflectiveCalls}
 
@@ -64,7 +63,7 @@ object Lifting {
   def liftFunction[T1 <: PhraseType, T2 <: PhraseType](p: Phrase[T1 -> T2]): Phrase[T1] => Phrase[T2] = {
     p match {
       case l: Lambda[T1, T2] =>
-        (arg: Phrase[T1]) =>l.body `[` arg  `/` l.param `]`
+        (arg: Phrase[T1]) => l.body `[` arg  `/` l.param `]`
       case app: Apply[_, T1 -> T2] =>
         val fun = liftFunction(app.fun)
         liftFunction(fun(app.arg))
@@ -135,7 +134,7 @@ object Lifting {
     }
   }
 
-  def liftIndexExpr(p: Phrase[ExpType]):Nat = {
+  def liftIndexExpr(p: Phrase[ExpType]): Nat = {
     p.t match {
       case ExpType(IndexType(n)) =>
         p match {
@@ -147,18 +146,60 @@ object Lifting {
             case i: IndexData => i.n
             case _ => throw new Exception("This should never happen")
           }
+          case Natural(_) => throw new Exception("This should never happen")
           case NatDependentApply(fun, arg) => liftIndexExpr(liftNatDependentFunction(fun)(arg))
           case Proj1(pair) => liftIndexExpr(liftPair(pair)._1)
           case Proj2(pair) => liftIndexExpr(liftPair(pair)._2)
           case TypeDependentApply(fun, arg) => liftIndexExpr(liftTypeDependentFunction(fun)(arg))
           case UnaryOp(op, e) => unOpToNat(op, liftIndexExpr(e))
-          case _:ExpPrimitive => ???
+          case prim: ExpPrimitive => prim match {
+            //TODO can we use our knowledge of n somehow?
+            case UnsafeAsIndex(n, e) => liftNatExpr(e)
+            case _ => ???
+          }
         }
       case _ => throw new Exception("This should never happen")
     }
   }
 
-  def binOpToNat(op:Operators.Binary.Value, n1:Nat, n2:Nat):Nat = ???
+  def liftNatExpr(p: Phrase[ExpType]): Nat = {
+    p.t match {
+      case ExpType(NatType) =>
+        p match {
+          case Natural(n) => n
+          case i: Identifier[ExpType] => NamedVar(i.name, StartFromRange(0))
+          case Apply(fun, arg) => liftNatExpr(liftFunction(fun)(arg))
+          case BinOp(op, lhs, rhs) => binOpToNat(op, liftNatExpr(lhs), liftNatExpr(rhs))
+          case IfThenElse(_, _, _) => ???
+          case Literal(_) => throw new Exception("This should never happen")
+          case NatDependentApply(fun, arg) => liftNatExpr(liftNatDependentFunction(fun)(arg))
+          case Proj1(pair) => liftNatExpr(liftPair(pair)._1)
+          case Proj2(pair) => liftNatExpr(liftPair(pair)._2)
+          case TypeDependentApply(fun, arg) => liftNatExpr(liftTypeDependentFunction(fun)(arg))
+          case UnaryOp(op, e) => unOpToNat(op, liftNatExpr(e))
+          case prim: ExpPrimitive => prim match {
+            //TODO can we use our knowledge of n somehow?
+            case AsNat(n, e) => liftIndexExpr(e)
+            case _ => ???
+          }
+        }
+      case pt => throw new Exception(s"Expected exp[nat] but found $pt.")
+    }
+  }
+
+  def binOpToNat(op:Operators.Binary.Value, n1:Nat, n2:Nat): Nat = {
+    import Operators.Binary._
+
+    op match {
+      case ADD => n1 + n2
+      case SUB => n1 - n2
+      case MUL => n1 * n2
+      case DIV => n1 / n2
+      case MOD => n1 % n2
+
+      case _ => ???
+    }
+  }
 
   def unOpToNat(op:Operators.Unary.Value, n:Nat):Nat = ???
 }

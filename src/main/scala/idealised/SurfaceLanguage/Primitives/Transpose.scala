@@ -18,10 +18,11 @@ final case class Transpose(array: DataExpr,
 
         val transposeFunction =
           λ(ExpType(IndexType(n * m)))(i => {
-            val j = i asNatIdentifier(withUpperBound = n * m)
-            val col = (j % n) * m
-            val row = j / n
-            (row + col) asPhrase(withType = IndexType(n * m))
+            UnsafeAsIndex(n * m, treatNatExprAsNat(AsNat(n * m, i), j => {
+              val col = (j % n) * m
+              val row = j / n
+              row + col
+            }))
           })
 
         Split(n, m, dt,

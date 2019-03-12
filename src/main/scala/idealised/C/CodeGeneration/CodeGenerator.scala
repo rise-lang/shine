@@ -257,6 +257,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case AsNat(_, e) => exp(e, env, path, cont)
 
+      case UnsafeAsIndex(_, e) => exp(e, env, path, cont)
+
       case Generate(n, _, lam@Lambda(_, _)) => path match {
         case (i : CIntExpr) :: ps =>
           val evaledLam = Lifting.liftFunction(lam)(Literal(IndexData(i, IndexType(n))))
@@ -317,8 +319,9 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
 
-      case Gather(_, _, idxF, a) => path match {
-        case (i : CIntExpr) :: ps => exp(a, env, CIntExpr(OperationalSemantics.evalIndexExp(idxF(i))) :: ps, cont)
+      case Gather(n, _, idxF, a) => path match {
+        case (i : CIntExpr) :: ps =>
+          exp(a, env, CIntExpr(OperationalSemantics.evalIndexExp(idxF.apply(UnsafeAsIndex(n, Natural(i))))) :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
 

@@ -5,11 +5,12 @@ import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Types._
 import idealised.DPIA.DSL._
+import idealised.DPIA.Compilation._
 import idealised.DPIA._
 
 import scala.xml.Elem
 
-final case class Cast(dt1: BasicType, dt2: BasicType, e : Phrase[ExpType])
+final case class Cast(dt1: BasicType, dt2: BasicType, e: Phrase[ExpType])
   extends ExpPrimitive {
 
   override val `type`: ExpType =
@@ -34,6 +35,9 @@ final case class Cast(dt1: BasicType, dt2: BasicType, e : Phrase[ExpType])
 
   def continuationTranslation(C: Phrase[ExpType -> CommandType])
                              (implicit context: TranslationContext): Phrase[CommandType] = {
-    C(this)
+    import TranslationToImperative._
+
+    con(e)(fun(e.t)(x =>
+      C(Cast(dt1, dt2, x))))
   }
 }

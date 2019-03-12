@@ -16,6 +16,10 @@ object asNat {
   def apply(e: DataExpr): AsNat = AsNat(e)
 }
 
+object unsafeAsIndex {
+  def apply(n: Nat, e: DataExpr): UnsafeAsIndex = UnsafeAsIndex(n, e)
+}
+
 object cast {
   def apply(dt: BasicType, e: DataExpr): Cast = Cast(dt, e)
 }

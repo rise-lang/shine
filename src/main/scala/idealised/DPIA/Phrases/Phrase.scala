@@ -2,9 +2,11 @@ package idealised.DPIA.Phrases
 
 import idealised.DPIA.Compilation.TranslationContext
 import idealised.DPIA.Semantics.OperationalSemantics
+import idealised.DPIA.Semantics.OperationalSemantics.NatData
 import idealised.DPIA.Types._
 import idealised.DPIA._
 import idealised.SurfaceLanguage
+import lift.arithmetic.NamedVar
 
 sealed trait Phrase[T <: PhraseType] {
   final lazy val t: T = TypeOf(this)
@@ -50,7 +52,9 @@ final case class BinOp(op: SurfaceLanguage.Operators.Binary.Value, lhs: Phrase[E
   extends Phrase[ExpType]
 
 final case class Literal(d: OperationalSemantics.Data)
-  extends Phrase[ExpType]
+  extends Phrase[ExpType] {
+  assert(!d.isInstanceOf[NatData])
+}
 
 final case class Natural(d: Nat) extends Phrase[ExpType]
 
@@ -61,11 +65,41 @@ object Phrase {
                                                      in: Phrase[T2]): Phrase[T2] = {
     object Visitor extends VisitAndRebuild.Visitor {
       override def apply[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
-        if (`for` == p) {
-          Stop(phrase.asInstanceOf[Phrase[T]])
-        } else {
-          Continue(p, this)
+        p match {
+          case `for` => Stop(phrase.asInstanceOf[Phrase[T]])
+          case Natural(n) =>
+            val name = `for` match {
+              case Identifier(name, _) => name
+            }
+            val v = NamedVar(name)
+
+            phrase.t match {
+              case ExpType(NatType) => phrase match {
+                case exp: Phrase[ExpType] =>
+                  Stop(Natural(Nat.substitute(Lifting.liftNatExpr(exp), v, n)).asInstanceOf[Phrase[T]])
+                case _ => throw new Exception("This should not happen.")
+              }
+              case ExpType(IndexType(_)) => phrase match {
+                case exp: Phrase[ExpType] =>
+                  Stop(Natural(Nat.substitute(Lifting.liftIndexExpr(exp), v, n)).asInstanceOf[Phrase[T]])
+              }
+              case _ => Continue(p, this)
+            }
+//            phrase match {
+//              case exp: Phrase[ExpType] => exp.t match {
+//                case ExpType(NatType) =>
+//                  Stop(Natural(Nat.substitute(Lifting.liftNatExpr(exp), v, n)).asInstanceOf[Phrase[T]])
+//                case _ => Continue(p, this)
+//              }
+//              case _ => ???
+//            }
+          case _ => Continue(p, this)
         }
+//        if (`for` == p) {
+//          Stop(phrase.asInstanceOf[Phrase[T]])
+//        } else {
+//          Continue(p, this)
+//        }
       }
     }
 

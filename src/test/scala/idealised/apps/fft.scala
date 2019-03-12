@@ -1,13 +1,11 @@
 package idealised.apps
 
 import idealised.SurfaceLanguage.DSL._
+import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
-import idealised.SurfaceLanguage.Semantics._
-import idealised.SurfaceLanguage.{LiteralExpr, NatExpr}
 import idealised.util.SyntaxChecker
 
 class fft extends idealised.util.Tests {
-
   /*
   def createStockhamIterationLambda(p: Int, LPrevIter: Int, N: Int): Expr[DataType -> DataType] = {
     val r = N / (LPrevIter * p)
@@ -63,109 +61,6 @@ class fft extends idealised.util.Tests {
           (0.00000000000000, -8.00000000000000),
           (5.65685424949238, -13.65685424949238))
   */
-
-  test("Nat can be used as DataType inside of an expression in C.") {
-    val simpleGenerate = fun(NatType)(i => i + NatExpr(1))
-    val program = idealised.C.ProgramGenerator.makeCode(TypeInference(simpleGenerate, Map()).convertToPhrase)
-
-    println(program.code)
-    SyntaxChecker(program.code)
-  }
-
-  test("Type inference for AsNat fails if not passed value of IndexType.") {
-    val simpleGenerate = fun(int)(i => asNat(i))
-
-    assertThrows[TypeInferenceException] {
-      TypeInference(simpleGenerate, Map())
-    }
-  }
-
-  test("AsNat and plus operation generates syntactically correct code in C.") {
-    val simpleGenerate = nFun(n => fun(IndexType(n))(i => asNat(i) + NatExpr(n)))
-    val program = idealised.C.ProgramGenerator.makeCode(TypeInference(simpleGenerate, Map()).convertToPhrase)
-
-    println(program.code)
-    SyntaxChecker(program.code)
-  }
-
-  test("Nat is implicitly converted to NatExpr in an expression.") {
-    //TODO make asNat(i: IdentifierExpr) implicit? This would then fail for every IdentifierExpr not of type IndexType
-    val simpleGenerate = nFun(n => fun(IndexType(n))(i => asNat(i) + n))
-    val program = idealised.C.ProgramGenerator.makeCode(TypeInference(simpleGenerate, Map()).convertToPhrase)
-
-    println(program.code)
-    SyntaxChecker(program.code)
-  }
-
-  test("Very simple one-dimensional generate generates syntactically correct code in C.") {
-    val id = fun(x => x)
-    val simpleGenerate = nFun(n => generate(fun(IndexType(n))(i => cast(double, i) + 1.0)) :>> mapSeq(id))
-    val program = idealised.C.ProgramGenerator.makeCode(TypeInference(simpleGenerate, Map()).convertToPhrase)
-
-    println(program.code)
-    SyntaxChecker(program.code)
-  }
-
-  test("Very simplistic generate, using index and maximum index size" +
-    "generates syntactically correct code in C.") {
-    val id = fun(x => x)
-    val simpleGenerate =
-      nFun(n => generate(fun(IndexType(n))(i => asNat(i) + n)) :>> mapSeq(id))
-    val program = idealised.C.ProgramGenerator.makeCode(TypeInference(simpleGenerate, Map()).convertToPhrase)
-
-    println(program.code)
-    SyntaxChecker(program.code)
-  }
-
-  test("One-dimensional generate generates syntactically correct code in C.") {
-    val add = fun(x => x._1 + x._2)
-    val simpleMap = nFun(n => fun(ArrayType(n, double))(in =>
-      zip(in,
-        generate(fun(IndexType(n))(i =>
-          foreignFun(double, "callCos", (double, "x"), "{ return cos(x); }",
-            cast(double, asNat(i) + n)))
-      )) :>>
-        mapSeq(add)))
-
-    val phrase = TypeInference(simpleMap, Map()).convertToPhrase
-    val program = idealised.C.ProgramGenerator.makeCode(phrase)
-    println(program.code)
-
-    SyntaxChecker(program.code)
-  }
-
-  test("Two-dimensional generate generates syntactically correct code in C.") {
-    val add = fun(x => x._1 + x._2)
-    val simpleMap = nFun((m, n) => fun(ArrayType(m, ArrayType(n, double)))(in =>
-      zip(in,
-        generate(fun(IndexType(m))(i =>
-          generate(fun(IndexType(n))(j =>
-            foreignFun(double, "callCos", (double, "x"), "{ return cos(x); }",
-              // TODO how to implicitly cast with Nat on the lhs of a binary op?
-              cast(double, (asNat(j) + n) * (asNat(i) + m)))
-            )))))
-        :>> mapSeq(fun(t => zip(t._1, t._2) :>> mapSeq(add)))
-    ))
-
-    val phrase = TypeInference(simpleMap, Map()).convertToPhrase
-    val program = idealised.C.ProgramGenerator.makeCode(phrase)
-    println(program.code)
-
-    SyntaxChecker(program.code)
-  }
-
-  test("Program with tuple output and no tuple inputs, can be generated in C.") {
-    val tuplz = fun(x => tuple(x, 1.0f))
-    val id = fun(x => x)
-    val tupleOut = fun(ArrayType(8, TupleType(float, float)))(xs =>
-      xs :>> mapSeq(id)
-    )
-
-    val phrase = TypeInference(tupleOut, Map()).convertToPhrase
-    val program = idealised.OpenCL.KernelGenerator.makeCode(phrase)
-    println(program.code)
-    SyntaxChecker.checkOpenCL(program.code)
-  }
 
   /*
   test("Correct code for complex Generate can be generated in C.") {

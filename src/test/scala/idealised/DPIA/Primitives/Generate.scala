@@ -49,7 +49,7 @@ class Generate extends idealised.util.Tests {
         generate(fun(IndexType(m))(i =>
           generate(fun(IndexType(n))(j =>
             foreignFun(double, "callCos", (double, "x"), "{ return cos(x); }",
-              // TODO how to implicitly cast with Nat on the lhs of a binary op?
+              // TODO how to implicitly cast, with Nat on the lhs of a binary op?
               cast(double, (asNat(j) + n) * asNat(i) + m))
             )))))
         :>> mapSeq(fun(t => zip(t._1, t._2) :>> mapSeq(add)))

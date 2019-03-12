@@ -32,6 +32,8 @@ object OperationalSemantics {
     // def apply(n: Nat): IndexData = IndexData(n, IndexType(n.max + 1))
   }
 
+  final case class NatData(n: Nat) extends Data(NatType)
+
   final case class BoolData(b: Boolean) extends Data(bool)
   final case class IntData(i: Int) extends Data(int) {
     override def toString: String = i.toString
@@ -184,6 +186,8 @@ object OperationalSemantics {
           case Identifier(name, _) => s(name)
 
           case Literal(d) => d
+
+          case Natural(n) => NatData(n)
 
           case UnaryOp(op, x) =>
             op match {
