@@ -3,6 +3,7 @@ package idealised.OpenMP
 import idealised._
 import idealised.DPIA.Compilation._
 import idealised.DPIA.DSL._
+import idealised.DPIA.FunctionalPrimitives.UnsafeAsIndex
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types._
 import lift.arithmetic.Cst
@@ -80,7 +81,7 @@ object ProgramGenerator {
     val output = (a.t.dataType, p.t.dataType) match {
       case (lhsT, rhsT) if lhsT == rhsT => a
       case (ArrayType(Cst(1), lhsT), rhsT) if lhsT == rhsT =>
-        a `@` (Cst(0) asPhrase IndexType(Cst(1)))
+        a `@` UnsafeAsIndex(1, Natural(0))
       case (lhsT, rhsT) => throw new Exception(s" $lhsT and $rhsT should match")
     }
 

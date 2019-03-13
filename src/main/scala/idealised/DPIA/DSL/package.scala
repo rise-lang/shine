@@ -50,6 +50,7 @@ package object DSL {
   }
 
   implicit class AccPhraseExtensions(a: Phrase[AccType]) {
+    // TODO do we really need all these different versions?
     def `@`(index: Phrase[ExpType]): IdxAcc = (index.t, a.t) match {
       case (ExpType(IndexType(n1)), AccType(ArrayType(n2, dt))) if n1 == n2 =>
         IdxAcc(n1, dt, index, a)
@@ -136,11 +137,6 @@ package object DSL {
     val liftedNat = Lifting.liftNatExpr(natExpr)
     val res = f(liftedNat)
     Natural(res)
-  }
-
-  //TODO remove and use new conversions
-  implicit class NatExtensions(n: Nat) {
-    def asPhrase(withType: IndexType): Phrase[ExpType] = Literal(IndexData(n, withType))
   }
 
   implicit def toLiteralInt(i: Int): Literal = Literal(IntData(i))
