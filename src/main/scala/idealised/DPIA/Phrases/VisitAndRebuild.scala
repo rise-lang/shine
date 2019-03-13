@@ -60,7 +60,6 @@ object VisitAndRebuild {
             case _ => Literal(d)
           }
 
-          //TODO check whether anything needs to be visited
           case Natural(n) => Natural(n)
 
           case UnaryOp(op, x) => UnaryOp(op, apply(x, v))
