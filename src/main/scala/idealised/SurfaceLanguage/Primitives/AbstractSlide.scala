@@ -1,11 +1,10 @@
 package idealised.SurfaceLanguage.Primitives
 
-import idealised.SurfaceLanguage.DSL.DataExpr
+import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
 import idealised.{DPIA, SurfaceLanguage}
-import idealised.SurfaceLanguage.Types._
 
-abstract class AbstractSlide(sz: Nat, sp: Nat, input: DataExpr,
+abstract class AbstractSlide(sz: Nat, sp: Nat, input: Expr,
                              override val t: Option[DataType])
   extends PrimitiveExpr
 {
@@ -25,7 +24,7 @@ abstract class AbstractSlide(sz: Nat, sp: Nat, input: DataExpr,
     }
   }
 
-  def make(sz: Nat, sp: Nat, input: DataExpr, t: Option[DataType]): AbstractSlide
+  def make(sz: Nat, sp: Nat, input: Expr, t: Option[DataType]): AbstractSlide
 
   override def inferType(subs: TypeInference.SubstitutionMap): AbstractSlide = {
     import TypeInference._
@@ -41,7 +40,7 @@ abstract class AbstractSlide(sz: Nat, sp: Nat, input: DataExpr,
       })
   }
 
-  override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): DataExpr = {
+  override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): Expr = {
     make(f(sz), f(sp), SurfaceLanguage.VisitAndRebuild(input, f), t.map(f(_)))
   }
 }

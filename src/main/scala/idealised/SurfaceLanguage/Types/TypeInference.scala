@@ -19,12 +19,12 @@ object TypeInference {
 
   type SubstitutionMap = scala.collection.Map[IdentifierExpr, IdentifierExpr]
 
-  def apply[T <: Type](expr: Expr[T], subs: SubstitutionMap): Expr[T] = {
+  def apply(expr: Expr, subs: SubstitutionMap): Expr = {
     inferType(expr, subs)
   }
 
-  private def inferType[T <: Type](expr: Expr[T], subs: SubstitutionMap): Expr[T] = {
-    (expr match {
+  private def inferType(expr: Expr, subs: SubstitutionMap): Expr = {
+    expr match {
       case i@IdentifierExpr(name, _) =>
         val identifier =
           if (subs.contains(i)) {
@@ -68,12 +68,12 @@ object TypeInference {
       case LiteralExpr(d) => LiteralExpr(d)
 
       case p: PrimitiveExpr => VisitAndRebuild(p.inferType(subs), GetLengthVisitor(subs))
-    }).asInstanceOf[Expr[T]]
+    }
   }
 
-  def setParamAndInferType[T <: Type](f: Expr[DataType -> T],
+  def setParamAndInferType(f: Expr,
                                       t: DataType,
-                                      subs: SubstitutionMap): Expr[DataType -> T] = {
+                                      subs: SubstitutionMap): Expr = {
     f match {
       case LambdaExpr(x, e) =>
         val newX = IdentifierExpr(newName(), Some(t))
@@ -83,10 +83,10 @@ object TypeInference {
     }
   }
 
-  def setParamsAndInferTypes[T <: Type](f: Expr[DataType -> (DataType -> T)],
+  def setParamsAndInferTypes(f: Expr,
                                         t1: DataType,
                                         t2: DataType,
-                                        subs: SubstitutionMap): Expr[DataType -> (DataType -> T)] = {
+                                        subs: SubstitutionMap): Expr = {
     f match {
       case LambdaExpr(x, e1) =>
         val newX = IdentifierExpr(newName(), Some(t1))
@@ -101,9 +101,9 @@ object TypeInference {
     }
   }
 
-  def setParamsAndInferTypes[T <: Type](f: Expr[`(nat)->`[DataType -> T]],
+  def setParamsAndInferTypes(f: Expr,
                                         makeDt: NatIdentifier => DataType,
-                                        subs: SubstitutionMap): Expr[`(nat)->`[DataType -> T]] = {
+                                        subs: SubstitutionMap): Expr = {
     f match {
       case NatDependentLambdaExpr(i, LambdaExpr(x, e)) =>
         val newX = IdentifierExpr(newName(), Some(makeDt(i)))

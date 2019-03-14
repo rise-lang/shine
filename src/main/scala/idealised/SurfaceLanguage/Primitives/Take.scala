@@ -1,11 +1,10 @@
 package idealised.SurfaceLanguage.Primitives
 
-import idealised.SurfaceLanguage.DSL.DataExpr
+import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
 import idealised.{DPIA, SurfaceLanguage}
-import idealised.SurfaceLanguage.Types._
 
-final case class Take(n: Nat, array: DataExpr,
+final case class Take(n: Nat, array: Expr,
                        override val t: Option[DataType])
   extends PrimitiveExpr
 {
@@ -29,7 +28,7 @@ final case class Take(n: Nat, array: DataExpr,
       })
   }
 
-  override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): DataExpr = {
+  override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): Expr = {
     Take(f(n), SurfaceLanguage.VisitAndRebuild(array, f), t.map(f(_)))
   }
 }

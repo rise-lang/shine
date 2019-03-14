@@ -1,11 +1,10 @@
 package idealised.OpenCL.SurfaceLanguage.Primitives
 
-import idealised.SurfaceLanguage.DSL.DataExpr
+import idealised.SurfaceLanguage.Expr
 import idealised.SurfaceLanguage.Primitives.AbstractDepMap
 import idealised.SurfaceLanguage.Types.DataType
-import idealised.SurfaceLanguage.{->, Expr, `(nat)->`}
 
-final case class DepMapWorkGroup(dim:Int)(f: Expr[`(nat)->`[DataType -> DataType]], array: DataExpr,
+final case class DepMapWorkGroup(dim:Int)(f: Expr, array: Expr,
                                        override val t: Option[DataType] = None)
   extends AbstractDepMap(f, array, t)
 {

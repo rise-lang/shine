@@ -8,70 +8,57 @@ import lift.arithmetic.{ContinuousRange, NamedVar}
 import scala.language.implicitConversions
 
 package object DSL {
-  type DataExpr = Expr[DataType]
 
-  implicit class BinOps(lhs: DataExpr) {
-    def +(rhs: DataExpr) = BinOpExpr(Operators.Binary.ADD, lhs, rhs)
-    def -(rhs: DataExpr) = BinOpExpr(Operators.Binary.SUB, lhs, rhs)
-    def *(rhs: DataExpr) = BinOpExpr(Operators.Binary.MUL, lhs, rhs)
-    def /(rhs: DataExpr) = BinOpExpr(Operators.Binary.DIV, lhs, rhs)
-    def %(rhs: DataExpr) = BinOpExpr(Operators.Binary.MOD, lhs, rhs)
-    def >(rhs: DataExpr) = BinOpExpr(Operators.Binary.GT, lhs, rhs)
-    def <(rhs: DataExpr) = BinOpExpr(Operators.Binary.LT, lhs, rhs)
-    def =:=(rhs: DataExpr) = BinOpExpr(Operators.Binary.EQ, lhs, rhs)
+  implicit class BinOps(lhs: Expr) {
+    def +(rhs: Expr) = BinOpExpr(Operators.Binary.ADD, lhs, rhs)
+    def -(rhs: Expr) = BinOpExpr(Operators.Binary.SUB, lhs, rhs)
+    def *(rhs: Expr) = BinOpExpr(Operators.Binary.MUL, lhs, rhs)
+    def /(rhs: Expr) = BinOpExpr(Operators.Binary.DIV, lhs, rhs)
+    def %(rhs: Expr) = BinOpExpr(Operators.Binary.MOD, lhs, rhs)
+    def >(rhs: Expr) = BinOpExpr(Operators.Binary.GT, lhs, rhs)
+    def <(rhs: Expr) = BinOpExpr(Operators.Binary.LT, lhs, rhs)
+    def =:=(rhs: Expr) = BinOpExpr(Operators.Binary.EQ, lhs, rhs)
     def unary_- = UnaryOpExpr(Operators.Unary.NEG, lhs)
   }
 
-  implicit class FunCall[T <: Type](f: Expr[DataType -> T]) {
-    def apply(arg: DataExpr): Expr[T] = Lifting.liftFunctionExpr(f)(arg)
-    def $(arg: DataExpr): Expr[T] = apply(arg)
+  implicit class FunCall(f: Expr) {
+    def apply(arg: Expr): Expr = Lifting.liftFunctionExpr(f)(arg)
+    def $(arg: Expr): Expr = apply(arg)
+
+    def apply(arg: Nat): Expr = Lifting.liftNatDependentFunctionExpr(f)(arg)
+    def $(arg: Nat): Expr = apply(arg)
+
+    def apply(arg: DataType): Expr = Lifting.liftTypeDependentFunctionExpr(f)(arg)
+    def $(arg: DataType): Expr = apply(arg)
   }
 
-  implicit class FunCallExpr(arg: DataExpr) {
-    def :>>[T <: Type](f: Expr[DataType -> T]): Expr[T] = f(arg)
-    def <<:[T <: Type](f: Expr[DataType -> T]): Expr[T] = f(arg)
+  implicit class FunCallExpr(arg: Expr) {
+    def :>>(f: Expr): Expr = f(arg)
+    def <<:(f: Expr): Expr = f(arg)
   }
 
-  implicit class FunCallExprPair(args: (Expr[DataType], Expr[DataType])) {
-    def :>>(z: (DataExpr, DataExpr) => Zip): Zip = z(args._1, args._2)
-    def <<:(z: (DataExpr, DataExpr) => Zip): Zip = z(args._1, args._2)
-  }
-
-  implicit class CallNatDependentLambda[T <: Type](f: Expr[`(nat)->`[T]]) {
-    def apply(arg: Nat): Expr[T] = Lifting.liftNatDependentFunctionExpr(f)(arg)
-    def $(arg: Nat): Expr[T] = apply(arg)
-  }
-
-  implicit class CallNatDependentLambdaExpr(arg: Nat) {
-    def :>>[T <: Type](f: Expr[`(nat)->`[T]]): Expr[T] = f(arg)
-    def <<:[T <: Type](f: Expr[`(nat)->`[T]]): Expr[T] = f(arg)
-  }
-
-  implicit class CallTypeDependentLambda[T <: Type](f: Expr[`(dt)->`[T]]) {
-    def apply(arg: DataType): Expr[T] = Lifting.liftTypeDependentFunctionExpr(f)(arg)
-    def $(arg: DataType): Expr[T] = apply(arg)
+  implicit class FunCallExprPair(args: (Expr, Expr)) {
+    def :>>(z: (Expr, Expr) => Zip): Zip = z(args._1, args._2)
+    def <<:(z: (Expr, Expr) => Zip): Zip = z(args._1, args._2)
   }
 
   implicit class CallTypeDependentLambdaExpr(arg: DataType) {
-    def :>>[T <: Type](f: Expr[`(dt)->`[T]]): Expr[T] = f(arg)
-    def <<:[T <: Type](f: Expr[`(dt)->`[T]]): Expr[T] = f(arg)
+    def :>>(f: Expr): Expr = f(arg)
+    def <<:(f: Expr): Expr = f(arg)
   }
 
-  implicit class FunComp[T <: Type](f: Expr[DataType -> T]) {
-    def o(g: Expr[DataType -> DataType]): Expr[DataType -> T] = fun(arg => f( g(arg) ) )
-    def <<<(g: Expr[DataType -> DataType]): Expr[DataType -> T] = f o g
+  implicit class FunComp(f: Expr) {
+    def o(g: Expr): Expr = fun(arg => f( g(arg) ) )
+    def <<<(g: Expr): Expr = f o g
   }
 
-  implicit class RevFunComp(f: Expr[DataType -> DataType]) {
-    def >>>[T <: Type](g: Expr[DataType -> T]): Expr[DataType -> T] = g o f
+  implicit class RevFunComp(f: Expr) {
+    def >>>(g: Expr): Expr = g o f
   }
 
-  implicit def toLiteralInt(i: Int): LiteralExpr = LiteralExpr(IntData(i))
-  implicit def toLiteralFloat(f: Float): LiteralExpr = LiteralExpr(FloatData(f))
-  implicit def toLiteralFloatN(v: VectorData): LiteralExpr = LiteralExpr(v)
-
-  implicit def toNatDependentLambda[T <: Type](p: Expr[T]): NatDependentLambdaExpr[T] =
-    nFun(_ => p)
+  def l(i: Int): LiteralExpr = LiteralExpr(IntData(i))
+  def l(f: Float): LiteralExpr = LiteralExpr(FloatData(f))
+  def l(v: VectorData): LiteralExpr = LiteralExpr(v)
 
   implicit class IdentExpPhraseExtensions(i: IdentifierExpr) {
     def asNatIdentifier = NamedVar(i.name)
@@ -83,7 +70,7 @@ package object DSL {
     def asExpr(withType: IndexType) = LiteralExpr(IndexData(n, withType))
   }
 
-  implicit class ExpPhraseExtensions(e: DataExpr) {
+  implicit class ExpPhraseExtensions(e: Expr) {
     def _1 = Fst(e, None)
     def _2 = Snd(e, None)
   }

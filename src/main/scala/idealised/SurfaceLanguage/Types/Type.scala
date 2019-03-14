@@ -24,7 +24,7 @@ final case class DepArrayType(size:Nat, elemType: `(nat)->dt`) extends ComposedT
 }
 
 object DepArrayType {
-  def apply(size:Nat, f:Nat => DataType): DepArrayType = {
+  def apply(size:Nat, f: Nat => DataType): DepArrayType = {
     val newName = NamedVar(freshName(), RangeAdd(0, size, 1))
     DepArrayType(size, NatDependentFunctionType(newName, f(newName)))
   }
@@ -85,7 +85,7 @@ object Type {
 
   def substitute[T <: Type](dt: DataType,
                             `for`: DataTypeIdentifier,
-                            in: Expr[T]): Expr[T] = {
+                            in: Expr): Expr = {
 
     object Visitor extends VisitAndRebuild.Visitor {
       override def apply[DT <: DataType](in: DT): DT = substitute(dt, `for`, in)
@@ -97,21 +97,21 @@ object Type {
 
   def substitute[T <: Type](ae: Nat,
                             `for`: NatIdentifier,
-                            in: Expr[T]): Expr[T] = {
+                            in: Expr): Expr = {
 
     object Visitor extends VisitAndRebuild.Visitor {
-      override def apply[T2 <: Type](e: Expr[T2]): Result[Expr[T2]] = {
+      override def apply(e: Expr): Result = {
         e match {
           case IdentifierExpr(name, _) =>
             if (`for`.name == name) {
-              Stop(LiteralExpr(IndexData(ae)).asInstanceOf[Expr[T2]])
+              Stop(LiteralExpr(IndexData(ae)))
             } else {
               Continue(e, this)
             }
           case LiteralExpr(IndexData(index, IndexType(size))) =>
             val newIndex = substitute(ae, `for`, in = index)
             val newSize = substitute(ae, `for`, in = size)
-            Stop(LiteralExpr(IndexData(newIndex, IndexType(newSize))).asInstanceOf[Expr[T2]])
+            Stop(LiteralExpr(IndexData(newIndex, IndexType(newSize))))
           case _ =>
             Continue(e, this)
         }

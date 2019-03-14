@@ -18,9 +18,9 @@ object dmapExample extends App{
 
   val xsT = DepArrayType(8, i => ArrayType(i + 1, int))
 
-  val addOne = fun(xsT)(array => depMapSeq(fun(x => mapSeq(fun(y => y + 1), x) ), array))
+  val addOne = fun(xsT)(array => depMapSeq(fun(x => mapSeq(fun(y => y + l(1)), x) ), array))
 
-  val reduceByRow = fun(xsT)(array => depMapSeq(fun(x => reduceSeq(fun(y => fun(z => y + z)), 0, x) ), array))
+  val reduceByRow = fun(xsT)(array => depMapSeq(fun(x => reduceSeq(fun(y => fun(z => y + z)), l(0), x) ), array))
 
   val takeAndDrop = fun(ArrayType(8, int))(array => mapSeq(fun(x => x), take(2, drop(3, array))))
 
@@ -30,24 +30,24 @@ object dmapExample extends App{
 
   val add = fun(x => fun(y => x + y))
 
-  val addOneGlobal = fun(xsT)(array => depMapGlobal(fun(x => mapSeq(fun(y => y + 1), x) ), array))
+  val addOneGlobal = fun(xsT)(array => depMapGlobal(fun(x => mapSeq(fun(y => y + l(1)), x) ), array))
 
-  val addOneWorkgroup = fun(xsT)(array => depMapWorkgroup(fun(x => mapSeq(fun(y => y + 1), x) ), array))
+  val addOneWorkgroup = fun(xsT)(array => depMapWorkgroup(fun(x => mapSeq(fun(y => y + l(1)), x) ), array))
 
-  val triangleVectorMultSeq: Expr[DataType -> (DataType -> DataType)] =
+  val triangleVectorMultSeq: Expr =
     fun(DepArrayType(8, i => ArrayType(i + 1, int)))(triangle =>
       fun(ArrayType(8, int))(vector =>
         depMapSeq(fun(row => zip(row, take(Macros.GetLength(row), vector))
-          :>> mapSeq(mult) :>> reduceSeq(add, 0)
+          :>> mapSeq(mult) :>> reduceSeq(add, l(0))
         ), triangle)
       )
     )
 
-  val triangleVectorMultPar: Expr[DataType -> (DataType -> DataType)] =
+  val triangleVectorMultPar: Expr =
     fun(DepArrayType(8, i => ArrayType(i + 1, int)))(triangle =>
       fun(ArrayType(8, int))(vector =>
         depMapPar(fun(row => zip(row, take(Macros.GetLength(row), vector))
-          :>> mapSeq(mult) :>> reduceSeq(add, 0)
+          :>> mapSeq(mult) :>> reduceSeq(add, l(0))
         ), triangle)
       )
     )
@@ -60,19 +60,19 @@ object dmapExample extends App{
 
   printKernel(fInUse)
 
-  def printKernel[T <: Type](expr: Expr[T]) {
-    //def generate(e:Expr[T]) = idealised.OpenMP.ProgramGenerator.makeCode(TypeInference(e, Map()).toPhrase)
-    def generate(e:Expr[T]) =
+  def printKernel[T <: Type](expr: Expr) {
+    //def generate(e:Expr) = idealised.OpenMP.ProgramGenerator.makeCode(TypeInference(e, Map()).toPhrase)
+    def generate(e:Expr) =
       KernelGenerator.makeCode(localSize = 8, globalSize = 8)(TypeInference(e, Map()).toPhrase)
     println(generate(expr).code)
   }
 
   val multSumAcc = fun(x => fun(y => (x._1 * x._2) + y))
 
-  def triangleVectorMultGlobalFused(N:Nat): Expr[DataType -> (DataType -> DataType)] =
+  def triangleVectorMultGlobalFused(N:Nat): Expr =
     fun(DepArrayType(N, i => ArrayType(i + 1, float)))(triangle =>
       fun(ArrayType(N, float))(vector =>
-        depMapGlobal(fun(row => zip(row, take(Macros.GetLength(row), vector)) :>> reduceSeq(multSumAcc, 0.0f)
+        depMapGlobal(fun(row => zip(row, take(Macros.GetLength(row), vector)) :>> reduceSeq(multSumAcc, l(0.0f))
         ), triangle)
       )
     )

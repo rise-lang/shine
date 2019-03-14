@@ -1,11 +1,10 @@
 package idealised.SurfaceLanguage.Primitives
 
-import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
 import idealised.{DPIA, SurfaceLanguage}
 
-final case class Split(n: Nat, array: DataExpr,
+final case class Split(n: Nat, array: Expr,
                           override val t: Option[DataType])
   extends PrimitiveExpr
 {
@@ -33,7 +32,7 @@ final case class Split(n: Nat, array: DataExpr,
       })
   }
 
-  override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): DataExpr = {
+  override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): Expr = {
     Split(f(n), SurfaceLanguage.VisitAndRebuild(array, f), t.map(f(_)))
   }
 }

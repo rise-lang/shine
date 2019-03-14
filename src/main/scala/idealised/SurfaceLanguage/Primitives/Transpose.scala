@@ -1,19 +1,18 @@
 package idealised.SurfaceLanguage.Primitives
 
 import idealised.DPIA
-import idealised.SurfaceLanguage.DSL.DataExpr
-import idealised.SurfaceLanguage.{PrimitiveExpr, VisitAndRebuild}
 import idealised.SurfaceLanguage.Types.{ArrayType, DataType, TypeInference}
+import idealised.SurfaceLanguage.{Expr, PrimitiveExpr, VisitAndRebuild}
 
-final case class Transpose(array: DataExpr,
+final case class Transpose(array: Expr,
                            override val t: Option[DataType])
   extends PrimitiveExpr
 {
   override def convertToPhrase: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
     array.t match {
       case Some(ArrayType(n, ArrayType(m, dt))) =>
-        import idealised.DPIA.FunctionalPrimitives._
         import idealised.DPIA.DSL._
+        import idealised.DPIA.FunctionalPrimitives._
         import idealised.DPIA.Types._
 
         val transposeFunction =
@@ -50,6 +49,6 @@ final case class Transpose(array: DataExpr,
       })
   }
 
-  override def visitAndRebuild(f: VisitAndRebuild.Visitor): DataExpr =
+  override def visitAndRebuild(f: VisitAndRebuild.Visitor): Expr =
     Transpose(VisitAndRebuild(array, f), t)
 }

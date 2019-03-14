@@ -16,12 +16,12 @@ class asum extends idealised.util.Tests {
   val add = fun(x => fun(a => x + a))
 
   val high_level = nFun(n => fun(inputT(n))(input =>
-    input :>> map(fabs) :>> reduceSeq(add, 0.0f) ))
+    input :>> map(fabs) :>> reduceSeq(add, l(0.0f)) ))
 
   test("High level asum type inference works") {
     val typed = TypeInference(high_level, Map())
 
-    val N = typed.t.get.n
+    val N = typed.t.get.asInstanceOf[NatDependentFunctionType[_ <: Type]].n
     assertResult(NatDependentFunctionType(N, FunctionType(inputT(N), float))) {
       typed.t.get
     }
@@ -62,7 +62,7 @@ class asum extends idealised.util.Tests {
       input :>>
         split(2048) :>>
         mapPar(
-          split(2048) >>> mapSeq(reduceSeq(add, 0.0f))
+          split(2048) >>> mapSeq(reduceSeq(add, l(0.0f)))
         ) :>> join
     ))
     val phrase = TypeInference(intelDerived2, Map()).convertToPhrase
@@ -79,10 +79,10 @@ class asum extends idealised.util.Tests {
         split(8192) :>>
         mapPar(
           split(128) >>>
-            mapSeq(reduceSeq(add, 0.0f)) >>>
-            iterate(6,
+            mapSeq(reduceSeq(add, l(0.0f))) >>>
+            iterate(6, nFun(_ =>
               split(2) >>>
-                mapSeq(reduceSeq(add, 0.0f))
+                mapSeq(reduceSeq(add, l(0.0f))))
             )
         ) :>> join
     ))
@@ -109,8 +109,7 @@ class asum extends idealised.util.Tests {
     ))
     val typed = TypeInference(intelDerivedNoWarp1, Map())
     val phrase = typed.convertToPhrase
-    val N = typed.t.get.n
-    assert(N == phrase.t.asInstanceOf[`(nat)->`[ExpType]].n)
+    val N = typed.t.get.asInstanceOf[NatDependentFunctionType[DataType]].n
     val p = OpenCL.KernelGenerator.makeCode(localSize = 128, globalSize = N)(phrase)
     println(p.code)
     SyntaxChecker.checkOpenCL(p.code)
@@ -124,7 +123,7 @@ class asum extends idealised.util.Tests {
         split(2048) :>>
         mapWorkgroup(
           split(2048) >>>
-            mapLocal(oclReduceSeq(add, 0.0f, OpenCL.PrivateMemory))
+            mapLocal(oclReduceSeq(add, l(0.0f), OpenCL.PrivateMemory))
         ) :>> join
     ))
     val phrase = TypeInference(intelDerived2, Map()).convertToPhrase
@@ -144,7 +143,7 @@ class asum extends idealised.util.Tests {
           reorderWithStride(128) >>>
             split(2048) >>>
             mapLocal(
-              oclReduceSeq(fun(x => fun(a => abs(float)(x) + a)), 0.0f, OpenCL.PrivateMemory)
+              oclReduceSeq(fun(x => fun(a => abs(float)(x) + a)), l(0.0f), OpenCL.PrivateMemory)
             )
         ) :>> join
     ))
@@ -163,10 +162,10 @@ class asum extends idealised.util.Tests {
         split(8192) :>>
         mapWorkgroup(
           split(128) >>>
-            toLocal(mapLocal(reduceSeq(add, 0.0f))) >>>
-            iterate(6,
+            toLocal(mapLocal(reduceSeq(add, l(0.0f)))) >>>
+            iterate(6, nFun(_ =>
               split(2) >>>
-                toLocal(mapLocal(reduceSeq(add, 0.0f)))
+                toLocal(mapLocal(reduceSeq(add, l(0.0f)))))
             )
         ) :>> join
     ))

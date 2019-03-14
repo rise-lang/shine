@@ -26,7 +26,7 @@ object gemv extends App {
   val matT = ArrayType(M, ArrayType(N, dataT))
 
   def runOpenCLKernel(name: String,
-                      untypedLambda: Expr[DataType -> (DataType -> (DataType -> (DataType -> (DataType -> DataType))))]): Unit = {
+                      untypedLambda: Expr): Unit = {
     println("\n----------------")
     val lambda = TypeInference(untypedLambda, Map()).convertToPhrase
     println(name + ":\n" + PrettyPhrasePrinter(lambda))
@@ -65,7 +65,7 @@ object gemv extends App {
   val mult = fun(x => x._1 * x._2)
   val add = fun(x => fun(a => x + a))
   val scal = fun(xs => fun(alpha => mapSeq(fun(x => alpha * x), xs)))
-  val dot = fun(xs => fun(ys => reduceSeq(add, 0.0f) o mapSeq(mult) $ zip(xs, ys)))
+  val dot = fun(xs => fun(ys => reduceSeq(add, l(0.0f)) o mapSeq(mult) $ zip(xs, ys)))
 
   val high_level =
     fun(matT)(mat => fun(xsT)(xs => fun(ysT)(ys =>
@@ -88,7 +88,7 @@ object gemv extends App {
 
         join() o mapWorkgroup(fun(t =>
           mapLocal(fun(x => (alpha * x) + (t._2 * beta))) o
-            toLocal(mapLocal(reduceSeq(fun(x => fun(a => mult(x) + a)), 0.0f)))
+            toLocal(mapLocal(reduceSeq(fun(x => fun(a => mult(x) + a)), l(0.0f))))
             o split(N) $ zip(xs, t._1)
         )) $ zip(mat, ys)
 
@@ -102,8 +102,8 @@ object gemv extends App {
 
         join() o mapWorkgroup(fun(t =>
           mapLocal(fun(x => (alpha * x) + (t._2 * beta))) o
-            toLocal(mapLocal(reduceSeq(add, 0.0f))) o split(128) o
-            toLocal(mapLocal(reduceSeq(fun(x => fun(a => mult(x) + a)), 0.0f)))
+            toLocal(mapLocal(reduceSeq(add, l(0.0f)))) o split(128) o
+            toLocal(mapLocal(reduceSeq(fun(x => fun(a => mult(x) + a)), l(0.0f))))
             o split(N /^ 128) o reorderWithStride(128) $ zip(xs, t._1)
         )) $ zip(mat, ys)
 
@@ -117,8 +117,8 @@ object gemv extends App {
 
         mapWorkgroup(fun(t =>
           fun(x => (x * alpha) + (t._2 * beta)) o
-            toLocal(reduceSeq(add, 0.0f)) o
-            toLocal(mapLocal(reduceSeq(fun(x => fun(a => mult(x) + a)), 0.0f))) o
+            toLocal(reduceSeq(add, l(0.0f))) o
+            toLocal(mapLocal(reduceSeq(fun(x => fun(a => mult(x) + a)), l(0.0f)))) o
             split(N /^ 128) o reorderWithStride(128) $ zip(xs, t._1)
         )) $ zip(mat, ys)
 
@@ -137,7 +137,7 @@ object gemv extends App {
 
           join() o mapPar(fun(t =>
             mapSeq(fun(x => (alpha * x) + (t._2 * beta))) o
-              toLocal(mapSeq(reduceSeq(fun(x => fun(a => mult(x) + a)), 0.0f)))
+              toLocal(mapSeq(reduceSeq(fun(x => fun(a => mult(x) + a)), l(0.0f))))
               o split(N) $ zip(xs, t._1)
           )) $ zip(mat, ys)
 

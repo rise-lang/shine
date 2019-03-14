@@ -1,10 +1,8 @@
 package idealised.DPIA
 
 import idealised.DPIA.Phrases._
-import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics.IndexData
 import idealised.DPIA.Types.{DataType, ExpType, IndexType, PhraseType}
-import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.SurfaceLanguage._
 import lift.arithmetic.{NamedVar, RangeAdd}
 

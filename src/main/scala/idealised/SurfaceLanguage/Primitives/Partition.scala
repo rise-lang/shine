@@ -1,13 +1,12 @@
 package idealised.SurfaceLanguage.Primitives
 
 import idealised.DPIA.Nat
-import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
 import idealised.{DPIA, SurfaceLanguage}
 import lift.arithmetic.ArithExpr
 
-final case class Partition(m:Nat, lenID:NatIdentifier, lenBody:Nat, array: DataExpr,
+final case class Partition(m:Nat, lenID:NatIdentifier, lenBody:Nat, array: Expr,
                        override val t: Option[DataType])
   extends PrimitiveExpr
 {
@@ -33,7 +32,7 @@ final case class Partition(m:Nat, lenID:NatIdentifier, lenBody:Nat, array: DataE
     typed
   }
 
-  override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): DataExpr = {
+  override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): Expr = {
     Partition(f(m), f(lenID).asInstanceOf[NatIdentifier], f(lenBody), SurfaceLanguage.VisitAndRebuild(array, f), t.map(f(_)))
   }
 }

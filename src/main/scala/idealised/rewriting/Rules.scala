@@ -21,5 +21,10 @@ object Rules {
       map(f) o map(g) $ arg
   }
 
+  def copy = fun(y => y) // TODO: think about how to avoid being beta reduced ...
+
+  def addCopy: Strategy = x => copy(x)
+
+  def transposeTranspose: Strategy = x => (transpose() o transpose()) $ x
 
 }

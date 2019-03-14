@@ -1,15 +1,12 @@
 package idealised.rewriting
 
-import idealised.SurfaceLanguage.Types.Type
 import idealised.SurfaceLanguage._
 
 object Elevate {
 
-  type LiftExpr = Expr[_ <: Type]
+  type Strategy = Expr => Expr
 
-  type Strategy = LiftExpr => LiftExpr
-
-  def isDefined: Strategy => LiftExpr => Boolean = s => e => {
+  def isDefined: Strategy => Expr => Boolean = s => e => {
     try { s(e); true } catch { case _: MatchError => false }
   }
 
@@ -18,9 +15,9 @@ object Elevate {
       case Position(pos) =>
         var exprsLeft = pos
         VisitAndRebuild(expr, new VisitAndRebuild.Visitor {
-          override def apply[T <: Type](e: Expr[T]): Result[Expr[T]] = {
+          override def apply(e: Expr): Result = {
             if (exprsLeft == 0) {
-              Stop( s(e).asInstanceOf[Expr[T]] )
+              Stop( s(e) )
             } else {
               exprsLeft = exprsLeft - 1
               Continue(e, this)
@@ -30,9 +27,9 @@ object Elevate {
 
       case FindFirst(predicate) =>
         VisitAndRebuild(expr, new VisitAndRebuild.Visitor {
-          override def apply[T <: Type](e: Expr[T]): Result[Expr[T]] = {
+          override def apply(e: Expr): Result = {
             if (predicate(e)) {
-              Stop( s(e).asInstanceOf[Expr[T]] )
+              Stop( s(e) )
             } else {
               Continue(e, this)
             }

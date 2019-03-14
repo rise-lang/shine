@@ -20,7 +20,7 @@ object Stencil extends App {
 
   val high_level = fun(xsT)(xs =>
     xs :>> slide(3, 1) :>> mapSeq(fun(nbh =>
-      nbh :>> reduceSeq(fun(x => fun(a => x + a)), 0.0f)
+      nbh :>> reduceSeq(fun(x => fun(a => x + a)), l(0.0f))
     ))
   )
 

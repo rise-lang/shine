@@ -1,13 +1,13 @@
 package idealised.apps
 
-import idealised.OpenCL.SurfaceLanguage.DSL.{oclReduceSeq, depMapGlobal, toGlobal, mapLocal, depMapWorkgroup}
+import idealised.OpenCL.SurfaceLanguage.DSL._
+import idealised.OpenCL._
 import idealised.OpenMP.SurfaceLanguage.DSL.depMapPar
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
-import idealised.OpenCL._
 import idealised.util.SyntaxChecker
-import lift.arithmetic.{ArithExpr, Cst, SizeVar}
+import lift.arithmetic.{ArithExpr, Cst}
 import opencl.executor.Executor
 
 import scala.language.{implicitConversions, postfixOps}
@@ -20,38 +20,38 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
   val multSumAcc = fun(x => fun(y => (x._1 * x._2) + y))
 
 
-  val triangleVectorMultSeq: Expr[DataType -> (DataType -> DataType)] =
+  val triangleVectorMultSeq: Expr =
     fun(DepArrayType(8, i => ArrayType(i + 1, int)))(triangle =>
       fun(ArrayType(8, int))(vector =>
         depMapSeq(fun(row => zip(row, take(Macros.GetLength(row), vector))
-          :>> mapSeq(mult) :>> reduceSeq(add, 0)
+          :>> mapSeq(mult) :>> reduceSeq(add, l(0))
         ), triangle)
       )
     )
 
-  val triangleVectorMultPar: Expr[DataType -> (DataType -> DataType)] =
+  val triangleVectorMultPar: Expr =
     fun(DepArrayType(8, i => ArrayType(i + 1, int)))(triangle =>
       fun(ArrayType(8, int))(vector =>
         depMapPar(fun(row => zip(row, take(Macros.GetLength(row), vector))
-          :>> mapSeq(mult) :>> reduceSeq(add, 0)
+          :>> mapSeq(mult) :>> reduceSeq(add, l(0))
         ), triangle)
       )
     )
 
-  val triangleVectorMultSeqOpenCL: Expr[DataType -> (DataType -> DataType)] =
+  val triangleVectorMultSeqOpenCL: Expr =
     fun(DepArrayType(8, i => ArrayType(i + 1, int)))(triangle =>
       fun(ArrayType(8, int))(vector =>
         depMapSeq(fun(row => zip(row, take(Macros.GetLength(row), vector))
-          :>> toGlobal(mapSeq(mult)) :>> oclReduceSeq(add, 0, PrivateMemory)
+          :>> toGlobal(mapSeq(mult)) :>> oclReduceSeq(add, l(0), PrivateMemory)
         ), triangle)
       )
     )
 
-  val triangleVectorMultGlobal: Expr[DataType -> (DataType -> DataType)] =
+  val triangleVectorMultGlobal: Expr =
     fun(DepArrayType(8, i => ArrayType(i + 1, int)))(triangle =>
       fun(ArrayType(8, int))(vector =>
         depMapGlobal(fun(row => zip(row, take(Macros.GetLength(row), vector))
-          :>> toGlobal(mapSeq(mult)) :>> oclReduceSeq(add, 0, PrivateMemory)
+          :>> toGlobal(mapSeq(mult)) :>> oclReduceSeq(add, l(0), PrivateMemory)
         ), triangle)
       )
     )
@@ -63,10 +63,10 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
     (inputMatrix, inputVector)
   }
 
-  def triangleVectorMultGlobalFused(N:ArithExpr): Expr[DataType -> (DataType -> DataType)] =
+  def triangleVectorMultGlobalFused(N:ArithExpr): Expr =
     fun(DepArrayType(N, i => ArrayType(i + 1, float)))(triangle =>
       fun(ArrayType(N, float))(vector =>
-        depMapGlobal(fun(row => zip(row, take(Macros.GetLength(row), vector)) :>> reduceSeq(multSumAcc, 0.0f)
+        depMapGlobal(fun(row => zip(row, take(Macros.GetLength(row), vector)) :>> reduceSeq(multSumAcc, l(0.0f))
         ), triangle)
       )
     )
@@ -153,13 +153,13 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
     import idealised.OpenCL._
     val actualN = inputSize
     val splitN = splitSize
-    val f: Expr[`(nat)->`[DataType -> (DataType -> DataType)]] = {
+    val f: Expr = {
 
       val SPLIT_SIZE = Cst(splitN)
       nFun(n => fun(DepArrayType(n, i => ArrayType(i + 1, float)))(triangle =>
         fun(ArrayType(n, float))(vector =>
           depMapWorkgroup.withIndex(nFun(rowIndex => fun(row =>
-            zip(pad(0, n - rowIndex - 1, 0.0f, row), vector) :>> split(SPLIT_SIZE) :>> mapLocal(oclReduceSeq(multSumAcc, 0.0f, PrivateMemory))
+            zip(pad(0, n - rowIndex - 1, l(0.0f), row), vector) :>> split(SPLIT_SIZE) :>> mapLocal(oclReduceSeq(multSumAcc, l(0.0f), PrivateMemory))
           )), triangle)
         )
       ))

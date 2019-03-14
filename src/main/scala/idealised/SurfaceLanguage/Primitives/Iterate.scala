@@ -1,15 +1,14 @@
 package idealised.SurfaceLanguage.Primitives
 
 import idealised.DPIA
-import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
 import idealised.SurfaceLanguage.Types.TypeInference.SubstitutionMap
 import lift.arithmetic._
 
 final case class Iterate(k: Nat,
-                         f: Expr[`(nat)->`[DataType -> DataType]],
-                         array: DataExpr,
+                         f: Expr,
+                         array: Expr,
                          override val t: Option[DataType])
   extends PrimitiveExpr
 {
@@ -67,7 +66,7 @@ final case class Iterate(k: Nat,
       })
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): DataExpr = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Expr = {
     Iterate(fun(k),
       VisitAndRebuild(f, fun),
       VisitAndRebuild(array, fun),

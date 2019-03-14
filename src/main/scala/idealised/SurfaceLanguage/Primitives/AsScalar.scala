@@ -1,11 +1,10 @@
 package idealised.SurfaceLanguage.Primitives
 
-import idealised.SurfaceLanguage.DSL.DataExpr
-import idealised.SurfaceLanguage.PrimitiveExpr
+import idealised.SurfaceLanguage.{Expr, PrimitiveExpr}
 import idealised.SurfaceLanguage.Types.{ArrayType, DataType, TypeInference, VectorType}
 import idealised.{DPIA, SurfaceLanguage}
 
-final case class AsScalar(array: DataExpr, override val t: Option[DataType] = None)
+final case class AsScalar(array: Expr, override val t: Option[DataType] = None)
   extends PrimitiveExpr
 {
 
@@ -27,7 +26,7 @@ final case class AsScalar(array: DataExpr, override val t: Option[DataType] = No
     }
   }
 
-  override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): DataExpr = {
+  override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): Expr = {
     AsScalar(SurfaceLanguage.VisitAndRebuild(array, f), t.map(f(_)))
   }
 

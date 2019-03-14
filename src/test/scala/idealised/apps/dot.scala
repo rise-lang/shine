@@ -15,13 +15,13 @@ class dot extends idealised.util.Tests {
   private val add = fun((x, a) => x + a)
 
   private val simpleDotProduct = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
-    zip(xs, ys) :>> mapSeq(mult) :>> reduceSeq(add, 0.0f)
+    zip(xs, ys) :>> mapSeq(mult) :>> reduceSeq(add, l(0.0f))
   )))
 
   test("Simple dot product type inference works") {
     val typed = TypeInference(simpleDotProduct, Map())
 
-    val N = typed.t.get.n
+    val N = typed.t.get.asInstanceOf[NatDependentFunctionType[_ <: Type]].n
     assertResult(NatDependentFunctionType(N, FunctionType(xsT(N), FunctionType(ysT(N), float)))) {
       typed.t.get
     }
@@ -103,7 +103,7 @@ class dot extends idealised.util.Tests {
         mapPar(
           split(2048) >>>
             mapSeq(
-              reduceSeq(fun(x => fun(a => mult(x) + a)), 0.0f)
+              reduceSeq(fun(x => fun(a => mult(x) + a)), l(0.0f))
             )
         ) :>> join
     )))
@@ -123,7 +123,7 @@ class dot extends idealised.util.Tests {
         mapPar(
           split(128) >>>
             mapSeq(
-              reduceSeq(fun(x => fun(a => x + a)), 0.0f)
+              reduceSeq(fun(x => fun(a => x + a)), l(0.0f))
             )
         ) :>> join
     ))

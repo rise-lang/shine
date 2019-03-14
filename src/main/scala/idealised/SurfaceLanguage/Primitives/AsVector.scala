@@ -1,11 +1,10 @@
 package idealised.SurfaceLanguage.Primitives
 
-import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.SurfaceLanguage.Types._
-import idealised.SurfaceLanguage.{Nat, PrimitiveExpr}
+import idealised.SurfaceLanguage.{Expr, Nat, PrimitiveExpr}
 import idealised.{DPIA, SurfaceLanguage}
 
-final case class AsVector(n: Nat, array: DataExpr,
+final case class AsVector(n: Nat, array: Expr,
                           override val t: Option[DataType] = None)
   extends PrimitiveExpr
 {
@@ -27,7 +26,7 @@ final case class AsVector(n: Nat, array: DataExpr,
     }
   }
 
-  override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): DataExpr = {
+  override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): Expr = {
     AsVector(f(n), SurfaceLanguage.VisitAndRebuild(array, f), t.map(f(_)))
   }
 

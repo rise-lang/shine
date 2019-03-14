@@ -1,11 +1,10 @@
 package idealised.SurfaceLanguage.Primitives
 
-import idealised.SurfaceLanguage.DSL.DataExpr
-import idealised.SurfaceLanguage.PrimitiveExpr
-import idealised.{DPIA, SurfaceLanguage}
+import idealised.SurfaceLanguage.{Expr, PrimitiveExpr}
 import idealised.SurfaceLanguage.Types._
+import idealised.{DPIA, SurfaceLanguage}
 
-final case class Join(array: DataExpr, override val t: Option[DataType])
+final case class Join(array: Expr, override val t: Option[DataType])
   extends PrimitiveExpr
 {
   override def convertToPhrase: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
@@ -25,7 +24,7 @@ final case class Join(array: DataExpr, override val t: Option[DataType])
       })
   }
 
-  override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): DataExpr = {
+  override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): Expr = {
     Join(SurfaceLanguage.VisitAndRebuild(array, f), t.map(f(_)))
   }
 }

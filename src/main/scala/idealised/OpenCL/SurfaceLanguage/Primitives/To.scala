@@ -2,15 +2,13 @@ package idealised.OpenCL.SurfaceLanguage.Primitives
 
 import idealised.DPIA
 import idealised.OpenCL.AddressSpace
-import idealised.SurfaceLanguage._
 import idealised.SurfaceLanguage.Types._
-import idealised.SurfaceLanguage.DSL.DataExpr
-import idealised.SurfaceLanguage.{Expr, PrimitiveExpr}
+import idealised.SurfaceLanguage.{Expr, PrimitiveExpr, _}
 
-abstract class To(f: Expr[DataType -> DataType],
-                  input: DataExpr,
+abstract class To(f: Expr,
+                  input: Expr,
                   addressSpace: AddressSpace,
-                  private val makeTo: (Expr[DataType -> DataType], DataExpr, Option[DataType]) => To,
+                  private val makeTo: (Expr, Expr, Option[DataType]) => To,
                   private val makeToDPIA: (DPIA.Types.DataType, DPIA.Types.DataType,
                     DPIA.Phrases.Phrase[DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]],
                     DPIA.Phrases.Phrase[DPIA.Types.ExpType]) => idealised.OpenCL.FunctionalPrimitives.To
@@ -21,7 +19,7 @@ abstract class To(f: Expr[DataType -> DataType],
 
   override def convertToPhrase: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
     (f.t, input.t) match {
-      case (Some(FunctionType(dt1, dt2)), Some(t1)) if dt1 == t1 =>
+      case (Some(FunctionType(dt1: DataType, dt2: DataType)), Some(t1)) if dt1 == t1 =>
         makeToDPIA(dt1, dt2,
           f.toPhrase[DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]],
           input.toPhrase[DPIA.Types.ExpType])
@@ -33,10 +31,10 @@ abstract class To(f: Expr[DataType -> DataType],
     import TypeInference._
     val input_ = TypeInference(input, subs)
     input_.t match {
-      case Some(dt1) =>
+      case Some(dt1: DataType) =>
         val f_ = TypeInference.setParamAndInferType(f, dt1, subs)
         f_.t match {
-          case Some(FunctionType(t1, dt2)) =>
+          case Some(FunctionType(t1, dt2: DataType)) =>
             if (dt1 == t1) {
               makeTo(f_, input_, Some(dt2))
             } else {
@@ -49,8 +47,10 @@ abstract class To(f: Expr[DataType -> DataType],
     }
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): DataExpr = {
-    makeTo(VisitAndRebuild(f, fun), VisitAndRebuild(input, fun), t.map(fun(_)))
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Expr = {
+    makeTo(VisitAndRebuild(f, fun), VisitAndRebuild(input, fun), t.map{
+      case dt: DataType => fun(dt)
+    })
   }
 
 }

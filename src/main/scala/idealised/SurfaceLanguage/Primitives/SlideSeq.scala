@@ -6,7 +6,7 @@ import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
 import TypeInference._
 
-final case class SlideSeq(sz: Nat, sp: Nat, input: DataExpr,
+final case class SlideSeq(sz: Nat, sp: Nat, input: Expr,
                           override val t: Option[DataType])
   extends AbstractSlide(sz, sp, input, t)
 {
@@ -17,6 +17,6 @@ final case class SlideSeq(sz: Nat, sp: Nat, input: DataExpr,
                input: DPIA.Phrases.Phrase[DPIA.Types.ExpType]) =
     DPIA.FunctionalPrimitives.SlideSeq(n, sz, sp, dt, input)
 
-  def make(sz: Nat, sp: Nat, input: DataExpr, t: Option[DataType]) =
+  def make(sz: Nat, sp: Nat, input: Expr, t: Option[DataType]) =
     SlideSeq(sz, sp, input, t)
 }

@@ -1,11 +1,10 @@
 package idealised.SurfaceLanguage.Primitives
 
-import idealised.SurfaceLanguage.DSL.DataExpr
-import idealised.SurfaceLanguage.{PrimitiveExpr, VisitAndRebuild}
+import idealised.SurfaceLanguage.{Expr, PrimitiveExpr, VisitAndRebuild}
 import idealised.DPIA
 import idealised.SurfaceLanguage.Types._
 
-final case class PrintType(input: DataExpr,
+final case class PrintType(input: Expr,
                            msg: String,
                            override val t: Option[DataType])
   extends PrimitiveExpr
@@ -19,11 +18,14 @@ final case class PrintType(input: DataExpr,
         case None => "NoType"
         case Some(dt) => dt.toString
       }}")
-      PrintType(input, msg, input.t)
+      PrintType(input, msg, input.t match {
+        case None => None
+        case Some(dt: DataType) => Some(dt)
+      })
     })
   }
 
-  override def visitAndRebuild(f: VisitAndRebuild.Visitor): DataExpr = {
+  override def visitAndRebuild(f: VisitAndRebuild.Visitor): Expr = {
     PrintType(VisitAndRebuild(input, f), msg, t.map(f(_)))
   }
 

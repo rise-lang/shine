@@ -67,7 +67,7 @@ object gemm extends App {
   }
 
   def printOpenCLKernel(name: String,
-                        untypedLambda: Expr[DataType -> (DataType -> (DataType -> (DataType -> (DataType -> DataType))))]): Unit = {
+                        untypedLambda: Expr): Unit = {
     val lambda = TypeInference(untypedLambda, Map()).convertToPhrase
     println(name + ":\n" + PrettyPhrasePrinter(lambda))
     TypeCheck(lambda)
@@ -259,7 +259,7 @@ object gemm extends App {
 //    val v6 = 64
 //    val v7 = 8
 //
-//    def tile(x: Nat, y: Nat): Expr[DataType -> DataType] =
+//    def tile(x: Nat, y: Nat): Expr =
 //      map(map(transpose()) o split(y) o transpose()) o split(x)
 //
 //    val zeros = LiteralExpr(
@@ -340,7 +340,7 @@ object gemm extends App {
 //    val v6 = 64
 //    val v7 = 8
 //
-//    def tile(x: Nat, y: Nat): Expr[DataType -> DataType] =
+//    def tile(x: Nat, y: Nat): Expr =
 //      map(map(transpose()) o split(y) o transpose()) o split(x)
 //
 //    val zeros = LiteralExpr(

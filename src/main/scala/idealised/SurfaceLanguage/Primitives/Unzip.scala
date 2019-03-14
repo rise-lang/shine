@@ -1,11 +1,10 @@
 package idealised.SurfaceLanguage.Primitives
 
-import idealised.SurfaceLanguage.DSL.DataExpr
-import idealised.SurfaceLanguage.PrimitiveExpr
-import idealised.{DPIA, SurfaceLanguage}
+import idealised.SurfaceLanguage.{Expr, PrimitiveExpr}
 import idealised.SurfaceLanguage.Types._
+import idealised.{DPIA, SurfaceLanguage}
 
-final case class Unzip(e: DataExpr,
+final case class Unzip(e: Expr,
                        override val t: Option[DataType])
   extends PrimitiveExpr
 {
@@ -26,7 +25,7 @@ final case class Unzip(e: DataExpr,
       })
   }
 
-  override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): DataExpr = {
+  override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): Expr = {
     Unzip(SurfaceLanguage.VisitAndRebuild(e, f), t.map(f(_)))
   }
 }

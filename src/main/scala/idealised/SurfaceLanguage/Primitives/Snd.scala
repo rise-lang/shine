@@ -1,11 +1,11 @@
 package idealised.SurfaceLanguage.Primitives
 
-import idealised.SurfaceLanguage.DSL.DataExpr
+import idealised.SurfaceLanguage.Expr
 import idealised.SurfaceLanguage.PrimitiveExpr
 import idealised.{DPIA, SurfaceLanguage}
 import idealised.SurfaceLanguage.Types._
 
-final case class Snd(tuple: DataExpr,
+final case class Snd(tuple: Expr,
                      override val t: Option[DataType])
   extends PrimitiveExpr
 {
@@ -29,7 +29,7 @@ final case class Snd(tuple: DataExpr,
       })
   }
 
-  override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): DataExpr = {
+  override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): Expr = {
     Snd(SurfaceLanguage.VisitAndRebuild(tuple, f), t.map(f(_)))
   }
 

@@ -16,7 +16,7 @@ class separableBlur extends idealised.util.Tests {
 
   val mul2 = fun(t => t._1 * t._2)
   val add = fun(x => fun(a => x + a))
-  val dot = fun(a => fun(b => zip(a, b) :>> map(mul2) :>> reduceSeq(add, 0.0f)))
+  val dot = fun(a => fun(b => zip(a, b) :>> map(mul2) :>> reduceSeq(add, l(0.0f))))
 
   // TODO: pad
   // TODO: loop unrolling ? OpenCLGenerator::generateForLoopUnrolled
@@ -83,7 +83,7 @@ class separableBlur extends idealised.util.Tests {
   -> mapInput(dot) |> slideSeq(3, 1) |> mapOutput(dot) // more flexible?
   */
 
-  def generate[T <: Type](e: Expr[T]) = {
+  def generate(e: Expr) = {
     val phrase = TypeInference(e, collection.Map()).convertToPhrase
     val program = OpenMP.ProgramGenerator.makeCode(phrase)
     SyntaxChecker(program.code)

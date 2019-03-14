@@ -2,8 +2,8 @@ import idealised.DPIA.Phrases.PrettyPhrasePrinter
 import idealised.DPIA.Types.TypeCheck
 import idealised.OpenCL._
 import idealised.SurfaceLanguage.DSL._
-import idealised.SurfaceLanguage.Types.{ArrayType, DataType, TypeInference, float}
-import idealised.SurfaceLanguage.{->, Expr}
+import idealised.SurfaceLanguage.Expr
+import idealised.SurfaceLanguage.Types.{ArrayType, TypeInference, float}
 import lift.arithmetic.SizeVar
 import org.junit.Assert.assertArrayEquals
 
@@ -28,7 +28,7 @@ object transposeApp extends App {
   val Msize = 8
 
   def printOpenCLKernel(name: String,
-                        untypedLambda: Expr[DataType -> DataType]): Unit = {
+                        untypedLambda: Expr): Unit = {
     val lambda = TypeInference(untypedLambda, Map()).convertToPhrase
     println(name + ":\n" + PrettyPhrasePrinter(lambda))
     TypeCheck(lambda)

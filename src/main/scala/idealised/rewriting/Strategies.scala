@@ -1,5 +1,6 @@
 package idealised.rewriting
 
+import idealised.SurfaceLanguage.Expr
 import idealised.rewriting.Elevate._
 
 object Strategies {
@@ -31,6 +32,6 @@ object Strategies {
 
   def rewriteNormalForm: Strategy = normalize(Rules.mapFission)
 
-  def listLocations: Strategy => LiftExpr => Seq[Location] =
+  def listLocations: Strategy => Expr => Seq[Location] =
     s => e => Location.findAll(isDefined(s)(_))(e)
 }

@@ -7,7 +7,7 @@ import idealised.util.{Execute, SyntaxChecker}
 class Transpose extends idealised.util.Tests {
   ignore("Simple transpose should produce the expected result on a test") {
     def checkResult[T <: idealised.SurfaceLanguage.Types.Type]
-    (e: idealised.SurfaceLanguage.Expr[T]) =
+    (e: idealised.SurfaceLanguage.Expr) =
     {
       val p = idealised.C.ProgramGenerator.makeCode(TypeInference(e, Map()).toPhrase)
       SyntaxChecker(p.code)

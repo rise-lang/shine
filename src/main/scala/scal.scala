@@ -4,8 +4,8 @@ import idealised.DPIA.Types.TypeCheck
 import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.OpenCL._
 import idealised.SurfaceLanguage.DSL._
+import idealised.SurfaceLanguage.Expr
 import idealised.SurfaceLanguage.Types._
-import idealised.SurfaceLanguage.{Expr, _}
 import idealised.utils.{Time, TimeSpan}
 import lift.arithmetic._
 
@@ -25,7 +25,7 @@ object scal extends App {
   val inputT = ArrayType(N, float)
 
   def runOpenCLKernel(name: String,
-                      untypedLambda: Expr[DataType -> (DataType -> DataType)]): Unit = {
+                      untypedLambda: Expr): Unit = {
     println("\n----------------")
     val lambda = TypeInference(untypedLambda, Map()).convertToPhrase
     println(name + ":\n" + PrettyPhrasePrinter(lambda))

@@ -2,19 +2,18 @@ package idealised.SurfaceLanguage.Primitives
 
 import idealised.DPIA
 import idealised.DPIA.freshName
-import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.SurfaceLanguage.Types.TypeInference.SubstitutionMap
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
 import lift.arithmetic.NamedVar
 
-abstract class AbstractDepMap(df: Expr[`(nat)->`[DataType -> DataType]],
-                              array: DataExpr,
+abstract class AbstractDepMap(df: Expr,
+                              array: Expr,
                               override val t: Option[DataType])
   extends PrimitiveExpr
 {
 
-  def makeMap: (Expr[`(nat)->`[DataType -> DataType]], DataExpr, Option[DataType]) => AbstractDepMap
+  def makeMap: (Expr, Expr, Option[DataType]) => AbstractDepMap
 
   def makeDPIAMap: (
     DPIA.Nat,
@@ -51,12 +50,12 @@ abstract class AbstractDepMap(df: Expr[`(nat)->`[DataType -> DataType]],
     case x => TypeInference.error(expr = this.toString, found= x.toString, expected = NatDependentLambdaExpr.toString)
   }
 
-  def dfF: Expr[->[DataType, DataType]] = df match {
+  def dfF: Expr = df match {
     case NatDependentLambdaExpr(_, f) => f
     case x => TypeInference.error(expr = this.toString, found= x.toString, expected = NatDependentLambdaExpr.toString)
   }
 
-  override def inferType(subs: SubstitutionMap): DataExpr = {
+  override def inferType(subs: SubstitutionMap): Expr = {
     import TypeInference._
     TypeInference(array, subs) |> (array =>
       array.t match {
@@ -64,7 +63,7 @@ abstract class AbstractDepMap(df: Expr[`(nat)->`[DataType -> DataType]],
 
           setParamsAndInferTypes(df, Type.substitute(_, `for`=j, in=df1), subs) |> (df =>
             df.t match {
-              case Some(NatDependentFunctionType(i, FunctionType(_, df2))) =>
+              case Some(NatDependentFunctionType(i, FunctionType(_, df2: DataType))) =>
                 makeMap(df, array, Some(DepArrayType(n, Type.substitute(_, `for`=i, `in`=df2))))
               case x => error(expr = s"${this.getClass.getSimpleName}($df, $array)",
                 found = s"`${x.toString}'", expected = "(nat) -> df1 -> df2")
@@ -75,7 +74,7 @@ abstract class AbstractDepMap(df: Expr[`(nat)->`[DataType -> DataType]],
       })
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): DataExpr = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Expr = {
     makeMap(VisitAndRebuild(df, fun), VisitAndRebuild(array, fun), t.map(fun(_)))
   }
 

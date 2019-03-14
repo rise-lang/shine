@@ -1,6 +1,5 @@
 package idealised.SurfaceLanguage
 
-import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.SurfaceLanguage.Types._
 
 import scala.language.postfixOps
@@ -8,17 +7,17 @@ import scala.language.reflectiveCalls
 
 object Lifting {
 
-  def liftFunctionExpr[T <: Type](p: Expr[DataType -> T]): DataExpr => Expr[T] = {
+  def liftFunctionExpr(p: Expr): Expr => Expr = {
     p match {
-      case l: LambdaExpr[T] =>
-        (arg: DataExpr) =>  Expr.substitute(arg, `for` = l.param, in = l.body)
-      case app: ApplyExpr[DataType -> T] =>
+      case l: LambdaExpr =>
+        (arg: Expr) =>  Expr.substitute(arg, `for` = l.param, in = l.body)
+      case app: ApplyExpr =>
         val fun = liftFunctionExpr(app.fun)
         liftFunctionExpr(fun(app.arg))
-      case app: NatDependentApplyExpr[DataType -> T] =>
+      case app: NatDependentApplyExpr =>
         val fun = liftNatDependentFunctionExpr(app.fun)
         liftFunctionExpr(fun(app.arg))
-      case app: TypeDependentApplyExpr[DataType -> T] =>
+      case app: TypeDependentApplyExpr =>
         val fun = liftTypeDependentFunctionExpr(app.fun)
         liftFunctionExpr(fun(app.arg))
       case IfThenElseExpr(_, _, _) =>
@@ -26,17 +25,17 @@ object Lifting {
     }
   }
 
-  def liftNatDependentFunctionExpr[T <: Type](p: Expr[`(nat)->`[T]]): Nat => Expr[T] = {
+  def liftNatDependentFunctionExpr(p: Expr): Nat => Expr = {
     p match {
-      case l: NatDependentLambdaExpr[T] =>
+      case l: NatDependentLambdaExpr =>
         (arg: Nat) => Type.substitute(arg, `for` = l.x, in = l.body)
-      case app: ApplyExpr[`(nat)->`[T]] =>
+      case app: ApplyExpr =>
         val fun = liftFunctionExpr(app.fun)
         liftNatDependentFunctionExpr(fun(app.arg))
-      case app: NatDependentApplyExpr[`(nat)->`[T]] =>
+      case app: NatDependentApplyExpr =>
         val fun = liftNatDependentFunctionExpr(app.fun)
         liftNatDependentFunctionExpr(fun(app.arg))
-      case app: TypeDependentApplyExpr[`(nat)->`[T]] =>
+      case app: TypeDependentApplyExpr =>
         val fun = liftTypeDependentFunctionExpr(app.fun)
         liftNatDependentFunctionExpr(fun(app.arg))
       case IfThenElseExpr(_, _, _) =>
@@ -44,17 +43,17 @@ object Lifting {
     }
   }
 
-  def liftTypeDependentFunctionExpr[T <: Type](p: Expr[`(dt)->`[T]]): DataType => Expr[T] = {
+  def liftTypeDependentFunctionExpr(p: Expr): DataType => Expr = {
     p match {
-      case l: TypeDependentLambdaExpr[T] =>
+      case l: TypeDependentLambdaExpr =>
         (arg: DataType) => Type.substitute(arg, `for` = l.x, in = l.body)
-      case app: ApplyExpr[`(dt)->`[T]] =>
+      case app: ApplyExpr =>
         val fun = liftFunctionExpr(app.fun)
         liftTypeDependentFunctionExpr(fun(app.arg))
-      case app: NatDependentApplyExpr[`(dt)->`[T]] =>
+      case app: NatDependentApplyExpr =>
         val fun = liftNatDependentFunctionExpr(app.fun)
         liftTypeDependentFunctionExpr(fun(app.arg))
-      case app: TypeDependentApplyExpr[`(dt)->`[T]] =>
+      case app: TypeDependentApplyExpr =>
         val fun = liftTypeDependentFunctionExpr(app.fun)
         liftTypeDependentFunctionExpr(fun(app.arg))
       case IfThenElseExpr(_, _, _) =>

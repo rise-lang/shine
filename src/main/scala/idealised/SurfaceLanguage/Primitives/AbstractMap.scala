@@ -1,18 +1,17 @@
 package idealised.SurfaceLanguage.Primitives
 
 import idealised.DPIA
-import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.SurfaceLanguage.Types.TypeInference.SubstitutionMap
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
 
-abstract class AbstractMap(f: Expr[DataType -> DataType],
-                           array: DataExpr,
+abstract class AbstractMap(f: Expr,
+                           array: Expr,
                            override val t: Option[DataType])
   extends PrimitiveExpr
 {
 
-  def makeMap: (Expr[DataType -> DataType], DataExpr, Option[DataType]) => AbstractMap
+  def makeMap: (Expr, Expr, Option[DataType]) => AbstractMap
 
   def makeDPIAMap: (
     DPIA.Nat,
@@ -25,7 +24,7 @@ abstract class AbstractMap(f: Expr[DataType -> DataType],
 
   override def convertToPhrase: DPIA.FunctionalPrimitives.AbstractMap = {
     (f.t, array.t) match {
-      case (Some(FunctionType(dt1, dt2)), Some(ArrayType(n, dt1_))) if dt1 == dt1_ =>
+      case (Some(FunctionType(dt1: DataType, dt2: DataType)), Some(ArrayType(n, dt1_))) if dt1 == dt1_ =>
         makeDPIAMap(n, dt1, dt2,
           f.toPhrase[DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]],
           array.toPhrase[DPIA.Types.ExpType]
@@ -34,14 +33,14 @@ abstract class AbstractMap(f: Expr[DataType -> DataType],
     }
   }
 
-  override def inferType(subs: SubstitutionMap): DataExpr = {
+  override def inferType(subs: SubstitutionMap): Expr = {
     import TypeInference._
     TypeInference(array, subs) |> (array =>
       array.t match {
         case Some(ArrayType(n, dt1)) =>
           setParamAndInferType(f, dt1, subs) |> (f =>
             f.t match {
-              case Some(FunctionType(dt1_, dt2)) =>
+              case Some(FunctionType(dt1_, dt2: DataType)) =>
                 if (dt1 == dt1_) {
                   makeMap(f, array, Some(ArrayType(n, dt2)))
                 } else {
@@ -56,7 +55,7 @@ abstract class AbstractMap(f: Expr[DataType -> DataType],
       })
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): DataExpr = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Expr = {
     makeMap(VisitAndRebuild(f, fun), VisitAndRebuild(array, fun), t.map(fun(_)))
   }
 
