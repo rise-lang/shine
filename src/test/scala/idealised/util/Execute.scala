@@ -15,12 +15,12 @@ object Execute {
       (s"clang -O2 $src -o $bin" !!)
       (s"$bin" !!)
     } catch {
-      case _: Throwable =>
+      case e: Throwable =>
         Console.err.println("==========")
-        Console.err.println("execution failed for code:")
+        Console.err.println(s"execution failed ($e) for code:")
         Console.err.println(code)
         Console.err.println("==========")
-        throw Exception(s"execution failed for: `$code'")
+        throw Exception(s"execution failed ($e) for: `$code'")
     }
   }
 }

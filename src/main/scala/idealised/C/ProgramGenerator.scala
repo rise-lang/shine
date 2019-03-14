@@ -13,7 +13,8 @@ import scala.collection._
 
 object ProgramGenerator {
 
-  def makeCode[T <: PhraseType](originalPhrase: Phrase[T]): Program = {
+  def makeCode[T <: PhraseType](originalPhrase: Phrase[T],
+                                name: String = "foo"): Program = {
 
     def getPhraseAndParams[_ <: PhraseType](p: Phrase[_],
                                             ps: Seq[Identifier[ExpType]]
@@ -27,12 +28,12 @@ object ProgramGenerator {
 
     val (phrase, params) = getPhraseAndParams(originalPhrase, Seq())
 
-    makeCode(phrase, params.reverse)
+    makeCode(phrase, params.reverse, name)
   }
 
   private def makeCode(p: Phrase[ExpType],
                        inputParams: Seq[Identifier[ExpType]],
-                       name: String = "foo"): Program = {
+                       name: String): Program = {
     val outParam = createOutputParam(outT = p.t)
 
     val gen = C.CodeGeneration.CodeGenerator()
