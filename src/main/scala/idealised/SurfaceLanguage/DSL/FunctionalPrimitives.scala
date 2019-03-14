@@ -180,12 +180,6 @@ object transpose {
   implicit def toTranspose(t: transpose.type): Expr[DataType -> DataType] = transpose()
 }
 
-object withIndex {
-  def apply(): Expr[DataType -> DataType] = fun(array => withIndex(array))
-
-  def apply(array: DataExpr): WithIndex = WithIndex(array, None)
-}
-
 object tuple {
   def apply(fst: DataExpr, snd: DataExpr): Tuple = Tuple(fst, snd, None)
 }

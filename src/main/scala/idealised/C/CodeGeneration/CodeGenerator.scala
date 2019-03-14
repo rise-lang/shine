@@ -346,8 +346,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error(s"Expected two C-Integer-Expressions on the path.")
       }
 
-      case WithIndex(_, _, e) => exp(e, env, path, cont)
-
       // TODO: this has to be refactored
       case VectorFromScalar(n, st, e) => path match {
         case (_: CIntExpr) :: ps =>
