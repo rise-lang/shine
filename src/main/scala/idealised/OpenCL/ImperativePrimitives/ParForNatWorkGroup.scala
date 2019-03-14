@@ -3,17 +3,17 @@ package idealised.OpenCL.ImperativePrimitives
 import idealised.C.AST.{Comment, Stmt}
 import idealised.DPIA.Phrases.Phrase
 import idealised.DPIA.Types.{AccType, CommandType, DataType}
-import idealised.DPIA.{->, Nat, NatIdentifier, `(nat)->`, freshName}
+import idealised.DPIA.{->, Nat, NatDataTypeFunction, NatIdentifier, `(nat)->`, freshName}
 import idealised.OpenCL
 import idealised.OpenCL.{BuiltInFunction, get_group_id, get_num_groups}
 import lift.arithmetic.{?, ContinuousRange, PosInf, RangeAdd}
 
 final case class ParForNatWorkGroup(dim:Int)(override val n:Nat,
-                                         override val i:NatIdentifier,
-                                         override val dt:DataType,
-                                         override val out:Phrase[AccType],
+                                             override val ft:NatDataTypeFunction,
+
+                                             override val out:Phrase[AccType],
                                          override val body: Phrase[`(nat)->`[AccType -> CommandType]])
-  extends OpenCLParForNat(n, i, dt, out, body) {
+  extends OpenCLParForNat(n, ft, out, body) {
   override val makeParForNat = ParForNatWorkGroup(dim) _
 
   override val parallelismLevel = OpenCL.WorkGroup

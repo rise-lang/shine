@@ -57,8 +57,8 @@ object `if` {
 
 object `for` {
   def apply(n: Nat,
-            f: Identifier[ExpType] => Phrase[CommandType]): For =
-    For(n, λ(exp"[idx($n)]")( i => f(i) ))
+            f: Identifier[ExpType] => Phrase[CommandType], unroll:Boolean = false): For =
+    For(n, λ(exp"[idx($n)]")( i => f(i) ), unroll)
 }
 
 object fst {

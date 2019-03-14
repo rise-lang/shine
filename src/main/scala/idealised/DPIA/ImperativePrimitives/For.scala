@@ -10,7 +10,8 @@ import idealised.DPIA._
 import scala.xml.Elem
 
 final case class For(n: Nat,
-                     body: Phrase[ExpType -> CommandType])
+                     body: Phrase[ExpType -> CommandType],
+                     unroll:Boolean)
   extends CommandPrimitive {
 
   override val `type`: CommandType =
@@ -25,7 +26,7 @@ final case class For(n: Nat,
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {
-    For(fun(n), VisitAndRebuild(body, fun))
+    For(fun(n), VisitAndRebuild(body, fun), unroll)
   }
 
   override def prettyPrint: String = s"(for 0..$n ${PrettyPhrasePrinter(body)})"

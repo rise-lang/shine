@@ -1,5 +1,6 @@
 package idealised.SurfaceLanguage
 
+import idealised.DPIA.NatNatTypeFunction
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage.Semantics._
 
@@ -8,6 +9,7 @@ object VisitAndRebuild {
   class Visitor {
     def apply[T <: Type](e: Expr[T]): Result[Expr[T]] = Continue(e, this)
     def apply(ae: Nat): Nat = ae
+    def apply(f:NatNatTypeFunction):NatNatTypeFunction = NatNatTypeFunction(f.x, apply(f.body))
     def apply[T <: DataType](dt: T): T = dt
 
     abstract class Result[+T]
