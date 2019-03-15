@@ -51,7 +51,7 @@ class Split extends idealised.util.Tests {
     val splitExample =
       nFun(n =>
         fun(DepArrayType(n, i => ArrayType(i + 1, float)))(xs =>
-          xs :>> split(4) :>> depMapSeq(fun(row => depMapSeq(fun(col => mapSeq(fun(x => x + l(1.0f)), col)), row)))
+          xs :>> split(4) :>> depMapSeq(fun(row => depMapSeq(fun(col => mapSeq(fun(x => x + 1.0f), col)), row)))
       ))
 
     val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(splitExample, Map()).toPhrase)

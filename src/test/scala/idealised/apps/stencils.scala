@@ -83,9 +83,9 @@ class stencils extends Tests {
     override def dpiaProgram: Expr = {
       nFun(n => fun(ArrayType(n, float))(input =>
         input :>>
-          pad(padSize, padSize, l(0.0f)) :>>
+          pad(padSize, padSize, 0.0f) :>>
           slide(stencilSize, 1) :>>
-          mapGlobal(oclReduceSeq(add, l(0.0f), PrivateMemory))
+          mapGlobal(oclReduceSeq(add, 0.0f, PrivateMemory))
       ))
     }
   }
@@ -95,10 +95,10 @@ class stencils extends Tests {
     override def dpiaProgram: Expr = {
       nFun(n => fun(ArrayType(n, float))(input =>
         input :>>
-          pad(padSize, padSize, l(0.0f)) :>>
+          pad(padSize, padSize, 0.0f) :>>
           slide(stencilSize, 1) :>>
           partition(3, m => SteppedCase(m, Seq(padSize, n - 2 * padSize + ((1 + stencilSize) % 2), padSize))) :>>
-          depMapSeqUnroll(mapGlobal(fun(nbh => oclReduceSeq(add, l(0.0f), PrivateMemory)(nbh)))) :>>
+          depMapSeqUnroll(mapGlobal(fun(nbh => oclReduceSeq(add, 0.0f, PrivateMemory)(nbh)))) :>>
           join
       ))
     }
@@ -130,7 +130,7 @@ class stencils extends Tests {
     }
 
     protected def tileStencil: Expr = {
-      fun(xs => xs :>> join :>> reduceSeq(add, l(0.0f)))
+      fun(xs => xs :>> join :>> reduceSeq(add, 0.0f))
     }
   }
 
@@ -140,7 +140,7 @@ class stencils extends Tests {
         input :>>
           pad2D(n, padSize, padSize, FloatData(0.0f)) :>>
           slide2D(stencilSize, 1) :>>
-          mapGlobal(1)(mapGlobal(0)(fun(nbh => join(nbh) :>> oclReduceSeq(add, l(0.0f), PrivateMemory))))
+          mapGlobal(1)(mapGlobal(0)(fun(nbh => join(nbh) :>> oclReduceSeq(add, 0.0f, PrivateMemory))))
       )
       )
     }
@@ -157,7 +157,7 @@ class stencils extends Tests {
           partition(3, m => SteppedCase(m, Seq(padSize, n - 2 * padSize, padSize))) :>>
           depMapSeqUnroll(
             //mapGlobal(0)(depMapSeqUnroll(mapGlobal(1)(join() >>> reduceSeq(add, 0.0f))))
-            mapGlobal(1)(mapGlobal(0)(join() >>> oclReduceSeq(add, l(0.0f), PrivateMemory)))
+            mapGlobal(1)(mapGlobal(0)(join() >>> oclReduceSeq(add, 0.0f, PrivateMemory)))
           ) :>>
           join
       ))

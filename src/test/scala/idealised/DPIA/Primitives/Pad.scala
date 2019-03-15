@@ -15,7 +15,7 @@ import scala.util.Random
 class Pad extends idealised.util.Tests {
   test("Simple C pad input and copy") {
     val f = nFun(n => fun(ArrayType(n, float))(xs =>
-      xs :>> pad(2, 3, l(5.0f)) :>> mapSeq(fun(x => x))
+      xs :>> pad(2, 3, 5.0f) :>> mapSeq(fun(x => x))
     ))
 
     val p = idealised.C.ProgramGenerator.makeCode(TypeInference(f, Map()).toPhrase)
@@ -26,7 +26,7 @@ class Pad extends idealised.util.Tests {
 
   test("Simple OpenMP pad input and copy") {
     val f = nFun(n => fun(ArrayType(n, float))( xs =>
-      xs :>> pad(2, 3, l(5.0f)) :>> mapPar(fun(x => x))
+      xs :>> pad(2, 3, 5.0f) :>> mapPar(fun(x => x))
     ))
 
     val p = idealised.OpenMP.ProgramGenerator.makeCode(TypeInference(f, Map()).toPhrase)
@@ -37,7 +37,7 @@ class Pad extends idealised.util.Tests {
 
   test("Simple OpenCL pad input and copy") {
     val f = nFun(n => fun(ArrayType(n, float))( xs =>
-      xs :>> pad(2, 3, l(5.0f)) :>> mapGlobal(fun(x => x))
+      xs :>> pad(2, 3, 5.0f) :>> mapGlobal(fun(x => x))
     ))
 
     val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase)
@@ -48,7 +48,7 @@ class Pad extends idealised.util.Tests {
 
   test("OpenCL Pad only left") {
     val f = nFun(n => fun(ArrayType(n, float))( xs =>
-      xs :>> pad(2, 0, l(5.0f)) :>> mapGlobal(fun(x => x))
+      xs :>> pad(2, 0, 5.0f) :>> mapGlobal(fun(x => x))
     ))
 
     val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase)
@@ -59,7 +59,7 @@ class Pad extends idealised.util.Tests {
 
   test("OpenCL Pad only right") {
     val f = nFun(n => fun(ArrayType(n, float))( xs =>
-      xs :>> pad(0, 3, l(5.0f)) :>> mapGlobal(fun(x => x))
+      xs :>> pad(0, 3, 5.0f) :>> mapGlobal(fun(x => x))
     ))
 
     val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase)

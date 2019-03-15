@@ -7,6 +7,7 @@ import idealised.SurfaceLanguage.NatIdentifier
 import idealised.SurfaceLanguage.Types._
 import idealised.util.SyntaxChecker
 import idealised.{C, OpenCL, OpenMP}
+import lift.arithmetic.Cst
 
 class asum extends idealised.util.Tests {
 
@@ -16,7 +17,7 @@ class asum extends idealised.util.Tests {
   val add = fun(x => fun(a => x + a))
 
   val high_level = nFun(n => fun(inputT(n))(input =>
-    input :>> map(fabs) :>> reduceSeq(add, l(0.0f)) ))
+    input :>> map(fabs) :>> reduceSeq(add, 0.0f) ))
 
   test("High level asum type inference works") {
     val typed = TypeInference(high_level, Map())
@@ -62,7 +63,7 @@ class asum extends idealised.util.Tests {
       input :>>
         split(2048) :>>
         mapPar(
-          split(2048) >>> mapSeq(reduceSeq(add, l(0.0f)))
+          split(2048) >>> mapSeq(reduceSeq(add, 0.0f))
         ) :>> join
     ))
     val phrase = TypeInference(intelDerived2, Map()).convertToPhrase
@@ -79,10 +80,10 @@ class asum extends idealised.util.Tests {
         split(8192) :>>
         mapPar(
           split(128) >>>
-            mapSeq(reduceSeq(add, l(0.0f))) >>>
+            mapSeq(reduceSeq(add, 0.0f)) >>>
             iterate(6, nFun(_ =>
               split(2) >>>
-                mapSeq(reduceSeq(add, l(0.0f))))
+                mapSeq(reduceSeq(add, 0.0f)))
             )
         ) :>> join
     ))
@@ -123,7 +124,7 @@ class asum extends idealised.util.Tests {
         split(2048) :>>
         mapWorkgroup(
           split(2048) >>>
-            mapLocal(oclReduceSeq(add, l(0.0f), OpenCL.PrivateMemory))
+            mapLocal(oclReduceSeq(add, 0.0f, OpenCL.PrivateMemory))
         ) :>> join
     ))
     val phrase = TypeInference(intelDerived2, Map()).convertToPhrase
@@ -140,10 +141,10 @@ class asum extends idealised.util.Tests {
       input :>>
         split(2048 * 128) :>>
         mapWorkgroup(
-          reorderWithStride(128) >>>
+          reorderWithStride(Cst(128)) >>>
             split(2048) >>>
             mapLocal(
-              oclReduceSeq(fun(x => fun(a => abs(float)(x) + a)), l(0.0f), OpenCL.PrivateMemory)
+              oclReduceSeq(fun(x => fun(a => abs(float)(x) + a)), 0.0f, OpenCL.PrivateMemory)
             )
         ) :>> join
     ))
@@ -162,10 +163,10 @@ class asum extends idealised.util.Tests {
         split(8192) :>>
         mapWorkgroup(
           split(128) >>>
-            toLocal(mapLocal(reduceSeq(add, l(0.0f)))) >>>
+            toLocal(mapLocal(reduceSeq(add, 0.0f))) >>>
             iterate(6, nFun(_ =>
               split(2) >>>
-                toLocal(mapLocal(reduceSeq(add, l(0.0f)))))
+                toLocal(mapLocal(reduceSeq(add, 0.0f))))
             )
         ) :>> join
     ))
@@ -184,7 +185,7 @@ class asum extends idealised.util.Tests {
         split(4096 * 128) :>>
         mapWorkgroup(
           asVector(2) >>>
-          reorderWithStride(64) >>>
+          reorderWithStride(Cst(64)) >>>
             split(2048) >>>
             mapLocal(
               oclReduceSeq(fun(x => fun(a => abs(float2)(x) + a)), vectorize(2, 0.0f), OpenCL.PrivateMemory)

@@ -11,7 +11,7 @@ class Reduce extends idealised.util.Tests {
   test("Simple example should generate syntactic valid C code with one loop") {
     val e =
       nFun(n =>
-        fun(ArrayType(n, float))(a => a :>> reduceSeq(add, l(0.0f))))
+        fun(ArrayType(n, float))(a => a :>> reduceSeq(add, 0.0f)))
 
     val p = idealised.C.ProgramGenerator.makeCode(TypeInference(e, Map()).toPhrase)
     val code = p.code
@@ -25,7 +25,7 @@ class Reduce extends idealised.util.Tests {
     val e =
       nFun(h => nFun(w =>
         fun(ArrayType(h, ArrayType(w, float)))(a =>
-          a :>> map(reduceSeq(add, l(0.0f))) :>> mapSeq(fun(x => x))
+          a :>> map(reduceSeq(add, 0.0f)) :>> mapSeq(fun(x => x))
         )))
 
     val p = idealised.C.ProgramGenerator.makeCode(TypeInference(e, Map()).toPhrase)
@@ -38,7 +38,7 @@ class Reduce extends idealised.util.Tests {
     val e =
       nFun(h => nFun(w =>
         fun(ArrayType(h, ArrayType(w, float)))(a =>
-        a :>> map(reduceSeq(add, l(0.0f))) :>> reduceSeq(add, l(0.0f))
+        a :>> map(reduceSeq(add, 0.0f)) :>> reduceSeq(add, 0.0f)
       )))
 
     val p = idealised.C.ProgramGenerator.makeCode(TypeInference(e, Map()).toPhrase)

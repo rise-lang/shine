@@ -35,9 +35,9 @@ class Partition extends idealised.util.Tests {
 
     val padAndPartition = nFun(n =>
       fun(ArrayType(n, float))(xs => xs :>>
-        pad(padAmount, padAmount, l(0.0f)) :>>
+        pad(padAmount, padAmount, 0.0f) :>>
         partition(3, lenF(n)) :>>
-        depMapSeqUnroll(mapSeq(fun(x => x + l(1.0f))))))
+        depMapSeqUnroll(mapSeq(fun(x => x + 1.0f)))))
 
     val p = idealised.OpenCL.KernelGenerator.makeCode(1, 1)(TypeInference(padAndPartition, Map()).toPhrase)
     val kernelF = p.as[ScalaFunction `(` Int `,` Array[Float] `)=>` Array[Float]]

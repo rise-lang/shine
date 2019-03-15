@@ -34,7 +34,7 @@ class fft extends idealised.util.Tests {
 
             val yChunk = yChunkWithBrow._1
             val Brow = yChunkWithBrow._2
-            mapSeq(fun(Bchunk => reduceSeq(cmultandsum, tuple(l(0.0f), l(0.0f))) $ zip(yChunk, Bchunk)
+            mapSeq(fun(Bchunk => reduceSeq(cmultandsum, tuple(0.0f, 0.0f)) $ zip(yChunk, Bchunk)
 
             )) $ Brow
 

@@ -79,7 +79,7 @@ object dot extends App {
   val add = fun((x, a) => x + a)
 
   val high_level = fun(xsT)(xs => fun(ysT)(ys =>
-    reduceSeq(add, l(0.0f)) o mapSeq(mult) $ zip(xs, ys)
+    reduceSeq(add, 0.0f) o mapSeq(mult) $ zip(xs, ys)
   ))
 
 //  {
@@ -134,7 +134,7 @@ object dot extends App {
     val dotCPU1 = fun(xsT)(xs => fun(ysT)(ys =>
       join() o mapPar(
         mapSeq(
-          reduceSeq(fun(x => fun(a => mult(x) + a)), l(0.0f))
+          reduceSeq(fun(x => fun(a => mult(x) + a)), 0.0f)
         ) o split(2048)
       ) o split(2048 * 128) $ zip(xs, ys)
     ))
@@ -148,7 +148,7 @@ object dot extends App {
     val dotCPU2 = fun(xsT)(in =>
       join() o mapPar(
         mapSeq(
-          reduceSeq(fun(x => fun(a => x + a)), l(0.0f))
+          reduceSeq(fun(x => fun(a => x + a)), 0.0f)
         ) o split(128)
       ) o split(128) $ in
     )
@@ -182,7 +182,7 @@ object dot extends App {
   val dotCPU1 = fun(xsT)(xs => fun(ysT)(ys =>
     join() o mapWorkgroup(
       mapLocal(
-        reduceSeq(fun(x => fun(a => mult(x) + a)), l(0.0f))
+        reduceSeq(fun(x => fun(a => mult(x) + a)), 0.0f)
       ) o split(2048)
     ) o split(2048 * 128) $ zip(xs, ys)
   ))
@@ -192,7 +192,7 @@ object dot extends App {
   val dotCPU2 = fun(xsT)(in =>
     join() o mapWorkgroup(
       mapLocal(
-        reduceSeq(fun(x => fun(a => x + a)), l(0.0f))
+        reduceSeq(fun(x => fun(a => x + a)), 0.0f)
       ) o split(128)
     ) o split(128) $ in
   )
@@ -202,8 +202,8 @@ object dot extends App {
   val dotProduct1 = fun(xsT)(xs => fun(ysT)(ys =>
     join() o mapWorkgroup(
       mapLocal(
-        reduceSeq(fun(x => fun(a => mult(x) + a)), l(0.0f))
-      ) o split(2048) o reorderWithStride(128)
+        reduceSeq(fun(x => fun(a => mult(x) + a)), 0.0f)
+      ) o split(2048) o reorderWithStride(Cst(128))
     ) o split(2048 * 128) $ zip(xs, ys)
   ))
 
@@ -211,8 +211,8 @@ object dot extends App {
 
   val dotProduct2 = fun(xsT)(in =>
     join() o mapWorkgroup(
-      iterate(6, toLocal(mapLocal(reduceSeq(add, l(0.0f)))) o split(2)) o
-        toLocal(mapLocal(reduceSeq(add, l(0.0f)))) o split(2)
+      iterate(6, toLocal(mapLocal(reduceSeq(add, 0.0f))) o split(2)) o
+        toLocal(mapLocal(reduceSeq(add, 0.0f))) o split(2)
     ) o split(128) $ in
   )
 

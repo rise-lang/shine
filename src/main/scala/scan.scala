@@ -16,7 +16,7 @@ object scan extends App{
   val xsT = ArrayType(8, float)
   val mult = fun(x => x._1 * x._2)
 
-  val basicScan = fun(xsT)(array => scanSeq(fun(x => fun(a => a + x)), l(0.0f), array))
+  val basicScan = fun(xsT)(array => scanSeq(fun(x => fun(a => a + x)), 0.0f, array))
 
   printKernel(basicScan)
 

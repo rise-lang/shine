@@ -16,7 +16,7 @@ class separableBlur extends idealised.util.Tests {
 
   val mul2 = fun(t => t._1 * t._2)
   val add = fun(x => fun(a => x + a))
-  val dot = fun(a => fun(b => zip(a, b) :>> map(mul2) :>> reduceSeq(add, l(0.0f))))
+  val dot = fun(a => fun(b => zip(a, b) :>> map(mul2) :>> reduceSeq(add, 0.0f)))
 
   // TODO: pad
   // TODO: registers/loop unrolling, vectorisation

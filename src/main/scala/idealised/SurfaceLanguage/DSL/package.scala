@@ -56,16 +56,16 @@ package object DSL {
     def >>>(g: Expr): Expr = g o f
   }
 
-  def l(i: Int): LiteralExpr = LiteralExpr(IntData(i))
-  def l(f: Float): LiteralExpr = LiteralExpr(FloatData(f))
-  def l(v: VectorData): LiteralExpr = LiteralExpr(v)
+  implicit def l(i: Int): LiteralExpr = LiteralExpr(IntData(i))
+  implicit def l(f: Float): LiteralExpr = LiteralExpr(FloatData(f))
+  implicit def l(v: VectorData): LiteralExpr = LiteralExpr(v)
 
   implicit class IdentExpPhraseExtensions(i: IdentifierExpr) {
     def asNatIdentifier = NamedVar(i.name)
     def asNatIdentifier(withUpperBound: Nat) = NamedVar(i.name, ContinuousRange(0, withUpperBound))
   }
 
-  implicit class NatExtensions(n: Nat) {
+  case class NatExtensions(n: Nat) {
     def asExpr = LiteralExpr(IndexData(n))
     def asExpr(withType: IndexType) = LiteralExpr(IndexData(n, withType))
   }
@@ -74,12 +74,4 @@ package object DSL {
     def _1 = Fst(e, None)
     def _2 = Snd(e, None)
   }
-
-//  implicit class ExpPhraseExtensions(e: DataExpr) {
-//    def `@`(index: DataExpr): Idx = (index.t, e.t) match {
-//      case (ExpType(IndexType(n1)), ExpType(ArrayType(n2, dt))) if n1 == n2 =>
-//        Idx(n1, dt, index, e)
-//      case x => error(x.toString, "(exp[idx(n)], exp[n.dt])")
-//    }
-//  }
 }

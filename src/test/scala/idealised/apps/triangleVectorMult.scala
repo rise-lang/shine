@@ -25,7 +25,7 @@ class triangleVectorMultNoExecutor extends idealised.util.Tests {
     fun(DepArrayType(8, i => ArrayType(i + 1, int)))(triangle =>
       fun(ArrayType(8, int))(vector =>
         depMapSeq(fun(row => zip(row, take(Macros.GetLength(row), vector))
-          :>> mapSeq(mult) :>> reduceSeq(add, l(0))
+          :>> mapSeq(mult) :>> reduceSeq(add, 0)
         ), triangle)
       )
     )
@@ -34,7 +34,7 @@ class triangleVectorMultNoExecutor extends idealised.util.Tests {
     fun(DepArrayType(8, i => ArrayType(i + 1, int)))(triangle =>
       fun(ArrayType(8, int))(vector =>
         depMapPar(fun(row => zip(row, take(Macros.GetLength(row), vector))
-          :>> mapSeq(mult) :>> reduceSeq(add, l(0))
+          :>> mapSeq(mult) :>> reduceSeq(add, 0)
         ), triangle)
       )
     )
@@ -43,7 +43,7 @@ class triangleVectorMultNoExecutor extends idealised.util.Tests {
     fun(DepArrayType(8, i => ArrayType(i + 1, int)))(triangle =>
       fun(ArrayType(8, int))(vector =>
         depMapSeq(fun(row => zip(row, take(Macros.GetLength(row), vector))
-          :>> toGlobal(mapSeq(mult)) :>> oclReduceSeq(add, l(0), PrivateMemory)
+          :>> toGlobal(mapSeq(mult)) :>> oclReduceSeq(add, 0, PrivateMemory)
         ), triangle)
       )
     )
@@ -52,7 +52,7 @@ class triangleVectorMultNoExecutor extends idealised.util.Tests {
     fun(DepArrayType(8, i => ArrayType(i + 1, int)))(triangle =>
       fun(ArrayType(8, int))(vector =>
         depMapGlobal(fun(row => zip(row, take(Macros.GetLength(row), vector))
-          :>> toGlobal(mapSeq(mult)) :>> oclReduceSeq(add, l(0), PrivateMemory)
+          :>> toGlobal(mapSeq(mult)) :>> oclReduceSeq(add, 0, PrivateMemory)
         ), triangle)
       )
     )
@@ -67,7 +67,7 @@ class triangleVectorMultNoExecutor extends idealised.util.Tests {
   def triangleVectorMultGlobalFused(N:ArithExpr): Expr =
     fun(DepArrayType(N, i => ArrayType(i + 1, float)))(triangle =>
       fun(ArrayType(N, float))(vector =>
-        depMapGlobal(fun(row => zip(row, take(Macros.GetLength(row), vector)) :>> reduceSeq(multSumAcc, l(0.0f))
+        depMapGlobal(fun(row => zip(row, take(Macros.GetLength(row), vector)) :>> reduceSeq(multSumAcc, 0.0f)
         ), triangle)
       )
     )
@@ -166,7 +166,7 @@ class triangleVectorMultNoExecutor extends idealised.util.Tests {
       fun(DepArrayType(N, i => ArrayType(i + 1, float)))(triangle =>
         fun(ArrayType(N, float))(vector =>
           depMapWorkgroup.withIndex(nFun(rowIndex => fun(row =>
-            zip(pad(0, N - rowIndex - 1, l(0.0f), row), vector) :>> split(SPLIT_SIZE) :>> mapLocal(oclReduceSeq(multSumAcc, l(0.0f), PrivateMemory))
+            zip(pad(0, N - rowIndex - 1, 0.0f, row), vector) :>> split(SPLIT_SIZE) :>> mapLocal(oclReduceSeq(multSumAcc, 0.0f, PrivateMemory))
           )), triangle)
         )
       ))

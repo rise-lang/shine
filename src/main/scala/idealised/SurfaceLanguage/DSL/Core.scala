@@ -6,6 +6,7 @@ import lift.arithmetic.NamedVar
 
 object identifier {
   def apply(name: String): IdentifierExpr = IdentifierExpr(name, None)
+
   def apply(name: String, dt: DataType): IdentifierExpr = IdentifierExpr(name, Some(dt))
 }
 
@@ -30,8 +31,7 @@ object fun {
 }
 
 object nFun {
-  def apply[T <: Type](f: (NatIdentifier, NatIdentifier, NatIdentifier, NatIdentifier, NatIdentifier) => Expr)
-                                                    : Expr = {
+  def apply[T <: Type](f: (NatIdentifier, NatIdentifier, NatIdentifier, NatIdentifier, NatIdentifier) => Expr): Expr = {
     val p1 = NamedVar(newName())
     val p2 = NamedVar(newName())
     val p3 = NamedVar(newName())
@@ -41,8 +41,7 @@ object nFun {
       NatDependentLambdaExpr(p3, NatDependentLambdaExpr(p4, NatDependentLambdaExpr(p5, f(p1, p2, p3, p4, p5))))))
   }
 
-  def apply[T <: Type](f: (NatIdentifier, NatIdentifier, NatIdentifier, NatIdentifier) => Expr)
-                                                              : Expr = {
+  def apply[T <: Type](f: (NatIdentifier, NatIdentifier, NatIdentifier, NatIdentifier) => Expr): Expr = {
     val p1 = NamedVar(newName())
     val p2 = NamedVar(newName())
     val p3 = NamedVar(newName())
@@ -51,8 +50,7 @@ object nFun {
       NatDependentLambdaExpr(p3, NatDependentLambdaExpr(p4, f(p1, p2, p3, p4)))))
   }
 
-  def apply[T <: Type](f: (NatIdentifier, NatIdentifier, NatIdentifier) => Expr)
-                                                     : Expr = {
+  def apply[T <: Type](f: (NatIdentifier, NatIdentifier, NatIdentifier) => Expr): Expr = {
     val p1 = NamedVar(newName())
     val p2 = NamedVar(newName())
     val p3 = NamedVar(newName())
