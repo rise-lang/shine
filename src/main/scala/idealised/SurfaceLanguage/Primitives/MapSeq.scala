@@ -1,15 +1,12 @@
 package idealised.SurfaceLanguage.Primitives
 
-import idealised.DPIA
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
 
 //noinspection TypeAnnotation
-final case class MapSeq(f: Expr, array: Expr,
+final case class MapSeq(override val f: Expr, override val array: Expr,
                         override val t: Option[DataType] = None)
   extends AbstractMap(f, array, t) {
-
-  override def makeDPIAMap = DPIA.FunctionalPrimitives.MapSeq
 
   override def makeMap = MapSeq
 }

@@ -11,7 +11,7 @@ class DependentArrays extends idealised.util.Tests {
         fun(DepArrayType(n, i =>
           ArrayType(i + 1, int)))(array => depMapSeq(fun(x => mapSeq(fun(y => y + 1), x) ), array)))
 
-    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase)
+    val p = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
 
     val code = p.code
     SyntaxChecker.checkOpenCL(code)
@@ -25,7 +25,7 @@ class DependentArrays extends idealised.util.Tests {
           xs :>> depMapSeq(fun(row => depMapSeq(fun(col => mapSeq(fun(x => x + 1.0f), col)), row)))
     ))
 
-    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(splitExample, Map()).toPhrase)
+    val p = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(splitExample, Map())))
     val code = p.code
     SyntaxChecker.checkOpenCL(code)
     println(code)

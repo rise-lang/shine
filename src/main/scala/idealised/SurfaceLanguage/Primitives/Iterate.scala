@@ -1,9 +1,8 @@
 package idealised.SurfaceLanguage.Primitives
 
-import idealised.DPIA
+import idealised.SurfaceLanguage.Types.TypeInference.SubstitutionMap
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
-import idealised.SurfaceLanguage.Types.TypeInference.SubstitutionMap
 import lift.arithmetic._
 
 final case class Iterate(k: Nat,
@@ -12,26 +11,6 @@ final case class Iterate(k: Nat,
                          override val t: Option[DataType])
   extends PrimitiveExpr
 {
-
-  override def convertToPhrase: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
-    (f.t, array.t) match {
-      case (Some(NatDependentFunctionType(_,
-        FunctionType(ArrayType(l, dt1), ArrayType(l_n, dt2)))), Some(ArrayType(m, dt)))
-          if dt1 == dt && dt2 == dt =>
-            val n = l_n match {
-              case Prod(l__ :: Pow(n1_, Cst(-1)) :: Nil) if l__.equals(l) => n1_
-              case _ => throw new Exception("")
-            }
-            DPIA.FunctionalPrimitives.Iterate(n, m, k, dt,
-              f.toPhrase[DPIA.Types.NatDependentFunctionType[DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]]],
-//              .asInstanceOf[DPIA.Phrases.Phrase[DPIA.Types.NatDependentFunctionType[
-//              DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]]]]
-
-              array.toPhrase[DPIA.Types.ExpType]
-            )
-      case _ => throw new Exception("")
-    }
-  }
 
   override def inferType(subs: SubstitutionMap): Iterate = {
     import TypeInference._

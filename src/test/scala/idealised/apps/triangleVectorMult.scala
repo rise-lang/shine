@@ -87,25 +87,25 @@ class triangleVectorMultNoExecutor extends idealised.util.Tests {
   }
 
   test("Basic sequential triangle vector multiplication compiles to syntactically correct C") {
-    val p = idealised.C.ProgramGenerator.makeCode(TypeInference(triangleVectorMultSeq, Map()).toPhrase)
+    val p = idealised.C.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(triangleVectorMultSeq, Map())))
     println(p.code)
     SyntaxChecker(p.code)
   }
 
   test("Basic sequential triangle vector multiplication compiles to syntactically correct OpenMP") {
-    val p = idealised.OpenMP.ProgramGenerator.makeCode(TypeInference(triangleVectorMultSeq, Map()).toPhrase)
+    val p = idealised.OpenMP.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(triangleVectorMultSeq, Map())))
     println(p.code)
     SyntaxChecker(p.code)
   }
 
   test("Basic parallel triangle vector multiplication compiles to syntactically correct OpenMP") {
-    val p = idealised.OpenMP.ProgramGenerator.makeCode(TypeInference(triangleVectorMultPar, Map()).toPhrase)
+    val p = idealised.OpenMP.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(triangleVectorMultPar, Map())))
     println(p.code)
     SyntaxChecker(p.code)
   }
 
   test("Basic sequential triangle vector multiplication compiles to syntactically correct OpenCL") {
-    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(triangleVectorMultSeqOpenCL, Map()).toPhrase)
+    val p = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(triangleVectorMultSeqOpenCL, Map())))
     println(p.code)
     SyntaxChecker.checkOpenCL(p.code)
   }
@@ -128,7 +128,7 @@ class triangleVectorMultNoExecutor extends idealised.util.Tests {
     val actualN = inputSize
     val f = triangleVectorMultGlobalFused(actualN)
 
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(localSize, globalSize)(TypeInference(f, Map()).toPhrase)
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(localSize, globalSize)(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
     //println(kernel.code)
 
     val(inputMatrix, inputVector) = generateInputs(actualN)
@@ -172,7 +172,7 @@ class triangleVectorMultNoExecutor extends idealised.util.Tests {
       ))
     }
 
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(localSize, globalSize)(TypeInference(f, Map()).toPhrase)
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(localSize, globalSize)(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
 
     val(inputMatrix, inputVector) = generateInputs(actualN)
     val scalaOutput = scalaMatrixVector(inputMatrix, inputVector)

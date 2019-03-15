@@ -13,17 +13,6 @@ final case class Reorder(idxF: Expr,
                          override val t: Option[DataType])
   extends PrimitiveExpr
 {
-  override def convertToPhrase: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
-    array.t match {
-      case Some(ArrayType(n, dt)) =>
-        DPIA.FunctionalPrimitives.Reorder(n, dt,
-          idxF.toPhrase[DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]],
-          idxFinv.toPhrase[DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]],
-          array.toPhrase[DPIA.Types.ExpType])
-      case _ => throw new Exception("")
-    }
-  }
-
   override def inferType(subs: TypeInference.SubstitutionMap): Expr = {
     import TypeInference._
 

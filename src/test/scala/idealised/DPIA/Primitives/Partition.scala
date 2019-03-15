@@ -2,12 +2,9 @@ package idealised.DPIA.Primitives
 
 import idealised.DPIA.{Nat, NatIdentifier}
 import idealised.SurfaceLanguage.DSL._
-import idealised.SurfaceLanguage.{->, Expr}
 import idealised.SurfaceLanguage.Types._
 import idealised.util.SyntaxChecker
 import lift.arithmetic._
-
-import scala.util.Random
 
 
 class Partition extends idealised.util.Tests {
@@ -20,7 +17,7 @@ class Partition extends idealised.util.Tests {
       nFun(n =>
         fun(ArrayType(n, float))(xs => xs :>> partition(3, lenF) :>> depMapSeq(mapSeq(fun(x => x)))))
 
-    val p = idealised.C.ProgramGenerator.makeCode(TypeInference(slideExample, Map()).toPhrase)
+    val p = idealised.C.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(slideExample, Map())))
     val code = p.code
     SyntaxChecker(code)
   }
@@ -39,7 +36,7 @@ class Partition extends idealised.util.Tests {
         partition(3, lenF(n)) :>>
         depMapSeqUnroll(mapSeq(fun(x => x + 1.0f)))))
 
-    val p = idealised.OpenCL.KernelGenerator.makeCode(1, 1)(TypeInference(padAndPartition, Map()).toPhrase)
+    val p = idealised.OpenCL.KernelGenerator.makeCode(1, 1)(idealised.DPIA.FromSurfaceLanguage(TypeInference(padAndPartition, Map())))
     val kernelF = p.as[ScalaFunction `(` Int `,` Array[Float] `)=>` Array[Float]]
     val input = Array.fill(128)(5.0f)
     val (output, time) = kernelF(128 `,` input)

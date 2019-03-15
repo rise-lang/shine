@@ -18,7 +18,7 @@ class Pad extends idealised.util.Tests {
       xs :>> pad(2, 3, 5.0f) :>> mapSeq(fun(x => x))
     ))
 
-    val p = idealised.C.ProgramGenerator.makeCode(TypeInference(f, Map()).toPhrase)
+    val p = idealised.C.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
     val code = p.code
     SyntaxChecker(code)
     println(code)
@@ -29,7 +29,7 @@ class Pad extends idealised.util.Tests {
       xs :>> pad(2, 3, 5.0f) :>> mapPar(fun(x => x))
     ))
 
-    val p = idealised.OpenMP.ProgramGenerator.makeCode(TypeInference(f, Map()).toPhrase)
+    val p = idealised.OpenMP.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
     val code = p.code
     SyntaxChecker(code)
     println(code)
@@ -40,7 +40,7 @@ class Pad extends idealised.util.Tests {
       xs :>> pad(2, 3, 5.0f) :>> mapGlobal(fun(x => x))
     ))
 
-    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase)
+    val p = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
     val code = p.code
     SyntaxChecker.checkOpenCL(code)
     println(code)
@@ -51,7 +51,7 @@ class Pad extends idealised.util.Tests {
       xs :>> pad(2, 0, 5.0f) :>> mapGlobal(fun(x => x))
     ))
 
-    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase)
+    val p = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
     val code = p.code
     SyntaxChecker.checkOpenCL(code)
     println(code)
@@ -62,7 +62,7 @@ class Pad extends idealised.util.Tests {
       xs :>> pad(0, 3, 5.0f) :>> mapGlobal(fun(x => x))
     ))
 
-    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase)
+    val p = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
     val code = p.code
     SyntaxChecker.checkOpenCL(code)
     println(code)
@@ -81,7 +81,7 @@ class Pad extends idealised.util.Tests {
     )
 
 
-    val p = idealised.OpenCL.KernelGenerator.makeCode(1,1)(TypeInference(f, Map()).toPhrase)
+    val p = idealised.OpenCL.KernelGenerator.makeCode(1,1)(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
     val kernelF = p.as[ScalaFunction`(`Int `,` Int `,` Array[Array[Float]]`)=>`Array[Float]]
     val code = p.code
     SyntaxChecker.checkOpenCL(code)

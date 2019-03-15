@@ -1,20 +1,12 @@
 package idealised.SurfaceLanguage.Primitives
 
-import idealised.SurfaceLanguage.{Expr, PrimitiveExpr}
+import idealised.SurfaceLanguage
 import idealised.SurfaceLanguage.Types.{ArrayType, DataType, TypeInference, VectorType}
-import idealised.{DPIA, SurfaceLanguage}
+import idealised.SurfaceLanguage.{Expr, PrimitiveExpr}
 
 final case class AsScalar(array: Expr, override val t: Option[DataType] = None)
   extends PrimitiveExpr
 {
-
-  override def convertToPhrase: DPIA.FunctionalPrimitives.AsScalar = {
-    array.t match {
-      case Some(ArrayType(n, VectorType(m, dt))) =>
-        DPIA.FunctionalPrimitives.AsScalar(n, m, dt, array.toPhrase[DPIA.Types.ExpType])
-      case _ => throw new Exception("")
-    }
-  }
 
   override def inferType(subs: TypeInference.SubstitutionMap): AsScalar = {
     import TypeInference._

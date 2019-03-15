@@ -1,37 +1,16 @@
 package idealised.SurfaceLanguage.Primitives
 
-import idealised.DPIA
 import idealised.SurfaceLanguage.Types.TypeInference.SubstitutionMap
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
 
-abstract class AbstractMap(f: Expr,
-                           array: Expr,
+abstract class AbstractMap(val f: Expr,
+                           val array: Expr,
                            override val t: Option[DataType])
   extends PrimitiveExpr
 {
 
   def makeMap: (Expr, Expr, Option[DataType]) => AbstractMap
-
-  def makeDPIAMap: (
-    DPIA.Nat,
-      DPIA.Types.DataType,
-      DPIA.Types.DataType,
-      DPIA.Phrases.Phrase[DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]],
-      DPIA.Phrases.Phrase[DPIA.Types.ExpType]
-    ) => DPIA.FunctionalPrimitives.AbstractMap
-
-
-  override def convertToPhrase: DPIA.FunctionalPrimitives.AbstractMap = {
-    (f.t, array.t) match {
-      case (Some(FunctionType(dt1: DataType, dt2: DataType)), Some(ArrayType(n, dt1_))) if dt1 == dt1_ =>
-        makeDPIAMap(n, dt1, dt2,
-          f.toPhrase[DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]],
-          array.toPhrase[DPIA.Types.ExpType]
-        )
-      case _ => throw new Exception("")
-    }
-  }
 
   override def inferType(subs: SubstitutionMap): Expr = {
     import TypeInference._

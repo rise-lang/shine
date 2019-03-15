@@ -25,7 +25,7 @@ object dot extends App {
   def printOpenCLKernel1(name: String, expr: Expr): Unit = {
     println(s"-- $name --")
 
-    val kernel = KernelGenerator.makeCode(localSize = 128, globalSize = N)(TypeInference(expr, Map()).toPhrase)
+    val kernel = KernelGenerator.makeCode(localSize = 128, globalSize = N)(DPIA.FromSurfaceLanguage(TypeInference(expr, Map())))
     println(kernel.code)
 
     val fun = kernel.as[ScalaFunction `(` Array[Float] `,` Array[Float] `)=>` Array[Float]]
@@ -52,7 +52,7 @@ object dot extends App {
 
   def printOpenCLKernel2(name: String, expr: Expr): Unit = {
     println(s"-- $name --")
-    val kernel = KernelGenerator.makeCode(localSize = 128, globalSize = N)(TypeInference(expr, Map()).toPhrase)
+    val kernel = KernelGenerator.makeCode(localSize = 128, globalSize = N)(DPIA.FromSurfaceLanguage(TypeInference(expr, Map())))
     println(kernel.code)
 
     val fun = kernel.as[ScalaFunction `(` Array[Float] `)=>` Array[Float]]
@@ -93,7 +93,7 @@ object dot extends App {
 
   {
     println(s"-- high level --")
-    val phrase = TypeInference(high_level, Map()).convertToPhrase
+    val phrase = DPIA.FromSurfaceLanguage(TypeInference(high_level, Map()))
     val program = OpenMP.ProgramGenerator.makeCode(phrase)
     println(program.code)
   }
@@ -108,7 +108,7 @@ object dot extends App {
         ) o split(2048)
       ) o split(2048 * 64) $ zip(asVector(4) $ xs, asVector(4) $ ys)
     ))
-    val phrase = TypeInference(dotCPUVector1, Map()).toPhrase
+    val phrase = DPIA.FromSurfaceLanguage(TypeInference(dotCPUVector1, Map()))
     val program = OpenMP.ProgramGenerator.makeCode(phrase)
     println(program.code)
   }
@@ -123,7 +123,7 @@ object dot extends App {
         ) o split(8192)
       ) o split(8192) $ zip(asVector(4) $ xs, asVector(4) $ ys)
     ))
-    val phrase = TypeInference(intelDerivedNoWarpDot1, Map()).toPhrase
+    val phrase = DPIA.FromSurfaceLanguage(TypeInference(intelDerivedNoWarpDot1, Map()))
     val program = OpenMP.ProgramGenerator.makeCode(phrase)
     println(program.code)
   }
@@ -138,7 +138,7 @@ object dot extends App {
         ) o split(2048)
       ) o split(2048 * 128) $ zip(xs, ys)
     ))
-    val phrase = TypeInference(dotCPU1, Map()).toPhrase
+    val phrase = DPIA.FromSurfaceLanguage(TypeInference(dotCPU1, Map()))
     val program = OpenMP.ProgramGenerator.makeCode(phrase)
     println(program.code)
   }
@@ -152,7 +152,7 @@ object dot extends App {
         ) o split(128)
       ) o split(128) $ in
     )
-    val phrase = TypeInference(dotCPU2, Map()).toPhrase
+    val phrase = DPIA.FromSurfaceLanguage(TypeInference(dotCPU2, Map()))
     val program = OpenMP.ProgramGenerator.makeCode(phrase)
     println(program.code)
   }

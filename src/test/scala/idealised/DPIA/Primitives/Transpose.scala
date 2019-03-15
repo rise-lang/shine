@@ -9,7 +9,7 @@ import scala.util.Random
 class Transpose extends idealised.util.Tests {
   test("Simple transpose should produce the expected result on a test") {
     def checkResult(e: idealised.SurfaceLanguage.Expr) = {
-      val p = idealised.C.ProgramGenerator.makeCode(TypeInference(e, Map()).toPhrase)
+      val p = idealised.C.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(e, Map())))
       SyntaxChecker(p.code)
       println(p.code)
 
@@ -66,7 +66,7 @@ int main(int argc, char** argv) {
 
     val f = nFun(n => nFun(m => fun(ArrayType(n, ArrayType(m, float)))(xs => xs :>> join :>> split(m))))
 
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(1, 1)(TypeInference(f, Map()).toPhrase)
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(1, 1)(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
     val kernelF = kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Array[Float]] `)=>` Array[Float]]
 
     val random = new Random()
@@ -90,7 +90,7 @@ int main(int argc, char** argv) {
 
     val f = nFun(n => nFun(m => fun(ArrayType(n, ArrayType(m, float)))(xs => xs :>> transpose)))
 
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(1, 1)(TypeInference(f, Map()).toPhrase)
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(1, 1)(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
     val kernelF = kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Array[Float]] `)=>` Array[Float]]
 
     val random = new Random()
@@ -114,7 +114,7 @@ int main(int argc, char** argv) {
 
     val f = nFun(n => nFun(m => fun(ArrayType(n, DepArrayType(m, i => ArrayType(i + 1, float))))(xs => xs :>> transpose :>> depMapSeq(fun(x => x)))))
 
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(1, 1)(TypeInference(f, Map()).toPhrase)
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(1, 1)(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
     val kernelF = kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Array[Array[Float]]] `)=>` Array[Float]]
 
     val random = new Random()

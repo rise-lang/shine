@@ -18,7 +18,7 @@ class NatLambdaGen extends idealised.util.TestsWithExecutor {
         fun(ArrayType(n, float))(in => in :>> split(x) :>> map(split(y)) :>> mapGlobal(mapSeq(mapSeq(id)))))
 
     val compiledProg =
-      idealised.OpenCL.KernelGenerator.makeCode(8, 32)(TypeInference(natDepProg, Map()).toPhrase)
+      idealised.OpenCL.KernelGenerator.makeCode(8, 32)(idealised.DPIA.FromSurfaceLanguage(TypeInference(natDepProg, Map())))
     println(compiledProg.code)
     SyntaxChecker.checkOpenCL(compiledProg.code)
   }
@@ -30,7 +30,7 @@ class NatLambdaGen extends idealised.util.TestsWithExecutor {
         mapSeq(mapSeq(mapSeq(id))) :>> join() :>> join))
 
     val compiledProg =
-      idealised.C.ProgramGenerator.makeCode(TypeInference(natDepProg, Map()).toPhrase)
+      idealised.C.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(natDepProg, Map())))
     println(compiledProg.code)
     SyntaxChecker(compiledProg.code)
   }
@@ -42,7 +42,7 @@ class NatLambdaGen extends idealised.util.TestsWithExecutor {
              in :>> split(x) :>> map(split(y)) :>> mapPar(mapSeq(mapSeq(id)))))
 
     val compiledProg =
-      idealised.OpenMP.ProgramGenerator.makeCode(TypeInference(natDepProg, Map()).toPhrase)
+      idealised.OpenMP.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(natDepProg, Map())))
     println(compiledProg.code)
     SyntaxChecker(compiledProg.code)
   }
@@ -69,7 +69,7 @@ class NatLambdaGen extends idealised.util.TestsWithExecutor {
                 transpose()))))))))// :>> untile2D)))
 
     val kernel =
-      idealised.OpenCL.KernelGenerator.makeCode(TypeInference(prog, Map()).toPhrase)
+      idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(prog, Map())))
     println(kernel.code)
 
     SyntaxChecker.checkOpenCL(kernel.code)

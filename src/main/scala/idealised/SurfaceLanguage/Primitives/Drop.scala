@@ -9,15 +9,6 @@ final case class Drop(n: Nat, array: Expr,
   extends PrimitiveExpr
 {
 
-
-  override def convertToPhrase: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
-    array.t match {
-      case Some(ArrayType(m, dt)) =>
-        DPIA.FunctionalPrimitives.Drop(n, m, dt, array.toPhrase[DPIA.Types.ExpType])
-      case _ => throw new Exception("")
-    }
-  }
-
   override def inferType(subs: TypeInference.SubstitutionMap): Drop = {
     import TypeInference._
     TypeInference(array, subs) |> (array =>

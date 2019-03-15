@@ -3,7 +3,7 @@ package idealised.DPIA.Primitives
 import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
-import idealised.util.{Execute, SyntaxChecker}
+import idealised.util.SyntaxChecker
 import lift.arithmetic.Cst
 
 class Reorder extends idealised.util.Tests {
@@ -12,7 +12,7 @@ class Reorder extends idealised.util.Tests {
       xs :>> reorderWithStride(Cst(128)) :>> mapSeq(fun(x => x))
     ))
 
-    val p = idealised.C.ProgramGenerator.makeCode(TypeInference(e, Map()).toPhrase)
+    val p = idealised.C.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(e, Map())))
     val code = p.code
     SyntaxChecker(code)
     println(code)
@@ -25,7 +25,7 @@ class Reorder extends idealised.util.Tests {
       xs :>> map(reorderWithStride(Cst(128))) :>> mapSeq(mapSeq(fun(x => x)))
     )))
 
-    val p = idealised.C.ProgramGenerator.makeCode(TypeInference(e, Map()).toPhrase)
+    val p = idealised.C.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(e, Map())))
     val code = p.code
     SyntaxChecker(code)
     println(code)
@@ -38,7 +38,7 @@ class Reorder extends idealised.util.Tests {
       xs :>> mapSeq(fun(x => x)) :>> reorderWithStride(Cst(128))
     ))
 
-    val p = idealised.C.ProgramGenerator.makeCode(TypeInference(e, Map()).toPhrase)
+    val p = idealised.C.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(e, Map())))
     val code = p.code
     SyntaxChecker(code)
     println(code)
@@ -51,7 +51,7 @@ class Reorder extends idealised.util.Tests {
       xs :>> mapSeq(mapSeq(fun(x => x))) :>> map(reorderWithStride(Cst(128)))
     )))
 
-    val p = idealised.C.ProgramGenerator.makeCode(TypeInference(e, Map()).toPhrase)
+    val p = idealised.C.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(e, Map())))
     val code = p.code
     SyntaxChecker(code)
     println(code)

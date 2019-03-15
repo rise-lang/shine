@@ -1,9 +1,8 @@
 package idealised.OpenCL.SurfaceLanguage.Primitives
 
-import idealised.{DPIA, OpenCL}
 import idealised.SurfaceLanguage
-import idealised.SurfaceLanguage.{Expr, PrimitiveExpr}
 import idealised.SurfaceLanguage.Types._
+import idealised.SurfaceLanguage.{Expr, PrimitiveExpr}
 
 final case class OpenCLFunction(name: String,
                                 inTs: Seq[DataType],
@@ -11,14 +10,6 @@ final case class OpenCLFunction(name: String,
                                 args: Seq[Expr]) extends PrimitiveExpr {
 
   override val t: Option[DataType] = Some(outT)
-
-
-  override def convertToPhrase: OpenCL.FunctionalPrimitives.OpenCLFunction = {
-    import DPIA.Types.DataType
-    OpenCL.FunctionalPrimitives.OpenCLFunction(
-      name, inTs.map(DataType(_)), DataType(outT),
-      args.map(_.toPhrase[DPIA.Types.ExpType]))
-  }
 
   override def inferType(subs: TypeInference.SubstitutionMap): OpenCLFunction = {
     args.map(TypeInference(_, subs)) |> (args => {

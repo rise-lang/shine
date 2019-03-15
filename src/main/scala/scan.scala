@@ -21,7 +21,7 @@ object scan extends App{
   printKernel(basicScan)
 
   def printKernel(expr: Expr) {
-    val kernel = KernelGenerator.makeCode(localSize = 8, globalSize = 8)(TypeInference(expr, Map()).toPhrase)
+    val kernel = KernelGenerator.makeCode(localSize = 8, globalSize = 8)(idealised.DPIA.FromSurfaceLanguage(TypeInference(expr, Map())))
     println(kernel.code)
   }
 }

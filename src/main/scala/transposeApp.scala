@@ -29,7 +29,7 @@ object transposeApp extends App {
 
   def printOpenCLKernel(name: String,
                         untypedLambda: Expr): Unit = {
-    val lambda = TypeInference(untypedLambda, Map()).convertToPhrase
+    val lambda = idealised.DPIA.FromSurfaceLanguage(TypeInference(untypedLambda, Map()))
     println(name + ":\n" + PrettyPhrasePrinter(lambda))
     TypeCheck(lambda)
 

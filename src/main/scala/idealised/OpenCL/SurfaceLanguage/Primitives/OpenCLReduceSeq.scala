@@ -1,6 +1,5 @@
 package idealised.OpenCL.SurfaceLanguage.Primitives
 
-import idealised.{DPIA, OpenCL}
 import idealised.OpenCL.AddressSpace
 import idealised.SurfaceLanguage.Types.TypeInference.SubstitutionMap
 import idealised.SurfaceLanguage.Types._
@@ -11,25 +10,12 @@ final case class OpenCLReduceSeq(f: Expr,
                                  initAddrSpace: AddressSpace,
                                  array: Expr,
                                  override val t: Option[DataType])
-  extends PrimitiveExpr
-{
-  override def convertToPhrase: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
-    (f.t, init.t, array.t) match {
-      case (Some(FunctionType(t1, FunctionType(t2, t3))), Some(dt2: DataType), Some(ArrayType(n, dt1)))
-        if dt1 == t1 && dt2 == t2 && dt2 == t3 =>
-         OpenCL.FunctionalPrimitives.OpenCLReduceSeq(n, dt1, dt2,
-          f.toPhrase[DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]]],
-          init.toPhrase[DPIA.Types.ExpType],
-           initAddrSpace,
-          array.toPhrase[DPIA.Types.ExpType])
-      case _ => throw new Exception("")
-    }
-  }
+  extends PrimitiveExpr {
 
   override def inferType(subs: SubstitutionMap): OpenCLReduceSeq = {
     import TypeInference._
     TypeInference(array, subs) |> (array =>
-      TypeInference(init , subs) |> (init =>
+      TypeInference(init, subs) |> (init =>
         (init.t, array.t) match {
           case (Some(dt2: DataType), Some(ArrayType(_, dt1))) =>
             setParamsAndInferTypes(f, dt1, dt2, subs) |> (f =>
@@ -53,9 +39,9 @@ final case class OpenCLReduceSeq(f: Expr,
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Expr = {
     OpenCLReduceSeq(VisitAndRebuild(f, fun),
-                    VisitAndRebuild(init, fun),
-                    initAddrSpace,
-                    VisitAndRebuild(array, fun),
-                    t.map(fun(_)))
+      VisitAndRebuild(init, fun),
+      initAddrSpace,
+      VisitAndRebuild(array, fun),
+      t.map(fun(_)))
   }
 }

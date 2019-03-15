@@ -41,7 +41,7 @@ class fft extends idealised.util.Tests {
         }))) o map(fun(yChunkRow => zip(yChunkRow, reorderedB))) o map(transpose() o split(LPrevIter)) o createY $ x)
     )
 
-    val phrase = TypeInference(fftiter, Map()).convertToPhrase
+    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(fftiter, Map()))
     val kernel = idealised.OpenMP.ProgramGenerator.makeCode(phrase)
     println(kernel.code)
 

@@ -28,7 +28,7 @@ object Stencil extends App {
 
   {
     println(s"-- high level --")
-    val phrase = TypeInference(high_level, Map()).convertToPhrase
+    val phrase = DPIA.FromSurfaceLanguage(TypeInference(high_level, Map()))
     println(PrettyPhrasePrinter(phrase))
     println(xmlPrinter.asString(phrase))
     val program = OpenMP.ProgramGenerator.makeCode(phrase)

@@ -3,7 +3,7 @@ import idealised.DPIA.Phrases.PrettyPhrasePrinter
 import idealised.DPIA.Types.TypeCheck
 import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.OpenCL._
-import idealised.OpenMP
+import idealised.{DPIA, OpenMP}
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage.{Expr, _}
@@ -28,7 +28,7 @@ object gemv extends App {
   def runOpenCLKernel(name: String,
                       untypedLambda: Expr): Unit = {
     println("\n----------------")
-    val lambda = TypeInference(untypedLambda, Map()).convertToPhrase
+    val lambda = DPIA.FromSurfaceLanguage(TypeInference(untypedLambda, Map()))
     println(name + ":\n" + PrettyPhrasePrinter(lambda))
     TypeCheck(lambda)
 
@@ -77,7 +77,7 @@ object gemv extends App {
       )))))
 
   {
-    val lambda = TypeInference(high_level, Map()).convertToPhrase
+    val lambda = DPIA.FromSurfaceLanguage(TypeInference(high_level, Map()))
     println("high_level:\n" + PrettyPhrasePrinter(lambda))
     TypeCheck(lambda)
   }
@@ -143,7 +143,7 @@ object gemv extends App {
 
         )))))
 
-    val phrase = TypeInference(fullMatrixVectorFusedOpenCL, Map()).toPhrase
+    val phrase = DPIA.FromSurfaceLanguage(TypeInference(fullMatrixVectorFusedOpenCL, Map()))
     val program = OpenMP.ProgramGenerator.makeCode(phrase)
     println(program.code)
   }

@@ -13,7 +13,7 @@ import scala.language.{postfixOps, reflectiveCalls}
 class MemAccess extends idealised.util.TestsWithExecutor {
   def printSyntaxCheckAnd(exec: KernelNoSizes => Array[Float], prog: Expr): Array[Float] = {
      val kernel = idealised.OpenCL.KernelGenerator
-      .makeCode(TypeInference(prog, Map()).toPhrase)
+      .makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(prog, Map())))
     println(kernel.code)
     SyntaxChecker.checkOpenCL(kernel.code)
 

@@ -8,13 +8,6 @@ final case class AsVector(n: Nat, array: Expr,
                           override val t: Option[DataType] = None)
   extends PrimitiveExpr
 {
-  override def convertToPhrase: DPIA.FunctionalPrimitives.AsVector = {
-    array.t match {
-      case Some(ArrayType(mn, st: ScalarType)) =>
-        DPIA.FunctionalPrimitives.AsVector(n, mn /^ n, st, array.toPhrase[DPIA.Types.ExpType])
-      case _ => throw new Exception("")
-    }
-  }
 
   override def inferType(subs: TypeInference.SubstitutionMap): AsVector = {
     import TypeInference._

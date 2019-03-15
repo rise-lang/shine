@@ -30,7 +30,7 @@ class asum extends idealised.util.Tests {
 
   // C code gen
   test("High level asum compiles to syntactically correct C") {
-    val p = C.ProgramGenerator.makeCode(TypeInference(high_level, Map()).toPhrase)
+    val p = C.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(high_level, Map())))
     println(p.code)
     SyntaxChecker(p.code)
   }
@@ -50,7 +50,7 @@ class asum extends idealised.util.Tests {
           ) >>> asScalar
         ) :>> join
     ))
-    val phrase = TypeInference(intelDerivedNoWarp1, Map()).convertToPhrase
+    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(intelDerivedNoWarp1, Map()))
     val p = OpenMP.ProgramGenerator.makeCode(phrase)
     println(p.code)
     SyntaxChecker(p.code)
@@ -66,7 +66,7 @@ class asum extends idealised.util.Tests {
           split(2048) >>> mapSeq(reduceSeq(add, 0.0f))
         ) :>> join
     ))
-    val phrase = TypeInference(intelDerived2, Map()).convertToPhrase
+    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(intelDerived2, Map()))
     val p = OpenMP.ProgramGenerator.makeCode(phrase)
     println(p.code)
     SyntaxChecker(p.code)
@@ -87,7 +87,7 @@ class asum extends idealised.util.Tests {
             )
         ) :>> join
     ))
-    val phrase = TypeInference(amdNvidiaDerived2, Map()).convertToPhrase
+    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(amdNvidiaDerived2, Map()))
     val p = OpenMP.ProgramGenerator.makeCode(phrase)
     println(p.code)
     SyntaxChecker(p.code)
@@ -109,7 +109,7 @@ class asum extends idealised.util.Tests {
         ) :>> join
     ))
     val typed = TypeInference(intelDerivedNoWarp1, Map())
-    val phrase = typed.convertToPhrase
+    val phrase = idealised.DPIA.FromSurfaceLanguage(typed)
     val N = typed.t.get.asInstanceOf[NatDependentFunctionType[DataType]].n
     val p = OpenCL.KernelGenerator.makeCode(localSize = 128, globalSize = N)(phrase)
     println(p.code)
@@ -127,7 +127,7 @@ class asum extends idealised.util.Tests {
             mapLocal(oclReduceSeq(add, 0.0f, OpenCL.PrivateMemory))
         ) :>> join
     ))
-    val phrase = TypeInference(intelDerived2, Map()).convertToPhrase
+    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(intelDerived2, Map()))
     val N = phrase.t.asInstanceOf[`(nat)->`[ExpType]].n
     val p = OpenCL.KernelGenerator.makeCode(localSize = 128, globalSize = N)(phrase)
     println(p.code)
@@ -148,7 +148,7 @@ class asum extends idealised.util.Tests {
             )
         ) :>> join
     ))
-    val phrase = TypeInference(nvidiaDerived1, Map()).convertToPhrase
+    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(nvidiaDerived1, Map()))
     val N = phrase.t.asInstanceOf[`(nat)->`[ExpType]].n
     val p = OpenCL.KernelGenerator.makeCode(localSize = 128, globalSize = N)(phrase)
     println(p.code)
@@ -170,7 +170,7 @@ class asum extends idealised.util.Tests {
             )
         ) :>> join
     ))
-    val phrase = TypeInference(amdNvidiaDerived2, Map()).convertToPhrase
+    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(amdNvidiaDerived2, Map()))
     val N = phrase.t.asInstanceOf[`(nat)->`[ExpType]].n
     val p = OpenCL.KernelGenerator.makeCode(localSize = 128, globalSize = N)(phrase)
     println(p.code)
@@ -192,7 +192,7 @@ class asum extends idealised.util.Tests {
             ) >>> asScalar
         ) :>> join
     ))
-    val phrase = TypeInference(amdDerived1, Map()).convertToPhrase
+    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(amdDerived1, Map()))
     val N = phrase.t.asInstanceOf[`(nat)->`[ExpType]].n
     val p = OpenCL.KernelGenerator.makeCode(localSize = 128, globalSize = N)(phrase)
     println(p.code)

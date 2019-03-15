@@ -14,7 +14,7 @@ class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
     val f: Expr =
       nFun(n => fun(ArrayType(n, int))(xs => xs :>> mapSeq(fun(x => x + 1))))
 
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase)
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
     println(kernel.code)
     SyntaxChecker.checkOpenCL(kernel.code)
 
@@ -33,7 +33,7 @@ class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
     val f: Expr =
       fun(ArrayType(n, int))(xs => xs :>> mapSeq(fun(x => x + 1)))
 
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase)
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
     println(kernel.code)
     SyntaxChecker.checkOpenCL(kernel.code)
 
@@ -52,7 +52,7 @@ class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
     val f: Expr =
       fun(ArrayType(n, int))(xs => nFun(s => xs :>> split(s) :>> mapSeq(mapSeq(fun(x => x + 1))) :>> join))
 
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase)
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
     println(kernel.code)
     SyntaxChecker.checkOpenCL(kernel.code)
 
@@ -73,7 +73,7 @@ class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
           fun(ArrayType(m, ArrayType(n, int)))(xs =>
             xs :>> mapSeq(mapSeq(fun(x => x + 1)))))
 
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase)
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
     println(kernel.code)
     SyntaxChecker.checkOpenCL(kernel.code)
 
@@ -96,7 +96,7 @@ class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
           nFun(s =>
             xs :>> split(s) :>> mapSeq(mapSeq(fun(x => x + 1))) :>> join())))
 
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase)
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
     println(kernel.code)
     SyntaxChecker.checkOpenCL(kernel.code)
 
@@ -114,7 +114,7 @@ class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
     val f: Expr =
       fun(ArrayType(n, int))(xs => xs :>> mapGlobal(fun(x => x + 1)))
 
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase)
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
     println(kernel.code)
     SyntaxChecker.checkOpenCL(kernel.code)
 

@@ -4,6 +4,6 @@ import idealised.SurfaceLanguage.Expr
 import idealised.SurfaceLanguage.Types._
 import idealised._
 
-final case class ToGlobal(f: Expr, input: Expr,
+final case class ToGlobal(override val f: Expr, override val input: Expr,
                           override val t: Option[DataType] = None)
-  extends To(f, input, OpenCL.GlobalMemory, ToGlobal, OpenCL.FunctionalPrimitives.ToGlobal)
+  extends To(f, input, OpenCL.GlobalMemory, ToGlobal)

@@ -1,40 +1,14 @@
 package idealised.SurfaceLanguage.Primitives
 
 
-import idealised.DPIA
 import idealised.SurfaceLanguage.Types.TypeInference.SubstitutionMap
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
 
-abstract class AbstractReduce(f: Expr,
-                              init: Expr, array: Expr,
-                              override val t: Option[DataType])
+abstract class AbstractReduce(val f: Expr, val init: Expr, val array: Expr, override val t: Option[DataType])
   extends PrimitiveExpr {
 
   def makeReduce: (Expr, Expr, Expr, Option[DataType]) => AbstractReduce
-
-  def makeDPIAReduce: (
-    DPIA.Nat,
-      DPIA.Types.DataType,
-      DPIA.Types.DataType,
-      DPIA.Phrases.Phrase[DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]]],
-      DPIA.Phrases.Phrase[DPIA.Types.ExpType],
-      DPIA.Phrases.Phrase[DPIA.Types.ExpType]
-    ) => DPIA.FunctionalPrimitives.AbstractReduce
-
-
-  override def convertToPhrase: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
-    (f.t, init.t, array.t) match {
-      case (Some(FunctionType(t1, FunctionType(t2, t3))), Some(dt2: DataType), Some(ArrayType(n, dt1)))
-        if dt1 == t1 && dt2 == t2 && dt2 == t3 =>
-        makeDPIAReduce(n, dt1, dt2,
-          f.toPhrase[DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]]],
-          init.toPhrase[DPIA.Types.ExpType],
-          array.toPhrase[DPIA.Types.ExpType])
-      case _ => throw new Exception("")
-    }
-
-  }
 
   override def inferType(subs: SubstitutionMap): AbstractReduce = {
     import TypeInference._

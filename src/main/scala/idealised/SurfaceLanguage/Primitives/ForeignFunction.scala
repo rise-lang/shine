@@ -36,15 +36,5 @@ final case class ForeignFunction(funDecl: ForeignFunction.Declaration,
     ForeignFunction(funDecl, inTs.map(f(_)), f(outT), args.map(VisitAndRebuild(_, f)))
   }
 
-  override def convertToPhrase: DPIA.FunctionalPrimitives.ForeignFunction = {
-    import DPIA.Types.DataType
-    DPIA.FunctionalPrimitives.ForeignFunction(
-      DPIA.FunctionalPrimitives.ForeignFunction.Declaration(funDecl.name, funDecl.argNames, funDecl.body),
-      inTs.map(DataType(_)), DataType(outT),
-      args.map(_.toPhrase[DPIA.Types.ExpType])
-    )
-  }
-
-
   override def t: Option[DataType] = Some(outT)
 }

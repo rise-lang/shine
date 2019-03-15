@@ -56,7 +56,7 @@ class separableBlur extends idealised.util.Tests {
     )))
 
   def program(name: String, e: Expr): C.Program = {
-    val phrase = TypeInference(e, collection.Map()).convertToPhrase
+    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(e, collection.Map()))
     val program = C.ProgramGenerator.makeCode(phrase, name)
     SyntaxChecker(program.code)
     println(program.code)

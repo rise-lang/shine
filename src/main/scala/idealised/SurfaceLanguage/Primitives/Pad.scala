@@ -4,18 +4,9 @@ import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
 import idealised.{DPIA, SurfaceLanguage}
 
-final case class Pad(l:Nat, r:Nat, padExpr:Expr, array: Expr,
-                      override val t: Option[DataType])
+final case class Pad(l: Nat, r: Nat, padExpr: Expr, array: Expr,
+                     override val t: Option[DataType])
   extends PrimitiveExpr {
-
-
-  override def convertToPhrase: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
-    array.t match {
-      case Some(ArrayType(n, dt)) =>
-        DPIA.FunctionalPrimitives.Pad(n, l, r, dt, padExpr.toPhrase[DPIA.Types.ExpType], array.toPhrase[DPIA.Types.ExpType])
-      case _ => throw new Exception("")
-    }
-  }
 
   override def inferType(subs: TypeInference.SubstitutionMap): Pad = {
     import TypeInference._

@@ -1,23 +1,21 @@
 package idealised.SurfaceLanguage.Primitives
 
-import idealised.SurfaceLanguage.{Expr, PrimitiveExpr, VisitAndRebuild}
-import idealised.DPIA
 import idealised.SurfaceLanguage.Types._
+import idealised.SurfaceLanguage.{Expr, PrimitiveExpr, VisitAndRebuild}
 
 final case class PrintType(input: Expr,
                            msg: String,
                            override val t: Option[DataType])
-  extends PrimitiveExpr
-{
-
-  override def convertToPhrase: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = input.toPhrase[DPIA.Types.ExpType]
+  extends PrimitiveExpr {
 
   override def inferType(subs: TypeInference.SubstitutionMap): PrintType = {
     TypeInference(input, subs) |> (input => {
-      println(s"Type $msg: ${input.t match {
-        case None => "NoType"
-        case Some(dt) => dt.toString
-      }}")
+      println(s"Type $msg: ${
+        input.t match {
+          case None => "NoType"
+          case Some(dt) => dt.toString
+        }
+      }")
       PrintType(input, msg, input.t match {
         case None => None
         case Some(dt: DataType) => Some(dt)
