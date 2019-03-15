@@ -7,12 +7,13 @@ import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
 import idealised.util.SyntaxChecker
+import idealised.utils.Display
 import lift.arithmetic.{ArithExpr, Cst}
 import opencl.executor.Executor
 
 import scala.language.{implicitConversions, postfixOps}
 
-class triangleVectorMult extends idealised.util.TestsWithExecutor {
+class triangleVectorMultNoExecutor extends idealised.util.Tests {
   val mult = fun(x => x._1 * x._2)
 
   val add = fun(x => fun(y => x + y))
@@ -109,9 +110,15 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
     SyntaxChecker.checkOpenCL(p.code)
   }
 
-  case class TriangleMatrixConfResult(inputSize:Int, splitSize:Int, localSize:Int, globalSize:Int, runtime:Double, correct:Boolean, code:String) {
-    def printout(): Unit = {
-      println(s"input = $inputSize; splitSize = $splitSize; localSize = $localSize; globalSize = $globalSize; runtime:$runtime correct:$correct")
+  case class TriangleMatrixConfResult(inputSize:Int,
+                                      splitSize:Int,
+                                      localSize:Int,
+                                      globalSize:Int,
+                                      runtime:Double,
+                                      correct:Boolean,
+                                      code:String) extends Display {
+    def display:String = {
+      s"input = $inputSize; splitSize = $splitSize; localSize = $localSize; globalSize = $globalSize; runtime:$runtime correct:$correct"
     }
   }
 
@@ -135,7 +142,6 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
     val correct = output.zip(scalaOutput).forall{case (x,y) => Math.abs(x - y) < 0.01}
 
     TriangleMatrixConfResult(inputSize, 0, localSize, globalSize, time.value, correct, kernel.code)
-
   }
 
   ignore ("Basic parallel triangle vector multiplication compiles to syntactically correct OpenCL") {
@@ -145,7 +151,7 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
     ) yield {
       triangleMatrixBasic(inputSize, localSize, inputSize)
     }
-    results.filter(_.correct).sortBy(_.runtime).foreach(_.printout())
+    results.filter(_.correct).sortBy(_.runtime).foreach(x => println(x.display))
   }
 
 
@@ -156,10 +162,11 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
     val f: Expr = {
 
       val SPLIT_SIZE = Cst(splitN)
-      nFun(n => fun(DepArrayType(n, i => ArrayType(i + 1, float)))(triangle =>
-        fun(ArrayType(n, float))(vector =>
+      nFun(N =>
+      fun(DepArrayType(N, i => ArrayType(i + 1, float)))(triangle =>
+        fun(ArrayType(N, float))(vector =>
           depMapWorkgroup.withIndex(nFun(rowIndex => fun(row =>
-            zip(pad(0, n - rowIndex - 1, l(0.0f), row), vector) :>> split(SPLIT_SIZE) :>> mapLocal(oclReduceSeq(multSumAcc, l(0.0f), PrivateMemory))
+            zip(pad(0, N - rowIndex - 1, l(0.0f), row), vector) :>> split(SPLIT_SIZE) :>> mapLocal(oclReduceSeq(multSumAcc, l(0.0f), PrivateMemory))
           )), triangle)
         )
       ))
@@ -183,17 +190,14 @@ class triangleVectorMult extends idealised.util.TestsWithExecutor {
     )
   }
 
-  test("Parallel triangle vector multiplication with global threads compiles to syntactically correct OpenCL") {
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(triangleVectorMultGlobal, Map()).toPhrase)
-    SyntaxChecker.checkOpenCL(kernel.code)
-  }
-
   test ("Parallel OpenCL triangle vector partial multiplication (padding the row up to vector) (PLDI '19 submission listing 5)") {
+    Executor.loadAndInit()
     val inputSize = 4096
     println(Executor.getPlatformName)
     println(Executor.getDeviceName)
 
     val result = triangleMatrixPadSplit(inputSize, 8, 8, inputSize)
+    Executor.shutdown()
 
     assert(result.correct)
   }

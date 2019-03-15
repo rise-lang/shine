@@ -1,11 +1,10 @@
 package idealised.SurfaceLanguage.Primitives
 
 import idealised.DPIA
-import idealised.DPIA.freshName
+import idealised.DPIA.NatDataTypeFunction
 import idealised.SurfaceLanguage.Types.TypeInference.SubstitutionMap
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
-import lift.arithmetic.NamedVar
 
 abstract class AbstractDepMap(df: Expr,
                               array: Expr,
@@ -17,10 +16,8 @@ abstract class AbstractDepMap(df: Expr,
 
   def makeDPIAMap: (
     DPIA.Nat,
-      DPIA.NatIdentifier,
-      DPIA.Types.DataType,
-      DPIA.NatIdentifier,
-      DPIA.Types.DataType,
+      DPIA.NatDataTypeFunction,
+      DPIA.NatDataTypeFunction,
       DPIA.Phrases.Phrase[DPIA.Types.NatDependentFunctionType[DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]]],
       DPIA.Phrases.Phrase[DPIA.Types.ExpType]
     ) => DPIA.FunctionalPrimitives.AbstractDepMap
@@ -29,18 +26,14 @@ abstract class AbstractDepMap(df: Expr,
   override def convertToPhrase: DPIA.FunctionalPrimitives.AbstractDepMap = {
     (df.t, array.t) match {
       case (Some(NatDependentFunctionType(k, FunctionType(df1_k: DataType, df2_k: DataType))), Some(DepArrayType(n, NatDependentFunctionType(_, _)))) =>
-        val i1 = NamedVar(freshName())
-        val dt1: DataType = Type.substitute(i1, `for`=k, in=df1_k)
 
-        val i2 = NamedVar(freshName())
-        val dt2: DataType = Type.substitute(i2, `for`=k, in=df2_k)
+        val ft1 = NatDataTypeFunction(n, (x:NatIdentifier) => Type.substitute[DataType](x, `for`=k, in=df1_k))
+        val ft2 = NatDataTypeFunction(n, (x:NatIdentifier) => Type.substitute[DataType](x, `for`=k, in=df2_k))
 
         val fPhrase = df.toPhrase[DPIA.Types.NatDependentFunctionType[DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]]]
         val inputPhrase = array.toPhrase[DPIA.Types.ExpType]
 
-    makeDPIAMap(n, i1, dt1, i2, dt2,
-          fPhrase,
-      inputPhrase)
+    makeDPIAMap(n, ft1, ft2, fPhrase, inputPhrase)
       case _ => throw new Exception("")
     }
   }

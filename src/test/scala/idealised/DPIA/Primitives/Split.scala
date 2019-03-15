@@ -22,7 +22,7 @@ class Split extends idealised.util.Tests {
   test("Simple 2D split example with separate maps should generate syntactic valid OpenMP code with three for loops") {
     val slideExample =
       nFun(n => nFun(m =>
-        fun(ArrayType(n, ArrayType(m, float)))( xs =>
+        fun(ArrayType(n, ArrayType(m, float)))(xs =>
           xs :>> map(split(2)) :>> mapSeq(mapSeq(mapSeq(fun(x => x)))) )))
 
     val p = idealised.OpenMP.ProgramGenerator.makeCode(TypeInference(slideExample, Map()).toPhrase)

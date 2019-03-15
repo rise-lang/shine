@@ -1,5 +1,6 @@
 package idealised.SurfaceLanguage.DSL
 
+import idealised.DPIA.NatNatTypeFunction
 import idealised.SurfaceLanguage.Primitives._
 import idealised.SurfaceLanguage.Semantics._
 import idealised.SurfaceLanguage.Types._
@@ -17,6 +18,17 @@ object depMapSeq {
 
   def apply(f: Expr, x: Expr): DepMapSeq = DepMapSeq(nFun(_ => f), x, None)
 }
+
+object depMapSeqUnroll {
+
+  def withIndex(f: Expr): Expr = fun(x => withIndex(f,x))
+  def withIndex(f: Expr, x: Expr): DepMapSeqUnroll= DepMapSeqUnroll(f, x, None)
+
+  def apply(f: Expr): Expr = fun(x => depMapSeqUnroll(f, x))
+
+  def apply(f: Expr, x: Expr): DepMapSeqUnroll = DepMapSeqUnroll(nFun(_ => f), x, None)
+}
+
 
 object mapSeq {
   def apply(f: Expr): Expr = fun(x => mapSeq(f, x))
@@ -53,11 +65,11 @@ object join {
 }
 
 object partition {
+
   def apply(m: Nat, f:NatIdentifier => Nat): Expr = fun(array => partition(m, f, array))
 
   def apply(m:Nat, f:NatIdentifier => Nat, array: Expr): Partition = {
-    val ident = NamedVar("p")
-    Partition(m, ident, f(ident), array, None)
+    Partition(m, NatNatTypeFunction(m, f), array, None)
   }
 }
 
@@ -111,6 +123,17 @@ object reduceSeq {
             init: Expr,
             array: Expr): ReduceSeq =
     ReduceSeq(f, init, array, None)
+}
+
+object reduceSeqUnroll {
+  def apply(f: Expr): Expr =
+    fun((init, array) => reduceSeqUnroll(f, init, array))
+
+  def apply(f: Expr, init: Expr): Expr =
+    fun(array => reduceSeqUnroll(f, init, array))
+
+  def apply(f: Expr, init: Expr, array: Expr): ReduceSeqUnroll =
+    ReduceSeqUnroll(f, init, array, None)
 }
 
 object scanSeq {

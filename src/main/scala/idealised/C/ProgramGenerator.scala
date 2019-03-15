@@ -3,6 +3,7 @@ package idealised.C
 import idealised.C.AST._
 import idealised.DPIA.Compilation._
 import idealised.DPIA.DSL._
+import idealised.DPIA.NatDataTypeFunction
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types.{AccType, CommandType, DataType, DataTypeIdentifier, DepArrayType, ExpType, PairType, PhraseType, TypeCheck, int}
 import idealised._
@@ -12,7 +13,8 @@ import scala.collection._
 
 object ProgramGenerator {
 
-  def makeCode[T <: PhraseType](originalPhrase: Phrase[T]): Program = {
+  def makeCode[T <: PhraseType](originalPhrase: Phrase[T],
+                                name: String = "foo"): Program = {
 
     def getPhraseAndParams[_ <: PhraseType](p: Phrase[_],
                                             ps: Seq[Identifier[ExpType]]
@@ -26,12 +28,12 @@ object ProgramGenerator {
 
     val (phrase, params) = getPhraseAndParams(originalPhrase, Seq())
 
-    makeCode(phrase, params.reverse)
+    makeCode(phrase, params.reverse, name)
   }
 
   private def makeCode(p: Phrase[ExpType],
                        inputParams: Seq[Identifier[ExpType]],
-                       name: String = "foo"): Program = {
+                       name: String): Program = {
     val outParam = createOutputParam(outT = p.t)
 
     val gen = C.CodeGeneration.CodeGenerator()
@@ -110,7 +112,7 @@ object ProgramGenerator {
       case ArrayType(_, dt) =>
         val baseDt = DataType.getBaseDataType(dt)
         PointerType(gen.typ(baseDt))
-      case DepArrayType(_, _, dt) =>
+      case DepArrayType(_, NatDataTypeFunction(_, dt)) =>
         val baseDt = DataType.getBaseDataType(dt)
         PointerType(gen.typ(baseDt))
       case r : RecordType => gen.typ(r)

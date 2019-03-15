@@ -347,13 +347,19 @@ class CPrinter extends Printer {
       case IntDiv(n, d) => "(" + toString(n) + " / " + toString(d) + ")"
       case lu: Lookup => "lookup" + lu.id + "(" + toString(lu.index) + ")"
       case i: lift.arithmetic.IfThenElse =>
-        s"( (${toString(i.test.lhs)} ${i.test.op} ${toString(i.test.rhs)}) ? " +
-          s"${toString(i.t)} : ${toString(i.e)} )"
+        s"((${toString(i.test)}) ? " +
+          s"${toString(i.t)} : ${toString(i.e)})"
 //      case aeFun:ArithExprFunction => aeFun.name
 //      case bs:BigSum => bs.toString
+      case sp: SteppedCase => toString(sp.intoIfChain())
       case otherwise => throw new Exception(s"Don't know how to print $otherwise")
     }
   }
 
-
+  private def toString(boolExpr: BoolExpr):String = boolExpr match {
+    case BoolExpr.True => "true"
+    case BoolExpr.False => "false"
+    case BoolExpr.ArithPredicate(lhs, rhs, op) =>
+      s"(${toString(lhs)} $op ${toString(rhs)})"
+  }
 }

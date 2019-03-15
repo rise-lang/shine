@@ -9,18 +9,15 @@ import idealised.DPIA._
 import scala.xml.Elem
 
 final case class DepIdxAcc(n: Nat,
-                           i:NatIdentifier,
-                           dt: DataType,
+                           ft:NatDataTypeFunction,
                            index: Nat,
                            array: Phrase[AccType])
   extends AccPrimitive {
 
-  private def makeDt(x:Nat):DataType = DataType.substitute(x, `for`=i, `in`=dt)
-
   override val `type`: AccType =
-    (n: Nat) -> (i: Nat) -> (dt: DataType) -> (index: Nat) ->
-      (array :: acc"[${DepArrayType(n, makeDt)}]") ->
-        acc"[${makeDt(index)}]"
+    (n: Nat) -> (ft:NatDataTypeFunction) -> (index: Nat) ->
+      (array :: acc"[$n.$ft]") ->
+        acc"[${ft(index)}]"
 
   override def eval(s: Store): AccIdentifier = {
 //    val arrayE = OperationalSemantics.eval(s, array)
@@ -33,13 +30,13 @@ final case class DepIdxAcc(n: Nat,
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {
-    DepIdxAcc(fun(n), fun(i).asInstanceOf[NatIdentifier], fun(dt), fun(index), VisitAndRebuild(array, fun))
+    DepIdxAcc(fun(n), fun(ft), fun(index), VisitAndRebuild(array, fun))
   }
 
   override def prettyPrint: String = s"${PrettyPhrasePrinter(array)}[$index]"
 
   override def xmlPrinter: Elem =
-    <depIdxAcc n={ToString(n)} i={ToString(i)} dt={ToString(dt)} index={ToString(index)}>
+    <depIdxAcc n={ToString(n)} ft={ToString(ft)} index={ToString(index)}>
       <input type={ToString(array.t)}>
         {Phrases.xmlPrinter(array)}
       </input>

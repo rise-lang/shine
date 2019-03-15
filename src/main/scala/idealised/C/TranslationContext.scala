@@ -4,8 +4,9 @@ import idealised.DPIA.ImperativePrimitives.Assign
 import idealised.DPIA.IntermediatePrimitives.{DepMapSeqI, MapSeqI}
 import idealised.DPIA.Phrases.{NatDependentLambda, Phrase}
 import idealised.DPIA.Types.{AccType, ArrayType, CommandType, DataType, DepArrayType, ExpType, RecordType, ScalarType}
-import idealised.DPIA.freshName
-import lift.arithmetic.NamedVar
+import idealised.DPIA.{NatDataTypeFunction, NatIdentifier, freshName}
+import idealised.SurfaceLanguage.Types.NatDependentFunctionType
+import lift.arithmetic.{NamedVar, RangeAdd}
 
 class TranslationContext() extends idealised.DPIA.Compilation.TranslationContext {
   override def assign(dt: DataType,
@@ -20,14 +21,13 @@ class TranslationContext() extends idealised.DPIA.Compilation.TranslationContext
       case ArrayType(n, et) =>
         MapSeqI(n, et, et, λ(ExpType(et))(x => λ(AccType(et))(a => assign(et, a, x) )), rhs, lhs)(this)
 
-      case DepArrayType(n, i, et) =>
-        val i_ = NamedVar(freshName())
-        val et_ = DataType.substitute(i_, `for`=i, in=et)
+      case DepArrayType(n, ft) =>
+
         val k = NamedVar(freshName())
-        val etk = DataType.substitute(k, `for`=i, in=et)
-        DepMapSeqI(n, i_, et_, i_, et_,
+
+        DepMapSeqI(n, ft, ft,
           NatDependentLambda(k,
-            λ(ExpType( etk ))(x => λ(AccType( etk ))(a => assign(etk, a, x) ))),
+            λ(ExpType( ft(k) ))(x => λ(AccType( ft(k) ))(a => assign(ft(k), a, x) ))),
           rhs, lhs)(this)
 
       case _ => throw new Exception("This should not happen")

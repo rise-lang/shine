@@ -23,7 +23,7 @@ final case class Slide(n: Nat,
                                   (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    con(this)(λ(exp"[$inputSize.$dt]")(x => A :=|dt"[$n.$sz.$dt]"| x ))
+    con(this)(λ(exp"[$n.$sz.$dt]")(x => A :=|dt"[$n.$sz.$dt]"| x ))
   }
 
   override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])

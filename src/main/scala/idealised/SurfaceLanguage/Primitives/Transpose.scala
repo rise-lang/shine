@@ -1,7 +1,9 @@
 package idealised.SurfaceLanguage.Primitives
 
 import idealised.DPIA
-import idealised.SurfaceLanguage.Types.{ArrayType, DataType, TypeInference}
+import idealised.DPIA.FunctionalPrimitives.TransposeArrayDep
+import idealised.DPIA.Types.ExpType
+import idealised.SurfaceLanguage.Types.{ArrayType, DataType, TypeInference, _}
 import idealised.SurfaceLanguage.{Expr, PrimitiveExpr, VisitAndRebuild}
 
 final case class Transpose(array: Expr,
@@ -36,6 +38,9 @@ final case class Transpose(array: Expr,
           Reorder(n*m, dt, transposeFunction, transposeInverseFunction,
             Join(n, m, dt, array.toPhrase[ExpType])))
 
+      case Some(ArrayType(n, DepArrayType(m, NatDependentFunctionType(i, dt)))) =>
+        TransposeArrayDep(n, m, i, dt, array.toPhrase[ExpType])
+
       case _ => throw new Exception("")
     }
   }
@@ -45,6 +50,9 @@ final case class Transpose(array: Expr,
     TypeInference(array, subs) |> (array =>
       array.t match {
         case Some(ArrayType(n, ArrayType(m, dt))) => Transpose(array, Some(ArrayType(m, ArrayType(n, dt))))
+        case Some(ArrayType(n, DepArrayType(m, NatDependentFunctionType(i, dt)))) =>
+          val outputType = DepArrayType(m, k => ArrayType(n, Type.substitute(k, `for`=i, `in` = dt)))
+          Transpose(array,  Some(outputType))
         case x => error(expr = s"Transpose($array)", found = s"`${x.toString}'", expected = "n.m.dt")
       })
   }

@@ -1,5 +1,8 @@
 package idealised.C.CodeGeneration
 
+import java.util.function.Predicate
+
+import idealised.C.AST.{Block, Node, Nodes}
 import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives._
 import idealised.DPIA.ImperativePrimitives._
@@ -10,6 +13,7 @@ import idealised.DPIA.Types._
 import idealised.DPIA.{Phrases, _}
 import idealised.SurfaceLanguage.Operators
 import idealised._
+import lift.arithmetic.BoolExpr.{ArithPredicate, False, True}
 import lift.arithmetic.{NamedVar, _}
 
 import scala.collection.immutable.VectorBuilder
@@ -115,9 +119,9 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case NewRegRot(n, dt, Lambda(registers, Lambda(rotate, body))) =>
         CCodeGen.codeGenNewRegRot(n, dt, registers, rotate, body, env)
 
-      case For(n, Lambda(i, p)) => CCodeGen.codeGenFor(n, i, p, env)
+      case For(n, Lambda(i, p), unroll) => CCodeGen.codeGenFor(n, i, p, unroll, env)
 
-      case ForNat(n, NatDependentLambda(i, p)) => CCodeGen.codeGenForNat(n, i, p, env)
+      case ForNat(n, NatDependentLambda(i, p), unroll) => CCodeGen.codeGenForNat(n, i, p, unroll, env)
 
       case Proj1(pair) => cmd(Lifting.liftPair(pair)._1, env)
       case Proj2(pair) => cmd(Lifting.liftPair(pair)._2, env)
@@ -138,12 +142,17 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           throw new Exception(s"Expected to find `$i' in the environment: `${env.identEnv}'")
         }), path, env))
 
-      case SplitAcc(_, m, _, a) => path match {
-        case (i : CIntExpr) :: ps  => acc(a, env, CIntExpr(i / m) :: CIntExpr(i % m) :: ps, cont)
+      case SplitAcc(n, _, _, a) => path match {
+        case (i : CIntExpr) :: ps  => acc(a, env, CIntExpr(i / n) :: CIntExpr(i % n) :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
       case JoinAcc(_, m, _, a) => path match {
         case (i : CIntExpr) :: (j : CIntExpr) :: ps => acc(a, env, CIntExpr(i * m + j) :: ps, cont)
+        case _ => error(s"Expected two C-Integer-Expressions on the path.")
+      }
+      case depJ@DepJoinAcc(_, _, _, a) => path match {
+        case (i : CIntExpr) :: (j : CIntExpr) :: ps =>
+          acc(a, env, CIntExpr(BigSum(0, i - 1, x => depJ.lenF(x)) + j) :: ps, cont)
         case _ => error(s"Expected two C-Integer-Expressions on the path.")
       }
 
@@ -183,7 +192,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case IdxAcc(_, _, i, a) => CCodeGen.codeGenIdxAcc(i, a, env, path, cont)
 
-      case DepIdxAcc(_, _, _, i, a) => acc(a, env, CIntExpr(i) :: path, cont)
+      case DepIdxAcc(_, _, i, a) => acc(a, env, CIntExpr(i) :: path, cont)
 
       case IdxVecAcc(_, _, i, a) => CCodeGen.codeGenIdxVecAcc(i, a, env, path, cont)
 
@@ -209,15 +218,19 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case Phrases.Literal(n) => cont(path match {
         case Nil =>
-          n.dataType match {
-            case _: IndexType => CCodeGen.codeGenLiteral(n)
-            case _: ScalarType => CCodeGen.codeGenLiteral(n)
-            case _ => error("Expected an IndexType or ScalarType.")
+            n.dataType match {
+              case _: IndexType => CCodeGen.codeGenLiteral (n)
+              case _: ScalarType => CCodeGen.codeGenLiteral (n)
+              case _ => error ("Expected an IndexType or ScalarType.")
           }
         case (i : CIntExpr) :: Nil =>
-          n.dataType match {
-            case _: ArrayType => C.AST.ArraySubscript(CCodeGen.codeGenLiteral(n), C.AST.ArithmeticExpr(i))
-            case _ => error("Expected an ArrayType.")
+          n match {
+            case SingletonArrayData(_, a) => CCodeGen.codeGenLiteral(a)
+            case _ =>
+              n.dataType match {
+                case _: ArrayType => C.AST.ArraySubscript(CCodeGen.codeGenLiteral(n), C.AST.ArithmeticExpr(i))
+                case _ => error("Expected an ArrayType.")
+              }
           }
         // case (_ :: _ :: Nil, _: ArrayType) => C.AST.Literal("0.0f") // TODO: (used in gemm like this) !!!!!!!
         case _ => error(s"Unexpected: $n $path")
@@ -244,25 +257,18 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       }
 
       case Split(n, _, _, e) => path match {
-        case (i : CIntExpr) :: (j : CIntExpr) :: ps => exp(e, env, CIntExpr(i * n + j) :: ps, cont)
+        case (i : CIntExpr) :: (j : CIntExpr) :: ps => exp(e, env, CIntExpr(n * i + j) :: ps, cont)
         case _ => error(s"Expected two C-Integer-Expressions on the path.")
       }
-      case Join(n, _, _, e) => path match {
-        case (i : CIntExpr) :: ps => exp(e, env, CIntExpr(i / n) :: CIntExpr(i % n) :: ps, cont)
+      case Join(_, m, _, e) => path match {
+        case (i : CIntExpr) :: ps => exp(e, env, CIntExpr(i / m) :: CIntExpr(i % m) :: ps, cont)
         case _ => error(s"Expected two C-Integer-Expressions on the path.")
       }
 
-      case part@Partition(_, _, _, _, _, e) => path match {
+      case part@Partition(_, _, _, _, e) => path match {
         case (i: CIntExpr) :: (j: CIntExpr) :: ps =>
-          val newIdx = BigSum(0, i, x => part.lenF(x)) + j
-          exp(e, env, CIntExpr(newIdx) :: ps, cont)
+          exp(e, env, CIntExpr(BigSum(0, i - 1, x => part.lenF(x)) + j) :: ps, cont)
         case _ => error(s"Expected path to contain at least two elements")
-      }
-
-      case DepSplit(n, _, _, _, e) => path match {
-        case (i: CIntExpr) :: (j: CIntExpr) :: ps =>
-          exp(e, env, CIntExpr(i * n + j) :: ps, cont)
-        case _ => error(s"Expected path to be not empty")
       }
 
       case Zip(_, _, _, e1, e2) => path match {
@@ -303,32 +309,27 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case Pad(n, l, r, _, pad, array) => path match {
         case (i: CIntExpr) :: ps =>
-          exp(pad, env, List(), padExpr => {
+          exp(pad, env, ps, padExpr => {
             exp(array, env, CIntExpr(i - l) ::ps, arrayExpr => {
 
-              def generateLeftSide(rest:Expr):Expr = {
-                //i < l ?
-                C.AST.TernaryExpr(
-                  C.AST.BinaryExpr(C.AST.ArithmeticExpr(i), C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(l)),
-                  padExpr, rest)
+              def cOperator(op:ArithPredicate.Operator.Value):C.AST.BinaryOperator.Value = op match {
+                case ArithPredicate.Operator.< => C.AST.BinaryOperator.<
+                case ArithPredicate.Operator.> => C.AST.BinaryOperator.>
+                case ArithPredicate.Operator.>= => C.AST.BinaryOperator.>=
+                case _ => null
               }
 
-              def generateRightSide = {
-                C.AST.TernaryExpr(
-                  C.AST.BinaryExpr(C.AST.ArithmeticExpr(i), C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(l + n)),
-                  arrayExpr,
-                  padExpr
-                )
-              }
-
-              val result = l match {
-                case Cst(0) => generateRightSide
-                case _ => r match {
-                  case Cst(0) => generateLeftSide(arrayExpr)
-                  case _ => generateLeftSide(generateRightSide)
+              def genBranch(lhs:ArithExpr, rhs:ArithExpr, operator:ArithPredicate.Operator.Value, taken:Expr, notTaken:Expr):Expr = {
+                import BoolExpr._
+                arithPredicate(lhs, rhs, operator) match {
+                  case True => taken
+                  case False => notTaken
+                  case _ => C.AST.TernaryExpr(
+                    C.AST.BinaryExpr(C.AST.ArithmeticExpr(i), cOperator(operator), C.AST.ArithmeticExpr(rhs)),
+                    taken, notTaken)
                 }
               }
-              cont(result)
+              cont(genBranch(i, l, ArithPredicate.Operator.<, padExpr, genBranch(i, l + n, ArithPredicate.Operator.<, arrayExpr, padExpr)))
             })
           })
 
@@ -337,6 +338,11 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case Slide(_, _, s2, _, e) => path match {
         case (i : CIntExpr) :: (j : CIntExpr) :: ps => exp(e, env, CIntExpr(i * s2 + j) :: ps, cont)
+        case _ => error(s"Expected two C-Integer-Expressions on the path.")
+      }
+
+      case TransposeArrayDep(_, _, _, _, e) => path match {
+        case (i : CIntExpr)::(j : CIntExpr) :: ps => exp(e, env, CIntExpr(j) :: CIntExpr(i) :: ps , cont)
         case _ => error(s"Expected two C-Integer-Expressions on the path.")
       }
 
@@ -371,7 +377,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case Idx(_, _, i, e) => CCodeGen.codeGenIdx(i, e, env, path, cont)
 
-      case DepIdx(_, _, _, i, e) => exp(e, env, CIntExpr(i) :: path, cont)
+      case DepIdx(_, _, i, e) => exp(e, env, CIntExpr(i) :: path, cont)
 
       case IdxVec(_, _, i, e) => CCodeGen.codeGenIdxVec(i, e, env, path, cont)
 
@@ -401,13 +407,39 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _: idealised.DPIA.Types.IndexType => C.AST.Type.int
       }
       case a: idealised.DPIA.Types.ArrayType => C.AST.ArrayType(typ(a.elemType), Some(a.size))
-      case a: idealised.DPIA.Types.DepArrayType => C.AST.ArrayType(typ(a.elemType), Some(a.size)) // TODO: be more precise with the size?
+      case a: idealised.DPIA.Types.DepArrayType => C.AST.ArrayType(typ(a.elemFType.body), Some(a.size)) // TODO: be more precise with the size?
       case r: idealised.DPIA.Types.RecordType =>
         C.AST.StructType(r.fst.toString + "_" + r.snd.toString, immutable.Seq(
           (typ(r.fst), "_fst"),
           (typ(r.snd), "_snd")))
       case _: idealised.DPIA.Types.DataTypeIdentifier => throw new Exception("This should not happen")
     }
+  }
+
+  /**
+    * This function takes a phrase with a nat dependent free variable `for`, and it generates a block
+    * where `for` is bound to the arithmetic expression at.
+    * @param `for` The free nat variable to substitute
+    * @param phrase The phrase to generate
+    * @param at The arithmetic expression we are generating phrase at
+    * @param generator Up-to-date code generator
+    * @param env Up-to-date environment
+    * @return
+    */
+  protected def generateNatDependentBody(`for`: NatIdentifier,
+                                       phrase: Phrase[CommandType],
+                                       at: ArithExpr,
+                                       env: Environment): Block = {
+    PhraseType.substitute(at, `for`, in = phrase) |> (p => {
+      val newIdentEnv = env.identEnv.map {
+        case (Identifier(name, AccType(dt)), declRef) =>
+          (Identifier(name, AccType(DataType.substitute(at, `for`, in = dt))), declRef)
+        case (Identifier(name, ExpType(dt)), declRef) =>
+          (Identifier(name, ExpType(DataType.substitute(at, `for`, in = dt))), declRef)
+        case x => x
+      }
+      C.AST.Block(immutable.Seq(this.cmd(p, env.copy(identEnv = newIdentEnv))))
+    })
   }
 
   protected object CCodeGen {
@@ -510,6 +542,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     def codeGenFor(n: Nat,
                    i: Identifier[ExpType],
                    p: Phrase[CommandType],
+                   unroll:Boolean,
                    env: Environment): Stmt = {
       val cI = C.AST.DeclRef(freshName("i_"))
       val range = RangeAdd(0, n, 1)
@@ -529,19 +562,33 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             updatedGen.cmd(p, env updatedIdentEnv (i -> cI)))
 
         case _ =>
-          // default case
-          val init = C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0)))
-          val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
-          val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + 1))
 
-          C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
-            C.AST.Block(immutable.Seq(updatedGen.cmd(p, env updatedIdentEnv (i -> cI)))))
+          if(unroll) {
+            val statements = for(index <- rangeAddToScalaRange(range)) yield {
+              val indexPhrase = Literal(IndexData(Cst(index), IndexType(n)))
+              val newPhrase = Phrase.substitute(phrase=indexPhrase,`for`=i, in=p)
+              immutable.Seq(updatedGen.cmd(newPhrase, env))
+            }
+            C.AST.Block(
+              C.AST.Comment(s"Unrolling from ${range.start} until ${range.stop} by increments of ${range.step}") +:
+                statements.flatten
+            )
+          } else {
+            // default case
+            val init = C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0)))
+            val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
+            val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + 1))
+
+            C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
+              C.AST.Block(immutable.Seq(updatedGen.cmd(p, env updatedIdentEnv (i -> cI)))))
+          }
       }})
     }
 
     def codeGenForNat(n: Nat,
                       i: NatIdentifier,
                       p: Phrase[CommandType],
+                      unroll:Boolean,
                       env: Environment): Stmt = {
       val cI = C.AST.DeclRef(freshName("i_"))
       val range = RangeAdd(0, n, 1)
@@ -566,20 +613,34 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
           val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + 1))
 
-          PhraseType.substitute(NamedVar(cI.name, range), `for` = i, in = p) |> (p => {
-
-            val newIdentEnv = env.identEnv.map {
-              case (Identifier(name, AccType(dt)), declRef) =>
-                (Identifier(name, AccType(DataType.substitute(NamedVar(cI.name, range), `for` = i, in = dt))), declRef)
-              case (Identifier(name, ExpType(dt)), declRef) =>
-                (Identifier(name, ExpType(DataType.substitute(NamedVar(cI.name, range), `for` = i, in = dt))), declRef)
-              case x => x
+          if(unroll) {
+            val statements = for (index <- rangeAddToScalaRange(range)) yield {
+              updatedGen.generateNatDependentBody(`for` = i, `phrase`=p, at = Cst(index), env).body
             }
+            C.AST.Block(
+              C.AST.Comment(s"Unrolling from ${range.start} until ${range.stop} by increments of ${range.step}") +:
+              statements.flatten
+            )
+          } else {
+            val body = updatedGen.generateNatDependentBody(`for` = i, `phrase` = p, at = NamedVar(cI.name, range), env)
 
             C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
-              C.AST.Block(immutable.Seq(updatedGen.cmd(p, env.copy(identEnv = newIdentEnv)))))
-          })
+              body
+            )
+          }
       }})
+    }
+
+
+    private def rangeAddToScalaRange(range:RangeAdd) = {
+      val (start,stop,step) = {
+        try {
+          (range.start.evalLong, range.stop.evalLong, range.step.evalLong)
+        } catch {
+          case _:NotEvaluableException => throw new Exception(s"Cannot evaluate range $range in loop unrolling")
+        }
+      }
+      start until stop by step
     }
 
     def codeGenIdxAcc(i: Phrase[ExpType],
@@ -743,59 +804,59 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
     def flattenArrayIndices(dt: DataType, path: Path): (Nat, Path) = {
       assert(dt.isInstanceOf[ArrayType] || dt.isInstanceOf[DepArrayType])
-      val elemT = dt match {
-        case ArrayType(_, t) => t
-        case DepArrayType(_, _, t) => t
-      }
-      val dimensionSizes = extractDimensionSizes(1)(elemT).reverse
 
-
-      val (indices, rest) = path.splitAt(dimensionSizes.size)
-      indices.foreach(i => assert(i.isInstanceOf[CIntExpr]))
+      val (indicesAsPathElements, rest) = path.splitAt(countArrayLayers(dt))
+      indicesAsPathElements.foreach(i => assert(i.isInstanceOf[CIntExpr]))
+      val indices = indicesAsPathElements.map(_.asInstanceOf[CIntExpr].num)
       assert(rest.isEmpty || !rest.head.isInstanceOf[CIntExpr])
 
-      val flattenedIndices = buildSummands(dt, dimensionSizes, indices).reduce(_ + _)
 
       val subMap = buildSubMap(dt, indices)
 
-      (ArithExpr.substitute(flattenedIndices, subMap), rest)
+      (ArithExpr.substitute(flattenIndices(dt, indices), subMap), rest)
     }
 
-    private def extractDimensionSizes(z: Nat)(dt: DataType): List[Nat] = {
-      dt match {
-        case ArrayType(size, elemType) =>
-          z :: extractDimensionSizes(z * size)(elemType)
-        case DepArrayType(size, i, elemType) =>
-          z :: extractDimensionSizes(BigSum(from = 0, upTo = size - 1, `for` = i, `in` = z))(elemType)
-        case _ => z :: Nil
+    def countArrayLayers(dataType: DataType):Int = {
+      dataType match {
+        case ArrayType(_, et) => 1 + countArrayLayers(et)
+        case DepArrayType(_, NatDataTypeFunction(_ ,et)) => 1 + countArrayLayers(et)
+        case _ => 0
       }
     }
 
-    private def buildSummands(dt: DataType,
-                              dimensionSizes: immutable.Seq[Nat],
-                              indices: immutable.Seq[PathExpr]): List[Nat] = {
-      (dt, dimensionSizes, indices) match {
-        case (_, Nil, Nil) => Nil
-        case (ArrayType(_, elemType), rs :: dimRest, CIntExpr(idx) :: idxRest) =>
-          (rs * idx) :: buildSummands(elemType, dimRest, idxRest)
-        case (DepArrayType(_, k, elemType), rs :: dimRest, CIntExpr(idx) :: idxRest) =>
-          BigSum(from = 0, upTo = idx - 1, `for` = k, `in` = rs) :: buildSummands(elemType, dimRest, idxRest)
+    def flattenIndices(dataType: DataType, indicies:List[Nat]):Nat = {
+      (dataType, indicies) match {
+        case (array:ArrayType, index::rest) =>
+          numberOfElementsUntil(array, index) + flattenIndices(array.elemType, rest)
+        case (array:DepArrayType, index::rest) =>
+          numberOfElementsUntil(array, index) + flattenIndices(array.elemFType.body, rest)
+        case (_,  Nil) => 0
+        case t => throw new Exception(s"This should not happen, pair $t")
       }
+    }
+
+    //Computes the total number of element in an array at a given offset
+    def numberOfElementsUntil(dt:ArrayType, at:Nat):Nat = {
+      DataType.getTotalNumberOfElements(dt.elemType)*at
+    }
+
+    def numberOfElementsUntil(dt:DepArrayType, at:Nat):Nat = {
+      BigSum(from=0, upTo = at-1, `for`=dt.elemFType.x, DataType.getTotalNumberOfElements(dt.elemFType.body))
     }
 
     private def getIndexVariablesScopes(dt:DataType):List[Option[NatIdentifier]] = {
       dt match {
         case ArrayType(_ , et) => None::getIndexVariablesScopes(et)
-        case DepArrayType(_, i, et) => Some(i)::getIndexVariablesScopes(et)
+        case DepArrayType(_, NatDataTypeFunction(i, et)) => Some(i)::getIndexVariablesScopes(et)
         case _ => Nil
       }
     }
 
     private def buildSubMap(dt: DataType,
-                            indices: immutable.Seq[PathExpr]): Predef.Map[Nat, Nat]  = {
+                            indices: immutable.Seq[Nat]): Predef.Map[Nat, Nat]  = {
       val bindings = getIndexVariablesScopes(dt)
       bindings.zip(indices).map({
-        case (Some(binder), CIntExpr(index)) => Some((binder, index))
+        case (Some(binder), index) => Some((binder, index))
         case _ => None
       }).filter(_.isDefined).map(_.get).toMap[Nat, Nat]
     }
