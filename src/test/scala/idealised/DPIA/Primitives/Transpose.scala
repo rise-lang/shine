@@ -9,8 +9,7 @@ import lift.arithmetic.{NamedVar, StartFromRange}
 import scala.util.Random
 
 class Transpose extends idealised.util.Tests {
-
-  ignore("Simple transpose should produce the expected result on a test") {
+  test("Simple transpose should produce the expected result on a test") {
     def checkResult[T <: idealised.SurfaceLanguage.Types.Type]
     (e: idealised.SurfaceLanguage.Expr[T]) =
     {
