@@ -33,7 +33,7 @@ package object DSL {
 
     def `@`(index: Nat): Idx = e.t match {
       case ExpType(ArrayType(n, dt)) =>
-        Idx(n, dt, Literal(IndexData(index, IndexType(n))), e)
+        Idx(n, dt, AsIndex(n, Natural(index)), e)
       case x => error(x.toString, "exp[n.dt]")
     }
 

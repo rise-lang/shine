@@ -57,10 +57,7 @@ object VisitAndRebuild {
           case IfThenElse(cond, thenP, elseP) =>
             IfThenElse(apply(cond, v), apply(thenP, v), apply(elseP, v))
 
-          case Literal(d) => d match {
-            case IndexData(i, t) => Literal(IndexData(v(i), v(t)))
-            case _ => Literal(d)
-          }
+          case Literal(d) => Literal(d)
 
           case Natural(n) => Natural(n)
 

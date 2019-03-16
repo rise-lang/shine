@@ -82,7 +82,7 @@ object ProgramGenerator {
     val output = (a.t.dataType, p.t.dataType) match {
       case (lhsT, rhsT) if lhsT == rhsT => a
       case (ArrayType(Cst(1), lhsT), rhsT) if lhsT == rhsT =>
-        a `@` Literal(IndexData(0, IndexType(1)))
+        a `@` AsIndex(1, Natural(0))
       case (lhsT, rhsT) => throw new Exception(s" $lhsT and $rhsT should match")
     }
 
