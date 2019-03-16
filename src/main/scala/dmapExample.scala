@@ -61,7 +61,7 @@ object dmapExample extends App{
 
   printKernel(fInUse)
 
-  def printKernel[T <: Type](expr: Expr) {
+  def printKernel(expr: Expr) {
     //def generate(e:Expr) = idealised.OpenMP.ProgramGenerator.makeCode(TypeInference(e, Map()).toPhrase)
     def generate(e:Expr) =
       KernelGenerator.makeCode(localSize = 8, globalSize = 8)(DPIA.FromSurfaceLanguage(TypeInference(e, Map())))

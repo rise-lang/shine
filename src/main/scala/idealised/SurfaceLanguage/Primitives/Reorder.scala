@@ -1,8 +1,6 @@
 package idealised.SurfaceLanguage.Primitives
 
-import idealised.DPIA
-import idealised.SurfaceLanguage.Types.TypeInference
-import idealised.SurfaceLanguage.Types._
+import idealised.SurfaceLanguage.Types.{TypeInference, _}
 import idealised.SurfaceLanguage._
 
 import scala.language.{postfixOps, reflectiveCalls}
@@ -18,7 +16,7 @@ final case class Reorder(idxF: Expr,
 
     TypeInference(array, subs) |> (array =>
       array.t match {
-        case Some(ArrayType(n, _)) =>
+        case Some(arrayT@ArrayType(n, _)) =>
           def idxFcheck(f: Expr) =
             f.t match {
               case Some(FunctionType(IndexType(m: NatIdentifier), _)) =>
@@ -36,10 +34,7 @@ final case class Reorder(idxF: Expr,
 
           TypeInference(idxF, subs) |> (idxF =>
             TypeInference(idxFinv, subs) |> (idxFinv =>
-              Reorder(idxFcheck(idxF), idxFcheck(idxFinv), array, array.t match {
-                case None => None
-                case Some(dt: DataType) => Some(dt)
-              })))
+              Reorder(idxFcheck(idxF), idxFcheck(idxFinv), array, Some(arrayT))))
 
         case x => error(expr = s"Reorder($idxF, $idxFinv, $array)",
           found = s"`${x.toString}'", expected = "n.dt")
