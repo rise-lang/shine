@@ -81,10 +81,10 @@ object Phrase {
             phrase.t match {
               case ExpType(NatType) =>
                   Stop(Natural(Nat.substitute(
-                    Internal.NatFromIndexExpr(phrase.asInstanceOf[Phrase[ExpType]]), v, n)).asInstanceOf[Phrase[T]])
+                    Internal.NatFromNatExpr(phrase.asInstanceOf[Phrase[ExpType]]), v, n)).asInstanceOf[Phrase[T]])
               case ExpType(IndexType(_)) =>
                   Stop(Natural(Nat.substitute(
-                    Internal.NatFromNatExpr(phrase.asInstanceOf[Phrase[ExpType]]), v, n)).asInstanceOf[Phrase[T]])
+                    Internal.NatFromIndexExpr(phrase.asInstanceOf[Phrase[ExpType]]), v, n)).asInstanceOf[Phrase[T]])
               case _ => Continue(p, this)
             }
           case _ => Continue(p, this)
