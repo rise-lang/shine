@@ -1,6 +1,5 @@
 package idealised.DPIA
 
-import idealised.DPIA.Phrases.Natural
 import idealised.SurfaceLanguage._
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
