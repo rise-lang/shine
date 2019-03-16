@@ -1,6 +1,7 @@
 package idealised.DPIA
 
 import idealised.DPIA.Compilation.TranslationContext
+import idealised.DPIA.FunctionalPrimitives.UnsafeAsIndex
 import idealised.DPIA.ImperativePrimitives._
 import idealised.DPIA.Phrases.{BinOp, Literal, Natural, Pair, Phrase, Proj1, Proj2, UnaryOp}
 import idealised.DPIA.Semantics.OperationalSemantics.{FloatData, IndexData, IntData}
@@ -58,7 +59,7 @@ package object DSL {
 
     def `@`(index: Nat): IdxAcc = a.t match {
       case AccType(ArrayType(n, dt)) =>
-        IdxAcc(n, dt, Literal(IndexData(index, IndexType(n))), a)
+        IdxAcc(n, dt, UnsafeAsIndex(n, Natural(index)), a)
       case x => error(x.toString, "acc[n.dt]")
     }
 

@@ -3,6 +3,7 @@ package idealised.C
 import idealised.C.AST._
 import idealised.DPIA.Compilation._
 import idealised.DPIA.DSL._
+import idealised.DPIA.FunctionalPrimitives.UnsafeAsIndex
 import idealised.DPIA.{NatDataTypeFunction, Phrases}
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics.IndexData
@@ -83,7 +84,7 @@ object ProgramGenerator {
     val output = (a.t.dataType, p.t.dataType) match {
       case (lhsT, rhsT) if lhsT == rhsT => a
       case (DPIA.Types.ArrayType(Cst(1), lhsT), rhsT) if lhsT == rhsT =>
-        a `@` Phrases.Literal(IndexData(0, IndexType(1)))
+        a `@` UnsafeAsIndex(1, Natural(0))
       case (lhsT, rhsT) => throw new Exception(s" $lhsT and $rhsT should match")
     }
 

@@ -180,12 +180,12 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case ReorderAcc(n, _, idxF, a) => path match {
         case (i : CIntExpr) :: ps =>
-          acc(a, env, CIntExpr(OperationalSemantics.evalIndexExp(idxF(Literal(IndexData(i, IndexType(n)))))) :: ps, cont)
+          acc(a, env, CIntExpr(OperationalSemantics.evalIndexExp(idxF(UnsafeAsIndex(n, Natural(i))))) :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
 
       case MapAcc(n, dt, _, f, a) => path match {
-        case (i : CIntExpr) :: ps => acc( f( IdxAcc(n, dt, Phrases.Literal(IndexData(i, IndexType(n))), a) ), env, ps, cont)
+        case (i : CIntExpr) :: ps => acc( f( IdxAcc(n, dt, UnsafeAsIndex(n, Natural(i)), a) ), env, ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
 
@@ -272,7 +272,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case Generate(n, _, lam@Lambda(_, _)) => path match {
         case (i : CIntExpr) :: ps =>
-          val evaledLam = Lifting.liftFunction(lam)(Literal(IndexData(i, IndexType(n))))
+          val evaledLam = Lifting.liftFunction(lam)(UnsafeAsIndex(n, Natural(i)))
           exp(evaledLam, env, ps, cont)
       }
 
@@ -324,7 +324,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case Reorder(n, _, idxF, _, a) => path match {
         case (i : CIntExpr) :: ps =>
-          exp(a, env, CIntExpr(OperationalSemantics.evalIndexExp(idxF(Literal(IndexData(i, IndexType(n)))))) :: ps, cont)
+          exp(a, env, CIntExpr(OperationalSemantics.evalIndexExp(idxF(UnsafeAsIndex(n, Natural(i))))) :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
 
@@ -389,7 +389,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
               FunctionType(ExpType(dt2), comm))
 
           cmd(f(
-            Idx(n, dt1, Literal(IndexData(i, IndexType(n))), e)
+            Idx(n, dt1, UnsafeAsIndex(n, Natural(i)), e)
           )(
             continue_cmd
           ), env updatedContEnv (continue_cmd -> (e => env => exp(e, env, ps, cont))))
@@ -586,7 +586,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
           if(unroll) {
             val statements = for(index <- rangeAddToScalaRange(range)) yield {
-              val indexPhrase = Literal(IndexData(Cst(index), IndexType(n)))
+              val indexPhrase = UnsafeAsIndex(n, Natural(index))
               val newPhrase = Phrase.substitute(phrase=indexPhrase,`for`=i, in=p)
               immutable.Seq(updatedGen.cmd(newPhrase, env))
             }

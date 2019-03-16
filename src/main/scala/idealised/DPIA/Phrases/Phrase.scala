@@ -2,7 +2,7 @@ package idealised.DPIA.Phrases
 
 import idealised.DPIA.Compilation.TranslationContext
 import idealised.DPIA.Semantics.OperationalSemantics
-import idealised.DPIA.Semantics.OperationalSemantics.NatData
+import idealised.DPIA.Semantics.OperationalSemantics.{NatData, IndexData}
 import idealised.DPIA.Types._
 import idealised.DPIA._
 import idealised.SurfaceLanguage
@@ -54,6 +54,7 @@ final case class BinOp(op: SurfaceLanguage.Operators.Binary.Value, lhs: Phrase[E
 final case class Literal(d: OperationalSemantics.Data)
   extends Phrase[ExpType] {
   assert(!d.isInstanceOf[NatData])
+  assert(!d.isInstanceOf[IndexData])
 }
 
 final case class Natural(d: Nat) extends Phrase[ExpType]
