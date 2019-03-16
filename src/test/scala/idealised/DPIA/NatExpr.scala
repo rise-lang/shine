@@ -47,16 +47,16 @@ class NatExpr extends idealised.util.Tests {
     SyntaxChecker(program.code)
   }
 
-  test("unsafeAsIndex acceptor translation is working correctly.") {
-    val simpleNatToIndexUsage = nFun(n => fun(NatType)(i => unsafeAsIndex(n, i)))
+  test("asIndex acceptor translation is working correctly.") {
+    val simpleNatToIndexUsage = nFun(n => fun(NatType)(i => asIndex(n, i)))
     val program = idealised.C.ProgramGenerator.makeCode(TypeInference(simpleNatToIndexUsage, Map()).convertToPhrase)
 
     println(program.code)
     SyntaxChecker(program.code)
   }
 
-  test("fmapExprNat allows the combination of two NatExpr into one.") {
-    val combined = fmapExprNat(NatExpr(8), NatExpr(2), (eight, two) => eight + two)
+  test("fmapNatExpr allows the combination of two NatExpr into one.") {
+    val combined = fmapNatExpr(NatExpr(8), NatExpr(2), (eight, two) => eight + two)
     assert(combined.n == lift.arithmetic.Cst(10))
   }
 }

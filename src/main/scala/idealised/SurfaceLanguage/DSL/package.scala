@@ -1,9 +1,8 @@
 package idealised.SurfaceLanguage
 
-import idealised.SurfaceLanguage.Primitives.{Fst, Snd, Zip}
+import idealised.SurfaceLanguage.Primitives.{AsIndex, Fst, Snd, Zip}
 import idealised.SurfaceLanguage.Semantics._
 import idealised.SurfaceLanguage.Types._
-import lift.arithmetic.{ContinuousRange, NamedVar}
 
 import scala.language.implicitConversions
 
@@ -72,18 +71,26 @@ package object DSL {
   implicit def toLiteralFloatN(v: VectorData): LiteralExpr = LiteralExpr(v)
   implicit def toNatExprNat(n: Nat): NatExpr = NatExpr(n)
 
-  def fmapExprNat(natExpr: DataExpr, f: Nat => Nat): NatExpr = {
+  def fmapNatExpr(natExpr: DataExpr, f: Nat => Nat): NatExpr = {
     val liftedNat = Lifting.liftNatExpr(natExpr)
     val res = f(liftedNat)
     NatExpr(res)
   }
 
 
-  def fmapExprNat(natExpr1: DataExpr, natExpr2: DataExpr, f: (Nat, Nat) => Nat): NatExpr = {
+  def fmapNatExpr(natExpr1: DataExpr, natExpr2: DataExpr, f: (Nat, Nat) => Nat): NatExpr = {
     val liftedNat1 = Lifting.liftNatExpr(natExpr1)
     val liftedNat2 = Lifting.liftNatExpr(natExpr2)
     val res = f(liftedNat1, liftedNat2)
     NatExpr(res)
+  }
+
+  // this is safe as long as `f' returns a Nat value of less than `n'
+  def fmapIndexExpr(indexExpr: DataExpr, f: Nat => Nat): DataExpr = {
+    indexExpr.t match {
+      case Some(IndexType(n)) => AsIndex(n, fmapNatExpr(asNat(indexExpr), f))
+      case x => throw new Exception(s"Expected ExpType(IndexType(n)) found: $x")
+    }
   }
 
 
@@ -95,11 +102,4 @@ package object DSL {
     def _2 = Snd(e, None)
   }
 
-//  implicit class ExpPhraseExtensions(e: DataExpr) {
-//    def `@`(index: DataExpr): Idx = (index.t, e.t) match {
-//      case (ExpType(IndexType(n1)), ExpType(ArrayType(n2, dt))) if n1 == n2 =>
-//        Idx(n1, dt, index, e)
-//      case x => error(x.toString, "(exp[idx(n)], exp[n.dt])")
-//    }
-//  }
 }

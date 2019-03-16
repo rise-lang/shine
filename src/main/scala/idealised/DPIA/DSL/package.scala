@@ -1,6 +1,7 @@
 package idealised.DPIA
 
 import idealised.DPIA.Compilation.TranslationContext
+import idealised.DPIA.FunctionalPrimitives.{AsIndex, AsNat}
 import idealised.DPIA.ImperativePrimitives._
 import idealised.DPIA.Phrases.{BinOp, Literal, Natural, Pair, Phrase, Proj1, Proj2, UnaryOp}
 import idealised.DPIA.Semantics.OperationalSemantics.{FloatData, IndexData, IntData}
@@ -131,10 +132,18 @@ package object DSL {
     def _2: Proj2[T1, T2] = π2(v)
   }
 
-  def fmapExprNat(natExpr: Phrase[ExpType], f: Nat => Nat): Phrase[ExpType] = {
+  def fmapNatExpr(natExpr: Phrase[ExpType], f: Nat => Nat): Phrase[ExpType] = {
     val liftedNat = Lifting.convertToNatExpr(natExpr)
     val res = f(liftedNat)
     Natural(res)
+  }
+
+  // this is safe as long as `f' returns a Nat value of less than `n'
+  def fmapIndexExpr(indexExpr: Phrase[ExpType], f: Nat => Nat): Phrase[ExpType] = {
+    indexExpr.t match {
+      case ExpType(IndexType(n)) => AsIndex(n, fmapNatExpr(AsNat(n, indexExpr), f))
+      case x => throw new Exception(s"Expected ExpType(IndexType(n)) found: $x")
+    }
   }
 
   implicit def toLiteralInt(i: Int): Literal = Literal(IntData(i))

@@ -3,7 +3,7 @@ package idealised.OpenMP
 import idealised._
 import idealised.DPIA.Compilation._
 import idealised.DPIA.DSL._
-import idealised.DPIA.FunctionalPrimitives.UnsafeAsIndex
+import idealised.DPIA.FunctionalPrimitives.AsIndex
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics.IndexData
 import idealised.DPIA.Types._

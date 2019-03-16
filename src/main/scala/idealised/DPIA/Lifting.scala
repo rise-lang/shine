@@ -1,6 +1,6 @@
 package idealised.DPIA
 
-import idealised.DPIA.FunctionalPrimitives.{AsNat, UnsafeAsIndex}
+import idealised.DPIA.FunctionalPrimitives.{AsNat, AsIndex}
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics.IndexData
 import idealised.DPIA.Types.{DataType, ExpType, IndexType, NatType, PhraseType}
@@ -154,7 +154,7 @@ object Lifting {
           case UnaryOp(op, e) => unOpToNat(op, convertIndexExpr(e))
           case prim: ExpPrimitive => prim match {
             //TODO can we use our knowledge of n somehow?
-            case UnsafeAsIndex(n, e) => convertToNatExpr(e)
+            case AsIndex(n, e) => convertToNatExpr(e)
             case _ => ???
           }
         }

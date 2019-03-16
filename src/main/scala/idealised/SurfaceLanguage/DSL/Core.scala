@@ -1,6 +1,5 @@
 package idealised.SurfaceLanguage.DSL
 
-import idealised.SurfaceLanguage
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
 import lift.arithmetic.NamedVar

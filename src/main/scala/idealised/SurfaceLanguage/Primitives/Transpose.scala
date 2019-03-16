@@ -20,20 +20,20 @@ final case class Transpose(array: DataExpr,
 
         val transposeFunction =
           λ(ExpType(IndexType(n * m)))(i => {
-            UnsafeAsIndex(n * m, fmapExprNat(AsNat(n * m, i), j => {
+            fmapIndexExpr(i, j => {
               val col = (j % n) * m
               val row = j / n
               row + col
-            }))
+            })
           })
 
         val transposeInverseFunction =
           λ(ExpType(IndexType(n * m)))(i => {
-            UnsafeAsIndex(n * m, fmapExprNat(AsNat(n * m, i), j => {
+            fmapIndexExpr(i, j => {
               val col = (j % m) * n
               val row = j / m
               row + col
-            }))
+            })
           })
 
         Split(n, m, dt,

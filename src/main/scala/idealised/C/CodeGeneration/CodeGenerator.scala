@@ -268,7 +268,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case AsNat(_, e) => exp(e, env, path, cont)
 
-      case UnsafeAsIndex(_, e) => exp(e, env, path, cont)
+      case AsIndex(_, e) => exp(e, env, path, cont)
 
       case Generate(n, _, lam@Lambda(_, _)) => path match {
         case (i : CIntExpr) :: ps =>
