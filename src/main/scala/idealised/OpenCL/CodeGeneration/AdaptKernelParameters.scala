@@ -92,8 +92,7 @@ object AdaptKernelParameters {
               identifierAsSingletonArray(i.asInstanceOf[Identifier[AccType]]) `@` zero
           }).asInstanceOf[Phrase[T]])
 
-        case f: OpenCLFunction => println(PrettyPhrasePrinter(f))
-          Continue(p, this)
+        case f: OpenCLFunction => Continue(p, this)
 
         case _ => Continue(p, this)
       }

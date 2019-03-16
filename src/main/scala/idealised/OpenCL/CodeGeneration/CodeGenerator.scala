@@ -11,6 +11,7 @@ import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics.VectorData
 import idealised.DPIA.Types._
 import idealised.DPIA._
+import idealised.OpenCL.FunctionalPrimitives.OpenCLFunction
 import idealised.OpenCL.ImperativePrimitives._
 import idealised.OpenCL._
 import idealised._
@@ -132,6 +133,9 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         case (i : CIntExpr) :: ps =>     exp(e, env, CIntExpr(i / m) :: ps, cont)
         case _ =>           error(s"Expected path to be not empty")
       }
+
+      case OpenCLFunction(name, _, _, args) =>
+        CCodeGen.codeGenForeignCall(name, args, env, Nil, cont)
 
       case _ => super.exp(phrase, env, path, cont)
     }

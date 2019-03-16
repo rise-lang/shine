@@ -8,7 +8,6 @@ import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised.OpenCL.FunctionalPrimitives.OpenCLFunction
 import idealised.SurfaceLanguage.Operators
 import idealised._
 import lift.arithmetic.{NamedVar, _}
@@ -409,9 +408,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case Proj1(pair) => exp(Lifting.liftPair(pair)._1, env, path, cont)
       case Proj2(pair) => exp(Lifting.liftPair(pair)._2, env, path, cont)
-
-      case OpenCLFunction(name, _, _, args) =>
-        CCodeGen.codeGenForeignCall(name, args, env, Nil, cont)
 
       case Apply(_, _) | NatDependentApply(_, _) | TypeDependentApply(_, _) |
            Phrases.IfThenElse(_, _, _) | _: ExpPrimitive =>
