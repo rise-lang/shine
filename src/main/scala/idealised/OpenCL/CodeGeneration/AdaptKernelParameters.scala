@@ -4,6 +4,7 @@ import idealised.DPIA
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types.{AccType, CommandType, ExpType, PairType, PhraseType}
 import idealised.DPIA.DSL._
+import idealised.DPIA.FunctionalPrimitives.AsIndex
 import idealised.DPIA.Semantics.OperationalSemantics.IndexData
 import idealised.OpenCL.FunctionalPrimitives.OpenCLFunction
 import idealised.{C, OpenCL}
@@ -60,7 +61,7 @@ object AdaptKernelParameters {
   private case class Visitor(scalarParamsInGlobalOrLocalMemory: Set[String])
     extends VisitAndRebuild.Visitor
   {
-    val zero = Literal(IndexData(0))
+    val zero = AsIndex(1, Natural(0))
 
     override def apply[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
       p match {

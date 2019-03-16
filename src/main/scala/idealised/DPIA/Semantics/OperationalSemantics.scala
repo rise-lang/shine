@@ -29,10 +29,6 @@ object OperationalSemantics {
 
   sealed abstract class Data(val dataType: DataType)
   final case class IndexData(n: Nat, indexType: IndexType) extends Data(indexType)
-  object IndexData {
-    def apply(n: Nat): IndexData = IndexData(n, IndexType(n.max))
-    // def apply(n: Nat): IndexData = IndexData(n, IndexType(n.max + 1))
-  }
 
   final case class NatData(n: Nat) extends Data(NatType)
 
