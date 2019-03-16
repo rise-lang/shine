@@ -50,7 +50,6 @@ package object DSL {
   }
 
   implicit class AccPhraseExtensions(a: Phrase[AccType]) {
-    // TODO do we really need all these different versions?
     def `@`(index: Phrase[ExpType]): IdxAcc = (index.t, a.t) match {
       case (ExpType(IndexType(n1)), AccType(ArrayType(n2, dt))) if n1 == n2 =>
         IdxAcc(n1, dt, index, a)
@@ -62,7 +61,6 @@ package object DSL {
         IdxAcc(n, dt, Literal(IndexData(index, IndexType(n))), a)
       case x => error(x.toString, "acc[n.dt]")
     }
-
 
     def `@v`(index: Phrase[ExpType]): IdxVecAcc = (index.t, a.t) match {
       case (ExpType(IndexType(n1)), AccType(VectorType(n2, st))) if n1 == n2 =>
@@ -133,8 +131,8 @@ package object DSL {
     def _2: Proj2[T1, T2] = π2(v)
   }
 
-  def treatNatExprAsNat(natExpr: Phrase[ExpType], f: Nat => Nat): Phrase[ExpType] = {
-    val liftedNat = Lifting.liftNatExpr(natExpr)
+  def fmapExprNat(natExpr: Phrase[ExpType], f: Nat => Nat): Phrase[ExpType] = {
+    val liftedNat = Lifting.convertToNatExpr(natExpr)
     val res = f(liftedNat)
     Natural(res)
   }

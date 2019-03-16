@@ -10,7 +10,7 @@ package object DSL {
       val f =
         nFun(n =>
           fun(IndexType(n))(i => {
-            unsafeAsIndex(n, treatNatExprAsNat(asNat(i), j =>
+            unsafeAsIndex(n, fmapExprNat(asNat(i), j =>
               (j / (n /^ s)) + s * (j % (n /^ s))))
           }))
       reorder(f, f)

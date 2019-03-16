@@ -23,8 +23,8 @@ class fft extends idealised.util.Tests {
           generate(fun(IndexType(p))(k => {
             // TODO use treatNatExprAsNat properly (look at it again)
             val exponentWoMinus2 =
-              treatNatExprAsNat(treatNatExprAsNat(asNat(j), j => j * LPrevIter) +
-                treatNatExprAsNat(asNat(i), i => i) * treatNatExprAsNat(asNat(k), k => k / (p * LPrevIter)), x => x)
+              fmapExprNat(fmapExprNat(asNat(j), j => j * LPrevIter) +
+                fmapExprNat(asNat(i), i => i) * fmapExprNat(asNat(k), k => k / (p * LPrevIter)), x => x)
             val exponent = cast(double, exponentWoMinus2) * -2.0
             tuple(cast(float, oclFun("cospi", double, double, exponent)),
               cast(float, oclFun("sinpi", double, double, exponent)))

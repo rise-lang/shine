@@ -1,5 +1,6 @@
 package idealised.DPIA
 
+import idealised.DPIA.Phrases.Natural
 import idealised.SurfaceLanguage._
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
@@ -48,7 +49,6 @@ class NatExpr extends idealised.util.Tests {
   }
 
   test("unsafeAsIndex acceptor translation is working correctly.") {
-    //TODO What about n? This generates a parameter for n although n does not appear in the generated code.
     val simpleNatToIndexUsage = nFun(n => fun(NatType)(i => unsafeAsIndex(n, i)))
     val program = idealised.C.ProgramGenerator.makeCode(TypeInference(simpleNatToIndexUsage, Map()).convertToPhrase)
 
@@ -56,7 +56,8 @@ class NatExpr extends idealised.util.Tests {
     SyntaxChecker(program.code)
   }
 
-  test("treatNatExprAsNat can simplify two NatExpr.") {
-  //  val resNatExp = treatNatExprAsNat
+  test("fmapExprNat allows the combination of two NatExpr into one.") {
+    val combined = fmapExprNat(NatExpr(8), NatExpr(2), (eight, two) => eight + two)
+    assert(combined.n == lift.arithmetic.Cst(10))
   }
 }

@@ -72,11 +72,20 @@ package object DSL {
   implicit def toLiteralFloatN(v: VectorData): LiteralExpr = LiteralExpr(v)
   implicit def toNatExprNat(n: Nat): NatExpr = NatExpr(n)
 
-  def treatNatExprAsNat(natExpr: DataExpr, f: Nat => Nat): NatExpr = {
+  def fmapExprNat(natExpr: DataExpr, f: Nat => Nat): NatExpr = {
     val liftedNat = Lifting.liftNatExpr(natExpr)
     val res = f(liftedNat)
     NatExpr(res)
   }
+
+
+  def fmapExprNat(natExpr1: DataExpr, natExpr2: DataExpr, f: (Nat, Nat) => Nat): NatExpr = {
+    val liftedNat1 = Lifting.liftNatExpr(natExpr1)
+    val liftedNat2 = Lifting.liftNatExpr(natExpr2)
+    val res = f(liftedNat1, liftedNat2)
+    NatExpr(res)
+  }
+
 
   implicit def toNatDependentLambda[T <: Type](p: Expr[T]): NatDependentLambdaExpr[T] =
     nFun(_ => p)

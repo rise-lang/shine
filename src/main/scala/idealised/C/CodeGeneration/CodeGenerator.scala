@@ -1,8 +1,6 @@
 package idealised.C.CodeGeneration
 
-import java.util.function.Predicate
-
-import idealised.C.AST.{Block, Node, Nodes}
+import idealised.C.AST.Block
 import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives._
 import idealised.DPIA.ImperativePrimitives._
@@ -13,7 +11,7 @@ import idealised.DPIA.Types._
 import idealised.DPIA._
 import idealised.SurfaceLanguage.Operators
 import idealised._
-import lift.arithmetic.BoolExpr.{ArithPredicate, False, True}
+import lift.arithmetic.BoolExpr.ArithPredicate
 import lift.arithmetic.{NamedVar, _}
 
 import scala.collection.immutable.VectorBuilder
@@ -182,7 +180,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case ReorderAcc(n, _, idxF, a) => path match {
         case (i : CIntExpr) :: ps =>
-          acc(a, env, CIntExpr(OperationalSemantics.evalIndexExp(idxF(UnsafeAsIndex(n, Natural(i))))) :: ps, cont)
+          acc(a, env, CIntExpr(OperationalSemantics.evalIndexExp(idxF(Literal(IndexData(i, IndexType(n)))))) :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
 
@@ -326,7 +324,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case Reorder(n, _, idxF, _, a) => path match {
         case (i : CIntExpr) :: ps =>
-          exp(a, env, CIntExpr(OperationalSemantics.evalIndexExp(idxF(UnsafeAsIndex(n, Natural(i))))) :: ps, cont)
+          exp(a, env, CIntExpr(OperationalSemantics.evalIndexExp(idxF(Literal(IndexData(i, IndexType(n)))))) :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
 

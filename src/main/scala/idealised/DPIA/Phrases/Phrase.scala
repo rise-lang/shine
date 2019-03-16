@@ -77,10 +77,10 @@ object Phrase {
             phrase.t match {
               case ExpType(NatType) =>
                   Stop(Natural(Nat.substitute(
-                    Lifting.liftNatExpr(phrase.asInstanceOf[Phrase[ExpType]]), v, n)).asInstanceOf[Phrase[T]])
+                    Lifting.convertToNatExpr(phrase.asInstanceOf[Phrase[ExpType]]), v, n)).asInstanceOf[Phrase[T]])
               case ExpType(IndexType(_)) =>
                   Stop(Natural(Nat.substitute(
-                    Lifting.liftIndexExpr(phrase.asInstanceOf[Phrase[ExpType]]), v, n)).asInstanceOf[Phrase[T]])
+                    Lifting.convertIndexExpr(phrase.asInstanceOf[Phrase[ExpType]]), v, n)).asInstanceOf[Phrase[T]])
               case _ => Continue(p, this)
             }
           case _ => Continue(p, this)

@@ -134,27 +134,27 @@ object Lifting {
     }
   }
 
-  def liftIndexExpr(p: Phrase[ExpType]): Nat = {
+  def convertIndexExpr(p: Phrase[ExpType]): Nat = {
     p.t match {
       case ExpType(IndexType(n)) =>
         p match {
           case i:Identifier[ExpType] => NamedVar(i.name, RangeAdd(0, n, 1))
-          case Apply(fun, arg) => liftIndexExpr(liftFunction(fun)(arg))
-          case BinOp(op, lhs, rhs) => binOpToNat(op, liftIndexExpr(lhs), liftIndexExpr(rhs))
+          case Apply(fun, arg) => convertIndexExpr(liftFunction(fun)(arg))
+          case BinOp(op, lhs, rhs) => binOpToNat(op, convertIndexExpr(lhs), convertIndexExpr(rhs))
           case IfThenElse(_, _, _) => ???
           case Literal(lit) => lit match {
             case i: IndexData => i.n
             case _ => throw new Exception("This should never happen")
           }
           case Natural(_) => throw new Exception("This should never happen")
-          case NatDependentApply(fun, arg) => liftIndexExpr(liftNatDependentFunction(fun)(arg))
-          case Proj1(pair) => liftIndexExpr(liftPair(pair)._1)
-          case Proj2(pair) => liftIndexExpr(liftPair(pair)._2)
-          case TypeDependentApply(fun, arg) => liftIndexExpr(liftTypeDependentFunction(fun)(arg))
-          case UnaryOp(op, e) => unOpToNat(op, liftIndexExpr(e))
+          case NatDependentApply(fun, arg) => convertIndexExpr(liftNatDependentFunction(fun)(arg))
+          case Proj1(pair) => convertIndexExpr(liftPair(pair)._1)
+          case Proj2(pair) => convertIndexExpr(liftPair(pair)._2)
+          case TypeDependentApply(fun, arg) => convertIndexExpr(liftTypeDependentFunction(fun)(arg))
+          case UnaryOp(op, e) => unOpToNat(op, convertIndexExpr(e))
           case prim: ExpPrimitive => prim match {
             //TODO can we use our knowledge of n somehow?
-            case UnsafeAsIndex(n, e) => liftNatExpr(e)
+            case UnsafeAsIndex(n, e) => convertToNatExpr(e)
             case _ => ???
           }
         }
@@ -162,24 +162,24 @@ object Lifting {
     }
   }
 
-  def liftNatExpr(p: Phrase[ExpType]): Nat = {
+  def convertToNatExpr(p: Phrase[ExpType]): Nat = {
     p.t match {
       case ExpType(NatType) =>
         p match {
           case Natural(n) => n
           case i: Identifier[ExpType] => NamedVar(i.name, StartFromRange(0))
-          case Apply(fun, arg) => liftNatExpr(liftFunction(fun)(arg))
-          case BinOp(op, lhs, rhs) => binOpToNat(op, liftNatExpr(lhs), liftNatExpr(rhs))
+          case Apply(fun, arg) => convertToNatExpr(liftFunction(fun)(arg))
+          case BinOp(op, lhs, rhs) => binOpToNat(op, convertToNatExpr(lhs), convertToNatExpr(rhs))
           case IfThenElse(_, _, _) => ???
           case Literal(_) => throw new Exception("This should never happen")
-          case NatDependentApply(fun, arg) => liftNatExpr(liftNatDependentFunction(fun)(arg))
-          case Proj1(pair) => liftNatExpr(liftPair(pair)._1)
-          case Proj2(pair) => liftNatExpr(liftPair(pair)._2)
-          case TypeDependentApply(fun, arg) => liftNatExpr(liftTypeDependentFunction(fun)(arg))
-          case UnaryOp(op, e) => unOpToNat(op, liftNatExpr(e))
+          case NatDependentApply(fun, arg) => convertToNatExpr(liftNatDependentFunction(fun)(arg))
+          case Proj1(pair) => convertToNatExpr(liftPair(pair)._1)
+          case Proj2(pair) => convertToNatExpr(liftPair(pair)._2)
+          case TypeDependentApply(fun, arg) => convertToNatExpr(liftTypeDependentFunction(fun)(arg))
+          case UnaryOp(op, e) => unOpToNat(op, convertToNatExpr(e))
           case prim: ExpPrimitive => prim match {
             //TODO can we use our knowledge of n somehow?
-            case AsNat(n, e) => liftIndexExpr(e)
+            case AsNat(n, e) => convertIndexExpr(e)
             case _ => ???
           }
         }

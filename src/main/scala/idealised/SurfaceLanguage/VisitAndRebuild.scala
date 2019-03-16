@@ -54,7 +54,7 @@ object VisitAndRebuild {
             IfThenElseExpr(apply(cond, v), apply(thenP, v), apply(elseP, v))
 
           case LiteralExpr(d) => d match {
-            case IndexData(i, t) => LiteralExpr(IndexData(i, v(t)))
+            case IndexData(i, t) => LiteralExpr(IndexData(v(i), v(t)))
             case _ => LiteralExpr(d)
           }
 

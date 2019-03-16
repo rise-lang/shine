@@ -16,7 +16,7 @@ final case class Generate(n: Nat,
 
   override val `type`: ExpType =
     (n: Nat) -> (dt: DataType) ->
-      (f :: t"exp[${IndexType(n)}] -> exp[$dt]") ->
+      (f :: t"exp[idx($n)] -> exp[$dt]") ->
         exp"[$n.$dt]"
 
   def prettyPrint: String =
