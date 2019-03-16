@@ -42,17 +42,9 @@ package object DSL {
     def <<:(z: (Expr, Expr) => Zip): Zip = z(args._1, args._2)
   }
 
-  implicit class CallTypeDependentLambdaExpr(arg: DataType) {
-    def :>>(f: Expr): Expr = f(arg)
-    def <<:(f: Expr): Expr = f(arg)
-  }
-
   implicit class FunComp(f: Expr) {
     def o(g: Expr): Expr = fun(arg => f( g(arg) ) )
     def <<<(g: Expr): Expr = f o g
-  }
-
-  implicit class RevFunComp(f: Expr) {
     def >>>(g: Expr): Expr = g o f
   }
 
