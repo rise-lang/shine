@@ -11,7 +11,7 @@ import idealised.DPIA.Compilation._
 import scala.xml.Elem
 import scala.language.reflectiveCalls
 
-final case class AsNat(n: Nat, e : Phrase[ExpType])
+final case class AsNat(n: Nat, e: Phrase[ExpType])
   extends ExpPrimitive {
 
   override val `type`: ExpType =

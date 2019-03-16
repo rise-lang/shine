@@ -1,7 +1,7 @@
 package idealised.SurfaceLanguage
 
-import idealised.SurfaceLanguage.DSL.{DataExpr, unsafeAsIndex}
-import idealised.SurfaceLanguage.Primitives.{AsNat, UnsafeAsIndex}
+import idealised.SurfaceLanguage.DSL.DataExpr
+import idealised.SurfaceLanguage.Primitives.{AsNat, AsIndex}
 import idealised.SurfaceLanguage.Semantics.IndexData
 import idealised.SurfaceLanguage.Types._
 import lift.arithmetic.{NamedVar, RangeAdd, StartFromRange}
@@ -83,7 +83,7 @@ object Lifting {
           case UnaryOpExpr(op, e) => unOpToNat(op, liftIndexExpr(e))
           case prim: PrimitiveExpr => prim match {
             //TODO can we use our knowledge of n somehow?
-            case UnsafeAsIndex(n, e, _) => liftNatExpr(e)
+            case AsIndex(n, e, _) => liftNatExpr(e)
             case _ => ???
           }
         }

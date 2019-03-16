@@ -11,7 +11,7 @@ import idealised.DPIA._
 import scala.xml.Elem
 import scala.language.reflectiveCalls
 
-final case class UnsafeAsIndex(n: Nat, e: Phrase[ExpType])
+final case class AsIndex(n: Nat, e: Phrase[ExpType])
   extends ExpPrimitive {
 
   override val `type`: ExpType =
@@ -26,7 +26,7 @@ final case class UnsafeAsIndex(n: Nat, e: Phrase[ExpType])
     </unsafeAsIndex>
 
   def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] =
-    UnsafeAsIndex(fun(n), VisitAndRebuild(e, fun))
+    AsIndex(fun(n), VisitAndRebuild(e, fun))
 
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Data = {
     OperationalSemantics.eval(s, e) match {
@@ -40,7 +40,7 @@ final case class UnsafeAsIndex(n: Nat, e: Phrase[ExpType])
     import TranslationToImperative._
 
     con(e)(fun(exp"[$NatType]")(x =>
-      A :=|IndexType(n)| UnsafeAsIndex(n, x)))
+      A :=|IndexType(n)| AsIndex(n, x)))
   }
 
   override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
@@ -51,6 +51,6 @@ final case class UnsafeAsIndex(n: Nat, e: Phrase[ExpType])
     import TranslationToImperative._
 
     con(e)(λ(e.t)(x =>
-      C(UnsafeAsIndex(n, x))))
+      C(AsIndex(n, x))))
   }
 }
