@@ -1,5 +1,6 @@
 package idealised.DPIA.Primitives
 
+import idealised.OpenCL.SurfaceLanguage.DSL.oclFun
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
 import idealised.util.SyntaxChecker
@@ -60,5 +61,32 @@ class Generate extends idealised.util.Tests {
     println(program.code)
 
     SyntaxChecker(program.code)
+  }
+
+  test("Syntactically correct code for complex Generate can be generated in C.") {
+    val N = 8
+    val LPrevIter = 1
+    val p = 2
+
+    val reorderedB =
+      generate(fun(IndexType(LPrevIter))(i =>
+        generate(fun(IndexType(p))(j =>
+          generate(fun(IndexType(p))(k => {
+            val exponentWoMinus2 =
+              treatNatExprAsNat(treatNatExprAsNat(asNat(j), j => j * LPrevIter) +
+                treatNatExprAsNat(asNat(i), i => i) * treatNatExprAsNat(asNat(k), k => k / (p * LPrevIter)), x => x)
+            val exponent = cast(double, exponentWoMinus2) * -2.0
+            tuple(cast(float, oclFun("cospi", double, double, exponent)),
+              cast(float, oclFun("sinpi", double, double, exponent)))
+          }))))))
+
+    val id = fun(x => x)
+    val generateSth = fun(ArrayType(N, float))(_ =>
+      reorderedB :>> mapSeq(mapSeq(mapSeq(id))))
+
+    val phrase = TypeInference(generateSth, Map()).convertToPhrase
+    val program = idealised.OpenCL.KernelGenerator.makeCode(phrase)
+    println(program.code)
+    SyntaxChecker.checkOpenCL(program.code)
   }
 }
