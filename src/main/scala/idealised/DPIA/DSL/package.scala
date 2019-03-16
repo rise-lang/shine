@@ -4,7 +4,7 @@ import idealised.DPIA.Compilation.TranslationContext
 import idealised.DPIA.FunctionalPrimitives.{AsIndex, AsNat}
 import idealised.DPIA.ImperativePrimitives._
 import idealised.DPIA.Phrases.{BinOp, Literal, Natural, Pair, Phrase, Proj1, Proj2, UnaryOp}
-import idealised.DPIA.Semantics.OperationalSemantics.{FloatData, IndexData, IntData}
+import idealised.DPIA.Semantics.OperationalSemantics.{FloatData, IntData}
 import idealised.DPIA.Types._
 import idealised.SurfaceLanguage.Operators
 
@@ -133,9 +133,7 @@ package object DSL {
   }
 
   def fmapNatExpr(natExpr: Phrase[ExpType], f: Nat => Nat): Phrase[ExpType] = {
-    val liftedNat = Lifting.convertToNatExpr(natExpr)
-    val res = f(liftedNat)
-    Natural(res)
+    Natural(f(Phrase.Internal.NatFromNatExpr(natExpr)))
   }
 
   // this is safe as long as `f' returns a Nat value of less than `n'
