@@ -37,7 +37,7 @@ object MapSeqSlideIRegRot {
             ((rs.wr `@` (size - 1)) :=|dt1| (Drop(size - 1, inputSize, dt1, input) `@` i)) `;`
             f(rs.rd)(output `@` i) `;` // body
             rotate
-          }))
+          }), unroll = false)
         })))
   }
 }

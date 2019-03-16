@@ -57,8 +57,18 @@ case class Kernel(decls: Seq[C.AST.Decl],
       val c = code
       val kernelJNI = opencl.executor.Kernel.create(c, kernel.name, "")
 
-      assert(localSize.isEvaluable && globalSize.isEvaluable,
-        "Local and Global Size must be evaluable and set before executing the kernel.")
+      List(localSize match {
+        case x if !x.isEvaluable => Some(s"OpenCL local size is not evaluable (currently set to $x)")
+        case _ => None
+      }, globalSize match {
+        case x if !x.isEvaluable => Some(s"OpenCL local size is not evaluable (currently set to $x)")
+        case _ => None
+      }).filter(_.isDefined).map(_.get) match {
+        case Nil =>
+        case problems =>
+          val errorMessage = "Cannot run kernel:\n" ++ problems.reduce(_ ++ _)
+          throw new Exception(errorMessage)
+      }
 
       val lengthMapping = sizeVarMap.asInstanceOf[Map[Nat,Nat]]
       val runtime = Executor.execute(kernelJNI,
@@ -247,7 +257,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
     case v: VectorType  => sizeInByte(v.elemType) * v.size
     case r: RecordType  => sizeInByte(r.fst) + sizeInByte(r.snd)
     case a: ArrayType   => sizeInByte(a.elemType) * a.size
-    case a: DepArrayType => SizeInByte(BigSum(Cst(0), a.size - 1, `for`=a.i, in=sizeInByte(a.elemType).value))
+    case a: DepArrayType => SizeInByte(BigSum(Cst(0), a.size - 1, `for`=a.elemFType.x, in=sizeInByte(a.elemFType.body).value))
     case _: DataTypeIdentifier => throw new Exception("This should not happen")
   }
 

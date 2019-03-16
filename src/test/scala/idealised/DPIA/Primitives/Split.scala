@@ -24,7 +24,7 @@ class Split extends idealised.util.Tests {
   test("Simple 2D split example with separate maps should generate syntactic valid OpenMP code with three for loops") {
     val slideExample =
       nFun(n => nFun(m =>
-        fun(ArrayType(n, ArrayType(m, float)))( xs =>
+        fun(ArrayType(n, ArrayType(m, float)))(xs =>
           xs :>> map(split(2)) :>> mapSeq(mapSeq(mapSeq(fun(x => x)))) )))
 
     val p = idealised.OpenMP.ProgramGenerator.makeCode(TypeInference(slideExample, Map()).toPhrase)
@@ -49,18 +49,6 @@ class Split extends idealised.util.Tests {
     "for".r.findAllIn(code).length shouldBe 3
   }
 
-  test("Simple 2D dependent split should generated syntactic valid OpenCL code") {
-    val splitExample =
-      nFun(n =>
-        fun(DepArrayType(n, i => ArrayType(i + 1, float)))(xs =>
-          xs :>> split(4) :>> depMapSeq(fun(row => depMapSeq(fun(col => mapSeq(fun(x => x + 1.0f), col)), row)))
-      ))
-
-    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(splitExample, Map()).toPhrase)
-    val code = p.code
-    SyntaxChecker.checkOpenCL(code)
-    println(code)
-  }
 
   ignore("Split mapAcc translation could work with functions working on independent elements") {
     val e = nFun(n => fun(ArrayType(n, float))(xs =>

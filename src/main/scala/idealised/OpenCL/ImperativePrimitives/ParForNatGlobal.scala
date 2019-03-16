@@ -3,18 +3,17 @@ package idealised.OpenCL.ImperativePrimitives
 import idealised.C.AST.{Comment, Stmt}
 import idealised.DPIA.Phrases.Phrase
 import idealised.DPIA.Types.{AccType, CommandType, DataType}
-import idealised.DPIA.{->, Nat, NatIdentifier, `(nat)->`, freshName}
+import idealised.DPIA.{->, Nat, NatDataTypeFunction, NatIdentifier, `(nat)->`, freshName}
 import idealised.OpenCL
 import idealised.OpenCL._
 import lift.arithmetic.{?, RangeAdd}
 
 //noinspection TypeAnnotation,ConvertibleToMethodValue
 final case class ParForNatGlobal(dim:Int)(override val n:Nat,
-                                          override val i:NatIdentifier,
-                                          override val dt:DataType,
+                                          override val ft:NatDataTypeFunction,
                                           override val out:Phrase[AccType],
                                           override val body: Phrase[`(nat)->`[AccType -> CommandType]])
-  extends OpenCLParForNat(n, i, dt, out, body) {
+  extends OpenCLParForNat(n, ft, out, body) {
   override val makeParForNat = ParForNatGlobal(dim) _
 
   override val parallelismLevel: OpenCL.Global.type = OpenCL.Global

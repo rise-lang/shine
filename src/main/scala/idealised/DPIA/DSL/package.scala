@@ -44,7 +44,7 @@ package object DSL {
     }
 
     def `@d`(index: Nat):DepIdx = e.t match {
-      case ExpType(DepArrayType(n, i, dt)) => DepIdx(n, i, dt, index, e)
+      case ExpType(depArray:DepArrayType) => DepIdx(depArray.size, depArray.elemFType, index, e)
       case x => error(x.toString, "exp[n.(i:Nat) -> dt]")
     }
   }
@@ -71,7 +71,7 @@ package object DSL {
     }
 
     def `@d`(index: Nat):DepIdxAcc = a.t match {
-      case AccType(DepArrayType(n, i, dt)) => DepIdxAcc(n, i, dt, index, a)
+      case AccType(depAT:DepArrayType) => DepIdxAcc(depAT.size, depAT.elemFType, index, a)
       case x => error(x.toString, "acc[n.(i:Nat) -> dt]")
     }
   }

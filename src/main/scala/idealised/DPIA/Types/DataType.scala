@@ -1,6 +1,6 @@
 package idealised.DPIA.Types
 
-import idealised.DPIA.{Nat, freshName}
+import idealised.DPIA.{Nat, NatDataTypeFunction, freshName}
 import idealised.SurfaceLanguage
 import idealised.SurfaceLanguage.NatIdentifier
 import lift.arithmetic.{ArithExpr, BigSum, NamedVar, RangeAdd}
@@ -33,12 +33,15 @@ final case class ArrayType(size: Nat, elemType: DataType) extends ComposedType {
   override def toString: String = s"$size.$elemType"
 }
 
-final case class DepArrayType(size:Nat, i: NatIdentifier, elemType: DataType) extends ComposedType {
-  override def toString: String = s"$size.($i -> $elemType)"
+final case class DepArrayType private (size:Nat, elemFType: NatDataTypeFunction) extends ComposedType {
+  private val correctRange = RangeAdd(0, size, 1)
+  assert(elemFType.x.range == correctRange, s"Inconsistent range for element type function in $this: $correctRange expected but ${elemFType.x.range} found ")
+
+  override def toString: String = s"$size.$elemFType"
 
   override def equals(that: Any): Boolean = that match {
-    case DepArrayType(size_, i_, elemType_) =>
-      val eq = size == size_ && elemType == DataType.substitute(i, `for`=i_, elemType_)
+    case DepArrayType(size_, elemFType_) =>
+      val eq = size == size_ && elemFType == elemFType_
       eq
     case _ => false
   }
@@ -46,8 +49,7 @@ final case class DepArrayType(size:Nat, i: NatIdentifier, elemType: DataType) ex
 
 object DepArrayType {
   def apply(size: Nat, f: NatIdentifier => DataType): DepArrayType = {
-    val newName = NamedVar(freshName(), RangeAdd(0, size, 1))
-    DepArrayType(size, newName, f(newName))
+    DepArrayType(size, NatDataTypeFunction(size, f))
   }
 }
 
@@ -110,7 +112,10 @@ object DataType {
           substitute(ae, `for`, a.elemType))
       case a: DepArrayType =>
         val subMap = Map((`for`,ae))
-        DepArrayType(ArithExpr.substitute(a.size, subMap), ArithExpr.substitute(a.i, subMap).asInstanceOf[NatIdentifier], substitute(ae, `for`, `in`=a.elemType))
+        val newSize = ArithExpr.substitute(a.size, subMap)
+        val newBody = substitute(ae, `for`, a.elemFType.body)
+        DepArrayType(newSize, a.elemFType.copy(body = newBody))
+
       case r: RecordType =>
         RecordType(substitute(ae, `for`, r.fst), substitute(ae, `for`, r.snd))
     }).asInstanceOf[T]
@@ -126,7 +131,7 @@ object DataType {
       case ct: SurfaceLanguage.Types.ComposedType => ct match {
         case at: SurfaceLanguage.Types.ArrayType => ArrayType(at.size, DataType(at.elemType))
         case dat:SurfaceLanguage.Types.DepArrayType =>
-          DepArrayType(dat.size, dat.elemType.n, DataType(dat.elemType.t))
+          DepArrayType(dat.size, x => DataType.substitute(x, `for`= dat.elemType.n, in=DataType(dat.elemType.t)))
         case tt: SurfaceLanguage.Types.TupleType =>
           assert(tt.elemTypes.size == 2)
           //noinspection ZeroIndexToHead
@@ -136,22 +141,11 @@ object DataType {
     }
   }
 
-  def getLength(dt: DataType, tupleAccess: List[Nat]): Nat = dt match {
-    case _: BasicType => 1
-    case r: RecordType =>
-      val t = tupleAccess.head
-      val elemT = if (t == (1: Nat)) { r.fst } else if (t == (2: Nat)) { r.snd } else { throw new Exception("This should not happen") }
-      getLength(elemT, tupleAccess.tail)
-    case a: ArrayType => getLength(a.elemType, tupleAccess) * a.size
-    case a: DepArrayType => BigSum(from = 0, upTo = a.size - 1, `for` = a.i, `in` = getLength(a.elemType, tupleAccess))
-    case _: DataTypeIdentifier => throw new Exception("This should not happen")
-  }
-
-  def getLength(dt: DataType): Nat = dt match {
+  def getTotalNumberOfElements(dt: DataType): Nat = dt match {
     case _: BasicType => 1
     case _: RecordType => 1
-    case a: ArrayType => getLength(a.elemType) * a.size
-    case a: DepArrayType => BigSum(from = 0, upTo = a.size - 1, `for` = a.i, `in` = getLength(a.elemType))
+    case a: ArrayType => getTotalNumberOfElements(a.elemType) * a.size
+    case a: DepArrayType => BigSum(from = 0, upTo = a.size - 1, `for` = a.elemFType.x, `in` = getTotalNumberOfElements(a.elemFType.body))
     case _: DataTypeIdentifier => throw new Exception("This should not happen")
   }
 
@@ -160,13 +154,13 @@ object DataType {
     case _: RecordType => 1 // TODO: is this correct?
     case VectorType(size, _) => size
     case ArrayType(size, _) => size
-    case DepArrayType(size, _, _) => size
+    case DepArrayType(size, _) => size
     case _: DataTypeIdentifier => throw new Exception("This should not happen")
   }
 
   def getSizes(dt: DataType): Seq[Nat] = dt match {
     case ArrayType(size, elemType) => Seq(size) ++ getSizes(elemType)
-    case DepArrayType(size, _, elemType) => Seq(size) ++ getSizes(elemType) // TODO: is this correct?
+    case DepArrayType(size, NatDataTypeFunction(_ , elemType)) => Seq(size) ++ getSizes(elemType) // TODO: is this correct?
     case _ => Seq(getSize(dt))
   }
 
@@ -175,7 +169,7 @@ object DataType {
     case _: RecordType => dt
     case _: DataTypeIdentifier => dt
     case ArrayType(_, elemType) => getBaseDataType(elemType)
-    case DepArrayType(_, _, elemType) => getBaseDataType(elemType)
+    case DepArrayType(_, NatDataTypeFunction(_, elemType)) => getBaseDataType(elemType)
   }
 
   implicit class RecordTypeConstructor(dt1: DataType) {

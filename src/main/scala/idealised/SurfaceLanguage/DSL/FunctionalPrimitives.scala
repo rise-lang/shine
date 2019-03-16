@@ -1,10 +1,11 @@
 package idealised.SurfaceLanguage.DSL
 
+import idealised.DPIA.NatNatTypeFunction
 import idealised.SurfaceLanguage.Primitives._
 import idealised.SurfaceLanguage.Semantics._
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage.{Expr, _}
-import lift.arithmetic.NamedVar
+import lift.arithmetic.{Cst, InclusiveIndexVar, NamedVar}
 
 import scala.language.implicitConversions
 
@@ -32,6 +33,17 @@ object depMapSeq {
 
   def apply(f: Expr[DataType -> DataType], x: DataExpr): DepMapSeq = DepMapSeq(nFun(_ => f), x, None)
 }
+
+object depMapSeqUnroll {
+
+  def withIndex(f: Expr[`(nat)->`[DataType -> DataType]]): Expr[DataType -> DataType] = fun(x => withIndex(f,x))
+  def withIndex(f: Expr[`(nat)->`[DataType -> DataType]], x:DataExpr): DepMapSeqUnroll= DepMapSeqUnroll(f, x, None)
+
+  def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] = fun(x => depMapSeqUnroll(f, x))
+
+  def apply(f: Expr[DataType -> DataType], x: DataExpr): DepMapSeqUnroll = DepMapSeqUnroll(nFun(_ => f), x, None)
+}
+
 
 object mapSeq {
   def apply(f: Expr[DataType -> DataType]): Expr[DataType -> DataType] = fun(x => mapSeq(f, x))
@@ -68,11 +80,11 @@ object join {
 }
 
 object partition {
+
   def apply(m: Nat, f:NatIdentifier => Nat): Expr[DataType -> DataType] = fun(array => partition(m, f, array))
 
   def apply(m:Nat, f:NatIdentifier => Nat, array: DataExpr): Partition = {
-    val ident = NamedVar("p")
-    Partition(m, ident, f(ident), array, None)
+    Partition(m, NatNatTypeFunction(m, f), array, None)
   }
 }
 
@@ -126,6 +138,20 @@ object reduceSeq {
             init: DataExpr,
             array: DataExpr): ReduceSeq =
     ReduceSeq(f, init, array, None)
+}
+
+object reduceSeqUnroll {
+  def apply(f: Expr[DataType -> (DataType -> DataType)]): Expr[DataType -> (DataType -> DataType)] =
+    fun((init, array) => reduceSeqUnroll(f, init, array))
+
+  def apply(f: Expr[DataType -> (DataType -> DataType)],
+            init: DataExpr): Expr[DataType -> DataType] =
+    fun(array => reduceSeqUnroll(f, init, array))
+
+  def apply(f: Expr[DataType -> (DataType -> DataType)],
+            init: DataExpr,
+            array: DataExpr): ReduceSeqUnroll =
+    ReduceSeqUnroll(f, init, array, None)
 }
 
 object scanSeq {

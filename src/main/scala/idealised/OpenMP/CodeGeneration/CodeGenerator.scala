@@ -38,7 +38,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
     phrase match {
       case ParFor(n, dt, a, Lambda(i, Lambda(o, p))) => OpenMPCodeGen.codeGenParFor(n, dt, a, i, o, p, env)
       case ForVec(n, dt, a, Lambda(i, Lambda(o, p))) => OpenMPCodeGen.codeGenParForVec(n, dt, a, i, o, p, env)
-      case ParForNat(n, _, _, a, NatDependentLambda(i, Lambda(o, p))) =>
+      case ParForNat(n, _, a, NatDependentLambda(i, Lambda(o, p))) =>
         OpenMPCodeGen.codeGenParForNat(n, a, i, o, p, env)
       case _ => super.cmd(phrase, env)
     }

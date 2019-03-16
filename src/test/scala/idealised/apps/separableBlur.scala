@@ -5,7 +5,7 @@ import idealised.SurfaceLanguage._
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage.Semantics._
-import idealised.util.SyntaxChecker
+import idealised.util.{Execute, SyntaxChecker}
 
 class separableBlur extends idealised.util.Tests {
   // Separable Convolution:
@@ -19,27 +19,26 @@ class separableBlur extends idealised.util.Tests {
   val dot = fun(a => fun(b => zip(a, b) :>> map(mul2) :>> reduceSeq(add, 0.0f)))
 
   // TODO: pad
-  // TODO: loop unrolling ? OpenCLGenerator::generateForLoopUnrolled
-  // TODO: register rotation (!= blocking)
-  // Larisa's MapSeqSlide, tiling25Dfix branch, OpenCLGenerator:generateMapSeqSlideLoop, TestMapSeqSlide::reduceSlide2DTest9PointWithWeights
-  // TODO: separable rewrite
-  // TODO: vectorisation
+  // TODO: registers/loop unrolling, vectorisation
+  // TODO: rewriting
 
   val weights2d = LiteralExpr(ArrayData(
     Array(1, 2, 1, 2, 4, 2, 1, 2, 1).map(f => FloatData(f / 16.0f))))
   val weights1d = LiteralExpr(ArrayData(Array(1, 2, 1).map(f => FloatData(f / 4.0f))))
 
-  val blur = {
-    val slide2d = map(slide(3, 1)) >>> slide(3, 1) >>> map(transpose())
-    val map2d = mapSeq(mapSeq(fun(nbh => dot(weights2d)(join(nbh)))))
+  val slide2d = map(slide(3, 1)) >>> slide(3, 1) >>> map(transpose())
+  def mapSeq2d(f: Expr[DataType -> DataType]) = mapSeq(mapSeq(f))
 
+  val blur =
     nFun(h => nFun(w => fun(ArrayType(h, ArrayType(w, float)))(input =>
-      input :>> /* pad2d >>> */ slide2d :>> map2d
+      input :>> /* pad2d >>> */ slide2d :>>
+        mapSeq2d(fun(nbh => dot(weights2d)(join(nbh))))
     )))
-  }
 
-  println("----- BLUR -----")
-  generate(blur)
+  val factorised_blur =
+    nFun(h => nFun(w => fun(ArrayType(h, ArrayType(w, float)))(input =>
+      input :>> slide2d :>> mapSeq2d(mapSeq(dot(weights1d)) >>> dot(weights1d))
+    )))
 
   val separated_blur = {
     val horizontal = mapSeq(slide(3, 1) >>> mapSeq(dot(weights1d)))
@@ -49,45 +48,76 @@ class separableBlur extends idealised.util.Tests {
     )))
   }
 
-  println("----- SEPARATED BLUR -----")
-  generate(separated_blur)
-  println("----- SEPARATED BLUR, FUSED -----")
-  generate({
-    nFun(h => nFun(w => fun(ArrayType(h, ArrayType(w, float)))(input =>
-      input :>> slide(3, 1) :>> mapSeq(
-        transpose() >>> slide(3, 1) >>> mapSeq(mapSeq(dot(weights1d)) >>> dot(weights1d))
-      )
-    )))
-  })
-  println("----- SEPARATED BLUR, REGISTER ROTATION -----")
-  generate({
+  val regrot_blur =
     nFun(h => nFun(w => fun(ArrayType(h, ArrayType(w, float)))(input =>
       input :>> slide(3, 1) :>> mapSeq(
         transpose() >>> map(dot(weights1d)) >>> slideSeq(3, 1) >>> map(dot(weights1d))
       )
     )))
-  })
 
-  // need to detect overlap and reuse opportunity
-  /*
-  map(dot) |> slide(3, 1) |> map(dot)
-  -> slide(3, 1) |> map(map(dot)) |> map(dot)
-  -> slide(3, 1) |> map(map(dot) |> dot)
-  -> mapSeqSlide(3, 1, mapSeq(dot) |> dot) // rotating 9 unreduced values
-  -> mapSeq(dot) |> mapSeqSlide(3, 1, dot) // two passes
-  -> map(dot) |> mapSeqSlide(3, 1, dot) // not valid
-
-  -> mapSeqSlide(3, 1, dot, dot) // two functions, looks unflexible and hacky
-
-  -> slideSeq(3, 1, dot) |> map(dot) // more flexible? need map to fold left
-  -> mapInput(dot) |> slideSeq(3, 1) |> mapOutput(dot) // more flexible?
-  */
-
-  def generate[T <: Type](e: Expr[T]) = {
+  def program[T <: Type](name: String, e: Expr[T]): C.Program = {
     val phrase = TypeInference(e, collection.Map()).convertToPhrase
-    val program = OpenMP.ProgramGenerator.makeCode(phrase)
+    val program = C.ProgramGenerator.makeCode(phrase, name)
     SyntaxChecker(program.code)
     println(program.code)
+    program
   }
 
+  lazy val ref_prog = program("blur_ref", blur)
+  test("blur compiles to C code") {
+    ref_prog
+  }
+
+  def check_ref[T <: Type](e: Expr[T]) = {
+    val prog = program("blur", e)
+    val testCode =
+      s"""
+#include <stdio.h>
+
+${ref_prog.code}
+
+${prog.code}
+
+int main(int argc, char** argv) {
+  const int H = 20;
+  const int W = 80;
+
+  float input[H * W];
+  for (int y = 0; y < H; y++) {
+    for (int x = 0; x < W; x++) {
+      input[y * W + x] = 0.3f * y + 0.6f * x;
+    }
+  }
+
+  float reference[H * W];
+  ${ref_prog.function.name}(reference, H, W, input);
+
+  float output[H * W];
+  ${prog.function.name}(output, H, W, input);
+
+  for (int i = 0; i < (H * W); i++) {
+    float delta = reference[i] - output[i];
+    if (delta < -0.001 && 0.001 < delta) {
+      fprintf(stderr, "difference with reference is too big: %f\\n", delta);
+      return 1;
+    }
+  }
+
+  return 0;
+}
+"""
+    Execute(testCode)
+  }
+
+  test("compile and compare factorised blur to the reference") {
+    check_ref(factorised_blur)
+  }
+
+  test("compile and compare separated blur to the reference") {
+    check_ref(separated_blur)
+  }
+
+  test("compile and compare register rotation blur to the reference") {
+    check_ref(regrot_blur)
+  }
 }

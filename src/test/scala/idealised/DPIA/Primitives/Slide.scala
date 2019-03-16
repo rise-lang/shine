@@ -6,6 +6,8 @@ import idealised.SurfaceLanguage.Types._
 import idealised.util.SyntaxChecker
 import lift.arithmetic._
 
+import scala.util.Random
+
 class Slide extends idealised.util.Tests {
 
   test("Simple slide example should generate syntactic valid C code with two for loops") {
@@ -49,4 +51,31 @@ class Slide extends idealised.util.Tests {
     "for".r.findAllIn(code).length shouldBe 3
   }
 
+  test("Two dimensional slide test") {
+    import idealised.OpenCL.{ScalaFunction, `(`, `)=>`, _}
+    opencl.executor.Executor.loadAndInit()
+
+    val slideSize = 3
+    val slideStep = 1
+
+    val f = nFun(n => nFun(m => fun(ArrayType(n, ArrayType(m, float)))(xs => xs  :>> slide2D(slideSize, slideStep) :>> mapSeq(fun(x => x)))))
+
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(1,1)(TypeInference(f, Map()).toPhrase)
+    val kernelF = kernel.as[ScalaFunction`(` Int `,` Int `,` Array[Array[Float]]`)=>`Array[Float]]
+
+    val random = new Random()
+    val actualN = 9
+    val actualM = 6
+    val input = Array.fill(actualN)(Array.fill(actualM)(random.nextFloat()))
+
+    val (kernelOutput, _) = kernelF(actualN `,` actualM `,` input)
+
+    val scalaOutput = input.map(_.sliding(slideSize, slideStep).toArray).sliding(slideSize, slideStep).toArray.map(_.transpose).flatten.flatten.flatten
+
+
+    println(kernel.code)
+    opencl.executor.Executor.shutdown()
+
+    assert(kernelOutput sameElements scalaOutput)
+  }
 }
