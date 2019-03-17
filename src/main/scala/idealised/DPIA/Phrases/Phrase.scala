@@ -113,44 +113,19 @@ object Phrase {
 
 
   object Internal {
-    def NatFromNatExpr(p: Phrase[ExpType]): Nat = {
+    def NatFromIndexExpr(p: Phrase[ExpType]): Nat = {
       p.t match {
         case ExpType(IndexType(n)) =>
           p match {
             case i:Identifier[ExpType] => NamedVar(i.name, RangeAdd(0, n, 1))
-            case Apply(fun, arg) => NatFromNatExpr(liftFunction(fun)(arg))
-            case BinOp(op, lhs, rhs) => binOpToNat(op, NatFromNatExpr(lhs), NatFromNatExpr(rhs))
+            case Apply(fun, arg) => NatFromIndexExpr(liftFunction(fun)(arg))
+            case BinOp(op, lhs, rhs) => binOpToNat(op, NatFromIndexExpr(lhs), NatFromIndexExpr(rhs))
             case DPIA.Phrases.IfThenElse(_, _, _) => ???
             case Literal(lit) => lit match {
               case i: IndexData => i.n
               case _ => throw new Exception("This should never happen")
             }
             case Natural(_) => throw new Exception("This should never happen")
-            case NatDependentApply(fun, arg) => NatFromNatExpr(liftNatDependentFunction(fun)(arg))
-            case Proj1(pair) => NatFromNatExpr(liftPair(pair)._1)
-            case Proj2(pair) => NatFromNatExpr(liftPair(pair)._2)
-            case TypeDependentApply(fun, arg) => NatFromNatExpr(liftTypeDependentFunction(fun)(arg))
-            case UnaryOp(op, e) => unOpToNat(op, NatFromNatExpr(e))
-            case prim: ExpPrimitive => prim match {
-              //TODO can we use our knowledge of n somehow?
-              case AsIndex(n, e) => NatFromIndexExpr(e)
-              case _ => ???
-            }
-          }
-        case _ => throw new Exception("This should never happen")
-      }
-    }
-
-    def NatFromIndexExpr(p: Phrase[ExpType]): Nat = {
-      p.t match {
-        case ExpType(NatType) =>
-          p match {
-            case Natural(n) => n
-            case i: Identifier[ExpType] => NamedVar(i.name, StartFromRange(0))
-            case Apply(fun, arg) => NatFromIndexExpr(liftFunction(fun)(arg))
-            case BinOp(op, lhs, rhs) => binOpToNat(op, NatFromIndexExpr(lhs), NatFromIndexExpr(rhs))
-            case DPIA.Phrases.IfThenElse(_, _, _) => ???
-            case Literal(_) => throw new Exception("This should never happen")
             case NatDependentApply(fun, arg) => NatFromIndexExpr(liftNatDependentFunction(fun)(arg))
             case Proj1(pair) => NatFromIndexExpr(liftPair(pair)._1)
             case Proj2(pair) => NatFromIndexExpr(liftPair(pair)._2)
@@ -158,7 +133,32 @@ object Phrase {
             case UnaryOp(op, e) => unOpToNat(op, NatFromIndexExpr(e))
             case prim: ExpPrimitive => prim match {
               //TODO can we use our knowledge of n somehow?
-              case AsNat(n, e) => NatFromNatExpr(e)
+              case AsIndex(n, e) => NatFromNatExpr(e)
+              case _ => ???
+            }
+          }
+        case _ => throw new Exception("This should never happen")
+      }
+    }
+
+    def NatFromNatExpr(p: Phrase[ExpType]): Nat = {
+      p.t match {
+        case ExpType(NatType) =>
+          p match {
+            case Natural(n) => n
+            case i: Identifier[ExpType] => NamedVar(i.name, StartFromRange(0))
+            case Apply(fun, arg) => NatFromNatExpr(liftFunction(fun)(arg))
+            case BinOp(op, lhs, rhs) => binOpToNat(op, NatFromNatExpr(lhs), NatFromNatExpr(rhs))
+            case DPIA.Phrases.IfThenElse(_, _, _) => ???
+            case Literal(_) => throw new Exception("This should never happen")
+            case NatDependentApply(fun, arg) => NatFromNatExpr(liftNatDependentFunction(fun)(arg))
+            case Proj1(pair) => NatFromNatExpr(liftPair(pair)._1)
+            case Proj2(pair) => NatFromNatExpr(liftPair(pair)._2)
+            case TypeDependentApply(fun, arg) => NatFromNatExpr(liftTypeDependentFunction(fun)(arg))
+            case UnaryOp(op, e) => unOpToNat(op, NatFromNatExpr(e))
+            case prim: ExpPrimitive => prim match {
+              //TODO can we use our knowledge of n somehow?
+              case AsNat(n, e) => NatFromIndexExpr(e)
               case _ => ???
             }
           }

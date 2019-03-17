@@ -133,7 +133,7 @@ package object DSL {
   }
 
   def fmapNatExpr(natExpr: Phrase[ExpType], f: Nat => Nat): Phrase[ExpType] = {
-    Natural(f(Phrase.Internal.NatFromNatExpr(natExpr)))
+    Natural(f(Phrase.Internal.NatFromIndexExpr(natExpr)))
   }
 
   // this is safe as long as `f' returns a Nat value of less than `n'
