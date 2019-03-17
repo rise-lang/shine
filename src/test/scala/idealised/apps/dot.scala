@@ -21,7 +21,7 @@ class dot extends idealised.util.Tests {
   test("Simple dot product type inference works") {
     val typed = TypeInference(simpleDotProduct, Map())
 
-    val N = typed.t.get.n
+    val N = typed.t.get.asInstanceOf[NatDependentFunctionType[_ <: Type]].n
     assertResult(NatDependentFunctionType(N, FunctionType(xsT(N), FunctionType(ysT(N), float)))) {
       typed.t.get
     }
@@ -30,7 +30,7 @@ class dot extends idealised.util.Tests {
   test("Simple dot product translation to phrase works and preserves types") {
     import idealised.DPIA.Types.float
     import idealised.DPIA._
-    val phrase = TypeInference(simpleDotProduct, Map()).convertToPhrase
+    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(simpleDotProduct, Map()))
 
     val N = phrase.t.asInstanceOf[`(nat)->`[ExpType -> ExpType]].n
     val dt = float
@@ -41,7 +41,7 @@ class dot extends idealised.util.Tests {
 
   // C
   test("Simple dot product compiles to syntactically correct C") {
-    val p = idealised.C.ProgramGenerator.makeCode(TypeInference(simpleDotProduct, Map()).toPhrase)
+    val p = idealised.C.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(simpleDotProduct, Map())))
     println(p.code)
     SyntaxChecker(p.code)
   }
@@ -64,7 +64,7 @@ class dot extends idealised.util.Tests {
         ) :>> join :>> asScalar
     )))
 
-    val phrase = TypeInference(dotCPUVector1, Map()).toPhrase
+    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(dotCPUVector1, Map()))
     val p = idealised.OpenMP.ProgramGenerator.makeCode(phrase)
     println(p.code)
     SyntaxChecker(p.code)
@@ -88,7 +88,7 @@ class dot extends idealised.util.Tests {
           ) :>> join :>> asScalar
       )))
 
-    val phrase = TypeInference(intelDerivedNoWarpDot1, Map()).toPhrase
+    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(intelDerivedNoWarpDot1, Map()))
     val p = idealised.OpenMP.ProgramGenerator.makeCode(phrase)
     println(p.code)
     SyntaxChecker(p.code)
@@ -108,7 +108,7 @@ class dot extends idealised.util.Tests {
         ) :>> join
     )))
 
-    val phrase = TypeInference(dotCPU1, Map()).toPhrase
+    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(dotCPU1, Map()))
     val p = idealised.OpenMP.ProgramGenerator.makeCode(phrase)
     println(p.code)
     SyntaxChecker(p.code)
@@ -128,7 +128,7 @@ class dot extends idealised.util.Tests {
         ) :>> join
     ))
 
-    val phrase = TypeInference(dotCPU2, Map()).toPhrase
+    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(dotCPU2, Map()))
     val p = idealised.OpenMP.ProgramGenerator.makeCode(phrase)
     println(p.code)
     SyntaxChecker(p.code)

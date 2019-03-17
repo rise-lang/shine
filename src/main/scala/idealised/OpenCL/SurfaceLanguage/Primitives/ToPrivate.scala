@@ -1,11 +1,9 @@
 package idealised.OpenCL.SurfaceLanguage.Primitives
 
-import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.SurfaceLanguage.Expr
 import idealised.SurfaceLanguage.Types._
-import idealised.SurfaceLanguage._
 import idealised._
 
-final case class ToPrivate(f: Expr[DataType -> DataType], input: DataExpr,
+final case class ToPrivate(override val f: Expr, override val input: Expr,
                          override val t: Option[DataType] = None)
-  extends To(f, input, OpenCL.PrivateMemory, ToPrivate, OpenCL.FunctionalPrimitives.ToPrivate)
+  extends To(f, input, OpenCL.PrivateMemory, ToPrivate)

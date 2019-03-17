@@ -1,3 +1,4 @@
+import idealised.DPIA
 import idealised.OpenCL._
 import idealised.OpenCL.KernelGenerator
 import idealised.OpenCL.SurfaceLanguage.DSL.{depMapGlobal, depMapWorkgroup}
@@ -34,7 +35,7 @@ object dmapExample extends App{
 
   val addOneWorkgroup = fun(xsT)(array => depMapWorkgroup(fun(x => mapSeq(fun(y => y + 1), x) ), array))
 
-  val triangleVectorMultSeq: Expr[DataType -> (DataType -> DataType)] =
+  val triangleVectorMultSeq: Expr =
     fun(DepArrayType(8, i => ArrayType(i + 1, int)))(triangle =>
       fun(ArrayType(8, int))(vector =>
         depMapSeq(fun(row => zip(row, take(Macros.GetLength(row), vector))
@@ -43,7 +44,7 @@ object dmapExample extends App{
       )
     )
 
-  val triangleVectorMultPar: Expr[DataType -> (DataType -> DataType)] =
+  val triangleVectorMultPar: Expr =
     fun(DepArrayType(8, i => ArrayType(i + 1, int)))(triangle =>
       fun(ArrayType(8, int))(vector =>
         depMapPar(fun(row => zip(row, take(Macros.GetLength(row), vector))
@@ -60,16 +61,16 @@ object dmapExample extends App{
 
   printKernel(fInUse)
 
-  def printKernel[T <: Type](expr: Expr[T]) {
-    //def generate(e:Expr[T]) = idealised.OpenMP.ProgramGenerator.makeCode(TypeInference(e, Map()).toPhrase)
-    def generate(e:Expr[T]) =
-      KernelGenerator.makeCode(localSize = 8, globalSize = 8)(TypeInference(e, Map()).toPhrase)
+  def printKernel(expr: Expr) {
+    //def generate(e:Expr) = idealised.OpenMP.ProgramGenerator.makeCode(TypeInference(e, Map()).toPhrase)
+    def generate(e:Expr) =
+      KernelGenerator.makeCode(localSize = 8, globalSize = 8)(DPIA.FromSurfaceLanguage(TypeInference(e, Map())))
     println(generate(expr).code)
   }
 
   val multSumAcc = fun(x => fun(y => (x._1 * x._2) + y))
 
-  def triangleVectorMultGlobalFused(N:Nat): Expr[DataType -> (DataType -> DataType)] =
+  def triangleVectorMultGlobalFused(N:Nat): Expr =
     fun(DepArrayType(N, i => ArrayType(i + 1, float)))(triangle =>
       fun(ArrayType(N, float))(vector =>
         depMapGlobal(fun(row => zip(row, take(Macros.GetLength(row), vector)) :>> reduceSeq(multSumAcc, 0.0f)
@@ -82,7 +83,7 @@ object dmapExample extends App{
   Executor.loadAndInit()
   import idealised.OpenCL._
   val kernel = idealised.OpenCL.KernelGenerator
-    .makeCode(localSize = 1, globalSize = 1)(TypeInference(triangleVectorMultGlobalFused(actualN), Map()).toPhrase)
+    .makeCode(localSize = 1, globalSize = 1)(DPIA.FromSurfaceLanguage(TypeInference(triangleVectorMultGlobalFused(actualN), Map())))
   println(kernel.code)
 
   val inputVector = Array.tabulate(actualN)(id => id + 1.0f)

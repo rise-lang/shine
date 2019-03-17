@@ -1,20 +1,10 @@
 package idealised.SurfaceLanguage.Primitives
 
-import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage.{PrimitiveExpr, _}
-import idealised.DPIA
 
-final case class AsIndex(n: Nat, e: DataExpr, override val t: Option[DataType] = None)
-  extends PrimitiveExpr
-{
-  override def convertToPhrase: DPIA.FunctionalPrimitives.AsIndex = {
-    e.t match {
-      case Some(NatType) =>
-        DPIA.FunctionalPrimitives.AsIndex(n, e.toPhrase[DPIA.Types.ExpType])
-      case _ => throw new Exception("The expression given to UnsafeAsIndex must be of type exp[nat].")
-    }
-  }
+final case class AsIndex(n: Nat, e: Expr, override val t: Option[DataType] = None)
+  extends PrimitiveExpr {
 
   override def inferType(subs: TypeInference.SubstitutionMap): AsIndex = {
     import TypeInference._
@@ -27,7 +17,7 @@ final case class AsIndex(n: Nat, e: DataExpr, override val t: Option[DataType] =
     )
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): DataExpr = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Expr = {
     AsIndex(fun(n), VisitAndRebuild(e, fun), t.map(fun(_)))
   }
 }

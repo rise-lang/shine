@@ -2,19 +2,18 @@ package idealised.OpenCL
 
 import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.DSL._
-import idealised.SurfaceLanguage._
 import idealised.SurfaceLanguage.Semantics.FloatData
 import idealised.SurfaceLanguage.Types._
+import idealised.SurfaceLanguage._
 import idealised.util.SyntaxChecker
-import lift.arithmetic.{?, SizeVar}
+import lift.arithmetic.SizeVar
 
-import scala.language.postfixOps
-import scala.language.reflectiveCalls
+import scala.language.{postfixOps, reflectiveCalls}
 
 class MemAccess extends idealised.util.TestsWithExecutor {
-  def printSyntaxCheckAnd[T <: Type](exec: KernelNoSizes => Array[Float], prog: Expr[T]): Array[Float] = {
+  def printSyntaxCheckAnd(exec: KernelNoSizes => Array[Float], prog: Expr): Array[Float] = {
      val kernel = idealised.OpenCL.KernelGenerator
-      .makeCode(TypeInference(prog, Map()).toPhrase)
+      .makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(prog, Map())))
     println(kernel.code)
     SyntaxChecker.checkOpenCL(kernel.code)
 

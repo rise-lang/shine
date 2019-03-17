@@ -4,8 +4,8 @@ import idealised.DPIA.Types.TypeCheck
 import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.OpenCL._
 import idealised.SurfaceLanguage.DSL._
+import idealised.SurfaceLanguage.Expr
 import idealised.SurfaceLanguage.Types._
-import idealised.SurfaceLanguage.{Expr, _}
 import idealised.utils.{Time, TimeSpan}
 import lift.arithmetic._
 
@@ -25,9 +25,9 @@ object scal extends App {
   val inputT = ArrayType(N, float)
 
   def runOpenCLKernel(name: String,
-                      untypedLambda: Expr[DataType -> (DataType -> DataType)]): Unit = {
+                      untypedLambda: Expr): Unit = {
     println("\n----------------")
-    val lambda = TypeInference(untypedLambda, Map()).convertToPhrase
+    val lambda = idealised.DPIA.FromSurfaceLanguage(TypeInference(untypedLambda, Map()))
     println(name + ":\n" + PrettyPhrasePrinter(lambda))
     TypeCheck(lambda)
 
@@ -68,7 +68,7 @@ object scal extends App {
   ) )
 
   {
-    val lambda = TypeInference(high_level, Map()).convertToPhrase
+    val lambda = idealised.DPIA.FromSurfaceLanguage(TypeInference(high_level, Map()))
     println("high_level:\n" + PrettyPhrasePrinter(lambda))
     TypeCheck(lambda)
   }
@@ -109,7 +109,7 @@ object scal extends App {
       ) o split(4 * 128 * 128) $ input
     ))
 
-    val phrase = TypeInference(scalIntel, Map()).toPhrase
+    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(scalIntel, Map()))
     val program = idealised.OpenMP.ProgramGenerator.makeCode(phrase, "scalIntel")
     println(program.code)
   }
@@ -125,7 +125,7 @@ object scal extends App {
       ) o split(4 * 128 * 128) $ input
     ))
 
-    val phrase = TypeInference(scalIntel2, Map()).toPhrase
+    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(scalIntel2, Map()))
     val program = idealised.OpenMP.ProgramGenerator.makeCode(phrase, "scalIntel2")
     println(program.code)
   }

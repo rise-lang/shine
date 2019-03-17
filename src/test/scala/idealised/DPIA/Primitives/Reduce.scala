@@ -1,9 +1,8 @@
 package idealised.DPIA.Primitives
 
 import idealised.SurfaceLanguage.DSL._
-import idealised.SurfaceLanguage.NatIdentifier
 import idealised.SurfaceLanguage.Types._
-import idealised.util.{Execute, SyntaxChecker}
+import idealised.util.SyntaxChecker
 
 class Reduce extends idealised.util.Tests {
   val add = fun(a => fun(b => a + b))
@@ -13,7 +12,7 @@ class Reduce extends idealised.util.Tests {
       nFun(n =>
         fun(ArrayType(n, float))(a => a :>> reduceSeq(add, 0.0f)))
 
-    val p = idealised.C.ProgramGenerator.makeCode(TypeInference(e, Map()).toPhrase)
+    val p = idealised.C.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(e, Map())))
     val code = p.code
     SyntaxChecker(code)
     println(code)
@@ -28,7 +27,7 @@ class Reduce extends idealised.util.Tests {
           a :>> map(reduceSeq(add, 0.0f)) :>> mapSeq(fun(x => x))
         )))
 
-    val p = idealised.C.ProgramGenerator.makeCode(TypeInference(e, Map()).toPhrase)
+    val p = idealised.C.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(e, Map())))
     val code = p.code
     SyntaxChecker(code)
     println(code)
@@ -41,7 +40,7 @@ class Reduce extends idealised.util.Tests {
         a :>> map(reduceSeq(add, 0.0f)) :>> reduceSeq(add, 0.0f)
       )))
 
-    val p = idealised.C.ProgramGenerator.makeCode(TypeInference(e, Map()).toPhrase)
+    val p = idealised.C.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(e, Map())))
     val code = p.code
     SyntaxChecker(code)
     println(code)

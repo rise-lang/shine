@@ -351,7 +351,7 @@ class CPrinter extends Printer {
           s"${toString(i.t)} : ${toString(i.e)})"
 //      case aeFun:ArithExprFunction => aeFun.name
 //      case bs:BigSum => bs.toString
-      case sp:SteppedCase => toString(sp.intoIfChain())
+      case sp: SteppedCase => toString(sp.intoIfChain())
       case otherwise => throw new Exception(s"Don't know how to print $otherwise")
     }
   }

@@ -1,23 +1,20 @@
 package idealised.DPIA.Primitives
 
-import idealised.OpenCL.`,`
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
 import idealised.util.{Execute, SyntaxChecker}
-import lift.arithmetic.{NamedVar, StartFromRange}
 
 import scala.util.Random
 
 class Transpose extends idealised.util.Tests {
   test("Simple transpose should produce the expected result on a test") {
-    def checkResult[T <: idealised.SurfaceLanguage.Types.Type]
-    (e: idealised.SurfaceLanguage.Expr[T]) =
-    {
-      val p = idealised.C.ProgramGenerator.makeCode(TypeInference(e, Map()).toPhrase)
+    def checkResult(e: idealised.SurfaceLanguage.Expr) = {
+      val p = idealised.C.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(e, Map())))
       SyntaxChecker(p.code)
       println(p.code)
 
-      val testCode = s"""
+      val testCode =
+        s"""
 #include <stdio.h>
 
 ${p.code}
@@ -50,6 +47,7 @@ int main(int argc, char** argv) {
 """
       Execute(testCode)
     }
+
     val gatherExp = nFun(n => nFun(m => fun(ArrayType(n, ArrayType(m, int)))(a =>
       a :>> transpose() :>> mapSeq(mapSeq(fun(x => x)))
     )))
@@ -68,8 +66,8 @@ int main(int argc, char** argv) {
 
     val f = nFun(n => nFun(m => fun(ArrayType(n, ArrayType(m, float)))(xs => xs :>> join :>> split(m))))
 
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(1,1)(TypeInference(f, Map()).toPhrase)
-    val kernelF = kernel.as[ScalaFunction`(`Int `,` Int `,` Array[Array[Float]]`)=>`Array[Float]]
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(1, 1)(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
+    val kernelF = kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Array[Float]] `)=>` Array[Float]]
 
     val random = new Random()
     val actualN = 9
@@ -92,8 +90,8 @@ int main(int argc, char** argv) {
 
     val f = nFun(n => nFun(m => fun(ArrayType(n, ArrayType(m, float)))(xs => xs :>> transpose)))
 
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(1,1)(TypeInference(f, Map()).toPhrase)
-    val kernelF = kernel.as[ScalaFunction`(`Int `,` Int `,` Array[Array[Float]]`)=>`Array[Float]]
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(1, 1)(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
+    val kernelF = kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Array[Float]] `)=>` Array[Float]]
 
     val random = new Random()
     val actualN = 9
@@ -114,10 +112,10 @@ int main(int argc, char** argv) {
     opencl.executor.Executor.loadAndInit()
 
 
-    val f = nFun(n => nFun(m => fun(ArrayType(n, DepArrayType(m, i => ArrayType(i + 1, float))))(xs => xs :>> transpose :>> depMapSeq(fun (x => x)))))
+    val f = nFun(n => nFun(m => fun(ArrayType(n, DepArrayType(m, i => ArrayType(i + 1, float))))(xs => xs :>> transpose :>> depMapSeq(fun(x => x)))))
 
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(1,1)(TypeInference(f, Map()).toPhrase)
-    val kernelF = kernel.as[ScalaFunction`(`Int `,` Int `,` Array[Array[Array[Float]]]`)=>`Array[Float]]
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(1, 1)(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
+    val kernelF = kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Array[Array[Float]]] `)=>` Array[Float]]
 
     val random = new Random()
     val actualN = 9

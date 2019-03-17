@@ -9,7 +9,8 @@ class Generate extends idealised.util.Tests {
   test("Very simple one-dimensional generate generates syntactically correct code in C.") {
     val id = fun(x => x)
     val simpleGenerate = nFun(n => generate(fun(IndexType(n))(i => cast(double, i) + 1.0)) :>> mapSeq(id))
-    val program = idealised.C.ProgramGenerator.makeCode(TypeInference(simpleGenerate, Map()).convertToPhrase)
+    val program = idealised.C.ProgramGenerator.makeCode(
+      idealised.DPIA.FromSurfaceLanguage(TypeInference(simpleGenerate, Map())))
 
     println(program.code)
     SyntaxChecker(program.code)
@@ -20,7 +21,8 @@ class Generate extends idealised.util.Tests {
     val id = fun(x => x)
     val simpleGenerate =
       nFun(n => generate(fun(IndexType(n))(i => indexAsNat(i) + n)) :>> mapSeq(id))
-    val program = idealised.C.ProgramGenerator.makeCode(TypeInference(simpleGenerate, Map()).convertToPhrase)
+    val program = idealised.C.ProgramGenerator.makeCode(
+      idealised.DPIA.FromSurfaceLanguage(TypeInference(simpleGenerate, Map())))
 
     println(program.code)
     SyntaxChecker(program.code)
@@ -36,7 +38,7 @@ class Generate extends idealised.util.Tests {
       )) :>>
         mapSeq(add)))
 
-    val phrase = TypeInference(simpleMap, Map()).convertToPhrase
+    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(simpleMap, Map()))
     val program = idealised.C.ProgramGenerator.makeCode(phrase)
     println(program.code)
 
@@ -56,7 +58,7 @@ class Generate extends idealised.util.Tests {
         :>> mapSeq(fun(t => zip(t._1, t._2) :>> mapSeq(add)))
     ))
 
-    val phrase = TypeInference(simpleMap, Map()).convertToPhrase
+    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(simpleMap, Map()))
     val program = idealised.C.ProgramGenerator.makeCode(phrase)
     println(program.code)
 
@@ -84,7 +86,7 @@ class Generate extends idealised.util.Tests {
     val generateSth = fun(ArrayType(N, float))(_ =>
       reorderedB :>> mapSeq(mapSeq(mapSeq(id))))
 
-    val phrase = TypeInference(generateSth, Map()).convertToPhrase
+    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(generateSth, Map()))
     val program = idealised.OpenCL.KernelGenerator.makeCode(phrase)
     println(program.code)
     SyntaxChecker.checkOpenCL(program.code)

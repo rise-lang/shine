@@ -7,7 +7,7 @@ import idealised.SurfaceLanguage.Types._
 import idealised.util.SyntaxChecker
 
 class fft extends idealised.util.Tests {
-  def createStockhamIterationLambda(p: Int, LPrevIter: Int, N: Int): Expr[DataType -> DataType] = {
+  def createStockhamIterationLambda(p: Int, LPrevIter: Int, N: Int): Expr = {
     val r = N / (LPrevIter * p)
 
     val cmultandsum = fun(vt => fun(acc => {
@@ -71,14 +71,13 @@ class fft extends idealised.util.Tests {
     val p = 2
 
     val fftiter = createStockhamIterationLambda(p, LPrevIter, N)
-    val phrase = TypeInference(fftiter, Map()).convertToPhrase
+    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(fftiter, Map()))
     val kernel = idealised.OpenMP.ProgramGenerator.makeCode(phrase)
     println(kernel.code)
 
     SyntaxChecker(kernel.code)
   }
 
-  /*
   test("single small FFT iteration computes correct result in OpenMP") {
     val p = 2
     val LPrevIter = 4
@@ -92,6 +91,5 @@ class fft extends idealised.util.Tests {
     output.size shouldBe GOLD_STOCK_ITER_P2_LPREV4_N8.size
     for (i <- 0 until output.size) output(i) should be (GOLD_STOCK_ITER_P2_LPREV4_N8(i) +- 1e-13)
   }
-  */
   */
 }

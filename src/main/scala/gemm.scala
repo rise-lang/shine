@@ -3,7 +3,7 @@ import idealised.DPIA.Phrases.PrettyPhrasePrinter
 import idealised.DPIA.Types.TypeCheck
 import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.OpenCL._
-import idealised.OpenMP
+import idealised.{DPIA, OpenMP}
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Semantics._
 import idealised.SurfaceLanguage.Types._
@@ -67,8 +67,8 @@ object gemm extends App {
   }
 
   def printOpenCLKernel(name: String,
-                        untypedLambda: Expr[DataType -> (DataType -> (DataType -> (DataType -> (DataType -> DataType))))]): Unit = {
-    val lambda = TypeInference(untypedLambda, Map()).convertToPhrase
+                        untypedLambda: Expr): Unit = {
+    val lambda = DPIA.FromSurfaceLanguage(TypeInference(untypedLambda, Map()))
     println(name + ":\n" + PrettyPhrasePrinter(lambda))
     TypeCheck(lambda)
 
@@ -247,7 +247,7 @@ object gemm extends App {
                   )) :>> join()
               )))))
 
-    val phrase = TypeInference(maliGEMM, Map()).toPhrase
+    val phrase = DPIA.FromSurfaceLanguage(TypeInference(maliGEMM, Map()))
     val program = OpenMP.ProgramGenerator.makeCode(phrase)
     println(program.code)
   }
@@ -259,7 +259,7 @@ object gemm extends App {
 //    val v6 = 64
 //    val v7 = 8
 //
-//    def tile(x: Nat, y: Nat): Expr[DataType -> DataType] =
+//    def tile(x: Nat, y: Nat): Expr =
 //      map(map(transpose()) o split(y) o transpose()) o split(x)
 //
 //    val zeros = LiteralExpr(
@@ -340,7 +340,7 @@ object gemm extends App {
 //    val v6 = 64
 //    val v7 = 8
 //
-//    def tile(x: Nat, y: Nat): Expr[DataType -> DataType] =
+//    def tile(x: Nat, y: Nat): Expr =
 //      map(map(transpose()) o split(y) o transpose()) o split(x)
 //
 //    val zeros = LiteralExpr(

@@ -8,7 +8,8 @@ import idealised.util.SyntaxChecker
 class NatExpr extends idealised.util.Tests {
   test("Nat can be used as DataType inside of an expression in C.") {
     val simpleNatUsage = fun(NatType)(n => n + NatExpr(1))
-    val program = idealised.C.ProgramGenerator.makeCode(TypeInference(simpleNatUsage, Map()).convertToPhrase)
+    val program = idealised.C.ProgramGenerator.makeCode(
+      idealised.DPIA.FromSurfaceLanguage(TypeInference(simpleNatUsage, Map())))
 
     println(program.code)
     SyntaxChecker(program.code)
@@ -16,7 +17,8 @@ class NatExpr extends idealised.util.Tests {
 
   test("asNat acceptor translation is working correctly.") {
     val outputNat = fun(IndexType(4))(i => indexAsNat(i))
-    val program = idealised.C.ProgramGenerator.makeCode(TypeInference(outputNat, Map()).convertToPhrase)
+    val program = idealised.C.ProgramGenerator.makeCode(
+      idealised.DPIA.FromSurfaceLanguage(TypeInference(outputNat, Map())))
 
     println(program.code)
     SyntaxChecker(program.code)
@@ -32,7 +34,8 @@ class NatExpr extends idealised.util.Tests {
 
   test("AsNat and plus operation generates syntactically correct code in C.") {
     val combiningIndexAndNat = nFun(n => fun(IndexType(n))(i => indexAsNat(i) + NatExpr(n)))
-    val program = idealised.C.ProgramGenerator.makeCode(TypeInference(combiningIndexAndNat, Map()).convertToPhrase)
+    val program = idealised.C.ProgramGenerator.makeCode(
+      idealised.DPIA.FromSurfaceLanguage(TypeInference(combiningIndexAndNat, Map())))
 
     println(program.code)
     SyntaxChecker(program.code)
@@ -41,7 +44,7 @@ class NatExpr extends idealised.util.Tests {
   test("Nat is implicitly converted to NatExpr in an expression.") {
     val implCastCombinedIdxAndNat = nFun(n => fun(IndexType(n))(i => indexAsNat(i) + n))
     val program = idealised.C.ProgramGenerator.makeCode(
-      TypeInference(implCastCombinedIdxAndNat, Map()).convertToPhrase)
+      idealised.DPIA.FromSurfaceLanguage(TypeInference(implCastCombinedIdxAndNat, Map())))
 
     println(program.code)
     SyntaxChecker(program.code)
@@ -49,7 +52,8 @@ class NatExpr extends idealised.util.Tests {
 
   test("asIndex acceptor translation is working correctly.") {
     val simpleNatToIndexUsage = nFun(n => fun(NatType)(i => asIndex(n, i)))
-    val program = idealised.C.ProgramGenerator.makeCode(TypeInference(simpleNatToIndexUsage, Map()).convertToPhrase)
+    val program = idealised.C.ProgramGenerator.makeCode(
+      idealised.DPIA.FromSurfaceLanguage(TypeInference(simpleNatToIndexUsage, Map())))
 
     println(program.code)
     SyntaxChecker(program.code)

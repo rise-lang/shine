@@ -1,14 +1,14 @@
 package idealised.apps
 
-import idealised.OpenCL.SurfaceLanguage.DSL.{depMapGlobal, depMapWorkgroup, mapLocal, oclReduceSeq, toGlobal}
+import idealised.OpenCL.SurfaceLanguage.DSL._
+import idealised.OpenCL._
 import idealised.OpenMP.SurfaceLanguage.DSL.depMapPar
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
-import idealised.OpenCL._
 import idealised.util.SyntaxChecker
 import idealised.utils.Display
-import lift.arithmetic.{ArithExpr, Cst, SizeVar}
+import lift.arithmetic.{ArithExpr, Cst}
 import opencl.executor.Executor
 
 import scala.language.{implicitConversions, postfixOps}
@@ -21,7 +21,7 @@ class triangleVectorMultNoExecutor extends idealised.util.Tests {
   val multSumAcc = fun(x => fun(y => (x._1 * x._2) + y))
 
 
-  val triangleVectorMultSeq: Expr[DataType -> (DataType -> DataType)] =
+  val triangleVectorMultSeq: Expr =
     fun(DepArrayType(8, i => ArrayType(i + 1, int)))(triangle =>
       fun(ArrayType(8, int))(vector =>
         depMapSeq(fun(row => zip(row, take(Macros.GetLength(row), vector))
@@ -30,7 +30,7 @@ class triangleVectorMultNoExecutor extends idealised.util.Tests {
       )
     )
 
-  val triangleVectorMultPar: Expr[DataType -> (DataType -> DataType)] =
+  val triangleVectorMultPar: Expr =
     fun(DepArrayType(8, i => ArrayType(i + 1, int)))(triangle =>
       fun(ArrayType(8, int))(vector =>
         depMapPar(fun(row => zip(row, take(Macros.GetLength(row), vector))
@@ -39,7 +39,7 @@ class triangleVectorMultNoExecutor extends idealised.util.Tests {
       )
     )
 
-  val triangleVectorMultSeqOpenCL: Expr[DataType -> (DataType -> DataType)] =
+  val triangleVectorMultSeqOpenCL: Expr =
     fun(DepArrayType(8, i => ArrayType(i + 1, int)))(triangle =>
       fun(ArrayType(8, int))(vector =>
         depMapSeq(fun(row => zip(row, take(Macros.GetLength(row), vector))
@@ -48,7 +48,7 @@ class triangleVectorMultNoExecutor extends idealised.util.Tests {
       )
     )
 
-  val triangleVectorMultGlobal: Expr[DataType -> (DataType -> DataType)] =
+  val triangleVectorMultGlobal: Expr =
     fun(DepArrayType(8, i => ArrayType(i + 1, int)))(triangle =>
       fun(ArrayType(8, int))(vector =>
         depMapGlobal(fun(row => zip(row, take(Macros.GetLength(row), vector))
@@ -64,7 +64,7 @@ class triangleVectorMultNoExecutor extends idealised.util.Tests {
     (inputMatrix, inputVector)
   }
 
-  def triangleVectorMultGlobalFused(N:ArithExpr): Expr[DataType -> (DataType -> DataType)] =
+  def triangleVectorMultGlobalFused(N:ArithExpr): Expr =
     fun(DepArrayType(N, i => ArrayType(i + 1, float)))(triangle =>
       fun(ArrayType(N, float))(vector =>
         depMapGlobal(fun(row => zip(row, take(Macros.GetLength(row), vector)) :>> reduceSeq(multSumAcc, 0.0f)
@@ -87,25 +87,25 @@ class triangleVectorMultNoExecutor extends idealised.util.Tests {
   }
 
   test("Basic sequential triangle vector multiplication compiles to syntactically correct C") {
-    val p = idealised.C.ProgramGenerator.makeCode(TypeInference(triangleVectorMultSeq, Map()).toPhrase)
+    val p = idealised.C.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(triangleVectorMultSeq, Map())))
     println(p.code)
     SyntaxChecker(p.code)
   }
 
   test("Basic sequential triangle vector multiplication compiles to syntactically correct OpenMP") {
-    val p = idealised.OpenMP.ProgramGenerator.makeCode(TypeInference(triangleVectorMultSeq, Map()).toPhrase)
+    val p = idealised.OpenMP.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(triangleVectorMultSeq, Map())))
     println(p.code)
     SyntaxChecker(p.code)
   }
 
   test("Basic parallel triangle vector multiplication compiles to syntactically correct OpenMP") {
-    val p = idealised.OpenMP.ProgramGenerator.makeCode(TypeInference(triangleVectorMultPar, Map()).toPhrase)
+    val p = idealised.OpenMP.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(triangleVectorMultPar, Map())))
     println(p.code)
     SyntaxChecker(p.code)
   }
 
   test("Basic sequential triangle vector multiplication compiles to syntactically correct OpenCL") {
-    val p = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(triangleVectorMultSeqOpenCL, Map()).toPhrase)
+    val p = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(triangleVectorMultSeqOpenCL, Map())))
     println(p.code)
     SyntaxChecker.checkOpenCL(p.code)
   }
@@ -128,7 +128,7 @@ class triangleVectorMultNoExecutor extends idealised.util.Tests {
     val actualN = inputSize
     val f = triangleVectorMultGlobalFused(actualN)
 
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(localSize, globalSize)(TypeInference(f, Map()).toPhrase)
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(localSize, globalSize)(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
     //println(kernel.code)
 
     val(inputMatrix, inputVector) = generateInputs(actualN)
@@ -159,7 +159,7 @@ class triangleVectorMultNoExecutor extends idealised.util.Tests {
     import idealised.OpenCL._
     val actualN = inputSize
     val splitN = splitSize
-    val f: Expr[`(nat)->`[DataType -> (DataType -> DataType)]] = {
+    val f: Expr = {
 
       val SPLIT_SIZE = Cst(splitN)
       nFun(N =>
@@ -172,7 +172,7 @@ class triangleVectorMultNoExecutor extends idealised.util.Tests {
       ))
     }
 
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(localSize, globalSize)(TypeInference(f, Map()).toPhrase)
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(localSize, globalSize)(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
 
     val(inputMatrix, inputVector) = generateInputs(actualN)
     val scalaOutput = scalaMatrixVector(inputMatrix, inputVector)

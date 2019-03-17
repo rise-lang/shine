@@ -1,12 +1,12 @@
 package idealised.apps
 
 import benchmarks.core.{CorrectnessCheck, RunOpenCLProgram}
-import idealised.OpenCL.{Kernel, PrivateMemory}
+import idealised.OpenCL.PrivateMemory
 import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.DSL.{fun, _}
-import idealised.SurfaceLanguage.Semantics.{FloatData, SingletonArrayData}
+import idealised.SurfaceLanguage.Expr
+import idealised.SurfaceLanguage.Semantics.FloatData
 import idealised.SurfaceLanguage.Types._
-import idealised.SurfaceLanguage.{->, Expr, LiteralExpr, `(nat)->`}
 import idealised.util.Tests
 import idealised.utils.Display
 import lift.arithmetic._
@@ -19,17 +19,17 @@ class stencils extends Tests {
   val add = fun(x => fun(y => x + y))
 
 
-  private case class StencilResult(inputSize:Int,
-                                     stencilSize:Int,
-                                     localSize:Int,
-                                     globalSize:Int,
-                                     code:String,
-                                     runtimeMs:Double,
-                                     correctness:CorrectnessCheck
-                                    ) extends Display{
+  private case class StencilResult(inputSize: Int,
+                                   stencilSize: Int,
+                                   localSize: Int,
+                                   globalSize: Int,
+                                   code: String,
+                                   runtimeMs: Double,
+                                   correctness: CorrectnessCheck
+                                  ) extends Display {
 
-    def display:String =
-        s"inputSize = $inputSize, " +
+    def display: String =
+      s"inputSize = $inputSize, " +
         s"stencilSize = $stencilSize, " +
         s"localSize = $localSize, " +
         s"globalSize = $globalSize, " +
@@ -41,8 +41,9 @@ class stencils extends Tests {
   private sealed abstract class StencilBaseProgramRun extends RunOpenCLProgram(verbose = false) {
     final type Summary = StencilResult
 
-    def inputSize:Int
-    def stencilSize:Int
+    def inputSize: Int
+
+    def stencilSize: Int
 
     override def makeSummary(localSize: Int, globalSize: Int, code: String, runtimeMs: Double, correctness: CorrectnessCheck): StencilResult = {
       StencilResult(
@@ -61,14 +62,14 @@ class stencils extends Tests {
 
     val inputMinRange = stencilSize //Used for `starts with` simplification
 
-    final val padSize = stencilSize/2
+    final val padSize = stencilSize / 2
     println(stencilSize)
     assert(inputSize > inputMinRange)
     final override type Input = Array[Float]
 
-    def dpiaProgram:Expr[`(nat)->`[DataType -> DataType]]
+    def dpiaProgram: Expr
 
-    final def scalaProgram: Array[Float] => Array[Float] = (xs:Array[Float]) => {
+    final def scalaProgram: Array[Float] => Array[Float] = (xs: Array[Float]) => {
       import idealised.utils.ScalaPatterns.pad
       pad(xs, padSize, 0.0f).sliding(stencilSize, 1).map(nbh => nbh.foldLeft(0.0f)(_ + _))
     }.toArray
@@ -79,9 +80,9 @@ class stencils extends Tests {
 
   }
 
-  private case class BasicStencil1D(inputSize:Int, stencilSize:Int) extends Stencil1DProgramRun {
+  private case class BasicStencil1D(inputSize: Int, stencilSize: Int) extends Stencil1DProgramRun {
 
-    override def dpiaProgram: Expr[`(nat)->`[DataType -> DataType]] = {
+    override def dpiaProgram: Expr = {
       nFun(n => fun(ArrayType(n, float))(input =>
         input :>>
           pad(padSize, padSize, 0.0f) :>>
@@ -91,14 +92,14 @@ class stencils extends Tests {
     }
   }
 
-  private case class PartitionedStencil1D(inputSize:Int, stencilSize:Int) extends Stencil1DProgramRun {
+  private case class PartitionedStencil1D(inputSize: Int, stencilSize: Int) extends Stencil1DProgramRun {
 
-    override def dpiaProgram: Expr[`(nat)->`[DataType -> DataType]] = {
+    override def dpiaProgram: Expr = {
       nFun(n => fun(ArrayType(n, float))(input =>
         input :>>
           pad(padSize, padSize, 0.0f) :>>
           slide(stencilSize, 1) :>>
-          partition(3, m => SteppedCase(m, Seq(padSize,  n - 2*padSize + ((1 + stencilSize) % 2), padSize))) :>>
+          partition(3, m => SteppedCase(m, Seq(padSize, n - 2 * padSize + ((1 + stencilSize) % 2), padSize))) :>>
           depMapSeqUnroll(mapGlobal(fun(nbh => oclReduceSeq(add, 0.0f, PrivateMemory)(nbh)))) :>>
           join
       ))
@@ -106,35 +107,36 @@ class stencils extends Tests {
   }
 
   private sealed trait Stencil2DProgramRun extends StencilBaseProgramRun {
-    def inputSize:Int
-    def stencilSize:Int
+    def inputSize: Int
+
+    def stencilSize: Int
 
     final override type Input = Array[Array[Float]]
 
-    protected val padSize = stencilSize/2
-    def dpiaProgram:Expr[`(nat)->`[DataType -> DataType]]
+    protected val padSize = stencilSize / 2
 
+    def dpiaProgram: Expr
 
     final override protected def makeInput(random: Random): Array[Array[Float]] = Array.fill(inputSize)(Array.fill(inputSize)(random.nextFloat()))
 
     final override protected def runScalaProgram(input: Array[Array[Float]]) = scalaProgram(input).flatten
 
 
-    private def tileStencil(input:Array[Array[Float]]):Float = {
+    private def tileStencil(input: Array[Array[Float]]): Float = {
       input.flatten.reduceOption(_ + _).getOrElse(0.0f)
     }
 
-    final def scalaProgram: Array[Array[Float]] => Array[Array[Float]] = (grid:Array[Array[Float]]) => {
+    final def scalaProgram: Array[Array[Float]] => Array[Array[Float]] = (grid: Array[Array[Float]]) => {
       import idealised.utils.ScalaPatterns._
       slide2D(pad2D(grid, padSize, 0.0f), stencilSize).map(_.map(tileStencil))
     }
 
-    protected def tileStencil:Expr[DataType -> DataType] = {
+    protected def tileStencil: Expr = {
       fun(xs => xs :>> join :>> reduceSeq(add, 0.0f))
     }
   }
 
-  private case class BasicStencil2D(inputSize:Int, stencilSize:Int) extends Stencil2DProgramRun {
+  private case class BasicStencil2D(inputSize: Int, stencilSize: Int) extends Stencil2DProgramRun {
     override def dpiaProgram = {
       nFun(n => fun(ArrayType(n, ArrayType(n, float)))(input =>
         input :>>
@@ -146,15 +148,15 @@ class stencils extends Tests {
     }
   }
 
-  private case class PartitionedStencil2D(inputSize:Int, stencilSize:Int) extends Stencil2DProgramRun {
+  private case class PartitionedStencil2D(inputSize: Int, stencilSize: Int) extends Stencil2DProgramRun {
 
     override def dpiaProgram = {
       nFun(n => fun(ArrayType(n, ArrayType(n, float)))(input =>
         input :>>
           pad2D(n, padSize, padSize, FloatData(0.0f)) :>>
           slide2D(stencilSize, 1) :>>
-            //partition2D(padSize, N - 2*padSize + ((1 + stencilSize) % 2)) :>>
-          partition(3, m => SteppedCase(m, Seq(padSize, n - 2*padSize, padSize))) :>>
+          //partition2D(padSize, N - 2*padSize + ((1 + stencilSize) % 2)) :>>
+          partition(3, m => SteppedCase(m, Seq(padSize, n - 2 * padSize, padSize))) :>>
           depMapSeqUnroll(
             //mapGlobal(0)(depMapSeqUnroll(mapGlobal(1)(join() >>> reduceSeq(add, 0.0f))))
             mapGlobal(1)(mapGlobal(0)(join() >>> oclReduceSeq(add, 0.0f, PrivateMemory)))

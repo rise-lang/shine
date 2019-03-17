@@ -15,7 +15,7 @@ class StructDecl extends idealised.util.Tests {
       xs :>> mapSeq(id)
     )
 
-    val phrase = TypeInference(tupleOut, Map()).convertToPhrase
+    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(tupleOut, Map()))
     val program = idealised.C.ProgramGenerator.makeCode(phrase)
     println(program.code)
     SyntaxChecker(program.code)
@@ -26,7 +26,7 @@ class StructDecl extends idealised.util.Tests {
       xs :>> mapPar(id)
     )
 
-    val phrase = TypeInference(tupleOut, Map()).convertToPhrase
+    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(tupleOut, Map()))
     val program = idealised.OpenMP.ProgramGenerator.makeCode(phrase)
     println(program.code)
     SyntaxChecker(program.code)
@@ -37,7 +37,7 @@ class StructDecl extends idealised.util.Tests {
       xs :>> mapSeq(id)
     )
 
-    val phrase = TypeInference(tupleOut, Map()).convertToPhrase
+    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(tupleOut, Map()))
     val program = idealised.OpenCL.KernelGenerator.makeCode(phrase)
     println(program.code)
     SyntaxChecker.checkOpenCL(program.code)
@@ -48,7 +48,7 @@ class StructDecl extends idealised.util.Tests {
       fun(ArrayType(8, float))(ys =>
         zip(xs, ys) :>> mapSeq(id) :>> mapSeq(addT)))
 
-    val phrase = TypeInference(tupleOut, Map()).convertToPhrase
+    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(tupleOut, Map()))
     val program = idealised.C.ProgramGenerator.makeCode(phrase)
     println(program.code)
     SyntaxChecker(program.code)
@@ -59,7 +59,7 @@ class StructDecl extends idealised.util.Tests {
       fun(ArrayType(8, float))(ys =>
         zip(xs, ys) :>> mapPar(id) :>> mapPar(addT)))
 
-    val phrase = TypeInference(tupleOut, Map()).convertToPhrase
+    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(tupleOut, Map()))
     val program = idealised.OpenMP.ProgramGenerator.makeCode(phrase)
     println(program.code)
     SyntaxChecker(program.code)
@@ -70,7 +70,7 @@ class StructDecl extends idealised.util.Tests {
       fun(ArrayType(8, float))(ys =>
         zip(xs, ys) :>> toGlobal(mapSeq(id)) :>> mapSeq(addT)))
 
-    val phrase = TypeInference(tupleOut, Map()).convertToPhrase
+    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(tupleOut, Map()))
     val program = idealised.OpenCL.KernelGenerator.makeCode(phrase)
     println(program.code)
     SyntaxChecker.checkOpenCL(program.code)

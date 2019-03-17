@@ -3,7 +3,7 @@ package idealised.DPIA
 import idealised.DPIA.FunctionalPrimitives.{IndexAsNat, AsIndex}
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics.IndexData
-import idealised.DPIA.Types.{DataType, ExpType, IndexType, NatType, PhraseType}
+import idealised.DPIA.Types.{DataType, ExpType, IndexType, PhraseType}
 import idealised.SurfaceLanguage._
 import lift.arithmetic.{NamedVar, RangeAdd, StartFromRange}
 

@@ -2,20 +2,19 @@ package idealised.OpenCL
 
 import idealised.OpenCL.SurfaceLanguage.DSL.mapGlobal
 import idealised.SurfaceLanguage.DSL.{fun, mapSeq, _}
+import idealised.SurfaceLanguage.Expr
 import idealised.SurfaceLanguage.Types._
-import idealised.SurfaceLanguage.{->, Expr, NatIdentifier, `(nat)->`}
 import idealised.util.SyntaxChecker
 
-import scala.language.postfixOps
-import scala.language.reflectiveCalls
+import scala.language.{postfixOps, reflectiveCalls}
 
 
 class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
   test("Running a simple kernel with generic input size") {
-    val f: Expr[`(nat)->`[DataType -> DataType]] =
+    val f: Expr =
       nFun(n => fun(ArrayType(n, int))(xs => xs :>> mapSeq(fun(x => x + 1))))
 
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase)
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
     println(kernel.code)
     SyntaxChecker.checkOpenCL(kernel.code)
 
@@ -31,10 +30,10 @@ class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
 
   test("Running a simple kernel with fixed input size") {
     val n = 8
-    val f: Expr[DataType -> DataType] =
+    val f: Expr =
       fun(ArrayType(n, int))(xs => xs :>> mapSeq(fun(x => x + 1)))
 
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase)
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
     println(kernel.code)
     SyntaxChecker.checkOpenCL(kernel.code)
 
@@ -50,10 +49,10 @@ class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
 
   test("Running a simple kernel with nat-dependent split") {
     val n = 8
-    val f: Expr[DataType -> `(nat)->`[DataType]] =
+    val f: Expr =
       fun(ArrayType(n, int))(xs => nFun(s => xs :>> split(s) :>> mapSeq(mapSeq(fun(x => x + 1))) :>> join))
 
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase)
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
     println(kernel.code)
     SyntaxChecker.checkOpenCL(kernel.code)
 
@@ -69,12 +68,12 @@ class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
   test("Running a simple kernel with multiple generic input sizes") {
     val m = 4
     val n = 8
-    val f: Expr[`(nat)->`[`(nat)->`[DataType -> DataType]]] =
+    val f: Expr =
       nFun((m, n) =>
           fun(ArrayType(m, ArrayType(n, int)))(xs =>
             xs :>> mapSeq(mapSeq(fun(x => x + 1)))))
 
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase)
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
     println(kernel.code)
     SyntaxChecker.checkOpenCL(kernel.code)
 
@@ -91,13 +90,13 @@ class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
   test("Running a simple kernel mixing nat-dependent with normal functions") {
     val n = 8
     val s = 2
-    val f: Expr[`(nat)->`[DataType -> `(nat)->`[DataType]]] =
+    val f: Expr =
       nFun(n =>
         fun(ArrayType(n, int))(xs =>
           nFun(s =>
             xs :>> split(s) :>> mapSeq(mapSeq(fun(x => x + 1))) :>> join())))
 
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase)
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
     println(kernel.code)
     SyntaxChecker.checkOpenCL(kernel.code)
 
@@ -112,10 +111,10 @@ class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
 
   test("Running a simple kernel with fixed input size and multiple threads") {
     val n = 8
-    val f: Expr[DataType -> DataType] =
+    val f: Expr =
       fun(ArrayType(n, int))(xs => xs :>> mapGlobal(fun(x => x + 1)))
 
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(TypeInference(f, Map()).toPhrase)
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
     println(kernel.code)
     SyntaxChecker.checkOpenCL(kernel.code)
 

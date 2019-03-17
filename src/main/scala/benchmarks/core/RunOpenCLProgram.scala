@@ -1,7 +1,8 @@
 package benchmarks.core
 
-import idealised.OpenCL.{Kernel, KernelWithSizes}
-import idealised.SurfaceLanguage.Types.{DataType, TypeInference}
+import idealised.DPIA
+import idealised.OpenCL.KernelWithSizes
+import idealised.SurfaceLanguage.Types.TypeInference
 import lift.arithmetic.ArithExpr
 
 import scala.util.Random
@@ -16,7 +17,7 @@ abstract class RunOpenCLProgram(val verbose:Boolean) {
 
   def inputSize:Int
 
-  def dpiaProgram:Expr[`(nat)->`[DataType -> DataType]]
+  def dpiaProgram: Expr
 
   protected def makeInput(random:Random):Input
 
@@ -25,7 +26,7 @@ abstract class RunOpenCLProgram(val verbose:Boolean) {
   protected def runScalaProgram(input:Input):Array[Float]
 
   private def compile(localSize:ArithExpr, globalSize:ArithExpr):KernelWithSizes = {
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(localSize, globalSize)(TypeInference(this.dpiaProgram, Map()).toPhrase)
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(localSize, globalSize)(DPIA.FromSurfaceLanguage(TypeInference(this.dpiaProgram, Map())))
 
     if(verbose) {
       println(kernel.code)

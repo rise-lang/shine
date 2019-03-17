@@ -13,7 +13,7 @@ class Map extends idealised.util.Tests {
       nFun(n =>
         fun(ArrayType(n, float))(xs => xs :>> mapSeq(fun(x => x))))
 
-    val p = idealised.C.ProgramGenerator.makeCode(TypeInference(slideExample, Map()).toPhrase)
+    val p = idealised.C.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(slideExample, Map())))
     val code = p.code
     SyntaxChecker(code)
     println(code)
@@ -26,7 +26,7 @@ class Map extends idealised.util.Tests {
       nFun(n => nFun(m =>
         fun(ArrayType(n, ArrayType(m, float)))(xs => xs :>> mapSeq(mapSeq(fun(x => x))))))
 
-    val p = idealised.C.ProgramGenerator.makeCode(TypeInference(slideExample, Map()).toPhrase)
+    val p = idealised.C.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(slideExample, Map())))
     val code = p.code
     SyntaxChecker(code)
     println(code)
@@ -40,7 +40,7 @@ class Map extends idealised.util.Tests {
         fun(ArrayType(n, ArrayType(m, ArrayType(o, float))))(xs =>
           xs :>> mapSeq(mapSeq(mapSeq(fun(x => x))))))))
 
-    val p = idealised.C.ProgramGenerator.makeCode(TypeInference(slideExample, Map()).toPhrase)
+    val p = idealised.C.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(slideExample, Map())))
     val code = p.code
     SyntaxChecker(code)
     println(code)

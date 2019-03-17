@@ -7,22 +7,22 @@ import idealised.SurfaceLanguage.Semantics._
 object VisitAndRebuild {
 
   class Visitor {
-    def apply[T <: Type](e: Expr[T]): Result[Expr[T]] = Continue(e, this)
+    def apply(e: Expr): Result = Continue(e, this)
     def apply(ae: Nat): Nat = ae
     def apply(f:NatNatTypeFunction):NatNatTypeFunction = NatNatTypeFunction(f.x, apply(f.body))
     def apply[T <: DataType](dt: T): T = dt
 
-    abstract class Result[+T]
-    case class Stop[T <: Type](p: Expr[T]) extends Result[Expr[T]]
-    case class Continue[T <: Type](p: Expr[T], v: Visitor) extends Result[Expr[T]]
+    abstract class Result
+    case class Stop(p: Expr) extends Result
+    case class Continue(p: Expr, v: Visitor) extends Result
   }
 
-  def apply[T <: Type](e: Expr[T], v: Visitor): Expr[T] = {
+  def apply(e: Expr, v: Visitor): Expr = {
     v(e) match {
-      case r: v.Stop[T]@unchecked => r.p
-      case c: v.Continue[T]@unchecked =>
+      case r: v.Stop => r.p
+      case c: v.Continue =>
         val v = c.v
-        (c.p match {
+        c.p match {
           case i: IdentifierExpr =>
             IdentifierExpr(i.name, i.t match {
               case None => None
@@ -65,7 +65,7 @@ object VisitAndRebuild {
           case BinOpExpr(op, lhs, rhs) => BinOpExpr(op, apply(lhs, v), apply(rhs, v))
 
           case p: PrimitiveExpr => p.visitAndRebuild(v)
-        }).asInstanceOf[Expr[T]]
+        }
     }
   }
 

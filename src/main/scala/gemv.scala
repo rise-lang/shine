@@ -3,7 +3,7 @@ import idealised.DPIA.Phrases.PrettyPhrasePrinter
 import idealised.DPIA.Types.TypeCheck
 import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.OpenCL._
-import idealised.OpenMP
+import idealised.{DPIA, OpenMP}
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage.{Expr, _}
@@ -26,9 +26,9 @@ object gemv extends App {
   val matT = ArrayType(M, ArrayType(N, dataT))
 
   def runOpenCLKernel(name: String,
-                      untypedLambda: Expr[DataType -> (DataType -> (DataType -> (DataType -> (DataType -> DataType))))]): Unit = {
+                      untypedLambda: Expr): Unit = {
     println("\n----------------")
-    val lambda = TypeInference(untypedLambda, Map()).convertToPhrase
+    val lambda = DPIA.FromSurfaceLanguage(TypeInference(untypedLambda, Map()))
     println(name + ":\n" + PrettyPhrasePrinter(lambda))
     TypeCheck(lambda)
 
@@ -77,7 +77,7 @@ object gemv extends App {
       )))))
 
   {
-    val lambda = TypeInference(high_level, Map()).convertToPhrase
+    val lambda = DPIA.FromSurfaceLanguage(TypeInference(high_level, Map()))
     println("high_level:\n" + PrettyPhrasePrinter(lambda))
     TypeCheck(lambda)
   }
@@ -104,7 +104,7 @@ object gemv extends App {
           mapLocal(fun(x => (alpha * x) + (t._2 * beta))) o
             toLocal(mapLocal(reduceSeq(add, 0.0f))) o split(128) o
             toLocal(mapLocal(reduceSeq(fun(x => fun(a => mult(x) + a)), 0.0f)))
-            o split(N /^ 128) o reorderWithStride(128) $ zip(xs, t._1)
+            o split(N /^ 128) o reorderWithStride(Cst(128)) $ zip(xs, t._1)
         )) $ zip(mat, ys)
 
       )))))
@@ -119,7 +119,7 @@ object gemv extends App {
           fun(x => (x * alpha) + (t._2 * beta)) o
             toLocal(reduceSeq(add, 0.0f)) o
             toLocal(mapLocal(reduceSeq(fun(x => fun(a => mult(x) + a)), 0.0f))) o
-            split(N /^ 128) o reorderWithStride(128) $ zip(xs, t._1)
+            split(N /^ 128) o reorderWithStride(Cst(128)) $ zip(xs, t._1)
         )) $ zip(mat, ys)
 
       )))))
@@ -143,7 +143,7 @@ object gemv extends App {
 
         )))))
 
-    val phrase = TypeInference(fullMatrixVectorFusedOpenCL, Map()).toPhrase
+    val phrase = DPIA.FromSurfaceLanguage(TypeInference(fullMatrixVectorFusedOpenCL, Map()))
     val program = OpenMP.ProgramGenerator.makeCode(phrase)
     println(program.code)
   }

@@ -27,7 +27,7 @@ class separableBlur extends idealised.util.Tests {
   val weights1d = LiteralExpr(ArrayData(Array(1, 2, 1).map(f => FloatData(f / 4.0f))))
 
   val slide2d = map(slide(3, 1)) >>> slide(3, 1) >>> map(transpose())
-  def mapSeq2d(f: Expr[DataType -> DataType]) = mapSeq(mapSeq(f))
+  def mapSeq2d(f: Expr) = mapSeq(mapSeq(f))
 
   val blur =
     nFun(h => nFun(w => fun(ArrayType(h, ArrayType(w, float)))(input =>
@@ -55,8 +55,8 @@ class separableBlur extends idealised.util.Tests {
       )
     )))
 
-  def program[T <: Type](name: String, e: Expr[T]): C.Program = {
-    val phrase = TypeInference(e, collection.Map()).convertToPhrase
+  def program(name: String, e: Expr): C.Program = {
+    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(e, collection.Map()))
     val program = C.ProgramGenerator.makeCode(phrase, name)
     SyntaxChecker(program.code)
     println(program.code)
@@ -68,7 +68,7 @@ class separableBlur extends idealised.util.Tests {
     ref_prog
   }
 
-  def check_ref[T <: Type](e: Expr[T]) = {
+  def check_ref(e: Expr) = {
     val prog = program("blur", e)
     val testCode =
       s"""

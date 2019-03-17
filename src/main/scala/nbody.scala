@@ -1,4 +1,4 @@
-import idealised.C
+import idealised.{C, DPIA}
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
 import lift.arithmetic.SizeVar
@@ -25,7 +25,7 @@ object nbody extends App {
     val f = fun(ArrayType(SizeVar("N"), float))(input =>
       mapSeq( update(1.0f)(2.0f)(3.0f) ) $ input
     )
-    val phrase = TypeInference(f, Map()).convertToPhrase
+    val phrase = DPIA.FromSurfaceLanguage(TypeInference(f, Map()))
     val program = C.ProgramGenerator.makeCode(phrase)
     println(program.code)
   }

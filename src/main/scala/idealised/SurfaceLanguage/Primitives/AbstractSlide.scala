@@ -1,31 +1,15 @@
 package idealised.SurfaceLanguage.Primitives
 
-import idealised.SurfaceLanguage.DSL.DataExpr
+import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
 import idealised.{DPIA, SurfaceLanguage}
-import idealised.SurfaceLanguage.Types._
 
-abstract class AbstractSlide(sz: Nat, sp: Nat, input: DataExpr,
+abstract class AbstractSlide(val sz: Nat, val sp: Nat, val input: Expr,
                              override val t: Option[DataType])
   extends PrimitiveExpr
 {
-  def makeDPIA(n: Nat,
-               sz: Nat,
-               sp: Nat,
-               dt: DataType,
-               input: DPIA.Phrases.Phrase[DPIA.Types.ExpType]
-              ): DPIA.Phrases.Phrase[DPIA.Types.ExpType]
 
-  override def convertToPhrase: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
-    input.t match {
-      case Some(ArrayType(m, dt)) =>
-        val n = (m - sz + sp) /^ sp
-        makeDPIA(n, sz, sp, dt, input.toPhrase[DPIA.Types.ExpType])
-      case _ => throw new Exception("")
-    }
-  }
-
-  def make(sz: Nat, sp: Nat, input: DataExpr, t: Option[DataType]): AbstractSlide
+  def make(sz: Nat, sp: Nat, input: Expr, t: Option[DataType]): AbstractSlide
 
   override def inferType(subs: TypeInference.SubstitutionMap): AbstractSlide = {
     import TypeInference._
@@ -41,7 +25,7 @@ abstract class AbstractSlide(sz: Nat, sp: Nat, input: DataExpr,
       })
   }
 
-  override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): DataExpr = {
+  override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): Expr = {
     make(f(sz), f(sp), SurfaceLanguage.VisitAndRebuild(input, f), t.map(f(_)))
   }
 }

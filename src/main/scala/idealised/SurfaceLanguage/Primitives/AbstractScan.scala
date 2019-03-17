@@ -1,8 +1,6 @@
 package idealised.SurfaceLanguage.Primitives
 
 
-import idealised.DPIA
-import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types.TypeInference.SubstitutionMap
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage.VisitAndRebuild.Visitor
@@ -11,31 +9,17 @@ import idealised.SurfaceLanguage._
 /**
   * Created by federico on 12/01/18.
   */
-abstract class AbstractScan(f:Expr[DataType -> (DataType -> DataType)],
-                            init:DataExpr,
-                            array:DataExpr,
+abstract class AbstractScan(val f: Expr, val init: Expr, val array: Expr,
                             override val t: Option[DataType]) extends PrimitiveExpr{
 
-  def makeScan:(Expr[DataType -> (DataType -> DataType)], DataExpr, DataExpr, Option[DataType]) => AbstractScan
+  def makeScan:(Expr, Expr, Expr, Option[DataType]) => AbstractScan
 
-  type DPIABinaryFunctionType = DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.FunctionType[DPIA.Types.ExpType, DPIA.Types.ExpType]]
-
-  def makeDPIAScan: (
-    DPIA.Nat,
-      DPIA.Types.DataType,
-      DPIA.Types.DataType,
-      DPIA.Phrases.Phrase[DPIABinaryFunctionType],
-      DPIA.Phrases.Phrase[DPIA.Types.ExpType],
-      DPIA.Phrases.Phrase[DPIA.Types.ExpType]
-    ) => DPIA.FunctionalPrimitives.AbstractScan
-
-
-  override def inferType(subs: SubstitutionMap): DataExpr = {
+  override def inferType(subs: SubstitutionMap): Expr = {
     import TypeInference._
     TypeInference(array, subs) |> (array =>
       TypeInference(init , subs) |> (init =>
         (init.t, array.t) match {
-          case (Some(dt2), Some(ArrayType(_, dt1))) =>
+          case (Some(dt2: DataType), Some(ArrayType(_, dt1))) =>
             setParamsAndInferTypes(f, dt1, dt2, subs) |> (f =>
               f.t match {
                 case Some(FunctionType(t1, FunctionType(t2, t3))) =>
@@ -55,18 +39,6 @@ abstract class AbstractScan(f:Expr[DataType -> (DataType -> DataType)],
         }))
   }
 
-  override def visitAndRebuild(fun: Visitor): DataExpr =
+  override def visitAndRebuild(fun: Visitor): Expr =
     makeScan(VisitAndRebuild(this.f, fun), VisitAndRebuild(this.init, fun), VisitAndRebuild(this.array, fun), this.t.map(fun(_)))
-
-  override def convertToPhrase:DPIA.FunctionalPrimitives.AbstractScan = {
-    (f.t, array.t) match {
-      case (Some(FunctionType(dt1, FunctionType(dt2, _))), Some(ArrayType(n, dt1_))) if dt1 == dt1_ =>
-        makeDPIAScan(n, dt1, dt2,
-          f.toPhrase[DPIABinaryFunctionType],
-          init.toPhrase[DPIA.Types.ExpType],
-          array.toPhrase[DPIA.Types.ExpType]
-        )
-      case _ => throw new Exception("")
-    }
-  }
 }

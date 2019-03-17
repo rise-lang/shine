@@ -1,21 +1,12 @@
 package idealised.SurfaceLanguage.Primitives
 
-import idealised.SurfaceLanguage.DSL.DataExpr
-import idealised.SurfaceLanguage.PrimitiveExpr
-import idealised.{DPIA, SurfaceLanguage}
+import idealised.SurfaceLanguage
 import idealised.SurfaceLanguage.Types._
+import idealised.SurfaceLanguage.{Expr, PrimitiveExpr}
 
-final case class Unzip(e: DataExpr,
+final case class Unzip(e: Expr,
                        override val t: Option[DataType])
-  extends PrimitiveExpr
-{
-  override def convertToPhrase: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
-    e.t match {
-      case Some(ArrayType(n, TupleType(dt1, dt2))) =>
-        DPIA.FunctionalPrimitives.Unzip(n, dt1, dt2, e.toPhrase[DPIA.Types.ExpType])
-      case _ => throw new Exception("")
-    }
-  }
+  extends PrimitiveExpr {
 
   override def inferType(subs: TypeInference.SubstitutionMap): Unzip = {
     import TypeInference._
@@ -26,7 +17,7 @@ final case class Unzip(e: DataExpr,
       })
   }
 
-  override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): DataExpr = {
+  override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): Expr = {
     Unzip(SurfaceLanguage.VisitAndRebuild(e, f), t.map(f(_)))
   }
 }

@@ -8,77 +8,60 @@ import lift.arithmetic.{NamedVar, RangeAdd, StartFromRange}
 import scala.language.implicitConversions
 
 package object DSL {
-  type DataExpr = Expr[DataType]
 
-  implicit class BinOps(lhs: DataExpr) {
-    def +(rhs: DataExpr) = BinOpExpr(Operators.Binary.ADD, lhs, rhs)
-    def -(rhs: DataExpr) = BinOpExpr(Operators.Binary.SUB, lhs, rhs)
-    def *(rhs: DataExpr) = BinOpExpr(Operators.Binary.MUL, lhs, rhs)
-    def /(rhs: DataExpr) = BinOpExpr(Operators.Binary.DIV, lhs, rhs)
-    def %(rhs: DataExpr) = BinOpExpr(Operators.Binary.MOD, lhs, rhs)
-    def >(rhs: DataExpr) = BinOpExpr(Operators.Binary.GT, lhs, rhs)
-    def <(rhs: DataExpr) = BinOpExpr(Operators.Binary.LT, lhs, rhs)
-    def =:=(rhs: DataExpr) = BinOpExpr(Operators.Binary.EQ, lhs, rhs)
+  implicit class BinOps(lhs: Expr) {
+    def +(rhs: Expr) = BinOpExpr(Operators.Binary.ADD, lhs, rhs)
+    def -(rhs: Expr) = BinOpExpr(Operators.Binary.SUB, lhs, rhs)
+    def *(rhs: Expr) = BinOpExpr(Operators.Binary.MUL, lhs, rhs)
+    def /(rhs: Expr) = BinOpExpr(Operators.Binary.DIV, lhs, rhs)
+    def %(rhs: Expr) = BinOpExpr(Operators.Binary.MOD, lhs, rhs)
+    def >(rhs: Expr) = BinOpExpr(Operators.Binary.GT, lhs, rhs)
+    def <(rhs: Expr) = BinOpExpr(Operators.Binary.LT, lhs, rhs)
+    def =:=(rhs: Expr) = BinOpExpr(Operators.Binary.EQ, lhs, rhs)
     def unary_- = UnaryOpExpr(Operators.Unary.NEG, lhs)
   }
 
-  implicit class FunCall[T <: Type](f: Expr[DataType -> T]) {
-    def apply(arg: DataExpr): Expr[T] = Lifting.liftFunctionExpr(f)(arg)
-    def $(arg: DataExpr): Expr[T] = apply(arg)
+  implicit class FunCall(f: Expr) {
+    def apply(arg: Expr): Expr = Lifting.liftFunctionExpr(f)(arg)
+    def $(arg: Expr): Expr = apply(arg)
+
+    def apply(arg: Nat): Expr = Lifting.liftNatDependentFunctionExpr(f)(arg)
+    def $(arg: Nat): Expr = apply(arg)
+
+    def apply(arg: DataType): Expr = Lifting.liftTypeDependentFunctionExpr(f)(arg)
+    def $(arg: DataType): Expr = apply(arg)
   }
 
-  implicit class FunCallExpr(arg: DataExpr) {
-    def :>>[T <: Type](f: Expr[DataType -> T]): Expr[T] = f(arg)
-    def <<:[T <: Type](f: Expr[DataType -> T]): Expr[T] = f(arg)
+  implicit class FunCallExpr(arg: Expr) {
+    def :>>(f: Expr): Expr = f(arg)
+    def <<:(f: Expr): Expr = f(arg)
   }
 
-  implicit class FunCallExprPair(args: (Expr[DataType], Expr[DataType])) {
-    def :>>(z: (DataExpr, DataExpr) => Zip): Zip = z(args._1, args._2)
-    def <<:(z: (DataExpr, DataExpr) => Zip): Zip = z(args._1, args._2)
+  implicit class FunCallExprPair(args: (Expr, Expr)) {
+    def :>>(z: (Expr, Expr) => Zip): Zip = z(args._1, args._2)
+    def <<:(z: (Expr, Expr) => Zip): Zip = z(args._1, args._2)
   }
 
-  implicit class CallNatDependentLambda[T <: Type](f: Expr[`(nat)->`[T]]) {
-    def apply(arg: Nat): Expr[T] = Lifting.liftNatDependentFunctionExpr(f)(arg)
-    def $(arg: Nat): Expr[T] = apply(arg)
+  implicit class FunComp(f: Expr) {
+    def o(g: Expr): Expr = fun(arg => f( g(arg) ) )
+    def <<<(g: Expr): Expr = f o g
+    def >>>(g: Expr): Expr = g o f
   }
 
-  implicit class CallNatDependentLambdaExpr(arg: Nat) {
-    def :>>[T <: Type](f: Expr[`(nat)->`[T]]): Expr[T] = f(arg)
-    def <<:[T <: Type](f: Expr[`(nat)->`[T]]): Expr[T] = f(arg)
-  }
+  implicit def l(i: Int): LiteralExpr = LiteralExpr(IntData(i))
+  implicit def l(f: Float): LiteralExpr = LiteralExpr(FloatData(f))
+  implicit def l(d: Double): LiteralExpr = LiteralExpr(DoubleData(d))
+  implicit def l(v: VectorData): LiteralExpr = LiteralExpr(v)
 
-  implicit class CallTypeDependentLambda[T <: Type](f: Expr[`(dt)->`[T]]) {
-    def apply(arg: DataType): Expr[T] = Lifting.liftTypeDependentFunctionExpr(f)(arg)
-    def $(arg: DataType): Expr[T] = apply(arg)
-  }
-
-  implicit class CallTypeDependentLambdaExpr(arg: DataType) {
-    def :>>[T <: Type](f: Expr[`(dt)->`[T]]): Expr[T] = f(arg)
-    def <<:[T <: Type](f: Expr[`(dt)->`[T]]): Expr[T] = f(arg)
-  }
-
-  implicit class FunComp[T <: Type](f: Expr[DataType -> T]) {
-    def o(g: Expr[DataType -> DataType]): Expr[DataType -> T] = fun(arg => f( g(arg) ) )
-    def <<<(g: Expr[DataType -> DataType]): Expr[DataType -> T] = f o g
-  }
-
-  implicit class RevFunComp(f: Expr[DataType -> DataType]) {
-    def >>>[T <: Type](g: Expr[DataType -> T]): Expr[DataType -> T] = g o f
-  }
-
-  implicit def toLiteralInt(i: Int): LiteralExpr = LiteralExpr(IntData(i))
-  implicit def toLiteralFloat(f: Float): LiteralExpr = LiteralExpr(FloatData(f))
-  implicit def toLiteralDouble(d: Double): LiteralExpr = LiteralExpr(DoubleData(d))
-  implicit def toLiteralFloatN(v: VectorData): LiteralExpr = LiteralExpr(v)
   implicit def toNatExprNat(n: Nat): NatExpr = NatExpr(n)
 
-  def fmapNatExpr(natExpr: DataExpr, f: Nat => Nat): NatExpr = {
+  def fmapNatExpr(natExpr: Expr, f: Nat => Nat): NatExpr = {
     val liftedNat = Internal.natFromNatExpr(natExpr)
     val res = f(liftedNat)
     NatExpr(res)
   }
 
-  def fmapNatExpr(natExpr1: DataExpr, natExpr2: DataExpr, f: (Nat, Nat) => Nat): NatExpr = {
+  def fmapNatExpr(natExpr1: Expr, natExpr2: Expr, f: (Nat, Nat) => Nat): NatExpr = {
     val liftedNat1 = Internal.natFromNatExpr(natExpr1)
     val liftedNat2 = Internal.natFromNatExpr(natExpr2)
     val res = f(liftedNat1, liftedNat2)
@@ -86,23 +69,20 @@ package object DSL {
   }
 
   // this is safe as long as `f' returns a Nat value of less than `n'
-  def fmapIndexExpr(indexExpr: DataExpr, f: Nat => Nat): DataExpr = {
+  def fmapIndexExpr(indexExpr: Expr, f: Nat => Nat): Expr = {
     indexExpr.t match {
       case Some(IndexType(n)) => AsIndex(n, fmapNatExpr(indexAsNat(indexExpr), f))
       case x => throw new Exception(s"Expected ExpType(IndexType(n)) found: $x")
     }
   }
 
-  implicit def toNatDependentLambda[T <: Type](p: Expr[T]): NatDependentLambdaExpr[T] =
-    nFun(_ => p)
-
-  implicit class ExpPhraseExtensions(e: DataExpr) {
+  implicit class ExpPhraseExtensions(e: Expr) {
     def _1 = Fst(e, None)
     def _2 = Snd(e, None)
   }
 
   private object Internal {
-    def natFromIndexExpr(p: Expr[DataType]): Nat = {
+    def natFromIndexExpr(p: Expr): Nat = {
       p.t match {
         case Some(IndexType(n)) =>
           p match {
@@ -128,7 +108,7 @@ package object DSL {
       }
     }
 
-    def natFromNatExpr(p: Expr[DataType]): Nat = {
+    def natFromNatExpr(p: Expr): Nat = {
       p.t match {
         case Some(NatType) =>
           p match {

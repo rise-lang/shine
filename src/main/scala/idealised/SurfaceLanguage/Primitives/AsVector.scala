@@ -1,21 +1,13 @@
 package idealised.SurfaceLanguage.Primitives
 
-import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.SurfaceLanguage.Types._
-import idealised.SurfaceLanguage.{Nat, PrimitiveExpr}
+import idealised.SurfaceLanguage.{Expr, Nat, PrimitiveExpr}
 import idealised.{DPIA, SurfaceLanguage}
 
-final case class AsVector(n: Nat, array: DataExpr,
+final case class AsVector(n: Nat, array: Expr,
                           override val t: Option[DataType] = None)
   extends PrimitiveExpr
 {
-  override def convertToPhrase: DPIA.FunctionalPrimitives.AsVector = {
-    array.t match {
-      case Some(ArrayType(mn, st: ScalarType)) =>
-        DPIA.FunctionalPrimitives.AsVector(n, mn /^ n, st, array.toPhrase[DPIA.Types.ExpType])
-      case _ => throw new Exception("")
-    }
-  }
 
   override def inferType(subs: TypeInference.SubstitutionMap): AsVector = {
     import TypeInference._
@@ -27,7 +19,7 @@ final case class AsVector(n: Nat, array: DataExpr,
     }
   }
 
-  override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): DataExpr = {
+  override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): Expr = {
     AsVector(f(n), SurfaceLanguage.VisitAndRebuild(array, f), t.map(f(_)))
   }
 

@@ -1,16 +1,12 @@
 package idealised.SurfaceLanguage.Primitives
 
-import idealised.DPIA
-import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
 
 //noinspection TypeAnnotation
-final case class Map(f: Expr[DataType -> DataType], array: DataExpr,
+final case class Map(override val f: Expr, override val array: Expr,
                      override val t: Option[DataType] = None)
   extends AbstractMap(f, array, t) {
-
-  override def makeDPIAMap = DPIA.FunctionalPrimitives.Map
 
   override def makeMap = Map
 }

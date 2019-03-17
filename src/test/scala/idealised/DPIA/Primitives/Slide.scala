@@ -15,7 +15,7 @@ class Slide extends idealised.util.Tests {
       nFun(n =>
         fun(ArrayType(n, float))(xs => xs :>> slide(3, 1) :>> mapSeq(mapSeq(fun(x => x)))))
 
-    val p = idealised.C.ProgramGenerator.makeCode(TypeInference(slideExample, Map()).toPhrase)
+    val p = idealised.C.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(slideExample, Map())))
     val code = p.code
     SyntaxChecker(code)
     println(code)
@@ -29,7 +29,7 @@ class Slide extends idealised.util.Tests {
         fun(ArrayType(n, ArrayType(m, float)))( xs =>
           xs :>> map(slide(3, 1)) :>> mapSeq(mapSeq(mapSeq(fun(x => x)))) )))
 
-    val p = idealised.OpenMP.ProgramGenerator.makeCode(TypeInference(slideExample, Map()).toPhrase)
+    val p = idealised.OpenMP.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(slideExample, Map())))
     val code = p.code
     SyntaxChecker(code)
     println(code)
@@ -43,7 +43,7 @@ class Slide extends idealised.util.Tests {
         fun(ArrayType(n, ArrayType(m, float)))( xs =>
           xs :>> mapSeq(slide(3, 1) >>> mapSeq(mapSeq(fun(x => x)))) )))
 
-    val p = idealised.OpenMP.ProgramGenerator.makeCode(TypeInference(slideExample, Map()).toPhrase)
+    val p = idealised.OpenMP.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(slideExample, Map())))
     val code = p.code
     SyntaxChecker(code)
     println(code)
@@ -60,7 +60,7 @@ class Slide extends idealised.util.Tests {
 
     val f = nFun(n => nFun(m => fun(ArrayType(n, ArrayType(m, float)))(xs => xs  :>> slide2D(slideSize, slideStep) :>> mapSeq(fun(x => x)))))
 
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(1,1)(TypeInference(f, Map()).toPhrase)
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(1,1)(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
     val kernelF = kernel.as[ScalaFunction`(` Int `,` Int `,` Array[Array[Float]]`)=>`Array[Float]]
 
     val random = new Random()
