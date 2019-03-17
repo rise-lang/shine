@@ -1,9 +1,9 @@
 package idealised.SurfaceLanguage
 
-import idealised.SurfaceLanguage.Primitives.{Fst, Snd, Zip}
+import idealised.SurfaceLanguage.Primitives._
 import idealised.SurfaceLanguage.Semantics._
 import idealised.SurfaceLanguage.Types._
-import lift.arithmetic.{ContinuousRange, NamedVar}
+import lift.arithmetic.{NamedVar, RangeAdd, StartFromRange}
 
 import scala.language.implicitConversions
 
@@ -50,20 +50,100 @@ package object DSL {
 
   implicit def l(i: Int): LiteralExpr = LiteralExpr(IntData(i))
   implicit def l(f: Float): LiteralExpr = LiteralExpr(FloatData(f))
+  implicit def l(d: Double): LiteralExpr = LiteralExpr(DoubleData(d))
   implicit def l(v: VectorData): LiteralExpr = LiteralExpr(v)
 
-  implicit class IdentExpPhraseExtensions(i: IdentifierExpr) {
-    def asNatIdentifier = NamedVar(i.name)
-    def asNatIdentifier(withUpperBound: Nat) = NamedVar(i.name, ContinuousRange(0, withUpperBound))
+  implicit def toNatExprNat(n: Nat): NatExpr = NatExpr(n)
+
+  def fmapNatExpr(natExpr: Expr, f: Nat => Nat): NatExpr = {
+    val liftedNat = Internal.natFromNatExpr(natExpr)
+    val res = f(liftedNat)
+    NatExpr(res)
   }
 
-  case class NatExtensions(n: Nat) {
-    def asExpr = LiteralExpr(IndexData(n))
-    def asExpr(withType: IndexType) = LiteralExpr(IndexData(n, withType))
+  def fmapNatExpr(natExpr1: Expr, natExpr2: Expr, f: (Nat, Nat) => Nat): NatExpr = {
+    val liftedNat1 = Internal.natFromNatExpr(natExpr1)
+    val liftedNat2 = Internal.natFromNatExpr(natExpr2)
+    val res = f(liftedNat1, liftedNat2)
+    NatExpr(res)
+  }
+
+  // this is safe as long as `f' returns a Nat value of less than `n'
+  def fmapIndexExpr(indexExpr: Expr, f: Nat => Nat): Expr = {
+    indexExpr.t match {
+      case Some(IndexType(n)) => AsIndex(n, fmapNatExpr(indexAsNat(indexExpr), f))
+      case x => throw new Exception(s"Expected ExpType(IndexType(n)) found: $x")
+    }
   }
 
   implicit class ExpPhraseExtensions(e: Expr) {
     def _1 = Fst(e, None)
     def _2 = Snd(e, None)
+  }
+
+  private object Internal {
+    def natFromIndexExpr(p: Expr): Nat = {
+      p.t match {
+        case Some(IndexType(n)) =>
+          p match {
+            case i: IdentifierExpr => NamedVar(i.name, RangeAdd(0, n, 1))
+            case ApplyExpr(fun, arg) => natFromIndexExpr(Lifting.liftFunctionExpr(fun)(arg))
+            case BinOpExpr(op, lhs, rhs) => binOpToNat(op, natFromIndexExpr(lhs), natFromIndexExpr(rhs))
+            case IfThenElseExpr(_, _, _) => ???
+            case LiteralExpr(lit) => lit match {
+              case i: IndexData => i.n
+              case _ => throw new Exception("This should never happen")
+            }
+            case NatExpr(_) => throw new Exception("This should never happen")
+            case NatDependentApplyExpr(fun, arg) => natFromIndexExpr(Lifting.liftNatDependentFunctionExpr(fun)(arg))
+            case TypeDependentApplyExpr(fun, arg) => natFromIndexExpr(Lifting.liftTypeDependentFunctionExpr(fun)(arg))
+            case UnaryOpExpr(op, e) => unOpToNat(op, natFromIndexExpr(e))
+            case prim: PrimitiveExpr => prim match {
+              //TODO can we use our knowledge of n somehow?
+              case AsIndex(n, e, _) => natFromNatExpr(e)
+              case _ => ???
+            }
+          }
+        case _ => throw new Exception("This should never happen")
+      }
+    }
+
+    def natFromNatExpr(p: Expr): Nat = {
+      p.t match {
+        case Some(NatType) =>
+          p match {
+            case NatExpr(n) => n
+            case i: IdentifierExpr => NamedVar(i.name, StartFromRange(0))
+            case ApplyExpr(fun, arg) => natFromNatExpr(Lifting.liftFunctionExpr(fun)(arg))
+            case BinOpExpr(op, lhs, rhs) => binOpToNat(op, natFromNatExpr(lhs), natFromNatExpr(rhs))
+            case IfThenElseExpr(_, _, _) => ???
+            case LiteralExpr(_) => throw new Exception("This should never happen")
+            case NatDependentApplyExpr(fun, arg) => natFromNatExpr(Lifting.liftNatDependentFunctionExpr(fun)(arg))
+            case TypeDependentApplyExpr(fun, arg) => natFromNatExpr(Lifting.liftTypeDependentFunctionExpr(fun)(arg))
+            case UnaryOpExpr(op, e) => unOpToNat(op, natFromNatExpr(e))
+            case prim: PrimitiveExpr => prim match {
+              case IndexAsNat(e, _) => natFromIndexExpr(e)
+              case _ => ???
+            }
+          }
+        case pt => throw new Exception(s"Expected exp[nat] but found $pt.")
+      }
+    }
+
+    def binOpToNat(op: Operators.Binary.Value, n1: Nat, n2: Nat): Nat = {
+      import Operators.Binary._
+
+      op match {
+        case ADD => n1 + n2
+        case SUB => n1 - n2
+        case MUL => n1 * n2
+        case DIV => n1 / n2
+        case MOD => n1 % n2
+
+        case _ => ???
+      }
+    }
+
+    def unOpToNat(op: Operators.Unary.Value, n: Nat): Nat = ???
   }
 }

@@ -10,8 +10,7 @@ package object DSL {
       val f =
         nFun(n =>
           fun(IndexType(n))(i => {
-            val j = i asNatIdentifier (withUpperBound = n)
-            NatExtensions( (j / (n /^ s)) + s * (j % (n /^ s)) ) asExpr (withType = IndexType(n))
+            fmapIndexExpr(i, j => (j / (n /^ s)) + s * (j % (n /^ s)))
           }))
       reorder(f, f)
     })

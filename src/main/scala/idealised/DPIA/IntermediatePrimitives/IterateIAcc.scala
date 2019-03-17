@@ -1,13 +1,12 @@
 package idealised.DPIA.IntermediatePrimitives
 
 import idealised.DPIA.Compilation.TranslationContext
-import idealised.DPIA._
 import idealised.DPIA.DSL._
-import idealised.DPIA.FunctionalPrimitives.Take
+import idealised.DPIA.FunctionalPrimitives.{AsIndex, Take}
 import idealised.DPIA.ImperativePrimitives.TakeAcc
 import idealised.DPIA.Phrases._
-import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
+import idealised.DPIA._
 import lift.arithmetic.NamedVar
 
 object IterateIAcc {
@@ -32,7 +31,7 @@ object IterateIAcc {
           f.apply(n.pow(k - i) * m)
             .apply(TakeAcc(n.pow(k - i - 1) * m, `n^k*m`, dt, v.wr))
             .apply(Take(n.pow(k - i) * m, `n^k*m`, dt, v.rd)) `;`
-            IfThenElse(ip < Literal(IndexData(k - 1, IndexType(k))), swap, done)
+            IfThenElse(ip < AsIndex(k, Natural(k - 1)), swap, done)
         })
       })
   }

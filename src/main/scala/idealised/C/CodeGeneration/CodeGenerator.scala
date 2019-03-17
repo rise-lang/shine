@@ -1,8 +1,6 @@
 package idealised.C.CodeGeneration
 
-import java.util.function.Predicate
-
-import idealised.C.AST.{Block, Node, Nodes}
+import idealised.C.AST.Block
 import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives._
 import idealised.DPIA.ImperativePrimitives._
@@ -10,10 +8,10 @@ import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
-import idealised.DPIA.{Phrases, _}
+import idealised.DPIA._
 import idealised.SurfaceLanguage.Operators
 import idealised._
-import lift.arithmetic.BoolExpr.{ArithPredicate, False, True}
+import lift.arithmetic.BoolExpr.ArithPredicate
 import lift.arithmetic.{NamedVar, _}
 
 import scala.collection.immutable.VectorBuilder
@@ -180,13 +178,14 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
 
-      case ReorderAcc(_, _, idxF, a) => path match {
-        case (i : CIntExpr) :: ps => acc(a, env, CIntExpr(OperationalSemantics.evalIndexExp(idxF(i))) :: ps, cont)
+      case ReorderAcc(n, _, idxF, a) => path match {
+        case (i : CIntExpr) :: ps =>
+          acc(a, env, CIntExpr(OperationalSemantics.evalIndexExp(idxF(AsIndex(n, Natural(i))))) :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
 
       case MapAcc(n, dt, _, f, a) => path match {
-        case (i : CIntExpr) :: ps => acc( f( IdxAcc(n, dt, Phrases.Literal(IndexData(i, IndexType(n))), a) ), env, ps, cont)
+        case (i : CIntExpr) :: ps => acc( f( IdxAcc(n, dt, AsIndex(n, Natural(i)), a) ), env, ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
 
@@ -219,8 +218,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case Phrases.Literal(n) => cont(path match {
         case Nil =>
             n.dataType match {
-              case _: IndexType => CCodeGen.codeGenLiteral (n)
-              case _: ScalarType => CCodeGen.codeGenLiteral (n)
+              case _: IndexType => CCodeGen.codeGenLiteral(n)
+              case _: ScalarType => CCodeGen.codeGenLiteral(n)
               case _ => error ("Expected an IndexType or ScalarType.")
           }
         case (i : CIntExpr) :: Nil =>
@@ -234,6 +233,11 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           }
         // case (_ :: _ :: Nil, _: ArrayType) => C.AST.Literal("0.0f") // TODO: (used in gemm like this) !!!!!!!
         case _ => error(s"Unexpected: $n $path")
+      })
+
+      case Phrases.Natural(n) => cont(path match {
+        case Nil => C.AST.ArithmeticExpr(n)
+        case _ => error(s"Expected the path to be empty.")
       })
 
       case uop@UnaryOp(op, e) => uop.t.dataType match {
@@ -253,7 +257,23 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                 cont(CCodeGen.codeGenBinaryOp(op, e1, e2))))
           case _ => error(s"Expected path to be empty")
         }
-        case _ => error(s"Expected scalar types")
+        case x => error(s"Expected scalar types")
+      }
+
+      case Cast(_, dt, e) => path match {
+        case Nil =>
+          exp(e, env, Nil, e =>
+            cont(C.AST.Cast(typ(dt), e)))
+      }
+
+      case IndexAsNat(_, e) => exp(e, env, path, cont)
+
+      case AsIndex(_, e) => exp(e, env, path, cont)
+
+      case Generate(n, _, lam@Lambda(_, _)) => path match {
+        case (i : CIntExpr) :: ps =>
+          val evaledLam = Lifting.liftFunction(lam)(AsIndex(n, Natural(i)))
+          exp(evaledLam, env, ps, cont)
       }
 
       case Split(n, _, _, e) => path match {
@@ -302,8 +322,9 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
 
-      case Reorder(_, _, idxF, _, a) => path match {
-        case (i : CIntExpr) :: ps => exp(a, env, CIntExpr(OperationalSemantics.evalIndexExp(idxF(i))) :: ps, cont)
+      case Reorder(n, _, idxF, _, a) => path match {
+        case (i : CIntExpr) :: ps =>
+          exp(a, env, CIntExpr(OperationalSemantics.evalIndexExp(idxF(AsIndex(n, Natural(i))))) :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
 
@@ -368,7 +389,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
               FunctionType(ExpType(dt2), comm))
 
           cmd(f(
-            Idx(n, dt1, Literal(IndexData(i, IndexType(n))), e)
+            Idx(n, dt1, AsIndex(n, Natural(i)), e)
           )(
             continue_cmd
           ), env updatedContEnv (continue_cmd -> (e => env => exp(e, env, ps, cont))))
@@ -401,7 +422,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     dt match {
       case b: idealised.DPIA.Types.BasicType => b match {
         case idealised.DPIA.Types.bool => C.AST.Type.int
-        case idealised.DPIA.Types.int => C.AST.Type.int
+        case idealised.DPIA.Types.int | idealised.DPIA.Types.NatType => C.AST.Type.int
         case idealised.DPIA.Types.float => C.AST.Type.float
         case idealised.DPIA.Types.double => C.AST.Type.double
         case _: idealised.DPIA.Types.IndexType => C.AST.Type.int
@@ -565,7 +586,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
           if(unroll) {
             val statements = for(index <- rangeAddToScalaRange(range)) yield {
-              val indexPhrase = Literal(IndexData(Cst(index), IndexType(n)))
+              val indexPhrase = AsIndex(n, Natural(index))
               val newPhrase = Phrase.substitute(phrase=indexPhrase,`for`=i, in=p)
               immutable.Seq(updatedGen.cmd(newPhrase, env))
             }
@@ -677,7 +698,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       d match {
         case i: IndexData =>
           C.AST.ArithmeticExpr(i.n)
-        case _: IntData | _: FloatData | _: BoolData =>
+        case _: IntData | _: FloatData | _: DoubleData | _: BoolData =>
           C.AST.Literal(d.toString)
         case ArrayData(a) => d.dataType match {
           case ArrayType(n, st) =>
@@ -743,10 +764,10 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           },
           body = C.AST.Code(funDecl.body)))
 
-      codeGenForeignCall(funDecl, args, env, Nil, cont)
+      codeGenForeignCall(funDecl.name, args, env, Nil, cont)
     }
 
-    def codeGenForeignCall(funDecl: ForeignFunction.Declaration,
+    def codeGenForeignCall(name: String,
                            args: collection.Seq[Phrase[ExpType]],
                            env: Environment,
                            args_ps: Path,
@@ -758,7 +779,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           case a +: args =>
             exp(a, env, args_ps, a => iter(args, res += a))
           case _ => cont(
-            C.AST.FunCall(C.AST.DeclRef(funDecl.name), res.result()))
+            C.AST.FunCall(C.AST.DeclRef(name), res.result()))
         }
       }
 
@@ -795,7 +816,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             case dat: DepArrayType =>
               val (k, ps) = flattenArrayIndices(dat, path)
               generateAccess(dt, C.AST.ArraySubscript(accuExpr, C.AST.ArithmeticExpr(k)), ps, env)
-            case _ => throw new Exception("Expected an ArrayType that is accessed by the index.")
+            case x => throw new Exception(s"Expected an ArrayType that is accessed by the index but found $x instead.")
           }
         case _ =>
           throw new Exception(s"Can't generate access for `$dt' with `${path.mkString("[", "::", "]")}'")

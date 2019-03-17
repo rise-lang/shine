@@ -104,6 +104,14 @@ final case class LiteralExpr(d: Data) extends Expr {
   override def toString: String = s"$d"
 }
 
+final case class NatExpr(n: Nat)
+  extends Expr
+{
+  override lazy val t: Option[DataType] = Some(NatType)
+
+  override def toString: String = s"$n"
+}
+
 abstract class PrimitiveExpr extends Expr {
   def inferType(subs: Types.TypeInference.SubstitutionMap): Expr
 

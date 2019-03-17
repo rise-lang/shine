@@ -57,6 +57,8 @@ object FromSurfaceLanguage {
       case LiteralExpr(d) =>
         Phrases.Literal(Semantics.OperationalSemantics.Data(d))
 
+      case NatExpr(n) => Phrases.Natural(n)
+
       case p: PrimitiveExpr =>
         FromSurfaceLanguagePrimitives(p) match {
           case Some(e) => e

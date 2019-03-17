@@ -1,6 +1,6 @@
 package idealised.DPIA
 
-import idealised.DPIA
+import idealised.{DPIA, SurfaceLanguage}
 import idealised.DPIA.FunctionalPrimitives.TransposeArrayDep
 import idealised.DPIA.Phrases.Phrase
 import idealised.DPIA.Types.{ExpType, PhraseType}
@@ -160,28 +160,63 @@ object FromSurfaceLanguagePrimitives {
 
           val transposeFunction =
             λ(ExpType(IndexType(n * m)))(i => {
-              val j = i asNatIdentifier(withUpperBound = n * m)
-              val col = (j % n) * m
-              val row = j / n
-              (row + col) asPhrase(withType = IndexType(n * m))
+              fmapIndexExpr(i, j => {
+                val col = (j % n) * m
+                val row = j / n
+                row + col
+              })
             })
 
           val transposeInverseFunction =
             λ(ExpType(IndexType(n * m)))(i => {
-              val j = i asNatIdentifier(withUpperBound = n * m)
-              val col = (j % m) * n
-              val row = j / m
-
-              row + col asPhrase(withType = IndexType(n * m))
+              fmapIndexExpr(i, j => {
+                val col = (j % m) * n
+                val row = j / m
+                row + col
+              })
             })
 
-          Some(
-            Split(n, m, dt,
-              Reorder(n*m, dt, transposeFunction, transposeInverseFunction,
-                Join(n, m, dt, FromSurfaceLanguage.asPhrase[ExpType](array)))))
+          Some(Split(n, m, dt,
+            Reorder(n*m, dt, transposeFunction, transposeInverseFunction,
+              Join(n, m, dt, FromSurfaceLanguage.asPhrase[ExpType](array)))))
 
         case Some(ArrayType(n, DepArrayType(m, NatDependentFunctionType(i, dt)))) =>
           Some(TransposeArrayDep(n, m, i, dt, FromSurfaceLanguage.asPhrase[ExpType](array)))
+      }
+
+      case Generate(f, _) => f.t match {
+        case Some(FunctionType(IndexType(n), dt : DataType)) =>
+          Some(FunctionalPrimitives.Generate(n, dt,
+            FromSurfaceLanguage.asPhrase[Types.FunctionType[ExpType, ExpType]](f)))
+      }
+
+      case IndexAsNat(e, _) => e.t match {
+        case Some(IndexType(n)) =>
+          Some(FunctionalPrimitives.IndexAsNat(n, FromSurfaceLanguage.asPhrase[ExpType](e)))
+      }
+
+      case AsIndex(n, e, _) => e.t match {
+        case Some(NatType) =>
+          Some(FunctionalPrimitives.AsIndex(n, FromSurfaceLanguage.asPhrase[DPIA.Types.ExpType](e)))
+      }
+
+      case Cast(bt, e, _) => e.t match {
+        case Some(edt: BasicType) => {
+          def toDPIABasicType(bt: DataType): DPIA.Types.BasicType = {
+            bt match {
+              case SurfaceLanguage.Types.NatType => DPIA.Types.NatType
+              case SurfaceLanguage.Types.IndexType(n) => DPIA.Types.IndexType(n)
+              case SurfaceLanguage.Types.bool => DPIA.Types.bool
+              case SurfaceLanguage.Types.int => DPIA.Types.int
+              case SurfaceLanguage.Types.float => DPIA.Types.float
+              case SurfaceLanguage.Types.double => DPIA.Types.double
+              case dt => throw new Exception(s"Expected BasicType but found $dt")
+            }
+          }
+
+          Some(FunctionalPrimitives.Cast(toDPIABasicType(edt), toDPIABasicType(bt),
+            FromSurfaceLanguage.asPhrase[ExpType](e)))
+        }
       }
 
       case Tuple(fst, snd, _) => (fst.t, snd.t) match {

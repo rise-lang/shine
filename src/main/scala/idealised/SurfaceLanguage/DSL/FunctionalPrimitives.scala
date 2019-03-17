@@ -9,6 +9,22 @@ import lift.arithmetic.NamedVar
 
 import scala.language.implicitConversions
 
+object generate {
+  def apply(f: Expr): Generate = Generate(f)
+}
+
+object indexAsNat {
+  def apply(e: Expr): IndexAsNat = IndexAsNat(e)
+}
+
+object asIndex {
+  def apply(n: Nat, e: Expr): AsIndex = AsIndex(n, e, Some(IndexType(n)))
+}
+
+object cast {
+  def apply(dt: BasicType, e: Expr): Cast = Cast(dt, e)
+}
+
 object depMapSeq {
 
   def withIndex(f: Expr): Expr = fun(x => withIndex(f,x))
