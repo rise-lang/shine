@@ -1,6 +1,6 @@
 package idealised.DPIA
 
-import idealised.DPIA.FunctionalPrimitives.{AsNat, AsIndex}
+import idealised.DPIA.FunctionalPrimitives.{IndexAsNat, AsIndex}
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics.IndexData
 import idealised.DPIA.Types.{DataType, ExpType, IndexType, NatType, PhraseType}

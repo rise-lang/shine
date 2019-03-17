@@ -1,7 +1,7 @@
 package idealised.SurfaceLanguage
 
 import idealised.SurfaceLanguage.DSL.DataExpr
-import idealised.SurfaceLanguage.Primitives.{AsNat, AsIndex}
+import idealised.SurfaceLanguage.Primitives.{IndexAsNat, AsIndex}
 import idealised.SurfaceLanguage.Semantics.IndexData
 import idealised.SurfaceLanguage.Types._
 import lift.arithmetic.{NamedVar, RangeAdd, StartFromRange}
@@ -64,69 +64,4 @@ object Lifting {
         throw new Exception("This should never happen")
     }
   }
-
-  def liftIndexExpr(p: Expr[DataType]): Nat = {
-    p.t match {
-      case Some(IndexType(n)) =>
-        p match {
-          case i: IdentifierExpr => NamedVar(i.name, RangeAdd(0, n, 1))
-          case ApplyExpr(fun, arg) => liftIndexExpr(liftFunctionExpr(fun)(arg))
-          case BinOpExpr(op, lhs, rhs) => binOpToNat(op, liftIndexExpr(lhs), liftIndexExpr(rhs))
-          case IfThenElseExpr(_, _, _) => ???
-          case LiteralExpr(lit) => lit match {
-            case i: IndexData => i.n
-            case _ => throw new Exception("This should never happen")
-          }
-          case NatExpr(_) => throw new Exception("This should never happen")
-          case NatDependentApplyExpr(fun, arg) => liftIndexExpr(liftNatDependentFunctionExpr(fun)(arg))
-          case TypeDependentApplyExpr(fun, arg) => liftIndexExpr(liftTypeDependentFunctionExpr(fun)(arg))
-          case UnaryOpExpr(op, e) => unOpToNat(op, liftIndexExpr(e))
-          case prim: PrimitiveExpr => prim match {
-            //TODO can we use our knowledge of n somehow?
-            case AsIndex(n, e, _) => liftNatExpr(e)
-            case _ => ???
-          }
-        }
-      case _ => throw new Exception("This should never happen")
-    }
-  }
-
-  def liftNatExpr(p: Expr[DataType]): Nat = {
-    p.t match {
-      case Some(NatType) =>
-        p match {
-          case NatExpr(n) => n
-          case i: IdentifierExpr => NamedVar(i.name, StartFromRange(0))
-          case ApplyExpr(fun, arg) => liftNatExpr(liftFunctionExpr(fun)(arg))
-          case BinOpExpr(op, lhs, rhs) => binOpToNat(op, liftNatExpr(lhs), liftNatExpr(rhs))
-          case IfThenElseExpr(_, _, _) => ???
-          case LiteralExpr(_) => throw new Exception("This should never happen")
-          case NatDependentApplyExpr(fun, arg) => liftNatExpr(liftNatDependentFunctionExpr(fun)(arg))
-          case TypeDependentApplyExpr(fun, arg) => liftNatExpr(liftTypeDependentFunctionExpr(fun)(arg))
-          case UnaryOpExpr(op, e) => unOpToNat(op, liftNatExpr(e))
-          case prim: PrimitiveExpr => prim match {
-            //TODO can we use our knowledge of n somehow?
-            case AsNat(e, _) => liftIndexExpr(e)
-            case _ => ???
-          }
-        }
-      case pt => throw new Exception(s"Expected exp[nat] but found $pt.")
-    }
-  }
-
-  def binOpToNat(op:Operators.Binary.Value, n1:Nat, n2:Nat): Nat = {
-    import Operators.Binary._
-
-    op match {
-      case ADD => n1 + n2
-      case SUB => n1 - n2
-      case MUL => n1 * n2
-      case DIV => n1 / n2
-      case MOD => n1 % n2
-
-      case _ => ???
-    }
-  }
-
-  def unOpToNat(op:Operators.Unary.Value, n:Nat):Nat = ???
 }

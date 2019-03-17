@@ -266,7 +266,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             cont(C.AST.Cast(typ(dt), e)))
       }
 
-      case AsNat(_, e) => exp(e, env, path, cont)
+      case IndexAsNat(_, e) => exp(e, env, path, cont)
 
       case AsIndex(_, e) => exp(e, env, path, cont)
 

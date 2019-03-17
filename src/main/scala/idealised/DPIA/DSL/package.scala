@@ -1,7 +1,7 @@
 package idealised.DPIA
 
 import idealised.DPIA.Compilation.TranslationContext
-import idealised.DPIA.FunctionalPrimitives.{AsIndex, AsNat}
+import idealised.DPIA.FunctionalPrimitives.{AsIndex, IndexAsNat}
 import idealised.DPIA.ImperativePrimitives._
 import idealised.DPIA.Phrases.{BinOp, Literal, Natural, Pair, Phrase, Proj1, Proj2, UnaryOp}
 import idealised.DPIA.Semantics.OperationalSemantics.{FloatData, IntData}
@@ -139,7 +139,7 @@ package object DSL {
   // this is safe as long as `f' returns a Nat value of less than `n'
   def fmapIndexExpr(indexExpr: Phrase[ExpType], f: Nat => Nat): Phrase[ExpType] = {
     indexExpr.t match {
-      case ExpType(IndexType(n)) => AsIndex(n, fmapNatExpr(AsNat(n, indexExpr), f))
+      case ExpType(IndexType(n)) => AsIndex(n, fmapNatExpr(IndexAsNat(n, indexExpr), f))
       case x => throw new Exception(s"Expected ExpType(IndexType(n)) found: $x")
     }
   }

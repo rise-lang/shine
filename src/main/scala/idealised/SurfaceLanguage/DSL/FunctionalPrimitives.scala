@@ -13,8 +13,8 @@ object generate {
   def apply(f: Expr[DataType -> DataType]): Generate = Generate(f)
 }
 
-object asNat {
-  def apply(e: DataExpr): AsNat = AsNat(e)
+object indexAsNat {
+  def apply(e: DataExpr): IndexAsNat = IndexAsNat(e)
 }
 
 object asIndex {

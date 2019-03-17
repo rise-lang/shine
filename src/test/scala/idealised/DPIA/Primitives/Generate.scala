@@ -19,7 +19,7 @@ class Generate extends idealised.util.Tests {
     "generates syntactically correct code in C.") {
     val id = fun(x => x)
     val simpleGenerate =
-      nFun(n => generate(fun(IndexType(n))(i => asNat(i) + n)) :>> mapSeq(id))
+      nFun(n => generate(fun(IndexType(n))(i => indexAsNat(i) + n)) :>> mapSeq(id))
     val program = idealised.C.ProgramGenerator.makeCode(TypeInference(simpleGenerate, Map()).convertToPhrase)
 
     println(program.code)
@@ -32,7 +32,7 @@ class Generate extends idealised.util.Tests {
       zip(in,
         generate(fun(IndexType(n))(i =>
           foreignFun(double, "callCos", (double, "x"), "{ return cos(x); }",
-            cast(double, asNat(i) + n)))
+            cast(double, indexAsNat(i) + n)))
       )) :>>
         mapSeq(add)))
 
@@ -51,7 +51,7 @@ class Generate extends idealised.util.Tests {
           generate(fun(IndexType(n))(j =>
             foreignFun(double, "callCos", (double, "x"), "{ return cos(x); }",
               // TODO how to implicitly cast, with Nat on the lhs of a binary op?
-              cast(double, (asNat(j) + n) * asNat(i) + m))
+              cast(double, (indexAsNat(j) + n) * indexAsNat(i) + m))
             )))))
         :>> mapSeq(fun(t => zip(t._1, t._2) :>> mapSeq(add)))
     ))
@@ -73,8 +73,8 @@ class Generate extends idealised.util.Tests {
         generate(fun(IndexType(p))(j =>
           generate(fun(IndexType(p))(k => {
             val exponentWoMinus2 =
-              fmapNatExpr(fmapNatExpr(asNat(j), j => j * LPrevIter) +
-                fmapNatExpr(asNat(i), i => i) * fmapNatExpr(asNat(k), k => k / (p * LPrevIter)), x => x)
+              fmapNatExpr(fmapNatExpr(indexAsNat(j), j => j * LPrevIter) +
+                fmapNatExpr(indexAsNat(i), i => i) * fmapNatExpr(indexAsNat(k), k => k / (p * LPrevIter)), x => x)
             val exponent = cast(double, exponentWoMinus2) * -2.0
             tuple(cast(float, oclFun("cospi", double, double, exponent)),
               cast(float, oclFun("sinpi", double, double, exponent)))

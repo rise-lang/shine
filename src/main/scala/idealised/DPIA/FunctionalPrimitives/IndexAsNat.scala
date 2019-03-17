@@ -11,7 +11,7 @@ import idealised.DPIA.Compilation._
 import scala.xml.Elem
 import scala.language.reflectiveCalls
 
-final case class AsNat(n: Nat, e: Phrase[ExpType])
+final case class IndexAsNat(n: Nat, e: Phrase[ExpType])
   extends ExpPrimitive {
 
   override val `type`: ExpType =
@@ -26,7 +26,7 @@ final case class AsNat(n: Nat, e: Phrase[ExpType])
     </asNat>
 
   def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] =
-    AsNat(fun(n), VisitAndRebuild(e, fun))
+    IndexAsNat(fun(n), VisitAndRebuild(e, fun))
 
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Data = ???
 
@@ -35,7 +35,7 @@ final case class AsNat(n: Nat, e: Phrase[ExpType])
     import TranslationToImperative._
 
     con(e)(λ(exp"[${IndexType(n)}]")(x =>
-      A :=|NatType| AsNat(n, x)))
+      A :=|NatType| IndexAsNat(n, x)))
   }
 
   override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
@@ -46,6 +46,6 @@ final case class AsNat(n: Nat, e: Phrase[ExpType])
     import TranslationToImperative._
 
     con(e)(λ(exp"[${IndexType(n)}]")(x =>
-      C(AsNat(n, x))))
+      C(IndexAsNat(n, x))))
   }
 }

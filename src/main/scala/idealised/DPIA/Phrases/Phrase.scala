@@ -1,7 +1,7 @@
 package idealised.DPIA.Phrases
 
 import idealised.DPIA.Compilation.TranslationContext
-import idealised.DPIA.FunctionalPrimitives.{AsIndex, AsNat}
+import idealised.DPIA.FunctionalPrimitives.{AsIndex, IndexAsNat}
 import idealised.DPIA.Lifting.{liftFunction, liftNatDependentFunction, liftPair, liftTypeDependentFunction}
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics.{IndexData, NatData}
@@ -158,7 +158,7 @@ object Phrase {
             case UnaryOp(op, e) => unOpToNat(op, NatFromNatExpr(e))
             case prim: ExpPrimitive => prim match {
               //TODO can we use our knowledge of n somehow?
-              case AsNat(n, e) => NatFromIndexExpr(e)
+              case IndexAsNat(n, e) => NatFromIndexExpr(e)
               case _ => ???
             }
           }
