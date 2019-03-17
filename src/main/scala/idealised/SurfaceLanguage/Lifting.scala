@@ -1,7 +1,10 @@
 package idealised.SurfaceLanguage
 
 import idealised.SurfaceLanguage.DSL.DataExpr
+import idealised.SurfaceLanguage.Primitives.{IndexAsNat, AsIndex}
+import idealised.SurfaceLanguage.Semantics.IndexData
 import idealised.SurfaceLanguage.Types._
+import lift.arithmetic.{NamedVar, RangeAdd, StartFromRange}
 
 import scala.language.postfixOps
 import scala.language.reflectiveCalls
@@ -61,5 +64,4 @@ object Lifting {
         throw new Exception("This should never happen")
     }
   }
-
 }

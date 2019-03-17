@@ -17,6 +17,7 @@ object OperationalSemantics {
         case idealised.SurfaceLanguage.Semantics.BoolData(b) => BoolData(b)
         case idealised.SurfaceLanguage.Semantics.IntData(i) => IntData(i)
         case idealised.SurfaceLanguage.Semantics.FloatData(f) => FloatData(f)
+        case idealised.SurfaceLanguage.Semantics.DoubleData(f) => DoubleData(f)
         case idealised.SurfaceLanguage.Semantics.IndexData(n, t) => IndexData(n, IndexType(t.size))
         case idealised.SurfaceLanguage.Semantics.TupleData(t @_*) => RecordData( Data(t(0)), Data(t(1)) )
         case idealised.SurfaceLanguage.Semantics.ArrayData(a) => ArrayData(a.map(Data(_)).toVector)
@@ -28,10 +29,9 @@ object OperationalSemantics {
 
   sealed abstract class Data(val dataType: DataType)
   final case class IndexData(n: Nat, indexType: IndexType) extends Data(indexType)
-  object IndexData {
-    def apply(n: Nat): IndexData = IndexData(n, IndexType(n.max))
-    // def apply(n: Nat): IndexData = IndexData(n, IndexType(n.max + 1))
-  }
+
+  final case class NatData(n: Nat) extends Data(NatType)
+
   final case class BoolData(b: Boolean) extends Data(bool)
   final case class IntData(i: Int) extends Data(int) {
     override def toString: String = i.toString
@@ -39,6 +39,9 @@ object OperationalSemantics {
 //  final case class Int4Data(i0: Int, i1: Int, i2: Int, i3: Int) extends Data(int4)
   final case class FloatData(f: Float) extends Data(float) {
     override def toString: String = f.toString + "f"
+  }
+  final case class DoubleData(d: Double) extends Data(double) {
+    override def toString: String = d.toString
   }
   final case class VectorData(a: Vector[Data]) extends Data(VectorType(a.length, a.head.dataType match {
     case b: ScalarType => b
@@ -182,6 +185,8 @@ object OperationalSemantics {
           case Identifier(name, _) => s(name)
 
           case Literal(d) => d
+
+          case Natural(n) => NatData(n)
 
           case UnaryOp(op, x) =>
             op match {

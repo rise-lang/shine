@@ -278,7 +278,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
             )
           )
 
-          CCodeGen.codeGenForeignCall(funDecl, args, env, i :: Nil, cont)
+          CCodeGen.codeGenForeignCall(funDecl.name, args, env, i :: Nil, cont)
 
         case _ =>
           throw new Exception(s"Can not generate fun call to $funDecl with current path $ps")

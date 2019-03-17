@@ -83,6 +83,8 @@ object xmlPrinter {
 
       case Literal(d) => <lit>{d}</lit>
 
+      case Natural(n) => <nat>{n}</nat>
+
       case Pair(fst, snd) =>
         <pair>
           <fst type={ToString(fst.t)}>{apply(fst)}</fst>

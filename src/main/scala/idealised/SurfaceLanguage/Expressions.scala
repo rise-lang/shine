@@ -191,6 +191,17 @@ final case class LiteralExpr(d: Data)
   override def toString: String = s"$d"
 }
 
+final case class NatExpr(n: Nat)
+  extends DataExpr
+{
+  override lazy val t: Option[DataType] = Some(NatType)
+
+  override def convertToPhrase: DPIA.Phrases.Natural =
+    DPIA.Phrases.Natural(n)
+
+  override def toString: String = s"$n"
+}
+
 abstract class PrimitiveExpr extends DataExpr {
   def inferType(subs: Types.TypeInference.SubstitutionMap): DataExpr
 

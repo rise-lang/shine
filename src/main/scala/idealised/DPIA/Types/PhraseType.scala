@@ -1,5 +1,6 @@
 package idealised.DPIA.Types
 
+import idealised.DPIA.FunctionalPrimitives.AsIndex
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics.IndexData
 import idealised.DPIA._
@@ -92,14 +93,12 @@ object PhraseType {
         p match {
           case Identifier(name, _) =>
             if (`for`.name == name) {
-              Stop(Literal(IndexData(ae, IndexType(ae.max))).asInstanceOf[Phrase[T2]])
+              Stop(AsIndex(ae.max, Natural(ae)).asInstanceOf[Phrase[T2]])
             } else {
               Continue(p, this)
             }
-          case Literal(IndexData(index, IndexType(size))) =>
-            val newIndex = Nat.substitute(ae, `for`, in = index)
-            val newSize = Nat.substitute(ae, `for`, in = size)
-            Stop(Literal(IndexData(newIndex, IndexType(newSize))).asInstanceOf[Phrase[T2]])
+          case Natural(n) =>
+            Stop(Natural(Nat.substitute(ae, `for`, n)).asInstanceOf[Phrase[T2]])
           case _ =>
             Continue(p, this)
         }

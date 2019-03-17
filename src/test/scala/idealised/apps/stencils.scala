@@ -13,6 +13,8 @@ import lift.arithmetic._
 
 import scala.util.Random
 
+import scala.language.reflectiveCalls
+
 class stencils extends Tests {
   val add = fun(x => fun(y => x + y))
 

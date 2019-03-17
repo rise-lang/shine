@@ -58,6 +58,8 @@ object VisitAndRebuild {
             case _ => LiteralExpr(d)
           }
 
+          case NatExpr(n) => NatExpr(v(n))
+
           case UnaryOpExpr(op, x) => UnaryOpExpr(op, apply(x, v))
 
           case BinOpExpr(op, lhs, rhs) => BinOpExpr(op, apply(lhs, v), apply(rhs, v))

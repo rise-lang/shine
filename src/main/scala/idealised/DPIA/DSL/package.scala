@@ -1,12 +1,12 @@
 package idealised.DPIA
 
 import idealised.DPIA.Compilation.TranslationContext
+import idealised.DPIA.FunctionalPrimitives.{AsIndex, IndexAsNat}
 import idealised.DPIA.ImperativePrimitives._
-import idealised.DPIA.Phrases.{BinOp, Identifier, Literal, Pair, Phrase, Proj1, Proj2, UnaryOp}
-import idealised.DPIA.Semantics.OperationalSemantics.{FloatData, IndexData, IntData}
+import idealised.DPIA.Phrases.{BinOp, Literal, Natural, Pair, Phrase, Proj1, Proj2, UnaryOp}
+import idealised.DPIA.Semantics.OperationalSemantics.{FloatData, IntData}
 import idealised.DPIA.Types._
 import idealised.SurfaceLanguage.Operators
-import lift.arithmetic.{ContinuousRange, NamedVar}
 
 import scala.language.{implicitConversions, reflectiveCalls}
 
@@ -33,7 +33,7 @@ package object DSL {
 
     def `@`(index: Nat): Idx = e.t match {
       case ExpType(ArrayType(n, dt)) =>
-        Idx(n, dt, Literal(IndexData(index, IndexType(n))), e)
+        Idx(n, dt, AsIndex(n, Natural(index)), e)
       case x => error(x.toString, "exp[n.dt]")
     }
 
@@ -59,10 +59,9 @@ package object DSL {
 
     def `@`(index: Nat): IdxAcc = a.t match {
       case AccType(ArrayType(n, dt)) =>
-        IdxAcc(n, dt, Literal(IndexData(index, IndexType(n))), a)
+        IdxAcc(n, dt, AsIndex(n, Natural(index)), a)
       case x => error(x.toString, "acc[n.dt]")
     }
-
 
     def `@v`(index: Phrase[ExpType]): IdxVecAcc = (index.t, a.t) match {
       case (ExpType(IndexType(n1)), AccType(VectorType(n2, st))) if n1 == n2 =>
@@ -94,10 +93,8 @@ package object DSL {
 
   implicit class CallExpLambda[T <: PhraseType](fun: Phrase[ExpType -> T]) {
     def apply(arg: Phrase[ExpType]): Phrase[T] = CallLambda[ExpType, T](fun)(arg)
-    def apply(arg: Nat): Phrase[T] = Lifting.liftFunctionToNatLambda(fun)(arg)
 
     def $(arg: Phrase[ExpType]): Phrase[T] = apply(arg)
-    def $(arg: Nat): Phrase[T] = apply(arg)
   }
 
   implicit class CallNatDependentLambda[T <: PhraseType](fun: Phrase[`(nat)->`[T]]) {
@@ -135,15 +132,16 @@ package object DSL {
     def _2: Proj2[T1, T2] = π2(v)
   }
 
-  implicit class IdentExpPhraseExtensions(i: Identifier[ExpType]) {
-    def asNatIdentifier = NamedVar(i.name)
-    def asNatIdentifier(withUpperBound: Nat) =
-      NamedVar(i.name, ContinuousRange(0, withUpperBound))
+  def fmapNatExpr(natExpr: Phrase[ExpType], f: Nat => Nat): Phrase[ExpType] = {
+    Natural(f(Phrase.Internal.NatFromNatExpr(natExpr)))
   }
 
-  implicit class NatExtensions(n: Nat) {
-    def asPhrase = Literal(IndexData(n, IndexType(n.max)))
-    def asPhrase(withType: IndexType): Phrase[ExpType] = Literal(IndexData(n, withType))
+  // this is safe as long as `f' returns a Nat value of less than `n'
+  def fmapIndexExpr(indexExpr: Phrase[ExpType], f: Nat => Nat): Phrase[ExpType] = {
+    indexExpr.t match {
+      case ExpType(IndexType(n)) => AsIndex(n, fmapNatExpr(IndexAsNat(n, indexExpr), f))
+      case x => throw new Exception(s"Expected ExpType(IndexType(n)) found: $x")
+    }
   }
 
   implicit def toLiteralInt(i: Int): Literal = Literal(IntData(i))

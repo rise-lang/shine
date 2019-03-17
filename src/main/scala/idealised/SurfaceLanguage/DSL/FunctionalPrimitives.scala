@@ -9,8 +9,23 @@ import lift.arithmetic.{Cst, InclusiveIndexVar, NamedVar}
 
 import scala.language.implicitConversions
 
-object depMapSeq {
+object generate {
+  def apply(f: Expr[DataType -> DataType]): Generate = Generate(f)
+}
 
+object indexAsNat {
+  def apply(e: DataExpr): IndexAsNat = IndexAsNat(e)
+}
+
+object asIndex {
+  def apply(n: Nat, e: DataExpr): AsIndex = AsIndex(n, e, Some(IndexType(n)))
+}
+
+object cast {
+  def apply(dt: BasicType, e: DataExpr): Cast = Cast(dt, e)
+}
+
+object depMapSeq {
   def withIndex(f: Expr[`(nat)->`[DataType -> DataType]]): Expr[DataType -> DataType] = fun(x => withIndex(f,x))
   def withIndex(f: Expr[`(nat)->`[DataType -> DataType]], x:DataExpr): DepMapSeq= DepMapSeq(f, x, None)
 

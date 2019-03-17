@@ -67,6 +67,8 @@ object TypeInference {
 
       case LiteralExpr(d) => LiteralExpr(d)
 
+      case NatExpr(n) => NatExpr(n)
+
       case p: PrimitiveExpr => VisitAndRebuild(p.inferType(subs), GetLengthVisitor(subs))
     }).asInstanceOf[Expr[T]]
   }

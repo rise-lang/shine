@@ -20,6 +20,8 @@ final case class IntData(i: Int) extends ScalarData(int)
 
 final case class FloatData(f: Float) extends ScalarData(float)
 
+final case class DoubleData(d: Double) extends ScalarData(double)
+
 final case class IndexData(n: Nat, indexType: IndexType) extends Data(indexType)
 
 object IndexData {
