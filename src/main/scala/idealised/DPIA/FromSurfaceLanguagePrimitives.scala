@@ -160,7 +160,7 @@ object FromSurfaceLanguagePrimitives {
 
           val transposeFunction =
             λ(ExpType(IndexType(n * m)))(i => {
-              fmapIndexExpr(i, j => {
+              mapIndexExpr(i, j => {
                 val col = (j % n) * m
                 val row = j / n
                 row + col
@@ -169,7 +169,7 @@ object FromSurfaceLanguagePrimitives {
 
           val transposeInverseFunction =
             λ(ExpType(IndexType(n * m)))(i => {
-              fmapIndexExpr(i, j => {
+              mapIndexExpr(i, j => {
                 val col = (j % m) * n
                 val row = j / m
                 row + col

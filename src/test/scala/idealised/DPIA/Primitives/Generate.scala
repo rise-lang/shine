@@ -75,8 +75,8 @@ class Generate extends idealised.util.Tests {
         generate(fun(IndexType(p))(j =>
           generate(fun(IndexType(p))(k => {
             val exponentWoMinus2 =
-              fmapNatExpr(fmapNatExpr(indexAsNat(j), j => j * LPrevIter) +
-                fmapNatExpr(indexAsNat(i), i => i) * fmapNatExpr(indexAsNat(k), k => k / (p * LPrevIter)), x => x)
+              mapNatExpr(mapNatExpr(indexAsNat(j), j => j * LPrevIter) +
+                mapNatExpr(indexAsNat(i), i => i) * mapNatExpr(indexAsNat(k), k => k / (p * LPrevIter)), x => x)
             val exponent = cast(double, exponentWoMinus2) * -2.0
             tuple(cast(float, oclFun("cospi", double, double, exponent)),
               cast(float, oclFun("sinpi", double, double, exponent)))

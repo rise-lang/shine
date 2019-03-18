@@ -132,14 +132,14 @@ package object DSL {
     def _2: Proj2[T1, T2] = π2(v)
   }
 
-  def fmapNatExpr(natExpr: Phrase[ExpType], f: Nat => Nat): Phrase[ExpType] = {
+  def mapNatExpr(natExpr: Phrase[ExpType], f: Nat => Nat): Phrase[ExpType] = {
     Natural(f(Phrase.Internal.NatFromNatExpr(natExpr)))
   }
 
   // this is safe as long as `f' returns a Nat value of less than `n'
-  def fmapIndexExpr(indexExpr: Phrase[ExpType], f: Nat => Nat): Phrase[ExpType] = {
+  def mapIndexExpr(indexExpr: Phrase[ExpType], f: Nat => Nat): Phrase[ExpType] = {
     indexExpr.t match {
-      case ExpType(IndexType(n)) => AsIndex(n, fmapNatExpr(IndexAsNat(n, indexExpr), f))
+      case ExpType(IndexType(n)) => AsIndex(n, mapNatExpr(IndexAsNat(n, indexExpr), f))
       case x => throw new Exception(s"Expected ExpType(IndexType(n)) found: $x")
     }
   }
