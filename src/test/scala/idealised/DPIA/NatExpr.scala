@@ -60,7 +60,7 @@ class NatExpr extends idealised.util.Tests {
   }
 
   test("fmapNatExpr allows the combination of two NatExpr into one.") {
-    val combined = fmapNatExpr(NatExpr(8), NatExpr(2), (eight, two) => eight + two)
+    val combined = mapNatExpr(NatExpr(8), NatExpr(2), (eight, two) => eight + two)
     assert(combined.n == lift.arithmetic.Cst(10))
   }
 }

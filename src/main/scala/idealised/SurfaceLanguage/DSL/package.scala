@@ -55,13 +55,13 @@ package object DSL {
 
   implicit def toNatExprNat(n: Nat): NatExpr = NatExpr(n)
 
-  def fmapNatExpr(natExpr: Expr, f: Nat => Nat): NatExpr = {
+  def mapNatExpr(natExpr: Expr, f: Nat => Nat): NatExpr = {
     val liftedNat = Internal.natFromNatExpr(natExpr)
     val res = f(liftedNat)
     NatExpr(res)
   }
 
-  def fmapNatExpr(natExpr1: Expr, natExpr2: Expr, f: (Nat, Nat) => Nat): NatExpr = {
+  def mapNatExpr(natExpr1: Expr, natExpr2: Expr, f: (Nat, Nat) => Nat): NatExpr = {
     val liftedNat1 = Internal.natFromNatExpr(natExpr1)
     val liftedNat2 = Internal.natFromNatExpr(natExpr2)
     val res = f(liftedNat1, liftedNat2)
@@ -69,9 +69,9 @@ package object DSL {
   }
 
   // this is safe as long as `f' returns a Nat value of less than `n'
-  def fmapIndexExpr(indexExpr: Expr, f: Nat => Nat): Expr = {
+  def mapIndexExpr(indexExpr: Expr, f: Nat => Nat): Expr = {
     indexExpr.t match {
-      case Some(IndexType(n)) => AsIndex(n, fmapNatExpr(indexAsNat(indexExpr), f))
+      case Some(IndexType(n)) => AsIndex(n, mapNatExpr(indexAsNat(indexExpr), f))
       case x => throw new Exception(s"Expected ExpType(IndexType(n)) found: $x")
     }
   }

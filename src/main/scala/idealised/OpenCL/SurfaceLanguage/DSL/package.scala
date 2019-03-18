@@ -10,7 +10,7 @@ package object DSL {
       val f =
         nFun(n =>
           fun(IndexType(n))(i => {
-            fmapIndexExpr(i, j => (j / (n /^ s)) + s * (j % (n /^ s)))
+            mapIndexExpr(i, j => (j / (n /^ s)) + s * (j % (n /^ s)))
           }))
       reorder(f, f)
     })
