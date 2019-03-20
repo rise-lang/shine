@@ -7,8 +7,8 @@ import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage.Semantics._
 import idealised.util.{Execute, SyntaxChecker}
 
-class separableBlur extends idealised.util.Tests {
-  // Separable Convolution:
+object binomialFilter {
+  // Binomial filter, convolution is separable:
   //
   // 1 2 1   1
   // 2 4 2 ~ 2 x 1 2 1
@@ -54,7 +54,9 @@ class separableBlur extends idealised.util.Tests {
         transpose() >>> map(dot(weights1d)) >>> slideSeq(3, 1) >>> map(dot(weights1d))
       )
     )))
+}
 
+class binomialFilter extends idealised.util.Tests {
   def program(name: String, e: Expr): C.Program = {
     val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(e, collection.Map()))
     val program = C.ProgramGenerator.makeCode(phrase, name)
@@ -63,7 +65,7 @@ class separableBlur extends idealised.util.Tests {
     program
   }
 
-  lazy val ref_prog = program("blur_ref", blur)
+  lazy val ref_prog = program("blur_ref", binomialFilter.blur)
   test("blur compiles to C code") {
     ref_prog
   }
@@ -110,14 +112,14 @@ int main(int argc, char** argv) {
   }
 
   test("compile and compare factorised blur to the reference") {
-    check_ref(factorised_blur)
+    check_ref(binomialFilter.factorised_blur)
   }
 
   test("compile and compare separated blur to the reference") {
-    check_ref(separated_blur)
+    check_ref(binomialFilter.separated_blur)
   }
 
   test("compile and compare register rotation blur to the reference") {
-    check_ref(regrot_blur)
+    check_ref(binomialFilter.regrot_blur)
   }
 }
