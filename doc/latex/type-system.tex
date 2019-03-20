@@ -342,9 +342,7 @@ The typing rules of \DPIA are given in \autoref{fig:typing-rules}. These rules d
         \prim{zipAcc_2} &:& (n : \natkind) \to (\dtone~\dttwo : \datatype) \to \tyacc[n.\dtone \times \dttwo] \to \tyacc[n.\dttwo] \\
         \prim{pairAcc_1}&:&(\dtone~\dttwo : \datatype) \to \tyacc[\dtone \times \dttwo] \to \tyacc[\dtone] \\
         \prim{pairAcc_2}&:&(\dtone~\dttwo : \datatype) \to \tyacc[\dtone \times \dttwo] \to \tyacc[\dttwo] \\
-        \prim{idxAcc} &:&(n : \natkind) \to (\dt : \datatype) \to \tyacc[n.\dt] \to \tyexp[\tyidx[n]] \to \tyacc[\dt] \bigskip\\
-
-        \prim{mapRead}&:&(n : \natkind) \to (\dtone~\dttwo : \datatype) \to (\tyexp[\dtone] \to (\tyexp[\dttwo] \to \tycomm) \to \tycomm) \to \tyexp[n.\dtone] \to \tyexp[n.\dttwo] \\
+        \prim{idxAcc} &:&(n : \natkind) \to (\dt : \datatype) \to \tyacc[n.\dt] \to \tyexp[\tyidx[n]] \to \tyacc[\dt] \\
     \end{tabular*}
     \subcaption{Imperative primitives}\label{fig:imp-prim}
   \end{minipage}
