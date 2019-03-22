@@ -1,13 +1,16 @@
 package idealised.DPIA.Primitives
 
+import benchmarks.core.SimpleRunOpenCLProgram
+import idealised.OpenCL.KernelWithSizes
 import idealised.OpenCL.SurfaceLanguage.DSL.mapGlobal
 import idealised.OpenMP.SurfaceLanguage.DSL.mapPar
 import idealised.SurfaceLanguage.DSL._
+import idealised.SurfaceLanguage.Expr
 import idealised.SurfaceLanguage.Semantics.FloatData
-
 import idealised.SurfaceLanguage.Types._
 import idealised.util.SyntaxChecker
-import idealised.utils.ScalaPatterns
+import idealised.utils.{ScalaPatterns, TimeSpan}
+import idealised.utils.Time.ms
 import lift.arithmetic._
 
 import scala.util.Random
@@ -69,8 +72,6 @@ class Pad extends idealised.util.Tests {
   }
 
   test("Pad 2D (OpenCL)") {
-    import idealised.OpenCL._
-
     val padAmount = 2
     val padValue = 0.0f
 
@@ -80,23 +81,30 @@ class Pad extends idealised.util.Tests {
       )
     )
 
-
-    val p = idealised.OpenCL.KernelGenerator.makeCode(1,1)(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
-    val kernelF = p.as[ScalaFunction`(`Int `,` Int `,` Array[Array[Float]]`)=>`Array[Float]]
-    val code = p.code
-    SyntaxChecker.checkOpenCL(code)
-    println(code)
-
-    opencl.executor.Executor.loadAndInit()
-    val random = new Random()
     val actualN = 2
     val actualM = 2
-    val input = Array.fill(actualN)(Array.fill(actualM)(random.nextFloat()))
-    val scalaOutput = ScalaPatterns.pad2D(input, padAmount, 0.0f).flatten
 
-    val (kernelOutput, _) = kernelF(actualN `,` actualM `,` input)
-    opencl.executor.Executor.shutdown()
+    case class Run() extends SimpleRunOpenCLProgram(false) {
+      override type Input = Array[Array[Float]]
 
-    assert(kernelOutput sameElements scalaOutput)
+      override def dpiaProgram: Expr = f
+
+      override protected def makeInput(random: Random): Input = {
+        Array.fill(actualN)(Array.fill(actualM)(random.nextFloat()))
+      }
+
+      override protected def runScalaProgram(input: Input): Array[Float] = {
+        ScalaPatterns.pad2D(input, padAmount, 0.0f).flatten
+      }
+
+      override protected def runKernel(k: KernelWithSizes, input: Array[Array[Float]]): (Array[Float], TimeSpan[ms]) = {
+        import idealised.OpenCL._
+
+        val kernelFun = k.as[ScalaFunction `(` Int `,` Int `,` Input `)=>` Array[Float]]
+        kernelFun(actualN `,` actualM `,` input)
+      }
+    }
+
+    Run().run(localSize = 1, globalSize = 1).correctness.check()
   }
 }

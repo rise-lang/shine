@@ -1,8 +1,13 @@
 package idealised.DPIA.Primitives
 
+import benchmarks.core.SimpleRunOpenCLProgram
+import idealised.OpenCL.KernelWithSizes
 import idealised.SurfaceLanguage.DSL._
+import idealised.SurfaceLanguage.Expr
 import idealised.SurfaceLanguage.Types._
 import idealised.util.{Execute, SyntaxChecker}
+import idealised.utils.Time.ms
+import idealised.utils.TimeSpan
 
 import scala.util.Random
 
@@ -60,74 +65,92 @@ int main(int argc, char** argv) {
 
 
   test("'Type level transposition' with join->split (OpenCL 2D)") {
-    import idealised.OpenCL.{ScalaFunction, `(`, `)=>`, _}
-    opencl.executor.Executor.loadAndInit()
-
-
     val f = nFun(n => nFun(m => fun(ArrayType(n, ArrayType(m, float)))(xs => xs :>> join :>> split(m))))
 
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(1, 1)(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
-    val kernelF = kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Array[Float]] `)=>` Array[Float]]
-
-    val random = new Random()
     val actualN = 9
     val actualM = 6
-    val input = Array.fill(actualN)(Array.fill(actualM)(random.nextFloat()))
-    val scalaOutput = input.flatten
 
-    val (kernelOutput, _) = kernelF(actualN `,` actualM `,` input)
+    case class Run() extends SimpleRunOpenCLProgram(false) {
+      override type Input = Array[Array[Float]]
 
-    println(kernel.code)
-    opencl.executor.Executor.shutdown()
+      override def dpiaProgram: Expr = f
 
-    assert(kernelOutput sameElements scalaOutput)
+      override protected def makeInput(random: Random): Array[Array[Float]] = {
+        Array.fill(actualN)(Array.fill(actualM)(random.nextFloat()))
+      }
+
+      override protected def runScalaProgram(input: Array[Array[Float]]): Array[Float] = {
+        input.flatten
+      }
+
+      override protected def runKernel(k: KernelWithSizes, input: Array[Array[Float]]): (Array[Float], TimeSpan[ms]) = {
+        import idealised.OpenCL._
+
+        val kernelFun = k.as[ScalaFunction `(` Int `,` Int `,` Input `)=>` Array[Float]]
+        kernelFun(actualN `,` actualM `,` input)
+      }
+    }
+
+    Run().run(1, 1).correctness.check()
   }
 
   test("Transpose 2D array (OpenCL)") {
-    import idealised.OpenCL.{ScalaFunction, `(`, `)=>`, _}
-    opencl.executor.Executor.loadAndInit()
-
-
     val f = nFun(n => nFun(m => fun(ArrayType(n, ArrayType(m, float)))(xs => xs :>> transpose)))
 
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(1, 1)(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
-    val kernelF = kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Array[Float]] `)=>` Array[Float]]
-
-    val random = new Random()
     val actualN = 9
     val actualM = 6
-    val input = Array.fill(actualN)(Array.fill(actualM)(random.nextFloat()))
-    val scalaOutput = input.transpose.flatten
 
-    val (kernelOutput, _) = kernelF(actualN `,` actualM `,` input)
+    case class Run() extends SimpleRunOpenCLProgram(false) {
+      override type Input = Array[Array[Float]]
 
-    println(kernel.code)
-    opencl.executor.Executor.shutdown()
+      override def dpiaProgram: Expr = f
 
-    assert(kernelOutput sameElements scalaOutput)
+      override protected def makeInput(random: Random): Array[Array[Float]] = {
+        Array.fill(actualN)(Array.fill(actualM)(random.nextFloat()))
+      }
+
+      override protected def runScalaProgram(input: Array[Array[Float]]): Array[Float] = {
+        input.transpose.flatten
+      }
+
+      override protected def runKernel(k: KernelWithSizes, input: Array[Array[Float]]): (Array[Float], TimeSpan[ms]) = {
+        import idealised.OpenCL._
+
+        val kernelFun = k.as[ScalaFunction `(` Int `,` Int `,` Input `)=>` Array[Float]]
+        kernelFun(actualN `,` actualM `,` input)
+      }
+    }
+
+    Run().run(1, 1).correctness.check()
   }
 
   test("TransposeArrayDep (OpenCL)") {
-    import idealised.OpenCL.{ScalaFunction, `(`, `)=>`, _}
-    opencl.executor.Executor.loadAndInit()
-
-
     val f = nFun(n => nFun(m => fun(ArrayType(n, DepArrayType(m, i => ArrayType(i + 1, float))))(xs => xs :>> transpose :>> depMapSeq(fun(x => x)))))
 
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(1, 1)(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
-    val kernelF = kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Array[Array[Float]]] `)=>` Array[Float]]
-
-    val random = new Random()
     val actualN = 9
     val actualM = 6
-    val input = Array.fill(actualN)(Array.tabulate(actualM)(i => Array.fill(i + 1)(random.nextFloat())))
-    val scalaOutput = input.transpose.flatten.flatten
 
-    val (kernelOutput, _) = kernelF(actualN `,` actualM `,` input)
+    case class Run() extends SimpleRunOpenCLProgram(false) {
+      override type Input = Array[Array[Array[Float]]]
 
-    println(kernel.code)
-    opencl.executor.Executor.shutdown()
+      override def dpiaProgram: Expr = f
 
-    assert(kernelOutput sameElements scalaOutput)
+      override protected def makeInput(random: Random): Array[Array[Array[Float]]] = {
+        Array.fill(actualN)(Array.tabulate(actualM)(i => Array.fill(i + 1)(random.nextFloat())))
+      }
+
+      override protected def runScalaProgram(input: Array[Array[Array[Float]]]): Array[Float] = {
+        input.transpose.flatten.flatten
+      }
+
+      override protected def runKernel(k: KernelWithSizes, input: Array[Array[Array[Float]]]): (Array[Float], TimeSpan[ms]) = {
+        import idealised.OpenCL._
+
+        val kernelFun = k.as[ScalaFunction `(` Int `,` Int `,` Input `)=>` Array[Float]]
+        kernelFun(actualN `,` actualM `,` input)
+      }
+    }
+
+    Run().run(1, 1).correctness.check()
   }
 }

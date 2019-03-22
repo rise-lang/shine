@@ -192,12 +192,16 @@ class triangleVectorMultNoExecutor extends idealised.util.Tests {
 
   test ("Parallel OpenCL triangle vector partial multiplication (padding the row up to vector) (PLDI '19 submission listing 5)") {
     Executor.loadAndInit()
+
     val inputSize = 4096
     println(Executor.getPlatformName)
     println(Executor.getDeviceName)
 
-    val result = triangleMatrixPadSplit(inputSize, 8, 8, inputSize)
-    Executor.shutdown()
+    val result = try {
+      triangleMatrixPadSplit(inputSize, 8, 8, inputSize)
+    } finally {
+      Executor.shutdown()
+    }
 
     assert(result.correct)
   }

@@ -1,9 +1,13 @@
 package idealised.DPIA.Primitives
 
+import benchmarks.core.SimpleRunOpenCLProgram
+import idealised.OpenCL.KernelWithSizes
 import idealised.SurfaceLanguage.DSL._
-import idealised.SurfaceLanguage.NatIdentifier
+import idealised.SurfaceLanguage.{Expr, NatIdentifier}
 import idealised.SurfaceLanguage.Types._
 import idealised.util.SyntaxChecker
+import idealised.utils.Time.ms
+import idealised.utils.TimeSpan
 import lift.arithmetic._
 
 import scala.util.Random
@@ -52,30 +56,35 @@ class Slide extends idealised.util.Tests {
   }
 
   test("Two dimensional slide test") {
-    import idealised.OpenCL.{ScalaFunction, `(`, `)=>`, _}
-    opencl.executor.Executor.loadAndInit()
-
     val slideSize = 3
     val slideStep = 1
 
     val f = nFun(n => nFun(m => fun(ArrayType(n, ArrayType(m, float)))(xs => xs  :>> slide2D(slideSize, slideStep) :>> mapSeq(fun(x => x)))))
 
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(1,1)(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
-    val kernelF = kernel.as[ScalaFunction`(` Int `,` Int `,` Array[Array[Float]]`)=>`Array[Float]]
-
-    val random = new Random()
     val actualN = 9
     val actualM = 6
-    val input = Array.fill(actualN)(Array.fill(actualM)(random.nextFloat()))
 
-    val (kernelOutput, _) = kernelF(actualN `,` actualM `,` input)
+    case class Run() extends SimpleRunOpenCLProgram(false) {
+      override type Input = Array[Array[Float]]
 
-    val scalaOutput = input.map(_.sliding(slideSize, slideStep).toArray).sliding(slideSize, slideStep).toArray.map(_.transpose).flatten.flatten.flatten
+      override def dpiaProgram: Expr = f
 
+      override protected def makeInput(random: Random): Array[Array[Float]] = {
+        Array.fill(actualN)(Array.fill(actualM)(random.nextFloat()))
+      }
 
-    println(kernel.code)
-    opencl.executor.Executor.shutdown()
+      override protected def runKernel(k: KernelWithSizes, input: Array[Array[Float]]): (Array[Float], TimeSpan[ms]) = {
+        import idealised.OpenCL._
 
-    assert(kernelOutput sameElements scalaOutput)
+        val kernelFun = k.as[ScalaFunction `(` Int `,` Int `,` Input `)=>` Array[Float]]
+        kernelFun(actualN `,` actualM `,` input)
+      }
+
+      override protected def runScalaProgram(input: Array[Array[Float]]): Array[Float] = {
+        input.map(_.sliding(slideSize, slideStep).toArray).sliding(slideSize, slideStep).toArray.map(_.transpose).flatten.flatten.flatten
+      }
+    }
+
+    Run().run(1, 1).correctness.check()
   }
 }
