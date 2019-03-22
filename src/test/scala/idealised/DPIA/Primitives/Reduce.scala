@@ -47,4 +47,17 @@ class Reduce extends idealised.util.Tests {
 
     "for".r.findAllIn(code).length shouldBe 2
   }
+
+  test("Folding a reduce into a map from the other side should generate syntactic valide C code") {
+    val e =
+      nFun(h => nFun(w =>
+        fun(ArrayType(h, ArrayType(w, float)))(a =>
+          a :>> mapSeq(mapSeq(fun(x => x))) :>> map(reduceSeq(add, 0.0f))
+        )))
+
+    val p = idealised.C.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(e, Map())))
+    val code = p.code
+    SyntaxChecker(code)
+    println(code)
+  }
 }
