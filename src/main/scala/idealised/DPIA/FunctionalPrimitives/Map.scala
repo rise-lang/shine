@@ -20,7 +20,7 @@ final case class Map(n: Nat,
                                      (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    mapAcc(f o g, array)(A)
+    mapAcc(g o f, array)(A)
   }
 
   override def continuationTranslation(C: Phrase[ExpType -> CommandType])

@@ -10,7 +10,7 @@ import idealised.DPIA.Phrases._
 
 import scala.language.reflectiveCalls
 
-object MapSeqSlideIRegRot {
+object SlideSeqIRegRot {
   def apply(n: Nat,
             size: Nat,
             // step: Nat,
