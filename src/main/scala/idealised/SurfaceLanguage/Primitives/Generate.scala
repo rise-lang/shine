@@ -17,7 +17,9 @@ final case class Generate(f: Expr, override val t: Option[DataType] = None)
     )
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Expr = {
-    Generate(VisitAndRebuild(f, fun), t.map(fun(_)))
+  override def children: Seq[Any] = Seq(f, t)
+
+  override def rebuild: Seq[Any] => Expr = {
+    case Seq(f: Expr, t: Option[DataType]) => Generate(f, t)
   }
 }

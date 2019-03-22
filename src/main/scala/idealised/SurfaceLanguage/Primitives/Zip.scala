@@ -23,9 +23,10 @@ final case class Zip(lhs: Expr, rhs: Expr,
         }))
   }
 
-  override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): Expr = {
-    Zip(SurfaceLanguage.VisitAndRebuild(lhs, f),
-      SurfaceLanguage.VisitAndRebuild(rhs, f),
-      t.map(f(_)))
+  override def children: Seq[Any] = Seq(lhs, rhs, t)
+
+  override def rebuild: Seq[Any] => Expr = {
+    case Seq(lhs: Expr, rhs: Expr, t: Option[DataType]) =>
+      Zip(lhs, rhs, t)
   }
 }

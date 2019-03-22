@@ -17,7 +17,9 @@ final case class AsIndex(n: Nat, e: Expr, override val t: Option[DataType] = Non
     )
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Expr = {
-    AsIndex(fun(n), VisitAndRebuild(e, fun), t.map(fun(_)))
+  override def children: Seq[Any] = Seq(n, e, t)
+
+  override def rebuild: Seq[Any] => Expr = {
+    case Seq(n: Nat, e: Expr, t: Option[DataType]) => AsIndex(n, e, t)
   }
 }

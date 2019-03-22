@@ -25,7 +25,10 @@ abstract class AbstractSlide(val sz: Nat, val sp: Nat, val input: Expr,
       })
   }
 
-  override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): Expr = {
-    make(f(sz), f(sp), SurfaceLanguage.VisitAndRebuild(input, f), t.map(f(_)))
+  override def children: Seq[Any] = Seq(sz, sp, input, t)
+
+  override def rebuild: Seq[Any] => Expr = {
+    case Seq(sz: Nat, sp: Nat, input: Expr, t: Option[DataType]) =>
+      make(sz, sp, input, t)
   }
 }

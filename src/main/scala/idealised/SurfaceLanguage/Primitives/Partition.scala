@@ -26,7 +26,10 @@ final case class Partition(m: Nat, lenF: NatNatTypeFunction, array: Expr,
     typed
   }
 
-  override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): Expr = {
-    Partition(f(m), f(lenF), SurfaceLanguage.VisitAndRebuild(array, f), t.map(f(_)))
+  override def children: Seq[Any] = Seq(m, lenF, array, t)
+
+  override def rebuild: Seq[Any] => Expr = {
+    case Seq(m: Nat, lenF: NatNatTypeFunction, array: Expr, t: Option[DataType]) =>
+      Partition(m, lenF, array, t)
   }
 }

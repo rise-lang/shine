@@ -87,17 +87,17 @@ package object DSL {
         case Some(IndexType(n)) =>
           p match {
             case i: IdentifierExpr => NamedVar(i.name, RangeAdd(0, n, 1))
-            case ApplyExpr(fun, arg) => natFromIndexExpr(Lifting.liftFunctionExpr(fun)(arg))
-            case BinOpExpr(op, lhs, rhs) => binOpToNat(op, natFromIndexExpr(lhs), natFromIndexExpr(rhs))
-            case IfThenElseExpr(_, _, _) => ???
-            case LiteralExpr(lit) => lit match {
+            case ApplyExpr(fun, arg, _) => natFromIndexExpr(Lifting.liftFunctionExpr(fun)(arg))
+            case BinOpExpr(op, lhs, rhs, _) => binOpToNat(op, natFromIndexExpr(lhs), natFromIndexExpr(rhs))
+            case IfThenElseExpr(_, _, _, _) => ???
+            case LiteralExpr(lit,_ ) => lit match {
               case i: IndexData => i.n
               case _ => throw new Exception("This should never happen")
             }
             case NatExpr(_) => throw new Exception("This should never happen")
-            case NatDependentApplyExpr(fun, arg) => natFromIndexExpr(Lifting.liftNatDependentFunctionExpr(fun)(arg))
-            case TypeDependentApplyExpr(fun, arg) => natFromIndexExpr(Lifting.liftTypeDependentFunctionExpr(fun)(arg))
-            case UnaryOpExpr(op, e) => unOpToNat(op, natFromIndexExpr(e))
+            case NatDependentApplyExpr(fun, arg, _) => natFromIndexExpr(Lifting.liftNatDependentFunctionExpr(fun)(arg))
+            case TypeDependentApplyExpr(fun, arg, _) => natFromIndexExpr(Lifting.liftTypeDependentFunctionExpr(fun)(arg))
+            case UnaryOpExpr(op, e, _) => unOpToNat(op, natFromIndexExpr(e))
             case prim: PrimitiveExpr => prim match {
               //TODO can we use our knowledge of n somehow?
               case AsIndex(n, e, _) => natFromNatExpr(e)
@@ -108,19 +108,22 @@ package object DSL {
       }
     }
 
+    // FIXME: this is matching on types before type inference
+    // Bastian Köpcke proposes:
+    // introduce a SurfaceLanguage primitive that calls the DPIA natFromNatExpr when it is converted to a DPIA phrase?
     def natFromNatExpr(p: Expr): Nat = {
       p.t match {
         case Some(NatType) =>
           p match {
             case NatExpr(n) => n
             case i: IdentifierExpr => NamedVar(i.name, StartFromRange(0))
-            case ApplyExpr(fun, arg) => natFromNatExpr(Lifting.liftFunctionExpr(fun)(arg))
-            case BinOpExpr(op, lhs, rhs) => binOpToNat(op, natFromNatExpr(lhs), natFromNatExpr(rhs))
-            case IfThenElseExpr(_, _, _) => ???
-            case LiteralExpr(_) => throw new Exception("This should never happen")
-            case NatDependentApplyExpr(fun, arg) => natFromNatExpr(Lifting.liftNatDependentFunctionExpr(fun)(arg))
-            case TypeDependentApplyExpr(fun, arg) => natFromNatExpr(Lifting.liftTypeDependentFunctionExpr(fun)(arg))
-            case UnaryOpExpr(op, e) => unOpToNat(op, natFromNatExpr(e))
+            case ApplyExpr(fun, arg, _) => natFromNatExpr(Lifting.liftFunctionExpr(fun)(arg))
+            case BinOpExpr(op, lhs, rhs, _) => binOpToNat(op, natFromNatExpr(lhs), natFromNatExpr(rhs))
+            case IfThenElseExpr(_, _, _, _) => ???
+            case LiteralExpr(_, _) => throw new Exception("This should never happen")
+            case NatDependentApplyExpr(fun, arg, _) => natFromNatExpr(Lifting.liftNatDependentFunctionExpr(fun)(arg))
+            case TypeDependentApplyExpr(fun, arg, _) => natFromNatExpr(Lifting.liftTypeDependentFunctionExpr(fun)(arg))
+            case UnaryOpExpr(op, e, _) => unOpToNat(op, natFromNatExpr(e))
             case prim: PrimitiveExpr => prim match {
               case IndexAsNat(e, _) => natFromIndexExpr(e)
               case _ => ???

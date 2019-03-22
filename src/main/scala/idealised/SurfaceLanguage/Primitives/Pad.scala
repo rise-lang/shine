@@ -19,7 +19,10 @@ final case class Pad(l: Nat, r: Nat, padExpr: Expr, array: Expr,
       )
   }
 
-  override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): Expr = {
-    Pad(f(l), f(r), SurfaceLanguage.VisitAndRebuild(padExpr, f), SurfaceLanguage.VisitAndRebuild(array, f), t.map(f(_)))
+  override def children: Seq[Any] = Seq(l, r, padExpr, array, t)
+
+  override def rebuild: Seq[Any] => Expr = {
+    case Seq(l: Nat, r: Nat, padExpr: Expr, array: Expr, t: Option[DataType]) =>
+      Pad(l, r, padExpr, array, t)
   }
 }

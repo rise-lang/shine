@@ -13,12 +13,12 @@ abstract class AbstractDepMap(val df: Expr,
   def makeMap: (Expr, Expr, Option[DataType]) => AbstractDepMap
 
   def dfI: NatIdentifier = df match {
-    case NatDependentLambdaExpr(i, _) => i
+    case NatDependentLambdaExpr(i, _, _) => i
     case x => TypeInference.error(expr = this.toString, found= x.toString, expected = NatDependentLambdaExpr.toString)
   }
 
   def dfF: Expr = df match {
-    case NatDependentLambdaExpr(_, f) => f
+    case NatDependentLambdaExpr(_, f, _) => f
     case x => TypeInference.error(expr = this.toString, found= x.toString, expected = NatDependentLambdaExpr.toString)
   }
 
@@ -41,8 +41,9 @@ abstract class AbstractDepMap(val df: Expr,
       })
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Expr = {
-    makeMap(VisitAndRebuild(df, fun), VisitAndRebuild(array, fun), t.map(fun(_)))
-  }
+  override def children: Seq[Any] = Seq(df, array, t)
 
+  override def rebuild: Seq[Any] => Expr = {
+    case Seq(df: Expr, array: Expr, t: Option[DataType]) => makeMap(df, array, t)
+  }
 }

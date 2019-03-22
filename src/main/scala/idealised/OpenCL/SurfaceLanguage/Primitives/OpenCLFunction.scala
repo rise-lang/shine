@@ -29,8 +29,11 @@ final case class OpenCLFunction(name: String,
     })
   }
 
-  override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): Expr = {
-    OpenCLFunction(name, inTs.map(f(_)), f(outT), args.map(SurfaceLanguage.VisitAndRebuild(_, f)))
+  override def children: Seq[Any] = Seq(inTs, outT, args)
+
+  override def rebuild: Seq[Any] => Expr = {
+    case Seq(inTs: Seq[DataType], outT: DataType, args: Seq[Expr]) =>
+      OpenCLFunction(name, inTs, outT, args)
   }
 
   override def toString: String = s"$name(${args.map(_.toString).mkString(",")})"

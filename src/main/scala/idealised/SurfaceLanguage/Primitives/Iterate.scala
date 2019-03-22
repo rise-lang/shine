@@ -18,9 +18,9 @@ final case class Iterate(k: Nat,
       array.t match {
         case Some(ArrayType(m, dt)) =>
           f match {
-            case NatDependentLambdaExpr(l, body) =>
+            case NatDependentLambdaExpr(l, body, _) =>
               setParamAndInferType(body, ArrayType(l, dt), subs) |> (body =>
-                NatDependentLambdaExpr(l, body) |> (f =>
+                natDepLambdaWithType(l, body) |> (f =>
                   f.t match {
                     case Some(NatDependentFunctionType(_,
                                 FunctionType(ArrayType(l_, dt1), ArrayType(l_n, dt2)))) =>
@@ -45,11 +45,10 @@ final case class Iterate(k: Nat,
       })
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Expr = {
-    Iterate(fun(k),
-      VisitAndRebuild(f, fun),
-      VisitAndRebuild(array, fun),
-      t.map(fun(_)))
-  }
+  override def children: Seq[Any] = Seq(k, f, array, t)
 
+  override def rebuild: Seq[Any] => Expr = {
+    case Seq(k: Nat, f: Expr, array: Expr, t: Option[DataType]) =>
+      Iterate(k, f, array, t)
+  }
 }

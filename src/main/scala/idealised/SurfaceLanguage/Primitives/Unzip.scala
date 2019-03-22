@@ -1,6 +1,5 @@
 package idealised.SurfaceLanguage.Primitives
 
-import idealised.SurfaceLanguage
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage.{Expr, PrimitiveExpr}
 
@@ -17,7 +16,9 @@ final case class Unzip(e: Expr,
       })
   }
 
-  override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): Expr = {
-    Unzip(SurfaceLanguage.VisitAndRebuild(e, f), t.map(f(_)))
+  override def children: Seq[Any] = Seq(e, t)
+
+  override def rebuild: Seq[Any] => Expr = {
+    case Seq(e: Expr, t: Option[DataType]) => Unzip(e, t)
   }
 }

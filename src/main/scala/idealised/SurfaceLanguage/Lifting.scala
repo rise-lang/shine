@@ -23,7 +23,7 @@ object Lifting {
       case app: TypeDependentApplyExpr =>
         val fun = liftTypeDependentFunctionExpr(app.fun)
         liftFunctionExpr(fun(app.arg))
-      case IfThenElseExpr(_, _, _) =>
+      case _: IfThenElseExpr =>
         throw new Exception("This should never happen")
     }
   }
@@ -41,7 +41,7 @@ object Lifting {
       case app: TypeDependentApplyExpr =>
         val fun = liftTypeDependentFunctionExpr(app.fun)
         liftNatDependentFunctionExpr(fun(app.arg))
-      case IfThenElseExpr(_, _, _) =>
+      case _: IfThenElseExpr =>
         throw new Exception("This should never happen")
     }
   }
@@ -59,7 +59,7 @@ object Lifting {
       case app: TypeDependentApplyExpr =>
         val fun = liftTypeDependentFunctionExpr(app.fun)
         liftTypeDependentFunctionExpr(fun(app.arg))
-      case IfThenElseExpr(_, _, _) =>
+      case _: IfThenElseExpr =>
         throw new Exception("This should never happen")
     }
   }

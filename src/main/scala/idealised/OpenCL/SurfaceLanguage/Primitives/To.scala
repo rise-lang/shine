@@ -32,10 +32,9 @@ abstract class To(val f: Expr,
     }
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Expr = {
-    makeTo(VisitAndRebuild(f, fun), VisitAndRebuild(input, fun), t.map{
-      case dt: DataType => fun(dt)
-    })
-  }
+  override def children: Seq[Any] = Seq(f, input, t)
 
+  override def rebuild: Seq[Any] => Expr = {
+    case Seq(f: Expr, input: Expr, t: Option[DataType]) => makeTo(f, input, t)
+  }
 }

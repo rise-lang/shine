@@ -23,8 +23,10 @@ final case class PrintType(input: Expr,
     })
   }
 
-  override def visitAndRebuild(f: VisitAndRebuild.Visitor): Expr = {
-    PrintType(VisitAndRebuild(input, f), msg, t.map(f(_)))
+  override def children: Seq[Any] = Seq(input, t)
+
+  override def rebuild: Seq[Any] => Expr = {
+    case Seq(input: Expr, t: Option[DataType]) => PrintType(input, msg, t)
   }
 
   override def toString: String = ""

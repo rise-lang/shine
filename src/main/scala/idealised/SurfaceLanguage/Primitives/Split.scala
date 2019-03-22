@@ -23,7 +23,10 @@ final case class Split(n: Nat, array: Expr,
       })
   }
 
-  override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): Expr = {
-    Split(f(n), SurfaceLanguage.VisitAndRebuild(array, f), t.map(f(_)))
+  override def children: Seq[Any] = Seq(n, array, t)
+
+  override def rebuild: Seq[Any] => Expr = {
+    case Seq(n: Nat, array: Expr, t: Option[DataType]) =>
+      Split(n, array, t)
   }
 }

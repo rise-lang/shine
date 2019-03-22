@@ -107,7 +107,10 @@ object Type {
                             in: Expr): Expr = {
 
     object Visitor extends VisitAndRebuild.Visitor {
-      override def apply[DT <: DataType](in: DT): DT = substitute(dt, `for`, in)
+      override def apply[T2 <: Type](in: T2): T2 = in match {
+        case inDt: DataType => substitute(dt, `for`, inDt).asInstanceOf[T2]
+        case x => x // TODO? I think we should substitute in this type too
+      }
     }
 
     VisitAndRebuild(in, Visitor)
@@ -119,7 +122,9 @@ object Type {
                             in: Expr): Expr = {
 
     object Visitor extends VisitAndRebuild.Visitor {
-      override def apply(e: Expr): Result = {
+      import VisitAndRebuild.{Result, Stop, Continue}
+
+      override def apply(e: Expr): Result[Expr] = {
         e match {
           case IdentifierExpr(name, _) =>
             if (`for`.name == name) {
@@ -127,7 +132,7 @@ object Type {
             } else {
               Continue(e, this)
             }
-          case LiteralExpr(IndexData(index, IndexType(size))) =>
+          case LiteralExpr(IndexData(index, IndexType(size)), _) =>
             val newIndex = substitute(ae, `for`, in = index)
             val newSize = substitute(ae, `for`, in = size)
             Stop(LiteralExpr(IndexData(newIndex, IndexType(newSize))))
@@ -138,7 +143,10 @@ object Type {
 
       override def apply(e: Nat): Nat = substitute(ae, `for`, e)
 
-      override def apply[DT <: DataType](dt: DT): DT = substitute(ae, `for`, dt)
+      override def apply[T2 <: Type](t: T2): T2 = t match {
+        case dt: DataType => substitute(ae, `for`, dt).asInstanceOf[T2]
+        case x => x // TODO? I think we should substitute in this type too
+      }
     }
 
     VisitAndRebuild(in, Visitor)
