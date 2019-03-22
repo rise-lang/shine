@@ -32,7 +32,7 @@ final case class SlideSeq(n: Nat,
   override def mapAcceptorTranslation(g: Phrase[ExpType -> ExpType], A: Phrase[AccType])
                                      (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
-    import idealised.DPIA.IntermediatePrimitives.{MapSeqSlideIRegRot => I} // TODO: making a choice here
+    import idealised.DPIA.IntermediatePrimitives.{SlideSeqIRegRot => I} // TODO: making a choice here
 
     con(input)(fun(exp"[$inputSize.$dt]")(x =>
       I(n, sz, dt, g.t.outT.dataType,
