@@ -2,21 +2,18 @@ package idealised.DPIA.DSL
 
 import idealised.DPIA.FunctionalPrimitives.{Fst, Snd}
 import idealised.DPIA.ImperativePrimitives._
-import idealised.DPIA.Phrases.{Identifier, IfThenElse, NatDependentLambda, Phrase}
+import idealised.DPIA.Phrases.{Identifier, IfThenElse, Phrase}
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import lift.arithmetic.{NamedVar, RangeAdd}
 
 object `new` {
   def apply(dt: DataType,
-            addressSpace: AddressSpace,
             f: Phrase[VarType -> CommandType]): New =
-    New(dt, addressSpace, f)
+    New(dt, f)
 
   def apply(dt: DataType,
-            addressSpace: AddressSpace,
             f: Phrase[VarType] => Phrase[CommandType]): New =
-    New(dt, addressSpace, λ(exp"[$dt]" x acc"[$dt]")( v => f(v) ))
+    New(dt, λ(exp"[$dt]" x acc"[$dt]")( v => f(v) ))
 }
 
 object newDoubleBuffer {
@@ -60,8 +57,8 @@ object `if` {
 
 object `for` {
   def apply(n: Nat,
-            f: Identifier[ExpType] => Phrase[CommandType]): For =
-    For(n, λ(exp"[idx($n)]")( i => f(i) ))
+            f: Identifier[ExpType] => Phrase[CommandType], unroll:Boolean = false): For =
+    For(n, λ(exp"[idx($n)]")( i => f(i) ), unroll)
 }
 
 object fst {

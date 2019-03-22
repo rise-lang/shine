@@ -1,21 +1,12 @@
 package idealised.SurfaceLanguage.Primitives
 
-import idealised.SurfaceLanguage.DSL.DataExpr
-import idealised.SurfaceLanguage.PrimitiveExpr
-import idealised.{DPIA, SurfaceLanguage}
+import idealised.SurfaceLanguage
 import idealised.SurfaceLanguage.Types._
+import idealised.SurfaceLanguage.{Expr, PrimitiveExpr}
 
-final case class Fst(tuple: DataExpr, override val t: Option[DataType])
+final case class Fst(tuple: Expr, override val t: Option[DataType])
   extends PrimitiveExpr
 {
-
-  override def convertToPhrase: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
-    tuple.t match {
-      case Some(TupleType(dt1, dt2)) =>
-        DPIA.FunctionalPrimitives.Fst(dt1, dt2, tuple.toPhrase[DPIA.Types.ExpType])
-      case _ => throw new Exception("")
-    }
-  }
 
   override def inferType(subs: TypeInference.SubstitutionMap): Fst = {
     import TypeInference._
@@ -27,7 +18,7 @@ final case class Fst(tuple: DataExpr, override val t: Option[DataType])
       })
   }
 
-  override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): DataExpr = {
+  override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): Expr = {
     Fst(SurfaceLanguage.VisitAndRebuild(tuple, f), t.map(f(_)))
   }
 

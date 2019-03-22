@@ -3,14 +3,15 @@ package idealised.DPIA.Primitives
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Types._
 import idealised.util.SyntaxChecker
-import lift.arithmetic._
 
 class Split extends idealised.util.Tests {
 
   test("Simple split example should generate syntactic valid C code with two for loops") {
-    val slideExample = fun(ArrayType(SizeVar("N"), float))(xs => xs :>> split(2) :>> mapSeq(mapSeq(fun(x => x))))
+    val slideExample =
+      nFun(n =>
+        fun(ArrayType(n, float))(xs => xs :>> split(2) :>> mapSeq(mapSeq(fun(x => x)))))
 
-    val p = idealised.C.ProgramGenerator.makeCode(TypeInference(slideExample, Map()).toPhrase)
+    val p = idealised.C.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(slideExample, Map())))
     val code = p.code
     SyntaxChecker(code)
     println(code)
@@ -19,10 +20,12 @@ class Split extends idealised.util.Tests {
   }
 
   test("Simple 2D split example with separate maps should generate syntactic valid OpenMP code with three for loops") {
-    val slideExample = fun(ArrayType(SizeVar("N"), ArrayType(SizeVar("M"), float)))( xs =>
-      xs :>> map(split(2)) :>> mapSeq(mapSeq(mapSeq(fun(x => x)))) )
+    val slideExample =
+      nFun(n => nFun(m =>
+        fun(ArrayType(n, ArrayType(m, float)))(xs =>
+          xs :>> map(split(2)) :>> mapSeq(mapSeq(mapSeq(fun(x => x)))) )))
 
-    val p = idealised.OpenMP.ProgramGenerator.makeCode(TypeInference(slideExample, Map()).toPhrase)
+    val p = idealised.OpenMP.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(slideExample, Map())))
     val code = p.code
     SyntaxChecker(code)
     println(code)
@@ -31,10 +34,12 @@ class Split extends idealised.util.Tests {
   }
 
   test("Simple 2D split example with merged maps should generate syntactic valid OpenMP code with three for loops") {
-    val slideExample = fun(ArrayType(SizeVar("N"), ArrayType(SizeVar("M"), float)))( xs =>
-      xs :>> mapSeq(split(2) >>> mapSeq(mapSeq(fun(x => x)))) )
+    val slideExample =
+      nFun(n => nFun(m =>
+        fun(ArrayType(n, ArrayType(m, float)))( xs =>
+          xs :>> mapSeq(split(2) >>> mapSeq(mapSeq(fun(x => x)))) )))
 
-    val p = idealised.OpenMP.ProgramGenerator.makeCode(TypeInference(slideExample, Map()).toPhrase)
+    val p = idealised.OpenMP.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(slideExample, Map())))
     val code = p.code
     SyntaxChecker(code)
     println(code)
@@ -42,4 +47,14 @@ class Split extends idealised.util.Tests {
     "for".r.findAllIn(code).length shouldBe 3
   }
 
+  ignore("Split mapAcc translation could work with functions working on independent elements") {
+    val e = nFun(n => fun(ArrayType(n, float))(xs =>
+      xs :>> mapSeq(fun(x => x)) :>> split(8) :>> map(fun(x => x))
+    ))
+
+    val p = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(e, Map())))
+    val code = p.code
+    SyntaxChecker.checkOpenCL(code)
+    println(code)
+  }
 }

@@ -9,6 +9,8 @@ object VisitAndRebuild {
   class Visitor {
     def apply[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = Continue(p, this)
     def apply(ae: Nat): Nat = ae
+    def apply(ft:NatNatTypeFunction):NatNatTypeFunction = NatNatTypeFunction(ft.x, apply(ft.body))
+    def apply(ft:NatDataTypeFunction):NatDataTypeFunction = NatDataTypeFunction(ft.x, apply[DataType](ft.body))
     def apply[T <: DataType](dt: T): T = dt
 
     abstract class Result[+T]
@@ -55,10 +57,9 @@ object VisitAndRebuild {
           case IfThenElse(cond, thenP, elseP) =>
             IfThenElse(apply(cond, v), apply(thenP, v), apply(elseP, v))
 
-          case Literal(d) => d match {
-            case IndexData(i, t) => Literal(IndexData(v(i), v(t)))
-            case _ => Literal(d)
-          }
+          case Literal(d) => Literal(d)
+
+          case Natural(n) => Natural(n)
 
           case UnaryOp(op, x) => UnaryOp(op, apply(x, v))
 

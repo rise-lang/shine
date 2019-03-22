@@ -42,17 +42,22 @@ final case class MapVec(n: Nat,
 
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommandType] = {
+    mapAcceptorTranslation(fun(exp"[$dt1]")(x => x), A)
+  }
+
+  override def mapAcceptorTranslation(g: Phrase[ExpType -> ExpType], A: Phrase[AccType])
+                                     (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
     con(array)(λ(exp"[${VectorType(n, dt1)}]")(x =>
-      MapVecI(n, dt1, dt2, λ(exp"[$dt1]")(x => λ(acc"[$dt2]")(o => acc(f(x))(o))), x, A)))
+      MapVecI(n, dt1, dt2, λ(exp"[$dt1]")(x => λ(acc"[$dt2]")(o => acc(g(f(x)))(o))), x, A)))
   }
 
   override def continuationTranslation(C: Phrase[ExpType -> CommandType])
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    `new`(dt"[${VectorType(n, dt2)}]", idealised.OpenCL.GlobalMemory,
+    `new`(dt"[${VectorType(n, dt2)}]",
       λ(exp"[${VectorType(n, dt2)}]" x acc"[${VectorType(n, dt2)}]")(tmp =>
         acc(this)(tmp.wr) `;`
           C(tmp.rd) )
@@ -60,7 +65,7 @@ final case class MapVec(n: Nat,
   }
 
   override def prettyPrint: String =
-    s"MapVec (${PrettyPhrasePrinter(f)}) (${PrettyPhrasePrinter(array)})"
+    s"mapVec (${PrettyPhrasePrinter(f)}) (${PrettyPhrasePrinter(array)})"
 
   override def xmlPrinter: Elem =
     <mapVec n={ToString(n)} dt1={ToString(dt1)} dt2={ToString(dt2)}>

@@ -45,6 +45,8 @@ object TypeCheck {
 
       case Literal(_) =>
 
+      case Natural(_) =>
+
       case UnaryOp(op, x) =>
         TypeCheck(x)
         x.t match {

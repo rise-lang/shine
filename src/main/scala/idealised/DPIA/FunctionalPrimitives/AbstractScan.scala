@@ -51,12 +51,18 @@ abstract  class AbstractScan(n: Nat,
 
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommandType] = {
+    mapAcceptorTranslation(fun(exp"[$dt1]")(x => x), A)
+  }
+
+  override def mapAcceptorTranslation(g: Phrase[ExpType -> ExpType], A: Phrase[AccType])
+                                     (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
     con(array)(λ(exp"[$n.$dt1]")(x =>
       con(init)(λ(exp"[$dt2]")(y =>
         makeScanI(n, dt1, dt2,
-          λ(exp"[$dt1]")(x => λ(exp"[$dt2]")(y => λ(acc"[$dt2]")(o => acc(f(x)(y))(o)))),
+          λ(exp"[$dt1]")(x => λ(exp"[$dt2]")(y => λ(acc"[$dt2]")(o =>
+            acc(g(f(x)(y)))(o)))),
           y, x, A)
       )
       ))
@@ -67,7 +73,7 @@ abstract  class AbstractScan(n: Nat,
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    `new`(dt"[$n.$dt2]", idealised.OpenCL.GlobalMemory, λ(exp"[$n.$dt2]" x acc"[$n.$dt2]")(tmp =>
+    `new`(dt"[$n.$dt2]", λ(exp"[$n.$dt2]" x acc"[$n.$dt2]")(tmp =>
       acc(this)(tmp.wr) `;` C(tmp.rd) ))
   }
 

@@ -19,12 +19,12 @@ final case class ArrayType(size: Nat, elemType: DataType) extends ComposedType {
   override def toString: String = s"$size.$elemType"
 }
 
-final case class DepArrayType(size:Nat, elemType: `(nat)->dt`) extends ComposedType {
-  override def toString: String = s"$size.$elemType"
+final case class DepArrayType(size: Nat, elemType: `(nat)->dt`) extends ComposedType {
+  override def toString: String = s"$size.${elemType.n} -> ${elemType.t}"
 }
 
 object DepArrayType {
-  def apply(size:Nat, f:Nat => DataType): DepArrayType = {
+  def apply(size: Nat, f: Nat => DataType): DepArrayType = {
     val newName = NamedVar(freshName(), RangeAdd(0, size, 1))
     DepArrayType(size, NatDependentFunctionType(newName, f(newName)))
   }
@@ -32,6 +32,7 @@ object DepArrayType {
 
 final case class TupleType(elemTypes: DataType*) extends ComposedType {
   assert(elemTypes.size == 2)
+
   override def toString: String = elemTypes.map(_.toString).mkString("(", ", ", ")")
 }
 
@@ -41,11 +42,21 @@ sealed trait BasicType extends DataType
 
 sealed trait ScalarType extends BasicType
 
-object bool extends ScalarType { override def toString: String = "bool" }
+object bool extends ScalarType {
+  override def toString: String = "bool"
+}
 
-object int extends ScalarType { override def toString: String = "int" }
+object int extends ScalarType {
+  override def toString: String = "int"
+}
 
-object float extends ScalarType { override def toString: String = "float" }
+object float extends ScalarType {
+  override def toString: String = "float"
+}
+
+object double extends ScalarType { override def toString: String = "double" }
+
+object NatType extends ScalarType { override def toString: String = "nat"}
 
 final case class IndexType(size: Nat) extends BasicType
 
@@ -55,29 +66,37 @@ sealed case class VectorType(size: Nat, elemType: ScalarType) extends BasicType 
 }
 
 object int2 extends VectorType(2, int)
+
 object int3 extends VectorType(3, int)
+
 object int4 extends VectorType(4, int)
+
 object int8 extends VectorType(8, int)
+
 object int16 extends VectorType(16, int)
 
 object float2 extends VectorType(2, float)
+
 object float3 extends VectorType(3, float)
+
 object float4 extends VectorType(4, float)
+
 object float8 extends VectorType(8, float)
+
 object float16 extends VectorType(16, float)
 
 
 // function types
 final case class FunctionType[T1 <: Type, T2 <: Type](inT: T1, outT: T2) extends Type
 
-final case class TypeDependentFunctionType[T <: Type](x: DataTypeIdentifier, t: T) extends Type
+final case class TypeDependentFunctionType[T <: Type](dt: DataTypeIdentifier, t: T) extends Type
 
-final case class NatDependentFunctionType[T <: Type](x: NatIdentifier, t: T) extends Type
+final case class NatDependentFunctionType[T <: Type](n: NatIdentifier, t: T) extends Type
 
 object NatDependentFunctionType {
   def apply[T <: Type](f: NatIdentifier => T): NatDependentFunctionType[T] = {
-    val newX = NamedVar(freshName())
-    NatDependentFunctionType(newX, f(newX))
+    val newN = NamedVar(freshName())
+    NatDependentFunctionType(newN, f(newN))
   }
 }
 
@@ -85,7 +104,7 @@ object Type {
 
   def substitute[T <: Type](dt: DataType,
                             `for`: DataTypeIdentifier,
-                            in: Expr[T]): Expr[T] = {
+                            in: Expr): Expr = {
 
     object Visitor extends VisitAndRebuild.Visitor {
       override def apply[DT <: DataType](in: DT): DT = substitute(dt, `for`, in)
@@ -97,21 +116,21 @@ object Type {
 
   def substitute[T <: Type](ae: Nat,
                             `for`: NatIdentifier,
-                            in: Expr[T]): Expr[T] = {
+                            in: Expr): Expr = {
 
     object Visitor extends VisitAndRebuild.Visitor {
-      override def apply[T2 <: Type](e: Expr[T2]): Result[Expr[T2]] = {
+      override def apply(e: Expr): Result = {
         e match {
           case IdentifierExpr(name, _) =>
             if (`for`.name == name) {
-              Stop(LiteralExpr(IndexData(ae)).asInstanceOf[Expr[T2]])
+              Stop(LiteralExpr(IndexData(ae)))
             } else {
               Continue(e, this)
             }
           case LiteralExpr(IndexData(index, IndexType(size))) =>
             val newIndex = substitute(ae, `for`, in = index)
             val newSize = substitute(ae, `for`, in = size)
-            Stop(LiteralExpr(IndexData(newIndex, IndexType(newSize))).asInstanceOf[Expr[T2]])
+            Stop(LiteralExpr(IndexData(newIndex, IndexType(newSize))))
           case _ =>
             Continue(e, this)
         }
@@ -133,7 +152,7 @@ object Type {
       (in match {
         case _: BasicType => in
         case ArrayType(size, elemType) => ArrayType(size, substitute(dt, `for`, elemType))
-        case TupleType(ts @ _*) => TupleType(ts.map(substitute(dt, `for`, _)):_*)
+        case TupleType(ts@_*) => TupleType(ts.map(substitute(dt, `for`, _)): _*)
       }).asInstanceOf[T]
     }
   }
@@ -145,7 +164,10 @@ object Type {
       case b: BasicType => b
       case ArrayType(size, elemType) =>
         ArrayType(ArithExpr.substitute(size, Map((`for`, ae))), substitute(ae, `for`, elemType))
-      case TupleType(ts @ _*) => TupleType(ts.map(substitute(ae, `for`, _)):_*)
+      case DepArrayType(size, NatDependentFunctionType(x, elemT)) =>
+        val innerT = NatDependentFunctionType(x, substitute(ae, `for`, elemT))
+        DepArrayType(ArithExpr.substitute(size, Map((`for`, ae))), innerT)
+      case TupleType(ts@_*) => TupleType(ts.map(substitute(ae, `for`, _)): _*)
     }).asInstanceOf[T]
   }
 
@@ -161,13 +183,13 @@ object Type {
     }
   }
 
-  def rebuild[T <: Type](f:Nat => Nat, in:T): T = {
+  def rebuild[T <: Type](f: Nat => Nat, in: T): T = {
     (in match {
       case IndexType(size) => IndexType(f(size))
-      case b:BasicType => b
+      case b: BasicType => b
       case ArrayType(size, elemType) => ArrayType(f(size), rebuild(f, elemType))
       case DepArrayType(size, elemType) => DepArrayType(f(size), rebuild(f, elemType))
-      case TupleType(ts @ _*) => TupleType(ts.map(t => rebuild(f, t)):_*)
+      case TupleType(ts@_*) => TupleType(ts.map(t => rebuild(f, t)): _*)
       case FunctionType(inT, outT) => FunctionType(rebuild(f, inT), rebuild(f, outT))
       case NatDependentFunctionType(ident, outT) => NatDependentFunctionType(f(ident).asInstanceOf[NatIdentifier], rebuild(f, outT))
       case TypeDependentFunctionType(ident, outT) => TypeDependentFunctionType(ident, rebuild(f, outT))

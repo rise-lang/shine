@@ -1,6 +1,7 @@
 package idealised.DPIA.ImperativePrimitives
 
 import idealised.DPIA.DSL._
+import idealised.DPIA.FunctionalPrimitives.AsIndex
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
@@ -22,7 +23,7 @@ final case class ForVec(n: Nat,
           comm
 
   override def eval(s: Store): Store = {
-    val nE = evalIndexExp(s, Literal(IndexData(n, IndexType(n))))
+    val nE = evalIndexExp(s, AsIndex(n, Natural(n)))
     val bodyE = OperationalSemantics.eval(s, body)(OperationalSemantics.BinaryFunctionEvaluator)
 
     (0 until nE.eval).foldLeft(s)((s1, i) => {

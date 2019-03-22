@@ -1,24 +1,11 @@
 package idealised.SurfaceLanguage.Primitives
 
-import idealised.DPIA
-import idealised.DPIA.FunctionalPrimitives
-import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.SurfaceLanguage.Types.{DataType, ScalarType, TypeInference, VectorType}
-import idealised.SurfaceLanguage.{Nat, PrimitiveExpr, VisitAndRebuild}
+import idealised.SurfaceLanguage.{Expr, Nat, PrimitiveExpr, VisitAndRebuild}
 
-final case class VectorFromScalar(n: Nat, arg: DataExpr,
+final case class VectorFromScalar(n: Nat, arg: Expr,
                                   override val t: Option[DataType] = None)
-  extends PrimitiveExpr
-{
-
-
-  override def convertToPhrase: DPIA.Phrases.Phrase[DPIA.Types.ExpType] = {
-    arg.t match {
-      case Some(dt: ScalarType) =>
-        FunctionalPrimitives.VectorFromScalar(n, dt, arg.toPhrase[DPIA.Types.ExpType])
-      case _ => throw new Exception("")
-    }
-  }
+  extends PrimitiveExpr {
 
   override def inferType(subs: TypeInference.SubstitutionMap): VectorFromScalar = {
     import TypeInference._
@@ -30,7 +17,7 @@ final case class VectorFromScalar(n: Nat, arg: DataExpr,
     }
   }
 
-  override def visitAndRebuild(f: VisitAndRebuild.Visitor): DataExpr = {
+  override def visitAndRebuild(f: VisitAndRebuild.Visitor): Expr = {
     VectorFromScalar(f(n), VisitAndRebuild(arg, f), t.map(f(_)))
   }
 

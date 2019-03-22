@@ -8,37 +8,35 @@ import idealised.DPIA._
 
 import scala.xml.Elem
 
-abstract class AbstractParForNat[T <: DataType](val n: Nat,
-                                                val i: NatIdentifier,
-                                                val dt: T,
-                                                val out: Phrase[AccType],
-                                                val body: Phrase[`(nat)->`[AccType -> CommandType]])
+abstract class AbstractParForNat(val n: Nat,
+                                 val ft:NatDataTypeFunction,
+                                 val out: Phrase[AccType],
+                                 val body: Phrase[`(nat)->`[AccType -> CommandType]])
   extends CommandPrimitive {
 
-  private def makeDt(x:Nat):DataType = DataType.substitute(x, `for`=i, `in`=dt)
-
   override lazy val `type`: CommandType = {
-    (n: Nat) -> (dt: DataType) ->
-      (out :: acc"[${DepArrayType(n, i, dt)}]") ->
-      (body :: t"(${body.t.x}:nat) -> acc[${makeDt(body.t.x)}] -> comm") ->
+
+    (n: Nat) -> (ft: NatDataTypeFunction) ->
+      (out :: acc"[${DepArrayType(n, ft)}]") ->
+      (body :: t"(${body.t.n}:nat) -> acc[${ft(body.t.n)}] -> comm") ->
       comm
   }
   override def eval(s: Store): Store = ???
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {
-    makeParForNat(fun(n), fun(i).asInstanceOf[NatIdentifier], fun(dt), VisitAndRebuild(out, fun), VisitAndRebuild(body, fun))
+    makeParForNat(fun(n), fun(ft), VisitAndRebuild(out, fun), VisitAndRebuild(body, fun))
   }
 
   override def prettyPrint: String =
-    s"(parForNat $n $i $dt ${PrettyPhrasePrinter(out)} ${PrettyPhrasePrinter(body)})"
+    s"(parForNat $n $ft ${PrettyPhrasePrinter(out)} ${PrettyPhrasePrinter(body)})"
 
 
   override def xmlPrinter: Elem =
-    <parForNat n={ToString(n)} dt={ToString(dt)}>
-      <output type={ToString(AccType(ArrayType(n, dt)))}>
+    <parForNat n={ToString(n)} ft={ToString(ft)}>
+      <output type={ToString(AccType(ArrayType(n, ft.body)))}>
         {Phrases.xmlPrinter(out)}
       </output>
-      <body type={ToString(body.t.x -> (AccType({makeDt(body.t.x)}) -> CommandType()))}>
+      <body type={ToString(body.t.n -> (AccType({ft(body.t.n)}) -> CommandType()))}>
         {Phrases.xmlPrinter(body)}
       </body>
     </parForNat>.copy(label = {
@@ -46,6 +44,6 @@ abstract class AbstractParForNat[T <: DataType](val n: Nat,
       Character.toLowerCase(name.charAt(0)) + name.substring(1)
     })
 
-  def makeParForNat: (Nat, NatIdentifier, T, Phrase[AccType], Phrase[`(nat)->`[AccType -> CommandType]]) => AbstractParForNat[T]
+  def makeParForNat: (Nat, NatDataTypeFunction, Phrase[AccType], Phrase[`(nat)->`[AccType -> CommandType]]) => AbstractParForNat
 
 }

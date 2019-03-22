@@ -3,7 +3,9 @@ package idealised.OpenMP
 import idealised._
 import idealised.DPIA.Compilation._
 import idealised.DPIA.DSL._
+import idealised.DPIA.FunctionalPrimitives.AsIndex
 import idealised.DPIA.Phrases._
+import idealised.DPIA.Semantics.OperationalSemantics.IndexData
 import idealised.DPIA.Types._
 import lift.arithmetic.Cst
 
@@ -18,6 +20,7 @@ object ProgramGenerator {
                                            ): (Phrase[ExpType], Seq[Identifier[ExpType]]) = {
       p match {
         case l: Lambda[ExpType, _]@unchecked => getPhraseAndParams(l.body, l.param +: ps)
+        case ndl: NatDependentLambda[_] => getPhraseAndParams(ndl.body, Identifier(ndl.x.name, ExpType(int)) +: ps)
         case ep: Phrase[ExpType]@unchecked => (ep, ps)
       }
     }
@@ -43,9 +46,9 @@ object ProgramGenerator {
 
     val (declarations, code) = gen.generate(p, env)
 
-    val typeDeclarations = C.ProgramGenerator.collectTypeDeclarations(code)
-
     val params = C.ProgramGenerator.makeParams(outParam, inputParams, gen)
+
+    val typeDeclarations = C.ProgramGenerator.collectTypeDeclarations(code, params)
 
     OpenMP.Program(
       typeDeclarations ++ declarations,
@@ -79,11 +82,12 @@ object ProgramGenerator {
     val output = (a.t.dataType, p.t.dataType) match {
       case (lhsT, rhsT) if lhsT == rhsT => a
       case (ArrayType(Cst(1), lhsT), rhsT) if lhsT == rhsT =>
-        a `@` (Cst(0) asPhrase IndexType(Cst(1)))
+        a `@` AsIndex(1, Natural(0))
       case (lhsT, rhsT) => throw new Exception(s" $lhsT and $rhsT should match")
     }
 
-    TranslationToImperative.acc(p)(output)(new idealised.OpenMP.TranslationContext) |> (p => {
+    TranslationToImperative.acc(p)(output)(
+      new idealised.OpenMP.TranslationContext) |> (p => {
       xmlPrinter.writeToFile("/tmp/p2.xml", p)
       TypeCheck(p) // TODO: only in debug
       p

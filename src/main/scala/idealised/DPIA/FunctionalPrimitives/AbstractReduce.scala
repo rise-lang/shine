@@ -59,12 +59,17 @@ abstract class AbstractReduce(n: Nat,
     s"${this.getClass.getSimpleName} (${PrettyPhrasePrinter(f)}) " +
       s"(${PrettyPhrasePrinter(init)}) (${PrettyPhrasePrinter(array)})"
 
+
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
     con(this)(λ(exp"[$dt2]")(r => acc(r)(A)))
   }
+
+  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
+                                     (implicit context: TranslationContext): Phrase[CommandType] =
+    ???
 
   override def continuationTranslation(C: Phrase[ExpType -> CommandType])
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
@@ -73,8 +78,8 @@ abstract class AbstractReduce(n: Nat,
     con(array)(λ(exp"[$n.$dt1]")(X =>
       con(init)(λ(exp"[$dt2]")(Y =>
         makeReduceI(n, dt1, dt2,
-          λ(exp"[$dt1]")(x => λ(exp"[$dt2]")(y => λ(acc"[$dt2]")(o => acc( f(x)(y) )( o )))),
-          Y, X, C)(context)))))
+          λ(exp"[$dt1]")(x => λ(exp"[$dt2]")(y => λ(acc"[$dt2]")(o => acc( f(x)(y) )( o ) ))),
+          Y, X, C)))))
   }
 
   override def xmlPrinter: Elem =

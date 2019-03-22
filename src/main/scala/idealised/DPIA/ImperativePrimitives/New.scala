@@ -1,6 +1,5 @@
 package idealised.DPIA.ImperativePrimitives
 
-import idealised.DPIA.Compilation.CodeGenerator
 import idealised.DPIA.DSL.identifier
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
@@ -11,7 +10,6 @@ import idealised.DPIA._
 import scala.xml.Elem
 
 final case class New(dt: DataType,
-                     addressSpace: AddressSpace,
                      f: Phrase[VarType -> CommandType])
   extends CommandPrimitive {
 
@@ -27,13 +25,13 @@ final case class New(dt: DataType,
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {
-    New(fun(dt), addressSpace, VisitAndRebuild(f, fun))
+    New(fun(dt), VisitAndRebuild(f, fun))
   }
 
-  override def prettyPrint: String = s"(new $addressSpace ${PrettyPhrasePrinter(f)})"
+  override def prettyPrint: String = s"(new ${PrettyPhrasePrinter(f)})"
 
   override def xmlPrinter: Elem =
-    <new dt={ToString(dt)} addressspace={ToString(addressSpace)}>
+    <new dt={ToString(dt)}>
       {Phrases.xmlPrinter(f)}
     </new>
 }

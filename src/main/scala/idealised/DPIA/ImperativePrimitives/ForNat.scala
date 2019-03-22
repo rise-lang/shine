@@ -8,17 +8,18 @@ import idealised.DPIA._
 import scala.xml.Elem
 
 final case class ForNat(n: Nat,
-                        body: Phrase[`(nat)->`[CommandType]])
+                        body: Phrase[`(nat)->`[CommandType]],
+                        unroll:Boolean)
   extends CommandPrimitive {
 
   override val `type`: CommandType = {
-    val k = body.t.x
+    val k = body.t.n
     (n: Nat) -> (body :: t"($k:nat) -> comm") -> comm
   }
   override def eval(s: Store): Store = ???
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {
-    ForNat(fun(n), VisitAndRebuild(body, fun))
+    ForNat(fun(n), VisitAndRebuild(body, fun), unroll)
   }
 
   override def prettyPrint: String = s"(forNat 0..$n ${PrettyPhrasePrinter(body)})"

@@ -19,14 +19,14 @@ final case class Iterate(n: Nat,
   extends ExpPrimitive {
 
   override val `type`: ExpType = {
-    val l = f.t.x
+    val l = f.t.n
     (n: Nat) -> (m: Nat) -> (k: Nat) -> (dt: DataType) ->
       (f :: t"($l : nat) -> exp[$l.$dt] -> exp[${l /^ n}.$dt]") ->
       (array :: exp"[$m.$dt]") -> exp"[${m /^ n.pow(k)}.$dt]"
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    Iterate(fun(n), fun(m), k, fun(dt), VisitAndRebuild(f, fun), VisitAndRebuild(array, fun))
+    Iterate(fun(n), fun(m), fun(k), fun(dt), VisitAndRebuild(f, fun), VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): Data = {
@@ -70,6 +70,11 @@ final case class Iterate(n: Nat,
         _Λ_(l => λ(acc"[${l /^ n}.$dt]")(o => λ(exp"[$l.$dt]")(x => acc(f(l)(x))(o)))),
         x) ))
   }
+
+  // TODO
+  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
+                                     (implicit context: TranslationContext): Phrase[CommandType] =
+    ???
 
   override def continuationTranslation(C: Phrase[ExpType -> CommandType])
                                       (implicit context: TranslationContext): Phrase[CommandType] = {

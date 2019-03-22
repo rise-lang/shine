@@ -3,7 +3,7 @@ import idealised.DPIA.Phrases.PrettyPhrasePrinter
 import idealised.DPIA.Types.TypeCheck
 import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.OpenCL._
-import idealised.OpenMP
+import idealised.{DPIA, OpenMP}
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Semantics._
 import idealised.SurfaceLanguage.Types._
@@ -67,13 +67,13 @@ object gemm extends App {
   }
 
   def printOpenCLKernel(name: String,
-                        untypedLambda: Expr[DataType -> (DataType -> (DataType -> (DataType -> (DataType -> DataType))))]): Unit = {
-    val lambda = TypeInference(untypedLambda, Map()).convertToPhrase
+                        untypedLambda: Expr): Unit = {
+    val lambda = DPIA.FromSurfaceLanguage(TypeInference(untypedLambda, Map()))
     println(name + ":\n" + PrettyPhrasePrinter(lambda))
     TypeCheck(lambda)
 
     println(s"-- $name --")
-    val kernel = KernelGenerator.makeCode(lambda, localSize = 8, globalSize = N)
+    val kernel = KernelGenerator.makeCode(localSize = 8, globalSize = N)(lambda)
     println(kernel.code)
 
 //    val fun = kernel.as[
@@ -137,10 +137,10 @@ object gemm extends App {
             fun(float)(beta =>
 
       join() o mapGlobal(0)(fun(ac =>
-        transposeW() o
+        transpose() o
         join() o
         mapGlobal(1)(fun(bc =>
-          transposeW() o
+          transpose() o
           fun(p235 =>
             mapSeq(fun(p237 =>
                 mapSeq(fun(p64 =>
@@ -199,8 +199,8 @@ object gemm extends App {
               zip(p237._1, p237._2) :>>
               mapSeq(fun(p64 =>
                 (p64._1 * alpha) + (p64._2 * beta)))))
-          ) :>> transposeW()
-        )) :>> join() :>> transposeW()
+          ) :>> transpose()
+        )) :>> join() :>> transpose()
       )) :>> join()
     )))))
 
@@ -242,12 +242,12 @@ object gemm extends App {
                                 zip(p237._1, p237._2) :>>
                                   mapSeq(fun(p64 =>
                                     (p64._1 * alpha) + (p64._2 * beta)))))
-                          ) :>> transposeW()
-                      )) :>> join() :>> transposeW()
+                          ) :>> transpose()
+                      )) :>> join() :>> transpose()
                   )) :>> join()
               )))))
 
-    val phrase = TypeInference(maliGEMM, Map()).toPhrase
+    val phrase = DPIA.FromSurfaceLanguage(TypeInference(maliGEMM, Map()))
     val program = OpenMP.ProgramGenerator.makeCode(phrase)
     println(program.code)
   }
@@ -259,7 +259,7 @@ object gemm extends App {
 //    val v6 = 64
 //    val v7 = 8
 //
-//    def tile(x: Nat, y: Nat): Expr[DataType -> DataType] =
+//    def tile(x: Nat, y: Nat): Expr =
 //      map(map(transpose()) o split(y) o transpose()) o split(x)
 //
 //    val zeros = LiteralExpr(
@@ -340,7 +340,7 @@ object gemm extends App {
 //    val v6 = 64
 //    val v7 = 8
 //
-//    def tile(x: Nat, y: Nat): Expr[DataType -> DataType] =
+//    def tile(x: Nat, y: Nat): Expr =
 //      map(map(transpose()) o split(y) o transpose()) o split(x)
 //
 //    val zeros = LiteralExpr(

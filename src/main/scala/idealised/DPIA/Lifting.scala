@@ -1,12 +1,11 @@
 package idealised.DPIA
 
+import idealised.DPIA.FunctionalPrimitives.{IndexAsNat, AsIndex}
 import idealised.DPIA.Phrases._
-import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics.IndexData
 import idealised.DPIA.Types.{DataType, ExpType, IndexType, PhraseType}
-import idealised.SurfaceLanguage.DSL.DataExpr
 import idealised.SurfaceLanguage._
-import lift.arithmetic.{NamedVar, RangeAdd}
+import lift.arithmetic.{NamedVar, RangeAdd, StartFromRange}
 
 import scala.language.{postfixOps, reflectiveCalls}
 
@@ -64,7 +63,7 @@ object Lifting {
   def liftFunction[T1 <: PhraseType, T2 <: PhraseType](p: Phrase[T1 -> T2]): Phrase[T1] => Phrase[T2] = {
     p match {
       case l: Lambda[T1, T2] =>
-        (arg: Phrase[T1]) =>l.body `[` arg  `/` l.param `]`
+        (arg: Phrase[T1]) => l.body `[` arg  `/` l.param `]`
       case app: Apply[_, T1 -> T2] =>
         val fun = liftFunction(app.fun)
         liftFunction(fun(app.arg))
@@ -134,31 +133,4 @@ object Lifting {
         throw new Exception("This should never happen")
     }
   }
-
-  def liftIndexExpr(p: Phrase[ExpType]):Nat = {
-    p.t match {
-      case ExpType(IndexType(n)) =>
-        p match {
-          case i:Identifier[ExpType] => NamedVar(i.name, RangeAdd(0, n, 1))
-          case Apply(fun, arg) => liftIndexExpr(liftFunction(fun)(arg))
-          case BinOp(op, lhs, rhs) => binOpToNat(op, liftIndexExpr(lhs), liftIndexExpr(rhs))
-          case IfThenElse(_, _, _) => ???
-          case Literal(lit) => lit match {
-            case i: IndexData => i.n
-            case _ => throw new Exception("This should never happen")
-          }
-          case NatDependentApply(fun, arg) => liftIndexExpr(liftNatDependentFunction(fun)(arg))
-          case Proj1(pair) => liftIndexExpr(liftPair(pair)._1)
-          case Proj2(pair) => liftIndexExpr(liftPair(pair)._2)
-          case TypeDependentApply(fun, arg) => liftIndexExpr(liftTypeDependentFunction(fun)(arg))
-          case UnaryOp(op, e) => unOpToNat(op, liftIndexExpr(e))
-          case _:ExpPrimitive => ???
-        }
-      case _ => throw new Exception("This should never happen")
-    }
-  }
-
-  def binOpToNat(op:Operators.Binary.Value, n1:Nat, n2:Nat):Nat = ???
-
-  def unOpToNat(op:Operators.Unary.Value, n:Nat):Nat = ???
 }

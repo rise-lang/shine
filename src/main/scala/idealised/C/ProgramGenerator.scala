@@ -3,8 +3,10 @@ package idealised.C
 import idealised.C.AST._
 import idealised.DPIA.Compilation._
 import idealised.DPIA.DSL._
+import idealised.DPIA.FunctionalPrimitives.AsIndex
+import idealised.DPIA.NatDataTypeFunction
 import idealised.DPIA.Phrases._
-import idealised.DPIA.Types.{AccType, CommandType, DataType, DataTypeIdentifier, DepArrayType, ExpType, PairType, PhraseType, TypeCheck}
+import idealised.DPIA.Types.{AccType, CommandType, DataType, DataTypeIdentifier, DepArrayType, ExpType, PairType, PhraseType, TypeCheck, int}
 import idealised._
 import lift.arithmetic.{Cst, Var}
 
@@ -12,25 +14,27 @@ import scala.collection._
 
 object ProgramGenerator {
 
-  def makeCode[T <: PhraseType](originalPhrase: Phrase[T]): Program = {
+  def makeCode[T <: PhraseType](originalPhrase: Phrase[T],
+                                name: String = "foo"): Program = {
 
     def getPhraseAndParams[_ <: PhraseType](p: Phrase[_],
                                             ps: Seq[Identifier[ExpType]]
                                            ): (Phrase[ExpType], Seq[Identifier[ExpType]]) = {
       p match {
         case l: Lambda[ExpType, _]@unchecked => getPhraseAndParams(l.body, l.param +: ps)
+        case ndl: NatDependentLambda[_] => getPhraseAndParams(ndl.body, Identifier(ndl.x.name, ExpType(int)) +: ps)
         case ep: Phrase[ExpType]@unchecked => (ep, ps)
       }
     }
 
     val (phrase, params) = getPhraseAndParams(originalPhrase, Seq())
 
-    makeCode(phrase, params.reverse)
+    makeCode(phrase, params.reverse, name)
   }
 
   private def makeCode(p: Phrase[ExpType],
                        inputParams: Seq[Identifier[ExpType]],
-                       name: String = "foo"): Program = {
+                       name: String): Program = {
     val outParam = createOutputParam(outT = p.t)
 
     val gen = C.CodeGeneration.CodeGenerator()
@@ -44,11 +48,13 @@ object ProgramGenerator {
 
     val (declarations, code) = gen.generate(p, env)
 
-    val typeDeclarations = collectTypeDeclarations(code)
+    val params = makeParams(outParam, inputParams, gen)
+
+    val typeDeclarations = collectTypeDeclarations(code, params)
 
     C.Program(
       typeDeclarations ++ declarations,
-      function    = makeFunction(makeParams(outParam, inputParams, gen), Block(Seq(code)), name),
+      function    = makeFunction(params, Block(Seq(code)), name),
       outputParam = outParam,
       inputParams = inputParams)
     }))
@@ -77,11 +83,12 @@ object ProgramGenerator {
     val output = (a.t.dataType, p.t.dataType) match {
       case (lhsT, rhsT) if lhsT == rhsT => a
       case (DPIA.Types.ArrayType(Cst(1), lhsT), rhsT) if lhsT == rhsT =>
-        a `@` (Cst(0) asPhrase DPIA.Types.IndexType(Cst(1)))
+        a `@` AsIndex(1, Natural(0))
       case (lhsT, rhsT) => throw new Exception(s" $lhsT and $rhsT should match")
     }
 
-    TranslationToImperative.acc(p)(output)(new idealised.C.TranslationContext) |> (p => {
+    TranslationToImperative.acc(p)(output)(
+      new idealised.C.TranslationContext) |> (p => {
       xmlPrinter.writeToFile("/tmp/p2.xml", p)
       TypeCheck(p) // TODO: only in debug
       p
@@ -95,25 +102,7 @@ object ProgramGenerator {
   def makeParams(out: Identifier[AccType],
                  ins: Seq[Identifier[ExpType]],
                  gen: CodeGeneration.CodeGenerator): Seq[ParamDecl] = {
-    val sizes = collectSizes(out.`type`.dataType
-      +: ins.map(_.`type`.dataType)).toSeq.sortBy(_.toString)
-    Seq(makeParam(out, gen)) ++ ins.map(makeParam(_, gen)) ++ sizes.map(makeSizeParam)
-  }
-
-  def collectSizes(ts: Seq[DataType]): Set[Var] = {
-    import DPIA.Types.{ArrayType, BasicType, RecordType}
-    ts.foldLeft(Set[Var]())( (s, t) => {
-      s ++ (t match {
-        case _: BasicType => Set()
-        case ArrayType(size, dt) =>
-          size.varList ++ collectSizes(Seq(dt))
-        case DepArrayType(size, _, et) =>
-          size.varList ++ collectSizes(Seq(et))
-        case RecordType(fst, snd) =>
-          collectSizes(Seq(fst)) ++ collectSizes(Seq(snd))
-        case _: DataTypeIdentifier => ???
-      })
-    })
+    Seq(makeParam(out, gen)) ++ ins.map(makeParam(_, gen))
   }
 
   def makeParam(i: Identifier[_], gen: CodeGeneration.CodeGenerator): ParamDecl = {
@@ -124,7 +113,7 @@ object ProgramGenerator {
       case ArrayType(_, dt) =>
         val baseDt = DataType.getBaseDataType(dt)
         PointerType(gen.typ(baseDt))
-      case DepArrayType(_, _, dt) =>
+      case DepArrayType(_, NatDataTypeFunction(_, dt)) =>
         val baseDt = DataType.getBaseDataType(dt)
         PointerType(gen.typ(baseDt))
       case r : RecordType => gen.typ(r)
@@ -138,14 +127,12 @@ object ProgramGenerator {
     ParamDecl(v.toString, Type.const_int)
   }
 
-  def collectTypeDeclarations(code: Stmt): Seq[Decl] = {
-    val typeDecls = mutable.Set[Decl]()
-
-    code.visitAndRebuild(new Nodes.VisitAndRebuild.Visitor {
+  def collectTypeDeclarations(code: Stmt, params: Seq[ParamDecl]): Seq[Decl] = {
+    def visitor(decls: mutable.Set[Decl]): Nodes.VisitAndRebuild.Visitor = new Nodes.VisitAndRebuild.Visitor {
       def collect(t: Type): Unit = t match {
         case _: BasicType =>
         case s: StructType =>
-          typeDecls += C.AST.StructTypeDecl(
+          decls += C.AST.StructTypeDecl(
             s.print,
             s.fields.map{ case (ty, name) => VarDecl(name, ty) }
           )
@@ -155,9 +142,15 @@ object ProgramGenerator {
       }
 
       override def apply(t: Type): Type = { collect(t) ; t }
-    })
+    }
 
-    typeDecls.toSeq
+    val allocTypeDecls = mutable.Set[Decl]()
+    code.visitAndRebuild(visitor(allocTypeDecls))
+
+    val paramTypeDecls = mutable.Set[Decl]()
+    params.foreach(_.visitAndRebuild(visitor(paramTypeDecls)))
+
+    (allocTypeDecls ++ paramTypeDecls).toSeq
   }
 
   private def getDataType(i: Identifier[_]): DataType = {

@@ -3,6 +3,8 @@ package idealised
 import idealised.DPIA.Nat
 import lift.arithmetic._
 
+import scala.language.implicitConversions
+
 package object OpenCL {
   sealed trait ParallelismLevel
   case object WorkGroup extends ParallelismLevel
@@ -11,12 +13,24 @@ package object OpenCL {
   case object Sequential extends ParallelismLevel
 
 
-  sealed trait AddressSpace extends DPIA.AddressSpace
+  sealed trait AddressSpace
   case object GlobalMemory extends AddressSpace
   case object LocalMemory extends AddressSpace
   case object PrivateMemory extends AddressSpace
 
-  case class NDRange(x: Nat, y: Nat, z: Nat)
+  case class NDRange(x: Nat, y: Nat, z: Nat) {
+    def isEvaluable: Boolean = x.isEvaluable && y.isEvaluable && z.isEvaluable
+    def ==(other: NDRange): Boolean = x == other.x && y == other.y && z == other.z
+  }
+  implicit def valToNatTuple[V](v: V)(implicit vToN: V => Nat): NDRange = NDRange(v, 1, 1)
+  implicit def pairToNatTuple[A,B](t: (A, B))(implicit aToN: A => Nat, bToN: B => Nat): NDRange =
+    NDRange(t._1, t._2, 1)
+  implicit def tripleToNatTuple[T,U,V](t: (T, U, V))
+                                      (implicit aToN: T => Nat, bToN: U => Nat, cToN: V => Nat): NDRange =
+    NDRange(t._1, t._2, t._3)
+  implicit def tupleToNDRange[R](ndRange: R)
+                                (implicit intToNat: R => (Nat, Nat, Nat)): NDRange =
+    NDRange(ndRange._1, ndRange._2, ndRange._3)
 
   // This class models OpenCL built in functions that can appear inside of arithmetic expressions
   // examples are get_global_size(0), or get_local_id(1), but also OpenCL math functions, e.g., ceil or sin

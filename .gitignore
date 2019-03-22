@@ -3,3 +3,13 @@ project
 target
 modules.xml
 .vscode
+
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.pdf
+*.gz

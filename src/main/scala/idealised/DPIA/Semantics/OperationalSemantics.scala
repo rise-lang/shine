@@ -4,6 +4,7 @@ import idealised.DPIA.Phrases._
 import idealised.DPIA.Types._
 import idealised.DPIA._
 import idealised.SurfaceLanguage.Operators
+import lift.arithmetic.ArithExpr
 
 import scala.collection.immutable.HashMap
 import scala.language.{implicitConversions, postfixOps, reflectiveCalls}
@@ -16,9 +17,11 @@ object OperationalSemantics {
         case idealised.SurfaceLanguage.Semantics.BoolData(b) => BoolData(b)
         case idealised.SurfaceLanguage.Semantics.IntData(i) => IntData(i)
         case idealised.SurfaceLanguage.Semantics.FloatData(f) => FloatData(f)
+        case idealised.SurfaceLanguage.Semantics.DoubleData(f) => DoubleData(f)
         case idealised.SurfaceLanguage.Semantics.IndexData(n, t) => IndexData(n, IndexType(t.size))
         case idealised.SurfaceLanguage.Semantics.TupleData(t @_*) => RecordData( Data(t(0)), Data(t(1)) )
         case idealised.SurfaceLanguage.Semantics.ArrayData(a) => ArrayData(a.map(Data(_)).toVector)
+        case idealised.SurfaceLanguage.Semantics.SingletonArrayData(n, a) => SingletonArrayData(n, Data(a))
         case idealised.SurfaceLanguage.Semantics.VectorData(v) => VectorData(v.map(Data(_)).toVector)
       }
     }
@@ -26,9 +29,9 @@ object OperationalSemantics {
 
   sealed abstract class Data(val dataType: DataType)
   final case class IndexData(n: Nat, indexType: IndexType) extends Data(indexType)
-  object IndexData {
-    def apply(n: Nat): IndexData = IndexData(n, IndexType(n.max))
-  }
+
+  final case class NatData(n: Nat) extends Data(NatType)
+
   final case class BoolData(b: Boolean) extends Data(bool)
   final case class IntData(i: Int) extends Data(int) {
     override def toString: String = i.toString
@@ -37,11 +40,15 @@ object OperationalSemantics {
   final case class FloatData(f: Float) extends Data(float) {
     override def toString: String = f.toString + "f"
   }
+  final case class DoubleData(d: Double) extends Data(double) {
+    override def toString: String = d.toString
+  }
   final case class VectorData(a: Vector[Data]) extends Data(VectorType(a.length, a.head.dataType match {
     case b: ScalarType => b
     case _ => throw new Exception("This should not happen")
   }))
   final case class ArrayData(a: Vector[Data]) extends Data(ArrayType(a.length, a.head.dataType))
+  final case class SingletonArrayData(length:ArithExpr, a:Data) extends Data(ArrayType(length, a.dataType))
   final case class RecordData(fst: Data, snd: Data) extends Data(RecordType(fst.dataType, snd.dataType))
 
   object makeArrayData {
@@ -179,6 +186,8 @@ object OperationalSemantics {
 
           case Literal(d) => d
 
+          case Natural(n) => NatData(n)
+
           case UnaryOp(op, x) =>
             op match {
               case Operators.Unary.NEG => - evalIntExp(s, x)
@@ -277,8 +286,8 @@ object OperationalSemantics {
       case Operators.Binary.MUL => (x, y) => x * y
       case Operators.Binary.DIV => (x, y) => x / y
       case Operators.Binary.MOD => (x, y) => x % y
-      case Operators.Binary.GT => (x, y) => (x gt y) ?? 1 !! 0
-      case Operators.Binary.LT => (x, y) => (x lt y) ?? 1 !! 0
+      case Operators.Binary.GT => (x, y) => ArithExpr.ifThenElse(x gt y, 1 , 0)
+      case Operators.Binary.LT => (x, y) => ArithExpr.ifThenElse(x lt y, 1,  0)
     }
   }
 

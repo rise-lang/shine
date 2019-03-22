@@ -1,9 +1,9 @@
 package idealised.DPIA.Types
 
+import idealised.DPIA.FunctionalPrimitives.AsIndex
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics.IndexData
 import idealised.DPIA._
-import lift.arithmetic.Var
 
 sealed trait PhraseType
 
@@ -38,14 +38,14 @@ final case class PassiveFunctionType[T1 <: PhraseType, T2 <: PhraseType](inT: T1
   override def toString = s"$inT ->p $outT"
 }
 
-final case class NatDependentFunctionType[T <: PhraseType](x: NatIdentifier, t: T)
+final case class NatDependentFunctionType[T <: PhraseType](n: NatIdentifier, t: T)
   extends PhraseType {
-  override def toString = s"($x : Nat) -> $t"
+  override def toString = s"($n : Nat) -> $t"
 }
 
-final case class TypeDependentFunctionType[T <: PhraseType](x: DataTypeIdentifier, t: T)
+final case class TypeDependentFunctionType[T <: PhraseType](dt: DataTypeIdentifier, t: T)
   extends PhraseType {
-  override def toString = s"($x : dt) -> $t"
+  override def toString = s"($dt : dt) -> $t"
 }
 
 object PhraseType {
@@ -78,9 +78,9 @@ object PhraseType {
       case pf: PassiveFunctionType[_, _] =>
         PassiveFunctionType(substitute(dt, `for`, pf.inT), substitute(dt, `for`, pf.outT))
       case nf: NatDependentFunctionType[_] =>
-        NatDependentFunctionType(nf.x, substitute(dt, `for`, nf.t))
+        NatDependentFunctionType(nf.n, substitute(dt, `for`, nf.t))
       case tf: TypeDependentFunctionType[_] =>
-        TypeDependentFunctionType(tf.x, substitute(dt, `for`, tf.t))
+        TypeDependentFunctionType(tf.dt, substitute(dt, `for`, tf.t))
     }
   }
 
@@ -93,14 +93,12 @@ object PhraseType {
         p match {
           case Identifier(name, _) =>
             if (`for`.name == name) {
-              Stop(Literal(IndexData(ae, IndexType(ae.max))).asInstanceOf[Phrase[T2]])
+              Stop(AsIndex(ae.max, Natural(ae)).asInstanceOf[Phrase[T2]])
             } else {
               Continue(p, this)
             }
-          case Literal(IndexData(index, IndexType(size))) =>
-            val newIndex = Nat.substitute(ae, `for`, in = index)
-            val newSize = Nat.substitute(ae, `for`, in = size)
-            Stop(Literal(IndexData(newIndex, IndexType(newSize))).asInstanceOf[Phrase[T2]])
+          case Natural(n) =>
+            Stop(Natural(Nat.substitute(ae, `for`, n)).asInstanceOf[Phrase[T2]])
           case _ =>
             Continue(p, this)
         }
@@ -132,9 +130,9 @@ object PhraseType {
       case pf: PassiveFunctionType[_, _] =>
         PassiveFunctionType(substitute(ae, `for`, pf.inT), substitute(ae, `for`, pf.outT))
       case nf: NatDependentFunctionType[_] =>
-        NatDependentFunctionType(nf.x, substitute(ae, `for`, nf.t))
+        NatDependentFunctionType(nf.n, substitute(ae, `for`, nf.t))
       case tf: TypeDependentFunctionType[_] =>
-        TypeDependentFunctionType(tf.x, substitute(ae, `for`, tf.t))
+        TypeDependentFunctionType(tf.dt, substitute(ae, `for`, tf.t))
     }
   }
 

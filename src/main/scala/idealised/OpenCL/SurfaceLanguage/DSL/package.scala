@@ -5,14 +5,14 @@ import idealised.SurfaceLanguage._
 import idealised.SurfaceLanguage.Types._
 
 package object DSL {
-
-  val reorderWithStridePhrase: Expr[`(nat)->`[`(nat)->`[DataType -> DataType]]] = {
-    dFun((s: Nat) =>
-      dFun((n: Nat) =>
-        fun(IndexType(n))(i => {
-          val j = i asNatIdentifier (withUpperBound = n)
-          (j / (n /^ s)) + s * (j % (n /^ s)) asExpr (withType = IndexType(n))
-        } ) ) )
+  val reorderWithStride: Expr = {
+    nFun(s => {
+      val f =
+        nFun(n =>
+          fun(IndexType(n))(i => {
+            mapIndexExpr(i, j => (j / (n /^ s)) + s * (j % (n /^ s)))
+          }))
+      reorder(f, f)
+    })
   }
-
 }

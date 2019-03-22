@@ -1,13 +1,14 @@
 package idealised.OpenCL.FunctionalPrimitives
 
 import idealised.DPIA.Compilation.{TranslationContext, TranslationToImperative}
-import idealised.DPIA.DSL._
+import idealised.DPIA.DSL.{`new`=> _, _}
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics.{Data, Store}
 import idealised.DPIA.Types._
 import idealised.DPIA.{Phrases, _}
 import idealised.OpenCL.AddressSpace
+import idealised.OpenCL.DSL._
 
 import scala.xml.Elem
 
@@ -24,7 +25,7 @@ abstract class To(dt1: DataType,
     (dt1: DataType) -> (dt2: DataType) ->
       (f :: t"exp[$dt1] -> exp[$dt2]") ->
         (input :: exp"[$dt1]") ->
-          exp"[$dt2]"
+          (addressSpace : AddressSpace) -> exp"[$dt2]"
 
   override def eval(s: Store): Data = OperationalSemantics.eval(s, input)
 
@@ -36,7 +37,7 @@ abstract class To(dt1: DataType,
     s"(to$addressSpace ${PrettyPhrasePrinter(f)} ${PrettyPhrasePrinter(input)})"
 
   override def xmlPrinter: Elem =
-    <to dt1={ToString(dt1)} dt2={ToString(dt2)}>
+    <to dt1={ToString(dt1)} dt2={ToString(dt2)} addressSpace={ToString(addressSpace)}>
       <f type={ToString(ExpType(dt1) -> ExpType(dt2))}>
         {Phrases.xmlPrinter(f)}
       </f>
@@ -55,10 +56,17 @@ abstract class To(dt1: DataType,
     con(this)(λ( exp"[$dt2]" )(x => acc(x)(A) ))
   }
 
+  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
+                                     (implicit context: TranslationContext): Phrase[CommandType] = {
+    import TranslationToImperative._
+
+    con(this)(λ( exp"[$dt2]" )(x => mapAcc(f, x)(A) ))
+  }
+
   override def continuationTranslation(C: Phrase[->[ExpType, CommandType]])
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    `new`(dt2, addressSpace, tmp => acc(f(input))(tmp.wr) `;` C(tmp.rd) )
+    newWithAddrSpace(dt2, addressSpace, tmp => acc(f(input))(tmp.wr) `;` C(tmp.rd) )
   }
 }

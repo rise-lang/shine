@@ -20,10 +20,10 @@ object TypeOf {
       case TypeDependentLambda(a, p) => (a: DataTypeIdentifier) -> p.t
 
       case NatDependentApply(p, e) =>
-        p.t.t `[` e `/` p.t.x `]`
+        p.t.t `[` e `/` p.t.n `]`
 
       case TypeDependentApply(p, e) =>
-        p.t.t `[` e `/` p.t.x `]`
+        p.t.t `[` e `/` p.t.dt `]`
 
       case Pair(p, q) => p.t x q.t
 
@@ -36,6 +36,8 @@ object TypeOf {
         thenP.t
 
       case Literal(l) => ExpType(l.dataType)
+
+      case Natural(n) => ExpType(NatType)
 
       case UnaryOp(_, x) => x.t
 

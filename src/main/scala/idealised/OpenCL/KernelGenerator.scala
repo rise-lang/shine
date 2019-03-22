@@ -2,6 +2,7 @@ package idealised.OpenCL
 
 import java.io.{File, PrintWriter}
 
+import idealised._
 import idealised.C.AST.DeclRef
 import idealised.DPIA.Compilation._
 import idealised.DPIA.DSL._
@@ -10,34 +11,38 @@ import idealised.DPIA.Types._
 import idealised.DPIA._
 import idealised.OpenCL.CodeGeneration.HoistMemoryAllocations.AllocationInfo
 import idealised.OpenCL.CodeGeneration.{AdaptKernelBody, AdaptKernelParameters, HoistMemoryAllocations}
-import idealised._
 
 import scala.collection._
 import scala.language.implicitConversions
 
 //noinspection VariablePatternShadow
 object KernelGenerator {
-
-  def makeCode[T <: PhraseType](originalPhrase: Phrase[T],
-                                localSize: Nat,
-                                globalSize: Nat): OpenCL.Kernel = {
-
-    def getPhraseAndParams[_ <: PhraseType](p: Phrase[_],
-                                            ps: Seq[Identifier[ExpType]]
-                                           ): (Phrase[ExpType], Seq[Identifier[ExpType]]) = {
-      p match {
-        case l: Lambda[ExpType, _]@unchecked => getPhraseAndParams(l.body, l.param +: ps)
-        case ep: Phrase[ExpType]@unchecked => (ep, ps)
-      }
-    }
-
+  def makeCode[T <: PhraseType, L, G](localSize: L, globalSize: G)(originalPhrase: Phrase[T])
+                                     (implicit toLRange: L => NDRange, toGRange: G => NDRange): OpenCL.KernelWithSizes = {
     val (phrase, params) = getPhraseAndParams(originalPhrase, Seq())
-
-    makeKernel(phrase, params.reverse, localSize, globalSize)
+    makeKernel(phrase, params.reverse, Some(localSize), Some(globalSize)).right.get
   }
 
-  private def makeKernel(p: Phrase[ExpType], inputParams: Seq[Identifier[ExpType]],
-                         localSize: Nat, globalSize: Nat): OpenCL.Kernel = {
+  def makeCode[T <: PhraseType](originalPhrase: Phrase[T]): OpenCL.KernelNoSizes = {
+    val (phrase, params) = getPhraseAndParams(originalPhrase, Seq())
+    makeKernel(phrase, params.reverse, None, None).left.get
+  }
+
+  private def getPhraseAndParams[_ <: PhraseType](p: Phrase[_],
+                                                  ps: Seq[Identifier[ExpType]]
+                                                 ): (Phrase[ExpType], Seq[Identifier[ExpType]]) = {
+    p match {
+      case l: Lambda[ExpType, _]@unchecked => getPhraseAndParams(l.body, l.param +: ps)
+      case ndl: NatDependentLambda[_] => getPhraseAndParams(ndl.body, Identifier(ndl.x.name, ExpType(int)) +: ps)
+      case ep: Phrase[ExpType]@unchecked => (ep, ps)
+    }
+  }
+
+  private def makeKernel(p: Phrase[ExpType],
+                         inputParams: Seq[Identifier[ExpType]],
+                         localSize: Option[NDRange],
+                         globalSize: Option[NDRange]): Either[OpenCL.KernelNoSizes, OpenCL.KernelWithSizes] = {
+
     val outParam = createOutputParam(outT = p.t)
 
     val gen = OpenCL.CodeGeneration.CodeGenerator(localSize, globalSize)
@@ -51,25 +56,31 @@ object KernelGenerator {
     adaptKernelParameters(p,
       makeParams(outParam, inputParams, intermediateAllocations, gen), inputParams) |> { case (p, kernelParams) =>
 
-    val identMap: Predef.Map[Identifier[_ <: BasePhraseTypes], DeclRef] =
-      (outParam +: inputParams).map( p => p -> C.AST.DeclRef(p.name) ).toMap
+      val identMap: Predef.Map[Identifier[_ <: BasePhraseTypes], DeclRef] =
+        (outParam +: inputParams).map( p => p -> C.AST.DeclRef(p.name) ).toMap
 
-    val intermediateIdentMap: Predef.Map[Identifier[_ <: BasePhraseTypes], DeclRef] =
-        intermediateAllocations.flatMap( p =>
-          Seq(Identifier(s"${p.identifier.name}_1", p.identifier.`type`.t1) -> C.AST.DeclRef(p.identifier.name),
-              Identifier(s"${p.identifier.name}_2", p.identifier.`type`.t2) -> C.AST.DeclRef(p.identifier.name) ) ).toMap
+      val intermediateIdentMap: Predef.Map[Identifier[_ <: BasePhraseTypes], DeclRef] =
+          intermediateAllocations.flatMap( p =>
+            Seq(Identifier(s"${p.identifier.name}_1", p.identifier.`type`.t1) -> C.AST.DeclRef(p.identifier.name),
+                Identifier(s"${p.identifier.name}_2", p.identifier.`type`.t2) -> C.AST.DeclRef(p.identifier.name) ) ).toMap
 
-    val env = C.CodeGeneration.CodeGenerator.Environment(identMap ++ intermediateIdentMap, Map.empty, Map.empty)
+      val env = C.CodeGeneration.CodeGenerator.Environment(identMap ++ intermediateIdentMap, Map.empty, Map.empty)
 
-    val (declarations, code) = gen.generate(p, env)
+      val (declarations, code) = gen.generate(p, env)
 
-    OpenCL.Kernel(
-      declarations,
-      kernel = makeKernelFunction(kernelParams, adaptKernelBody(C.AST.Block(Seq(code)))),
-      outputParam = outParam,
-      inputParams = inputParams,
-      intermediateParams = intermediateAllocations.map(_.identifier),
-      localSize, globalSize)
+      val typeDeclarations = C.ProgramGenerator.collectTypeDeclarations(code, kernelParams)
+
+      val oclKernel = OpenCL.Kernel(declarations ++ typeDeclarations,
+            kernel = makeKernelFunction (kernelParams, adaptKernelBody (C.AST.Block (Seq (code) ) ) ),
+            outputParam = outParam,
+            inputParams = inputParams,
+            intermediateParams = intermediateAllocations.map (_.identifier))
+
+      (localSize, globalSize) match {
+        case (None, None) => Left(KernelNoSizes(oclKernel))
+        case (Some(localSize_), Some(globalSize_)) => Right(KernelWithSizes(oclKernel,localSize_, globalSize_))
+        case _ => throw new Exception("At the moment, we assume that local and global size are always provided together.")
+      }
     }}))
   }
 
@@ -84,7 +95,8 @@ object KernelGenerator {
   }
 
   private def rewriteToImperative(p: Phrase[ExpType], a: Phrase[AccType]): Phrase[CommandType] = {
-    TranslationToImperative.acc(p)(a)(new idealised.OpenCL.TranslationContext) |> (p => {
+    TranslationToImperative.acc(p)(a)(
+      new idealised.OpenCL.TranslationContext) |> (p => {
       xmlPrinter.writeToFile("/tmp/p2.xml", p)
       TypeCheck(p) // TODO: only in debug
       p
@@ -105,10 +117,7 @@ object KernelGenerator {
                          gen: CodeGeneration.CodeGenerator): Seq[OpenCL.AST.ParamDecl] = {
     Seq(makeGlobalParam(out, gen)) ++ // first the output parameter ...
       ins.map(makeInputParam(_, gen)) ++ // ... then the input parameters ...
-      intermediateAllocations.map(makeParam(_, gen)) ++ // ... then the intermediate buffers ...
-      // ... finally, the parameters for the length information in the type
-      // these can only come from the input parameters.
-      makeLengthParams(ins.map(_.t.dataType))
+      intermediateAllocations.map(makeParam(_, gen)) //++  ... then the intermediate buffers ...
   }
 
   // pass arrays via global and scalar + tuple values via private memory

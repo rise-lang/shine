@@ -31,7 +31,13 @@ final case class Cycle(n: Nat,
     Cycle(v(n), v(m), v(dt), VisitAndRebuild(input, v))
 
   override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommandType] = ???
+                                  (implicit context: TranslationContext): Phrase[CommandType] =
+    ???
+
+
+  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
+                                     (implicit context: TranslationContext): Phrase[CommandType] =
+    ???
 
   override def continuationTranslation(C: Phrase[->[ExpType, CommandType]])
                                       (implicit context: TranslationContext): Phrase[CommandType] = {

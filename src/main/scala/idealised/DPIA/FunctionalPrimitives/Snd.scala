@@ -43,6 +43,10 @@ final case class Snd(dt1: DataType,
     con(record)(λ(exp"[$dt1 x $dt2]")(x => A :=|dt2| Snd(dt1, dt2, x) ))
   }
 
+  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
+                                     (implicit context: TranslationContext): Phrase[CommandType] =
+    ???
+
   override def continuationTranslation(C: Phrase[ExpType -> CommandType])
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._

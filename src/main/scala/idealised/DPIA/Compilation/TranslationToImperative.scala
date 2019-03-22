@@ -8,7 +8,6 @@ import idealised.DPIA._
 import scala.language.reflectiveCalls
 
 object TranslationToImperative {
-
   def apply(p: Phrase[ExpType])
            (implicit context: TranslationContext): Phrase[CommandType] = {
     val outT = p.t
@@ -23,6 +22,8 @@ object TranslationToImperative {
       case x: Identifier[ExpType] => A :=|x.t.dataType| x
 
       case c: Literal => A :=|c.t.dataType| c
+
+      case n: Natural => A :=|n.t.dataType| n
 
       case u@UnaryOp(op, e) =>
         con(e)(λ(u.t)(x =>
@@ -53,6 +54,26 @@ object TranslationToImperative {
     }
   }
 
+  def mapAcc(f: Phrase[ExpType -> ExpType], E: Phrase[ExpType])
+            (A: Phrase[AccType])
+            (implicit context: TranslationContext): Phrase[CommandType] = {
+    E match {
+      case ep: ExpPrimitive => ep.mapAcceptorTranslation(f, A)
+
+      // on the fly beta-reduction
+      case Apply(fun, arg) => mapAcc(f, Lifting.liftFunction(fun)(arg))(A)
+      case NatDependentApply(fun, arg) => mapAcc(f, Lifting.liftNatDependentFunction(fun)(arg))(A)
+      case TypeDependentApply(fun, arg) => mapAcc(f, Lifting.liftTypeDependentFunction(fun)(arg))(A)
+
+      case IfThenElse(cond, thenP, elseP) =>
+        con(cond)(λ(cond.t) { x =>
+          `if` (x) `then` mapAcc(f, thenP)(A) `else` mapAcc(f, elseP)(A)
+        })
+
+      case _ => throw new Exception("This should never happen")
+    }
+  }
+
   def con(E: Phrase[ExpType])
          (C: Phrase[ExpType -> CommandType])
          (implicit context: TranslationContext): Phrase[CommandType] = {
@@ -60,6 +81,8 @@ object TranslationToImperative {
       case x: Identifier[ExpType] => C(x)
 
       case c: Literal => C(c)
+
+      case n: Natural => C(n)
 
       case u@UnaryOp(op, e) =>
         con(e)(λ(u.t)(x =>

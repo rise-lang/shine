@@ -18,7 +18,7 @@ final case class MapRead(n: Nat,
 {
   override val `type`: ExpType =
     (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
-      (f :: exp"[$dt1]" -> (t"exp[$dt2] -> comm" -> comm)) ->
+      (f :: exp"[$dt1]" -> ((t"exp[$dt2] -> comm") -> comm)) ->
       (input :: exp"[$n.$dt1]") -> exp"[$n.$dt2]"
 
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] = {
@@ -31,9 +31,14 @@ final case class MapRead(n: Nat,
                                   (implicit context: TranslationContext): Phrase[CommandType] =
     throw new Exception("This should not happen")
 
+
+  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
+                                     (implicit context: TranslationContext): Phrase[CommandType] =
+    throw new Exception("This should not happen")
+
   override def continuationTranslation(C: Phrase[->[ExpType, CommandType]])
                                       (implicit context: TranslationContext): Phrase[CommandType] =
-      throw new Exception("This should not happen")
+    throw new Exception("This should not happen")
 
   override def prettyPrint: String = s"(mapRead $f $input)"
 
