@@ -94,8 +94,10 @@ abstract class Comment(val string: String) extends Stmt
 
 abstract class Code(val string: String) extends Stmt
 
+abstract class ExprStmt(val expr: Expr) extends Stmt
 
-abstract class Expr extends Stmt
+
+abstract class Expr extends Node
 
 abstract class Assignment(val lvalue: Expr, val rvalue: Expr) extends Expr
 
@@ -255,6 +257,11 @@ object Comment {
 object Code {
   def apply(string: String): Code = DefaultImplementations.Code(string)
   def unapply(arg: Code): Option[String] = Some(arg.string)
+}
+
+object ExprStmt {
+  def apply(expr: Expr): ExprStmt = DefaultImplementations.ExprStmt(expr)
+  def unapply(arg: ExprStmt): Option[Expr] = Some(arg.expr)
 }
 
 object Assignment {
@@ -434,6 +441,10 @@ object DefaultImplementations {
 
   case class Code(override val string: String) extends C.AST.Code(string) {
     override def visitAndRebuild(v: VisitAndRebuild.Visitor): Code.this.type = this
+  }
+
+  case class ExprStmt(override val expr: Expr) extends C.AST.ExprStmt(expr) {
+    override def visitAndRebuild(v: VisitAndRebuild.Visitor): ExprStmt = ExprStmt(VisitAndRebuild(expr, v))
   }
 
 

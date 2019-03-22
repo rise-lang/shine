@@ -51,8 +51,8 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
             acc(a, env, Nil, {
               case C.AST.FunCall(C.AST.DeclRef(name), immutable.Seq(idx, v))
                 if name.startsWith("vstore") =>
-                  C.AST.FunCall(C.AST.DeclRef(name), immutable.Seq(e, idx, v))
-              case a => C.AST.Assignment(a, e)
+                C.AST.ExprStmt(C.AST.FunCall(C.AST.DeclRef(name), immutable.Seq(e, idx, v)))
+              case a => C.AST.ExprStmt(C.AST.Assignment(a, e))
             }))
 
         case _ => super.cmd(phrase, env)
@@ -88,7 +88,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
           })
         case _ =>           error(s"Expected path to be not empty")
       }
-
+      case IdxVecAcc(_, _, i, a) => CCodeGen.codeGenIdxAcc(i, a, env, path, cont)
       case _ => super.acc(phrase, env, path, cont)
     }
   }
@@ -133,6 +133,19 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         case (i : CIntExpr) :: ps =>     exp(e, env, CIntExpr(i / m) :: ps, cont)
         case _ =>           error(s"Expected path to be not empty")
       }
+      // TODO: this has to be refactored
+      case VectorFromScalar(n, st, e) => path match {
+        case (_: CIntExpr) :: ps =>
+          // in this case we index straight into the vector build from a single scalar
+          // it is equivalent to return the scalar `e' without boxing and unboxing it
+          exp(e, env, ps, cont)
+
+        case Nil =>
+          exp(e, env, Nil, e =>
+            cont(C.AST.Literal(s"($st$n)(" + C.AST.Printer(e) + ")")))
+      }
+
+      case IdxVec(_, _, i, e) => CCodeGen.codeGenIdx(i, e, env, path, cont)
 
       case OpenCLFunction(name, _, _, args) =>
         CCodeGen.codeGenForeignCall(name, args, env, Nil, cont)

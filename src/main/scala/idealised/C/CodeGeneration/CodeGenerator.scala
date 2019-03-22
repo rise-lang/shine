@@ -107,7 +107,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case Assign(_, a, e) =>
         exp(e, env, Nil, e =>
           acc(a, env, Nil, a =>
-            C.AST.Assignment(a, e)))
+            C.AST.ExprStmt(C.AST.Assignment(a, e))))
 
       case New(dt, Lambda(v, p)) => CCodeGen.codeGenNew(dt, v, p, env)
 
@@ -192,8 +192,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case IdxAcc(_, _, i, a) => CCodeGen.codeGenIdxAcc(i, a, env, path, cont)
 
       case DepIdxAcc(_, _, i, a) => acc(a, env, CIntExpr(i) :: path, cont)
-
-      case IdxVecAcc(_, _, i, a) => CCodeGen.codeGenIdxVecAcc(i, a, env, path, cont)
 
       case Proj1(pair) => acc(Lifting.liftPair(pair)._1, env, path, cont)
       case Proj2(pair) => acc(Lifting.liftPair(pair)._2, env, path, cont)
@@ -367,21 +365,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error(s"Expected two C-Integer-Expressions on the path.")
       }
 
-      // TODO: this has to be refactored
-      case VectorFromScalar(n, st, e) => path match {
-        case (_: CIntExpr) :: ps =>
-          // in this case we index straight into the vector build from a single scalar
-          // it is equivalent to return the scalar `e' without boxing and unboxing it
-          exp(e, env, ps, cont)
-        //          C.AST.ArraySubscript(
-        //            C.AST.Literal( "(" + s"($st[$n]){" + C.AST.Printer(exp(e, env, ps)) + "})" ),
-        //            C.AST.ArithmeticExpr(i))
-
-        case Nil =>
-          exp(e, env, Nil, e =>
-            cont(C.AST.Literal("(" + s"($st[$n]){" + C.AST.Printer(e) + "})")))
-      }
-
       case MapRead(n, dt1, dt2, f, e) => path match {
         case (i : CIntExpr) :: ps =>
           val continue_cmd =
@@ -400,14 +383,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case DepIdx(_, _, i, e) => exp(e, env, CIntExpr(i) :: path, cont)
 
-      case IdxVec(_, _, i, e) => CCodeGen.codeGenIdxVec(i, e, env, path, cont)
-
       case ForeignFunction(f, inTs, outT, args) =>
-        path match {
-          case Nil =>
-            CCodeGen.codeGenForeignFunction(f, inTs, outT, args, env, path, cont)
-          case _ => error("Expected path to be empty")
-        }
+        CCodeGen.codeGenForeignFunction(f, inTs, outT, args, env, path, cont)
 
       case Proj1(pair) => exp(Lifting.liftPair(pair)._1, env, path, cont)
       case Proj2(pair) => exp(Lifting.liftPair(pair)._2, env, path, cont)
@@ -443,7 +420,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     * @param `for` The free nat variable to substitute
     * @param phrase The phrase to generate
     * @param at The arithmetic expression we are generating phrase at
-    * @param generator Up-to-date code generator
     * @param env Up-to-date environment
     * @return
     */
@@ -514,15 +490,15 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           env updatedIdentEnv (ve -> in_ptr) updatedIdentEnv (va -> out_ptr)
             updatedCommEnv (swap -> {
             Block(immutable.Seq(
-              Assignment(in_ptr, TernaryExpr(flag, tmp1, tmp2)),
-              Assignment(out_ptr, TernaryExpr(flag, tmp2, tmp1)),
+              ExprStmt(Assignment(in_ptr, TernaryExpr(flag, tmp1, tmp2))),
+              ExprStmt(Assignment(out_ptr, TernaryExpr(flag, tmp2, tmp1))),
               // toggle flag with xor
-              Assignment(flag, BinaryExpr(flag, ^, Literal("1")))))
+              ExprStmt(Assignment(flag, BinaryExpr(flag, ^, Literal("1"))))))
           })
             updatedCommEnv (done -> {
             Block(immutable.Seq(
-              Assignment(in_ptr, TernaryExpr(flag, tmp1, tmp2)),
-              acc(out, env, CIntExpr(0) :: Nil, o => Assignment(out_ptr, UnaryExpr(&, o)))))
+              ExprStmt(Assignment(in_ptr, TernaryExpr(flag, tmp1, tmp2))),
+              acc(out, env, CIntExpr(0) :: Nil, o => ExprStmt(Assignment(out_ptr, UnaryExpr(&, o))))))
           }))
       ))
     }
@@ -554,7 +530,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           env updatedIdentEnv (re -> rs) updatedIdentEnv (ra -> rs)
             updatedCommEnv (rot -> Block(
             // (1 until registerCount).map(i => Assignment(rs(i-1), rs(i)))
-            (1 until registerCount).map(i => Assignment(generateAccess(rst, rs, CIntExpr(i - 1) :: Nil, env), generateAccess(rst, rs, CIntExpr(i) :: Nil, env)))
+            (1 until registerCount).map(i => ExprStmt(Assignment(generateAccess(rst, rs, CIntExpr(i - 1) :: Nil, env), generateAccess(rst, rs, CIntExpr(i) :: Nil, env))))
           ))
         )
       )
@@ -889,7 +865,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case SUB => C.AST.BinaryOperator.-
         case MUL => C.AST.BinaryOperator.*
         case DIV => C.AST.BinaryOperator./
-        case MOD => ???
+        case MOD => C.AST.BinaryOperator.%
         case GT => C.AST.BinaryOperator.>
         case LT => C.AST.BinaryOperator.<
         case EQ => C.AST.BinaryOperator.==

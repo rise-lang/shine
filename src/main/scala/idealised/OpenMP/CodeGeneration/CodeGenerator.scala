@@ -5,8 +5,8 @@ import idealised.C.AST.{ArraySubscript, Assignment, Decl}
 import idealised.C.CodeGeneration.{CodeGenerator => CCodeGenerator}
 import idealised.C.CodeGeneration.CodeGenerator.CIntExpr
 import idealised.DPIA.DSL._
-import idealised.DPIA.FunctionalPrimitives.{AsScalar, AsVector, ForeignFunction}
-import idealised.DPIA.ImperativePrimitives.{AsScalarAcc, AsVectorAcc, ForVec}
+import idealised.DPIA.FunctionalPrimitives.{AsScalar, AsVector, ForeignFunction, VectorFromScalar}
+import idealised.DPIA.ImperativePrimitives._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics.{ArrayData, VectorData}
@@ -66,6 +66,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
           })
         case _ =>           error(s"Expected path to be not empty")
       }
+      case IdxVecAcc(_, _, i, a) => CCodeGen.codeGenIdxAcc(i, a, env, path, cont)
       case _ =>             super.acc(phrase, env, path, cont)
     }
   }
@@ -117,6 +118,21 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         case (i: CIntExpr) :: ps =>     exp(e, env, CIntExpr(i / m) :: ps, cont)
         case _ =>           error(s"Expected path to be not empty")
       }
+      // TODO: this has to be refactored
+      case VectorFromScalar(n, st, e) => path match {
+        case (_: CIntExpr) :: ps =>
+          // in this case we index straight into the vector build from a single scalar
+          // it is equivalent to return the scalar `e' without boxing and unboxing it
+          exp(e, env, ps, cont)
+        //          C.AST.ArraySubscript(
+        //            C.AST.Literal( "(" + s"($st[$n]){" + C.AST.Printer(exp(e, env, ps)) + "})" ),
+        //            C.AST.ArithmeticExpr(i))
+
+        case Nil =>
+          exp(e, env, Nil, e =>
+            cont(C.AST.Literal("(" + s"($st[$n]){" + C.AST.Printer(e) + "})")))
+      }
+      case IdxVec(_, _, i, e) => CCodeGen.codeGenIdx(i, e, env, path, cont)
       case _ =>             super.exp(phrase, env, path, cont)
     }
   }

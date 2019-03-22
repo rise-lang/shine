@@ -4,7 +4,7 @@ import idealised.DPIA.DSL._
 import idealised.DPIA.ImperativePrimitives.Assign
 import idealised.DPIA.IntermediatePrimitives.{DepMapSeqI, MapSeqI}
 import idealised.DPIA.Phrases.{NatDependentLambda, Phrase}
-import idealised.DPIA.Types.{AccType, ArrayType, CommandType, DataType, DepArrayType, ExpType, IndexType, RecordType, ScalarType}
+import idealised.DPIA.Types._
 import idealised.DPIA.freshName
 import lift.arithmetic.NamedVar
 
@@ -32,7 +32,7 @@ class TranslationContext() extends idealised.DPIA.Compilation.TranslationContext
             λ(ExpType( ft(k) ))(x => λ(AccType( ft(k) ))(a => assign(ft(k), a, x) ))),
           rhs, lhs)(this)
 
-      case _ => throw new Exception("This should not happen")
+      case x => throw new Exception(s"Don't know how to assign value of type $x")
     }
   }
 }

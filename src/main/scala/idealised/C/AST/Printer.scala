@@ -93,8 +93,8 @@ class CPrinter extends Printer {
     case d: DeclStmt => printDeclStmt(d)
     case c: Comment => printComment(c)
     case c: Code => printCode(c)
-    case e: Expr =>
-      printExpr(e)
+    case e: ExprStmt =>
+      printExpr(e.expr)
       print(";")
   }
 
