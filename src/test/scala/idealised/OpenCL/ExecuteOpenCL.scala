@@ -8,7 +8,6 @@ import idealised.util.SyntaxChecker
 
 import scala.language.{postfixOps, reflectiveCalls}
 
-
 class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
   test("Running a simple kernel with generic input size") {
     val f: Expr =

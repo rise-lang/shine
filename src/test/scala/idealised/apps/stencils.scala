@@ -1,18 +1,18 @@
 package idealised.apps
 
 import benchmarks.core.{CorrectnessCheck, RunOpenCLProgram}
-import idealised.OpenCL.PrivateMemory
+import idealised.OpenCL.{KernelWithSizes, PrivateMemory}
 import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.DSL.{fun, _}
 import idealised.SurfaceLanguage.Expr
 import idealised.SurfaceLanguage.Semantics.FloatData
 import idealised.SurfaceLanguage.Types._
 import idealised.util.Tests
-import idealised.utils.Display
+import idealised.utils.Time.ms
+import idealised.utils.{Display, TimeSpan}
 import lift.arithmetic._
 
 import scala.util.Random
-
 import scala.language.reflectiveCalls
 
 class stencils extends Tests {
@@ -55,6 +55,13 @@ class stencils extends Tests {
         runtimeMs = runtimeMs,
         correctness = correctness
       )
+    }
+
+    override protected def runKernel(k: KernelWithSizes, input: Input): (Array[Float], TimeSpan[ms]) = {
+      import idealised.OpenCL._
+
+      val kernelFun = k.as[ScalaFunction `(` Int `,` Input `)=>` Array[Float]]
+      kernelFun(inputSize `,` input)
     }
   }
 

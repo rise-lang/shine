@@ -3,6 +3,7 @@ package benchmarks.core
 import idealised.DPIA
 import idealised.OpenCL.KernelWithSizes
 import idealised.SurfaceLanguage.Types.TypeInference
+import idealised.utils.{Display, Time, TimeSpan}
 import lift.arithmetic.ArithExpr
 
 import scala.util.Random
@@ -14,8 +15,6 @@ abstract class RunOpenCLProgram(val verbose:Boolean) {
   type Input
   //The type of the summary structure recording data about the runs
   type Summary
-
-  def inputSize:Int
 
   def dpiaProgram: Expr
 
@@ -34,23 +33,48 @@ abstract class RunOpenCLProgram(val verbose:Boolean) {
     kernel
   }
 
+  protected def runKernel(k: KernelWithSizes, input: Input): (Array[Float], TimeSpan[Time.ms])
+
   final def run(localSize:Int, globalSize:Int):Summary = {
     opencl.executor.Executor.loadAndInit()
 
-    val rand = new Random()
-    val input = makeInput(rand)
-    val scalaOutput = runScalaProgram(input)
+    val (scalaOutput, kernel, kernelOutput, time) = try {
+      val rand = new Random()
+      val input = makeInput(rand)
+      val scalaOutput = runScalaProgram(input)
 
-    import idealised.OpenCL.{ScalaFunction, `(`, `)=>`, _}
-
-    val kernel = this.compile(localSize, globalSize)
-    val kernelFun = kernel.as[ScalaFunction`(`Int`,` Input`)=>`Array[Float]]
-    val (kernelOutput, time) = kernelFun(inputSize `,` input)
-
-    opencl.executor.Executor.shutdown()
+      val kernel = this.compile(localSize, globalSize)
+      val (kernelOutput, time) = runKernel(kernel, input)
+      (scalaOutput, kernel, kernelOutput, time)
+    } finally {
+      opencl.executor.Executor.shutdown()
+    }
 
     val correct = CorrectnessCheck(kernelOutput, scalaOutput)
 
     makeSummary(localSize, globalSize, kernel.code, time.value, correct)
   }
+}
+
+abstract class SimpleRunOpenCLProgram(override val verbose: Boolean)
+  extends RunOpenCLProgram(verbose) {
+
+  final type Summary = Result
+
+  case class Result(localSize: Int,
+                    globalSize: Int,
+                    code: String,
+                    runtimeMs: Double,
+                    correctness: CorrectnessCheck
+                   ) extends Display {
+    def display: String =
+      s"localSize = $localSize, " +
+      s"globalSize = $globalSize, " +
+      s"code = $code, " +
+      s"runtime = $runtimeMs," +
+      s" correct = ${correctness.display}"
+  }
+
+  override def makeSummary(localSize: Int, globalSize: Int, code: String, runtimeMs: Double, correctness: CorrectnessCheck): Result =
+    Result(localSize, globalSize, code, runtimeMs, correctness)
 }

@@ -1,10 +1,17 @@
 package idealised.DPIA.Primitives
 
+import benchmarks.core.SimpleRunOpenCLProgram
 import idealised.DPIA.{Nat, NatIdentifier}
+import idealised.OpenCL.KernelWithSizes
 import idealised.SurfaceLanguage.DSL._
+import idealised.SurfaceLanguage.Expr
 import idealised.SurfaceLanguage.Types._
 import idealised.util.SyntaxChecker
+import idealised.utils.Time.ms
+import idealised.utils.TimeSpan
 import lift.arithmetic._
+
+import scala.util.Random
 
 
 class Partition extends idealised.util.Tests {
@@ -23,9 +30,6 @@ class Partition extends idealised.util.Tests {
   }
 
   test("Partition threeway with pad and unrolling") {
-    opencl.executor.Executor.loadAndInit()
-    import idealised.OpenCL.{ScalaFunction, `(`, `)=>`, _}
-
     val padAmount = 3
 
     def lenF(n: Nat) = SteppedCase(3, n, 3) _
@@ -36,17 +40,29 @@ class Partition extends idealised.util.Tests {
         partition(3, lenF(n)) :>>
         depMapSeqUnroll(mapSeq(fun(x => x + 1.0f)))))
 
-    val p = idealised.OpenCL.KernelGenerator.makeCode(1, 1)(idealised.DPIA.FromSurfaceLanguage(TypeInference(padAndPartition, Map())))
-    val kernelF = p.as[ScalaFunction `(` Int `,` Array[Float] `)=>` Array[Float]]
-    val input = Array.fill(128)(5.0f)
-    val (output, time) = kernelF(128 `,` input)
+    case class Run() extends SimpleRunOpenCLProgram(false) {
+      val inputSize: Int = 128
 
-    val scalaOutput = (Array.fill(padAmount)(0.0f) ++ input ++ Array.fill(padAmount)(0.0f)).map(x => x + 1.0f)
+      override type Input = Array[Float]
 
-    assert(output.zip(scalaOutput).forall { case (x, y) => x - y < 0.01 })
+      override def dpiaProgram: Expr = padAndPartition
 
-    val code = p.code
-    SyntaxChecker.checkOpenCL(code)
-    opencl.executor.Executor.shutdown()
+      override protected def makeInput(random: Random): Input = {
+        Array.fill(inputSize)(5.0f)
+      }
+
+      override protected def runScalaProgram(input: Array[Float]): Array[Float] = {
+        (Array.fill(padAmount)(0.0f) ++ input ++ Array.fill(padAmount)(0.0f)).map(x => x + 1.0f)
+      }
+
+      override protected def runKernel(k: KernelWithSizes, input: Array[Float]): (Array[Float], TimeSpan[ms]) = {
+        import idealised.OpenCL._
+
+        val kernelFun = k.as[ScalaFunction `(` Int `,` Input `)=>` Array[Float]]
+        kernelFun(inputSize `,` input)
+      }
+    }
+
+    Run().run(1, 1).correctness.check()
   }
 }
