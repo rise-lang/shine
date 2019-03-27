@@ -107,10 +107,8 @@ object Type {
                             in: Expr): Expr = {
 
     object Visitor extends VisitAndRebuild.Visitor {
-      override def apply[T2 <: Type](in: T2): T2 = in match {
-        case inDt: DataType => substitute(dt, `for`, inDt).asInstanceOf[T2]
-        case x => x // TODO? I think we should substitute in this type too
-      }
+      override def apply[T2 <: Type](in: T2): T2 =
+        substitute(dt, `for`, in).asInstanceOf[T2]
     }
 
     VisitAndRebuild(in, Visitor)
@@ -143,14 +141,55 @@ object Type {
 
       override def apply(e: Nat): Nat = substitute(ae, `for`, e)
 
-      override def apply[T2 <: Type](t: T2): T2 = t match {
-        case dt: DataType => substitute(ae, `for`, dt).asInstanceOf[T2]
-        case x => x // TODO? I think we should substitute in this type too
-      }
+      override def apply[T2 <: Type](t: T2): T2 =
+        substitute(ae, `for`, t).asInstanceOf[T2]
     }
 
     VisitAndRebuild(in, Visitor)
 
+  }
+
+  def substitute(t: Type, `for`: Type, in: Type): Type = {
+    def st(in: Type) = substitute(t, `for`, in)
+
+    if (`for` == in) {
+      t
+    } else {
+      in match {
+        case _: BasicType => in
+        case ArrayType(size, elemType) => ArrayType(size, st(elemType).asInstanceOf[DataType])
+        case DepArrayType(size, elemType) => DepArrayType(size, st(elemType).asInstanceOf[NatDependentDataType])
+        case TupleType(ts@_*) => TupleType(ts.map(st(_).asInstanceOf[DataType]): _*)
+        case FunctionType(inT, outT) =>
+          FunctionType(st(inT), st(outT))
+        case TypeDependentFunctionType(dt, body) =>
+          TypeDependentFunctionType(dt, st(body))
+        case NatDependentFunctionType(n, body) =>
+          NatDependentFunctionType(n, st(body))
+      }
+    }
+  }
+
+  def substitute(ae: Nat, `for`: NatIdentifier, in: Type): Type = {
+    def sn(n: Nat) = substitute(ae, `for`, n)
+    def sdt(dt: DataType) = substitute(ae, `for`, dt)
+    def st(t: Type) = substitute(ae, `for`, t)
+
+    in match {
+      case _: ScalarType => in
+      case IndexType(size) => IndexType(sn(size))
+      case ArrayType(size, elemType) =>
+        ArrayType(sn(size), sdt(elemType))
+      case DepArrayType(size, elemType) =>
+        DepArrayType(sn(size), st(elemType).asInstanceOf[NatDependentDataType])
+      case TupleType(ts@_*) => TupleType(ts.map(sdt): _*)
+      case FunctionType(inT, outT) =>
+        FunctionType(st(inT), st(outT))
+      case TypeDependentFunctionType(dt, body) =>
+        TypeDependentFunctionType(dt, st(body))
+      case NatDependentFunctionType(n, body) =>
+        NatDependentFunctionType(n, st(body))
+    }
   }
 
   def substitute[T <: DataType](dt: DataType, `for`: DataType, in: T): T = {
