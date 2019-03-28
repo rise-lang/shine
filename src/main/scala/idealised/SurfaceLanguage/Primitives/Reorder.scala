@@ -41,11 +41,10 @@ final case class Reorder(idxF: Expr,
       })
   }
 
-  override def visitAndRebuild(f: VisitAndRebuild.Visitor): Expr = {
-    Reorder(
-      VisitAndRebuild(idxF, f),
-      VisitAndRebuild(idxFinv, f),
-      VisitAndRebuild(array, f),
-      t)
+  override def children: Seq[Any] = Seq(idxF, idxFinv, array, t)
+
+  override def rebuild: Seq[Any] => Expr = {
+    case Seq(idxF: Expr, idxFinv: Expr, array: Expr, t: Option[DataType]) =>
+      Reorder(idxF, idxFinv, array, t)
   }
 }

@@ -18,8 +18,10 @@ final case class Snd(tuple: Expr,
       })
   }
 
-  override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): Expr = {
-    Snd(SurfaceLanguage.VisitAndRebuild(tuple, f), t.map(f(_)))
+  override def children: Seq[Any] = Seq(tuple, t)
+
+  override def rebuild: Seq[Any] => Expr = {
+    case Seq(tuple: Expr, t: Option[DataType]) => Snd(tuple, t)
   }
 
   override def toString: String = s"$tuple._2"

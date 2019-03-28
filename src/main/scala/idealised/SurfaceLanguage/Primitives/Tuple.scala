@@ -16,8 +16,10 @@ final case class Tuple(fst: Expr, snd: Expr,
         }))
   }
 
-  override def visitAndRebuild(f: VisitAndRebuild.Visitor): Expr = {
-    Tuple(VisitAndRebuild(fst, f), VisitAndRebuild(snd, f), t.map(f(_)))
-  }
+  override def children: Seq[Any] = Seq(fst, snd, t)
 
+  override def rebuild: Seq[Any] => Expr = {
+    case Seq(fst: Expr, snd: Expr, t: Option[DataType]) =>
+      Tuple(fst, snd, t)
+  }
 }

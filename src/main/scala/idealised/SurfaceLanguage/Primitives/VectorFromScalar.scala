@@ -17,8 +17,10 @@ final case class VectorFromScalar(n: Nat, arg: Expr,
     }
   }
 
-  override def visitAndRebuild(f: VisitAndRebuild.Visitor): Expr = {
-    VectorFromScalar(f(n), VisitAndRebuild(arg, f), t.map(f(_)))
-  }
+  override def children: Seq[Any] = Seq(n, arg, t)
 
+  override def rebuild: Seq[Any] => Expr = {
+    case Seq(n: Nat, arg: Expr, t: Option[DataType]) =>
+      VectorFromScalar(n, arg, t)
+  }
 }

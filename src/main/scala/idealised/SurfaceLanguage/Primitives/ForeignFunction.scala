@@ -32,8 +32,11 @@ final case class ForeignFunction(funDecl: ForeignFunction.Declaration,
     })
   }
 
-  override def visitAndRebuild(f: VisitAndRebuild.Visitor): Expr = {
-    ForeignFunction(funDecl, inTs.map(f(_)), f(outT), args.map(VisitAndRebuild(_, f)))
+  override def children: Seq[Any] = Seq(inTs, outT, args)
+
+  override def rebuild: Seq[Any] => Expr = {
+    case Seq(inTs: Seq[DataType], outT: DataType, args: Seq[Expr]) =>
+      ForeignFunction(funDecl, inTs, outT, args)
   }
 
   override def t: Option[DataType] = Some(outT)

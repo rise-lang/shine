@@ -39,6 +39,10 @@ abstract class AbstractScan(val f: Expr, val init: Expr, val array: Expr,
         }))
   }
 
-  override def visitAndRebuild(fun: Visitor): Expr =
-    makeScan(VisitAndRebuild(this.f, fun), VisitAndRebuild(this.init, fun), VisitAndRebuild(this.array, fun), this.t.map(fun(_)))
+  override def children: Seq[Any] = Seq(f, init, array, t)
+
+  override def rebuild: Seq[Any] => Expr = {
+    case Seq(f: Expr, init: Expr, array: Expr, t: Option[DataType]) =>
+      makeScan(f, init, array, t)
+  }
 }

@@ -19,7 +19,9 @@ final case class Drop(n: Nat, array: Expr,
       })
   }
 
-  override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): Expr = {
-    Drop(f(n), SurfaceLanguage.VisitAndRebuild(array, f), t.map(f(_)))
+  override def children: Seq[Any] = Seq(n, array, t)
+
+  override def rebuild: Seq[Any] => Expr = {
+    case Seq(n: Nat, array: Expr, t: Option[DataType]) => Drop(n, array, t)
   }
 }

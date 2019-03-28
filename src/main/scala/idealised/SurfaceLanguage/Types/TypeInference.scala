@@ -37,35 +37,59 @@ object TypeInference {
           case None => error(identifier.toString, s"Found Identifier $name without type")
         }
 
-      case LambdaExpr(param, body) =>
+      case LambdaExpr(param, body, _) =>
         inferType(param, subs) match {
           case newParam: IdentifierExpr =>
-            LambdaExpr(newParam, inferType(body, subs))
+            lambdaWithType(newParam, inferType(body, subs))
           case _ => throw new Exception("")
         }
 
-      case ApplyExpr(fun, arg) => ApplyExpr(inferType(fun, subs), inferType(arg, subs))
+      case ApplyExpr(fun, arg, _) =>
+        val f = inferType(fun, subs)
+        val a = inferType(arg, subs)
+        f.t match {
+          case Some(FunctionType(_, outT)) => ApplyExpr(f, a, Some(outT))
+        }
 
-      case NatDependentLambdaExpr(x, e) =>
-        NatDependentLambdaExpr(x, inferType(e, subs))
+      case NatDependentLambdaExpr(x, body, _) =>
+        natDepLambdaWithType(x, inferType(body, subs))
 
-      case NatDependentApplyExpr(f, x) =>
-        NatDependentApplyExpr(inferType(f, subs), x)
+      case NatDependentApplyExpr(fun, x, _) =>
+        val f = inferType(fun, subs)
+        f.t match {
+          case Some(NatDependentFunctionType(_, bodyT)) =>
+            NatDependentApplyExpr(f, x, Some(bodyT))
+        }
 
-      case TypeDependentLambdaExpr(x, e) =>
-        TypeDependentLambdaExpr(x, inferType(e, subs))
+      case TypeDependentLambdaExpr(x, body, _) =>
+        val e = inferType(body, subs)
+        TypeDependentLambdaExpr(x, e, Some(TypeDependentFunctionType(x, e.t.get)))
 
-      case TypeDependentApplyExpr(f, x) =>
-        TypeDependentApplyExpr(inferType(f, subs), x)
+      case TypeDependentApplyExpr(fun, x, _) =>
+        val f = inferType(fun, subs)
+        f.t match {
+          case Some(TypeDependentFunctionType(_, bodyT)) =>
+            TypeDependentApplyExpr(f, x, Some(bodyT))
+        }
 
-      case IfThenElseExpr(cond, thenE, elseE) =>
-        IfThenElseExpr(inferType(cond, subs), inferType(thenE, subs), inferType(elseE, subs))
+      case IfThenElseExpr(cond, thenE, elseE, _) =>
+        val c = inferType(cond, subs)
+        val te = inferType(thenE, subs)
+        val ee = inferType(elseE, subs)
+        (te.t, ee.t) match {
+          case (Some(tT), Some(eT)) if tT == eT =>
+            IfThenElseExpr(c, te, ee, Some(tT))
+        }
 
-      case UnaryOpExpr(op, e) => UnaryOpExpr(op, inferType(e, subs))
+      case BinOpExpr(op, lhs, rhs, _) =>
+        val l = inferType(lhs, subs)
+        val r = inferType(rhs, subs)
+        (l.t, r.t) match {
+          case (Some(lT), Some(rT)) if lT == rT =>
+            BinOpExpr(op, l, r, Some(lT))
+        }
 
-      case BinOpExpr(op, lhs, rhs) => BinOpExpr(op, inferType(lhs, subs), inferType(rhs, subs))
-
-      case LiteralExpr(d) => LiteralExpr(d)
+      case LiteralExpr(d, _) => LiteralExpr(d, Some(d.dataType))
 
       case NatExpr(n) => NatExpr(n)
 
@@ -73,14 +97,22 @@ object TypeInference {
     }
   }
 
+  def lambdaWithType(x: IdentifierExpr, e: Expr): Expr = {
+    LambdaExpr(x, e, Some(FunctionType(x.t.get, e.t.get)))
+  }
+
+  def natDepLambdaWithType(x: NatIdentifier, e: Expr): Expr = {
+    NatDependentLambdaExpr(x, e, Some(NatDependentFunctionType(x, e.t.get)))
+  }
+
   def setParamAndInferType(f: Expr,
                                       t: DataType,
                                       subs: SubstitutionMap): Expr = {
     f match {
-      case LambdaExpr(x, e) =>
+      case LambdaExpr(x, e, _) =>
         val newX = IdentifierExpr(newName(), Some(t))
         val newE = apply(e, subs.updated(x, newX))
-        LambdaExpr(newX, newE)
+        lambdaWithType(newX, newE)
       case _ => throw new Exception("This should not happen")
     }
   }
@@ -90,13 +122,13 @@ object TypeInference {
                                         t2: DataType,
                                         subs: SubstitutionMap): Expr = {
     f match {
-      case LambdaExpr(x, e1) =>
+      case LambdaExpr(x, e1, _) =>
         val newX = IdentifierExpr(newName(), Some(t1))
         e1 match {
-          case LambdaExpr(y, e2) =>
+          case LambdaExpr(y, e2, _) =>
             val newY = IdentifierExpr(newName(), Some(t2))
             val newE2 = apply(e2, subs.updated(x, newX).updated(y, newY))
-            LambdaExpr(newX, LambdaExpr(newY, newE2))
+            lambdaWithType(newX, lambdaWithType(newY, newE2))
           case _ => throw new Exception("This should not happen")
         }
       case _ => throw new Exception("This should not happen")
@@ -107,10 +139,10 @@ object TypeInference {
                                         makeDt: NatIdentifier => DataType,
                                         subs: SubstitutionMap): Expr = {
     f match {
-      case NatDependentLambdaExpr(i, LambdaExpr(x, e)) =>
+      case NatDependentLambdaExpr(i, LambdaExpr(x, e, _), _) =>
         val newX = IdentifierExpr(newName(), Some(makeDt(i)))
         val newE = inferType(e, subs.updated(x, newX))
-        NatDependentLambdaExpr(i, LambdaExpr(newX, newE))
+        natDepLambdaWithType(i, lambdaWithType(newX, newE))
       case _ => throw new Exception("This should not happen")
     }
   }
@@ -127,6 +159,6 @@ object TypeInference {
       case _ => ae
     }
 
-    override def apply[T <: DataType](dt: T): T = Type.rebuild(this.apply, dt)
+    override def apply[T <: Type](dt: T): T = Type.rebuild(this.apply, dt)
   }
 }

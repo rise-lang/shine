@@ -18,8 +18,10 @@ final case class AsScalar(array: Expr, override val t: Option[DataType] = None)
     }
   }
 
-  override def visitAndRebuild(f: SurfaceLanguage.VisitAndRebuild.Visitor): Expr = {
-    AsScalar(SurfaceLanguage.VisitAndRebuild(array, f), t.map(f(_)))
+  override def children: Seq[Any] = Seq(array, t)
+
+  override def rebuild: Seq[Any] => Expr = {
+    case Seq(array: Expr, t: Option[DataType]) => AsScalar(array, t)
   }
 
 }

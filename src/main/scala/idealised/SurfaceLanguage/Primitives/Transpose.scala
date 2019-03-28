@@ -19,6 +19,10 @@ final case class Transpose(array: Expr,
       })
   }
 
-  override def visitAndRebuild(f: VisitAndRebuild.Visitor): Expr =
-    Transpose(VisitAndRebuild(array, f), t)
+  override def children: Seq[Any] = Seq(array, t)
+
+  override def rebuild: Seq[Any] => Expr = {
+    case Seq(array: Expr, t: Option[DataType]) =>
+      Transpose(array, t)
+  }
 }

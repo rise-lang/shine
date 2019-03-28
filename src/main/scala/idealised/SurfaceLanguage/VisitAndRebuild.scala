@@ -5,69 +5,70 @@ import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage.Semantics._
 
 object VisitAndRebuild {
+  sealed abstract class Result[+T](val value: T) {
+    def map[U](f: T => U): Result[U]
+  }
+  final case class Stop[+T](override val value: T) extends Result[T](value) {
+    override def map[U](f: T => U): Result[U] = Stop(f(value))
+  }
+  final case class Continue[+T](override val value: T, v: Visitor) extends Result[T](value) {
+    override def map[U](f: T => U): Result[U] = Continue(f(value), v)
+  }
 
   class Visitor {
-    def apply(e: Expr): Result = Continue(e, this)
+    def apply(e: Expr): Result[Expr] = Continue(e, this)
     def apply(ae: Nat): Nat = ae
     def apply(f:NatNatTypeFunction):NatNatTypeFunction = NatNatTypeFunction(f.x, apply(f.body))
-    def apply[T <: DataType](dt: T): T = dt
-
-    abstract class Result
-    case class Stop(p: Expr) extends Result
-    case class Continue(p: Expr, v: Visitor) extends Result
+    def apply[T <: Type](t: T): T = t
   }
 
   def apply(e: Expr, v: Visitor): Expr = {
     v(e) match {
-      case r: v.Stop => r.p
-      case c: v.Continue =>
+      case s: Stop[Expr] => s.value
+      case c: Continue[Expr] =>
         val v = c.v
-        c.p match {
-          case i: IdentifierExpr =>
-            IdentifierExpr(i.name, i.t match {
-              case None => None
-              case Some(dt) => Some(v(dt))
-            })
-
-          case LambdaExpr(x, p) =>
-            apply(x, v) match {
-              case newX: IdentifierExpr => LambdaExpr(newX, apply(p, v))
-              case _ => throw new Exception("This should not happen")
-            }
-
-          case ApplyExpr(p, q) =>
-            ApplyExpr(apply(p, v), apply(q, v))
-
-          case NatDependentLambdaExpr(a, p) =>
-            NatDependentLambdaExpr(a, apply(p, v))
-
-          case TypeDependentLambdaExpr(dt, p) =>
-            TypeDependentLambdaExpr(dt, apply(p, v))
-
-          case NatDependentApplyExpr(p, ae) =>
-            NatDependentApplyExpr(apply(p, v), ae)
-
-          case TypeDependentApplyExpr(p, dt) =>
-            TypeDependentApplyExpr(apply(p, v), dt)
-
-          case IfThenElseExpr(cond, thenP, elseP) =>
-            IfThenElseExpr(apply(cond, v), apply(thenP, v), apply(elseP, v))
-
-          case LiteralExpr(d) => d match {
-            case IndexData(i, t) => LiteralExpr(IndexData(v(i), v(t)))
-            case _ => LiteralExpr(d)
-          }
-
-          case NatExpr(n) => NatExpr(v(n))
-
-          case UnaryOpExpr(op, x) => UnaryOpExpr(op, apply(x, v))
-
-          case BinOpExpr(op, lhs, rhs) => BinOpExpr(op, apply(lhs, v), apply(rhs, v))
-
-          case p: PrimitiveExpr => p.visitAndRebuild(v)
-        }
+        c.value.rebuild(c.value.children.map(applyAny(v)))
     }
   }
 
+  def applyAny(v: Visitor): Any => Any = {
+    case e: Expr => apply(e, v)
+    case n: Nat => v(n)
+    case f: NatNatTypeFunction => v(f)
+    case t: Type => v(t)
+    case s: Seq[_] => s.map(applyAny(v))
+    case o: Option[_] => o.map(applyAny(v))
+    case otherwise => println(s"$otherwise"); ???
+  }
+
+  object DFS {
+    def apply(e: Expr, v: Visitor): Result[Expr] = {
+      v(e) match {
+        case s: Stop[Expr] => s
+        case c: Continue[Expr] =>
+          val children = applySeq(c.v)(c.value.children)
+          children.map(c.value.rebuild)
+      }
+    }
+
+    def applySeq(v: Visitor): Seq[Any] => Result[Seq[Any]] = {
+      case Nil => Continue(Nil, v)
+      case x :: r => applyAny(v)(x) match {
+        case s: Stop[Any] => Stop(s.value +: r)
+        case c: Continue[Any] => applySeq(c.v)(r).map(r => c.value +: r)
+      }
+    }
+
+    def applyAny(v: Visitor): Any => Result[Any] = {
+      case e: Expr => apply(e, v)
+      case n: Nat => Continue(v(n), v)
+      case f: NatNatTypeFunction => Continue(v(f), v)
+      case t: Type => Continue(v(t), v)
+      case s: Seq[_] => applySeq(v)(s)
+      case None => Continue(None, v)
+      case Some(x) => applyAny(v)(x).map(Some(_))
+      case otherwise => println(s"$otherwise"); ???
+    }
+  }
 }
 

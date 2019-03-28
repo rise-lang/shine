@@ -37,11 +37,10 @@ final case class OpenCLReduceSeq(f: Expr,
         }))
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Expr = {
-    OpenCLReduceSeq(VisitAndRebuild(f, fun),
-      VisitAndRebuild(init, fun),
-      initAddrSpace,
-      VisitAndRebuild(array, fun),
-      t.map(fun(_)))
+  override def children: Seq[Any] = Seq(f, init, array, t)
+
+  override def rebuild: Seq[Any] => Expr = {
+    case Seq(f: Expr, init: Expr, array: Expr, t: Option[DataType]) =>
+      OpenCLReduceSeq(f, init, initAddrSpace, array, t)
   }
 }

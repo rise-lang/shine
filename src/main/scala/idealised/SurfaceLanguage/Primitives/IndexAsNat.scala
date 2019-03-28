@@ -16,7 +16,9 @@ final case class IndexAsNat(e: Expr, override val t: Option[DataType] = Some(Nat
     )
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Expr = {
-    IndexAsNat(VisitAndRebuild(e, fun), t.map(fun(_)))
+  override def children: Seq[Any] = Seq(e, t)
+
+  override def rebuild: Seq[Any] => Expr = {
+    case Seq(e: Expr, t: Option[DataType]) => IndexAsNat(e, t)
   }
 }

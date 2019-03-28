@@ -35,11 +35,10 @@ abstract class AbstractReduce(val f: Expr, val init: Expr, val array: Expr, over
         }))
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Expr = {
-    makeReduce(VisitAndRebuild(f, fun),
-      VisitAndRebuild(init, fun),
-      VisitAndRebuild(array, fun),
-      t.map(fun(_)))
-  }
+  override def children: Seq[Any] = Seq(f, init, array, t)
 
+  override def rebuild: Seq[Any] => Expr = {
+    case Seq(f: Expr, init: Expr, array: Expr, t: Option[DataType]) =>
+      makeReduce(f, init, array, t)
+  }
 }
