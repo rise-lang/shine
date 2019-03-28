@@ -109,8 +109,6 @@ package object DSL {
     }
 
     // FIXME: this is matching on types before type inference
-    // Bastian Köpcke proposes:
-    // introduce a SurfaceLanguage primitive that calls the DPIA natFromNatExpr when it is converted to a DPIA phrase?
     def natFromNatExpr(p: Expr): Nat = {
       p.t match {
         case Some(NatType) =>
