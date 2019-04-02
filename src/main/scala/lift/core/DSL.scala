@@ -49,16 +49,16 @@ object DSL {
   }
 
   object nFun {
-    def apply(f: NatIdentifier => Expr): NatLambda = {
+    def apply(f: NatIdentifier => Expr): NatDepLambda = {
       val x = lift.arithmetic.NamedVar(freshName("n"))
-      NatLambda(x, f(x))
+      NatDepLambda(x, f(x))
     }
   }
 
   object tFun {
-    def apply(f: DataTypeIdentifier => Expr): TypeLambda = {
+    def apply(f: DataTypeIdentifier => Expr): TypeDepLambda = {
       val x = DataTypeIdentifier(freshName("dt"))
-      TypeLambda(x, f(x))
+      TypeDepLambda(x, f(x))
     }
   }
   

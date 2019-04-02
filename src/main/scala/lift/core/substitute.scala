@@ -65,7 +65,8 @@ object substitute {
       in match {
         case _: BasicType | _: DataTypeIdentifier => in
         case ArrayType(size, elemType) => ArrayType(size, st(elemType).asInstanceOf[DataType])
-        case DepArrayType(size, elemType) => DepArrayType(size, st(elemType).asInstanceOf[NatDependentDataType])
+//        case DepArrayType(size, elemType) => DepArrayType(size, st(elemType).asInstanceOf[NatDependentDataType])
+        case DepArrayType(size, fdt) => DepArrayType(size, ???)
         case TupleType(ts@_*) => TupleType(ts.map(st(_).asInstanceOf[DataType]): _*)
         case FunctionType(inT, outT) =>
           FunctionType(st(inT), st(outT))
@@ -90,7 +91,8 @@ object substitute {
       case ArrayType(size, elemType) =>
         ArrayType(sn(size), st(elemType).asInstanceOf[DataType])
       case DepArrayType(size, elemType) =>
-        DepArrayType(sn(size), st(elemType).asInstanceOf[NatDependentDataType])
+        DepArrayType(sn(size), ???)
+//        DepArrayType(sn(size), st(elemType).asInstanceOf[NatDependentDataType])
       case TupleType(ts@_*) => TupleType(ts.map(st(_).asInstanceOf[DataType]): _*)
       case FunctionType(inT, outT) =>
         FunctionType(st(inT), st(outT))

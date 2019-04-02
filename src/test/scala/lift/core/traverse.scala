@@ -36,8 +36,8 @@ class traverse extends idealised.util.Tests {
   test("traverse an expression depth-first") {
     val expected = {
       Seq(
-        { case _: NatLambda => () },
-        { case _: NatLambda => () },
+        { case _: NatDepLambda => () },
+        { case _: NatDepLambda => () },
         { case _: Lambda => () },
         { case _: Apply => () },
         { case _: Apply => () },
@@ -65,8 +65,8 @@ class traverse extends idealised.util.Tests {
   test("traverse an expression depth-first with stop and update") {
     val expected = {
       Seq(
-        { case _: NatLambda => () },
-        { case _: NatLambda => () },
+        { case _: NatDepLambda => () },
+        { case _: NatDepLambda => () },
         { case _: Lambda => () }
       ) : Seq[Any => Unit]
     }

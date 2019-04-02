@@ -5,8 +5,8 @@ import lift.arithmetic._
 
 object primitives {
   private def nFun(f: NatIdentifier => Type): Type = {
-    val x = NamedVar(freshName("n"))
-    NatDependentFunctionType(x, f(x))
+    val n = NamedVar(freshName("n"))
+    NatDependentFunctionType(n, f(n))
   }
 
   private def implN(f: NatIdentifier => Type): Type = {
@@ -14,16 +14,47 @@ object primitives {
   }
 
   private def tFun(f: DataTypeIdentifier => Type): Type = {
-    val x = DataTypeIdentifier(freshName("dt"))
-    TypeDependentFunctionType(x, f(x))
+    val dt = DataTypeIdentifier(freshName("dt"))
+    TypeDependentFunctionType(dt, f(dt))
   }
 
   private def implT(f: DataTypeIdentifier => Type): Type = {
     f(DataTypeIdentifier(freshName("dt")))
   }
 
+  private def fnFun(f: NatNatFunctionIdentifier => Type): Type = {
+    val fn = NatNatFunctionIdentifier(freshName("fn"))
+    NatNatDependentFunctionType(fn, f(fn))
+  }
+
+  private def implFn(f: NatNatFunctionIdentifier => Type): Type = {
+    f(NatNatFunctionIdentifier(freshName("fn")))
+  }
+
+  private def fdtFun(f: NatDataTypeFunctionIdentifier => Type): Type = {
+    val fdt = NatDataTypeFunctionIdentifier(freshName("fdt"))
+    NatDataTypeDependentFunctionType(fdt, f(fdt))
+  }
+
+  private def implFdt(f: NatDataTypeFunctionIdentifier => Type): Type = {
+    f(NatDataTypeFunctionIdentifier(freshName("fdt")))
+  }
+
   implicit private final class To(private val a: Type) extends AnyVal {
     @inline def ->(b: Type): Type = FunctionType(a, b)
+  }
+
+  implicit private final class NatDataTypeApplyHelper(val f: lift.core.types.NatDataTypeFunction) {
+    def apply(n: Nat): DataType = {
+      NatDataTypeApply(f, n)
+    }
+  }
+
+  implicit private final class NatNatApplyHelper(val f: lift.core.types.NatNatFunction) {
+    def apply(n: Nat): Nat = {
+      //NatDataTypeApply(f, n)
+      ???
+    }
   }
 
   case object map extends Primitive {
@@ -34,6 +65,12 @@ object primitives {
 
   case object mapSeq extends Primitive {
     override def t: Type = map.t
+  }
+
+  case object depMap extends Primitive {
+    override def t: Type = implN(n => implFdt(fdt1 => implFdt(fdt2 =>
+      nFun(k => fdt1(k) -> fdt2(k)) -> DepArrayType(n, fdt1) -> DepArrayType(n, fdt2)
+    )))
   }
 
   case object reduce extends Primitive {
@@ -96,9 +133,15 @@ object primitives {
   }
 
   case class BinOp(op: Operators.Binary.Value) extends Primitive {
-    override def toString: String = s"$op"
+    override def toString: String = s"($op)"
 
     override def t: Type = implT(a => a -> a -> a)
+  }
+
+  case object IfThenElse extends Primitive {
+    override def toString: String = s"if then else"
+
+    override def t: Type = implT(a => bool -> a -> a)
   }
 }
 

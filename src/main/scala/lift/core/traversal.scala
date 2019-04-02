@@ -37,21 +37,21 @@ object traversal {
               Lambda(x, apply(e, v))
             case Apply(f, e) =>
               Apply(apply(f, v), apply(e, v))
-            case NatLambda(n, e) =>
-              NatLambda(n, apply(e, v))
-            case NatApply(f, n) =>
-              NatApply(apply(f, v), v(n))
-            case TypeLambda(dt, e) =>
-              TypeLambda(dt, apply(e, v))
-            case TypeApply(f, dt) =>
-              TypeApply(apply(f, v), v(dt))
+            case NatDepLambda(n, e) =>
+              NatDepLambda(n, apply(e, v))
+            case NatDepApply(f, n) =>
+              NatDepApply(apply(f, v), v(n))
+            case TypeDepLambda(dt, e) =>
+              TypeDepLambda(dt, apply(e, v))
+            case TypeDepApply(f, dt) =>
+              TypeDepApply(apply(f, v), v(dt))
             case l: Literal => l
             case Index(n, size) =>
               Index(v(n), v(size))
             case NatExpr(n) =>
               NatExpr(v(n))
-            case IfThenElse(ce, te, ee) =>
-              IfThenElse(apply(ce, v), apply(te, v), apply(ee, v))
+//            case IfThenElse(ce, te, ee) =>
+//              IfThenElse(apply(ce, v), apply(te, v), apply(ee, v))
             case TypedExpr(e, t) =>
               TypedExpr(apply(e, v), v(t))
             case p: Primitive => p

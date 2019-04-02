@@ -53,18 +53,18 @@ object infer {
         constraints += TypeConstraint(tf.t, FunctionType(te.t, ot))
         TypedExpr(Apply(tf, te), ot)
 
-      case NatLambda(n, e) =>
+      case NatDepLambda(n, e) =>
         val te = typed(e)
-        TypedExpr(NatLambda(n, te), NatDependentFunctionType(n, te.t))
+        TypedExpr(NatDepLambda(n, te), NatDependentFunctionType(n, te.t))
 
-      case NatApply(f, n) =>
+      case NatDepApply(f, n) =>
         typed(liftNatDependentFunctionExpr(f).value(n))
 
-      case TypeLambda(dt, e) =>
+      case TypeDepLambda(dt, e) =>
         val te = typed(e)
-        TypedExpr(TypeLambda(dt, te), TypeDependentFunctionType(dt, te.t))
+        TypedExpr(TypeDepLambda(dt, te), TypeDependentFunctionType(dt, te.t))
 
-      case TypeApply(f, dt) =>
+      case TypeDepApply(f, dt) =>
         typed(liftTypeDependentFunctionExpr(f).value(dt))
 
       case l: Literal => TypedExpr(l, l.d.dataType)
@@ -73,15 +73,15 @@ object infer {
 
       case n: NatExpr => TypedExpr(n, NatType)
 
-      case IfThenElse(cond, thenE, elseE) =>
-        val tce = typed(cond)
-        val tte = typed(thenE)
-        val tee = typed(elseE)
-        val ot = fresh()
-        constraints += TypeConstraint(tce.t, bool)
-        constraints += TypeConstraint(tte.t, ot)
-        constraints += TypeConstraint(tee.t, ot)
-        TypedExpr(IfThenElse(tce, tte, tee), ot)
+//      case IfThenElse(cond, thenE, elseE) =>
+//        val tce = typed(cond)
+//        val tte = typed(thenE)
+//        val tee = typed(elseE)
+//        val ot = fresh()
+//        constraints += TypeConstraint(tce.t, bool)
+//        constraints += TypeConstraint(tte.t, ot)
+//        constraints += TypeConstraint(tee.t, ot)
+//        TypedExpr(IfThenElse(tce, tte, tee), ot)
 
       case TypedExpr(e, t) =>
         val te = typed(e)
