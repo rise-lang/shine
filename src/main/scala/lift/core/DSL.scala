@@ -33,7 +33,7 @@ object DSL {
   }
 
   implicit class FunComp(f: Expr) {
-    def \>(g: Expr): Expr = fun(x => g(f(x)))
+    def >>(g: Expr): Expr = fun(x => g(f(x)))
   }
 
   object fun {
