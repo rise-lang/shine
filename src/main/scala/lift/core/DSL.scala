@@ -66,4 +66,5 @@ object DSL {
   def l(f: Float): Literal = Literal(FloatData(f))
   def l(d: Double): Literal = Literal(DoubleData(d))
   def l(v: VectorData): Literal = Literal(v)
+  def l(a: ArrayData): Literal = Literal(a)
 }

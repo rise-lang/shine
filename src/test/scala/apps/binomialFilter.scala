@@ -30,9 +30,10 @@ object binomialFilter {
   // TODO: registers/loop unrolling, vectorisation
   // TODO: rewriting
 
-  val weights2d = Literal(ArrayData(
+  val weights2d = l(ArrayData(
     Array(1, 2, 1, 2, 4, 2, 1, 2, 1).map(f => FloatData(f / 16.0f))))
-  val weights1d = Literal(ArrayData(Seq(FloatData(1.0f))))//Array(1, 2, 1).map(f => FloatData(f / 4.0f))))
+  val weights1d = l(ArrayData(
+    Array(1, 2, 1).map(f => FloatData(f / 4.0f))))
 
   val slide3x3 = map(slide(3)(1)) >> slide(3)(1) >> map(transpose)
 
@@ -149,5 +150,48 @@ class binomialFilter extends idealised.util.Tests {
       repeatNTimes(2)(applyDFS(specialize.mapSeq)) `;`
       repeatNTimes(2)(applyDFSSkip(1)(specialize.mapSeq))
     assertExprEq(pick(result), norm(separated))
+  }
+
+  test("rewrite to register rotation blur") {
+    val * = map
+    val T = transpose
+    val Sh = slide(3)(1)
+    val Sv = slide(3)(1)
+    val Dh = dot(weights1d)
+    val Dv = dot(weights1d)
+
+    val steps = Seq[(Strategy, Expr)](
+      (id,
+        *(Sh) >> Sv >> *(T) >> *(*(fun(nbh => dot(weights2d)(join(nbh)))))),
+      (applyDFS(separateDotT),
+        *(Sh) >> Sv >> *(T) >> *(*(T >> *(Dv) >> Dh))),
+      (applyDFS(`*f >> S -> S >> **f`),
+        Sv >> *(*(Sh)) >> *(T) >> *(*(T >> *(Dv) >> Dh))),
+      (applyDFS(mapFusion),
+        Sv >> *(*(Sh)) >> *(T >> *(T >> *(Dv) >> Dh))),
+      (applyDFS(mapFusion),
+        Sv >> *(*(Sh) >> T >> *(T >> *(Dv) >> Dh))),
+      (applyDFS(`*S >> T -> T >> S >> *T`),
+        Sv >> *(T >> Sh >> *(T) >> *(T >> *(Dv) >> Dh))),
+      (applyDFS(mapFusion),
+        Sv >> *(T >> Sh >> *(T >> T >> *(Dv) >> Dh))),
+      (applyDFS(`T >> T -> `),
+        Sv >> *(T >> Sh >> *(*(Dv) >> Dh))),
+      (applyDFSSkip(1)(mapInnerFission),
+        Sv >> *(T >> Sh >> *(*(Dv)) >> *(Dh))),
+      (applyDFS(`S >> **f -> *f >> S`),
+        Sv >> *(T >> *(Dv) >> Sh >> *(Dh)))
+    )
+
+    val result = steps.foldLeft[Expr](highLevel)({ case (e, (s, expected)) =>
+      val result = norm(s(e))
+      assertExprEq(result, norm(expected))
+      result
+    })
+
+    val pick = repeatNTimes(2)(applyDFS(specialize.reduceSeq)) `;`
+      applyDFS(specialize.slideSeq) `;`
+      applyDFS(specialize.mapSeq)
+    assertExprEq(pick(result), norm(regrot_blur))
   }
 }

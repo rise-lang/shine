@@ -11,4 +11,8 @@ object specialize {
   val reduceSeq: Strategy = {
     case primitives.reduce => primitives.reduceSeq
   }
+
+  val slideSeq: Strategy = {
+    case primitives.slide => primitives.slideSeq
+  }
 }
