@@ -24,11 +24,16 @@ object algorithmic {
       map(g >> f)(arg)
   }
 
-  // *(g >> f) -> *g >> *f
-  def mapFission: Strategy = {
+  // fission of the last function to be applied inside a map
+  // *(g >> .. >> f) -> *(g >> ..) >> *f
+  def mapLastFission: Strategy = {
     // TODO? 'x' should not be used in 'f' or 'g'
+    /* chain of two fission
     case Apply(`map`, Lambda(x1, Apply(f, Apply(g, x2)))) if x1 == x2 =>
       map(g) >> map(f)
+      */
+    case Apply(`map`, Lambda(x, Apply(f, gx))) =>
+      Apply(`map`, Lambda(x, gx)) >> map(f)
   }
 
   def `**f >> T -> T >> **f`: Strategy = {

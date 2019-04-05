@@ -13,7 +13,7 @@ object substitute {
       }
     }
 
-    traversal.DepthFirstLocalStop(in, Visitor)
+    traversal.DepthFirstLocalResult(in, Visitor)
   }
 
   def apply[T <: Type](dt: DataType,
@@ -25,7 +25,7 @@ object substitute {
         substitute(dt, `for`, in).asInstanceOf[T2]
     }
 
-    traversal.DepthFirstLocalStop(in, Visitor)
+    traversal.DepthFirstLocalResult(in, Visitor)
   }
 
   def apply[T <: Type](ae: Nat,
@@ -53,7 +53,7 @@ object substitute {
         substitute(ae, `for`, t).asInstanceOf[T2]
     }
 
-    traversal.DepthFirstLocalStop(in, Visitor)
+    traversal.DepthFirstLocalResult(in, Visitor)
   }
 
   def apply(t: Type, `for`: Type, in: Type): Type = {

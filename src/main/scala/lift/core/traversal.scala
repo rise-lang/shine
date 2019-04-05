@@ -25,7 +25,7 @@ object traversal {
     def apply[T <: Type](t: T): T = t
   }
 
-  object DepthFirstLocalStop {
+  object DepthFirstLocalResult {
     def apply(expr: Expr, v: Visitor): Expr = {
       v(expr) match {
         case s: Stop[Expr] => s.value
@@ -60,27 +60,52 @@ object traversal {
     }
   }
 
-  object DepthFirstGlobalStop {
-    def apply(expr: Expr, v: Visitor): (Boolean, Expr) = {
-      var stopped = false
-      def wrap(v: Visitor): Visitor = new Visitor {
-        override def apply(e: Expr): Result[Expr] = {
-          if (stopped) {
-            Stop(e)
-          } else {
-            v(e) match {
-              case s: Stop[Expr] => stopped = true; s
-              case c: Continue[Expr] => Continue(c.value, wrap(c.v))
-            }
-          }
-        }
-        override def apply(ae: Nat): Nat = v(ae)
-        override def apply(f: NatNatTypeFunction): NatNatTypeFunction = v(f)
-        override def apply[T <: Type](t: T): T = v(t)
+  object DepthFirstGlobalResult {
+    def chain[A, B](a: Result[A], b: B,
+                    visit_b: Visitor => Result[B]): Result[(A, B)] = {
+      a match {
+        case Stop(as) => Stop((as, b))
+        case Continue(ac, vc) => visit_b(vc).map((ac, _))
       }
+    }
 
-      val result = DepthFirstLocalStop(expr, wrap(v))
-      (stopped, result)
+    def chainE[A](a: Result[A], e: Expr) =
+      chain(a, e, apply(e, _))
+
+    def chainN[A](a: Result[A], n: Nat)=
+      chain(a, n, v => Continue(v(n), v))
+
+    def chainT[A, T <: Type](a: Result[A], t: T) =
+      chain(a, t, v => Continue(v(t), v))
+
+    def apply(expr: Expr, visit: Visitor): Result[Expr] = {
+      visit(expr) match {
+        case Stop(r) => Stop(r)
+        case Continue(c, v) => c match {
+          case i: Identifier => Continue(i, v)
+          case Lambda(x, e) =>
+            apply(e, v).map(Lambda(x, _))
+          case Apply(f, e) =>
+            chainE(apply(f, v), e).map(r => Apply(r._1, r._2))
+          case NatLambda(n, e) =>
+            apply(e, v).map(NatLambda(n, _))
+          case NatApply(f, n) =>
+            chainN(apply(f, v), n).map(r => NatApply(r._1, r._2))
+          case TypeLambda(dt, e) =>
+            apply(e, v).map(TypeLambda(dt, _))
+          case TypeApply(f, dt) =>
+            chainT(apply(f, v), dt).map(r => TypeApply(r._1, r._2))
+          case l: Literal => Continue(l, v)
+          case Index(n, size) =>
+            Continue(Index(v(n), v(size)), v)
+          case NatExpr(n) =>
+            Continue(NatExpr(v(n)), v)
+          case IfThenElse(ce, te, ee) => ???
+          case TypedExpr(e, t) =>
+            chainT(apply(e, v), t).map(r => TypedExpr(r._1, r._2))
+          case p: Primitive => Continue(p, v)
+        }
+      }
     }
   }
 }

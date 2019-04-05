@@ -6,6 +6,7 @@ import lift.core.semantics._
 import lift.core.DSL._
 import elevate.core._
 import strategies._
+import strategies.traversal._
 import rules._
 import rules.algorithmic._
 import strategies.algorithmic._
@@ -77,30 +78,28 @@ object binomialFilter {
 class binomialFilter extends idealised.util.Tests {
   import binomialFilter._
 
-  def assertExprEq(a: Expr, b: Expr): Unit = {
-    println(s"$a")
-    println(s"~ $b")
-    if (!StructuralEquality(a, b)) {
-      throw new Exception(s"expected structural equality")
+  def eq(a: Expr, b: Expr): Unit = {
+    if (!StructuralEquality(norm(a), norm(b))) {
+      throw new Exception(s"expected structural equality:\n$a\n$b")
     }
   }
-
+/*
   test("rewrite to reference") {
     val s =
-      applyDFS(specialize.reduceSeq) `;`
-        repeatNTimes(2)(applyDFS(specialize.mapSeq))
-    assertExprEq(s(highLevel), reference)
+      depthFirst(find(specialize.reduceSeq)) `;`
+        repeatNTimes(2)(depthFirst(find(specialize.mapSeq)))
+    eq(s(highLevel), reference)
   }
-
+*/
   test("rewrite to factorised blur") {
     val s =
       norm `;`
-      applyDFS(separateDot) `;`
-        repeatNTimes(2)(applyDFS(specialize.reduceSeq)) `;`
-        repeatNTimes(2)(applyDFS(specialize.mapSeq)) `;`
+      depthFirst(find(separateDot)) `;`
+        repeatNTimes(2)(depthFirst(find(specialize.reduceSeq))) `;`
+        repeatNTimes(2)(depthFirst(find(specialize.mapSeq))) `;`
         norm
 
-    assertExprEq(s(highLevel), norm(factorised))
+    eq(s(highLevel), norm(factorised))
   }
 
   test("rewrite to separated blur") {
@@ -114,42 +113,43 @@ class binomialFilter extends idealised.util.Tests {
     val steps = Seq[(Strategy, Expr)](
       (id,
         *(Sh) >> Sv >> *(T) >> *(*(fun(nbh => dot(weights2d)(join(nbh)))))),
-      (applyDFS(separateDotT),
+      (depthFirst(find(separateDotT)),
         *(Sh) >> Sv >> *(T) >> *(*(T >> *(Dv) >> Dh))),
-      (applyDFS(`*f >> S -> S >> **f`),
+      (depthFirst(find(`*f >> S -> S >> **f`)),
         Sv >> *(*(Sh)) >> *(T) >> *(*(T >> *(Dv) >> Dh))),
-      (applyDFS(mapFusion),
+      (depthFirst(find(mapFusion)),
         Sv >> *(*(Sh)) >> *(T >> *(T >> *(Dv) >> Dh))),
-      (applyDFS(mapFusion),
+      (depthFirst(find(mapFusion)),
         Sv >> *(*(Sh) >> T >> *(T >> *(Dv) >> Dh))),
-      (applyDFS(`*S >> T -> T >> S >> *T`),
+      (depthFirst(find(`*S >> T -> T >> S >> *T`)),
         Sv >> *(T >> Sh >> *(T) >> *(T >> *(Dv) >> Dh))),
-      (applyDFS(mapFusion),
+      (depthFirst(find(mapFusion)),
         Sv >> *(T >> Sh >> *(T >> T >> *(Dv) >> Dh))),
-      (applyDFS(`T >> T -> `),
+      (depthFirst(find(`T >> T -> `)),
         Sv >> *(T >> Sh >> *(*(Dv) >> Dh))),
-      (applyDFSSkip(1)(mapInnerFission),
+      (depthFirst(drop(1)(mapFirstFission)),
         Sv >> *(T >> Sh >> *(*(Dv)) >> *(Dh))),
-      (applyDFS(`S >> **f -> *f >> S`),
+      (depthFirst(find(`S >> **f -> *f >> S`)),
         Sv >> *(T >> *(Dv) >> Sh >> *(Dh))),
-      (applyDFS(mapInnerFission),
+      (depthFirst(find(mapFirstFission)),
         Sv >> *(T) >> *(*(Dv) >> Sh >> *(Dh))),
-      (applyDFS(mapInnerFission),
+      (depthFirst(find(mapFirstFission)),
         Sv >> *(T) >> *(*(Dv)) >> *(Sh >> *(Dh))),
-      (applyDFSSkip(1)(mapFusion),
+      (depthFirst(drop(1)(mapFusion)),
         Sv >> *(T >> *(Dv)) >> *(Sh >> *(Dh)))
     )
 
     val result = steps.foldLeft[Expr](highLevel)({ case (e, (s, expected)) =>
         val result = norm(s(e))
-        assertExprEq(result, norm(expected))
+        eq(result, norm(expected))
         result
     })
 
-    val pick = repeatNTimes(2)(applyDFS(specialize.reduceSeq)) `;`
-      repeatNTimes(2)(applyDFS(specialize.mapSeq)) `;`
-      repeatNTimes(2)(applyDFSSkip(1)(specialize.mapSeq))
-    assertExprEq(pick(result), norm(separated))
+    println(result)
+    val pick = repeatNTimes(2)(depthFirst(find(specialize.reduceSeq))) `;`
+      repeatNTimes(2)(depthFirst(find(specialize.mapSeq))) `;`
+      repeatNTimes(2)(depthFirst(drop(1)(specialize.mapSeq)))
+    eq(pick(result), norm(separated))
   }
 
   test("rewrite to register rotation blur") {
@@ -163,35 +163,35 @@ class binomialFilter extends idealised.util.Tests {
     val steps = Seq[(Strategy, Expr)](
       (id,
         *(Sh) >> Sv >> *(T) >> *(*(fun(nbh => dot(weights2d)(join(nbh)))))),
-      (applyDFS(separateDotT),
+      (depthFirst(find(separateDotT)),
         *(Sh) >> Sv >> *(T) >> *(*(T >> *(Dv) >> Dh))),
-      (applyDFS(`*f >> S -> S >> **f`),
+      (depthFirst(find(`*f >> S -> S >> **f`)),
         Sv >> *(*(Sh)) >> *(T) >> *(*(T >> *(Dv) >> Dh))),
-      (applyDFS(mapFusion),
+      (depthFirst(find(mapFusion)),
         Sv >> *(*(Sh)) >> *(T >> *(T >> *(Dv) >> Dh))),
-      (applyDFS(mapFusion),
+      (depthFirst(find(mapFusion)),
         Sv >> *(*(Sh) >> T >> *(T >> *(Dv) >> Dh))),
-      (applyDFS(`*S >> T -> T >> S >> *T`),
+      (depthFirst(find(`*S >> T -> T >> S >> *T`)),
         Sv >> *(T >> Sh >> *(T) >> *(T >> *(Dv) >> Dh))),
-      (applyDFS(mapFusion),
+      (depthFirst(find(mapFusion)),
         Sv >> *(T >> Sh >> *(T >> T >> *(Dv) >> Dh))),
-      (applyDFS(`T >> T -> `),
+      (depthFirst(find(`T >> T -> `)),
         Sv >> *(T >> Sh >> *(*(Dv) >> Dh))),
-      (applyDFSSkip(1)(mapInnerFission),
+      (depthFirst(drop(1)(mapFirstFission)),
         Sv >> *(T >> Sh >> *(*(Dv)) >> *(Dh))),
-      (applyDFS(`S >> **f -> *f >> S`),
+      (depthFirst(find(`S >> **f -> *f >> S`)),
         Sv >> *(T >> *(Dv) >> Sh >> *(Dh)))
     )
 
     val result = steps.foldLeft[Expr](highLevel)({ case (e, (s, expected)) =>
       val result = norm(s(e))
-      assertExprEq(result, norm(expected))
+      eq(result, norm(expected))
       result
     })
 
-    val pick = repeatNTimes(2)(applyDFS(specialize.reduceSeq)) `;`
-      applyDFS(specialize.slideSeq) `;`
-      applyDFS(specialize.mapSeq)
-    assertExprEq(pick(result), norm(regrot_blur))
+    val pick = repeatNTimes(2)(depthFirst(find(specialize.reduceSeq))) `;`
+      depthFirst(find(specialize.slideSeq)) `;`
+      depthFirst(find(specialize.mapSeq))
+    eq(pick(result), norm(regrot_blur))
   }
 }

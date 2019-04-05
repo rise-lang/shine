@@ -2,6 +2,8 @@ package elevate.core
 
 import lift.core.Expr
 
+import strategies.traversal._
+
 package object strategies {
   def id: Strategy =
     e => e
@@ -11,7 +13,10 @@ package object strategies {
 
   def leftChoice: Strategy => Strategy => Strategy =
     f => s => e => {
-      if (isDefined(f)(e)) { f(e) } else { s(e) }
+      mayApply(f)(e) match {
+        case Some(r) => r
+        case None => s(e)
+      }
     }
 
   def `try`: Strategy => Strategy =
@@ -29,27 +34,6 @@ package object strategies {
   def repeatNTimes: Int => Strategy => Strategy =
     n => s => if (n > 0) { s `;` repeatNTimes(n-1)(s) } else { id }
 
-  def applyDFS: Strategy => Strategy =
-    s => applyAt(s)(FindFirst(isDefined(s)))
-
-  def applyDFSSkip: Int => Strategy => Strategy =
-    n => s => e => { // function of 'e' to create fresh vars
-      var skip = n
-      applyAt(s)(FindFirst({ e =>
-        isDefined(s)(e) && {
-          if (skip > 0) {
-            skip -= 1
-            false
-          } else {
-            true
-          }
-        }
-      }))(e)
-    }
-
   def normalize: Strategy => Strategy =
-    s => repeat(applyDFS(s))
-
-  def listLocations: Strategy => Expr => Seq[Location] =
-    s => e => Location.findAll(isDefined(s)(_))(e)
+    s => repeat(depthFirst(find(s)))
 }

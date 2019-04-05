@@ -9,41 +9,41 @@ import elevate.core.rules.algorithmic._
 
 object algorithmic {
   // TODO: only compose simpler rules
-  def mapInnerFission: Strategy = {
+  // TODO: what if 'x' is used in 'f'?
+
+  // fission of the first function to be applied inside a map
+  // *(g >> .. >> f) -> *g >> *(.. >> f)
+  def mapFirstFission: Strategy = {
     case Apply(primitives.map, Lambda(x, gx)) =>
-      mapInnerFissionRec(x, fun(e => e), gx)
+      mapFirstFissionRec(x, fun(e => e), gx)
   }
 
-  // TODO: what if 'x' is used in 'f'?
-  def mapInnerFissionRec(x: Identifier, f: Expr, gx: Expr): Expr = {
+  private def mapFirstFissionRec(x: Identifier, f: Expr, gx: Expr): Expr = {
     gx match {
       case Apply(f2, gx2) =>
         if (gx2 == x) {
           primitives.map(f2) >> primitives.map(f)
         } else {
-          mapInnerFissionRec(x, fun(e => f(f2(e))), gx2)
+          mapFirstFissionRec(x, fun(e => f(f2(e))), gx2)
         }
     }
   }
-/*
-  def mapInnerFission: Strategy =
-    peek(e => println(s"start: $e")) `;`
-      mapFissionDive(genMapInnerFission(0)) `;`
-        peek(e => println(s"end: $e"))
 
-  private def mapFissionDive(s: Strategy): Strategy = e => {
-    mapFission(e) match {
-      case Lambda(x1, Apply(f, Apply(inner, x2))) if x1 == x2 =>
-        println(s"inner: $inner")
-        Lambda(x1, Apply(f, Apply(s(inner), x2)))
-    }
+  // fission of all the functions chained inside a map
+  // *(g >> .. >> f) -> *g >> .. >> *f
+  def mapFullFission: Strategy = {
+    case Apply(primitives.map, Lambda(x, gx)) =>
+      mapFullFissionRec(x, gx)
   }
 
-  private def genMapInnerFission(n: Int): Strategy = {
-    mapFissionDive({ genMapInnerFission(n + 1)(_) }) +> { e =>
-      println(s"end: $n: $e")
-      mapFusion(e)
+  def mapFullFissionRec(x: Identifier, gx: Expr): Expr = {
+    gx match {
+      case Apply(f, gx2) =>
+        if (gx2 == x) {
+          primitives.map(f)
+        } else {
+          mapFullFissionRec(x, gx2) >> primitives.map(f)
+        }
     }
   }
-  */
 }
