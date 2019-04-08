@@ -13,7 +13,7 @@ import scala.language.reflectiveCalls
 object SlideSeqIRegRot {
   def apply(n: Nat,
             size: Nat,
-            // step: Nat,
+            step: Nat,
             dt1: DataType,
             dt2: DataType,
             f: Phrase[ExpType -> (AccType -> CommandType)],
@@ -21,7 +21,7 @@ object SlideSeqIRegRot {
             output: Phrase[AccType])
            (implicit context: TranslationContext): Phrase[CommandType] =
   {
-    val step = 1
+    assert(step.eval == 1) // FIXME?
     val inputSize = step * n + size - step
 
     NewRegRot(size, dt1,

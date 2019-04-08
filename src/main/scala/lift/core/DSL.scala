@@ -4,7 +4,6 @@ import lift.core.types.{DataType, DataTypeIdentifier}
 import lift.core.semantics._
 
 object DSL {
-
   implicit class BinOps(lhs: Expr) {
     import lift.core.primitives.{BinOp, UnaryOp}
 
@@ -61,7 +60,7 @@ object DSL {
       TypeLambda(x, f(x))
     }
   }
-  
+
   def l(i: Int): Literal = Literal(IntData(i))
   def l(f: Float): Literal = Literal(FloatData(f))
   def l(d: Double): Literal = Literal(DoubleData(d))

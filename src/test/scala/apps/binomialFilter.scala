@@ -4,12 +4,17 @@ import lift.core._
 import lift.core.primitives._
 import lift.core.semantics._
 import lift.core.DSL._
+import lift.core.types._
+
 import elevate.core._
 import strategies._
 import strategies.traversal._
 import rules._
 import rules.algorithmic._
 import strategies.algorithmic._
+
+import idealised.C
+import idealised.util.{Execute, SyntaxChecker}
 
 object binomialFilter {
   // Binomial filter, convolution is separable:
@@ -53,7 +58,7 @@ object binomialFilter {
     vertical >> horizontal
   }
 
-  val regrot_blur =
+  val regrot =
     slide(3)(1) >> mapSeq(transpose >>
       map(dotSeq(weights1d)) >> slideSeq(3)(1) >> map(dotSeq(weights1d))
     )
@@ -83,14 +88,14 @@ class binomialFilter extends idealised.util.Tests {
       throw new Exception(s"expected structural equality:\n$a\n$b")
     }
   }
-/*
+
   test("rewrite to reference") {
     val s =
       depthFirst(find(specialize.reduceSeq)) `;`
         repeatNTimes(2)(depthFirst(find(specialize.mapSeq)))
     eq(s(highLevel), reference)
   }
-*/
+
   test("rewrite to factorised blur") {
     val s =
       norm `;`
@@ -192,6 +197,77 @@ class binomialFilter extends idealised.util.Tests {
     val pick = repeatNTimes(2)(depthFirst(find(specialize.reduceSeq))) `;`
       depthFirst(find(specialize.slideSeq)) `;`
       depthFirst(find(specialize.mapSeq))
-    eq(pick(result), norm(regrot_blur))
+    eq(pick(result), norm(regrot))
+  }
+
+  def program(name: String, e: Expr): C.Program = {
+    val typed = types.infer(
+      nFun(h => nFun(w => fun(ArrayType(h, ArrayType(w, float)))(a => e(a))))
+    )
+    println(typed)
+    val phrase = idealised.DPIA.fromLift(typed)
+    println(phrase)
+    val program = C.ProgramGenerator.makeCode(phrase, name)
+    SyntaxChecker(program.code)
+    println(program.code)
+    program
+  }
+
+  lazy val ref_prog = program("blur_ref", reference)
+  test("blur compiles to C code") {
+    ref_prog
+  }
+
+  def check_ref(e: Expr) = {
+    val prog = program("blur", e)
+    val testCode =
+      s"""
+#include <stdio.h>
+
+${ref_prog.code}
+
+${prog.code}
+
+int main(int argc, char** argv) {
+  const int H = 20;
+  const int W = 80;
+
+  float input[H * W];
+  for (int y = 0; y < H; y++) {
+    for (int x = 0; x < W; x++) {
+      input[y * W + x] = 0.3f * y + 0.6f * x;
+    }
+  }
+
+  float reference[H * W];
+  ${ref_prog.function.name}(reference, H, W, input);
+
+  float output[H * W];
+  ${prog.function.name}(output, H, W, input);
+
+  for (int i = 0; i < (H * W); i++) {
+    float delta = reference[i] - output[i];
+    if (delta < -0.001 && 0.001 < delta) {
+      fprintf(stderr, "difference with reference is too big: %f\\n", delta);
+      return 1;
+    }
+  }
+
+  return 0;
+}
+"""
+    Execute(testCode)
+  }
+
+  test("compile and compare factorised blur to the reference") {
+    check_ref(binomialFilter.factorised)
+  }
+
+  test("compile and compare separated blur to the reference") {
+    check_ref(binomialFilter.separated)
+  }
+
+  test("compile and compare register rotation blur to the reference") {
+    check_ref(binomialFilter.regrot)
   }
 }

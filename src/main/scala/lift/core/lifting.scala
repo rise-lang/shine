@@ -1,6 +1,6 @@
 package lift.core
 
-import lift.core.types.DataType
+import lift.core.types._
 
 object lifting {
   sealed trait Result[+T] {
@@ -75,4 +75,17 @@ object lifting {
     }
   }
 
+  def liftNatDependentFunctionType(ty: Type): Nat => Type = {
+    ty match {
+      case NatDependentFunctionType(x, t) =>
+        (n: Nat) => substitute(n, `for`=x, in=t)
+    }
+  }
+
+  def liftTypeDependentFunctionType(ty: Type): DataType => Type = {
+    ty match {
+      case TypeDependentFunctionType(x, t) =>
+        (dt: DataType) => substitute(dt, `for`=x, in=t)
+    }
+  }
 }

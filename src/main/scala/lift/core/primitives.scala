@@ -10,7 +10,7 @@ object primitives {
   }
 
   private def implN(f: NatIdentifier => Type): Type = {
-    f(NamedVar(freshName("n")))
+    f(NamedVar(freshName("_n")))
   }
 
   private def tFun(f: DataTypeIdentifier => Type): Type = {
@@ -19,7 +19,7 @@ object primitives {
   }
 
   private def implT(f: DataTypeIdentifier => Type): Type = {
-    f(DataTypeIdentifier(freshName("dt")))
+    f(DataTypeIdentifier(freshName("_dt")))
   }
 
   implicit private final class To(private val a: Type) extends AnyVal {
@@ -28,7 +28,7 @@ object primitives {
 
   case object map extends Primitive {
     override def t: Type = implN(n => implT(a => implT(b =>
-      (a -> b) -> ArrayType(n, a) -> ArrayType(n, b)
+      (a -> b) -> (ArrayType(n, a) -> ArrayType(n, b))
     )))
   }
 
@@ -38,7 +38,7 @@ object primitives {
 
   case object reduce extends Primitive {
     override def t: Type = implN(n => implT(a => implT(b =>
-      (a -> b -> b) -> b -> ArrayType(n, a) -> b
+      (a -> (b -> b)) -> (b -> (ArrayType(n, a) -> b))
     )))
   }
 
@@ -77,7 +77,7 @@ object primitives {
 
   case object zip extends Primitive {
     override def t: Type = implN(n => implT(a => implT(b =>
-      ArrayType(n, a) -> ArrayType(n, b) -> ArrayType(n, TupleType(a, b))
+      ArrayType(n, a) -> (ArrayType(n, b) -> ArrayType(n, TupleType(a, b)))
     )))
   }
 
@@ -92,13 +92,13 @@ object primitives {
   case class UnaryOp(op: Operators.Unary.Value) extends Primitive {
     override def toString: String = s"$op"
 
-    override def t: Type = implT(a => a -> a -> a)
+    override def t: Type = implT(a => a -> a)
   }
 
   case class BinOp(op: Operators.Binary.Value) extends Primitive {
     override def toString: String = s"$op"
 
-    override def t: Type = implT(a => a -> a -> a)
+    override def t: Type = implT(a => a -> (a -> a))
   }
 }
 

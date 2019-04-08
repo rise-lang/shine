@@ -1,16 +1,19 @@
 package lift.core.types
 
-import lift.arithmetic.ArithExpr
 import lift.core._
 import lift.core.lifting._
 
-case class InferenceException(msg: String) extends Exception
+case class InferenceException(msg: String) extends Exception {
+  override def toString = s"inference exception: $msg"
+}
 
 object infer {
   def apply(e: Expr): TypedExpr = {
     val constraints: MConstraints = scala.collection.mutable.Set()
-    val te = constraint(e, constraints, scala.collection.mutable.Map())
-    solve(constraints.toSet)(te)
+    val typed_e = constrainTypes(e, constraints, scala.collection.mutable.Map())
+    implicit val (boundT, boundN) = boundIdentifiers(typed_e)
+    val solution = solve(constraints.toSet)
+    solution(typed_e) match { case r: TypedExpr => r }
   }
 
   def error(msg: String): Nothing =
@@ -23,28 +26,26 @@ object infer {
   case class TypeConstraint(a: Type, b: Type) extends Constraint
   case class NatConstraint(a: Nat, b: Nat) extends Constraint
 
-  def constraint(expr: Expr,
-                 constraints: MConstraints,
-                 identifierT: scala.collection.mutable.Map[Identifier, Type]
-                ): TypedExpr = {
-    def fresh(): Type = DataTypeIdentifier(freshName("t"))
-    def typed(e: Expr): TypedExpr = constraint(e, constraints, identifierT)
+  def constrainTypes(expr: Expr,
+                     constraints: MConstraints,
+                     identifierT: scala.collection.mutable.Map[Identifier, Type]
+                    ): TypedExpr = {
+    def fresh(): Type = DataTypeIdentifier(freshName("_t"))
+    def freshNat(): NatIdentifier = lift.arithmetic.NamedVar(freshName("_n"))
+    def typed(e: Expr): TypedExpr = constrainTypes(e, constraints, identifierT)
 
     expr match {
       case i: Identifier =>
-        val t = identifierT.get(i) match {
-          case None =>
-            val newT = fresh()
-            identifierT update (i, newT)
-            newT
-          case Some(oldT) => oldT
-        }
+        val t = identifierT
+          .getOrElse(i, error(s"$i has no type in the environment"))
         TypedExpr(i, t)
 
       case Lambda(x, e) =>
-        val tx = typed(x)
+        val xt = fresh()
+        identifierT update (x, xt)
         val te = typed(e)
-        TypedExpr(Lambda(x, te), FunctionType(tx.t, te.t))
+        identifierT remove x
+        TypedExpr(Lambda(x, te), FunctionType(xt, te.t))
 
       case Apply(f, e) =>
         val tf = typed(f)
@@ -58,14 +59,16 @@ object infer {
         TypedExpr(NatLambda(n, te), NatDependentFunctionType(n, te.t))
 
       case NatApply(f, n) =>
-        typed(liftNatDependentFunctionExpr(f).value(n))
+        val tf = typed(f)
+        TypedExpr(NatApply(tf, n), liftNatDependentFunctionType(tf.t)(n))
 
       case TypeLambda(dt, e) =>
         val te = typed(e)
         TypedExpr(TypeLambda(dt, te), TypeDependentFunctionType(dt, te.t))
 
       case TypeApply(f, dt) =>
-        typed(liftTypeDependentFunctionExpr(f).value(dt))
+        val tf = typed(f)
+        TypedExpr(TypeApply(tf, dt), liftTypeDependentFunctionType(tf.t)(dt))
 
       case l: Literal => TypedExpr(l, l.d.dataType)
 
@@ -92,28 +95,108 @@ object infer {
     }
   }
 
+  def boundIdentifiers(expr: TypedExpr)
+  : (Set[DataTypeIdentifier], Set[NatIdentifier]) = {
+    val boundT = scala.collection.mutable.Set[DataTypeIdentifier]()
+    val boundN = scala.collection.mutable.Set[NatIdentifier]()
+
+    case class Visitor() extends traversal.Visitor {
+      override def apply(e: Expr): traversal.Result[Expr] = {
+        e match {
+          case NatLambda(x, _) => boundN += x
+          case TypeLambda(x, _) => boundT += x
+          case _ =>
+        }
+        traversal.Continue(e, this)
+      }
+
+      override def apply[T <: Type](t: T): T = {
+        visitT(t)
+        t
+      }
+    }
+
+    def visitT: Type => Unit = {
+      case NatDependentFunctionType(x, t) =>
+        boundN += x
+        visitT(t)
+      case TypeDependentFunctionType(x, t) =>
+        boundT += x
+        visitT(t)
+      case FunctionType(it, ot) =>
+        visitT(it)
+        visitT(ot)
+      case _ =>
+    }
+
+    traversal.DepthFirstLocalResult(expr, Visitor())
+    (boundT.toSet, boundN.toSet)
+  }
+
   object Solution {
     def apply(): Solution = Solution(Map(), Map())
     def subs(ta: Type, tb: Type): Solution = Solution(Map(ta -> tb), Map())
-    def subs(na: Nat, nb: Nat): Solution = Solution(Map(), Map(na -> nb))
+    def subs(na: NatIdentifier, nb: Nat): Solution = Solution(Map(), Map(na -> nb))
   }
 
   case class Solution(ts: Map[Type, Type],
-                      ns: Map[Nat, Nat]) {
-    def apply(e: TypedExpr): TypedExpr = {
-      ???
+                      ns: Map[NatIdentifier, Nat]) {
+    def apply(e: Expr): Expr = {
+      val sol = this
+      traversal.DepthFirstLocalResult(e, new traversal.Visitor {
+        override def apply(ae: Nat): Nat = sol(ae)
+        override def apply[T <: Type](t: T): T = sol(t).asInstanceOf[T]
+      })
+    }
+
+    def apply(t: Type): Type = {
+      val t2 = ts.foldLeft(t) { case (result, (ta, tb)) =>
+        substitute(tb, `for` = ta, in = result)
+      }
+      ns.foldLeft(t2) { case (result, (na, nb)) =>
+        substitute(nb, `for` = na, in = result)
+      }
+    }
+
+    def apply(n: Nat): Nat = {
+      ns.foldLeft(n) { case (result, (na, nb)) =>
+        substitute(nb, `for` = na, in = result)
+      }
     }
 
     def apply(other: Solution): Solution = {
-      ???
+      Solution(
+        ts.mapValues(t => other(t)) ++ other.ts,
+        ns.mapValues(n => other(n)) ++ other.ns
+      )
+    }
+
+    def apply(constraints: Constraints): Constraints = {
+      constraints.map({
+        case TypeConstraint(a, b) =>
+          TypeConstraint(apply(a), apply(b))
+        case NatConstraint(a, b) =>
+          NatConstraint(apply(a), apply(b))
+      })
     }
   }
 
-  def solve(cs: Constraints): Solution = {
-    if (cs.isEmpty) { Solution() } else { solveOne(cs.head)(solve(cs.tail)) }
+  def solve(cs: Constraints)
+           (implicit
+            boundT: Set[DataTypeIdentifier],
+            boundN: Set[NatIdentifier]): Solution = {
+    if (cs.isEmpty) {
+      Solution()
+    } else {
+      val s = solveOne(cs.head)
+      s(solve(s(cs.tail)))
+    }
   }
 
-  def solveOne: Constraint => Solution = {
+  def solveOne(c: Constraint)
+              (implicit
+               boundT: Set[DataTypeIdentifier],
+               boundN: Set[NatIdentifier]): Solution = c match {
     case TypeConstraint(a, b) => (a, b) match {
       case (i: DataTypeIdentifier, _) => unify(i, b)
       case (_, i: DataTypeIdentifier) => unify(i, a)
@@ -130,41 +213,84 @@ object infer {
       case (FunctionType(ina, outa), FunctionType(inb, outb)) =>
         solve(Set(TypeConstraint(ina, inb), TypeConstraint(outa, outb)))
       case (NatDependentFunctionType(na, ta), NatDependentFunctionType(nb, tb)) =>
-        solve(Set(NatConstraint(na, nb), TypeConstraint(ta, tb)))
+        solve(Set(TypeConstraint(ta, substitute(na, `for`=nb, in=tb))))
       case (TypeDependentFunctionType(dta, ta), TypeDependentFunctionType(dtb, tb)) =>
-        solve(Set(TypeConstraint(dta, dtb), TypeConstraint(ta, tb)))
+        solve(Set(TypeConstraint(ta, substitute(dta, `for`=dtb, in=tb))))
       case _ => error(s"cannot unify $a and $b")
     }
     case NatConstraint(a, b) => (a, b) match {
       case (i: NatIdentifier, _) => unify(i, b)
       case (_, i: NatIdentifier) => unify(i, a)
+      case _ if a == b => Solution()
       case _ => error(s"cannot unify $a and $b")
     }
   }
 
-  def unify(i: DataTypeIdentifier, t: Type): Solution = {
+  def unify(i: DataTypeIdentifier, t: Type)
+           (implicit bound: Set[DataTypeIdentifier]): Solution = {
     t match {
-      case _: DataTypeIdentifier =>
-        if (i == t) { Solution() } else { Solution.subs(i, t) }
+      case j: DataTypeIdentifier =>
+        if (i == j) { Solution() }
+        else if (!bound(i)) { Solution.subs(i, j) }
+        else if (!bound(j)) { Solution.subs(j, i) }
+        else { ??? }
       case _ if occurs(i, t) =>
         error(s"circular use: $i occurs in $t")
-      case _ => Solution.subs(i, t)
+      case _ if !bound(i) => Solution.subs(i, t)
+      case _ => ???
     }
   }
 
-  def unify(i: NatIdentifier, n: Nat): Solution = {
+  def unify(i: NatIdentifier, n: Nat)
+           (implicit bound: Set[NatIdentifier]): Solution = {
+    import lift.arithmetic._
+
+    def findPivot(terms: Seq[ArithExpr]): NatIdentifier = {
+      val free = terms.filter({
+        case j: NatIdentifier if !bound(j) => true
+        case _ => false
+      })
+      val potentialPivots = free.toSet
+        .filter(p => terms.count(ArithExpr.contains(_, p)) == 1)
+      if (potentialPivots.isEmpty) { ??? }
+      potentialPivots.head.asInstanceOf[NatIdentifier]
+    }
+
     n match {
-      case _: NatIdentifier =>
-        if (i == n) { Solution() } else { Solution.subs(i, n) }
+      case j: NatIdentifier =>
+        if (i == j) { Solution() }
+        else if (!bound(i)) { Solution.subs(i, j) }
+        else if (!bound(j)) { Solution.subs(j, i) }
+        else { ??? }
       case _ if ArithExpr.contains(n, i) =>
         error(s"circular use: $i occurs in $n")
-      /*
-    case Prod()
-    case c: Cst
-    */
-      case _ => Solution.subs(i, n)
+      case _ if !bound(i) => Solution.subs(i, n)
+        // TODO:
+      case Prod(terms) =>
+        // i = pivot * .. --> pivot = i / ..
+        val pivot = findPivot(terms)
+        val value = Prod(i :: terms.filter({_ != pivot }).map(n => Cst(1) /^ n))
+        Solution.subs(pivot, value)
+      case Sum(terms) =>
+        // i = pivot + .. --> pivot = i - ..
+        val pivot = findPivot(terms)
+        val value = Sum(i :: terms.filter({ _ != pivot }).map(n => -1 * n))
+        Solution.subs(pivot, value)
+      case _ => ???
     }
   }
 
-  def occurs(i: DataTypeIdentifier, t: Type) = ???
+  def occurs(i: DataTypeIdentifier, t: Type): Boolean = {
+    t match {
+      case j: DataTypeIdentifier => i == j
+      case FunctionType(it, ot) => occurs(i, it) || occurs(i, ot)
+      case _ => false
+        /*
+      case _: ScalarType => false
+      case ArrayType(_, et) => occurs(i, et)
+      case _: DepArrayType => ???
+      case TupleType(ets @ _*) => !ets.exists(occurs(i, _))
+       */
+    }
+  }
 }
