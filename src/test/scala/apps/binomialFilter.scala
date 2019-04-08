@@ -260,14 +260,14 @@ int main(int argc, char** argv) {
   }
 
   test("compile and compare factorised blur to the reference") {
-    check_ref(binomialFilter.factorised)
+    check_ref(factorised)
   }
 
   test("compile and compare separated blur to the reference") {
-    check_ref(binomialFilter.separated)
+    check_ref(separated)
   }
 
   test("compile and compare register rotation blur to the reference") {
-    check_ref(binomialFilter.regrot)
+    check_ref(regrot)
   }
 }

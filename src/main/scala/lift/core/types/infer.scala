@@ -17,7 +17,7 @@ object infer {
   }
 
   def error(msg: String): Nothing =
-    throw new InferenceException(msg)
+    throw InferenceException(msg)
 
   type Constraints = scala.collection.immutable.Set[Constraint]
   type MConstraints = scala.collection.mutable.Set[Constraint]
@@ -265,7 +265,6 @@ object infer {
       case _ if ArithExpr.contains(n, i) =>
         error(s"circular use: $i occurs in $n")
       case _ if !bound(i) => Solution.subs(i, n)
-        // TODO:
       case Prod(terms) =>
         // i = pivot * .. --> pivot = i / ..
         val pivot = findPivot(terms)
@@ -285,12 +284,6 @@ object infer {
       case j: DataTypeIdentifier => i == j
       case FunctionType(it, ot) => occurs(i, it) || occurs(i, ot)
       case _ => false
-        /*
-      case _: ScalarType => false
-      case ArrayType(_, et) => occurs(i, et)
-      case _: DepArrayType => ???
-      case TupleType(ets @ _*) => !ets.exists(occurs(i, _))
-       */
     }
   }
 }
