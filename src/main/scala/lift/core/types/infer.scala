@@ -13,7 +13,7 @@ object infer {
     val typed_e = constrainTypes(e, constraints, scala.collection.mutable.Map())
     implicit val (boundT, boundN) = boundIdentifiers(typed_e)
     val solution = solve(constraints.toSet)
-    solution(typed_e) match { case r: TypedExpr => r }
+    solution(typed_e).asInstanceOf[TypedExpr]
   }
 
   def error(msg: String): Nothing =
@@ -198,8 +198,8 @@ object infer {
                boundT: Set[DataTypeIdentifier],
                boundN: Set[NatIdentifier]): Solution = c match {
     case TypeConstraint(a, b) => (a, b) match {
-      case (i: DataTypeIdentifier, _) => unify(i, b)
-      case (_, i: DataTypeIdentifier) => unify(i, a)
+      case (i: DataTypeIdentifier, _) => unifyTypeIdent(i, b)
+      case (_, i: DataTypeIdentifier) => unifyTypeIdent(i, a)
       case (_: BasicType, _: BasicType) if a == b =>
         Solution()
       case (IndexType(sa), IndexType(sb)) =>
@@ -219,15 +219,19 @@ object infer {
       case _ => error(s"cannot unify $a and $b")
     }
     case NatConstraint(a, b) => (a, b) match {
-      case (i: NatIdentifier, _) => unify(i, b)
-      case (_, i: NatIdentifier) => unify(i, a)
+      case (i: NatIdentifier, _) => nat.unifyIdent(i, b)
+      case (_, i: NatIdentifier) => nat.unifyIdent(i, a)
       case _ if a == b => Solution()
+      case (s: lift.arithmetic.Sum, _) => nat.unifySum(s, b)
+      case (_, s: lift.arithmetic.Sum) => nat.unifySum(s, a)
+      case (p: lift.arithmetic.Prod, _) => nat.unifyProd(p, b)
+      case (_, p: lift.arithmetic.Prod) => nat.unifyProd(p, a)
       case _ => error(s"cannot unify $a and $b")
     }
   }
 
-  def unify(i: DataTypeIdentifier, t: Type)
-           (implicit bound: Set[DataTypeIdentifier]): Solution = {
+  def unifyTypeIdent(i: DataTypeIdentifier, t: Type)
+                    (implicit bound: Set[DataTypeIdentifier]): Solution = {
     t match {
       case j: DataTypeIdentifier =>
         if (i == j) { Solution() }
@@ -241,41 +245,78 @@ object infer {
     }
   }
 
-  def unify(i: NatIdentifier, n: Nat)
-           (implicit bound: Set[NatIdentifier]): Solution = {
+  object nat {
     import lift.arithmetic._
 
-    def findPivot(terms: Seq[ArithExpr]): NatIdentifier = {
-      val free = terms.filter({
-        case j: NatIdentifier if !bound(j) => true
-        case _ => false
-      })
-      val potentialPivots = free.toSet
-        .filter(p => terms.count(ArithExpr.contains(_, p)) == 1)
-      if (potentialPivots.isEmpty) { ??? }
-      potentialPivots.head.asInstanceOf[NatIdentifier]
+    def unwrapFreeTerm(term: ArithExpr)
+                      (implicit bound: Set[NatIdentifier]): Option[NatIdentifier] = {
+      term match {
+        case i: NatIdentifier if !bound(i) => Some(i)
+        case Prod(Cst(_) :: t :: Nil) => unwrapFreeTerm(t)
+        case Sum(Cst(_) :: t :: Nil) => unwrapFreeTerm(t)
+        case Pow(b, Cst(_)) => unwrapFreeTerm(b)
+        case _ => None
+      }
     }
 
-    n match {
-      case j: NatIdentifier =>
-        if (i == j) { Solution() }
-        else if (!bound(i)) { Solution.subs(i, j) }
-        else if (!bound(j)) { Solution.subs(j, i) }
-        else { ??? }
-      case _ if ArithExpr.contains(n, i) =>
-        error(s"circular use: $i occurs in $n")
-      case _ if !bound(i) => Solution.subs(i, n)
-      case Prod(terms) =>
-        // i = pivot * .. --> pivot = i / ..
-        val pivot = findPivot(terms)
-        val value = Prod(i :: terms.filter({_ != pivot }).map(n => Cst(1) /^ n))
-        Solution.subs(pivot, value)
-      case Sum(terms) =>
-        // i = pivot + .. --> pivot = i - ..
-        val pivot = findPivot(terms)
-        val value = Sum(i :: terms.filter({ _ != pivot }).map(n => -1 * n))
-        Solution.subs(pivot, value)
-      case _ => ???
+    def findPivot(terms: Seq[ArithExpr])
+                 (implicit bound: Set[NatIdentifier]): Nat = {
+      val (free, toTerm) =
+        terms.foldLeft((Set[NatIdentifier](), Map[NatIdentifier, Nat]()))(
+          { case ((fr, tt), term) =>
+            unwrapFreeTerm(term) match {
+              case Some(x) => (fr + x, tt updated (x, term))
+              case None => (fr, tt)
+            }
+          })
+      val pivots = free.filter(p => terms.count(ArithExpr.contains(_, p)) == 1)
+      if (pivots.isEmpty) { ??? }
+      toTerm(pivots.head)
+    }
+
+    def pivotSolution(term: Nat, value: Nat): Solution = {
+      term match {
+        case i: NatIdentifier => Solution.subs(i, value)
+        case Prod((c: Cst) :: t :: Nil) => pivotSolution(t, value /^ c)
+        case Sum((c: Cst) :: t :: Nil) => pivotSolution(t, value - c)
+        case Pow(b, Cst(-1)) => pivotSolution(b, Cst(1) /^ value)
+        case _ => ???
+      }
+    }
+
+    def unifyProd(p: Prod, n: Nat)
+                 (implicit bound: Set[NatIdentifier]): Solution = {
+      val Prod(terms) = p
+      // n = pivot * .. --> pivot = n / ..
+      val pivot = findPivot(terms)
+      val value = Prod(n :: terms.filter({_ != pivot }).map(n => Cst(1) /^ n))
+      pivotSolution(pivot, value)
+    }
+
+    def unifySum(s: Sum, n: Nat)
+                (implicit bound: Set[NatIdentifier]): Solution = {
+      val Sum(terms) = s
+      // i = pivot + .. --> pivot = i - ..
+      val pivot = findPivot(terms)
+      val value = Sum(n :: terms.filter({ _ != pivot }).map(n => -1 * n))
+      pivotSolution(pivot, value)
+    }
+
+    def unifyIdent(i: NatIdentifier, n: Nat)
+                     (implicit bound: Set[NatIdentifier]): Solution = {
+      n match {
+        case j: NatIdentifier =>
+          if (i == j) { Solution() }
+          else if (!bound(i)) { Solution.subs(i, j) }
+          else if (!bound(j)) { Solution.subs(j, i) }
+          else { ??? }
+        case _ if ArithExpr.contains(n, i) =>
+          error(s"circular use: $i occurs in $n")
+        case _ if !bound(i) => Solution.subs(i, n)
+        case p: Prod => unifyProd(p, i)
+        case s: Sum => unifySum(s, i)
+        case _ => ???
+      }
     }
   }
 

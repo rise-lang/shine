@@ -31,7 +31,7 @@ object harrisCornerDetection {
   val zip2d = fun(a => fun(b =>
     zip(a, b) :>> map(fun(al_bl => zip(al_bl._1, al_bl._2)))))
 
-  val gaussian = idealised.apps.binomialFilter.blur
+  val gaussian: Expr = ???
 
   // TODO: store temporaries
   val e = nFun(h => nFun(w => fun(ArrayType(h, ArrayType(w, float)))(i => {

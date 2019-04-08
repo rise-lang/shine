@@ -94,6 +94,7 @@ class traverse extends idealised.util.Tests {
             Apply(fun(x => x), input)
           )))
         ))
+      case _ => throw new Exception("the traversal should have stopped")
     }
     // the trace should match expectations
     trace.length shouldBe expected.length

@@ -17,25 +17,39 @@ sealed trait Phrase[T <: PhraseType] {
 }
 
 final case class Identifier[T <: PhraseType](name: String, `type`: T)
-  extends Phrase[T]
+  extends Phrase[T] {
+  override def toString: String = s"($name : ${`type`})"
+}
 
 final case class Lambda[T1 <: PhraseType, T2 <: PhraseType](param: Identifier[T1], body: Phrase[T2])
-  extends Phrase[T1 -> T2]
+  extends Phrase[T1 -> T2] {
+  override def toString: String = s"λ$param. $body"
+}
 
 final case class Apply[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 -> T2], arg: Phrase[T1])
-  extends Phrase[T2]
+  extends Phrase[T2] {
+  override def toString: String = s"($fun $arg)"
+}
 
 final case class NatDependentLambda[T <: PhraseType](x: NatIdentifier, body: Phrase[T])
-  extends Phrase[`(nat)->`[T]]
+  extends Phrase[`(nat)->`[T]] {
+  override def toString: String = s"Λ($x : nat). $body"
+}
 
 final case class TypeDependentLambda[T <: PhraseType](x: DataTypeIdentifier, body: Phrase[T])
-  extends Phrase[`(dt)->`[T]]
+  extends Phrase[`(dt)->`[T]] {
+  override def toString: String = s"Λ($x : data). $body"
+}
 
 final case class NatDependentApply[T <: PhraseType](fun: Phrase[`(nat)->`[T]], arg: Nat)
-  extends Phrase[T]
+  extends Phrase[T] {
+  override def toString: String = s"($fun $arg)"
+}
 
 final case class TypeDependentApply[T <: PhraseType](fun: Phrase[`(dt)->`[T]], arg: DataType)
-  extends Phrase[T]
+  extends Phrase[T] {
+  override def toString: String = s"($fun $arg)"
+}
 
 final case class Pair[T1 <: PhraseType, T2 <: PhraseType](fst: Phrase[T1], snd: Phrase[T2])
   extends Phrase[T1 x T2]

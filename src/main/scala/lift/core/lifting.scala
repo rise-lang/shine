@@ -79,6 +79,7 @@ object lifting {
     ty match {
       case NatDependentFunctionType(x, t) =>
         (n: Nat) => substitute(n, `for`=x, in=t)
+      case _ => ???
     }
   }
 
@@ -86,6 +87,7 @@ object lifting {
     ty match {
       case TypeDependentFunctionType(x, t) =>
         (dt: DataType) => substitute(dt, `for`=x, in=t)
+      case _ => ???
     }
   }
 }

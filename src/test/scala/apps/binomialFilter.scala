@@ -34,7 +34,6 @@ object binomialFilter {
 
   // TODO: pad
   // TODO: registers/loop unrolling, vectorisation
-  // TODO: rewriting
 
   val weights2d = l(ArrayData(
     Array(1, 2, 1, 2, 4, 2, 1, 2, 1).map(f => FloatData(f / 16.0f))))
@@ -213,9 +212,9 @@ class binomialFilter extends idealised.util.Tests {
     program
   }
 
-  lazy val ref_prog = program("blur_ref", reference)
+  def ref_prog() = program("blur_ref", reference)
   test("blur compiles to C code") {
-    ref_prog
+    ref_prog()
   }
 
   def check_ref(e: Expr) = {
@@ -224,7 +223,7 @@ class binomialFilter extends idealised.util.Tests {
       s"""
 #include <stdio.h>
 
-${ref_prog.code}
+${ref_prog().code}
 
 ${prog.code}
 
