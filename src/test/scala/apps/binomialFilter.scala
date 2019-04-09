@@ -246,7 +246,7 @@ int main(int argc, char** argv) {
 
   for (int i = 0; i < (H * W); i++) {
     float delta = reference[i] - output[i];
-    if (delta < -0.001 && 0.001 < delta) {
+    if (delta < -0.001 || 0.001 < delta) {
       fprintf(stderr, "difference with reference is too big: %f\\n", delta);
       return 1;
     }
