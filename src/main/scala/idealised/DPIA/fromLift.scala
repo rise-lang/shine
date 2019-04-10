@@ -236,6 +236,9 @@ object fromLift {
         fun[ExpType](exp"[$a]", x =>
           fun[ExpType](exp"[$a]", y =>
             BinOp(bop(op), x, y)))
+
+      case (lp.reduce, _) =>
+        throw new Exception(s"$p has no implementation")
     }
   }
 
