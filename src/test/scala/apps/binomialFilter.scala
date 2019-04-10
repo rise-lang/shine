@@ -203,18 +203,16 @@ class binomialFilter extends idealised.util.Tests {
     val typed = types.infer(
       nFun(h => nFun(w => fun(ArrayType(h, ArrayType(w, float)))(a => e(a))))
     )
-    println(typed)
     val phrase = idealised.DPIA.fromLift(typed)
-    println(phrase)
     val program = C.ProgramGenerator.makeCode(phrase, name)
     SyntaxChecker(program.code)
     println(program.code)
     program
   }
 
-  def ref_prog() = program("blur_ref", reference)
+  lazy val ref_prog = program("blur_ref", reference)
   test("blur compiles to C code") {
-    ref_prog()
+    ref_prog
   }
 
   def check_ref(e: Expr) = {
@@ -223,7 +221,7 @@ class binomialFilter extends idealised.util.Tests {
       s"""
 #include <stdio.h>
 
-${ref_prog().code}
+${ref_prog.code}
 
 ${prog.code}
 

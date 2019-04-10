@@ -221,9 +221,9 @@ object infer {
     case NatConstraint(a, b) => (a, b) match {
       case (i: NatIdentifier, _) => nat.unifyIdent(i, b)
       case (_, i: NatIdentifier) => nat.unifyIdent(i, a)
+      case _ if a == b => Solution()
       case _ if nat.unwrapFreeTerm(a).isDefined => nat.pivotSolution(a, b)
       case _ if nat.unwrapFreeTerm(b).isDefined => nat.pivotSolution(b, a)
-      case _ if a == b => Solution()
       case (lift.arithmetic.Sum(a :: b :: Nil), // TODO: generalize
       lift.arithmetic.Sum(x :: y :: Nil)) if a == y && b == x
         => Solution()

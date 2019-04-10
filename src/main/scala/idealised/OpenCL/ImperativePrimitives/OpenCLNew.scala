@@ -20,7 +20,7 @@ final case class OpenCLNew(dt: DataType,
 
   override def eval(s: Store): Store = {
     val f_ = OperationalSemantics.eval(s, f)
-    val arg = identifier(freshName(), f.t.inT)
+    val arg = identifier(freshName("x"), f.t.inT)
     val newStore = OperationalSemantics.eval(s + (arg.name -> 0), f_(arg))
     newStore - arg.name
   }
