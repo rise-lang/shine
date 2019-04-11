@@ -17,8 +17,8 @@ object fromLift {
         Lambda(Identifier(x.name, fromLift(i)), fromLift(e))
       case l.TypedExpr(l.Apply(f, e), _) =>
         Apply(
-          fromLift(f).asInstanceOf[Phrase[FunctionType[ExpType, PhraseType]]],
-          fromLift(e).asInstanceOf[Phrase[ExpType]])
+          fromLift(f).asInstanceOf[Phrase[FunctionType[PhraseType, PhraseType]]],
+          fromLift(e).asInstanceOf[Phrase[PhraseType]])
       case l.TypedExpr(l.NatLambda(n, e), _) =>
         NatDependentLambda(n, fromLift(e))
       case l.TypedExpr(l.NatApply(f, n), _) =>
@@ -38,7 +38,8 @@ object fromLift {
         Literal(OpSem.IndexData(n, IndexType(sz)))
       case l.TypedExpr(l.NatExpr(n), _) =>
         Natural(n)
-      case l.TypedExpr(p: l.Primitive, t) => fromLift(p, t)
+      case l.TypedExpr(p: l.Primitive, t) =>
+        fromLift(p, t)
     }
   }
 
@@ -109,7 +110,7 @@ object fromLift {
         val a = fromLift(la)
         val b = fromLift(lb)
         fun[ExpType -> ExpType](ExpType(a) -> ExpType(b), f =>
-          fun[ExpType](ExpType(ArrayType(n, a)), e =>
+          fun[ExpType](exp"[$n.$a]", e =>
             Map(n, a, b, f, e)))
 
       case (lp.mapSeq,
@@ -119,7 +120,7 @@ object fromLift {
         val a = fromLift(la)
         val b = fromLift(lb)
         fun[ExpType -> ExpType](ExpType(a) -> ExpType(b), f =>
-          fun[ExpType](ExpType(ArrayType(n, a)), e =>
+          fun[ExpType](exp"[$n.$a]", e =>
             MapSeq(n, a, b, f, e)))
 
       case (lp.reduceSeq,
@@ -138,7 +139,7 @@ object fromLift {
       lt.FunctionType(lt.ArrayType(n, lt.ArrayType(m, la)), _))
       =>
         val a = fromLift(la)
-        fun[ExpType](ExpType(ArrayType(n, ArrayType(m, a))), e =>
+        fun[ExpType](exp"[$n.$m.$a]", e =>
           Join(n, m, a, e))
 
       case (lp.split,
@@ -147,7 +148,7 @@ object fromLift {
       =>
         val a = fromLift(la)
         nFun(n =>
-          fun[ExpType](ExpType(ArrayType(m * n, a)), e =>
+          fun[ExpType](exp"[${m * n}.$a]", e =>
             Split(n, m, a, e)))
 
       case (lp.slide,
@@ -157,7 +158,7 @@ object fromLift {
       =>
         val a = fromLift(la)
         nFun(sz => nFun(sp =>
-          fun[ExpType](ExpType(ArrayType(sp * n + sz - sp, a)), e =>
+          fun[ExpType](exp"[${sp * n + sz - sp}.$a]", e =>
             Slide(n, sz, sp, a, e))))
 
       case (lp.slideSeq,
@@ -167,7 +168,7 @@ object fromLift {
       =>
         val a = fromLift(la)
         nFun(sz => nFun(sp =>
-          fun[ExpType](ExpType(ArrayType(sp * n + sz - sp, a)), e =>
+          fun[ExpType](exp"[${sp * n + sz - sp}.$a]", e =>
             SlideSeq(n, sz, sp, a, e))))
 
       case (lp.transpose,

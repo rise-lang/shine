@@ -89,7 +89,7 @@ object infer {
       case TypedExpr(e, t) =>
         val te = typed(e)
         constraints += TypeConstraint(te.t, t)
-        TypedExpr(e, t)
+        te
 
       case p: Primitive => TypedExpr(p, p.t)
     }

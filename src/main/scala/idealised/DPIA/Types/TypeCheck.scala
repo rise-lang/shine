@@ -16,11 +16,7 @@ object TypeCheck {
       case Apply(p, q) =>
         TypeCheck(p)
         TypeCheck(q)
-        p.t match {
-          case FunctionType(t1, _) =>
-            check(t1, q.t)
-          case x => error(x.toString, FunctionType.toString)
-        }
+        check(p.t.inT, q.t)
 
       case NatDependentLambda(_, p) => TypeCheck(p)
 
