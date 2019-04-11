@@ -268,12 +268,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case AsIndex(_, e) => exp(e, env, path, cont)
 
-      case Generate(n, _, lam@Lambda(_, _)) => path match {
-        case (i : CIntExpr) :: ps =>
-          val evaledLam = Lifting.liftFunction(lam)(AsIndex(n, Natural(i)))
-          exp(evaledLam, env, ps, cont)
-      }
-
       case Split(n, _, _, e) => path match {
         case (i : CIntExpr) :: (j : CIntExpr) :: ps => exp(e, env, CIntExpr(n * i + j) :: ps, cont)
         case _ => error(s"Expected two C-Integer-Expressions on the path.")
@@ -376,6 +370,17 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           )(
             continue_cmd
           ), env updatedContEnv (continue_cmd -> (e => env => exp(e, env, ps, cont))))
+        case Nil => error(s"Expected path to be not empty")
+      }
+
+      case GenerateCont(n, dt, f) => path match {
+        case (i : CIntExpr) :: ps =>
+          val continue_cmd =
+            Identifier[ExpType -> CommandType](s"continue_$freshName",
+              FunctionType(ExpType(dt), comm))
+
+          cmd(f(AsIndex(n, Natural(i)))(continue_cmd),
+            env updatedContEnv (continue_cmd -> (e => env => exp(e, env, ps, cont))))
         case Nil => error(s"Expected path to be not empty")
       }
 
@@ -735,7 +740,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       addDeclaration(
         C.AST.FunDecl(funDecl.name,
           returnType = typ(outT),
-          params = (funDecl.argNames zip inTs).map {
+          params = (funDecl.args zip inTs).map {
             case (name, dt) => C.AST.ParamDecl(name, typ(dt))
           },
           body = C.AST.Code(funDecl.body)))

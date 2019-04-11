@@ -43,19 +43,24 @@ object fromLift {
     }
   }
 
-  def apply(t: lt.DataType): DataType = {
+  def apply(t: lt.BasicType): BasicType = {
     t match {
-      case lt.DataTypeIdentifier(name) => DataTypeIdentifier(name)
-      case lt.ArrayType(sz, et) => ArrayType(sz, fromLift(et))
-      case lt.DepArrayType(sz, et) => ???
-      case lt.TupleType(a, b) => RecordType(fromLift(a), fromLift(b))
       case lt.bool => bool
       case lt.int => int
       case lt.float => float
       case lt.double => double
       case lt.NatType => NatType
       case lt.IndexType(sz) => IndexType(sz)
-      // case _ => ???
+    }
+  }
+
+  def apply(t: lt.DataType): DataType = {
+    t match {
+      case bt: lt.BasicType => apply(bt)
+      case lt.DataTypeIdentifier(name) => DataTypeIdentifier(name)
+      case lt.ArrayType(sz, et) => ArrayType(sz, fromLift(et))
+      case lt.DepArrayType(sz, et) => ???
+      case lt.TupleType(a, b) => RecordType(fromLift(a), fromLift(b))
     }
   }
 
@@ -85,23 +90,23 @@ object fromLift {
   import lift.core.{primitives => lp}
   import idealised.DPIA.FunctionalPrimitives._
 
+  def nFun(f: NatIdentifier => Phrase[_ <: PhraseType]): Phrase[_ <: PhraseType] = {
+    val n = lift.arithmetic.NamedVar(freshName("n"))
+    NatDependentLambda(n, f(n))
+  }
+
+  def tFun(f: DataTypeIdentifier => Phrase[_ <: PhraseType]): Phrase[_ <: PhraseType] = {
+    val dt = DataTypeIdentifier(freshName("dt"))
+    TypeDependentLambda(dt, f(dt))
+  }
+
+  def fun[T <: PhraseType](t: T,
+                           f: Phrase[T] => Phrase[_ <: PhraseType]): Phrase[_ <: PhraseType] = {
+    val x = Identifier(freshName("x"), t)
+    Lambda(x, f(x))
+  }
+
   def apply(p: l.Primitive, t: lt.Type): Phrase[_ <: PhraseType] = {
-    def nFun(f: NatIdentifier => Phrase[_ <: PhraseType]): Phrase[_ <: PhraseType] = {
-      val n = lift.arithmetic.NamedVar(freshName("n"))
-      NatDependentLambda(n, f(n))
-    }
-
-    def tFun(f: DataTypeIdentifier => Phrase[_ <: PhraseType]): Phrase[_ <: PhraseType] = {
-      val dt = DataTypeIdentifier(freshName("dt"))
-      TypeDependentLambda(dt, f(dt))
-    }
-
-    def fun[T <: PhraseType](t: T,
-                             f: Phrase[T] => Phrase[_ <: PhraseType]): Phrase[_ <: PhraseType] = {
-      val x = Identifier(freshName("x"), t)
-      Lambda(x, f(x))
-    }
-
     (p, t) match {
       case (lp.map,
       lt.FunctionType(lt.FunctionType(_, lb: lt.DataType),
@@ -171,6 +176,17 @@ object fromLift {
           fun[ExpType](exp"[${sp * n + sz - sp}.$a]", e =>
             SlideSeq(n, sz, sp, a, e))))
 
+      case (lp.reorder,
+      lt.FunctionType(_,
+      lt.FunctionType(_,
+      lt.FunctionType(lt.ArrayType(n, la), _))))
+      =>
+        val a = fromLift(la)
+        fun[ExpType -> ExpType](exp"[idx($n)]" -> exp"[idx($n)]", idxF =>
+          fun[ExpType -> ExpType](exp"[idx($n)]" -> exp"[idx($n)]", idxFinv =>
+            fun[ExpType](exp"[$n.$a]", e =>
+              Reorder(n, a, idxF, idxFinv, e))))
+
       case (lp.transpose,
       lt.FunctionType(lt.ArrayType(n, lt.ArrayType(m, la)), _))
       =>
@@ -238,8 +254,61 @@ object fromLift {
           fun[ExpType](exp"[$a]", y =>
             BinOp(bop(op), x, y)))
 
+      case (lp.cast, lt.FunctionType(la: lt.BasicType, lb: lt.BasicType))
+      =>
+        val a = fromLift(la)
+        val b = fromLift(lb)
+        fun[ExpType](ExpType(a), x =>
+          Cast(a, b, x))
+
+      case (lp.ForeignFun(decl, la), _)
+      =>
+        val (inTs, outT) = foreignFunIO(la)
+        wrapForeignFun(decl, inTs, outT, Vector())
+
+      case (lp.generate, lt.FunctionType(_, lt.ArrayType(n, la)))
+      =>
+        val a = fromLift(la)
+        fun[ExpType -> ExpType](exp"[idx($n)]" -> ExpType(a), f =>
+          Generate(n, a, f))
+
+      case (lp.iterate,
+      lt.NatDependentFunctionType(_,
+      lt.FunctionType(_,
+      lt.FunctionType(_, _))))
+      => ???
+
+      case (lp.indexAsNat, lt.FunctionType(lt.IndexType(n), lt.NatType))
+      =>
+        fun[ExpType](exp"[idx($n)]", e =>
+          IndexAsNat(n, e))
+
       case (lp.reduce, _) =>
         throw new Exception(s"$p has no implementation")
+    }
+  }
+
+  def foreignFunIO(t: lt.Type): (Vector[DataType], DataType) = {
+    t match {
+      case lt.FunctionType(la: lt.DataType, lb) =>
+        val a = fromLift(la)
+        val (i, o) = foreignFunIO(lb)
+        (a +: i, o)
+      case lo: lt.DataType =>
+        (Vector(), fromLift(lo))
+    }
+  }
+
+  def wrapForeignFun(decl: lp.ForeignFunDecl,
+                     intTs: Vector[DataType],
+                     outT: DataType,
+                     args: Vector[Phrase[ExpType]]): Phrase[_ <: PhraseType] = {
+    val i = args.length
+    if (i < intTs.length) {
+      fun[ExpType](ExpType(intTs(i)), a =>
+        wrapForeignFun(decl, intTs, outT, args :+ a))
+    } else {
+      ForeignFunction(decl, intTs, outT, args)
     }
   }
 

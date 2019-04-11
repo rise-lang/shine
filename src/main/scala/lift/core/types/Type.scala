@@ -8,8 +8,9 @@ sealed trait Type
 // data types
 sealed trait DataType extends Type
 
-final case class DataTypeIdentifier(name: String) extends DataType
-
+final case class DataTypeIdentifier(name: String) extends DataType {
+  override def toString: String = name
+}
 
 sealed trait ComposedType extends DataType
 
@@ -56,7 +57,9 @@ object double extends ScalarType { override def toString: String = "double" }
 
 object NatType extends ScalarType { override def toString: String = "nat"}
 
-final case class IndexType(size: Nat) extends BasicType
+final case class IndexType(size: Nat) extends BasicType {
+  override def toString: String = s"idx($size)"
+}
 
 
 sealed case class VectorType(size: Nat, elemType: ScalarType) extends BasicType {

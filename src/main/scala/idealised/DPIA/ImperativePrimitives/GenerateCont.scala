@@ -6,22 +6,21 @@ import idealised.DPIA.Types._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics._
 
-import scala.language.reflectiveCalls
+import scala.xml.Elem
 
-final case class MapRead(n: Nat,
-                         dt1: DataType,
-                         dt2: DataType,
-                         f: Phrase[ExpType -> ((ExpType -> CommandType) -> CommandType)],
-                         input: Phrase[ExpType])
+// note: would not be necessary if generate was defined as indices + map
+final case class GenerateCont(n: Nat,
+                              dt: DataType,
+                              f: Phrase[ExpType -> ((ExpType -> CommandType) -> CommandType)])
   extends ExpPrimitive
 {
   override val t: ExpType =
-    (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
-      (f :: exp"[$dt1]" -> ((t"exp[$dt2] -> comm") -> comm)) ->
-      (input :: exp"[$n.$dt1]") -> exp"[$n.$dt2]"
+    (n: Nat) -> (dt: DataType) ->
+      (f :: exp"[idx($n)]" -> ((t"exp[$dt] -> comm") -> comm)) ->
+      exp"[$n.$dt]"
 
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    MapRead(v(n), v(dt1), v(dt2), VisitAndRebuild(f, v), VisitAndRebuild(input, v))
+    GenerateCont(v(n), v(dt), VisitAndRebuild(f, v))
   }
 
   override def eval(s: Store): Data = ???
@@ -39,15 +38,12 @@ final case class MapRead(n: Nat,
                                       (implicit context: TranslationContext): Phrase[CommandType] =
     throw new Exception("This should not happen")
 
-  override def prettyPrint: String = s"(mapRead $f $input)"
+  override def prettyPrint: String = s"(generateCont $n $f)"
 
-  override def xmlPrinter: xml.Elem =
-    <mapRead n={ToString(n)} dt1={ToString(dt1)} dt2={ToString(dt2)}>
+  override def xmlPrinter: Elem =
+    <generateCont n={ToString(n)} dt={ToString(dt)}>
       <f>
         {Phrases.xmlPrinter(f)}
       </f>
-      <input>
-        {Phrases.xmlPrinter(input)}
-      </input>
-    </mapRead>
+    </generateCont>
 }
