@@ -30,12 +30,12 @@ final case class PairType[T1 <: PhraseType, T2 <: PhraseType](t1: T1, t2: T2)
 
 final case class FunctionType[T1 <: PhraseType, T2 <: PhraseType](inT: T1, outT: T2)
   extends PhraseType {
-  override def toString = s"$inT -> ($outT)"
+  override def toString = s"($inT) -> $outT"
 }
 
 final case class PassiveFunctionType[T1 <: PhraseType, T2 <: PhraseType](inT: T1, outT: T2)
   extends PhraseType {
-  override def toString = s"$inT ->p ($outT)"
+  override def toString = s"($inT) ->p $outT"
 }
 
 final case class NatDependentFunctionType[T <: PhraseType](n: NatIdentifier, t: T)

@@ -236,13 +236,15 @@ int main(int argc, char** argv) {
     }
   }
 
-  float reference[H * W];
+  const int OH = H - 2;
+  const int OW = W - 2;
+  float reference[OH * OW];
   ${ref_prog.function.name}(reference, H, W, input);
 
-  float output[H * W];
+  float output[OH * OW];
   ${prog.function.name}(output, H, W, input);
 
-  for (int i = 0; i < (H * W); i++) {
+  for (int i = 0; i < (OH * OW); i++) {
     float delta = reference[i] - output[i];
     if (delta < -0.001 || 0.001 < delta) {
       fprintf(stderr, "difference with reference is too big: %f\\n", delta);

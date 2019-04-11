@@ -86,7 +86,7 @@ object float16 extends VectorType(16, float)
 
 // function types
 final case class FunctionType[T1 <: Type, T2 <: Type](inT: T1, outT: T2) extends Type {
-  override def toString: String = s"$inT -> ($outT)"
+  override def toString: String = s"($inT) -> $outT"
 }
 
 final case class TypeDependentFunctionType[T <: Type](dt: DataTypeIdentifier, t: T) extends Type {
