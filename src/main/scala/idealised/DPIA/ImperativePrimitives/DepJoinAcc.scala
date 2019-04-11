@@ -16,7 +16,7 @@ final case class DepJoinAcc(n: Nat,
 {
 
 
-  override val `type`: AccType =
+  override val t: AccType =
     (n: Nat) -> (lenF: NatNatTypeFunction) ->
       (array :: acc"[${BigSum(from=0, upTo = n-1, `for`=lenF.x, lenF.body)}.$dt]") ->
       acc"[${DepArrayType(n, i => ArrayType(lenF(i), dt))}]"

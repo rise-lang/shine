@@ -15,7 +15,7 @@ final case class Cycle(n: Nat,
                        input: Phrase[ExpType])
   extends ExpPrimitive
 {
-  override val `type`: ExpType =
+  override val t: ExpType =
     (n: Nat) -> (m: Nat) -> (dt: DataType) -> (input :: exp"[$m.$dt]") -> exp"[$n.$dt]"
 
   override def eval(s: Store): Data = {

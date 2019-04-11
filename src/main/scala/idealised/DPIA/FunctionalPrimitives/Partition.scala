@@ -18,7 +18,7 @@ final case class Partition(n: Nat,
   extends ExpPrimitive {
 
 
-  override val `type`: ExpType =
+  override val t: ExpType =
     (n: Nat) -> (m: Nat) -> (dt: DataType) ->
       (array :: exp"[$n.$dt]") -> exp"[$m.${NatDataTypeFunction(m, (i:NatIdentifier) => ArrayType(lenF(i), dt))}]"
 

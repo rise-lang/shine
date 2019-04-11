@@ -16,7 +16,7 @@ final case class ForVec(n: Nat,
                         body: Phrase[ExpType -> (AccType -> CommandType)])
   extends CommandPrimitive
 {
-  override lazy val `type`: CommandType =
+  override val t: CommandType =
     (n: Nat) -> (dt: ScalarType) ->
       (out :: acc"[${VectorType(n, dt)}]") ->
         (body :: t"exp[idx($n)] -> acc[$dt] -> comm") ->

@@ -13,7 +13,7 @@ final case class New(dt: DataType,
                      f: Phrase[VarType -> CommandType])
   extends CommandPrimitive {
 
-  override val `type`: CommandType =
+  override val t: CommandType =
     (dt: DataType) -> /* (addressSpace: AddressSpace) -> */
       (f :: t"var[$dt] -> comm") -> comm
 

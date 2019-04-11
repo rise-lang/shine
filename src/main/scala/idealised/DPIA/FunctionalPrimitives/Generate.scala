@@ -14,7 +14,7 @@ final case class Generate(n: Nat,
                           f : Phrase[ExpType -> ExpType])
   extends ExpPrimitive {
 
-  override val `type`: ExpType =
+  override val t: ExpType =
     (n: Nat) -> (dt: DataType) ->
       (f :: t"exp[idx($n)] -> exp[$dt]") ->
         exp"[$n.$dt]"

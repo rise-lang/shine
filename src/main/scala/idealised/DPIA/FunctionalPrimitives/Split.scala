@@ -17,7 +17,7 @@ final case class Split(n: Nat,
                        array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override val `type`: ExpType =
+  override val t: ExpType =
     (n: Nat) -> (m: Nat) -> (dt: DataType) ->
       (array :: exp"[${m * n}.$dt]") -> exp"[$m.$n.$dt]"
 

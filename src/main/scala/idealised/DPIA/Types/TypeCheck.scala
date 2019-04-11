@@ -67,7 +67,7 @@ object TypeCheck {
             error(s"$x1 $op $x2", s"exp[b] $op exp[b]")
         }
 
-      case c: Primitive[_] => c.`type`
+      case _: Primitive[_] =>
     }
   }
 

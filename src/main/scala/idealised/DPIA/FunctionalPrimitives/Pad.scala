@@ -19,7 +19,7 @@ final case class Pad(n: Nat,
                      array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override val `type`: ExpType =
+  override val t: ExpType =
     (n: Nat) -> (l: Nat) -> (r: Nat) -> (dt: DataType) ->
       (padExp :: exp"[$dt]") -> (array :: exp"[$n.$dt]") -> exp"[${l + n + r}.$dt]"
 

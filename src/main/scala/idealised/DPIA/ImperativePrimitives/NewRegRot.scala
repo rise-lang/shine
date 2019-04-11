@@ -10,7 +10,7 @@ final case class NewRegRot(n: Nat,
                            f: Phrase[VarType -> (CommandType -> CommandType)])
   extends CommandPrimitive
 {
-  override def `type`: CommandType =
+  override val t: CommandType =
     (n: Nat) -> (dt: DataType) -> (f :: t"var[$n.$dt] -> comm -> comm") -> comm
 
   override def eval(s: Store): Store = ???

@@ -18,7 +18,7 @@ abstract class AbstractSlide(n: Nat,
 {
   val inputSize = sp * n + sz - sp
 
-  override def `type`: ExpType =
+  override val t: ExpType =
     (n: Nat) -> (sz: Nat) -> (sp: Nat) -> (dt: DataType) ->
       (input :: exp"[$inputSize.$dt]") ->
       exp"[$n.$sz.$dt]"

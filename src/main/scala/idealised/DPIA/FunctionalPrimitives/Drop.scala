@@ -18,7 +18,7 @@ final case class Drop(n: Nat,
                       array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override val `type`: ExpType =
+  override val t: ExpType =
     (n: Nat) -> (m: Nat) -> (dt: DataType) ->
       (array :: exp"[$m.$dt]") -> exp"[${m - n}.$dt]"
 

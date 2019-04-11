@@ -16,7 +16,7 @@ final case class AsScalar(n: Nat,
                           array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override lazy val `type`: ExpType =
+  override val t: ExpType =
     (n: Nat) -> (m: Nat) -> (dt: ScalarType) ->
       (array :: exp"[$n.${VectorType(m, dt)}]") ->
         exp"[${n * m}.$dt]"

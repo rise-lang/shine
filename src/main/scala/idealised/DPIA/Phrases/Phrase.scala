@@ -9,73 +9,135 @@ import idealised.DPIA.Types._
 import idealised.DPIA._
 import idealised.{DPIA, SurfaceLanguage}
 import idealised.SurfaceLanguage.Operators
-import idealised.SurfaceLanguage.Operators.Binary._
 import lift.arithmetic.{NamedVar, RangeAdd, StartFromRange}
 
+import scala.language.{postfixOps, reflectiveCalls}
+
 sealed trait Phrase[T <: PhraseType] {
-  final lazy val t: T = TypeOf(this)
+  val t: T
 }
 
 final case class Identifier[T <: PhraseType](name: String, `type`: T)
   extends Phrase[T] {
+
+  override val t: T = `type`
   override def toString: String = s"($name : ${`type`})"
 }
 
 final case class Lambda[T1 <: PhraseType, T2 <: PhraseType](param: Identifier[T1], body: Phrase[T2])
   extends Phrase[T1 -> T2] {
+
+  override val t: T1 -> T2 = param.t -> body.t
   override def toString: String = s"λ$param. $body"
 }
 
 final case class Apply[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 -> T2], arg: Phrase[T1])
   extends Phrase[T2] {
+
+  assert(fun.t.inT == arg.t)
+  override val t: T2 = fun.t.outT
   override def toString: String = s"($fun $arg)"
 }
 
 final case class NatDependentLambda[T <: PhraseType](x: NatIdentifier, body: Phrase[T])
   extends Phrase[`(nat)->`[T]] {
+
+  override val t: `(nat)->`[T] = (x: NatIdentifier) -> body.t
   override def toString: String = s"Λ($x : nat). $body"
 }
 
 final case class TypeDependentLambda[T <: PhraseType](x: DataTypeIdentifier, body: Phrase[T])
   extends Phrase[`(dt)->`[T]] {
+
+  override val t: `(dt)->`[T] = (x: DataTypeIdentifier) -> body.t
   override def toString: String = s"Λ($x : data). $body"
 }
 
 final case class NatDependentApply[T <: PhraseType](fun: Phrase[`(nat)->`[T]], arg: Nat)
   extends Phrase[T] {
+
+  override val t: T = (fun.t.t `[` arg `/` fun.t.n `]`).asInstanceOf[T]
   override def toString: String = s"($fun $arg)"
 }
 
 final case class TypeDependentApply[T <: PhraseType](fun: Phrase[`(dt)->`[T]], arg: DataType)
   extends Phrase[T] {
+
+  override val t: T = (fun.t.t `[` arg `/` fun.t.dt `]`).asInstanceOf[T]
   override def toString: String = s"($fun $arg)"
 }
 
 final case class Pair[T1 <: PhraseType, T2 <: PhraseType](fst: Phrase[T1], snd: Phrase[T2])
-  extends Phrase[T1 x T2]
+  extends Phrase[T1 x T2] {
+
+  override val t: x[T1, T2] = fst.t x snd.t
+}
 
 final case class Proj1[T1 <: PhraseType, T2 <: PhraseType](pair: Phrase[T1 x T2])
-  extends Phrase[T1]
+  extends Phrase[T1] {
+
+  override val t: T1 = pair.t.t1
+}
 
 final case class Proj2[T1 <: PhraseType, T2 <: PhraseType](pair: Phrase[T1 x T2])
-  extends Phrase[T2]
+  extends Phrase[T2] {
+
+  override val t: T2 = pair.t.t2
+}
 
 final case class IfThenElse[T <: PhraseType](cond: Phrase[ExpType], thenP: Phrase[T], elseP: Phrase[T])
-  extends Phrase[T]
+  extends Phrase[T] {
+
+  assert(thenP.t == elseP.t)
+  override val t: T = thenP.t
+}
 
 final case class UnaryOp(op: SurfaceLanguage.Operators.Unary.Value, p: Phrase[ExpType])
-  extends Phrase[ExpType]
+  extends Phrase[ExpType] {
+
+  override val t: ExpType = p.t
+}
 
 final case class BinOp(op: SurfaceLanguage.Operators.Binary.Value, lhs: Phrase[ExpType], rhs: Phrase[ExpType])
-  extends Phrase[ExpType]
+  extends Phrase[ExpType] {
+
+  override val t: ExpType =
+    op match {
+      case Operators.Binary.GT |
+           Operators.Binary.LT |
+           Operators.Binary.EQ => exp"[$bool]"
+      case _ => (lhs.t.dataType, rhs.t.dataType) match {
+        case (t1, t2) if t1 == t2 => ExpType(t1)
+        // TODO: Think about this more thoroughly ...
+        case (IndexType(n), `int`) =>
+          ExpType(IndexType(n))
+        //              ExpType(IndexType(OperationalSemantics.toScalaOp(op)(n, OperationalSemantics.evalIntExp(rhs))))
+        case (`int`, IndexType(n)) =>
+          ExpType(IndexType(n))
+        //              ExpType(IndexType(OperationalSemantics.toScalaOp(op)(OperationalSemantics.evalIntExp(lhs), n)))
+        case (IndexType(n), IndexType(_)) =>
+          //              ExpType(IndexType(OperationalSemantics.toScalaOp(op)(n, m)))
+          ExpType(IndexType(n))
+
+        case (lhsT, rhsT) =>
+          throw new TypeException(s"Failed type checking: found" +
+            s"`$lhsT' and `$rhsT', but expected them to match.")
+      }
+    }
+}
 
 final case class Literal(d: OperationalSemantics.Data)
   extends Phrase[ExpType] {
+
   assert(!d.isInstanceOf[NatData])
   assert(!d.isInstanceOf[IndexData])
+
+  override val t: ExpType = ExpType(d.dataType)
 }
 
-final case class Natural(d: Nat) extends Phrase[ExpType]
+final case class Natural(d: Nat) extends Phrase[ExpType] {
+  override val t: ExpType = ExpType(NatType)
+}
 
 object Phrase {
   // substitutes `phrase` for `for` in `in`, i.e. in [ phrase / for ]
@@ -199,8 +261,6 @@ object Phrase {
 }
 
 sealed trait Primitive[T <: PhraseType] extends Phrase[T] {
-  def `type`: T
-
   def prettyPrint: String
 
   def xmlPrinter: xml.Elem

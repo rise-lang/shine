@@ -18,7 +18,7 @@ final case class Iterate(n: Nat,
                          array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override val `type`: ExpType = {
+  override val t: ExpType = {
     val l = f.t.n
     (n: Nat) -> (m: Nat) -> (k: Nat) -> (dt: DataType) ->
       (f :: t"($l : nat) -> exp[$l.$dt] -> exp[${l /^ n}.$dt]") ->
