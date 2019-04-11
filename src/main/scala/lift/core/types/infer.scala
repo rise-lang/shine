@@ -224,12 +224,6 @@ object infer {
       case _ if a == b => Solution()
       case _ if nat.unwrapFreeTerm(a).isDefined => nat.pivotSolution(a, b)
       case _ if nat.unwrapFreeTerm(b).isDefined => nat.pivotSolution(b, a)
-      case (lift.arithmetic.Sum(a :: b :: Nil), // TODO: generalize
-      lift.arithmetic.Sum(x :: y :: Nil)) if a == y && b == x
-        => Solution()
-      case (lift.arithmetic.Prod(a :: b :: Nil), // TODO: generalize
-      lift.arithmetic.Prod(x :: y :: Nil)) if a == y && b == x
-      => Solution()
       case (s: lift.arithmetic.Sum, _) => nat.unifySum(s, b)
       case (_, s: lift.arithmetic.Sum) => nat.unifySum(s, a)
       case (p: lift.arithmetic.Prod, _) => nat.unifyProd(p, b)
@@ -297,7 +291,8 @@ object infer {
       val Prod(terms) = p
       // n = pivot * .. --> pivot = n / ..
       val pivot = findPivot(terms)
-      val value = Prod(n :: terms.filter({_ != pivot }).map(n => Cst(1) /^ n))
+      val value = terms.filter({_ != pivot }).map(n => Cst(1) /^ n).
+        foldLeft(n)({ case (x, t) => x * t })
       pivotSolution(pivot, value)
     }
 
@@ -306,7 +301,8 @@ object infer {
       val Sum(terms) = s
       // i = pivot + .. --> pivot = i - ..
       val pivot = findPivot(terms)
-      val value = Sum(n :: terms.filter({ _ != pivot }).map(n => -1 * n))
+      val value = terms.filter({ _ != pivot }).map(n => -1 * n).
+        foldLeft(n)({ case (x, t) => x + t })
       pivotSolution(pivot, value)
     }
 
