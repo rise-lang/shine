@@ -38,11 +38,11 @@ object traversal {
             case Apply(f, e) =>
               Apply(apply(f, v), apply(e, v))
             case NatLambda(n, e) =>
-              NatLambda(n, apply(e, v))
+              NatLambda(v(n).asInstanceOf[NatIdentifier], apply(e, v))
             case NatApply(f, n) =>
               NatApply(apply(f, v), v(n))
             case TypeLambda(dt, e) =>
-              TypeLambda(dt, apply(e, v))
+              TypeLambda(v(dt), apply(e, v))
             case TypeApply(f, dt) =>
               TypeApply(apply(f, v), v(dt))
             case l: Literal => l
@@ -88,11 +88,13 @@ object traversal {
           case Apply(f, e) =>
             chainE(apply(f, v), e).map(r => Apply(r._1, r._2))
           case NatLambda(n, e) =>
-            apply(e, v).map(NatLambda(n, _))
+            val m = v(n).asInstanceOf[NatIdentifier]
+            apply(e, v).map(NatLambda(m, _))
           case NatApply(f, n) =>
             chainN(apply(f, v), n).map(r => NatApply(r._1, r._2))
           case TypeLambda(dt, e) =>
-            apply(e, v).map(TypeLambda(dt, _))
+            val dt2 = v(dt)
+            apply(e, v).map(TypeLambda(dt2, _))
           case TypeApply(f, dt) =>
             chainT(apply(f, v), dt).map(r => TypeApply(r._1, r._2))
           case l: Literal => Continue(l, v)

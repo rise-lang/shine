@@ -3,14 +3,16 @@ package lift.core.types
 import lift.core._
 import lift.core.lifting._
 
+import scala.collection.mutable
+
 case class InferenceException(msg: String) extends Exception {
   override def toString = s"inference exception: $msg"
 }
 
 object infer {
   def apply(e: Expr): TypedExpr = {
-    val constraints: MConstraints = scala.collection.mutable.Set()
-    val typed_e = constrainTypes(e, constraints, scala.collection.mutable.Map())
+    val constraints = mutable.Set[Constraint]()
+    val typed_e = constrainTypes(e, constraints, mutable.Map())
     implicit val (boundT, boundN) = boundIdentifiers(typed_e)
     val solution = solve(constraints.toSet)
     solution(typed_e).asInstanceOf[TypedExpr]
@@ -19,15 +21,16 @@ object infer {
   def error(msg: String): Nothing =
     throw InferenceException(msg)
 
-  type Constraints = scala.collection.immutable.Set[Constraint]
-  type MConstraints = scala.collection.mutable.Set[Constraint]
-
   trait Constraint
-  case class TypeConstraint(a: Type, b: Type) extends Constraint
-  case class NatConstraint(a: Nat, b: Nat) extends Constraint
+  case class TypeConstraint(a: Type, b: Type) extends Constraint {
+    override def toString: String = s"$a  ~  $b"
+  }
+  case class NatConstraint(a: Nat, b: Nat) extends Constraint {
+    override def toString: String = s"$a  ~  $b"
+  }
 
   def constrainTypes(expr: Expr,
-                     constraints: MConstraints,
+                     constraints: mutable.Set[Constraint],
                      identifierT: scala.collection.mutable.Map[Identifier, Type]
                     ): TypedExpr = {
     def fresh(): Type = DataTypeIdentifier(freshName("_t"))
@@ -96,9 +99,9 @@ object infer {
   }
 
   def boundIdentifiers(expr: TypedExpr)
-  : (Set[DataTypeIdentifier], Set[NatIdentifier]) = {
-    val boundT = scala.collection.mutable.Set[DataTypeIdentifier]()
-    val boundN = scala.collection.mutable.Set[NatIdentifier]()
+  : (mutable.Set[DataTypeIdentifier], mutable.Set[NatIdentifier]) = {
+    val boundT = mutable.Set[DataTypeIdentifier]()
+    val boundN = mutable.Set[NatIdentifier]()
 
     case class Visitor() extends traversal.Visitor {
       override def apply(e: Expr): traversal.Result[Expr] = {
@@ -130,7 +133,7 @@ object infer {
     }
 
     traversal.DepthFirstLocalResult(expr, Visitor())
-    (boundT.toSet, boundN.toSet)
+    (boundT, boundN)
   }
 
   object Solution {
@@ -171,7 +174,7 @@ object infer {
       )
     }
 
-    def apply(constraints: Constraints): Constraints = {
+    def apply(constraints: Set[Constraint]): Set[Constraint] = {
       constraints.map({
         case TypeConstraint(a, b) =>
           TypeConstraint(apply(a), apply(b))
@@ -181,10 +184,10 @@ object infer {
     }
   }
 
-  def solve(cs: Constraints)
+  def solve(cs: Set[Constraint])
            (implicit
-            boundT: Set[DataTypeIdentifier],
-            boundN: Set[NatIdentifier]): Solution = {
+            boundT: mutable.Set[DataTypeIdentifier],
+            boundN: mutable.Set[NatIdentifier]): Solution = {
     if (cs.isEmpty) {
       Solution()
     } else {
@@ -195,27 +198,41 @@ object infer {
 
   def solveOne(c: Constraint)
               (implicit
-               boundT: Set[DataTypeIdentifier],
-               boundN: Set[NatIdentifier]): Solution = c match {
+               boundT: mutable.Set[DataTypeIdentifier],
+               boundN: mutable.Set[NatIdentifier]): Solution = c match {
     case TypeConstraint(a, b) => (a, b) match {
       case (i: DataTypeIdentifier, _) => unifyTypeIdent(i, b)
       case (_, i: DataTypeIdentifier) => unifyTypeIdent(i, a)
       case (_: BasicType, _: BasicType) if a == b =>
         Solution()
       case (IndexType(sa), IndexType(sb)) =>
-        solve(Set(NatConstraint(sa, sb)))
+        solveOne(NatConstraint(sa, sb))
       case (ArrayType(sa, ea), ArrayType(sb, eb)) =>
         solve(Set(NatConstraint(sa, sb), TypeConstraint(ea, eb)))
       case (DepArrayType(sa, ea), DepArrayType(sb, eb)) =>
         ???
-      case (TupleType(ea @ _*), TupleType(eb @ _*)) =>
+      case (TupleType(ea@_*), TupleType(eb@_*)) =>
         solve(ea.zip(eb).map({ case (a, b) => TypeConstraint(a, b) }).toSet)
       case (FunctionType(ina, outa), FunctionType(inb, outb)) =>
         solve(Set(TypeConstraint(ina, inb), TypeConstraint(outa, outb)))
       case (NatDependentFunctionType(na, ta), NatDependentFunctionType(nb, tb)) =>
-        solve(Set(TypeConstraint(ta, substitute(na, `for`=nb, in=tb))))
+        val n = lift.arithmetic.NamedVar(freshName("n"))
+        boundN += n
+        boundN -= na
+        boundN -= nb
+        solve(Set(
+          TypeConstraint(substitute(n, `for`=na, in=ta), substitute(n, `for`=nb, in=tb)),
+          NatConstraint(n, na), NatConstraint(n, nb)
+        ))
       case (TypeDependentFunctionType(dta, ta), TypeDependentFunctionType(dtb, tb)) =>
-        solve(Set(TypeConstraint(ta, substitute(dta, `for`=dtb, in=tb))))
+        val dt = DataTypeIdentifier(freshName("t"))
+        boundT += dt
+        boundT -= dta
+        boundT -= dtb
+        solve(Set(
+          TypeConstraint(substitute(dt, `for`=dta, in=ta), substitute(dt, `for`=dtb, in=tb)),
+          TypeConstraint(dt, dta), TypeConstraint(dt, dtb)
+        ))
       case _ => error(s"cannot unify $a and $b")
     }
     case NatConstraint(a, b) => (a, b) match {
@@ -233,7 +250,7 @@ object infer {
   }
 
   def unifyTypeIdent(i: DataTypeIdentifier, t: Type)
-                    (implicit bound: Set[DataTypeIdentifier]): Solution = {
+                    (implicit bound: mutable.Set[DataTypeIdentifier]): Solution = {
     t match {
       case j: DataTypeIdentifier =>
         if (i == j) { Solution() }
@@ -251,7 +268,7 @@ object infer {
     import lift.arithmetic._
 
     def unwrapFreeTerm(term: ArithExpr)
-                      (implicit bound: Set[NatIdentifier]): Option[NatIdentifier] = {
+                      (implicit bound: mutable.Set[NatIdentifier]): Option[NatIdentifier] = {
       term match {
         case i: NatIdentifier if !bound(i) => Some(i)
         case Prod(Cst(_) :: t :: Nil) => unwrapFreeTerm(t)
@@ -262,7 +279,7 @@ object infer {
     }
 
     def findPivot(terms: Seq[ArithExpr])
-                 (implicit bound: Set[NatIdentifier]): Nat = {
+                 (implicit bound: mutable.Set[NatIdentifier]): Nat = {
       val (free, toTerm) =
         terms.foldLeft((Set[NatIdentifier](), Map[NatIdentifier, Nat]()))(
           { case ((fr, tt), term) =>
@@ -287,36 +304,36 @@ object infer {
     }
 
     def unifyProd(p: Prod, n: Nat)
-                 (implicit bound: Set[NatIdentifier]): Solution = {
-      val Prod(terms) = p
-      // n = pivot * .. --> pivot = n / ..
+                 (implicit bound: mutable.Set[NatIdentifier]): Solution = {
+      val Prod(ps) = p
+      // n = ps --> 1 = ss * (1/n)
+      val terms = (Cst(1) /^ n) :: ps
+      // 1 = pivot * .. --> pivot = 1 / ..
       val pivot = findPivot(terms)
-      val value = terms.filter({_ != pivot }).map(n => Cst(1) /^ n).
-        foldLeft(n)({ case (x, t) => x * t })
+      val value = terms.filter({_ != pivot }).foldLeft(1: Nat)({ case (x, t) => x /^ t })
       pivotSolution(pivot, value)
     }
 
     def unifySum(s: Sum, n: Nat)
-                (implicit bound: Set[NatIdentifier]): Solution = {
-      val Sum(terms) = s
-      // i = pivot + .. --> pivot = i - ..
+                (implicit bound: mutable.Set[NatIdentifier]): Solution = {
+      val Sum(ss) = s
+      // n = ss --> 0 = ss + (-n)
+      val terms = (-1*n) :: ss
+      // 0 = pivot + .. --> pivot = 0 - ..
       val pivot = findPivot(terms)
-      val value = terms.filter({ _ != pivot }).map(n => -1 * n).
-        foldLeft(n)({ case (x, t) => x + t })
+      val value = terms.filter({ _ != pivot }).foldLeft(0: Nat)({ case (x, t) => x - t })
       pivotSolution(pivot, value)
     }
 
     def unifyIdent(i: NatIdentifier, n: Nat)
-                     (implicit bound: Set[NatIdentifier]): Solution = {
+                     (implicit bound: mutable.Set[NatIdentifier]): Solution = {
       n match {
         case j: NatIdentifier =>
           if (i == j) { Solution() }
           else if (!bound(i)) { Solution.subs(i, j) }
           else if (!bound(j)) { Solution.subs(j, i) }
           else { ??? }
-        case _ if ArithExpr.contains(n, i) =>
-          error(s"circular use: $i occurs in $n")
-        case _ if !bound(i) => Solution.subs(i, n)
+        case _ if !ArithExpr.contains(n, i) && !bound(i) => Solution.subs(i, n)
         case p: Prod => unifyProd(p, i)
         case s: Sum => unifySum(s, i)
         case _ => ???

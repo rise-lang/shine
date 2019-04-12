@@ -90,16 +90,6 @@ object fromLift {
   import lift.core.{primitives => lp}
   import idealised.DPIA.FunctionalPrimitives._
 
-  def nFun(f: NatIdentifier => Phrase[_ <: PhraseType]): Phrase[_ <: PhraseType] = {
-    val n = lift.arithmetic.NamedVar(freshName("n"))
-    NatDependentLambda(n, f(n))
-  }
-
-  def tFun(f: DataTypeIdentifier => Phrase[_ <: PhraseType]): Phrase[_ <: PhraseType] = {
-    val dt = DataTypeIdentifier(freshName("dt"))
-    TypeDependentLambda(dt, f(dt))
-  }
-
   def fun[T <: PhraseType](t: T,
                            f: Phrase[T] => Phrase[_ <: PhraseType]): Phrase[_ <: PhraseType] = {
     val x = Identifier(freshName("x"), t)
@@ -148,33 +138,35 @@ object fromLift {
           Join(n, m, a, e))
 
       case (lp.split,
-      lt.NatDependentFunctionType(_,
-      lt.FunctionType(_, lt.ArrayType(m, lt.ArrayType(n, la)))))
+      lt.NatDependentFunctionType(n,
+      lt.FunctionType(lt.ArrayType(insz, la), lt.ArrayType(m, _))))
       =>
         val a = fromLift(la)
-        nFun(n =>
-          fun[ExpType](exp"[${m * n}.$a]", e =>
+        NatDependentLambda(n,
+          fun[ExpType](exp"[$insz.$a]", e =>
             Split(n, m, a, e)))
 
       case (lp.slide,
-        lt.NatDependentFunctionType(_,
-        lt.NatDependentFunctionType(_,
-        lt.FunctionType(lt.ArrayType(_, la), lt.ArrayType(n, _)))))
+        lt.NatDependentFunctionType(sz,
+        lt.NatDependentFunctionType(sp,
+        lt.FunctionType(lt.ArrayType(insz, la), lt.ArrayType(n, _)))))
       =>
         val a = fromLift(la)
-        nFun(sz => nFun(sp =>
-          fun[ExpType](exp"[${sp * n + sz - sp}.$a]", e =>
-            Slide(n, sz, sp, a, e))))
+        NatDependentLambda(sz,
+          NatDependentLambda(sp,
+            fun[ExpType](exp"[$insz.$a]", e =>
+              Slide(n, sz, sp, a, e))))
 
       case (lp.slideSeq,
-      lt.NatDependentFunctionType(_,
-      lt.NatDependentFunctionType(_,
-      lt.FunctionType(lt.ArrayType(_, la), lt.ArrayType(n, _)))))
+      lt.NatDependentFunctionType(sz,
+      lt.NatDependentFunctionType(sp,
+      lt.FunctionType(lt.ArrayType(insz, la), lt.ArrayType(n, _)))))
       =>
         val a = fromLift(la)
-        nFun(sz => nFun(sp =>
-          fun[ExpType](exp"[${sp * n + sz - sp}.$a]", e =>
-            SlideSeq(n, sz, sp, a, e))))
+        NatDependentLambda(sz,
+          NatDependentLambda(sp,
+            fun[ExpType](exp"[$insz.$a]", e =>
+              SlideSeq(n, sz, sp, a, e))))
 
       case (lp.reorder,
       lt.FunctionType(_,
@@ -273,10 +265,18 @@ object fromLift {
           Generate(n, a, f))
 
       case (lp.iterate,
-      lt.NatDependentFunctionType(_,
-      lt.FunctionType(_,
-      lt.FunctionType(_, _))))
-      => ???
+      lt.NatDependentFunctionType(k,
+      lt.FunctionType(lt.NatDependentFunctionType(l,
+        lt.FunctionType(lt.ArrayType(ln, _), _)),
+      lt.FunctionType(lt.ArrayType(insz, _), lt.ArrayType(m, la)))))
+      =>
+        val n = ln /^ l
+        val a = fromLift(la)
+        NatDependentLambda(k,
+          fun[`(nat)->`[ExpType -> ExpType]](
+            NatDependentFunctionType(l, exp"[$ln.$a]" -> exp"[$l.$a]"), f =>
+            fun[ExpType](exp"[$insz.$a]", e =>
+              Iterate(n, m, k, a, f, e))))
 
       case (lp.indexAsNat, lt.FunctionType(lt.IndexType(n), lt.NatType))
       =>

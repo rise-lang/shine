@@ -37,7 +37,9 @@ class traverse extends idealised.util.Tests {
     val expected = {
       Seq(
         { case _: NatLambda => () },
+        { case _: NatIdentifier => () },
         { case _: NatLambda => () },
+        { case _: NatIdentifier => () },
         { case _: Lambda => () },
         { case _: Apply => () },
         { case _: Apply => () },
@@ -66,7 +68,9 @@ class traverse extends idealised.util.Tests {
     val expected = {
       Seq(
         { case _: NatLambda => () },
+        { case _: NatIdentifier => () },
         { case _: NatLambda => () },
+        { case _: NatIdentifier => () },
         { case _: Lambda => () }
       ) : Seq[Any => Unit]
     }

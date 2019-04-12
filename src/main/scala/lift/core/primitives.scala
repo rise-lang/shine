@@ -116,8 +116,8 @@ object primitives {
 
   case object iterate extends Primitive {
     override def t: Type = implN(n => implN(m => nFun(k => implT(a =>
-      nFun(l => ArrayType(l, a) -> ArrayType(l /^ n, a)) ->
-        (ArrayType(m, a) -> ArrayType(m /^ n.pow(k), a))
+      nFun(l => ArrayType(l * n, a) -> ArrayType(l, a)) ->
+        (ArrayType(m * n.pow(k), a) -> ArrayType(m, a))
     ))))
   }
 

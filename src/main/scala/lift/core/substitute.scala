@@ -70,7 +70,7 @@ object substitute {
         case FunctionType(inT, outT) =>
           FunctionType(st(inT), st(outT))
         case TypeDependentFunctionType(dt, body) =>
-          TypeDependentFunctionType(dt, st(body))
+          TypeDependentFunctionType(st(dt).asInstanceOf[DataTypeIdentifier], st(body))
         case NatDependentFunctionType(n, body) =>
           NatDependentFunctionType(n, st(body))
       }
@@ -95,9 +95,9 @@ object substitute {
       case FunctionType(inT, outT) =>
         FunctionType(st(inT), st(outT))
       case TypeDependentFunctionType(dt, body) =>
-        TypeDependentFunctionType(dt, st(body))
+        TypeDependentFunctionType(sdt(dt).asInstanceOf[DataTypeIdentifier], st(body))
       case NatDependentFunctionType(n, body) =>
-        NatDependentFunctionType(n, st(body))
+        NatDependentFunctionType(sn(n).asInstanceOf[NatIdentifier], st(body))
     }
   }
 /*

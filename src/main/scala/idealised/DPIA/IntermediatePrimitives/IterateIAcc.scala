@@ -11,12 +11,12 @@ import lift.arithmetic.NamedVar
 
 object IterateIAcc {
   def apply(n: Nat,
-    m: Nat,
-    k: Nat,
-    dt: DataType,
-    out: Phrase[AccType],
-    f: Phrase[`(nat)->`[AccType -> (ExpType -> CommandType)]],
-    in: Phrase[ExpType])
+            m: Nat,
+            k: Nat,
+            dt: DataType,
+            out: Phrase[AccType],
+            f: Phrase[`(nat)->`[AccType -> (ExpType -> CommandType)]],
+            in: Phrase[ExpType])
            (implicit context: TranslationContext): Phrase[CommandType] =
   {
     val `n^k*m` = n.pow(k) * m
@@ -28,7 +28,7 @@ object IterateIAcc {
         `for`(k, ip => {
           val i = NamedVar(ip.name)
 
-          f.apply(n.pow(k - i) * m)
+          f.apply(n.pow(k - i - 1) * m)
             .apply(TakeAcc(n.pow(k - i - 1) * m, `n^k*m`, dt, v.wr))
             .apply(Take(n.pow(k - i) * m, `n^k*m`, dt, v.rd)) `;`
             IfThenElse(ip < AsIndex(k, Natural(k - 1)), swap, done)
