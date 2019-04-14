@@ -310,8 +310,8 @@ The typing rules of \DPIA are given in \autoref{fig:typing-rules}. These rules d
         \prim{split}&:&(n~m : \natkind) \to (\dt : \datatype) \to \tyexp[nm.\dt] \to \tyexp[m.n.\dt] \\
         \prim{join}&:&(n~m : \natkind) \to (\dt : \datatype) \to \tyexp[n.m.\dt] \to \tyexp[nm.\dt] \\
         \prim{reorder}&:&(n : \natkind) \to (\dt : \datatype) \to (\tyexp[\tyidx[n]] \to \tyexp[\tyidx[n]]) \to (\tyexp[\tyidx[n]] \to \tyexp[\tyidx[n]]) \to \tyexp[n.\dt] \to \tyexp[n.\dt] \\
-        \prim{drop}&:&(n~m : \natkind) \to (\dt : \datatype) \to \tyexp[(m + n).\dt] \to \tyexp[m.\dt] \\ % TODO? differs from implementation
-        \prim{take}&:&(n~m : \natkind) \to (\dt : \datatype) \to \tyexp[m.\dt] \to \tyexp[n.\dt] \\ % TODO? ensure n <= m by using addition instead?
+        \prim{drop}&:&(n~m : \natkind) \to (\dt : \datatype) \to \tyexp[(n + m).\dt] \to \tyexp[m.\dt] \\
+        \prim{take}&:&(n~m : \natkind) \to (\dt : \datatype) \to \tyexp[(n + m).\dt] \to \tyexp[n.\dt] \\
         \prim{pad}&:&(n~l~r : \natkind) \to (\dt : \datatype) \to \tyexp[\dt] \to \tyexp[n.\dt] \to \tyexp[(l + n + r).\dt] \\
         \prim{slide}&:&(n~sz~sp : \natkind) \to (\dt : \datatype) \to \tyexp[(sp \times n + sz - sp).\dt] \to \tyexp[n.sz.\dt] \\
         \prim{zip}&:&(n : \natkind) \to (\dtone~\dttwo : \datatype) \to \tyexp[n.\dtone] \to \tyexp[n.\dttwo] \to \tyexp[n.(\dtone \times \dttwo)] \\

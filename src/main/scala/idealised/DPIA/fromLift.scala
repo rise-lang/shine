@@ -207,6 +207,26 @@ object fromLift {
             Reorder(n*m, a, transposeFunction, transposeInverseFunction,
               Join(n, m, a, e))))
 
+      case (lp.take,
+        lt.NatDependentFunctionType(n,
+        lt.FunctionType(lt.ArrayType(nm, la), _)))
+      =>
+        val m = nm - n
+        val a = fromLift(la)
+        NatDependentLambda(n,
+          fun[ExpType](exp"[$nm.$a]", e =>
+            Take(n, m, a, e)))
+
+      case (lp.drop,
+      lt.NatDependentFunctionType(n,
+      lt.FunctionType(lt.ArrayType(nm, la), _)))
+      =>
+        val m = nm - n
+        val a = fromLift(la)
+        NatDependentLambda(n,
+          fun[ExpType](exp"[$nm.$a]", e =>
+            Drop(n, m, a, e)))
+
       case (lp.zip,
         lt.FunctionType(lt.ArrayType(n, la),
         lt.FunctionType(lt.ArrayType(_, lb), _)))

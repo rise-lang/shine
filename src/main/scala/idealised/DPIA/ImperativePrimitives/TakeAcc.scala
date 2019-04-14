@@ -15,7 +15,7 @@ final case class TakeAcc(n: Nat,
 
   override val t: AccType =
     (n: Nat) -> (m: Nat) -> (dt: DataType) ->
-      (array :: acc"[$m.$dt]") -> acc"[$n.$dt]"
+      (array :: acc"[${n + m}.$dt]") -> acc"[$n.$dt]"
 
   override def eval(s: Store): AccIdentifier = ???
 

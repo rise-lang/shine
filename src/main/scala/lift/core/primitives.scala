@@ -72,6 +72,18 @@ object primitives {
     )))
   }
 
+  case object take extends Primitive {
+    override def t: Type = nFun(n => implN(m => implT(a =>
+      ArrayType(n + m, a) -> ArrayType(n, a)
+    )))
+  }
+
+  case object drop extends Primitive {
+    override def t: Type = nFun(n => implN(m => implT(a =>
+      ArrayType(n + m, a) -> ArrayType(m, a)
+    )))
+  }
+
   case object zip extends Primitive {
     override def t: Type = implN(n => implT(a => implT(b =>
       ArrayType(n, a) -> (ArrayType(n, b) -> ArrayType(n, TupleType(a, b)))

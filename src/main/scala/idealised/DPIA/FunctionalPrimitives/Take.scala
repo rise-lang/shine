@@ -20,7 +20,7 @@ final case class Take(n: Nat,
 
   override val t: ExpType =
     (n: Nat) -> (m: Nat) -> (dt: DataType) ->
-      (array :: exp"[$m.$dt]") -> exp"[$n.$dt]"
+      (array :: exp"[${n + m}.$dt]") -> exp"[$n.$dt]"
 
   override def eval(s: Store): Data = ???
 
@@ -41,7 +41,7 @@ final case class Take(n: Nat,
   override def continuationTranslation(C: Phrase[->[ExpType, CommandType]])
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
-    con(array)(λ(exp"[$m.$dt]")(x => C(Take(n, m, dt, x))))
+    con(array)(λ(exp"[${n + m}.$dt]")(x => C(Take(n, m, dt, x))))
   }
 
   override def xmlPrinter: Elem =
