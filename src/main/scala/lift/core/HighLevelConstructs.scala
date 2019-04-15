@@ -5,7 +5,7 @@ import lift.core.types._
 import lift.core.primitives._
 
 object HighLevelConstructs {
-  val slide2D = nFun(sz => nFun(st => fun(a =>
+  val slide2D: Expr = nFun(sz => nFun(st => fun(a =>
     a |> map(slide(sz)(st)) |> slide(sz)(st) |> map(transpose)
   )))
 

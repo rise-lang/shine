@@ -1,10 +1,24 @@
 package idealised.util
 
+import idealised.DPIA
+
 object gen {
-  def CProgram(e: lift.core.Expr): idealised.C.Program = {
+  private def toDPIA(e: lift.core.Expr): DPIA.Phrases.Phrase[_ <: DPIA.Types.PhraseType] = {
     val typed_e = lift.core.types.infer(e)
-    val dpia_e = idealised.DPIA.fromLift(typed_e)
+    idealised.DPIA.fromLift(typed_e)
+  }
+
+  def CProgram(e: lift.core.Expr): idealised.C.Program = {
+    val dpia_e = toDPIA(e)
     val p = idealised.C.ProgramGenerator.makeCode(dpia_e)
+    SyntaxChecker(p.code)
+    println(p.code)
+    p
+  }
+
+  def OpenMPProgram(e: lift.core.Expr): idealised.OpenMP.Program = {
+    val dpia_e = toDPIA(e)
+    val p = idealised.OpenMP.ProgramGenerator.makeCode(dpia_e)
     SyntaxChecker(p.code)
     println(p.code)
     p

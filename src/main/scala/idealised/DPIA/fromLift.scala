@@ -43,20 +43,27 @@ object fromLift {
     }
   }
 
-  def apply(t: lt.BasicType): BasicType = {
+  def apply(t: lt.ScalarType): ScalarType = {
     t match {
       case lt.bool => bool
       case lt.int => int
       case lt.float => float
       case lt.double => double
       case lt.NatType => NatType
+    }
+  }
+
+  def apply(t: lt.BasicType): BasicType = {
+    t match {
+      case st: lt.ScalarType => fromLift(st)
       case lt.IndexType(sz) => IndexType(sz)
+      case lt.VectorType(sz, e: lt.ScalarType) => VectorType(sz, fromLift(e))
     }
   }
 
   def apply(t: lt.DataType): DataType = {
     t match {
-      case bt: lt.BasicType => apply(bt)
+      case bt: lt.BasicType => fromLift(bt)
       case lt.DataTypeIdentifier(name) => DataTypeIdentifier(name)
       case lt.ArrayType(sz, et) => ArrayType(sz, fromLift(et))
       case lt.DepArrayType(sz, et) => ???
@@ -97,6 +104,9 @@ object fromLift {
   }
 
   def apply(p: l.Primitive, t: lt.Type): Phrase[_ <: PhraseType] = {
+    import lift.OpenMP.{primitives => omp}
+    import idealised.OpenMP.FunctionalPrimitives._
+
     (p, t) match {
       case (lp.map,
       lt.FunctionType(lt.FunctionType(_, lb: lt.DataType),
@@ -118,6 +128,16 @@ object fromLift {
           fun[ExpType](exp"[$n.$a]", e =>
             MapSeq(n, a, b, f, e)))
 
+      case (omp.mapPar,
+      lt.FunctionType(lt.FunctionType(_, lb: lt.DataType),
+      lt.FunctionType(lt.ArrayType(n, la: lt.DataType), _)))
+      =>
+        val a = fromLift(la)
+        val b = fromLift(lb)
+        fun[ExpType -> ExpType](ExpType(a) -> ExpType(b), f =>
+          fun[ExpType](exp"[$n.$a]", e =>
+            MapPar(n, a, b, f, e)))
+
       case (lp.reduceSeq,
       lt.FunctionType(_,
       lt.FunctionType(lb: lt.DataType,
@@ -129,6 +149,18 @@ object fromLift {
           fun[ExpType](exp"[$b]", i =>
             fun[ExpType](exp"[$n.$a]", e =>
               ReduceSeq(n, a, b, f, i, e))))
+
+      case (lp.scanSeq,
+      lt.FunctionType(_,
+      lt.FunctionType(lb: lt.DataType,
+      lt.FunctionType(lt.ArrayType(n, la), _ ))))
+      =>
+        val a = fromLift(la)
+        val b = fromLift(lb)
+        fun[ExpType -> (ExpType -> ExpType)](exp"[$a]" -> (exp"[$b]" -> exp"[$b]"), f =>
+          fun[ExpType](exp"[$b]", i =>
+            fun[ExpType](exp"[$n.$a]", e =>
+              ScanSeq(n, a, b, f, i, e))))
 
       case (lp.join,
       lt.FunctionType(lt.ArrayType(n, lt.ArrayType(m, la)), _))
@@ -277,7 +309,6 @@ object fromLift {
       =>
         val (inTs, outT) = foreignFunIO(la)
         wrapForeignFun(decl, inTs, outT, Vector())
-
       case (lp.generate, lt.FunctionType(_, lt.ArrayType(n, la)))
       =>
         val a = fromLift(la)
@@ -298,12 +329,33 @@ object fromLift {
             fun[ExpType](exp"[$insz.$a]", e =>
               Iterate(n, m, k, a, f, e))))
 
+      case (omp.asVector,
+        lt.NatDependentFunctionType(n,
+        lt.FunctionType(lt.ArrayType(mn, la: lt.ScalarType), lt.ArrayType(m, _))))
+      =>
+        val a = fromLift(la)
+        NatDependentLambda(n,
+          fun[ExpType](exp"[$mn.$a]", e =>
+            AsVector(n, m, a, e)))
+
+      case (omp.asScalar, lt.FunctionType(lt.ArrayType(m, lt.VectorType(n, la: lt.ScalarType)), _))
+      =>
+        val a = fromLift(la)
+        fun[ExpType](ExpType(ArrayType(m, VectorType(n, a))), e =>
+          AsScalar(m, n, a, e))
+
+      case (omp.vectorFromScalar, lt.FunctionType(_, lt.VectorType(n, la: lt.ScalarType)))
+      =>
+        val a = fromLift(la)
+        fun[ExpType](ExpType(a), e =>
+          VectorFromScalar(n, a, e))
+
       case (lp.indexAsNat, lt.FunctionType(lt.IndexType(n), lt.NatType))
       =>
         fun[ExpType](exp"[idx($n)]", e =>
           IndexAsNat(n, e))
 
-      case (lp.reduce, _) =>
+      case (lp.reduce, _) | (lp.scan, _) =>
         throw new Exception(s"$p has no implementation")
     }
   }

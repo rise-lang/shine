@@ -7,8 +7,6 @@ import lift.core.DSL._
 import lift.core.types._
 
 import elevate.core._
-import strategies._
-import strategies.traversal._
 import rules._
 import rules.algorithmic._
 import strategies.algorithmic._
@@ -62,7 +60,7 @@ object binomialFilter {
       map(dotSeq(weights1d)) >> slideSeq(3)(1) >> map(dotSeq(weights1d))
     )
 
-  val norm = normalize(betaReduction +> etaReduction)
+  val norm = strategies.normalize(betaReduction +> etaReduction)
 
   val separateDot: Strategy = {
     case Apply(Apply(Apply(`reduce`, rf), init), Apply(Apply(`map`, mf), Apply(Apply(`zip`, w), Apply(`join`, nbh))))
@@ -82,20 +80,26 @@ object binomialFilter {
 class binomialFilter extends idealised.util.Tests {
   import binomialFilter._
 
-  def eq(a: Expr, b: Expr): Unit = {
+  def s_eq(a: Expr, b: Expr): Unit = {
     if (!StructuralEquality(norm(a), norm(b))) {
       throw new Exception(s"expected structural equality:\n$a\n$b")
     }
   }
 
   test("rewrite to reference") {
+    import strategies._
+    import strategies.traversal._
+
     val s =
       depthFirst(find(specialize.reduceSeq)) `;`
         repeatNTimes(2)(depthFirst(find(specialize.mapSeq)))
-    eq(s(highLevel), reference)
+    s_eq(s(highLevel), reference)
   }
 
   test("rewrite to factorised blur") {
+    import strategies._
+    import strategies.traversal._
+
     val s =
       norm `;`
       depthFirst(find(separateDot)) `;`
@@ -103,10 +107,13 @@ class binomialFilter extends idealised.util.Tests {
         repeatNTimes(2)(depthFirst(find(specialize.mapSeq))) `;`
         norm
 
-    eq(s(highLevel), norm(factorised))
+    s_eq(s(highLevel), norm(factorised))
   }
 
   test("rewrite to separated blur") {
+    import strategies._
+    import strategies.traversal._
+
     val * = map
     val T = transpose
     val Sh = slide(3)(1)
@@ -131,7 +138,7 @@ class binomialFilter extends idealised.util.Tests {
         Sv >> *(T >> Sh >> *(T >> T >> *(Dv) >> Dh))),
       (depthFirst(find(`T >> T -> `)),
         Sv >> *(T >> Sh >> *(*(Dv) >> Dh))),
-      (depthFirst(drop(1)(mapFirstFission)),
+      (depthFirst(traversal.drop(1)(mapFirstFission)),
         Sv >> *(T >> Sh >> *(*(Dv)) >> *(Dh))),
       (depthFirst(find(`S >> **f -> *f >> S`)),
         Sv >> *(T >> *(Dv) >> Sh >> *(Dh))),
@@ -145,7 +152,7 @@ class binomialFilter extends idealised.util.Tests {
 
     val result = steps.foldLeft[Expr](highLevel)({ case (e, (s, expected)) =>
         val result = norm(s(e))
-        eq(result, norm(expected))
+        s_eq(result, norm(expected))
         result
     })
 
@@ -153,10 +160,13 @@ class binomialFilter extends idealised.util.Tests {
     val pick = repeatNTimes(2)(depthFirst(find(specialize.reduceSeq))) `;`
       repeatNTimes(2)(depthFirst(find(specialize.mapSeq))) `;`
       repeatNTimes(2)(depthFirst(drop(1)(specialize.mapSeq)))
-    eq(pick(result), norm(separated))
+    s_eq(pick(result), norm(separated))
   }
 
   test("rewrite to register rotation blur") {
+    import strategies._
+    import strategies.traversal._
+
     val * = map
     val T = transpose
     val Sh = slide(3)(1)
@@ -189,14 +199,14 @@ class binomialFilter extends idealised.util.Tests {
 
     val result = steps.foldLeft[Expr](highLevel)({ case (e, (s, expected)) =>
       val result = norm(s(e))
-      eq(result, norm(expected))
+      s_eq(result, norm(expected))
       result
     })
 
     val pick = repeatNTimes(2)(depthFirst(find(specialize.reduceSeq))) `;`
       depthFirst(find(specialize.slideSeq)) `;`
       depthFirst(find(specialize.mapSeq))
-    eq(pick(result), norm(regrot))
+    s_eq(pick(result), norm(regrot))
   }
 
   def program(name: String, e: Expr): C.Program = {

@@ -1,72 +1,72 @@
-package idealised.apps
+package apps
 
-import idealised.DPIA._
-import idealised.DPIA.Types.ExpType
-import idealised.SurfaceLanguage.DSL._
-import idealised.SurfaceLanguage.NatIdentifier
-import idealised.SurfaceLanguage.Types._
+import lift.core._
+import lift.core.types._
+import lift.core.DSL._
+import lift.core.primitives._
 import idealised.util.SyntaxChecker
-import idealised.{C, OpenCL, OpenMP}
-import lift.arithmetic.Cst
+import idealised.{C, OpenMP}
 
 class asum extends idealised.util.Tests {
 
   def inputT(n : NatIdentifier) = ArrayType(n, float)
-  val abs = (t: DataType) => fun(x => foreignFun(t, "my_abs", (t, "y"), "{ return fabs(y); }", x))
+  val abs = tFun(t => foreignFun("my_abs", Seq("y"), "{ return fabs(y); }", t -> t))
   val fabs = abs(float)
   val add = fun(x => fun(a => x + a))
 
   val high_level = nFun(n => fun(inputT(n))(input =>
-    input :>> map(fabs) :>> reduceSeq(add, 0.0f) ))
+    input |> map(fabs) |> reduceSeq(add)(l(0.0f))
+  ))
 
   test("High level asum type inference works") {
-    val typed = TypeInference(high_level, Map())
+    val typed = infer(high_level)
 
-    val N = typed.t.get.asInstanceOf[NatDependentFunctionType[_ <: Type]].n
+    val N = typed.t.asInstanceOf[NatDependentFunctionType[_ <: Type]].n
     assertResult(NatDependentFunctionType(N, FunctionType(inputT(N), float))) {
-      typed.t.get
+      typed.t
     }
   }
 
   // C code gen
   test("High level asum compiles to syntactically correct C") {
-    val p = C.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(high_level, Map())))
+    val p = C.ProgramGenerator.makeCode(idealised.DPIA.fromLift(infer(high_level)))
     println(p.code)
     SyntaxChecker(p.code)
   }
 
   // OpenMP code gen
   test("Intel derived no warp compiles to syntactically correct OpenMP code") {
-    import OpenMP.SurfaceLanguage.DSL._
+    import lift.OpenMP.primitives._
 
     val intelDerivedNoWarp1 = nFun(n => fun(inputT(n))(input =>
-      input :>>
-        split(32768) :>>
+      input |>
+        split(32768) |>
         mapPar(
-          asVector(4) >>>
-          split(8192) >>>
+          asVector(4) >>
+          split(8192) >>
           mapSeq(
-            reduceSeq(fun(x => fun(a => abs(float4)(x) + a) ), vectorize(4, 0.0f))
-          ) >>> asScalar
-        ) :>> join
+            reduceSeq(fun(x => fun(a => abs(float4)(x) + a)))(vectorFromScalar(l(0.0f)))
+          ) >> asScalar
+        ) |> join
     ))
-    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(intelDerivedNoWarp1, Map()))
+    val typed_e = infer(intelDerivedNoWarp1)
+    val phrase = idealised.DPIA.fromLift(typed_e)
     val p = OpenMP.ProgramGenerator.makeCode(phrase)
     println(p.code)
     SyntaxChecker(p.code)
   }
 
   test("Second kernel of Intel derived compiles to syntactically correct OpenMP code") {
-    import OpenMP.SurfaceLanguage.DSL._
+    import lift.OpenMP.primitives._
 
     val intelDerived2 = nFun(n => fun(inputT(n))(input =>
-      input :>>
-        split(2048) :>>
+      input |>
+        split(2048) |>
         mapPar(
-          split(2048) >>> mapSeq(reduceSeq(add, 0.0f))
-        ) :>> join
+          split(2048) >> mapSeq(reduceSeq(add)(l(0.0f)))
+        ) |> join
     ))
-    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(intelDerived2, Map()))
+    val phrase = idealised.DPIA.fromLift(infer(intelDerived2))
     val p = OpenMP.ProgramGenerator.makeCode(phrase)
     println(p.code)
     SyntaxChecker(p.code)
@@ -74,26 +74,26 @@ class asum extends idealised.util.Tests {
 
   // REASON: iterate was changed, incompatible with SurfaceLanguage
   ignore("AMD/Nvidia second kernel derived compiles to syntactically correct OpenMP code") {
-    import OpenMP.SurfaceLanguage.DSL._
+    import lift.OpenMP.primitives._
 
     val amdNvidiaDerived2 = nFun(n => fun(inputT(n))(input =>
-      input :>>
-        split(8192) :>>
+      input |>
+        split(8192) |>
         mapPar(
-          split(128) >>>
-            mapSeq(reduceSeq(add, 0.0f)) >>>
-            iterate(6, nFun(_ =>
-              split(2) >>>
-                mapSeq(reduceSeq(add, 0.0f)))
+          split(128) >>
+            mapSeq(reduceSeq(add)(l(0.0f))) >>
+            iterate(6)(nFun(_ =>
+              split(2) >>
+                mapSeq(reduceSeq(add)(l(0.0f))))
             )
-        ) :>> join
+        ) |> join
     ))
-    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(amdNvidiaDerived2, Map()))
+    val phrase = idealised.DPIA.fromLift(infer(amdNvidiaDerived2))
     val p = OpenMP.ProgramGenerator.makeCode(phrase)
     println(p.code)
     SyntaxChecker(p.code)
   }
-
+/*
   // OpenCL code gen
   test("Intel derived no warp compiles to syntactically correct OpenCL code") {
     import OpenCL.SurfaceLanguage.DSL._
@@ -199,4 +199,5 @@ class asum extends idealised.util.Tests {
     println(p.code)
     SyntaxChecker.checkOpenCL(p.code)
   }
+  */
 }

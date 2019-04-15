@@ -54,6 +54,13 @@ object DSL {
     }
   }
 
+  object nFunT {
+    def apply(f: NatIdentifier => Type): Type = {
+      val x = lift.arithmetic.NamedVar(freshName("n"))
+      NatDependentFunctionType(x, f(x))
+    }
+  }
+
   def implN[A](f: NatIdentifier => A): A = {
     f(lift.arithmetic.NamedVar(freshName("_n")))
   }
@@ -62,6 +69,13 @@ object DSL {
     def apply(f: DataTypeIdentifier => Expr): TypeLambda = {
       val x = DataTypeIdentifier(freshName("dt"))
       TypeLambda(x, f(x))
+    }
+  }
+
+  object tFunT {
+    def apply(f: DataTypeIdentifier => Type): Type = {
+      val x = DataTypeIdentifier(freshName("dt"))
+      TypeDependentFunctionType(x, f(x))
     }
   }
 

@@ -61,9 +61,9 @@ final case class IndexType(size: Nat) extends BasicType {
   override def toString: String = s"idx($size)"
 }
 
-
-sealed case class VectorType(size: Nat, elemType: ScalarType) extends BasicType {
-  override def toString: String = s"$elemType$size"
+// TODO: enforce ScalarType
+sealed case class VectorType(size: Nat, elemType: Type) extends BasicType {
+  override def toString: String = s"<$size>$elemType"
 }
 
 object int2 extends VectorType(2, int)

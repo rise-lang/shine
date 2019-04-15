@@ -20,16 +20,16 @@ class traverse extends idealised.util.Tests {
       Continue(e, this)
     }
 
-    override def apply(ae: Nat): Nat = {
+    override def apply(ae: Nat): Result[Nat] = {
       println(ae)
       trace += ae
-      ae
+      Continue(ae, this)
     }
 
-    override def apply[T <: Type](t: T): T = {
+    override def apply[T <: Type](t: T): Result[T] = {
       println(t)
       trace += t
-      t
+      Continue(t, this)
     }
   }
 

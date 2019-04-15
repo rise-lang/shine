@@ -15,7 +15,11 @@ object infer {
     val typed_e = constrainTypes(e, constraints, mutable.Map())
     implicit val (boundT, boundN) = boundIdentifiers(typed_e)
     val solution = solve(constraints.toSet)
-    solution(typed_e).asInstanceOf[TypedExpr]
+    val result = solution(typed_e)
+    if (!isClosedForm(result)) {
+      error("expression is not in closed form after inference")
+    }
+    result.asInstanceOf[TypedExpr]
   }
 
   def error(msg: String): Nothing =
@@ -100,40 +104,88 @@ object infer {
 
   def boundIdentifiers(expr: TypedExpr)
   : (mutable.Set[DataTypeIdentifier], mutable.Set[NatIdentifier]) = {
+    import traversal.{Result, Continue}
+
     val boundT = mutable.Set[DataTypeIdentifier]()
     val boundN = mutable.Set[NatIdentifier]()
 
     case class Visitor() extends traversal.Visitor {
-      override def apply(e: Expr): traversal.Result[Expr] = {
+      override def apply(e: Expr): Result[Expr] = {
         e match {
           case NatLambda(x, _) => boundN += x
           case TypeLambda(x, _) => boundT += x
           case _ =>
         }
-        traversal.Continue(e, this)
+        Continue(e, this)
       }
 
-      override def apply[T <: Type](t: T): T = {
-        visitT(t)
-        t
+      override def apply[T <: Type](t: T): Result[T] = {
+        val r = traversal.types.DepthFirstLocalResult(t, new traversal.Visitor() {
+          override def apply[T <: Type](t: T): Result[T] = {
+            t match {
+              case NatDependentFunctionType(x, _) => boundN += x
+              case TypeDependentFunctionType(x, _) => boundT += x
+              case _ =>
+            }
+            Continue(t, this)
+          }
+        })
+        Continue(r, this)
       }
-    }
-
-    def visitT: Type => Unit = {
-      case NatDependentFunctionType(x, t) =>
-        boundN += x
-        visitT(t)
-      case TypeDependentFunctionType(x, t) =>
-        boundT += x
-        visitT(t)
-      case FunctionType(it, ot) =>
-        visitT(it)
-        visitT(ot)
-      case _ =>
     }
 
     traversal.DepthFirstLocalResult(expr, Visitor())
     (boundT, boundN)
+  }
+
+  def isClosedForm(expr: Expr): Boolean = {
+    import traversal.{Result, Continue, Stop}
+
+    case class Visitor(boundV: Set[Identifier],
+                       boundT: Set[DataTypeIdentifier],
+                       boundN: Set[NatIdentifier]) extends traversal.Visitor {
+      override def apply(e: Expr): Result[Expr] = {
+        e match {
+          case i: Identifier if !boundV(i) => Stop(i)
+          case Lambda(x, _) => Continue(e, this.copy(boundV = boundV + x))
+          case NatLambda(x, _) => Continue(e, this.copy(boundN = boundN + x))
+          case TypeLambda(x, _) => Continue(e, this.copy(boundT = boundT + x))
+          case _ => Continue(e, this)
+        }
+      }
+
+      override def apply(ae: Nat): Result[Nat] = visitNat(ae, boundN, this)
+
+      override def apply[T <: Type](t: T): Result[T] = {
+        case class TypeVisitor(boundT: Set[DataTypeIdentifier],
+                               boundN: Set[NatIdentifier]) extends traversal.Visitor {
+          override def apply[T <: Type](t: T): Result[T] = {
+            t match {
+              case i: DataTypeIdentifier if !boundT(i) => Stop(t)
+              case NatDependentFunctionType(x, _) => Continue(t, this.copy(boundN = boundN + x))
+              case TypeDependentFunctionType(x, _) => Continue(t, this.copy(boundT = boundT + x))
+              case _ => Continue(t, this)
+            }
+          }
+
+          override def apply(ae: Nat): Result[Nat] = visitNat(ae, boundN, this)
+        }
+        Continue(traversal.types.DepthFirstLocalResult(t, TypeVisitor(boundT, boundN)), this)
+      }
+    }
+
+    def visitNat(ae: Nat, bound: Set[NatIdentifier], v: traversal.Visitor): Result[Nat] = {
+      val closed = ae.varList.foldLeft(true)({
+        case (c, v: NatIdentifier) => c && bound(v)
+        case (c, _) => c
+      })
+      if (closed) { Continue(ae, v) } else { Stop(ae) }
+    }
+
+    traversal.DepthFirstGlobalResult(expr, Visitor(Set(), Set(), Set())) match {
+      case Stop(_) => false
+      case Continue(_, _) => true
+    }
   }
 
   object Solution {
@@ -147,8 +199,9 @@ object infer {
     def apply(e: Expr): Expr = {
       val sol = this
       traversal.DepthFirstLocalResult(e, new traversal.Visitor {
-        override def apply(ae: Nat): Nat = sol(ae)
-        override def apply[T <: Type](t: T): T = sol(t).asInstanceOf[T]
+        import traversal.{Result, Continue}
+        override def apply(ae: Nat): Result[Nat] = Continue(sol(ae), this)
+        override def apply[T <: Type](t: T): Result[T] = Continue(sol(t).asInstanceOf[T], this)
       })
     }
 
@@ -208,6 +261,8 @@ object infer {
       case (IndexType(sa), IndexType(sb)) =>
         solveOne(NatConstraint(sa, sb))
       case (ArrayType(sa, ea), ArrayType(sb, eb)) =>
+        solve(Set(NatConstraint(sa, sb), TypeConstraint(ea, eb)))
+      case (VectorType(sa, ea), VectorType(sb, eb)) =>
         solve(Set(NatConstraint(sa, sb), TypeConstraint(ea, eb)))
       case (DepArrayType(sa, ea), DepArrayType(sb, eb)) =>
         ???

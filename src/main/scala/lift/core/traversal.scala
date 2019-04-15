@@ -17,12 +17,8 @@ object traversal {
 
   class Visitor {
     def apply(e: Expr): Result[Expr] = Continue(e, this)
-
-    def apply(ae: Nat): Nat = ae
-
-    def apply(f: NatNatTypeFunction): NatNatTypeFunction = NatNatTypeFunction(f.x, apply(f.body))
-
-    def apply[T <: Type](t: T): T = t
+    def apply(ae: Nat): Result[Nat] = Continue(ae, this)
+    def apply[T <: Type](t: T): Result[T] = Continue(t, this)
   }
 
   object DepthFirstLocalResult {
@@ -38,22 +34,25 @@ object traversal {
             case Apply(f, e) =>
               Apply(apply(f, v), apply(e, v))
             case NatLambda(n, e) =>
-              NatLambda(v(n).asInstanceOf[NatIdentifier], apply(e, v))
+              NatLambda(v(n).value.asInstanceOf[NatIdentifier], apply(e, v))
             case NatApply(f, n) =>
-              NatApply(apply(f, v), v(n))
+              NatApply(apply(f, v), v(n).value)
             case TypeLambda(dt, e) =>
-              TypeLambda(v(dt), apply(e, v))
+              TypeLambda(v(dt).value, apply(e, v))
             case TypeApply(f, dt) =>
-              TypeApply(apply(f, v), v(dt))
+              TypeApply(apply(f, v), v(dt).value)
             case l: Literal => l
             case Index(n, size) =>
-              Index(v(n), v(size))
+              Index(v(n).value, v(size).value)
             case NatExpr(n) =>
-              NatExpr(v(n))
+              NatExpr(v(n).value)
             case IfThenElse(ce, te, ee) =>
               IfThenElse(apply(ce, v), apply(te, v), apply(ee, v))
             case TypedExpr(e, t) =>
-              TypedExpr(apply(e, v), v(t))
+              TypedExpr(apply(e, v), v(t).value)
+            // could be avoided if foreign fun could be parametric
+            case primitives.ForeignFun(decl, t) =>
+              primitives.ForeignFun(decl, v(t).value)
             case p: Primitive => p
           }
       }
@@ -73,10 +72,10 @@ object traversal {
       chain(a, e, apply(e, _))
 
     def chainN[A](a: Result[A], n: Nat)=
-      chain(a, n, v => Continue(v(n), v))
+      chain(a, n, v => v(n))
 
     def chainT[A, T <: Type](a: Result[A], t: T) =
-      chain(a, t, v => Continue(v(t), v))
+      chain(a, t, v => v(t))
 
     def apply(expr: Expr, visit: Visitor): Result[Expr] = {
       visit(expr) match {
@@ -88,24 +87,51 @@ object traversal {
           case Apply(f, e) =>
             chainE(apply(f, v), e).map(r => Apply(r._1, r._2))
           case NatLambda(n, e) =>
-            val m = v(n).asInstanceOf[NatIdentifier]
-            apply(e, v).map(NatLambda(m, _))
+            chainE(v(n), e).map(r => NatLambda(r._1.asInstanceOf[NatIdentifier], r._2))
           case NatApply(f, n) =>
             chainN(apply(f, v), n).map(r => NatApply(r._1, r._2))
           case TypeLambda(dt, e) =>
-            val dt2 = v(dt)
-            apply(e, v).map(TypeLambda(dt2, _))
+            chainE(v(dt), e).map(r => TypeLambda(r._1, r._2))
           case TypeApply(f, dt) =>
             chainT(apply(f, v), dt).map(r => TypeApply(r._1, r._2))
           case l: Literal => Continue(l, v)
           case Index(n, size) =>
-            Continue(Index(v(n), v(size)), v)
+            chainN(v(n), size).map(r => Index(r._1, r._2))
           case NatExpr(n) =>
-            Continue(NatExpr(v(n)), v)
+            v(n).map(NatExpr)
           case IfThenElse(ce, te, ee) => ???
           case TypedExpr(e, t) =>
             chainT(apply(e, v), t).map(r => TypedExpr(r._1, r._2))
+          // could be avoided if foreign fun could be parametric
+          case primitives.ForeignFun(decl, t) =>
+            v(t).map(primitives.ForeignFun(decl, _))
           case p: Primitive => Continue(p, v)
+        }
+      }
+    }
+  }
+
+  object types {
+    object DepthFirstLocalResult {
+      def apply[T <: Type](ty: T, visit: Visitor): T = {
+        visit(ty) match {
+          case s: Stop[T] => s.value
+          case c: Continue[T] =>
+            val v = c.v
+            (c.value match {
+              case i: DataTypeIdentifier => i
+              case ArrayType(n, e) => ArrayType(v(n).value, apply(e, v))
+              case DepArrayType(n, e) => DepArrayType(v(n).value, apply(e, v))
+              case TupleType(ts@_*) => TupleType(ts.map(apply(_, v)): _*)
+              case s: ScalarType => s
+              case IndexType(n) => IndexType(v(n).value)
+              case VectorType(n, e) => VectorType(v(n).value, apply(e, v))
+              case FunctionType(a, b) => FunctionType(apply(a, v), apply(b, v))
+              case TypeDependentFunctionType(dt, t) =>
+                TypeDependentFunctionType(apply(dt, v), apply(t, v))
+              case NatDependentFunctionType(n, t) =>
+                NatDependentFunctionType(v(n).value.asInstanceOf[NatIdentifier], apply(t, v))
+            }).asInstanceOf[T]
         }
       }
     }

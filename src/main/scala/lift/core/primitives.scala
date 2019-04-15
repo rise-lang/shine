@@ -1,20 +1,9 @@
 package lift.core
 
 import lift.core.types._
-import lift.arithmetic._
 import lift.core.DSL._
 
 object primitives {
-  private def nFun(f: NatIdentifier => Type): Type = {
-    val x = NamedVar(freshName("n"))
-    NatDependentFunctionType(x, f(x))
-  }
-
-  private def tFun(f: DataTypeIdentifier => Type): Type = {
-    val x = DataTypeIdentifier(freshName("dt"))
-    TypeDependentFunctionType(x, f(x))
-  }
-
   case object map extends Primitive {
     override def t: Type = implN(n => implT(a => implT(b =>
       (a -> b) -> (ArrayType(n, a) -> ArrayType(n, b))
@@ -35,6 +24,16 @@ object primitives {
     override def t: Type = reduce.t
   }
 
+  case object scan extends Primitive {
+    override def t: Type = implN(n => implT(a => implT(b =>
+      (a -> (b -> b)) -> (b -> (ArrayType(n, a) -> ArrayType(n, b)))
+    )))
+  }
+
+  case object scanSeq extends Primitive {
+    override def t: Type = scan.t
+  }
+
   case object join extends Primitive {
     override def t: Type = implN(n => implN(m => implT(dt =>
       ArrayType(n, ArrayType(m, dt)) -> ArrayType(n * m, dt)
@@ -42,13 +41,13 @@ object primitives {
   }
 
   case object split extends Primitive {
-    override def t: Type = nFun(n => implN(m => implT(dt =>
+    override def t: Type = nFunT(n => implN(m => implT(dt =>
       ArrayType(m * n, dt) -> ArrayType(m, ArrayType(n, dt))
     )))
   }
 
   case object slide extends Primitive {
-    override def t: Type = implN(n => nFun(sz => nFun(sp => implT(dt => {
+    override def t: Type = implN(n => nFunT(sz => nFunT(sp => implT(dt => {
       val inputSize = sp * n + sz - sp
       ArrayType(inputSize, dt) -> ArrayType(n, ArrayType(sz, dt))
     }))))
@@ -73,13 +72,13 @@ object primitives {
   }
 
   case object take extends Primitive {
-    override def t: Type = nFun(n => implN(m => implT(a =>
+    override def t: Type = nFunT(n => implN(m => implT(a =>
       ArrayType(n + m, a) -> ArrayType(n, a)
     )))
   }
 
   case object drop extends Primitive {
-    override def t: Type = nFun(n => implN(m => implT(a =>
+    override def t: Type = nFunT(n => implN(m => implT(a =>
       ArrayType(n + m, a) -> ArrayType(m, a)
     )))
   }
@@ -110,6 +109,7 @@ object primitives {
     override def t: Type = implT(a => a -> (a -> a))
   }
 
+  // TODO: ask for basic type parameters
   case object cast extends Primitive {
     override def t: Type = implT(a => implT(b => a -> b))
   }
@@ -127,8 +127,8 @@ object primitives {
   }
 
   case object iterate extends Primitive {
-    override def t: Type = implN(n => implN(m => nFun(k => implT(a =>
-      nFun(l => ArrayType(l * n, a) -> ArrayType(l, a)) ->
+    override def t: Type = implN(n => implN(m => nFunT(k => implT(a =>
+      nFunT(l => ArrayType(l * n, a) -> ArrayType(l, a)) ->
         (ArrayType(m * n.pow(k), a) -> ArrayType(m, a))
     ))))
   }
