@@ -170,7 +170,7 @@ object infer {
 
           override def apply(ae: Nat): Result[Nat] = visitNat(ae, boundN, this)
         }
-        Continue(traversal.types.DepthFirstLocalResult(t, TypeVisitor(boundT, boundN)), this)
+        traversal.types.DepthFirstGlobalResult(t, TypeVisitor(boundT, boundN))
       }
     }
 

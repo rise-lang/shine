@@ -135,5 +135,40 @@ object traversal {
         }
       }
     }
+
+    object DepthFirstGlobalResult {
+      import traversal.DepthFirstGlobalResult.chain
+
+      def chainT[A, T <: Type](a: Result[A], t: T) =
+        chain(a, t, apply(t, _))
+
+      def apply[T <: Type](ty: T, visit: Visitor): Result[T] = {
+        visit(ty) match {
+          case Stop(r) => Stop(r)
+          case Continue(c, v) => (c match {
+            case i: DataTypeIdentifier => Continue(i, v)
+            case ArrayType(n, e) =>
+              chainT(v(n), e).map(r => ArrayType(r._1, r._2))
+            case DepArrayType(n, e) =>
+              chainT(v(n), e).map(r => DepArrayType(r._1, r._2))
+            case TupleType(ts@_*) =>
+              ts.foldLeft(Continue(Vector(), v) : Result[Vector[DataType]])({ case (r, t) =>
+                chainT(r, t).map(x => x._1 :+ x._2)
+              }).map(ts => TupleType(ts: _*))
+            case s: ScalarType => Continue(s, v)
+            case IndexType(n) => v(n).map(IndexType)
+            case VectorType(n, e) =>
+              chainT(v(n), e).map(r => VectorType(r._1, r._2))
+            case FunctionType(a, b) =>
+              chainT(apply(a, v), b).map(r => FunctionType(r._1, r._2))
+            case TypeDependentFunctionType(dt, t) =>
+              chainT(apply(dt, v), t).map(r => TypeDependentFunctionType(r._1, r._2))
+            case NatDependentFunctionType(n, t) =>
+              chainT(v(n), t).map(r =>
+                NatDependentFunctionType(r._1.asInstanceOf[NatIdentifier], r._2))
+          }).asInstanceOf[Result[T]]
+        }
+      }
+    }
   }
 }
