@@ -361,7 +361,7 @@ object infer {
     def unifyProd(p: Prod, n: Nat)
                  (implicit bound: mutable.Set[NatIdentifier]): Solution = {
       val Prod(ps) = p
-      // n = ps --> 1 = ss * (1/n)
+      // n = ps --> 1 = ps * (1/n)
       val terms = (Cst(1) /^ n) :: ps
       // 1 = pivot * .. --> pivot = 1 / ..
       val pivot = findPivot(terms)
