@@ -24,6 +24,10 @@ object primitives {
     override def t: Type = reduce.t
   }
 
+  case object reduceSeqUnroll extends Primitive {
+    override def t: Type = reduce.t
+  }
+
   case object scan extends Primitive {
     override def t: Type = implN(n => implT(a => implT(b =>
       (a -> (b -> b)) -> (b -> (ArrayType(n, a) -> ArrayType(n, b)))

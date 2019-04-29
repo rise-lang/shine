@@ -154,6 +154,18 @@ object fromLift {
             fun[ExpType](exp"[$n.$a]", e =>
               ReduceSeq(n, a, b, f, i, e))))
 
+      case (lp.reduceSeqUnroll,
+      lt.FunctionType(_,
+      lt.FunctionType(lb: lt.DataType,
+      lt.FunctionType(lt.ArrayType(n, la), _ ))))
+      =>
+        val a = fromLift(la)
+        val b = fromLift(lb)
+        fun[ExpType -> (ExpType -> ExpType)](exp"[$a]" -> (exp"[$b]" -> exp"[$b]"), f =>
+          fun[ExpType](exp"[$b]", i =>
+            fun[ExpType](exp"[$n.$a]", e =>
+              ReduceSeqUnroll(n, a, b, f, i, e))))
+
       case (lp.scanSeq,
       lt.FunctionType(_,
       lt.FunctionType(lb: lt.DataType,
