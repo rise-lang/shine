@@ -46,8 +46,6 @@ object traversal {
               Index(v(n).value, v(size).value)
             case NatExpr(n) =>
               NatExpr(v(n).value)
-            case IfThenElse(ce, te, ee) =>
-              IfThenElse(apply(ce, v), apply(te, v), apply(ee, v))
             case TypedExpr(e, t) =>
               TypedExpr(apply(e, v), v(t).value)
             // could be avoided if foreign fun could be parametric
@@ -99,7 +97,6 @@ object traversal {
             chainN(v(n), size).map(r => Index(r._1, r._2))
           case NatExpr(n) =>
             v(n).map(NatExpr)
-          case IfThenElse(ce, te, ee) => ???
           case TypedExpr(e, t) =>
             chainT(apply(e, v), t).map(r => TypedExpr(r._1, r._2))
           // could be avoided if foreign fun could be parametric

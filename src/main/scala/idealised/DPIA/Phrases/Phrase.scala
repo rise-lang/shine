@@ -195,7 +195,7 @@ object Phrase {
         case ExpType(IndexType(n)) =>
           p match {
             case i:Identifier[ExpType] => NamedVar(i.name, RangeAdd(0, n, 1))
-            case Apply(fun, arg) => NatFromIndexExpr(liftFunction(fun)(arg))
+            case Apply(fun, arg) => NatFromIndexExpr(liftFunction(fun).reducing(arg))
             case BinOp(op, lhs, rhs) => binOpToNat(op, NatFromIndexExpr(lhs), NatFromIndexExpr(rhs))
             case DPIA.Phrases.IfThenElse(_, _, _) => ???
             case Literal(lit) => lit match {
@@ -224,7 +224,7 @@ object Phrase {
           p match {
             case Natural(n) => n
             case i: Identifier[ExpType] => NamedVar(i.name, StartFromRange(0))
-            case Apply(fun, arg) => NatFromNatExpr(liftFunction(fun)(arg))
+            case Apply(fun, arg) => NatFromNatExpr(liftFunction(fun).reducing(arg))
             case BinOp(op, lhs, rhs) => binOpToNat(op, NatFromNatExpr(lhs), NatFromNatExpr(rhs))
             case DPIA.Phrases.IfThenElse(_, _, _) => ???
             case Literal(_) => throw new Exception("This should never happen")

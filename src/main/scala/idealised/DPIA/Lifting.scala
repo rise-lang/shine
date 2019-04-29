@@ -11,13 +11,14 @@ import scala.language.{postfixOps, reflectiveCalls}
 
 // TODO: Discuss with Bob: this excludes if (as the condition needs to be properly evaluated)
 object Lifting {
+  import lift.core.lifting.{Result, Reducing, Expanding}
 
   def liftNatDependentFunction[T <: PhraseType](p: Phrase[`(nat)->`[T]]): Nat => Phrase[T] = {
     p match {
       case l: NatDependentLambda[T] =>
         (arg: Nat) => l.body `[` arg `/` l.x `]`
       case app: Apply[_, `(nat)->`[T]] =>
-        val fun = liftFunction(app.fun)
+        val fun = liftFunction(app.fun).reducing
         liftNatDependentFunction(fun(app.arg))
       case app: NatDependentApply[`(nat)->`[T]] =>
         val fun = liftNatDependentFunction(app.fun)
@@ -41,7 +42,7 @@ object Lifting {
       case l: TypeDependentLambda[T] =>
         (arg: DataType) => l.body `[` arg `/` l.x `]`
       case app: Apply[_, `(dt)->`[T]] =>
-        val fun = liftFunction(app.fun)
+        val fun = liftFunction(app.fun).reducing
         liftTypeDependentFunction(fun(app.arg))
       case app: NatDependentApply[`(dt)->`[T]] =>
         val fun = liftNatDependentFunction(app.fun)
@@ -60,13 +61,16 @@ object Lifting {
     }
   }
 
-  def liftFunction[T1 <: PhraseType, T2 <: PhraseType](p: Phrase[T1 -> T2]): Phrase[T1] => Phrase[T2] = {
+  def liftFunction[T1 <: PhraseType, T2 <: PhraseType](p: Phrase[T1 -> T2]): Result[Phrase[T1] => Phrase[T2]] = {
+    def chain[T1 <: PhraseType, T2 <: PhraseType](r: Result[Phrase[T1 -> T2]]): Result[Phrase[T1] => Phrase[T2]] =
+      r.bind(liftFunction,
+        f => Expanding((a: Phrase[T1]) => Apply(f, a)))
+
     p match {
       case l: Lambda[T1, T2] =>
-        (arg: Phrase[T1]) => l.body `[` arg  `/` l.param `]`
+        Reducing((arg: Phrase[T1]) => l.body `[` arg  `/` l.param `]`)
       case app: Apply[_, T1 -> T2] =>
-        val fun = liftFunction(app.fun)
-        liftFunction(fun(app.arg))
+        chain(liftFunction(app.fun).map(lf => lf(app.arg)))
       case app: NatDependentApply[T1 -> T2] =>
         val fun = liftNatDependentFunction(app.fun)
         liftFunction(fun(app.arg))
@@ -79,8 +83,7 @@ object Lifting {
       case p2: Proj2[a, T1 -> T2] =>
         val pair = liftPair(p2.pair)
         liftFunction(pair._2)
-      case Identifier(_, _) | IfThenElse(_, _, _) =>
-        throw new Exception("This should never happen")
+      case _ => chain(Expanding(p))
     }
   }
 
@@ -89,7 +92,7 @@ object Lifting {
       case l: Lambda[ExpType, T] =>
         (arg: Nat) => l.body `[` arg  `/` NamedVar(l.param.name) `]`
       case app: Apply[_, ExpType -> T] =>
-        val fun = liftFunction(app.fun)
+        val fun = liftFunction(app.fun).reducing
         liftFunctionToNatLambda(fun(app.arg))
       case app: NatDependentApply[ExpType -> T] =>
         val fun = liftNatDependentFunction(app.fun)
@@ -115,7 +118,7 @@ object Lifting {
         (Identifier[T1](i.name + "_1", i.t.t1), Identifier[T2](i.name + "_2", i.t.t2))
       case pair: Pair[T1, T2] => (pair.fst, pair.snd)
       case app: Apply[_, T1 x T2] =>
-        val fun = liftFunction(app.fun)
+        val fun = liftFunction(app.fun).reducing
         liftPair(fun(app.arg))
       case app: NatDependentApply[T1 x T2] =>
         val fun = liftNatDependentFunction(app.fun)

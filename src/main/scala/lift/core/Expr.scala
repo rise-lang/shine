@@ -44,10 +44,6 @@ final case class NatExpr(n: Nat) extends Expr {
   override def toString: String = s"$n"
 }
 
-final case class IfThenElse(cond: Expr, thenE: Expr, elseE: Expr) extends Expr {
-  override def toString: String = s"if ($cond) then ($thenE) else ($elseE)"
-}
-
 final case class TypedExpr(e: Expr, t: Type) extends Expr {
   override def toString: String = s"($e : $t)"
 }

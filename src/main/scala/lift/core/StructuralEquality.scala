@@ -56,8 +56,6 @@ object StructuralEquality {
         nat(na, nb) && nat(sa, sb)
       case (NatExpr(na), NatExpr(nb)) =>
         nat(na, nb)
-      case (IfThenElse(ca, tea, eea), IfThenElse(cb, teb, eeb)) =>
-        exp(ca, cb) && exp(tea, teb) && exp(eea, eeb)
       case (TypedExpr(ea, ta), TypedExpr(eb, tb)) =>
         exp(ea, eb) && typ(ta, tb)
       case (pa: Primitive, pb: Primitive) => pa == pb

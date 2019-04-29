@@ -83,16 +83,6 @@ object infer {
 
       case n: NatExpr => TypedExpr(n, NatType)
 
-      case IfThenElse(cond, thenE, elseE) =>
-        val tce = typed(cond)
-        val tte = typed(thenE)
-        val tee = typed(elseE)
-        val ot = fresh()
-        constraints += TypeConstraint(tce.t, bool)
-        constraints += TypeConstraint(tte.t, ot)
-        constraints += TypeConstraint(tee.t, ot)
-        TypedExpr(IfThenElse(tce, tte, tee), ot)
-
       case TypedExpr(e, t) =>
         val te = typed(e)
         constraints += TypeConstraint(te.t, t)
@@ -311,7 +301,7 @@ object infer {
         if (i == j) { Solution() }
         else if (!bound(i)) { Solution.subs(i, j) }
         else if (!bound(j)) { Solution.subs(j, i) }
-        else { ??? }
+        else { error(s"cannot unify $i and $j, they are both bound") }
       case _ if occurs(i, t) =>
         error(s"circular use: $i occurs in $t")
       case _ if !bound(i) => Solution.subs(i, t)
@@ -387,7 +377,7 @@ object infer {
           if (i == j) { Solution() }
           else if (!bound(i)) { Solution.subs(i, j) }
           else if (!bound(j)) { Solution.subs(j, i) }
-          else { ??? }
+          else { error(s"cannot unify $i and $j, they are both bound") }
         case _ if !ArithExpr.contains(n, i) && !bound(i) => Solution.subs(i, n)
         case p: Prod => unifyProd(p, i)
         case s: Sum => unifySum(s, i)

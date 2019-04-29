@@ -1,43 +1,39 @@
 package idealised.DPIA.Primitives
 
-import benchmarks.core.SimpleRunOpenCLProgram
-import idealised.OpenCL.KernelWithSizes
-import idealised.OpenCL.SurfaceLanguage.DSL.mapGlobal
-import idealised.OpenMP.SurfaceLanguage.DSL.mapPar
-import idealised.SurfaceLanguage.DSL._
-import idealised.SurfaceLanguage.Expr
-import idealised.SurfaceLanguage.Semantics.FloatData
-import idealised.SurfaceLanguage.Types._
-import idealised.util.SyntaxChecker
-import idealised.utils.{ScalaPatterns, TimeSpan}
-import idealised.utils.Time.ms
-import lift.arithmetic._
+import lift.core.DSL._
+import lift.core.types._
+import lift.core.primitives._
 
-import scala.util.Random
+import idealised.util.gen
 
 class Pad extends idealised.util.Tests {
-  test("Simple C pad input and copy") {
-    val f = nFun(n => fun(ArrayType(n, float))(xs =>
-      xs :>> pad(2, 3, 5.0f) :>> mapSeq(fun(x => x))
+  test("Simple C constant pad input and copy") {
+    val e = nFun(n => fun(ArrayType(n, float))(xs =>
+      xs |> padCst(2)(3)(l(5.0f)) |> mapSeq(fun(x => x))
     ))
 
-    val p = idealised.C.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
-    val code = p.code
-    SyntaxChecker(code)
-    println(code)
+    gen.CProgram(e)
   }
 
-  test("Simple OpenMP pad input and copy") {
-    val f = nFun(n => fun(ArrayType(n, float))( xs =>
-      xs :>> pad(2, 3, 5.0f) :>> mapPar(fun(x => x))
+  test("Simple C clamp pad input and copy") {
+    val e = nFun(n => fun(ArrayType(n, float))(xs =>
+      xs |> padClamp(2)(3) |> mapSeq(fun(x => x))
     ))
 
-    val p = idealised.OpenMP.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
-    val code = p.code
-    SyntaxChecker(code)
-    println(code)
+    gen.CProgram(e)
   }
 
+  test("Simple OpenMP constant pad input and copy") {
+    import lift.OpenMP.primitives._
+
+    val e = nFun(n => fun(ArrayType(n, float))( xs =>
+      xs |> padCst(2)(3)(l(5.0f)) |> mapPar(fun(x => x))
+    ))
+
+    gen.OpenMPProgram(e)
+  }
+
+/* TODO
   test("Simple OpenCL pad input and copy") {
     val f = nFun(n => fun(ArrayType(n, float))( xs =>
       xs :>> pad(2, 3, 5.0f) :>> mapGlobal(fun(x => x))
@@ -107,4 +103,6 @@ class Pad extends idealised.util.Tests {
 
     Run().run(localSize = 1, globalSize = 1).correctness.check()
   }
+
+ */
 }

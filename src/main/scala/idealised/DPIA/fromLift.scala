@@ -16,26 +16,26 @@ object fromLift {
       case l.TypedExpr(l.Lambda(x, e), lt.FunctionType(i, _)) =>
         Lambda(Identifier(x.name, fromLift(i)), fromLift(e))
       case l.TypedExpr(l.Apply(f, e), _) =>
-        Apply(
-          fromLift(f).asInstanceOf[Phrase[FunctionType[PhraseType, PhraseType]]],
-          fromLift(e).asInstanceOf[Phrase[PhraseType]])
+        Lifting.liftFunction( // TODO: should we try to reduce by lifting here?
+          fromLift(f).asInstanceOf[Phrase[FunctionType[PhraseType, PhraseType]]])
+          .value(fromLift(e).asInstanceOf[Phrase[PhraseType]])
       case l.TypedExpr(l.NatLambda(n, e), _) =>
         NatDependentLambda(n, fromLift(e))
       case l.TypedExpr(l.NatApply(f, n), _) =>
-        NatDependentApply(
+        NatDependentApply( // TODO: should we try to reduce by lifting here?
           fromLift(f).asInstanceOf[Phrase[NatDependentFunctionType[PhraseType]]],
           n)
       case l.TypedExpr(l.TypeLambda(dt, e), _) =>
         TypeDependentLambda(DataTypeIdentifier(dt.name), fromLift(e))
       case l.TypedExpr(l.TypeApply(f, dt), _) =>
-        TypeDependentApply(
+        TypeDependentApply( // TODO: should we try to reduce by lifting here?
           fromLift(f).asInstanceOf[Phrase[TypeDependentFunctionType[PhraseType]]],
           fromLift(dt)
         )
       case l.TypedExpr(l.Literal(d), _) =>
         Literal(fromLift(d))
       case l.TypedExpr(l.Index(n, sz), _) =>
-        Literal(OpSem.IndexData(n, IndexType(sz)))
+        FunctionalPrimitives.AsIndex(sz, Natural(n)) // TODO: check
       case l.TypedExpr(l.NatExpr(n), _) =>
         Natural(n)
       case l.TypedExpr(p: l.Primitive, t) =>
@@ -106,6 +106,10 @@ object fromLift {
   def apply(p: l.Primitive, t: lt.Type): Phrase[_ <: PhraseType] = {
     import lift.OpenMP.{primitives => omp}
     import idealised.OpenMP.FunctionalPrimitives._
+
+    // TODO: remove surface language
+    import idealised.SurfaceLanguage.Operators.Unary
+    import idealised.SurfaceLanguage.Operators.Binary
 
     (p, t) match {
       case (lp.map,
@@ -259,6 +263,30 @@ object fromLift {
           fun[ExpType](exp"[$nm.$a]", e =>
             Drop(n, m, a, e)))
 
+      case (lp.padCst,
+      lt.NatDependentFunctionType(l,
+      lt.NatDependentFunctionType(r,
+      lt.FunctionType(_,
+      lt.FunctionType(lt.ArrayType(n, la), _)))))
+      =>
+        val a = fromLift(la)
+        NatDependentLambda(l,
+          NatDependentLambda(r,
+            fun[ExpType](exp"[$a]", cst =>
+                fun[ExpType](exp"[$n.$a]", e =>
+                  Pad(n, l, r, a, cst, e)))))
+
+      case (lp.padClamp,
+      lt.NatDependentFunctionType(l,
+      lt.NatDependentFunctionType(r,
+      lt.FunctionType(lt.ArrayType(n, la), _))))
+      =>
+        val a = fromLift(la)
+        NatDependentLambda(l,
+          NatDependentLambda(r,
+              fun[ExpType](exp"[$n.$a]", e =>
+                PadClamp(n, l, r, a, e))))
+
       case (lp.zip,
         lt.FunctionType(lt.ArrayType(n, la),
         lt.FunctionType(lt.ArrayType(_, lb), _)))
@@ -283,20 +311,62 @@ object fromLift {
         val b = fromLift(lb)
         fun[ExpType](exp"[$a x $b]", e => Snd(a, b, e))
 
-      case (lp.UnaryOp(op),
-      lt.FunctionType(la: lt.DataType, _))
+      case (lp.idx,
+      lt.FunctionType(_,
+      lt.FunctionType(lt.ArrayType(n, la), _)))
       =>
         val a = fromLift(la)
-        fun[ExpType](exp"[$a]", e =>
-          UnaryOp(uop(op), e))
+        fun[ExpType](exp"[idx($n)]", i =>
+          fun[ExpType](exp"[$n.$a]", e =>
+            ImperativePrimitives.Idx(n, a, i, e)))
 
-      case (lp.BinOp(op),
-      lt.FunctionType(la: lt.DataType, _))
+      case (lp.select,
+      lt.FunctionType(_,
+      lt.FunctionType(la: lt.DataType, _)))
       =>
         val a = fromLift(la)
-        fun[ExpType](exp"[$a]", x =>
-          fun[ExpType](exp"[$a]", y =>
-            BinOp(bop(op), x, y)))
+        fun[ExpType](ExpType(bool), c =>
+          fun[ExpType](ExpType(a), tExpr =>
+            fun[ExpType](ExpType(a), fExpr =>
+              IfThenElse(c, tExpr, fExpr))))
+
+      case (lp.neg, lt.FunctionType(la: lt.DataType, _)) =>
+        val a = fromLift(la)
+        fun[ExpType](exp"[$a]", e => UnaryOp(Unary.NEG, e))
+
+      case (lp.add, lt.FunctionType(la: lt.DataType, _)) =>
+        val a = fromLift(la)
+        fun[ExpType](exp"[$a]", e1 =>
+          fun[ExpType](exp"[$a]", e2 => BinOp(Binary.ADD, e1, e2)))
+      case (lp.sub, lt.FunctionType(la: lt.DataType, _)) =>
+        val a = fromLift(la)
+        fun[ExpType](exp"[$a]", e1 =>
+          fun[ExpType](exp"[$a]", e2 => BinOp(Binary.SUB, e1, e2)))
+      case (lp.mul, lt.FunctionType(la: lt.DataType, _)) =>
+        val a = fromLift(la)
+        fun[ExpType](exp"[$a]", e1 =>
+          fun[ExpType](exp"[$a]", e2 => BinOp(Binary.MUL, e1, e2)))
+      case (lp.div, lt.FunctionType(la: lt.DataType, _)) =>
+        val a = fromLift(la)
+        fun[ExpType](exp"[$a]", e1 =>
+          fun[ExpType](exp"[$a]", e2 => BinOp(Binary.DIV, e1, e2)))
+      case (lp.mod, lt.FunctionType(la: lt.DataType, _)) =>
+        val a = fromLift(la)
+        fun[ExpType](exp"[$a]", e1 =>
+          fun[ExpType](exp"[$a]", e2 => BinOp(Binary.MOD, e1, e2)))
+
+      case (lp.gt, lt.FunctionType(la: lt.DataType, _)) =>
+        val a = fromLift(la)
+        fun[ExpType](exp"[$a]", e1 =>
+          fun[ExpType](exp"[$a]", e2 => BinOp(Binary.GT, e1, e2)))
+      case (lp.lt, lt.FunctionType(la: lt.DataType, _)) =>
+        val a = fromLift(la)
+        fun[ExpType](exp"[$a]", e1 =>
+          fun[ExpType](exp"[$a]", e2 => BinOp(Binary.LT, e1, e2)))
+      case (lp.equal, lt.FunctionType(la: lt.DataType, _)) =>
+        val a = fromLift(la)
+        fun[ExpType](exp"[$a]", e1 =>
+          fun[ExpType](exp"[$a]", e2 => BinOp(Binary.EQ, e1, e2)))
 
       case (lp.cast, lt.FunctionType(la: lt.BasicType, lb: lt.BasicType))
       =>
@@ -381,31 +451,6 @@ object fromLift {
         wrapForeignFun(decl, intTs, outT, args :+ a))
     } else {
       ForeignFunction(decl, intTs, outT, args)
-    }
-  }
-
-  // TODO: remove surface language
-  val Unary = idealised.SurfaceLanguage.Operators.Unary
-  val Binary = idealised.SurfaceLanguage.Operators.Binary
-
-  def uop(op: l.Operators.Unary.Value): Unary.Value = {
-    import l.Operators.Unary._
-    op match {
-      case NEG => Unary.NEG
-    }
-  }
-
-  def bop(op: l.Operators.Binary.Value): Binary.Value = {
-    import l.Operators.Binary._
-    op match {
-      case ADD => Binary.ADD
-      case SUB => Binary.SUB
-      case MUL => Binary.MUL
-      case DIV => Binary.DIV
-      case MOD => Binary.MOD
-      case GT => Binary.GT
-      case LT => Binary.LT
-      case EQ => Binary.EQ
     }
   }
 }

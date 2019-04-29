@@ -11,14 +11,21 @@ object lifting {
 
     def map[R](f: T => R): Result[R] =
       bind(v => Reducing(f(v)), v => Expanding(f(v)))
+
+    def reducing: T
   }
   case class Reducing[+T](override val value: T) extends Result[T] {
     override def bind[R](rf: T => Result[R],
                          ef: T => Result[R]): Result[R] = rf(value)
+
+    override def reducing: T = value
   }
   case class Expanding[+T](override val value: T) extends Result[T] {
     override def bind[R](rf: T => Result[R],
                          ef: T => Result[R]): Result[R] = ef(value)
+
+    override def reducing: T =
+      throw new Exception("lifting was not reducing")
   }
 
   // p : a -> b

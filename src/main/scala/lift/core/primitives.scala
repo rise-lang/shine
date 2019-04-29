@@ -83,6 +83,18 @@ object primitives {
     )))
   }
 
+  case object padCst extends Primitive {
+    override def t: Type = implN(n => nFunT(l => nFunT(r => implT(a =>
+      a -> (ArrayType(n, a) -> ArrayType(l + n + r, a))
+    ))))
+  }
+
+  case object padClamp extends Primitive {
+    override def t: Type = implN(n => nFunT(l => nFunT(r => implT(a =>
+      ArrayType(n, a) -> ArrayType(l + n + r, a)
+    ))))
+  }
+
   case object zip extends Primitive {
     override def t: Type = implN(n => implT(a => implT(b =>
       ArrayType(n, a) -> (ArrayType(n, b) -> ArrayType(n, TupleType(a, b)))
@@ -97,16 +109,45 @@ object primitives {
     override def t: Type = implT(a => implT(b => TupleType(a, b) -> b))
   }
 
-  case class UnaryOp(op: Operators.Unary.Value) extends Primitive {
-    override def toString: String = s"$op"
+  case object idx extends Primitive {
+    override def t: Type = implN(n => implT(a =>
+      IndexType(n) -> (ArrayType(n, a) -> a)
+    ))
+  }
 
+  // if-then-else
+  case object select extends Primitive {
+    override def t: Type = implT(a => bool -> (a -> (a -> a)))
+  }
+
+  case object neg extends Primitive {
     override def t: Type = implT(a => a -> a)
   }
 
-  case class BinOp(op: Operators.Binary.Value) extends Primitive {
-    override def toString: String = s"$op"
-
+  case object add extends Primitive {
     override def t: Type = implT(a => a -> (a -> a))
+  }
+  case object sub extends Primitive {
+    override def t: Type = add.t
+  }
+  case object mul extends Primitive {
+    override def t: Type = add.t
+  }
+  case object div extends Primitive {
+    override def t: Type = add.t
+  }
+  case object mod extends Primitive {
+    override def t: Type = add.t
+  }
+
+  case object gt extends Primitive {
+    override def t: Type = implT(a => a -> (a -> bool))
+  }
+  case object lt extends Primitive {
+    override def t: Type = gt.t
+  }
+  case object equal extends Primitive {
+    override def t: Type = gt.t
   }
 
   // TODO: ask for basic type parameters
@@ -138,23 +179,4 @@ object primitives {
       IndexType(n) -> NatType
     )
   }
-}
-
-object Operators {
-
-  object Unary extends Enumeration {
-    val NEG: Unary.Value = Value("-")
-  }
-
-  object Binary extends Enumeration {
-    val ADD: Binary.Value = Value("+")
-    val SUB: Binary.Value = Value("-")
-    val MUL: Binary.Value = Value("*")
-    val DIV: Binary.Value = Value("/")
-    val MOD: Binary.Value = Value("%")
-    val GT: Binary.Value = Value(">")
-    val LT: Binary.Value = Value("<")
-    val EQ: Binary.Value = Value("==")
-  }
-
 }

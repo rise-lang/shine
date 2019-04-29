@@ -5,18 +5,18 @@ import lift.core.semantics._
 
 object DSL {
   implicit class BinOps(lhs: Expr) {
-    import lift.core.primitives.{BinOp, UnaryOp}
+    import lift.core.primitives._
 
-    def +(rhs: Expr) = BinOp(Operators.Binary.ADD)(lhs)(rhs)
-    def -(rhs: Expr) = BinOp(Operators.Binary.SUB)(lhs)(rhs)
-    def *(rhs: Expr) = BinOp(Operators.Binary.MUL)(lhs)(rhs)
-    def /(rhs: Expr) = BinOp(Operators.Binary.DIV)(lhs)(rhs)
-    def %(rhs: Expr) = BinOp(Operators.Binary.MOD)(lhs)(rhs)
-    def >(rhs: Expr) = BinOp(Operators.Binary.GT)(lhs)(rhs)
-    def <(rhs: Expr) = BinOp(Operators.Binary.LT)(lhs)(rhs)
-    def =:=(rhs: Expr) = BinOp(Operators.Binary.EQ)(lhs)(rhs)
+    def +(rhs: Expr) = add(lhs)(rhs)
+    def -(rhs: Expr) = sub(lhs)(rhs)
+    def *(rhs: Expr) = mul(lhs)(rhs)
+    def /(rhs: Expr) = div(lhs)(rhs)
+    def %(rhs: Expr) = mod(lhs)(rhs)
+    def >(rhs: Expr) = gt(lhs)(rhs)
+    def <(rhs: Expr) = lt(lhs)(rhs)
+    def =:=(rhs: Expr) = equal(lhs)(rhs)
 
-    def unary_- = UnaryOp(Operators.Unary.NEG)(lhs)
+    def unary_- = neg(lhs)
   }
 
   implicit class FunCall(f: Expr) {
