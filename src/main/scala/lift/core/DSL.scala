@@ -61,6 +61,13 @@ object DSL {
       TypeDepLambda(x, f(x))
     }
   }
+
+  object nTypeFun {
+    def apply(f: NatIdentifier => DataType): types.NatDataTypeLambda= {
+      val x = lift.arithmetic.NamedVar(freshName("n"))
+      types.NatDataTypeLambda(x, f(x))
+    }
+  }
   
   def l(i: Int): Literal = Literal(IntData(i))
   def l(f: Float): Literal = Literal(FloatData(f))
