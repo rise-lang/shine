@@ -3,7 +3,6 @@ package lift.core.types
 import lift.core._
 import lift.arithmetic._
 
-// Kinds: Nat | (Function) Type | DataType | Nat -> DataType | Nat -> Nat
 sealed trait Type
 
 // ============================================================================================= //
@@ -25,7 +24,9 @@ final case class NatDataTypeDependentFunctionType[T <: Type](fn: NatDataTypeFunc
 // ============================================================================================= //
 sealed trait DataType extends Type
 
-final case class DataTypeIdentifier(name: String) extends DataType
+final case class DataTypeIdentifier(name: String) extends DataType {
+  override def toString: String = name
+}
 
 sealed trait ComposedType extends DataType
 
@@ -37,12 +38,13 @@ final case class DepArrayType(size: Nat, fdt: NatDataTypeFunction) extends Compo
   override def toString: String = s"$size.$fdt"
 }
 
-//object DepArrayType {
-//  def apply(size: Nat, f: Nat => DataType): DepArrayType = {
-//    val newN = NamedVar(freshName("n"), RangeAdd(0, size, 1))
-//    DepArrayType(size, NatDependentFunctionType(newN, f(newN)))
-//  }
-//}
+object DepArrayType {
+  def apply(size: Nat, f: Nat => DataType): DepArrayType = {
+   val newN = NamedVar(freshName("n"), RangeAdd(0, size, 1))
+    val fdt = NatDataTypeLambda(newN, f(newN))
+    DepArrayType(size, fdt)
+  }
+}
 
 final case class TupleType(elemTypes: DataType*) extends ComposedType {
   assert(elemTypes.size == 2)
@@ -50,7 +52,9 @@ final case class TupleType(elemTypes: DataType*) extends ComposedType {
   override def toString: String = elemTypes.map(_.toString).mkString("(", ", ", ")")
 }
 
+
 sealed trait BasicType extends DataType
+
 
 sealed trait ScalarType extends BasicType
 
@@ -70,10 +74,13 @@ object double extends ScalarType { override def toString: String = "double" }
 
 object NatType extends ScalarType { override def toString: String = "nat"}
 
-final case class IndexType(size: Nat) extends BasicType
+final case class IndexType(size: Nat) extends BasicType {
+  override def toString: String = s"idx($size)"
+}
 
-sealed case class VectorType(size: Nat, elemType: ScalarType) extends BasicType {
-  override def toString: String = s"$elemType$size"
+// TODO: enforce ScalarType
+sealed case class VectorType(size: Nat, elemType: Type) extends BasicType {
+  override def toString: String = s"<$size>$elemType"
 }
 
 object int2 extends VectorType(2, int)
@@ -134,7 +141,21 @@ final case class NatNatFunctionIdentifier(name: String) extends NatNatFunction
 // ============================================================================================= //
 // Nat -> DataType
 // ============================================================================================= //
-sealed trait NatDataTypeFunction
+sealed trait NatDataTypeFunction {
+  def map(f:DataType => DataType):NatDataTypeFunction = {
+    NatDataTypeFunction.mapOnElement(f, this)
+  }
+}
+
+object NatDataTypeFunction {
+  def mapOnElement(f:DataType => DataType,
+          typeFun:NatDataTypeFunction):NatDataTypeFunction = {
+    typeFun match {
+      case ident:NatDataTypeFunctionIdentifier => ident
+      case NatDataTypeLambda(binder, body) => NatDataTypeLambda(binder, f(body))
+    }
+  }
+}
 
 final case class NatDataTypeLambda(n: NatIdentifier, dt: DataType) extends NatDataTypeFunction {
 //  //See hash code of NatNatTypeFunction

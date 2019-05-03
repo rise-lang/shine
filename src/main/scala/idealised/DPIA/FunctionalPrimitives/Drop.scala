@@ -18,9 +18,9 @@ final case class Drop(n: Nat,
                       array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override val `type`: ExpType =
+  override val t: ExpType =
     (n: Nat) -> (m: Nat) -> (dt: DataType) ->
-      (array :: exp"[$m.$dt]") -> exp"[${m - n}.$dt]"
+      (array :: exp"[${n + m}.$dt]") -> exp"[$m.$dt]"
 
   override def eval(s: Store): Data = ???
 
@@ -41,7 +41,7 @@ final case class Drop(n: Nat,
   override def continuationTranslation(C: Phrase[->[ExpType, CommandType]])
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
-    con(array)(λ(exp"[$m.$dt]")(x => C(Drop(n, m, dt, x))))
+    con(array)(λ(exp"[${n + m}.$dt]")(x => C(Drop(n, m, dt, x))))
   }
 
   override def xmlPrinter: Elem =

@@ -5,6 +5,7 @@ import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Types._
 import idealised.DPIA.DSL._
+import idealised.DPIA.ImperativePrimitives.GenerateCont
 import idealised.DPIA._
 
 import scala.xml.Elem
@@ -14,7 +15,7 @@ final case class Generate(n: Nat,
                           f : Phrase[ExpType -> ExpType])
   extends ExpPrimitive {
 
-  override val `type`: ExpType =
+  override val t: ExpType =
     (n: Nat) -> (dt: DataType) ->
       (f :: t"exp[idx($n)] -> exp[$dt]") ->
         exp"[$n.$dt]"
@@ -42,6 +43,14 @@ final case class Generate(n: Nat,
 
   def continuationTranslation(C: Phrase[ExpType -> CommandType])
                              (implicit context: TranslationContext): Phrase[CommandType] = {
-    C(this)
+    import TranslationToImperative._
+
+    // note: would not be necessary if generate was defined as indices + map
+    C(GenerateCont(n, dt,
+      fun(exp"[idx($n)]")(i =>
+        fun(exp"[$dt]" -> (comm: CommandType))(cont =>
+          con(f(i))(fun(exp"[$dt]")(g => Apply(cont, g)))
+        ))
+    ))
   }
 }

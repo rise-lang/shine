@@ -13,13 +13,13 @@ final case class New(dt: DataType,
                      f: Phrase[VarType -> CommandType])
   extends CommandPrimitive {
 
-  override val `type`: CommandType =
+  override val t: CommandType =
     (dt: DataType) -> /* (addressSpace: AddressSpace) -> */
       (f :: t"var[$dt] -> comm") -> comm
 
   override def eval(s: Store): Store = {
     val f_ = OperationalSemantics.eval(s, f)
-    val arg = identifier(freshName(), f.t.inT)
+    val arg = identifier(freshName("x"), f.t.inT)
     val newStore = OperationalSemantics.eval(s + (arg.name -> 0), f_(arg))
     newStore - arg.name
   }

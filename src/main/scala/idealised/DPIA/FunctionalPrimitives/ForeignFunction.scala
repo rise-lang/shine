@@ -12,7 +12,8 @@ import scala.language.reflectiveCalls
 import scala.xml.Elem
 
 object ForeignFunction {
-  final case class Declaration(name: String, argNames: Seq[String], body: String)
+  val Declaration = lift.core.primitives.ForeignFunDecl
+  type Declaration = lift.core.primitives.ForeignFunDecl
 }
 
 final case class ForeignFunction(funDecl: ForeignFunction.Declaration,
@@ -21,7 +22,7 @@ final case class ForeignFunction(funDecl: ForeignFunction.Declaration,
                                  args: Seq[Phrase[ExpType]])
   extends ExpPrimitive {
 
-  override lazy val `type`: ExpType =
+  override val t: ExpType =
     (inTs zip args).foreach {
       case (inT, arg) => arg :: exp"[$inT]"
     } -> exp"[$outT]"

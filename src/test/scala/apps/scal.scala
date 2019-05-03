@@ -1,68 +1,64 @@
-package idealised.apps
+package apps
 
-import idealised.SurfaceLanguage.DSL._
-import idealised.SurfaceLanguage.Types._
-import idealised.util.SyntaxChecker
-import lift.arithmetic._
+import lift.core.DSL._
+import lift.core.types._
+import lift.core.primitives._
+import idealised.util.gen
 
 class scal extends idealised.util.Tests {
 
   private val simpleScal = nFun(n => fun(ArrayType(n, float))(input => fun(float)(alpha =>
-    mapSeq(fun(x => alpha * x ), input)
-  ) ))
+    input |> mapSeq(fun(x => alpha * x))
+  )))
 
   // TODO: fix equality of types (specifically, NatDependentFunctionType and TypeDependentFunctionType)
   ignore("Simple scal type inference works") {
-    val typed = TypeInference(simpleScal, Map())
+    val typed = infer(simpleScal)
 
     assertResult(
-      NatDependentFunctionType(n => FunctionType(ArrayType(n, float), FunctionType(float, ArrayType(n, float))))
+      nFunT(n => FunctionType(ArrayType(n, float), FunctionType(float, ArrayType(n, float))))
     ) {
-      typed.t.get
+      typed.t
     }
   }
 
   // OpenMP
   test("scalIntel compiles to syntactically correct OpenMP") {
-    import idealised.OpenMP.SurfaceLanguage.DSL._
+    import lift.OpenMP.primitives._
 
     val scalIntel = nFun(n => fun(ArrayType(n, float))(input => fun(float)(alpha =>
-      input :>>
-        split(4 * 128 * 128) :>>
+      input |>
+        split(4 * 128 * 128) |>
         mapPar(
-          asVector(4) >>>
-            split(128) >>>
+          asVector(4) >>
+            split(128) >>
             mapSeq(mapSeq(
-              fun(x => vectorize(4, alpha) * x)
-            )) >>> join >>> asScalar
-        ) :>>
+              fun(x => vectorFromScalar(alpha) * x)
+            )) >> join >> asScalar
+        ) |>
         join
     )))
 
-    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(scalIntel, Map()))
-    val program = idealised.OpenMP.ProgramGenerator.makeCode(phrase, "scalIntel")
-    println(program.code)
+    gen.OpenMPProgram(scalIntel)
   }
 
   test("scalIntel2 compiles to syntactically correct OpenMP") {
-    import idealised.OpenMP.SurfaceLanguage.DSL._
+    import lift.OpenMP.primitives._
 
     val scalIntel2 = nFun(n => fun(ArrayType(n, float))(input => fun(float)(alpha =>
-      input :>>
-        split(4 * 128 * 128) :>>
+      input |>
+        split(4 * 128 * 128) |>
         mapPar(
-          asVector(4) >>>
+          asVector(4) >>
             mapSeq(
-              fun(x => vectorize(4, alpha) * x)
-            ) >>> asScalar
-        ) :>> join
+              fun(x => vectorFromScalar(alpha) * x)
+            ) >> asScalar
+        ) |> join
     )))
 
-    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(scalIntel2, Map()))
-    val program = idealised.OpenMP.ProgramGenerator.makeCode(phrase, "scalIntel2")
-    println(program.code)
+    gen.OpenMPProgram(scalIntel2)
   }
-
+/*
   // OpenCL
   {
     import idealised.OpenCL.SurfaceLanguage.DSL._
@@ -121,6 +117,6 @@ class scal extends idealised.util.Tests {
       println(p.code)
       SyntaxChecker.checkOpenCL(p.code)
     }
-
   }
+  */
 }

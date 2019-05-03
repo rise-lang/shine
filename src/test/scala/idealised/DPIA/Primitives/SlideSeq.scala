@@ -1,21 +1,23 @@
 package idealised.DPIA.Primitives
 
-import idealised.SurfaceLanguage.DSL._
-import idealised.SurfaceLanguage.Types._
-import idealised.util.{Execute, SyntaxChecker}
+import lift.core.DSL._
+import lift.core.types._
+import lift.core.primitives.{slideSeq, map, reduceSeq}
+import idealised.util.{Execute, gen}
 
 class SlideSeq extends idealised.util.Tests {
+  val add = fun(a => fun(b => a + b))
+
   test("Simple example should generate C code producing the expected result on a test") {
     val e = nFun(n => fun(ArrayType(n, int))(a =>
-      a :>> slideSeq(3, 1) :>> map(reduceSeq(fun(_ + _), 0))))
-    val p = idealised.C.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(e, Map())))
-    val code = p.code
-    SyntaxChecker(code)
+      a |> slideSeq(3)(1) |> map(reduceSeq(add)(l(0)))
+    ))
+    val p = gen.CProgram(e)
 
     val testCode = s"""
 #include <stdio.h>
 
-$code
+${p.code}
 
 int main(int argc, char** argv) {
   const int N = 50;

@@ -13,7 +13,7 @@ final case class ReorderAcc(n: Nat,
                             array: Phrase[AccType])
   extends AccPrimitive
 {
-  override def `type`: AccType =
+  override val t: AccType =
     (n: Nat) -> (dt: DataType) ->
       (idxF :: t"exp[idx($n)] -> exp[idx($n)]") ->
         (array :: acc"[$n.$dt]") ->

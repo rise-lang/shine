@@ -14,7 +14,7 @@ abstract class AbstractParForNat(val n: Nat,
                                  val body: Phrase[`(nat)->`[AccType -> CommandType]])
   extends CommandPrimitive {
 
-  override lazy val `type`: CommandType = {
+  override val t: CommandType = {
 
     (n: Nat) -> (ft: NatDataTypeFunction) ->
       (out :: acc"[${DepArrayType(n, ft)}]") ->

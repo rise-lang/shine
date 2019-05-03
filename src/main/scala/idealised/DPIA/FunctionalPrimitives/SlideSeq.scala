@@ -18,8 +18,6 @@ final case class SlideSeq(n: Nat,
                           input: Phrase[ExpType])
   extends AbstractSlide(n, sz, sp, dt, input)
 {
-  assert(sp.eval == 1) // FIXME?
-
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     SlideSeq(v(n), v(sz), v(sp), v(dt), VisitAndRebuild(input, v))
   }
@@ -35,7 +33,7 @@ final case class SlideSeq(n: Nat,
     import idealised.DPIA.IntermediatePrimitives.{SlideSeqIRegRot => I} // TODO: making a choice here
 
     con(input)(fun(exp"[$inputSize.$dt]")(x =>
-      I(n, sz, dt, g.t.outT.dataType,
+      I(n, sz, sp, dt, g.t.outT.dataType,
         fun(exp"[$sz.$dt]")(x =>
           fun(acc"[${g.t.outT.dataType}]")(o => acc(g(x))(o))),
         x, A

@@ -18,7 +18,7 @@ final case class Reorder(n: Nat,
                          input: Phrase[ExpType])
   extends ExpPrimitive
 {
-  override val `type`: ExpType =
+  override val t: ExpType =
     (n: Nat) -> (dt: DataType) ->
       (idxF :: t"exp[idx($n)] -> exp[idx($n)]") ->
       (idxFinv :: t"exp[idx($n)] -> exp[idx($n)]") ->

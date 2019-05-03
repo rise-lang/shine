@@ -16,11 +16,7 @@ object TypeCheck {
       case Apply(p, q) =>
         TypeCheck(p)
         TypeCheck(q)
-        p.t match {
-          case FunctionType(t1, _) =>
-            check(t1, q.t)
-          case x => error(x.toString, FunctionType.toString)
-        }
+        check(p.t.inT, q.t)
 
       case NatDependentLambda(_, p) => TypeCheck(p)
 
@@ -67,7 +63,7 @@ object TypeCheck {
             error(s"$x1 $op $x2", s"exp[b] $op exp[b]")
         }
 
-      case c: Primitive[_] => c.`type`
+      case _: Primitive[_] =>
     }
   }
 
@@ -80,8 +76,16 @@ object TypeCheck {
   }
 
   def check(found: PhraseType, expected: PhraseType): Unit = {
-    if (found != expected) {
-      error(found, expected)
+    (found, expected) match {
+      case (_: ExpType, _) | (_, _: ExpType) |
+           (_: AccType, _) | (_, _: AccType) =>
+        if (found != expected) {
+          error(found, expected)
+        }
+      case _ => // TODO: structural equality
+        if (found != expected) {
+          println(s"Type warning: found $found expected $expected")
+        }
     }
   }
 

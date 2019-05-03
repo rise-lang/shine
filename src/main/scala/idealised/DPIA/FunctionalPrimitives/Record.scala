@@ -16,7 +16,7 @@ final case class Record(dt1: DataType,
                         snd: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override val `type`: ExpType =
+  override val t: ExpType =
     (dt1: DataType) -> (dt2: DataType) ->
       (fst :: exp"[$dt1]") -> (snd :: exp"[$dt2]") -> exp"[$dt1 x $dt2]"
 

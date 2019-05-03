@@ -1,5 +1,4 @@
 package lift.core
-
 package object types {
   type ->[T1 <: Type, T2 <: Type] = FunctionType[T1, T2]
   type `(nat)->`[T <: Type] = NatDependentFunctionType[T]

@@ -1,37 +1,37 @@
-package idealised.apps
+package apps
 
+import lift.core.NatIdentifier
+import lift.core.DSL._
+import lift.core.types._
+import lift.core.primitives._
 import idealised.DPIA.Types.ExpType
-import idealised.OpenCL.PrivateMemory
-import idealised.SurfaceLanguage.DSL._
-import idealised.SurfaceLanguage.NatIdentifier
-import idealised.SurfaceLanguage.Types._
-import idealised.util.SyntaxChecker
+import idealised.util.gen
 
 class dot extends idealised.util.Tests {
 
   private def xsT(N : NatIdentifier) = ArrayType(N, float)
   private def ysT(N : NatIdentifier) = ArrayType(N, float)
 
-  private val mult = fun(x => x._1 * x._2)
-  private val add = fun((x, a) => x + a)
+  private val mulT = fun(x => fst(x) * snd(x))
+  private val add = fun(x => fun(a => x + a))
 
   private val simpleDotProduct = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
-    zip(xs, ys) :>> mapSeq(mult) :>> reduceSeq(add, 0.0f)
+    zip(xs)(ys) |> mapSeq(mulT) |> reduceSeq(add)(l(0.0f))
   )))
 
   test("Simple dot product type inference works") {
-    val typed = TypeInference(simpleDotProduct, Map())
+    val typed = infer(simpleDotProduct)
 
-    val N = typed.t.get.asInstanceOf[NatDependentFunctionType[_ <: Type]].n
+    val N = typed.t.asInstanceOf[NatDependentFunctionType[_ <: Type]].n
     assertResult(NatDependentFunctionType(N, FunctionType(xsT(N), FunctionType(ysT(N), float)))) {
-      typed.t.get
+      typed.t
     }
   }
 
   test("Simple dot product translation to phrase works and preserves types") {
     import idealised.DPIA.Types.float
     import idealised.DPIA._
-    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(simpleDotProduct, Map()))
+    val phrase = idealised.DPIA.fromLift(infer(simpleDotProduct))
 
     val N = phrase.t.asInstanceOf[`(nat)->`[ExpType -> ExpType]].n
     val dt = float
@@ -42,99 +42,79 @@ class dot extends idealised.util.Tests {
 
   // C
   test("Simple dot product compiles to syntactically correct C") {
-    val p = idealised.C.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(simpleDotProduct, Map())))
-    println(p.code)
-    SyntaxChecker(p.code)
+    gen.CProgram(simpleDotProduct)
   }
 
   // OpenMP
   test("Dot product CPU vector 1 compiles to syntactically correct OpenMP") {
-    import idealised.OpenMP.SurfaceLanguage.DSL._
+    import lift.OpenMP.primitives._
 
     val dotCPUVector1 = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
-      zip(
-        xs :>> asVector(4),
-        ys:>> asVector(4)
-      ) :>>
-        split(2048 * 64) :>>
-        mapPar(
-          split(2048) >>>
-            mapSeq(
-              reduceSeq(fun(x => fun(a => mult(x) + a)), vectorize(4, 0.0f))
-            )
-        ) :>> join :>> asScalar
+      zip(asVector(4)(xs))(asVector(4)(ys))
+      |> split(2048 * 64)
+      |> mapPar(
+        split(2048) >>
+        mapSeq(
+          reduceSeq(fun(x => add(mulT(x))))(vectorFromScalar(l(0.0f)))
+        )
+      ) |> join |> asScalar
     )))
 
-    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(dotCPUVector1, Map()))
-    val p = idealised.OpenMP.ProgramGenerator.makeCode(phrase)
-    println(p.code)
-    SyntaxChecker(p.code)
+    gen.OpenMPProgram(dotCPUVector1)
   }
 
   test("Intel derived no warp dot product 1 compiles to syntactically correct OpenMP") {
-    import idealised.OpenMP.SurfaceLanguage.DSL._
+    import lift.OpenMP.primitives._
 
     val intelDerivedNoWarpDot1 = nFun(n =>
       fun(xsT(n))(xs => fun(ysT(n))(ys =>
-        zip(
-          xs :>> asVector(4),
-          ys:>> asVector(4)
-        ) :>>
-          split(8192) :>>
-          mapPar(
-            split(8192) >>>
-              mapSeq(
-                reduceSeq(fun(x => fun(a => mult(x) + a)), vectorize(4, 0.0f))
-              )
-          ) :>> join :>> asScalar
+        zip(xs |> asVector(4))(ys |> asVector(4))
+        |> split(8192)
+        |> mapPar(
+          split(8192) >>
+          mapSeq(
+            reduceSeq(fun(x => add(mulT(x))))(vectorFromScalar(l(0.0f)))
+          )
+        ) |> join |> asScalar
       )))
 
-    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(intelDerivedNoWarpDot1, Map()))
-    val p = idealised.OpenMP.ProgramGenerator.makeCode(phrase)
-    println(p.code)
-    SyntaxChecker(p.code)
+    gen.OpenMPProgram(intelDerivedNoWarpDot1)
   }
 
   test("Dot product CPU 1 compiles to syntactically correct OpenMP") {
-    import idealised.OpenMP.SurfaceLanguage.DSL._
+    import lift.OpenMP.primitives._
 
     val dotCPU1 = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
-      zip(xs, ys) :>>
-        split(2048 * 128) :>>
+      zip(xs)(ys) |>
+        split(2048 * 128) |>
         mapPar(
-          split(2048) >>>
+          split(2048) >>
             mapSeq(
-              reduceSeq(fun(x => fun(a => mult(x) + a)), 0.0f)
+              reduceSeq(fun(x => add(mulT(x))))(l(0.0f))
             )
-        ) :>> join
+        ) |> join
     )))
 
-    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(dotCPU1, Map()))
-    val p = idealised.OpenMP.ProgramGenerator.makeCode(phrase)
-    println(p.code)
-    SyntaxChecker(p.code)
+    gen.OpenMPProgram(dotCPU1)
   }
 
   test("Dot product CPU 2 compiles to syntactically correct OpenMP") {
-    import idealised.OpenMP.SurfaceLanguage.DSL._
+    import lift.OpenMP.primitives._
 
     val dotCPU2 = nFun(n => fun(xsT(n))(in =>
-      in :>>
-        split(128) :>>
+      in |>
+        split(128) |>
         mapPar(
-          split(128) >>>
+          split(128) >>
             mapSeq(
-              reduceSeq(fun(x => fun(a => x + a)), 0.0f)
+              reduceSeq(add)(l(0.0f))
             )
-        ) :>> join
+        ) |> join
     ))
 
-    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(dotCPU2, Map()))
-    val p = idealised.OpenMP.ProgramGenerator.makeCode(phrase)
-    println(p.code)
-    SyntaxChecker(p.code)
+    gen.OpenMPProgram(dotCPU2)
   }
-
+/*
   test("Intel derived no warp dot product 1 compiles to syntactically correct OpenCL") {
     import idealised.OpenCL.SurfaceLanguage.DSL._
 
@@ -239,5 +219,5 @@ class dot extends idealised.util.Tests {
     println(p.code)
     SyntaxChecker.checkOpenCL(p.code)
   }
-
+*/
 }

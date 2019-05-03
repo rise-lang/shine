@@ -47,12 +47,12 @@ package object DPIA {
 
   object NatNatTypeFunction {
     def apply(upperBound:Nat, f:NatIdentifier => Nat):NatNatTypeFunction = {
-      val x = NamedVar(freshName(), RangeAdd(0, upperBound, 1))
+      val x = NamedVar(freshName("n"), RangeAdd(0, upperBound, 1))
       NatNatTypeFunction(x, f(x))
     }
 
     def apply(upperBound:Nat, id:NatIdentifier, body:Nat):NatNatTypeFunction = {
-      val x = NamedVar(freshName(), RangeAdd(0, upperBound, 1))
+      val x = NamedVar(freshName("n"), RangeAdd(0, upperBound, 1))
       NatNatTypeFunction(x, x => ArithExpr.substitute(body, Map((id, x))))
     }
   }
@@ -78,12 +78,12 @@ package object DPIA {
 
   object NatDataTypeFunction {
     def apply(upperBound:Nat, f:NatIdentifier => DataType):NatDataTypeFunction = {
-      val x = NamedVar(freshName(), RangeAdd(0, upperBound, 1))
+      val x = NamedVar(freshName("n"), RangeAdd(0, upperBound, 1))
       NatDataTypeFunction(x, f(x))
     }
 
     def apply(upperBound:Nat, id:NatIdentifier, body:DataType):NatDataTypeFunction = {
-      val x = NamedVar(freshName(), RangeAdd(0, upperBound, 1))
+      val x = NamedVar(freshName("n"), RangeAdd(0, upperBound, 1))
       NatDataTypeFunction(x, x => DataType.substitute(x, `for`=id, `in`=body))
     }
   }
@@ -102,22 +102,8 @@ package object DPIA {
     }
   }
 
-  object freshName {
-    private var counter = 0
-
-    /**Note: I changed the default prefix from v to x. This is because, v is also the prefix used by ArithExpr variables
-      * This lead to a situation wherein it was possible, by sheer chance, that a namedVar with the default name had the
-      * same .name value as another, non NamedVar variable, which happened to just have a clashing id.
-      *
-      * Maybe should we push this naming function into the ArithExpr? Or use the var id instead of a non-shared global
-      * counter?
-      * */
-
-    def apply(prefix: String = "x"): String = {
-      counter += 1
-      prefix + counter
-    }
-  }
+  // note: this is an easy fix to avoid name conflicts between lift and dpia
+  val freshName = lift.core.freshName
 
   type x[T1 <: PhraseType, T2 <: PhraseType] = PairType[T1, T2]
   type ->[T1 <: PhraseType, T2 <: PhraseType] = FunctionType[T1, T2]

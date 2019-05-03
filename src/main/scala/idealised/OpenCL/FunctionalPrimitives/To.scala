@@ -21,7 +21,7 @@ abstract class To(dt1: DataType,
                     Phrase[ExpType -> ExpType], Phrase[ExpType]) => To)
   extends ExpPrimitive {
 
-  override lazy val `type`: ExpType =
+  override val t: ExpType =
     (dt1: DataType) -> (dt2: DataType) ->
       (f :: t"exp[$dt1] -> exp[$dt2]") ->
         (input :: exp"[$dt1]") ->

@@ -1,10 +1,9 @@
 package lift.core
 
-import lift.core.types.{DataType, DataTypeIdentifier}
+import lift.core.types._
 import lift.core.semantics._
 
 object DSL {
-
   implicit class BinOps(lhs: Expr) {
     import lift.core.primitives.{BinOp, UnaryOp}
 
@@ -33,7 +32,7 @@ object DSL {
   }
 
   implicit class FunComp(f: Expr) {
-    def \>(g: Expr): Expr = fun(x => g(f(x)))
+    def >>(g: Expr): Expr = fun(x => g(f(x)))
   }
 
   object fun {
@@ -49,16 +48,27 @@ object DSL {
   }
 
   object nFun {
-    def apply(f: NatIdentifier => Expr): NatDepLambda = {
+    def apply(f: NatIdentifier => Expr): NatLambda = {
       val x = lift.arithmetic.NamedVar(freshName("n"))
-      NatDepLambda(x, f(x))
+      NatLambda(x, f(x))
     }
   }
 
+  object nFunT {
+    def apply(f: NatIdentifier => Type): Type = {
+      val x = lift.arithmetic.NamedVar(freshName("n"))
+      NatDependentFunctionType(x, f(x))
+    }
+  }
+
+  def implN[A](f: NatIdentifier => A): A = {
+    f(lift.arithmetic.NamedVar(freshName("_n")))
+  }
+
   object tFun {
-    def apply(f: DataTypeIdentifier => Expr): TypeDepLambda = {
+    def apply(f: DataTypeIdentifier => Expr): TypeLambda = {
       val x = DataTypeIdentifier(freshName("dt"))
-      TypeDepLambda(x, f(x))
+      TypeLambda(x, f(x))
     }
   }
 
@@ -68,9 +78,33 @@ object DSL {
       types.NatDataTypeLambda(x, f(x))
     }
   }
-  
+
+  object tFunT {
+    def apply(f: DataTypeIdentifier => Type): Type = {
+      val x = DataTypeIdentifier(freshName("dt"))
+      TypeDependentFunctionType(x, f(x))
+    }
+  }
+
+  def implT[A](f: DataTypeIdentifier => A): A = {
+    f(DataTypeIdentifier(freshName("_dt")))
+  }
+
+  implicit def natToExpr(n: Nat): NatExpr = NatExpr(n)
+
   def l(i: Int): Literal = Literal(IntData(i))
   def l(f: Float): Literal = Literal(FloatData(f))
   def l(d: Double): Literal = Literal(DoubleData(d))
   def l(v: VectorData): Literal = Literal(v)
+  def l(a: ArrayData): Literal = Literal(a)
+
+  implicit final class To(private val a: Type) extends AnyVal {
+    @inline def ->(b: Type): Type = FunctionType(a, b)
+  }
+
+  object foreignFun {
+    def apply(name: String, params: Seq[String], body: String, t: Type): Expr = {
+      primitives.ForeignFun(primitives.ForeignFunDecl(name, params, body), t)
+    }
+  }
 }

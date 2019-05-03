@@ -20,24 +20,26 @@ class traverse extends idealised.util.Tests {
       Continue(e, this)
     }
 
-    override def apply(ae: Nat): Nat = {
+    override def apply(ae: Nat): Result[Nat] = {
       println(ae)
       trace += ae
-      ae
+      Continue(ae, this)
     }
 
-    override def apply[T <: Type](t: T): T = {
+    override def apply[T <: Type](t: T): Result[T] = {
       println(t)
       trace += t
-      t
+      Continue(t, this)
     }
   }
 
   test("traverse an expression depth-first") {
     val expected = {
       Seq(
-        { case _: NatDepLambda => () },
-        { case _: NatDepLambda => () },
+        { case _: NatLambda => () },
+        { case _: NatIdentifier => () },
+        { case _: NatLambda => () },
+        { case _: NatIdentifier => () },
         { case _: Lambda => () },
         { case _: Apply => () },
         { case _: Apply => () },
@@ -53,7 +55,7 @@ class traverse extends idealised.util.Tests {
     }
 
     val trace = mutable.ArrayBuffer[Any]()
-    val result = DepthFirstLocalStop(e, new TraceVisitor(trace))
+    val result = DepthFirstLocalResult(e, new TraceVisitor(trace))
 
     // the expression should not have changed
     assert(StructuralEquality(result, e))
@@ -65,8 +67,10 @@ class traverse extends idealised.util.Tests {
   test("traverse an expression depth-first with stop and update") {
     val expected = {
       Seq(
-        { case _: NatDepLambda => () },
-        { case _: NatDepLambda => () },
+        { case _: NatLambda => () },
+        { case _: NatIdentifier => () },
+        { case _: NatLambda => () },
+        { case _: NatIdentifier => () },
         { case _: Lambda => () }
       ) : Seq[Any => Unit]
     }
@@ -84,15 +88,18 @@ class traverse extends idealised.util.Tests {
       }
     }
 
-    val (found, result) = DepthFirstGlobalStop(e, new Visitor)
+    val result = DepthFirstGlobalResult(e, new Visitor)
 
     // the expression should have changed
-    assert(found)
-    assert(StructuralEquality(result,
-      nFun(h => nFun(w => fun(ArrayType(h, ArrayType(w, float)))(input =>
-        Apply(fun(x => x), input)
-      )))
-    ))
+    result match {
+      case traversal.Stop(r) =>
+        assert(StructuralEquality(r,
+          nFun(h => nFun(w => fun(ArrayType(h, ArrayType(w, float)))(input =>
+            Apply(fun(x => x), input)
+          )))
+        ))
+      case _ => throw new Exception("the traversal should have stopped")
+    }
     // the trace should match expectations
     trace.length shouldBe expected.length
     trace.zip(expected).foreach({ case (x, e) => e(x) })
@@ -114,17 +121,16 @@ class traverse extends idealised.util.Tests {
       }
     }
 
-    val (found, result) = DepthFirstGlobalStop(e, new Visitor)
+    val result = DepthFirstGlobalResult(e, new Visitor)
 
     // the expression should have changed
-    assert(found)
-    val expected = nFun(n => fun(ArrayType(n, float))(input => {
-      val x = Identifier(freshName("x"))
-      Apply(Lambda(x, x), input |> map(fun(x => x)))
-    }))
-    println(e)
-    println(result)
-    println(expected)
-    assert(StructuralEquality(result, expected))
+    result match {
+      case traversal.Stop(r) =>
+        val expected = nFun(n => fun(ArrayType(n, float))(input => {
+          val x = Identifier(freshName("x"))
+          Apply(Lambda(x, x), input |> map(fun(x => x)))
+        }))
+        assert(StructuralEquality(r, expected))
+    }
   }
 }

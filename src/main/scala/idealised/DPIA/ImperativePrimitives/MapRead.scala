@@ -2,7 +2,6 @@ package idealised.DPIA.ImperativePrimitives
 
 import idealised.DPIA.Compilation.TranslationContext
 import idealised.DPIA._
-import idealised.DPIA.DSL._
 import idealised.DPIA.Types._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics._
@@ -16,7 +15,7 @@ final case class MapRead(n: Nat,
                          input: Phrase[ExpType])
   extends ExpPrimitive
 {
-  override val `type`: ExpType =
+  override val t: ExpType =
     (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
       (f :: exp"[$dt1]" -> ((t"exp[$dt2] -> comm") -> comm)) ->
       (input :: exp"[$n.$dt1]") -> exp"[$n.$dt2]"

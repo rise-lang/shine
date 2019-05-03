@@ -13,7 +13,7 @@ import scala.language.reflectiveCalls
 object SlideSeqIRegRot {
   def apply(n: Nat,
             size: Nat,
-            // step: Nat,
+            step: Nat,
             dt1: DataType,
             dt2: DataType,
             f: Phrase[ExpType -> (AccType -> CommandType)],
@@ -21,7 +21,7 @@ object SlideSeqIRegRot {
             output: Phrase[AccType])
            (implicit context: TranslationContext): Phrase[CommandType] =
   {
-    val step = 1
+    assert(step.eval == 1) // FIXME?
     val inputSize = step * n + size - step
 
     NewRegRot(size, dt1,
@@ -29,12 +29,12 @@ object SlideSeqIRegRot {
         fun(comm : CommandType)(rotate => {
           // prologue initialisation
           MapSeqI(size - 1, dt1, dt1, fun(ExpType(dt1))(exp => fun(AccType(dt1))(acc => acc :=|dt1| exp)),
-            Take(size - 1, inputSize, dt1, input),
-            TakeAcc(size - 1, size, dt1, rs.wr)) `;`
+            Take(size - 1, inputSize - size + 1, dt1, input),
+            TakeAcc(size - 1, size - size + 1, dt1, rs.wr)) `;`
           // core loop
           ForNat(n, _Λ_(i => {
             // load current value
-            ((rs.wr `@` (size - 1)) :=|dt1| (Drop(size - 1, inputSize, dt1, input) `@` i)) `;`
+            ((rs.wr `@` (size - 1)) :=|dt1| (Drop(size - 1, (inputSize - size + 1), dt1, input) `@` i)) `;`
             f(rs.rd)(output `@` i) `;` // body
             rotate
           }), unroll = false)

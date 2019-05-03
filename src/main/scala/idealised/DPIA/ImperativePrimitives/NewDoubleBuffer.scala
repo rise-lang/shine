@@ -17,7 +17,7 @@ final case class NewDoubleBuffer(dt1: DataType,
                                  f: Phrase[ExpType x AccType x CommandType x CommandType -> CommandType])
   extends CommandPrimitive {
 
-  override val `type`: CommandType =
+  override val t: CommandType =
     (dt1: DataType) -> (dt2: DataType) -> (dt3: DataType) -> (n: Nat) ->
       (in :: exp"[$dt1]") ->
         (out :: acc"[$dt2]") ->

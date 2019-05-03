@@ -1,65 +1,12 @@
 package lift.core
 
 import lift.core.types._
-import lift.arithmetic._
+import lift.core.DSL._
 
 object primitives {
-  private def nFun(f: NatIdentifier => Type): Type = {
-    val n = NamedVar(freshName("n"))
-    NatDependentFunctionType(n, f(n))
-  }
-
-  private def implN(f: NatIdentifier => Type): Type = {
-    f(NamedVar(freshName("n")))
-  }
-
-  private def tFun(f: DataTypeIdentifier => Type): Type = {
-    val dt = DataTypeIdentifier(freshName("dt"))
-    TypeDependentFunctionType(dt, f(dt))
-  }
-
-  private def implT(f: DataTypeIdentifier => Type): Type = {
-    f(DataTypeIdentifier(freshName("dt")))
-  }
-
-  private def fnFun(f: NatNatFunctionIdentifier => Type): Type = {
-    val fn = NatNatFunctionIdentifier(freshName("fn"))
-    NatNatDependentFunctionType(fn, f(fn))
-  }
-
-  private def implFn(f: NatNatFunctionIdentifier => Type): Type = {
-    f(NatNatFunctionIdentifier(freshName("fn")))
-  }
-
-  private def fdtFun(f: NatDataTypeFunctionIdentifier => Type): Type = {
-    val fdt = NatDataTypeFunctionIdentifier(freshName("fdt"))
-    NatDataTypeDependentFunctionType(fdt, f(fdt))
-  }
-
-  private def implFdt(f: NatDataTypeFunctionIdentifier => Type): Type = {
-    f(NatDataTypeFunctionIdentifier(freshName("fdt")))
-  }
-
-  implicit private final class To(private val a: Type) extends AnyVal {
-    @inline def ->(b: Type): Type = FunctionType(a, b)
-  }
-
-  implicit private final class NatDataTypeApplyHelper(val f: lift.core.types.NatDataTypeFunction) {
-    def apply(n: Nat): DataType = {
-      NatDataTypeApply(f, n)
-    }
-  }
-
-  implicit private final class NatNatApplyHelper(val f: lift.core.types.NatNatFunction) {
-    def apply(n: Nat): Nat = {
-      //NatDataTypeApply(f, n)
-      ???
-    }
-  }
-
   case object map extends Primitive {
     override def t: Type = implN(n => implT(a => implT(b =>
-      (a -> b) -> ArrayType(n, a) -> ArrayType(n, b)
+      (a -> b) -> (ArrayType(n, a) -> ArrayType(n, b))
     )))
   }
 
@@ -67,20 +14,24 @@ object primitives {
     override def t: Type = map.t
   }
 
-  case object depMap extends Primitive {
-    override def t: Type = implN(n => implFdt(fdt1 => implFdt(fdt2 =>
-      nFun(k => fdt1(k) -> fdt2(k)) -> DepArrayType(n, fdt1) -> DepArrayType(n, fdt2)
-    )))
-  }
-
   case object reduce extends Primitive {
     override def t: Type = implN(n => implT(a => implT(b =>
-      (a -> b -> b) -> b -> ArrayType(n, a) -> b
+      (a -> (b -> b)) -> (b -> (ArrayType(n, a) -> b))
     )))
   }
 
   case object reduceSeq extends Primitive {
     override def t: Type = reduce.t
+  }
+
+  case object scan extends Primitive {
+    override def t: Type = implN(n => implT(a => implT(b =>
+      (a -> (b -> b)) -> (b -> (ArrayType(n, a) -> ArrayType(n, b)))
+    )))
+  }
+
+  case object scanSeq extends Primitive {
+    override def t: Type = scan.t
   }
 
   case object join extends Primitive {
@@ -90,13 +41,13 @@ object primitives {
   }
 
   case object split extends Primitive {
-    override def t: Type = nFun(n => implN(m => implT(dt =>
+    override def t: Type = nFunT(n => implN(m => implT(dt =>
       ArrayType(m * n, dt) -> ArrayType(m, ArrayType(n, dt))
     )))
   }
 
   case object slide extends Primitive {
-    override def t: Type = implN(n => nFun(sz => nFun(sp => implT(dt => {
+    override def t: Type = implN(n => nFunT(sz => nFunT(sp => implT(dt => {
       val inputSize = sp * n + sz - sp
       ArrayType(inputSize, dt) -> ArrayType(n, ArrayType(sz, dt))
     }))))
@@ -106,15 +57,35 @@ object primitives {
     override def t: Type = slide.t
   }
 
+  case object reorder extends Primitive {
+    override def t: Type = implN(n => implT(a =>
+      (IndexType(n) -> IndexType(n)) -> (// idxF
+        (IndexType(n) -> IndexType(n)) -> (// idxFinv
+          ArrayType(n, a) -> ArrayType(n, a)))
+    ))
+  }
+
   case object transpose extends Primitive {
     override def t: Type = implN(n => implN(m => implT(dt =>
       ArrayType(n, ArrayType(m, dt)) -> ArrayType(m, ArrayType(n, dt))
     )))
   }
 
+  case object take extends Primitive {
+    override def t: Type = nFunT(n => implN(m => implT(a =>
+      ArrayType(n + m, a) -> ArrayType(n, a)
+    )))
+  }
+
+  case object drop extends Primitive {
+    override def t: Type = nFunT(n => implN(m => implT(a =>
+      ArrayType(n + m, a) -> ArrayType(m, a)
+    )))
+  }
+
   case object zip extends Primitive {
     override def t: Type = implN(n => implT(a => implT(b =>
-      ArrayType(n, a) -> ArrayType(n, b) -> ArrayType(n, TupleType(a, b))
+      ArrayType(n, a) -> (ArrayType(n, b) -> ArrayType(n, TupleType(a, b)))
     )))
   }
 
@@ -129,19 +100,43 @@ object primitives {
   case class UnaryOp(op: Operators.Unary.Value) extends Primitive {
     override def toString: String = s"$op"
 
-    override def t: Type = implT(a => a -> a -> a)
+    override def t: Type = implT(a => a -> a)
   }
 
   case class BinOp(op: Operators.Binary.Value) extends Primitive {
-    override def toString: String = s"($op)"
+    override def toString: String = s"$op"
 
-    override def t: Type = implT(a => a -> a -> a)
+    override def t: Type = implT(a => a -> (a -> a))
   }
 
-  case object IfThenElse extends Primitive {
-    override def toString: String = s"if then else"
+  // TODO: ask for basic type parameters
+  case object cast extends Primitive {
+    override def t: Type = implT(a => implT(b => a -> b))
+  }
 
-    override def t: Type = implT(a => bool -> a -> a)
+  case class ForeignFunDecl(name: String, args: Seq[String], body: String)
+
+  case class ForeignFun(decl: ForeignFunDecl, override val t: Type) extends Primitive {
+    override def toString: String = decl.name
+  }
+
+  case object generate extends Primitive {
+    override def t: Type = implN(n => implT(a =>
+      (IndexType(n) -> a) -> ArrayType(n, a)
+    ))
+  }
+
+  case object iterate extends Primitive {
+    override def t: Type = implN(n => implN(m => nFunT(k => implT(a =>
+      nFunT(l => ArrayType(l * n, a) -> ArrayType(l, a)) ->
+        (ArrayType(m * n.pow(k), a) -> ArrayType(m, a))
+    ))))
+  }
+
+  case object indexAsNat extends Primitive {
+    override def t: Type = implN(n =>
+      IndexType(n) -> NatType
+    )
   }
 }
 

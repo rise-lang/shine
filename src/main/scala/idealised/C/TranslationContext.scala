@@ -25,7 +25,7 @@ class TranslationContext() extends idealised.DPIA.Compilation.TranslationContext
 
       case DepArrayType(n, ft) =>
 
-        val k = NamedVar(freshName())
+        val k = NamedVar(freshName("k"))
 
         DepMapSeqI(n, ft, ft,
           NatDependentLambda(k,

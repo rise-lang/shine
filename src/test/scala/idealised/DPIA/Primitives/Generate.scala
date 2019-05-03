@@ -1,71 +1,49 @@
 package idealised.DPIA.Primitives
 
-import idealised.OpenCL.SurfaceLanguage.DSL.oclFun
-import idealised.SurfaceLanguage.DSL._
-import idealised.SurfaceLanguage.Types._
-import idealised.util.SyntaxChecker
+import lift.core.DSL._
+import lift.core.types._
+import lift.core.primitives._
+import idealised.util.gen
 
 class Generate extends idealised.util.Tests {
-  test("Very simple one-dimensional generate generates syntactically correct code in C.") {
-    val id = fun(x => x)
-    val simpleGenerate = nFun(n => generate(fun(IndexType(n))(i => cast(double, i) + 1.0)) :>> mapSeq(id))
-    val program = idealised.C.ProgramGenerator.makeCode(
-      idealised.DPIA.FromSurfaceLanguage(TypeInference(simpleGenerate, Map())))
+  val id = fun(x => x)
+  val addT = fun(x => fst(x) + snd(x))
+  val cos = foreignFun("callCos", Seq("x"), "{ return cos(x); }", double -> double)
 
-    println(program.code)
-    SyntaxChecker(program.code)
+  test("Very simple one-dimensional generate generates syntactically correct code in C.") {
+    val e = nFun(n => generate(fun(IndexType(n))(i => cast(i) + l(1.0))) |> mapSeq(id))
+    gen.CProgram(e)
   }
 
   test("Very simplistic generate, using index and maximum index size" +
     "generates syntactically correct code in C.") {
-    val id = fun(x => x)
-    val simpleGenerate =
-      nFun(n => generate(fun(IndexType(n))(i => indexAsNat(i) + n)) :>> mapSeq(id))
-    val program = idealised.C.ProgramGenerator.makeCode(
-      idealised.DPIA.FromSurfaceLanguage(TypeInference(simpleGenerate, Map())))
-
-    println(program.code)
-    SyntaxChecker(program.code)
+    val e =
+      nFun(n => generate(fun(IndexType(n))(i => indexAsNat(i) + n)) |> mapSeq(id))
+    gen.CProgram(e)
   }
 
   test("One-dimensional generate generates syntactically correct code in C.") {
-    val add = fun(x => x._1 + x._2)
-    val simpleMap = nFun(n => fun(ArrayType(n, double))(in =>
-      zip(in,
-        generate(fun(IndexType(n))(i =>
-          foreignFun(double, "callCos", (double, "x"), "{ return cos(x); }",
-            cast(double, indexAsNat(i) + n)))
-      )) :>>
-        mapSeq(add)))
-
-    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(simpleMap, Map()))
-    val program = idealised.C.ProgramGenerator.makeCode(phrase)
-    println(program.code)
-
-    SyntaxChecker(program.code)
+    val e = nFun(n => fun(ArrayType(n, double))(in =>
+      zip(in)(generate(fun(IndexType(n))(i => cos(cast(indexAsNat(i) + n)))))
+      |> mapSeq(addT)
+    ))
+    gen.CProgram(e)
   }
 
   test("Two-dimensional generate generates syntactically correct code in C.") {
-    val add = fun(x => x._1 + x._2)
-    val simpleMap = nFun((m, n) => fun(ArrayType(m, ArrayType(n, double)))(in =>
-      zip(in,
+    val e = nFun(m => nFun(n => fun(ArrayType(m, ArrayType(n, double)))(in =>
+      zip(in)(
         generate(fun(IndexType(m))(i =>
           generate(fun(IndexType(n))(j =>
-            foreignFun(double, "callCos", (double, "x"), "{ return cos(x); }",
-              // TODO how to implicitly cast, with Nat on the lhs of a binary op?
-              cast(double, (indexAsNat(j) + n) * indexAsNat(i) + m))
-            )))))
-        :>> mapSeq(fun(t => zip(t._1, t._2) :>> mapSeq(add)))
-    ))
-
-    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(simpleMap, Map()))
-    val program = idealised.C.ProgramGenerator.makeCode(phrase)
-    println(program.code)
-
-    SyntaxChecker(program.code)
+            cos(cast((indexAsNat(j) + n) * indexAsNat(i) + m))
+          )))))
+        |> mapSeq(fun(t => zip(fst(t))(snd(t)) |> mapSeq(addT)))
+    )))
+    gen.CProgram(e)
   }
 
   // FIXME: mapNatExpr and natFromNatExpr
+  /*
   ignore("Syntactically correct code for complex Generate can be generated in C.") {
     val N = 8
     val LPrevIter = 1
@@ -92,4 +70,5 @@ class Generate extends idealised.util.Tests {
     println(program.code)
     SyntaxChecker.checkOpenCL(program.code)
   }
+  */
 }

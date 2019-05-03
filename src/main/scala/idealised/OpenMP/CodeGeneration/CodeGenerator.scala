@@ -144,7 +144,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         // struct float4 {
         //    float data[4];
         // };
-        C.AST.StructType(v.toString,
+        C.AST.StructType(s"${v.elemType}${v.size}",
           immutable.Seq((C.AST.ArrayType(typ(v.elemType), Some(v.size)), "data")))
       case _ => super.typ(dt)
     }
@@ -287,7 +287,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
           addDeclaration(
             C.AST.FunDecl(funDecl.name,
               returnType = typ(elemType),
-              params = (funDecl.argNames zip inTs_).map {
+              params = (funDecl.args zip inTs_).map {
                 case (name, dt) => C.AST.ParamDecl(name, typ(dt))
               },
               body = C.AST.Code(funDecl.body)

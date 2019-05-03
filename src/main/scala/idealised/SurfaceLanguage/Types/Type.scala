@@ -25,7 +25,7 @@ final case class DepArrayType(size: Nat, elemType: `(nat)->dt`) extends Composed
 
 object DepArrayType {
   def apply(size: Nat, f: Nat => DataType): DepArrayType = {
-    val newName = NamedVar(freshName(), RangeAdd(0, size, 1))
+    val newName = NamedVar(freshName("n"), RangeAdd(0, size, 1))
     DepArrayType(size, NatDependentFunctionType(newName, f(newName)))
   }
 }
@@ -95,7 +95,7 @@ final case class NatDependentFunctionType[T <: Type](n: NatIdentifier, t: T) ext
 
 object NatDependentFunctionType {
   def apply[T <: Type](f: NatIdentifier => T): NatDependentFunctionType[T] = {
-    val newN = NamedVar(freshName())
+    val newN = NamedVar(freshName("n"))
     NatDependentFunctionType(newN, f(newN))
   }
 }

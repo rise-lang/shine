@@ -13,7 +13,7 @@ import scala.xml.Elem
 final case class Cast(dt1: BasicType, dt2: BasicType, e: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override val `type`: ExpType =
+  override val t: ExpType =
     (dt1: BasicType) -> (dt2: BasicType) ->
       (e :: exp"[$dt1]") -> exp"[$dt2]"
 

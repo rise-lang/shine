@@ -18,7 +18,7 @@ final case class Zip(n: Nat,
                      e2: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override val `type`: ExpType =
+  override val t: ExpType =
     (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
       (e1 :: exp"[$n.$dt1]") ->
        (e2 :: exp"[$n.$dt2]") -> exp"[$n.($dt1 x $dt2)]"
