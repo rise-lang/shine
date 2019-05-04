@@ -277,9 +277,4 @@ int main(int argc, char** argv) {
   test("compile and compare register rotation blur to the reference") {
     check_ref(regrot)
   }
-
-
-  slide(3)(1) >> mapSeq(transpose >>
-    map(dotSeq(weights1d)) >> slideSeq(3)(1) >> map(dotSeq(weights1d))
-  )
 }

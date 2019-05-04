@@ -912,7 +912,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           case True => taken
           case False => notTaken
           case _ => C.AST.TernaryExpr(
-            C.AST.BinaryExpr(C.AST.ArithmeticExpr(i), cOperator(operator), C.AST.ArithmeticExpr(rhs)),
+            C.AST.BinaryExpr(C.AST.ArithmeticExpr(lhs), cOperator(operator), C.AST.ArithmeticExpr(rhs)),
             taken, notTaken)
         }
       }

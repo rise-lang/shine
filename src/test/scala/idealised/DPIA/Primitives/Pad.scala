@@ -3,6 +3,7 @@ package idealised.DPIA.Primitives
 import lift.core.DSL._
 import lift.core.types._
 import lift.core.primitives._
+import lift.core.HighLevelConstructs.padClamp2D
 
 import idealised.util.gen
 
@@ -19,6 +20,14 @@ class Pad extends idealised.util.Tests {
     val e = nFun(n => fun(ArrayType(n, float))(xs =>
       xs |> padClamp(2)(3) |> mapSeq(fun(x => x))
     ))
+
+    gen.CProgram(e)
+  }
+
+  test("2D C clamp pad input and copy") {
+    val e = nFun(n => nFun(m => fun(ArrayType(n, ArrayType(m, float)))(xs =>
+      xs |> padClamp2D(2) |> mapSeq(mapSeq(fun(x => x)))
+    )))
 
     gen.CProgram(e)
   }
