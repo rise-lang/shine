@@ -32,9 +32,9 @@ object lifting {
         Reducing((e: Expr) => substitute(e, `for` = x, in = body))
       case Apply(f, e) =>
         chain(liftFunctionExpr(f).map(lf => lf(e)))
-      case NatApply(f, n) =>
+      case NatDepApply(f, n) =>
         chain(liftNatDependentFunctionExpr(f).map(lf => lf(n)))
-      case TypeApply(f, t) =>
+      case TypeDepApply(f, t) =>
         chain(liftTypeDependentFunctionExpr(f).map(lf => lf(t)))
       case _ => chain(Expanding(p))
     }
@@ -43,16 +43,16 @@ object lifting {
   def liftNatDependentFunctionExpr(p: Expr): Result[Nat => Expr] = {
     def chain(r: Result[Expr]): Result[Nat => Expr] =
       r.bind(liftNatDependentFunctionExpr,
-        f => Expanding((n: Nat) => NatApply(f, n)))
+        f => Expanding((n: Nat) => NatDepApply(f, n)))
 
     p match {
-      case NatLambda(x, e) =>
+      case NatDepLambda(x, e) =>
         Reducing((n: Nat) => substitute(n, `for` = x, in = e))
       case Apply(f, e) =>
         chain(liftFunctionExpr(f).map(lf => lf(e)))
-      case NatApply(f, n) =>
+      case NatDepApply(f, n) =>
         chain(liftNatDependentFunctionExpr(f).map(lf => lf(n)))
-      case TypeApply(f, t) =>
+      case TypeDepApply(f, t) =>
         chain(liftTypeDependentFunctionExpr(f).map(lf => lf(t)))
       case _ => chain(Expanding(p))
     }
@@ -61,16 +61,16 @@ object lifting {
   def liftTypeDependentFunctionExpr(p: Expr): Result[DataType => Expr] = {
     def chain(r: Result[Expr]): Result[DataType => Expr] =
       r.bind(liftTypeDependentFunctionExpr,
-        f => Expanding((dt: DataType) => TypeApply(f, dt)))
+        f => Expanding((dt: DataType) => TypeDepApply(f, dt)))
 
     p match {
-      case TypeLambda(x, e) =>
+      case TypeDepLambda(x, e) =>
         Reducing((dt: DataType) => substitute(dt, `for` = x, in = e))
       case Apply(f, e) =>
         chain(liftFunctionExpr(f).map(lf => lf(e)))
-      case NatApply(f, n) =>
+      case NatDepApply(f, n) =>
         chain(liftNatDependentFunctionExpr(f).map(lf => lf(n)))
-      case TypeApply(f, t) =>
+      case TypeDepApply(f, t) =>
         chain(liftTypeDependentFunctionExpr(f).map(lf => lf(t)))
       case _ => chain(Expanding(p))
     }

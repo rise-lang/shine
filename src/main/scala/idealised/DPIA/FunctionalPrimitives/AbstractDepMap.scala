@@ -12,12 +12,19 @@ import scala.xml.Elem
 
 
 abstract class AbstractDepMap(n: Nat,
-                              ft1:NatDataTypeFunction,
+                              ft1: NatDataTypeFunction,
                               ft2: NatDataTypeFunction,
                               f: Phrase[`(nat)->`[ExpType -> ExpType]],
                               array: Phrase[ExpType])
   extends ExpPrimitive {
 
+  override val t: ExpType = {
+    val k = f.t.n
+    (n: Nat) -> (ft1: NatDataTypeFunction) -> (ft2: NatDataTypeFunction) ->
+      (f :: t"($k : nat) -> exp[${ ft1(k) }] -> exp[${ ft2(k) }]") ->
+        (array :: exp"[$n.$ft1]") ->
+          exp"[$n.$ft2]"
+  }
 
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommandType] = {
@@ -59,14 +66,6 @@ abstract class AbstractDepMap(n: Nat,
                array: Phrase[ExpType],
                out: Phrase[AccType])
               (implicit context: TranslationContext): Phrase[CommandType]
-
-  override val t: ExpType = {
-    val k = f.t.n
-    (n: Nat) -> (ft1:NatDataTypeFunction) -> (ft2:NatDataTypeFunction) ->
-      (f :: t"($k : nat) -> exp[${ ft1(k) }] -> exp[${ ft2(k) }]")
-    (array :: exp"[$n.$ft1]") ->
-      exp"[$n.$ft2]"
-  }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     makeMap(fun(n), fun(ft1), fun(ft2), VisitAndRebuild(f, fun), VisitAndRebuild(array, fun))

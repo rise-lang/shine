@@ -111,7 +111,9 @@ final case class NatDataTypeApply(f: NatDataTypeFunction, n: Nat) extends DataTy
 // ============================================================================================= //
 // Nat -> Nat
 // ============================================================================================= //
-sealed trait NatNatFunction
+sealed trait NatNatFunction {
+  def apply(l: Nat): Nat
+}
 
 final case class NatNatLambda private (n: NatIdentifier, m: Nat) extends NatNatFunction {
   //NatNatTypeFunction have an interesting comparison behavior, as we do not define
@@ -135,7 +137,9 @@ final case class NatNatLambda private (n: NatIdentifier, m: Nat) extends NatNatF
   }
 }
 
-final case class NatNatFunctionIdentifier(name: String) extends NatNatFunction
+final case class NatNatFunctionIdentifier(name: String) extends NatNatFunction {
+  override def apply(l: Nat): Nat = ???
+}
 
 
 // ============================================================================================= //
@@ -145,9 +149,13 @@ sealed trait NatDataTypeFunction {
   def map(f:DataType => DataType):NatDataTypeFunction = {
     NatDataTypeFunction.mapOnElement(f, this)
   }
+
+  def apply(n: Nat): NatDataTypeApply = call(n)
+  def call(n: Nat): NatDataTypeApply = NatDataTypeApply(this, n)
 }
 
 object NatDataTypeFunction {
+
   def mapOnElement(f:DataType => DataType,
           typeFun:NatDataTypeFunction):NatDataTypeFunction = {
     typeFun match {
@@ -155,6 +163,7 @@ object NatDataTypeFunction {
       case NatDataTypeLambda(binder, body) => NatDataTypeLambda(binder, f(body))
     }
   }
+
 }
 
 final case class NatDataTypeLambda(n: NatIdentifier, dt: DataType) extends NatDataTypeFunction {
@@ -174,6 +183,18 @@ final case class NatDataTypeLambda(n: NatIdentifier, dt: DataType) extends NatDa
 //      case _ => false
 //    }
 //  }
+}
+
+object NatDataTypeLambda {
+  def apply(upperBound:Nat, f:NatIdentifier => DataType):NatDataTypeFunction = {
+    val x = NamedVar(freshName("n"), RangeAdd(0, upperBound, 1))
+    NatDataTypeLambda(x, f(x))
+  }
+
+  def apply(upperBound:Nat, id:NatIdentifier, body:DataType):NatDataTypeFunction = {
+    val x = NamedVar(freshName("n"), RangeAdd(0, upperBound, 1))
+    NatDataTypeLambda(x, substitute(_, `for`=id, `in`=body))
+  }
 }
 
 final case class NatDataTypeFunctionIdentifier(name: String) extends NatDataTypeFunction

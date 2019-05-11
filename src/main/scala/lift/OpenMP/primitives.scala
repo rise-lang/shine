@@ -2,17 +2,17 @@ package lift.OpenMP
 
 import lift.core.DSL._
 import lift.core.types._
-import lift.core.{primitives => cp}
+import lift.core.{primitives => core}
 
 object primitives {
   sealed trait Primitive extends lift.core.Primitive
 
   case object mapPar extends Primitive {
-    override def t: Type = cp.map.t
+    override def t: Type = core.map.t
   }
 
   case object reducePar extends Primitive {
-    override def t: Type = cp.reduce.t
+    override def t: Type = core.reduce.t
   }
 
   // TODO: should vectorisation be in the core, or shared with OpenCL?

@@ -33,14 +33,14 @@ object traversal {
               Lambda(x, apply(e, v))
             case Apply(f, e) =>
               Apply(apply(f, v), apply(e, v))
-            case NatLambda(n, e) =>
-              NatLambda(v(n).value.asInstanceOf[NatIdentifier], apply(e, v))
-            case NatApply(f, n) =>
-              NatApply(apply(f, v), v(n).value)
-            case TypeLambda(dt, e) =>
-              TypeLambda(v(dt).value, apply(e, v))
-            case TypeApply(f, dt) =>
-              TypeApply(apply(f, v), v(dt).value)
+            case NatDepLambda(n, e) =>
+              NatDepLambda(v(n).value.asInstanceOf[NatIdentifier], apply(e, v))
+            case NatDepApply(f, n) =>
+              NatDepApply(apply(f, v), v(n).value)
+            case TypeDepLambda(dt, e) =>
+              TypeDepLambda(v(dt).value, apply(e, v))
+            case TypeDepApply(f, dt) =>
+              TypeDepApply(apply(f, v), v(dt).value)
             case l: Literal => l
             case Index(n, size) =>
               Index(v(n).value, v(size).value)
@@ -51,8 +51,8 @@ object traversal {
             case TypedExpr(e, t) =>
               TypedExpr(apply(e, v), v(t).value)
             // could be avoided if foreign fun could be parametric
-            case primitives.ForeignFun(decl, t) =>
-              primitives.ForeignFun(decl, v(t).value)
+            case primitives.ForeignFunction(decl, t) =>
+              primitives.ForeignFunction(decl, v(t).value)
             case p: Primitive => p
           }
       }
@@ -86,14 +86,14 @@ object traversal {
             apply(e, v).map(Lambda(x, _))
           case Apply(f, e) =>
             chainE(apply(f, v), e).map(r => Apply(r._1, r._2))
-          case NatLambda(n, e) =>
-            chainE(v(n), e).map(r => NatLambda(r._1.asInstanceOf[NatIdentifier], r._2))
-          case NatApply(f, n) =>
-            chainN(apply(f, v), n).map(r => NatApply(r._1, r._2))
-          case TypeLambda(dt, e) =>
-            chainE(v(dt), e).map(r => TypeLambda(r._1, r._2))
-          case TypeApply(f, dt) =>
-            chainT(apply(f, v), dt).map(r => TypeApply(r._1, r._2))
+          case NatDepLambda(n, e) =>
+            chainE(v(n), e).map(r => NatDepLambda(r._1.asInstanceOf[NatIdentifier], r._2))
+          case NatDepApply(f, n) =>
+            chainN(apply(f, v), n).map(r => NatDepApply(r._1, r._2))
+          case TypeDepLambda(dt, e) =>
+            chainE(v(dt), e).map(r => TypeDepLambda(r._1, r._2))
+          case TypeDepApply(f, dt) =>
+            chainT(apply(f, v), dt).map(r => TypeDepApply(r._1, r._2))
           case l: Literal => Continue(l, v)
           case Index(n, size) =>
             chainN(v(n), size).map(r => Index(r._1, r._2))
@@ -103,8 +103,8 @@ object traversal {
           case TypedExpr(e, t) =>
             chainT(apply(e, v), t).map(r => TypedExpr(r._1, r._2))
           // could be avoided if foreign fun could be parametric
-          case primitives.ForeignFun(decl, t) =>
-            v(t).map(primitives.ForeignFun(decl, _))
+          case primitives.ForeignFunction(decl, t) =>
+            v(t).map(primitives.ForeignFunction(decl, _))
           case p: Primitive => Continue(p, v)
         }
       }

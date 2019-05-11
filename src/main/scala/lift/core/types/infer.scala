@@ -61,21 +61,21 @@ object infer {
         constraints += TypeConstraint(tf.t, FunctionType(te.t, ot))
         TypedExpr(Apply(tf, te), ot)
 
-      case NatLambda(n, e) =>
+      case NatDepLambda(n, e) =>
         val te = typed(e)
-        TypedExpr(NatLambda(n, te), NatDependentFunctionType(n, te.t))
+        TypedExpr(NatDepLambda(n, te), NatDependentFunctionType(n, te.t))
 
-      case NatApply(f, n) =>
+      case NatDepApply(f, n) =>
         val tf = typed(f)
-        TypedExpr(NatApply(tf, n), liftNatDependentFunctionType(tf.t)(n))
+        TypedExpr(NatDepApply(tf, n), liftNatDependentFunctionType(tf.t)(n))
 
-      case TypeLambda(dt, e) =>
+      case TypeDepLambda(dt, e) =>
         val te = typed(e)
-        TypedExpr(TypeLambda(dt, te), TypeDependentFunctionType(dt, te.t))
+        TypedExpr(TypeDepLambda(dt, te), TypeDependentFunctionType(dt, te.t))
 
-      case TypeApply(f, dt) =>
+      case TypeDepApply(f, dt) =>
         val tf = typed(f)
-        TypedExpr(TypeApply(tf, dt), liftTypeDependentFunctionType(tf.t)(dt))
+        TypedExpr(TypeDepApply(tf, dt), liftTypeDependentFunctionType(tf.t)(dt))
 
       case l: Literal => TypedExpr(l, l.d.dataType)
 
@@ -113,8 +113,8 @@ object infer {
     case class Visitor() extends traversal.Visitor {
       override def apply(e: Expr): Result[Expr] = {
         e match {
-          case NatLambda(x, _) => boundN += x
-          case TypeLambda(x, _) => boundT += x
+          case NatDepLambda(x, _) => boundN += x
+          case TypeDepLambda(x, _) => boundT += x
           case _ =>
         }
         Continue(e, this)
@@ -150,8 +150,8 @@ object infer {
         e match {
           case i: Identifier if !boundV(i) => Stop(i)
           case Lambda(x, _) => Continue(e, this.copy(boundV = boundV + x))
-          case NatLambda(x, _) => Continue(e, this.copy(boundN = boundN + x))
-          case TypeLambda(x, _) => Continue(e, this.copy(boundT = boundT + x))
+          case NatDepLambda(x, _) => Continue(e, this.copy(boundN = boundN + x))
+          case TypeDepLambda(x, _) => Continue(e, this.copy(boundT = boundT + x))
           case _ => Continue(e, this)
         }
       }

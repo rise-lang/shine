@@ -9,7 +9,7 @@ import idealised.DPIA._
 
 import scala.xml.Elem
 
-case class TransposeArrayDep(n:Nat, m:Nat, i:NatIdentifier, dt:DataType, array:Phrase[ExpType]) extends ExpPrimitive {
+case class TransposeDepArray(n:Nat, m:Nat, i:NatIdentifier, dt:DataType, array:Phrase[ExpType]) extends ExpPrimitive {
 
   private def dt(x:Nat):DataType = DataType.substitute(x, `for`=i, `in`=this.dt)
 
@@ -19,7 +19,7 @@ case class TransposeArrayDep(n:Nat, m:Nat, i:NatIdentifier, dt:DataType, array:P
   }
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    TransposeArrayDep(f(n), f(m), f(i).asInstanceOf[NatIdentifier], f(dt), VisitAndRebuild(array, f))
+    TransposeDepArray(f(n), f(m), f(i).asInstanceOf[NatIdentifier], f(dt), VisitAndRebuild(array, f))
   }
 
   override def acceptorTranslation(A: Phrase[AccType])(implicit context: TranslationContext): Phrase[CommandType] = {
@@ -31,7 +31,7 @@ case class TransposeArrayDep(n:Nat, m:Nat, i:NatIdentifier, dt:DataType, array:P
 
   override def continuationTranslation(C: Phrase[ExpType -> CommandType])(implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
-    con(array)(λ(exp"[$n.${DepArrayType(m, k => dt(k))}]")(x => C(TransposeArrayDep(n, m, i, dt, x))))
+    con(array)(λ(exp"[$n.${DepArrayType(m, k => dt(k))}]")(x => C(TransposeDepArray(n, m, i, dt, x))))
   }
 
   override def xmlPrinter: Elem = {

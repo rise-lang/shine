@@ -6,7 +6,7 @@ import org.junit.Test
 
 class depArrays extends idealised.util.Tests {
 
-  val identity = nFun(n => fun(DepArrayType(n, nTypeFun(i => ArrayType(i + 1, float))))(xs => xs))
+  val identity = nFun(n => fun(DepArrayType(n, natTypeFun(i => ArrayType(i + 1, float))))(xs => xs))
 
   def check(e:Expr):Unit = {
     println(e)

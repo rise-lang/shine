@@ -12,8 +12,8 @@ import scala.language.reflectiveCalls
 import scala.xml.Elem
 
 object ForeignFunction {
-  val Declaration = lift.core.primitives.ForeignFunDecl
-  type Declaration = lift.core.primitives.ForeignFunDecl
+  val Declaration = lift.core.primitives.ForeignFunctionDecl
+  type Declaration = lift.core.primitives.ForeignFunctionDecl
 }
 
 final case class ForeignFunction(funDecl: ForeignFunction.Declaration,

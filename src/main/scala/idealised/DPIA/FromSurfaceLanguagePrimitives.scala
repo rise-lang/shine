@@ -1,7 +1,7 @@
 package idealised.DPIA
 
 import idealised.{DPIA, SurfaceLanguage}
-import idealised.DPIA.FunctionalPrimitives.TransposeArrayDep
+import idealised.DPIA.FunctionalPrimitives.TransposeDepArray
 import idealised.DPIA.Phrases.Phrase
 import idealised.DPIA.Types.{ExpType, PhraseType}
 import idealised.OpenCL.SurfaceLanguage.Primitives._
@@ -181,7 +181,7 @@ object FromSurfaceLanguagePrimitives {
               Join(n, m, dt, FromSurfaceLanguage.asPhrase[ExpType](array)))))
 
         case Some(ArrayType(n, DepArrayType(m, NatDependentFunctionType(i, dt)))) =>
-          Some(TransposeArrayDep(n, m, i, dt, FromSurfaceLanguage.asPhrase[ExpType](array)))
+          Some(TransposeDepArray(n, m, i, dt, FromSurfaceLanguage.asPhrase[ExpType](array)))
       }
 
       case Generate(f, _) => f.t match {
