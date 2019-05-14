@@ -2,6 +2,7 @@ package lift.core.types
 
 import lift.core._
 import lift.core.lifting._
+import lift.core.types.infer.solveOne
 
 import scala.collection.mutable
 
@@ -14,6 +15,7 @@ object infer {
     val constraints = mutable.Set[Constraint]()
     val typed_e = constrainTypes(e, constraints, mutable.Map())
     implicit val (boundT, boundN) = boundIdentifiers(typed_e)
+    constraints.toSet.map(println)
     val solution = solve(constraints.toSet)
     val result = solution(typed_e)
     if (!isClosedForm(result)) {
@@ -251,53 +253,62 @@ object infer {
     if (cs.isEmpty) {
       Solution()
     } else {
-      val s = solveOne(cs.head)
-      s(solve(s(cs.tail)))
+      def solveAt(pos:Int):Solution = {
+        if(pos >= cs.size) error(s"cannot solve constraints")
+        val element = cs.toSeq(pos)
+        solveOne(element) match {
+          case Some(s) => s(solve(s(cs - element)))
+          case None => solveAt(pos + 1)
+        }
+      }
+      solveAt(0)
     }
   }
 
   def solveOne(c: Constraint)
               (implicit
                boundT: mutable.Set[DataTypeIdentifier],
-               boundN: mutable.Set[NatIdentifier]): Solution = c match {
+               boundN: mutable.Set[NatIdentifier]): Option[Solution] = c match {
     case TypeConstraint(a, b) => (a, b) match {
-      case (i: DataTypeIdentifier, _) => unifyTypeIdent(i, b)
-      case (_, i: DataTypeIdentifier) => unifyTypeIdent(i, a)
+      case (i: DataTypeIdentifier, _) => Some(unifyTypeIdent(i, b))
+      case (_, i: DataTypeIdentifier) => Some(unifyTypeIdent(i, a))
       case (_: BasicType, _: BasicType) if a == b =>
-        Solution()
+        Some(Solution())
       case (IndexType(sa), IndexType(sb)) =>
         solveOne(NatConstraint(sa, sb))
       case (ArrayType(sa, ea), ArrayType(sb, eb)) =>
-        solve(Set(NatConstraint(sa, sb), TypeConstraint(ea, eb)))
+        Some(solve(Set(NatConstraint(sa, sb), TypeConstraint(ea, eb))))
       case (VectorType(sa, ea), VectorType(sb, eb)) =>
-        solve(Set(NatConstraint(sa, sb), TypeConstraint(ea, eb)))
+        Some(solve(Set(NatConstraint(sa, sb), TypeConstraint(ea, eb))))
       case (DepArrayType(sa, ea), DepArrayType(sb, eb)) =>
         ???
       case (TupleType(ea@_*), TupleType(eb@_*)) =>
-        solve(ea.zip(eb).map({ case (a, b) => TypeConstraint(a, b) }).toSet)
+        Some(solve(ea.zip(eb).map({ case (a, b) => TypeConstraint(a, b) }).toSet))
       case (FunctionType(ina, outa), FunctionType(inb, outb)) =>
-        solve(Set(TypeConstraint(ina, inb), TypeConstraint(outa, outb)))
+        Some(solve(Set(TypeConstraint(ina, inb), TypeConstraint(outa, outb))))
       case (NatDependentFunctionType(na, ta), NatDependentFunctionType(nb, tb)) =>
         val n = lift.arithmetic.NamedVar(freshName("n"))
         boundN += n
         boundN -= na
         boundN -= nb
-        solve(Set(
+        Some(solve(Set(
           TypeConstraint(substitute(n, `for`=na, in=ta), substitute(n, `for`=nb, in=tb)),
           NatConstraint(n, na), NatConstraint(n, nb)
-        ))
+        )))
       case (TypeDependentFunctionType(dta, ta), TypeDependentFunctionType(dtb, tb)) =>
         val dt = DataTypeIdentifier(freshName("t"))
         boundT += dt
         boundT -= dta
         boundT -= dtb
-        solve(Set(
+        Some(solve(Set(
           TypeConstraint(substitute(dt, `for`=dta, in=ta), substitute(dt, `for`=dtb, in=tb)),
           TypeConstraint(dt, dta), TypeConstraint(dt, dtb)
-        ))
+        )))
+      case (NatDataTypeApply(_, _), ArrayType(_, _)) => None
+
       case _ => error(s"cannot unify $a and $b")
     }
-    case NatConstraint(a, b) => (a, b) match {
+    case NatConstraint(a, b) => Some((a, b) match {
       case (i: NatIdentifier, _) => nat.unifyIdent(i, b)
       case (_, i: NatIdentifier) => nat.unifyIdent(i, a)
       case _ if a == b => Solution()
@@ -308,7 +319,7 @@ object infer {
       case (p: lift.arithmetic.Prod, _) => nat.unifyProd(p, b)
       case (_, p: lift.arithmetic.Prod) => nat.unifyProd(p, a)
       case _ => error(s"cannot unify $a and $b")
-    }
+    })
   }
 
   def unifyTypeIdent(i: DataTypeIdentifier, t: Type)

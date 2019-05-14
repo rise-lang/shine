@@ -131,6 +131,13 @@ object traversal {
                 TypeDependentFunctionType(apply(dt, v), apply(t, v))
               case NatDependentFunctionType(n, t) =>
                 NatDependentFunctionType(v(n).value.asInstanceOf[NatIdentifier], apply(t, v))
+
+              case NatDataTypeApply(ndtf, n) =>
+                val newNDTF = ndtf match {
+                case i:NatDataTypeFunctionIdentifier => i
+                case NatDataTypeLambda(x, dt) => NatDataTypeLambda(x, apply(dt, v))
+              }
+                NatDataTypeApply(newNDTF, v(n).value)
             }).asInstanceOf[T]
         }
       }

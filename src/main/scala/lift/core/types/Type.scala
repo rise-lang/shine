@@ -8,15 +8,25 @@ sealed trait Type
 // ============================================================================================= //
 // (Function) Types
 // ============================================================================================= //
-final case class FunctionType[T1 <: Type, T2 <: Type](inT: T1, outT: T2) extends Type
+final case class FunctionType[T1 <: Type, T2 <: Type](inT: T1, outT: T2) extends Type {
+  override def toString: String = s"($inT -> $outT)"
+}
 
-final case class TypeDependentFunctionType[T <: Type](dt: DataTypeIdentifier, t: T) extends Type
+final case class TypeDependentFunctionType[T <: Type](dt: DataTypeIdentifier, t: T) extends Type {
+  override def toString: String = s"(${dt.name}:data -> $t)"
+}
 
-final case class NatDependentFunctionType[T <: Type](n: NatIdentifier, t: T) extends Type
+final case class NatDependentFunctionType[T <: Type](n: NatIdentifier, t: T) extends Type {
+  override def toString: String = s"($n:nat -> $t)"
+}
 
-final case class NatNatDependentFunctionType[T <: Type](fn: NatNatFunctionIdentifier, t: T) extends Type
+final case class NatNatDependentFunctionType[T <: Type](fn: NatNatFunctionIdentifier, t: T) extends Type {
+  override def toString: String = s"(${fn.name}:nat -> nat -> $t)"
+}
 
-final case class NatDataTypeDependentFunctionType[T <: Type](fn: NatDataTypeFunctionIdentifier, t: T) extends Type
+final case class NatDataTypeDependentFunctionType[T <: Type](fn: NatDataTypeFunctionIdentifier, t: T) extends Type {
+  override def toString: String = s"(${fn.name}:nat -> data -> $t)"
+}
 
 
 // ============================================================================================= //
@@ -172,7 +182,7 @@ final case class NatDataTypeLambda(n: NatIdentifier, dt: DataType) extends NatDa
 //
 //  def apply(m: Nat): DataType = ??? //DataType.substitute(m, `for`=n, `in`=body)
 
-  override def toString: String = s"($n: nat) -> $dt"
+  override def toString: String = s"($n: nat -> $dt)"
 
 //  override def equals(obj: Any): Boolean = {
 //    obj match {
@@ -197,4 +207,6 @@ object NatDataTypeLambda {
   }
 }
 
-final case class NatDataTypeFunctionIdentifier(name: String) extends NatDataTypeFunction
+final case class NatDataTypeFunctionIdentifier(name: String) extends NatDataTypeFunction {
+  override def toString: String = name
+}

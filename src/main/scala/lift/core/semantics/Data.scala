@@ -1,5 +1,6 @@
 package lift.core.semantics
 
+import lift.core.Literal
 import lift.core.types._
 
 sealed abstract class Data(val dataType: DataType)
@@ -19,3 +20,7 @@ final case class FloatData(f: Float) extends ScalarData(float)
 final case class DoubleData(d: Double) extends ScalarData(double)
 
 final case class VectorData(v: Seq[ScalarData]) extends Data(VectorType(v.length, v.head.dataType))
+
+object Conversions {
+  implicit def fromInt(x:Int):Literal = Literal(IntData(x))
+}

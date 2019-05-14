@@ -4,6 +4,16 @@ import lift.arithmetic.BigSum
 import lift.core.types._
 import lift.core.DSL._
 
+/** IMPORTANT NOTE! **/
+/**
+  * Scala's arrow operator is left-associative! But usually people mean in in a right-associative way!
+  * example
+  * a -> b -> c means (a -> b) -> c, not the usually implied a -> (b -> c)
+  *
+  * PLEASE BE EXPLICIT WITH PARENTHESISATION
+  */
+
+
 object primitives {
 
   case object asIndex extends Primitive {
@@ -30,7 +40,7 @@ object primitives {
 
   case object depMapSeq extends Primitive {
     override def t: Type = implN(n => implNDF(ft1 => implNDF(ft2 =>
-      nFunT(k => ft1(k) -> ft2(k)) -> DepArrayType(n, ft1) -> DepArrayType(n, ft2)
+      nFunT(k => ft1(k) -> ft2(k)) -> (DepArrayType(n, ft1) -> DepArrayType(n, ft2))
     )))
   }
 
