@@ -1,6 +1,6 @@
 package idealised.SurfaceLanguage.DSL
 
-import idealised.DPIA.NatNatTypeFunction
+import idealised.DPIA.NatNatLambda
 import idealised.SurfaceLanguage.Primitives._
 import idealised.SurfaceLanguage.Semantics._
 import idealised.SurfaceLanguage.Types._
@@ -85,7 +85,7 @@ object partition {
   def apply(m: Nat, f:NatIdentifier => Nat): Expr = fun(array => partition(m, f, array))
 
   def apply(m:Nat, f:NatIdentifier => Nat, array: Expr): Partition = {
-    Partition(m, NatNatTypeFunction(m, f), array, None)
+    Partition(m, NatNatLambda(m, f), array, None)
   }
 }
 

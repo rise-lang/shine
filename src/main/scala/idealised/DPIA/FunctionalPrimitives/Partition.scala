@@ -12,7 +12,7 @@ import scala.xml.Elem
 
 final case class Partition(n: Nat,
                            m: Nat,
-                           lenF:NatNatTypeFunction,
+                           lenF:NatNatLambda,
                            dt: DataType,
                            array: Phrase[ExpType])
   extends ExpPrimitive {

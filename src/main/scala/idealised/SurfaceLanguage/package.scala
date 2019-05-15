@@ -15,6 +15,7 @@ package object SurfaceLanguage {
 
   type Nat = ArithExpr
   type NatIdentifier = NamedVar
+  type NatFunIdentifier = NamedVar
 
   type ->[T1 <: Type, T2 <: Type] = FunctionType[T1, T2]
   type `(nat)->`[T <: Type] = NatDependentFunctionType[T]

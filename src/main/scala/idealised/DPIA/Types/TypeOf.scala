@@ -25,6 +25,8 @@ object TypeOf {
       case TypeDependentApply(p, e) =>
         p.t.t `[` e `/` p.t.dt `]`
 
+      case DLet(_, _, e) => e.t
+
       case Pair(p, q) => p.t x q.t
 
       case Proj1(p) => p.t.t1

@@ -22,9 +22,30 @@ package object DPIA {
 
   type Nat = ArithExpr
   type NatIdentifier = NamedVar
+  type NatFunIdentifier = NamedVar
 
-  case class NatNatTypeFunction private (x:NatIdentifier, body:Nat) {
-    //NatNatTypeFunction have an interesting comparison behavior, as we do not define
+  class NatFunCall(val fun:NatFunIdentifier, val args:Seq[Nat]) extends ArithExprFunction(fun.name) {
+    override def visitAndRebuild(f: Nat => Nat): Nat = NatFunCall(f(fun).asInstanceOf[NatIdentifier], args.map(f))
+
+    def callAndParameterListString = s"$fun(${args.map(_.toString).reduceOption(_ + "," + _).getOrElse("")})"
+
+    override lazy val toString = s"⌈${this.callAndParameterListString}⌉"
+
+    override val HashSeed = 0x31111112
+
+    override def equals(that: Any): Boolean = that match {
+      case f: NatFunCall => this.name.equals(f.name) && this.args == f.args
+      case _ => false
+    }
+  }
+
+  object NatFunCall {
+    def apply(fun:NatFunIdentifier, args:Seq[Nat]) = new NatFunCall(fun, args)
+  }
+
+
+  case class NatNatLambda private(x:NatIdentifier, body:Nat) {
+    //NatNatLambdas have an interesting comparison behavior, as we do not define
     //equality for them as simple syntactic equality: we just want to make sure their bodies
     //are equal up-to renaming of the binder.
 
@@ -39,21 +60,21 @@ package object DPIA {
 
     override def equals(obj: Any): Boolean = {
       obj match {
-        case other:NatNatTypeFunction => body == other(x)
+        case other:NatNatLambda => body == other(x)
         case _ => false
       }
     }
   }
 
-  object NatNatTypeFunction {
-    def apply(upperBound:Nat, f:NatIdentifier => Nat):NatNatTypeFunction = {
+  object NatNatLambda {
+    def apply(upperBound:Nat, f:NatIdentifier => Nat):NatNatLambda = {
       val x = NamedVar(freshName(), RangeAdd(0, upperBound, 1))
-      NatNatTypeFunction(x, f(x))
+      NatNatLambda(x, f(x))
     }
 
-    def apply(upperBound:Nat, id:NatIdentifier, body:Nat):NatNatTypeFunction = {
+    def apply(upperBound:Nat, id:NatIdentifier, body:Nat):NatNatLambda = {
       val x = NamedVar(freshName(), RangeAdd(0, upperBound, 1))
-      NatNatTypeFunction(x, x => ArithExpr.substitute(body, Map((id, x))))
+      NatNatLambda(x, x => ArithExpr.substitute(body, Map((id, x))))
     }
   }
 

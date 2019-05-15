@@ -41,6 +41,11 @@ object FromSurfaceLanguage {
           apply(fun).asInstanceOf[Phrases.Phrase[Types.TypeDependentFunctionType[Types.PhraseType]]],
           arg)
 
+      case DLet(fun, definition, body, _) =>
+        Phrases.DLet(
+          fun, apply(definition), apply(body)
+        )
+
       case IfThenElseExpr(cond, thenE, elseE, _) =>
         Phrases.IfThenElse(apply(cond).asInstanceOf[Phrases.Phrase[Types.ExpType]],
           apply(thenE).asInstanceOf[Phrases.Phrase[Types.PhraseType]],

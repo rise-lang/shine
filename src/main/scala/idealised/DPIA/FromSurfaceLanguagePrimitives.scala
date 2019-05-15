@@ -110,7 +110,7 @@ object FromSurfaceLanguagePrimitives {
         case Some(ArrayType(n, DepArrayType(m, NatDependentFunctionType(i, dt)))) =>
           ???
         case Some(DepArrayType(n, NatDependentFunctionType(d_i, ArrayType(d_n, dt)))) =>
-          Some(FunctionalPrimitives.DepJoin(n, NatNatTypeFunction(n, d_i, d_n), dt, FromSurfaceLanguage.asPhrase[ExpType](array)))
+          Some(FunctionalPrimitives.DepJoin(n, NatNatLambda(n, d_i, d_n), dt, FromSurfaceLanguage.asPhrase[ExpType](array)))
         case Some(DepArrayType(n, NatDependentFunctionType(i, DepArrayType(m, NatDependentFunctionType(j, dt))))) =>
           ???
       }

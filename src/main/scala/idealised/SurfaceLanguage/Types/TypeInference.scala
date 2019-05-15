@@ -8,6 +8,7 @@ import scala.language.existentials
 class TypeInferenceException(expr: String, msg: String)
   extends TypeException(s"Failed to infer type for `$expr'. $msg.")
 
+//noinspection TypeAnnotation
 object TypeInference {
   def error(expr: String, found: String, expected: String): Nothing = {
     throw new TypeInferenceException(expr, s"Found $found but expected $expected")
@@ -70,6 +71,15 @@ object TypeInference {
         f.t match {
           case Some(TypeDependentFunctionType(_, bodyT)) =>
             TypeDependentApplyExpr(f, x, Some(bodyT))
+        }
+
+      case DLet(binder, definition, body, _) =>
+        val defn = inferType(definition, subs)
+        checkDLetDefinitionIsValid(defn)
+
+        val bodyExpr = inferType(body, subs)
+        bodyExpr.t match {
+          case Some(t) =>  DLet(binder, defn, bodyExpr, Some(t))
         }
 
       case IfThenElseExpr(cond, thenE, elseE, _) =>
@@ -160,5 +170,36 @@ object TypeInference {
     }
 
     override def apply[T <: Type](dt: T): T = Type.rebuild(this.apply, dt)
+  }
+
+  private def checkDLetDefinitionIsValid(defn:Expr):Unit = {
+    defn.t match {
+      case None => error(defn.toString, "Cannot infer definition type in DLet")
+      case Some(t) =>
+        val findFunctionTypes = new VisitAndRebuild.Visitor {
+          var found = false
+
+          override def apply[T <: Type](t: T): T = t match {
+            case FunctionType(_,_) =>
+              this.found = true
+              t
+            case _ => t
+          }
+        }
+        VisitAndRebuild(defn, findFunctionTypes)
+        if(findFunctionTypes.found) error(defn.toString, "in dlet definition may not be a function type")
+
+        finalReturnType(t) match {
+          case _:IndexType =>
+          case _ => error(defn.toString, "in dlet definition must return an index type")
+        }
+    }
+  }
+
+  private def finalReturnType(t:Type):Type = t match {
+    case FunctionType(_, out) => finalReturnType(out)
+    case NatDependentFunctionType(_, out) => finalReturnType(out)
+    case TypeDependentFunctionType(_, out) => finalReturnType(out)
+    case _ => t
   }
 }

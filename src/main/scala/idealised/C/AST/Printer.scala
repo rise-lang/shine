@@ -1,5 +1,6 @@
 package idealised.C.AST
 
+import idealised.DPIA.NatFunCall
 import lift.arithmetic._
 
 trait Printer {
@@ -349,6 +350,7 @@ class CPrinter extends Printer {
       case i: lift.arithmetic.IfThenElse =>
         s"((${toString(i.test)}) ? " +
           s"${toString(i.t)} : ${toString(i.e)})"
+      case natFunCall:NatFunCall => natFunCall.callAndParameterListString
 //      case aeFun:ArithExprFunction => aeFun.name
 //      case bs:BigSum => bs.toString
       case sp: SteppedCase => toString(sp.intoIfChain())

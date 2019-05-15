@@ -9,7 +9,7 @@ object VisitAndRebuild {
   class Visitor {
     def apply[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = Continue(p, this)
     def apply(ae: Nat): Nat = ae
-    def apply(ft:NatNatTypeFunction):NatNatTypeFunction = NatNatTypeFunction(ft.x, apply(ft.body))
+    def apply(ft:NatNatLambda):NatNatLambda = NatNatLambda(ft.x, apply(ft.body))
     def apply(ft:NatDataTypeFunction):NatDataTypeFunction = NatDataTypeFunction(ft.x, apply[DataType](ft.body))
     def apply[T <: DataType](dt: T): T = dt
 

@@ -76,3 +76,10 @@ object tFun {
   }
 
 }
+
+object dlet {
+  def apply(defn:Expr, makeBody:NatFunIdentifier => Expr):DLet = {
+    val identifier = NamedVar("f")
+    DLet(identifier, defn, makeBody(identifier))
+  }
+}

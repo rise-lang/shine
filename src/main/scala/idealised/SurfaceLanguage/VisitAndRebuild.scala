@@ -1,6 +1,6 @@
 package idealised.SurfaceLanguage
 
-import idealised.DPIA.NatNatTypeFunction
+import idealised.DPIA.NatNatLambda
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage.Semantics._
 
@@ -18,7 +18,7 @@ object VisitAndRebuild {
   class Visitor {
     def apply(e: Expr): Result[Expr] = Continue(e, this)
     def apply(ae: Nat): Nat = ae
-    def apply(f:NatNatTypeFunction):NatNatTypeFunction = NatNatTypeFunction(f.x, apply(f.body))
+    def apply(f:NatNatLambda):NatNatLambda = NatNatLambda(f.x, apply(f.body))
     def apply[T <: Type](t: T): T = t
   }
 
@@ -34,7 +34,7 @@ object VisitAndRebuild {
   def applyAny(v: Visitor): Any => Any = {
     case e: Expr => apply(e, v)
     case n: Nat => v(n)
-    case f: NatNatTypeFunction => v(f)
+    case f: NatNatLambda => v(f)
     case t: Type => v(t)
     case s: Seq[_] => s.map(applyAny(v))
     case o: Option[_] => o.map(applyAny(v))
@@ -62,7 +62,7 @@ object VisitAndRebuild {
     def applyAny(v: Visitor): Any => Result[Any] = {
       case e: Expr => apply(e, v)
       case n: Nat => Continue(v(n), v)
-      case f: NatNatTypeFunction => Continue(v(f), v)
+      case f: NatNatLambda => Continue(v(f), v)
       case t: Type => Continue(v(t), v)
       case s: Seq[_] => applySeq(v)(s)
       case None => Continue(None, v)
