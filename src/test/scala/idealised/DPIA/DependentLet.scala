@@ -4,6 +4,7 @@ import idealised.SurfaceLanguage.Types._
 import idealised.util.SyntaxChecker
 
 class DependentLet extends idealised.util.Tests{
+
   test("basic dlet test") {
     val f = fun(IndexType(10))(idx =>
       dlet(idx, lenF => fun(ArrayType(NatFunCall(lenF, Seq()), float))(xs =>

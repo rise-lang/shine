@@ -34,6 +34,7 @@ object KernelGenerator {
     p match {
       case l: Lambda[ExpType, _]@unchecked => getPhraseAndParams(l.body, l.param +: ps)
       case ndl: NatDependentLambda[_] => getPhraseAndParams(ndl.body, Identifier(ndl.x.name, ExpType(int)) +: ps)
+      case dlet:DLet[_, ExpType]@unchecked => getPhraseAndParams(dlet.body, ps)
       case ep: Phrase[ExpType]@unchecked => (ep, ps)
     }
   }
