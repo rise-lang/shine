@@ -210,8 +210,9 @@ class binomialFilter extends idealised.util.Tests {
   }
 */
   def program(name: String, e: Expr): C.Program = {
+    val szr = lift.arithmetic.RangeAdd(3, lift.arithmetic.PosInf, 1)
     val typed = types.infer(
-      nFun(h => nFun(w => fun(ArrayType(h, ArrayType(w, float)))(a => e(a))))
+      nFun(szr, h => nFun(szr, w => fun(ArrayType(h, ArrayType(w, float)))(a => e(a))))
     )
     val phrase = idealised.DPIA.fromLift(typed)
     val program = C.ProgramGenerator.makeCode(phrase, name)

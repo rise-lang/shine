@@ -36,8 +36,9 @@ object harrisCornerDetection {
 
   val gaussian: Expr = binomialFilter.regrot
 
+  val szr = lift.arithmetic.RangeAdd(3, lift.arithmetic.PosInf, 1)
   // TODO: store temporaries
-  val e = nFun(h => nFun(w => fun(ArrayType(h, ArrayType(w, float)))(i => {
+  val e = nFun(szr, h => nFun(szr, w => fun(ArrayType(h, ArrayType(w, float)))(i => {
     val ix = stencil3x3(sobelX)(i)
     val iy = stencil3x3(sobelY)(i)
 
