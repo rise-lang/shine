@@ -23,4 +23,12 @@ object gen {
     println(p.code)
     p
   }
+
+  def OpenCLKernel(e: lift.core.Expr): idealised.OpenCL.KernelNoSizes = {
+    val dpia_e = toDPIA(e)
+    val p = idealised.OpenCL.KernelGenerator.makeCode(dpia_e)
+    SyntaxChecker.checkOpenCL(p.code)
+    println(p.code)
+    p
+  }
 }

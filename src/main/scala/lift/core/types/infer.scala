@@ -17,7 +17,7 @@ object infer {
     val solution = solve(constraints.toSet)
     val result = solution(typed_e)
     if (!isClosedForm(result)) {
-      error("expression is not in closed form after inference")
+      error(s"expression is not in closed form after inference: $result")
     }
     result.asInstanceOf[TypedExpr]
   }

@@ -105,7 +105,9 @@ object fromLift {
 
   def apply(p: l.Primitive, t: lt.Type): Phrase[_ <: PhraseType] = {
     import lift.OpenMP.{primitives => omp}
+    import lift.OpenCL.{primitives => ocl}
     import idealised.OpenMP.FunctionalPrimitives._
+    import idealised.OpenCL.FunctionalPrimitives._
 
     // TODO: remove surface language
     import idealised.SurfaceLanguage.Operators.Unary
@@ -116,31 +118,37 @@ object fromLift {
       lt.FunctionType(lt.FunctionType(_, lb: lt.DataType),
       lt.FunctionType(lt.ArrayType(n, la: lt.DataType), _)))
       =>
-        val a = fromLift(la)
-        val b = fromLift(lb)
-        fun[ExpType -> ExpType](ExpType(a) -> ExpType(b), f =>
-          fun[ExpType](exp"[$n.$a]", e =>
-            Map(n, a, b, f, e)))
+        makeMap(Map, n, la, lb)
 
       case (lp.mapSeq,
       lt.FunctionType(lt.FunctionType(_, lb: lt.DataType),
       lt.FunctionType(lt.ArrayType(n, la: lt.DataType), _)))
       =>
-        val a = fromLift(la)
-        val b = fromLift(lb)
-        fun[ExpType -> ExpType](ExpType(a) -> ExpType(b), f =>
-          fun[ExpType](exp"[$n.$a]", e =>
-            MapSeq(n, a, b, f, e)))
+        makeMap(MapSeq, n, la, lb)
 
       case (omp.mapPar,
       lt.FunctionType(lt.FunctionType(_, lb: lt.DataType),
       lt.FunctionType(lt.ArrayType(n, la: lt.DataType), _)))
       =>
-        val a = fromLift(la)
-        val b = fromLift(lb)
-        fun[ExpType -> ExpType](ExpType(a) -> ExpType(b), f =>
-          fun[ExpType](exp"[$n.$a]", e =>
-            MapPar(n, a, b, f, e)))
+        makeMap(MapPar, n, la, lb)
+
+      case (ocl.mapGlobal(dim),
+      lt.FunctionType(lt.FunctionType(_, lb: lt.DataType),
+      lt.FunctionType(lt.ArrayType(n, la: lt.DataType), _)))
+      =>
+        makeMap(MapGlobal(dim), n, la, lb)
+
+      case (ocl.mapLocal(dim),
+      lt.FunctionType(lt.FunctionType(_, lb: lt.DataType),
+      lt.FunctionType(lt.ArrayType(n, la: lt.DataType), _)))
+      =>
+        makeMap(MapLocal(dim), n, la, lb)
+
+      case (ocl.mapWorkGroup(dim),
+      lt.FunctionType(lt.FunctionType(_, lb: lt.DataType),
+      lt.FunctionType(lt.ArrayType(n, la: lt.DataType), _)))
+      =>
+        makeMap(MapWorkGroup(dim), n, la, lb)
 
       case (lp.reduceSeq,
       lt.FunctionType(_,
@@ -153,6 +161,18 @@ object fromLift {
           fun[ExpType](exp"[$b]", i =>
             fun[ExpType](exp"[$n.$a]", e =>
               ReduceSeq(n, a, b, f, i, e))))
+
+      case (ocl.oclReduceSeq(i_space),
+      lt.FunctionType(_,
+      lt.FunctionType(lb: lt.DataType,
+      lt.FunctionType(lt.ArrayType(n, la), _ ))))
+      =>
+        val a = fromLift(la)
+        val b = fromLift(lb)
+        fun[ExpType -> (ExpType -> ExpType)](exp"[$a]" -> (exp"[$b]" -> exp"[$b]"), f =>
+          fun[ExpType](exp"[$b]", i =>
+            fun[ExpType](exp"[$n.$a]", e =>
+              OpenCLReduceSeq(n, a, b, f, i, i_space, e))))
 
       case (lp.reduceSeqUnroll,
       lt.FunctionType(_,
@@ -411,7 +431,7 @@ object fromLift {
             fun[ExpType](exp"[$insz.$a]", e =>
               Iterate(n, m, k, a, f, e))))
 
-      case (omp.asVector,
+      case (lp.asVector,
         lt.NatDependentFunctionType(n,
         lt.FunctionType(lt.ArrayType(mn, la: lt.ScalarType), lt.ArrayType(m, _))))
       =>
@@ -420,13 +440,13 @@ object fromLift {
           fun[ExpType](exp"[$mn.$a]", e =>
             AsVector(n, m, a, e)))
 
-      case (omp.asScalar, lt.FunctionType(lt.ArrayType(m, lt.VectorType(n, la: lt.ScalarType)), _))
+      case (lp.asScalar, lt.FunctionType(lt.ArrayType(m, lt.VectorType(n, la: lt.ScalarType)), _))
       =>
         val a = fromLift(la)
         fun[ExpType](ExpType(ArrayType(m, VectorType(n, a))), e =>
           AsScalar(m, n, a, e))
 
-      case (omp.vectorFromScalar, lt.FunctionType(_, lt.VectorType(n, la: lt.ScalarType)))
+      case (lp.vectorFromScalar, lt.FunctionType(_, lt.VectorType(n, la: lt.ScalarType)))
       =>
         val a = fromLift(la)
         fun[ExpType](ExpType(a), e =>
@@ -440,6 +460,17 @@ object fromLift {
       case (lp.reduce, _) | (lp.scan, _) =>
         throw new Exception(s"$p has no implementation")
     }
+  }
+
+  def makeMap(map: (Nat, DataType, DataType, Phrase[ExpType -> ExpType], Phrase[ExpType]) => Phrase[_ <: PhraseType],
+              n: Nat,
+              la: lt.DataType,
+              lb: lt.DataType): Phrase[_ <: PhraseType] = {
+    val a = fromLift(la)
+    val b = fromLift(lb)
+    fun[ExpType -> ExpType](ExpType(a) -> ExpType(b), f =>
+      fun[ExpType](exp"[$n.$a]", e =>
+        map(n, a, b, f, e)))
   }
 
   def foreignFunIO(t: lt.Type): (Vector[DataType], DataType) = {

@@ -1,5 +1,6 @@
 package apps
 
+import lift.core._
 import lift.core.DSL._
 import lift.core.types._
 import lift.core.primitives._
@@ -58,65 +59,52 @@ class scal extends idealised.util.Tests {
 
     gen.OpenMPProgram(scalIntel2)
   }
-/*
+
   // OpenCL
   {
-    import idealised.OpenCL.SurfaceLanguage.DSL._
+    import lift.OpenCL.primitives._
 
-    val scalWgLcl = (fst: ArithExpr, snd: ArithExpr) =>
+    val scalWgLcl = (fst: Nat, snd: Nat) =>
       nFun(n => fun(ArrayType(n, float))(input => fun(float)(alpha =>
-        input :>>
-          split(fst) :>>
-          mapWorkgroup(
-            split(snd) >>>
+        input |>
+          split(fst) |>
+          mapWorkGroup(
+            split(snd) >>
               mapLocal(mapSeq(
                 fun(x => alpha * x)
-              )) >>> join
-          ) :>> join
+              )) >> join
+          ) |> join
       )))
 
     test("vectorScal compiles to syntactically correct OpenCL") {
       val vectorScal = scalWgLcl(1024, 4)
-      val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(vectorScal, Map()))
-      val p = idealised.OpenCL.KernelGenerator.makeCode(phrase)
-      println(p.code)
-      SyntaxChecker.checkOpenCL(p.code)
+      gen.OpenCLKernel(vectorScal)
     }
 
     test("scalAMD compiles to syntactically correct OpenCL") {
       val scalAMD = scalWgLcl(128, 1)
-      val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(scalAMD, Map()))
-      val p = idealised.OpenCL.KernelGenerator.makeCode(phrase)
-      println(p.code)
-      SyntaxChecker.checkOpenCL(p.code)
+      gen.OpenCLKernel(scalAMD)
     }
 
     test("scalNvidia compiles to syntactically correct OpenCL") {
       val scalNvidia = scalWgLcl(2048, 1)
-      val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(scalNvidia, Map()))
-      val p = idealised.OpenCL.KernelGenerator.makeCode(phrase)
-      println(p.code)
-      SyntaxChecker.checkOpenCL(p.code)
+      gen.OpenCLKernel(scalNvidia)
     }
 
     test("scalIntel compiles to syntactically correct OpenCL") {
       val scalIntel = nFun(n => fun(ArrayType(n, float))(input => fun(float)(alpha =>
-        input :>>
-          split(4 * 128 * 128) :>>
-          mapWorkgroup(
-            asVector(4) >>>
-              split(128) >>>
+        input |>
+          split(4 * 128 * 128) |>
+          mapWorkGroup(
+            asVector(4) >>
+              split(128) >>
               mapLocal(mapSeq(
-                fun(x => vectorize(4, alpha) * x)
-              )) >>> join >>> asScalar
-          ) :>>
+                fun(x => vectorFromScalar(alpha) * x)
+              )) >> join >> asScalar
+          ) |>
           join
       )))
-      val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(scalIntel, Map()))
-      val p = idealised.OpenCL.KernelGenerator.makeCode(phrase)
-      println(p.code)
-      SyntaxChecker.checkOpenCL(p.code)
+      gen.OpenCLKernel(scalIntel)
     }
   }
-  */
 }

@@ -42,76 +42,73 @@ class Pad extends idealised.util.Tests {
     gen.OpenMPProgram(e)
   }
 
-/* TODO
   test("Simple OpenCL pad input and copy") {
-    val f = nFun(n => fun(ArrayType(n, float))( xs =>
-      xs :>> pad(2, 3, 5.0f) :>> mapGlobal(fun(x => x))
+    import lift.OpenCL.primitives._
+
+    val e = nFun(n => fun(ArrayType(n, float))( xs =>
+      xs |> padCst(2)(3)(l(5.0f)) |> mapGlobal(fun(x => x))
     ))
 
-    val p = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
-    val code = p.code
-    SyntaxChecker.checkOpenCL(code)
-    println(code)
+    gen.OpenCLKernel(e)
   }
 
   test("OpenCL Pad only left") {
-    val f = nFun(n => fun(ArrayType(n, float))( xs =>
-      xs :>> pad(2, 0, 5.0f) :>> mapGlobal(fun(x => x))
+    import lift.OpenCL.primitives._
+
+    val e = nFun(n => fun(ArrayType(n, float))( xs =>
+      xs |> padCst(2)(0)(l(5.0f)) |> mapGlobal(fun(x => x))
     ))
 
-    val p = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
-    val code = p.code
-    SyntaxChecker.checkOpenCL(code)
-    println(code)
+    gen.OpenCLKernel(e)
   }
 
   test("OpenCL Pad only right") {
-    val f = nFun(n => fun(ArrayType(n, float))( xs =>
-      xs :>> pad(0, 3, 5.0f) :>> mapGlobal(fun(x => x))
+    import lift.OpenCL.primitives._
+
+    val e = nFun(n => fun(ArrayType(n, float))( xs =>
+      xs |> padCst(0)(3)(l(5.0f)) |> mapGlobal(fun(x => x))
     ))
 
-    val p = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
-    val code = p.code
-    SyntaxChecker.checkOpenCL(code)
-    println(code)
+    gen.OpenCLKernel(e)
   }
 
-  test("Pad 2D (OpenCL)") {
-    val padAmount = 2
-    val padValue = 0.0f
+  /* TODO
+    test("Pad 2D (OpenCL)") {
+      val padAmount = 2
+      val padValue = 0.0f
 
-    val f = nFun(
-      n => nFun(m =>
-        fun(ArrayType(n, ArrayType(m, float)))(xs => xs :>> pad2D(m, Cst(padAmount), Cst(padAmount), FloatData(padValue)) :>> mapSeq(mapSeq(fun(x => x))))
+      val f = nFun(
+        n => nFun(m =>
+          fun(ArrayType(n, ArrayType(m, float)))(xs => xs :>> pad2D(m, Cst(padAmount), Cst(padAmount), FloatData(padValue)) :>> mapSeq(mapSeq(fun(x => x))))
+        )
       )
-    )
 
-    val actualN = 2
-    val actualM = 2
+      val actualN = 2
+      val actualM = 2
 
-    case class Run() extends SimpleRunOpenCLProgram(false) {
-      override type Input = Array[Array[Float]]
+      case class Run() extends SimpleRunOpenCLProgram(false) {
+        override type Input = Array[Array[Float]]
 
-      override def dpiaProgram: Expr = f
+        override def dpiaProgram: Expr = f
 
-      override protected def makeInput(random: Random): Input = {
-        Array.fill(actualN)(Array.fill(actualM)(random.nextFloat()))
+        override protected def makeInput(random: Random): Input = {
+          Array.fill(actualN)(Array.fill(actualM)(random.nextFloat()))
+        }
+
+        override protected def runScalaProgram(input: Input): Array[Float] = {
+          ScalaPatterns.pad2D(input, padAmount, 0.0f).flatten
+        }
+
+        override protected def runKernel(k: KernelWithSizes, input: Array[Array[Float]]): (Array[Float], TimeSpan[ms]) = {
+          import idealised.OpenCL._
+
+          val kernelFun = k.as[ScalaFunction `(` Int `,` Int `,` Input `)=>` Array[Float]]
+          kernelFun(actualN `,` actualM `,` input)
+        }
       }
 
-      override protected def runScalaProgram(input: Input): Array[Float] = {
-        ScalaPatterns.pad2D(input, padAmount, 0.0f).flatten
-      }
-
-      override protected def runKernel(k: KernelWithSizes, input: Array[Array[Float]]): (Array[Float], TimeSpan[ms]) = {
-        import idealised.OpenCL._
-
-        val kernelFun = k.as[ScalaFunction `(` Int `,` Int `,` Input `)=>` Array[Float]]
-        kernelFun(actualN `,` actualM `,` input)
-      }
+      Run().run(localSize = 1, globalSize = 1).correctness.check()
     }
 
-    Run().run(localSize = 1, globalSize = 1).correctness.check()
-  }
-
- */
+   */
 }

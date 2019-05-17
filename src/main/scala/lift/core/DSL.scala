@@ -3,6 +3,8 @@ package lift.core
 import lift.core.types._
 import lift.core.semantics._
 
+import scala.language.implicitConversions
+
 object DSL {
   implicit class BinOps(lhs: Expr) {
     import lift.core.primitives._
