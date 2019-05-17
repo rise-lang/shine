@@ -20,15 +20,6 @@ object HighLevelConstructs {
     })
   }
 
-  /* TODO?
-  val padClamp: Expr = nFun(l => nFun(r =>
-    padIdx(l)(r)(fun(i => fun(n =>
-      select(i < NatExpr(0))(NatExpr(0))(
-        select(i < n)(i)(n - NatExpr(1)))
-    )))
-  ))
-   */
-
   val padClamp2D: Expr = {
     nFun(b => map(padClamp(b)(b)) >> padClamp(b)(b))
   }

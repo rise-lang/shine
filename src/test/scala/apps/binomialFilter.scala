@@ -34,8 +34,6 @@ object binomialFilter {
     zip(a)(b) |> map(mulT) |> reduceSeqUnroll(add)(l(0.0f))
   ))
 
-  // TODO: registers/loop unrolling, vectorisation
-
   val weights2d = l(ArrayData(
     Array(1, 2, 1, 2, 4, 2, 1, 2, 1).map(f => FloatData(f / 16.0f))))
   val weights1d = l(ArrayData(
@@ -112,13 +110,14 @@ class binomialFilter extends idealised.util.Tests {
 
     s_eq(s(highLevel), norm(factorised))
   }
-/* TODO: with pad
+
   test("rewrite to separated blur") {
     import strategies._
     import strategies.traversal._
 
     val * = map
     val T = transpose
+    val P = padClamp2D(1)
     val Sh = slide(3)(1)
     val Sv = slide(3)(1)
     val Dh = dot(weights1d)
@@ -126,31 +125,31 @@ class binomialFilter extends idealised.util.Tests {
 
     val steps = Seq[(Strategy, Expr)](
       (id,
-        *(Sh) >> Sv >> *(T) >> *(*(fun(nbh => dot(weights2d)(join(nbh)))))),
+        P >> *(Sh) >> Sv >> *(T) >> *(*(fun(nbh => dot(weights2d)(join(nbh)))))),
       (depthFirst(find(separateDotT)),
-        *(Sh) >> Sv >> *(T) >> *(*(T >> *(Dv) >> Dh))),
+        P >> *(Sh) >> Sv >> *(T) >> *(*(T >> *(Dv) >> Dh))),
       (depthFirst(find(`*f >> S -> S >> **f`)),
-        Sv >> *(*(Sh)) >> *(T) >> *(*(T >> *(Dv) >> Dh))),
+        P >> Sv >> *(*(Sh)) >> *(T) >> *(*(T >> *(Dv) >> Dh))),
       (depthFirst(find(mapFusion)),
-        Sv >> *(*(Sh)) >> *(T >> *(T >> *(Dv) >> Dh))),
+        P >> Sv >> *(*(Sh)) >> *(T >> *(T >> *(Dv) >> Dh))),
       (depthFirst(find(mapFusion)),
-        Sv >> *(*(Sh) >> T >> *(T >> *(Dv) >> Dh))),
+        P >> Sv >> *(*(Sh) >> T >> *(T >> *(Dv) >> Dh))),
       (depthFirst(find(`*S >> T -> T >> S >> *T`)),
-        Sv >> *(T >> Sh >> *(T) >> *(T >> *(Dv) >> Dh))),
+        P >> Sv >> *(T >> Sh >> *(T) >> *(T >> *(Dv) >> Dh))),
       (depthFirst(find(mapFusion)),
-        Sv >> *(T >> Sh >> *(T >> T >> *(Dv) >> Dh))),
+        P >> Sv >> *(T >> Sh >> *(T >> T >> *(Dv) >> Dh))),
       (depthFirst(find(`T >> T -> `)),
-        Sv >> *(T >> Sh >> *(*(Dv) >> Dh))),
+        P >> Sv >> *(T >> Sh >> *(*(Dv) >> Dh))),
       (depthFirst(traversal.drop(1)(mapFirstFission)),
-        Sv >> *(T >> Sh >> *(*(Dv)) >> *(Dh))),
+        P >> Sv >> *(T >> Sh >> *(*(Dv)) >> *(Dh))),
       (depthFirst(find(`S >> **f -> *f >> S`)),
-        Sv >> *(T >> *(Dv) >> Sh >> *(Dh))),
+        P >> Sv >> *(T >> *(Dv) >> Sh >> *(Dh))),
       (depthFirst(find(mapFirstFission)),
-        Sv >> *(T) >> *(*(Dv) >> Sh >> *(Dh))),
+        P >> Sv >> *(T) >> *(*(Dv) >> Sh >> *(Dh))),
       (depthFirst(find(mapFirstFission)),
-        Sv >> *(T) >> *(*(Dv)) >> *(Sh >> *(Dh))),
+        P >> Sv >> *(T) >> *(*(Dv)) >> *(Sh >> *(Dh))),
       (depthFirst(drop(1)(mapFusion)),
-        Sv >> *(T >> *(Dv)) >> *(Sh >> *(Dh)))
+        P >> Sv >> *(T >> *(Dv)) >> *(Sh >> *(Dh)))
     )
 
     val result = steps.foldLeft[Expr](highLevel)({ case (e, (s, expected)) =>
@@ -172,6 +171,7 @@ class binomialFilter extends idealised.util.Tests {
 
     val * = map
     val T = transpose
+    val P = padClamp2D(1)
     val Sh = slide(3)(1)
     val Sv = slide(3)(1)
     val Dh = dot(weights1d)
@@ -179,25 +179,25 @@ class binomialFilter extends idealised.util.Tests {
 
     val steps = Seq[(Strategy, Expr)](
       (id,
-        *(Sh) >> Sv >> *(T) >> *(*(fun(nbh => dot(weights2d)(join(nbh)))))),
+        P >> *(Sh) >> Sv >> *(T) >> *(*(fun(nbh => dot(weights2d)(join(nbh)))))),
       (depthFirst(find(separateDotT)),
-        *(Sh) >> Sv >> *(T) >> *(*(T >> *(Dv) >> Dh))),
+        P >> *(Sh) >> Sv >> *(T) >> *(*(T >> *(Dv) >> Dh))),
       (depthFirst(find(`*f >> S -> S >> **f`)),
-        Sv >> *(*(Sh)) >> *(T) >> *(*(T >> *(Dv) >> Dh))),
+        P >> Sv >> *(*(Sh)) >> *(T) >> *(*(T >> *(Dv) >> Dh))),
       (depthFirst(find(mapFusion)),
-        Sv >> *(*(Sh)) >> *(T >> *(T >> *(Dv) >> Dh))),
+        P >> Sv >> *(*(Sh)) >> *(T >> *(T >> *(Dv) >> Dh))),
       (depthFirst(find(mapFusion)),
-        Sv >> *(*(Sh) >> T >> *(T >> *(Dv) >> Dh))),
+        P >> Sv >> *(*(Sh) >> T >> *(T >> *(Dv) >> Dh))),
       (depthFirst(find(`*S >> T -> T >> S >> *T`)),
-        Sv >> *(T >> Sh >> *(T) >> *(T >> *(Dv) >> Dh))),
+        P >> Sv >> *(T >> Sh >> *(T) >> *(T >> *(Dv) >> Dh))),
       (depthFirst(find(mapFusion)),
-        Sv >> *(T >> Sh >> *(T >> T >> *(Dv) >> Dh))),
+        P >> Sv >> *(T >> Sh >> *(T >> T >> *(Dv) >> Dh))),
       (depthFirst(find(`T >> T -> `)),
-        Sv >> *(T >> Sh >> *(*(Dv) >> Dh))),
+        P >> Sv >> *(T >> Sh >> *(*(Dv) >> Dh))),
       (depthFirst(drop(1)(mapFirstFission)),
-        Sv >> *(T >> Sh >> *(*(Dv)) >> *(Dh))),
+        P >> Sv >> *(T >> Sh >> *(*(Dv)) >> *(Dh))),
       (depthFirst(find(`S >> **f -> *f >> S`)),
-        Sv >> *(T >> *(Dv) >> Sh >> *(Dh)))
+        P >> Sv >> *(T >> *(Dv) >> Sh >> *(Dh)))
     )
 
     val result = steps.foldLeft[Expr](highLevel)({ case (e, (s, expected)) =>
@@ -211,7 +211,7 @@ class binomialFilter extends idealised.util.Tests {
       depthFirst(find(specialize.mapSeq))
     s_eq(pick(result), norm(regrot))
   }
-*/
+
   def program(name: String, e: Expr): C.Program = {
     val szr = lift.arithmetic.RangeAdd(3, lift.arithmetic.PosInf, 1)
     val typed = types.infer(

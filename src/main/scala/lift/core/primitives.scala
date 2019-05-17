@@ -87,12 +87,14 @@ object primitives {
     )))
   }
 
+  // TODO? could be expressed in terms of a pad idx -> val
   case object padCst extends Primitive {
     override def t: Type = implN(n => nFunT(l => nFunT(r => implT(a =>
       a -> (ArrayType(n, a) -> ArrayType(l + n + r, a))
     ))))
   }
 
+  // TODO? could be expressed in terms of a pad idx -> idx or idx -> val
   case object padClamp extends Primitive {
     override def t: Type = implN(n => nFunT(l => nFunT(r => implT(a =>
       ArrayType(n, a) -> ArrayType(l + n + r, a)
