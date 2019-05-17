@@ -30,6 +30,9 @@ object binomialFilter {
   val dotSeq = fun(a => fun(b =>
     zip(a)(b) |> map(mulT) |> reduceSeq(add)(l(0.0f))
   ))
+  val dotSeqUnroll = fun(a => fun(b =>
+    zip(a)(b) |> map(mulT) |> reduceSeqUnroll(add)(l(0.0f))
+  ))
 
   // TODO: registers/loop unrolling, vectorisation
 
@@ -277,5 +280,14 @@ int main(int argc, char** argv) {
 
   test("compile and compare register rotation blur to the reference") {
     check_ref(regrot)
+  }
+
+  test("register rotation blur with unroll should contain no modulo or division") {
+    val code = program("blur",
+      padClamp2D(1) >> slide(3)(1) >> mapSeq(transpose >>
+        map(dotSeqUnroll(weights1d)) >> slideSeq(3)(1) >> map(dotSeqUnroll(weights1d))
+      )).code
+    " % ".r.findAllIn(code).length shouldBe 0
+    " / ".r.findAllIn(code).length shouldBe 0
   }
 }
