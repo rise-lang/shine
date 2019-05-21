@@ -57,7 +57,17 @@ object primitives {
     }))))
   }
 
-  case object slideSeq extends Primitive {
+  object slideSeq {
+    trait Rotate {}
+    case object Values extends Rotate {}
+    case object Indices extends Rotate {}
+  }
+
+  case class slideSeq(rot: slideSeq.Rotate) extends Primitive {
+    override def t: Type = slide.t
+  }
+
+  case object slideSeqBuffer extends Primitive {
     override def t: Type = slide.t
   }
 

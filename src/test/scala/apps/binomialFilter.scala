@@ -58,7 +58,9 @@ object binomialFilter {
 
   val regrot =
     padClamp2D(1) >> slide(3)(1) >> mapSeq(transpose >>
-      map(dotSeq(weights1d)) >> slideSeq(3)(1) >> map(dotSeq(weights1d))
+      map(dotSeq(weights1d)) >>
+      slideSeq(slideSeq.Values)(3)(1) >>
+      map(dotSeq(weights1d))
     )
 
   val norm = strategies.normalize(betaReduction +> etaReduction)
@@ -207,7 +209,7 @@ class binomialFilter extends idealised.util.Tests {
     })
 
     val pick = repeatNTimes(2)(depthFirst(find(specialize.reduceSeq))) `;`
-      depthFirst(find(specialize.slideSeq)) `;`
+      depthFirst(find(specialize.slideSeq(slideSeq.Values))) `;`
       depthFirst(find(specialize.mapSeq))
     s_eq(pick(result), norm(regrot))
   }
@@ -285,7 +287,9 @@ int main(int argc, char** argv) {
   test("register rotation blur with unroll should contain no modulo or division") {
     val code = program("blur",
       padClamp2D(1) >> slide(3)(1) >> mapSeq(transpose >>
-        map(dotSeqUnroll(weights1d)) >> slideSeq(3)(1) >> map(dotSeqUnroll(weights1d))
+        map(dotSeqUnroll(weights1d)) >>
+        slideSeq(slideSeq.Values)(3)(1) >>
+        map(dotSeqUnroll(weights1d))
       )).code
     " % ".r.findAllIn(code).length shouldBe 0
     " / ".r.findAllIn(code).length shouldBe 0

@@ -225,7 +225,7 @@ object fromLift {
             fun[ExpType](exp"[$insz.$a]", e =>
               Slide(n, sz, sp, a, e))))
 
-      case (lp.slideSeq,
+      case (lp.slideSeq(rot),
       lt.NatDependentFunctionType(sz,
       lt.NatDependentFunctionType(sp,
       lt.FunctionType(lt.ArrayType(insz, la), lt.ArrayType(n, _)))))
@@ -234,7 +234,7 @@ object fromLift {
         NatDependentLambda(sz,
           NatDependentLambda(sp,
             fun[ExpType](exp"[$insz.$a]", e =>
-              SlideSeq(n, sz, sp, a, e))))
+              SlideSeq(rot, n, sz, sp, a, e))))
 
       case (lp.reorder,
       lt.FunctionType(_,

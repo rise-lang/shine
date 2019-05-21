@@ -12,7 +12,7 @@ object specialize {
     case primitives.reduce => primitives.reduceSeq
   }
 
-  val slideSeq: Strategy = {
-    case primitives.slide => primitives.slideSeq
+  def slideSeq(rot: primitives.slideSeq.Rotate): Strategy = {
+    case primitives.slide => primitives.slideSeq(rot)
   }
 }

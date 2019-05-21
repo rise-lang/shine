@@ -1,17 +1,15 @@
 package idealised.DPIA.FunctionalPrimitives
 
+import lift.core.{primitives => lp}
 import idealised.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import idealised.DPIA._
 import idealised.DPIA.DSL._
 import idealised.DPIA.Types._
 import idealised.DPIA.Phrases._
-import idealised.DPIA.Phrases.ExpPrimitive
-import idealised.DPIA.Semantics.OperationalSemantics
-import idealised.DPIA.Semantics.OperationalSemantics.{Data, Store}
-import idealised.OpenCL.GlobalMemory
 
 // performs a sequential slide, taking advantage of the space/time overlapping reuse opportunity
-final case class SlideSeq(n: Nat,
+final case class SlideSeq(rot: lp.slideSeq.Rotate,
+                          n: Nat,
                           sz: Nat,
                           sp: Nat,
                           dt: DataType,
@@ -19,7 +17,7 @@ final case class SlideSeq(n: Nat,
   extends AbstractSlide(n, sz, sp, dt, input)
 {
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    SlideSeq(v(n), v(sz), v(sp), v(dt), VisitAndRebuild(input, v))
+    SlideSeq(rot, v(n), v(sz), v(sp), v(dt), VisitAndRebuild(input, v))
   }
 
   override def acceptorTranslation(A: Phrase[AccType])
@@ -30,7 +28,12 @@ final case class SlideSeq(n: Nat,
   override def mapAcceptorTranslation(g: Phrase[ExpType -> ExpType], A: Phrase[AccType])
                                      (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
-    import idealised.DPIA.IntermediatePrimitives.{SlideSeqIRegRot => I} // TODO: making a choice here
+    import idealised.DPIA.IntermediatePrimitives.{SlideSeqIValues, SlideSeqIIndices}
+
+    val I = rot match {
+      case lp.slideSeq.Values => SlideSeqIValues.apply _
+      case lp.slideSeq.Indices => SlideSeqIIndices.apply _
+    }
 
     con(input)(fun(exp"[$inputSize.$dt]")(x =>
       I(n, sz, sp, dt, g.t.outT.dataType,
