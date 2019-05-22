@@ -108,6 +108,7 @@ object fromLift {
     import lift.OpenCL.{primitives => ocl}
     import idealised.OpenMP.FunctionalPrimitives._
     import idealised.OpenCL.FunctionalPrimitives._
+    import idealised.OpenCL.{GlobalMemory, LocalMemory, PrivateMemory}
 
     // TODO: remove surface language
     import idealised.SurfaceLanguage.Operators.Unary
@@ -456,6 +457,19 @@ object fromLift {
       =>
         fun[ExpType](exp"[idx($n)]", e =>
           IndexAsNat(n, e))
+
+      case (ocl.to(i_space),
+      lt.FunctionType(lt.FunctionType(la: lt.DataType, lb: lt.DataType), _))
+      =>
+        val a = fromLift(la)
+        val b = fromLift(lb)
+        fun[ExpType -> ExpType](exp"[$a]" -> exp"[$b]", f =>
+          fun[ExpType](exp"[$a]", e =>
+            i_space match {
+              case GlobalMemory => ToGlobal(a, b, f, e)
+              case LocalMemory => ToLocal(a, b, f, e)
+              case PrivateMemory => ToPrivate(a, b, f, e)
+            }))
 
       case (lp.reduce, _) | (lp.scan, _) =>
         throw new Exception(s"$p has no implementation")
