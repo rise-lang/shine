@@ -91,17 +91,17 @@ final case class TypeDependentApplyExpr(fun: Expr, arg: DataType, override val t
   }
 }
 
-final case class DLet(binder:NatFunIdentifier,
-                      definition:Expr,
-                      body:Expr,
-                      override val t:Option[Type] = None) extends Expr {
+final case class LetNat(binder:NatFunIdentifier,
+                        definition:Expr,
+                        body:Expr,
+                        override val t:Option[Type] = None) extends Expr {
   override def toString: String = s"let $binder = $definition in $body"
 
   override def children: Seq[Any] = Seq(binder, definition, body)
 
   override def rebuild: Seq[Any] => Expr = {
     case Seq(binder:NatFunIdentifier, definition:Expr, body:Expr, t:Option[Type]) =>
-      DLet(binder, definition, body, t)
+      LetNat(binder, definition, body, t)
   }
 }
 

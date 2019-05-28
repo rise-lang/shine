@@ -78,9 +78,9 @@ object tFun {
 
 }
 
-object dlet {
-  def apply(defn:Expr, makeBody:NatFunIdentifier => Expr):DLet = {
+object letNat {
+  def apply(defn:Expr, makeBody:NatFunIdentifier => Expr):LetNat = {
     val identifier = NatFunIdentifier()
-    DLet(identifier, defn, makeBody(identifier))
+    LetNat(identifier, defn, makeBody(identifier))
   }
 }

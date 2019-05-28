@@ -25,7 +25,7 @@ object TypeOf {
       case TypeDependentApply(p, e) =>
         p.t.t `[` e `/` p.t.dt `]`
 
-      case NatLet(_, _, e) => e.t
+      case LetNat(_, _, e) => e.t
 
       case Pair(p, q) => p.t x q.t
 

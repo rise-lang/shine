@@ -41,8 +41,8 @@ object FromSurfaceLanguage {
           apply(fun).asInstanceOf[Phrases.Phrase[Types.TypeDependentFunctionType[Types.PhraseType]]],
           arg)
 
-      case DLet(fun, definition, body, _) =>
-        Phrases.NatLet(
+      case LetNat(fun, definition, body, _) =>
+        Phrases.LetNat(
           fun, apply(definition).asInstanceOf[Phrase[ExpType]], apply(body)
         )
 

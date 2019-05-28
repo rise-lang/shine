@@ -30,7 +30,7 @@ object TypeCheck {
 
       case TypeDependentApply(p, _) => TypeCheck(p)
 
-      case NatLet(_, defn, body) => TypeCheck(defn); TypeCheck(body)
+      case LetNat(_, defn, body) => TypeCheck(defn); TypeCheck(body)
 
       case Pair(p, q) => TypeCheck(p); TypeCheck(q)
 

@@ -44,7 +44,7 @@ object TranslationToImperative {
       case NatDependentApply(fun, arg) => acc(Lifting.liftNatDependentFunction(fun)(arg))(A)
       case TypeDependentApply(fun, arg) => acc(Lifting.liftTypeDependentFunction(fun)(arg))(A)
 
-      case NatLet(binder, defn, body) => NatLet(binder, defn, acc(body)(A))
+      case LetNat(binder, defn, body) => LetNat(binder, defn, acc(body)(A))
 
       case IfThenElse(cond, thenP, elseP) =>
         con(cond)(λ(cond.t) { x =>

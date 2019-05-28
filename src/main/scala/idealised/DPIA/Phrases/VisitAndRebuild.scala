@@ -48,7 +48,7 @@ object VisitAndRebuild {
           case TypeDependentApply(p, dt) =>
             TypeDependentApply(apply(p, v), dt)
 
-          case NatLet(binder, defn, body) => NatLet(binder, apply(defn, v), apply(body, v))
+          case LetNat(binder, defn, body) => LetNat(binder, apply(defn, v), apply(body, v))
 
           case Pair(p, q) => Pair(apply(p, v), apply(q, v))
 

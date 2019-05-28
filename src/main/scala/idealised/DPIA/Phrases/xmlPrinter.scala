@@ -81,7 +81,7 @@ object xmlPrinter {
           {apply(body)}
         </Λ>
 
-      case NatLet(binder, defn, body) =>
+      case LetNat(binder, defn, body) =>
         <nLet binder={binder.name} defn={apply(defn)}>
           {apply(body)}
         </nLet>

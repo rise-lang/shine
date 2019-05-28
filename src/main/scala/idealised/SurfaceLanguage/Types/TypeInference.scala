@@ -73,13 +73,13 @@ object TypeInference {
             TypeDependentApplyExpr(f, x, Some(bodyT))
         }
 
-      case DLet(binder, definition, body, _) =>
+      case LetNat(binder, definition, body, _) =>
         val defn = inferType(definition, subs)
         checkDLetDefinitionIsValid(defn)
 
         val bodyExpr = inferType(body, subs)
         bodyExpr.t match {
-          case Some(t) =>  DLet(binder, defn, bodyExpr, Some(t))
+          case Some(t) =>  LetNat(binder, defn, bodyExpr, Some(t))
         }
 
       case IfThenElseExpr(cond, thenE, elseE, _) =>

@@ -150,7 +150,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case Proj1(pair) => cmd(Lifting.liftPair(pair)._1, env)
       case Proj2(pair) => cmd(Lifting.liftPair(pair)._2, env)
 
-      case NatLet(binder, defn, body) =>
+      case LetNat(binder, defn, body) =>
         defineNatFunction(binder, defn ,env)
         cmd(body, env)
 
