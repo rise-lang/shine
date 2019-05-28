@@ -187,7 +187,6 @@ object TypeInference {
           }
         }
         VisitAndRebuild(defn, findFunctionTypes)
-        if(findFunctionTypes.found) error(defn.toString, "in NatLet definition may not be a function type")
 
         finalReturnType(t) match {
           case _:IndexType =>

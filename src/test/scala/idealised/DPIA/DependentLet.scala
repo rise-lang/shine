@@ -7,7 +7,7 @@ class DependentLet extends idealised.util.Tests{
 
   test("Simple no capture") {
     val program = nFun(n =>
-      fun(ArrayType(n, float))(xs => dlet(0, f => mapSeq(fun(x => x))(take(f(), xs)))
+      fun(ArrayType(n, float))(xs => dlet(fun(int)(x => x + 0), f => mapSeq(fun(x => x))(take(f(5), xs)))
     ))
 
     val typed = TypeInference(program, Map())

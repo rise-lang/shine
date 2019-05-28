@@ -79,9 +79,27 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     }
   }
 
-  private def defineNatFunction(identifier: NatFunIdentifier, phrase:Phrase[ExpType], env:Environment):Unit = {
-    val cbody = C.AST.Block(immutable.Seq(exp(phrase, env, List(), C.AST.Return(_))))
-    val decl = C.AST.FunDecl(identifier.name, typ(phrase.t.dataType), immutable.Seq(), cbody)
+  private def defineNatFunction[T <: PhraseType](identifier: NatFunIdentifier, phrase:Phrase[T], env:Environment):Unit = {
+
+    def getPhraseAndParams[_ <: PhraseType](p: Phrase[_],
+                                                    ps: immutable.Seq[Identifier[ExpType]] = immutable.Seq()
+                                                   ): (Phrase[ExpType], immutable.Seq[Identifier[ExpType]]) = {
+      p match {
+        case l: Lambda[ExpType, _]@unchecked => getPhraseAndParams(l.body, l.param +: ps)
+        case ndl: NatDependentLambda[_] => getPhraseAndParams(ndl.body, Identifier(ndl.x.name, ExpType(int)) +: ps)
+        case ep: Phrase[ExpType]@unchecked => (ep, ps)
+      }
+    }
+
+    val (body, params) = getPhraseAndParams(phrase)
+
+    val newEnv = params.foldLeft(env)((e, ident) => e.updatedIdentEnv(ident, C.AST.DeclRef(ident.name)))
+
+    val decl = C.AST.FunDecl(
+      identifier.name,
+      typ(body.t.dataType),
+      params.map(ident => C.AST.ParamDecl(ident.name, typ(ident.t.dataType))),
+      C.AST.Block(immutable.Seq(exp(body, newEnv, List(), C.AST.Return(_)))))
     this.decls += decl
   }
 
@@ -133,7 +151,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case Proj2(pair) => cmd(Lifting.liftPair(pair)._2, env)
 
       case NatLet(binder, defn, body) =>
-        defineNatFunction(binder, defn, env)
+        defineNatFunction(binder, defn ,env)
         cmd(body, env)
 
       case Apply(_, _) | NatDependentApply(_, _) | TypeDependentApply(_, _) |
