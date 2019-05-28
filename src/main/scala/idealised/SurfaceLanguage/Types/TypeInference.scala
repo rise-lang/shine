@@ -75,7 +75,7 @@ object TypeInference {
 
       case LetNat(binder, definition, body, _) =>
         val defn = inferType(definition, subs)
-        checkDLetDefinitionIsValid(defn)
+        checkLetNatDefinitionIsWellTyped(defn)
 
         val bodyExpr = inferType(body, subs)
         bodyExpr.t match {
@@ -172,7 +172,8 @@ object TypeInference {
     override def apply[T <: Type](dt: T): T = Type.rebuild(this.apply, dt)
   }
 
-  private def checkDLetDefinitionIsValid(defn:Expr):Unit = {
+
+  private def checkLetNatDefinitionIsWellTyped(defn:Expr):Unit = {
     defn.t match {
       case None => error(defn.toString, "Cannot infer definition type in DLet")
       case Some(t) =>

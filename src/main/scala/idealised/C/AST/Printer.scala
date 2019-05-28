@@ -1,6 +1,7 @@
 package idealised.C.AST
 
 import idealised.DPIA.NatFunCall
+import idealised.DPIA.Types.ExpType
 import lift.arithmetic._
 
 trait Printer {
@@ -45,7 +46,7 @@ object Printer {
   def apply(n: Node): String = (new CPrinter).printNode(n)
 }
 
-class CPrinter extends Printer {
+class CPrinter() extends Printer {
 
   override def printNode(n: Node): String = {
 

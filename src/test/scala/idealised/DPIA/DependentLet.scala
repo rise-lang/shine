@@ -1,5 +1,7 @@
 package idealised.DPIA
 import idealised.SurfaceLanguage.DSL._
+import idealised.SurfaceLanguage.LiteralExpr
+import idealised.SurfaceLanguage.Semantics.IntData
 import idealised.SurfaceLanguage.Types._
 import idealised.util.SyntaxChecker
 
@@ -7,7 +9,14 @@ class DependentLet extends idealised.util.Tests{
 
   test("Simple no capture") {
     val program = nFun(n =>
-      fun(ArrayType(n, float))(xs => letNat(fun(int)(x => x + 0), f => mapSeq(fun(x => x))(take(f(5), xs)))
+      fun(ArrayType(n, float))(xs =>
+        letNat(fun(int)(x => x + 2), f =>
+          letNat(fun(int)(x => x + 1), g =>
+            letNat(5, five =>
+              mapSeq(fun(x => x))(take(g(f(five())), xs))
+            )
+          )
+        )
     ))
 
     val typed = TypeInference(program, Map())
@@ -19,11 +28,14 @@ class DependentLet extends idealised.util.Tests{
     println(code)
   }
 
-  ignore("basic dlet test") {
-    val f = fun(IndexType(10))(idx =>
-      letNat(idx, lenF => fun(ArrayType(NatFunCall(lenF, Seq()), float))(xs =>
-        xs :>> mapSeq(fun(x => x + 1.0f))
-    )))
+  test("basic test") {
+    val f = nFun(n => fun(IndexType(10))(idx =>
+        fun(ArrayType(n, float))(xs =>
+            letNat(
+            fun(int)(x => x),
+              f => xs :>> take(f(LiteralExpr(IntData(62)))) :>> mapSeq(fun(x => x + 1.0f)))
+        )
+      ))
 
     val typed = TypeInference(f, Map())
 

@@ -1,8 +1,7 @@
 package idealised.SurfaceLanguage
 
-import idealised.DPIA.NatNatLambda
+import idealised.DPIA.{NatFunIdentifier, NatNatLambda}
 import idealised.SurfaceLanguage.Types._
-import idealised.SurfaceLanguage.Semantics._
 
 object VisitAndRebuild {
   sealed abstract class Result[+T](val value: T) {

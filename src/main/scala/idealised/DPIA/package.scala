@@ -1,5 +1,6 @@
 package idealised
 
+import idealised.C.AST.CPrinter
 import idealised.DPIA.FunctionalPrimitives.{AsIndex, IndexAsNat}
 import idealised.DPIA.Lifting._
 import idealised.DPIA.Phrases._
@@ -23,18 +24,52 @@ package object DPIA {
   type Nat = ArithExpr
   type NatIdentifier = NamedVar
 
+  implicit class NatOps(n:Nat) {
+    def mapNatFunArg(f:NatFunArg => NatFunArg):Nat = {
+      n.visitAndRebuild({
+        case NatFunCall(fun, args) => NatFunCall(fun, args.map(f))
+        case other => other
+      })
+    }
+  }
+
   case class NatFunIdentifier(name:String) {
-    def apply(args:Nat*):NatFunCall = NatFunCall(this, args)
+    def apply(args:Any*):NatFunCall =
+      NatFunCall(this, args.map({
+        case arg:NatFunArg => arg
+        case n:Nat => NatArg(n)
+        case exp:SurfaceLanguage.Expr => SurfaceExpArg(exp)
+        case exp:Phrase[ExpType] => DPIAExpArg(exp)
+      }))
   }
 
   object NatFunIdentifier {
     def apply():NatFunIdentifier = NatFunIdentifier(freshName("nFun"))
   }
 
-  class NatFunCall(val fun:NatFunIdentifier, val args:Seq[Nat]) extends ArithExprFunction(fun.name) {
-    override def visitAndRebuild(f: Nat => Nat): Nat = NatFunCall(fun, args.map(f))
+  sealed trait NatFunArg
+  case class NatArg(n:Nat) extends NatFunArg
+  case class SurfaceExpArg(surf:SurfaceLanguage.Expr) extends NatFunArg
+  case class DPIAExpArg(e:Phrase[ExpType]) extends NatFunArg
+  case class CASTArg(c: C.AST.Expr) extends NatFunArg
 
-    def callAndParameterListString = s"${fun.name}(${args.map(_.toString).reduceOption(_ + "," + _).getOrElse("")})"
+
+  class NatFunCall(val fun:NatFunIdentifier, val args:Seq[NatFunArg]) extends ArithExprFunction(fun.name)  {
+    override def visitAndRebuild(f: Nat => Nat): Nat = NatFunCall(fun, args.map {
+      case NatArg(n) => NatArg(f(n))
+      case other => other
+    })
+
+
+    def callAndParameterListString() =
+      s"${fun.name}(${args.map({
+        case NatArg(n) => {
+          val p = new CPrinter()
+          p.toString(n)
+        }
+        case DPIAExpArg(_) => ???
+        case CASTArg(expr) => C.AST.Printer(expr) // TODO: pass printer along ...
+      }).reduceOption(_ + "," + _).getOrElse("")})"
 
     override lazy val toString = s"⌈${this.callAndParameterListString}⌉"
 
@@ -47,7 +82,9 @@ package object DPIA {
   }
 
   object NatFunCall {
-    def apply(fun:NatFunIdentifier, args:Seq[Nat]) = new NatFunCall(fun, args)
+    def apply(fun:NatFunIdentifier, args:Seq[NatFunArg]) = new NatFunCall(fun, args)
+
+    def unapply(arg: NatFunCall): Option[(NatFunIdentifier, Seq[NatFunArg])] = Some(arg.fun, arg.args)
   }
 
 
