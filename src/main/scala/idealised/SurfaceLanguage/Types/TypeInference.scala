@@ -187,11 +187,12 @@ object TypeInference {
           }
         }
         VisitAndRebuild(defn, findFunctionTypes)
-        if(findFunctionTypes.found) error(defn.toString, "in dlet definition may not be a function type")
+        if(findFunctionTypes.found) error(defn.toString, "in NatLet definition may not be a function type")
 
         finalReturnType(t) match {
           case _:IndexType =>
-          case _ => error(defn.toString, "in dlet definition must return an index type")
+          case idealised.SurfaceLanguage.Types.int =>
+          case _ => error(defn.toString, "in NatLet definition return value must either be 'int' or 'idx'")
         }
     }
   }

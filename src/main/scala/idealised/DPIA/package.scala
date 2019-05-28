@@ -22,12 +22,19 @@ package object DPIA {
 
   type Nat = ArithExpr
   type NatIdentifier = NamedVar
-  type NatFunIdentifier = NamedVar
+
+  case class NatFunIdentifier(name:String) {
+    def apply(args:Nat*):NatFunCall = NatFunCall(this, args)
+  }
+
+  object NatFunIdentifier {
+    def apply():NatFunIdentifier = NatFunIdentifier(freshName("nFun"))
+  }
 
   class NatFunCall(val fun:NatFunIdentifier, val args:Seq[Nat]) extends ArithExprFunction(fun.name) {
-    override def visitAndRebuild(f: Nat => Nat): Nat = NatFunCall(f(fun).asInstanceOf[NatIdentifier], args.map(f))
+    override def visitAndRebuild(f: Nat => Nat): Nat = NatFunCall(fun, args.map(f))
 
-    def callAndParameterListString = s"$fun(${args.map(_.toString).reduceOption(_ + "," + _).getOrElse("")})"
+    def callAndParameterListString = s"${fun.name}(${args.map(_.toString).reduceOption(_ + "," + _).getOrElse("")})"
 
     override lazy val toString = s"⌈${this.callAndParameterListString}⌉"
 

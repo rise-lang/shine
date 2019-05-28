@@ -229,7 +229,9 @@ class CPrinter extends Printer {
   }
 
   private def printReturn(r: Return): Unit = {
-    println("return;")
+    print("return ")
+    r.x.foreach(printExpr)
+    println(";")
   }
 
   private def printDeclStmt(d: DeclStmt): Unit = {

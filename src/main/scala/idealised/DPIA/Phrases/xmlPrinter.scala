@@ -81,6 +81,11 @@ object xmlPrinter {
           {apply(body)}
         </Λ>
 
+      case NatLet(binder, defn, body) =>
+        <nLet binder={binder.name} defn={apply(defn)}>
+          {apply(body)}
+        </nLet>
+
       case Literal(d) => <lit>{d}</lit>
 
       case Natural(n) => <nat>{n}</nat>

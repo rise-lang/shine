@@ -5,7 +5,21 @@ import idealised.util.SyntaxChecker
 
 class DependentLet extends idealised.util.Tests{
 
-  test("basic dlet test") {
+  test("Simple no capture") {
+    val program = nFun(n =>
+      fun(ArrayType(n, float))(xs => dlet(0, f => mapSeq(fun(x => x))(take(f(), xs)))
+    ))
+
+    val typed = TypeInference(program, Map())
+
+    val p = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(typed))
+
+    val code = p.code
+    SyntaxChecker.checkOpenCL(code)
+    println(code)
+  }
+
+  ignore("basic dlet test") {
     val f = fun(IndexType(10))(idx =>
       dlet(idx, lenF => fun(ArrayType(NatFunCall(lenF, Seq()), float))(xs =>
         xs :>> mapSeq(fun(x => x + 1.0f))

@@ -1,5 +1,6 @@
 package idealised.SurfaceLanguage.DSL
 
+import idealised.DPIA.NatFunIdentifier
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
 import lift.arithmetic.NamedVar
@@ -79,7 +80,7 @@ object tFun {
 
 object dlet {
   def apply(defn:Expr, makeBody:NatFunIdentifier => Expr):DLet = {
-    val identifier = NamedVar("f")
+    val identifier = NatFunIdentifier()
     DLet(identifier, defn, makeBody(identifier))
   }
 }

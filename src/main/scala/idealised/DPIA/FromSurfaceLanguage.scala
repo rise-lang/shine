@@ -42,8 +42,8 @@ object FromSurfaceLanguage {
           arg)
 
       case DLet(fun, definition, body, _) =>
-        Phrases.DLet(
-          fun, apply(definition), apply(body)
+        Phrases.NatLet(
+          fun, apply(definition).asInstanceOf[Phrase[ExpType]], apply(body)
         )
 
       case IfThenElseExpr(cond, thenE, elseE, _) =>

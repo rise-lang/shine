@@ -1,6 +1,7 @@
 package idealised.C.CodeGeneration
 
 import idealised.C.AST.Block
+import idealised.C.AST.DefaultImplementations.Return
 import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives._
 import idealised.DPIA.ImperativePrimitives._
@@ -22,7 +23,8 @@ object CodeGenerator {
 
   final case class Environment(identEnv: immutable.Map[Identifier[_ <: BasePhraseTypes], C.AST.DeclRef],
                                commEnv: immutable.Map[Identifier[CommandType], C.AST.Stmt],
-                               contEnv: immutable.Map[Identifier[ExpType -> CommandType], Phrase[ExpType] => Environment => C.AST.Stmt]) {
+                               contEnv: immutable.Map[Identifier[ExpType -> CommandType], Phrase[ExpType] => Environment => C.AST.Stmt]
+                              ) {
     def updatedIdentEnv(kv: (Identifier[_ <: BasePhraseTypes], C.AST.DeclRef)): Environment = {
       this.copy(identEnv = identEnv + kv)
     }
@@ -77,6 +79,12 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     }
   }
 
+  private def defineNatFunction(identifier: NatFunIdentifier, phrase:Phrase[ExpType], env:Environment):Unit = {
+    val cbody = C.AST.Block(immutable.Seq(exp(phrase, env, List(), C.AST.Return(_))))
+    val decl = C.AST.FunDecl(identifier.name, typ(phrase.t.dataType), immutable.Seq(), cbody)
+    this.decls += decl
+  }
+
   def updatedRanges(key: String, value: lift.arithmetic.Range): CodeGenerator =
     new CodeGenerator(decls, ranges.updated(key, value))
 
@@ -123,6 +131,10 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case Proj1(pair) => cmd(Lifting.liftPair(pair)._1, env)
       case Proj2(pair) => cmd(Lifting.liftPair(pair)._2, env)
+
+      case NatLet(binder, defn, body) =>
+        defineNatFunction(binder, defn, env)
+        cmd(body, env)
 
       case Apply(_, _) | NatDependentApply(_, _) | TypeDependentApply(_, _) |
            _: CommandPrimitive =>

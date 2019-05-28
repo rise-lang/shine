@@ -31,6 +31,8 @@ object PrettyPhrasePrinter {
 
       case TypeDependentLambda(param, body) => s"Λ (${param.name}: dt) -> ${apply(body)}"
 
+      case NatLet(binder, defn, body) => s"nLet ${binder.name} = ${apply(defn)} in ${apply(body)}"
+
       case Literal(d) => d.toString
 
       case Natural(n) => n.toString

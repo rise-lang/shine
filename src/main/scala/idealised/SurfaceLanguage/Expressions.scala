@@ -1,5 +1,6 @@
 package idealised.SurfaceLanguage
 
+import idealised.DPIA.NatFunIdentifier
 import idealised.SurfaceLanguage.Semantics.Data
 import idealised.SurfaceLanguage.Types._
 import idealised.traversal.{FromChildren, ToChildren}
