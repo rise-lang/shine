@@ -13,6 +13,7 @@ class ArrayToPrivate extends idealised.util.TestsWithExecutor {
       a |> mapGlobal(toPrivate(mapSeq(fun(x => x + l(1.0f)))))
     ))
 
-    gen.OpenCLKernel(e)
+    val code = gen.OpenCLKernel(e).code
+    "for \\(".r.findAllIn(code).length shouldBe 1
   }
 }
