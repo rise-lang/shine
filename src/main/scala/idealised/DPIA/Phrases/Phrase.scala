@@ -37,7 +37,7 @@ final case class NatDependentApply[T <: PhraseType](fun: Phrase[`(nat)->`[T]], a
 final case class TypeDependentApply[T <: PhraseType](fun: Phrase[`(dt)->`[T]], arg: DataType)
   extends Phrase[T]
 
-final case class LetNat[T1 <: PhraseType, T2 <: PhraseType](binder:NatFunIdentifier,
+final case class LetNat[T1 <: PhraseType, T2 <: PhraseType](binder:LetNatIdentifier,
                                                             defn:Phrase[T1],
                                                             body:Phrase[T2]) extends Phrase[T2]
 

@@ -1,6 +1,6 @@
 package idealised.SurfaceLanguage.DSL
 
-import idealised.DPIA.NatFunIdentifier
+import idealised.DPIA.LetNatIdentifier
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
 import lift.arithmetic.NamedVar
@@ -79,8 +79,8 @@ object tFun {
 }
 
 object letNat {
-  def apply(defn:Expr, makeBody:NatFunIdentifier => Expr):LetNat = {
-    val identifier = NatFunIdentifier()
+  def apply(defn:Expr, makeBody:LetNatIdentifier => Expr):LetNat = {
+    val identifier = LetNatIdentifier()
     LetNat(identifier, defn, makeBody(identifier))
   }
 }

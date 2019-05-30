@@ -236,18 +236,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
   def nat(nat:Nat,
           env:Environment,
           path:Path):C.AST.ArithmeticExpr = {
-
-    val replaced = nat.mapNatFunArg({
-          case DPIAExpArg(e) =>
-            val cExpr = exp(e, env, path, C.AST.ExprStmt(_)) match {
-              case C.AST.ExprStmt(expr) => expr
-              case _ => ???
-            }
-            CASTArg(cExpr)
-          case arg => arg
-        })
-
-    C.AST.ArithmeticExpr(replaced)
+    C.AST.ArithmeticExpr(nat)
   }
 
   override def exp(phrase: Phrase[ExpType],

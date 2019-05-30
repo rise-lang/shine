@@ -31,9 +31,8 @@ class DependentLet extends idealised.util.Tests{
   test("basic test") {
     val f = nFun(n => fun(IndexType(10))(idx =>
         fun(ArrayType(n, float))(xs =>
-            letNat(
-            fun(int)(x => x),
-              f => xs :>> take(f(LiteralExpr(IntData(62)))) :>> mapSeq(fun(x => x + 1.0f)))
+            letNat(idx,
+              f => xs :>> take(f()) :>> mapSeq(fun(x => x + 1.0f)))
         )
       ))
 

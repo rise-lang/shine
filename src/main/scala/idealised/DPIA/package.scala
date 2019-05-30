@@ -24,54 +24,49 @@ package object DPIA {
   type Nat = ArithExpr
   type NatIdentifier = NamedVar
 
-  implicit class NatOps(n:Nat) {
-    def mapNatFunArg(f:NatFunArg => NatFunArg):Nat = {
-      n.visitAndRebuild({
-        case NatFunCall(fun, args) => NatFunCall(fun, args.map(f))
-        case other => other
-      })
+  case class LetNatIdentifier(id:NatIdentifier) {
+    def name:String = id.name
+
+    def apply(args:Any*):NatFunCall = {
+      NatFunCall(this, args.map({
+        case n:Nat => NatArg(n)
+        case id:LetNatIdentifier => LetNatIdArg(id)
+        case other =>
+          throw new Exception(s"Invalid parameter to NatFunCall ${this.name} $other, must either bet a Nat or a LetNatIdentifier")
+      }))
     }
   }
 
-  case class NatFunIdentifier(name:String) {
-    def apply(args:Any*):NatFunCall =
-      NatFunCall(this, args.map({
-        case arg:NatFunArg => arg
-        case n:Nat => NatArg(n)
-        case exp:SurfaceLanguage.Expr => SurfaceExpArg(exp)
-        case exp:Phrase[ExpType] => DPIAExpArg(exp)
-      }))
-  }
-
-  object NatFunIdentifier {
-    def apply():NatFunIdentifier = NatFunIdentifier(freshName("nFun"))
+  object LetNatIdentifier {
+    def apply():LetNatIdentifier = {
+      LetNatIdentifier(NamedVar(freshName("nFun")))
+    }
   }
 
   sealed trait NatFunArg
   case class NatArg(n:Nat) extends NatFunArg
-  case class SurfaceExpArg(surf:SurfaceLanguage.Expr) extends NatFunArg
-  case class DPIAExpArg(e:Phrase[ExpType]) extends NatFunArg
-  case class CASTArg(c: C.AST.Expr) extends NatFunArg
+  case class LetNatIdArg(letNatIdentifier: LetNatIdentifier) extends NatFunArg
 
 
-  class NatFunCall(val fun:NatFunIdentifier, val args:Seq[NatFunArg]) extends ArithExprFunction(fun.name)  {
+  class NatFunCall(val fun:LetNatIdentifier, val args:Seq[NatFunArg]) extends ArithExprFunction(fun.id.name)  {
     override def visitAndRebuild(f: Nat => Nat): Nat = NatFunCall(fun, args.map {
       case NatArg(n) => NatArg(f(n))
       case other => other
     })
 
 
-    def callAndParameterListString() =
-      s"${fun.name}(${args.map({
-        case NatArg(n) => {
-          val p = new CPrinter()
-          p.toString(n)
-        }
-        case DPIAExpArg(_) => ???
-        case CASTArg(expr) => C.AST.Printer(expr) // TODO: pass printer along ...
-      }).reduceOption(_ + "," + _).getOrElse("")})"
+    def callAndParameterListString(printNat:Nat => String) =
+      s"${fun.id.name}(${args.map{
+        arg =>
+          val nat:Nat = arg match {
+            case NatArg(n) => n
+            case LetNatIdArg(LetNatIdentifier(id)) => id
+          }
+          printNat(nat)
 
-    override lazy val toString = s"⌈${this.callAndParameterListString}⌉"
+      }.reduceOption(_ + "," + _).getOrElse("")})"
+
+    override lazy val toString = s"⌈${this.callAndParameterListString(nat => new CPrinter().toString(nat))}⌉"
 
     override val HashSeed = 0x31111112
 
@@ -82,9 +77,9 @@ package object DPIA {
   }
 
   object NatFunCall {
-    def apply(fun:NatFunIdentifier, args:Seq[NatFunArg]) = new NatFunCall(fun, args)
+    def apply(fun:LetNatIdentifier, args:Seq[NatFunArg]) = new NatFunCall(fun, args)
 
-    def unapply(arg: NatFunCall): Option[(NatFunIdentifier, Seq[NatFunArg])] = Some(arg.fun, arg.args)
+    def unapply(arg: NatFunCall): Option[(LetNatIdentifier, Seq[NatFunArg])] = Some(arg.fun, arg.args)
   }
 
 
