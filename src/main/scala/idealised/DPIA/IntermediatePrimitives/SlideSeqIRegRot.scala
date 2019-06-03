@@ -32,7 +32,7 @@ object SlideSeqIRegRot {
             Take(size - 1, inputSize - size + 1, dt1, input),
             TakeAcc(size - 1, size - size + 1, dt1, rs.wr)) `;`
           // core loop
-          ForNat(n, _Λ_(i => {
+          ForNat(n, _Λ_[NatKind](i => {
             // load current value
             ((rs.wr `@` (size - 1)) :=|dt1| (Drop(size - 1, (inputSize - size + 1), dt1, input) `@` i)) `;`
             f(rs.rd)(output `@` i) `;` // body

@@ -18,13 +18,9 @@ object TypeCheck {
         TypeCheck(q)
         check(p.t.inT, q.t)
 
-      case NatDependentLambda(_, p) => TypeCheck(p)
+      case DepLambda(_, p) => TypeCheck(p)
 
-      case TypeDependentLambda(_, p) => TypeCheck(p)
-
-      case NatDependentApply(p, _) => TypeCheck(p)
-
-      case TypeDependentApply(p, _) => TypeCheck(p)
+      case DepApply(p, _) => TypeCheck(p)
 
       case Pair(p, q) => TypeCheck(p); TypeCheck(q)
 

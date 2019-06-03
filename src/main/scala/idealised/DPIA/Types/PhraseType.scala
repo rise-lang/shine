@@ -44,6 +44,16 @@ final case class DependentFunctionType[K <: Kind, T <: PhraseType](x: K#I, t: T)
 
 object PhraseType {
 
+  def substitute[K <: Kind, T <: PhraseType](x: K#T, `for`: K#I, in: Phrase[T]): Phrase[T] = (x, `for`) match {
+    case (dt: DataType, forDt: DataTypeIdentifier)  => substitute(dt, forDt, in)
+    case (n: Nat, forN: NatIdentifier)              => substitute(n, forN, in)
+  }
+
+  def substitute[K <: Kind](x: K#T, `for`: K#I, in: PhraseType): PhraseType = (x, `for`) match {
+    case (dt: DataType, forDt: DataTypeIdentifier)  => substitute(dt, forDt, in)
+    case (n: Nat, forN: NatIdentifier)              => substitute(n, forN, in)
+  }
+
   def substitute[T <: PhraseType](dt: DataType,
                                   `for`: DataTypeIdentifier,
                                   in: Phrase[T]): Phrase[T] = {

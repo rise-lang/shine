@@ -1,12 +1,9 @@
 package idealised
 
-import idealised.DPIA.FunctionalPrimitives.{AsIndex, IndexAsNat}
-import idealised.DPIA.Lifting._
 import idealised.DPIA.Phrases._
-import idealised.DPIA.Semantics.OperationalSemantics.IndexData
 import idealised.DPIA.Types.{PhraseTypeParser, _}
-import idealised.SurfaceLanguage.Operators
 import lift.arithmetic._
+import lift.core
 
 import scala.language.{implicitConversions, reflectiveCalls}
 
@@ -29,6 +26,26 @@ package object DPIA {
   object NatIdentifier {
     def apply(name: String): NatIdentifier = new NamedVar(name) with Kind.Identifier
     def apply(name: String, range: Range): NatIdentifier = new NamedVar(name, range) with Kind.Identifier
+  }
+
+  type NatDependentLambda[T <: PhraseType] = DepLambda[NatKind, T]
+  object NatDependentLambda {
+    def apply[T <: PhraseType](x: NatIdentifier, body: Phrase[T]): NatDependentLambda[T] = DepLambda[NatKind, T](x, body)
+  }
+
+  type NatDependentApply[T <: PhraseType] = DepApply[NatKind, T]
+  object NatDependentApply {
+    def apply[T <: PhraseType](fun: Phrase[`(nat)->`[T]], arg: Nat): NatDependentApply[T] = DepApply[NatKind, T](fun, arg)
+  }
+
+  type TypeDependentLambda[T <: PhraseType] = DepLambda[DataKind, T]
+  object TypeDependentLambda {
+    def apply[T <: PhraseType](x: DataTypeIdentifier, body: Phrase[T]): TypeDependentLambda[T] = DepLambda[DataKind, T](x, body)
+  }
+
+  type TypeDependentApply[T <: PhraseType] = DepApply[DataKind, T]
+  object TypeDependentApply {
+    def  apply[T <: PhraseType](fun: Phrase[`(dt)->`[T]], arg: DataType): TypeDependentApply[T] = DepApply[DataKind, T](fun, arg)
   }
 
   case class NatNatTypeFunction private (x:NatIdentifier, body:Nat) {
@@ -111,11 +128,12 @@ package object DPIA {
   }
 
   // note: this is an easy fix to avoid name conflicts between lift and dpia
-  val freshName = lift.core.freshName
+  val freshName: core.freshName.type = lift.core.freshName
 
   type x[T1 <: PhraseType, T2 <: PhraseType] = PairType[T1, T2]
   type ->[T1 <: PhraseType, T2 <: PhraseType] = FunctionType[T1, T2]
   type `->p`[T1 <: PhraseType, T2 <: PhraseType] = PassiveFunctionType[T1, T2]
+  type `()->`[K <: Kind, T <: PhraseType] = DependentFunctionType[K, T]
   type `(nat)->`[T <: PhraseType] = NatDependentFunctionType[T]
   type `(dt)->`[T <: PhraseType] = TypeDependentFunctionType[T]
   type VarType = ExpType x AccType
@@ -172,8 +190,12 @@ package object DPIA {
     def `->p`[T2 <: PhraseType](t2: T2) = PassiveFunctionType(t1, t2)
   }
 
+  implicit class DependentFunctionTypeConstructor[K <: Kind](x: K#I) {
+    def `()->`[T <: PhraseType](outT: T): K `()->` T = DependentFunctionType[K, T](x, outT)
+  }
+
   implicit class NatDependentFunctionTypeConstructor(x: NatIdentifier) {
-    def ->[T <: PhraseType](outT: T) = DependentFunctionType[NatKind, T](x, outT)
+    def ->[T <: PhraseType](outT: T): `()->`[NatKind, T] = DependentFunctionType[NatKind, T](x, outT)
   }
 
   implicit class TypeDependentFunctionTypeConstructor(x: DataTypeIdentifier) {

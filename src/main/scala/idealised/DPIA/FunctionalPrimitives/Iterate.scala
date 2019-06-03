@@ -67,7 +67,7 @@ final case class Iterate(n: Nat,
 
     con(array)(λ(exp"[${m * n.pow(k)}.$dt]")(x =>
       IterateIAcc(n, m, k, dt, A,
-        _Λ_(l => λ(acc"[$l.$dt]")(o => λ(exp"[${l * n}.$dt]")(x => acc(f(l)(x))(o)))),
+        _Λ_[NatKind](l => λ(acc"[$l.$dt]")(o => λ(exp"[${l * n}.$dt]")(x => acc(f(l)(x))(o)))),
         x) ))
   }
 

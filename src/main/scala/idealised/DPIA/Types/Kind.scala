@@ -1,6 +1,7 @@
 package idealised.DPIA.Types
 
 import idealised.DPIA
+import idealised.DPIA.NatIdentifier
 
 sealed trait Kind {
   type T
@@ -10,6 +11,17 @@ sealed trait Kind {
 object Kind {
   trait Identifier {
     def name: String
+  }
+
+  trait IdentifierMaker[K <: Kind] {
+    def makeIdentifier(): K#I
+  }
+
+  implicit object DataTypeIdentifierMaker extends IdentifierMaker[DataKind] {
+    override def makeIdentifier(): DataTypeIdentifier = DataTypeIdentifier(DPIA.freshName("dt"))
+  }
+  implicit object NatIdentifierMaker extends IdentifierMaker[NatKind] {
+    override def makeIdentifier(): NatIdentifier = NatIdentifier(DPIA.freshName("n"))
   }
 }
 

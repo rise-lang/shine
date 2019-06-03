@@ -1,6 +1,5 @@
 package idealised.DPIA.Phrases
 
-import idealised.DPIA.Semantics.OperationalSemantics.IndexData
 import idealised.DPIA.Types._
 import idealised.DPIA._
 
@@ -36,17 +35,11 @@ object VisitAndRebuild {
           case Apply(p, q) =>
             Apply(apply(p, v), apply(q, v))
 
-          case NatDependentLambda(a, p) =>
-            NatDependentLambda(a, apply(p, v))
+          case DepLambda(a, p) =>
+            DepLambda(a, apply(p, v))
 
-          case TypeDependentLambda(dt, p) =>
-            TypeDependentLambda(dt, apply(p, v))
-
-          case NatDependentApply(p, ae) =>
-            NatDependentApply(apply(p, v), ae)
-
-          case TypeDependentApply(p, dt) =>
-            TypeDependentApply(apply(p, v), dt)
+          case DepApply(p, a) =>
+            DepApply(apply(p, v), a)
 
           case Pair(p, q) => Pair(apply(p, v), apply(q, v))
 

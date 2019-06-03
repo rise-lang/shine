@@ -119,12 +119,12 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case For(n, Lambda(i, p), unroll) => CCodeGen.codeGenFor(n, i, p, unroll, env)
 
-      case ForNat(n, NatDependentLambda(i, p), unroll) => CCodeGen.codeGenForNat(n, i, p, unroll, env)
+      case ForNat(n, DepLambda(i: NatIdentifier, p), unroll) => CCodeGen.codeGenForNat(n, i, p, unroll, env)
 
       case Proj1(pair) => cmd(Lifting.liftPair(pair)._1, env)
       case Proj2(pair) => cmd(Lifting.liftPair(pair)._2, env)
 
-      case Apply(_, _) | NatDependentApply(_, _) | TypeDependentApply(_, _) |
+      case Apply(_, _) | DepApply(_, _) |
            _: CommandPrimitive =>
         error(s"Don't know how to generate code for $phrase")
     }
@@ -196,7 +196,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case Proj1(pair) => acc(Lifting.liftPair(pair)._1, env, path, cont)
       case Proj2(pair) => acc(Lifting.liftPair(pair)._2, env, path, cont)
 
-      case Apply(_, _) | NatDependentApply(_, _) | TypeDependentApply(_, _) |
+      case Apply(_, _) | DepApply(_, _) |
            Phrases.IfThenElse(_, _, _) | _: AccPrimitive =>
         error(s"Don't know how to generate code for $phrase")
     }
@@ -395,7 +395,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case Proj1(pair) => exp(Lifting.liftPair(pair)._1, env, path, cont)
       case Proj2(pair) => exp(Lifting.liftPair(pair)._2, env, path, cont)
 
-      case Apply(_, _) | NatDependentApply(_, _) | TypeDependentApply(_, _) |
+      case Apply(_, _) | DepApply(_, _) |
            Phrases.IfThenElse(_, _, _) | _: ExpPrimitive =>
         error(s"Don't know how to generate code for $phrase")
     }
