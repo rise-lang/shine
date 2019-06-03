@@ -1,7 +1,6 @@
 package lift
 
 import lift.arithmetic._
-import lift.core.types.{DataType, DataTypeIdentifier}
 
 package object core {
   object freshName {
@@ -14,7 +13,12 @@ package object core {
   }
 
   type Nat = ArithExpr
-  type NatIdentifier = NamedVar
+  type NatIdentifier = NamedVar with types.Kind.Identifier
+
+  object NatIdentifier {
+    def apply(name: String): NatIdentifier = new NamedVar(name) with types.Kind.Identifier
+    def apply(name: String, range: Range): NatIdentifier = new NamedVar(name, range) with types.Kind.Identifier
+  }
 
 //  case class NatNatTypeFunction private (x:NatIdentifier, body:Nat) {
 //    //NatNatTypeFunction have an interesting comparison behavior, as we do not define

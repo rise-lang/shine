@@ -19,6 +19,6 @@ final case class Unzip(e: Expr,
   override def children: Seq[Any] = Seq(e, t)
 
   override def rebuild: Seq[Any] => Expr = {
-    case Seq(e: Expr, t: Option[DataType]) => Unzip(e, t)
+    case Seq(e: Expr, t: Option[DataType]@unchecked) => Unzip(e, t)
   }
 }

@@ -1,9 +1,6 @@
 package idealised.SurfaceLanguage
 
-import idealised.SurfaceLanguage.Primitives.{IndexAsNat, AsIndex}
-import idealised.SurfaceLanguage.Semantics.IndexData
 import idealised.SurfaceLanguage.Types._
-import lift.arithmetic.{NamedVar, RangeAdd, StartFromRange}
 
 import scala.language.postfixOps
 import scala.language.reflectiveCalls
@@ -23,7 +20,8 @@ object Lifting {
       case app: TypeDependentApplyExpr =>
         val fun = liftTypeDependentFunctionExpr(app.fun)
         liftFunctionExpr(fun(app.arg))
-      case _: IfThenElseExpr =>
+      case _: BinOpExpr | _: IdentifierExpr | _: IfThenElseExpr | _: LiteralExpr | _: NatDependentLambdaExpr |
+           _: NatExpr | _: PrimitiveExpr | _: TypeDependentLambdaExpr | _: UnaryOpExpr =>
         throw new Exception("This should never happen")
     }
   }
@@ -41,7 +39,8 @@ object Lifting {
       case app: TypeDependentApplyExpr =>
         val fun = liftTypeDependentFunctionExpr(app.fun)
         liftNatDependentFunctionExpr(fun(app.arg))
-      case _: IfThenElseExpr =>
+      case _: BinOpExpr | _: IdentifierExpr | _: IfThenElseExpr | _: LambdaExpr | _: LiteralExpr | _: NatExpr |
+           _: PrimitiveExpr  | _: TypeDependentLambdaExpr | _: UnaryOpExpr =>
         throw new Exception("This should never happen")
     }
   }
@@ -59,7 +58,8 @@ object Lifting {
       case app: TypeDependentApplyExpr =>
         val fun = liftTypeDependentFunctionExpr(app.fun)
         liftTypeDependentFunctionExpr(fun(app.arg))
-      case _: IfThenElseExpr =>
+      case _: BinOpExpr | _: IdentifierExpr | _: IfThenElseExpr | _: LambdaExpr | _: LiteralExpr |
+           _: NatDependentLambdaExpr | _: NatExpr | _: PrimitiveExpr | _: UnaryOpExpr =>
         throw new Exception("This should never happen")
     }
   }

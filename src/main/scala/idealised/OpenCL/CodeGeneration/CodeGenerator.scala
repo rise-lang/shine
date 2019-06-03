@@ -127,7 +127,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
               // TODO: check that idx is the right offset ...
               cont( C.AST.FunCall(C.AST.DeclRef(s"vload$n"), immutable.Seq(idx, v)) )
           })
-        case Nil => error(s"Expected path to have two elements")
+        case _ => error(s"Expected path to have two elements")
       }
       case AsScalar(_, m, _, e) => path match {
         case (i : CIntExpr) :: ps =>     exp(e, env, CIntExpr(i / m) :: ps, cont)

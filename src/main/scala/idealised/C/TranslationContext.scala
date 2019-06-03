@@ -1,12 +1,12 @@
 package idealised.C
 
+import idealised.DPIA
 import idealised.DPIA.DSL._
 import idealised.DPIA.ImperativePrimitives.Assign
 import idealised.DPIA.IntermediatePrimitives.{DepMapSeqI, MapSeqI}
 import idealised.DPIA.Phrases.{NatDependentLambda, Phrase}
 import idealised.DPIA.Types._
 import idealised.DPIA.freshName
-import lift.arithmetic.NamedVar
 
 class TranslationContext() extends idealised.DPIA.Compilation.TranslationContext {
   override def assign(dt: DataType,
@@ -25,7 +25,7 @@ class TranslationContext() extends idealised.DPIA.Compilation.TranslationContext
 
       case DepArrayType(n, ft) =>
 
-        val k = NamedVar(freshName("k"))
+        val k = DPIA.NatIdentifier(freshName("k"))
 
         DepMapSeqI(n, ft, ft,
           NatDependentLambda(k,

@@ -21,7 +21,7 @@ final case class Fst(tuple: Expr, override val t: Option[DataType])
   override def children: Seq[Any] = Seq(tuple, t)
 
   override def rebuild: Seq[Any] => Expr = {
-    case Seq(tuple: Expr, t: Option[DataType]) => Fst(tuple, t)
+    case Seq(tuple: Expr, t: Option[DataType]@unchecked) => Fst(tuple, t)
   }
 
   override def toString: String = s"$tuple._1"

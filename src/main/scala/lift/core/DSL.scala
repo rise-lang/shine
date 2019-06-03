@@ -52,7 +52,7 @@ object DSL {
 
   object nFun {
     def apply(f: NatIdentifier => Expr): NatDepLambda = {
-      val x = lift.arithmetic.NamedVar(freshName("n"))
+      val x = NatIdentifier(freshName("n"))
       NatDepLambda(x, f(x))
     }
   }
@@ -67,7 +67,7 @@ object DSL {
   // dependent function types
   object nFunT {
     def apply(f: NatIdentifier => Type): Type = {
-      val x = lift.arithmetic.NamedVar(freshName("n"))
+      val x = NatIdentifier(freshName("n"))
       NatDependentFunctionType(x, f(x))
     }
   }
@@ -82,21 +82,21 @@ object DSL {
   // type level functions
   object natTypeFun {
     def apply(f: NatIdentifier => DataType): NatDataTypeLambda = {
-      val x = lift.arithmetic.NamedVar(freshName("n"))
+      val x = NatIdentifier(freshName("n"))
       NatDataTypeLambda(x, f(x))
     }
   }
 
   object natNatFun {
     def apply(f: NatIdentifier => Nat): NatNatLambda = {
-      val x = lift.arithmetic.NamedVar(freshName("n"))
+      val x = NatIdentifier(freshName("n"))
       NatNatLambda(x, f(x))
     }
   }
 
   // types with implicit type parameters
   def implN[A](f: NatIdentifier => A): A = {
-    f(lift.arithmetic.NamedVar(freshName("_n")))
+    f(NatIdentifier(freshName("_n")))
   }
 
   def implT[A](f: DataTypeIdentifier => A): A = {

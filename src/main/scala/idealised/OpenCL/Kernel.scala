@@ -140,7 +140,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
       arg.dpiaParameter.t match {
         case ExpType(idealised.DPIA.Types.int) =>
           arg.scalaValue match {
-            case Some(i:Int) => sizeVariables + ((NamedVar(arg.dpiaParameter.name), Cst(i)))
+            case Some(i:Int) => sizeVariables + ((NatIdentifier(arg.dpiaParameter.name), Cst(i)))
             case Some(num) =>
               throw new Exception(s"Int value for kernel argument ${arg.dpiaParameter.name} expected but $num (of type ${num.getClass.getName} found")
             case None =>

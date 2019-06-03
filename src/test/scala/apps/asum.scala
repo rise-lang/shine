@@ -21,7 +21,7 @@ class asum extends idealised.util.Tests {
   test("High level asum type inference works") {
     val typed = infer(high_level)
 
-    val N = typed.t.asInstanceOf[NatDependentFunctionType[_ <: Type]].n
+    val N = typed.t.asInstanceOf[NatDependentFunctionType[_ <: Type]].x
     assertResult(NatDependentFunctionType(N, FunctionType(inputT(N), float))) {
       typed.t
     }

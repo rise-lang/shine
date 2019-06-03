@@ -19,7 +19,7 @@ abstract class AbstractDepMap(n: Nat,
   extends ExpPrimitive {
 
   override val t: ExpType = {
-    val k = f.t.n
+    val k = f.t.x
     (n: Nat) -> (ft1: NatDataTypeFunction) -> (ft2: NatDataTypeFunction) ->
       (f :: t"($k : nat) -> exp[${ ft1(k) }] -> exp[${ ft2(k) }]") ->
         (array :: exp"[$n.$ft1]") ->

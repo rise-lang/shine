@@ -1,5 +1,6 @@
 package lift.core
 
+import lift.arithmetic.NamedVar
 import lift.core.types._
 
 object traversal {
@@ -68,13 +69,13 @@ object traversal {
       }
     }
 
-    def chainE[A](a: Result[A], e: Expr) =
+    def chainE[A](a: Result[A], e: Expr): Result[(A, Expr)] =
       chain(a, e, apply(e, _))
 
-    def chainN[A](a: Result[A], n: Nat)=
+    def chainN[A](a: Result[A], n: Nat): Result[(A, Nat)] =
       chain(a, n, v => v(n))
 
-    def chainT[A, T <: Type](a: Result[A], t: T) =
+    def chainT[A, T <: Type](a: Result[A], t: T): Result[(A, T)] =
       chain(a, t, v => v(t))
 
     def apply(expr: Expr, visit: Visitor): Result[Expr] = {
@@ -127,10 +128,16 @@ object traversal {
               case IndexType(n) => IndexType(v(n).value)
               case VectorType(n, e) => VectorType(v(n).value, apply(e, v))
               case FunctionType(a, b) => FunctionType(apply(a, v), apply(b, v))
-              case TypeDependentFunctionType(dt, t) =>
-                TypeDependentFunctionType(apply(dt, v), apply(t, v))
-              case NatDependentFunctionType(n, t) =>
-                NatDependentFunctionType(v(n).value.asInstanceOf[NatIdentifier], apply(t, v))
+              case DependentFunctionType(x, t) =>
+                x match {
+                  case dt: DataTypeIdentifier =>
+                    TypeDependentFunctionType(apply(dt, v), apply(t, v))
+                  case n: NatIdentifier =>
+                    val nn : NatIdentifier = v(n).value match {
+                      case n: NamedVar => NatIdentifier(n.name, n.range)
+                    }
+                    NatDependentFunctionType(nn, apply(t, v))
+                }
 
               case NatDataTypeApply(ndtf, n) =>
                 val newNDTF = ndtf match {
@@ -172,9 +179,9 @@ object traversal {
               chainT(v(n), e).map(r => VectorType(r._1, r._2))
             case FunctionType(a, b) =>
               chainT(apply(a, v), b).map(r => FunctionType(r._1, r._2))
-            case TypeDependentFunctionType(dt, t) =>
+            case DependentFunctionType(dt: DataTypeIdentifier, t) =>
               chainT(apply(dt, v), t).map(r => TypeDependentFunctionType(r._1, r._2))
-            case NatDependentFunctionType(n, t) =>
+            case DependentFunctionType(n: NatIdentifier, t) =>
               chainT(v(n), t).map(r =>
                 NatDependentFunctionType(r._1.asInstanceOf[NatIdentifier], r._2))
           }).asInstanceOf[Result[T]]

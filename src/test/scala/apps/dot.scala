@@ -22,7 +22,7 @@ class dot extends idealised.util.Tests {
   test("Simple dot product type inference works") {
     val typed = infer(simpleDotProduct)
 
-    val N = typed.t.asInstanceOf[NatDependentFunctionType[_ <: Type]].n
+    val N = typed.t.asInstanceOf[NatDependentFunctionType[_ <: Type]].x
     assertResult(NatDependentFunctionType(N, FunctionType(xsT(N), FunctionType(ysT(N), float)))) {
       typed.t
     }
@@ -33,7 +33,7 @@ class dot extends idealised.util.Tests {
     import idealised.DPIA._
     val phrase = idealised.DPIA.fromLift(infer(simpleDotProduct))
 
-    val N = phrase.t.asInstanceOf[`(nat)->`[ExpType -> ExpType]].n
+    val N = phrase.t.asInstanceOf[`(nat)->`[ExpType -> ExpType]].x
     val dt = float
     assertResult(N -> (exp"[$N.$dt]" -> (exp"[$N.$dt]" -> exp"[$dt]"))) {
       phrase.t

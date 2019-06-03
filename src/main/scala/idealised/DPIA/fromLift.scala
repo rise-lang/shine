@@ -89,10 +89,12 @@ object fromLift {
     ty match {
       case dt: lt.DataType => ExpType(fromLift(dt))
       case lt.FunctionType(i, o) => FunctionType(fromLift(i), fromLift(o))
-      case lt.TypeDependentFunctionType(dt, t) =>
-        TypeDependentFunctionType(DataTypeIdentifier(dt.name), fromLift(t))
-      case lt.NatDependentFunctionType(n, t) =>
-        NatDependentFunctionType(n, fromLift(t))
+      case lt.DependentFunctionType(x, t) => x match {
+          case dt: lt.DataTypeIdentifier =>
+            TypeDependentFunctionType(DataTypeIdentifier(dt.name), fromLift(t))
+          case n: l.NatIdentifier =>
+            NatDependentFunctionType(n, fromLift(t))
+        }
     }
   }
 
@@ -124,7 +126,7 @@ object fromLift {
 
     (p, t) match {
       case (core.asIndex,
-      lt.NatDependentFunctionType(n,
+      lt.DependentFunctionType(n: l.NatIdentifier,
       lt.FunctionType(lt.NatType, lt.IndexType(_))))
       =>
         NatDependentLambda(n,
@@ -169,7 +171,7 @@ object fromLift {
 
       case (core.depMapSeq,
       lt.FunctionType(
-      lt.NatDependentFunctionType(k, lt.FunctionType(_, _)),
+      lt.DependentFunctionType(k: l.NatIdentifier, lt.FunctionType(_, _)),
       lt.FunctionType(lt.DepArrayType(n, la), lt.DepArrayType(_, lb))))
       =>
         val a: NatDataTypeFunction = ??? // fromLift(la)
@@ -220,7 +222,7 @@ object fromLift {
           Join(n, m, a, e))
 
       case (core.split,
-      lt.NatDependentFunctionType(n,
+      lt.DependentFunctionType(n: l.NatIdentifier,
       lt.FunctionType(lt.ArrayType(insz, la), lt.ArrayType(m, _))))
       =>
         val a = fromLift(la)
@@ -229,8 +231,8 @@ object fromLift {
             Split(n, m, a, e)))
 
       case (core.slide,
-      lt.NatDependentFunctionType(sz,
-      lt.NatDependentFunctionType(sp,
+      lt.DependentFunctionType(sz: l.NatIdentifier,
+      lt.DependentFunctionType(sp: l.NatIdentifier,
       lt.FunctionType(lt.ArrayType(insz, la), lt.ArrayType(n, _)))))
       =>
         val a = fromLift(la)
@@ -240,8 +242,8 @@ object fromLift {
               Slide(n, sz, sp, a, e))))
 
       case (core.slideSeq,
-      lt.NatDependentFunctionType(sz,
-      lt.NatDependentFunctionType(sp,
+      lt.DependentFunctionType(sz: l.NatIdentifier,
+      lt.DependentFunctionType(sp: l.NatIdentifier,
       lt.FunctionType(lt.ArrayType(insz, la), lt.ArrayType(n, _)))))
       =>
         val a = fromLift(la)
@@ -290,7 +292,7 @@ object fromLift {
               Join(n, m, a, e))))
 
       case (core.take,
-      lt.NatDependentFunctionType(n,
+      lt.DependentFunctionType(n: l.NatIdentifier,
       lt.FunctionType(lt.ArrayType(nm, la), _)))
       =>
         val m = nm - n
@@ -300,7 +302,7 @@ object fromLift {
             Take(n, m, a, e)))
 
       case (core.drop,
-      lt.NatDependentFunctionType(n,
+      lt.DependentFunctionType(n: l.NatIdentifier,
       lt.FunctionType(lt.ArrayType(nm, la), _)))
       =>
         val m = nm - n
@@ -377,8 +379,8 @@ object fromLift {
           Generate(n, a, f))
 
       case (core.iterate,
-      lt.NatDependentFunctionType(k,
-      lt.FunctionType(lt.NatDependentFunctionType(l,
+      lt.DependentFunctionType(k: l.NatIdentifier,
+      lt.FunctionType(lt.DependentFunctionType(l: l.NatIdentifier,
       lt.FunctionType(lt.ArrayType(ln, _), _)),
       lt.FunctionType(lt.ArrayType(insz, _), lt.ArrayType(m, la)))))
       =>
@@ -391,7 +393,7 @@ object fromLift {
                 Iterate(n, m, k, a, f, e))))
 
       case (omp.asVector,
-      lt.NatDependentFunctionType(n,
+      lt.DependentFunctionType(n: l.NatIdentifier,
       lt.FunctionType(lt.ArrayType(mn, la: lt.ScalarType), lt.ArrayType(m, _))))
       =>
         val a = fromLift(la)

@@ -20,6 +20,6 @@ final case class Cast(dt: BasicType, e: Expr, override val t: Option[BasicType] 
   override def children: Seq[Any] = Seq(dt, e, t)
 
   override def rebuild: Seq[Any] => Expr = {
-    case Seq(dt: BasicType, e: Expr, t: Option[BasicType]) => Cast(dt, e, t)
+    case Seq(dt: BasicType, e: Expr, t: Option[BasicType]@unchecked) => Cast(dt, e, t)
   }
 }

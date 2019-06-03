@@ -26,7 +26,7 @@ final case class PrintType(input: Expr,
   override def children: Seq[Any] = Seq(input, t)
 
   override def rebuild: Seq[Any] => Expr = {
-    case Seq(input: Expr, t: Option[DataType]) => PrintType(input, msg, t)
+    case Seq(input: Expr, t: Option[DataType]@unchecked) => PrintType(input, msg, t)
   }
 
   override def toString: String = ""

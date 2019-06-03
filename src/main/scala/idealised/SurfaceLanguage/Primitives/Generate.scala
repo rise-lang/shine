@@ -20,6 +20,6 @@ final case class Generate(f: Expr, override val t: Option[DataType] = None)
   override def children: Seq[Any] = Seq(f, t)
 
   override def rebuild: Seq[Any] => Expr = {
-    case Seq(f: Expr, t: Option[DataType]) => Generate(f, t)
+    case Seq(f: Expr, t: Option[DataType]@unchecked) => Generate(f, t)
   }
 }

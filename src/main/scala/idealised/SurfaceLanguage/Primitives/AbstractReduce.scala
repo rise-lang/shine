@@ -38,7 +38,7 @@ abstract class AbstractReduce(val f: Expr, val init: Expr, val array: Expr, over
   override def children: Seq[Any] = Seq(f, init, array, t)
 
   override def rebuild: Seq[Any] => Expr = {
-    case Seq(f: Expr, init: Expr, array: Expr, t: Option[DataType]) =>
+    case Seq(f: Expr, init: Expr, array: Expr, t: Option[DataType]@unchecked) =>
       makeReduce(f, init, array, t)
   }
 }

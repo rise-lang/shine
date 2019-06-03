@@ -78,7 +78,7 @@ object lifting {
 
   def liftNatDependentFunctionType(ty: Type): Nat => Type = {
     ty match {
-      case NatDependentFunctionType(x, t) =>
+      case DependentFunctionType(x: NatIdentifier, t) =>
         (n: Nat) => substitute(n, `for`=x, in=t)
       case _ => ???
     }
@@ -86,7 +86,7 @@ object lifting {
 
   def liftTypeDependentFunctionType(ty: Type): DataType => Type = {
     ty match {
-      case TypeDependentFunctionType(x, t) =>
+      case DependentFunctionType(x: DataTypeIdentifier, t) =>
         (dt: DataType) => substitute(dt, `for`=x, in=t)
       case _ => ???
     }

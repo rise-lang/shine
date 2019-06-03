@@ -95,8 +95,8 @@ class visitAndRebuild extends idealised.util.Tests {
         { case ArrayType(_, ArrayType(_, _: ScalarType)) => () },
         { case ArrayType(_, ArrayType(_, _: ScalarType)) => () },
         { case FunctionType(ArrayType(_, ArrayType(_, _)), ArrayType(_, ArrayType(_, _))) => () },
-        { case _: NatDependentFunctionType[DataType] => () },
-        { case _: NatDependentFunctionType[DataType] => () }
+        { case _: DependentFunctionType[_, _] => () },
+        { case _: DependentFunctionType[_, _] => () }
       ) : Seq[Any => Unit]
     }
 

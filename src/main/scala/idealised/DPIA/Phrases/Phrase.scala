@@ -56,14 +56,14 @@ final case class TypeDependentLambda[T <: PhraseType](x: DataTypeIdentifier, bod
 final case class NatDependentApply[T <: PhraseType](fun: Phrase[`(nat)->`[T]], arg: Nat)
   extends Phrase[T] {
 
-  override val t: T = (fun.t.t `[` arg `/` fun.t.n `]`).asInstanceOf[T]
+  override val t: T = (fun.t.t `[` arg `/` fun.t.x `]`).asInstanceOf[T]
   override def toString: String = s"($fun $arg)"
 }
 
 final case class TypeDependentApply[T <: PhraseType](fun: Phrase[`(dt)->`[T]], arg: DataType)
   extends Phrase[T] {
 
-  override val t: T = (fun.t.t `[` arg `/` fun.t.dt `]`).asInstanceOf[T]
+  override val t: T = (fun.t.t `[` arg `/` fun.t.x `]`).asInstanceOf[T]
   override def toString: String = s"($fun $arg)"
 }
 
@@ -150,7 +150,7 @@ object Phrase {
         p match {
           case `for` => Stop(phrase.asInstanceOf[Phrase[T]])
           case Natural(n) =>
-            val v = NamedVar(`for` match {
+            val v = NatIdentifier(`for` match {
               case Identifier(name, _) => name
               case _ => ???
             })

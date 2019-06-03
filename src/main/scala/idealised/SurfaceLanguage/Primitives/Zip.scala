@@ -1,6 +1,5 @@
 package idealised.SurfaceLanguage.Primitives
 
-import idealised.SurfaceLanguage
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage.{Expr, PrimitiveExpr}
 
@@ -26,7 +25,7 @@ final case class Zip(lhs: Expr, rhs: Expr,
   override def children: Seq[Any] = Seq(lhs, rhs, t)
 
   override def rebuild: Seq[Any] => Expr = {
-    case Seq(lhs: Expr, rhs: Expr, t: Option[DataType]) =>
+    case Seq(lhs: Expr, rhs: Expr, t: Option[DataType]@unchecked) =>
       Zip(lhs, rhs, t)
   }
 }

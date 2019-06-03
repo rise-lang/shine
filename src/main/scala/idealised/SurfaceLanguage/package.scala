@@ -1,7 +1,7 @@
 package idealised
 
 import idealised.SurfaceLanguage.Types._
-import lift.arithmetic.{ArithExpr, NamedVar}
+import lift.arithmetic.{ArithExpr, NamedVar, Range}
 
 package object SurfaceLanguage {
   object newName {
@@ -14,7 +14,12 @@ package object SurfaceLanguage {
   }
 
   type Nat = ArithExpr
-  type NatIdentifier = NamedVar
+  type NatIdentifier = NamedVar with Kind.Identifier
+
+  object NatIdentifier {
+    def apply(name: String): NatIdentifier = new NamedVar(name) with Kind.Identifier
+    def apply(name: String, range: Range): NatIdentifier = new NamedVar(name, range) with Kind.Identifier
+  }
 
   type ->[T1 <: Type, T2 <: Type] = FunctionType[T1, T2]
   type `(nat)->`[T <: Type] = NatDependentFunctionType[T]

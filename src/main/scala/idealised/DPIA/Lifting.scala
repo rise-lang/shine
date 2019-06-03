@@ -87,7 +87,7 @@ object Lifting {
   def liftFunctionToNatLambda[T <: PhraseType](p: Phrase[ExpType -> T]): Nat => Phrase[T] = {
     p match {
       case l: Lambda[ExpType, T] =>
-        (arg: Nat) => l.body `[` arg  `/` NamedVar(l.param.name) `]`
+        (arg: Nat) => l.body `[` arg  `/` NatIdentifier(l.param.name) `]`
       case app: Apply[_, ExpType -> T] =>
         val fun = liftFunction(app.fun)
         liftFunctionToNatLambda(fun(app.arg))

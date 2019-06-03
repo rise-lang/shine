@@ -68,7 +68,7 @@ object substitute {
     traversal.types.DepthFirstLocalResult(in, Visitor())
   }
 
-  def apply[T <: Type](ae: Nat, `for`: NatIdentifier, in: T): T = {
+  def apply[T <: Type](ae: Nat, `for`: NamedVar, in: T): T = {
     case class Visitor() extends traversal.Visitor {
       override def apply(n: Nat): Result[Nat] =
         Continue(substitute(ae, `for`, n), this)
@@ -77,7 +77,7 @@ object substitute {
     traversal.types.DepthFirstLocalResult(in, Visitor())
   }
 
-  def apply(ae: Nat, `for`: NatIdentifier, in: Nat): Nat = {
+  def apply(ae: Nat, `for`: NamedVar, in: Nat): Nat = {
     in.visitAndRebuild {
       case v: NamedVar =>
         if (`for`.name == v.name) {

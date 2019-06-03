@@ -21,7 +21,15 @@ package object DPIA {
   }
 
   type Nat = ArithExpr
-  type NatIdentifier = NamedVar
+  type NatIdentifier = NamedVar with Kind.Identifier
+
+  implicit def surfaceToDPINatIdentifier(n: SurfaceLanguage.NatIdentifier): NatIdentifier = NatIdentifier(n.name, n.range)
+  implicit def liftToDPIANatIdentifer(n: lift.core.NatIdentifier): NatIdentifier = NatIdentifier(n.name, n.range)
+
+  object NatIdentifier {
+    def apply(name: String): NatIdentifier = new NamedVar(name) with Kind.Identifier
+    def apply(name: String, range: Range): NatIdentifier = new NamedVar(name, range) with Kind.Identifier
+  }
 
   case class NatNatTypeFunction private (x:NatIdentifier, body:Nat) {
     //NatNatTypeFunction have an interesting comparison behavior, as we do not define
@@ -47,7 +55,7 @@ package object DPIA {
 
   object NatNatTypeFunction {
     def apply(upperBound:Nat, f:NatIdentifier => Nat):NatNatTypeFunction = {
-      val x = NamedVar(freshName("n"), RangeAdd(0, upperBound, 1))
+      val x = NatIdentifier(freshName("n"), RangeAdd(0, upperBound, 1))
       NatNatTypeFunction(x, f(x))
     }
 
@@ -78,7 +86,7 @@ package object DPIA {
 
   object NatDataTypeFunction {
     def apply(upperBound:Nat, f:NatIdentifier => DataType):NatDataTypeFunction = {
-      val x = NamedVar(freshName("n"), RangeAdd(0, upperBound, 1))
+      val x = NatIdentifier(freshName("n"), RangeAdd(0, upperBound, 1))
       NatDataTypeFunction(x, f(x))
     }
 
@@ -165,7 +173,7 @@ package object DPIA {
   }
 
   implicit class NatDependentFunctionTypeConstructor(x: NatIdentifier) {
-    def ->[T <: PhraseType](outT: T) = NatDependentFunctionType(x, outT)
+    def ->[T <: PhraseType](outT: T) = DependentFunctionType[NatKind, T](x, outT)
   }
 
   implicit class TypeDependentFunctionTypeConstructor(x: DataTypeIdentifier) {

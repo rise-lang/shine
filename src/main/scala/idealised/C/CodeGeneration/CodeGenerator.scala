@@ -262,6 +262,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case Nil =>
           exp(e, env, Nil, e =>
             cont(C.AST.Cast(typ(dt), e)))
+        case _ => error(s"Expected path to be empty")
       }
 
       case IndexAsNat(_, e) => exp(e, env, path, cont)
@@ -370,7 +371,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           )(
             continue_cmd
           ), env updatedContEnv (continue_cmd -> (e => env => exp(e, env, ps, cont))))
-        case Nil => error(s"Expected path to be not empty")
+        case _ => error(s"Expected path to be not empty")
       }
 
       case GenerateCont(n, dt, f) => path match {
@@ -381,7 +382,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
           cmd(f(AsIndex(n, Natural(i)))(continue_cmd),
             env updatedContEnv (continue_cmd -> (e => env => exp(e, env, ps, cont))))
-        case Nil => error(s"Expected path to be not empty")
+        case _ => error(s"Expected path to be not empty")
       }
 
       case Idx(_, _, i, e) => CCodeGen.codeGenIdx(i, e, env, path, cont)
