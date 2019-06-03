@@ -50,7 +50,7 @@ object primitives {
     )))
   }
 
-  case class ForeignFunction(decl: ForeignFunctionDecl, override val t: Type) extends Primitive {
+  case class ForeignFunctionCall(decl: ForeignFunctionDecl, override val t: Type) extends Primitive {
     override def toString: String = decl.name
   }
 

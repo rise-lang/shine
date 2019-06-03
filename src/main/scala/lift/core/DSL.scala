@@ -125,7 +125,7 @@ object DSL {
 
   object foreignFun {
     def apply(name: String, params: Seq[String], body: String, t: Type): Expr = {
-      primitives.ForeignFunction(primitives.ForeignFunctionDecl(name, params, body), t)
+      primitives.ForeignFunctionCall(primitives.ForeignFunctionDecl(name, params, body), t)
     }
   }
 }

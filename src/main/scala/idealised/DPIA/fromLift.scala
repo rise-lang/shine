@@ -4,7 +4,7 @@ import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types._
 import idealised.DPIA.Semantics.{OperationalSemantics => OpSem}
-import idealised.OpenCL.FunctionalPrimitives.MapGlobal
+import idealised.OpenCL.FunctionalPrimitives._
 import idealised.SurfaceLanguage.Operators
 import lift.{core => l}
 import lift.core.{types => lt}
@@ -154,6 +154,18 @@ object fromLift {
       lt.FunctionType(lt.ArrayType(n, la: lt.DataType), _)))
       =>
         makeMap(MapGlobal(dim), n, la, lb)
+
+      case (ocl.mapLocal(dim),
+      lt.FunctionType(lt.FunctionType(_, lb: lt.DataType),
+      lt.FunctionType(lt.ArrayType(n, la: lt.DataType), _)))
+      =>
+        makeMap(MapLocal(dim), n, la, lb)
+
+      case (ocl.mapWorkGroup(dim),
+      lt.FunctionType(lt.FunctionType(_, lb: lt.DataType),
+      lt.FunctionType(lt.ArrayType(n, la: lt.DataType), _)))
+      =>
+        makeMap(MapWorkGroup(dim), n, la, lb)
 
       case (core.depMapSeq,
       lt.FunctionType(
@@ -353,7 +365,7 @@ object fromLift {
         fun[ExpType](ExpType(a), x =>
           Cast(a, b, x))
 
-      case (core.ForeignFunction(decl, la), _)
+      case (core.ForeignFunctionCall(decl, la), _)
       =>
         val (inTs, outT) = foreignFunIO(la)
         wrapForeignFun(decl, inTs, outT, Vector())

@@ -20,4 +20,26 @@ object primitives {
     implicit def toMapGlobal(m: mapGlobal.type): mapGlobal = mapGlobal(0)
   }
 
+  case class mapLocal(dim: Int) extends Primitive {
+    override def t: Type = core.map.t
+  }
+
+  object mapLocal {
+    def apply(): mapLocal = mapLocal(0)
+    def apply(e: Expr): Expr = mapLocal(0)(e)
+
+    implicit def toMapLocal(m: mapLocal.type): mapLocal = mapLocal(0)
+  }
+
+  case class mapWorkGroup(dim: Int) extends Primitive {
+    override def t: Type = core.map.t
+  }
+
+  object mapWorkGroup {
+    def apply(): mapWorkGroup = mapWorkGroup(0)
+    def apply(e: Expr): Expr = mapWorkGroup(0)(e)
+
+    implicit def toMapLocal(m: mapWorkGroup.type): mapWorkGroup = mapWorkGroup(0)
+  }
+
 }
