@@ -34,14 +34,14 @@ object traversal {
               Lambda(x, apply(e, v))
             case Apply(f, e) =>
               Apply(apply(f, v), apply(e, v))
-            case NatDepLambda(n, e) =>
-              NatDepLambda(v(n).value.asInstanceOf[NatIdentifier], apply(e, v))
-            case NatDepApply(f, n) =>
-              NatDepApply(apply(f, v), v(n).value)
-            case TypeDepLambda(dt, e) =>
-              TypeDepLambda(v(dt).value, apply(e, v))
-            case TypeDepApply(f, dt) =>
-              TypeDepApply(apply(f, v), v(dt).value)
+            case DepLambda(x, e) => x match {
+              case n: NatIdentifier       => NatDepLambda(v(n).value.asInstanceOf[NatIdentifier], apply(e, v))
+              case dt: DataTypeIdentifier => TypeDepLambda(v(dt).value, apply(e, v))
+            }
+            case DepApply(f, x) => x match {
+              case n: Nat       => NatDepApply(apply(f, v), v(n).value)
+              case dt: DataType => TypeDepApply(apply(f, v), v(dt).value)
+            }
             case l: Literal => l
             case Index(n, size) =>
               Index(v(n).value, v(size).value)
@@ -87,14 +87,14 @@ object traversal {
             apply(e, v).map(Lambda(x, _))
           case Apply(f, e) =>
             chainE(apply(f, v), e).map(r => Apply(r._1, r._2))
-          case NatDepLambda(n, e) =>
-            chainE(v(n), e).map(r => NatDepLambda(r._1.asInstanceOf[NatIdentifier], r._2))
-          case NatDepApply(f, n) =>
-            chainN(apply(f, v), n).map(r => NatDepApply(r._1, r._2))
-          case TypeDepLambda(dt, e) =>
-            chainE(v(dt), e).map(r => TypeDepLambda(r._1, r._2))
-          case TypeDepApply(f, dt) =>
-            chainT(apply(f, v), dt).map(r => TypeDepApply(r._1, r._2))
+          case DepLambda(x, e) => x match {
+            case n: NatIdentifier       => chainE(v(n), e).map(r => NatDepLambda(r._1.asInstanceOf[NatIdentifier], r._2))
+            case dt: DataTypeIdentifier => chainE(v(dt), e).map(r => TypeDepLambda(r._1, r._2))
+          }
+          case DepApply(f, x) => x match {
+            case n: Nat       => chainN(apply(f, v), n).map(r => NatDepApply(r._1, r._2))
+            case dt: DataType => chainT(apply(f, v), dt).map(r => TypeDepApply(r._1, r._2))
+          }
           case l: Literal => Continue(l, v)
           case Index(n, size) =>
             chainN(v(n), size).map(r => Index(r._1, r._2))

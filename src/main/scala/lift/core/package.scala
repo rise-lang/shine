@@ -20,6 +20,26 @@ package object core {
     def apply(name: String, range: Range): NatIdentifier = new NamedVar(name, range) with types.Kind.Identifier
   }
 
+  type NatDepLambda = DepLambda[types.NatKind]
+  object NatDepLambda {
+    def apply(n: NatIdentifier, e: Expr): NatDepLambda = DepLambda[types.NatKind](n, e)
+  }
+
+  type NatDepApply = DepApply[types.NatKind]
+  object NatDepApply {
+    def apply(f: Expr, n: Nat): NatDepApply = DepApply[types.NatKind](f, n)
+  }
+
+  type TypeDepLambda = DepLambda[types.DataKind]
+  object TypeDepLambda {
+    def apply(dt: types.DataTypeIdentifier, e: Expr): TypeDepLambda = DepLambda[types.DataKind](dt, e)
+  }
+
+  type TypeDepApply = DepApply[types.DataKind]
+  object TypeDepApply {
+    def apply(f: Expr, dt: types.DataType): TypeDepApply = DepApply[types.DataKind](f, dt)
+  }
+
 //  case class NatNatTypeFunction private (x:NatIdentifier, body:Nat) {
 //    //NatNatTypeFunction have an interesting comparison behavior, as we do not define
 //    //equality for them as simple syntactic equality: we just want to make sure their bodies

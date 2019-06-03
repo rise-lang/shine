@@ -43,13 +43,13 @@ object StructuralEquality {
         apply(ba, bb, env bindIdents (xa.name, xb.name))
       case (Apply(fa, ea), Apply(fb, eb)) =>
         exp(fa, fb) && exp(ea, eb)
-      case (NatDepLambda(xa, ba), NatDepLambda(xb, bb)) =>
+      case (DepLambda(xa: NatIdentifier, ba), DepLambda(xb: NatIdentifier, bb)) =>
         apply(ba, bb, env bindNatIdents (xa, xb))
-      case (NatDepApply(fa, na), NatDepApply(fb, nb)) =>
+      case (DepApply(fa, na: Nat), DepApply(fb, nb: Nat)) =>
         exp(fa, fb) && nat(na, nb)
-      case (TypeDepLambda(xa, ba), TypeDepLambda(xb, bb)) =>
+      case (DepLambda(xa: DataTypeIdentifier, ba), DepLambda(xb: DataTypeIdentifier, bb)) =>
         apply(ba, bb, env bindTypeIdents (xa, xb))
-      case (TypeDepApply(fa, ta), TypeDepApply(fb, tb)) =>
+      case (DepApply(fa, ta: DataType), DepApply(fb, tb: DataType)) =>
         exp(fa, fb) && typ(ta, tb)
       case (la: Literal, lb: Literal) => la == lb
       case (Index(na, sa), Index(nb, sb)) =>

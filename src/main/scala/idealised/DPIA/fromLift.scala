@@ -28,20 +28,23 @@ object fromLift {
               fromLift(f).asInstanceOf[Phrase[FunctionType[PhraseType, PhraseType]]],
               fromLift(e).asInstanceOf[Phrase[PhraseType]])
 
-          case l.NatDepLambda(n, e) =>
-            NatDependentLambda(n, fromLift(e))
-          case l.NatDepApply(f, n) =>
-            NatDependentApply(
-              fromLift(f).asInstanceOf[Phrase[NatDependentFunctionType[PhraseType]]],
-              n)
-
-          case l.TypeDepLambda(dt, e) =>
-            TypeDependentLambda(DataTypeIdentifier(dt.name), fromLift(e))
-          case l.TypeDepApply(f, dt) =>
-            TypeDependentApply(
-              fromLift(f).asInstanceOf[Phrase[TypeDependentFunctionType[PhraseType]]],
-              fromLift(dt)
-            )
+          case l.DepLambda(x, e) => x match {
+            case n: l.NatIdentifier =>
+              NatDependentLambda(n, fromLift(e))
+            case dt: lt.DataTypeIdentifier =>
+              TypeDependentLambda(DataTypeIdentifier(dt.name), fromLift(e))
+          }
+          case l.DepApply(f, x) => x match {
+            case n: Nat =>
+              NatDependentApply(
+                fromLift(f).asInstanceOf[Phrase[NatDependentFunctionType[PhraseType]]],
+                n)
+            case dt: lt.DataType =>
+              TypeDependentApply(
+                fromLift(f).asInstanceOf[Phrase[TypeDependentFunctionType[PhraseType]]],
+                fromLift(dt)
+              )
+          }
 
           case l.Literal(d)   =>  Literal(fromLift(d))
           case l.Index(n, sz) =>  Literal(OpSem.IndexData(n, IndexType(sz)))

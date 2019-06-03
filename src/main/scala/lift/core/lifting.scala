@@ -28,14 +28,12 @@ object lifting {
         f => Expanding((e: Expr) => Apply(f, e)))
 
     p match {
-      case Lambda(x, body) =>
-        Reducing((e: Expr) => substitute(e, `for` = x, in = body))
-      case Apply(f, e) =>
-        chain(liftFunctionExpr(f).map(lf => lf(e)))
-      case NatDepApply(f, n) =>
-        chain(liftNatDependentFunctionExpr(f).map(lf => lf(n)))
-      case TypeDepApply(f, t) =>
-        chain(liftTypeDependentFunctionExpr(f).map(lf => lf(t)))
+      case Lambda(x, body)  => Reducing((e: Expr) => substitute(e, `for` = x, in = body))
+      case Apply(f, e)      => chain(liftFunctionExpr(f).map(lf => lf(e)))
+      case DepApply(f, x) => x match {
+        case n: Nat         => chain(liftNatDependentFunctionExpr(f).map(lf => lf(n)))
+        case t: DataType    => chain(liftTypeDependentFunctionExpr(f).map(lf => lf(t)))
+      }
       case _ => chain(Expanding(p))
     }
   }
@@ -46,14 +44,13 @@ object lifting {
         f => Expanding((n: Nat) => NatDepApply(f, n)))
 
     p match {
-      case NatDepLambda(x, e) =>
+      case DepLambda(x: NatIdentifier, e) =>
         Reducing((n: Nat) => substitute(n, `for` = x, in = e))
-      case Apply(f, e) =>
-        chain(liftFunctionExpr(f).map(lf => lf(e)))
-      case NatDepApply(f, n) =>
-        chain(liftNatDependentFunctionExpr(f).map(lf => lf(n)))
-      case TypeDepApply(f, t) =>
-        chain(liftTypeDependentFunctionExpr(f).map(lf => lf(t)))
+      case Apply(f, e)      => chain(liftFunctionExpr(f).map(lf => lf(e)))
+      case DepApply(f, x) => x match {
+          case n: Nat       => chain(liftNatDependentFunctionExpr(f).map(lf => lf(n)))
+          case t: DataType  => chain(liftTypeDependentFunctionExpr(f).map(lf => lf(t)))
+        }
       case _ => chain(Expanding(p))
     }
   }
@@ -64,14 +61,13 @@ object lifting {
         f => Expanding((dt: DataType) => TypeDepApply(f, dt)))
 
     p match {
-      case TypeDepLambda(x, e) =>
+      case DepLambda(x: DataTypeIdentifier, e) =>
         Reducing((dt: DataType) => substitute(dt, `for` = x, in = e))
-      case Apply(f, e) =>
-        chain(liftFunctionExpr(f).map(lf => lf(e)))
-      case NatDepApply(f, n) =>
-        chain(liftNatDependentFunctionExpr(f).map(lf => lf(n)))
-      case TypeDepApply(f, t) =>
-        chain(liftTypeDependentFunctionExpr(f).map(lf => lf(t)))
+      case Apply(f, e)    => chain(liftFunctionExpr(f).map(lf => lf(e)))
+      case DepApply(f, x) => x match {
+        case n: Nat       => chain(liftNatDependentFunctionExpr(f).map(lf => lf(n)))
+        case t: DataType  => chain(liftTypeDependentFunctionExpr(f).map(lf => lf(t)))
+      }
       case _ => chain(Expanding(p))
     }
   }

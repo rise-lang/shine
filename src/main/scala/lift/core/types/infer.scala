@@ -62,21 +62,23 @@ object infer {
         constraints += TypeConstraint(tf.t, FunctionType(te.t, ot))
         TypedExpr(Apply(tf, te), ot)
 
-      case NatDepLambda(n, e) =>
-        val te = typed(e)
-        TypedExpr(NatDepLambda(n, te), NatDependentFunctionType(n, te.t))
+      case DepLambda(x, e) => x match {
+        case n: NatIdentifier =>
+          val te = typed(e)
+          TypedExpr(NatDepLambda(n, te), NatDependentFunctionType(n, te.t))
+        case dt: DataTypeIdentifier =>
+          val te = typed(e)
+          TypedExpr(TypeDepLambda(dt, te), TypeDependentFunctionType(dt, te.t))
+      }
 
-      case NatDepApply(f, n) =>
-        val tf = typed(f)
-        TypedExpr(NatDepApply(tf, n), liftNatDependentFunctionType(tf.t)(n))
-
-      case TypeDepLambda(dt, e) =>
-        val te = typed(e)
-        TypedExpr(TypeDepLambda(dt, te), TypeDependentFunctionType(dt, te.t))
-
-      case TypeDepApply(f, dt) =>
-        val tf = typed(f)
-        TypedExpr(TypeDepApply(tf, dt), liftTypeDependentFunctionType(tf.t)(dt))
+      case DepApply(f, x) => x match {
+        case n: Nat =>
+          val tf = typed(f)
+          TypedExpr(NatDepApply(tf, n), liftNatDependentFunctionType(tf.t)(n))
+        case dt: DataType =>
+          val tf = typed(f)
+          TypedExpr(TypeDepApply(tf, dt), liftTypeDependentFunctionType(tf.t)(dt))
+      }
 
       case l: Literal => TypedExpr(l, l.d.dataType)
 
@@ -114,8 +116,8 @@ object infer {
     case class Visitor() extends traversal.Visitor {
       override def apply(e: Expr): Result[Expr] = {
         e match {
-          case NatDepLambda(x, _) => boundN += x
-          case TypeDepLambda(x, _) => boundT += x
+          case DepLambda(x: NatIdentifier, _) => boundN += x
+          case DepLambda(x: DataTypeIdentifier, _) => boundT += x
           case _ =>
         }
         Continue(e, this)
@@ -151,8 +153,8 @@ object infer {
         e match {
           case i: Identifier if !boundV(i) => Stop(i)
           case Lambda(x, _) => Continue(e, this.copy(boundV = boundV + x))
-          case NatDepLambda(x, _) => Continue(e, this.copy(boundN = boundN + x))
-          case TypeDepLambda(x, _) => Continue(e, this.copy(boundT = boundT + x))
+          case DepLambda(x: NatIdentifier, _)       => Continue(e, this.copy(boundN = boundN + x))
+          case DepLambda(x: DataTypeIdentifier, _)  => Continue(e, this.copy(boundT = boundT + x))
           case _ => Continue(e, this)
         }
       }

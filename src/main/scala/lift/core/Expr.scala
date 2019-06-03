@@ -16,20 +16,12 @@ final case class Apply(f: Expr, e: Expr) extends Expr {
   override def toString: String = s"($f $e)"
 }
 
-final case class NatDepLambda(n: NatIdentifier, e: Expr) extends Expr {
-  override def toString: String = s"Λ($n : nat). $e"
+final case class DepLambda[K <: Kind](x: K#I, e: Expr) extends Expr {
+  override def toString: String = s"Λ(${x.name} : ${x.getClass.toString}). $e"
 }
 
-final case class NatDepApply(f: Expr, n: Nat) extends Expr {
-  override def toString: String = s"($f $n)"
-}
-
-final case class TypeDepLambda(dt: DataTypeIdentifier, e: Expr) extends Expr {
-  override def toString: String = s"Λ($dt : data). $e"
-}
-
-final case class TypeDepApply(f: Expr, dt: DataType) extends Expr {
-  override def toString: String = s"($f $dt)"
+final case class DepApply[K <: Kind](f: Expr, x: K#T) extends Expr {
+  override def toString: String = s"($f $x)"
 }
 
 final case class NatNatDepLambda(fn: NatNatFunctionIdentifier, e: Expr) extends Expr {
