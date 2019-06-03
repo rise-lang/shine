@@ -40,7 +40,7 @@ object TranslationToImperative {
       case ep: ExpPrimitive => ep.acceptorTranslation(A)
 
       // on the fly beta-reduction
-      case Apply(fun, arg) => acc(Lifting.liftFunction(fun)(arg))(A)
+      case Apply(fun, arg) => acc(Lifting.liftFunction(fun).reducing(arg))(A)
       case NatDependentApply(fun, arg) => acc(Lifting.liftNatDependentFunction(fun)(arg))(A)
       case TypeDependentApply(fun, arg) => acc(Lifting.liftTypeDependentFunction(fun)(arg))(A)
 
@@ -61,7 +61,7 @@ object TranslationToImperative {
       case ep: ExpPrimitive => ep.mapAcceptorTranslation(f, A)
 
       // on the fly beta-reduction
-      case Apply(fun, arg) => mapAcc(f, Lifting.liftFunction(fun)(arg))(A)
+      case Apply(fun, arg) => mapAcc(f, Lifting.liftFunction(fun).reducing(arg))(A)
       case NatDependentApply(fun, arg) => mapAcc(f, Lifting.liftNatDependentFunction(fun)(arg))(A)
       case TypeDependentApply(fun, arg) => mapAcc(f, Lifting.liftTypeDependentFunction(fun)(arg))(A)
 
@@ -99,7 +99,7 @@ object TranslationToImperative {
       case ep: ExpPrimitive => ep.continuationTranslation(C)
 
       // on the fly beta-reduction
-      case Apply(fun, arg) => con(Lifting.liftFunction(fun)(arg))(C)
+      case Apply(fun, arg) => con(Lifting.liftFunction(fun).reducing(arg))(C)
       case NatDependentApply(fun, arg) => con(Lifting.liftNatDependentFunction(fun)(arg))(C)
       case TypeDependentApply(fun, arg) => con(Lifting.liftTypeDependentFunction(fun)(arg))(C)
 

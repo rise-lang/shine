@@ -19,4 +19,8 @@ object HighLevelConstructs {
       reorder(f)(f)
     })
   }
+
+  val padClamp2D: Expr = {
+    nFun(b => map(padClamp(b)(b)) >> padClamp(b)(b))
+  }
 }

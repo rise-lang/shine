@@ -10,30 +10,27 @@ import idealised.DPIA.{->, Nat, Phrases, _}
 import scala.language.reflectiveCalls
 import scala.xml.Elem
 
-final case class Pad(n: Nat,
-                     l: Nat,
-                     r: Nat,
-                     dt: DataType,
-                     padExp: Phrase[ExpType],
-                     array: Phrase[ExpType])
+// TODO: invalid for empty array
+final case class PadClamp(n: Nat,
+                          l: Nat,
+                          r: Nat,
+                          dt: DataType,
+                          array: Phrase[ExpType])
   extends ExpPrimitive {
 
   override val t: ExpType =
     (n: Nat) -> (l: Nat) -> (r: Nat) -> (dt: DataType) ->
-      (padExp :: exp"[$dt]") ->
       (array :: exp"[$n.$dt]") -> exp"[${l + n + r}.$dt]"
 
   override def eval(s: Store): Data = ???
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    Pad(fun(n), fun(l), fun(r), fun(dt), VisitAndRebuild(padExp, fun), VisitAndRebuild(array, fun))
+    PadClamp(fun(n), fun(l), fun(r), fun(dt), VisitAndRebuild(array, fun))
   }
 
   override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommandType] = {
-    import TranslationToImperative._
+                                  (implicit context: TranslationContext): Phrase[CommandType] =
     ???
-  }
 
   override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
                                      (implicit context: TranslationContext): Phrase[CommandType] =
@@ -42,14 +39,13 @@ final case class Pad(n: Nat,
   override def continuationTranslation(C: Phrase[->[ExpType, CommandType]])
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
-    con(array)(λ(exp"[$n.$dt]")(x => C(Pad(n, l, r, dt, padExp, x))))
+    con(array)(λ(exp"[$n.$dt]")(x => C(PadClamp(n, l, r, dt, x))))
   }
 
   override def xmlPrinter: Elem =
-    <pad n={n.toString} l={l.toString} r={r.toString} dt={dt.toString}>
-      {Phrases.xmlPrinter(padExp)}
+    <padClamp n={n.toString} l={l.toString} r={r.toString} dt={dt.toString}>
       {Phrases.xmlPrinter(array)}
-    </pad>
+    </padClamp>
 
-  override def prettyPrint: String = s"(pad $array)"
+  override def prettyPrint: String = s"(padClamp $array)"
 }

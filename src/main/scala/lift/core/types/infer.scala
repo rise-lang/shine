@@ -19,7 +19,7 @@ object infer {
     val solution = solve(constraints.toSet)
     val result = solution(typed_e)
     if (!isClosedForm(result)) {
-      error("expression is not in closed form after inference")
+      error(s"expression is not in closed form after inference: $result")
     }
     result.asInstanceOf[TypedExpr]
   }
@@ -329,7 +329,7 @@ object infer {
         if (i == j) { Solution() }
         else if (!bound(i)) { Solution.subs(i, j) }
         else if (!bound(j)) { Solution.subs(j, i) }
-        else { ??? }
+        else { error(s"cannot unify $i and $j, they are both bound") }
       case _ if occurs(i, t) =>
         error(s"circular use: $i occurs in $t")
       case _ if !bound(i) => Solution.subs(i, t)
@@ -405,7 +405,7 @@ object infer {
           if (i == j) { Solution() }
           else if (!bound(i)) { Solution.subs(i, j) }
           else if (!bound(j)) { Solution.subs(j, i) }
-          else { ??? }
+          else { error(s"cannot unify $i and $j, they are both bound") }
         case _ if !ArithExpr.contains(n, i) && !bound(i) => Solution.subs(i, n)
         case p: Prod => unifyProd(p, i)
         case s: Sum => unifySum(s, i)

@@ -7,18 +7,18 @@ import scala.language.implicitConversions
 
 object DSL {
   implicit class BinOps(lhs: Expr) {
-    import lift.core.primitives.{BinOp, UnaryOp}
+    import lift.core.primitives._
 
-    def +(rhs: Expr): Expr = BinOp(Operators.Binary.ADD)(lhs)(rhs)
-    def -(rhs: Expr): Expr = BinOp(Operators.Binary.SUB)(lhs)(rhs)
-    def *(rhs: Expr): Expr = BinOp(Operators.Binary.MUL)(lhs)(rhs)
-    def /(rhs: Expr): Expr = BinOp(Operators.Binary.DIV)(lhs)(rhs)
-    def %(rhs: Expr): Expr = BinOp(Operators.Binary.MOD)(lhs)(rhs)
-    def >(rhs: Expr): Expr = BinOp(Operators.Binary.GT)(lhs)(rhs)
-    def <(rhs: Expr): Expr = BinOp(Operators.Binary.LT)(lhs)(rhs)
-    def =:=(rhs: Expr): Expr = BinOp(Operators.Binary.EQ)(lhs)(rhs)
+    def +(rhs: Expr): Expr = add(lhs)(rhs)
+    def -(rhs: Expr): Expr = sub(lhs)(rhs)
+    def *(rhs: Expr): Expr = mul(lhs)(rhs)
+    def /(rhs: Expr): Expr = div(lhs)(rhs)
+    def %(rhs: Expr): Expr = mod(lhs)(rhs)
+    def >(rhs: Expr): Expr = gt(lhs)(rhs)
+    def <(rhs: Expr): Expr = lt(lhs)(rhs)
+    def =:=(rhs: Expr): Expr = equal(lhs)(rhs)
 
-    def unary_- : Expr = UnaryOp(Operators.Unary.NEG)(lhs)
+    def unary_- : Expr = neg(lhs)
   }
 
   implicit class FunCall(f: Expr) {
@@ -51,9 +51,13 @@ object DSL {
   }
 
   object nFun {
-    def apply(f: NatIdentifier => Expr): NatDepLambda = {
+    def apply(r: lift.arithmetic.Range, f: NatIdentifier => Expr): NatDepLambda = {
       val x = lift.arithmetic.NamedVar(freshName("n"))
       NatDepLambda(x, f(x))
+    }
+
+    def apply(f: NatIdentifier => Expr): NatDepLambda = {
+      nFun(lift.arithmetic.RangeAdd(0, lift.arithmetic.PosInf, 1), f)
     }
   }
 

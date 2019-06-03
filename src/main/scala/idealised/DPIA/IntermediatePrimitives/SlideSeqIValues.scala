@@ -10,7 +10,7 @@ import idealised.DPIA.Phrases._
 
 import scala.language.reflectiveCalls
 
-object SlideSeqIRegRot {
+object SlideSeqIValues {
   def apply(n: Nat,
             size: Nat,
             step: Nat,
@@ -34,7 +34,7 @@ object SlideSeqIRegRot {
           // core loop
           ForNat(n, _Λ_(i => {
             // load current value
-            ((rs.wr `@` (size - 1)) :=|dt1| (Drop(size - 1, (inputSize - size + 1), dt1, input) `@` i)) `;`
+            ((rs.wr `@` (size - 1)) :=|dt1| (Drop(size - 1, inputSize - size + 1, dt1, input) `@` i)) `;`
             f(rs.rd)(output `@` i) `;` // body
             rotate
           }), unroll = false)
