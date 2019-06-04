@@ -17,7 +17,7 @@ final case class Apply(f: Expr, e: Expr) extends Expr {
 }
 
 final case class DepLambda[K <: Kind](x: K#I, e: Expr) extends Expr {
-  override def toString: String = s"Λ(${x.name} : ${x.getClass.toString}). $e"
+  override def toString: String = s"Λ(${x.name} : ${x.getClass.getName.dropWhile(_!='$').drop(1).takeWhile(_!='$')}). $e"
 }
 
 final case class DepApply[K <: Kind](f: Expr, x: K#T) extends Expr {

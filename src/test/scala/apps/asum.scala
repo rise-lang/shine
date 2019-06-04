@@ -24,7 +24,7 @@ class asum extends idealised.util.Tests {
     val typed = infer(high_level)
 
     val N = typed.t.asInstanceOf[NatDepFunType[_ <: Type]].x
-    assertResult(NatDepFunType(N, FunType(inputT(N), float))) {
+    assertResult(DepFunType[NatKind, Type](N, FunType(inputT(N), float))) {
       typed.t
     }
   }

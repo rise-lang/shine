@@ -25,7 +25,7 @@ object PrettyPhrasePrinter {
 
       case Lambda(param, body) => s"λ ${apply(param)}: ${param.t} -> ${apply(body)}"
 
-      case DepLambda(param, body) => s"Λ (${param.name}: ${param.getClass.toString}) -> ${apply(body)}"
+      case DepLambda(param, body) => s"Λ (${param.name}: ${param.getClass.getName.dropWhile(_!='$').drop(1).takeWhile(_!='$')}) -> ${apply(body)}"
 
       case Literal(d) => d.toString
 

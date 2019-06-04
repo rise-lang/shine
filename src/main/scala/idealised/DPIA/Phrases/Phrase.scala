@@ -42,7 +42,7 @@ final case class Apply[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 -> T2]
 final case class DepLambda[K <: Kind, T <: PhraseType](x: K#I, body: Phrase[T])
   extends Phrase[K `()->` T] {
   override val t: DependentFunctionType[K, T] = (x: K#I) `()->` body.t
-  override def toString: String = s"Λ(${x.name} : ${x.getClass.toString}). $body"
+  override def toString: String = s"Λ(${x.name} : ${x.getClass.getName.dropWhile(_!='$').drop(1).takeWhile(_!='$')}). $body"
 }
 
 final case class DepApply[K <: Kind, T <: PhraseType](fun: Phrase[K `()->` T], arg: K#T)

@@ -5,6 +5,9 @@ import lift.arithmetic._
 import traversal.{Result, Stop, Continue}
 
 object substitute {
+
+  // substitute in Expr
+
   def apply[K <: Kind](x: K#T, `for`: K#I, in: Expr): Expr =  (x, `for`) match {
     case (n: Nat, forN: NatIdentifier) => apply(n, forN, in)
     case (dt: DataType, forDt: DataTypeIdentifier) => apply(dt, forDt, in)
@@ -60,23 +63,12 @@ object substitute {
     traversal.DepthFirstLocalResult(in, Visitor)
   }
 
+  // substitute in Type
+
   def apply[K <: Kind, T <: Type](x: K#T, `for`: K#I, in: T): T =  (x, `for`) match {
-    case (n: Nat, forN: NatIdentifier) => apply(n, forN, in)
-    case (dt: DataType, forDt: DataTypeIdentifier) => apply(dt, forDt, in)
-  }
-
-  def apply[A <: Type, B <: Type](ty: A, `for`: A, in: B): B = {
-    case class Visitor() extends traversal.Visitor {
-      override def apply[T <: Type](t: T): traversal.Result[T] = {
-        if (`for` == t) {
-          Stop(ty.asInstanceOf[T])
-        } else {
-          Continue(t, this)
-        }
-      }
-    }
-
-    traversal.types.DepthFirstLocalResult(in, Visitor())
+    case (n: Nat, forN: NatIdentifier)                => apply(n, forN, in)
+    case (dt: DataType, forDt: DataTypeIdentifier)    => apply(dt, forDt, in)
+    case (n2n: NatToNat, forN2N: NatToNatIdentifier)  => apply(n2n, forN2N, in)
   }
 
   def apply[T <: Type](ae: Nat, `for`: NamedVar, in: T): T = {
@@ -88,6 +80,32 @@ object substitute {
     traversal.types.DepthFirstLocalResult(in, Visitor())
   }
 
+  def apply[A <: Type, B <: Type](ty: A, `for`: A, in: B): B = {
+    case class Visitor() extends traversal.Visitor {
+      override def apply[T <: Type](t: T): traversal.Result[T] =
+        if (`for` == t) {
+          Stop(ty.asInstanceOf[T])
+        } else {
+          Continue(t, this)
+        }
+    }
+    traversal.types.DepthFirstLocalResult(in, Visitor())
+  }
+
+  def apply[T <: Type](n2n: NatToNat, `for`: NatToNatIdentifier, in: T): T = {
+    case class Visitor() extends traversal.Visitor {
+      override def apply(n: NatToNat): Result[NatToNat] =
+        if (`for` == n) {
+          Stop(n2n)
+        } else {
+          Continue(n, this)
+        }
+    }
+    traversal.types.DepthFirstLocalResult(in, Visitor())
+  }
+
+  // substitute in Nat
+
   def apply(ae: Nat, `for`: NamedVar, in: Nat): Nat = {
     in.visitAndRebuild {
       case v: NamedVar =>
@@ -98,5 +116,11 @@ object substitute {
         }
       case e => e
     }
+  }
+
+  // substitute in NatToData
+
+  def apply(n: NatToData, `for`: NatToData, in: NatToData): NatToData = {
+    ???
   }
 }

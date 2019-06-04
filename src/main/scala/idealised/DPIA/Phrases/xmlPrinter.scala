@@ -32,7 +32,7 @@ object xmlPrinter {
       case app: DepApply[_, T] =>
         <natApply>
           <fun type={ToString(app.fun.t)}>{apply(app.fun)}</fun>
-          <arg type={app.arg.getClass.toString}>{app.arg}</arg>
+          <arg type={app.arg.getClass.getName.dropWhile(_!='$').drop(1).takeWhile(_!='$')}>{app.arg}</arg>
         </natApply>
 
       case p1: Proj1[a, b] =>
@@ -66,7 +66,7 @@ object xmlPrinter {
         </λ>
 
       case DepLambda(param, body) =>
-        <Λ param={param.name + " : " + param.getClass.toString}>
+        <Λ param={param.name + " : " + param.getClass.getName.dropWhile(_!='$').drop(1).takeWhile(_!='$')}>
           {apply(body)}
         </Λ>
 

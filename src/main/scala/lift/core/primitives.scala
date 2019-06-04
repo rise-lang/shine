@@ -27,7 +27,7 @@ object primitives {
 
   case object depJoin extends Primitive {
     override def t: Type = implN(n => implN2N(lenF => implDT(dt => {
-      DepArrayType(n, NatToDataTypeLambda(n, (i: NatIdentifier) => ArrayType(lenF(i), dt))) ->
+      DepArrayType(n, NatToDataLambda(n, (i: NatIdentifier) => ArrayType(lenF(i), dt))) ->
         ArrayType(BigSum(from = 0, upTo = n - 1, (n: InclusiveIndexVar) => lenF(n)), dt)
     })))
   }
@@ -119,7 +119,7 @@ object primitives {
   case object partition extends Primitive {
     override def t: Type = implN(n => implDT(dt =>
       nFunT(m => n2nFunT(lenF =>
-          ArrayType(n, dt) -> DepArrayType(m, NatToDataTypeLambda(m, (i: NatIdentifier) => ArrayType(lenF(i), dt)))
+          ArrayType(n, dt) -> DepArrayType(m, NatToDataLambda(m, (i: NatIdentifier) => ArrayType(lenF(i), dt)))
     ))))
   }
 

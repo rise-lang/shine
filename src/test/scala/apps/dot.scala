@@ -24,7 +24,7 @@ class dot extends idealised.util.Tests {
     val typed = infer(simpleDotProduct)
 
     val N = typed.t.asInstanceOf[NatDepFunType[_ <: Type]].x
-    assertResult(NatDepFunType(N, FunType(xsT(N), FunType(ysT(N), float)))) {
+    assertResult(DepFunType[NatKind, Type](N, FunType(xsT(N), FunType(ysT(N), float)))) {
       typed.t
     }
   }

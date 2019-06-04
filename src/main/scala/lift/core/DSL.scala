@@ -58,28 +58,28 @@ object DSL {
   }
 
   object nFun {
-    def apply(r: lift.arithmetic.Range, f: NatIdentifier => Expr): NatDepLambda = {
+    def apply(r: lift.arithmetic.Range, f: NatIdentifier => Expr): DepLambda[NatKind] = {
       val x = NatIdentifier(freshName("n"), r)
-      NatDepLambda(x, f(x))
+      DepLambda[NatKind](x, f(x))
     }
 
-    def apply(f: NatIdentifier => Expr): NatDepLambda = {
+    def apply(f: NatIdentifier => Expr): DepLambda[NatKind] = {
       nFun(lift.arithmetic.RangeAdd(0, lift.arithmetic.PosInf, 1), f)
     }
   }
 
   object dtFun {
-    def apply(f: DataTypeIdentifier => Expr): TypeDepLambda = {
+    def apply(f: DataTypeIdentifier => Expr): DepLambda[DataKind] = {
       val x = DataTypeIdentifier(freshName("dt"))
-      TypeDepLambda(x, f(x))
+      DepLambda[DataKind](x, f(x))
     }
   }
 
   // type level functions
   object n2dtFun {
-    def apply(f: NatIdentifier => DataType): NatToDataTypeLambda = {
+    def apply(f: NatIdentifier => DataType): NatToDataLambda = {
       val x = NatIdentifier(freshName("n2dt"))
-      NatToDataTypeLambda(x, f(x))
+      NatToDataLambda(x, f(x))
     }
   }
 
@@ -94,28 +94,28 @@ object DSL {
   object nFunT {
     def apply(f: NatIdentifier => Type): Type = {
       val x = NatIdentifier(freshName("n"))
-      NatDepFunType(x, f(x))
+      DepFunType[NatKind, Type](x, f(x))
     }
   }
 
   object dtFunT {
     def apply(f: DataTypeIdentifier => Type): Type = {
       val x = DataTypeIdentifier(freshName("dt"))
-      DataDepFunType(x, f(x))
+      DepFunType[DataKind, Type](x, f(x))
     }
   }
 
   object n2nFunT {
     def apply(f: NatToNat => Type): Type = {
       val x = NatToNatIdentifier(freshName("_n2n"))
-      NatToNatFunType(x, f(x))
+      DepFunType[NatToNatKind, Type](x, f(x))
     }
   }
 
   object n2dtFunT {
     def apply(f: NatToData => Type): Type = {
       val x = NatToDataIdentifier(freshName("_n2dt"))
-      NatToDataFunType(x, f(x))
+      DepFunType[NatToDataKind, Type](x, f(x))
     }
   }
 

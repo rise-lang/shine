@@ -34,6 +34,9 @@ object infer {
   case class NatConstraint(a: Nat, b: Nat) extends Constraint {
     override def toString: String = s"$a  ~  $b"
   }
+  case class NatToDataConstraint(a: NatToData, b: NatToData) extends Constraint {
+    override def toString: String = s"$a  ~  $b"
+  }
 
   def constrainTypes(expr: Expr,
                      constraints: mutable.Set[Constraint],
@@ -65,19 +68,25 @@ object infer {
       case DepLambda(x, e) => x match {
         case n: NatIdentifier =>
           val te = typed(e)
-          TypedExpr(NatDepLambda(n, te), NatDepFunType(n, te.t))
+          TypedExpr(DepLambda[NatKind](n, te), DepFunType[NatKind, Type](n, te.t))
         case dt: DataTypeIdentifier =>
           val te = typed(e)
-          TypedExpr(TypeDepLambda(dt, te), DataDepFunType(dt, te.t))
+          TypedExpr(DepLambda[DataKind](dt, te), DepFunType[DataKind, Type](dt, te.t))
+        case n2n: NatToNatIdentifier =>
+          val te = typed(e)
+          TypedExpr(DepLambda[NatToNatKind](n2n, te), DepFunType[NatToNatKind, Type](n2n, te.t))
       }
 
       case DepApply(f, x) => x match {
         case n: Nat =>
           val tf = typed(f)
-          TypedExpr(NatDepApply(tf, n), liftDependentFunctionType[NatKind](tf.t)(n))
+          TypedExpr(DepApply[NatKind](tf, n), liftDependentFunctionType[NatKind](tf.t)(n))
         case dt: DataType =>
           val tf = typed(f)
-          TypedExpr(TypeDepApply(tf, dt), liftDependentFunctionType[DataKind](tf.t)(dt))
+          TypedExpr(DepApply[DataKind](tf, dt), liftDependentFunctionType[DataKind](tf.t)(dt))
+        case n2n: NatToNat =>
+          val tf = typed(f)
+          TypedExpr(DepApply[NatToNatKind](tf, n2n), liftDependentFunctionType[NatToNatKind](tf.t)(n2n))
       }
 
       case l: Literal => TypedExpr(l, l.d.dataType)
@@ -159,7 +168,7 @@ object infer {
               case i: DataTypeIdentifier if !boundT(i) => Stop(t)
               case DepArrayType(_, elementTypeFun) => elementTypeFun match {
                 case i:NatToDataIdentifier => if(boundNatDataTypeFun(i)) Stop(t) else Continue(t, this)
-                case NatToDataTypeLambda(x, _) =>  Continue(t, this.copy(boundN = boundN + x))
+                case NatToDataLambda(x, _) =>  Continue(t, this.copy(boundN = boundN + x))
               }
               case DepFunType(x: NatIdentifier, _) => Continue(t, this.copy(boundN = boundN + x))
               case DepFunType(x: DataTypeIdentifier, _) => Continue(t, this.copy(boundT = boundT + x))
@@ -188,13 +197,15 @@ object infer {
   }
 
   object Solution {
-    def apply(): Solution = Solution(Map(), Map())
-    def subs(ta: Type, tb: Type): Solution = Solution(Map(ta -> tb), Map())
-    def subs(na: NamedVar, nb: Nat): Solution = Solution(Map(), Map(na -> nb))
+    def apply(): Solution = Solution(Map(), Map(), Map())
+    def subs(ta: Type, tb: Type): Solution = Solution(Map(ta -> tb), Map(), Map())
+    def subs(na: NamedVar, nb: Nat): Solution = Solution(Map(), Map(na -> nb), Map())
+    def subs(na: NatToData, nb: NatToData): Solution = Solution(Map(), Map(), Map(na -> nb))
   }
 
   case class Solution(ts: Map[Type, Type],
-                      ns: Map[NamedVar, Nat]) {
+                      ns: Map[NamedVar, Nat],
+                      n2ds: Map[NatToData, NatToData]) {
     def apply(e: Expr): Expr = {
       val sol = this
       traversal.DepthFirstLocalResult(e, new traversal.Visitor {
@@ -219,20 +230,29 @@ object infer {
       }
     }
 
+    def apply(n2d: NatToData): NatToData = {
+      n2ds.foldLeft(n2d) { case (result, (na, nb)) =>
+        substitute(nb, `for` = na, in = result)
+      }
+    }
+
     def apply(other: Solution): Solution = {
       Solution(
         ts.mapValues(t => other(t)) ++ other.ts,
-        ns.mapValues(n => other(n)) ++ other.ns
+        ns.mapValues(n => other(n)) ++ other.ns,
+        n2ds.mapValues(n => other(n)) ++ other.n2ds
       )
     }
 
     def apply(constraints: Set[Constraint]): Set[Constraint] = {
-      constraints.map({
+      constraints.map {
         case TypeConstraint(a, b) =>
           TypeConstraint(apply(a), apply(b))
         case NatConstraint(a, b) =>
           NatConstraint(apply(a), apply(b))
-      })
+        case NatToDataConstraint(a, b) =>
+          NatToDataConstraint(apply(a), apply(b))
+      }
     }
   }
 
@@ -260,8 +280,8 @@ object infer {
                boundT: mutable.Set[DataTypeIdentifier],
                boundN: mutable.Set[NamedVar]): Option[Solution] = c match {
     case TypeConstraint(a, b) => (a, b) match {
-      case (i: DataTypeIdentifier, _) => Some(unifyTypeIdent(i, b))
-      case (_, i: DataTypeIdentifier) => Some(unifyTypeIdent(i, a))
+      case (i: DataTypeIdentifier, _) => Some(dataType.unifyIdent(i, b))
+      case (_, i: DataTypeIdentifier) => Some(dataType.unifyIdent(i, a))
       case (_: BasicType, _: BasicType) if a == b =>
         Some(Solution())
       case (IndexType(sa), IndexType(sb)) =>
@@ -271,9 +291,9 @@ object infer {
       case (VectorType(sa, ea), VectorType(sb, eb)) =>
         Some(solve(Set(NatConstraint(sa, sb), TypeConstraint(ea, eb))))
       case (DepArrayType(sa, ea), DepArrayType(sb, eb)) =>
-        ???
+        Some(solve(Set(NatConstraint(sa, sb), NatToDataConstraint(ea, eb))))
       case (TupleType(ea@_*), TupleType(eb@_*)) =>
-        Some(solve(ea.zip(eb).map({ case (a, b) => TypeConstraint(a, b) }).toSet))
+        Some(solve((ea zip eb).map{ case (aa, bb) => TypeConstraint(aa, bb) }.toSet))
       case (FunType(ina, outa), FunType(inb, outb)) =>
         Some(solve(Set(TypeConstraint(ina, inb), TypeConstraint(outa, outb))))
       case (DepFunType(na: NatIdentifier, ta), DepFunType(nb: NatIdentifier, tb)) =>
@@ -294,7 +314,7 @@ object infer {
           TypeConstraint(substitute(dt, `for`=dta, in=ta), substitute(dt, `for`=dtb, in=tb)),
           TypeConstraint(dt, dta), TypeConstraint(dt, dtb)
         )))
-      case (NatDataTypeApply(_, _), ArrayType(_, _)) => None
+      case (NatToDataApply(_, _), ArrayType(_, _)) => None
 
       case _ => error(s"cannot unify $a and $b")
     }
@@ -310,18 +330,24 @@ object infer {
       case (_, p: lift.arithmetic.Prod) => nat.unifyProd(p, a)
       case _ => error(s"cannot unify $a and $b")
     })
+    case NatToDataConstraint(a, b) => (a, b) match {
+      case (i: NatToDataIdentifier, _) => Some(natToData.unifyIdent(i, b))
+      case (_, i: NatToDataIdentifier) => Some(natToData.unifyIdent(i, a))
+      case _ if a == b => Some(Solution())
+      case _ => error(s"cannot unify $a and $b")
+    }
+
   }
 
-  def unifyTypeIdent(i: DataTypeIdentifier, t: Type)
-                    (implicit bound: mutable.Set[DataTypeIdentifier]): Solution = {
-    t match {
+  object dataType {
+    def unifyIdent(i: DataTypeIdentifier, t: Type)
+                  (implicit bound: mutable.Set[DataTypeIdentifier]): Solution = t match {
       case j: DataTypeIdentifier =>
         if (i == j) { Solution() }
         else if (!bound(i)) { Solution.subs(i, j) }
         else if (!bound(j)) { Solution.subs(j, i) }
         else { error(s"cannot unify $i and $j, they are both bound") }
-      case _ if occurs(i, t) =>
-        error(s"circular use: $i occurs in $t")
+      case _ if occurs(i, t) => error(s"circular use: $i occurs in $t")
       case _ if !bound(i) => Solution.subs(i, t)
       case _ => ???
     }
@@ -331,21 +357,19 @@ object infer {
     import lift.arithmetic._
 
     def unwrapFreeTerm(term: ArithExpr)
-                      (implicit bound: mutable.Set[NamedVar]): Option[NamedVar] = {
-      term match {
-        case i: NamedVar if !bound(i) => Some(i)
-        case Prod(Cst(_) :: t :: Nil) => unwrapFreeTerm(t)
-        case Sum(Cst(_) :: t :: Nil) => unwrapFreeTerm(t)
-        case Pow(b, Cst(_)) => unwrapFreeTerm(b)
-        case _ => None
-      }
+                      (implicit bound: mutable.Set[NamedVar]): Option[NamedVar] = term match {
+      case i: NamedVar if !bound(i) => Some(i)
+      case Prod(Cst(_) :: t :: Nil) => unwrapFreeTerm(t)
+      case Sum(Cst(_) :: t :: Nil) => unwrapFreeTerm(t)
+      case Pow(b, Cst(_)) => unwrapFreeTerm(b)
+      case _ => None
     }
 
     def findPivot(terms: Seq[ArithExpr])
                  (implicit bound: mutable.Set[NamedVar]): Nat = {
       val (free, toTerm) =
-        terms.foldLeft((Set[NamedVar](), Map[NamedVar, Nat]()))(
-          { case ((fr, tt), term) =>
+        terms.foldLeft((Set[NamedVar](), Map[NamedVar, Nat]()))({
+          case ((fr, tt), term) =>
             unwrapFreeTerm(term) match {
               case Some(x) => (fr + x, tt updated (x, term))
               case None => (fr, tt)
@@ -356,14 +380,12 @@ object infer {
       toTerm(pivots.head)
     }
 
-    def pivotSolution(term: Nat, value: Nat): Solution = {
-      term match {
-        case i: NamedVar => Solution.subs(i, value)
-        case Prod((c: Cst) :: t :: Nil) => pivotSolution(t, value /^ c)
-        case Sum((c: Cst) :: t :: Nil) => pivotSolution(t, value - c)
-        case Pow(b, Cst(-1)) => pivotSolution(b, Cst(1) /^ value)
-        case _ => ???
-      }
+    def pivotSolution(term: Nat, value: Nat): Solution = term match {
+      case i: NamedVar => Solution.subs(i, value)
+      case Prod((c: Cst) :: t :: Nil) => pivotSolution(t, value /^ c)
+      case Sum((c: Cst) :: t :: Nil) => pivotSolution(t, value - c)
+      case Pow(b, Cst(-1)) => pivotSolution(b, Cst(1) /^ value)
+      case _ => ???
     }
 
     def unifyProd(p: Prod, n: Nat)
@@ -389,26 +411,33 @@ object infer {
     }
 
     def unifyIdent(i: NamedVar, n: Nat)
-                     (implicit bound: mutable.Set[NamedVar]): Solution = {
-      n match {
-        case j: NamedVar =>
-          if (i == j) { Solution() }
-          else if (!bound(i)) { Solution.subs(i, j) }
-          else if (!bound(j)) { Solution.subs(j, i) }
-          else { error(s"cannot unify $i and $j, they are both bound") }
-        case _ if !ArithExpr.contains(n, i) && !bound(i) => Solution.subs(i, n)
-        case p: Prod => unifyProd(p, i)
-        case s: Sum => unifySum(s, i)
-        case _ => ???
-      }
+                  (implicit bound: mutable.Set[NamedVar]): Solution = n match {
+      case j: NamedVar =>
+        if (i == j) { Solution() }
+        else if (!bound(i)) { Solution.subs(i, j) }
+        else if (!bound(j)) { Solution.subs(j, i) }
+        else { error(s"cannot unify $i and $j, they are both bound") }
+      case _ if !ArithExpr.contains(n, i) && !bound(i) => Solution.subs(i, n)
+      case p: Prod => unifyProd(p, i)
+      case s: Sum => unifySum(s, i)
+      case _ => ???
     }
   }
 
-  def occurs(i: DataTypeIdentifier, t: Type): Boolean = {
-    t match {
-      case j: DataTypeIdentifier => i == j
-      case FunType(it, ot) => occurs(i, it) || occurs(i, ot)
-      case _ => false
+  object natToData {
+    def unifyIdent(i: NatToDataIdentifier, n: NatToData): Solution = n match {
+      case j: NatToDataIdentifier =>
+        if (i == j) { Solution() }
+//        else if (!bound(i)) { Solution.subs(i, j) }
+//        else if (!bound(j)) { Solution.subs(j, i) }
+        else { error(s"cannot unify $i and $j, they are both bound") }
+      case _ => Solution.subs(i, n)
     }
+  }
+
+  def occurs(i: DataTypeIdentifier, t: Type): Boolean = t match {
+    case j: DataTypeIdentifier => i == j
+    case FunType(it, ot) => occurs(i, it) || occurs(i, ot)
+    case _ => false
   }
 }

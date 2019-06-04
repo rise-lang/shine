@@ -15,23 +15,4 @@ package object types {
   type `(nat->nat)->`[T <: Type] = NatToNatDepFunType[T]
   type `(nat->data)->`[T <: Type] = NatToDataDepFunType[T]
 
-  object DataDepFunType {
-    def apply[T <: Type](dt: DataTypeIdentifier, t: T): DepFunType[DataKind, T] =
-      DepFunType[DataKind, T](dt, t)
-  }
-
-  object NatDepFunType {
-    def apply[T <: Type](n: NatIdentifier, t: T): DepFunType[NatKind, T] =
-      DepFunType[NatKind, T](n, t)
-  }
-
-  object NatToNatFunType {
-    def apply[T <: Type](x: NatToNatIdentifier, t: T): DepFunType[NatToNatKind, T] =
-      DepFunType[NatToNatKind, T](x, t)
-  }
-
-  object NatToDataFunType {
-    def apply[T <: Type](x: NatToDataIdentifier, t: T): DepFunType[NatToDataKind, T] =
-      DepFunType[NatToDataKind, T](x, t)
-  }
 }

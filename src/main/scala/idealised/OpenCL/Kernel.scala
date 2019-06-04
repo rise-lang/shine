@@ -222,7 +222,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
       case ad: Array[Array[Array[Array[Double]]]] => GlobalArg.createInput(ad.flatten.flatten.flatten)
 
       case _ => throw new IllegalArgumentException("Kernel argument is of unsupported type: " +
-        arg.getClass.toString)
+        arg.getClass.getName)
     }
   }
 
