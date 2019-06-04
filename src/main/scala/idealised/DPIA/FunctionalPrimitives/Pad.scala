@@ -42,7 +42,9 @@ final case class Pad(n: Nat,
   override def continuationTranslation(C: Phrase[->[ExpType, CommandType]])
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
-    con(array)(λ(exp"[$n.$dt]")(x => C(Pad(n, l, r, dt, padExp, x))))
+    con(array)(λ(exp"[$n.$dt]")(x =>
+      con(padExp)(λ(exp"[$dt]")(p =>
+        C(Pad(n, l, r, dt, p, x))))))
   }
 
   override def xmlPrinter: Elem =

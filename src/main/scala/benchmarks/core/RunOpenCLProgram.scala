@@ -2,21 +2,21 @@ package benchmarks.core
 
 import idealised.DPIA
 import idealised.OpenCL.KernelWithSizes
-import idealised.SurfaceLanguage.Types.TypeInference
 import idealised.utils.{Display, Time, TimeSpan}
 import lift.arithmetic.ArithExpr
+import lift.core.Expr
+import lift.core.types.infer
 
 import scala.util.Random
 
 
 abstract class RunOpenCLProgram(val verbose:Boolean) {
-  import idealised.SurfaceLanguage._
   //The Scala type representing the input data
   type Input
   //The type of the summary structure recording data about the runs
   type Summary
 
-  def dpiaProgram: Expr
+  def expr: Expr
 
   protected def makeInput(random:Random):Input
 
@@ -25,7 +25,7 @@ abstract class RunOpenCLProgram(val verbose:Boolean) {
   protected def runScalaProgram(input:Input):Array[Float]
 
   private def compile(localSize:ArithExpr, globalSize:ArithExpr):KernelWithSizes = {
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(localSize, globalSize)(DPIA.FromSurfaceLanguage(TypeInference(this.dpiaProgram, Map())))
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(localSize, globalSize)(DPIA.fromLift(infer(this.expr)))
 
     if(verbose) {
       println(kernel.code)
