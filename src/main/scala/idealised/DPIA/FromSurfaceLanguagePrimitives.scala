@@ -340,7 +340,7 @@ object FromSurfaceLanguagePrimitives {
     case _: Slide =>
       (n, sz, sp, dt, input) => DPIA.FunctionalPrimitives.Slide(n, sz, sp, dt, input)
     case _: SlideSeq =>
-      (n, sz, sp, dt, input) => DPIA.FunctionalPrimitives.SlideSeq(n, sz, sp, dt, input)
+      (n, sz, sp, dt, input) => DPIA.FunctionalPrimitives.SlideSeq(lift.core.primitives.slideSeq.Values, n, sz, sp, dt, input)
   }
 
   def makeDPIATo(to: To): (DataType, DataType, Phrase[DPIA.Types.FunctionType[ExpType, ExpType]], Phrase[ExpType])

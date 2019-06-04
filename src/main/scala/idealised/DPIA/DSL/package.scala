@@ -12,8 +12,6 @@ import scala.language.{implicitConversions, reflectiveCalls}
 
 package object DSL {
 
-  import scala.language.reflectiveCalls
-
   implicit class BinOps(lhs: Phrase[ExpType]) {
     def +(rhs: Phrase[ExpType]) = BinOp(Operators.Binary.ADD, lhs, rhs)
     def -(rhs: Phrase[ExpType]) = BinOp(Operators.Binary.SUB, lhs, rhs)
@@ -88,7 +86,7 @@ package object DSL {
   }
 
   implicit class CallLambda[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 -> T2]) {
-    def apply(arg: Phrase[T1]): Phrase[T2] = Lifting.liftFunction(fun)(arg)
+    def apply(arg: Phrase[T1]): Phrase[T2] = Lifting.liftFunction(fun).value(arg)
 
     def $(arg: Phrase[T1]): Phrase[T2] = apply(arg)
   }

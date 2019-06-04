@@ -40,7 +40,7 @@ object TranslationToImperative {
       case ep: ExpPrimitive => ep.acceptorTranslation(A)
 
       // on the fly beta-reduction
-      case Apply(fun, arg) => acc(Lifting.liftFunction(fun)(arg))(A)
+      case Apply(fun, arg) => acc(Lifting.liftFunction(fun).reducing(arg))(A)
       case DepApply(fun, arg) => arg match {
         case a: Nat =>
           acc(Lifting.liftDependentFunction[NatKind, ExpType](fun.asInstanceOf[ Phrase[NatKind `()->` ExpType]])(a))(A)
@@ -65,7 +65,7 @@ object TranslationToImperative {
       case ep: ExpPrimitive => ep.mapAcceptorTranslation(f, A)
 
       // on the fly beta-reduction
-      case Apply(fun, arg) => mapAcc(f, Lifting.liftFunction(fun)(arg))(A)
+      case Apply(fun, arg) => mapAcc(f, Lifting.liftFunction(fun).reducing(arg))(A)
       case DepApply(fun, arg) =>  arg match {
         case a: Nat =>
           mapAcc(f, Lifting.liftDependentFunction[NatKind, ExpType](fun.asInstanceOf[Phrase[NatKind `()->` ExpType]])(a))(A)
@@ -107,7 +107,7 @@ object TranslationToImperative {
       case ep: ExpPrimitive => ep.continuationTranslation(C)
 
       // on the fly beta-reduction
-      case Apply(fun, arg) => con(Lifting.liftFunction(fun)(arg))(C)
+      case Apply(fun, arg) => con(Lifting.liftFunction(fun).reducing(arg))(C)
       case DepApply(fun, arg) => arg match {
         case a: Nat => con(Lifting.liftDependentFunction[NatKind, ExpType](fun.asInstanceOf[Phrase[NatKind `()->` ExpType]])(a))(C)
         case a: DataType => con(Lifting.liftDependentFunction[DataKind, ExpType](fun.asInstanceOf[Phrase[DataKind `()->` ExpType]])(a))(C)

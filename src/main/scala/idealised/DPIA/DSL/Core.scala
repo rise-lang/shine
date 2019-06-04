@@ -32,7 +32,10 @@ trait depFunDef {
     NatDependentLambda(x, f(x))
   }
 
-  def apply[K <: Kind] = new {
+  def apply[K <: Kind]: Object {
+    def apply[T <: PhraseType](f: K#I => Phrase[T])
+                              (implicit w: Kind.IdentifierMaker[K]): DepLambda[K, T]
+  } = new {
     def apply[T <: PhraseType](f: K#I => Phrase[T])
                               (implicit w: Kind.IdentifierMaker[K]): DepLambda[K, T] = {
       val x = w.makeIdentifier()

@@ -20,12 +20,12 @@ object KernelGenerator {
   def makeCode[T <: PhraseType, L, G](localSize: L, globalSize: G)(originalPhrase: Phrase[T])
                                      (implicit toLRange: L => NDRange, toGRange: G => NDRange): OpenCL.KernelWithSizes = {
     val (phrase, params) = getPhraseAndParams(originalPhrase, Seq())
-    makeKernel(phrase, params.reverse, Some(localSize), Some(globalSize)).right.get
+    makeKernel("KERNEL", phrase, params.reverse, Some(localSize), Some(globalSize)).right.get
   }
 
-  def makeCode[T <: PhraseType](originalPhrase: Phrase[T]): OpenCL.KernelNoSizes = {
+  def makeCode[T <: PhraseType](originalPhrase: Phrase[T], name: String = "KERNEL"): OpenCL.KernelNoSizes = {
     val (phrase, params) = getPhraseAndParams(originalPhrase, Seq())
-    makeKernel(phrase, params.reverse, None, None).left.get
+    makeKernel(name, phrase, params.reverse, None, None).left.get
   }
 
   private def getPhraseAndParams[_ <: PhraseType](p: Phrase[_],
@@ -38,7 +38,8 @@ object KernelGenerator {
     }
   }
 
-  private def makeKernel(p: Phrase[ExpType],
+  private def makeKernel(name: String,
+                         p: Phrase[ExpType],
                          inputParams: Seq[Identifier[ExpType]],
                          localSize: Option[NDRange],
                          globalSize: Option[NDRange]): Either[OpenCL.KernelNoSizes, OpenCL.KernelWithSizes] = {
@@ -71,7 +72,7 @@ object KernelGenerator {
       val typeDeclarations = C.ProgramGenerator.collectTypeDeclarations(code, kernelParams)
 
       val oclKernel = OpenCL.Kernel(declarations ++ typeDeclarations,
-            kernel = makeKernelFunction (kernelParams, adaptKernelBody (C.AST.Block (Seq (code) ) ) ),
+            kernel = makeKernelFunction(name, kernelParams, adaptKernelBody (C.AST.Block (Seq (code) ) ) ),
             outputParam = outParam,
             inputParams = inputParams,
             intermediateParams = intermediateAllocations.map (_.identifier))
@@ -177,11 +178,8 @@ object KernelGenerator {
     AdaptKernelBody(body)
   }
 
-  private def makeKernelFunction(params: Seq[OpenCL.AST.ParamDecl], body: C.AST.Block): OpenCL.AST.KernelDecl = {
-    OpenCL.AST.KernelDecl(name = "KERNEL",
-      params = params,
-      body = body,
-      attribute = None)
+  private def makeKernelFunction(name: String, params: Seq[OpenCL.AST.ParamDecl], body: C.AST.Block): OpenCL.AST.KernelDecl = {
+    OpenCL.AST.KernelDecl(name, params = params, body = body, attribute = None)
   }
 
   implicit private def getDataType(i: Identifier[_]): DataType = {

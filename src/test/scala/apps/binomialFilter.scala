@@ -5,6 +5,7 @@ import lift.core.primitives._
 import lift.core.semantics._
 import lift.core.DSL._
 import lift.core.types._
+import lift.core.HighLevelConstructs.padClamp2D
 
 import elevate.core._
 import rules._
@@ -29,9 +30,9 @@ object binomialFilter {
   val dotSeq = fun(a => fun(b =>
     zip(a)(b) |> map(mulT) |> reduceSeq(add)(l(0.0f))
   ))
-
-  // TODO: pad
-  // TODO: registers/loop unrolling, vectorisation
+  val dotSeqUnroll = fun(a => fun(b =>
+    zip(a)(b) |> map(mulT) |> reduceSeqUnroll(add)(l(0.0f))
+  ))
 
   val weights2d = l(ArrayData(
     Array(1, 2, 1, 2, 4, 2, 1, 2, 1).map(f => FloatData(f / 16.0f))))
@@ -41,23 +42,25 @@ object binomialFilter {
   val slide3x3 = map(slide(3)(1)) >> slide(3)(1) >> map(transpose)
 
   val highLevel =
-    slide3x3 >> map(map(fun(nbh => dot(weights2d)(join(nbh)))))
+    padClamp2D(1) >> slide3x3 >> map(map(fun(nbh => dot(weights2d)(join(nbh)))))
 
   val reference =
-    slide3x3 >> mapSeq(mapSeq(fun(nbh => dotSeq(weights2d)(join(nbh)))))
+    padClamp2D(1) >> slide3x3 >> mapSeq(mapSeq(fun(nbh => dotSeq(weights2d)(join(nbh)))))
 
   val factorised =
-    slide3x3 >> mapSeq(mapSeq(map(dotSeq(weights1d)) >> dotSeq(weights1d)))
+    padClamp2D(1) >> slide3x3 >> mapSeq(mapSeq(map(dotSeq(weights1d)) >> dotSeq(weights1d)))
 
   val separated = {
     val horizontal = mapSeq(slide(3)(1) >> mapSeq(dotSeq(weights1d)))
     val vertical = slide(3)(1) >> mapSeq(transpose >> mapSeq(dotSeq(weights1d)))
-    vertical >> horizontal
+    padClamp2D(1) >> vertical >> horizontal
   }
 
   val regrot =
-    slide(3)(1) >> mapSeq(transpose >>
-      map(dotSeq(weights1d)) >> slideSeq(3)(1) >> map(dotSeq(weights1d))
+    padClamp2D(1) >> slide(3)(1) >> mapSeq(transpose >>
+      map(dotSeq(weights1d)) >>
+      slideSeq(slideSeq.Values)(3)(1) >>
+      map(dotSeq(weights1d))
     )
 
   val norm = strategies.normalize(betaReduction +> etaReduction)
@@ -116,6 +119,7 @@ class binomialFilter extends idealised.util.Tests {
 
     val * = map
     val T = transpose
+    val P = padClamp2D(1)
     val Sh = slide(3)(1)
     val Sv = slide(3)(1)
     val Dh = dot(weights1d)
@@ -123,31 +127,31 @@ class binomialFilter extends idealised.util.Tests {
 
     val steps = Seq[(Strategy, Expr)](
       (id,
-        *(Sh) >> Sv >> *(T) >> *(*(fun(nbh => dot(weights2d)(join(nbh)))))),
+        P >> *(Sh) >> Sv >> *(T) >> *(*(fun(nbh => dot(weights2d)(join(nbh)))))),
       (depthFirst(find(separateDotT)),
-        *(Sh) >> Sv >> *(T) >> *(*(T >> *(Dv) >> Dh))),
+        P >> *(Sh) >> Sv >> *(T) >> *(*(T >> *(Dv) >> Dh))),
       (depthFirst(find(`*f >> S -> S >> **f`)),
-        Sv >> *(*(Sh)) >> *(T) >> *(*(T >> *(Dv) >> Dh))),
+        P >> Sv >> *(*(Sh)) >> *(T) >> *(*(T >> *(Dv) >> Dh))),
       (depthFirst(find(mapFusion)),
-        Sv >> *(*(Sh)) >> *(T >> *(T >> *(Dv) >> Dh))),
+        P >> Sv >> *(*(Sh)) >> *(T >> *(T >> *(Dv) >> Dh))),
       (depthFirst(find(mapFusion)),
-        Sv >> *(*(Sh) >> T >> *(T >> *(Dv) >> Dh))),
+        P >> Sv >> *(*(Sh) >> T >> *(T >> *(Dv) >> Dh))),
       (depthFirst(find(`*S >> T -> T >> S >> *T`)),
-        Sv >> *(T >> Sh >> *(T) >> *(T >> *(Dv) >> Dh))),
+        P >> Sv >> *(T >> Sh >> *(T) >> *(T >> *(Dv) >> Dh))),
       (depthFirst(find(mapFusion)),
-        Sv >> *(T >> Sh >> *(T >> T >> *(Dv) >> Dh))),
+        P >> Sv >> *(T >> Sh >> *(T >> T >> *(Dv) >> Dh))),
       (depthFirst(find(`T >> T -> `)),
-        Sv >> *(T >> Sh >> *(*(Dv) >> Dh))),
+        P >> Sv >> *(T >> Sh >> *(*(Dv) >> Dh))),
       (depthFirst(traversal.drop(1)(mapFirstFission)),
-        Sv >> *(T >> Sh >> *(*(Dv)) >> *(Dh))),
+        P >> Sv >> *(T >> Sh >> *(*(Dv)) >> *(Dh))),
       (depthFirst(find(`S >> **f -> *f >> S`)),
-        Sv >> *(T >> *(Dv) >> Sh >> *(Dh))),
+        P >> Sv >> *(T >> *(Dv) >> Sh >> *(Dh))),
       (depthFirst(find(mapFirstFission)),
-        Sv >> *(T) >> *(*(Dv) >> Sh >> *(Dh))),
+        P >> Sv >> *(T) >> *(*(Dv) >> Sh >> *(Dh))),
       (depthFirst(find(mapFirstFission)),
-        Sv >> *(T) >> *(*(Dv)) >> *(Sh >> *(Dh))),
+        P >> Sv >> *(T) >> *(*(Dv)) >> *(Sh >> *(Dh))),
       (depthFirst(drop(1)(mapFusion)),
-        Sv >> *(T >> *(Dv)) >> *(Sh >> *(Dh)))
+        P >> Sv >> *(T >> *(Dv)) >> *(Sh >> *(Dh)))
     )
 
     val result = steps.foldLeft[Expr](highLevel)({ case (e, (s, expected)) =>
@@ -169,6 +173,7 @@ class binomialFilter extends idealised.util.Tests {
 
     val * = map
     val T = transpose
+    val P = padClamp2D(1)
     val Sh = slide(3)(1)
     val Sv = slide(3)(1)
     val Dh = dot(weights1d)
@@ -176,25 +181,25 @@ class binomialFilter extends idealised.util.Tests {
 
     val steps = Seq[(Strategy, Expr)](
       (id,
-        *(Sh) >> Sv >> *(T) >> *(*(fun(nbh => dot(weights2d)(join(nbh)))))),
+        P >> *(Sh) >> Sv >> *(T) >> *(*(fun(nbh => dot(weights2d)(join(nbh)))))),
       (depthFirst(find(separateDotT)),
-        *(Sh) >> Sv >> *(T) >> *(*(T >> *(Dv) >> Dh))),
+        P >> *(Sh) >> Sv >> *(T) >> *(*(T >> *(Dv) >> Dh))),
       (depthFirst(find(`*f >> S -> S >> **f`)),
-        Sv >> *(*(Sh)) >> *(T) >> *(*(T >> *(Dv) >> Dh))),
+        P >> Sv >> *(*(Sh)) >> *(T) >> *(*(T >> *(Dv) >> Dh))),
       (depthFirst(find(mapFusion)),
-        Sv >> *(*(Sh)) >> *(T >> *(T >> *(Dv) >> Dh))),
+        P >> Sv >> *(*(Sh)) >> *(T >> *(T >> *(Dv) >> Dh))),
       (depthFirst(find(mapFusion)),
-        Sv >> *(*(Sh) >> T >> *(T >> *(Dv) >> Dh))),
+        P >> Sv >> *(*(Sh) >> T >> *(T >> *(Dv) >> Dh))),
       (depthFirst(find(`*S >> T -> T >> S >> *T`)),
-        Sv >> *(T >> Sh >> *(T) >> *(T >> *(Dv) >> Dh))),
+        P >> Sv >> *(T >> Sh >> *(T) >> *(T >> *(Dv) >> Dh))),
       (depthFirst(find(mapFusion)),
-        Sv >> *(T >> Sh >> *(T >> T >> *(Dv) >> Dh))),
+        P >> Sv >> *(T >> Sh >> *(T >> T >> *(Dv) >> Dh))),
       (depthFirst(find(`T >> T -> `)),
-        Sv >> *(T >> Sh >> *(*(Dv) >> Dh))),
+        P >> Sv >> *(T >> Sh >> *(*(Dv) >> Dh))),
       (depthFirst(drop(1)(mapFirstFission)),
-        Sv >> *(T >> Sh >> *(*(Dv)) >> *(Dh))),
+        P >> Sv >> *(T >> Sh >> *(*(Dv)) >> *(Dh))),
       (depthFirst(find(`S >> **f -> *f >> S`)),
-        Sv >> *(T >> *(Dv) >> Sh >> *(Dh)))
+        P >> Sv >> *(T >> *(Dv) >> Sh >> *(Dh)))
     )
 
     val result = steps.foldLeft[Expr](highLevel)({ case (e, (s, expected)) =>
@@ -204,14 +209,15 @@ class binomialFilter extends idealised.util.Tests {
     })
 
     val pick = repeatNTimes(2)(depthFirst(find(specialize.reduceSeq))) `;`
-      depthFirst(find(specialize.slideSeq)) `;`
+      depthFirst(find(specialize.slideSeq(slideSeq.Values))) `;`
       depthFirst(find(specialize.mapSeq))
     s_eq(pick(result), norm(regrot))
   }
 
   def program(name: String, e: Expr): C.Program = {
+    val szr = lift.arithmetic.RangeAdd(3, lift.arithmetic.PosInf, 1)
     val typed = types.infer(
-      nFun(h => nFun(w => fun(ArrayType(h, ArrayType(w, float)))(a => e(a))))
+      nFun(szr, h => nFun(szr, w => fun(ArrayType(h, ArrayType(w, float)))(a => e(a))))
     )
     val phrase = idealised.DPIA.fromLift(typed)
     val program = C.ProgramGenerator.makeCode(phrase, name)
@@ -246,15 +252,13 @@ int main(int argc, char** argv) {
     }
   }
 
-  const int OH = H - 2;
-  const int OW = W - 2;
-  float reference[OH * OW];
+  float reference[H * W];
   ${ref_prog.function.name}(reference, H, W, input);
 
-  float output[OH * OW];
+  float output[H * W];
   ${prog.function.name}(output, H, W, input);
 
-  for (int i = 0; i < (OH * OW); i++) {
+  for (int i = 0; i < (H * W); i++) {
     float delta = reference[i] - output[i];
     if (delta < -0.001 || 0.001 < delta) {
       fprintf(stderr, "difference with reference is too big: %f\\n", delta);
@@ -278,5 +282,16 @@ int main(int argc, char** argv) {
 
   test("compile and compare register rotation blur to the reference") {
     check_ref(regrot)
+  }
+
+  test("register rotation blur with unroll should contain no modulo or division") {
+    val code = program("blur",
+      padClamp2D(1) >> slide(3)(1) >> mapSeq(transpose >>
+        map(dotSeqUnroll(weights1d)) >>
+        slideSeq(slideSeq.Values)(3)(1) >>
+        map(dotSeqUnroll(weights1d))
+      )).code
+    " % ".r.findAllIn(code).length shouldBe 0
+    " / ".r.findAllIn(code).length shouldBe 0
   }
 }

@@ -20,11 +20,11 @@ object primitives {
     override def t: Type = nFunT(n => NatType -> IndexType(n))
   }
 
-  case class BinOp(op: Operators.Binary.Value) extends Primitive {
-    override def toString: String = s"$op"
-
-    override def t: Type = implT(a => a -> (a -> a))
-  }
+//  case class BinOp(op: Operators.Binary.Value) extends Primitive {
+//    override def toString: String = s"$op"
+//
+//    override def t: Type = implT(a => a -> (a -> a))
+//  }
 
   // TODO: ask for basic type parameters
   case object cast extends Primitive {
@@ -66,6 +66,12 @@ object primitives {
     ))
   }
 
+  case object idx extends Primitive {
+    override def t: Type = implN(n => implT(a =>
+      IndexType(n) -> (ArrayType(n, a) -> a)
+    ))
+  }
+
   case object indexAsNat extends Primitive {
     override def t: Type = implN(n =>
       IndexType(n) -> NatType
@@ -95,6 +101,20 @@ object primitives {
     override def t: Type = map.t
   }
 
+  // TODO? could be expressed in terms of a pad idx -> val
+  case object padCst extends Primitive {
+    override def t: Type = implN(n => nFunT(l => nFunT(r => implT(a =>
+      a -> (ArrayType(n, a) -> ArrayType(l + n + r, a))
+    ))))
+  }
+
+  // TODO? could be expressed in terms of a pad idx -> idx or idx -> val
+  case object padClamp extends Primitive {
+    override def t: Type = implN(n => nFunT(l => nFunT(r => implT(a =>
+      ArrayType(n, a) -> ArrayType(l + n + r, a)
+    ))))
+  }
+
   case object reduce extends Primitive {
     override def t: Type = implN(n => implT(a => implT(b =>
       (a -> (b -> b)) -> (b -> (ArrayType(n, a) -> b))
@@ -102,6 +122,10 @@ object primitives {
   }
 
   case object reduceSeq extends Primitive {
+    override def t: Type = reduce.t
+  }
+
+  case object reduceSeqUnroll extends Primitive {
     override def t: Type = reduce.t
   }
 
@@ -130,7 +154,17 @@ object primitives {
     }))))
   }
 
-  case object slideSeq extends Primitive {
+  object slideSeq {
+    trait Rotate {}
+    case object Values extends Rotate {}
+    case object Indices extends Rotate {}
+  }
+
+  case class slideSeq(rot: slideSeq.Rotate) extends Primitive {
+    override def t: Type = slide.t
+  }
+
+  case object slideSeqBuffer extends Primitive {
     override def t: Type = slide.t
   }
 
@@ -156,9 +190,16 @@ object primitives {
     )))
   }
 
-  case class UnaryOp(op: Operators.Unary.Value) extends Primitive {
-    override def toString: String = s"$op"
+//  case class UnaryOp(op: Operators.Unary.Value) extends Primitive {
+//    override def toString: String = s"$op"
+//  }
 
+  // if-then-else
+  case object select extends Primitive {
+    override def t: Type = implT(a => bool -> (a -> (a -> a)))
+  }
+
+  case object neg extends Primitive {
     override def t: Type = implT(a => a -> a)
   }
 
@@ -173,23 +214,57 @@ object primitives {
       ArrayType(n, a) -> (ArrayType(n, b) -> ArrayType(n, TupleType(a, b)))
     )))
   }
-}
 
-object Operators {
-
-  object Unary extends Enumeration {
-    val NEG: Unary.Value = Value("-")
+  case object add extends Primitive {
+    override def t: Type = implT(a => a -> (a -> a))
+  }
+  case object sub extends Primitive {
+    override def t: Type = add.t
+  }
+  case object mul extends Primitive {
+    override def t: Type = add.t
+  }
+  case object div extends Primitive {
+    override def t: Type = add.t
+  }
+  case object mod extends Primitive {
+    override def t: Type = add.t
   }
 
-  object Binary extends Enumeration {
-    val ADD: Binary.Value = Value("+")
-    val SUB: Binary.Value = Value("-")
-    val MUL: Binary.Value = Value("*")
-    val DIV: Binary.Value = Value("/")
-    val MOD: Binary.Value = Value("%")
-    val GT: Binary.Value = Value(">")
-    val LT: Binary.Value = Value("<")
-    val EQ: Binary.Value = Value("==")
+  case object gt extends Primitive {
+    override def t: Type = implT(a => a -> (a -> bool))
+  }
+  case object lt extends Primitive {
+    override def t: Type = gt.t
+  }
+  case object equal extends Primitive {
+    override def t: Type = gt.t
   }
 
+  case class ForeignFunDecl(name: String, args: Seq[String], body: String)
+
+  case class ForeignFun(decl: ForeignFunDecl, override val t: Type) extends Primitive {
+    override def toString: String = decl.name
+  }
+
+  // TODO: should vectorisation be in the core or not?
+  // TODO: ask for a scalar type parameter instead of casting
+
+  case object asVector extends Primitive {
+    override def t: Type = nFunT(n => implN(m => implT(a =>
+      ArrayType(m * n, a) -> ArrayType(m, VectorType(n, a))
+    )))
+  }
+
+  case object asScalar extends Primitive {
+    override def t: Type = implN(n => implN(m => implT(a =>
+      ArrayType(m, VectorType(n, a)) -> ArrayType(m * n, a)
+    )))
+  }
+
+  case object vectorFromScalar extends Primitive {
+    override def t: Type = implN(n => implT(a =>
+      a -> VectorType(n, a)
+    ))
+  }
 }

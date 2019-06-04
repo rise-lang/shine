@@ -1,10 +1,11 @@
 package apps
 
-import lift.core.NatIdentifier
+import idealised.DPIA.Types.ExpType
+import lift.core._
 import lift.core.DSL._
 import lift.core.types._
 import lift.core.primitives._
-import idealised.DPIA.Types.ExpType
+import lift.core.HighLevelConstructs.reorderWithStride
 import idealised.util.gen
 
 class dot extends idealised.util.Tests {
@@ -114,110 +115,88 @@ class dot extends idealised.util.Tests {
 
     gen.OpenMPProgram(dotCPU2)
   }
-/*
-  test("Intel derived no warp dot product 1 compiles to syntactically correct OpenCL") {
-    import idealised.OpenCL.SurfaceLanguage.DSL._
 
-    val intelDerivedNoWarpDot1 = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
-      zip(
-        xs :>> asVector(4),
-        ys:>> asVector(4)
-      ) :>>
-        split(8192) :>>
-        mapWorkgroup(
-          split(8192) >>>
-            mapLocal(
-              oclReduceSeq(fun(x => fun(a => mult(x) + a)), vectorize(4, 0.0f), PrivateMemory)
-            )
-        ) :>> join :>> asScalar
-    )))
+  { // OpenCL
+    import lift.OpenCL.primitives._
+    import idealised.OpenCL.PrivateMemory
 
-    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(intelDerivedNoWarpDot1, Map()))
-    val p = idealised.OpenCL.KernelGenerator.makeCode(phrase)
-    println(p.code)
-    SyntaxChecker.checkOpenCL(p.code)
+    // FIXME: (1/^n)*k*n should be simplified to k
+    ignore("Intel derived no warp dot product 1 compiles to syntactically correct OpenCL") {
+      val intelDerivedNoWarpDot1 = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
+        zip(xs |> asVector(4))(ys |> asVector(4)) |>
+          split(8192) |>
+          mapWorkGroup(
+            split(8192) >
+              mapLocal(
+                oclReduceSeq(PrivateMemory)(fun(x => fun(a => mulT(x) + a)))(vectorFromScalar(l(0.0f)))
+              )
+          ) |> join |> asScalar
+      )))
+
+      gen.OpenCLKernel(intelDerivedNoWarpDot1)
+    }
+
+    test("Dot product CPU 1 compiles to syntactically correct OpenCL") {
+      val dotCPU1 = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
+        zip(xs)(ys) |>
+          split(2048 * 128) |>
+          mapWorkGroup(
+            split(2048) >>
+              mapLocal(
+                oclReduceSeq(PrivateMemory)(fun(x => fun(a => mulT(x) + a)))(l(0.0f))
+              )
+          ) |> join
+      )))
+
+      gen.OpenCLKernel(dotCPU1)
+    }
+
+    test("Dot product CPU 2 compiles to syntactically correct OpenCL") {
+      val dotCPU2 = nFun(n => fun(xsT(n))(in =>
+        in |>
+          split(128) |>
+          mapWorkGroup(
+            split(128) >>
+              mapLocal(
+                oclReduceSeq(PrivateMemory)(fun(x => fun(a => x + a)))(l(0.0f))
+              )
+          ) |> join
+      ))
+
+      gen.OpenCLKernel(dotCPU2)
+    }
+
+    test("Dot product 1 compiles to syntactically correct OpenCL") {
+      val dotProduct1 = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
+        zip(xs)(ys) |>
+          split(2048 * 128) |>
+          mapWorkGroup(
+            reorderWithStride(128) >>
+              split(2048) >>
+              mapLocal(
+                oclReduceSeq(PrivateMemory)(fun(x => fun(a => mulT(x) + a)))(l(0.0f))
+              )
+          ) |> join
+      )))
+
+      gen.OpenCLKernel(dotProduct1)
+    }
+
+    // FIXME
+    ignore("Dot product 2 compiles to syntactically correct OpenCL") {
+      val dotProduct2 = nFun(n => fun(xsT(n))(in =>
+        in |>
+          split(128) |>
+          mapWorkGroup(
+            split(2) >>
+              toLocal(mapLocal(oclReduceSeq(PrivateMemory)(add)(l(0.0f)))) >>
+              iterate(6)(
+                split(2) >> toLocal(mapLocal(oclReduceSeq(PrivateMemory)(add)(l(0.0f))))
+              )
+          ) |> join
+      ))
+
+      gen.OpenCLKernel(dotProduct2)
+    }
   }
-
-  test("Dot product CPU 1 compiles to syntactically correct OpenCL") {
-    import idealised.OpenCL.SurfaceLanguage.DSL._
-
-    val dotCPU1 = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
-      zip(xs, ys) :>>
-        split(2048 * 128) :>>
-        mapWorkgroup(
-          split(2048) >>>
-            mapLocal(
-              oclReduceSeq(fun(x => fun(a => mult(x) + a)), 0.0f, PrivateMemory)
-            )
-        ) :>> join
-    )))
-
-    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(dotCPU1, Map()))
-    val p = idealised.OpenCL.KernelGenerator.makeCode(phrase)
-    println(p.code)
-    SyntaxChecker.checkOpenCL(p.code)
-  }
-
-  test("Dot product CPU 2 compiles to syntactically correct OpenCL") {
-    import idealised.OpenCL.SurfaceLanguage.DSL._
-
-    val dotCPU2 = nFun(n => fun(xsT(n))(in =>
-      in :>>
-        split(128) :>>
-        mapWorkgroup(
-          split(128) >>>
-            mapLocal(
-              oclReduceSeq(fun(x => fun(a => x + a)), 0.0f, PrivateMemory)
-            )
-        ) :>> join
-    ))
-
-    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(dotCPU2, Map()))
-    val p = idealised.OpenCL.KernelGenerator.makeCode(phrase)
-    println(p.code)
-    SyntaxChecker.checkOpenCL(p.code)
-  }
-
-  test("Dot product 1 compiles to syntactically correct OpenCL") {
-    import idealised.OpenCL.SurfaceLanguage.DSL._
-
-    val dotProduct1 = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
-      zip(xs, ys) :>>
-        split(2048 * 128) :>>
-        mapWorkgroup(
-          reorderWithStride(128) >>>
-            split(2048) >>>
-            mapLocal(
-              oclReduceSeq(fun(x => fun(a => mult(x) + a)), 0.0f, PrivateMemory)
-            )
-        ) :>> join
-    )))
-
-    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(dotProduct1, Map()))
-    val p = idealised.OpenCL.KernelGenerator.makeCode(phrase)
-    println(p.code)
-    SyntaxChecker.checkOpenCL(p.code)
-  }
-
-  ignore ("Dot product 2 compiles to syntactically correct OpenCL") {
-    import idealised.OpenCL.SurfaceLanguage.DSL._
-
-    val dotProduct2 = nFun(n => fun(xsT(n))(in =>
-      in :>>
-        split(128) :>>
-        mapWorkgroup(
-          split(2) >>>
-          toLocal(mapLocal(oclReduceSeq(add, 0.0f, PrivateMemory))) >>>
-          iterate(6,
-            split(2) >>> toLocal(mapLocal(oclReduceSeq(add, 0.0f, PrivateMemory)))
-          )
-        ) :>> join
-    ))
-
-    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(dotProduct2, Map()))
-    val p = idealised.OpenCL.KernelGenerator.makeCode(phrase)
-    println(p.code)
-    SyntaxChecker.checkOpenCL(p.code)
-  }
-*/
 }

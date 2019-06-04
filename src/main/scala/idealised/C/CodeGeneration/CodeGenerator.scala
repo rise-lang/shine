@@ -321,31 +321,17 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
 
+      case PadClamp(n, l, r, _, e) => path match {
+        case (i: CIntExpr) :: ps =>
+          exp(e, env, CIntExpr(0) :: ps, left =>
+            exp(e, env, CIntExpr(n-1) :: ps, right =>
+            genPad(n, l, r, left, right, i, ps, e, env, cont)))
+      }
+
       case Pad(n, l, r, _, pad, array) => path match {
         case (i: CIntExpr) :: ps =>
-          exp(pad, env, ps, padExpr => {
-            exp(array, env, CIntExpr(i - l) ::ps, arrayExpr => {
-
-              def cOperator(op:ArithPredicate.Operator.Value):C.AST.BinaryOperator.Value = op match {
-                case ArithPredicate.Operator.< => C.AST.BinaryOperator.<
-                case ArithPredicate.Operator.> => C.AST.BinaryOperator.>
-                case ArithPredicate.Operator.>= => C.AST.BinaryOperator.>=
-                case _ => null
-              }
-
-              def genBranch(lhs:ArithExpr, rhs:ArithExpr, operator:ArithPredicate.Operator.Value, taken:Expr, notTaken:Expr):Expr = {
-                import BoolExpr._
-                arithPredicate(lhs, rhs, operator) match {
-                  case True => taken
-                  case False => notTaken
-                  case _ => C.AST.TernaryExpr(
-                    C.AST.BinaryExpr(C.AST.ArithmeticExpr(i), cOperator(operator), C.AST.ArithmeticExpr(rhs)),
-                    taken, notTaken)
-                }
-              }
-              cont(genBranch(i, l, ArithPredicate.Operator.<, padExpr, genBranch(i, l + n, ArithPredicate.Operator.<, arrayExpr, padExpr)))
-            })
-          })
+          exp(pad, env, ps, padExpr =>
+            genPad(n, l, r, padExpr, padExpr, i, ps, array, env, cont))
 
         case _ => error(s"Expected path to be not empty")
       }
@@ -903,6 +889,36 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case _ => false
     }).map(i => (NamedVar(i._1.name), NamedVar(i._2.name))).toMap[ArithExpr, ArithExpr]
     ArithExpr.substitute(n, substitionMap)
+  }
+
+  protected def genPad(n: Nat, l: Nat, r: Nat,
+                       left: Expr, right: Expr,
+                       i: CIntExpr, ps: Path,
+                       array: Phrase[ExpType],
+                       env: Environment,
+                       cont: Expr => Stmt): Stmt = {
+
+    exp(array, env, CIntExpr(i - l) ::ps, arrayExpr => {
+
+      def cOperator(op:ArithPredicate.Operator.Value):C.AST.BinaryOperator.Value = op match {
+        case ArithPredicate.Operator.< => C.AST.BinaryOperator.<
+        case ArithPredicate.Operator.> => C.AST.BinaryOperator.>
+        case ArithPredicate.Operator.>= => C.AST.BinaryOperator.>=
+        case _ => null
+      }
+
+      def genBranch(lhs:ArithExpr, rhs:ArithExpr, operator:ArithPredicate.Operator.Value, taken:Expr, notTaken:Expr):Expr = {
+        import BoolExpr._
+        arithPredicate(lhs, rhs, operator) match {
+          case True => taken
+          case False => notTaken
+          case _ => C.AST.TernaryExpr(
+            C.AST.BinaryExpr(C.AST.ArithmeticExpr(lhs), cOperator(operator), C.AST.ArithmeticExpr(rhs)),
+            taken, notTaken)
+        }
+      }
+      cont(genBranch(i, l, ArithPredicate.Operator.<, left, genBranch(i, l + n, ArithPredicate.Operator.<, arrayExpr, right)))
+    })
   }
 }
 
