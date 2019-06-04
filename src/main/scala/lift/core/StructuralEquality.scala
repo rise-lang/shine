@@ -5,9 +5,8 @@ import lift.arithmetic.ArithExpr
 
 object StructuralEquality {
   final case class Environment(idents: Map[String, String],
-                                natIdents: Map[Nat, Nat],
-                                typeIdents: Map[DataTypeIdentifier, DataTypeIdentifier]
-                              ){
+                               natIdents: Map[Nat, Nat],
+                               typeIdents: Map[DataTypeIdentifier, DataTypeIdentifier]){
     def bindIdents(ab: (String, String)): Environment = {
       this.copy(idents = idents + ab)
     }
@@ -56,8 +55,6 @@ object StructuralEquality {
         nat(na, nb) && nat(sa, sb)
       case (NatExpr(na), NatExpr(nb)) =>
         nat(na, nb)
-//      case (IfThenElse(ca, tea, eea), IfThenElse(cb, teb, eeb)) =>
-//        exp(ca, cb) && exp(tea, teb) && exp(eea, eeb)
       case (TypedExpr(ea, ta), TypedExpr(eb, tb)) =>
         exp(ea, eb) && typ(ta, tb)
       case (pa: Primitive, pb: Primitive) => pa == pb

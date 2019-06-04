@@ -20,12 +20,6 @@ object primitives {
     override def t: Type = nFunT(n => NatType -> IndexType(n))
   }
 
-//  case class BinOp(op: Operators.Binary.Value) extends Primitive {
-//    override def toString: String = s"$op"
-//
-//    override def t: Type = implT(a => a -> (a -> a))
-//  }
-
   // TODO: ask for basic type parameters
   case object cast extends Primitive {
     override def t: Type = implT(a => implT(b => a -> b))
@@ -189,10 +183,6 @@ object primitives {
       ArrayType(n, ArrayType(m, dt)) -> ArrayType(m, ArrayType(n, dt))
     )))
   }
-
-//  case class UnaryOp(op: Operators.Unary.Value) extends Primitive {
-//    override def toString: String = s"$op"
-//  }
 
   // if-then-else
   case object select extends Primitive {

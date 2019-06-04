@@ -25,8 +25,8 @@ object DSL {
     import lift.core.lifting._
 
     def apply(e: Expr): Expr = liftFunctionExpr(f).value(e)
-    def apply(n: Nat): Expr = liftNatDependentFunctionExpr(f).value(n)
-    def apply(dt: DataType): Expr = liftTypeDependentFunctionExpr(f).value(dt)
+    def apply(n: Nat): Expr = liftDependentFunctionExpr[NatKind](f).value(n)
+    def apply(dt: DataType): Expr = liftDependentFunctionExpr[DataKind](f).value(dt)
   }
 
   implicit class FunPipe(e: Expr) {

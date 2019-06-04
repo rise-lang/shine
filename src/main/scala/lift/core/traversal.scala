@@ -35,7 +35,9 @@ object traversal {
             case Apply(f, e) =>
               Apply(apply(f, v), apply(e, v))
             case DepLambda(x, e) => x match {
-              case n: NatIdentifier => NatDepLambda(v(n).value match { case a: NamedVar => NatIdentifier(a) }, apply(e, v))
+              case n: NatIdentifier => NatDepLambda((v(n).value: @unchecked) match {
+                case a: NamedVar => NatIdentifier(a)
+              }, apply(e, v))
               case dt: DataTypeIdentifier => TypeDepLambda(v(dt).value, apply(e, v))
             }
             case DepApply(f, x) => x match {
@@ -47,8 +49,6 @@ object traversal {
               Index(v(n).value, v(size).value)
             case NatExpr(n) =>
               NatExpr(v(n).value)
-            //case IfThenElse(ce, te, ee) =>
-              //IfThenElse(apply(ce, v), apply(te, v), apply(ee, v))
             case TypedExpr(e, t) =>
               TypedExpr(apply(e, v), v(t).value)
             // could be avoided if foreign fun could be parametric
@@ -88,7 +88,8 @@ object traversal {
           case Apply(f, e) =>
             chainE(apply(f, v), e).map(r => Apply(r._1, r._2))
           case DepLambda(x, e) => x match {
-            case n: NatIdentifier       => chainE(v(n), e).map(r => NatDepLambda(r._1.asInstanceOf[NatIdentifier], r._2))
+            case n: NatIdentifier       => chainE(v(n), e).map(r =>
+              NatDepLambda((r._1: @unchecked) match { case a: NamedVar => NatIdentifier(a) }, r._2) )
             case dt: DataTypeIdentifier => chainE(v(dt), e).map(r => TypeDepLambda(r._1, r._2))
           }
           case DepApply(f, x) => x match {
@@ -100,7 +101,6 @@ object traversal {
             chainN(v(n), size).map(r => Index(r._1, r._2))
           case NatExpr(n) =>
             v(n).map(NatExpr)
-          //case IfThenElse(ce, te, ee) => ???
           case TypedExpr(e, t) =>
             chainT(apply(e, v), t).map(r => TypedExpr(r._1, r._2))
           // could be avoided if foreign fun could be parametric
@@ -130,13 +130,12 @@ object traversal {
               case FunctionType(a, b) => FunctionType(apply(a, v), apply(b, v))
               case DependentFunctionType(x, t) =>
                 x match {
+                  case n: NatIdentifier =>
+                    NatDependentFunctionType((v(n).value: @unchecked) match {
+                      case n: NamedVar => NatIdentifier(n.name, n.range)
+                    }, apply(t, v))
                   case dt: DataTypeIdentifier =>
                     TypeDependentFunctionType(apply(dt, v), apply(t, v))
-                  case n: NatIdentifier =>
-                    val nn : NatIdentifier = v(n).value match {
-                      case n: NamedVar => NatIdentifier(n.name, n.range)
-                    }
-                    NatDependentFunctionType(nn, apply(t, v))
                 }
 
               case NatDataTypeApply(ndtf, n) =>
@@ -183,7 +182,9 @@ object traversal {
               chainT(apply(dt, v), t).map(r => TypeDependentFunctionType(r._1, r._2))
             case DependentFunctionType(n: NatIdentifier, t) =>
               chainT(v(n), t).map(r =>
-                NatDependentFunctionType(r._1.asInstanceOf[NatIdentifier], r._2))
+                NatDependentFunctionType((r._1: @unchecked) match {
+                  case n: NamedVar => NatIdentifier(n.name, n.range)
+                }, r._2))
           }).asInstanceOf[Result[T]]
         }
       }

@@ -37,60 +37,33 @@ object lifting {
     p match {
       case Lambda(x, body)  => Reducing((e: Expr) => substitute(e, `for` = x, in = body))
       case Apply(f, e)      => chain(liftFunctionExpr(f).map(lf => lf(e)))
-      case DepApply(f, x) => x match {
-        case n: Nat         => chain(liftNatDependentFunctionExpr(f).map(lf => lf(n)))
-        case t: DataType    => chain(liftTypeDependentFunctionExpr(f).map(lf => lf(t)))
+      case DepApply(f, x)   => x match {
+        case n: Nat         => chain(liftDependentFunctionExpr[NatKind](f).map(lf => lf(n)))
+        case t: DataType    => chain(liftDependentFunctionExpr[DataKind](f).map(lf => lf(t)))
       }
-      case _ => chain(Expanding(p))
+      case _                => chain(Expanding(p))
     }
   }
 
-  def liftNatDependentFunctionExpr(p: Expr): Result[Nat => Expr] = {
-    def chain(r: Result[Expr]): Result[Nat => Expr] =
-      r.bind(liftNatDependentFunctionExpr,
-        f => Expanding((n: Nat) => NatDepApply(f, n)))
+  def liftDependentFunctionExpr[K <: Kind](p: Expr): Result[K#T => Expr] = {
+    def chain(r: Result[Expr]): Result[K#T => Expr] =
+      r.bind(liftDependentFunctionExpr,
+        f => Expanding((x: K#T) => DepApply[K](f, x)))
 
     p match {
-      case DepLambda(x: NatIdentifier, e) =>
-        Reducing((n: Nat) => substitute(n, `for` = x, in = e))
+      case DepLambda(x, e)  => Reducing((a: K#T) => substitute(a, `for` = x, in = e))
       case Apply(f, e)      => chain(liftFunctionExpr(f).map(lf => lf(e)))
-      case DepApply(f, x) => x match {
-          case n: Nat       => chain(liftNatDependentFunctionExpr(f).map(lf => lf(n)))
-          case t: DataType  => chain(liftTypeDependentFunctionExpr(f).map(lf => lf(t)))
-        }
-      case _ => chain(Expanding(p))
-    }
-  }
-
-  def liftTypeDependentFunctionExpr(p: Expr): Result[DataType => Expr] = {
-    def chain(r: Result[Expr]): Result[DataType => Expr] =
-      r.bind(liftTypeDependentFunctionExpr,
-        f => Expanding((dt: DataType) => TypeDepApply(f, dt)))
-
-    p match {
-      case DepLambda(x: DataTypeIdentifier, e) =>
-        Reducing((dt: DataType) => substitute(dt, `for` = x, in = e))
-      case Apply(f, e)    => chain(liftFunctionExpr(f).map(lf => lf(e)))
-      case DepApply(f, x) => x match {
-        case n: Nat       => chain(liftNatDependentFunctionExpr(f).map(lf => lf(n)))
-        case t: DataType  => chain(liftTypeDependentFunctionExpr(f).map(lf => lf(t)))
+      case DepApply(f, x)   => x match {
+        case n: Nat         => chain(liftDependentFunctionExpr[NatKind](f).map(lf => lf(n)))
+        case t: DataType    => chain(liftDependentFunctionExpr[DataKind](f).map(lf => lf(t)))
       }
-      case _ => chain(Expanding(p))
+      case _                => chain(Expanding(p))
     }
   }
 
-  def liftNatDependentFunctionType(ty: Type): Nat => Type = {
+  def liftDependentFunctionType[K <: Kind](ty: Type): K#T => Type = {
     ty match {
-      case DependentFunctionType(x: NatIdentifier, t) =>
-        (n: Nat) => substitute(n, `for`=x, in=t)
-      case _ => ???
-    }
-  }
-
-  def liftTypeDependentFunctionType(ty: Type): DataType => Type = {
-    ty match {
-      case DependentFunctionType(x: DataTypeIdentifier, t) =>
-        (dt: DataType) => substitute(dt, `for`=x, in=t)
+      case DependentFunctionType(x, t) => (a: K#T) => substitute(a, `for`=x, in=t)
       case _ => ???
     }
   }

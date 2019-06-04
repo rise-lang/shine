@@ -74,10 +74,10 @@ object infer {
       case DepApply(f, x) => x match {
         case n: Nat =>
           val tf = typed(f)
-          TypedExpr(NatDepApply(tf, n), liftNatDependentFunctionType(tf.t)(n))
+          TypedExpr(NatDepApply(tf, n), liftDependentFunctionType[NatKind](tf.t)(n))
         case dt: DataType =>
           val tf = typed(f)
-          TypedExpr(TypeDepApply(tf, dt), liftTypeDependentFunctionType(tf.t)(dt))
+          TypedExpr(TypeDepApply(tf, dt), liftDependentFunctionType[DataKind](tf.t)(dt))
       }
 
       case l: Literal => TypedExpr(l, l.d.dataType)
@@ -85,17 +85,6 @@ object infer {
       case i: Index => TypedExpr(i, IndexType(i.size))
 
       case n: NatExpr => TypedExpr(n, NatType)
-      /*
-      case IfThenElse(cond, thenE, elseE) =>
-        val tce = typed(cond)
-        val tte = typed(thenE)
-        val tee = typed(elseE)
-        val ot = fresh()
-        constraints += TypeConstraint(tce.t, bool)
-        constraints += TypeConstraint(tte.t, ot)
-        constraints += TypeConstraint(tee.t, ot)
-        TypedExpr(IfThenElse(tce, tte, tee), ot)
-        */
 
       case TypedExpr(e, t) =>
         val te = typed(e)
