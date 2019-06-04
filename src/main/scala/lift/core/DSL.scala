@@ -52,7 +52,7 @@ object DSL {
 
   object nFun {
     def apply(r: lift.arithmetic.Range, f: NatIdentifier => Expr): NatDepLambda = {
-      val x = NatIdentifier(freshName("n"))
+      val x = NatIdentifier(freshName("n"), r)
       NatDepLambda(x, f(x))
     }
 
