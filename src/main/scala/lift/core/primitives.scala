@@ -44,11 +44,14 @@ object primitives {
     )))
   }
 
-  case class ForeignFunctionCall(decl: ForeignFunctionDecl, override val t: Type) extends Primitive {
+  case class ForeignFunction(decl: ForeignFunction.Decl, override val t: Type) extends Primitive {
     override def toString: String = decl.name
   }
 
-  case class ForeignFunctionDecl(name: String, args: Seq[String], body: String)
+  object ForeignFunction {
+    case class Decl(name: String, definition: Option[Def])
+    case class Def(params: Seq[String], body: String)
+  }
 
   case object fst extends Primitive {
     override def t: Type = implT(a => implT(b => TupleType(a, b) -> a))
@@ -107,6 +110,10 @@ object primitives {
     override def t: Type = implN(n => nFunT(l => nFunT(r => implT(a =>
       ArrayType(n, a) -> ArrayType(l + n + r, a)
     ))))
+  }
+
+  case object pair extends Primitive {
+    override def t: Type = implT(a => implT(b => a -> (b -> TupleType(a, b))))
   }
 
   case object reduce extends Primitive {
