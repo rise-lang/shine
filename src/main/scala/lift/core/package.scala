@@ -18,6 +18,7 @@ package object core {
   object NatIdentifier {
     def apply(name: String): NatIdentifier = new NamedVar(name) with types.Kind.Identifier
     def apply(name: String, range: Range): NatIdentifier = new NamedVar(name, range) with types.Kind.Identifier
+    def apply(nv: NamedVar): NatIdentifier = new NamedVar(nv.name, nv.range) with types.Kind.Identifier
   }
 
   type NatDepLambda = DepLambda[types.NatKind]

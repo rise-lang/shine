@@ -347,8 +347,8 @@ object fromLift {
             Drop(n, m, a, e)))
 
       case (core.padCst,
-      lt.DependentFunctionType(l: NatIdentifier,
-      lt.DependentFunctionType(r: NatIdentifier,
+      lt.DependentFunctionType(l: l.NatIdentifier,
+      lt.DependentFunctionType(r: l.NatIdentifier,
       lt.FunctionType(_,
       lt.FunctionType(lt.ArrayType(n, la), _)))))
       =>
@@ -360,8 +360,8 @@ object fromLift {
                   Pad(n, l, r, a, cst, e)))))
 
       case (core.padClamp,
-      lt.DependentFunctionType(l: NatIdentifier,
-      lt.DependentFunctionType(r: NatIdentifier,
+      lt.DependentFunctionType(l: l.NatIdentifier,
+      lt.DependentFunctionType(r: l.NatIdentifier,
       lt.FunctionType(lt.ArrayType(n, la), _))))
       =>
         val a = fromLift(la)

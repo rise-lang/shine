@@ -35,7 +35,7 @@ object traversal {
             case Apply(f, e) =>
               Apply(apply(f, v), apply(e, v))
             case DepLambda(x, e) => x match {
-              case n: NatIdentifier       => NatDepLambda(v(n).value.asInstanceOf[NatIdentifier], apply(e, v))
+              case n: NatIdentifier => NatDepLambda(v(n).value match { case a: NamedVar => NatIdentifier(a) }, apply(e, v))
               case dt: DataTypeIdentifier => TypeDepLambda(v(dt).value, apply(e, v))
             }
             case DepApply(f, x) => x match {
