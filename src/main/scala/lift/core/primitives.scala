@@ -1,6 +1,6 @@
 package lift.core
 
-import lift.arithmetic.BigSum
+import lift.arithmetic.{BigSum, InclusiveIndexVar}
 import lift.core.types._
 import lift.core.DSL._
 
@@ -34,7 +34,7 @@ object primitives {
   case object depJoin extends Primitive {
     override def t: Type = implN(n => implNNF(lenF => implT(dt => {
       DepArrayType(n, NatDataTypeLambda(n, (i: NatIdentifier) => ArrayType(lenF(i), dt))) ->
-        ArrayType(BigSum(from = 0, upTo = n - 1, lenF), dt)
+        ArrayType(BigSum(from = 0, upTo = n - 1, (n: InclusiveIndexVar) => lenF(n)), dt)
     })))
   }
 
