@@ -53,22 +53,22 @@ object infer {
         identifierT update (x, xt)
         val te = typed(e)
         identifierT remove x
-        TypedExpr(Lambda(x, te), FunctionType(xt, te.t))
+        TypedExpr(Lambda(x, te), FunType(xt, te.t))
 
       case Apply(f, e) =>
         val tf = typed(f)
         val te = typed(e)
         val ot = fresh()
-        constraints += TypeConstraint(tf.t, FunctionType(te.t, ot))
+        constraints += TypeConstraint(tf.t, FunType(te.t, ot))
         TypedExpr(Apply(tf, te), ot)
 
       case DepLambda(x, e) => x match {
         case n: NatIdentifier =>
           val te = typed(e)
-          TypedExpr(NatDepLambda(n, te), NatDependentFunctionType(n, te.t))
+          TypedExpr(NatDepLambda(n, te), NatDepFunType(n, te.t))
         case dt: DataTypeIdentifier =>
           val te = typed(e)
-          TypedExpr(TypeDepLambda(dt, te), TypeDependentFunctionType(dt, te.t))
+          TypedExpr(TypeDepLambda(dt, te), DataDepFunType(dt, te.t))
       }
 
       case DepApply(f, x) => x match {
@@ -116,8 +116,8 @@ object infer {
         val r = traversal.types.DepthFirstLocalResult(t, new traversal.Visitor() {
           override def apply[U <: Type](t: U): Result[U] = {
             t match {
-              case DependentFunctionType(x: NatIdentifier, _) => boundN += x
-              case DependentFunctionType(x: DataTypeIdentifier, _) => boundT += x
+              case DepFunType(x: NatIdentifier, _) => boundN += x
+              case DepFunType(x: DataTypeIdentifier, _) => boundT += x
               case _ =>
             }
             Continue(t, this)
@@ -137,7 +137,7 @@ object infer {
     case class Visitor(boundV: Set[Identifier],
                        boundT: Set[DataTypeIdentifier],
                        boundN: Set[NamedVar],
-                       boundNatDataTypeFun:Set[NatDataTypeFunctionIdentifier]) extends traversal.Visitor {
+                       boundNatDataTypeFun:Set[NatToDataIdentifier]) extends traversal.Visitor {
       override def apply(e: Expr): Result[Expr] = {
         e match {
           case i: Identifier if !boundV(i) => Stop(i)
@@ -153,16 +153,16 @@ object infer {
       override def apply[T <: Type](t: T): Result[T] = {
         case class TypeVisitor(boundT: Set[DataTypeIdentifier],
                                boundN: Set[NamedVar],
-                               boundNatDataTypeFun:Set[NatDataTypeFunctionIdentifier]) extends traversal.Visitor {
+                               boundNatDataTypeFun:Set[NatToDataIdentifier]) extends traversal.Visitor {
           override def apply[U <: Type](t: U): Result[U] = {
             t match {
               case i: DataTypeIdentifier if !boundT(i) => Stop(t)
               case DepArrayType(_, elementTypeFun) => elementTypeFun match {
-                case i:NatDataTypeFunctionIdentifier => if(boundNatDataTypeFun(i)) Stop(t) else Continue(t, this)
-                case NatDataTypeLambda(x, _) =>  Continue(t, this.copy(boundN = boundN + x))
+                case i:NatToDataIdentifier => if(boundNatDataTypeFun(i)) Stop(t) else Continue(t, this)
+                case NatToDataTypeLambda(x, _) =>  Continue(t, this.copy(boundN = boundN + x))
               }
-              case DependentFunctionType(x: NatIdentifier, _) => Continue(t, this.copy(boundN = boundN + x))
-              case DependentFunctionType(x: DataTypeIdentifier, _) => Continue(t, this.copy(boundT = boundT + x))
+              case DepFunType(x: NatIdentifier, _) => Continue(t, this.copy(boundN = boundN + x))
+              case DepFunType(x: DataTypeIdentifier, _) => Continue(t, this.copy(boundT = boundT + x))
               case _ => Continue(t, this)
             }
           }
@@ -274,9 +274,9 @@ object infer {
         ???
       case (TupleType(ea@_*), TupleType(eb@_*)) =>
         Some(solve(ea.zip(eb).map({ case (a, b) => TypeConstraint(a, b) }).toSet))
-      case (FunctionType(ina, outa), FunctionType(inb, outb)) =>
+      case (FunType(ina, outa), FunType(inb, outb)) =>
         Some(solve(Set(TypeConstraint(ina, inb), TypeConstraint(outa, outb))))
-      case (DependentFunctionType(na: NatIdentifier, ta), DependentFunctionType(nb: NatIdentifier, tb)) =>
+      case (DepFunType(na: NatIdentifier, ta), DepFunType(nb: NatIdentifier, tb)) =>
         val n = NamedVar(freshName("n"))
         boundN += n
         boundN -= na
@@ -285,7 +285,7 @@ object infer {
           TypeConstraint(substitute(n, `for`=na, in=ta), substitute(n, `for`=nb, in=tb)),
           NatConstraint(n, na), NatConstraint(n, nb)
         )))
-      case (DependentFunctionType(dta: DataTypeIdentifier, ta), DependentFunctionType(dtb: DataTypeIdentifier, tb)) =>
+      case (DepFunType(dta: DataTypeIdentifier, ta), DepFunType(dtb: DataTypeIdentifier, tb)) =>
         val dt = DataTypeIdentifier(freshName("t"))
         boundT += dt
         boundT -= dta
@@ -407,7 +407,7 @@ object infer {
   def occurs(i: DataTypeIdentifier, t: Type): Boolean = {
     t match {
       case j: DataTypeIdentifier => i == j
-      case FunctionType(it, ot) => occurs(i, it) || occurs(i, ot)
+      case FunType(it, ot) => occurs(i, it) || occurs(i, ot)
       case _ => false
     }
   }

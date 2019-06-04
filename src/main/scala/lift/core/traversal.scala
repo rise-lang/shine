@@ -127,21 +127,21 @@ object traversal {
               case s: ScalarType => s
               case IndexType(n) => IndexType(v(n).value)
               case VectorType(n, e) => VectorType(v(n).value, apply(e, v))
-              case FunctionType(a, b) => FunctionType(apply(a, v), apply(b, v))
-              case DependentFunctionType(x, t) =>
+              case FunType(a, b) => FunType(apply(a, v), apply(b, v))
+              case DepFunType(x, t) =>
                 x match {
                   case n: NatIdentifier =>
-                    NatDependentFunctionType((v(n).value: @unchecked) match {
+                    NatDepFunType((v(n).value: @unchecked) match {
                       case n: NamedVar => NatIdentifier(n.name, n.range)
                     }, apply(t, v))
                   case dt: DataTypeIdentifier =>
-                    TypeDependentFunctionType(apply(dt, v), apply(t, v))
+                    DataDepFunType(apply(dt, v), apply(t, v))
                 }
 
               case NatDataTypeApply(ndtf, n) =>
                 val newNDTF = ndtf match {
-                case i:NatDataTypeFunctionIdentifier => i
-                case NatDataTypeLambda(x, dt) => NatDataTypeLambda(x, apply(dt, v))
+                case i:NatToDataIdentifier => i
+                case NatToDataTypeLambda(x, dt) => NatToDataTypeLambda(x, apply(dt, v))
               }
                 NatDataTypeApply(newNDTF, v(n).value)
             }).asInstanceOf[T]
@@ -164,9 +164,9 @@ object traversal {
               chainT(v(n), e).map(r => ArrayType(r._1, r._2))
             case DepArrayType(n, e) =>
               e match {
-                case ident:NatDataTypeFunctionIdentifier => v(n).map(DepArrayType(_, ident))
-                case NatDataTypeLambda(binder, body) =>
-                  chainT(v(n), body).map(r => DepArrayType(r._1, NatDataTypeLambda(binder, r._2)))
+                case ident:NatToDataIdentifier => v(n).map(DepArrayType(_, ident))
+                case NatToDataTypeLambda(binder, body) =>
+                  chainT(v(n), body).map(r => DepArrayType(r._1, NatToDataTypeLambda(binder, r._2)))
               }
             case TupleType(ts@_*) =>
               ts.foldLeft(Continue(Vector(), v) : Result[Vector[DataType]])({ case (r, t) =>
@@ -176,13 +176,13 @@ object traversal {
             case IndexType(n) => v(n).map(IndexType)
             case VectorType(n, e) =>
               chainT(v(n), e).map(r => VectorType(r._1, r._2))
-            case FunctionType(a, b) =>
-              chainT(apply(a, v), b).map(r => FunctionType(r._1, r._2))
-            case DependentFunctionType(dt: DataTypeIdentifier, t) =>
-              chainT(apply(dt, v), t).map(r => TypeDependentFunctionType(r._1, r._2))
-            case DependentFunctionType(n: NatIdentifier, t) =>
+            case FunType(a, b) =>
+              chainT(apply(a, v), b).map(r => FunType(r._1, r._2))
+            case DepFunType(dt: DataTypeIdentifier, t) =>
+              chainT(apply(dt, v), t).map(r => DataDepFunType(r._1, r._2))
+            case DepFunType(n: NatIdentifier, t) =>
               chainT(v(n), t).map(r =>
-                NatDependentFunctionType((r._1: @unchecked) match {
+                NatDepFunType((r._1: @unchecked) match {
                   case n: NamedVar => NatIdentifier(n.name, n.range)
                 }, r._2))
           }).asInstanceOf[Result[T]]

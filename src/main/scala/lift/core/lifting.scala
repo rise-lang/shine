@@ -40,6 +40,7 @@ object lifting {
       case DepApply(f, x)   => x match {
         case n: Nat         => chain(liftDependentFunctionExpr[NatKind](f).map(lf => lf(n)))
         case t: DataType    => chain(liftDependentFunctionExpr[DataKind](f).map(lf => lf(t)))
+        case n2n: NatToNat  => chain(liftDependentFunctionExpr[NatToNatKind](f).map(lf => lf(n2n)))
       }
       case _                => chain(Expanding(p))
     }
@@ -56,6 +57,7 @@ object lifting {
       case DepApply(f, x)   => x match {
         case n: Nat         => chain(liftDependentFunctionExpr[NatKind](f).map(lf => lf(n)))
         case t: DataType    => chain(liftDependentFunctionExpr[DataKind](f).map(lf => lf(t)))
+        case n2n: NatToNat  => chain(liftDependentFunctionExpr[NatToNatKind](f).map(lf => lf(n2n)))
       }
       case _                => chain(Expanding(p))
     }
@@ -63,7 +65,7 @@ object lifting {
 
   def liftDependentFunctionType[K <: Kind](ty: Type): K#T => Type = {
     ty match {
-      case DependentFunctionType(x, t) => (a: K#T) => substitute(a, `for`=x, in=t)
+      case DepFunType(x, t) => (a: K#T) => substitute(a, `for`=x, in=t)
       case _ => ???
     }
   }

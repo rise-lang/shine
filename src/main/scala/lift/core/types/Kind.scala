@@ -1,5 +1,6 @@
 package lift.core.types
 
+import lift.core
 
 sealed trait Kind {
   type T
@@ -22,6 +23,16 @@ sealed trait DataKind extends Kind {
 }
 
 sealed trait NatKind extends Kind {
-  override type T = lift.core.Nat
-  override type I = lift.core.NatIdentifier
+  override type T = core.Nat
+  override type I = core.NatIdentifier
+}
+
+sealed trait NatToDataKind extends Kind {
+  override type T = NatToData
+  override type I = NatToDataIdentifier
+}
+
+sealed trait NatToNatKind extends Kind {
+  override type T = NatToNat
+  override type I = NatToNatIdentifier
 }

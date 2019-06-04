@@ -23,8 +23,8 @@ class dot extends idealised.util.Tests {
   test("Simple dot product type inference works") {
     val typed = infer(simpleDotProduct)
 
-    val N = typed.t.asInstanceOf[NatDependentFunctionType[_ <: Type]].x
-    assertResult(NatDependentFunctionType(N, FunctionType(xsT(N), FunctionType(ysT(N), float)))) {
+    val N = typed.t.asInstanceOf[NatDepFunType[_ <: Type]].x
+    assertResult(NatDepFunType(N, FunType(xsT(N), FunType(ysT(N), float)))) {
       typed.t
     }
   }

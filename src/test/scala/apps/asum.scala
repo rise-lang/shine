@@ -12,7 +12,7 @@ import idealised.util.{SyntaxChecker, gen}
 class asum extends idealised.util.Tests {
 
   def inputT(n : NatIdentifier) = ArrayType(n, float)
-  val abs = tFun(t => foreignFun("my_abs", Seq("y"), "{ return fabs(y); }", t -> t))
+  val abs = dtFun(t => foreignFun("my_abs", Seq("y"), "{ return fabs(y); }", t -> t))
   val fabs = abs(float)
   val add = fun(x => fun(a => x + a))
 
@@ -23,8 +23,8 @@ class asum extends idealised.util.Tests {
   test("High level asum type inference works") {
     val typed = infer(high_level)
 
-    val N = typed.t.asInstanceOf[NatDependentFunctionType[_ <: Type]].x
-    assertResult(NatDependentFunctionType(N, FunctionType(inputT(N), float))) {
+    val N = typed.t.asInstanceOf[NatDepFunType[_ <: Type]].x
+    assertResult(NatDepFunType(N, FunType(inputT(N), float))) {
       typed.t
     }
   }

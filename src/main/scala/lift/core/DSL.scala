@@ -33,6 +33,7 @@ object DSL {
     def apply(e: Expr): Expr = liftFunctionExpr(f).value(e)
     def apply(n: Nat): Expr = liftDependentFunctionExpr[NatKind](f).value(n)
     def apply(dt: DataType): Expr = liftDependentFunctionExpr[DataKind](f).value(dt)
+    def apply(n2n: NatToNat): Expr = liftDependentFunctionExpr[NatToNatKind](f).value(n2n)
   }
 
   implicit class FunPipe(e: Expr) {
@@ -67,10 +68,25 @@ object DSL {
     }
   }
 
-  object tFun {
+  object dtFun {
     def apply(f: DataTypeIdentifier => Expr): TypeDepLambda = {
       val x = DataTypeIdentifier(freshName("dt"))
       TypeDepLambda(x, f(x))
+    }
+  }
+
+  // type level functions
+  object n2dtFun {
+    def apply(f: NatIdentifier => DataType): NatToDataTypeLambda = {
+      val x = NatIdentifier(freshName("n2dt"))
+      NatToDataTypeLambda(x, f(x))
+    }
+  }
+
+  object n2nFun {
+    def apply(f: NatIdentifier => Nat): NatToNatLambda = {
+      val x = NatIdentifier(freshName("n2n"))
+      NatToNatLambda(x, f(x))
     }
   }
 
@@ -78,29 +94,28 @@ object DSL {
   object nFunT {
     def apply(f: NatIdentifier => Type): Type = {
       val x = NatIdentifier(freshName("n"))
-      NatDependentFunctionType(x, f(x))
+      NatDepFunType(x, f(x))
     }
   }
 
-  object tFunT {
+  object dtFunT {
     def apply(f: DataTypeIdentifier => Type): Type = {
       val x = DataTypeIdentifier(freshName("dt"))
-      TypeDependentFunctionType(x, f(x))
+      DataDepFunType(x, f(x))
     }
   }
 
-  // type level functions
-  object natTypeFun {
-    def apply(f: NatIdentifier => DataType): NatDataTypeLambda = {
-      val x = NatIdentifier(freshName("n"))
-      NatDataTypeLambda(x, f(x))
+  object n2nFunT {
+    def apply(f: NatToNat => Type): Type = {
+      val x = NatToNatIdentifier(freshName("_n2n"))
+      NatToNatFunType(x, f(x))
     }
   }
 
-  object natNatFun {
-    def apply(f: NatIdentifier => Nat): NatNatLambda = {
-      val x = NatIdentifier(freshName("n"))
-      NatNatLambda(x, f(x))
+  object n2dtFunT {
+    def apply(f: NatToData => Type): Type = {
+      val x = NatToDataIdentifier(freshName("_n2dt"))
+      NatToDataFunType(x, f(x))
     }
   }
 
@@ -109,19 +124,19 @@ object DSL {
     f(NatIdentifier(freshName("_n")))
   }
 
-  def implT[A](f: DataTypeIdentifier => A): A = {
+  def implDT[A](f: DataTypeIdentifier => A): A = {
     f(DataTypeIdentifier(freshName("_dt")))
   }
 
-  def implNNF[A](f: NatNatFunction => A): A = {
-    f(NatNatFunctionIdentifier(freshName("_nnf")))
+  def implN2N[A](f: NatToNat => A): A = {
+    f(NatToNatIdentifier(freshName("_n2n")))
   }
 
-  def implNDF[A](f: NatDataTypeFunction => A): A = {
-    f(NatDataTypeFunctionIdentifier(freshName("_ndf")))
+  def implN2DT[A](f: NatToData => A): A = {
+    f(NatToDataIdentifier(freshName("_n2dt")))
   }
 
-  implicit def natToExpr(n: Nat): NatExpr = NatExpr(n)
+  implicit def wrapInNatExpr(n: Nat): NatExpr = NatExpr(n)
 
   def mapNatExpr(n: Expr, f: Nat => Nat): NatExpr = {
     NatExpr(f(Internal.natFromNatExpr(n)))
@@ -157,7 +172,7 @@ object DSL {
   def l(a: ArrayData): Literal = Literal(a)
 
   implicit final class To(private val a: Type) extends AnyVal {
-    @inline def ->(b: Type): Type = FunctionType(a, b)
+    @inline def ->(b: Type): Type = FunType(a, b)
   }
 
   object foreignFun {
