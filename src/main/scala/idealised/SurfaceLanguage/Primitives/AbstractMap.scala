@@ -37,6 +37,6 @@ abstract class AbstractMap(val f: Expr,
   override def children: Seq[Any] = Seq(f, array, t)
 
   override def rebuild: Seq[Any] => Expr = {
-    case Seq(f: Expr, array: Expr, t: Option[DataType]) => makeMap(f, array, t)
+    case Seq(f: Expr, array: Expr, t: Option[DataType]@unchecked) => makeMap(f, array, t)
   }
 }

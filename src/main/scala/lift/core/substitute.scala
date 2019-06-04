@@ -5,6 +5,12 @@ import lift.arithmetic._
 import traversal.{Result, Stop, Continue}
 
 object substitute {
+  def apply[K <: Kind](x: K#T, `for`: K#I, in: Expr): Expr =  (x, `for`) match {
+    case (n: Nat, forN: NatIdentifier) => apply(n, forN, in)
+    case (dt: DataType, forDt: DataTypeIdentifier) => apply(dt, forDt, in)
+  }
+
+
   def apply(expr: Expr, `for`: Expr, in: Expr): Expr = {
     object Visitor extends traversal.Visitor {
       override def apply(e: Expr): Result[Expr] = {
@@ -54,6 +60,11 @@ object substitute {
     traversal.DepthFirstLocalResult(in, Visitor)
   }
 
+  def apply[K <: Kind, T <: Type](x: K#T, `for`: K#I, in: T): T =  (x, `for`) match {
+    case (n: Nat, forN: NatIdentifier) => apply(n, forN, in)
+    case (dt: DataType, forDt: DataTypeIdentifier) => apply(dt, forDt, in)
+  }
+
   def apply[A <: Type, B <: Type](ty: A, `for`: A, in: B): B = {
     case class Visitor() extends traversal.Visitor {
       override def apply[T <: Type](t: T): traversal.Result[T] = {
@@ -68,7 +79,7 @@ object substitute {
     traversal.types.DepthFirstLocalResult(in, Visitor())
   }
 
-  def apply[T <: Type](ae: Nat, `for`: NatIdentifier, in: T): T = {
+  def apply[T <: Type](ae: Nat, `for`: NamedVar, in: T): T = {
     case class Visitor() extends traversal.Visitor {
       override def apply(n: Nat): Result[Nat] =
         Continue(substitute(ae, `for`, n), this)
@@ -77,7 +88,7 @@ object substitute {
     traversal.types.DepthFirstLocalResult(in, Visitor())
   }
 
-  def apply(ae: Nat, `for`: NatIdentifier, in: Nat): Nat = {
+  def apply(ae: Nat, `for`: NamedVar, in: Nat): Nat = {
     in.visitAndRebuild {
       case v: NamedVar =>
         if (`for`.name == v.name) {

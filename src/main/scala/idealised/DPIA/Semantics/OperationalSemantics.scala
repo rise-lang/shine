@@ -104,9 +104,8 @@ object OperationalSemantics {
         p match {
           case l: Lambda[T1, T2] =>
             (arg: Phrase[T1]) => l.body `[` arg `/` l.param `]`
-          case Identifier(_, _) | Apply(_, _) | NatDependentApply(_, _) |
-               TypeDependentApply(_, _) | IfThenElse(_, _, _) |
-               Proj1(_) | Proj2(_) =>
+          case Identifier(_, _) | Apply(_, _) | DepApply(_, _) |
+               IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
             throw new Exception("This should never happen")
         }
       }
@@ -122,9 +121,8 @@ object OperationalSemantics {
           case l: Lambda[T1, T2 -> T3] => (arg: Phrase[T1]) =>
             eval(s, l.body `[` arg `/` l.param `]` )(UnaryFunctionEvaluator)
 
-          case Identifier(_, _) | Apply(_, _) | NatDependentApply(_, _) |
-               TypeDependentApply(_, _) | IfThenElse(_, _, _) |
-               Proj1(_) | Proj2(_) =>
+          case Identifier(_, _) | Apply(_, _) | DepApply(_, _) |
+               IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
             throw new Exception("This should never happen")
         }
       }
@@ -141,9 +139,8 @@ object OperationalSemantics {
           case l: Lambda[T1, T2 -> (T3 -> T4)] => (arg: Phrase[T1]) =>
             eval(s, l.body `[` arg  `/` l.param `]` )(BinaryFunctionEvaluator)
 
-          case Identifier(_, _) | Apply(_, _) | NatDependentApply(_, _) |
-               TypeDependentApply(_, _) | IfThenElse(_, _, _) |
-               Proj1(_) | Proj2(_) =>
+          case Identifier(_, _) | Apply(_, _) | DepApply(_, _) |
+               IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
             throw new Exception("This should never happen")
         }
       }
@@ -155,9 +152,8 @@ object OperationalSemantics {
         p match {
           case l: NatDependentLambda[T] =>
             (arg: NatIdentifier) => l.body `[` arg `/` l.x `]`
-          case Identifier(_, _) | Apply(_, _) | NatDependentApply(_, _) |
-               TypeDependentApply(_, _) | IfThenElse(_, _, _) |
-               Proj1(_) | Proj2(_) =>
+          case Identifier(_, _) | Apply(_, _) | DepApply(_, _) |
+               IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
             throw new Exception("This should never happen")
         }
       }
@@ -170,9 +166,8 @@ object OperationalSemantics {
           case i: Identifier[T1 x T2] =>
             (Identifier[T1](i.name, i.t.t1), Identifier[T2](i.name, i.t.t2))
           case pair: Pair[T1, T2] => (pair.fst, pair.snd)
-          case Apply(_, _) | NatDependentApply(_, _) |
-               TypeDependentApply(_, _) | IfThenElse(_, _, _) |
-               Proj1(_) | Proj2(_) =>
+          case Apply(_, _) | DepApply(_, _) |
+               IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
             throw new Exception("This should never happen")
         }
       }
@@ -206,9 +201,8 @@ object OperationalSemantics {
 
           case c: ExpPrimitive => c.eval(s)
 
-          case Apply(_, _) | NatDependentApply(_, _) |
-               TypeDependentApply(_, _) | IfThenElse(_, _, _) |
-               Proj1(_) | Proj2(_) =>
+          case Apply(_, _) | DepApply(_, _) |
+               IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
             throw new Exception("This should never happen")
         }
       }
@@ -222,9 +216,8 @@ object OperationalSemantics {
 
           case c: AccPrimitive => c.eval(s)
 
-          case Apply(_, _) | NatDependentApply(_, _) |
-               TypeDependentApply(_, _) | IfThenElse(_, _, _) |
-               Proj1(_) | Proj2(_) =>
+          case Apply(_, _) | DepApply(_, _) |
+               IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
             throw new Exception("This should never happen")
         }
       }
@@ -238,9 +231,8 @@ object OperationalSemantics {
 
           case c: CommandPrimitive => c.eval(s)
 
-          case Apply(_, _) | NatDependentApply(_, _) |
-               TypeDependentApply(_, _) | IfThenElse(_, _, _) |
-               Proj1(_) | Proj2(_) =>
+          case Apply(_, _) | DepApply(_, _) |
+               IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
             throw new Exception("This should never happen")
         }
       }

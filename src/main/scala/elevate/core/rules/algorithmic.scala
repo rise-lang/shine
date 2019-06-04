@@ -42,28 +42,29 @@ object algorithmic {
   }
 
   def `*f >> S -> S >> **f`: Strategy = {
-    case Apply(NatDepApply(NatDepApply(`slide`, sz), sp), Apply(Apply(`map`, f), x)) =>
+    case Apply(DepApply(DepApply(`slide`, sz: Nat), sp: Nat), Apply(Apply(`map`, f), x)) =>
       x |> slide(sz)(sp) |> map(map(f))
-    case Apply(NatDepApply(`split`, n), Apply(Apply(`map`, f), x)) =>
+    case Apply(DepApply(`split`, n: Nat), Apply(Apply(`map`, f), x)) =>
       x |> split(n) |> map(map(f))
   }
 
   def `S >> **f -> *f >> S`: Strategy = {
-    case Apply(Apply(`map`, Apply(`map`, f)), Apply(NatDepApply(NatDepApply(`slide`, sz), sp), x)) =>
+    case Apply(Apply(`map`, Apply(`map`, f)), Apply(DepApply(DepApply(`slide`, sz: Nat), sp: Nat), x)) =>
       x |> map(f) |> slide(sz)(sp)
-    case Apply(Apply(`map`, Apply(`map`, f)), Apply(NatDepApply(`split`, n), x)) =>
+    case Apply(Apply(`map`, Apply(`map`, f)), Apply(DepApply(`split`, n: Nat), x)) =>
       x |> map(f) |> split(n)
   }
 
   def `*S >> T -> T >> S >> *T`: Strategy = {
-    case Apply(`transpose`, Apply(Apply(`map`, NatDepApply(NatDepApply(`slide`, sz), sp)), y)) =>
+    case Apply(`transpose`, Apply(Apply(`map`, DepApply(DepApply(`slide`, sz: Nat), sp: Nat)), y)) =>
       y |> transpose |> slide(sz)(sp) |> map(transpose)
-    case Apply(`transpose`, Apply(Apply(`map`, NatDepApply(`split`, n)), y)) =>
+    case Apply(`transpose`, Apply(Apply(`map`, DepApply(`split`, n: Nat)), y)) =>
       y |> transpose |> split(n) |> map(transpose)
   }
 
   def `S >> *T -> T >> *S >> T`: Strategy = {
-    case Apply(Apply(`map`, Lambda(x1, Apply(`transpose`, x2))), Apply(NatDepApply(NatDepApply(`slide`, sz), sp), y)) if x1 == x2 =>
+    case Apply(Apply(`map`, Lambda(x1, Apply(`transpose`, x2))),
+          Apply(DepApply(DepApply(`slide`, sz: Nat), sp: Nat), y)) if x1 == x2 =>
       y |> transpose |> map(slide(sz)(sp)) |> transpose
   }
 

@@ -17,7 +17,7 @@ setup := {
 }
 
 
-scalacOptions ++= Seq("-Xmax-classfile-name", "100", "-unchecked", "-deprecation", "-feature")
+scalacOptions ++= Seq("-Xmax-classfile-name", "100", "-unchecked", "-deprecation", "-feature", "-language:reflectiveCalls")
 
 fork := true
 javaOptions += "-Djava.library.path=lib/executor/lib/Executor/build"

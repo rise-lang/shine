@@ -3,6 +3,8 @@ package lift.core.semantics
 import lift.core.Literal
 import lift.core.types._
 
+import scala.language.implicitConversions
+
 sealed abstract class Data(val dataType: DataType)
 
 sealed abstract class ScalarData(override val dataType: ScalarType) extends Data(dataType)

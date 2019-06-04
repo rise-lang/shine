@@ -32,7 +32,7 @@ final case class OpenCLFunction(name: String,
   override def children: Seq[Any] = Seq(inTs, outT, args)
 
   override def rebuild: Seq[Any] => Expr = {
-    case Seq(inTs: Seq[DataType], outT: DataType, args: Seq[Expr]) =>
+    case Seq(inTs: Seq[DataType]@unchecked, outT: DataType, args: Seq[Expr]@unchecked) =>
       OpenCLFunction(name, inTs, outT, args)
   }
 

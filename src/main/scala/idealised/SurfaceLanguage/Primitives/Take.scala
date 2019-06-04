@@ -1,6 +1,5 @@
 package idealised.SurfaceLanguage.Primitives
 
-import idealised.SurfaceLanguage
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
 
@@ -21,7 +20,7 @@ final case class Take(n: Nat, array: Expr,
   override def children: Seq[Any] = Seq(n, array, t)
 
   override def rebuild: Seq[Any] => Expr = {
-    case Seq(n: Nat, array: Expr, t: Option[DataType]) =>
+    case Seq(n: Nat, array: Expr, t: Option[DataType]@unchecked) =>
       Take(n, array, t)
   }
 }

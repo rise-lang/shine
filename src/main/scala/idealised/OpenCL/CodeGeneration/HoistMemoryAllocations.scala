@@ -50,7 +50,7 @@ object HoistMemoryAllocations {
 
           case f: ForNat =>
             f.body match {
-              case NatDependentLambda(loopIndex, _) =>
+              case DepLambda(loopIndex: NatIdentifier, _) =>
                 Continue(f,
                   Visitor(ParForInfo(OpenCL.Sequential, Right(loopIndex), f.n) :: parForInfos))
               case _ => throw new Exception("This should not happen")
@@ -58,7 +58,7 @@ object HoistMemoryAllocations {
 
           case pf:ParForNat =>
             pf.body match {
-              case NatDependentLambda(loopIndex, _) =>
+              case DepLambda(loopIndex: NatIdentifier, _) =>
                 Continue(pf,
                   Visitor(ParForInfo(OpenCL.Global, Right(loopIndex), pf.n) :: parForInfos))
               case _ => throw new Exception("This should not happen")

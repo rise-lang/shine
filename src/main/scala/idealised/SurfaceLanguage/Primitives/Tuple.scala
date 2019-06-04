@@ -19,7 +19,7 @@ final case class Tuple(fst: Expr, snd: Expr,
   override def children: Seq[Any] = Seq(fst, snd, t)
 
   override def rebuild: Seq[Any] => Expr = {
-    case Seq(fst: Expr, snd: Expr, t: Option[DataType]) =>
+    case Seq(fst: Expr, snd: Expr, t: Option[DataType]@unchecked) =>
       Tuple(fst, snd, t)
   }
 }

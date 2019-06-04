@@ -36,9 +36,9 @@ class traverse extends idealised.util.Tests {
   test("traverse an expression depth-first") {
     val expected = {
       Seq(
-        { case _: NatDepLambda => () },
+        { case _: NatDepLambda@unchecked => () },
         { case _: NatIdentifier => () },
-        { case _: NatDepLambda => () },
+        { case _: NatDepLambda@unchecked => () },
         { case _: NatIdentifier => () },
         { case _: Lambda => () },
         { case _: Apply => () },
@@ -67,9 +67,9 @@ class traverse extends idealised.util.Tests {
   test("traverse an expression depth-first with stop and update") {
     val expected = {
       Seq(
-        { case _: NatDepLambda => () },
+        { case _: NatDepLambda@unchecked => () },
         { case _: NatIdentifier => () },
-        { case _: NatDepLambda => () },
+        { case _: NatDepLambda@unchecked => () },
         { case _: NatIdentifier => () },
         { case _: Lambda => () }
       ) : Seq[Any => Unit]
@@ -124,7 +124,7 @@ class traverse extends idealised.util.Tests {
     val result = DepthFirstGlobalResult(e, new Visitor)
 
     // the expression should have changed
-    result match {
+    (result: @unchecked) match {
       case traversal.Stop(r) =>
         val expected = nFun(n => fun(ArrayType(n, float))(input => {
           val x = Identifier(freshName("x"))

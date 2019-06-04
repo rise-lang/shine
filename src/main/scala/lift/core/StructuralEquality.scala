@@ -5,9 +5,8 @@ import lift.arithmetic.ArithExpr
 
 object StructuralEquality {
   final case class Environment(idents: Map[String, String],
-                                natIdents: Map[Nat, Nat],
-                                typeIdents: Map[DataTypeIdentifier, DataTypeIdentifier]
-                              ){
+                               natIdents: Map[Nat, Nat],
+                               typeIdents: Map[DataTypeIdentifier, DataTypeIdentifier]){
     def bindIdents(ab: (String, String)): Environment = {
       this.copy(idents = idents + ab)
     }
@@ -43,21 +42,19 @@ object StructuralEquality {
         apply(ba, bb, env bindIdents (xa.name, xb.name))
       case (Apply(fa, ea), Apply(fb, eb)) =>
         exp(fa, fb) && exp(ea, eb)
-      case (NatDepLambda(xa, ba), NatDepLambda(xb, bb)) =>
+      case (DepLambda(xa: NatIdentifier, ba), DepLambda(xb: NatIdentifier, bb)) =>
         apply(ba, bb, env bindNatIdents (xa, xb))
-      case (NatDepApply(fa, na), NatDepApply(fb, nb)) =>
+      case (DepApply(fa, na: Nat), DepApply(fb, nb: Nat)) =>
         exp(fa, fb) && nat(na, nb)
-      case (TypeDepLambda(xa, ba), TypeDepLambda(xb, bb)) =>
+      case (DepLambda(xa: DataTypeIdentifier, ba), DepLambda(xb: DataTypeIdentifier, bb)) =>
         apply(ba, bb, env bindTypeIdents (xa, xb))
-      case (TypeDepApply(fa, ta), TypeDepApply(fb, tb)) =>
+      case (DepApply(fa, ta: DataType), DepApply(fb, tb: DataType)) =>
         exp(fa, fb) && typ(ta, tb)
       case (la: Literal, lb: Literal) => la == lb
       case (Index(na, sa), Index(nb, sb)) =>
         nat(na, nb) && nat(sa, sb)
       case (NatExpr(na), NatExpr(nb)) =>
         nat(na, nb)
-//      case (IfThenElse(ca, tea, eea), IfThenElse(cb, teb, eeb)) =>
-//        exp(ca, cb) && exp(tea, teb) && exp(eea, eeb)
       case (TypedExpr(ea, ta), TypedExpr(eb, tb)) =>
         exp(ea, eb) && typ(ta, tb)
       case (pa: Primitive, pb: Primitive) => pa == pb

@@ -6,7 +6,7 @@ import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives.AsIndex
 import idealised.DPIA.NatDataTypeFunction
 import idealised.DPIA.Phrases._
-import idealised.DPIA.Types.{AccType, CommandType, DataType, DataTypeIdentifier, DepArrayType, ExpType, PairType, PhraseType, TypeCheck, int}
+import idealised.DPIA.Types.{AccType, CommandType, DataType, DataTypeIdentifier, DepArrayType, ExpType, NatKind, PairType, PhraseType, TypeCheck, int}
 import idealised._
 import lift.arithmetic.{Cst, Var}
 
@@ -22,7 +22,7 @@ object ProgramGenerator {
                                            ): (Phrase[ExpType], Seq[Identifier[ExpType]]) = {
       p match {
         case l: Lambda[ExpType, _]@unchecked => getPhraseAndParams(l.body, l.param +: ps)
-        case ndl: NatDependentLambda[_] => getPhraseAndParams(ndl.body, Identifier(ndl.x.name, ExpType(int)) +: ps)
+        case ndl: DepLambda[NatKind, _]@unchecked => getPhraseAndParams(ndl.body, Identifier(ndl.x.name, ExpType(int)) +: ps)
         case ep: Phrase[ExpType]@unchecked => (ep, ps)
       }
     }

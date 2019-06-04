@@ -20,6 +20,6 @@ final case class AsIndex(n: Nat, e: Expr, override val t: Option[DataType] = Non
   override def children: Seq[Any] = Seq(n, e, t)
 
   override def rebuild: Seq[Any] => Expr = {
-    case Seq(n: Nat, e: Expr, t: Option[DataType]) => AsIndex(n, e, t)
+    case Seq(n: Nat, e: Expr, t: Option[DataType]@unchecked) => AsIndex(n, e, t)
   }
 }

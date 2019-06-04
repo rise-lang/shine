@@ -2,7 +2,6 @@ package idealised.DPIA.Types
 
 import idealised.DPIA.FunctionalPrimitives.AsIndex
 import idealised.DPIA.Phrases._
-import idealised.DPIA.Semantics.OperationalSemantics.IndexData
 import idealised.DPIA._
 
 sealed trait PhraseType
@@ -38,17 +37,22 @@ final case class PassiveFunctionType[T1 <: PhraseType, T2 <: PhraseType](inT: T1
   override def toString = s"($inT) ->p $outT"
 }
 
-final case class NatDependentFunctionType[T <: PhraseType](n: NatIdentifier, t: T)
+final case class DependentFunctionType[K <: Kind, T <: PhraseType](x: K#I, t: T)
   extends PhraseType {
-  override def toString = s"($n : Nat) -> $t"
-}
-
-final case class TypeDependentFunctionType[T <: PhraseType](dt: DataTypeIdentifier, t: T)
-  extends PhraseType {
-  override def toString = s"($dt : dt) -> $t"
+  override def toString = s"(${x.name} : ${x.getClass.getTypeName}) -> $t"
 }
 
 object PhraseType {
+
+  def substitute[K <: Kind, T <: PhraseType](x: K#T, `for`: K#I, in: Phrase[T]): Phrase[T] = (x, `for`) match {
+    case (dt: DataType, forDt: DataTypeIdentifier)  => substitute(dt, forDt, in)
+    case (n: Nat, forN: NatIdentifier)              => substitute(n, forN, in)
+  }
+
+  def substitute[K <: Kind](x: K#T, `for`: K#I, in: PhraseType): PhraseType = (x, `for`) match {
+    case (dt: DataType, forDt: DataTypeIdentifier)  => substitute(dt, forDt, in)
+    case (n: Nat, forN: NatIdentifier)              => substitute(n, forN, in)
+  }
 
   def substitute[T <: PhraseType](dt: DataType,
                                   `for`: DataTypeIdentifier,
@@ -77,10 +81,8 @@ object PhraseType {
         FunctionType(substitute(dt, `for`, f.inT), substitute(dt, `for`, f.outT))
       case pf: PassiveFunctionType[_, _] =>
         PassiveFunctionType(substitute(dt, `for`, pf.inT), substitute(dt, `for`, pf.outT))
-      case nf: NatDependentFunctionType[_] =>
-        NatDependentFunctionType(nf.n, substitute(dt, `for`, nf.t))
-      case tf: TypeDependentFunctionType[_] =>
-        TypeDependentFunctionType(tf.dt, substitute(dt, `for`, tf.t))
+      case df: DependentFunctionType[_, _] =>
+        DependentFunctionType(df.x, substitute(dt, `for`, df.t))
     }
   }
 
@@ -129,10 +131,8 @@ object PhraseType {
         FunctionType(substitute(ae, `for`, f.inT), substitute(ae, `for`, f.outT))
       case pf: PassiveFunctionType[_, _] =>
         PassiveFunctionType(substitute(ae, `for`, pf.inT), substitute(ae, `for`, pf.outT))
-      case nf: NatDependentFunctionType[_] =>
-        NatDependentFunctionType(nf.n, substitute(ae, `for`, nf.t))
-      case tf: TypeDependentFunctionType[_] =>
-        TypeDependentFunctionType(tf.dt, substitute(ae, `for`, tf.t))
+      case df: DependentFunctionType[_, _] =>
+        DependentFunctionType(df.x, substitute(ae, `for`, df.t))
     }
   }
 

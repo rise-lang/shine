@@ -19,7 +19,7 @@ final case class Iterate(n: Nat,
   extends ExpPrimitive {
 
   override val t: ExpType = {
-    val l = f.t.n
+    val l = f.t.x
     (n: Nat) -> (m: Nat) -> (k: Nat) -> (dt: DataType) ->
       (f :: t"($l : nat) -> exp[${l * n}.$dt] -> exp[$l.$dt]") ->
       (array :: exp"[${m * n.pow(k)}.$dt]") -> exp"[$m.$dt]"
@@ -45,7 +45,7 @@ final case class Iterate(n: Nat,
 
   override def xmlPrinter: Elem = {
     val l = f.t match {
-      case NatDependentFunctionType(l_, _) => l_
+      case DependentFunctionType(l_, _) => l_
       case _ => throw new Exception("This should not happen")
     }
     <iterate n={ToString(n)} m={ToString(m)} k={ToString(k)} dt={ToString(dt)}>
@@ -67,7 +67,7 @@ final case class Iterate(n: Nat,
 
     con(array)(λ(exp"[${m * n.pow(k)}.$dt]")(x =>
       IterateIAcc(n, m, k, dt, A,
-        _Λ_(l => λ(acc"[$l.$dt]")(o => λ(exp"[${l * n}.$dt]")(x => acc(f(l)(x))(o)))),
+        _Λ_[NatKind](l => λ(acc"[$l.$dt]")(o => λ(exp"[${l * n}.$dt]")(x => acc(f(l)(x))(o)))),
         x) ))
   }
 

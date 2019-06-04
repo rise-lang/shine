@@ -21,7 +21,7 @@ final case class AsScalar(array: Expr, override val t: Option[DataType] = None)
   override def children: Seq[Any] = Seq(array, t)
 
   override def rebuild: Seq[Any] => Expr = {
-    case Seq(array: Expr, t: Option[DataType]) => AsScalar(array, t)
+    case Seq(array: Expr, t: Option[DataType]@unchecked) => AsScalar(array, t)
   }
 
 }

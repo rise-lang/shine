@@ -40,7 +40,7 @@ final case class OpenCLReduceSeq(f: Expr,
   override def children: Seq[Any] = Seq(f, init, array, t)
 
   override def rebuild: Seq[Any] => Expr = {
-    case Seq(f: Expr, init: Expr, array: Expr, t: Option[DataType]) =>
+    case Seq(f: Expr, init: Expr, array: Expr, t: Option[DataType]@unchecked) =>
       OpenCLReduceSeq(f, init, initAddrSpace, array, t)
   }
 }

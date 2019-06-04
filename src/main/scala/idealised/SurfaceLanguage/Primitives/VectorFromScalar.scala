@@ -20,7 +20,7 @@ final case class VectorFromScalar(n: Nat, arg: Expr,
   override def children: Seq[Any] = Seq(n, arg, t)
 
   override def rebuild: Seq[Any] => Expr = {
-    case Seq(n: Nat, arg: Expr, t: Option[DataType]) =>
+    case Seq(n: Nat, arg: Expr, t: Option[DataType]@unchecked) =>
       VectorFromScalar(n, arg, t)
   }
 }

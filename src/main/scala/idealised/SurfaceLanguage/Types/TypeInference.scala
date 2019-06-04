@@ -47,7 +47,7 @@ object TypeInference {
       case ApplyExpr(fun, arg, _) =>
         val f = inferType(fun, subs)
         val a = inferType(arg, subs)
-        f.t match {
+        (f.t: @unchecked) match {
           case Some(FunctionType(_, outT)) => ApplyExpr(f, a, Some(outT))
         }
 
@@ -56,8 +56,8 @@ object TypeInference {
 
       case NatDependentApplyExpr(fun, x, _) =>
         val f = inferType(fun, subs)
-        f.t match {
-          case Some(NatDependentFunctionType(_, bodyT)) =>
+        (f.t: @unchecked) match {
+          case Some(DependentFunctionType(_: NatIdentifier, bodyT)) =>
             NatDependentApplyExpr(f, x, Some(bodyT))
         }
 
@@ -67,8 +67,8 @@ object TypeInference {
 
       case TypeDependentApplyExpr(fun, x, _) =>
         val f = inferType(fun, subs)
-        f.t match {
-          case Some(TypeDependentFunctionType(_, bodyT)) =>
+        (f.t: @unchecked) match {
+          case Some(DependentFunctionType(_: DataTypeIdentifier, bodyT)) =>
             TypeDependentApplyExpr(f, x, Some(bodyT))
         }
 
@@ -87,6 +87,12 @@ object TypeInference {
         (l.t, r.t) match {
           case (Some(lT), Some(rT)) if lT == rT =>
             BinOpExpr(op, l, r, Some(lT))
+        }
+
+      case UnaryOpExpr(op, expr, _) =>
+        val e = inferType(expr, subs)
+        (e.t: @unchecked) match {
+          case Some(eT) => UnaryOpExpr(op, e, Some(eT))
         }
 
       case LiteralExpr(d, _) => LiteralExpr(d, Some(d.dataType))

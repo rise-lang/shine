@@ -26,18 +26,18 @@ object FromSurfaceLanguage {
           apply(arg).asInstanceOf[Phrase[ExpType]])
 
       case NatDependentLambdaExpr(x, body, _) =>
-        Phrases.NatDependentLambda(x, apply(body))
+        idealised.DPIA.NatDependentLambda(x, apply(body))
 
       case NatDependentApplyExpr(fun, arg, _) =>
-        Phrases.NatDependentApply(
+        idealised.DPIA.NatDependentApply(
           apply(fun).asInstanceOf[Phrases.Phrase[Types.NatDependentFunctionType[Types.PhraseType]]],
           arg)
 
       case TypeDependentLambdaExpr(x, body, _) =>
-        Phrases.TypeDependentLambda(Types.DataTypeIdentifier(x.name), apply(body))
+        idealised.DPIA.TypeDependentLambda(Types.DataTypeIdentifier(x.name), apply(body))
 
       case TypeDependentApplyExpr(fun, arg, _) =>
-        Phrases.TypeDependentApply(
+        idealised.DPIA.TypeDependentApply(
           apply(fun).asInstanceOf[Phrases.Phrase[Types.TypeDependentFunctionType[Types.PhraseType]]],
           arg)
 

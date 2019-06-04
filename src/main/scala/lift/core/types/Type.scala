@@ -12,12 +12,8 @@ final case class FunctionType[T1 <: Type, T2 <: Type](inT: T1, outT: T2) extends
   override def toString: String = s"($inT -> $outT)"
 }
 
-final case class TypeDependentFunctionType[T <: Type](dt: DataTypeIdentifier, t: T) extends Type {
-  override def toString: String = s"(${dt.name}:data -> $t)"
-}
-
-final case class NatDependentFunctionType[T <: Type](n: NatIdentifier, t: T) extends Type {
-  override def toString: String = s"($n:nat -> $t)"
+final case class DependentFunctionType[K <: Kind, T <: Type](x: K#I, t: T) extends Type {
+  override def toString: String = s"(${x.name}:${x.getClass.toString}-> $t)"
 }
 
 final case class NatNatDependentFunctionType[T <: Type](fn: NatNatFunctionIdentifier, t: T) extends Type {
@@ -34,7 +30,7 @@ final case class NatDataTypeDependentFunctionType[T <: Type](fn: NatDataTypeFunc
 // ============================================================================================= //
 sealed trait DataType extends Type
 
-final case class DataTypeIdentifier(name: String) extends DataType {
+final case class DataTypeIdentifier(name: String) extends DataType with Kind.Identifier {
   override def toString: String = name
 }
 
@@ -50,7 +46,7 @@ final case class DepArrayType(size: Nat, fdt: NatDataTypeFunction) extends Compo
 
 object DepArrayType {
   def apply(size: Nat, f: Nat => DataType): DepArrayType = {
-   val newN = NamedVar(freshName("n"), RangeAdd(0, size, 1))
+   val newN = NatIdentifier(freshName("n"), RangeAdd(0, size, 1))
     val fdt = NatDataTypeLambda(newN, f(newN))
     DepArrayType(size, fdt)
   }
@@ -197,7 +193,7 @@ final case class NatDataTypeLambda(n: NatIdentifier, dt: DataType) extends NatDa
 
 object NatDataTypeLambda {
   def apply(upperBound:Nat, f:NatIdentifier => DataType):NatDataTypeFunction = {
-    val x = NamedVar(freshName("n"), RangeAdd(0, upperBound, 1))
+    val x = NatIdentifier(freshName("n"), RangeAdd(0, upperBound, 1))
     NatDataTypeLambda(x, f(x))
   }
 

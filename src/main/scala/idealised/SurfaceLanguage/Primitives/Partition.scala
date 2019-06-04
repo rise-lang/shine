@@ -1,7 +1,6 @@
 package idealised.SurfaceLanguage.Primitives
 
 import idealised.DPIA.{Nat, NatNatTypeFunction}
-import idealised.SurfaceLanguage
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
 import lift.arithmetic.BigSum
@@ -29,7 +28,7 @@ final case class Partition(m: Nat, lenF: NatNatTypeFunction, array: Expr,
   override def children: Seq[Any] = Seq(m, lenF, array, t)
 
   override def rebuild: Seq[Any] => Expr = {
-    case Seq(m: Nat, lenF: NatNatTypeFunction, array: Expr, t: Option[DataType]) =>
+    case Seq(m: Nat, lenF: NatNatTypeFunction, array: Expr, t: Option[DataType]@unchecked) =>
       Partition(m, lenF, array, t)
   }
 }

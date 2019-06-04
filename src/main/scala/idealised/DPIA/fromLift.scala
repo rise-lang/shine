@@ -29,20 +29,23 @@ object fromLift {
               fromLift(f).asInstanceOf[Phrase[FunctionType[PhraseType, PhraseType]]])
               .value(fromLift(e).asInstanceOf[Phrase[PhraseType]])
 
-          case l.NatDepLambda(n, e) =>
-            NatDependentLambda(n, fromLift(e))
-          case l.NatDepApply(f, n) =>
-            NatDependentApply( // TODO: should we try to reduce by lifting here?
-              fromLift(f).asInstanceOf[Phrase[NatDependentFunctionType[PhraseType]]],
-              n)
-
-          case l.TypeDepLambda(dt, e) =>
-            TypeDependentLambda(DataTypeIdentifier(dt.name), fromLift(e))
-          case l.TypeDepApply(f, dt) =>
-            TypeDependentApply( // TODO: should we try to reduce by lifting here?
-              fromLift(f).asInstanceOf[Phrase[TypeDependentFunctionType[PhraseType]]],
-              fromLift(dt)
-            )
+          case l.DepLambda(x, e) => x match {
+            case n: l.NatIdentifier =>
+              NatDependentLambda(n, fromLift(e))
+            case dt: lt.DataTypeIdentifier =>
+              TypeDependentLambda(DataTypeIdentifier(dt.name), fromLift(e))
+          }
+          case l.DepApply(f, x) => x match {
+            case n: Nat =>
+              NatDependentApply( // TODO: should we try to reduce by lifting here?
+                fromLift(f).asInstanceOf[Phrase[NatDependentFunctionType[PhraseType]]],
+                n)
+            case dt: lt.DataType =>
+              TypeDependentApply( // TODO: should we try to reduce by lifting here?
+                fromLift(f).asInstanceOf[Phrase[TypeDependentFunctionType[PhraseType]]],
+                fromLift(dt)
+              )
+          }
 
           case l.Literal(d)   =>  Literal(fromLift(d))
           case l.Index(n, sz) =>  Literal(OpSem.IndexData(n, IndexType(sz)))
@@ -90,10 +93,12 @@ object fromLift {
     ty match {
       case dt: lt.DataType => ExpType(fromLift(dt))
       case lt.FunctionType(i, o) => FunctionType(fromLift(i), fromLift(o))
-      case lt.TypeDependentFunctionType(dt, t) =>
-        TypeDependentFunctionType(DataTypeIdentifier(dt.name), fromLift(t))
-      case lt.NatDependentFunctionType(n, t) =>
-        NatDependentFunctionType(n, fromLift(t))
+      case lt.DependentFunctionType(x, t) => x match {
+          case dt: lt.DataTypeIdentifier =>
+            TypeDependentFunctionType(DataTypeIdentifier(dt.name), fromLift(t))
+          case n: l.NatIdentifier =>
+            NatDependentFunctionType(n, fromLift(t))
+        }
     }
   }
 
@@ -132,7 +137,7 @@ object fromLift {
 
     (p, t) match {
       case (core.asIndex,
-      lt.NatDependentFunctionType(n,
+      lt.DependentFunctionType(n: l.NatIdentifier,
       lt.FunctionType(lt.NatType, lt.IndexType(_))))
       =>
         NatDependentLambda(n,
@@ -177,7 +182,7 @@ object fromLift {
 
       case (core.depMapSeq,
       lt.FunctionType(
-      lt.NatDependentFunctionType(k, lt.FunctionType(_, _)),
+      lt.DependentFunctionType(k: l.NatIdentifier, lt.FunctionType(_, _)),
       lt.FunctionType(lt.DepArrayType(n, la), lt.DepArrayType(_, lb))))
       =>
         val a: NatDataTypeFunction = ??? // fromLift(la)
@@ -252,7 +257,7 @@ object fromLift {
           Join(n, m, a, e))
 
       case (core.split,
-      lt.NatDependentFunctionType(n,
+      lt.DependentFunctionType(n: l.NatIdentifier,
       lt.FunctionType(lt.ArrayType(insz, la), lt.ArrayType(m, _))))
       =>
         val a = fromLift(la)
@@ -261,8 +266,8 @@ object fromLift {
             Split(n, m, a, e)))
 
       case (core.slide,
-      lt.NatDependentFunctionType(sz,
-      lt.NatDependentFunctionType(sp,
+      lt.DependentFunctionType(sz: l.NatIdentifier,
+      lt.DependentFunctionType(sp: l.NatIdentifier,
       lt.FunctionType(lt.ArrayType(insz, la), lt.ArrayType(n, _)))))
       =>
         val a = fromLift(la)
@@ -272,8 +277,8 @@ object fromLift {
               Slide(n, sz, sp, a, e))))
 
       case (core.slideSeq(rot),
-      lt.NatDependentFunctionType(sz,
-      lt.NatDependentFunctionType(sp,
+      lt.DependentFunctionType(sz: l.NatIdentifier,
+      lt.DependentFunctionType(sp: l.NatIdentifier,
       lt.FunctionType(lt.ArrayType(insz, la), lt.ArrayType(n, _)))))
       =>
         val a = fromLift(la)
@@ -322,7 +327,7 @@ object fromLift {
               Join(n, m, a, e))))
 
       case (core.take,
-      lt.NatDependentFunctionType(n,
+      lt.DependentFunctionType(n: l.NatIdentifier,
       lt.FunctionType(lt.ArrayType(nm, la), _)))
       =>
         val m = nm - n
@@ -332,7 +337,7 @@ object fromLift {
             Take(n, m, a, e)))
 
       case (core.drop,
-      lt.NatDependentFunctionType(n,
+      lt.DependentFunctionType(n: l.NatIdentifier,
       lt.FunctionType(lt.ArrayType(nm, la), _)))
       =>
         val m = nm - n
@@ -342,8 +347,8 @@ object fromLift {
             Drop(n, m, a, e)))
 
       case (core.padCst,
-      lt.NatDependentFunctionType(l,
-      lt.NatDependentFunctionType(r,
+      lt.DependentFunctionType(l: l.NatIdentifier,
+      lt.DependentFunctionType(r: l.NatIdentifier,
       lt.FunctionType(_,
       lt.FunctionType(lt.ArrayType(n, la), _)))))
       =>
@@ -355,8 +360,8 @@ object fromLift {
                   Pad(n, l, r, a, cst, e)))))
 
       case (core.padClamp,
-      lt.NatDependentFunctionType(l,
-      lt.NatDependentFunctionType(r,
+      lt.DependentFunctionType(l: l.NatIdentifier,
+      lt.DependentFunctionType(r: l.NatIdentifier,
       lt.FunctionType(lt.ArrayType(n, la), _))))
       =>
         val a = fromLift(la)
@@ -475,8 +480,8 @@ object fromLift {
           Generate(n, a, f))
 
       case (core.iterate,
-      lt.NatDependentFunctionType(k,
-      lt.FunctionType(lt.NatDependentFunctionType(l,
+      lt.DependentFunctionType(k: l.NatIdentifier,
+      lt.FunctionType(lt.DependentFunctionType(l: l.NatIdentifier,
       lt.FunctionType(lt.ArrayType(ln, _), _)),
       lt.FunctionType(lt.ArrayType(insz, _), lt.ArrayType(m, la)))))
       =>
@@ -489,7 +494,7 @@ object fromLift {
                 Iterate(n, m, k, a, f, e))))
 
       case (core.asVector,
-      lt.NatDependentFunctionType(n,
+      lt.DependentFunctionType(n: l.NatIdentifier,
       lt.FunctionType(lt.ArrayType(mn, la: lt.ScalarType), lt.ArrayType(m, _))))
       =>
         val a = fromLift(la)

@@ -8,9 +8,7 @@ object PrettyPhrasePrinter {
     p match {
       case app: Apply[a, T] => s"(${apply(app.fun)})(${apply(app.arg)})"
 
-      case app: NatDependentApply[T] => s"(${apply(app.fun)})(${app.arg})"
-
-      case app: TypeDependentApply[T] => s"(${apply(app.fun)})(${app.arg})"
+      case app: DepApply[_, T] => s"(${apply(app.fun)})(${app.arg})"
 
       case p1: Proj1[a, b] => s"π1(${apply(p1.pair)})"
 
@@ -27,9 +25,7 @@ object PrettyPhrasePrinter {
 
       case Lambda(param, body) => s"λ ${apply(param)}: ${param.t} -> ${apply(body)}"
 
-      case NatDependentLambda(param, body) => s"Λ (${param.name}: nat) -> ${apply(body)}"
-
-      case TypeDependentLambda(param, body) => s"Λ (${param.name}: dt) -> ${apply(body)}"
+      case DepLambda(param, body) => s"Λ (${param.name}: ${param.getClass.toString}) -> ${apply(body)}"
 
       case Literal(d) => d.toString
 
