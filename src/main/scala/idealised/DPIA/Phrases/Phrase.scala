@@ -45,6 +45,14 @@ final case class DepLambda[K <: Kind, T <: PhraseType](x: K#I, body: Phrase[T])
   override def toString: String = s"Λ(${x.name} : ${x.getClass.getName.dropWhile(_!='$').drop(1).takeWhile(_!='$')}). $body"
 }
 
+object DepLambda {
+  def apply[K <: Kind](x: K#I): Object {
+    def apply[T <: PhraseType](body: Phrase[T]): DepLambda[K, T]
+  } = new {
+    def apply[T <: PhraseType](body: Phrase[T]) = DepLambda(x, body)
+  }
+}
+
 final case class DepApply[K <: Kind, T <: PhraseType](fun: Phrase[K `()->` T], arg: K#T)
   extends Phrase[T] {
 

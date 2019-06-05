@@ -125,7 +125,7 @@ final case class NatToNatLambda private(n: NatIdentifier, m: Nat) extends NatToN
 
 //  def apply(l: Nat): Nat = ArithExpr.substitute(m, Map((n, l)))
 
-  override def toString: String = s"($n: nat) -> $m"
+  override def toString: String = s"($n: nat |-> $m)"
 
   override def equals(obj: Any): Boolean = obj match {
     case other: NatToNatLambda => m == other(n)
@@ -164,7 +164,7 @@ object NatToData {
 }
 
 final case class NatToDataLambda(n: NatIdentifier, dt: DataType) extends NatToData {
-  override def toString: String = s"($n: nat -> $dt)"
+  override def toString: String = s"($n: nat |-> $dt)"
 }
 
 object NatToDataLambda {

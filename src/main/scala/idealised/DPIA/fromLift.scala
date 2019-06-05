@@ -28,17 +28,17 @@ object fromLift {
 
           case l.DepLambda(x, e) => x match {
             case n: l.NatIdentifier =>
-              NatDependentLambda(n, fromLift(e))
+              DepLambda[NatKind](n)(fromLift(e))
             case dt: lt.DataTypeIdentifier =>
-              TypeDependentLambda(DataTypeIdentifier(dt.name), fromLift(e))
+              DepLambda[DataKind](DataTypeIdentifier(dt.name))(fromLift(e))
           }
           case l.DepApply(f, x) => x match {
             case n: Nat =>
-              NatDependentApply( // TODO: should we try to reduce by lifting here?
+              DepApply[NatKind, PhraseType]( // TODO: should we try to reduce by lifting here?
                 fromLift(f).asInstanceOf[Phrase[DepFunType[NatKind, PhraseType]]],
                 n)
             case dt: lt.DataType =>
-              TypeDependentApply( // TODO: should we try to reduce by lifting here?
+              DepApply[DataKind, PhraseType]( // TODO: should we try to reduce by lifting here?
                 fromLift(f).asInstanceOf[Phrase[DepFunType[DataKind, PhraseType]]],
                 fromLift(dt)
               )
@@ -132,7 +132,7 @@ object fromLift {
       lt.DepFunType(n: l.NatIdentifier,
       lt.FunType(lt.NatType, lt.IndexType(_))))
       =>
-        NatDependentLambda(n,
+        DepLambda[NatKind](n)(
           fun[ExpType](exp"[$NatType]", e =>
             AsIndex(n, e)))
 
@@ -255,7 +255,7 @@ object fromLift {
       lt.FunType(lt.ArrayType(insz, la), lt.ArrayType(m, _))))
       =>
         val a = fromLift(la)
-        NatDependentLambda(n,
+        DepLambda[NatKind](n)(
           fun[ExpType](exp"[$insz.$a]", e =>
             Split(n, m, a, e)))
 
@@ -265,8 +265,8 @@ object fromLift {
       lt.FunType(lt.ArrayType(insz, la), lt.ArrayType(n, _)))))
       =>
         val a = fromLift(la)
-        NatDependentLambda(sz,
-          NatDependentLambda(sp,
+        DepLambda[NatKind](sz)(
+          DepLambda[NatKind](sp)(
             fun[ExpType](exp"[$insz.$a]", e =>
               Slide(n, sz, sp, a, e))))
 
@@ -276,8 +276,8 @@ object fromLift {
       lt.FunType(lt.ArrayType(insz, la), lt.ArrayType(n, _)))))
       =>
         val a = fromLift(la)
-        NatDependentLambda(sz,
-          NatDependentLambda(sp,
+        DepLambda[NatKind](sz)(
+          DepLambda[NatKind](sp)(
             fun[ExpType](exp"[$insz.$a]", e =>
               SlideSeq(rot, n, sz, sp, a, e))))
 
@@ -326,7 +326,7 @@ object fromLift {
       =>
         val m = nm - n
         val a = fromLift(la)
-        NatDependentLambda(n,
+        DepLambda[NatKind](n)(
           fun[ExpType](exp"[$nm.$a]", e =>
             Take(n, m, a, e)))
 
@@ -336,7 +336,7 @@ object fromLift {
       =>
         val m = nm - n
         val a = fromLift(la)
-        NatDependentLambda(n,
+        DepLambda[NatKind](n)(
           fun[ExpType](exp"[$nm.$a]", e =>
             Drop(n, m, a, e)))
 
@@ -347,8 +347,8 @@ object fromLift {
       lt.FunType(lt.ArrayType(n, la), _)))))
       =>
         val a = fromLift(la)
-        NatDependentLambda(l,
-          NatDependentLambda(r,
+        DepLambda[NatKind](l)(
+          DepLambda[NatKind](r)(
             fun[ExpType](exp"[$a]", cst =>
                 fun[ExpType](exp"[$n.$a]", e =>
                   Pad(n, l, r, a, cst, e)))))
@@ -359,8 +359,8 @@ object fromLift {
       lt.FunType(lt.ArrayType(n, la), _))))
       =>
         val a = fromLift(la)
-        NatDependentLambda(l,
-          NatDependentLambda(r,
+        DepLambda[NatKind](l)(
+          DepLambda[NatKind](r)(
               fun[ExpType](exp"[$n.$a]", e =>
                 PadClamp(n, l, r, a, e))))
 
@@ -491,7 +491,7 @@ object fromLift {
       =>
         val n = ln /^ l
         val a = fromLift(la)
-        NatDependentLambda(k,
+        DepLambda[NatKind](k)(
           fun[`(nat)->`[ExpType -> ExpType]](l `()->` (exp"[$ln.$a]" -> exp"[$l.$a]"), f =>
               fun[ExpType](exp"[$insz.$a]", e =>
                 Iterate(n, m, k, a, f, e))))
@@ -501,7 +501,7 @@ object fromLift {
       lt.FunType(lt.ArrayType(mn, la: lt.ScalarType), lt.ArrayType(m, _))))
       =>
         val a = fromLift(la)
-        NatDependentLambda(n,
+        DepLambda[NatKind](n)(
           fun[ExpType](exp"[$mn.$a]", e =>
             AsVector(n, m, a, e)))
 

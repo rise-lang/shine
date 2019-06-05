@@ -28,26 +28,6 @@ package object DPIA {
     def apply(name: String, range: Range): NatIdentifier = new NamedVar(name, range) with Kind.Identifier
   }
 
-  type NatDependentLambda[T <: PhraseType] = DepLambda[NatKind, T]
-  object NatDependentLambda {
-    def apply[T <: PhraseType](x: NatIdentifier, body: Phrase[T]): NatDependentLambda[T] = DepLambda[NatKind, T](x, body)
-  }
-
-  type NatDependentApply[T <: PhraseType] = DepApply[NatKind, T]
-  object NatDependentApply {
-    def apply[T <: PhraseType](fun: Phrase[`(nat)->`[T]], arg: Nat): NatDependentApply[T] = DepApply[NatKind, T](fun, arg)
-  }
-
-  type TypeDependentLambda[T <: PhraseType] = DepLambda[DataKind, T]
-  object TypeDependentLambda {
-    def apply[T <: PhraseType](x: DataTypeIdentifier, body: Phrase[T]): TypeDependentLambda[T] = DepLambda[DataKind, T](x, body)
-  }
-
-  type TypeDependentApply[T <: PhraseType] = DepApply[DataKind, T]
-  object TypeDependentApply {
-    def  apply[T <: PhraseType](fun: Phrase[`(dt)->`[T]], arg: DataType): TypeDependentApply[T] = DepApply[DataKind, T](fun, arg)
-  }
-
   case class NatNatTypeFunction private (x:NatIdentifier, body:Nat) {
     //NatNatTypeFunction have an interesting comparison behavior, as we do not define
     //equality for them as simple syntactic equality: we just want to make sure their bodies
@@ -189,10 +169,6 @@ package object DPIA {
   implicit class PassiveFunTypeConstructor[T1 <: PhraseType](t1: T1) {
     def `->p`[T2 <: PhraseType](t2: T2) = PassiveFunType(t1, t2)
   }
-
-//  implicit class DepFunTypeConstructor[K <: Kind](x: K#I) {
-//    def `()->`[T <: PhraseType](outT: T): K `()->` T = DepFunType[K, T](x, outT)
-//  }
 
   implicit final class NatDepFunTypeConstructor(private val x: NatIdentifier) {
     def `()->`[T <: PhraseType](t: T): `()->`[NatKind, T] = DepFunType[NatKind, T](x, t)

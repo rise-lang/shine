@@ -150,7 +150,7 @@ object OperationalSemantics {
     new Evaluator[`(nat)->`[T], NatIdentifier => Phrase[T]] {
       def apply(s: Store, p: Phrase[`(nat)->`[T]]): NatIdentifier => Phrase[T] = {
         p match {
-          case l: NatDependentLambda[T] =>
+          case l: DepLambda[NatKind, T] =>
             (arg: NatIdentifier) => l.body `[` arg `/` l.x `]`
           case Identifier(_, _) | Apply(_, _) | DepApply(_, _) |
                IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
