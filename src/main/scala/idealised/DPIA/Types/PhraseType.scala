@@ -39,7 +39,7 @@ final case class PassiveFunType[T1 <: PhraseType, T2 <: PhraseType](inT: T1, out
 
 final case class DepFunType[K <: Kind, T <: PhraseType](x: K#I, t: T)
   extends PhraseType {
-  override def toString = s"(${x.name} : ${x.getClass.getTypeName}) -> $t"
+  override def toString = s"(${x.name}: ${Kind.formatKindName(x.getClass.getName)}) -> $t"
 }
 
 object PhraseType {

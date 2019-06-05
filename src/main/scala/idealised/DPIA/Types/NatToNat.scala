@@ -39,10 +39,13 @@ object NatToNatLambda {
   }
 }
 
-final case class NatToNatIdentifier(name: String) extends NatToNat with Kind.Identifier
+final case class NatToNatIdentifier(name: String) extends NatToNat with Kind.Identifier {
+  override lazy val toString: String = name
+}
 
 final class NatToNatApply(val f: NatToNat, val n: Nat) extends ArithExprFunction(s"$f($n)") {
   override def visitAndRebuild(f: Nat => Nat): Nat = this
+  override lazy val toString: String = s"$f($n)"
 }
 
 object NatToNatApply {

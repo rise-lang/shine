@@ -14,7 +14,7 @@ final case class FunType[T1 <: Type, T2 <: Type](inT: T1, outT: T2) extends Type
 
 final case class DepFunType[K <: Kind, T <: Type](x: K#I, t: T) extends Type {
   override def toString: String =
-    s"(${x.name}: ${x.getClass.getName.dropWhile(_!='$').drop(1).takeWhile(_!='$')} -> $t)"
+    s"(${x.name}: ${Kind.formatKindName(x.getClass.getName)} -> $t)"
 }
 
 // ============================================================================================= //
@@ -154,10 +154,13 @@ object NatToNatLambda {
   }
 }
 
-final case class NatToNatIdentifier(name: String) extends NatToNat with Kind.Identifier
+final case class NatToNatIdentifier(name: String) extends NatToNat with Kind.Identifier {
+  override lazy val toString: String = name
+}
 
 final class NatToNatApply(val f: NatToNat, val n: Nat) extends ArithExprFunction(s"$f($n)") {
   override def visitAndRebuild(f: Nat => Nat): Nat = this
+  override lazy val toString: String = s"$f($n)"
 }
 object NatToNatApply {
   def apply(f: NatToNat, n: Nat): Nat = f match {
