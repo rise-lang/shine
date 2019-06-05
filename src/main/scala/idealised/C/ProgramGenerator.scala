@@ -6,7 +6,7 @@ import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives.AsIndex
 import idealised.DPIA.NatDataTypeFunction
 import idealised.DPIA.Phrases._
-import idealised.DPIA.Types.{AccType, CommandType, DataType, DataTypeIdentifier, DepArrayType, ExpType, NatKind, PairType, PhraseType, TypeCheck, int}
+import idealised.DPIA.Types.{AccType, CommType, DataType, DataTypeIdentifier, DepArrayType, ExpType, NatKind, PairType, PhraseType, TypeCheck, int}
 import idealised._
 import lift.arithmetic.{Cst, Var}
 
@@ -79,7 +79,7 @@ object ProgramGenerator {
     p
   }
 
-  private def rewriteToImperative(p: Phrase[ExpType], a: Phrase[AccType]): Phrase[CommandType] = {
+  private def rewriteToImperative(p: Phrase[ExpType], a: Phrase[AccType]): Phrase[CommType] = {
     val output = (a.t.dataType, p.t.dataType) match {
       case (lhsT, rhsT) if lhsT == rhsT => a
       case (DPIA.Types.ArrayType(Cst(1), lhsT), rhsT) if lhsT == rhsT =>

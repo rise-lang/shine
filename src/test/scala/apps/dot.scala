@@ -36,7 +36,7 @@ class dot extends idealised.util.Tests {
 
     val N = phrase.t.asInstanceOf[`(nat)->`[ExpType -> ExpType]].x
     val dt = float
-    assertResult(N -> (exp"[$N.$dt]" -> (exp"[$N.$dt]" -> exp"[$dt]"))) {
+    assertResult(N `()->` (exp"[$N.$dt]" -> (exp"[$N.$dt]" -> exp"[$dt]"))) {
       phrase.t
     }
   }

@@ -19,9 +19,9 @@ final case class DepMapGlobal(dim:Int)(n: Nat,
   override def makeMapI(n: Nat,
                         ft1:NatDataTypeFunction,
                         ft2:NatDataTypeFunction,
-                        f: Phrase[`(nat)->`[->[ExpType, ->[AccType, CommandType]]]],
+                        f: Phrase[`(nat)->`[->[ExpType, ->[AccType, CommType]]]],
                         array: Phrase[ExpType],
                         out: Phrase[AccType])
-                       (implicit context: TranslationContext): Phrase[CommandType] =
+                       (implicit context: TranslationContext): Phrase[CommType] =
     DepMapGlobalI(dim)(n, ft1, ft2, f, array, out)
 }

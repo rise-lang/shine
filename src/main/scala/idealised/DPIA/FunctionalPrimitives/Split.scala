@@ -53,7 +53,7 @@ final case class Split(n: Nat,
     </split>
 
   override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+                                  (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     acc(array)(SplitAcc(n, m, dt, A))
@@ -61,11 +61,11 @@ final case class Split(n: Nat,
 
   // TODO?
   override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommandType] =
+                                     (implicit context: TranslationContext): Phrase[CommType] =
     ???
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommandType])
-                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[ExpType -> CommType])
+                                      (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(array)(λ(exp"[${m * n}.$dt]")(x => C(Split(n, m, dt, x)) ))

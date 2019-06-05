@@ -64,13 +64,13 @@ object VisitAndRebuild {
   }
 
   private def visitAndRebuild(phraseType: PhraseType, v: Visitor): PhraseType = phraseType match {
-    case ExpType(dt)                    => ExpType(v(dt))
-    case AccType(dt)                    => AccType(v(dt))
-    case CommandType()                  => CommandType()
-    case PairType(t1, t2)               => PairType(visitAndRebuild(t1, v), visitAndRebuild(t2, v))
-    case FunctionType(inT, outT)        => FunctionType(visitAndRebuild(inT, v), visitAndRebuild(outT, v))
-    case PassiveFunctionType(inT, outT) => PassiveFunctionType(visitAndRebuild(inT, v), visitAndRebuild(outT, v))
-    case DependentFunctionType(x, t)    => DependentFunctionType(x, visitAndRebuild(t, v))
+    case ExpType(dt)                => ExpType(v(dt))
+    case AccType(dt)                => AccType(v(dt))
+    case CommType()                 => CommType()
+    case PairType(t1, t2)           => PairType(visitAndRebuild(t1, v), visitAndRebuild(t2, v))
+    case FunType(inT, outT)         => FunType(visitAndRebuild(inT, v), visitAndRebuild(outT, v))
+    case PassiveFunType(inT, outT)  => PassiveFunType(visitAndRebuild(inT, v), visitAndRebuild(outT, v))
+    case DepFunType(x, t)           => DepFunType(x, visitAndRebuild(t, v))
   }
 
 }

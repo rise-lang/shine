@@ -47,21 +47,21 @@ final case class Reorder(n: Nat,
   }
 
   override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+                                  (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     acc(input)(ReorderAcc(n, dt, idxFinv, A))
   }
 
   override def mapAcceptorTranslation(g: Phrase[ExpType -> ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommandType] = {
+                                     (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     mapAcc(g, input)(ReorderAcc(n, dt, idxFinv, A))
   }
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommandType])
-                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[ExpType -> CommType])
+                                      (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(input)(λ(exp"[$n.$dt]")(x => C(Reorder(n, dt, idxF, idxFinv, x)) ))

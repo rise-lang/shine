@@ -9,7 +9,7 @@ import scala.language.reflectiveCalls
 
 object TranslationToImperative {
   def apply(p: Phrase[ExpType])
-           (implicit context: TranslationContext): Phrase[CommandType] = {
+           (implicit context: TranslationContext): Phrase[CommType] = {
     val outT = p.t
     val out = identifier("output", AccType(outT.dataType))
     acc(p)(out)
@@ -17,7 +17,7 @@ object TranslationToImperative {
 
   def acc(E: Phrase[ExpType])
          (A: Phrase[AccType])
-         (implicit context: TranslationContext): Phrase[CommandType] = {
+         (implicit context: TranslationContext): Phrase[CommType] = {
     E match {
       case x: Identifier[ExpType] => A :=|x.t.dataType| x
 
@@ -60,7 +60,7 @@ object TranslationToImperative {
 
   def mapAcc(f: Phrase[ExpType -> ExpType], E: Phrase[ExpType])
             (A: Phrase[AccType])
-            (implicit context: TranslationContext): Phrase[CommandType] = {
+            (implicit context: TranslationContext): Phrase[CommType] = {
     E match {
       case ep: ExpPrimitive => ep.mapAcceptorTranslation(f, A)
 
@@ -83,8 +83,8 @@ object TranslationToImperative {
   }
 
   def con(E: Phrase[ExpType])
-         (C: Phrase[ExpType -> CommandType])
-         (implicit context: TranslationContext): Phrase[CommandType] = {
+         (C: Phrase[ExpType -> CommType])
+         (implicit context: TranslationContext): Phrase[CommType] = {
     E match {
       case x: Identifier[ExpType] => C(x)
 

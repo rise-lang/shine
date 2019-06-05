@@ -12,7 +12,7 @@ object parFor {
   def apply(n: Nat,
             dt: DataType,
             out: Phrase[AccType],
-            f: Phrase[ExpType] => Phrase[AccType] => Phrase[CommandType]): ParFor =
+            f: Phrase[ExpType] => Phrase[AccType] => Phrase[CommType]): ParFor =
     ParFor(n, dt, out, λ(exp"[idx($n)]")( i => λ(acc"[$dt]")( o => f(i)(o) )))
 }
 
@@ -20,12 +20,12 @@ object `parForVec` {
   def apply(n: Nat,
             st: ScalarType,
             out: Phrase[AccType],
-            f: Phrase[ExpType] => Phrase[AccType] => Phrase[CommandType]): ForVec =
+            f: Phrase[ExpType] => Phrase[AccType] => Phrase[CommType]): ForVec =
     ForVec(n, st, out, λ(exp"[idx($n)]")(i => λ(acc"[$st]")(o => f(i)(o) )))
 }
 
 object parForNat {
-  def apply(n:Nat, ft:NatDataTypeFunction, out:Phrase[AccType], f:NatIdentifier => Phrase[AccType] => Phrase[CommandType]):ParForNat = {
+  def apply(n:Nat, ft:NatDataTypeFunction, out:Phrase[AccType], f:NatIdentifier => Phrase[AccType] => Phrase[CommType]):ParForNat = {
     ParForNat(n, ft, out, _Λ_(idx => λ(acc"[${ft(idx)}]")(o => f(idx)(o)), RangeAdd(0, n, 1)))
   }
 }

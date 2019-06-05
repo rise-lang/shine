@@ -11,13 +11,13 @@ import scala.language.reflectiveCalls
 final case class MapRead(n: Nat,
                          dt1: DataType,
                          dt2: DataType,
-                         f: Phrase[ExpType -> ((ExpType -> CommandType) -> CommandType)],
+                         f: Phrase[ExpType -> ((ExpType -> CommType) -> CommType)],
                          input: Phrase[ExpType])
   extends ExpPrimitive
 {
   override val t: ExpType =
     (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
-      (f :: exp"[$dt1]" -> ((t"exp[$dt2] -> comm") -> comm)) ->
+      (f :: exp"[$dt1]" -> ((exp"[$dt2]" -> comm) -> comm)) ->
       (input :: exp"[$n.$dt1]") -> exp"[$n.$dt2]"
 
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] = {
@@ -27,16 +27,16 @@ final case class MapRead(n: Nat,
   override def eval(s: Store): Data = ???
 
   override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommandType] =
+                                  (implicit context: TranslationContext): Phrase[CommType] =
     throw new Exception("This should not happen")
 
 
   override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommandType] =
+                                     (implicit context: TranslationContext): Phrase[CommType] =
     throw new Exception("This should not happen")
 
-  override def continuationTranslation(C: Phrase[->[ExpType, CommandType]])
-                                      (implicit context: TranslationContext): Phrase[CommandType] =
+  override def continuationTranslation(C: Phrase[->[ExpType, CommType]])
+                                      (implicit context: TranslationContext): Phrase[CommType] =
     throw new Exception("This should not happen")
 
   override def prettyPrint: String = s"(mapRead $f $input)"

@@ -12,7 +12,7 @@ import scala.xml.Elem
 // note: would not be necessary if generate was defined as indices + map
 final case class GenerateCont(n: Nat,
                               dt: DataType,
-                              f: Phrase[ExpType -> ((ExpType -> CommandType) -> CommandType)])
+                              f: Phrase[ExpType -> ((ExpType -> CommType) -> CommType)])
   extends ExpPrimitive
 {
   override val t: ExpType =
@@ -27,16 +27,16 @@ final case class GenerateCont(n: Nat,
   override def eval(s: Store): Data = ???
 
   override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommandType] =
+                                  (implicit context: TranslationContext): Phrase[CommType] =
     throw new Exception("This should not happen")
 
 
   override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommandType] =
+                                     (implicit context: TranslationContext): Phrase[CommType] =
     throw new Exception("This should not happen")
 
-  override def continuationTranslation(C: Phrase[->[ExpType, CommandType]])
-                                      (implicit context: TranslationContext): Phrase[CommandType] =
+  override def continuationTranslation(C: Phrase[->[ExpType, CommType]])
+                                      (implicit context: TranslationContext): Phrase[CommType] =
     throw new Exception("This should not happen")
 
   override def prettyPrint: String = s"(generateCont $n $f)"

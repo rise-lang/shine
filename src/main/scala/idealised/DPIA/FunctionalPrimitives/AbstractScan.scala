@@ -26,11 +26,11 @@ abstract  class AbstractScan(n: Nat,
   def makeScanI(n: Nat,
                 dt1: DataType,
                 dt2: DataType,
-                f: Phrase[ExpType -> (ExpType -> (AccType -> CommandType))],
+                f: Phrase[ExpType -> (ExpType -> (AccType -> CommType))],
                 init: Phrase[ExpType],
                 array: Phrase[ExpType],
                 out: Phrase[AccType])
-               (implicit context: TranslationContext): Phrase[CommandType]
+               (implicit context: TranslationContext): Phrase[CommType]
 
   override val t: ExpType =
     (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
@@ -50,12 +50,12 @@ abstract  class AbstractScan(n: Nat,
       s"(${PrettyPhrasePrinter(init)}) (${PrettyPhrasePrinter(array)})"
 
   override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+                                  (implicit context: TranslationContext): Phrase[CommType] = {
     mapAcceptorTranslation(fun(exp"[$dt1]")(x => x), A)
   }
 
   override def mapAcceptorTranslation(g: Phrase[ExpType -> ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommandType] = {
+                                     (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(array)(λ(exp"[$n.$dt1]")(x =>
@@ -69,8 +69,8 @@ abstract  class AbstractScan(n: Nat,
     )
   }
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommandType])
-                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[ExpType -> CommType])
+                                      (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     `new`(dt"[$n.$dt2]", λ(exp"[$n.$dt2]" x acc"[$n.$dt2]")(tmp =>

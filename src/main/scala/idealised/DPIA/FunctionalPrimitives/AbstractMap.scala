@@ -42,7 +42,7 @@ abstract class AbstractMap(n: Nat,
   }
 
   override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+                                  (implicit context: TranslationContext): Phrase[CommType] = {
     mapAcceptorTranslation(fun(exp"[$dt2]")(x => x), A)
   }
 

@@ -21,17 +21,17 @@ import scala.language.implicitConversions
 object CodeGenerator {
 
   final case class Environment(identEnv: immutable.Map[Identifier[_ <: BasePhraseTypes], C.AST.DeclRef],
-                               commEnv: immutable.Map[Identifier[CommandType], C.AST.Stmt],
-                               contEnv: immutable.Map[Identifier[ExpType -> CommandType], Phrase[ExpType] => Environment => C.AST.Stmt]) {
+                               commEnv: immutable.Map[Identifier[CommType], C.AST.Stmt],
+                               contEnv: immutable.Map[Identifier[ExpType -> CommType], Phrase[ExpType] => Environment => C.AST.Stmt]) {
     def updatedIdentEnv(kv: (Identifier[_ <: BasePhraseTypes], C.AST.DeclRef)): Environment = {
       this.copy(identEnv = identEnv + kv)
     }
 
-    def updatedCommEnv(kv: (Identifier[CommandType], C.AST.Stmt)): Environment = {
+    def updatedCommEnv(kv: (Identifier[CommType], C.AST.Stmt)): Environment = {
       this.copy(commEnv = commEnv + kv)
     }
 
-    def updatedContEnv(kv: (Identifier[ExpType -> CommandType], Phrase[ExpType] => Environment => C.AST.Stmt)): Environment = {
+    def updatedContEnv(kv: (Identifier[ExpType -> CommType], Phrase[ExpType] => Environment => C.AST.Stmt)): Environment = {
       this.copy(contEnv = contEnv + kv)
     }
   }
@@ -80,22 +80,22 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
   def updatedRanges(key: String, value: lift.arithmetic.Range): CodeGenerator =
     new CodeGenerator(decls, ranges.updated(key, value))
 
-  override def generate(phrase: Phrase[CommandType], env: CodeGenerator.Environment): (scala.Seq[Decl], Stmt) = {
+  override def generate(phrase: Phrase[CommType], env: CodeGenerator.Environment): (scala.Seq[Decl], Stmt) = {
     val stmt = cmd(phrase, env)
     (decls, stmt)
   }
 
-  override def cmd(phrase: Phrase[CommandType], env: Environment): Stmt = {
+  override def cmd(phrase: Phrase[CommType], env: Environment): Stmt = {
     phrase match {
       case Phrases.IfThenElse(cond, thenP, elseP) =>
         exp(cond, env, Nil, cond =>
           C.AST.IfThenElse(cond, cmd(thenP, env), Some(cmd(elseP, env))))
 
-      case i: Identifier[CommandType] => env.commEnv(i)
+      case i: Identifier[CommType] => env.commEnv(i)
 
       case Apply(i : Identifier[_], e) => // TODO: think about this
         env.contEnv(
-          i.asInstanceOf[Identifier[ExpType -> CommandType]]
+          i.asInstanceOf[Identifier[ExpType -> CommType]]
         )(
           e.asInstanceOf[Phrase[ExpType]]
         )(env)
@@ -349,8 +349,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case MapRead(n, dt1, dt2, f, e) => path match {
         case (i : CIntExpr) :: ps =>
           val continue_cmd =
-            Identifier[ExpType -> CommandType](s"continue_$freshName",
-              FunctionType(ExpType(dt2), comm))
+            Identifier[ExpType -> CommType](s"continue_$freshName", ExpType(dt2) -> comm)
 
           cmd(f(
             Idx(n, dt1, AsIndex(n, Natural(i)), e)
@@ -363,8 +362,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case GenerateCont(n, dt, f) => path match {
         case (i : CIntExpr) :: ps =>
           val continue_cmd =
-            Identifier[ExpType -> CommandType](s"continue_$freshName",
-              FunctionType(ExpType(dt), comm))
+            Identifier[ExpType -> CommType](s"continue_$freshName", ExpType(dt) -> comm)
 
           cmd(f(AsIndex(n, Natural(i)))(continue_cmd),
             env updatedContEnv (continue_cmd -> (e => env => exp(e, env, ps, cont))))
@@ -416,9 +414,9 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     * @return
     */
   protected def generateNatDependentBody(`for`: NatIdentifier,
-                                       phrase: Phrase[CommandType],
-                                       at: ArithExpr,
-                                       env: Environment): Block = {
+                                         phrase: Phrase[CommType],
+                                         at: ArithExpr,
+                                         env: Environment): Block = {
     PhraseType.substitute(at, `for`, in = phrase) |> (p => {
       val newIdentEnv = env.identEnv.map {
         case (Identifier(name, AccType(dt)), declRef) =>
@@ -434,7 +432,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
   protected object CCodeGen {
     def codeGenNew(dt: DataType,
                    v: Identifier[VarType],
-                   p: Phrase[CommandType],
+                   p: Phrase[CommType],
                    env: Environment): Stmt = {
       val ve = Identifier(s"${v.name}_e", v.t.t1)
       val va = Identifier(s"${v.name}_a", v.t.t2)
@@ -450,8 +448,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     def codeGenNewDoubleBuffer(dt: ArrayType,
                                in: Phrase[ExpType],
                                out: Phrase[AccType],
-                               ps: Identifier[VarType x CommandType x CommandType],
-                               p: Phrase[CommandType],
+                               ps: Identifier[VarType x CommType x CommType],
+                               p: Phrase[CommType],
                                env: Environment): Stmt = {
       import C.AST._
       import BinaryOperator._
@@ -498,8 +496,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     def codeGenNewRegRot(n: Nat,
                          dt: DataType,
                          registers: Identifier[VarType],
-                         rotate: Identifier[CommandType],
-                         body: Phrase[CommandType],
+                         rotate: Identifier[CommType],
+                         body: Phrase[CommType],
                          env: Environment): Stmt = {
       import C.AST._
 
@@ -530,7 +528,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
     def codeGenFor(n: Nat,
                    i: Identifier[ExpType],
-                   p: Phrase[CommandType],
+                   p: Phrase[CommType],
                    unroll:Boolean,
                    env: Environment): Stmt = {
       val cI = C.AST.DeclRef(freshName("i_"))
@@ -576,7 +574,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
     def codeGenForNat(n: Nat,
                       i: NatIdentifier,
-                      p: Phrase[CommandType],
+                      p: Phrase[CommType],
                       unroll:Boolean,
                       env: Environment): Stmt = {
       val cI = C.AST.DeclRef(freshName("i_"))

@@ -50,21 +50,21 @@ abstract class To(dt1: DataType,
     })
 
   override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+                                  (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(this)(λ( exp"[$dt2]" )(x => acc(x)(A) ))
   }
 
   override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommandType] = {
+                                     (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(this)(λ( exp"[$dt2]" )(x => mapAcc(f, x)(A) ))
   }
 
-  override def continuationTranslation(C: Phrase[->[ExpType, CommandType]])
-                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[->[ExpType, CommType]])
+                                      (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     newWithAddrSpace(dt2, addressSpace, tmp => acc(f(input))(tmp.wr) `;` C(tmp.rd) )

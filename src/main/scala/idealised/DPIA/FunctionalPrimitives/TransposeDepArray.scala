@@ -22,14 +22,14 @@ case class TransposeDepArray(n:Nat, m:Nat, i:NatIdentifier, dt:DataType, array:P
     TransposeDepArray(f(n), f(m), f(i).asInstanceOf[NatIdentifier], f(dt), VisitAndRebuild(array, f))
   }
 
-  override def acceptorTranslation(A: Phrase[AccType])(implicit context: TranslationContext): Phrase[CommandType] = {
+  override def acceptorTranslation(A: Phrase[AccType])(implicit context: TranslationContext): Phrase[CommType] = {
     ???
   }
 
-  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])(implicit context: TranslationContext): Phrase[CommandType] = ???
+  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])(implicit context: TranslationContext): Phrase[CommType] = ???
 
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommandType])(implicit context: TranslationContext): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[ExpType -> CommType])(implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
     con(array)(λ(exp"[$n.${DepArrayType(m, k => dt(k))}]")(x => C(TransposeDepArray(n, m, i, dt, x))))
   }

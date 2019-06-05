@@ -12,10 +12,10 @@ object DepMapSeqI {
   def apply(n: Nat,
             ft1:NatDataTypeFunction,
             ft2:NatDataTypeFunction,
-            f: Phrase[`(nat)->`[ExpType -> (AccType -> CommandType)]],
+            f: Phrase[`(nat)->`[ExpType -> (AccType -> CommType)]],
             in: Phrase[ExpType],
             out: Phrase[AccType])
-           (implicit context: TranslationContext): Phrase[CommandType] =
+           (implicit context: TranslationContext): Phrase[CommType] =
   {
     ForNat(n, _Λ_( i => f(i)(in `@d` i)(out `@d` i), RangeAdd(0, n, 1)), unroll = false)
   }
@@ -25,10 +25,10 @@ object DepMapSeqIUnroll {
   def apply(n: Nat,
             ft1:NatDataTypeFunction,
             ft2:NatDataTypeFunction,
-            f: Phrase[`(nat)->`[ExpType -> (AccType -> CommandType)]],
+            f: Phrase[`(nat)->`[ExpType -> (AccType -> CommType)]],
             in: Phrase[ExpType],
             out: Phrase[AccType])
-           (implicit context: TranslationContext): Phrase[CommandType] =
+           (implicit context: TranslationContext): Phrase[CommType] =
   {
     ForNat(n, _Λ_( i => f(i)(in `@d` i)(out `@d` i), RangeAdd(0, n, 1)), unroll = true)
   }

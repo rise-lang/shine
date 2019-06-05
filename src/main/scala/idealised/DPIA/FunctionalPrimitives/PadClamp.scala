@@ -4,7 +4,7 @@ import idealised.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import idealised.DPIA.DSL.{λ, _}
 import idealised.DPIA.Phrases.{ExpPrimitive, Phrase, VisitAndRebuild}
 import idealised.DPIA.Semantics.OperationalSemantics.{Data, Store}
-import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType, _}
+import idealised.DPIA.Types.{AccType, CommType, DataType, ExpType, _}
 import idealised.DPIA.{->, Nat, Phrases, _}
 
 import scala.language.reflectiveCalls
@@ -29,15 +29,15 @@ final case class PadClamp(n: Nat,
   }
 
   override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommandType] =
+                                  (implicit context: TranslationContext): Phrase[CommType] =
     ???
 
   override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommandType] =
+                                     (implicit context: TranslationContext): Phrase[CommType] =
     ???
 
-  override def continuationTranslation(C: Phrase[->[ExpType, CommandType]])
-                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[->[ExpType, CommType]])
+                                      (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
     con(array)(λ(exp"[$n.$dt]")(x => C(PadClamp(n, l, r, dt, x))))
   }

@@ -31,13 +31,13 @@ final case class Cast(dt1: BasicType, dt2: BasicType, e: Phrase[ExpType])
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Data = ???
 
   def acceptorTranslation(A: Phrase[AccType])
-                         (implicit context: TranslationContext): Phrase[CommandType] = ???
+                         (implicit context: TranslationContext): Phrase[CommType] = ???
 
   override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommandType] = ???
+                                     (implicit context: TranslationContext): Phrase[CommType] = ???
 
-  def continuationTranslation(C: Phrase[ExpType -> CommandType])
-                             (implicit context: TranslationContext): Phrase[CommandType] = {
+  def continuationTranslation(C: Phrase[ExpType -> CommType])
+                             (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(e)(fun(e.t)(x =>

@@ -36,19 +36,19 @@ final case class Generate(n: Nat,
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Data = ???
 
   def acceptorTranslation(A: Phrase[AccType])
-                         (implicit context: TranslationContext): Phrase[CommandType] = ???
+                         (implicit context: TranslationContext): Phrase[CommType] = ???
 
   override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommandType] = ???
+                                     (implicit context: TranslationContext): Phrase[CommType] = ???
 
-  def continuationTranslation(C: Phrase[ExpType -> CommandType])
-                             (implicit context: TranslationContext): Phrase[CommandType] = {
+  def continuationTranslation(C: Phrase[ExpType -> CommType])
+                             (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     // note: would not be necessary if generate was defined as indices + map
     C(GenerateCont(n, dt,
       fun(exp"[idx($n)]")(i =>
-        fun(exp"[$dt]" -> (comm: CommandType))(cont =>
+        fun(exp"[$dt]" -> (comm: CommType))(cont =>
           con(f(i))(fun(exp"[$dt]")(g => Apply(cont, g)))
         ))
     ))

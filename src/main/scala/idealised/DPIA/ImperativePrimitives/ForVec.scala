@@ -13,10 +13,10 @@ import scala.xml.Elem
 final case class ForVec(n: Nat,
                         dt: ScalarType,
                         out: Phrase[AccType],
-                        body: Phrase[ExpType -> (AccType -> CommandType)])
+                        body: Phrase[ExpType -> (AccType -> CommType)])
   extends CommandPrimitive
 {
-  override val t: CommandType =
+  override val t: CommType =
     (n: Nat) -> (dt: ScalarType) ->
       (out :: acc"[${VectorType(n, dt)}]") ->
         (body :: t"exp[idx($n)] -> acc[$dt] -> comm") ->
@@ -32,7 +32,7 @@ final case class ForVec(n: Nat,
     })
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommType] = {
     ForVec(fun(n), fun(dt), VisitAndRebuild(out, fun), VisitAndRebuild(body, fun))
   }
 
@@ -45,7 +45,7 @@ final case class ForVec(n: Nat,
       <output type={ToString(AccType(VectorType(n, dt)))}>
         {Phrases.xmlPrinter(out)}
       </output>
-      <body type={ToString(ExpType(IndexType(n)) -> (AccType(dt) -> CommandType()))}>
+      <body type={ToString(ExpType(IndexType(n)) -> (AccType(dt) -> CommType()))}>
         {Phrases.xmlPrinter(body)}
       </body>
     </forVec>

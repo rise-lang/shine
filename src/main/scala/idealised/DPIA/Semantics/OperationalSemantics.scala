@@ -223,9 +223,9 @@ object OperationalSemantics {
       }
     }
 
-  implicit def CommandEvaluator: Evaluator[CommandType, Store] =
-    new Evaluator[CommandType, Store] {
-      def apply(s: Store, p: Phrase[CommandType]): Store = {
+  implicit def CommandEvaluator: Evaluator[CommType, Store] =
+    new Evaluator[CommType, Store] {
+      def apply(s: Store, p: Phrase[CommType]): Store = {
         p match {
           case Identifier(_, _) => throw new Exception("This should never happen")
 

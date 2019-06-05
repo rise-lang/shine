@@ -17,20 +17,20 @@ final case class Map(n: Nat,
   override def makeMap: (Nat, DataType, DataType, Phrase[ExpType -> ExpType], Phrase[ExpType]) => AbstractMap = Map
 
   override def mapAcceptorTranslation(g: Phrase[ExpType -> ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommandType] = {
+                                     (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     mapAcc(g o f, array)(A)
   }
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommandType])
-                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[ExpType -> CommType])
+                                      (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(array)(λ(exp"[$n.$dt1]")(x =>
       C(MapRead(n, dt1, dt2,
         fun(exp"[$dt1]")(a =>
-          fun(exp"[$dt2]" -> (comm: CommandType))(cont =>
+          fun(exp"[$dt2]" -> (comm: CommType))(cont =>
             con(f(a))(fun(exp"[$dt2]")(b => Apply(cont, b))))),
         x))))
   }

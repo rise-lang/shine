@@ -36,7 +36,7 @@ final case class AsIndex(n: Nat, e: Phrase[ExpType])
   }
 
   def acceptorTranslation(A: Phrase[AccType])
-                         (implicit context: TranslationContext): Phrase[CommandType] = {
+                         (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(e)(fun(exp"[$NatType]")(x =>
@@ -44,10 +44,10 @@ final case class AsIndex(n: Nat, e: Phrase[ExpType])
   }
 
   override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommandType] = ???
+                                     (implicit context: TranslationContext): Phrase[CommType] = ???
 
-  def continuationTranslation(C: Phrase[ExpType -> CommandType])
-                             (implicit context: TranslationContext): Phrase[CommandType] = {
+  def continuationTranslation(C: Phrase[ExpType -> CommType])
+                             (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(e)(λ(e.t)(x =>

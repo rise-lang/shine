@@ -14,7 +14,7 @@ case class Assign(dt: DataType,
                   rhs: Phrase[ExpType])
   extends CommandPrimitive {
 
-  override val t: CommandType =
+  override val t: CommType =
     (dt: DataType) -> (lhs :: acc"[$dt]") -> (rhs :: exp"[$dt]") -> comm
 
   override def eval(s: Store): Store = {
@@ -58,7 +58,7 @@ case class Assign(dt: DataType,
     })
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommType] = {
     Assign(fun(dt), VisitAndRebuild(lhs, fun), VisitAndRebuild(rhs, fun))
   }
 

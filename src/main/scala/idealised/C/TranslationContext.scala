@@ -11,7 +11,7 @@ import idealised.DPIA.{NatDependentLambda, freshName}
 class TranslationContext() extends idealised.DPIA.Compilation.TranslationContext {
   override def assign(dt: DataType,
                       lhs: Phrase[AccType],
-                      rhs: Phrase[ExpType]): Phrase[CommandType] = {
+                      rhs: Phrase[ExpType]): Phrase[CommType] = {
     dt match {
       case _: ScalarType => Assign(dt, lhs, rhs)
 

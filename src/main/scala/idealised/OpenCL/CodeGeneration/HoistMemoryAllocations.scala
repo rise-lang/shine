@@ -14,7 +14,7 @@ object HoistMemoryAllocations {
   case class AllocationInfo(addressSpace: idealised.OpenCL.AddressSpace,
                             identifier: Identifier[VarType])
 
-  def apply(originalPhrase: Phrase[CommandType]): (Phrase[CommandType], List[AllocationInfo]) = {
+  def apply(originalPhrase: Phrase[CommType]): (Phrase[CommType], List[AllocationInfo]) = {
     val visitor = new VisitorScope(List[AllocationInfo]()).Visitor(List())
 
     val rewrittenPhrase = VisitAndRebuild(originalPhrase, visitor)
@@ -82,7 +82,7 @@ object HoistMemoryAllocations {
 
       private def replaceNew(addressSpace: idealised.OpenCL.AddressSpace,
                              variable: Identifier[VarType],
-                             body: Phrase[CommandType]): Phrase[CommandType] = {
+                             body: Phrase[CommType]): Phrase[CommType] = {
         // Replace `new` node by looking through the information from the `par for`s, ...
         val (finalVariable, finalBody) = parForInfos.foldLeft((variable, body)) {
           // ... to rewrite the new's body given the oldParam, oldBody,
@@ -113,11 +113,11 @@ object HoistMemoryAllocations {
       }
 
       private def performRewrite(oldVariable: Identifier[VarType],
-                                 oldBody: Phrase[CommandType],
+                                 oldBody: Phrase[CommType],
                                  i: Either[Identifier[ExpType],Nat],
-                                 n: Nat): (Identifier[VarType], Phrase[CommandType]) = {
+                                 n: Nat): (Identifier[VarType], Phrase[CommType]) = {
         // Create `newParam' with a new type ...
-        val newVariable = Identifier(oldVariable.name, VarType(dt=ArrayType(n, oldVariable.t.t1.dataType)))
+        val newVariable = Identifier(oldVariable.name, varT"[$n.${oldVariable.t.t1.dataType}]")
         // ... and substitute all occurrences of the oldParam with
         // the newParam indexed by the `par for` index, ...
         val newBody = i match {

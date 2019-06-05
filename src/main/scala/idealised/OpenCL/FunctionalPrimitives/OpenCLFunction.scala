@@ -41,12 +41,12 @@ final case class OpenCLFunction(name: String,
     </OpenCLFunction>
 
   override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+                                  (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     def recurse(ts: Seq[(Phrase[ExpType], DataType)],
                 exps: Seq[Phrase[ExpType]],
-                inTs: Seq[DataType]): Phrase[CommandType] = {
+                inTs: Seq[DataType]): Phrase[CommType] = {
       ts match {
         // with only one argument left to process return the assignment of the OpenCLFunction call
         case Seq( (arg, inT) ) =>
@@ -62,16 +62,16 @@ final case class OpenCLFunction(name: String,
   }
 
   override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommandType] =
+                                     (implicit context: TranslationContext): Phrase[CommType] =
     ???
 
-  override def continuationTranslation(C: Phrase[->[ExpType, CommandType]])
-                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[->[ExpType, CommType]])
+                                      (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     def recurse(ts: Seq[(Phrase[ExpType], DataType)],
                 es: Seq[Phrase[ExpType]],
-                inTs: Seq[DataType]): Phrase[CommandType] = {
+                inTs: Seq[DataType]): Phrase[CommType] = {
       ts match {
         // with only one argument left to process continue with the OpenCLFunction call
         case Seq( (arg, inT) ) =>

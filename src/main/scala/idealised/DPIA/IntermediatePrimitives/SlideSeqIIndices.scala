@@ -16,10 +16,10 @@ object SlideSeqIIndices {
             step: Nat,
             dt1: DataType,
             dt2: DataType,
-            f: Phrase[ExpType -> (AccType -> CommandType)],
+            f: Phrase[ExpType -> (AccType -> CommType)],
             input: Phrase[ExpType],
             output: Phrase[AccType])
-           (implicit context: TranslationContext): Phrase[CommandType] =
+           (implicit context: TranslationContext): Phrase[CommType] =
   {
     assert(step.eval == 1) // FIXME?
     val inputSize = step * n + size - step

@@ -7,10 +7,10 @@ import idealised.DPIA.Semantics.OperationalSemantics.Store
 
 final case class NewRegRot(n: Nat,
                            dt: DataType,
-                           f: Phrase[VarType -> (CommandType -> CommandType)])
+                           f: Phrase[VarType -> (CommType -> CommType)])
   extends CommandPrimitive
 {
-  override val t: CommandType =
+  override val t: CommType =
     (n: Nat) -> (dt: DataType) -> (f :: t"var[$n.$dt] -> comm -> comm") -> comm
 
   override def eval(s: Store): Store = ???
@@ -22,7 +22,7 @@ final case class NewRegRot(n: Nat,
       <f>{Phrases.xmlPrinter(f)}</f>
     </newCircularBuffer>
 
-  override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[CommandType] = {
+  override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[CommType] = {
     NewRegRot(v(n), v(dt), VisitAndRebuild(f, v))
   }
 }

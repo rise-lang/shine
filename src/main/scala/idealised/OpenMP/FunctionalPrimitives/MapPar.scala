@@ -17,9 +17,9 @@ final case class MapPar(n: Nat,
 {
   override def makeMap = MapPar
   override def makeMapI(n: Nat, dt1: DataType, dt2: DataType,
-                        f: Phrase[->[ExpType, ->[AccType, CommandType]]],
+                        f: Phrase[->[ExpType, ->[AccType, CommType]]],
                         array: Phrase[ExpType],
                         out: Phrase[AccType])
-                       (implicit context: TranslationContext): Phrase[CommandType] =
+                       (implicit context: TranslationContext): Phrase[CommType] =
     MapParI(n, dt1, dt2, f, array, out)
 }

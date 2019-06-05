@@ -1,14 +1,14 @@
 package idealised.DPIA.Compilation
 
 import idealised.DPIA.Phrases.Phrase
-import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType}
+import idealised.DPIA.Types.{AccType, CommType, DataType, ExpType}
 
 trait CodeGenerator[Environment, Path, Stmt, Expr, Decl, Ident, Type] {
   def name: String
 
-  def generate(phrase: Phrase[CommandType], env: Environment): (Seq[Decl], Stmt)
+  def generate(phrase: Phrase[CommType], env: Environment): (Seq[Decl], Stmt)
 
-  def cmd(phrase: Phrase[CommandType], env: Environment): Stmt
+  def cmd(phrase: Phrase[CommType], env: Environment): Stmt
 
   def acc(phrase: Phrase[AccType],
           env: Environment,

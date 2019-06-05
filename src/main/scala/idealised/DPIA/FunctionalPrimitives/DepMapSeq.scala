@@ -19,7 +19,7 @@ final case class DepMapSeq(n: Nat,
   override def makeMapI(n: Nat,
                         ft1:NatDataTypeFunction,
                         ft2: NatDataTypeFunction,
-                        f: Phrase[`(nat)->`[->[ExpType, ->[AccType, CommandType]]]],
+                        f: Phrase[`(nat)->`[->[ExpType, ->[AccType, CommType]]]],
                         array: Phrase[ExpType],
                         out: Phrase[AccType])
                        (implicit context: TranslationContext) =
@@ -39,7 +39,7 @@ final case class DepMapSeqUnroll(n: Nat,
   override def makeMapI(n: Nat,
                         ft1:NatDataTypeFunction,
                         ft2: NatDataTypeFunction,
-                        f: Phrase[`(nat)->`[->[ExpType, ->[AccType, CommandType]]]],
+                        f: Phrase[`(nat)->`[->[ExpType, ->[AccType, CommType]]]],
                         array: Phrase[ExpType],
                         out: Phrase[AccType])
                        (implicit context: TranslationContext) =

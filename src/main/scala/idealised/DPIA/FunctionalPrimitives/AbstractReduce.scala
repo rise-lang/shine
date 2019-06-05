@@ -25,11 +25,11 @@ abstract class AbstractReduce(n: Nat,
   def makeReduceI(n: Nat,
                   dt1: DataType,
                   dt2: DataType,
-                  f: Phrase[ExpType -> (ExpType -> (AccType -> CommandType))],
+                  f: Phrase[ExpType -> (ExpType -> (AccType -> CommType))],
                   init: Phrase[ExpType],
                   array: Phrase[ExpType],
-                  out: Phrase[ExpType -> CommandType])
-                 (implicit context: TranslationContext): Phrase[CommandType]
+                  out: Phrase[ExpType -> CommType])
+                 (implicit context: TranslationContext): Phrase[CommType]
 
   override val t: ExpType =
     (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
@@ -61,18 +61,18 @@ abstract class AbstractReduce(n: Nat,
 
 
   override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+                                  (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(this)(λ(exp"[$dt2]")(r => acc(r)(A)))
   }
 
   override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommandType] =
+                                     (implicit context: TranslationContext): Phrase[CommType] =
     ???
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommandType])
-                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[ExpType -> CommType])
+                                      (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(array)(λ(exp"[$n.$dt1]")(X =>

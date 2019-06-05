@@ -11,10 +11,10 @@ import scala.xml.Elem
 abstract class AbstractParForNat(val n: Nat,
                                  val ft:NatDataTypeFunction,
                                  val out: Phrase[AccType],
-                                 val body: Phrase[`(nat)->`[AccType -> CommandType]])
+                                 val body: Phrase[`(nat)->`[AccType -> CommType]])
   extends CommandPrimitive {
 
-  override val t: CommandType = {
+  override val t: CommType = {
 
     (n: Nat) -> (ft: NatDataTypeFunction) ->
       (out :: acc"[${DepArrayType(n, ft)}]") ->
@@ -23,7 +23,7 @@ abstract class AbstractParForNat(val n: Nat,
   }
   override def eval(s: Store): Store = ???
 
-  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommType] = {
     makeParForNat(fun(n), fun(ft), VisitAndRebuild(out, fun), VisitAndRebuild(body, fun))
   }
 
@@ -36,7 +36,7 @@ abstract class AbstractParForNat(val n: Nat,
       <output type={ToString(AccType(ArrayType(n, ft.body)))}>
         {Phrases.xmlPrinter(out)}
       </output>
-      <body type={ToString(body.t.x -> (AccType({ft(body.t.x)}) -> CommandType()))}>
+      <body type={ToString(body.t.x -> (AccType({ft(body.t.x)}) -> CommType()))}>
         {Phrases.xmlPrinter(body)}
       </body>
     </parForNat>.copy(label = {
@@ -44,6 +44,6 @@ abstract class AbstractParForNat(val n: Nat,
       Character.toLowerCase(name.charAt(0)) + name.substring(1)
     })
 
-  def makeParForNat: (Nat, NatDataTypeFunction, Phrase[AccType], Phrase[`(nat)->`[AccType -> CommandType]]) => AbstractParForNat
+  def makeParForNat: (Nat, NatDataTypeFunction, Phrase[AccType], Phrase[`(nat)->`[AccType -> CommType]]) => AbstractParForNat
 
 }

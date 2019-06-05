@@ -16,17 +16,17 @@ object SlideSeqIValues {
             step: Nat,
             dt1: DataType,
             dt2: DataType,
-            f: Phrase[ExpType -> (AccType -> CommandType)],
+            f: Phrase[ExpType -> (AccType -> CommType)],
             input: Phrase[ExpType],
             output: Phrase[AccType])
-           (implicit context: TranslationContext): Phrase[CommandType] =
+           (implicit context: TranslationContext): Phrase[CommType] =
   {
     assert(step.eval == 1) // FIXME?
     val inputSize = step * n + size - step
 
     NewRegRot(size, dt1,
       fun(exp"[$size.$dt1]" x acc"[$size.$dt1]")(rs =>
-        fun(comm : CommandType)(rotate => {
+        fun(comm : CommType)(rotate => {
           // prologue initialisation
           MapSeqI(size - 1, dt1, dt1, fun(ExpType(dt1))(exp => fun(AccType(dt1))(acc => acc :=|dt1| exp)),
             Take(size - 1, inputSize - size + 1, dt1, input),

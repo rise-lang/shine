@@ -48,18 +48,4 @@ package object Types {
     @inline def -> [B](y: B): B = y
     def →[B](y: B): B = ->(y)
   }
-
-  type NatDependentFunctionType[T <: PhraseType] = DependentFunctionType[NatKind, T]
-
-  object NatDependentFunctionType {
-    def apply[T <: PhraseType](n: NatIdentifier, t: T): DependentFunctionType[NatKind, T] =
-      DependentFunctionType[NatKind, T](n, t)
-  }
-
-  type TypeDependentFunctionType[T <: PhraseType] = DependentFunctionType[DataKind, T]
-
-  object TypeDependentFunctionType {
-    def apply[T <: PhraseType](dt: DataTypeIdentifier, t: T): DependentFunctionType[DataKind, T] =
-      DependentFunctionType[DataKind, T](dt, t)
-  }
 }

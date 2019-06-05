@@ -15,16 +15,16 @@ object IterateIAcc {
             k: Nat,
             dt: DataType,
             out: Phrase[AccType],
-            f: Phrase[`(nat)->`[AccType -> (ExpType -> CommandType)]],
+            f: Phrase[`(nat)->`[AccType -> (ExpType -> CommType)]],
             in: Phrase[ExpType])
-           (implicit context: TranslationContext): Phrase[CommandType] =
+           (implicit context: TranslationContext): Phrase[CommType] =
   {
     val sz = n.pow(k) * m
 
     newDoubleBuffer(dt"[$sz.$dt]", dt"[$m.$dt]", ArrayType(sz, dt), in, out,
       (v: Phrase[VarType],
-       swap: Phrase[CommandType],
-       done: Phrase[CommandType]) => {
+       swap: Phrase[CommType],
+       done: Phrase[CommType]) => {
         `for`(k, ip => {
           val i = NamedVar(ip.name)
 

@@ -95,7 +95,7 @@ object KernelGenerator {
     identifier("output", AccType(outT.dataType))
   }
 
-  private def rewriteToImperative(p: Phrase[ExpType], a: Phrase[AccType]): Phrase[CommandType] = {
+  private def rewriteToImperative(p: Phrase[ExpType], a: Phrase[AccType]): Phrase[CommType] = {
     TranslationToImperative.acc(p)(a)(
       new idealised.OpenCL.TranslationContext) |> (p => {
       xmlPrinter.writeToFile("/tmp/p2.xml", p)
@@ -104,7 +104,7 @@ object KernelGenerator {
     })
   }
 
-  private def hoistMemoryAllocations(p: Phrase[CommandType]): (Phrase[CommandType], List[AllocationInfo]) = {
+  private def hoistMemoryAllocations(p: Phrase[CommType]): (Phrase[CommType], List[AllocationInfo]) = {
     HoistMemoryAllocations(p) |> { case (p, intermediateAllocations) =>
       xmlPrinter.writeToFile("/tmp/p4.xml", p)
       TypeCheck(p) // TODO: only in debug
@@ -161,10 +161,10 @@ object KernelGenerator {
       OpenCL.AST.ParamDecl(v.toString, C.AST.Type.int, OpenCL.PrivateMemory) ).sortBy(_.name)
   }
 
-  private def adaptKernelParameters(p: Phrase[CommandType],
+  private def adaptKernelParameters(p: Phrase[CommType],
                                     params: Seq[OpenCL.AST.ParamDecl],
                                     inputParams: Seq[Identifier[ExpType]]
-                                   ): (Phrase[CommandType], Seq[OpenCL.AST.ParamDecl]) = {
+                                   ): (Phrase[CommType], Seq[OpenCL.AST.ParamDecl]) = {
     AdaptKernelParameters(p, params, inputParams) |> { case (p, newParams) =>
       xmlPrinter.writeToFile("/tmp/p5.xml", p)
       TypeCheck(p) // TODO: only in debug

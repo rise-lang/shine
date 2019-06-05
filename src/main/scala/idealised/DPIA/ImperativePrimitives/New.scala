@@ -10,10 +10,10 @@ import idealised.DPIA._
 import scala.xml.Elem
 
 final case class New(dt: DataType,
-                     f: Phrase[VarType -> CommandType])
+                     f: Phrase[VarType -> CommType])
   extends CommandPrimitive {
 
-  override val t: CommandType =
+  override val t: CommType =
     (dt: DataType) -> /* (addressSpace: AddressSpace) -> */
       (f :: t"var[$dt] -> comm") -> comm
 
@@ -24,7 +24,7 @@ final case class New(dt: DataType,
     newStore - arg.name
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommType] = {
     New(fun(dt), VisitAndRebuild(f, fun))
   }
 

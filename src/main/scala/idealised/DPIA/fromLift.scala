@@ -23,7 +23,7 @@ object fromLift {
           }
           case l.Apply(f, e) =>
             Lifting.liftFunction( // TODO: should we try to reduce by lifting here?
-              fromLift(f).asInstanceOf[Phrase[FunctionType[PhraseType, PhraseType]]])
+              fromLift(f).asInstanceOf[Phrase[FunType[PhraseType, PhraseType]]])
               .value(fromLift(e).asInstanceOf[Phrase[PhraseType]])
 
           case l.DepLambda(x, e) => x match {
@@ -35,11 +35,11 @@ object fromLift {
           case l.DepApply(f, x) => x match {
             case n: Nat =>
               NatDependentApply( // TODO: should we try to reduce by lifting here?
-                fromLift(f).asInstanceOf[Phrase[NatDependentFunctionType[PhraseType]]],
+                fromLift(f).asInstanceOf[Phrase[DepFunType[NatKind, PhraseType]]],
                 n)
             case dt: lt.DataType =>
               TypeDependentApply( // TODO: should we try to reduce by lifting here?
-                fromLift(f).asInstanceOf[Phrase[TypeDependentFunctionType[PhraseType]]],
+                fromLift(f).asInstanceOf[Phrase[DepFunType[DataKind, PhraseType]]],
                 fromLift(dt)
               )
           }
@@ -88,13 +88,11 @@ object fromLift {
 
   def apply(ty: lt.Type): PhraseType = {
     ty match {
-      case dt: lt.DataType => ExpType(fromLift(dt))
-      case lt.FunType(i, o) => FunctionType(fromLift(i), fromLift(o))
-      case lt.DepFunType(x, t) => x match {
-          case dt: lt.DataTypeIdentifier =>
-            TypeDependentFunctionType(DataTypeIdentifier(dt.name), fromLift(t))
-          case n: l.NatIdentifier =>
-            NatDependentFunctionType(n, fromLift(t))
+      case dt: lt.DataType      => ExpType(fromLift(dt))
+      case lt.FunType(i, o)     => fromLift(i) -> fromLift(o)
+      case lt.DepFunType(x, t)  => x match {
+          case dt: lt.DataTypeIdentifier  => DataTypeIdentifier(dt.name) `()->` fromLift(t)
+          case n: l.NatIdentifier         => n `()->` fromLift(t)
         }
     }
   }
@@ -182,7 +180,9 @@ object fromLift {
         val a: NatDataTypeFunction = ??? // fromLift(la)
         val b: NatDataTypeFunction = ??? // fromLift(lb)
         fun[`(nat)->`[ExpType -> ExpType]](
-          NatDependentFunctionType(k, ExpType(a(k)) -> ExpType(b(k))), f =>
+          k `()->` (ExpType(a(k)) -> ExpType(b(k)))
+          //NatDependentFunctionType(k, ExpType(a(k)) -> ExpType(b(k)))
+          , f =>
           fun[ExpType](exp"[$n.$a]", e =>
             DepMapSeq(n, a, b, f, e)))
 
@@ -480,7 +480,7 @@ object fromLift {
       case (core.generate, lt.FunType(_, lt.ArrayType(n, la)))
       =>
         val a = fromLift(la)
-        fun[ExpType -> ExpType](exp"[idx($n)]" -> ExpType(a), f =>
+        fun[ExpType -> ExpType](exp"[idx($n)]" -> exp"[$a]", f =>
           Generate(n, a, f))
 
       case (core.iterate,
@@ -492,8 +492,7 @@ object fromLift {
         val n = ln /^ l
         val a = fromLift(la)
         NatDependentLambda(k,
-          fun[`(nat)->`[ExpType -> ExpType]](
-            NatDependentFunctionType(l, exp"[$ln.$a]" -> exp"[$l.$a]"), f =>
+          fun[`(nat)->`[ExpType -> ExpType]](l `()->` (exp"[$ln.$a]" -> exp"[$l.$a]"), f =>
               fun[ExpType](exp"[$insz.$a]", e =>
                 Iterate(n, m, k, a, f, e))))
 

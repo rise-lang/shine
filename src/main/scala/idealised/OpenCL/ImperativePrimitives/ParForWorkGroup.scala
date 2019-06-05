@@ -2,7 +2,7 @@ package idealised.OpenCL.ImperativePrimitives
 
 import idealised.C.AST._
 import idealised.DPIA.Phrases.Phrase
-import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType}
+import idealised.DPIA.Types.{AccType, CommType, DataType, ExpType}
 import idealised.DPIA._
 import idealised._
 import lift.arithmetic.{?, ContinuousRange, PosInf, RangeAdd}
@@ -12,7 +12,7 @@ import idealised.OpenCL._
 final case class ParForWorkGroup(dim: Int)(override val n: Nat,
                                            override val dt: DataType,
                                            override val out: Phrase[AccType],
-                                           override val body: Phrase[ExpType -> (AccType -> CommandType)])
+                                           override val body: Phrase[ExpType -> (AccType -> CommType)])
   extends OpenCLParFor(n, dt, out, body) {
 
   lazy val num_groups: Nat = ?

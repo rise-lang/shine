@@ -22,7 +22,7 @@ object FromSurfaceLanguage {
 
       case ApplyExpr(fun, arg, _) =>
         Phrases.Apply(
-          apply(fun).asInstanceOf[Phrase[FunctionType[ExpType, PhraseType]]],
+          apply(fun).asInstanceOf[Phrase[FunType[ExpType, PhraseType]]],
           apply(arg).asInstanceOf[Phrase[ExpType]])
 
       case NatDependentLambdaExpr(x, body, _) =>
@@ -30,7 +30,7 @@ object FromSurfaceLanguage {
 
       case NatDependentApplyExpr(fun, arg, _) =>
         idealised.DPIA.NatDependentApply(
-          apply(fun).asInstanceOf[Phrases.Phrase[Types.NatDependentFunctionType[Types.PhraseType]]],
+          apply(fun).asInstanceOf[Phrases.Phrase[Types.DepFunType[NatKind, Types.PhraseType]]],
           arg)
 
       case TypeDependentLambdaExpr(x, body, _) =>
@@ -38,7 +38,7 @@ object FromSurfaceLanguage {
 
       case TypeDependentApplyExpr(fun, arg, _) =>
         idealised.DPIA.TypeDependentApply(
-          apply(fun).asInstanceOf[Phrases.Phrase[Types.TypeDependentFunctionType[Types.PhraseType]]],
+          apply(fun).asInstanceOf[Phrases.Phrase[Types.DepFunType[Types.DataKind, Types.PhraseType]]],
           arg)
 
       case IfThenElseExpr(cond, thenE, elseE, _) =>

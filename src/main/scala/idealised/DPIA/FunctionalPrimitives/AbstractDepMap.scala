@@ -27,7 +27,7 @@ abstract class AbstractDepMap(n: Nat,
   }
 
   override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+                                  (implicit context: TranslationContext): Phrase[CommType] = {
     import idealised.DPIA.Compilation.TranslationToImperative._
     import idealised.DPIA._
 
@@ -38,7 +38,7 @@ abstract class AbstractDepMap(n: Nat,
   }
 
   override def mapAcceptorTranslation(g: Phrase[ExpType -> ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommandType] = {
+                                     (implicit context: TranslationContext): Phrase[CommType] = {
     import idealised.DPIA.Compilation.TranslationToImperative._
     import idealised.DPIA._
 
@@ -48,8 +48,8 @@ abstract class AbstractDepMap(n: Nat,
       }))), x, A)))
   }
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommandType])
-                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[ExpType -> CommType])
+                                      (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     `new`(dt"[$n.$ft2]", λ(exp"[$n.$ft2]" x acc"[$n.$ft2]")(tmp =>
@@ -62,10 +62,10 @@ abstract class AbstractDepMap(n: Nat,
   def makeMapI(n: Nat,
                ft1:NatDataTypeFunction,
                ft2:NatDataTypeFunction,
-               f: Phrase[`(nat)->`[ExpType -> (AccType -> CommandType)]],
+               f: Phrase[`(nat)->`[ExpType -> (AccType -> CommType)]],
                array: Phrase[ExpType],
                out: Phrase[AccType])
-              (implicit context: TranslationContext): Phrase[CommandType]
+              (implicit context: TranslationContext): Phrase[CommType]
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     makeMap(fun(n), fun(ft1), fun(ft2), VisitAndRebuild(f, fun), VisitAndRebuild(array, fun))

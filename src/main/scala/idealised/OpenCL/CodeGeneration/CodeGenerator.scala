@@ -36,7 +36,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
   override def updatedRanges(key: String, value: lift.arithmetic.Range): CodeGenerator =
     new CodeGenerator(decls, ranges.updated(key, value), localSize, globalSize)
 
-  override def cmd(phrase: Phrase[CommandType], env: Environment): Stmt = {
+  override def cmd(phrase: Phrase[CommType], env: Environment): Stmt = {
     phrase match {
       case f@OpenCLParFor(n, dt, a, Lambda(i, Lambda(o, p))) =>
         OpenCLCodeGen.codeGenOpenCLParFor(f, n, dt, a, i, o, p, env)
@@ -162,10 +162,10 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
   protected object OpenCLCodeGen {
     def codeGenOpenCLNew(dt: DataType,
-                   addressSpace: AddressSpace,
-                   v: Identifier[VarType],
-                   p: Phrase[CommandType],
-                   env: Environment): Stmt = {
+                         addressSpace: AddressSpace,
+                         v: Identifier[VarType],
+                         p: Phrase[CommType],
+                         env: Environment): Stmt = {
       val ve = Identifier(s"${v.name}_e", v.t.t1)
       val va = Identifier(s"${v.name}_a", v.t.t2)
       val vC = C.AST.DeclRef(v.name)
@@ -183,7 +183,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
                             a: Phrase[AccType],
                             i: Identifier[ExpType],
                             o: Phrase[AccType],
-                            p: Phrase[CommandType],
+                            p: Phrase[CommType],
                             env: Environment): Stmt = {
       val cI = C.AST.DeclRef(f.name)
       val range = RangeAdd(f.init, n, f.step)
@@ -230,7 +230,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
                                a: Phrase[AccType],
                                i: NatIdentifier,
                                o: Phrase[AccType],
-                               p: Phrase[CommandType],
+                               p: Phrase[CommType],
                                env: Environment): Stmt = {
       val cI = C.AST.DeclRef(f.name)
       val range = RangeAdd(f.init, n, f.step)

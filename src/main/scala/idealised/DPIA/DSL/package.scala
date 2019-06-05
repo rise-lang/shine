@@ -79,7 +79,7 @@ package object DSL {
   implicit class AssignmentHelper(lhs: Phrase[AccType]) {
     def :=|(dt: DataType) = new {
       def |(rhs: Phrase[ExpType])
-           (implicit context: TranslationContext): Phrase[CommandType] = {
+           (implicit context: TranslationContext): Phrase[CommType] = {
         context.assign(dt, lhs, rhs)
       }
     }
@@ -117,8 +117,8 @@ package object DSL {
     }
   }
 
-  implicit class SequentialComposition(c1: Phrase[CommandType]) {
-    def `;`(c2: Phrase[CommandType]): Phrase[CommandType] = Seq(c1, c2)
+  implicit class SequentialComposition(c1: Phrase[CommType]) {
+    def `;`(c2: Phrase[CommType]): Phrase[CommType] = Seq(c1, c2)
   }
 
   implicit class VarExtensions(v: Phrase[VarType]) {
