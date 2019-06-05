@@ -17,19 +17,21 @@ import scala.util.Random
 
 
 class Partition extends idealised.util.Tests {
-  test("Simple partition into a triangle C") {
+  ignore("Simple partition into a triangle C") {
     val lenF = n2nFun((i: NatIdentifier) => i + 1)
 
     val slideExample =
       nFun(n =>
-        fun(ArrayType(n, float))(xs => xs |> partition(3)(lenF) |> depMapSeq(mapSeq(fun(x => x)))))
+        fun(ArrayType(n, float))(xs => xs |> partition.apply(3)(lenF) |> depMapSeq(mapSeq(fun(x => x)))))
+
+    println("\n" + slideExample + "\n")
 
     val p = idealised.C.ProgramGenerator.makeCode(DPIA.fromLift(infer(slideExample)))
     val code = p.code
     SyntaxChecker(code)
   }
 
-  test("Partition threeway with pad and unrolling") {
+  ignore("Partition threeway with pad and unrolling") {
     val padAmount = 3
 
     def lenF(n: Nat) = n2nFun((i: NatIdentifier) => SteppedCase(3, n, 3)(i))

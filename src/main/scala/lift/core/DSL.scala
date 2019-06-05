@@ -30,10 +30,10 @@ object DSL {
   implicit class FunCall(f: Expr) {
     import lift.core.lifting._
 
-    def apply(e: Expr): Expr = liftFunctionExpr(f).value(e)
-    def apply(n: Nat): Expr = liftDependentFunctionExpr[NatKind](f).value(n)
-    def apply(dt: DataType): Expr = liftDependentFunctionExpr[DataKind](f).value(dt)
-    def apply(n2n: NatToNat): Expr = liftDependentFunctionExpr[NatToNatKind](f).value(n2n)
+    def apply(e: Expr): Expr = liftFunExpr(f).value(e)
+    def apply(n: Nat): Expr = liftDepFunExpr[NatKind](f).value(n)
+    def apply(dt: DataType): Expr = liftDepFunExpr[DataKind](f).value(dt)
+    def apply(n2n: NatToNat): Expr = liftDepFunExpr[NatToNatKind](f).value(n2n)
   }
 
   implicit class FunPipe(e: Expr) {
@@ -149,14 +149,14 @@ object DSL {
 
         case _: Identifier      => ??? // NamedVar(i.name, StartFromRange(0))
         case Apply(fun, arg)    => fun match {
-          case l: Lambda => natFromNatExpr(lifting.liftFunctionExpr(l).value(arg))
+          case l: Lambda => natFromNatExpr(lifting.liftFunExpr(l).value(arg))
           case p: Primitive       => p match {
             case _: primitives.indexAsNat.type => natFromNatExpr(arg)
             case _ => ???
           }
           case _ => ???
         }
-        case DepApply(fun, arg) => natFromNatExpr(lifting.liftDependentFunctionExpr(fun).value(arg))
+        case DepApply(fun, arg) => natFromNatExpr(lifting.liftDepFunExpr(fun).value(arg))
         case Literal(_)         => throw new Exception("This should never happen")
         case Index(_, _)        => ???
         case TypedExpr(te, _)   => natFromNatExpr(te)
@@ -171,8 +171,12 @@ object DSL {
   def l(v: VectorData): Literal = Literal(v)
   def l(a: ArrayData): Literal = Literal(a)
 
-  implicit final class To(private val a: Type) extends AnyVal {
+  implicit final class FunTypeHelper(private val a: Type) extends AnyVal {
     @inline def ->(b: Type): Type = FunType(a, b)
+  }
+
+  implicit final class ArrayTypeHelper(private val n: Nat) extends AnyVal {
+    @inline def `.`(dt: DataType): ArrayType = ArrayType(n, dt)
   }
 
   object foreignFun {

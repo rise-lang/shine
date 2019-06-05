@@ -173,7 +173,7 @@ object traversal {
                   chainT(v(n), body).map(r => DepArrayType(r._1, NatToDataLambda(binder, r._2)))
               }
             case TupleType(ts@_*) =>
-              ts.foldLeft(Continue(Vector(), v) : Result[Vector[DataType]])({ case (r, t) =>
+              ts.foldLeft(Continue(Vector(), v): Result[Vector[DataType]])({ case (r, t) =>
                 chainT(r, t).map(x => x._1 :+ x._2)
               }).map(ts => TupleType(ts: _*))
             case s: ScalarType => Continue(s, v)

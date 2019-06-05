@@ -4,7 +4,7 @@ import lift.core._
 
 package object rules {
   def betaReduction: Strategy = {
-    case Apply(f, x) => lifting.liftFunctionExpr(f) match {
+    case Apply(f, x) => lifting.liftFunExpr(f) match {
       case lifting.Reducing(lf) => lf(x)
     }
   }

@@ -12,11 +12,17 @@ case class InferenceException(msg: String) extends Exception {
 
 object infer {
   def apply(e: Expr): TypedExpr = {
-    val constraints = mutable.Set[Constraint]()
-    val typed_e = constrainTypes(e, constraints, mutable.Map())
-    implicit val (boundT, boundN) = boundIdentifiers(typed_e)
-    constraints.toSet.foreach(println)
-    val solution = solve(constraints.toSet)
+    // build set of constraints
+    val mutableConstraints = mutable.Set[Constraint]()
+    val typed_e = constrainTypes(e, mutableConstraints, mutable.Map())
+    val constraints = mutableConstraints.toSet
+    constraints.foreach(println)
+
+    // solve the constraints
+    val (boundT, boundN) = boundIdentifiers(typed_e)
+    val solution = solve(constraints)(boundT, boundN)
+
+    // apply the solution
     val result = solution(typed_e)
     if (!isClosedForm(result)) {
       error(s"expression is not in closed form after inference: $result")
@@ -62,7 +68,9 @@ object infer {
         val tf = typed(f)
         val te = typed(e)
         val ot = fresh()
-        constraints += TypeConstraint(tf.t, FunType(te.t, ot))
+        val constraint = TypeConstraint(tf.t, FunType(te.t, ot))
+        println(s"Constraint for expression `$expr' is `$constraint'")
+        constraints += constraint
         TypedExpr(Apply(tf, te), ot)
 
       case DepLambda(x, e) => x match {
@@ -97,15 +105,16 @@ object infer {
 
       case TypedExpr(e, t) =>
         val te = typed(e)
-        constraints += TypeConstraint(te.t, t)
+        val constraint = TypeConstraint(te.t, t)
+        println(s"Constraint for expression `$expr' is `$constraint'")
+        constraints += constraint
         te
 
       case p: Primitive => TypedExpr(p, p.t)
     }
   }
 
-  def boundIdentifiers(expr: TypedExpr)
-  : (mutable.Set[DataTypeIdentifier], mutable.Set[NamedVar]) = {
+  def boundIdentifiers(expr: TypedExpr): (mutable.Set[DataTypeIdentifier], mutable.Set[NamedVar]) = {
     import traversal.{Result, Continue}
 
     val boundT = mutable.Set[DataTypeIdentifier]()

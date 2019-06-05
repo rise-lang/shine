@@ -17,7 +17,7 @@ final case class Apply(f: Expr, e: Expr) extends Expr {
 }
 
 final case class DepLambda[K <: Kind](x: K#I, e: Expr) extends Expr {
-  override def toString: String = s"Λ(${x.name} : ${x.getClass.getName.dropWhile(_!='$').drop(1).takeWhile(_!='$')}). $e"
+  override def toString: String = s"Λ${x.name}: ${Kind.formatKindName(x.getClass.getName)}. $e"
 }
 
 final case class DepApply[K <: Kind](f: Expr, x: K#T) extends Expr {
@@ -37,7 +37,7 @@ final case class NatExpr(n: Nat) extends Expr {
 }
 
 final case class TypedExpr(e: Expr, t: Type) extends Expr {
-  override def toString: String = s"($e : $t)"
+  override def toString: String = s"($e: $t)"
 }
 
 abstract class Primitive extends Expr {

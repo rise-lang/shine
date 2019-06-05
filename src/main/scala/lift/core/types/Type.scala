@@ -38,7 +38,7 @@ final case class DepArrayType(size: Nat, fdt: NatToData) extends ComposedType {
 
 object DepArrayType {
   def apply(size: Nat, f: Nat => DataType): DepArrayType = {
-   val newN = NatIdentifier(freshName("n"), RangeAdd(0, size, 1))
+    val newN = NatIdentifier(freshName("n"), RangeAdd(0, size, 1))
     val fdt = NatToDataLambda(newN, f(newN))
     DepArrayType(size, fdt)
   }
