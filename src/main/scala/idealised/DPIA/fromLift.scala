@@ -177,8 +177,8 @@ object fromLift {
       lt.DepFunType(k: l.NatIdentifier, lt.FunType(_, _)),
       lt.FunType(lt.DepArrayType(n, la), lt.DepArrayType(_, lb))))
       =>
-        val a: NatDataTypeFunction = ??? // fromLift(la)
-        val b: NatDataTypeFunction = ??? // fromLift(lb)
+        val a: NatToDataLambda = ??? // fromLift(la)
+        val b: NatToDataLambda = ??? // fromLift(lb)
         fun[`(nat)->`[ExpType -> ExpType]](
           k `()->` (ExpType(a(k)) -> ExpType(b(k)))
           //NatDependentFunctionType(k, ExpType(a(k)) -> ExpType(b(k)))
@@ -239,8 +239,8 @@ object fromLift {
         lt.FunType(lt.DepArrayType(n, llenF), lt.ArrayType(_, la)))
         =>
         val a = fromLift(la)
-        val lenF: NatNatTypeFunction = ??? // fromLift(llenF)
-        fun[ExpType](exp"[$n.${NatDataTypeFunction(n, (i:NatIdentifier) => ArrayType(lenF(i), a))}]", e =>
+        val lenF: NatToNatLambda = ??? // fromLift(llenF)
+        fun[ExpType](exp"[$n.${NatToDataLambda(n, (i:NatIdentifier) => ArrayType(lenF(i), a))}]", e =>
           DepJoin(n, lenF, a, e))
 
       case (core.join,

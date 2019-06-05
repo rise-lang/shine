@@ -19,13 +19,13 @@ import scala.language.reflectiveCalls
 import scala.xml.Elem
 
 final case class DepIdx(n: Nat,
-                        ft:NatDataTypeFunction,
+                        ft:NatToDataLambda,
                         index: Nat,
                         array: Phrase[ExpType])
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (n: Nat) -> (ft: NatDataTypeFunction) -> (index: Nat) ->
+    (n: Nat) -> (ft: NatToDataLambda) -> (index: Nat) ->
       (array :: exp"[$n.$ft]") ->
         exp"[${ft(index)}]"
 

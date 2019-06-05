@@ -93,7 +93,7 @@ class PhraseTypeParser(val string: String,
 //    }
 //  }
 
-  def parseDataTypeOrNatDataTypeFunction:Either[DataType, NatDataTypeFunction] = {
+  def parseDataTypeOrNatDataTypeFunction:Either[DataType, NatToDataLambda] = {
     if (peakToken == "(") {
       nextToken
     }
@@ -102,7 +102,7 @@ class PhraseTypeParser(val string: String,
       values.next match {
         case n: Nat => Left(parseArrayOrIdxType(n))
         case dt: DataType => Left(parseRecordOrBaseType(dt))
-        case ndt:NatDataTypeFunction =>
+        case ndt:NatToDataLambda =>
           Right(ndt)
         //case null => parseArrayOrIdxOrRecordOrBaseType(null)
         case _ => error

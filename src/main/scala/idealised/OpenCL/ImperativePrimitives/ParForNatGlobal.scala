@@ -2,15 +2,15 @@ package idealised.OpenCL.ImperativePrimitives
 
 import idealised.C.AST.{Comment, Stmt}
 import idealised.DPIA.Phrases.Phrase
-import idealised.DPIA.Types.{AccType, CommType}
-import idealised.DPIA.{->, Nat, NatDataTypeFunction, `(nat)->`, freshName}
+import idealised.DPIA.Types.{AccType, CommType, NatToDataLambda}
+import idealised.DPIA.{->, Nat, `(nat)->`, freshName}
 import idealised.OpenCL
 import idealised.OpenCL._
 import lift.arithmetic.{?, RangeAdd}
 
 //noinspection TypeAnnotation,ConvertibleToMethodValue
 final case class ParForNatGlobal(dim:Int)(override val n:Nat,
-                                          override val ft:NatDataTypeFunction,
+                                          override val ft:NatToDataLambda,
                                           override val out:Phrase[AccType],
                                           override val body: Phrase[`(nat)->`[AccType -> CommType]])
   extends OpenCLParForNat(n, ft, out, body) {

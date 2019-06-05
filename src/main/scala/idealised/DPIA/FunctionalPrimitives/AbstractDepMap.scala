@@ -12,15 +12,15 @@ import scala.xml.Elem
 
 
 abstract class AbstractDepMap(n: Nat,
-                              ft1: NatDataTypeFunction,
-                              ft2: NatDataTypeFunction,
+                              ft1: NatToDataLambda,
+                              ft2: NatToDataLambda,
                               f: Phrase[`(nat)->`[ExpType -> ExpType]],
                               array: Phrase[ExpType])
   extends ExpPrimitive {
 
   override val t: ExpType = {
     val k = f.t.x
-    (n: Nat) -> (ft1: NatDataTypeFunction) -> (ft2: NatDataTypeFunction) ->
+    (n: Nat) -> (ft1: NatToDataLambda) -> (ft2: NatToDataLambda) ->
       (f :: t"($k : nat) -> exp[${ ft1(k) }] -> exp[${ ft2(k) }]") ->
         (array :: exp"[$n.$ft1]") ->
           exp"[$n.$ft2]"
@@ -57,11 +57,11 @@ abstract class AbstractDepMap(n: Nat,
   }
 
 
-  def makeMap: (Nat, NatDataTypeFunction, NatDataTypeFunction, Phrase[`(nat)->`[ExpType -> ExpType]], Phrase[ExpType]) => AbstractDepMap
+  def makeMap: (Nat, NatToDataLambda, NatToDataLambda, Phrase[`(nat)->`[ExpType -> ExpType]], Phrase[ExpType]) => AbstractDepMap
 
   def makeMapI(n: Nat,
-               ft1:NatDataTypeFunction,
-               ft2:NatDataTypeFunction,
+               ft1:NatToDataLambda,
+               ft2:NatToDataLambda,
                f: Phrase[`(nat)->`[ExpType -> (AccType -> CommType)]],
                array: Phrase[ExpType],
                out: Phrase[AccType])

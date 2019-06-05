@@ -10,8 +10,8 @@ import lift.arithmetic.RangeAdd
 
 object DepMapSeqI {
   def apply(n: Nat,
-            ft1:NatDataTypeFunction,
-            ft2:NatDataTypeFunction,
+            ft1:NatToDataLambda,
+            ft2:NatToDataLambda,
             f: Phrase[`(nat)->`[ExpType -> (AccType -> CommType)]],
             in: Phrase[ExpType],
             out: Phrase[AccType])
@@ -23,8 +23,8 @@ object DepMapSeqI {
 
 object DepMapSeqIUnroll {
   def apply(n: Nat,
-            ft1:NatDataTypeFunction,
-            ft2:NatDataTypeFunction,
+            ft1:NatToDataLambda,
+            ft2:NatToDataLambda,
             f: Phrase[`(nat)->`[ExpType -> (AccType -> CommType)]],
             in: Phrase[ExpType],
             out: Phrase[AccType])

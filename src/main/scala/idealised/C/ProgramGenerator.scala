@@ -4,9 +4,8 @@ import idealised.C.AST._
 import idealised.DPIA.Compilation._
 import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives.AsIndex
-import idealised.DPIA.NatDataTypeFunction
 import idealised.DPIA.Phrases._
-import idealised.DPIA.Types.{AccType, CommType, DataType, DataTypeIdentifier, DepArrayType, ExpType, NatKind, PairType, PhraseType, TypeCheck, int}
+import idealised.DPIA.Types.{AccType, CommType, DataType, DataTypeIdentifier, DepArrayType, ExpType, NatKind, NatToDataLambda, PairType, PhraseType, TypeCheck, int}
 import idealised._
 import lift.arithmetic.{Cst, Var}
 
@@ -113,7 +112,7 @@ object ProgramGenerator {
       case ArrayType(_, dt) =>
         val baseDt = DataType.getBaseDataType(dt)
         PointerType(gen.typ(baseDt))
-      case DepArrayType(_, NatDataTypeFunction(_, dt)) =>
+      case DepArrayType(_, NatToDataLambda(_, dt)) =>
         val baseDt = DataType.getBaseDataType(dt)
         PointerType(gen.typ(baseDt))
       case r : RecordType => gen.typ(r)

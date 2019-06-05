@@ -1,11 +1,12 @@
 package idealised.SurfaceLanguage.Primitives
 
-import idealised.DPIA.{Nat, NatNatTypeFunction}
+import idealised.DPIA.Types.NatToNatLambda
+import idealised.DPIA.Nat
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
 import lift.arithmetic.BigSum
 
-final case class Partition(m: Nat, lenF: NatNatTypeFunction, array: Expr,
+final case class Partition(m: Nat, lenF: NatToNatLambda, array: Expr,
                            override val t: Option[DataType])
   extends PrimitiveExpr {
 
@@ -28,7 +29,7 @@ final case class Partition(m: Nat, lenF: NatNatTypeFunction, array: Expr,
   override def children: Seq[Any] = Seq(m, lenF, array, t)
 
   override def rebuild: Seq[Any] => Expr = {
-    case Seq(m: Nat, lenF: NatNatTypeFunction, array: Expr, t: Option[DataType]@unchecked) =>
+    case Seq(m: Nat, lenF: NatToNatLambda, array: Expr, t: Option[DataType]@unchecked) =>
       Partition(m, lenF, array, t)
   }
 }

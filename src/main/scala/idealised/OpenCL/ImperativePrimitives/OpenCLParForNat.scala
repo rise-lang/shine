@@ -2,13 +2,13 @@ package idealised.OpenCL.ImperativePrimitives
 
 import idealised.C.AST.Stmt
 import idealised.DPIA.Phrases.Phrase
-import idealised.DPIA.Types.{AccType, CommType}
-import idealised.DPIA.{->, Nat, NatDataTypeFunction, `(nat)->`}
+import idealised.DPIA.Types._
+import idealised.DPIA.{->, Nat, `(nat)->`}
 import idealised.OpenCL.BuiltInFunction
 import idealised.OpenMP.ImperativePrimitives.AbstractParForNat
 
 abstract class OpenCLParForNat(n: Nat,
-                               ft:NatDataTypeFunction,
+                               ft:NatToDataLambda,
                                out: Phrase[AccType],
                                body: Phrase[`(nat)->`[AccType -> CommType]])
   extends AbstractParForNat(n, ft, out, body) {
@@ -26,7 +26,7 @@ abstract class OpenCLParForNat(n: Nat,
 
 object OpenCLParForNat
 {
-  def unapply(arg: OpenCLParForNat): Option[(Nat, NatDataTypeFunction, Phrase[AccType], Phrase[`(nat)->`[AccType -> CommType]])] = {
+  def unapply(arg: OpenCLParForNat): Option[(Nat, NatToDataLambda, Phrase[AccType], Phrase[`(nat)->`[AccType -> CommType]])] = {
     Some(arg.n, arg.ft, arg.out, arg.body)
   }
 }

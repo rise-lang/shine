@@ -9,14 +9,14 @@ import idealised.DPIA._
 import scala.xml.Elem
 
 abstract class AbstractParForNat(val n: Nat,
-                                 val ft:NatDataTypeFunction,
+                                 val ft:NatToDataLambda,
                                  val out: Phrase[AccType],
                                  val body: Phrase[`(nat)->`[AccType -> CommType]])
   extends CommandPrimitive {
 
   override val t: CommType = {
 
-    (n: Nat) -> (ft: NatDataTypeFunction) ->
+    (n: Nat) -> (ft: NatToDataLambda) ->
       (out :: acc"[${DepArrayType(n, ft)}]") ->
       (body :: t"(${body.t.x}:nat) -> acc[${ft(body.t.x)}] -> comm") ->
       comm
@@ -44,6 +44,6 @@ abstract class AbstractParForNat(val n: Nat,
       Character.toLowerCase(name.charAt(0)) + name.substring(1)
     })
 
-  def makeParForNat: (Nat, NatDataTypeFunction, Phrase[AccType], Phrase[`(nat)->`[AccType -> CommType]]) => AbstractParForNat
+  def makeParForNat: (Nat, NatToDataLambda, Phrase[AccType], Phrase[`(nat)->`[AccType -> CommType]]) => AbstractParForNat
 
 }

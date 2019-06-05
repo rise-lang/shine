@@ -13,14 +13,14 @@ import lift.arithmetic.{ArithExpr, BigSum}
 import scala.xml.Elem
 
 final case class DepJoin(n: Nat,
-                         lenF: NatNatTypeFunction,
+                         lenF: NatToNatLambda,
                          dt: DataType,
                          array: Phrase[ExpType])
   extends ExpPrimitive {
 
   override val t: ExpType = {
-    (n: Nat) -> (lenF: NatNatTypeFunction) -> (dt: DataType) ->
-      (array :: exp"[$n.${NatDataTypeFunction(n, (i:NatIdentifier) => ArrayType(lenF(i), dt))}]") ->
+    (n: Nat) -> (lenF: NatToNatLambda) -> (dt: DataType) ->
+      (array :: exp"[$n.${NatToDataLambda(n, (i:NatIdentifier) => ArrayType(lenF(i), dt))}]") ->
       exp"[${BigSum(from = 0, upTo = n - 1, `for` = lenF.x, lenF.body)}.$dt]"
   }
 
@@ -61,7 +61,7 @@ final case class DepJoin(n: Nat,
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
-    con(array)(λ(exp"[$n.${NatDataTypeFunction(n, (i:NatIdentifier) => ArrayType(lenF(i), dt))}]")(x =>
+    con(array)(λ(exp"[$n.${NatToDataLambda(n, (i:NatIdentifier) => ArrayType(lenF(i), dt))}]")(x =>
       C(DepJoin(n, lenF, dt, x)) ))
   }
 }

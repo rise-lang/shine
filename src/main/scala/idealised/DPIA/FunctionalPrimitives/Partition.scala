@@ -6,13 +6,12 @@ import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import lift.arithmetic.ArithExpr
 
 import scala.xml.Elem
 
 final case class Partition(n: Nat,
                            m: Nat,
-                           lenF:NatNatTypeFunction,
+                           lenF:NatToNatLambda,
                            dt: DataType,
                            array: Phrase[ExpType])
   extends ExpPrimitive {
@@ -20,7 +19,7 @@ final case class Partition(n: Nat,
 
   override val t: ExpType =
     (n: Nat) -> (m: Nat) -> (dt: DataType) ->
-      (array :: exp"[$n.$dt]") -> exp"[$m.${NatDataTypeFunction(m, (i:NatIdentifier) => ArrayType(lenF(i), dt))}]"
+      (array :: exp"[$n.$dt]") -> exp"[$m.${NatToDataLambda(m, (i:NatIdentifier) => ArrayType(lenF(i), dt))}]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     Partition(fun(n), fun(m), fun(lenF), fun(dt), VisitAndRebuild(array, fun))

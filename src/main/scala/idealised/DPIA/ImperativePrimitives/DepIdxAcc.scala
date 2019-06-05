@@ -9,13 +9,13 @@ import idealised.DPIA._
 import scala.xml.Elem
 
 final case class DepIdxAcc(n: Nat,
-                           ft:NatDataTypeFunction,
+                           ft:NatToDataLambda,
                            index: Nat,
                            array: Phrase[AccType])
   extends AccPrimitive {
 
   override val t: AccType =
-    (n: Nat) -> (ft:NatDataTypeFunction) -> (index: Nat) ->
+    (n: Nat) -> (ft:NatToDataLambda) -> (index: Nat) ->
       (array :: acc"[$n.$ft]") ->
         acc"[${ft(index)}]"
 

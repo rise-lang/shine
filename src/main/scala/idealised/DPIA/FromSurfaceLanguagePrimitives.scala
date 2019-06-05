@@ -3,7 +3,7 @@ package idealised.DPIA
 import idealised.{DPIA, SurfaceLanguage}
 import idealised.DPIA.FunctionalPrimitives.TransposeDepArray
 import idealised.DPIA.Phrases.Phrase
-import idealised.DPIA.Types.{ExpType, PhraseType}
+import idealised.DPIA.Types.{ExpType, NatToNatLambda, NatToDataLambda, PhraseType}
 import idealised.OpenCL.SurfaceLanguage.Primitives._
 import idealised.OpenMP.SurfaceLanguage.Primitives.{DepMapPar, MapPar, ReducePar}
 import idealised.SurfaceLanguage.Primitives._
@@ -21,8 +21,8 @@ object FromSurfaceLanguagePrimitives {
           Some(DependentFunctionType(k: SurfaceLanguage.NatIdentifier, FunctionType(df1_k: DataType, df2_k: DataType))),
           Some(DepArrayType(n, DependentFunctionType(_: SurfaceLanguage.NatIdentifier, _)))
           ) =>
-          val ft1 = NatDataTypeFunction(n, (x: NatIdentifier) => Type.substitute[DataType](x, `for` = k, in = df1_k))
-          val ft2 = NatDataTypeFunction(n, (x: NatIdentifier) => Type.substitute[DataType](x, `for` = k, in = df2_k))
+          val ft1 = NatToDataLambda(n, (x: NatIdentifier) => Type.substitute[DataType](x, `for` = k, in = df1_k))
+          val ft2 = NatToDataLambda(n, (x: NatIdentifier) => Type.substitute[DataType](x, `for` = k, in = df2_k))
 
           Some(makeDPIADepMap(map)(n, ft1, ft2,
             FromSurfaceLanguage.asPhrase[DPIA.Types.DepFunType[DPIA.Types.NatKind, DPIA.Types.FunType[ExpType, ExpType]]](map.df),
@@ -111,7 +111,7 @@ object FromSurfaceLanguagePrimitives {
         case Some(ArrayType(n, DepArrayType(m, DependentFunctionType(i: SurfaceLanguage.NatIdentifier, dt)))) =>
           ???
         case Some(DepArrayType(n, DependentFunctionType(d_i: SurfaceLanguage.NatIdentifier, ArrayType(d_n, dt)))) =>
-          Some(FunctionalPrimitives.DepJoin(n, NatNatTypeFunction(n, NatIdentifier(d_i.name, d_i.range), d_n), dt, FromSurfaceLanguage.asPhrase[ExpType](array)))
+          Some(FunctionalPrimitives.DepJoin(n, NatToNatLambda(n, NatIdentifier(d_i.name, d_i.range), d_n), dt, FromSurfaceLanguage.asPhrase[ExpType](array)))
         case Some(DepArrayType(n, DependentFunctionType(i: SurfaceLanguage.NatIdentifier, DepArrayType(m, DependentFunctionType(j: SurfaceLanguage.NatIdentifier, dt))))) =>
           ???
       }
@@ -292,8 +292,8 @@ object FromSurfaceLanguagePrimitives {
   }
 
   def makeDPIADepMap(map: AbstractDepMap): (Nat,
-    NatDataTypeFunction,
-    NatDataTypeFunction,
+    NatToDataLambda,
+    NatToDataLambda,
     Phrases.Phrase[DPIA.Types.DepFunType[DPIA.Types.NatKind, DPIA.Types.FunType[ExpType, ExpType]]],
     Phrases.Phrase[ExpType]
     ) => FunctionalPrimitives.AbstractDepMap = map match {
