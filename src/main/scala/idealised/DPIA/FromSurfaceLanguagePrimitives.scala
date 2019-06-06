@@ -80,7 +80,8 @@ object FromSurfaceLanguagePrimitives {
 
       case ForeignFunction(funDecl, inTs, outT, args) =>
         Some(FunctionalPrimitives.ForeignFunction(
-          FunctionalPrimitives.ForeignFunction.Declaration(funDecl.name, funDecl.argNames, funDecl.body),
+          FunctionalPrimitives.ForeignFunction.Declaration(funDecl.name,
+            Some(FunctionalPrimitives.ForeignFunction.Definition(funDecl.argNames, funDecl.body))),
           inTs.map(Types.DataType(_)), Types.DataType(outT),
           args.map(FromSurfaceLanguage.asPhrase[ExpType])
         ))

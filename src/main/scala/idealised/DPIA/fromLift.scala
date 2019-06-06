@@ -2,14 +2,11 @@ package idealised.DPIA
 
 import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
-import idealised.DPIA.Types._
 import idealised.DPIA.Semantics.{OperationalSemantics => OpSem}
-import idealised.OpenCL.FunctionalPrimitives._
+import idealised.DPIA.Types._
 import idealised.SurfaceLanguage.Operators
-import idealised.SurfaceLanguage.Operators.Binary
+import lift.core.{semantics => ls, types => lt}
 import lift.{core => l}
-import lift.core.{types => lt}
-import lift.core.{semantics => ls}
 
 object fromLift {
   def apply(expr: l.Expr): Phrase[_ <: PhraseType] = {
@@ -114,8 +111,8 @@ object fromLift {
     }
   }
 
-  import lift.core.{primitives => core}
   import idealised.DPIA.FunctionalPrimitives._
+  import lift.core.{primitives => core}
 
   def fun[T <: PhraseType](t: T,
                            f: Phrase[T] => Phrase[_ <: PhraseType]): Phrase[_ <: PhraseType] = {
@@ -124,16 +121,13 @@ object fromLift {
   }
 
   def apply(p: l.Primitive, t: lt.Type): Phrase[_ <: PhraseType] = {
-    import lift.OpenCL.{primitives => ocl}
-    import lift.OpenMP.{primitives => omp}
-    import lift.OpenCL.{primitives => ocl}
-    import idealised.OpenMP.FunctionalPrimitives._
     import idealised.OpenCL.FunctionalPrimitives._
     import idealised.OpenCL.{GlobalMemory, LocalMemory, PrivateMemory}
+    import idealised.OpenMP.FunctionalPrimitives._
+    import lift.OpenCL.{primitives => ocl}
+    import lift.OpenMP.{primitives => omp}
 
     // TODO: remove surface language
-    import idealised.SurfaceLanguage.Operators.Unary
-    import idealised.SurfaceLanguage.Operators.Binary
 
     (p, t) match {
       case (core.asIndex,
@@ -404,6 +398,16 @@ object fromLift {
         val b = fromLift(lb)
         fun[ExpType](exp"[$a x $b]", e => Snd(a, b, e))
 
+      case (core.pair,
+      lt.FunctionType(la: lt.DataType,
+      lt.FunctionType(lb: lt.DataType, _)))
+      =>
+        val a = fromLift(la)
+        val b = fromLift(lb)
+        fun[ExpType](exp"[$a]", x =>
+          fun[ExpType](exp"[$b]", y =>
+            Record(a, b, x, y)))
+
       case (core.idx,
       lt.FunctionType(_,
       lt.FunctionType(lt.ArrayType(n, la), _)))
@@ -468,7 +472,7 @@ object fromLift {
         fun[ExpType](ExpType(a), x =>
           Cast(a, b, x))
 
-      case (core.ForeignFunctionCall(decl, la), _)
+      case (core.ForeignFunction(decl, la), _)
       =>
         val (inTs, outT) = foreignFunIO(la)
         wrapForeignFun(decl, inTs, outT, Vector())
@@ -562,7 +566,7 @@ object fromLift {
     }
   }
 
-  def wrapForeignFun(decl: core.ForeignFunctionDecl,
+  def wrapForeignFun(decl: core.ForeignFunction.Decl,
                      intTs: Vector[DataType],
                      outT: DataType,
                      args: Vector[Phrase[ExpType]]): Phrase[_ <: PhraseType] = {

@@ -56,7 +56,7 @@ package object DSL {
   implicit def toNatExprNat(n: Nat): NatExpr = NatExpr(n)
 
   def mapNatExpr(natExpr: Expr, f: Nat => Nat): NatExpr = {
-    val liftedNat = Internal.natFromNatExpr(natExpr)
+    val liftedNat: Nat = Internal.natFromNatExpr(natExpr)
     val res = f(liftedNat)
     NatExpr(res)
   }
