@@ -28,8 +28,8 @@ class fft extends idealised.util.Tests {
             val exponentWoMinus2 =
               mapNatExpr(mapNatExpr(indexAsNat(j), j => j * LPrevIter) +
                 mapNatExpr(indexAsNat(i), i => i) * mapNatExpr(indexAsNat(k), k => k / (p * LPrevIter)), x => x)
-            val exponent = cast(exponentWoMinus2) * l(-2.0)
-            pair(cast(cospi(exponent)))(cast(float)(sinpi(exponent)))
+            val exponent = (cast(exponentWoMinus2) :: float) * l(-2.0)
+            pair(cast(cospi(exponent) :: float))(cast(sinpi(exponent) :: float))
           }))))))
 
     val modPReorder = split(p) |> transpose |> join
