@@ -27,6 +27,11 @@ object DSL {
     def _2: Expr = primitives.snd(lhs)
   }
 
+  implicit class TypeAnnotation(t: Type) {
+    def ::(e: Expr): TypedExpr = TypedExpr(e, t)
+    def `:`(e: Expr): TypedExpr = TypedExpr(e, t)
+  }
+
   implicit class FunCall(f: Expr) {
     import lift.core.lifting._
 
