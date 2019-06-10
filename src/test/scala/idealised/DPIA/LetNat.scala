@@ -7,7 +7,7 @@ import idealised.util.SyntaxChecker
 
 class LetNat extends idealised.util.Tests{
 
-  test("Simple no capture") {
+  test("Simple functions with no capture") {
     val program = nFun(n =>
       fun(ArrayType(n, float))(xs =>
         letNat(fun(int)(x => x + 2), f =>
@@ -28,7 +28,7 @@ class LetNat extends idealised.util.Tests{
     println(code)
   }
 
-  test("basic test") {
+  test("Inlined single value") {
     val f = nFun(n => fun(IndexType(10))(idx =>
         fun(ArrayType(n, float))(xs =>
             letNat(idx,
