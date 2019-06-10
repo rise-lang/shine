@@ -42,7 +42,7 @@ object ProgramGenerator {
     rewriteToImperative(p, outParam) |> (p => {
 
     val env = C.CodeGeneration.CodeGenerator.Environment(
-      (outParam +: inputParams).map(p => p -> C.AST.DeclRef(p.name) ).toMap, Map.empty, Map.empty)
+      (outParam +: inputParams).map(p => p -> C.AST.DeclRef(p.name) ).toMap, Map.empty, Map.empty, Map.empty)
 
     val (declarations, code) = gen.generate(p, env)
 

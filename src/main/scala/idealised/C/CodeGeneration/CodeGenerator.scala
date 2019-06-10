@@ -1,7 +1,6 @@
 package idealised.C.CodeGeneration
 
 import idealised.C.AST.Block
-import idealised.C.AST.DefaultImplementations.Return
 import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives._
 import idealised.DPIA.ImperativePrimitives._
@@ -23,7 +22,8 @@ object CodeGenerator {
 
   final case class Environment(identEnv: immutable.Map[Identifier[_ <: BasePhraseTypes], C.AST.DeclRef],
                                commEnv: immutable.Map[Identifier[CommandType], C.AST.Stmt],
-                               contEnv: immutable.Map[Identifier[ExpType -> CommandType], Phrase[ExpType] => Environment => C.AST.Stmt]
+                               contEnv: immutable.Map[Identifier[ExpType -> CommandType], Phrase[ExpType] => Environment => C.AST.Stmt],
+                               inlLetNatEnv: immutable.Map[LetNatIdentifier, C.AST.Expr]
                               ) {
     def updatedIdentEnv(kv: (Identifier[_ <: BasePhraseTypes], C.AST.DeclRef)): Environment = {
       this.copy(identEnv = identEnv + kv)
@@ -36,6 +36,19 @@ object CodeGenerator {
     def updatedContEnv(kv: (Identifier[ExpType -> CommandType], Phrase[ExpType] => Environment => C.AST.Stmt)): Environment = {
       this.copy(contEnv = contEnv + kv)
     }
+
+    def updatedInlNatEnv(kv:(LetNatIdentifier, C.AST.Expr)):Environment = {
+      this.copy(inlLetNatEnv = this.inlLetNatEnv + kv)
+    }
+  }
+
+  object Environment {
+    def empty = Environment(
+      immutable.Map(),
+      immutable.Map(),
+      immutable.Map(),
+      immutable.Map()
+    )
   }
 
   sealed trait PathExpr
@@ -79,11 +92,11 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     }
   }
 
-  private def defineNatFunction[T <: PhraseType](name: String, phrase:Phrase[T], env:Environment):Unit = {
+  private def defineNatFunction[T <: PhraseType](name: String, phrase: Phrase[T], env: Environment): Unit = {
 
     def getPhraseAndParams[_ <: PhraseType](p: Phrase[_],
-                                                    ps: immutable.Seq[Identifier[ExpType]] = immutable.Seq()
-                                                   ): (Phrase[ExpType], immutable.Seq[Identifier[ExpType]]) = {
+                                            ps: immutable.Seq[Identifier[ExpType]] = immutable.Seq()
+                                           ): (Phrase[ExpType], immutable.Seq[Identifier[ExpType]]) = {
       p match {
         case l: Lambda[ExpType, _]@unchecked => getPhraseAndParams(l.body, l.param +: ps)
         case ndl: NatDependentLambda[_] => getPhraseAndParams(ndl.body, Identifier(ndl.x.name, ExpType(int)) +: ps)
@@ -120,7 +133,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case i: Identifier[CommandType] => env.commEnv(i)
 
-      case Apply(i : Identifier[_], e) => // TODO: think about this
+      case Apply(i: Identifier[_], e) => // TODO: think about this
         env.contEnv(
           i.asInstanceOf[Identifier[ExpType -> CommandType]]
         )(
@@ -152,8 +165,13 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case Proj2(pair) => cmd(Lifting.liftPair(pair)._2, env)
 
       case LetNat(binder, defn, body) =>
-        defineNatFunction(binder.name, defn ,env)
-        cmd(body, env)
+        defn.t match {
+          case ExpType(_) =>
+            exp(defn.asInstanceOf[Phrase[ExpType]], env, List(), e => cmd(body, env updatedInlNatEnv(binder, e)))
+          case _ =>
+            defineNatFunction(binder.name, defn, env)
+            cmd(body, env)
+        }
 
       case Apply(_, _) | NatDependentApply(_, _) | TypeDependentApply(_, _) |
            _: CommandPrimitive =>
@@ -172,15 +190,15 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         }), path, env))
 
       case SplitAcc(n, _, _, a) => path match {
-        case (i : CIntExpr) :: ps  => acc(a, env, CIntExpr(i / n) :: CIntExpr(i % n) :: ps, cont)
+        case (i: CIntExpr) :: ps => acc(a, env, CIntExpr(i / n) :: CIntExpr(i % n) :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
       case JoinAcc(_, m, _, a) => path match {
-        case (i : CIntExpr) :: (j : CIntExpr) :: ps => acc(a, env, CIntExpr(i * m + j) :: ps, cont)
+        case (i: CIntExpr) :: (j: CIntExpr) :: ps => acc(a, env, CIntExpr(i * m + j) :: ps, cont)
         case _ => error(s"Expected two C-Integer-Expressions on the path.")
       }
       case depJ@DepJoinAcc(_, _, _, a) => path match {
-        case (i : CIntExpr) :: (j : CIntExpr) :: ps =>
+        case (i: CIntExpr) :: (j: CIntExpr) :: ps =>
           acc(a, env, CIntExpr(BigSum(0, i - 1, x => depJ.lenF(x)) + j) :: ps, cont)
         case _ => error(s"Expected two C-Integer-Expressions on the path.")
       }
@@ -189,34 +207,34 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case RecordAcc2(_, _, a) => acc(a, env, SndMember :: path, cont)
 
       case ZipAcc1(_, _, _, a) => path match {
-        case (i : CIntExpr) :: ps => acc(a, env, i :: FstMember :: ps, cont)
+        case (i: CIntExpr) :: ps => acc(a, env, i :: FstMember :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
       case ZipAcc2(_, _, _, a) => path match {
-        case (i : CIntExpr) :: ps => acc(a, env, i :: SndMember :: ps, cont)
+        case (i: CIntExpr) :: ps => acc(a, env, i :: SndMember :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
       case UnzipAcc(_, _, _, _) => ???
 
       case TakeAcc(_, _, _, a) => acc(a, env, path, cont)
       case DropAcc(n, _, _, a) => path match {
-        case (i : CIntExpr) :: ps => acc(a, env, CIntExpr(i + n) ::ps, cont)
+        case (i: CIntExpr) :: ps => acc(a, env, CIntExpr(i + n) :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
 
       case CycleAcc(_, m, _, a) => path match {
-        case (i : CIntExpr) :: ps => acc(a, env, CIntExpr(i % m) :: ps, cont)
+        case (i: CIntExpr) :: ps => acc(a, env, CIntExpr(i % m) :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
 
       case ReorderAcc(n, _, idxF, a) => path match {
-        case (i : CIntExpr) :: ps =>
+        case (i: CIntExpr) :: ps =>
           acc(a, env, CIntExpr(OperationalSemantics.evalIndexExp(idxF(AsIndex(n, Natural(i))))) :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
 
       case MapAcc(n, dt, _, f, a) => path match {
-        case (i : CIntExpr) :: ps => acc( f( IdxAcc(n, dt, AsIndex(n, Natural(i)), a) ), env, ps, cont)
+        case (i: CIntExpr) :: ps => acc(f(IdxAcc(n, dt, AsIndex(n, Natural(i)), a)), env, ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
 
@@ -233,10 +251,66 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     }
   }
 
-  def nat(nat:Nat,
-          env:Environment,
-          path:Path):C.AST.ArithmeticExpr = {
-    C.AST.ArithmeticExpr(nat)
+  def nat(nat: Nat,
+          env: Environment,
+          path: Path): C.AST.Expr = {
+    def rec(n:Nat) = this.nat(n, env, path)
+    import C.AST
+    nat match {
+      case Cst(c) => AST.Literal(c.toString)
+      case Pow(b, ex) =>
+        ex match {
+          case Cst(2) => AST.BinaryExpr(rec(b),AST.BinaryOperator.*, rec(b))
+          case _ => AST.Cast(AST.Type.int, AST.FunCall(AST.DeclRef("pow"), immutable.Seq(
+            AST.Cast(AST.Type.float, rec(b)), AST.Cast(AST.Type.float, rec(b)))
+          ))
+        }
+      case Log(b, x) => AST.Cast(AST.Type.int, AST.FunCall(AST.DeclRef("log" + b), immutable.Seq(
+       AST.Cast(AST.Type.float, rec(x)))
+      ))
+      case Prod(es) => es.foldLeft(AST.Literal("1"):AST.Expr)((accum:AST.Expr, e:ArithExpr) => {
+        e match {
+          case Pow(b, Cst(-1)) => C.AST.BinaryExpr(accum, AST.BinaryOperator./, rec(b))
+          case _ => C.AST.BinaryExpr(accum, AST.BinaryOperator.*, rec(e))
+        }
+      })
+      case Sum(es) => es.map(rec).reduceOption(AST.BinaryExpr(_, AST.BinaryOperator.+, _)).getOrElse(AST.Literal("0"))
+      case Mod(a, n) => AST.BinaryExpr(rec(a), AST.BinaryOperator.%, rec(n))
+      case v:Var => C.AST.DeclRef(v.toString)
+      case IntDiv(n, d) => AST.BinaryExpr(rec(n), AST.BinaryOperator./, rec(d))
+      case lu:Lookup => AST.FunCall(AST.DeclRef(s"lookup${lu.id}"), immutable.Seq(AST.Literal(lu.index.toString)))
+
+      case lift.arithmetic.IfThenElse(cond, trueBranch, falseBranch) => AST.TernaryExpr(
+       boolExp(cond, env, path), rec(trueBranch), rec(falseBranch))
+
+      case natFunCall: NatFunCall =>
+        if(natFunCall.args.isEmpty) {
+          env.inlLetNatEnv(natFunCall.fun)
+        } else {
+          AST.FunCall(AST.DeclRef(natFunCall.name), natFunCall.args.map({
+            case NatArg(n) => rec(n)
+            case LetNatIdArg(letNatIdentifier) => AST.DeclRef(letNatIdentifier.name)
+          }))
+        }
+
+      case sp: SteppedCase => rec(sp.intoIfChain())
+      case otherwise => throw new Exception(s"Don't know how to print $otherwise")
+    }
+  }
+
+  private def boolExp(b:BoolExpr, env:Environment, path:Path):C.AST.Expr = b match {
+    case BoolExpr.True => C.AST.Literal("true")
+    case BoolExpr.False => C.AST.Literal("false")
+    case BoolExpr.ArithPredicate(lhs, rhs, op) =>
+      val cOp = op match {
+        case ArithPredicate.Operator.!= => C.AST.BinaryOperator.!=
+        case ArithPredicate.Operator.== => C.AST.BinaryOperator.==
+        case ArithPredicate.Operator.< => C.AST.BinaryOperator.<
+        case ArithPredicate.Operator.<= => C.AST.BinaryOperator.<=
+        case ArithPredicate.Operator.> => C.AST.BinaryOperator.>
+        case ArithPredicate.Operator.>= => C.AST.BinaryOperator.>=
+      }
+      C.AST.BinaryExpr(nat(lhs, env, path), cOp, nat(rhs, env, path))
   }
 
   override def exp(phrase: Phrase[ExpType],
@@ -709,8 +783,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
     def codeGenLiteral(d: OperationalSemantics.Data): Expr = {
       d match {
-        case i: IndexData =>
-          C.AST.ArithmeticExpr(i.n)
+        case i: IndexData => nat(i.n, Environment.empty, List())
         case _: IntData | _: FloatData | _: DoubleData | _: BoolData =>
           C.AST.Literal(d.toString)
         case ArrayData(a) => d.dataType match {

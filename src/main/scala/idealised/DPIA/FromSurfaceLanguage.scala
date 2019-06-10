@@ -47,12 +47,9 @@ object FromSurfaceLanguage {
           toPhrase(fun).asInstanceOf[Phrases.Phrase[Types.TypeDependentFunctionType[Types.PhraseType]]],
           arg)
 
-      case ln@LetNat(_, definition, _, _) =>
-        val fv = freeVariables(definition)
-        val scoped = scopeLetNat(fv, ln)
-
+      case ln@LetNat(binder, definition, body, _) =>
         Phrases.LetNat(
-          scoped.binder, toPhrase(scoped.definition).asInstanceOf[Phrase[ExpType]], toPhrase(scoped.body)
+          binder, toPhrase(definition).asInstanceOf[Phrase[ExpType]], toPhrase(body)
         )
 
       case IfThenElseExpr(cond, thenE, elseE, _) =>

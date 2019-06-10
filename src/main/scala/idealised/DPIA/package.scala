@@ -1,12 +1,8 @@
 package idealised
 
 import idealised.C.AST.CPrinter
-import idealised.DPIA.FunctionalPrimitives.{AsIndex, IndexAsNat}
-import idealised.DPIA.Lifting._
 import idealised.DPIA.Phrases._
-import idealised.DPIA.Semantics.OperationalSemantics.IndexData
 import idealised.DPIA.Types.{PhraseTypeParser, _}
-import idealised.SurfaceLanguage.Operators
 import lift.arithmetic._
 
 import scala.language.{implicitConversions, reflectiveCalls}

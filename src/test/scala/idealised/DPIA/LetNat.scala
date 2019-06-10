@@ -5,7 +5,7 @@ import idealised.SurfaceLanguage.Semantics.IntData
 import idealised.SurfaceLanguage.Types._
 import idealised.util.SyntaxChecker
 
-class DependentLet extends idealised.util.Tests{
+class LetNat extends idealised.util.Tests{
 
   test("Simple no capture") {
     val program = nFun(n =>
