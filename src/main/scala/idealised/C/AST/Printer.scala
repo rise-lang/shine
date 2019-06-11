@@ -331,7 +331,7 @@ class CPrinter() extends Printer {
   def typeName(t: Type): String = t.toString
 
   override def toString(e: ArithExpr) : String = {
-    println("WARNING!!! LATE PRINTING OF ARITHMETIC EXPRESSIONS")
+    Predef.println("WARNING!!! LATE PRINTING OF ARITHMETIC EXPRESSIONS")
     e match {
       case Cst(c) => c.toString
       case Pow(b, ex) =>
