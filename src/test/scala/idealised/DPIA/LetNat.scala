@@ -50,7 +50,7 @@ class LetNat extends idealised.util.Tests{
     val f = nFun(n => fun(ArrayType(n, int))(dict =>
       letNat(nFun(i => fun(ArrayType(n, int))(dict => Idx(dict, asIndex(n, i)))),
         length => letNat(dict,
-          nDict => fun(DepArrayType(n, i => ArrayType(length(i, nDict), float)))(xs => xs)
+          nDict => fun(DepArrayType(n, i => ArrayType(length(i, nDict), float)))(xs => xs :>> depMapSeq(mapSeq(fun(x => x + 1.0f))))
         )
       )))
 
