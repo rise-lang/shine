@@ -188,19 +188,6 @@ object TypeInference {
           }
         }
         VisitAndRebuild(defn, findFunctionTypes)
-
-        finalReturnType(t) match {
-          case _:IndexType =>
-          case idealised.SurfaceLanguage.Types.int =>
-          case _ => error(defn.toString, "in NatLet definition return value must either be 'int' or 'idx'")
-        }
     }
-  }
-
-  private def finalReturnType(t:Type):Type = t match {
-    case FunctionType(_, out) => finalReturnType(out)
-    case NatDependentFunctionType(_, out) => finalReturnType(out)
-    case TypeDependentFunctionType(_, out) => finalReturnType(out)
-    case _ => t
   }
 }

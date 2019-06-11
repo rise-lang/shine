@@ -48,8 +48,10 @@ class LetNat extends idealised.util.Tests{
 
   test("Dictionary-dependent array") {
     val f = nFun(n => fun(ArrayType(n, int))(dict =>
-      letNat(nFun(i => Idx(dict, asIndex(n, i))),
-        length => fun(DepArrayType(n, i => ArrayType(length(i), float)))(xs => xs)
+      letNat(nFun(i => fun(ArrayType(n, int))(dict => Idx(dict, asIndex(n, i)))),
+        length => letNat(dict,
+          nDict => fun(DepArrayType(n, i => ArrayType(length(i, nDict), float)))(xs => xs)
+        )
       )))
 
     val typed = TypeInference(f, Map())
