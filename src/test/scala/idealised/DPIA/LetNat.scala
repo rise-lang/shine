@@ -1,7 +1,8 @@
 package idealised.DPIA
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.LiteralExpr
-import idealised.SurfaceLanguage.Semantics.IntData
+import idealised.SurfaceLanguage.Primitives.{AsIndex, Idx}
+import idealised.SurfaceLanguage.Semantics.{IndexData, IntData}
 import idealised.SurfaceLanguage.Types._
 import idealised.util.SyntaxChecker
 
@@ -35,6 +36,21 @@ class LetNat extends idealised.util.Tests{
               f => xs :>> take(f()) :>> mapSeq(fun(x => x + 1.0f)))
         )
       ))
+
+    val typed = TypeInference(f, Map())
+
+    val p = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(typed))
+
+    val code = p.code
+    SyntaxChecker.checkOpenCL(code)
+    println(code)
+  }
+
+  test("Dictionary-dependent array") {
+    val f = nFun(n => fun(ArrayType(n, int))(dict =>
+      letNat(nFun(i => Idx(dict, asIndex(n, i))),
+        length => fun(DepArrayType(n, i => ArrayType(length(i), float)))(xs => xs)
+      )))
 
     val typed = TypeInference(f, Map())
 

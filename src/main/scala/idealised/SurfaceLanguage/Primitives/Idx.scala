@@ -12,10 +12,10 @@ case class Idx(e:Expr, idx:Expr, override val t:Option[DataType] = None) extends
       TypeInference(this.idx, subs) |> (index =>
         (e.t, index.t) match {
           case (Some(ArrayType(n, dt)), Some(IndexType(idxLen))) =>
-            ArithPredicate(n, idxLen, ArithPredicate.Operator.<).evaluate match {
-              case Some(false) => error(expr = s"($array @ $index)", found = s"$idxLen >= $n", expected = s"$idxLen < $n")
+            ArithPredicate(n, idxLen, ArithPredicate.Operator.<=).evaluate match {
+              case Some(false) => error(expr = s"($array @ $index)", found = s"$idxLen > $n", expected = s"$idxLen < $n")
+              case _ => Idx(array, index, Some(dt))
             }
-            Idx(array, index, Some(dt))
 
           case x => error(expr = s"($array @ $index)", found = s"${x.toString()}", expected = "(n.dt, idx(n))")
         }

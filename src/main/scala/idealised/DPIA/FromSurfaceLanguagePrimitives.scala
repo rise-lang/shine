@@ -200,6 +200,12 @@ object FromSurfaceLanguagePrimitives {
           Some(FunctionalPrimitives.AsIndex(n, FromSurfaceLanguage.asPhrase[DPIA.Types.ExpType](e)))
       }
 
+      case Idx(e, idx, _) =>Some(
+        ImperativePrimitives.Idx(
+          FromSurfaceLanguage.asPhrase[DPIA.Types.ExpType](idx),
+          FromSurfaceLanguage.asPhrase[DPIA.Types.ExpType](e)
+        ))
+
       case Cast(bt, e, _) => e.t match {
         case Some(edt: BasicType) => {
           def toDPIABasicType(bt: DataType): DPIA.Types.BasicType = {
