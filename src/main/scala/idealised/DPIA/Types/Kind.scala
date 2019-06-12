@@ -23,6 +23,9 @@ object Kind {
   implicit object NatIdentifierMaker extends IdentifierMaker[NatKind] {
     override def makeIdentifier(): NatIdentifier = NatIdentifier(DPIA.freshName("n"))
   }
+  implicit object AddrIdentifierMaker extends IdentifierMaker[AddrKind] {
+    override def makeIdentifier(): AddrSpaceIdentifier = AddrSpaceIdentifier(DPIA.freshName("addr"))
+  }
 }
 
 sealed trait DataKind extends Kind {
@@ -37,4 +40,9 @@ sealed trait PhraseKind extends Kind {
 sealed trait NatKind extends Kind {
   override type T = DPIA.Nat
   override type I = DPIA.NatIdentifier
+}
+
+sealed trait AddrKind extends Kind {
+  override type T = AddrSpace
+  override type I = AddrSpaceIdentifier
 }
