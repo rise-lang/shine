@@ -38,16 +38,19 @@ It is important that these translations satisfy the following equivalences.
       &=& \semE{E_1}_{\num}(\lambda x.~\semE{E_2}_{\num}(\lambda y.~A := x + y))
       \medskip\\
 
+      \semA{\prim{toMem}~\alpha~\delta~E}_{\delta}(A)
+      &=& \semA{E}_\delta(A)
+      \\
       \semA{\prim{mapPar}~N~\delta_1~\delta_2~F~E}_{N.\delta_2}(A)
       &=& \semE{E}_{N.\delta_1}(\lambda x.~\prim{mapParI}~N~\delta_1~\delta_2~(\lambda x~o. \semA{F~x}_{\delta_2}(o))~x~A)
       \\
       \semA{\prim{mapSeq}~N~\delta_1~\delta_2~F~E}_{N.\delta_2}(A)
       &=& \semE{E}_{N.\delta_1}(\lambda x.~\prim{mapSeqI}~N~\delta_1~\delta_2~(\lambda x~o. \semA{F~x}_{\delta_2}(o))~x~A)
       \\
-      \semA{\prim{reduceSeq}~N~\delta_1~\delta_2~F~I~E}_{\delta_2}(A)
+      \semA{\prim{reduceSeq}~N~\alpha~\delta_1~\delta_2~F~I~E}_{\mathsf{num}}(A)
       &=& \begin{array}[t]{@{}l}
             \semE{E}_{N.\delta_1}(\lambda x.~\semE{I}_{\delta_2}(\lambda y.\\
-            \quad\quad \prim{reduceSeqI}~N~\delta_1~\delta_2~(\lambda x~y~o. \semA{F~x~y}_{\delta_2}(o))~y~x~(\lambda r. \semA{r}(A))))
+            \quad\quad \prim{reduceSeqI}~N~\alpha~\delta_1~\delta_2~(\lambda x~y~o. \semA{F~x~y}_{\delta_2}(o))~y~x~(\lambda r.A := r)))
           \end{array}
       \medskip\\
 
@@ -56,9 +59,6 @@ It is important that these translations satisfy the following equivalences.
       \\
       \semA{\prim{join}~N~M~\delta~E}_{NM.\delta}(A)
       &=& \semA{E}_{N.M.\delta}(\prim{joinAcc}~N~M~\delta~A)
-      \\
-      \semA{\prim{reorder}~N~\delta~F~F^{-1}~E}_{N.\delta}(A)
-      &=& \semA{E}_{N.\delta}(\prim{reorderAcc}~N~\delta~F^{-1}~A)
       \\
       \semA{\prim{zip}~N~\delta_1~\delta_2~E_1~E_2}_{N.\delta_1\times\delta_2}(A)
       &=& \semA{E_1}_{N.\delta_1}(\prim{zipAcc}_1~N~\delta_1~\delta_2~A);
@@ -94,16 +94,14 @@ It is important that these translations satisfy the following equivalences.
       &=& \semE{E_1}_{\num}(\lambda x.~\semE{E_2}_{\num}(\lambda y.~C(x+y)~)~)
       \medskip\\
 
-      \semE{\prim{mapPar}~N~\delta_1~\delta_2~F~E}_{N.\delta_2}(C)
-      &=& \prim{new}~(N.\delta_2)~(\lambda \mathit{tmp}.~\semA{\prim{mapPar}~N~\delta_1~\delta_2~F~E}_{N.\delta_2}(\mathit{tmp}.2);~C(\mathit{tmp}.1)~)
+      \semE{\prim{toMem}~\alpha~\delta~E}_{\delta}(C)
+        &=& \prim{new}~\alpha~\delta~(\lambda \mathit{tmp}.~\semA{E}_{\delta}(\mathit{tmp}.w);~C(\mathit{tmp}.r)~)
       \\
-      \semE{\prim{mapSeq}~N~\delta_1~\delta_2~F~E}_{N.\delta_2}(C)
-      &=& \prim{new}~(N.\delta_2)~(\lambda \mathit{tmp}.~\semA{\prim{mapSeq}~N~\delta_1~\delta_2~F~E}_{N.\delta_2}(\mathit{tmp}.2);~C(\mathit{tmp}.1)~)
-      \\
-      \semE{\prim{reduceSeq}~N~\delta_1~\delta_2~F~I~E}_{\delta_2}(C)
+      \semE{\prim{reduceSeq}~N~\alpha~\delta_1~\delta_2~F~I~E}_{\delta_2}(C)
       &=& \begin{array}[t]{@{}l}
             \semE{E}_{N.\delta_1}(\lambda x.~
-            \semE{I}_{\delta_2}(\lambda y.~\prim{reduceSeqI}~N~\delta_1~\delta_2~(\lambda x~y~o.~\semA{F~x~y}_{\delta_2}(o))~y~x)~C)
+            \semE{I}_{\delta_2}(\lambda y.\\
+      \quad\quad \prim{reduceSeqI}~N~\alpha~\delta_1~\delta_2~(\lambda x~y~o.~\semA{F~x~y}_{\delta_2}(o))~y~x)~C)
           \end{array}
       \medskip\\
 
@@ -112,9 +110,6 @@ It is important that these translations satisfy the following equivalences.
       \\
       \semE{\prim{join}~N~M~\delta~E}_{NM.\delta}(C)
       &=& \semE{E}_{N.M.\delta}(\lambda x.~C(\prim{join}~N~M~\delta~x)~)
-      \\
-      \semE{\prim{reorder}~N~\delta~F~F^{-1}~E}_{N.\delta}(C)
-      &=& \semE{E}_{N.\delta}(\lambda x.~C(\prim{reorder}~N~\delta~F~F^{-1}~x))
       \\
       \semE{\prim{zip}~N~\delta_1~\delta_2~E_1~E_2}_{N.\delta_1 \times \delta_2}(C)
       &=& \semE{E_1}_{N.\delta_1}(\lambda x.~\semE{E_2}_{N.\delta_2}(\lambda y.~C(\prim{zip}~N~\delta_1~\delta_2~x~y)~)~)
@@ -160,9 +155,6 @@ For the acceptor translation, the intuition is that we cannot decide what to do 
       \semM{G}{\prim{join}~N~M~\delta_1~E}_{NM.\delta_2}(A)
       &=& \semM{\prim{map}~M~\delta_1~\delta_2~G}{E}_{N.M.\delta_2}(\prim{joinAcc}~N~M~\delta_1~A)
       \\
-      \semM{G}{\prim{reorder}~N~\delta_1~F~F^{-1}~E}_{N.\delta_2}(A)
-      &=& \semM{G}{E}_{N.\delta_2}(\prim{reorderAcc}~N~\delta_1~F^{-1}~A)
-      \\
     \end{array}
   \end{displaymath}
   \caption{Acceptor-passing map translation}\label{fig:map-acc-trans}
@@ -195,11 +187,11 @@ $$ \prim{mapRead}: (n : \natkind) \to (\dtone~\dttwo : \datatype) \to (\tyexp[\d
 \begin{displaymath}
   \prim{reduceSeqI}
   =
-  \Lambda n~\dtone~\dttwo.\lambda f\,\mathit{init}~\mathit{xs}~c.~\prim{new}~\dttwo~(\lambda \mathit{acc}.~
+  \Lambda n~a~\dtone~\dttwo.\lambda f\,\mathit{init}~\mathit{xs}~c.~\prim{new}~a~\dttwo~(\lambda \mathit{acc}.~
     \begin{array}[t]{@{}l}
-    \projtwo{acc} :=_{\dtone} \mathit{init};\\
-    \prim{for}~n~(\lambda i.~f\,(\ei)~(\projtwo{acc})~(\projone{acc})\ );\\
-    c~(\projone{acc})\ )
+    \semA{init}(acc.w)\\
+    \prim{for}~n~(\lambda i.~f\,(\ei)~(acc.r)~(acc.w)\ );\\
+    c~(acc.r)\ )
     \end{array}
 \end{displaymath}
 
