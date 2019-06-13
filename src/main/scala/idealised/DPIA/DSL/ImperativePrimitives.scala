@@ -64,7 +64,7 @@ object `for` {
 object fst {
   def apply(record: Phrase[ExpType]): Fst = {
     record.t match {
-      case ExpType(RecordType(dt1, dt2)) => Fst(dt1, dt2, record)
+      case ExpType(RecordType(dt1, dt2), _) => Fst(dt1, dt2, record)
       case x => error(x.toString, "ExpType(RecordType)")
     }
   }
@@ -73,7 +73,7 @@ object fst {
 object snd {
   def apply(record: Phrase[ExpType]): Snd = {
     record.t match {
-      case ExpType(RecordType(dt1, dt2)) => Snd(dt1, dt2, record)
+      case ExpType(RecordType(dt1, dt2), _) => Snd(dt1, dt2, record)
       case x => error(x.toString, "ExpType(RecordType)")
     }
   }

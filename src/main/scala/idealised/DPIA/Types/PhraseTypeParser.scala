@@ -6,7 +6,8 @@ class PhraseTypeParser(val string: String,
                        var strings: Seq[String],
                        var values: Iterator[Any]) {
 
-  val tokens: Seq[String] = Seq("exp", "acc", "comm", "var", "nat", "idx", "[", "]", "(", ")", ".", "x", "->", ":")
+  val tokens: Seq[String] =
+    Seq("exp", "acc", "comm", "var", "nat", "idx", "[", "]", "(", ")", ".", "x", "->", ":", ",")
 
   def hasToken: Boolean = strings.nonEmpty
 
@@ -93,7 +94,7 @@ class PhraseTypeParser(val string: String,
 //    }
 //  }
 
-  def parseDataTypeOrNatDataTypeFunction:Either[DataType, NatDataTypeFunction] = {
+  def parseDataTypeOrNatDataTypeFunction: Either[DataType, NatDataTypeFunction] = {
     if (peakToken == "(") {
       nextToken
     }
@@ -115,6 +116,15 @@ class PhraseTypeParser(val string: String,
       case Left(dt) => dt
       case Right(_) => error
     }
+  }
+
+  def parseAccessType: AccessType = {
+    if (values.hasNext) {
+      values.next match {
+        case a : AccessType => a
+        case _ => error
+      }
+    } else error
   }
 
   def parseNatDependentFunctionType: PhraseType = {
@@ -170,8 +180,16 @@ class PhraseTypeParser(val string: String,
     nextToken match {
       case "[" =>
         val dt = parseDataType
-        nextToken match {
-          case "]" => ExpType(dt)
+
+        peakToken match {
+          case "," => {
+            nextToken
+            val accessType = parseAccessType
+            nextToken match {
+              case "]" => ExpType(dt, accessType)
+              case _ => error
+            }
+          }
           case _ => error
         }
       case _ => error
@@ -195,7 +213,7 @@ class PhraseTypeParser(val string: String,
       case "[" =>
         val dt = parseDataType
         nextToken match {
-          case "]" => ExpType(dt) x AccType(dt)
+          case "]" => ExpType(dt, Read) x AccType(dt)
           case _ => error
         }
       case _ => error

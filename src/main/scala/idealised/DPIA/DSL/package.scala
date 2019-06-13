@@ -26,35 +26,35 @@ package object DSL {
 
   implicit class ExpPhraseExtensions(e: Phrase[ExpType]) {
     def `@`(index: Phrase[ExpType]): Idx = (index.t, e.t) match {
-      case (ExpType(IndexType(n1)), ExpType(ArrayType(n2, dt))) if n1 == n2 =>
+      case (ExpType(IndexType(n1), _), ExpType(ArrayType(n2, dt), _)) if n1 == n2 =>
         Idx(n1, dt, index, e)
-      case x => error(x.toString, "(exp[idx(n)], exp[n.dt])")
+      case x => error(x.toString, "(exp[idx(n), _], exp[n.dt, _])")
     }
 
     def `@`(index: Nat): Idx = e.t match {
-      case ExpType(ArrayType(n, dt)) =>
+      case ExpType(ArrayType(n, dt), _) =>
         Idx(n, dt, AsIndex(n, Natural(index)), e)
-      case x => error(x.toString, "exp[n.dt]")
+      case x => error(x.toString, "exp[n.dt, _]")
     }
 
 
     def `@v`(index: Phrase[ExpType]): IdxVec = (index.t, e.t) match {
-      case (ExpType(IndexType(n1)), ExpType(VectorType(n2, st))) if n1 == n2 =>
+      case (ExpType(IndexType(n1), _), ExpType(VectorType(n2, st), _)) if n1 == n2 =>
         IdxVec(n1, st, index, e)
-      case x => error(x.toString, "(exp[idx(n)], exp[st<n>])")
+      case x => error(x.toString, "(exp[idx(n), _], exp[st<n>, _])")
     }
 
     def `@d`(index: Nat):DepIdx = e.t match {
-      case ExpType(depArray:DepArrayType) => DepIdx(depArray.size, depArray.elemFType, index, e)
-      case x => error(x.toString, "exp[n.(i:Nat) -> dt]")
+      case ExpType(depArray:DepArrayType, _) => DepIdx(depArray.size, depArray.elemFType, index, e)
+      case x => error(x.toString, "exp[n.(i:Nat) -> dt, _]")
     }
   }
 
   implicit class AccPhraseExtensions(a: Phrase[AccType]) {
     def `@`(index: Phrase[ExpType]): IdxAcc = (index.t, a.t) match {
-      case (ExpType(IndexType(n1)), AccType(ArrayType(n2, dt))) if n1 == n2 =>
+      case (ExpType(IndexType(n1), _), AccType(ArrayType(n2, dt))) if n1 == n2 =>
         IdxAcc(n1, dt, index, a)
-      case x => error(x.toString, "(exp[idx(n)], acc[n.dt])")
+      case x => error(x.toString, "(exp[idx(n), _], acc[n.dt])")
     }
 
     def `@`(index: Nat): IdxAcc = a.t match {
@@ -64,9 +64,9 @@ package object DSL {
     }
 
     def `@v`(index: Phrase[ExpType]): IdxVecAcc = (index.t, a.t) match {
-      case (ExpType(IndexType(n1)), AccType(VectorType(n2, st))) if n1 == n2 =>
+      case (ExpType(IndexType(n1), _), AccType(VectorType(n2, st))) if n1 == n2 =>
         IdxVecAcc(n1, st, index, a)
-      case x => error(x.toString, "(exp[idx(n)], acc[n.dt])")
+      case x => error(x.toString, "(exp[idx(n), _], acc[n.dt])")
     }
 
     def `@d`(index: Nat):DepIdxAcc = a.t match {
@@ -139,8 +139,8 @@ package object DSL {
   // this is safe as long as `f' returns a Nat value of less than `n'
   def mapIndexExpr(indexExpr: Phrase[ExpType], f: Nat => Nat): Phrase[ExpType] = {
     indexExpr.t match {
-      case ExpType(IndexType(n)) => AsIndex(n, mapNatExpr(IndexAsNat(n, indexExpr), f))
-      case x => throw new Exception(s"Expected ExpType(IndexType(n)) found: $x")
+      case ExpType(IndexType(n), _) => AsIndex(n, mapNatExpr(IndexAsNat(n, indexExpr), f))
+      case x => throw new Exception(s"Expected ExpType(IndexType(n), _) found: $x")
     }
   }
 

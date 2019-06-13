@@ -34,6 +34,11 @@ package object Types {
     def →[B](y: B): B = ->(y)
   }
 
+  implicit final class ArrowAddrSpace(private val self: AddrSpace) {
+    @inline def -> [B](y: B): B = y
+    def →[B](y: B): B = ->(y)
+  }
+
   implicit final class ArrowNatNatTypeFun(private val self: NatNatTypeFunction) {
     @inline def -> [B](y: B): B = y
     def →[B](y: B): B = ->(y)
@@ -61,5 +66,19 @@ package object Types {
   object TypeDependentFunctionType {
     def apply[T <: PhraseType](dt: DataTypeIdentifier, t: T): DependentFunctionType[DataKind, T] =
       DependentFunctionType[DataKind, T](dt, t)
+  }
+
+  type AddrSpaceDependentFunctionType[T <: PhraseType] = DependentFunctionType[AddrKind, T]
+
+  object AddrSpaceDependentFunctionType {
+    def apply[T <: PhraseType](addr: AddrSpaceIdentifier, t: T): DependentFunctionType[AddrKind, T] =
+      DependentFunctionType[AddrKind, T](addr, t)
+  }
+
+  type AccessDependentFunctionType[T <: PhraseType] = DependentFunctionType[AccessKind, T]
+
+  object AccessDependentFunctionType {
+    def apply[T <: PhraseType](at: AccessTypeIdentifier, t: T): DependentFunctionType[AccessKind, T] =
+      DependentFunctionType[AccessKind, T](at, t)
   }
 }

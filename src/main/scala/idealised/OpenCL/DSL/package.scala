@@ -39,6 +39,6 @@ package object DSL {
     def apply(dt: DataType,
               addressSpace: AddressSpace,
               f: Phrase[VarType] => Phrase[CommandType]): OpenCLNew =
-      OpenCLNew(dt, addressSpace, λ(exp"[$dt]" x acc"[$dt]")(v => f(v) ))
+      OpenCLNew(dt, addressSpace, λ(exp"[$dt, $Read]" x acc"[$dt]")(v => f(v) ))
   }
 }

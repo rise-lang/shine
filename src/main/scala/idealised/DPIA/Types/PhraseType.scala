@@ -8,8 +8,8 @@ sealed trait PhraseType
 
 sealed abstract class BasePhraseTypes extends PhraseType
 
-final case class ExpType(dataType: DataType) extends BasePhraseTypes {
-  override def toString = s"exp[$dataType]"
+final case class ExpType(dataType: DataType, accessType: AccessType) extends BasePhraseTypes {
+  override def toString = s"exp[$dataType, $accessType]"
 }
 
 final case class AccType(dataType: DataType) extends BasePhraseTypes {

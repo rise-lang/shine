@@ -208,7 +208,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                    cont: Expr => Stmt) : Stmt =
   {
     phrase match {
-      case i@Identifier(_, ExpType(dt)) => cont(CCodeGen.generateAccess(dt,
+      case i@Identifier(_, ExpType(dt, _)) => cont(CCodeGen.generateAccess(dt,
         env.identEnv.applyOrElse(i, (_: Phrase[_]) => {
           throw new Exception(s"Expected to find `$i' in the environment: `${env.identEnv}'")
         }), path, env))
@@ -350,7 +350,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case (i : CIntExpr) :: ps =>
           val continue_cmd =
             Identifier[ExpType -> CommandType](s"continue_$freshName",
-              FunctionType(ExpType(dt2), comm))
+              FunctionType(ExpType(dt2, Read), comm))
 
           cmd(f(
             Idx(n, dt1, AsIndex(n, Natural(i)), e)
@@ -364,7 +364,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case (i : CIntExpr) :: ps =>
           val continue_cmd =
             Identifier[ExpType -> CommandType](s"continue_$freshName",
-              FunctionType(ExpType(dt), comm))
+              FunctionType(ExpType(dt, Read), comm))
 
           cmd(f(AsIndex(n, Natural(i)))(continue_cmd),
             env updatedContEnv (continue_cmd -> (e => env => exp(e, env, ps, cont))))
@@ -423,8 +423,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       val newIdentEnv = env.identEnv.map {
         case (Identifier(name, AccType(dt)), declRef) =>
           (Identifier(name, AccType(DataType.substitute(at, `for`, in = dt))), declRef)
-        case (Identifier(name, ExpType(dt)), declRef) =>
-          (Identifier(name, ExpType(DataType.substitute(at, `for`, in = dt))), declRef)
+        case (Identifier(name, ExpType(dt, a)), declRef) =>
+          (Identifier(name, ExpType(DataType.substitute(at, `for`, in = dt), a)), declRef)
         case x => x
       }
       C.AST.Block(immutable.Seq(this.cmd(p, env.copy(identEnv = newIdentEnv))))
@@ -884,7 +884,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                                    identEnv: immutable.Map[Identifier[_ <: BasePhraseTypes], C.AST.DeclRef]): Nat = {
     // lift the substitutions from the Phrase level to the ArithExpr level
     val substitionMap = identEnv.filter(_._1.t match {
-      case ExpType(IndexType(_)) => true
+      case ExpType(IndexType(_), _) => true
       case AccType(IndexType(_)) => true
       case _ => false
     }).map(i => (NamedVar(i._1.name), NamedVar(i._2.name))).toMap[ArithExpr, ArithExpr]
