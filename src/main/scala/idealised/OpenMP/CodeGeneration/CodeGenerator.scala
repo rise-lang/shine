@@ -284,15 +284,19 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         case (VectorType(_, elemType), i :: Nil) =>
           // this is not really generic, to treat all arguments the same ...
           val inTs_ = inTs.map { case VectorType(_, et) => et }
-          addDeclaration(
-            C.AST.FunDecl(funDecl.name,
-              returnType = typ(elemType),
-              params = (funDecl.args zip inTs_).map {
-                case (name, dt) => C.AST.ParamDecl(name, typ(dt))
-              },
-              body = C.AST.Code(funDecl.body)
-            )
-          )
+          funDecl.definition match {
+            case Some(funDef) =>
+              addDeclaration(
+                C.AST.FunDecl(funDecl.name,
+                  returnType = typ(elemType),
+                  params = (funDef.params zip inTs_).map {
+                    case (name, dt) => C.AST.ParamDecl(name, typ(dt))
+                  },
+                  body = C.AST.Code(funDef.body)
+                )
+              )
+            case _ =>
+          }
 
           CCodeGen.codeGenForeignCall(funDecl.name, args, env, i :: Nil, cont)
 

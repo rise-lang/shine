@@ -52,8 +52,8 @@ object traversal {
             case TypedExpr(e, t) =>
               TypedExpr(apply(e, v), v(t).value)
             // could be avoided if foreign fun could be parametric
-            case primitives.ForeignFunctionCall(decl, t) =>
-              primitives.ForeignFunctionCall(decl, v(t).value)
+            case primitives.ForeignFunction(decl, t) =>
+              primitives.ForeignFunction(decl, v(t).value)
             case p: Primitive => p
           }
       }
@@ -104,8 +104,8 @@ object traversal {
           case TypedExpr(e, t) =>
             chainT(apply(e, v), t).map(r => TypedExpr(r._1, r._2))
           // could be avoided if foreign fun could be parametric
-          case primitives.ForeignFunctionCall(decl, t) =>
-            v(t).map(primitives.ForeignFunctionCall(decl, _))
+          case primitives.ForeignFunction(decl, t) =>
+            v(t).map(primitives.ForeignFunction(decl, _))
           case p: Primitive => Continue(p, v)
         }
       }

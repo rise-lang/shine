@@ -8,6 +8,7 @@ import lift.core.primitives._
 import lift.core.HighLevelConstructs.reorderWithStride
 import idealised.util.{SyntaxChecker, gen}
 
+//noinspection TypeAnnotation
 class asum extends idealised.util.Tests {
 
   def inputT(n : NatIdentifier) = ArrayType(n, float)

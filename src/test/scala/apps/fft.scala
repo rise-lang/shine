@@ -1,19 +1,22 @@
-package idealised.apps
+package apps
 
-import idealised.SurfaceLanguage.DSL._
-import idealised.OpenCL.SurfaceLanguage.DSL._
-import idealised.SurfaceLanguage._
-import idealised.SurfaceLanguage.Types._
-import idealised.util.SyntaxChecker
+import lift.core._
+import lift.core.types._
+import lift.core.DSL._
+import lift.core.primitives._
+import lift.OpenCL.primitives._
 
 class fft extends idealised.util.Tests {
   def createStockhamIterationLambda(p: Int, LPrevIter: Int, N: Int): Expr = {
     val r = N / (LPrevIter * p)
 
+    val cospi = foreignFun("cospi", double -> double)
+    val sinpi = foreignFun("sinpi", double -> double)
+
     val cmultandsum = fun(vt => fun(acc => {
       val lres = acc._1 + (vt._1._1 * vt._2._1 - vt._1._2 * vt._2._2)
       val rres = acc._2 + (vt._1._2 * vt._2._1 + vt._1._1 * vt._2._2)
-      tuple(lres, rres)
+      pair(lres)(rres)
     }))
 
     // TODO compare with previous implementations again
@@ -25,26 +28,24 @@ class fft extends idealised.util.Tests {
             val exponentWoMinus2 =
               mapNatExpr(mapNatExpr(indexAsNat(j), j => j * LPrevIter) +
                 mapNatExpr(indexAsNat(i), i => i) * mapNatExpr(indexAsNat(k), k => k / (p * LPrevIter)), x => x)
-            val exponent = cast(double, exponentWoMinus2) * -2.0
-            tuple(cast(float, oclFun("cospi", double, double, exponent)),
-              cast(float, oclFun("sinpi", double, double, exponent)))
+            val exponent = (cast(exponentWoMinus2) :: float) * l(-2.0)
+            pair(cast(cospi(exponent) :: float))(cast(sinpi(exponent) :: float))
           }))))))
 
-    val modPReorder = join() o transpose() o split(p)
-    val createY = transpose() o modPReorder o split(r)
+    val modPReorder = split(p) |> transpose |> join
+    val createY = split(r) |> modPReorder |> transpose
 
     fun(ArrayType(N, TupleType(float, float)))(x =>
-      join() o transpose() o mapSeq(join() o transpose()) o
-        split(LPrevIter) o
-          join() o mapGlobal(mapSeq(fun(yChunkWithBrow => {
-
-            val yChunk = yChunkWithBrow._1
-            val Brow = yChunkWithBrow._2
-            mapSeq(fun(Bchunk => reduceSeq(cmultandsum, tuple(0.0f, 0.0f)) $ zip(yChunk, Bchunk)
-
-            )) $ Brow
-
-    }))) o map(fun(yChunkRow => zip(yChunkRow, reorderedB))) o map(transpose() o split(LPrevIter)) o createY $ x)
+      x |> createY |> map(
+        split(LPrevIter) |> transpose
+      ) |> map(fun(yChunkRow =>
+        zip(yChunkRow)(reorderedB))
+      ) |> mapGlobal(mapSeq(fun(yChunkWithBrow => {
+        val yChunk = yChunkWithBrow._1
+        val Brow = yChunkWithBrow._2
+        Brow |> mapSeq(fun(Bchunk => zip(yChunk)(Bchunk) |> reduceSeq(cmultandsum)(pair(l(0.0f))(l(0.0f)))))
+      }))) |> join |> split(LPrevIter) |> mapSeq(transpose |> join) |> transpose |> join
+    )
   }
 
   val GOLD_STOCK_ITER_P2_LPREV4_N8: Array[Double] =

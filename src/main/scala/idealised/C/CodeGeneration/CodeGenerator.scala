@@ -255,7 +255,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                 cont(CCodeGen.codeGenBinaryOp(op, e1, e2))))
           case _ => error(s"Expected path to be empty")
         }
-        case x => error(s"Expected scalar types")
+        case _ => error(s"Expected scalar types")
       }
 
       case Cast(_, dt, e) => path match {
@@ -724,13 +724,17 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                                ps: Path,
                                cont: Expr => Stmt): Stmt =
     {
-      addDeclaration(
-        C.AST.FunDecl(funDecl.name,
-          returnType = typ(outT),
-          params = (funDecl.args zip inTs).map {
-            case (name, dt) => C.AST.ParamDecl(name, typ(dt))
-          },
-          body = C.AST.Code(funDecl.body)))
+      funDecl.definition match {
+        case Some(funDef) =>
+          addDeclaration(
+            C.AST.FunDecl(funDecl.name,
+              returnType = typ(outT),
+              params = (funDef.params zip inTs).map {
+                case (name, dt) => C.AST.ParamDecl(name, typ(dt))
+              },
+              body = C.AST.Code(funDef.body)))
+        case _ =>
+      }
 
       codeGenForeignCall(funDecl.name, args, env, Nil, cont)
     }
