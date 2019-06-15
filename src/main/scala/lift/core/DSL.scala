@@ -81,17 +81,8 @@ object DSL {
       Lambda(x, f(TypedExpr(x, dt)))
     }
 
-    def apply(ft: FunctionType[Type, Type]): Object {
-      def apply(f: (Identifier, Identifier, Identifier, Identifier, Identifier) => Expr): TypedExpr
-
-      def apply(f: (Identifier, Identifier, Identifier, Identifier) => Expr): TypedExpr
-
-      def apply(f: (Identifier, Identifier, Identifier) => Expr): TypedExpr
-
-      def apply(f: (Identifier, Identifier) => Expr): TypedExpr
-
-      def apply(f: Identifier => Expr): TypedExpr
-    } = new {
+    //noinspection TypeAnnotation
+    def apply(ft: FunctionType[Type, Type]) = new {
       def apply(f: Identifier => Expr): TypedExpr = untyped(f) :: ft
 
       def apply(f: (Identifier, Identifier) => Expr): TypedExpr = untyped(f) :: ft
