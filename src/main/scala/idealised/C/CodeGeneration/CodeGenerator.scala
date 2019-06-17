@@ -92,33 +92,26 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     }
   }
 
-  private def defineNatFunction[T <: PhraseType](name: String, phrase: Phrase[T], env: Environment): Unit = {
-
-    def getPhraseAndParams[_ <: PhraseType](p: Phrase[_],
-                                            ps: immutable.Seq[Identifier[ExpType]] = immutable.Seq()
-                                           ): (Phrase[ExpType], immutable.Seq[Identifier[ExpType]]) = {
-      p match {
-        case l: Lambda[ExpType, _]@unchecked => getPhraseAndParams(l.body, l.param +: ps)
-        case ndl: NatDependentLambda[_] => getPhraseAndParams(ndl.body, Identifier(ndl.x.name, ExpType(int)) +: ps)
-        case ep: Phrase[ExpType]@unchecked => (ep, ps)
-      }
-    }
-
-    val (body, params) = getPhraseAndParams(phrase)
-
-    val newEnv = params.foldLeft(env)((e, ident) => e.updatedIdentEnv(ident, C.AST.DeclRef(ident.name)))
-
-    val decl = C.AST.FunDecl(
-      name,
-      typ(body.t.dataType),
-      params.map(ident => C.AST.ParamDecl(ident.name, typ(ident.t.dataType))),
-      C.AST.Block(immutable.Seq(exp(body, newEnv, List(), C.AST.Return(_))))
-    )
-    addDeclaration(decl)
-  }
 
   def updatedRanges(key: String, value: lift.arithmetic.Range): CodeGenerator =
     new CodeGenerator(decls, ranges.updated(key, value))
+
+  def generate(phrase:Phrase[CommandType],
+               topLevelDefinitions:scala.Seq[(LetNatIdentifier, Phrase[ExpType])],
+               env:CodeGenerator.Environment): (scala.Seq[Decl], Stmt) = {
+    val stmt = this.generateWithFunctions(phrase, topLevelDefinitions, env)
+    (decls, stmt)
+  }
+
+  def generateWithFunctions(phrase:Phrase[CommandType],
+                            topLevelDefinitions:scala.Seq[(LetNatIdentifier, Phrase[ExpType])],
+                            env:CodeGenerator.Environment):Stmt = {
+    topLevelDefinitions.headOption match {
+      case Some((ident, defn)) =>
+        generateLetNat(ident, defn, env, (gen, env) => gen.generateWithFunctions(phrase, topLevelDefinitions.tail, env))
+      case None => cmd(phrase,env)
+    }
+  }
 
   override def generate(phrase: Phrase[CommandType], env: CodeGenerator.Environment): (scala.Seq[Decl], Stmt) = {
     val stmt = cmd(phrase, env)
@@ -164,14 +157,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case Proj1(pair) => cmd(Lifting.liftPair(pair)._1, env)
       case Proj2(pair) => cmd(Lifting.liftPair(pair)._2, env)
 
-      case LetNat(binder, defn, body) =>
-        defn.t match {
-          case ExpType(_) =>
-            exp(defn.asInstanceOf[Phrase[ExpType]], env, List(), e => cmd(body, env updatedInlNatEnv(binder, e)))
-          case _ =>
-            defineNatFunction(binder.name, defn, env)
-            cmd(body, env)
-        }
+      case LetNat(binder, defn, body) => generateLetNat(binder, defn, env, (gen, env) => gen.cmd(body, env))
+
 
       case Apply(_, _) | NatDependentApply(_, _) | TypeDependentApply(_, _) |
            _: CommandPrimitive =>
@@ -523,6 +510,51 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           (typ(r.snd), "_snd")))
       case _: idealised.DPIA.Types.DataTypeIdentifier => throw new Exception("This should not happen")
     }
+  }
+
+
+  private def generateLetNat[T <: PhraseType](binder:LetNatIdentifier,
+                             defn:Phrase[T],
+                             env:Environment,
+                             cont:(CodeGenerator ,Environment) => Stmt):Stmt = {
+    defn.t match {
+      case ExpType(_) =>
+        exp(defn.asInstanceOf[Phrase[ExpType]], env, List(), e => cont(this, env updatedInlNatEnv(binder, e)))
+      case _ =>
+        val newCodeGen = defineNatFunction(binder.name, defn, env)
+        cont(newCodeGen, env)
+    }
+  }
+
+  private def defineNatFunction[T <: PhraseType](name: String, phrase: Phrase[T], env: Environment): CodeGenerator = {
+
+    def getPhraseAndParams[_ <: PhraseType](p: Phrase[_],
+                                            ps: immutable.Seq[Identifier[ExpType]] = immutable.Seq(),
+                                            ranges:immutable.Seq[(String, Range)] = immutable.Seq()
+                                           ): (Phrase[ExpType], immutable.Seq[Identifier[ExpType]], immutable.Seq[(String, Range)]) = {
+      p match {
+        case l: Lambda[ExpType, _]@unchecked => getPhraseAndParams(l.body, l.param +: ps, ranges)
+        case ndl: NatDependentLambda[_] => getPhraseAndParams(ndl.body, Identifier(ndl.x.name, ExpType(int)) +: ps, (ndl.x.name, ndl.x.range) +: ranges)
+        case ep: Phrase[ExpType]@unchecked => (ep, ps.reverse, ranges.reverse)
+      }
+    }
+
+    val (body, params, ranges) = getPhraseAndParams(phrase)
+
+    val newEnv = params.foldLeft(env)((e, ident) => e.updatedIdentEnv(ident, C.AST.DeclRef(ident.name)))
+
+    val newCodeGen = ranges.foldLeft(this)((gen, rangeInfo) => gen.updatedRanges(rangeInfo._1, rangeInfo._2))
+
+
+
+    val decl = C.AST.FunDecl(
+      name,
+      typ(body.t.dataType),
+      params.map(ident => C.AST.ParamDecl(ident.name, typ(ident.t.dataType))),
+      C.AST.Block(immutable.Seq(newCodeGen.exp(body, newEnv, List(), C.AST.Return(_))))
+    )
+    newCodeGen.addDeclaration(decl)
+    newCodeGen
   }
 
   /**
