@@ -50,6 +50,10 @@ package object DPIA {
       case other => other
     })
 
+    override def freeVariables: Set[Var] = args.map({
+      case NatArg(arg) => ArithExpr.freeVariables(arg)
+      case _ => Set[Var]()
+    }).reduceOption(_.union(_)).getOrElse(Set())
 
     def callAndParameterListString(printNat:Nat => String) =
       s"${fun.id.name}(${args.map{
