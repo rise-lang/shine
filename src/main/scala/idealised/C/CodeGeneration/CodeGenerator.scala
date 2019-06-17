@@ -276,7 +276,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         } else {
           AST.FunCall(AST.DeclRef(natFunCall.name), natFunCall.args.map({
             case NatArg(n) => rec(n)
-            case LetNatIdArg(letNatIdentifier) => AST.DeclRef(letNatIdentifier.name)
+            case LetNatIdArg(ident) => env.inlLetNatEnv(ident)
           }))
         }
 
