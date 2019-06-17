@@ -142,10 +142,11 @@ class CPrinter() extends Printer {
       case s: StructType => print(s"struct ${s.name} ${p.name}")
       case _: UnionType => ???
       case a: ArrayType =>
-        print(s"${a.getBaseType} ${p.name}[${ a.getSizes match {
+        print(s"${a.getBaseType}* ${p.name}")
+        /*print(s"${a.getBaseType} ${p.name}[${ a.getSizes match {
           case None => ""
           case Some(s) => s
-        } }]")
+        } }]")*/
       case pt: PointerType => print(s"${pt.valueType}* ${p.name}")
     }
   }
