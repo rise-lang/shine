@@ -790,6 +790,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                       cont: Expr => Stmt): Stmt = {
       exp(i, env, Nil, i => {
         val idx: ArithExpr = i match {
+          case C.AST.Literal(text) => Cst(text.toInt)
           case C.AST.DeclRef(name) => NamedVar(name, ranges(name))
           case C.AST.ArithmeticExpr(ae) => ae
         }
