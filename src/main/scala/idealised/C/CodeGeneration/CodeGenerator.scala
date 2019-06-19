@@ -96,7 +96,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
   def updatedRanges(key: String, value: lift.arithmetic.Range): CodeGenerator =
     new CodeGenerator(decls, ranges.updated(key, value))
 
-  def generate(phrase:Phrase[CommandType],
+  override def generate(phrase:Phrase[CommandType],
                topLevelDefinitions:scala.Seq[(LetNatIdentifier, Phrase[ExpType])],
                env:CodeGenerator.Environment): (scala.Seq[Decl], Stmt) = {
     val stmt = this.generateWithFunctions(phrase, topLevelDefinitions, env)
@@ -111,11 +111,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         generateLetNat(ident, defn, env, (gen, env) => gen.generateWithFunctions(phrase, topLevelDefinitions.tail, env))
       case None => cmd(phrase,env)
     }
-  }
-
-  override def generate(phrase: Phrase[CommandType], env: CodeGenerator.Environment): (scala.Seq[Decl], Stmt) = {
-    val stmt = cmd(phrase, env)
-    (decls, stmt)
   }
 
   override def cmd(phrase: Phrase[CommandType], env: Environment): Stmt = {
@@ -367,25 +362,9 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case (i: CIntExpr) :: ps =>
           exp(pad, env, ps, padExpr => {
             exp(array, env, CIntExpr(i - l) ::ps, arrayExpr => {
-
-              def cOperator(op:ArithPredicate.Operator.Value):C.AST.BinaryOperator.Value = op match {
-                case ArithPredicate.Operator.< => C.AST.BinaryOperator.<
-                case ArithPredicate.Operator.> => C.AST.BinaryOperator.>
-                case ArithPredicate.Operator.>= => C.AST.BinaryOperator.>=
-                case _ => null
-              }
-
-              def genBranch(lhs:ArithExpr, rhs:ArithExpr, operator:ArithPredicate.Operator.Value, taken:Expr, notTaken:Expr):Expr = {
-                import BoolExpr._
-                arithPredicate(lhs, rhs, operator) match {
-                  case True => taken
-                  case False => notTaken
-                  case _ => C.AST.TernaryExpr(
-                    C.AST.BinaryExpr(C.AST.ArithmeticExpr(i), cOperator(operator), C.AST.ArithmeticExpr(rhs)),
-                    taken, notTaken)
-                }
-              }
-              cont(genBranch(i, l, ArithPredicate.Operator.<, padExpr, genBranch(i, l + n, ArithPredicate.Operator.<, arrayExpr, padExpr)))
+              cont(genArithExprBranch(i, l, ArithPredicate.Operator.<, padExpr,
+                genArithExprBranch(i, l + n, ArithPredicate.Operator.<, arrayExpr, padExpr))
+              )
             })
           })
 
@@ -980,15 +959,34 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     ArithExpr.substitute(n, substitionMap)
   }
 
+  def genArithExprBranch(lhs:ArithExpr, rhs:ArithExpr, operator:ArithPredicate.Operator.Value, taken:Expr, notTaken:Expr):Expr = {
+    val cop = operator match {
+      case ArithPredicate.Operator.< => C.AST.BinaryOperator.<
+      case ArithPredicate.Operator.> => C.AST.BinaryOperator.>
+      case ArithPredicate.Operator.>= => C.AST.BinaryOperator.>=
+      case _ => null
+    }
+
+    import BoolExpr._
+    arithPredicate(lhs, rhs, operator) match {
+      case True => taken
+      case False => notTaken
+      case _ => C.AST.TernaryExpr(
+        C.AST.BinaryExpr(C.AST.ArithmeticExpr(lhs), cop, C.AST.ArithmeticExpr(rhs)),
+        taken, notTaken)
+    }
+  }
 
   private def visitAndGenerateNat[N <: C.AST.Node](node:N, env:Environment):N = {
     C.AST.Nodes.VisitAndRebuild(node, new C.AST.Nodes.VisitAndRebuild.Visitor() {
-      override def post(n: Node): Node = n match {
-        case C.AST.ArithmeticExpr(ae) => genNat(ae, env)
-        case other => other
+      override def post(n: Node): Node =
+        n match {
+          case C.AST.ArithmeticExpr(ae) => genNat(ae, env)
+          case other => other
       }
     })
   }
+
 
   def genNat(n: Nat,
           env: Environment): Expr = {

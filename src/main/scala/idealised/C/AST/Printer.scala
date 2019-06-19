@@ -355,7 +355,7 @@ class CPrinter() extends Printer {
       case i: lift.arithmetic.IfThenElse =>
         s"((${toString(i.test)}) ? " +
           s"${toString(i.t)} : ${toString(i.e)})"
-      case natFunCall:NatFunCall => natFunCall.callAndParameterListString(toString)
+      case natFunCall:NatFunCall => natFunCall.callAndParameterListString
 //      case aeFun:ArithExprFunction => aeFun.name
 //      case bs:BigSum => bs.toString
       case sp: SteppedCase => toString(sp.intoIfChain())

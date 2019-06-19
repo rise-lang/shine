@@ -55,18 +55,17 @@ package object DPIA {
       case _ => Set[Var]()
     }).reduceOption(_.union(_)).getOrElse(Set())
 
-    def callAndParameterListString(printNat:Nat => String) =
+    def callAndParameterListString =
       s"${fun.id.name}(${args.map{
         arg =>
           val nat:Nat = arg match {
             case NatArg(n) => n
             case LetNatIdArg(LetNatIdentifier(id)) => id
           }
-          printNat(nat)
-
+          nat.toString
       }.reduceOption(_ + "," + _).getOrElse("")})"
 
-    override lazy val toString = s"⌈${this.callAndParameterListString(nat => new CPrinter().toString(nat))}⌉"
+    override lazy val toString = s"⌈${this.callAndParameterListString}⌉"
 
     override val HashSeed = 0x31111112
 

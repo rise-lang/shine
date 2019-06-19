@@ -4,7 +4,7 @@ import idealised.C.AST._
 import idealised.DPIA.Compilation._
 import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives.AsIndex
-import idealised.DPIA.NatDataTypeFunction
+import idealised.DPIA.{LetNatIdentifier, NatDataTypeFunction}
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types.{AccType, CommandType, DataType, DataTypeIdentifier, DepArrayType, ExpType, PairType, PhraseType, TypeCheck, int}
 import idealised._
@@ -18,22 +18,27 @@ object ProgramGenerator {
                                 name: String = "foo"): Program = {
 
     def getPhraseAndParams[_ <: PhraseType](p: Phrase[_],
-                                            ps: Seq[Identifier[ExpType]]
-                                           ): (Phrase[ExpType], Seq[Identifier[ExpType]]) = {
+                                                    ps: Seq[Identifier[ExpType]],
+                                                    defs:Seq[(LetNatIdentifier, Phrase[ExpType])]
+                                                   ): (Phrase[ExpType], Seq[Identifier[ExpType]], Seq[(LetNatIdentifier, Phrase[ExpType])]) = {
       p match {
-        case l: Lambda[ExpType, _]@unchecked => getPhraseAndParams(l.body, l.param +: ps)
-        case ndl: NatDependentLambda[_] => getPhraseAndParams(ndl.body, Identifier(ndl.x.name, ExpType(int)) +: ps)
-        case ep: Phrase[ExpType]@unchecked => (ep, ps)
+        case l: Lambda[ExpType, _]@unchecked => getPhraseAndParams(l.body, l.param +: ps, defs)
+        case ndl: NatDependentLambda[_] => getPhraseAndParams(ndl.body, Identifier(ndl.x.name, ExpType(int)) +: ps, defs)
+        case ln:LetNat[ExpType, _]@unchecked => // LetNat(binder, defn:Phrase[ExpType], body) =>
+          getPhraseAndParams(ln.body, ps, (ln.binder, ln.defn) +: defs)
+        case ep: Phrase[ExpType]@unchecked => (ep, ps.reverse, defs.reverse)
       }
     }
 
-    val (phrase, params) = getPhraseAndParams(originalPhrase, Seq())
 
-    makeCode(phrase, params.reverse, name)
+    val (phrase, params, topLevelLetNats) = getPhraseAndParams(originalPhrase, Seq(), Seq())
+
+    makeCode(phrase, params, topLevelLetNats, name)
   }
 
   private def makeCode(p: Phrase[ExpType],
                        inputParams: Seq[Identifier[ExpType]],
+                       topLevelLetNats:Seq[(LetNatIdentifier, Phrase[ExpType])],
                        name: String): Program = {
     val outParam = createOutputParam(outT = p.t)
 
@@ -46,7 +51,7 @@ object ProgramGenerator {
     val env = C.CodeGeneration.CodeGenerator.Environment(
       (outParam +: inputParams).map(p => p -> C.AST.DeclRef(p.name) ).toMap, Map.empty, Map.empty, Map.empty)
 
-    val (declarations, code) = gen.generate(p, env)
+    val (declarations, code) = gen.generate(p, topLevelLetNats, env)
 
     val params = makeParams(outParam, inputParams, gen)
 
