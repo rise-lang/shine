@@ -1,6 +1,6 @@
 package idealised.C.CodeGeneration
 
-import idealised.C.AST.Block
+import idealised.C.AST.{Block, Node}
 import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives._
 import idealised.DPIA.ImperativePrimitives._
@@ -119,7 +119,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
   }
 
   override def cmd(phrase: Phrase[CommandType], env: Environment): Stmt = {
-    phrase match {
+    visitAndGenerateNat(phrase match {
       case Phrases.IfThenElse(cond, thenP, elseP) =>
         exp(cond, env, Nil, cond =>
           C.AST.IfThenElse(cond, cmd(thenP, env), Some(cmd(elseP, env))))
@@ -163,7 +163,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case Apply(_, _) | NatDependentApply(_, _) | TypeDependentApply(_, _) |
            _: CommandPrimitive =>
         error(s"Don't know how to generate code for $phrase")
-    }
+    }, env)
   }
 
   override def acc(phrase: Phrase[AccType],
@@ -238,66 +238,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     }
   }
 
-  def nat(n: Nat,
-          env: Environment): C.AST.Expr = {
-    def rec(n:Nat) = this.nat(n, env)
-    import C.AST
-    n match {
-      case Cst(c) => AST.Literal(c.toString)
-      case Pow(b, ex) =>
-        ex match {
-          case Cst(2) => AST.BinaryExpr(rec(b),AST.BinaryOperator.*, rec(b))
-          case _ => AST.Cast(AST.Type.int, AST.FunCall(AST.DeclRef("pow"), immutable.Seq(
-            AST.Cast(AST.Type.float, rec(b)), AST.Cast(AST.Type.float, rec(b)))
-          ))
-        }
-      case Log(b, x) => AST.Cast(AST.Type.int, AST.FunCall(AST.DeclRef("log" + b), immutable.Seq(
-       AST.Cast(AST.Type.float, rec(x)))
-      ))
-      case Prod(es) => es.foldLeft(AST.Literal("1"):AST.Expr)((accum:AST.Expr, e:ArithExpr) => {
-        e match {
-          case Pow(b, Cst(-1)) => C.AST.BinaryExpr(accum, AST.BinaryOperator./, rec(b))
-          case _ => C.AST.BinaryExpr(accum, AST.BinaryOperator.*, rec(e))
-        }
-      })
-      case Sum(es) => es.map(rec).reduceOption(AST.BinaryExpr(_, AST.BinaryOperator.+, _)).getOrElse(AST.Literal("0"))
-      case Mod(a, n) => AST.BinaryExpr(rec(a), AST.BinaryOperator.%, rec(n))
-      case v:Var => C.AST.DeclRef(v.toString)
-      case IntDiv(n, d) => AST.BinaryExpr(rec(n), AST.BinaryOperator./, rec(d))
-      case lu:Lookup => AST.FunCall(AST.DeclRef(s"lookup${lu.id}"), immutable.Seq(AST.Literal(lu.index.toString)))
-
-      case lift.arithmetic.IfThenElse(cond, trueBranch, falseBranch) => AST.TernaryExpr(
-       boolExp(cond, env), rec(trueBranch), rec(falseBranch))
-
-      case natFunCall: NatFunCall =>
-        if(natFunCall.args.isEmpty) {
-          env.inlLetNatEnv(natFunCall.fun)
-        } else {
-          AST.FunCall(AST.DeclRef(natFunCall.name), natFunCall.args.map({
-            case NatArg(n) => rec(n)
-            case LetNatIdArg(ident) => env.inlLetNatEnv(ident)
-          }))
-        }
-
-      case sp: SteppedCase => rec(sp.intoIfChain())
-      case otherwise => throw new Exception(s"Don't know how to print $otherwise")
-    }
-  }
-
-  private def boolExp(b:BoolExpr, env:Environment):C.AST.Expr = b match {
-    case BoolExpr.True => C.AST.Literal("true")
-    case BoolExpr.False => C.AST.Literal("false")
-    case BoolExpr.ArithPredicate(lhs, rhs, op) =>
-      val cOp = op match {
-        case ArithPredicate.Operator.!= => C.AST.BinaryOperator.!=
-        case ArithPredicate.Operator.== => C.AST.BinaryOperator.==
-        case ArithPredicate.Operator.< => C.AST.BinaryOperator.<
-        case ArithPredicate.Operator.<= => C.AST.BinaryOperator.<=
-        case ArithPredicate.Operator.> => C.AST.BinaryOperator.>
-        case ArithPredicate.Operator.>= => C.AST.BinaryOperator.>=
-      }
-      C.AST.BinaryExpr(nat(lhs, env), cOp, nat(rhs, env))
-  }
 
   override def exp(phrase: Phrase[ExpType],
                    env: Environment,
@@ -322,7 +262,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             case SingletonArrayData(_, a) => CCodeGen.codeGenLiteral(a)
             case _ =>
               n.dataType match {
-                case _: ArrayType => C.AST.ArraySubscript(CCodeGen.codeGenLiteral(n), nat(i, env))
+                case _: ArrayType => C.AST.ArraySubscript(CCodeGen.codeGenLiteral(n), C.AST.ArithmeticExpr(i))
                 case _ => error("Expected an ArrayType.")
               }
           }
@@ -331,7 +271,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       })
 
       case Phrases.Natural(n) => cont(path match {
-        case Nil => nat(n, env)
+        case Nil => C.AST.ArithmeticExpr(n)
         case _ => error(s"Expected the path to be empty.")
       })
 
@@ -441,7 +381,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                   case True => taken
                   case False => notTaken
                   case _ => C.AST.TernaryExpr(
-                    C.AST.BinaryExpr(nat(i, env), cOperator(operator), nat(rhs, env)),
+                    C.AST.BinaryExpr(C.AST.ArithmeticExpr(i), cOperator(operator), C.AST.ArithmeticExpr(rhs)),
                     taken, notTaken)
                 }
               }
@@ -544,13 +484,12 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
     val newCodeGen = ranges.foldLeft(this)((gen, rangeInfo) => gen.updatedRanges(rangeInfo._1, rangeInfo._2))
 
-
-
+    val cBody = visitAndGenerateNat(newCodeGen.exp(body, newEnv, List(), C.AST.Return(_)), newEnv)
     val decl = C.AST.FunDecl(
       name,
       typ(body.t.dataType),
       params.map(ident => C.AST.ParamDecl(ident.name, typ(ident.t.dataType))),
-      C.AST.Block(immutable.Seq(newCodeGen.exp(body, newEnv, List(), C.AST.Return(_))))
+      C.AST.Block(immutable.Seq(cBody))
     )
     newCodeGen.addDeclaration(decl)
     newCodeGen
@@ -697,7 +636,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case Cst(1) =>
           C.AST.Stmts(C.AST.Stmts(
             C.AST.Comment("iteration count is exactly 1, no loop emitted"),
-            C.AST.DeclStmt(C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(nat(0, env))))),
+            C.AST.DeclStmt(C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0))))),
             updatedGen.cmd(p, env updatedIdentEnv (i -> cI)))
 
         case _ =>
@@ -714,9 +653,9 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             )
           } else {
             // default case
-            val init = C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(nat(0, env)))
-            val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, nat(n, env))
-            val increment = C.AST.Assignment(cI, nat(NamedVar(cI.name, range) + 1, env))
+            val init = C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0)))
+            val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
+            val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + 1))
 
             C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
               C.AST.Block(immutable.Seq(updatedGen.cmd(p, env updatedIdentEnv (i -> cI)))))
@@ -743,14 +682,14 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case Cst(1) =>
           C.AST.Stmts(C.AST.Stmts(
             C.AST.Comment("iteration count is exactly 1, no loop emitted"),
-            C.AST.DeclStmt(C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(nat(0, env))))),
+            C.AST.DeclStmt(C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0))))),
             updatedGen.cmd(p, env))
 
         case _ =>
           // default case
-          val init = C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(nat(0, env)))
-          val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, nat(n, env))
-          val increment = C.AST.Assignment(cI, nat(NamedVar(cI.name, range) + 1, env))
+          val init = C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0)))
+          val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
+          val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + 1))
 
           if(unroll) {
             val statements = for (index <- rangeAddToScalaRange(range)) yield {
@@ -815,7 +754,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
     def codeGenLiteral(d: OperationalSemantics.Data): Expr = {
       d match {
-        case i: IndexData => nat(i.n, Environment.empty)
+        case i: IndexData => C.AST.ArithmeticExpr(i.n)
         case _: IntData | _: FloatData | _: DoubleData | _: BoolData =>
           C.AST.Literal(d.toString)
         case ArrayData(a) => d.dataType match {
@@ -926,14 +865,14 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           dt match {
             case _: VectorType =>
               val data = C.AST.StructMemberAccess(accuExpr, C.AST.DeclRef("data"))
-              C.AST.ArraySubscript(data, nat(i, env))
+              C.AST.ArraySubscript(data, C.AST.ArithmeticExpr(i))
             case at: ArrayType =>
               val (k, ps) = flattenArrayIndices(at, path)
-              generateAccess(dt, C.AST.ArraySubscript(accuExpr, nat(k, env)), ps, env)
+              generateAccess(dt, C.AST.ArraySubscript(accuExpr, C.AST.ArithmeticExpr(k)), ps, env)
 
             case dat: DepArrayType =>
               val (k, ps) = flattenArrayIndices(dat, path)
-              generateAccess(dt, C.AST.ArraySubscript(accuExpr, nat(k, env)), ps, env)
+              generateAccess(dt, C.AST.ArraySubscript(accuExpr, C.AST.ArithmeticExpr(k)), ps, env)
             case x => throw new Exception(s"Expected an ArrayType that is accessed by the index but found $x instead.")
           }
         case _ =>
@@ -1040,5 +979,76 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     }).map(i => (NamedVar(i._1.name), NamedVar(i._2.name))).toMap[ArithExpr, ArithExpr]
     ArithExpr.substitute(n, substitionMap)
   }
+
+
+  private def visitAndGenerateNat[N <: C.AST.Node](node:N, env:Environment):N = {
+    C.AST.Nodes.VisitAndRebuild(node, new C.AST.Nodes.VisitAndRebuild.Visitor() {
+      override def post(n: Node): Node = n match {
+        case C.AST.ArithmeticExpr(ae) => genNat(ae, env)
+        case other => other
+      }
+    })
+  }
+
+  def genNat(n: Nat,
+          env: Environment): Expr = {
+
+    def boolExp(b:BoolExpr, env:Environment):C.AST.Expr = b match {
+      case BoolExpr.True => C.AST.Literal("true")
+      case BoolExpr.False => C.AST.Literal("false")
+      case BoolExpr.ArithPredicate(lhs, rhs, op) =>
+        val cOp = op match {
+          case ArithPredicate.Operator.!= => C.AST.BinaryOperator.!=
+          case ArithPredicate.Operator.== => C.AST.BinaryOperator.==
+          case ArithPredicate.Operator.< => C.AST.BinaryOperator.<
+          case ArithPredicate.Operator.<= => C.AST.BinaryOperator.<=
+          case ArithPredicate.Operator.> => C.AST.BinaryOperator.>
+          case ArithPredicate.Operator.>= => C.AST.BinaryOperator.>=
+        }
+        C.AST.BinaryExpr(C.AST.ArithmeticExpr(lhs), cOp, C.AST.ArithmeticExpr(rhs))
+    }
+    import C.AST
+    n match {
+      case Cst(c) => AST.Literal(c.toString)
+      case Pow(b, ex) =>
+        ex match {
+          case Cst(2) => AST.BinaryExpr(genNat(b, env),AST.BinaryOperator.*, genNat(b, env))
+          case _ => AST.Cast(AST.Type.int, AST.FunCall(AST.DeclRef("pow"), immutable.Seq(
+            AST.Cast(AST.Type.float, genNat(b, env)), AST.Cast(AST.Type.float, genNat(b, env)))
+          ))
+        }
+      case Log(b, x) => AST.Cast(AST.Type.int, AST.FunCall(AST.DeclRef("log" + b), immutable.Seq(
+        AST.Cast(AST.Type.float, genNat(x, env)))
+      ))
+      case Prod(es) => es.foldLeft(AST.Literal("1"):AST.Expr)((accum:AST.Expr, e:ArithExpr) => {
+        e match {
+          case Pow(b, Cst(-1)) => C.AST.BinaryExpr(accum, AST.BinaryOperator./, genNat(b, env))
+          case _ => C.AST.BinaryExpr(accum, AST.BinaryOperator.*, genNat(e, env))
+        }
+      })
+      case Sum(es) => es.map(genNat(_, env)).reduceOption(AST.BinaryExpr(_, AST.BinaryOperator.+, _)).getOrElse(AST.Literal("0"))
+      case Mod(a, n) => AST.BinaryExpr(genNat(a, env), AST.BinaryOperator.%, genNat(n, env))
+      case v:Var => C.AST.DeclRef(v.toString)
+      case IntDiv(n, d) => AST.BinaryExpr(genNat(n, env), AST.BinaryOperator./, genNat(d, env))
+      case lu:Lookup => AST.FunCall(AST.DeclRef(s"lookup${lu.id}"), immutable.Seq(AST.Literal(lu.index.toString)))
+
+      case lift.arithmetic.IfThenElse(cond, trueBranch, falseBranch) => AST.TernaryExpr(
+        boolExp(cond, env), genNat(trueBranch, env), genNat(falseBranch, env))
+
+      case natFunCall: NatFunCall =>
+        if(natFunCall.args.isEmpty) {
+          env.inlLetNatEnv(natFunCall.fun)
+        } else {
+          AST.FunCall(AST.DeclRef(natFunCall.name), natFunCall.args.map({
+            case NatArg(n) => genNat(n, env)
+            case LetNatIdArg(ident) => env.inlLetNatEnv(ident)
+          }))
+        }
+
+      case sp: SteppedCase => genNat(sp.intoIfChain(), env)
+      case otherwise => throw new Exception(s"Don't know how to print $otherwise")
+    }
+  }
+
 }
 
