@@ -43,38 +43,4 @@ class LetNat extends idealised.util.Tests{
     SyntaxChecker.checkOpenCL(code)
     println(code)
   }
-
-  test("Dictionary-dependent array") {
-    val f = nFun(n => fun(ArrayType(n, int))(dict =>
-      letNat(nFun(i => fun(ArrayType(n, int))(dict => Idx(dict, asIndex(n, i)))),
-        length => letNat(dict,
-          nDict => fun(DepArrayType(n, i => ArrayType(length(i, nDict), float)))(xs => xs :>> depMapSeq(mapSeq(fun(x => x + 1.0f))))
-        )
-      )))
-
-    val typed = TypeInference(f, Map())
-
-    val p = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(typed))
-
-    val code = p.code
-    SyntaxChecker.checkOpenCL(code)
-    println(code)
-  }
-
-  test("Dictionary-dependent array by offset") {
-    val f = nFun(n => fun(ArrayType(n, int))(dict =>
-      letNat(nFun(i => fun(ArrayType(n, int))(dict => Idx(dict, asIndex(n, i + 1))- Idx(dict, asIndex(n, i)))),
-        length => letNat(dict,
-          nDict => fun(DepArrayType(n, i => ArrayType(length(i, nDict), float)))(xs => xs :>> depMapSeq(mapSeq(fun(x => x + 1.0f))))
-        )
-      )))
-
-    val typed = TypeInference(f, Map())
-
-    val p = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(typed))
-
-    val code = p.code
-    SyntaxChecker.checkOpenCL(code)
-    println(code)
-  }
 }
