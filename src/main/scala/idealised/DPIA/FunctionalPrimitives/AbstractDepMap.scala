@@ -12,12 +12,19 @@ import scala.xml.Elem
 
 
 abstract class AbstractDepMap(n: Nat,
-                              ft1:NatDataTypeFunction,
+                              ft1: NatDataTypeFunction,
                               ft2: NatDataTypeFunction,
                               f: Phrase[`(nat)->`[ExpType -> ExpType]],
                               array: Phrase[ExpType])
   extends ExpPrimitive {
 
+  override val t: ExpType = {
+    val k = f.t.x
+    (n: Nat) -> (ft1: NatDataTypeFunction) -> (ft2: NatDataTypeFunction) ->
+      (f :: t"($k : nat) -> exp[${ ft1(k) }] -> exp[${ ft2(k) }]") ->
+        (array :: exp"[$n.$ft1]") ->
+          exp"[$n.$ft2]"
+  }
 
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommandType] = {
@@ -25,7 +32,7 @@ abstract class AbstractDepMap(n: Nat,
     import idealised.DPIA._
 
     con(array)(λ(exp"[$n.$ft1]")(x =>
-      makeMapI(n, ft1, ft2, _Λ_((k: NatIdentifier) => λ(exp"[${ft1(k)}]")(x => λ(acc"[${ft2(k)}]")(o => {
+      makeMapI(n, ft1, ft2, _Λ_[NatKind]((k: NatIdentifier) => λ(exp"[${ft1(k)}]")(x => λ(acc"[${ft2(k)}]")(o => {
         acc(f(k)(x))(o)
       }))), x, A)))
   }
@@ -36,7 +43,7 @@ abstract class AbstractDepMap(n: Nat,
     import idealised.DPIA._
 
     con(array)(λ(exp"[$n.$ft1]")(x =>
-      makeMapI(n, ft1, ft2, _Λ_((k: NatIdentifier) => λ(exp"[${ft1(k)}]")(x => λ(acc"[${ft2(k)}]")(o => {
+      makeMapI(n, ft1, ft2, _Λ_[NatKind]((k: NatIdentifier) => λ(exp"[${ft1(k)}]")(x => λ(acc"[${ft2(k)}]")(o => {
         acc(f(k)(x))(o)
       }))), x, A)))
   }
@@ -60,14 +67,6 @@ abstract class AbstractDepMap(n: Nat,
                out: Phrase[AccType])
               (implicit context: TranslationContext): Phrase[CommandType]
 
-  override val `type`: ExpType = {
-    val k = f.t.n
-    (n: Nat) -> (ft1:NatDataTypeFunction) -> (ft2:NatDataTypeFunction) ->
-      (f :: t"($k : nat) -> exp[${ ft1(k) }] -> exp[${ ft2(k) }]")
-    (array :: exp"[$n.$ft1]") ->
-      exp"[$n.$ft2]"
-  }
-
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     makeMap(fun(n), fun(ft1), fun(ft2), VisitAndRebuild(f, fun), VisitAndRebuild(array, fun))
   }
@@ -79,7 +78,7 @@ abstract class AbstractDepMap(n: Nat,
 
   override def xmlPrinter: Elem = {
     val k = f match {
-      case NatDependentLambda(k_, _) => k_
+      case DepLambda(k_ : NatIdentifier, _) => k_
       case _ => throw new Exception("This should not happen")
     }
     <map n={ToString(n)} ft1={ToString(ft1)} ft2={ToString(ft2)}>

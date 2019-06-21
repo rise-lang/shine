@@ -11,26 +11,28 @@ import lift.arithmetic.NamedVar
 
 object IterateIAcc {
   def apply(n: Nat,
-    m: Nat,
-    k: Nat,
-    dt: DataType,
-    out: Phrase[AccType],
-    f: Phrase[`(nat)->`[AccType -> (ExpType -> CommandType)]],
-    in: Phrase[ExpType])
+            m: Nat,
+            k: Nat,
+            dt: DataType,
+            out: Phrase[AccType],
+            f: Phrase[`(nat)->`[AccType -> (ExpType -> CommandType)]],
+            in: Phrase[ExpType])
            (implicit context: TranslationContext): Phrase[CommandType] =
   {
-    val `n^k*m` = n.pow(k) * m
+    val sz = n.pow(k) * m
 
-    newDoubleBuffer(dt"[${`n^k*m`}.$dt]", dt"[$m.$dt]", ArrayType(`n^k*m`, dt), in, out,
+    newDoubleBuffer(dt"[$sz.$dt]", dt"[$m.$dt]", ArrayType(sz, dt), in, out,
       (v: Phrase[VarType],
        swap: Phrase[CommandType],
        done: Phrase[CommandType]) => {
         `for`(k, ip => {
           val i = NamedVar(ip.name)
 
-          f.apply(n.pow(k - i) * m)
-            .apply(TakeAcc(n.pow(k - i - 1) * m, `n^k*m`, dt, v.wr))
-            .apply(Take(n.pow(k - i) * m, `n^k*m`, dt, v.rd)) `;`
+          val isz = n.pow(k - i) * m
+          val osz = n.pow(k - i - 1) * m
+          f.apply(osz)
+            .apply(TakeAcc(osz, sz - osz, dt, v.wr))
+            .apply(Take(isz, sz - isz, dt, v.rd)) `;`
             IfThenElse(ip < AsIndex(k, Natural(k - 1)), swap, done)
         })
       })

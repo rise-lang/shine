@@ -2,70 +2,134 @@ package idealised.DPIA.Phrases
 
 import idealised.DPIA.Compilation.TranslationContext
 import idealised.DPIA.FunctionalPrimitives.{AsIndex, IndexAsNat}
-import idealised.DPIA.Lifting.{liftFunction, liftNatDependentFunction, liftPair, liftTypeDependentFunction}
+import idealised.DPIA.Lifting.{liftFunction, liftDependentFunction, liftPair}
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics.{IndexData, NatData}
 import idealised.DPIA.Types._
 import idealised.DPIA._
 import idealised.{DPIA, SurfaceLanguage}
 import idealised.SurfaceLanguage.Operators
-import idealised.SurfaceLanguage.Operators.Binary._
 import lift.arithmetic.{NamedVar, RangeAdd, StartFromRange}
 
+import scala.language.{postfixOps, reflectiveCalls}
+
 sealed trait Phrase[T <: PhraseType] {
-  final lazy val t: T = TypeOf(this)
+  val t: T // TODO? perform type checking at the same time
 }
 
 final case class Identifier[T <: PhraseType](name: String, `type`: T)
-  extends Phrase[T]
+  extends Phrase[T] {
+
+  override val t: T = `type`
+  override def toString: String = s"($name : ${`type`})"
+}
 
 final case class Lambda[T1 <: PhraseType, T2 <: PhraseType](param: Identifier[T1], body: Phrase[T2])
-  extends Phrase[T1 -> T2]
+  extends Phrase[T1 -> T2] {
+
+  override val t: T1 -> T2 = param.t -> body.t
+  override def toString: String = s"λ$param. $body"
+}
 
 final case class Apply[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 -> T2], arg: Phrase[T1])
-  extends Phrase[T2]
+  extends Phrase[T2] {
 
-final case class NatDependentLambda[T <: PhraseType](x: NatIdentifier, body: Phrase[T])
-  extends Phrase[`(nat)->`[T]]
+  TypeCheck.check(fun.t.inT, arg.t) // FIXME: redundant with type checking
+  override val t: T2 = fun.t.outT
+  override def toString: String = s"($fun $arg)"
+}
 
-final case class TypeDependentLambda[T <: PhraseType](x: DataTypeIdentifier, body: Phrase[T])
-  extends Phrase[`(dt)->`[T]]
+final case class DepLambda[K <: Kind, T <: PhraseType](x: K#I, body: Phrase[T])
+  extends Phrase[K `()->` T] {
+  override val t: DependentFunctionType[K, T] = (x: K#I) `()->` body.t
+  override def toString: String = s"Λ(${x.name} : ${x.getClass.toString}). $body"
+}
 
-final case class NatDependentApply[T <: PhraseType](fun: Phrase[`(nat)->`[T]], arg: Nat)
-  extends Phrase[T]
+final case class DepApply[K <: Kind, T <: PhraseType](fun: Phrase[K `()->` T], arg: K#T)
+  extends Phrase[T] {
 
-final case class TypeDependentApply[T <: PhraseType](fun: Phrase[`(dt)->`[T]], arg: DataType)
-  extends Phrase[T]
+  override val t: T = PhraseType.substitute(arg, `for`=fun.t.x, in=fun.t.t).asInstanceOf[T]
+  override def toString: String = s"($fun $arg)"
+}
 
 final case class LetNat[T1 <: PhraseType, T2 <: PhraseType](binder:LetNatIdentifier,
                                                             defn:Phrase[T1],
-                                                            body:Phrase[T2]) extends Phrase[T2]
+                                                            body:Phrase[T2]) extends Phrase[T2] {
+  override val t: T2 = body.t
+}
 
 final case class Pair[T1 <: PhraseType, T2 <: PhraseType](fst: Phrase[T1], snd: Phrase[T2])
-  extends Phrase[T1 x T2]
+  extends Phrase[T1 x T2] {
+
+  override val t: x[T1, T2] = fst.t x snd.t
+}
 
 final case class Proj1[T1 <: PhraseType, T2 <: PhraseType](pair: Phrase[T1 x T2])
-  extends Phrase[T1]
+  extends Phrase[T1] {
+
+  override val t: T1 = pair.t.t1
+}
 
 final case class Proj2[T1 <: PhraseType, T2 <: PhraseType](pair: Phrase[T1 x T2])
-  extends Phrase[T2]
+  extends Phrase[T2] {
+
+  override val t: T2 = pair.t.t2
+}
 
 final case class IfThenElse[T <: PhraseType](cond: Phrase[ExpType], thenP: Phrase[T], elseP: Phrase[T])
-  extends Phrase[T]
+  extends Phrase[T] {
+
+  // FIXME: redundant with type checking
+  TypeCheck.check(thenP.t, elseP.t)
+  override val t: T = thenP.t
+}
 
 final case class UnaryOp(op: SurfaceLanguage.Operators.Unary.Value, p: Phrase[ExpType])
-  extends Phrase[ExpType]
+  extends Phrase[ExpType] {
+
+  override val t: ExpType = p.t
+}
 
 final case class BinOp(op: SurfaceLanguage.Operators.Binary.Value, lhs: Phrase[ExpType], rhs: Phrase[ExpType])
-  extends Phrase[ExpType]
+  extends Phrase[ExpType] {
+
+  override val t: ExpType =
+    op match {
+      case Operators.Binary.GT |
+           Operators.Binary.LT |
+           Operators.Binary.EQ => exp"[$bool]"
+      case _ => (lhs.t.dataType, rhs.t.dataType) match {
+        case (t1, t2) if t1 == t2 => ExpType(t1)
+        // TODO: Think about this more thoroughly ...
+        case (IndexType(n), `int`) =>
+          ExpType(IndexType(n))
+        //              ExpType(IndexType(OperationalSemantics.toScalaOp(op)(n, OperationalSemantics.evalIntExp(rhs))))
+        case (`int`, IndexType(n)) =>
+          ExpType(IndexType(n))
+        //              ExpType(IndexType(OperationalSemantics.toScalaOp(op)(OperationalSemantics.evalIntExp(lhs), n)))
+        case (IndexType(n), IndexType(_)) =>
+          //              ExpType(IndexType(OperationalSemantics.toScalaOp(op)(n, m)))
+          ExpType(IndexType(n))
+
+        case (lhsT, rhsT) =>
+          throw new TypeException(s"Failed type checking: found" +
+            s"`$lhsT' and `$rhsT', but expected them to match.")
+      }
+    }
+}
 
 final case class Literal(d: OperationalSemantics.Data)
   extends Phrase[ExpType] {
+
   assert(!d.isInstanceOf[NatData])
   assert(!d.isInstanceOf[IndexData])
+
+  override val t: ExpType = ExpType(d.dataType)
 }
 
-final case class Natural(d: Nat) extends Phrase[ExpType]
+final case class Natural(d: Nat) extends Phrase[ExpType] {
+  override val t: ExpType = ExpType(NatType)
+}
 
 object Phrase {
   // substitutes `phrase` for `for` in `in`, i.e. in [ phrase / for ]
@@ -77,7 +141,7 @@ object Phrase {
         p match {
           case `for` => Stop(phrase.asInstanceOf[Phrase[T]])
           case Natural(n) =>
-            val v = NamedVar(`for` match {
+            val v = NatIdentifier(`for` match {
               case Identifier(name, _) => name
               case _ => ???
             })
@@ -122,7 +186,7 @@ object Phrase {
         case ExpType(IndexType(n)) =>
           p match {
             case i:Identifier[ExpType] => NamedVar(i.name, RangeAdd(0, n, 1))
-            case Apply(fun, arg) => NatFromIndexExpr(liftFunction(fun)(arg))
+            case Apply(fun, arg) => NatFromIndexExpr(liftFunction(fun).reducing(arg))
             case BinOp(op, lhs, rhs) => binOpToNat(op, NatFromIndexExpr(lhs), NatFromIndexExpr(rhs))
             case DPIA.Phrases.IfThenElse(_, _, _) => ???
             case Literal(lit) => lit match {
@@ -130,10 +194,13 @@ object Phrase {
               case _ => throw new Exception("This should never happen")
             }
             case Natural(_) => throw new Exception("This should never happen")
-            case NatDependentApply(fun, arg) => NatFromIndexExpr(liftNatDependentFunction(fun)(arg))
+            case DepApply(fun, arg) => (fun, arg) match {
+              case (f, a: Nat) =>
+                NatFromIndexExpr(liftDependentFunction[NatKind, ExpType](f.asInstanceOf[Phrase[NatKind `()->` ExpType]])(a))
+            }
             case Proj1(pair) => NatFromIndexExpr(liftPair(pair)._1)
             case Proj2(pair) => NatFromIndexExpr(liftPair(pair)._2)
-            case TypeDependentApply(fun, arg) => NatFromIndexExpr(liftTypeDependentFunction(fun)(arg))
+//            case TypeDependentApply(fun, arg) => NatFromIndexExpr(liftTypeDependentFunction(fun)(arg))
             case UnaryOp(op, e) => unOpToNat(op, NatFromIndexExpr(e))
             case prim: ExpPrimitive => prim match {
               //TODO can we use our knowledge of n somehow?
@@ -151,14 +218,16 @@ object Phrase {
           p match {
             case Natural(n) => n
             case i: Identifier[ExpType] => NamedVar(i.name, StartFromRange(0))
-            case Apply(fun, arg) => NatFromNatExpr(liftFunction(fun)(arg))
+            case Apply(fun, arg) => NatFromNatExpr(liftFunction(fun).reducing(arg))
             case BinOp(op, lhs, rhs) => binOpToNat(op, NatFromNatExpr(lhs), NatFromNatExpr(rhs))
             case DPIA.Phrases.IfThenElse(_, _, _) => ???
             case Literal(_) => throw new Exception("This should never happen")
-            case NatDependentApply(fun, arg) => NatFromNatExpr(liftNatDependentFunction(fun)(arg))
+            case DepApply(fun, arg) => (fun, arg) match {
+              case (f, a: Nat) =>
+                NatFromNatExpr(liftDependentFunction[NatKind, ExpType](f.asInstanceOf[Phrase[NatKind `()->` ExpType]])(a))
+            }
             case Proj1(pair) => NatFromNatExpr(liftPair(pair)._1)
             case Proj2(pair) => NatFromNatExpr(liftPair(pair)._2)
-            case TypeDependentApply(fun, arg) => NatFromNatExpr(liftTypeDependentFunction(fun)(arg))
             case UnaryOp(op, e) => unOpToNat(op, NatFromNatExpr(e))
             case prim: ExpPrimitive => prim match {
               //TODO can we use our knowledge of n somehow?
@@ -189,8 +258,6 @@ object Phrase {
 }
 
 sealed trait Primitive[T <: PhraseType] extends Phrase[T] {
-  def `type`: T
-
   def prettyPrint: String
 
   def xmlPrinter: xml.Elem

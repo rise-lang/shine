@@ -17,7 +17,7 @@ abstract class AbstractParFor[T <: DataType](val n: Nat,
                                              val body: Phrase[ExpType -> (AccType -> CommandType)])
   extends CommandPrimitive {
 
-  override lazy val `type`: CommandType =
+  override val t: CommandType =
     (n: Nat) -> (dt: DataType) ->
       (out :: acc"[$n.$dt]") ->
       (body :: t"exp[idx($n)] -> acc[$dt] -> comm") ->

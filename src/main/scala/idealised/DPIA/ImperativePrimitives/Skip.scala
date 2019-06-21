@@ -10,7 +10,7 @@ import scala.xml.Elem
 // not final because of DSL.typed.skip
 case class Skip() extends CommandPrimitive {
 
-  override val `type`: CommandType = comm
+  override val t: CommandType = comm
 
   override def eval(s: Store): Store = s
 

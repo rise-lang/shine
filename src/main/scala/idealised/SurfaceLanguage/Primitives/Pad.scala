@@ -2,7 +2,6 @@ package idealised.SurfaceLanguage.Primitives
 
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
-import idealised.{DPIA, SurfaceLanguage}
 
 final case class Pad(l: Nat, r: Nat, padExpr: Expr, array: Expr,
                      override val t: Option[DataType])
@@ -22,7 +21,7 @@ final case class Pad(l: Nat, r: Nat, padExpr: Expr, array: Expr,
   override def children: Seq[Any] = Seq(l, r, padExpr, array, t)
 
   override def rebuild: Seq[Any] => Expr = {
-    case Seq(l: Nat, r: Nat, padExpr: Expr, array: Expr, t: Option[DataType]) =>
+    case Seq(l: Nat, r: Nat, padExpr: Expr, array: Expr, t: Option[DataType]@unchecked) =>
       Pad(l, r, padExpr, array, t)
   }
 }

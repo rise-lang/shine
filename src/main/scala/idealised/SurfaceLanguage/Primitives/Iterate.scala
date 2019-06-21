@@ -22,7 +22,7 @@ final case class Iterate(k: Nat,
               setParamAndInferType(body, ArrayType(l, dt), subs) |> (body =>
                 natDepLambdaWithType(l, body) |> (f =>
                   f.t match {
-                    case Some(NatDependentFunctionType(_,
+                    case Some(DependentFunctionType(_: NatIdentifier,
                                 FunctionType(ArrayType(l_, dt1), ArrayType(l_n, dt2)))) =>
                       if (l == l_ && dt1 == dt && dt2 == dt) {
                         val n = l_n match {
@@ -48,7 +48,7 @@ final case class Iterate(k: Nat,
   override def children: Seq[Any] = Seq(k, f, array, t)
 
   override def rebuild: Seq[Any] => Expr = {
-    case Seq(k: Nat, f: Expr, array: Expr, t: Option[DataType]) =>
+    case Seq(k: Nat, f: Expr, array: Expr, t: Option[DataType]@unchecked) =>
       Iterate(k, f, array, t)
   }
 }

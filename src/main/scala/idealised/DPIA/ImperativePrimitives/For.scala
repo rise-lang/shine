@@ -14,7 +14,7 @@ final case class For(n: Nat,
                      unroll:Boolean)
   extends CommandPrimitive {
 
-  override val `type`: CommandType =
+  override val t: CommandType =
     (n: Nat) -> (body :: t"exp[idx($n)] -> comm") -> comm
 
   override def eval(s: Store): Store = {

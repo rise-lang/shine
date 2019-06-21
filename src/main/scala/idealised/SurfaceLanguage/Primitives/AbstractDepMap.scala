@@ -26,11 +26,11 @@ abstract class AbstractDepMap(val df: Expr,
     import TypeInference._
     TypeInference(array, subs) |> (array =>
       array.t match {
-        case Some(DepArrayType(n, NatDependentFunctionType(j, df1))) =>
+        case Some(DepArrayType(n, DependentFunctionType(j: NatIdentifier, df1))) =>
 
           setParamsAndInferTypes(df, Type.substitute(_, `for`=j, in=df1), subs) |> (df =>
             df.t match {
-              case Some(NatDependentFunctionType(i, FunctionType(_, df2: DataType))) =>
+              case Some(DependentFunctionType(i: NatIdentifier, FunctionType(_, df2: DataType))) =>
                 makeMap(df, array, Some(DepArrayType(n, Type.substitute(_, `for`=i, `in`=df2))))
               case x => error(expr = s"${this.getClass.getSimpleName}($df, $array)",
                 found = s"`${x.toString}'", expected = "(nat) -> df1 -> df2")
@@ -44,6 +44,6 @@ abstract class AbstractDepMap(val df: Expr,
   override def children: Seq[Any] = Seq(df, array, t)
 
   override def rebuild: Seq[Any] => Expr = {
-    case Seq(df: Expr, array: Expr, t: Option[DataType]) => makeMap(df, array, t)
+    case Seq(df: Expr, array: Expr, t: Option[DataType]@unchecked) => makeMap(df, array, t)
   }
 }

@@ -20,7 +20,7 @@ final case class OpenCLReduceSeq(n: Nat,
                            array: Phrase[ExpType])
   extends ExpPrimitive
 {
-  override val `type`: ExpType =
+  override val t: ExpType =
     (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
       (f :: t"exp[$dt1] -> exp[$dt2] -> exp[$dt2]") ->
       (init :: exp"[$dt2]") -> (initAddrSpace : AddressSpace) ->

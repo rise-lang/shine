@@ -9,15 +9,15 @@ import lift.arithmetic.{ArithExpr, BigSum}
 import scala.xml.Elem
 
 final case class DepJoinAcc(n: Nat,
-                            lenF:NatNatLambda,
+                            lenF:NatNatTypeFunction,
                             dt: DataType,
                             array: Phrase[AccType])
   extends AccPrimitive
 {
 
 
-  override val `type`: AccType =
-    (n: Nat) -> (lenF: NatNatLambda) ->
+  override val t: AccType =
+    (n: Nat) -> (lenF: NatNatTypeFunction) ->
       (array :: acc"[${BigSum(from=0, upTo = n-1, `for`=lenF.x, lenF.body)}.$dt]") ->
       acc"[${DepArrayType(n, i => ArrayType(lenF(i), dt))}]"
 

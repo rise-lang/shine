@@ -14,7 +14,7 @@ final case class RecordAcc2(dt1: DataType,
                             record: Phrase[AccType])
   extends AccPrimitive {
 
-  override val `type`: AccType =
+  override val t: AccType =
     (dt1: DataType) -> (dt2: DataType) ->
       (record :: acc"[$dt1 x $dt2]") ->
         acc"[$dt2]"

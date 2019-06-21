@@ -6,6 +6,22 @@ import idealised.util.SyntaxChecker
 
 class LetNat extends idealised.util.Tests{
 
+  test("Simple function") {
+    val program = nFun(n =>
+      fun(ArrayType(n, float))(xs =>
+            letNat(5, five =>
+              mapSeq(fun(x => x))(take(five(), xs)
+      ))))
+
+    val typed = TypeInference(program, Map())
+    println(typed.t)
+    val p = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(typed))
+
+    val code = p.code
+    SyntaxChecker.checkOpenCL(code)
+    println(code)
+  }
+
   test("Simple functions with no capture") {
     val program = nFun(n =>
       fun(ArrayType(n, float))(xs =>

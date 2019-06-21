@@ -38,7 +38,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
     phrase match {
       case ParFor(n, dt, a, Lambda(i, Lambda(o, p))) => OpenMPCodeGen.codeGenParFor(n, dt, a, i, o, p, env)
       case ForVec(n, dt, a, Lambda(i, Lambda(o, p))) => OpenMPCodeGen.codeGenParForVec(n, dt, a, i, o, p, env)
-      case ParForNat(n, _, a, NatDependentLambda(i, Lambda(o, p))) =>
+      case ParForNat(n, _, a, DepLambda(i: NatIdentifier, Lambda(o, p))) =>
         OpenMPCodeGen.codeGenParForNat(n, a, i, o, p, env)
       case _ => super.cmd(phrase, env)
     }
@@ -144,7 +144,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         // struct float4 {
         //    float data[4];
         // };
-        C.AST.StructType(v.toString,
+        C.AST.StructType(s"${v.elemType}${v.size}",
           immutable.Seq((C.AST.ArrayType(typ(v.elemType), Some(v.size)), "data")))
       case _ => super.typ(dt)
     }
@@ -284,15 +284,19 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         case (VectorType(_, elemType), i :: Nil) =>
           // this is not really generic, to treat all arguments the same ...
           val inTs_ = inTs.map { case VectorType(_, et) => et }
-          addDeclaration(
-            C.AST.FunDecl(funDecl.name,
-              returnType = typ(elemType),
-              params = (funDecl.argNames zip inTs_).map {
-                case (name, dt) => C.AST.ParamDecl(name, typ(dt))
-              },
-              body = C.AST.Code(funDecl.body)
-            )
-          )
+          funDecl.definition match {
+            case Some(funDef) =>
+              addDeclaration(
+                C.AST.FunDecl(funDecl.name,
+                  returnType = typ(elemType),
+                  params = (funDef.params zip inTs_).map {
+                    case (name, dt) => C.AST.ParamDecl(name, typ(dt))
+                  },
+                  body = C.AST.Code(funDef.body)
+                )
+              )
+            case _ =>
+          }
 
           CCodeGen.codeGenForeignCall(funDecl.name, args, env, i :: Nil, cont)
 

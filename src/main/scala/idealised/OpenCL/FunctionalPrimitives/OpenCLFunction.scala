@@ -18,7 +18,7 @@ final case class OpenCLFunction(name: String,
                                 args: Seq[Phrase[ExpType]])
   extends ExpPrimitive {
 
-  override lazy val `type`: ExpType =
+  override val t: ExpType =
     (inTs zip args).foreach{
       case (inT, arg) => arg :: exp"[$inT]"
     } -> exp"[$outT]"

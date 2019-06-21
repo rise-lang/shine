@@ -35,6 +35,6 @@ abstract class To(val f: Expr,
   override def children: Seq[Any] = Seq(f, input, t)
 
   override def rebuild: Seq[Any] => Expr = {
-    case Seq(f: Expr, input: Expr, t: Option[DataType]) => makeTo(f, input, t)
+    case Seq(f: Expr, input: Expr, t: Option[DataType]@unchecked) => makeTo(f, input, t)
   }
 }

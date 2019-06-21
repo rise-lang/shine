@@ -16,7 +16,7 @@ final case class VectorFromScalar(n: Nat,
                                   arg: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override lazy val `type`: ExpType =
+  override val t: ExpType =
     (n: Nat) -> (dt: ScalarType) ->
       (arg :: exp"[$dt]") ->
         exp"[${VectorType(n, dt)}]"

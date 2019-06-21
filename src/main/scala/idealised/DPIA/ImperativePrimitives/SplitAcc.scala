@@ -14,7 +14,7 @@ final case class SplitAcc(n: Nat,
                           array: Phrase[AccType])
   extends AccPrimitive {
 
-  override val `type`: AccType =
+  override val t: AccType =
     (n: Nat) -> (m: Nat) -> (dt: DataType) ->
       (array :: acc"[$m.$n.$dt]") ->
         acc"[${n * m}.$dt]"

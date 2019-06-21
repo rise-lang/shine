@@ -7,12 +7,16 @@ import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics.{Data, Store}
 import idealised.DPIA.Types._
 import idealised.DPIA._
+import lift.core.primitives
 
 import scala.language.reflectiveCalls
 import scala.xml.Elem
 
 object ForeignFunction {
-  final case class Declaration(name: String, argNames: Seq[String], body: String)
+  val Declaration: primitives.ForeignFunction.Decl.type = lift.core.primitives.ForeignFunction.Decl
+  val Definition: primitives.ForeignFunction.Def.type = lift.core.primitives.ForeignFunction.Def
+  type Declaration = lift.core.primitives.ForeignFunction.Decl
+  type Definition = lift.core.primitives.ForeignFunction.Def
 }
 
 final case class ForeignFunction(funDecl: ForeignFunction.Declaration,
@@ -21,7 +25,7 @@ final case class ForeignFunction(funDecl: ForeignFunction.Declaration,
                                  args: Seq[Phrase[ExpType]])
   extends ExpPrimitive {
 
-  override lazy val `type`: ExpType =
+  override val t: ExpType =
     (inTs zip args).foreach {
       case (inT, arg) => arg :: exp"[$inT]"
     } -> exp"[$outT]"

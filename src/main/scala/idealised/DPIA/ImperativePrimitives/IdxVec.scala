@@ -17,7 +17,7 @@ final case class IdxVec(n: Nat,
                         vector: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override val `type`: ExpType =
+  override val t: ExpType =
     (n: Nat) -> (st: ScalarType) ->
       (index :: exp"[idx($n)]") ->
         (vector :: exp"[${VectorType(n, st)}]") ->

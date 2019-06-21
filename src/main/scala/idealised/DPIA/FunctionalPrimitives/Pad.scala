@@ -2,7 +2,6 @@ package idealised.DPIA.FunctionalPrimitives
 
 import idealised.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import idealised.DPIA.DSL.{λ, _}
-import idealised.DPIA.ImperativePrimitives.TakeAcc
 import idealised.DPIA.Phrases.{ExpPrimitive, Phrase, VisitAndRebuild}
 import idealised.DPIA.Semantics.OperationalSemantics.{Data, Store}
 import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType, _}
@@ -13,15 +12,16 @@ import scala.xml.Elem
 
 final case class Pad(n: Nat,
                      l: Nat,
-                     r:Nat,
+                     r: Nat,
                      dt: DataType,
                      padExp: Phrase[ExpType],
                      array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override val `type`: ExpType =
+  override val t: ExpType =
     (n: Nat) -> (l: Nat) -> (r: Nat) -> (dt: DataType) ->
-      (padExp :: exp"[$dt]") -> (array :: exp"[$n.$dt]") -> exp"[${l + n + r}.$dt]"
+      (padExp :: exp"[$dt]") ->
+      (array :: exp"[$n.$dt]") -> exp"[${l + n + r}.$dt]"
 
   override def eval(s: Store): Data = ???
 

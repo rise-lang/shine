@@ -86,7 +86,7 @@ package object DSL {
   }
 
   implicit class CallLambda[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 -> T2]) {
-    def apply(arg: Phrase[T1]): Phrase[T2] = Lifting.liftFunction(fun)(arg)
+    def apply(arg: Phrase[T1]): Phrase[T2] = Lifting.liftFunction(fun).value(arg)
 
     def $(arg: Phrase[T1]): Phrase[T2] = apply(arg)
   }
@@ -99,14 +99,14 @@ package object DSL {
 
   implicit class CallNatDependentLambda[T <: PhraseType](fun: Phrase[`(nat)->`[T]]) {
     def apply(arg: Nat): Phrase[T] =
-      Lifting.liftNatDependentFunction(fun)(arg)
+      Lifting.liftDependentFunction[NatKind, T](fun)(arg)
 
     def $(arg: Nat): Phrase[T] = apply(arg)
   }
 
   implicit class CallTypeDependentLambda[T <: PhraseType](fun: Phrase[`(dt)->`[T]]) {
     def apply(arg: DataType): Phrase[T] =
-      Lifting.liftTypeDependentFunction(fun)(arg)
+      Lifting.liftDependentFunction[DataKind, T](fun)(arg)
 
     def $(arg: DataType): Phrase[T] = apply(arg)
   }

@@ -34,7 +34,7 @@ package object Types {
     def →[B](y: B): B = ->(y)
   }
 
-  implicit final class ArrowNatNatTypeFun(private val self: NatNatLambda) {
+  implicit final class ArrowNatNatTypeFun(private val self: NatNatTypeFunction) {
     @inline def -> [B](y: B): B = y
     def →[B](y: B): B = ->(y)
   }
@@ -47,5 +47,19 @@ package object Types {
   implicit final class ArrowUnit(private val self: Unit) {
     @inline def -> [B](y: B): B = y
     def →[B](y: B): B = ->(y)
+  }
+
+  type NatDependentFunctionType[T <: PhraseType] = DependentFunctionType[NatKind, T]
+
+  object NatDependentFunctionType {
+    def apply[T <: PhraseType](n: NatIdentifier, t: T): DependentFunctionType[NatKind, T] =
+      DependentFunctionType[NatKind, T](n, t)
+  }
+
+  type TypeDependentFunctionType[T <: PhraseType] = DependentFunctionType[DataKind, T]
+
+  object TypeDependentFunctionType {
+    def apply[T <: PhraseType](dt: DataTypeIdentifier, t: T): DependentFunctionType[DataKind, T] =
+      DependentFunctionType[DataKind, T](dt, t)
   }
 }

@@ -40,9 +40,13 @@ object TranslationToImperative {
       case ep: ExpPrimitive => ep.acceptorTranslation(A)
 
       // on the fly beta-reduction
-      case Apply(fun, arg) => acc(Lifting.liftFunction(fun)(arg))(A)
-      case NatDependentApply(fun, arg) => acc(Lifting.liftNatDependentFunction(fun)(arg))(A)
-      case TypeDependentApply(fun, arg) => acc(Lifting.liftTypeDependentFunction(fun)(arg))(A)
+      case Apply(fun, arg) => acc(Lifting.liftFunction(fun).reducing(arg))(A)
+      case DepApply(fun, arg) => arg match {
+        case a: Nat =>
+          acc(Lifting.liftDependentFunction[NatKind, ExpType](fun.asInstanceOf[ Phrase[NatKind `()->` ExpType]])(a))(A)
+        case a: DataType =>
+          acc(Lifting.liftDependentFunction[DataKind, ExpType](fun.asInstanceOf[Phrase[DataKind `()->` ExpType]])(a))(A)
+      }
 
       case LetNat(binder, defn, body) => LetNat(binder, defn, acc(body)(A))
 
@@ -63,9 +67,13 @@ object TranslationToImperative {
       case ep: ExpPrimitive => ep.mapAcceptorTranslation(f, A)
 
       // on the fly beta-reduction
-      case Apply(fun, arg) => mapAcc(f, Lifting.liftFunction(fun)(arg))(A)
-      case NatDependentApply(fun, arg) => mapAcc(f, Lifting.liftNatDependentFunction(fun)(arg))(A)
-      case TypeDependentApply(fun, arg) => mapAcc(f, Lifting.liftTypeDependentFunction(fun)(arg))(A)
+      case Apply(fun, arg) => mapAcc(f, Lifting.liftFunction(fun).reducing(arg))(A)
+      case DepApply(fun, arg) =>  arg match {
+        case a: Nat =>
+          mapAcc(f, Lifting.liftDependentFunction[NatKind, ExpType](fun.asInstanceOf[Phrase[NatKind `()->` ExpType]])(a))(A)
+        case a: DataType =>
+          mapAcc(f, Lifting.liftDependentFunction[DataKind, ExpType](fun.asInstanceOf[Phrase[DataKind `()->` ExpType]])(a))(A)
+      }
 
       case IfThenElse(cond, thenP, elseP) =>
         con(cond)(λ(cond.t) { x =>
@@ -101,9 +109,11 @@ object TranslationToImperative {
       case ep: ExpPrimitive => ep.continuationTranslation(C)
 
       // on the fly beta-reduction
-      case Apply(fun, arg) => con(Lifting.liftFunction(fun)(arg))(C)
-      case NatDependentApply(fun, arg) => con(Lifting.liftNatDependentFunction(fun)(arg))(C)
-      case TypeDependentApply(fun, arg) => con(Lifting.liftTypeDependentFunction(fun)(arg))(C)
+      case Apply(fun, arg) => con(Lifting.liftFunction(fun).reducing(arg))(C)
+      case DepApply(fun, arg) => arg match {
+        case a: Nat => con(Lifting.liftDependentFunction[NatKind, ExpType](fun.asInstanceOf[Phrase[NatKind `()->` ExpType]])(a))(C)
+        case a: DataType => con(Lifting.liftDependentFunction[DataKind, ExpType](fun.asInstanceOf[Phrase[DataKind `()->` ExpType]])(a))(C)
+      }
 
       case IfThenElse(cond, thenP, elseP) =>
         con(cond)(λ(cond.t) { x =>

@@ -17,7 +17,7 @@ final case class Join(n: Nat,
                       array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override val `type`: ExpType =
+  override val t: ExpType =
     (n: Nat) -> (m: Nat) -> (dt: DataType) ->
       (array :: exp"[$n.$m.$dt]") -> exp"[${n * m}.$dt]"
 

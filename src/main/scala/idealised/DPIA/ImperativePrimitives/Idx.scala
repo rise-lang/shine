@@ -17,7 +17,7 @@ final case class Idx(n: Nat,
                      array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override val `type`: ExpType =
+  override val t: ExpType =
     (n: Nat) -> (dt: DataType) ->
       (index :: exp"[idx($n)]") ->
         (array :: exp"[$n.$dt]") ->

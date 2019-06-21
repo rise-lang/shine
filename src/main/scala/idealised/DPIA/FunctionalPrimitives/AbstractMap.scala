@@ -19,7 +19,7 @@ abstract class AbstractMap(n: Nat,
 
   def makeMap: (Nat, DataType, DataType, Phrase[ExpType -> ExpType], Phrase[ExpType]) => AbstractMap
 
-  override val `type`: ExpType =
+  override val t: ExpType =
     (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
       (f :: t"exp[$dt1] -> exp[$dt2]") ->
       (array :: exp"[$n.$dt1]") -> exp"[$n.$dt2]"

@@ -20,12 +20,12 @@ object KernelGenerator {
   def makeCode[T <: PhraseType, L, G](localSize: L, globalSize: G)(originalPhrase: Phrase[T])
                                      (implicit toLRange: L => NDRange, toGRange: G => NDRange): OpenCL.KernelWithSizes = {
     val (phrase, params, defs) = getPhraseAndParams(originalPhrase, Seq(), Seq())
-    makeKernel(phrase, params.reverse, defs.reverse, Some(localSize), Some(globalSize)).right.get
+    makeKernel("KERNEL", phrase, params.reverse, defs.reverse, Some(localSize), Some(globalSize)).right.get
   }
 
-  def makeCode[T <: PhraseType](originalPhrase: Phrase[T]): OpenCL.KernelNoSizes = {
+  def makeCode[T <: PhraseType](originalPhrase: Phrase[T], name: String = "KERNEL"): OpenCL.KernelNoSizes = {
     val (phrase, params, defs) = getPhraseAndParams(originalPhrase, Seq(), Seq())
-    makeKernel(phrase, params.reverse, defs.reverse, None, None).left.get
+    makeKernel(name, phrase, params.reverse, defs.reverse, None, None).left.get
   }
 
   private def getPhraseAndParams[_ <: PhraseType](p: Phrase[_],
@@ -35,13 +35,13 @@ object KernelGenerator {
     p match {
       case l: Lambda[ExpType, _]@unchecked => getPhraseAndParams(l.body, l.param +: ps, defs)
       case ndl: NatDependentLambda[_] => getPhraseAndParams(ndl.body, Identifier(ndl.x.name, ExpType(int)) +: ps, defs)
-      case ln:LetNat[ExpType, _]@unchecked => // LetNat(binder, defn:Phrase[ExpType], body) =>
-        getPhraseAndParams(ln.body, ps, (ln.binder, ln.defn) +: defs)
+      case ln:LetNat[ExpType, _]@unchecked => getPhraseAndParams(ln.body, ps, (ln.binder, ln.defn) +: defs)
       case ep: Phrase[ExpType]@unchecked => (ep, ps, defs)
     }
   }
 
-  private def makeKernel(p: Phrase[ExpType],
+  private def makeKernel(name:String,
+                         p: Phrase[ExpType],
                          inputParams: Seq[Identifier[ExpType]],
                          letNatDefs:Seq[(LetNatIdentifier, Phrase[ExpType])],
                          localSize: Option[NDRange],
@@ -75,7 +75,7 @@ object KernelGenerator {
       val typeDeclarations = C.ProgramGenerator.collectTypeDeclarations(code, kernelParams)
 
       val oclKernel = OpenCL.Kernel(declarations ++ typeDeclarations,
-            kernel = makeKernelFunction (kernelParams, adaptKernelBody (C.AST.Block (Seq (code) ) ) ),
+            kernel = makeKernelFunction(name, kernelParams, adaptKernelBody (C.AST.Block (Seq (code) ) ) ),
             outputParam = outParam,
             inputParams = inputParams,
             intermediateParams = intermediateAllocations.map (_.identifier))
@@ -181,11 +181,8 @@ object KernelGenerator {
     AdaptKernelBody(body)
   }
 
-  private def makeKernelFunction(params: Seq[OpenCL.AST.ParamDecl], body: C.AST.Block): OpenCL.AST.KernelDecl = {
-    OpenCL.AST.KernelDecl(name = "KERNEL",
-      params = params,
-      body = body,
-      attribute = None)
+  private def makeKernelFunction(name: String, params: Seq[OpenCL.AST.ParamDecl], body: C.AST.Block): OpenCL.AST.KernelDecl = {
+    OpenCL.AST.KernelDecl(name, params = params, body = body, attribute = None)
   }
 
   implicit private def getDataType(i: Identifier[_]): DataType = {

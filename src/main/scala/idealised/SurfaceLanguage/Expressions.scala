@@ -16,7 +16,7 @@ final case class IdentifierExpr(name: String,
   override def children: Seq[Any] = Seq(t)
 
   override def rebuild: Seq[Any] => Expr = {
-    case Seq(t: Option[DataType]) => IdentifierExpr(name, t)
+    case Seq(t: Option[DataType]@unchecked) => IdentifierExpr(name, t)
   }
 }
 
@@ -33,7 +33,7 @@ final case class LambdaExpr(param: IdentifierExpr, body: Expr, override val t: O
   override def children: Seq[Any] = Seq(param, body, t)
 
   override def rebuild: Seq[Any] => Expr = {
-    case Seq(param: IdentifierExpr, body: Expr, t: Option[Type]) => LambdaExpr(param, body, t)
+    case Seq(param: IdentifierExpr, body: Expr, t: Option[Type]@unchecked) => LambdaExpr(param, body, t)
   }
 }
 
@@ -43,7 +43,7 @@ final case class ApplyExpr(fun: Expr, arg: Expr, override val t: Option[Type] = 
   override def children: Seq[Any] = Seq(fun, arg, t)
 
   override def rebuild: Seq[Any] => Expr = {
-    case Seq(fun: Expr, arg: Expr, t: Option[Type]) => ApplyExpr(fun, arg, t)
+    case Seq(fun: Expr, arg: Expr, t: Option[Type]@unchecked) => ApplyExpr(fun, arg, t)
   }
 }
 
@@ -53,7 +53,7 @@ final case class NatDependentLambdaExpr(x: NatIdentifier, body: Expr, override v
   override def children: Seq[Any] = Seq(x, body, t)
 
   override def rebuild: Seq[Any] => Expr = {
-    case Seq(x: NatIdentifier, body: Expr, t: Option[Type]) =>
+    case Seq(x: NatIdentifier, body: Expr, t: Option[Type]@unchecked) =>
       NatDependentLambdaExpr(x, body, t)
   }
 }
@@ -64,7 +64,7 @@ final case class NatDependentApplyExpr(fun: Expr, arg: Nat, override val t: Opti
   override def children: Seq[Any] = Seq(fun, arg, t)
 
   override def rebuild: Seq[Any] => Expr = {
-    case Seq(fun: Expr, arg: Nat, t: Option[Type]) =>
+    case Seq(fun: Expr, arg: Nat, t: Option[Type]@unchecked) =>
       NatDependentApplyExpr(fun, arg, t)
   }
 }
@@ -75,7 +75,7 @@ final case class TypeDependentLambdaExpr(x: DataTypeIdentifier, body: Expr, over
   override def children: Seq[Any] = Seq(x, body, t)
 
   override def rebuild: Seq[Any] => Expr = {
-    case Seq(x: DataTypeIdentifier, body: Expr, t: Option[Type]) =>
+    case Seq(x: DataTypeIdentifier, body: Expr, t: Option[Type]@unchecked) =>
       TypeDependentLambdaExpr(x, body, t)
   }
 }
@@ -86,7 +86,7 @@ final case class TypeDependentApplyExpr(fun: Expr, arg: DataType, override val t
   override def children: Seq[Any] = Seq(fun, arg, t)
 
   override def rebuild: Seq[Any] => Expr = {
-    case Seq(fun: Expr, arg: DataType, t: Option[Type]) =>
+    case Seq(fun: Expr, arg: DataType, t: Option[Type]@unchecked) =>
       TypeDependentApplyExpr(fun, arg, t)
   }
 }
@@ -111,7 +111,7 @@ final case class IfThenElseExpr(cond: Expr, thenE: Expr, elseE: Expr, override v
   override def children: Seq[Any] = Seq(cond, thenE, elseE, t)
 
   override def rebuild: Seq[Any] => Expr = {
-    case Seq(cond: Expr, thenE: Expr, elseE: Expr, t: Option[Type]) =>
+    case Seq(cond: Expr, thenE: Expr, elseE: Expr, t: Option[Type]@unchecked) =>
       IfThenElseExpr(cond, thenE, elseE, t)
   }
 }
@@ -122,7 +122,7 @@ final case class UnaryOpExpr(op: Operators.Unary.Value, e: Expr, override val t:
   override def children: Seq[Any] = Seq(e, t)
 
   override def rebuild: Seq[Any] => Expr = {
-    case Seq(e: Expr, t: Option[Type]) => UnaryOpExpr(op, e, t)
+    case Seq(e: Expr, t: Option[Type]@unchecked) => UnaryOpExpr(op, e, t)
   }
 }
 
@@ -132,7 +132,7 @@ final case class BinOpExpr(op: Operators.Binary.Value, lhs: Expr, rhs: Expr, ove
   override def children: Seq[Any] = Seq(lhs, rhs, t)
 
   override def rebuild: Seq[Any] => Expr = {
-    case Seq(lhs: Expr, rhs: Expr, t: Option[Type]) => BinOpExpr(op, lhs, rhs, t)
+    case Seq(lhs: Expr, rhs: Expr, t: Option[Type]@unchecked) => BinOpExpr(op, lhs, rhs, t)
   }
 }
 

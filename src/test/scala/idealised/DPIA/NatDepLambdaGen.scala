@@ -9,7 +9,7 @@ import idealised.util.SyntaxChecker
 
 import scala.language.{postfixOps, reflectiveCalls}
 
-class NatLambdaGen extends idealised.util.TestsWithExecutor {
+class NatDepLambdaGen extends idealised.util.TestsWithExecutor {
   val id = fun(x => x)
 
   test("Generate code for top-level nat-dependent lambdas in OpenCL") {

@@ -1,10 +1,10 @@
 package idealised.DPIA.Primitives
 
 import benchmarks.core.SimpleRunOpenCLProgram
-import idealised.DPIA.{Nat, NatIdentifier}
+import idealised.DPIA.Nat
 import idealised.OpenCL.KernelWithSizes
 import idealised.SurfaceLanguage.DSL._
-import idealised.SurfaceLanguage.Expr
+import idealised.SurfaceLanguage.{Expr, NatIdentifier}
 import idealised.SurfaceLanguage.Types._
 import idealised.util.SyntaxChecker
 import idealised.utils.Time.ms

@@ -15,7 +15,7 @@ final case class IdxVecAcc(n: Nat,
                            vector: Phrase[AccType])
   extends AccPrimitive {
 
-  override val `type`: AccType =
+  override val t: AccType =
     (n: Nat) -> (st: ScalarType) ->
       (index :: exp"[idx($n)]") ->
         (vector :: acc"[${VectorType(n, st)}]") ->

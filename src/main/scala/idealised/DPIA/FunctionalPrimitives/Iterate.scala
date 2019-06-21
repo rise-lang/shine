@@ -18,11 +18,11 @@ final case class Iterate(n: Nat,
                          array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override val `type`: ExpType = {
-    val l = f.t.n
+  override val t: ExpType = {
+    val l = f.t.x
     (n: Nat) -> (m: Nat) -> (k: Nat) -> (dt: DataType) ->
-      (f :: t"($l : nat) -> exp[$l.$dt] -> exp[${l /^ n}.$dt]") ->
-      (array :: exp"[$m.$dt]") -> exp"[${m /^ n.pow(k)}.$dt]"
+      (f :: t"($l : nat) -> exp[${l * n}.$dt] -> exp[$l.$dt]") ->
+      (array :: exp"[${m * n.pow(k)}.$dt]") -> exp"[$m.$dt]"
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
@@ -44,8 +44,8 @@ final case class Iterate(n: Nat,
   }
 
   override def xmlPrinter: Elem = {
-    val l = f match {
-      case NatDependentLambda(l_, _) => l_
+    val l = f.t match {
+      case DependentFunctionType(l_, _) => l_
       case _ => throw new Exception("This should not happen")
     }
     <iterate n={ToString(n)} m={ToString(m)} k={ToString(k)} dt={ToString(dt)}>
@@ -65,9 +65,9 @@ final case class Iterate(n: Nat,
                                   (implicit context: TranslationContext): Phrase[CommandType] = {
     import idealised.DPIA.Compilation.TranslationToImperative._
 
-    con(array)(λ(exp"[$m.$dt]")(x =>
-      IterateIAcc(n, m = m /^ n.pow(k), k, dt, A,
-        _Λ_(l => λ(acc"[${l /^ n}.$dt]")(o => λ(exp"[$l.$dt]")(x => acc(f(l)(x))(o)))),
+    con(array)(λ(exp"[${m * n.pow(k)}.$dt]")(x =>
+      IterateIAcc(n, m, k, dt, A,
+        _Λ_[NatKind](l => λ(acc"[$l.$dt]")(o => λ(exp"[${l * n}.$dt]")(x => acc(f(l)(x))(o)))),
         x) ))
   }
 

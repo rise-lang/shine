@@ -14,7 +14,7 @@ import scala.language.reflectiveCalls
 final case class IndexAsNat(n: Nat, e: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override val `type`: ExpType =
+  override val t: ExpType =
     (n: Nat) -> (e :: exp"[idx($n)]") -> exp"[$NatType]"
 
   def prettyPrint: String =

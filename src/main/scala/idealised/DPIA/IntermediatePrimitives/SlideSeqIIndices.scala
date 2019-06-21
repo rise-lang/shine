@@ -10,10 +10,10 @@ import idealised.DPIA.ImperativePrimitives.{CycleAcc, DropAcc, ForNat, TakeAcc}
 
 import scala.language.reflectiveCalls
 
-object SlideSeqICircular {
+object SlideSeqIIndices {
   def apply(n: Nat,
             size: Nat,
-            // step: Nat,
+            step: Nat,
             dt1: DataType,
             dt2: DataType,
             f: Phrase[ExpType -> (AccType -> CommandType)],
@@ -21,18 +21,18 @@ object SlideSeqICircular {
             output: Phrase[AccType])
            (implicit context: TranslationContext): Phrase[CommandType] =
   {
-    val step = 1
+    assert(step.eval == 1) // FIXME?
     val inputSize = step * n + size - step
 
     `new`(ArrayType(size, dt1), buffer => {
       MapSeqI(size - 1, dt1, dt1, fun(ExpType(dt1))(exp => fun(AccType(dt1))(acc => acc :=| dt1 | exp)),
-        Take(size - 1, inputSize, dt1, input),
-        TakeAcc(size - 1, size, dt1, buffer.wr)) `;`
-        ForNat(n, _Λ_(i => {
-          ((DropAcc(size - 1, size - 1 + n, dt1,
+        Take(size - 1, inputSize - size + 1, dt1, input),
+        TakeAcc(size - 1, size - size + 1, dt1, buffer.wr)) `;`
+        ForNat(n, _Λ_[NatKind](i => {
+          ((DropAcc(size - 1, n, dt1,
             CycleAcc(size - 1 + n, size, dt1, buffer.wr)) `@` i) :=| dt1 |
-            (Drop(size - 1, inputSize, dt1, input) `@` i)) `;`
-            f(Take(3, n - i, dt1, Drop(i, n, dt1, Cycle(n, size, dt1, buffer.rd))))(output `@` i)
+            (Drop(size - 1, inputSize - size + 1, dt1, input) `@` i)) `;`
+            f(Take(3, n - i - 3, dt1, Drop(i, n - i, dt1, Cycle(n, size, dt1, buffer.rd))))(output `@` i)
         }), unroll = false)
     })
   }

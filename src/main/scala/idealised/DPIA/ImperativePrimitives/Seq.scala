@@ -12,7 +12,7 @@ final case class Seq(c1: Phrase[CommandType],
                      c2: Phrase[CommandType])
   extends CommandPrimitive {
 
-  override val `type`: CommandType =
+  override val t: CommandType =
     (c1 :: comm) -> (c2 :: comm) -> comm
 
   override def eval(s: Store): Store = {

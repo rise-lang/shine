@@ -29,17 +29,11 @@ object xmlPrinter {
           <arg type={ToString(app.arg.t)}>{apply(app.arg)}</arg>
         </apply>
 
-      case app: NatDependentApply[T] =>
+      case app: DepApply[_, T] =>
         <natApply>
           <fun type={ToString(app.fun.t)}>{apply(app.fun)}</fun>
-          <arg type="Nat">{app.arg}</arg>
+          <arg type={app.arg.getClass.toString}>{app.arg}</arg>
         </natApply>
-
-      case app: TypeDependentApply[T] =>
-        <typeApply>
-          <fun type={ToString(app.fun.t)}>{apply(app.fun)}</fun>
-          <arg type="Nat">{app.arg}</arg>
-        </typeApply>
 
       case p1: Proj1[a, b] =>
         <π1>{apply(p1.pair)}</π1>
@@ -71,13 +65,8 @@ object xmlPrinter {
           {apply(body)}
         </λ>
 
-      case NatDependentLambda(param, body) =>
-        <Λ param={param.name + " : nat"}>
-          {apply(body)}
-        </Λ>
-
-      case TypeDependentLambda(param, body) =>
-        <Λ param={param.name + " : dt"}>
+      case DepLambda(param, body) =>
+        <Λ param={param.name + " : " + param.getClass.toString}>
           {apply(body)}
         </Λ>
 

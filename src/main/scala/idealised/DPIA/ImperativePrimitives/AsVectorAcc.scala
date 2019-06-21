@@ -13,7 +13,7 @@ final case class AsVectorAcc(n: Nat,
                              array: Phrase[AccType])
   extends AccPrimitive {
 
-  override lazy val `type`: AccType =
+  override val t: AccType =
     (n: Nat) -> (m: Nat) -> (dt: ScalarType) ->
       (array :: acc"[$n.${VectorType(m, dt)}]") ->
         acc"[${n * m}.$dt]"

@@ -12,8 +12,8 @@ final case class ForNat(n: Nat,
                         unroll:Boolean)
   extends CommandPrimitive {
 
-  override val `type`: CommandType = {
-    val k = body.t.n
+  override val t: CommandType = {
+    val k = body.t.x
     (n: Nat) -> (body :: t"($k:nat) -> comm") -> comm
   }
   override def eval(s: Store): Store = ???

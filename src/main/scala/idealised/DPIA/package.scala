@@ -4,6 +4,7 @@ import idealised.C.AST.CPrinter
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types.{PhraseTypeParser, _}
 import lift.arithmetic._
+import lift.core
 
 import scala.language.{implicitConversions, reflectiveCalls}
 
@@ -18,7 +19,35 @@ package object DPIA {
   }
 
   type Nat = ArithExpr
-  type NatIdentifier = NamedVar
+  type NatIdentifier = NamedVar with Kind.Identifier
+
+  implicit def surfaceToDPINatIdentifier(n: SurfaceLanguage.NatIdentifier): NatIdentifier = NatIdentifier(n.name, n.range)
+  implicit def liftToDPIANatIdentifer(n: lift.core.NatIdentifier): NatIdentifier = NatIdentifier(n.name, n.range)
+
+  object NatIdentifier {
+    def apply(name: String): NatIdentifier = new NamedVar(name) with Kind.Identifier
+    def apply(name: String, range: Range): NatIdentifier = new NamedVar(name, range) with Kind.Identifier
+  }
+
+  type NatDependentLambda[T <: PhraseType] = DepLambda[NatKind, T]
+  object NatDependentLambda {
+    def apply[T <: PhraseType](x: NatIdentifier, body: Phrase[T]): NatDependentLambda[T] = DepLambda[NatKind, T](x, body)
+  }
+
+  type NatDependentApply[T <: PhraseType] = DepApply[NatKind, T]
+  object NatDependentApply {
+    def apply[T <: PhraseType](fun: Phrase[`(nat)->`[T]], arg: Nat): NatDependentApply[T] = DepApply[NatKind, T](fun, arg)
+  }
+
+  type TypeDependentLambda[T <: PhraseType] = DepLambda[DataKind, T]
+  object TypeDependentLambda {
+    def apply[T <: PhraseType](x: DataTypeIdentifier, body: Phrase[T]): TypeDependentLambda[T] = DepLambda[DataKind, T](x, body)
+  }
+
+  type TypeDependentApply[T <: PhraseType] = DepApply[DataKind, T]
+  object TypeDependentApply {
+    def  apply[T <: PhraseType](fun: Phrase[`(dt)->`[T]], arg: DataType): TypeDependentApply[T] = DepApply[DataKind, T](fun, arg)
+  }
 
   case class LetNatIdentifier(id:NatIdentifier) {
     def name:String = id.name
@@ -35,7 +64,7 @@ package object DPIA {
 
   object LetNatIdentifier {
     def apply():LetNatIdentifier = {
-      LetNatIdentifier(NamedVar(freshName("nFun")))
+      LetNatIdentifier(NatIdentifier("nFun"))
     }
   }
 
@@ -82,7 +111,7 @@ package object DPIA {
   }
 
 
-  case class NatNatLambda private(x:NatIdentifier, body:Nat) {
+  case class NatNatTypeFunction private(x:NatIdentifier, body:Nat) {
     //NatNatLambdas have an interesting comparison behavior, as we do not define
     //equality for them as simple syntactic equality: we just want to make sure their bodies
     //are equal up-to renaming of the binder.
@@ -98,21 +127,21 @@ package object DPIA {
 
     override def equals(obj: Any): Boolean = {
       obj match {
-        case other:NatNatLambda => body == other(x)
+        case other:NatNatTypeFunction => body == other(x)
         case _ => false
       }
     }
   }
 
-  object NatNatLambda {
-    def apply(upperBound:Nat, f:NatIdentifier => Nat):NatNatLambda = {
-      val x = NamedVar(freshName(), RangeAdd(0, upperBound, 1))
-      NatNatLambda(x, f(x))
+  object NatNatTypeFunction {
+    def apply(upperBound:Nat, f:NatIdentifier => Nat):NatNatTypeFunction = {
+      val x = NatIdentifier(freshName("n"), RangeAdd(0, upperBound, 1))
+      NatNatTypeFunction(x, f(x))
     }
 
-    def apply(upperBound:Nat, id:NatIdentifier, body:Nat):NatNatLambda = {
-      val x = NamedVar(freshName(), RangeAdd(0, upperBound, 1))
-      NatNatLambda(x, x => ArithExpr.substitute(body, Map((id, x))))
+    def apply(upperBound:Nat, id:NatIdentifier, body:Nat):NatNatTypeFunction = {
+      val x = NamedVar(freshName("n"), RangeAdd(0, upperBound, 1))
+      NatNatTypeFunction(x, x => ArithExpr.substitute(body, Map((id, x))))
     }
   }
 
@@ -137,12 +166,12 @@ package object DPIA {
 
   object NatDataTypeFunction {
     def apply(upperBound:Nat, f:NatIdentifier => DataType):NatDataTypeFunction = {
-      val x = NamedVar(freshName(), RangeAdd(0, upperBound, 1))
+      val x = NatIdentifier(freshName("n"), RangeAdd(0, upperBound, 1))
       NatDataTypeFunction(x, f(x))
     }
 
     def apply(upperBound:Nat, id:NatIdentifier, body:DataType):NatDataTypeFunction = {
-      val x = NamedVar(freshName(), RangeAdd(0, upperBound, 1))
+      val x = NamedVar(freshName("n"), RangeAdd(0, upperBound, 1))
       NatDataTypeFunction(x, x => DataType.substitute(x, `for`=id, `in`=body))
     }
   }
@@ -161,26 +190,13 @@ package object DPIA {
     }
   }
 
-  object freshName {
-    private var counter = 0
-
-    /**Note: I changed the default prefix from v to x. This is because, v is also the prefix used by ArithExpr variables
-      * This lead to a situation wherein it was possible, by sheer chance, that a namedVar with the default name had the
-      * same .name value as another, non NamedVar variable, which happened to just have a clashing id.
-      *
-      * Maybe should we push this naming function into the ArithExpr? Or use the var id instead of a non-shared global
-      * counter?
-      * */
-
-    def apply(prefix: String = "x"): String = {
-      counter += 1
-      prefix + counter
-    }
-  }
+  // note: this is an easy fix to avoid name conflicts between lift and dpia
+  val freshName: core.freshName.type = lift.core.freshName
 
   type x[T1 <: PhraseType, T2 <: PhraseType] = PairType[T1, T2]
   type ->[T1 <: PhraseType, T2 <: PhraseType] = FunctionType[T1, T2]
   type `->p`[T1 <: PhraseType, T2 <: PhraseType] = PassiveFunctionType[T1, T2]
+  type `()->`[K <: Kind, T <: PhraseType] = DependentFunctionType[K, T]
   type `(nat)->`[T <: PhraseType] = NatDependentFunctionType[T]
   type `(dt)->`[T <: PhraseType] = TypeDependentFunctionType[T]
   type VarType = ExpType x AccType
@@ -237,8 +253,12 @@ package object DPIA {
     def `->p`[T2 <: PhraseType](t2: T2) = PassiveFunctionType(t1, t2)
   }
 
+  implicit class DependentFunctionTypeConstructor[K <: Kind](x: K#I) {
+    def `()->`[T <: PhraseType](outT: T): K `()->` T = DependentFunctionType[K, T](x, outT)
+  }
+
   implicit class NatDependentFunctionTypeConstructor(x: NatIdentifier) {
-    def ->[T <: PhraseType](outT: T) = NatDependentFunctionType(x, outT)
+    def ->[T <: PhraseType](outT: T): `()->`[NatKind, T] = DependentFunctionType[NatKind, T](x, outT)
   }
 
   implicit class TypeDependentFunctionTypeConstructor(x: DataTypeIdentifier) {

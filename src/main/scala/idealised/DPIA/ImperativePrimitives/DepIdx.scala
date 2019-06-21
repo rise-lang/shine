@@ -24,7 +24,7 @@ final case class DepIdx(n: Nat,
                         array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override val `type`: ExpType =
+  override val t: ExpType =
     (n: Nat) -> (ft: NatDataTypeFunction) -> (index: Nat) ->
       (array :: exp"[$n.$ft]") ->
         exp"[${ft(index)}]"

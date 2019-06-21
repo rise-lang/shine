@@ -1,9 +1,8 @@
 package idealised.DPIA.Types
 
-import idealised.DPIA.{Nat, NatDataTypeFunction, freshName}
-import idealised.SurfaceLanguage
-import idealised.SurfaceLanguage.NatIdentifier
-import lift.arithmetic.{ArithExpr, BigSum, NamedVar, RangeAdd}
+import idealised.DPIA.{Nat, NatDataTypeFunction}
+import idealised.{DPIA, SurfaceLanguage}
+import lift.arithmetic.{ArithExpr, BigSum, RangeAdd}
 
 import scala.language.implicitConversions
 
@@ -48,7 +47,7 @@ final case class DepArrayType private (size:Nat, elemFType: NatDataTypeFunction)
 }
 
 object DepArrayType {
-  def apply(size: Nat, f: NatIdentifier => DataType): DepArrayType = {
+  def apply(size: Nat, f: DPIA.NatIdentifier => DataType): DepArrayType = {
     DepArrayType(size, NatDataTypeFunction(size, f))
   }
 }
@@ -58,7 +57,7 @@ final case class RecordType(fst: DataType, snd: DataType) extends ComposedType {
 }
 
 sealed case class VectorType(size: Nat, elemType: ScalarType) extends BasicType {
-  override def toString: String = s"$elemType$size"
+  override def toString: String = s"<$size>$elemType"
 }
 
 object int2 extends VectorType(2, int)
@@ -73,7 +72,7 @@ object float4 extends VectorType(4, float)
 object float8 extends VectorType(8, float)
 object float16 extends VectorType(16, float)
 
-final case class DataTypeIdentifier(name: String) extends DataType {
+final case class DataTypeIdentifier(name: String) extends DataType with Kind.Identifier {
   override def toString: String = name
 }
 
@@ -105,8 +104,8 @@ object DataType {
 
   def substitute[T <: DataType](ae: Nat, `for`: Nat, in: T): T = {
     (in match {
+      case s: ScalarType => s
       case i: IndexType => IndexType(ArithExpr.substitute(i.size, Map((`for`, ae))))
-      case b: BasicType => b
       case a: ArrayType =>
         ArrayType(ArithExpr.substitute(a.size, Map((`for`, ae))),
           substitute(ae, `for`, a.elemType))
@@ -115,7 +114,8 @@ object DataType {
         val newSize = ArithExpr.substitute(a.size, subMap)
         val newBody = substitute(ae, `for`, a.elemFType.body)
         DepArrayType(newSize, a.elemFType.copy(body = newBody))
-
+      case v: VectorType =>
+        VectorType(ArithExpr.substitute(v.size, Map((`for`, ae))), v.elemType)
       case r: RecordType =>
         RecordType(substitute(ae, `for`, r.fst), substitute(ae, `for`, r.snd))
     }).asInstanceOf[T]
@@ -131,7 +131,7 @@ object DataType {
       case ct: SurfaceLanguage.Types.ComposedType => ct match {
         case at: SurfaceLanguage.Types.ArrayType => ArrayType(at.size, DataType(at.elemType))
         case dat:SurfaceLanguage.Types.DepArrayType =>
-          DepArrayType(dat.size, x => DataType.substitute(x, `for`= dat.elemType.n, in=DataType(dat.elemType.t)))
+          DepArrayType(dat.size, x => DataType.substitute(x, `for`= dat.elemType.x, in=DataType(dat.elemType.t)))
         case tt: SurfaceLanguage.Types.TupleType =>
           assert(tt.elemTypes.size == 2)
           //noinspection ZeroIndexToHead

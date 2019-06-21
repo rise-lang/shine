@@ -147,7 +147,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case For(n, Lambda(i, p), unroll) => CCodeGen.codeGenFor(n, i, p, unroll, env)
 
-      case ForNat(n, NatDependentLambda(i, p), unroll) => CCodeGen.codeGenForNat(n, i, p, unroll, env)
+      case ForNat(n, DepLambda(i: NatIdentifier, p), unroll) => CCodeGen.codeGenForNat(n, i, p, unroll, env)
 
       case Proj1(pair) => cmd(Lifting.liftPair(pair)._1, env)
       case Proj2(pair) => cmd(Lifting.liftPair(pair)._2, env)
@@ -155,7 +155,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case LetNat(binder, defn, body) => generateLetNat(binder, defn, env, (gen, env) => gen.cmd(body, env))
 
 
-      case Apply(_, _) | NatDependentApply(_, _) | TypeDependentApply(_, _) |
+      case Apply(_, _) | DepApply(_, _) |
            _: CommandPrimitive =>
         error(s"Don't know how to generate code for $phrase")
     }, env)
@@ -172,15 +172,15 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         }), path, env))
 
       case SplitAcc(n, _, _, a) => path match {
-        case (i: CIntExpr) :: ps => acc(a, env, CIntExpr(i / n) :: CIntExpr(i % n) :: ps, cont)
+        case (i : CIntExpr) :: ps  => acc(a, env, CIntExpr(i / n) :: CIntExpr(i % n) :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
       case JoinAcc(_, m, _, a) => path match {
-        case (i: CIntExpr) :: (j: CIntExpr) :: ps => acc(a, env, CIntExpr(i * m + j) :: ps, cont)
+        case (i : CIntExpr) :: (j : CIntExpr) :: ps => acc(a, env, CIntExpr(i * m + j) :: ps, cont)
         case _ => error(s"Expected two C-Integer-Expressions on the path.")
       }
       case depJ@DepJoinAcc(_, _, _, a) => path match {
-        case (i: CIntExpr) :: (j: CIntExpr) :: ps =>
+        case (i : CIntExpr) :: (j : CIntExpr) :: ps =>
           acc(a, env, CIntExpr(BigSum(0, i - 1, x => depJ.lenF(x)) + j) :: ps, cont)
         case _ => error(s"Expected two C-Integer-Expressions on the path.")
       }
@@ -189,34 +189,34 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case RecordAcc2(_, _, a) => acc(a, env, SndMember :: path, cont)
 
       case ZipAcc1(_, _, _, a) => path match {
-        case (i: CIntExpr) :: ps => acc(a, env, i :: FstMember :: ps, cont)
+        case (i : CIntExpr) :: ps => acc(a, env, i :: FstMember :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
       case ZipAcc2(_, _, _, a) => path match {
-        case (i: CIntExpr) :: ps => acc(a, env, i :: SndMember :: ps, cont)
+        case (i : CIntExpr) :: ps => acc(a, env, i :: SndMember :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
       case UnzipAcc(_, _, _, _) => ???
 
       case TakeAcc(_, _, _, a) => acc(a, env, path, cont)
       case DropAcc(n, _, _, a) => path match {
-        case (i: CIntExpr) :: ps => acc(a, env, CIntExpr(i + n) :: ps, cont)
+        case (i : CIntExpr) :: ps => acc(a, env, CIntExpr(i + n) ::ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
 
       case CycleAcc(_, m, _, a) => path match {
-        case (i: CIntExpr) :: ps => acc(a, env, CIntExpr(i % m) :: ps, cont)
+        case (i : CIntExpr) :: ps => acc(a, env, CIntExpr(i % m) :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
 
       case ReorderAcc(n, _, idxF, a) => path match {
-        case (i: CIntExpr) :: ps =>
+        case (i : CIntExpr) :: ps =>
           acc(a, env, CIntExpr(OperationalSemantics.evalIndexExp(idxF(AsIndex(n, Natural(i))))) :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
 
       case MapAcc(n, dt, _, f, a) => path match {
-        case (i: CIntExpr) :: ps => acc(f(IdxAcc(n, dt, AsIndex(n, Natural(i)), a)), env, ps, cont)
+        case (i : CIntExpr) :: ps => acc( f( IdxAcc(n, dt, AsIndex(n, Natural(i)), a) ), env, ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
 
@@ -227,7 +227,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case Proj1(pair) => acc(Lifting.liftPair(pair)._1, env, path, cont)
       case Proj2(pair) => acc(Lifting.liftPair(pair)._2, env, path, cont)
 
-      case Apply(_, _) | NatDependentApply(_, _) | TypeDependentApply(_, _) |
+      case Apply(_, _) | DepApply(_, _) |
            Phrases.IfThenElse(_, _, _) | _: AccPrimitive =>
         error(s"Don't know how to generate code for $phrase")
     }
@@ -287,24 +287,19 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                 cont(CCodeGen.codeGenBinaryOp(op, e1, e2))))
           case _ => error(s"Expected path to be empty")
         }
-        case x => error(s"Expected scalar types")
+        case _ => error(s"Expected scalar types")
       }
 
       case Cast(_, dt, e) => path match {
         case Nil =>
           exp(e, env, Nil, e =>
             cont(C.AST.Cast(typ(dt), e)))
+        case _ => error(s"Expected path to be empty")
       }
 
       case IndexAsNat(_, e) => exp(e, env, path, cont)
 
       case AsIndex(_, e) => exp(e, env, path, cont)
-
-      case Generate(n, _, lam@Lambda(_, _)) => path match {
-        case (i : CIntExpr) :: ps =>
-          val evaledLam = Lifting.liftFunction(lam)(AsIndex(n, Natural(i)))
-          exp(evaledLam, env, ps, cont)
-      }
 
       case Split(n, _, _, e) => path match {
         case (i : CIntExpr) :: (j : CIntExpr) :: ps => exp(e, env, CIntExpr(n * i + j) :: ps, cont)
@@ -358,15 +353,17 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
 
+      case PadClamp(n, l, r, _, e) => path match {
+        case (i: CIntExpr) :: ps =>
+          exp(e, env, CIntExpr(0) :: ps, left =>
+            exp(e, env, CIntExpr(n-1) :: ps, right =>
+            genPad(n, l, r, left, right, i, ps, e, env, cont)))
+      }
+
       case Pad(n, l, r, _, pad, array) => path match {
         case (i: CIntExpr) :: ps =>
-          exp(pad, env, ps, padExpr => {
-            exp(array, env, CIntExpr(i - l) ::ps, arrayExpr => {
-              cont(genArithExprBranch(i, l, ArithPredicate.Operator.<, padExpr,
-                genArithExprBranch(i, l + n, ArithPredicate.Operator.<, arrayExpr, padExpr))
-              )
-            })
-          })
+          exp(pad, env, ps, padExpr =>
+            genPad(n, l, r, padExpr, padExpr, i, ps, array, env, cont))
 
         case _ => error(s"Expected path to be not empty")
       }
@@ -376,7 +373,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error(s"Expected two C-Integer-Expressions on the path.")
       }
 
-      case TransposeArrayDep(_, _, _, _, e) => path match {
+      case TransposeDepArray(_, _, _, _, e) => path match {
         case (i : CIntExpr)::(j : CIntExpr) :: ps => exp(e, env, CIntExpr(j) :: CIntExpr(i) :: ps , cont)
         case _ => error(s"Expected two C-Integer-Expressions on the path.")
       }
@@ -392,7 +389,18 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           )(
             continue_cmd
           ), env updatedContEnv (continue_cmd -> (e => env => exp(e, env, ps, cont))))
-        case Nil => error(s"Expected path to be not empty")
+        case _ => error(s"Expected path to be not empty")
+      }
+
+      case GenerateCont(n, dt, f) => path match {
+        case (i : CIntExpr) :: ps =>
+          val continue_cmd =
+            Identifier[ExpType -> CommandType](s"continue_$freshName",
+              FunctionType(ExpType(dt), comm))
+
+          cmd(f(AsIndex(n, Natural(i)))(continue_cmd),
+            env updatedContEnv (continue_cmd -> (e => env => exp(e, env, ps, cont))))
+        case _ => error(s"Expected path to be not empty")
       }
 
       case Idx(_, _, i, e) => CCodeGen.codeGenIdx(i, e, env, path, cont)
@@ -405,7 +413,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case Proj1(pair) => exp(Lifting.liftPair(pair)._1, env, path, cont)
       case Proj2(pair) => exp(Lifting.liftPair(pair)._2, env, path, cont)
 
-      case Apply(_, _) | NatDependentApply(_, _) | TypeDependentApply(_, _) |
+      case Apply(_, _) | DepApply(_, _) |
            Phrases.IfThenElse(_, _, _) | _: ExpPrimitive =>
         error(s"Don't know how to generate code for $phrase")
     }
@@ -792,13 +800,17 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                                ps: Path,
                                cont: Expr => Stmt): Stmt =
     {
-      addDeclaration(
-        C.AST.FunDecl(funDecl.name,
-          returnType = typ(outT),
-          params = (funDecl.argNames zip inTs).map {
-            case (name, dt) => C.AST.ParamDecl(name, typ(dt))
-          },
-          body = C.AST.Code(funDecl.body)))
+      funDecl.definition match {
+        case Some(funDef) =>
+          addDeclaration(
+            C.AST.FunDecl(funDecl.name,
+              returnType = typ(outT),
+              params = (funDef.params zip inTs).map {
+                case (name, dt) => C.AST.ParamDecl(name, typ(dt))
+              },
+              body = C.AST.Code(funDef.body)))
+        case _ =>
+      }
 
       codeGenForeignCall(funDecl.name, args, env, Nil, cont)
     }
@@ -1048,5 +1060,35 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     }
   }
 
+
+  protected def genPad(n: Nat, l: Nat, r: Nat,
+                       left: Expr, right: Expr,
+                       i: CIntExpr, ps: Path,
+                       array: Phrase[ExpType],
+                       env: Environment,
+                       cont: Expr => Stmt): Stmt = {
+
+    exp(array, env, CIntExpr(i - l) ::ps, arrayExpr => {
+
+      def cOperator(op:ArithPredicate.Operator.Value):C.AST.BinaryOperator.Value = op match {
+        case ArithPredicate.Operator.< => C.AST.BinaryOperator.<
+        case ArithPredicate.Operator.> => C.AST.BinaryOperator.>
+        case ArithPredicate.Operator.>= => C.AST.BinaryOperator.>=
+        case _ => null
+      }
+
+      def genBranch(lhs:ArithExpr, rhs:ArithExpr, operator:ArithPredicate.Operator.Value, taken:Expr, notTaken:Expr):Expr = {
+        import BoolExpr._
+        arithPredicate(lhs, rhs, operator) match {
+          case True => taken
+          case False => notTaken
+          case _ => C.AST.TernaryExpr(
+            C.AST.BinaryExpr(C.AST.ArithmeticExpr(lhs), cOperator(operator), C.AST.ArithmeticExpr(rhs)),
+            taken, notTaken)
+        }
+      }
+      cont(genBranch(i, l, ArithPredicate.Operator.<, left, genBranch(i, l + n, ArithPredicate.Operator.<, arrayExpr, right)))
+    })
+  }
 }
 

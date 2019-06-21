@@ -28,7 +28,7 @@ abstract class AbstractSlide(val sz: Nat, val sp: Nat, val input: Expr,
   override def children: Seq[Any] = Seq(sz, sp, input, t)
 
   override def rebuild: Seq[Any] => Expr = {
-    case Seq(sz: Nat, sp: Nat, input: Expr, t: Option[DataType]) =>
+    case Seq(sz: Nat, sp: Nat, input: Expr, t: Option[DataType]@unchecked) =>
       make(sz, sp, input, t)
   }
 }

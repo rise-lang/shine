@@ -18,7 +18,7 @@ final case class MapVec(n: Nat,
                         array: Phrase[ExpType])
   extends ExpPrimitive
 {
-  override val `type`: ExpType =
+  override val t: ExpType =
     (n: Nat) -> (dt1: ScalarType) -> (dt2: ScalarType) ->
       (f :: t"exp[$dt1] -> exp[$dt2]") ->
         (array :: exp"[${VectorType(n, dt1)}]") -> exp"[${VectorType(n, dt2)}]"

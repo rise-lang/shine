@@ -44,7 +44,7 @@ final case class Reorder(idxF: Expr,
   override def children: Seq[Any] = Seq(idxF, idxFinv, array, t)
 
   override def rebuild: Seq[Any] => Expr = {
-    case Seq(idxF: Expr, idxFinv: Expr, array: Expr, t: Option[DataType]) =>
+    case Seq(idxF: Expr, idxFinv: Expr, array: Expr, t: Option[DataType]@unchecked) =>
       Reorder(idxF, idxFinv, array, t)
   }
 }

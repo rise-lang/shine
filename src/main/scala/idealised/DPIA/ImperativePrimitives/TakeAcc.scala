@@ -13,9 +13,9 @@ final case class TakeAcc(n: Nat,
                          array: Phrase[AccType])
   extends AccPrimitive {
 
-  override val `type`: AccType =
+  override val t: AccType =
     (n: Nat) -> (m: Nat) -> (dt: DataType) ->
-      (array :: acc"[$m.$dt]") -> acc"[$n.$dt]"
+      (array :: acc"[${n + m}.$dt]") -> acc"[$n.$dt]"
 
   override def eval(s: Store): AccIdentifier = ???
 

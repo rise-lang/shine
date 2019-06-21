@@ -12,13 +12,13 @@ import scala.xml.Elem
 
 final case class Partition(n: Nat,
                            m: Nat,
-                           lenF:NatNatLambda,
+                           lenF:NatNatTypeFunction,
                            dt: DataType,
                            array: Phrase[ExpType])
   extends ExpPrimitive {
 
 
-  override val `type`: ExpType =
+  override val t: ExpType =
     (n: Nat) -> (m: Nat) -> (dt: DataType) ->
       (array :: exp"[$n.$dt]") -> exp"[$m.${NatDataTypeFunction(m, (i:NatIdentifier) => ArrayType(lenF(i), dt))}]"
 

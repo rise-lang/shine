@@ -31,7 +31,7 @@ abstract class AbstractReduce(n: Nat,
                   out: Phrase[ExpType -> CommandType])
                  (implicit context: TranslationContext): Phrase[CommandType]
 
-  override val `type`: ExpType =
+  override val t: ExpType =
     (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
       (f :: t"exp[$dt1] -> exp[$dt2] -> exp[$dt2]") ->
       (init :: exp"[$dt2]") ->

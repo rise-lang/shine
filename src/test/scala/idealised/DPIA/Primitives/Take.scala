@@ -1,27 +1,23 @@
 package idealised.DPIA.Primitives
 
-import idealised.SurfaceLanguage.DSL._
-import idealised.SurfaceLanguage.Types._
-import idealised.util.SyntaxChecker
+import lift.core.DSL._
+import lift.core.types._
+import lift.core.primitives._
+import idealised.util.gen
 
 class Take extends idealised.util.Tests {
 
   test ("Simple take example") {
-    val e = fun(ArrayType(128, int))(a => take(8, a) :>> mapSeq(fun(x => x)))
+    val e = fun(ArrayType(128, int))(a =>
+      take(8)(a) |> mapSeq(fun(x => x)))
 
-    val p = idealised.C.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(e, Map())))
-    val code = p.code
-    SyntaxChecker(code)
-    println(code)
+    gen.CProgram(e)
   }
 
   ignore ("Trigger TakeAcc acceptor translation, what should happen?") {
-    val e = fun(ArrayType(128, int))(a => take(8, a))
+    val e = fun(ArrayType(128, int))(a => take(8)(a))
 
-    val p = idealised.C.ProgramGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(e, Map())))
-    val code = p.code
-    SyntaxChecker(code)
-    println(code)
+    gen.CProgram(e)
   }
 
 }
