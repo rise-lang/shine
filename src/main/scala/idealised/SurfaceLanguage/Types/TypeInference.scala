@@ -75,7 +75,10 @@ object TypeInference {
 
       case LetNat(binder, definition, body, _) =>
         val defn = inferType(definition, subs)
-        checkLetNatDefinitionIsWellTyped(defn)
+        defn.t match {
+          case None => error(defn.toString, "Cannot infer definition type in LetNat")
+          case Some(_) => //TODO: Are there rules on which types should be allowed here?
+        }
 
         val bodyExpr = inferType(body, subs)
         bodyExpr.t match {
@@ -176,24 +179,5 @@ object TypeInference {
     }
 
     override def apply[T <: Type](dt: T): T = Type.rebuild(this.apply, dt)
-  }
-
-
-  private def checkLetNatDefinitionIsWellTyped(defn:Expr):Unit = {
-    defn.t match {
-      case None => error(defn.toString, "Cannot infer definition type in DLet")
-      case Some(t) =>
-        val findFunctionTypes = new VisitAndRebuild.Visitor {
-          var found = false
-
-          override def apply[T <: Type](t: T): T = t match {
-            case FunctionType(_,_) =>
-              this.found = true
-              t
-            case _ => t
-          }
-        }
-        VisitAndRebuild(defn, findFunctionTypes)
-    }
   }
 }
