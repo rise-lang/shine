@@ -11,7 +11,7 @@ import idealised.DPIA.{->, Nat, Phrases, _}
 import scala.language.reflectiveCalls
 import scala.xml.Elem
 
-// this takes n many elements from an array of m elements
+// this takes n many elements from an array of n + m elements
 final case class Take(n: Nat,
                       m: Nat,
                       dt: DataType,

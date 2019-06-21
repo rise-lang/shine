@@ -42,9 +42,6 @@ object FromSurfaceLanguage {
           arg)
 
       case LetNat(binder, definition, body, _) =>
-        val defn1 = apply(definition).asInstanceOf[Phrase[ExpType]]
-        val body1 = apply(body)
-
         Phrases.LetNat(
           binder, apply(definition).asInstanceOf[Phrase[ExpType]], apply(body)
         )

@@ -75,7 +75,7 @@ object FromSurfaceLanguagePrimitives {
 
       case Drop(n, array, _) => (array.t: @unchecked) match {
         case Some(ArrayType(m, dt)) =>
-          Some(FunctionalPrimitives.Drop(n, m, dt, FromSurfaceLanguage.asPhrase[ExpType](array)))
+          Some(FunctionalPrimitives.Drop(n, m - n, dt, FromSurfaceLanguage.asPhrase[ExpType](array)))
       }
 
       case ForeignFunction(funDecl, inTs, outT, args) =>
@@ -148,9 +148,10 @@ object FromSurfaceLanguagePrimitives {
         case x => None
       }
 
-      case Take(n, array, _) => (array.t: @unchecked) match {
+      case Take(n, array, _) =>
+        (array.t: @unchecked) match {
         case Some(ArrayType(m, dt)) =>
-          Some(FunctionalPrimitives.Take(n, m, dt, FromSurfaceLanguage.asPhrase[ExpType](array)))
+          Some(FunctionalPrimitives.Take(n, m - n, dt, FromSurfaceLanguage.asPhrase[ExpType](array)))
       }
 
       case Transpose(array, _) => (array.t: @unchecked) match {

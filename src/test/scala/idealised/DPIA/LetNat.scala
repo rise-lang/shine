@@ -10,7 +10,7 @@ class LetNat extends idealised.util.Tests{
     val program = nFun(n =>
       fun(ArrayType(n, float))(xs =>
             letNat(5, five =>
-              mapSeq(fun(x => x))(take(five(), xs)
+              mapSeq(fun(x => x))(drop(five(), xs)
       ))))
 
     val typed = TypeInference(program, Map())
