@@ -46,7 +46,7 @@ object Printer {
   def apply(n: Node): String = (new CPrinter).printNode(n)
 }
 
-class CPrinter() extends Printer {
+class CPrinter extends Printer {
 
   override def printNode(n: Node): String = {
 
@@ -143,10 +143,6 @@ class CPrinter() extends Printer {
       case _: UnionType => ???
       case a: ArrayType =>
         print(s"${a.getBaseType}* ${p.name}")
-        /*print(s"${a.getBaseType} ${p.name}[${ a.getSizes match {
-          case None => ""
-          case Some(s) => s
-        } }]")*/
       case pt: PointerType => print(s"${pt.valueType}* ${p.name}")
     }
   }

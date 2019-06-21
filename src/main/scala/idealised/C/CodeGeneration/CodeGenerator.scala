@@ -233,7 +233,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     }
   }
 
-
   override def exp(phrase: Phrase[ExpType],
                    env: Environment,
                    path: Path,
@@ -741,7 +740,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
     def codeGenLiteral(d: OperationalSemantics.Data): Expr = {
       d match {
-        case i: IndexData => C.AST.ArithmeticExpr(i.n)
+        case i: IndexData =>
+          C.AST.ArithmeticExpr(i.n)
         case _: IntData | _: FloatData | _: DoubleData | _: BoolData =>
           C.AST.Literal(d.toString)
         case ArrayData(a) => d.dataType match {
@@ -971,23 +971,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     ArithExpr.substitute(n, substitionMap)
   }
 
-  def genArithExprBranch(lhs:ArithExpr, rhs:ArithExpr, operator:ArithPredicate.Operator.Value, taken:Expr, notTaken:Expr):Expr = {
-    val cop = operator match {
-      case ArithPredicate.Operator.< => C.AST.BinaryOperator.<
-      case ArithPredicate.Operator.> => C.AST.BinaryOperator.>
-      case ArithPredicate.Operator.>= => C.AST.BinaryOperator.>=
-      case _ => null
-    }
-
-    import BoolExpr._
-    arithPredicate(lhs, rhs, operator) match {
-      case True => taken
-      case False => notTaken
-      case _ => C.AST.TernaryExpr(
-        C.AST.BinaryExpr(C.AST.ArithmeticExpr(lhs), cop, C.AST.ArithmeticExpr(rhs)),
-        taken, notTaken)
-    }
-  }
 
   private def visitAndGenerateNat[N <: C.AST.Node](node:N, env:Environment):N = {
     C.AST.Nodes.VisitAndRebuild(node, new C.AST.Nodes.VisitAndRebuild.Visitor() {

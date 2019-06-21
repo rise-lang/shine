@@ -2,7 +2,6 @@ package idealised.DPIA.FunctionalPrimitives
 
 import idealised.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import idealised.DPIA.DSL.{λ, _}
-import idealised.DPIA.ImperativePrimitives.TakeAcc
 import idealised.DPIA.Phrases.{ExpPrimitive, Phrase, VisitAndRebuild}
 import idealised.DPIA.Semantics.OperationalSemantics.{Data, Store}
 import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType, _}
