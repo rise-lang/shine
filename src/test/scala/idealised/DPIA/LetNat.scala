@@ -125,8 +125,7 @@ class LetNat extends idealised.util.Tests{
       Executor.shutdown()
 
       val scalaOutput = runScala(indices, sparse, dense)
-      assert(output.zip(scalaOutput).forall(x => x._1 - x._2 < 0.01))
-
+      assert(output.zip(scalaOutput).forall(x => Math.abs(x._1 - x._2) < 0.01))
     }
     runTest()
   }
@@ -171,6 +170,33 @@ class LetNat extends idealised.util.Tests{
     val code = p.code
     SyntaxChecker.checkOpenCL(code)
     println(code)
+
+    def runScala(indices:Array[Int], sparse:Array[Float], dense:Array[Float]):Float = {
+      indices.zip(sparse).foldLeft(0.0f)({
+        case (accum, (index, x)) => accum + (dense(index) + x)
+      })
+    }
+
+    def runTest():Unit = {
+      Executor.loadAndInit()
+      val random = new Random()
+      val length = 64
+      val numEntries = 10 + random.nextInt(20)
+
+      val indices = (0 until numEntries).map(_ => random.nextInt(length)).toArray
+      val sparse = (0 until numEntries).map(_ => random.nextFloat()).toArray
+      val dense = (0 until length).map(_ => random.nextFloat()).toArray
+
+      import idealised.OpenCL._
+      val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Int] `,` Array[Float] `,` Array[Float] `)=>` Float](1, 1)
+      val (output, _) = runKernel(numEntries `,` length `,` indices `,` sparse `,` dense)
+
+      Executor.shutdown()
+
+      val scalaOutput = runScala(indices, sparse, dense)
+      assert(Math.abs(scalaOutput - output) < 0.01)
+    }
+    runTest()
   }
 
   test("dense matrix sparse vector multiplication") {
