@@ -12,8 +12,9 @@ final case class FunctionType[T1 <: Type, T2 <: Type](inT: T1, outT: T2) extends
   override def toString: String = s"($inT -> $outT)"
 }
 
-final case class DependentFunctionType[K <: Kind, T <: Type](x: K#I, t: T) extends Type {
-  override def toString: String = s"(${x.name}:${x.getClass.toString}-> $t)"
+final case class DependentFunctionType[K <: Kind, T <: Type](x: K#I, t: T)
+                                                            (implicit kn: KindName[K]) extends Type {
+  override def toString: String = s"(${x.name} : ${kn.get} -> $t)"
 }
 
 final case class NatNatDependentFunctionType[T <: Type](fn: NatNatFunctionIdentifier, t: T) extends Type {
