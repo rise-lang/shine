@@ -5,6 +5,7 @@ import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Primitives.{Fst, Idx, Snd}
 import idealised.SurfaceLanguage.Types._
 import idealised.util.SyntaxChecker
+import opencl.executor.Executor
 
 import scala.util.Random
 
@@ -107,20 +108,27 @@ class LetNat extends idealised.util.Tests{
       })
     }
 
-    val random = new Random()
-    val length = 64
-    val numEntries = 10 + random.nextInt(20)
+    def runTest():Unit = {
+      Executor.loadAndInit()
+      val random = new Random()
+      val length = 64
+      val numEntries = 10 + random.nextInt(20)
 
-    val indices = (0 until numEntries).map(_ => random.nextInt(length)).toArray
-    val sparse = (0 until numEntries).map(_ => random.nextFloat()).toArray
-    val dense = (0 until length).map(_ => random.nextFloat()).toArray
+      val indices = (0 until numEntries).map(_ => random.nextInt(length)).toArray
+      val sparse = (0 until numEntries).map(_ => random.nextFloat()).toArray
+      val dense = (0 until length).map(_ => random.nextFloat()).toArray
 
-    import idealised.OpenCL._
-    val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Int] `,`Array[Float] `,` Array[Float] `)=>` Array[Float]](1, 1)
-    val (output, _) = runKernel(numEntries `,` length `,` indices `,` sparse `,` dense)
+      import idealised.OpenCL._
+      val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Int] `,` Array[Float] `,` Array[Float] `)=>` Array[Float]](1, 1)
+      val (output, _) = runKernel(numEntries `,` length `,` indices `,` sparse `,` dense)
 
-    val scalaOutput = runScala(indices, sparse, dense)
-    assert(output.zip(scalaOutput).forall(x => x._1 - x._2 < 0.01))
+      Executor.shutdown()
+
+      val scalaOutput = runScala(indices, sparse, dense)
+      assert(output.zip(scalaOutput).forall(x => x._1 - x._2 < 0.01))
+
+    }
+    runTest()
   }
 
   test("sparse vector dense vector multiplication") {
