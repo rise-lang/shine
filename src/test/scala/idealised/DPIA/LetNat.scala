@@ -1,10 +1,12 @@
 package idealised.DPIA
-import idealised.OpenCL.GlobalMemory
+import idealised.OpenCL.{GlobalMemory, ScalaFunction}
 import idealised.OpenCL.SurfaceLanguage.DSL.oclReduceSeq
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Primitives.{Fst, Idx, Snd}
 import idealised.SurfaceLanguage.Types._
 import idealised.util.SyntaxChecker
+
+import scala.util.Random
 
 class LetNat extends idealised.util.Tests{
 
@@ -98,6 +100,27 @@ class LetNat extends idealised.util.Tests{
     val code = p.code
     SyntaxChecker.checkOpenCL(code)
     println(code)
+
+    def runScala(indices:Array[Int], sparse:Array[Float], dense:Array[Float]):Array[Float] = {
+      indices.zip(sparse).map({
+        case (index, x) => dense(index) + x
+      })
+    }
+
+    val random = new Random()
+    val length = 64
+    val numEntries = 10 + random.nextInt(20)
+
+    val indices = (0 until numEntries).map(_ => random.nextInt(length)).toArray
+    val sparse = (0 until numEntries).map(_ => random.nextFloat()).toArray
+    val dense = (0 until length).map(_ => random.nextFloat()).toArray
+
+    import idealised.OpenCL._
+    val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Int] `,`Array[Float] `,` Array[Float] `)=>` Array[Float]](1, 1)
+    val (output, _) = runKernel(numEntries `,` length `,` indices `,` sparse `,` dense)
+
+    val scalaOutput = runScala(indices, sparse, dense)
+    assert(output.zip(scalaOutput).forall(x => x._1 - x._2 < 0.01))
   }
 
   test("sparse vector dense vector multiplication") {
@@ -183,5 +206,6 @@ class LetNat extends idealised.util.Tests{
 
     val code = p.code
     SyntaxChecker.checkOpenCL(code)
-    println(code)  }
+    println(code)
+  }
 }
