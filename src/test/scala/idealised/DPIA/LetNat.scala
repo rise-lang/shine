@@ -193,11 +193,8 @@ class LetNat extends idealised.util.Tests{
 
       Executor.shutdown()
 
-      println("Kernel output" + output)
-
       val scalaOutput = runScala(indices, sparse, dense)
-      println("Scala output")
-      assert(Math.abs(scalaOutput - output(0)) < 0.1)
+      assert(Math.abs(scalaOutput - output(0)) < 0.01)
     }
     runTest()
   }
@@ -244,5 +241,7 @@ class LetNat extends idealised.util.Tests{
     val code = p.code
     SyntaxChecker.checkOpenCL(code)
     println(code)
+
+    //TODO: Automate
   }
 }
