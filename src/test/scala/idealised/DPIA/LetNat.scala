@@ -193,7 +193,10 @@ class LetNat extends idealised.util.Tests{
 
       Executor.shutdown()
 
+      println("Kernel output" + output)
+
       val scalaOutput = runScala(indices, sparse, dense)
+      println("Scala output")
       assert(Math.abs(scalaOutput - output(0)) < 0.1)
     }
     runTest()
