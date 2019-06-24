@@ -130,7 +130,7 @@ class LetNat extends idealised.util.Tests{
     runTest()
   }
 
-  test("sparse vector dense vector multiplication") {
+  test("sparse vector dense vector dot product") {
     val f = nFun(n => nFun(m =>
       fun(ArrayType(n, TupleType(IndexType(m), float)))(sparse =>
         fun(ArrayType(m, float))(dense =>
@@ -150,13 +150,13 @@ class LetNat extends idealised.util.Tests{
     println(code)
   }
 
-  test("2 array sparse vector dense vector multiplication") {
+  test("2 array sparse vector dense vector dot product") {
     val f = nFun(n => nFun(m =>
       fun(ArrayType(n, IndexType(m)))(indices =>
         fun(ArrayType(n, float))(sparse =>
         fun(ArrayType(m, float))(dense =>
           zip(indices, sparse) :>> split(n) :>> mapSeq(
-            oclReduceSeq(fun(pair => fun(accum => accum + Snd(pair, None) + Idx(dense, Fst(pair, None)))),0.0f, GlobalMemory))
+            oclReduceSeq(fun(pair => fun(accum => accum + Snd(pair, None) * Idx(dense, Fst(pair, None)))),0.0f, GlobalMemory))
         )
         )
       )
