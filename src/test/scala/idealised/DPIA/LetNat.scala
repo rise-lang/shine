@@ -1,10 +1,11 @@
 package idealised.DPIA
-import idealised.OpenCL.GlobalMemory
-import idealised.OpenCL.SurfaceLanguage.DSL.oclReduceSeq
+import idealised.OpenCL.{GlobalMemory, ScalaFunction}
+import idealised.OpenCL.SurfaceLanguage.DSL.{mapGlobal, oclReduceSeq}
 import idealised.SurfaceLanguage.DSL._
-import idealised.SurfaceLanguage.Primitives.{Fst, Idx, Snd}
+import idealised.SurfaceLanguage.Primitives.{AsIndex, Fst, Idx, Snd}
 import idealised.SurfaceLanguage.Types._
 import idealised.util.SyntaxChecker
+import opencl.executor.Executor
 
 class LetNat extends idealised.util.Tests{
 
@@ -71,6 +72,26 @@ class LetNat extends idealised.util.Tests{
         )
       )
     ))
+
+    val typed = TypeInference(f, Map())
+
+    val p = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(typed))
+
+    val code = p.code
+    SyntaxChecker.checkOpenCL(code)
+    println(code)
+  }
+
+  test("Sparse-Dense Vector DotProduct") {
+    val f = nFun(n => nFun(m =>
+      fun(ArrayType(n, TupleType(IndexType(m), float)))(sparse =>
+        fun(ArrayType(m, float))(dense =>
+          sparse :>> split(n) :>> mapSeq(
+            oclReduceSeq(fun(pair => fun(accum => accum + Snd(pair, None) + Idx(dense, Fst(pair, None)))),0.0f, GlobalMemory))
+        )
+        )
+      )
+    )
 
     val typed = TypeInference(f, Map())
 
