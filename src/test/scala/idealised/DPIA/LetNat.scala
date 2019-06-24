@@ -173,7 +173,7 @@ class LetNat extends idealised.util.Tests{
 
     def runScala(indices:Array[Int], sparse:Array[Float], dense:Array[Float]):Float = {
       indices.zip(sparse).foldLeft(0.0f)({
-        case (accum, (index, x)) => accum + (dense(index) * x)
+        case (accum, (index, x)) => accum + dense(index) * x
       })
     }
 
@@ -188,13 +188,13 @@ class LetNat extends idealised.util.Tests{
       val dense = (0 until length).map(_ => random.nextFloat()).toArray
 
       import idealised.OpenCL._
-      val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Int] `,` Array[Float] `,` Array[Float] `)=>` Float](1, 1)
+      val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Int] `,` Array[Float] `,` Array[Float] `)=>` Array[Float]](1, 1)
       val (output, _) = runKernel(numEntries `,` length `,` indices `,` sparse `,` dense)
 
       Executor.shutdown()
 
       val scalaOutput = runScala(indices, sparse, dense)
-      assert(Math.abs(scalaOutput - output) < 0.1)
+      assert(Math.abs(scalaOutput - output(0)) < 0.1)
     }
     runTest()
   }
