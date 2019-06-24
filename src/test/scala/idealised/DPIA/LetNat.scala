@@ -1,6 +1,8 @@
 package idealised.DPIA
+import idealised.OpenCL.GlobalMemory
+import idealised.OpenCL.SurfaceLanguage.DSL.oclReduceSeq
 import idealised.SurfaceLanguage.DSL._
-import idealised.SurfaceLanguage.Primitives.Idx
+import idealised.SurfaceLanguage.Primitives.{Fst, Idx, Snd}
 import idealised.SurfaceLanguage.Types._
 import idealised.util.SyntaxChecker
 
@@ -50,6 +52,25 @@ class LetNat extends idealised.util.Tests{
               f => xs :>> take(f()) :>> mapSeq(fun(x => x + 1.0f)))
         )
       ))
+
+    val typed = TypeInference(f, Map())
+
+    val p = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(typed))
+
+    val code = p.code
+    SyntaxChecker.checkOpenCL(code)
+    println(code)
+  }
+
+
+  test("Sparse-Dense Vector Add") {
+    val f = nFun(n => nFun(m =>
+      fun(ArrayType(n, TupleType(IndexType(m), float)))(sparse =>
+        fun(ArrayType(m, float))(dense =>
+          sparse :>> mapSeq(fun(pair => Snd(pair, None) + Idx(dense, Fst(pair, None))))
+        )
+      )
+    ))
 
     val typed = TypeInference(f, Map())
 
