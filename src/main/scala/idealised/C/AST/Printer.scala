@@ -230,7 +230,7 @@ class CPrinter extends Printer {
 
   private def printReturn(r: Return): Unit = {
     print("return ")
-    r.x.foreach(printExpr)
+    r.x.map(printExpr)
     println(";")
   }
 
