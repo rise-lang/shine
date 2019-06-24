@@ -720,14 +720,16 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                       env: Environment,
                       ps: Path,
                       cont: Expr => Stmt): Stmt = {
-      exp(i, env, Nil, i => {
-        val idx: ArithExpr = i match {
-          case C.AST.Literal(text) => Cst(text.toInt)
-          case C.AST.DeclRef(name) => NamedVar(name, ranges(name))
-          case C.AST.ArithmeticExpr(ae) => ae
-        }
-
-        acc(a, env, CIntExpr(idx) :: ps, cont)
+      exp(i, env, Nil, {
+        case C.AST.Literal(text) => acc(a, env, CIntExpr(Cst(text.toInt)) :: ps, cont)
+        case C.AST.DeclRef(name) => acc(a, env, CIntExpr(NamedVar(name, ranges(name))) :: ps, cont)
+        case C.AST.ArithmeticExpr(ae) => acc(a, env, ae :: ps, cont)
+        case cExpr:C.AST.Expr =>
+          val arithVar = NamedVar(freshName("tmpIdx"))
+          acc(a, env, CIntExpr(arithVar) :: ps, generated => C.AST.Block(immutable.Seq(
+            C.AST.DeclStmt(C.AST.VarDecl(arithVar.name, C.AST.Type.int, Some(cExpr))),
+            cont(generated)
+          )))
       })
     }
 
