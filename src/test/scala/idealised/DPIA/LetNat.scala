@@ -173,7 +173,7 @@ class LetNat extends idealised.util.Tests{
 
     def runScala(indices:Array[Int], sparse:Array[Float], dense:Array[Float]):Float = {
       indices.zip(sparse).foldLeft(0.0f)({
-        case (accum, (index, x)) => accum + (dense(index) + x)
+        case (accum, (index, x)) => accum + (dense(index) * x)
       })
     }
 
