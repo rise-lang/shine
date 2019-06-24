@@ -81,6 +81,25 @@ class LetNat extends idealised.util.Tests{
     println(code)
   }
 
+  test("2 array sparse vector dense vector add") {
+    val f = nFun(n => nFun(m =>
+      fun(ArrayType(n, IndexType(m)))(indices =>
+      fun(ArrayType(n, float))(sparse =>
+        fun(ArrayType(m, float))(dense =>
+          zip(indices, sparse) :>> mapSeq(fun(pair => Snd(pair, None) + Idx(dense, Fst(pair, None))))
+        )
+      )
+    )))
+
+    val typed = TypeInference(f, Map())
+
+    val p = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(typed))
+
+    val code = p.code
+    SyntaxChecker.checkOpenCL(code)
+    println(code)
+  }
+
   test("sparse vector dense vector multiplication") {
     val f = nFun(n => nFun(m =>
       fun(ArrayType(n, TupleType(IndexType(m), float)))(sparse =>
@@ -101,6 +120,28 @@ class LetNat extends idealised.util.Tests{
     println(code)
   }
 
+  test("2 array sparse vector dense vector multiplication") {
+    val f = nFun(n => nFun(m =>
+      fun(ArrayType(n, IndexType(m)))(indices =>
+        fun(ArrayType(n, float))(sparse =>
+        fun(ArrayType(m, float))(dense =>
+          zip(indices, sparse) :>> split(n) :>> mapSeq(
+            oclReduceSeq(fun(pair => fun(accum => accum + Snd(pair, None) + Idx(dense, Fst(pair, None)))),0.0f, GlobalMemory))
+        )
+        )
+      )
+    )
+    )
+
+    val typed = TypeInference(f, Map())
+
+    val p = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(typed))
+
+    val code = p.code
+    SyntaxChecker.checkOpenCL(code)
+    println(code)
+  }
+
   test("dense matrix sparse vector multiplication") {
     val f = nFun(n => nFun(m =>
       fun(ArrayType(n, ArrayType(m, float)))(matrix =>
@@ -110,6 +151,29 @@ class LetNat extends idealised.util.Tests{
                 fun(pair => fun(accum => accum + Snd(pair, None) + Idx(row, Fst(pair, None)))), 0.0f, GlobalMemory)
             ))
           ))
+      )
+    ))
+
+    val typed = TypeInference(f, Map())
+
+    val p = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(typed))
+
+    val code = p.code
+    SyntaxChecker.checkOpenCL(code)
+    println(code)  }
+
+  test("2 array dense matrix sparse vector multiplication") {
+    val f = nFun(n => nFun(m =>
+      fun(ArrayType(n, ArrayType(m, float)))(matrix =>
+        nFun(k =>
+          fun(ArrayType(k, IndexType(m)))(indices =>
+          fun(ArrayType(k, float))(sparse =>
+            matrix :>> mapSeq(fun(row =>
+              zip(indices, sparse) :>> oclReduceSeq(
+                fun(pair => fun(accum => accum + Snd(pair, None) + Idx(row, Fst(pair, None)))), 0.0f, GlobalMemory)
+          ))
+        ))
+        )
       )
     ))
 
