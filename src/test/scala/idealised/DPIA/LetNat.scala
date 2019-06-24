@@ -105,15 +105,14 @@ class LetNat extends idealised.util.Tests{
   test("dense matrix sparse vector multiplication") {
     val f = nFun(n => nFun(m =>
       fun(ArrayType(n, ArrayType(m, float)))(matrix =>
-          nFun(k => fun(ArrayType(n, TupleType(IndexType(m), float)))(vector =>
+          nFun(k => fun(ArrayType(k, TupleType(IndexType(m), float)))(vector =>
             matrix :>> mapSeq(fun(row =>
               vector :>> oclReduceSeq(
                 fun(pair => fun(accum => accum + Snd(pair, None) + Idx(row, Fst(pair, None)))), 0.0f, GlobalMemory)
             ))
           ))
       )
-    )
-    )
+    ))
 
     val typed = TypeInference(f, Map())
 
