@@ -64,7 +64,7 @@ class LetNat extends idealised.util.Tests{
   }
 
 
-  test("Sparse-Dense Vector Add") {
+  test("sparse vector dense vector add") {
     val f = nFun(n => nFun(m =>
       fun(ArrayType(n, TupleType(IndexType(m), float)))(sparse =>
         fun(ArrayType(m, float))(dense =>
@@ -82,7 +82,7 @@ class LetNat extends idealised.util.Tests{
     println(code)
   }
 
-  test("Sparse-Dense Vector DotProduct") {
+  test("sparse vector dense vector multiplication") {
     val f = nFun(n => nFun(m =>
       fun(ArrayType(n, TupleType(IndexType(m), float)))(sparse =>
         fun(ArrayType(m, float))(dense =>
@@ -101,4 +101,25 @@ class LetNat extends idealised.util.Tests{
     SyntaxChecker.checkOpenCL(code)
     println(code)
   }
+
+  test("dense matrix sparse vector multiplication") {
+    val f = nFun(n => nFun(m =>
+      fun(ArrayType(n, ArrayType(m, float)))(matrix =>
+          nFun(k => fun(ArrayType(n, TupleType(IndexType(m), float)))(vector =>
+            matrix :>> mapSeq(fun(row =>
+              vector :>> oclReduceSeq(
+                fun(pair => fun(accum => accum + Snd(pair, None) + Idx(row, Fst(pair, None)))), 0.0f, GlobalMemory)
+            ))
+          ))
+      )
+    )
+    )
+
+    val typed = TypeInference(f, Map())
+
+    val p = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(typed))
+
+    val code = p.code
+    SyntaxChecker.checkOpenCL(code)
+    println(code)  }
 }
