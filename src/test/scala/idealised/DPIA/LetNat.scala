@@ -1,11 +1,10 @@
 package idealised.DPIA
-import idealised.OpenCL.{GlobalMemory, ScalaFunction}
-import idealised.OpenCL.SurfaceLanguage.DSL.{mapGlobal, oclReduceSeq}
+import idealised.OpenCL.GlobalMemory
+import idealised.OpenCL.SurfaceLanguage.DSL.oclReduceSeq
 import idealised.SurfaceLanguage.DSL._
-import idealised.SurfaceLanguage.Primitives.{AsIndex, Fst, Idx, Snd}
+import idealised.SurfaceLanguage.Primitives.{Fst, Idx, Snd}
 import idealised.SurfaceLanguage.Types._
 import idealised.util.SyntaxChecker
-import opencl.executor.Executor
 
 class LetNat extends idealised.util.Tests{
 
