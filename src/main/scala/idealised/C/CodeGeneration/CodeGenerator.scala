@@ -419,6 +419,14 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
   }
 
   override def typ(dt: DataType): Type = {
+
+    def typeToName(t:DataType):String = {
+      t match {
+        case IndexType(_) => freshName("idx")
+        case _ => t.toString
+      }
+    }
+
     dt match {
       case b: idealised.DPIA.Types.BasicType => b match {
         case idealised.DPIA.Types.bool => C.AST.Type.int
@@ -430,7 +438,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case a: idealised.DPIA.Types.ArrayType => C.AST.ArrayType(typ(a.elemType), Some(a.size))
       case a: idealised.DPIA.Types.DepArrayType => C.AST.ArrayType(typ(a.elemFType.body), Some(a.size)) // TODO: be more precise with the size?
       case r: idealised.DPIA.Types.RecordType =>
-        C.AST.StructType(r.fst.toString + "_" + r.snd.toString, immutable.Seq(
+        C.AST.StructType(typeToName(r.fst) + "_" + typeToName(r.snd), immutable.Seq(
           (typ(r.fst), "_fst"),
           (typ(r.snd), "_snd")))
       case _: idealised.DPIA.Types.DataTypeIdentifier => throw new Exception("This should not happen")
@@ -767,28 +775,15 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                    env: Environment,
                    ps: Path,
                    cont: Expr => Stmt): Stmt = {
-      exp(i, env, Nil, i => {
-        val idx: ArithExpr = i match {
-          case C.AST.DeclRef(name) => NamedVar(name, ranges(name))
-          case C.AST.ArithmeticExpr(ae) => ae
-        }
-
-        exp(e, env, CIntExpr(idx) :: ps, cont)
-      })
-    }
-
-    def codeGenIdxVec(i: Phrase[ExpType],
-                      e: Phrase[ExpType],
-                      env: Environment,
-                      ps: Path,
-                      cont: Expr => Stmt): Stmt = {
-      exp(i, env, Nil, i => {
-        val idx: ArithExpr = i match {
-          case C.AST.DeclRef(name) => NamedVar(name, ranges(name))
-          case C.AST.ArithmeticExpr(ae) => ae
-        }
-
-        exp(e, env, CIntExpr(idx) :: ps, cont)
+      exp(i, env, Nil, {
+        case C.AST.DeclRef(name) => exp(e, env, CIntExpr(NamedVar(name, ranges(name))) :: ps, cont)
+        case C.AST.ArithmeticExpr(ae) => exp(e, env, CIntExpr(ae) :: ps, cont)
+        case cExpr:C.AST.Expr =>
+          val arithVar = NamedVar(freshName("tmpIdx"))
+          exp(e, env, CIntExpr(arithVar) :: ps, generated => C.AST.Block(immutable.Seq(
+            C.AST.DeclStmt(C.AST.VarDecl(arithVar.name, C.AST.Type.int, Some(cExpr))),
+            cont(generated)
+          )))
       })
     }
 
