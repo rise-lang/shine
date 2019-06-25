@@ -1,7 +1,7 @@
 package idealised.apps
 
-import idealised.OpenCL.{GlobalMemory, ScalaFunction}
-import idealised.OpenCL.SurfaceLanguage.DSL.oclReduceSeq
+import idealised.OpenCL.{GlobalMemory, PrivateMemory, ScalaFunction}
+import idealised.OpenCL.SurfaceLanguage.DSL.{mapGlobal, oclReduceSeq}
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Primitives.{Fst, Idx, Snd}
 import idealised.SurfaceLanguage.Types._
@@ -11,7 +11,6 @@ import opencl.executor.Executor
 import scala.util.Random
 
 class SparseVector extends idealised.util.Tests {
-
 
   test("sparse vector dense vector add") {
     val f = nFun(n => nFun(m =>
@@ -81,8 +80,8 @@ class SparseVector extends idealised.util.Tests {
     val f = nFun(n => nFun(m =>
       fun(ArrayType(n, TupleType(IndexType(m), float)))(sparse =>
         fun(ArrayType(m, float))(dense =>
-          sparse :>> split(n) :>> mapSeq(
-            oclReduceSeq(fun(pair => fun(accum => accum + Snd(pair, None) + Idx(dense, Fst(pair, None)))),0.0f, GlobalMemory))
+          sparse :>> split(n) :>> mapGlobal(
+            oclReduceSeq(fun(pair => fun(accum => accum + Snd(pair, None) + Idx(dense, Fst(pair, None)))),0.0f, PrivateMemory))
         )
       )
     )
@@ -102,8 +101,8 @@ class SparseVector extends idealised.util.Tests {
       fun(ArrayType(n, IndexType(m)))(indices =>
         fun(ArrayType(n, float))(sparse =>
           fun(ArrayType(m, float))(dense =>
-            zip(indices, sparse) :>> split(n) :>> mapSeq(
-              oclReduceSeq(fun(pair => fun(accum => accum + Snd(pair, None) * Idx(dense, Fst(pair, None)))),0.0f, GlobalMemory))
+            zip(indices, sparse) :>> split(n) :>> mapGlobal(
+              oclReduceSeq(fun(pair => fun(accum => accum + Snd(pair, None) * Idx(dense, Fst(pair, None)))),0.0f, PrivateMemory))
           )
         )
       )
@@ -150,9 +149,9 @@ class SparseVector extends idealised.util.Tests {
     val f = nFun(n => nFun(m =>
       fun(ArrayType(n, ArrayType(m, float)))(matrix =>
         nFun(k => fun(ArrayType(k, TupleType(IndexType(m), float)))(vector =>
-          matrix :>> mapSeq(fun(row =>
+          matrix :>> mapGlobal(fun(row =>
             vector :>> oclReduceSeq(
-              fun(pair => fun(accum => accum + Snd(pair, None) + Idx(row, Fst(pair, None)))), 0.0f, GlobalMemory)
+              fun(pair => fun(accum => accum + Snd(pair, None) + Idx(row, Fst(pair, None)))), 0.0f, PrivateMemory)
           ))
         ))
       )
@@ -172,9 +171,9 @@ class SparseVector extends idealised.util.Tests {
         nFun(k =>
           fun(ArrayType(k, IndexType(m)))(indices =>
             fun(ArrayType(k, float))(sparse =>
-              matrix :>> mapSeq(fun(row =>
+              matrix :>> mapGlobal(fun(row =>
                 zip(indices, sparse) :>> oclReduceSeq(
-                  fun(pair => fun(accum => accum + Snd(pair, None) + Idx(row, Fst(pair, None)))), 0.0f, GlobalMemory)
+                  fun(pair => fun(accum => accum + Snd(pair, None) + Idx(row, Fst(pair, None)))), 0.0f, PrivateMemory)
               ))
             ))
         )
