@@ -221,6 +221,11 @@ case class Kernel(decls: Seq[C.AST.Decl],
       case ad: Array[Array[Array[Double]]] => GlobalArg.createInput(ad.flatten.flatten)
       case ad: Array[Array[Array[Array[Double]]]] => GlobalArg.createInput(ad.flatten.flatten.flatten)
 
+      case pairs:Array[(Int, Float)] =>
+        val intArray = pairs.flatMap{case (x,y) => Iterable(x, java.lang.Float.floatToIntBits(y))}
+        GlobalArg.createInput(intArray)
+
+
       case _ => throw new IllegalArgumentException("Kernel argument is of unsupported type: " +
         arg.getClass.toString)
     }
