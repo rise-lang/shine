@@ -32,9 +32,7 @@ final case class ArrayType(size: Nat, elemType: DataType) extends ComposedType {
   override def toString: String = s"$size.$elemType"
 }
 
-final case class DepArrayType private (size:Nat, elemFType: NatToDataLambda) extends ComposedType {
-  private val correctRange = RangeAdd(0, size, 1)
-  assert(elemFType.x.range == correctRange, s"Inconsistent range for element type function in $this: $correctRange expected but ${elemFType.x.range} found ")
+final case class DepArrayType private (size: Nat, elemFType: NatToData) extends ComposedType {
 
   override def toString: String = s"$size.$elemFType"
 
@@ -125,13 +123,20 @@ object DataType {
       case a: DepArrayType =>
         val subMap = Map((`for`,ae))
         val newSize = ArithExpr.substitute(a.size, subMap)
-        val newBody = substitute(ae, `for`, a.elemFType.body)
-        DepArrayType(newSize, a.elemFType.copy(body = newBody))
+        val newElemFType = substitute(ae, `for`, a.elemFType)
+        DepArrayType(newSize, newElemFType)
       case v: VectorType =>
         VectorType(ArithExpr.substitute(v.size, Map((`for`, ae))), v.elemType)
       case r: RecordType =>
         RecordType(substitute(ae, `for`, r.fst), substitute(ae, `for`, r.snd))
     }).asInstanceOf[T]
+  }
+
+  def substitute(ae: DPIA.Nat, `for`: DPIA.Nat, in: NatToData): NatToData = {
+    in match {
+      case i: NatToDataIdentifier => i
+      case NatToDataLambda(x, body) => NatToDataLambda(x, substitute(ae, `for`, body))
+    }
   }
 
   implicit def apply(dt: SurfaceLanguage.Types.DataType): DataType = {
@@ -158,7 +163,11 @@ object DataType {
     case _: BasicType => 1
     case _: RecordType => 1
     case a: ArrayType => getTotalNumberOfElements(a.elemType) * a.size
-    case a: DepArrayType => BigSum(from = 0, upTo = a.size - 1, `for` = a.elemFType.x, `in` = getTotalNumberOfElements(a.elemFType.body))
+    case a: DepArrayType =>
+      a.elemFType match {
+        case NatToDataLambda(x, body) =>
+          BigSum(from = 0, upTo = a.size - 1, `for` = x, `in` = getTotalNumberOfElements(body))
+      }
     case _: DataTypeIdentifier => throw new Exception("This should not happen")
   }
 

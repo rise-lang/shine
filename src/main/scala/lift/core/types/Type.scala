@@ -2,6 +2,7 @@ package lift.core.types
 
 import lift.core._
 import lift.arithmetic._
+import lift.core.DSL.n2dtFun
 
 sealed trait Type
 
@@ -38,9 +39,7 @@ final case class DepArrayType(size: Nat, fdt: NatToData) extends ComposedType {
 
 object DepArrayType {
   def apply(size: Nat, f: Nat => DataType): DepArrayType = {
-    val newN = NatIdentifier(freshName("n"), RangeAdd(0, size, 1))
-    val fdt = NatToDataLambda(newN, f(newN))
-    DepArrayType(size, fdt)
+    DepArrayType(size, n2dtFun(RangeAdd(0, size, 1))(f))
   }
 }
 

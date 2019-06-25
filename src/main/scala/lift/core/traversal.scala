@@ -189,6 +189,7 @@ object traversal {
                 DepFunType[NatKind, Type]((r._1: @unchecked) match {
                   case n: NamedVar => NatIdentifier(n.name, n.range)
                 }, r._2))
+            case a: NatToDataApply => Continue(a, v)
           }).asInstanceOf[Result[T]]
         }
       }

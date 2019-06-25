@@ -257,7 +257,11 @@ case class Kernel(decls: Seq[C.AST.Decl],
     case v: VectorType  => sizeInByte(v.elemType) * v.size
     case r: RecordType  => sizeInByte(r.fst) + sizeInByte(r.snd)
     case a: ArrayType   => sizeInByte(a.elemType) * a.size
-    case a: DepArrayType => SizeInByte(BigSum(Cst(0), a.size - 1, `for`=a.elemFType.x, in=sizeInByte(a.elemFType.body).value))
+    case a: DepArrayType =>
+      a.elemFType match {
+        case NatToDataLambda(x, body) =>
+          SizeInByte(BigSum(Cst(0), a.size - 1, `for`=x, in=sizeInByte(body).value))
+      }
     case _: DataTypeIdentifier => throw new Exception("This should not happen")
   }
 

@@ -2,14 +2,14 @@ package idealised.OpenCL.ImperativePrimitives
 
 import idealised.C.AST.{Comment, Stmt}
 import idealised.DPIA.Phrases.Phrase
-import idealised.DPIA.Types.{AccType, CommType, NatToDataLambda}
+import idealised.DPIA.Types.{AccType, CommType, NatToData}
 import idealised.DPIA.{->, Nat, `(nat)->`, freshName}
 import idealised.OpenCL
 import idealised.OpenCL.{BuiltInFunction, get_group_id, get_num_groups}
 import lift.arithmetic.{?, ContinuousRange, PosInf, RangeAdd}
 
 final case class ParForNatWorkGroup(dim:Int)(override val n:Nat,
-                                             override val ft:NatToDataLambda,
+                                             override val ft:NatToData,
 
                                              override val out:Phrase[AccType],
                                              override val body: Phrase[`(nat)->`[AccType -> CommType]])

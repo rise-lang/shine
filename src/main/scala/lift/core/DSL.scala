@@ -164,6 +164,11 @@ object DSL {
       val x = NatIdentifier(freshName("n2dt"))
       NatToDataLambda(x, f(x))
     }
+
+    def apply(r: lift.arithmetic.Range)(f: NatIdentifier => DataType): NatToDataLambda = {
+      val x = NatIdentifier(freshName("n2dt"), r)
+      NatToDataLambda(x, f(x))
+    }
   }
 
   object n2nFun {

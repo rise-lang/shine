@@ -8,8 +8,8 @@ import idealised.OpenCL.DSL.parForNatLocal
 
 final case class DepMapLocalI(dim:Int) {
   def apply(n: Nat,
-            ft1:NatToDataLambda,
-            ft2:NatToDataLambda,
+            ft1:NatToData,
+            ft2:NatToData,
             f: Phrase[`(nat)->`[ExpType -> (AccType -> CommType)]],
             in: Phrase[ExpType],
             out: Phrase[AccType])

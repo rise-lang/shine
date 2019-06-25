@@ -81,8 +81,16 @@ object fromLift {
       case bt: lt.BasicType => fromLift(bt)
       case lt.DataTypeIdentifier(name) => DataTypeIdentifier(name)
       case lt.ArrayType(sz, et) => ArrayType(sz, fromLift(et))
-      case lt.DepArrayType(sz, et) => ???
+      case lt.DepArrayType(sz, f) => DepArrayType(sz, fromLift(f))
       case lt.TupleType(a, b) => RecordType(fromLift(a), fromLift(b))
+      case lt.NatToDataApply(f, n) => NatToDataApply(fromLift(f), n)
+    }
+  }
+
+  def apply(ntd: lt.NatToData): NatToData= {
+    ntd match {
+      case lt.NatToDataLambda(x, body) => NatToDataLambda(x, fromLift(body))
+      case lt.NatToDataIdentifier(x) => NatToDataIdentifier(x)
     }
   }
 
@@ -177,13 +185,13 @@ object fromLift {
       lt.DepFunType(k: l.NatIdentifier, lt.FunType(_, _)),
       lt.FunType(lt.DepArrayType(n, la), lt.DepArrayType(_, lb))))
       =>
-        val a: NatToDataLambda = ??? // fromLift(la)
-        val b: NatToDataLambda = ??? // fromLift(lb)
+        val a: NatToData = fromLift(la)
+        val b: NatToData = fromLift(lb)
         fun[`(nat)->`[ExpType -> ExpType]](
           k `()->` (ExpType(a(k)) -> ExpType(b(k)))
           //NatDependentFunctionType(k, ExpType(a(k)) -> ExpType(b(k)))
           , f =>
-          fun[ExpType](exp"[$n.$a]", e =>
+          fun[ExpType](ExpType(DepArrayType(n, a)), e =>
             DepMapSeq(n, a, b, f, e)))
 
       case (core.reduceSeq,

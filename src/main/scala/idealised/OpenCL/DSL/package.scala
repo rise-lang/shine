@@ -8,24 +8,24 @@ import lift.arithmetic.RangeAdd
 
 package object DSL {
 
-  private def parForBodyFunction(n:Nat, ft:NatToDataLambda, f:NatIdentifier => Phrase[AccType] => Phrase[CommType]) = {
+  private def parForBodyFunction(n:Nat, ft:NatToData, f:NatIdentifier => Phrase[AccType] => Phrase[CommType]) = {
     _Λ_(idx => λ(acc"[${ft(idx)}]")(o => f(idx)(o)), RangeAdd(0, n, 1))
   }
 
   object parForNatGlobal {
-    def apply(dim:Int)(n:Nat, ft:NatToDataLambda, out:Phrase[AccType], f:NatIdentifier => Phrase[AccType] => Phrase[CommType]):ParForNatGlobal = {
+    def apply(dim:Int)(n:Nat, ft:NatToData, out:Phrase[AccType], f:NatIdentifier => Phrase[AccType] => Phrase[CommType]):ParForNatGlobal = {
       ParForNatGlobal(dim)(n, ft, out, parForBodyFunction(n, ft, f))
     }
   }
 
   object parForNatWorkGroup {
-    def apply(dim:Int)(n:Nat, ft:NatToDataLambda, out:Phrase[AccType], f:NatIdentifier => Phrase[AccType] => Phrase[CommType]):ParForNatWorkGroup = {
+    def apply(dim:Int)(n:Nat, ft:NatToData, out:Phrase[AccType], f:NatIdentifier => Phrase[AccType] => Phrase[CommType]):ParForNatWorkGroup = {
       ParForNatWorkGroup(dim)(n, ft, out, parForBodyFunction(n, ft, f))
     }
   }
 
   object parForNatLocal {
-    def apply(dim:Int)(n:Nat, ft:NatToDataLambda, out:Phrase[AccType], f:NatIdentifier => Phrase[AccType] => Phrase[CommType]):ParForNatLocal = {
+    def apply(dim:Int)(n:Nat, ft:NatToData, out:Phrase[AccType], f:NatIdentifier => Phrase[AccType] => Phrase[CommType]):ParForNatLocal = {
       ParForNatLocal(dim)(n, ft, out,  parForBodyFunction(n, ft, f))
     }
   }

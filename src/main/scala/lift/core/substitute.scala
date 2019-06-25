@@ -121,6 +121,9 @@ object substitute {
   // substitute in NatToData
 
   def apply(n: NatToData, `for`: NatToData, in: NatToData): NatToData = {
-    ???
+    in match {
+      case i: NatToDataIdentifier => if (i == `for`) n else in
+      case _ => in
+    }
   }
 }

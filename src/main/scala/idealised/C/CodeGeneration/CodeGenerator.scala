@@ -395,7 +395,11 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _: idealised.DPIA.Types.IndexType => C.AST.Type.int
       }
       case a: idealised.DPIA.Types.ArrayType => C.AST.ArrayType(typ(a.elemType), Some(a.size))
-      case a: idealised.DPIA.Types.DepArrayType => C.AST.ArrayType(typ(a.elemFType.body), Some(a.size)) // TODO: be more precise with the size?
+      case a: idealised.DPIA.Types.DepArrayType =>
+        a.elemFType match {
+          case NatToDataLambda(_, body) =>
+            C.AST.ArrayType(typ(body), Some(a.size)) // TODO: be more precise with the size?
+        }
       case r: idealised.DPIA.Types.RecordType =>
         C.AST.StructType(r.fst.toString + "_" + r.snd.toString, immutable.Seq(
           (typ(r.fst), "_fst"),
@@ -820,7 +824,10 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case (array:ArrayType, index::rest) =>
           numberOfElementsUntil(array, index) + flattenIndices(array.elemType, rest)
         case (array:DepArrayType, index::rest) =>
-          numberOfElementsUntil(array, index) + flattenIndices(array.elemFType.body, rest)
+          array.elemFType match {
+            case NatToDataLambda(_, body) =>
+              numberOfElementsUntil(array, index) + flattenIndices(body, rest)
+          }
         case (_,  Nil) => 0
         case t => throw new Exception(s"This should not happen, pair $t")
       }
@@ -832,7 +839,10 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     }
 
     def numberOfElementsUntil(dt:DepArrayType, at:Nat):Nat = {
-      BigSum(from=0, upTo = at-1, `for`=dt.elemFType.x, DataType.getTotalNumberOfElements(dt.elemFType.body))
+      dt.elemFType match {
+        case NatToDataLambda(x, body) =>
+          BigSum(from=0, upTo = at-1, `for`=x, DataType.getTotalNumberOfElements(body))
+      }
     }
 
     private def getIndexVariablesScopes(dt:DataType):List[Option[NatIdentifier]] = {

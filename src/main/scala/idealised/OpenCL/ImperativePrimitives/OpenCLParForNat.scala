@@ -8,7 +8,7 @@ import idealised.OpenCL.BuiltInFunction
 import idealised.OpenMP.ImperativePrimitives.AbstractParForNat
 
 abstract class OpenCLParForNat(n: Nat,
-                               ft:NatToDataLambda,
+                               ft:NatToData,
                                out: Phrase[AccType],
                                body: Phrase[`(nat)->`[AccType -> CommType]])
   extends AbstractParForNat(n, ft, out, body) {
@@ -26,7 +26,7 @@ abstract class OpenCLParForNat(n: Nat,
 
 object OpenCLParForNat
 {
-  def unapply(arg: OpenCLParForNat): Option[(Nat, NatToDataLambda, Phrase[AccType], Phrase[`(nat)->`[AccType -> CommType]])] = {
+  def unapply(arg: OpenCLParForNat): Option[(Nat, NatToData, Phrase[AccType], Phrase[`(nat)->`[AccType -> CommType]])] = {
     Some(arg.n, arg.ft, arg.out, arg.body)
   }
 }

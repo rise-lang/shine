@@ -323,7 +323,8 @@ object infer {
           TypeConstraint(substitute(dt, `for`=dta, in=ta), substitute(dt, `for`=dtb, in=tb)),
           TypeConstraint(dt, dta), TypeConstraint(dt, dtb)
         )))
-      case (NatToDataApply(_, _), ArrayType(_, _)) => None
+      case (_: NatToDataApply, dt: DataType) => Some(Solution.subs(a, dt)) // substitute apply by data type
+      case (dt: DataType, _: NatToDataApply) => Some(Solution.subs(b, dt)) // substitute apply by data type
 
       case _ => error(s"cannot unify $a and $b")
     }

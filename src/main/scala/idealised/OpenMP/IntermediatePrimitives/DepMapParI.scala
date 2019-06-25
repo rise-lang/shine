@@ -9,8 +9,8 @@ import idealised.OpenMP.DSL.parForNat
 //noinspection TypeAnnotation
 object DepMapParI {
   def apply(n: Nat,
-            ft1:NatToDataLambda,
-            ft2:NatToDataLambda,
+            ft1:NatToData,
+            ft2:NatToData,
             f: Phrase[`(nat)->`[ExpType -> (AccType -> CommType)]],
             in: Phrase[ExpType],
             out: Phrase[AccType]): Phrase[CommType] =
