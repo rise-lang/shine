@@ -46,7 +46,7 @@ class SparseVector extends idealised.util.Tests {
       val dense = (0 until length).map(_ => random.nextFloat()).toArray
 
       import idealised.OpenCL._
-      val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[(Int, Float)] `,` Array[Float] `)=>` Array[Float]](1, 1)
+      val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[(Int, Float)] `,` Array[Float] `)=>` Array[Float]](1, length)
       val (output, _) = runKernel(numEntries `,` length `,` indices.zip(sparse) `,` dense)
 
       Executor.shutdown()
@@ -93,7 +93,7 @@ class SparseVector extends idealised.util.Tests {
       val dense = (0 until length).map(_ => random.nextFloat()).toArray
 
       import idealised.OpenCL._
-      val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Int] `,` Array[Float] `,` Array[Float] `)=>` Array[Float]](1, 1)
+      val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Int] `,` Array[Float] `,` Array[Float] `)=>` Array[Float]](1, length)
       val (output, _) = runKernel(numEntries `,` length `,` indices `,` sparse `,` dense)
 
       Executor.shutdown()
@@ -140,7 +140,7 @@ class SparseVector extends idealised.util.Tests {
       val dense = (0 until length).map(_ => random.nextFloat()).toArray
 
       import idealised.OpenCL._
-      val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[(Int, Float)] `,` Array[Float] `)=>` Array[Float]](1, 1)
+      val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[(Int, Float)] `,` Array[Float] `)=>` Array[Float]](1, length)
       val (output, _) = runKernel(numEntries `,` length `,` indices.zip(sparse) `,` dense)
 
       Executor.shutdown()
@@ -190,7 +190,7 @@ class SparseVector extends idealised.util.Tests {
       val dense = (0 until length).map(_ => random.nextFloat()).toArray
 
       import idealised.OpenCL._
-      val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Int] `,` Array[Float] `,` Array[Float] `)=>` Array[Float]](1, 1)
+      val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Int] `,` Array[Float] `,` Array[Float] `)=>` Array[Float]](1, length)
       val (output, _) = runKernel(numEntries `,` length `,` indices `,` sparse `,` dense)
 
       Executor.shutdown()
@@ -238,7 +238,7 @@ class SparseVector extends idealised.util.Tests {
       val vector = Array.tabulate(numEntries)(_ => random.nextFloat())
 
       import idealised.OpenCL._
-      val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Array[Float]] `,` Int `,` Array[(Int, Float)] `)=>` Array[Float]](1, 1)
+      val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Array[Float]] `,` Int `,` Array[(Int, Float)] `)=>` Array[Float]](1, length)
       val (output, _) = runKernel(length `,` length `,` matrix `,` numEntries `,` indices.zip(vector))
 
       Executor.shutdown()
@@ -290,7 +290,7 @@ class SparseVector extends idealised.util.Tests {
       val vector = Array.tabulate(numEntries)(_ => random.nextFloat())
 
       import idealised.OpenCL._
-      val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Array[Float]] `,` Int `,` Array[Int] `,` Array[Float] `)=>` Array[Float]](1, 1)
+      val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Array[Float]] `,` Int `,` Array[Int] `,` Array[Float] `)=>` Array[Float]](1, length)
       val (output, _) = runKernel(length `,` length `,` matrix `,` numEntries `,` indices `,` vector)
 
       Executor.shutdown()
