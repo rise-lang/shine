@@ -151,7 +151,7 @@ class SparseVector extends idealised.util.Tests {
         nFun(k => fun(ArrayType(k, TupleType(IndexType(m), float)))(vector =>
           matrix :>> mapGlobal(fun(row =>
             vector :>> oclReduceSeq(
-              fun(pair => fun(accum => accum + Snd(pair, None) + Idx(row, Fst(pair, None)))), 0.0f, PrivateMemory)
+              fun(pair => fun(accum => accum + Snd(pair, None) * Idx(row, Fst(pair, None)))), 0.0f, PrivateMemory)
           ))
         ))
       )
@@ -173,7 +173,7 @@ class SparseVector extends idealised.util.Tests {
             fun(ArrayType(k, float))(sparse =>
               matrix :>> mapGlobal(fun(row =>
                 zip(indices, sparse) :>> oclReduceSeq(
-                  fun(pair => fun(accum => accum + Snd(pair, None) + Idx(row, Fst(pair, None)))), 0.0f, PrivateMemory)
+                  fun(pair => fun(accum => accum + Snd(pair, None) * Idx(row, Fst(pair, None)))), 0.0f, PrivateMemory)
               ))
             ))
         )
@@ -188,6 +188,32 @@ class SparseVector extends idealised.util.Tests {
     SyntaxChecker.checkOpenCL(code)
     println(code)
 
-    //TODO: Automate
+
+    def runScala(matrix:Array[Array[Float]], indices:Array[Int], vector:Array[Float]):Array[Float] = {
+      matrix.map(row =>
+        indices.zip(vector).map({case (index, x) => row(index) * x }).sum
+      )
+    }
+
+    def runTest():Unit = {
+      Executor.loadAndInit()
+      val random = new Random()
+      val length = 64
+      val numEntries = 10 + random.nextInt(20)
+
+      val matrix = Array.tabulate(length)(_ => Array.tabulate(length)(_ => random.nextFloat()))
+      val indices = Array.tabulate(numEntries)(_ => random.nextInt(length))
+      val vector = Array.tabulate(numEntries)(_ => random.nextFloat())
+
+      import idealised.OpenCL._
+      val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Array[Float]] `,` Int `,` Array[Int] `,` Array[Float] `)=>` Array[Float]](1, 1)
+      val (output, _) = runKernel(length `,` length `,` matrix `,` numEntries `,` indices `,` vector)
+
+      Executor.shutdown()
+
+      val scalaOutput = runScala(matrix, indices, vector)
+      assert(output.zip(scalaOutput).forall({case (x,y) => Math.abs(x - y) < 0.01}))
+    }
+    runTest()
   }
 }
