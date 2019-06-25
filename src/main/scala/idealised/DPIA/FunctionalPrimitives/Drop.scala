@@ -14,23 +14,25 @@ import scala.xml.Elem
 // this drops n many elements from an array of m elements
 final case class Drop(n: Nat,
                       m: Nat,
+                      w: AccessType,
                       dt: DataType,
                       array: Phrase[ExpType])
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (n: Nat) -> (m: Nat) -> (dt: DataType) ->
-      (array :: exp"[${n + m}.$dt]") -> exp"[$m.$dt]"
+    (n: Nat) -> (m: Nat) -> (w: AccessType) -> (dt: DataType) ->
+      (array :: exp"[${n + m}.$dt, $w]") -> exp"[$m.$dt, $w]"
 
   override def eval(s: Store): Data = ???
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    Drop(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))
+    Drop(fun(n), fun(m), w, fun(dt), VisitAndRebuild(array, fun))
   }
 
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
+    //TODO if this is not needed then the AccessType param is not needed either
     ???
   }
 
@@ -41,7 +43,7 @@ final case class Drop(n: Nat,
   override def continuationTranslation(C: Phrase[->[ExpType, CommandType]])
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
-    con(array)(λ(exp"[${n + m}.$dt]")(x => C(Drop(n, m, dt, x))))
+    con(array)(λ(exp"[${n + m}.$dt, $Read]")(x => C(Drop(n, m, Read, dt, x))))
   }
 
   override def xmlPrinter: Elem =

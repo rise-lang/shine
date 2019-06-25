@@ -20,8 +20,8 @@ final case class OpenCLFunction(name: String,
 
   override val t: ExpType =
     (inTs zip args).foreach{
-      case (inT, arg) => arg :: exp"[$inT]"
-    } -> exp"[$outT]"
+      case (inT, arg) => arg :: exp"[$inT, $Read]"
+    } -> exp"[$outT, $Read]"
 
   override def visitAndRebuild(f: Visitor): Phrase[ExpType] = {
     OpenCLFunction(name, inTs.map(f(_)), f(outT), args.map(VisitAndRebuild(_, f)))
@@ -50,11 +50,11 @@ final case class OpenCLFunction(name: String,
       ts match {
         // with only one argument left to process return the assignment of the OpenCLFunction call
         case Seq( (arg, inT) ) =>
-          con(arg)(λ(exp"[$inT]")(e =>
+          con(arg)(λ(exp"[$inT, $Read]")(e =>
             A :=|outT| OpenCLFunction(name, inTs :+ inT, outT, exps :+ e) ))
         // with a `tail` of arguments left, recurse
         case Seq( (arg, inT), tail@_* ) =>
-          con(arg)(λ(exp"[$inT]")(e => recurse(tail, exps :+ e, inTs :+ inT) ))
+          con(arg)(λ(exp"[$inT, $Read]")(e => recurse(tail, exps :+ e, inTs :+ inT) ))
       }
     }
 
@@ -75,10 +75,10 @@ final case class OpenCLFunction(name: String,
       ts match {
         // with only one argument left to process continue with the OpenCLFunction call
         case Seq( (arg, inT) ) =>
-          con(arg)(λ(exp"[$inT]")(e => C(OpenCLFunction(name, inTs :+ inT, outT, es :+ e)) ))
+          con(arg)(λ(exp"[$inT, $Read]")(e => C(OpenCLFunction(name, inTs :+ inT, outT, es :+ e)) ))
         // with a `tail` of arguments left, recurse
         case Seq( (arg, inT), tail@_* ) =>
-          con(arg)(λ(exp"[$inT]")(e => recurse(tail, es :+ e, inTs :+ inT) ))
+          con(arg)(λ(exp"[$inT, $Read]")(e => recurse(tail, es :+ e, inTs :+ inT) ))
       }
     }
 

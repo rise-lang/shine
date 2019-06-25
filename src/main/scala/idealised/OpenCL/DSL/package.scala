@@ -31,14 +31,14 @@ package object DSL {
   }
 
   object newWithAddrSpace {
-    def apply(dt: DataType,
-              addressSpace: AddressSpace,
+    def apply(addrSpace: AddrSpace,
+              dt: DataType,
               f: Phrase[VarType -> CommandType]): OpenCLNew =
-      OpenCLNew(dt, addressSpace, f)
+      OpenCLNew(addrSpace, dt, f)
 
-    def apply(dt: DataType,
-              addressSpace: AddressSpace,
+    def apply(addrSpace: AddrSpace,
+              dt: DataType,
               f: Phrase[VarType] => Phrase[CommandType]): OpenCLNew =
-      OpenCLNew(dt, addressSpace, λ(exp"[$dt, $Read]" x acc"[$dt]")(v => f(v) ))
+      OpenCLNew(addrSpace, dt, λ(exp"[$dt, $Read]" x acc"[$dt]")(v => f(v) ))
   }
 }

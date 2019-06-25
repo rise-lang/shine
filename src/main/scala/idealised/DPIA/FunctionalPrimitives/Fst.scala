@@ -18,7 +18,7 @@ final case class Fst(dt1: DataType,
 
   override val t: ExpType =
     (dt1: DataType) -> (dt2: DataType) ->
-      (record :: exp"[$dt1 x $dt2]") -> exp"[$dt1]"
+      (record :: exp"[$dt1 x $dt2, $Read]") -> exp"[$dt1, $Read]"
 
 
   override def eval(s: Store): Data = {
@@ -41,8 +41,7 @@ final case class Fst(dt1: DataType,
 
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommandType] = {
-    import TranslationToImperative._
-    con(record)(λ(exp"[$dt1 x $dt2]")(x => A :=|dt1| Fst(dt1, dt2, x) ))
+    ???
   }
 
   override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
@@ -52,6 +51,6 @@ final case class Fst(dt1: DataType,
   override def continuationTranslation(C: Phrase[ExpType -> CommandType])
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
-    con(record)(λ(exp"[$dt1 x $dt2]")(x => C(Fst(dt1, dt2, x)) ))
+    con(record)(λ(exp"[$dt1 x $dt2, $Read]")(x => C(Fst(Read, dt1, dt2, x)) ))
   }
 }

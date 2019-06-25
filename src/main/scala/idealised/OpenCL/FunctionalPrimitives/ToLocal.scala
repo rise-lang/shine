@@ -5,8 +5,6 @@ import idealised.DPIA.Types._
 import idealised.DPIA._
 import idealised.OpenCL
 
-final case class ToLocal(dt1: DataType,
-                         dt2: DataType,
-                         f: Phrase[ExpType -> ExpType],
+final case class ToLocal(dt: DataType,
                          input: Phrase[ExpType])
-  extends To(dt1, dt2, f, input, OpenCL.LocalMemory, ToLocal)
+  extends To(LocalMem, dt, input, ToLocal)

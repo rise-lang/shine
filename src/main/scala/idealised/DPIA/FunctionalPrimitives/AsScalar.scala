@@ -18,8 +18,8 @@ final case class AsScalar(n: Nat,
 
   override val t: ExpType =
     (n: Nat) -> (m: Nat) -> (dt: ScalarType) ->
-      (array :: exp"[$n.${VectorType(m, dt)}]") ->
-        exp"[${n * m}.$dt]"
+      (array :: exp"[$n.${VectorType(m, dt)}, $Read]") ->
+        exp"[${n * m}.$dt, $Read]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     AsScalar(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))

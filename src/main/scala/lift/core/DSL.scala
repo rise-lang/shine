@@ -55,6 +55,7 @@ object DSL {
       Lambda(x, f(x))
     }
 
+    //TODO use TypedExpr one line earlier already?
     def apply(dt: DataType)(f: Expr => Expr): Expr = {
       val x = Identifier(freshName("e"))
       Lambda(x, f(TypedExpr(x, dt)))

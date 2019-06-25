@@ -15,7 +15,7 @@ final case class Cast(dt1: BasicType, dt2: BasicType, e: Phrase[ExpType])
 
   override val t: ExpType =
     (dt1: BasicType) -> (dt2: BasicType) ->
-      (e :: exp"[$dt1]") -> exp"[$dt2]"
+      (e :: exp"[$dt1, $Read]") -> exp"[$dt2, $Read]"
 
   def prettyPrint: String =
     s"${this.getClass.getSimpleName} (${PrettyPhrasePrinter(e)})"

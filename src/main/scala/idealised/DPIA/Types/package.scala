@@ -29,12 +29,12 @@ package object Types {
     def →[B](y: B): B = ->(y)
   }
 
-  implicit final class ArrowAddressSpace(private val self: AddressSpace) {
+  implicit final class ArrowAddrSpace(private val self: AddrSpace) {
     @inline def -> [B](y: B): B = y
     def →[B](y: B): B = ->(y)
   }
 
-  implicit final class ArrowAddrSpace(private val self: AddrSpace) {
+  implicit final class ArrowAccessType(private val self: AccessType) {
     @inline def -> [B](y: B): B = y
     def →[B](y: B): B = ->(y)
   }

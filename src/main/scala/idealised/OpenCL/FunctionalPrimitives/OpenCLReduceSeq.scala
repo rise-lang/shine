@@ -5,43 +5,47 @@ import idealised.DPIA.Phrases._
 import idealised.DPIA.Types._
 import idealised.DPIA.DSL._
 import idealised.DPIA._
-import idealised.OpenCL.AddressSpace
 import idealised.OpenCL.IntermediatePrimitives.OpenCLReduceSeqI
 import idealised.DPIA.Semantics.OperationalSemantics._
 
 import scala.xml.Elem
 
 final case class OpenCLReduceSeq(n: Nat,
-                           dt1: DataType,
-                           dt2: DataType,
-                           f: Phrase[ExpType -> (ExpType -> ExpType)],
-                           init: Phrase[ExpType],
-                           initAddrSpace: AddressSpace,
-                           array: Phrase[ExpType])
+                                 initAddrSpace: AddrSpace,
+                                 dt1: DataType,
+                                 dt2: DataType,
+                                 f: Phrase[ExpType -> (ExpType -> ExpType)],
+                                 init: Phrase[ExpType],
+                                 array: Phrase[ExpType])
   extends ExpPrimitive
 {
   override val t: ExpType =
-    (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
-      (f :: t"exp[$dt1] -> exp[$dt2] -> exp[$dt2]") ->
-      (init :: exp"[$dt2]") -> (initAddrSpace : AddressSpace) ->
-      (array :: exp"[$n.$dt1]") -> exp"[$dt2]"
+    (n: Nat) -> (initAddrSpace : AddrSpace) -> (dt1: DataType) -> (dt2: DataType) ->
+      (f :: t"exp[$dt1, $Read] -> exp[$dt2, $Read] -> exp[$dt2, $Write]") -> (init :: exp"[$dt2, $Write]") ->
+        (array :: exp"[$n.$dt1, $Read]") -> exp"[$dt2, $Read]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    OpenCLReduceSeq(fun(n), fun(dt1), fun(dt2),
-      VisitAndRebuild(f, fun), VisitAndRebuild(init, fun), initAddrSpace, VisitAndRebuild(array, fun))
+    OpenCLReduceSeq(fun(n), initAddrSpace, fun(dt1), fun(dt2),
+      VisitAndRebuild(f, fun), VisitAndRebuild(init, fun), VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): Data = ???
 
   override def prettyPrint: String =
-    s"${this.getClass.getSimpleName} (${PrettyPhrasePrinter(f)}) " +
+    s"${this.getClass.getSimpleName} (${initAddrSpace}) (${PrettyPhrasePrinter(f)}) " +
       s"(${PrettyPhrasePrinter(init)}) (${PrettyPhrasePrinter(array)})"
 
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    con(this)(λ(exp"[$dt2]")(r => acc(r)(A)))
+    con(array)(λ(exp"[$n.$dt1, $Read]")(X =>
+      con(init)(λ(exp"[$dt2, $Write]")(Y =>
+        OpenCLReduceSeqI(n, initAddrSpace, dt1, dt2,
+          λ(exp"[$dt1, $Read]")(x => λ(exp"[$dt2, $Read]")(y => λ(acc"[$dt2]")(o => acc( f(x)(y) )( o )))),
+          //TODO acceptor takes r which should be Write
+          Y, X, λ(exp"[$dt2, $Read]")(r => acc(r)(A)))(context)))))
+
   }
 
   override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
@@ -52,22 +56,22 @@ final case class OpenCLReduceSeq(n: Nat,
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    con(array)(λ(exp"[$n.$dt1]")(X =>
-      con(init)(λ(exp"[$dt2]")(Y =>
-        OpenCLReduceSeqI(n, dt1, dt2,
+    con(array)(λ(exp"[$n.$dt1, $Read]")(X =>
+      con(init)(λ(exp"[$dt2, $Write]")(Y =>
+        OpenCLReduceSeqI(n, initAddrSpace, dt1, dt2,
           λ(exp"[$dt1]")(x => λ(exp"[$dt2]")(y => λ(acc"[$dt2]")(o => acc( f(x)(y) )( o )))),
-          Y, initAddrSpace, X, C)(context)))))
+          Y, X, C)(context)))))
   }
 
   override def xmlPrinter: Elem =
-    <reduce n={ToString(n)} dt1={ToString(dt1)} dt2={ToString(dt2)} addressSpace={ToString(initAddrSpace)}>
-      <f type={ToString(ExpType(dt1) -> (ExpType(dt2) -> ExpType(dt2)))}>
+    <reduce n={ToString(n)} addrSpace={ToString(initAddrSpace)} dt1={ToString(dt1)} dt2={ToString(dt2)}>
+      <f type={ToString(ExpType(dt1, Read) -> (ExpType(dt2, Read) -> ExpType(dt2, Write)))}>
         {Phrases.xmlPrinter(f)}
       </f>
-      <init type={ToString(ExpType(dt2))}>
+      <init type={ToString(ExpType(dt2, Write))}>
         {Phrases.xmlPrinter(init)}
       </init>
-      <input type={ToString(ExpType(ArrayType(n, dt1)))}>
+      <input type={ToString(ExpType(ArrayType(n, dt1), Read))}>
         {Phrases.xmlPrinter(array)}
       </input>
     </reduce>.copy(label = {

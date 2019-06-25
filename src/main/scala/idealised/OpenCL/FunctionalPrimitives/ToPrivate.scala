@@ -5,8 +5,6 @@ import idealised.DPIA.Types._
 import idealised.DPIA._
 import idealised.OpenCL
 
-final case class ToPrivate(dt1: DataType,
-                           dt2: DataType,
-                           f: Phrase[ExpType -> ExpType],
+final case class ToPrivate(dt: DataType,
                            input: Phrase[ExpType])
-  extends To(dt1, dt2, f, input, OpenCL.PrivateMemory, ToPrivate)
+  extends To(PrivateMem, dt, input, ToPrivate)
