@@ -420,7 +420,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
   override def typ(dt: DataType): Type = {
 
-    def typeToName(t:DataType):String = {
+    def typeToStructNameComponent(t:DataType):String = {
       t match {
         case IndexType(_) => freshName("idx")
         case _ => t.toString
@@ -438,7 +438,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case a: idealised.DPIA.Types.ArrayType => C.AST.ArrayType(typ(a.elemType), Some(a.size))
       case a: idealised.DPIA.Types.DepArrayType => C.AST.ArrayType(typ(a.elemFType.body), Some(a.size)) // TODO: be more precise with the size?
       case r: idealised.DPIA.Types.RecordType =>
-        C.AST.StructType(typeToName(r.fst) + "_" + typeToName(r.snd), immutable.Seq(
+        C.AST.StructType(typeToStructNameComponent(r.fst) + "_" + typeToStructNameComponent(r.snd), immutable.Seq(
           (typ(r.fst), "_fst"),
           (typ(r.snd), "_snd")))
       case _: idealised.DPIA.Types.DataTypeIdentifier => throw new Exception("This should not happen")
