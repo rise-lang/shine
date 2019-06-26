@@ -174,18 +174,7 @@ object NatToNatApply {
 // Nat -> DataType
 // ============================================================================================= //
 sealed trait NatToData {
-  def map(f: DataType => DataType): NatToData = {
-    NatToData.mapOnElement(f, typeFun = this)
-  }
-
   def apply(n: Nat): DataType = NatToDataApply(this, n)
-}
-
-object NatToData {
-  def mapOnElement(f:DataType => DataType, typeFun: NatToData): NatToData = typeFun match {
-    case ident:NatToDataIdentifier => ident
-    case NatToDataLambda(binder, body) => NatToDataLambda(binder, f(body))
-  }
 }
 
 case class NatToDataLambda private (x: NatIdentifier, body: DataType) extends NatToData {

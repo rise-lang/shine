@@ -221,27 +221,31 @@ object infer {
         import traversal.{Result, Continue}
         override def apply(ae: Nat): Result[Nat] = Continue(sol(ae), this)
         override def apply[T <: Type](t: T): Result[T] = Continue(sol(t).asInstanceOf[T], this)
+        override def apply(n2d: NatToData): Result[NatToData] = Continue(sol(n2d), this)
       })
     }
 
     def apply(t: Type): Type = {
-      val t2 = ts.foldLeft(t) { case (result, (ta, tb)) =>
-        substitute(tb, `for` = ta, in = result)
+      val t2 = ts.foldLeft(t) {
+        case (result, (ta, tb)) => substitute(tb, `for` = ta, in = result)
       }
-      ns.foldLeft(t2) { case (result, (na, nb)) =>
-        substitute(nb, `for` = na, in = result)
+      val t3 = ns.foldLeft(t2) {
+        case (result, (na, nb)) => substitute(nb, `for` = na, in = result)
+      }
+      n2ds.foldLeft(t3) {
+        case (result, (na, nb)) => substitute(nb, `for` = na, in = result)
       }
     }
 
     def apply(n: Nat): Nat = {
-      ns.foldLeft(n) { case (result, (na, nb)) =>
-        substitute(nb, `for` = na, in = result)
+      ns.foldLeft(n) {
+        case (result, (na, nb)) => substitute(nb, `for` = na, in = result)
       }
     }
 
     def apply(n2d: NatToData): NatToData = {
-      n2ds.foldLeft(n2d) { case (result, (na, nb)) =>
-        substitute(nb, `for` = na, in = result)
+      n2ds.foldLeft(n2d) {
+        case (result, (na, nb)) => substitute(nb, `for` = na, in = result)
       }
     }
 

@@ -83,10 +83,14 @@ object substitute {
   def apply[A <: Type, B <: Type](ty: A, `for`: A, in: B): B = {
     case class Visitor() extends traversal.Visitor {
       override def apply[T <: Type](t: T): traversal.Result[T] =
-        if (`for` == t) {
-          Stop(ty.asInstanceOf[T])
-        } else {
-          Continue(t, this)
+        t match {
+          case NatToDataApply(n2d1, x) => `for` match {
+            case NatToDataApply(n2d2, y: NamedVar) if n2d1 == n2d2 =>
+                Stop(substitute(x, y, ty).asInstanceOf[T])
+            case _ => Continue(t, this)
+          }
+          case _ if `for` == t => Stop(ty.asInstanceOf[T])
+          case _ => Continue(t, this)
         }
     }
     traversal.types.DepthFirstLocalResult(in, Visitor())
@@ -97,6 +101,18 @@ object substitute {
       override def apply(n: NatToNat): Result[NatToNat] =
         if (`for` == n) {
           Stop(n2n)
+        } else {
+          Continue(n, this)
+        }
+    }
+    traversal.types.DepthFirstLocalResult(in, Visitor())
+  }
+
+  def apply[T <: Type](n2d: NatToData, `for`: NatToDataIdentifier, in: T): T = {
+    case class Visitor() extends traversal.Visitor {
+      override def apply(n: NatToData): Result[NatToData] =
+        if (`for` == n) {
+          Stop(n2d)
         } else {
           Continue(n, this)
         }

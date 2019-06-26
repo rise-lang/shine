@@ -21,11 +21,12 @@ object traversal {
     def apply(ae: Nat): Result[Nat] = Continue(ae, this)
     def apply[T <: Type](t: T): Result[T] = Continue(t, this)
     def apply(n2n: NatToNat): Result[NatToNat] = Continue(n2n, this)
+    def apply(n2d: NatToData): Result[NatToData] = Continue(n2d, this)
   }
 
   object DepthFirstLocalResult {
     def apply(expr: Expr, v: Visitor): Expr = {
-      v(expr) match {
+      v.apply(expr) match {
         case s: Stop[Expr] => s.value
         case c: Continue[Expr] =>
           val v = c.v
@@ -45,6 +46,7 @@ object traversal {
               case n: Nat         => DepApply[NatKind](apply(f, v), v(n).value)
               case dt: DataType   => DepApply[DataKind](apply(f, v), v(dt).value)
               case n2n: NatToNat  => DepApply[NatToNatKind](apply(f, v), v(n2n).value)
+              case n2d: NatToData => DepApply[NatToDataKind](apply(f, v), v(n2d).value)
             }
             case l: Literal => l
             case Index(n, size) =>
@@ -124,7 +126,12 @@ object traversal {
             (c.value match {
               case i: DataTypeIdentifier => i
               case ArrayType(n, e) => ArrayType(v(n).value, apply(e, v))
-              case DepArrayType(n, e) => DepArrayType(v(n).value, e.map(apply(_, v)))
+              case DepArrayType(n, e) =>
+                val newE = e match {
+                  case i: NatToDataIdentifier => v.apply(i).value
+                  case NatToDataLambda(binder, body) => NatToDataLambda(binder, v(body).value)
+                }
+                DepArrayType(v(n).value, newE)
               case TupleType(ts@_*) => TupleType(ts.map(apply(_, v)): _*)
               case s: ScalarType => s
               case IndexType(n) => IndexType(v(n).value)
@@ -140,13 +147,15 @@ object traversal {
                     DepFunType[DataKind, Type](apply(dt, v), apply(t, v))
                   case n2n: NatToNatIdentifier =>
                     DepFunType[NatToNatKind, Type](v(n2n).value.asInstanceOf[NatToNatIdentifier], apply(t, v))
+                  case n2d: NatToDataIdentifier =>
+                    DepFunType[NatToDataKind, Type](v(n2d).value.asInstanceOf[NatToDataIdentifier], apply(t, v))
                 }
 
               case NatToDataApply(ndtf, n) =>
                 val newNDTF = ndtf match {
-                case i:NatToDataIdentifier => i
-                case NatToDataLambda(x, dt) => NatToDataLambda(x, apply(dt, v))
-              }
+                  case i: NatToDataIdentifier => i
+                  case NatToDataLambda(x, dt) => NatToDataLambda(x, apply(dt, v))
+                }
                 NatToDataApply(newNDTF, v(n).value)
             }).asInstanceOf[T]
         }
