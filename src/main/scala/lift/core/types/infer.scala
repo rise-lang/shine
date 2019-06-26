@@ -209,12 +209,12 @@ object infer {
     def apply(): Solution = Solution(Map(), Map(), Map())
     def subs(ta: Type, tb: Type): Solution = Solution(Map(ta -> tb), Map(), Map())
     def subs(na: NamedVar, nb: Nat): Solution = Solution(Map(), Map(na -> nb), Map())
-    def subs(na: NatToData, nb: NatToData): Solution = Solution(Map(), Map(), Map(na -> nb))
+    def subs(na: NatToDataIdentifier, nb: NatToData): Solution = Solution(Map(), Map(), Map(na -> nb))
   }
 
   case class Solution(ts: Map[Type, Type],
                       ns: Map[NamedVar, Nat],
-                      n2ds: Map[NatToData, NatToData]) {
+                      n2ds: Map[NatToDataIdentifier, NatToData]) {
     def apply(e: Expr): Expr = {
       val sol = this
       traversal.DepthFirstLocalResult(e, new traversal.Visitor {
@@ -245,12 +245,28 @@ object infer {
       }
     }
 
-    def apply(other: Solution): Solution = {
+    def ++(other: Solution): Solution = {
       Solution(
         ts.mapValues(t => other(t)) ++ other.ts,
         ns.mapValues(n => other(n)) ++ other.ns,
         n2ds.mapValues(n => other(n)) ++ other.n2ds
       )
+    }
+
+    def combine(other: Solution)
+               (implicit
+                boundT: mutable.Set[DataTypeIdentifier],
+                boundN: mutable.Set[NamedVar]): Solution = {
+      val s = this ++ other
+      s.ts.map {
+        case (NatToDataApply(i: NatToDataIdentifier, n: NamedVar), b) =>
+          s.n2ds.get(i) match {
+            case Some(NatToDataLambda(x, body)) =>
+              solve( Set( TypeConstraint( substitute(n, `for`=x, in=body), b ) ) )
+            case _ => Solution()
+          }
+        case _ => Solution()
+      }.foldLeft(s)(_ ++ _)
     }
 
     def apply(constraints: Set[Constraint]): Set[Constraint] = {
@@ -276,7 +292,7 @@ object infer {
         if(pos >= cs.size) error(s"cannot solve constraints")
         val element = cs.toSeq(pos)
         solveOne(element) match {
-          case Some(s) => s(solve(s(cs - element)))
+          case Some(s) => s combine solve(s.apply(cs - element))
           case None => solveAt(pos + 1)
         }
       }
