@@ -41,6 +41,8 @@ object VisitAndRebuild {
           case DepApply(p, a) =>
             DepApply(apply(p, v), a)
 
+          case LetNat(binder, defn, body) => LetNat(binder, apply(defn, v), apply(body, v))
+
           case Pair(p, q) => Pair(apply(p, v), apply(q, v))
 
           case Proj1(p) => Proj1(apply(p, v))

@@ -2,7 +2,6 @@ package idealised.DPIA.FunctionalPrimitives
 
 import idealised.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import idealised.DPIA.DSL.{λ, _}
-import idealised.DPIA.ImperativePrimitives.DropAcc
 import idealised.DPIA.Phrases.{ExpPrimitive, Phrase, VisitAndRebuild}
 import idealised.DPIA.Semantics.OperationalSemantics.{Data, Store}
 import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType, _}
@@ -11,7 +10,7 @@ import idealised.DPIA.{->, Nat, Phrases, _}
 import scala.language.reflectiveCalls
 import scala.xml.Elem
 
-// this drops n many elements from an array of m elements
+// this drops n many elements from an array of n + m elements
 final case class Drop(n: Nat,
                       m: Nat,
                       dt: DataType,

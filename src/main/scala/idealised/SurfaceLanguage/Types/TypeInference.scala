@@ -8,6 +8,7 @@ import scala.language.existentials
 class TypeInferenceException(expr: String, msg: String)
   extends TypeException(s"Failed to infer type for `$expr'. $msg.")
 
+//noinspection TypeAnnotation
 object TypeInference {
   def error(expr: String, found: String, expected: String): Nothing = {
     throw new TypeInferenceException(expr, s"Found $found but expected $expected")
@@ -70,6 +71,18 @@ object TypeInference {
         (f.t: @unchecked) match {
           case Some(DependentFunctionType(_: DataTypeIdentifier, bodyT)) =>
             TypeDependentApplyExpr(f, x, Some(bodyT))
+        }
+
+      case LetNat(binder, definition, body, _) =>
+        val defn = inferType(definition, subs)
+        defn.t match {
+          case None => error(defn.toString, "Cannot infer definition type in LetNat")
+          case Some(_) => //TODO: Are there rules on which types should be allowed here?
+        }
+
+        val bodyExpr = inferType(body, subs)
+        bodyExpr.t match {
+          case Some(t) =>  LetNat(binder, defn, bodyExpr, Some(t))
         }
 
       case IfThenElseExpr(cond, thenE, elseE, _) =>

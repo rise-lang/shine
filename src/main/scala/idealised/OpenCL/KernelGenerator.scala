@@ -19,28 +19,31 @@ import scala.language.implicitConversions
 object KernelGenerator {
   def makeCode[T <: PhraseType, L, G](localSize: L, globalSize: G)(originalPhrase: Phrase[T])
                                      (implicit toLRange: L => NDRange, toGRange: G => NDRange): OpenCL.KernelWithSizes = {
-    val (phrase, params) = getPhraseAndParams(originalPhrase, Seq())
-    makeKernel("KERNEL", phrase, params.reverse, Some(localSize), Some(globalSize)).right.get
+    val (phrase, params, defs) = getPhraseAndParams(originalPhrase, Seq(), Seq())
+    makeKernel("KERNEL", phrase, params.reverse, defs.reverse, Some(localSize), Some(globalSize)).right.get
   }
 
   def makeCode[T <: PhraseType](originalPhrase: Phrase[T], name: String = "KERNEL"): OpenCL.KernelNoSizes = {
-    val (phrase, params) = getPhraseAndParams(originalPhrase, Seq())
-    makeKernel(name, phrase, params.reverse, None, None).left.get
+    val (phrase, params, defs) = getPhraseAndParams(originalPhrase, Seq(), Seq())
+    makeKernel(name, phrase, params.reverse, defs.reverse, None, None).left.get
   }
 
   private def getPhraseAndParams[_ <: PhraseType](p: Phrase[_],
-                                                  ps: Seq[Identifier[ExpType]]
-                                                 ): (Phrase[ExpType], Seq[Identifier[ExpType]]) = {
+                                                  ps: Seq[Identifier[ExpType]],
+                                                  defs:Seq[(LetNatIdentifier, Phrase[ExpType])]
+                                                 ): (Phrase[ExpType], Seq[Identifier[ExpType]], Seq[(LetNatIdentifier, Phrase[ExpType])]) = {
     p match {
-      case l: Lambda[ExpType, _]@unchecked => getPhraseAndParams(l.body, l.param +: ps)
-      case ndl: NatDependentLambda[_]@unchecked => getPhraseAndParams(ndl.body, Identifier(ndl.x.name, ExpType(int)) +: ps)
-      case ep: Phrase[ExpType]@unchecked => (ep, ps)
+      case l: Lambda[ExpType, _]@unchecked => getPhraseAndParams(l.body, l.param +: ps, defs)
+      case ndl: NatDependentLambda[_] => getPhraseAndParams(ndl.body, Identifier(ndl.x.name, ExpType(int)) +: ps, defs)
+      case ln:LetNat[ExpType, _]@unchecked => getPhraseAndParams(ln.body, ps, (ln.binder, ln.defn) +: defs)
+      case ep: Phrase[ExpType]@unchecked => (ep, ps, defs)
     }
   }
 
-  private def makeKernel(name: String,
+  private def makeKernel(name:String,
                          p: Phrase[ExpType],
                          inputParams: Seq[Identifier[ExpType]],
+                         letNatDefs:Seq[(LetNatIdentifier, Phrase[ExpType])],
                          localSize: Option[NDRange],
                          globalSize: Option[NDRange]): Either[OpenCL.KernelNoSizes, OpenCL.KernelWithSizes] = {
 
@@ -65,9 +68,9 @@ object KernelGenerator {
             Seq(Identifier(s"${p.identifier.name}_1", p.identifier.`type`.t1) -> C.AST.DeclRef(p.identifier.name),
                 Identifier(s"${p.identifier.name}_2", p.identifier.`type`.t2) -> C.AST.DeclRef(p.identifier.name) ) ).toMap
 
-      val env = C.CodeGeneration.CodeGenerator.Environment(identMap ++ intermediateIdentMap, Map.empty, Map.empty)
+      val env = C.CodeGeneration.CodeGenerator.Environment(identMap ++ intermediateIdentMap, Map.empty, Map.empty, Map.empty)
 
-      val (declarations, code) = gen.generate(p, env)
+      val (declarations, code) = gen.generate(p, letNatDefs, env)
 
       val typeDeclarations = C.ProgramGenerator.collectTypeDeclarations(code, kernelParams)
 

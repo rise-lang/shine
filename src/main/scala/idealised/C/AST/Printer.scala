@@ -1,5 +1,7 @@
 package idealised.C.AST
 
+import idealised.DPIA.NatFunCall
+import idealised.DPIA.Types.ExpType
 import lift.arithmetic._
 
 trait Printer {
@@ -139,11 +141,10 @@ class CPrinter extends Printer {
       case b: BasicType => print(s"${b.name} ${p.name}")
       case s: StructType => print(s"struct ${s.name} ${p.name}")
       case _: UnionType => ???
-      case a: ArrayType =>
-        print(s"${a.getBaseType} ${p.name}[${ a.getSizes match {
-          case None => ""
-          case Some(s) => s
-        } }]")
+      case a: ArrayType => print(s"${a.getBaseType} ${p.name}[${ a.getSizes match {
+        case None => ""
+        case Some(s) => s}
+      }]")
       case pt: PointerType => print(s"${pt.valueType}* ${p.name}")
     }
   }
@@ -228,7 +229,9 @@ class CPrinter extends Printer {
   }
 
   private def printReturn(r: Return): Unit = {
-    println("return;")
+    print("return ")
+    r.x.map(printExpr)
+    println(";")
   }
 
   private def printDeclStmt(d: DeclStmt): Unit = {
@@ -349,6 +352,7 @@ class CPrinter extends Printer {
       case i: lift.arithmetic.IfThenElse =>
         s"((${toString(i.test)}) ? " +
           s"${toString(i.t)} : ${toString(i.e)})"
+      case natFunCall:NatFunCall => natFunCall.callAndParameterListString
 //      case aeFun:ArithExprFunction => aeFun.name
 //      case bs:BigSum => bs.toString
       case sp: SteppedCase => toString(sp.intoIfChain())
