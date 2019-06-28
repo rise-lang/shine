@@ -16,8 +16,9 @@ final case class Apply(f: Expr, e: Expr) extends Expr {
   override def toString: String = s"($f $e)"
 }
 
-final case class DepLambda[K <: Kind](x: K#I, e: Expr) extends Expr {
-  override def toString: String = s"Λ(${x.name} : ${x.getClass.toString}). $e"
+final case class DepLambda[K <: Kind](x: K#I, e: Expr)
+                                     (implicit kn: KindName[K]) extends Expr {
+  override def toString: String = s"Λ(${x.name} : ${kn.get}). $e"
 }
 
 final case class DepApply[K <: Kind](f: Expr, x: K#T) extends Expr {

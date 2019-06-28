@@ -35,13 +35,34 @@ object DSL {
   implicit class FunCall(f: Expr) {
     import lift.core.lifting._
 
-    def apply(e: Expr): Expr = liftFunctionExpr(f).value(e)
     def apply(n: Nat): Expr = liftDependentFunctionExpr[NatKind](f).value(n)
     def apply(dt: DataType): Expr = liftDependentFunctionExpr[DataKind](f).value(dt)
+
+    def apply(e: Expr): Expr = liftFunctionExpr(f).value(e)
+
+    def apply(e1: Expr, e2: Expr): Expr = {
+      val g = liftFunctionExpr(f).value(e1)
+      g.apply(e2)
+    }
+
+    def apply(e1: Expr, e2: Expr, e3: Expr): Expr = {
+      val g = liftFunctionExpr(f).value(e1)
+      g.apply(e2, e3)
+    }
+
+    def apply(e1: Expr, e2: Expr, e3: Expr, e4: Expr): Expr = {
+      val g = liftFunctionExpr(f).value(e1)
+      g.apply(e2, e3, e4)
+    }
+
+    def apply(e1: Expr, e2: Expr, e3: Expr, e4: Expr, e5: Expr): Expr = {
+      val g = liftFunctionExpr(f).value(e1)
+      g.apply(e2, e3, e4, e5)
+    }
   }
 
   implicit class FunPipe(e: Expr) {
-    def |>(f: Expr): Expr = f(e)
+    def |>(f: Expr): Expr = f.apply(e)
   }
 
   implicit class FunComp(f: Expr) {
@@ -50,14 +71,60 @@ object DSL {
 
   // function values
   object fun {
+    def apply(dt: DataType)(f: TypedExpr => Expr): Expr = {
+      val x = Identifier(freshName("e"))
+      Lambda(x, f(TypedExpr(x, dt)))
+    }
+
     def apply(f: Identifier => Expr): Expr = {
       val x = Identifier(freshName("e"))
       Lambda(x, f(x))
     }
 
-    def apply(dt: DataType)(f: Expr => Expr): Expr = {
-      val x = Identifier(freshName("e"))
-      Lambda(x, f(TypedExpr(x, dt)))
+    def apply(f: (Identifier, Identifier) => Expr): Expr = untyped(f)
+
+    def apply(f: (Identifier, Identifier, Identifier) => Expr): Expr = untyped(f)
+
+    def apply(f: (Identifier, Identifier, Identifier, Identifier) => Expr): Expr = untyped(f)
+
+    def apply(f: (Identifier, Identifier, Identifier, Identifier, Identifier) => Expr): Expr = untyped(f)
+
+    private def untyped(f: Identifier => Expr): Expr = {
+      val e = Identifier(freshName("e"))
+      Lambda(e, f(e))
+    }
+
+    private def untyped(f: (Identifier, Identifier) => Expr): Expr = {
+      val e = Identifier(freshName("e"))
+      Lambda(e, untyped(e1 => f(e, e1)))
+    }
+
+    private def untyped(f: (Identifier, Identifier, Identifier) => Expr): Expr = {
+      val e = Identifier(freshName("e"))
+      Lambda(e, untyped((e1, e2) => f(e, e1, e2)))
+    }
+
+    private def untyped(f: (Identifier, Identifier, Identifier, Identifier) => Expr): Expr = {
+      val e = Identifier(freshName("e"))
+      Lambda(e, untyped((e1, e2, e3) => f(e, e1, e2, e3)))
+    }
+
+    private def untyped(f: (Identifier, Identifier, Identifier, Identifier, Identifier) => Expr): Expr = {
+      val e = Identifier(freshName("e"))
+      Lambda(e, untyped((e1, e2, e3, e4) => f(e, e1, e2, e3, e4)))
+    }
+
+    //noinspection TypeAnnotation
+    def apply(ft: FunctionType[Type, Type]) = new {
+      def apply(f: Identifier => Expr): TypedExpr = fun.untyped(f) :: ft
+
+      def apply(f: (Identifier, Identifier) => Expr): TypedExpr = fun.untyped(f) :: ft
+
+      def apply(f: (Identifier, Identifier, Identifier) => Expr): TypedExpr = fun.untyped(f) :: ft
+
+      def apply(f: (Identifier, Identifier, Identifier, Identifier) => Expr): TypedExpr = fun.untyped(f) :: ft
+
+      def apply(f: (Identifier, Identifier, Identifier, Identifier, Identifier) => Expr): TypedExpr = fun.untyped(f) :: ft
     }
   }
 
@@ -69,6 +136,30 @@ object DSL {
 
     def apply(f: NatIdentifier => Expr): NatDepLambda = {
       nFun(lift.arithmetic.RangeAdd(0, lift.arithmetic.PosInf, 1), f)
+    }
+
+    def apply(f: (NatIdentifier, NatIdentifier) => Expr): NatDepLambda = {
+      val r = lift.arithmetic.RangeAdd(0, lift.arithmetic.PosInf, 1)
+      val n = NatIdentifier(freshName("n"), r)
+      NatDepLambda(n, nFun( f(n, _) ))
+    }
+
+    def apply(f: (NatIdentifier, NatIdentifier, NatIdentifier) => Expr): NatDepLambda = {
+      val r = lift.arithmetic.RangeAdd(0, lift.arithmetic.PosInf, 1)
+      val n = NatIdentifier(freshName("n"), r)
+      NatDepLambda(n, nFun( (n1, n2) => f(n, n1, n2) ))
+    }
+
+    def apply(f: (NatIdentifier, NatIdentifier, NatIdentifier, NatIdentifier) => Expr): NatDepLambda = {
+      val r = lift.arithmetic.RangeAdd(0, lift.arithmetic.PosInf, 1)
+      val n = NatIdentifier(freshName("n"), r)
+      NatDepLambda(n, nFun( (n1, n2, n3) => f(n, n1, n2, n3) ))
+    }
+
+    def apply(f: (NatIdentifier, NatIdentifier, NatIdentifier, NatIdentifier, NatIdentifier) => Expr): NatDepLambda = {
+      val r = lift.arithmetic.RangeAdd(0, lift.arithmetic.PosInf, 1)
+      val n = NatIdentifier(freshName("n"), r)
+      NatDepLambda(n, nFun( (n1, n2, n3, n4) => f(n, n1, n2, n3, n4) ))
     }
   }
 
@@ -161,8 +252,27 @@ object DSL {
   def l(v: VectorData): Literal = Literal(v)
   def l(a: ArrayData): Literal = Literal(a)
 
-  implicit final class To(private val a: Type) extends AnyVal {
-    @inline def ->(b: Type): Type = FunctionType(a, b)
+  implicit final class TypeConstructors(private val a: Type) extends AnyVal {
+    @inline def ->(b: Type): FunctionType[Type, Type] = FunctionType(a, b)
+    // ... and as a right associative operator
+    @inline def ->:(b: Type): FunctionType[Type, Type] = FunctionType(b, a)
+  }
+
+  implicit final class TupleTypeConstructors(private val a: DataType) extends AnyVal {
+    @inline def x(b: DataType): TupleType = TupleType(a, b)
+  }
+
+  final case class ArrayTypeConstructorHelper(ns: Seq[Nat]) {
+    @inline def `.`(n: Nat): ArrayTypeConstructorHelper = ArrayTypeConstructorHelper(ns :+ n)
+    @inline def `.`(dt: DataType): ArrayType = {
+      val nsr = ns.reverse
+      nsr.tail.foldLeft(ArrayType(nsr.head, dt))( (t, n) => ArrayType(n, t) )
+    }
+  }
+
+  implicit final class ArrayTypeConstructors(private val n: Nat) extends AnyVal {
+    @inline def `.`(m: Nat): ArrayTypeConstructorHelper = ArrayTypeConstructorHelper(Seq(n, m))
+    @inline def `.`(dt: DataType): ArrayType = ArrayType(n, dt)
   }
 
   object foreignFun {
