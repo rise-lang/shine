@@ -7,4 +7,4 @@ import idealised.OpenCL
 
 final case class ToLocal(dt: DataType,
                          input: Phrase[ExpType])
-  extends To(LocalMem, dt, input, ToLocal)
+  extends To(Local, dt, input, ToLocal)

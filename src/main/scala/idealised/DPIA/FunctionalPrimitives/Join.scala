@@ -13,16 +13,17 @@ import scala.xml.Elem
 
 final case class Join(n: Nat,
                       m: Nat,
+                      w: AccessType,
                       dt: DataType,
                       array: Phrase[ExpType])
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (n: Nat) -> (m: Nat) -> (dt: DataType) ->
-      (array :: exp"[$n.$m.$dt]") -> exp"[${n * m}.$dt]"
+    (n: Nat) -> (m: Nat) -> (w: AccessType) -> (dt: DataType) ->
+      (array :: exp"[$n.$m.$dt, $w]") -> exp"[${n * m}.$dt, $w]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    Join(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))
+    Join(fun(n), fun(m), fun(w), fun(dt), VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): Data = {
@@ -41,7 +42,7 @@ final case class Join(n: Nat,
   override def prettyPrint: String = s"(join ${PrettyPhrasePrinter(array)})"
 
   override def xmlPrinter: Elem =
-    <join n={ToString(n)} m={ToString(m)} dt={ToString(dt)}>
+    <join n={ToString(n)} m={ToString(m)} w={ToString(w)} dt={ToString(dt)}>
       {Phrases.xmlPrinter(array)}
     </join>
 
@@ -56,7 +57,7 @@ final case class Join(n: Nat,
                                      (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    mapAcc(fun(exp"[$m.$dt]")(x => Map(m, dt, g.t.outT.dataType, g, x)), array)(
+    mapAcc(fun(exp"[$m.$dt, $read]")(x => Map(m, dt, g.t.outT.dataType, g, x)), array)(
       JoinAcc(n, m, dt, A))
   }
 
@@ -64,6 +65,6 @@ final case class Join(n: Nat,
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    con(array)(λ(exp"[$n.$m.$dt]")(x => C(Join(n, m, dt, x)) ))
+    con(array)(λ(exp"[$n.$m.$dt, $read]")(x => C(Join(n, m, w, dt, x)) ))
   }
 }

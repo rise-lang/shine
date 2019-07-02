@@ -12,7 +12,7 @@ object FromSurfaceLanguage {
       case IdentifierExpr(name, t) => t match {
         case None => throw new Exception(s"Found Identifier without a type")
         case Some(dt) =>
-          Phrases.Identifier(name, Types.ExpType(Types.DataType(dt), Read))
+          Phrases.Identifier(name, Types.ExpType(Types.DataType(dt), read))
       }
 
       case LambdaExpr(param, body, _) =>

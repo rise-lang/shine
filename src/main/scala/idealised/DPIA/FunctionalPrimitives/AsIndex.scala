@@ -15,7 +15,7 @@ final case class AsIndex(n: Nat, e: Phrase[ExpType])
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (n: Nat) -> (e :: exp"[$NatType, $Read]") -> exp"[${IndexType(n)}, $Read]"
+    (n: Nat) -> (e :: exp"[$NatType, $read]") -> exp"[${IndexType(n)}, $read]"
 
   def prettyPrint: String =
     s"${this.getClass.getSimpleName} (${PrettyPhrasePrinter(e)})"
@@ -39,7 +39,7 @@ final case class AsIndex(n: Nat, e: Phrase[ExpType])
                          (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    con(e)(fun(exp"[$NatType, $Read]")(x =>
+    con(e)(fun(exp"[$NatType, $read]")(x =>
       A :=|IndexType(n)| AsIndex(n, x)))
   }
 

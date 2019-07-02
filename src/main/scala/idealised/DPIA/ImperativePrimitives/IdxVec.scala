@@ -19,9 +19,9 @@ final case class IdxVec(n: Nat,
 
   override val t: ExpType =
     (n: Nat) -> (st: ScalarType) ->
-      (index :: exp"[idx($n)]") ->
-        (vector :: exp"[${VectorType(n, st)}]") ->
-          exp"[$st]"
+      (index :: exp"[idx($n), $read]") ->
+        (vector :: exp"[${VectorType(n, st)}, $read]") ->
+          exp"[$st, $read]"
 
   override def eval(s: Store): Data = {
     (OperationalSemantics.eval(s, vector), OperationalSemantics.eval(s, index)) match {
@@ -38,10 +38,10 @@ final case class IdxVec(n: Nat,
 
   override def xmlPrinter: Elem =
     <idxVec n={ToString(n)} st={ToString(st)}>
-      <input type={ToString(ExpType(VectorType(n, st)))}>
+      <input type={ToString(ExpType(VectorType(n, st), read))}>
         {Phrases.xmlPrinter(vector)}
       </input>
-      <index type={ToString(ExpType(int))}>
+      <index type={ToString(ExpType(int, read))}>
         {Phrases.xmlPrinter(index)}
       </index>
     </idxVec>
@@ -49,7 +49,7 @@ final case class IdxVec(n: Nat,
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
-    con(vector)(λ(exp"[${VectorType(n, st)}]")(x => A :=| st | IdxVec(n, st, index, x)))
+    con(vector)(λ(exp"[${VectorType(n, st)}, $read]")(x => A :=| st | IdxVec(n, st, index, x)))
   }
 
   override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
@@ -59,14 +59,14 @@ final case class IdxVec(n: Nat,
   override def continuationTranslation(C: Phrase[ExpType -> CommandType])
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
-    con(vector)(λ(exp"[${VectorType(n, st)}]")(e => C(IdxVec(n, st, index, e))))
+    con(vector)(λ(exp"[${VectorType(n, st)}, $read]")(e => C(IdxVec(n, st, index, e))))
   }
 }
 
 object IdxVec {
   def apply(index: Phrase[ExpType], vector: Phrase[ExpType]): IdxVec = {
     (index.t, vector.t) match {
-      case (ExpType(IndexType(n1)), ExpType(VectorType(n2, st))) if n1 == n2 =>
+      case (ExpType(IndexType(n1), _: read.type), ExpType(VectorType(n2, st), _: read.type)) if n1 == n2 =>
         IdxVec(n1, st, index, vector)
       case x => error(x.toString, "(exp[idx(n)], exp[st<n>])")
     }

@@ -14,18 +14,19 @@ import scala.xml.Elem
 
 final case class DepJoin(n: Nat,
                          lenF: NatNatTypeFunction,
+                         w: AccessType,
                          dt: DataType,
                          array: Phrase[ExpType])
   extends ExpPrimitive {
 
   override val t: ExpType = {
     (n: Nat) -> (lenF: NatNatTypeFunction) -> (dt: DataType) ->
-      (array :: exp"[$n.${NatDataTypeFunction(n, (i:NatIdentifier) => ArrayType(lenF(i), dt))}]") ->
-      exp"[${BigSum(from = 0, upTo = n - 1, `for` = lenF.x, lenF.body)}.$dt]"
+      (array :: exp"[$n.${NatDataTypeFunction(n, (i:NatIdentifier) => ArrayType(lenF(i), dt))}, $w]") ->
+      exp"[${BigSum(from = 0, upTo = n - 1, `for` = lenF.x, lenF.body)}.$dt, $w]"
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    DepJoin(fun(n), fun(lenF), fun(dt), VisitAndRebuild(array, fun))
+    DepJoin(fun(n), fun(lenF), fun(w), fun(dt), VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): Data = {
@@ -44,7 +45,7 @@ final case class DepJoin(n: Nat,
   override def prettyPrint: String = s"(depJoin ${PrettyPhrasePrinter(array)})"
 
   override def xmlPrinter: Elem =
-    <join n={ToString(n)} lenF={ToString(lenF)} dt={ToString(dt)}>
+    <join n={ToString(n)} lenF={ToString(lenF)} w={ToString(w)} dt={ToString(dt)}>
       {Phrases.xmlPrinter(array)}
     </join>
 
@@ -61,7 +62,7 @@ final case class DepJoin(n: Nat,
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    con(array)(λ(exp"[$n.${NatDataTypeFunction(n, (i:NatIdentifier) => ArrayType(lenF(i), dt))}]")(x =>
-      C(DepJoin(n, lenF, dt, x)) ))
+    con(array)(λ(exp"[$n.${NatDataTypeFunction(n, (i:NatIdentifier) => ArrayType(lenF(i), dt))}, $read]")(x =>
+      C(DepJoin(n, lenF, w, dt, x)) ))
   }
 }

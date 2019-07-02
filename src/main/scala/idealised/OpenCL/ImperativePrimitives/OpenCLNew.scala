@@ -6,16 +6,15 @@ import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised.OpenCL.AddressSpace
 
 import scala.xml.Elem
 
-final case class OpenCLNew(addrSpace: AddrSpace,
+final case class OpenCLNew(addrSpace: AddressSpace,
                            dt: DataType,
                            f: Phrase[VarType -> CommandType]) extends CommandPrimitive {
 
   override val t: CommandType =
-    (addrSpace: AddrSpace) -> (dt: DataType) ->
+    (addrSpace: AddressSpace) -> (dt: DataType) ->
       (f :: t"var[$dt] -> comm") -> comm
 
   override def eval(s: Store): Store = {

@@ -11,7 +11,7 @@ import idealised.DPIA.Semantics.OperationalSemantics._
 import scala.xml.Elem
 
 final case class OpenCLReduceSeq(n: Nat,
-                                 initAddrSpace: AddrSpace,
+                                 initAddrSpace: AddressSpace,
                                  dt1: DataType,
                                  dt2: DataType,
                                  f: Phrase[ExpType -> (ExpType -> ExpType)],
@@ -20,9 +20,9 @@ final case class OpenCLReduceSeq(n: Nat,
   extends ExpPrimitive
 {
   override val t: ExpType =
-    (n: Nat) -> (initAddrSpace : AddrSpace) -> (dt1: DataType) -> (dt2: DataType) ->
-      (f :: t"exp[$dt1, $Read] -> exp[$dt2, $Read] -> exp[$dt2, $Write]") -> (init :: exp"[$dt2, $Write]") ->
-        (array :: exp"[$n.$dt1, $Read]") -> exp"[$dt2, $Read]"
+    (n: Nat) -> (initAddrSpace : AddressSpace) -> (dt1: DataType) -> (dt2: DataType) ->
+      (f :: t"exp[$dt1, $read] -> exp[$dt2, $read] -> exp[$dt2, $write]") -> (init :: exp"[$dt2, $write]") ->
+        (array :: exp"[$n.$dt1, $read]") -> exp"[$dt2, $read]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     OpenCLReduceSeq(fun(n), initAddrSpace, fun(dt1), fun(dt2),
@@ -39,12 +39,12 @@ final case class OpenCLReduceSeq(n: Nat,
                                   (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    con(array)(λ(exp"[$n.$dt1, $Read]")(X =>
-      con(init)(λ(exp"[$dt2, $Write]")(Y =>
+    con(array)(λ(exp"[$n.$dt1, $read]")(X =>
+      con(init)(λ(exp"[$dt2, $write]")(Y =>
         OpenCLReduceSeqI(n, initAddrSpace, dt1, dt2,
-          λ(exp"[$dt1, $Read]")(x => λ(exp"[$dt2, $Read]")(y => λ(acc"[$dt2]")(o => acc( f(x)(y) )( o )))),
+          λ(exp"[$dt1, $read]")(x => λ(exp"[$dt2, $read]")(y => λ(acc"[$dt2]")(o => acc( f(x)(y) )( o )))),
           //TODO acceptor takes r which should be Write
-          Y, X, λ(exp"[$dt2, $Read]")(r => acc(r)(A)))(context)))))
+          Y, X, λ(exp"[$dt2, $read]")(r => acc(r)(A)))(context)))))
 
   }
 
@@ -56,8 +56,8 @@ final case class OpenCLReduceSeq(n: Nat,
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    con(array)(λ(exp"[$n.$dt1, $Read]")(X =>
-      con(init)(λ(exp"[$dt2, $Write]")(Y =>
+    con(array)(λ(exp"[$n.$dt1, $read]")(X =>
+      con(init)(λ(exp"[$dt2, $write]")(Y =>
         OpenCLReduceSeqI(n, initAddrSpace, dt1, dt2,
           λ(exp"[$dt1]")(x => λ(exp"[$dt2]")(y => λ(acc"[$dt2]")(o => acc( f(x)(y) )( o )))),
           Y, X, C)(context)))))
@@ -65,13 +65,13 @@ final case class OpenCLReduceSeq(n: Nat,
 
   override def xmlPrinter: Elem =
     <reduce n={ToString(n)} addrSpace={ToString(initAddrSpace)} dt1={ToString(dt1)} dt2={ToString(dt2)}>
-      <f type={ToString(ExpType(dt1, Read) -> (ExpType(dt2, Read) -> ExpType(dt2, Write)))}>
+      <f type={ToString(ExpType(dt1, read) -> (ExpType(dt2, read) -> ExpType(dt2, write)))}>
         {Phrases.xmlPrinter(f)}
       </f>
-      <init type={ToString(ExpType(dt2, Write))}>
+      <init type={ToString(ExpType(dt2, write))}>
         {Phrases.xmlPrinter(init)}
       </init>
-      <input type={ToString(ExpType(ArrayType(n, dt1), Read))}>
+      <input type={ToString(ExpType(ArrayType(n, dt1), read))}>
         {Phrases.xmlPrinter(array)}
       </input>
     </reduce>.copy(label = {

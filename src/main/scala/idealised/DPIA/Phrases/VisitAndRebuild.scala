@@ -8,6 +8,8 @@ object VisitAndRebuild {
   class Visitor {
     def apply[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = Continue(p, this)
     def apply(ae: Nat): Nat = ae
+    def apply(w: AccessType): AccessType = w
+    def apply(a: AddressSpace): AddressSpace = a
     def apply(ft:NatNatTypeFunction):NatNatTypeFunction = NatNatTypeFunction(ft.x, apply(ft.body))
     def apply(ft:NatDataTypeFunction):NatDataTypeFunction = NatDataTypeFunction(ft.x, apply[DataType](ft.body))
     def apply[T <: DataType](dt: T): T = dt
@@ -64,7 +66,7 @@ object VisitAndRebuild {
   }
 
   private def visitAndRebuild(phraseType: PhraseType, v: Visitor): PhraseType = phraseType match {
-    case ExpType(dt)                    => ExpType(v(dt))
+    case ExpType(dt, w)                 => ExpType(v(dt), v(w))
     case AccType(dt)                    => AccType(v(dt))
     case CommandType()                  => CommandType()
     case PairType(t1, t2)               => PairType(visitAndRebuild(t1, v), visitAndRebuild(t2, v))

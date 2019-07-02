@@ -20,10 +20,10 @@ final case class Reorder(n: Nat,
 {
   override val t: ExpType =
     (n: Nat) -> (dt: DataType) ->
-      (idxF :: t"exp[idx($n)] -> exp[idx($n)]") ->
-      (idxFinv :: t"exp[idx($n)] -> exp[idx($n)]") ->
-      (input :: exp"[$n.$dt]") ->
-      exp"[$n.$dt]"
+      (idxF :: t"exp[idx($n), $read] -> exp[idx($n), $read]") ->
+        (idxFinv :: t"exp[idx($n), $read] -> exp[idx($n), $read]") ->
+          (input :: exp"[$n.$dt, $read]") ->
+            exp"[$n.$dt, $read]"
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     Reorder(f(n), f(dt),
@@ -64,7 +64,7 @@ final case class Reorder(n: Nat,
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    con(input)(λ(exp"[$n.$dt]")(x => C(Reorder(n, dt, idxF, idxFinv, x)) ))
+    con(input)(λ(exp"[$n.$dt, $read]")(x => C(Reorder(n, dt, idxF, idxFinv, x)) ))
   }
 
   override def prettyPrint: String = s"(reorder idxF ${PrettyPhrasePrinter(input)})"

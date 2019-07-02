@@ -7,4 +7,4 @@ import idealised._
 
 final case class ToGlobal(dt: DataType,
                           input: Phrase[ExpType])
-  extends To(GlobalMem, dt, input, ToGlobal)
+  extends To(Global, dt, input, ToGlobal)

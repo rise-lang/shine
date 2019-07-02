@@ -43,11 +43,11 @@ final case class Drop(n: Nat,
   override def continuationTranslation(C: Phrase[->[ExpType, CommandType]])
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
-    con(array)(λ(exp"[${n + m}.$dt, $Read]")(x => C(Drop(n, m, Read, dt, x))))
+    con(array)(λ(exp"[${n + m}.$dt, $read]")(x => C(Drop(n, m, read, dt, x))))
   }
 
   override def xmlPrinter: Elem =
-    <drop n={n.toString} m={m.toString} dt={dt.toString}>
+    <drop n={n.toString} m={m.toString} w={w.toString} dt={dt.toString}>
       {Phrases.xmlPrinter(array)}
     </drop>
 

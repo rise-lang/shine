@@ -19,7 +19,7 @@ final case class NewDoubleBuffer(dt1: DataType,
 
   override val t: CommandType =
     (dt1: DataType) -> (dt2: DataType) -> (dt3: DataType) -> (n: Nat) ->
-      (in :: exp"[$dt1]") ->
+      (in :: exp"[$dt1, $read]") ->
         (out :: acc"[$dt2]") ->
           (f :: FunctionType(PairType(PairType(VarType(ArrayType(n, dt3)), comm), comm), comm) ) -> comm
 

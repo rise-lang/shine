@@ -1,14 +1,12 @@
 package idealised.OpenCL.CodeGeneration
 
-import idealised.DPIA
-import idealised.DPIA.Phrases._
-import idealised.DPIA.Types.{AccType, CommandType, ExpType, PairType, PhraseType}
 import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives.AsIndex
-import idealised.DPIA.Semantics.OperationalSemantics.IndexData
-import idealised.OpenCL.FunctionalPrimitives.OpenCLFunction
-import idealised.{C, OpenCL}
+import idealised.DPIA.Phrases._
+import idealised.DPIA.Types.{AccType, CommandType, ExpType, PairType, PhraseType, read}
 import idealised.OpenCL.AST.ParamDecl
+import idealised.OpenCL.FunctionalPrimitives.OpenCLFunction
+import idealised.{C, DPIA, OpenCL}
 
 import scala.collection.mutable
 
@@ -103,14 +101,14 @@ object AdaptKernelParameters {
       i.`type` match {
         case _: ExpType =>
           val ie = i.asInstanceOf[Identifier[ExpType]]
-          ie.copy(`type` = ExpType(DPIA.Types.ArrayType(1, ie.`type`.dataType))).asInstanceOf[Identifier[T]]
+          ie.copy(`type` = ExpType(DPIA.Types.ArrayType(1, ie.`type`.dataType), read)).asInstanceOf[Identifier[T]]
         case _: AccType =>
           val ia = i.asInstanceOf[Identifier[AccType]]
           ia.copy(`type` = AccType(DPIA.Types.ArrayType(1, ia.`type`.dataType))).asInstanceOf[Identifier[T]]
         case PairType(_: ExpType, _: AccType) =>
           val ip = i.asInstanceOf[Identifier[PairType[ExpType, AccType]]]
           ip.copy(`type` = PairType(
-            ExpType(DPIA.Types.ArrayType(1, ip.`type`.t1.dataType)),
+            ExpType(DPIA.Types.ArrayType(1, ip.`type`.t1.dataType), read),
               AccType(DPIA.Types.ArrayType(1, ip.`type`.t2.dataType)))).asInstanceOf[Identifier[T]]
       }
     }

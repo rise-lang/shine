@@ -11,14 +11,14 @@ import scala.language.reflectiveCalls
 final case class MapRead(n: Nat,
                          dt1: DataType,
                          dt2: DataType,
-                         f: Phrase[ExpType -> ((ExpType -> CommandType) -> CommandType)],
+                         f: Phrase[ExpType -> (ExpType -> CommandType -> CommandType)],
                          input: Phrase[ExpType])
   extends ExpPrimitive
 {
   override val t: ExpType =
     (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
-      (f :: exp"[$dt1]" -> ((t"exp[$dt2] -> comm") -> comm)) ->
-      (input :: exp"[$n.$dt1]") -> exp"[$n.$dt2]"
+      (f :: exp"[$dt1, $read]" -> (t"exp[$dt2, $read] -> comm" -> comm)) ->
+      (input :: exp"[$n.$dt1, $read]") -> exp"[$n.$dt2, $read]"
 
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     MapRead(v(n), v(dt1), v(dt2), VisitAndRebuild(f, v), VisitAndRebuild(input, v))

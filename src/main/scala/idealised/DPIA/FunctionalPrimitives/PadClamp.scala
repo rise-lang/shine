@@ -20,7 +20,7 @@ final case class PadClamp(n: Nat,
 
   override val t: ExpType =
     (n: Nat) -> (l: Nat) -> (r: Nat) -> (dt: DataType) ->
-      (array :: exp"[$n.$dt]") -> exp"[${l + n + r}.$dt]"
+      (array :: exp"[$n.$dt, $read]") -> exp"[${l + n + r}.$dt, $read]"
 
   override def eval(s: Store): Data = ???
 
@@ -39,7 +39,7 @@ final case class PadClamp(n: Nat,
   override def continuationTranslation(C: Phrase[->[ExpType, CommandType]])
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
-    con(array)(λ(exp"[$n.$dt]")(x => C(PadClamp(n, l, r, dt, x))))
+    con(array)(λ(exp"[$n.$dt, $read]")(x => C(PadClamp(n, l, r, dt, x))))
   }
 
   override def xmlPrinter: Elem =

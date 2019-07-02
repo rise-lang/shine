@@ -1,0 +1,95 @@
+
+\begin{figure*}
+    \small
+    \begin{minipage}{1.0\linewidth}
+      \begin{mathpar}
+        \inferrule* [right=Var]
+        {x : \theta \in \Gamma}
+        {\typd{\Pi}{\Gamma}{x}{\theta}}
+  
+        \inferrule* [right=Conv]
+        {\typd{\Pi}{\Gamma}{P}{\theta_1} \\\\
+          \Delta \vdash \theta_1 \equiv \theta_2 : \phrasetype}
+        {\typd{\Pi}{\Gamma}{P}{\theta_2}}
+  
+        \inferrule* [right=Prim]
+        {\mathsf{prim} : \theta \in \textsc{Primitives}}
+        {\typd{\Pi}{\Gamma}{\mathsf{prim}}{\theta}}
+      \end{mathpar}
+      \subcaption{Structural Rules}\label{fig:structural-rules}
+    \end{minipage}
+  
+    \medskip
+  
+    \begin{minipage}{1.0\linewidth}
+      \begin{mathpar}
+        \inferrule* [right=Lam]
+        {\typd{\Pi}{\Gamma, x : \theta_1}{P}{\theta_2}}
+        {\typd{\Pi}{\Gamma}{\lambda x.P}{\theta_1 \to \theta_2}}
+  
+        \inferrule* [right=App]
+        {\typd{\Pi}{\Gamma_1}{P}{\theta_1 \to \theta_2} \\
+          \typd{\Pi}{\Gamma_2}{Q}{\theta_1}}
+        {\typd{\Pi}{\Gamma_1, \Gamma_2}{P~Q}{\theta_2}}\medskip
+      \end{mathpar}
+      \begin{mathpar}
+        \inferrule* [right=TLam]
+        {\typ{\Delta, x : \kappa}{\Pi}{\Gamma}{P}{\theta} \\
+          x \not\in \mathit{ftv}(\Pi, \Gamma)}
+        {\typd{\Pi}{\Gamma}{\Lambda x. P}{(x \mathord: \kappa) \to \theta}}
+  
+        \inferrule* [right=TApp]
+        {\typd{\Pi}{\Gamma}{P}{(x \mathord:\kappa) \to \theta} \\
+          \Delta \vdash \tau : \kappa}
+        {\typd{\Pi}{\Gamma}{P~\tau}{\theta[\tau/x]}}\medskip
+      \end{mathpar}
+      \begin{mathpar}
+        \inferrule* [right=Pair]
+        {\typd{\Pi}{\Gamma}{P}{\theta_1} \\
+          \typd{\Pi}{\Gamma}{Q}{\theta_2}}
+        {\typd{\Pi}{\Gamma}{\langle P, Q \rangle}{\theta_1 \times \theta_2}}
+  
+        \inferrule* [right=Proj]
+        {\typd{\Pi}{\Gamma}{P}{\theta_1 \times \theta_2}}
+        {\typd{\Pi}{\Gamma}{P.i}{\theta_i}}
+      \end{mathpar}
+      \subcaption{Introduction and Elimination Rules}\label{fig:intro-elim-rules}
+    \end{minipage}
+  
+    \medskip
+  
+    \begin{minipage}{1.0\linewidth}
+      \begin{mathpar}
+          \inferrule*[right=Write Literal]
+          {\typd{\Pi}{\Gamma}{P}{\tyexp[\mathsf{num}, \pureacc]}}
+          {\typd{\Pi}{\Gamma}{P}{\tyexp[\mathsf{num}, \writeacc]}}
+      \end{mathpar}
+    \end{minipage}
+  
+    \medskip
+  
+    \begin{minipage}{1.0\linewidth}
+      \begin{mathpar}
+        \inferrule* [right=Activate]
+        {\typd{\Pi, x : \theta}{\Gamma}{P}{\theta'}}
+        {\typd{\Pi}{\Gamma, x : \theta}{P}{\theta'}}
+  
+        \inferrule* [right=Passify]
+        {\typd{\Pi}{\Gamma, x : \theta}{P}{\phi}}
+        {\typd{\Pi, x : \theta}{\Gamma}{P}{\phi}}\medskip
+      \end{mathpar}
+      \begin{mathpar}
+        \inferrule* [right=Promote]
+        {\typd{\Pi}{\cdot}{P}{\theta_1 \to \theta_2}}
+        {\typd{\Pi}{\cdot}{P}{\theta_1 \pureto \theta_2}}
+  
+        \inferrule* [right=Derelict]
+        {\typd{\Pi}{\Gamma}{P}{\theta_1 \pureto \theta_2}}
+        {\typd{\Pi}{\Gamma}{P}{\theta_1 \to \theta_2}}
+      \end{mathpar}
+      \subcaption{Active and Passive Phrase Rules}\label{fig:active-passive-rules}
+    \end{minipage}
+  
+    \caption{Typing Rules: Indexed Affine $\lambda$-Calculus with Passivity \cite{OHearnPTT99}}
+    \label{fig:typing-rules}
+  \end{figure*}

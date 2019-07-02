@@ -71,7 +71,7 @@ object PhraseType {
   def substitute(dt: DataType, `for`: DataType, in: PhraseType): PhraseType = {
     in match {
       case b: BasePhraseTypes => b match {
-        case e: ExpType => ExpType(DataType.substitute(dt, `for`, e.dataType))
+        case e: ExpType => ExpType(DataType.substitute(dt, `for`, e.dataType), e.accessType)
         case a: AccType => AccType(DataType.substitute(dt, `for`, a.dataType))
       }
       case c: CommandType => c
@@ -121,7 +121,7 @@ object PhraseType {
   def substitute(ae: Nat, `for`: Nat, in: PhraseType): PhraseType = {
     in match {
       case b: BasePhraseTypes => b match {
-        case e: ExpType => ExpType(DataType.substitute(ae, `for`, e.dataType))
+        case e: ExpType => ExpType(DataType.substitute(ae, `for`, e.dataType), e.accessType)
         case a: AccType => AccType(DataType.substitute(ae, `for`, a.dataType))
       }
       case c: CommandType => c

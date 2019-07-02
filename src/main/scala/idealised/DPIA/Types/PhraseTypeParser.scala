@@ -121,7 +121,7 @@ class PhraseTypeParser(val string: String,
   def parseAccessType: AccessType = {
     if (values.hasNext) {
       values.next match {
-        case a : AccessType => a
+        case a: AccessType => a
         case _ => error
       }
     } else error
@@ -182,14 +182,13 @@ class PhraseTypeParser(val string: String,
         val dt = parseDataType
 
         peakToken match {
-          case "," => {
+          case "," =>
             nextToken
             val accessType = parseAccessType
             nextToken match {
               case "]" => ExpType(dt, accessType)
               case _ => error
             }
-          }
           case _ => error
         }
       case _ => error
@@ -213,7 +212,7 @@ class PhraseTypeParser(val string: String,
       case "[" =>
         val dt = parseDataType
         nextToken match {
-          case "]" => ExpType(dt, Read) x AccType(dt)
+          case "]" => ExpType(dt, read) x AccType(dt)
           case _ => error
         }
       case _ => error

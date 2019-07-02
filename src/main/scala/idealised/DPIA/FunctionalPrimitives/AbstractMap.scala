@@ -1,6 +1,6 @@
 package idealised.DPIA.FunctionalPrimitives
 
-import idealised.DPIA.Compilation.{TranslationContext, TranslationToImperative}
+import idealised.DPIA.Compilation.TranslationContext
 import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
@@ -21,8 +21,8 @@ abstract class AbstractMap(n: Nat,
 
   override val t: ExpType =
     (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
-      (f :: t"exp[$dt1] -> exp[$dt2]") ->
-      (array :: exp"[$n.$dt1]") -> exp"[$n.$dt2]"
+      (f :: t"exp[$dt1, $read] -> exp[$dt2, $write]") ->
+      (array :: exp"[$n.$dt1, $read]") -> exp"[$n.$dt2, $write]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     makeMap(fun(n), fun(dt1), fun(dt2), VisitAndRebuild(f, fun), VisitAndRebuild(array, fun))
@@ -43,7 +43,7 @@ abstract class AbstractMap(n: Nat,
 
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommandType] = {
-    mapAcceptorTranslation(fun(exp"[$dt2]")(x => x), A)
+    mapAcceptorTranslation(fun(exp"[$dt2, $read]")(x => x), A)
   }
 
   override def prettyPrint: String =
@@ -51,10 +51,10 @@ abstract class AbstractMap(n: Nat,
 
   override def xmlPrinter: Elem =
     <map n={ToString(n)} dt1={ToString(dt1)} dt2={ToString(dt2)}>
-      <f type={ToString(ExpType(dt1) -> ExpType(dt2))}>
+      <f type={ToString(ExpType(dt1, read) -> ExpType(dt2, write))}>
         {Phrases.xmlPrinter(f)}
       </f>
-      <input type={ToString(ExpType(ArrayType(n, dt1)))}>
+      <input type={ToString(ExpType(ArrayType(n, dt1), read))}>
         {Phrases.xmlPrinter(array)}
       </input>
     </map>.copy(label = {

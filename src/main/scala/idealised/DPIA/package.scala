@@ -139,7 +139,7 @@ package object DPIA {
   type VarType = ExpType x AccType
 
   object VarType {
-    def apply(dt: DataType): PairType[ExpType, AccType] = ExpType(dt) x AccType(dt)
+    def apply(dt: DataType): PairType[ExpType, AccType] = ExpType(dt, read) x AccType(dt)
   }
 
   //noinspection TypeAnnotation

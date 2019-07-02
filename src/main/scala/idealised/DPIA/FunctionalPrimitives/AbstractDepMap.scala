@@ -21,9 +21,9 @@ abstract class AbstractDepMap(n: Nat,
   override val t: ExpType = {
     val k = f.t.x
     (n: Nat) -> (ft1: NatDataTypeFunction) -> (ft2: NatDataTypeFunction) ->
-      (f :: t"($k : nat) -> exp[${ ft1(k) }] -> exp[${ ft2(k) }]") ->
-        (array :: exp"[$n.$ft1]") ->
-          exp"[$n.$ft2]"
+      (f :: t"($k : nat) -> exp[${ft1(k)}, $read] -> exp[${ft2(k)}, $write]") ->
+        (array :: exp"[$n.$ft1, $read]") ->
+          exp"[$n.$ft2, $write]"
   }
 
   override def acceptorTranslation(A: Phrase[AccType])
@@ -31,8 +31,8 @@ abstract class AbstractDepMap(n: Nat,
     import idealised.DPIA.Compilation.TranslationToImperative._
     import idealised.DPIA._
 
-    con(array)(λ(exp"[$n.$ft1]")(x =>
-      makeMapI(n, ft1, ft2, _Λ_[NatKind]((k: NatIdentifier) => λ(exp"[${ft1(k)}]")(x => λ(acc"[${ft2(k)}]")(o => {
+    con(array)(λ(exp"[$n.$ft1, $read]")(x =>
+      makeMapI(n, ft1, ft2, _Λ_[NatKind]((k: NatIdentifier) => λ(exp"[${ft1(k)}, $read]")(x => λ(acc"[${ft2(k)}, $write]")(o => {
         acc(f(k)(x))(o)
       }))), x, A)))
   }
@@ -42,8 +42,8 @@ abstract class AbstractDepMap(n: Nat,
     import idealised.DPIA.Compilation.TranslationToImperative._
     import idealised.DPIA._
 
-    con(array)(λ(exp"[$n.$ft1]")(x =>
-      makeMapI(n, ft1, ft2, _Λ_[NatKind]((k: NatIdentifier) => λ(exp"[${ft1(k)}]")(x => λ(acc"[${ft2(k)}]")(o => {
+    con(array)(λ(exp"[$n.$ft1, $read]")(x =>
+      makeMapI(n, ft1, ft2, _Λ_[NatKind]((k: NatIdentifier) => λ(exp"[${ft1(k)}, $read]")(x => λ(acc"[${ft2(k)}, $read]")(o => {
         acc(f(k)(x))(o)
       }))), x, A)))
   }
@@ -52,7 +52,7 @@ abstract class AbstractDepMap(n: Nat,
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    `new`(dt"[$n.$ft2]", λ(exp"[$n.$ft2]" x acc"[$n.$ft2]")(tmp =>
+    `new`(dt"[$n.$ft2]", λ(exp"[$n.$ft2, $read]" x acc"[$n.$ft2]")(tmp =>
       acc(this)(tmp.wr) `;` C(tmp.rd) ))
   }
 
@@ -82,10 +82,10 @@ abstract class AbstractDepMap(n: Nat,
       case _ => throw new Exception("This should not happen")
     }
     <map n={ToString(n)} ft1={ToString(ft1)} ft2={ToString(ft2)}>
-      <f type={ToString(k -> (ExpType(ft1(k)) -> ExpType(ft2(k))))}>
+      <f type={ToString(k -> (ExpType(ft1(k), read) -> ExpType(ft2(k), write)))}>
         {Phrases.xmlPrinter(f)}
       </f>
-      <input type={ToString(ExpType(DepArrayType(n, ft1)))}>
+      <input type={ToString(ExpType(DepArrayType(n, ft1), read))}>
         {Phrases.xmlPrinter(array)}
       </input>
     </map>.copy(label = {

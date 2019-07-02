@@ -18,7 +18,7 @@ final case class Record(dt1: DataType,
 
   override val t: ExpType =
     (dt1: DataType) -> (dt2: DataType) ->
-      (fst :: exp"[$dt1]") -> (snd :: exp"[$dt2]") -> exp"[$dt1 x $dt2]"
+      (fst :: exp"[$dt1, $read]") -> (snd :: exp"[$dt2, $read]") -> exp"[$dt1 x $dt2, $read]"
 
   override def eval(s: Store): Data = {
     RecordData(
@@ -60,8 +60,8 @@ final case class Record(dt1: DataType,
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    con(fst)(λ(exp"[$dt1]")(x =>
-      con(snd)(λ(exp"[$dt2]")(y =>
+    con(fst)(λ(exp"[$dt1, $read]")(x =>
+      con(snd)(λ(exp"[$dt2, $read]")(y =>
         C(Record(dt1, dt2, x, y)) )) ))
   }
 }

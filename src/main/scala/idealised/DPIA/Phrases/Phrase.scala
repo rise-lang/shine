@@ -91,19 +91,19 @@ final case class BinOp(op: SurfaceLanguage.Operators.Binary.Value, lhs: Phrase[E
     op match {
       case Operators.Binary.GT |
            Operators.Binary.LT |
-           Operators.Binary.EQ => exp"[$bool, $Read]"
+           Operators.Binary.EQ => exp"[$bool, $read]"
       case _ => (lhs.t.dataType, rhs.t.dataType) match {
-        case (t1, t2) if t1 == t2 => ExpType(t1, Read)
+        case (t1, t2) if t1 == t2 => ExpType(t1, read)
         // TODO: Think about this more thoroughly ...
         case (IndexType(n), `int`) =>
-          ExpType(IndexType(n), Read)
+          ExpType(IndexType(n), read)
         //              ExpType(IndexType(OperationalSemantics.toScalaOp(op)(n, OperationalSemantics.evalIntExp(rhs))))
         case (`int`, IndexType(n)) =>
-          ExpType(IndexType(n), Read)
+          ExpType(IndexType(n), read)
         //              ExpType(IndexType(OperationalSemantics.toScalaOp(op)(OperationalSemantics.evalIntExp(lhs), n)))
         case (IndexType(n), IndexType(_)) =>
           //              ExpType(IndexType(OperationalSemantics.toScalaOp(op)(n, m)))
-          ExpType(IndexType(n), Read)
+          ExpType(IndexType(n), read)
 
         case (lhsT, rhsT) =>
           throw new TypeException(s"Failed type checking: found" +
@@ -118,11 +118,11 @@ final case class Literal(d: OperationalSemantics.Data)
   assert(!d.isInstanceOf[NatData])
   assert(!d.isInstanceOf[IndexData])
 
-  override val t: ExpType = ExpType(d.dataType, Read)
+  override val t: ExpType = ExpType(d.dataType, read)
 }
 
 final case class Natural(d: Nat) extends Phrase[ExpType] {
-  override val t: ExpType = ExpType(NatType, Read)
+  override val t: ExpType = ExpType(NatType, read)
 }
 
 object Phrase {

@@ -26,8 +26,8 @@ final case class DepIdx(n: Nat,
 
   override val t: ExpType =
     (n: Nat) -> (ft: NatDataTypeFunction) -> (index: Nat) ->
-      (array :: exp"[$n.$ft]") ->
-        exp"[${ft(index)}]"
+      (array :: exp"[$n.$ft, $read]") ->
+        exp"[${ft(index)}, $read]"
 
   //  override def inferTypes: Idx = {
   //    import TypeInference._
@@ -64,7 +64,7 @@ final case class DepIdx(n: Nat,
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
-    con(array)(λ(exp"[$n.$ft]")(x => A :=| {ft(index)} | DepIdx(n, ft, index, x)))
+    con(array)(λ(exp"[$n.$ft, $read]")(x => A :=| {ft(index)} | DepIdx(n, ft, index, x)))
 
   }
 
@@ -75,6 +75,6 @@ final case class DepIdx(n: Nat,
   override def continuationTranslation(C: Phrase[ExpType -> CommandType])
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
-    con(array)(λ(exp"[$n.$ft]")(e => C(DepIdx(n, ft, index, e))))
+    con(array)(λ(exp"[$n.$ft, $read]")(e => C(DepIdx(n, ft, index, e))))
   }
 }

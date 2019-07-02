@@ -27,11 +27,11 @@ final case class Map(n: Nat,
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    con(array)(λ(exp"[$n.$dt1]")(x =>
+    con(array)(λ(exp"[$n.$dt1, $read]")(x =>
       C(MapRead(n, dt1, dt2,
-        fun(exp"[$dt1]")(a =>
-          fun(exp"[$dt2]" -> (comm: CommandType))(cont =>
-            con(f(a))(fun(exp"[$dt2]")(b => Apply(cont, b))))),
+        fun(exp"[$dt1, $read]")(a =>
+          fun(exp"[$dt2, $read]" -> (comm: CommandType))(cont =>
+            con(f(a))(fun(exp"[$dt2, $read]")(b => Apply(cont, b))))),
         x))))
   }
 }

@@ -163,16 +163,22 @@ alsoletter=\#
 
 \maketitle
 
+\newcommand{\ei}{\prim{idx}~n~\dtone~\mathit{xs}~i}
+\newcommand{\ea}{\prim{idxAcc}~n~\dttwo~\mathit{out}~i}
 
-\section{Type System of Data Parallel Idealised Algol}
-\label{sec:typeSystem}
-\input{type-system}
+\newcommand{\codegenComm}[1]{\textsc{CodeGen}_{\mathsf{comm}}(#1)}
+\newcommand{\codegenAcc}[2]{\textsc{CodeGen}_{\mathsf{acc}[#1]}(#2)}
+\newcommand{\codegenExp}[2]{\textsc{CodeGen}_{\mathsf{exp}[#1]}(#2)}
+\newcommand{\codegenData}[1]{\textsc{CodeGen}_{\mathsf{\datatype}}(#1)}
 
-\clearpage
 
-\section{Translation From Functional to Imperative}
-\label{sec:translation}
+\input{well-formed-types}
+\input{typeing-rules}
+\input{primitives}
+
 \input{translation}
+\input{expansion}
+\input{code-gen}
 
 \clearpage
 

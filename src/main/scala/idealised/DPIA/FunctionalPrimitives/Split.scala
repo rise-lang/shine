@@ -13,16 +13,17 @@ import scala.xml.Elem
 
 final case class Split(n: Nat,
                        m: Nat,
+                       w: AccessType,
                        dt: DataType,
                        array: Phrase[ExpType])
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (n: Nat) -> (m: Nat) -> (dt: DataType) ->
-      (array :: exp"[${m * n}.$dt]") -> exp"[$m.$n.$dt]"
+    (n: Nat) -> (m: Nat) -> (w: AccessType) -> (dt: DataType) ->
+      (array :: exp"[${m * n}.$dt, $w]") -> exp"[$m.$n.$dt, $w]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    Split(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))
+    Split(fun(n), fun(m), fun(w), fun(dt), VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): Data = {
@@ -68,6 +69,6 @@ final case class Split(n: Nat,
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    con(array)(λ(exp"[${m * n}.$dt]")(x => C(Split(n, m, dt, x)) ))
+    con(array)(λ(exp"[${m * n}.$dt, $read]")(x => C(Split(n, m, w, dt, x)) ))
   }
 }

@@ -19,9 +19,9 @@ final case class Idx(n: Nat,
 
   override val t: ExpType =
     (n: Nat) -> (dt: DataType) ->
-      (index :: exp"[idx($n)]") ->
-        (array :: exp"[$n.$dt]") ->
-          exp"[$dt]"
+      (index :: exp"[idx($n), $read]") ->
+        (array :: exp"[$n.$dt, $read]") ->
+          exp"[$dt, $read]"
 
 //  override def inferTypes: Idx = {
 //    import TypeInference._
@@ -49,10 +49,10 @@ final case class Idx(n: Nat,
 
   override def xmlPrinter: Elem =
     <idx n={ToString(n)} dt={ToString(dt)}>
-      <input type={ToString(ExpType(ArrayType(n, dt)))}>
+      <input type={ToString(ExpType(ArrayType(n, dt), read))}>
         {Phrases.xmlPrinter(array)}
       </input>
-      <index type={ToString(ExpType(int))}>
+      <index type={ToString(ExpType(int, read))}>
         {Phrases.xmlPrinter(index)}
       </index>
     </idx>
@@ -60,7 +60,7 @@ final case class Idx(n: Nat,
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
-    con(array)(λ(exp"[$n.$dt]")(x => A :=| dt | Idx(n, dt, index, x)))
+    con(array)(λ(exp"[$n.$dt, $read]")(x => A :=| dt | Idx(n, dt, index, x)))
   }
 
   override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
@@ -70,14 +70,14 @@ final case class Idx(n: Nat,
   override def continuationTranslation(C: Phrase[ExpType -> CommandType])
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
-    con(array)(λ(exp"[$n.$dt]")(e => C(Idx(n, dt, index, e))))
+    con(array)(λ(exp"[$n.$dt, $read]")(e => C(Idx(n, dt, index, e))))
   }
 }
 
 object Idx {
   def apply(index: Phrase[ExpType], array: Phrase[ExpType]): Idx = {
     (index.t, array.t) match {
-      case (ExpType(IndexType(n1)), ExpType(ArrayType(n2, dt_))) if n1 == n2 =>
+      case (ExpType(IndexType(n1), _: read.type), ExpType(ArrayType(n2, dt_), _: read.type)) if n1 == n2 =>
         Idx(n1, dt_, index, array)
       case x => error(x.toString, "(exp[idx(n)], exp[n.dt])")
     }

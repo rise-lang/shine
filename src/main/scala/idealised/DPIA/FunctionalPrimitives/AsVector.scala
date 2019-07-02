@@ -18,8 +18,8 @@ final case class AsVector(n: Nat,
 
   override val t: ExpType =
     (n: Nat) -> (m: Nat) -> (dt: ScalarType) ->
-      (array :: exp"[${m * n}.$dt, $Read]") ->
-        exp"[$m.${VectorType(n, dt)}, $Read]"
+      (array :: exp"[${m * n}.$dt, $read]") ->
+        exp"[$m.${VectorType(n, dt)}, $read]"
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     AsVector(f(n), f(m), f(dt), VisitAndRebuild(array, f))

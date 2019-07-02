@@ -17,7 +17,7 @@ final case class IdxAcc(n: Nat,
 
   override val t: AccType =
     (n: Nat) -> (dt: DataType) ->
-      (index :: exp"[idx($n)]") ->
+      (index :: exp"[idx($n), $read]") ->
         (array :: acc"[$n.$dt]") ->
           acc"[$dt]"
 
@@ -51,7 +51,7 @@ object IdxAcc {
   def apply(index: Phrase[ExpType],
             array: Phrase[AccType]): IdxAcc = {
     (index.t, array.t) match {
-      case (ExpType(IndexType(n1)), AccType(ArrayType(n2, dt_))) if n1 == n2 =>
+      case (ExpType(IndexType(n1), _: read.type), AccType(ArrayType(n2, dt_))) if n1 == n2 =>
         IdxAcc(n1, dt_, index, array)
       case x => error(x.toString, "(exp[idx(n)], exp[n.dt])")
     }

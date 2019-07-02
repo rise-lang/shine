@@ -20,8 +20,8 @@ final case class Zip(n: Nat,
 
   override val t: ExpType =
     (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
-      (e1 :: exp"[$n.$dt1]") ->
-       (e2 :: exp"[$n.$dt2]") -> exp"[$n.($dt1 x $dt2)]"
+      (e1 :: exp"[$n.$dt1, $read]") ->
+       (e2 :: exp"[$n.$dt2, $read]") -> exp"[$n.($dt1 x $dt2), $read]"
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     Zip(f(n), f(dt1), f(dt2), VisitAndRebuild(e1, f), VisitAndRebuild(e2, f))
@@ -43,10 +43,10 @@ final case class Zip(n: Nat,
 
   override def xmlPrinter: Elem =
     <zip n={ToString(n)} dt1={ToString(dt1)} dt2={ToString(dt2)}>
-      <lhs type={ToString(ExpType(ArrayType(n, dt1)))}>
+      <lhs type={ToString(ExpType(ArrayType(n, dt1), read))}>
         {Phrases.xmlPrinter(e1)}
       </lhs>
-      <rhs type={ToString(ExpType(ArrayType(n, dt2)))}>
+      <rhs type={ToString(ExpType(ArrayType(n, dt2), read))}>
         {Phrases.xmlPrinter(e2)}
       </rhs>
     </zip>
@@ -68,8 +68,8 @@ final case class Zip(n: Nat,
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    con(e1)(λ(exp"[$n.$dt1]")(x =>
-      con(e2)(λ(exp"[$n.$dt2]")(y =>
+    con(e1)(λ(exp"[$n.$dt1, $read]")(x =>
+      con(e2)(λ(exp"[$n.$dt2, $read]")(y =>
         C(Zip(n, dt1, dt2, x, y)) )) ))
   }
 }

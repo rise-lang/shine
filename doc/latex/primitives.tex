@@ -1,0 +1,79 @@
+\begin{figure}[p]
+    \footnotesize
+    \begin{minipage}{1.0\linewidth} \begin{tabular*}{\linewidth}{>{$}l<{$}@{\hspace{0.4em}}>{$}c<{$}>{$}l<{$}}
+          \underline{\ell}&:&\tyexp[\mathsf{num}, \pureacc]\\
+          \prim{negate}&:&\tyexp[\mathsf{num}, \pureacc] \to \tyexp[\mathsf{num}, \pureacc] \\
+          (+,*,/,-)   &:&\tyexp[\mathsf{num}, \pureacc] \times \tyexp[\mathsf{num}, \pureacc] \to \tyexp[\mathsf{num}, \pureacc]\\
+  
+          \prim{toMem}&:&(a : \addrkind) \to (\dt : \datatype) \to \tyexp[\dt, \writeacc] \to \tyexp[\dt, \pureacc]\\
+          \prim{mapSeq}&:&(n : \natkind) \to (\dtone~\dttwo : \datatype) \to (\tyexp[\dtone, \pureacc] \to \tyexp[\dttwo, \writeacc]) \to \tyexp[n.\dtone, \pureacc] \to \tyexp[n.\dttwo, \writeacc] \\
+          \prim{mapPar}&:&(n : \natkind) \to (\dtone~\dttwo : \datatype) \to (\tyexp[\dtone, \pureacc] \to \tyexp[\dttwo, \writeacc]) \to \tyexp[n.\dtone, \pureacc] \to \tyexp[n.\dttwo, \writeacc] \\
+  
+          \prim{reduceSeq}&:&(n : \natkind) \to (a : \addrkind) \to (\dtone~\dttwo : \datatype) \to\\
+          && (\tyexp[\dtone, \pureacc] \to \tyexp[\dttwo, \pureacc] \to \tyexp[\dttwo, \writeacc]) \to \tyexp[\dttwo, \writeacc] \to \tyexp[n.\dtone, \pureacc] \to \tyexp[\dttwo, \pureacc]\bigskip\\
+  
+          \prim{split}&:&(n~m : \natkind) \to (w : \access) \to (\dt : \datatype) \to \tyexp[nm.\dt, w] \to \tyexp[m.n.\dt, w] \\
+          \prim{join}&:&(n~m : \natkind) \to (w : \access) \to (\dt : \datatype) \to \tyexp[n.m.\dt, w] \to \tyexp[nm.\dt, w]\\
+          \prim{drop}&:&(n~m : \natkind) \to (w : \access) \to (\dt : \datatype) \to \tyexp[(n + m).\dt, w] \to \tyexp[m.\dt, w] \\
+          \prim{take}&:&(n~m : \natkind) \to (w : \access) \to (\dt : \datatype) \to \tyexp[(n + m).\dt, w] \to \tyexp[n.\dt, w]\bigskip\\
+  
+          \prim{gather}&:&(n : \natkind) \to (\dt : \datatype) \to (\tyexp[\tyidx[n], \pureacc] \to \tyexp[\tyidx[n], \pureacc]) \to \tyexp[n.\dt, \pureacc] \to \tyexp[n.\dt, \pureacc]\\
+          \prim{scatter}&:&(n : \natkind) \to (\dt : \datatype) \to (\tyexp[\tyidx[n], \pureacc] \to \tyexp[\tyidx[n], \pureacc]) \to \tyexp[n.\dt, \writeacc] \to \tyexp[n.\dt, \writeacc]\bigskip\\
+  
+          \prim{pad}&:&(n~l~q : \natkind) \to (\dt : \datatype) \to \tyexp[\dt, \pureacc] \to \tyexp[n.\dt, \pureacc] \to \tyexp[(l + n + q).\dt, \pureacc] \\
+          \prim{slide}&:&(n~sz~sp : \natkind) \to (\dt : \datatype) \to \tyexp[(sp \times n + sz - sp).\dt, \pureacc] \to \tyexp[n.sz.\dt, \pureacc] \bigskip\\
+  
+          \prim{zip}&:&(n : \natkind) \to (\dtone~\dttwo : \datatype) \to \tyexp[n.\dtone, \pureacc] \to \tyexp[n.\dttwo, \pureacc] \to \tyexp[n.(\dtone \times \dttwo), \pureacc] \\
+  
+          \prim{pair}&:&(\dtone~\dttwo: \datatype) \to \tyexp[\dtone, \pureacc] \to \tyexp[\dttwo, \pureacc] \to \tyexp[\dtone \times \dttwo, \pureacc]\\
+          \prim{fst}&:&(\dtone~\dttwo : \datatype) \to \tyexp[\dtone \times \dttwo, \pureacc] \to \tyexp[\dtone, \pureacc] \\
+          \prim{snd}&:&(\dtone~\dttwo : \datatype) \to \tyexp[\dtone \times \dttwo, \pureacc] \to \tyexp[\dttwo, \pureacc] \\
+          \prim{idx} &:&(n : \natkind) \to (\dt : \datatype) \to \tyexp[n.\dt, \pureacc] \to \tyexp[\tyidx[n], \pureacc] \to \tyexp[\dt, \pureacc] \\ % TODO? order differs from implementation, and is inside imperative primitives
+      \end{tabular*}
+      \subcaption{Functional primitives}\label{fig:func-prim}
+    \end{minipage}
+  
+    \vspace{1em}
+  
+    \begin{minipage}{1.0\linewidth}
+    \begin{tabular*}{\linewidth}{>{$}l<{$}>{$}c<{$}>{$}l<{$}}
+          (\mathord;)&:&\tycomm \times \tycomm \to \tycomm \\
+          \prim{skip}&:&\tycomm \\
+          \prim{new}&:&(a : \addrkind) \to (\dt : \datatype) \to (\tyvar[\dt] \to \tycomm) \to \tycomm
+          \qquad (\text{where }\mathsf{var}[\dt] = \tyexp[\dt, \pureacc] \times \tyacc[\dt] : \phrasetype) \\
+          (:=)&:&\tyacc[\mathsf{num}] \times \tyexp[\mathsf{num}, \pureacc] \to \tycomm \\
+          \prim{for}&:&(n : \natkind) \to (\tyexp[\tyidx[n], \pureacc] \to \tycomm) \to \tycomm \\
+          \prim{parfor}&:&(n : \natkind) \to (\dt : \datatype) \to \tyacc[n.\dt] \to (\tyexp[\tyidx[n], \pureacc] \to \tyacc[\dt] \pureto \tycomm) \to \tycomm \bigskip\\
+  
+          \prim{splitAcc}&:&(n~m : \natkind) \to (\dt : \datatype) \to \tyacc[m.n.\dt] \to \tyacc[nm.\dt] \\
+          \prim{joinAcc}&:&(n~m : \natkind) \to (\dt : \datatype) \to \tyacc[nm.\dt] \to \tyacc[n.m.\dt] \\
+          \prim{zipAcc_1} &:&(n : \natkind) \to (\dtone~\dttwo : \datatype) \to \tyacc[n.\dtone \times \dttwo] \to \tyacc[n.\dtone] \\
+          \prim{zipAcc_2} &:&(n : \natkind) \to (\dtone~\dttwo : \datatype) \to \tyacc[n.\dtone \times \dttwo] \to \tyacc[n.\dttwo] \\
+          \prim{pairAcc_1}&:&(\dtone~\dttwo : \datatype) \to \tyacc[\dtone \times \dttwo] \to \tyacc[\dtone] \\
+          \prim{pairAcc_2}&:&(\dtone~\dttwo : \datatype) \to \tyacc[\dtone \times \dttwo] \to \tyacc[\dttwo] \\
+          \prim{idxAcc} &:&(n : \natkind) \to (\dt : \datatype) \to \tyacc[n.\dt] \to \tyexp[\tyidx[n], \pureacc] \to \tyacc[\dt] \\
+      \end{tabular*}
+      \subcaption{Imperative primitives}\label{fig:imp-prim}
+    \end{minipage}
+  
+    \vspace{2em}
+  
+    \begin{minipage}{1.0\linewidth}
+      \begin{tabular*}{\linewidth}{>{$}l<{$}@{\hspace{.25em}}>{$}c<{$}>{$}l<{$}}
+          \prim{mapSeqI}   &:& (n : \natkind) \to (\dtone~\dttwo : \datatype) \to
+                              (\tyexp[\dtone, \pureacc] \to \tyacc[\dttwo] \to \tycomm) \to \tyexp[n.\dtone, \pureacc] \to \tyacc[n.\dttwo] \to \tycomm \\
+          \prim{mapParI}   &:& (n : \natkind) \to (\dtone~\dttwo : \datatype) \to
+          (\tyexp[\dtone, \pureacc] \to \tyacc[\dttwo] \pureto \tycomm) \to \tyexp[n.\dtone, \pureacc] \to \tyacc[n.\dttwo] \to \tycomm \\
+          \prim{reduceSeqI}&:& (n: \natkind) \to (\dtone~\dttwo : \datatype) \to (\tyexp[\dtone, \pureacc] \to \tyexp[\dttwo, \pureacc] \to \tyacc[\dttwo] \to \tycomm) \to \\
+          & & \qquad \to \tyexp[\dttwo, \writeacc] \to \tyexp[n.\dtone, \pureacc] \to (\tyexp[t, \pureacc] \to \tycomm) \to \tycomm \\
+          & & \text{this signature is not completely correct. the last function that is passed needs to accept}\\
+          & & \text{a write expression in case of the acceptor translation.}
+      \end{tabular*}
+      \subcaption{Intermediate imperative macros}\label{fig:imp-intermediate}
+    \end{minipage}
+  
+    \vspace{1em}
+  
+    \caption{Data Parallel Programming Primitives, Functional and Imperative}
+    \label{fig:primitives}
+  \end{figure}

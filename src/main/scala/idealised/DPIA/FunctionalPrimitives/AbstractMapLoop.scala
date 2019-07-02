@@ -23,9 +23,9 @@ abstract class AbstractMapLoop(n: Nat,
                                      (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    con(array)(λ(exp"[$n.$dt1]")(x =>
+    con(array)(λ(exp"[$n.$dt1, $read]")(x =>
       makeMapI(n, dt1, dt2,
-        λ(exp"[$dt1]")(x => λ(acc"[${g.t.outT.dataType}]")(o => acc(g(f(x)))(o))),
+        λ(exp"[$dt1, $read]")(x => λ(acc"[${g.t.outT.dataType}]")(o => acc(g(f(x)))(o))),
         x, A)))
   }
 
@@ -33,7 +33,7 @@ abstract class AbstractMapLoop(n: Nat,
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    `new`(dt"[$n.$dt2]", λ(exp"[$n.$dt2]" x acc"[$n.$dt2]")(tmp =>
+    `new`(dt"[$n.$dt2]", λ(exp"[$n.$dt2, $read]" x acc"[$n.$dt2]")(tmp =>
       acc(this)(tmp.wr) `;` C(tmp.rd) ))
   }
 }

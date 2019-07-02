@@ -20,7 +20,7 @@ final case class Partition(n: Nat,
 
   override val t: ExpType =
     (n: Nat) -> (m: Nat) -> (dt: DataType) ->
-      (array :: exp"[$n.$dt]") -> exp"[$m.${NatDataTypeFunction(m, (i:NatIdentifier) => ArrayType(lenF(i), dt))}]"
+      (array :: exp"[$n.$dt, $read]") -> exp"[$m.${NatDataTypeFunction(m, (i:NatIdentifier) => ArrayType(lenF(i), dt))}, $read]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     Partition(fun(n), fun(m), fun(lenF), fun(dt), VisitAndRebuild(array, fun))
@@ -48,6 +48,6 @@ final case class Partition(n: Nat,
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    con(array)(λ(exp"[$n.$dt]")(x => C(Partition(n, m, lenF, dt, x)) ))
+    con(array)(λ(exp"[$n.$dt, $read]")(x => C(Partition(n, m, lenF, dt, x)) ))
   }
 }

@@ -160,7 +160,7 @@ object FromSurfaceLanguagePrimitives {
           import idealised.DPIA.Types._
 
           val transposeFunction =
-            λ(ExpType(IndexType(n * m), Read))(i => {
+            λ(ExpType(IndexType(n * m), read))(i => {
               mapIndexExpr(i, j => {
                 val col = (j % n) * m
                 val row = j / n
@@ -169,7 +169,7 @@ object FromSurfaceLanguagePrimitives {
             })
 
           val transposeInverseFunction =
-            λ(ExpType(IndexType(n * m), Read))(i => {
+            λ(ExpType(IndexType(n * m), read))(i => {
               mapIndexExpr(i, j => {
                 val col = (j % m) * n
                 val row = j / m

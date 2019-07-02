@@ -2,9 +2,9 @@ package idealised.DPIA.Types
 
 sealed trait AccessType
 
-object Write extends AccessType { override def toString = "Write" }
+object write extends AccessType { override def toString = "write" }
 
-object Read extends AccessType { override def toString = "Read" }
+object read extends AccessType { override def toString = "read" }
 
 final case class AccessTypeIdentifier(name: String) extends AccessType with Kind.Identifier {
   override def toString: String = name

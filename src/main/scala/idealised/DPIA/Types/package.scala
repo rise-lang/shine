@@ -2,7 +2,6 @@ package idealised.DPIA
 
 import idealised.DPIA.Types.TypeCheck._
 import idealised.DPIA.Phrases.{Phrase, ToString}
-import idealised.OpenCL.AddressSpace
 
 
 package object Types {
@@ -29,7 +28,7 @@ package object Types {
     def →[B](y: B): B = ->(y)
   }
 
-  implicit final class ArrowAddrSpace(private val self: AddrSpace) {
+  implicit final class ArrowAddrSpace(private val self: AddressSpace) {
     @inline def -> [B](y: B): B = y
     def →[B](y: B): B = ->(y)
   }
@@ -68,11 +67,11 @@ package object Types {
       DependentFunctionType[DataKind, T](dt, t)
   }
 
-  type AddrSpaceDependentFunctionType[T <: PhraseType] = DependentFunctionType[AddrKind, T]
+  type AddrSpaceDependentFunctionType[T <: PhraseType] = DependentFunctionType[AddressSpaceKind, T]
 
   object AddrSpaceDependentFunctionType {
-    def apply[T <: PhraseType](addr: AddrSpaceIdentifier, t: T): DependentFunctionType[AddrKind, T] =
-      DependentFunctionType[AddrKind, T](addr, t)
+    def apply[T <: PhraseType](addr: AddressSpaceIdentifier, t: T): DependentFunctionType[AddressSpaceKind, T] =
+      DependentFunctionType[AddressSpaceKind, T](addr, t)
   }
 
   type AccessDependentFunctionType[T <: PhraseType] = DependentFunctionType[AccessKind, T]

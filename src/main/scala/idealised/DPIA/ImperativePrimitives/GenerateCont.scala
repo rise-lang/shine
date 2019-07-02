@@ -11,13 +11,13 @@ import scala.xml.Elem
 // note: would not be necessary if generate was defined as indices + map
 final case class GenerateCont(n: Nat,
                               dt: DataType,
-                              f: Phrase[ExpType -> ((ExpType -> CommandType) -> CommandType)])
+                              f: Phrase[ExpType -> (ExpType -> CommandType -> CommandType)])
   extends ExpPrimitive
 {
   override val t: ExpType =
     (n: Nat) -> (dt: DataType) ->
-      (f :: exp"[idx($n)]" -> ((t"exp[$dt] -> comm") -> comm)) ->
-      exp"[$n.$dt]"
+      (f :: exp"[idx($n), $read]" -> (t"exp[$dt, $read] -> comm" -> comm)) ->
+      exp"[$n.$dt, $read]"
 
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     GenerateCont(v(n), v(dt), VisitAndRebuild(f, v))

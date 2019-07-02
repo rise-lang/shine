@@ -23,7 +23,7 @@ class TranslationContext() extends idealised.DPIA.Compilation.TranslationContext
 
       //TODO makes a decision. Not allowed!
       case ArrayType(n, et) =>
-        MapSeqI(n, et, et, λ(ExpType(et, Read))(x => λ(AccType(et))(a => assign(et, a, x) )), rhs, lhs)(this)
+        MapSeqI(n, et, et, λ(ExpType(et, read))(x => λ(AccType(et))(a => assign(et, a, x) )), rhs, lhs)(this)
 
       //TODO makes a decision. Not allowed!
       case DepArrayType(n, ft) =>
@@ -32,7 +32,7 @@ class TranslationContext() extends idealised.DPIA.Compilation.TranslationContext
 
         DepMapSeqI(n, ft, ft,
           NatDependentLambda(k,
-            λ(ExpType(ft(k), Read))(x => λ(AccType( ft(k) ))(a => assign(ft(k), a, x) ))),
+            λ(ExpType(ft(k), read))(x => λ(AccType( ft(k) ))(a => assign(ft(k), a, x) ))),
           rhs, lhs)(this)
 
       case x => throw new Exception(s"Don't know how to assign value of type $x")

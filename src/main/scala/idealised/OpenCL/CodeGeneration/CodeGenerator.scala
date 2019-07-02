@@ -58,7 +58,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         case _ => super.cmd(phrase, env)
       }
 
-      case OpenCLNew(dt, addrSpace, Lambda(v, p)) => OpenCLCodeGen.codeGenOpenCLNew(dt, addrSpace, v, p, env)
+      case OpenCLNew(addrSpace, dt, Lambda(v, p)) => OpenCLCodeGen.codeGenOpenCLNew(dt, addrSpace, v, p, env)
 
       case _: New => throw new Exception("New without address space found in OpenCL program.")
 
@@ -162,7 +162,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
   protected object OpenCLCodeGen {
     def codeGenOpenCLNew(dt: DataType,
-                   addressSpace: AddressSpace,
+                   addressSpace: DPIA.Types.AddressSpace,
                    v: Identifier[VarType],
                    p: Phrase[CommandType],
                    env: Environment): Stmt = {
@@ -250,8 +250,8 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
             env.copy(identEnv = env.identEnv.map {
               case (Identifier(name, AccType(dt)), declRef) =>
                 (Identifier(name, AccType(DataType.substitute(NamedVar(cI.name, range), `for` = i, in = dt))), declRef)
-              case (Identifier(name, ExpType(dt)), declRef) =>
-                (Identifier(name, ExpType(DataType.substitute(NamedVar(cI.name, range), `for` = i, in = dt))), declRef)
+              case (Identifier(name, ExpType(dt, read)), declRef) =>
+                (Identifier(name, ExpType(DataType.substitute(NamedVar(cI.name, range), `for` = i, in = dt), read)), declRef)
               case x => x
             }) |> (env =>
 

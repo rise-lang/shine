@@ -22,7 +22,7 @@ final case class SlideSeq(rot: lp.slideSeq.Rotate,
 
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommandType] = {
-    mapAcceptorTranslation(fun(exp"[$sz.$dt]")(x => x), A)
+    mapAcceptorTranslation(fun(exp"[$sz.$dt, $read]")(x => x), A)
   }
 
   override def mapAcceptorTranslation(g: Phrase[ExpType -> ExpType], A: Phrase[AccType])
@@ -35,9 +35,9 @@ final case class SlideSeq(rot: lp.slideSeq.Rotate,
       case lp.slideSeq.Indices => SlideSeqIIndices.apply _
     }
 
-    con(input)(fun(exp"[$inputSize.$dt]")(x =>
+    con(input)(fun(exp"[$inputSize.$dt, $read]")(x =>
       I(n, sz, sp, dt, g.t.outT.dataType,
-        fun(exp"[$sz.$dt]")(x =>
+        fun(exp"[$sz.$dt, $read]")(x =>
           fun(acc"[${g.t.outT.dataType}]")(o => acc(g(x))(o))),
         x, A
       )))
@@ -47,7 +47,7 @@ final case class SlideSeq(rot: lp.slideSeq.Rotate,
                                       (implicit context: TranslationContext): Phrase[CommandType] = {
     import TranslationToImperative._
 
-    `new`(dt"[$n.$dt]", fun(exp"[$n.$dt]" x acc"[$n.$dt]")(tmp =>
+    `new`(dt"[$n.$dt]", fun(exp"[$n.$dt, $read]" x acc"[$n.$dt]")(tmp =>
       acc(this)(tmp.wr) `;` C(tmp.rd)
     ))
   }

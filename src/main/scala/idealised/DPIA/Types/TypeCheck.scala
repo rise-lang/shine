@@ -42,7 +42,7 @@ object TypeCheck {
       case UnaryOp(op, x) =>
         TypeCheck(x)
         x.t match {
-          case ExpType(_, Read) =>
+          case ExpType(_, `read`) =>
           case y => error(y.toString, s"$op ${ExpType.toString}")
         }
 
@@ -50,7 +50,7 @@ object TypeCheck {
         TypeCheck(lhs)
         TypeCheck(rhs)
         (lhs.t, rhs.t) match {
-          case (ExpType(dt1, Read), ExpType(dt2, Read))
+          case (ExpType(dt1, `read`), ExpType(dt2, `read`))
             if dt1.isInstanceOf[BasicType] && dt2.isInstanceOf[BasicType] =>
               if (lhs.t != rhs.t) {
                 error(s"${lhs.t} and ${rhs.t}", expected = "them to match")

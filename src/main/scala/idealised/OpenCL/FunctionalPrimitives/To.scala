@@ -11,15 +11,15 @@ import idealised.OpenCL.DSL.newWithAddrSpace
 
 import scala.xml.Elem
 
-abstract class To(addrSpace: AddrSpace,
+abstract class To(addrSpace: AddressSpace,
                   dt: DataType,
                   input: Phrase[ExpType],
                   private val makeTo: (DataType, Phrase[ExpType]) => To)
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (addrSpace : AddrSpace) -> (dt: DataType) ->
-      (input :: exp"[$dt, $Write]") -> exp"[$dt, $Read]"
+    (addrSpace : AddressSpace) -> (dt: DataType) ->
+      (input :: exp"[$dt, $write]") -> exp"[$dt, $read]"
 
   override def eval(s: Store): Data = OperationalSemantics.eval(s, input)
 
@@ -32,7 +32,7 @@ abstract class To(addrSpace: AddrSpace,
 
   override def xmlPrinter: Elem =
     <to addrSpace={ToString(addrSpace)} dt={ToString(dt)}>
-      <input type={ToString(ExpType(dt, Write))}>
+      <input type={ToString(ExpType(dt, write))}>
         {Phrases.xmlPrinter(input)}
       </input>
     </to>.copy(label = {

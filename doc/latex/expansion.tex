@@ -1,0 +1,25 @@
+\begin{figure}
+\begin{displaymath}
+    \prim{mapParI}
+    =
+    \Lambda n~\dtone~\dttwo.\lambda f\,\mathit{xs}~\mathit{out}.~
+    \prim{parfor}~n~\dttwo~\mathit{out}~(\lambda i~o.~f\,(\ei)~o)
+  \end{displaymath}
+  \begin{displaymath}
+    \prim{mapSeqI}
+    =
+    \Lambda n~\dtone~\dttwo.\lambda f\,\mathit{xs}~\mathit{out}.~
+    \prim{for}~n~(\lambda~i.~f\,(\ei)~(\ea)\ )
+  \end{displaymath}
+  \begin{displaymath}
+    \prim{reduceSeqI}
+    =
+    \Lambda n~a~\dtone~\dttwo.\lambda f\,\mathit{init}~\mathit{xs}~c.~\prim{new}~a~\dttwo~(\lambda \mathit{acc}.~
+      \begin{array}[t]{@{}l}
+      \semA{init}(acc.w)\\
+      \prim{for}~n~(\lambda i.~f\,(\ei)~(acc.r)~(acc.w)\ );\\
+      c~(acc.r)\ )
+      \end{array}
+\end{displaymath}
+\caption{Macro expansion}  
+\end{figure}

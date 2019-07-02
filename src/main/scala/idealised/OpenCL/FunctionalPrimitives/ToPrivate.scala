@@ -7,4 +7,4 @@ import idealised.OpenCL
 
 final case class ToPrivate(dt: DataType,
                            input: Phrase[ExpType])
-  extends To(PrivateMem, dt, input, ToPrivate)
+  extends To(Private, dt, input, ToPrivate)

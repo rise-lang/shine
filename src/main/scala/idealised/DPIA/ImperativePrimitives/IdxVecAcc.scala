@@ -17,7 +17,7 @@ final case class IdxVecAcc(n: Nat,
 
   override val t: AccType =
     (n: Nat) -> (st: ScalarType) ->
-      (index :: exp"[idx($n)]") ->
+      (index :: exp"[idx($n), $read]") ->
         (vector :: acc"[${VectorType(n, st)}]") ->
           acc"[$st]"
 
@@ -51,7 +51,7 @@ object IdxVecAcc {
   def apply(index: Phrase[ExpType],
             vector: Phrase[AccType]): IdxVecAcc = {
     (index.t, vector.t) match {
-      case (ExpType(IndexType(n1)), AccType(VectorType(n2, st))) if n1 == n2 =>
+      case (ExpType(IndexType(n1), _: read.type), AccType(VectorType(n2, st))) if n1 == n2 =>
         IdxVecAcc(n1, st, index, vector)
       case x => error(x.toString, "(exp[idx(n)], exp[n.dt])")
     }
