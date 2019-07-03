@@ -35,5 +35,5 @@ package object strategies {
     n => s => if (n > 0) { s `;` repeatNTimes(n-1)(s) } else { id }
 
   def normalize: Strategy => Strategy =
-    s => repeat(depthFirst(find(s)))
+    s => repeat(oncetd(s))
 }
