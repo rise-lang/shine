@@ -38,8 +38,10 @@ object lifting {
       case Lambda(x, body)  => Reducing((e: Expr) => substitute(e, `for` = x, in = body))
       case Apply(f, e)      => chain(liftFunctionExpr(f).map(lf => lf(e)))
       case DepApply(f, x)   => x match {
-        case n: Nat         => chain(liftDependentFunctionExpr[NatKind](f).map(lf => lf(n)))
-        case t: DataType    => chain(liftDependentFunctionExpr[DataKind](f).map(lf => lf(t)))
+        case t: DataType      => chain(liftDependentFunctionExpr[DataKind](f).map(lf => lf(t)))
+        case n: Nat           => chain(liftDependentFunctionExpr[NatKind](f).map(lf => lf(n)))
+        case a: AddressSpace  => chain(liftDependentFunctionExpr[AddressSpaceKind](f).map(lf => lf(a)))
+        case a: AccessType    => chain(liftDependentFunctionExpr[AccessKind](f).map(lf => lf(a)))
       }
       case _                => chain(Expanding(p))
     }
@@ -54,8 +56,10 @@ object lifting {
       case DepLambda(x, e)  => Reducing((a: K#T) => substitute(a, `for` = x, in = e))
       case Apply(f, e)      => chain(liftFunctionExpr(f).map(lf => lf(e)))
       case DepApply(f, x)   => x match {
-        case n: Nat         => chain(liftDependentFunctionExpr[NatKind](f).map(lf => lf(n)))
-        case t: DataType    => chain(liftDependentFunctionExpr[DataKind](f).map(lf => lf(t)))
+        case t: DataType      => chain(liftDependentFunctionExpr[DataKind](f).map(lf => lf(t)))
+        case n: Nat           => chain(liftDependentFunctionExpr[NatKind](f).map(lf => lf(n)))
+        case a: AddressSpace  => chain(liftDependentFunctionExpr[AddressSpaceKind](f).map(lf => lf(a)))
+        case a: AccessType    => chain(liftDependentFunctionExpr[AccessKind](f).map(lf => lf(a)))
       }
       case _                => chain(Expanding(p))
     }

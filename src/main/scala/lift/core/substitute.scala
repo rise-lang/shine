@@ -61,8 +61,10 @@ object substitute {
   }
 
   def apply[K <: Kind, T <: Type](x: K#T, `for`: K#I, in: T): T =  (x, `for`) match {
-    case (n: Nat, forN: NatIdentifier) => apply(n, forN, in)
-    case (dt: DataType, forDt: DataTypeIdentifier) => apply(dt, forDt, in)
+    case (dt: DataType, forDt: DataTypeIdentifier)        => apply(dt, forDt, in)
+    case (n: Nat, forN: NatIdentifier)                    => apply(n, forN, in)
+    case (a: AddressSpace, forA: AddressSpaceIdentifier)  => apply(a, forA, in)
+    case (a: AccessType, forA: AccessTypeIdentifier)      => apply(a, forA, in)
   }
 
   def apply[A <: Type, B <: Type](ty: A, `for`: A, in: B): B = {
@@ -79,10 +81,36 @@ object substitute {
     traversal.types.DepthFirstLocalResult(in, Visitor())
   }
 
-  def apply[T <: Type](ae: Nat, `for`: NamedVar, in: T): T = {
+  def apply[T <: Type](n: Nat, `for`: NamedVar, in: T): T = {
     case class Visitor() extends traversal.Visitor {
-      override def apply(n: Nat): Result[Nat] =
-        Continue(substitute(ae, `for`, n), this)
+      override def apply(in: Nat): Result[Nat] =
+        Continue(substitute(n, `for`, in), this)
+    }
+
+    traversal.types.DepthFirstLocalResult(in, Visitor())
+  }
+
+  def apply[T <: Type](a: AddressSpace, `for`: AddressSpaceIdentifier, in: T): T = {
+    case class Visitor() extends traversal.Visitor {
+      override def apply(b: AddressSpace): Result[AddressSpace] =
+        if (`for` == b) {
+          Stop(a)
+        } else {
+          Continue(b, this)
+        }
+    }
+
+    traversal.types.DepthFirstLocalResult(in, Visitor())
+  }
+
+  def apply[T <: Type](a: AccessType, `for`: AccessTypeIdentifier, in: T): T = {
+    case class Visitor() extends traversal.Visitor {
+      override def apply(b: AccessType): Result[AccessType] =
+        if (`for` == b) {
+          Stop(a)
+        } else {
+          Continue(b, this)
+        }
     }
 
     traversal.types.DepthFirstLocalResult(in, Visitor())

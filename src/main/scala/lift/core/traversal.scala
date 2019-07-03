@@ -20,6 +20,8 @@ object traversal {
     def apply(e: Expr): Result[Expr] = Continue(e, this)
     def apply(ae: Nat): Result[Nat] = Continue(ae, this)
     def apply[T <: Type](t: T): Result[T] = Continue(t, this)
+    def apply(a: AddressSpace): Result[AddressSpace] = Continue(a, this)
+    def apply(a: AccessType): Result[AccessType] = Continue(a, this)
   }
 
   object DepthFirstLocalResult {

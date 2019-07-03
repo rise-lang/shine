@@ -25,3 +25,13 @@ sealed trait NatKind extends Kind {
   override type T = lift.core.Nat
   override type I = lift.core.NatIdentifier
 }
+
+sealed trait AddressSpaceKind extends Kind {
+  override type T = AddressSpace
+  override type I = AddressSpaceIdentifier
+}
+
+sealed trait AccessKind extends Kind {
+  override type T = AccessType
+  override type I = AccessTypeIdentifier
+}
