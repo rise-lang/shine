@@ -215,8 +215,8 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       env.copy(identEnv = env.identEnv.map {
         case (Identifier(name, AccType(dt)), declRef) =>
           (Identifier(name, AccType(DataType.substitute(NamedVar(cI.name, range), `for` = i, in = dt))), declRef)
-        case (Identifier(name, ExpType(dt)), declRef) =>
-          (Identifier(name, ExpType(DataType.substitute(NamedVar(cI.name, range), `for` = i, in = dt))), declRef)
+        case (Identifier(name, ExpType(dt, w)), declRef) =>
+          (Identifier(name, ExpType(DataType.substitute(NamedVar(cI.name, range), `for` = i, in = dt), w)), declRef)
         case x => x
       }) |> (env =>
 

@@ -33,7 +33,7 @@ object KernelGenerator {
                                                  ): (Phrase[ExpType], Seq[Identifier[ExpType]]) = {
     p match {
       case l: Lambda[ExpType, _]@unchecked => getPhraseAndParams(l.body, l.param +: ps)
-      case ndl: NatDependentLambda[_]@unchecked => getPhraseAndParams(ndl.body, Identifier(ndl.x.name, ExpType(int)) +: ps)
+      case ndl: NatDependentLambda[_]@unchecked => getPhraseAndParams(ndl.body, Identifier(ndl.x.name, ExpType(int, read)) +: ps)
       case ep: Phrase[ExpType]@unchecked => (ep, ps)
     }
   }
@@ -184,9 +184,9 @@ object KernelGenerator {
 
   implicit private def getDataType(i: Identifier[_]): DataType = {
     i.t match {
-      case ExpType(dataType) => dataType
+      case ExpType(dataType, _) => dataType
       case AccType(dataType) => dataType
-      case PairType(ExpType(dt1), AccType(dt2)) if dt1 == dt2 => dt1
+      case PairType(ExpType(dt1, _), AccType(dt2)) if dt1 == dt2 => dt1
       case _ => throw new Exception("This should not happen")
     }
   }

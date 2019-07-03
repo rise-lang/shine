@@ -138,7 +138,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
   private def collectSizeVars(arguments:List[Argument], sizeVariables:Map[NatIdentifier, Nat]):Map[NatIdentifier, Nat] = {
     def recordSizeVariable( sizeVariables:Map[NatIdentifier, Nat], arg:Argument) = {
       arg.dpiaParameter.t match {
-        case ExpType(idealised.DPIA.Types.int) =>
+        case ExpType(idealised.DPIA.Types.int, read) =>
           arg.scalaValue match {
             case Some(i:Int) => sizeVariables + ((NatIdentifier(arg.dpiaParameter.name), Cst(i)))
             case Some(num) =>
@@ -239,9 +239,9 @@ case class Kernel(decls: Seq[C.AST.Decl],
 
   private implicit def getDataType(i: Identifier[_]): DataType = {
     i.t match {
-      case ExpType(dataType) => dataType
+      case ExpType(dataType, _) => dataType
       case AccType(dataType) => dataType
-      case PairType(ExpType(dt1), AccType(dt2)) if dt1 == dt2 => dt1
+      case PairType(ExpType(dt1, _), AccType(dt2)) if dt1 == dt2 => dt1
       case _ => throw new Exception("This should not happen")
     }
   }

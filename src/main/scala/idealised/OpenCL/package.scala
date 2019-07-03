@@ -18,6 +18,12 @@ package object OpenCL {
   case object LocalMemory extends AddressSpace
   case object PrivateMemory extends AddressSpace
 
+  def fromDPIAAddressSpace(a: idealised.DPIA.Types.AddressSpace): AddressSpace = a match {
+    case _: idealised.DPIA.Types.AddressSpace.Global.type => GlobalMemory
+    case _: idealised.DPIA.Types.AddressSpace.Local.type => LocalMemory
+    case _: idealised.DPIA.Types.AddressSpace.Private.type => PrivateMemory
+  }
+
   case class NDRange(x: Nat, y: Nat, z: Nat) {
     def isEvaluable: Boolean = x.isEvaluable && y.isEvaluable && z.isEvaluable
     def ==(other: NDRange): Boolean = x == other.x && y == other.y && z == other.z

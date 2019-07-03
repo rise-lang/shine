@@ -11,7 +11,7 @@ import idealised.DPIA.Semantics.OperationalSemantics._
 import scala.xml.Elem
 
 final case class OpenCLReduceSeq(n: Nat,
-                                 initAddrSpace: AddressSpace,
+                                 initAddrSpace: idealised.DPIA.Types.AddressSpace,
                                  dt1: DataType,
                                  dt2: DataType,
                                  f: Phrase[ExpType -> (ExpType -> ExpType)],
