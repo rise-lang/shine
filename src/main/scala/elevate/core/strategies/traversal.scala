@@ -60,46 +60,33 @@ object traversal {
   // generic one-level traversal operators
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  private def traverseSingleSubexpression: Strategy => Strategy =
+  private def traverseSingleSubexpression: Strategy => Expr => Option[Expr] =
     s => {
-    case i: Identifier => i
-    case Lambda(x, e) => Lambda(x, s(e))
-    case DepLambda(x, e) => x match {
-      case n: NatIdentifier => NatDepLambda(n, s(e))
-      case dt: DataTypeIdentifier => TypeDepLambda(dt, s(e))
+      case Identifier(_) => None
+      case Lambda(x, e) => Some(Lambda(x, s(e)))
+      case DepLambda(x, e) => x match {
+        case n: NatIdentifier => Some(NatDepLambda(n, s(e)))
+        case dt: DataTypeIdentifier => Some(TypeDepLambda(dt, s(e)))
+      }
+      case DepApply(f, x) => x match {
+        case n: Nat => Some(NatDepApply(s(f), n))
+        case dt: DataType => Some(TypeDepApply(s(f), dt))
+      }
+      case Literal(_) => None
+      case Index(_, _) => None
+      case NatExpr(_) => None
+      case TypedExpr(e, t) => Some(TypedExpr(s(e), t))
+      case ff: primitives.ForeignFunction => None
+      case p: Primitive => None
     }
-    case DepApply(f, x) => x match {
-      case n: Nat => NatDepApply(s(f), n)
-      case dt: DataType => TypeDepApply(s(f), dt)
-    }
-    case l: Literal => l
-    case idx: Index => idx
-    case ne: NatExpr => ne
-    case TypedExpr(e, t) => TypedExpr(s(e), t)
-    case ff: primitives.ForeignFunction => ff
-    case p:Primitive => p
-    }
-
-  private def containsSubexpression(e: Expr): Boolean = {
-    e match {
-      case Identifier(_) => false
-      case Lambda(_, _) => true
-      case Apply(_, _) => true
-      case DepLambda(_, _) => true
-      case DepApply(_, _) => true
-      case Literal(_) => false
-      case Index(_, _) => false
-      case NatExpr(_) => false
-      case TypedExpr(_, _) => true
-      case ff: primitives.ForeignFunction => false
-      case p: Primitive => false
-    }
-  }
 
   // applies s to all direct subexpressions
   def all: Strategy => Strategy = s => {
     case Apply(f, e) => Apply(s(f), s(e))
-    case x => traverseSingleSubexpression(s)(x)
+    case x => traverseSingleSubexpression(s)(x) match {
+      case Some(e) => e
+      case None => x
+    }
   }
 
   // applies s to one direct subexpression
@@ -108,8 +95,10 @@ object traversal {
         case Some(x) => Apply(x,e)
         case _ => Apply(f, s(e))
       }
-    case x if containsSubexpression(x) => traverseSingleSubexpression(s)(x)
-    case _ => throw NotFound
+    case x => traverseSingleSubexpression(s)(x) match {
+      case Some(e) => e
+      case None => throw NotFound
+    }
   }
 
   // applies s to at least one direct subexpression and as many as possible
@@ -118,8 +107,10 @@ object traversal {
       case (None, None) => throw NotFound
       case (x, y) => Apply(x.getOrElse(f), y.getOrElse(e))
     }
-    case x if containsSubexpression(x) => traverseSingleSubexpression(s)(x)
-    case _ => throw NotFound
+    case x => traverseSingleSubexpression(s)(x) match {
+      case Some(e) => e
+      case None => throw NotFound
+    }
   }
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -145,5 +136,5 @@ object traversal {
   def somebu: Strategy => Strategy = s => ((e: Expr) => some(somebu(s))(e)) <+ s
 
   // todo figure out whats wrong here
-  //def innermost: Strategy => Strategy = s => bottomup(`try`(s `;` innermost(s)))
+  def innermost: Strategy => Strategy = s => bottomup(`try`(e => (s `;` innermost(s))(e)))
 }
