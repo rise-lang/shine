@@ -1,9 +1,8 @@
 package elevate.core
 
 import lift.core._
-import lift.core.primitives.map
 import lift.core.DSL._
-
+import lift.core.primitives.map
 import rules._
 import rules.algorithmic.{mapFusion, mapLastFission}
 import strategies._
@@ -11,7 +10,7 @@ import strategies.algorithmic.{mapFirstFission, mapFullFission}
 import strategies.traversal._
 
 class fission_fusion extends idealised.util.Tests {
-  val norm = normalize(betaReduction +> etaReduction)
+  val norm = normalize(betaReduction <+ etaReduction)
 
   def eq(a: Expr, b: Expr): Unit = {
     if (!StructuralEquality(norm(a), norm(b))) {

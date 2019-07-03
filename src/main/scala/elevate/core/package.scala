@@ -20,6 +20,6 @@ package object core {
   }
 
   implicit class LeftChoice(f: Strategy) {
-    def +>(s: Strategy): Strategy = strategies.leftChoice(f)(s)
+    def <+(s: Strategy): Strategy = strategies.leftChoice(f)(s)
   }
 }

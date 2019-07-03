@@ -63,7 +63,7 @@ object binomialFilter {
       map(dotSeq(weights1d))
     )
 
-  val norm = strategies.normalize(betaReduction +> etaReduction)
+  val norm = strategies.normalize(betaReduction <+ etaReduction)
 
   val separateDot: Strategy = {
     case Apply(Apply(Apply(`reduce`, rf), init), Apply(Apply(`map`, mf), Apply(Apply(`zip`, w), Apply(`join`, nbh))))
