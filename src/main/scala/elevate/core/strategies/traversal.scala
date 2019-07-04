@@ -1,7 +1,6 @@
 package elevate.core.strategies
 
 import elevate.core._
-import lift.arithmetic.NamedVar
 import lift.core.types.{DataType, DataTypeIdentifier}
 import lift.core.{Apply, DepApply, DepLambda, Expr, Identifier, Index, Lambda, Literal, Nat, NatDepApply, NatDepLambda, NatExpr, NatIdentifier, Primitive, TypeDepApply, TypeDepLambda, TypedExpr, primitives, traversal => lt}
 
@@ -37,13 +36,13 @@ object traversal {
       }
     }
 
-  // todo express this similar to `find`
-  def position(n: Int): Strategy => TraversalStrategy =
+  @deprecated
+  def positionOld(n: Int): Strategy => TraversalStrategy =
     s => e => {
       if (n <= 0) {
         Stop(s(e))
       } else {
-        Continue(e, position(n - 1)(s))
+        Continue(e, positionOld(n - 1)(s))
       }
     }
 
@@ -138,6 +137,8 @@ object traversal {
   def sometd: Strategy => Strategy = s => s <+ (e => some(sometd(s))(e))
 
   def somebu: Strategy => Strategy = s => ((e: Expr) => some(somebu(s))(e)) <+ s
+
+  def position(n: Int): Strategy => Strategy = s => if(n <= 0) s else one(position(n-1)(s))
 
   // todo figure out whats wrong here
   def innermost: Strategy => Strategy = s => bottomup(`try`(e => (s `;` innermost(s))(e)))
