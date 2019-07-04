@@ -28,7 +28,7 @@ class fission_fusion extends idealised.util.Tests {
       fun(f1 => fun(f2 => map(f1 >> f2))),
       depthFirst(position(2)(mapLastFission)),
       fun(f1 => fun(f2 => map(f1) >> map(f2))),
-      depthFirst(find(mapFusion)))
+      oncetd(mapFusion))
   }
 
   test("last fission, chain of 3") {
@@ -36,7 +36,7 @@ class fission_fusion extends idealised.util.Tests {
       fun(f1 => fun(f2 => fun(f3 => map(f1 >> f2 >> f3)))),
       depthFirst(position(3)(mapLastFission)),
       fun(f1 => fun(f2 => fun(f3 => map(f1 >> f2) >> map(f3)))),
-      depthFirst(find(mapFusion)))
+      oncetd(mapFusion))
   }
 
   test("first fission, chain of 2") {
@@ -44,7 +44,7 @@ class fission_fusion extends idealised.util.Tests {
       fun(f1 => fun(f2 => map(f1 >> f2))),
       depthFirst(position(2)(mapFirstFission)),
       fun(f1 => fun(f2 => map(f1) >> map(f2))),
-      depthFirst(find(mapFusion)))
+      oncetd(mapFusion))
   }
 
   test("first fission, chain of 3") {
@@ -52,7 +52,7 @@ class fission_fusion extends idealised.util.Tests {
       fun(f1 => fun(f2 => fun(f3 => map(f1 >> f2 >> f3)))),
       depthFirst(position(3)(mapFirstFission)),
       fun(f1 => fun(f2 => fun(f3 => map(f1) >> map(f2 >> f3)))),
-      depthFirst(find(mapFusion)))
+      oncetd(mapFusion))
   }
 
   test("full fission, chain of 2") {
@@ -60,7 +60,7 @@ class fission_fusion extends idealised.util.Tests {
       fun(f1 => fun(f2 => map(f1 >> f2))),
       depthFirst(position(2)(mapFullFission)),
       fun(f1 => fun(f2 => map(f1) >> map(f2))),
-      depthFirst(find(mapFusion)))
+      oncetd(mapFusion))
   }
 
   test("full fission, chain of 3") {

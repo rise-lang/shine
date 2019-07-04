@@ -27,6 +27,8 @@ object traversal {
         case lt.Continue(_, _) => throw NotFound
       }
     }
+
+  @deprecated
   def find: Strategy => TraversalStrategy =
     s => e => {
       mayApply(s)(e) match {
@@ -35,6 +37,7 @@ object traversal {
       }
     }
 
+  // todo express this similar to `find`
   def position(n: Int): Strategy => TraversalStrategy =
     s => e => {
       if (n <= 0) {
@@ -44,6 +47,7 @@ object traversal {
       }
     }
 
+  // todo express this similar to `find`
   def drop(n: Int): Strategy => TraversalStrategy =
     s => e => {
       mayApply(s)(e) match {

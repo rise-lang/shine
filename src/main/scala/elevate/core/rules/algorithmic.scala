@@ -13,20 +13,25 @@ object algorithmic {
   // S: slide/split
   // J: join
 
-  def splitJoin: Nat => Strategy =
+  /// divide & conquer /////////////////////////////////////////////////////////////////////////////////////////////////
+
+  def splitJoin: Nat => Strategy = `*f -> S >> **f >> J`
+  def `*f -> S >> **f >> J`: Nat => Strategy =
     n => {
       case Apply(`map`, f) => split(n) >> map(map(f)) >> join
     }
 
-  // *g >> *f -> *(g >> f)
-  def mapFusion: Strategy = {
+  /// fusion / fission /////////////////////////////////////////////////////////////////////////////////////////////////
+
+  def mapFusion: Strategy = `*g >> *f -> *(g >> f)`
+  def `*g >> *f -> *(g >> f)`: Strategy = {
     case Apply(Apply(`map`, f), Apply(Apply(`map`, g), arg)) =>
       map(g >> f)(arg)
   }
 
   // fission of the last function to be applied inside a map
-  // *(g >> .. >> f) -> *(g >> ..) >> *f
-  def mapLastFission: Strategy = {
+  def mapLastFission: Strategy = `*(g >> .. >> f) -> *(g >> ..) >> *f`
+  def `*(g >> .. >> f) -> *(g >> ..) >> *f`: Strategy = {
     // TODO? 'x' should not be used in 'f' or 'g'
     /* chain of two fission
     case Apply(`map`, Lambda(x1, Apply(f, Apply(g, x2)))) if x1 == x2 =>
@@ -36,39 +41,12 @@ object algorithmic {
       Apply(`map`, Lambda(x, gx)) >> map(f)
   }
 
-  def `**f >> T -> T >> **f`: Strategy = {
-    case Apply(`transpose`, Apply(Apply(`map`, Lambda(x1, Apply(Apply(`map`, f), x2))), y)) if x1 == x2 =>
-      y |> transpose |> map(map(f))
-  }
+  /// identities ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  def `*f >> S -> S >> **f`: Strategy = {
-    case Apply(DepApply(DepApply(`slide`, sz: Nat), sp: Nat), Apply(Apply(`map`, f), x)) =>
-      x |> slide(sz)(sp) |> map(map(f))
-    case Apply(DepApply(`split`, n: Nat), Apply(Apply(`map`, f), x)) =>
-      x |> split(n) |> map(map(f))
-  }
-
-  def `S >> **f -> *f >> S`: Strategy = {
-    case Apply(Apply(`map`, Apply(`map`, f)), Apply(DepApply(DepApply(`slide`, sz: Nat), sp: Nat), x)) =>
-      x |> map(f) |> slide(sz)(sp)
-    case Apply(Apply(`map`, Apply(`map`, f)), Apply(DepApply(`split`, n: Nat), x)) =>
-      x |> map(f) |> split(n)
-  }
-
-  def `*S >> T -> T >> S >> *T`: Strategy = {
-    case Apply(`transpose`, Apply(Apply(`map`, DepApply(DepApply(`slide`, sz: Nat), sp: Nat)), y)) =>
-      y |> transpose |> slide(sz)(sp) |> map(transpose)
-    case Apply(`transpose`, Apply(Apply(`map`, DepApply(`split`, n: Nat)), y)) =>
-      y |> transpose |> split(n) |> map(transpose)
-  }
-
-  def `S >> *T -> T >> *S >> T`: Strategy = {
-    case Apply(Apply(`map`, Lambda(x1, Apply(`transpose`, x2))),
-          Apply(DepApply(DepApply(`slide`, sz: Nat), sp: Nat), y)) if x1 == x2 =>
-      y |> transpose |> map(slide(sz)(sp)) |> transpose
-  }
-
+  def createTransposePair: Strategy = ` -> T >> T`
   def ` -> T >> T`: Strategy = x => x |> transpose |> transpose
+
+  def removeTransposePair: Strategy = `T >> T -> `
   def `T >> T -> `: Strategy = {
     case Apply(`transpose`, Apply(`transpose`, x)) => x
   }
