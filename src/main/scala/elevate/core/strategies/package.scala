@@ -8,6 +8,9 @@ package object strategies {
   def id: Strategy =
     e => e
 
+  def fail: Strategy =
+    throw NotFound
+
   def seq: Strategy => Strategy => Strategy =
     f => s => e => s(f(e))
 
@@ -35,5 +38,5 @@ package object strategies {
     n => s => if (n > 0) { s `;` repeatNTimes(n-1)(s) } else { id }
 
   def normalize: Strategy => Strategy =
-    s => repeat(depthFirst(find(s)))
+    s => repeat(oncetd(s))
 }
