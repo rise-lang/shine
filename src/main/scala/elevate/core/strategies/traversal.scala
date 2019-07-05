@@ -150,18 +150,15 @@ object traversal {
 
   def somebu: Strategy => Strategy = s => ((e: Expr) => some(somebu(s))(e)) <+ s
 
-  def position(n: Int): Strategy => Strategy = s => if(n <= 0) s else one(position(n-1)(s))
+  def position(n: Int): Strategy => Strategy = s => if(n <= 0) s else oneWithState(position(n-1)(s))
 
-  def drop(n: Int): Strategy => Strategy = s => e => mayApply2(s)(e) match {
+  def skip(n: Int): Strategy => Strategy = s => e => mayApply2(s)(e) match {
     case Failure(a) =>
-      println(s"fail ($n) $e")
-      oneWithState(drop(n)(a))(e)
+      oneWithState(skip(n)(a))(e)
     case Success(r) if n <= 0 =>
-      println(s"succ ($n) $e")
       r
     case Success(r) if n > 0 =>
-      println(s"drop ($n) $e")
-      oneWithState(drop(n-1)(s))(e)
+      oneWithState(skip(n-1)(s))(e)
   }
 
   // todo figure out whats wrong here
