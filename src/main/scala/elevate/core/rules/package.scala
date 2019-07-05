@@ -7,13 +7,13 @@ package object rules {
     case Apply(f, x) => lifting.liftFunctionExpr(f) match {
       case lifting.Reducing(lf) => lf(x)
     }
-    case _ => throw NotFound(betaReduction)
+    case _ => throw NotApplicable(betaReduction)
   }
 
   def etaReduction: Strategy = {
     // TODO? 'x' should not be used in 'f'
     case Lambda(x1, Apply(f, x2)) if x1 == x2 => f
-    case _ => throw NotFound(etaReduction)
+    case _ => throw NotApplicable(etaReduction)
   }
 
   def etaAbstraction: Strategy = {
@@ -21,6 +21,6 @@ package object rules {
     case f =>
       val x = Identifier(freshName("η"))
       Lambda(x, Apply(f, x))
-    case _ => throw NotFound(etaReduction)
+    case _ => throw NotApplicable(etaReduction)
   }
 }

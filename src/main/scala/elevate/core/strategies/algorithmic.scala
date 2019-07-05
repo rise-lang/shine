@@ -16,7 +16,7 @@ object algorithmic {
   def mapFirstFission: Strategy = {
     case Apply(primitives.map, Lambda(x, gx)) =>
       mapFirstFissionRec(x, fun(e => e), gx)
-    case _ => throw NotFound(mapFirstFission)
+    case _ => throw NotApplicable(mapFirstFission)
   }
 
   private def mapFirstFissionRec(x: Identifier, f: Expr, gx: Expr): Expr = {
@@ -35,7 +35,7 @@ object algorithmic {
   def mapFullFission: Strategy = {
     case Apply(primitives.map, Lambda(x, gx)) =>
       mapFullFissionRec(x, gx)
-    case _ => throw NotFound(mapFullFission)
+    case _ => throw NotApplicable(mapFullFission)
   }
 
   def mapFullFissionRec(x: Identifier, gx: Expr): Expr = {

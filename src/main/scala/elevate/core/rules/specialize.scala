@@ -1,21 +1,21 @@
 package elevate.core.rules
 
-import elevate.core.{NotFound, Strategy}
+import elevate.core.{NotApplicable, Strategy}
 import lift.core.primitives
 
 object specialize {
   def mapSeq: Strategy = {
     case primitives.map => primitives.mapSeq
-    case _ => throw NotFound(mapSeq)
+    case _ => throw NotApplicable(mapSeq)
   }
 
   def reduceSeq: Strategy = {
     case primitives.reduce => primitives.reduceSeq
-    case _ => throw NotFound(reduceSeq)
+    case _ => throw NotApplicable(reduceSeq)
   }
 
   def slideSeq(rot: primitives.slideSeq.Rotate): Strategy = {
     case primitives.slide => primitives.slideSeq(rot)
-    case _ => throw NotFound(elevate.core.rules.specialize.slideSeq(rot))
+    case _ => throw NotApplicable(elevate.core.rules.specialize.slideSeq(rot))
   }
 }
