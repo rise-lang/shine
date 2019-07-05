@@ -1,0 +1,38 @@
+\begin{figure}[p]
+    \footnotesize
+    \begin{minipage}{1.0\linewidth} \begin{tabular*}{\linewidth}{>{$}l<{$}@{\hspace{0.4em}}>{$}c<{$}>{$}l<{$}}
+          \underline{\ell}&:&\tyval{\basic}{\pureacc}\\
+          \prim{negate}&:&\tyval{\basic}{\pureacc} \to \tyval{\basic}{\pureacc} \\
+          (+,*,/,-)   &:&\tyval{\basic}{\pureacc} \times \tyval{\basic}{\pureacc} \to \tyval{\basic}{\pureacc}\\
+  
+          \prim{toMem}&:&(a : \addrkind) \to (\dt : \datatype) \to \tyval{\dt}{\writeacc} \to \tyval{\dt}{\pureacc}\\
+          \prim{mapSeq}&:&(n : \natkind) \to (\dtone~\dttwo : \datatype) \to (\tyval{\dtone}{\pureacc} \to \tyval{\dttwo}{\writeacc}) \to \tyval{n.\dtone}{\pureacc} \to \tyval{n.\dttwo}{\writeacc} \\
+          \prim{mapPar}&:&(n : \natkind) \to (\dtone~\dttwo : \datatype) \to (\tyval{\dtone}{\pureacc} \to \tyval{\dttwo}{\writeacc}) \to \tyval{n.\dtone}{\pureacc} \to \tyval{n.\dttwo}{\writeacc} \\
+  
+          \prim{reduceSeq}&:&(n : \natkind) \to (a : \addrkind) \to (\dtone~\dttwo : \datatype) \to\\
+          && (\tyval{\dtone}{\pureacc} \to \tyval{\dttwo}{\pureacc} \to \tyval{\dttwo}{\writeacc}) \to \tyval{\dttwo}{\writeacc} \to \tyval{n.\dtone}{\pureacc} \to \tyval{\dttwo}{\pureacc}\bigskip\\
+  
+          \prim{split}&:&(n~m : \natkind) \to (w : \access) \to (\dt : \datatype) \to \tyval{nm.\dt}{w} \to \tyval{m.n.\dt}{w} \\
+          \prim{join}&:&(n~m : \natkind) \to (w : \access) \to (\dt : \datatype) \to \tyval{n.m.\dt}{w} \to \tyval{nm.\dt}{w}\\
+          \prim{drop}&:&(n~m : \natkind) \to (w : \access) \to (\dt : \datatype) \to \tyval{(n + m).\dt}{w} \to \tyval{m.\dt}{w} \\
+          \prim{take}&:&(n~m : \natkind) \to (w : \access) \to (\dt : \datatype) \to \tyval{(n + m).\dt}{w} \to \tyval{n.\dt}{w}\bigskip\\
+  
+          \prim{gather}&:&(n : \natkind) \to (\dt : \datatype) \to (\tyval{\tyidx[n]}{\pureacc} \to \tyval{\tyidx[n]}{\pureacc}) \to \tyval{n.\dt}{\pureacc} \to \tyval{n.\dt}{\pureacc}\\
+          \prim{scatter}&:&(n : \natkind) \to (\dt : \datatype) \to (\tyval{\tyidx[n]}{\pureacc} \to \tyval{\tyidx[n]}{\pureacc}) \to \tyval{n.\dt}{\writeacc} \to \tyval{n.\dt}{\writeacc}\bigskip\\
+  
+          \prim{pad}&:&(n~l~q : \natkind) \to (\dt : \datatype) \to \tyval{\dt}{\pureacc} \to \tyval{n.\dt}{\pureacc} \to \tyval{(l + n + q).\dt}{\pureacc} \\
+          \prim{slide}&:&(n~sz~sp : \natkind) \to (\dt : \datatype) \to \tyval{(sp \times n + sz - sp).\dt}{\pureacc} \to \tyval{n.sz.\dt}{\pureacc} \bigskip\\
+  
+          \prim{zip}&:&(n : \natkind) \to (\dtone~\dttwo : \datatype) \to \tyval{n.\dtone}{\pureacc} \to \tyval{n.\dttwo}{\pureacc} \to \tyval{n.(\dtone \times \dttwo)}{\pureacc} \\
+  
+          \prim{pair}&:&(\dtone~\dttwo: \datatype) \to \tyval{\dtone}{\pureacc} \to \tyval{\dttwo}{\pureacc} \to \tyval{\dtone \times \dttwo}{\pureacc}\\
+          \prim{fst}&:&(\dtone~\dttwo : \datatype) \to \tyval{\dtone \times \dttwo}{\pureacc} \to \tyval{\dtone}{\pureacc} \\
+          \prim{snd}&:&(\dtone~\dttwo : \datatype) \to \tyval{\dtone \times \dttwo}{\pureacc} \to \tyval{\dttwo}{\pureacc} \\
+          \prim{idx} &:&(n : \natkind) \to (\dt : \datatype) \to \tyval{n.\dt}{\pureacc} \to \tyval{\tyidx[n]}{\pureacc} \to \tyval{\dt}{\pureacc} \\ % TODO? order differs from implementation, and is inside imperative primitives
+      \end{tabular*}
+      \subcaption{Functional primitives}\label{fig:func-prim}
+    \end{minipage}
+  
+    \caption{Data Parallel Programming Primitives}
+    \label{fig:primitives}
+  \end{figure}

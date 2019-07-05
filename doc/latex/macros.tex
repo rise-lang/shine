@@ -1,20 +1,26 @@
+\newcommand{\type}{\mathsf{type}}
+\newcommand{\passivetype}{\mathsf{passiveT}}
+
 \newcommand{\phrasetype}{\mathsf{phrase}}
-\newcommand{\passivetype}{\mathsf{passive}}
+\newcommand{\passivephrasetype}{\mathsf{passivePhrase}}
 \newcommand{\access}{\mathsf{access}}
 \newcommand{\datatype}{\mathsf{data}}
 \newcommand{\natkind}{\mathsf{nat}}
 \newcommand{\addrkind}{\mathsf{addrSpace}}
 \newcommand{\vwkind}{\mathsf{width}}
-\newcommand{\pureacc}{\mathsf{read}}
-\newcommand{\writeacc}{\mathsf{write}}
+\newcommand{\pureacc}{\mathtt{R}}
+\newcommand{\writeacc}{\mathtt{W}}
 \newcommand{\num}{\mathsf{num}}
 \newcommand{\sem}[1]{\llbracket #1 \rrbracket}
 \newcommand{\interfere}{\mathrel\triangledown}
 \newcommand{\indep}{\mathrel\triangle}
 \newcommand{\objspace}{\mathord{\dagger}}
+\newcommand{\basic}{\mathsf{basic}}
 
 \newcommand{\kw}[1]{\mathrm{#1}}
 
+% \newcommand{\tyval}[2]{\mathsf{value}[#1, #2]}
+\newcommand{\tyval}[2]{\ensuremath{#1_{#2}}}
 \newcommand{\tycomm}{\mathsf{comm}}
 \newcommand{\tyexp}{\mathsf{exp}}
 \newcommand{\typush}{\mathsf{push}}

@@ -1,4 +1,4 @@
-\begin{figure}
+\begin{figure}[b]
     \small
     \begin{minipage}{0.3\linewidth}
       \begin{mathpar}
@@ -89,7 +89,7 @@
     \begin{minipage}{1.0\linewidth}
       \begin{mathpar}
         \inferrule*
-        {\Delta \vdash \delta : \datatype \\\\ \Delta \vdash \omega : \access}
+        {\Delta \vdash \delta : \datatype \\ \Delta \vdash \omega : \access}
         {\Delta \vdash \tyexp[\delta, \omega] : \phrasetype}
   
         \inferrule*
@@ -125,27 +125,27 @@
     \begin{minipage}{1.0\linewidth}
       \begin{mathpar}
         \inferrule*
-        {\Delta \vdash \delta : \datatype}
-        {\Delta \vdash \tyexp[\delta] : \passivetype}
+        {\Delta \vdash \delta : \datatype \\ \Delta \vdash \omega : \access}
+        {\Delta \vdash \tyexp[\delta] : \passivephrasetype}
   
         \inferrule*
-        {\Delta \vdash \phi_1 : \passivetype \\
-          \Delta \vdash \phi_2 : \passivetype}
-        {\Delta \vdash \phi_1 \times \phi_2 : \passivetype}
+        {\Delta \vdash \phi_1 : \passivephrasetype \\
+          \Delta \vdash \phi_2 : \passivephrasetype}
+        {\Delta \vdash \phi_1 \times \phi_2 : \passivephrasetype}
   
         \inferrule*
         {\Delta \vdash \theta : \phrasetype \\
-          \Delta \vdash \phi : \passivetype}
-        {\Delta \vdash \theta \to \phi : \passivetype}
+          \Delta \vdash \phi : \passivephrasetype}
+        {\Delta \vdash \theta \to \phi : \passivephrasetype}
   
         \inferrule*
         {\Delta \vdash \theta_1 : \phrasetype \\
           \Delta \vdash \theta_2 : \phrasetype}
-        {\Delta \vdash \theta_1 \pureto \theta_2 : \passivetype}
+        {\Delta \vdash \theta_1 \pureto \theta_2 : \passivephrasetype}
   
         \inferrule*
-        {\Delta, x : \kappa \vdash \phi : \passivetype \\ \kappa \in \{\natkind,\datatype\}}
-        {\Delta \vdash (x\mathord:\kappa) \to \phi : \passivetype}
+        {\Delta, x : \kappa \vdash \phi : \passivephrasetype \\ \kappa \in \{\natkind,\datatype\}}
+        {\Delta \vdash (x\mathord:\kappa) \to \phi : \passivephrasetype}
       \end{mathpar}
       \subcaption{Passive Types}
       \label{fig:passive-types}
