@@ -4,11 +4,11 @@ import elevate.core.Strategy
 import lift.core.primitives
 
 object specialize {
-  val mapSeq: Strategy = {
+  def mapSeq: Strategy = {
     case primitives.map => primitives.mapSeq
   }
 
-  val reduceSeq: Strategy = {
+  def reduceSeq: Strategy = {
     case primitives.reduce => primitives.reduceSeq
   }
 

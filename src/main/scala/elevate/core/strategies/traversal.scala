@@ -46,15 +46,15 @@ object traversal {
       }
     }
 
-  // todo express this similar to `find`
-  def drop(n: Int): Strategy => TraversalStrategy =
+  @deprecated
+  def dropOld(n: Int): Strategy => TraversalStrategy =
     s => e => {
       mayApply(s)(e) match {
-        case None => Continue(e, drop(n)(s))
+        case None => Continue(e, dropOld(n)(s))
         case Some(r) => if (n <= 0) {
           Stop(r)
         } else {
-          Continue(e, drop(n - 1)(s))
+          Continue(e, dropOld(n - 1)(s))
         }
       }
     }
@@ -139,6 +139,18 @@ object traversal {
   def somebu: Strategy => Strategy = s => ((e: Expr) => some(somebu(s))(e)) <+ s
 
   def position(n: Int): Strategy => Strategy = s => if(n <= 0) s else one(position(n-1)(s))
+
+  def drop(n: Int): Strategy => Strategy = s => e => mayApply(s)(e) match {
+    case None =>
+      println(s"fail ($n) $e")
+      one(drop(n)(s))(e)
+    case Some(r) if n <= 0 =>
+      println(s"succ ($n) $e")
+      r
+    case Some(r) if n > 0 =>
+      println(s"drop ($n) $e")
+      some(drop(n-1)(s))(e)
+  }
 
   // todo figure out whats wrong here
   def innermost: Strategy => Strategy = s => bottomup(`try`(e => (s `;` innermost(s))(e)))

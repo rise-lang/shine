@@ -39,4 +39,9 @@ package object strategies {
 
   def normalize: Strategy => Strategy =
     s => repeat(oncetd(s))
+
+  def print: Strategy = print("")
+  def print(msg: String): Strategy = {
+    e => println(s"$msg $e"); e
+  }
 }

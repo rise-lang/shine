@@ -142,7 +142,7 @@ class binomialFilter extends idealised.util.Tests {
         P >> Sv >> *(T >> Sh >> *(T >> T >> *(Dv) >> Dh))),
       (oncetd(`T >> T -> `),
         P >> Sv >> *(T >> Sh >> *(*(Dv) >> Dh))),
-      (depthFirst(traversal.drop(1)(mapFirstFission)),
+      (drop(1)(mapFirstFission),
         P >> Sv >> *(T >> Sh >> *(*(Dv)) >> *(Dh))),
       (oncetd(`S >> **f -> *f >> S`),
         P >> Sv >> *(T >> *(Dv) >> Sh >> *(Dh))),
@@ -150,7 +150,7 @@ class binomialFilter extends idealised.util.Tests {
         P >> Sv >> *(T) >> *(*(Dv) >> Sh >> *(Dh))),
       (oncetd(mapFirstFission),
         P >> Sv >> *(T) >> *(*(Dv)) >> *(Sh >> *(Dh))),
-      (depthFirst(drop(1)(mapFusion)),
+      (drop(1)(mapFusion),
         P >> Sv >> *(T >> *(Dv)) >> *(Sh >> *(Dh)))
     )
 
@@ -160,10 +160,9 @@ class binomialFilter extends idealised.util.Tests {
         result
     })
 
-    println(result)
     val pick = repeatNTimes(2)(oncetd(specialize.reduceSeq)) `;`
       repeatNTimes(2)(oncetd(specialize.mapSeq)) `;`
-      repeatNTimes(2)(depthFirst(drop(1)(specialize.mapSeq)))
+      repeatNTimes(2)(drop(1)(specialize.mapSeq))
     s_eq(pick(result), norm(separated))
   }
 
@@ -196,7 +195,7 @@ class binomialFilter extends idealised.util.Tests {
         P >> Sv >> *(T >> Sh >> *(T >> T >> *(Dv) >> Dh))),
       (oncetd(`T >> T -> `),
         P >> Sv >> *(T >> Sh >> *(*(Dv) >> Dh))),
-      (depthFirst(drop(1)(mapFirstFission)),
+      (drop(1)(mapFirstFission),
         P >> Sv >> *(T >> Sh >> *(*(Dv)) >> *(Dh))),
       (oncetd(`S >> **f -> *f >> S`),
         P >> Sv >> *(T >> *(Dv) >> Sh >> *(Dh)))
