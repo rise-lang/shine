@@ -8,9 +8,6 @@ package object strategies {
   def id: Strategy =
     e => e
 
-  def fail: Strategy =
-    throw NotFound
-
   def seq: Strategy => Strategy => Strategy =
     f => s => e => s(f(e))
 

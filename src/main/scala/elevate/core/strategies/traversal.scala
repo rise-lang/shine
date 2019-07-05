@@ -23,7 +23,7 @@ object traversal {
     ts => expr => {
       lt.DepthFirstGlobalResult(expr, Visitor(ts)) match {
         case lt.Stop(r) => r
-        case lt.Continue(_, _) => throw NotFound
+        case lt.Continue(_, _) => throw NotFound(???)
       }
     }
 
@@ -100,19 +100,31 @@ object traversal {
       }
     case x => traverseSingleSubexpression(s)(x) match {
       case Some(e) => e
-      case None => throw NotFound
+      case None => throw NotFound(s)
+    }
+  }
+
+  // applies s to one direct subexpression
+  def oneWithState: Strategy => Strategy = s => {
+    case Apply(f, e) => mayApply2(s)(f) match {
+        case (Some(x), _) => Apply(x,e)
+        case (None, state) => Apply(f, state(e))
+      }
+    case x => traverseSingleSubexpression(s)(x) match {
+      case Some(e) => e
+      case None => throw NotFound(s)
     }
   }
 
   // applies s to at least one direct subexpression and as many as possible
   def some: Strategy => Strategy = s => {
     case Apply(f, e) => (mayApply(s)(f), mayApply(s)(e)) match {
-      case (None, None) => throw NotFound
+      case (None, None) => throw NotFound(s)
       case (x, y) => Apply(x.getOrElse(f), y.getOrElse(e))
     }
     case x => traverseSingleSubexpression(s)(x) match {
       case Some(e) => e
-      case None => throw NotFound
+      case None => throw NotFound(s)
     }
   }
 
@@ -140,16 +152,16 @@ object traversal {
 
   def position(n: Int): Strategy => Strategy = s => if(n <= 0) s else one(position(n-1)(s))
 
-  def drop(n: Int): Strategy => Strategy = s => e => mayApply(s)(e) match {
-    case None =>
+  def drop(n: Int): Strategy => Strategy = s => e => mayApply2(s)(e) match {
+    case (None, a) =>
       println(s"fail ($n) $e")
-      one(drop(n)(s))(e)
-    case Some(r) if n <= 0 =>
+      oneWithState(drop(n)(a))(e)
+    case (Some(r), _) if n <= 0 =>
       println(s"succ ($n) $e")
       r
-    case Some(r) if n > 0 =>
+    case (Some(r), _) if n > 0 =>
       println(s"drop ($n) $e")
-      some(drop(n-1)(s))(e)
+      oneWithState(drop(n-1)(s))(e)
   }
 
   // todo figure out whats wrong here
