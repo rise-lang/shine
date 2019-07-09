@@ -5,17 +5,25 @@ import lift.core._
 package object core {
   type Strategy = Expr => Expr
 
-  sealed trait RewriteResult
-  case class Success(e: Expr) extends RewriteResult
-  case class Failure(s: Strategy) extends RewriteResult
+  sealed trait RewriteResult {
+    def getExprOrElse(e: Expr): Expr
+  }
+
+  case class Success(e: Expr) extends RewriteResult {
+    override def getExprOrElse(expr: Expr): Expr = e
+  }
+
+  case class Failure(s: Strategy) extends RewriteResult {
+    override def getExprOrElse(e: Expr): Expr = e
+  }
 
   case class NotApplicable(s: Strategy) extends Exception
 
-  def mayApply: Strategy => Expr => Option[Expr] =
+  def mayApply: Strategy => Expr => RewriteResult =
     s => e => {
-      try { Some(s(e)) }
+      try { Success(s(e)) }
       catch {
-        case _: MatchError | NotApplicable(_) => None
+        case _: MatchError | NotApplicable(_) => Failure(s)
       }
     }
 

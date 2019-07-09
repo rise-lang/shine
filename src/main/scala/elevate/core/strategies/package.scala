@@ -14,8 +14,8 @@ package object strategies {
   def leftChoice: Strategy => Strategy => Strategy =
     f => s => e => {
       mayApply(f)(e) match {
-        case Some(r) => r
-        case None => s(e)
+        case Success(r) => r
+        case Failure(_) => s(e)
       }
     }
 

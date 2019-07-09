@@ -31,8 +31,8 @@ object traversal {
   def find: Strategy => TraversalStrategy =
     s => e => {
       mayApply(s)(e) match {
-        case None => Continue(e, find(s))
-        case Some(r) => Stop(r)
+        case Failure(_) => Continue(e, find(s))
+        case Success(r) => Stop(r)
       }
     }
 
@@ -50,8 +50,8 @@ object traversal {
   def dropOld(n: Int): Strategy => TraversalStrategy =
     s => e => {
       mayApply(s)(e) match {
-        case None => Continue(e, dropOld(n)(s))
-        case Some(r) => if (n <= 0) {
+        case Failure(_) => Continue(e, dropOld(n)(s))
+        case Success(r) => if (n <= 0) {
           Stop(r)
         } else {
           Continue(e, dropOld(n - 1)(s))
@@ -95,8 +95,8 @@ object traversal {
   // applies s to one direct subexpression
   def one: Strategy => Strategy = s => {
     case Apply(f, e) => mayApply(s)(f) match {
-        case Some(x) => Apply(x,e)
-        case _ => Apply(f, s(e))
+        case Success(x) => Apply(x,e)
+        case Failure(_) => Apply(f, s(e))
       }
     case x => traverseSingleSubexpression(s)(x) match {
       case Some(e) => e
@@ -119,8 +119,8 @@ object traversal {
   // applies s to at least one direct subexpression and as many as possible
   def some: Strategy => Strategy = s => {
     case Apply(f, e) => (mayApply(s)(f), mayApply(s)(e)) match {
-      case (None, None) => throw NotApplicable(s)
-      case (x, y) => Apply(x.getOrElse(f), y.getOrElse(e))
+      case (Failure(_), Failure(_)) => throw NotApplicable(s)
+      case (x, y) => Apply(x.getExprOrElse(f), y.getExprOrElse(e))
     }
     case x => traverseSingleSubexpression(s)(x) match {
       case Some(e) => e
