@@ -8,17 +8,14 @@ package object strategies {
   def id: Strategy =
     e => e
 
-  def fail: Strategy =
-    throw NotFound
-
   def seq: Strategy => Strategy => Strategy =
     f => s => e => s(f(e))
 
   def leftChoice: Strategy => Strategy => Strategy =
     f => s => e => {
       mayApply(f)(e) match {
-        case Some(r) => r
-        case None => s(e)
+        case Success(r) => r
+        case Failure(_) => s(e)
       }
     }
 
@@ -39,4 +36,9 @@ package object strategies {
 
   def normalize: Strategy => Strategy =
     s => repeat(oncetd(s))
+
+  def print: Strategy = print("")
+  def print(msg: String): Strategy = {
+    e => println(s"$msg $e"); e
+  }
 }

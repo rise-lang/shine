@@ -1,9 +1,9 @@
 package elevate.core.rules
 
-import elevate.core.Strategy
+import elevate.core.{NotApplicable, Strategy}
 import lift.core._
 import lift.core.DSL._
-import lift.core.primitives.{map, slide, split, join, transpose}
+import lift.core.primitives.{join, map, slide, split, transpose}
 
 object algorithmic {
   // - Notation -
@@ -17,21 +17,22 @@ object algorithmic {
 
   def splitJoin: Nat => Strategy = `*f -> S >> **f >> J`
   def `*f -> S >> **f >> J`: Nat => Strategy =
-    n => {
+    n => Rule({
       case Apply(`map`, f) => split(n) >> map(map(f)) >> join
-    }
+    })
 
   /// fusion / fission /////////////////////////////////////////////////////////////////////////////////////////////////
 
   def mapFusion: Strategy = `*g >> *f -> *(g >> f)`
-  def `*g >> *f -> *(g >> f)`: Strategy = {
+  def `*g >> *f -> *(g >> f)`: Strategy = Rule({
     case Apply(Apply(`map`, f), Apply(Apply(`map`, g), arg)) =>
       map(g >> f)(arg)
-  }
+    case _ => throw NotApplicable(mapFusion)
+  })
 
   // fission of the last function to be applied inside a map
   def mapLastFission: Strategy = `*(g >> .. >> f) -> *(g >> ..) >> *f`
-  def `*(g >> .. >> f) -> *(g >> ..) >> *f`: Strategy = {
+  def `*(g >> .. >> f) -> *(g >> ..) >> *f`: Strategy = Rule({
     // TODO? 'x' should not be used in 'f' or 'g'
     /* chain of two fission
     case Apply(`map`, Lambda(x1, Apply(f, Apply(g, x2)))) if x1 == x2 =>
@@ -39,7 +40,7 @@ object algorithmic {
       */
     case Apply(`map`, Lambda(x, Apply(f, gx))) =>
       Apply(`map`, Lambda(x, gx)) >> map(f)
-  }
+  })
 
   /// identities ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -47,7 +48,7 @@ object algorithmic {
   def ` -> T >> T`: Strategy = x => x |> transpose |> transpose
 
   def removeTransposePair: Strategy = `T >> T -> `
-  def `T >> T -> `: Strategy = {
+  def `T >> T -> `: Strategy = Rule({
     case Apply(`transpose`, Apply(`transpose`, x)) => x
-  }
+  })
 }

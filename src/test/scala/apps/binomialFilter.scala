@@ -66,19 +66,19 @@ object binomialFilter {
 
   val norm = strategies.normalize(betaReduction <+ etaReduction)
 
-  val separateDot: Strategy = {
+  val separateDot: Strategy = Rule({
     case Apply(Apply(Apply(`reduce`, rf), init), Apply(Apply(`map`, mf), Apply(Apply(`zip`, w), Apply(`join`, nbh))))
     if rf == norm(add) && init == l(0.0f) && mf == norm(mulT) && w == weights2d
     =>
       nbh |> map(dot(weights1d)) |> dot(weights1d)
-  }
+  })
 
-  val separateDotT: Strategy = {
+  val separateDotT: Strategy = Rule({
     case Apply(Apply(Apply(`reduce`, rf), init), Apply(Apply(`map`, mf), Apply(Apply(`zip`, w), Apply(`join`, nbh))))
       if rf == norm(add) && init == l(0.0f) && mf == norm(mulT) && w == weights2d
     =>
       nbh |> transpose |> map(dot(weights1d)) |> dot(weights1d)
-  }
+  })
 }
 
 class binomialFilter extends idealised.util.Tests {
@@ -143,7 +143,7 @@ class binomialFilter extends idealised.util.Tests {
         P >> Sv >> *(T >> Sh >> *(T >> T >> *(Dv) >> Dh))),
       (oncetd(`T >> T -> `),
         P >> Sv >> *(T >> Sh >> *(*(Dv) >> Dh))),
-      (depthFirst(traversal.drop(1)(mapFirstFission)),
+      (skip(1)(mapFirstFission),
         P >> Sv >> *(T >> Sh >> *(*(Dv)) >> *(Dh))),
       (oncetd(`S >> **f -> *f >> S`),
         P >> Sv >> *(T >> *(Dv) >> Sh >> *(Dh))),
@@ -151,7 +151,7 @@ class binomialFilter extends idealised.util.Tests {
         P >> Sv >> *(T) >> *(*(Dv) >> Sh >> *(Dh))),
       (oncetd(mapFirstFission),
         P >> Sv >> *(T) >> *(*(Dv)) >> *(Sh >> *(Dh))),
-      (depthFirst(drop(1)(mapFusion)),
+      (skip(1)(mapFusion),
         P >> Sv >> *(T >> *(Dv)) >> *(Sh >> *(Dh)))
     )
 
@@ -161,10 +161,9 @@ class binomialFilter extends idealised.util.Tests {
         result
     })
 
-    println(result)
     val pick = repeatNTimes(2)(oncetd(specialize.reduceSeq)) `;`
       repeatNTimes(2)(oncetd(specialize.mapSeq)) `;`
-      repeatNTimes(2)(depthFirst(drop(1)(specialize.mapSeq)))
+      repeatNTimes(2)(skip(1)(specialize.mapSeq))
     s_eq(pick(result), norm(separated))
   }
 
@@ -197,7 +196,7 @@ class binomialFilter extends idealised.util.Tests {
         P >> Sv >> *(T >> Sh >> *(T >> T >> *(Dv) >> Dh))),
       (oncetd(`T >> T -> `),
         P >> Sv >> *(T >> Sh >> *(*(Dv) >> Dh))),
-      (depthFirst(drop(1)(mapFirstFission)),
+      (skip(1)(mapFirstFission),
         P >> Sv >> *(T >> Sh >> *(*(Dv)) >> *(Dh))),
       (oncetd(`S >> **f -> *f >> S`),
         P >> Sv >> *(T >> *(Dv) >> Sh >> *(Dh)))
