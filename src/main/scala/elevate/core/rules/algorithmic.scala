@@ -9,7 +9,7 @@ object algorithmic {
   // - Notation -
   // x >> y: piping operator, x then y
   // *f: map(f)
-  // T: transpose}
+  // T: transpose
   // S: slide/split
   // J: join
 

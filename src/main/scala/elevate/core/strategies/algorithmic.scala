@@ -32,11 +32,10 @@ object algorithmic {
 
   // fission of all the functions chained inside a map
   // *(g >> .. >> f) -> *g >> .. >> *f
-  def mapFullFission: Strategy = {
+  def mapFullFission: Strategy = Rule({
     case Apply(primitives.map, Lambda(x, gx)) =>
       mapFullFissionRec(x, gx)
-    case _ => throw NotApplicable(mapFullFission)
-  }
+  })
 
   def mapFullFissionRec(x: Identifier, gx: Expr): Expr = {
     gx match {
