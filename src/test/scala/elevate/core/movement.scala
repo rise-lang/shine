@@ -21,7 +21,7 @@ class movement extends idealised.util.Tests {
   def **(x: Expr): Expr = map(map(x))
   def λ(f: Identifier => Expr): Expr = fun(f)
 
-  /// transpose ////////////////////////////////////////////////////////////////////////////////////////////////////////
+  // transpose
 
   test("**f >> T -> T >> **f") {
     val gold = λ(f => T >> **(f))
@@ -42,7 +42,7 @@ class movement extends idealised.util.Tests {
     )
   }
 
-  /// split/slide //////////////////////////////////////////////////////////////////////////////////////////////////////
+  // split/slide
 
   test("S >> **f -> *f >> S") {
     assert(eq(
@@ -58,7 +58,7 @@ class movement extends idealised.util.Tests {
     )
   }
 
-  /// join /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  // join
 
   test("J >> *f -> **f >> J") {
     assert(eq(
@@ -74,7 +74,7 @@ class movement extends idealised.util.Tests {
     ))
   }
 
-  /// special-cases ////////////////////////////////////////////////////////////////////////////////////////////////////
+  // special-cases
 
   test("T >> S -> *S >> T >> *T") {
     assert(eq(
