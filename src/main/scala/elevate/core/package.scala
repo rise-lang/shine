@@ -24,6 +24,9 @@ package object core {
       try { Success(s(e)) }
       catch {
         case NotApplicable(x) => Failure(x)
+        case m:MatchError =>
+          println("WARN: All Strategies wrapped in `elevate.core.rules.Rule`?")
+          throw m
       }
     }
 

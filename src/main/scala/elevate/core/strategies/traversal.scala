@@ -150,7 +150,7 @@ object traversal {
     case Success(r) if n <= 0 =>
       r
     case Success(_) if n > 0 =>
-      oneWithState(skip(n-1)(s))(e)
+      oneWithState(skip(n - 1)(s))(e)
   }
 
   // todo figure out whats wrong here
