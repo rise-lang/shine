@@ -92,11 +92,11 @@ object traversal {
     }
   }
 
-  // applies s to one direct subexpression
-  def one: Strategy => Strategy = s => {
+  private def oneHandlingState(carryOverState: Boolean) : Strategy => Strategy = s => {
     case Apply(f, e) => mayApply(s)(f) match {
         case Success(x) => Apply(x,e)
-        case Failure(_) => Apply(f, s(e))
+        case Failure(state) => if(carryOverState)
+          Apply(f, state(e)) else Apply(f, s(e))
       }
     case x => traverseSingleSubexpression(s)(x) match {
       case Some(e) => e
@@ -105,16 +105,8 @@ object traversal {
   }
 
   // applies s to one direct subexpression
-  def oneWithState: Strategy => Strategy = s => {
-    case Apply(f, e) => mayApply2(s)(f) match {
-        case Success(x) => Apply(x,e)
-        case Failure(state) => Apply(f, state(e))
-      }
-    case x => traverseSingleSubexpression(s)(x) match {
-      case Some(e) => e
-      case None => throw NotApplicable(s)
-    }
-  }
+  def one: Strategy => Strategy = oneHandlingState(false)
+  def oneWithState: Strategy => Strategy = oneHandlingState(true)
 
   // applies s to at least one direct subexpression and as many as possible
   def some: Strategy => Strategy = s => {
@@ -152,12 +144,12 @@ object traversal {
 
   def position(n: Int): Strategy => Strategy = s => if(n <= 0) s else oneWithState(position(n-1)(s))
 
-  def skip(n: Int): Strategy => Strategy = s => e => mayApply2(s)(e) match {
+  def skip(n: Int): Strategy => Strategy = s => e => mayApply(s)(e) match {
     case Failure(a) =>
       oneWithState(skip(n)(a))(e)
     case Success(r) if n <= 0 =>
       r
-    case Success(r) if n > 0 =>
+    case Success(_) if n > 0 =>
       oneWithState(skip(n-1)(s))(e)
   }
 

@@ -6,6 +6,7 @@ package object rules {
   def betaReduction: Strategy = {
     case Apply(f, x) => lifting.liftFunctionExpr(f) match {
       case lifting.Reducing(lf) => lf(x)
+      case _ => throw NotApplicable(betaReduction)
     }
     case _ => throw NotApplicable(betaReduction)
   }

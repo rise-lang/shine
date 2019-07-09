@@ -23,18 +23,9 @@ package object core {
     s => e => {
       try { Success(s(e)) }
       catch {
-        case _: MatchError | NotApplicable(_) => Failure(s)
-      }
-    }
-
-  def mayApply2: Strategy => Expr => RewriteResult =
-    s => e => {
-      try { Success(s(e)) }
-      catch {
         case NotApplicable(x) => Failure(x)
       }
     }
-
 
   implicit class Then(f: Strategy) {
     def `;`(s: Strategy): Strategy = strategies.seq(f)(s)

@@ -70,6 +70,7 @@ object binomialFilter {
     if rf == norm(add) && init == l(0.0f) && mf == norm(mulT) && w == weights2d
     =>
       nbh |> map(dot(weights1d)) |> dot(weights1d)
+    case _ => throw NotApplicable(separateDot)
   }
 
   val separateDotT: Strategy = {
@@ -77,6 +78,7 @@ object binomialFilter {
       if rf == norm(add) && init == l(0.0f) && mf == norm(mulT) && w == weights2d
     =>
       nbh |> transpose |> map(dot(weights1d)) |> dot(weights1d)
+    case _ => throw NotApplicable(separateDotT)
   }
 }
 
