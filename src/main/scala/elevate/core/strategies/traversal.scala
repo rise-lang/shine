@@ -1,8 +1,8 @@
 package elevate.core.strategies
 
 import elevate.core._
-import _root_.lift.core.types.{DataType, DataTypeIdentifier}
-import _root_.lift.core.{Apply, DepApply, DepLambda, Expr, Identifier, Index, Lambda, Literal, Nat, NatDepApply, NatDepLambda, NatExpr, NatIdentifier, Primitive, TypeDepApply, TypeDepLambda, TypedExpr, primitives, traversal => lt}
+import lift.core.types.{DataType, DataTypeIdentifier}
+import lift.core.{Apply, DepApply, DepLambda, Expr, Identifier, Index, Lambda, Literal, Nat, NatDepApply, NatDepLambda, NatExpr, NatIdentifier, Primitive, TypeDepApply, TypeDepLambda, TypedExpr, primitives, traversal => lt}
 
 object traversal {
 

@@ -4,9 +4,9 @@ import elevate.core.rules._
 import elevate.core.rules.algorithmic.{mapFusion}
 import elevate.core.strategies._
 import elevate.core.strategies.traversal._
-import _root_.lift.core.DSL._
-import _root_.lift.core._
-import _root_.lift.core.primitives._
+import lift.core.DSL._
+import lift.core._
+import lift.core.primitives._
 
 class traversals extends idealised.util.Tests {
   val norm = normalize(betaReduction <+ etaReduction)

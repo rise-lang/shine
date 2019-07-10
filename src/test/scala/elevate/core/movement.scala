@@ -4,9 +4,9 @@ import elevate.core.rules._
 import elevate.core.rules.movement._
 import elevate.core.strategies._
 import elevate.core.strategies.traversal._
-import _root_.lift.core.{Expr, Identifier, StructuralEquality}
-import _root_.lift.core.primitives._
-import _root_.lift.core.DSL._
+import lift.core.{Expr, Identifier, StructuralEquality}
+import lift.core.primitives._
+import lift.core.DSL._
 import scala.language.implicitConversions
 
 class movement extends idealised.util.Tests {
@@ -38,13 +38,6 @@ class movement extends idealised.util.Tests {
         λ(f => **(f) >> T)
       ).forall((expr: Expr) =>
         eq(oncetd(`**f >> T -> T >> **f`)(expr), gold))
-    )
-  }
-
-  test("**f >> T -> T >> **f - family") {
-    assert(eq(
-      oncetd(lift(`T >> **f -> **f >> T`))(λ(f => *(T) >> ***(f))),
-      λ(f => ***(f) >> *(T)))
     )
   }
 

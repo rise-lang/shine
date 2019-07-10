@@ -1,7 +1,7 @@
 package elevate.core.strategies
 
-import _root_.lift.core._
-import _root_.lift.core.DSL._
+import lift.core._
+import lift.core.DSL._
 
 import elevate.core._
 

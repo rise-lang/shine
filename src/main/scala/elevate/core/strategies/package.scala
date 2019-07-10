@@ -47,10 +47,4 @@ package object strategies {
   def print(msg: String): Strategy = {
     e => println(s"$msg $e"); Success(e)
   }
-
-  def lift: Strategy => Strategy =
-    s =>
-      print("input: ") `;` repeat(mapFusion) `;`      // repeats x times
-      print("step1: ") `;` one(one(one(s))) `;`       // #`one`s = f(x)
-      print("step2: ")`;` one(repeat(mapFullFission)) // #`one`s = g(x)
 }
