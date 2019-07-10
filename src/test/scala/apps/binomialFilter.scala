@@ -107,11 +107,11 @@ class binomialFilter extends idealised.util.Tests {
     import strategies.traversal._
 
     val s =
-      norm `;` print `;`
-      oncetd(separateDot) `;` print `;`
+      norm `;`
+      oncetd(separateDot) `;`
         repeatNTimes(2)(oncetd(specialize.reduceSeq)) `;`
         repeatNTimes(2)(oncetd(specialize.mapSeq)) `;`
-        norm `;` print
+        norm
 
     s_eq(s(highLevel).get,
       norm(factorised).get)
