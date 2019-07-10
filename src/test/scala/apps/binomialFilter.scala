@@ -65,19 +65,21 @@ object binomialFilter {
 
   val norm = strategies.normalize(betaReduction <+ etaReduction)
 
-  val separateDot: Strategy = Rule({
+  val separateDot: Strategy = {
     case Apply(Apply(Apply(`reduce`, rf), init), Apply(Apply(`map`, mf), Apply(Apply(`zip`, w), Apply(`join`, nbh))))
     if rf == norm(add) && init == l(0.0f) && mf == norm(mulT) && w == weights2d
     =>
       nbh |> map(dot(weights1d)) |> dot(weights1d)
-  })
+    case _ => throw NotApplicable(separateDot)
+  }
 
-  val separateDotT: Strategy = Rule({
+  val separateDotT: Strategy = {
     case Apply(Apply(Apply(`reduce`, rf), init), Apply(Apply(`map`, mf), Apply(Apply(`zip`, w), Apply(`join`, nbh))))
       if rf == norm(add) && init == l(0.0f) && mf == norm(mulT) && w == weights2d
     =>
       nbh |> transpose |> map(dot(weights1d)) |> dot(weights1d)
-  })
+    case _ => throw NotApplicable(separateDotT)
+  }
 }
 
 class binomialFilter extends idealised.util.Tests {
