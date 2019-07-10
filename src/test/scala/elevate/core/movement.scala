@@ -141,7 +141,7 @@ class movement extends idealised.util.Tests {
 
   test("slideOverSplit") {
     assert(eq(
-      oncetd(slideOverSplit)(slide(3)(1) >> split(16)),
+      oncetd(slideBeforeSplit)(slide(3)(1) >> split(16)),
       slide(16+3-1)(16) >> map(slide(3)(1))
     ))
   }
