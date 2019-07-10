@@ -3,32 +3,24 @@ package elevate
 import lift.core._
 
 package object core {
-  type Strategy = Expr => Expr
+  type Strategy = Expr => RewriteResult
 
   sealed trait RewriteResult {
     def getExprOrElse(e: Expr): Expr
+    def get: Expr
   }
 
   case class Success(e: Expr) extends RewriteResult {
     override def getExprOrElse(expr: Expr): Expr = e
+    override def get: Expr = e
   }
 
   case class Failure(s: Strategy) extends RewriteResult {
     override def getExprOrElse(e: Expr): Expr = e
+    override def get: Expr = throw NotApplicable(s)
   }
 
   case class NotApplicable(s: Strategy) extends Exception
-
-  def mayApply: Strategy => Expr => RewriteResult =
-    s => e => {
-      try { Success(s(e)) }
-      catch {
-        case NotApplicable(x) => Failure(x)
-        case m:MatchError =>
-          println("WARN: All Strategies wrapped in `elevate.core.rules.Rule`?")
-          throw m
-      }
-    }
 
   implicit class Then(f: Strategy) {
     def `;`(s: Strategy): Strategy = strategies.seq(f)(s)

@@ -1,11 +1,9 @@
 package elevate.core.strategies
 
-import lift.core._
-import lift.core.DSL._
+import _root_.lift.core._
+import _root_.lift.core.DSL._
 
 import elevate.core._
-import elevate.core.rules._
-import elevate.core.rules.algorithmic._
 
 object algorithmic {
   // TODO: only compose simpler rules
@@ -15,8 +13,8 @@ object algorithmic {
   // *(g >> .. >> f) -> *g >> *(.. >> f)
   def mapFirstFission: Strategy = {
     case Apply(primitives.map, Lambda(x, gx)) =>
-      mapFirstFissionRec(x, fun(e => e), gx)
-    case _ => throw NotApplicable(mapFirstFission)
+      Success(mapFirstFissionRec(x, fun(e => e), gx))
+    case _ => Failure(mapFirstFission)
   }
 
   private def mapFirstFissionRec(x: Identifier, f: Expr, gx: Expr): Expr = {
@@ -34,8 +32,8 @@ object algorithmic {
   // *(g >> .. >> f) -> *g >> .. >> *f
   def mapFullFission: Strategy = {
     case Apply(primitives.map, Lambda(x, gx)) =>
-      mapFullFissionRec(x, gx)
-    case _ => throw NotApplicable(mapFullFission)
+      Success(mapFullFissionRec(x, gx))
+    case _ => Failure(mapFullFission)
   }
 
   def mapFullFissionRec(x: Identifier, gx: Expr): Expr = {

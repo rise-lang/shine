@@ -4,14 +4,14 @@ import elevate.core.rules._
 import elevate.core.rules.algorithmic.{mapFusion}
 import elevate.core.strategies._
 import elevate.core.strategies.traversal._
-import lift.core.DSL._
-import lift.core._
-import lift.core.primitives._
+import _root_.lift.core.DSL._
+import _root_.lift.core._
+import _root_.lift.core.primitives._
 
 class traversals extends idealised.util.Tests {
   val norm = normalize(betaReduction <+ etaReduction)
 
-  def eq(a: Expr, b: Expr): Boolean = StructuralEquality(norm(a), norm(b))
+  def eq(a: Expr, b: Expr): Boolean = StructuralEquality(norm(a).get, norm(b).get)
 
   test("id traversals") {
     val expr = fun(f => fun(g => map(f) >> map(g)))
@@ -28,7 +28,7 @@ class traversals extends idealised.util.Tests {
         sometd(id)(expr),
         //innermost(id)(expr),
         somebu(id)(expr)
-      ).forall(eq(_, expr))
+      ).forall(x => eq(x.get, expr))
     )
   }
 
@@ -45,7 +45,7 @@ class traversals extends idealised.util.Tests {
         somebu(mapFusion)(expr),
         topdown(`try`(mapFusion))(expr),
         bottomup(`try`(mapFusion))(expr)
-      ).forall(eq(_, gold))
+      ).forall(x => eq(x.get, gold))
     )
   }
 }

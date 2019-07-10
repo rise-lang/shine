@@ -1,6 +1,6 @@
 package elevate.core.rules
 
-import elevate.core.{NotApplicable, Strategy}
+import elevate.core.{Failure, NotApplicable, Strategy, Success}
 import lift.core.{Apply, DepApply, Expr, Lambda, Nat, Primitive}
 import lift.core.primitives._
 import lift.core.DSL._
@@ -22,8 +22,8 @@ object movement {
     case Apply(
     `transpose`,
     Apply(Apply(`map`, Apply(`map`, f)), y)) =>
-      y |> transpose |> map(map(f))
-    case _ => throw NotApplicable(mapMapFBeforeTranspose)
+      Success(y |> transpose |> map(map(f)))
+    case _ => Failure(mapMapFBeforeTranspose)
   }
 
   def transposeBeforeMapMapF: Strategy = `T >> **f -> **f >> T`
@@ -31,8 +31,8 @@ object movement {
     case Apply(
     Apply(`map`, Apply(`map`, f)),
     Apply(`transpose`, y)) =>
-      y |> map(map(f)) |> transpose
-    case _ => throw NotApplicable(transposeBeforeMapMapF)
+      Success(y |> map(map(f)) |> transpose)
+    case _ => Failure(transposeBeforeMapMapF)
   }
 
   // split/slide
@@ -48,8 +48,8 @@ object movement {
     case Apply(
     Apply(`map`, Apply(`map`, f)),
     Apply(s, y)) if isSplitOrSlide(s) =>
-      y |> map(f) |> s
-    case _ => throw NotApplicable(slideBeforeMapMapF)
+      Success(y |> map(f) |> s)
+    case _ => Failure(slideBeforeMapMapF)
   }
 
   def mapFBeforeSlide: Strategy = `*f >> S -> S >> **f`
@@ -57,8 +57,8 @@ object movement {
     case Apply(
     s,
     Apply(Apply(`map`, f), y)) if isSplitOrSlide(s) =>
-      y |> s |> map(map(f))
-    case _ => throw NotApplicable(mapFBeforeSlide)
+      Success(y |> s |> map(map(f)))
+    case _ => Failure(mapFBeforeSlide)
   }
 
   // join
@@ -69,8 +69,8 @@ object movement {
     Apply(`map`, f),
     Apply(`join`, y)
     ) =>
-      y |> map(map(f)) >> join
-    case _ => throw NotApplicable(joinBeforeMapF)
+      Success(y |> map(map(f)) >> join)
+    case _ => Failure(joinBeforeMapF)
   }
 
   def mapMapFBeforeJoin: Strategy = `**f >> J -> J >> *f`
@@ -79,8 +79,8 @@ object movement {
     `join`,
     Apply(Apply(map, Apply(`map`, f)), y)
     ) =>
-      y |> join |> map(f)
-    case _ => throw NotApplicable(mapMapFBeforeJoin)
+      Success(y |> join |> map(f))
+    case _ => Failure(mapMapFBeforeJoin)
   }
 
   // special-cases
@@ -92,8 +92,8 @@ object movement {
     s,
     Apply(`transpose`, y)
     ) if isSplitOrSlide(s) =>
-      y |> map(s) |> transpose >> map(transpose)
-    case _ => throw NotApplicable(transposeBeforeSlide)
+      Success(y |> map(s) |> transpose >> map(transpose))
+    case _ => Failure(transposeBeforeSlide)
   }
 
   def transposeBeforeMapSlide: Strategy = `T >> *S -> S >> *T >> T`
@@ -102,8 +102,8 @@ object movement {
     Apply(`map`, s),
     Apply(`transpose`, y)
     ) if isSplitOrSlide(s) =>
-      y |> s |> map(transpose) |> transpose
-    case _ => throw NotApplicable(transposeBeforeMapSlide)
+      Success(y |> s |> map(transpose) |> transpose)
+    case _ => Failure(transposeBeforeMapSlide)
   }
 
   def mapSlideBeforeTranspose: Strategy = `*S >> T -> T >> S >> *T`
@@ -112,8 +112,8 @@ object movement {
     `transpose`,
     Apply(Apply(`map`, s), y)
     ) if isSplitOrSlide(s) =>
-      y |> transpose >> s >> map(transpose)
-    case _ => throw NotApplicable(mapSlideBeforeTranspose)
+      Success(y |> transpose >> s >> map(transpose))
+    case _ => Failure(mapSlideBeforeTranspose)
   }
 
   // transpose + join
@@ -124,8 +124,8 @@ object movement {
     `transpose`,
     Apply(`join`, y)
     ) =>
-      y |> map(transpose) |> transpose |> map(join)
-    case _ => throw NotApplicable(joinBeforeTranspose)
+      Success(y |> map(transpose) |> transpose |> map(join))
+    case _ => Failure(joinBeforeTranspose)
   }
 
   def transposeBeforeMapJoin: Strategy = `T >> *J -> *T >> J >> T`
@@ -134,8 +134,8 @@ object movement {
     Apply(`map`, `join`),
     Apply(`transpose`, y)
     ) =>
-      y |> map(transpose) |> join |> transpose
-    case _ => throw NotApplicable(transposeBeforeMapJoin)
+      Success(y |> map(transpose) |> join |> transpose)
+    case _ => Failure(transposeBeforeMapJoin)
   }
 
   def mapTransposeBeforeJoin: Strategy = `*T >> J -> T >> *J >> T`
@@ -144,8 +144,8 @@ object movement {
     `join`,
     Apply(Apply(`map`, `transpose`), y)
     ) =>
-      y |> transpose |> map(join) |> transpose
-    case _ => throw NotApplicable(mapTransposeBeforeJoin)
+      Success(y |> transpose |> map(join) |> transpose)
+    case _ => Failure(mapTransposeBeforeJoin)
   }
 
   def mapJoinBeforeTranspose: Strategy = `*J >> T -> T >> *T >> J`
@@ -154,8 +154,8 @@ object movement {
     `transpose`,
     Apply(Apply(`map`, `join`), y)
     ) =>
-      y |> transpose |> map(transpose) |> join
-    case _ => throw NotApplicable(mapJoinBeforeTranspose)
+      Success(y |> transpose |> map(transpose) |> join)
+    case _ => Failure(mapJoinBeforeTranspose)
   }
 
   // join + join
@@ -166,8 +166,8 @@ object movement {
     `join`,
     Apply(`join`, y)
     ) =>
-      y |> map(join) >> join
-    case _ => throw NotApplicable(joinBeforeJoin)
+      Success(y |> map(join) >> join)
+    case _ => Failure(joinBeforeJoin)
   }
 
   def mapJoinBeforeJoin: Strategy = `*J >> J -> J >> J`
@@ -176,8 +176,8 @@ object movement {
     `join`,
     Apply(Apply(`map`, `join`), y)
     ) =>
-      y |> join |> join
-    case _ => throw NotApplicable(mapJoinBeforeJoin)
+      Success(y |> join |> join)
+    case _ => Failure(mapJoinBeforeJoin)
   }
 
   // split + slide
@@ -188,7 +188,7 @@ object movement {
     DepApply(`split`, k: Nat),
     Apply(DepApply(DepApply(`slide`, n: Nat), s: Nat), y)
     ) =>
-      y |> slide(k+n-s)(k) |> map(slide(n)(s))
-    case _ => throw NotApplicable(slideBeforeSplit)
+      Success(y |> slide(k+n-s)(k) |> map(slide(n)(s)))
+    case _ => Failure(slideBeforeSplit)
   }
 }
