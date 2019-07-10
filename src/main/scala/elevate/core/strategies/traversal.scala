@@ -8,29 +8,22 @@ object traversal {
 
   // generic one-level traversal operators
 
-  private def inject(generator: Expr => Expr, test: RewriteResult): RewriteResult = {
-    test match {
-      case Success(e) => Success(generator(e))
-      case f:Failure => f
-    }
-  }
-
   private def traverseSingleSubexpression: Strategy => Expr => Option[RewriteResult] =
     s => {
       case Identifier(_) => None
-      case Lambda(x, e) => Some(inject(Lambda(x, _), s(e)))
+      case Lambda(x, e) => Some(s(e).mapSuccess(Lambda(x, _)))
       case DepLambda(x, e) => x match {
-        case n: NatIdentifier => Some(inject(NatDepLambda(n, _), s(e)))
-        case dt: DataTypeIdentifier => Some(inject(TypeDepLambda(dt, _), s(e)))
+        case n: NatIdentifier => Some(s(e).mapSuccess(NatDepLambda(n, _)))
+        case dt: DataTypeIdentifier => Some(s(e).mapSuccess(TypeDepLambda(dt, _)))
       }
       case DepApply(f, x) => x match {
-        case n: Nat => Some(inject(NatDepApply(_, n), s(f)))
-        case dt: DataType => Some(inject(TypeDepApply(_, dt), s(f)))
+        case n: Nat => Some(s(f).mapSuccess(NatDepApply(_, n)))
+        case dt: DataType => Some(s(f).mapSuccess(TypeDepApply(_, dt)))
       }
       case Literal(_) => None
       case Index(_, _) => None
       case NatExpr(_) => None
-      case TypedExpr(e, t) => Some(inject(TypedExpr(_, t), s(e)))
+      case TypedExpr(e, t) => Some(s(e).mapSuccess(TypedExpr(_, t)))
       case ff: primitives.ForeignFunction => None
       case p: Primitive => None
     }
@@ -51,8 +44,8 @@ object traversal {
     case Apply(f, e) => s(f) match {
         case Success(x) => Success(Apply(x,e))
         case Failure(state) => if(carryOverState)
-          inject(Apply(f, _), state(e)) else
-          inject(Apply(f, _), s(e))
+          state(e).mapSuccess(Apply(f, _)) else
+          s(e).mapSuccess(Apply(f, _))
       }
     case x => traverseSingleSubexpression(s)(x) match {
       case Some(r) => r
