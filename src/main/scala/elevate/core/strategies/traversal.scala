@@ -30,10 +30,8 @@ object traversal {
 
   // applies s to all direct subexpressions
   def all: Strategy => Strategy = s => {
-    case Apply(f, e) => (s(f), s(e)) match {
-      case (Success(a), Success(b)) => Success(Apply(a,b))
-      case _ => Failure(s)
-    }
+    case Apply(f, e) => s(f).flatMapSuccess(a => s(e).mapSuccess(b => Apply(a, b)))
+
     case x => traverseSingleSubexpression(s)(x) match {
       case Some(r) => r
       case None => Success(x)
