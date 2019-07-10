@@ -10,6 +10,7 @@ import lift.core.HighLevelConstructs.padClamp2D
 import elevate.core._
 import rules._
 import rules.algorithmic._
+import rules.movement._
 import strategies.algorithmic._
 
 import idealised.C
