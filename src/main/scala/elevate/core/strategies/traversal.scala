@@ -5,63 +5,8 @@ import lift.core.types.{DataType, DataTypeIdentifier}
 import lift.core.{Apply, DepApply, DepLambda, Expr, Identifier, Index, Lambda, Literal, Nat, NatDepApply, NatDepLambda, NatExpr, NatIdentifier, Primitive, TypeDepApply, TypeDepLambda, TypedExpr, primitives, traversal => lt}
 
 object traversal {
-  sealed trait Result
-  case class Stop(e: Expr) extends Result
-  case class Continue(e: Expr, ts: TraversalStrategy) extends Result
-  type TraversalStrategy = Expr => Result
 
-  case class Visitor(ts: TraversalStrategy) extends lt.Visitor {
-    override def apply(e: Expr): lt.Result[Expr] = {
-      ts(e) match {
-        case Stop(r) => lt.Stop(r)
-        case Continue(ke, kts) => lt.Continue(ke, Visitor(kts))
-      }
-    }
-  }
-
-  def depthFirst: TraversalStrategy => Strategy =
-    ts => expr => {
-      lt.DepthFirstGlobalResult(expr, Visitor(ts)) match {
-        case lt.Stop(r) => r
-        case lt.Continue(_, _) => throw NotApplicable(???)
-      }
-    }
-
-  @deprecated
-  def find: Strategy => TraversalStrategy =
-    s => e => {
-      mayApply(s)(e) match {
-        case Failure(_) => Continue(e, find(s))
-        case Success(r) => Stop(r)
-      }
-    }
-
-  @deprecated
-  def positionOld(n: Int): Strategy => TraversalStrategy =
-    s => e => {
-      if (n <= 0) {
-        Stop(s(e))
-      } else {
-        Continue(e, positionOld(n - 1)(s))
-      }
-    }
-
-  @deprecated
-  def dropOld(n: Int): Strategy => TraversalStrategy =
-    s => e => {
-      mayApply(s)(e) match {
-        case Failure(_) => Continue(e, dropOld(n)(s))
-        case Success(r) => if (n <= 0) {
-          Stop(r)
-        } else {
-          Continue(e, dropOld(n - 1)(s))
-        }
-      }
-    }
-
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // generic one-level traversal operators
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   private def traverseSingleSubexpression: Strategy => Expr => Option[Expr] =
     s => {
@@ -120,9 +65,7 @@ object traversal {
     }
   }
 
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // generic traversal strategies
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   def topdown: Strategy => Strategy = s => s `;` (e => all(topdown(s))(e))
 
