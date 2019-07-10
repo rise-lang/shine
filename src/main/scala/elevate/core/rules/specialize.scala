@@ -1,18 +1,21 @@
 package elevate.core.rules
 
-import elevate.core.Strategy
+import elevate.core.{NotApplicable, Strategy}
 import lift.core.primitives
 
 object specialize {
-  val mapSeq: Strategy = {
+  def mapSeq: Strategy = {
     case primitives.map => primitives.mapSeq
+    case _ => throw NotApplicable(mapSeq)
   }
 
-  val reduceSeq: Strategy = {
+  def reduceSeq: Strategy = {
     case primitives.reduce => primitives.reduceSeq
+    case _ => throw NotApplicable(mapSeq)
   }
 
   def slideSeq(rot: primitives.slideSeq.Rotate): Strategy = {
     case primitives.slide => primitives.slideSeq(rot)
+    case _ => throw NotApplicable(mapSeq)
   }
 }

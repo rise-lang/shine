@@ -14,8 +14,8 @@ package object strategies {
   def leftChoice: Strategy => Strategy => Strategy =
     f => s => e => {
       mayApply(f)(e) match {
-        case Some(r) => r
-        case None => s(e)
+        case Success(r) => r
+        case Failure(_) => s(e)
       }
     }
 
@@ -35,5 +35,10 @@ package object strategies {
     n => s => if (n > 0) { s `;` repeatNTimes(n-1)(s) } else { id }
 
   def normalize: Strategy => Strategy =
-    s => repeat(depthFirst(find(s)))
+    s => repeat(oncetd(s))
+
+  def print: Strategy = print("")
+  def print(msg: String): Strategy = {
+    e => println(s"$msg $e"); e
+  }
 }

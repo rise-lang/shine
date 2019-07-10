@@ -10,6 +10,7 @@ import lift.core.HighLevelConstructs.padClamp2D
 import elevate.core._
 import rules._
 import rules.algorithmic._
+import rules.movement._
 import strategies.algorithmic._
 
 import idealised.C
@@ -63,13 +64,14 @@ object binomialFilter {
       map(dotSeq(weights1d))
     )
 
-  val norm = strategies.normalize(betaReduction +> etaReduction)
+  val norm = strategies.normalize(betaReduction <+ etaReduction)
 
   val separateDot: Strategy = {
     case Apply(Apply(Apply(`reduce`, rf), init), Apply(Apply(`map`, mf), Apply(Apply(`zip`, w), Apply(`join`, nbh))))
     if rf == norm(add) && init == l(0.0f) && mf == norm(mulT) && w == weights2d
     =>
       nbh |> map(dot(weights1d)) |> dot(weights1d)
+    case _ => throw NotApplicable(separateDot)
   }
 
   val separateDotT: Strategy = {
@@ -77,6 +79,7 @@ object binomialFilter {
       if rf == norm(add) && init == l(0.0f) && mf == norm(mulT) && w == weights2d
     =>
       nbh |> transpose |> map(dot(weights1d)) |> dot(weights1d)
+    case _ => throw NotApplicable(separateDotT)
   }
 }
 
@@ -94,8 +97,8 @@ class binomialFilter extends idealised.util.Tests {
     import strategies.traversal._
 
     val s =
-      depthFirst(find(specialize.reduceSeq)) `;`
-        repeatNTimes(2)(depthFirst(find(specialize.mapSeq)))
+      oncetd(specialize.reduceSeq) `;`
+        repeatNTimes(2)(oncetd(specialize.mapSeq))
     s_eq(s(highLevel), reference)
   }
 
@@ -105,9 +108,9 @@ class binomialFilter extends idealised.util.Tests {
 
     val s =
       norm `;`
-      depthFirst(find(separateDot)) `;`
-        repeatNTimes(2)(depthFirst(find(specialize.reduceSeq))) `;`
-        repeatNTimes(2)(depthFirst(find(specialize.mapSeq))) `;`
+      oncetd(separateDot) `;`
+        repeatNTimes(2)(oncetd(specialize.reduceSeq)) `;`
+        repeatNTimes(2)(oncetd(specialize.mapSeq)) `;`
         norm
 
     s_eq(s(highLevel), norm(factorised))
@@ -128,29 +131,29 @@ class binomialFilter extends idealised.util.Tests {
     val steps = Seq[(Strategy, Expr)](
       (id,
         P >> *(Sh) >> Sv >> *(T) >> *(*(fun(nbh => dot(weights2d)(join(nbh)))))),
-      (depthFirst(find(separateDotT)),
+      (oncetd(separateDotT),
         P >> *(Sh) >> Sv >> *(T) >> *(*(T >> *(Dv) >> Dh))),
-      (depthFirst(find(`*f >> S -> S >> **f`)),
+      (oncetd(`*f >> S -> S >> **f`),
         P >> Sv >> *(*(Sh)) >> *(T) >> *(*(T >> *(Dv) >> Dh))),
-      (depthFirst(find(mapFusion)),
+      (oncetd(mapFusion),
         P >> Sv >> *(*(Sh)) >> *(T >> *(T >> *(Dv) >> Dh))),
-      (depthFirst(find(mapFusion)),
+      (oncetd(mapFusion),
         P >> Sv >> *(*(Sh) >> T >> *(T >> *(Dv) >> Dh))),
-      (depthFirst(find(`*S >> T -> T >> S >> *T`)),
+      (oncetd(`*S >> T -> T >> S >> *T`),
         P >> Sv >> *(T >> Sh >> *(T) >> *(T >> *(Dv) >> Dh))),
-      (depthFirst(find(mapFusion)),
+      (oncetd(mapFusion),
         P >> Sv >> *(T >> Sh >> *(T >> T >> *(Dv) >> Dh))),
-      (depthFirst(find(`T >> T -> `)),
+      (oncetd(`T >> T -> `),
         P >> Sv >> *(T >> Sh >> *(*(Dv) >> Dh))),
-      (depthFirst(traversal.drop(1)(mapFirstFission)),
+      (skip(1)(mapFirstFission),
         P >> Sv >> *(T >> Sh >> *(*(Dv)) >> *(Dh))),
-      (depthFirst(find(`S >> **f -> *f >> S`)),
+      (oncetd(`S >> **f -> *f >> S`),
         P >> Sv >> *(T >> *(Dv) >> Sh >> *(Dh))),
-      (depthFirst(find(mapFirstFission)),
+      (oncetd(mapFirstFission),
         P >> Sv >> *(T) >> *(*(Dv) >> Sh >> *(Dh))),
-      (depthFirst(find(mapFirstFission)),
+      (oncetd(mapFirstFission),
         P >> Sv >> *(T) >> *(*(Dv)) >> *(Sh >> *(Dh))),
-      (depthFirst(drop(1)(mapFusion)),
+      (skip(1)(mapFusion),
         P >> Sv >> *(T >> *(Dv)) >> *(Sh >> *(Dh)))
     )
 
@@ -160,10 +163,9 @@ class binomialFilter extends idealised.util.Tests {
         result
     })
 
-    println(result)
-    val pick = repeatNTimes(2)(depthFirst(find(specialize.reduceSeq))) `;`
-      repeatNTimes(2)(depthFirst(find(specialize.mapSeq))) `;`
-      repeatNTimes(2)(depthFirst(drop(1)(specialize.mapSeq)))
+    val pick = repeatNTimes(2)(oncetd(specialize.reduceSeq)) `;`
+      repeatNTimes(2)(oncetd(specialize.mapSeq)) `;`
+      repeatNTimes(2)(skip(1)(specialize.mapSeq))
     s_eq(pick(result), norm(separated))
   }
 
@@ -182,23 +184,23 @@ class binomialFilter extends idealised.util.Tests {
     val steps = Seq[(Strategy, Expr)](
       (id,
         P >> *(Sh) >> Sv >> *(T) >> *(*(fun(nbh => dot(weights2d)(join(nbh)))))),
-      (depthFirst(find(separateDotT)),
+      (oncetd(separateDotT),
         P >> *(Sh) >> Sv >> *(T) >> *(*(T >> *(Dv) >> Dh))),
-      (depthFirst(find(`*f >> S -> S >> **f`)),
+      (oncetd(`*f >> S -> S >> **f`),
         P >> Sv >> *(*(Sh)) >> *(T) >> *(*(T >> *(Dv) >> Dh))),
-      (depthFirst(find(mapFusion)),
+      (oncetd(mapFusion),
         P >> Sv >> *(*(Sh)) >> *(T >> *(T >> *(Dv) >> Dh))),
-      (depthFirst(find(mapFusion)),
+      (oncetd(mapFusion),
         P >> Sv >> *(*(Sh) >> T >> *(T >> *(Dv) >> Dh))),
-      (depthFirst(find(`*S >> T -> T >> S >> *T`)),
+      (oncetd(`*S >> T -> T >> S >> *T`),
         P >> Sv >> *(T >> Sh >> *(T) >> *(T >> *(Dv) >> Dh))),
-      (depthFirst(find(mapFusion)),
+      (oncetd(mapFusion),
         P >> Sv >> *(T >> Sh >> *(T >> T >> *(Dv) >> Dh))),
-      (depthFirst(find(`T >> T -> `)),
+      (oncetd(`T >> T -> `),
         P >> Sv >> *(T >> Sh >> *(*(Dv) >> Dh))),
-      (depthFirst(drop(1)(mapFirstFission)),
+      (skip(1)(mapFirstFission),
         P >> Sv >> *(T >> Sh >> *(*(Dv)) >> *(Dh))),
-      (depthFirst(find(`S >> **f -> *f >> S`)),
+      (oncetd(`S >> **f -> *f >> S`),
         P >> Sv >> *(T >> *(Dv) >> Sh >> *(Dh)))
     )
 
@@ -208,9 +210,9 @@ class binomialFilter extends idealised.util.Tests {
       result
     })
 
-    val pick = repeatNTimes(2)(depthFirst(find(specialize.reduceSeq))) `;`
-      depthFirst(find(specialize.slideSeq(slideSeq.Values))) `;`
-      depthFirst(find(specialize.mapSeq))
+    val pick = repeatNTimes(2)(oncetd(specialize.reduceSeq)) `;`
+      oncetd(specialize.slideSeq(slideSeq.Values)) `;`
+      oncetd(specialize.mapSeq)
     s_eq(pick(result), norm(regrot))
   }
 
