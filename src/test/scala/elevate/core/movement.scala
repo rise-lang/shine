@@ -46,35 +46,35 @@ class movement extends idealised.util.Tests {
     // level 0
     println("level0")
     assert(eq(
-      one(one(family0(`**f >> T -> T >> **f`)))(λ(f => **(f) >> T)),
+      one(one(`**f >> T -> T >> **f`))(λ(f => **(f) >> T)),
       λ(f => T >> **(f)))
     )
 
     // level 1
     println("level1")
     assert(eq(
-      one(one(family1(`**f >> T -> T >> **f`)))(λ(f => ***(f) >> *(T))),
+      one(one(fmap(`**f >> T -> T >> **f`)))(λ(f => ***(f) >> *(T))),
       λ(f => *(T) >> ***(f)))
     )
 
     // level 2
     println("level2")
     assert(eq(
-      one(one(family2(`**f >> T -> T >> **f`)))(λ(f => ****(f) >> **(T))),
+      one(one(fmap(fmap(`**f >> T -> T >> **f`))))(λ(f => ****(f) >> **(T))),
       λ(f => **(T) >> ****(f)))
     )
 
     // level 3
     println("level3")
     assert(eq(
-      one(one(family3(`**f >> T -> T >> **f`)))(λ(f => *****(f) >> ***(T))),
+      one(one(fmap(fmap(fmap(`**f >> T -> T >> **f`)))))(λ(f => *****(f) >> ***(T))),
       λ(f => ***(T) >> *****(f)))
     )
 
     // level 4
     println("level4")
     assert(eq(
-      one(one(familyLevel(`**f >> T -> T >> **f`)(4)))(λ(f => ******(f) >> ****(T))),
+      one(one(fmap(fmap(fmap(fmap(`**f >> T -> T >> **f`))))))(λ(f => ******(f) >> ****(T))),
       λ(f => ****(T) >> ******(f)))
     )
   }
