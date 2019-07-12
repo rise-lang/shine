@@ -30,7 +30,7 @@ package object strategies {
   // ((map λe14. (transpose ((map (map e12)) e14))) e13) // result of mapFusion + reductionNormalform
   //  (map λe14. (transpose ((map (map e12)) e14)))      // result of `function`
   //       λe14. (transpose ((map (map e12)) e14))       // result of `argument`
-  //             (transpose ((map (map e12)) e14))       // result of 'body'
+  //             (transpose ((map (map e12)) e14))       // result of 'body' -> here we can apply s
 
   def mapped: Strategy => Strategy =
     s => s <+ (e => fmap(mapped(s))(e))
