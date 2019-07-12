@@ -68,18 +68,18 @@ object binomialFilter {
 
   val separateDot: Strategy = {
     case Apply(Apply(Apply(`reduce`, rf), init), Apply(Apply(`map`, mf), Apply(Apply(`zip`, w), Apply(`join`, nbh))))
-    if rf == norm(add) && init == l(0.0f) && mf == norm(mulT) && w == weights2d
+    if rf == norm(add).get && init == l(0.0f) && mf == norm(mulT).get && w == weights2d
     =>
-      nbh |> map(dot(weights1d)) |> dot(weights1d)
-    case _ => throw NotApplicable(separateDot)
+      Success(nbh |> map(dot(weights1d)) |> dot(weights1d))
+    case _ => Failure(separateDot)
   }
 
   val separateDotT: Strategy = {
     case Apply(Apply(Apply(`reduce`, rf), init), Apply(Apply(`map`, mf), Apply(Apply(`zip`, w), Apply(`join`, nbh))))
-      if rf == norm(add) && init == l(0.0f) && mf == norm(mulT) && w == weights2d
+      if rf == norm(add).get && init == l(0.0f) && mf == norm(mulT).get && w == weights2d
     =>
-      nbh |> transpose |> map(dot(weights1d)) |> dot(weights1d)
-    case _ => throw NotApplicable(separateDotT)
+      Success(nbh |> transpose |> map(dot(weights1d)) |> dot(weights1d))
+    case _ => Failure(separateDotT)
   }
 }
 
@@ -87,7 +87,7 @@ class binomialFilter extends idealised.util.Tests {
   import binomialFilter._
 
   def s_eq(a: Expr, b: Expr): Unit = {
-    if (!StructuralEquality(norm(a), norm(b))) {
+    if (!StructuralEquality(norm(a).get, norm(b).get)) {
       throw new Exception(s"expected structural equality:\n$a\n$b")
     }
   }
@@ -99,7 +99,7 @@ class binomialFilter extends idealised.util.Tests {
     val s =
       oncetd(specialize.reduceSeq) `;`
         repeatNTimes(2)(oncetd(specialize.mapSeq))
-    s_eq(s(highLevel), reference)
+    s_eq(s(highLevel).get, reference)
   }
 
   test("rewrite to factorised blur") {
@@ -113,7 +113,8 @@ class binomialFilter extends idealised.util.Tests {
         repeatNTimes(2)(oncetd(specialize.mapSeq)) `;`
         norm
 
-    s_eq(s(highLevel), norm(factorised))
+    s_eq(s(highLevel).get,
+      norm(factorised).get)
   }
 
   test("rewrite to separated blur") {
@@ -158,15 +159,15 @@ class binomialFilter extends idealised.util.Tests {
     )
 
     val result = steps.foldLeft[Expr](highLevel)({ case (e, (s, expected)) =>
-        val result = norm(s(e))
-        s_eq(result, norm(expected))
+        val result = norm(s(e).get).get
+        s_eq(result, norm(expected).get)
         result
     })
 
     val pick = repeatNTimes(2)(oncetd(specialize.reduceSeq)) `;`
       repeatNTimes(2)(oncetd(specialize.mapSeq)) `;`
       repeatNTimes(2)(skip(1)(specialize.mapSeq))
-    s_eq(pick(result), norm(separated))
+    s_eq(pick(result).get, norm(separated).get)
   }
 
   test("rewrite to register rotation blur") {
@@ -205,15 +206,15 @@ class binomialFilter extends idealised.util.Tests {
     )
 
     val result = steps.foldLeft[Expr](highLevel)({ case (e, (s, expected)) =>
-      val result = norm(s(e))
-      s_eq(result, norm(expected))
+      val result = norm(s(e).get).get
+      s_eq(result, norm(expected).get)
       result
     })
 
     val pick = repeatNTimes(2)(oncetd(specialize.reduceSeq)) `;`
       oncetd(specialize.slideSeq(slideSeq.Values)) `;`
       oncetd(specialize.mapSeq)
-    s_eq(pick(result), norm(regrot))
+    s_eq(pick(result).get, norm(regrot).get)
   }
 
   def program(name: String, e: Expr): C.Program = {

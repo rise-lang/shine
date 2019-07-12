@@ -4,11 +4,14 @@ import elevate.core.rules._
 import elevate.core.rules.movement._
 import elevate.core.strategies._
 import elevate.core.strategies.traversal._
-import lift.core.DSL._
-import lift.core._
+import lift.core.{Expr, Identifier, StructuralEquality}
 import lift.core.primitives._
+import lift.core.DSL._
+import scala.language.implicitConversions
 
 class movement extends idealised.util.Tests {
+
+  implicit def rewriteResultToExpr(r: RewriteResult): Expr = r.get
 
   val norm: Strategy = normalize(betaReduction <+ etaReduction)
   def eq(a: Expr, b: Expr): Boolean = StructuralEquality(norm(a), norm(b))
@@ -19,6 +22,7 @@ class movement extends idealised.util.Tests {
   def J: Expr = join
   def *(x: Expr): Expr = map(x)
   def **(x: Expr): Expr = map(map(x))
+  def ***(x: Expr): Expr = map(map(map(x)))
   def λ(f: Identifier => Expr): Expr = fun(f)
 
   // transpose
@@ -28,9 +32,9 @@ class movement extends idealised.util.Tests {
 
     assert(
       List(
-        norm(λ(f => *(λ(x => *(f)(x))) >> T)),
+        norm(λ(f => *(λ(x => *(f)(x))) >> T)).get,
         λ(f => **(f) >> T)
-      ).forall(expr =>
+      ).forall((expr: Expr) =>
         eq(oncetd(`**f >> T -> T >> **f`)(expr), gold))
     )
   }

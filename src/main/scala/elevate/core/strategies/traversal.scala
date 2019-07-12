@@ -8,44 +8,46 @@ object traversal {
 
   // generic one-level traversal operators
 
-  private def traverseSingleSubexpression: Strategy => Expr => Option[Expr] =
+  private def traverseSingleSubexpression: Strategy => Expr => Option[RewriteResult] =
     s => {
       case Identifier(_) => None
-      case Lambda(x, e) => Some(Lambda(x, s(e)))
+      case Lambda(x, e) => Some(s(e).mapSuccess(Lambda(x, _)))
       case DepLambda(x, e) => x match {
-        case n: NatIdentifier => Some(NatDepLambda(n, s(e)))
-        case dt: DataTypeIdentifier => Some(TypeDepLambda(dt, s(e)))
+        case n: NatIdentifier => Some(s(e).mapSuccess(NatDepLambda(n, _)))
+        case dt: DataTypeIdentifier => Some(s(e).mapSuccess(TypeDepLambda(dt, _)))
       }
       case DepApply(f, x) => x match {
-        case n: Nat => Some(NatDepApply(s(f), n))
-        case dt: DataType => Some(TypeDepApply(s(f), dt))
+        case n: Nat => Some(s(f).mapSuccess(NatDepApply(_, n)))
+        case dt: DataType => Some(s(f).mapSuccess(TypeDepApply(_, dt)))
       }
       case Literal(_) => None
       case Index(_, _) => None
       case NatExpr(_) => None
-      case TypedExpr(e, t) => Some(TypedExpr(s(e), t))
+      case TypedExpr(e, t) => Some(s(e).mapSuccess(TypedExpr(_, t)))
       case ff: primitives.ForeignFunction => None
       case p: Primitive => None
     }
 
   // applies s to all direct subexpressions
   def all: Strategy => Strategy = s => {
-    case Apply(f, e) => Apply(s(f), s(e))
+    case Apply(f, e) => s(f).flatMapSuccess(a => s(e).mapSuccess(b => Apply(a, b)))
+
     case x => traverseSingleSubexpression(s)(x) match {
-      case Some(e) => e
-      case None => x
+      case Some(r) => r
+      case None => Success(x)
     }
   }
 
   private def oneHandlingState(carryOverState: Boolean) : Strategy => Strategy = s => {
-    case Apply(f, e) => mayApply(s)(f) match {
-        case Success(x) => Apply(x,e)
+    case Apply(f, e) => s(f) match {
+        case Success(x) => Success(Apply(x,e))
         case Failure(state) => if(carryOverState)
-          Apply(f, state(e)) else Apply(f, s(e))
+          state(e).mapSuccess(Apply(f, _)) else
+          s(e).mapSuccess(Apply(f, _))
       }
     case x => traverseSingleSubexpression(s)(x) match {
-      case Some(e) => e
-      case None => throw NotApplicable(s)
+      case Some(r) => r
+      case None => Failure(s)
     }
   }
 
@@ -55,13 +57,13 @@ object traversal {
 
   // applies s to at least one direct subexpression and as many as possible
   def some: Strategy => Strategy = s => {
-    case Apply(f, e) => (mayApply(s)(f), mayApply(s)(e)) match {
-      case (Failure(_), Failure(_)) => throw NotApplicable(s)
-      case (x, y) => Apply(x.getExprOrElse(f), y.getExprOrElse(e))
+    case Apply(f, e) => (s(f), s(e)) match {
+      case (Failure(_), Failure(_)) => Failure(s)
+      case (x, y) => Success(Apply(x.getExprOrElse(f), y.getExprOrElse(e)))
     }
     case x => traverseSingleSubexpression(s)(x) match {
-      case Some(e) => e
-      case None => throw NotApplicable(s)
+      case Some(r) => r
+      case None => Failure(s)
     }
   }
 
@@ -87,11 +89,11 @@ object traversal {
 
   def position(n: Int): Strategy => Strategy = s => if(n <= 0) s else oneWithState(position(n-1)(s))
 
-  def skip(n: Int): Strategy => Strategy = s => e => mayApply(s)(e) match {
+  def skip(n: Int): Strategy => Strategy = s => e => s(e) match {
     case Failure(a) =>
       oneWithState(skip(n)(a))(e)
     case Success(r) if n <= 0 =>
-      r
+      Success(r)
     case Success(_) if n > 0 =>
       oneWithState(skip(n - 1)(s))(e)
   }

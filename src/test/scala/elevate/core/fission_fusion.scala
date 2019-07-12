@@ -13,14 +13,14 @@ class fission_fusion extends idealised.util.Tests {
   val norm = normalize(betaReduction <+ etaReduction)
 
   def eq(a: Expr, b: Expr): Unit = {
-    if (!StructuralEquality(norm(a), norm(b))) {
+    if (!StructuralEquality(norm(a).get, norm(b).get)) {
       throw new Exception(s"expected structural equality:\n$a\n$b")
     }
   }
 
   def check(a: Expr, fis: Strategy, b: Expr, fus: Strategy): Unit = {
-    eq(fis(a), b)
-    eq(fus(b), a)
+    eq(fis(a).get, b)
+    eq(fus(b).get, a)
   }
 
   test("last fission, chain of 2") {

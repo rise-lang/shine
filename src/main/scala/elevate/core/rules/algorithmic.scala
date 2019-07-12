@@ -1,9 +1,10 @@
 package elevate.core.rules
 
-import elevate.core.{NotApplicable, Strategy}
+import elevate.core.{Failure, NotApplicable, Strategy, Success}
 import lift.core._
 import lift.core.DSL._
 import lift.core.primitives.{join, map, slide, split, transpose}
+
 
 object algorithmic {
   // - Notation -
@@ -18,8 +19,8 @@ object algorithmic {
   def splitJoin: Nat => Strategy = `*f -> S >> **f >> J`
   def `*f -> S >> **f >> J`: Nat => Strategy =
     n => {
-      case Apply(`map`, f) => split(n) >> map(map(f)) >> join
-      case _ => throw NotApplicable(splitJoin(n))
+      case Apply(`map`, f) => Success(split(n) >> map(map(f)) >> join)
+      case _ => Failure(splitJoin(n))
     }
 
   // fusion / fission
@@ -27,8 +28,8 @@ object algorithmic {
   def mapFusion: Strategy = `*g >> *f -> *(g >> f)`
   def `*g >> *f -> *(g >> f)`: Strategy = {
     case Apply(Apply(`map`, f), Apply(Apply(`map`, g), arg)) =>
-      map(g >> f)(arg)
-    case _ => throw NotApplicable(mapFusion)
+      Success(map(g >> f)(arg))
+    case _ => Failure(mapFusion)
   }
 
   // fission of the last function to be applied inside a map
@@ -40,18 +41,18 @@ object algorithmic {
       map(g) >> map(f)
       */
     case Apply(`map`, Lambda(x, Apply(f, gx))) =>
-      Apply(`map`, Lambda(x, gx)) >> map(f)
-    case _ => throw NotApplicable(mapLastFission)
+      Success(Apply(`map`, Lambda(x, gx)) >> map(f))
+    case _ => Failure(mapLastFission)
   }
 
   // identities
 
   def createTransposePair: Strategy = ` -> T >> T`
-  def ` -> T >> T`: Strategy = x => x |> transpose |> transpose
+  def ` -> T >> T`: Strategy = x => Success(x |> transpose |> transpose)
 
   def removeTransposePair: Strategy = `T >> T -> `
   def `T >> T -> `: Strategy = {
-    case Apply(`transpose`, Apply(`transpose`, x)) => x
-    case _ => throw NotApplicable(removeTransposePair)
+    case Apply(`transpose`, Apply(`transpose`, x)) => Success(x)
+    case _ => Failure(removeTransposePair)
   }
 }

@@ -1,29 +1,25 @@
 package elevate.core
 
 import lift.core.Expr
-
 import strategies.traversal._
+import scala.language.implicitConversions
+
 
 package object strategies {
   def id: Strategy =
-    e => e
+    e => Success(e)
 
   def seq: Strategy => Strategy => Strategy =
-    f => s => e => s(f(e))
+    f => s => e => f(e).flatMapSuccess(s(_))
 
   def leftChoice: Strategy => Strategy => Strategy =
-    f => s => e => {
-      mayApply(f)(e) match {
-        case Success(r) => r
-        case Failure(_) => s(e)
-      }
-    }
+    f => s => e => f(e).flatMapFailure(_ => s(e))
 
   def `try`: Strategy => Strategy =
     s => leftChoice(s)(id)
 
   def peek(f: Expr => Unit): Strategy =
-    e => { f(e); e }
+    e => { f(e); Success(e) }
 
   def repeat: Strategy => Strategy =
     s => `try`(s `;` (e => repeat(s)(e)))
@@ -39,6 +35,6 @@ package object strategies {
 
   def print: Strategy = print("")
   def print(msg: String): Strategy = {
-    e => println(s"$msg $e"); e
+    e => println(s"$msg $e"); Success(e)
   }
 }
