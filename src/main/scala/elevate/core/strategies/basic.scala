@@ -9,18 +9,10 @@ object basic {
     e => Success(e)
 
   def seq: Strategy => Strategy => Strategy =
-    f => s => e => f(e) match {
-      case Success(x) => s(x)
-      case f:Failure => f
-    }
+    f => s => e => f(e).flatMapSuccess(s(_))
 
   def leftChoice: Strategy => Strategy => Strategy =
-    f => s => e => {
-      f(e) match {
-        case s:Success => s
-        case Failure(_) => s(e)
-      }
-    }
+    f => s => e => f(e).flatMapFailure(_ => s(e))
 
   def `try`: Strategy => Strategy =
     s => leftChoice(s)(id)

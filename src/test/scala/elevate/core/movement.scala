@@ -4,6 +4,7 @@ import elevate.core.rules._
 import elevate.core.rules.movement._
 import elevate.core.strategies._
 import elevate.core.strategies.traversal._
+import elevate.core.strategies.normalforms._
 import lift.core.{Expr, Identifier, StructuralEquality}
 import lift.core.primitives._
 import lift.core.DSL._

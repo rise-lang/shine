@@ -9,8 +9,12 @@ package object core {
   sealed trait RewriteResult {
     def getExprOrElse(e: Expr): Expr
     def get: Expr
+
     def mapSuccess(f: Expr => Expr): RewriteResult
     def flatMapSuccess(f: Expr => RewriteResult): RewriteResult
+
+    def mapFailure(f: Strategy => Strategy): RewriteResult
+    def flatMapFailure(f: Strategy => RewriteResult): RewriteResult
   }
 
   case class Success(e: Expr) extends RewriteResult {
@@ -19,6 +23,9 @@ package object core {
 
     override def mapSuccess(f: Expr => Expr): RewriteResult = Success(f(e))
     override def flatMapSuccess(f: Expr => RewriteResult): RewriteResult = f(e)
+
+    override def mapFailure(f: Strategy => Strategy): RewriteResult = this
+    override def flatMapFailure(f: Strategy => RewriteResult): RewriteResult = this
   }
 
   case class Failure(s: Strategy) extends RewriteResult {
@@ -27,6 +34,9 @@ package object core {
 
     override def mapSuccess(f: Expr => Expr): RewriteResult = this
     override def flatMapSuccess(f: Expr => RewriteResult): RewriteResult = this
+
+    override def mapFailure(f: Strategy => Strategy): RewriteResult = Failure(f(s))
+    override def flatMapFailure(f: Strategy => RewriteResult): RewriteResult = f(s)
   }
 
   case class NotApplicable(s: Strategy) extends Exception

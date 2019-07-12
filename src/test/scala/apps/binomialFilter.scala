@@ -8,6 +8,8 @@ import lift.core.types._
 import lift.core.HighLevelConstructs.padClamp2D
 
 import elevate.core._
+import elevate.core.strategies.normalforms._
+import elevate.core.strategies.basic._
 import rules._
 import rules.algorithmic._
 import rules.movement._
@@ -64,7 +66,7 @@ object binomialFilter {
       map(dotSeq(weights1d))
     )
 
-  val norm = strategies.normalize(betaReduction <+ etaReduction)
+  val norm = normalize(betaReduction <+ etaReduction)
 
   val separateDot: Strategy = {
     case Apply(Apply(Apply(`reduce`, rf), init), Apply(Apply(`map`, mf), Apply(Apply(`zip`, w), Apply(`join`, nbh))))

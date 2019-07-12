@@ -20,7 +20,6 @@ package object strategies {
   def wrap: Int => (Strategy => Strategy) => Strategy => Strategy =
     i => wrapper => s => if(i <= 0) s else wrap(i-1)(wrapper)(wrapper(s))
 
-
   def fmap: Strategy => Strategy =
     s =>
       mapFusion `;` reductionNormalform `;`

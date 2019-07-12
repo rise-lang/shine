@@ -5,9 +5,9 @@ import lift.core.DSL._
 import lift.core.primitives.map
 import rules._
 import rules.algorithmic.{mapFusion, mapLastFission}
-import strategies._
 import strategies.algorithmic.{mapFirstFission, mapFullFission}
 import strategies.traversal._
+import strategies.normalforms._
 
 class fission_fusion extends idealised.util.Tests {
   val norm = normalize(betaReduction <+ etaReduction)
