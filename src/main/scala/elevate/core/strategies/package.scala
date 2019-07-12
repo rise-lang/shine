@@ -1,11 +1,9 @@
 package elevate.core
 
-import lift.core.Expr
 import elevate.core.rules.algorithmic._
 import elevate.core.strategies.algorithmic._
 import elevate.core.strategies.normalforms._
-import elevate.core.strategies.basic._
-import elevate.core.rules._
+import elevate.core.strategies.liftTraversal._
 import strategies.traversal._
 import scala.language.implicitConversions
 
@@ -23,10 +21,18 @@ package object strategies {
   def fmap: Strategy => Strategy =
     s =>
       mapFusion `;` reductionNormalform `;`
-      wrap(3)(one(_))(s) `;` reductionNormalform `;`
-      wrap(1)(one(_))(mapFullFission)
+      //wrap(3)(one(_))(s) `;` reductionNormalform `;`
+      function(argument(body(s))) `;` reductionNormalform `;`
+      one(mapFullFission)
 
-  def family: Strategy => Strategy =
-    s => s <+ (e => family(fmap(s))(e))
+  // example rule used for s: **f >> T -> T >> **f
+  // ((map transpose) ((map (map (map e12))) e13))       // input to fmap
+  // ((map λe14. (transpose ((map (map e12)) e14))) e13) // result of mapFusion + reductionNormalform
+  //  (map λe14. (transpose ((map (map e12)) e14)))      // result of `function`
+  //       λe14. (transpose ((map (map e12)) e14))       // result of `argument`
+  //             (transpose ((map (map e12)) e14))       // result of 'body'
+
+  def mapped: Strategy => Strategy =
+    s => s <+ (e => fmap(mapped(s))(e))
 
 }

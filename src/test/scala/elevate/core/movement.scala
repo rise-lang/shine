@@ -4,6 +4,7 @@ import elevate.core.rules._
 import elevate.core.rules.movement._
 import elevate.core.strategies._
 import elevate.core.strategies.traversal._
+import elevate.core.strategies.liftTraversal._
 import elevate.core.strategies.normalforms._
 import lift.core.{Expr, Identifier, StructuralEquality}
 import lift.core.primitives._
@@ -43,54 +44,70 @@ class movement extends idealised.util.Tests {
     )
   }
 
-  test("family: **f >> *T -> *T >> ***f") {
+  test("fmap basic") {
     // level 0
-    println("level0")
     assert(eq(
       one(one(`**f >> T -> T >> **f`))(λ(f => **(f) >> T)),
       λ(f => T >> **(f)))
     )
 
     // level 1
-    println("level1")
     assert(eq(
       one(one(fmap(`**f >> T -> T >> **f`)))(λ(f => ***(f) >> *(T))),
       λ(f => *(T) >> ***(f)))
     )
 
     // level 2
-    println("level2")
     assert(eq(
       one(one(fmap(fmap(`**f >> T -> T >> **f`))))(λ(f => ****(f) >> **(T))),
       λ(f => **(T) >> ****(f)))
     )
 
     // level 3
-    println("level3")
     assert(eq(
       one(one(fmap(fmap(fmap(`**f >> T -> T >> **f`)))))(λ(f => *****(f) >> ***(T))),
       λ(f => ***(T) >> *****(f)))
     )
 
     // level 4
-    println("level4")
     assert(eq(
       one(one(fmap(fmap(fmap(fmap(`**f >> T -> T >> **f`))))))(λ(f => ******(f) >> ****(T))),
       λ(f => ****(T) >> ******(f)))
     )
 
-    // level 4
-    println("level4 alternative")
+    // level 4 alternative
     assert(eq(
-      one(one(family(`**f >> T -> T >> **f`)))(λ(f => ******(f) >> ****(T))),
+      one(one(mapped(`**f >> T -> T >> **f`)))(λ(f => ******(f) >> ****(T))),
       λ(f => ****(T) >> ******(f)))
     )
 
-    // level 4
-    println("should fail")
+    // should fail
+    assert(
+      body(one(mapped(`**f >> T -> T >> **f`)))(λ(f => *****(f) >> ****(T))) match {
+        case Failure(_) => true
+        case Success(_) => false
+      }
+    )
+  }
+
+  test("fmap advanced + lift specific traversals") {
+    // mapped pattern before
     assert(eq(
-      one(one(family(`**f >> T -> T >> **f`)))(λ(f => *****(f) >> ****(T))),
-      λ(f => ****(T) >> ******(f)))
+      body(body(mapped(`**f >> T -> T >> **f`)))(λ(f => *(S) >> ***(f) >> *(T))),
+      λ(f => *(S) >> *(T) >> ***(f)))
+    )
+
+    // mapped pattern after
+    // we got to jump "over" this pattern before the rule is applicable
+    assert(eq(
+      body(body(argument(mapped(`**f >> T -> T >> **f`))))(λ(f => ***(f) >> *(T) >> *(S))),
+      λ(f => *(T) >> ***(f) >> *(S)))
+    )
+
+    // ...or we could simply "find" the place automatically
+    assert(eq(
+      oncetd(mapped(`**f >> T -> T >> **f`))(λ(f => ***(f) >> *(T) >> *(S))),
+      λ(f => *(T) >> ***(f) >> *(S)))
     )
   }
 
