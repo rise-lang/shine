@@ -1,6 +1,7 @@
 package elevate
 
 import lift.core._
+import elevate.core.strategies.basic._
 
 package object core {
   type Strategy = Expr => RewriteResult
@@ -31,10 +32,10 @@ package object core {
   case class NotApplicable(s: Strategy) extends Exception
 
   implicit class Then(f: Strategy) {
-    def `;`(s: Strategy): Strategy = strategies.seq(f)(s)
+    def `;`(s: Strategy): Strategy = seq(f)(s)
   }
 
   implicit class LeftChoice(f: Strategy) {
-    def <+(s: Strategy): Strategy = strategies.leftChoice(f)(s)
+    def <+(s: Strategy): Strategy = leftChoice(f)(s)
   }
 }

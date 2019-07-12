@@ -77,6 +77,20 @@ class movement extends idealised.util.Tests {
       one(one(fmap(fmap(fmap(fmap(`**f >> T -> T >> **f`))))))(λ(f => ******(f) >> ****(T))),
       λ(f => ****(T) >> ******(f)))
     )
+
+    // level 4
+    println("level4 alternative")
+    assert(eq(
+      one(one(family(`**f >> T -> T >> **f`)))(λ(f => ******(f) >> ****(T))),
+      λ(f => ****(T) >> ******(f)))
+    )
+
+    // level 4
+    println("should fail")
+    assert(eq(
+      one(one(family(`**f >> T -> T >> **f`)))(λ(f => *****(f) >> ****(T))),
+      λ(f => ****(T) >> ******(f)))
+    )
   }
 
   test("T >> **f -> **f >> T") {
