@@ -118,6 +118,20 @@ class movement extends idealised.util.Tests {
     )
   }
 
+  test("T >> ****f -> ****f >> T") {
+    assert(eq(
+      oncetd(`T >> **f -> **f >> T`)(λ(f => T >> ****(f))),
+      λ(f => ****(f) >> T))
+    )
+  }
+
+  test("****f >> T -> T >> ****f") {
+    assert(eq(
+      oncetd(`**f >> T -> T >> **f`)(λ(f => ****(f) >> T)),
+      λ(f => T >> ****(f)))
+    )
+  }
+
   // split/slide
 
   test("S >> **f -> *f >> S") {
