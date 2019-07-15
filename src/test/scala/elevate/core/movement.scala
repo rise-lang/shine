@@ -1,11 +1,11 @@
 package elevate.core
 
-import elevate.core.rules._
-import elevate.core.rules.movement._
+import elevate.lift.rules._
+import elevate.lift.rules.movement._
 import elevate.core.strategies._
 import elevate.core.strategies.traversal._
-import elevate.core.strategies.liftTraversal._
-import elevate.core.strategies.normalforms._
+import elevate.lift.strategies.traversal._
+import elevate.lift.strategies.normalForm._
 import lift.core.{Expr, Identifier, StructuralEquality}
 import lift.core.primitives._
 import lift.core.DSL._
@@ -30,17 +30,20 @@ class movement extends idealised.util.Tests {
   def ******(x: Expr): Expr = map(map(map(map(map(map(x))))))
   def λ(f: Identifier => Expr): Expr = fun(f)
 
+  def testMultiple(list: List[Expr], gold: Expr) = {
+    assert(list.forall(eq(_, gold)))
+  }
+
   // transpose
 
   test("**f >> T -> T >> **f") {
     val gold = λ(f => T >> **(f))
 
-    assert(
+    testMultiple(
       List(
         norm(λ(f => *(λ(x => *(f)(x))) >> T)).get,
         λ(f => **(f) >> T)
-      ).forall((expr: Expr) =>
-        eq(oncetd(`**f >> T -> T >> **f`)(expr), gold))
+      ).map(oncetd(`**f >> T -> T >> **f`)(_).get), gold
     )
   }
 
@@ -53,25 +56,25 @@ class movement extends idealised.util.Tests {
 
     // level 1
     assert(eq(
-      one(one(fmap(`**f >> T -> T >> **f`)))(λ(f => ***(f) >> *(T))),
+      one(one(fmapRNF(`**f >> T -> T >> **f`)))(λ(f => ***(f) >> *(T))),
       λ(f => *(T) >> ***(f)))
     )
 
     // level 2
     assert(eq(
-      one(one(fmap(fmap(`**f >> T -> T >> **f`))))(λ(f => ****(f) >> **(T))),
+      one(one(fmapRNF(fmapRNF(`**f >> T -> T >> **f`))))(λ(f => ****(f) >> **(T))),
       λ(f => **(T) >> ****(f)))
     )
 
     // level 3
     assert(eq(
-      one(one(fmap(fmap(fmap(`**f >> T -> T >> **f`)))))(λ(f => *****(f) >> ***(T))),
+      one(one(fmapRNF(fmapRNF(fmapRNF(`**f >> T -> T >> **f`)))))(λ(f => *****(f) >> ***(T))),
       λ(f => ***(T) >> *****(f)))
     )
 
     // level 4
     assert(eq(
-      one(one(fmap(fmap(fmap(fmap(`**f >> T -> T >> **f`))))))(λ(f => ******(f) >> ****(T))),
+      one(one(fmapRNF(fmapRNF(fmapRNF(fmapRNF(`**f >> T -> T >> **f`))))))(λ(f => ******(f) >> ****(T))),
       λ(f => ****(T) >> ******(f)))
     )
 
@@ -92,22 +95,52 @@ class movement extends idealised.util.Tests {
 
   test("fmap advanced + lift specific traversals") {
     // mapped pattern before
-    assert(eq(
-      body(body(mapped(`**f >> T -> T >> **f`)))(λ(f => *(S) >> ***(f) >> *(T))),
-      λ(f => *(S) >> *(T) >> ***(f)))
+    testMultiple(
+      List(
+        body(body(mapped(`**f >> T -> T >> **f`)))(λ(f => *(S) >> ***(f) >> *(T))),
+        body(body(fmapRNF(`**f >> T -> T >> **f`)))(λ(f => *(S) >> ***(f) >> *(T)))
+      ), λ(f => *(S) >> *(T) >> ***(f))
     )
 
     // mapped pattern after
     // we got to jump "over" this pattern before the rule is applicable
-    assert(eq(
-      body(body(argument(mapped(`**f >> T -> T >> **f`))))(λ(f => ***(f) >> *(T) >> *(S))),
-      λ(f => *(T) >> ***(f) >> *(S)))
+    testMultiple(
+      List(
+        body(body(argument(mapped(`**f >> T -> T >> **f`))))(λ(f => ***(f) >> *(T) >> *(S))),
+        body(body(argument(fmapRNF(`**f >> T -> T >> **f`))))(λ(f => ***(f) >> *(T) >> *(S)))
+      ), λ(f => *(T) >> ***(f) >> *(S))
     )
 
     // ...or we could simply "find" the place automatically
-    assert(eq(
-      oncetd(mapped(`**f >> T -> T >> **f`))(λ(f => ***(f) >> *(T) >> *(S))),
-      λ(f => *(T) >> ***(f) >> *(S)))
+    testMultiple(
+      List(
+        oncetd(mapped(`**f >> T -> T >> **f`))(λ(f => ***(f) >> *(T) >> *(S))),
+        oncetd(fmapRNF(`**f >> T -> T >> **f`))(λ(f => ***(f) >> *(T) >> *(S)))
+      ), λ(f => *(T) >> ***(f) >> *(S))
+    )
+
+    // testing mapped specific behaviour below: mapped can be used without needing to know
+    // how many times I need to nest `fmap` to get the same behaviour
+
+    testMultiple(
+      List(
+        body(body(mapped(`**f >> T -> T >> **f`)))(λ(f => *(S) >> ****(f) >> **(T))),
+        body(body(fmapRNF(fmapRNF(`**f >> T -> T >> **f`))))(λ(f => *(S) >> ****(f) >> **(T)))
+      ), λ(f => *(S) >> **(T) >> ****(f))
+    )
+
+    testMultiple(
+      List(
+        body(body(argument(mapped(`**f >> T -> T >> **f`))))(λ(f => ****(f) >> **(T) >> *(S))),
+        body(body(argument(fmapRNF(fmapRNF(`**f >> T -> T >> **f`)))))(λ(f => ****(f) >> **(T) >> *(S)))
+      ), λ(f => **(T) >> ****(f) >> *(S))
+    )
+
+    testMultiple(
+      List(
+        oncetd(mapped(`**f >> T -> T >> **f`))(λ(f => ****(f) >> **(T) >> *(S))),
+        oncetd(fmapRNF(fmapRNF(`**f >> T -> T >> **f`)))(λ(f => ****(f) >> **(T) >> *(S)))
+      ), λ(f => **(T) >> ****(f) >> *(S))
     )
   }
 

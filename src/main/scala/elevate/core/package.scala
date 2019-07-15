@@ -1,6 +1,6 @@
 package elevate
 
-import lift.core._
+import _root_.lift.core._
 import elevate.core.strategies.basic._
 
 package object core {
