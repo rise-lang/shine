@@ -56,9 +56,9 @@ object DSL {
     }
 
     //TODO use TypedExpr one line earlier already?
-    def apply(dt: DataType)(f: Expr => Expr): Expr = {
+    def apply(t: Type)(f: Expr => Expr): Expr = {
       val x = Identifier(freshName("e"))
-      Lambda(x, f(TypedExpr(x, dt)))
+      Lambda(x, f(TypedExpr(x, t)))
     }
   }
 
@@ -115,7 +115,7 @@ object DSL {
     f(NatIdentifier(freshName("_n")))
   }
 
-  def implT[A](f: DataTypeIdentifier => A): A = {
+  def implDT[A](f: DataTypeIdentifier => A): A = {
     f(DataTypeIdentifier(freshName("_dt")))
   }
 
@@ -125,6 +125,14 @@ object DSL {
 
   def implNDF[A](f: NatDataTypeFunction => A): A = {
     f(NatDataTypeFunctionIdentifier(freshName("_ndf")))
+  }
+
+  def implW[A](f: AccessTypeIdentifier => A): A = {
+    f(AccessTypeIdentifier(freshName("_w")))
+  }
+
+  def implA[A](f: AddressSpaceIdentifier => A): A = {
+    f(AddressSpaceIdentifier(freshName("_w")))
   }
 
   implicit def natToExpr(n: Nat): NatExpr = NatExpr(n)
@@ -165,6 +173,12 @@ object DSL {
   implicit final class To(private val a: Type) extends AnyVal {
     @inline def ->(b: Type): Type = FunctionType(a, b)
   }
+
+//  implicit final class ToDT(private val dt: DataType) extends AnyVal {
+//    @inline def ->(b: Type): Type = FunctionType(implToType(dt), b)
+//  }
+
+//  implicit def implToType(dt: DataType): Type = DataAccessType(dt, R) // default is ``read''
 
   object foreignFun {
     def apply(name: String, t: Type): Expr = {

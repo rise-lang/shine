@@ -14,6 +14,7 @@ object Kind {
 
 sealed trait TypeKind extends Kind {
   override type T = Type
+  override type I = TypeIdentifier
 }
 
 sealed trait DataKind extends Kind {

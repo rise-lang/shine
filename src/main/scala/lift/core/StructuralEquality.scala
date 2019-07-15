@@ -31,6 +31,8 @@ object StructuralEquality {
       ArithExpr.substitute(a, env.natIdents) == b
     def typ(a: Type, b: Type): Boolean =
       true // TODO: types
+    def data(a: DataType, b: DataType): Boolean =
+      true // TODO: data types
 
     (a, b) match {
       case (Identifier(na), Identifier(nb)) =>
@@ -49,7 +51,7 @@ object StructuralEquality {
       case (DepLambda(xa: DataTypeIdentifier, ba), DepLambda(xb: DataTypeIdentifier, bb)) =>
         apply(ba, bb, env bindTypeIdents (xa, xb))
       case (DepApply(fa, ta: DataType), DepApply(fb, tb: DataType)) =>
-        exp(fa, fb) && typ(ta, tb)
+        exp(fa, fb) && data(ta, tb)
       case (la: Literal, lb: Literal) => la == lb
       case (Index(na, sa), Index(nb, sb)) =>
         nat(na, nb) && nat(sa, sb)

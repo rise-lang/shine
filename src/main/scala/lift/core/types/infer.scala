@@ -31,6 +31,9 @@ object infer {
   case class TypeConstraint(a: Type, b: Type) extends Constraint {
     override def toString: String = s"$a  ~  $b"
   }
+  case class DataTypeConstraint(a: DataType, b: DataType) extends Constraint {
+    override def toString: String = s"$a  ~  $b"
+  }
   case class NatConstraint(a: Nat, b: Nat) extends Constraint {
     override def toString: String = s"$a  ~  $b"
   }
@@ -39,7 +42,7 @@ object infer {
                      constraints: mutable.Set[Constraint],
                      identifierT: scala.collection.mutable.Map[Identifier, Type]
                     ): TypedExpr = {
-    def fresh(): Type = DataTypeIdentifier(freshName("_t"))
+    def fresh(): Type = TypeIdentifier(freshName("_t"))
     def typed(e: Expr): TypedExpr = constrainTypes(e, constraints, identifierT)
 
     expr match {
@@ -80,11 +83,11 @@ object infer {
           TypedExpr(TypeDepApply(tf, dt), liftDependentFunctionType[DataKind](tf.t)(dt))
       }
 
-      case l: Literal => TypedExpr(l, l.d.dataType)
+      case l: Literal => TypedExpr(l, l.d.dataType.`_`(R))
 
-      case i: Index => TypedExpr(i, IndexType(i.size))
+      case i: Index => TypedExpr(i, IndexType(i.size).`_`(R))
 
-      case n: NatExpr => TypedExpr(n, NatType)
+      case n: NatExpr => TypedExpr(n, NatType.`_`(R))
 
       case TypedExpr(e, t) =>
         val te = typed(e)
@@ -156,14 +159,20 @@ object infer {
                                boundNatDataTypeFun:Set[NatDataTypeFunctionIdentifier]) extends traversal.Visitor {
           override def apply[U <: Type](t: U): Result[U] = {
             t match {
-              case i: DataTypeIdentifier if !boundT(i) => Stop(t)
-              case DepArrayType(_, elementTypeFun) => elementTypeFun match {
-                case i:NatDataTypeFunctionIdentifier => if(boundNatDataTypeFun(i)) Stop(t) else Continue(t, this)
-                case NatDataTypeLambda(x, _) =>  Continue(t, this.copy(boundN = boundN + x))
-              }
               case DependentFunctionType(x: NatIdentifier, _) => Continue(t, this.copy(boundN = boundN + x))
               case DependentFunctionType(x: DataTypeIdentifier, _) => Continue(t, this.copy(boundT = boundT + x))
               case _ => Continue(t, this)
+            }
+          }
+
+          override def data[DT <: DataType](dt: DT): Result[DT] = {
+            dt match {
+              case i: DataTypeIdentifier if !boundT(i) => Stop(dt)
+              case DepArrayType(_, elementTypeFun) => elementTypeFun match {
+                case i:NatDataTypeFunctionIdentifier => if(boundNatDataTypeFun(i)) Stop(dt) else Continue(dt, this)
+                case NatDataTypeLambda(x, _) =>  Continue(dt, this.copy(boundN = boundN + x))
+              }
+              case _ => Continue(dt, this)
             }
           }
 
@@ -260,20 +269,26 @@ object infer {
                boundT: mutable.Set[DataTypeIdentifier],
                boundN: mutable.Set[NamedVar]): Option[Solution] = c match {
     case TypeConstraint(a, b) => (a, b) match {
-      case (i: DataTypeIdentifier, _) => Some(unifyTypeIdent(i, b))
-      case (_, i: DataTypeIdentifier) => Some(unifyTypeIdent(i, a))
-      case (_: BasicType, _: BasicType) if a == b =>
-        Some(Solution())
-      case (IndexType(sa), IndexType(sb)) =>
-        solveOne(NatConstraint(sa, sb))
-      case (ArrayType(sa, ea), ArrayType(sb, eb)) =>
-        Some(solve(Set(NatConstraint(sa, sb), TypeConstraint(ea, eb))))
-      case (VectorType(sa, ea), VectorType(sb, eb)) =>
-        Some(solve(Set(NatConstraint(sa, sb), TypeConstraint(ea, eb))))
-      case (DepArrayType(sa, ea), DepArrayType(sb, eb)) =>
-        ???
-      case (TupleType(ea@_*), TupleType(eb@_*)) =>
-        Some(solve(ea.zip(eb).map({ case (a, b) => TypeConstraint(a, b) }).toSet))
+      case (i: TypeIdentifier, _) => Some(unifyTypeIdent(i, b))
+      case (_, i: TypeIdentifier) => Some(unifyTypeIdent(i, a))
+      case (DataAccessType(dt1, w1), DataAccessType(dt2, w2)) if w1 == w2 =>
+        (dt1, dt2) match {
+          case (i: DataTypeIdentifier, _) => Some(unifyDataTypeIdent(i, b))
+          case (_, i: DataTypeIdentifier) => Some(unifyDataTypeIdent(i, a))
+          case (b1: BasicType, b2: BasicType) if b1 == b2 =>
+            Some(Solution())
+          case (IndexType(sa), IndexType(sb)) =>
+            solveOne(NatConstraint(sa, sb))
+          case (ArrayType(sa, ea), ArrayType(sb, eb)) =>
+            Some(solve(Set(NatConstraint(sa, sb), DataTypeConstraint(ea, eb))))
+          case (VectorType(sa, ea), VectorType(sb, eb)) =>
+            Some(solve(Set(NatConstraint(sa, sb), DataTypeConstraint(ea, eb))))
+          case (DepArrayType(sa, ea), DepArrayType(sb, eb)) =>
+            ???
+          case (TupleType(ea@_*), TupleType(eb@_*)) =>
+            Some(solve(ea.zip(eb).map({ case (a, b) => DataTypeConstraint(a, b) }).toSet))
+          case (NatDataTypeApply(_, _), ArrayType(_, _)) => None
+        }
       case (FunctionType(ina, outa), FunctionType(inb, outb)) =>
         Some(solve(Set(TypeConstraint(ina, inb), TypeConstraint(outa, outb))))
       case (DependentFunctionType(na: NatIdentifier, ta), DependentFunctionType(nb: NatIdentifier, tb)) =>
@@ -292,9 +307,8 @@ object infer {
         boundT -= dtb
         Some(solve(Set(
           TypeConstraint(substitute(dt, `for`=dta, in=ta), substitute(dt, `for`=dtb, in=tb)),
-          TypeConstraint(dt, dta), TypeConstraint(dt, dtb)
+          DataTypeConstraint(dt, dta), DataTypeConstraint(dt, dtb)
         )))
-      case (NatDataTypeApply(_, _), ArrayType(_, _)) => None
 
       case _ => error(s"cannot unify $a and $b")
     }
@@ -312,18 +326,28 @@ object infer {
     })
   }
 
-  def unifyTypeIdent(i: DataTypeIdentifier, t: Type)
+  def unifyTypeIdent(i: TypeIdentifier, t: Type)
                     (implicit bound: mutable.Set[DataTypeIdentifier]): Solution = {
     t match {
-      case j: DataTypeIdentifier =>
-        if (i == j) { Solution() }
-        else if (!bound(i)) { Solution.subs(i, j) }
-        else if (!bound(j)) { Solution.subs(j, i) }
-        else { error(s"cannot unify $i and $j, they are both bound") }
-      case _ if occurs(i, t) =>
-        error(s"circular use: $i occurs in $t")
-      case _ if !bound(i) => Solution.subs(i, t)
-      case _ => ???
+      case j: TypeIdentifier => if (i == j) { Solution() } else { Solution.subs(i, j) }
+      case _ => Solution.subs(i, t)
+    }
+  }
+
+  def unifyDataTypeIdent(i: DataTypeIdentifier, t: Type)
+                        (implicit bound: mutable.Set[DataTypeIdentifier]): Solution = {
+    t match {
+      case DataAccessType(dt, w) => dt match {
+        case j: DataTypeIdentifier =>
+          if (i == j) { Solution() }
+          else if (!bound(i)) { Solution.subs(DataAccessType(i, w), DataAccessType(j, w)) }
+          else if (!bound(j)) { Solution.subs(DataAccessType(j, w), DataAccessType(i, w)) }
+          else { error(s"cannot unify $i and $j, they are both bound") }
+        case _ if occurs(i, t) =>
+          error(s"circular use: $i occurs in $t")
+        case _ if !bound(i) => Solution.subs(DataAccessType(i, w), t)
+        case _ => ???
+      }
     }
   }
 
@@ -406,7 +430,7 @@ object infer {
 
   def occurs(i: DataTypeIdentifier, t: Type): Boolean = {
     t match {
-      case j: DataTypeIdentifier => i == j
+      case DataAccessType(j: DataTypeIdentifier, _) => i == j
       case FunctionType(it, ot) => occurs(i, it) || occurs(i, ot)
       case _ => false
     }

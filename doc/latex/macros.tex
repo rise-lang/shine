@@ -89,3 +89,7 @@
 
 % possessive citation, i.e.: This is Adam's [1999] paper.
 \newcommand\citeapos[1]{\citeauthor{#1}'s \citeyear{#1}}
+
+\makeatletter % allow us to mention @-commands
+\def\arcr{\@arraycr}
+\makeatother

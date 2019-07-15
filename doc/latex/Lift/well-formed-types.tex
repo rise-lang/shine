@@ -92,52 +92,20 @@
         \inferrule*
         {\Delta \vdash \theta_1 : \type \\\\
           \Delta \vdash \theta_2 : \type}
-        {\Delta \vdash \theta_1 \times \theta_2 : \type}
-  
-        \inferrule*
-        {\Delta \vdash \theta_1 : \type \\\\
-          \Delta \vdash \theta_2 : \type}
         {\Delta \vdash \theta_1 \to \theta_2 : \type}
   
         \inferrule*
-        {\Delta \vdash \theta_1 : \type \\\\
-          \Delta \vdash \theta_2 : \type}
-        {\Delta \vdash \theta_1 \pureto \theta_2 : \type}
-  
-        \inferrule*
-        {\Delta, x : \kappa \vdash \theta : \type \\ \kappa \in \{\natkind, \addrkind, \access, \datatype\}}
+        {\Delta, x : \kappa \vdash \theta : \type \\ \kappa \in
+          \left\{
+            \begin{array}{l}
+            \natkind, \addrkind,\arcr
+            \access, \datatype
+            \end{array}
+          \right\}
+        }
         {\Delta \vdash (x\mathord:\kappa) \to \theta : \type}
       \end{mathpar}
-      \subcaption{Phrase Types}\label{fig:phrase-type-kinding}
-    \end{minipage}
-  
-    \begin{minipage}{1.0\linewidth}
-      \begin{mathpar}
-        \inferrule*
-        {\Delta \vdash \delta : \datatype \\ \Delta \vdash \omega : \access}
-        {\Delta \vdash \tyval{\delta}{\omega} : \passivetype}
-  
-        \inferrule*
-        {\Delta \vdash \phi_1 : \passivetype \\\\
-          \Delta \vdash \phi_2 : \passivetype}
-        {\Delta \vdash \phi_1 \times \phi_2 : \passivetype}
-  
-        \inferrule*
-        {\Delta \vdash \theta : \phrasetype \\\\
-          \Delta \vdash \phi : \passivetype}
-        {\Delta \vdash \theta \to \phi : \passivetype}
-  
-        \inferrule*
-        {\Delta \vdash \theta_1 : \phrasetype \\\\
-          \Delta \vdash \theta_2 : \phrasetype}
-        {\Delta \vdash \theta_1 \pureto \theta_2 : \passivetype}
-  
-        \inferrule*
-        {\Delta, x : \kappa \vdash \phi : \passivetype \\ \kappa \in \{\natkind,\datatype\}}
-        {\Delta \vdash (x\mathord:\kappa) \to \phi : \passivetype}
-      \end{mathpar}
-      \subcaption{Passive Types}
-      \label{fig:passive-types}
+      \subcaption{Types}\label{fig:phrase-type-kinding}
     \end{minipage}
   
     \caption{Well-formed Types}

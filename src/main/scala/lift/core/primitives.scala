@@ -22,11 +22,11 @@ object primitives {
 
   // TODO: ask for basic type parameters
   case object cast extends Primitive {
-    override def t: Type = implT(a => implT(b => a -> b))
+    override def t: Type = implDT(a => implDT(b => a -> b))
   }
 
   case object depJoin extends Primitive {
-    override def t: Type = implN(n => implNNF(lenF => implT(dt => {
+    override def t: Type = implN(n => implNNF(lenF => implDT(dt => {
       DepArrayType(n, NatDataTypeLambda(n, (i: NatIdentifier) => ArrayType(lenF(i), dt))) ->
         ArrayType(BigSum(from = 0, upTo = n - 1, (n: InclusiveIndexVar) => lenF(n)), dt)
     })))
@@ -39,9 +39,9 @@ object primitives {
   }
 
   case object drop extends Primitive {
-    override def t: Type = nFunT(n => implN(m => implT(a =>
-      ArrayType(n + m, a) -> ArrayType(m, a)
-    )))
+    override def t: Type = nFunT(n => implN(m => implW(w => implDT(t =>
+      ArrayType(n + m, t).`_`(w) -> ArrayType(m, t).`_`(w)
+    ))))
   }
 
   case class ForeignFunction(decl: ForeignFunction.Decl, override val t: Type) extends Primitive {
@@ -54,17 +54,17 @@ object primitives {
   }
 
   case object fst extends Primitive {
-    override def t: Type = implT(a => implT(b => TupleType(a, b) -> a))
+    override def t: Type = implDT(a => implDT(b => TupleType(a, b) -> a))
   }
 
   case object generate extends Primitive {
-    override def t: Type = implN(n => implT(a =>
+    override def t: Type = implN(n => implDT(a =>
       (IndexType(n) -> a) -> ArrayType(n, a)
     ))
   }
 
   case object idx extends Primitive {
-    override def t: Type = implN(n => implT(a =>
+    override def t: Type = implN(n => implDT(a =>
       IndexType(n) -> (ArrayType(n, a) -> a)
     ))
   }
@@ -76,20 +76,20 @@ object primitives {
   }
 
   case object iterate extends Primitive {
-    override def t: Type = implN(n => implN(m => nFunT(k => implT(a =>
+    override def t: Type = implN(n => implN(m => nFunT(k => implDT(a =>
       nFunT(l => ArrayType(l * n, a) -> ArrayType(l, a)) ->
         (ArrayType(m * n.pow(k), a) -> ArrayType(m, a))
     ))))
   }
 
   case object join extends Primitive {
-    override def t: Type = implN(n => implN(m => implT(dt =>
-      ArrayType(n, ArrayType(m, dt)) -> ArrayType(n * m, dt)
-    )))
+    override def t: Type = implN(n => implN(m => implW(w => implDT(t =>
+      ArrayType(n, ArrayType(m, t)).`_`(w) -> ArrayType(n * m, t).`_`(w)
+    ))))
   }
 
   case object map extends Primitive {
-    override def t: Type = implN(n => implT(a => implT(b =>
+    override def t: Type = implN(n => implDT(a => implDT(b =>
       (a -> b) -> (ArrayType(n, a) -> ArrayType(n, b))
     )))
   }
@@ -100,24 +100,24 @@ object primitives {
 
   // TODO? could be expressed in terms of a pad idx -> val
   case object padCst extends Primitive {
-    override def t: Type = implN(n => nFunT(l => nFunT(r => implT(a =>
+    override def t: Type = implN(n => nFunT(l => nFunT(r => implDT(a =>
       a -> (ArrayType(n, a) -> ArrayType(l + n + r, a))
     ))))
   }
 
   // TODO? could be expressed in terms of a pad idx -> idx or idx -> val
   case object padClamp extends Primitive {
-    override def t: Type = implN(n => nFunT(l => nFunT(r => implT(a =>
+    override def t: Type = implN(n => nFunT(l => nFunT(r => implDT(a =>
       ArrayType(n, a) -> ArrayType(l + n + r, a)
     ))))
   }
 
   case object pair extends Primitive {
-    override def t: Type = implT(a => implT(b => a -> (b -> TupleType(a, b))))
+    override def t: Type = implDT(a => implDT(b => a -> (b -> TupleType(a, b))))
   }
 
   case object reduce extends Primitive {
-    override def t: Type = implN(n => implT(a => implT(b =>
+    override def t: Type = implN(n => implDT(a => implDT(b =>
       (a -> (b -> b)) -> (b -> (ArrayType(n, a) -> b))
     )))
   }
@@ -131,7 +131,7 @@ object primitives {
   }
 
   case object reorder extends Primitive {
-    override def t: Type = implN(n => implT(a =>
+    override def t: Type = implN(n => implDT(a =>
       (IndexType(n) -> IndexType(n)) -> (// idxF
         (IndexType(n) -> IndexType(n)) -> (// idxFinv
           ArrayType(n, a) -> ArrayType(n, a)))
@@ -139,7 +139,7 @@ object primitives {
   }
 
   case object scan extends Primitive {
-    override def t: Type = implN(n => implT(a => implT(b =>
+    override def t: Type = implN(n => implDT(a => implDT(b =>
       (a -> (b -> b)) -> (b -> (ArrayType(n, a) -> ArrayType(n, b)))
     )))
   }
@@ -149,7 +149,7 @@ object primitives {
   }
 
   case object slide extends Primitive {
-    override def t: Type = implN(n => nFunT(sz => nFunT(sp => implT(dt => {
+    override def t: Type = implN(n => nFunT(sz => nFunT(sp => implDT(dt => {
       val inputSize = sp * n + sz - sp
       ArrayType(inputSize, dt) -> ArrayType(n, ArrayType(sz, dt))
     }))))
@@ -170,50 +170,50 @@ object primitives {
   }
 
   case object snd extends Primitive {
-    override def t: Type = implT(a => implT(b => TupleType(a, b) -> b))
+    override def t: Type = implDT(a => implDT(b => TupleType(a, b) -> b))
   }
 
   case object split extends Primitive {
-    override def t: Type = nFunT(n => implN(m => implT(dt =>
-      ArrayType(m * n, dt) -> ArrayType(m, ArrayType(n, dt))
-    )))
+    override def t: Type = nFunT(n => implN(m => implW(w => implDT(t =>
+      ArrayType(m * n, t).`_`(w) -> ArrayType(m, ArrayType(n, t)).`_`(w)
+    ))))
   }
 
   case object take extends Primitive {
-    override def t: Type = nFunT(n => implN(m => implT(a =>
-      ArrayType(n + m, a) -> ArrayType(n, a)
-    )))
+    override def t: Type = nFunT(n => implN(m => implW(w => implDT(t =>
+      ArrayType(n + m, t).`_`(w) -> ArrayType(n, t).`_`(w)
+    ))))
   }
 
   case object transpose extends Primitive {
-    override def t: Type = implN(n => implN(m => implT(dt =>
+    override def t: Type = implN(n => implN(m => implDT(dt =>
       ArrayType(n, ArrayType(m, dt)) -> ArrayType(m, ArrayType(n, dt))
     )))
   }
 
   // if-then-else
   case object select extends Primitive {
-    override def t: Type = implT(a => bool -> (a -> (a -> a)))
+    override def t: Type = implDT(t => bool -> (t -> (t -> t)))
   }
 
   case object neg extends Primitive {
-    override def t: Type = implT(a => a -> a)
+    override def t: Type = implDT(t => t -> t)
   }
 
   case object unzip extends Primitive {
-    override def t: Type = implN(n => implT(dt1 => implT(dt2 =>
+    override def t: Type = implN(n => implDT(dt1 => implDT(dt2 =>
       ArrayType(n, TupleType(dt1, dt2)) -> TupleType(ArrayType(n, dt1), ArrayType(n, dt2))
     )))
   }
 
   case object zip extends Primitive {
-    override def t: Type = implN(n => implT(a => implT(b =>
+    override def t: Type = implN(n => implDT(a => implDT(b =>
       ArrayType(n, a) -> (ArrayType(n, b) -> ArrayType(n, TupleType(a, b)))
     )))
   }
 
   case object add extends Primitive {
-    override def t: Type = implT(a => a -> (a -> a))
+    override def t: Type = implDT(t => t -> (t -> t))
   }
   case object sub extends Primitive {
     override def t: Type = add.t
@@ -229,7 +229,7 @@ object primitives {
   }
 
   case object gt extends Primitive {
-    override def t: Type = implT(a => a -> (a -> bool))
+    override def t: Type = implDT(t => t -> (t -> bool))
   }
   case object lt extends Primitive {
     override def t: Type = gt.t
@@ -248,19 +248,19 @@ object primitives {
   // TODO: ask for a scalar type parameter instead of casting
 
   case object asVector extends Primitive {
-    override def t: Type = nFunT(n => implN(m => implT(a =>
+    override def t: Type = nFunT(n => implN(m => implDT(a =>
       ArrayType(m * n, a) -> ArrayType(m, VectorType(n, a))
     )))
   }
 
   case object asScalar extends Primitive {
-    override def t: Type = implN(n => implN(m => implT(a =>
+    override def t: Type = implN(n => implN(m => implDT(a =>
       ArrayType(m, VectorType(n, a)) -> ArrayType(m * n, a)
     )))
   }
 
   case object vectorFromScalar extends Primitive {
-    override def t: Type = implN(n => implT(a =>
+    override def t: Type = implN(n => implDT(a =>
       a -> VectorType(n, a)
     ))
   }

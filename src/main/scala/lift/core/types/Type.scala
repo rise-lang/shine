@@ -5,6 +5,10 @@ import lift.arithmetic._
 
 sealed trait Type
 
+final case class TypeIdentifier(name: String) extends Type with Kind.Identifier {
+  override def toString: String = name
+}
+
 // ============================================================================================= //
 // (Function) Types
 // ============================================================================================= //
@@ -28,7 +32,9 @@ final case class NatDataTypeDependentFunctionType[T <: Type](fn: NatDataTypeFunc
 // ============================================================================================= //
 // Data Types
 // ============================================================================================= //
-sealed trait DataType extends Type
+sealed trait DataType {
+  def `_`(w: AccessType): DataAccessType = DataAccessType(this, w)
+}
 
 final case class DataTypeIdentifier(name: String) extends DataType with Kind.Identifier {
   override def toString: String = name
@@ -85,7 +91,7 @@ final case class IndexType(size: Nat) extends BasicType {
 }
 
 // TODO: enforce ScalarType
-sealed case class VectorType(size: Nat, elemType: Type) extends BasicType {
+sealed case class VectorType(size: Nat, elemType: DataType) extends BasicType {
   override def toString: String = s"<$size>$elemType"
 }
 
@@ -113,6 +119,8 @@ object float16 extends VectorType(16, float)
 final case class NatDataTypeApply(f: NatDataTypeFunction, n: Nat) extends DataType {
   override def toString: String = s"$f($n)"
 }
+
+case class DataAccessType(dt: DataType, w: AccessType) extends Type
 
 // ============================================================================================= //
 // Nat -> Nat
@@ -197,7 +205,7 @@ object NatDataTypeLambda {
     NatDataTypeLambda(x, f(x))
   }
 
-  def apply(upperBound:Nat, id:NatIdentifier, body:DataType):NatDataTypeFunction = {
+  def apply(upperBound:Nat, id:NatIdentifier, body: DataType):NatDataTypeFunction = {
     val x = NamedVar(freshName("n"), RangeAdd(0, upperBound, 1))
     NatDataTypeLambda(x, substitute(_, `for`=id, `in`=body))
   }
