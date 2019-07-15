@@ -7,14 +7,15 @@ import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
 import elevate.core.strategies.algorithmic._
 
-object normalforms {
+
+object normalForm {
 
   def normalize: Strategy => Strategy =
     s => repeat(oncetd(s))
 
-  def reductionNormalform: Strategy = normalize(betaReduction <+ etaReduction)
+  def reductionNormalForm: Strategy = normalize(betaReduction <+ etaReduction)
 
-  def rewriteNormalform: Strategy = normalize(mapFullFission)
+  def rewriteNormalForm: Strategy = normalize(mapFullFission)
 
-  def codegenNormalform: Strategy = normalize(mapFusion)
+  def codegenNormalForm: Strategy = normalize(mapFusion)
 }

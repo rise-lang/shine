@@ -4,7 +4,7 @@ import elevate.core.rules._
 import elevate.core.rules.algorithmic.{mapFusion}
 import elevate.core.strategies._
 import elevate.core.strategies.traversal._
-import elevate.core.strategies.normalforms._
+import elevate.core.strategies.normalForm._
 import elevate.core.strategies.basic._
 import lift.core.DSL._
 import lift.core._

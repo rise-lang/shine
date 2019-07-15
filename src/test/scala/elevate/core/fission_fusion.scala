@@ -7,7 +7,7 @@ import rules._
 import rules.algorithmic.{mapFusion, mapLastFission}
 import strategies.algorithmic.{mapFirstFission, mapFullFission}
 import strategies.traversal._
-import strategies.normalforms._
+import strategies.normalForm._
 
 class fission_fusion extends idealised.util.Tests {
   val norm = normalize(betaReduction <+ etaReduction)

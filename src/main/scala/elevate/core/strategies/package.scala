@@ -2,7 +2,8 @@ package elevate.core
 
 import elevate.core.rules.algorithmic._
 import elevate.core.strategies.algorithmic._
-import elevate.core.strategies.normalforms._
+import elevate.core.strategies.basic._
+import elevate.core.strategies.normalForm._
 import elevate.core.strategies.liftTraversal._
 import strategies.traversal._
 import scala.language.implicitConversions
@@ -11,18 +12,16 @@ import scala.language.implicitConversions
 package object strategies {
 
   def print: Strategy = print("")
-  def print(msg: String): Strategy = {
-    e => println(s"$msg $e"); Success(e)
-  }
+  def print(msg: String): Strategy = peek(e => println(s"$msg $e"))
 
   def wrap: Int => (Strategy => Strategy) => Strategy => Strategy =
     i => wrapper => s => if(i <= 0) s else wrap(i-1)(wrapper)(wrapper(s))
 
   def fmap: Strategy => Strategy =
     s =>
-      mapFusion `;` reductionNormalform `;`
+      mapFusion `;` reductionNormalForm `;`
       //wrap(3)(one(_))(s) `;` reductionNormalform `;`
-      function(argument(body(s))) `;` reductionNormalform `;`
+      function(argument(body(s))) `;` reductionNormalForm `;`
       one(mapFullFission)
 
   // example rule used for s: **f >> T -> T >> **f

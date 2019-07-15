@@ -8,7 +8,7 @@ import lift.core.types._
 import lift.core.HighLevelConstructs.padClamp2D
 
 import elevate.core._
-import elevate.core.strategies.normalforms._
+import elevate.core.strategies.normalForm._
 import elevate.core.strategies.basic._
 import rules._
 import rules.algorithmic._
@@ -66,7 +66,7 @@ object binomialFilter {
       map(dotSeq(weights1d))
     )
 
-  val norm = normalize(betaReduction <+ etaReduction)
+  val norm = reductionNormalForm
 
   val separateDot: Strategy = {
     case Apply(Apply(Apply(`reduce`, rf), init), Apply(Apply(`map`, mf), Apply(Apply(`zip`, w), Apply(`join`, nbh))))
@@ -109,14 +109,14 @@ class binomialFilter extends idealised.util.Tests {
     import strategies.traversal._
 
     val s =
-      reductionNormalform `;`
+      reductionNormalForm `;`
       oncetd(separateDot) `;`
         repeatNTimes(2)(oncetd(specialize.reduceSeq)) `;`
         repeatNTimes(2)(oncetd(specialize.mapSeq)) `;`
-        reductionNormalform
+        reductionNormalForm
 
     s_eq(s(highLevel).get,
-      reductionNormalform(factorised).get)
+      reductionNormalForm(factorised).get)
   }
 
   test("rewrite to separated blur") {
@@ -161,15 +161,15 @@ class binomialFilter extends idealised.util.Tests {
     )
 
     val result = steps.foldLeft[Expr](highLevel)({ case (e, (s, expected)) =>
-        val result = reductionNormalform(s(e).get).get
-        s_eq(result, reductionNormalform(expected).get)
+        val result = reductionNormalForm(s(e).get).get
+        s_eq(result, reductionNormalForm(expected).get)
         result
     })
 
     val pick = repeatNTimes(2)(oncetd(specialize.reduceSeq)) `;`
       repeatNTimes(2)(oncetd(specialize.mapSeq)) `;`
       repeatNTimes(2)(skip(1)(specialize.mapSeq))
-    s_eq(pick(result).get, reductionNormalform(separated).get)
+    s_eq(pick(result).get, reductionNormalForm(separated).get)
   }
 
   test("rewrite to register rotation blur") {
@@ -208,15 +208,15 @@ class binomialFilter extends idealised.util.Tests {
     )
 
     val result = steps.foldLeft[Expr](highLevel)({ case (e, (s, expected)) =>
-      val result = reductionNormalform(s(e).get).get
-      s_eq(result, reductionNormalform(expected).get)
+      val result = reductionNormalForm(s(e).get).get
+      s_eq(result, reductionNormalForm(expected).get)
       result
     })
 
     val pick = repeatNTimes(2)(oncetd(specialize.reduceSeq)) `;`
       oncetd(specialize.slideSeq(slideSeq.Values)) `;`
       oncetd(specialize.mapSeq)
-    s_eq(pick(result).get, reductionNormalform(regrot).get)
+    s_eq(pick(result).get, reductionNormalForm(regrot).get)
   }
 
   def program(name: String, e: Expr): C.Program = {
