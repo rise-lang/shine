@@ -17,21 +17,27 @@ package object strategies {
   def wrap: Int => (Strategy => Strategy) => Strategy => Strategy =
     i => wrapper => s => if(i <= 0) s else wrap(i-1)(wrapper)(wrapper(s))
 
-  def fmap: Strategy => Strategy =
+  // applying a strategy to an expression applied to a lift `map`. Example:
+  // ((map λe14. (transpose ((map (map e12)) e14))) e13) // input expr
+  //  (map λe14. (transpose ((map (map e12)) e14)))      // result of `function`
+  //       λe14. (transpose ((map (map e12)) e14))       // result of `argument`
+  //             (transpose ((map (map e12)) e14))       // result of 'body' -> here we can apply s
+  def fmap: Strategy => Strategy = s => function(argument(body(s)))
+
+  // fmap applied for expressions in rewrite normal form:
+  // fuse -> fmap -> fission
+  def fmapRNF: Strategy => Strategy =
     s =>
       mapFusion `;` reductionNormalForm `;`
-      //wrap(3)(one(_))(s) `;` reductionNormalform `;`
-      function(argument(body(s))) `;` reductionNormalForm `;`
+      fmap(s) `;` reductionNormalForm `;`
       one(mapFullFission)
 
   // example rule used for s: **f >> T -> T >> **f
   // ((map transpose) ((map (map (map e12))) e13))       // input to fmap
-  // ((map λe14. (transpose ((map (map e12)) e14))) e13) // result of mapFusion + reductionNormalform
-  //  (map λe14. (transpose ((map (map e12)) e14)))      // result of `function`
-  //       λe14. (transpose ((map (map e12)) e14))       // result of `argument`
-  //             (transpose ((map (map e12)) e14))       // result of 'body' -> here we can apply s
 
+
+  // applying a strategy to an expression nested in one or multiple lift `map`s
   def mapped: Strategy => Strategy =
-    s => s <+ (e => fmap(mapped(s))(e))
+    s => s <+ (e => fmapRNF(mapped(s))(e))
 
 }

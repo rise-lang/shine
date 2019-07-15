@@ -56,25 +56,25 @@ class movement extends idealised.util.Tests {
 
     // level 1
     assert(eq(
-      one(one(fmap(`**f >> T -> T >> **f`)))(λ(f => ***(f) >> *(T))),
+      one(one(fmapRNF(`**f >> T -> T >> **f`)))(λ(f => ***(f) >> *(T))),
       λ(f => *(T) >> ***(f)))
     )
 
     // level 2
     assert(eq(
-      one(one(fmap(fmap(`**f >> T -> T >> **f`))))(λ(f => ****(f) >> **(T))),
+      one(one(fmapRNF(fmapRNF(`**f >> T -> T >> **f`))))(λ(f => ****(f) >> **(T))),
       λ(f => **(T) >> ****(f)))
     )
 
     // level 3
     assert(eq(
-      one(one(fmap(fmap(fmap(`**f >> T -> T >> **f`)))))(λ(f => *****(f) >> ***(T))),
+      one(one(fmapRNF(fmapRNF(fmapRNF(`**f >> T -> T >> **f`)))))(λ(f => *****(f) >> ***(T))),
       λ(f => ***(T) >> *****(f)))
     )
 
     // level 4
     assert(eq(
-      one(one(fmap(fmap(fmap(fmap(`**f >> T -> T >> **f`))))))(λ(f => ******(f) >> ****(T))),
+      one(one(fmapRNF(fmapRNF(fmapRNF(fmapRNF(`**f >> T -> T >> **f`))))))(λ(f => ******(f) >> ****(T))),
       λ(f => ****(T) >> ******(f)))
     )
 
@@ -98,7 +98,7 @@ class movement extends idealised.util.Tests {
     testMultiple(
       List(
         body(body(mapped(`**f >> T -> T >> **f`)))(λ(f => *(S) >> ***(f) >> *(T))),
-        body(body(fmap(`**f >> T -> T >> **f`)))(λ(f => *(S) >> ***(f) >> *(T)))
+        body(body(fmapRNF(`**f >> T -> T >> **f`)))(λ(f => *(S) >> ***(f) >> *(T)))
       ), λ(f => *(S) >> *(T) >> ***(f))
     )
 
@@ -107,7 +107,7 @@ class movement extends idealised.util.Tests {
     testMultiple(
       List(
         body(body(argument(mapped(`**f >> T -> T >> **f`))))(λ(f => ***(f) >> *(T) >> *(S))),
-        body(body(argument(fmap(`**f >> T -> T >> **f`))))(λ(f => ***(f) >> *(T) >> *(S)))
+        body(body(argument(fmapRNF(`**f >> T -> T >> **f`))))(λ(f => ***(f) >> *(T) >> *(S)))
       ), λ(f => *(T) >> ***(f) >> *(S))
     )
 
@@ -115,7 +115,7 @@ class movement extends idealised.util.Tests {
     testMultiple(
       List(
         oncetd(mapped(`**f >> T -> T >> **f`))(λ(f => ***(f) >> *(T) >> *(S))),
-        oncetd(fmap(`**f >> T -> T >> **f`))(λ(f => ***(f) >> *(T) >> *(S)))
+        oncetd(fmapRNF(`**f >> T -> T >> **f`))(λ(f => ***(f) >> *(T) >> *(S)))
       ), λ(f => *(T) >> ***(f) >> *(S))
     )
 
@@ -125,21 +125,21 @@ class movement extends idealised.util.Tests {
     testMultiple(
       List(
         body(body(mapped(`**f >> T -> T >> **f`)))(λ(f => *(S) >> ****(f) >> **(T))),
-        body(body(fmap(fmap(`**f >> T -> T >> **f`))))(λ(f => *(S) >> ****(f) >> **(T)))
+        body(body(fmapRNF(fmapRNF(`**f >> T -> T >> **f`))))(λ(f => *(S) >> ****(f) >> **(T)))
       ), λ(f => *(S) >> **(T) >> ****(f))
     )
 
     testMultiple(
       List(
         body(body(argument(mapped(`**f >> T -> T >> **f`))))(λ(f => ****(f) >> **(T) >> *(S))),
-        body(body(argument(fmap(fmap(`**f >> T -> T >> **f`)))))(λ(f => ****(f) >> **(T) >> *(S)))
+        body(body(argument(fmapRNF(fmapRNF(`**f >> T -> T >> **f`)))))(λ(f => ****(f) >> **(T) >> *(S)))
       ), λ(f => **(T) >> ****(f) >> *(S))
     )
 
     testMultiple(
       List(
         oncetd(mapped(`**f >> T -> T >> **f`))(λ(f => ****(f) >> **(T) >> *(S))),
-        oncetd(fmap(fmap(`**f >> T -> T >> **f`)))(λ(f => ****(f) >> **(T) >> *(S)))
+        oncetd(fmapRNF(fmapRNF(`**f >> T -> T >> **f`)))(λ(f => ****(f) >> **(T) >> *(S)))
       ), λ(f => **(T) >> ****(f) >> *(S))
     )
   }
