@@ -1,11 +1,11 @@
-package elevate.core.strategies
+package elevate.lift.strategies
 
 import elevate.core.Strategy
-import elevate.core.rules._
-import elevate.core.rules.algorithmic._
-import elevate.core.strategies.basic._
-import elevate.core.strategies.traversal._
-import elevate.core.strategies.algorithmic._
+import elevate.core.strategies.basic.repeat
+import elevate.core.strategies.traversal.oncetd
+import elevate.lift.strategies.algorithmic._
+import elevate.lift.rules._
+import elevate.lift.rules.algorithmic._
 
 
 object normalForm {

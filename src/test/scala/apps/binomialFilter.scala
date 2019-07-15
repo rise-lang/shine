@@ -8,12 +8,12 @@ import lift.core.types._
 import lift.core.HighLevelConstructs.padClamp2D
 
 import elevate.core._
-import elevate.core.strategies.normalForm._
+import elevate.lift.strategies.normalForm._
 import elevate.core.strategies.basic._
-import rules._
-import rules.algorithmic._
-import rules.movement._
-import strategies.algorithmic._
+import elevate.lift.rules._
+import elevate.lift.rules.algorithmic._
+import elevate.lift.rules.movement._
+import elevate.lift.strategies.algorithmic._
 
 import idealised.C
 import idealised.util.{Execute, SyntaxChecker}

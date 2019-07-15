@@ -1,5 +1,6 @@
-package elevate.core
+package elevate.lift
 
+import elevate.core.{Failure, Strategy, Success}
 import lift.core._
 
 package object rules {

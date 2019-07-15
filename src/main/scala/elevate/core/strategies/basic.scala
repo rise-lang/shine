@@ -28,4 +28,11 @@ object basic {
 
   def repeatNTimes: Int => Strategy => Strategy =
     n => s => if (n > 0) { s `;` repeatNTimes(n-1)(s) } else { id }
+
+  def print: Strategy = print("")
+  def print(msg: String): Strategy = peek(e => println(s"$msg $e"))
+
+  def wrap: Int => (Strategy => Strategy) => Strategy => Strategy =
+    i => wrapper => s => if(i <= 0) s else wrap(i-1)(wrapper)(wrapper(s))
+
 }
