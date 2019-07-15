@@ -33,7 +33,9 @@ final case class NatDataTypeDependentFunctionType[T <: Type](fn: NatDataTypeFunc
 // Data Types
 // ============================================================================================= //
 sealed trait DataType {
-  def `_`(w: AccessType): DataAccessType = DataAccessType(this, w)
+  def __(w: AccessType): DataAccessType = DataAccessType(this, w)
+  def _W: DataAccessType = DataAccessType(this, lift.core.types.W)
+  def _R: DataAccessType = DataAccessType(this, lift.core.types.R)
 }
 
 final case class DataTypeIdentifier(name: String) extends DataType with Kind.Identifier {

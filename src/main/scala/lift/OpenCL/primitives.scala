@@ -46,15 +46,15 @@ object primitives {
   }
 
 
-  case class to(space: AddressSpace) extends Primitive {
-    override def t: Type = implDT(a => implDT(b =>
-      (a -> b) -> (a -> b)
-    ))
+  object to extends Primitive {
+    override def t: Type = implDT(t =>
+      nFunA(a => t.__(W) -> t.__(R) )
+    )
   }
 
-  val toGlobal = to(idealised.OpenCL.GlobalMemory)
-  val toLocal = to(idealised.OpenCL.LocalMemory)
-  val toPrivate = to(idealised.OpenCL.PrivateMemory)
+  val toGlobal: Expr = to(lift.core.types.AddressSpace.Global)
+  val toLocal: Expr = to(lift.core.types.AddressSpace.Local)
+  val toPrivate: Expr = to(lift.core.types.AddressSpace.Private)
 
   case class oclReduceSeq(init_space: AddressSpace) extends Primitive {
     override def t: Type = core.reduceSeq.t

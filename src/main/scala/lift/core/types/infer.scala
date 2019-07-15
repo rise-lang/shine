@@ -83,11 +83,11 @@ object infer {
           TypedExpr(TypeDepApply(tf, dt), liftDependentFunctionType[DataKind](tf.t)(dt))
       }
 
-      case l: Literal => TypedExpr(l, l.d.dataType.`_`(R))
+      case l: Literal => TypedExpr(l, l.d.dataType.__(R))
 
-      case i: Index => TypedExpr(i, IndexType(i.size).`_`(R))
+      case i: Index => TypedExpr(i, IndexType(i.size).__(R))
 
-      case n: NatExpr => TypedExpr(n, NatType.`_`(R))
+      case n: NatExpr => TypedExpr(n, NatType.__(R))
 
       case TypedExpr(e, t) =>
         val te = typed(e)

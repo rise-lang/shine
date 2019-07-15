@@ -38,6 +38,7 @@ object DSL {
     def apply(e: Expr): Expr = liftFunctionExpr(f).value(e)
     def apply(n: Nat): Expr = liftDependentFunctionExpr[NatKind](f).value(n)
     def apply(dt: DataType): Expr = liftDependentFunctionExpr[DataKind](f).value(dt)
+    def apply(a: AddressSpace): Expr = liftDependentFunctionExpr[AddressSpaceKind](f).value(a)
   }
 
   implicit class FunPipe(e: Expr) {
@@ -92,6 +93,13 @@ object DSL {
     def apply(f: DataTypeIdentifier => Type): Type = {
       val x = DataTypeIdentifier(freshName("dt"))
       TypeDependentFunctionType(x, f(x))
+    }
+  }
+
+  object nFunA {
+    def apply(f: AddressSpaceIdentifier => Type): Type = {
+      val x = AddressSpaceIdentifier(freshName("a"))
+      AddressSpaceDependentFunctionType(x, f(x))
     }
   }
 
@@ -172,13 +180,9 @@ object DSL {
 
   implicit final class To(private val a: Type) extends AnyVal {
     @inline def ->(b: Type): Type = FunctionType(a, b)
+    // ... and as a right associative operator
+    @inline def ->:(b: Type): FunctionType[Type, Type] = FunctionType(b, a)
   }
-
-//  implicit final class ToDT(private val dt: DataType) extends AnyVal {
-//    @inline def ->(b: Type): Type = FunctionType(implToType(dt), b)
-//  }
-
-//  implicit def implToType(dt: DataType): Type = DataAccessType(dt, R) // default is ``read''
 
   object foreignFun {
     def apply(name: String, t: Type): Expr = {

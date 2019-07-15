@@ -22,4 +22,9 @@ package object types {
     def apply[T <: Type](n: NatIdentifier, t: T): DependentFunctionType[NatKind, T] =
       DependentFunctionType[NatKind, T](n, t)
   }
+
+  object AddressSpaceDependentFunctionType {
+    def apply[T <: Type](a: AddressSpaceIdentifier, t: T): DependentFunctionType[AddressSpaceKind, T] =
+      DependentFunctionType[AddressSpaceKind, T](a, t)
+  }
 }
