@@ -32,10 +32,6 @@ package object strategies {
       fmap(s) `;` reductionNormalForm `;`
       one(mapFullFission)
 
-  // example rule used for s: **f >> T -> T >> **f
-  // ((map transpose) ((map (map (map e12))) e13))       // input to fmap
-
-
   // applying a strategy to an expression nested in one or multiple lift `map`s
   def mapped: Strategy => Strategy =
     s => s <+ (e => fmapRNF(mapped(s))(e))
