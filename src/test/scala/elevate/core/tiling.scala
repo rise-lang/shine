@@ -1,25 +1,13 @@
 package elevate.core
 
-import elevate.core.strategies.liftTraversal._
+import elevate.lift.strategies.traversal._
 import elevate.core.strategies.tiling._
-import elevate.core.strategies._
+import elevate.lift._
 import lift.core.DSL._
-import lift.core._
 import lift.core.primitives._
 
-class tiling extends idealised.util.Tests {
 
-  // notation
-  def T: Expr = transpose
-  def S: Expr = split(4)//slide(3)(1)
-  def J: Expr = join
-  def *(x: Expr): Expr = map(x)
-  def **(x: Expr): Expr = map(map(x))
-  def ***(x: Expr): Expr = map(map(map(x)))
-  def ****(x: Expr): Expr = map(map(map(map(x))))
-  def *****(x: Expr): Expr = map(map(map(map(map(x)))))
-  def ******(x: Expr): Expr = map(map(map(map(map(map(x))))))
-  def λ(f: Identifier => Expr): Expr = fun(f)
+class tiling extends idealised.util.Tests {
 
   test("simple 2d tiling") {
     val input = λ(f => **(f))
@@ -29,6 +17,12 @@ class tiling extends idealised.util.Tests {
     println(
       tile(32)(input)
     )
+  }
+
+  test("loop interchange") {
+    assert(structEq(
+      body(body(loopInterchange))(λ(in => λ(f => **(f) <| in))).get,
+      λ(in => λ(f => transpose << **(f) << transpose <| in))))
   }
 
   test("tiling0") {

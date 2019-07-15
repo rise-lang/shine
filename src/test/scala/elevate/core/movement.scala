@@ -6,32 +6,20 @@ import elevate.core.strategies._
 import elevate.core.strategies.traversal._
 import elevate.lift.strategies.traversal._
 import elevate.lift.strategies.normalForm._
+import elevate.lift._
 import lift.core.{Expr, Identifier, StructuralEquality}
 import lift.core.primitives._
 import lift.core.DSL._
+
 import scala.language.implicitConversions
 
 class movement extends idealised.util.Tests {
 
   implicit def rewriteResultToExpr(r: RewriteResult): Expr = r.get
-
-  val norm: Strategy = normalize(betaReduction <+ etaReduction)
-  def eq(a: Expr, b: Expr): Boolean = StructuralEquality(norm(a), norm(b))
-
-  // notation
-  def T: Expr = transpose
-  def S: Expr = split(4)//slide(3)(1)
-  def J: Expr = join
-  def *(x: Expr): Expr = map(x)
-  def **(x: Expr): Expr = map(map(x))
-  def ***(x: Expr): Expr = map(map(map(x)))
-  def ****(x: Expr): Expr = map(map(map(map(x))))
-  def *****(x: Expr): Expr = map(map(map(map(map(x)))))
-  def ******(x: Expr): Expr = map(map(map(map(map(map(x))))))
-  def λ(f: Identifier => Expr): Expr = fun(f)
+  val norm: Strategy = reductionNormalForm
 
   def testMultiple(list: List[Expr], gold: Expr) = {
-    assert(list.forall(eq(_, gold)))
+    assert(list.forall(structEq(_, gold)))
   }
 
   // transpose
@@ -49,37 +37,37 @@ class movement extends idealised.util.Tests {
 
   test("fmap basic") {
     // level 0
-    assert(eq(
+    assert(structEq(
       one(one(`**f >> T -> T >> **f`))(λ(f => **(f) >> T)),
       λ(f => T >> **(f)))
     )
 
     // level 1
-    assert(eq(
+    assert(structEq(
       one(one(fmapRNF(`**f >> T -> T >> **f`)))(λ(f => ***(f) >> *(T))),
       λ(f => *(T) >> ***(f)))
     )
 
     // level 2
-    assert(eq(
+    assert(structEq(
       one(one(fmapRNF(fmapRNF(`**f >> T -> T >> **f`))))(λ(f => ****(f) >> **(T))),
       λ(f => **(T) >> ****(f)))
     )
 
     // level 3
-    assert(eq(
+    assert(structEq(
       one(one(fmapRNF(fmapRNF(fmapRNF(`**f >> T -> T >> **f`)))))(λ(f => *****(f) >> ***(T))),
       λ(f => ***(T) >> *****(f)))
     )
 
     // level 4
-    assert(eq(
+    assert(structEq(
       one(one(fmapRNF(fmapRNF(fmapRNF(fmapRNF(`**f >> T -> T >> **f`))))))(λ(f => ******(f) >> ****(T))),
       λ(f => ****(T) >> ******(f)))
     )
 
     // level 4 alternative
-    assert(eq(
+    assert(structEq(
       one(one(mapped(`**f >> T -> T >> **f`)))(λ(f => ******(f) >> ****(T))),
       λ(f => ****(T) >> ******(f)))
     )
@@ -145,21 +133,21 @@ class movement extends idealised.util.Tests {
   }
 
   test("T >> **f -> **f >> T") {
-    assert(eq(
+    assert(structEq(
       oncetd(`T >> **f -> **f >> T`)(λ(f => T >> **(f))),
       λ(f => **(f) >> T))
     )
   }
 
   test("T >> ****f -> ****f >> T") {
-    assert(eq(
+    assert(structEq(
       oncetd(`T >> **f -> **f >> T`)(λ(f => T >> ****(f))),
       λ(f => ****(f) >> T))
     )
   }
 
   test("****f >> T -> T >> ****f") {
-    assert(eq(
+    assert(structEq(
       oncetd(`**f >> T -> T >> **f`)(λ(f => ****(f) >> T)),
       λ(f => T >> ****(f)))
     )
@@ -168,14 +156,14 @@ class movement extends idealised.util.Tests {
   // split/slide
 
   test("S >> **f -> *f >> S") {
-    assert(eq(
+    assert(structEq(
       oncetd(`S >> **f -> *f >> S`)(λ(f => S >> **(f))),
       λ(f => *(f) >> S))
     )
   }
 
   test("*f >> S -> S >> **f") {
-    assert(eq(
+    assert(structEq(
       oncetd(`*f >> S -> S >> **f`)(λ(f => *(f) >> S)),
       λ(f => S >> **(f)))
     )
@@ -184,14 +172,14 @@ class movement extends idealised.util.Tests {
   // join
 
   test("J >> *f -> **f >> J") {
-    assert(eq(
+    assert(structEq(
       oncetd(`J >> *f -> **f >> J`)(λ(f => J >> *(f))),
       λ(f => **(f) >> J)
     ))
   }
 
   test("**f >> J -> *f >> J") {
-    assert(eq(
+    assert(structEq(
       oncetd(`**f >> J -> J >> *f`)(λ(f => **(f) >> J)),
       λ(f => J >> *(f))
     ))
@@ -200,70 +188,70 @@ class movement extends idealised.util.Tests {
   // special-cases
 
   test("T >> S -> *S >> T >> *T") {
-    assert(eq(
+    assert(structEq(
       oncetd(`T >> S -> *S >> T >> *T`)(T >> S),
       *(S) >> T >> *(T)
     ))
   }
 
   test("T >> *S -> S >> *T >> T") {
-    assert(eq(
+    assert(structEq(
       oncetd(`T >> *S -> S >> *T >> T`)(T >> *(S)),
       S >> *(T) >> T
     ))
   }
 
   test("*S >> T -> T >> S >> *T") {
-    assert(eq(
+    assert(structEq(
       oncetd(`*S >> T -> T >> S >> *T`)(*(S) >> T),
       T >> S >> *(T)
     ))
   }
 
   test("J >> T -> *T >> T >> *J") {
-    assert(eq(
+    assert(structEq(
       oncetd(`J >> T -> *T >> T >> *J`)(J >> T),
       *(T) >> T >> *(J)
     ))
   }
 
   test("T >> *J -> *T >> J >> T") {
-    assert(eq(
+    assert(structEq(
       oncetd(`T >> *J -> *T >> J >> T`)(T >> *(J)),
       *(T) >> J >> T
     ))
   }
 
   test("*T >> J -> T >> *J >> T") {
-    assert(eq(
+    assert(structEq(
       oncetd(`*T >> J -> T >> *J >> T`)(*(T) >> J),
       T >> *(J) >> T
     ))
   }
 
   test("*J >> T -> T >> *T >> J") {
-    assert(eq(
+    assert(structEq(
       oncetd(`*J >> T -> T >> *T >> J`)(*(J) >> T),
       T >> *(T) >> J
     ))
   }
 
   test("J >> J -> *J >> J") {
-    assert(eq(
+    assert(structEq(
       oncetd(`J >> J -> *J >> J`)(J >> J),
       *(J) >> J
     ))
   }
 
   test("*J >> J -> J >> J") {
-    assert(eq(
+    assert(structEq(
       oncetd(`*J >> J -> J >> J`)(*(J) >> J),
       J >> J
     ))
   }
 
   test("slideOverSplit") {
-    assert(eq(
+    assert(structEq(
       oncetd(slideBeforeSplit)(slide(3)(1) >> split(16)),
       slide(16+3-1)(16) >> map(slide(3)(1))
     ))
