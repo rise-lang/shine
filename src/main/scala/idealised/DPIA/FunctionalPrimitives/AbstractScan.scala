@@ -35,8 +35,8 @@ abstract  class AbstractScan(n: Nat,
   override val t: ExpType =
     (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
       (f :: t"exp[$dt1, $read] -> exp[$dt2, $read] -> exp[$dt2, $write]") ->
-      (init :: exp"[$dt2, $write]") ->
-      (array :: exp"[$n.$dt1, $read]") -> exp"[$n.$dt2, $read]"
+        (init :: exp"[$dt2, $write]") ->
+          (array :: exp"[$n.$dt1, $read]") -> exp"[$n.$dt2, $read]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     makeScan(fun(n), fun(dt1), fun(dt2),

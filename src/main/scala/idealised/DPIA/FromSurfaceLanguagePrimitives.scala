@@ -111,7 +111,7 @@ object FromSurfaceLanguagePrimitives {
         case Some(ArrayType(n, DepArrayType(m, DependentFunctionType(i: SurfaceLanguage.NatIdentifier, dt)))) =>
           ???
         case Some(DepArrayType(n, DependentFunctionType(d_i: SurfaceLanguage.NatIdentifier, ArrayType(d_n, dt)))) =>
-          Some(FunctionalPrimitives.DepJoin(n, NatNatTypeFunction(n, NatIdentifier(d_i.name, d_i.range), d_n), ???, dt, FromSurfaceLanguage.asPhrase[ExpType](array)))
+          Some(FunctionalPrimitives.DepJoin(n, NatNatTypeFunction(n, NatIdentifier(d_i.name, d_i.range), d_n), dt, FromSurfaceLanguage.asPhrase[ExpType](array)))
         case Some(DepArrayType(n, DependentFunctionType(i: SurfaceLanguage.NatIdentifier, DepArrayType(m, DependentFunctionType(j: SurfaceLanguage.NatIdentifier, dt))))) =>
           ???
       }
@@ -187,7 +187,7 @@ object FromSurfaceLanguagePrimitives {
 
       case Generate(f, _) => (f.t: @unchecked) match {
         case Some(FunctionType(IndexType(n), dt : DataType)) =>
-          Some(FunctionalPrimitives.Generate(n, ???, dt,
+          Some(FunctionalPrimitives.Generate(n, dt,
             FromSurfaceLanguage.asPhrase[Types.FunctionType[ExpType, ExpType]](f)))
       }
 

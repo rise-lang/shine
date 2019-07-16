@@ -5,10 +5,6 @@ import lift.arithmetic._
 
 sealed trait Type
 
-final case class TypeIdentifier(name: String) extends Type with Kind.Identifier {
-  override def toString: String = name
-}
-
 // ============================================================================================= //
 // (Function) Types
 // ============================================================================================= //

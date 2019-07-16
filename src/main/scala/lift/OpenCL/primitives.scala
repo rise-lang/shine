@@ -56,7 +56,7 @@ object primitives {
   val toLocal: Expr = to(lift.core.types.AddressSpace.Local)
   val toPrivate: Expr = to(lift.core.types.AddressSpace.Private)
 
-  case class oclReduceSeq(init_space: AddressSpace) extends Primitive {
+  case class oclReduceSeq(init_space: lift.core.types.AddressSpace) extends Primitive {
     override def t: Type = core.reduceSeq.t
   }
 

@@ -11,10 +11,9 @@ import idealised.OpenCL.DSL.newWithAddrSpace
 
 import scala.xml.Elem
 
-abstract class To(addrSpace: AddressSpace,
-                  dt: DataType,
-                  input: Phrase[ExpType],
-                  private val makeTo: (DataType, Phrase[ExpType]) => To)
+final case class To(addrSpace: AddressSpace,
+                    dt: DataType,
+                    input: Phrase[ExpType])
   extends ExpPrimitive {
 
   override val t: ExpType =
@@ -24,7 +23,7 @@ abstract class To(addrSpace: AddressSpace,
   override def eval(s: Store): Data = OperationalSemantics.eval(s, input)
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    makeTo(fun(dt), VisitAndRebuild(input, fun))
+    To(addrSpace, fun(dt), VisitAndRebuild(input, fun))
   }
 
   override def prettyPrint: String =

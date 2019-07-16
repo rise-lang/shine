@@ -82,7 +82,7 @@ package object DPIA {
     }
   }
 
-  case class NatDataTypeFunction private (x:NatIdentifier, body:DataType) {
+  case class NatDataTypeFunction(x:NatIdentifier, body:DataType) {
     //See hash code of NatNatTypeFunction
     override def hashCode(): Int = this(NamedVar("ComparisonDummy")).hashCode()
 

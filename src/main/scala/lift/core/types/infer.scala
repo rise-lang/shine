@@ -42,7 +42,7 @@ object infer {
                      constraints: mutable.Set[Constraint],
                      identifierT: scala.collection.mutable.Map[Identifier, Type]
                     ): TypedExpr = {
-    def fresh(): Type = TypeIdentifier(freshName("_t"))
+    def fresh(): Type = DataAccessType(DataTypeIdentifier(freshName("_dt")), AccessTypeIdentifier(freshName("_w")))
     def typed(e: Expr): TypedExpr = constrainTypes(e, constraints, identifierT)
 
     expr match {
@@ -269,12 +269,12 @@ object infer {
                boundT: mutable.Set[DataTypeIdentifier],
                boundN: mutable.Set[NamedVar]): Option[Solution] = c match {
     case TypeConstraint(a, b) => (a, b) match {
-      case (i: TypeIdentifier, _) => Some(unifyTypeIdent(i, b))
-      case (_, i: TypeIdentifier) => Some(unifyTypeIdent(i, a))
+      case (DataAccessType(i: DataTypeIdentifier, w), _) => Some(unifyDataTypeIdent(i, w, b))
+      case (_, DataAccessType(i: DataTypeIdentifier, w)) => Some(unifyDataTypeIdent(i, w, a))
       case (DataAccessType(dt1, w1), DataAccessType(dt2, w2)) if w1 == w2 =>
         (dt1, dt2) match {
-          case (i: DataTypeIdentifier, _) => Some(unifyDataTypeIdent(i, b))
-          case (_, i: DataTypeIdentifier) => Some(unifyDataTypeIdent(i, a))
+          case (i: DataTypeIdentifier, _) => Some(unifyDataTypeIdent(i, w1, b))
+          case (_, i: DataTypeIdentifier) => Some(unifyDataTypeIdent(i, w2, a))
           case (b1: BasicType, b2: BasicType) if b1 == b2 =>
             Some(Solution())
           case (IndexType(sa), IndexType(sb)) =>
@@ -326,18 +326,10 @@ object infer {
     })
   }
 
-  def unifyTypeIdent(i: TypeIdentifier, t: Type)
-                    (implicit bound: mutable.Set[DataTypeIdentifier]): Solution = {
-    t match {
-      case j: TypeIdentifier => if (i == j) { Solution() } else { Solution.subs(i, j) }
-      case _ => Solution.subs(i, t)
-    }
-  }
-
-  def unifyDataTypeIdent(i: DataTypeIdentifier, t: Type)
+  def unifyDataTypeIdent(i: DataTypeIdentifier, w: AccessType, t: Type)
                         (implicit bound: mutable.Set[DataTypeIdentifier]): Solution = {
     t match {
-      case DataAccessType(dt, w) => dt match {
+      case DataAccessType(dt, w2) if w == w2 => dt match {
         case j: DataTypeIdentifier =>
           if (i == j) { Solution() }
           else if (!bound(i)) { Solution.subs(DataAccessType(i, w), DataAccessType(j, w)) }
