@@ -12,11 +12,11 @@ import idealised.util.{SyntaxChecker, gen}
 class asum extends idealised.util.Tests {
 
   def inputT(n : NatIdentifier) = ArrayType(n, float)
-  val abs = tFun(t => foreignFun("my_abs", Seq("y"), "{ return fabs(y); }", t -> t))
+  val abs = tFun(t => foreignFun("my_abs", Seq("y"), "{ return fabs(y); }", t._R ->: t._R))
   val fabs = abs(float)
   val add = fun(x => fun(a => x + a))
 
-  val high_level = nFun(n => fun(inputT(n))(input =>
+  val high_level = nFun(n => fun(inputT(n)._R)(input =>
     input |> map(fabs) |> reduceSeq(add)(l(0.0f))
   ))
 
@@ -24,7 +24,7 @@ class asum extends idealised.util.Tests {
     val typed = infer(high_level)
 
     val N = typed.t.asInstanceOf[NatDependentFunctionType[_ <: Type]].x
-    assertResult(NatDependentFunctionType(N, FunctionType(inputT(N), float))) {
+    assertResult(NatDependentFunctionType(N, FunctionType(inputT(N)._R, float._R))) {
       typed.t
     }
   }
@@ -100,7 +100,7 @@ class asum extends idealised.util.Tests {
             asVector(4) >>
               split(8192) >>
               mapLocal(
-                oclReduceSeq(PrivateMemory)(fun(x => fun(a => abs(float4)(x) + a)))(vectorFromScalar(l(0.0f)))
+                oclReduceSeq(AddressSpace.Private)(fun(x => fun(a => abs(float4)(x) + a)))(vectorFromScalar(l(0.0f)))
               ) >> asScalar
           ) |> join
       ))
@@ -117,7 +117,7 @@ class asum extends idealised.util.Tests {
           split(2048) |>
           mapWorkGroup(
             split(2048) >>
-              mapLocal(oclReduceSeq(PrivateMemory)(add)(l(0.0f)))
+              mapLocal(oclReduceSeq(AddressSpace.Private)(add)(l(0.0f)))
           ) |> join
       ))
 
@@ -136,7 +136,7 @@ class asum extends idealised.util.Tests {
             reorderWithStride(128) >>
               split(2048) >>
               mapLocal(
-                oclReduceSeq(PrivateMemory)(fun(x => fun(a => abs(float)(x) + a)))(l(0.0f))
+                oclReduceSeq(AddressSpace.Private)(fun(x => fun(a => abs(float)(x) + a)))(l(0.0f))
               )
           ) |> join
       ))
@@ -179,7 +179,7 @@ class asum extends idealised.util.Tests {
               reorderWithStride(64) >>
               split(2048) >>
               mapLocal(
-                oclReduceSeq(PrivateMemory)(fun(x => fun(a => abs(float2)(x) + a)))(vectorFromScalar(l(0.0f)))
+                oclReduceSeq(AddressSpace.Private)(fun(x => fun(a => abs(float2)(x) + a)))(vectorFromScalar(l(0.0f)))
               ) >> asScalar
           ) |> join
       ))

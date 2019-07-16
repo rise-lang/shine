@@ -32,6 +32,11 @@ object DSL {
     def `:`(e: Expr): TypedExpr = TypedExpr(e, t)
   }
 
+  implicit class DataTypeAnnotation(dt: DataType) {
+    def ::(e: Expr): TypedExpr = TypedExpr(e, dt._R)
+    def `:`(e: Expr): TypedExpr = TypedExpr(e, dt._R)
+  }
+
   implicit class FunCall(f: Expr) {
     import lift.core.lifting._
 
@@ -61,6 +66,8 @@ object DSL {
       val x = Identifier(freshName("e"))
       Lambda(x, f(TypedExpr(x, t)))
     }
+
+    def apply(dt: DataType)(f: Expr => Expr): Expr = apply(dt._R)(f)
   }
 
   object nFun {

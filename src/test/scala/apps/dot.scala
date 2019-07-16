@@ -24,7 +24,7 @@ class dot extends idealised.util.Tests {
     val typed = infer(simpleDotProduct)
 
     val N = typed.t.asInstanceOf[NatDependentFunctionType[_ <: Type]].x
-    assertResult(NatDependentFunctionType(N, FunctionType(xsT(N), FunctionType(ysT(N), float)))) {
+    assertResult(NatDependentFunctionType(N, FunctionType(xsT(N)._R, FunctionType(ysT(N)._R, float._R)))) {
       typed.t
     }
   }
@@ -128,7 +128,7 @@ class dot extends idealised.util.Tests {
           mapWorkGroup(
             split(8192) >
               mapLocal(
-                oclReduceSeq(PrivateMemory)(fun(x => fun(a => mulT(x) + a)))(vectorFromScalar(l(0.0f)))
+                oclReduceSeq(AddressSpace.Private)(fun(x => fun(a => mulT(x) + a)))(vectorFromScalar(l(0.0f)))
               )
           ) |> join |> asScalar
       )))
@@ -143,7 +143,7 @@ class dot extends idealised.util.Tests {
           mapWorkGroup(
             split(2048) >>
               mapLocal(
-                oclReduceSeq(PrivateMemory)(fun(x => fun(a => mulT(x) + a)))(l(0.0f))
+                oclReduceSeq(AddressSpace.Private)(fun(x => fun(a => mulT(x) + a)))(l(0.0f))
               )
           ) |> join
       )))
@@ -158,7 +158,7 @@ class dot extends idealised.util.Tests {
           mapWorkGroup(
             split(128) >>
               mapLocal(
-                oclReduceSeq(PrivateMemory)(fun(x => fun(a => x + a)))(l(0.0f))
+                oclReduceSeq(AddressSpace.Private)(fun(x => fun(a => x + a)))(l(0.0f))
               )
           ) |> join
       ))
@@ -174,7 +174,7 @@ class dot extends idealised.util.Tests {
             reorderWithStride(128) >>
               split(2048) >>
               mapLocal(
-                oclReduceSeq(PrivateMemory)(fun(x => fun(a => mulT(x) + a)))(l(0.0f))
+                oclReduceSeq(AddressSpace.Private)(fun(x => fun(a => mulT(x) + a)))(l(0.0f))
               )
           ) |> join
       )))
@@ -189,9 +189,9 @@ class dot extends idealised.util.Tests {
           split(128) |>
           mapWorkGroup(
             split(2) >>
-              toLocal(mapLocal(oclReduceSeq(PrivateMemory)(add)(l(0.0f)))) >>
+              toLocal(mapLocal(oclReduceSeq(AddressSpace.Private)(add)(l(0.0f)))) >>
               iterate(6)(
-                split(2) >> toLocal(mapLocal(oclReduceSeq(PrivateMemory)(add)(l(0.0f))))
+                split(2) >> toLocal(mapLocal(oclReduceSeq(AddressSpace.Private)(add)(l(0.0f))))
               )
           ) |> join
       ))
