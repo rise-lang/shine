@@ -12,7 +12,7 @@ import idealised.util.{SyntaxChecker, gen}
 class asum extends idealised.util.Tests {
 
   def inputT(n : NatIdentifier) = ArrayType(n, float)
-  val abs = tFun(t => foreignFun("my_abs", Seq("y"), "{ return fabs(y); }", t -> t))
+  val abs = tFun(t => foreignFun("my_abs", Seq("y"), "{ return fabs(y); }", t ->: t))
   val fabs = abs(float)
   val add = fun(x => fun(a => x + a))
 
