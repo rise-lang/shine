@@ -42,7 +42,7 @@ object infer {
                      constraints: mutable.Set[Constraint],
                      identifierT: scala.collection.mutable.Map[Identifier, Type]
                     ): TypedExpr = {
-    def fresh(): Type = DataAccessType(DataTypeIdentifier(freshName("_dt")), AccessTypeIdentifier(freshName("_w")))
+    def fresh(): Type = TypeIdentifier(freshName("_t")) // DataAccessType(DataTypeIdentifier(freshName("_dt")), AccessTypeIdentifier(freshName("_w")))
     def typed(e: Expr): TypedExpr = constrainTypes(e, constraints, identifierT)
 
     expr match {
@@ -197,13 +197,15 @@ object infer {
   }
 
   object Solution {
-    def apply(): Solution = Solution(Map(), Map())
-    def subs(ta: Type, tb: Type): Solution = Solution(Map(ta -> tb), Map())
-    def subs(na: NamedVar, nb: Nat): Solution = Solution(Map(), Map(na -> nb))
+    def apply(): Solution = Solution(Map(), Map(), Map())
+    def subs(ta: Type, tb: Type): Solution = Solution(Map(ta -> tb), Map(), Map())
+    def subs(na: NamedVar, nb: Nat): Solution = Solution(Map(), Map(na -> nb), Map())
+    def subs(wa: AccessTypeIdentifier, wb: AccessType): Solution = Solution(Map(), Map(), Map(wa -> wb))
   }
 
   case class Solution(ts: Map[Type, Type],
-                      ns: Map[NamedVar, Nat]) {
+                      ns: Map[NamedVar, Nat],
+                      ws: Map[AccessTypeIdentifier, AccessType]) {
     def apply(e: Expr): Expr = {
       val sol = this
       traversal.DepthFirstLocalResult(e, new traversal.Visitor {
@@ -228,10 +230,17 @@ object infer {
       }
     }
 
+    def apply(w: AccessType): AccessType = {
+      ws.foldLeft(w) { case (result, (wa, wb)) =>
+        substitute(wb, `for` = wa, in = result)
+      }
+    }
+
     def apply(other: Solution): Solution = {
       Solution(
         ts.mapValues(t => other(t)) ++ other.ts,
-        ns.mapValues(n => other(n)) ++ other.ns
+        ns.mapValues(n => other(n)) ++ other.ns,
+        ws.mapValues(w => other(w)) ++ other.ws
       )
     }
 
@@ -269,12 +278,12 @@ object infer {
                boundT: mutable.Set[DataTypeIdentifier],
                boundN: mutable.Set[NamedVar]): Option[Solution] = c match {
     case TypeConstraint(a, b) => (a, b) match {
-      case (DataAccessType(i: DataTypeIdentifier, w), _) => Some(unifyDataTypeIdent(i, w, b))
-      case (_, DataAccessType(i: DataTypeIdentifier, w)) => Some(unifyDataTypeIdent(i, w, a))
+      case (i: TypeIdentifier, _) => Some(unifyTypeIdent(i, b))
+      case (_, i: TypeIdentifier) => Some(unifyTypeIdent(i, a))
       case (DataAccessType(dt1, w1), DataAccessType(dt2, w2)) if w1 == w2 =>
         (dt1, dt2) match {
-          case (i: DataTypeIdentifier, _) => Some(unifyDataTypeIdent(i, w1, b))
-          case (_, i: DataTypeIdentifier) => Some(unifyDataTypeIdent(i, w2, a))
+          case (i: DataTypeIdentifier, _) => Some(unifyDataTypeIdent(i, w1, dt2))
+          case (_, i: DataTypeIdentifier) => Some(unifyDataTypeIdent(i, w2, dt1))
           case (b1: BasicType, b2: BasicType) if b1 == b2 =>
             Some(Solution())
           case (IndexType(sa), IndexType(sb)) =>
@@ -312,6 +321,7 @@ object infer {
 
       case _ => error(s"cannot unify $a and $b")
     }
+
     case NatConstraint(a, b) => Some((a, b) match {
       case (i: NamedVar, _) => nat.unifyIdent(i, b)
       case (_, i: NamedVar) => nat.unifyIdent(i, a)
@@ -326,20 +336,27 @@ object infer {
     })
   }
 
-  def unifyDataTypeIdent(i: DataTypeIdentifier, w: AccessType, t: Type)
+  def unifyTypeIdent(i: TypeIdentifier, t: Type)
+                    (implicit bound: mutable.Set[DataTypeIdentifier]): Solution = {
+    Solution.subs(i, t)
+//    t match {
+//      case DataAccessType(dt, w) => Solution.subs(i, DataAccessType(dt, w))
+//      // case DataAccessType(dt, wi: AccessTypeIdentifier) => unifyDataTypeIdent(i, w, dt).apply( Solution.subs(wi, w) )
+//    }
+  }
+
+  def unifyDataTypeIdent(i: DataTypeIdentifier, w: AccessType, dt: DataType)
                         (implicit bound: mutable.Set[DataTypeIdentifier]): Solution = {
-    t match {
-      case DataAccessType(dt, w2) if w == w2 => dt match {
-        case j: DataTypeIdentifier =>
-          if (i == j) { Solution() }
-          else if (!bound(i)) { Solution.subs(DataAccessType(i, w), DataAccessType(j, w)) }
-          else if (!bound(j)) { Solution.subs(DataAccessType(j, w), DataAccessType(i, w)) }
-          else { error(s"cannot unify $i and $j, they are both bound") }
-        case _ if occurs(i, t) =>
-          error(s"circular use: $i occurs in $t")
-        case _ if !bound(i) => Solution.subs(DataAccessType(i, w), t)
-        case _ => ???
-      }
+    dt match {
+      case j: DataTypeIdentifier =>
+        if (i == j) { Solution() }
+        else if (!bound(i)) { Solution.subs(DataAccessType(i, w), DataAccessType(j, w)) }
+        else if (!bound(j)) { Solution.subs(DataAccessType(j, w), DataAccessType(i, w)) }
+        else { error(s"cannot unify $i and $j, they are both bound") }
+      case _ if occurs(i, DataAccessType(dt, w)) =>
+        error(s"circular use: $i occurs in ${DataAccessType(dt, w)}")
+      case _ if !bound(i) => Solution.subs(DataAccessType(i, w), DataAccessType(dt, w))
+      case _ => ???
     }
   }
 

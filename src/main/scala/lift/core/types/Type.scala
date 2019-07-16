@@ -5,6 +5,10 @@ import lift.arithmetic._
 
 sealed trait Type
 
+final case class TypeIdentifier(name: String) extends Type {
+  override def toString: String = name
+}
+
 // ============================================================================================= //
 // (Function) Types
 // ============================================================================================= //
@@ -118,7 +122,9 @@ final case class NatDataTypeApply(f: NatDataTypeFunction, n: Nat) extends DataTy
   override def toString: String = s"$f($n)"
 }
 
-case class DataAccessType(dt: DataType, w: AccessType) extends Type
+case class DataAccessType(dt: DataType, w: AccessType) extends Type {
+  override def toString: String = s"${dt}_$w"
+}
 
 // ============================================================================================= //
 // Nat -> Nat

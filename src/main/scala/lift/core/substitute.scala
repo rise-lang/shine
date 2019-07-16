@@ -150,4 +150,8 @@ object substitute {
       case e => e
     }
   }
+
+  def apply(a: AccessType, `for`: AccessTypeIdentifier, in: AccessType): AccessType = {
+    if (in == `for`) { a } else { in }
+  }
 }

@@ -137,9 +137,11 @@ object traversal {
                   case dt: DataTypeIdentifier =>
                     TypeDependentFunctionType(data(dt, v), apply(t, v))
                 }
+              case i: TypeIdentifier => i
             }).asInstanceOf[T]
         }
       }
+
       def data[DT <: DataType](dt: DT, visit: Visitor): DT = {
         visit.data(dt) match {
           case s: Stop[DT] => s.value
@@ -187,6 +189,7 @@ object traversal {
                 NatDependentFunctionType((r._1: @unchecked) match {
                   case n: NamedVar => NatIdentifier(n.name, n.range)
                 }, r._2))
+            case i: TypeIdentifier => i
           }).asInstanceOf[Result[T]]
         }
       }
