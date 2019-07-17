@@ -253,8 +253,6 @@ object DSL {
   def l(a: ArrayData): Literal = Literal(a)
 
   implicit final class TypeConstructors(private val a: Type) extends AnyVal {
-    @inline def ->(b: Type): FunctionType[Type, Type] = FunctionType(a, b)
-    // ... and as a right associative operator
     @inline def ->:(b: Type): FunctionType[Type, Type] = FunctionType(b, a)
   }
 
