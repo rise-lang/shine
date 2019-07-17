@@ -13,15 +13,15 @@ import lift.arithmetic.{ArithExpr, BigSum}
 import scala.xml.Elem
 
 final case class DepJoin(n: Nat,
-                         lenF: NatToNatLambda,
+                         lenF: NatToNat,
                          dt: DataType,
                          array: Phrase[ExpType])
   extends ExpPrimitive {
 
   override val t: ExpType = {
-    (n: Nat) -> (lenF: NatToNatLambda) -> (dt: DataType) ->
+    (n: Nat) -> (lenF: NatToNat) -> (dt: DataType) ->
       (array :: exp"[$n.${NatToDataLambda(n, (i:NatIdentifier) => ArrayType(lenF(i), dt))}]") ->
-      exp"[${BigSum(from = 0, upTo = n - 1, `for` = lenF.x, lenF.body)}.$dt]"
+        exp"[${BigSum(from = 0, upTo = n - 1, i => lenF(i))}.$dt]"
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {

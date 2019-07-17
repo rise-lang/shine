@@ -11,14 +11,14 @@ import scala.xml.Elem
 
 final case class Partition(n: Nat,
                            m: Nat,
-                           lenF:NatToNatLambda,
+                           lenF: NatToNat,
                            dt: DataType,
                            array: Phrase[ExpType])
   extends ExpPrimitive {
 
 
   override val t: ExpType =
-    (n: Nat) -> (m: Nat) -> (dt: DataType) ->
+    (n: Nat) -> (m: Nat) -> (lenF: NatToNat) -> (dt: DataType) ->
       (array :: exp"[$n.$dt]") -> exp"[$m.${NatToDataLambda(m, (i:NatIdentifier) => ArrayType(lenF(i), dt))}]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {

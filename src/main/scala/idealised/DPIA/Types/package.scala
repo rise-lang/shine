@@ -34,7 +34,7 @@ package object Types {
     def →[B](y: B): B = ->(y)
   }
 
-  implicit final class ArrowNatNatTypeFun(private val self: NatToNatLambda) {
+  implicit final class ArrowNatNatTypeFun(private val self: NatToNat) {
     @inline def -> [B](y: B): B = y
     def →[B](y: B): B = ->(y)
   }
