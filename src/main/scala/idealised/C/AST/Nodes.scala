@@ -86,7 +86,7 @@ abstract class Break() extends Stmt
 
 abstract class Continue() extends Stmt
 
-abstract class Return() extends Stmt
+abstract class Return(val x:Option[Expr]) extends Stmt
 
 abstract class DeclStmt(val decl: Decl) extends Stmt
 
@@ -241,7 +241,8 @@ object Continue {
 }
 
 object Return {
-  def apply(): Return = DefaultImplementations.Return()
+  def apply(): Return = DefaultImplementations.Return(None)
+  def apply(x:Expr): Return = DefaultImplementations.Return(Some(x))
 }
 
 object DeclStmt {
@@ -427,8 +428,8 @@ object DefaultImplementations {
     override def visitAndRebuild(v: VisitAndRebuild.Visitor): Continue.this.type = this
   }
 
-  case class Return() extends C.AST.Return {
-    override def visitAndRebuild(v: VisitAndRebuild.Visitor): Return.this.type = this
+  case class Return(override val x:Option[Expr]) extends C.AST.Return(x) {
+    override def visitAndRebuild(v: VisitAndRebuild.Visitor): Return = Return(x.map(VisitAndRebuild(_, v)))
   }
 
   case class DeclStmt(override val decl: Decl) extends C.AST.DeclStmt(decl) {

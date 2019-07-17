@@ -352,8 +352,8 @@ object infer {
       case (i: NamedVar, _) => nat.unifyIdent(i, b)
       case (_, i: NamedVar) => nat.unifyIdent(i, a)
       case _ if a == b => Solution()
-      case _ if nat.unwrapFreeTerm(a).isDefined => nat.pivotSolution(a, b)
-      case _ if nat.unwrapFreeTerm(b).isDefined => nat.pivotSolution(b, a)
+      // case _ if !nat.potentialPivots(a).isEmpty => nat.tryPivots(a, b)
+      // case _ if !nat.potentialPivots(b).isEmpty => nat.tryPivots(b, a)
       case (s: lift.arithmetic.Sum, _) => nat.unifySum(s, b)
       case (_, s: lift.arithmetic.Sum) => nat.unifySum(s, a)
       case (p: lift.arithmetic.Prod, _) => nat.unifyProd(p, b)
@@ -383,8 +383,24 @@ object infer {
     }
   }
 
-  object nat {
+  private object nat {
     import lift.arithmetic._
+
+    // collect free variables with only 1 occurence
+    def potentialPivots(n: Nat)
+                       (implicit bound: mutable.Set[NamedVar]): Set[NamedVar] = {
+      var free_occurences = mutable.Map[NamedVar, Integer]()
+        .withDefault(_ => 0)
+      ArithExpr.visit(n, {
+        case v: NamedVar if !bound(v) => free_occurences(v) += 1
+        case _ =>
+      })
+
+      free_occurences.foldLeft(Set[NamedVar]())({ case (potential, (v, c)) =>
+        if (c == 1) { potential + v }
+        else { potential }
+      })
+    }
 
     def unwrapFreeTerm(term: ArithExpr)
                       (implicit bound: mutable.Set[NamedVar]): Option[NamedVar] = term match {
@@ -394,50 +410,64 @@ object infer {
       case Pow(b, Cst(_)) => unwrapFreeTerm(b)
       case _ => None
     }
+//
+//      free_occurences.foldLeft(Set[NamedVar]())({ case (potential, (v, c)) =>
+//          if (c == 1) { potential + v }
+//          else { potential }
+//      })
+//    }
 
-    def findPivot(terms: Seq[ArithExpr])
-                 (implicit bound: mutable.Set[NamedVar]): Nat = {
-      val (free, toTerm) =
-        terms.foldLeft((Set[NamedVar](), Map[NamedVar, Nat]()))({
-          case ((fr, tt), term) =>
-            unwrapFreeTerm(term) match {
-              case Some(x) => (fr + x, tt updated (x, term))
-              case None => (fr, tt)
-            }
-          })
-      val pivots = free.filter(p => terms.count(ArithExpr.contains(_, p)) == 1)
-      if (pivots.isEmpty) { ??? }
-      toTerm(pivots.head)
+//    def pivotSolution(term: Nat, value: Nat): Solution = term match {
+//      case i: NamedVar => Solution.subs(i, value)
+//      case Prod((c: Cst) :: t :: Nil) => pivotSolution(t, value /^ c)
+//      case Sum((c: Cst) :: t :: Nil) => pivotSolution(t, value - c)
+//      case Pow(b, Cst(-1)) => pivotSolution(b, Cst(1) /^ value)
+//      case _ => ???
+//    }
+
+    def pivotSolution(pivot: NamedVar, n: Nat, value: Nat)
+                     (implicit bound: mutable.Set[NamedVar]): Option[Solution] = {
+      n match {
+        case i: NamedVar if i == pivot => Some(Solution.subs(pivot, value))
+        case Prod(terms) =>
+          val (p, r) = terms.partition(t => ArithExpr.contains(t, pivot))
+          if (p.size != 1) {
+            None
+          } else {
+            pivotSolution(pivot, p.head, r.foldLeft(value)({ case (v, r) => v /^ r }))
+          }
+        case Sum(terms) =>
+          val (p, r) = terms.partition(t => ArithExpr.contains(t, pivot))
+          if (p.size != 1) {
+            None
+          } else {
+            pivotSolution(pivot, p.head, r.foldLeft(value)({ case (v, r) => v - r }))
+          }
+        case Pow(b, Cst(-1)) => pivotSolution(pivot, b, Cst(1) /^ value)
+        case _ => ???
+      }
     }
 
-    def pivotSolution(term: Nat, value: Nat): Solution = term match {
-      case i: NamedVar => Solution.subs(i, value)
-      case Prod((c: Cst) :: t :: Nil) => pivotSolution(t, value /^ c)
-      case Sum((c: Cst) :: t :: Nil) => pivotSolution(t, value - c)
-      case Pow(b, Cst(-1)) => pivotSolution(b, Cst(1) /^ value)
-      case _ => ???
+    def tryPivots(n: Nat, value: Nat)
+                 (implicit bound: mutable.Set[NamedVar]): Option[Solution] = {
+      val pivots = potentialPivots(n)
+      pivots.foreach(pivotSolution(_, n, value) match {
+        case Some(s) =>
+          return Some(s)
+      })
+      return None
     }
 
     def unifyProd(p: Prod, n: Nat)
                  (implicit bound: mutable.Set[NamedVar]): Solution = {
-      val Prod(ps) = p
-      // n = ps --> 1 = ps * (1/n)
-      val terms = (Cst(1) /^ n) :: ps
-      // 1 = pivot * .. --> pivot = 1 / ..
-      val pivot = findPivot(terms)
-      val value = terms.filter({_ != pivot }).foldLeft(1: Nat)({ case (x, t) => x /^ t })
-      pivotSolution(pivot, value)
+      // n = p --> 1 = p * (1/n)
+      tryPivots(p /^ n, 1).get
     }
 
     def unifySum(s: Sum, n: Nat)
                 (implicit bound: mutable.Set[NamedVar]): Solution = {
-      val Sum(ss) = s
-      // n = ss --> 0 = ss + (-n)
-      val terms = (-1*n) :: ss
-      // 0 = pivot + .. --> pivot = 0 - ..
-      val pivot = findPivot(terms)
-      val value = terms.filter({ _ != pivot }).foldLeft(0: Nat)({ case (x, t) => x - t })
-      pivotSolution(pivot, value)
+      // n = s --> 0 = s + (-n)
+      tryPivots(s - n, 0).get
     }
 
     def unifyIdent(i: NamedVar, n: Nat)

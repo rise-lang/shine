@@ -1,5 +1,6 @@
 package idealised.SurfaceLanguage
 
+import idealised.DPIA.LetNatIdentifier
 import idealised.SurfaceLanguage.Semantics.Data
 import idealised.SurfaceLanguage.Types._
 import idealised.traversal.{FromChildren, ToChildren}
@@ -87,6 +88,20 @@ final case class TypeDependentApplyExpr(fun: Expr, arg: DataType, override val t
   override def rebuild: Seq[Any] => Expr = {
     case Seq(fun: Expr, arg: DataType, t: Option[Type]@unchecked) =>
       TypeDependentApplyExpr(fun, arg, t)
+  }
+}
+
+final case class LetNat(binder:LetNatIdentifier,
+                        definition:Expr,
+                        body:Expr,
+                        override val t:Option[Type] = None) extends Expr {
+  override def toString: String = s"let $binder = $definition in $body"
+
+  override def children: Seq[Any] = Seq(binder, definition, body, t)
+
+  override def rebuild: Seq[Any] => Expr = {
+    case Seq(binder:LetNatIdentifier, definition:Expr, body:Expr, t:Option[Type]) =>
+      LetNat(binder, definition, body, t)
   }
 }
 

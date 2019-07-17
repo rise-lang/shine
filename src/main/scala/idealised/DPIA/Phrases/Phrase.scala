@@ -60,6 +60,12 @@ final case class DepApply[K <: Kind, T <: PhraseType](fun: Phrase[K `()->` T], a
   override def toString: String = s"($fun $arg)"
 }
 
+final case class LetNat[T1 <: PhraseType, T2 <: PhraseType](binder:LetNatIdentifier,
+                                                            defn:Phrase[T1],
+                                                            body:Phrase[T2]) extends Phrase[T2] {
+  override val t: T2 = body.t
+}
+
 final case class Pair[T1 <: PhraseType, T2 <: PhraseType](fst: Phrase[T1], snd: Phrase[T2])
   extends Phrase[T1 x T2] {
 

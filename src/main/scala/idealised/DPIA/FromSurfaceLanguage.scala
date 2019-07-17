@@ -41,6 +41,11 @@ object FromSurfaceLanguage {
           apply(fun).asInstanceOf[Phrases.Phrase[Types.DepFunType[Types.DataKind, Types.PhraseType]]],
           arg)
 
+      case LetNat(binder, definition, body, _) =>
+        Phrases.LetNat(
+          binder, apply(definition).asInstanceOf[Phrase[ExpType]], apply(body)
+        )
+
       case IfThenElseExpr(cond, thenE, elseE, _) =>
         Phrases.IfThenElse(apply(cond).asInstanceOf[Phrases.Phrase[Types.ExpType]],
           apply(thenE).asInstanceOf[Phrases.Phrase[Types.PhraseType]],

@@ -75,7 +75,7 @@ object FromSurfaceLanguagePrimitives {
 
       case Drop(n, array, _) => (array.t: @unchecked) match {
         case Some(ArrayType(m, dt)) =>
-          Some(FunctionalPrimitives.Drop(n, m, dt, FromSurfaceLanguage.asPhrase[ExpType](array)))
+          Some(FunctionalPrimitives.Drop(n, m - n, dt, FromSurfaceLanguage.asPhrase[ExpType](array)))
       }
 
       case ForeignFunction(funDecl, inTs, outT, args) =>
@@ -148,9 +148,10 @@ object FromSurfaceLanguagePrimitives {
         case x => None
       }
 
-      case Take(n, array, _) => (array.t: @unchecked) match {
+      case Take(n, array, _) =>
+        (array.t: @unchecked) match {
         case Some(ArrayType(m, dt)) =>
-          Some(FunctionalPrimitives.Take(n, m, dt, FromSurfaceLanguage.asPhrase[ExpType](array)))
+          Some(FunctionalPrimitives.Take(n, m - n, dt, FromSurfaceLanguage.asPhrase[ExpType](array)))
       }
 
       case Transpose(array, _) => (array.t: @unchecked) match {
@@ -200,9 +201,14 @@ object FromSurfaceLanguagePrimitives {
         case Some(NatType) =>
           Some(FunctionalPrimitives.AsIndex(n, FromSurfaceLanguage.asPhrase[DPIA.Types.ExpType](e)))
       }
+      case Idx(e, idx, _) => Some(
+        ImperativePrimitives.Idx(
+          FromSurfaceLanguage.asPhrase[DPIA.Types.ExpType](idx),
+          FromSurfaceLanguage.asPhrase[DPIA.Types.ExpType](e)
+        ))
 
-      case Cast(bt, e, _) => (e.t: @unchecked) match {
-        case Some(edt: BasicType) =>
+      case Cast(bt, e, _) => e.t match {
+        case Some(edt: BasicType) => {
           def toDPIABasicType(bt: DataType): DPIA.Types.BasicType = {
             bt match {
               case SurfaceLanguage.Types.NatType => DPIA.Types.NatType
@@ -217,6 +223,7 @@ object FromSurfaceLanguagePrimitives {
 
           Some(FunctionalPrimitives.Cast(toDPIABasicType(edt), toDPIABasicType(bt),
             FromSurfaceLanguage.asPhrase[ExpType](e)))
+        }
       }
 
       case Tuple(fst, snd, _) => ( (fst.t, snd.t) : @unchecked) match {

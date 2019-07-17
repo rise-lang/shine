@@ -27,6 +27,8 @@ object PrettyPhrasePrinter {
 
       case DepLambda(param, body) => s"Λ (${param.name}: ${param.getClass.getName.dropWhile(_!='$').drop(1).takeWhile(_!='$')}) -> ${apply(body)}"
 
+      case LetNat(binder, defn, body) => s"nLet ${binder.name} = ${apply(defn)} in ${apply(body)}"
+
       case Literal(d) => d.toString
 
       case Natural(n) => n.toString
