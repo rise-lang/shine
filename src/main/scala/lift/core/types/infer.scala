@@ -305,7 +305,7 @@ object infer {
             pivotSolution(pivot, p.head, r.foldLeft(value)({ case (v, r) => v - r }))
           }
         case Pow(b, Cst(-1)) => pivotSolution(pivot, b, Cst(1) /^ value)
-        case _ => ???
+        case _ => None
       }
     }
 
@@ -315,6 +315,7 @@ object infer {
       pivots.foreach(pivotSolution(_, n, value) match {
         case Some(s) =>
           return Some(s)
+        case None =>
       })
       return None
     }

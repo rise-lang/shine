@@ -120,15 +120,14 @@ class dot extends idealised.util.Tests {
     import lift.OpenCL.primitives._
     import idealised.OpenCL.PrivateMemory
 
-    // FIXME
-    ignore("Intel derived no warp dot product 1 compiles to syntactically correct OpenCL") {
+    test("Intel derived no warp dot product 1 compiles to syntactically correct OpenCL") {
       val intelDerivedNoWarpDot1 = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
         zip(xs |> asVector(4))(ys |> asVector(4)) |>
           split(8192) |>
           mapWorkGroup(
-            split(8192) >
+            split(8192) >>
               mapLocal(
-                oclReduceSeq(PrivateMemory)(fun(x => fun(a => mulT(x) + a)))(vectorFromScalar(l(0.0f)))
+                oclReduceSeq(PrivateMemory)(fun(x => add(mulT(x))))(vectorFromScalar(l(0.0f)))
               )
           ) |> join |> asScalar
       )))
@@ -182,7 +181,7 @@ class dot extends idealised.util.Tests {
       gen.OpenCLKernel(dotProduct1)
     }
 
-    // FIXME
+    // FIXME: SyntaxChecker fails
     ignore("Dot product 2 compiles to syntactically correct OpenCL") {
       val dotProduct2 = nFun(n => fun(xsT(n))(in =>
         in |>
@@ -190,9 +189,9 @@ class dot extends idealised.util.Tests {
           mapWorkGroup(
             split(2) >>
               toLocal(mapLocal(oclReduceSeq(PrivateMemory)(add)(l(0.0f)))) >>
-              iterate(6)(
+              iterate(6)(nFun(_ =>
                 split(2) >> toLocal(mapLocal(oclReduceSeq(PrivateMemory)(add)(l(0.0f))))
-              )
+              ))
           ) |> join
       ))
 

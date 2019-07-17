@@ -147,7 +147,7 @@ class asum extends idealised.util.Tests {
       SyntaxChecker.checkOpenCL(p.code)
     }
 
-    // FIXME
+    // FIXME: wrong type, check the expression?
     ignore("AMD/Nvidia second kernel derived compiles to syntactically correct OpenCL code") {
       val amdNvidiaDerived2 = nFun(n => fun(inputT(n))(input =>
         input |>
