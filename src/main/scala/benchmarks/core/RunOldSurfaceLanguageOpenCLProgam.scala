@@ -55,26 +55,3 @@ abstract class RunOldSurfaceLanguageOpenCLProgam(val verbose:Boolean) {
     makeSummary(localSize, globalSize, kernel.code, time.value, correct)
   }
 }
-
-abstract class SimpleRunOpenCLProgram(override val verbose: Boolean)
-  extends RunOpenCLProgram(verbose) {
-
-  final type Summary = Result
-
-  case class Result(localSize: Int,
-                    globalSize: Int,
-                    code: String,
-                    runtimeMs: Double,
-                    correctness: CorrectnessCheck
-                   ) extends Display {
-    def display: String =
-      s"localSize = $localSize, " +
-        s"globalSize = $globalSize, " +
-        s"code = $code, " +
-        s"runtime = $runtimeMs," +
-        s" correct = ${correctness.display}"
-  }
-
-  override def makeSummary(localSize: Int, globalSize: Int, code: String, runtimeMs: Double, correctness: CorrectnessCheck): Result =
-    Result(localSize, globalSize, code, runtimeMs, correctness)
-}
