@@ -1,5 +1,6 @@
 package lift.core
 
+import lift.arithmetic.RangeAdd
 import lift.core.types._
 import lift.core.semantics._
 
@@ -177,12 +178,25 @@ object DSL {
       val x = NatIdentifier(freshName("n2dt"), r)
       NatToDataLambda(x, f(x))
     }
+
+    def apply(upperBound: Nat)(f: NatIdentifier => DataType): NatToDataLambda = {
+      apply(RangeAdd(0, upperBound, 1))(f)
+    }
   }
 
   object n2nFun {
     def apply(f: NatIdentifier => Nat): NatToNatLambda = {
       val x = NatIdentifier(freshName("n2n"))
       NatToNatLambda(x, f(x))
+    }
+
+    def apply(r: lift.arithmetic.Range)(f: NatIdentifier => Nat): NatToNatLambda = {
+      val x = NatIdentifier(freshName("n2n"), r)
+      NatToNatLambda(x, f(x))
+    }
+
+    def apply(upperBound: Nat)(f: NatIdentifier => Nat): NatToNatLambda = {
+      apply(RangeAdd(0, upperBound, 1))(f)
     }
   }
 

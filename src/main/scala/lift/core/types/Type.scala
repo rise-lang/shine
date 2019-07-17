@@ -141,18 +141,6 @@ final case class NatToNatLambda private(x: NatIdentifier, body: Nat) extends Nat
   }
 }
 
-object NatToNatLambda {
-  def apply(upperBound:Nat, f: NatIdentifier => Nat): NatToNatLambda = {
-    val x = NatIdentifier(freshName("n"), RangeAdd(0, upperBound, 1))
-    NatToNatLambda(x, f(x))
-  }
-
-  def apply(upperBound:Nat, id: NatIdentifier, body:Nat): NatToNatLambda = {
-    val x = NamedVar(freshName("n"), RangeAdd(0, upperBound, 1))
-    NatToNatLambda(x, x => ArithExpr.substitute(body, Map((id, x))))
-  }
-}
-
 final case class NatToNatIdentifier(name: String) extends NatToNat with Kind.Identifier {
   override lazy val toString: String = name
 }
@@ -188,18 +176,6 @@ case class NatToDataLambda private (x: NatIdentifier, body: DataType) extends Na
   override def equals(obj: Any): Boolean = obj match {
     case other:NatToDataLambda => body == other.apply(x)
     case _ => false
-  }
-}
-
-object NatToDataLambda {
-  def apply(upperBound: Nat, f: NatIdentifier => DataType): NatToData = {
-    val n = NatIdentifier(freshName("n"), RangeAdd(0, upperBound, 1))
-    NatToDataLambda(n, f(n))
-  }
-
-  def apply(upperBound: Nat, n: NatIdentifier, body: DataType): NatToData = {
-    val n = NamedVar(freshName("n"), RangeAdd(0, upperBound, 1))
-    NatToDataLambda(n, substitute(_, `for`=n, `in`=body))
   }
 }
 
