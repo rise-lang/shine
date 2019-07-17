@@ -1,21 +1,23 @@
-package apps
+package idealised.apps
 
-import benchmarks.core.{CorrectnessCheck, RunOpenCLProgram}
-import idealised.OpenCL._
-import idealised.util.gen
+import benchmarks.core.{CorrectnessCheck, RunOldSurfaceLanguageOpenCLProgam}
+import idealised.OpenCL.{KernelWithSizes, PrivateMemory}
+import idealised.OpenCL.SurfaceLanguage.DSL._
+import idealised.SurfaceLanguage.DSL.{fun, _}
+import idealised.SurfaceLanguage.Expr
+import idealised.SurfaceLanguage.Semantics.FloatData
+import idealised.SurfaceLanguage.Types._
+import idealised.util.Tests
 import idealised.utils.Time.ms
 import idealised.utils.{Display, TimeSpan}
-import lift.OpenCL.primitives._
-import lift.arithmetic.SteppedCase
-import lift.core.DSL._
-import lift.core.Expr
-import lift.core.primitives._
-import lift.core.types._
-import lift.core.HighLevelConstructs._
+import lift.arithmetic._
 
 import scala.util.Random
+import scala.language.reflectiveCalls
 
-class stencil extends idealised.util.Tests {
+class stencilOldSurfaceLanguage extends Tests {
+  val add = fun(x => fun(y => x + y))
+
 
   private case class StencilResult(inputSize: Int,
                                    stencilSize: Int,
@@ -36,7 +38,7 @@ class stencil extends idealised.util.Tests {
         s" correct = ${correctness.display}"
   }
 
-  private sealed abstract class StencilBaseProgramRun extends RunOpenCLProgram(verbose = false) {
+  private sealed abstract class StencilBaseProgramRun extends RunOldSurfaceLanguageOpenCLProgam(verbose = false) {
     final type Summary = StencilResult
 
     def inputSize: Int
@@ -65,12 +67,14 @@ class stencil extends idealised.util.Tests {
 
   private trait Stencil1DProgramRun extends StencilBaseProgramRun {
 
-    val inputMinRange: Int = stencilSize //Used for `starts with` simplification
+    val inputMinRange = stencilSize //Used for `starts with` simplification
 
     final val padSize = stencilSize / 2
     println(stencilSize)
     assert(inputSize > inputMinRange)
     final override type Input = Array[Float]
+
+    def expr: Expr
 
     final def scalaProgram: Array[Float] => Array[Float] = (xs: Array[Float]) => {
       import idealised.utils.ScalaPatterns.pad
@@ -87,10 +91,10 @@ class stencil extends idealised.util.Tests {
 
     override def expr: Expr = {
       nFun(n => fun(ArrayType(n, float))(input =>
-        input |>
-          padCst(padSize)(padSize)(l(0.0f)) |>
-          slide(stencilSize)(1) |>
-          mapGlobal( oclReduceSeq(PrivateMemory)(add)(l(0.0f)) )
+        input :>>
+          pad(padSize, padSize, 0.0f) :>>
+          slide(stencilSize, 1) :>>
+          mapGlobal(oclReduceSeq(add, 0.0f, PrivateMemory))
       ))
     }
   }
@@ -99,11 +103,11 @@ class stencil extends idealised.util.Tests {
 
     override def expr: Expr = {
       nFun(n => fun(ArrayType(n, float))(input =>
-        input |>
-          padCst(padSize)(padSize)(l(0.0f)) |>
-          slide(stencilSize)(1) |>
-          partition(3)(n2nFun(m => SteppedCase(m, Seq(padSize, n - 2 * padSize + ((1 + stencilSize) % 2), padSize)))) |>
-          depMapSeq(mapGlobal(fun(nbh => oclReduceSeq(PrivateMemory)(add)(l(0.0f))(nbh)))) |>
+        input :>>
+          pad(padSize, padSize, 0.0f) :>>
+          slide(stencilSize, 1) :>>
+          partition(3, m => SteppedCase(m, Seq(padSize, n - 2 * padSize + ((1 + stencilSize) % 2), padSize))) :>>
+          depMapSeqUnroll(mapGlobal(fun(nbh => oclReduceSeq(add, 0.0f, PrivateMemory)(nbh)))) :>>
           join
       ))
     }
@@ -135,17 +139,17 @@ class stencil extends idealised.util.Tests {
     }
 
     protected def tileStencil: Expr = {
-      fun(xs => xs |> join |> reduceSeq(add)(l(0.0f)))
+      fun(xs => xs :>> join :>> reduceSeq(add, 0.0f))
     }
   }
 
   private case class BasicStencil2D(inputSize: Int, stencilSize: Int) extends Stencil2DProgramRun {
     override def expr = {
       nFun(n => fun(ArrayType(n, ArrayType(n, float)))(input =>
-        input |>
-          padCst2D(padSize)(padSize)(l(0.0f)) |>
-          slide2D(stencilSize)(1) |>
-          mapGlobal(1)(mapGlobal(0)(fun(nbh => join(nbh) |> oclReduceSeq(PrivateMemory)(add)(l(0.0f)))))
+        input :>>
+          pad2D(n, padSize, padSize, FloatData(0.0f)) :>>
+          slide2D(stencilSize, 1) :>>
+          mapGlobal(1)(mapGlobal(0)(fun(nbh => join(nbh) :>> oclReduceSeq(add, 0.0f, PrivateMemory))))
       )
       )
     }
@@ -155,39 +159,25 @@ class stencil extends idealised.util.Tests {
 
     override def expr = {
       nFun(n => fun(ArrayType(n, ArrayType(n, float)))(input =>
-        input |>
-          padCst2D(padSize)(padSize)(l(0.0f)) |>
-          slide2D(stencilSize)(1) |>
+        input :>>
+          pad2D(n, padSize, padSize, FloatData(0.0f)) :>>
+          slide2D(stencilSize, 1) :>>
           //partition2D(padSize, N - 2*padSize + ((1 + stencilSize) % 2)) :>>
-          partition(3)(n2nFun(m => SteppedCase(m, Seq(padSize, n - 2 * padSize, padSize)))) |>
-          depMapSeq(
+          partition(3, m => SteppedCase(m, Seq(padSize, n - 2 * padSize, padSize))) :>>
+          depMapSeqUnroll(
             //mapGlobal(0)(depMapSeqUnroll(mapGlobal(1)(join() >>> reduceSeq(add, 0.0f))))
-            mapGlobal(1)(mapGlobal(0)(join >> oclReduceSeq(PrivateMemory)(add)(l(0.0f))))
-          ) |>
+            mapGlobal(1)(mapGlobal(0)(join() >>> oclReduceSeq(add, 0.0f, PrivateMemory)))
+          ) :>>
           join
       ))
     }
-  }
-
-  private val simpleStencil = nFun(n => fun(ArrayType(n, float))(xs =>
-    xs |> slide(3)(1) |> mapSeq(fun(nbh =>
-      nbh |> reduceSeq(fun(x => fun(a => x + a)))(l(0.0f))
-    ))
-  ))
-
-  test("Simple stencil compiles to syntactically correct C") {
-    gen.CProgram(simpleStencil)
-  }
-
-  test("Simple scan compiles to syntactically correct OpenMP") {
-    gen.OpenMPProgram(simpleStencil)
   }
 
   test("Basic 1D addition stencil") {
     BasicStencil1D(1024, 5).run(localSize = 4, globalSize = 4).correctness.check()
   }
 
-  ignore("Partitioned 1D addition stencil, with specialised area handling") {
+  test("Partitioned 1D addition stencil, with specialised area handling") {
     PartitionedStencil1D(256, 3).run(localSize = 4, globalSize = 32).correctness.check()
   }
 
@@ -195,7 +185,7 @@ class stencil extends idealised.util.Tests {
     BasicStencil2D(256, stencilSize = 11).run(localSize = 2, globalSize = 4).correctness.check()
   }
 
-  ignore("Partitioned 2D addition stencil") {
+  test("Partitioned 2D addition stencil") {
     PartitionedStencil2D(inputSize = 1024, stencilSize = 11).run(localSize = 4, globalSize = 1024).correctness.check()
   }
 }
