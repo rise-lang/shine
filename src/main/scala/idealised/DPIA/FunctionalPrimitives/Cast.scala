@@ -26,7 +26,7 @@ final case class Cast(dt1: BasicType, dt2: BasicType, e: Phrase[ExpType])
     </cast>
 
   def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] =
-    Cast(fun(dt1), fun(dt2), VisitAndRebuild(e, fun))
+    Cast(fun.data(dt1), fun.data(dt2), VisitAndRebuild(e, fun))
 
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Data = ???
 

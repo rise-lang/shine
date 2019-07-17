@@ -29,7 +29,7 @@ package object DPIA {
   implicit def liftToDPIANatIdentifer(n: lift.core.NatIdentifier): NatIdentifier = NatIdentifier(n.name, n.range)
 
   object Nat {
-    def substitute(ae: Nat, `for`: NatIdentifier, in: Nat): Nat = {
+    def substitute[N <: Nat](ae: Nat, `for`: NatIdentifier, in: N): N = {
       in.visitAndRebuild {
         case v: Var =>
           if (`for`.name == v.name) {
@@ -38,7 +38,7 @@ package object DPIA {
             v
           }
         case e => e
-      }
+      }.asInstanceOf[N]
     }
   }
 

@@ -29,7 +29,7 @@ final case class Fst(dt1: DataType,
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    Fst(fun(dt1), fun(dt2), VisitAndRebuild(record, fun))
+    Fst(fun.data(dt1), fun.data(dt2), VisitAndRebuild(record, fun))
   }
 
   override def prettyPrint: String = s"${PrettyPhrasePrinter(record)}._1"

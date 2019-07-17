@@ -17,7 +17,7 @@ final case class SlideSeq(rot: lp.slideSeq.Rotate,
   extends AbstractSlide(n, sz, sp, dt, input)
 {
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    SlideSeq(rot, v(n), v(sz), v(sp), v(dt), VisitAndRebuild(input, v))
+    SlideSeq(rot, v.nat(n), v.nat(sz), v.nat(sp), v.data(dt), VisitAndRebuild(input, v))
   }
 
   override def acceptorTranslation(A: Phrase[AccType])

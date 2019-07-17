@@ -22,7 +22,7 @@ final case class AsVector(n: Nat,
         exp"[$m.${VectorType(n, dt)}]"
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    AsVector(f(n), f(m), f(dt), VisitAndRebuild(array, f))
+    AsVector(f.nat(n), f.nat(m), f.data(dt), VisitAndRebuild(array, f))
   }
 
   override def eval(s: Store): Data = ???

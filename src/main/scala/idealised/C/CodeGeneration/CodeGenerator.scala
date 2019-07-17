@@ -557,7 +557,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           if(unroll) {
             val statements = for(index <- rangeAddToScalaRange(range)) yield {
               val indexPhrase = AsIndex(n, Natural(index))
-              val newPhrase = Phrase.substitute(phrase=indexPhrase,`for`=i, in=p)
+              val newPhrase = Phrase.substitute(ph=indexPhrase,`for`=i, in=p)
               immutable.Seq(updatedGen.cmd(newPhrase, env))
             }
             C.AST.Block(

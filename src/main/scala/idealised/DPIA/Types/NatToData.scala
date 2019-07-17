@@ -36,3 +36,17 @@ object NatToDataLambda {
 final case class NatToDataIdentifier(name: String) extends NatToData with Kind.Identifier {
   override def toString: String = name
 }
+
+object NatToData {
+  def substitute[T <: NatToData](ae: Nat, `for`: NatIdentifier, in: T): T = {
+    (in match {
+      case NatToDataLambda(x, body) =>
+        val nX: NatIdentifier = ae match {
+          case aeI: NatIdentifier => Nat.substitute(aeI, `for`, x).asInstanceOf[NatIdentifier]
+          case _ => x
+        }
+        NatToDataLambda(nX, DataType.substitute(ae, `for`, body))
+      case i: NatToDataIdentifier => i
+    }).asInstanceOf[T]
+  }
+}

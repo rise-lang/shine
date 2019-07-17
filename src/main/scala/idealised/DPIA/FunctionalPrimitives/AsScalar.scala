@@ -22,7 +22,7 @@ final case class AsScalar(n: Nat,
         exp"[${n * m}.$dt]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    AsScalar(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))
+    AsScalar(fun.nat(n), fun.nat(m), fun.data(dt), VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): Data = ???

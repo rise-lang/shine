@@ -59,7 +59,7 @@ object PhraseType {
                                   in: Phrase[T]): Phrase[T] = {
 
     object Visitor extends Phrases.VisitAndRebuild.Visitor {
-      override def apply[DT <: DataType](in: DT): DT = DataType.substitute(dt, `for`, in)
+      override def data[DT <: DataType](in: DT): DT = DataType.substitute(dt, `for`, in)
     }
 
     val p = Phrases.VisitAndRebuild(in, Visitor)
@@ -91,7 +91,7 @@ object PhraseType {
                                   in: Phrase[T]): Phrase[T] = {
 
     object Visitor extends Phrases.VisitAndRebuild.Visitor {
-      override def apply[T2 <: PhraseType](p: Phrase[T2]): Result[Phrase[T2]] = {
+      override def phrase[T2 <: PhraseType](p: Phrase[T2]): Result[Phrase[T2]] = {
         p match {
           case Identifier(name, _) =>
             if (`for`.name == name) {
@@ -106,9 +106,13 @@ object PhraseType {
         }
       }
 
-      override def apply(e: Nat): Nat = Nat.substitute(ae, `for`, e)
+      override def nat[N <: Nat](n: N): N = Nat.substitute(ae, `for`, in=n)
 
-      override def apply[DT <: DataType](dt: DT): DT = DataType.substitute(ae, `for`, dt)
+      override def data[DT <: DataType](dt: DT): DT = DataType.substitute(ae, `for`, in=dt)
+
+//      override def natToData[N <: NatToData](ft: N): N = NatToData.substitute(ae, `for`, in=ft)
+//
+//      override def natToNat[N <: NatToNat](ft: N): N = super.natToNat(ft)
     }
 
     val p = Phrases.VisitAndRebuild(in, Visitor)

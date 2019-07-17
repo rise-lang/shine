@@ -30,7 +30,7 @@ abstract class To(dt1: DataType,
   override def eval(s: Store): Data = OperationalSemantics.eval(s, input)
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    makeTo(fun(dt1), fun(dt2), VisitAndRebuild(f, fun), VisitAndRebuild(input, fun))
+    makeTo(fun.data(dt1), fun.data(dt2), VisitAndRebuild(f, fun), VisitAndRebuild(input, fun))
   }
 
   override def prettyPrint: String =

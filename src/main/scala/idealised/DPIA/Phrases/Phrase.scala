@@ -135,26 +135,26 @@ final case class Natural(d: Nat) extends Phrase[ExpType] {
 
 object Phrase {
   // substitutes `phrase` for `for` in `in`, i.e. in [ phrase / for ]
-  def substitute[T1 <: PhraseType, T2 <: PhraseType](phrase: Phrase[T1],
+  def substitute[T1 <: PhraseType, T2 <: PhraseType](ph: Phrase[T1],
                                                      `for`: Phrase[T1],
                                                      in: Phrase[T2]): Phrase[T2] = {
     object Visitor extends VisitAndRebuild.Visitor {
-      override def apply[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
+      override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
         p match {
-          case `for` => Stop(phrase.asInstanceOf[Phrase[T]])
+          case `for` => Stop(ph.asInstanceOf[Phrase[T]])
           case Natural(n) =>
             val v = NatIdentifier(`for` match {
               case Identifier(name, _) => name
               case _ => ???
             })
 
-            phrase.t match {
+            ph.t match {
               case ExpType(NatType) =>
                   Stop(Natural(Nat.substitute(
-                    Internal.NatFromNatExpr(phrase.asInstanceOf[Phrase[ExpType]]), v, n)).asInstanceOf[Phrase[T]])
+                    Internal.NatFromNatExpr(ph.asInstanceOf[Phrase[ExpType]]), v, n)).asInstanceOf[Phrase[T]])
               case ExpType(IndexType(_)) =>
                   Stop(Natural(Nat.substitute(
-                    Internal.NatFromIndexExpr(phrase.asInstanceOf[Phrase[ExpType]]), v, n)).asInstanceOf[Phrase[T]])
+                    Internal.NatFromIndexExpr(ph.asInstanceOf[Phrase[ExpType]]), v, n)).asInstanceOf[Phrase[T]])
               case _ => Continue(p, this)
             }
           case _ => Continue(p, this)
@@ -169,7 +169,7 @@ object Phrase {
                                    in: Phrase[T2]): Phrase[T2] = {
 
     object Visitor extends VisitAndRebuild.Visitor {
-      override def apply[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
+      override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
         if (substitutionMap.isDefinedAt(p)) {
           Stop(substitutionMap(p).asInstanceOf[Phrase[T]])
         } else {

@@ -31,7 +31,7 @@ final case class Generate(n: Nat,
     </generate>
 
   def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] =
-    Generate(fun(n), fun(dt), VisitAndRebuild(f, fun))
+    Generate(fun.nat(n), fun.data(dt), VisitAndRebuild(f, fun))
 
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Data = ???
 

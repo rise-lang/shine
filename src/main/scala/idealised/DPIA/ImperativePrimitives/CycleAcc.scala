@@ -19,7 +19,7 @@ final case class CycleAcc(n: Nat,
   override def eval(s: Store): AccIdentifier = ???
 
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[AccType] =
-    CycleAcc(v(n), v(m), v(dt), VisitAndRebuild(input, v))
+    CycleAcc(v.nat(n), v.nat(m), v.data(dt), VisitAndRebuild(input, v))
 
   override def xmlPrinter: xml.Elem =
     <cycleAcc n={ToString(n)} m={ToString(m)} dt={ToString(dt)}>

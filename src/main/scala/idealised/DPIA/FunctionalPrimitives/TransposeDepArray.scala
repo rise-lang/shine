@@ -19,7 +19,7 @@ case class TransposeDepArray(n:Nat, m:Nat, i:NatIdentifier, dt:DataType, array:P
   }
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    TransposeDepArray(f(n), f(m), f(i).asInstanceOf[NatIdentifier], f(dt), VisitAndRebuild(array, f))
+    TransposeDepArray(f.nat(n), f.nat(m), f.nat(i).asInstanceOf[NatIdentifier], f.data(dt), VisitAndRebuild(array, f))
   }
 
   override def acceptorTranslation(A: Phrase[AccType])(implicit context: TranslationContext): Phrase[CommType] = {

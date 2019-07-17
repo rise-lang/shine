@@ -21,7 +21,7 @@ final case class UnzipAcc(n: Nat,
 
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {
-    UnzipAcc(fun(n), fun(dt1), fun(dt2), VisitAndRebuild(a, fun))
+    UnzipAcc(fun.nat(n), fun.data(dt1), fun.data(dt2), VisitAndRebuild(a, fun))
   }
 
   override def eval(s: Store): AccIdentifier = ???

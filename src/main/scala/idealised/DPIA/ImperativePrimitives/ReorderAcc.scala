@@ -31,5 +31,5 @@ final case class ReorderAcc(n: Nat,
     </reorderAcc>
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[AccType] =
-    ReorderAcc(f(n), f(dt), VisitAndRebuild(idxF, f), VisitAndRebuild(array, f))
+    ReorderAcc(f.nat(n), f.data(dt), VisitAndRebuild(idxF, f), VisitAndRebuild(array, f))
 }

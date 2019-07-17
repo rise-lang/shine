@@ -25,7 +25,7 @@ final case class New(dt: DataType,
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommType] = {
-    New(fun(dt), VisitAndRebuild(f, fun))
+    New(fun.data(dt), VisitAndRebuild(f, fun))
   }
 
   override def prettyPrint: String = s"(new ${PrettyPhrasePrinter(f)})"

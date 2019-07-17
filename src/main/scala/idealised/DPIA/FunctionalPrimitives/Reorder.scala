@@ -26,7 +26,7 @@ final case class Reorder(n: Nat,
       exp"[$n.$dt]"
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    Reorder(f(n), f(dt),
+    Reorder(f.nat(n), f.data(dt),
       VisitAndRebuild(idxF, f),
       VisitAndRebuild(idxFinv, f),
       VisitAndRebuild(input, f))

@@ -86,6 +86,6 @@ final case class ForeignFunction(funDecl: ForeignFunction.Declaration,
     </ForeignFunction>
 
   override def visitAndRebuild(f: Visitor): Phrase[ExpType] = {
-    ForeignFunction(funDecl, inTs.map(f(_)), f(outT), args.map(VisitAndRebuild(_, f)))
+    ForeignFunction(funDecl, inTs.map(f.data), f.data(outT), args.map(VisitAndRebuild(_, f)))
   }
 }

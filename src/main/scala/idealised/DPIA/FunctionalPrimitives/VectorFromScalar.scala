@@ -22,7 +22,7 @@ final case class VectorFromScalar(n: Nat,
         exp"[${VectorType(n, dt)}]"
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    VectorFromScalar(f(n), f(dt), VisitAndRebuild(arg, f))
+    VectorFromScalar(f.nat(n), f.data(dt), VisitAndRebuild(arg, f))
   }
 
   override def eval(s: Store): Data = ???

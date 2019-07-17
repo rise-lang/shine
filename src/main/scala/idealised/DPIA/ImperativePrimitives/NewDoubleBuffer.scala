@@ -25,7 +25,7 @@ final case class NewDoubleBuffer(dt1: DataType,
   override def eval(s: Store): Store = ???
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommType] = {
-    NewDoubleBuffer(fun(dt1), fun(dt2), fun(dt3), fun(n), VisitAndRebuild(in, fun), VisitAndRebuild(out, fun), VisitAndRebuild(f, fun))
+    NewDoubleBuffer(fun.data(dt1), fun.data(dt2), fun.data(dt3), fun.nat(n), VisitAndRebuild(in, fun), VisitAndRebuild(out, fun), VisitAndRebuild(f, fun))
   }
 
   override def prettyPrint: String = s"(new $${PrettyPhrasePrinter(f)})"

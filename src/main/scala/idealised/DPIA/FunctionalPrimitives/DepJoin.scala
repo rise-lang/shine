@@ -25,7 +25,7 @@ final case class DepJoin(n: Nat,
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    DepJoin(fun(n), fun(lenF), fun(dt), VisitAndRebuild(array, fun))
+    DepJoin(fun.nat(n), fun.natToNat(lenF), fun.data(dt), VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): Data = {

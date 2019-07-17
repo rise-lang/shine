@@ -28,7 +28,7 @@ final case class Snd(dt1: DataType,
   }
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    Snd(f(dt1), f(dt2), VisitAndRebuild(record, f))
+    Snd(f.data(dt1), f.data(dt2), VisitAndRebuild(record, f))
   }
 
   override def xmlPrinter: Elem = <snd>

@@ -68,7 +68,11 @@ abstract class AbstractDepMap(n: Nat,
               (implicit context: TranslationContext): Phrase[CommType]
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    makeMap(fun(n), fun(ft1), fun(ft2), VisitAndRebuild(f, fun), VisitAndRebuild(array, fun))
+    val nArray = VisitAndRebuild(array, fun)
+    val nF = VisitAndRebuild(f, fun)
+    val nFt1 = fun.natToData(ft1)
+    val nFt2 = fun.natToData(ft2)
+    makeMap(fun.nat(n), nFt1, nFt2, nF, nArray)
   }
 
   override def eval(s: Store): Data = ???

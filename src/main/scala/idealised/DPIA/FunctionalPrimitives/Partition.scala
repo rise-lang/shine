@@ -22,7 +22,7 @@ final case class Partition(n: Nat,
       (array :: exp"[$n.$dt]") -> exp"[$m.${NatToDataLambda(m, (i:NatIdentifier) => ArrayType(lenF(i), dt))}]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    Partition(fun(n), fun(m), fun(lenF), fun(dt), VisitAndRebuild(array, fun))
+    Partition(fun.nat(n), fun.nat(m), fun.natToNat(lenF), fun.data(dt), VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): Data = ???

@@ -59,7 +59,7 @@ case class Assign(dt: DataType,
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommType] = {
-    Assign(fun(dt), VisitAndRebuild(lhs, fun), VisitAndRebuild(rhs, fun))
+    Assign(fun.data(dt), VisitAndRebuild(lhs, fun), VisitAndRebuild(rhs, fun))
   }
 
   override def prettyPrint: String = s"(${PrettyPhrasePrinter(lhs)} := ${PrettyPhrasePrinter(rhs)})"

@@ -26,7 +26,7 @@ final case class OpenCLNew(dt: DataType,
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommType] = {
-    OpenCLNew(fun(dt), addressSpace, VisitAndRebuild(f, fun))
+    OpenCLNew(fun.data(dt), addressSpace, VisitAndRebuild(f, fun))
   }
 
   override def prettyPrint: String = s"(new ${PrettyPhrasePrinter(f)})"

@@ -22,7 +22,7 @@ final case class Split(n: Nat,
       (array :: exp"[${m * n}.$dt]") -> exp"[$m.$n.$dt]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    Split(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))
+    Split(fun.nat(n), fun.nat(m), fun.data(dt), VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): Data = {

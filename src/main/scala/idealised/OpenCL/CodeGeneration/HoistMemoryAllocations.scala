@@ -38,7 +38,7 @@ object HoistMemoryAllocations {
 
       def getReplacedAllocations: List[AllocationInfo] = replacedAllocations
 
-      override def apply[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
+      override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
         p match {
           case f: For =>
             f.body match {

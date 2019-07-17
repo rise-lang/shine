@@ -27,7 +27,7 @@ final case class Unzip(n: Nat,
 //        exp"[($n.$dt1 x $n.$dt2)]"
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    Unzip(f(n), f(dt1), f(dt2), VisitAndRebuild(e, f))
+    Unzip(f.nat(n), f.data(dt1), f.data(dt2), VisitAndRebuild(e, f))
   }
 
   override def eval(s: Store): Data = {

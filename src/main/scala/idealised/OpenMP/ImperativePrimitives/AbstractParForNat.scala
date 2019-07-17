@@ -24,7 +24,7 @@ abstract class AbstractParForNat(val n: Nat,
   override def eval(s: Store): Store = ???
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommType] = {
-    makeParForNat(fun(n), fun(ft), VisitAndRebuild(out, fun), VisitAndRebuild(body, fun))
+    makeParForNat(fun.nat(n), fun.natToData(ft), VisitAndRebuild(out, fun), VisitAndRebuild(body, fun))
   }
 
   override def prettyPrint: String =

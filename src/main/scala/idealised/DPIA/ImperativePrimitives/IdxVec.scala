@@ -31,7 +31,7 @@ final case class IdxVec(n: Nat,
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    IdxVec(fun(n), fun(st), VisitAndRebuild(index, fun), VisitAndRebuild(vector, fun))
+    IdxVec(fun.nat(n), fun.data(st), VisitAndRebuild(index, fun), VisitAndRebuild(vector, fun))
   }
 
   override def prettyPrint: String = s"(${PrettyPhrasePrinter(vector)}).${PrettyPhrasePrinter(index)}"

@@ -24,7 +24,7 @@ final case class MapVec(n: Nat,
         (array :: exp"[${VectorType(n, dt1)}]") -> exp"[${VectorType(n, dt2)}]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    MapVec(fun(n), fun(dt1), fun(dt2), VisitAndRebuild(f, fun), VisitAndRebuild(array, fun))
+    MapVec(fun.nat(n), fun.data(dt1), fun.data(dt2), VisitAndRebuild(f, fun), VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): Data = {

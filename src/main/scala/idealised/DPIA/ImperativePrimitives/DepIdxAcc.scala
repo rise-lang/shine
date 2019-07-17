@@ -30,7 +30,7 @@ final case class DepIdxAcc(n: Nat,
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {
-    DepIdxAcc(fun(n), fun(ft), fun(index), VisitAndRebuild(array, fun))
+    DepIdxAcc(fun.nat(n), fun.natToData(ft), fun.nat(index), VisitAndRebuild(array, fun))
   }
 
   override def prettyPrint: String = s"${PrettyPhrasePrinter(array)}[$index]"

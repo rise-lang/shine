@@ -21,7 +21,7 @@ final case class DropAcc(n: Nat,
   override def eval(s: Store): AccIdentifier = ???
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {
-    DropAcc(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))
+    DropAcc(fun.nat(n), fun.nat(m), fun.data(dt), VisitAndRebuild(array, fun))
   }
 
   override def prettyPrint: String = s"(dropAcc ${PrettyPhrasePrinter(array)})"

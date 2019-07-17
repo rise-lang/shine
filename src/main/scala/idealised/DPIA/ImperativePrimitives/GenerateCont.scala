@@ -21,7 +21,7 @@ final case class GenerateCont(n: Nat,
       exp"[$n.$dt]"
 
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    GenerateCont(v(n), v(dt), VisitAndRebuild(f, v))
+    GenerateCont(v.nat(n), v.data(dt), VisitAndRebuild(f, v))
   }
 
   override def eval(s: Store): Data = ???

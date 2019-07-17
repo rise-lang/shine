@@ -25,7 +25,7 @@ final case class Take(n: Nat,
   override def eval(s: Store): Data = ???
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    Take(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))
+    Take(fun.nat(n), fun.nat(m), fun.data(dt), VisitAndRebuild(array, fun))
   }
 
   override def acceptorTranslation(A: Phrase[AccType])

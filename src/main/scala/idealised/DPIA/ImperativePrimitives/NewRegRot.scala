@@ -23,6 +23,6 @@ final case class NewRegRot(n: Nat,
     </newCircularBuffer>
 
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[CommType] = {
-    NewRegRot(v(n), v(dt), VisitAndRebuild(f, v))
+    NewRegRot(v.nat(n), v.data(dt), VisitAndRebuild(f, v))
   }
 }

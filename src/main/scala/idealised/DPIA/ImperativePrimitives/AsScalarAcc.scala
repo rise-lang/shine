@@ -19,7 +19,7 @@ final case class AsScalarAcc(n: Nat,
         acc"[$n.${VectorType(m, dt)}]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {
-    AsScalarAcc(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))
+    AsScalarAcc(fun.nat(n), fun.nat(m), fun.data(dt), VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): AccIdentifier = ???

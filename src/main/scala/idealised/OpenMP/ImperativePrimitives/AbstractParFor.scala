@@ -34,7 +34,7 @@ abstract class AbstractParFor[T <: DataType](val n: Nat,
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommType] = {
-    makeParFor(fun(n), fun(dt), VisitAndRebuild(out, fun), VisitAndRebuild(body, fun))
+    makeParFor(fun.nat(n), fun.data(dt), VisitAndRebuild(out, fun), VisitAndRebuild(body, fun))
   }
 
   override def prettyPrint: String =

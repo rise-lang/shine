@@ -26,7 +26,7 @@ final case class Pad(n: Nat,
   override def eval(s: Store): Data = ???
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    Pad(fun(n), fun(l), fun(r), fun(dt), VisitAndRebuild(padExp, fun), VisitAndRebuild(array, fun))
+    Pad(fun.nat(n), fun.nat(l), fun.nat(r), fun.data(dt), VisitAndRebuild(padExp, fun), VisitAndRebuild(array, fun))
   }
 
   override def acceptorTranslation(A: Phrase[AccType])

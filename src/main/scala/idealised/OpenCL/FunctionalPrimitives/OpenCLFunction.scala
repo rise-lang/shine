@@ -24,7 +24,7 @@ final case class OpenCLFunction(name: String,
     } -> exp"[$outT]"
 
   override def visitAndRebuild(f: Visitor): Phrase[ExpType] = {
-    OpenCLFunction(name, inTs.map(f(_)), f(outT), args.map(VisitAndRebuild(_, f)))
+    OpenCLFunction(name, inTs.map(f.data), f.data(outT), args.map(VisitAndRebuild(_, f)))
   }
 
 //  override def codeGenExp(env: Environment): Expression = {

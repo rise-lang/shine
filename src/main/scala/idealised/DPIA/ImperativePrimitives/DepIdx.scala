@@ -49,7 +49,7 @@ final case class DepIdx(n: Nat,
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    DepIdx(fun(n), fun(ft), fun(index), VisitAndRebuild(array, fun))
+    DepIdx(fun.nat(n), fun.natToData(ft), fun.nat(index), VisitAndRebuild(array, fun))
   }
 
   override def prettyPrint: String = s"(${PrettyPhrasePrinter(array)})[$index]"

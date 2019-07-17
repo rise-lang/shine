@@ -28,7 +28,7 @@ final case class Cycle(n: Nat,
   }
 
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] =
-    Cycle(v(n), v(m), v(dt), VisitAndRebuild(input, v))
+    Cycle(v.nat(n), v.nat(m), v.data(dt), VisitAndRebuild(input, v))
 
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommType] =

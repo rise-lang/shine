@@ -26,7 +26,7 @@ final case class IndexAsNat(n: Nat, e: Phrase[ExpType])
     </asNat>
 
   def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] =
-    IndexAsNat(fun(n), VisitAndRebuild(e, fun))
+    IndexAsNat(fun.nat(n), VisitAndRebuild(e, fun))
 
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Data = ???
 

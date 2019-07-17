@@ -39,7 +39,7 @@ abstract  class AbstractScan(n: Nat,
       (array :: exp"[$n.$dt1]") -> exp"[$n.$dt2]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    makeScan(fun(n), fun(dt1), fun(dt2),
+    makeScan(fun.nat(n), fun.data(dt1), fun.data(dt2),
       VisitAndRebuild(f, fun), VisitAndRebuild(init, fun), VisitAndRebuild(array, fun))
   }
 

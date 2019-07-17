@@ -19,7 +19,7 @@ final case class ForNat(n: Nat,
   override def eval(s: Store): Store = ???
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommType] = {
-    ForNat(fun(n), VisitAndRebuild(body, fun), unroll)
+    ForNat(fun.nat(n), VisitAndRebuild(body, fun), unroll)
   }
 
   override def prettyPrint: String = s"(forNat 0..$n ${PrettyPhrasePrinter(body)})"

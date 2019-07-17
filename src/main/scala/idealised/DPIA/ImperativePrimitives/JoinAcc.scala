@@ -20,7 +20,7 @@ final case class JoinAcc(n: Nat,
         acc"[$n.$m.$dt]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {
-    JoinAcc(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))
+    JoinAcc(fun.nat(n), fun.nat(m), fun.data(dt), VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): AccIdentifier = ???

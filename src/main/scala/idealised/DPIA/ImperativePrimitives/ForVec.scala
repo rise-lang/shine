@@ -33,7 +33,7 @@ final case class ForVec(n: Nat,
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommType] = {
-    ForVec(fun(n), fun(dt), VisitAndRebuild(out, fun), VisitAndRebuild(body, fun))
+    ForVec(fun.nat(n), fun.data(dt), VisitAndRebuild(out, fun), VisitAndRebuild(body, fun))
   }
 
   override def prettyPrint: String =

@@ -26,7 +26,7 @@ final case class For(n: Nat,
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommType] = {
-    For(fun(n), VisitAndRebuild(body, fun), unroll)
+    For(fun.nat(n), VisitAndRebuild(body, fun), unroll)
   }
 
   override def prettyPrint: String = s"(for 0..$n ${PrettyPhrasePrinter(body)})"

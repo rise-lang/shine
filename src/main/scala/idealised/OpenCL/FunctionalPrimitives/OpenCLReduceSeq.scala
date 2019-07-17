@@ -27,7 +27,7 @@ final case class OpenCLReduceSeq(n: Nat,
       (array :: exp"[$n.$dt1]") -> exp"[$dt2]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    OpenCLReduceSeq(fun(n), fun(dt1), fun(dt2),
+    OpenCLReduceSeq(fun.nat(n), fun.data(dt1), fun.data(dt2),
       VisitAndRebuild(f, fun), VisitAndRebuild(init, fun), initAddrSpace, VisitAndRebuild(array, fun))
   }
 

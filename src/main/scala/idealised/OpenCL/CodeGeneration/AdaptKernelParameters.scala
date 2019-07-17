@@ -61,7 +61,7 @@ object AdaptKernelParameters {
   {
     val zero = AsIndex(1, Natural(0))
 
-    override def apply[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
+    override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
       p match {
         case p1: Proj1[T, _] => p1.pair match {
           case i: Identifier[PairType[T, _]] if scalarParamsInGlobalOrLocalMemory.contains(i.name) =>

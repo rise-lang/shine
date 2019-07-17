@@ -16,7 +16,7 @@ final case class Slide(n: Nat,
   extends AbstractSlide(n, sz, sp, dt, input)
 {
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    Slide(f(n), f(sz), f(sp), f(dt), VisitAndRebuild(input, f))
+    Slide(f.nat(n), f.nat(sz), f.nat(sp), f.data(dt), VisitAndRebuild(input, f))
   }
 
   override def acceptorTranslation(A: Phrase[AccType])

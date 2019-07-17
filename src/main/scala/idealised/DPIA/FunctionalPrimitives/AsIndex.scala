@@ -26,7 +26,7 @@ final case class AsIndex(n: Nat, e: Phrase[ExpType])
     </unsafeAsIndex>
 
   def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] =
-    AsIndex(fun(n), VisitAndRebuild(e, fun))
+    AsIndex(fun.nat(n), VisitAndRebuild(e, fun))
 
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Data = {
     OperationalSemantics.eval(s, e) match {

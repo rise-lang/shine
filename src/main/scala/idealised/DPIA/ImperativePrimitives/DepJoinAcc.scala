@@ -22,7 +22,7 @@ final case class DepJoinAcc(n: Nat,
       acc"[${DepArrayType(n, i => ArrayType(lenF(i), dt))}]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {
-    DepJoinAcc(fun(n), fun(lenF), fun(dt), VisitAndRebuild(array, fun))
+    DepJoinAcc(fun.nat(n), fun.natToNat(lenF), fun.data(dt), VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): AccIdentifier = ???

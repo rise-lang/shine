@@ -27,7 +27,7 @@ final case class Record(dt1: DataType,
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    Record(fun(dt1), fun(dt2),
+    Record(fun.data(dt1), fun.data(dt2),
       VisitAndRebuild(fst, fun), VisitAndRebuild(snd, fun))
   }
 

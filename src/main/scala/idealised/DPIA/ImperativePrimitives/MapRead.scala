@@ -21,7 +21,7 @@ final case class MapRead(n: Nat,
       (input :: exp"[$n.$dt1]") -> exp"[$n.$dt2]"
 
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    MapRead(v(n), v(dt1), v(dt2), VisitAndRebuild(f, v), VisitAndRebuild(input, v))
+    MapRead(v.nat(n), v.data(dt1), v.data(dt2), VisitAndRebuild(f, v), VisitAndRebuild(input, v))
   }
 
   override def eval(s: Store): Data = ???
