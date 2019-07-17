@@ -67,8 +67,7 @@ class asum extends idealised.util.Tests {
     gen.OpenMPProgram(intelDerived2)
   }
 
-  // FIXME
-  ignore("AMD/Nvidia second kernel derived compiles to syntactically correct OpenMP code") {
+  test("AMD/Nvidia second kernel derived compiles to syntactically correct OpenMP code") {
     import lift.OpenMP.primitives._
 
     val amdNvidiaDerived2 = nFun(n => fun(inputT(n))(input =>

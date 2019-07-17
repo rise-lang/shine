@@ -120,7 +120,7 @@ class dot extends idealised.util.Tests {
     import lift.OpenCL.primitives._
     import idealised.OpenCL.PrivateMemory
 
-    // FIXME: (1/^n)*k*n should be simplified to k
+    // FIXME
     ignore("Intel derived no warp dot product 1 compiles to syntactically correct OpenCL") {
       val intelDerivedNoWarpDot1 = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
         zip(xs |> asVector(4))(ys |> asVector(4)) |>
