@@ -42,7 +42,9 @@ object IsClosedForm {
 
           override def apply(ae: Nat): Result[Nat] = visitNat(ae, boundN, this)
         }
+
         traversal.types.DepthFirstGlobalResult(t, TypeVisitor(boundT, boundN, boundNatDataTypeFun))
+          .mapVisitor(_ => this)
       }
     }
 
