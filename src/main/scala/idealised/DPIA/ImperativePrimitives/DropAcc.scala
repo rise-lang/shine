@@ -15,8 +15,8 @@ final case class DropAcc(n: Nat,
   extends AccPrimitive {
 
   override val t: AccType =
-    (n: Nat) -> (m: Nat) -> (dt: DataType) ->
-      (array :: acc"[${n + m}.$dt]") -> acc"[${m - n}.$dt]"
+    (n: Nat) ->: (m: Nat) ->: (dt: DataType) ->:
+      (array :: acc"[${n + m}.$dt]") ->: acc"[${m - n}.$dt]"
 
   override def eval(s: Store): AccIdentifier = ???
 

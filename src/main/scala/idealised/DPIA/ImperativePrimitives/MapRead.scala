@@ -16,9 +16,9 @@ final case class MapRead(n: Nat,
   extends ExpPrimitive
 {
   override val t: ExpType =
-    (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
-      (f :: exp"[$dt1]" -> ((exp"[$dt2]" -> comm) -> comm)) ->
-      (input :: exp"[$n.$dt1]") -> exp"[$n.$dt2]"
+    (n: Nat) ->: (dt1: DataType) ->: (dt2: DataType) ->:
+      (f :: exp"[$dt1]" ->: ((exp"[$dt2]" ->: comm) ->: comm)) ->:
+      (input :: exp"[$n.$dt1]") ->: exp"[$n.$dt2]"
 
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     MapRead(v.nat(n), v.data(dt1), v.data(dt2), VisitAndRebuild(f, v), VisitAndRebuild(input, v))

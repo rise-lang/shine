@@ -27,17 +27,17 @@ final case class PairType[T1 <: PhraseType, T2 <: PhraseType](t1: T1, t2: T2)
   override def toString = s"$t1 x $t2"
 }
 
-final case class FunType[T1 <: PhraseType, T2 <: PhraseType](inT: T1, outT: T2)
+final case class FunType[T <: PhraseType, +R <: PhraseType](inT: T, outT: R)
   extends PhraseType {
   override def toString = s"($inT) -> $outT"
 }
 
-final case class PassiveFunType[T1 <: PhraseType, T2 <: PhraseType](inT: T1, outT: T2)
+final case class PassiveFunType[T <: PhraseType, +R <: PhraseType](inT: T, outT: R)
   extends PhraseType {
   override def toString = s"($inT) ->p $outT"
 }
 
-final case class DepFunType[K <: Kind, T <: PhraseType](x: K#I, t: T)
+final case class DepFunType[K <: Kind, +R <: PhraseType](x: K#I, t: R)
   extends PhraseType {
   override def toString = s"(${x.name}: ${Kind.formatKindName(x.getClass.getName)}) -> $t"
 }
@@ -109,10 +109,6 @@ object PhraseType {
       override def nat[N <: Nat](n: N): N = Nat.substitute(ae, `for`, in=n)
 
       override def data[DT <: DataType](dt: DT): DT = DataType.substitute(ae, `for`, in=dt)
-
-//      override def natToData[N <: NatToData](ft: N): N = NatToData.substitute(ae, `for`, in=ft)
-//
-//      override def natToNat[N <: NatToNat](ft: N): N = super.natToNat(ft)
     }
 
     val p = Phrases.VisitAndRebuild(in, Visitor)

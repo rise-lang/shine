@@ -146,9 +146,9 @@ object OperationalSemantics {
       }
     }
 
-  implicit def NatDependentFunctionEvaluator[T <: PhraseType]: Evaluator[`(nat)->`[T], NatIdentifier => Phrase[T]] =
-    new Evaluator[`(nat)->`[T], NatIdentifier => Phrase[T]] {
-      def apply(s: Store, p: Phrase[`(nat)->`[T]]): NatIdentifier => Phrase[T] = {
+  implicit def NatDependentFunctionEvaluator[T <: PhraseType]: Evaluator[`(nat)->:`[T], NatIdentifier => Phrase[T]] =
+    new Evaluator[`(nat)->:`[T], NatIdentifier => Phrase[T]] {
+      def apply(s: Store, p: Phrase[`(nat)->:`[T]]): NatIdentifier => Phrase[T] = {
         p match {
           case l: DepLambda[NatKind, T] =>
             (arg: NatIdentifier) => l.body `[` arg `/` l.x `]`

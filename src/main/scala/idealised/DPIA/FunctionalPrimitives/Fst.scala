@@ -17,8 +17,8 @@ final case class Fst(dt1: DataType,
 {
 
   override val t: ExpType =
-    (dt1: DataType) -> (dt2: DataType) ->
-      (record :: exp"[$dt1 x $dt2]") -> exp"[$dt1]"
+    (dt1: DataType) ->: (dt2: DataType) ->:
+      (record :: exp"[$dt1 x $dt2]") ->: exp"[$dt1]"
 
 
   override def eval(s: Store): Data = {

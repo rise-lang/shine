@@ -194,11 +194,11 @@ package object DPIA {
   val freshName: core.freshName.type = lift.core.freshName
 
   type x[T1 <: PhraseType, T2 <: PhraseType] = PairType[T1, T2]
-  type ->:[T1 <: PhraseType, T2 <: PhraseType] = FunType[T1, T2]
-  type `->p`[T1 <: PhraseType, T2 <: PhraseType] = PassiveFunType[T1, T2]
-  type `()->`[K <: Kind, T <: PhraseType] = DepFunType[K, T]
-  type `(nat)->`[T <: PhraseType] = DepFunType[NatKind, T]
-  type `(dt)->`[T <: PhraseType] = DepFunType[DataKind, T]
+  type ->:[T <: PhraseType, R <: PhraseType] = FunType[T, R]
+  type `->p:`[T <: PhraseType, R <: PhraseType] = PassiveFunType[T, R]
+  type `()->:`[K <: Kind, R <: PhraseType] = DepFunType[K, R]
+  type `(nat)->:`[R <: PhraseType] = DepFunType[NatKind, R]
+  type `(dt)->:`[R <: PhraseType] = DepFunType[DataKind, R]
   type VarType = ExpType x AccType
 
   object VarType {
@@ -245,24 +245,24 @@ package object DPIA {
     def x[T2 <: PhraseType](t2: T2) = PairType(t1, t2)
   }
 
-  implicit class FunTypeConstructor[T1 <: PhraseType](t1: T1) {
-    def ->[T2 <: PhraseType](t2: T2) = FunType(t1, t2)
+  implicit class FunTypeConstructor[R <: PhraseType](r: R) {
+    def ->:[T <: PhraseType](t: T): T ->: R = FunType(t, r)
   }
 
-  implicit class PassiveFunTypeConstructor[T1 <: PhraseType](t1: T1) {
-    def `->p`[T2 <: PhraseType](t2: T2) = PassiveFunType(t1, t2)
+  implicit class PassiveFunTypeConstructor[R <: PhraseType](r: R) {
+    def `->p:`[T <: PhraseType](t: T) = PassiveFunType(t, r)
   }
 
-  implicit final class NatDepFunTypeConstructor(private val x: NatIdentifier) {
-    def `()->`[T <: PhraseType](t: T): `()->`[NatKind, T] = DepFunType[NatKind, T](x, t)
+  implicit class NatDepFunTypeConstructor[R <: PhraseType](t: R) {
+    def `()->:`(x: NatIdentifier): `()->:`[NatKind, R] = DepFunType[NatKind, R](x, t)
   }
 
-  implicit final class LiftNatDepFunTypeConstructor(private val x: lift.core.NatIdentifier) {
-    def `()->`[T <: PhraseType](t: T): `()->`[NatKind, T] = NatIdentifier(x.name, x.range) `()->` t
+  implicit class LiftNatDepFunTypeConstructor[R <: PhraseType](t: R) {
+    def `()->:`(x: lift.core.NatIdentifier): `()->:`[NatKind, R] = NatIdentifier(x.name, x.range) `()->:` t
   }
 
-  implicit class DataDepFunTypeConstructor(x: DataTypeIdentifier) {
-    def `()->`[T <: PhraseType](outT: T): `()->`[DataKind, T] = DepFunType[DataKind, T](x, outT)
+  implicit class DataDepFunTypeConstructor[R <: PhraseType](outT: R) {
+    def `()->:`(x: DataTypeIdentifier): `()->:`[DataKind, R] = DepFunType[DataKind, R](x, outT)
   }
 
   implicit class PhraseTypeHelper(val sc: StringContext) extends AnyVal {

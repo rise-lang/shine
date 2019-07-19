@@ -18,8 +18,9 @@ final case class Join(n: Nat,
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (n: Nat) -> (m: Nat) -> (dt: DataType) ->
-      (array :: exp"[$n.$m.$dt]") -> exp"[${n * m}.$dt]"
+    (n: Nat) ->: (m: Nat) ->: (dt: DataType) ->:
+      (array :: exp"[$n.$m.$dt]") ->:
+        exp"[${n * m}.$dt]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     Join(fun.nat(n), fun.nat(m), fun.data(dt), VisitAndRebuild(array, fun))

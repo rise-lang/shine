@@ -25,8 +25,8 @@ final case class DepIdx(n: Nat,
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (n: Nat) -> (ft: NatToData) -> (index: Nat) ->
-      (array :: exp"[$n.$ft]") ->
+    (n: Nat) ->: (ft: NatToData) ->: (index: Nat) ->:
+      (array :: exp"[$n.$ft]") ->:
         exp"[${ft(index)}]"
 
   //  override def inferTypes: Idx = {

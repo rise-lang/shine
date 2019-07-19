@@ -15,8 +15,8 @@ final case class JoinAcc(n: Nat,
 {
 
   override val t: AccType =
-    (n: Nat) -> (m: Nat) -> (dt: DataType) ->
-      (array :: acc"[${n * m}.$dt]") ->
+    (n: Nat) ->: (m: Nat) ->: (dt: DataType) ->:
+      (array :: acc"[${n * m}.$dt]") ->:
         acc"[$n.$m.$dt]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {

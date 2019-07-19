@@ -19,8 +19,8 @@ final case class Unzip(n: Nat,
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
-      (e :: exp"[$n.($dt1 x $dt2)]") ->
+    (n: Nat) ->: (dt1: DataType) ->: (dt2: DataType) ->:
+      (e :: exp"[$n.($dt1 x $dt2)]") ->:
       ExpType(RecordType(ArrayType(n, dt1), ArrayType(n, dt2)))
 
   // TODO: fix parsing of this:

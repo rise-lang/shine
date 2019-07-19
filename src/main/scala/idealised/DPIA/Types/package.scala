@@ -19,33 +19,12 @@ package object Types {
     }
   }
 
-  implicit final class ArrowDataType(private val self: DataType) {
-    @inline def -> [B](y: B): B = y
-    def →[B](y: B): B = ->(y)
-  }
-
-  implicit final class ArrowNat(private val self: Nat) {
-    @inline def -> [B](y: B): B = y
-    def →[B](y: B): B = ->(y)
-  }
-
-  implicit final class ArrowAddressSpace(private val self: AddressSpace) {
-    @inline def -> [B](y: B): B = y
-    def →[B](y: B): B = ->(y)
-  }
-
-  implicit final class ArrowNatNatTypeFun(private val self: NatToNat) {
-    @inline def -> [B](y: B): B = y
-    def →[B](y: B): B = ->(y)
-  }
-
-  implicit final class ArrowNatDataTypeFun(private val self: NatToData) {
-    @inline def -> [B](y: B): B = y
-    def →[B](y: B): B = ->(y)
-  }
-
-  implicit final class ArrowUnit(private val self: Unit) {
-    @inline def -> [B](y: B): B = y
-    def →[B](y: B): B = ->(y)
+  implicit final class ArrowType[T <: PhraseType](t: T) {
+    @inline def ->: (dt: DataType): T = t
+    @inline def ->: (n: Nat): T = t
+    @inline def ->: (addressSpace: AddressSpace): T = t
+    @inline def ->: (ntn: NatToNat): T = t
+    @inline def ->: (ntd: NatToData): T = t
+    @inline def ->: (unit: Unit): T = t
   }
 }

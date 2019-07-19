@@ -17,9 +17,9 @@ final case class DepJoinAcc(n: Nat,
 
 
   override val t: AccType =
-    (n: Nat) -> (lenF: NatToNat) ->
-      (array :: acc"[${BigSum(from=0, upTo = n-1, i => lenF(i))}.$dt]") ->
-      acc"[${DepArrayType(n, i => ArrayType(lenF(i), dt))}]"
+    (n: Nat) ->: (lenF: NatToNat) ->:
+      (array :: acc"[${BigSum(from=0, upTo = n-1, i => lenF(i))}.$dt]") ->:
+        acc"[${DepArrayType(n, i => ArrayType(lenF(i), dt))}]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {
     DepJoinAcc(fun.nat(n), fun.natToNat(lenF), fun.data(dt), VisitAndRebuild(array, fun))

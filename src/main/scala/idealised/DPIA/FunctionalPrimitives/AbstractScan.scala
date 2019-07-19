@@ -33,10 +33,10 @@ abstract  class AbstractScan(n: Nat,
                (implicit context: TranslationContext): Phrase[CommType]
 
   override val t: ExpType =
-    (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
-      (f :: t"exp[$dt1] -> exp[$dt2] -> exp[$dt2]") ->
-      (init :: exp"[$dt2]") ->
-      (array :: exp"[$n.$dt1]") -> exp"[$n.$dt2]"
+    (n: Nat) ->: (dt1: DataType) ->: (dt2: DataType) ->:
+      (f :: t"exp[$dt1] -> exp[$dt2] -> exp[$dt2]") ->:
+        (init :: exp"[$dt2]") ->:
+          (array :: exp"[$n.$dt1]") ->: exp"[$n.$dt2]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     makeScan(fun.nat(n), fun.data(dt1), fun.data(dt2),
@@ -79,7 +79,7 @@ abstract  class AbstractScan(n: Nat,
 
   override def xmlPrinter: Elem =
     <reduce n={ToString(n)} dt1={ToString(dt1)} dt2={ToString(dt2)}>
-      <f type={ToString(ExpType(dt1) -> (ExpType(dt2) -> ExpType(dt2)))}>
+      <f type={ToString(ExpType(dt1) ->: ExpType(dt2) ->: ExpType(dt2))}>
         {Phrases.xmlPrinter(f)}
       </f>
       <init type={ToString(ExpType(dt2))}>

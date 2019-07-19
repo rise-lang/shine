@@ -21,7 +21,7 @@ final case class OpenCLFunction(name: String,
   override val t: ExpType =
     (inTs zip args).foreach{
       case (inT, arg) => arg :: exp"[$inT]"
-    } -> exp"[$outT]"
+    } ->: exp"[$outT]"
 
   override def visitAndRebuild(f: Visitor): Phrase[ExpType] = {
     OpenCLFunction(name, inTs.map(f.data), f.data(outT), args.map(VisitAndRebuild(_, f)))

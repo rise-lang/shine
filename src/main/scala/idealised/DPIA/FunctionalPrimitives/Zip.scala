@@ -19,9 +19,9 @@ final case class Zip(n: Nat,
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
-      (e1 :: exp"[$n.$dt1]") ->
-       (e2 :: exp"[$n.$dt2]") -> exp"[$n.($dt1 x $dt2)]"
+    (n: Nat) ->: (dt1: DataType) ->: (dt2: DataType) ->:
+      (e1 :: exp"[$n.$dt1]") ->:
+       (e2 :: exp"[$n.$dt2]") ->: exp"[$n.($dt1 x $dt2)]"
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     Zip(f.nat(n), f.data(dt1), f.data(dt2), VisitAndRebuild(e1, f), VisitAndRebuild(e2, f))

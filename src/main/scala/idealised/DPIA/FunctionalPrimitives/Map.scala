@@ -30,7 +30,7 @@ final case class Map(n: Nat,
     con(array)(λ(exp"[$n.$dt1]")(x =>
       C(MapRead(n, dt1, dt2,
         fun(exp"[$dt1]")(a =>
-          fun(exp"[$dt2]" -> (comm: CommType))(cont =>
+          fun(exp"[$dt2]" ->: (comm: CommType))(cont =>
             con(f(a))(fun(exp"[$dt2]")(b => Apply(cont, b))))),
         x))))
   }

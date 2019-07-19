@@ -48,7 +48,7 @@ object primitives {
 
   case class to(space: AddressSpace) extends Primitive {
     override def t: Type = implDT(a => implDT(b =>
-      (a -> b) -> (a -> b)
+      (a ->: b) ->: (a ->: b)
     ))
   }
 

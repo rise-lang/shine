@@ -15,7 +15,7 @@ final case class AsIndex(n: Nat, e: Phrase[ExpType])
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (n: Nat) -> (e :: exp"[$NatType]") -> exp"[${IndexType(n)}]"
+    (n: Nat) ->: (e :: exp"[$NatType]") ->: exp"[${IndexType(n)}]"
 
   def prettyPrint: String =
     s"${this.getClass.getSimpleName} (${PrettyPhrasePrinter(e)})"

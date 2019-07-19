@@ -15,8 +15,8 @@ final case class UnzipAcc(n: Nat,
 {
 
   override val t: AccType =
-    (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
-      (a :: AccType(RecordType(ArrayType(n, dt1), ArrayType(n, dt2)))) ->
+    (n: Nat) ->: (dt1: DataType) ->: (dt2: DataType) ->:
+      (a :: AccType(RecordType(ArrayType(n, dt1), ArrayType(n, dt2)))) ->:
         acc"[$n.($dt1 x $dt2)]"
 
 

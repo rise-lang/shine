@@ -27,7 +27,7 @@ final case class Identifier[T <: PhraseType](name: String, `type`: T)
 final case class Lambda[T1 <: PhraseType, T2 <: PhraseType](param: Identifier[T1], body: Phrase[T2])
   extends Phrase[T1 ->: T2] {
 
-  override val t: T1 ->: T2 = param.t -> body.t
+  override val t: T1 ->: T2 = param.t ->: body.t
   override def toString: String = s"λ$param. $body"
 }
 
@@ -40,7 +40,7 @@ final case class Apply[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 ->: T2
 }
 
 final case class DepLambda[K <: Kind, T <: PhraseType](x: K#I, body: Phrase[T])
-  extends Phrase[K `()->` T] {
+  extends Phrase[K `()->:` T] {
   override val t: DepFunType[K, T] = DepFunType[K, T](x, body.t)
   override def toString: String = s"Λ(${x.name} : ${x.getClass.getName.dropWhile(_!='$').drop(1).takeWhile(_!='$')}). $body"
 }
@@ -53,7 +53,7 @@ object DepLambda {
   }
 }
 
-final case class DepApply[K <: Kind, T <: PhraseType](fun: Phrase[K `()->` T], arg: K#T)
+final case class DepApply[K <: Kind, T <: PhraseType](fun: Phrase[K `()->:` T], arg: K#T)
   extends Phrase[T] {
 
   override val t: T = PhraseType.substitute(arg, `for`=fun.t.x, in=fun.t.t).asInstanceOf[T]
@@ -204,7 +204,7 @@ object Phrase {
             case Natural(_) => throw new Exception("This should never happen")
             case DepApply(fun, arg) => (fun, arg) match {
               case (f, a: Nat) =>
-                NatFromIndexExpr(liftDependentFunction[NatKind, ExpType](f.asInstanceOf[Phrase[NatKind `()->` ExpType]])(a))
+                NatFromIndexExpr(liftDependentFunction[NatKind, ExpType](f.asInstanceOf[Phrase[NatKind `()->:` ExpType]])(a))
             }
             case Proj1(pair) => NatFromIndexExpr(liftPair(pair)._1)
             case Proj2(pair) => NatFromIndexExpr(liftPair(pair)._2)
@@ -232,7 +232,7 @@ object Phrase {
             case Literal(_) => throw new Exception("This should never happen")
             case DepApply(fun, arg) => (fun, arg) match {
               case (f, a: Nat) =>
-                NatFromNatExpr(liftDependentFunction[NatKind, ExpType](f.asInstanceOf[Phrase[NatKind `()->` ExpType]])(a))
+                NatFromNatExpr(liftDependentFunction[NatKind, ExpType](f.asInstanceOf[Phrase[NatKind `()->:` ExpType]])(a))
             }
             case Proj1(pair) => NatFromNatExpr(liftPair(pair)._1)
             case Proj2(pair) => NatFromNatExpr(liftPair(pair)._2)

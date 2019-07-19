@@ -13,11 +13,11 @@ import scala.language.{postfixOps, reflectiveCalls}
 object Lifting {
   import lift.core.lifting.{Result, Reducing, Expanding}
 
-  def liftDependentFunction[K <: Kind, T <: PhraseType](p: Phrase[K `()->` T]): K#T => Phrase[T] = {
+  def liftDependentFunction[K <: Kind, T <: PhraseType](p: Phrase[K `()->:` T]): K#T => Phrase[T] = {
     p match {
       case l: DepLambda[K, T] =>
         (arg: K#T) => PhraseType.substitute(arg, `for`=l.x, in=l.body)
-      case app: Apply[_, K `()->` T] =>
+      case app: Apply[_, K `()->:` T] =>
         val fun = liftFunction(app.fun).reducing
         liftDependentFunction(fun(app.arg))
       case DepApply(f, arg) =>
@@ -26,10 +26,10 @@ object Lifting {
 //      case app: TypeDependentApply[K `()->` T] =>
 //        val fun = liftDependentFunction(app.fun)
 //        liftDependentFunction(fun(app.arg))
-      case p1: Proj1[K `()->` T, b] =>
+      case p1: Proj1[K `()->:` T, b] =>
         val pair = liftPair(p1.pair)
         liftDependentFunction(pair._1)
-      case p2: Proj2[a, K `()->` T] =>
+      case p2: Proj2[a, K `()->:` T] =>
         val pair = liftPair(p2.pair)
         liftDependentFunction(pair._2)
       case Identifier(_, _) | IfThenElse(_, _, _) =>

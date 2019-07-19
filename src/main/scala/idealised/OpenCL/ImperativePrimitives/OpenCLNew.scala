@@ -15,8 +15,8 @@ final case class OpenCLNew(dt: DataType,
                            f: Phrase[VarType ->: CommType]) extends CommandPrimitive {
 
   override val t: CommType =
-    (dt: DataType) -> (addressSpace: AddressSpace) ->
-      (f :: t"var[$dt] -> comm") -> comm
+    (dt: DataType) ->: (addressSpace: AddressSpace) ->:
+      (f :: t"var[$dt] -> comm") ->: comm
 
   override def eval(s: Store): Store = {
     val f_ = OperationalSemantics.eval(s, f)

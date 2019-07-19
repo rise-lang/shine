@@ -129,7 +129,7 @@ class PhraseTypeParser(val string: String,
                     case ")" => nextToken
                       peakToken match {
                         case "->" => nextToken
-                          l `()->` parsePhraseType
+                          l `()->:` parsePhraseType
                         case _ => error
                       }
                     case _ => error

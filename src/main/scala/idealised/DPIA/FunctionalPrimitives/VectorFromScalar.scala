@@ -17,8 +17,8 @@ final case class VectorFromScalar(n: Nat,
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (n: Nat) -> (dt: ScalarType) ->
-      (arg :: exp"[$dt]") ->
+    (n: Nat) ->: (dt: ScalarType) ->:
+      (arg :: exp"[$dt]") ->:
         exp"[${VectorType(n, dt)}]"
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {

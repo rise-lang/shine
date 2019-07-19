@@ -17,8 +17,8 @@ final case class Record(dt1: DataType,
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (dt1: DataType) -> (dt2: DataType) ->
-      (fst :: exp"[$dt1]") -> (snd :: exp"[$dt2]") -> exp"[$dt1 x $dt2]"
+    (dt1: DataType) ->: (dt2: DataType) ->:
+      (fst :: exp"[$dt1]") ->: (snd :: exp"[$dt2]") ->: exp"[$dt1 x $dt2]"
 
   override def eval(s: Store): Data = {
     RecordData(

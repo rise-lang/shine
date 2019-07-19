@@ -19,9 +19,9 @@ final case class MapVec(n: Nat,
   extends ExpPrimitive
 {
   override val t: ExpType =
-    (n: Nat) -> (dt1: ScalarType) -> (dt2: ScalarType) ->
-      (f :: t"exp[$dt1] -> exp[$dt2]") ->
-        (array :: exp"[${VectorType(n, dt1)}]") -> exp"[${VectorType(n, dt2)}]"
+    (n: Nat) ->: (dt1: ScalarType) ->: (dt2: ScalarType) ->:
+      (f :: t"exp[$dt1] -> exp[$dt2]") ->:
+        (array :: exp"[${VectorType(n, dt1)}]") ->: exp"[${VectorType(n, dt2)}]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     MapVec(fun.nat(n), fun.data(dt1), fun.data(dt2), VisitAndRebuild(f, fun), VisitAndRebuild(array, fun))
@@ -69,7 +69,7 @@ final case class MapVec(n: Nat,
 
   override def xmlPrinter: Elem =
     <mapVec n={ToString(n)} dt1={ToString(dt1)} dt2={ToString(dt2)}>
-      <f type={ToString(ExpType(dt1) -> ExpType(dt2))}>
+      <f type={ToString(ExpType(dt1) ->: ExpType(dt2))}>
         {Phrases.xmlPrinter(f)}
       </f>
       <input type={ToString(ExpType(VectorType(n, dt1)))}>

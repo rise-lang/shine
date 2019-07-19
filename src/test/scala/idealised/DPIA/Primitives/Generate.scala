@@ -8,7 +8,7 @@ import idealised.util.gen
 class Generate extends idealised.util.Tests {
   val id = fun(x => x)
   val addT = fun(x => fst(x) + snd(x))
-  val cos = foreignFun("callCos", Seq("x"), "{ return cos(x); }", double -> double)
+  val cos = foreignFun("callCos", Seq("x"), "{ return cos(x); }", double ->: double)
 
   test("Very simple one-dimensional generate generates syntactically correct code in C.") {
     val e = nFun(n => generate(fun(IndexType(n))(i => cast(i) + l(1.0))) |> mapSeq(id))

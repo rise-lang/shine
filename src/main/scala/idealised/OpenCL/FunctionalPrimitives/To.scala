@@ -22,10 +22,10 @@ abstract class To(dt1: DataType,
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (dt1: DataType) -> (dt2: DataType) ->
-      (f :: t"exp[$dt1] -> exp[$dt2]") ->
-        (input :: exp"[$dt1]") ->
-          (addressSpace : AddressSpace) -> exp"[$dt2]"
+    (dt1: DataType) ->: (dt2: DataType) ->:
+      (f :: t"exp[$dt1] -> exp[$dt2]") ->:
+        (input :: exp"[$dt1]") ->:
+          (addressSpace : AddressSpace) ->: exp"[$dt2]"
 
   override def eval(s: Store): Data = OperationalSemantics.eval(s, input)
 
@@ -38,7 +38,7 @@ abstract class To(dt1: DataType,
 
   override def xmlPrinter: Elem =
     <to dt1={ToString(dt1)} dt2={ToString(dt2)} addressSpace={ToString(addressSpace)}>
-      <f type={ToString(ExpType(dt1) -> ExpType(dt2))}>
+      <f type={ToString(ExpType(dt1) ->: ExpType(dt2))}>
         {Phrases.xmlPrinter(f)}
       </f>
       <input type={ToString(ExpType(dt1))}>

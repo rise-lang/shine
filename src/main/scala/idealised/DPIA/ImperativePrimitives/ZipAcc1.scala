@@ -15,8 +15,8 @@ final case class ZipAcc1(n: Nat,
   extends AccPrimitive {
 
   override val t: AccType =
-    (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
-      (array :: acc"[$n.($dt1 x $dt2)]") -> acc"[$n.$dt1]"
+    (n: Nat) ->: (dt1: DataType) ->: (dt2: DataType) ->:
+      (array :: acc"[$n.($dt1 x $dt2)]") ->: acc"[$n.$dt1]"
 
   override def eval(s: Store): AccIdentifier = ???
 

@@ -17,8 +17,8 @@ final case class Snd(dt1: DataType,
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (dt1: DataType) -> (dt2: DataType) ->
-      (record :: exp"[$dt1 x $dt2]") -> exp"[$dt2]"
+    (dt1: DataType) ->: (dt2: DataType) ->:
+      (record :: exp"[$dt1 x $dt2]") ->: exp"[$dt2]"
 
   override def eval(s: Store): Data = {
     OperationalSemantics.eval(s, record) match {

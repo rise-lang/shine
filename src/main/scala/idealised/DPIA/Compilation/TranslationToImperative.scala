@@ -43,9 +43,9 @@ object TranslationToImperative {
       case Apply(fun, arg) => acc(Lifting.liftFunction(fun).reducing(arg))(A)
       case DepApply(fun, arg) => arg match {
         case a: Nat =>
-          acc(Lifting.liftDependentFunction[NatKind, ExpType](fun.asInstanceOf[ Phrase[NatKind `()->` ExpType]])(a))(A)
+          acc(Lifting.liftDependentFunction[NatKind, ExpType](fun.asInstanceOf[ Phrase[NatKind `()->:` ExpType]])(a))(A)
         case a: DataType =>
-          acc(Lifting.liftDependentFunction[DataKind, ExpType](fun.asInstanceOf[Phrase[DataKind `()->` ExpType]])(a))(A)
+          acc(Lifting.liftDependentFunction[DataKind, ExpType](fun.asInstanceOf[Phrase[DataKind `()->:` ExpType]])(a))(A)
       }
 
       case LetNat(binder, defn, body) => LetNat(binder, defn, acc(body)(A))
@@ -70,9 +70,9 @@ object TranslationToImperative {
       case Apply(fun, arg) => mapAcc(f, Lifting.liftFunction(fun).reducing(arg))(A)
       case DepApply(fun, arg) =>  arg match {
         case a: Nat =>
-          mapAcc(f, Lifting.liftDependentFunction[NatKind, ExpType](fun.asInstanceOf[Phrase[NatKind `()->` ExpType]])(a))(A)
+          mapAcc(f, Lifting.liftDependentFunction[NatKind, ExpType](fun.asInstanceOf[Phrase[NatKind `()->:` ExpType]])(a))(A)
         case a: DataType =>
-          mapAcc(f, Lifting.liftDependentFunction[DataKind, ExpType](fun.asInstanceOf[Phrase[DataKind `()->` ExpType]])(a))(A)
+          mapAcc(f, Lifting.liftDependentFunction[DataKind, ExpType](fun.asInstanceOf[Phrase[DataKind `()->:` ExpType]])(a))(A)
       }
 
       case IfThenElse(cond, thenP, elseP) =>
@@ -111,8 +111,8 @@ object TranslationToImperative {
       // on the fly beta-reduction
       case Apply(fun, arg) => con(Lifting.liftFunction(fun).reducing(arg))(C)
       case DepApply(fun, arg) => arg match {
-        case a: Nat => con(Lifting.liftDependentFunction[NatKind, ExpType](fun.asInstanceOf[Phrase[NatKind `()->` ExpType]])(a))(C)
-        case a: DataType => con(Lifting.liftDependentFunction[DataKind, ExpType](fun.asInstanceOf[Phrase[DataKind `()->` ExpType]])(a))(C)
+        case a: Nat => con(Lifting.liftDependentFunction[NatKind, ExpType](fun.asInstanceOf[Phrase[NatKind `()->:` ExpType]])(a))(C)
+        case a: DataType => con(Lifting.liftDependentFunction[DataKind, ExpType](fun.asInstanceOf[Phrase[DataKind `()->:` ExpType]])(a))(C)
       }
 
       case IfThenElse(cond, thenP, elseP) =>

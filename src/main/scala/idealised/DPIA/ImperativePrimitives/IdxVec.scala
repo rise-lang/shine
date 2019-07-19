@@ -18,9 +18,9 @@ final case class IdxVec(n: Nat,
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (n: Nat) -> (st: ScalarType) ->
-      (index :: exp"[idx($n)]") ->
-        (vector :: exp"[${VectorType(n, st)}]") ->
+    (n: Nat) ->: (st: ScalarType) ->:
+      (index :: exp"[idx($n)]") ->:
+        (vector :: exp"[${VectorType(n, st)}]") ->:
           exp"[$st]"
 
   override def eval(s: Store): Data = {

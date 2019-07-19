@@ -8,13 +8,13 @@ import idealised.DPIA._
 import scala.xml.Elem
 
 final case class ForNat(n: Nat,
-                        body: Phrase[`(nat)->`[CommType]],
+                        body: Phrase[`(nat)->:`[CommType]],
                         unroll:Boolean)
   extends CommandPrimitive {
 
   override val t: CommType = {
     val k = body.t.x
-    (n: Nat) -> (body :: t"($k:nat) -> comm") -> comm
+    (n: Nat) ->: (body :: t"($k:nat) -> comm") ->: comm
   }
   override def eval(s: Store): Store = ???
 

@@ -15,7 +15,7 @@ object IterateIAcc {
             k: Nat,
             dt: DataType,
             out: Phrase[AccType],
-            f: Phrase[`(nat)->`[AccType ->: ExpType ->: CommType]],
+            f: Phrase[`(nat)->:`[AccType ->: ExpType ->: CommType]],
             in: Phrase[ExpType])
            (implicit context: TranslationContext): Phrase[CommType] =
   {

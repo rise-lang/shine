@@ -16,8 +16,8 @@ final case class Generate(n: Nat,
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (n: Nat) -> (dt: DataType) ->
-      (f :: t"exp[idx($n)] -> exp[$dt]") ->
+    (n: Nat) ->: (dt: DataType) ->:
+      (f :: t"exp[idx($n)] -> exp[$dt]") ->:
         exp"[$n.$dt]"
 
   def prettyPrint: String =
@@ -25,7 +25,7 @@ final case class Generate(n: Nat,
 
   override def xmlPrinter: Elem =
     <generate n={ToString(n)} dt={ToString(dt)}>
-      <f type={ToString(ExpType(IndexType(n)) -> ExpType(dt))}>
+      <f type={ToString(ExpType(IndexType(n)) ->: ExpType(dt))}>
        {Phrases.xmlPrinter(f)}
       </f>
     </generate>
@@ -48,7 +48,7 @@ final case class Generate(n: Nat,
     // note: would not be necessary if generate was defined as indices + map
     C(GenerateCont(n, dt,
       fun(exp"[idx($n)]")(i =>
-        fun(exp"[$dt]" -> (comm: CommType))(cont =>
+        fun(exp"[$dt]" ->: (comm: CommType))(cont =>
           con(f(i))(fun(exp"[$dt]")(g => Apply(cont, g)))
         ))
     ))

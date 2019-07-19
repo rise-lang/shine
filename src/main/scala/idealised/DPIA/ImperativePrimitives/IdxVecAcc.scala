@@ -16,9 +16,9 @@ final case class IdxVecAcc(n: Nat,
   extends AccPrimitive {
 
   override val t: AccType =
-    (n: Nat) -> (st: ScalarType) ->
-      (index :: exp"[idx($n)]") ->
-        (vector :: acc"[${VectorType(n, st)}]") ->
+    (n: Nat) ->: (st: ScalarType) ->:
+      (index :: exp"[idx($n)]") ->:
+        (vector :: acc"[${VectorType(n, st)}]") ->:
           acc"[$st]"
 
   override def eval(s: Store): AccIdentifier = {

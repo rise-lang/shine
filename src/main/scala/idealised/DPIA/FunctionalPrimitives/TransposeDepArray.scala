@@ -14,8 +14,8 @@ case class TransposeDepArray(n:Nat, m:Nat, i:NatIdentifier, dt:DataType, array:P
   private def dt(x:Nat):DataType = DataType.substitute(x, `for`=i, `in`=this.dt)
 
   override val t: ExpType = {
-    (n: Nat) -> (m: Nat) -> (i: Nat) -> (dt: DataType) ->
-      (array :: exp"[$n.${DepArrayType(m, k => dt(k))}]") -> exp"[${DepArrayType(m, k => ArrayType(n, dt(k)))}]"
+    (n: Nat) ->: (m: Nat) ->: (i: Nat) ->: (dt: DataType) ->:
+      (array :: exp"[$n.${DepArrayType(m, k => dt(k))}]") ->: exp"[${DepArrayType(m, k => ArrayType(n, dt(k)))}]"
   }
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {

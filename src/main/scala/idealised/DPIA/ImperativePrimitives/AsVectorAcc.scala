@@ -14,8 +14,8 @@ final case class AsVectorAcc(n: Nat,
   extends AccPrimitive {
 
   override val t: AccType =
-    (n: Nat) -> (m: Nat) -> (dt: ScalarType) ->
-      (array :: acc"[$n.${VectorType(m, dt)}]") ->
+    (n: Nat) ->: (m: Nat) ->: (dt: ScalarType) ->:
+      (array :: acc"[$n.${VectorType(m, dt)}]") ->:
         acc"[${n * m}.$dt]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {

@@ -28,7 +28,7 @@ final case class ForeignFunction(funDecl: ForeignFunction.Declaration,
   override val t: ExpType =
     (inTs zip args).foreach {
       case (inT, arg) => arg :: exp"[$inT]"
-    } -> exp"[$outT]"
+    } ->: exp"[$outT]"
 
   override def eval(s: Store): Data = ???
 

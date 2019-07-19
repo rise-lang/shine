@@ -17,10 +17,10 @@ final case class NewDoubleBuffer(dt1: DataType,
   extends CommandPrimitive {
 
   override val t: CommType =
-    (dt1: DataType) -> (dt2: DataType) -> (dt3: DataType) -> (n: Nat) ->
-      (in :: exp"[$dt1]") ->
-        (out :: acc"[$dt2]") ->
-          (f :: (((varT"[$n.$dt3]" x comm) x comm) -> comm) ) -> comm
+    (dt1: DataType) ->: (dt2: DataType) ->: (dt3: DataType) ->: (n: Nat) ->:
+      (in :: exp"[$dt1]") ->:
+        (out :: acc"[$dt2]") ->:
+          (f :: (((varT"[$n.$dt3]" x comm) x comm) ->: comm) ) ->: comm
 
   override def eval(s: Store): Store = ???
 

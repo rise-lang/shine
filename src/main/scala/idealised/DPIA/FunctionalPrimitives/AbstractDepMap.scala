@@ -14,15 +14,15 @@ import scala.xml.Elem
 abstract class AbstractDepMap(n: Nat,
                               ft1: NatToData,
                               ft2: NatToData,
-                              f: Phrase[`(nat)->`[ExpType ->: ExpType]],
+                              f: Phrase[`(nat)->:`[ExpType ->: ExpType]],
                               array: Phrase[ExpType])
   extends ExpPrimitive {
 
   override val t: ExpType = {
     val k = f.t.x
-    (n: Nat) -> (ft1: NatToData) -> (ft2: NatToData) ->
-      (f :: t"($k : nat) -> exp[${ ft1(k) }] -> exp[${ ft2(k) }]") ->
-        (array :: ExpType(DepArrayType(n, ft1))) ->
+    (n: Nat) ->: (ft1: NatToData) ->: (ft2: NatToData) ->:
+      (f :: t"($k : nat) -> exp[${ ft1(k) }] -> exp[${ ft2(k) }]") ->:
+        (array :: ExpType(DepArrayType(n, ft1))) ->:
           ExpType(DepArrayType(n, ft2))
   }
 
@@ -57,12 +57,12 @@ abstract class AbstractDepMap(n: Nat,
   }
 
 
-  def makeMap: (Nat, NatToData, NatToData, Phrase[`(nat)->`[ExpType ->: ExpType]], Phrase[ExpType]) => AbstractDepMap
+  def makeMap: (Nat, NatToData, NatToData, Phrase[`(nat)->:`[ExpType ->: ExpType]], Phrase[ExpType]) => AbstractDepMap
 
   def makeMapI(n: Nat,
                ft1:NatToData,
                ft2:NatToData,
-               f: Phrase[`(nat)->`[ExpType ->: AccType ->: CommType]],
+               f: Phrase[`(nat)->:`[ExpType ->: AccType ->: CommType]],
                array: Phrase[ExpType],
                out: Phrase[AccType])
               (implicit context: TranslationContext): Phrase[CommType]
@@ -86,7 +86,7 @@ abstract class AbstractDepMap(n: Nat,
       case _ => throw new Exception("This should not happen")
     }
     <map n={ToString(n)} ft1={ToString(ft1)} ft2={ToString(ft2)}>
-      <f type={ToString(k -> (ExpType(ft1(k)) -> ExpType(ft2(k))))}>
+      <f type={ToString(k ->: ExpType(ft1(k)) ->: ExpType(ft2(k)))}>
         {Phrases.xmlPrinter(f)}
       </f>
       <input type={ToString(ExpType(DepArrayType(n, ft1)))}>

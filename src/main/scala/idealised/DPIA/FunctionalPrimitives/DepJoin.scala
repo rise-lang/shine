@@ -19,8 +19,8 @@ final case class DepJoin(n: Nat,
   extends ExpPrimitive {
 
   override val t: ExpType = {
-    (n: Nat) -> (lenF: NatToNat) -> (dt: DataType) ->
-      (array :: exp"[$n.${NatToDataLambda(n, (i:NatIdentifier) => ArrayType(lenF(i), dt))}]") ->
+    (n: Nat) ->: (lenF: NatToNat) ->: (dt: DataType) ->:
+      (array :: exp"[$n.${NatToDataLambda(n, (i:NatIdentifier) => ArrayType(lenF(i), dt))}]") ->:
         exp"[${BigSum(from = 0, upTo = n - 1, i => lenF(i))}.$dt]"
   }
 

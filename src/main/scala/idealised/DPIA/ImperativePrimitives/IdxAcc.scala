@@ -16,9 +16,9 @@ final case class IdxAcc(n: Nat,
   extends AccPrimitive {
 
   override val t: AccType =
-    (n: Nat) -> (dt: DataType) ->
-      (index :: exp"[idx($n)]") ->
-        (array :: acc"[$n.$dt]") ->
+    (n: Nat) ->: (dt: DataType) ->:
+      (index :: exp"[idx($n)]") ->:
+        (array :: acc"[$n.$dt]") ->:
           acc"[$dt]"
 
   override def eval(s: Store): AccIdentifier = {

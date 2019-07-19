@@ -16,8 +16,8 @@ final case class GenerateCont(n: Nat,
   extends ExpPrimitive
 {
   override val t: ExpType =
-    (n: Nat) -> (dt: DataType) ->
-      (f :: exp"[idx($n)]" -> ((t"exp[$dt] -> comm") -> comm)) ->
+    (n: Nat) ->: (dt: DataType) ->:
+      (f :: exp"[idx($n)]" ->: t"exp[$dt] -> comm" ->: comm) ->:
       exp"[$n.$dt]"
 
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] = {

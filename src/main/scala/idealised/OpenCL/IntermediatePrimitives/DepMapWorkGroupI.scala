@@ -9,7 +9,7 @@ final case class DepMapWorkGroupI(dim:Int) {
   def apply(n: Nat,
             ft1:NatToData,
             ft2:NatToData,
-            f: Phrase[`(nat)->`[ExpType ->: AccType ->: CommType]],
+            f: Phrase[`(nat)->:`[ExpType ->: AccType ->: CommType]],
             in: Phrase[ExpType],
             out: Phrase[AccType]): Phrase[CommType] =
   {

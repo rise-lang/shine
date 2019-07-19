@@ -97,10 +97,10 @@ object fromLift {
   def apply(ty: lt.Type): PhraseType = {
     ty match {
       case dt: lt.DataType      => ExpType(fromLift(dt))
-      case lt.FunType(i, o)     => fromLift(i) -> fromLift(o)
+      case lt.FunType(i, o)     => fromLift(i) ->: fromLift(o)
       case lt.DepFunType(x, t)  => x match {
-          case dt: lt.DataTypeIdentifier  => DataTypeIdentifier(dt.name) `()->` fromLift(t)
-          case n: l.NatIdentifier         => n `()->` fromLift(t)
+          case dt: lt.DataTypeIdentifier  => DataTypeIdentifier(dt.name) `()->:` fromLift(t)
+          case n: l.NatIdentifier         => n `()->:` fromLift(t)
         }
     }
   }
@@ -187,8 +187,8 @@ object fromLift {
       =>
         val a: NatToData = fromLift(la)
         val b: NatToData = fromLift(lb)
-        fun[`(nat)->`[ExpType ->: ExpType]](
-          k `()->` (ExpType(a(k)) -> ExpType(b(k)))
+        fun[`(nat)->:`[ExpType ->: ExpType]](
+          k `()->:` (ExpType(a(k)) ->: ExpType(b(k)))
           //NatDependentFunctionType(k, ExpType(a(k)) -> ExpType(b(k)))
           , f =>
           fun[ExpType](ExpType(DepArrayType(n, a)), e =>
@@ -201,7 +201,7 @@ object fromLift {
       =>
         val a = fromLift(la)
         val b = fromLift(lb)
-        fun[ExpType ->: ExpType ->: ExpType](exp"[$a]" -> (exp"[$b]" -> exp"[$b]"), f =>
+        fun[ExpType ->: ExpType ->: ExpType](exp"[$a]" ->: exp"[$b]" ->: exp"[$b]", f =>
           fun[ExpType](exp"[$b]", i =>
             fun[ExpType](exp"[$n.$a]", e =>
               ReduceSeq(n, a, b, f, i, e))))
@@ -214,7 +214,7 @@ object fromLift {
       =>
         val a = fromLift(la)
         val b = fromLift(lb)
-        fun[ExpType ->: ExpType ->: ExpType](exp"[$a]" -> (exp"[$b]" -> exp"[$b]"), f =>
+        fun[ExpType ->: ExpType ->: ExpType](exp"[$a]" ->: exp"[$b]" ->: exp"[$b]", f =>
           fun[ExpType](exp"[$b]", i =>
             fun[ExpType](exp"[$n.$a]", e =>
               OpenCLReduceSeq(n, a, b, f, i, i_space, e))))
@@ -226,7 +226,7 @@ object fromLift {
       =>
         val a = fromLift(la)
         val b = fromLift(lb)
-        fun[ExpType ->: ExpType ->: ExpType](exp"[$a]" -> (exp"[$b]" -> exp"[$b]"), f =>
+        fun[ExpType ->: ExpType ->: ExpType](exp"[$a]" ->: exp"[$b]" ->: exp"[$b]", f =>
           fun[ExpType](exp"[$b]", i =>
             fun[ExpType](exp"[$n.$a]", e =>
               ReduceSeqUnroll(n, a, b, f, i, e))))
@@ -238,7 +238,7 @@ object fromLift {
       =>
         val a = fromLift(la)
         val b = fromLift(lb)
-        fun[ExpType ->: ExpType ->: ExpType](exp"[$a]" -> (exp"[$b]" -> exp"[$b]"), f =>
+        fun[ExpType ->: ExpType ->: ExpType](exp"[$a]" ->: exp"[$b]" ->: exp"[$b]", f =>
           fun[ExpType](exp"[$b]", i =>
             fun[ExpType](exp"[$n.$a]", e =>
               ScanSeq(n, a, b, f, i, e))))
@@ -295,8 +295,8 @@ object fromLift {
       lt.FunType(lt.ArrayType(n, la), _))))
       =>
         val a = fromLift(la)
-        fun[ExpType ->: ExpType](exp"[idx($n)]" -> exp"[idx($n)]", idxF =>
-          fun[ExpType ->: ExpType](exp"[idx($n)]" -> exp"[idx($n)]", idxFinv =>
+        fun[ExpType ->: ExpType](exp"[idx($n)]" ->: exp"[idx($n)]", idxF =>
+          fun[ExpType ->: ExpType](exp"[idx($n)]" ->: exp"[idx($n)]", idxFinv =>
             fun[ExpType](exp"[$n.$a]", e =>
               Reorder(n, a, idxF, idxFinv, e))))
 
@@ -488,7 +488,7 @@ object fromLift {
       case (core.generate, lt.FunType(_, lt.ArrayType(n, la)))
       =>
         val a = fromLift(la)
-        fun[ExpType ->: ExpType](exp"[idx($n)]" -> exp"[$a]", f =>
+        fun[ExpType ->: ExpType](exp"[idx($n)]" ->: exp"[$a]", f =>
           Generate(n, a, f))
 
       case (core.iterate,
@@ -500,7 +500,7 @@ object fromLift {
         val n = ln /^ l
         val a = fromLift(la)
         DepLambda[NatKind](k)(
-          fun[`(nat)->`[ExpType ->: ExpType]](l `()->` (exp"[$ln.$a]" -> exp"[$l.$a]"), f =>
+          fun[`(nat)->:`[ExpType ->: ExpType]](l `()->:` (exp"[$ln.$a]" ->: exp"[$l.$a]"), f =>
               fun[ExpType](exp"[$insz.$a]", e =>
                 Iterate(n, m, k, a, f, e))))
 
@@ -535,7 +535,7 @@ object fromLift {
       =>
         val a = fromLift(la)
         val b = fromLift(lb)
-        fun[ExpType ->: ExpType](exp"[$a]" -> exp"[$b]", f =>
+        fun[ExpType ->: ExpType](exp"[$a]" ->: exp"[$b]", f =>
           fun[ExpType](exp"[$a]", e =>
             i_space match {
               case GlobalMemory => ToGlobal(a, b, f, e)
@@ -554,7 +554,7 @@ object fromLift {
                       lb: lt.DataType): Phrase[_ <: PhraseType] = {
     val a = fromLift(la)
     val b = fromLift(lb)
-    fun[ExpType ->: ExpType](ExpType(a) -> ExpType(b), f =>
+    fun[ExpType ->: ExpType](ExpType(a) ->: ExpType(b), f =>
       fun[ExpType](exp"[$n.$a]", e =>
         map(n, a, b, f, e)))
   }

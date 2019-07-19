@@ -16,7 +16,7 @@ final case class Cycle(n: Nat,
   extends ExpPrimitive
 {
   override val t: ExpType =
-    (n: Nat) -> (m: Nat) -> (dt: DataType) -> (input :: exp"[$m.$dt]") -> exp"[$n.$dt]"
+    (n: Nat) ->: (m: Nat) ->: (dt: DataType) ->: (input :: exp"[$m.$dt]") ->: exp"[$n.$dt]"
 
   override def eval(s: Store): Data = {
     OperationalSemantics.eval(s, input) match {
