@@ -1,6 +1,5 @@
 package idealised
 
-import idealised.C.AST.CPrinter
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types.{PhraseTypeParser, _}
 import lift.arithmetic._
@@ -25,26 +24,6 @@ package object DPIA {
     def apply(name: String): NatIdentifier = new NamedVar(name) with Kind.Identifier
     def apply(name: String, range: Range): NatIdentifier = new NamedVar(name, range) with Kind.Identifier
   }
-
-//  type NatDependentLambda[T <: PhraseType] = DepLambda[NatKind, T]
-//  object NatDependentLambda {
-//    def apply[T <: PhraseType](x: NatIdentifier, body: Phrase[T]): NatDependentLambda[T] = DepLambda[NatKind, T](x, body)
-//  }
-//
-//  type NatDependentApply[T <: PhraseType] = DepApply[NatKind, T]
-//  object NatDependentApply {
-//    def apply[T <: PhraseType](fun: Phrase[`(nat)->`[T]], arg: Nat): NatDependentApply[T] = DepApply[NatKind, T](fun, arg)
-//  }
-//
-//  type TypeDependentLambda[T <: PhraseType] = DepLambda[DataKind, T]
-//  object TypeDependentLambda {
-//    def apply[T <: PhraseType](x: DataTypeIdentifier, body: Phrase[T]): TypeDependentLambda[T] = DepLambda[DataKind, T](x, body)
-//  }
-//
-//  type TypeDependentApply[T <: PhraseType] = DepApply[DataKind, T]
-//  object TypeDependentApply {
-//    def  apply[T <: PhraseType](fun: Phrase[`(dt)->`[T]], arg: DataType): TypeDependentApply[T] = DepApply[DataKind, T](fun, arg)
-//  }
 
   implicit def surfaceToDPINatIdentifier(n: SurfaceLanguage.NatIdentifier): NatIdentifier = NatIdentifier(n.name, n.range)
   implicit def liftToDPIANatIdentifer(n: lift.core.NatIdentifier): NatIdentifier = NatIdentifier(n.name, n.range)
