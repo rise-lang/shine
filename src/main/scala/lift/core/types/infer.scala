@@ -249,28 +249,39 @@ object infer {
       }
     }
 
-    def ++(other: Solution): Solution = {
-      Solution(
-        ts.mapValues(t => other(t)) ++ other.ts,
-        ns.mapValues(n => other(n)) ++ other.ns,
-        n2ds.mapValues(n => other(n)) ++ other.n2ds
-      )
-    }
+    // concatenating two solutions into a single one
+    def ++(other: Solution)
+          (implicit
+           boundT: mutable.Set[DataTypeIdentifier],
+           boundN: mutable.Set[NamedVar]): Solution = {
+      // this function combines two solutions by applying all the solutions from s2 to the values in s1
+      // it then concatenates the resulting maps
+      val combine: (Solution, Solution) => Solution = (s1, s2) => {
+        Solution(
+          s1.ts.mapValues(t => s2(t)) ++ s2.ts,
+          s1.ns.mapValues(n => s2(n)) ++ s2.ns,
+          s1.n2ds.mapValues(n => s2(n)) ++ s2.n2ds
+        )
+      }
 
-    def combine(other: Solution)
-               (implicit
-                boundT: mutable.Set[DataTypeIdentifier],
-                boundN: mutable.Set[NamedVar]): Solution = {
-      val s = this ++ other
+      // concatenating two solutions starts by combining them ...
+      val s = combine(this, other)
+      // ... it then takes all the type values ...
       s.ts.map {
+        // ... to look for `NatToDataApply` nodes that should be replaced by `b`,
+        // but where the function to call is an identifier ...
         case (NatToDataApply(i: NatToDataIdentifier, n: NamedVar), b) =>
+          // ... to find the function, the identifier is used to look up the matching `NatToDataLambda` ...
           s.n2ds.get(i) match {
             case Some(NatToDataLambda(x, body)) =>
+              // ... and then the `NatToDataApply` is replaced
+              // with the body of the `NatToDataLambda` appropriately substituted ...
               solve( Set( TypeConstraint( substitute(n, `for`=x, in=body), b ) ) )
             case _ => Solution()
           }
         case _ => Solution()
-      }.foldLeft(s)(_ ++ _)
+      // ... finally, all resulting solutions are combined into a single one by folding over them
+      }.foldLeft(s)(combine)
     }
 
     def apply(constraints: Set[Constraint]): Set[Constraint] = {
@@ -296,7 +307,7 @@ object infer {
         if(pos >= cs.size) error(s"cannot solve constraints")
         val element = cs.toSeq(pos)
         solveOne(element) match {
-          case Some(s) => s combine solve(s.apply(cs - element))
+          case Some(s) => s ++ solve(s.apply(cs - element))
           case None => solveAt(pos + 1)
         }
       }
@@ -386,62 +397,39 @@ object infer {
   private object nat {
     import lift.arithmetic._
 
-    // collect free variables with only 1 occurence
+    // collect free variables with only 1 occurrence
     def potentialPivots(n: Nat)
                        (implicit bound: mutable.Set[NamedVar]): Set[NamedVar] = {
-      var free_occurences = mutable.Map[NamedVar, Integer]()
+      val free_occurrences = mutable.Map[NamedVar, Integer]()
         .withDefault(_ => 0)
       ArithExpr.visit(n, {
-        case v: NamedVar if !bound(v) => free_occurences(v) += 1
+        case v: NamedVar if !bound(v) => free_occurrences(v) += 1
         case _ =>
       })
 
-      free_occurences.foldLeft(Set[NamedVar]())({ case (potential, (v, c)) =>
+      free_occurrences.foldLeft(Set[NamedVar]())({ case (potential, (v, c)) =>
         if (c == 1) { potential + v }
         else { potential }
       })
     }
-
-    def unwrapFreeTerm(term: ArithExpr)
-                      (implicit bound: mutable.Set[NamedVar]): Option[NamedVar] = term match {
-      case i: NamedVar if !bound(i) => Some(i)
-      case Prod(Cst(_) :: t :: Nil) => unwrapFreeTerm(t)
-      case Sum(Cst(_) :: t :: Nil) => unwrapFreeTerm(t)
-      case Pow(b, Cst(_)) => unwrapFreeTerm(b)
-      case _ => None
-    }
-//
-//      free_occurences.foldLeft(Set[NamedVar]())({ case (potential, (v, c)) =>
-//          if (c == 1) { potential + v }
-//          else { potential }
-//      })
-//    }
-
-//    def pivotSolution(term: Nat, value: Nat): Solution = term match {
-//      case i: NamedVar => Solution.subs(i, value)
-//      case Prod((c: Cst) :: t :: Nil) => pivotSolution(t, value /^ c)
-//      case Sum((c: Cst) :: t :: Nil) => pivotSolution(t, value - c)
-//      case Pow(b, Cst(-1)) => pivotSolution(b, Cst(1) /^ value)
-//      case _ => ???
-//    }
 
     def pivotSolution(pivot: NamedVar, n: Nat, value: Nat)
                      (implicit bound: mutable.Set[NamedVar]): Option[Solution] = {
       n match {
         case i: NamedVar if i == pivot => Some(Solution.subs(pivot, value))
         case Prod(terms) =>
-          val (p, r) = terms.partition(t => ArithExpr.contains(t, pivot))
+          val (p, rest) = terms.partition(t => ArithExpr.contains(t, pivot))
           if (p.size != 1) {
             None
           } else {
-            pivotSolution(pivot, p.head, r.foldLeft(value)({ case (v, r) => v /^ r }))
+            pivotSolution(pivot, p.head, rest.foldLeft(value)({ case (v, r) => v /^ r }))
           }
         case Sum(terms) =>
-          val (p, r) = terms.partition(t => ArithExpr.contains(t, pivot))
+          val (p, rest) = terms.partition(t => ArithExpr.contains(t, pivot))
           if (p.size != 1) {
             None
           } else {
-            pivotSolution(pivot, p.head, r.foldLeft(value)({ case (v, r) => v - r }))
+            pivotSolution(pivot, p.head, rest.foldLeft(value)({ case (v, r) => v - r }))
           }
         case Pow(b, Cst(-1)) => pivotSolution(pivot, b, Cst(1) /^ value)
         case _ => ???
@@ -452,9 +440,10 @@ object infer {
                  (implicit bound: mutable.Set[NamedVar]): Option[Solution] = {
       val pivots = potentialPivots(n)
       pivots.foreach(pivotSolution(_, n, value) match {
-        case Some(s) =>
-          return Some(s)
+        case Some(s) => return Some(s)
+        case _ =>
       })
+      //noinspection RemoveRedundantReturn
       return None
     }
 
@@ -488,8 +477,6 @@ object infer {
     def unifyIdent(i: NatToDataIdentifier, n: NatToData): Solution = n match {
       case j: NatToDataIdentifier =>
         if (i == j) { Solution() }
-//        else if (!bound(i)) { Solution.subs(i, j) }
-//        else if (!bound(j)) { Solution.subs(j, i) }
         else { error(s"cannot unify $i and $j, they are both bound") }
       case _ => Solution.subs(i, n)
     }
