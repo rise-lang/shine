@@ -4,18 +4,7 @@ import lift.arithmetic.{BigSum, InclusiveIndexVar}
 import lift.core.types._
 import lift.core.DSL._
 
-/** IMPORTANT NOTE! **/
-/**
-  * Scala's arrow operator is left-associative! But usually people mean in in a right-associative way!
-  * example
-  * a -> b -> c means (a -> b) -> c, not the usually implied a -> (b -> c)
-  *
-  * PLEASE BE EXPLICIT WITH PARENTHESISATION
-  */
-
-
 object primitives {
-
   case object asIndex extends Primitive {
     override def t: Type = nFunT(n => NatType ->: IndexType(n))
   }
@@ -170,7 +159,7 @@ object primitives {
     case object Indices extends Rotate {}
   }
 
-  case class slideSeq(rot: slideSeq.Rotate) extends Primitive {
+  case class slideSeq(roprimT: slideSeq.Rotate) extends Primitive {
     override def t: Type = slide.t
   }
 
@@ -245,12 +234,6 @@ object primitives {
   }
   case object equal extends Primitive {
     override def t: Type = gt.t
-  }
-
-  case class ForeignFunDecl(name: String, args: Seq[String], body: String)
-
-  case class ForeignFun(decl: ForeignFunDecl, override val t: Type) extends Primitive {
-    override def toString: String = decl.name
   }
 
   // TODO: should vectorisation be in the core or not?
