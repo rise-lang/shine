@@ -45,11 +45,11 @@ final case class Fst(dt1: DataType,
     con(record)(λ(exp"[$dt1 x $dt2]")(x => A :=|dt1| Fst(dt1, dt2, x) ))
   }
 
-  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
+  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
                                      (implicit context: TranslationContext): Phrase[CommType] =
     ???
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommType])
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
     con(record)(λ(exp"[$dt1 x $dt2]")(x => C(Fst(dt1, dt2, x)) ))

@@ -12,7 +12,7 @@ import scala.xml.Elem
 
 final case class Generate(n: Nat,
                           dt: DataType,
-                          f : Phrase[ExpType -> ExpType])
+                          f : Phrase[ExpType ->: ExpType])
   extends ExpPrimitive {
 
   override val t: ExpType =
@@ -38,10 +38,10 @@ final case class Generate(n: Nat,
   def acceptorTranslation(A: Phrase[AccType])
                          (implicit context: TranslationContext): Phrase[CommType] = ???
 
-  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
+  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
                                      (implicit context: TranslationContext): Phrase[CommType] = ???
 
-  def continuationTranslation(C: Phrase[ExpType -> CommType])
+  def continuationTranslation(C: Phrase[ExpType ->: CommType])
                              (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 

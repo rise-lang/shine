@@ -52,11 +52,11 @@ final case class Record(dt1: DataType,
       acc(snd)(recordAcc2(dt1, dt2, A))
   }
 
-  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
+  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
                                      (implicit context: TranslationContext): Phrase[CommType] =
     ???
 
-  override def continuationTranslation(C: Phrase[->[ExpType, CommType]])
+  override def continuationTranslation(C: Phrase[->:[ExpType, CommType]])
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 

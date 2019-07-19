@@ -14,7 +14,7 @@ import scala.xml.Elem
 abstract class AbstractParFor[T <: DataType](val n: Nat,
                                              val dt: T,
                                              val out: Phrase[AccType],
-                                             val body: Phrase[ExpType -> (AccType -> CommType)])
+                                             val body: Phrase[ExpType ->: AccType ->: CommType])
   extends CommandPrimitive {
 
   override val t: CommType =
@@ -54,6 +54,6 @@ abstract class AbstractParFor[T <: DataType](val n: Nat,
       Character.toLowerCase(name.charAt(0)) + name.substring(1)
     })
 
-  def makeParFor: (Nat, T, Phrase[AccType], Phrase[ExpType -> (AccType -> CommType)]) => AbstractParFor[T]
+  def makeParFor: (Nat, T, Phrase[AccType], Phrase[ExpType ->: AccType ->: CommType]) => AbstractParFor[T]
 
 }

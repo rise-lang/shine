@@ -10,7 +10,7 @@ import idealised.DPIA._
 import scala.xml.Elem
 
 final case class New(dt: DataType,
-                     f: Phrase[VarType -> CommType])
+                     f: Phrase[VarType ->: CommType])
   extends CommandPrimitive {
 
   override val t: CommType =

@@ -34,7 +34,7 @@ class dot extends idealised.util.Tests {
     import idealised.DPIA._
     val phrase = idealised.DPIA.fromLift(infer(simpleDotProduct))
 
-    val N = phrase.t.asInstanceOf[`(nat)->`[ExpType -> ExpType]].x
+    val N = phrase.t.asInstanceOf[`(nat)->`[ExpType ->: ExpType]].x
     val dt = float
     assertResult(N `()->` (exp"[$N.$dt]" -> (exp"[$N.$dt]" -> exp"[$dt]"))) {
       phrase.t

@@ -8,7 +8,7 @@ import idealised.DPIA._
 
 object `new` {
   def apply(dt: DataType,
-            f: Phrase[VarType -> CommType]): New =
+            f: Phrase[VarType ->: CommType]): New =
     New(dt, f)
 
   def apply(dt: DataType,
@@ -22,7 +22,7 @@ object newDoubleBuffer {
             dt3: ArrayType,
             in: Phrase[ExpType],
             out: Phrase[AccType],
-            f: Phrase[VarType x CommType x CommType -> CommType]): NewDoubleBuffer =
+            f: Phrase[(VarType x CommType x CommType) ->: CommType]): NewDoubleBuffer =
     NewDoubleBuffer(dt1, dt2, dt3.elemType, dt3.size, in, out, f)
 
   def apply(dt1: DataType,

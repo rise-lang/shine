@@ -10,7 +10,7 @@ import scala.language.reflectiveCalls
 
 object ScanSeqI {
   def apply(n: Nat, dt1: DataType, dt2: DataType,
-            f: Phrase[ExpType -> (ExpType -> (AccType -> CommType))],
+            f: Phrase[ExpType ->: ExpType ->: AccType ->: CommType],
             init: Phrase[ExpType],
             in: Phrase[ExpType],
             out: Phrase[AccType])

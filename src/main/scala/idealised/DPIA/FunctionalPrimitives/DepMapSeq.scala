@@ -10,7 +10,7 @@ import idealised.DPIA._
 final case class DepMapSeq(n: Nat,
                            ft1:NatToData,
                            ft2: NatToData,
-                           f: Phrase[`(nat)->`[ExpType -> ExpType]],
+                           f: Phrase[`(nat)->`[ExpType ->: ExpType]],
                            array: Phrase[ExpType])
   extends AbstractDepMap(n, ft1, ft2, f, array)
 {
@@ -19,7 +19,7 @@ final case class DepMapSeq(n: Nat,
   override def makeMapI(n: Nat,
                         ft1:NatToData,
                         ft2: NatToData,
-                        f: Phrase[`(nat)->`[->[ExpType, ->[AccType, CommType]]]],
+                        f: Phrase[`(nat)->`[ExpType ->: AccType ->: CommType]],
                         array: Phrase[ExpType],
                         out: Phrase[AccType])
                        (implicit context: TranslationContext) =
@@ -30,7 +30,7 @@ final case class DepMapSeq(n: Nat,
 final case class DepMapSeqUnroll(n: Nat,
                                  ft1:NatToData,
                                  ft2: NatToData,
-                                 f: Phrase[`(nat)->`[ExpType -> ExpType]],
+                                 f: Phrase[`(nat)->`[ExpType ->: ExpType]],
                                  array: Phrase[ExpType])
   extends AbstractDepMap(n, ft1, ft2, f, array)
 {
@@ -39,7 +39,7 @@ final case class DepMapSeqUnroll(n: Nat,
   override def makeMapI(n: Nat,
                         ft1:NatToData,
                         ft2: NatToData,
-                        f: Phrase[`(nat)->`[->[ExpType, ->[AccType, CommType]]]],
+                        f: Phrase[`(nat)->`[ExpType ->: AccType ->: CommType]],
                         array: Phrase[ExpType],
                         out: Phrase[AccType])
                        (implicit context: TranslationContext) =

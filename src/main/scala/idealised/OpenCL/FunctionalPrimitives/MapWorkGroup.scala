@@ -10,14 +10,14 @@ import idealised.OpenCL.IntermediatePrimitives.MapWorkGroupI
 final case class MapWorkGroup(dim: Int)(n: Nat,
                                         dt1: DataType,
                                         dt2: DataType,
-                                        f: Phrase[ExpType -> ExpType],
+                                        f: Phrase[ExpType ->: ExpType],
                                         array: Phrase[ExpType])
   extends AbstractMapLoop(n, dt1, dt2, f, array)
 {
   override def makeMap = MapWorkGroup(dim)
 
   override def makeMapI(n: Nat, dt1: DataType, dt2: DataType,
-                        f: Phrase[->[ExpType, ->[AccType, CommType]]],
+                        f: Phrase[->:[ExpType, ->:[AccType, CommType]]],
                         array: Phrase[ExpType],
                         out: Phrase[AccType])
                        (implicit context: TranslationContext): Phrase[CommType] =

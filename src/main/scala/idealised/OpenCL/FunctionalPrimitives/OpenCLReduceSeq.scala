@@ -12,12 +12,12 @@ import idealised.DPIA.Semantics.OperationalSemantics._
 import scala.xml.Elem
 
 final case class OpenCLReduceSeq(n: Nat,
-                           dt1: DataType,
-                           dt2: DataType,
-                           f: Phrase[ExpType -> (ExpType -> ExpType)],
-                           init: Phrase[ExpType],
-                           initAddrSpace: AddressSpace,
-                           array: Phrase[ExpType])
+                                 dt1: DataType,
+                                 dt2: DataType,
+                                 f: Phrase[ExpType ->: ExpType ->: ExpType],
+                                 init: Phrase[ExpType],
+                                 initAddrSpace: AddressSpace,
+                                 array: Phrase[ExpType])
   extends ExpPrimitive
 {
   override val t: ExpType =
@@ -44,11 +44,11 @@ final case class OpenCLReduceSeq(n: Nat,
     con(this)(λ(exp"[$dt2]")(r => acc(r)(A)))
   }
 
-  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
+  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
                                      (implicit context: TranslationContext): Phrase[CommType] =
     ???
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommType])
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 

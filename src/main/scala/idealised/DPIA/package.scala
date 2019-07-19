@@ -194,7 +194,7 @@ package object DPIA {
   val freshName: core.freshName.type = lift.core.freshName
 
   type x[T1 <: PhraseType, T2 <: PhraseType] = PairType[T1, T2]
-  type ->[T1 <: PhraseType, T2 <: PhraseType] = FunType[T1, T2]
+  type ->:[T1 <: PhraseType, T2 <: PhraseType] = FunType[T1, T2]
   type `->p`[T1 <: PhraseType, T2 <: PhraseType] = PassiveFunType[T1, T2]
   type `()->`[K <: Kind, T <: PhraseType] = DepFunType[K, T]
   type `(nat)->`[T <: PhraseType] = DepFunType[NatKind, T]

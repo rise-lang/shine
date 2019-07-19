@@ -14,7 +14,7 @@ final case class Iterate(n: Nat,
                          m: Nat,
                          k: Nat,
                          dt: DataType,
-                         f: Phrase[`(nat)->`[ExpType -> ExpType]],
+                         f: Phrase[`(nat)->`[ExpType ->: ExpType]],
                          array: Phrase[ExpType])
   extends ExpPrimitive {
 
@@ -69,11 +69,11 @@ final case class Iterate(n: Nat,
   }
 
   // TODO
-  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
+  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
                                      (implicit context: TranslationContext): Phrase[CommType] =
     ???
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommType])
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import idealised.DPIA.Compilation.TranslationToImperative._
 

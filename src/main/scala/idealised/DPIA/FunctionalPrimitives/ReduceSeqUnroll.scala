@@ -9,7 +9,7 @@ import idealised.DPIA._
 final case class ReduceSeqUnroll(n: Nat,
                                  dt1: DataType,
                                  dt2: DataType,
-                                 f: Phrase[ExpType -> (ExpType -> ExpType)],
+                                 f: Phrase[ExpType ->: ExpType ->: ExpType],
                                  init: Phrase[ExpType],
                                  array: Phrase[ExpType])
   extends AbstractReduce(n, dt1, dt2, f, init, array)
@@ -19,10 +19,10 @@ final case class ReduceSeqUnroll(n: Nat,
   override def makeReduceI(n: Nat,
                            dt1: DataType,
                            dt2: DataType,
-                           f: Phrase[->[ExpType, ->[ExpType, ->[AccType, CommType]]]],
+                           f: Phrase[->:[ExpType, ->:[ExpType, ->:[AccType, CommType]]]],
                            init: Phrase[ExpType],
                            array: Phrase[ExpType],
-                           out: Phrase[->[ExpType, CommType]])
+                           out: Phrase[->:[ExpType, CommType]])
                           (implicit context: TranslationContext): Phrase[CommType] =
     ReduceSeqI(n, dt1, dt2, f, init, array, out, unroll = true)
 }

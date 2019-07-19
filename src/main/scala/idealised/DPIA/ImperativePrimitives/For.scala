@@ -10,7 +10,7 @@ import idealised.DPIA._
 import scala.xml.Elem
 
 final case class For(n: Nat,
-                     body: Phrase[ExpType -> CommType],
+                     body: Phrase[ExpType ->: CommType],
                      unroll:Boolean)
   extends CommandPrimitive {
 

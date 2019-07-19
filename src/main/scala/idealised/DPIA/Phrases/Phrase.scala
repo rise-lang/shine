@@ -25,13 +25,13 @@ final case class Identifier[T <: PhraseType](name: String, `type`: T)
 }
 
 final case class Lambda[T1 <: PhraseType, T2 <: PhraseType](param: Identifier[T1], body: Phrase[T2])
-  extends Phrase[T1 -> T2] {
+  extends Phrase[T1 ->: T2] {
 
-  override val t: T1 -> T2 = param.t -> body.t
+  override val t: T1 ->: T2 = param.t -> body.t
   override def toString: String = s"λ$param. $body"
 }
 
-final case class Apply[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 -> T2], arg: Phrase[T1])
+final case class Apply[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 ->: T2], arg: Phrase[T1])
   extends Phrase[T2] {
 
   TypeCheck.check(fun.t.inT, arg.t) // FIXME: redundant with type checking
@@ -279,11 +279,11 @@ trait ExpPrimitive extends Primitive[ExpType] {
   def acceptorTranslation(A: Phrase[AccType])
                          (implicit context: TranslationContext): Phrase[CommType]
 
-  def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType],
+  def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType],
                              A: Phrase[AccType])
                             (implicit context: TranslationContext): Phrase[CommType]
 
-  def continuationTranslation(C: Phrase[ExpType -> CommType])
+  def continuationTranslation(C: Phrase[ExpType ->: CommType])
                              (implicit context: TranslationContext): Phrase[CommType]
 }
 

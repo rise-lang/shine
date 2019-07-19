@@ -13,11 +13,11 @@ import scala.xml.Elem
 abstract class AbstractMap(n: Nat,
                            dt1: DataType,
                            dt2: DataType,
-                           f: Phrase[ExpType -> ExpType],
+                           f: Phrase[ExpType ->: ExpType],
                            array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  def makeMap: (Nat, DataType, DataType, Phrase[ExpType -> ExpType], Phrase[ExpType]) => AbstractMap
+  def makeMap: (Nat, DataType, DataType, Phrase[ExpType ->: ExpType], Phrase[ExpType]) => AbstractMap
 
   override val t: ExpType =
     (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->

@@ -12,7 +12,7 @@ import scala.xml.Elem
 
 final case class OpenCLNew(dt: DataType,
                            addressSpace: AddressSpace,
-                           f: Phrase[VarType -> CommType]) extends CommandPrimitive {
+                           f: Phrase[VarType ->: CommType]) extends CommandPrimitive {
 
   override val t: CommType =
     (dt: DataType) -> (addressSpace: AddressSpace) ->

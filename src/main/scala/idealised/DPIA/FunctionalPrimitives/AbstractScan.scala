@@ -16,17 +16,17 @@ import scala.xml.Elem
 abstract  class AbstractScan(n: Nat,
                              dt1: DataType,
                              dt2: DataType,
-                             f: Phrase[ExpType -> (ExpType -> ExpType)],
+                             f: Phrase[ExpType ->: ExpType ->: ExpType],
                              init:Phrase[ExpType],
                              array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  def makeScan: (Nat, DataType, DataType, Phrase[ExpType -> (ExpType -> ExpType)], Phrase[ExpType], Phrase[ExpType]) => AbstractScan
+  def makeScan: (Nat, DataType, DataType, Phrase[ExpType ->: ExpType ->: ExpType], Phrase[ExpType], Phrase[ExpType]) => AbstractScan
 
   def makeScanI(n: Nat,
                 dt1: DataType,
                 dt2: DataType,
-                f: Phrase[ExpType -> (ExpType -> (AccType -> CommType))],
+                f: Phrase[ExpType ->: ExpType ->: AccType ->: CommType],
                 init: Phrase[ExpType],
                 array: Phrase[ExpType],
                 out: Phrase[AccType])
@@ -54,7 +54,7 @@ abstract  class AbstractScan(n: Nat,
     mapAcceptorTranslation(fun(exp"[$dt1]")(x => x), A)
   }
 
-  override def mapAcceptorTranslation(g: Phrase[ExpType -> ExpType], A: Phrase[AccType])
+  override def mapAcceptorTranslation(g: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
                                      (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
@@ -69,7 +69,7 @@ abstract  class AbstractScan(n: Nat,
     )
   }
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommType])
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 

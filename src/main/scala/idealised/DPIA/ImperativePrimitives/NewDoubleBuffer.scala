@@ -13,7 +13,7 @@ final case class NewDoubleBuffer(dt1: DataType,
                                  n: Nat,
                                  in: Phrase[ExpType],
                                  out: Phrase[AccType],
-                                 f: Phrase[ExpType x AccType x CommType x CommType -> CommType])
+                                 f: Phrase[(ExpType x AccType x CommType x CommType) ->: CommType])
   extends CommandPrimitive {
 
   override val t: CommType =

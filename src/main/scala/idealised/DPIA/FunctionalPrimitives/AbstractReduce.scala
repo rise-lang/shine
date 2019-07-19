@@ -14,21 +14,21 @@ import scala.xml.Elem
 abstract class AbstractReduce(n: Nat,
                               dt1: DataType,
                               dt2: DataType,
-                              f: Phrase[ExpType -> (ExpType -> ExpType)],
+                              f: Phrase[ExpType ->: ExpType ->: ExpType],
                               init: Phrase[ExpType],
                               array: Phrase[ExpType])
   extends ExpPrimitive {
 
   def makeReduce: (Nat, DataType, DataType,
-    Phrase[ExpType -> (ExpType -> ExpType)], Phrase[ExpType], Phrase[ExpType]) => AbstractReduce
+    Phrase[ExpType ->: ExpType ->: ExpType], Phrase[ExpType], Phrase[ExpType]) => AbstractReduce
 
   def makeReduceI(n: Nat,
                   dt1: DataType,
                   dt2: DataType,
-                  f: Phrase[ExpType -> (ExpType -> (AccType -> CommType))],
+                  f: Phrase[ExpType ->: ExpType ->: AccType ->: CommType],
                   init: Phrase[ExpType],
                   array: Phrase[ExpType],
-                  out: Phrase[ExpType -> CommType])
+                  out: Phrase[ExpType ->: CommType])
                  (implicit context: TranslationContext): Phrase[CommType]
 
   override val t: ExpType =
@@ -67,11 +67,11 @@ abstract class AbstractReduce(n: Nat,
     con(this)(λ(exp"[$dt2]")(r => acc(r)(A)))
   }
 
-  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
+  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
                                      (implicit context: TranslationContext): Phrase[CommType] =
     ???
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommType])
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 

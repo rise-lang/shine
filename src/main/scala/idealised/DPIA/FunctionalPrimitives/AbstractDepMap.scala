@@ -14,7 +14,7 @@ import scala.xml.Elem
 abstract class AbstractDepMap(n: Nat,
                               ft1: NatToData,
                               ft2: NatToData,
-                              f: Phrase[`(nat)->`[ExpType -> ExpType]],
+                              f: Phrase[`(nat)->`[ExpType ->: ExpType]],
                               array: Phrase[ExpType])
   extends ExpPrimitive {
 
@@ -37,7 +37,7 @@ abstract class AbstractDepMap(n: Nat,
       }))), x, A)))
   }
 
-  override def mapAcceptorTranslation(g: Phrase[ExpType -> ExpType], A: Phrase[AccType])
+  override def mapAcceptorTranslation(g: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
                                      (implicit context: TranslationContext): Phrase[CommType] = {
     import idealised.DPIA.Compilation.TranslationToImperative._
     import idealised.DPIA._
@@ -48,7 +48,7 @@ abstract class AbstractDepMap(n: Nat,
       }))), x, A)))
   }
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommType])
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
@@ -57,12 +57,12 @@ abstract class AbstractDepMap(n: Nat,
   }
 
 
-  def makeMap: (Nat, NatToData, NatToData, Phrase[`(nat)->`[ExpType -> ExpType]], Phrase[ExpType]) => AbstractDepMap
+  def makeMap: (Nat, NatToData, NatToData, Phrase[`(nat)->`[ExpType ->: ExpType]], Phrase[ExpType]) => AbstractDepMap
 
   def makeMapI(n: Nat,
                ft1:NatToData,
                ft2:NatToData,
-               f: Phrase[`(nat)->`[ExpType -> (AccType -> CommType)]],
+               f: Phrase[`(nat)->`[ExpType ->: AccType ->: CommType]],
                array: Phrase[ExpType],
                out: Phrase[AccType])
               (implicit context: TranslationContext): Phrase[CommType]

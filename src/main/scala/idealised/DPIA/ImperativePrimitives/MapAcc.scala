@@ -10,7 +10,7 @@ import scala.xml.Elem
 final case class MapAcc(n: Nat,
                         dt1: DataType,
                         dt2: DataType,
-                        f: Phrase[AccType -> AccType],
+                        f: Phrase[AccType ->: AccType],
                         array: Phrase[AccType])
   extends AccPrimitive {
 

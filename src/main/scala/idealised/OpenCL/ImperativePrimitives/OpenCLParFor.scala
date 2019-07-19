@@ -9,7 +9,7 @@ import idealised.DPIA._
 abstract class OpenCLParFor(n: Nat,
                             dt: DataType,
                             out: Phrase[AccType],
-                            body: Phrase[ExpType -> (AccType -> CommType)])
+                            body: Phrase[ExpType ->: AccType ->: CommType])
   extends AbstractParFor(n, dt, out, body) {
 
   def parallelismLevel: idealised.OpenCL.ParallelismLevel
@@ -24,6 +24,6 @@ abstract class OpenCLParFor(n: Nat,
 }
 
 object OpenCLParFor {
-  def unapply(arg: OpenCLParFor): Option[(Nat, DataType, Phrase[AccType], Phrase[ExpType -> (AccType -> CommType)])] =
+  def unapply(arg: OpenCLParFor): Option[(Nat, DataType, Phrase[AccType], Phrase[ExpType ->: AccType ->: CommType])] =
     Some(arg.n, arg.dt, arg.out, arg.body)
 }

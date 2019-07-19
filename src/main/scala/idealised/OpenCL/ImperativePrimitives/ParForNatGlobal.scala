@@ -3,7 +3,7 @@ package idealised.OpenCL.ImperativePrimitives
 import idealised.C.AST.{Comment, Stmt}
 import idealised.DPIA.Phrases.Phrase
 import idealised.DPIA.Types.{AccType, CommType, NatToData}
-import idealised.DPIA.{->, Nat, `(nat)->`, freshName}
+import idealised.DPIA.{->:, Nat, `(nat)->`, freshName}
 import idealised.OpenCL
 import idealised.OpenCL._
 import lift.arithmetic.{?, RangeAdd}
@@ -12,7 +12,7 @@ import lift.arithmetic.{?, RangeAdd}
 final case class ParForNatGlobal(dim:Int)(override val n:Nat,
                                           override val ft:NatToData,
                                           override val out:Phrase[AccType],
-                                          override val body: Phrase[`(nat)->`[AccType -> CommType]])
+                                          override val body: Phrase[`(nat)->`[AccType ->: CommType]])
   extends OpenCLParForNat(n, ft, out, body) {
   override val makeParForNat = ParForNatGlobal(dim) _
 

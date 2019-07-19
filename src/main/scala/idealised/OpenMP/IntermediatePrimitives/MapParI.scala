@@ -9,7 +9,7 @@ import idealised.OpenMP.DSL._
 
 object MapParI {
   def apply(n: Nat, dt1: DataType, dt2: DataType,
-            f: Phrase[ExpType -> (AccType -> CommType)],
+            f: Phrase[ExpType ->: AccType ->: CommType],
             in: Phrase[ExpType],
             out: Phrase[AccType])
            (implicit context: TranslationContext): Phrase[CommType] =

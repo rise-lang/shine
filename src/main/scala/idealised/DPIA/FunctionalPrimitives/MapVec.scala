@@ -14,7 +14,7 @@ import scala.xml.Elem
 final case class MapVec(n: Nat,
                         dt1: ScalarType,
                         dt2: ScalarType,
-                        f: Phrase[ExpType -> ExpType],
+                        f: Phrase[ExpType ->: ExpType],
                         array: Phrase[ExpType])
   extends ExpPrimitive
 {
@@ -45,7 +45,7 @@ final case class MapVec(n: Nat,
     mapAcceptorTranslation(fun(exp"[$dt1]")(x => x), A)
   }
 
-  override def mapAcceptorTranslation(g: Phrase[ExpType -> ExpType], A: Phrase[AccType])
+  override def mapAcceptorTranslation(g: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
                                      (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
@@ -53,7 +53,7 @@ final case class MapVec(n: Nat,
       MapVecI(n, dt1, dt2, λ(exp"[$dt1]")(x => λ(acc"[$dt2]")(o => acc(g(f(x)))(o))), x, A)))
   }
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommType])
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 

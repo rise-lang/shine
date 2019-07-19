@@ -11,7 +11,7 @@ import scala.language.reflectiveCalls
 final case class MapRead(n: Nat,
                          dt1: DataType,
                          dt2: DataType,
-                         f: Phrase[ExpType -> ((ExpType -> CommType) -> CommType)],
+                         f: Phrase[ExpType ->: (ExpType ->: CommType) ->: CommType],
                          input: Phrase[ExpType])
   extends ExpPrimitive
 {
@@ -31,11 +31,11 @@ final case class MapRead(n: Nat,
     throw new Exception("This should not happen")
 
 
-  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
+  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
                                      (implicit context: TranslationContext): Phrase[CommType] =
     throw new Exception("This should not happen")
 
-  override def continuationTranslation(C: Phrase[->[ExpType, CommType]])
+  override def continuationTranslation(C: Phrase[->:[ExpType, CommType]])
                                       (implicit context: TranslationContext): Phrase[CommType] =
     throw new Exception("This should not happen")
 

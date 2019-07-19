@@ -12,7 +12,7 @@ import idealised.OpenCL._
 final case class ParForGlobal(dim: Int)(override val n: Nat,
                                         override val dt: DataType,
                                         override val out: Phrase[AccType],
-                                        override val body: Phrase[ExpType -> (AccType -> CommType)])
+                                        override val body: Phrase[ExpType ->: AccType ->: CommType])
   extends OpenCLParFor(n, dt, out, body) {
 
   override val makeParFor = ParForGlobal(dim) _

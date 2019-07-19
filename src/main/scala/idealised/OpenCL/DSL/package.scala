@@ -33,7 +33,7 @@ package object DSL {
   object newWithAddrSpace {
     def apply(dt: DataType,
               addressSpace: AddressSpace,
-              f: Phrase[VarType -> CommType]): OpenCLNew =
+              f: Phrase[VarType ->: CommType]): OpenCLNew =
       OpenCLNew(dt, addressSpace, f)
 
     def apply(dt: DataType,

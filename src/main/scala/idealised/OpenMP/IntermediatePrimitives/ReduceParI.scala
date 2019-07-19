@@ -9,10 +9,10 @@ import scala.language.reflectiveCalls
 
 object ReduceParI {
   def apply(n: Nat, dt1: DataType, dt2: DataType,
-            f: Phrase[ExpType -> (ExpType -> (AccType -> CommType))],
+            f: Phrase[ExpType ->: ExpType ->: AccType ->: CommType],
             init: Phrase[ExpType],
             in: Phrase[ExpType],
-            out: Phrase[ExpType -> CommType])
+            out: Phrase[ExpType ->: CommType])
            (implicit context: TranslationContext): Phrase[CommType] =
   {
 //    `new`(dt2, OpenCL.PrivateMemory, acc =>

@@ -16,7 +16,7 @@ object SlideSeqIValues {
             step: Nat,
             dt1: DataType,
             dt2: DataType,
-            f: Phrase[ExpType -> (AccType -> CommType)],
+            f: Phrase[ExpType ->: AccType ->: CommType],
             input: Phrase[ExpType],
             output: Phrase[AccType])
            (implicit context: TranslationContext): Phrase[CommType] =

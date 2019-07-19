@@ -22,7 +22,7 @@ object CodeGenerator {
 
   final case class Environment(identEnv: immutable.Map[Identifier[_ <: BasePhraseTypes], C.AST.DeclRef],
                                commEnv: immutable.Map[Identifier[CommType], C.AST.Stmt],
-                               contEnv: immutable.Map[Identifier[ExpType -> CommType], Phrase[ExpType] => Environment => C.AST.Stmt],
+                               contEnv: immutable.Map[Identifier[ExpType ->: CommType], Phrase[ExpType] => Environment => C.AST.Stmt],
                                inlLetNatEnv: immutable.Map[LetNatIdentifier, C.AST.Expr]
                               ) {
     def updatedIdentEnv(kv: (Identifier[_ <: BasePhraseTypes], C.AST.DeclRef)): Environment = {
@@ -33,7 +33,7 @@ object CodeGenerator {
       this.copy(commEnv = commEnv + kv)
     }
 
-    def updatedContEnv(kv: (Identifier[ExpType -> CommType], Phrase[ExpType] => Environment => C.AST.Stmt)): Environment = {
+    def updatedContEnv(kv: (Identifier[ExpType ->: CommType], Phrase[ExpType] => Environment => C.AST.Stmt)): Environment = {
       this.copy(contEnv = contEnv + kv)
     }
 
@@ -123,7 +123,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case Apply(i: Identifier[_], e) => // TODO: think about this
         env.contEnv(
-          i.asInstanceOf[Identifier[ExpType -> CommType]]
+          i.asInstanceOf[Identifier[ExpType ->: CommType]]
         )(
           e.asInstanceOf[Phrase[ExpType]]
         )(env)
@@ -380,7 +380,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case MapRead(n, dt1, dt2, f, e) => path match {
         case (i : CIntExpr) :: ps =>
           val continue_cmd =
-            Identifier[ExpType -> CommType](s"continue_$freshName", ExpType(dt2) -> comm)
+            Identifier[ExpType ->: CommType](s"continue_$freshName", ExpType(dt2) -> comm)
 
           cmd(f(
             Idx(n, dt1, AsIndex(n, Natural(i)), e)
@@ -393,7 +393,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case GenerateCont(n, dt, f) => path match {
         case (i : CIntExpr) :: ps =>
           val continue_cmd =
-            Identifier[ExpType -> CommType](s"continue_$freshName", ExpType(dt) -> comm)
+            Identifier[ExpType ->: CommType](s"continue_$freshName", ExpType(dt) -> comm)
 
           cmd(f(AsIndex(n, Natural(i)))(continue_cmd),
             env updatedContEnv (continue_cmd -> (e => env => exp(e, env, ps, cont))))

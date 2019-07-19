@@ -7,7 +7,7 @@ import idealised.DPIA.Semantics.OperationalSemantics.Store
 
 final case class NewRegRot(n: Nat,
                            dt: DataType,
-                           f: Phrase[VarType -> (CommType -> CommType)])
+                           f: Phrase[VarType ->: CommType ->: CommType])
   extends CommandPrimitive
 {
   override val t: CommType =

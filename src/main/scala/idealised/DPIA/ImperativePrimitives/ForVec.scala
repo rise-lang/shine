@@ -13,7 +13,7 @@ import scala.xml.Elem
 final case class ForVec(n: Nat,
                         dt: ScalarType,
                         out: Phrase[AccType],
-                        body: Phrase[ExpType -> (AccType -> CommType)])
+                        body: Phrase[ExpType ->: AccType ->: CommType])
   extends CommandPrimitive
 {
   override val t: CommType =

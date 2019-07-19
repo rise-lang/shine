@@ -9,7 +9,7 @@ import scala.xml.Elem
 
 final case class ReorderAcc(n: Nat,
                             dt: DataType,
-                            idxF: Phrase[ExpType -> ExpType],
+                            idxF: Phrase[ExpType ->: ExpType],
                             array: Phrase[AccType])
   extends AccPrimitive
 {

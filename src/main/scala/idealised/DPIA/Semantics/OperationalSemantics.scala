@@ -97,10 +97,10 @@ object OperationalSemantics {
 
 
   implicit def UnaryFunctionEvaluator[T1 <: PhraseType,
-                                      T2 <: PhraseType]: Evaluator[T1 -> T2,
+                                      T2 <: PhraseType]: Evaluator[T1 ->: T2,
                                                                    Phrase[T1] => Phrase[T2]] =
-    new Evaluator[T1 -> T2, Phrase[T1] => Phrase[T2]] {
-      def apply(s: Store, p: Phrase[T1 -> T2]): Phrase[T1] => Phrase[T2] = {
+    new Evaluator[T1 ->: T2, Phrase[T1] => Phrase[T2]] {
+      def apply(s: Store, p: Phrase[T1 ->: T2]): Phrase[T1] => Phrase[T2] = {
         p match {
           case l: Lambda[T1, T2] =>
             (arg: Phrase[T1]) => l.body `[` arg `/` l.param `]`
@@ -113,12 +113,12 @@ object OperationalSemantics {
 
   implicit def BinaryFunctionEvaluator[T1 <: PhraseType,
                                        T2 <: PhraseType,
-                                       T3 <: PhraseType]: Evaluator[T1 -> (T2 -> T3),
+                                       T3 <: PhraseType]: Evaluator[T1 ->: T2 ->: T3,
                                                                     Phrase[T1] => Phrase[T2] => Phrase[T3]] =
-    new Evaluator[T1 -> (T2 -> T3), Phrase[T1] => Phrase[T2] => Phrase[T3]] {
-      def apply(s: Store, p: Phrase[T1 -> (T2 -> T3)]): Phrase[T1] => Phrase[T2] => Phrase[T3] = {
+    new Evaluator[T1 ->: T2 ->: T3, Phrase[T1] => Phrase[T2] => Phrase[T3]] {
+      def apply(s: Store, p: Phrase[T1 ->: T2 ->: T3]): Phrase[T1] => Phrase[T2] => Phrase[T3] = {
         p match {
-          case l: Lambda[T1, T2 -> T3] => (arg: Phrase[T1]) =>
+          case l: Lambda[T1, T2 ->: T3] => (arg: Phrase[T1]) =>
             eval(s, l.body `[` arg `/` l.param `]` )(UnaryFunctionEvaluator)
 
           case Identifier(_, _) | Apply(_, _) | DepApply(_, _) |
@@ -131,12 +131,12 @@ object OperationalSemantics {
   implicit def TrinaryFunctionEvaluator[T1 <: PhraseType,
                                         T2 <: PhraseType,
                                         T3 <: PhraseType,
-                                        T4 <: PhraseType]: Evaluator[T1 -> (T2 -> (T3 -> T4)),
+                                        T4 <: PhraseType]: Evaluator[T1 ->: T2 ->: T3 ->: T4,
                                                                      Phrase[T1] => Phrase[T2] => Phrase[T3] => Phrase[T4]] =
-    new Evaluator[T1 -> (T2 -> (T3 -> T4)), Phrase[T1] => Phrase[T2] => Phrase[T3] => Phrase[T4]] {
-      def apply(s: Store, p: Phrase[T1 -> (T2 -> (T3 -> T4))]): Phrase[T1] => Phrase[T2] => Phrase[T3] => Phrase[T4] = {
+    new Evaluator[T1 ->: T2 ->: T3 ->: T4, Phrase[T1] => Phrase[T2] => Phrase[T3] => Phrase[T4]] {
+      def apply(s: Store, p: Phrase[T1 ->: T2 ->: T3 ->: T4]): Phrase[T1] => Phrase[T2] => Phrase[T3] => Phrase[T4] = {
         p match {
-          case l: Lambda[T1, T2 -> (T3 -> T4)] => (arg: Phrase[T1]) =>
+          case l: Lambda[T1, T2 ->: T3 ->: T4] => (arg: Phrase[T1]) =>
             eval(s, l.body `[` arg  `/` l.param `]` )(BinaryFunctionEvaluator)
 
           case Identifier(_, _) | Apply(_, _) | DepApply(_, _) |

@@ -8,7 +8,7 @@ import idealised.DPIA._
 final case class ParForNat(override val n: Nat,
                            override val ft:NatToData,
                            override val out: Phrase[AccType],
-                           override val body: Phrase[`(nat)->`[AccType -> CommType]])
+                           override val body: Phrase[`(nat)->`[AccType ->: CommType]])
   extends AbstractParForNat(n, ft, out, body) {
   override def makeParForNat = ParForNat
 }

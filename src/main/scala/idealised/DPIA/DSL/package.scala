@@ -85,13 +85,13 @@ package object DSL {
     }
   }
 
-  implicit class CallLambda[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 -> T2]) {
+  implicit class CallLambda[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 ->: T2]) {
     def apply(arg: Phrase[T1]): Phrase[T2] = Lifting.liftFunction(fun).value(arg)
 
     def $(arg: Phrase[T1]): Phrase[T2] = apply(arg)
   }
 
-  implicit class CallExpLambda[T <: PhraseType](fun: Phrase[ExpType -> T]) {
+  implicit class CallExpLambda[T <: PhraseType](fun: Phrase[ExpType ->: T]) {
     def apply(arg: Phrase[ExpType]): Phrase[T] = CallLambda[ExpType, T](fun)(arg)
 
     def $(arg: Phrase[ExpType]): Phrase[T] = apply(arg)
@@ -111,8 +111,8 @@ package object DSL {
     def $(arg: DataType): Phrase[T] = apply(arg)
   }
 
-  implicit class FunComp[T1 <: PhraseType, T2 <: PhraseType](f: Phrase[T1 -> T2]) {
-    def o[T3 <: PhraseType](g: Phrase[T3 -> T1]): Phrase[T3 -> T2] = {
+  implicit class FunComp[T1 <: PhraseType, T2 <: PhraseType](f: Phrase[T1 ->: T2]) {
+    def o[T3 <: PhraseType](g: Phrase[T3 ->: T1]): Phrase[T3 ->: T2] = {
       λ(g.t.inT)(arg => f(g(arg)))
     }
   }

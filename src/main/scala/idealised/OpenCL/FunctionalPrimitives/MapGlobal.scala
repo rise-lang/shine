@@ -10,13 +10,13 @@ import idealised.OpenCL.IntermediatePrimitives.MapGlobalI
 final case class MapGlobal(dim: Int)(n: Nat,
                                      dt1: DataType,
                                      dt2: DataType,
-                                     f: Phrase[ExpType -> ExpType],
+                                     f: Phrase[ExpType ->: ExpType],
                                      array: Phrase[ExpType])
   extends AbstractMapLoop(n, dt1, dt2, f, array)
 {
   override def makeMap = MapGlobal(dim)
   override def makeMapI(n: Nat, dt1: DataType, dt2: DataType,
-                        f: Phrase[->[ExpType, ->[AccType, CommType]]],
+                        f: Phrase[->:[ExpType, ->:[AccType, CommType]]],
                         array: Phrase[ExpType],
                         out: Phrase[AccType])
                        (implicit context: TranslationContext): Phrase[CommType] =

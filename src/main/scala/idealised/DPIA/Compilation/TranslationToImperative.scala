@@ -60,7 +60,7 @@ object TranslationToImperative {
     }
   }
 
-  def mapAcc(f: Phrase[ExpType -> ExpType], E: Phrase[ExpType])
+  def mapAcc(f: Phrase[ExpType ->: ExpType], E: Phrase[ExpType])
             (A: Phrase[AccType])
             (implicit context: TranslationContext): Phrase[CommType] = {
     E match {
@@ -85,7 +85,7 @@ object TranslationToImperative {
   }
 
   def con(E: Phrase[ExpType])
-         (C: Phrase[ExpType -> CommType])
+         (C: Phrase[ExpType ->: CommType])
          (implicit context: TranslationContext): Phrase[CommType] = {
     E match {
       case x: Identifier[ExpType] => C(x)

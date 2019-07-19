@@ -10,7 +10,7 @@ import idealised.DPIA._
 final case class ScanSeq(n: Nat,
                          dt1: DataType,
                          dt2: DataType,
-                         f: Phrase[ExpType -> (ExpType -> ExpType)],
+                         f: Phrase[ExpType ->: ExpType ->: ExpType],
                          init:Phrase[ExpType],
                          array: Phrase[ExpType])
   extends AbstractScan(n, dt1, dt2, f, init, array)
@@ -20,7 +20,7 @@ final case class ScanSeq(n: Nat,
   override def makeScanI(n: Nat,
                          dt1: DataType,
                          dt2: DataType,
-                         f: Phrase[->[ExpType, ->[ExpType, ->[AccType, CommType]]]],
+                         f: Phrase[->:[ExpType, ->:[ExpType, ->:[AccType, CommType]]]],
                          init: Phrase[ExpType],
                          array: Phrase[ExpType],
                          out: Phrase[AccType])

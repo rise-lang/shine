@@ -14,11 +14,11 @@ import scala.xml.Elem
 
 abstract class To(dt1: DataType,
                   dt2: DataType,
-                  f: Phrase[ExpType -> ExpType],
+                  f: Phrase[ExpType ->: ExpType],
                   input: Phrase[ExpType],
                   addressSpace: AddressSpace,
                   private val makeTo: (DataType, DataType,
-                    Phrase[ExpType -> ExpType], Phrase[ExpType]) => To)
+                    Phrase[ExpType ->: ExpType], Phrase[ExpType]) => To)
   extends ExpPrimitive {
 
   override val t: ExpType =
@@ -56,14 +56,14 @@ abstract class To(dt1: DataType,
     con(this)(λ( exp"[$dt2]" )(x => acc(x)(A) ))
   }
 
-  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
+  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
                                      (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(this)(λ( exp"[$dt2]" )(x => mapAcc(f, x)(A) ))
   }
 
-  override def continuationTranslation(C: Phrase[->[ExpType, CommType]])
+  override def continuationTranslation(C: Phrase[->:[ExpType, CommType]])
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 

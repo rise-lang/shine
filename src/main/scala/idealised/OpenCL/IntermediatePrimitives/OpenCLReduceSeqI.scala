@@ -12,11 +12,11 @@ import scala.language.reflectiveCalls
 
 object OpenCLReduceSeqI {
   def apply(n: Nat, dt1: DataType, dt2: DataType,
-            f: Phrase[ExpType -> (ExpType -> (AccType -> CommType))],
+            f: Phrase[ExpType ->: ExpType ->: AccType ->: CommType],
             init: Phrase[ExpType],
             initAddrSpace: AddressSpace,
             in: Phrase[ExpType],
-            out: Phrase[ExpType -> CommType])
+            out: Phrase[ExpType ->: CommType])
            (implicit context: TranslationContext): Phrase[CommType] =
   {
     newWithAddrSpace(dt2, initAddrSpace, acc =>

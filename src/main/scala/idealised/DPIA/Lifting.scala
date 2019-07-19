@@ -91,14 +91,14 @@ object Lifting {
 //    }
 //  }
 
-  def liftFunction[T1 <: PhraseType, T2 <: PhraseType](p: Phrase[T1 -> T2]): Result[Phrase[T1] => Phrase[T2]] = {
-    def chain[T1 <: PhraseType, T2 <: PhraseType](r: Result[Phrase[T1 -> T2]]): Result[Phrase[T1] => Phrase[T2]] =
+  def liftFunction[T1 <: PhraseType, T2 <: PhraseType](p: Phrase[T1 ->: T2]): Result[Phrase[T1] => Phrase[T2]] = {
+    def chain[T1 <: PhraseType, T2 <: PhraseType](r: Result[Phrase[T1 ->: T2]]): Result[Phrase[T1] => Phrase[T2]] =
       r.bind(liftFunction,
         f => Expanding((a: Phrase[T1]) => Apply(f, a)))
     p match {
       case l: Lambda[T1, T2] =>
         Reducing((arg: Phrase[T1]) => l.body `[` arg  `/` l.param `]`)
-      case app: Apply[_, T1 -> T2] =>
+      case app: Apply[_, T1 ->: T2] =>
         chain(liftFunction(app.fun).map(lf => lf(app.arg)))
       case DepApply(f, arg) =>
         val fun = liftDependentFunction(f) // .asInstanceOf[Phrase[`(nat)->`[T1 -> T2]]]
@@ -109,21 +109,21 @@ object Lifting {
 //      case app: TypeDependentApply[T1 -> T2] =>
 //        val fun = liftTypeDependentFunction(app.fun)
 //        liftFunction(fun(app.arg))
-      case p1: Proj1[T1 -> T2, b] =>
+      case p1: Proj1[T1 ->: T2, b] =>
         val pair = liftPair(p1.pair)
         liftFunction(pair._1)
-      case p2: Proj2[a, T1 -> T2] =>
+      case p2: Proj2[a, T1 ->: T2] =>
         val pair = liftPair(p2.pair)
         liftFunction(pair._2)
       case _ => chain(Expanding(p))
     }
   }
 
-  def liftFunctionToNatLambda[T <: PhraseType](p: Phrase[ExpType -> T]): Nat => Phrase[T] = {
+  def liftFunctionToNatLambda[T <: PhraseType](p: Phrase[ExpType ->: T]): Nat => Phrase[T] = {
     p match {
       case l: Lambda[ExpType, T] =>
         (arg: Nat) => l.body `[` arg  `/` NatIdentifier(l.param.name) `]`
-      case app: Apply[_, ExpType -> T] =>
+      case app: Apply[_, ExpType ->: T] =>
         val fun = liftFunction(app.fun).reducing
         liftFunctionToNatLambda(fun(app.arg))
       case DepApply(f, arg) =>
@@ -135,10 +135,10 @@ object Lifting {
 //      case app: TypeDependentApply[ExpType -> T] =>
 //        val fun = liftTypeDependentFunction(app.fun)
 //        liftFunctionToNatLambda(fun(app.arg))
-      case p1: Proj1[ExpType -> T, b] =>
+      case p1: Proj1[ExpType ->: T, b] =>
         val pair = liftPair(p1.pair)
         liftFunctionToNatLambda(pair._1)
-      case p2: Proj2[a, ExpType -> T] =>
+      case p2: Proj2[a, ExpType ->: T] =>
         val pair = liftPair(p2.pair)
         liftFunctionToNatLambda(pair._2)
       case Identifier(_, _) | IfThenElse(_, _, _) =>
