@@ -281,8 +281,8 @@ object DSL {
   def l(v: VectorData): Literal = Literal(v)
   def l(a: ArrayData): Literal = Literal(a)
 
-  implicit final class TypeConstructors(private val a: Type) extends AnyVal {
-    @inline def ->:(b: Type): FunType[Type, Type] = FunType(a, b)
+  implicit final class TypeConstructors(private val r: Type) extends AnyVal {
+    @inline def ->:(t: Type): FunType[Type, Type] = FunType(t, r)
   }
 
   implicit final class TupleTypeConstructors(private val a: DataType) extends AnyVal {
