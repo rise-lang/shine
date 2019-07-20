@@ -26,7 +26,7 @@ object FromSurfaceLanguage {
           apply(arg).asInstanceOf[Phrase[ExpType]])
 
       case NatDependentLambdaExpr(x, body, _) =>
-        Phrases.DepLambda[NatKind](x)(apply(body))
+        Phrases.DepLambda[NatKind](NatIdentifier(x.name, x.range))(apply(body))
 
       case NatDependentApplyExpr(fun, arg, _) =>
         Phrases.DepApply[NatKind, Types.PhraseType](

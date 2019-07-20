@@ -3,7 +3,6 @@ package idealised
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types.{PhraseTypeParser, _}
 import lift.arithmetic._
-import lift.core
 
 import scala.language.{implicitConversions, reflectiveCalls}
 
@@ -24,9 +23,6 @@ package object DPIA {
     def apply(name: String): NatIdentifier = new NamedVar(name) with Kind.Identifier
     def apply(name: String, range: Range): NatIdentifier = new NamedVar(name, range) with Kind.Identifier
   }
-
-  implicit def surfaceToDPINatIdentifier(n: SurfaceLanguage.NatIdentifier): NatIdentifier = NatIdentifier(n.name, n.range)
-  implicit def liftToDPIANatIdentifer(n: lift.core.NatIdentifier): NatIdentifier = NatIdentifier(n.name, n.range)
 
   case class LetNatIdentifier(id:NatIdentifier) {
     def name:String = id.name
@@ -170,7 +166,7 @@ package object DPIA {
   }
 
   // note: this is an easy fix to avoid name conflicts between lift and dpia
-  val freshName: core.freshName.type = lift.core.freshName
+  val freshName: lift.core.freshName.type = lift.core.freshName
 
   type x[T1 <: PhraseType, T2 <: PhraseType] = PairType[T1, T2]
   type ->:[T <: PhraseType, R <: PhraseType] = FunType[T, R]
@@ -232,17 +228,13 @@ package object DPIA {
     def `->p:`[T <: PhraseType](t: T) = PassiveFunType(t, r)
   }
 
-  implicit class NatDepFunTypeConstructor[R <: PhraseType](t: R) {
-    def `()->:`(x: NatIdentifier): `()->:`[NatKind, R] = DepFunType[NatKind, R](x, t)
+  implicit class DepFunTypeConstructor[R <: PhraseType](r: R) {
+    def `()->:`(i: DataTypeIdentifier): `()->:`[DataKind, R] = DepFunType[DataKind, R](i, r)
+    def `()->:`(n: NatIdentifier): `()->:`[NatKind, R] = DepFunType[NatKind, R](n, r)
+    def `()->:`(n: NatToNatIdentifier): `()->:`[NatToNatKind, R] = DepFunType[NatToNatKind, R](n, r)
+    def `()->:`(n: NatToDataIdentifier): `()->:`[NatToDataKind, R] = DepFunType[NatToDataKind, R](n, r)
   }
 
-  implicit class LiftNatDepFunTypeConstructor[R <: PhraseType](t: R) {
-    def `()->:`(x: lift.core.NatIdentifier): `()->:`[NatKind, R] = NatIdentifier(x.name, x.range) `()->:` t
-  }
-
-  implicit class DataDepFunTypeConstructor[R <: PhraseType](outT: R) {
-    def `()->:`(x: DataTypeIdentifier): `()->:`[DataKind, R] = DepFunType[DataKind, R](x, outT)
-  }
 
   implicit class PhraseTypeHelper(val sc: StringContext) extends AnyVal {
     def t(args: Any*): PhraseType = {

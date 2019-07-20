@@ -16,112 +16,105 @@ object fromLift {
     expression(expr)
   }
 
-  def expression(expr: l.Expr): Phrase[_ <: PhraseType] = {
-    expr match {
-      case l.TypedExpr(typedExpr, t) =>
-        typedExpr match {
-          case l.Identifier(name) =>
-            Identifier(name, `type`(t))
+  def expression(expr: l.Expr): Phrase[_ <: PhraseType] = expr match {
+    case l.TypedExpr(typedExpr, t) =>
+      typedExpr match {
+        case l.Identifier(name) =>
+          Identifier(name, `type`(t))
 
-          case l.Lambda(x, e) => t match {
-            case lt.FunType(i, _) =>
-              Lambda(Identifier(x.name, `type`(i)), expression(e))
-            case _ => ???
-          }
-          case l.Apply(f, e) =>
-            Lifting.liftFunction( // TODO: should we try to reduce by lifting here?
-              expression(f).asInstanceOf[Phrase[FunType[PhraseType, PhraseType]]])
-              .value(expression(e).asInstanceOf[Phrase[PhraseType]])
-
-          case l.DepLambda(x, e) => x match {
-            case n: l.NatIdentifier =>
-              DepLambda[NatKind](n)(expression(e))
-            case dt: lt.DataTypeIdentifier =>
-              DepLambda[DataKind](DataTypeIdentifier(dt.name))(expression(e))
-          }
-          case l.DepApply(f, x) => x match {
-            case n: Nat =>
-              DepApply[NatKind, PhraseType]( // TODO: should we try to reduce by lifting here?
-                expression(f).asInstanceOf[Phrase[DepFunType[NatKind, PhraseType]]],
-                n)
-            case dt: lt.DataType =>
-              DepApply[DataKind, PhraseType]( // TODO: should we try to reduce by lifting here?
-                expression(f).asInstanceOf[Phrase[DepFunType[DataKind, PhraseType]]],
-                dataType(dt)
-              )
-          }
-
-          case l.Literal(d)   =>  Literal(data(d))
-          case l.Index(n, sz) =>  Literal(OpSem.IndexData(n, IndexType(sz)))
-          case l.NatExpr(n)   =>  Natural(n)
-          case p: l.Primitive =>  primitive(p, t)
-
-          case _: l.TypedExpr => ??? // do not expect typed expr
+        case l.Lambda(x, e) => t match {
+          case lt.FunType(i, _) =>
+            Lambda(Identifier(x.name, `type`(i)), expression(e))
+          case _ => ???
         }
-      case _ => ??? // expected typed expr
+        case l.Apply(f, e) =>
+          Lifting.liftFunction( // TODO: should we try to reduce by lifting here?
+            expression(f).asInstanceOf[Phrase[FunType[PhraseType, PhraseType]]])
+            .value(expression(e).asInstanceOf[Phrase[PhraseType]])
+
+        case l.DepLambda(x, e) => x match {
+          case n: l.NatIdentifier =>
+            DepLambda[NatKind](natIdentifier(n))(expression(e))
+          case dt: lt.DataTypeIdentifier =>
+            DepLambda[DataKind](dataTypeIdentifier(dt))(expression(e))
+        }
+        case l.DepApply(f, x) => x match {
+          case n: Nat =>
+            DepApply[NatKind, PhraseType]( // TODO: should we try to reduce by lifting here?
+              expression(f).asInstanceOf[Phrase[DepFunType[NatKind, PhraseType]]],
+              n)
+          case dt: lt.DataType =>
+            DepApply[DataKind, PhraseType]( // TODO: should we try to reduce by lifting here?
+              expression(f).asInstanceOf[Phrase[DepFunType[DataKind, PhraseType]]],
+              dataType(dt)
+            )
+        }
+
+        case l.Literal(d)   =>  Literal(data(d))
+        case l.Index(n, sz) =>  Literal(OpSem.IndexData(n, IndexType(sz)))
+        case l.NatExpr(n)   =>  Natural(n)
+        case p: l.Primitive =>  primitive(p, t)
+
+        case _: l.TypedExpr => ??? // do not expect typed expr
+      }
+    case _ => ??? // expected typed expr
+    }
+
+  def scalarType(t: lt.ScalarType): ScalarType = t match {
+    case lt.bool => bool
+    case lt.int => int
+    case lt.float => float
+    case lt.double => double
+    case lt.NatType => NatType
+  }
+
+  def basicType(t: lt.BasicType): BasicType = t match {
+    case st: lt.ScalarType => scalarType(st)
+    case lt.IndexType(sz) => IndexType(sz)
+    case lt.VectorType(sz, et) => et match {
+      case e : lt.ScalarType => VectorType(sz, scalarType(e))
+      case _ => ???
+    }
+  }
+
+  def dataType(t: lt.DataType): DataType = t match {
+    case bt: lt.BasicType => basicType(bt)
+    case i: lt.DataTypeIdentifier => dataTypeIdentifier(i)
+    case lt.ArrayType(sz, et) => ArrayType(sz, dataType(et))
+    case lt.DepArrayType(sz, f) => DepArrayType(sz, ntd(f))
+    case lt.TupleType(a, b) => RecordType(dataType(a), dataType(b))
+    case lt.NatToDataApply(f, n) => NatToDataApply(ntd(f), n)
+  }
+
+  def ntd(ntd: lt.NatToData): NatToData= ntd match {
+    case lt.NatToDataLambda(n, body) => NatToDataLambda(natIdentifier(n), dataType(body))
+    case lt.NatToDataIdentifier(x) => NatToDataIdentifier(x)
+  }
+
+  def dataTypeIdentifier(dt: lt.DataTypeIdentifier): DataTypeIdentifier = DataTypeIdentifier(dt.name)
+  def natIdentifier(n: l.NatIdentifier): NatIdentifier = NatIdentifier(n.name, n.range)
+  def natToNatIdentifier(n: lt.NatToNatIdentifier): NatToNatIdentifier = NatToNatIdentifier(n.name)
+  def natToDataIdentifier(n: lt.NatToDataIdentifier): NatToDataIdentifier = NatToDataIdentifier(n.name)
+
+  def `type`(ty: lt.Type): PhraseType = ty match {
+    case dt: lt.DataType      => ExpType(dataType(dt))
+    case lt.FunType(i, o)     => `type`(i) ->: `type`(o)
+    case lt.DepFunType(i, t)  => i match {
+        case dt: lt.DataTypeIdentifier    => dataTypeIdentifier(dt)   `()->:` `type`(t)
+        case n: l.NatIdentifier           => natIdentifier(n)         `()->:` `type`(t)
+        case n2n: lt.NatToNatIdentifier   => natToNatIdentifier(n2n)  `()->:` `type`(t)
+        case n2d: lt.NatToDataIdentifier  => natToDataIdentifier(n2d) `()->:` `type`(t)
       }
   }
 
-  def scalarType(t: lt.ScalarType): ScalarType = {
-    t match {
-      case lt.bool => bool
-      case lt.int => int
-      case lt.float => float
-      case lt.double => double
-      case lt.NatType => NatType
-    }
-  }
-
-  def basicType(t: lt.BasicType): BasicType = {
-    t match {
-      case st: lt.ScalarType => scalarType(st)
-      case lt.IndexType(sz) => IndexType(sz)
-      case lt.VectorType(sz, et) => et match {
-        case e : lt.ScalarType => VectorType(sz, scalarType(e))
-        case _ => ???
-      }
-    }
-  }
-
-  def dataType(t: lt.DataType): DataType = {
-    t match {
-      case bt: lt.BasicType => basicType(bt)
-      case lt.DataTypeIdentifier(name) => DataTypeIdentifier(name)
-      case lt.ArrayType(sz, et) => ArrayType(sz, dataType(et))
-      case lt.DepArrayType(sz, f) => DepArrayType(sz, fromLift(f))
-      case lt.TupleType(a, b) => RecordType(dataType(a), dataType(b))
-      case lt.NatToDataApply(f, n) => NatToDataApply(fromLift(f), n)
-    }
-  }
-
-  def apply(ntd: lt.NatToData): NatToData= {
-    ntd match {
-      case lt.NatToDataLambda(x, body) => NatToDataLambda(x, dataType(body))
-      case lt.NatToDataIdentifier(x) => NatToDataIdentifier(x)
-    }
-  }
-
-  def `type`(ty: lt.Type): PhraseType = {
-    ty match {
-      case dt: lt.DataType      => ExpType(dataType(dt))
-      case lt.FunType(i, o)     => `type`(i) ->: `type`(o)
-      case lt.DepFunType(x, t)  => x match {
-          case dt: lt.DataTypeIdentifier  => DataTypeIdentifier(dt.name) `()->:` `type`(t)
-          case n: l.NatIdentifier         => n `()->:` `type`(t)
-        }
-    }
-  }
-
-  def data(d: ls.Data): OpSem.Data = {
-    d match {
-      case ls.ArrayData(a) => OpSem.ArrayData(a.map(data(_)).toVector)
-      case ls.TupleData(a, b) => OpSem.RecordData(data(a), data(b))
-      case ls.BoolData(b) => OpSem.BoolData(b)
-      case ls.IntData(i) => OpSem.IntData(i)
-      case ls.FloatData(f) => OpSem.FloatData(f)
-      case ls.DoubleData(f) => OpSem.DoubleData(f)
-      case ls.VectorData(v) => OpSem.VectorData(v.map(data(_)).toVector)
-    }
+  def data(d: ls.Data): OpSem.Data = d match {
+    case ls.ArrayData(a) => OpSem.ArrayData(a.map(data).toVector)
+    case ls.TupleData(a, b) => OpSem.RecordData(data(a), data(b))
+    case ls.BoolData(b) => OpSem.BoolData(b)
+    case ls.IntData(i) => OpSem.IntData(i)
+    case ls.FloatData(f) => OpSem.FloatData(f)
+    case ls.DoubleData(f) => OpSem.DoubleData(f)
+    case ls.VectorData(v) => OpSem.VectorData(v.map(data(_)).toVector)
   }
 
   import idealised.DPIA.FunctionalPrimitives._
@@ -147,7 +140,7 @@ object fromLift {
       lt.DepFunType(n: l.NatIdentifier,
       lt.FunType(lt.NatType, lt.IndexType(_))))
       =>
-        DepLambda[NatKind](n)(
+        DepLambda[NatKind](natIdentifier(n))(
           fun[ExpType](exp"[$NatType]", e =>
             AsIndex(n, e)))
 
@@ -189,14 +182,14 @@ object fromLift {
 
       case (core.depMapSeq,
       lt.FunType(
-      lt.DepFunType(k: l.NatIdentifier, lt.FunType(_, _)),
+      lt.DepFunType(lk: l.NatIdentifier, lt.FunType(_, _)),
       lt.FunType(lt.DepArrayType(n, la), lt.DepArrayType(_, lb))))
       =>
-        val a: NatToData = fromLift(la)
-        val b: NatToData = fromLift(lb)
+        val a = ntd(la)
+        val b = ntd(lb)
+        val k = natIdentifier(lk)
         fun[`(nat)->:`[ExpType ->: ExpType]](
           k `()->:` (ExpType(a(k)) ->: ExpType(b(k)))
-          //NatDependentFunctionType(k, ExpType(a(k)) -> ExpType(b(k)))
           , f =>
           fun[ExpType](ExpType(DepArrayType(n, a)), e =>
             DepMapSeq(n, a, b, f, e)))
@@ -270,7 +263,7 @@ object fromLift {
       lt.FunType(lt.ArrayType(insz, la), lt.ArrayType(m, _))))
       =>
         val a = dataType(la)
-        DepLambda[NatKind](n)(
+        DepLambda[NatKind](natIdentifier(n))(
           fun[ExpType](exp"[$insz.$a]", e =>
             Split(n, m, a, e)))
 
@@ -280,8 +273,8 @@ object fromLift {
       lt.FunType(lt.ArrayType(insz, la), lt.ArrayType(n, _)))))
       =>
         val a = dataType(la)
-        DepLambda[NatKind](sz)(
-          DepLambda[NatKind](sp)(
+        DepLambda[NatKind](natIdentifier(sz))(
+          DepLambda[NatKind](natIdentifier(sp))(
             fun[ExpType](exp"[$insz.$a]", e =>
               Slide(n, sz, sp, a, e))))
 
@@ -291,8 +284,8 @@ object fromLift {
       lt.FunType(lt.ArrayType(insz, la), lt.ArrayType(n, _)))))
       =>
         val a = dataType(la)
-        DepLambda[NatKind](sz)(
-          DepLambda[NatKind](sp)(
+        DepLambda[NatKind](natIdentifier(sz))(
+          DepLambda[NatKind](natIdentifier(sp))(
             fun[ExpType](exp"[$insz.$a]", e =>
               SlideSeq(rot, n, sz, sp, a, e))))
 
@@ -341,7 +334,7 @@ object fromLift {
       =>
         val m = nm - n
         val a = dataType(la)
-        DepLambda[NatKind](n)(
+        DepLambda[NatKind](natIdentifier(n))(
           fun[ExpType](exp"[$nm.$a]", e =>
             Take(n, m, a, e)))
 
@@ -351,7 +344,7 @@ object fromLift {
       =>
         val m = nm - n
         val a = dataType(la)
-        DepLambda[NatKind](n)(
+        DepLambda[NatKind](natIdentifier(n))(
           fun[ExpType](exp"[$nm.$a]", e =>
             Drop(n, m, a, e)))
 
@@ -362,8 +355,8 @@ object fromLift {
       lt.FunType(lt.ArrayType(n, la), _)))))
       =>
         val a = dataType(la)
-        DepLambda[NatKind](l)(
-          DepLambda[NatKind](r)(
+        DepLambda[NatKind](natIdentifier(l))(
+          DepLambda[NatKind](natIdentifier(r))(
             fun[ExpType](exp"[$a]", cst =>
                 fun[ExpType](exp"[$n.$a]", e =>
                   Pad(n, l, r, a, cst, e)))))
@@ -374,8 +367,8 @@ object fromLift {
       lt.FunType(lt.ArrayType(n, la), _))))
       =>
         val a = dataType(la)
-        DepLambda[NatKind](l)(
-          DepLambda[NatKind](r)(
+        DepLambda[NatKind](natIdentifier(l))(
+          DepLambda[NatKind](natIdentifier(r))(
               fun[ExpType](exp"[$n.$a]", e =>
                 PadClamp(n, l, r, a, e))))
 
@@ -500,13 +493,14 @@ object fromLift {
 
       case (core.iterate,
       lt.DepFunType(k: l.NatIdentifier,
-      lt.FunType(lt.DepFunType(l: l.NatIdentifier,
+      lt.FunType(lt.DepFunType(ll: l.NatIdentifier,
       lt.FunType(lt.ArrayType(ln, _), _)),
       lt.FunType(lt.ArrayType(insz, _), lt.ArrayType(m, la)))))
       =>
+        val l = natIdentifier(ll)
         val n = ln /^ l
         val a = dataType(la)
-        DepLambda[NatKind](k)(
+        DepLambda[NatKind](natIdentifier(k))(
           fun[`(nat)->:`[ExpType ->: ExpType]](l `()->:` (exp"[$ln.$a]" ->: exp"[$l.$a]"), f =>
               fun[ExpType](exp"[$insz.$a]", e =>
                 Iterate(n, m, k, a, f, e))))
@@ -516,7 +510,7 @@ object fromLift {
       lt.FunType(lt.ArrayType(mn, la: lt.ScalarType), lt.ArrayType(m, _))))
       =>
         val a = scalarType(la)
-        DepLambda[NatKind](n)(
+        DepLambda[NatKind](natIdentifier(n))(
           fun[ExpType](exp"[$mn.$a]", e =>
             AsVector(n, m, a, e)))
 
@@ -568,6 +562,8 @@ object fromLift {
 
   def foreignFunIO(t: lt.Type): (Vector[DataType], DataType) = {
     t match {
+      case lo: lt.DataType =>
+        (Vector(), dataType(lo))
       case lt.FunType(laa, lb) => laa match {
         case la: lt.DataType =>
           val a = dataType(la)
@@ -575,8 +571,7 @@ object fromLift {
           (a +: i, o)
         case _ => ???
       }
-      case lo: lt.DataType =>
-        (Vector(), dataType(lo))
+      case lt.DepFunType(_, _) => throw new Exception("This should not be possible")
     }
   }
 
