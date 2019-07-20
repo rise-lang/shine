@@ -36,7 +36,7 @@ class structuralEquality extends idealised.util.Tests {
     ))
   }
 
-  ignore("reduce wrong type") {
+  test("reduce different type") {
     assert(!StructuralEquality(
       nFun(n => fun(ArrayType(n, int))(a =>
         reduceSeq(fun(x => fun(y => x + y)))(0)(a))),
@@ -45,10 +45,17 @@ class structuralEquality extends idealised.util.Tests {
     ))
   }
 
-  test("map different choices") {
+  test("map different implementations") {
     assert(!StructuralEquality(
       nFun(n => fun(ArrayType(n, int))(a => map(fun(x => x))(a))),
       nFun(m => fun(ArrayType(m, int))(b => mapSeq(fun(x => x))(b)))
+    ))
+  }
+
+  test("dependent function type using an array") {
+    assert(StructuralEquality(
+      nFunT(n => tFunT(a => tFunT(t => ArrayType(n, a) ->: t))),
+      nFunT(m => tFunT(b => tFunT(t => ArrayType(m, b) ->: t)))
     ))
   }
 }
