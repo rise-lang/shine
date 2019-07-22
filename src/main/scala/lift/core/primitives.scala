@@ -98,6 +98,12 @@ object primitives {
     ))
   }
 
+  case object reduce extends Primitive {
+    override def t: Type = implN(n => implA(a => implDT(t =>
+      (t._R ->: t._R ->: t._W) ->: t._W ->: ArrayType(n, t)._R ->: t._R
+    )))
+  }
+
   case object reduceSeq extends Primitive {
     override def t: Type = implN(n => implA(a => implDT(s => implDT(t =>
       (s._R ->: t._R ->: t._W) ->: t._W ->: ArrayType(n, s)._R ->: t._R

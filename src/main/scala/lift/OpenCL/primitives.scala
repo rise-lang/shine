@@ -1,8 +1,5 @@
 package lift.OpenCL
 
-// TODO: move
-import idealised.OpenCL.AddressSpace
-
 import lift.core.DSL._
 import lift.core.types._
 import lift.core.{Expr, primitives => core}
@@ -46,17 +43,17 @@ object primitives {
   }
 
 
-  object to extends Primitive {
+  object toMem extends Primitive {
     override def t: Type = implDT(t =>
       nFunA(a => t.__(W) ->: t.__(R) )
     )
   }
 
-  val toGlobal: Expr = to(lift.core.types.AddressSpace.Global)
-  val toLocal: Expr = to(lift.core.types.AddressSpace.Local)
-  val toPrivate: Expr = to(lift.core.types.AddressSpace.Private)
+  val toGlobal: Expr = toMem(lift.core.types.AddressSpace.Global)
+  val toLocal: Expr = toMem(lift.core.types.AddressSpace.Local)
+  val toPrivate: Expr = toMem(lift.core.types.AddressSpace.Private)
 
-  case class oclReduceSeq(init_space: lift.core.types.AddressSpace) extends Primitive {
+  object oclReduceSeq extends Primitive {
     override def t: Type = core.reduceSeq.t
   }
 

@@ -229,15 +229,15 @@ object fromLift {
             fun[ExpType](exp"[$n.$a, $read]", e =>
               ReduceSeq(n, a, b, f, i, e))))
 
-
-      case (ocl.oclReduceSeq(initAddressSpace),
+      case (ocl.oclReduceSeq,
+      lt.DependentFunctionType(i,
       lt.FunctionType(_,
       lt.FunctionType(lt.DataAccessType(lb: lt.DataType, lt.W),
-      lt.FunctionType(lt.DataAccessType(lt.ArrayType(n, la), lt.R), _))))
+      lt.FunctionType(lt.DataAccessType(lt.ArrayType(n, la), lt.R), _)))))
       =>
         val a = dataType(la)
         val b = dataType(lb)
-        val i_space = fromLift(initAddressSpace)
+        val i_space = fromLift(i.asInstanceOf[lt.AddressSpaceIdentifier])
         fun[ExpType -> (ExpType -> ExpType)](exp"[$a, $read]" -> (exp"[$b, $read]" -> exp"[$b, $write]"), f =>
           fun[ExpType](exp"[$b, $read]", i =>
             fun[ExpType](exp"[$n.$a, $read]", e =>
@@ -559,7 +559,7 @@ object fromLift {
         fun[ExpType](exp"[idx($n), $read]", e =>
           IndexAsNat(n, e))
 
-      case (ocl.to,
+      case (ocl.`toMem`,
       lt.DependentFunctionType(las: lt.AddressSpaceIdentifier,
       lt.FunctionType(lt.DataAccessType(la: lt.DataType, lt.W), _)))
       =>
@@ -567,9 +567,6 @@ object fromLift {
         val as = fromLift(las)
         fun[ExpType](exp"[$a, $write]", e =>
           To(as, a, e))
-
-      case (core.reduce, _) | (core.scan, _) =>
-        throw new Exception(s"$p has no implementation")
     }
   }
 

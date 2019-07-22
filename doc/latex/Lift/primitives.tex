@@ -1,7 +1,7 @@
-\begin{figure}[p]
+\begin{figure}
     \footnotesize
-    \begin{minipage}{1.0\linewidth} \begin{tabular*}{\linewidth}{>{$}l<{$}@{\hspace{0.4em}}>{$}c<{$}>{$}l<{$}}
-          \underline{\ell}&:&\tyval{\basic}{\pureacc}\\
+    \begin{tabular*}{\linewidth}{>{$}l<{$}@{\hspace{0.4em}}>{$}c<{$}>{$}l<{$}}
+          \underline{\ell}&:&(dt: \datatype) \to \tyval{\dt}{\pureacc}\\
           \prim{neg}&:&\{\dt : \datatype\} \to \tyval{\dt}{\pureacc} \to \tyval{\dt}{\pureacc} \\
           (+,*,/,-)   &:&\{\dt : \datatype\} \to \tyval{\dt}{\pureacc} \to \tyval{\dt}{\pureacc} \to \tyval{\dt}{\pureacc}\\
           (>=,<=,==)   &:&\{\dt : \datatype\} \to \tyval{\dt}{\pureacc} \to \tyval{\dt}{\pureacc} \to \tyval{\mathsf{bool}}{\pureacc}\\
@@ -12,6 +12,7 @@
           \prim{map}&:&\{n : \natkind\} \to \{\dtone~\dttwo : \datatype\} \to (\tyval{\dtone}{\pureacc} \to \tyval{\dttwo}{\writeacc}) \to \tyval{n.\dtone}{\pureacc} \to \tyval{n.\dttwo}{\writeacc} \\
           \prim{mapSeq}&:&\{n : \natkind\} \to \{\dtone~\dttwo : \datatype\} \to (\tyval{\dtone}{\pureacc} \to \tyval{\dttwo}{\writeacc}) \to \tyval{n.\dtone}{\pureacc} \to \tyval{n.\dttwo}{\writeacc} \\
   
+          \prim{reduce}&:&\{n : \natkind\} \to \{a : \addrkind\} \to \{\dt : \datatype\} \to (\tyval{\dt}{\pureacc} \to \tyval{\dt}{\pureacc} \to \tyval{\dt}{\writeacc}) \to \tyval{\dt}{\writeacc} \to \tyval{n.\dt}{\pureacc} \to \tyval{\dt}{\pureacc}\\
           \prim{reduceSeq}&:&\{n : \natkind\} \to \{a : \addrkind\} \to \{\dtone~\dttwo : \datatype\} \to (\tyval{\dtone}{\pureacc} \to \tyval{\dttwo}{\pureacc} \to \tyval{\dttwo}{\writeacc}) \to \tyval{\dttwo}{\writeacc} \to \tyval{n.\dtone}{\pureacc} \to \tyval{\dttwo}{\pureacc}\\
           \prim{reduceSeqUnroll}&:&\{n : \natkind\} \to \{a : \addrkind\} \to \{\dtone~\dttwo : \datatype\} \to (\tyval{\dtone}{\pureacc} \to \tyval{\dttwo}{\pureacc} \to \tyval{\dttwo}{\writeacc}) \to \tyval{\dttwo}{\writeacc} \to \tyval{n.\dtone}{\pureacc} \to \tyval{\dttwo}{\pureacc}\\
           \prim{scanSeq}&:&\{n : \natkind\} \to \{\dtone~\dttwo : \datatype\} \to (\tyval{\dtone}{\pureacc} \to \tyval{\dttwo}{\pureacc} \to \tyval{\dttwo}{\writeacc}) \to \tyval{\dttwo}{\writeacc} \to \tyval{n.\dtone}{\pureacc} \to \tyval{n.\dttwo}{\pureacc}\\
@@ -21,45 +22,67 @@
   
           \prim{split}&:&(n : \natkind) \to \{m : \natkind\} \to \{w : \access\} \to \{\dt : \datatype\} \to \tyval{nm.\dt}{w} \to \tyval{m.n.\dt}{w} \\
           \prim{join}&:&\{n~m : \natkind\} \to \{w : \access\} \to \{\dt : \datatype\} \to \tyval{n.m.\dt}{w} \to \tyval{nm.\dt}{w}\\
-          \prim{drop}&:&(n : \natkind) \to \{m : \natkind\} \to \{w : \access\} \to \{\dt : \datatype\} \to \tyval{(n + m).\dt}{w} \to \tyval{m.\dt}{w} \\
-          \prim{take}&:&(n : \natkind) \to \{m : \natkind\} \to \{w : \access\} \to \{\dt : \datatype\} \to \tyval{(n + m).\dt}{w} \to \tyval{n.\dt}{w}\\
+          \\[-.75em]
+          \prim{slide}&:&\{n : \natkind\} \to (sz~sp : \natkind) \to \{\dt : \datatype\} \to \tyval{(sp \times n + sz - sp).\dt}{\pureacc} \to \tyval{n.sz.\dt}{\pureacc} \\
+          \prim{slideSeqRotValues}&:&\{n : \natkind\} \to (sz~sp : \natkind) \to \{\dt : \datatype\} \to \tyval{(sp \times n + sz - sp).\dt}{\pureacc} \to \tyval{n.sz.\dt}{\pureacc} \\
+          \prim{slideSeqRotIndices}&:&\{n : \natkind\} \to (sz~sp : \natkind) \to \{\dt : \datatype\} \to \tyval{(sp \times n + sz - sp).\dt}{\pureacc} \to \tyval{n.sz.\dt}{\pureacc} \\
+          \prim{slideSeqBuffer}&:&\{n : \natkind\} \to (sz~sp : \natkind) \to \{\dt : \datatype\} \to \tyval{(sp \times n + sz - sp).\dt}{\pureacc} \to \tyval{n.sz.\dt}{\pureacc} \\
+          \\[-.75em]
           \prim{transpose}&:&\{n~m : \natkind\} \to \{\dt : \datatype\} \to \tyval{n.m.\dt}{\pureacc} \to \tyval{m.n.\dt}{\pureacc}\\
-          \prim{generate}&:&\{n : \natkind\} \to \{\dt : \datatype\} \to \tyval{\tyidx[n]}{\pureacc} \to \tyval{\dt}{\pureacc} \to \tyval{n.\dt}{\pureacc}\bigskip\\
-
+          \\[-.75em]
           % \prim{gather}&:&(n : \natkind) \to (\dt : \datatype) \to (\tyval{\tyidx[n]}{\pureacc} \to \tyval{\tyidx[n]}{\pureacc}) \to \tyval{n.\dt}{\pureacc} \to \tyval{n.\dt}{\pureacc}\\
           % \prim{scatter}&:&(n : \natkind) \to (\dt : \datatype) \to (\tyval{\tyidx[n]}{\pureacc} \to \tyval{\tyidx[n]}{\pureacc}) \to \tyval{n.\dt}{\writeacc} \to \tyval{n.\dt}{\writeacc}\\
           \prim{reorder}&:&\{n : \natkind\} \to \{\dt : \datatype\} \to
             (\tyval{\tyidx[n]}{\pureacc} \to \tyval{\tyidx[n]}{\pureacc}) \to
             (\tyval{\tyidx[n]}{\pureacc} \to \tyval{\tyidx[n]}{\pureacc}) \to
             \tyval{n.\dt}{\pureacc} \to \tyval{n.\dt}{\pureacc}\\
-
-          \medskip\\
-
-  
+          \\[-.75em]
+          \prim{generate}&:&\{n : \natkind\} \to \{\dt : \datatype\} \to \tyval{\tyidx[n]}{\pureacc} \to \tyval{\dt}{\pureacc} \to \tyval{n.\dt}{\pureacc}\\
+          \\[-.75em]
+          \prim{drop}&:&(n : \natkind) \to \{m : \natkind\} \to \{w : \access\} \to \{\dt : \datatype\} \to \tyval{(n + m).\dt}{w} \to \tyval{m.\dt}{w} \\
+          \prim{take}&:&(n : \natkind) \to \{m : \natkind\} \to \{w : \access\} \to \{\dt : \datatype\} \to \tyval{(n + m).\dt}{w} \to \tyval{n.\dt}{w}\\
+          \\[-.75em]
           \prim{padCst}&:&\{n : \natkind\} \to (l~q : \natkind) \to \{\dt : \datatype\} \to \tyval{\dt}{\pureacc} \to \tyval{n.\dt}{\pureacc} \to \tyval{(l + n + q).\dt}{\pureacc} \\
           \prim{padClamp}&:&\{n : \natkind\} \to (l~q : \natkind) \to \{\dt : \datatype\} \to \tyval{n.\dt}{\pureacc} \to \tyval{(l + n + q).\dt}{\pureacc} \\
-          \prim{slide}&:&\{n : \natkind\} \to (sz~sp : \natkind) \to \{\dt : \datatype\} \to \tyval{(sp \times n + sz - sp).\dt}{\pureacc} \to \tyval{n.sz.\dt}{\pureacc} \\
-          \prim{slideSeqRotValues}&:&\{n : \natkind\} \to (sz~sp : \natkind) \to \{\dt : \datatype\} \to \tyval{(sp \times n + sz - sp).\dt}{\pureacc} \to \tyval{n.sz.\dt}{\pureacc} \\
-          \prim{slideSeqRotIndices}&:&\{n : \natkind\} \to (sz~sp : \natkind) \to \{\dt : \datatype\} \to \tyval{(sp \times n + sz - sp).\dt}{\pureacc} \to \tyval{n.sz.\dt}{\pureacc} \\
-          \prim{slideSeqBuffer}&:&\{n : \natkind\} \to (sz~sp : \natkind) \to \{\dt : \datatype\} \to \tyval{(sp \times n + sz - sp).\dt}{\pureacc} \to \tyval{n.sz.\dt}{\pureacc} \\
-
-          \medskip\\
-  
+          \\[-.75em]
           \prim{zip}&:&\{n : \natkind\} \to \{\dtone~\dttwo : \datatype\} \to \tyval{n.\dtone}{\pureacc} \to \tyval{n.\dttwo}{\pureacc} \to \tyval{n.(\dtone \times \dttwo)}{\pureacc} \\
           \prim{unzip}&:&\{n : \natkind\} \to \{\dtone~\dttwo : \datatype\} \to \tyval{n.(\dtone \times \dttwo)}{\pureacc} \to \tyval{(n.\dtone \times n.\dttwo)}{\pureacc}\\
-  
+          \\[-.75em]
           \prim{pair}&:&\{\dtone~\dttwo: \datatype\} \to \tyval{\dtone}{\pureacc} \to \tyval{\dttwo}{\pureacc} \to \tyval{\dtone \times \dttwo}{\pureacc}\\
           \prim{fst}&:&\{\dtone~\dttwo : \datatype\} \to \tyval{\dtone \times \dttwo}{\pureacc} \to \tyval{\dtone}{\pureacc} \\
           \prim{snd}&:&\{\dtone~\dttwo : \datatype\} \to \tyval{\dtone \times \dttwo}{\pureacc} \to \tyval{\dttwo}{\pureacc} \\
+          \\[-.75em]
           \prim{idx} &:&\{n : \natkind\} \to \{\dt : \datatype\} \to \tyval{\tyidx[n]}{\pureacc}  \to \tyval{n.\dt}{\pureacc} \to \tyval{\dt}{\pureacc} \\
+          \\[-.75em]
           \prim{indexAsNat}&:&\{n: \natkind\} \to \tyval{\tyidx[n]}{\pureacc} \to \tyval{\natkind}{\pureacc}\\
           \prim{natAsIndex}&:&(n : \natkind) \to \tyval{\natkind}{\pureacc} \to \tyval{\tyidx[n]}{\pureacc}\\
+          \\[-.75em]
           \prim{cast}&:&\{\dtone~\dttwo : \datatype\} \to \tyval{\dtone}{\pureacc} \to \tyval{\dttwo}{\pureacc}\\
-          \prim{toMem}&:&(a : \addrkind) \to (\dt : \datatype) \to \tyval{\dt}{\writeacc} \to \tyval{\dt}{\pureacc}\\
       \end{tabular*}
-      \subcaption{Functional primitives}\label{fig:func-prim}
-    \end{minipage}
   
     \caption{Data Parallel Programming Primitives}
     \label{fig:primitives}
   \end{figure}
+
+\begin{figure}
+  \footnotesize
+  \begin{tabular*}{\linewidth}{>{$}l<{$}@{\hspace{0.4em}}>{$}c<{$}>{$}l<{$}}
+    \prim{mapGlobal_i}&:&\{n : \natkind\} \to \{\dtone~\dttwo : \datatype\} \to (\tyval{\dtone}{\pureacc} \to \tyval{\dttwo}{\writeacc}) \to \tyval{n.\dtone}{\pureacc} \to \tyval{n.\dttwo}{\writeacc} \qquad \forall i \in \{0, 1, 2\} \\
+    \prim{mapLocal_i}&:&\{n : \natkind\} \to \{\dtone~\dttwo : \datatype\} \to (\tyval{\dtone}{\pureacc} \to \tyval{\dttwo}{\writeacc}) \to \tyval{n.\dtone}{\pureacc} \to \tyval{n.\dttwo}{\writeacc} \qquad \forall i \in \{0, 1, 2\} \\
+    \prim{mapWorkGroup_i}&:&\{n : \natkind\} \to \{\dtone~\dttwo : \datatype\} \to (\tyval{\dtone}{\pureacc} \to \tyval{\dttwo}{\writeacc}) \to \tyval{n.\dtone}{\pureacc} \to \tyval{n.\dttwo}{\writeacc} \qquad \forall i \in \{0, 1, 2\} \\
+
+    \prim{toMem}&:&\{\dt : \datatype\} \to (a : \addrkind) \to \tyval{\dt}{\writeacc} \to \tyval{\dt}{\pureacc} \\
+  \end{tabular*}
+  \caption{OpenCL Primitives}
+  \label{fig:ocl-primitives}
+\end{figure}
+
+\begin{figure}
+  \footnotesize
+  \begin{tabular*}{\linewidth}{>{$}l<{$}@{\hspace{0.4em}}>{$}c<{$}>{$}l<{$}}
+    \prim{mapPar}&:&\{n : \natkind\} \to \{\dtone~\dttwo : \datatype\} \to (\tyval{\dtone}{\pureacc} \to \tyval{\dttwo}{\writeacc}) \to \tyval{n.\dtone}{\pureacc} \to \tyval{n.\dttwo}{\writeacc}\\
+    \prim{reducePar}&:&\{n : \natkind\} \to \{a : \addrkind\} \to \{\dt : \datatype\} \to (\tyval{\dt}{\pureacc} \to \tyval{\dt}{\pureacc} \to \tyval{\dt}{\writeacc}) \to \tyval{\dt}{\writeacc} \to \tyval{n.\dt}{\pureacc} \to \tyval{\dt}{\pureacc}\\
+  \end{tabular*}
+  \caption{OpenMP Primitives}
+  \label{fig:omp-primitives}
+\end{figure}
