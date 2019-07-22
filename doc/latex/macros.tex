@@ -7,6 +7,8 @@
 \newcommand{\datatype}{\mathsf{data}}
 \newcommand{\natkind}{\mathsf{nat}}
 \newcommand{\addrkind}{\mathsf{addrSpace}}
+\newcommand{\ntnkind}{\natkind\hspace{-.25em}\rightarrow\hspace{-.25em}\natkind}
+\newcommand{\ntdkind}{\natkind\hspace{-.25em}\rightarrow\hspace{-.25em}\datatype}
 \newcommand{\vwkind}{\mathsf{width}}
 \newcommand{\pureacc}{\mathtt{R}}
 \newcommand{\writeacc}{\mathtt{W}}
@@ -28,6 +30,11 @@
 \newcommand{\tyacc}{\mathsf{acc}}
 \newcommand{\tyvar}{\mathsf{var}}
 \newcommand{\tyidx}{\mathsf{idx}}
+
+% \usepackage{fdsymbol}
+
+\newcommand{\lArray}[2]{#1\scalebox{.75}{\text{\raisebox{-.25em}{$\bullet$}}}#2}
+\newcommand{\lDepArray}[3]{#1\scalebox{.75}{\text{\raisebox{-.25em}{$\blacklozenge$}}}#2\mapsto#3}
 
 \newcommand{\pureto}{\to_{\textrm{p}}}
 
