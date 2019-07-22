@@ -29,14 +29,20 @@ object IsClosedForm {
                                boundNatDataTypeFun:Set[NatDataTypeFunctionIdentifier]) extends traversal.Visitor {
           override def apply[U <: Type](t: U): Result[U] = {
             t match {
-              case i: DataTypeIdentifier if !boundT(i) => Stop(t)
-              case DepArrayType(_, elementTypeFun) => elementTypeFun match {
-                case i:NatDataTypeFunctionIdentifier => if(boundNatDataTypeFun(i)) Stop(t) else Continue(t, this)
-                case NatDataTypeLambda(x, _) =>  Continue(t, this.copy(boundN = boundN + x))
-              }
               case DependentFunctionType(x: NatIdentifier, _) => Continue(t, this.copy(boundN = boundN + x))
               case DependentFunctionType(x: DataTypeIdentifier, _) => Continue(t, this.copy(boundT = boundT + x))
               case _ => Continue(t, this)
+            }
+          }
+
+          override def data[DT <: DataType](dt: DT): Result[DT] = {
+            dt match {
+              case i: DataTypeIdentifier if !boundT(i) => Stop(dt)
+              case DepArrayType(_, elementTypeFun) => elementTypeFun match {
+                case i:NatDataTypeFunctionIdentifier => if(boundNatDataTypeFun(i)) Stop(dt) else Continue(dt, this)
+                case NatDataTypeLambda(x, _) =>  Continue(dt, this.copy(boundN = boundN + x))
+              }
+              case _ => Continue(dt, this)
             }
           }
 
@@ -44,7 +50,6 @@ object IsClosedForm {
         }
 
         traversal.types.DepthFirstGlobalResult(t, TypeVisitor(boundT, boundN, boundNatDataTypeFun))
-          .mapVisitor(_ => this)
       }
     }
 

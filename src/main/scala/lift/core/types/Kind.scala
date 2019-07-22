@@ -49,4 +49,7 @@ object KindName {
   implicit val natKindName: KindName[NatKind] = new KindName[NatKind] {
     def get = "nat"
   }
+  implicit val addressSpaceKindName: KindName[AddressSpaceKind] = new KindName[AddressSpaceKind] {
+    def get = "addressSpace"
+  }
 }

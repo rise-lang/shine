@@ -5,6 +5,7 @@ import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.{OperationalSemantics => OpSem}
 import idealised.DPIA.Types._
 import idealised.SurfaceLanguage.Operators
+import lift.core.types.NatDataTypeLambda
 import lift.core.{semantics => ls, types => lt}
 import lift.{core => l}
 
@@ -72,7 +73,7 @@ object fromLift {
 
   def apply(f: lt.NatDataTypeFunction): NatDataTypeFunction = {
     f match {
-      case lt.NatDataTypeLambda(n, dt) => NatDataTypeFunction(liftToDPIANatIdentifer(n), fromLift(dt))
+      case lt.NatDataTypeLambda(n, dt) => NatDataTypeFunction(liftToDPIANatIdentifer(n), dataType(dt))
       case lt.NatDataTypeFunctionIdentifier(name) => ???
     }
   }
@@ -119,7 +120,7 @@ object fromLift {
   def `type`(ty: lt.Type): PhraseType = {
     ty match {
       //case dt: lt.DataType => ExpType(dataType(dt))
-      case lt.DataAccessType(dt, w) => ExpType(fromLift(dt), fromLift(w))
+      case lt.DataAccessType(dt, w) => ExpType(dataType(dt), fromLift(w))
       case lt.FunctionType(i, o) => FunctionType(`type`(i), `type`(o))
       case lt.DependentFunctionType(x, t) => x match {
           case dt: lt.DataTypeIdentifier =>
@@ -564,7 +565,7 @@ object fromLift {
       lt.FunctionType(lt.DataAccessType(la: lt.DataType, lt.W), _)))
       =>
         val a = dataType(la)
-        val as = dataType(las)
+        val as = fromLift(las)
         fun[ExpType](exp"[$a, $write]", e =>
           To(as, a, e))
 

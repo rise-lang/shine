@@ -77,15 +77,13 @@ object DSL {
 
   // function values
   object fun {
-    def apply(dt: DataType)(f: TypedExpr => Expr): Expr = {
+    def apply(t: Type)(f: Expr => Expr): Expr = {
       val x = Identifier(freshName("e"))
-      Lambda(x, f(TypedExpr(x, dt)))
+      Lambda(x, f(TypedExpr(x, t)))
     }
+    def apply(dt: DataType)(f: Expr => Expr): Expr = apply(dt._R)(f)
 
-    def apply(f: Identifier => Expr): Expr = {
-      val x = Identifier(freshName("e"))
-      Lambda(x, f(x))
-    }
+    def apply(f: Identifier => Expr): Expr = untyped(f)
 
     def apply(f: (Identifier, Identifier) => Expr): Expr = untyped(f)
 
@@ -132,8 +130,6 @@ object DSL {
 
       def apply(f: (Identifier, Identifier, Identifier, Identifier, Identifier) => Expr): TypedExpr = fun.untyped(f) :: ft
     }
-
-    def apply(dt: DataType)(f: Expr => Expr): Expr = apply(dt._R)(f)
   }
 
   object nFun {
@@ -171,7 +167,7 @@ object DSL {
     }
   }
 
-  object tFun {
+  object dtFun {
     def apply(f: DataTypeIdentifier => Expr): TypeDepLambda = {
       val x = DataTypeIdentifier(freshName("dt"))
       TypeDepLambda(x, f(x))
@@ -186,7 +182,7 @@ object DSL {
     }
   }
 
-  object tFunT {
+  object dtFunT {
     def apply(f: DataTypeIdentifier => Type): Type = {
       val x = DataTypeIdentifier(freshName("dt"))
       TypeDependentFunctionType(x, f(x))

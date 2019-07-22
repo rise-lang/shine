@@ -54,8 +54,8 @@ class structuralEquality extends idealised.util.Tests {
 
   test("dependent function type using an array") {
     assert(StructuralEquality(
-      nFunT(n => tFunT(a => tFunT(t => ArrayType(n, a) ->: t))),
-      nFunT(m => tFunT(b => tFunT(t => ArrayType(m, b) ->: t)))
+      nFunT(n => dtFunT(a => dtFunT(t => ArrayType(n, a)._R ->: t._R))),
+      nFunT(m => dtFunT(b => dtFunT(t => ArrayType(m, b)._R ->: t._R)))
     ))
   }
 }

@@ -31,6 +31,8 @@ object StructuralEquality {
       ArithExpr.substitute(a, env.natIdents) == b
     def typ(a: Type, b: Type): Boolean =
       apply(a, b, env)
+    def data(a: DataType, b: DataType): Boolean =
+      apply(a, b, env)
 
     (a, b) match {
       case (Identifier(na), Identifier(nb)) =>
@@ -71,6 +73,29 @@ object StructuralEquality {
       ArithExpr.substitute(a, env.natIdents) == b
     def typ(a: Type, b: Type): Boolean =
       apply(a, b, env)
+    def data(a: DataType, b: DataType): Boolean =
+      apply(a, b, env)
+
+    (a, b) match {
+      case (DataAccessType(ia, wa), DataAccessType(ib, wb)) =>
+        data(ia, ib) && wa == wb
+      case (FunctionType(ia, oa), FunctionType(ib, ob)) =>
+        typ(ia, ib) && typ(oa, ob)
+      case (DependentFunctionType(na: NatIdentifier, ta), DependentFunctionType(nb: NatIdentifier, tb)) =>
+        apply(ta, tb, env bindNatIdents(na, nb))
+      case (DependentFunctionType(dta: DataTypeIdentifier, ta), DependentFunctionType(dtb: DataTypeIdentifier, tb)) =>
+        apply(ta, tb, env bindTypIdents(dta, dtb))
+      case _ => false
+    }
+  }
+
+  def apply(a: DataType, b: DataType, env: Environment): Boolean = {
+    def nat(a: Nat, b: Nat): Boolean =
+      ArithExpr.substitute(a, env.natIdents) == b
+    def typ(a: Type, b: Type): Boolean =
+      apply(a, b, env)
+    def data(a: DataType, b: DataType): Boolean =
+      apply(a, b, env)
 
     (a, b) match {
       case (dta: DataTypeIdentifier, dtb: DataTypeIdentifier) =>
@@ -79,21 +104,15 @@ object StructuralEquality {
           case None => throw new Exception(s"unexpected free variable '$dta'")
         }
       case (ArrayType(na, ea), ArrayType(nb, eb)) =>
-        nat(na, nb) && typ(ea, eb)
+        nat(na, nb) && data(ea, eb)
       case (TupleType(tas@_*), TupleType(tbs@_*)) =>
-        tas.zip(tbs).foldLeft(true){ case (eq, (ta, tb)) => eq && typ(ta, tb) }
+        tas.zip(tbs).foldLeft(true){ case (eq, (ta, tb)) => eq && data(ta, tb) }
       case (sa: ScalarType, sb: ScalarType) =>
-       sa == sb
+        sa == sb
       case (IndexType(na), IndexType(nb)) =>
         nat(na, nb)
       case (VectorType(na, ea), VectorType(nb, eb)) =>
-        nat(na, nb) && typ(ea, eb)
-      case (FunctionType(ia, oa), FunctionType(ib, ob)) =>
-        typ(ia, ib) && typ(oa, ob)
-      case (DependentFunctionType(na: NatIdentifier, ta), DependentFunctionType(nb: NatIdentifier, tb)) =>
-        apply(ta, tb, env bindNatIdents(na, nb))
-      case (DependentFunctionType(dta: DataTypeIdentifier, ta), DependentFunctionType(dtb: DataTypeIdentifier, tb)) =>
-        apply(ta, tb, env bindTypIdents(dta, dtb))
+        nat(na, nb) && data(ea, eb)
       case _ => false
     }
   }
