@@ -66,7 +66,7 @@ object binomialFilter {
       map(dotSeq(weights1d))
     )
 
-  val norm = reductionNormalForm
+  val norm = lambdaCalculusNormalForm
 
   val separateDot: Strategy = {
     case Apply(Apply(Apply(`reduce`, rf), init), Apply(Apply(`map`, mf), Apply(Apply(`zip`, w), Apply(`join`, nbh))))
@@ -109,14 +109,14 @@ class binomialFilter extends idealised.util.Tests {
     import strategies.traversal._
 
     val s =
-      reductionNormalForm `;`
+      LCNF `;`
       oncetd(separateDot) `;`
         repeatNTimes(2)(oncetd(specialize.reduceSeq)) `;`
         repeatNTimes(2)(oncetd(specialize.mapSeq)) `;`
-        reductionNormalForm
+       LCNF
 
     s_eq(s(highLevel).get,
-      reductionNormalForm(factorised).get)
+      lambdaCalculusNormalForm(factorised).get)
   }
 
   test("rewrite to separated blur") {
@@ -161,15 +161,15 @@ class binomialFilter extends idealised.util.Tests {
     )
 
     val result = steps.foldLeft[Expr](highLevel)({ case (e, (s, expected)) =>
-        val result = reductionNormalForm(s(e).get).get
-        s_eq(result, reductionNormalForm(expected).get)
+        val result = lambdaCalculusNormalForm(s(e).get).get
+        s_eq(result, lambdaCalculusNormalForm(expected).get)
         result
     })
 
     val pick = repeatNTimes(2)(oncetd(specialize.reduceSeq)) `;`
       repeatNTimes(2)(oncetd(specialize.mapSeq)) `;`
       repeatNTimes(2)(skip(1)(specialize.mapSeq))
-    s_eq(pick(result).get, reductionNormalForm(separated).get)
+    s_eq(pick(result).get, lambdaCalculusNormalForm(separated).get)
   }
 
   test("rewrite to register rotation blur") {
@@ -208,15 +208,15 @@ class binomialFilter extends idealised.util.Tests {
     )
 
     val result = steps.foldLeft[Expr](highLevel)({ case (e, (s, expected)) =>
-      val result = reductionNormalForm(s(e).get).get
-      s_eq(result, reductionNormalForm(expected).get)
+      val result = lambdaCalculusNormalForm(s(e).get).get
+      s_eq(result, lambdaCalculusNormalForm(expected).get)
       result
     })
 
     val pick = repeatNTimes(2)(oncetd(specialize.reduceSeq)) `;`
       oncetd(specialize.slideSeq(slideSeq.Values)) `;`
       oncetd(specialize.mapSeq)
-    s_eq(pick(result).get, reductionNormalForm(regrot).get)
+    s_eq(pick(result).get, lambdaCalculusNormalForm(regrot).get)
   }
 
   def program(name: String, e: Expr): C.Program = {

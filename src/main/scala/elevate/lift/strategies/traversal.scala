@@ -43,11 +43,11 @@ object traversal {
   def fmap: Strategy => Strategy = s => function(argumentOf(map)(body(s)))
 
   // fmap applied for expressions in rewrite normal form:
-  // fuse -> fmap -> fissio
+  // fuse -> fmap -> fission
   def fmapRNF: Strategy => Strategy =
     s =>
-      mapFusion `;` reductionNormalForm `;`
-      fmap(s) `;` reductionNormalForm `;`
+      mapFusion `;` LCNF `;`
+      fmap(s) `;` LCNF `;`
       one(mapFullFission)
 
   // applying a strategy to an expression nested in one or multiple lift `map`s
