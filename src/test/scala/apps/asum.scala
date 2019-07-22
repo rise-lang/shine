@@ -12,7 +12,7 @@ import idealised.util.{SyntaxChecker, gen}
 class asum extends idealised.util.Tests {
 
   def inputT(n : NatIdentifier) = ArrayType(n, float)
-  val abs = tFun(t => foreignFun("my_abs", Seq("y"), "{ return fabs(y); }", t -> t))
+  val abs = tFun(t => foreignFun("my_abs", Seq("y"), "{ return fabs(y); }", t ->: t))
   val fabs = abs(float)
   val add = fun(x => fun(a => x + a))
 
@@ -67,8 +67,7 @@ class asum extends idealised.util.Tests {
     gen.OpenMPProgram(intelDerived2)
   }
 
-  // FIXME
-  ignore("AMD/Nvidia second kernel derived compiles to syntactically correct OpenMP code") {
+  test("AMD/Nvidia second kernel derived compiles to syntactically correct OpenMP code") {
     import lift.OpenMP.primitives._
 
     val amdNvidiaDerived2 = nFun(n => fun(inputT(n))(input =>
@@ -148,7 +147,7 @@ class asum extends idealised.util.Tests {
       SyntaxChecker.checkOpenCL(p.code)
     }
 
-    // FIXME
+    // FIXME: wrong type, check the expression?
     ignore("AMD/Nvidia second kernel derived compiles to syntactically correct OpenCL code") {
       val amdNvidiaDerived2 = nFun(n => fun(inputT(n))(input =>
         input |>
