@@ -16,15 +16,14 @@ final case class ArrayType(size: Nat, elemType: DataType) extends ComposedType {
   override def toString: String = s"$size.$elemType"
 }
 
-final case class DepArrayType(size: Nat, fdt: NatDataTypeFunction) extends ComposedType {
+final case class DepArrayType(size: Nat, fdt: NatToData) extends ComposedType {
   override def toString: String = s"$size.$fdt"
 }
 
 object DepArrayType {
   def apply(size: Nat, f: Nat => DataType): DepArrayType = {
-    val newN = NatIdentifier(freshName("n"), RangeAdd(0, size, 1))
-    val fdt = NatDataTypeLambda(newN, f(newN))
-    DepArrayType(size, fdt)
+    val n = NatIdentifier(freshName("n"), RangeAdd(0, size, 1))
+    DepArrayType(size, NatToDataLambda(n, f(n)))
   }
 }
 
@@ -86,6 +85,15 @@ object float8 extends VectorType(8, float)
 object float16 extends VectorType(16, float)
 
 
-final case class NatDataTypeApply(f: NatDataTypeFunction, n: Nat) extends DataType {
+final class NatToDataApply(val f: NatToData, val n: Nat) extends DataType {
   override def toString: String = s"$f($n)"
+}
+
+object NatToDataApply {
+  def apply(f: NatToData, n: Nat): DataType = f match {
+    case l: NatToDataLambda     => l.apply(n)
+    case i: NatToDataIdentifier => new NatToDataApply(i, n)
+  }
+
+  def unapply(arg: NatToDataApply): Option[(NatToData, Nat)] = Some((arg.f, arg.n))
 }

@@ -96,14 +96,14 @@ class gemv extends idealised.util.Tests {
   test("High level gemv type inference works") {
     val typed = infer(high_level)
 
-    val N = typed.t.asInstanceOf[NatDependentFunctionType[_ <: Type]].x
-    val M = typed.t.asInstanceOf[NatDependentFunctionType[_ <: Type]].t.asInstanceOf[NatDependentFunctionType[_ <: Type]].x
+    val N = typed.t.asInstanceOf[NatDepFunType[_ <: Type]].x
+    val M = typed.t.asInstanceOf[NatDepFunType[_ <: Type]].t.asInstanceOf[NatDepFunType[_ <: Type]].x
     assertResult(
-      NatDependentFunctionType(N,
-        NatDependentFunctionType(M,
+      DepFunType(N,
+        DepFunType(M,
             ArrayType(M, ArrayType(N, float))._R ->:
-              ArrayType(N, float)._R ->: (ArrayType(M, float)._R ->:
-                float._R ->: float._R ->: ArrayType(M, float)._R)))) {
+              (ArrayType(N, float)._R ->: (ArrayType(M, float)._R ->:
+                (float._R ->: (float._R ->: ArrayType(M, float)._R))))))) {
       typed.t
     }
   }

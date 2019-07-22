@@ -5,6 +5,7 @@ import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics.{ArrayData, Store}
 import idealised.DPIA.Types._
 import idealised.DPIA._
+import lift.arithmetic.SimplifiedExpr
 
 import scala.language.{postfixOps, reflectiveCalls}
 import scala.xml.Elem
@@ -16,11 +17,11 @@ abstract class AbstractSlide(n: Nat,
                              input: Phrase[ExpType])
   extends ExpPrimitive
 {
-  val inputSize: Nat = sp * n + sz - sp
+  val inputSize: Nat with SimplifiedExpr = sp * n + sz - sp
 
   override val t: ExpType =
-    (n: Nat) -> (sz: Nat) -> (sp: Nat) -> (dt: DataType) ->
-      (input :: exp"[$inputSize.$dt, $read]") ->
+    (n: Nat) ->: (sz: Nat) ->: (sp: Nat) ->: (dt: DataType) ->:
+      (input :: exp"[$inputSize.$dt, $read]") ->:
         exp"[$n.$sz.$dt, $read]"
 
   override def eval(s: Store): OperationalSemantics.Data = {

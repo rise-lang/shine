@@ -1,8 +1,8 @@
 package lift.core
 
-import lift.arithmetic.{BigSum, InclusiveIndexVar}
-import lift.core.types._
+import lift.arithmetic.BigSum
 import lift.core.DSL._
+import lift.core.types._
 
 object primitives {
   // TODO: ask for basic type parameters
@@ -11,14 +11,14 @@ object primitives {
   }
 
   case object depJoin extends Primitive {
-    override def t: Type = implN(n => implNNF(lenF => implDT(dt => {
-      DepArrayType(n, NatDataTypeLambda(n, (i: NatIdentifier) => ArrayType(lenF(i), dt)))._R ->:
-        ArrayType(BigSum(from = 0, upTo = n - 1, (n: InclusiveIndexVar) => lenF(n)), dt)._R
+    override def t: Type = implN(n => implN2N(lenF => implDT(dt => {
+      DepArrayType(n, n2dtFun(n)(i => ArrayType(lenF(i), dt)))._R ->:
+        ArrayType(BigSum(from = 0, upTo = n - 1, n => lenF(n)), dt)._R
     })))
   }
 
   case object depMapSeq extends Primitive {
-    override def t: Type = implN(n => implNDF(ft1 => implNDF(ft2 =>
+    override def t: Type = implN(n => implN2DT(ft1 => implN2DT(ft2 =>
       nFunT(k => ft1(k)._R ->: ft2(k)._R) ->: DepArrayType(n, ft1)._R ->: DepArrayType(n, ft2)._R
     )))
   }
@@ -76,6 +76,13 @@ object primitives {
 
   case object natAsIndex extends Primitive {
     override def t: Type = nFunT(n => NatType._R ->: IndexType(n)._R)
+  }
+
+  case object partition extends Primitive {
+    override def t: Type = implN(n => implDT(dt =>
+      nFunT(m => n2nFunT(lenF =>
+        ArrayType(n, dt)._R ->: DepArrayType(m, n2dtFun(m)(i => ArrayType(lenF(i), dt)))._R
+      ))))
   }
 
   // TODO? could be expressed in terms of a pad idx -> val

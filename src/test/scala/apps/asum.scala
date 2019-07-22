@@ -23,8 +23,8 @@ class asum extends idealised.util.Tests {
   test("High level asum type inference works") {
     val typed = infer(high_level)
 
-    val N = typed.t.asInstanceOf[NatDependentFunctionType[_ <: Type]].x
-    assertResult(NatDependentFunctionType(N, FunctionType(inputT(N)._R, float._R))) {
+    val N = typed.t.asInstanceOf[NatDepFunType[_ <: Type]].x
+    assertResult(DepFunType[NatKind, Type](N, FunType(inputT(N)._R, float._R))) {
       typed.t
     }
   }
@@ -104,7 +104,7 @@ class asum extends idealised.util.Tests {
           ) |> join
       ))
       val phrase = idealised.DPIA.fromLift(infer(intelDerivedNoWarp1))
-      val N = phrase.t.asInstanceOf[idealised.DPIA.`(nat)->`[ExpType]].x
+      val N = phrase.t.asInstanceOf[idealised.DPIA.`(nat)->:`[ExpType]].x
       val p = OpenCL.KernelGenerator.makeCode(localSize = 128, globalSize = N)(phrase)
       println(p.code)
       SyntaxChecker.checkOpenCL(p.code)
@@ -121,7 +121,7 @@ class asum extends idealised.util.Tests {
       ))
 
       val phrase = idealised.DPIA.fromLift(infer(intelDerived2))
-      val N = phrase.t.asInstanceOf[idealised.DPIA.`(nat)->`[ExpType]].x
+      val N = phrase.t.asInstanceOf[idealised.DPIA.`(nat)->:`[ExpType]].x
       val p = OpenCL.KernelGenerator.makeCode(localSize = 128, globalSize = N)(phrase)
       println(p.code)
       SyntaxChecker.checkOpenCL(p.code)
@@ -141,7 +141,7 @@ class asum extends idealised.util.Tests {
       ))
 
       val phrase = idealised.DPIA.fromLift(infer(nvidiaDerived1))
-      val N = phrase.t.asInstanceOf[idealised.DPIA.`(nat)->`[ExpType]].x
+      val N = phrase.t.asInstanceOf[idealised.DPIA.`(nat)->:`[ExpType]].x
       val p = OpenCL.KernelGenerator.makeCode(localSize = 128, globalSize = N)(phrase)
       println(p.code)
       SyntaxChecker.checkOpenCL(p.code)
@@ -163,7 +163,7 @@ class asum extends idealised.util.Tests {
       ))
 
       val phrase = idealised.DPIA.fromLift(infer(amdNvidiaDerived2))
-      val N = phrase.t.asInstanceOf[idealised.DPIA.`(nat)->`[ExpType]].x
+      val N = phrase.t.asInstanceOf[idealised.DPIA.`(nat)->:`[ExpType]].x
       val p = OpenCL.KernelGenerator.makeCode(localSize = 128, globalSize = N)(phrase)
       println(p.code)
       SyntaxChecker.checkOpenCL(p.code)
@@ -184,7 +184,7 @@ class asum extends idealised.util.Tests {
       ))
 
       val phrase = idealised.DPIA.fromLift(infer(amdDerived1))
-      val N = phrase.t.asInstanceOf[idealised.DPIA.`(nat)->`[ExpType]].x
+      val N = phrase.t.asInstanceOf[idealised.DPIA.`(nat)->:`[ExpType]].x
       val p = OpenCL.KernelGenerator.makeCode(localSize = 128, globalSize = N)(phrase)
       println(p.code)
       SyntaxChecker.checkOpenCL(p.code)

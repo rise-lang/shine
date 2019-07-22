@@ -6,24 +6,23 @@ import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import lift.arithmetic.ArithExpr
 
 import scala.xml.Elem
 
 final case class Partition(n: Nat,
                            m: Nat,
-                           lenF:NatNatTypeFunction,
+                           lenF: NatToNat,
                            dt: DataType,
                            array: Phrase[ExpType])
   extends ExpPrimitive {
 
 
   override val t: ExpType =
-    (n: Nat) -> (m: Nat) -> (dt: DataType) ->
-      (array :: exp"[$n.$dt, $read]") -> exp"[$m.${NatDataTypeFunction(m, (i:NatIdentifier) => ArrayType(lenF(i), dt))}, $read]"
+    (n: Nat) ->: (m: Nat) ->: (lenF: NatToNat) ->: (dt: DataType) ->:
+      (array :: exp"[$n.$dt, $read]") ->: exp"[$m.${NatToDataLambda(m, (i:NatIdentifier) => ArrayType(lenF(i), dt))}, $read]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    Partition(fun(n), fun(m), fun(lenF), fun(dt), VisitAndRebuild(array, fun))
+    Partition(fun.nat(n), fun.nat(m), fun.natToNat(lenF), fun.data(dt), VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): Data = ???
@@ -36,16 +35,16 @@ final case class Partition(n: Nat,
     </partition>
 
   override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+                                  (implicit context: TranslationContext): Phrase[CommType] = {
     ???
   }
 
-  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommandType] =
+  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
+                                     (implicit context: TranslationContext): Phrase[CommType] =
     ???
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommandType])
-                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])
+                                      (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(array)(λ(exp"[$n.$dt, $read]")(x => C(Partition(n, m, lenF, dt, x)) ))

@@ -17,13 +17,13 @@ final case class To(addrSpace: AddressSpace,
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (addrSpace : AddressSpace) -> (dt: DataType) ->
-      (input :: exp"[$dt, $write]") -> exp"[$dt, $read]"
+    (addrSpace : AddressSpace) ->: (dt: DataType) ->:
+      (input :: exp"[$dt, $write]") ->: exp"[$dt, $read]"
 
   override def eval(s: Store): Data = OperationalSemantics.eval(s, input)
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    To(addrSpace, fun(dt), VisitAndRebuild(input, fun))
+    To(fun.addressSpace(addrSpace), fun.data(dt), VisitAndRebuild(input, fun))
   }
 
   override def prettyPrint: String =
@@ -40,17 +40,17 @@ final case class To(addrSpace: AddressSpace,
     })
 
   override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+                                  (implicit context: TranslationContext): Phrase[CommType] = {
     ???
   }
 
-  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommandType] = {
+  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
+                                     (implicit context: TranslationContext): Phrase[CommType] = {
     ???
   }
 
-  override def continuationTranslation(C: Phrase[->[ExpType, CommandType]])
-                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[->:[ExpType, CommType]])
+                                      (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     newWithAddrSpace(addrSpace, dt, tmp => acc(input)(tmp.wr) `;` C(tmp.rd) )

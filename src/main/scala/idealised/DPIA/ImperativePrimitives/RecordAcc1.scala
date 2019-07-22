@@ -15,8 +15,8 @@ final case class RecordAcc1(dt1: DataType,
   extends AccPrimitive {
 
   override val t: AccType =
-    (dt1: DataType) -> (dt2: DataType) ->
-      (record :: acc"[$dt1 x $dt2]") ->
+    (dt1: DataType) ->: (dt2: DataType) ->:
+      (record :: acc"[$dt1 x $dt2]") ->:
         acc"[$dt1]"
 
   override def eval(s: Store): AccIdentifier = {
@@ -27,7 +27,7 @@ final case class RecordAcc1(dt1: DataType,
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] =
-    RecordAcc1(fun(dt1), fun(dt2), VisitAndRebuild(record, fun))
+    RecordAcc1(fun.data(dt1), fun.data(dt2), VisitAndRebuild(record, fun))
 
 
   override def xmlPrinter: Elem =

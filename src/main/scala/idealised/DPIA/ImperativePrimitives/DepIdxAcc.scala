@@ -9,14 +9,14 @@ import idealised.DPIA._
 import scala.xml.Elem
 
 final case class DepIdxAcc(n: Nat,
-                           ft:NatDataTypeFunction,
+                           ft:NatToData,
                            index: Nat,
                            array: Phrase[AccType])
   extends AccPrimitive {
 
   override val t: AccType =
-    (n: Nat) -> (ft:NatDataTypeFunction) -> (index: Nat) ->
-      (array :: acc"[$n.$ft]") ->
+    (n: Nat) ->: (ft:NatToData) ->: (index: Nat) ->:
+      (array :: acc"[$n.$ft]") ->:
         acc"[${ft(index)}]"
 
   override def eval(s: Store): AccIdentifier = {
@@ -30,7 +30,7 @@ final case class DepIdxAcc(n: Nat,
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {
-    DepIdxAcc(fun(n), fun(ft), fun(index), VisitAndRebuild(array, fun))
+    DepIdxAcc(fun.nat(n), fun.natToData(ft), fun.nat(index), VisitAndRebuild(array, fun))
   }
 
   override def prettyPrint: String = s"${PrettyPhrasePrinter(array)}[$index]"

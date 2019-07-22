@@ -45,7 +45,7 @@ object primitives {
 
   object toMem extends Primitive {
     override def t: Type = implDT(t =>
-      nFunA(a => t.__(W) ->: t.__(R) )
+      aFunT(a => t.__(W) ->: t.__(R) )
     )
   }
 

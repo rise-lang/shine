@@ -2,6 +2,7 @@ package lift.core.types
 
 import lift.core._
 import lift.arithmetic._
+import lift.core.DSL.n2dtFun
 
 sealed trait Type
 
@@ -9,20 +10,16 @@ final case class TypeIdentifier(name: String) extends Type {
   override def toString: String = name
 }
 
-final case class FunctionType[T1 <: Type, T2 <: Type](inT: T1, outT: T2) extends Type {
+final case class FunType[T1 <: Type, T2 <: Type](inT: T1, outT: T2) extends Type {
   override def toString: String = s"($inT -> $outT)"
 }
 
-final case class DependentFunctionType[K <: Kind, T <: Type](x: K#I, t: T)
-                                                            (implicit kn: KindName[K]) extends Type {
-  override def toString: String = s"(${x.name} : ${kn.get} -> $t)"
+final case class DepFunType[K <: Kind, T <: Type](x: K#I, t: T) extends Type {
+  override def toString: String =
+    s"(${x.name}: ${Kind.formatKindName(x.getClass.getName)} -> $t)"
 }
 
-final case class NatNatDependentFunctionType[T <: Type](fn: NatNatFunctionIdentifier, t: T) extends Type {
-  override def toString: String = s"(${fn.name}:nat -> nat -> $t)"
-}
-
-final case class NatDataTypeDependentFunctionType[T <: Type](fn: NatDataTypeFunctionIdentifier, t: T) extends Type {
+final case class NatDataTypeDependentFunctionType[T <: Type](fn: NatToDataIdentifier, t: T) extends Type {
   override def toString: String = s"(${fn.name}:nat -> data -> $t)"
 }
 
@@ -33,92 +30,73 @@ case class DataAccessType(dt: DataType, w: AccessType) extends Type {
 // ============================================================================================= //
 // Nat -> Nat
 // ============================================================================================= //
-sealed trait NatNatFunction {
-  def apply(l: Nat): Nat
+sealed trait NatToNat {
+  def apply(n: Nat): Nat = NatToNatApply(this, n)
 }
 
-final case class NatNatLambda private (n: NatIdentifier, m: Nat) extends NatNatFunction {
-  //NatNatTypeFunction have an interesting comparison behavior, as we do not define
-  //equality for them as simple syntactic equality: we just want to make sure their bodies
-  //are equal up-to renaming of the binder.
+final case class NatToNatLambda private(x: NatIdentifier, body: Nat) extends NatToNat {
+  // NatToNat have an interesting comparison behavior, as we do not define
+  // equality for them as simple syntactic equality: we just want to make sure their bodies
+  // are equal up-to renaming of the binder.
 
-  //However, just updating equals is not sufficient, as many data structures, such as HashMaps,
-  //use hashCodes as proxy for equality. In order to make sure this property is respected, we ignore
-  //the identifier variable, and just take the hash of the body evaluated at a known point
+  // However, just updating equals is not sufficient, as many data structures, such as HashMaps,
+  // use hashCodes as proxy for equality. In order to make sure this property is respected, we ignore
+  // the identifier variable, and just take the hash of the body evaluated at a known point
   override def hashCode(): Int = this(NamedVar("comparisonDummy")).hashCode()
 
-  def apply(l: Nat): Nat = ArithExpr.substitute(m, Map((n, l)))
+  override def apply(l: Nat): Nat = ArithExpr.substitute(body, Map((x, l)))
 
-  override def toString: String = s"($n: nat) -> $m"
+  override def toString: String = s"($x: nat |-> $body)"
 
-  override def equals(obj: Any): Boolean = {
-    obj match {
-      case other: NatNatLambda => m == other(n)
-      case _ => false
-    }
+  override def equals(obj: Any): Boolean = obj match {
+    case other: NatToNatLambda => body == other(x)
+    case _ => false
   }
 }
 
-final case class NatNatFunctionIdentifier(name: String) extends NatNatFunction {
-  override def apply(l: Nat): Nat = ???
+final case class NatToNatIdentifier(name: String) extends NatToNat with Kind.Identifier {
+  override lazy val toString: String = name
+}
+
+final class NatToNatApply(val f: NatToNat, val n: Nat) extends ArithExprFunction(s"$f($n)") {
+  override def visitAndRebuild(f: Nat => Nat): Nat = this
+  override lazy val toString: String = s"$f($n)"
+}
+object NatToNatApply {
+  def apply(f: NatToNat, n: Nat): Nat = f match {
+    case l: NatToNatLambda      => l.apply(n)
+    case i: NatToNatIdentifier  => new NatToNatApply(i, n)
+  }
+  def unapply(arg: NatToNatApply): Option[(NatToNat, Nat)] = Some((arg.f, arg.n))
 }
 
 
 // ============================================================================================= //
 // Nat -> DataType
 // ============================================================================================= //
-sealed trait NatDataTypeFunction {
-  def map(f:DataType => DataType):NatDataTypeFunction = {
-    NatDataTypeFunction.mapOnElement(f, this)
+sealed trait NatToData {
+  def map(f:DataType => DataType): NatToData = this match {
+    case ident: NatToDataIdentifier => ident
+    case NatToDataLambda(x, body) => NatToDataLambda(x, f(body))
   }
 
-  def apply(n: Nat): NatDataTypeApply = call(n)
-  def call(n: Nat): NatDataTypeApply = NatDataTypeApply(this, n)
+  def apply(n: Nat): DataType = NatToDataApply(this, n)
 }
 
-object NatDataTypeFunction {
+case class NatToDataLambda private (x: NatIdentifier, body: DataType) extends NatToData {
+  //See hash code of NatNatTypeFunction
+  override def hashCode(): Int = this.apply(NamedVar("ComparisonDummy")).hashCode()
 
-  def mapOnElement(f:DataType => DataType,
-          typeFun:NatDataTypeFunction):NatDataTypeFunction = {
-    typeFun match {
-      case ident:NatDataTypeFunctionIdentifier => ident
-      case NatDataTypeLambda(binder, body) => NatDataTypeLambda(binder, f(body))
-    }
-  }
+  override def apply(a: Nat): DataType = substitute(a, `for`=x, in=body)
 
-}
+  override def toString: String = s"($x: nat |-> $body)"
 
-final case class NatDataTypeLambda(n: NatIdentifier, dt: DataType) extends NatDataTypeFunction {
-//  //See hash code of NatNatTypeFunction
-//  override def hashCode(): Int = this(NamedVar("ComparisonDummy")).hashCode()
-//
-//  def apply(m: Nat): DataType = ??? //DataType.substitute(m, `for`=n, `in`=body)
-
-  override def toString: String = s"($n: nat -> $dt)"
-
-//  override def equals(obj: Any): Boolean = {
-//    obj match {
-//      case other: NatDataTypeLambda =>
-//        val subbedOther = other(n)
-//        val eq = dt == subbedOther
-//        eq
-//      case _ => false
-//    }
-//  }
-}
-
-object NatDataTypeLambda {
-  def apply(upperBound:Nat, f:NatIdentifier => DataType):NatDataTypeFunction = {
-    val x = NatIdentifier(freshName("n"), RangeAdd(0, upperBound, 1))
-    NatDataTypeLambda(x, f(x))
-  }
-
-  def apply(upperBound:Nat, id:NatIdentifier, body: DataType):NatDataTypeFunction = {
-    val x = NamedVar(freshName("n"), RangeAdd(0, upperBound, 1))
-    NatDataTypeLambda(x, substitute(_, `for`=id, `in`=body))
+  override def equals(obj: Any): Boolean = obj match {
+    case other:NatToDataLambda => body == other.apply(x)
+    case _ => false
   }
 }
 
-final case class NatDataTypeFunctionIdentifier(name: String) extends NatDataTypeFunction {
+final case class NatToDataIdentifier(name: String) extends NatToData with Kind.Identifier {
   override def toString: String = name
 }

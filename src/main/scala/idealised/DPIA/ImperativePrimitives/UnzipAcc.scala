@@ -15,13 +15,13 @@ final case class UnzipAcc(n: Nat,
 {
 
   override val t: AccType =
-    (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
-      (a :: AccType(RecordType(ArrayType(n, dt1), ArrayType(n, dt2)))) ->
+    (n: Nat) ->: (dt1: DataType) ->: (dt2: DataType) ->:
+      (a :: AccType(RecordType(ArrayType(n, dt1), ArrayType(n, dt2)))) ->:
         acc"[$n.($dt1 x $dt2)]"
 
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {
-    UnzipAcc(fun(n), fun(dt1), fun(dt2), VisitAndRebuild(a, fun))
+    UnzipAcc(fun.nat(n), fun.data(dt1), fun.data(dt2), VisitAndRebuild(a, fun))
   }
 
   override def eval(s: Store): AccIdentifier = ???

@@ -14,11 +14,11 @@ object OpenCLReduceSeqI {
   def apply(n: Nat,
             initAddrSpace: idealised.DPIA.Types.AddressSpace,
             dt1: DataType, dt2: DataType,
-            f: Phrase[ExpType -> (ExpType -> (AccType -> CommandType))],
+            f: Phrase[ExpType ->: ExpType ->: AccType ->: CommType],
             init: Phrase[ExpType],
             in: Phrase[ExpType],
-            out: Phrase[ExpType -> CommandType])
-           (implicit context: TranslationContext): Phrase[CommandType] =
+            out: Phrase[ExpType ->: CommType])
+           (implicit context: TranslationContext): Phrase[CommType] =
   {
     newWithAddrSpace(initAddrSpace, dt2, acc =>
       (acc.wr :=|dt2| init) `;`

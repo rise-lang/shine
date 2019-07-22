@@ -18,9 +18,9 @@ final case class IdxVec(n: Nat,
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (n: Nat) -> (st: ScalarType) ->
-      (index :: exp"[idx($n), $read]") ->
-        (vector :: exp"[${VectorType(n, st)}, $read]") ->
+    (n: Nat) ->: (st: ScalarType) ->:
+      (index :: exp"[idx($n), $read]") ->:
+        (vector :: exp"[${VectorType(n, st)}, $read]") ->:
           exp"[$st, $read]"
 
   override def eval(s: Store): Data = {
@@ -31,7 +31,7 @@ final case class IdxVec(n: Nat,
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    IdxVec(fun(n), fun(st), VisitAndRebuild(index, fun), VisitAndRebuild(vector, fun))
+    IdxVec(fun.nat(n), fun.data(st), VisitAndRebuild(index, fun), VisitAndRebuild(vector, fun))
   }
 
   override def prettyPrint: String = s"(${PrettyPhrasePrinter(vector)}).${PrettyPhrasePrinter(index)}"
@@ -47,17 +47,17 @@ final case class IdxVec(n: Nat,
     </idxVec>
 
   override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+                                  (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
     con(vector)(λ(exp"[${VectorType(n, st)}, $read]")(x => A :=| st | IdxVec(n, st, index, x)))
   }
 
-  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommandType] =
+  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
+                                     (implicit context: TranslationContext): Phrase[CommType] =
     ???
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommandType])
-                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])
+                                      (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
     con(vector)(λ(exp"[${VectorType(n, st)}, $read]")(e => C(IdxVec(n, st, index, e))))
   }

@@ -17,12 +17,12 @@ final case class VectorFromScalar(n: Nat,
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (n: Nat) -> (dt: ScalarType) ->
-      (arg :: exp"[$dt, $read]") ->
+    (n: Nat) ->: (dt: ScalarType) ->:
+      (arg :: exp"[$dt, $read]") ->:
         exp"[${VectorType(n, dt)}, $read]"
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    VectorFromScalar(f(n), f(dt), VisitAndRebuild(arg, f))
+    VectorFromScalar(f.nat(n), f.data(dt), VisitAndRebuild(arg, f))
   }
 
   override def eval(s: Store): Data = ???
@@ -35,17 +35,17 @@ final case class VectorFromScalar(n: Nat,
     </makeVector>
 
   override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+                                  (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
     con(arg)(λ(exp"[$dt, $read]")(e => A :=|dt| VectorFromScalar(n, dt, e) ))
   }
 
-  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommandType] =
+  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
+                                     (implicit context: TranslationContext): Phrase[CommType] =
     ???
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommandType])
-                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])
+                                      (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
     con(arg)(λ(exp"[$dt, $read]")(e => C(VectorFromScalar(n, dt, e)) ))
   }

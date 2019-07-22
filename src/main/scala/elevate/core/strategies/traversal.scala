@@ -1,6 +1,7 @@
 package elevate.core.strategies
 
 import elevate.core._
+import elevate.core.strategies.basic._
 import lift.core.types._
 import lift.core._
 
@@ -13,12 +14,12 @@ object traversal {
       case Identifier(_) => None
       case Lambda(x, e) => Some(s(e).mapSuccess(Lambda(x, _)))
       case DepLambda(x, e) => x match {
-        case n: NatIdentifier => Some(s(e).mapSuccess(NatDepLambda(n, _)))
-        case dt: DataTypeIdentifier => Some(s(e).mapSuccess(TypeDepLambda(dt, _)))
+        case n: NatIdentifier => Some(s(e).mapSuccess(DepLambda[NatKind](n, _)))
+        case dt: DataTypeIdentifier => Some(s(e).mapSuccess(DepLambda[DataKind](dt, _)))
       }
       case DepApply(f, x) => x match {
-        case n: Nat => Some(s(f).mapSuccess(NatDepApply(_, n)))
-        case dt: DataType => Some(s(f).mapSuccess(TypeDepApply(_, dt)))
+        case n: Nat => Some(s(f).mapSuccess(DepApply[NatKind](_, n)))
+        case dt: DataType => Some(s(f).mapSuccess(DepApply[DataKind](_, dt)))
       }
       case Literal(_) => None
       case Index(_, _) => None

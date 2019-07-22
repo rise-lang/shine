@@ -18,66 +18,41 @@ package object Types {
     }
   }
 
-  implicit final class ArrowDataType(private val self: DataType) {
-    @inline def -> [B](y: B): B = y
-    def →[B](y: B): B = ->(y)
+  implicit final class ArrowType[T <: PhraseType](t: T) {
+    @inline def ->: (dt: DataType): T = t
+    @inline def ->: (n: Nat): T = t
+    @inline def ->: (addressSpace: AddressSpace): T = t
+    @inline def ->: (accessType: AccessType): T = t
+    @inline def ->: (ntn: NatToNat): T = t
+    @inline def ->: (ntd: NatToData): T = t
+    @inline def ->: (unit: Unit): T = t
   }
 
-  implicit final class ArrowNat(private val self: Nat) {
-    @inline def -> [B](y: B): B = y
-    def →[B](y: B): B = ->(y)
-  }
-
-  implicit final class ArrowAddrSpace(private val self: AddressSpace) {
-    @inline def -> [B](y: B): B = y
-    def →[B](y: B): B = ->(y)
-  }
-
-  implicit final class ArrowAccessType(private val self: AccessType) {
-    @inline def -> [B](y: B): B = y
-    def →[B](y: B): B = ->(y)
-  }
-
-  implicit final class ArrowNatNatTypeFun(private val self: NatNatTypeFunction) {
-    @inline def -> [B](y: B): B = y
-    def →[B](y: B): B = ->(y)
-  }
-
-  implicit final class ArrowNatDataTypeFun(private val self: NatDataTypeFunction) {
-    @inline def -> [B](y: B): B = y
-    def →[B](y: B): B = ->(y)
-  }
-
-  implicit final class ArrowUnit(private val self: Unit) {
-    @inline def -> [B](y: B): B = y
-    def →[B](y: B): B = ->(y)
-  }
-
-  type NatDependentFunctionType[T <: PhraseType] = DependentFunctionType[NatKind, T]
+  type NatDependentFunctionType[T <: PhraseType] = DepFunType[NatKind, T]
 
   object NatDependentFunctionType {
-    def apply[T <: PhraseType](n: NatIdentifier, t: T): DependentFunctionType[NatKind, T] =
-      DependentFunctionType[NatKind, T](n, t)
+    def apply[T <: PhraseType](n: NatIdentifier, t: T): DepFunType[NatKind, T] =
+      DepFunType[NatKind, T](n, t)
   }
 
-  type TypeDependentFunctionType[T <: PhraseType] = DependentFunctionType[DataKind, T]
+  type TypeDependentFunctionType[T <: PhraseType] = DepFunType[DataKind, T]
 
   object TypeDependentFunctionType {
-    def apply[T <: PhraseType](dt: DataTypeIdentifier, t: T): DependentFunctionType[DataKind, T] =
-      DependentFunctionType[DataKind, T](dt, t)
+    def apply[T <: PhraseType](dt: DataTypeIdentifier, t: T): DepFunType[DataKind, T] =
+      DepFunType[DataKind, T](dt, t)
   }
 
-  type AddrSpaceDependentFunctionType[T <: PhraseType] = DependentFunctionType[AddressSpaceKind, T]
+  type AddrSpaceDependentFunctionType[T <: PhraseType] = DepFunType[AddressSpaceKind, T]
 
   object AddrSpaceDependentFunctionType {
-    def apply[T <: PhraseType](addr: AddressSpaceIdentifier, t: T): DependentFunctionType[AddressSpaceKind, T] =
-      DependentFunctionType[AddressSpaceKind, T](addr, t)
+    def apply[T <: PhraseType](addr: AddressSpaceIdentifier, t: T): DepFunType[AddressSpaceKind, T] =
+      DepFunType[AddressSpaceKind, T](addr, t)
   }
 
-  type AccessDependentFunctionType[T <: PhraseType] = DependentFunctionType[AccessKind, T]
+  type AccessDependentFunctionType[T <: PhraseType] = DepFunType[AccessKind, T]
 
   object AccessDependentFunctionType {
-    def apply[T <: PhraseType](at: AccessTypeIdentifier, t: T): DependentFunctionType[AccessKind, T] =
-      DependentFunctionType[AccessKind, T](at, t)
+    def apply[T <: PhraseType](at: AccessTypeIdentifier, t: T): DepFunType[AccessKind, T] =
+      DepFunType[AccessKind, T](at, t)
   }
 }

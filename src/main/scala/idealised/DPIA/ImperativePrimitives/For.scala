@@ -10,12 +10,12 @@ import idealised.DPIA._
 import scala.xml.Elem
 
 final case class For(n: Nat,
-                     body: Phrase[ExpType -> CommandType],
+                     body: Phrase[ExpType ->: CommType],
                      unroll:Boolean)
   extends CommandPrimitive {
 
-  override val t: CommandType =
-    (n: Nat) -> (body :: t"exp[idx($n), $read] -> comm") -> comm
+  override val t: CommType =
+    (n: Nat) ->: (body :: t"exp[idx($n), $read] -> comm") ->: comm
 
   override def eval(s: Store): Store = {
     val nE = evalIndexExp(s, AsIndex(n, Natural(n)))
@@ -25,8 +25,8 @@ final case class For(n: Nat,
     )
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {
-    For(fun(n), VisitAndRebuild(body, fun), unroll)
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommType] = {
+    For(fun.nat(n), VisitAndRebuild(body, fun), unroll)
   }
 
   override def prettyPrint: String = s"(for 0..$n ${PrettyPhrasePrinter(body)})"

@@ -19,14 +19,14 @@ import scala.language.reflectiveCalls
 import scala.xml.Elem
 
 final case class DepIdx(n: Nat,
-                        ft:NatDataTypeFunction,
+                        ft:NatToData,
                         index: Nat,
                         array: Phrase[ExpType])
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (n: Nat) -> (ft: NatDataTypeFunction) -> (index: Nat) ->
-      (array :: exp"[$n.$ft, $read]") ->
+    (n: Nat) ->: (ft: NatToData) ->: (index: Nat) ->:
+      (array :: exp"[$n.$ft, $read]") ->:
         exp"[${ft(index)}, $read]"
 
   //  override def inferTypes: Idx = {
@@ -49,7 +49,7 @@ final case class DepIdx(n: Nat,
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    DepIdx(fun(n), fun(ft), fun(index), VisitAndRebuild(array, fun))
+    DepIdx(fun.nat(n), fun.natToData(ft), fun.nat(index), VisitAndRebuild(array, fun))
   }
 
   override def prettyPrint: String = s"(${PrettyPhrasePrinter(array)})[$index]"
@@ -62,18 +62,18 @@ final case class DepIdx(n: Nat,
     </depIdx>
 
   override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+                                  (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
     con(array)(λ(exp"[$n.$ft, $read]")(x => A :=| {ft(index)} | DepIdx(n, ft, index, x)))
 
   }
 
-  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommandType] =
+  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
+                                     (implicit context: TranslationContext): Phrase[CommType] =
     ???
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommandType])
-                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])
+                                      (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
     con(array)(λ(exp"[$n.$ft, $read]")(e => C(DepIdx(n, ft, index, e))))
   }

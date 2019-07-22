@@ -8,34 +8,35 @@ import idealised.DPIA.Semantics.OperationalSemantics._
 
 import scala.xml.Elem
 
+//noinspection ScalaUnnecessaryParentheses
 // note: would not be necessary if generate was defined as indices + map
 final case class GenerateCont(n: Nat,
                               dt: DataType,
-                              f: Phrase[ExpType -> (ExpType -> CommandType -> CommandType)])
+                              f: Phrase[ExpType ->: ((ExpType ->: CommType) ->: CommType)])
   extends ExpPrimitive
 {
   override val t: ExpType =
-    (n: Nat) -> (dt: DataType) ->
-      (f :: exp"[idx($n), $read]" -> (t"exp[$dt, $read] -> comm" -> comm)) ->
+    (n: Nat) ->: (dt: DataType) ->:
+      (f :: exp"[idx($n), $read]" ->: t"exp[$dt, $read] -> comm" ->: comm) ->:
       exp"[$n.$dt, $read]"
 
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    GenerateCont(v(n), v(dt), VisitAndRebuild(f, v))
+    GenerateCont(v.nat(n), v.data(dt), VisitAndRebuild(f, v))
   }
 
   override def eval(s: Store): Data = ???
 
   override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommandType] =
+                                  (implicit context: TranslationContext): Phrase[CommType] =
     throw new Exception("This should not happen")
 
 
-  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommandType] =
+  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
+                                     (implicit context: TranslationContext): Phrase[CommType] =
     throw new Exception("This should not happen")
 
-  override def continuationTranslation(C: Phrase[->[ExpType, CommandType]])
-                                      (implicit context: TranslationContext): Phrase[CommandType] =
+  override def continuationTranslation(C: Phrase[->:[ExpType, CommType]])
+                                      (implicit context: TranslationContext): Phrase[CommType] =
     throw new Exception("This should not happen")
 
   override def prettyPrint: String = s"(generateCont $n $f)"

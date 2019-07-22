@@ -16,7 +16,7 @@ final case class Cycle(n: Nat,
   extends ExpPrimitive
 {
   override val t: ExpType =
-    (n: Nat) -> (m: Nat) -> (dt: DataType) -> (input :: exp"[$m.$dt, $read]") -> exp"[$n.$dt, $read]"
+    (n: Nat) ->: (m: Nat) ->: (dt: DataType) ->: (input :: exp"[$m.$dt, $read]") ->: exp"[$n.$dt, $read]"
 
   override def eval(s: Store): Data = {
     OperationalSemantics.eval(s, input) match {
@@ -28,19 +28,19 @@ final case class Cycle(n: Nat,
   }
 
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] =
-    Cycle(v(n), v(m), v(dt), VisitAndRebuild(input, v))
+    Cycle(v.nat(n), v.nat(m), v.data(dt), VisitAndRebuild(input, v))
 
   override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommandType] =
+                                  (implicit context: TranslationContext): Phrase[CommType] =
     ???
 
 
-  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommandType] =
+  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
+                                     (implicit context: TranslationContext): Phrase[CommType] =
     ???
 
-  override def continuationTranslation(C: Phrase[->[ExpType, CommandType]])
-                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[->:[ExpType, CommType]])
+                                      (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
     con(input)(fun(exp"[$m.$dt, $read]")(x => C(Cycle(n, m, dt, x))))
   }

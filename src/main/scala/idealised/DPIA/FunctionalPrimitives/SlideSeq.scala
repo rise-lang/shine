@@ -17,16 +17,16 @@ final case class SlideSeq(rot: lp.slideSeq.Rotate,
   extends AbstractSlide(n, sz, sp, dt, input)
 {
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    SlideSeq(rot, v(n), v(sz), v(sp), v(dt), VisitAndRebuild(input, v))
+    SlideSeq(rot, v.nat(n), v.nat(sz), v.nat(sp), v.data(dt), VisitAndRebuild(input, v))
   }
 
   override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+                                  (implicit context: TranslationContext): Phrase[CommType] = {
     mapAcceptorTranslation(fun(exp"[$sz.$dt, $read]")(x => x), A)
   }
 
-  override def mapAcceptorTranslation(g: Phrase[ExpType -> ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommandType] = {
+  override def mapAcceptorTranslation(g: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
+                                     (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
     import idealised.DPIA.IntermediatePrimitives.{SlideSeqIValues, SlideSeqIIndices}
 
@@ -43,8 +43,8 @@ final case class SlideSeq(rot: lp.slideSeq.Rotate,
       )))
   }
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommandType])
-                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])
+                                      (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     `new`(dt"[$n.$dt]", fun(exp"[$n.$dt, $read]" x acc"[$n.$dt]")(tmp =>

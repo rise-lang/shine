@@ -14,18 +14,19 @@ final case class OpenCLReduceSeq(n: Nat,
                                  initAddrSpace: idealised.DPIA.Types.AddressSpace,
                                  dt1: DataType,
                                  dt2: DataType,
-                                 f: Phrase[ExpType -> (ExpType -> ExpType)],
+                                 f: Phrase[ExpType ->: ExpType ->: ExpType],
                                  init: Phrase[ExpType],
                                  array: Phrase[ExpType])
   extends ExpPrimitive
 {
   override val t: ExpType =
-    (n: Nat) -> (initAddrSpace : AddressSpace) -> (dt1: DataType) -> (dt2: DataType) ->
-      (f :: t"exp[$dt1, $read] -> exp[$dt2, $read] -> exp[$dt2, $write]") -> (init :: exp"[$dt2, $write]") ->
-        (array :: exp"[$n.$dt1, $read]") -> exp"[$dt2, $read]"
+    (n: Nat) ->: (dt1: DataType) ->: (dt2: DataType) ->:
+      (f :: t"exp[$dt1, $read] -> exp[$dt2, $read] -> exp[$dt2, $read]") ->:
+      (init :: exp"[$dt2, $read]") ->: (initAddrSpace : AddressSpace) ->:
+      (array :: exp"[$n.$dt1, $read]") ->: exp"[$dt2, $read]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    OpenCLReduceSeq(fun(n), initAddrSpace, fun(dt1), fun(dt2),
+    OpenCLReduceSeq(fun.nat(n), initAddrSpace, fun.data(dt1), fun.data(dt2),
       VisitAndRebuild(f, fun), VisitAndRebuild(init, fun), VisitAndRebuild(array, fun))
   }
 
@@ -36,7 +37,7 @@ final case class OpenCLReduceSeq(n: Nat,
       s"(${PrettyPhrasePrinter(init)}) (${PrettyPhrasePrinter(array)})"
 
   override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+                                  (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(array)(λ(exp"[$n.$dt1, $read]")(X =>
@@ -48,12 +49,12 @@ final case class OpenCLReduceSeq(n: Nat,
 
   }
 
-  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommandType] =
+  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
+                                     (implicit context: TranslationContext): Phrase[CommType] =
     ???
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommandType])
-                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])
+                                      (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(array)(λ(exp"[$n.$dt1, $read]")(X =>
@@ -65,7 +66,7 @@ final case class OpenCLReduceSeq(n: Nat,
 
   override def xmlPrinter: Elem =
     <reduce n={ToString(n)} addrSpace={ToString(initAddrSpace)} dt1={ToString(dt1)} dt2={ToString(dt2)}>
-      <f type={ToString(ExpType(dt1, read) -> (ExpType(dt2, read) -> ExpType(dt2, write)))}>
+      <f type={ToString(ExpType(dt1, read) ->: (ExpType(dt2, read) ->: ExpType(dt2, write)))}>
         {Phrases.xmlPrinter(f)}
       </f>
       <init type={ToString(ExpType(dt2, write))}>

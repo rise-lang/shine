@@ -8,11 +8,11 @@ import idealised.DPIA._
 
 object `new` {
   def apply(dt: DataType,
-            f: Phrase[VarType -> CommandType]): New =
+            f: Phrase[VarType ->: CommType]): New =
     New(dt, f)
 
   def apply(dt: DataType,
-            f: Phrase[VarType] => Phrase[CommandType]): New =
+            f: Phrase[VarType] => Phrase[CommType]): New =
     New(dt, λ(exp"[$dt]" x acc"[$dt]")( v => f(v) ))
 }
 
@@ -22,7 +22,7 @@ object newDoubleBuffer {
             dt3: ArrayType,
             in: Phrase[ExpType],
             out: Phrase[AccType],
-            f: Phrase[VarType x CommandType x CommandType -> CommandType]): NewDoubleBuffer =
+            f: Phrase[(VarType x CommType x CommType) ->: CommType]): NewDoubleBuffer =
     NewDoubleBuffer(dt1, dt2, dt3.elemType, dt3.size, in, out, f)
 
   def apply(dt1: DataType,
@@ -30,11 +30,11 @@ object newDoubleBuffer {
             dt3: ArrayType,
             in: Phrase[ExpType],
             out: Phrase[AccType],
-            f: (Phrase[VarType], Phrase[CommandType], Phrase[CommandType]) => Phrase[CommandType]) =
-    NewDoubleBuffer(dt1, dt2, dt3.elemType, dt3.size, in, out, λ(VarType(dt1) x CommandType() x CommandType())(ps => {
+            f: (Phrase[VarType], Phrase[CommType], Phrase[CommType]) => Phrase[CommType]) =
+    NewDoubleBuffer(dt1, dt2, dt3.elemType, dt3.size, in, out, λ(varT"[$dt1]" x CommType() x CommType())(ps => {
       val    v: Phrase[VarType]     = ps._1._1
-      val swap: Phrase[CommandType] = ps._1._2
-      val done: Phrase[CommandType] = ps._2
+      val swap: Phrase[CommType] = ps._1._2
+      val done: Phrase[CommType] = ps._2
       f(v, swap, done)
     }))
 }
@@ -57,7 +57,7 @@ object `if` {
 
 object `for` {
   def apply(n: Nat,
-            f: Identifier[ExpType] => Phrase[CommandType], unroll:Boolean = false): For =
+            f: Identifier[ExpType] => Phrase[CommType], unroll:Boolean = false): For =
     For(n, λ(exp"[idx($n)]")( i => f(i) ), unroll)
 }
 

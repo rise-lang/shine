@@ -19,22 +19,22 @@ final case class TransposeDepArray(n:Nat,
   private def dt(x:Nat):DataType = DataType.substitute(x, `for`=i, `in`=this.dt)
 
   override val t: ExpType = {
-    (n: Nat) -> (m: Nat) -> (i: Nat) -> (dt: DataType) ->
-      (array :: exp"[$n.${DepArrayType(m, k => dt(k))}, $read]") -> exp"[${DepArrayType(m, k => ArrayType(n, dt(k)))}, $read]"
+    (n: Nat) ->: (m: Nat) ->: (i: Nat) ->: (dt: DataType) ->:
+      (array :: exp"[$n.${DepArrayType(m, k => dt(k))}, $read]") ->: exp"[${DepArrayType(m, k => ArrayType(n, dt(k)))}, $read]"
   }
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    TransposeDepArray(f(n), f(m), f(i).asInstanceOf[NatIdentifier], f(dt), VisitAndRebuild(array, f))
+    TransposeDepArray(f.nat(n), f.nat(m), f.nat(i).asInstanceOf[NatIdentifier], f.data(dt), VisitAndRebuild(array, f))
   }
 
-  override def acceptorTranslation(A: Phrase[AccType])(implicit context: TranslationContext): Phrase[CommandType] = {
+  override def acceptorTranslation(A: Phrase[AccType])(implicit context: TranslationContext): Phrase[CommType] = {
     ???
   }
 
-  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])(implicit context: TranslationContext): Phrase[CommandType] = ???
+  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])(implicit context: TranslationContext): Phrase[CommType] = ???
 
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommandType])(implicit context: TranslationContext): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])(implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
     con(array)(λ(exp"[$n.${DepArrayType(m, k => dt(k))}, $read]")(x => C(TransposeDepArray(n, m, i, dt, x))))
   }

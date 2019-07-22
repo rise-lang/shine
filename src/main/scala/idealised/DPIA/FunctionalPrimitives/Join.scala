@@ -19,11 +19,12 @@ final case class Join(n: Nat,
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (n: Nat) -> (m: Nat) -> (w: AccessType) -> (dt: DataType) ->
-      (array :: exp"[$n.$m.$dt, $w]") -> exp"[${n * m}.$dt, $w]"
+    (n: Nat) ->: (m: Nat) ->: (w: AccessType) ->: (dt: DataType) ->:
+      (array :: exp"[$n.$m.$dt, $w]") ->:
+        exp"[${n * m}.$dt, $w]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    Join(fun(n), fun(m), fun(w), fun(dt), VisitAndRebuild(array, fun))
+    Join(fun.nat(n), fun.nat(m), fun.access(w), fun.data(dt), VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): Data = {
@@ -47,22 +48,22 @@ final case class Join(n: Nat,
     </join>
 
   override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+                                  (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     acc(array)(JoinAcc(n, m, dt, A))
   }
 
-  override def mapAcceptorTranslation(g: Phrase[ExpType -> ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommandType] = {
+  override def mapAcceptorTranslation(g: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
+                                     (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     mapAcc(fun(exp"[$m.$dt, $read]")(x => Map(m, dt, g.t.outT.dataType, g, x)), array)(
       JoinAcc(n, m, dt, A))
   }
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommandType])
-                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])
+                                      (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(array)(λ(exp"[$n.$m.$dt, $read]")(x => C(Join(n, m, w, dt, x)) ))

@@ -23,4 +23,10 @@ object HighLevelConstructs {
   val padClamp2D: Expr = {
     nFun(b => map(padClamp(b)(b)) >> padClamp(b)(b))
   }
+
+  val padCst2D: Expr = {
+    nFun(n =>
+      nFun(b => fun(x => padCst(b)(b)(generate(fun(IndexType(n))(_ => x))) >> map(padCst(b)(b)(x))))
+    )
+  }
 }

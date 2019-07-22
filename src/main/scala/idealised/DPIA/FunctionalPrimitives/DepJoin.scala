@@ -13,19 +13,19 @@ import lift.arithmetic.{ArithExpr, BigSum}
 import scala.xml.Elem
 
 final case class DepJoin(n: Nat,
-                         lenF: NatNatTypeFunction,
+                         lenF: NatToNat,
                          dt: DataType,
                          array: Phrase[ExpType])
   extends ExpPrimitive {
 
   override val t: ExpType = {
-    (n: Nat) -> (lenF: NatNatTypeFunction) -> (dt: DataType) ->
-      (array :: exp"[$n.${NatDataTypeFunction(n, (i:NatIdentifier) => ArrayType(lenF(i), dt))}, $read]") ->
-      exp"[${BigSum(from = 0, upTo = n - 1, `for` = lenF.x, lenF.body)}.$dt, $read]"
+    (n: Nat) ->: (lenF: NatToNat) ->: (dt: DataType) ->:
+      (array :: exp"[$n.${NatToDataLambda(n, (i:NatIdentifier) => ArrayType(lenF(i), dt))}, $read]") ->:
+        exp"[${BigSum(from = 0, upTo = n - 1, i => lenF(i))}.$dt, $read]"
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    DepJoin(fun(n), fun(lenF), fun(dt), VisitAndRebuild(array, fun))
+    DepJoin(fun.nat(n), fun.natToNat(lenF), fun.data(dt), VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): Data = {
@@ -49,19 +49,19 @@ final case class DepJoin(n: Nat,
     </join>
 
   override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+                                  (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     acc(array)(DepJoinAcc(n, lenF, dt, A))
   }
 
-  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])(implicit context: TranslationContext): Phrase[CommandType] = ???
+  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])(implicit context: TranslationContext): Phrase[CommType] = ???
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommandType])
-                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])
+                                      (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
-    con(array)(λ(exp"[$n.${NatDataTypeFunction(n, (i:NatIdentifier) => ArrayType(lenF(i), dt))}, $read]")(x =>
+    con(array)(λ(exp"[$n.${NatToDataLambda(n, (i:NatIdentifier) => ArrayType(lenF(i), dt))}, $read]")(x =>
       C(DepJoin(n, lenF, dt, x)) ))
   }
 }

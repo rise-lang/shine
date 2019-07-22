@@ -13,20 +13,20 @@ import scala.xml.Elem
 
 final case class Reorder(n: Nat,
                          dt: DataType,
-                         idxF: Phrase[ExpType -> ExpType],
-                         idxFinv: Phrase[ExpType -> ExpType],
+                         idxF: Phrase[ExpType ->: ExpType],
+                         idxFinv: Phrase[ExpType ->: ExpType],
                          input: Phrase[ExpType])
   extends ExpPrimitive
 {
   override val t: ExpType =
-    (n: Nat) -> (dt: DataType) ->
-      (idxF :: t"exp[idx($n), $read] -> exp[idx($n), $read]") ->
-        (idxFinv :: t"exp[idx($n), $read] -> exp[idx($n), $read]") ->
-          (input :: exp"[$n.$dt, $read]") ->
+    (n: Nat) ->: (dt: DataType) ->:
+      (idxF :: t"exp[idx($n), $read] -> exp[idx($n), $read]") ->:
+        (idxFinv :: t"exp[idx($n), $read] -> exp[idx($n), $read]") ->:
+          (input :: exp"[$n.$dt, $read]") ->:
             exp"[$n.$dt, $read]"
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    Reorder(f(n), f(dt),
+    Reorder(f.nat(n), f.data(dt),
       VisitAndRebuild(idxF, f),
       VisitAndRebuild(idxFinv, f),
       VisitAndRebuild(input, f))
@@ -47,21 +47,21 @@ final case class Reorder(n: Nat,
   }
 
   override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+                                  (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     acc(input)(ReorderAcc(n, dt, idxFinv, A))
   }
 
-  override def mapAcceptorTranslation(g: Phrase[ExpType -> ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommandType] = {
+  override def mapAcceptorTranslation(g: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
+                                     (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     mapAcc(g, input)(ReorderAcc(n, dt, idxFinv, A))
   }
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommandType])
-                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])
+                                      (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(input)(λ(exp"[$n.$dt, $read]")(x => C(Reorder(n, dt, idxF, idxFinv, x)) ))

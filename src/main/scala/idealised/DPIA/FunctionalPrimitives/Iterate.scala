@@ -14,19 +14,20 @@ final case class Iterate(n: Nat,
                          m: Nat,
                          k: Nat,
                          dt: DataType,
-                         f: Phrase[`(nat)->`[ExpType -> ExpType]],
+                         f: Phrase[`(nat)->:`[ExpType ->: ExpType]],
                          array: Phrase[ExpType])
   extends ExpPrimitive {
 
   override val t: ExpType = {
     val l = f.t.x
-    (n: Nat) -> (m: Nat) -> (k: Nat) -> (dt: DataType) ->
-      (f :: t"($l : nat) -> exp[${l * n}.$dt, $read] -> exp[$l.$dt, $read]") ->
-      (array :: exp"[${m * n.pow(k)}.$dt, $read]") -> exp"[$m.$dt, $read]"
+    (n: Nat) ->: (m: Nat) ->: (k: Nat) ->: (dt: DataType) ->:
+      (f :: t"($l : nat) -> exp[${l * n}.$dt, $read] -> exp[$l.$dt, $read]") ->:
+        (array :: exp"[${m * n.pow(k)}.$dt, $read]") ->:
+          exp"[$m.$dt, $read]"
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    Iterate(fun(n), fun(m), fun(k), fun(dt), VisitAndRebuild(f, fun), VisitAndRebuild(array, fun))
+    Iterate(fun.nat(n), fun.nat(m), fun.nat(k), fun.data(dt), VisitAndRebuild(f, fun), VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): Data = {
@@ -44,12 +45,9 @@ final case class Iterate(n: Nat,
   }
 
   override def xmlPrinter: Elem = {
-    val l = f.t match {
-      case DependentFunctionType(l_, _) => l_
-      case _ => throw new Exception("This should not happen")
-    }
+    val l = f.t.x
     <iterate n={ToString(n)} m={ToString(m)} k={ToString(k)} dt={ToString(dt)}>
-      <f type={ToString(l -> (ExpType(ArrayType(l, dt), read) -> ExpType(ArrayType(l /^ n, dt), read)))}>
+      <f type={ToString(l ->: ExpType(ArrayType(l, dt), read) ->: ExpType(ArrayType(l /^ n, dt), read))}>
         {Phrases.xmlPrinter(f)}
       </f>
       <input type={ToString(ExpType(ArrayType(m, dt), read))}>
@@ -62,7 +60,7 @@ final case class Iterate(n: Nat,
     s"(iterate $k ${PrettyPhrasePrinter(f)} ${PrettyPhrasePrinter(array)})"
 
   override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+                                  (implicit context: TranslationContext): Phrase[CommType] = {
     import idealised.DPIA.Compilation.TranslationToImperative._
 
     con(array)(λ(exp"[${m * n.pow(k)}.$dt, $read]")(x =>
@@ -72,12 +70,12 @@ final case class Iterate(n: Nat,
   }
 
   // TODO
-  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommandType] =
+  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
+                                     (implicit context: TranslationContext): Phrase[CommType] =
     ???
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommandType])
-                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])
+                                      (implicit context: TranslationContext): Phrase[CommType] = {
     import idealised.DPIA.Compilation.TranslationToImperative._
 
     ???

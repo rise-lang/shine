@@ -16,22 +16,22 @@ final case class Slide(n: Nat,
   extends AbstractSlide(n, sz, sp, dt, input)
 {
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    Slide(f(n), f(sz), f(sp), f(dt), VisitAndRebuild(input, f))
+    Slide(f.nat(n), f.nat(sz), f.nat(sp), f.data(dt), VisitAndRebuild(input, f))
   }
 
   override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+                                  (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(this)(λ(exp"[$n.$sz.$dt, $read]")(x => A :=|dt"[$n.$sz.$dt]"| x ))
   }
 
-  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommandType] =
+  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
+                                     (implicit context: TranslationContext): Phrase[CommType] =
     ???
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommandType])
-                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])
+                                      (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(input)(λ(exp"[$inputSize.$dt, $read]")(x => C(Slide(n, sz, sp, dt, x)) ))

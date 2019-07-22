@@ -9,11 +9,11 @@ import scala.xml.Elem
 // not final because of DSL.typed.skip
 case class Skip() extends CommandPrimitive {
 
-  override val t: CommandType = comm
+  override val t: CommType = comm
 
   override def eval(s: Store): Store = s
 
-  override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[CommandType] = this
+  override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[CommType] = this
 
   override def prettyPrint: String = "skip"
 

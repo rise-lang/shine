@@ -14,31 +14,31 @@ import scala.xml.Elem
 abstract class AbstractReduce(n: Nat,
                               dt1: DataType,
                               dt2: DataType,
-                              f: Phrase[ExpType -> (ExpType -> ExpType)],
+                              f: Phrase[ExpType ->: ExpType ->: ExpType],
                               init: Phrase[ExpType],
                               array: Phrase[ExpType])
   extends ExpPrimitive {
 
   def makeReduce: (Nat, DataType, DataType,
-    Phrase[ExpType -> (ExpType -> ExpType)], Phrase[ExpType], Phrase[ExpType]) => AbstractReduce
+    Phrase[ExpType ->: ExpType ->: ExpType], Phrase[ExpType], Phrase[ExpType]) => AbstractReduce
 
   def makeReduceI(n: Nat,
                   dt1: DataType,
                   dt2: DataType,
-                  f: Phrase[ExpType -> (ExpType -> (AccType -> CommandType))],
+                  f: Phrase[ExpType ->: ExpType ->: AccType ->: CommType],
                   init: Phrase[ExpType],
                   array: Phrase[ExpType],
-                  out: Phrase[ExpType -> CommandType])
-                 (implicit context: TranslationContext): Phrase[CommandType]
+                  out: Phrase[ExpType ->: CommType])
+                 (implicit context: TranslationContext): Phrase[CommType]
 
   override val t: ExpType =
-    (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
-      (f :: t"exp[$dt1, $read] -> exp[$dt2, $read] -> exp[$dt2, $write]") ->
-        (init :: exp"[$dt2, $write]") ->
-          (array :: exp"[$n.$dt1, $read]") -> exp"[$dt2, $read]"
+    (n: Nat) ->: (dt1: DataType) ->: (dt2: DataType) ->:
+      (f :: t"exp[$dt1, $read] -> exp[$dt2, $read] -> exp[$dt2, $write]") ->:
+        (init :: exp"[$dt2, $write]") ->:
+          (array :: exp"[$n.$dt1, $read]") ->: exp"[$dt2, $read]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    makeReduce(fun(n), fun(dt1), fun(dt2),
+    makeReduce(fun.nat(n), fun.data(dt1), fun.data(dt2),
       VisitAndRebuild(f, fun), VisitAndRebuild(init, fun), VisitAndRebuild(array, fun))
   }
 
@@ -61,18 +61,18 @@ abstract class AbstractReduce(n: Nat,
 
 
   override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+                                  (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(this)(λ(exp"[$dt2, $read]")(r => acc(r)(A)))
   }
 
-  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommandType] =
+  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
+                                     (implicit context: TranslationContext): Phrase[CommType] =
     ???
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommandType])
-                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])
+                                      (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(array)(λ(exp"[$n.$dt1, $read]")(X =>
@@ -84,7 +84,7 @@ abstract class AbstractReduce(n: Nat,
 
   override def xmlPrinter: Elem =
     <reduce n={ToString(n)} dt1={ToString(dt1)} dt2={ToString(dt2)}>
-      <f type={ToString(ExpType(dt1, read) -> (ExpType(dt2, read) -> ExpType(dt2, write)))}>
+      <f type={ToString(ExpType(dt1, read) ->: ExpType(dt2, read) ->: ExpType(dt2, write))}>
         {Phrases.xmlPrinter(f)}
       </f>
       <init type={ToString(ExpType(dt2, write))}>

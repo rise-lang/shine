@@ -83,7 +83,7 @@ object ProgramGenerator {
   }
 
   private def rewriteToImperative(p: Phrase[ExpType],
-                                  a: Phrase[AccType]): Phrase[CommandType] = {
+                                  a: Phrase[AccType]): Phrase[CommType] = {
     val output = (a.t.dataType, p.t.dataType) match {
       case (lhsT, rhsT) if lhsT == rhsT => a
       case (ArrayType(Cst(1), lhsT), rhsT) if lhsT == rhsT =>

@@ -12,11 +12,17 @@ case class InferenceException(msg: String) extends Exception {
 
 object infer {
   def apply(e: Expr): TypedExpr = {
-    val constraints = mutable.Set[Constraint]()
-    val typed_e = constrainTypes(e, constraints, mutable.Map())
-    implicit val (boundT, boundN) = boundIdentifiers(typed_e)
-    constraints.toSet.foreach(println)
-    val solution = solve(constraints.toSet)
+    // build set of constraints
+    val mutableConstraints = mutable.Set[Constraint]()
+    val typed_e = constrainTypes(e, mutableConstraints, mutable.Map())
+    val constraints = mutableConstraints.toSet
+    constraints.foreach(println)
+
+    // solve the constraints
+    val (boundT, boundN) = boundIdentifiers(typed_e)
+    val solution = solve(constraints)(boundT, boundN)
+
+    // apply the solution
     solution(typed_e).asInstanceOf[TypedExpr]
   }
 
@@ -31,6 +37,9 @@ object infer {
     override def toString: String = s"$a  ~  $b"
   }
   case class NatConstraint(a: Nat, b: Nat) extends Constraint {
+    override def toString: String = s"$a  ~  $b"
+  }
+  case class NatToDataConstraint(a: NatToData, b: NatToData) extends Constraint {
     override def toString: String = s"$a  ~  $b"
   }
 
@@ -52,31 +61,39 @@ object infer {
         identifierT update (x, xt)
         val te = typed(e)
         identifierT remove x
-        TypedExpr(Lambda(x, te), FunctionType(xt, te.t))
+        TypedExpr(Lambda(x, te), FunType(xt, te.t))
 
       case Apply(f, e) =>
         val tf = typed(f)
         val te = typed(e)
         val ot = fresh()
-        constraints += TypeConstraint(tf.t, FunctionType(te.t, ot))
+        val constraint = TypeConstraint(tf.t, FunType(te.t, ot))
+        println(s"Constraint for expression `$expr' is `$constraint'")
+        constraints += constraint
         TypedExpr(Apply(tf, te), ot)
 
       case DepLambda(x, e) => x match {
         case n: NatIdentifier =>
           val te = typed(e)
-          TypedExpr(NatDepLambda(n, te), NatDependentFunctionType(n, te.t))
+          TypedExpr(DepLambda[NatKind](n, te), DepFunType[NatKind, Type](n, te.t))
         case dt: DataTypeIdentifier =>
           val te = typed(e)
-          TypedExpr(TypeDepLambda(dt, te), TypeDependentFunctionType(dt, te.t))
+          TypedExpr(DepLambda[DataKind](dt, te), DepFunType[DataKind, Type](dt, te.t))
+        case n2n: NatToNatIdentifier =>
+          val te = typed(e)
+          TypedExpr(DepLambda[NatToNatKind](n2n, te), DepFunType[NatToNatKind, Type](n2n, te.t))
       }
 
       case DepApply(f, x) => x match {
         case n: Nat =>
           val tf = typed(f)
-          TypedExpr(NatDepApply(tf, n), liftDependentFunctionType[NatKind](tf.t)(n))
+          TypedExpr(DepApply[NatKind](tf, n), liftDependentFunctionType[NatKind](tf.t)(n))
         case dt: DataType =>
           val tf = typed(f)
-          TypedExpr(TypeDepApply(tf, dt), liftDependentFunctionType[DataKind](tf.t)(dt))
+          TypedExpr(DepApply[DataKind](tf, dt), liftDependentFunctionType[DataKind](tf.t)(dt))
+        case n2n: NatToNat =>
+          val tf = typed(f)
+          TypedExpr(DepApply[NatToNatKind](tf, n2n), liftDependentFunctionType[NatToNatKind](tf.t)(n2n))
       }
 
       case l: Literal => TypedExpr(l, l.d.dataType.__(R))
@@ -87,22 +104,23 @@ object infer {
 
       case TypedExpr(e, t) =>
         val te = typed(e)
-        constraints += TypeConstraint(te.t, t)
+        val constraint = TypeConstraint(te.t, t)
+        println(s"Constraint for expression `$expr' is `$constraint'")
+        constraints += constraint
         te
 
       case p: Primitive => TypedExpr(p, p.t)
     }
   }
 
-  def boundIdentifiers(expr: TypedExpr)
-  : (mutable.Set[DataTypeIdentifier], mutable.Set[NamedVar]) = {
+  def boundIdentifiers(expr: TypedExpr): (mutable.Set[DataTypeIdentifier], mutable.Set[NamedVar]) = {
     import traversal.{Result, Continue}
 
     val boundT = mutable.Set[DataTypeIdentifier]()
     val boundN = mutable.Set[NamedVar]()
 
     case class Visitor() extends traversal.Visitor {
-      override def apply(e: Expr): Result[Expr] = {
+      override def visitExpr(e: Expr): Result[Expr] = {
         e match {
           case DepLambda(x: NatIdentifier, _) => boundN += x
           case DepLambda(x: DataTypeIdentifier, _) => boundT += x
@@ -111,12 +129,12 @@ object infer {
         Continue(e, this)
       }
 
-      override def apply[T <: Type](t: T): Result[T] = {
+      override def visitType[T <: Type](t: T): Result[T] = {
         val r = traversal.types.DepthFirstLocalResult(t, new traversal.Visitor() {
-          override def apply[U <: Type](t: U): Result[U] = {
+          override def visitType[U <: Type](t: U): Result[U] = {
             t match {
-              case DependentFunctionType(x: NatIdentifier, _) => boundN += x
-              case DependentFunctionType(x: DataTypeIdentifier, _) => boundT += x
+              case DepFunType(x: NatIdentifier, _) => boundN += x
+              case DepFunType(x: DataTypeIdentifier, _) => boundT += x
               case _ =>
             }
             Continue(t, this)
@@ -131,36 +149,42 @@ object infer {
   }
 
   object Solution {
-    def apply(): Solution = Solution(Map(), Map(), Map())
-    def subs(ta: Type, tb: Type): Solution = Solution(Map(ta -> tb), Map(), Map())
-    def subs(na: NamedVar, nb: Nat): Solution = Solution(Map(), Map(na -> nb), Map())
-    def subs(wa: AccessTypeIdentifier, wb: AccessType): Solution = Solution(Map(), Map(), Map(wa -> wb))
+    def apply(): Solution = Solution(Map(), Map(), Map(), Map())
+    def subs(ta: Type, tb: Type): Solution = Solution(Map(ta -> tb), Map(), Map(), Map())
+    def subs(na: NamedVar, nb: Nat): Solution = Solution(Map(), Map(na -> nb), Map(), Map())
+    def subs(na: NatToDataIdentifier, nb: NatToData): Solution = Solution(Map(), Map(), Map(na -> nb), Map())
+    def subs(wa: AccessTypeIdentifier, wb: AccessType): Solution = Solution(Map(), Map(), Map(), Map(wa -> wb))
   }
 
   case class Solution(ts: Map[Type, Type],
                       ns: Map[NamedVar, Nat],
+                      n2ds: Map[NatToDataIdentifier, NatToData],
                       ws: Map[AccessTypeIdentifier, AccessType]) {
     def apply(e: Expr): Expr = {
       val sol = this
       traversal.DepthFirstLocalResult(e, new traversal.Visitor {
         import traversal.{Result, Continue}
-        override def apply(ae: Nat): Result[Nat] = Continue(sol(ae), this)
-        override def apply[T <: Type](t: T): Result[T] = Continue(sol(t).asInstanceOf[T], this)
+        override def visitNat(ae: Nat): Result[Nat] = Continue(sol(ae), this)
+        override def visitType[T <: Type](t: T): Result[T] = Continue(sol(t).asInstanceOf[T], this)
+        override def visitN2D(n2d: NatToData): Result[NatToData] = Continue(sol(n2d), this)
       })
     }
 
     def apply(t: Type): Type = {
-      val t2 = ts.foldLeft(t) { case (result, (ta, tb)) =>
-        substitute(tb, `for` = ta, in = result)
+      val t2 = ts.foldLeft(t) {
+        case (result, (ta, tb)) => substitute(tb, `for` = ta, in = result)
       }
-      ns.foldLeft(t2) { case (result, (na, nb)) =>
-        substitute(nb, `for` = na, in = result)
+      val t3 = ns.foldLeft(t2) {
+        case (result, (na, nb)) => substitute(nb, `for` = na, in = result)
+      }
+      n2ds.foldLeft(t3) {
+        case (result, (na, nb)) => substitute(nb, `for` = na, in = result)
       }
     }
 
     def apply(n: Nat): Nat = {
-      ns.foldLeft(n) { case (result, (na, nb)) =>
-        substitute(nb, `for` = na, in = result)
+      ns.foldLeft(n) {
+        case (result, (na, nb)) => substitute(nb, `for` = na, in = result)
       }
     }
 
@@ -170,21 +194,57 @@ object infer {
       }
     }
 
-    def apply(other: Solution): Solution = {
-      Solution(
-        ts.mapValues(t => other(t)) ++ other.ts,
-        ns.mapValues(n => other(n)) ++ other.ns,
-        ws.mapValues(w => other(w)) ++ other.ws
-      )
+    def apply(n2d: NatToData): NatToData = {
+      n2ds.foldLeft(n2d) {
+        case (result, (na, nb)) => substitute(nb, `for` = na, in = result)
+      }
+    }
+
+    // concatenating two solutions into a single one
+    def ++(other: Solution)
+          (implicit
+           boundT: mutable.Set[DataTypeIdentifier],
+           boundN: mutable.Set[NamedVar]): Solution = {
+      // this function combines two solutions by applying all the solutions from s2 to the values in s1
+      // it then concatenates the resulting maps
+      val combine: (Solution, Solution) => Solution = (s1, s2) => {
+        Solution(
+          s1.ts.mapValues(t => s2(t)) ++ s2.ts,
+          s1.ns.mapValues(n => s2(n)) ++ s2.ns,
+          s1.n2ds.mapValues(n => s2(n)) ++ s2.n2ds,
+          s1.ws.mapValues(w => s2(w)) ++ s2.ws
+        )
+      }
+
+      // concatenating two solutions starts by combining them ...
+      val s = combine(this, other)
+      // ... it then takes all the type values ...
+      s.ts.map {
+        // ... to look for `NatToDataApply` nodes that should be replaced by `b`,
+        // but where the function to call is an identifier ...
+        case (DataAccessType(NatToDataApply(i: NatToDataIdentifier, n: NamedVar), w), b) =>
+          // ... to find the function, the identifier is used to look up the matching `NatToDataLambda` ...
+          s.n2ds.get(i) match {
+            case Some(NatToDataLambda(x, body)) =>
+              // ... and then the `NatToDataApply` is replaced
+              // with the body of the `NatToDataLambda` appropriately substituted ...
+              solve( Set( TypeConstraint( DataAccessType(substitute(n, `for`=x, in=body), w), b ) ) )
+            case _ => Solution()
+          }
+        case _ => Solution()
+      // ... finally, all resulting solutions are combined into a single one by folding over them
+      }.foldLeft(s)(combine)
     }
 
     def apply(constraints: Set[Constraint]): Set[Constraint] = {
-      constraints.map({
+      constraints.map {
         case TypeConstraint(a, b) =>
           TypeConstraint(apply(a), apply(b))
         case NatConstraint(a, b) =>
           NatConstraint(apply(a), apply(b))
-      })
+        case NatToDataConstraint(a, b) =>
+          NatToDataConstraint(apply(a), apply(b))
+      }
     }
   }
 
@@ -199,7 +259,7 @@ object infer {
         if(pos >= cs.size) error(s"cannot solve constraints")
         val element = cs.toSeq(pos)
         solveOne(element) match {
-          case Some(s) => s(solve(s(cs - element)))
+          case Some(s) => s ++ solve(s.apply(cs - element))
           case None => solveAt(pos + 1)
         }
       }
@@ -227,14 +287,14 @@ object infer {
           case (VectorType(sa, ea), VectorType(sb, eb)) =>
             Some(solve(Set(NatConstraint(sa, sb), DataTypeConstraint(ea, eb))))
           case (DepArrayType(sa, ea), DepArrayType(sb, eb)) =>
-            ???
+            Some(solve(Set(NatConstraint(sa, sb), NatToDataConstraint(ea, eb))))
           case (TupleType(ea@_*), TupleType(eb@_*)) =>
-            Some(solve(ea.zip(eb).map({ case (a, b) => DataTypeConstraint(a, b) }).toSet))
-          case (NatDataTypeApply(_, _), ArrayType(_, _)) => None
+            Some(solve((ea zip eb).map{ case (aa, bb) => DataTypeConstraint(aa, bb) }.toSet))
+          case (NatToDataApply(_, _), ArrayType(_, _)) => None
         }
-      case (FunctionType(ina, outa), FunctionType(inb, outb)) =>
+      case (FunType(ina, outa), FunType(inb, outb)) =>
         Some(solve(Set(TypeConstraint(ina, inb), TypeConstraint(outa, outb))))
-      case (DependentFunctionType(na: NatIdentifier, ta), DependentFunctionType(nb: NatIdentifier, tb)) =>
+      case (DepFunType(na: NatIdentifier, ta), DepFunType(nb: NatIdentifier, tb)) =>
         val n = NamedVar(freshName("n"))
         boundN += n
         boundN -= na
@@ -243,7 +303,7 @@ object infer {
           TypeConstraint(substitute(n, `for`=na, in=ta), substitute(n, `for`=nb, in=tb)),
           NatConstraint(n, na), NatConstraint(n, nb)
         )))
-      case (DependentFunctionType(dta: DataTypeIdentifier, ta), DependentFunctionType(dtb: DataTypeIdentifier, tb)) =>
+      case (DepFunType(dta: DataTypeIdentifier, ta), DepFunType(dtb: DataTypeIdentifier, tb)) =>
         val dt = DataTypeIdentifier(freshName("t"))
         boundT += dt
         boundT -= dta
@@ -252,6 +312,8 @@ object infer {
           TypeConstraint(substitute(dt, `for`=dta, in=ta), substitute(dt, `for`=dtb, in=tb)),
           DataTypeConstraint(dt, dta), DataTypeConstraint(dt, dtb)
         )))
+//      case (_: NatToDataApply, dt: DataType) => Some(Solution.subs(a, dt)) // substitute apply by data type
+//      case (dt: DataType, _: NatToDataApply) => Some(Solution.subs(b, dt)) // substitute apply by data type
 
       case _ => error(s"cannot unify $a and $b")
     }
@@ -268,6 +330,13 @@ object infer {
       case (_, p: lift.arithmetic.Prod) => nat.unifyProd(p, a)
       case _ => error(s"cannot unify $a and $b")
     })
+    case NatToDataConstraint(a, b) => (a, b) match {
+      case (i: NatToDataIdentifier, _) => Some(natToData.unifyIdent(i, b))
+      case (_, i: NatToDataIdentifier) => Some(natToData.unifyIdent(i, a))
+      case _ if a == b => Some(Solution())
+      case _ => error(s"cannot unify $a and $b")
+    }
+
   }
 
   def unifyTypeIdent(i: TypeIdentifier, t: Type)
@@ -287,8 +356,7 @@ object infer {
         else if (!bound(i)) { Solution.subs(DataAccessType(i, w), DataAccessType(j, w)) }
         else if (!bound(j)) { Solution.subs(DataAccessType(j, w), DataAccessType(i, w)) }
         else { error(s"cannot unify $i and $j, they are both bound") }
-      case _ if occurs(i, DataAccessType(dt, w)) =>
-        error(s"circular use: $i occurs in ${DataAccessType(dt, w)}")
+      case _ if occurs(i, DataAccessType(dt, w)) => error(s"circular use: $i occurs in ${DataAccessType(dt, w)}")
       case _ if !bound(i) => Solution.subs(DataAccessType(i, w), DataAccessType(dt, w))
       case _ => ???
     }
@@ -297,19 +365,19 @@ object infer {
   private object nat {
     import lift.arithmetic._
 
-    // collect free variables with only 1 occurence
+    // collect free variables with only 1 occurrence
     def potentialPivots(n: Nat)
                        (implicit bound: mutable.Set[NamedVar]): Set[NamedVar] = {
-      var free_occurences = mutable.Map[NamedVar, Integer]()
-          .withDefault(_ => 0)
+      val free_occurrences = mutable.Map[NamedVar, Integer]()
+        .withDefault(_ => 0)
       ArithExpr.visit(n, {
-        case v: NamedVar if !bound(v) => free_occurences(v) += 1
+        case v: NamedVar if !bound(v) => free_occurrences(v) += 1
         case _ =>
       })
 
-      free_occurences.foldLeft(Set[NamedVar]())({ case (potential, (v, c)) =>
-          if (c == 1) { potential + v }
-          else { potential }
+      free_occurrences.foldLeft(Set[NamedVar]())({ case (potential, (v, c)) =>
+        if (c == 1) { potential + v }
+        else { potential }
       })
     }
 
@@ -318,18 +386,18 @@ object infer {
       n match {
         case i: NamedVar if i == pivot => Some(Solution.subs(pivot, value))
         case Prod(terms) =>
-          val (p, r) = terms.partition(t => ArithExpr.contains(t, pivot))
+          val (p, rest) = terms.partition(t => ArithExpr.contains(t, pivot))
           if (p.size != 1) {
             None
           } else {
-            pivotSolution(pivot, p.head, r.foldLeft(value)({ case (v, r) => v /^ r }))
+            pivotSolution(pivot, p.head, rest.foldLeft(value)({ case (v, r) => v /^ r }))
           }
         case Sum(terms) =>
-          val (p, r) = terms.partition(t => ArithExpr.contains(t, pivot))
+          val (p, rest) = terms.partition(t => ArithExpr.contains(t, pivot))
           if (p.size != 1) {
             None
           } else {
-            pivotSolution(pivot, p.head, r.foldLeft(value)({ case (v, r) => v - r }))
+            pivotSolution(pivot, p.head, rest.foldLeft(value)({ case (v, r) => v - r }))
           }
         case Pow(b, Cst(-1)) => pivotSolution(pivot, b, Cst(1) /^ value)
         case _ => None
@@ -340,10 +408,10 @@ object infer {
                  (implicit bound: mutable.Set[NamedVar]): Option[Solution] = {
       val pivots = potentialPivots(n)
       pivots.foreach(pivotSolution(_, n, value) match {
-        case Some(s) =>
-          return Some(s)
+        case Some(s) => return Some(s)
         case None =>
       })
+      //noinspection RemoveRedundantReturn
       return None
     }
 
@@ -360,26 +428,31 @@ object infer {
     }
 
     def unifyIdent(i: NamedVar, n: Nat)
-                     (implicit bound: mutable.Set[NamedVar]): Solution = {
-      n match {
-        case j: NamedVar =>
-          if (i == j) { Solution() }
-          else if (!bound(i)) { Solution.subs(i, j) }
-          else if (!bound(j)) { Solution.subs(j, i) }
-          else { error(s"cannot unify $i and $j, they are both bound") }
-        case _ if !ArithExpr.contains(n, i) && !bound(i) => Solution.subs(i, n)
-        case p: Prod => unifyProd(p, i)
-        case s: Sum => unifySum(s, i)
-        case _ => ???
-      }
+                  (implicit bound: mutable.Set[NamedVar]): Solution = n match {
+      case j: NamedVar =>
+        if (i == j) { Solution() }
+        else if (!bound(i)) { Solution.subs(i, j) }
+        else if (!bound(j)) { Solution.subs(j, i) }
+        else { error(s"cannot unify $i and $j, they are both bound") }
+      case _ if !ArithExpr.contains(n, i) && !bound(i) => Solution.subs(i, n)
+      case p: Prod => unifyProd(p, i)
+      case s: Sum => unifySum(s, i)
+      case _ => ???
     }
   }
 
-  def occurs(i: DataTypeIdentifier, t: Type): Boolean = {
-    t match {
-      case DataAccessType(j: DataTypeIdentifier, _) => i == j
-      case FunctionType(it, ot) => occurs(i, it) || occurs(i, ot)
-      case _ => false
+  object natToData {
+    def unifyIdent(i: NatToDataIdentifier, n: NatToData): Solution = n match {
+      case j: NatToDataIdentifier =>
+        if (i == j) { Solution() }
+        else { error(s"cannot unify $i and $j, they are both bound") }
+      case _ => Solution.subs(i, n)
     }
+  }
+
+  def occurs(i: DataTypeIdentifier, t: Type): Boolean = t match {
+    case DataAccessType(j: DataTypeIdentifier, _) => i == j
+    case FunType(it, ot) => occurs(i, it) || occurs(i, ot)
+    case _ => false
   }
 }

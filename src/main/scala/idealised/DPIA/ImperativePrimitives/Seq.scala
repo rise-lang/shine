@@ -8,19 +8,19 @@ import idealised.DPIA.Types._
 
 import scala.xml.Elem
 
-final case class Seq(c1: Phrase[CommandType],
-                     c2: Phrase[CommandType])
+final case class Seq(c1: Phrase[CommType],
+                     c2: Phrase[CommType])
   extends CommandPrimitive {
 
-  override val t: CommandType =
-    (c1 :: comm) -> (c2 :: comm) -> comm
+  override val t: CommType =
+    (c1 :: comm) ->: (c2 :: comm) ->: comm
 
   override def eval(s: Store): Store = {
     val s1 = OperationalSemantics.eval(s, c1)
     OperationalSemantics.eval(s1, c2)
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommType] = {
     Seq(VisitAndRebuild(c1, fun), VisitAndRebuild(c2, fun))
   }
 

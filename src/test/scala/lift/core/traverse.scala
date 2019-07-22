@@ -14,19 +14,19 @@ class traverse extends idealised.util.Tests {
 
   class TraceVisitor(var trace: mutable.ArrayBuffer[Any]) extends Visitor
   {
-    override def apply(e: Expr): Result[Expr] = {
+    override def visitExpr(e: Expr): Result[Expr] = {
       println(e)
       trace += e
       Continue(e, this)
     }
 
-    override def apply(ae: Nat): Result[Nat] = {
+    override def visitNat(ae: Nat): Result[Nat] = {
       println(ae)
       trace += ae
       Continue(ae, this)
     }
 
-    override def apply[T <: Type](t: T): Result[T] = {
+    override def visitType[T <: Type](t: T): Result[T] = {
       println(t)
       trace += t
       Continue(t, this)
@@ -36,9 +36,9 @@ class traverse extends idealised.util.Tests {
   test("traverse an expression depth-first") {
     val expected = {
       Seq(
-        { case _: NatDepLambda@unchecked => () },
+        { case _: DepLambda[NatKind]@unchecked => () },
         { case _: NatIdentifier => () },
-        { case _: NatDepLambda@unchecked => () },
+        { case _: DepLambda[NatKind]@unchecked => () },
         { case _: NatIdentifier => () },
         { case _: Lambda => () },
         { case _: Apply => () },
@@ -67,9 +67,9 @@ class traverse extends idealised.util.Tests {
   test("traverse an expression depth-first with stop and update") {
     val expected = {
       Seq(
-        { case _: NatDepLambda@unchecked => () },
+        { case _: DepLambda[NatKind]@unchecked => () },
         { case _: NatIdentifier => () },
-        { case _: NatDepLambda@unchecked => () },
+        { case _: DepLambda[NatKind]@unchecked => () },
         { case _: NatIdentifier => () },
         { case _: Lambda => () }
       ) : Seq[Any => Unit]
@@ -77,13 +77,13 @@ class traverse extends idealised.util.Tests {
 
     val trace = mutable.ArrayBuffer[Any]()
     class Visitor extends TraceVisitor(trace) {
-      override def apply(expr: Expr): Result[Expr] = {
+      override def visitExpr(expr: Expr): Result[Expr] = {
         expr match {
           case Apply(Apply(`map`, _), e) =>
             val r = Apply(fun(x => x), e)
             println(r)
             Stop(r)
-          case _ => super.apply(expr)
+          case _ => super.visitExpr(expr)
         }
       }
     }
@@ -111,7 +111,7 @@ class traverse extends idealised.util.Tests {
     ))
 
     class Visitor extends traversal.Visitor {
-      override def apply(expr: Expr): Result[Expr] = {
+      override def visitExpr(expr: Expr): Result[Expr] = {
         expr match {
           case Apply(`map`, f) =>
             println(f)

@@ -21,10 +21,10 @@ final case class OpenCLFunction(name: String,
   override val t: ExpType =
     (inTs zip args).foreach{
       case (inT, arg) => arg :: exp"[$inT, $read]"
-    } -> exp"[$outT, $read]"
+    } ->: exp"[$outT, $read]"
 
   override def visitAndRebuild(f: Visitor): Phrase[ExpType] = {
-    OpenCLFunction(name, inTs.map(f(_)), f(outT), args.map(VisitAndRebuild(_, f)))
+    OpenCLFunction(name, inTs.map(f.data), f.data(outT), args.map(VisitAndRebuild(_, f)))
   }
 
 //  override def codeGenExp(env: Environment): Expression = {
@@ -41,12 +41,12 @@ final case class OpenCLFunction(name: String,
     </OpenCLFunction>
 
   override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+                                  (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     def recurse(ts: Seq[(Phrase[ExpType], DataType)],
                 exps: Seq[Phrase[ExpType]],
-                inTs: Seq[DataType]): Phrase[CommandType] = {
+                inTs: Seq[DataType]): Phrase[CommType] = {
       ts match {
         // with only one argument left to process return the assignment of the OpenCLFunction call
         case Seq( (arg, inT) ) =>
@@ -61,17 +61,17 @@ final case class OpenCLFunction(name: String,
     recurse(args zip inTs, Seq(), Seq())
   }
 
-  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommandType] =
+  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
+                                     (implicit context: TranslationContext): Phrase[CommType] =
     ???
 
-  override def continuationTranslation(C: Phrase[->[ExpType, CommandType]])
-                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[->:[ExpType, CommType]])
+                                      (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     def recurse(ts: Seq[(Phrase[ExpType], DataType)],
                 es: Seq[Phrase[ExpType]],
-                inTs: Seq[DataType]): Phrase[CommandType] = {
+                inTs: Seq[DataType]): Phrase[CommType] = {
       ts match {
         // with only one argument left to process continue with the OpenCLFunction call
         case Seq( (arg, inT) ) =>

@@ -4,9 +4,9 @@ import idealised.C.AST._
 import idealised.DPIA.Compilation._
 import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives.AsIndex
-import idealised.DPIA.{LetNatIdentifier, NatDataTypeFunction}
+import idealised.DPIA.LetNatIdentifier
 import idealised.DPIA.Phrases._
-import idealised.DPIA.Types.{AccType, CommandType, DataType, DataTypeIdentifier, DepArrayType, ExpType, NatKind, PairType, PhraseType, read, TypeCheck, int}
+import idealised.DPIA.Types.{AccType, CommType, DataType, DataTypeIdentifier, DepArrayType, ExpType, NatToDataLambda, PairType, PhraseType, TypeCheck, int, read}
 import idealised._
 import lift.arithmetic.{Cst, Var}
 
@@ -85,7 +85,7 @@ object ProgramGenerator {
     p
   }
 
-  private def rewriteToImperative(p: Phrase[ExpType], a: Phrase[AccType]): Phrase[CommandType] = {
+  private def rewriteToImperative(p: Phrase[ExpType], a: Phrase[AccType]): Phrase[CommType] = {
     val output = (a.t.dataType, p.t.dataType) match {
       case (lhsT, rhsT) if lhsT == rhsT => a
       case (DPIA.Types.ArrayType(Cst(1), lhsT), rhsT) if lhsT == rhsT =>
@@ -119,7 +119,7 @@ object ProgramGenerator {
       case ArrayType(_, dt) =>
         val baseDt = DataType.getBaseDataType(dt)
         PointerType(gen.typ(baseDt))
-      case DepArrayType(_, NatDataTypeFunction(_, dt)) =>
+      case DepArrayType(_, NatToDataLambda(_, dt)) =>
         val baseDt = DataType.getBaseDataType(dt)
         PointerType(gen.typ(baseDt))
       case r : RecordType => gen.typ(r)
