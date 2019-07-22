@@ -160,6 +160,11 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
     case _ => super.typ(dt)
   }
 
+  override def genNat(n: Nat, env: Environment): Expr = n match {
+    case of: BuiltInFunction => C.AST.Literal(of.toOCLString)
+    case _ => super.genNat(n, env)
+  }
+
   protected object OpenCLCodeGen {
     def codeGenOpenCLNew(dt: DataType,
                    addressSpace: DPIA.Types.AddressSpace,

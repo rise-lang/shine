@@ -22,6 +22,8 @@ object TypeCheck {
 
       case DepApply(p, _) => TypeCheck(p)
 
+      case LetNat(_, defn, body) => TypeCheck(defn); TypeCheck(body)
+
       case Pair(p, q) => TypeCheck(p); TypeCheck(q)
 
       case Proj1(p) => TypeCheck(p)

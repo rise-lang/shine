@@ -1,6 +1,6 @@
 package idealised.C.CodeGeneration
 
-import idealised.C.AST.Block
+import idealised.C.AST.{Block, Node}
 import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives._
 import idealised.DPIA.ImperativePrimitives._
@@ -22,7 +22,9 @@ object CodeGenerator {
 
   final case class Environment(identEnv: immutable.Map[Identifier[_ <: BasePhraseTypes], C.AST.DeclRef],
                                commEnv: immutable.Map[Identifier[CommandType], C.AST.Stmt],
-                               contEnv: immutable.Map[Identifier[ExpType -> CommandType], Phrase[ExpType] => Environment => C.AST.Stmt]) {
+                               contEnv: immutable.Map[Identifier[ExpType -> CommandType], Phrase[ExpType] => Environment => C.AST.Stmt],
+                               inlLetNatEnv: immutable.Map[LetNatIdentifier, C.AST.Expr]
+                              ) {
     def updatedIdentEnv(kv: (Identifier[_ <: BasePhraseTypes], C.AST.DeclRef)): Environment = {
       this.copy(identEnv = identEnv + kv)
     }
@@ -34,6 +36,19 @@ object CodeGenerator {
     def updatedContEnv(kv: (Identifier[ExpType -> CommandType], Phrase[ExpType] => Environment => C.AST.Stmt)): Environment = {
       this.copy(contEnv = contEnv + kv)
     }
+
+    def updatedInlNatEnv(kv:(LetNatIdentifier, C.AST.Expr)):Environment = {
+      this.copy(inlLetNatEnv = this.inlLetNatEnv + kv)
+    }
+  }
+
+  object Environment {
+    def empty = Environment(
+      immutable.Map(),
+      immutable.Map(),
+      immutable.Map(),
+      immutable.Map()
+    )
   }
 
   sealed trait PathExpr
@@ -77,23 +92,36 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     }
   }
 
+
   def updatedRanges(key: String, value: lift.arithmetic.Range): CodeGenerator =
     new CodeGenerator(decls, ranges.updated(key, value))
 
-  override def generate(phrase: Phrase[CommandType], env: CodeGenerator.Environment): (scala.Seq[Decl], Stmt) = {
-    val stmt = cmd(phrase, env)
+  override def generate(phrase:Phrase[CommandType],
+               topLevelDefinitions:scala.Seq[(LetNatIdentifier, Phrase[ExpType])],
+               env:CodeGenerator.Environment): (scala.Seq[Decl], Stmt) = {
+    val stmt = this.generateWithFunctions(phrase, topLevelDefinitions, env)
     (decls, stmt)
   }
 
+  def generateWithFunctions(phrase:Phrase[CommandType],
+                            topLevelDefinitions:scala.Seq[(LetNatIdentifier, Phrase[ExpType])],
+                            env:CodeGenerator.Environment):Stmt = {
+    topLevelDefinitions.headOption match {
+      case Some((ident, defn)) =>
+        generateLetNat(ident, defn, env, (gen, env) => gen.generateWithFunctions(phrase, topLevelDefinitions.tail, env))
+      case None => cmd(phrase,env)
+    }
+  }
+
   override def cmd(phrase: Phrase[CommandType], env: Environment): Stmt = {
-    phrase match {
+    visitAndGenerateNat(phrase match {
       case Phrases.IfThenElse(cond, thenP, elseP) =>
         exp(cond, env, Nil, cond =>
           C.AST.IfThenElse(cond, cmd(thenP, env), Some(cmd(elseP, env))))
 
       case i: Identifier[CommandType] => env.commEnv(i)
 
-      case Apply(i : Identifier[_], e) => // TODO: think about this
+      case Apply(i: Identifier[_], e) => // TODO: think about this
         env.contEnv(
           i.asInstanceOf[Identifier[ExpType -> CommandType]]
         )(
@@ -124,10 +152,13 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case Proj1(pair) => cmd(Lifting.liftPair(pair)._1, env)
       case Proj2(pair) => cmd(Lifting.liftPair(pair)._2, env)
 
+      case LetNat(binder, defn, body) => generateLetNat(binder, defn, env, (gen, env) => gen.cmd(body, env))
+
+
       case Apply(_, _) | DepApply(_, _) |
            _: CommandPrimitive =>
         error(s"Don't know how to generate code for $phrase")
-    }
+    }, env)
   }
 
   override def acc(phrase: Phrase[AccType],
@@ -388,6 +419,14 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
   }
 
   override def typ(dt: DataType): Type = {
+
+    def typeToStructNameComponent(t:DataType):String = {
+      t match {
+        case IndexType(_) => freshName("idx")
+        case _ => t.toString
+      }
+    }
+
     dt match {
       case b: idealised.DPIA.Types.BasicType => b match {
         case idealised.DPIA.Types.bool => C.AST.Type.int
@@ -399,11 +438,55 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case a: idealised.DPIA.Types.ArrayType => C.AST.ArrayType(typ(a.elemType), Some(a.size))
       case a: idealised.DPIA.Types.DepArrayType => C.AST.ArrayType(typ(a.elemFType.body), Some(a.size)) // TODO: be more precise with the size?
       case r: idealised.DPIA.Types.RecordType =>
-        C.AST.StructType(r.fst.toString + "_" + r.snd.toString, immutable.Seq(
+        C.AST.StructType(typeToStructNameComponent(r.fst) + "_" + typeToStructNameComponent(r.snd), immutable.Seq(
           (typ(r.fst), "_fst"),
           (typ(r.snd), "_snd")))
       case _: idealised.DPIA.Types.DataTypeIdentifier => throw new Exception("This should not happen")
     }
+  }
+
+
+  private def generateLetNat[T <: PhraseType](binder:LetNatIdentifier,
+                             defn:Phrase[T],
+                             env:Environment,
+                             cont:(CodeGenerator ,Environment) => Stmt):Stmt = {
+    defn.t match {
+      case ExpType(_) =>
+        exp(defn.asInstanceOf[Phrase[ExpType]], env, List(), e => cont(this, env updatedInlNatEnv(binder, e)))
+      case _ =>
+        val newCodeGen = defineNatFunction(binder.name, defn, env)
+        cont(newCodeGen, env)
+    }
+  }
+
+  private def defineNatFunction[T <: PhraseType](name: String, phrase: Phrase[T], env: Environment): CodeGenerator = {
+
+    def getPhraseAndParams[_ <: PhraseType](p: Phrase[_],
+                                            ps: immutable.Seq[Identifier[ExpType]] = immutable.Seq(),
+                                            ranges:immutable.Seq[(String, Range)] = immutable.Seq()
+                                           ): (Phrase[ExpType], immutable.Seq[Identifier[ExpType]], immutable.Seq[(String, Range)]) = {
+      p match {
+        case l: Lambda[ExpType, _]@unchecked => getPhraseAndParams(l.body, l.param +: ps, ranges)
+        case ndl: NatDependentLambda[_] => getPhraseAndParams(ndl.body, Identifier(ndl.x.name, ExpType(int)) +: ps, (ndl.x.name, ndl.x.range) +: ranges)
+        case ep: Phrase[ExpType]@unchecked => (ep, ps.reverse, ranges.reverse)
+      }
+    }
+
+    val (body, params, ranges) = getPhraseAndParams(phrase)
+
+    val newEnv = params.foldLeft(env)((e, ident) => e.updatedIdentEnv(ident, C.AST.DeclRef(ident.name)))
+
+    val newCodeGen = ranges.foldLeft(this)((gen, rangeInfo) => gen.updatedRanges(rangeInfo._1, rangeInfo._2))
+
+    val cBody = visitAndGenerateNat(newCodeGen.exp(body, newEnv, List(), C.AST.Return(_)), newEnv)
+    val decl = C.AST.FunDecl(
+      name,
+      typ(body.t.dataType),
+      params.map(ident => C.AST.ParamDecl(ident.name, typ(ident.t.dataType))),
+      C.AST.Block(immutable.Seq(cBody))
+    )
+    newCodeGen.addDeclaration(decl)
+    newCodeGen
   }
 
   /**
@@ -637,28 +720,16 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                       env: Environment,
                       ps: Path,
                       cont: Expr => Stmt): Stmt = {
-      exp(i, env, Nil, i => {
-        val idx: ArithExpr = i match {
-          case C.AST.DeclRef(name) => NamedVar(name, ranges(name))
-          case C.AST.ArithmeticExpr(ae) => ae
-        }
-
-        acc(a, env, CIntExpr(idx) :: ps, cont)
-      })
-    }
-
-    def codeGenIdxVecAcc(i: Phrase[ExpType],
-                         a: Phrase[AccType],
-                         env: Environment,
-                         ps: Path,
-                         cont: Expr => Stmt): Stmt = {
-      exp(i, env, Nil, i => {
-        val idx: ArithExpr = i match {
-          case C.AST.DeclRef(name) => NamedVar(name, ranges(name))
-          case C.AST.ArithmeticExpr(ae) => ae
-        }
-
-        acc(a, env, CIntExpr(idx) :: ps, cont)
+      exp(i, env, Nil, {
+        case C.AST.Literal(text) => acc(a, env, CIntExpr(Cst(text.toInt)) :: ps, cont)
+        case C.AST.DeclRef(name) => acc(a, env, CIntExpr(NamedVar(name, ranges(name))) :: ps, cont)
+        case C.AST.ArithmeticExpr(ae) => acc(a, env, CIntExpr(ae) :: ps, cont)
+        case cExpr:C.AST.Expr =>
+          val arithVar = NamedVar(freshName("idxAcc"))
+          acc(a, env, CIntExpr(arithVar) :: ps, generated => C.AST.Block(immutable.Seq(
+            C.AST.DeclStmt(C.AST.VarDecl(arithVar.name, C.AST.Type.int, Some(cExpr))),
+            cont(generated)
+          )))
       })
     }
 
@@ -691,28 +762,15 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                    env: Environment,
                    ps: Path,
                    cont: Expr => Stmt): Stmt = {
-      exp(i, env, Nil, i => {
-        val idx: ArithExpr = i match {
-          case C.AST.DeclRef(name) => NamedVar(name, ranges(name))
-          case C.AST.ArithmeticExpr(ae) => ae
-        }
-
-        exp(e, env, CIntExpr(idx) :: ps, cont)
-      })
-    }
-
-    def codeGenIdxVec(i: Phrase[ExpType],
-                      e: Phrase[ExpType],
-                      env: Environment,
-                      ps: Path,
-                      cont: Expr => Stmt): Stmt = {
-      exp(i, env, Nil, i => {
-        val idx: ArithExpr = i match {
-          case C.AST.DeclRef(name) => NamedVar(name, ranges(name))
-          case C.AST.ArithmeticExpr(ae) => ae
-        }
-
-        exp(e, env, CIntExpr(idx) :: ps, cont)
+      exp(i, env, Nil, {
+        case C.AST.DeclRef(name) => exp(e, env, CIntExpr(NamedVar(name, ranges(name))) :: ps, cont)
+        case C.AST.ArithmeticExpr(ae) => exp(e, env, CIntExpr(ae) :: ps, cont)
+        case cExpr:C.AST.Expr =>
+          val arithVar = NamedVar(freshName("idx"))
+          exp(e, env, CIntExpr(arithVar) :: ps, generated => C.AST.Block(immutable.Seq(
+            C.AST.DeclStmt(C.AST.VarDecl(arithVar.name, C.AST.Type.int, Some(cExpr))),
+            cont(generated)
+          )))
       })
     }
 
@@ -894,6 +952,79 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     }).map(i => (NamedVar(i._1.name), NamedVar(i._2.name))).toMap[ArithExpr, ArithExpr]
     ArithExpr.substitute(n, substitionMap)
   }
+
+
+  private def visitAndGenerateNat[N <: C.AST.Node](node:N, env:Environment):N = {
+    C.AST.Nodes.VisitAndRebuild(node, new C.AST.Nodes.VisitAndRebuild.Visitor() {
+      override def post(n: Node): Node =
+        n match {
+          case C.AST.ArithmeticExpr(ae) => genNat(ae, env)
+          case other => other
+      }
+    })
+  }
+
+
+  def genNat(n: Nat,
+          env: Environment): Expr = {
+
+    def boolExp(b:BoolExpr, env:Environment):C.AST.Expr = b match {
+      case BoolExpr.True => C.AST.Literal("true")
+      case BoolExpr.False => C.AST.Literal("false")
+      case BoolExpr.ArithPredicate(lhs, rhs, op) =>
+        val cOp = op match {
+          case ArithPredicate.Operator.!= => C.AST.BinaryOperator.!=
+          case ArithPredicate.Operator.== => C.AST.BinaryOperator.==
+          case ArithPredicate.Operator.< => C.AST.BinaryOperator.<
+          case ArithPredicate.Operator.<= => C.AST.BinaryOperator.<=
+          case ArithPredicate.Operator.> => C.AST.BinaryOperator.>
+          case ArithPredicate.Operator.>= => C.AST.BinaryOperator.>=
+        }
+        C.AST.BinaryExpr(C.AST.ArithmeticExpr(lhs), cOp, C.AST.ArithmeticExpr(rhs))
+    }
+    import C.AST
+    n match {
+      case Cst(c) => AST.Literal(c.toString)
+      case Pow(b, ex) =>
+        ex match {
+          case Cst(2) => AST.BinaryExpr(genNat(b, env),AST.BinaryOperator.*, genNat(b, env))
+          case _ => AST.Cast(AST.Type.int, AST.FunCall(AST.DeclRef("pow"), immutable.Seq(
+            AST.Cast(AST.Type.float, genNat(b, env)), AST.Cast(AST.Type.float, genNat(b, env)))
+          ))
+        }
+      case Log(b, x) => AST.Cast(AST.Type.int, AST.FunCall(AST.DeclRef("log" + b), immutable.Seq(
+        AST.Cast(AST.Type.float, genNat(x, env)))
+      ))
+      case Prod(es) => es.foldLeft(AST.Literal("1"):AST.Expr)((accum:AST.Expr, e:ArithExpr) => {
+        e match {
+          case Pow(b, Cst(-1)) => C.AST.BinaryExpr(accum, AST.BinaryOperator./, genNat(b, env))
+          case _ => C.AST.BinaryExpr(accum, AST.BinaryOperator.*, genNat(e, env))
+        }
+      })
+      case Sum(es) => es.map(genNat(_, env)).reduceOption(AST.BinaryExpr(_, AST.BinaryOperator.+, _)).getOrElse(AST.Literal("0"))
+      case Mod(a, n) => AST.BinaryExpr(genNat(a, env), AST.BinaryOperator.%, genNat(n, env))
+      case v:Var => C.AST.DeclRef(v.toString)
+      case IntDiv(n, d) => AST.BinaryExpr(genNat(n, env), AST.BinaryOperator./, genNat(d, env))
+      case lu:Lookup => AST.FunCall(AST.DeclRef(s"lookup${lu.id}"), immutable.Seq(AST.Literal(lu.index.toString)))
+
+      case lift.arithmetic.IfThenElse(cond, trueBranch, falseBranch) => AST.TernaryExpr(
+        boolExp(cond, env), genNat(trueBranch, env), genNat(falseBranch, env))
+
+      case natFunCall: NatFunCall =>
+        if(natFunCall.args.isEmpty) {
+          env.inlLetNatEnv(natFunCall.fun)
+        } else {
+          AST.FunCall(AST.DeclRef(natFunCall.name), natFunCall.args.map({
+            case NatArg(n) => genNat(n, env)
+            case LetNatIdArg(ident) => env.inlLetNatEnv(ident)
+          }))
+        }
+
+      case sp: SteppedCase => genNat(sp.intoIfChain(), env)
+      case otherwise => throw new Exception(s"Don't know how to print $otherwise")
+    }
+  }
+
 
   protected def genPad(n: Nat, l: Nat, r: Nat,
                        left: Expr, right: Expr,

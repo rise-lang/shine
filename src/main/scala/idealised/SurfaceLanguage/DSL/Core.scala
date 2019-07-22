@@ -1,5 +1,6 @@
 package idealised.SurfaceLanguage.DSL
 
+import idealised.DPIA.LetNatIdentifier
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage._
 
@@ -74,4 +75,11 @@ object tFun {
     TypeDependentLambdaExpr(x, f(x))
   }
 
+}
+
+object letNat {
+  def apply(defn:Expr, makeBody:LetNatIdentifier => Expr):LetNat = {
+    val identifier = LetNatIdentifier()
+    LetNat(identifier, defn, makeBody(identifier))
+  }
 }

@@ -1,18 +1,21 @@
 package elevate.core.rules
 
-import elevate.core.Strategy
+import elevate.core.{Failure, NotApplicable, Strategy, Success}
 import lift.core.primitives
 
 object specialize {
-  val mapSeq: Strategy = {
-    case primitives.map => primitives.mapSeq
+  def mapSeq: Strategy = {
+    case primitives.map => Success(primitives.mapSeq)
+    case _ => Failure(mapSeq)
   }
 
-  val reduceSeq: Strategy = {
-    case primitives.reduce => primitives.reduceSeq
+  def reduceSeq: Strategy = {
+    case primitives.reduce => Success(primitives.reduceSeq)
+    case _ => Failure(reduceSeq)
   }
 
   def slideSeq(rot: primitives.slideSeq.Rotate): Strategy = {
-    case primitives.slide => primitives.slideSeq(rot)
+    case primitives.slide => Success(primitives.slideSeq(rot))
+    case _ => Failure(slideSeq(rot))
   }
 }

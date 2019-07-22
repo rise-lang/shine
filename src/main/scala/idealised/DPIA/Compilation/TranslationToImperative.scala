@@ -48,6 +48,8 @@ object TranslationToImperative {
           acc(Lifting.liftDependentFunction[DataKind, ExpType](fun.asInstanceOf[Phrase[DataKind `()->` ExpType]])(a))(A)
       }
 
+      case LetNat(binder, defn, body) => LetNat(binder, defn, acc(body)(A))
+
       case IfThenElse(cond, thenP, elseP) =>
         con(cond)(λ(cond.t) { x =>
           `if` (x) `then` acc(thenP)(A) `else` acc(elseP)(A)

@@ -17,11 +17,7 @@ object infer {
     implicit val (boundT, boundN) = boundIdentifiers(typed_e)
     constraints.toSet.foreach(println)
     val solution = solve(constraints.toSet)
-    val result = solution(typed_e)
-    if (!isClosedForm(result)) {
-      error(s"expression is not in closed form after inference: $result")
-    }
-    result.asInstanceOf[TypedExpr]
+    solution(typed_e).asInstanceOf[TypedExpr]
   }
 
   def error(msg: String): Nothing =
@@ -132,68 +128,6 @@ object infer {
 
     traversal.DepthFirstLocalResult(expr, Visitor())
     (boundT, boundN)
-  }
-
-  def isClosedForm(expr: Expr): Boolean = {
-    import traversal.{Result, Continue, Stop}
-
-    case class Visitor(boundV: Set[Identifier],
-                       boundT: Set[DataTypeIdentifier],
-                       boundN: Set[NamedVar],
-                       boundNatDataTypeFun:Set[NatDataTypeFunctionIdentifier]) extends traversal.Visitor {
-      override def apply(e: Expr): Result[Expr] = {
-        e match {
-          case i: Identifier if !boundV(i) => Stop(i)
-          case Lambda(x, _) => Continue(e, this.copy(boundV = boundV + x))
-          case DepLambda(x: NatIdentifier, _)       => Continue(e, this.copy(boundN = boundN + x))
-          case DepLambda(x: DataTypeIdentifier, _)  => Continue(e, this.copy(boundT = boundT + x))
-          case _ => Continue(e, this)
-        }
-      }
-
-      override def apply(ae: Nat): Result[Nat] = visitNat(ae, boundN, this)
-
-      override def apply[T <: Type](t: T): Result[T] = {
-        case class TypeVisitor(boundT: Set[DataTypeIdentifier],
-                               boundN: Set[NamedVar],
-                               boundNatDataTypeFun:Set[NatDataTypeFunctionIdentifier]) extends traversal.Visitor {
-          override def apply[U <: Type](t: U): Result[U] = {
-            t match {
-              case DependentFunctionType(x: NatIdentifier, _) => Continue(t, this.copy(boundN = boundN + x))
-              case DependentFunctionType(x: DataTypeIdentifier, _) => Continue(t, this.copy(boundT = boundT + x))
-              case _ => Continue(t, this)
-            }
-          }
-
-          override def data[DT <: DataType](dt: DT): Result[DT] = {
-            dt match {
-              case i: DataTypeIdentifier if !boundT(i) => Stop(dt)
-              case DepArrayType(_, elementTypeFun) => elementTypeFun match {
-                case i:NatDataTypeFunctionIdentifier => if(boundNatDataTypeFun(i)) Stop(dt) else Continue(dt, this)
-                case NatDataTypeLambda(x, _) =>  Continue(dt, this.copy(boundN = boundN + x))
-              }
-              case _ => Continue(dt, this)
-            }
-          }
-
-          override def apply(ae: Nat): Result[Nat] = visitNat(ae, boundN, this)
-        }
-        traversal.types.DepthFirstGlobalResult(t, TypeVisitor(boundT, boundN, boundNatDataTypeFun))
-      }
-    }
-
-    def visitNat(ae: Nat, bound: Set[NamedVar], v: traversal.Visitor): Result[Nat] = {
-      val closed = ae.varList.foldLeft(true)({
-        case (c, v: NamedVar) => c && bound(v)
-        case (c, _) => c
-      })
-      if (closed) { Continue(ae, v) } else { Stop(ae) }
-    }
-
-    traversal.DepthFirstGlobalResult(expr, Visitor(Set(), Set(), Set(), Set())) match {
-      case Stop(_) => false
-      case Continue(_, _) => true
-    }
   }
 
   object Solution {
@@ -326,8 +260,8 @@ object infer {
       case (i: NamedVar, _) => nat.unifyIdent(i, b)
       case (_, i: NamedVar) => nat.unifyIdent(i, a)
       case _ if a == b => Solution()
-      case _ if nat.unwrapFreeTerm(a).isDefined => nat.pivotSolution(a, b)
-      case _ if nat.unwrapFreeTerm(b).isDefined => nat.pivotSolution(b, a)
+      // case _ if !nat.potentialPivots(a).isEmpty => nat.tryPivots(a, b)
+      // case _ if !nat.potentialPivots(b).isEmpty => nat.tryPivots(b, a)
       case (s: lift.arithmetic.Sum, _) => nat.unifySum(s, b)
       case (_, s: lift.arithmetic.Sum) => nat.unifySum(s, a)
       case (p: lift.arithmetic.Prod, _) => nat.unifyProd(p, b)
@@ -360,65 +294,69 @@ object infer {
     }
   }
 
-  object nat {
+  private object nat {
     import lift.arithmetic._
 
-    def unwrapFreeTerm(term: ArithExpr)
-                      (implicit bound: mutable.Set[NamedVar]): Option[NamedVar] = {
-      term match {
-        case i: NamedVar if !bound(i) => Some(i)
-        case Prod(Cst(_) :: t :: Nil) => unwrapFreeTerm(t)
-        case Sum(Cst(_) :: t :: Nil) => unwrapFreeTerm(t)
-        case Pow(b, Cst(_)) => unwrapFreeTerm(b)
+    // collect free variables with only 1 occurence
+    def potentialPivots(n: Nat)
+                       (implicit bound: mutable.Set[NamedVar]): Set[NamedVar] = {
+      var free_occurences = mutable.Map[NamedVar, Integer]()
+          .withDefault(_ => 0)
+      ArithExpr.visit(n, {
+        case v: NamedVar if !bound(v) => free_occurences(v) += 1
+        case _ =>
+      })
+
+      free_occurences.foldLeft(Set[NamedVar]())({ case (potential, (v, c)) =>
+          if (c == 1) { potential + v }
+          else { potential }
+      })
+    }
+
+    def pivotSolution(pivot: NamedVar, n: Nat, value: Nat)
+                     (implicit bound: mutable.Set[NamedVar]): Option[Solution] = {
+      n match {
+        case i: NamedVar if i == pivot => Some(Solution.subs(pivot, value))
+        case Prod(terms) =>
+          val (p, r) = terms.partition(t => ArithExpr.contains(t, pivot))
+          if (p.size != 1) {
+            None
+          } else {
+            pivotSolution(pivot, p.head, r.foldLeft(value)({ case (v, r) => v /^ r }))
+          }
+        case Sum(terms) =>
+          val (p, r) = terms.partition(t => ArithExpr.contains(t, pivot))
+          if (p.size != 1) {
+            None
+          } else {
+            pivotSolution(pivot, p.head, r.foldLeft(value)({ case (v, r) => v - r }))
+          }
+        case Pow(b, Cst(-1)) => pivotSolution(pivot, b, Cst(1) /^ value)
         case _ => None
       }
     }
 
-    def findPivot(terms: Seq[ArithExpr])
-                 (implicit bound: mutable.Set[NamedVar]): Nat = {
-      val (free, toTerm) =
-        terms.foldLeft((Set[NamedVar](), Map[NamedVar, Nat]()))(
-          { case ((fr, tt), term) =>
-            unwrapFreeTerm(term) match {
-              case Some(x) => (fr + x, tt updated (x, term))
-              case None => (fr, tt)
-            }
-          })
-      val pivots = free.filter(p => terms.count(ArithExpr.contains(_, p)) == 1)
-      if (pivots.isEmpty) { ??? }
-      toTerm(pivots.head)
-    }
-
-    def pivotSolution(term: Nat, value: Nat): Solution = {
-      term match {
-        case i: NamedVar => Solution.subs(i, value)
-        case Prod((c: Cst) :: t :: Nil) => pivotSolution(t, value /^ c)
-        case Sum((c: Cst) :: t :: Nil) => pivotSolution(t, value - c)
-        case Pow(b, Cst(-1)) => pivotSolution(b, Cst(1) /^ value)
-        case _ => ???
-      }
+    def tryPivots(n: Nat, value: Nat)
+                 (implicit bound: mutable.Set[NamedVar]): Option[Solution] = {
+      val pivots = potentialPivots(n)
+      pivots.foreach(pivotSolution(_, n, value) match {
+        case Some(s) =>
+          return Some(s)
+        case None =>
+      })
+      return None
     }
 
     def unifyProd(p: Prod, n: Nat)
                  (implicit bound: mutable.Set[NamedVar]): Solution = {
-      val Prod(ps) = p
-      // n = ps --> 1 = ps * (1/n)
-      val terms = (Cst(1) /^ n) :: ps
-      // 1 = pivot * .. --> pivot = 1 / ..
-      val pivot = findPivot(terms)
-      val value = terms.filter({_ != pivot }).foldLeft(1: Nat)({ case (x, t) => x /^ t })
-      pivotSolution(pivot, value)
+      // n = p --> 1 = p * (1/n)
+      tryPivots(p /^ n, 1).get
     }
 
     def unifySum(s: Sum, n: Nat)
                 (implicit bound: mutable.Set[NamedVar]): Solution = {
-      val Sum(ss) = s
-      // n = ss --> 0 = ss + (-n)
-      val terms = (-1*n) :: ss
-      // 0 = pivot + .. --> pivot = 0 - ..
-      val pivot = findPivot(terms)
-      val value = terms.filter({ _ != pivot }).foldLeft(0: Nat)({ case (x, t) => x - t })
-      pivotSolution(pivot, value)
+      // n = s --> 0 = s + (-n)
+      tryPivots(s - n, 0).get
     }
 
     def unifyIdent(i: NamedVar, n: Nat)

@@ -12,15 +12,13 @@ class scal extends idealised.util.Tests {
     input |> mapSeq(fun(x => alpha * x))
   )))
 
-  // TODO: fix equality of types (specifically, NatDependentFunctionType and TypeDependentFunctionType)
-  ignore("Simple scal type inference works") {
+  test("Simple scal type inference works") {
     val typed = infer(simpleScal)
 
-    assertResult(
-      nFunT(n => FunctionType(ArrayType(n, float)._R, FunctionType(float._R, ArrayType(n, float)._R)))
-    ) {
+    assert(StructuralEquality(
+      nFunT(n => FunctionType(ArrayType(n, float)._R, FunctionType(float._R, ArrayType(n, float)._R))),
       typed.t
-    }
+    ))
   }
 
   // OpenMP

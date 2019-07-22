@@ -48,7 +48,7 @@ object primitives {
 
   object to extends Primitive {
     override def t: Type = implDT(t =>
-      nFunA(a => t.__(W) -> t.__(R) )
+      nFunA(a => t.__(W) ->: t.__(R) )
     )
   }
 

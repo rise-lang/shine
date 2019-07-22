@@ -1,5 +1,6 @@
 package idealised
 
+import idealised.C.AST.CPrinter
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types.{PhraseTypeParser, _}
 import lift.arithmetic._
@@ -48,8 +49,70 @@ package object DPIA {
     def  apply[T <: PhraseType](fun: Phrase[`(dt)->`[T]], arg: DataType): TypeDependentApply[T] = DepApply[DataKind, T](fun, arg)
   }
 
-  case class NatNatTypeFunction private (x:NatIdentifier, body:Nat) {
-    //NatNatTypeFunction have an interesting comparison behavior, as we do not define
+  case class LetNatIdentifier(id:NatIdentifier) {
+    def name:String = id.name
+
+    def apply(args:Any*):NatFunCall = {
+      NatFunCall(this, args.map({
+        case n:Nat => NatArg(n)
+        case id:LetNatIdentifier => LetNatIdArg(id)
+        case other =>
+          throw new Exception(s"Invalid parameter to NatFunCall ${this.name} $other, must either bet a Nat or a LetNatIdentifier")
+      }))
+    }
+  }
+
+  object LetNatIdentifier {
+    def apply():LetNatIdentifier = {
+      LetNatIdentifier(NatIdentifier("nFun"))
+    }
+  }
+
+  sealed trait NatFunArg
+  case class NatArg(n:Nat) extends NatFunArg
+  case class LetNatIdArg(letNatIdentifier: LetNatIdentifier) extends NatFunArg
+
+
+  class NatFunCall(val fun:LetNatIdentifier, val args:Seq[NatFunArg]) extends ArithExprFunction(fun.id.name)  {
+    override def visitAndRebuild(f: Nat => Nat): Nat = NatFunCall(fun, args.map {
+      case NatArg(n) => NatArg(f(n))
+      case other => other
+    })
+
+    override def freeVariables: Set[Var] = args.map({
+      case NatArg(arg) => ArithExpr.freeVariables(arg)
+      case _ => Set[Var]()
+    }).reduceOption(_.union(_)).getOrElse(Set())
+
+    def callAndParameterListString =
+      s"${fun.id.name}(${args.map{
+        arg =>
+          val nat:Nat = arg match {
+            case NatArg(n) => n
+            case LetNatIdArg(LetNatIdentifier(id)) => id
+          }
+          nat.toString
+      }.reduceOption(_ + "," + _).getOrElse("")})"
+
+    override lazy val toString = s"⌈${this.callAndParameterListString}⌉"
+
+    override val HashSeed = 0x31111112
+
+    override def equals(that: Any): Boolean = that match {
+      case f: NatFunCall => this.name.equals(f.name) && this.args == f.args
+      case _ => false
+    }
+  }
+
+  object NatFunCall {
+    def apply(fun:LetNatIdentifier, args:Seq[NatFunArg]) = new NatFunCall(fun, args)
+
+    def unapply(arg: NatFunCall): Option[(LetNatIdentifier, Seq[NatFunArg])] = Some(arg.fun, arg.args)
+  }
+
+
+  case class NatNatTypeFunction private(x:NatIdentifier, body:Nat) {
+    //NatNatLambdas have an interesting comparison behavior, as we do not define
     //equality for them as simple syntactic equality: we just want to make sure their bodies
     //are equal up-to renaming of the binder.
 

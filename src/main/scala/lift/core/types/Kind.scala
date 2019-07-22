@@ -1,6 +1,5 @@
 package lift.core.types
 
-
 sealed trait Kind {
   type T
   type I <: Kind.Identifier
@@ -34,4 +33,20 @@ sealed trait AddressSpaceKind extends Kind {
 sealed trait AccessKind extends Kind {
   override type T = AccessType
   override type I = AccessTypeIdentifier
+}
+
+trait KindName[K <: Kind] {
+  def get: String
+}
+
+object KindName {
+  implicit val typeKindName: KindName[TypeKind] = new KindName[TypeKind] {
+    def get = "type"
+  }
+  implicit val dataKindName: KindName[DataKind] = new KindName[DataKind] {
+    def get = "data"
+  }
+  implicit val natKindName: KindName[NatKind] = new KindName[NatKind] {
+    def get = "nat"
+  }
 }
