@@ -28,6 +28,11 @@ class tiling extends idealised.util.Tests {
     val input2D = λ(i => λ(f => **(f) $ i))
     val input3D = λ(i => λ(f => ***(f) $ i))
 
+    assert(structEq(
+      λ(i => λ(f => *(f) $ i)),
+      λ(i => λ(f => *!(f) $ i))
+    ))
+
     println(LCNF(input1D))
     println(LCNF(input2D))
     println(LCNF(input3D))

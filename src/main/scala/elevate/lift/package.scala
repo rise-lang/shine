@@ -23,5 +23,27 @@ package object lift {
   def ******(x: Expr): Expr = map(map(map(map(map(map(x))))))
   def λ(f: Identifier => Expr): Expr = fun(f)
 
+  // map in LCNF
+  def *!(x: Expr): Expr = {
+    val i = Identifier(freshName("e"))
+    map(Lambda(i, Apply(x, i)))
+  }
+
+  def **!(x: Expr): Expr = {
+    val i = Identifier(freshName("e"))
+    map(Lambda(i, *!(x)))
+  }
+
+  def ***!(x: Expr): Expr = {
+    val i = Identifier(freshName("e"))
+    map(Lambda(i, **!(x)))
+  }
+
+  def ****!(x: Expr): Expr = {
+    val i = Identifier(freshName("e"))
+    map(Lambda(i, ***!(x)))
+  }
+
+
 
 }
