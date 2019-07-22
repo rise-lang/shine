@@ -1,11 +1,13 @@
 package elevate.lift.strategies
 
 import elevate.core.Strategy
-import elevate.core.strategies.basic.repeat
-import elevate.core.strategies.traversal.oncetd
+import elevate.core.strategies.basic._
+import elevate.core.strategies.traversal._
+import elevate.lift.strategies.traversal._
 import elevate.lift.strategies.algorithmic._
 import elevate.lift.rules._
 import elevate.lift.rules.algorithmic._
+import lift.core.primitives.map
 
 
 object normalForm {
@@ -14,7 +16,8 @@ object normalForm {
     s => repeat(oncetd(s))
 
   def LCNF: Strategy = lambdaCalculusNormalForm
-  def lambdaCalculusNormalForm: Strategy = normalize(betaReduction <+ etaReduction)
+  def lambdaCalculusNormalForm: Strategy =
+    normalize(betaReduction <+ etaReduction) //`;` tryAll(argumentOf(map)(etaAbstraction))
 
   def RNF: Strategy = rewriteNormalForm
   def rewriteNormalForm: Strategy = normalize(mapFullFission)

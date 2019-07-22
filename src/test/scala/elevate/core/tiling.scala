@@ -23,6 +23,46 @@ class tiling extends idealised.util.Tests {
     )
   }
 
+  test("LCNF") {
+    val input1D = λ(i => λ(f => *(f) $ i))
+    val input2D = λ(i => λ(f => **(f) $ i))
+    val input3D = λ(i => λ(f => ***(f) $ i))
+
+    println(LCNF(input1D))
+    println(LCNF(input2D))
+    println(LCNF(input3D))
+  }
+
+  test("tileND") {
+    // 1D
+    val input1D = λ(i => λ(f => *(f) $ i))
+
+    println(s"1D: $input1D")
+    println(body(body(tileND(1)(32)))(input1D))
+    println("-----------------------------")
+
+    // 2D
+    // todo need input
+    val input2D = λ(i => λ(f => (**(f) o T) $ i))
+    val outer= λ(i => λ(f => (J o ***(f) o S o T) $ i))
+    val inner = λ(i => λ(f => (*(J o **(f) o S) o T) $ i))
+
+    println(s"input: $input2D")
+    println(s"outer: $outer")
+    println(s"inner: $inner")
+    // outer
+    println(body(body(tileND(1)(32)))(input2D))
+    // inner
+    println(body(body(
+      print `;` function(argumentOf(map)(etaAbstraction)) `;` print `;` fmap(tileND(1)(32))))(input2D))
+    println("-----------------------------")
+
+    // 3D
+    val input3D = λ(i => λ(f => ***(f) $ i))
+    println(body(body(tileND(1)(32)))(input3D))
+
+  }
+
   test("loop interchange") {
     /*
     assert(structEq(

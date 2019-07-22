@@ -24,6 +24,17 @@ object movement {
     `transpose`,
     Apply(Apply(`map`, Apply(`map`, f)), y)) =>
       Success(y |> transpose |> map(map(f)))
+    // LCNF
+    case Apply(
+      `transpose`,
+      Apply(
+        Apply(`map`, Lambda(n7, Apply(
+          Apply(`map`, Lambda(n6, Apply(
+            f, n61))), n71))),
+        arg
+      )
+    )
+     => Success(arg |> transpose |> map(map(f)))
     case _ => Failure(mapMapFBeforeTranspose)
   }
 

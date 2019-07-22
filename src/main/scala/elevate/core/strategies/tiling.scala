@@ -48,4 +48,12 @@ object tiling {
   def tiling2: Strategy => Strategy = s => print `;`
     argument(s) `;` print `;` s
 
+  def tileND: Int => Int => Strategy =
+    d => n => d match {
+      case x if x <= 0 => id
+      // ((map f) arg)
+      case 1 => print `;` function(splitJoin(n)) `;` LCNF
+      case _ => fmap(tileND(d-1)(n)) `;` tileND(1)(n)
+    }
+
 }
