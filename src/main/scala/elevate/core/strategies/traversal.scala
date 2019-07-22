@@ -1,6 +1,7 @@
 package elevate.core.strategies
 
 import elevate.core._
+import elevate.core.strategies.basic._
 import lift.core.types._
 import lift.core._
 

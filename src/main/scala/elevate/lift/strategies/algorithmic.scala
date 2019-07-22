@@ -1,9 +1,8 @@
-package elevate.core.strategies
+package elevate.lift.strategies
 
-import lift.core._
+import elevate.core.{Failure, Strategy, Success}
 import lift.core.DSL._
-
-import elevate.core._
+import lift.core._
 
 object algorithmic {
   // TODO: only compose simpler rules
