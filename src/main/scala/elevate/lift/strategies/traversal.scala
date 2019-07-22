@@ -46,8 +46,8 @@ object traversal {
   // fuse -> fmap -> fission
   def fmapRNF: Strategy => Strategy =
     s =>
-      mapFusion `;` LCNF `;`
-      fmap(s) `;` LCNF `;`
+      mapFusion `;` BENF `;`
+      fmap(s) `;` BENF `;`
       one(mapFullFission)
 
   // applying a strategy to an expression nested in one or multiple lift `map`s
