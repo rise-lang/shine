@@ -17,7 +17,7 @@ object normalForm {
 
   def LCNF: Strategy = lambdaCalculusNormalForm
   def lambdaCalculusNormalForm: Strategy =
-    normalize(betaReduction <+ etaReduction) //`;` tryAll(argumentOf(map)(etaAbstraction))
+    normalize(betaReduction <+ etaReduction) `;` tryAll(argumentOf(map)(etaAbstraction))
 
   def RNF: Strategy = rewriteNormalForm
   def rewriteNormalForm: Strategy = normalize(mapFullFission)

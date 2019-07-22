@@ -33,7 +33,7 @@ object movement {
             f, n61))), n71))),
         arg
       )
-    )
+    ) if n7 == n71 && n6 == n61
      => Success(arg |> transpose |> map(map(f)))
     case _ => Failure(mapMapFBeforeTranspose)
   }

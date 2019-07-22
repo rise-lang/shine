@@ -131,6 +131,8 @@ class binomialFilter extends idealised.util.Tests {
     val Dh = dot(weights1d)
     val Dv = dot(weights1d)
 
+    val fullLambdaCalculusReduction = normalize(betaReduction <+ etaReduction)
+
     val steps = Seq[(Strategy, Expr)](
       (id,
         P >> *(Sh) >> Sv >> *(T) >> *(*(fun(nbh => dot(weights2d)(join(nbh)))))),
@@ -161,15 +163,16 @@ class binomialFilter extends idealised.util.Tests {
     )
 
     val result = steps.foldLeft[Expr](highLevel)({ case (e, (s, expected)) =>
-        val result = lambdaCalculusNormalForm(s(e).get).get
-        s_eq(result, lambdaCalculusNormalForm(expected).get)
+        val result = fullLambdaCalculusReduction(s(e).get).get
+        println(result)
+        s_eq(result, fullLambdaCalculusReduction(expected).get)
         result
     })
 
     val pick = repeatNTimes(2)(oncetd(specialize.reduceSeq)) `;`
       repeatNTimes(2)(oncetd(specialize.mapSeq)) `;`
       repeatNTimes(2)(skip(1)(specialize.mapSeq))
-    s_eq(pick(result).get, lambdaCalculusNormalForm(separated).get)
+    s_eq(pick(result).get, fullLambdaCalculusReduction(separated).get)
   }
 
   test("rewrite to register rotation blur") {
@@ -183,6 +186,8 @@ class binomialFilter extends idealised.util.Tests {
     val Sv = slide(3)(1)
     val Dh = dot(weights1d)
     val Dv = dot(weights1d)
+
+    val fullLambdaCalculusReduction = normalize(betaReduction <+ etaReduction)
 
     val steps = Seq[(Strategy, Expr)](
       (id,
@@ -208,15 +213,15 @@ class binomialFilter extends idealised.util.Tests {
     )
 
     val result = steps.foldLeft[Expr](highLevel)({ case (e, (s, expected)) =>
-      val result = lambdaCalculusNormalForm(s(e).get).get
-      s_eq(result, lambdaCalculusNormalForm(expected).get)
+      val result = fullLambdaCalculusReduction(s(e).get).get
+      s_eq(result, fullLambdaCalculusReduction(expected).get)
       result
     })
 
     val pick = repeatNTimes(2)(oncetd(specialize.reduceSeq)) `;`
       oncetd(specialize.slideSeq(slideSeq.Values)) `;`
       oncetd(specialize.mapSeq)
-    s_eq(pick(result).get, lambdaCalculusNormalForm(regrot).get)
+    s_eq(pick(result).get, fullLambdaCalculusReduction(regrot).get)
   }
 
   def program(name: String, e: Expr): C.Program = {

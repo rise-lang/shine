@@ -5,6 +5,7 @@ import lift.core.{Apply, Lambda, Primitive}
 import lift.core.primitives.map
 import elevate.lift.rules.algorithmic._
 import elevate.core.strategies.traversal._
+import elevate.core.strategies.basic._
 import elevate.lift.strategies.algorithmic._
 import elevate.lift.strategies.normalForm._
 
@@ -45,10 +46,9 @@ object traversal {
   // fmap applied for expressions in rewrite normal form:
   // fuse -> fmap -> fission
   def fmapRNF: Strategy => Strategy =
-    s =>
-      mapFusion `;` LCNF `;`
-      fmap(s) `;` LCNF `;`
-      one(mapFullFission)
+    s => LCNF `;` mapFusion `;`
+      LCNF `;` fmap(s) `;`
+      LCNF `;` one(mapFullFission)
 
   // applying a strategy to an expression nested in one or multiple lift `map`s
   def mapped: Strategy => Strategy =
