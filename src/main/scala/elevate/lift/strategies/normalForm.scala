@@ -15,9 +15,12 @@ object normalForm {
   def normalize: Strategy => Strategy =
     s => repeat(oncetd(s))
 
+  def BENF: Strategy = betaEtaNormalForm
+  def betaEtaNormalForm: Strategy = normalize(betaReduction <+ etaReduction)
+
   def LCNF: Strategy = lambdaCalculusNormalForm
   def lambdaCalculusNormalForm: Strategy =
-    normalize(betaReduction <+ etaReduction) `;` tryAll(argumentOf(map)(etaAbstraction))
+    BENF `;` tryAll(argumentOf(map)(etaAbstraction))
 
   def RNF: Strategy = rewriteNormalForm
   def rewriteNormalForm: Strategy = normalize(mapFullFission)
