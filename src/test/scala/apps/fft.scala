@@ -10,8 +10,8 @@ class fft extends idealised.util.Tests {
   def createStockhamIterationLambda(p: Int, LPrevIter: Int, N: Int): Expr = {
     val r = N / (LPrevIter * p)
 
-    val cospi = foreignFun("cospi", double -> double)
-    val sinpi = foreignFun("sinpi", double -> double)
+    val cospi = foreignFun("cospi", double ->: double)
+    val sinpi = foreignFun("sinpi", double ->: double)
 
     val cmultandsum = fun(vt => fun(acc => {
       val lres = acc._1 + (vt._1._1 * vt._2._1 - vt._1._2 * vt._2._2)

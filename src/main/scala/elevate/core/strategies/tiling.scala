@@ -12,7 +12,7 @@ import elevate.lift.strategies.normalForm._
 object tiling {
 
   def tile: Int => Strategy = i =>
-    tryAll(splitJoin(i)) `;` reductionNormalForm `;`
+    tryAll(splitJoin(i)) `;` LCNF `;`
     rewriteNormalForm `;`
     body(
       body(argument(function( // find out what this pattern resembles?
@@ -20,7 +20,7 @@ object tiling {
         createTransposePair `;`
         argument(mapMapFBeforeTranspose) `;`
           print)))))) `;`
-      rewriteNormalForm `;` reductionNormalForm
+      rewriteNormalForm `;` LCNF
 
   def tiling1: Strategy = splitJoin(32)
 

@@ -16,7 +16,7 @@ import scala.language.implicitConversions
 class movement extends idealised.util.Tests {
 
   implicit def rewriteResultToExpr(r: RewriteResult): Expr = r.get
-  val norm: Strategy = reductionNormalForm
+  val norm: Strategy = LCNF
 
   def testMultiple(list: List[Expr], gold: Expr) = {
     assert(list.forall(structEq(_, gold)))

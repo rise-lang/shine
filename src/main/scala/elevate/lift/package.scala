@@ -8,7 +8,7 @@ import elevate.lift.strategies.normalForm._
 package object lift {
 
   def structEq(a: Expr, b: Expr): Boolean = StructuralEquality(
-    reductionNormalForm(a).get, reductionNormalForm(b).get
+    LCNF(a).get, LCNF(b).get
   )
 
   // notation

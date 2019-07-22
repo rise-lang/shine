@@ -1,11 +1,10 @@
 package elevate.lift.strategies
 
 import elevate.core.{Failure, Strategy}
-import lift.core.{Apply, Lambda}
+import lift.core.{Apply, Lambda, Primitive}
+import lift.core.primitives.map
 import elevate.lift.rules.algorithmic._
-import elevate.lift.rules._
 import elevate.core.strategies.traversal._
-import elevate.core.strategies.basic._
 import elevate.lift.strategies.algorithmic._
 import elevate.lift.strategies.normalForm._
 
@@ -29,20 +28,26 @@ object traversal {
       case x => Failure(s)
     }
 
+  def argumentOf(x: Primitive): Strategy => Strategy = {
+    s => {
+      case Apply(f, e) if f == x => s(e).mapSuccess(Apply(f, _))
+      case x => Failure(s)
+    }
+  }
+
   // applying a strategy to an expression applied to a lift `map`. Example:
   // ((map λe14. (transpose ((map (map e12)) e14))) e13) // input expr
   //  (map λe14. (transpose ((map (map e12)) e14)))      // result of `function`
   //       λe14. (transpose ((map (map e12)) e14))       // result of `argument`
   //             (transpose ((map (map e12)) e14))       // result of 'body' -> here we can apply s
-  def fmap: Strategy => Strategy = s =>
-    function(argument(body(s)))
+  def fmap: Strategy => Strategy = s => function(argumentOf(map)(body(s)))
 
   // fmap applied for expressions in rewrite normal form:
-  // fuse -> fmap -> fissio
+  // fuse -> fmap -> fission
   def fmapRNF: Strategy => Strategy =
     s =>
-      mapFusion `;` reductionNormalForm `;`
-      fmap(s) `;` reductionNormalForm `;`
+      mapFusion `;` LCNF `;`
+      fmap(s) `;` LCNF `;`
       one(mapFullFission)
 
   // applying a strategy to an expression nested in one or multiple lift `map`s
