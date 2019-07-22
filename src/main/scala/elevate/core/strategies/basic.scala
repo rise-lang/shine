@@ -32,7 +32,7 @@ object basic {
   def print: Strategy = print("")
   def print(msg: String): Strategy = peek(e => println(s"$msg $e"))
 
-  def wrap: Int => (Strategy => Strategy) => Strategy => Strategy =
-    i => wrapper => s => if(i <= 0) s else wrap(i-1)(wrapper)(wrapper(s))
+  def wrapNTimes: Int => (Strategy => Strategy) => Strategy => Strategy =
+    i => wrapper => s => if(i <= 0) s else wrapNTimes(i-1)(wrapper)(wrapper(s))
 
 }
