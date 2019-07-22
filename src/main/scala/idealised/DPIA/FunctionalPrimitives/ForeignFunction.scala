@@ -7,16 +7,16 @@ import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics.{Data, Store}
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import lift.core.primitives
+import lift.{core => lc}
 
 import scala.language.reflectiveCalls
 import scala.xml.Elem
 
 object ForeignFunction {
-  val Declaration: primitives.ForeignFunction.Decl.type = lift.core.primitives.ForeignFunction.Decl
-  val Definition: primitives.ForeignFunction.Def.type = lift.core.primitives.ForeignFunction.Def
-  type Declaration = lift.core.primitives.ForeignFunction.Decl
-  type Definition = lift.core.primitives.ForeignFunction.Def
+  val Declaration: lc.ForeignFunction.Decl.type = lc.ForeignFunction.Decl
+  val Definition: lc.ForeignFunction.Def.type = lc.ForeignFunction.Def
+  type Declaration = lc.ForeignFunction.Decl
+  type Definition = lc.ForeignFunction.Def
 }
 
 final case class ForeignFunction(funDecl: ForeignFunction.Declaration,

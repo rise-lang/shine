@@ -5,7 +5,6 @@ import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.{OperationalSemantics => OpSem}
 import idealised.DPIA.Types._
 import idealised.SurfaceLanguage.Operators
-import lift.core.types.NatDataTypeLambda
 import lift.core.{semantics => ls, types => lt}
 import lift.{core => l}
 
@@ -133,7 +132,7 @@ object fromLift {
 
   def data(d: ls.Data): OpSem.Data = {
     d match {
-      case ls.ArrayData(a) => OpSem.ArrayData(a.map(data(_)).toVector)
+      case ls.ArrayData(a) => OpSem.ArrayData(a.map(data).toVector)
       case ls.TupleData(a, b) => OpSem.RecordData(data(a), data(b))
       case ls.BoolData(b) => OpSem.BoolData(b)
       case ls.IntData(i) => OpSem.IntData(i)
@@ -162,7 +161,7 @@ object fromLift {
     // TODO: remove surface language
 
     (p, t) match {
-      case (core.asIndex,
+      case (core.`natAsIndex`,
       lt.DependentFunctionType(n: l.NatIdentifier,
       lt.FunctionType(lt.DataAccessType(lt.NatType, lt.R), lt.DataAccessType(lt.IndexType(_), lt.R))))
       =>
@@ -509,7 +508,7 @@ object fromLift {
         fun[ExpType](ExpType(a, read), x =>
           Cast(a, b, x))
 
-      case (core.ForeignFunction(decl, la), _)
+      case (l.ForeignFunction(decl, la), _)
       =>
         val (inTs, outT) = foreignFunIO(la)
         wrapForeignFun(decl, inTs, outT, Vector())
@@ -599,7 +598,7 @@ object fromLift {
     }
   }
 
-  def wrapForeignFun(decl: core.ForeignFunction.Decl,
+  def wrapForeignFun(decl: l.ForeignFunction.Decl,
                      intTs: Vector[DataType],
                      outT: DataType,
                      args: Vector[Phrase[ExpType]]): Phrase[_ <: PhraseType] = {

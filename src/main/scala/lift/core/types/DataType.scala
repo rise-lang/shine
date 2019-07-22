@@ -4,14 +4,7 @@ import lift.arithmetic.RangeAdd
 import lift.core.{Nat, NatIdentifier, freshName}
 
 
-// ============================================================================================= //
-// Data Types
-// ============================================================================================= //
-sealed trait DataType {
-  def __(w: AccessType): DataAccessType = DataAccessType(this, w)
-  def _W: DataAccessType = DataAccessType(this, lift.core.types.W)
-  def _R: DataAccessType = DataAccessType(this, lift.core.types.R)
-}
+sealed trait DataType
 
 final case class DataTypeIdentifier(name: String) extends DataType with Kind.Identifier {
   override def toString: String = name

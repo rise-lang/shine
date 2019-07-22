@@ -294,12 +294,12 @@ object DSL {
 
   object foreignFun {
     def apply(name: String, t: Type): Expr = {
-      primitives.ForeignFunction(primitives.ForeignFunction.Decl(name, None), t)
+      ForeignFunction(ForeignFunction.Decl(name, None), t)
     }
 
     def apply(name: String, params: Seq[String], body: String, t: Type): Expr = {
-      primitives.ForeignFunction(primitives.ForeignFunction.Decl(name,
-        Some(primitives.ForeignFunction.Def(params, body))), t)
+      ForeignFunction(ForeignFunction.Decl(name,
+        Some(ForeignFunction.Def(params, body))), t)
     }
   }
 }

@@ -1,8 +1,8 @@
 package elevate.core.strategies
 
 import elevate.core._
-import lift.core.types.{DataType, DataTypeIdentifier}
-import lift.core.{Apply, DepApply, DepLambda, Expr, Identifier, Index, Lambda, Literal, Nat, NatDepApply, NatDepLambda, NatExpr, NatIdentifier, Primitive, TypeDepApply, TypeDepLambda, TypedExpr, primitives, traversal => lt}
+import lift.core.types._
+import lift.core._
 
 object traversal {
 
@@ -24,7 +24,7 @@ object traversal {
       case Index(_, _) => None
       case NatExpr(_) => None
       case TypedExpr(e, t) => Some(s(e).mapSuccess(TypedExpr(_, t)))
-      case ff: primitives.ForeignFunction => None
+      case ff: ForeignFunction => None
       case p: Primitive => None
     }
 
