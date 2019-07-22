@@ -1,9 +1,11 @@
 package elevate.core
 
-import elevate.core.rules._
-import elevate.core.rules.algorithmic.{mapFusion}
+import elevate.lift.rules._
+import elevate.lift.rules.algorithmic.{mapFusion}
 import elevate.core.strategies._
 import elevate.core.strategies.traversal._
+import elevate.lift.strategies.normalForm._
+import elevate.core.strategies.basic._
 import lift.core.DSL._
 import lift.core._
 import lift.core.primitives._

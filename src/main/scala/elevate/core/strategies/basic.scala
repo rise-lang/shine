@@ -1,11 +1,10 @@
-package elevate.core
+package elevate.core.strategies
 
+import elevate.core.{Failure, Strategy, Success}
 import lift.core.Expr
-import strategies.traversal._
-import scala.language.implicitConversions
 
+object basic {
 
-package object strategies {
   def id: Strategy =
     e => Success(e)
 
@@ -30,11 +29,10 @@ package object strategies {
   def repeatNTimes: Int => Strategy => Strategy =
     n => s => if (n > 0) { s `;` repeatNTimes(n-1)(s) } else { id }
 
-  def normalize: Strategy => Strategy =
-    s => repeat(oncetd(s))
-
   def print: Strategy = print("")
-  def print(msg: String): Strategy = {
-    e => println(s"$msg $e"); Success(e)
-  }
+  def print(msg: String): Strategy = peek(e => println(s"$msg $e"))
+
+  def applyNTimes: Int => (Strategy => Strategy) => Strategy => Strategy =
+    i => f => s => if(i <= 0) s else applyNTimes(i-1)(f)(f(s))
+
 }

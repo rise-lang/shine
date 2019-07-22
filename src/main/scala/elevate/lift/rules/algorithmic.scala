@@ -1,4 +1,4 @@
-package elevate.core.rules
+package elevate.lift.rules
 
 import elevate.core.{Failure, NotApplicable, Strategy, Success}
 import lift.core._
