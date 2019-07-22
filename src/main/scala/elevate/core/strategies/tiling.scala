@@ -5,6 +5,7 @@ import elevate.core.strategies.traversal._
 import elevate.core.strategies.basic._
 import elevate.lift.rules.algorithmic._
 import elevate.lift.rules.movement._
+import elevate.lift.rules._
 import elevate.lift.strategies.traversal._
 import elevate.lift.strategies.normalForm._
 
@@ -24,7 +25,8 @@ object tiling {
   def tiling1: Strategy = splitJoin(32)
 
   // map(map(f)) -> transpose << map(map(f)) << transpose
-  def loopInterchange: Strategy = createTransposePair `;` argument(mapMapFBeforeTranspose)
+  def loopInterchange: Strategy = print `;` etaAbstraction `;` print `;`
+    body(createTransposePair) `;` print `;` rewriteNormalForm `;` print `;` body(argument(mapMapFBeforeTranspose))
 
 
   /*

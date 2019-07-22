@@ -3,7 +3,9 @@ package elevate.lift.strategies
 import elevate.core.{Failure, Strategy}
 import lift.core.{Apply, Lambda}
 import elevate.lift.rules.algorithmic._
+import elevate.lift.rules._
 import elevate.core.strategies.traversal._
+import elevate.core.strategies.basic._
 import elevate.lift.strategies.algorithmic._
 import elevate.lift.strategies.normalForm._
 
@@ -32,7 +34,8 @@ object traversal {
   //  (map λe14. (transpose ((map (map e12)) e14)))      // result of `function`
   //       λe14. (transpose ((map (map e12)) e14))       // result of `argument`
   //             (transpose ((map (map e12)) e14))       // result of 'body' -> here we can apply s
-  def fmap: Strategy => Strategy = s => function(argument(body(s)))
+  def fmap: Strategy => Strategy = s =>
+    function(argument(body(s)))
 
   // fmap applied for expressions in rewrite normal form:
   // fuse -> fmap -> fissio
