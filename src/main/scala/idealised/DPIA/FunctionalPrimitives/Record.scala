@@ -17,8 +17,8 @@ final case class Record(dt1: DataType,
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (dt1: DataType) -> (dt2: DataType) ->
-      (fst :: exp"[$dt1]") -> (snd :: exp"[$dt2]") -> exp"[$dt1 x $dt2]"
+    (dt1: DataType) ->: (dt2: DataType) ->:
+      (fst :: exp"[$dt1]") ->: (snd :: exp"[$dt2]") ->: exp"[$dt1 x $dt2]"
 
   override def eval(s: Store): Data = {
     RecordData(
@@ -27,7 +27,7 @@ final case class Record(dt1: DataType,
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    Record(fun(dt1), fun(dt2),
+    Record(fun.data(dt1), fun.data(dt2),
       VisitAndRebuild(fst, fun), VisitAndRebuild(snd, fun))
   }
 
@@ -45,19 +45,19 @@ final case class Record(dt1: DataType,
     </record>
 
   override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+                                  (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     acc(fst)(recordAcc1(dt1, dt2, A)) `;`
       acc(snd)(recordAcc2(dt1, dt2, A))
   }
 
-  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommandType] =
+  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
+                                     (implicit context: TranslationContext): Phrase[CommType] =
     ???
 
-  override def continuationTranslation(C: Phrase[->[ExpType, CommandType]])
-                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[->:[ExpType, CommType]])
+                                      (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(fst)(λ(exp"[$dt1]")(x =>

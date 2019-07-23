@@ -13,13 +13,13 @@ import scala.xml.Elem
 final case class ForVec(n: Nat,
                         dt: ScalarType,
                         out: Phrase[AccType],
-                        body: Phrase[ExpType -> (AccType -> CommandType)])
+                        body: Phrase[ExpType ->: AccType ->: CommType])
   extends CommandPrimitive
 {
-  override val t: CommandType =
-    (n: Nat) -> (dt: ScalarType) ->
-      (out :: acc"[${VectorType(n, dt)}]") ->
-        (body :: t"exp[idx($n)] -> acc[$dt] -> comm") ->
+  override val t: CommType =
+    (n: Nat) ->: (dt: ScalarType) ->:
+      (out :: acc"[${VectorType(n, dt)}]") ->:
+        (body :: t"exp[idx($n)] -> acc[$dt] -> comm") ->:
           comm
 
   override def eval(s: Store): Store = {
@@ -32,8 +32,8 @@ final case class ForVec(n: Nat,
     })
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {
-    ForVec(fun(n), fun(dt), VisitAndRebuild(out, fun), VisitAndRebuild(body, fun))
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommType] = {
+    ForVec(fun.nat(n), fun.data(dt), VisitAndRebuild(out, fun), VisitAndRebuild(body, fun))
   }
 
   override def prettyPrint: String =
@@ -45,7 +45,7 @@ final case class ForVec(n: Nat,
       <output type={ToString(AccType(VectorType(n, dt)))}>
         {Phrases.xmlPrinter(out)}
       </output>
-      <body type={ToString(ExpType(IndexType(n)) -> (AccType(dt) -> CommandType()))}>
+      <body type={ToString(ExpType(IndexType(n)) ->: AccType(dt) ->: CommType())}>
         {Phrases.xmlPrinter(body)}
       </body>
     </forVec>

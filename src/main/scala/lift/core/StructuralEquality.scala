@@ -88,11 +88,11 @@ object StructuralEquality {
         nat(na, nb)
       case (VectorType(na, ea), VectorType(nb, eb)) =>
         nat(na, nb) && typ(ea, eb)
-      case (FunctionType(ia, oa), FunctionType(ib, ob)) =>
+      case (FunType(ia, oa), FunType(ib, ob)) =>
         typ(ia, ib) && typ(oa, ob)
-      case (DependentFunctionType(na: NatIdentifier, ta), DependentFunctionType(nb: NatIdentifier, tb)) =>
+      case (DepFunType(na: NatIdentifier, ta), DepFunType(nb: NatIdentifier, tb)) =>
         apply(ta, tb, env bindNatIdents(na, nb))
-      case (DependentFunctionType(dta: DataTypeIdentifier, ta), DependentFunctionType(dtb: DataTypeIdentifier, tb)) =>
+      case (DepFunType(dta: DataTypeIdentifier, ta), DepFunType(dtb: DataTypeIdentifier, tb)) =>
         apply(ta, tb, env bindTypIdents(dta, dtb))
       case _ => false
     }

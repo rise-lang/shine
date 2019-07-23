@@ -25,7 +25,9 @@ class DependentArrays extends idealised.util.Tests {
           xs :>> depMapSeq(fun(row => depMapSeq(fun(col => mapSeq(fun(x => x + 1.0f), col)), row)))
     ))
 
-    val p = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(splitExample, Map())))
+    val splitExampleTyped = idealised.DPIA.FromSurfaceLanguage(TypeInference(splitExample, Map()))
+    println(splitExampleTyped)
+    val p = idealised.OpenCL.KernelGenerator.makeCode(splitExampleTyped)
     val code = p.code
     SyntaxChecker.checkOpenCL(code)
     println(code)

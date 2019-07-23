@@ -1,6 +1,6 @@
 package idealised.DPIA.Types
 
-import idealised.DPIA.{Nat, NatDataTypeFunction}
+import idealised.DPIA.Nat
 import idealised.{DPIA, SurfaceLanguage}
 import lift.arithmetic.{ArithExpr, BigSum, RangeAdd}
 
@@ -32,9 +32,7 @@ final case class ArrayType(size: Nat, elemType: DataType) extends ComposedType {
   override def toString: String = s"$size.$elemType"
 }
 
-final case class DepArrayType private (size:Nat, elemFType: NatDataTypeFunction) extends ComposedType {
-  private val correctRange = RangeAdd(0, size, 1)
-  assert(elemFType.x.range == correctRange, s"Inconsistent range for element type function in $this: $correctRange expected but ${elemFType.x.range} found ")
+final case class DepArrayType private (size: Nat, elemFType: NatToData) extends ComposedType {
 
   override def toString: String = s"$size.$elemFType"
 
@@ -48,7 +46,7 @@ final case class DepArrayType private (size:Nat, elemFType: NatDataTypeFunction)
 
 object DepArrayType {
   def apply(size: Nat, f: DPIA.NatIdentifier => DataType): DepArrayType = {
-    DepArrayType(size, NatDataTypeFunction(size, f))
+    DepArrayType(size, NatToDataLambda(size, f))
   }
 }
 
@@ -71,6 +69,19 @@ object float3 extends VectorType(3, float)
 object float4 extends VectorType(4, float)
 object float8 extends VectorType(8, float)
 object float16 extends VectorType(16, float)
+
+final class NatToDataApply(val f: NatToData, val n: Nat) extends DataType {
+  override def toString: String = s"$f($n)"
+}
+
+object NatToDataApply {
+  def apply(f: NatToData, n: Nat): DataType = f match {
+    case l: NatToDataLambda     => l.apply(n)
+    case i: NatToDataIdentifier => new NatToDataApply(i, n)
+  }
+
+  def unapply(arg: NatToDataApply): Option[(NatToData, Nat)] = Some((arg.f, arg.n))
+}
 
 final case class DataTypeIdentifier(name: String) extends DataType with Kind.Identifier {
   override def toString: String = name
@@ -112,13 +123,20 @@ object DataType {
       case a: DepArrayType =>
         val subMap = Map((`for`,ae))
         val newSize = ArithExpr.substitute(a.size, subMap)
-        val newBody = substitute(ae, `for`, a.elemFType.body)
-        DepArrayType(newSize, a.elemFType.copy(body = newBody))
+        val newElemFType = substitute(ae, `for`, a.elemFType)
+        DepArrayType(newSize, newElemFType)
       case v: VectorType =>
         VectorType(ArithExpr.substitute(v.size, Map((`for`, ae))), v.elemType)
       case r: RecordType =>
         RecordType(substitute(ae, `for`, r.fst), substitute(ae, `for`, r.snd))
     }).asInstanceOf[T]
+  }
+
+  def substitute(ae: DPIA.Nat, `for`: DPIA.Nat, in: NatToData): NatToData = {
+    in match {
+      case i: NatToDataIdentifier => i
+      case NatToDataLambda(x, body) => NatToDataLambda(x, substitute(ae, `for`, body))
+    }
   }
 
   implicit def apply(dt: SurfaceLanguage.Types.DataType): DataType = {
@@ -145,7 +163,11 @@ object DataType {
     case _: BasicType => 1
     case _: RecordType => 1
     case a: ArrayType => getTotalNumberOfElements(a.elemType) * a.size
-    case a: DepArrayType => BigSum(from = 0, upTo = a.size - 1, `for` = a.elemFType.x, `in` = getTotalNumberOfElements(a.elemFType.body))
+    case a: DepArrayType =>
+      a.elemFType match {
+        case NatToDataLambda(x, body) =>
+          BigSum(from = 0, upTo = a.size - 1, `for` = x, `in` = getTotalNumberOfElements(body))
+      }
     case _: DataTypeIdentifier => throw new Exception("This should not happen")
   }
 
@@ -160,7 +182,7 @@ object DataType {
 
   def getSizes(dt: DataType): Seq[Nat] = dt match {
     case ArrayType(size, elemType) => Seq(size) ++ getSizes(elemType)
-    case DepArrayType(size, NatDataTypeFunction(_ , elemType)) => Seq(size) ++ getSizes(elemType) // TODO: is this correct?
+    case DepArrayType(size, NatToDataLambda(_ , elemType)) => Seq(size) ++ getSizes(elemType) // TODO: is this correct?
     case _ => Seq(getSize(dt))
   }
 
@@ -169,7 +191,7 @@ object DataType {
     case _: RecordType => dt
     case _: DataTypeIdentifier => dt
     case ArrayType(_, elemType) => getBaseDataType(elemType)
-    case DepArrayType(_, NatDataTypeFunction(_, elemType)) => getBaseDataType(elemType)
+    case DepArrayType(_, NatToDataLambda(_, elemType)) => getBaseDataType(elemType)
   }
 
   implicit class RecordTypeConstructor(dt1: DataType) {

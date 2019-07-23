@@ -9,7 +9,7 @@ import scala.language.reflectiveCalls
 
 object TranslationToImperative {
   def apply(p: Phrase[ExpType])
-           (implicit context: TranslationContext): Phrase[CommandType] = {
+           (implicit context: TranslationContext): Phrase[CommType] = {
     val outT = p.t
     val out = identifier("output", AccType(outT.dataType))
     acc(p)(out)
@@ -17,7 +17,7 @@ object TranslationToImperative {
 
   def acc(E: Phrase[ExpType])
          (A: Phrase[AccType])
-         (implicit context: TranslationContext): Phrase[CommandType] = {
+         (implicit context: TranslationContext): Phrase[CommType] = {
     E match {
       case x: Identifier[ExpType] => A :=|x.t.dataType| x
 
@@ -43,9 +43,9 @@ object TranslationToImperative {
       case Apply(fun, arg) => acc(Lifting.liftFunction(fun).reducing(arg))(A)
       case DepApply(fun, arg) => arg match {
         case a: Nat =>
-          acc(Lifting.liftDependentFunction[NatKind, ExpType](fun.asInstanceOf[ Phrase[NatKind `()->` ExpType]])(a))(A)
+          acc(Lifting.liftDependentFunction[NatKind, ExpType](fun.asInstanceOf[ Phrase[NatKind `()->:` ExpType]])(a))(A)
         case a: DataType =>
-          acc(Lifting.liftDependentFunction[DataKind, ExpType](fun.asInstanceOf[Phrase[DataKind `()->` ExpType]])(a))(A)
+          acc(Lifting.liftDependentFunction[DataKind, ExpType](fun.asInstanceOf[Phrase[DataKind `()->:` ExpType]])(a))(A)
       }
 
       case LetNat(binder, defn, body) => LetNat(binder, defn, acc(body)(A))
@@ -60,9 +60,9 @@ object TranslationToImperative {
     }
   }
 
-  def mapAcc(f: Phrase[ExpType -> ExpType], E: Phrase[ExpType])
+  def mapAcc(f: Phrase[ExpType ->: ExpType], E: Phrase[ExpType])
             (A: Phrase[AccType])
-            (implicit context: TranslationContext): Phrase[CommandType] = {
+            (implicit context: TranslationContext): Phrase[CommType] = {
     E match {
       case ep: ExpPrimitive => ep.mapAcceptorTranslation(f, A)
 
@@ -70,9 +70,9 @@ object TranslationToImperative {
       case Apply(fun, arg) => mapAcc(f, Lifting.liftFunction(fun).reducing(arg))(A)
       case DepApply(fun, arg) =>  arg match {
         case a: Nat =>
-          mapAcc(f, Lifting.liftDependentFunction[NatKind, ExpType](fun.asInstanceOf[Phrase[NatKind `()->` ExpType]])(a))(A)
+          mapAcc(f, Lifting.liftDependentFunction[NatKind, ExpType](fun.asInstanceOf[Phrase[NatKind `()->:` ExpType]])(a))(A)
         case a: DataType =>
-          mapAcc(f, Lifting.liftDependentFunction[DataKind, ExpType](fun.asInstanceOf[Phrase[DataKind `()->` ExpType]])(a))(A)
+          mapAcc(f, Lifting.liftDependentFunction[DataKind, ExpType](fun.asInstanceOf[Phrase[DataKind `()->:` ExpType]])(a))(A)
       }
 
       case IfThenElse(cond, thenP, elseP) =>
@@ -85,8 +85,8 @@ object TranslationToImperative {
   }
 
   def con(E: Phrase[ExpType])
-         (C: Phrase[ExpType -> CommandType])
-         (implicit context: TranslationContext): Phrase[CommandType] = {
+         (C: Phrase[ExpType ->: CommType])
+         (implicit context: TranslationContext): Phrase[CommType] = {
     E match {
       case x: Identifier[ExpType] => C(x)
 
@@ -111,8 +111,8 @@ object TranslationToImperative {
       // on the fly beta-reduction
       case Apply(fun, arg) => con(Lifting.liftFunction(fun).reducing(arg))(C)
       case DepApply(fun, arg) => arg match {
-        case a: Nat => con(Lifting.liftDependentFunction[NatKind, ExpType](fun.asInstanceOf[Phrase[NatKind `()->` ExpType]])(a))(C)
-        case a: DataType => con(Lifting.liftDependentFunction[DataKind, ExpType](fun.asInstanceOf[Phrase[DataKind `()->` ExpType]])(a))(C)
+        case a: Nat => con(Lifting.liftDependentFunction[NatKind, ExpType](fun.asInstanceOf[Phrase[NatKind `()->:` ExpType]])(a))(C)
+        case a: DataType => con(Lifting.liftDependentFunction[DataKind, ExpType](fun.asInstanceOf[Phrase[DataKind `()->:` ExpType]])(a))(C)
       }
 
       case IfThenElse(cond, thenP, elseP) =>

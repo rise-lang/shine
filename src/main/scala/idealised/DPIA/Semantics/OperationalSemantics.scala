@@ -97,10 +97,10 @@ object OperationalSemantics {
 
 
   implicit def UnaryFunctionEvaluator[T1 <: PhraseType,
-                                      T2 <: PhraseType]: Evaluator[T1 -> T2,
+                                      T2 <: PhraseType]: Evaluator[T1 ->: T2,
                                                                    Phrase[T1] => Phrase[T2]] =
-    new Evaluator[T1 -> T2, Phrase[T1] => Phrase[T2]] {
-      def apply(s: Store, p: Phrase[T1 -> T2]): Phrase[T1] => Phrase[T2] = {
+    new Evaluator[T1 ->: T2, Phrase[T1] => Phrase[T2]] {
+      def apply(s: Store, p: Phrase[T1 ->: T2]): Phrase[T1] => Phrase[T2] = {
         p match {
           case l: Lambda[T1, T2] =>
             (arg: Phrase[T1]) => l.body `[` arg `/` l.param `]`
@@ -113,12 +113,12 @@ object OperationalSemantics {
 
   implicit def BinaryFunctionEvaluator[T1 <: PhraseType,
                                        T2 <: PhraseType,
-                                       T3 <: PhraseType]: Evaluator[T1 -> (T2 -> T3),
+                                       T3 <: PhraseType]: Evaluator[T1 ->: T2 ->: T3,
                                                                     Phrase[T1] => Phrase[T2] => Phrase[T3]] =
-    new Evaluator[T1 -> (T2 -> T3), Phrase[T1] => Phrase[T2] => Phrase[T3]] {
-      def apply(s: Store, p: Phrase[T1 -> (T2 -> T3)]): Phrase[T1] => Phrase[T2] => Phrase[T3] = {
+    new Evaluator[T1 ->: T2 ->: T3, Phrase[T1] => Phrase[T2] => Phrase[T3]] {
+      def apply(s: Store, p: Phrase[T1 ->: T2 ->: T3]): Phrase[T1] => Phrase[T2] => Phrase[T3] = {
         p match {
-          case l: Lambda[T1, T2 -> T3] => (arg: Phrase[T1]) =>
+          case l: Lambda[T1, T2 ->: T3] => (arg: Phrase[T1]) =>
             eval(s, l.body `[` arg `/` l.param `]` )(UnaryFunctionEvaluator)
 
           case Identifier(_, _) | Apply(_, _) | DepApply(_, _) |
@@ -131,12 +131,12 @@ object OperationalSemantics {
   implicit def TrinaryFunctionEvaluator[T1 <: PhraseType,
                                         T2 <: PhraseType,
                                         T3 <: PhraseType,
-                                        T4 <: PhraseType]: Evaluator[T1 -> (T2 -> (T3 -> T4)),
+                                        T4 <: PhraseType]: Evaluator[T1 ->: T2 ->: T3 ->: T4,
                                                                      Phrase[T1] => Phrase[T2] => Phrase[T3] => Phrase[T4]] =
-    new Evaluator[T1 -> (T2 -> (T3 -> T4)), Phrase[T1] => Phrase[T2] => Phrase[T3] => Phrase[T4]] {
-      def apply(s: Store, p: Phrase[T1 -> (T2 -> (T3 -> T4))]): Phrase[T1] => Phrase[T2] => Phrase[T3] => Phrase[T4] = {
+    new Evaluator[T1 ->: T2 ->: T3 ->: T4, Phrase[T1] => Phrase[T2] => Phrase[T3] => Phrase[T4]] {
+      def apply(s: Store, p: Phrase[T1 ->: T2 ->: T3 ->: T4]): Phrase[T1] => Phrase[T2] => Phrase[T3] => Phrase[T4] = {
         p match {
-          case l: Lambda[T1, T2 -> (T3 -> T4)] => (arg: Phrase[T1]) =>
+          case l: Lambda[T1, T2 ->: T3 ->: T4] => (arg: Phrase[T1]) =>
             eval(s, l.body `[` arg  `/` l.param `]` )(BinaryFunctionEvaluator)
 
           case Identifier(_, _) | Apply(_, _) | DepApply(_, _) |
@@ -146,11 +146,11 @@ object OperationalSemantics {
       }
     }
 
-  implicit def NatDependentFunctionEvaluator[T <: PhraseType]: Evaluator[`(nat)->`[T], NatIdentifier => Phrase[T]] =
-    new Evaluator[`(nat)->`[T], NatIdentifier => Phrase[T]] {
-      def apply(s: Store, p: Phrase[`(nat)->`[T]]): NatIdentifier => Phrase[T] = {
+  implicit def NatDependentFunctionEvaluator[T <: PhraseType]: Evaluator[`(nat)->:`[T], NatIdentifier => Phrase[T]] =
+    new Evaluator[`(nat)->:`[T], NatIdentifier => Phrase[T]] {
+      def apply(s: Store, p: Phrase[`(nat)->:`[T]]): NatIdentifier => Phrase[T] = {
         p match {
-          case l: NatDependentLambda[T] =>
+          case l: DepLambda[NatKind, T] =>
             (arg: NatIdentifier) => l.body `[` arg `/` l.x `]`
           case Identifier(_, _) | Apply(_, _) | DepApply(_, _) |
                IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
@@ -223,9 +223,9 @@ object OperationalSemantics {
       }
     }
 
-  implicit def CommandEvaluator: Evaluator[CommandType, Store] =
-    new Evaluator[CommandType, Store] {
-      def apply(s: Store, p: Phrase[CommandType]): Store = {
+  implicit def CommandEvaluator: Evaluator[CommType, Store] =
+    new Evaluator[CommType, Store] {
+      def apply(s: Store, p: Phrase[CommType]): Store = {
         p match {
           case Identifier(_, _) => throw new Exception("This should never happen")
 

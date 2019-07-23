@@ -16,7 +16,7 @@ class scal extends idealised.util.Tests {
     val typed = infer(simpleScal)
 
     assert(StructuralEquality(
-      nFunT(n => FunctionType(ArrayType(n, float), FunctionType(float, ArrayType(n, float)))),
+      nFunT(n => FunType(ArrayType(n, float), FunType(float, ArrayType(n, float)))),
       typed.t
     ))
   }

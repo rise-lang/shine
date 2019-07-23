@@ -6,11 +6,21 @@ import idealised.DPIA._
 object VisitAndRebuild {
 
   class Visitor {
-    def apply[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = Continue(p, this)
-    def apply(ae: Nat): Nat = ae
-    def apply(ft:NatNatTypeFunction):NatNatTypeFunction = NatNatTypeFunction(ft.x, apply(ft.body))
-    def apply(ft:NatDataTypeFunction):NatDataTypeFunction = NatDataTypeFunction(ft.x, apply[DataType](ft.body))
-    def apply[T <: DataType](dt: T): T = dt
+    def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = Continue(p, this)
+
+    def nat[N <: Nat](n: N): N = n
+
+    def data[T <: DataType](dt: T): T = dt
+
+    def natToNat[N <: NatToNat](ft: N): N = (ft match {
+      case NatToNatLambda(n, body) => NatToNatLambda(nat(n), nat(body))
+      case i: NatToNatIdentifier => i
+    }).asInstanceOf[N]
+
+    def natToData[N <: NatToData](ft: N): N = (ft match {
+      case NatToDataLambda(n, body) => NatToDataLambda(nat(n), data(body))
+      case i: NatToDataIdentifier => i
+    }).asInstanceOf[N]
 
     abstract class Result[+T]
     case class Stop[T <: PhraseType](p: Phrase[T]) extends Result[Phrase[T]]
@@ -18,13 +28,13 @@ object VisitAndRebuild {
   }
 
   def apply[T <: PhraseType](phrase: Phrase[T], v: Visitor): Phrase[T] = {
-    v(phrase) match {
+    v.phrase(phrase) match {
       case r: v.Stop[T]@unchecked => r.p
       case c: v.Continue[T]@unchecked =>
         val v = c.v
         (c.p match {
           case i: Identifier[T] =>
-            Identifier(i.name, visitAndRebuild(i.t, v))
+            Identifier(i.name, visitPhraseTypeAndRebuild(i.t, v))
 
           case Lambda(x, p) =>
             apply(x, v) match {
@@ -65,14 +75,14 @@ object VisitAndRebuild {
     }
   }
 
-  private def visitAndRebuild(phraseType: PhraseType, v: Visitor): PhraseType = phraseType match {
-    case ExpType(dt)                    => ExpType(v(dt))
-    case AccType(dt)                    => AccType(v(dt))
-    case CommandType()                  => CommandType()
-    case PairType(t1, t2)               => PairType(visitAndRebuild(t1, v), visitAndRebuild(t2, v))
-    case FunctionType(inT, outT)        => FunctionType(visitAndRebuild(inT, v), visitAndRebuild(outT, v))
-    case PassiveFunctionType(inT, outT) => PassiveFunctionType(visitAndRebuild(inT, v), visitAndRebuild(outT, v))
-    case DependentFunctionType(x, t)    => DependentFunctionType(x, visitAndRebuild(t, v))
+  private def visitPhraseTypeAndRebuild(phraseType: PhraseType, v: Visitor): PhraseType = phraseType match {
+    case ExpType(dt)                => ExpType(v.data(dt))
+    case AccType(dt)                => AccType(v.data(dt))
+    case CommType()                 => CommType()
+    case PairType(t1, t2)           => PairType(visitPhraseTypeAndRebuild(t1, v), visitPhraseTypeAndRebuild(t2, v))
+    case FunType(inT, outT)         => FunType(visitPhraseTypeAndRebuild(inT, v), visitPhraseTypeAndRebuild(outT, v))
+    case PassiveFunType(inT, outT)  => PassiveFunType(visitPhraseTypeAndRebuild(inT, v), visitPhraseTypeAndRebuild(outT, v))
+    case DepFunType(x, t)           => DepFunType(x, visitPhraseTypeAndRebuild(t, v))
   }
 
 }

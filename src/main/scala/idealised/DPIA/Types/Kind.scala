@@ -23,6 +23,14 @@ object Kind {
   implicit object NatIdentifierMaker extends IdentifierMaker[NatKind] {
     override def makeIdentifier(): NatIdentifier = NatIdentifier(DPIA.freshName("n"))
   }
+
+  def formatKindName(s: String): String =
+    s.dropWhile(_!='$').drop(1).takeWhile(_!='$') match {
+      case "NatIdentifier" => "nat"
+      case "DataTypeIdentifier" => "data"
+      case "NatToNatIdentifier" => "nat->nat"
+      case "NatToDataIdentifier" => "nat->data"
+    }
 }
 
 sealed trait DataKind extends Kind {
@@ -37,4 +45,14 @@ sealed trait PhraseKind extends Kind {
 sealed trait NatKind extends Kind {
   override type T = DPIA.Nat
   override type I = DPIA.NatIdentifier
+}
+
+sealed trait NatToNatKind extends Kind {
+  override type T = NatToNat
+  override type I = NatToNatIdentifier
+}
+
+sealed trait NatToDataKind extends Kind {
+  override type T = NatToData
+  override type I = NatToDataIdentifier
 }

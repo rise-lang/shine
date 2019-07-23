@@ -16,9 +16,9 @@ final case class IdxAcc(n: Nat,
   extends AccPrimitive {
 
   override val t: AccType =
-    (n: Nat) -> (dt: DataType) ->
-      (index :: exp"[idx($n)]") ->
-        (array :: acc"[$n.$dt]") ->
+    (n: Nat) ->: (dt: DataType) ->:
+      (index :: exp"[idx($n)]") ->:
+        (array :: acc"[$n.$dt]") ->:
           acc"[$dt]"
 
   override def eval(s: Store): AccIdentifier = {
@@ -31,7 +31,7 @@ final case class IdxAcc(n: Nat,
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {
-    IdxAcc(fun(n), fun(dt), VisitAndRebuild(index, fun), VisitAndRebuild(array, fun))
+    IdxAcc(fun.nat(n), fun.data(dt), VisitAndRebuild(index, fun), VisitAndRebuild(array, fun))
   }
 
   override def prettyPrint: String = s"${PrettyPhrasePrinter(array)}[${PrettyPhrasePrinter(index)}]"

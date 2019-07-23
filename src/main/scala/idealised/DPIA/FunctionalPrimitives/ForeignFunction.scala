@@ -28,17 +28,17 @@ final case class ForeignFunction(funDecl: ForeignFunction.Declaration,
   override val t: ExpType =
     (inTs zip args).foreach {
       case (inT, arg) => arg :: exp"[$inT]"
-    } -> exp"[$outT]"
+    } ->: exp"[$outT]"
 
   override def eval(s: Store): Data = ???
 
   override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+                                  (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     def recurse(ts: Seq[(Phrase[ExpType], DataType)],
                 exps: Seq[Phrase[ExpType]],
-                inTs: Seq[DataType]): Phrase[CommandType] = {
+                inTs: Seq[DataType]): Phrase[CommType] = {
       ts match {
         // with only one argument left to process return the assignment of the function call
         case Seq((arg, inT)) =>
@@ -53,17 +53,17 @@ final case class ForeignFunction(funDecl: ForeignFunction.Declaration,
     recurse(args zip inTs, Seq(), Seq())
   }
 
-  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommandType] =
+  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
+                                     (implicit context: TranslationContext): Phrase[CommType] =
     ???
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommandType])
-                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])
+                                      (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     def recurse(ts: Seq[(Phrase[ExpType], DataType)],
                 exps: Seq[Phrase[ExpType]],
-                inTs: Seq[DataType]): Phrase[CommandType] = {
+                inTs: Seq[DataType]): Phrase[CommType] = {
       ts match {
         // with only one argument left to process return the assignment of the function call
         case Seq( (arg, inT) ) =>
@@ -86,6 +86,6 @@ final case class ForeignFunction(funDecl: ForeignFunction.Declaration,
     </ForeignFunction>
 
   override def visitAndRebuild(f: Visitor): Phrase[ExpType] = {
-    ForeignFunction(funDecl, inTs.map(f(_)), f(outT), args.map(VisitAndRebuild(_, f)))
+    ForeignFunction(funDecl, inTs.map(f.data), f.data(outT), args.map(VisitAndRebuild(_, f)))
   }
 }

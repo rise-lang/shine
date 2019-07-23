@@ -15,12 +15,12 @@ final case class SplitAcc(n: Nat,
   extends AccPrimitive {
 
   override val t: AccType =
-    (n: Nat) -> (m: Nat) -> (dt: DataType) ->
-      (array :: acc"[$m.$n.$dt]") ->
+    (n: Nat) ->: (m: Nat) ->: (dt: DataType) ->:
+      (array :: acc"[$m.$n.$dt]") ->:
         acc"[${n * m}.$dt]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {
-    SplitAcc(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))
+    SplitAcc(fun.nat(n), fun.nat(m), fun.data(dt), VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): AccIdentifier = ???

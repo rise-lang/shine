@@ -14,13 +14,13 @@ final case class TakeAcc(n: Nat,
   extends AccPrimitive {
 
   override val t: AccType =
-    (n: Nat) -> (m: Nat) -> (dt: DataType) ->
-      (array :: acc"[${n + m}.$dt]") -> acc"[$n.$dt]"
+    (n: Nat) ->: (m: Nat) ->: (dt: DataType) ->:
+      (array :: acc"[${n + m}.$dt]") ->: acc"[$n.$dt]"
 
   override def eval(s: Store): AccIdentifier = ???
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {
-    TakeAcc(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))
+    TakeAcc(fun.nat(n), fun.nat(m), fun.data(dt), VisitAndRebuild(array, fun))
   }
 
   override def prettyPrint: String = s"(takeAcc ${PrettyPhrasePrinter(array)})"

@@ -12,12 +12,12 @@ import scala.xml.Elem
 
 final case class Generate(n: Nat,
                           dt: DataType,
-                          f : Phrase[ExpType -> ExpType])
+                          f : Phrase[ExpType ->: ExpType])
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (n: Nat) -> (dt: DataType) ->
-      (f :: t"exp[idx($n)] -> exp[$dt]") ->
+    (n: Nat) ->: (dt: DataType) ->:
+      (f :: t"exp[idx($n)] -> exp[$dt]") ->:
         exp"[$n.$dt]"
 
   def prettyPrint: String =
@@ -25,30 +25,30 @@ final case class Generate(n: Nat,
 
   override def xmlPrinter: Elem =
     <generate n={ToString(n)} dt={ToString(dt)}>
-      <f type={ToString(ExpType(IndexType(n)) -> ExpType(dt))}>
+      <f type={ToString(ExpType(IndexType(n)) ->: ExpType(dt))}>
        {Phrases.xmlPrinter(f)}
       </f>
     </generate>
 
   def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] =
-    Generate(fun(n), fun(dt), VisitAndRebuild(f, fun))
+    Generate(fun.nat(n), fun.data(dt), VisitAndRebuild(f, fun))
 
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Data = ???
 
   def acceptorTranslation(A: Phrase[AccType])
-                         (implicit context: TranslationContext): Phrase[CommandType] = ???
+                         (implicit context: TranslationContext): Phrase[CommType] = ???
 
-  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommandType] = ???
+  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
+                                     (implicit context: TranslationContext): Phrase[CommType] = ???
 
-  def continuationTranslation(C: Phrase[ExpType -> CommandType])
-                             (implicit context: TranslationContext): Phrase[CommandType] = {
+  def continuationTranslation(C: Phrase[ExpType ->: CommType])
+                             (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     // note: would not be necessary if generate was defined as indices + map
     C(GenerateCont(n, dt,
       fun(exp"[idx($n)]")(i =>
-        fun(exp"[$dt]" -> (comm: CommandType))(cont =>
+        fun(exp"[$dt]" ->: (comm: CommType))(cont =>
           con(f(i))(fun(exp"[$dt]")(g => Apply(cont, g)))
         ))
     ))

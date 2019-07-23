@@ -1,6 +1,6 @@
 package idealised.apps
 
-import benchmarks.core.{CorrectnessCheck, RunOpenCLProgram}
+import benchmarks.core.{CorrectnessCheck, RunOldSurfaceLanguageOpenCLProgam}
 import idealised.OpenCL.{KernelWithSizes, PrivateMemory}
 import idealised.OpenCL.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.DSL.{fun, _}
@@ -15,7 +15,7 @@ import lift.arithmetic._
 import scala.util.Random
 import scala.language.reflectiveCalls
 
-class stencils extends Tests {
+class stencilOldSurfaceLanguage extends Tests {
   val add = fun(x => fun(y => x + y))
 
 
@@ -38,7 +38,7 @@ class stencils extends Tests {
         s" correct = ${correctness.display}"
   }
 
-  private sealed abstract class StencilBaseProgramRun extends RunOpenCLProgram(verbose = false) {
+  private sealed abstract class StencilBaseProgramRun extends RunOldSurfaceLanguageOpenCLProgam(verbose = false) {
     final type Summary = StencilResult
 
     def inputSize: Int
@@ -74,7 +74,7 @@ class stencils extends Tests {
     assert(inputSize > inputMinRange)
     final override type Input = Array[Float]
 
-    def dpiaProgram: Expr
+    def expr: Expr
 
     final def scalaProgram: Array[Float] => Array[Float] = (xs: Array[Float]) => {
       import idealised.utils.ScalaPatterns.pad
@@ -89,7 +89,7 @@ class stencils extends Tests {
 
   private case class BasicStencil1D(inputSize: Int, stencilSize: Int) extends Stencil1DProgramRun {
 
-    override def dpiaProgram: Expr = {
+    override def expr: Expr = {
       nFun(n => fun(ArrayType(n, float))(input =>
         input :>>
           pad(padSize, padSize, 0.0f) :>>
@@ -101,7 +101,7 @@ class stencils extends Tests {
 
   private case class PartitionedStencil1D(inputSize: Int, stencilSize: Int) extends Stencil1DProgramRun {
 
-    override def dpiaProgram: Expr = {
+    override def expr: Expr = {
       nFun(n => fun(ArrayType(n, float))(input =>
         input :>>
           pad(padSize, padSize, 0.0f) :>>
@@ -122,7 +122,7 @@ class stencils extends Tests {
 
     protected val padSize = stencilSize / 2
 
-    def dpiaProgram: Expr
+    def expr: Expr
 
     final override protected def makeInput(random: Random): Array[Array[Float]] = Array.fill(inputSize)(Array.fill(inputSize)(random.nextFloat()))
 
@@ -144,7 +144,7 @@ class stencils extends Tests {
   }
 
   private case class BasicStencil2D(inputSize: Int, stencilSize: Int) extends Stencil2DProgramRun {
-    override def dpiaProgram = {
+    override def expr = {
       nFun(n => fun(ArrayType(n, ArrayType(n, float)))(input =>
         input :>>
           pad2D(n, padSize, padSize, FloatData(0.0f)) :>>
@@ -157,7 +157,7 @@ class stencils extends Tests {
 
   private case class PartitionedStencil2D(inputSize: Int, stencilSize: Int) extends Stencil2DProgramRun {
 
-    override def dpiaProgram = {
+    override def expr = {
       nFun(n => fun(ArrayType(n, ArrayType(n, float)))(input =>
         input :>>
           pad2D(n, padSize, padSize, FloatData(0.0f)) :>>

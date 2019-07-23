@@ -2,24 +2,17 @@ package lift.core
 
 package object types {
 
-  type TypeDependentFunctionType[T <: Type] = DependentFunctionType[DataKind, T]
-  type NatDependentFunctionType[T <: Type] = DependentFunctionType[NatKind, T]
-  type NatDependentDataType = NatDependentFunctionType[DataType]
+  type DataDepFunType[T <: Type] = DepFunType[DataKind, T]
+  type NatDepFunType[T <: Type] = DepFunType[NatKind, T]
+  type NatToNatDepFunType[T <: Type] = DepFunType[NatToNatKind, T]
+  type NatToDataDepFunType[T <: Type] = DepFunType[NatToDataKind, T]
+  type NatDepDataType = NatDepFunType[DataType]
 
-  type ->[T1 <: Type, T2 <: Type] = FunctionType[T1, T2]
-  type `(nat)->`[T <: Type] = NatDependentFunctionType[T]
-  type `(nat)->dt` = NatDependentDataType
-  type `(dt)->`[T <: Type] = TypeDependentFunctionType[T]
-  type `(nat->nat)->`[T <: Type] = NatNatDependentFunctionType[T]
-  type `(nat->data)->`[T <: Type] = NatDataTypeDependentFunctionType[T]
+  type ->[T1 <: Type, T2 <: Type] = FunType[T1, T2]
+  type `(nat)->`[T <: Type] = NatDepFunType[T]
+  type `(nat)->dt` = NatDepDataType
+  type `(dt)->`[T <: Type] = DataDepFunType[T]
+  type `(nat->nat)->`[T <: Type] = NatToNatDepFunType[T]
+  type `(nat->data)->`[T <: Type] = NatToDataDepFunType[T]
 
-  object TypeDependentFunctionType {
-    def apply[T <: Type](dt: DataTypeIdentifier, t: T): DependentFunctionType[DataKind, T] =
-      DependentFunctionType[DataKind, T](dt, t)
-  }
-
-  object NatDependentFunctionType {
-    def apply[T <: Type](n: NatIdentifier, t: T): DependentFunctionType[NatKind, T] =
-      DependentFunctionType[NatKind, T](n, t)
-  }
 }

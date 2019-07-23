@@ -16,30 +16,30 @@ import scala.xml.Elem
 abstract  class AbstractScan(n: Nat,
                              dt1: DataType,
                              dt2: DataType,
-                             f: Phrase[ExpType -> (ExpType -> ExpType)],
+                             f: Phrase[ExpType ->: ExpType ->: ExpType],
                              init:Phrase[ExpType],
                              array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  def makeScan: (Nat, DataType, DataType, Phrase[ExpType -> (ExpType -> ExpType)], Phrase[ExpType], Phrase[ExpType]) => AbstractScan
+  def makeScan: (Nat, DataType, DataType, Phrase[ExpType ->: ExpType ->: ExpType], Phrase[ExpType], Phrase[ExpType]) => AbstractScan
 
   def makeScanI(n: Nat,
                 dt1: DataType,
                 dt2: DataType,
-                f: Phrase[ExpType -> (ExpType -> (AccType -> CommandType))],
+                f: Phrase[ExpType ->: ExpType ->: AccType ->: CommType],
                 init: Phrase[ExpType],
                 array: Phrase[ExpType],
                 out: Phrase[AccType])
-               (implicit context: TranslationContext): Phrase[CommandType]
+               (implicit context: TranslationContext): Phrase[CommType]
 
   override val t: ExpType =
-    (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
-      (f :: t"exp[$dt1] -> exp[$dt2] -> exp[$dt2]") ->
-      (init :: exp"[$dt2]") ->
-      (array :: exp"[$n.$dt1]") -> exp"[$n.$dt2]"
+    (n: Nat) ->: (dt1: DataType) ->: (dt2: DataType) ->:
+      (f :: t"exp[$dt1] -> exp[$dt2] -> exp[$dt2]") ->:
+        (init :: exp"[$dt2]") ->:
+          (array :: exp"[$n.$dt1]") ->: exp"[$n.$dt2]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    makeScan(fun(n), fun(dt1), fun(dt2),
+    makeScan(fun.nat(n), fun.data(dt1), fun.data(dt2),
       VisitAndRebuild(f, fun), VisitAndRebuild(init, fun), VisitAndRebuild(array, fun))
   }
 
@@ -50,12 +50,12 @@ abstract  class AbstractScan(n: Nat,
       s"(${PrettyPhrasePrinter(init)}) (${PrettyPhrasePrinter(array)})"
 
   override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+                                  (implicit context: TranslationContext): Phrase[CommType] = {
     mapAcceptorTranslation(fun(exp"[$dt1]")(x => x), A)
   }
 
-  override def mapAcceptorTranslation(g: Phrase[ExpType -> ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommandType] = {
+  override def mapAcceptorTranslation(g: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
+                                     (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(array)(λ(exp"[$n.$dt1]")(x =>
@@ -69,8 +69,8 @@ abstract  class AbstractScan(n: Nat,
     )
   }
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommandType])
-                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])
+                                      (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     `new`(dt"[$n.$dt2]", λ(exp"[$n.$dt2]" x acc"[$n.$dt2]")(tmp =>
@@ -79,7 +79,7 @@ abstract  class AbstractScan(n: Nat,
 
   override def xmlPrinter: Elem =
     <reduce n={ToString(n)} dt1={ToString(dt1)} dt2={ToString(dt2)}>
-      <f type={ToString(ExpType(dt1) -> (ExpType(dt2) -> ExpType(dt2)))}>
+      <f type={ToString(ExpType(dt1) ->: ExpType(dt2) ->: ExpType(dt2))}>
         {Phrases.xmlPrinter(f)}
       </f>
       <init type={ToString(ExpType(dt2))}>

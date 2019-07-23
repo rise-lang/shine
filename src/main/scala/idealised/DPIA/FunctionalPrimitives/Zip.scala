@@ -19,12 +19,12 @@ final case class Zip(n: Nat,
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
-      (e1 :: exp"[$n.$dt1]") ->
-       (e2 :: exp"[$n.$dt2]") -> exp"[$n.($dt1 x $dt2)]"
+    (n: Nat) ->: (dt1: DataType) ->: (dt2: DataType) ->:
+      (e1 :: exp"[$n.$dt1]") ->:
+       (e2 :: exp"[$n.$dt2]") ->: exp"[$n.($dt1 x $dt2)]"
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    Zip(f(n), f(dt1), f(dt2), VisitAndRebuild(e1, f), VisitAndRebuild(e2, f))
+    Zip(f.nat(n), f.data(dt1), f.data(dt2), VisitAndRebuild(e1, f), VisitAndRebuild(e2, f))
   }
 
   override def eval(s: Store): Data = {
@@ -52,7 +52,7 @@ final case class Zip(n: Nat,
     </zip>
 
   override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+                                  (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     acc(e1)(ZipAcc1(n, dt1, dt2, A)) `;`
@@ -60,12 +60,12 @@ final case class Zip(n: Nat,
   }
 
   // TODO?
-  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommandType] =
+  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
+                                     (implicit context: TranslationContext): Phrase[CommType] =
     ???
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommandType])
-                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])
+                                      (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(e1)(λ(exp"[$n.$dt1]")(x =>

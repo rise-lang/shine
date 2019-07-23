@@ -22,23 +22,23 @@ object FromSurfaceLanguage {
 
       case ApplyExpr(fun, arg, _) =>
         Phrases.Apply(
-          apply(fun).asInstanceOf[Phrase[FunctionType[ExpType, PhraseType]]],
+          apply(fun).asInstanceOf[Phrase[FunType[ExpType, PhraseType]]],
           apply(arg).asInstanceOf[Phrase[ExpType]])
 
       case NatDependentLambdaExpr(x, body, _) =>
-        idealised.DPIA.NatDependentLambda(x, apply(body))
+        Phrases.DepLambda[NatKind](NatIdentifier(x.name, x.range))(apply(body))
 
       case NatDependentApplyExpr(fun, arg, _) =>
-        idealised.DPIA.NatDependentApply(
-          apply(fun).asInstanceOf[Phrases.Phrase[Types.NatDependentFunctionType[Types.PhraseType]]],
+        Phrases.DepApply[NatKind, Types.PhraseType](
+          apply(fun).asInstanceOf[Phrases.Phrase[Types.DepFunType[NatKind, Types.PhraseType]]],
           arg)
 
       case TypeDependentLambdaExpr(x, body, _) =>
-        idealised.DPIA.TypeDependentLambda(Types.DataTypeIdentifier(x.name), apply(body))
+        Phrases.DepLambda[DataKind](Types.DataTypeIdentifier(x.name))(apply(body))
 
       case TypeDependentApplyExpr(fun, arg, _) =>
-        idealised.DPIA.TypeDependentApply(
-          apply(fun).asInstanceOf[Phrases.Phrase[Types.TypeDependentFunctionType[Types.PhraseType]]],
+        Phrases.DepApply[DataKind, Types.PhraseType](
+          apply(fun).asInstanceOf[Phrases.Phrase[Types.DepFunType[Types.DataKind, Types.PhraseType]]],
           arg)
 
       case LetNat(binder, definition, body, _) =>

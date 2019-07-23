@@ -9,18 +9,18 @@ import idealised.DPIA.Types._
 abstract class AbstractMapLoop(n: Nat,
                                dt1: DataType,
                                dt2: DataType,
-                               f: Phrase[ExpType -> ExpType],
+                               f: Phrase[ExpType ->: ExpType],
                                array: Phrase[ExpType])
   extends AbstractMap(n, dt1, dt2, f, array)
 {
   def makeMapI(n: Nat, dt1: DataType, dt2: DataType,
-               f: Phrase[ExpType -> (AccType -> CommandType)],
+               f: Phrase[ExpType ->: AccType ->: CommType],
                array: Phrase[ExpType],
                out: Phrase[AccType])
-              (implicit context: TranslationContext): Phrase[CommandType]
+              (implicit context: TranslationContext): Phrase[CommType]
 
-  override def mapAcceptorTranslation(g: Phrase[ExpType -> ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommandType] = {
+  override def mapAcceptorTranslation(g: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
+                                     (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(array)(λ(exp"[$n.$dt1]")(x =>
@@ -29,8 +29,8 @@ abstract class AbstractMapLoop(n: Nat,
         x, A)))
   }
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommandType])
-                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])
+                                      (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     `new`(dt"[$n.$dt2]", λ(exp"[$n.$dt2]" x acc"[$n.$dt2]")(tmp =>

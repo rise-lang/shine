@@ -2,15 +2,15 @@ package idealised.OpenCL.ImperativePrimitives
 
 import idealised.C.AST.Stmt
 import idealised.DPIA.Phrases.Phrase
-import idealised.DPIA.Types.{AccType, CommandType, DataType}
-import idealised.DPIA.{->, Nat, NatDataTypeFunction, NatIdentifier, `(nat)->`}
+import idealised.DPIA.Types._
+import idealised.DPIA.{->:, Nat, `(nat)->:`}
 import idealised.OpenCL.BuiltInFunction
 import idealised.OpenMP.ImperativePrimitives.AbstractParForNat
 
 abstract class OpenCLParForNat(n: Nat,
-                               ft:NatDataTypeFunction,
+                               ft:NatToData,
                                out: Phrase[AccType],
-                               body: Phrase[`(nat)->`[AccType -> CommandType]])
+                               body: Phrase[`(nat)->:`[AccType ->: CommType]])
   extends AbstractParForNat(n, ft, out, body) {
 
   def parallelismLevel: idealised.OpenCL.ParallelismLevel
@@ -26,7 +26,7 @@ abstract class OpenCLParForNat(n: Nat,
 
 object OpenCLParForNat
 {
-  def unapply(arg: OpenCLParForNat): Option[(Nat, NatDataTypeFunction, Phrase[AccType], Phrase[`(nat)->`[AccType -> CommandType]])] = {
+  def unapply(arg: OpenCLParForNat): Option[(Nat, NatToData, Phrase[AccType], Phrase[`(nat)->:`[AccType ->: CommType]])] = {
     Some(arg.n, arg.ft, arg.out, arg.body)
   }
 }

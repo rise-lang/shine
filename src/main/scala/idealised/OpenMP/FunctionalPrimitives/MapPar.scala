@@ -11,15 +11,15 @@ import idealised.OpenMP.IntermediatePrimitives.MapParI
 final case class MapPar(n: Nat,
                         dt1: DataType,
                         dt2: DataType,
-                        f: Phrase[ExpType -> ExpType],
+                        f: Phrase[ExpType ->: ExpType],
                         array: Phrase[ExpType])
   extends AbstractMapLoop(n, dt1, dt2, f, array)
 {
   override def makeMap = MapPar
   override def makeMapI(n: Nat, dt1: DataType, dt2: DataType,
-                        f: Phrase[->[ExpType, ->[AccType, CommandType]]],
+                        f: Phrase[->:[ExpType, ->:[AccType, CommType]]],
                         array: Phrase[ExpType],
                         out: Phrase[AccType])
-                       (implicit context: TranslationContext): Phrase[CommandType] =
+                       (implicit context: TranslationContext): Phrase[CommType] =
     MapParI(n, dt1, dt2, f, array, out)
 }
