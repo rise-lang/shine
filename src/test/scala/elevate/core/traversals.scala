@@ -13,7 +13,7 @@ import lift.core.primitives._
 class traversals extends idealised.util.Tests {
   val norm = normalize(betaReduction <+ etaReduction)
 
-  def eq(a: Expr, b: Expr): Boolean = StructuralEquality(norm(a).get, norm(b).get)
+  def eq(a: Expr, b: Expr): Boolean = norm(a).get == norm(b).get
 
   test("id traversals") {
     val expr = fun(f => fun(g => map(f) >> map(g)))

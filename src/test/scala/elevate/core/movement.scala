@@ -6,7 +6,7 @@ import elevate.core.strategies._
 import elevate.core.strategies.traversal._
 import elevate.lift.strategies.traversal._
 import elevate.lift.strategies.normalForm._
-import lift.core.{Expr, Identifier, StructuralEquality}
+import lift.core.{Expr, Identifier}
 import lift.core.primitives._
 import lift.core.DSL._
 import scala.language.implicitConversions
@@ -16,7 +16,7 @@ class movement extends idealised.util.Tests {
   implicit def rewriteResultToExpr(r: RewriteResult): Expr = r.get
 
   val norm: Strategy = normalize(betaReduction <+ etaReduction)
-  def eq(a: Expr, b: Expr): Boolean = StructuralEquality(norm(a), norm(b))
+  def eq(a: Expr, b: Expr): Boolean = norm(a) == norm(b)
 
   // notation
   def T: Expr = transpose

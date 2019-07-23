@@ -13,7 +13,7 @@ class fission_fusion extends idealised.util.Tests {
   val norm = normalize(betaReduction <+ etaReduction)
 
   def eq(a: Expr, b: Expr): Unit = {
-    if (!StructuralEquality(norm(a).get, norm(b).get)) {
+    if (norm(a).get != norm(b).get) {
       throw new Exception(s"expected structural equality:\n$a\n$b")
     }
   }
