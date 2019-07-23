@@ -1,28 +1,74 @@
 \begin{figure}[b]
-    \small
-    \begin{minipage}{0.3\linewidth}
+    \footnotesize
+    \begin{minipage}{1.0\linewidth}
       \begin{mathpar}
-        \kappa ::= \datatype \mid \type \mid \natkind \mid \addrkind \mid \access
+        \kappa ::= \access \mid \addrkind \mid \ntnkind \mid \ntdkind \mid \natkind \mid \datatype \mid \type
       \end{mathpar}
       \subcaption{Kinds}\label{fig:kinds}
-    \end{minipage}%
-    \begin{minipage}{0.3\linewidth}
+    \end{minipage}
+
+    \medskip
+
+    \begin{minipage}{0.4\linewidth}
       \begin{mathpar}
         \inferrule*
-        {x : \kappa \in \Delta}
-        {\Delta \vdash x : \kappa}
+        {\x : \kappa \in \Delta}
+        {\Delta \vdash \x : \kappa}
       \end{mathpar}
       \subcaption{Kinding Structural Rules}\label{fig:structural-kinding}
     \end{minipage}
-    \begin{minipage}{0.3\linewidth}
+    %
+    \begin{minipage}{0.4\linewidth}
       \begin{mathpar}
          \inferrule
-         {\models \forall \sigma : \mathit{dom}(\Delta) \to \mathbb{N}.\sigma(M) = \sigma(N)}
-         {\Delta \vdash M \equiv N : \natkind}
+         {\models \forall \sigma : \mathit{dom}(\Delta) \to \mathbb{N}.\sigma(\Nat{N}) = \sigma(\Nat{M})}
+         {\Delta \vdash \Nat{N} \equiv \Nat{M} : \natkind}
       \end{mathpar}
       \subcaption{Type Equality}\label{fig:equality-kinding}
     \end{minipage}
   
+    \medskip
+      
+    \begin{minipage}{.4\linewidth}
+      \begin{mathpar}
+        \inferrule*
+        {\W \in \{\writeacc, \readacc\} }
+        {\Delta \vdash \W : \access}
+      \end{mathpar}
+      \subcaption{Accessibility}\label{fig:accessib8ility-kinding}
+    \end{minipage}
+    %
+    \begin{minipage}{.4\linewidth}
+      \begin{mathpar}
+        \inferrule*
+        {\A \in \{\mathsf{global, local, private, constant\}}}
+        {\Delta \vdash \A : \addrkind}
+  
+      \end{mathpar}
+      \subcaption{Address Spaces}\label{fig:address-space-kinding}
+    \end{minipage}
+
+    \medskip
+
+    \begin{minipage}{.4\linewidth}
+      \begin{mathpar}
+        \inferrule*
+        {\Delta, \n : \natkind \vdash \Nat{M} : \natkind}
+        {\Delta \vdash \lNtN{\n}{\Nat{M}} : \ntnkind}
+      \end{mathpar}
+      \subcaption{$\natkind$ to $\natkind$ type level functions}\label{fig:nat2nat-kinding}
+    \end{minipage}
+    %
+    \begin{minipage}{.4\linewidth}
+      \begin{mathpar}
+        \inferrule*
+        {\Delta, \n : \natkind \vdash \DT : \datatype}
+        {\Delta \vdash \lNtDT{\n}{\DT} : \ntdkind}
+  
+      \end{mathpar}
+      \subcaption{$\natkind$ to $\datatype$ type level functions}\label{fig:nat2data-kinding}
+    \end{minipage}
+
     \medskip
   
     \begin{minipage}{1.0\linewidth}
@@ -32,30 +78,14 @@
         {\Delta \vdash \underline{\ell} : \natkind}
   
         \inferrule*
-        {\Delta \vdash M : \natkind \\ \Delta \vdash N : \natkind}
-        {\Delta \vdash M + N : \natkind}
-  
+        {\Delta \vdash \Nat{N} : \natkind \\ \Delta \vdash \Nat{M} : \natkind \\ \oplus \in \{+,*,\ldots\}}
+        {\Delta \vdash \Nat{N} \oplus \Nat{M} : \natkind}
+
         \inferrule*
-        {\Delta \vdash M : \natkind \\ \Delta \vdash N : \natkind}
-        {\Delta \vdash M * N : \natkind}
+        {\Delta \vdash \FN : \ntnkind \\ \Delta \vdash \Nat{M} : \natkind}
+        {\Delta \vdash \FN~\Nat{M} : \natkind}
       \end{mathpar}
       \subcaption{Natural numbers}\label{fig:natural-number-kinding}
-    \end{minipage}
-  
-    \medskip
-      
-    \begin{minipage}{1.0\linewidth}
-        \begin{mathpar}
-        \inferrule*
-        {\omega \in \{\writeacc, \pureacc\} }
-        {\Delta \vdash \omega : \access}
-  
-        \inferrule*
-        {\alpha \in \{\mathsf{global, local, private (, constant)\}}}
-        {\Delta \vdash \alpha : \addrkind}
-  
-        \end{mathpar}
-        \subcaption{Accessibility and Address Spaces}\label{fig:address-space-kinding}
     \end{minipage}
   
     \medskip
@@ -71,16 +101,28 @@
         {\Delta \vdash \natkind : \datatype}
   
         \inferrule*
-        {\Delta \vdash N : \natkind}
-        {\Delta \vdash \tyidx[N] : \datatype}
+        {\Delta \vdash \N : \natkind}
+        {\Delta \vdash \tyidx[\N] : \datatype}
   
         \inferrule*
-        {\Delta \vdash N : \natkind \\\\ \Delta \vdash \delta : \datatype}
-        {\Delta \vdash N.\delta : \datatype}
+        {\Delta \vdash \N : \natkind \\\\ \Delta \vdash \DT : \datatype}
+        {\Delta \vdash \lArray{\N}{\DT} : \datatype}
   
         \inferrule*
-        {\Delta \vdash \delta_1 : \datatype \\\\ \Delta \vdash \delta_2 : \datatype}
-        {\Delta \vdash \delta_1 \times \delta_2 : \datatype}
+        {\Delta \vdash \DTone : \datatype \\\\ \Delta \vdash \DTtwo : \datatype}
+        {\Delta \vdash \lPair{\DTone}{\DTtwo} : \datatype}
+
+        \inferrule*
+        {\Delta \vdash \N : \natkind \\\\ \Delta \vdash \DT : \datatype}
+        {\Delta \vdash \lArray{\N}{\DT} : \datatype}
+
+        \inferrule*
+        {\Delta \vdash \N : \natkind \\\\ \Delta \vdash \fdt : \ntdkind}
+        {\Delta \vdash \lDepArray{\N}{\fdt} : \datatype}
+
+        \inferrule*
+        {\Delta \vdash \FDT : \ntdkind \\ \Delta \vdash \N : \natkind}
+        {\Delta \vdash \FDT~\N : \datatype}
       \end{mathpar}
       \subcaption{Data Types}\label{fig:data-type-kinding}
     \end{minipage}
@@ -90,24 +132,26 @@
     \begin{minipage}{1.0\linewidth}
       \begin{mathpar}
         \inferrule*
-        {\Delta \vdash \delta : \datatype \\ \Delta \vdash \omega : \access}
-        {\Delta \vdash \tyval{\delta}{\omega} : \type}
+        {\Delta \vdash \DT : \datatype \\\\
+         \Delta \vdash \W : \access}
+        {\Delta \vdash \tyval{\DT}{\W} : \type}
   
         \inferrule*
-        {\Delta \vdash \theta_1 : \type \\\\
-          \Delta \vdash \theta_2 : \type}
-        {\Delta \vdash \theta_1 \to \theta_2 : \type}
+        {\Delta \vdash \TYone : \type \\\\
+         \Delta \vdash \TYtwo : \type}
+        {\Delta \vdash \TYone \to \TYtwo : \type}
   
         \inferrule*
-        {\Delta, x : \kappa \vdash \theta : \type \\ \kappa \in
+        {\Delta, \x : \kappa \vdash \TY : \type \\ \kappa \in
           \left\{
             \begin{array}{l}
-            \natkind, \addrkind,\arcr
-            \access, \datatype
+            \access, \addrkind,\arcr
+            \ntnkind, \ntdkind,\arcr
+            \natkind, \datatype
             \end{array}
           \right\}
         }
-        {\Delta \vdash (x\mathord:\kappa) \to \theta : \type}
+        {\Delta \vdash (\x\mathord:\kappa) \to \TY : \type}
       \end{mathpar}
       \subcaption{Types}\label{fig:phrase-type-kinding}
     \end{minipage}
