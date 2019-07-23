@@ -1,9 +1,10 @@
 package elevate.lift.rules
 
 import elevate.core.{Failure, NotApplicable, Strategy, Success}
+import elevate.lift.rules._
 import lift.core._
 import lift.core.DSL._
-import lift.core.primitives.{join, map, slide, split, transpose}
+import lift.core.primitives.{id, join, map, slide, split, transpose}
 
 
 object algorithmic {
@@ -47,8 +48,18 @@ object algorithmic {
 
   // identities
 
-  def createTransposePair: Strategy = ` -> T >> T`
-  def ` -> T >> T`: Strategy = x => Success(x |> transpose |> transpose)
+  def createId: Strategy = ` -> id`
+  def ` -> id`: Strategy = x => Success(x |> id)
+
+  def liftId: Strategy = `id -> *id`
+  def `id -> *id`: Strategy = {
+    case Apply(`id`, arg) => Success(Apply(map(id), arg))
+  }
+
+  def createTransposePair: Strategy = `id -> T >> T`
+  def `id -> T >> T`: Strategy = {
+    case Apply(`id`, arg) => Success(Apply(transpose >> transpose, arg))
+  }
 
   def removeTransposePair: Strategy = `T >> T -> `
   def `T >> T -> `: Strategy = {

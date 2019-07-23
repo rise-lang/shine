@@ -132,7 +132,7 @@ class binomialFilter extends idealised.util.Tests {
     val Dv = dot(weights1d)
 
     val steps = Seq[(Strategy, Expr)](
-      (id,
+      (strategies.basic.id,
         P >> *(Sh) >> Sv >> *(T) >> *(*(fun(nbh => dot(weights2d)(join(nbh)))))),
       (oncetd(separateDotT),
         P >> *(Sh) >> Sv >> *(T) >> *(*(T >> *(Dv) >> Dh))),
@@ -185,7 +185,7 @@ class binomialFilter extends idealised.util.Tests {
     val Dv = dot(weights1d)
 
     val steps = Seq[(Strategy, Expr)](
-      (id,
+      (strategies.basic.id,
         P >> *(Sh) >> Sv >> *(T) >> *(*(fun(nbh => dot(weights2d)(join(nbh)))))),
       (oncetd(separateDotT),
         P >> *(Sh) >> Sv >> *(T) >> *(*(T >> *(Dv) >> Dh))),
@@ -227,7 +227,7 @@ class binomialFilter extends idealised.util.Tests {
     val phrase = idealised.DPIA.fromLift(typed)
     val program = C.ProgramGenerator.makeCode(phrase, name)
     SyntaxChecker(program.code)
-    println(program.code)
+    debugln(program.code)
     program
   }
 

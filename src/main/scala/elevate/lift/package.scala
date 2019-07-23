@@ -8,12 +8,14 @@ import elevate.lift.strategies.normalForm._
 package object lift {
 
   def structEq(a: Expr, b: Expr): Boolean = StructuralEquality(
-    LCNF(a).get, LCNF(b).get
+    BENF(a).get, BENF(b).get
   )
 
   // notation
+  val tileSize = 4
+  def ID: Expr = id
   def T: Expr = transpose
-  def S: Expr = split(4)//slide(3)(1)
+  def S: Expr = split(tileSize)//slide(3)(1)
   def J: Expr = join
   def *(x: Expr): Expr = map(x)
   def **(x: Expr): Expr = map(map(x))
@@ -31,19 +33,17 @@ package object lift {
 
   def **!(x: Expr): Expr = {
     val i = Identifier(freshName("e"))
-    map(Lambda(i, *!(x)))
+    map(Lambda(i, Apply(*!(x), i)))
   }
 
   def ***!(x: Expr): Expr = {
     val i = Identifier(freshName("e"))
-    map(Lambda(i, **!(x)))
+    map(Lambda(i, Apply(**!(x), i)))
   }
 
   def ****!(x: Expr): Expr = {
     val i = Identifier(freshName("e"))
-    map(Lambda(i, ***!(x)))
+    map(Lambda(i, Apply(***!(x), i)))
   }
-
-
 
 }

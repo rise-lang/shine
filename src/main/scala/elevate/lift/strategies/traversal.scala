@@ -26,13 +26,13 @@ object traversal {
   def argument: Strategy => Strategy =
     s => {
       case Apply(f, e) => s(e).mapSuccess(Apply(f, _))
-      case x => Failure(s)
+      case _ => Failure(s)
     }
 
   def argumentOf(x: Primitive): Strategy => Strategy = {
     s => {
       case Apply(f, e) if f == x => s(e).mapSuccess(Apply(f, _))
-      case x => Failure(s)
+      case _ => Failure(s)
     }
   }
 
@@ -53,4 +53,12 @@ object traversal {
   // applying a strategy to an expression nested in one or multiple lift `map`s
   def mapped: Strategy => Strategy =
     s => s <+ (e => fmapRNF(mapped(s))(e))
+
+  // moves along RNF-normalized expression
+  // e.g., expr == ***f o ****g o *h
+  // move(0)(s) == s(***f o ****g o *h)
+  // move(1)(s) == s(****g o *h)
+  // move(2)(s) == s(*h)
+  def move: Int => Strategy => Strategy =
+    i => s => applyNTimes(i)(argument(_))(s)
 }

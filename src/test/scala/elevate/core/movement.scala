@@ -32,7 +32,7 @@ class movement extends idealised.util.Tests {
       List(
         norm(λ(f => *(λ(x => *(f)(x))) >> T)).get,
         λ(f => **(f) >> T)
-      ).map((print `;` oncetd(`**f >> T -> T >> **f`))(_).get), gold
+      ).map((debug `;` oncetd(`**f >> T -> T >> **f`))(_).get), gold
     )
   }
 
