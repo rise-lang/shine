@@ -226,12 +226,11 @@ class tiling extends idealised.util.Tests {
     case d => ArrayType(n, inputT(d-1, n))
   }
 
-  val lower: Strategy = normalize(specialize.mapSeq2) `;` BENF `;` RNF
+  val lower: Strategy = LCNF `;` normalize(specialize.mapSeq2) //`;` BENF `;` RNF
 
   val abs = tFun(t => foreignFun("my_abs", Seq("y"), "{ return fabs(y); }", t ->: t))
   val fabs: Expr = abs(float)
 
-  /*
   test("codegen 1D tiles") {
     val highLevel = nFun(n => fun(inputT(1, n))(i => *(fabs) $ i))
     val tiled = one(body(tileND(1)(tileSize)))(highLevel).get
@@ -240,6 +239,7 @@ class tiling extends idealised.util.Tests {
     println(gen.CProgram(lower(tiled)))
   }
 
+  /*
   test("codegen 2D tiles") {
     val high_level = nFun(n => fun(inputT(2, n))(i => **!(fabs) $ i))
     println(high_level)

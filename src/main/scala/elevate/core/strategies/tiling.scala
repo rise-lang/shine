@@ -17,7 +17,7 @@ object tiling {
       case i => fmap(tileND(d-1)(n)) `;` tileND(1)(n) `;` shiftDim(i)
     }
 
-  // Notation: a.A -> a == tiled dimension; A == original dimension
+  // Notation: a.A -> a == tile dimension; A == original dimension
   // a.b.c.d: 4D array (inner => outer): a == innermost dim; d == outermost dim
   //
   // dim == 2 -> shift one level:
