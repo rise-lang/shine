@@ -1,7 +1,7 @@
 package elevate.lift.strategies
 
 import elevate.core.{Failure, Strategy}
-import lift.core.{Apply, Lambda, Primitive}
+import lift.core.{Apply, DepLambda, Lambda, Primitive}
 import lift.core.primitives.map
 import elevate.lift.rules.algorithmic._
 import elevate.core.strategies.traversal._

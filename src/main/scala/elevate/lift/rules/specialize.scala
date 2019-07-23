@@ -1,12 +1,21 @@
 package elevate.lift.rules
 
 import elevate.core.{Failure, NotApplicable, Strategy, Success}
-import lift.core.primitives
+import lift.core.{Apply, Lambda, primitives}
+import lift.core.primitives._
 
 object specialize {
   def mapSeq: Strategy = {
     case primitives.map => Success(primitives.mapSeq)
     case _ => Failure(mapSeq)
+  }
+
+  def mapSeq2: Strategy = {
+    // (mapSeq λη1. (my_abs η1))
+    case Apply(`map`, l@Lambda(_, Apply(ForeignFunction(_,_), _))) => Success(Apply(primitives.mapSeq, l))
+    // (map λη1. ((mapSeq λη2. (my_abs η2)) η1))
+    case Apply(`map`, l@Lambda(_, Apply(Apply(primitives.mapSeq, _), _))) => Success(Apply(primitives.mapSeq, l))
+    case _ => Failure(mapSeq2)
   }
 
   def reduceSeq: Strategy = {
