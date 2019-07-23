@@ -23,6 +23,7 @@ object IsClosedForm {
 
       override def apply(ae: Nat): Result[Nat] = visitNat(ae, boundN, this)
 
+      // TODO: use a single bound: Set[Kind.Identifier]
       override def apply[T <: Type](t: T): Result[T] = {
         case class TypeVisitor(boundT: Set[DataTypeIdentifier],
                                boundN: Set[NamedVar],
