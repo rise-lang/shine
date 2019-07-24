@@ -1,9 +1,7 @@
 package elevate.core.strategies
 
-import elevate.core.{Failure, Strategy, Success}
-import elevate.lift.strategies.traversal._
+import elevate.core.{Strategy, Success}
 import lift.core.Expr
-
 
 object basic {
 
