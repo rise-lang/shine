@@ -45,5 +45,4 @@ package object lift {
     val i = Identifier(freshName("e"))
     map(Lambda(i, Apply(***!(x), i)))
   }
-
 }

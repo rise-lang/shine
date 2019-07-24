@@ -17,7 +17,6 @@ object movement {
 
   // transpose
 
-  // (transpose ((map (map f)) y))
   def mapMapFBeforeTranspose: Strategy = `**f >> T -> T >> **f`
   def `**f >> T -> T >> **f`: Strategy = {
     case Apply(

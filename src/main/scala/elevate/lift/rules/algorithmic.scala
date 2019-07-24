@@ -1,10 +1,9 @@
 package elevate.lift.rules
 
-import elevate.core.{Failure, NotApplicable, Strategy, Success}
-import elevate.lift.rules._
+import elevate.core.{Failure, Strategy, Success}
 import lift.core._
 import lift.core.DSL._
-import lift.core.primitives.{id, join, map, slide, split, transpose}
+import lift.core.primitives.{id, join, map, split, transpose}
 
 
 object algorithmic {
