@@ -274,4 +274,25 @@ class tiling extends idealised.util.Tests {
     println(gen.CProgram(lower(highLevel)))
     println(gen.CProgram(lower(tiled)))
   }
+
+  /// LOOP INTERCHANGE
+
+   test("simple loop interchange") {
+     assert(structEq(
+       body(body(loopInterchange))(λ(i => λ(f => **!(f) $ i))),
+       λ(i => λ(f => (T o **(f) o T) $ i))
+     ))
+   }
+
+  test("interchange innermost two loops in loop nest of depth 3") {
+    assert(structEq(
+      body(body(loopInterchangeAtLevel(1)))(λ(i => λ(f => ***!(f) $ i))),
+      λ(i => λ(f => (*(T) o ***(f) o *(T)) $ i))
+    ))
+
+    assert(structEq(
+      body(body(fmap(loopInterchange) `;` LCNF `;` RNF))(λ(i => λ(f => ***!(f) $ i))),
+      λ(i => λ(f => (*(T) o ***(f) o *(T)) $ i))
+    ))
+   }
 }

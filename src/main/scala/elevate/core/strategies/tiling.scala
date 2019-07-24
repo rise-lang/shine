@@ -49,17 +49,19 @@ object tiling {
   def shiftDimRec: Int => Int => Strategy =
     position => level => LCNF `;`
       (level match {
-      case 1 => move(position)(loopInterchange(1)) `;` LCNF
-      case l => shiftDimRec(position)(l - 1) `;` LCNF `;` move(position + l - 1)(loopInterchange(l))
+      case 1 => move(position)(fmap(loopInterchange)) `;` LCNF `;` RNF
+      case l => shiftDimRec(position)(l - 1) `;` LCNF `;`
+        move(position + l - 1)(loopInterchangeAtLevel(l))
     })
 
-  // in front of *..*f (maps), creating transpose pairs nested depth-deep in maps, move transpose over *..*f
-  // depth == 0: A.B.C.D => A.B.D.C todo: check if this is actually the case (not needed so far)
-  //                 ^ ^        ^ ^
-  // depth == 1: A.B.C.D => A.C.B.D
-  //               ^ ^        ^ ^   ... and so on
-  def loopInterchange: Int => Strategy =
-    depth => applyNTimes(depth)(fmap(_))(
+  // in front of **f, creating transpose pairs, move one transpose over **f
+  def loopInterchange: Strategy =
       createId `;` createTransposePair `;` LCNF `;` argument(mapMapFBeforeTranspose)
-    ) `;` LCNF `;` RNF
+
+  // level == 0: A.B.C.D => A.B.D.C
+  //                 ^ ^        ^ ^
+  // level == 1: A.B.C.D => A.C.B.D
+  //               ^ ^        ^ ^   ... and so on
+  def loopInterchangeAtLevel: Int => Strategy =
+    level => applyNTimes(level)(fmap(_))(loopInterchange) `;` LCNF `;` RNF
 }
