@@ -16,7 +16,7 @@
         {\mathsf{prim} : \TY \in \textsc{Primitives}}
         {\typd{\Pi}{\Gamma}{\mathsf{prim}}{\TY}}
       \end{mathpar}
-      \subcaption{Structural Rules}\label{fig:structural-rules}
+      \subcaption{Structural Rules}\label{fig:lift-structural-rules}
     \end{minipage}
   
     \medskip
@@ -49,13 +49,13 @@
         \inferrule* [right=Pair]
         {\typd{\Pi}{\Gamma}{\Progone}{\TYone} \\
           \typd{\Pi}{\Gamma}{\Progtwo}{\TYtwo}}
-        {\typd{\Pi}{\Gamma}{\langle \Progone, \Progtwo \rangle}{\TYone \times \TYtwo}}
+        {\typd{\Pi}{\Gamma}{\langle \Progone, \Progtwo \rangle}{\lPair{\TYone}{\TYtwo}}}
   
         \inferrule* [right=Proj]
         {\typd{\Pi}{\Gamma}{\Prog}{\TY_1 \times \TY_2}}
         {\typd{\Pi}{\Gamma}{\Prog.i}{\TY_i}}
       \end{mathpar}
-      \subcaption{Introduction and Elimination Rules}\label{fig:intro-elim-rules}
+      \subcaption{Introduction and Elimination Rules}\label{fig:lift-intro-elim-rules}
     \end{minipage}
   
     \medskip
@@ -66,7 +66,7 @@
           {\typd{\Pi}{\Gamma}{\Prog}{\tyval{\basic}{\readacc}}}
           {\typd{\Pi}{\Gamma}{\Prog}{\tyval{\basic}{\writeacc}}}
       \end{mathpar}
-      \subcaption{Access conversion rule}\label{fig:access-conversion-rule}
+      \subcaption{Access conversion rule}\label{fig:lift-access-conversion-rule}
     \end{minipage}
   
     \medskip
