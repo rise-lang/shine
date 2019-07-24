@@ -39,6 +39,4 @@ object basic {
 
   def applyNTimes: Int => (Strategy => Strategy) => Strategy => Strategy =
     i => f => s => if(i <= 0) s else applyNTimes(i-1)(f)(f(s))
-
-
 }

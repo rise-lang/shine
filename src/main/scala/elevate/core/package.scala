@@ -48,6 +48,4 @@ package object core {
   implicit class LeftChoice(f: Strategy) {
     def <+(s: Strategy): Strategy = leftChoice(f)(s)
   }
-
-
 }
