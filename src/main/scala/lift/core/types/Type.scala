@@ -16,6 +16,11 @@ final case class FunType[T1 <: Type, T2 <: Type](inT: T1, outT: T2) extends Type
 final case class DepFunType[K <: Kind, T <: Type](x: K#I, t: T) extends Type {
   override def toString: String =
     s"(${x.name}: ${Kind.formatKindName(x.getClass.getName)} -> $t)"
+
+  override def equals(obj: Any) = obj match {
+    case other: DepFunType[K, _] => t == lifting.liftDependentFunctionType[K](other)(x)
+    case _ => false
+  }
 }
 
 // ============================================================================================= //
