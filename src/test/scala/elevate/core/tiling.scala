@@ -285,14 +285,17 @@ class tiling extends idealised.util.Tests {
    }
 
   test("interchange innermost two loops in loop nest of depth 3") {
+    val input = λ(i => λ(f => ***!(f) $ i))
+    val gold = λ(i => λ(f => (*(T) o ***(f) o *(T)) $ i))
+
     assert(structEq(
-      body(body(loopInterchangeAtLevel(1)))(λ(i => λ(f => ***!(f) $ i))),
-      λ(i => λ(f => (*(T) o ***(f) o *(T)) $ i))
+      body(body(loopInterchangeAtLevel(1)))(input),
+      gold
     ))
 
     assert(structEq(
-      body(body(fmap(loopInterchange) `;` LCNF `;` RNF))(λ(i => λ(f => ***!(f) $ i))),
-      λ(i => λ(f => (*(T) o ***(f) o *(T)) $ i))
+      body(body(fmap(loopInterchange) `;` LCNF `;` RNF))(input),
+      gold
     ))
    }
 }
