@@ -105,10 +105,6 @@
         {\Delta \vdash \tyidx[\N] : \datatype}
   
         \inferrule*
-        {\Delta \vdash \N : \natkind \\\\ \Delta \vdash \DT : \datatype}
-        {\Delta \vdash \lArray{\N}{\DT} : \datatype}
-  
-        \inferrule*
         {\Delta \vdash \DTone : \datatype \\\\ \Delta \vdash \DTtwo : \datatype}
         {\Delta \vdash \lPair{\DTone}{\DTtwo} : \datatype}
 
