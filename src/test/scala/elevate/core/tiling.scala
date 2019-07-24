@@ -9,7 +9,7 @@ import elevate.lift._
 import elevate.lift.rules._
 import idealised.util.gen
 import lift.core.DSL._
-import lift.core.{Apply, Expr, NatIdentifier}
+import lift.core.{Apply, Expr, NatDepLambda, NatIdentifier, TypedExpr}
 import lift.core.primitives._
 import lift.core.types.{ArrayType, float, infer}
 import org.scalatest.Ignore
@@ -221,36 +221,57 @@ class tiling extends idealised.util.Tests {
 
   /// CODEGEN TESTS
 
-  def inputT(dim: Int, n : NatIdentifier): ArrayType = dim match {
-    case 1 => ArrayType(n, float)
-    case d => ArrayType(n, inputT(d-1, n))
+  def inputT(dim: Int, n : List[NatIdentifier]): ArrayType = dim match {
+    case 1 => ArrayType(n.head, float)
+    case d => ArrayType(n.head, inputT(d-1, n.tail))
   }
 
-  val lower: Strategy = LCNF `;` CNF `;` normalize(specialize.mapSeqCompute) `;` BENF
+  def wrapInLambda(dim: Int,
+                   f: TypedExpr => Expr,
+                   genInputType: List[NatIdentifier] => ArrayType,
+                   natIds: List[NatIdentifier] = List()): NatDepLambda = {
+    dim match {
+      case 1 => nFun(n => fun(genInputType( natIds :+ n))(f))
+      case d => nFun(n => wrapInLambda(d - 1, f, genInputType, natIds :+ n))
+    }
+  }
 
-  val abs = tFun(t => foreignFun("my_abs", Seq("y"), "{ return fabs(y); }", t ->: t))
-  val fabs: Expr = abs(float)
+  // todo: this should use mapSeqCompute and CNF instead of RNF
+  // ... but mapAcceptorTranslation for split is missing
+  val lower: Strategy = LCNF `;` RNF `;` normalize(specialize.mapSeq) `;` BENF
+
+  val identity = tFun(t => foreignFun("identity", Seq("y"), "{ return y; }", t ->: t))
+  val floatId: Expr = identity(float)
 
   test("codegen 1D tiles") {
-    val highLevel = nFun(n => fun(inputT(1, n))(i => *(fabs) $ i))
+    val highLevel = wrapInLambda(1, i => *(floatId) $ i, inputT(1, _))
     val tiled = one(body(tileND(1)(tileSize)))(highLevel).get
 
     println(gen.CProgram(lower(highLevel)))
     println(gen.CProgram(lower(tiled)))
   }
 
-  /*
   test("codegen 2D tiles") {
-    val high_level = nFun(n => fun(inputT(2, n))(i => **!(fabs) $ i))
-    println(high_level)
-    val tiled = one(body(tileND(2)(tileSize)))(high_level).get
+    val highLevel = wrapInLambda(2, i => **!(floatId) $ i, inputT(2, _))
+    val tiled = one(one(body(tileND(2)(tileSize))))(highLevel).get
 
-    println("---------------------")
-    println(lower(tiled).get)
-    println("---------------------")
-
-    println(gen.CProgram(lower(high_level)))
+    println(gen.CProgram(lower(highLevel)))
     println(gen.CProgram(lower(tiled)))
   }
-   */
+
+  test("codegen 3D tiles") {
+    val highLevel = wrapInLambda(3, i => ***!(floatId) $ i, inputT(3, _))
+    val tiled = one(one(one(body(tileND(3)(tileSize)))))(highLevel).get
+
+    println(gen.CProgram(lower(highLevel)))
+    println(gen.CProgram(lower(tiled)))
+  }
+
+  test("codegen two innermost of three loops") {
+    val highLevel = wrapInLambda(3, i => ***!(floatId) $ i, inputT(3, _))
+    val tiled = one(one(one(body(fmap(tileND(2)(tileSize))))))(highLevel).get
+
+    println(gen.CProgram(lower(highLevel)))
+    println(gen.CProgram(lower(tiled)))
+  }
 }
