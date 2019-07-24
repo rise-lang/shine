@@ -5,7 +5,7 @@ import elevate.lift._
 import elevate.core.strategies.traversal._
 import elevate.core.strategies.basic._
 import lift.core.DSL._
-import lift.core.primitives._
+import lift.core.primitives.map
 
 class traversals extends idealised.util.Tests {
 
