@@ -79,46 +79,46 @@ package object DSL {
   implicit class AssignmentHelper(lhs: Phrase[AccType]) {
     def :=|(dt: DataType) = new {
       def |(rhs: Phrase[ExpType])
-           (implicit context: TranslationContext): Phrase[CommandType] = {
+           (implicit context: TranslationContext): Phrase[CommType] = {
         context.assign(dt, lhs, rhs)
       }
     }
   }
 
-  implicit class CallLambda[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 -> T2]) {
+  implicit class CallLambda[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 ->: T2]) {
     def apply(arg: Phrase[T1]): Phrase[T2] = Lifting.liftFunction(fun).value(arg)
 
     def $(arg: Phrase[T1]): Phrase[T2] = apply(arg)
   }
 
-  implicit class CallExpLambda[T <: PhraseType](fun: Phrase[ExpType -> T]) {
+  implicit class CallExpLambda[T <: PhraseType](fun: Phrase[ExpType ->: T]) {
     def apply(arg: Phrase[ExpType]): Phrase[T] = CallLambda[ExpType, T](fun)(arg)
 
     def $(arg: Phrase[ExpType]): Phrase[T] = apply(arg)
   }
 
-  implicit class CallNatDependentLambda[T <: PhraseType](fun: Phrase[`(nat)->`[T]]) {
+  implicit class CallNatDependentLambda[T <: PhraseType](fun: Phrase[`(nat)->:`[T]]) {
     def apply(arg: Nat): Phrase[T] =
       Lifting.liftDependentFunction[NatKind, T](fun)(arg)
 
     def $(arg: Nat): Phrase[T] = apply(arg)
   }
 
-  implicit class CallTypeDependentLambda[T <: PhraseType](fun: Phrase[`(dt)->`[T]]) {
+  implicit class CallTypeDependentLambda[T <: PhraseType](fun: Phrase[`(dt)->:`[T]]) {
     def apply(arg: DataType): Phrase[T] =
       Lifting.liftDependentFunction[DataKind, T](fun)(arg)
 
     def $(arg: DataType): Phrase[T] = apply(arg)
   }
 
-  implicit class FunComp[T1 <: PhraseType, T2 <: PhraseType](f: Phrase[T1 -> T2]) {
-    def o[T3 <: PhraseType](g: Phrase[T3 -> T1]): Phrase[T3 -> T2] = {
+  implicit class FunComp[T1 <: PhraseType, T2 <: PhraseType](f: Phrase[T1 ->: T2]) {
+    def o[T3 <: PhraseType](g: Phrase[T3 ->: T1]): Phrase[T3 ->: T2] = {
       λ(g.t.inT)(arg => f(g(arg)))
     }
   }
 
-  implicit class SequentialComposition(c1: Phrase[CommandType]) {
-    def `;`(c2: Phrase[CommandType]): Phrase[CommandType] = Seq(c1, c2)
+  implicit class SequentialComposition(c1: Phrase[CommType]) {
+    def `;`(c2: Phrase[CommType]): Phrase[CommType] = Seq(c1, c2)
   }
 
   implicit class VarExtensions(v: Phrase[VarType]) {

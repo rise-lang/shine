@@ -10,7 +10,7 @@ import idealised.DPIA.ImperativePrimitives._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics.{ArrayData, VectorData}
-import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType, PhraseType, ScalarType, VectorType}
+import idealised.DPIA.Types.{AccType, CommType, DataType, ExpType, PhraseType, ScalarType, VectorType}
 import idealised.DPIA.{Nat, NatIdentifier, Phrases, error, freshName}
 import idealised.OpenMP.ImperativePrimitives.{ParFor, ParForNat}
 import lift.arithmetic
@@ -34,7 +34,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
     new CodeGenerator(decls, ranges.updated(key, value))
 
 
-  override def cmd(phrase: Phrase[CommandType], env: Environment): Stmt = {
+  override def cmd(phrase: Phrase[CommType], env: Environment): Stmt = {
     phrase match {
       case ParFor(n, dt, a, Lambda(i, Lambda(o, p))) => OpenMPCodeGen.codeGenParFor(n, dt, a, i, o, p, env)
       case ForVec(n, dt, a, Lambda(i, Lambda(o, p))) => OpenMPCodeGen.codeGenParForVec(n, dt, a, i, o, p, env)
@@ -156,7 +156,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
                       a: Phrase[AccType],
                       i: Identifier[ExpType],
                       o: Phrase[AccType],
-                      p: Phrase[CommandType],
+                      p: Phrase[CommType],
                       env: Environment): Stmt = {
       val cI = C.AST.DeclRef(freshName("i_"))
       val range = RangeAdd(0, n, 1)
@@ -194,7 +194,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
                          a: Phrase[AccType],
                          i: NatIdentifier,
                          o: Phrase[AccType],
-                         p: Phrase[CommandType],
+                         p: Phrase[CommType],
                          env: Environment): Stmt = {
 
       val cI = C.AST.DeclRef(freshName("i_"))
@@ -242,7 +242,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
                          a: Phrase[AccType],
                          i: Identifier[ExpType],
                          o: Phrase[AccType],
-                         p: Phrase[CommandType],
+                         p: Phrase[CommType],
                          env: Environment): Stmt = {
       val cI = C.AST.DeclRef(freshName("i_"))
       val range = RangeAdd(0, n, 1)

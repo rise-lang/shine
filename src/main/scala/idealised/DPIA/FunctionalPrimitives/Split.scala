@@ -18,11 +18,11 @@ final case class Split(n: Nat,
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (n: Nat) -> (m: Nat) -> (dt: DataType) ->
-      (array :: exp"[${m * n}.$dt]") -> exp"[$m.$n.$dt]"
+    (n: Nat) ->: (m: Nat) ->: (dt: DataType) ->:
+      (array :: exp"[${m * n}.$dt]") ->: exp"[$m.$n.$dt]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    Split(fun(n), fun(m), fun(dt), VisitAndRebuild(array, fun))
+    Split(fun.nat(n), fun.nat(m), fun.data(dt), VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): Data = {
@@ -53,19 +53,19 @@ final case class Split(n: Nat,
     </split>
 
   override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+                                  (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     acc(array)(SplitAcc(n, m, dt, A))
   }
 
   // TODO?
-  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommandType] =
+  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
+                                     (implicit context: TranslationContext): Phrase[CommType] =
     ???
 
-  override def continuationTranslation(C: Phrase[ExpType -> CommandType])
-                                      (implicit context: TranslationContext): Phrase[CommandType] = {
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])
+                                      (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(array)(λ(exp"[${m * n}.$dt]")(x => C(Split(n, m, dt, x)) ))

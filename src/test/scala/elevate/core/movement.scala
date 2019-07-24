@@ -1,13 +1,11 @@
 package elevate.core
 
-import elevate.lift.rules._
 import elevate.lift.rules.movement._
 import elevate.core.strategies.traversal._
 import elevate.core.strategies.basic._
-import elevate.lift.strategies.traversal._
 import elevate.lift.strategies.normalForm._
 import elevate.lift._
-import lift.core.{Expr, Identifier, StructuralEquality}
+import lift.core.Expr
 import lift.core.primitives._
 import lift.core.DSL._
 

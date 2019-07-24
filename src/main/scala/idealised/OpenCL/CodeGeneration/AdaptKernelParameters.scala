@@ -1,14 +1,12 @@
 package idealised.OpenCL.CodeGeneration
 
-import idealised.DPIA
-import idealised.DPIA.Phrases._
-import idealised.DPIA.Types.{AccType, CommandType, ExpType, PairType, PhraseType}
 import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives.AsIndex
-import idealised.DPIA.Semantics.OperationalSemantics.IndexData
-import idealised.OpenCL.FunctionalPrimitives.OpenCLFunction
-import idealised.{C, OpenCL}
+import idealised.DPIA.Phrases._
+import idealised.DPIA.Types.{AccType, CommType, ExpType, PairType, PhraseType}
 import idealised.OpenCL.AST.ParamDecl
+import idealised.OpenCL.FunctionalPrimitives.OpenCLFunction
+import idealised.{C, DPIA, OpenCL}
 
 import scala.collection.mutable
 
@@ -19,10 +17,10 @@ import scala.collection.mutable
 //
 object AdaptKernelParameters {
 
-  def apply(originalPhrase: Phrase[CommandType],
+  def apply(originalPhrase: Phrase[CommType],
             params: Seq[ParamDecl],
             inputParams: Seq[Identifier[ExpType]]
-           ): (Phrase[CommandType], Seq[ParamDecl]) = {
+           ): (Phrase[CommType], Seq[ParamDecl]) = {
     val (newParams, scalarParamsInGlobalOrLocalMemory) = adaptParamDecls(params, inputParams)
 
     val rewrittenPhrase = VisitAndRebuild(originalPhrase, Visitor(scalarParamsInGlobalOrLocalMemory))
@@ -63,7 +61,7 @@ object AdaptKernelParameters {
   {
     val zero = AsIndex(1, Natural(0))
 
-    override def apply[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
+    override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
       p match {
         case p1: Proj1[T, _] => p1.pair match {
           case i: Identifier[PairType[T, _]] if scalarParamsInGlobalOrLocalMemory.contains(i.name) =>

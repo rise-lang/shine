@@ -7,9 +7,7 @@ import elevate.lift.strategies.normalForm._
 
 package object lift {
 
-  def structEq(a: Expr, b: Expr): Boolean = StructuralEquality(
-    BENF(a).get, BENF(b).get
-  )
+  def structEq(a: Expr, b: Expr): Boolean = BENF(a).get == BENF(b).get
 
   // notation
   val tileSize = 4

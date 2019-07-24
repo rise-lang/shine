@@ -10,7 +10,7 @@ object IsClosedForm {
     case class Visitor(boundV: Set[Identifier],
                        boundT: Set[DataTypeIdentifier],
                        boundN: Set[NamedVar],
-                       boundNatDataTypeFun:Set[NatDataTypeFunctionIdentifier]) extends traversal.Visitor {
+                       boundNatDataTypeFun:Set[NatToDataIdentifier]) extends traversal.Visitor {
       override def apply(e: Expr): Result[Expr] = {
         e match {
           case i: Identifier if !boundV(i) => Stop(i)
@@ -23,19 +23,20 @@ object IsClosedForm {
 
       override def apply(ae: Nat): Result[Nat] = visitNat(ae, boundN, this)
 
+      // TODO: use a single bound: Set[Kind.Identifier]
       override def apply[T <: Type](t: T): Result[T] = {
         case class TypeVisitor(boundT: Set[DataTypeIdentifier],
                                boundN: Set[NamedVar],
-                               boundNatDataTypeFun:Set[NatDataTypeFunctionIdentifier]) extends traversal.Visitor {
+                               boundNatDataTypeFun:Set[NatToDataIdentifier]) extends traversal.Visitor {
           override def apply[U <: Type](t: U): Result[U] = {
             t match {
               case i: DataTypeIdentifier if !boundT(i) => Stop(t)
               case DepArrayType(_, elementTypeFun) => elementTypeFun match {
-                case i:NatDataTypeFunctionIdentifier => if(boundNatDataTypeFun(i)) Stop(t) else Continue(t, this)
-                case NatDataTypeLambda(x, _) =>  Continue(t, this.copy(boundN = boundN + x))
+                case i: NatToDataIdentifier => if(boundNatDataTypeFun(i)) Stop(t) else Continue(t, this)
+                case NatToDataLambda(x, _) =>  Continue(t, this.copy(boundN = boundN + x))
               }
-              case DependentFunctionType(x: NatIdentifier, _) => Continue(t, this.copy(boundN = boundN + x))
-              case DependentFunctionType(x: DataTypeIdentifier, _) => Continue(t, this.copy(boundT = boundT + x))
+              case DepFunType(x: NatIdentifier, _) => Continue(t, this.copy(boundN = boundN + x))
+              case DepFunType(x: DataTypeIdentifier, _) => Continue(t, this.copy(boundT = boundT + x))
               case _ => Continue(t, this)
             }
           }

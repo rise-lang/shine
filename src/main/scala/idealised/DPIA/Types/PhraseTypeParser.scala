@@ -93,7 +93,7 @@ class PhraseTypeParser(val string: String,
 //    }
 //  }
 
-  def parseDataTypeOrNatDataTypeFunction:Either[DataType, NatDataTypeFunction] = {
+  def parseDataTypeOrNatDataTypeFunction:Either[DataType, NatToDataLambda] = {
     if (peakToken == "(") {
       nextToken
     }
@@ -102,7 +102,7 @@ class PhraseTypeParser(val string: String,
       values.next match {
         case n: Nat => Left(parseArrayOrIdxType(n))
         case dt: DataType => Left(parseRecordOrBaseType(dt))
-        case ndt:NatDataTypeFunction =>
+        case ndt:NatToDataLambda =>
           Right(ndt)
         //case null => parseArrayOrIdxOrRecordOrBaseType(null)
         case _ => error
@@ -129,7 +129,7 @@ class PhraseTypeParser(val string: String,
                     case ")" => nextToken
                       peakToken match {
                         case "->" => nextToken
-                          NatDependentFunctionType(l, parsePhraseType)
+                          l `()->:` parsePhraseType
                         case _ => error
                       }
                     case _ => error
@@ -207,7 +207,7 @@ class PhraseTypeParser(val string: String,
     if (!hasToken) return pt1
     nextToken match {
       case "x" => PairType(pt1, parsePhraseType)
-      case "->" => FunctionType(pt1, parsePhraseType)
+      case "->" => FunType(pt1, parsePhraseType)
       case _ => error
     }
   }

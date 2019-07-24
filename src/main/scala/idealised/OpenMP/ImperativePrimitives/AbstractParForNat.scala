@@ -9,22 +9,22 @@ import idealised.DPIA._
 import scala.xml.Elem
 
 abstract class AbstractParForNat(val n: Nat,
-                                 val ft:NatDataTypeFunction,
+                                 val ft:NatToData,
                                  val out: Phrase[AccType],
-                                 val body: Phrase[`(nat)->`[AccType -> CommandType]])
+                                 val body: Phrase[`(nat)->:`[AccType ->: CommType]])
   extends CommandPrimitive {
 
-  override val t: CommandType = {
+  override val t: CommType = {
 
-    (n: Nat) -> (ft: NatDataTypeFunction) ->
-      (out :: acc"[${DepArrayType(n, ft)}]") ->
-      (body :: t"(${body.t.x}:nat) -> acc[${ft(body.t.x)}] -> comm") ->
-      comm
+    (n: Nat) ->: (ft: NatToData) ->:
+      (out :: acc"[${DepArrayType(n, ft)}]") ->:
+       (body :: t"(${body.t.x}:nat) -> acc[${ft(body.t.x)}] -> comm") ->:
+          comm
   }
   override def eval(s: Store): Store = ???
 
-  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {
-    makeParForNat(fun(n), fun(ft), VisitAndRebuild(out, fun), VisitAndRebuild(body, fun))
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommType] = {
+    makeParForNat(fun.nat(n), fun.natToData(ft), VisitAndRebuild(out, fun), VisitAndRebuild(body, fun))
   }
 
   override def prettyPrint: String =
@@ -33,10 +33,10 @@ abstract class AbstractParForNat(val n: Nat,
 
   override def xmlPrinter: Elem =
     <parForNat n={ToString(n)} ft={ToString(ft)}>
-      <output type={ToString(AccType(ArrayType(n, ft.body)))}>
+      <output type={ToString(AccType(DepArrayType(n, ft)))}>
         {Phrases.xmlPrinter(out)}
       </output>
-      <body type={ToString(body.t.x -> (AccType({ft(body.t.x)}) -> CommandType()))}>
+      <body type={ToString(body.t.x ->: AccType({ft(body.t.x)}) ->: CommType())}>
         {Phrases.xmlPrinter(body)}
       </body>
     </parForNat>.copy(label = {
@@ -44,6 +44,6 @@ abstract class AbstractParForNat(val n: Nat,
       Character.toLowerCase(name.charAt(0)) + name.substring(1)
     })
 
-  def makeParForNat: (Nat, NatDataTypeFunction, Phrase[AccType], Phrase[`(nat)->`[AccType -> CommandType]]) => AbstractParForNat
+  def makeParForNat: (Nat, NatToData, Phrase[AccType], Phrase[`(nat)->:`[AccType ->: CommType]]) => AbstractParForNat
 
 }

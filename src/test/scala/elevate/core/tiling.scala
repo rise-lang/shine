@@ -9,9 +9,9 @@ import elevate.lift._
 import elevate.lift.rules._
 import idealised.util.gen
 import lift.core.DSL._
-import lift.core.{Apply, Expr, NatDepLambda, NatIdentifier, TypedExpr}
+import lift.core.{Apply, DepLambda, Expr, NatIdentifier, TypedExpr}
 import lift.core.primitives._
-import lift.core.types.{ArrayType, float, infer}
+import lift.core.types.{ArrayType, NatKind, float, infer}
 import org.scalatest.Ignore
 
 import scala.language.implicitConversions
@@ -229,7 +229,7 @@ class tiling extends idealised.util.Tests {
   def wrapInLambda(dim: Int,
                    f: TypedExpr => Expr,
                    genInputType: List[NatIdentifier] => ArrayType,
-                   natIds: List[NatIdentifier] = List()): NatDepLambda = {
+                   natIds: List[NatIdentifier] = List()): DepLambda[NatKind] = {
     dim match {
       case 1 => nFun(n => fun(genInputType( natIds :+ n))(f))
       case d => nFun(n => wrapInLambda(d - 1, f, genInputType, natIds :+ n))
@@ -240,7 +240,7 @@ class tiling extends idealised.util.Tests {
   // ... but mapAcceptorTranslation for split is missing
   val lower: Strategy = LCNF `;` RNF `;` normalize(specialize.mapSeq) `;` BENF
 
-  val identity = tFun(t => foreignFun("identity", Seq("y"), "{ return y; }", t ->: t))
+  val identity = dtFun(t => foreignFun("identity", Seq("y"), "{ return y; }", t ->: t))
   val floatId: Expr = identity(float)
 
   test("codegen 1D tiles") {

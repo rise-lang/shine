@@ -1,10 +1,8 @@
 package idealised
 
-import idealised.C.AST.CPrinter
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types.{PhraseTypeParser, _}
 import lift.arithmetic._
-import lift.core
 
 import scala.language.{implicitConversions, reflectiveCalls}
 
@@ -21,32 +19,9 @@ package object DPIA {
   type Nat = ArithExpr
   type NatIdentifier = NamedVar with Kind.Identifier
 
-  implicit def surfaceToDPINatIdentifier(n: SurfaceLanguage.NatIdentifier): NatIdentifier = NatIdentifier(n.name, n.range)
-  implicit def liftToDPIANatIdentifer(n: lift.core.NatIdentifier): NatIdentifier = NatIdentifier(n.name, n.range)
-
   object NatIdentifier {
     def apply(name: String): NatIdentifier = new NamedVar(name) with Kind.Identifier
     def apply(name: String, range: Range): NatIdentifier = new NamedVar(name, range) with Kind.Identifier
-  }
-
-  type NatDependentLambda[T <: PhraseType] = DepLambda[NatKind, T]
-  object NatDependentLambda {
-    def apply[T <: PhraseType](x: NatIdentifier, body: Phrase[T]): NatDependentLambda[T] = DepLambda[NatKind, T](x, body)
-  }
-
-  type NatDependentApply[T <: PhraseType] = DepApply[NatKind, T]
-  object NatDependentApply {
-    def apply[T <: PhraseType](fun: Phrase[`(nat)->`[T]], arg: Nat): NatDependentApply[T] = DepApply[NatKind, T](fun, arg)
-  }
-
-  type TypeDependentLambda[T <: PhraseType] = DepLambda[DataKind, T]
-  object TypeDependentLambda {
-    def apply[T <: PhraseType](x: DataTypeIdentifier, body: Phrase[T]): TypeDependentLambda[T] = DepLambda[DataKind, T](x, body)
-  }
-
-  type TypeDependentApply[T <: PhraseType] = DepApply[DataKind, T]
-  object TypeDependentApply {
-    def  apply[T <: PhraseType](fun: Phrase[`(dt)->`[T]], arg: DataType): TypeDependentApply[T] = DepApply[DataKind, T](fun, arg)
   }
 
   case class LetNatIdentifier(id:NatIdentifier) {
@@ -177,7 +152,7 @@ package object DPIA {
   }
 
   object Nat {
-    def substitute(ae: Nat, `for`: NatIdentifier, in: Nat): Nat = {
+    def substitute[N <: Nat](ae: Nat, `for`: NatIdentifier, in: N): N = {
       in.visitAndRebuild {
         case v: Var =>
           if (`for`.name == v.name) {
@@ -186,19 +161,19 @@ package object DPIA {
             v
           }
         case e => e
-      }
+      }.asInstanceOf[N]
     }
   }
 
   // note: this is an easy fix to avoid name conflicts between lift and dpia
-  val freshName: core.freshName.type = lift.core.freshName
+  val freshName: lift.core.freshName.type = lift.core.freshName
 
   type x[T1 <: PhraseType, T2 <: PhraseType] = PairType[T1, T2]
-  type ->[T1 <: PhraseType, T2 <: PhraseType] = FunctionType[T1, T2]
-  type `->p`[T1 <: PhraseType, T2 <: PhraseType] = PassiveFunctionType[T1, T2]
-  type `()->`[K <: Kind, T <: PhraseType] = DependentFunctionType[K, T]
-  type `(nat)->`[T <: PhraseType] = NatDependentFunctionType[T]
-  type `(dt)->`[T <: PhraseType] = TypeDependentFunctionType[T]
+  type ->:[T <: PhraseType, R <: PhraseType] = FunType[T, R]
+  type `->p:`[T <: PhraseType, R <: PhraseType] = PassiveFunType[T, R]
+  type `()->:`[K <: Kind, R <: PhraseType] = DepFunType[K, R]
+  type `(nat)->:`[R <: PhraseType] = DepFunType[NatKind, R]
+  type `(dt)->:`[R <: PhraseType] = DepFunType[DataKind, R]
   type VarType = ExpType x AccType
 
   object VarType {
@@ -245,25 +220,21 @@ package object DPIA {
     def x[T2 <: PhraseType](t2: T2) = PairType(t1, t2)
   }
 
-  implicit class FunctionTypeConstructor[T1 <: PhraseType](t1: T1) {
-    def ->[T2 <: PhraseType](t2: T2) = FunctionType(t1, t2)
+  implicit class FunTypeConstructor[R <: PhraseType](r: R) {
+    def ->:[T <: PhraseType](t: T): T ->: R = FunType(t, r)
   }
 
-  implicit class PassiveFunctionTypeConstructor[T1 <: PhraseType](t1: T1) {
-    def `->p`[T2 <: PhraseType](t2: T2) = PassiveFunctionType(t1, t2)
+  implicit class PassiveFunTypeConstructor[R <: PhraseType](r: R) {
+    def `->p:`[T <: PhraseType](t: T) = PassiveFunType(t, r)
   }
 
-  implicit class DependentFunctionTypeConstructor[K <: Kind](x: K#I) {
-    def `()->`[T <: PhraseType](outT: T): K `()->` T = DependentFunctionType[K, T](x, outT)
+  implicit class DepFunTypeConstructor[R <: PhraseType](r: R) {
+    def `()->:`(i: DataTypeIdentifier): `()->:`[DataKind, R] = DepFunType[DataKind, R](i, r)
+    def `()->:`(n: NatIdentifier): `()->:`[NatKind, R] = DepFunType[NatKind, R](n, r)
+    def `()->:`(n: NatToNatIdentifier): `()->:`[NatToNatKind, R] = DepFunType[NatToNatKind, R](n, r)
+    def `()->:`(n: NatToDataIdentifier): `()->:`[NatToDataKind, R] = DepFunType[NatToDataKind, R](n, r)
   }
 
-  implicit class NatDependentFunctionTypeConstructor(x: NatIdentifier) {
-    def ->[T <: PhraseType](outT: T): `()->`[NatKind, T] = DependentFunctionType[NatKind, T](x, outT)
-  }
-
-  implicit class TypeDependentFunctionTypeConstructor(x: DataTypeIdentifier) {
-    def ->[T <: PhraseType](outT: T) = TypeDependentFunctionType(x, outT)
-  }
 
   implicit class PhraseTypeHelper(val sc: StringContext) extends AnyVal {
     def t(args: Any*): PhraseType = {
@@ -276,6 +247,10 @@ package object DPIA {
 
     def acc(args: Any*): AccType = {
       new PhraseTypeParser("acc" + sc.s(args:_*), sc.parts, args.iterator).parseAccType
+    }
+
+    def varT(args: Any*): VarType = {
+      new PhraseTypeParser("var" + sc.s(args:_*), sc.parts, args.iterator).parseVarType
     }
 
     def dt(args: Any*): DataType = {

@@ -15,10 +15,11 @@ class scal extends idealised.util.Tests {
   test("Simple scal type inference works") {
     val typed = infer(simpleScal)
 
-    assert(StructuralEquality(
-      nFunT(n => FunctionType(ArrayType(n, float), FunctionType(float, ArrayType(n, float)))),
+    assert(
+      nFunT(n => FunType(ArrayType(n, float), FunType(float, ArrayType(n, float))))
+        ==
       typed.t
-    ))
+    )
   }
 
   // OpenMP

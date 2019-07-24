@@ -10,17 +10,17 @@ import scala.xml.Elem
 final case class MapAcc(n: Nat,
                         dt1: DataType,
                         dt2: DataType,
-                        f: Phrase[AccType -> AccType],
+                        f: Phrase[AccType ->: AccType],
                         array: Phrase[AccType])
   extends AccPrimitive {
 
   override val t: AccType =
-    (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
-      (f :: t"acc[$dt1] -> acc[$dt2]") ->
-      (array :: acc"[$n.$dt1]") -> acc"[$n.$dt2]"
+    (n: Nat) ->: (dt1: DataType) ->: (dt2: DataType) ->:
+      (f :: t"acc[$dt1] -> acc[$dt2]") ->:
+      (array :: acc"[$n.$dt1]") ->: acc"[$n.$dt2]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {
-    MapAcc(fun(n), fun(dt1), fun(dt2), VisitAndRebuild(f, fun), VisitAndRebuild(array, fun))
+    MapAcc(fun.nat(n), fun.data(dt1), fun.data(dt2), VisitAndRebuild(f, fun), VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): AccIdentifier = ???
@@ -29,7 +29,7 @@ final case class MapAcc(n: Nat,
 
   override def xmlPrinter: Elem =
     <mapAcc n={ToString(n)} dt1={ToString(dt1)} dt2={ToString(dt2)}>
-      <f type={ToString(ExpType(dt1) -> ExpType(dt2))}>
+      <f type={ToString(ExpType(dt1) ->: ExpType(dt2))}>
         {Phrases.xmlPrinter(f)}
       </f>
       <input type={ToString(AccType(ArrayType(n, dt1)))}>

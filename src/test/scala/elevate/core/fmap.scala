@@ -4,7 +4,7 @@ import elevate.lift.rules.movement._
 import elevate.core.strategies.traversal._
 import elevate.lift.strategies.traversal._
 import elevate.lift._
-import lift.core.{Expr, Identifier, StructuralEquality}
+import lift.core.Expr
 import lift.core.DSL._
 
 import scala.language.implicitConversions

@@ -10,12 +10,12 @@ import scala.language.reflectiveCalls
 
 object ReduceSeqI {
   def apply(n: Nat, dt1: DataType, dt2: DataType,
-            f: Phrase[ExpType -> (ExpType -> (AccType -> CommandType))],
+            f: Phrase[ExpType ->: ExpType ->: AccType ->: CommType],
             init: Phrase[ExpType],
             in: Phrase[ExpType],
-            out: Phrase[ExpType -> CommandType],
+            out: Phrase[ExpType ->: CommType],
             unroll: Boolean = false)
-           (implicit context: TranslationContext): Phrase[CommandType] =
+           (implicit context: TranslationContext): Phrase[CommType] =
   {
     `new`(dt2, acc =>
       (acc.wr :=|dt2| init) `;`

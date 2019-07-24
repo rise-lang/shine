@@ -1,8 +1,10 @@
 package elevate.core
 
+import elevate.lift.rules._
 import elevate.lift.rules.algorithmic.{mapFusion}
 import elevate.lift._
 import elevate.core.strategies.traversal._
+import elevate.lift.strategies.normalForm._
 import elevate.core.strategies.basic._
 import lift.core.DSL._
 import lift.core.primitives.map

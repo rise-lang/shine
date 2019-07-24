@@ -16,9 +16,9 @@ final case class IdxVecAcc(n: Nat,
   extends AccPrimitive {
 
   override val t: AccType =
-    (n: Nat) -> (st: ScalarType) ->
-      (index :: exp"[idx($n)]") ->
-        (vector :: acc"[${VectorType(n, st)}]") ->
+    (n: Nat) ->: (st: ScalarType) ->:
+      (index :: exp"[idx($n)]") ->:
+        (vector :: acc"[${VectorType(n, st)}]") ->:
           acc"[$st]"
 
   override def eval(s: Store): AccIdentifier = {
@@ -31,7 +31,7 @@ final case class IdxVecAcc(n: Nat,
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {
-    IdxVecAcc(fun(n), fun(st), VisitAndRebuild(index, fun), VisitAndRebuild(vector, fun))
+    IdxVecAcc(fun.nat(n), fun.data(st), VisitAndRebuild(index, fun), VisitAndRebuild(vector, fun))
   }
 
   override def prettyPrint: String = s"${PrettyPhrasePrinter(vector)}[${PrettyPhrasePrinter(index)}]"

@@ -2,17 +2,17 @@ package idealised.OpenCL.ImperativePrimitives
 
 import idealised.C.AST.Stmt
 import idealised.DPIA.Phrases.Phrase
-import idealised.DPIA.Types.{AccType, CommandType, DataType}
-import idealised.DPIA.{->, Nat, NatDataTypeFunction, NatIdentifier, `(nat)->`, freshName}
+import idealised.DPIA.Types.{AccType, CommType, NatToData}
+import idealised.DPIA.{->:, Nat, `(nat)->:`, freshName}
 import idealised.OpenCL
 import idealised.OpenCL.AST.Barrier
 import idealised.OpenCL.{BuiltInFunction, get_local_id, get_local_size}
 import lift.arithmetic.{?, ContinuousRange, PosInf, RangeAdd}
 
 final case class ParForNatLocal(dim:Int)(override val n:Nat,
-                                         override val ft:NatDataTypeFunction,
-                                          override val out:Phrase[AccType],
-                                          override val body: Phrase[`(nat)->`[AccType -> CommandType]])
+                                         override val ft:NatToData,
+                                         override val out:Phrase[AccType],
+                                         override val body: Phrase[`(nat)->:`[AccType ->: CommType]])
   extends OpenCLParForNat(n, ft, out, body) {
   override val makeParForNat = ParForNatLocal(dim) _
 

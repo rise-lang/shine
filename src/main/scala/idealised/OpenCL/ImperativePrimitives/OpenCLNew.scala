@@ -12,11 +12,11 @@ import scala.xml.Elem
 
 final case class OpenCLNew(dt: DataType,
                            addressSpace: AddressSpace,
-                           f: Phrase[VarType -> CommandType]) extends CommandPrimitive {
+                           f: Phrase[VarType ->: CommType]) extends CommandPrimitive {
 
-  override val t: CommandType =
-    (dt: DataType) -> (addressSpace: AddressSpace) ->
-      (f :: t"var[$dt] -> comm") -> comm
+  override val t: CommType =
+    (dt: DataType) ->: (addressSpace: AddressSpace) ->:
+      (f :: t"var[$dt] -> comm") ->: comm
 
   override def eval(s: Store): Store = {
     val f_ = OperationalSemantics.eval(s, f)
@@ -25,8 +25,8 @@ final case class OpenCLNew(dt: DataType,
     newStore - arg.name
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommandType] = {
-    OpenCLNew(fun(dt), addressSpace, VisitAndRebuild(f, fun))
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommType] = {
+    OpenCLNew(fun.data(dt), addressSpace, VisitAndRebuild(f, fun))
   }
 
   override def prettyPrint: String = s"(new ${PrettyPhrasePrinter(f)})"

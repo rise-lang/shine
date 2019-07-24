@@ -4,14 +4,14 @@ import idealised.DPIA
 import idealised.DPIA.DSL._
 import idealised.DPIA.ImperativePrimitives.Assign
 import idealised.DPIA.IntermediatePrimitives.{DepMapSeqI, MapSeqI}
-import idealised.DPIA.Phrases.Phrase
+import idealised.DPIA.Phrases.{DepLambda, Phrase}
 import idealised.DPIA.Types._
-import idealised.DPIA.{NatDependentLambda, freshName}
+import idealised.DPIA.freshName
 
 class TranslationContext() extends idealised.DPIA.Compilation.TranslationContext {
   override def assign(dt: DataType,
                       lhs: Phrase[AccType],
-                      rhs: Phrase[ExpType]): Phrase[CommandType] = {
+                      rhs: Phrase[ExpType]): Phrase[CommType] = {
     dt match {
       case _: ScalarType => Assign(dt, lhs, rhs)
 
@@ -28,7 +28,7 @@ class TranslationContext() extends idealised.DPIA.Compilation.TranslationContext
         val k = DPIA.NatIdentifier(freshName("k"))
 
         DepMapSeqI(n, ft, ft,
-          NatDependentLambda(k,
+          DepLambda[NatKind](k)(
             λ(ExpType( ft(k) ))(x => λ(AccType( ft(k) ))(a => assign(ft(k), a, x) ))),
           rhs, lhs)(this)
 

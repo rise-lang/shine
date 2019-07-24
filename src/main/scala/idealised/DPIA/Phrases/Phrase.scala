@@ -25,13 +25,13 @@ final case class Identifier[T <: PhraseType](name: String, `type`: T)
 }
 
 final case class Lambda[T1 <: PhraseType, T2 <: PhraseType](param: Identifier[T1], body: Phrase[T2])
-  extends Phrase[T1 -> T2] {
+  extends Phrase[T1 ->: T2] {
 
-  override val t: T1 -> T2 = param.t -> body.t
+  override val t: T1 ->: T2 = param.t ->: body.t
   override def toString: String = s"λ$param. $body"
 }
 
-final case class Apply[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 -> T2], arg: Phrase[T1])
+final case class Apply[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 ->: T2], arg: Phrase[T1])
   extends Phrase[T2] {
 
   TypeCheck.check(fun.t.inT, arg.t) // FIXME: redundant with type checking
@@ -40,12 +40,20 @@ final case class Apply[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 -> T2]
 }
 
 final case class DepLambda[K <: Kind, T <: PhraseType](x: K#I, body: Phrase[T])
-  extends Phrase[K `()->` T] {
-  override val t: DependentFunctionType[K, T] = (x: K#I) `()->` body.t
-  override def toString: String = s"Λ(${x.name} : ${x.getClass.toString}). $body"
+  extends Phrase[K `()->:` T] {
+  override val t: DepFunType[K, T] = DepFunType[K, T](x, body.t)
+  override def toString: String = s"Λ(${x.name} : ${x.getClass.getName.dropWhile(_!='$').drop(1).takeWhile(_!='$')}). $body"
 }
 
-final case class DepApply[K <: Kind, T <: PhraseType](fun: Phrase[K `()->` T], arg: K#T)
+object DepLambda {
+  def apply[K <: Kind](x: K#I): Object {
+    def apply[T <: PhraseType](body: Phrase[T]): DepLambda[K, T]
+  } = new {
+    def apply[T <: PhraseType](body: Phrase[T]) = DepLambda(x, body)
+  }
+}
+
+final case class DepApply[K <: Kind, T <: PhraseType](fun: Phrase[K `()->:` T], arg: K#T)
   extends Phrase[T] {
 
   override val t: T = PhraseType.substitute(arg, `for`=fun.t.x, in=fun.t.t).asInstanceOf[T]
@@ -133,26 +141,26 @@ final case class Natural(d: Nat) extends Phrase[ExpType] {
 
 object Phrase {
   // substitutes `phrase` for `for` in `in`, i.e. in [ phrase / for ]
-  def substitute[T1 <: PhraseType, T2 <: PhraseType](phrase: Phrase[T1],
+  def substitute[T1 <: PhraseType, T2 <: PhraseType](ph: Phrase[T1],
                                                      `for`: Phrase[T1],
                                                      in: Phrase[T2]): Phrase[T2] = {
     object Visitor extends VisitAndRebuild.Visitor {
-      override def apply[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
+      override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
         p match {
-          case `for` => Stop(phrase.asInstanceOf[Phrase[T]])
+          case `for` => Stop(ph.asInstanceOf[Phrase[T]])
           case Natural(n) =>
             val v = NatIdentifier(`for` match {
               case Identifier(name, _) => name
               case _ => ???
             })
 
-            phrase.t match {
+            ph.t match {
               case ExpType(NatType) =>
                   Stop(Natural(Nat.substitute(
-                    Internal.NatFromNatExpr(phrase.asInstanceOf[Phrase[ExpType]]), v, n)).asInstanceOf[Phrase[T]])
+                    Internal.NatFromNatExpr(ph.asInstanceOf[Phrase[ExpType]]), v, n)).asInstanceOf[Phrase[T]])
               case ExpType(IndexType(_)) =>
                   Stop(Natural(Nat.substitute(
-                    Internal.NatFromIndexExpr(phrase.asInstanceOf[Phrase[ExpType]]), v, n)).asInstanceOf[Phrase[T]])
+                    Internal.NatFromIndexExpr(ph.asInstanceOf[Phrase[ExpType]]), v, n)).asInstanceOf[Phrase[T]])
               case _ => Continue(p, this)
             }
           case _ => Continue(p, this)
@@ -167,7 +175,7 @@ object Phrase {
                                    in: Phrase[T2]): Phrase[T2] = {
 
     object Visitor extends VisitAndRebuild.Visitor {
-      override def apply[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
+      override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
         if (substitutionMap.isDefinedAt(p)) {
           Stop(substitutionMap(p).asInstanceOf[Phrase[T]])
         } else {
@@ -196,7 +204,7 @@ object Phrase {
             case Natural(_) => throw new Exception("This should never happen")
             case DepApply(fun, arg) => (fun, arg) match {
               case (f, a: Nat) =>
-                NatFromIndexExpr(liftDependentFunction[NatKind, ExpType](f.asInstanceOf[Phrase[NatKind `()->` ExpType]])(a))
+                NatFromIndexExpr(liftDependentFunction[NatKind, ExpType](f.asInstanceOf[Phrase[NatKind `()->:` ExpType]])(a))
             }
             case Proj1(pair) => NatFromIndexExpr(liftPair(pair)._1)
             case Proj2(pair) => NatFromIndexExpr(liftPair(pair)._2)
@@ -224,7 +232,7 @@ object Phrase {
             case Literal(_) => throw new Exception("This should never happen")
             case DepApply(fun, arg) => (fun, arg) match {
               case (f, a: Nat) =>
-                NatFromNatExpr(liftDependentFunction[NatKind, ExpType](f.asInstanceOf[Phrase[NatKind `()->` ExpType]])(a))
+                NatFromNatExpr(liftDependentFunction[NatKind, ExpType](f.asInstanceOf[Phrase[NatKind `()->:` ExpType]])(a))
             }
             case Proj1(pair) => NatFromNatExpr(liftPair(pair)._1)
             case Proj2(pair) => NatFromNatExpr(liftPair(pair)._2)
@@ -269,20 +277,20 @@ trait ExpPrimitive extends Primitive[ExpType] {
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Data
 
   def acceptorTranslation(A: Phrase[AccType])
-                         (implicit context: TranslationContext): Phrase[CommandType]
+                         (implicit context: TranslationContext): Phrase[CommType]
 
-  def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType],
+  def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType],
                              A: Phrase[AccType])
-                            (implicit context: TranslationContext): Phrase[CommandType]
+                            (implicit context: TranslationContext): Phrase[CommType]
 
-  def continuationTranslation(C: Phrase[ExpType -> CommandType])
-                             (implicit context: TranslationContext): Phrase[CommandType]
+  def continuationTranslation(C: Phrase[ExpType ->: CommType])
+                             (implicit context: TranslationContext): Phrase[CommType]
 }
 
 trait AccPrimitive extends Primitive[AccType] {
   def eval(s: OperationalSemantics.Store): OperationalSemantics.AccIdentifier
 }
 
-trait CommandPrimitive extends Primitive[CommandType] {
+trait CommandPrimitive extends Primitive[CommType] {
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Store
 }

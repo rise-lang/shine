@@ -15,7 +15,7 @@ final case class IndexAsNat(n: Nat, e: Phrase[ExpType])
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (n: Nat) -> (e :: exp"[idx($n)]") -> exp"[$NatType]"
+    (n: Nat) ->: (e :: exp"[idx($n)]") ->: exp"[$NatType]"
 
   def prettyPrint: String =
     s"${this.getClass.getSimpleName} (${PrettyPhrasePrinter(e)})"
@@ -26,23 +26,23 @@ final case class IndexAsNat(n: Nat, e: Phrase[ExpType])
     </asNat>
 
   def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] =
-    IndexAsNat(fun(n), VisitAndRebuild(e, fun))
+    IndexAsNat(fun.nat(n), VisitAndRebuild(e, fun))
 
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Data = ???
 
   def acceptorTranslation(A: Phrase[AccType])
-                         (implicit context: TranslationContext): Phrase[CommandType] = {
+                         (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(e)(λ(exp"[${IndexType(n)}]")(x =>
       A :=|NatType| IndexAsNat(n, x)))
   }
 
-  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommandType] = ???
+  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
+                                     (implicit context: TranslationContext): Phrase[CommType] = ???
 
-  def continuationTranslation(C: Phrase[ExpType -> CommandType])
-                             (implicit context: TranslationContext): Phrase[CommandType] = {
+  def continuationTranslation(C: Phrase[ExpType ->: CommType])
+                             (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(e)(λ(exp"[${IndexType(n)}]")(x =>

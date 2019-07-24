@@ -1,6 +1,6 @@
 package idealised.DPIA.Phrases
 
-import idealised.DPIA.Types.PhraseType
+import idealised.DPIA.Types.{Kind, PhraseType}
 
 object PrettyPhrasePrinter {
 
@@ -25,7 +25,7 @@ object PrettyPhrasePrinter {
 
       case Lambda(param, body) => s"λ ${apply(param)}: ${param.t} -> ${apply(body)}"
 
-      case DepLambda(param, body) => s"Λ (${param.name}: ${param.getClass.toString}) -> ${apply(body)}"
+      case DepLambda(param, body) => s"Λ (${param.name}: ${Kind.formatKindName(param.getClass.getName)}) -> ${apply(body)}"
 
       case LetNat(binder, defn, body) => s"nLet ${binder.name} = ${apply(defn)} in ${apply(body)}"
 
@@ -38,5 +38,4 @@ object PrettyPhrasePrinter {
       case c: Primitive[_] => c.prettyPrint
     }
   }
-
 }

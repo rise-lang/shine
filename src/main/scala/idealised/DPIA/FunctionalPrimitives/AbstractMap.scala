@@ -13,19 +13,19 @@ import scala.xml.Elem
 abstract class AbstractMap(n: Nat,
                            dt1: DataType,
                            dt2: DataType,
-                           f: Phrase[ExpType -> ExpType],
+                           f: Phrase[ExpType ->: ExpType],
                            array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  def makeMap: (Nat, DataType, DataType, Phrase[ExpType -> ExpType], Phrase[ExpType]) => AbstractMap
+  def makeMap: (Nat, DataType, DataType, Phrase[ExpType ->: ExpType], Phrase[ExpType]) => AbstractMap
 
   override val t: ExpType =
-    (n: Nat) -> (dt1: DataType) -> (dt2: DataType) ->
-      (f :: t"exp[$dt1] -> exp[$dt2]") ->
-      (array :: exp"[$n.$dt1]") -> exp"[$n.$dt2]"
+    (n: Nat) ->: (dt1: DataType) ->: (dt2: DataType) ->:
+      (f :: t"exp[$dt1] -> exp[$dt2]") ->:
+      (array :: exp"[$n.$dt1]") ->: exp"[$n.$dt2]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    makeMap(fun(n), fun(dt1), fun(dt2), VisitAndRebuild(f, fun), VisitAndRebuild(array, fun))
+    makeMap(fun.nat(n), fun.data(dt1), fun.data(dt2), VisitAndRebuild(f, fun), VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): Data = {
@@ -42,7 +42,7 @@ abstract class AbstractMap(n: Nat,
   }
 
   override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommandType] = {
+                                  (implicit context: TranslationContext): Phrase[CommType] = {
     mapAcceptorTranslation(fun(exp"[$dt2]")(x => x), A)
   }
 
@@ -51,7 +51,7 @@ abstract class AbstractMap(n: Nat,
 
   override def xmlPrinter: Elem =
     <map n={ToString(n)} dt1={ToString(dt1)} dt2={ToString(dt2)}>
-      <f type={ToString(ExpType(dt1) -> ExpType(dt2))}>
+      <f type={ToString(ExpType(dt1) ->: ExpType(dt2))}>
         {Phrases.xmlPrinter(f)}
       </f>
       <input type={ToString(ExpType(ArrayType(n, dt1)))}>

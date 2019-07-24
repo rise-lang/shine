@@ -2,12 +2,12 @@ package idealised.OpenMP
 import idealised.DPIA.DSL.λ
 import idealised.DPIA.IntermediatePrimitives.MapVecI
 import idealised.DPIA.Phrases.Phrase
-import idealised.DPIA.Types.{AccType, CommandType, DataType, ExpType, VectorType}
+import idealised.DPIA.Types.{AccType, CommType, DataType, ExpType, VectorType}
 
 class TranslationContext() extends idealised.C.TranslationContext {
   override def assign(dt: DataType,
                       A: Phrase[AccType],
-                      E: Phrase[ExpType]): Phrase[CommandType] = {
+                      E: Phrase[ExpType]): Phrase[CommType] = {
     dt match {
       case VectorType(n, st) =>
         MapVecI(n, st, st, λ(ExpType(st))(x => λ(AccType(st))(a => assign(st, a, x) )), E, A)

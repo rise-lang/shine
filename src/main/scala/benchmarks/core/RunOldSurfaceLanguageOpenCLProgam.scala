@@ -2,15 +2,15 @@ package benchmarks.core
 
 import idealised.DPIA
 import idealised.OpenCL.KernelWithSizes
+import idealised.SurfaceLanguage.Expr
+import idealised.SurfaceLanguage.Types.TypeInference
 import idealised.utils.{Display, Time, TimeSpan}
 import lift.arithmetic.ArithExpr
-import lift.core.Expr
-import lift.core.types.infer
 
 import scala.util.Random
 
 
-abstract class RunOpenCLProgram(val verbose:Boolean) {
+abstract class RunOldSurfaceLanguageOpenCLProgam(val verbose:Boolean) {
   //The Scala type representing the input data
   type Input
   //The type of the summary structure recording data about the runs
@@ -25,7 +25,7 @@ abstract class RunOpenCLProgram(val verbose:Boolean) {
   protected def runScalaProgram(input:Input):Array[Float]
 
   private def compile(localSize:ArithExpr, globalSize:ArithExpr):KernelWithSizes = {
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(localSize, globalSize)(DPIA.fromLift(infer(this.expr)))
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(localSize, globalSize)(DPIA.FromSurfaceLanguage(TypeInference(this.expr, Map())))
 
     if(verbose) {
       println(kernel.code)
@@ -54,27 +54,4 @@ abstract class RunOpenCLProgram(val verbose:Boolean) {
 
     makeSummary(localSize, globalSize, kernel.code, time.value, correct)
   }
-}
-
-abstract class SimpleRunOpenCLProgram(override val verbose: Boolean)
-  extends RunOpenCLProgram(verbose) {
-
-  final type Summary = Result
-
-  case class Result(localSize: Int,
-                    globalSize: Int,
-                    code: String,
-                    runtimeMs: Double,
-                    correctness: CorrectnessCheck
-                   ) extends Display {
-    def display: String =
-      s"localSize = $localSize, " +
-      s"globalSize = $globalSize, " +
-      s"code = $code, " +
-      s"runtime = $runtimeMs," +
-      s" correct = ${correctness.display}"
-  }
-
-  override def makeSummary(localSize: Int, globalSize: Int, code: String, runtimeMs: Double, correctness: CorrectnessCheck): Result =
-    Result(localSize, globalSize, code, runtimeMs, correctness)
 }

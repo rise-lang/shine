@@ -1,5 +1,6 @@
 package lift.core
 
+import lift.arithmetic.RangeAdd
 import lift.core.types._
 import lift.core.semantics._
 
@@ -35,29 +36,25 @@ object DSL {
   implicit class FunCall(f: Expr) {
     import lift.core.lifting._
 
-    def apply(n: Nat): Expr = liftDependentFunctionExpr[NatKind](f).value(n)
-    def apply(dt: DataType): Expr = liftDependentFunctionExpr[DataKind](f).value(dt)
-
-    def apply(e: Expr): Expr = liftFunctionExpr(f).value(e)
+    def apply(e: Expr): Expr = liftFunExpr(f).value(e)
+    def apply(n: Nat): Expr = liftDepFunExpr[NatKind](f).value(n)
+    def apply(dt: DataType): Expr = liftDepFunExpr[DataKind](f).value(dt)
+    def apply(n2n: NatToNat): Expr = liftDepFunExpr[NatToNatKind](f).value(n2n)
 
     def apply(e1: Expr, e2: Expr): Expr = {
-      val g = liftFunctionExpr(f).value(e1)
-      g.apply(e2)
+      liftFunExpr(f).value(e1).apply(e2)
     }
 
     def apply(e1: Expr, e2: Expr, e3: Expr): Expr = {
-      val g = liftFunctionExpr(f).value(e1)
-      g.apply(e2, e3)
+      liftFunExpr(f).value(e1).apply(e2, e3)
     }
 
     def apply(e1: Expr, e2: Expr, e3: Expr, e4: Expr): Expr = {
-      val g = liftFunctionExpr(f).value(e1)
-      g.apply(e2, e3, e4)
+      liftFunExpr(f).value(e1).apply(e2, e3, e4)
     }
 
     def apply(e1: Expr, e2: Expr, e3: Expr, e4: Expr, e5: Expr): Expr = {
-      val g = liftFunctionExpr(f).value(e1)
-      g.apply(e2, e3, e4, e5)
+      liftFunExpr(f).value(e1).apply(e2, e3, e4, e5)
     }
   }
 
@@ -79,14 +76,14 @@ object DSL {
 
   // function values
   object fun {
-    def apply(dt: DataType)(f: TypedExpr => Expr): Expr = {
-      val x = Identifier(freshName("e"))
-      Lambda(x, f(TypedExpr(x, dt)))
-    }
-
     def apply(f: Identifier => Expr): Expr = {
       val x = Identifier(freshName("e"))
       Lambda(x, f(x))
+    }
+
+    def apply(dt: DataType)(f: TypedExpr => Expr): Expr = {
+      val x = Identifier(freshName("e"))
+      Lambda(x, f(TypedExpr(x, dt)))
     }
 
     def apply(f: (Identifier, Identifier) => Expr): Expr = untyped(f)
@@ -123,58 +120,91 @@ object DSL {
     }
 
     //noinspection TypeAnnotation
-    def apply(ft: FunctionType[Type, Type]) = new {
-      def apply(f: Identifier => Expr): TypedExpr = fun.untyped(f) :: ft
+    def apply(ft: FunType[Type, Type]) = new {
+      def apply(f: Identifier => Expr): TypedExpr = untyped(f) :: ft
 
-      def apply(f: (Identifier, Identifier) => Expr): TypedExpr = fun.untyped(f) :: ft
+      def apply(f: (Identifier, Identifier) => Expr): TypedExpr = untyped(f) :: ft
 
-      def apply(f: (Identifier, Identifier, Identifier) => Expr): TypedExpr = fun.untyped(f) :: ft
+      def apply(f: (Identifier, Identifier, Identifier) => Expr): TypedExpr = untyped(f) :: ft
 
-      def apply(f: (Identifier, Identifier, Identifier, Identifier) => Expr): TypedExpr = fun.untyped(f) :: ft
+      def apply(f: (Identifier, Identifier, Identifier, Identifier) => Expr): TypedExpr = untyped(f) :: ft
 
-      def apply(f: (Identifier, Identifier, Identifier, Identifier, Identifier) => Expr): TypedExpr = fun.untyped(f) :: ft
+      def apply(f: (Identifier, Identifier, Identifier, Identifier, Identifier) => Expr): TypedExpr = untyped(f) :: ft
     }
   }
 
   object nFun {
-    def apply(r: lift.arithmetic.Range, f: NatIdentifier => Expr): NatDepLambda = {
+    def apply(r: lift.arithmetic.Range, f: NatIdentifier => Expr): DepLambda[NatKind] = {
       val x = NatIdentifier(freshName("n"), r)
-      NatDepLambda(x, f(x))
+      DepLambda[NatKind](x, f(x))
     }
 
-    def apply(f: NatIdentifier => Expr): NatDepLambda = {
+    def apply(f: NatIdentifier => Expr): DepLambda[NatKind] = {
       nFun(lift.arithmetic.RangeAdd(0, lift.arithmetic.PosInf, 1), f)
     }
 
-    def apply(f: (NatIdentifier, NatIdentifier) => Expr): NatDepLambda = {
+    def apply(f: (NatIdentifier, NatIdentifier) => Expr): DepLambda[NatKind] = {
       val r = lift.arithmetic.RangeAdd(0, lift.arithmetic.PosInf, 1)
       val n = NatIdentifier(freshName("n"), r)
-      NatDepLambda(n, nFun( f(n, _) ))
+      DepLambda[NatKind](n, nFun( f(n, _) ))
     }
 
-    def apply(f: (NatIdentifier, NatIdentifier, NatIdentifier) => Expr): NatDepLambda = {
+    def apply(f: (NatIdentifier, NatIdentifier, NatIdentifier) => Expr): DepLambda[NatKind] = {
       val r = lift.arithmetic.RangeAdd(0, lift.arithmetic.PosInf, 1)
       val n = NatIdentifier(freshName("n"), r)
-      NatDepLambda(n, nFun( (n1, n2) => f(n, n1, n2) ))
+      DepLambda[NatKind](n, nFun( (n1, n2) => f(n, n1, n2) ))
     }
 
-    def apply(f: (NatIdentifier, NatIdentifier, NatIdentifier, NatIdentifier) => Expr): NatDepLambda = {
+    def apply(f: (NatIdentifier, NatIdentifier, NatIdentifier, NatIdentifier) => Expr): DepLambda[NatKind] = {
       val r = lift.arithmetic.RangeAdd(0, lift.arithmetic.PosInf, 1)
       val n = NatIdentifier(freshName("n"), r)
-      NatDepLambda(n, nFun( (n1, n2, n3) => f(n, n1, n2, n3) ))
+      DepLambda[NatKind](n, nFun( (n1, n2, n3) => f(n, n1, n2, n3) ))
     }
 
-    def apply(f: (NatIdentifier, NatIdentifier, NatIdentifier, NatIdentifier, NatIdentifier) => Expr): NatDepLambda = {
+    def apply(f: (NatIdentifier, NatIdentifier, NatIdentifier, NatIdentifier, NatIdentifier) => Expr): DepLambda[NatKind] = {
       val r = lift.arithmetic.RangeAdd(0, lift.arithmetic.PosInf, 1)
       val n = NatIdentifier(freshName("n"), r)
-      NatDepLambda(n, nFun( (n1, n2, n3, n4) => f(n, n1, n2, n3, n4) ))
+      DepLambda[NatKind](n, nFun( (n1, n2, n3, n4) => f(n, n1, n2, n3, n4) ))
     }
   }
 
-  object tFun {
-    def apply(f: DataTypeIdentifier => Expr): TypeDepLambda = {
+  object dtFun {
+    def apply(f: DataTypeIdentifier => Expr): DepLambda[DataKind] = {
       val x = DataTypeIdentifier(freshName("dt"))
-      TypeDepLambda(x, f(x))
+      DepLambda[DataKind](x, f(x))
+    }
+  }
+
+  // type level functions
+  object n2dtFun {
+    def apply(f: NatIdentifier => DataType): NatToDataLambda = {
+      val x = NatIdentifier(freshName("n2dt"))
+      NatToDataLambda(x, f(x))
+    }
+
+    def apply(r: lift.arithmetic.Range)(f: NatIdentifier => DataType): NatToDataLambda = {
+      val x = NatIdentifier(freshName("n2dt"), r)
+      NatToDataLambda(x, f(x))
+    }
+
+    def apply(upperBound: Nat)(f: NatIdentifier => DataType): NatToDataLambda = {
+      apply(RangeAdd(0, upperBound, 1))(f)
+    }
+  }
+
+  object n2nFun {
+    def apply(f: NatIdentifier => Nat): NatToNatLambda = {
+      val x = NatIdentifier(freshName("n2n"))
+      NatToNatLambda(x, f(x))
+    }
+
+    def apply(r: lift.arithmetic.Range)(f: NatIdentifier => Nat): NatToNatLambda = {
+      val x = NatIdentifier(freshName("n2n"), r)
+      NatToNatLambda(x, f(x))
+    }
+
+    def apply(upperBound: Nat)(f: NatIdentifier => Nat): NatToNatLambda = {
+      apply(RangeAdd(0, upperBound, 1))(f)
     }
   }
 
@@ -182,29 +212,28 @@ object DSL {
   object nFunT {
     def apply(f: NatIdentifier => Type): Type = {
       val x = NatIdentifier(freshName("n"))
-      NatDependentFunctionType(x, f(x))
+      DepFunType[NatKind, Type](x, f(x))
     }
   }
 
-  object tFunT {
+  object dtFunT {
     def apply(f: DataTypeIdentifier => Type): Type = {
       val x = DataTypeIdentifier(freshName("dt"))
-      TypeDependentFunctionType(x, f(x))
+      DepFunType[DataKind, Type](x, f(x))
     }
   }
 
-  // type level functions
-  object natTypeFun {
-    def apply(f: NatIdentifier => DataType): NatDataTypeLambda = {
-      val x = NatIdentifier(freshName("n"))
-      NatDataTypeLambda(x, f(x))
+  object n2nFunT {
+    def apply(f: NatToNat => Type): Type = {
+      val x = NatToNatIdentifier(freshName("_n2n"))
+      DepFunType[NatToNatKind, Type](x, f(x))
     }
   }
 
-  object natNatFun {
-    def apply(f: NatIdentifier => Nat): NatNatLambda = {
-      val x = NatIdentifier(freshName("n"))
-      NatNatLambda(x, f(x))
+  object n2dtFunT {
+    def apply(f: NatToData => Type): Type = {
+      val x = NatToDataIdentifier(freshName("_n2dt"))
+      DepFunType[NatToDataKind, Type](x, f(x))
     }
   }
 
@@ -213,19 +242,19 @@ object DSL {
     f(NatIdentifier(freshName("_n")))
   }
 
-  def implT[A](f: DataTypeIdentifier => A): A = {
+  def implDT[A](f: DataTypeIdentifier => A): A = {
     f(DataTypeIdentifier(freshName("_dt")))
   }
 
-  def implNNF[A](f: NatNatFunction => A): A = {
-    f(NatNatFunctionIdentifier(freshName("_nnf")))
+  def implN2N[A](f: NatToNat => A): A = {
+    f(NatToNatIdentifier(freshName("_n2n")))
   }
 
-  def implNDF[A](f: NatDataTypeFunction => A): A = {
-    f(NatDataTypeFunctionIdentifier(freshName("_ndf")))
+  def implN2DT[A](f: NatToData => A): A = {
+    f(NatToDataIdentifier(freshName("_n2dt")))
   }
 
-  implicit def natToExpr(n: Nat): NatExpr = NatExpr(n)
+  implicit def wrapInNatExpr(n: Nat): NatExpr = NatExpr(n)
 
   def mapNatExpr(n: Expr, f: Nat => Nat): NatExpr = {
     NatExpr(f(Internal.natFromNatExpr(n)))
@@ -238,14 +267,14 @@ object DSL {
 
         case _: Identifier      => ??? // NamedVar(i.name, StartFromRange(0))
         case Apply(fun, arg)    => fun match {
-          case l: Lambda => natFromNatExpr(lifting.liftFunctionExpr(l).value(arg))
+          case l: Lambda => natFromNatExpr(lifting.liftFunExpr(l).value(arg))
           case p: Primitive       => p match {
             case _: primitives.indexAsNat.type => natFromNatExpr(arg)
             case _ => ???
           }
           case _ => ???
         }
-        case DepApply(fun, arg) => natFromNatExpr(lifting.liftDependentFunctionExpr(fun).value(arg))
+        case DepApply(fun, arg) => natFromNatExpr(lifting.liftDepFunExpr(fun).value(arg))
         case Literal(_)         => throw new Exception("This should never happen")
         case Index(_, _)        => ???
         case TypedExpr(te, _)   => natFromNatExpr(te)
@@ -260,8 +289,8 @@ object DSL {
   def l(v: VectorData): Literal = Literal(v)
   def l(a: ArrayData): Literal = Literal(a)
 
-  implicit final class TypeConstructors(private val a: Type) extends AnyVal {
-    @inline def ->:(b: Type): FunctionType[Type, Type] = FunctionType(b, a)
+  implicit final class TypeConstructors(private val r: Type) extends AnyVal {
+    @inline def ->:(t: Type): FunType[Type, Type] = FunType(t, r)
   }
 
   implicit final class TupleTypeConstructors(private val a: DataType) extends AnyVal {

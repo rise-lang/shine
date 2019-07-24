@@ -14,8 +14,8 @@ final case class Cast(dt1: BasicType, dt2: BasicType, e: Phrase[ExpType])
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (dt1: BasicType) -> (dt2: BasicType) ->
-      (e :: exp"[$dt1]") -> exp"[$dt2]"
+    (dt1: BasicType) ->: (dt2: BasicType) ->:
+      (e :: exp"[$dt1]") ->: exp"[$dt2]"
 
   def prettyPrint: String =
     s"${this.getClass.getSimpleName} (${PrettyPhrasePrinter(e)})"
@@ -26,18 +26,18 @@ final case class Cast(dt1: BasicType, dt2: BasicType, e: Phrase[ExpType])
     </cast>
 
   def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] =
-    Cast(fun(dt1), fun(dt2), VisitAndRebuild(e, fun))
+    Cast(fun.data(dt1), fun.data(dt2), VisitAndRebuild(e, fun))
 
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Data = ???
 
   def acceptorTranslation(A: Phrase[AccType])
-                         (implicit context: TranslationContext): Phrase[CommandType] = ???
+                         (implicit context: TranslationContext): Phrase[CommType] = ???
 
-  override def mapAcceptorTranslation(f: Phrase[ExpType -> ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommandType] = ???
+  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
+                                     (implicit context: TranslationContext): Phrase[CommType] = ???
 
-  def continuationTranslation(C: Phrase[ExpType -> CommandType])
-                             (implicit context: TranslationContext): Phrase[CommandType] = {
+  def continuationTranslation(C: Phrase[ExpType ->: CommType])
+                             (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(e)(fun(e.t)(x =>
