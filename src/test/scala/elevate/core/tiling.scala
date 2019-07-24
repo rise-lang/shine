@@ -298,4 +298,25 @@ class tiling extends idealised.util.Tests {
       gold
     ))
    }
+
+  /// REAL APPLICATIONS
+
+  test("tile gemm") {
+    val sequential =
+      nFun((n, m, k) =>
+        fun((n`.`k`.`float) ->: (k`.`m`.`float) ->: (n`.`m`.`float) ->: float ->: float ->: (n`.`m`.`float))
+        ((a, b, c, alpha, beta) =>
+
+          zip(a, c) |> map(fun(ac =>
+            zip(transpose(b), ac._2) |> map(fun(bc =>
+              zip(ac._1, bc._1) |>
+                reduce(fun( (y, acc) => acc + (y._1 * y._2)), l(0.0f)) |>
+                fun(x => (x * alpha) + (beta * bc._2))
+            ))
+          ))
+        )
+      )
+
+    (LCNF `;` CNF `;` oncetd(tileND(2)(4)) `;` BENF `;` RNF)(sequential)
+  }
 }
