@@ -1,7 +1,7 @@
 package idealised.DPIA
 
 import idealised.DPIA.Compilation.TranslationContext
-import idealised.DPIA.FunctionalPrimitives.{AsIndex, IndexAsNat}
+import idealised.DPIA.FunctionalPrimitives.{AsIndex, DepIdx, Idx, IdxVec, IndexAsNat}
 import idealised.DPIA.ImperativePrimitives._
 import idealised.DPIA.Phrases.{BinOp, Literal, Natural, Pair, Phrase, Proj1, Proj2, UnaryOp}
 import idealised.DPIA.Semantics.OperationalSemantics.{FloatData, IntData}

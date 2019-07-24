@@ -1,6 +1,6 @@
-package idealised.DPIA.ImperativePrimitives
+package idealised.DPIA.FunctionalPrimitives
 
-import idealised.DPIA.Compilation.{CodeGenerator, TranslationContext, TranslationToImperative}
+import idealised.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics

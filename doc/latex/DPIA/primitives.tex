@@ -1,79 +1,320 @@
-\begin{figure}[p]
+\begin{figure}
     \footnotesize
     \begin{minipage}{1.0\linewidth} \begin{tabular*}{\linewidth}{>{$}l<{$}@{\hspace{0.4em}}>{$}c<{$}>{$}l<{$}}
-          \underline{\ell}&:&\tyexp[\mathsf{num}, \readacc]\\
-          \prim{negate}&:&\tyexp[\mathsf{num}, \readacc] \to \tyexp[\mathsf{num}, \readacc] \\
-          (+,*,/,-)   &:&\tyexp[\mathsf{num}, \readacc] \times \tyexp[\mathsf{num}, \readacc] \to \tyexp[\mathsf{num}, \readacc]\\
-  
-          \prim{toMem}&:&(a : \addrkind) \to (\dt : \datatype) \to \tyexp[\dt, \writeacc] \to \tyexp[\dt, \readacc]\\
-          \prim{mapSeq}&:&(n : \natkind) \to (\dtone~\dttwo : \datatype) \to (\tyexp[\dtone, \readacc] \to \tyexp[\dttwo, \writeacc]) \to \tyexp[n.\dtone, \readacc] \to \tyexp[n.\dttwo, \writeacc] \\
-          \prim{mapPar}&:&(n : \natkind) \to (\dtone~\dttwo : \datatype) \to (\tyexp[\dtone, \readacc] \to \tyexp[\dttwo, \writeacc]) \to \tyexp[n.\dtone, \readacc] \to \tyexp[n.\dttwo, \writeacc] \\
-  
-          \prim{reduceSeq}&:&(n : \natkind) \to (a : \addrkind) \to (\dtone~\dttwo : \datatype) \to\\
-          && (\tyexp[\dtone, \readacc] \to \tyexp[\dttwo, \readacc] \to \tyexp[\dttwo, \writeacc]) \to \tyexp[\dttwo, \writeacc] \to \tyexp[n.\dtone, \readacc] \to \tyexp[\dttwo, \readacc]\bigskip\\
-  
-          \prim{split}&:&(n~m : \natkind) \to (w : \access) \to (\dt : \datatype) \to \tyexp[nm.\dt, w] \to \tyexp[m.n.\dt, w] \\
-          \prim{join}&:&(n~m : \natkind) \to (w : \access) \to (\dt : \datatype) \to \tyexp[n.m.\dt, w] \to \tyexp[nm.\dt, w]\\
-          \prim{drop}&:&(n~m : \natkind) \to (w : \access) \to (\dt : \datatype) \to \tyexp[(n + m).\dt, w] \to \tyexp[m.\dt, w] \\
-          \prim{take}&:&(n~m : \natkind) \to (w : \access) \to (\dt : \datatype) \to \tyexp[(n + m).\dt, w] \to \tyexp[n.\dt, w]\bigskip\\
-  
-          \prim{gather}&:&(n : \natkind) \to (\dt : \datatype) \to (\tyexp[\tyidx[n], \readacc] \to \tyexp[\tyidx[n], \readacc]) \to \tyexp[n.\dt, \readacc] \to \tyexp[n.\dt, \readacc]\\
-          \prim{scatter}&:&(n : \natkind) \to (\dt : \datatype) \to (\tyexp[\tyidx[n], \readacc] \to \tyexp[\tyidx[n], \readacc]) \to \tyexp[n.\dt, \writeacc] \to \tyexp[n.\dt, \writeacc]\bigskip\\
-  
-          \prim{pad}&:&(n~l~q : \natkind) \to (\dt : \datatype) \to \tyexp[\dt, \readacc] \to \tyexp[n.\dt, \readacc] \to \tyexp[(l + n + q).\dt, \readacc] \\
-          \prim{slide}&:&(n~sz~sp : \natkind) \to (\dt : \datatype) \to \tyexp[(sp \times n + sz - sp).\dt, \readacc] \to \tyexp[n.sz.\dt, \readacc] \bigskip\\
-  
-          \prim{zip}&:&(n : \natkind) \to (\dtone~\dttwo : \datatype) \to \tyexp[n.\dtone, \readacc] \to \tyexp[n.\dttwo, \readacc] \to \tyexp[n.(\dtone \times \dttwo), \readacc] \\
-  
-          \prim{pair}&:&(\dtone~\dttwo: \datatype) \to \tyexp[\dtone, \readacc] \to \tyexp[\dttwo, \readacc] \to \tyexp[\dtone \times \dttwo, \readacc]\\
-          \prim{fst}&:&(\dtone~\dttwo : \datatype) \to \tyexp[\dtone \times \dttwo, \readacc] \to \tyexp[\dtone, \readacc] \\
-          \prim{snd}&:&(\dtone~\dttwo : \datatype) \to \tyexp[\dtone \times \dttwo, \readacc] \to \tyexp[\dttwo, \readacc] \\
-          \prim{idx} &:&(n : \natkind) \to (\dt : \datatype) \to \tyexp[n.\dt, \readacc] \to \tyexp[\tyidx[n], \readacc] \to \tyexp[\dt, \readacc] \\ % TODO? order differs from implementation, and is inside imperative primitives
+          \underline{\ell}&:&(\dt: \datatype)
+            \to \tyexp{\dt}{\readacc}\\
+
+          \prim{negate}&:&(\dt: \datatype)
+            \to \tyexp{\dt}{\readacc}
+            \to \tyexp{\dt}{\readacc}\\
+
+          (+,*,/,-)   &:&(\dt: \datatype)
+            \to \tyexp{\dt}{\readacc}
+            \to \tyexp{\dt}{\readacc}
+            \to \tyexp{\dt}{\readacc}\\
+
+          \medskip\\
+
+          \prim{map}&:& (\n: \natkind) \to (\dtone~\dttwo: \datatype)
+            \to (\tyexp{\dtone}{\readacc} \to \tyexp{\dttwo}{\writeacc})
+            \to \tyexp{\lArray{\n}{\dtone}}{\readacc}
+            \to \tyexp{\lArray{\n}{\dttwo}}{\writeacc}\\
+
+          \prim{mapSeq}&:& (\n: \natkind) \to (\dtone~\dttwo: \datatype)
+            \to (\tyexp{\dtone}{\readacc} \to \tyexp{\dttwo}{\writeacc})
+            \to \tyexp{\lArray{\n}{\dtone}}{\readacc}
+            \to \tyexp{\lArray{\n}{\dttwo}}{\writeacc}\\
+
+          \prim{reduceSeq}&:&(\n : \natkind) \to (\dtone~\dttwo : \datatype) \to\\
+            &&\qquad (\tyexp{\dtone}{\readacc} \to \tyexp{\dttwo}{\readacc} \to \tyexp{\dttwo}{\writeacc})
+            \to \tyexp{\dttwo}{\writeacc}
+            \to \tyexp{\lArray{\n}{\dtone}}{\readacc}
+            \to \tyexp{\dttwo}{\readacc}\\
+
+          \prim{reduceSeqUnroll}&:&(\n : \natkind) \to (\dtone~\dttwo : \datatype) \to\\
+            &&\qquad (\tyexp{\dtone}{\readacc} \to \tyexp{\dttwo}{\readacc} \to \tyexp{\dttwo}{\writeacc})
+            \to \tyexp{\dttwo}{\writeacc}
+            \to \tyexp{\lArray{\n}{\dtone}}{\readacc}
+            \to \tyexp{\dttwo}{\readacc}\\
+
+          \prim{scanSeq}&:& (\n : \natkind) \to (\dtone~\dttwo : \datatype)
+            \to (\tyexp{\dtone}{\readacc} \to \tyexp{\dttwo}{\readacc} \to \tyexp{\dttwo}{\writeacc}) \to\\
+            &&\qquad \tyexp{\dttwo}{\writeacc}
+            \to \tyexp{\lArray{\n}{\dtone}}{\readacc}
+            \to \tyexp{\lArray{\n}{\dttwo}}{\readacc}\\
+
+          \prim{iterate}&:& (\n~\m~\nat{k}: \natkind) \to (\dt: \datatype) \to\\
+            &&\qquad ((\nat{l}: \natkind) \to \tyexp{\lArray{\nat{l}\n}{\dt}}{\readacc} \to \tyexp{\lArray{\nat{l}}{\dt}}{\readacc})
+            \to \tyexp{\lArray{\m\cdot\n^{\nat{k}}}{\dt}}{\readacc}
+            \to \tyexp{\lArray{\m}{\dt}}{\readacc}\\
+
+          \medskip\\
+
+          \prim{split}&:& (\n~\m : \natkind)\to (\wvar : \access) \to (\dt : \datatype)
+            \to \tyexp{\lArray{\n\m}{\dt}}{\wvar}
+            \to \tyexp{\lArray{\m}{\lArray{\n}{\dt}}}{\wvar}\\
+
+          \prim{join}&:& (\n~\m: \natkind) \to (\wvar: \access) \to (\dt: \datatype)
+            \to \tyexp{\lArray{\n}{\lArray{\m}{\dt}}}{\wvar}
+            \to \tyexp{\lArray{\n\m}{\dt}}{\wvar}\\
+          \\[-.75em]
+
+          \prim{slide}&:& (\n~\nat{sz}~\nat{sp} : \natkind) \to (\dt : \datatype)
+            \to \tyexp{\lArray{\nat{(sp \cdot n + sz - sp)}}{\dt}}{\readacc}
+            \to \tyexp{\lArray{\n}{\lArray{\nat{sz}}{\dt}}}{\readacc}\\
+
+          \prim{slideSeq}&:& (\n~\nat{sz}~\nat{sp} : \natkind) \to (\dt : \datatype)
+            \to \tyexp{\lArray{\nat{(sp \cdot n + sz - sp)}}{\dt}}{\readacc}
+            \to \tyexp{\lArray{\n}{\lArray{\nat{sz}}{\dt}}}{\readacc}\\
+          \\[-.75em]
+
+          \prim{reorder}&:& (\n: \natkind) \to (\dt: \datatype)
+            \to (\tyexp{\tyidx[\n]}{\readacc} \to \tyexp{\tyidx[\n]}{\readacc}) \to\\
+            &&\qquad (\tyexp{\tyidx[\n]}{\readacc} \to \tyexp{\tyidx[\n]}{\readacc})
+            \to \tyexp{\lArray{\n}{\dt}}{\readacc}
+            \to \tyexp{\lArray{\n}{\dt}}{\readacc}\\
+
+          \prim{cycle}&:& (\n~\m: \natkind) \to (\dt: \datatype)
+            \to \tyexp{\lArray{\m}{\dt}}{\readacc}
+            \to \tyexp{\lArray{\n}{\dt}}{\readacc}\\
+          \\[-.75em]
+
+          \prim{generate}&:& (\n: \natkind) \to (\dt: \datatype)
+            \to (\tyexp{\tyidx[\n]}{\readacc} \to \tyexp{\dt}{\readacc})
+            \to \tyexp{\lArray{\n}{\dt}}{\readacc}\\
+          \\[-.75em]
+
+          \prim{drop}&:& (\n~\m: \natkind) \to (\wvar: \access) \to (\dt: \datatype)
+            \to \tyexp{\lArray{\n + \m}{\dt}}{\wvar}
+            \to \tyexp{\lArray{\m}{\dt}}{\wvar}\\
+
+          \prim{take}&:& (\n~\m : \natkind) \to (\wvar : \access) \to (\dt : \datatype)
+            \to \tyexp{\lArray{(\n + \m)}{\dt}}{\wvar}
+            \to \tyexp{\lArray{n}{\dt}}{\wvar}\\
+          \\[-.75em]
+
+          \prim{pad}&:& (\n~\nat{l}~\nat{r}: \natkind) \to (\dt: \datatype)
+            \to \tyexp{\dt}{\readacc}
+            \to \tyexp{\lArray{\n}{\dt}}{\readacc}
+            \to \tyexp{\lArray{\nat{l}+\n+\nat{r}}{\dt}}{\readacc}\\
+
+          \prim{padClamp}&:& (\n~\nat{l}~\nat{r}: \natkind) \to (\dt: \datatype)
+            \to \tyexp{\lArray{\n}{\dt}}{\readacc}
+            \to \tyexp{\lArray{\nat{l}+\n+\nat{r}}{\dt}}{\readacc}\\
+          \\[-.75em]
+
+          \prim{zip}&:& (\n: \natkind) \to (\dtone~\dttwo: \datatype)
+            \to \tyexp{\lArray{\n}{\dtone}}{\readacc}
+            \to \tyexp{\lArray{\n}{\dttwo}}{\readacc}
+            \to \tyexp{\lArray{\n}{\lPair{\dtone}{\dttwo}}}{\readacc}\\
+
+          \prim{unzip}&:& (\n: \natkind) \to (\dtone~\dttwo: \datatype)
+            \to \tyexp{\lArray{\n}{\lPair{\dtone}{\dttwo}}}{\readacc}
+            \to \tyexp{\lPair{\lArray{\n}{\dtone}}{\lArray{\n}{\dttwo}}}{\readacc}\\
+          \\[-.75em]
+
+          \prim{record}&:&(\dtone~\dttwo: \datatype)
+            \to \tyexp{\dtone}{\readacc}
+            \to \tyexp{\dttwo}{\readacc}
+            \to \tyexp{\lPair{\dtone}{\dttwo}}{\readacc}\\
+
+          \prim{fst}&:& (\dtone~\dttwo: \datatype)
+            \to \tyexp{\lPair{\dtone}{\dttwo}}{\readacc}
+            \to \tyexp{\dtone}{\readacc}\\
+
+          \prim{snd}&:& (\dtone~\dttwo: \datatype)
+            \to \tyexp{\lPair{\dtone}{\dttwo}}{\readacc}
+            \to \tyexp{\dttwo}{\readacc}\\
+          \\[-.75em]
+
+          \prim{idx}&:& (\n: \natkind) \to (\dt: \datatype)
+            \to \tyexp{\tyidx[\n]}{\readacc}
+            \to \tyexp{\lArray{\n}{\dt}}{\readacc}
+            \to \tyexp{\dt}{\readacc}\\
+          \\[-.75em]
+
+          \prim{indexAsNat}&:& (\n: \natkind)
+            \to \tyexp{\tyidx[\n]}{\readacc}
+            \to \tyexp{\natkind}{\readacc}\\
+
+          \prim{asIndex}&:& (\n: \natkind)
+            \to \tyexp{\natkind}{\readacc}
+            \to \tyexp{\tyidx[\n]}{\readacc}\\
+
+          \prim{case}&:& (\dtone~\dttwo: \datatype)
+            \to \tyexp{\dtone}{\readacc}
+            \to \tyexp{\dttwo}{\readacc}\\
+
+          \medskip\\
+
+          \prim{depJoin}&:& (\n: \natkind) \to (\fn: \ntnkind) \to (\dt: \datatype)
+            \to \tyexp{\lArray{\n}{\lNtDT{i}{\lArray{(\fn~i)}{\dt}}}}{\readacc}
+            \to \tyexp{\lArray{\Sigma_{\nat{j}=0}^{\n-1}(\fn~\nat{j})}{\dt}}{\readacc}\\
+
+          \prim{depMapSeq}&:& (\n: \natkind) \to (\fdtone~\fdttwo: \ntdkind) \to \\
+            && \qquad ((\nat{k}: \natkind) \to \tyexp{\fdtone~\nat{k}}{\readacc} \to \tyexp{\fdttwo~\nat{k}}{\writeacc})
+            \to \tyexp{\lDepArray{\n}{\fdtone}}{\readacc}
+            \to \tyexp{\lDepArray{\n}{\fdttwo}}{\writeacc}\\
+
+          \prim{depMapSeqUnroll}&:& (\n: \natkind) \to (\fdtone~\fdttwo: \ntdkind) \to \\
+            &&\qquad ((\nat{k}: \natkind) \to \tyexp{\fdtone~\nat{k}}{\readacc} \to \tyexp{\fdttwo~\nat{k}}{\writeacc})
+            \to \tyexp{\lDepArray{\n}{\fdtone}}{\readacc}
+            \to \tyexp{\lDepArray{\n}{\fdttwo}}{\writeacc}\\
+
+          \prim{partition}&:& (\n~\m: \natkind) \to (\fdt : \ntnkind) \to (\dt : \datatype)
+            \to \tyexp{\lArray{\n}{\dt}}{\readacc}
+            \to \tyexp{\lDepArray{\m}{\lNtDT{\nat{i}}{\lArray{(\fdt~\nat{i})}{\dt}}}}{\readacc}\\
+
+          \prim{transposeDepArray}&:& (\n~\m: \natkind) \to (\fdt: \ntdkind)
+            \to \tyexp{\lArray{\n}{\lDepArray{\m}{\fdt}}}{\readacc}
+            \to \tyexp{\lDepArray{\m}{\lNtDT{\nat{k}}{\lArray{\n}{\fdt~\nat{k}}}}}{\readacc}\\
+
+          \prim{depIdx}&:& (\n: \natkind) \to (\fdt: \ntdkind) \to (\nat{i}: \natkind)
+            \to \tyexp{\lDepArray{\n}{\fdt}}{\readacc}
+            \to \tyexp{\fdt~\nat{i}}{\readacc}\\
       \end{tabular*}
-      \subcaption{Functional primitives}\label{fig:func-prim}
     \end{minipage}
-  
-    \vspace{1em}
-  
+    \caption{DPIA Functional primitives}\label{fig:func-prim}
+  \end{figure}
+
+  \begin{figure}
+    \footnotesize
     \begin{minipage}{1.0\linewidth}
     \begin{tabular*}{\linewidth}{>{$}l<{$}>{$}c<{$}>{$}l<{$}}
-          (\mathord;)&:&\tycomm \times \tycomm \to \tycomm \\
+          (\mathord;)&:&\tycomm \to \tycomm \to \tycomm \\
+          \\[-.75em]
+
           \prim{skip}&:&\tycomm \\
-          \prim{new}&:&(a : \addrkind) \to (\dt : \datatype) \to (\tyvar[\dt] \to \tycomm) \to \tycomm
-          \qquad (\text{where }\mathsf{var}[\dt] = \tyexp[\dt, \readacc] \times \tyacc[\dt] : \phrasetype) \\
-          (:=)&:&\tyacc[\mathsf{num}] \times \tyexp[\mathsf{num}, \readacc] \to \tycomm \\
-          \prim{for}&:&(n : \natkind) \to (\tyexp[\tyidx[n], \readacc] \to \tycomm) \to \tycomm \\
-          \prim{parfor}&:&(n : \natkind) \to (\dt : \datatype) \to \tyacc[n.\dt] \to (\tyexp[\tyidx[n], \readacc] \to \tyacc[\dt] \pureto \tycomm) \to \tycomm \bigskip\\
+          \\[-.75em]
+
+          (:=)&:& (\dt: \datatype)
+            \to \tyacc{\dt} \to \tyexp{\dt}{\readacc} \to \tycomm\\
+          \\[-.75em]
+
+          \prim{for}&:&(\n : \natkind)
+            \to (\tyexp{\tyidx[\n]}{\readacc} \to \tycomm)
+            \to \tycomm \\
+
+          \prim{forNat}&:&(\n : \natkind)
+            \to ((\nat{k}: \natkind) \to \tycomm)
+            \to \tycomm \\
+
+          % \prim{parfor}&:&(n : \natkind) \to (\dt : \datatype) \to \tyacc[n.\dt] \to (\tyexp[\tyidx[n], \readacc] \to \tyacc[\dt] \pureto \tycomm) \to \tycomm\\
+          \\[-.75em]
+
+          \prim{new}&:&(\dt : \datatype)
+            \to (\tyvar[\dt] \to \tycomm) \to \tycomm\\
+
+          \prim{newDoubleBuffer}&:&(\dtzero~\dtone~\dttwo : \datatype) \to (\n: \natkind)
+            \to \tyexp{\dtzero}{\readacc}
+            \to \tyacc{\dtone} \to\\
+            &&\qquad (\lPair{\lPair{\tyvar[\lArray{\n}{\dttwo}]}{\tycomm}}{\tycomm} \to \tycomm)
+            \to \tycomm\\
+
+          \prim{newRegRot}&:&(\n: \natkind) \to (\dt: \datatype)
+            \to (\tyvar[\lArray{\n}{\dttwo}] \to \tycomm \to \tycomm)
+            \to \tycomm\\
+
+          \medskip\\
+
+          \prim{mapAcc}&:& (\n: \natkind) \to (\dtone~\dttwo: \datatype)
+            \to (\tyacc{\dtone} \to \tyacc{\dttwo})
+            \to \tyacc{\lArray{\n}{\dtone}}
+            \to \tyacc{\lArray{\n}{\dttwo}}\\
+
+          \prim{mapRead}&:& (\n: \natkind) \to (\dtone~\dttwo: \datatype) \to\\
+            &&\qquad (\tyexp{\dtone}{\readacc} \to (\tyexp{\dttwo}{\readacc} \to \tycomm) \to \tycomm)
+            \to \tyexp{\lArray{\n}{\dtone}}{\readacc}
+            \to \tyexp{\lArray{\n}{\dttwo}}{\readacc}\\
+
+          \medskip\\
   
-          \prim{splitAcc}&:&(n~m : \natkind) \to (\dt : \datatype) \to \tyacc[m.n.\dt] \to \tyacc[nm.\dt] \\
-          \prim{joinAcc}&:&(n~m : \natkind) \to (\dt : \datatype) \to \tyacc[nm.\dt] \to \tyacc[n.m.\dt] \\
-          \prim{zipAcc_1} &:&(n : \natkind) \to (\dtone~\dttwo : \datatype) \to \tyacc[n.\dtone \times \dttwo] \to \tyacc[n.\dtone] \\
-          \prim{zipAcc_2} &:&(n : \natkind) \to (\dtone~\dttwo : \datatype) \to \tyacc[n.\dtone \times \dttwo] \to \tyacc[n.\dttwo] \\
-          \prim{pairAcc_1}&:&(\dtone~\dttwo : \datatype) \to \tyacc[\dtone \times \dttwo] \to \tyacc[\dtone] \\
-          \prim{pairAcc_2}&:&(\dtone~\dttwo : \datatype) \to \tyacc[\dtone \times \dttwo] \to \tyacc[\dttwo] \\
-          \prim{idxAcc} &:&(n : \natkind) \to (\dt : \datatype) \to \tyacc[n.\dt] \to \tyexp[\tyidx[n], \readacc] \to \tyacc[\dt] \\
+          \prim{splitAcc}&:&(\n~\m: \natkind) \to (\dt : \datatype)
+            \to \tyacc{\lArray{\m}{\lArray{\n}{\dt}}}
+            \to \tyacc{\lArray{\n\m}{\dt}} \\
+
+          \prim{joinAcc}&:&(\n~\m : \natkind) \to (\dt : \datatype)
+            \to \tyacc{\lArray{\n\m}{\dt}}
+            \to \tyacc{\lArray{\n}{\lArray{\m}{\dt}}} \\
+          \\[-.75em]
+
+          \prim{reorderAcc}&:& (\n: \natkind) \to (\dt: \datatype)
+            \to (\tyexp{\tyidx[\n]}{\readacc} \to \tyexp{\tyidx[\n]}{\readacc})
+            \to \tyacc{\lArray{\n}{\dt}}
+            \to \tyacc{\lArray{\n}{\dt}} \\
+
+          \prim{cycleAcc}&:& (\n~\m: \natkind) \to (\dt: \datatype)
+            \to \tyacc{\lArray{\m}{\dt}}
+            \to \tyacc{\lArray{\n}{\dt}}\\
+          \\[-.75em]
+
+          \prim{generateCont}&:& (\n: \natkind) \to (\dt: \datatype)
+            \to (\tyexp{\tyidx[\n]}{\readacc} \to (\tyexp{\dt}{\readacc} \to \tycomm) \to \tycomm)
+            \to \tyexp{\lArray{\n}{\dt}}{\readacc}\\
+          \\[-.75em]
+
+          \prim{dropAcc}&:& (\n~\m: \natkind) \to (\dt: \datatype)
+            \to \tyacc{\lArray{\n+\m}{\dt}}
+            \to \tyacc{\lArray{\m-\n}{\dt}}\\
+
+          \prim{takeAcc}&:& (\n~\m: \natkind) \to (\dt: \datatype)
+            \to \tyacc{\lArray{\n+\m}{\dt}}
+            \to \tyacc{\lArray{\n}{\dt}}\\
+          \\[-.75em]
+
+          \prim{zipAcc_1} &:&(\n : \natkind) \to (\dtone~\dttwo : \datatype)
+            \to \tyacc{\lArray{\n}{\lPair{\dtone}{\dttwo}}}
+            \to \tyacc{\lArray{\n}{\dtone}}\\
+
+          \prim{zipAcc_2} &:&(n : \natkind) \to (\dtone~\dttwo : \datatype) 
+            \to \tyacc{\lArray{\n}{\lPair{\dtone}{\dttwo}}}
+            \to \tyacc{\lArray{\n}{\dttwo}}\\
+
+          \prim{unzipAcc}&:& (\n: \natkind) \to (\dtone~\dttwo: \datatype)
+            \to \tyacc{\lPair{\lArray{\n}{\dtone}}{\lArray{\n}{\dttwo}}}
+            \to \tyacc{\lArray{\n}{\lPair{\dtone}{\dttwo}}}\\
+          \\[-.75em]
+
+          \prim{recordAcc_1}&:& (\dtone~\dttwo : \datatype)
+            \to \tyacc{\lPair{\dtone}{\dttwo}}
+            \to \tyacc{\dtone} \\
+          \prim{recordAcc_2}&:&(\dtone~\dttwo : \datatype)
+            \to \tyacc{\lPair{\dtone}{\dttwo}}
+            \to \tyacc{\dttwo} \\
+          \\[-.75em]
+
+          \prim{idxAcc} &:& (\n : \natkind) \to (\dt : \datatype)
+            \to \tyexp{\tyidx[n]}{\readacc}
+            \to \tyacc{\lArray{\n}{\dt}}
+            \to \tyacc{\dt} \\
+
+          \medskip\\
+
+          \prim{depJoinAcc}&:& (\n: \natkind) \to (\fn: \ntnkind) \to (\dt: \datatype)
+            \to \tyacc{\lArray{\Sigma_{\nat{j}=0}^{\n-1}(\fn~\nat{j})}{\dt}}
+            \to \tyacc{\lDepArray{\n}{\lNtN{\nat{i}}{\lArray{(\fn~\nat{i})}{\dt}}}}\\
+
+            \\[.5em]
+            \hfill\mathsf{where} && \mathsf{var}[\dt] = \lPair{\tyexp{\dt}{\readacc}}{\tyacc{\dt}} : \type \\
       \end{tabular*}
-      \subcaption{Imperative primitives}\label{fig:imp-prim}
     \end{minipage}
-  
-    \vspace{2em}
-  
-    \begin{minipage}{1.0\linewidth}
-      \begin{tabular*}{\linewidth}{>{$}l<{$}@{\hspace{.25em}}>{$}c<{$}>{$}l<{$}}
-          \prim{mapSeqI}   &:& (n : \natkind) \to (\dtone~\dttwo : \datatype) \to
-                              (\tyexp[\dtone, \readacc] \to \tyacc[\dttwo] \to \tycomm) \to \tyexp[n.\dtone, \readacc] \to \tyacc[n.\dttwo] \to \tycomm \\
-          \prim{mapParI}   &:& (n : \natkind) \to (\dtone~\dttwo : \datatype) \to
-          (\tyexp[\dtone, \readacc] \to \tyacc[\dttwo] \pureto \tycomm) \to \tyexp[n.\dtone, \readacc] \to \tyacc[n.\dttwo] \to \tycomm \\
-          \prim{reduceSeqI}&:& (n: \natkind) \to (\dtone~\dttwo : \datatype) \to (\tyexp[\dtone, \readacc] \to \tyexp[\dttwo, \readacc] \to \tyacc[\dttwo] \to \tycomm) \to \\
-          & & \qquad \to \tyexp[\dttwo, \writeacc] \to \tyexp[n.\dtone, \readacc] \to (\tyexp[t, \readacc] \to \tycomm) \to \tycomm \\
-          & & \text{this signature is not completely correct. the last function that is passed needs to accept}\\
-          & & \text{a write expression in case of the acceptor translation.}
-      \end{tabular*}
-      \subcaption{Intermediate imperative macros}\label{fig:imp-intermediate}
-    \end{minipage}
-  
-    \vspace{1em}
-  
-    \caption{Data Parallel Programming Primitives, Functional and Imperative}
-    \label{fig:primitives}
+    \caption{DPIA Imperative primitives}\label{fig:imp-prim}
   \end{figure}
+  
+  % \begin{figure}
+  %   \footnotesize
+  %   \begin{minipage}{1.0\linewidth}
+  %     \begin{tabular*}{\linewidth}{>{$}l<{$}@{\hspace{.25em}}>{$}c<{$}>{$}l<{$}}
+  %         \prim{mapSeqI}   &:& (n : \natkind) \to (\dtone~\dttwo : \datatype) \to
+  %                             (\tyexp[\dtone, \readacc] \to \tyacc[\dttwo] \to \tycomm) \to \tyexp[n.\dtone, \readacc] \to \tyacc[n.\dttwo] \to \tycomm \\
+  %         \prim{mapParI}   &:& (n : \natkind) \to (\dtone~\dttwo : \datatype) \to
+  %         (\tyexp[\dtone, \readacc] \to \tyacc[\dttwo] \pureto \tycomm) \to \tyexp[n.\dtone, \readacc] \to \tyacc[n.\dttwo] \to \tycomm \\
+  %         \prim{reduceSeqI}&:& (n: \natkind) \to (\dtone~\dttwo : \datatype) \to (\tyexp[\dtone, \readacc] \to \tyexp[\dttwo, \readacc] \to \tyacc[\dttwo] \to \tycomm) \to \\
+  %         & & \qquad \to \tyexp[\dttwo, \writeacc] \to \tyexp[n.\dtone, \readacc] \to (\tyexp[t, \readacc] \to \tycomm) \to \tycomm \\
+  %         & & \text{this signature is not completely correct. the last function that is passed needs to accept}\\
+  %         & & \text{a write expression in case of the acceptor translation.}
+  %     \end{tabular*}
+  %   \end{minipage}
+  
+  %   \caption{DPIA Intermediate imperative macros}\label{fig:imp-intermediate}
+  % \end{figure}

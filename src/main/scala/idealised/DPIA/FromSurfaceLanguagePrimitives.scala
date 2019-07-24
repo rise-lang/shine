@@ -3,13 +3,13 @@ package idealised.DPIA
 import idealised.{DPIA, SurfaceLanguage}
 import idealised.DPIA.FunctionalPrimitives.TransposeDepArray
 import idealised.DPIA.Phrases.Phrase
-import idealised.DPIA.Types.{ExpType, NatToNatLambda, NatToDataLambda, PhraseType}
+import idealised.DPIA.Types.{ExpType, NatToDataLambda, NatToNatLambda, PhraseType}
 import idealised.OpenCL.SurfaceLanguage.Primitives._
 import idealised.OpenMP.SurfaceLanguage.Primitives.{DepMapPar, MapPar, ReducePar}
 import idealised.SurfaceLanguage.Primitives._
 import idealised.SurfaceLanguage.Types.{DataType, _}
 import idealised.SurfaceLanguage._
-import lift.arithmetic.{Cst, Pow, Prod}
+import lift.arithmetic.{Cst, NamedVar, Pow, Prod}
 
 
 object FromSurfaceLanguagePrimitives {
@@ -183,7 +183,9 @@ object FromSurfaceLanguagePrimitives {
               Join(n, m, ???, dt, FromSurfaceLanguage.asPhrase[ExpType](array)))))
 
         case Some(ArrayType(n, DepArrayType(m, DependentFunctionType(i: SurfaceLanguage.NatIdentifier, dt)))) =>
-          Some(TransposeDepArray(n, m, NatIdentifier(i.name, i.range), dt, FromSurfaceLanguage.asPhrase[ExpType](array)))
+          Some(TransposeDepArray(n, m, NatToDataLambda(i.range.max, k =>
+            DPIA.Types.DataType.substitute(k: NamedVar, `for` = i: NamedVar, in = dt : DPIA.Types.DataType)
+          ), FromSurfaceLanguage.asPhrase[ExpType](array)))
       }
 
       case Generate(f, _) => (f.t: @unchecked) match {
@@ -202,7 +204,7 @@ object FromSurfaceLanguagePrimitives {
           Some(FunctionalPrimitives.AsIndex(n, FromSurfaceLanguage.asPhrase[DPIA.Types.ExpType](e)))
       }
       case Idx(e, idx, _) => Some(
-        ImperativePrimitives.Idx(
+        FunctionalPrimitives.Idx(
           FromSurfaceLanguage.asPhrase[DPIA.Types.ExpType](idx),
           FromSurfaceLanguage.asPhrase[DPIA.Types.ExpType](e)
         ))

@@ -445,7 +445,7 @@ object fromLift {
         val a = dataType(la)
         fun[ExpType](exp"[idx($n), $read]", i =>
           fun[ExpType](exp"[$n.$a, $read]", e =>
-            ImperativePrimitives.Idx(n, a, i, e)))
+            FunctionalPrimitives.Idx(n, a, i, e)))
 
       case (core.select,
       lt.FunType(_,
