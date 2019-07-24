@@ -4,7 +4,7 @@
       \begin{mathpar}
         \kappa ::= \access \mid \addrkind \mid \ntnkind \mid \ntdkind \mid \natkind \mid \datatype \mid \type
       \end{mathpar}
-      \subcaption{Kinds}\label{fig:kinds}
+      \subcaption{Kinds}\label{fig:lift-kinds}
     \end{minipage}
 
     \medskip
@@ -15,7 +15,7 @@
         {\x : \kappa \in \Delta}
         {\Delta \vdash \x : \kappa}
       \end{mathpar}
-      \subcaption{Kinding Structural Rules}\label{fig:structural-kinding}
+      \subcaption{Kinding Structural Rules}\label{fig:lift-structural-kinding}
     \end{minipage}
     %
     \begin{minipage}{0.4\linewidth}
@@ -24,7 +24,7 @@
          {\models \forall \sigma : \mathit{dom}(\Delta) \to \mathbb{N}.\sigma(\Nat{N}) = \sigma(\Nat{M})}
          {\Delta \vdash \Nat{N} \equiv \Nat{M} : \natkind}
       \end{mathpar}
-      \subcaption{Type Equality}\label{fig:equality-kinding}
+      \subcaption{Type Equality}\label{fig:lift-equality-kinding}
     \end{minipage}
   
     \medskip
@@ -35,7 +35,7 @@
         {\W \in \{\writeacc, \readacc\} }
         {\Delta \vdash \W : \access}
       \end{mathpar}
-      \subcaption{Accessibility}\label{fig:accessib8ility-kinding}
+      \subcaption{Accessibility}\label{fig:lift-accessib8ility-kinding}
     \end{minipage}
     %
     \begin{minipage}{.4\linewidth}
@@ -45,7 +45,7 @@
         {\Delta \vdash \A : \addrkind}
   
       \end{mathpar}
-      \subcaption{Address Spaces}\label{fig:address-space-kinding}
+      \subcaption{Address Spaces}\label{fig:lift-address-space-kinding}
     \end{minipage}
 
     \medskip
@@ -56,7 +56,7 @@
         {\Delta, \n : \natkind \vdash \Nat{M} : \natkind}
         {\Delta \vdash \lNtN{\n}{\Nat{M}} : \ntnkind}
       \end{mathpar}
-      \subcaption{$\natkind$ to $\natkind$ type level functions}\label{fig:nat2nat-kinding}
+      \subcaption{$\natkind$ to $\natkind$ type level functions}\label{fig:lift-nat2nat-kinding}
     \end{minipage}
     %
     \begin{minipage}{.4\linewidth}
@@ -66,7 +66,7 @@
         {\Delta \vdash \lNtDT{\n}{\DT} : \ntdkind}
   
       \end{mathpar}
-      \subcaption{$\natkind$ to $\datatype$ type level functions}\label{fig:nat2data-kinding}
+      \subcaption{$\natkind$ to $\datatype$ type level functions}\label{fig:lift-nat2data-kinding}
     \end{minipage}
 
     \medskip
@@ -85,7 +85,7 @@
         {\Delta \vdash \FN : \ntnkind \\ \Delta \vdash \Nat{M} : \natkind}
         {\Delta \vdash \FN~\Nat{M} : \natkind}
       \end{mathpar}
-      \subcaption{Natural numbers}\label{fig:natural-number-kinding}
+      \subcaption{Natural numbers}\label{fig:lift-natural-number-kinding}
     \end{minipage}
   
     \medskip
@@ -120,7 +120,7 @@
         {\Delta \vdash \FDT : \ntdkind \\ \Delta \vdash \N : \natkind}
         {\Delta \vdash \FDT~\N : \datatype}
       \end{mathpar}
-      \subcaption{Data Types}\label{fig:data-type-kinding}
+      \subcaption{Data Types}\label{fig:lift-data-type-kinding}
     \end{minipage}
   
     \medskip
@@ -149,9 +149,9 @@
         }
         {\Delta \vdash (\x\mathord:\kappa) \to \TY : \type}
       \end{mathpar}
-      \subcaption{Types}\label{fig:phrase-type-kinding}
+      \subcaption{Types}\label{fig:lift-phrase-type-kinding}
     \end{minipage}
   
     \caption{Well-formed Types}
-    \label{fig:types}
+    \label{fig:lift-types}
   \end{figure}

@@ -1,28 +1,77 @@
 \begin{figure}[b]
-    \small
-    \begin{minipage}{0.3\linewidth}
+    \footnotesize
+    \begin{minipage}{1.0\linewidth}
       \begin{mathpar}
-        \kappa ::= \datatype \mid \phrasetype \mid \natkind \mid \addrkind \mid \access
+        % Kind
+        \kappa ::= \access \mid \addrkind \mid \ntnkind \mid \ntdkind \mid \natkind \mid \datatype \mid \type
       \end{mathpar}
-      \subcaption{Kinds}\label{fig:kinds}
-    \end{minipage}%
-    \begin{minipage}{0.3\linewidth}
+      \subcaption{Kinds}\label{fig:dpia-kinds}
+    \end{minipage}
+
+    \medskip
+
+    \begin{minipage}{0.4\linewidth}
       \begin{mathpar}
         \inferrule*
-        {x : \kappa \in \Delta}
-        {\Delta \vdash x : \kappa}
+        {\x : \kappa \in \Delta}
+        {\Delta \vdash \x : \kappa}
       \end{mathpar}
-      \subcaption{Kinding Structural Rules}\label{fig:structural-kinding}
+      \subcaption{Kinding Structural Rules}\label{fig:dpia-structural-kinding}
     \end{minipage}
-    \begin{minipage}{0.3\linewidth}
+    %
+    \begin{minipage}{0.4\linewidth}
       \begin{mathpar}
          \inferrule
-         {\models \forall \sigma : \mathit{dom}(\Delta) \to \mathbb{N}.\sigma(M) = \sigma(N)}
-         {\Delta \vdash M \equiv N : \natkind}
+         {\models \forall \sigma : \mathit{dom}(\Delta) \to \mathbb{N}.\sigma(\Nat{N}) = \sigma(\Nat{M})}
+         {\Delta \vdash \Nat{N} \equiv \Nat{M} : \natkind}
       \end{mathpar}
-      \subcaption{Type Equality}\label{fig:equality-kinding}
+      \subcaption{Type Equality}\label{fig:dpia-equality-kinding}
     \end{minipage}
   
+    \medskip
+
+    \begin{minipage}{.4\linewidth}
+      \begin{mathpar}
+        % AccessType
+        \inferrule*
+        {\W \in \{\writeacc, \readacc\} }
+        {\Delta \vdash \W : \access}
+      \end{mathpar}
+      \subcaption{Accessibility}\label{fig:dpia-accessib8ility-kinding}
+    \end{minipage}
+    %
+    \begin{minipage}{.4\linewidth}
+      \begin{mathpar}
+        % AddressSpace
+        \inferrule*
+        {\A \in \{\mathsf{global, local, private, constant\}}}
+        {\Delta \vdash \A : \addrkind}
+      \end{mathpar}
+      \subcaption{Address Spaces}\label{fig:dpia-address-space-kinding}
+    \end{minipage}
+
+    \medskip
+
+    \begin{minipage}{.4\linewidth}
+      \begin{mathpar}
+        % NatToNatLambda
+        \inferrule*
+        {\Delta, \n : \natkind \vdash \Nat{M} : \natkind}
+        {\Delta \vdash \lNtN{\n}{\Nat{M}} : \ntnkind}
+      \end{mathpar}
+      \subcaption{$\natkind$ to $\natkind$ type level functions}\label{fig:dpia-nat2nat-kinding}
+    \end{minipage}
+    %
+    \begin{minipage}{.4\linewidth}
+      \begin{mathpar}
+        % NatToDataLambda
+        \inferrule*
+        {\Delta, \n : \natkind \vdash \DT : \datatype}
+        {\Delta \vdash \lNtDT{\n}{\DT} : \ntdkind}
+      \end{mathpar}
+      \subcaption{$\natkind$ to $\datatype$ type level functions}\label{fig:dpia-nat2data-kinding}
+    \end{minipage}
+
     \medskip
   
     \begin{minipage}{1.0\linewidth}
@@ -32,125 +81,140 @@
         {\Delta \vdash \underline{\ell} : \natkind}
   
         \inferrule*
-        {\Delta \vdash M : \natkind \\ \Delta \vdash N : \natkind}
-        {\Delta \vdash M + N : \natkind}
-  
+        {\Delta \vdash \Nat{N} : \natkind \\ \Delta \vdash \Nat{M} : \natkind \\ \oplus \in \{+,*,\ldots\}}
+        {\Delta \vdash \Nat{N} \oplus \Nat{M} : \natkind}
+
+        % NatToNatApply
         \inferrule*
-        {\Delta \vdash M : \natkind \\ \Delta \vdash N : \natkind}
-        {\Delta \vdash M * N : \natkind}
+        {\Delta \vdash \FN : \ntnkind \\ \Delta \vdash \Nat{M} : \natkind}
+        {\Delta \vdash \FN~\Nat{M} : \natkind}
       \end{mathpar}
-      \subcaption{Natural numbers}\label{fig:natural-number-kinding}
-    \end{minipage}
-  
-    \medskip
-      
-    \begin{minipage}{1.0\linewidth}
-        \begin{mathpar}
-        \inferrule*
-        {\omega \in \{\writeacc, \readacc\} }
-        {\Delta \vdash \omega : \access}
-  
-        \inferrule*
-        {\alpha \in \{\mathsf{global, local, private (, constant)\}}}
-        {\Delta \vdash \alpha : \addrkind}
-  
-  %      \inferrule*
-  %      {\Delta \vdash \alpha_1 : \addrkind \\\\ \Delta \vdash \alpha_2 : \addrkind}
-  %      {\Delta \vdash \alpha_1 \times \alpha_2 : \addrkind}
-        \end{mathpar}
-        \subcaption{Accessibility and Address Spaces}\label{fig:address-space-kinding}
+      \subcaption{Natural numbers}\label{fig:dpia-natural-number-kinding}
     \end{minipage}
   
     \medskip
   
     \begin{minipage}{1.0\linewidth}
       \begin{mathpar}
+        % BasicType / ScalarType
         \inferrule*
         { }
-        {\Delta \vdash \mathsf{num} : \datatype}
-  
+        {\Delta \vdash \basic : \datatype}
+
+        % NatType
         \inferrule*
-        {\Delta \vdash N : \natkind}
-        {\Delta \vdash \tyidx[N] : \datatype}
+        { }
+        {\Delta \vdash \natkind : \datatype}
   
+        % IndexType
         \inferrule*
-        {\Delta \vdash N : \natkind \\\\ \Delta \vdash \delta : \datatype}
-        {\Delta \vdash N.\delta : \datatype}
+        {\Delta \vdash \N : \natkind}
+        {\Delta \vdash \tyidx[\N] : \datatype}
   
+        % RecordType
         \inferrule*
-        {\Delta \vdash \delta_1 : \datatype \\\\ \Delta \vdash \delta_2 : \datatype}
-        {\Delta \vdash \delta_1 \times \delta_2 : \datatype}
+        {\Delta \vdash \DTone : \datatype \\\\ \Delta \vdash \DTtwo : \datatype}
+        {\Delta \vdash \lPair{\DTone}{\DTtwo} : \datatype}
+
+        % ArrayType
+        \inferrule*
+        {\Delta \vdash \N : \natkind \\\\ \Delta \vdash \DT : \datatype}
+        {\Delta \vdash \lArray{\N}{\DT} : \datatype}
+
+        % DepArrayType
+        \inferrule*
+        {\Delta \vdash \N : \natkind \\\\ \Delta \vdash \fdt : \ntdkind}
+        {\Delta \vdash \lDepArray{\N}{\fdt} : \datatype}
+
+        % NatToDataApply
+        \inferrule*
+        {\Delta \vdash \FDT : \ntdkind \\ \Delta \vdash \N : \natkind}
+        {\Delta \vdash \FDT~\N : \datatype}
       \end{mathpar}
-      \subcaption{Data Types}\label{fig:data-type-kinding}
+      \subcaption{Data Types}\label{fig:dpia-data-type-kinding}
     \end{minipage}
   
     \medskip
   
     \begin{minipage}{1.0\linewidth}
       \begin{mathpar}
+        % ExpType
         \inferrule*
-        {\Delta \vdash \delta : \datatype \\ \Delta \vdash \omega : \access}
-        {\Delta \vdash \tyexp[\delta, \omega] : \phrasetype}
+        {\Delta \vdash \DT : \datatype \\ \Delta \vdash \W : \access}
+        {\Delta \vdash \tyexp{\DT}{\W} : \type}
   
+        % AccType
         \inferrule*
-        {\Delta \vdash \delta : \datatype}
-        {\Delta \vdash \tyacc[\delta] : \phrasetype}
+        {\Delta \vdash \DT : \datatype}
+        {\Delta \vdash \tyacc{\DT} : \type}
   
+        % CommType
         \inferrule*
         { }
-        {\Delta \vdash \tycomm : \phrasetype}
+        {\Delta \vdash \tycomm : \type}
   
+        % PairType
         \inferrule*
-        {\Delta \vdash \theta_1 : \phrasetype \\
-          \Delta \vdash \theta_2 : \phrasetype}
-        {\Delta \vdash \theta_1 \times \theta_2 : \phrasetype}
+        {\Delta \vdash \TYone : \type \\\\
+          \Delta \vdash \TYtwo : \type}
+        {\Delta \vdash \lPair{\TYone}{\TYtwo} : \type}
   
+        % FunType
         \inferrule*
-        {\Delta \vdash \theta_1 : \phrasetype \\\\
-          \Delta \vdash \theta_2 : \phrasetype}
-        {\Delta \vdash \theta_1 \to \theta_2 : \phrasetype}
+        {\Delta \vdash \TYone : \type \\\\
+          \Delta \vdash \TYtwo : \type}
+        {\Delta \vdash \TYone \to \TYtwo : \type}
   
+        % PassiveFunType
         \inferrule*
-        {\Delta \vdash \theta_1 : \phrasetype \\\\
-          \Delta \vdash \theta_2 : \phrasetype}
-        {\Delta \vdash \theta_1 \pureto \theta_2 : \phrasetype}
+        {\Delta \vdash \TYone : \type \\\\
+          \Delta \vdash \TYtwo : \type}
+        {\Delta \vdash \TYone \pureto \TYtwo : \type}
   
+        % DepFunType
         \inferrule*
-        {\Delta, x : \kappa \vdash \theta : \phrasetype \\ \kappa \in \{\natkind, \addrkind, \access, \datatype\}}
-        {\Delta \vdash (x\mathord:\kappa) \to \theta : \phrasetype}
+        {\Delta, \x : \kappa \vdash \TY : \type \\ \kappa \in
+        \left\{
+          \begin{array}{l}
+          \access, \addrkind,\arcr
+          \ntnkind, \ntdkind,\arcr
+          \natkind, \datatype
+          \end{array}
+        \right\}}
+        {\Delta \vdash (\x\mathord:\kappa) \to \TY : \type}
       \end{mathpar}
-      \subcaption{Phrase Types}\label{fig:phrase-type-kinding}
+      \subcaption{Phrase Types}\label{fig:dpia-phrase-type-kinding}
     \end{minipage}
   
-    \begin{minipage}{1.0\linewidth}
-      \begin{mathpar}
-        \inferrule*
-        {\Delta \vdash \delta : \datatype \\ \Delta \vdash \omega : \access}
-        {\Delta \vdash \tyexp[\delta] : \passivephrasetype}
+    % \begin{minipage}{1.0\linewidth}
+    %   \begin{mathpar}
+    %     \inferrule*
+    %     {\Delta \vdash \delta : \datatype \\ \Delta \vdash \omega : \access}
+    %     {\Delta \vdash \tyexp[\delta] : \passivetype}
   
-        \inferrule*
-        {\Delta \vdash \phi_1 : \passivephrasetype \\
-          \Delta \vdash \phi_2 : \passivephrasetype}
-        {\Delta \vdash \phi_1 \times \phi_2 : \passivephrasetype}
+    %     \inferrule*
+    %     {\Delta \vdash \phi_1 : \passivetype \\
+    %       \Delta \vdash \phi_2 : \passivetype}
+    %     {\Delta \vdash \phi_1 \times \phi_2 : \passivetype}
   
-        \inferrule*
-        {\Delta \vdash \theta : \phrasetype \\
-          \Delta \vdash \phi : \passivephrasetype}
-        {\Delta \vdash \theta \to \phi : \passivephrasetype}
+    %     \inferrule*
+    %     {\Delta \vdash \theta : \type \\
+    %       \Delta \vdash \phi : \passivetype}
+    %     {\Delta \vdash \theta \to \phi : \passivetype}
   
-        \inferrule*
-        {\Delta \vdash \theta_1 : \phrasetype \\
-          \Delta \vdash \theta_2 : \phrasetype}
-        {\Delta \vdash \theta_1 \pureto \theta_2 : \passivephrasetype}
+    %     \inferrule*
+    %     {\Delta \vdash \theta_1 : \type \\
+    %       \Delta \vdash \theta_2 : \type}
+    %     {\Delta \vdash \theta_1 \pureto \theta_2 : \passivetype}
   
-        \inferrule*
-        {\Delta, x : \kappa \vdash \phi : \passivephrasetype \\ \kappa \in \{\natkind,\datatype\}}
-        {\Delta \vdash (x\mathord:\kappa) \to \phi : \passivephrasetype}
-      \end{mathpar}
-      \subcaption{Passive Types}
-      \label{fig:passive-types}
-    \end{minipage}
+    %     \inferrule*
+    %     {\Delta, x : \kappa \vdash \phi : \passivetype \\ \kappa \in \{\natkind,\datatype\}}
+    %     {\Delta \vdash (x\mathord:\kappa) \to \phi : \passivetype}
+    %   \end{mathpar}
+    %   \subcaption{Passive Types}
+    %   \label{fig:dpia-passive-types}
+    % \end{minipage}
   
     \caption{Well-formed Types}
-    \label{fig:types}
+    \label{fig:dpia-types}
   \end{figure}

@@ -21,13 +21,12 @@
 
 \newcommand{\kw}[1]{\mathrm{#1}}
 
-% \newcommand{\tyval}[2]{\mathsf{value}[#1, #2]}
 \newcommand{\tyval}[2]{\ensuremath{#1_{#2}}}
 \newcommand{\tycomm}{\mathsf{comm}}
-\newcommand{\tyexp}{\mathsf{exp}}
+\newcommand{\tyexp}[2]{\mathsf{exp}[#1, #2]}
 \newcommand{\typush}{\mathsf{push}}
 \newcommand{\tymem}{\mathsf{mem}}
-\newcommand{\tyacc}{\mathsf{acc}}
+\newcommand{\tyacc}[1]{\mathsf{acc}[#1]}
 \newcommand{\tyvar}{\mathsf{var}}
 \newcommand{\tyidx}{\mathsf{idx}}
 
