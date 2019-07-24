@@ -9,13 +9,22 @@ import elevate.lift.strategies.normalForm._
 
 object tiling {
 
-  def tileND: Int => Int => Strategy =
-    d => n => d match {
-      case x if x <= 0 => id
-      // ((map f) arg)
-      case 1 => function(splitJoin(n)) `;` LCNF `;` RNF
-      case i => fmap(tileND(d-1)(n)) `;` tileND(1)(n) `;` shiftDim(i)
+  def tileND: Int => Int => Strategy = d => n => tileNDList(d)(List.tabulate(d)(_ => n))
+
+  def tileNDList: Int => List[Int] => Strategy =
+    d => n => {
+      assert(n.size == d) // check we have as many tile sizes as dimensions
+      tileNDRec(d)(n)
     }
+
+  def tileNDRec: Int => List[Int] => Strategy =
+    d => n => d match {
+        case x if x <= 0 => id
+        // ((map f) arg)
+        case 1 => function(splitJoin(n.head)) `;` LCNF `;` RNF
+        case i => fmap(tileNDRec(d-1)(n.tail)) `;` tileNDRec(1)(n) `;` shiftDim(i)
+      }
+
 
   // Notation: a.A -> a == tile dimension; A == original dimension
   // a.b.c.d: 4D array (inner => outer): a == innermost dim; d == outermost dim
