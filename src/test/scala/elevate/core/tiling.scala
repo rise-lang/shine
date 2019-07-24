@@ -226,7 +226,7 @@ class tiling extends idealised.util.Tests {
     case d => ArrayType(n, inputT(d-1, n))
   }
 
-  val lower: Strategy = LCNF `;` normalize(specialize.mapSeq2) //`;` BENF `;` RNF
+  val lower: Strategy = LCNF `;` CNF `;` normalize(specialize.mapSeq2) `;` BENF
 
   val abs = tFun(t => foreignFun("my_abs", Seq("y"), "{ return fabs(y); }", t ->: t))
   val fabs: Expr = abs(float)
