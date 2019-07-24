@@ -198,8 +198,6 @@
           \prim{forNat}&:&(\n : \natkind)
             \to ((\nat{k}: \natkind) \to \tycomm)
             \to \tycomm \\
-
-          % \prim{parfor}&:&(n : \natkind) \to (\dt : \datatype) \to \tyacc[n.\dt] \to (\tyexp[\tyidx[n], \readacc] \to \tyacc[\dt] \pureto \tycomm) \to \tycomm\\
           \\[-.75em]
 
           \prim{new}&:&(\dt : \datatype)
@@ -318,3 +316,55 @@
   
   %   \caption{DPIA Intermediate imperative macros}\label{fig:imp-intermediate}
   % \end{figure}
+
+  \begin{figure}
+    \footnotesize
+    \begin{minipage}{1.0\linewidth} \begin{tabular*}{\linewidth}{>{$}l<{$}@{\hspace{0.4em}}>{$}c<{$}>{$}l<{$}}
+      \prim{map}P\prim{(}i\prim{)}&:& (\n: \natkind) \to (\dtone~\dttwo: \datatype)
+            \to (\tyexp{\dtone}{\readacc} \to \tyexp{\dttwo}{\writeacc})
+            \to \tyexp{\lArray{\n}{\dtone}}{\readacc}
+            \to \tyexp{\lArray{\n}{\dttwo}}{\writeacc}\\[.25em]
+            && \qquad \qquad \forall P \in \{ \mathsf{global}, \mathsf{local}, \mathsf{workGroup} \} \wedge \forall i \in \{0, 1, 2\}\\
+
+      \prim{depMap}P\prim{(}i\prim{)}&:& (\n: \natkind) \to (\fdtone~\fdttwo: \ntdkind) \to \\
+            && \qquad ((\nat{k}: \natkind) \to \tyexp{\fdtone~\nat{k}}{\readacc} \to \tyexp{\fdttwo~\nat{k}}{\writeacc})
+            \to \tyexp{\lDepArray{\n}{\fdtone}}{\readacc}
+            \to \tyexp{\lDepArray{\n}{\fdttwo}}{\writeacc}\\[.25em]
+            && \qquad \qquad \forall P \in \{ \mathsf{global}, \mathsf{local}, \mathsf{workGroup} \} \wedge \forall i \in \{0, 1, 2\}\\
+
+      \prim{OpenCLReduceSeq}&:&(\n : \natkind) \to (\avar: \addrkind) \to (\dtone~\dttwo : \datatype) \to\\
+            &&\qquad (\tyexp{\dtone}{\readacc} \to \tyexp{\dttwo}{\readacc} \to \tyexp{\dttwo}{\writeacc})
+            \to \tyexp{\dttwo}{\writeacc}
+            \to \tyexp{\lArray{\n}{\dtone}}{\readacc}
+            \to \tyexp{\dttwo}{\readacc}\\
+          
+      \prim{To}&:&(\avar: \addrkind) \to (\dt: \datatype)
+        \to \tyexp{\dt}{\writeacc}
+        \to \tyexp{\dt}{\readacc}\\
+      \end{tabular*}
+    \end{minipage}
+    \caption{OpenCL Functional primitives}\label{fig:opencl-func-prim}
+  \end{figure}
+
+  \begin{figure}
+    \footnotesize
+    \begin{minipage}{1.0\linewidth} \begin{tabular*}{\linewidth}{>{$}l<{$}@{\hspace{0.4em}}>{$}c<{$}>{$}l<{$}}
+      \prim{OpenCLNew}&:&(\avar: \addrkind) \to (\dt : \datatype)
+            \to (\tyvar[\dt] \to \tycomm) \to \tycomm\\
+
+      \prim{ParFor}P\prim{(}i\prim{)}&:& (\n : \natkind) \to (\dt : \datatype)
+        \to \tyacc{\lArray{\n}{\dt}}
+        \to (\tyexp{\tyidx[\n]}{\readacc} \to \tyacc{\dt} \to \tycomm)
+        \to \tycomm\\[.25em]
+        && \qquad \qquad \forall P \in \{ \mathsf{global}, \mathsf{local}, \mathsf{workGroup} \} \wedge \forall i \in \{0, 1, 2\}\\
+
+      \prim{ParForNat}P\prim{(}i\prim{)}&:& (\n : \natkind) \to (\fdt : \ntdkind)
+        \to \tyacc{\lDepArray{\n}{\fdt}}
+        \to ((\nat{k}: \natkind) \to \tyacc{\fdt~\nat{k}} \to \tycomm)
+        \to \tycomm\\[.25em]
+        && \qquad \qquad \forall P \in \{ \mathsf{global}, \mathsf{local}, \mathsf{workGroup} \} \wedge \forall i \in \{0, 1, 2\}\\
+
+      \end{tabular*}
+    \end{minipage}
+    \caption{OpenCL Imperative primitives}\label{fig:opencl-func-prim}
+  \end{figure}
