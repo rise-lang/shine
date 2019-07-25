@@ -58,7 +58,7 @@ class traverse extends idealised.util.Tests {
     val result = DepthFirstLocalResult(e, new TraceVisitor(trace))
 
     // the expression should not have changed
-    assert(StructuralEquality(result, e))
+    assert(result == e)
     // the trace should match expectations
     trace.length shouldBe expected.length
     trace.zip(expected).foreach({ case (x, e) => e(x) })
@@ -93,11 +93,11 @@ class traverse extends idealised.util.Tests {
     // the expression should have changed
     result match {
       case traversal.Stop(r) =>
-        assert(StructuralEquality(r,
+        assert(r ==
           nFun(h => nFun(w => fun(ArrayType(h, ArrayType(w, float)))(input =>
             Apply(fun(x => x), input)
           )))
-        ))
+        )
       case _ => throw new Exception("the traversal should have stopped")
     }
     // the trace should match expectations
@@ -130,7 +130,7 @@ class traverse extends idealised.util.Tests {
           val x = Identifier(freshName("x"))
           Apply(Lambda(x, x), input |> map(fun(x => x)))
         }))
-        assert(StructuralEquality(r, expected))
+        assert(r == expected)
     }
   }
 }

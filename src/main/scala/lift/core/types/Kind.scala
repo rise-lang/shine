@@ -4,7 +4,7 @@ import lift.core
 
 sealed trait Kind {
   type T
-  type I <: Kind.Identifier
+  type I <: Kind.Identifier with T
 }
 
 object Kind {

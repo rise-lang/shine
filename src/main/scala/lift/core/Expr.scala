@@ -10,6 +10,11 @@ final case class Identifier(name: String) extends Expr {
 
 final case class Lambda(x: Identifier, e: Expr) extends Expr {
   override def toString: String = s"λ$x. $e"
+
+  override def equals(obj: Any): Boolean = obj match {
+    case other: Lambda => e == lifting.liftFunExpr(other).value(x)
+    case _ => false
+  }
 }
 
 final case class Apply(f: Expr, e: Expr) extends Expr {
@@ -18,6 +23,11 @@ final case class Apply(f: Expr, e: Expr) extends Expr {
 
 final case class DepLambda[K <: Kind](x: K#I, e: Expr) extends Expr {
   override def toString: String = s"Λ${x.name}: ${Kind.formatKindName(x.getClass.getName)}. $e"
+
+  override def equals(obj: Any): Boolean = obj match {
+    case other: DepLambda[K] => e == lifting.liftDepFunExpr[K](other).value(x)
+    case _ => false
+  }
 }
 
 final case class DepApply[K <: Kind](f: Expr, x: K#T) extends Expr {
