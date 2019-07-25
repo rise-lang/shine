@@ -24,9 +24,7 @@
           \prim{join}&:&\{\n~\m : \natkind\} \to \{\wvar : \access\} \to \{\dt : \datatype\} \to \tyval{\lArray{\n}{\lArray{\m}{\dt}}}{\wvar} \to \tyval{\lArray{\n\m}{\dt}}{\wvar}\\
           \\[-.75em]
           \prim{slide}&:&\{\n : \natkind\} \to (\nat{sz}~\nat{sp} : \natkind) \to \{\dt : \datatype\} \to \tyval{\lArray{\nat{(sp \cdot n + sz - sp)}}{\dt}}{\readacc} \to \tyval{\lArray{\n}{\lArray{\nat{sz}}{\dt}}}{\readacc} \\
-          \prim{slideSeqRotValues}&:&\{\n : \natkind\} \to (\nat{sz}~\nat{sp} : \natkind) \to \{\dt : \datatype\} \to \tyval{\lArray{\nat{(sp \cdot n + sz - sp)}}{\dt}}{\readacc} \to \tyval{\lArray{\n}{\lArray{\nat{sz}}{\dt}}}{\readacc} \\
-          \prim{slideSeqRotIndices}&:&\{\n : \natkind\} \to (\nat{sz}~\nat{sp} : \natkind) \to \{\dt : \datatype\} \to \tyval{\lArray{\nat{(sp \cdot n + sz - sp)}}{\dt}}{\readacc} \to \tyval{\lArray{\n}{\lArray{\nat{sz}}{\dt}}}{\readacc} \\
-          \prim{slideSeqBuffer}&:&\{\n : \natkind\} \to (\nat{sz}~\nat{sp} : \natkind) \to \{\dt : \datatype\} \to \tyval{\lArray{\nat{(sp \cdot n + sz - sp)}}{\dt}}{\readacc} \to \tyval{\lArray{\n}{\lArray{\nat{sz}}{\dt}}}{\readacc} \\
+          \prim{slideSeq(}rot\prim{)}&:&\{\n : \natkind\} \to (\nat{sz}~\nat{sp} : \natkind) \to \{\dt : \datatype\} \to \tyval{\lArray{\nat{(sp \cdot n + sz - sp)}}{\dt}}{\readacc} \to \tyval{\lArray{\n}{\lArray{\nat{sz}}{\dt}}}{\readacc} \qquad \forall rot \in \{ \text{values}, \text{indices} \}\\
           \\[-.75em]
           \prim{transpose}&:&\{\n~\m : \natkind\} \to \{\dt : \datatype\} \to \tyval{\lArray{\n}{\lArray{\m}{\dt}}}{\readacc} \to \tyval{\lArray{\m}{\lArray{\n}{\dt}}}{\readacc}\\
           \\[-.75em]
