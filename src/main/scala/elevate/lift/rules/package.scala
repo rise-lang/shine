@@ -21,7 +21,7 @@ package object rules {
 
   def etaAbstraction: Strategy = {
     // TODO? what if this is not a function
-    case f if !f.isInstanceOf[Lambda] =>
+    case f =>
       val x = Identifier(freshName("η"))
       Success(Lambda(x, Apply(f, x)))
     case _ => Failure(etaAbstraction)

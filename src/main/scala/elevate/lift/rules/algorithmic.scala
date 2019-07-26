@@ -47,7 +47,7 @@ object algorithmic {
 
   // identities
 
-  def createId: Strategy = ` -> id`
+  def idAfter: Strategy = ` -> id`
   def ` -> id`: Strategy = x => Success(x |> id)
 
   def liftId: Strategy = `id -> *id`
@@ -59,6 +59,8 @@ object algorithmic {
   def `id -> T >> T`: Strategy = {
     case Apply(`id`, arg) => Success(Apply(transpose >> transpose, arg))
   }
+
+  def `_-> T >> T`: Strategy = idAfter `;` createTransposePair
 
   def removeTransposePair: Strategy = `T >> T -> `
   def `T >> T -> `: Strategy = {

@@ -1,3 +1,4 @@
+package elevate
 
 import _root_.lift.core._
 import _root_.lift.core.types.Kind
@@ -52,6 +53,7 @@ package object lift {
                  inlineTypedExpr: Boolean = false,
                  inlineLambdaIdentifier: Boolean = false): String = {
 
+    @scala.annotation.tailrec
     def getID(x: Any): String = x match {
       case Apply(f,_) if inlineApply => getID(f)
       case TypedExpr(x,_) if inlineTypedExpr => getID(x)
@@ -70,10 +72,10 @@ package object lift {
       case class Label(s: String,
                        decorations: String => String = x => s"$x",
                        forEdge: Boolean = false){
-        def bold = this.copy(decorations = x => s"<b>${decorations(x)}</b>")
-        def italic = this.copy(decorations = x => s"<i>${decorations(x)}</i>")
-        def gray = this.copy(decorations = x => s"<font color='gray'>${decorations(x)}</font>")
-        def edge = this.copy(forEdge = true)
+        def bold: Label = this.copy(decorations = x => s"<b>${decorations(x)}</b>")
+        def italic: Label = this.copy(decorations = x => s"<i>${decorations(x)}</i>")
+        def gray: Label = this.copy(decorations = x => s"<font color='gray'>${decorations(x)}</font>")
+        def edge: Label = this.copy(forEdge = true)
 
         override def toString: String = {
           val label = if(ty.isDefined && !forEdge)

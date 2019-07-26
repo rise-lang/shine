@@ -261,7 +261,7 @@ class tiling extends idealised.util.Tests {
 
   test("codegen 3D tiles") {
     val highLevel = wrapInLambda(3, i => ***!(floatId) $ i, inputT(3, _))
-    val tiled = one(one(one(body(tileNDList(3)(List(4,8,16))))))(highLevel).get
+    val tiled = one(one(one(body(tileNDList(List(4,8,16))))))(highLevel).get
 
     println(gen.CProgram(lower(highLevel)))
     println(gen.CProgram(lower(tiled)))

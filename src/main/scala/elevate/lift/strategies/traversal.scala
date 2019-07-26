@@ -59,6 +59,6 @@ object traversal {
   // move(0)(s) == s(***f o ****g o *h)
   // move(1)(s) == s(****g o *h)
   // move(2)(s) == s(*h)
-  def move: Int => Strategy => Strategy =
+  def moveTowardsArgument: Int => Strategy => Strategy =
     i => s => applyNTimes(i)(argument(_))(s)
 }
