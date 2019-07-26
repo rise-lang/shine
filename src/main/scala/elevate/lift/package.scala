@@ -11,7 +11,6 @@ package object lift {
 
   // notation
   val tileSize = 4
-  def ID: Expr = id
   def T: Expr = transpose
   def S: Expr = split(tileSize)//slide(3)(1)
   def J: Expr = join
