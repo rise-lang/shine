@@ -11,14 +11,6 @@ object Kind {
   trait Identifier {
     def name: String
   }
-
-  def formatKindName(s: String): String =
-    s.dropWhile(_!='$').drop(1).takeWhile(_!='$') match {
-      case "NatIdentifier" => "nat"
-      case "DataTypeIdentifier" => "data"
-      case "NatToNatIdentifier" => "nat->nat"
-      case "NatToDataIdentifier" => "nat->data"
-    }
 }
 
 sealed trait TypeKind extends Kind {
@@ -60,16 +52,25 @@ trait KindName[K <: Kind] {
 }
 
 object KindName {
-  implicit val typeKindName: KindName[TypeKind] = new KindName[TypeKind] {
+  implicit val typeKN: KindName[TypeKind] = new KindName[TypeKind] {
     def get = "type"
   }
-  implicit val dataKindName: KindName[DataKind] = new KindName[DataKind] {
+  implicit val dataKN: KindName[DataKind] = new KindName[DataKind] {
     def get = "data"
   }
-  implicit val natKindName: KindName[NatKind] = new KindName[NatKind] {
+  implicit val natKN: KindName[NatKind] = new KindName[NatKind] {
     def get = "nat"
   }
-  implicit val addressSpaceKindName: KindName[AddressSpaceKind] = new KindName[AddressSpaceKind] {
+  implicit val addressSpaceKN: KindName[AddressSpaceKind] = new KindName[AddressSpaceKind] {
     def get = "addressSpace"
+  }
+  implicit val AccessTypeKN: KindName[AccessKind] = new KindName[AccessKind] {
+    def get = "access"
+  }
+  implicit val n2nKN: KindName[NatToNatKind] = new KindName[NatToNatKind] {
+    def get = "nat->nat"
+  }
+  implicit val n2dtKN: KindName[NatToDataKind] = new KindName[NatToDataKind] {
+    def get = "nat->data"
   }
 }

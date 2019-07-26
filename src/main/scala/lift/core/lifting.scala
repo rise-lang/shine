@@ -35,7 +35,7 @@ object lifting {
         f => Expanding((e: Expr) => Apply(f, e)))
 
     p match {
-      case Lambda(x, body)    => Reducing((e: Expr) => substitute(e, `for` = x, in = body))
+      case Lambda(x, body)    => Reducing((e: Expr) => substitute.exprInExpr(e, `for` = x, in = body))
       case Apply(f, e)        => chain(liftFunExpr(f).map(lf => lf(e)))
       case DepApply(f, x)     => x match {
         case t: DataType      => chain(liftDepFunExpr[DataKind](f).map(lf => lf(t)))
@@ -55,7 +55,7 @@ object lifting {
         f => Expanding((x: K#T) => DepApply[K](f, x)))
 
     p match {
-      case DepLambda(x, e)    => Reducing((a: K#T) => substitute(a, `for` = x, in = e))
+      case DepLambda(x, e)    => Reducing((a: K#T) => substitute.kindInExpr(a, `for` = x, in = e))
       case Apply(f, e)        => chain(liftFunExpr(f).map(lf => lf(e)))
       case DepApply(f, x)     => x match {
         case t: DataType      => chain(liftDepFunExpr[DataKind](f).map(lf => lf(t)))
@@ -71,7 +71,7 @@ object lifting {
 
   def liftDependentFunctionType[K <: Kind](ty: Type): K#T => Type = {
     ty match {
-      case DepFunType(x, t) => (a: K#T) => substitute(a, `for`=x, in=t)
+      case DepFunType(x, t) => (a: K#T) => substitute.kindInType(a, `for`=x, in=t)
       case _ => ???
     }
   }

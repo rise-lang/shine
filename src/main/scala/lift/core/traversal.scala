@@ -192,7 +192,7 @@ object traversal {
         visit.visitType(ty) match {
           case Stop(r) => Stop(r)
           case Continue(c, v) => (c match {
-            case DataAccessType(dt, w) => DataAccessType(data(dt, v).value, w)
+            case DataAccessType(dt, w) => data(dt, v).map(r => DataAccessType(r, w))
             case FunType(a, b) =>
               chainT(apply(a, v), b).map(r => FunType(r._1, r._2))
             case DepFunType(i, t) => i match {

@@ -21,8 +21,9 @@ final case class Apply(f: Expr, e: Expr) extends Expr {
   override def toString: String = s"($f $e)"
 }
 
-final case class DepLambda[K <: Kind](x: K#I, e: Expr) extends Expr {
-  override def toString: String = s"Λ${x.name}: ${Kind.formatKindName(x.getClass.getName)}. $e"
+final case class DepLambda[K <: Kind](x: K#I, e: Expr)
+                                     (implicit val kn: KindName[K]) extends Expr {
+  override def toString: String = s"Λ${x.name}: ${kn.get}. $e"
 
   override def equals(obj: Any): Boolean = obj match {
     case other: DepLambda[K] => e == lifting.liftDepFunExpr[K](other).value(x)

@@ -16,7 +16,7 @@ case class NatToDataLambda private (x: NatIdentifier, body: DataType) extends Na
   //See hash code of NatNatTypeFunction
   override def hashCode(): Int = this.apply(NamedVar("ComparisonDummy")).hashCode()
 
-  override def apply(a: Nat): DataType = substitute(a, `for`=x, in=body)
+  override def apply(a: Nat): DataType = substitute.natInDataType(a, `for`=x, in=body)
 
   override def toString: String = s"($x: nat |-> $body)"
 
