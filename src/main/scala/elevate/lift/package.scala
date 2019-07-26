@@ -122,13 +122,19 @@ package object lift {
              |${recurse(f, parent, None)}
              |${recurse(e, expr, None)}""".stripMargin
 
-        case DepLambda(x, e) =>
+        case DepLambda(x, e) if !inlineLambdaIdentifier =>
           val id = getID(x)
           val expr = getID(e)
           s"""$parent ${Label("Λ")}
              |$parent -> $id ${addEdgeLabel(edgeLabel("id"))};
              |$parent -> $expr ${addEdgeLabel(edgeLabel("body"))};
              |$id ${Label(x.toString)}
+             |${recurse(e, expr, None)}""".stripMargin
+
+        case DepLambda(x, e) if inlineLambdaIdentifier =>
+          val expr = getID(e)
+          s"""$parent ${Label(s"Λ.$x")}
+             |$parent -> $expr ${addEdgeLabel(edgeLabel("body"))};
              |${recurse(e, expr, None)}""".stripMargin
 
         case DepApply(f, e) =>
