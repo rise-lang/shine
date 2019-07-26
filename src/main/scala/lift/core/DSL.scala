@@ -62,8 +62,8 @@ object DSL {
     def |>(f: Expr): Expr = f.apply(e)
   }
 
-  implicit class FunPipeReverse(e: Expr) {
-    def $(f: Expr): Expr = e.apply(f)
+  implicit class FunPipeReverse(f: Expr) {
+    def $(e: Expr): Expr = f.apply(e)
   }
 
   implicit class FunComp(f: Expr) {

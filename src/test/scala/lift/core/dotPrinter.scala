@@ -6,7 +6,7 @@ import lift.core.types.{float, infer}
 import lift.core.primitives._
 import lift.core.types.float
 
-class dot extends idealised.util.Tests {
+class dotPrinter extends idealised.util.Tests {
 
   def exprToDot(path: String, name: String, e: Expr, dot: Expr => String): Unit = {
     import java.io._
@@ -20,15 +20,15 @@ class dot extends idealised.util.Tests {
   }
 
   test("simple *f") {
-    println(dot(λ(i => λ(f => *(f) $ i))))
+    println(dotPrinter(λ(i => λ(f => *(f) $ i))))
   }
 
   test("typed *f") {
-    println(dot(infer(λ(i => λ(f => *(f) $ i)))))
+    println(dotPrinter(infer(λ(i => λ(f => *(f) $ i)))))
   }
 
   test("tiled 4D") {
-    println(dot(λ(i => λ(f => (
+    println(dotPrinter(λ(i => λ(f => (
       J o **(J) o ****(J) o ******(J) o
         *****(T) o ***(T) o ****(T) o *(T) o **(T) o ***(T) o
         ****(****(f)) o
@@ -55,7 +55,7 @@ class dot extends idealised.util.Tests {
 
     val typedGemm = infer(gemm)
 
-    println(dot(gemm))
-    println(dot(typedGemm))
+    println(dotPrinter(gemm))
+    println(dotPrinter(typedGemm))
   }
 }
