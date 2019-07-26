@@ -13,21 +13,6 @@ package object types {
   type `(nat->nat)->`[T <: Type] = NatToNatDepFunType[T]
   type `(nat->data)->`[T <: Type] = NatToDataDepFunType[T]
 
-//  object TypeDependentFunctionType {
-//    def apply[T <: Type](dt: DataTypeIdentifier, t: T): DependentFunctionType[DataKind, T] =
-//      DependentFunctionType[DataKind, T](dt, t)
-//  }
-//
-//  object NatDependentFunctionType {
-//    def apply[T <: Type](n: NatIdentifier, t: T): DependentFunctionType[NatKind, T] =
-//      DependentFunctionType[NatKind, T](n, t)
-//  }
-//
-//  object AddressSpaceDependentFunctionType {
-//    def apply[T <: Type](a: AddressSpaceIdentifier, t: T): DependentFunctionType[AddressSpaceKind, T] =
-//      DependentFunctionType[AddressSpaceKind, T](a, t)
-//  }
-
   implicit class DataTypeExtension(val dt: DataType) {
     def __(w: AccessType): DataAccessType = DataAccessType(dt, w)
     def _W: DataAccessType = DataAccessType(dt, lift.core.types.W)

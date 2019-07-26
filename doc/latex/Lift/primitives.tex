@@ -68,9 +68,9 @@
             \to \tyval{\lDepArray{\n}{\fdtone{}}}{\readacc}
             \to \tyval{\lDepArray{\n}{\fdttwo{}}}{\readacc}\\
 
-          \prim{partition}&:& \{\n: \natkind\} \to \{\dt : \datatype\} \to (\m: \natkind) \to (\fdt : \ntnkind)
+          \prim{partition}&:& \{\n: \natkind\} \to \{\dt : \datatype\} \to (\m: \natkind) \to (\fn : \ntnkind)
             \to \tyval{\lArray{\n}{\dt}}{\readacc}
-            \to \tyval{\lDepArray{\m}{\lNtDT{\nat{i}}{\lArray{(\fdt~\nat{i})}{\dt}}}}{\readacc}\\
+            \to \tyval{\lDepArray{\m}{\lNtDT{\nat{i}}{\lArray{(\fn~\nat{i})}{\dt}}}}{\readacc}\\
       \end{tabular*}
   
     \caption{Data Parallel Programming Primitives}
@@ -80,9 +80,8 @@
 \begin{figure}
   \footnotesize
   \begin{tabular*}{\linewidth}{>{$}l<{$}@{\hspace{0.4em}}>{$}c<{$}>{$}l<{$}}
-    \prim{mapGlobal(}i\prim{)}&:&\{\n : \natkind\} \to \{\dtone~\dttwo : \datatype\} \to (\tyval{\dtone}{\readacc} \to \tyval{\dttwo}{\writeacc}) \to \tyval{\lArray{n}{\dtone}}{\readacc} \to \tyval{\lArray{\n}{\dttwo}}{\writeacc} \qquad \forall i \in \{0, 1, 2\} \\
-    \prim{mapLocal(}i\prim{)}&:&\{\n : \natkind\} \to \{\dtone~\dttwo : \datatype\} \to (\tyval{\dtone}{\readacc} \to \tyval{\dttwo}{\writeacc}) \to \tyval{\lArray{n}{\dtone}}{\readacc} \to \tyval{\lArray{\n}{\dttwo}}{\writeacc} \qquad \forall i \in \{0, 1, 2\} \\
-    \prim{mapWorkGroup(}i\prim{)}&:&\{\n : \natkind\} \to \{\dtone~\dttwo : \datatype\} \to (\tyval{\dtone}{\readacc} \to \tyval{\dttwo}{\writeacc}) \to \tyval{\lArray{n}{\dtone}}{\readacc} \to \tyval{\lArray{\n}{\dttwo}}{\writeacc} \qquad \forall i \in \{0, 1, 2\} \\
+    \prim{map}P\prim{(}i\prim{)}&:&\{\n : \natkind\} \to \{\dtone~\dttwo : \datatype\} \to (\tyval{\dtone}{\readacc} \to \tyval{\dttwo}{\writeacc}) \to \tyval{\lArray{n}{\dtone}}{\readacc} \to \tyval{\lArray{\n}{\dttwo}}{\writeacc}
+      \qquad \forall P \in \{ \mathsf{global}, \mathsf{local}, \mathsf{workGroup} \} \wedge \forall i \in \{0, 1, 2\}\\
 
     \prim{toMem}&:&\{\dt : \datatype\} \to (\avar : \addrkind) \to \tyval{\dt}{\writeacc} \to \tyval{\dt}{\readacc} \\
   \end{tabular*}
