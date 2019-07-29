@@ -1,7 +1,7 @@
 package idealised.C.AST
 
 import idealised.C
-import idealised.C.AST.Nodes.VisitAndRebuild
+import idealised.C.AST.Nodes.{VisitAndBuildStmt, VisitAndRebuild}
 import lift.arithmetic.ArithExpr
 
 /*
@@ -62,7 +62,9 @@ abstract class StructTypeDecl(override val name: String,
                               val fields: Seq[VarDecl]) extends Decl(name)
 
 
-abstract class Stmt extends Node
+abstract class Stmt extends Node {
+  def visitAndBuildStmt(v:VisitAndBuildStmt.Visitor):Stmt
+}
 
 abstract class Block(val body: Seq[Stmt] = Seq()) extends Stmt {
   def +(s: Stmt): Block
@@ -97,7 +99,9 @@ abstract class Code(val string: String) extends Stmt
 abstract class ExprStmt(val expr: Expr) extends Stmt
 
 
-abstract class Expr extends Node
+abstract class Expr extends Node {
+  def visitAndBuildStmt(v:VisitAndBuildStmt.Visitor, cont:Expr => Stmt):Stmt
+}
 
 abstract class Assignment(val lvalue: Expr, val rvalue: Expr) extends Expr
 
@@ -168,7 +172,19 @@ object Nodes {
     }
   }
 
+  object VisitAndBuildStmt {
+    class Visitor {
+      def onExpr(e:Expr, cont:Expr => Stmt):Stmt = cont(e)
+      def onStmt(stmt: Stmt):Stmt = stmt
+    }
+
+    def apply(e:Expr, v:Visitor, cont:Expr => Stmt):Stmt = {
+      e.visitAndBuildStmt(v, e => v.onExpr(e, cont))
+    }
+    def apply(s:Stmt, v:Visitor):Stmt = v.onStmt(s.visitAndBuildStmt(v))
+  }
 }
+
 
 // default constructors and extractors
 
@@ -380,12 +396,18 @@ object DefaultImplementations {
     def add(s: Seq[Stmt]): Block = this.++(s)
 
     override def visitAndRebuild(v: VisitAndRebuild.Visitor): Block = Block(body.map(VisitAndRebuild(_, v)))
+
+    override def visitAndBuildStmt(v: VisitAndBuildStmt.Visitor): Block = {
+      Block(body.map(VisitAndBuildStmt(_, v)))
+    }
   }
 
   case class Stmts(override val fst: Stmt, override val snd: Stmt)
     extends C.AST.Stmts(fst, snd)
   {
     override def visitAndRebuild(v: VisitAndRebuild.Visitor): Stmts = Stmts(VisitAndRebuild(fst, v), VisitAndRebuild(snd, v))
+
+    override def visitAndBuildStmt(v: VisitAndBuildStmt.Visitor): Stmt = Stmts(VisitAndBuildStmt(fst, v), VisitAndBuildStmt(snd, v))
   }
 
   case class ForLoop(override val init: C.AST.DeclStmt,
@@ -396,6 +418,14 @@ object DefaultImplementations {
   {
     override def visitAndRebuild(v: VisitAndRebuild.Visitor): ForLoop =
       ForLoop(VisitAndRebuild(init, v), VisitAndRebuild(cond, v), VisitAndRebuild(increment, v), VisitAndRebuild(body, v))
+
+    override def visitAndBuildStmt(v: VisitAndBuildStmt.Visitor): Stmt =
+      VisitAndBuildStmt(cond, v, condE => VisitAndBuildStmt(increment, v, incrementE => ForLoop(
+        VisitAndBuildStmt(init, v).asInstanceOf[C.AST.DeclStmt],
+        condE,
+        incrementE,
+        VisitAndBuildStmt(body, v).asInstanceOf[Block]
+      )))
   }
 
   case class WhileLoop(override val cond: Expr, override val body: Stmt)
@@ -403,6 +433,9 @@ object DefaultImplementations {
   {
     override def visitAndRebuild(v: VisitAndRebuild.Visitor):
       WhileLoop = WhileLoop(VisitAndRebuild(cond, v), VisitAndRebuild(body, v))
+
+    override def visitAndBuildStmt(v: VisitAndBuildStmt.Visitor): Stmt =
+      VisitAndBuildStmt(cond, v, condE => WhileLoop(condE, VisitAndBuildStmt(body, v)))
   }
 
   case class IfThenElse(override val cond: Expr,
@@ -412,40 +445,61 @@ object DefaultImplementations {
   {
     override def visitAndRebuild(v: VisitAndRebuild.Visitor): IfThenElse =
       IfThenElse(VisitAndRebuild(cond, v), VisitAndRebuild(trueBody, v), falseBody.map(VisitAndRebuild(_, v)))
+
+    override def visitAndBuildStmt(v: VisitAndBuildStmt.Visitor): Stmt =
+      VisitAndBuildStmt(cond, v, condE => IfThenElse(condE, VisitAndBuildStmt(trueBody, v), falseBody.map(VisitAndBuildStmt(_, v))))
   }
 
   case class GOTO(override val label: String)
     extends C.AST.GOTO(label)
   {
     override def visitAndRebuild(v: VisitAndRebuild.Visitor): GOTO.this.type = this
+
+    override def visitAndBuildStmt(v: VisitAndBuildStmt.Visitor): Stmt = this
   }
 
   case class Break() extends C.AST.Break {
     override def visitAndRebuild(v: VisitAndRebuild.Visitor): Break.this.type = this
+
+    override def visitAndBuildStmt(v: VisitAndBuildStmt.Visitor): Stmt = this
   }
 
   case class Continue() extends C.AST.Continue {
     override def visitAndRebuild(v: VisitAndRebuild.Visitor): Continue.this.type = this
+
+    override def visitAndBuildStmt(v: VisitAndBuildStmt.Visitor): Stmt = this
   }
 
   case class Return(override val x:Option[Expr]) extends C.AST.Return(x) {
     override def visitAndRebuild(v: VisitAndRebuild.Visitor): Return = Return(x.map(VisitAndRebuild(_, v)))
+
+    override def visitAndBuildStmt(v: VisitAndBuildStmt.Visitor): Stmt = this
   }
 
   case class DeclStmt(override val decl: Decl) extends C.AST.DeclStmt(decl) {
     override def visitAndRebuild(v: VisitAndRebuild.Visitor): DeclStmt = DeclStmt(VisitAndRebuild(decl, v))
+
+    override def visitAndBuildStmt(v: VisitAndBuildStmt.Visitor): Stmt = this
   }
 
   case class Comment(override val string: String) extends C.AST.Comment(string) {
     override def visitAndRebuild(v: VisitAndRebuild.Visitor): Comment.this.type = this
+
+    override def visitAndBuildStmt(v: VisitAndBuildStmt.Visitor): Stmt = this
   }
 
   case class Code(override val string: String) extends C.AST.Code(string) {
     override def visitAndRebuild(v: VisitAndRebuild.Visitor): Code.this.type = this
+
+    override def visitAndBuildStmt(v: VisitAndBuildStmt.Visitor): Stmt = this
   }
 
   case class ExprStmt(override val expr: Expr) extends C.AST.ExprStmt(expr) {
     override def visitAndRebuild(v: VisitAndRebuild.Visitor): ExprStmt = ExprStmt(VisitAndRebuild(expr, v))
+
+    override def visitAndBuildStmt(v: VisitAndBuildStmt.Visitor): Stmt =
+      VisitAndBuildStmt(expr, v, exprE =>
+        ExprStmt(exprE))
   }
 
 
@@ -453,10 +507,17 @@ object DefaultImplementations {
     extends C.AST.Assignment(lvalue, rvalue) {
     override def visitAndRebuild(v: VisitAndRebuild.Visitor): Assignment =
       Assignment(VisitAndRebuild(lvalue, v), VisitAndRebuild(rvalue, v))
+
+    override def visitAndBuildStmt(v: VisitAndBuildStmt.Visitor, cont: Expr => Stmt): Stmt =
+      VisitAndBuildStmt(lvalue, v, lvalueE =>
+        VisitAndBuildStmt(rvalue, v, rvalueE =>
+          cont(Assignment(lvalueE, rvalueE))))
   }
 
   case class DeclRef(override val name: String) extends C.AST.DeclRef(name) {
     override def visitAndRebuild(v: VisitAndRebuild.Visitor): DeclRef.this.type = this
+
+    override def visitAndBuildStmt(v: VisitAndBuildStmt.Visitor, cont: Expr => Stmt): Stmt = cont(this)
   }
 
   case class FunCall(override val fun: C.AST.DeclRef, override val args: Seq[Expr])
@@ -464,6 +525,15 @@ object DefaultImplementations {
   {
     override def visitAndRebuild(v: VisitAndRebuild.Visitor): FunCall =
       FunCall(VisitAndRebuild(fun, v), args.map(VisitAndRebuild(_, v)))
+
+    override def visitAndBuildStmt(v: VisitAndBuildStmt.Visitor, cont: Expr => Stmt): Stmt = {
+      def rec(worklist:Iterable[Expr], accum:Seq[Expr]):Stmt = worklist.headOption match {
+        case None => cont(FunCall(fun, accum))
+        case Some(head) => VisitAndBuildStmt(head, v, headE => rec(worklist.tail, accum :+ headE))
+      }
+
+      rec(args, Seq())
+    }
   }
 
   case class ArraySubscript(override val array: Expr, override val index: Expr)
@@ -471,6 +541,9 @@ object DefaultImplementations {
   {
     override def visitAndRebuild(v: VisitAndRebuild.Visitor): ArraySubscript =
       ArraySubscript(VisitAndRebuild(array, v), VisitAndRebuild(index, v))
+
+    override def visitAndBuildStmt(v: VisitAndBuildStmt.Visitor, cont: Expr => Stmt): Stmt =
+      VisitAndBuildStmt(array, v, arrayE => VisitAndBuildStmt(index, v, indexE => cont(ArraySubscript(arrayE, indexE))))
   }
 
   case class StructMemberAccess(override val struct: Expr, override val member: C.AST.DeclRef)
@@ -478,12 +551,18 @@ object DefaultImplementations {
   {
     override def visitAndRebuild(v: VisitAndRebuild.Visitor): StructMemberAccess =
       StructMemberAccess(VisitAndRebuild(struct, v), VisitAndRebuild(member, v))
+
+    override def visitAndBuildStmt(v: VisitAndBuildStmt.Visitor, cont: Expr => Stmt): Stmt =
+      VisitAndBuildStmt(struct, v, structE => cont(StructMemberAccess(structE, member)))
   }
 
   case class UnaryExpr(override val op: UnaryOperator.Value, override val e: Expr)
     extends C.AST.UnaryExpr(op, e)
   {
     override def visitAndRebuild(v: VisitAndRebuild.Visitor): UnaryExpr = UnaryExpr(op, VisitAndRebuild(e, v))
+
+    override def visitAndBuildStmt(v: VisitAndBuildStmt.Visitor, cont: Expr => Stmt): Stmt =
+      VisitAndBuildStmt(e, v, eE => cont(UnaryExpr(op, eE)))
   }
 
   case class BinaryExpr(override val lhs: Expr, override val op: BinaryOperator.Value, override val rhs: Expr)
@@ -491,6 +570,11 @@ object DefaultImplementations {
   {
     override def visitAndRebuild(v: VisitAndRebuild.Visitor): BinaryExpr =
       BinaryExpr(VisitAndRebuild(lhs, v), op, VisitAndRebuild(rhs, v))
+
+    override def visitAndBuildStmt(v: VisitAndBuildStmt.Visitor, cont: Expr => Stmt): Stmt =
+      VisitAndBuildStmt(lhs, v, lhsE =>
+        VisitAndBuildStmt(rhs, v, rhsE =>
+          cont(BinaryExpr(lhsE, op, rhsE))))
   }
 
   case class TernaryExpr(override val cond: Expr, override val thenE: Expr, override val elseE: Expr)
@@ -498,17 +582,30 @@ object DefaultImplementations {
   {
     override def visitAndRebuild(v: VisitAndRebuild.Visitor): TernaryExpr =
       TernaryExpr(VisitAndRebuild(cond, v), VisitAndRebuild(thenE, v), VisitAndRebuild(elseE, v))
+
+    override def visitAndBuildStmt(v: VisitAndBuildStmt.Visitor, cont: Expr => Stmt): Stmt =
+      VisitAndBuildStmt(cond, v, condE =>
+        VisitAndBuildStmt(thenE, v, thenEE =>
+          VisitAndBuildStmt(elseE, v, elseEE =>
+            cont(TernaryExpr(condE, thenEE, elseEE)))))
   }
 
   case class Cast(override val t: Type, override val e: Expr) extends C.AST.Cast(t, e) {
     override def visitAndRebuild(v: VisitAndRebuild.Visitor): Cast = Cast(v(t), VisitAndRebuild(e, v))
+
+    override def visitAndBuildStmt(v: VisitAndBuildStmt.Visitor, cont: Expr => Stmt): Stmt =
+      VisitAndBuildStmt(e, v, eE => cont(Cast(t, eE)))
   }
 
   case class Literal(override val code: String) extends C.AST.Literal(code) {
     override def visitAndRebuild(v: VisitAndRebuild.Visitor): Literal.this.type = this
+
+    override def visitAndBuildStmt(v: VisitAndBuildStmt.Visitor, cont: Expr => Stmt): Stmt = cont(this)
   }
 
   case class ArithmeticExpr(override val ae: lift.arithmetic.ArithExpr) extends C.AST.ArithmeticExpr(ae) {
     override def visitAndRebuild(v: VisitAndRebuild.Visitor): ArithmeticExpr.this.type = this
+
+    override def visitAndBuildStmt(v: VisitAndBuildStmt.Visitor, cont: Expr => Stmt): Stmt = cont(this)
   }
 }

@@ -1,7 +1,7 @@
 package idealised.OpenCL.AST
 
 import idealised.C
-import idealised.C.AST.Nodes.VisitAndRebuild
+import idealised.C.AST.Nodes.{VisitAndBuildStmt, VisitAndRebuild}
 import idealised.C.AST._
 import idealised.OpenCL
 
@@ -39,4 +39,6 @@ case class ParamDecl(override val name: String,
 
 case class Barrier(local: Boolean, global: Boolean) extends Stmt {
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Barrier = this
+
+  override def visitAndBuildStmt(v: VisitAndBuildStmt.Visitor): Stmt = this
 }

@@ -26,5 +26,5 @@ trait CodeGenerator[Environment, Path, Stmt, Expr, Decl, Ident, Type] {
 
   def typ(dt: DataType): Type
 
-  def genNat(n:Nat, env:Environment):Expr
+  def genNat(n:Nat, env:Environment, cont:Expr => Stmt):Stmt
 }

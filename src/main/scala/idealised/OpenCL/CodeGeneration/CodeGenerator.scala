@@ -160,9 +160,9 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
     case _ => super.typ(dt)
   }
 
-  override def genNat(n: Nat, env: Environment): Expr = n match {
-    case of: BuiltInFunction => C.AST.Literal(of.toOCLString)
-    case _ => super.genNat(n, env)
+  override def genNat(n: Nat, env: Environment, cont:Expr => Stmt): Stmt = n match {
+    case of: BuiltInFunction => cont(C.AST.Literal(of.toOCLString))
+    case _ => super.genNat(n, env, cont)
   }
 
   protected object OpenCLCodeGen {
