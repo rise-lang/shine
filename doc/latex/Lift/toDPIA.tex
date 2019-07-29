@@ -1,0 +1,44 @@
+\newcommand{\expToDPIA}[1]{\mathcal{I}_\textit{exp}(#1)}
+\newcommand{\typToDPIA}[1]{\mathcal{I}_\textit{typ}(#1)}
+\newcommand{\kindToDPIA}[1]{\mathcal{I}_\textit{kind}(#1)}
+\newcommand{\primToDPIA}[2]{\mathcal{I}_\textit{prim}(#1, #2)}
+
+\begin{figure}
+  \begin{displaymath}
+    \begin{array}{lcl}
+      \expToDPIA{x : t} &=& x : \typToDPIA{t} \\
+      \expToDPIA{\lambda x.~e : t_i \to t_o} &=& \lambda x : \typToDPIA{t_i}.~ \expToDPIA{e} \\
+      \expToDPIA{f~e} &=& \expToDPIA{f}~\expToDPIA{e} \\
+      \expToDPIA{\Lambda x : \kindToDPIA{\kappa}.~e} &=& \Lambda x : \kappa.~\expToDPIA{e} \\
+      \expToDPIA{f~\tau} &=& \expToDPIA{f}~\tau \\
+      %\expToDPIA{f~(n : \natkind)} &=& \expToDPIA{f}~n \\
+      %\expToDPIA{f~(dt : \datatype)} &=& \expToDPIA{f}~\typToDPIA{dt} \\
+      \expToDPIA{\underline{\ell}} &=& \underline{\ell} \\
+      \expToDPIA{\prim{p} : t} &=& \primToDPIA{\prim{p}}{t} \\
+    \end{array}
+  \end{displaymath}
+  \caption{Translating \Lift{} expressions to DPIA expressions}
+\end{figure}
+
+\begin{figure}
+  \begin{displaymath}
+    \begin{array}{lcl}
+      \typToDPIA{\tyval{t}{\W}} &=& \tyexp{t}{\W} \\
+      \typToDPIA{t_i \to t_o} &=& \typToDPIA{t_i} \to \typToDPIA{t_o} \\
+      \typToDPIA{(x : \kappa) \to t} &=& (x : \kindToDPIA{\kappa}) \to \typToDPIA{t} \\
+    \end{array}
+  \end{displaymath}
+  \caption{Translating \Lift{} types to DPIA types}
+\end{figure}
+
+\begin{figure}
+  \begin{displaymath}
+    \begin{array}{lcl}
+      \primToDPIA{f}{t_i \to t_o} &=& \lambda x : \typToDPIA{t_i}.~\primToDPIA{f~x}{t_o} \\
+      \primToDPIA{f}{\{ x: \kappa \} \to t} &=& \primToDPIA{f~x}{t} \\
+      \primToDPIA{f}{( x: \kappa ) \to t} &=& \Lambda x : \kindToDPIA{\kappa}.~\primToDPIA{f~x}{t} \\
+      \primToDPIA{e}{\tyval{t}{\W}} &=& e \\
+    \end{array}
+  \end{displaymath}
+  \caption{Translating \Lift{} primitives to DPIA primitives}
+\end{figure}
