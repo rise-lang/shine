@@ -987,21 +987,35 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         genNat(lhs, env, lhs => genNat(rhs, env, rhs => cont( C.AST.BinaryExpr(lhs, cOp, rhs))))
     }
 
-    def genReduce(exprs:Iterable[Nat],
-                  genCombine:Nat => (Nat, (Expr, Expr) => Expr),
+    /**
+      * General form of expression generation algorithm from a series of nats,
+      * Used by sum and product
+      *
+      *
+      * @param nats The series of nats from which the expression is generated
+      * @param behavior For each input nat, this function returns both the actual nat we wish to generate
+      *                 (It's not always the input nat, as in the case of Pow-in-Prod) and the binary operator
+      *                 used
+      * @param default In case the nat list is empty, we shall return this value
+      * @param cont The cont of the generation
+      * @param accum Internal accumulator used across iterations
+      * @return
+      */
+    def genBinopFold(nats:Iterable[Nat],
+                  behavior:Nat => (Nat, C.AST.BinaryOperator.Value),
                   default:Expr,
                   cont:Expr => Stmt,
                   accum:Option[Expr] = None):Stmt = {
-      exprs.headOption match {
+      nats.headOption match {
         case None => cont(accum.getOrElse(default))
-        case Some(head) =>
-          val (toGen, combineF) = genCombine(head)
-          genNat(toGen, env, exp => {
+        case Some(nat) =>
+          val (natToGenerate,op) = behavior(nat)
+          genNat(natToGenerate, env, exp => {
             val nextAccum = accum match {
               case None => exp
-              case Some(acc) => combineF(acc, exp)
+              case Some(acc) => C.AST.BinaryExpr(acc, op, exp)
             }
-            genReduce(exprs.tail, genCombine, default, cont, Some(nextAccum))
+            genBinopFold(nats.tail, behavior, default, cont, Some(nextAccum))
           })
       }
     }
@@ -1032,16 +1046,15 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
            )
 
          case Prod(es) =>
-           genReduce(
+           genBinopFold(
              es, {
-               case Pow(b, Cst(-1)) =>
-                 (b, C.AST.BinaryExpr(_, AST.BinaryOperator./, _))
-               case e => (e, C.AST.BinaryExpr(_, AST.BinaryOperator.*, _))
+               case Pow(b, Cst(-1)) => (b, AST.BinaryOperator./)
+               case e => (e, AST.BinaryOperator.*)
              }, AST.Literal("0"), cont
            )
 
          case Sum(es) =>
-           genReduce(es, n => (n, (e1, e2) => AST.BinaryExpr(e1, AST.BinaryOperator.+, e2)), AST.Literal("0"), cont)
+           genBinopFold(es, n => (n, AST.BinaryOperator.+), AST.Literal("0"), cont)
 
          case Mod(a, n) =>
            genNat(a, env, a => genNat(n, env, n => cont(AST.BinaryExpr(a, AST.BinaryOperator.%, n))))
@@ -1052,7 +1065,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
          case lu:Lookup => cont(AST.FunCall(AST.DeclRef(s"lookup${lu.id}"), immutable.Seq(AST.Literal(lu.index.toString))))
 
          case lift.arithmetic.IfThenElse(cond, trueBranch, falseBranch) =>
-
            boolExp(cond, env,
              cond => genNat(trueBranch, env,
                trueBranch => genNat(falseBranch, env,
