@@ -16,8 +16,7 @@ class scal extends idealised.util.Tests {
     val typed = infer(simpleScal)
 
     assert(
-      // TODO: toMem?
-      nFunT(n => ArrayType(n, float)._R ->: float._R ->: ArrayType(n, float)._W)
+      nFunT(n => ArrayType(n, float) ->: float ->: ArrayType(n, float))
         ==
       typed.t
     )

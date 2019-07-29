@@ -41,7 +41,6 @@ object lifting {
         case t: DataType      => chain(liftDepFunExpr[DataKind](f).map(lf => lf(t)))
         case n: Nat           => chain(liftDepFunExpr[NatKind](f).map(lf => lf(n)))
         case a: AddressSpace  => chain(liftDepFunExpr[AddressSpaceKind](f).map(lf => lf(a)))
-        case a: AccessType    => chain(liftDepFunExpr[AccessKind](f).map(lf => lf(a)))
         case n2n: NatToNat    => chain(liftDepFunExpr[NatToNatKind](f).map(lf => lf(n2n)))
         case n2d: NatToData   => chain(liftDepFunExpr[NatToDataKind](f).map(lf => lf(n2d)))
       }
@@ -61,7 +60,6 @@ object lifting {
         case t: DataType      => chain(liftDepFunExpr[DataKind](f).map(lf => lf(t)))
         case n: Nat           => chain(liftDepFunExpr[NatKind](f).map(lf => lf(n)))
         case a: AddressSpace  => chain(liftDepFunExpr[AddressSpaceKind](f).map(lf => lf(a)))
-        case a: AccessType    => chain(liftDepFunExpr[AccessKind](f).map(lf => lf(a)))
         case n2n: NatToNat    => chain(liftDepFunExpr[NatToNatKind](f).map(lf => lf(n2n)))
         case n2d: NatToData   => chain(liftDepFunExpr[NatToDataKind](f).map(lf => lf(n2d)))
       }

@@ -29,7 +29,7 @@ object substitute {
 
     object Visitor extends traversal.Visitor {
       override def visitType[T <: Type](in: T): Result[T] =
-        Continue(substitute.dataTypeInType(dt, `for`, in), this)
+        Continue(substitute.typeInType(dt, `for`, in), this)
     }
 
     traversal.DepthFirstLocalResult(in, Visitor)
@@ -65,10 +65,9 @@ object substitute {
   // substitute in Type
 
   def kindInType[K <: Kind, T <: Type](x: K#T, `for`: K#I, in: T): T =  (x, `for`) match {
-    case (dt: DataType, forDt: DataTypeIdentifier)        => dataTypeInType(dt, forDt, in)
+    case (dt: DataType, forDt: DataTypeIdentifier)        => typeInType(dt, forDt, in)
     case (n: Nat, forN: NatIdentifier)                    => natInType(n, forN, in)
     case (a: AddressSpace, forA: AddressSpaceIdentifier)  => addressSpaceInType(a, forA, in)
-    case (a: AccessType, forA: AccessTypeIdentifier)      => accessTypeInType(a, forA, in)
     case (n2n: NatToNat, forN2N: NatToNatIdentifier)  => n2nInType(n2n, forN2N, in)
   }
 
@@ -83,34 +82,6 @@ object substitute {
       }
     }
     traversal.types.DepthFirstLocalResult(in, Visitor())
-  }
-
-  def dataTypeInType[B <: Type](dt: DataType, `for`: DataType, in: B): B = {
-    case class Visitor() extends traversal.Visitor {
-      override def visitDataType[DT <: DataType](t: DT): traversal.Result[DT] = {
-        if (`for` == t) {
-          Stop(dt.asInstanceOf[DT])
-        } else {
-          Continue(t, this)
-        }
-      }
-    }
-
-    traversal.types.DepthFirstLocalResult(in, Visitor())
-  }
-
-  def dataTypeInDataType[B <: DataType](dt: DataType, `for`: DataType, in: B): B = {
-    case class Visitor() extends traversal.Visitor {
-      override def visitDataType[DT <: DataType](t: DT): traversal.Result[DT] = {
-        if (`for` == t) {
-          Stop(dt.asInstanceOf[DT])
-        } else {
-          Continue(t, this)
-        }
-      }
-    }
-
-    traversal.types.DepthFirstLocalResult.data(in, Visitor())
   }
 
   def natInType[T <: Type](n: Nat, `for`: NamedVar, in: T): T = {
@@ -141,18 +112,6 @@ object substitute {
         }
     }
 
-    traversal.types.DepthFirstLocalResult(in, Visitor())
-  }
-
-  def accessTypeInType[T <: Type](a: AccessType, `for`: AccessTypeIdentifier, in: T): T = {
-    case class Visitor() extends traversal.Visitor {
-      override def visitAccess(b: AccessType): Result[AccessType] =
-        if (`for` == b) {
-          Stop(a)
-        } else {
-          Continue(b, this)
-        }
-    }
     traversal.types.DepthFirstLocalResult(in, Visitor())
   }
 
@@ -197,12 +156,6 @@ object substitute {
   // substitute in AddressSpace
 
   def addressSpaceInAddressSpace(a: AddressSpace, `for`: AddressSpaceIdentifier, in: AddressSpace): AddressSpace = {
-    if (in == `for`) { a } else { in }
-  }
-
-  // substitute in AccessType
-
-  def accessTypeInAccessType(a: AccessType, `for`: AccessTypeIdentifier, in: AccessType): AccessType = {
     if (in == `for`) { a } else { in }
   }
 

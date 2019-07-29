@@ -1,6 +1,6 @@
 package apps
 
-import idealised.DPIA.Types.ExpType
+import idealised.DPIA.Types.{ExpType, read, write}
 import lift.core._
 import lift.core.DSL._
 import lift.core.types._
@@ -24,7 +24,7 @@ class dot extends idealised.util.Tests {
     val typed = infer(simpleDotProduct)
 
     val N = typed.t.asInstanceOf[NatDepFunType[_ <: Type]].x
-    assertResult(DepFunType[NatKind, Type](N, FunType(xsT(N)._R, FunType(ysT(N)._R, float._R)))) {
+    assertResult(DepFunType[NatKind, Type](N, FunType(xsT(N), FunType(ysT(N), float)))) {
       typed.t
     }
   }
@@ -36,7 +36,7 @@ class dot extends idealised.util.Tests {
 
     val N = phrase.t.asInstanceOf[`(nat)->:`[ExpType ->: ExpType]].x
     val dt = float
-    assertResult(N `()->:` (exp"[$N.$dt]" ->: exp"[$N.$dt]" ->: exp"[$dt]")) {
+    assertResult(N `()->:` (exp"[$N.$dt, $read]" ->: exp"[$N.$dt, $read]" ->: exp"[$dt, $write]")) {
       phrase.t
     }
   }

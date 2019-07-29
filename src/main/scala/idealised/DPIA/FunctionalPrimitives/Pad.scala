@@ -43,7 +43,7 @@ final case class Pad(n: Nat,
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
     con(array)(λ(exp"[$n.$dt, $read]")(x =>
-      con(padExp)(λ(exp"[$dt]")(p =>
+      con(padExp)(λ(exp"[$dt, $read]")(p =>
         C(Pad(n, l, r, dt, p, x))))))
   }
 

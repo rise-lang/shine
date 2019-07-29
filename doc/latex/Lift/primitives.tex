@@ -1,76 +1,77 @@
 \begin{figure}
     \footnotesize
     \begin{tabular*}{\linewidth}{>{$}l<{$}@{\hspace{0.4em}}>{$}c<{$}>{$}l<{$}}
-          \underline{\ell}&:&(\dt: \datatype) \to \tyval{\dt}{\readacc}\\
-          \prim{neg}&:&\{\dt : \datatype\} \to \tyval{\dt}{\readacc} \to \tyval{\dt}{\readacc} \\
-          (+,*,/,-)   &:&\{\dt : \datatype\} \to \tyval{\dt}{\readacc} \to \tyval{\dt}{\readacc} \to \tyval{\dt}{\readacc}\\
-          (>=,<=,==)   &:&\{\dt : \datatype\} \to \tyval{\dt}{\readacc} \to \tyval{\dt}{\readacc} \to \tyval{\mathsf{bool}}{\readacc}\\
-          \prim{select} &:&\{\dt : \datatype\} \to \tyval{\mathsf{bool}}{\readacc} \to \tyval{\dt}{\readacc} \to \tyval{\dt}{\readacc} \to \tyval{\dt}{\readacc}\\ 
+          % FIXME: literal, consistency with implementation
+          \underline{\ell}&:&(\dt: \datatype) \to \dt \\
+          \prim{neg}&:&\{\dt : \datatype\} \to \dt \to \dt \\
+          (+,*,/,-)   &:&\{\dt : \datatype\} \to \dt \to \dt \to \dt \\
+          (>=,<=,==)   &:&\{\dt : \datatype\} \to \dt \to \dt \to bool \\
+          \prim{select} &:&\{\dt : \datatype\} \to bool \to \dt \to \dt \to \dt\\ 
          
           \medskip\\
           
-          \prim{map}&:&\{\n : \natkind\} \to \{\dtone~\dttwo : \datatype\} \to (\tyval{\dtone}{\readacc} \to \tyval{\dttwo}{\writeacc}) \to \tyval{\lArray{n}{\dtone}}{\readacc} \to \tyval{\lArray{\n}{\dttwo}}{\writeacc} \\
-          \prim{mapSeq}&:&\{\n : \natkind\} \to \{\dtone~\dttwo : \datatype\} \to (\tyval{\dtone}{\readacc} \to \tyval{\dttwo}{\writeacc}) \to \tyval{\lArray{n}{\dtone}}{\readacc} \to \tyval{\lArray{\n}{\dttwo}}{\writeacc} \\
+          \prim{map}&:&\{\n : \natkind\} \to \{\dtone~\dttwo : \datatype\} \to (\dtone \to \dttwo) \to \lArray{n}{\dtone} \to \lArray{\n}{\dttwo} \\
+          \prim{mapSeq}&:&\{\n : \natkind\} \to \{\dtone~\dttwo : \datatype\} \to (\dtone \to \dttwo) \to \lArray{n}{\dtone} \to \lArray{\n}{\dttwo} \\
   
-          \prim{reduce}&:&\{\n : \natkind\} \to \{\avar : \addrkind\} \to \{\dt : \datatype\} \to (\tyval{\dt}{\readacc} \to \tyval{\dt}{\readacc} \to \tyval{\dt}{\writeacc}) \to \tyval{\dt}{\writeacc} \to \tyval{\lArray{\n}{\dt}}{\readacc} \to \tyval{\dt}{\readacc}\\
-          \prim{reduceSeq}&:&\{\n : \natkind\} \to \{\avar : \addrkind\} \to \{\dtone~\dttwo : \datatype\} \to (\tyval{\dtone}{\readacc} \to \tyval{\dttwo}{\readacc} \to \tyval{\dttwo}{\writeacc}) \to \tyval{\dttwo}{\writeacc} \to \tyval{\lArray{\n}{\dtone}}{\readacc} \to \tyval{\dttwo}{\readacc}\\
-          \prim{reduceSeqUnroll}&:&\{\n : \natkind\} \to \{\avar : \addrkind\} \to \{\dtone~\dttwo : \datatype\} \to (\tyval{\dtone}{\readacc} \to \tyval{\dttwo}{\readacc} \to \tyval{\dttwo}{\writeacc}) \to \tyval{\dttwo}{\writeacc} \to \tyval{\lArray{\n}{\dtone}}{\readacc} \to \tyval{\dttwo}{\readacc}\\
-          \prim{scanSeq}&:&\{\n : \natkind\} \to \{\dtone~\dttwo : \datatype\} \to (\tyval{\dtone}{\readacc} \to \tyval{\dttwo}{\readacc} \to \tyval{\dttwo}{\writeacc}) \to \tyval{\dttwo}{\writeacc} \to \tyval{\lArray{\n}{\dtone}}{\readacc} \to \tyval{\lArray{\n}{\dttwo}}{\readacc}\\
-          \prim{iterate}&:&\{\n~\m : \natkind\} \to (\nat{k} : \natkind) \to \{\dt : \datatype\} \to ((\nat{l} : \natkind) \to \tyval{\lArray{\nat{l\n}}{\dt}}{\readacc} \to \tyval{\lArray{\nat{l}}{\dt}}{\readacc}) \to \tyval{\lArray{\nat{(\m \cdot \n^{k})}}{\dt}}{\readacc} \to \tyval{\lArray{\m}{\dt}}{\readacc}\\
+          \prim{reduce}&:&\{\n : \natkind\} \to \{\avar : \addrkind\} \to \{\dt : \datatype\} \to (\dt \to \dt \to \dt) \to \dt \to \lArray{\n}{\dt} \to \dt\\
+          \prim{reduceSeq}&:&\{\n : \natkind\} \to \{\avar : \addrkind\} \to \{\dtone~\dttwo : \datatype\} \to (\dtone \to \dttwo \to \dttwo) \to \dttwo \to \lArray{\n}{\dtone} \to \dttwo\\
+          \prim{reduceSeqUnroll}&:&\{\n : \natkind\} \to \{\avar : \addrkind\} \to \{\dtone~\dttwo : \datatype\} \to (\dtone \to \dttwo \to \dttwo) \to \dttwo \to \lArray{\n}{\dtone} \to \dttwo\\
+          \prim{scanSeq}&:&\{\n : \natkind\} \to \{\dtone~\dttwo : \datatype\} \to (\dtone \to \dttwo \to \dttwo) \to \dttwo \to \lArray{\n}{\dtone} \to \lArray{\n}{\dttwo}\\
+          \prim{iterate}&:&\{\n~\m : \natkind\} \to (\nat{k} : \natkind) \to \{\dt : \datatype\} \to ((\nat{l} : \natkind) \to \lArray{\nat{l\n}}{\dt} \to \lArray{\nat{l}}{\dt}) \to \lArray{\nat{(\m \cdot \n^{k})}}{\dt} \to \lArray{\m}{\dt}\\
           
           \medskip\\
   
-          \prim{split}&:&(\n : \natkind) \to \{\m : \natkind\} \to \{\wvar : \access\} \to \{\dt : \datatype\} \to \tyval{\lArray{\n\m}{\dt}}{\wvar} \to \tyval{\lArray{\m}{\lArray{\n}{\dt}}}{\wvar} \\
-          \prim{join}&:&\{\n~\m : \natkind\} \to \{\wvar : \access\} \to \{\dt : \datatype\} \to \tyval{\lArray{\n}{\lArray{\m}{\dt}}}{\wvar} \to \tyval{\lArray{\n\m}{\dt}}{\wvar}\\
+          \prim{split}&:&(\n : \natkind) \to \{\m : \natkind\} \to \{\dt : \datatype\} \to \lArray{\n\m}{\dt} \to \lArray{\m}{\lArray{\n}{\dt}} \\
+          \prim{join}&:&\{\n~\m : \natkind\} \to \{\dt : \datatype\} \to \lArray{\n}{\lArray{\m}{\dt}} \to \lArray{\n\m}{\dt}\\
           \\[-.75em]
-          \prim{slide}&:&\{\n : \natkind\} \to (\nat{sz}~\nat{sp} : \natkind) \to \{\dt : \datatype\} \to \tyval{\lArray{\nat{(sp \cdot n + sz - sp)}}{\dt}}{\readacc} \to \tyval{\lArray{\n}{\lArray{\nat{sz}}{\dt}}}{\readacc} \\
-          \prim{slideSeq(}rot\prim{)}&:&\{\n : \natkind\} \to (\nat{sz}~\nat{sp} : \natkind) \to \{\dt : \datatype\} \to \tyval{\lArray{\nat{(sp \cdot n + sz - sp)}}{\dt}}{\readacc} \to \tyval{\lArray{\n}{\lArray{\nat{sz}}{\dt}}}{\readacc} \qquad \forall rot \in \{ \text{values}, \text{indices} \}\\
+          \prim{slide}&:&\{\n : \natkind\} \to (\nat{sz}~\nat{sp} : \natkind) \to \{\dt : \datatype\} \to \lArray{\nat{(sp \cdot n + sz - sp)}}{\dt} \to \lArray{\n}{\lArray{\nat{sz}}{\dt}} \\
+          \prim{slideSeq(}rot\prim{)}&:&\{\n : \natkind\} \to (\nat{sz}~\nat{sp} : \natkind) \to \{\dt : \datatype\} \to \lArray{\nat{(sp \cdot n + sz - sp)}}{\dt} \to \lArray{\n}{\lArray{\nat{sz}}{\dt}} \qquad \forall rot \in \{ \text{values}, \text{indices} \}\\
           \\[-.75em]
-          \prim{transpose}&:&\{\n~\m : \natkind\} \to \{\dt : \datatype\} \to \tyval{\lArray{\n}{\lArray{\m}{\dt}}}{\readacc} \to \tyval{\lArray{\m}{\lArray{\n}{\dt}}}{\readacc}\\
+          \prim{transpose}&:&\{\n~\m : \natkind\} \to \{\dt : \datatype\} \to \lArray{\n}{\lArray{\m}{\dt}} \to \lArray{\m}{\lArray{\n}{\dt}}\\
           \\[-.75em]
-          % \prim{gather}&:&(n : \natkind) \to (\dt : \datatype) \to (\tyval{\tyidx[n]}{\readacc} \to \tyval{\tyidx[n]}{\readacc}) \to \tyval{n.\dt}{\readacc} \to \tyval{n.\dt}{\readacc}\\
-          % \prim{scatter}&:&(n : \natkind) \to (\dt : \datatype) \to (\tyval{\tyidx[n]}{\readacc} \to \tyval{\tyidx[n]}{\readacc}) \to \tyval{n.\dt}{\writeacc} \to \tyval{n.\dt}{\writeacc}\\
+          % \prim{gather}&:&(n : \natkind) \to (\dt : \datatype) \to (\tyidx[n] \to \tyidx[n]) \to n.\dt \to n.\dt\\
+          % \prim{scatter}&:&(n : \natkind) \to (\dt : \datatype) \to (\tyidx[n] \to \tyidx[n]) \to n.\dt \to n.\dt\\
           \prim{reorder}&:&\{\n : \natkind\} \to \{\dt : \datatype\} \to
-            (\tyval{\tyidx[\n]}{\readacc} \to \tyval{\tyidx[\n]}{\readacc}) \to
-            (\tyval{\tyidx[\n]}{\readacc} \to \tyval{\tyidx[\n]}{\readacc}) \to
-            \tyval{\lArray{\n}{\dt}}{\readacc} \to \tyval{\lArray{\n}{\dt}}{\readacc}\\
+            (\tyidx[\n] \to \tyidx[\n]) \to
+            (\tyidx[\n] \to \tyidx[\n]) \to
+            \lArray{\n}{\dt} \to \lArray{\n}{\dt}\\
           \\[-.75em]
-          \prim{generate}&:&\{\n : \natkind\} \to \{\dt : \datatype\} \to \tyval{\tyidx[\n]}{\readacc} \to \tyval{\dt}{\readacc} \to \tyval{\lArray{\n}{\dt}}{\readacc}\\
+          \prim{generate}&:&\{\n : \natkind\} \to \{\dt : \datatype\} \to (\tyidx[\n] \to \dt) \to \lArray{\n}{\dt}\\
           \\[-.75em]
-          \prim{drop}&:&(\n : \natkind) \to \{\m : \natkind\} \to \{\wvar : \access\} \to \{\dt : \datatype\} \to \tyval{\lArray{(\n + \m)}{\dt}}{\wvar} \to \tyval{\lArray{m}{\dt}}{\wvar} \\
-          \prim{take}&:&(\n : \natkind) \to \{\m : \natkind\} \to \{\wvar : \access\} \to \{\dt : \datatype\} \to \tyval{\lArray{(\n + \m)}{\dt}}{\wvar} \to \tyval{\lArray{n}{\dt}}{\wvar}\\
+          \prim{drop}&:&(\n : \natkind) \to \{\m : \natkind\} \to \{\dt : \datatype\} \to \lArray{(\n + \m)}{\dt} \to \lArray{m}{\dt} \\
+          \prim{take}&:&(\n : \natkind) \to \{\m : \natkind\} \to \{\dt : \datatype\} \to \lArray{(\n + \m)}{\dt} \to \lArray{n}{\dt}\\
           \\[-.75em]
-          \prim{padCst}&:&\{\n : \natkind\} \to (\nat{l}~\nat{q} : \natkind) \to \{\dt : \datatype\} \to \tyval{\dt}{\readacc} \to \tyval{\lArray{\n}{\dt}}{\readacc} \to \tyval{\lArray{(\nat{l} + \n + \nat{q})}{\dt}}{\readacc} \\
-          \prim{padClamp}&:&\{\n : \natkind\} \to (\nat{l}~\nat{q} : \natkind) \to \{\dt : \datatype\} \to \tyval{\lArray{\n}{\dt}}{\readacc} \to \tyval{\lArray{(\nat{l} + \n + \nat{q})}{\dt}}{\readacc} \\
+          \prim{padCst}&:&\{\n : \natkind\} \to (\nat{l}~\nat{q} : \natkind) \to \{\dt : \datatype\} \to \dt \to \lArray{\n}{\dt} \to \lArray{(\nat{l} + \n + \nat{q})}{\dt} \\
+          \prim{padClamp}&:&\{\n : \natkind\} \to (\nat{l}~\nat{q} : \natkind) \to \{\dt : \datatype\} \to \lArray{\n}{\dt} \to \lArray{(\nat{l} + \n + \nat{q})}{\dt} \\
           \\[-.75em]
-          \prim{zip}&:&\{\n : \natkind\} \to \{\dtone~\dttwo : \datatype\} \to \tyval{\lArray{\n}{\dtone}}{\readacc} \to \tyval{\lArray{\n}{\dttwo}}{\readacc} \to \tyval{\lArray{\n}{(\lPair{\dtone}{\dttwo})}}{\readacc} \\
-          \prim{unzip}&:&\{\n : \natkind\} \to \{\dtone~\dttwo : \datatype\} \to \tyval{\lArray{\n}{(\lPair{\dtone}{\dttwo})}}{\readacc} \to \tyval{(\lPair{\lArray{\n}{\dtone}}{\lArray{\n}{\dttwo}})}{\readacc}\\
+          \prim{zip}&:&\{\n : \natkind\} \to \{\dtone~\dttwo : \datatype\} \to \lArray{\n}{\dtone} \to \lArray{\n}{\dttwo} \to \lArray{\n}{(\lPair{\dtone}{\dttwo})} \\
+          \prim{unzip}&:&\{\n : \natkind\} \to \{\dtone~\dttwo : \datatype\} \to \lArray{\n}{(\lPair{\dtone}{\dttwo})} \to (\lPair{\lArray{\n}{\dtone}}{\lArray{\n}{\dttwo}})\\
           \\[-.75em]
-          \prim{pair}&:&\{\dtone~\dttwo: \datatype\} \to \tyval{\dtone}{\readacc} \to \tyval{\dttwo}{\readacc} \to \tyval{\lPair{\dtone}{\dttwo}}{\readacc}\\
-          \prim{fst}&:&\{\dtone~\dttwo : \datatype\} \to \tyval{\lPair{\dtone}{\dttwo}}{\readacc} \to \tyval{\dtone}{\readacc} \\
-          \prim{snd}&:&\{\dtone~\dttwo : \datatype\} \to \tyval{\lPair{\dtone}{\dttwo}}{\readacc} \to \tyval{\dttwo}{\readacc} \\
+          \prim{pair}&:&\{\dtone~\dttwo: \datatype\} \to \dtone \to \dttwo \to \lPair{\dtone}{\dttwo}\\
+          \prim{fst}&:&\{\dtone~\dttwo : \datatype\} \to \lPair{\dtone}{\dttwo} \to \dtone \\
+          \prim{snd}&:&\{\dtone~\dttwo : \datatype\} \to \lPair{\dtone}{\dttwo} \to \dttwo \\
           \\[-.75em]
-          \prim{idx} &:&\{\n : \natkind\} \to \{\dt : \datatype\} \to \tyval{\tyidx[\n]}{\readacc}  \to \tyval{\lArray{\n}{\dt}}{\readacc} \to \tyval{\dt}{\readacc} \\
+          \prim{idx} &:&\{\n : \natkind\} \to \{\dt : \datatype\} \to \tyidx[\n]  \to \lArray{\n}{\dt} \to \dt \\
           \\[-.75em]
-          \prim{indexAsNat}&:&\{\n: \natkind\} \to \tyval{\tyidx[\n]}{\readacc} \to \tyval{\natkind}{\readacc}\\
-          \prim{natAsIndex}&:&(\n : \natkind) \to \tyval{\natkind}{\readacc} \to \tyval{\tyidx[\n]}{\readacc}\\
+          \prim{indexAsNat}&:&\{\n: \natkind\} \to \tyidx[\n] \to \natkind\\
+          \prim{natAsIndex}&:&(\n : \natkind) \to \natkind \to \tyidx[\n]\\
           \\[-.75em]
-          \prim{cast}&:&\{\dtone~\dttwo : \datatype\} \to \tyval{\dtone}{\readacc} \to \tyval{\dttwo}{\readacc}\\
+          \prim{cast}&:&\{\dtone~\dttwo : \datatype\} \to \dtone \to \dttwo\\
 
           \medskip\\
 
           \prim{depJoin}&:&\{\n : \natkind\} \to \{\fn : \ntnkind\} \to \{\dt : \datatype\}
-            \to \tyval{\lDepArray{\n}{\lNtDT{\nat{i}}{\lArray{(\fn~\nat{i})}}{\dt}}}{\readacc}
-            \to \tyval{\lArray{\Sigma_{\nat{j}=0}^{\n-1}(\fn~\nat{j})}{\dt}}{\readacc}\\
+            \to \lDepArray{\n}{\lNtDT{\nat{i}}{\lArray{(\fn~\nat{i})}}{\dt}}
+            \to \lArray{\Sigma_{\nat{j}=0}^{\n-1}(\fn~\nat{j})}{\dt}\\
 
           \prim{depMapSeq}&:&\{\n : \natkind\} \to \{\fdtone~\fdttwo : \ntdkind\}
-            \to ((\nat{k} : \natkind) \to \tyval{(\fdtone~\nat{k})}{\readacc} \to \tyval{(\fdttwo~\nat{k})}{\readacc})
-            \to \tyval{\lDepArray{\n}{\fdtone{}}}{\readacc}
-            \to \tyval{\lDepArray{\n}{\fdttwo{}}}{\readacc}\\
+            \to ((\nat{k} : \natkind) \to (\fdtone~\nat{k}) \to (\fdttwo~\nat{k}))
+            \to \lDepArray{\n}{\fdtone{}}
+            \to \lDepArray{\n}{\fdttwo{}}\\
 
           \prim{partition}&:& \{\n: \natkind\} \to \{\dt : \datatype\} \to (\m: \natkind) \to (\fn : \ntnkind)
-            \to \tyval{\lArray{\n}{\dt}}{\readacc}
-            \to \tyval{\lDepArray{\m}{\lNtDT{\nat{i}}{\lArray{(\fn~\nat{i})}{\dt}}}}{\readacc}\\
+            \to \lArray{\n}{\dt}
+            \to \lDepArray{\m}{\lNtDT{\nat{i}}{\lArray{(\fn~\nat{i})}{\dt}}}\\
       \end{tabular*}
   
     \caption{Data Parallel Programming Primitives}
@@ -80,10 +81,10 @@
 \begin{figure}
   \footnotesize
   \begin{tabular*}{\linewidth}{>{$}l<{$}@{\hspace{0.4em}}>{$}c<{$}>{$}l<{$}}
-    \prim{map}P\prim{(}i\prim{)}&:&\{\n : \natkind\} \to \{\dtone~\dttwo : \datatype\} \to (\tyval{\dtone}{\readacc} \to \tyval{\dttwo}{\writeacc}) \to \tyval{\lArray{n}{\dtone}}{\readacc} \to \tyval{\lArray{\n}{\dttwo}}{\writeacc}
+    \prim{map}P\prim{(}i\prim{)}&:&\{\n : \natkind\} \to \{\dtone~\dttwo : \datatype\} \to (\dtone \to \dttwo) \to \lArray{n}{\dtone} \to \lArray{\n}{\dttwo}
       \qquad \forall P \in \{ \mathsf{global}, \mathsf{local}, \mathsf{workGroup} \} \wedge \forall i \in \{0, 1, 2\}\\
 
-    \prim{toMem}&:&\{\dt : \datatype\} \to (\avar : \addrkind) \to \tyval{\dt}{\writeacc} \to \tyval{\dt}{\readacc} \\
+    \prim{toMem}&:&\{\dt : \datatype\} \to (\avar : \addrkind) \to \dt \to \dt \\
   \end{tabular*}
   \caption{OpenCL Primitives}
   \label{fig:ocl-primitives}
@@ -92,8 +93,8 @@
 \begin{figure}
   \footnotesize
   \begin{tabular*}{\linewidth}{>{$}l<{$}@{\hspace{0.4em}}>{$}c<{$}>{$}l<{$}}
-    \prim{mapPar}&:&\{\n : \natkind\} \to \{\dtone~\dttwo : \datatype\} \to (\tyval{\dtone}{\readacc} \to \tyval{\dttwo}{\writeacc}) \to \tyval{\lArray{\n}{\dtone}}{\readacc} \to \tyval{\lArray{\n}{\dttwo}}{\writeacc}\\
-    \prim{reducePar}&:&\{\n : \natkind\} \to \{\avar : \addrkind\} \to \{\dt : \datatype\} \to (\tyval{\dt}{\readacc} \to \tyval{\dt}{\readacc} \to \tyval{\dt}{\writeacc}) \to \tyval{\dt}{\writeacc} \to \tyval{\lArray{\n}{\dt}}{\readacc} \to \tyval{\dt}{\readacc}\\
+    \prim{mapPar}&:&\{\n : \natkind\} \to \{\dtone~\dttwo : \datatype\} \to (\dtone \to \dttwo) \to \lArray{\n}{\dtone} \to \lArray{\n}{\dttwo}\\
+    \prim{reducePar}&:&\{\n : \natkind\} \to \{\avar : \addrkind\} \to \{\dt : \datatype\} \to (\dt \to \dt \to \dt) \to \dt \to \lArray{\n}{\dt} \to \dt\\
   \end{tabular*}
   \caption{OpenMP Primitives}
   \label{fig:omp-primitives}

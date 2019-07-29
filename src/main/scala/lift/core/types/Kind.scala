@@ -32,11 +32,6 @@ sealed trait AddressSpaceKind extends Kind {
   override type I = AddressSpaceIdentifier
 }
 
-sealed trait AccessKind extends Kind {
-  override type T = AccessType
-  override type I = AccessTypeIdentifier
-}
-
 sealed trait NatToNatKind extends Kind {
   override type T = NatToNat
   override type I = NatToNatIdentifier
@@ -63,9 +58,6 @@ object KindName {
   }
   implicit val addressSpaceKN: KindName[AddressSpaceKind] = new KindName[AddressSpaceKind] {
     def get = "addressSpace"
-  }
-  implicit val AccessTypeKN: KindName[AccessKind] = new KindName[AccessKind] {
-    def get = "access"
   }
   implicit val n2nKN: KindName[NatToNatKind] = new KindName[NatToNatKind] {
     def get = "nat->nat"

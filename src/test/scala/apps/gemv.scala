@@ -10,14 +10,14 @@ import lift.core.HighLevelConstructs.reorderWithStride
 class gemv extends idealised.util.Tests {
 
   // we can use implicit type parameters and type annotations to specify the function type of mult
-  val mult  = implDT(dt => fun(x => x._1 * x._2) :: ((dt x dt)._R ->: dt._R))
+  val mult  = implDT(dt => fun(x => x._1 * x._2) :: ((dt x dt) ->: dt))
   val add   = fun(x => fun(y => x + y))
-  val scal  = implN(n => fun(xs => fun(a => mapSeq(fun(x => a * x), xs))) :: (ArrayType(n, float)._R ->: float._R ->: ArrayType(n, float)._R))
+  val scal  = implN(n => fun(xs => fun(a => mapSeq(fun(x => a * x), xs))) :: (ArrayType(n, float) ->: float ->: ArrayType(n, float)))
   val dot   = fun(xs => fun(ys => zip(xs, ys) |> mapSeq(mult) |> reduceSeq(add, l(0.0f))))
 
   val high_level =
     nFun((n, m) =>
-      fun((m`.`n`.`float)._R ->: (n`.`float)._R ->: (m`.`float)._R ->: float._R ->: float._R ->: (m`.`float)._R)
+      fun((m`.`n`.`float) ->: (n`.`float) ->: (m`.`float) ->: float ->: float ->: (m`.`float))
          ((mat, xs, ys, alpha, beta) =>
 
         zip(mapSeq(fun(row => alpha * dot(row, xs)), mat), scal(ys, beta)) |>
@@ -30,7 +30,7 @@ class gemv extends idealised.util.Tests {
 
     val fullMatrixVectorFusedOpenCL =
       nFun((n, m) =>
-        fun((m `.` n `.` float)._R ->: (n `.` float)._R ->: (m `.` float)._R ->: float._R ->: float._R ->: (m `.` float)._R)
+        fun((m `.` n `.` float) ->: (n `.` float) ->: (m `.` float) ->: float ->: float ->: (m `.` float))
         ((mat, xs, ys, alpha, beta) =>
           zip(mat, ys) |>
             mapWorkGroup(fun(t =>
@@ -44,7 +44,7 @@ class gemv extends idealised.util.Tests {
 
     val fullMatrixVectorFusedOpenCLAMD =
       nFun((n, m) =>
-        fun((m `.` n `.` float)._R ->: (n `.` float)._R ->: (m `.` float)._R ->: float._R ->: float._R ->: (m `.` float)._R)
+        fun((m `.` n `.` float) ->: (n `.` float) ->: (m `.` float) ->: float ->: float ->: (m `.` float))
         ((mat, xs, ys, alpha, beta) =>
           zip(mat, ys) |>
             mapWorkGroup(fun(t =>
@@ -61,7 +61,7 @@ class gemv extends idealised.util.Tests {
 
     val keplerBest =
       nFun((n, m) =>
-        fun((m `.` n `.` float)._R ->: (n `.` float)._R ->: (m `.` float)._R ->: float._R ->: float._R ->: (m `.` float)._R)
+        fun((m `.` n `.` float) ->: (n `.` float) ->: (m `.` float) ->: float ->: float ->: (m `.` float))
         ((mat, xs, ys, alpha, beta) =>
           zip(mat, ys) |>
             mapWorkGroup(fun(t =>
@@ -80,7 +80,7 @@ class gemv extends idealised.util.Tests {
 
     val fullMatrixVectorFusedOpenMP =
       nFun((n, m) =>
-        fun((m `.` n `.` float)._R ->: (n `.` float)._R ->: (m `.` float)._R ->: float._R ->: float._R ->: (m `.` float)._R)
+        fun((m `.` n `.` float) ->: (n `.` float) ->: (m `.` float) ->: float ->: float ->: (m `.` float))
         ((mat, xs, ys, alpha, beta) =>
           zip(mat, ys) |>
             mapPar(fun(t =>
@@ -101,9 +101,9 @@ class gemv extends idealised.util.Tests {
     assertResult(
       DepFunType(N,
         DepFunType(M,
-            ArrayType(M, ArrayType(N, float))._R ->:
-              (ArrayType(N, float)._R ->: (ArrayType(M, float)._R ->:
-                (float._R ->: (float._R ->: ArrayType(M, float)._R))))))) {
+            ArrayType(M, ArrayType(N, float)) ->:
+              (ArrayType(N, float) ->: (ArrayType(M, float) ->:
+                (float ->: (float ->: ArrayType(M, float)))))))) {
       typed.t
     }
   }

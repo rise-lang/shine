@@ -25,7 +25,7 @@ object SlideSeqIValues {
     val inputSize = step * n + size - step
 
     NewRegRot(size, dt1,
-      fun(exp"[$size.$dt1]" x acc"[$size.$dt1]")(rs =>
+      fun(exp"[$size.$dt1, $read]" x acc"[$size.$dt1]")(rs =>
         fun(comm : CommType)(rotate => {
           // prologue initialisation
           MapSeqI(size - 1, dt1, dt1, fun(ExpType(dt1, read))(exp => fun(AccType(dt1))(acc => acc :=|dt1| exp)),

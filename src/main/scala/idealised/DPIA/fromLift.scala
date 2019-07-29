@@ -60,12 +60,6 @@ object fromLift {
     case _ => ??? // expected typed expr
     }
 
-  def access(w: lt.AccessType): AccessType = w match {
-    case lt.W => write
-    case lt.R => read
-    case lt.AccessTypeIdentifier(name) => AccessTypeIdentifier(name)
-  }
-
   def addressSpace(a: lt.AddressSpace): AddressSpace = a match {
     case lt.AddressSpace.Global => AddressSpace.Global
     case lt.AddressSpace.Local => AddressSpace.Local
@@ -114,8 +108,8 @@ object fromLift {
   def natToDataIdentifier(n: lt.NatToDataIdentifier): NatToDataIdentifier = NatToDataIdentifier(n.name)
 
   def `type`(ty: lt.Type): PhraseType = ty match {
-    case lt.DataAccessType(dt, w) => ExpType(dataType(dt), access(w))
-      case lt.FunType(i, o)     => `type`(i) ->: `type`(o)
+    case dt: lt.DataType => ExpType(dataType(dt), read)
+    case lt.FunType(i, o)     => `type`(i) ->: `type`(o)
     case lt.DepFunType(i, t)  => i match {
         case dt: lt.DataTypeIdentifier    => dataTypeIdentifier(dt)   `()->:` `type`(t)
         case n: l.NatIdentifier           => natIdentifier(n)         `()->:` `type`(t)
@@ -155,52 +149,52 @@ object fromLift {
     (p, t) match {
       case (core.`natAsIndex`,
       lt.DepFunType(n: l.NatIdentifier,
-      lt.FunType(lt.DataAccessType(lt.NatType, lt.R), lt.DataAccessType(lt.IndexType(_), lt.R))))
+      lt.FunType(lt.NatType, lt.IndexType(_))))
       =>
         DepLambda[NatKind](natIdentifier(n))(
           fun[ExpType](ExpType(NatType, read), e =>
             AsIndex(n, e)))
 
       case (core.map,
-      lt.FunType(lt.FunType(_, lt.DataAccessType(lb: lt.DataType, lt.W)),
-      lt.FunType(lt.DataAccessType(lt.ArrayType(n, la: lt.DataType), lt.R), _)))
+      lt.FunType(lt.FunType(_, lb: lt.DataType),
+      lt.FunType(lt.ArrayType(n, la: lt.DataType), _)))
       =>
         makeMap(Map, n, la, lb)
 
       case (core.mapSeq,
-      lt.FunType(lt.FunType(_, lt.DataAccessType(lb: lt.DataType, lt.W)),
-      lt.FunType(lt.DataAccessType(lt.ArrayType(n, la: lt.DataType), lt.R), _)))
+      lt.FunType(lt.FunType(_, lb: lt.DataType),
+      lt.FunType(lt.ArrayType(n, la: lt.DataType), _)))
       =>
         makeMap(MapSeq, n, la, lb)
 
       case (omp.mapPar,
-      lt.FunType(lt.FunType(_, lt.DataAccessType(lb: lt.DataType, lt.W)),
-      lt.FunType(lt.DataAccessType(lt.ArrayType(n, la: lt.DataType), lt.R), _)))
+      lt.FunType(lt.FunType(_, lb: lt.DataType),
+      lt.FunType(lt.ArrayType(n, la: lt.DataType), _)))
       =>
         makeMap(MapPar, n, la, lb)
 
       case (ocl.mapGlobal(dim),
-      lt.FunType(lt.FunType(_, lt.DataAccessType(lb: lt.DataType, lt.W)),
-      lt.FunType(lt.DataAccessType(lt.ArrayType(n, la: lt.DataType), lt.R), _)))
+      lt.FunType(lt.FunType(_, lb: lt.DataType),
+      lt.FunType(lt.ArrayType(n, la: lt.DataType), _)))
       =>
         makeMap(MapGlobal(dim), n, la, lb)
 
       case (ocl.mapLocal(dim),
-      lt.FunType(lt.FunType(_, lt.DataAccessType(lb: lt.DataType, lt.W)),
-      lt.FunType(lt.DataAccessType(lt.ArrayType(n, la: lt.DataType), lt.R), _)))
+      lt.FunType(lt.FunType(_, lb: lt.DataType),
+      lt.FunType(lt.ArrayType(n, la: lt.DataType), _)))
       =>
         makeMap(MapLocal(dim), n, la, lb)
 
       case (ocl.mapWorkGroup(dim),
-      lt.FunType(lt.FunType(_, lt.DataAccessType(lb: lt.DataType, lt.W)),
-      lt.FunType(lt.DataAccessType(lt.ArrayType(n, la: lt.DataType), lt.R), _)))
+      lt.FunType(lt.FunType(_, lb: lt.DataType),
+      lt.FunType(lt.ArrayType(n, la: lt.DataType), _)))
       =>
         makeMap(MapWorkGroup(dim), n, la, lb)
 
       case (core.depMapSeq,
       lt.FunType(
       lt.DepFunType(lk: l.NatIdentifier, lt.FunType(_, _)),
-      lt.FunType(lt.DataAccessType(lt.DepArrayType(n, la), lt.R), lt.DataAccessType(lt.DepArrayType(_, lb), lt.R))))
+      lt.FunType(lt.DepArrayType(n, la), lt.DepArrayType(_, lb))))
       =>
         val a = ntd(la)
         val b = ntd(lb)
@@ -213,8 +207,8 @@ object fromLift {
 
       case (core.reduceSeq,
       lt.FunType(_,
-      lt.FunType(lt.DataAccessType(lb: lt.DataType, lt.W),
-      lt.FunType(lt.DataAccessType(lt.ArrayType(n, la), lt.R), _ ))))
+      lt.FunType(lb: lt.DataType,
+      lt.FunType(lt.ArrayType(n, la), _ ))))
       =>
         val a = dataType(la)
         val b = dataType(lb)
@@ -226,8 +220,8 @@ object fromLift {
       case (ocl.oclReduceSeq,
       lt.DepFunType(i: lt.AddressSpaceIdentifier,
       lt.FunType(_,
-      lt.FunType(lt.DataAccessType(lb: lt.DataType, lt.W),
-      lt.FunType(lt.DataAccessType(lt.ArrayType(n, la), lt.R), _)))))
+      lt.FunType(lb: lt.DataType,
+      lt.FunType(lt.ArrayType(n, la), _)))))
       =>
         val a = dataType(la)
         val b = dataType(lb)
@@ -239,8 +233,8 @@ object fromLift {
 
       case (core.reduceSeqUnroll,
       lt.FunType(_,
-      lt.FunType(lt.DataAccessType(lb: lt.DataType, lt.W),
-      lt.FunType(lt.DataAccessType(lt.ArrayType(n, la), lt.R), _ ))))
+      lt.FunType(lb: lt.DataType,
+      lt.FunType(lt.ArrayType(n, la), _ ))))
       =>
         val a = dataType(la)
         val b = dataType(lb)
@@ -251,8 +245,8 @@ object fromLift {
 
       case (core.scanSeq,
       lt.FunType(_,
-      lt.FunType(lt.DataAccessType(lb: lt.DataType, lt.W),
-      lt.FunType(lt.DataAccessType(lt.ArrayType(n, la), lt.R), _))))
+      lt.FunType(lb: lt.DataType,
+      lt.FunType(lt.ArrayType(n, la), _))))
       =>
         val a = dataType(la)
         val b = dataType(lb)
@@ -262,7 +256,7 @@ object fromLift {
               ScanSeq(n, a, b, f, i, e))))
 
       case (core.depJoin,
-        lt.FunType(lt.DataAccessType(lt.DepArrayType(n, llenF), lt.R), lt.DataAccessType(lt.ArrayType(_, la), lt.R)))
+        lt.FunType(lt.DepArrayType(n, llenF), lt.ArrayType(_, la)))
         =>
         val a = dataType(la)
         val lenF: NatToNatLambda = ??? // fromLift(llenF)
@@ -270,19 +264,19 @@ object fromLift {
           DepJoin(n, lenF, a, e))
 
       case (core.join,
-      lt.FunType(lt.DataAccessType(lt.ArrayType(n, lt.ArrayType(m, la)), lw), _))
+      lt.FunType(lt.ArrayType(n, lt.ArrayType(m, la)), _))
       =>
         val a = dataType(la)
-        val w = access(lw)
+        val w = read // TODO
         fun[ExpType](exp"[$n.$m.$a, $w]", e =>
           Join(n, m, w, a, e))
 
       case (core.split,
       lt.DepFunType(n: l.NatIdentifier,
-      lt.FunType(lt.DataAccessType(lt.ArrayType(mn, la), lw), lt.DataAccessType(lt.ArrayType(m, _), _))))
+      lt.FunType(lt.ArrayType(mn, la), lt.ArrayType(m, _))))
       =>
         val a = dataType(la)
-        val w = access(lw)
+        val w = read // TODO
         DepLambda[NatKind](natIdentifier(n))(
           fun[ExpType](exp"[$mn.$a, $w]", e =>
             Split(n, m, w, a, e)))
@@ -290,7 +284,7 @@ object fromLift {
       case (core.slide,
       lt.DepFunType(sz: l.NatIdentifier,
       lt.DepFunType(sp: l.NatIdentifier,
-      lt.FunType(lt.DataAccessType(lt.ArrayType(insz, la), lt.R), lt.DataAccessType(lt.ArrayType(n, _), lt.R)))))
+      lt.FunType(lt.ArrayType(insz, la), lt.ArrayType(n, _)))))
       =>
         val a = dataType(la)
         DepLambda[NatKind](natIdentifier(sz))(
@@ -301,7 +295,7 @@ object fromLift {
       case (core.slideSeq(rot),
       lt.DepFunType(sz: l.NatIdentifier,
       lt.DepFunType(sp: l.NatIdentifier,
-      lt.FunType(lt.DataAccessType(lt.ArrayType(insz, la), lt.R), lt.DataAccessType(lt.ArrayType(n, _), lt.R)))))
+      lt.FunType(lt.ArrayType(insz, la), lt.ArrayType(n, _)))))
       =>
         val a = dataType(la)
         DepLambda[NatKind](natIdentifier(sz))(
@@ -312,7 +306,7 @@ object fromLift {
       case (core.reorder,
       lt.FunType(_,
       lt.FunType(_,
-      lt.FunType(lt.DataAccessType(lt.ArrayType(n, la), lt.R), _))))
+      lt.FunType(lt.ArrayType(n, la), _))))
       =>
         val a = dataType(la)
         fun[ExpType ->: ExpType](exp"[idx($n), $read]" ->: exp"[idx($n), $read]", idxF =>
@@ -321,7 +315,7 @@ object fromLift {
               Reorder(n, a, idxF, idxFinv, e))))
 
       case (core.transpose,
-      lt.FunType(lt.DataAccessType(lt.ArrayType(n, lt.ArrayType(m, la)), lt.R), _))
+      lt.FunType(lt.ArrayType(n, lt.ArrayType(m, la)), _))
       =>
         val a = dataType(la)
 
@@ -343,29 +337,29 @@ object fromLift {
             })
           })
 
-        fun[ExpType](exp"[$n.$m.$a, read]", e =>
+        fun[ExpType](exp"[$n.$m.$a, $read]", e =>
           Split(n, m, read, a,
             Reorder(n * m, a, transposeFunction, transposeInverseFunction,
               Join(n, m, read, a, e))))
 
       case (core.take,
       lt.DepFunType(n: l.NatIdentifier,
-      lt.FunType(lt.DataAccessType(lt.ArrayType(nm, la), lw), _)))
+      lt.FunType(lt.ArrayType(nm, la), lw)))
       =>
         val m = nm - n
         val a = dataType(la)
-        val w = access(lw)
+        val w = read // TODO
         DepLambda[NatKind](natIdentifier(n))(
           fun[ExpType](exp"[$nm.$a, $w]", e =>
             Take(n, m, w, a, e)))
 
       case (core.drop,
       lt.DepFunType(n: l.NatIdentifier,
-      lt.FunType(lt.DataAccessType(lt.ArrayType(nm, la), lw), _)))
+      lt.FunType(lt.ArrayType(nm, la), _)))
       =>
         val m = nm - n
         val a = dataType(la)
-        val w = access(lw)
+        val w = read // TODO
         DepLambda[NatKind](natIdentifier(n))(
           fun[ExpType](exp"[$nm.$a, $w]", e =>
             Drop(n, m, w, a, e)))
@@ -374,7 +368,7 @@ object fromLift {
       lt.DepFunType(l: l.NatIdentifier,
       lt.DepFunType(r: l.NatIdentifier,
       lt.FunType(_,
-      lt.FunType(lt.DataAccessType(lt.ArrayType(n, la), lt.R), _)))))
+      lt.FunType(lt.ArrayType(n, la), _)))))
       =>
         val a = dataType(la)
         DepLambda[NatKind](natIdentifier(l))(
@@ -386,7 +380,7 @@ object fromLift {
       case (core.padClamp,
       lt.DepFunType(l: l.NatIdentifier,
       lt.DepFunType(r: l.NatIdentifier,
-      lt.FunType(lt.DataAccessType(lt.ArrayType(n, la), lt.R), _))))
+      lt.FunType(lt.ArrayType(n, la), _))))
       =>
         val a = dataType(la)
         DepLambda[NatKind](natIdentifier(l))(
@@ -396,8 +390,8 @@ object fromLift {
 
       case (core.unzip,
       lt.FunType(
-      lt.DataAccessType(lt.ArrayType(n, lt.TupleType(la, lb)), lt.R),
-      lt.DataAccessType(lt.TupleType(lt.ArrayType(_, _), lt.ArrayType(_, _)), lt.R)))
+      lt.ArrayType(n, lt.TupleType(la, lb)),
+      lt.TupleType(lt.ArrayType(_, _), lt.ArrayType(_, _))))
       =>
         val a = dataType(la)
         val b = dataType(lb)
@@ -405,8 +399,8 @@ object fromLift {
             Unzip(n, a, b, e))
 
       case (core.zip,
-      lt.FunType(lt.DataAccessType(lt.ArrayType(n, la), lt.R),
-      lt.FunType(lt.DataAccessType(lt.ArrayType(_, lb), lt.R), _)))
+      lt.FunType(lt.ArrayType(n, la),
+      lt.FunType(lt.ArrayType(_, lb), _)))
       =>
         val a = dataType(la)
         val b = dataType(lb)
@@ -415,22 +409,22 @@ object fromLift {
             Zip(n, a, b, x, y)))
 
       case (core.fst,
-      lt.FunType(lt.DataAccessType(lt.TupleType(la, lb), lt.R), _))
+      lt.FunType(lt.TupleType(la, lb), _))
       =>
         val a = dataType(la)
         val b = dataType(lb)
         fun[ExpType](exp"[($a x $b), $read]", e => Fst(a, b, e))
 
       case (core.snd,
-      lt.FunType(lt.DataAccessType(lt.TupleType(la, lb), lt.R), _))
+      lt.FunType(lt.TupleType(la, lb), _))
       =>
         val a = dataType(la)
         val b = dataType(lb)
         fun[ExpType](exp"[($a x $b), $read]", e => Snd(a, b, e))
 
       case (core.pair,
-      lt.FunType(lt.DataAccessType(la: lt.DataType, lt.R),
-      lt.FunType(lt.DataAccessType(lb: lt.DataType, lt.R), _)))
+      lt.FunType(la: lt.DataType,
+      lt.FunType(lb: lt.DataType, _)))
       =>
         val a = dataType(la)
         val b = dataType(lb)
@@ -440,7 +434,7 @@ object fromLift {
 
       case (core.idx,
       lt.FunType(_,
-      lt.FunType(lt.DataAccessType(lt.ArrayType(n, la), lt.R), _)))
+      lt.FunType(lt.ArrayType(n, la), _)))
       =>
         val a = dataType(la)
         fun[ExpType](exp"[idx($n), $read]", i =>
@@ -449,7 +443,7 @@ object fromLift {
 
       case (core.select,
       lt.FunType(_,
-      lt.FunType(lt.DataAccessType(la: lt.DataType, lt.R), _)))
+      lt.FunType(la: lt.DataType, _)))
       =>
         val a = dataType(la)
         fun[ExpType](ExpType(bool, read), c =>
@@ -457,45 +451,45 @@ object fromLift {
             fun[ExpType](ExpType(a, read), fExpr =>
               IfThenElse(c, tExpr, fExpr))))
 
-      case (core.neg, lt.FunType(lt.DataAccessType(la: lt.DataType, lt.R), _)) =>
+      case (core.neg, lt.FunType(la: lt.DataType, _)) =>
         val a = dataType(la)
         fun[ExpType](exp"[$a, $read]", e => UnaryOp(Operators.Unary.NEG, e))
 
-      case (core.add, lt.FunType(lt.DataAccessType(la: lt.DataType, lt.R), _)) =>
+      case (core.add, lt.FunType(la: lt.DataType, _)) =>
         val a = dataType(la)
         fun[ExpType](exp"[$a, $read]", e1 =>
           fun[ExpType](exp"[$a, $read]", e2 => BinOp(Operators.Binary.ADD, e1, e2)))
-      case (core.sub, lt.FunType(lt.DataAccessType(la: lt.DataType, lt.R), _)) =>
+      case (core.sub, lt.FunType(la: lt.DataType, _)) =>
         val a = dataType(la)
         fun[ExpType](exp"[$a, $read]", e1 =>
           fun[ExpType](exp"[$a, $read]", e2 => BinOp(Operators.Binary.SUB, e1, e2)))
-      case (core.mul, lt.FunType(lt.DataAccessType(la: lt.DataType, lt.R), _)) =>
+      case (core.mul, lt.FunType(la: lt.DataType, _)) =>
         val a = dataType(la)
         fun[ExpType](exp"[$a, $read]", e1 =>
           fun[ExpType](exp"[$a, $read]", e2 => BinOp(Operators.Binary.MUL, e1, e2)))
-      case (core.div, lt.FunType(lt.DataAccessType(la: lt.DataType, lt.R), _)) =>
+      case (core.div, lt.FunType(la: lt.DataType, _)) =>
         val a = dataType(la)
         fun[ExpType](exp"[$a, $read]", e1 =>
           fun[ExpType](exp"[$a, $read]", e2 => BinOp(Operators.Binary.DIV, e1, e2)))
-      case (core.mod, lt.FunType(lt.DataAccessType(la: lt.DataType, lt.R), _)) =>
+      case (core.mod, lt.FunType(la: lt.DataType, _)) =>
         val a = dataType(la)
         fun[ExpType](exp"[$a, $read]", e1 =>
           fun[ExpType](exp"[$a, $read]", e2 => BinOp(Operators.Binary.MOD, e1, e2)))
 
-      case (core.gt, lt.FunType(lt.DataAccessType(la: lt.DataType, lt.R), _)) =>
+      case (core.gt, lt.FunType(la: lt.DataType, _)) =>
         val a = dataType(la)
         fun[ExpType](exp"[$a, $read]", e1 =>
           fun[ExpType](exp"[$a, $read]", e2 => BinOp(Operators.Binary.GT, e1, e2)))
-      case (core.lt, lt.FunType(lt.DataAccessType(la: lt.DataType, lt.R), _)) =>
+      case (core.lt, lt.FunType(la: lt.DataType, _)) =>
         val a = dataType(la)
         fun[ExpType](exp"[$a, $read]", e1 =>
           fun[ExpType](exp"[$a, $read]", e2 => BinOp(Operators.Binary.LT, e1, e2)))
-      case (core.equal, lt.FunType(lt.DataAccessType(la: lt.DataType, lt.R), _)) =>
+      case (core.equal, lt.FunType(la: lt.DataType, _)) =>
         val a = dataType(la)
         fun[ExpType](exp"[$a, $read]", e1 =>
           fun[ExpType](exp"[$a, $read]", e2 => BinOp(Operators.Binary.EQ, e1, e2)))
 
-      case (core.cast, lt.FunType(lt.DataAccessType(la: lt.BasicType, lt.R), lt.DataAccessType(lb: lt.BasicType, lt.R)))
+      case (core.cast, lt.FunType(la: lt.BasicType, lb: lt.BasicType))
       =>
         val a = basicType(la)
         val b = basicType(lb)
@@ -507,7 +501,7 @@ object fromLift {
         val (inTs, outT) = foreignFunIO(la)
         wrapForeignFun(decl, inTs, outT, Vector())
 
-      case (core.generate, lt.FunType(_, lt.DataAccessType(lt.ArrayType(n, la), lt.R)))
+      case (core.generate, lt.FunType(_, lt.ArrayType(n, la)))
       =>
         val a = dataType(la)
         fun[ExpType ->: ExpType](exp"[idx($n), $read]" ->: exp"[$a, $read]", f =>
@@ -516,8 +510,8 @@ object fromLift {
       case (core.iterate,
       lt.DepFunType(k: l.NatIdentifier,
       lt.FunType(lt.DepFunType(ll: l.NatIdentifier,
-      lt.FunType(lt.DataAccessType(lt.ArrayType(ln, _), lt.R), _)),
-      lt.FunType(lt.DataAccessType(lt.ArrayType(insz, _), lt.R), lt.DataAccessType(lt.ArrayType(m, la), lt.R)))))
+      lt.FunType(lt.ArrayType(ln, _), _)),
+      lt.FunType(lt.ArrayType(insz, _), lt.ArrayType(m, la)))))
       =>
         val l = natIdentifier(ll)
         val n = ln /^ l
@@ -529,33 +523,33 @@ object fromLift {
 
       case (core.asVector,
       lt.DepFunType(n: l.NatIdentifier,
-      lt.FunType(lt.DataAccessType(lt.ArrayType(mn, la: lt.ScalarType), lt.R), lt.DataAccessType(lt.ArrayType(m, _), lt.R))))
+      lt.FunType(lt.ArrayType(mn, la: lt.ScalarType), lt.ArrayType(m, _))))
       =>
         val a = scalarType(la)
         DepLambda[NatKind](natIdentifier(n))(
           fun[ExpType](exp"[$mn.$a, $read]", e =>
             AsVector(n, m, a, e)))
 
-      case (core.asScalar, lt.FunType(lt.DataAccessType(lt.ArrayType(m, lt.VectorType(n, la: lt.ScalarType)), lt.R), _))
+      case (core.asScalar, lt.FunType(lt.ArrayType(m, lt.VectorType(n, la: lt.ScalarType)), _))
       =>
         val a = scalarType(la)
         fun[ExpType](ExpType(ArrayType(m, VectorType(n, a)), read), e =>
           AsScalar(m, n, a, e))
 
-      case (core.vectorFromScalar, lt.FunType(_, lt.DataAccessType(lt.VectorType(n, la: lt.ScalarType), lt.R)))
+      case (core.vectorFromScalar, lt.FunType(_, lt.VectorType(n, la: lt.ScalarType)))
       =>
         val a = scalarType(la)
         fun[ExpType](ExpType(a, read), e =>
           VectorFromScalar(n, a, e))
 
-      case (core.indexAsNat, lt.FunType(lt.DataAccessType(lt.IndexType(n), lt.R), lt.DataAccessType(lt.NatType, lt.R)))
+      case (core.indexAsNat, lt.FunType(lt.IndexType(n), lt.NatType))
       =>
         fun[ExpType](exp"[idx($n), $read]", e =>
           IndexAsNat(n, e))
 
       case (ocl.`toMem`,
       lt.DepFunType(las: lt.AddressSpaceIdentifier,
-      lt.FunType(lt.DataAccessType(la: lt.DataType, lt.W), _)))
+      lt.FunType(la: lt.DataType, _)))
       =>
         val a = dataType(la)
         val as = addressSpace(las)
@@ -583,7 +577,7 @@ object fromLift {
       case lo: lt.DataType =>
         (Vector(), dataType(lo))
       case lt.FunType(laa, lb) => laa match {
-        case lt.DataAccessType(la: lt.DataType, _) =>
+        case la: lt.DataType =>
           val a = dataType(la)
           val (i, o) = foreignFunIO(lb)
           (a +: i, o)

@@ -23,9 +23,7 @@ object traversal {
     def visitExpr(e: Expr): Result[Expr] = Continue(e, this)
     def visitNat(ae: Nat): Result[Nat] = Continue(ae, this)
     def visitType[T <: Type](t: T): Result[T] = Continue(t, this)
-    def visitDataType[DT <: DataType](dt: DT): Result[DT] = Continue(dt, this)
     def visitAddressSpace(a: AddressSpace): Result[AddressSpace] = Continue(a, this)
-    def visitAccess(a: AccessType): Result[AccessType] = Continue(a, this)
     def visitN2N(n2n: NatToNat): Result[NatToNat] = Continue(n2n, this)
     def visitN2D(n2d: NatToData): Result[NatToData] = Continue(n2d, this)
   }
@@ -46,13 +44,12 @@ object traversal {
               case n: NatIdentifier => DepLambda[NatKind]((v.visitNat(n).value: @unchecked) match {
                 case a: NamedVar => NatIdentifier(a)
               }, apply(e, v))
-              case dt: DataTypeIdentifier => DepLambda[DataKind](v.visitDataType(dt).value, apply(e, v))
+              case dt: DataTypeIdentifier => DepLambda[DataKind](v.visitType(dt).value, apply(e, v))
             }
             case DepApply(f, x) => x match {
               case n: Nat           => DepApply[NatKind](apply(f, v), v.visitNat(n).value)
-              case dt: DataType     => DepApply[DataKind](apply(f, v), v.visitDataType(dt).value)
+              case dt: DataType     => DepApply[DataKind](apply(f, v), v.visitType(dt).value)
               case a: AddressSpace  => DepApply[AddressSpaceKind](apply(f, v), v.visitAddressSpace(a).value)
-              case w: AccessType    => DepApply[AccessKind](apply(f, v), v.visitAccess(w).value)
               case n2n: NatToNat    => DepApply[NatToNatKind](apply(f, v), v.visitN2N(n2n).value)
               case n2d: NatToData   => DepApply[NatToDataKind](apply(f, v), v.visitN2D(n2d).value)
             }
@@ -91,7 +88,7 @@ object traversal {
       chain(a, t, v => v.visitType(t))
 
     def chainDT[A, DT <: DataType](a: Result[A], dt: DT): Result[(A, DT)] =
-      chain(a, dt, v => v.visitDataType(dt))
+      chain(a, dt, v => v.visitType(dt))
 
     def apply(expr: Expr, visit: Visitor): Result[Expr] = {
       visit.visitExpr(expr) match {
@@ -105,7 +102,7 @@ object traversal {
           case DepLambda(x, e) => x match {
             case n: NatIdentifier       => chainE(v.visitNat(n), e).map(r =>
               DepLambda[NatKind]((r._1: @unchecked) match { case a: NamedVar => NatIdentifier(a) }, r._2) )
-            case dt: DataTypeIdentifier => chainE(v.visitDataType(dt), e).map(r => DepLambda[DataKind](r._1, r._2))
+            case dt: DataTypeIdentifier => chainE(v.visitType(dt), e).map(r => DepLambda[DataKind](r._1, r._2))
           }
           case DepApply(f, x) => x match {
             case n: Nat       => chainN(apply(f, v), n).map(r => DepApply[NatKind](r._1, r._2))
@@ -135,7 +132,7 @@ object traversal {
           case c: Continue[T] =>
             val v = c.v
             (c.value match {
-              case DataAccessType(dt, w) => DataAccessType(data(dt, v), w)
+              case dt: DataType => data(dt, v)
               case FunType(a, b) => FunType(apply(a, v), apply(b, v))
               case DepFunType(x, t) =>
                 x match {
@@ -145,6 +142,8 @@ object traversal {
                     }, apply(t, v))
                   case dt: DataTypeIdentifier =>
                     DepFunType[DataKind, Type](data(dt, v), apply(t, v))
+                  case a: AddressSpaceIdentifier =>
+                    DepFunType[AddressSpaceKind, Type](v.visitAddressSpace(a).value.asInstanceOf[AddressSpaceIdentifier], apply(t, v))
                   case n2n: NatToNatIdentifier =>
                     DepFunType[NatToNatKind, Type](v.visitN2N(n2n).value.asInstanceOf[NatToNatIdentifier], apply(t, v))
                   case n2d: NatToDataIdentifier =>
@@ -156,7 +155,7 @@ object traversal {
       }
 
       def data[DT <: DataType](dt: DT, visit: Visitor): DT = {
-        visit.visitDataType(dt) match {
+        visit.visitType(dt) match {
           case s: Stop[DT] => s.value
           case c: Continue[DT] =>
             val v = c.v
@@ -192,7 +191,7 @@ object traversal {
         visit.visitType(ty) match {
           case Stop(r) => Stop(r)
           case Continue(c, v) => (c match {
-            case DataAccessType(dt, w) => data(dt, v).map(r => DataAccessType(r, w))
+            case dt: DataType => data(dt, v)
             case FunType(a, b) =>
               chainT(apply(a, v), b).map(r => FunType(r._1, r._2))
             case DepFunType(i, t) => i match {
@@ -204,13 +203,13 @@ object traversal {
                     case n: NamedVar => NatIdentifier(n.name, n.range)
                   }, r._2))
             }
-            case i: TypeIdentifier => i
+            case i: TypeIdentifier => Continue(i, v)
           }).asInstanceOf[Result[T]]
         }
       }
 
       def data[DT <: DataType](dt: DT, visit: Visitor): Result[DT] = {
-        visit.visitDataType(dt) match {
+        visit.visitType(dt) match {
           case Stop(r) => Stop(r)
           case Continue(c, v) => (c match {
             case i: DataTypeIdentifier => Continue(i, v)

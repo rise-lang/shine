@@ -12,10 +12,4 @@ package object types {
   type `(dt)->`[T <: Type] = DataDepFunType[T]
   type `(nat->nat)->`[T <: Type] = NatToNatDepFunType[T]
   type `(nat->data)->`[T <: Type] = NatToDataDepFunType[T]
-
-  implicit class DataTypeExtension(val dt: DataType) {
-    def __(w: AccessType): DataAccessType = DataAccessType(dt, w)
-    def _W: DataAccessType = DataAccessType(dt, lift.core.types.W)
-    def _R: DataAccessType = DataAccessType(dt, lift.core.types.R)
-  }
 }

@@ -33,11 +33,6 @@ object DSL {
     def `:`(e: Expr): TypedExpr = TypedExpr(e, t)
   }
 
-  implicit class DataTypeAnnotation(dt: DataType) {
-    def ::(e: Expr): TypedExpr = TypedExpr(e, dt._R)
-    def `:`(e: Expr): TypedExpr = TypedExpr(e, dt._R)
-  }
-
   implicit class FunCall(f: Expr) {
     import lift.core.lifting._
 
@@ -79,7 +74,6 @@ object DSL {
       val x = Identifier(freshName("e"))
       Lambda(x, f(TypedExpr(x, t)))
     }
-    def apply(dt: DataType)(f: Expr => Expr): Expr = apply(dt._R)(f)
 
     def apply(f: Identifier => Expr): Expr = untyped(f)
 
@@ -241,13 +235,6 @@ object DSL {
     }
   }
 
-  object wFunT {
-    def apply(f: AccessTypeIdentifier => Type): Type = {
-      val x = AccessTypeIdentifier(freshName("w"))
-      DepFunType[AccessKind, Type](x, f(x))
-    }
-  }
-
   // types with implicit type parameters
   def implN[A](f: NatIdentifier => A): A = {
     f(NatIdentifier(freshName("_n")))
@@ -263,10 +250,6 @@ object DSL {
 
   def implN2DT[A](f: NatToData => A): A = {
     f(NatToDataIdentifier(freshName("_n2dt")))
-  }
-
-  def implW[A](f: AccessTypeIdentifier => A): A = {
-    f(AccessTypeIdentifier(freshName("_w")))
   }
 
   def implA[A](f: AddressSpaceIdentifier => A): A = {

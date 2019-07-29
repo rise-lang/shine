@@ -27,8 +27,8 @@ final case class ForeignFunction(funDecl: ForeignFunction.Declaration,
 
   override val t: ExpType =
     (inTs zip args).foreach {
-      case (inT, arg) => arg :: exp"[$inT]"
-    } ->: exp"[$outT]"
+      case (inT, arg) => arg :: exp"[$inT, $read]"
+    } ->: exp"[$outT, $read]"
 
   override def eval(s: Store): Data = ???
 
@@ -67,11 +67,11 @@ final case class ForeignFunction(funDecl: ForeignFunction.Declaration,
       ts match {
         // with only one argument left to process return the assignment of the function call
         case Seq( (arg, inT) ) =>
-          con(arg)(λ(exp"[$inT]")(e =>
+          con(arg)(λ(exp"[$inT, $read]")(e =>
             C( ForeignFunction(funDecl, inTs :+ inT, outT, exps :+ e) )) )
         // with a `tail` of arguments left, recurse
         case Seq( (arg, inT), tail@_* ) =>
-          con(arg)(λ(exp"[$inT]")(e => recurse(tail, exps :+ e, inTs :+ inT) ))
+          con(arg)(λ(exp"[$inT, $read]")(e => recurse(tail, exps :+ e, inTs :+ inT) ))
       }
     }
 

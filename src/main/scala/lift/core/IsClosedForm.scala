@@ -31,20 +31,15 @@ object IsClosedForm {
                                boundNatDataTypeFun:Set[NatToDataIdentifier]) extends traversal.Visitor {
           override def visitType[U <: Type](t: U): Result[U] = {
             t match {
+              case _: TypeIdentifier => Stop(t)
               case DepFunType(x: NatIdentifier, _) => Continue(t, this.copy(boundN = boundN + x))
               case DepFunType(x: DataTypeIdentifier, _) => Continue(t, this.copy(boundT = boundT + x))
-              case _ => Continue(t, this)
-            }
-          }
-
-          override def visitDataType[DT <: DataType](dt: DT): Result[DT] = {
-            dt match {
-              case i: DataTypeIdentifier if !boundT(i) => Stop(dt)
+              case i: DataTypeIdentifier if !boundT(i) => Stop(t)
               case DepArrayType(_, elementTypeFun) => elementTypeFun match {
-                case i:NatToDataIdentifier => if(boundNatDataTypeFun(i)) Stop(dt) else Continue(dt, this)
-                case NatToDataLambda(x, _) =>  Continue(dt, this.copy(boundN = boundN + x))
+                case i:NatToDataIdentifier => if(boundNatDataTypeFun(i)) Stop(t) else Continue(t, this)
+                case NatToDataLambda(x, _) =>  Continue(t, this.copy(boundN = boundN + x))
               }
-              case _ => Continue(dt, this)
+              case _ => Continue(t, this)
             }
           }
 

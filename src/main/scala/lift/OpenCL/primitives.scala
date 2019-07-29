@@ -44,9 +44,7 @@ object primitives {
 
 
   object toMem extends Primitive {
-    override def t: Type = implDT(t =>
-      aFunT(a => t.__(W) ->: t.__(R) )
-    )
+    override def t: Type = implDT(t => aFunT(a => t ->: t))
   }
 
   val toGlobal: Expr = toMem(lift.core.types.AddressSpace.Global)

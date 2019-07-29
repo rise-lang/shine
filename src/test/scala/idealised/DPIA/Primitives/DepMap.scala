@@ -8,7 +8,7 @@ import lift.core.types._
 class DepMap extends idealised.util.Tests {
   test("Simple triangle depMap example should generate syntactic valid C code with two for loop") {
     val e =
-      nFun(n => fun(DepArrayType(n, n2dtFun(i => (i+1)`.`float))._R ->: DepArrayType(n, n2dtFun(i => (i+1)`.`float))._R)(xs =>
+      nFun(n => fun(DepArrayType(n, n2dtFun(i => (i+1)`.`float)) ->: DepArrayType(n, n2dtFun(i => (i+1)`.`float)))(xs =>
         xs |> depMapSeq(nFun(_ => mapSeq(fun(x => x))))))
 
     println(e)

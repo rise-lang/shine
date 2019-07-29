@@ -33,16 +33,10 @@ object infer {
   case class TypeConstraint(a: Type, b: Type) extends Constraint {
     override def toString: String = s"$a  ~  $b"
   }
-  case class DataTypeConstraint(a: DataType, b: DataType) extends Constraint {
-    override def toString: String = s"$a  ~  $b"
-  }
   case class NatConstraint(a: Nat, b: Nat) extends Constraint {
     override def toString: String = s"$a  ~  $b"
   }
   case class AddressSpaceConstraint(a: AddressSpace, b: AddressSpace) extends Constraint {
-    override def toString: String = s"$a  ~  $b"
-  }
-  case class AccessTypeConstraint(a: AccessType, b: AccessType) extends Constraint {
     override def toString: String = s"$a  ~  $b"
   }
   case class NatToDataConstraint(a: NatToData, b: NatToData) extends Constraint {
@@ -99,16 +93,19 @@ object infer {
         case dt: DataType =>
           val tf = typed(f)
           TypedExpr(DepApply[DataKind](tf, dt), liftDependentFunctionType[DataKind](tf.t)(dt))
+        case a: AddressSpace =>
+          val tf = typed(f)
+          TypedExpr(DepApply[AddressSpaceKind](tf, a), liftDependentFunctionType[AddressSpaceKind](tf.t)(a))
         case n2n: NatToNat =>
           val tf = typed(f)
           TypedExpr(DepApply[NatToNatKind](tf, n2n), liftDependentFunctionType[NatToNatKind](tf.t)(n2n))
       }
 
-      case l: Literal => TypedExpr(l, l.d.dataType._R)
+      case l: Literal => TypedExpr(l, l.d.dataType)
 
-      case i: Index => TypedExpr(i, IndexType(i.size)._R)
+      case i: Index => TypedExpr(i, IndexType(i.size))
 
-      case n: NatExpr => TypedExpr(n, NatType._R)
+      case n: NatExpr => TypedExpr(n, NatType)
 
       case TypedExpr(e, t) =>
         val te = typed(e)
@@ -154,29 +151,24 @@ object infer {
   }
 
   object Solution {
-    def apply(): Solution = Solution(Map(), Map(), Map(), Map(), Map(), Map())
-    def subs(ta: TypeIdentifier, tb: Type): Solution = Solution(Map(ta -> tb), Map(), Map(), Map(), Map(), Map())
-    def subs(dta: DataTypeIdentifier, dtb: DataType): Solution = Solution(Map(), Map(dta -> dtb), Map(), Map(), Map(), Map())
-    def subs(na: NamedVar, nb: Nat): Solution = Solution(Map(), Map(), Map(na -> nb), Map(), Map(), Map())
-    def subs(aa: AddressSpaceIdentifier, ab: AddressSpace): Solution = Solution(Map(), Map(), Map(), Map(aa -> ab), Map(), Map())
-    def subs(wa: AccessTypeIdentifier, wb: AccessType): Solution = Solution(Map(), Map(), Map(), Map(), Map(wa -> wb), Map())
-    def subs(na: NatToDataIdentifier, nb: NatToData): Solution = Solution(Map(), Map(), Map(), Map(), Map(), Map(na -> nb))
+    def apply(): Solution = Solution(Map(), Map(), Map(), Map())
+    def subs(ta: TypeIdentifier, tb: Type): Solution = Solution(Map(ta -> tb), Map(), Map(), Map())
+    def subs(ta: DataTypeIdentifier, tb: Type): Solution = Solution(Map(ta -> tb), Map(), Map(), Map())
+    def subs(na: NamedVar, nb: Nat): Solution = Solution(Map(), Map(na -> nb), Map(), Map())
+    def subs(aa: AddressSpaceIdentifier, ab: AddressSpace): Solution = Solution(Map(), Map(), Map(aa -> ab), Map())
+    def subs(na: NatToDataIdentifier, nb: NatToData): Solution = Solution(Map(), Map(), Map(), Map(na -> nb))
   }
 
   case class Solution(ts: Map[Type, Type],
-                      dts: Map[DataType, DataType],
                       ns: Map[NamedVar, Nat],
                       as: Map[AddressSpaceIdentifier, AddressSpace],
-                      ws: Map[AccessTypeIdentifier, AccessType],
                       n2ds: Map[NatToDataIdentifier, NatToData]) {
     import traversal.{Result, Stop, Continue}
 
     case class Visitor(sol: Solution) extends traversal.Visitor {
       override def visitNat(ae: Nat): Result[Nat] = Stop(sol(ae))
       override def visitType[T <: Type](t: T): Result[T] = Stop(sol(t).asInstanceOf[T])
-      override def visitDataType[DT <: DataType](dt: DT): Result[DT] = Stop(sol(dt).asInstanceOf[DT])
       override def visitAddressSpace(a: AddressSpace): Result[AddressSpace] = Stop(sol(a))
-      override def visitAccess(a: AccessType): Result[AccessType] = Stop(sol(a))
       override def visitN2D(n2d: NatToData): Result[NatToData] = Stop(sol(n2d))
     }
 
@@ -193,15 +185,6 @@ object infer {
       })
     }
 
-    def apply(dt: DataType): DataType = {
-      traversal.types.DepthFirstLocalResult.data(dt, new Visitor(this) {
-        override def visitDataType[DT <: DataType](dt: DT): Result[DT] = sol.dts.get(dt) match {
-          case Some(x) => Stop(x.asInstanceOf[DT])
-          case None => Continue(dt, this)
-        }
-      })
-    }
-
     def apply(n: Nat): Nat = {
       ns.foldLeft(n) {
         case (result, (na, nb)) => substitute.natInNat(nb, `for` = na, in = result)
@@ -211,12 +194,6 @@ object infer {
     def apply(a: AddressSpace): AddressSpace = {
       as.foldLeft(a) { case (result, (aa, ab)) =>
         substitute.addressSpaceInAddressSpace(ab, `for` = aa, in = result)
-      }
-    }
-
-    def apply(w: AccessType): AccessType = {
-      ws.foldLeft(w) { case (result, (wa, wb)) =>
-        substitute.accessTypeInAccessType(wb, `for` = wa, in = result)
       }
     }
 
@@ -234,10 +211,8 @@ object infer {
       val combine: (Solution, Solution) => Solution = (s1, s2) => {
         Solution(
           s1.ts.mapValues(t => s2(t)) ++ s2.ts,
-          s1.dts.mapValues(dt => s2(dt)) ++ s2.dts,
           s1.ns.mapValues(n => s2(n)) ++ s2.ns,
           s1.as.mapValues(a => s2(a)) ++ s2.as,
-          s1.ws.mapValues(w => s2(w)) ++ s2.ws,
           s1.n2ds.mapValues(n => s2(n)) ++ s2.n2ds
         )
       }
@@ -245,7 +220,7 @@ object infer {
       // concatenating two solutions starts by combining them ...
       val s = combine(this, other)
       // ... it then takes all the type values ...
-      s.dts.map {
+      s.ts.map {
         // ... to look for `NatToDataApply` nodes that should be replaced by `b`,
         // but where the function to call is an identifier ...
         case (NatToDataApply(i: NatToDataIdentifier, n: NamedVar), b) =>
@@ -254,7 +229,7 @@ object infer {
             case Some(NatToDataLambda(x, body)) =>
               // ... and then the `NatToDataApply` is replaced
               // with the body of the `NatToDataLambda` appropriately substituted ...
-              solve(Set(DataTypeConstraint(substitute.natInDataType(n, `for`=x, in=body), b)))
+              solve(Set(TypeConstraint(substitute.natInDataType(n, `for`=x, in=body), b)))
             case _ => Solution()
           }
         case _ => Solution()
@@ -266,12 +241,8 @@ object infer {
       constraints.map {
         case TypeConstraint(a, b) =>
           TypeConstraint(apply(a), apply(b))
-        case DataTypeConstraint(a, b) =>
-          DataTypeConstraint(apply(a), apply(b))
         case AddressSpaceConstraint(a, b) =>
           AddressSpaceConstraint(apply(a), apply(b))
-        case AccessTypeConstraint(a, b) =>
-          AccessTypeConstraint(apply(a), apply(b))
         case NatConstraint(a, b) =>
           NatConstraint(apply(a), apply(b))
         case NatToDataConstraint(a, b) =>
@@ -302,12 +273,21 @@ object infer {
     case TypeConstraint(a, b) => (a, b) match {
       case (i: TypeIdentifier, _) => Some(unifyTypeIdent(i, b))
       case (_, i: TypeIdentifier) => Some(unifyTypeIdent(i, a))
-      case (DataAccessType(dt1: ScalarType, _), DataAccessType(dt2, _)) =>
-        solveOne(DataTypeConstraint(dt1, dt2))
-      case (DataAccessType(dt1, _), DataAccessType(dt2: ScalarType, _)) =>
-        solveOne(DataTypeConstraint(dt1, dt2))
-      case (DataAccessType(dt1, w1), DataAccessType(dt2, w2)) =>
-        Some(solve(Set(DataTypeConstraint(dt1, dt2), AccessTypeConstraint(w1, w2))))
+      case (i: DataTypeIdentifier, dt: DataType) => Some(unifyDataTypeIdent(i, dt))
+      case (dt: DataType, i: DataTypeIdentifier) => Some(unifyDataTypeIdent(i, dt))
+      case (b1: BasicType, b2: BasicType) if b1 == b2 =>
+        Some(Solution())
+      case (IndexType(sa), IndexType(sb)) =>
+        solveOne(NatConstraint(sa, sb))
+      case (ArrayType(sa, ea), ArrayType(sb, eb)) =>
+        Some(solve(Set(NatConstraint(sa, sb), TypeConstraint(ea, eb))))
+      case (VectorType(sa, ea), VectorType(sb, eb)) =>
+        Some(solve(Set(NatConstraint(sa, sb), TypeConstraint(ea, eb))))
+      case (DepArrayType(sa, ea), DepArrayType(sb, eb)) =>
+        Some(solve(Set(NatConstraint(sa, sb), NatToDataConstraint(ea, eb))))
+      case (TupleType(ea@_*), TupleType(eb@_*)) =>
+        Some(solve((ea zip eb).map{ case (aa, bb) => TypeConstraint(aa, bb) }.toSet))
+      case (NatToDataApply(_, _), ArrayType(_, _)) => None
       case (FunType(ina, outa), FunType(inb, outb)) =>
         Some(solve(Set(TypeConstraint(ina, inb), TypeConstraint(outa, outb))))
       case (DepFunType(na: NatIdentifier, ta), DepFunType(nb: NatIdentifier, tb)) =>
@@ -326,38 +306,13 @@ object infer {
         bound -= dta
         bound -= dtb
         Some(solve(Set(
-          TypeConstraint(substitute.dataTypeInType(dt, `for`=dta, in=ta),
-            substitute.dataTypeInType(dt, `for`=dtb, in=tb)),
-          DataTypeConstraint(dt, dta), DataTypeConstraint(dt, dtb)
+          TypeConstraint(substitute.typeInType(dt, `for`=dta, in=ta),
+            substitute.typeInType(dt, `for`=dtb, in=tb)),
+          TypeConstraint(dt, dta), TypeConstraint(dt, dtb)
         )))
 //      case (_: NatToDataApply, dt: DataType) => Some(Solution.subs(a, dt)) // substitute apply by data type
 //      case (dt: DataType, _: NatToDataApply) => Some(Solution.subs(b, dt)) // substitute apply by data type
 
-      case _ => error(s"cannot unify $a and $b")
-    }
-
-    case DataTypeConstraint(a, b) => (a, b) match {
-      case (i: DataTypeIdentifier, _) => Some(unifyDataTypeIdent(i, b))
-      case (_, i: DataTypeIdentifier) => Some(unifyDataTypeIdent(i, a))
-      case (b1: BasicType, b2: BasicType) if b1 == b2 =>
-        Some(Solution())
-      case (IndexType(sa), IndexType(sb)) =>
-        solveOne(NatConstraint(sa, sb))
-      case (ArrayType(sa, ea), ArrayType(sb, eb)) =>
-        Some(solve(Set(NatConstraint(sa, sb), DataTypeConstraint(ea, eb))))
-      case (VectorType(sa, ea), VectorType(sb, eb)) =>
-        Some(solve(Set(NatConstraint(sa, sb), DataTypeConstraint(ea, eb))))
-      case (DepArrayType(sa, ea), DepArrayType(sb, eb)) =>
-        Some(solve(Set(NatConstraint(sa, sb), NatToDataConstraint(ea, eb))))
-      case (TupleType(ea@_*), TupleType(eb@_*)) =>
-        Some(solve((ea zip eb).map{ case (aa, bb) => DataTypeConstraint(aa, bb) }.toSet))
-      case (NatToDataApply(_, _), ArrayType(_, _)) => None
-    }
-
-    case AccessTypeConstraint(a, b) => (a, b) match {
-      case (i: AccessTypeIdentifier, _) => Some(unifyAccessTypeIdent(i, b))
-      case (_, i: AccessTypeIdentifier) => Some(unifyAccessTypeIdent(i, a))
-      case _ if a == b => Some(Solution())
       case _ => error(s"cannot unify $a and $b")
     }
 
@@ -402,18 +357,6 @@ object infer {
         else { error(s"cannot unify $i and $j, they are both bound") }
       case _ if occurs(i, dt) => error(s"circular use: $i occurs in $dt")
       case _ if !bound(i) => Solution.subs(i, dt)
-    }
-  }
-
-  def unifyAccessTypeIdent(i: AccessTypeIdentifier, w: AccessType)
-                          (implicit bound: mutable.Set[Kind.Identifier]): Solution = {
-    w match {
-      case j: AccessTypeIdentifier =>
-        if (i == j) { Solution() }
-        else if (!bound(i)) { Solution.subs(i, j) }
-        else if (!bound(j)) { Solution.subs(j, i) }
-        else { error(s"cannot unify $i and $j, they are both bound") }
-      case _ => ???
     }
   }
 
@@ -504,9 +447,8 @@ object infer {
     }
   }
 
-  def occurs(i: DataTypeIdentifier, t: DataType): Boolean = t match {
-    // case DataAccessType(j: DataTypeIdentifier, _) => i == j
-    // case FunType(it, ot) => occurs(i, it) || occurs(i, ot)
+  def occurs(i: DataTypeIdentifier, t: Type): Boolean = t match {
+    case FunType(it, ot) => occurs(i, it) || occurs(i, ot)
     case _ => false
   }
 }

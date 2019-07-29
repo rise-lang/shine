@@ -13,7 +13,7 @@ object `new` {
 
   def apply(dt: DataType,
             f: Phrase[VarType] => Phrase[CommType]): New =
-    New(dt, λ(exp"[$dt]" x acc"[$dt]")( v => f(v) ))
+    New(dt, λ(exp"[$dt, $read]" x acc"[$dt]")( v => f(v) ))
 }
 
 object newDoubleBuffer {
@@ -58,7 +58,7 @@ object `if` {
 object `for` {
   def apply(n: Nat,
             f: Identifier[ExpType] => Phrase[CommType], unroll:Boolean = false): For =
-    For(n, λ(exp"[idx($n)]")( i => f(i) ), unroll)
+    For(n, λ(exp"[idx($n), $read]")( i => f(i) ), unroll)
 }
 
 object fst {

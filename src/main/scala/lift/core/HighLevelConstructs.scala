@@ -13,7 +13,7 @@ object HighLevelConstructs {
     nFun(s => {
       val f =
         implN(n =>
-          fun(IndexType(n)._R)(i => i /* FIXME {
+          fun(IndexType(n))(i => i /* FIXME {
             mapIndexExpr(i, j => (j / (n /^ s)) + s * (j % (n /^ s)))
           }*/))
       reorder(f)(f)

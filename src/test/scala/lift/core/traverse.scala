@@ -50,7 +50,7 @@ class traverse extends idealised.util.Tests {
         { case _: Identifier => () },
         { case _: TypedExpr => () },
         { case _: Identifier => () },
-        { case DataAccessType(ArrayType(_, ArrayType(_, _: ScalarType)), R) => () }
+        { case ArrayType(_, ArrayType(_, _: ScalarType)) => () }
       ) : Seq[Any => Unit]
     }
 

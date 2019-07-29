@@ -2,7 +2,7 @@
     \footnotesize
     \begin{minipage}{1.0\linewidth}
       \begin{mathpar}
-        \kappa ::= \access \mid \addrkind \mid \ntnkind \mid \ntdkind \mid \natkind \mid \datatype \mid \type
+        \kappa ::= \addrkind \mid \ntnkind \mid \ntdkind \mid \natkind \mid \datatype \mid \type
       \end{mathpar}
       \subcaption{Kinds}\label{fig:lift-kinds}
     \end{minipage}
@@ -29,15 +29,6 @@
   
     \medskip
       
-    \begin{minipage}{.4\linewidth}
-      \begin{mathpar}
-        \inferrule*
-        {\W \in \{\writeacc, \readacc\} }
-        {\Delta \vdash \W : \access}
-      \end{mathpar}
-      \subcaption{Accessibility}\label{fig:lift-accessib8ility-kinding}
-    \end{minipage}
-    %
     \begin{minipage}{.4\linewidth}
       \begin{mathpar}
         \inferrule*
@@ -128,9 +119,8 @@
     \begin{minipage}{1.0\linewidth}
       \begin{mathpar}
         \inferrule*
-        {\Delta \vdash \DT : \datatype \\\\
-         \Delta \vdash \W : \access}
-        {\Delta \vdash \tyval{\DT}{\W} : \type}
+        {\Delta \vdash \DT : \datatype}
+        {\Delta \vdash \DT : \type}
   
         \inferrule*
         {\Delta \vdash \TYone : \type \\\\
@@ -141,7 +131,7 @@
         {\Delta, \x : \kappa \vdash \TY : \type \\ \kappa \in
           \left\{
             \begin{array}{l}
-            \access, \addrkind,\arcr
+            \addrkind,\arcr
             \ntnkind, \ntdkind,\arcr
             \natkind, \datatype
             \end{array}

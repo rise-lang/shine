@@ -78,6 +78,7 @@ class PhraseTypeParser(val string: String,
     peakToken match {
       case "x" => nextToken; RecordType(dt, parseDataType)
       case "]" => dt
+      case "," => dt
       case ")" => nextToken; parseRecordOrBaseType(dt)
       case _ => error
     }

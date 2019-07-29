@@ -54,14 +54,14 @@ class gemm extends idealised.util.Tests {
   }
 
   // we can use implicit type parameters and type annotations to specify the function type of mult
-  val mult  = implDT(dt => fun(x => x._1 * x._2) :: ((dt x dt)._R ->: dt._R))
+  val mult  = implDT(dt => fun(x => x._1 * x._2) :: ((dt x dt) ->: dt))
   val add   = fun(x => fun(y => x + y))
-  val scal  = implN(n => fun(xs => fun(a => mapSeq(fun(x => a * x), xs))) :: (ArrayType(n, float)._R ->: float._R ->: ArrayType(n, float)._R))
-  val dot = fun(x => foreignFun("dot", float4._R ->: float4._R ->: float._R)(x._1, x._2))
+  val scal  = implN(n => fun(xs => fun(a => mapSeq(fun(x => a * x), xs))) :: (ArrayType(n, float) ->: float ->: ArrayType(n, float)))
+  val dot = fun(x => foreignFun("dot", float4 ->: float4 ->: float)(x._1, x._2))
 
   val sequential =
     nFun((n, m, k) =>
-      fun((n`.`k`.`float)._R ->: (k`.`m`.`float)._R ->: (n`.`m`.`float)._R ->: float._R ->: float._R ->: (n`.`m`.`float)._R)
+      fun((n`.`k`.`float) ->: (k`.`m`.`float) ->: (n`.`m`.`float) ->: float ->: float ->: (n`.`m`.`float))
          ((a, b, c, alpha, beta) =>
 
          zip(a, c) |> mapSeq(fun(ac =>
@@ -87,7 +87,7 @@ class gemm extends idealised.util.Tests {
 
     val mali_GEMM =
       nFun((n, m, k) =>
-        fun((m`.`k`.`float)._R ->: (n`.`k`.`float)._R ->: (m`.`n`.`float)._R ->: float._R ->: float._R ->: (m`.`n`.`float)._R)
+        fun((m`.`k`.`float) ->: (n`.`k`.`float) ->: (m`.`n`.`float) ->: float ->: float ->: (m`.`n`.`float))
         ((a, b, c, alpha, beta) =>
 
           zip( split(p2)(a), split(p2)(c) ) |>

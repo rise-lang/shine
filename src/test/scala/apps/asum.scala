@@ -12,11 +12,11 @@ import idealised.util.{SyntaxChecker, gen}
 class asum extends idealised.util.Tests {
 
   def inputT(n : NatIdentifier) = ArrayType(n, float)
-  val abs = dtFun(t => foreignFun("my_abs", Seq("y"), "{ return fabs(y); }", t._R ->: t._R))
+  val abs = dtFun(t => foreignFun("my_abs", Seq("y"), "{ return fabs(y); }", t ->: t))
   val fabs = abs(float)
   val add = fun(x => fun(a => x + a))
 
-  val high_level = nFun(n => fun(inputT(n)._R)(input =>
+  val high_level = nFun(n => fun(inputT(n))(input =>
     input |> map(fabs) |> reduceSeq(add)(l(0.0f))
   ))
 
@@ -24,7 +24,7 @@ class asum extends idealised.util.Tests {
     val typed = infer(high_level)
 
     val N = typed.t.asInstanceOf[NatDepFunType[_ <: Type]].x
-    assertResult(DepFunType[NatKind, Type](N, FunType(inputT(N)._R, float._R))) {
+    assertResult(DepFunType[NatKind, Type](N, FunType(inputT(N), float))) {
       typed.t
     }
   }

@@ -9,7 +9,7 @@
       \expToDPIA{x : t} &=& x : \typToDPIA{t} \\
       \expToDPIA{\lambda x.~e : t_i \to t_o} &=& \lambda x : \typToDPIA{t_i}.~ \expToDPIA{e} \\
       \expToDPIA{f~e} &=& \expToDPIA{f}~\expToDPIA{e} \\
-      \expToDPIA{\Lambda x : \kindToDPIA{\kappa}.~e} &=& \Lambda x : \kappa.~\expToDPIA{e} \\
+      \expToDPIA{\Lambda x : \kappa.~e} &=& \Lambda x : \kindToDPIA{\kappa}.~\expToDPIA{e} \\
       \expToDPIA{f~\tau} &=& \expToDPIA{f}~\tau \\
       %\expToDPIA{f~(n : \natkind)} &=& \expToDPIA{f}~n \\
       %\expToDPIA{f~(dt : \datatype)} &=& \expToDPIA{f}~\typToDPIA{dt} \\
@@ -23,7 +23,7 @@
 \begin{figure}
   \begin{displaymath}
     \begin{array}{lcl}
-      \typToDPIA{\tyval{t}{\W}} &=& \tyexp{t}{\W} \\
+      \typToDPIA{t} &=& \tyexp{t}{read} \\ % FIXME: should not always be read
       \typToDPIA{t_i \to t_o} &=& \typToDPIA{t_i} \to \typToDPIA{t_o} \\
       \typToDPIA{(x : \kappa) \to t} &=& (x : \kindToDPIA{\kappa}) \to \typToDPIA{t} \\
     \end{array}
@@ -37,8 +37,9 @@
       \primToDPIA{f}{t_i \to t_o} &=& \lambda x : \typToDPIA{t_i}.~\primToDPIA{f~x}{t_o} \\
       \primToDPIA{f}{\{ x: \kappa \} \to t} &=& \primToDPIA{f~x}{t} \\
       \primToDPIA{f}{( x: \kappa ) \to t} &=& \Lambda x : \kindToDPIA{\kappa}.~\primToDPIA{f~x}{t} \\
-      \primToDPIA{e}{\tyval{t}{\W}} &=& e \\
+      \primToDPIA{e}{t} &=& e \\
     \end{array}
   \end{displaymath}
+  % TODO: not as implemented
   \caption{Translating \Lift{} primitives to DPIA primitives}
 \end{figure}
