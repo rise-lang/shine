@@ -33,7 +33,7 @@ class DependentArrays extends idealised.util.Tests {
     println(code)
   }
 
-  test("Generates a for loop") {
+  test("Big sum generates a for loop") {
     val f =
       nFun(n =>
         fun(DepArrayType(n, i =>
@@ -44,5 +44,7 @@ class DependentArrays extends idealised.util.Tests {
     val code = p.code
     SyntaxChecker.checkOpenCL(code)
     println(code)
+
+    "for".r.findAllIn(code).length shouldBe 3
   }
 }

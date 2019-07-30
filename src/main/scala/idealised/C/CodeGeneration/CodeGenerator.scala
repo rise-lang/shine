@@ -1002,21 +1002,19 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       * @return
       */
     def genBinopFold(nats:Iterable[Nat],
-                  behavior:Nat => (Nat, C.AST.BinaryOperator.Value),
-                  default:Expr,
-                  cont:Expr => Stmt,
-                  accum:Option[Expr] = None):Stmt = {
+                     behavior:Nat => (Nat, C.AST.BinaryOperator.Value),
+                     default:Expr,
+                     cont:Expr => Stmt,
+                     accum:Option[Expr] = None):Stmt = {
       nats.headOption match {
         case None => cont(accum.getOrElse(default))
         case Some(nat) =>
-          val (natToGenerate,op) = behavior(nat)
-          genNat(natToGenerate, env, exp => {
-            val nextAccum = accum match {
-              case None => exp
-              case Some(acc) => C.AST.BinaryExpr(acc, op, exp)
-            }
-            genBinopFold(nats.tail, behavior, default, cont, Some(nextAccum))
-          })
+          accum match {
+            case None => genNat(nat, env, exp => genBinopFold(nats.tail, behavior, default, cont, Some(exp)))
+            case Some(acc) =>
+              val (natToGenerate,op) = behavior(nat)
+              genNat(natToGenerate, env, exp => genBinopFold(nats.tail, behavior, default, cont, Some(C.AST.BinaryExpr(acc, op, exp))))
+          }
       }
     }
 
@@ -1091,17 +1089,16 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
          case sp: SteppedCase => genNat(sp.intoIfChain(), env, cont)
 
          case BigSum(variable, body) =>
-           genNat(0, env, zero =>
              genNat(variable.from, env, from => {
                genNat(variable.upTo, env, upTo => {
                  genNat(body, env, bodyE => {
-                   val cVar = C.AST.DeclRef(variable.name)
+                   val loopVar = C.AST.DeclRef(variable.toString)
 
-                   val init = C.AST.DeclStmt(C.AST.VarDecl(cVar.name, C.AST.Type.int, init = Some(from)))
-                   val cond = C.AST.BinaryExpr(cVar, C.AST.BinaryOperator.<, upTo)
-                   val increment = C.AST.Assignment(cVar, C.AST.ArithmeticExpr(NamedVar(cVar.name, variable.range) + 1))
+                   val init = C.AST.DeclStmt(C.AST.VarDecl(loopVar.name, C.AST.Type.int, init = Some(from)))
+                   val cond = C.AST.BinaryExpr(loopVar, C.AST.BinaryOperator.<, upTo)
+                   val increment = C.AST.Assignment(loopVar, C.AST.ArithmeticExpr(NamedVar(loopVar.name, variable.range) + 1))
 
-                   val accumVar = C.AST.VarDecl(freshName("accum_"), C.AST.Type.int, Some(zero))
+                   val accumVar = C.AST.VarDecl(freshName("accum_"), C.AST.Type.int, Some(AST.Literal("0")))
 
 
                    val forLoop = C.AST.ForLoop(init,
@@ -1124,7 +1121,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                  })
                })
              })
-           )
          case otherwise => throw new Exception(s"Don't know how to print $otherwise")
        }
   }
