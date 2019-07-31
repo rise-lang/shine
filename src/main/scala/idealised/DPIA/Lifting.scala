@@ -1,17 +1,13 @@
 package idealised.DPIA
 
-import idealised.DPIA.FunctionalPrimitives.{AsIndex, IndexAsNat}
 import idealised.DPIA.Phrases._
-import idealised.DPIA.Semantics.OperationalSemantics.IndexData
-import idealised.DPIA.Types.{DataType, ExpType, IndexType, Kind, PhraseType}
-import idealised.SurfaceLanguage._
-import lift.arithmetic.{NamedVar, RangeAdd, StartFromRange}
+import idealised.DPIA.Types.{ExpType, Kind, PhraseType}
 
 import scala.language.{postfixOps, reflectiveCalls}
 
 // TODO: Discuss with Bob: this excludes if (as the condition needs to be properly evaluated)
 object Lifting {
-  import lift.core.lifting.{Result, Reducing, Expanding}
+  import lift.core.lifting.{Expanding, Reducing, Result}
 
   def liftDependentFunction[K <: Kind, T <: PhraseType](p: Phrase[K `()->:` T]): K#T => Phrase[T] = {
     p match {

@@ -23,7 +23,7 @@ object CodeGenerator {
   final case class Environment(identEnv: immutable.Map[Identifier[_ <: BasePhraseTypes], C.AST.DeclRef],
                                commEnv: immutable.Map[Identifier[CommType], C.AST.Stmt],
                                contEnv: immutable.Map[Identifier[ExpType ->: CommType], Phrase[ExpType] => Environment => C.AST.Stmt],
-                               inlLetNatEnv: immutable.Map[LetNatIdentifier, C.AST.Expr]
+                               letNatEnv: immutable.Map[LetNatIdentifier, Phrase[PhraseType]]
                               ) {
     def updatedIdentEnv(kv: (Identifier[_ <: BasePhraseTypes], C.AST.DeclRef)): Environment = {
       this.copy(identEnv = identEnv + kv)
@@ -37,8 +37,8 @@ object CodeGenerator {
       this.copy(contEnv = contEnv + kv)
     }
 
-    def updatedInlNatEnv(kv:(LetNatIdentifier, C.AST.Expr)):Environment = {
-      this.copy(inlLetNatEnv = this.inlLetNatEnv + kv)
+    def updatedInlNatEnv(kv:(LetNatIdentifier,  Phrase[PhraseType])):Environment = {
+      this.copy(letNatEnv = this.letNatEnv + kv)
     }
   }
 
@@ -452,43 +452,35 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                              defn:Phrase[T],
                              env:Environment,
                              cont:(CodeGenerator ,Environment) => Stmt):Stmt = {
-    defn.t match {
-      case ExpType(_) =>
-        exp(defn.asInstanceOf[Phrase[ExpType]], env, List(), e => cont(this, env updatedInlNatEnv(binder, e)))
-      case _ =>
-        val newCodeGen = defineNatFunction(binder.name, defn, env)
-        cont(newCodeGen, env)
-    }
+    cont(this, env updatedInlNatEnv(binder, defn.asInstanceOf[Phrase[PhraseType]]))
+
   }
 
-  private def defineNatFunction[T <: PhraseType](name: String, phrase: Phrase[T], env: Environment): CodeGenerator = {
+  def inlineAndGenerate[T <: PhraseType](phrase: Phrase[T],
+                                         env:Environment,
+                                         args:Iterable[Either[Phrase[ExpType], Nat]],
+                                         cont:Expr => Stmt):Stmt = {
 
-    def getPhraseAndParams[_ <: PhraseType](p: Phrase[_],
-                                            ps: immutable.Seq[Identifier[ExpType]] = immutable.Seq(),
-                                            ranges:immutable.Seq[(String, Range)] = immutable.Seq()
-                                           ): (Phrase[ExpType], immutable.Seq[Identifier[ExpType]], immutable.Seq[(String, Range)]) = {
-      p match {
-        case l: Lambda[ExpType, _]@unchecked => getPhraseAndParams(l.body, l.param +: ps, ranges)
-        case ndl: DepLambda[NatKind, _]@unchecked => getPhraseAndParams(ndl.body, Identifier(ndl.x.name, ExpType(int)) +: ps, (ndl.x.name, ndl.x.range) +: ranges)
-        case ep: Phrase[ExpType]@unchecked => (ep, ps.reverse, ranges.reverse)
+    def error(s:String) = throw new Exception(s + " in deferred function generation")
+    phrase match {
+      case l: Lambda[ExpType, _]@unchecked => args.headOption match {
+        case Some(Right(_)) => error("Nat argument passed but phrase type arg expected")
+        case None => error("Parameter missing")
+        case Some(Left(param)) => inlineAndGenerate(l(param), env, args.tail, cont)
       }
+      case ndl: DepLambda[NatKind, _]@unchecked => args.headOption match {
+        case Some(Right(nat)) => inlineAndGenerate(ndl(nat), env, args.tail, cont)
+        case None => error("Parameter missing")
+        case Some(Left(_)) => error("Expression phrase argument passed but nat expected")
+      }
+      case ep: Phrase[ExpType]@unchecked => args.headOption match {
+        case Some(_) => error("Too many arguments in deferred funct")
+        case None =>
+          exp(ep, env, List(), cont)
+      }
+
+      case _ => error(s"Cannot generate phrase $phrase")
     }
-
-    val (body, params, ranges) = getPhraseAndParams(phrase)
-
-    val newEnv = params.foldLeft(env)((e, ident) => e.updatedIdentEnv(ident, C.AST.DeclRef(ident.name)))
-
-    val newCodeGen = ranges.foldLeft(this)((gen, rangeInfo) => gen.updatedRanges(rangeInfo._1, rangeInfo._2))
-
-    val cBody = visitAndGenerateNat(newCodeGen.exp(body, newEnv, List(), C.AST.Return(_)), newEnv)
-    val decl = C.AST.FunDecl(
-      name,
-      typ(body.t.dataType),
-      params.map(ident => C.AST.ParamDecl(ident.name, typ(ident.t.dataType))),
-      C.AST.Block(immutable.Seq(cBody))
-    )
-    newCodeGen.addDeclaration(decl)
-    newCodeGen
   }
 
   /**
@@ -1070,21 +1062,19 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
 
          case natFunCall: NatFunCall =>
-           if(natFunCall.args.isEmpty) {
-             cont(env.inlLetNatEnv(natFunCall.fun))
-           } else {
-             def rec(worklist:Iterable[NatFunArg], accum:immutable.Seq[Expr], cont:immutable.Seq[Expr] => Stmt):Stmt = {
-               worklist.headOption match {
-                 case None => cont(accum)
-                 case Some(arg) => arg match {
-                   case NatArg(n) => genNat(n, env, n => rec(worklist.tail, accum :+ n, cont))
-                   case LetNatIdArg(ident) => rec(worklist.tail, accum :+ env.inlLetNatEnv(ident), cont)
-                 }
-               }
-             }
+           val phrase = env.letNatEnv(natFunCall.fun)
 
-             rec(natFunCall.args, immutable.Seq(), exprs => cont(AST.FunCall(AST.DeclRef(natFunCall.name), exprs)))
-           }
+           val args = natFunCall.args.map({
+             case NatArg(argN) => Right(argN)
+             case LetNatIdArg(ident) =>
+               val argPhrase = env.letNatEnv(ident)
+               if(!argPhrase.t.isInstanceOf[ExpType]) {
+                 throw new Exception("Cannot use non-expression let nat arguments in natFunCall")
+               }
+               Left(argPhrase.asInstanceOf[Phrase[ExpType]])
+           })
+
+           visitAndGenerateNat(inlineAndGenerate(phrase, env, args, cont), env)
 
          case sp: SteppedCase => genNat(sp.intoIfChain(), env, cont)
 

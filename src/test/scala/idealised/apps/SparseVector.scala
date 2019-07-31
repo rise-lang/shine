@@ -3,7 +3,7 @@ package idealised.apps
 import idealised.OpenCL.{GlobalMemory, PrivateMemory, ScalaFunction}
 import idealised.OpenCL.SurfaceLanguage.DSL.{mapGlobal, oclReduceSeq}
 import idealised.SurfaceLanguage.DSL._
-import idealised.SurfaceLanguage.Primitives.{Fst, Idx, Snd}
+import idealised.SurfaceLanguage.Primitives.{AsIndex, Fst, Idx, Snd}
 import idealised.SurfaceLanguage.Types._
 import idealised.util.SyntaxChecker
 import opencl.executor.Executor
@@ -299,5 +299,25 @@ class SparseVector extends idealised.util.Tests {
       assert(output.zip(scalaOutput).forall({case (x,y) => Math.abs(x - y) < 0.01}))
     }
     runTest()
+  }
+
+  test("Sparse matrix dense vector") {
+    val f = nFun(n =>
+      fun(ArrayType(n, int))(dict =>
+        letNat(dict, dictN =>
+          letNat(fun(ArrayType(n, int))(dict => nFun(x => Idx(dict, AsIndex(n, x)))), lenF =>
+            fun(DepArrayType(n, i => ArrayType(lenF(dictN, i), float)))(arr => depMapSeq(mapSeq(fun(x => x + 1.0f)), arr))
+          )
+        )
+      )
+    )
+
+    val typed = TypeInference(f, Map())
+
+    val p = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(typed))
+
+    val code = p.code
+    SyntaxChecker.checkOpenCL(code)
+    println(code)
   }
 }

@@ -39,7 +39,7 @@ package object DPIA {
 
   object LetNatIdentifier {
     def apply():LetNatIdentifier = {
-      LetNatIdentifier(NatIdentifier("nFun"))
+      LetNatIdentifier(NatIdentifier(freshName("nFun")))
     }
   }
 
