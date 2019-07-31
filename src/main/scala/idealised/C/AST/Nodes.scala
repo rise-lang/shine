@@ -479,7 +479,10 @@ object DefaultImplementations {
   case class DeclStmt(override val decl: Decl) extends C.AST.DeclStmt(decl) {
     override def visitAndRebuild(v: VisitAndRebuild.Visitor): DeclStmt = DeclStmt(VisitAndRebuild(decl, v))
 
-    override def visitAndBuildStmt(v: VisitAndBuildStmt.Visitor): Stmt = this
+    override def visitAndBuildStmt(v: VisitAndBuildStmt.Visitor): Stmt = decl match {
+      case VarDecl(name, t, Some(init)) => VisitAndBuildStmt(init, v, initE => DeclStmt(VarDecl(name, t, Some(initE))))
+      case _ => this
+    }
   }
 
   case class Comment(override val string: String) extends C.AST.Comment(string) {
