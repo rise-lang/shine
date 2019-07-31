@@ -38,14 +38,6 @@ final case class Literal(d: semantics.Data) extends Expr {
   override def toString: String = s"$d"
 }
 
-final case class Index(n: Nat, size: Nat) extends Expr {
-  override def toString: String = s"idx($n)"
-}
-
-final case class NatExpr(n: Nat) extends Expr {
-  override def toString: String = s"$n"
-}
-
 final case class TypedExpr(e: Expr, t: Type) extends Expr {
   override def toString: String = s"($e: $t)"
 }

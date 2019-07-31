@@ -50,10 +50,11 @@ object fromLift {
             )
         }
 
-        case l.Literal(d)   =>  Literal(data(d))
-        case l.Index(n, sz) =>  Literal(OpSem.IndexData(n, IndexType(sz)))
-        case l.NatExpr(n)   =>  Natural(n)
-        case p: l.Primitive =>  primitive(p, t)
+          case l.Literal(d)   =>  d match {
+            case ls.NatData(n)  => Natural(n)
+            case _              => Literal(data(d))
+          }
+          case p: l.Primitive =>  primitive(p, t)
 
         case _: l.TypedExpr => ??? // do not expect typed expr
       }
@@ -113,8 +114,9 @@ object fromLift {
     case ls.BoolData(b) => OpSem.BoolData(b)
     case ls.IntData(i) => OpSem.IntData(i)
     case ls.FloatData(f) => OpSem.FloatData(f)
-    case ls.DoubleData(f) => OpSem.DoubleData(f)
+    case ls.DoubleData(d) => OpSem.DoubleData(d)
     case ls.VectorData(v) => OpSem.VectorData(v.map(data(_)).toVector)
+    case ls.IndexData(i, n) => OpSem.IndexData(i, n)
   }
 
   import idealised.DPIA.FunctionalPrimitives._
