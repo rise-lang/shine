@@ -1,6 +1,7 @@
 package lift.core
 
 import elevate.lift._
+import elevate.util._
 import lift.core.DSL._
 import lift.core.types.{float, infer}
 import lift.core.primitives._

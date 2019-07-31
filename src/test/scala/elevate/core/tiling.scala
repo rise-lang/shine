@@ -6,6 +6,7 @@ import elevate.core.strategies.tiling._
 import elevate.core.strategies.traversal._
 import elevate.core.strategies.basic._
 import elevate.lift._
+import elevate.util._
 import elevate.lift.rules._
 import idealised.util.gen
 import lift.core.DSL._

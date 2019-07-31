@@ -3,7 +3,7 @@ package elevate.core
 import elevate.lift.rules.movement._
 import elevate.core.strategies.traversal._
 import elevate.lift.strategies.traversal._
-import elevate.lift._
+import elevate.util._
 import lift.core.Expr
 import lift.core.DSL._
 

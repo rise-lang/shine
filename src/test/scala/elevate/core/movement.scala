@@ -5,6 +5,7 @@ import elevate.core.strategies.traversal._
 import elevate.core.strategies.basic._
 import elevate.lift.strategies.normalForm._
 import elevate.lift._
+import elevate.util._
 import lift.core.Expr
 import lift.core.primitives._
 import lift.core.DSL._
