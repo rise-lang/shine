@@ -45,6 +45,6 @@ class DependentArrays extends idealised.util.Tests {
     SyntaxChecker.checkOpenCL(code)
     println(code)
 
-    "for".r.findAllIn(code).length shouldBe 3
+    "for".r.findAllIn(code).length shouldBe 4
   }
 }
