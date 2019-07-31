@@ -1,7 +1,7 @@
 package idealised.apps
 
 import idealised.OpenCL.{GlobalMemory, PrivateMemory, ScalaFunction}
-import idealised.OpenCL.SurfaceLanguage.DSL.{mapGlobal, oclReduceSeq}
+import idealised.OpenCL.SurfaceLanguage.DSL.{depMapGlobal, mapGlobal, oclReduceSeq}
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Primitives.{AsIndex, Fst, Idx, Snd}
 import idealised.SurfaceLanguage.Types._
@@ -305,9 +305,9 @@ class SparseVector extends idealised.util.Tests {
     val f = nFun(n => nFun(m =>
       fun(ArrayType(n, IndexType(m)))(dict =>
         letNat(nFun(i => Idx(dict, AsIndex(n, i))), lenF =>
-          fun(DepArrayType(n, i => ArrayType(lenF(i), TupleType(IndexType(n), float))))(matrix =>
-            fun(ArrayType(n, float))(vector =>
-              matrix :>> depMapSeq(
+          fun(DepArrayType(n, i => ArrayType(lenF(i), TupleType(IndexType(m), float))))(matrix =>
+            fun(ArrayType(m, float))(vector =>
+              matrix :>> depMapGlobal(
                 oclReduceSeq(fun(pair => fun(accum => accum + Snd(pair, None) * Idx(vector, Fst(pair, None)))),0.0f, PrivateMemory)
               )
             )

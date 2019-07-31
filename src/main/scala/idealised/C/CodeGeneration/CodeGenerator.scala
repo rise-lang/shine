@@ -37,7 +37,7 @@ object CodeGenerator {
       this.copy(contEnv = contEnv + kv)
     }
 
-    def updatedInlNatEnv(kv:(LetNatIdentifier,  Phrase[PhraseType])):Environment = {
+    def updatedNatEnv(kv:(LetNatIdentifier,  Phrase[PhraseType])):Environment = {
       this.copy(letNatEnv = this.letNatEnv + kv)
     }
   }
@@ -452,7 +452,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                              defn:Phrase[T],
                              env:Environment,
                              cont:(CodeGenerator ,Environment) => Stmt):Stmt = {
-    cont(this, env updatedInlNatEnv(binder, defn.asInstanceOf[Phrase[PhraseType]]))
+    cont(this, env updatedNatEnv(binder, defn.asInstanceOf[Phrase[PhraseType]]))
 
   }
 
