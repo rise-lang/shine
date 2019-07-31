@@ -302,14 +302,19 @@ class SparseVector extends idealised.util.Tests {
   }
 
   test("Sparse matrix dense vector") {
-    val f = nFun(n =>
-      fun(ArrayType(n, int))(dict =>
-        letNat(dict, dictN =>
-          letNat(fun(ArrayType(n, int))(dict => nFun(x => Idx(dict, AsIndex(n, x)))), lenF =>
-            fun(DepArrayType(n, i => ArrayType(lenF(dictN, i), float)))(arr => depMapSeq(mapSeq(fun(x => x + 1.0f)), arr))
+    val f = nFun(n => nFun(m =>
+      fun(ArrayType(n, IndexType(m)))(dict =>
+        letNat(nFun(i => Idx(dict, AsIndex(n, i))), lenF =>
+          fun(DepArrayType(n, i => ArrayType(lenF(i), TupleType(IndexType(n), float))))(matrix =>
+            fun(ArrayType(n, float))(vector =>
+              matrix :>> depMapSeq(
+                oclReduceSeq(fun(pair => fun(accum => accum + Snd(pair, None) * Idx(vector, Fst(pair, None)))),0.0f, PrivateMemory)
+              )
+            )
           )
         )
       )
+    )
     )
 
     val typed = TypeInference(f, Map())
