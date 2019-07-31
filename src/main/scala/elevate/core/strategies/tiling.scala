@@ -21,7 +21,7 @@ object tiling {
         case x if x <= 0 => id
         // ((map f) arg)
         case 1 => function(splitJoin(n.head)) `;` LCNF `;` RNF
-        case i => fmap(tileNDRec(d-1)(n.tail)) `;` tileNDRec(1)(n) `;` shiftDim(i)
+        case i => fmap(tileNDRec(d-1)(n.tail)) `;` tileNDRec(1)(n) `;` shiftDim(i) `;` RNF
       }
 
   // Notation: A.a -> a == tile dimension; A == original dimension
@@ -39,7 +39,7 @@ object tiling {
     d => {
       val joins = d
       val transposes = (1 to d-2).sum
-      LCNF `;` shiftDimRec(joins + transposes)(d-1)
+      LCNF `;` RNF `;` shiftDimRec(joins + transposes)(d-1) `;` LCNF `;` RNF
     }
 
   // position: how far to move right until we reach maps
@@ -47,8 +47,8 @@ object tiling {
   def shiftDimRec: Int => Int => Strategy =
     position => level => LCNF `;`
       (level match {
-      case 1 => moveTowardsArgument(position)(fmap(loopInterchange)) `;` LCNF `;` RNF
-      case l => shiftDimRec(position)(l - 1) `;` LCNF `;`
+      case 1 => moveTowardsArgument(position)(loopInterchangeAtLevel(1)) `;` LCNF `;` RNF
+      case l => shiftDimRec(position)(l - 1) `;` LCNF `;` RNF `;`
         moveTowardsArgument(position + l - 1)(loopInterchangeAtLevel(l))
     })
 

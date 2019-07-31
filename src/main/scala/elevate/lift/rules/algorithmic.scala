@@ -1,6 +1,7 @@
 package elevate.lift.rules
 
 import elevate.core.{Failure, Strategy, Success}
+import elevate.lift.strategies.predicate._
 import lift.core._
 import lift.core.DSL._
 import lift.core.primitives.{id, join, map, split, transpose}
@@ -36,11 +37,8 @@ object algorithmic {
   def mapLastFission: Strategy = `*(g >> .. >> f) -> *(g >> ..) >> *f`
   def `*(g >> .. >> f) -> *(g >> ..) >> *f`: Strategy = {
     // TODO? 'x' should not be used in 'f' or 'g'
-    /* chain of two fission
-    case Apply(`map`, Lambda(x1, Apply(f, Apply(g, x2)))) if x1 == x2 =>
-      map(g) >> map(f)
-      */
-    case Apply(`map`, Lambda(x, Apply(f, gx))) =>
+    // TODO: why gx != Identifier?
+    case Apply(`map`, Lambda(x, Apply(f, gx))) if !contains(x)(f) && !isIdentifier(gx) =>
       Success(Apply(`map`, Lambda(x, gx)) >> map(f))
     case _ => Failure(mapLastFission)
   }

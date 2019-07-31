@@ -26,6 +26,12 @@ package object lift {
                          inlineLambdaIdentifier: Boolean,
                          ty: Option[String]): String = {
 
+      def attr(str: String): String = s"[$str]"
+      def fill(c: String): String = s"fillcolor=$c "
+      def fillWhite = fill("white")
+      def fillGray = fill("\"#e6e2de\"")
+      def fillBlack = fill("black")
+
       case class Label(s: String,
                        decorations: String => String = x => s"$x",
                        forEdge: Boolean = false){
@@ -43,7 +49,7 @@ package object lift {
         }
       }
 
-      val edgeLabel = (x: String) => Label(x).gray.edge.toString
+      val edgeLabel = (x: String) => attr(fillBlack + Label(x).gray.edge.toString)
       def addEdgeLabel(s: String): String = if (printEdgeLabels) s else ""
 
       def recurse(e: Expr,
@@ -54,7 +60,7 @@ package object lift {
       def binaryNode(nodeLabel: String, a: (Expr, String), b: (Expr, String)): String = {
         val aID = getID(a._1)
         val bID = getID(b._1)
-        s"""$parent ${Label(nodeLabel)}
+        s"""$parent ${attr(fillWhite + Label(nodeLabel).toString)}
            |$parent -> $aID ${addEdgeLabel(edgeLabel(a._2))};
            |$parent -> $bID ${addEdgeLabel(edgeLabel(b._2))};
            |${recurse(a._1, aID, None)}
@@ -68,7 +74,7 @@ package object lift {
         case Lambda(i, e) if inlineLambdaIdentifier =>
           val idLabel = getID(i)
           val expr = getID(e)
-          s"""$parent ${Label(s"λ.$i")}
+          s"""$parent ${attr(fillWhite + Label(s"λ.$i").toString)}
              |$parent -> $expr ${addEdgeLabel(edgeLabel("body"))};
              |${recurse(e, expr, None)}""".stripMargin
 
@@ -83,25 +89,25 @@ package object lift {
         case DepLambda(x, e) if !inlineLambdaIdentifier =>
           val id = getID(x)
           val expr = getID(e)
-          s"""$parent ${Label("Λ")}
+          s"""$parent ${attr(fillWhite + Label("Λ").toString)}
              |$parent -> $id ${addEdgeLabel(edgeLabel("id"))};
              |$parent -> $expr ${addEdgeLabel(edgeLabel("body"))};
-             |$id ${Label(x.toString)}
+             |$id ${attr(fillWhite + Label(x.toString).toString)}
              |${recurse(e, expr, None)}""".stripMargin
 
         case DepLambda(x, e) if inlineLambdaIdentifier =>
           val expr = getID(e)
-          s"""$parent ${Label(s"Λ.$x")}
+          s"""$parent ${attr(fillWhite + Label(s"Λ.$x").toString)}
              |$parent -> $expr ${addEdgeLabel(edgeLabel("body"))};
              |${recurse(e, expr, None)}""".stripMargin
 
         case DepApply(f, e) =>
           val fun = getID(f)
           val arg = getID(e)
-          s"""$parent ${Label("apply")}
+          s"""$parent ${attr(fillWhite + Label("apply").toString)}
              |$parent -> $fun ${addEdgeLabel(edgeLabel("fun"))};
              |$parent -> $arg ${addEdgeLabel(edgeLabel("arg"))};
-             |$arg ${Label(e.toString)}
+             |$arg ${attr(fillWhite + Label(e.toString).toString)}
              |${recurse(f, fun, None)}""".stripMargin
 
         case TypedExpr(e, t) if inlineTypedExpr =>
@@ -112,15 +118,15 @@ package object lift {
           val expr = getID(e)
           val ty = getID(t)
           val formattedType = t.toString.replaceAll("->", "-\\\\>")
-          s"""$parent ${Label("TypedExpr")}
+          s"""$parent ${attr(fillWhite + Label("TypedExpr").toString)}
              |$parent -> $expr ${addEdgeLabel(edgeLabel("expr"))}
              |$parent -> $ty ${addEdgeLabel(edgeLabel("type"))}
              |$ty [label="$formattedType"]
              |${recurse(e, expr, None)}""".stripMargin
 
-        case l: Literal => s"$parent ${Label(l.toString).italic}"
-        case i: Identifier => s"$parent ${Label(i.toString).italic}"
-        case p: Primitive => s"$parent ${Label(p.toString).bold}"
+        case l: Literal => s"$parent ${attr(fillWhite + Label(l.toString).italic.toString)}"
+        case i: Identifier => s"$parent ${attr(fillWhite + Label(i.toString).italic.toString)}"
+        case p: Primitive => s"$parent ${attr(fillGray + Label(p.toString).bold.toString)}"
       }
     }
 
@@ -128,10 +134,20 @@ package object lift {
     s"""
        |digraph graphname
        |{
-       |node [shape="record",style="rounded"]
+       |node [shape="record",style="rounded, filled"]
        |$content
        |}
      """.stripMargin
   }
 
+  def exprToDot(path: String, name: String, e: Expr, dot: Expr => String): Unit = {
+    import java.io._
+    import sys.process._
+
+    val w =new PrintWriter(new File(s"$path/$name.dot"))
+    w.write(dot(e))
+    w.flush()
+    w.close()
+    val test = s"dot -Tpdf $path/$name.dot -o $path/$name.pdf".!
+  }
 }

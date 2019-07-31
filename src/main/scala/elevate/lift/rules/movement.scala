@@ -1,6 +1,7 @@
 package elevate.lift.rules
 
 import elevate.core.{Failure, NotApplicable, Strategy, Success}
+import elevate.lift.strategies.predicate._
 import lift.core.{Apply, DepApply, Expr, Lambda, Nat, Primitive}
 import lift.core.primitives._
 import lift.core.DSL._
@@ -32,8 +33,8 @@ object movement {
             f, n61))), n71))),
         arg
       )
-    ) if n7 == n71 && n6 == n61
-     => Success(arg |> transpose |> map(map(f)))
+    ) if contains(n6)(n61) && contains(n7)(n71) =>
+      Success(arg |> transpose |> map(map(f)))
     case _ => Failure(mapMapFBeforeTranspose)
   }
 

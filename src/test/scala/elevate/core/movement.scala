@@ -4,11 +4,13 @@ import elevate.lift.rules.movement._
 import elevate.core.strategies.traversal._
 import elevate.core.strategies.basic._
 import elevate.lift.strategies.normalForm._
+import elevate.lift.strategies.predicate._
 import elevate.lift._
 import elevate.util._
-import lift.core.Expr
+import lift.core.{Apply, Expr, Literal}
 import lift.core.primitives._
 import lift.core.DSL._
+import lift.core.types.{float, infer}
 
 import scala.language.implicitConversions
 
@@ -33,6 +35,26 @@ class movement extends idealised.util.Tests {
         λ(f => **(f) >> T)
       ).map((debug `;` oncetd(`**f >> T -> T >> **f`))(_).get), gold
     )
+  }
+
+  test("**f >> T - zip constraint") {
+    val test = λ(i => λ(f => (T o ***(f)) $ zip(i,i)))
+
+    val backward =
+      nFun((m, n, k) =>
+        fun((m`.`k`.`float) ->: (k`.`n`.`float) ->: (m`.`n`.`float) ->: float ->: float ->: (m`.`n`.`float))
+        ((a, b, c, alpha, beta) =>
+          (transpose o map(fun(ac =>
+            map(fun(bc =>
+              (fun(x => (x * alpha) + beta * bc._2) o
+                reduce(fun((y, acc) => acc + (y._1 * y._2)), l(0.0f))) $
+                zip(ac._1, bc._1))) $
+              zip(transpose(b),ac._2)))) $
+            zip(a, c)
+        )
+      )
+
+    assert(oncetd(mapMapFBeforeTranspose)(backward))
   }
 
   test("T >> **f -> **f >> T") {

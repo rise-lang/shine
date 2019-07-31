@@ -1,5 +1,8 @@
 package elevate.core
 
+import java.io.{File, PrintWriter}
+
+import elevate.core.strategies.basic
 import elevate.lift.strategies.traversal._
 import elevate.lift.strategies.normalForm._
 import elevate.core.strategies.tiling._
@@ -8,15 +11,15 @@ import elevate.core.strategies.basic._
 import elevate.lift._
 import elevate.util._
 import elevate.lift.rules._
+import elevate.lift.rules.algorithmic._
 import idealised.util.gen
 import lift.core.DSL._
-import lift.core.{Apply, DepLambda, Expr, NatIdentifier, TypedExpr}
+import lift.core.{Apply, DepLambda, Expr, Identifier, Lambda, NatIdentifier, TypedExpr}
 import lift.core.primitives._
 import lift.core.types.{ArrayType, NatKind, float, infer}
 import org.scalatest.Ignore
 
 import scala.language.implicitConversions
-
 
 class tiling extends idealised.util.Tests {
 
@@ -42,6 +45,8 @@ class tiling extends idealised.util.Tests {
   /// TILING ONE LOOP
 
   test("tileND - tile one loop 1D") {
+    println(body(body(tileND(1)(tileSize)))(λ(i => λ(f => *(f) $ i))))
+    println(λ(i => λ(f => (J o **(f) o S) $ i)))
     assert(structEq(
       body(body(tileND(1)(tileSize)))(λ(i => λ(f => *(f) $ i))),
       λ(i => λ(f => (J o **(f) o S) $ i))
@@ -302,22 +307,47 @@ class tiling extends idealised.util.Tests {
 
   /// REAL APPLICATIONS
 
+  // todo WIP
   test("tile gemm") {
-    val sequential =
-      nFun((n, m, k) =>
-        fun((n`.`k`.`float) ->: (k`.`m`.`float) ->: (n`.`m`.`float) ->: float ->: float ->: (n`.`m`.`float))
+    val backward =
+      nFun((m, n, k) =>
+        fun((m`.`k`.`float) ->: (k`.`n`.`float) ->: (m`.`n`.`float) ->: float ->: float ->: (m`.`n`.`float))
         ((a, b, c, alpha, beta) =>
-
-          zip(a, c) |> map(fun(ac =>
-            zip(transpose(b), ac._2) |> map(fun(bc =>
-              zip(ac._1, bc._1) |>
-                reduce(fun( (y, acc) => acc + (y._1 * y._2)), l(0.0f)) |>
-                fun(x => (x * alpha) + (beta * bc._2))
-            ))
-          ))
+          map(fun(ac =>
+            map(fun(bc =>
+              (fun(x => (x * alpha) + beta * bc._2) o
+                reduce(fun((y, acc) => acc + (y._1 * y._2)), l(0.0f))) $
+            zip(ac._1, bc._1))) $
+          zip(transpose(b),ac._2))) $
+        zip(a, c)
         )
       )
 
-    (LCNF `;` CNF `;` oncetd(tileND(2)(4)) `;` BENF `;` RNF)(sequential)
+    val tiled = (LCNF `;` CNF `;` oncetd(tileND(2)(4)) `;` BENF `;` RNF)(backward)
+    //infer(tiled)
+  }
+
+  test("map fission issue when used with zip") {
+    def xsT(N : NatIdentifier) = ArrayType(N, float)
+    def ysT(N : NatIdentifier) = ArrayType(N, float)
+
+    val mulT = fun(x => fst(x) * snd(x))
+
+    val simple = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
+        zip(xs)(ys) |> map(mulT)
+    )))
+
+    // we can't fission the map
+    assert(structEq(infer((RNF)(simple)), infer(simple)))
+    // and tiling it doesn't break it either
+    infer((oncetd(splitJoin(4)) `;` RNF `;` LCNF)(simple))
+    infer((oncetd(tileND(1)(4)) `;` RNF `;` LCNF)(simple))
+  }
+
+  test("normalform actually normalizes") {
+    val gold = λ(i => λ(f => (J o **(f) o S) $ i))
+    assert(structEq((RNF `;` BENF)(λ(i => λ(f => (J o **(f) o S) $ i))), gold))
+    assert(structEq((RNF `;` RNF `;` BENF)(λ(i => λ(f => (J o **(f) o S) $ i))), gold))
+    assert(structEq((RNF `;` RNF `;` RNF `;` BENF)(λ(i => λ(f => (J o **(f) o S) $ i))), gold))
   }
 }
