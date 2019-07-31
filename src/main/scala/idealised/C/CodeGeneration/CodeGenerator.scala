@@ -456,20 +456,25 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
   }
 
-  def inlineAndGenerate[T <: PhraseType](phrase: Phrase[T],
-                                         env:Environment,
-                                         args:Iterable[Either[Phrase[ExpType], Nat]],
-                                         cont:Expr => Stmt):Stmt = {
+  /* Take a phrase representing a function (may have multiple level of lambas/DepLambda[NatKind, _]), and a series of arguments,
+     and generates the code of the function applied to the arguments.
+     Since the generated code is inlined directly, no special measures need to be taken to handle variables captured
+     in the phrase
+   */
+  def generateInlinedCall[T <: PhraseType](phrase: Phrase[T],
+                                           env:Environment,
+                                           args:Iterable[Either[Phrase[ExpType], Nat]],
+                                           cont:Expr => Stmt):Stmt = {
 
     def error(s:String) = throw new Exception(s + " in deferred function generation")
     phrase match {
       case l: Lambda[ExpType, _]@unchecked => args.headOption match {
         case Some(Right(_)) => error("Nat argument passed but phrase type arg expected")
         case None => error("Parameter missing")
-        case Some(Left(param)) => inlineAndGenerate(l(param), env, args.tail, cont)
+        case Some(Left(param)) => generateInlinedCall(l(param), env, args.tail, cont)
       }
       case ndl: DepLambda[NatKind, _]@unchecked => args.headOption match {
-        case Some(Right(nat)) => inlineAndGenerate(ndl(nat), env, args.tail, cont)
+        case Some(Right(nat)) => generateInlinedCall(ndl(nat), env, args.tail, cont)
         case None => error("Parameter missing")
         case Some(Left(_)) => error("Expression phrase argument passed but nat expected")
       }
@@ -1074,7 +1079,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                Left(argPhrase.asInstanceOf[Phrase[ExpType]])
            })
 
-           visitAndGenerateNat(inlineAndGenerate(phrase, env, args, cont), env)
+           visitAndGenerateNat(generateInlinedCall(phrase, env, args, cont), env)
 
          case sp: SteppedCase => genNat(sp.intoIfChain(), env, cont)
 
