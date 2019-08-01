@@ -64,8 +64,9 @@ class NatDepLambdaGen extends idealised.util.TestsWithExecutor {
               x :>> tile(tileRows)(tileColumns) :>>
                 mapWorkgroup(1)(mapWorkgroup(0)(fun(tile =>
                   tile :>>
-                    toGlobal(mapLocal(1)(mapLocal(0)(toLocal(id))) >>>
-                      transpose()) :>>
+                    mapLocal(1)(mapLocal(0)(fun(x => toLocal(x)))) :>>
+                    transpose() :>>
+                    fun(x => toGlobal(x)) :>>
                 transpose()))))))))// :>> untile2D)))
 
     val kernel =

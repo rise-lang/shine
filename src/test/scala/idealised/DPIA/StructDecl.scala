@@ -68,7 +68,7 @@ class StructDecl extends idealised.util.Tests {
   test("Program using intermediary tuples but not in input or output, can be generated in OpenCL.") {
     val tupleOut = fun(ArrayType(8, float))(xs =>
       fun(ArrayType(8, float))(ys =>
-        zip(xs, ys) :>> toGlobal(mapSeq(id)) :>> mapSeq(addT)))
+        zip(xs, ys) :>> mapSeq(id) :>> fun(x => toGlobal(x)) :>> mapSeq(addT)))
 
     val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(tupleOut, Map()))
     val program = idealised.OpenCL.KernelGenerator.makeCode(phrase)

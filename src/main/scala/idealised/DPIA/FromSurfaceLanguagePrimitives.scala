@@ -75,7 +75,8 @@ object FromSurfaceLanguagePrimitives {
 
       case Drop(n, array, _) => (array.t: @unchecked) match {
         case Some(ArrayType(m, dt)) =>
-          Some(FunctionalPrimitives.Drop(n, m - n, ???, dt, FromSurfaceLanguage.asPhrase[ExpType](array)))
+          Some(FunctionalPrimitives.Drop(n, m - n, Types.read, // TODO
+            dt, FromSurfaceLanguage.asPhrase[ExpType](array)))
       }
 
       case ForeignFunction(funDecl, inTs, outT, args) =>
@@ -107,7 +108,8 @@ object FromSurfaceLanguagePrimitives {
 
       case Join(array, _) => (array.t: @unchecked) match {
         case Some(ArrayType(n, ArrayType(m, dt))) =>
-          Some(FunctionalPrimitives.Join(n, m, ???, dt, FromSurfaceLanguage.asPhrase[ExpType](array)))
+          Some(FunctionalPrimitives.Join(n, m, Types.read, // TODO
+            dt, FromSurfaceLanguage.asPhrase[ExpType](array)))
         case Some(ArrayType(n, DepArrayType(m, DependentFunctionType(i: SurfaceLanguage.NatIdentifier, dt)))) =>
           ???
         case Some(DepArrayType(n, DependentFunctionType(d_i: SurfaceLanguage.NatIdentifier, ArrayType(d_n, dt)))) =>
@@ -144,14 +146,16 @@ object FromSurfaceLanguagePrimitives {
 
       case Split(n, array, _) => (array.t: @unchecked) match {
         case Some(ArrayType(mn, dt)) =>
-          Some(FunctionalPrimitives.Split(n, mn /^ n, ???, dt, FromSurfaceLanguage.asPhrase[ExpType](array)))
+          Some(FunctionalPrimitives.Split(n, mn /^ n, Types.read, // TODO
+            dt, FromSurfaceLanguage.asPhrase[ExpType](array)))
         case x => None
       }
 
       case Take(n, array, _) =>
         (array.t: @unchecked) match {
         case Some(ArrayType(m, dt)) =>
-          Some(FunctionalPrimitives.Take(n, m - n, ???, dt, FromSurfaceLanguage.asPhrase[ExpType](array)))
+          Some(FunctionalPrimitives.Take(n, m - n, Types.read, // TODO
+            dt, FromSurfaceLanguage.asPhrase[ExpType](array)))
       }
 
       case Transpose(array, _) => (array.t: @unchecked) match {
@@ -178,9 +182,11 @@ object FromSurfaceLanguagePrimitives {
               })
             })
 
-          Some(Split(n, m, ???, dt,
+          Some(Split(n, m, Types.read, // TODO
+            dt,
             Reorder(n*m, dt, transposeFunction, transposeInverseFunction,
-              Join(n, m, ???, dt, FromSurfaceLanguage.asPhrase[ExpType](array)))))
+              Join(n, m, Types.read, // TODO
+                dt, FromSurfaceLanguage.asPhrase[ExpType](array)))))
 
         case Some(ArrayType(n, DepArrayType(m, DependentFunctionType(i: SurfaceLanguage.NatIdentifier, dt)))) =>
           Some(TransposeDepArray(n, m, NatToDataLambda(i.range.max, k =>
@@ -260,17 +266,15 @@ object FromSurfaceLanguagePrimitives {
       case OpenCLReduceSeq(f, init, initAddrSpace, array, _) => ( (f.t, init.t, array.t) : @unchecked) match {
         case (Some(FunctionType(t1, FunctionType(t2, t3))), Some(dt2: DataType), Some(ArrayType(n, dt1)))
           if dt1 == t1 && dt2 == t2 && dt2 == t3 =>
-          Some(idealised.OpenCL.FunctionalPrimitives.OpenCLReduceSeq(n, ???, dt1, dt2,
+          Some(idealised.OpenCL.FunctionalPrimitives.OpenCLReduceSeq(n, initAddrSpace, dt1, dt2,
             FromSurfaceLanguage.asPhrase[DPIA.Types.FunType[DPIA.Types.ExpType, DPIA.Types.FunType[DPIA.Types.ExpType, DPIA.Types.ExpType]]](f),
             FromSurfaceLanguage.asPhrase[DPIA.Types.ExpType](init),
             FromSurfaceLanguage.asPhrase[DPIA.Types.ExpType](array)))
       }
 
-      case to: To => ( (to.f.t, to.input.t) : @unchecked) match {
-        case (Some(FunctionType(dt1: DataType, dt2: DataType)), Some(t1)) if dt1 == t1 =>
-          Some(makeDPIATo(to)(dt1, dt2,
-            FromSurfaceLanguage.asPhrase[DPIA.Types.FunType[DPIA.Types.ExpType, DPIA.Types.ExpType]](to.f),
-            FromSurfaceLanguage.asPhrase[DPIA.Types.ExpType](to.input)))
+      case to: To => to.t match {
+        case Some(dt: DataType) =>
+          Some(makeDPIATo(to)(dt, FromSurfaceLanguage.asPhrase[DPIA.Types.ExpType](to.input)))
       }
 
       case _ => None
@@ -352,15 +356,9 @@ object FromSurfaceLanguagePrimitives {
       (n, sz, sp, dt, input) => DPIA.FunctionalPrimitives.SlideSeq(lift.core.primitives.slideSeq.Values, n, sz, sp, dt, input)
   }
 
-  def makeDPIATo(to: To): (DataType, DataType, Phrase[DPIA.Types.FunType[ExpType, ExpType]], Phrase[ExpType])
-    => idealised.OpenCL.FunctionalPrimitives.To = ???
-//    to match {
-//    case _: ToPrivate =>
-//      (dt1, dt2, f, array) => idealised.OpenCL.FunctionalPrimitives.ToPrivate(dt1, dt2, f, array)
-//    case _: ToLocal =>
-//      (dt1, dt2, f, array) => idealised.OpenCL.FunctionalPrimitives.ToLocal(dt1, dt2, f, array)
-//    case _: ToGlobal =>
-//      (dt1, dt2, f, array) => idealised.OpenCL.FunctionalPrimitives.ToGlobal(dt1, dt2, f, array)
-//  }
-
+  def makeDPIATo(to: To): (DataType, Phrase[ExpType])
+    => idealised.OpenCL.FunctionalPrimitives.To = {
+    (dt, array) =>
+      idealised.OpenCL.FunctionalPrimitives.To(to.addressSpace, dt, array)
+  }
 }

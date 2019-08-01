@@ -103,27 +103,15 @@ object depMapLocal {
 
 
 object toLocal {
-  def apply(f: Expr): Expr =
-    fun(x => toLocal(f, x))
-
-  def apply(f: Expr, x: Expr): ToLocal =
-    ToLocal(f, x)
+  def apply(e: Expr): Expr = ToLocal(e)
 }
 
 object toGlobal {
-  def apply(f: Expr): Expr =
-    fun(x => toGlobal(f, x))
-
-  def apply(f: Expr, x: Expr): ToGlobal =
-    ToGlobal(f, x)
+  def apply(e: Expr): Expr = ToGlobal(e)
 }
 
 object toPrivate {
-  def apply(f: Expr): Expr =
-    fun(x => toPrivate(f, x))
-
-  def apply(f: Expr, x: Expr): ToPrivate =
-    ToPrivate(f, x)
+  def apply(e: Expr): Expr = ToPrivate(e)
 }
 
 object oclReduceSeq {
