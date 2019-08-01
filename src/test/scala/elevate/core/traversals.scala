@@ -1,16 +1,33 @@
 package elevate.core
 
 import elevate.lift.rules._
-import elevate.lift.rules.algorithmic.{mapFusion}
 import elevate.util._
-import elevate.core.strategies.traversal._
 import elevate.lift.strategies.normalForm._
 import elevate.core.strategies.basic._
+import elevate.core.strategies.traversal.oncetd
+import elevate.lift.rules.algorithmic.rules
+import elevate.lift.strategies.traversal.{body, function, inBody}
 import lift.core.DSL._
+import lift.core.Expr
 import lift.core.primitives.map
+
 
 class traversals extends idealised.util.Tests {
 
+  test("simple") {
+    val expr = fun(f => fun(g => map(f) >> map(g)))
+    val strategy = body(body(body(rules.mapFusion `;` function(rules.mapLastFission))))
+
+    val metaStrategy = inBody(inBody(rules.bodyFission))(strategy)
+    val newStrategy = metaStrategy.get[StrategyT[Expr]]
+    println("------------------")
+    println(strategy)
+    println(newStrategy)
+    println("------------------")
+    println(newStrategy(expr))
+    println(strategy(expr))
+  }
+  /*
   test("id traversals") {
     val expr = fun(f => fun(g => map(f) >> map(g)))
 
@@ -46,4 +63,6 @@ class traversals extends idealised.util.Tests {
       ).forall(x => betaEtaEquals(x.get, gold))
     )
   }
+
+   */
 }

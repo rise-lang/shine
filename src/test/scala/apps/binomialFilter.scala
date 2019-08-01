@@ -19,6 +19,7 @@ import idealised.C
 import idealised.util.{Execute, SyntaxChecker}
 
 object binomialFilter {
+  /*
   // Binomial filter, convolution is separable:
   //
   // 1 2 1   1
@@ -299,4 +300,6 @@ int main(int argc, char** argv) {
     " % ".r.findAllIn(code).length shouldBe 0
     " / ".r.findAllIn(code).length shouldBe 0
   }
+
+   */
 }

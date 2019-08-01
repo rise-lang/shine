@@ -5,6 +5,7 @@ import lift.core._
 
 package object rules {
 
+  /*
   def betaReduction: Strategy = {
     case Apply(f, x) => lifting.liftFunExpr(f) match {
       case lifting.Reducing(lf) => Success(lf(x))
@@ -26,4 +27,6 @@ package object rules {
       Success(Lambda(x, Apply(f, x)))
     case _ => Failure(etaAbstraction)
   }
+
+   */
 }

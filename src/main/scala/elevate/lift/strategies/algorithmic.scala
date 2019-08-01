@@ -8,6 +8,7 @@ object algorithmic {
   // TODO: only compose simpler rules
   // TODO: what if 'x' is used in 'f'?
 
+  /*
   // fission of the first function to be applied inside a map
   // *(g >> .. >> f) -> *g >> *(.. >> f)
   def mapFirstFission: Strategy = {
@@ -45,4 +46,6 @@ object algorithmic {
         }
     }
   }
+
+   */
 }

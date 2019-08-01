@@ -5,6 +5,7 @@ import lift.core.{Apply, Lambda, primitives}
 import lift.core.primitives._
 
 object specialize {
+  /*
   def mapSeq: Strategy = {
     case primitives.map => Success(primitives.mapSeq)
     case _ => Failure(mapSeq)
@@ -28,4 +29,6 @@ object specialize {
     case primitives.slide => Success(primitives.slideSeq(rot))
     case _ => Failure(slideSeq(rot))
   }
+
+   */
 }

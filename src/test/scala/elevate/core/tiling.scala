@@ -23,6 +23,7 @@ import scala.language.implicitConversions
 
 class tiling extends idealised.util.Tests {
 
+  /*
   implicit def rewriteResultToExpr(r: RewriteResult[Expr]): Expr = r.get
 
   test("LCNF") {
@@ -350,4 +351,6 @@ class tiling extends idealised.util.Tests {
     assert(betaEtaEquals((RNF `;` RNF `;` BENF)(λ(i => λ(f => (J o **(f) o S) $ i))), gold))
     assert(betaEtaEquals((RNF `;` RNF `;` RNF `;` BENF)(λ(i => λ(f => (J o **(f) o S) $ i))), gold))
   }
+
+   */
 }

@@ -1,6 +1,6 @@
 package elevate.lift.strategies
 
-import elevate.core.{Failure, Strategy}
+import elevate.core.{Failure, RewriteResult, Strategy, StrategyT, Success}
 import lift.core.{Apply, DepLambda, Expr, Lambda, Primitive}
 import lift.core.primitives.map
 import elevate.lift.rules.algorithmic._
@@ -11,18 +11,28 @@ import elevate.lift.strategies.normalForm._
 
 object traversal {
 
-  def body: Strategy => Strategy =
-    s => {
-      case Lambda(x, f) => s(f).mapSuccess({case y: Expr => Lambda(x, y)})
+  case class body(s: StrategyT[Expr]) extends StrategyT[Expr] {
+    def apply(e: Expr): RewriteResult[Expr] = e match {
+      case Lambda(x, f) => s(f).mapSuccess({ case y: Expr => Lambda(x, y) })
       case _ => Failure(s)
     }
+  }
 
-  def function: Strategy => Strategy =
-    s => {
-      case Apply(f, e) => s(f).mapSuccess({case y: Expr => Apply(y, e)})
+  case class function(s: StrategyT[Expr]) extends StrategyT[Expr] {
+    def apply(e: Expr): RewriteResult[Expr] = e match {
+      case Apply(f, e) => s(f).mapSuccess({ case y: Expr => Apply(y, e) })
       case _ => Failure(s)
     }
+  }
 
+  case class inBody(s: StrategyT[StrategyT[Expr]]) extends StrategyT[StrategyT[Expr]] {
+    def apply(e: StrategyT[Expr]): RewriteResult[StrategyT[Expr]] = e match {
+      case body(x: StrategyT[Expr]) => s(x).mapSuccess({case y: StrategyT[Expr] => body(y)})
+      case _ => Failure(s)
+    }
+  }
+
+  /*
   def argument: Strategy => Strategy =
     s => {
       case Apply(f, e) => s(e).mapSuccess({case y: Expr => Apply(f, y)})
@@ -35,7 +45,9 @@ object traversal {
       case _ => Failure(s)
     }
   }
+   */
 
+  /*
   // applying a strategy to an expression applied to a lift `map`. Example:
   // ((map λe14. (transpose ((map (map e12)) e14))) e13) // input expr
   //  (map λe14. (transpose ((map (map e12)) e14)))      // result of `function`
@@ -61,4 +73,6 @@ object traversal {
   // move(2)(s) == s(*h)
   def moveTowardsArgument: Int => Strategy => Strategy =
     i => s => applyNTimes(i)(argument(_))(s)
+
+   */
 }

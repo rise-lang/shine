@@ -1,5 +1,6 @@
 package elevate.core
 
+/*
 import lift.core._
 import lift.core.DSL._
 import lift.core.primitives.map
@@ -9,7 +10,10 @@ import elevate.lift.strategies.algorithmic.{mapFirstFission, mapFullFission}
 import strategies.traversal._
 import elevate.lift.strategies.normalForm._
 
+ */
+
 class fission_fusion extends idealised.util.Tests {
+  /*
   val norm = normalize(betaReduction <+ etaReduction)
 
   def eq(a: Expr, b: Expr): Unit = {
@@ -70,4 +74,6 @@ class fission_fusion extends idealised.util.Tests {
       fun(f1 => fun(f2 => fun(f3 => map(f1) >> map(f2) >> map(f3)))),
       normalize(mapFusion))
   }
+
+   */
 }

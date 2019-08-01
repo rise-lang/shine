@@ -18,6 +18,7 @@ object movement {
 
   // transpose
 
+  /*
   def mapMapFBeforeTranspose: Strategy = `**f >> T -> T >> **f`
   def `**f >> T -> T >> **f`: Strategy = {
     case Apply(
@@ -203,4 +204,6 @@ object movement {
       Success(y |> slide(k+n-s)(k) |> map(slide(n)(s)))
     case _ => Failure(slideBeforeSplit)
   }
+
+   */
 }

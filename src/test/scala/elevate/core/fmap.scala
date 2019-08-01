@@ -12,6 +12,7 @@ import scala.language.implicitConversions
 
 class fmap extends idealised.util.Tests {
 
+  /*
   implicit def rewriteResultToExpr(r: RewriteResult[Expr]): Expr = r.get
   def testMultiple(list: List[Expr], gold: Expr) = {
     assert(list.forall(betaEtaEquals(_, gold)))
@@ -118,4 +119,6 @@ class fmap extends idealised.util.Tests {
       ), λ(f => **(T) >> ****(f) >> *(S))
     )
   }
+
+   */
 }

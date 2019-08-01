@@ -9,6 +9,7 @@ import elevate.lift.strategies.normalForm._
 
 object tiling {
 
+  /*
   def tileND: Int => Int => Strategy = d => n => tileNDList(List.tabulate(d)(_ => n))
 
   def tileNDList: List[Int] => Strategy =
@@ -62,4 +63,6 @@ object tiling {
   //               ^ ^        ^ ^   ... and so on
   def loopInterchangeAtLevel: Int => Strategy =
     level => applyNTimes(level)(fmap(_))(loopInterchange) `;` LCNF `;` RNF
+
+   */
 }

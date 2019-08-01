@@ -14,6 +14,7 @@ import lift.core.primitives.map
 
 object normalForm {
 
+  /*
   def normalize: Strategy => Strategy =
     s => repeat(oncetd(s))
 
@@ -29,4 +30,6 @@ object normalForm {
 
   def CNF: Strategy = codegenNormalForm
   def codegenNormalForm: Strategy = normalize(mapFusion)
+
+   */
 }

@@ -1,40 +1,59 @@
 package elevate.core.strategies
 
-import elevate.core.{Strategy, Success}
+import elevate.core._
 import lift.core.{Expr, Program}
 
 object basic {
 
-  def id: Strategy =
-    e => Success(e)
+  case class id[T <: Program]() extends StrategyT[T] {
+    def apply(e: T) = Success(e)
+  }
 
-  def seq: Strategy => Strategy => Strategy =
-    f => s => e => f(e).flatMapSuccess(s(_))
+  case class seq[T <: Program](f: StrategyT[T], s: StrategyT[T]) extends StrategyT[T] {
+    def apply(e: T): RewriteResult[T] = f(e).flatMapSuccess({ case x:T => s(x)})
+  }
 
-  def leftChoice: Strategy => Strategy => Strategy =
-    f => s => e => f(e).flatMapFailure(_ => s(e))
+  case class leftChoice[T <: Program](f: StrategyT[T], s: StrategyT[T]) extends StrategyT[T] {
+    def apply(e: T): RewriteResult[T] = f(e).flatMapFailure(_ => s(e))
+  }
 
-  def `try`: Strategy => Strategy =
-    s => leftChoice(s)(id)
+  case class `try`[T <: Program](s: StrategyT[T]) extends StrategyT[T] {
+    def apply(e: T): RewriteResult[T] = leftChoice[T](s, id())(e)
+  }
 
-  def peek(f: Program => Unit): Strategy =
-    e => { f(e); Success(e) }
+  case class peek[T <: Program](f: T => Unit) extends StrategyT[T] {
+    def apply(e: T): RewriteResult[T] = {f(e); Success(e)}
+  }
 
-  def repeat: Strategy => Strategy =
-    s => `try`(s `;` (e => repeat(s)(e)))
+  case class repeat[T <: Program](s: StrategyT[T]) extends StrategyT[T] {
+    def apply(e: T): RewriteResult[T] = `try`[T](s `;` repeat[T](s))(e)
+  }
 
+  /*
   def countingRepeat: (Int => Strategy) => Int => Strategy =
     s => i => `try`(s(i) `;` (e => countingRepeat(s)(i+1)(e)))
 
   def repeatNTimes: Int => Strategy => Strategy =
     n => s => if (n > 0) { s `;` repeatNTimes(n-1)(s) } else { id }
+   */
 
-  def debug: Strategy = debug("")
-  def debug(msg: String): Strategy = peek(e => println(s"$msg $e"))
-  def debugln(msg: String): Strategy = debug(msg + "\n")
+  case class debug[T <: Program](msg: String) extends StrategyT[T] {
+    def apply(e: T): RewriteResult[T] = peek[T](p => println(s"$msg $p"))(e)
+  }
 
-  def print(msg: String): Strategy = peek(e => println(msg))
+  object debug {
+    def apply[T <: Program](e: T): RewriteResult[T] = debug("")(e)
+  }
 
-  def applyNTimes: Int => (Strategy => Strategy) => Strategy => Strategy =
-    i => f => s => if(i <= 0) s else applyNTimes(i-1)(f)(f(s))
+  case class debugln[T <: Program](msg: String) extends StrategyT[T] {
+    def apply(e: T): RewriteResult[T] = debug[T](msg + "\n")(e)
+  }
+
+  case class print[T <: Program](msg: String) extends StrategyT[T] {
+    def apply(e: T): RewriteResult[T] = peek[T](e => println(msg))(e)
+  }
+
+  case class applyNTimes[T <: Program](i: Int, f: (StrategyT[T] => StrategyT[T]), s: StrategyT[T]) extends StrategyT[T] {
+    def apply(e: T): RewriteResult[T] = if(i <= 0) s(e) else applyNTimes[T](i-1,f,f(s))(e)
+  }
 }

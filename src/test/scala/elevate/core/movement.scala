@@ -17,6 +17,7 @@ import scala.language.implicitConversions
 
 class movement extends idealised.util.Tests {
 
+  /*
   implicit def rewriteResultToExpr(r: RewriteResult[Expr]): Expr = r.get
   val norm: Strategy = LCNF
 
@@ -181,4 +182,6 @@ class movement extends idealised.util.Tests {
       slide(16+3-1)(16) >> map(slide(3)(1))
     ))
   }
+
+   */
 }
