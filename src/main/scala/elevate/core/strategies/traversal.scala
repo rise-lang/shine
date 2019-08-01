@@ -13,6 +13,7 @@ object traversal {
     s => {
       case Identifier(_) => None
       case Lambda(x, e) => Some(s(e).mapSuccess(Lambda(x, _)))
+      case Apply(f, e) => ??? // TODO: @Bastian.Hagedorn: what to do here?
       case DepLambda(x, e) => x match {
         case n: NatIdentifier => Some(s(e).mapSuccess(DepLambda[NatKind](n, _)))
         case dt: DataTypeIdentifier => Some(s(e).mapSuccess(DepLambda[DataKind](dt, _)))

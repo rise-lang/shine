@@ -143,6 +143,10 @@ abstract class Cast(val t: Type, val e: Expr) extends Expr
 
 abstract class Literal(val code: String) extends Expr
 
+abstract class ArrayLiteral(val t: ArrayType, val inits: Seq[Expr]) extends Expr
+
+abstract class RecordLiteral(val fst: Expr, val snd: Expr) extends Expr
+
 abstract class ArithmeticExpr(val ae: lift.arithmetic.ArithExpr) extends Expr
 
 // visitor
@@ -313,6 +317,16 @@ object Cast {
 object Literal {
   def apply(code: String): Literal = DefaultImplementations.Literal(code)
   def unapply(arg: Literal): Option[String] = Some(arg.code)
+}
+
+object ArrayLiteral {
+  def apply(t: ArrayType, inits: Seq[Expr]): ArrayLiteral = DefaultImplementations.ArrayLiteral(t, inits)
+  def unapply(arg: ArrayLiteral): Option[(ArrayType, Seq[Expr])] = Some(arg.t, arg.inits)
+}
+
+object RecordLiteral {
+  def apply(fst: Expr, snd: Expr): RecordLiteral = DefaultImplementations.RecordLiteral(fst, snd)
+  def unapply(arg: RecordLiteral): Option[(Expr, Expr)] = Some(arg.fst, arg.snd)
 }
 
 object ArithmeticExpr {
@@ -506,6 +520,16 @@ object DefaultImplementations {
 
   case class Literal(override val code: String) extends C.AST.Literal(code) {
     override def visitAndRebuild(v: VisitAndRebuild.Visitor): Literal.this.type = this
+  }
+
+  case class ArrayLiteral(override val t: ArrayType, override val inits: Seq[Expr]) extends C.AST.ArrayLiteral(t, inits) {
+    override def visitAndRebuild(v: VisitAndRebuild.Visitor): ArrayLiteral =
+      ArrayLiteral(v(t).asInstanceOf[ArrayType], inits.map(VisitAndRebuild(_, v)))
+  }
+
+  case class RecordLiteral(override val fst: Expr, override val snd: Expr) extends C.AST.RecordLiteral(fst, snd) {
+    override def visitAndRebuild(v: VisitAndRebuild.Visitor): RecordLiteral =
+      RecordLiteral(VisitAndRebuild(fst, v), VisitAndRebuild(snd, v))
   }
 
   case class ArithmeticExpr(override val ae: lift.arithmetic.ArithExpr) extends C.AST.ArithmeticExpr(ae) {

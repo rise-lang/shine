@@ -79,6 +79,8 @@ class CPrinter extends Printer {
     case t: TernaryExpr => printTernaryExpr(t)
     case c: Cast => printCast(c)
     case l: Literal => printLiteral(l)
+    case al: ArrayLiteral => printArrayLiteral(al)
+    case rl: RecordLiteral => printRecordLiteral(rl)
     case a: ArithmeticExpr => printArithmeticExpr(a)
   }
 
@@ -320,6 +322,24 @@ class CPrinter extends Printer {
 
   private def printLiteral(l: Literal): Unit = {
     print(l.code)
+  }
+
+  private def printArrayLiteral(al: ArrayLiteral): Unit = {
+    print("(")
+    print(s"${al.t.getBaseType}[${ al.t.getSizes match {
+      case None => ""
+      case Some(s) => s
+    } }]")
+    al.inits.mkString("{", ",", "}")
+    print(")")
+  }
+
+  private def printRecordLiteral(rl: RecordLiteral): Unit = {
+    print("{")
+    printExpr(rl.fst)
+    print(",")
+    printExpr(rl.snd)
+    print("}")
   }
 
   private def printArithmeticExpr(a: ArithmeticExpr): Unit = {

@@ -11,38 +11,33 @@ object algorithmic {
   // fission of the first function to be applied inside a map
   // *(g >> .. >> f) -> *g >> *(.. >> f)
   def mapFirstFission: Strategy = {
-    case Apply(primitives.map, Lambda(x, gx)) =>
-      Success(mapFirstFissionRec(x, fun(e => e), gx))
+    case Apply(primitives.map, Lambda(x, Apply(f, y))) =>
+      Success(mapFirstFissionRec(x, fun(e => e), f, y))
     case _ => Failure(mapFirstFission)
   }
 
-  private def mapFirstFissionRec(x: Identifier, f: Expr, gx: Expr): Expr = {
-    gx match {
-      case Apply(f2, gx2) =>
-        if (gx2 == x) {
-          primitives.map(f2) >> primitives.map(f)
-        } else {
-          mapFirstFissionRec(x, fun(e => f(f2(e))), gx2)
-        }
+  @scala.annotation.tailrec
+  private def mapFirstFissionRec(x: Identifier, f: Expr, g: Expr, y: Expr): Expr = {
+    if (y == x) {
+      primitives.map(g) >> primitives.map(f)
+    } else {
+      mapFirstFissionRec(x, fun(e => f(g(e))), g, y)
     }
   }
 
   // fission of all the functions chained inside a map
   // *(g >> .. >> f) -> *g >> .. >> *f
   def mapFullFission: Strategy = {
-    case Apply(primitives.map, Lambda(x, gx)) =>
-      Success(mapFullFissionRec(x, gx))
+    case Apply(primitives.map, Lambda(x, Apply(f, y))) =>
+      Success(mapFullFissionRec(x, f, y))
     case _ => Failure(mapFullFission)
   }
 
-  def mapFullFissionRec(x: Identifier, gx: Expr): Expr = {
-    gx match {
-      case Apply(f, gx2) =>
-        if (gx2 == x) {
-          primitives.map(f)
-        } else {
-          mapFullFissionRec(x, gx2) >> primitives.map(f)
-        }
+  def mapFullFissionRec(x: Identifier, f: Expr, y: Expr): Expr = {
+    if (y == x) {
+      primitives.map(f)
+    } else {
+      mapFullFissionRec(x, f, y) >> primitives.map(f)
     }
   }
 }

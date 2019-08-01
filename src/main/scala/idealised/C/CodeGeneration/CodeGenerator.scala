@@ -228,7 +228,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case Proj2(pair) => acc(Lifting.liftPair(pair)._2, env, path, cont)
 
       case Apply(_, _) | DepApply(_, _) |
-           Phrases.IfThenElse(_, _, _) | _: AccPrimitive =>
+           Phrases.IfThenElse(_, _, _) | LetNat(_, _, _) |  _: AccPrimitive =>
         error(s"Don't know how to generate code for $phrase")
     }
   }
@@ -252,13 +252,9 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
               case _ => error ("Expected an IndexType or ScalarType.")
           }
         case (i : CIntExpr) :: Nil =>
-          n match {
-            case SingletonArrayData(_, a) => CCodeGen.codeGenLiteral(a)
-            case _ =>
-              n.dataType match {
-                case _: ArrayType => C.AST.ArraySubscript(CCodeGen.codeGenLiteral(n), C.AST.ArithmeticExpr(i))
-                case _ => error("Expected an ArrayType.")
-              }
+          n.dataType match {
+            case _: ArrayType => C.AST.ArraySubscript(CCodeGen.codeGenLiteral(n), C.AST.ArithmeticExpr(i))
+            case _ => error("Expected an ArrayType.")
           }
         // case (_ :: _ :: Nil, _: ArrayType) => C.AST.Literal("0.0f") // TODO: (used in gemm like this) !!!!!!!
         case _ => error(s"Unexpected: $n $path")
@@ -356,7 +352,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case (i: CIntExpr) :: ps =>
           exp(e, env, CIntExpr(0) :: ps, left =>
             exp(e, env, CIntExpr(n-1) :: ps, right =>
-            genPad(n, l, r, left, right, i, ps, e, env, cont)))
+              genPad(n, l, r, left, right, i, ps, e, env, cont)))
+        case _ => error(s"Expected path to be not empty")
       }
 
       case Pad(n, l, r, _, pad, array) => path match {
@@ -411,7 +408,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case Proj2(pair) => exp(Lifting.liftPair(pair)._2, env, path, cont)
 
       case Apply(_, _) | DepApply(_, _) |
-           Phrases.IfThenElse(_, _, _) | _: ExpPrimitive =>
+           Phrases.IfThenElse(_, _, _) | LetNat(_, _, _) | _: ExpPrimitive =>
         error(s"Don't know how to generate code for $phrase")
     }
   }
@@ -432,18 +429,21 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case idealised.DPIA.Types.float => C.AST.Type.float
         case idealised.DPIA.Types.double => C.AST.Type.double
         case _: idealised.DPIA.Types.IndexType => C.AST.Type.int
+        case _: idealised.DPIA.Types.VectorType =>throw new Exception("Vector types in C are not supported")
       }
       case a: idealised.DPIA.Types.ArrayType => C.AST.ArrayType(typ(a.elemType), Some(a.size))
       case a: idealised.DPIA.Types.DepArrayType =>
         a.elemFType match {
           case NatToDataLambda(_, body) =>
             C.AST.ArrayType(typ(body), Some(a.size)) // TODO: be more precise with the size?
+          case _: NatToDataIdentifier =>  throw new Exception("This should not happen")
         }
       case r: idealised.DPIA.Types.RecordType =>
         C.AST.StructType(typeToStructNameComponent(r.fst) + "_" + typeToStructNameComponent(r.snd), immutable.Seq(
           (typ(r.fst), "_fst"),
           (typ(r.snd), "_snd")))
       case _: idealised.DPIA.Types.DataTypeIdentifier => throw new Exception("This should not happen")
+      case _: idealised.DPIA.Types.NatToDataApply => throw new Exception("This should not happen")
     }
   }
 
@@ -737,21 +737,15 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
     def codeGenLiteral(d: OperationalSemantics.Data): Expr = {
       d match {
-        case i: IndexData =>
-          C.AST.ArithmeticExpr(i.i)
+        case NatData(n)       => C.AST.ArithmeticExpr(n)
+        case IndexData(i, _)  => C.AST.ArithmeticExpr(i)
         case _: IntData | _: FloatData | _: DoubleData | _: BoolData =>
           C.AST.Literal(d.toString)
-        case ArrayData(a) => d.dataType match {
-          case ArrayType(n, st) =>
-            a.head match {
-              case IntData(0) | FloatData(0.0f) | BoolData(false)
-                if a.distinct.length == 1 =>
-                C.AST.Literal("(" + s"($st[$n]){" + a.head + "})")
-              case _ =>
-                C.AST.Literal("(" + s"($st[$n])" + a.mkString("{", ",", "}") + ")")
-            }
-          case _ => error("Expected scalar or array types")
-        }
+        case ArrayData(a) =>
+          C.AST.ArrayLiteral(typ(d.dataType).asInstanceOf[C.AST.ArrayType], a.map(codeGenLiteral))
+        case RecordData(fst, snd) =>
+          C.AST.RecordLiteral(codeGenLiteral(fst), codeGenLiteral(snd))
+        case VectorData(_) => throw new Exception("VectorData not supported in C")
       }
     }
 
@@ -885,6 +879,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           array.elemFType match {
             case NatToDataLambda(_, body) =>
               numberOfElementsUntil(array, index) + flattenIndices(body, rest)
+            case _: NatToDataIdentifier => throw new Exception(s"This should not happen")
           }
         case (_,  Nil) => 0
         case t => throw new Exception(s"This should not happen, pair $t")
@@ -900,6 +895,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       dt.elemFType match {
         case NatToDataLambda(x, body) =>
           BigSum(from=0, upTo = at-1, `for`=x, DataType.getTotalNumberOfElements(body))
+        case _: NatToDataIdentifier => throw new Exception(s"This should not happen")
       }
     }
 
