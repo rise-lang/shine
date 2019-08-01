@@ -95,10 +95,6 @@ object infer {
 
       case l: Literal => TypedExpr(l, l.d.dataType)
 
-      case i: Index => TypedExpr(i, IndexType(i.size))
-
-      case n: NatExpr => TypedExpr(n, NatType)
-
       case TypedExpr(e, t) =>
         val te = typed(e)
         val constraint = TypeConstraint(te.t, t)

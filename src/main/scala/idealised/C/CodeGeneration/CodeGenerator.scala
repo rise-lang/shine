@@ -738,7 +738,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     def codeGenLiteral(d: OperationalSemantics.Data): Expr = {
       d match {
         case i: IndexData =>
-          C.AST.ArithmeticExpr(i.n)
+          C.AST.ArithmeticExpr(i.i)
         case _: IntData | _: FloatData | _: DoubleData | _: BoolData =>
           C.AST.Literal(d.toString)
         case ArrayData(a) => d.dataType match {
