@@ -26,17 +26,17 @@ class tiling extends idealised.util.Tests {
   implicit def rewriteResultToExpr(r: RewriteResult): Expr = r.get
 
   test("LCNF") {
-    assert(structEq(
+    assert(betaEtaEquals(
       λ(i => λ(f => *(f) $ i)),
       λ(i => λ(f => *!(f) $ i))
     ))
 
-    assert(structEq(
+    assert(betaEtaEquals(
       LCNF(λ(i => λ(f => **(f) $ i))),
       λ(i => λ(f => **!(f) $ i))
     ))
 
-    assert(structEq(
+    assert(betaEtaEquals(
       LCNF(λ(i => λ(f => ***(f) $ i))),
       λ(i => λ(f => ***!(f) $ i))
     ))
@@ -47,7 +47,7 @@ class tiling extends idealised.util.Tests {
   test("tileND - tile one loop 1D") {
     println(body(body(tileND(1)(tileSize)))(λ(i => λ(f => *(f) $ i))))
     println(λ(i => λ(f => (J o **(f) o S) $ i)))
-    assert(structEq(
+    assert(betaEtaEquals(
       body(body(tileND(1)(tileSize)))(λ(i => λ(f => *(f) $ i))),
       λ(i => λ(f => (J o **(f) o S) $ i))
     ))
@@ -57,13 +57,13 @@ class tiling extends idealised.util.Tests {
     val input2D = λ(i => λ(f => **!(f) $ i))
 
     // outer
-    assert(structEq(
+    assert(betaEtaEquals(
       body(body(tileND(1)(tileSize)))(input2D),
       λ(i => λ(f => (J o ***(f) o S) $ i))
     ))
 
     // inner
-    assert(structEq(
+    assert(betaEtaEquals(
       body(body(fmap(tileND(1)(tileSize))))(input2D),
       λ(i => λ(f => *(J o **(f) o S) $ i))
     ))
@@ -73,19 +73,19 @@ class tiling extends idealised.util.Tests {
     val input3D = λ(i => λ(f => ***!(f) $ i))
 
     // outer
-    assert(structEq(
+    assert(betaEtaEquals(
       body(body(tileND(1)(tileSize)))(input3D),
       λ(i => λ(f => (J o ****(f) o S) $ i))
     ))
 
     // middle
-    assert(structEq(
+    assert(betaEtaEquals(
       body(body(fmap(tileND(1)(tileSize))))(input3D),
       λ(i => λ(f => *(J o ***(f) o S) $ i))
     ))
 
     // inner
-    assert(structEq(
+    assert(betaEtaEquals(
       body(body(fmap(fmap(tileND(1)(tileSize)))))(input3D),
       λ(i => λ(f => **(J o **(f) o S) $ i))
     ))
@@ -96,25 +96,25 @@ class tiling extends idealised.util.Tests {
     val input4D = λ(i => λ(f => ****!(f) $ i))
 
     // P
-    assert(structEq(
+    assert(betaEtaEquals(
       body(body(tileND(1)(tileSize)))(input4D),
       λ(i => λ(f => (J o *****(f) o S) $ i))
     ))
 
     // O
-    assert(structEq(
+    assert(betaEtaEquals(
       body(body(fmap(tileND(1)(tileSize))))(input4D),
       λ(i => λ(f => *(J o ****(f) o S) $ i))
     ))
 
     // N
-    assert(structEq(
+    assert(betaEtaEquals(
       body(body(fmap(fmap(tileND(1)(tileSize)))))(input4D),
       λ(i => λ(f => **(J o ***(f) o S) $ i))
     ))
 
     // M
-    assert(structEq(
+    assert(betaEtaEquals(
       body(body(fmap(fmap(fmap(tileND(1)(tileSize))))))(input4D),
       λ(i => λ(f => ***(J o **(f) o S) $ i))
     ))
@@ -123,7 +123,7 @@ class tiling extends idealised.util.Tests {
   /// TILING TWO LOOPS
 
   test("tileND - tile two loops 2D") {
-    assert(structEq(
+    assert(betaEtaEquals(
       body(body(tileND(2)(tileSize)))(λ(i => λ(f => **!(f) $ i))),
       λ(i => λ(f => (J o **(J) o *(T) o ****(f) o *(T) o **(S) o S) $ i))
     ))
@@ -133,13 +133,13 @@ class tiling extends idealised.util.Tests {
     val input3D = λ(i => λ(f => ***!(f) $ i))
 
     // outer two
-    assert(structEq(
+    assert(betaEtaEquals(
       body(body(tileND(2)(tileSize)))(input3D),
       LCNF(λ(i => λ(f => (J o **(J) o *(T) o *****(f) o *(T) o **(S) o S) $ i)))
     ))
 
     // inner two
-    assert(structEq(
+    assert(betaEtaEquals(
       body(body(fmap(tileND(2)(tileSize))))(input3D),
       LCNF(λ(i => λ(f => *(J o **(J) o *(T) o ****(f) o *(T) o **(S) o S) $ i)))
     ))
@@ -149,19 +149,19 @@ class tiling extends idealised.util.Tests {
     val input4D = λ(i => λ(f => ****!(f) $ i))
 
     // outer two
-    assert(structEq(
+    assert(betaEtaEquals(
       body(body(tileND(2)(tileSize)))(input4D),
       λ(i => λ(f => (J o **(J) o *(T) o ******(f) o *(T) o **(S) o S) $ i))
     ))
 
     // middle two
-    assert(structEq(
+    assert(betaEtaEquals(
       body(body(fmap(tileND(2)(tileSize))))(input4D),
       λ(i => λ(f => *(J o **(J) o *(T) o *****(f) o *(T) o **(S) o S) $ i))
     ))
 
     // inner two
-    assert(structEq(
+    assert(betaEtaEquals(
       body(body(fmap(fmap(tileND(2)(tileSize)))))(input4D),
       λ(i => λ(f => **(J o **(J) o *(T) o ****(f) o *(T) o **(S) o S) $ i))
     ))
@@ -170,7 +170,7 @@ class tiling extends idealised.util.Tests {
   /// TILING THREE LOOPS
 
   test("tileND - tile three loops 3D") {
-    assert(structEq(
+    assert(betaEtaEquals(
       body(body(tileND(3)(tileSize)))(λ(i => λ(f => ***!(f) $ i))),
       λ(i => λ(f => (
       J o **(J) o ****(J) o
@@ -185,7 +185,7 @@ class tiling extends idealised.util.Tests {
     val input4D = λ(i => λ(f => ****!(f) $ i))
 
     // outer three
-    assert(structEq(
+    assert(betaEtaEquals(
       body(body(tileND(3)(tileSize)))(input4D),
       λ(i => λ(f => (
       J o **(J) o ****(J) o
@@ -196,7 +196,7 @@ class tiling extends idealised.util.Tests {
     ))
 
     // inner three
-    assert(structEq(
+    assert(betaEtaEquals(
       body(body(fmap(tileND(3)(tileSize))))(input4D),
       λ(i => λ(f => *(
       J o **(J) o ****(J) o
@@ -219,7 +219,7 @@ class tiling extends idealised.util.Tests {
         ******(S) o ****(S) o **(S) o S) $ i
       ))
 
-    assert(structEq(
+    assert(betaEtaEquals(
       body(body(tileND(4)(tileSize)))(input4D),
       gold
     ))
@@ -284,7 +284,7 @@ class tiling extends idealised.util.Tests {
   /// LOOP INTERCHANGE
 
    test("simple loop interchange") {
-     assert(structEq(
+     assert(betaEtaEquals(
        body(body(loopInterchange))(λ(i => λ(f => **!(f) $ i))),
        λ(i => λ(f => (T o **(f) o T) $ i))
      ))
@@ -294,12 +294,12 @@ class tiling extends idealised.util.Tests {
     val input = λ(i => λ(f => ***!(f) $ i))
     val gold = λ(i => λ(f => (*(T) o ***(f) o *(T)) $ i))
 
-    assert(structEq(
+    assert(betaEtaEquals(
       body(body(loopInterchangeAtLevel(1)))(input),
       gold
     ))
 
-    assert(structEq(
+    assert(betaEtaEquals(
       body(body(fmap(loopInterchange) `;` LCNF `;` RNF))(input),
       gold
     ))
@@ -338,7 +338,7 @@ class tiling extends idealised.util.Tests {
     )))
 
     // we can't fission the map
-    assert(structEq(infer((RNF)(simple)), infer(simple)))
+    assert(betaEtaEquals(infer((RNF)(simple)), infer(simple)))
     // and tiling it doesn't break it either
     infer((oncetd(splitJoin(4)) `;` RNF `;` LCNF)(simple))
     infer((oncetd(tileND(1)(4)) `;` RNF `;` LCNF)(simple))
@@ -346,8 +346,8 @@ class tiling extends idealised.util.Tests {
 
   test("normalform actually normalizes") {
     val gold = λ(i => λ(f => (J o **(f) o S) $ i))
-    assert(structEq((RNF `;` BENF)(λ(i => λ(f => (J o **(f) o S) $ i))), gold))
-    assert(structEq((RNF `;` RNF `;` BENF)(λ(i => λ(f => (J o **(f) o S) $ i))), gold))
-    assert(structEq((RNF `;` RNF `;` RNF `;` BENF)(λ(i => λ(f => (J o **(f) o S) $ i))), gold))
+    assert(betaEtaEquals((RNF `;` BENF)(λ(i => λ(f => (J o **(f) o S) $ i))), gold))
+    assert(betaEtaEquals((RNF `;` RNF `;` BENF)(λ(i => λ(f => (J o **(f) o S) $ i))), gold))
+    assert(betaEtaEquals((RNF `;` RNF `;` RNF `;` BENF)(λ(i => λ(f => (J o **(f) o S) $ i))), gold))
   }
 }

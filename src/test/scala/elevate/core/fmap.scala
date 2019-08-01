@@ -14,46 +14,46 @@ class fmap extends idealised.util.Tests {
 
   implicit def rewriteResultToExpr(r: RewriteResult): Expr = r.get
   def testMultiple(list: List[Expr], gold: Expr) = {
-    assert(list.forall(structEq(_, gold)))
+    assert(list.forall(betaEtaEquals(_, gold)))
   }
 
   test("fmap basic level0") {
-    assert(structEq(
+    assert(betaEtaEquals(
       one(one(`**f >> T -> T >> **f`))(λ(f => **(f) >> T)),
       λ(f => T >> **(f)))
     )
   }
 
   test("fmap basic level1") {
-    assert(structEq(
+    assert(betaEtaEquals(
       one(one(fmapRNF(`**f >> T -> T >> **f`)))(λ(f => ***(f) >> *(T))),
       λ(f => *(T) >> ***(f)))
     )
   }
 
   test("fmap basic level2") {
-    assert(structEq(
+    assert(betaEtaEquals(
       one(one(fmapRNF(fmapRNF(`**f >> T -> T >> **f`))))(λ(f => ****(f) >> **(T))),
       λ(f => **(T) >> ****(f)))
     )
   }
 
   test("fmap basic level3") {
-    assert(structEq(
+    assert(betaEtaEquals(
       one(one(fmapRNF(fmapRNF(fmapRNF(`**f >> T -> T >> **f`)))))(λ(f => *****(f) >> ***(T))),
       λ(f => ***(T) >> *****(f)))
     )
   }
 
   test("fmap basic level4") {
-    assert(structEq(
+    assert(betaEtaEquals(
       one(one(fmapRNF(fmapRNF(fmapRNF(fmapRNF(`**f >> T -> T >> **f`))))))(λ(f => ******(f) >> ****(T))),
       λ(f => ****(T) >> ******(f)))
     )
   }
 
   test("fmap basic level4 alternative") {
-    assert(structEq(
+    assert(betaEtaEquals(
       one(one(mapped(`**f >> T -> T >> **f`)))(λ(f => ******(f) >> ****(T))),
       λ(f => ****(T) >> ******(f)))
     )

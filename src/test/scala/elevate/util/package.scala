@@ -6,7 +6,7 @@ import _root_.lift.core._
 import _root_.lift.core.DSL._
 
 package object util {
-  def structEq(a: Expr, b: Expr): Boolean = BENF(a).get == BENF(b).get
+  def betaEtaEquals(a: Expr, b: Expr): Boolean = BENF(a).get == BENF(b).get
 
   // notation
   val tileSize = 4

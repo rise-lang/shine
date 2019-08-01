@@ -26,7 +26,7 @@ class traversals extends idealised.util.Tests {
         sometd(id)(expr),
         //innermost(id)(expr),
         somebu(id)(expr)
-      ).forall(x => structEq(x.get, expr))
+      ).forall(x => betaEtaEquals(x.get, expr))
     )
   }
 
@@ -43,7 +43,7 @@ class traversals extends idealised.util.Tests {
         somebu(mapFusion)(expr),
         topdown(`try`(mapFusion))(expr),
         bottomup(`try`(mapFusion))(expr)
-      ).forall(x => structEq(x.get, gold))
+      ).forall(x => betaEtaEquals(x.get, gold))
     )
   }
 }

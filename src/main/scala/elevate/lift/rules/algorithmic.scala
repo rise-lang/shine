@@ -36,7 +36,6 @@ object algorithmic {
   // fission of the last function to be applied inside a map
   def mapLastFission: Strategy = `*(g >> .. >> f) -> *(g >> ..) >> *f`
   def `*(g >> .. >> f) -> *(g >> ..) >> *f`: Strategy = {
-    // TODO? 'x' should not be used in 'f' or 'g'
     // TODO: why gx != Identifier?
     case Apply(`map`, Lambda(x, Apply(f, gx))) if !contains(x)(f) && !isIdentifier(gx) =>
       Success(Apply(`map`, Lambda(x, gx)) >> map(f))
