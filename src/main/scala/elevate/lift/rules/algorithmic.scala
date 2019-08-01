@@ -1,9 +1,10 @@
 package elevate.lift.rules
 
-import elevate.core.{Failure, NotApplicable, Strategy, Success}
+import elevate.core.{Failure, Strategy, Success}
+import elevate.lift.strategies.predicate._
 import lift.core._
 import lift.core.DSL._
-import lift.core.primitives.{join, map, slide, split, transpose}
+import lift.core.primitives.{id, join, map, split, transpose}
 
 
 object algorithmic {
@@ -35,20 +36,28 @@ object algorithmic {
   // fission of the last function to be applied inside a map
   def mapLastFission: Strategy = `*(g >> .. >> f) -> *(g >> ..) >> *f`
   def `*(g >> .. >> f) -> *(g >> ..) >> *f`: Strategy = {
-    // TODO? 'x' should not be used in 'f' or 'g'
-    /* chain of two fission
-    case Apply(`map`, Lambda(x1, Apply(f, Apply(g, x2)))) if x1 == x2 =>
-      map(g) >> map(f)
-      */
-    case Apply(`map`, Lambda(x, Apply(f, gx))) =>
+    // TODO: why gx != Identifier?
+    case Apply(`map`, Lambda(x, Apply(f, gx))) if !contains(x)(f) && !isIdentifier(gx) =>
       Success(Apply(`map`, Lambda(x, gx)) >> map(f))
     case _ => Failure(mapLastFission)
   }
 
   // identities
 
-  def createTransposePair: Strategy = ` -> T >> T`
-  def ` -> T >> T`: Strategy = x => Success(x |> transpose |> transpose)
+  def idAfter: Strategy = ` -> id`
+  def ` -> id`: Strategy = x => Success(x |> id)
+
+  def liftId: Strategy = `id -> *id`
+  def `id -> *id`: Strategy = {
+    case Apply(`id`, arg) => Success(Apply(map(id), arg))
+  }
+
+  def createTransposePair: Strategy = `id -> T >> T`
+  def `id -> T >> T`: Strategy = {
+    case Apply(`id`, arg) => Success(Apply(transpose >> transpose, arg))
+  }
+
+  def `_-> T >> T`: Strategy = idAfter `;` createTransposePair
 
   def removeTransposePair: Strategy = `T >> T -> `
   def `T >> T -> `: Strategy = {

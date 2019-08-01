@@ -1,6 +1,7 @@
 package elevate.lift.rules
 
 import elevate.core.{Failure, NotApplicable, Strategy, Success}
+import elevate.lift.strategies.predicate._
 import lift.core.{Apply, DepApply, Expr, Lambda, Nat, Primitive}
 import lift.core.primitives._
 import lift.core.DSL._
@@ -23,6 +24,17 @@ object movement {
     `transpose`,
     Apply(Apply(`map`, Apply(`map`, f)), y)) =>
       Success(y |> transpose |> map(map(f)))
+    // LCNF
+    case Apply(
+      `transpose`,
+      Apply(
+        Apply(`map`, Lambda(n7, Apply(
+          Apply(`map`, Lambda(n6, Apply(
+            f, n61))), n71))),
+        arg
+      )
+    ) if contains(n6)(n61) && contains(n7)(n71) =>
+      Success(arg |> transpose |> map(map(f)))
     case _ => Failure(mapMapFBeforeTranspose)
   }
 
