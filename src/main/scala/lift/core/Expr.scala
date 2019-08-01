@@ -18,7 +18,10 @@ final case class Lambda(x: Identifier, e: Expr) extends Expr {
 }
 
 final case class Apply(f: Expr, e: Expr) extends Expr {
-  override def toString: String = s"($f $e)"
+  override def toString: String = e match {
+    case Apply(Apply(_,_),_) => s"($f\n$e)"
+    case _ => s"($f $e)"
+  }
 }
 
 final case class DepLambda[K <: Kind](x: K#I, e: Expr) extends Expr {

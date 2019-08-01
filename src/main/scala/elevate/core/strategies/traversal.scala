@@ -82,6 +82,8 @@ object traversal {
 
   def alltd: Strategy => Strategy = s => s <+ (e => all(alltd(s))(e))
 
+  def tryAll: Strategy => Strategy = s => ((e: Expr) => all(tryAll(`try`(s)))(e)) `;` `try`(s)
+
   def sometd: Strategy => Strategy = s => s <+ (e => some(sometd(s))(e))
 
   def somebu: Strategy => Strategy = s => ((e: Expr) => some(somebu(s))(e)) <+ s
