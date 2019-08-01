@@ -2,13 +2,13 @@ package elevate.lift.strategies
 
 import elevate.core.strategies.traversal.oncetd
 import elevate.core.{Failure, RewriteResult, Strategy, Success}
-import lift.core.{Expr, Identifier, Lambda}
+import lift.core.{Expr, Identifier, Lambda, Program}
 
 import scala.language.implicitConversions
 
 object predicate {
 
-  implicit def rewriteResultToBoolean(r: RewriteResult): Boolean = r match {
+  implicit def rewriteResultToBoolean[T <: Program](r: RewriteResult[T]): Boolean = r match {
     case Failure(_) => false
     case Success(_) => true
   }

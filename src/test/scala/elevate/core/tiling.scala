@@ -23,7 +23,7 @@ import scala.language.implicitConversions
 
 class tiling extends idealised.util.Tests {
 
-  implicit def rewriteResultToExpr(r: RewriteResult): Expr = r.get
+  implicit def rewriteResultToExpr(r: RewriteResult[Expr]): Expr = r.get
 
   test("LCNF") {
     assert(betaEtaEquals(
@@ -251,7 +251,7 @@ class tiling extends idealised.util.Tests {
 
   test("codegen 1D tiles") {
     val highLevel = wrapInLambda(1, i => *(floatId) $ i, inputT(1, _))
-    val tiled = one(body(tileND(1)(tileSize)))(highLevel).get
+    val tiled = one(body(tileND(1)(tileSize)))(highLevel).get[Expr]
 
     println(gen.CProgram(lower(highLevel)))
     println(gen.CProgram(lower(tiled)))
@@ -259,7 +259,7 @@ class tiling extends idealised.util.Tests {
 
   test("codegen 2D tiles") {
     val highLevel = wrapInLambda(2, i => **!(floatId) $ i, inputT(2, _))
-    val tiled = one(one(body(tileND(2)(tileSize))))(highLevel).get
+    val tiled = one(one(body(tileND(2)(tileSize))))(highLevel).get[Expr]
 
     println(gen.CProgram(lower(highLevel)))
     println(gen.CProgram(lower(tiled)))
@@ -267,7 +267,7 @@ class tiling extends idealised.util.Tests {
 
   test("codegen 3D tiles") {
     val highLevel = wrapInLambda(3, i => ***!(floatId) $ i, inputT(3, _))
-    val tiled = one(one(one(body(tileNDList(List(4,8,16))))))(highLevel).get
+    val tiled = one(one(one(body(tileNDList(List(4,8,16))))))(highLevel).get[Expr]
 
     println(gen.CProgram(lower(highLevel)))
     println(gen.CProgram(lower(tiled)))
@@ -275,7 +275,7 @@ class tiling extends idealised.util.Tests {
 
   test("codegen two innermost of three loops") {
     val highLevel = wrapInLambda(3, i => ***!(floatId) $ i, inputT(3, _))
-    val tiled = one(one(one(body(fmap(tileND(2)(tileSize))))))(highLevel).get
+    val tiled = one(one(one(body(fmap(tileND(2)(tileSize))))))(highLevel).get[Expr]
 
     println(gen.CProgram(lower(highLevel)))
     println(gen.CProgram(lower(tiled)))

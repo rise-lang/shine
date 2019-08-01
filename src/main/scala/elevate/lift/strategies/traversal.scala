@@ -1,7 +1,7 @@
 package elevate.lift.strategies
 
 import elevate.core.{Failure, Strategy}
-import lift.core.{Apply, DepLambda, Lambda, Primitive}
+import lift.core.{Apply, DepLambda, Expr, Lambda, Primitive}
 import lift.core.primitives.map
 import elevate.lift.rules.algorithmic._
 import elevate.core.strategies.traversal._
@@ -13,25 +13,25 @@ object traversal {
 
   def body: Strategy => Strategy =
     s => {
-      case Lambda(x, f) => s(f).mapSuccess(Lambda(x, _))
+      case Lambda(x, f) => s(f).mapSuccess({case y: Expr => Lambda(x, y)})
       case _ => Failure(s)
     }
 
   def function: Strategy => Strategy =
     s => {
-      case Apply(f, e) => s(f).mapSuccess(Apply(_, e))
+      case Apply(f, e) => s(f).mapSuccess({case y: Expr => Apply(y, e)})
       case _ => Failure(s)
     }
 
   def argument: Strategy => Strategy =
     s => {
-      case Apply(f, e) => s(e).mapSuccess(Apply(f, _))
+      case Apply(f, e) => s(e).mapSuccess({case y: Expr => Apply(f, y)})
       case _ => Failure(s)
     }
 
   def argumentOf(x: Primitive): Strategy => Strategy = {
     s => {
-      case Apply(f, e) if f == x => s(e).mapSuccess(Apply(f, _))
+      case Apply(f, e) if f == x => s(e).mapSuccess({case y:Expr => Apply(f, y)})
       case _ => Failure(s)
     }
   }

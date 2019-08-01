@@ -45,7 +45,7 @@ object algorithmic {
   // identities
 
   def idAfter: Strategy = ` -> id`
-  def ` -> id`: Strategy = x => Success(x |> id)
+  def ` -> id`: Strategy = {case x:Expr => Success[Expr](x |> id)}
 
   def liftId: Strategy = `id -> *id`
   def `id -> *id`: Strategy = {

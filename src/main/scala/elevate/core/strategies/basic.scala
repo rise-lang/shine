@@ -1,7 +1,7 @@
 package elevate.core.strategies
 
 import elevate.core.{Strategy, Success}
-import lift.core.Expr
+import lift.core.{Expr, Program}
 
 object basic {
 
@@ -17,7 +17,7 @@ object basic {
   def `try`: Strategy => Strategy =
     s => leftChoice(s)(id)
 
-  def peek(f: Expr => Unit): Strategy =
+  def peek(f: Program => Unit): Strategy =
     e => { f(e); Success(e) }
 
   def repeat: Strategy => Strategy =

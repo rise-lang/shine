@@ -101,7 +101,7 @@ class binomialFilter extends idealised.util.Tests {
     val s =
       oncetd(specialize.reduceSeq) `;`
         repeatNTimes(2)(oncetd(specialize.mapSeq))
-    s_eq(s(highLevel).get, reference)
+    s_eq(s(highLevel).get[Expr], reference)
   }
 
   test("rewrite to factorised blur") {

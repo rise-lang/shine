@@ -17,7 +17,7 @@ import scala.language.implicitConversions
 
 class movement extends idealised.util.Tests {
 
-  implicit def rewriteResultToExpr(r: RewriteResult): Expr = r.get
+  implicit def rewriteResultToExpr(r: RewriteResult[Expr]): Expr = r.get
   val norm: Strategy = LCNF
 
   def testMultiple(list: List[Expr], gold: Expr) = {
@@ -33,7 +33,7 @@ class movement extends idealised.util.Tests {
       List(
         norm(λ(f => *(λ(x => *(f)(x))) >> T)).get,
         λ(f => **(f) >> T)
-      ).map((debug `;` oncetd(`**f >> T -> T >> **f`))(_).get), gold
+      ).map((debug `;` oncetd(`**f >> T -> T >> **f`))(_).get[Expr]), gold
     )
   }
 
