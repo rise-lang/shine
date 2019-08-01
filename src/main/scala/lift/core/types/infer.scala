@@ -273,8 +273,8 @@ object infer {
     case TypeConstraint(a, b) => (a, b) match {
       case (i: TypeIdentifier, _) => Some(unifyTypeIdent(i, b))
       case (_, i: TypeIdentifier) => Some(unifyTypeIdent(i, a))
-      case (i: DataTypeIdentifier, dt: DataType) => Some(unifyDataTypeIdent(i, dt))
-      case (dt: DataType, i: DataTypeIdentifier) => Some(unifyDataTypeIdent(i, dt))
+      case (i: DataTypeIdentifier, _) => Some(unifyDataTypeIdent(i, b))
+      case (_, i: DataTypeIdentifier) => Some(unifyDataTypeIdent(i, a))
       case (b1: BasicType, b2: BasicType) if b1 == b2 =>
         Some(Solution())
       case (IndexType(sa), IndexType(sb)) =>
@@ -347,16 +347,17 @@ object infer {
 //    }
   }
 
-  def unifyDataTypeIdent(i: DataTypeIdentifier, dt: DataType)
+  // FIXME: datatypes and types are mixed up
+  def unifyDataTypeIdent(i: DataTypeIdentifier, t: Type)
                         (implicit bound: mutable.Set[Kind.Identifier]): Solution = {
-    dt match {
+    t match {
       case j: DataTypeIdentifier =>
         if (i == j) { Solution() }
         else if (!bound(i)) { Solution.subs(i, j) }
         else if (!bound(j)) { Solution.subs(j, i) }
         else { error(s"cannot unify $i and $j, they are both bound") }
-      case _ if occurs(i, dt) => error(s"circular use: $i occurs in $dt")
-      case _ if !bound(i) => Solution.subs(i, dt)
+      case _ if occurs(i, t) => error(s"circular use: $i occurs in $t")
+      case _ if !bound(i) => Solution.subs(i, t)
     }
   }
 

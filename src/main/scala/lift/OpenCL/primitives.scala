@@ -52,7 +52,6 @@ object primitives {
   val toPrivate: Expr = toMem(lift.core.types.AddressSpace.Private)
 
   object oclReduceSeq extends Primitive {
-    override def t: Type = core.reduceSeq.t
+    override def t: Type = aFunT(a => core.reduceSeq.t)
   }
-
 }

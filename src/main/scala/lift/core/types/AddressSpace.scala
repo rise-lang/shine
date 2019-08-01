@@ -1,5 +1,6 @@
 package lift.core.types
 
+// TODO: should not be in the core
 sealed trait AddressSpace
 
 object AddressSpace {

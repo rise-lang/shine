@@ -1,6 +1,7 @@
 package idealised.OpenCL.CodeGeneration
 
 import idealised.C.AST._
+import idealised.OpenCL.AddressSpace
 import idealised.{C, OpenCL}
 import lift.arithmetic.{IfThenElse => _, _}
 
@@ -27,7 +28,7 @@ object AdaptKernelBody {
     {
       override def pre(n: Node): Result = {
         n match {
-          case OpenCL.AST.VarDecl(name, _: ArrayType, OpenCL.PrivateMemory, _) =>  privateArrayVars.add(name)
+          case OpenCL.AST.VarDecl(name, _: ArrayType, AddressSpace.Private, _) =>  privateArrayVars.add(name)
 
           case ArraySubscript(DeclRef(name), index) if privateArrayVars.contains(name) =>
             index match {
@@ -74,11 +75,11 @@ object AdaptKernelBody {
           //             VLoad(v.v, v.t, ArithExpression(ArithExpr.substitute(v.offset.content, map))))
 
           // unroll var declarations
-          case OpenCL.AST.VarDecl(name, at: ArrayType, OpenCL.PrivateMemory, _) =>
+          case OpenCL.AST.VarDecl(name, at: ArrayType, AddressSpace.Private, _) =>
             privateArrayVars.add(name)
             val size = Type.getLengths(at).map(_.evalInt).product
             val seq = (0 until size).foldLeft(Seq[OpenCL.AST.VarDecl]())( (seq, i) =>
-              seq :+ OpenCL.AST.VarDecl(s"${name}_$i", Type.getBaseType(at), OpenCL.PrivateMemory))
+              seq :+ OpenCL.AST.VarDecl(s"${name}_$i", Type.getBaseType(at), AddressSpace.Private))
             seq.foldLeft(Comment(s"unrolled $name"): Stmt)( (stmt, v) => Stmts(stmt, DeclStmt(v)))
             Continue(n, this)
 

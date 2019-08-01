@@ -32,7 +32,7 @@ abstract class AbstractDepMap(n: Nat,
     import idealised.DPIA._
 
     con(array)(λ(exp"[$n.$ft1, $read]")(x =>
-      makeMapI(n, ft1, ft2, _Λ_[NatKind]((k: NatIdentifier) => λ(exp"[${ft1(k)}, $read]")(x => λ(acc"[${ft2(k)}, $write]")(o => {
+      makeMapI(n, ft1, ft2, _Λ_[NatKind]((k: NatIdentifier) => λ(exp"[${ft1(k)}, $read]")(x => λ(acc"[${ft2(k)}]")(o => {
         acc(f(k)(x))(o)
       }))), x, A)))
   }
@@ -43,7 +43,7 @@ abstract class AbstractDepMap(n: Nat,
     import idealised.DPIA._
 
     con(array)(λ(exp"[$n.$ft1, $read]")(x =>
-      makeMapI(n, ft1, ft2, _Λ_[NatKind]((k: NatIdentifier) => λ(exp"[${ft1(k)}, $read]")(x => λ(acc"[${ft2(k)}, $read]")(o => {
+      makeMapI(n, ft1, ft2, _Λ_[NatKind]((k: NatIdentifier) => λ(exp"[${ft1(k)}, $read]")(x => λ(acc"[${ft2(k)}]")(o => {
         acc(f(k)(x))(o)
       }))), x, A)))
   }

@@ -2,7 +2,7 @@ package idealised.OpenCL.AST
 
 import idealised.C.AST._
 import idealised.OpenCL
-import idealised.OpenCL.{NDRange, BuiltInFunction}
+import idealised.OpenCL.{BuiltInFunction, NDRange, AddressSpace}
 import lift.arithmetic.ArithExpr
 
 object Printer {
@@ -72,8 +72,8 @@ class Printer extends idealised.C.AST.CPrinter {
   private def printVarDecl(v: VarDecl): Unit = {
     if (v.t.const) print("const ")
     v.t match {
-      case b: BasicType if v.addressSpace == OpenCL.PrivateMemory => print(s"${b.name} ${v.name}")
-      case s: StructType if v.addressSpace == OpenCL.PrivateMemory => print(s"struct ${s.name} ${v.name}")
+      case b: BasicType if v.addressSpace == AddressSpace.Private => print(s"${b.name} ${v.name}")
+      case s: StructType if v.addressSpace == AddressSpace.Private => print(s"struct ${s.name} ${v.name}")
       case p: PointerType => print(s"${toString(v.addressSpace)} ${p.valueType}* ${v.name}")
     }
     v.init match {
@@ -85,8 +85,8 @@ class Printer extends idealised.C.AST.CPrinter {
   }
 
   def toString(addressSpace: OpenCL.AddressSpace): String = addressSpace match {
-    case OpenCL.GlobalMemory  => "global"
-    case OpenCL.LocalMemory   => "local"
-    case OpenCL.PrivateMemory => "private"
+    case AddressSpace.Global  => "global"
+    case AddressSpace.Local   => "local"
+    case AddressSpace.Private => "private"
   }
 }

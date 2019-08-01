@@ -6,6 +6,7 @@ import idealised.DPIA.Phrases._
 import idealised.DPIA.Types.{AccType, CommType, ExpType, PairType, PhraseType, read}
 import idealised.OpenCL.AST.ParamDecl
 import idealised.OpenCL.FunctionalPrimitives.OpenCLFunction
+import idealised.OpenCL.AddressSpace
 import idealised.{C, DPIA, OpenCL}
 
 import scala.collection.mutable
@@ -36,7 +37,7 @@ object AdaptKernelParameters {
       paramDecl.t match {
         case _: C.AST.BasicType =>
           paramDecl.addressSpace match {
-            case OpenCL.GlobalMemory | OpenCL.LocalMemory =>
+            case AddressSpace.Global | AddressSpace.Local =>
               // remember scalar parameters in global or local memory and change their type to an
               // array of size 1
               scalarParamsInGlobalOrLocalMemory.add(paramDecl.name)

@@ -47,11 +47,13 @@ object PhraseType {
   def substitute[K <: Kind, T <: PhraseType](x: K#T, `for`: K#I, in: Phrase[T]): Phrase[T] = (x, `for`) match {
     case (dt: DataType, forDt: DataTypeIdentifier)  => substitute(dt, forDt, in)
     case (n: Nat, forN: NatIdentifier)              => substitute(n, forN, in)
+    case (a: AddressSpace, forA: AddressSpaceIdentifier) => substitute(a, forA, in)
   }
 
   def substitute[K <: Kind](x: K#T, `for`: K#I, in: PhraseType): PhraseType = (x, `for`) match {
     case (dt: DataType, forDt: DataTypeIdentifier)  => substitute(dt, forDt, in)
     case (n: Nat, forN: NatIdentifier)              => substitute(n, forN, in)
+    case (a: AddressSpace, forA: AddressSpaceIdentifier) => substitute(a, forA, in)
   }
 
   def substitute[T <: PhraseType](dt: DataType,
@@ -136,4 +138,21 @@ object PhraseType {
     }
   }
 
+  def substitute[T <: PhraseType](addr: AddressSpace,
+                                  `for`: AddressSpaceIdentifier,
+                                  in: Phrase[T]): Phrase[T] = {
+
+    object Visitor extends Phrases.VisitAndRebuild.Visitor {
+      override def addressSpace(a: AddressSpace): AddressSpace =
+        if (a == `for`) { addr } else { a }
+    }
+
+    Phrases.VisitAndRebuild(in, Visitor)
+  }
+
+  def substitute(addr: AddressSpace,
+                 `for`: AddressSpaceIdentifier,
+                 in: PhraseType): PhraseType = {
+    in
+  }
 }

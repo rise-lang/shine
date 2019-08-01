@@ -37,6 +37,8 @@ object fromLift {
             DepLambda[NatKind](natIdentifier(n))(expression(e))
           case dt: lt.DataTypeIdentifier =>
             DepLambda[DataKind](dataTypeIdentifier(dt))(expression(e))
+          case a: lt.AddressSpaceIdentifier =>
+            DepLambda[AddressSpaceKind](addressSpaceIdentifier(a))(expression(e))
         }
         case l.DepApply(f, x) => x match {
           case n: Nat =>
@@ -47,6 +49,11 @@ object fromLift {
             DepApply[DataKind, PhraseType]( // TODO: should we try to reduce by lifting here?
               expression(f).asInstanceOf[Phrase[DepFunType[DataKind, PhraseType]]],
               dataType(dt)
+            )
+          case a: lt.AddressSpace =>
+            DepApply[AddressSpaceKind, PhraseType]( // TODO: should we try to reduce by lifting here?
+              expression(f).asInstanceOf[Phrase[DepFunType[AddressSpaceKind, PhraseType]]],
+              addressSpace(a)
             )
         }
 
@@ -104,6 +111,7 @@ object fromLift {
 
   def dataTypeIdentifier(dt: lt.DataTypeIdentifier): DataTypeIdentifier = DataTypeIdentifier(dt.name)
   def natIdentifier(n: l.NatIdentifier): NatIdentifier = NatIdentifier(n.name, n.range)
+  def addressSpaceIdentifier(a: lt.AddressSpaceIdentifier): AddressSpaceIdentifier = AddressSpaceIdentifier(a.name)
   def natToNatIdentifier(n: lt.NatToNatIdentifier): NatToNatIdentifier = NatToNatIdentifier(n.name)
   def natToDataIdentifier(n: lt.NatToDataIdentifier): NatToDataIdentifier = NatToDataIdentifier(n.name)
 
@@ -139,7 +147,6 @@ object fromLift {
 
   def primitive(p: l.Primitive, t: lt.Type): Phrase[_ <: PhraseType] = {
     import idealised.OpenCL.FunctionalPrimitives._
-    import idealised.OpenCL.{GlobalMemory, LocalMemory, PrivateMemory}
     import idealised.OpenMP.FunctionalPrimitives._
     import lift.OpenCL.{primitives => ocl}
     import lift.OpenMP.{primitives => omp}
@@ -225,11 +232,12 @@ object fromLift {
       =>
         val a = dataType(la)
         val b = dataType(lb)
-        val i_space = addressSpace(i)
-        fun[ExpType ->: ExpType ->: ExpType](exp"[$a, $read]" ->: exp"[$b, $read]" ->: exp"[$b, $write]", f =>
-          fun[ExpType](exp"[$b, $read]", i =>
-            fun[ExpType](exp"[$n.$a, $read]", e =>
-              OpenCLReduceSeq(n, i_space, a, b, f, i, e))))
+        val i_space = addressSpaceIdentifier(i)
+        DepLambda[AddressSpaceKind](i_space)(
+          fun[ExpType ->: ExpType ->: ExpType](exp"[$a, $read]" ->: exp"[$b, $read]" ->: exp"[$b, $write]", f =>
+            fun[ExpType](exp"[$b, $read]", i =>
+              fun[ExpType](exp"[$n.$a, $read]", e =>
+                OpenCLReduceSeq(n, i_space, a, b, f, i, e)))))
 
       case (core.reduceSeqUnroll,
       lt.FunType(_,

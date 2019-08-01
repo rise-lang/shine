@@ -1,7 +1,7 @@
 package apps
 
 import benchmarks.core.{CorrectnessCheck, RunOpenCLProgram}
-import idealised.OpenCL._
+import idealised.OpenCL.KernelWithSizes
 import idealised.util.gen
 import idealised.utils.Time.ms
 import idealised.utils.{Display, TimeSpan}

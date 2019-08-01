@@ -6,6 +6,7 @@ import idealised.DPIA.Phrases.Phrase
 import idealised.DPIA.Types.{AccType, CommType, DataType, ExpType, read}
 import idealised.DPIA._
 import idealised.OpenCL.ImperativePrimitives.ParForWorkGroup
+import idealised.OpenCL.AddressSpace
 import idealised._
 
 final case class MapWorkGroupI(dim: Int) {
@@ -21,7 +22,7 @@ final case class MapWorkGroupI(dim: Int) {
       //      TypeChecker(access)
       //      val identifier = ToOpenCL.acc(access, new ToOpenCL(?, ?))
       //      val addressSpace = env.addressspace(identifier.name)
-      val addressSpace = OpenCL.GlobalMemory // FIXME: address space of 'a'
+      val addressSpace = AddressSpace.Global // FIXME: address space of 'a'
 
       f(in `@` i)(a)
     })))

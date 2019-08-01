@@ -13,7 +13,7 @@ import idealised.DPIA.Types._
 import idealised.DPIA._
 import idealised.OpenCL.FunctionalPrimitives.OpenCLFunction
 import idealised.OpenCL.ImperativePrimitives._
-import idealised.OpenCL._
+import idealised.OpenCL.{NDRange, BuiltInFunction}
 import idealised._
 import lift.arithmetic
 import lift.arithmetic._
@@ -176,7 +176,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       val vC = C.AST.DeclRef(v.name)
 
       C.AST.Block(immutable.Seq(
-        C.AST.DeclStmt(OpenCL.AST.VarDecl(vC.name, typ(dt), fromDPIAAddressSpace(addressSpace))),
+        C.AST.DeclStmt(OpenCL.AST.VarDecl(vC.name, typ(dt), addressSpace)),
         cmd(Phrase.substitute(Pair(ve, va), `for` = v, `in` = p),
           env updatedIdentEnv (ve -> vC)
             updatedIdentEnv (va -> vC))))
@@ -196,7 +196,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
       applySubstitutions(n, env.identEnv) |> (n => {
 
-      val init = OpenCL.AST.VarDecl(cI.name, C.AST.Type.int, OpenCL.PrivateMemory, init = Some(C.AST.ArithmeticExpr(f.init)))
+      val init = OpenCL.AST.VarDecl(cI.name, C.AST.Type.int, AddressSpace.Private, init = Some(C.AST.ArithmeticExpr(f.init)))
       val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
       val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + f.step))
 
@@ -243,7 +243,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
       applySubstitutions(n, env.identEnv) |> (n => {
 
-        val init = OpenCL.AST.VarDecl(cI.name, C.AST.Type.int, OpenCL.PrivateMemory, init = Some(C.AST.ArithmeticExpr(f.init)))
+        val init = OpenCL.AST.VarDecl(cI.name, C.AST.Type.int, AddressSpace.Private, init = Some(C.AST.ArithmeticExpr(f.init)))
         val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
         val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + f.step))
 

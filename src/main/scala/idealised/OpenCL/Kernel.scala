@@ -171,9 +171,9 @@ case class Kernel(decls: Seq[C.AST.Decl],
         case Success(actualSize) =>
           //And create the parameter
           arg.openCLParameter.addressSpace match {
-            case PrivateMemory => throw new Exception ("'Private memory' is an invalid memory for opencl parameter")
-            case LocalMemory => LocalArg.create (actualSize)
-            case GlobalMemory => GlobalArg.createOutput(actualSize) //Despite the strange name, createOutput is the same as create.
+            case AddressSpace.Private => throw new Exception ("'Private memory' is an invalid memory for opencl parameter")
+            case AddressSpace.Local => LocalArg.create (actualSize)
+            case AddressSpace.Global => GlobalArg.createOutput(actualSize) //Despite the strange name, createOutput is the same as create.
           }
         case Failure(_) => throw new Exception(s"Could not evaluate $cleanSize")
       }

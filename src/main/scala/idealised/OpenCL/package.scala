@@ -12,17 +12,8 @@ package object OpenCL {
   case object Local extends ParallelismLevel
   case object Sequential extends ParallelismLevel
 
-
-  sealed trait AddressSpace
-  case object GlobalMemory extends AddressSpace
-  case object LocalMemory extends AddressSpace
-  case object PrivateMemory extends AddressSpace
-
-  def fromDPIAAddressSpace(a: idealised.DPIA.Types.AddressSpace): AddressSpace = a match {
-    case _: idealised.DPIA.Types.AddressSpace.Global.type => GlobalMemory
-    case _: idealised.DPIA.Types.AddressSpace.Local.type => LocalMemory
-    case _: idealised.DPIA.Types.AddressSpace.Private.type => PrivateMemory
-  }
+  val AddressSpace = idealised.DPIA.Types.AddressSpace
+  type AddressSpace = idealised.DPIA.Types.AddressSpace
 
   case class NDRange(x: Nat, y: Nat, z: Nat) {
     def isEvaluable: Boolean = x.isEvaluable && y.isEvaluable && z.isEvaluable

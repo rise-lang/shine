@@ -118,7 +118,6 @@ class dot extends idealised.util.Tests {
 
   { // OpenCL
     import lift.OpenCL.primitives._
-    import idealised.OpenCL.PrivateMemory
 
     test("Intel derived no warp dot product 1 compiles to syntactically correct OpenCL") {
       val intelDerivedNoWarpDot1 = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>

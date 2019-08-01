@@ -89,7 +89,6 @@ class asum extends idealised.util.Tests {
   { // OpenCL code gen
     import lift.OpenCL.primitives._
     import idealised.OpenCL
-    import idealised.OpenCL.PrivateMemory
 
     test("Intel derived no warp compiles to syntactically correct OpenCL code") {
       val intelDerivedNoWarp1 = nFun(n => fun(inputT(n))(input =>

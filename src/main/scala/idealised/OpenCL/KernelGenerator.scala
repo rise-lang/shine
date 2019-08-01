@@ -139,14 +139,14 @@ object KernelGenerator {
     OpenCL.AST.ParamDecl(
       i.name,
       gen.typ(getDataType(i)),
-      OpenCL.GlobalMemory)
+      AddressSpace.Global)
   }
 
   private def makePrivateParam(i: Identifier[_], gen: CodeGeneration.CodeGenerator): OpenCL.AST.ParamDecl = {
     OpenCL.AST.ParamDecl(
       i.name,
       gen.typ(getDataType(i)),
-      OpenCL.PrivateMemory)
+      AddressSpace.Private)
   }
 
   private def makeParam(allocInfo: AllocationInfo, gen: CodeGeneration.CodeGenerator): OpenCL.AST.ParamDecl = {
@@ -161,7 +161,7 @@ object KernelGenerator {
   private def makeLengthParams(types: Seq[DataType]): Seq[OpenCL.AST.ParamDecl] = {
     val lengths: Seq[Nat] = types.flatMap(DataType.getSizes)
     lengths.filter(_.isInstanceOf[lift.arithmetic.Var]).distinct.map(v =>
-      OpenCL.AST.ParamDecl(v.toString, C.AST.Type.int, OpenCL.PrivateMemory) ).sortBy(_.name)
+      OpenCL.AST.ParamDecl(v.toString, C.AST.Type.int, AddressSpace.Private) ).sortBy(_.name)
   }
 
   private def adaptKernelParameters(p: Phrase[CommType],

@@ -90,6 +90,9 @@ object traversal {
     def chainDT[A, DT <: DataType](a: Result[A], dt: DT): Result[(A, DT)] =
       chain(a, dt, v => v.visitType(dt))
 
+    def chainA[A](a: Result[A], addr: AddressSpace): Result[(A, AddressSpace)] =
+      chain(a, addr, v => v.visitAddressSpace(addr))
+
     def apply(expr: Expr, visit: Visitor): Result[Expr] = {
       visit.visitExpr(expr) match {
         case Stop(r) => Stop(r)
@@ -103,10 +106,13 @@ object traversal {
             case n: NatIdentifier       => chainE(v.visitNat(n), e).map(r =>
               DepLambda[NatKind]((r._1: @unchecked) match { case a: NamedVar => NatIdentifier(a) }, r._2) )
             case dt: DataTypeIdentifier => chainE(v.visitType(dt), e).map(r => DepLambda[DataKind](r._1, r._2))
+            case a: AddressSpace => chainE(v.visitAddressSpace(a), e).map(r =>
+              DepLambda[AddressSpaceKind](r._1.asInstanceOf[AddressSpaceIdentifier], r._2))
           }
           case DepApply(f, x) => x match {
             case n: Nat       => chainN(apply(f, v), n).map(r => DepApply[NatKind](r._1, r._2))
             case dt: DataType => chainDT(apply(f, v), dt).map(r => DepApply[DataKind](r._1, r._2))
+            case a: AddressSpace => chainA(apply(f, v), a).map(r => DepApply[AddressSpaceKind](r._1, r._2))
           }
           case l: Literal => Continue(l, v)
           case Index(n, size) =>
