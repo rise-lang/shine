@@ -140,8 +140,7 @@ object traversal {
             (c.value match {
               case dt: DataType => data(dt, v)
               case FunType(a, b) => FunType(apply(a, v), apply(b, v))
-              case DepFunType(x, t) =>
-                x match {
+              case DepFunType(x, t) => x match {
                   case n: NatIdentifier =>
                     DepFunType[NatKind, Type]((v.visitNat(n).value: @unchecked) match {
                       case n: NamedVar => NatIdentifier(n.name, n.range)
@@ -168,7 +167,7 @@ object traversal {
             (c.value match {
               case i: DataTypeIdentifier => i
               case ArrayType(n, e) => ArrayType(v.visitNat(n).value, data(e, v))
-              case DepArrayType(n, e) => DepArrayType(v.visitNat(n).value, e.map(data(_, v)))
+              case DepArrayType(n, fdt) => DepArrayType(v.visitNat(n).value, v.visitN2D(fdt).value)
               case TupleType(ts@_*) => TupleType(ts.map(data(_, v)): _*)
               case s: ScalarType => s
               case IndexType(n) => IndexType(v.visitNat(n).value)
@@ -221,11 +220,8 @@ object traversal {
             case i: DataTypeIdentifier => Continue(i, v)
             case ArrayType(n, e) =>
               chainDT(v.visitNat(n), e).map(r => ArrayType(r._1, r._2))
-            case DepArrayType(n, e) => e match {
-                case ident: NatToDataIdentifier => v.visitNat(n).map(DepArrayType(_, ident))
-                case NatToDataLambda(binder, body) =>
-                  chainDT(v.visitNat(n), body).map(r => DepArrayType(r._1, NatToDataLambda(binder, r._2)))
-              }
+            case DepArrayType(n, fdt) =>
+              chain(v.visitNat(n), fdt, _.visitN2D(fdt)).map(r => DepArrayType(r._1, r._2))
             case TupleType(ts@_*) =>
               ts.foldLeft(Continue(Vector(), v): Result[Vector[DataType]])({ case (r, t) =>
                 chainDT(r, t).map(x => x._1 :+ x._2)

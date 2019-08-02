@@ -48,8 +48,6 @@ object infer {
                      identifierT: scala.collection.mutable.Map[Identifier, Type]
                     ): TypedExpr = {
     def fresh(): Type = TypeIdentifier(freshName("_t"))
-    // DataAccessType(DataTypeIdentifier(freshName("_dt"))
-    // AccessTypeIdentifier(freshName("_w")))
     def typed(e: Expr): TypedExpr = constrainTypes(e, constraints, identifierT)
 
     expr match {
@@ -152,7 +150,7 @@ object infer {
 
   object Solution {
     def apply(): Solution = Solution(Map(), Map(), Map(), Map())
-    def subs(ta: TypeIdentifier, tb: Type): Solution = Solution(Map(ta -> tb), Map(), Map(), Map())
+    def subs(ta: Type, tb: Type): Solution = Solution(Map(ta -> tb), Map(), Map(), Map())
     def subs(ta: DataTypeIdentifier, tb: Type): Solution = Solution(Map(ta -> tb), Map(), Map(), Map())
     def subs(na: NamedVar, nb: Nat): Solution = Solution(Map(), Map(na -> nb), Map(), Map())
     def subs(aa: AddressSpaceIdentifier, ab: AddressSpace): Solution = Solution(Map(), Map(), Map(aa -> ab), Map())
@@ -256,6 +254,7 @@ object infer {
     if (cs.isEmpty) {
       Solution()
     } else {
+      @scala.annotation.tailrec
       def solveAt(pos:Int):Solution = {
         if(pos >= cs.size) error(s"cannot solve constraints")
         val element = cs.toSeq(pos)
@@ -268,6 +267,7 @@ object infer {
     }
   }
 
+  @scala.annotation.tailrec
   def solveOne(c: Constraint)
               (implicit bound: mutable.Set[Kind.Identifier]): Option[Solution] = c match {
     case TypeConstraint(a, b) => (a, b) match {
@@ -287,7 +287,6 @@ object infer {
         Some(solve(Set(NatConstraint(sa, sb), NatToDataConstraint(ea, eb))))
       case (TupleType(ea@_*), TupleType(eb@_*)) =>
         Some(solve((ea zip eb).map{ case (aa, bb) => TypeConstraint(aa, bb) }.toSet))
-      case (NatToDataApply(_, _), ArrayType(_, _)) => None
       case (FunType(ina, outa), FunType(inb, outb)) =>
         Some(solve(Set(TypeConstraint(ina, inb), TypeConstraint(outa, outb))))
       case (DepFunType(na: NatIdentifier, ta), DepFunType(nb: NatIdentifier, tb)) =>
@@ -310,8 +309,8 @@ object infer {
             substitute.typeInType(dt, `for`=dtb, in=tb)),
           TypeConstraint(dt, dta), TypeConstraint(dt, dtb)
         )))
-//      case (_: NatToDataApply, dt: DataType) => Some(Solution.subs(a, dt)) // substitute apply by data type
-//      case (dt: DataType, _: NatToDataApply) => Some(Solution.subs(b, dt)) // substitute apply by data type
+      case (_: NatToDataApply, dt: DataType) => Some(Solution.subs(a, dt)) // substitute apply by data type
+      case (dt: DataType, _: NatToDataApply) => Some(Solution.subs(b, dt)) // substitute apply by data type
 
       case _ => error(s"cannot unify $a and $b")
     }
@@ -341,10 +340,6 @@ object infer {
   def unifyTypeIdent(i: TypeIdentifier, t: Type)
                     (implicit bound: mutable.Set[Kind.Identifier]): Solution = {
     Solution.subs(i, t)
-//    t match {
-//      case DataAccessType(dt, w) => Solution.subs(i, DataAccessType(dt, w))
-//      // case DataAccessType(dt, wi: AccessTypeIdentifier) => unifyDataTypeIdent(i, w, dt).apply( Solution.subs(wi, w) )
-//    }
   }
 
   // FIXME: datatypes and types are mixed up

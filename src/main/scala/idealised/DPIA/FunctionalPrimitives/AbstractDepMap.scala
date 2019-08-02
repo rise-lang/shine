@@ -22,8 +22,8 @@ abstract class AbstractDepMap(n: Nat,
     val k = f.t.x
     (n: Nat) ->: (ft1: NatToData) ->: (ft2: NatToData) ->:
       (f :: t"($k : nat) -> exp[${ ft1(k) }, $read] -> exp[${ ft2(k) }, $write]") ->:
-        (array :: exp"[$n.$ft1, $read]") ->:
-      exp"[$n.$ft2, $write]"
+        (array :: ExpType(DepArrayType(n, ft1), read)) ->: // (array :: exp"[$n.$ft1, $read]") ->:
+          ExpType(DepArrayType(n, ft2), write) // exp"[$n.$ft2, $write]"
   }
 
   override def acceptorTranslation(A: Phrase[AccType])
