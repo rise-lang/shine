@@ -7,7 +7,7 @@ import lift.core.primitives._
 import lift.core.types._
 
 //noinspection TypeAnnotation
-class gemm extends idealised.util.Tests {
+class gemm extends idealised.util.TestsWithExecutor {
 
   val epsilon = 1.0f
 
@@ -140,17 +140,19 @@ class gemm extends idealised.util.Tests {
 
     val random = new Random()
 
-    val n = 100
-    val m = 100
-    val k = 100
+    val n = 10
+    val m = 10
+    val k = 10
     val A = Array.fill(n, k)(random.nextFloat)
     val B = Array.fill(k, m)(random.nextFloat)
     val C = Array.fill(n, m)(random.nextFloat)
     val alpha = 2.0f
     val beta = 3.0f
 
-    val localSize = ???
-    val globalSize = ???
+    println(A.map(_.mkString("[", ", ", "]")).mkString("[ ", ",\n", " ]"))
+
+    val localSize = 1
+    val globalSize = 1
 
     val runKernel = gen.OpenCLKernel(ocl.mali_GEMM).as[ScalaFunction `(`
       Int `,` Int `,` Int `,`
@@ -158,7 +160,10 @@ class gemm extends idealised.util.Tests {
       Array[Array[Float]] `,`
       Array[Array[Float]] `,`
       Float `,`
-      Float `)=>` Array[Array[Float]]]
-    val (output, time) = runKernel(localSize, globalSize)(n `,` m `,` k `,` A `,` B `,` C `,` alpha `,` beta)
+      Float `)=>` Array[Float]]
+    val (flatOutput, time) = runKernel(localSize, globalSize)(n `,` m `,` k `,` A `,` B `,` C `,` alpha `,` beta)
+
+    val output: Array[Array[Float]] = flatOutput.grouped(10).toArray
+    println(output.map(_.mkString("[", ", ", "]")).mkString("[ ", ",\n", " ]"))
   }
 }
