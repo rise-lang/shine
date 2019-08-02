@@ -21,7 +21,7 @@ class traversals extends idealised.util.Tests {
     val strategy = body(body(body(mapFusion `;` function(mapLastFission))))
 
     val metaStrategy = inBody(inBody(bodyFission))(strategy)
-    val newStrategy = metaStrategy.get[Strategy[Expr]]
+    val newStrategy = metaStrategy.get
     println("------------------")
     println(strategy)
     println(newStrategy)

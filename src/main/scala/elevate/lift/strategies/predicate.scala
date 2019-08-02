@@ -2,13 +2,13 @@ package elevate.lift.strategies
 
 import elevate.core.strategies.traversal.oncetd
 import elevate.core.{Failure, RewriteResult, Strategy, Success}
-import lift.core.{Expr, Identifier, Lambda, Program}
+import lift.core.{Expr, Identifier, Lambda}
 
 import scala.language.implicitConversions
 
 object predicate {
 
-  implicit def rewriteResultToBoolean[T <: Program](r: RewriteResult[T]): Boolean = r match {
+  implicit def rewriteResultToBoolean[P](r: RewriteResult[P]): Boolean = r match {
     case Failure(_) => false
     case Success(_) => true
   }
@@ -27,11 +27,11 @@ object predicate {
     }
   }
 
-  case class isEqualTo[T <: Program](x: Expr) extends Strategy[T] {
-    def apply(e: T): RewriteResult[T] = if (e == x) Success(e) else Failure(isEqualTo(x))
+  case class isEqualTo[P](x: Expr) extends Strategy[P] {
+    def apply(e: P): RewriteResult[P] = if (e == x) Success(e) else Failure(isEqualTo(x))
   }
 
-  case class contains[T <: Program](x: Expr) extends Strategy[Expr] {
+  case class contains[P](x: Expr) extends Strategy[Expr] {
     def apply(e: Expr): RewriteResult[Expr] = oncetd(isEqualTo(x))(e)
   }
 }
