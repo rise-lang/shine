@@ -118,11 +118,11 @@ class gemm extends idealised.util.Tests {
       )
   }
 
-  test("High level gemm type inference works") {
+  test("Sequential gemm type inference works") {
     infer(sequential)
   }
 
-  test("High level gemm compiles to syntactically correct C") {
+  test("Sequential gemm compiles to syntactically correct C") {
     gen.CProgram(sequential)
   }
 
@@ -132,5 +132,33 @@ class gemm extends idealised.util.Tests {
 
   test("OpenCL gemm versions compiles to syntactically correct kernel") {
     gen.OpenCLKernel(ocl.mali_GEMM)
+  }
+
+  test("OpenCL gemm versions produce the expected result") {
+    import idealised.OpenCL._
+    import scala.util.Random
+
+    val random = new Random()
+
+    val n = 100
+    val m = 100
+    val k = 100
+    val A = Array.fill(n, k)(random.nextFloat)
+    val B = Array.fill(k, m)(random.nextFloat)
+    val C = Array.fill(n, m)(random.nextFloat)
+    val alpha = 2.0f
+    val beta = 3.0f
+
+    val localSize = ???
+    val globalSize = ???
+
+    val runKernel = gen.OpenCLKernel(ocl.mali_GEMM).as[ScalaFunction `(`
+      Int `,` Int `,` Int `,`
+      Array[Array[Float]] `,`
+      Array[Array[Float]] `,`
+      Array[Array[Float]] `,`
+      Float `,`
+      Float `)=>` Array[Array[Float]]]
+    val (output, time) = runKernel(localSize, globalSize)(n `,` m `,` k `,` A `,` B `,` C `,` alpha `,` beta)
   }
 }
