@@ -54,6 +54,10 @@ package object OpenCL {
     override def visitAndRebuild(f: Nat => Nat): Nat =
       f(new BuiltInFunctionCall(name, param, range.visitAndRebuild(f)))
 
+    override def exposedArgs: Seq[Nat] = Seq()
+
+    override def substituteExposedArgs(subMap: Map[Nat, SimplifiedExpr]): ArithExprFunctionCall = this
+
   }
 
   object BuiltInFunctionCall {

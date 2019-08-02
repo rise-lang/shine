@@ -1,7 +1,7 @@
 package idealised.DPIA.Types
 
 import idealised.DPIA.{Nat, NatIdentifier, freshName}
-import lift.arithmetic.{ArithExpr, ArithExprFunctionCall, NamedVar, RangeAdd}
+import lift.arithmetic.{ArithExpr, ArithExprFunctionCall, NamedVar, RangeAdd, SimplifiedExpr}
 
 sealed trait NatToNat  {
   def apply(n: Nat): Nat = NatToNatApply(this, n)
@@ -46,6 +46,11 @@ final case class NatToNatIdentifier(name: String) extends NatToNat with Kind.Ide
 final class NatToNatApply(val f: NatToNat, val n: Nat) extends ArithExprFunctionCall(s"$f($n)") {
   override def visitAndRebuild(f: Nat => Nat): Nat = this
   override lazy val toString: String = s"$f($n)"
+
+  override def exposedArgs: Seq[Nat] = Seq(n)
+
+  override def substituteExposedArgs(subMap: Map[Nat, SimplifiedExpr]): ArithExprFunctionCall =
+    new NatToNatApply(f, subMap.getOrElse(n, n))
 }
 
 object NatToNatApply {

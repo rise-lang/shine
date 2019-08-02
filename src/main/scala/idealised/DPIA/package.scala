@@ -54,6 +54,18 @@ package object DPIA {
       case other => other
     })
 
+    override def exposedArgs: Seq[Nat] = args.map({
+      case NatArg(n) => Some(n)
+      case _ => None
+    }).filter(_.isDefined).map(_.get)
+
+    override def substituteExposedArgs(subMap: Map[Nat, SimplifiedExpr]): ArithExprFunctionCall = {
+      new NatFunCall(fun, args.map {
+        case NatArg(x) => NatArg(subMap.getOrElse(x, x))
+        case other => other
+      })
+    }
+
     override def freeVariables: Set[Var] = args.map({
       case NatArg(arg) => ArithExpr.freeVariables(arg)
       case _ => Set[Var]()
