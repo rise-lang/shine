@@ -49,10 +49,10 @@ object AdaptKernelParameters {
         case _: C.AST.BasicType =>
           paramDecl.addressSpace match {
             case OpenCL.GlobalMemory | OpenCL.LocalMemory =>
-              // remember scalar parameters in global or local memory and change their type to an
-              // array of size 1
+              // remember scalar parameters in global or local memory and change their type to pointers
               scalarParamsInGlobalOrLocalMemory.add(paramDecl.name)
-              paramDecl.copy(t = C.AST.ArrayType(paramDecl.t, Some(1)))
+              paramDecl.copy(t = C.AST.PointerType(paramDecl.t,
+                const = inputParams.map(_.name).contains(paramDecl.name)))
             case _ => paramDecl
           }
         case at: C.AST.ArrayType =>
