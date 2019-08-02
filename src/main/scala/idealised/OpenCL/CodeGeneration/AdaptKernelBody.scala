@@ -103,7 +103,7 @@ object AdaptKernelBody {
   private def inferLoopTripCount(loop: ForLoop): Int = {
     val start = loop.init.decl match {
       case VarDecl(_, _, Some(ArithmeticExpr(ae))) => ae match {
-        case ArithExprFunction(_, range) => range.min.evalInt
+        case ArithExprFunctionCall(_, range) => range.min.evalInt
         case _ => ae.evalInt
       }
       case _ => ???
@@ -111,7 +111,7 @@ object AdaptKernelBody {
 
     val stop = loop.cond match {
       case C.AST.BinaryExpr(_, C.AST.BinaryOperator.<, ArithmeticExpr(ae)) => ae match {
-        case ArithExprFunction(_, range) => range.max.evalInt
+        case ArithExprFunctionCall(_, range) => range.max.evalInt
         case _ => ae.evalInt
       }
       case _ => ???
@@ -123,7 +123,7 @@ object AdaptKernelBody {
         val ae = ArithExpr.substitute(rhs, Map(NamedVar(name) -> Cst(0)))
         ae match {
           // TODO: generalise this
-          case ArithExprFunction(_, range) => range match {
+          case ArithExprFunctionCall(_, range) => range match {
             case RangeAdd(min, max, s) if (min.evalInt + 1) == max.evalInt && s.evalInt == 1 =>
               min.evalInt
             case _ => ???

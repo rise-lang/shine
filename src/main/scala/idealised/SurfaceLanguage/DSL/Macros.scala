@@ -1,12 +1,12 @@
 package idealised.SurfaceLanguage.DSL
 
 import idealised.SurfaceLanguage.IdentifierExpr
-import lift.arithmetic.{ArithExpr, ArithExprFunction}
+import lift.arithmetic.{ArithExpr, ArithExprFunctionCall}
 
 
 object Macros {
 
-  class GetLength(val x: IdentifierExpr) extends ArithExprFunction(s"getLength($x)") {
+  class GetLength(val x: IdentifierExpr) extends ArithExprFunctionCall(s"getLength($x)") {
     override def visitAndRebuild(f: ArithExpr => ArithExpr): ArithExpr = this
   }
 

@@ -34,8 +34,8 @@ package object OpenCL {
 
   // This class models OpenCL built in functions that can appear inside of arithmetic expressions
   // examples are get_global_size(0), or get_local_id(1), but also OpenCL math functions, e.g., ceil or sin
-  class BuiltInFunction private(name: String, val param: Int, range: Range)
-    extends ArithExprFunction(name, range) {
+  class BuiltInFunctionCall private(name: String, val param: Int, range: Range)
+    extends ArithExprFunctionCall(name, range) {
 
     lazy val toOCLString = s"$name($param)"
 
@@ -44,7 +44,7 @@ package object OpenCL {
     override val HashSeed = 0x31111111
 
     override def equals(that: Any): Boolean = that match {
-      case f: BuiltInFunction => this.name.equals(f.name) && this.param == f.param
+      case f: BuiltInFunctionCall => this.name.equals(f.name) && this.param == f.param
       case _ => false
     }
 
@@ -52,52 +52,52 @@ package object OpenCL {
     override lazy val sign: Sign.Value = Sign.Positive
 
     override def visitAndRebuild(f: Nat => Nat): Nat =
-      f(new BuiltInFunction(name, param, range.visitAndRebuild(f)))
+      f(new BuiltInFunctionCall(name, param, range.visitAndRebuild(f)))
 
   }
 
-  object BuiltInFunction {
-    def apply(name: String, param: Int, range: Range = RangeUnknown) : BuiltInFunction =
-      new BuiltInFunction(name, param, range)
+  object BuiltInFunctionCall {
+    def apply(name: String, param: Int, range: Range = RangeUnknown) : BuiltInFunctionCall =
+      new BuiltInFunctionCall(name, param, range)
   }
 
   object get_num_groups {
     def apply(param:Int, range : Range = ContinuousRange(1, PosInf)) =
-      BuiltInFunction("get_num_groups", param, range)
+      BuiltInFunctionCall("get_num_groups", param, range)
   }
 
   object get_global_size {
     def apply(param: Int, range : Range = ContinuousRange(1, PosInf)) =
-      BuiltInFunction("get_global_size", param, range)
+      BuiltInFunctionCall("get_global_size", param, range)
   }
 
   object get_local_size {
     def apply(param: Int, range : Range = ContinuousRange(1, PosInf)) =
-      BuiltInFunction("get_local_size", param, range)
+      BuiltInFunctionCall("get_local_size", param, range)
   }
 
   object get_local_id {
     def apply(param:Int, range : Range) =
-      BuiltInFunction("get_local_id", param, range)
+      BuiltInFunctionCall("get_local_id", param, range)
 
     def apply(param:Int) =
-      BuiltInFunction("get_local_id", param, ContinuousRange(0, get_local_size(param)))
+      BuiltInFunctionCall("get_local_id", param, ContinuousRange(0, get_local_size(param)))
   }
 
   object get_global_id {
     def apply(param:Int, range : Range) =
-      BuiltInFunction("get_global_id", param, range)
+      BuiltInFunctionCall("get_global_id", param, range)
 
     def apply(param:Int) =
-      BuiltInFunction("get_global_id", param, ContinuousRange(0, get_global_size(param)))
+      BuiltInFunctionCall("get_global_id", param, ContinuousRange(0, get_global_size(param)))
   }
 
   object get_group_id {
     def apply(param:Int, range : Range) =
-      BuiltInFunction("get_group_id", param, range)
+      BuiltInFunctionCall("get_group_id", param, range)
 
     def apply(param:Int) =
-      BuiltInFunction("get_group_id", param, ContinuousRange(0, get_num_groups(param)))
+      BuiltInFunctionCall("get_group_id", param, ContinuousRange(0, get_num_groups(param)))
 
   }
 

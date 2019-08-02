@@ -48,7 +48,7 @@ package object DPIA {
   case class LetNatIdArg(letNatIdentifier: LetNatIdentifier) extends NatFunArg
 
 
-  class NatFunCall(val fun:LetNatIdentifier, val args:Seq[NatFunArg]) extends ArithExprFunction(fun.id.name)  {
+  class NatFunCall(val fun:LetNatIdentifier, val args:Seq[NatFunArg]) extends ArithExprFunctionCall(fun.id.name)  {
     override def visitAndRebuild(f: Nat => Nat): Nat = NatFunCall(fun, args.map {
       case NatArg(n) => NatArg(f(n))
       case other => other
