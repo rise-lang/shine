@@ -60,7 +60,7 @@ final case class OpenCLReduceSeq(n: Nat,
     con(array)(λ(exp"[$n.$dt1, $read]")(X =>
       con(init)(λ(exp"[$dt2, $write]")(Y =>
         OpenCLReduceSeqI(n, initAddrSpace, dt1, dt2,
-          λ(exp"[$dt1]")(x => λ(exp"[$dt2]")(y => λ(acc"[$dt2]")(o => acc( f(x)(y) )( o )))),
+          λ(exp"[$dt1, $read]")(x => λ(exp"[$dt2, $read]")(y => λ(acc"[$dt2]")(o => acc( f(x)(y) )( o )))),
           Y, X, C)(context)))))
   }
 

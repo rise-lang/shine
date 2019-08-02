@@ -95,7 +95,7 @@ class gemm extends idealised.util.Tests {
               zip( split(p2)(b), split(p1)(transpose(ac._2)) ) |>
                 mapGlobal(1)(fun(bc =>
                   zip( split(p3)(transpose(ac._1)), split(p3)(transpose(bc._1)) ) |>
-                    reduceSeq(fun((p236, p67) =>
+                    oclReduceSeq(AddressSpace.Private)(fun((p236, p67) =>
                       zip(p67, transpose(p236._1)) |>
                         mapSeq(fun(p54 =>
                           zip(p54._1, transpose(p236._2)) |>
@@ -130,4 +130,7 @@ class gemm extends idealised.util.Tests {
     infer(ocl.mali_GEMM)
   }
 
+  test("OpenCL gemm versions compiles to syntactically correct kernel") {
+    gen.OpenCLKernel(ocl.mali_GEMM)
+  }
 }
