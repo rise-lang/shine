@@ -5,16 +5,13 @@ import elevate.core.strategies.basic._
 
 package object core {
 
-  // A rule is the same as a strategy
+  // Rule is just a different name for Strategy
   type Rule[T <: Program] = Strategy[T]
-  trait Strategy[T <: Program] extends Program {
-    def apply(p: T): RewriteResult[T]
-  }
+  trait Strategy[T <: Program] extends Program { def apply(p: T): RewriteResult[T] }
 
   type Meta = Strategy[Elevate] // Meta = Strategies for Elevate
   type Elevate = Strategy[Lift] // Elevate = Strategies for Lift
   type Lift = Expr
-
 
   sealed trait RewriteResult[T <: Program] {
     def getProgramOrElse[T <: Program](e: T): T

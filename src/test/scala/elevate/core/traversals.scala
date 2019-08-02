@@ -8,6 +8,7 @@ import elevate.core.strategies.traversal.oncetd
 import elevate.lift.rules
 import elevate.lift.rules.algorithmic._
 import elevate.lift.strategies.traversal.{body, function, inBody}
+import elevate.meta.rules.traversal.bodyFission
 import lift.core.DSL._
 import lift.core.Expr
 import lift.core.primitives.map

@@ -5,7 +5,7 @@ import java.io.{File, PrintWriter}
 import elevate.core.strategies.basic
 import elevate.lift.strategies.traversal._
 import elevate.lift.strategies.normalForm._
-import elevate.core.strategies.tiling._
+import elevate.lift.strategies.tiling._
 import elevate.core.strategies.traversal._
 import elevate.core.strategies.basic._
 import elevate.lift._

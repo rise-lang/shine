@@ -21,6 +21,8 @@ object basic {
     def apply(e: T): RewriteResult[T] = leftChoice[T](s, id())(e)
   }
 
+  def try2[T <: Program]: Strategy[T] => Strategy[T] = s => leftChoice[T](s, id())
+
   case class peek[T <: Program](f: T => Unit) extends Strategy[T] {
     def apply(e: T): RewriteResult[T] = {f(e); Success(e)}
   }
@@ -30,7 +32,8 @@ object basic {
   }
 
   case class countingRepeat[T <: Program](s: Int => Strategy[T], i: Int) extends Strategy[T] {
-    def apply(e: T): RewriteResult[T] = (`try`(s(i) `;` countingRepeat(s, i+1)))(e)
+    def apply(e: T): RewriteResult[T] = (`try`(s(i) `;` countingRepeat(s, i + 1))) (e)
+  }
 
   case class repeatNTimes[T <: Program](n: Int, s: Strategy[T]) extends Strategy[T] {
     def apply(e :T): RewriteResult[T] = if (n > 0) {(s `;` repeatNTimes(n - 1, s))(e)} else { id()(e) }

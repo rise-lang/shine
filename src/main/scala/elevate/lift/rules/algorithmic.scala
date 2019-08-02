@@ -53,12 +53,6 @@ object algorithmic {
     override def toString = s"mapLastFission"
   }
 
-  case object bodyFission extends Rule[Elevate] {
-    def apply(e: Elevate): RewriteResult[Elevate] = e match {
-      case body(seq(f,s)) => Success(seq(body(f),body(s)))
-      case x => Failure(bodyFission)
-    }
-  }
 
   // identities
 

@@ -1,11 +1,4 @@
-package elevate.core.strategies
-
-import elevate.core._
-import elevate.core.strategies.basic._
-import elevate.lift.rules.algorithmic._
-import elevate.lift.rules.movement._
-import elevate.lift.strategies.traversal._
-import elevate.lift.strategies.normalForm._
+package elevate.lift.strategies
 
 object tiling {
 
