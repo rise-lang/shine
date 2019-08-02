@@ -4,15 +4,17 @@ import _root_.lift.core._
 import elevate.core.strategies.basic._
 
 package object core {
-  //type StrategyT[T <: Program] = Program => RewriteResult[T]
-  //type Strategy = Program => RewriteResult[Expr]
 
-  trait StrategyT[T <: Program] extends Program {
+  // A rule is the same as a strategy
+  type Rule[T <: Program] = Strategy[T]
+  trait Strategy[T <: Program] extends Program {
     def apply(p: T): RewriteResult[T]
   }
 
-  // the typical elevate strategy to rewrite lift programs
-  trait Strategy extends StrategyT[Expr]
+  type Meta = Strategy[Elevate] // Meta = Strategies for Elevate
+  type Elevate = Strategy[Lift] // Elevate = Strategies for Lift
+  type Lift = Expr
+
 
   sealed trait RewriteResult[T <: Program] {
     def getProgramOrElse[T <: Program](e: T): T
@@ -21,8 +23,8 @@ package object core {
     def mapSuccess(f: Program => Program): RewriteResult[T]
     def flatMapSuccess(f: Program => RewriteResult[T]): RewriteResult[T]
 
-    def mapFailure(f: StrategyT[T] => StrategyT[T]): RewriteResult[T]
-    def flatMapFailure(f: StrategyT[T] => RewriteResult[T]): RewriteResult[T]
+    def mapFailure(f: Strategy[T] => Strategy[T]): RewriteResult[T]
+    def flatMapFailure(f: Strategy[T] => RewriteResult[T]): RewriteResult[T]
   }
 
   case class Success[T <: Program](e: Program) extends RewriteResult[T] {
@@ -32,28 +34,28 @@ package object core {
     override def mapSuccess(f: Program => Program): RewriteResult[T] = Success(f(e))
     override def flatMapSuccess(f: Program => RewriteResult[T]): RewriteResult[T] = f(e)
 
-    override def mapFailure(f: StrategyT[T] => StrategyT[T]): RewriteResult[T] = this
-    override def flatMapFailure(f: StrategyT[T] => RewriteResult[T]): RewriteResult[T] = this
+    override def mapFailure(f: Strategy[T] => Strategy[T]): RewriteResult[T] = this
+    override def flatMapFailure(f: Strategy[T] => RewriteResult[T]): RewriteResult[T] = this
   }
 
-  case class Failure[T <: Program](s: StrategyT[T]) extends RewriteResult[T] {
+  case class Failure[T <: Program](s: Strategy[T]) extends RewriteResult[T] {
     override def getProgramOrElse[U <: Program](u: U): U = u
     override def get[U <: Program]: U = throw NotApplicable(s)
 
     override def mapSuccess(f: Program => Program): RewriteResult[T] = this
     override def flatMapSuccess(f: Program => RewriteResult[T]): RewriteResult[T] = this
 
-    override def mapFailure(f: StrategyT[T] => StrategyT[T]): RewriteResult[T] = Failure(f(s))
-    override def flatMapFailure(f: StrategyT[T] => RewriteResult[T]): RewriteResult[T] = f(s)
+    override def mapFailure(f: Strategy[T] => Strategy[T]): RewriteResult[T] = Failure(f(s))
+    override def flatMapFailure(f: Strategy[T] => RewriteResult[T]): RewriteResult[T] = f(s)
   }
 
-  case class NotApplicable[T <: Program](s: StrategyT[T]) extends Exception
+  case class NotApplicable[T <: Program](s: Strategy[T]) extends Exception
 
-  implicit class Then[T <: Program](f: StrategyT[T]) {
-    def `;`(s: StrategyT[T]): StrategyT[T] = seq[T](f,s)
+  implicit class Then[T <: Program](f: Strategy[T]) {
+    def `;`(s: Strategy[T]): Strategy[T] = seq[T](f,s)
   }
 
-  implicit class LeftChoice[T <: Program](f: StrategyT[T]) {
-    def <+(s: StrategyT[T]): StrategyT[T] = leftChoice(f,s)
+  implicit class LeftChoice[T <: Program](f: Strategy[T]) {
+    def <+(s: Strategy[T]): Strategy[T] = leftChoice(f,s)
   }
 }

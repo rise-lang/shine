@@ -5,7 +5,8 @@ import elevate.util._
 import elevate.lift.strategies.normalForm._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal.oncetd
-import elevate.lift.rules.algorithmic.rules
+import elevate.lift.rules
+import elevate.lift.rules.algorithmic._
 import elevate.lift.strategies.traversal.{body, function, inBody}
 import lift.core.DSL._
 import lift.core.Expr
@@ -16,10 +17,10 @@ class traversals extends idealised.util.Tests {
 
   test("simple") {
     val expr = fun(f => fun(g => map(f) >> map(g)))
-    val strategy = body(body(body(rules.mapFusion `;` function(rules.mapLastFission))))
+    val strategy = body(body(body(mapFusion `;` function(mapLastFission))))
 
-    val metaStrategy = inBody(inBody(rules.bodyFission))(strategy)
-    val newStrategy = metaStrategy.get[StrategyT[Expr]]
+    val metaStrategy = inBody(inBody(bodyFission))(strategy)
+    val newStrategy = metaStrategy.get[Strategy[Expr]]
     println("------------------")
     println(strategy)
     println(newStrategy)

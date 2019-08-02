@@ -1,8 +1,9 @@
 package elevate.lift.rules
 
 import elevate.core.strategies.basic.seq
-import elevate.core.{Failure, RewriteResult, Strategy, StrategyT, Success}
+import elevate.core.{Elevate, Failure, Lift, RewriteResult, Rule, Strategy, Success}
 import elevate.lift.strategies.predicate._
+import elevate.lift.strategies.traversal._
 import elevate.lift.strategies.traversal.body
 import lift.core._
 import lift.core.DSL._
@@ -18,48 +19,44 @@ object algorithmic {
   // J: join
 
 
-  // like this we can avoid using parenthesis
-  object rules {
-    def mapFusion: StrategyT[Expr] = `*g >> *f -> *(g >> f)`()
-    def splitJoin(n : Nat): StrategyT[Expr] = `*f -> S >> **f >> J`(n)
-    def mapLastFission: StrategyT[Expr] = `*(g >> .. >> f) -> *(g >> ..) >> *f`()
-    def bodyFission: StrategyT[StrategyT[Expr]] = bodyFissionObject()
-  }
-
-  import rules._
-
   // divide & conquer
-  case class `*f -> S >> **f >> J`(n: Nat) extends StrategyT[Expr] {
+  case object splitJoin { def apply(n: Nat) = `*f -> S >> **f >> J`(n) }
+  case class `*f -> S >> **f >> J`(n: Nat) extends Strategy[Expr] {
     def apply(e: Expr): RewriteResult[Expr] = e match {
       case Apply(`map`, f) => Success(split(n) >> map(map(f)) >> join)
       case _ => Failure(splitJoin(n))
     }
+    override def toString = s"splitJoin($n)"
   }
 
   // fusion / fission
-  case class `*g >> *f -> *(g >> f)`() extends StrategyT[Expr] {
-    def apply(e: Expr): RewriteResult[Expr] = e match {
+  case object mapFusion extends Rule[Lift] { def apply(e: Lift) = `*g >> *f -> *(g >> f)`(e) }
+  case object `*g >> *f -> *(g >> f)` extends Rule[Lift] {
+    def apply(e: Lift): RewriteResult[Lift] = e match {
       case Apply(Apply(`map`, f), Apply(Apply(`map`, g), arg)) =>
         Success(map(g >> f)(arg))
       case _ => Failure(mapFusion)
     }
+    override def toString = s"mapFusion"
   }
 
   // fission of the last function to be applied inside a map
-  case class `*(g >> .. >> f) -> *(g >> ..) >> *f`() extends StrategyT[Expr] {
+  case object mapLastFission extends Rule[Lift] { def apply(e: Lift) = `*(g >> .. >> f) -> *(g >> ..) >> *f`(e) }
+  case object `*(g >> .. >> f) -> *(g >> ..) >> *f` extends Rule[Lift] {
     // TODO: why gx != Identifier?
-    def apply(e: Expr): RewriteResult[Expr] = e match {
+    def apply(e: Lift): RewriteResult[Lift] = e match {
         // todo fix constraint again
-      case Apply(`map`, Lambda(x, Apply(f, gx))) => //if !contains(x)(f) && !isIdentifier(gx) =>
+      case Apply(`map`, Lambda(x, Apply(f, gx))) if !contains(x)(f) && !isIdentifier(gx) =>
         Success(Apply(`map`, Lambda(x, gx)) >> map(f))
       case _ => Failure(mapLastFission)
     }
+    override def toString = s"mapLastFission"
   }
 
-  case class bodyFissionObject() extends StrategyT[StrategyT[Expr]] {
-    def apply(e: StrategyT[Expr]): RewriteResult[StrategyT[Expr]] = e match {
+  case object bodyFission extends Rule[Elevate] {
+    def apply(e: Elevate): RewriteResult[Elevate] = e match {
       case body(seq(f,s)) => Success(seq(body(f),body(s)))
-      case x => Failure(bodyFissionObject())
+      case x => Failure(bodyFission)
     }
   }
 

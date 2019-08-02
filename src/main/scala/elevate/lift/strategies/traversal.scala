@@ -1,7 +1,7 @@
 package elevate.lift.strategies
 
-import elevate.core.{Failure, RewriteResult, Strategy, StrategyT, Success}
-import lift.core.{Apply, DepLambda, Expr, Lambda, Primitive}
+import elevate.core.{Elevate, Failure, Lift, Meta, RewriteResult, Strategy, Success}
+import lift.core.{Apply, DepLambda, Expr, Lambda, Primitive, Program}
 import lift.core.primitives.map
 import elevate.lift.rules.algorithmic._
 import elevate.core.strategies.traversal._
@@ -11,23 +11,25 @@ import elevate.lift.strategies.normalForm._
 
 object traversal {
 
-  case class body(s: StrategyT[Expr]) extends StrategyT[Expr] {
-    def apply(e: Expr): RewriteResult[Expr] = e match {
+  abstract class Traversal[T <: Program](s: Strategy[T]) extends Strategy[T]
+
+  case class body(s: Elevate) extends Traversal[Lift](s) {
+    def apply(e: Lift): RewriteResult[Lift] = e match {
       case Lambda(x, f) => s(f).mapSuccess({ case y: Expr => Lambda(x, y) })
       case _ => Failure(s)
     }
   }
 
-  case class function(s: StrategyT[Expr]) extends StrategyT[Expr] {
-    def apply(e: Expr): RewriteResult[Expr] = e match {
-      case Apply(f, e) => s(f).mapSuccess({ case y: Expr => Apply(y, e) })
+  case class function(s: Elevate) extends Traversal[Lift](s) {
+    def apply(e: Lift): RewriteResult[Lift] = e match {
+      case Apply(f, e) => s(f).mapSuccess({ case y: Lift => Apply(y, e) })
       case _ => Failure(s)
     }
   }
 
-  case class inBody(s: StrategyT[StrategyT[Expr]]) extends StrategyT[StrategyT[Expr]] {
-    def apply(e: StrategyT[Expr]): RewriteResult[StrategyT[Expr]] = e match {
-      case body(x: StrategyT[Expr]) => s(x).mapSuccess({case y: StrategyT[Expr] => body(y)})
+  case class inBody(s: Meta) extends Traversal[Elevate](s) {
+    def apply(e: Elevate): RewriteResult[Elevate] = e match {
+      case body(x: Elevate) => s(x).mapSuccess({case y: Elevate => body(y)})
       case _ => Failure(s)
     }
   }
