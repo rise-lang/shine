@@ -329,8 +329,8 @@ class SparseVector extends idealised.util.Tests {
   test("Offset based matrix multiply") {
     val f = nFun(n => nFun(m =>
       fun(ArrayType(n + 1, int))(dict =>
-        letNat(nFun(i => Idx(dict, AsIndex(n + 1, i + 1)) - Idx(dict, AsIndex(n + 1, i))), lenF =>
-          fun(DepArrayType(n, i => ArrayType(lenF(i), TupleType(IndexType(m), float))))(matrix =>
+        letNat(nFun(i => Idx(dict, AsIndex(n + 1, i))), lookup =>
+          fun(DepArrayType(n, i => ArrayType(lookup(i + 1) - lookup(i), TupleType(IndexType(m), float))))(matrix =>
             fun(ArrayType(m, float))(vector =>
               matrix :>> depMapGlobal(
                 oclReduceSeq(fun(pair => fun(accum => accum + Snd(pair, None) * Idx(vector, Fst(pair, None)))),0.0f, PrivateMemory)
