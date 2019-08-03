@@ -454,7 +454,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                              cont:(CodeGenerator ,Environment) => Stmt):Stmt = {
     defn.t match {
       case ExpType(_) =>
-        exp(defn.asInstanceOf[Phrase[ExpType]], env, List(), e => cont(this, env updatedInlNatEnv(binder, e)))
+        exp(defn.asInstanceOf[Phrase[ExpType]], env, List(), e => cont(this, env updatedInlNatEnv((binder, e))))
       case _ =>
         val newCodeGen = defineNatFunction(binder.name, defn, env)
         cont(newCodeGen, env)
@@ -476,7 +476,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
     val (body, params, ranges) = getPhraseAndParams(phrase)
 
-    val newEnv = params.foldLeft(env)((e, ident) => e.updatedIdentEnv(ident, C.AST.DeclRef(ident.name)))
+    val newEnv = params.foldLeft(env)((e, ident) => e.updatedIdentEnv((ident, C.AST.DeclRef(ident.name))))
 
     val newCodeGen = ranges.foldLeft(this)((gen, rangeInfo) => gen.updatedRanges(rangeInfo._1, rangeInfo._2))
 
