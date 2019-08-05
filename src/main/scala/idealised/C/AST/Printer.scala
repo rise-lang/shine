@@ -325,13 +325,19 @@ class CPrinter extends Printer {
   }
 
   private def printArrayLiteral(al: ArrayLiteral): Unit = {
-    print("(")
+    print("((")
     print(s"${al.t.getBaseType}[${ al.t.getSizes match {
       case None => ""
       case Some(s) => s
     } }]")
-    al.inits.mkString("{", ",", "}")
-    print(")")
+    print("){")
+    var first = true
+    al.inits.foreach { e =>
+      if (first) { first = false  }
+      else { print(", ") }
+      printExpr(e)
+    }
+    print("})")
   }
 
   private def printRecordLiteral(rl: RecordLiteral): Unit = {
