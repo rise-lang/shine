@@ -4,7 +4,7 @@ import elevate.lift.rules._
 import elevate.util._
 import elevate.lift.strategies.normalForm._
 import elevate.core.strategies.basic._
-import elevate.core.strategies.traversal.oncetd
+import elevate.core.strategies.traversal._
 import elevate.lift.rules
 import elevate.lift.rules.algorithmic._
 import elevate.lift.strategies.traversal.{body, function, inBody}
@@ -29,9 +29,10 @@ class traversals extends idealised.util.Tests {
     println(newStrategy(expr))
     println(strategy(expr))
   }
-  /*
+
   test("id traversals") {
     val expr = fun(f => fun(g => map(f) >> map(g)))
+    val id = strategies.basic.id[Lift]()
 
     assert(
       List(
@@ -66,5 +67,4 @@ class traversals extends idealised.util.Tests {
     )
   }
 
-   */
 }

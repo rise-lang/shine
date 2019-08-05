@@ -1,9 +1,10 @@
 package elevate.lift.strategies
 
-import elevate.core.{Failure, Strategy, Success}
+import elevate.core.{Failure, Lift, Strategy, Success}
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
 import elevate.lift.strategies.traversal._
+import elevate.core.strategies.predicate._
 import elevate.lift.strategies.predicate._
 import elevate.lift.strategies.algorithmic._
 import elevate.lift.rules._
@@ -14,22 +15,20 @@ import lift.core.primitives.map
 
 object normalForm {
 
-  /*
-  def normalize: Strategy => Strategy =
+  def normalize: Strategy[Lift] => Strategy[Lift] =
     s => repeat(oncetd(s))
 
-  def BENF: Strategy = betaEtaNormalForm
-  def betaEtaNormalForm: Strategy = normalize(betaReduction <+ etaReduction)
+  def BENF: Strategy[Lift] = betaEtaNormalForm
+  def betaEtaNormalForm: Strategy[Lift] = normalize(betaReduction <+ etaReduction)
 
-  def LCNF: Strategy = lambdaCalculusNormalForm
-  def lambdaCalculusNormalForm: Strategy =
+  def LCNF: Strategy[Lift] = lambdaCalculusNormalForm
+  def lambdaCalculusNormalForm: Strategy[Lift] =
     BENF `;` tryAll(argumentOf(map)(isLambda <+ etaAbstraction))
 
-  def RNF: Strategy = rewriteNormalForm
-  def rewriteNormalForm: Strategy = normalize(mapLastFission) `;` LCNF
+  def RNF: Strategy[Lift] = rewriteNormalForm
+  def rewriteNormalForm: Strategy[Lift] = normalize(mapLastFission) `;` LCNF
 
-  def CNF: Strategy = codegenNormalForm
-  def codegenNormalForm: Strategy = normalize(mapFusion)
+  def CNF: Strategy[Lift] = codegenNormalForm
+  def codegenNormalForm: Strategy[Lift] = normalize(mapFusion)
 
-   */
 }

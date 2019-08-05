@@ -27,6 +27,7 @@ object traversal {
     }
   }
 
+  // todo move to meta package
   case class inBody(s: Meta) extends Traversal[Elevate](s) {
     def apply(e: Elevate): RewriteResult[Elevate] = e match {
       case body(x: Elevate) => s(x).mapSuccess(body)
@@ -34,38 +35,35 @@ object traversal {
     }
   }
 
-  /*
-  def argument: Strategy => Strategy =
+  def argument: Elevate => Elevate =
     s => {
-      case Apply(f, e) => s(e).mapSuccess({case y: Expr => Apply(f, y)})
+      case Apply(f, e) => s(e).mapSuccess(Apply(f, _))
       case _ => Failure(s)
     }
 
-  def argumentOf(x: Primitive): Strategy => Strategy = {
+  def argumentOf(x: Primitive): Elevate => Elevate = {
     s => {
-      case Apply(f, e) if f == x => s(e).mapSuccess({case y:Expr => Apply(f, y)})
+      case Apply(f, e) if f == x => s(e).mapSuccess(Apply(f, _))
       case _ => Failure(s)
     }
   }
-   */
 
-  /*
   // applying a strategy to an expression applied to a lift `map`. Example:
   // ((map λe14. (transpose ((map (map e12)) e14))) e13) // input expr
   //  (map λe14. (transpose ((map (map e12)) e14)))      // result of `function`
   //       λe14. (transpose ((map (map e12)) e14))       // result of `argument`
   //             (transpose ((map (map e12)) e14))       // result of 'body' -> here we can apply s
-  def fmap: Strategy => Strategy = s => function(argumentOf(map)(body(s)))
+  def fmap: Elevate => Elevate = s => function(argumentOf(map)(body(s)))
 
   // fmap applied for expressions in rewrite normal form:
   // fuse -> fmap -> fission
-  def fmapRNF: Strategy => Strategy =
+  def fmapRNF: Elevate => Elevate =
     s => LCNF `;` mapFusion `;`
       LCNF `;` fmap(s) `;`
       LCNF `;` one(mapFullFission)
 
   // applying a strategy to an expression nested in one or multiple lift `map`s
-  def mapped: Strategy => Strategy =
+  def mapped: Elevate => Elevate =
     s => s <+ (e => fmapRNF(mapped(s))(e))
 
   // moves along RNF-normalized expression
@@ -73,8 +71,6 @@ object traversal {
   // move(0)(s) == s(***f o ****g o *h)
   // move(1)(s) == s(****g o *h)
   // move(2)(s) == s(*h)
-  def moveTowardsArgument: Int => Strategy => Strategy =
-    i => s => applyNTimes(i)(argument(_))(s)
-
-   */
+  def moveTowardsArgument: Int => Elevate => Elevate =
+    i => s => applyNTimes(i, argument(_), s)
 }

@@ -38,11 +38,11 @@ object basic {
     def apply(e :P): RewriteResult[P] = if (n > 0) {(s `;` repeatNTimes(n - 1, s))(e)} else { id()(e) }
   }
 
+  def show[P]: Strategy[P] = debug("")
+
   case class debug[P](msg: String) extends Strategy[P] {
     def apply(e: P): RewriteResult[P] = peek[P](p => println(s"$msg $p"))(e)
   }
-
-  case object debug { def apply[P](e: P): RewriteResult[P] = debug("")(e) }
 
   case class debugln[P](msg: String) extends Strategy[P] {
     def apply(e: P): RewriteResult[P] = debug[P](msg + "\n")(e)

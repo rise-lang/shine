@@ -23,7 +23,6 @@ import scala.language.implicitConversions
 
 class tiling extends idealised.util.Tests {
 
-  /*
   implicit def rewriteResultToExpr(r: RewriteResult[Expr]): Expr = r.get
 
   test("LCNF") {
@@ -245,14 +244,14 @@ class tiling extends idealised.util.Tests {
 
   // todo: this should use mapSeqCompute and CNF instead of RNF
   // ... but mapAcceptorTranslation for split is missing
-  val lower: Strategy = LCNF `;` RNF `;` normalize(specialize.mapSeq) `;` BENF
+  val lower: Strategy[Lift] = LCNF `;` RNF `;` normalize(specialize.mapSeq) `;` BENF
 
   val identity = dtFun(t => foreignFun("identity", Seq("y"), "{ return y; }", t ->: t))
   val floatId: Expr = identity(float)
 
   test("codegen 1D tiles") {
     val highLevel = wrapInLambda(1, i => *(floatId) $ i, inputT(1, _))
-    val tiled = one(body(tileND(1)(tileSize)))(highLevel).get[Expr]
+    val tiled = one(body(tileND(1)(tileSize)))(highLevel).get
 
     println(gen.CProgram(lower(highLevel)))
     println(gen.CProgram(lower(tiled)))
@@ -260,7 +259,7 @@ class tiling extends idealised.util.Tests {
 
   test("codegen 2D tiles") {
     val highLevel = wrapInLambda(2, i => **!(floatId) $ i, inputT(2, _))
-    val tiled = one(one(body(tileND(2)(tileSize))))(highLevel).get[Expr]
+    val tiled = one(one(body(tileND(2)(tileSize))))(highLevel).get
 
     println(gen.CProgram(lower(highLevel)))
     println(gen.CProgram(lower(tiled)))
@@ -268,7 +267,7 @@ class tiling extends idealised.util.Tests {
 
   test("codegen 3D tiles") {
     val highLevel = wrapInLambda(3, i => ***!(floatId) $ i, inputT(3, _))
-    val tiled = one(one(one(body(tileNDList(List(4,8,16))))))(highLevel).get[Expr]
+    val tiled = one(one(one(body(tileNDList(List(4,8,16))))))(highLevel).get
 
     println(gen.CProgram(lower(highLevel)))
     println(gen.CProgram(lower(tiled)))
@@ -276,7 +275,7 @@ class tiling extends idealised.util.Tests {
 
   test("codegen two innermost of three loops") {
     val highLevel = wrapInLambda(3, i => ***!(floatId) $ i, inputT(3, _))
-    val tiled = one(one(one(body(fmap(tileND(2)(tileSize))))))(highLevel).get[Expr]
+    val tiled = one(one(one(body(fmap(tileND(2)(tileSize))))))(highLevel).get
 
     println(gen.CProgram(lower(highLevel)))
     println(gen.CProgram(lower(tiled)))
@@ -351,6 +350,4 @@ class tiling extends idealised.util.Tests {
     assert(betaEtaEquals((RNF `;` RNF `;` BENF)(λ(i => λ(f => (J o **(f) o S) $ i))), gold))
     assert(betaEtaEquals((RNF `;` RNF `;` RNF `;` BENF)(λ(i => λ(f => (J o **(f) o S) $ i))), gold))
   }
-
-   */
 }

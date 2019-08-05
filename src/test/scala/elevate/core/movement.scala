@@ -5,6 +5,7 @@ import elevate.core.strategies.traversal._
 import elevate.core.strategies.basic._
 import elevate.lift.strategies.normalForm._
 import elevate.lift.strategies.predicate._
+import elevate.core.strategies.predicate._
 import elevate.lift._
 import elevate.util._
 import lift.core.{Apply, Expr, Literal}
@@ -17,9 +18,8 @@ import scala.language.implicitConversions
 
 class movement extends idealised.util.Tests {
 
-  /*
   implicit def rewriteResultToExpr(r: RewriteResult[Expr]): Expr = r.get
-  val norm: Strategy = LCNF
+  val norm = LCNF
 
   def testMultiple(list: List[Expr], gold: Expr) = {
     assert(list.forall(betaEtaEquals(_, gold)))
@@ -34,7 +34,7 @@ class movement extends idealised.util.Tests {
       List(
         norm(λ(f => *(λ(x => *(f)(x))) >> T)).get,
         λ(f => **(f) >> T)
-      ).map((debug `;` oncetd(`**f >> T -> T >> **f`))(_).get[Expr]), gold
+      ).map((show[Lift] `;` oncetd(`**f >> T -> T >> **f`))(_).get), gold
     )
   }
 
@@ -182,6 +182,4 @@ class movement extends idealised.util.Tests {
       slide(16+3-1)(16) >> map(slide(3)(1))
     ))
   }
-
-   */
 }

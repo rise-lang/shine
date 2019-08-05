@@ -1,17 +1,17 @@
 package elevate.lift.strategies
 
-import elevate.core.{Failure, Strategy, Success}
+import elevate.core.{Failure, Lift, Strategy, Success}
 import lift.core.DSL._
 import lift.core._
 
+// todo express rules as case objects/classes
 object algorithmic {
   // TODO: only compose simpler rules
   // TODO: what if 'x' is used in 'f'?
 
-  /*
   // fission of the first function to be applied inside a map
   // *(g >> .. >> f) -> *g >> *(.. >> f)
-  def mapFirstFission: Strategy = {
+  def mapFirstFission: Strategy[Lift] = {
     case Apply(primitives.map, Lambda(x, gx)) =>
       Success(mapFirstFissionRec(x, fun(e => e), gx))
     case _ => Failure(mapFirstFission)
@@ -30,7 +30,7 @@ object algorithmic {
 
   // fission of all the functions chained inside a map
   // *(g >> .. >> f) -> *g >> .. >> *f
-  def mapFullFission: Strategy = {
+  def mapFullFission: Strategy[Lift] = {
     case Apply(primitives.map, Lambda(x, gx)) =>
       Success(mapFullFissionRec(x, gx))
     case _ => Failure(mapFullFission)
@@ -46,6 +46,4 @@ object algorithmic {
         }
     }
   }
-
-   */
 }

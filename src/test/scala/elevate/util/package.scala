@@ -1,12 +1,12 @@
 package elevate
 
-//import elevate.lift.strategies.normalForm.BENF
+import elevate.lift.strategies.normalForm.BENF
 import _root_.lift.core.primitives._
 import _root_.lift.core._
 import _root_.lift.core.DSL._
 
 package object util {
-  //def betaEtaEquals(a: Expr, b: Expr): Boolean = BENF(a).get == BENF(b).get
+  def betaEtaEquals(a: Expr, b: Expr): Boolean = BENF(a).get == BENF(b).get
 
   // notation
   val tileSize = 4

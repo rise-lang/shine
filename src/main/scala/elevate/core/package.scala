@@ -6,8 +6,6 @@ import elevate.core.strategies.basic._
 package object core {
 
   type Strategy[P] = P => RewriteResult[P]
-  // Rule is just a different name for Strategy
-  type Rule[P] = Strategy[P]
 
   type Meta = Strategy[Elevate] // Meta = Strategies for Elevate
   type Elevate = Strategy[Lift] // Elevate = Strategies for Lift
