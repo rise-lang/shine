@@ -1,6 +1,7 @@
 package idealised.SurfaceLanguage.DSL
 
-import idealised.SurfaceLanguage.Semantics.{Data, SingletonArrayData}
+import idealised.SurfaceLanguage.Semantics.Data
+import idealised.SurfaceLanguage.Types.IndexType
 import idealised.SurfaceLanguage.{Expr, LiteralExpr}
 import lift.arithmetic.{ArithExpr, SteppedCase}
 
@@ -20,7 +21,7 @@ object pad2D {
     * @return
     */
   def apply(n: ArithExpr, l: ArithExpr, r: ArithExpr, data: Data): Expr = {
-    fun(xs => xs :>> pad(l, r, LiteralExpr(SingletonArrayData(n, data))) :>> map(pad(l, r, LiteralExpr(data))))
+    fun(xs => xs :>> pad(l, r, generate(fun(IndexType(n))(_ => LiteralExpr(data)))) :>> map(pad(l, r, LiteralExpr(data))))
   }
 
 }

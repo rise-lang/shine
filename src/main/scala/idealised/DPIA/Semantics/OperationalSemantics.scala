@@ -21,7 +21,6 @@ object OperationalSemantics {
         case idealised.SurfaceLanguage.Semantics.IndexData(n, t) => IndexData(n, t.size)
         case idealised.SurfaceLanguage.Semantics.TupleData(t @_*) => RecordData( Data(t(0)), Data(t(1)) )
         case idealised.SurfaceLanguage.Semantics.ArrayData(a) => ArrayData(a.map(Data(_)).toVector)
-        case idealised.SurfaceLanguage.Semantics.SingletonArrayData(n, a) => ??? // SingletonArrayData(n, Data(a))
         case idealised.SurfaceLanguage.Semantics.VectorData(v) => VectorData(v.map(Data(_)).toVector)
       }
     }
