@@ -2,8 +2,7 @@ package lift.core
 
 import lift.core.types._
 
-trait Program
-sealed trait Expr extends Program
+sealed trait Expr
 
 final case class Identifier(name: String) extends Expr {
   override def toString: String = name
