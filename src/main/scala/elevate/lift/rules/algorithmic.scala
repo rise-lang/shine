@@ -21,7 +21,7 @@ object algorithmic {
 
 
   // divide & conquer
-  case object splitJoin { def apply(n: Nat) = `*f -> S >> **f >> J`(n) }
+  def  splitJoin(n: Nat): Strategy[Lift] = `*f -> S >> **f >> J`(n: Nat)
   case class `*f -> S >> **f >> J`(n: Nat) extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
       case Apply(`map`, f) => Success(split(n) >> map(map(f)) >> join)
@@ -31,7 +31,7 @@ object algorithmic {
   }
 
   // fusion / fission
-  case object mapFusion extends Strategy[Lift] { def apply(e: Lift) = `*g >> *f -> *(g >> f)`(e) }
+  def mapFusion: Strategy[Lift] = `*g >> *f -> *(g >> f)`
   case object `*g >> *f -> *(g >> f)` extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
       case Apply(Apply(`map`, f), Apply(Apply(`map`, g), arg)) =>
@@ -42,7 +42,7 @@ object algorithmic {
   }
 
   // fission of the last function to be applied inside a map
-  case object mapLastFission extends Strategy[Lift] { def apply(e: Lift) = `*(g >> .. >> f) -> *(g >> ..) >> *f`(e) }
+  def mapLastFission: Strategy[Lift] = `*(g >> .. >> f) -> *(g >> ..) >> *f`
   case object `*(g >> .. >> f) -> *(g >> ..) >> *f` extends Strategy[Lift] {
     // TODO: why gx != Identifier?
     def apply(e: Lift): RewriteResult[Lift] = e match {
@@ -56,26 +56,35 @@ object algorithmic {
 
 
   // identities
-  // todo express as case objects/classes
 
   def idAfter: Strategy[Lift] = ` -> id`
-  def ` -> id`: Strategy[Lift] = {case x:Lift => Success[Lift](x |> id)}
+  case object ` -> id` extends Strategy[Lift] {
+    def apply(e: Lift): RewriteResult[Lift] = Success(e |> id)
+  }
 
   def liftId: Strategy[Lift] = `id -> *id`
-  def `id -> *id`: Strategy[Lift] = {
-    case Apply(`id`, arg) => Success(Apply(map(id), arg))
+  case object `id -> *id` extends Strategy[Lift] {
+    def apply(e: Lift): RewriteResult[Lift] = e match {
+      case Apply(`id`, arg) => Success(Apply(map(id), arg))
+      case _ => Failure(liftId)
+    }
   }
 
   def createTransposePair: Strategy[Lift] = `id -> T >> T`
-  def `id -> T >> T`: Strategy[Lift] = {
-    case Apply(`id`, arg) => Success(Apply(transpose >> transpose, arg))
+  case object `id -> T >> T` extends Strategy[Lift] {
+    def apply(e: Lift): RewriteResult[Lift] = e match {
+      case Apply(`id`, arg) => Success(Apply(transpose >> transpose, arg))
+      case _ => Failure(createTransposePair)
+    }
   }
 
   def `_-> T >> T`: Strategy[Lift] = idAfter `;` createTransposePair
 
   def removeTransposePair: Strategy[Lift] = `T >> T -> `
-  def `T >> T -> `: Strategy[Lift] = {
-    case Apply(`transpose`, Apply(`transpose`, x)) => Success(x)
-    case _ => Failure(removeTransposePair)
+  case object `T >> T -> ` extends Strategy[Lift]  {
+    def apply(e: Lift): RewriteResult[Lift] = e match {
+      case Apply(`transpose`, Apply(`transpose`, x)) => Success(x)
+      case _ => Failure(removeTransposePair)
+    }
   }
 }
