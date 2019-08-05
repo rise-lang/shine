@@ -8,7 +8,7 @@ object traversal {
   case object bodyFission extends Strategy[Elevate] {
     def apply(e: Elevate): RewriteResult[Elevate] = e match {
       case body(seq(f,s)) => Success(seq(body(f),body(s)))
-      case x => Failure(bodyFission)
+      case _ => Failure(bodyFission)
     }
   }
 
