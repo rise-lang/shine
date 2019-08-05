@@ -4,7 +4,6 @@ import elevate.core.{Failure, Lift, RewriteResult, Strategy, Success}
 import lift.core.DSL._
 import lift.core._
 
-// todo express rules as case objects/classes
 object algorithmic {
   // TODO: only compose simpler rules
   // TODO: what if 'x' is used in 'f'?

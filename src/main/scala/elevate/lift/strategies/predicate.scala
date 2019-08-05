@@ -7,9 +7,11 @@ import scala.language.implicitConversions
 
 object predicate {
 
-  def isLambda: Strategy[Lift] = {
-    case l:Lambda => Success(l)
-    case _ => Failure(isLambda)
+  case object isLambda extends Strategy[Lift] {
+    def apply(e: Lift): RewriteResult[Lift] = e match {
+      case l: Lambda => Success(l)
+      case _ => Failure(isLambda)
+    }
   }
 
   case object isIdentifier extends Strategy[Lift] {
