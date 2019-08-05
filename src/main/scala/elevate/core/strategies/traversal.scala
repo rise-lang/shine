@@ -22,8 +22,6 @@ object traversal {
         case dt: DataType => Some(s(f).mapSuccess(DepApply[DataKind](_, dt) ))
       }
       case Literal(_) => None
-      case Index(_, _) => None
-      case NatExpr(_) => None
       case TypedExpr(e, t) => Some(s(e).mapSuccess(TypedExpr(_, t)))
       case ff: primitives.ForeignFunction => None
       case p: Primitive => None

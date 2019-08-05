@@ -26,7 +26,7 @@ case class Idx(e:Expr, idx:Expr, override val t:Option[DataType] = None) extends
   override def children: Seq[Any] = Seq(e, idx, t)
 
   override def rebuild: Seq[Any] => Expr = {
-    case Seq(e:Expr, idx:Expr, t: Option[DataType]) => Idx(e, idx, t)
+    case Seq(e:Expr, idx:Expr, t: Option[DataType]@unchecked) => Idx(e, idx, t)
   }
 
   override def toString: String = s"$e @ $idx"

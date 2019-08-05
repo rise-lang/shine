@@ -198,7 +198,7 @@ object Phrase {
             case BinOp(op, lhs, rhs) => binOpToNat(op, NatFromIndexExpr(lhs), NatFromIndexExpr(rhs))
             case DPIA.Phrases.IfThenElse(_, _, _) => ???
             case Literal(lit) => lit match {
-              case i: IndexData => i.n
+              case i: IndexData => i.i
               case _ => throw new Exception("This should never happen")
             }
             case Natural(_) => throw new Exception("This should never happen")

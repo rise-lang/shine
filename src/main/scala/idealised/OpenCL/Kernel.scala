@@ -221,7 +221,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
       case ad: Array[Array[Array[Double]]] => GlobalArg.createInput(ad.flatten.flatten)
       case ad: Array[Array[Array[Array[Double]]]] => GlobalArg.createInput(ad.flatten.flatten.flatten)
 
-      case pairs:Array[(Int, Float)] =>
+      case pairs:Array[(Int, Float)]@unchecked =>
         val intArray = pairs.flatMap{case (x,y) => Iterable(x, java.lang.Float.floatToIntBits(y))}
         GlobalArg.createInput(intArray)
 
@@ -266,7 +266,10 @@ case class Kernel(decls: Seq[C.AST.Decl],
       a.elemFType match {
         case NatToDataLambda(x, body) =>
           SizeInByte(BigSum(Cst(0), a.size - 1, `for`=x, in=sizeInByte(body).value))
+        case _: NatToDataIdentifier =>
+          throw new Exception("This should not happen")
       }
+    case _: NatToDataApply =>  throw new Exception("This should not happen")
     case _: DataTypeIdentifier => throw new Exception("This should not happen")
   }
 
