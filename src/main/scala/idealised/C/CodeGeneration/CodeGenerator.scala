@@ -959,7 +959,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
 
   private def visitAndGenerateNat(node:Stmt, env:Environment):Stmt = {
-    C.AST.Nodes.VisitAndBuildStmt(node, new C.AST.Nodes.VisitAndBuildStmt.Visitor() {
+    C.AST.Nodes.VisitAndGenerateStmt(node, new C.AST.Nodes.VisitAndGenerateStmt.Visitor() {
       override def onExpr(e: Expr, cont: Expr => Stmt): Stmt = e match {
         case C.AST.ArithmeticExpr(ae) => genNat(ae, env, cont)
         case other => cont(other)
