@@ -1,37 +1,27 @@
 package elevate.core
 
-import elevate.lift.rules._
 import elevate.lift.rules.movement._
-import elevate.core.strategies._
 import elevate.core.strategies.traversal._
-import elevate.lift.strategies.traversal._
+import elevate.core.strategies.basic._
 import elevate.lift.strategies.normalForm._
-import lift.core.{Expr, Identifier}
+import elevate.lift.strategies.predicate._
+import elevate.lift._
+import elevate.util._
+import lift.core.{Apply, Expr, Literal}
 import lift.core.primitives._
 import lift.core.DSL._
+import lift.core.types.{float, infer}
+
 import scala.language.implicitConversions
+
 
 class movement extends idealised.util.Tests {
 
   implicit def rewriteResultToExpr(r: RewriteResult): Expr = r.get
-
-  val norm: Strategy = normalize(betaReduction <+ etaReduction)
-  def eq(a: Expr, b: Expr): Boolean = norm(a) == norm(b)
-
-  // notation
-  def T: Expr = transpose
-  def S: Expr = split(4)//slide(3)(1)
-  def J: Expr = join
-  def *(x: Expr): Expr = map(x)
-  def **(x: Expr): Expr = map(map(x))
-  def ***(x: Expr): Expr = map(map(map(x)))
-  def ****(x: Expr): Expr = map(map(map(map(x))))
-  def *****(x: Expr): Expr = map(map(map(map(map(x)))))
-  def ******(x: Expr): Expr = map(map(map(map(map(map(x))))))
-  def λ(f: Identifier => Expr): Expr = fun(f)
+  val norm: Strategy = LCNF
 
   def testMultiple(list: List[Expr], gold: Expr) = {
-    assert(list.forall(eq(_, gold)))
+    assert(list.forall(betaEtaEquals(_, gold)))
   }
 
   // transpose
@@ -43,125 +33,62 @@ class movement extends idealised.util.Tests {
       List(
         norm(λ(f => *(λ(x => *(f)(x))) >> T)).get,
         λ(f => **(f) >> T)
-      ).map(oncetd(`**f >> T -> T >> **f`)(_).get), gold
+      ).map((debug `;` oncetd(`**f >> T -> T >> **f`))(_).get), gold
     )
   }
 
-  test("fmap basic") {
-    // level 0
-    assert(eq(
-      one(one(`**f >> T -> T >> **f`))(λ(f => **(f) >> T)),
-      λ(f => T >> **(f)))
-    )
+  test("**f >> T - zip constraint") {
+    val test = λ(i => λ(f => (T o ***(f)) $ zip(i,i)))
 
-    // level 1
-    assert(eq(
-      one(one(fmapRNF(`**f >> T -> T >> **f`)))(λ(f => ***(f) >> *(T))),
-      λ(f => *(T) >> ***(f)))
-    )
+    val backward =
+      nFun((m, n, k) =>
+        fun((m`.`k`.`float) ->: (k`.`n`.`float) ->: (m`.`n`.`float) ->: float ->: float ->: (m`.`n`.`float))
+        ((a, b, c, alpha, beta) =>
+          (transpose o map(fun(ac =>
+            map(fun(bc =>
+              (fun(x => (x * alpha) + beta * bc._2) o
+                reduce(fun((y, acc) => acc + (y._1 * y._2)), l(0.0f))) $
+                zip(ac._1, bc._1))) $
+              zip(transpose(b),ac._2)))) $
+            zip(a, c)
+        )
+      )
 
-    // level 2
-    assert(eq(
-      one(one(fmapRNF(fmapRNF(`**f >> T -> T >> **f`))))(λ(f => ****(f) >> **(T))),
-      λ(f => **(T) >> ****(f)))
-    )
-
-    // level 3
-    assert(eq(
-      one(one(fmapRNF(fmapRNF(fmapRNF(`**f >> T -> T >> **f`)))))(λ(f => *****(f) >> ***(T))),
-      λ(f => ***(T) >> *****(f)))
-    )
-
-    // level 4
-    assert(eq(
-      one(one(fmapRNF(fmapRNF(fmapRNF(fmapRNF(`**f >> T -> T >> **f`))))))(λ(f => ******(f) >> ****(T))),
-      λ(f => ****(T) >> ******(f)))
-    )
-
-    // level 4 alternative
-    assert(eq(
-      one(one(mapped(`**f >> T -> T >> **f`)))(λ(f => ******(f) >> ****(T))),
-      λ(f => ****(T) >> ******(f)))
-    )
-
-    // should fail
-    assert(
-      body(one(mapped(`**f >> T -> T >> **f`)))(λ(f => *****(f) >> ****(T))) match {
-        case Failure(_) => true
-        case Success(_) => false
-      }
-    )
-  }
-
-  test("fmap advanced + lift specific traversals") {
-    // mapped pattern before
-    testMultiple(
-      List(
-        body(body(mapped(`**f >> T -> T >> **f`)))(λ(f => *(S) >> ***(f) >> *(T))),
-        body(body(fmapRNF(`**f >> T -> T >> **f`)))(λ(f => *(S) >> ***(f) >> *(T)))
-      ), λ(f => *(S) >> *(T) >> ***(f))
-    )
-
-    // mapped pattern after
-    // we got to jump "over" this pattern before the rule is applicable
-    testMultiple(
-      List(
-        body(body(argument(mapped(`**f >> T -> T >> **f`))))(λ(f => ***(f) >> *(T) >> *(S))),
-        body(body(argument(fmapRNF(`**f >> T -> T >> **f`))))(λ(f => ***(f) >> *(T) >> *(S)))
-      ), λ(f => *(T) >> ***(f) >> *(S))
-    )
-
-    // ...or we could simply "find" the place automatically
-    testMultiple(
-      List(
-        oncetd(mapped(`**f >> T -> T >> **f`))(λ(f => ***(f) >> *(T) >> *(S))),
-        oncetd(fmapRNF(`**f >> T -> T >> **f`))(λ(f => ***(f) >> *(T) >> *(S)))
-      ), λ(f => *(T) >> ***(f) >> *(S))
-    )
-
-    // testing mapped specific behaviour below: mapped can be used without needing to know
-    // how many times I need to nest `fmap` to get the same behaviour
-
-    testMultiple(
-      List(
-        body(body(mapped(`**f >> T -> T >> **f`)))(λ(f => *(S) >> ****(f) >> **(T))),
-        body(body(fmapRNF(fmapRNF(`**f >> T -> T >> **f`))))(λ(f => *(S) >> ****(f) >> **(T)))
-      ), λ(f => *(S) >> **(T) >> ****(f))
-    )
-
-    testMultiple(
-      List(
-        body(body(argument(mapped(`**f >> T -> T >> **f`))))(λ(f => ****(f) >> **(T) >> *(S))),
-        body(body(argument(fmapRNF(fmapRNF(`**f >> T -> T >> **f`)))))(λ(f => ****(f) >> **(T) >> *(S)))
-      ), λ(f => **(T) >> ****(f) >> *(S))
-    )
-
-    testMultiple(
-      List(
-        oncetd(mapped(`**f >> T -> T >> **f`))(λ(f => ****(f) >> **(T) >> *(S))),
-        oncetd(fmapRNF(fmapRNF(`**f >> T -> T >> **f`)))(λ(f => ****(f) >> **(T) >> *(S)))
-      ), λ(f => **(T) >> ****(f) >> *(S))
-    )
+    assert(oncetd(mapMapFBeforeTranspose)(backward))
   }
 
   test("T >> **f -> **f >> T") {
-    assert(eq(
+    assert(betaEtaEquals(
       oncetd(`T >> **f -> **f >> T`)(λ(f => T >> **(f))),
       λ(f => **(f) >> T))
+    )
+  }
+
+  test("T >> ****f -> ****f >> T") {
+    assert(betaEtaEquals(
+      oncetd(`T >> **f -> **f >> T`)(λ(f => T >> ****(f))),
+      λ(f => ****(f) >> T))
+    )
+  }
+
+  test("****f >> T -> T >> ****f") {
+    assert(betaEtaEquals(
+      oncetd(`**f >> T -> T >> **f`)(λ(f => ****(f) >> T)),
+      λ(f => T >> ****(f)))
     )
   }
 
   // split/slide
 
   test("S >> **f -> *f >> S") {
-    assert(eq(
+    assert(betaEtaEquals(
       oncetd(`S >> **f -> *f >> S`)(λ(f => S >> **(f))),
       λ(f => *(f) >> S))
     )
   }
 
   test("*f >> S -> S >> **f") {
-    assert(eq(
+    assert(betaEtaEquals(
       oncetd(`*f >> S -> S >> **f`)(λ(f => *(f) >> S)),
       λ(f => S >> **(f)))
     )
@@ -170,14 +97,14 @@ class movement extends idealised.util.Tests {
   // join
 
   test("J >> *f -> **f >> J") {
-    assert(eq(
+    assert(betaEtaEquals(
       oncetd(`J >> *f -> **f >> J`)(λ(f => J >> *(f))),
       λ(f => **(f) >> J)
     ))
   }
 
   test("**f >> J -> *f >> J") {
-    assert(eq(
+    assert(betaEtaEquals(
       oncetd(`**f >> J -> J >> *f`)(λ(f => **(f) >> J)),
       λ(f => J >> *(f))
     ))
@@ -186,70 +113,70 @@ class movement extends idealised.util.Tests {
   // special-cases
 
   test("T >> S -> *S >> T >> *T") {
-    assert(eq(
+    assert(betaEtaEquals(
       oncetd(`T >> S -> *S >> T >> *T`)(T >> S),
       *(S) >> T >> *(T)
     ))
   }
 
   test("T >> *S -> S >> *T >> T") {
-    assert(eq(
+    assert(betaEtaEquals(
       oncetd(`T >> *S -> S >> *T >> T`)(T >> *(S)),
       S >> *(T) >> T
     ))
   }
 
   test("*S >> T -> T >> S >> *T") {
-    assert(eq(
+    assert(betaEtaEquals(
       oncetd(`*S >> T -> T >> S >> *T`)(*(S) >> T),
       T >> S >> *(T)
     ))
   }
 
   test("J >> T -> *T >> T >> *J") {
-    assert(eq(
+    assert(betaEtaEquals(
       oncetd(`J >> T -> *T >> T >> *J`)(J >> T),
       *(T) >> T >> *(J)
     ))
   }
 
   test("T >> *J -> *T >> J >> T") {
-    assert(eq(
+    assert(betaEtaEquals(
       oncetd(`T >> *J -> *T >> J >> T`)(T >> *(J)),
       *(T) >> J >> T
     ))
   }
 
   test("*T >> J -> T >> *J >> T") {
-    assert(eq(
+    assert(betaEtaEquals(
       oncetd(`*T >> J -> T >> *J >> T`)(*(T) >> J),
       T >> *(J) >> T
     ))
   }
 
   test("*J >> T -> T >> *T >> J") {
-    assert(eq(
+    assert(betaEtaEquals(
       oncetd(`*J >> T -> T >> *T >> J`)(*(J) >> T),
       T >> *(T) >> J
     ))
   }
 
   test("J >> J -> *J >> J") {
-    assert(eq(
+    assert(betaEtaEquals(
       oncetd(`J >> J -> *J >> J`)(J >> J),
       *(J) >> J
     ))
   }
 
   test("*J >> J -> J >> J") {
-    assert(eq(
+    assert(betaEtaEquals(
       oncetd(`*J >> J -> J >> J`)(*(J) >> J),
       J >> J
     ))
   }
 
   test("slideOverSplit") {
-    assert(eq(
+    assert(betaEtaEquals(
       oncetd(slideBeforeSplit)(slide(3)(1) >> split(16)),
       slide(16+3-1)(16) >> map(slide(3)(1))
     ))

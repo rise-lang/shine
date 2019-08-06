@@ -34,7 +34,7 @@ object KernelGenerator {
                                                  ): (Phrase[ExpType], Seq[Identifier[ExpType]], Seq[(LetNatIdentifier, Phrase[ExpType])]) = {
     p match {
       case l: Lambda[ExpType, _]@unchecked => getPhraseAndParams(l.body, l.param +: ps, defs)
-      case ndl: DepLambda[NatKind, _] => getPhraseAndParams(ndl.body, Identifier(ndl.x.name, ExpType(int)) +: ps, defs)
+      case ndl: DepLambda[NatKind, _]@unchecked => getPhraseAndParams(ndl.body, Identifier(ndl.x.name, ExpType(int)) +: ps, defs)
       case ln:LetNat[ExpType, _]@unchecked => getPhraseAndParams(ln.body, ps, (ln.binder, ln.defn) +: defs)
       case ep: Phrase[ExpType]@unchecked => (ep, ps, defs)
     }
@@ -132,6 +132,7 @@ object KernelGenerator {
       case _: BasicType => makePrivateParam(i, gen)
       case _: RecordType => makePrivateParam(i, gen)
       case _: DataTypeIdentifier => throw new Exception("This should not happen")
+      case _: NatToDataApply =>  throw new Exception("This should not happen")
     }
   }
 

@@ -1,7 +1,7 @@
 package idealised.SurfaceLanguage
 
 import idealised.DPIA.Types.NatToNatLambda
-import idealised.DPIA.{LetNatIdentifier, NatNatTypeFunction}
+import idealised.DPIA.LetNatIdentifier
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage.Semantics._
 

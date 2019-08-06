@@ -30,7 +30,7 @@ final case class AsIndex(n: Nat, e: Phrase[ExpType])
 
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Data = {
     OperationalSemantics.eval(s, e) match {
-      case NatData(m) => IndexData(m, IndexType(n))
+      case NatData(m) => IndexData(m, n)
       case d => throw new Exception(s"Expected NatData but found $d.")
     }
   }

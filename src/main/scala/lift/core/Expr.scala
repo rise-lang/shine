@@ -18,7 +18,10 @@ final case class Lambda(x: Identifier, e: Expr) extends Expr {
 }
 
 final case class Apply(f: Expr, e: Expr) extends Expr {
-  override def toString: String = s"($f $e)"
+  override def toString: String = e match {
+    case Apply(Apply(_,_),_) => s"($f\n$e)"
+    case _ => s"($f $e)"
+  }
 }
 
 final case class DepLambda[K <: Kind](x: K#I, e: Expr) extends Expr {
@@ -36,14 +39,6 @@ final case class DepApply[K <: Kind](f: Expr, x: K#T) extends Expr {
 
 final case class Literal(d: semantics.Data) extends Expr {
   override def toString: String = s"$d"
-}
-
-final case class Index(n: Nat, size: Nat) extends Expr {
-  override def toString: String = s"idx($n)"
-}
-
-final case class NatExpr(n: Nat) extends Expr {
-  override def toString: String = s"$n"
 }
 
 final case class TypedExpr(e: Expr, t: Type) extends Expr {

@@ -143,6 +143,8 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         case Nil =>
           exp(e, env, Nil, e =>
             cont(C.AST.Literal(s"($st$n)(" + C.AST.Printer(e) + ")")))
+
+        case _ => error(s"Didn't expect path: $path")
       }
 
       case IdxVec(_, _, i, e) => CCodeGen.codeGenIdx(i, e, env, path, cont)
