@@ -18,17 +18,16 @@ object OperationalSemantics {
         case idealised.SurfaceLanguage.Semantics.IntData(i) => IntData(i)
         case idealised.SurfaceLanguage.Semantics.FloatData(f) => FloatData(f)
         case idealised.SurfaceLanguage.Semantics.DoubleData(f) => DoubleData(f)
-        case idealised.SurfaceLanguage.Semantics.IndexData(n, t) => IndexData(n, IndexType(t.size))
+        case idealised.SurfaceLanguage.Semantics.IndexData(n, t) => IndexData(n, t.size)
         case idealised.SurfaceLanguage.Semantics.TupleData(t @_*) => RecordData( Data(t(0)), Data(t(1)) )
         case idealised.SurfaceLanguage.Semantics.ArrayData(a) => ArrayData(a.map(Data(_)).toVector)
-        case idealised.SurfaceLanguage.Semantics.SingletonArrayData(n, a) => SingletonArrayData(n, Data(a))
         case idealised.SurfaceLanguage.Semantics.VectorData(v) => VectorData(v.map(Data(_)).toVector)
       }
     }
   }
 
   sealed abstract class Data(val dataType: DataType)
-  final case class IndexData(n: Nat, indexType: IndexType) extends Data(indexType)
+  final case class IndexData(i: Nat, n: Nat) extends Data(IndexType(n))
 
   final case class NatData(n: Nat) extends Data(NatType)
 
@@ -48,7 +47,6 @@ object OperationalSemantics {
     case _ => throw new Exception("This should not happen")
   }))
   final case class ArrayData(a: Vector[Data]) extends Data(ArrayType(a.length, a.head.dataType))
-  final case class SingletonArrayData(length:ArithExpr, a:Data) extends Data(ArrayType(length, a.dataType))
   final case class RecordData(fst: Data, snd: Data) extends Data(RecordType(fst.dataType, snd.dataType))
 
   object makeArrayData {
@@ -105,7 +103,7 @@ object OperationalSemantics {
           case l: Lambda[T1, T2] =>
             (arg: Phrase[T1]) => l.body `[` arg `/` l.param `]`
           case Identifier(_, _) | Apply(_, _) | DepApply(_, _) |
-               IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
+               IfThenElse(_, _, _) | Proj1(_) | Proj2(_) | LetNat(_, _, _) =>
             throw new Exception("This should never happen")
         }
       }
@@ -122,7 +120,7 @@ object OperationalSemantics {
             eval(s, l.body `[` arg `/` l.param `]` )(UnaryFunctionEvaluator)
 
           case Identifier(_, _) | Apply(_, _) | DepApply(_, _) |
-               IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
+               IfThenElse(_, _, _) | Proj1(_) | Proj2(_) | LetNat(_, _, _) =>
             throw new Exception("This should never happen")
         }
       }
@@ -140,7 +138,7 @@ object OperationalSemantics {
             eval(s, l.body `[` arg  `/` l.param `]` )(BinaryFunctionEvaluator)
 
           case Identifier(_, _) | Apply(_, _) | DepApply(_, _) |
-               IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
+               IfThenElse(_, _, _) | Proj1(_) | Proj2(_) | LetNat(_, _, _) =>
             throw new Exception("This should never happen")
         }
       }
@@ -153,7 +151,7 @@ object OperationalSemantics {
           case l: DepLambda[NatKind, T] =>
             (arg: NatIdentifier) => l.body `[` arg `/` l.x `]`
           case Identifier(_, _) | Apply(_, _) | DepApply(_, _) |
-               IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
+               IfThenElse(_, _, _) | Proj1(_) | Proj2(_) | LetNat(_, _, _) =>
             throw new Exception("This should never happen")
         }
       }
@@ -167,7 +165,7 @@ object OperationalSemantics {
             (Identifier[T1](i.name, i.t.t1), Identifier[T2](i.name, i.t.t2))
           case pair: Pair[T1, T2] => (pair.fst, pair.snd)
           case Apply(_, _) | DepApply(_, _) |
-               IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
+               IfThenElse(_, _, _) | Proj1(_) | Proj2(_) | LetNat(_, _, _) =>
             throw new Exception("This should never happen")
         }
       }
@@ -202,7 +200,7 @@ object OperationalSemantics {
           case c: ExpPrimitive => c.eval(s)
 
           case Apply(_, _) | DepApply(_, _) |
-               IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
+               IfThenElse(_, _, _) | Proj1(_) | Proj2(_) | LetNat(_, _, _) =>
             throw new Exception("This should never happen")
         }
       }
@@ -217,7 +215,7 @@ object OperationalSemantics {
           case c: AccPrimitive => c.eval(s)
 
           case Apply(_, _) | DepApply(_, _) |
-               IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
+               IfThenElse(_, _, _) | Proj1(_) | Proj2(_) | LetNat(_, _, _) =>
             throw new Exception("This should never happen")
         }
       }
@@ -232,7 +230,7 @@ object OperationalSemantics {
           case c: CommandPrimitive => c.eval(s)
 
           case Apply(_, _) | DepApply(_, _) |
-               IfThenElse(_, _, _) | Proj1(_) | Proj2(_) =>
+               IfThenElse(_, _, _) | Proj1(_) | Proj2(_) | LetNat(_, _, _) =>
             throw new Exception("This should never happen")
         }
       }

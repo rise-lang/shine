@@ -100,7 +100,7 @@ final case class LetNat(binder:LetNatIdentifier,
   override def children: Seq[Any] = Seq(binder, definition, body, t)
 
   override def rebuild: Seq[Any] => Expr = {
-    case Seq(binder:LetNatIdentifier, definition:Expr, body:Expr, t:Option[Type]) =>
+    case Seq(binder:LetNatIdentifier, definition:Expr, body:Expr, t:Option[Type]@unchecked) =>
       LetNat(binder, definition, body, t)
   }
 }

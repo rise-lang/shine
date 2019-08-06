@@ -58,6 +58,10 @@ object primitives {
     ))
   }
 
+  case object id extends Primitive {
+    override def t: Type = implDT(t => t ->: t)
+  }
+
   case object indexAsNat extends Primitive {
     override def t: Type = implN(n =>
       IndexType(n) ->: NatType

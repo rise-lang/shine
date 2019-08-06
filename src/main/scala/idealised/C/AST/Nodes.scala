@@ -147,6 +147,10 @@ abstract class Cast(val t: Type, val e: Expr) extends Expr
 
 abstract class Literal(val code: String) extends Expr
 
+abstract class ArrayLiteral(val t: ArrayType, val inits: Seq[Expr]) extends Expr
+
+abstract class RecordLiteral(val fst: Expr, val snd: Expr) extends Expr
+
 abstract class ArithmeticExpr(val ae: lift.arithmetic.ArithExpr) extends Expr
 
 // visitor
@@ -190,17 +194,17 @@ object Nodes {
 
 object FunDecl {
   def apply(name: String, returnType: Type, params: Seq[ParamDecl], body: Stmt): FunDecl = DefaultImplementations.FunDecl(name, returnType, params, body)
-  def unapply(arg: FunDecl): Option[(String, Type, Seq[ParamDecl], Stmt)] = Some(arg.name, arg.returnType, arg.params, arg.body)
+  def unapply(arg: FunDecl): Option[(String, Type, Seq[ParamDecl], Stmt)] = Some((arg.name, arg.returnType, arg.params, arg.body))
 }
 
 object VarDecl {
   def apply(name: String, t: Type, init: Option[Expr] = None): VarDecl = DefaultImplementations.VarDecl(name, t, init)
-  def unapply(arg: VarDecl): Option[(String, Type, Option[Expr])] = Some(arg.name, arg.t, arg.init)
+  def unapply(arg: VarDecl): Option[(String, Type, Option[Expr])] = Some((arg.name, arg.t, arg.init))
 }
 
 object ParamDecl {
   def apply(name: String, t: Type): ParamDecl = DefaultImplementations.ParamDecl(name, t)
-  def unapply(arg: ParamDecl): Option[(String, Type)] = Some(arg.name, arg.t)
+  def unapply(arg: ParamDecl): Option[(String, Type)] = Some((arg.name, arg.t))
 }
 
 object LabelDecl {
@@ -210,12 +214,12 @@ object LabelDecl {
 
 object TypedefDecl {
   def apply(t: Type, name: String): TypedefDecl  = DefaultImplementations.TypedefDecl(t, name)
-  def unapply(arg: TypedefDecl): Option[(Type, String)] = Some(arg.t, arg.name)
+  def unapply(arg: TypedefDecl): Option[(Type, String)] = Some((arg.t, arg.name))
 }
 
 object StructTypeDecl {
   def apply(name: String, fields: Seq[VarDecl]): StructTypeDecl = DefaultImplementations.StructTypeDecl(name, fields)
-  def unapply(arg: StructTypeDecl): Option[(String, Seq[VarDecl])] = Some(arg.name, arg.fields)
+  def unapply(arg: StructTypeDecl): Option[(String, Seq[VarDecl])] = Some((arg.name, arg.fields))
 }
 
 object Block {
@@ -225,22 +229,22 @@ object Block {
 
 object Stmts {
   def apply(fst: Stmt, snd: Stmt): Stmts = DefaultImplementations.Stmts(fst, snd)
-  def unapply(arg: Stmts): Option[(Stmt, Stmt)] = Some(arg.fst, arg.snd)
+  def unapply(arg: Stmts): Option[(Stmt, Stmt)] = Some((arg.fst, arg.snd))
 }
 
 object ForLoop {
   def apply(init: DeclStmt, cond: Expr, increment: Expr, body: Block): ForLoop = DefaultImplementations.ForLoop(init, cond, increment, body)
-  def unapply(arg: ForLoop): Option[(Stmt, Expr, Expr, Stmt)] = Some(arg.init, arg.cond, arg.increment, arg.body)
+  def unapply(arg: ForLoop): Option[(Stmt, Expr, Expr, Stmt)] = Some((arg.init, arg.cond, arg.increment, arg.body))
 }
 
 object WhileLoop {
   def apply(cond: Expr, body: Stmt): WhileLoop = DefaultImplementations.WhileLoop(cond, body)
-  def unapply(arg: WhileLoop): Option[(Expr, Stmt)] = Some(arg.cond, arg.body)
+  def unapply(arg: WhileLoop): Option[(Expr, Stmt)] = Some((arg.cond, arg.body))
 }
 
 object IfThenElse {
   def apply(cond: Expr, trueBody: Stmt, falseBody: Option[Stmt]): IfThenElse = DefaultImplementations.IfThenElse(cond, trueBody, falseBody)
-  def unapply(arg: IfThenElse): Option[(Expr, Stmt, Option[Stmt])] = Some(arg.cond, arg.trueBody, arg.falseBody)
+  def unapply(arg: IfThenElse): Option[(Expr, Stmt, Option[Stmt])] = Some((arg.cond, arg.trueBody, arg.falseBody))
 }
 
 object GOTO {
@@ -283,7 +287,7 @@ object ExprStmt {
 
 object Assignment {
   def apply(lvalue: Expr, rvalue: Expr): Assignment = DefaultImplementations.Assignment(lvalue, rvalue)
-  def unapply(arg: Assignment): Option[(Expr, Expr)] = Some(arg.lvalue, arg.rvalue)
+  def unapply(arg: Assignment): Option[(Expr, Expr)] = Some((arg.lvalue, arg.rvalue))
 }
 
 object DeclRef {
@@ -293,42 +297,52 @@ object DeclRef {
 
 object FunCall {
   def apply(fun: DeclRef, args: Seq[Expr]): FunCall = DefaultImplementations.FunCall(fun, args)
-  def unapply(arg: FunCall): Option[(DeclRef, Seq[Expr])] = Some(arg.fun, arg.args)
+  def unapply(arg: FunCall): Option[(DeclRef, Seq[Expr])] = Some((arg.fun, arg.args))
 }
 
 object ArraySubscript {
   def apply(array: Expr, index: Expr): ArraySubscript = DefaultImplementations.ArraySubscript(array, index)
-  def unapply(arg: ArraySubscript): Option[(Expr, Expr)] = Some(arg.array, arg.index)
+  def unapply(arg: ArraySubscript): Option[(Expr, Expr)] = Some((arg.array, arg.index))
 }
 
 object StructMemberAccess {
   def apply(struct: Expr, member: DeclRef): StructMemberAccess = DefaultImplementations.StructMemberAccess(struct, member)
-  def unapply(arg: StructMemberAccess): Option[(Expr, DeclRef)] = Some(arg.struct, arg.member)
+  def unapply(arg: StructMemberAccess): Option[(Expr, DeclRef)] = Some((arg.struct, arg.member))
 }
 
 object UnaryExpr {
   def apply(op: UnaryOperator.Value, e: Expr): UnaryExpr = DefaultImplementations.UnaryExpr(op, e)
-  def unapply(arg: UnaryExpr): Option[(UnaryOperator.Value, Expr)] = Some(arg.op, arg.e)
+  def unapply(arg: UnaryExpr): Option[(UnaryOperator.Value, Expr)] = Some((arg.op, arg.e))
 }
 
 object BinaryExpr {
   def apply(lhs: Expr, op: BinaryOperator.Value, rhs: Expr): BinaryExpr = DefaultImplementations.BinaryExpr(lhs, op, rhs)
-  def unapply(arg: BinaryExpr): Option[(Expr, BinaryOperator.Value, Expr)] = Some(arg.lhs, arg.op, arg.rhs)
+  def unapply(arg: BinaryExpr): Option[(Expr, BinaryOperator.Value, Expr)] = Some((arg.lhs, arg.op, arg.rhs))
 }
 
 object TernaryExpr {
   def apply(cond: Expr, thenE: Expr, elseE: Expr): TernaryExpr = DefaultImplementations.TernaryExpr(cond, thenE, elseE)
-  def unapply(arg: TernaryExpr): Option[(Expr, Expr, Expr)] = Some(arg.cond, arg.thenE, arg.elseE)
+  def unapply(arg: TernaryExpr): Option[(Expr, Expr, Expr)] = Some((arg.cond, arg.thenE, arg.elseE))
 }
 
 object Cast {
   def apply(t: Type, e: Expr): Cast = DefaultImplementations.Cast(t, e)
-  def unapply(arg: Cast): Option[(Type, Expr)] = Some(arg.t, arg.e)
+  def unapply(arg: Cast): Option[(Type, Expr)] = Some((arg.t, arg.e))
 }
 
 object Literal {
   def apply(code: String): Literal = DefaultImplementations.Literal(code)
   def unapply(arg: Literal): Option[String] = Some(arg.code)
+}
+
+object ArrayLiteral {
+  def apply(t: ArrayType, inits: Seq[Expr]): ArrayLiteral = DefaultImplementations.ArrayLiteral(t, inits)
+  def unapply(arg: ArrayLiteral): Option[(ArrayType, Seq[Expr])] = Some((arg.t, arg.inits))
+}
+
+object RecordLiteral {
+  def apply(fst: Expr, snd: Expr): RecordLiteral = DefaultImplementations.RecordLiteral(fst, snd)
+  def unapply(arg: RecordLiteral): Option[(Expr, Expr)] = Some((arg.fst, arg.snd))
 }
 
 object ArithmeticExpr {
@@ -612,6 +626,16 @@ object DefaultImplementations {
     override def visitAndRebuild(v: VisitAndRebuild.Visitor): Literal.this.type = this
 
     override def visitAndBuildStmt(v: VisitAndBuildStmt.Visitor, cont: Expr => Stmt): Stmt = cont(this)
+  }
+
+  case class ArrayLiteral(override val t: ArrayType, override val inits: Seq[Expr]) extends C.AST.ArrayLiteral(t, inits) {
+    override def visitAndRebuild(v: VisitAndRebuild.Visitor): ArrayLiteral =
+      ArrayLiteral(v(t).asInstanceOf[ArrayType], inits.map(VisitAndRebuild(_, v)))
+  }
+
+  case class RecordLiteral(override val fst: Expr, override val snd: Expr) extends C.AST.RecordLiteral(fst, snd) {
+    override def visitAndRebuild(v: VisitAndRebuild.Visitor): RecordLiteral =
+      RecordLiteral(VisitAndRebuild(fst, v), VisitAndRebuild(snd, v))
   }
 
   case class ArithmeticExpr(override val ae: lift.arithmetic.ArithExpr) extends C.AST.ArithmeticExpr(ae) {

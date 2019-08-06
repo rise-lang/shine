@@ -25,5 +25,5 @@ abstract class OpenCLParFor(n: Nat,
 
 object OpenCLParFor {
   def unapply(arg: OpenCLParFor): Option[(Nat, DataType, Phrase[AccType], Phrase[ExpType ->: AccType ->: CommType])] =
-    Some(arg.n, arg.dt, arg.out, arg.body)
+    Some((arg.n, arg.dt, arg.out, arg.body))
 }
