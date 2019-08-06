@@ -67,7 +67,13 @@ object traversal {
     }
   }
 
-  abstract class Traversal[P](s: Strategy[P]) extends Strategy[P]
+  abstract class Traversal[P](val st: Strategy[P]) extends Strategy[P] {
+    def apply(p: P): RewriteResult[P]
+  }
+
+  object Traversal extends {
+    def unapply[P](arg: Traversal[P]): Option[Strategy[P]] = Some(arg.st)
+  }
 
   case class body(s: Elevate) extends Traversal[Lift](s) {
     def apply(e: Lift): RewriteResult[Lift] = e match {

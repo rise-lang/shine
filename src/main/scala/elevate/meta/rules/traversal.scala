@@ -1,8 +1,8 @@
 package elevate.meta.rules
 
-import elevate.core.{Elevate, Failure, RewriteResult, Strategy, Success}
+import elevate.core.{Elevate, Failure, Lift, RewriteResult, Strategy, Success}
 import elevate.core.strategies.basic.seq
-import elevate.lift.strategies.traversal.body
+import elevate.lift.strategies.traversal._
 
 object traversal {
   case object bodyFission extends Strategy[Elevate] {
@@ -11,5 +11,6 @@ object traversal {
       case _ => Failure(bodyFission)
     }
   }
+
 
 }
