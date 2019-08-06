@@ -76,6 +76,12 @@ class Printer extends idealised.C.AST.CPrinter {
     v.t match {
       case b: BasicType if v.addressSpace == OpenCL.PrivateMemory => print(s"${b.name} ${v.name}")
       case s: StructType if v.addressSpace == OpenCL.PrivateMemory => print(s"struct ${s.name} ${v.name}")
+      case a: ArrayType if v.addressSpace == OpenCL.PrivateMemory =>
+        // float name[s];
+        print(s"${a.getBaseType} ${v.name}[${ a.getSizes match {
+          case None => ""
+          case Some(s) => s
+        } }]")
       case p: PointerType => print(s"${toString(v.addressSpace)} ${p.valueType}* ${v.name}")
     }
     v.init match {

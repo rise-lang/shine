@@ -1,6 +1,6 @@
 package idealised.OpenCL.CodeGeneration
 
-import idealised.C.AST._
+import idealised.C.AST.{Nodes, _}
 import idealised.{C, OpenCL}
 import lift.arithmetic.{IfThenElse => _, _}
 
@@ -27,13 +27,15 @@ object AdaptKernelBody {
     {
       override def pre(n: Node): Result = {
         n match {
-          case OpenCL.AST.VarDecl(name, _: ArrayType, OpenCL.PrivateMemory, _) =>  privateArrayVars.add(name)
+          case OpenCL.AST.VarDecl(name, _: ArrayType, OpenCL.PrivateMemory, _) =>
+            privateArrayVars.add(name)
 
           case ArraySubscript(DeclRef(name), index) if privateArrayVars.contains(name) =>
-            index match {
-              case ArithmeticExpr(ae) => ArithExpr.visit(ae, { case v: Var => loopVars.add(v.name); case _ => })
-              case _ =>
-            }
+            collectVars(index, loopVars)
+
+          // literal arrays too
+          case ArraySubscript(ArrayLiteral(_, _), index) =>
+            collectVars(index, loopVars)
 
           case _ =>
         }
@@ -46,50 +48,38 @@ object AdaptKernelBody {
     v.loopVars.toSet
   }
 
-  // Unroll private arrays and every loop where the loop variable is a member of the given set
+  private def collectVars(e: Expr, set: mutable.Set[String]): Unit = {
+    Nodes.VisitAndRebuild(e, new Nodes.VisitAndRebuild.Visitor {
+      override def pre(n: Node): Result = {
+        n match {
+          case DeclRef(i) => set.add(i)
+          case _ =>
+        }
+        Continue(n, this)
+      }
+    })
+  }
+
+  // Unroll every loop where the loop variable is a member of the given set
   //
-  // Returns the body of the kernel with the private array declarations and indicated loops unrolled
+  // Returns the body of the kernel with the indicated loops unrolled
   private def unroll(block: C.AST.Block, loopVars: Set[String]): C.AST.Block = {
 
-    case class Visitor(privateArrayVars: mutable.Set[String], map: Map[ArithExpr, ArithExpr])
+    case class Visitor(privateArrayVars: mutable.Set[String], map: Map[String, Expr])
       extends C.AST.Nodes.VisitAndRebuild.Visitor
     {
       override def pre(n: Node): Result = {
         n match {
-
-          case ArraySubscript(DeclRef(name), index) =>
-            index match {
-              case ArithmeticExpr(ae) =>
-                ArithExpr.substitute(ae, map) match {
-                  // append the index as a suffix when the arithmetic expression is reduced to a
-                  // constant (i.e. all variables have been substituted)
-                  case Cst(_) if privateArrayVars.contains(name) => Stop(DeclRef(s"${name}_i"))
-                  case newAe => Stop(ArraySubscript(DeclRef(name), ArithmeticExpr(newAe)))
-                }
-              case _ => Continue(n, this)
-            }
-
-          //        case v: VLoad =>
-          //           ExpressionVisitor.Stop(
-          //             VLoad(v.v, v.t, ArithExpression(ArithExpr.substitute(v.offset.content, map))))
-
-          // unroll var declarations
-          case OpenCL.AST.VarDecl(name, at: ArrayType, OpenCL.PrivateMemory, _) =>
-            privateArrayVars.add(name)
-            val size = Type.getLengths(at).map(_.evalInt).product
-            val seq = (0 until size).foldLeft(Seq[OpenCL.AST.VarDecl]())( (seq, i) =>
-              seq :+ OpenCL.AST.VarDecl(s"${name}_$i", Type.getBaseType(at), OpenCL.PrivateMemory))
-            seq.foldLeft(Comment(s"unrolled $name"): Stmt)( (stmt, v) => Stmts(stmt, DeclStmt(v)))
-            Continue(n, this)
+          case DeclRef(name) if map.contains(name) => Stop(map(name))
 
           // unroll previously identified loops
           case loop: ForLoop if loopVars.contains(loop.init.decl.name) =>
             val seq = (0 until inferLoopTripCount(loop)).foldLeft(Seq[Stmt]())( (seq, i) => {
-              val nestedBlock = C.AST.Nodes.VisitAndRebuild(loop.body, Visitor(privateArrayVars, map.updated(NamedVar(loop.init.decl.name), i)))
+              val nestedBlock = C.AST.Nodes.VisitAndRebuild(loop.body, Visitor(privateArrayVars, map.updated(loop.init.decl.name, Literal(i.toString))))
               nestedBlock.body.foldLeft(seq)(_ :+ _)
             })
-            seq.foldLeft(Comment(s"unrolled loop"): Stmt)( (stmt, v) => Stmts(stmt, v))
-            Continue(n, this)
+            val result = seq.foldLeft(Comment(s"unrolled loop"): Stmt)( (stmt, v) => Stmts(stmt, v))
+            Continue(result, this)
 
           case _ => Continue(n, this)
         }
@@ -101,38 +91,27 @@ object AdaptKernelBody {
 
   // compute the number of iterations to be performed by the given loop
   private def inferLoopTripCount(loop: ForLoop): Int = {
+    // expected loop: for (int i = start; i < stop; i = step + i)
+
+    val i = loop.init.decl.name
+
     val start = loop.init.decl match {
-      case VarDecl(_, _, Some(ArithmeticExpr(ae))) => ae match {
-        case ArithExprFunction(_, range) => range.min.evalInt
-        case _ => ae.evalInt
-      }
+      case VarDecl(_, _, Some(Literal(l))) => l.toInt
       case _ => ???
     }
 
     val stop = loop.cond match {
-      case C.AST.BinaryExpr(_, C.AST.BinaryOperator.<, ArithmeticExpr(ae)) => ae match {
-        case ArithExprFunction(_, range) => range.max.evalInt
-        case _ => ae.evalInt
-      }
+      case BinaryExpr(DeclRef(i2), BinaryOperator.<, Literal(l))
+        if i == i2 => l.toInt
       case _ => ???
     }
 
     val step = loop.increment match {
-      // assuming steps of the form: i = i + 1
-      case Assignment(DeclRef(name), ArithmeticExpr(rhs)) =>
-        val ae = ArithExpr.substitute(rhs, Map(NamedVar(name) -> Cst(0)))
-        ae match {
-          // TODO: generalise this
-          case ArithExprFunction(_, range) => range match {
-            case RangeAdd(min, max, s) if (min.evalInt + 1) == max.evalInt && s.evalInt == 1 =>
-              min.evalInt
-            case _ => ???
-          }
-          case _ => ae.evalInt
-        }
+      case Assignment(DeclRef(i2), BinaryExpr(Literal(l), BinaryOperator.+, DeclRef(i3)))
+        if i == i2 && i == i3 => l.toInt
       case _ => ???
     }
 
-    (stop - start) / step
+    (stop - start + step - 1) / step
   }
 }

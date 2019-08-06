@@ -122,6 +122,8 @@ object TranslationToImperative {
 
       case Proj1(_) => throw new Exception("This should never happen")
       case Proj2(_) => throw new Exception("This should never happen")
+
+      case LetNat(_, _, _) => throw new Exception("This should never happen")
     }
   }
 

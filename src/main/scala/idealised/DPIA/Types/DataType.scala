@@ -2,7 +2,7 @@ package idealised.DPIA.Types
 
 import idealised.DPIA.Nat
 import idealised.{DPIA, SurfaceLanguage}
-import lift.arithmetic.{ArithExpr, BigSum, RangeAdd}
+import lift.arithmetic.{ArithExpr, BigSum}
 
 import scala.language.implicitConversions
 
@@ -167,8 +167,9 @@ object DataType {
       a.elemFType match {
         case NatToDataLambda(x, body) =>
           BigSum(from = 0, upTo = a.size - 1, `for` = x, `in` = getTotalNumberOfElements(body))
+        case NatToDataIdentifier(_) => throw new Exception("This should not happen")
       }
-    case _: DataTypeIdentifier => throw new Exception("This should not happen")
+    case _: DataTypeIdentifier | _: NatToDataApply => throw new Exception("This should not happen")
   }
 
   def getSize(dt: DataType): Nat = dt match {
@@ -177,7 +178,7 @@ object DataType {
     case VectorType(size, _) => size
     case ArrayType(size, _) => size
     case DepArrayType(size, _) => size
-    case _: DataTypeIdentifier => throw new Exception("This should not happen")
+    case _: DataTypeIdentifier | _: NatToDataApply => throw new Exception("This should not happen")
   }
 
   def getSizes(dt: DataType): Seq[Nat] = dt match {
@@ -186,12 +187,14 @@ object DataType {
     case _ => Seq(getSize(dt))
   }
 
+  @scala.annotation.tailrec
   def getBaseDataType(dt: DataType): DataType = dt match {
     case _: BasicType => dt
     case _: RecordType => dt
     case _: DataTypeIdentifier => dt
     case ArrayType(_, elemType) => getBaseDataType(elemType)
     case DepArrayType(_, NatToDataLambda(_, elemType)) => getBaseDataType(elemType)
+    case DepArrayType(_, _) | _: NatToDataApply => throw new Exception("This should not happen")
   }
 
   implicit class RecordTypeConstructor(dt1: DataType) {

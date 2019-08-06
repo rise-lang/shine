@@ -10,8 +10,6 @@ sealed abstract class ScalarData(override val dataType: ScalarType) extends Data
 
 final case class ArrayData(a: Seq[Data]) extends Data(ArrayType(a.length, a.head.dataType))
 
-final case class SingletonArrayData( length:ArithExpr, value:Data) extends Data(ArrayType(length, value.dataType))
-
 final case class TupleData(t: Data*) extends Data(TupleType(t.map(_.dataType):_*))
 
 final case class BoolData(b: Boolean) extends ScalarData(bool)
