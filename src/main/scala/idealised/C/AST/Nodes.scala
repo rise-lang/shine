@@ -183,7 +183,7 @@ object Nodes {
     }
 
     def apply(e:Expr, v:Visitor, cont:Expr => Stmt):Stmt = {
-      e.visitAndGenerateStmt(v, e => v.onExpr(e, cont))
+      e.visitAndGenerateStmt(v, v.onExpr(_, cont))
     }
     def apply(s:Stmt, v:Visitor):Stmt = v.onStmt(s.visitAndGenerateStmt(v))
   }
