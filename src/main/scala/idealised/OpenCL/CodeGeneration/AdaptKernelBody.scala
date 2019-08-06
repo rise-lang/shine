@@ -34,7 +34,7 @@ object AdaptKernelBody {
             collectVars(index, loopVars)
 
           // literal arrays too
-          case ArraySubscript(Literal(_), index) =>
+          case ArraySubscript(ArrayLiteral(_, _), index) =>
             collectVars(index, loopVars)
 
           case _ =>

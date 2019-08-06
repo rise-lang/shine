@@ -1,6 +1,7 @@
 package elevate.lift
 
 import elevate.core.{Failure, Strategy, Success}
+import elevate.lift.strategies.predicate._
 import lift.core._
 
 package object rules {
@@ -14,16 +15,14 @@ package object rules {
   }
 
   def etaReduction: Strategy = {
-    // TODO? 'x' should not be used in 'f'
-    case Lambda(x1, Apply(f, x2)) if x1 == x2 => Success(f)
+    case Lambda(x1, Apply(f, x2)) if x1 == x2 && !contains(x1)(f) => Success(f)
     case _ => Failure(etaReduction)
   }
 
   def etaAbstraction: Strategy = {
-    // TODO? what if this is not a function
+    // TODO? check that `f` is a function (i.e. has a function type)
     case f =>
       val x = Identifier(freshName("η"))
       Success(Lambda(x, Apply(f, x)))
-    case _ => Failure(etaAbstraction)
   }
 }

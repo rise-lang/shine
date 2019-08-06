@@ -2,12 +2,15 @@ package idealised
 
 import java.io.{File, PrintWriter}
 
+import com.github.ghik.silencer.silent
 import opencl.executor.Executor
 import org.scalatest.{BeforeAndAfter, FunSuite, Matchers}
 
 package object util {
+  @silent("define classes/objects inside of package objects")
   abstract class Tests extends FunSuite with Matchers
 
+  @silent("define classes/objects inside of package objects")
   abstract class TestsWithExecutor extends Tests with BeforeAndAfter {
     before {
       Executor.loadLibrary()

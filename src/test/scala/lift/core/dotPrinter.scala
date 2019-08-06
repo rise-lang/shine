@@ -3,7 +3,6 @@ package lift.core
 import elevate.lift._
 import elevate.util._
 import lift.core.DSL._
-import lift.core.types.{float, infer}
 import lift.core.primitives._
 import lift.core.types.float
 
@@ -25,7 +24,7 @@ class dotPrinter extends idealised.util.Tests {
   }
 
   test("typed *f") {
-    println(dotPrinter(infer(λ(i => λ(f => *(f) $ i)))))
+    println(dotPrinter(lift.core.types.infer(λ(i => λ(f => *(f) $ i)))))
   }
 
   test("tiled 4D") {
@@ -54,7 +53,7 @@ class dotPrinter extends idealised.util.Tests {
         )
       )
 
-    val typedGemm = infer(gemm)
+    val typedGemm = lift.core.types.infer(gemm)
 
     println(dotPrinter(gemm))
     println(dotPrinter(typedGemm))

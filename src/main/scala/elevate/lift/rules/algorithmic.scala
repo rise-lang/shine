@@ -7,6 +7,7 @@ import lift.core.DSL._
 import lift.core.primitives.{id, join, map, split, transpose}
 
 
+//noinspection MutatorLikeMethodIsParameterless
 object algorithmic {
   // - Notation -
   // x >> y: piping operator, x then y
@@ -50,11 +51,13 @@ object algorithmic {
   def liftId: Strategy = `id -> *id`
   def `id -> *id`: Strategy = {
     case Apply(`id`, arg) => Success(Apply(map(id), arg))
+    case _ => Failure(liftId)
   }
 
   def createTransposePair: Strategy = `id -> T >> T`
   def `id -> T >> T`: Strategy = {
     case Apply(`id`, arg) => Success(Apply(transpose >> transpose, arg))
+    case _ => Failure(createTransposePair)
   }
 
   def `_-> T >> T`: Strategy = idAfter `;` createTransposePair

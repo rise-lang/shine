@@ -1,12 +1,11 @@
 package idealised.C
 
-import idealised.C.AST._
 import idealised.DPIA.Compilation._
 import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives.AsIndex
-import idealised.DPIA.{LetNatIdentifier, NatDataTypeFunction}
+import idealised.DPIA.LetNatIdentifier
 import idealised.DPIA.Phrases._
-import idealised.DPIA.Types.{AccType, CommType, DataType, DataTypeIdentifier, DepArrayType, ExpType, NatKind, NatToDataLambda, PairType, PhraseType, TypeCheck, int}
+import idealised.DPIA.Types._
 import idealised._
 import lift.arithmetic.{Cst, Var}
 
@@ -18,18 +17,14 @@ object ProgramGenerator {
                                 name: String = "foo"): Program = {
 
     def getPhraseAndParams[_ <: PhraseType](p: Phrase[_],
-                                                    ps: Seq[Identifier[ExpType]],
-                                                    defs:Seq[(LetNatIdentifier, Phrase[ExpType])]
-                                                   ): (Phrase[ExpType], Seq[Identifier[ExpType]], Seq[(LetNatIdentifier, Phrase[ExpType])]) = {
-      p match {
+                                            ps: Seq[Identifier[ExpType]],
+                                            defs:Seq[(LetNatIdentifier, Phrase[ExpType])])
+      : (Phrase[ExpType], Seq[Identifier[ExpType]], Seq[(LetNatIdentifier, Phrase[ExpType])]) = p match {
         case l: Lambda[ExpType, _]@unchecked => getPhraseAndParams(l.body, l.param +: ps, defs)
         case ndl: DepLambda[_, _] => getPhraseAndParams(ndl.body, Identifier(ndl.x.name, ExpType(int)) +: ps, defs)
-        case ln:LetNat[ExpType, _]@unchecked => // LetNat(binder, defn:Phrase[ExpType], body) =>
-          getPhraseAndParams(ln.body, ps, (ln.binder, ln.defn) +: defs)
+        case ln:LetNat[ExpType, _]@unchecked => getPhraseAndParams(ln.body, ps, (ln.binder, ln.defn) +: defs)
         case ep: Phrase[ExpType]@unchecked => (ep, ps.reverse, defs.reverse)
       }
-    }
-
 
     val (phrase, params, topLevelLetNats) = getPhraseAndParams(originalPhrase, Seq(), Seq())
 
@@ -59,7 +54,7 @@ object ProgramGenerator {
 
     C.Program(
       typeDeclarations ++ declarations,
-      function    = makeFunction(params, Block(Seq(code)), name),
+      function    = makeFunction(params, C.AST.Block(Seq(code)), name),
       outputParam = outParam,
       inputParams = inputParams)
     }))
@@ -67,14 +62,12 @@ object ProgramGenerator {
 
   private def createOutputParam(outT: ExpType): Identifier[AccType] = {
     outT.dataType match {
-      case _: DPIA.Types.BasicType =>
-        identifier("output", AccType(DPIA.Types.ArrayType(Cst(1), outT.dataType)))
-      case _: DPIA.Types.ArrayType =>
+      case _: BasicType =>
+        identifier("output", AccType(ArrayType(Cst(1), outT.dataType)))
+      case _: ArrayType | _: DepArrayType =>
         identifier("output", AccType(outT.dataType))
-      case _: DPIA.Types.DepArrayType =>
-        identifier("output", AccType(outT.dataType))
-      case _: DPIA.Types.RecordType => ???
-      case _: DPIA.Types.DataTypeIdentifier => ???
+      case _: RecordType => throw new Exception("Records as output parameters currently not supported")
+      case _: DataTypeIdentifier | _: NatToDataApply => throw new Exception("This should not happen")
     }
   }
 
@@ -100,71 +93,69 @@ object ProgramGenerator {
     })
   }
 
-  def makeFunction(params: Seq[ParamDecl], body: Block, name: String): FunDecl = {
-    FunDecl(name, returnType = Type.void, params, body)
+  def makeFunction(params: Seq[C.AST.ParamDecl], body: C.AST.Block, name: String): C.AST.FunDecl = {
+    C.AST.FunDecl(name, returnType = C.AST.Type.void, params, body)
   }
 
   def makeParams(out: Identifier[AccType],
                  ins: Seq[Identifier[ExpType]],
-                 gen: CodeGeneration.CodeGenerator): Seq[ParamDecl] = {
+                 gen: CodeGeneration.CodeGenerator): Seq[C.AST.ParamDecl] = {
     Seq(makeParam(out, gen)) ++ ins.map(makeParam(_, gen))
   }
 
-  def makeParam(i: Identifier[_], gen: CodeGeneration.CodeGenerator): ParamDecl = {
-    import DPIA.Types.{ArrayType, BasicType, RecordType}
+  def makeParam(i: Identifier[_], gen: CodeGeneration.CodeGenerator): C.AST.ParamDecl = {
     // Turn array types into pointer types
 
     val paramType = getDataType(i) match {
       case ArrayType(_, dt) =>
         val baseDt = DataType.getBaseDataType(dt)
-        PointerType(gen.typ(baseDt))
+        C.AST.PointerType(gen.typ(baseDt))
       case DepArrayType(_, NatToDataLambda(_, dt)) =>
         val baseDt = DataType.getBaseDataType(dt)
-        PointerType(gen.typ(baseDt))
+        C.AST.PointerType(gen.typ(baseDt))
       case r : RecordType => gen.typ(r)
       case t : BasicType => gen.typ(t)
-      case _: DataTypeIdentifier => ???
+      case _: DataTypeIdentifier | _: NatToDataApply | DepArrayType(_, NatToDataIdentifier(_)) =>
+        throw new Exception("This should not happen")
     }
-    ParamDecl(i.name, paramType)
+    C.AST.ParamDecl(i.name, paramType)
   }
 
-  def makeSizeParam(v: Var): ParamDecl = {
-    ParamDecl(v.toString, Type.const_int)
+  def makeSizeParam(v: Var): C.AST.ParamDecl = {
+    C.AST.ParamDecl(v.toString, C.AST.Type.const_int)
   }
 
-  def collectTypeDeclarations(code: Stmt, params: Seq[ParamDecl]): Seq[Decl] = {
-    def visitor(decls: mutable.Set[Decl]): Nodes.VisitAndRebuild.Visitor = new Nodes.VisitAndRebuild.Visitor {
-      def collect(t: Type): Unit = t match {
-        case _: BasicType =>
-        case s: StructType =>
+  def collectTypeDeclarations(code: C.AST.Stmt, params: Seq[C.AST.ParamDecl]): Seq[C.AST.Decl] = {
+    def visitor(decls: mutable.Set[C.AST.Decl]): C.AST.Nodes.VisitAndRebuild.Visitor = new C.AST.Nodes.VisitAndRebuild.Visitor {
+      def collect(t: C.AST.Type): Unit = t match {
+        case _: C.AST.BasicType =>
+        case s: C.AST.StructType =>
           decls += C.AST.StructTypeDecl(
             s.print,
-            s.fields.map{ case (ty, name) => VarDecl(name, ty) }
+            s.fields.map{ case (ty, name) => C.AST.VarDecl(name, ty) }
           )
-        case at: ArrayType => collect(at.elemType)
-        case pt: PointerType => collect(pt.valueType)
-        case ut: UnionType => ut.fields.foreach(collect)
+        case at: C.AST.ArrayType => collect(at.elemType)
+        case pt: C.AST.PointerType => collect(pt.valueType)
+        case ut: C.AST.UnionType => ut.fields.foreach(collect)
       }
 
-      override def apply(t: Type): Type = { collect(t) ; t }
+      override def apply(t: C.AST.Type): C.AST.Type = { collect(t) ; t }
     }
 
-    val allocTypeDecls = mutable.Set[Decl]()
+    val allocTypeDecls = mutable.Set[C.AST.Decl]()
     code.visitAndRebuild(visitor(allocTypeDecls))
 
-    val paramTypeDecls = mutable.Set[Decl]()
+    val paramTypeDecls = mutable.Set[C.AST.Decl]()
     params.foreach(_.visitAndRebuild(visitor(paramTypeDecls)))
 
     (allocTypeDecls ++ paramTypeDecls).toSeq
   }
 
-  private def getDataType(i: Identifier[_]): DataType = {
-    i.t match {
-      case ExpType(dataType) => dataType
-      case AccType(dataType) => dataType
-      case PairType(ExpType(dt1), AccType(dt2)) if dt1 == dt2 => dt1
-      case _ => throw new Exception("This should not happen")
-    }
+  private def getDataType(i: Identifier[_]): DataType = i.t match {
+    case ExpType(dataType) => dataType
+    case AccType(dataType) => dataType
+    case PairType(ExpType(dt1), AccType(dt2)) if dt1 == dt2 => dt1
+    case _ => throw new Exception("This should not happen")
   }
 
 }
