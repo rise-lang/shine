@@ -1025,7 +1025,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                genNat(b, env, b =>
                  genNat(ex, env, ex =>
                    cont(AST.Cast(AST.Type.int, AST.FunCall(AST.DeclRef("pow"), immutable.Seq(
-                     AST.Cast(AST.Type.float, ex), AST.Cast(AST.Type.float, b))))
+                     AST.Cast(AST.Type.float, b), AST.Cast(AST.Type.float, ex))))
                    )
                  )
                )
