@@ -391,8 +391,8 @@ class SparseVector extends idealised.util.Tests {
     def randomValue = random.nextInt(9).toFloat + 1
 
     // input values
-    val n: Int = 6 // number of rows
-    val m: Int = 4  // length of vector (max length of row)
+    val n: Int = 1024 // number of rows
+    val m: Int = 512  // length of vector (max length of row)
     val rowLengths: Array[Int] = Array.tabulate(n)(_ => random.nextInt(m-1)+1)
     val dict: Array[Int] = rowLengths.scan(0)(_+_) // offset into rows (of max m length)
     val matrix: Array[Array[(Int, Float)]] = Array.tabulate(n)(rowIdx => Array.tabulate(rowLengths(rowIdx))(_ => (random.nextInt(m), randomValue)) ) // matrix values (as pairs of x-coord + value)
@@ -405,13 +405,20 @@ class SparseVector extends idealised.util.Tests {
       }
     )
 
-    def print1D[T]: Array[T] => String = x => x.mkString("[", ", ", "]")
-    def print2D[T]: Array[Array[T]] => String = x => x.map(print1D).mkString("[\n  ", ",\n  ", "\n]")
-    println(s"Vector\n: ${print1D(vector)}")
-    println(s"Matrix\n: ${print2D(matrix)}")
-    println(s"Row lengths\n: ${print1D(rowLengths)}")
-    println(s"Dict\n: ${print1D(dict)}")
-    println(s"\nGold\n: ${print1D(gold)}")
+    import idealised.OpenCL._
+    val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Int] `,` Array[Array[(Int, Float)]] `,` Array[Float] `)=>` Array[Float]](1, n)
+    val (output, _) = runKernel(n `,` m `,` dict `,` matrix `,` vector)
+
+    assert(gold sameElements output)
+
+//    def print1D[T]: Array[T] => String = x => x.mkString("[", ", ", "]")
+//    def print2D[T]: Array[Array[T]] => String = x => x.map(print1D).mkString("[\n  ", ",\n  ", "\n]")
+//    println(s"Vector\n: ${print1D(vector)}")
+//    println(s"Matrix\n: ${print2D(matrix)}")
+//    println(s"Row lengths\n: ${print1D(rowLengths)}")
+//    println(s"Dict\n: ${print1D(dict)}")
+//    println(s"\nGold\n: ${print1D(gold)}")
+//    println(s"\nOutput\n: ${print1D(output)}")
 
     Executor.shutdown()
   }
