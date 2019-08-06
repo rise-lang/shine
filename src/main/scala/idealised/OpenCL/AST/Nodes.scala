@@ -40,5 +40,5 @@ case class ParamDecl(override val name: String,
 case class Barrier(local: Boolean, global: Boolean) extends Stmt {
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Barrier = this
 
-  override def visitAndBuildStmt(v: VisitAndGenerateStmt.Visitor): Stmt = this
+  override def visitAndGenerateStmt(v: VisitAndGenerateStmt.Visitor): Stmt = this
 }
