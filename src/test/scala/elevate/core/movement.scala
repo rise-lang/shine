@@ -2,13 +2,12 @@ package elevate.core
 
 import elevate.lift.rules.movement._
 import elevate.core.strategies.traversal._
+import elevate.core.strategies.predicate._
+import elevate.lift.strategies.traversal._
 import elevate.core.strategies.basic._
 import elevate.lift.strategies.normalForm._
-import elevate.lift.strategies.predicate._
-import elevate.core.strategies.predicate._
-import elevate.lift._
 import elevate.util._
-import lift.core.{Apply, Expr, Literal}
+import lift.core.Expr
 import lift.core.primitives._
 import lift.core.DSL._
 import lift.core.types.{float, infer}
@@ -55,26 +54,26 @@ class movement extends idealised.util.Tests {
         )
       )
 
-    assert(oncetd(mapMapFBeforeTranspose)(backward))
+    assert(oncetd(mapMapFBeforeTranspose).apply(backward))
   }
 
   test("T >> **f -> **f >> T") {
     assert(betaEtaEquals(
-      oncetd(`T >> **f -> **f >> T`)(λ(f => T >> **(f))),
+      oncetd(`T >> **f -> **f >> T`).apply(λ(f => T >> **(f))),
       λ(f => **(f) >> T))
     )
   }
 
   test("T >> ****f -> ****f >> T") {
     assert(betaEtaEquals(
-      oncetd(`T >> **f -> **f >> T`)(λ(f => T >> ****(f))),
+      oncetd(`T >> **f -> **f >> T`).apply(λ(f => T >> ****(f))),
       λ(f => ****(f) >> T))
     )
   }
 
   test("****f >> T -> T >> ****f") {
     assert(betaEtaEquals(
-      oncetd(`**f >> T -> T >> **f`)(λ(f => ****(f) >> T)),
+      oncetd(`**f >> T -> T >> **f`).apply(λ(f => ****(f) >> T)),
       λ(f => T >> ****(f)))
     )
   }
@@ -83,14 +82,14 @@ class movement extends idealised.util.Tests {
 
   test("S >> **f -> *f >> S") {
     assert(betaEtaEquals(
-      oncetd(`S >> **f -> *f >> S`)(λ(f => S >> **(f))),
+      oncetd(`S >> **f -> *f >> S`).apply(λ(f => S >> **(f))),
       λ(f => *(f) >> S))
     )
   }
 
   test("*f >> S -> S >> **f") {
     assert(betaEtaEquals(
-      oncetd(`*f >> S -> S >> **f`)(λ(f => *(f) >> S)),
+      oncetd(`*f >> S -> S >> **f`).apply(λ(f => *(f) >> S)),
       λ(f => S >> **(f)))
     )
   }
@@ -99,14 +98,14 @@ class movement extends idealised.util.Tests {
 
   test("J >> *f -> **f >> J") {
     assert(betaEtaEquals(
-      oncetd(`J >> *f -> **f >> J`)(λ(f => J >> *(f))),
+      oncetd(`J >> *f -> **f >> J`).apply(λ(f => J >> *(f))),
       λ(f => **(f) >> J)
     ))
   }
 
   test("**f >> J -> *f >> J") {
     assert(betaEtaEquals(
-      oncetd(`**f >> J -> J >> *f`)(λ(f => **(f) >> J)),
+      oncetd(`**f >> J -> J >> *f`).apply(λ(f => **(f) >> J)),
       λ(f => J >> *(f))
     ))
   }
@@ -115,70 +114,70 @@ class movement extends idealised.util.Tests {
 
   test("T >> S -> *S >> T >> *T") {
     assert(betaEtaEquals(
-      oncetd(`T >> S -> *S >> T >> *T`)(T >> S),
+      oncetd(`T >> S -> *S >> T >> *T`).apply(T >> S),
       *(S) >> T >> *(T)
     ))
   }
 
   test("T >> *S -> S >> *T >> T") {
     assert(betaEtaEquals(
-      oncetd(`T >> *S -> S >> *T >> T`)(T >> *(S)),
+      oncetd(`T >> *S -> S >> *T >> T`).apply(T >> *(S)),
       S >> *(T) >> T
     ))
   }
 
   test("*S >> T -> T >> S >> *T") {
     assert(betaEtaEquals(
-      oncetd(`*S >> T -> T >> S >> *T`)(*(S) >> T),
+      oncetd(`*S >> T -> T >> S >> *T`).apply(*(S) >> T),
       T >> S >> *(T)
     ))
   }
 
   test("J >> T -> *T >> T >> *J") {
     assert(betaEtaEquals(
-      oncetd(`J >> T -> *T >> T >> *J`)(J >> T),
+      oncetd(`J >> T -> *T >> T >> *J`).apply(J >> T),
       *(T) >> T >> *(J)
     ))
   }
 
   test("T >> *J -> *T >> J >> T") {
     assert(betaEtaEquals(
-      oncetd(`T >> *J -> *T >> J >> T`)(T >> *(J)),
+      oncetd(`T >> *J -> *T >> J >> T`).apply(T >> *(J)),
       *(T) >> J >> T
     ))
   }
 
   test("*T >> J -> T >> *J >> T") {
     assert(betaEtaEquals(
-      oncetd(`*T >> J -> T >> *J >> T`)(*(T) >> J),
+      oncetd(`*T >> J -> T >> *J >> T`).apply(*(T) >> J),
       T >> *(J) >> T
     ))
   }
 
   test("*J >> T -> T >> *T >> J") {
     assert(betaEtaEquals(
-      oncetd(`*J >> T -> T >> *T >> J`)(*(J) >> T),
+      oncetd(`*J >> T -> T >> *T >> J`).apply(*(J) >> T),
       T >> *(T) >> J
     ))
   }
 
   test("J >> J -> *J >> J") {
     assert(betaEtaEquals(
-      oncetd(`J >> J -> *J >> J`)(J >> J),
+      oncetd(`J >> J -> *J >> J`).apply(J >> J),
       *(J) >> J
     ))
   }
 
   test("*J >> J -> J >> J") {
     assert(betaEtaEquals(
-      oncetd(`*J >> J -> J >> J`)(*(J) >> J),
+      oncetd(`*J >> J -> J >> J`).apply(*(J) >> J),
       J >> J
     ))
   }
 
   test("slideOverSplit") {
     assert(betaEtaEquals(
-      oncetd(slideBeforeSplit)(slide(3)(1) >> split(16)),
+      oncetd(slideBeforeSplit).apply(slide(3)(1) >> split(16)),
       slide(16+3-1)(16) >> map(slide(3)(1))
     ))
   }

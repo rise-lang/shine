@@ -10,6 +10,7 @@ import lift.core.HighLevelConstructs.padClamp2D
 import elevate.core._
 import elevate.lift.strategies.normalForm._
 import elevate.core.strategies.basic._
+import elevate.lift.strategies.traversal._
 import elevate.lift.rules._
 import elevate.lift.rules.algorithmic._
 import elevate.lift.rules.movement._

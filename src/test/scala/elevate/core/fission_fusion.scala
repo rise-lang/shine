@@ -8,6 +8,7 @@ import elevate.lift.rules.algorithmic.{mapFusion, mapLastFission}
 import elevate.lift.strategies.algorithmic.{mapFirstFission, mapFullFission}
 import strategies.traversal._
 import elevate.lift.strategies.normalForm._
+import elevate.lift.strategies.traversal._
 
 
 class fission_fusion extends idealised.util.Tests {

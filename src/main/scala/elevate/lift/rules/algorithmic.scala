@@ -4,8 +4,8 @@ import elevate.core.strategies.basic.seq
 import elevate.core._
 import elevate.core.strategies.predicate._
 import elevate.lift.strategies.predicate._
+import elevate.core.strategies.traversal._
 import elevate.lift.strategies.traversal._
-import elevate.lift.strategies.traversal.body
 import lift.core._
 import lift.core.DSL._
 import lift.core.primitives.{id, join, map, split, transpose}
@@ -47,7 +47,7 @@ object algorithmic {
     // TODO: why gx != Identifier?
     def apply(e: Lift): RewriteResult[Lift] = e match {
         // todo fix constraint again
-      case Apply(`map`, Lambda(x, Apply(f, gx))) if !contains(x)(f) && !isIdentifier(gx) =>
+      case Apply(`map`, Lambda(x, Apply(f, gx))) if !contains[Lift](x).apply(f) && !isIdentifier(gx) =>
         Success(Apply(`map`, Lambda(x, gx)) >> map(f))
       case _ => Failure(mapLastFission)
     }

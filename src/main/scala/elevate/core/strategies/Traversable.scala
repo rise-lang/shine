@@ -4,4 +4,5 @@ import elevate.core.Strategy
 
 trait Traversable[P] {
   def all: Strategy[P] => Strategy[P]
+  def oneHandlingState: Boolean => Strategy[P] => Strategy[P]
 }

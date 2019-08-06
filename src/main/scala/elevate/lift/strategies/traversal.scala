@@ -40,6 +40,20 @@ object traversal {
       }
     }
 
+    override def oneHandlingState: Boolean => Strategy[Lift] => Strategy[Lift] =
+      carryOverState => s => {
+        case Apply(f, e) => s(f) match {
+          case Success(x: Lift) => Success(Apply(x, e))
+          case Failure(state) => if (carryOverState)
+            state(e).mapSuccess(Apply(f, _)) else
+            s(e).mapSuccess(Apply(f, _))
+        }
+        case x => elevate.lift.strategies.traversal.traverseSingleSubexpression(s)(x) match {
+          case Some(r) => r
+          case None => Failure(s)
+        }
+      }
+
     // case class all(s: Strategy[Lift]) extends Strategy[Lift] {
     //    def apply(e: Lift): RewriteResult[Lift] = e match {
     //      case Apply(f, e) => s(f).flatMapSuccess(a => s(e).mapSuccess(b => Apply(a, b) ) )
