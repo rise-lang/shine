@@ -1110,11 +1110,13 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                      )
                    )
 
-                   C.AST.Block(immutable.Seq(
-                     C.AST.DeclStmt(accumVar),
-                     forLoop,
+                   C.AST.Stmts(
+                     C.AST.Stmts(
+                        C.AST.DeclStmt(accumVar),
+                        forLoop
+                     ),
                      cont(C.AST.DeclRef(accumVar.name))
-                   ))
+                   )
                  })
                })
              })
