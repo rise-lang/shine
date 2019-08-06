@@ -41,33 +41,31 @@ class traversals extends idealised.util.Tests {
         bottomup(id).apply(expr),
         downup(id).apply(expr),
         downup2(id,id).apply(expr),
-        oncetd(id).apply(expr)
-        //oncebu(id)(expr),
-        //alltd(id)(expr),
-        //sometd(id)(expr),
+        oncetd(id).apply(expr),
+        oncebu(id).apply(expr),
+        alltd(id).apply(expr),
+        sometd(id).apply(expr),
         //innermost(id)(expr),
-        //somebu(id)(expr)
+        somebu(id).apply(expr)
       ).forall(x => betaEtaEquals(x.get, expr))
     )
   }
 
-  /*
   test("simple fusion") {
     val expr = fun(f => fun(g => map(f) >> map(g)))
     val gold = fun(f => fun(g => map(f >> g)))
 
     assert(
       List(
-        oncetd(mapFusion)(expr),
-        oncebu(mapFusion)(expr),
-        alltd(mapFusion)(expr),
-        sometd(mapFusion)(expr),
-        somebu(mapFusion)(expr),
-        topdown(`try`(mapFusion))(expr),
-        bottomup(`try`(mapFusion))(expr)
+        oncetd(mapFusion).apply(expr),
+        oncebu(mapFusion).apply(expr),
+        alltd(mapFusion).apply(expr),
+        sometd(mapFusion).apply(expr),
+        somebu(mapFusion).apply(expr),
+        topdown(`try`(mapFusion)).apply(expr),
+        bottomup(`try`(mapFusion)).apply(expr)
       ).forall(x => betaEtaEquals(x.get, gold))
     )
 
   }
-   */
 }

@@ -48,22 +48,23 @@ object traversal {
             state(e).mapSuccess(Apply(f, _)) else
             s(e).mapSuccess(Apply(f, _))
         }
-        case x => elevate.lift.strategies.traversal.traverseSingleSubexpression(s)(x) match {
+        case x => traverseSingleSubexpression(s)(x) match {
           case Some(r) => r
           case None => Failure(s)
         }
       }
 
-    // case class all(s: Strategy[Lift]) extends Strategy[Lift] {
-    //    def apply(e: Lift): RewriteResult[Lift] = e match {
-    //      case Apply(f, e) => s(f).flatMapSuccess(a => s(e).mapSuccess(b => Apply(a, b) ) )
-    //
-    //      case x => traverseSingleSubexpression(s)(x) match {
-    //        case Some(r) => r
-    //        case None => Success(x)
-    //      }
-    //    }
-    //  }
+    override def some: Strategy[Lift] => Strategy[Lift] = s => {
+      case Apply(f, e) => (s(f), s(e)) match {
+        case (Failure(_), Failure(_)) => Failure(s)
+        case (x, y) => Success(Apply(x.getProgramOrElse(f), y.getProgramOrElse(e)))
+      }
+
+      case x => traverseSingleSubexpression(s)(x) match {
+        case Some(r) => r
+        case None => Failure(s)
+      }
+    }
   }
 
   abstract class Traversal[P](s: Strategy[P]) extends Strategy[P]
