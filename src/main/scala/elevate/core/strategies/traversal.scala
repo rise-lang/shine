@@ -9,34 +9,20 @@ object traversal {
 
   // generic one-level traversal operators
 
-  private def traverseSingleSubexpression: Strategy[Lift] => Lift => Option[RewriteResult[Lift]] =
-    s => {
-      case Identifier(_) => None
-      case Lambda(x, e) => Some(s(e).mapSuccess(Lambda(x, _)))
-      case DepLambda(x, e) => x match {
-        case n: NatIdentifier => Some(s(e).mapSuccess(DepLambda[NatKind](n, _)))
-        case dt: DataTypeIdentifier => Some(s(e).mapSuccess(DepLambda[DataKind](dt, _)))
-      }
-      case DepApply(f, x) => x match {
-        case n: Nat => Some(s(f).mapSuccess(DepApply[NatKind](_, n) ))
-        case dt: DataType => Some(s(f).mapSuccess(DepApply[DataKind](_, dt) ))
-      }
-      case Literal(_) => None
-      case TypedExpr(e, t) => Some(s(e).mapSuccess(TypedExpr(_, t)))
-      case ff: primitives.ForeignFunction => None
-      case p: Primitive => None
-    }
-
   // applies s to all direct subexpressions
-  case class all(s: Strategy[Lift]) extends Strategy[Lift] {
-    def apply(e: Lift): RewriteResult[Lift] = e match {
-      case Apply(f, e) => s(f).flatMapSuccess(a => s(e).mapSuccess(b => Apply(a, b) ) )
+//  case class all(s: Strategy[Lift]) extends Strategy[Lift] {
+//    def apply(e: Lift): RewriteResult[Lift] = e match {
+//      case Apply(f, e) => s(f).flatMapSuccess(a => s(e).mapSuccess(b => Apply(a, b) ) )
+//
+//      case x => traverseSingleSubexpression(s)(x) match {
+//        case Some(r) => r
+//        case None => Success(x)
+//      }
+//    }
+//  }
 
-      case x => traverseSingleSubexpression(s)(x) match {
-        case Some(r) => r
-        case None => Success(x)
-      }
-    }
+  case class all[P : Traversable](s: Strategy[P]) extends Strategy[P] {
+    def apply(e: P): RewriteResult[P] = implicitly[Traversable[P]].all(s)(e)
   }
 
   case class oneHandlingState(carryOverState: Boolean, s: Strategy[Lift]) extends Strategy[Lift] {
@@ -47,7 +33,7 @@ object traversal {
           state(e).mapSuccess(Apply(f, _) ) else
           s(e).mapSuccess(Apply(f, _))
       }
-      case x => traverseSingleSubexpression(s)(x) match {
+      case x => elevate.lift.strategies.traversal.traverseSingleSubexpression(s)(x) match {
         case Some(r) => r
         case None => Failure(s)
       }
@@ -70,7 +56,7 @@ object traversal {
         case (Failure(_), Failure(_)) => Failure(s)
         case (x, y) => Success(Apply(x.getProgramOrElse(f), y.getProgramOrElse(e)))
       }
-      case x => traverseSingleSubexpression(s)(x) match {
+      case x => elevate.lift.strategies.traversal.traverseSingleSubexpression(s)(x) match {
         case Some(r) => r
         case None => Failure(s)
       }
@@ -84,9 +70,9 @@ object traversal {
     def apply(e: Lift): RewriteResult[Lift] = (s <+ one(oncetd(s))) (e)
   }
 
-  def topdown: Strategy[Lift] => Strategy[Lift] = s => s `;` (e => all(topdown(s))(e))
-
-  def bottomup: Strategy[Lift] => Strategy[Lift] = s => ((e: Lift) => all(bottomup(s))(e)) `;` s
+  def topdown[P](implicit ev :Traversable[P]): Strategy[P] => Strategy[P] = (s: Strategy[P]) => s `;` (e => all(topdown.apply(s)).apply(e))
+/*
+  def bottomup: Strategy[Lift] => Strategy[Lift] = s => ((e: Lift) => all(bottomup(s)).apply(e)) `;` s
 
   def downup: Strategy[Lift] => Strategy[Lift] = s => s `;` (e => (all(downup(s)) `;` s)(e))
 
@@ -95,9 +81,9 @@ object traversal {
 
   def oncebu: Strategy[Lift] => Strategy[Lift] = s => ((e: Lift) => one(oncebu(s))(e)) <+ s
 
-  def alltd: Strategy[Lift] => Strategy[Lift] = s => s <+ (e => all(alltd(s))(e))
+  def alltd: Strategy[Lift] => Strategy[Lift] = s => s <+ (e => all(alltd(s)).apply(e))
 
-  def tryAll: Strategy[Lift] => Strategy[Lift] = s => ((e: Lift) => all(tryAll(`try`(s)))(e)) `;` `try`(s)
+  def tryAll: Strategy[Lift] => Strategy[Lift] = s => ((e: Lift) => all(tryAll(`try`(s))).apply(e)) `;` `try`(s)
 
   def sometd: Strategy[Lift] => Strategy[Lift] = s => s <+ (e => some(sometd(s))(e))
 
@@ -116,4 +102,5 @@ object traversal {
 
   // todo figure out whats wrong here
   def innermost: Strategy[Lift] => Strategy[Lift] = s => bottomup(`try`(e => (s `;` innermost(s))(e)))
+ */
 }

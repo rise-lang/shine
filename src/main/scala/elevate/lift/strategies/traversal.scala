@@ -1,15 +1,56 @@
 package elevate.lift.strategies
 
-import elevate.core.{Elevate, Failure, Lift, Meta, RewriteResult, Strategy, Success}
-import lift.core.{Apply, DepLambda, Expr, Lambda, Primitive}
+import elevate.core._
+import lift.core._
 import lift.core.primitives.map
 import elevate.lift.rules.algorithmic._
 import elevate.core.strategies.traversal._
 import elevate.core.strategies.basic._
 import elevate.lift.strategies.algorithmic._
 import elevate.lift.strategies.normalForm._
+import lift.core.types._
 
 object traversal {
+
+  def traverseSingleSubexpression: Strategy[Lift] => Lift => Option[RewriteResult[Lift]] =
+    s => {
+      case Identifier(_) => None
+      case Lambda(x, e) => Some(s(e).mapSuccess(Lambda(x, _)))
+      case DepLambda(x, e) => x match {
+        case n: NatIdentifier => Some(s(e).mapSuccess(DepLambda[NatKind](n, _)))
+        case dt: DataTypeIdentifier => Some(s(e).mapSuccess(DepLambda[DataKind](dt, _)))
+      }
+      case DepApply(f, x) => x match {
+        case n: Nat => Some(s(f).mapSuccess(DepApply[NatKind](_, n) ))
+        case dt: DataType => Some(s(f).mapSuccess(DepApply[DataKind](_, dt) ))
+      }
+      case Literal(_) => None
+      case TypedExpr(e, t) => Some(s(e).mapSuccess(TypedExpr(_, t)))
+      case ff: primitives.ForeignFunction => None
+      case p: Primitive => None
+    }
+
+  implicit object LiftTraversable extends elevate.core.strategies.Traversable[Lift] {
+    override def all: Strategy[Lift] => Strategy[Lift] = s => {
+      case Apply(f, e) => s(f).flatMapSuccess(a => s(e).mapSuccess(b => Apply(a, b)))
+
+      case x => traverseSingleSubexpression(s)(x) match {
+        case Some(r) => r
+        case None => Success(x)
+      }
+    }
+
+    // case class all(s: Strategy[Lift]) extends Strategy[Lift] {
+    //    def apply(e: Lift): RewriteResult[Lift] = e match {
+    //      case Apply(f, e) => s(f).flatMapSuccess(a => s(e).mapSuccess(b => Apply(a, b) ) )
+    //
+    //      case x => traverseSingleSubexpression(s)(x) match {
+    //        case Some(r) => r
+    //        case None => Success(x)
+    //      }
+    //    }
+    //  }
+  }
 
   abstract class Traversal[P](s: Strategy[P]) extends Strategy[P]
 
