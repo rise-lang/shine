@@ -1,27 +1,13 @@
 package idealised
 
+import com.github.ghik.silencer.silent
 import idealised.DPIA.Nat
 import lift.arithmetic._
 
 import scala.language.implicitConversions
 
 package object OpenCL {
-  sealed trait ParallelismLevel
-  case object WorkGroup extends ParallelismLevel
-  case object Global extends ParallelismLevel
-  case object Local extends ParallelismLevel
-  case object Sequential extends ParallelismLevel
 
-
-  sealed trait AddressSpace
-  case object GlobalMemory extends AddressSpace
-  case object LocalMemory extends AddressSpace
-  case object PrivateMemory extends AddressSpace
-
-  case class NDRange(x: Nat, y: Nat, z: Nat) {
-    def isEvaluable: Boolean = x.isEvaluable && y.isEvaluable && z.isEvaluable
-    def ==(other: NDRange): Boolean = x == other.x && y == other.y && z == other.z
-  }
   implicit def valToNatTuple[V](v: V)(implicit vToN: V => Nat): NDRange = NDRange(v, 1, 1)
   implicit def pairToNatTuple[A,B](t: (A, B))(implicit aToN: A => Nat, bToN: B => Nat): NDRange =
     NDRange(t._1, t._2, 1)
@@ -34,32 +20,6 @@ package object OpenCL {
 
   // This class models OpenCL built in functions that can appear inside of arithmetic expressions
   // examples are get_global_size(0), or get_local_id(1), but also OpenCL math functions, e.g., ceil or sin
-  class BuiltInFunction private(name: String, val param: Int, range: Range)
-    extends ArithExprFunction(name, range) {
-
-    lazy val toOCLString = s"$name($param)"
-
-    override lazy val digest: Int = HashSeed ^ /*range.digest() ^*/ name.hashCode ^ param
-
-    override val HashSeed = 0x31111111
-
-    override def equals(that: Any): Boolean = that match {
-      case f: BuiltInFunction => this.name.equals(f.name) && this.param == f.param
-      case _ => false
-    }
-
-    override lazy val (min : Nat, max: Nat) = (range.min.min, range.max.max)
-    override lazy val sign: Sign.Value = Sign.Positive
-
-    override def visitAndRebuild(f: Nat => Nat): Nat =
-      f(new BuiltInFunction(name, param, range.visitAndRebuild(f)))
-
-  }
-
-  object BuiltInFunction {
-    def apply(name: String, param: Int, range: Range = RangeUnknown) : BuiltInFunction =
-      new BuiltInFunction(name, param, range)
-  }
 
   object get_num_groups {
     def apply(param:Int, range : Range = ContinuousRange(1, PosInf)) =
@@ -101,6 +61,7 @@ package object OpenCL {
 
   }
 
+  @silent("define classes/objects inside of package objects")
   trait FunctionHelper {
     type T
     type R
@@ -110,11 +71,13 @@ package object OpenCL {
 
   type `)=>`[TT, RR] = FunctionHelper { type T = TT; type R = RR }
 
+  @silent("define classes/objects inside of package objects")
   sealed trait HList {
     def length: Int
     def toList: List[Any]
   }
 
+  @silent("define classes/objects inside of package objects")
   case class HCons[+L <: HList, +N](list: L, node: N) extends HList {
     def `,`[V](v: V) = HCons(this, v)
 

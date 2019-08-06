@@ -21,7 +21,7 @@ object Lifting {
         val fun = liftTypeDependentFunctionExpr(app.fun)
         liftFunctionExpr(fun(app.arg))
       case _: BinOpExpr | _: IdentifierExpr | _: IfThenElseExpr | _: LiteralExpr | _: NatDependentLambdaExpr |
-           _: NatExpr | _: PrimitiveExpr | _: TypeDependentLambdaExpr | _: UnaryOpExpr =>
+           _: NatExpr | _: PrimitiveExpr | _: TypeDependentLambdaExpr | _: UnaryOpExpr | _: LetNat =>
         throw new Exception("This should never happen")
     }
   }
@@ -40,7 +40,7 @@ object Lifting {
         val fun = liftTypeDependentFunctionExpr(app.fun)
         liftNatDependentFunctionExpr(fun(app.arg))
       case _: BinOpExpr | _: IdentifierExpr | _: IfThenElseExpr | _: LambdaExpr | _: LiteralExpr | _: NatExpr |
-           _: PrimitiveExpr  | _: TypeDependentLambdaExpr | _: UnaryOpExpr =>
+           _: PrimitiveExpr  | _: TypeDependentLambdaExpr | _: UnaryOpExpr | _: LetNat =>
         throw new Exception("This should never happen")
     }
   }
@@ -59,7 +59,7 @@ object Lifting {
         val fun = liftTypeDependentFunctionExpr(app.fun)
         liftTypeDependentFunctionExpr(fun(app.arg))
       case _: BinOpExpr | _: IdentifierExpr | _: IfThenElseExpr | _: LambdaExpr | _: LiteralExpr |
-           _: NatDependentLambdaExpr | _: NatExpr | _: PrimitiveExpr | _: UnaryOpExpr =>
+           _: NatDependentLambdaExpr | _: NatExpr | _: PrimitiveExpr | _: UnaryOpExpr | _: LetNat =>
         throw new Exception("This should never happen")
     }
   }

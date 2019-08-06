@@ -129,27 +129,27 @@ object Type {
 
 object BasicType {
   def apply(name: String, const: Boolean = false): BasicType = DefaultTypeImplementations.BasicType(name, const)
-  def unapply(arg: BasicType): Option[(String, Boolean)] = Some(arg.name, arg.const)
+  def unapply(arg: BasicType): Option[(String, Boolean)] = Some((arg.name, arg.const))
 }
 
 object StructType {
   def apply(name: String, fields: Seq[(Type, String)], const: Boolean = false): StructType = DefaultTypeImplementations.StructType(name, fields, const)
-  def unapply(arg: StructType): Option[(String, Seq[(Type, String)], Boolean)] = Some(arg.name, arg.fields, arg.const)
+  def unapply(arg: StructType): Option[(String, Seq[(Type, String)], Boolean)] = Some((arg.name, arg.fields, arg.const))
 }
 
 object ArrayType {
   def apply(elemType: Type, size: Option[ArithExpr], const: Boolean = false): ArrayType = DefaultTypeImplementations.ArrayType(elemType, size, const)
-  def unapply(arg: ArrayType): Option[(Type, Option[ArithExpr], Boolean)] = Some(arg.elemType, arg.size, arg.const)
+  def unapply(arg: ArrayType): Option[(Type, Option[ArithExpr], Boolean)] = Some((arg.elemType, arg.size, arg.const))
 }
 
 object PointerType {
   def apply(valueType: Type, const: Boolean = false): PointerType = DefaultTypeImplementations.PointerType(valueType, const)
-  def unapply(arg: PointerType): Option[(Type, Boolean)] = Some(arg.valueType, arg.const)
+  def unapply(arg: PointerType): Option[(Type, Boolean)] = Some((arg.valueType, arg.const))
 }
 
 object UnionType {
   def apply(fields: Seq[Type], const: Boolean = false): UnionType = DefaultTypeImplementations.UnionType(fields, const)
-  def unapply(arg: UnionType): Option[(Seq[Type], Boolean)] = Some(arg.fields, arg.const)
+  def unapply(arg: UnionType): Option[(Seq[Type], Boolean)] = Some((arg.fields, arg.const))
 }
 
 object DefaultTypeImplementations {

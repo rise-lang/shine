@@ -14,6 +14,7 @@ object traversal {
 
   def traverseSingleSubexpression: Strategy[Lift] => Lift => Option[RewriteResult[Lift]] =
     s => {
+      case Apply(_,_) => throw new Exception("this should not happen")
       case Identifier(_) => None
       case Lambda(x, e) => Some(s(e).mapSuccess(Lambda(x, _)))
       case DepLambda(x, e) => x match {

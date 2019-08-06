@@ -11,6 +11,7 @@ import lift.core.DSL._
 import lift.core.primitives.{id, join, map, split, transpose}
 
 
+//noinspection MutatorLikeMethodIsParameterless
 object algorithmic {
   // - Notation -
   // x >> y: piping operator, x then y
@@ -18,7 +19,6 @@ object algorithmic {
   // T: transpose
   // S: slide/split
   // J: join
-
 
   // divide & conquer
   def  splitJoin(n: Nat): Strategy[Lift] = `*f -> S >> **f >> J`(n: Nat)
@@ -53,7 +53,6 @@ object algorithmic {
     }
     override def toString = s"mapLastFission"
   }
-
 
   // identities
 

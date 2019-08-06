@@ -1,5 +1,6 @@
 package elevate.lift.strategies
 
+import com.github.ghik.silencer.silent
 import elevate.core.{Failure, Lift, RewriteResult, Strategy, Success}
 import lift.core.DSL._
 import lift.core._
@@ -18,6 +19,8 @@ object algorithmic {
     }
   }
 
+  // TODO: this should be expressed with elevate strategies
+  @silent
   private def mapFirstFissionRec(x: Identifier, f: Expr, gx: Expr): Expr = {
     gx match {
       case Apply(f2, gx2) =>
@@ -39,6 +42,8 @@ object algorithmic {
     }
   }
 
+  // TODO: this should be expressed with elevate strategies
+  @silent
   def mapFullFissionRec(x: Identifier, gx: Expr): Expr = {
     gx match {
       case Apply(f, gx2) =>
