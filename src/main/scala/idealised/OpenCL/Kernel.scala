@@ -221,14 +221,22 @@ case class Kernel(decls: Seq[C.AST.Decl],
       case ad: Array[Array[Array[Double]]] => GlobalArg.createInput(ad.flatten.flatten)
       case ad: Array[Array[Array[Array[Double]]]] => GlobalArg.createInput(ad.flatten.flatten.flatten)
 
-      case pairs:Array[(Int, Float)]@unchecked =>
-        val intArray = pairs.flatMap{case (x,y) => Iterable(x, java.lang.Float.floatToIntBits(y))}
-        GlobalArg.createInput(intArray)
-
+      case p: Array[(_, _)] => p.head match {
+          case (_: Int, _: Float) =>
+            GlobalArg.createInput(flattenToArrayOfInts(p.asInstanceOf[Array[(Int, Float)]]))
+        }
+      case pp: Array[Array[(_, _)]] => pp.head.head match {
+        case (_: Int, _: Float) =>
+          GlobalArg.createInput(pp.flatMap(a => flattenToArrayOfInts(a.asInstanceOf[Array[(Int, Float)]])))
+      }
 
       case _ => throw new IllegalArgumentException("Kernel argument is of unsupported type: " +
         arg.getClass.getName)
     }
+  }
+
+  private def flattenToArrayOfInts(a: Array[(Int, Float)]): Array[Int] = {
+    a.flatMap{ case (x,y) => Iterable(x, java.lang.Float.floatToIntBits(y)) }
   }
 
   private def castToOutputType[R](dt: DataType, output: GlobalArg): R = {
