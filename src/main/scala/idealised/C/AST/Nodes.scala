@@ -412,14 +412,10 @@ object DefaultImplementations {
     override def visitAndRebuild(v: VisitAndRebuild.Visitor): Block = Block(body.map(VisitAndRebuild(_, v)))
 
     override def visitAndGenerateStmt(v: VisitAndGenerateStmt.Visitor): Block = {
-      //We cannot simply map, as later blocks may be dependent on the contents previous blocks.
-      //Instead, we must merge everything into one resulting block
+      // We cannot simply map, as later blocks may be dependent on the contents previous blocks.
+      // Instead, we must merge everything into one resulting block
       body.foldLeft(Block(Seq()))((currentBlock, stmt) => {
-        val rebuilt = VisitAndGenerateStmt(stmt, v)
-        rebuilt match {
-          case Block(stmts) => Block(currentBlock.body ++ stmts)
-          case other => Block(currentBlock.body :+ other)
-        }
+        Block(currentBlock.body :+ VisitAndGenerateStmt(stmt, v))
       })
     }
   }
