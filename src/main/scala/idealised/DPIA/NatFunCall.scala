@@ -8,10 +8,10 @@ case class LetNatIdArg(letNatIdentifier: LetNatIdentifier) extends NatFunArg
 
 
 class NatFunCall(val fun:LetNatIdentifier, val args:Seq[NatFunArg]) extends ArithExprFunctionCall(fun.id.name)  {
-  override def visitAndRebuild(f: Nat => Nat): Nat = NatFunCall(fun, args.map {
-    case NatArg(n) => NatArg(f(n))
+  override def visitAndRebuild(f: Nat => Nat): Nat = f(NatFunCall(fun, args.map {
+    case NatArg(n) => NatArg(n.visitAndRebuild(f))
     case other => other
-  })
+  }))
 
   override def exposedArgs: Seq[Nat] = args.map({
     case NatArg(n) => Some(n)

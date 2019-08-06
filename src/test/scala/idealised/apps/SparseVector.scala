@@ -384,5 +384,35 @@ class SparseVector extends idealised.util.Tests {
     val code = p.code
     SyntaxChecker.checkOpenCL(code)
     println(code)
+
+    Executor.loadAndInit()
+
+    val random = new Random
+    def randomValue = random.nextInt(9).toFloat + 1
+
+    // input values
+    val n: Int = 6 // number of rows
+    val m: Int = 4  // length of vector (max length of row)
+    val rowLengths: Array[Int] = Array.tabulate(n)(_ => random.nextInt(m-1)+1)
+    val dict: Array[Int] = rowLengths.scan(0)(_+_) // offset into rows (of max m length)
+    val matrix: Array[Array[(Int, Float)]] = Array.tabulate(n)(rowIdx => Array.tabulate(rowLengths(rowIdx))(_ => (random.nextInt(m), randomValue)) ) // matrix values (as pairs of x-coord + value)
+    val vector: Array[Float] = Array.tabulate(m)(_ => randomValue) // vector values
+
+    // compute gold output
+    val gold = matrix.map( row =>
+      row.foldLeft(0.0f) { (accum, pair) =>
+        accum + pair._2 * vector(pair._1)
+      }
+    )
+
+    def print1D[T]: Array[T] => String = x => x.mkString("[", ", ", "]")
+    def print2D[T]: Array[Array[T]] => String = x => x.map(print1D).mkString("[\n  ", ",\n  ", "\n]")
+    println(s"Vector\n: ${print1D(vector)}")
+    println(s"Matrix\n: ${print2D(matrix)}")
+    println(s"Row lengths\n: ${print1D(rowLengths)}")
+    println(s"Dict\n: ${print1D(dict)}")
+    println(s"\nGold\n: ${print1D(gold)}")
+
+    Executor.shutdown()
   }
 }
