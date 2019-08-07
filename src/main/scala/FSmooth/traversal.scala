@@ -27,11 +27,11 @@ object traversal {
         case c: Continue[Expr] =>
           val v = c.v
           c.value match {
-            case Abstraction(xs, e) => Abstraction(xs, apply(e, v))
-            case Application(f, es) => Application(apply(f, v), es.map(apply(_, v)))
-            case Let(x, init, e) => Let(x, apply(init, v), apply(e, v))
-            case Conditional(c, t, e) => Conditional(apply(c, v), apply(t, v), apply(e, v))
-            case Identifier(_) | ScalarValue(_) | IndexValue(_) |
+            case Abstraction(xs, e, t) => Abstraction(xs, apply(e, v), t)
+            case Application(f, es, t) => Application(apply(f, v), es.map(apply(_, v)), t)
+            case Let(x, init, e, t) => Let(x, apply(init, v), apply(e, v), t)
+            case Conditional(c, tr, el, t) => Conditional(apply(c, v), apply(tr, v), apply(el, v), t)
+            case Identifier(_, _) | ScalarValue(_) | IndexValue(_) |
                  CardinalityValue(_) | _: Constants
               => c.value
           }

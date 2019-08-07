@@ -27,19 +27,21 @@ object DSL {
   }
 
   implicit class Get(e0: Expr) {
-    def get(e1: Expr): Expr = VectorFunctionConstants.get(e0)(e1)
+    def get(e1: Expr): Expr = VectorFunctionConstants.get(None)(e0)(e1)
   }
 
   implicit class Bob(lhs: Expr) {
-    def +(rhs: Expr): Expr = ScalarFunctionConstants.`+`(lhs)(rhs)
-    def -(rhs: Expr): Expr = ScalarFunctionConstants.`-`(lhs)(rhs)
-    def *(rhs: Expr): Expr = ScalarFunctionConstants.`*`(lhs)(rhs)
-    def /(rhs: Expr): Expr = ScalarFunctionConstants.`/`(lhs)(rhs)
-    def **(rhs: Expr): Expr = ScalarFunctionConstants.`**`(lhs)(rhs)
-    def >(rhs: Expr): Expr = ScalarFunctionConstants.`>`(lhs)(rhs)
-    def <(rhs: Expr): Expr = ScalarFunctionConstants.`<`(lhs)(rhs)
-    def =:=(rhs: Expr): Expr = ScalarFunctionConstants.`=:=`(lhs)(rhs)
-    def <>(rhs: Expr): Expr = ScalarFunctionConstants.`<>`(lhs)(rhs)
+    def +(rhs: Expr): Expr = ScalarFunctionConstants.`+`(None)(lhs)(rhs)
+    def -(rhs: Expr): Expr = ScalarFunctionConstants.`-`(None)(lhs)(rhs)
+    def *(rhs: Expr): Expr = ScalarFunctionConstants.`*`(None)(lhs)(rhs)
+    def /(rhs: Expr): Expr = ScalarFunctionConstants.`/`(None)(lhs)(rhs)
+    def **(rhs: Expr): Expr = ScalarFunctionConstants.`**`(None)(lhs)(rhs)
+    def >(rhs: Expr): Expr = ScalarFunctionConstants.`>`(None)(lhs)(rhs)
+    def <(rhs: Expr): Expr = ScalarFunctionConstants.`<`(None)(lhs)(rhs)
+    def =:=(rhs: Expr): Expr = ScalarFunctionConstants.`=:=`(None)(lhs)(rhs)
+    def <>(rhs: Expr): Expr = ScalarFunctionConstants.`<>`(None)(lhs)(rhs)
+    def &&(rhs: Expr): Expr = ScalarFunctionConstants.`&&`(None)(lhs)(rhs)
+    def ||(rhs: Expr): Expr = ScalarFunctionConstants.`||`(None)(lhs)(rhs)
   }
 
   def Vector = Array(Double)
@@ -49,6 +51,14 @@ object DSL {
   def MatrixD = Array(Array(Pair(Double, Double)))
 
   def freshName: String => String = lift.core.freshName.apply
+
+  def implM(f: ExpressionTypeVar => Type): Type = {
+    f(ExpressionTypeVar(freshName("M")))
+  }
+
+  def implNum(f: ExpressionTypeVar => Type): Type = {
+    f(ExpressionTypeVar(freshName("Num")))
+  }
 
   object fun {
     def apply(f: Identifier => Expr): Abstraction = {
@@ -100,5 +110,20 @@ object DSL {
   object scalar {
     def apply(d: Double): ScalarValue = ScalarValue(d)
   }
+
+  def build = VectorFunctionConstants.build(None)
+  def ifold = VectorFunctionConstants.ifold(None)
+  def get = VectorFunctionConstants.get(None)
+  def len = VectorFunctionConstants.length(None)
+
+  def pair = PairFunctionConstants.pair(None)
+  def fst = PairFunctionConstants.fst(None)
+  def snd = PairFunctionConstants.snd(None)
+
+  def sign = ScalarFunctionConstants.sign(None)
+  def cos = ScalarFunctionConstants.cos(None)
+  def tan = ScalarFunctionConstants.tan(None)
+  def log = ScalarFunctionConstants.log(None)
+  def exp = ScalarFunctionConstants.exp(None)
 }
 

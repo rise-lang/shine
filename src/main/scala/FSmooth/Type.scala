@@ -2,11 +2,15 @@ package FSmooth
 
 sealed trait Type
 
+final case class TypeVar(name: String) extends Type
+
 sealed trait ExpressionType extends Type
 
-final case class FunType(inTs: Seq[Type], outT: ExpressionType) extends Type {
-  override def toString: String = s"(${inTs.mkString("->")} -> $outT)"
+final case class FunType(inTs: Seq[Type], outT: Type) extends Type {
+  override def toString: String = s"(${inTs.mkString(" -> ")} -> $outT)"
 }
+
+final case class ExpressionTypeVar(name: String) extends ExpressionType
 
 sealed trait Num extends ExpressionType
 

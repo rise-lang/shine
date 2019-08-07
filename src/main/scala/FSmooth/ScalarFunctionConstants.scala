@@ -2,72 +2,90 @@ package FSmooth
 
 import DSL._
 
+//noinspection DuplicatedCode
 object ScalarFunctionConstants {
-  case object `+` extends Constants {
-    override def t: Type = (Double x Double) -> Double
+  case class `+`(override val t: Option[Type]) extends Constants(t) {
+    override def typeScheme: Type = implNum(Num => Num -> Num -> Num )
+    override def copy(t: Type): Constants = new `+`(Some(t))
   }
 
-  case object `-` extends Constants {
-    override def t: Type = (Double x Double) -> Double
+  case class `-`(override val t: Option[Type]) extends Constants(t) {
+    override def typeScheme: Type = implNum(Num => Num -> Num -> Num )
+    override def copy(t: Type): Constants = new `-`(Some(t))
   }
 
-  case object `*` extends Constants {
-    override def t: Type = (Double x Double) -> Double
+  case class `*`(override val t: Option[Type]) extends Constants(t) {
+    override def typeScheme: Type = implNum(Num => Num -> Num -> Num )
+    override def copy(t: Type): Constants = `*`(Some(t))
   }
 
-  case object `/` extends Constants {
-    override def t: Type = (Double x Double) -> Double
+  case class `/`(override val t: Option[Type]) extends Constants(t) {
+    override def typeScheme: Type = implNum(Num => Num -> Num -> Num )
+    override def copy(t: Type): Constants = `/`(Some(t))
   }
 
-  case object `**` extends Constants {
-    override def t: Type = (Double x Double) -> Double
+  case class `**`(override val t: Option[Type]) extends Constants(t) {
+    override def typeScheme: Type = implNum(Num => Num -> Num -> Num )
+    override def copy(t: Type): Constants = `**`(Some(t))
   }
 
-  case object sign extends Constants {
-    override def t: Type = Double -> Double
+  case class sign(override val t: Option[Type]) extends Constants(t) {
+    override def typeScheme: Type = implNum(Num => Num -> Num )
+    override def copy(t: Type): Constants = sign(Some(t))
   }
 
-  case object cos extends Constants {
-    override def t: Type = Double -> Double
+  case class cos(override val t: Option[Type]) extends Constants(t) {
+    override def typeScheme: Type = implNum(Num => Num -> Num )
+    override def copy(t: Type): Constants = cos(Some(t))
   }
 
-  case object tan extends Constants {
-    override def t: Type = Double -> Double
+  case class tan(override val t: Option[Type]) extends Constants(t) {
+    override def typeScheme: Type = implNum(Num => Num -> Num )
+    override def copy(t: Type): Constants = tan(Some(t))
   }
 
-  case object log extends Constants {
-    override def t: Type = Double -> Double
+  case class log(override val t: Option[Type]) extends Constants(t) {
+    override def typeScheme: Type = implNum(Num => Num -> Num )
+    override def copy(t: Type): Constants = log(Some(t))
   }
 
-  case object exp extends Constants {
-    override def t: Type = Double -> Double
+  case class exp(override val t: Option[Type]) extends Constants(t) {
+    override def typeScheme: Type = implNum(Num => Num -> Num )
+    override def copy(t: Type): Constants = exp(Some(t))
   }
 
-  case object `>` extends Constants {
-    override def t: Type = (Double -> Double) -> Bool
+  case class `>`(override val t: Option[Type]) extends Constants(t) {
+    override def typeScheme: Type = implNum(Num => (Num -> Num) -> Bool )
+    override def copy(t: Type): Constants = `>`(Some(t))
   }
 
-  case object `<` extends Constants {
-    override def t: Type = (Double -> Double) -> Bool
+  case class `<`(override val t: Option[Type]) extends Constants(t) {
+    override def typeScheme: Type = implNum(Num => (Num -> Num) -> Bool )
+    override def copy(t: Type): Constants = `<`(Some(t))
   }
 
-  case object `=:=` extends Constants {
-    override def t: Type = (Double -> Double) -> Bool
+  case class `=:=`(override val t: Option[Type]) extends Constants(t) {
+    override def typeScheme: Type = implNum(Num => (Num -> Num) -> Bool )
+    override def copy(t: Type): Constants = `=:=`(Some(t))
   }
 
-  case object `<>` extends Constants {
-    override def t: Type = (Double -> Double) -> Bool
+  case class `<>`(override val t: Option[Type]) extends Constants(t) {
+    override def typeScheme: Type = implNum(Num => (Num -> Num) -> Bool )
+    override def copy(t: Type): Constants = `<>`(Some(t))
   }
 
-  case object `&&` extends Constants {
-    override def t: Type = (Double -> Double) -> Bool
+  case class `&&`(override val t: Option[Type]) extends Constants(t) {
+    override def typeScheme: Type = implNum(Num => (Num -> Num) -> Bool )
+    override def copy(t: Type): Constants = `&&`(Some(t))
   }
 
-  case object `||` extends Constants {
-    override def t: Type = (Double -> Double) -> Bool
+  case class `||`(override val t: Option[Type]) extends Constants(t) {
+    override def typeScheme: Type = implNum(Num => (Num -> Num) -> Bool )
+    override def copy(t: Type): Constants = `||`(Some(t))
   }
 
-  case object `!` extends Constants {
-    override def t: Type = Bool -> Bool
+  case class `!`(override val t: Option[Type]) extends Constants(t) {
+    override def typeScheme: Type = Bool -> Bool
+    override def copy(t: Type): Constants = new `!`(Some(t))
   }
 }

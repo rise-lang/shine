@@ -32,9 +32,9 @@ object lifting {
         f => Expanding((es: Seq[Expr]) => Application(f, es)))
 
     p match {
-      case Abstraction(xs, body)  =>
+      case Abstraction(xs, body, _)  =>
         Reducing((es: Seq[Expr])  => substitute(es, `for` = xs, in = body))
-      case Application(f, es)     => chain(liftFunExpr(f).map(lf => lf(es)))
+      case Application(f, es, _)     => chain(liftFunExpr(f).map(lf => lf(es)))
       case _                      => chain(Expanding(p))
     }
   }
