@@ -6,6 +6,7 @@ import elevate.lift.strategies.normalForm._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
 import elevate.lift.strategies.traversal._
+import elevate.meta.rules.fission._
 import elevate.lift.rules.movement._
 import elevate.lift.strategies.tiling._
 import elevate.lift._
@@ -13,7 +14,7 @@ import elevate.lift.rules
 import elevate.lift.rules.algorithmic._
 import elevate.lift.strategies.predicate.isLambda
 import elevate.lift.strategies.traversal.{body, function, inBody}
-import elevate.meta.rules.traversal.bodyFission
+import elevate.meta.rules.fission.bodyFission
 import lift.core.DSL._
 import lift.core._
 import lift.core.primitives.{join, map, split}
@@ -37,8 +38,21 @@ class traversals extends idealised.util.Tests {
     val orig = body(body(tileND(2)(tileSize)))
     println(orig)
 
-    val oldTiling = body(body(function(argumentOf(map)(body(function(splitJoin(4)) `;` LCNF `;` RNF))) `;` function(splitJoin(4)) `;` LCNF `;` RNF `;` LCNF `;` RNF `;` LCNF `;` argument(argument(function(argumentOf(map)(body(idAfter `;` createTransposePair `;` LCNF `;` argument(mapMapFBeforeTranspose)))) `;` LCNF `;` RNF)) `;` LCNF `;` RNF `;` LCNF `;` RNF `;` RNF))
-    val simplified = body(body(function(argumentOf(map)(body(function(splitJoin(4))))) `;` function(splitJoin(4)) `;` RNF `;` LCNF `;` argument(argument(function(argumentOf(map)(body(idAfter `;` createTransposePair `;` LCNF `;` argument(mapMapFBeforeTranspose)))) `;` RNF))))
+    val oldTiling = body(body(
+      function(argumentOf(map,body(function(splitJoin(4)) `;` LCNF `;` RNF))) `;`
+        function(splitJoin(4)) `;`
+        LCNF `;` RNF `;` LCNF `;` RNF `;` LCNF `;`
+        argument(argument(function(argumentOf(map,body(idAfter `;` createTransposePair `;` LCNF `;` argument(mapMapFBeforeTranspose)))) `;` LCNF `;` RNF)) `;`
+        LCNF `;` RNF `;` LCNF `;` RNF `;` RNF
+    ))
+
+    val simplified = body(body(
+      function(argumentOf(map,body(function(splitJoin(4))))) `;`
+        function(splitJoin(4)) `;`
+        RNF `;` LCNF `;`
+        argument(argument(function(argumentOf(map,body(idAfter `;` createTransposePair `;` LCNF `;` argument(mapMapFBeforeTranspose)))) `;` RNF))))
+
+    val normalized = FNF(simplified).get
 
 
     //assert(betaEtaEquals(orig(input2D).get, printed(input2D).get))

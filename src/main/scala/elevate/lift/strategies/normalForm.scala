@@ -15,9 +15,6 @@ import lift.core.primitives.map
 
 object normalForm {
 
-  def normalize: Strategy[Lift] => Strategy[Lift] =
-    s => repeat(oncetd(s))
-
   //def BENF: Strategy[Lift] = betaEtaNormalForm
   def BENF = BENFCaseClass()
   case class BENFCaseClass() extends Strategy[Lift] {
@@ -34,7 +31,7 @@ object normalForm {
     override def toString = "LCNF"
   }
   def lambdaCalculusNormalForm: Strategy[Lift] =
-    BENF `;` normalize(argumentOf(map)(isNotLambda `;` etaAbstraction))
+    BENF `;` normalize(argumentOf(map, (isNotLambda `;` etaAbstraction)))
 
   //def RNF: Strategy[Lift] = rewriteNormalForm
   def RNF = RNFCaseClass()

@@ -1,6 +1,9 @@
 package elevate.core.strategies
 
 import elevate.core._
+import elevate.core.strategies.traversal.oncetd
+import elevate.lift.strategies.traversal._
+import elevate.meta.strategies.traversal._
 
 object basic {
 
@@ -64,4 +67,10 @@ object basic {
   def applyNTimes[P]: Int => (Strategy[P] => Strategy[P]) => Strategy[P] => Strategy[P] =
     i => f => s => if(i <= 0) s else applyNTimes[P](i-1)(f)(f(s))
 
+  // todo generalize
+  def normalize: Strategy[Lift] => Strategy[Lift] =
+    s => repeat(oncetd(s))
+
+  def normalizeElevate: Strategy[Elevate] => Strategy[Elevate] =
+    s => repeat(oncetd(s))
 }

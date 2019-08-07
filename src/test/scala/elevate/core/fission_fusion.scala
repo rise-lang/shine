@@ -3,6 +3,7 @@ package elevate.core
 import lift.core._
 import lift.core.DSL._
 import lift.core.primitives.map
+import elevate.core.strategies.basic._
 import elevate.lift.rules._
 import elevate.lift.rules.algorithmic.{mapFusion, mapLastFission}
 import elevate.lift.strategies.algorithmic.{mapFirstFission, mapFullFission}

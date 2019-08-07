@@ -100,12 +100,12 @@ object traversal {
     override def toString = s"argument($s)"
   }
 
-  case class argumentOf(x: Primitive)(s: Elevate) extends Elevate {
+  case class argumentOf(x: Primitive, s: Elevate) extends Elevate {
     def apply(e: Lift): RewriteResult[Lift] = e match {
       case Apply(f, e) if f == x => s(e).mapSuccess(Apply(f, _))
       case _ => Failure(s)
     }
-    override def toString = s"argumentOf($x)($s)"
+    override def toString = s"argumentOf($x,$s)"
   }
 
   // applying a strategy to an expression applied to a lift `map`. Example:
@@ -113,7 +113,7 @@ object traversal {
   //  (map λe14. (transpose ((map (map e12)) e14)))      // result of `function`
   //       λe14. (transpose ((map (map e12)) e14))       // result of `argument`
   //             (transpose ((map (map e12)) e14))       // result of 'body' -> here we can apply s
-  def fmap: Elevate => Elevate = s => function(argumentOf(map)(body(s)))
+  def fmap: Elevate => Elevate = s => function(argumentOf(map,body(s)))
 
   // fmap applied for expressions in rewrite normal form:
   // fuse -> fmap -> fission
