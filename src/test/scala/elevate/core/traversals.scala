@@ -6,13 +6,18 @@ import elevate.lift.strategies.normalForm._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
 import elevate.lift.strategies.traversal._
+import elevate.lift.rules.movement._
+import elevate.lift.strategies.tiling._
+import elevate.lift._
 import elevate.lift.rules
 import elevate.lift.rules.algorithmic._
+import elevate.lift.strategies.predicate.isLambda
 import elevate.lift.strategies.traversal.{body, function, inBody}
 import elevate.meta.rules.traversal.bodyFission
 import lift.core.DSL._
-import lift.core.Expr
-import lift.core.primitives.map
+import lift.core._
+import lift.core.primitives.{join, map, split}
+import lift.core.types.NatKind
 
 
 class traversals extends idealised.util.Tests {
@@ -20,15 +25,78 @@ class traversals extends idealised.util.Tests {
   test("simple") {
     val expr = fun(f => fun(g => map(f) >> map(g)))
     val strategy = body(body(body(mapFusion `;` function(mapLastFission))))
+    val printTest = mapped(mapFusion)
+    val printTest2 = fmap(mapFusion)
+    val printTest3 = tileND(2)(4)
+
+    val printed =function(argumentOf(map)(body(function(splitJoin(4)) `;` LCNF `;` RNF))) `;`
+      function(splitJoin(4)) `;`
+      LCNF `;`
+      RNF `;`
+      LCNF `;`
+      RNF `;`
+      LCNF `;`
+      argument(argument(function(argumentOf(map)(body(idAfter `;` createTransposePair `;` LCNF `;` argument(mapMapFBeforeTranspose)))) `;` LCNF `;` RNF)) `;`
+      LCNF `;`
+      RNF `;`
+      LCNF `;`
+      RNF `;`
+      RNF
+
+
 
     val metaStrategy = inBody(inBody(bodyFission))(strategy)
     val newStrategy = metaStrategy.get
     println("------------------")
     println(strategy)
     println(newStrategy)
+    println(printTest)
+    println(printTest2)
+    println("------------------")
+    println(printTest3)
+    println(printed)
     println("------------------")
     println(newStrategy(expr))
     println(strategy(expr))
+  }
+
+  test("simplification") {
+    val input2D = λ(i => λ(f => **!(f) $ i))
+    val orig = body(body(tileND(2)(tileSize)))
+    val printed = body(body(
+      function(argumentOf(map)(body(function(splitJoin(4)) `;` LCNF `;` RNF))) `;`
+        function(splitJoin(4)) `;`
+        LCNF `;`
+        RNF `;`
+//        LCNF `;`
+//        RNF `;`
+//        LCNF `;`
+//        LCNF `;`
+        argument(argument(function(argumentOf(map)(body(idAfter `;` createTransposePair `;` LCNF `;` argument(mapMapFBeforeTranspose)))) `;` LCNF `;` RNF)) `;`
+        LCNF `;`
+        RNF //`;`
+//        LCNF `;`
+//        RNF `;`
+//        RNF
+    ))
+
+    val x = Lambda(Identifier("e1"), Lambda(Identifier("e2"), Apply(Apply(map, Lambda(Identifier("e3"), Apply(Apply(map, Lambda(Identifier("e4"), Apply(Identifier("e2"), Identifier("e4")))), Identifier("e3")))), Identifier("e1"))))
+
+    assert(input2D == x)
+
+    //println(toReusableString(input2D))
+
+    //println(orig)
+
+    assert(betaEtaEquals(orig(input2D).get, printed(input2D).get))
+    println(printed(input2D).get)
+  }
+
+  test("RNF did not normalize") {
+    val expr2 = Apply(join, Apply(Apply(map, Lambda(Identifier("η125"), Apply(Apply(map, Lambda(Identifier("ee3"), Apply(join, Apply(Apply(map, Lambda(Identifier("η124"), Apply(Apply(map, Lambda(Identifier("η123"), Apply(Identifier("ee2"), Identifier("η123")))), Identifier("η124")))), Apply(DepApply[NatKind](split, 4), Identifier("ee3")))))), Identifier("η125")))), Apply(DepApply[NatKind](split, 4), Identifier("ee1"))))
+    val expr5 = Apply(join, Apply(Apply(map, Lambda(Identifier("η141"), Apply(Apply(map, Lambda(Identifier("η140"), Apply(join, Identifier("η140")))), Identifier("η141")))), Apply(Apply(map, Lambda(Identifier("η145"), Apply(Apply(map, Lambda(Identifier("η144"), Apply(Apply(map, Lambda(Identifier("η143"), Apply(Apply(map, Lambda(Identifier("η142"), Apply(Identifier("ee2"), Identifier("η142")))), Identifier("η143")))), Identifier("η144")))), Identifier("η145")))), Apply(Apply(map, Lambda(Identifier("η147"), Apply(Apply(map, Lambda(Identifier("η146"), Apply(DepApply[NatKind](split, 4), Identifier("η146")))), Identifier("η147")))), Apply(DepApply[NatKind](split, 4), Identifier("ee1"))))))
+
+    assert(RNF(expr2).get == expr5)
   }
 
   test("id traversals") {

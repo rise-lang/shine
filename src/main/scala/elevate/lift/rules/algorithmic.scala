@@ -46,7 +46,6 @@ object algorithmic {
   case object `*(g >> .. >> f) -> *(g >> ..) >> *f` extends Strategy[Lift] {
     // TODO: why gx != Identifier?
     def apply(e: Lift): RewriteResult[Lift] = e match {
-        // todo fix constraint again
       case Apply(`map`, Lambda(x, Apply(f, gx))) if !contains[Lift](x).apply(f) && !isIdentifier(gx) =>
         Success(Apply(`map`, Lambda(x, gx)) >> map(f))
       case _ => Failure(mapLastFission)
@@ -59,6 +58,7 @@ object algorithmic {
   def idAfter: Strategy[Lift] = ` -> id`
   case object ` -> id` extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = Success(e |> id)
+    override def toString = "idAfter"
   }
 
   def liftId: Strategy[Lift] = `id -> *id`
@@ -67,6 +67,7 @@ object algorithmic {
       case Apply(`id`, arg) => Success(Apply(map(id), arg))
       case _ => Failure(liftId)
     }
+    override def toString = "liftId"
   }
 
   def createTransposePair: Strategy[Lift] = `id -> T >> T`
@@ -75,6 +76,7 @@ object algorithmic {
       case Apply(`id`, arg) => Success(Apply(transpose >> transpose, arg))
       case _ => Failure(createTransposePair)
     }
+    override def toString = "createTransposePair"
   }
 
   def `_-> T >> T`: Strategy[Lift] = idAfter `;` createTransposePair
@@ -85,5 +87,6 @@ object algorithmic {
       case Apply(`transpose`, Apply(`transpose`, x)) => Success(x)
       case _ => Failure(removeTransposePair)
     }
+    override def toString = "createTransposePair"
   }
 }

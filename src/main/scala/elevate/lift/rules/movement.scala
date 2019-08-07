@@ -40,6 +40,7 @@ object movement {
         Success(arg |> transpose |> map(map(f)))
       case _ => Failure(mapMapFBeforeTranspose)
     }
+    override def toString = "mapMapFBeforeTranspose"
   }
 
   def transposeBeforeMapMapF: Strategy[Lift] = `T >> **f -> **f >> T`
@@ -51,6 +52,7 @@ object movement {
         Success(y |> map(map(f)) |> transpose)
       case _ => Failure(transposeBeforeMapMapF)
     }
+    override def toString = "transposeBeforeMapMapF"
   }
 
   // split/slide
@@ -70,6 +72,7 @@ object movement {
         Success(y |> map(f) |> s)
       case _ => Failure(slideBeforeMapMapF)
     }
+    override def toString = "slideBeforeMapMapF"
   }
 
   def mapFBeforeSlide: Strategy[Lift] = `*f >> S -> S >> **f`
@@ -81,6 +84,7 @@ object movement {
         Success(y |> s |> map(map(f)))
       case _ => Failure(mapFBeforeSlide)
     }
+    override def toString = "mapFBeforeSlide"
   }
 
   // join
@@ -95,6 +99,7 @@ object movement {
         Success(y |> map(map(f)) >> join)
       case _ => Failure(joinBeforeMapF)
     }
+    override def toString = "joinBeforeMapF"
   }
 
   def mapMapFBeforeJoin: Strategy[Lift] = `**f >> J -> J >> *f`
@@ -107,6 +112,7 @@ object movement {
         Success(y |> join |> map(f))
       case _ => Failure(mapMapFBeforeJoin)
     }
+    override def toString = "mapMapFBeforeJoin"
   }
 
   // special-cases
@@ -122,6 +128,7 @@ object movement {
         Success(y |> map(s) |> transpose >> map(transpose))
       case _ => Failure(transposeBeforeSlide)
     }
+    override def toString = "transposeBeforeSlide"
   }
 
   def transposeBeforeMapSlide: Strategy[Lift] = `T >> *S -> S >> *T >> T`
@@ -134,6 +141,7 @@ object movement {
         Success(y |> s |> map(transpose) |> transpose)
       case _ => Failure(transposeBeforeMapSlide)
     }
+    override def toString = "transposeBeforeMapSlide"
   }
 
   def mapSlideBeforeTranspose: Strategy[Lift] = `*S >> T -> T >> S >> *T`
@@ -146,6 +154,7 @@ object movement {
         Success(y |> transpose >> s >> map(transpose))
       case _ => Failure(mapSlideBeforeTranspose)
     }
+    override def toString = "mapSlideBeforeTranspose"
   }
 
   // transpose + join
@@ -160,6 +169,7 @@ object movement {
         Success(y |> map(transpose) |> transpose |> map(join))
       case _ => Failure(joinBeforeTranspose)
     }
+    override def toString = "joinBeforeTranspose"
   }
 
   def transposeBeforeMapJoin: Strategy[Lift] = `T >> *J -> *T >> J >> T`
@@ -172,6 +182,7 @@ object movement {
         Success(y |> map(transpose) |> join |> transpose)
       case _ => Failure(transposeBeforeMapJoin)
     }
+    override def toString = "transposeBeforeMapJoin"
   }
 
   def mapTransposeBeforeJoin: Strategy[Lift] = `*T >> J -> T >> *J >> T`
@@ -184,6 +195,7 @@ object movement {
         Success(y |> transpose |> map(join) |> transpose)
       case _ => Failure(mapTransposeBeforeJoin)
     }
+    override def toString = "mapTransposeBeforeJoin"
   }
 
   def mapJoinBeforeTranspose: Strategy[Lift] = `*J >> T -> T >> *T >> J`
@@ -196,6 +208,7 @@ object movement {
         Success(y |> transpose |> map(transpose) |> join)
       case _ => Failure(mapJoinBeforeTranspose)
     }
+    override def toString = "mapJoinBeforeTranspose"
   }
 
   // join + join
@@ -210,6 +223,7 @@ object movement {
         Success(y |> map(join) >> join)
       case _ => Failure(joinBeforeJoin)
     }
+    override def toString = "joinBeforeJoin"
   }
 
   def mapJoinBeforeJoin: Strategy[Lift] = `*J >> J -> J >> J`
@@ -222,6 +236,7 @@ object movement {
         Success(y |> join |> join)
       case _ => Failure(mapJoinBeforeJoin)
     }
+    override def toString = "mapJoinBeforeJoin"
   }
 
   // split + slide
@@ -236,5 +251,6 @@ object movement {
         Success(y |> slide(k + n - s)(k) |> map(slide(n)(s)))
       case _ => Failure(slideBeforeSplit)
     }
+    override def toString = "slideBeforeSplit"
   }
 }

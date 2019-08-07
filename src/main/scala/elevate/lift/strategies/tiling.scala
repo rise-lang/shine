@@ -1,7 +1,7 @@
 package elevate.lift.strategies
 
 import elevate.core.{Elevate, Lift, Strategy}
-import elevate.core.strategies.basic.{applyNTimes, id}
+import elevate.core.strategies.basic.{applyNTimes, debug, id}
 import elevate.lift.rules.algorithmic._
 import elevate.lift.rules.movement._
 import elevate.lift.strategies.traversal._
@@ -61,5 +61,5 @@ object tiling {
   // level == 1: A.B.C.D => A.C.B.D
   //               ^ ^        ^ ^   ... and so on
   def loopInterchangeAtLevel: Int => Strategy[Lift] =
-    level => applyNTimes(level, (e: Strategy[Lift]) => fmap(e), loopInterchange) `;` LCNF `;` RNF
+    level => applyNTimes(level)((e: Strategy[Lift]) => fmap(e))(loopInterchange) `;` LCNF `;` RNF
 }

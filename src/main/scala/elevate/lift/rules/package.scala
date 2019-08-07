@@ -15,6 +15,7 @@ package object rules {
       }
       case _ => Failure(betaReduction)
     }
+    override def toString = "betaReduction"
   }
 
   case object etaReduction extends Strategy[Lift]  {
@@ -22,6 +23,7 @@ package object rules {
       case Lambda(x1, Apply(f, x2)) if x1 == x2 && !contains[Lift](x1).apply(f) => Success(f)
       case _ => Failure(etaReduction)
     }
+    override def toString = "etaReduction"
   }
 
   case object etaAbstraction extends Strategy[Lift] {
@@ -31,5 +33,6 @@ package object rules {
         val x = Identifier(freshName("η"))
         Success(Lambda(x, Apply(f, x)))
     }
+    override def toString = "etaAbstraction"
   }
 }

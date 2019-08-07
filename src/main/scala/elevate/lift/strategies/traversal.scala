@@ -68,47 +68,44 @@ object traversal {
     }
   }
 
-  abstract class Traversal[P](val st: Strategy[P]) extends Strategy[P] {
-    def apply(p: P): RewriteResult[P]
-  }
-
-  object Traversal extends {
-    def unapply[P](arg: Traversal[P]): Option[Strategy[P]] = Some(arg.st)
-  }
-
-  case class body(s: Elevate) extends Traversal[Lift](s) {
+  case class body(s: Elevate) extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
       case Lambda(x, f) => s(f).mapSuccess(Lambda(x, _) )
       case _ => Failure(s)
     }
+    override def toString = s"body($s)"
   }
 
-  case class function(s: Elevate) extends Traversal[Lift](s) {
+  case class function(s: Elevate) extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
       case Apply(f, e) => s(f).mapSuccess(Apply(_, e))
       case _ => Failure(s)
     }
+    override def toString = s"function($s)"
   }
 
   // todo move to meta package
-  case class inBody(s: Meta) extends Traversal[Elevate](s) {
+  case class inBody(s: Meta) extends Strategy[Elevate] {
     def apply(e: Elevate): RewriteResult[Elevate] = e match {
       case body(x: Elevate) => s(x).mapSuccess(body)
       case _ => Failure(s)
     }
   }
 
-  def argument: Elevate => Elevate =
-    s => {
+  case class argument(s: Elevate) extends Elevate {
+    def apply(e: Lift): RewriteResult[Lift] = e match {
       case Apply(f, e) => s(e).mapSuccess(Apply(f, _))
       case _ => Failure(s)
     }
+    override def toString = s"argument($s)"
+  }
 
-  def argumentOf(x: Primitive): Elevate => Elevate = {
-    s => {
+  case class argumentOf(x: Primitive)(s: Elevate) extends Elevate {
+    def apply(e: Lift): RewriteResult[Lift] = e match {
       case Apply(f, e) if f == x => s(e).mapSuccess(Apply(f, _))
       case _ => Failure(s)
     }
+    override def toString = s"argumentOf($x)($s)"
   }
 
   // applying a strategy to an expression applied to a lift `map`. Example:
@@ -135,5 +132,5 @@ object traversal {
   // move(1)(s) == s(****g o *h)
   // move(2)(s) == s(*h)
   def moveTowardsArgument: Int => Elevate => Elevate =
-    i => s => applyNTimes(i, argument(_), s)
+    i => s => applyNTimes(i)((e: Elevate) => argument(e))(s)
 }

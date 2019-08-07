@@ -1,9 +1,34 @@
 package elevate
 
 import _root_.lift.core._
-import elevate.core.{Lift, Strategy, Success}
+import _root_.lift.core.types._
+import elevate.core.strategies.basic.peek
+import elevate.core.{Lift, RewriteResult, Strategy, Success}
 
 package object lift {
+
+  def printLambda : Strategy[Lift] = peek[Lift](p => println(s"${toReusableString(p)}"))
+  def printLambda(msg: String) : Strategy[Lift] = peek[Lift](p => println(s"$msg \n${toReusableString(p)}"))
+
+  def toReusableString(e: Lift): String = {
+    e match {
+      case Identifier(name) => s"""Identifier("id$name")""" // id prefix prevents name clashes with freshName
+      case Lambda(x, e) => s"Lambda(${toReusableString(x)}, ${toReusableString(e)})"
+      case Apply(f, e) => s"Apply(${toReusableString(f)}, ${toReusableString(e)})"
+      case DepLambda(x, e) => x match {
+        case n: NatIdentifier => s"DepLambda[NatKind]($n, ${toReusableString(e)})"
+        case dt: DataTypeIdentifier => s"DepLambda[DataKind]($dt, ${toReusableString(e)})"
+      }
+      case DepApply(f, x) => x match {
+        case n: Nat => s"DepApply[NatKind](${toReusableString(f)}, $n)"
+        case dt: DataType => s"DepApply[DataKind](${toReusableString(f)}, $dt)"
+      }
+      case Literal(d) => s"Literal($d)"
+      case TypedExpr(e, t) => ??? // do types print reusably as well?
+      case ff: primitives.ForeignFunction => ff.toString
+      case p: Primitive => p.toString
+    }
+  }
 
   def dotPrinter(expr: Expr,
                  printEdgeLabels: Boolean = false,

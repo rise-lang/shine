@@ -45,7 +45,7 @@ class tiling extends idealised.util.Tests {
   /// TILING ONE LOOP
 
   test("tileND - tile one loop 1D") {
-    println(body(body(tileND(1)(tileSize)))(λ(i => λ(f => *(f) $ i))))
+    println(body(body(tileND(1)(tileSize)) `;` BENF)(λ(i => λ(f => *(f) $ i))))
     println(λ(i => λ(f => (J o **(f) o S) $ i)))
     assert(betaEtaEquals(
       body(body(tileND(1)(tileSize)))(λ(i => λ(f => *(f) $ i))),
@@ -324,7 +324,8 @@ class tiling extends idealised.util.Tests {
       )
 
     val tiled = (LCNF `;` CNF `;` oncetd(tileND(2)(4)) `;` BENF `;` RNF)(backward)
-    //infer(tiled)
+    println(tiled)
+    infer(tiled)
   }
 
   test("map fission issue when used with zip") {
@@ -346,8 +347,15 @@ class tiling extends idealised.util.Tests {
 
   test("normalform actually normalizes") {
     val gold = λ(i => λ(f => (J o **(f) o S) $ i))
-    assert(betaEtaEquals((RNF `;` BENF)(λ(i => λ(f => (J o **(f) o S) $ i))), gold))
-    assert(betaEtaEquals((RNF `;` RNF `;` BENF)(λ(i => λ(f => (J o **(f) o S) $ i))), gold))
-    assert(betaEtaEquals((RNF `;` RNF `;` RNF `;` BENF)(λ(i => λ(f => (J o **(f) o S) $ i))), gold))
+    assert(betaEtaEquals((RNF `;` BENF) (λ(i => λ(f => (J o **(f) o S) $ i))), gold))
+    assert(betaEtaEquals((RNF `;` RNF `;` BENF) (λ(i => λ(f => (J o **(f) o S) $ i))), gold))
+    assert(betaEtaEquals((RNF `;` RNF `;` RNF `;` BENF) (λ(i => λ(f => (J o **(f) o S) $ i))), gold))
+
+    val gold2 = LCNF(λ(i => λ(f => (J o **(f) o S) $ i))).get
+    assert((LCNF `;` LCNF)(λ(i => λ(f => (J o **(f) o S) $ i))).get == gold2)
+    assert((LCNF `;` LCNF `;` LCNF)(λ(i => λ(f => (J o **(f) o S) $ i))).get == gold2)
+
+    val gold3 = (LCNF `;` RNF)(λ(i => λ(f => (J o **(f) o S) $ i))).get
+    assert((LCNF `;` RNF `;` LCNF `;` RNF)(λ(i => λ(f => (J o **(f) o S) $ i))).get == gold3)
   }
 }

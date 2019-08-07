@@ -1,6 +1,6 @@
 package elevate.lift.strategies
 
-import elevate.core.{Failure, Lift, Strategy, Success}
+import elevate.core.{Failure, Lift, RewriteResult, Strategy, Success}
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
 import elevate.lift.strategies.traversal._
@@ -18,17 +18,38 @@ object normalForm {
   def normalize: Strategy[Lift] => Strategy[Lift] =
     s => repeat(oncetd(s))
 
-  def BENF: Strategy[Lift] = betaEtaNormalForm
-  def betaEtaNormalForm: Strategy[Lift] = normalize(betaReduction <+ etaReduction)
+  //def BENF: Strategy[Lift] = betaEtaNormalForm
+  def BENF = BENFCaseClass()
+  case class BENFCaseClass() extends Strategy[Lift] {
+    def apply(e: Lift): RewriteResult[Lift] = betaEtaNormalForm(e)
+    override def toString = "BENF"
+  }
+  def betaEtaNormalForm: Strategy[Lift] =
+    normalize(etaReduction <+ betaReduction)
 
-  def LCNF: Strategy[Lift] = lambdaCalculusNormalForm
+  //def LCNF: Strategy[Lift] = lambdaCalculusNormalForm
+  def LCNF = LCNFCaseClass()
+  case class LCNFCaseClass() extends Strategy[Lift] {
+    def apply(e: Lift): RewriteResult[Lift] = lambdaCalculusNormalForm(e)
+    override def toString = "LCNF"
+  }
   def lambdaCalculusNormalForm: Strategy[Lift] =
-    BENF `;` tryAll(argumentOf(map)(isLambda <+ etaAbstraction))
+    BENF `;` normalize(argumentOf(map)(isNotLambda `;` etaAbstraction))
 
-  def RNF: Strategy[Lift] = rewriteNormalForm
-  def rewriteNormalForm: Strategy[Lift] = normalize(mapLastFission) `;` LCNF
+  //def RNF: Strategy[Lift] = rewriteNormalForm
+  def RNF = RNFCaseClass()
+  case class RNFCaseClass() extends Strategy[Lift] {
+    def apply(e: Lift): RewriteResult[Lift] = rewriteNormalForm(e)
+    override def toString = "RNF"
+  }
+  def rewriteNormalForm: Strategy[Lift] = normalize(LCNF `;` mapLastFission) `;` LCNF
 
-  def CNF: Strategy[Lift] = codegenNormalForm
+  //def CNF: Strategy[Lift] = codegenNormalForm
+  def CNF = CNFCaseClass()
+  case class CNFCaseClass() extends Strategy[Lift] {
+    def apply(e: Lift): RewriteResult[Lift] = codegenNormalForm(e)
+    override def toString = "CNF"
+  }
   def codegenNormalForm: Strategy[Lift] = normalize(mapFusion)
 
 }

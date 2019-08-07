@@ -36,6 +36,7 @@ object traversal {
 
   case class oncetd[P: Traversable](s: Strategy[P]) extends Strategy[P] {
     def apply(p: P): RewriteResult[P] = (s <+ one(oncetd(s))) (p)
+    override def toString = s"oncetd($s)"
   }
 
   case class topdown[P: Traversable](s: Strategy[P]) extends Strategy[P] {
@@ -44,6 +45,7 @@ object traversal {
 
   case class tryAll[P: Traversable](s: Strategy[P]) extends Strategy[P] {
     def apply(p: P): RewriteResult[P] = (all(tryAll(`try`(s))) `;` `try`(s)) (p)
+    override def toString = s"tryAll($s)"
   }
 
   case class bottomup[P: Traversable](s: Strategy[P]) extends Strategy[P] {

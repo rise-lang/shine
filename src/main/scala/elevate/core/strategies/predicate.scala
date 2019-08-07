@@ -15,10 +15,12 @@ object predicate {
   case class isEqualTo[P](x: P) extends Strategy[P] {
     def apply(e: P): RewriteResult[P] =
       if (e == x) Success(e) else Failure(isEqualTo(x))
+    override def toString = s"isEqualTo($x)"
   }
 
   case class contains[P: Traversable](x: P) extends Strategy[P] {
     def apply(p: P): RewriteResult[P] = oncetd(isEqualTo(x)).apply(p)
+    override def toString = s"contains($x)"
   }
 
 }
