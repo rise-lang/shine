@@ -44,6 +44,21 @@ object DSL {
     def ||(rhs: Expr): Expr = ScalarFunctionConstants.`||`(freshTypeVar)(lhs, rhs)
   }
 
+  //noinspection ApparentResultTypeRefinement
+  object `if` {
+    def apply(cond: Expr): Object {
+      def `then`(thenBranch: Expr): Object {
+        def `else` (elseBranch: Expr): Conditional
+      }
+    } = new {
+      def `then`(thenBranch: Expr): Object {
+        def `else` (elseBranch: Expr): Conditional
+      } = new {
+        def `else`(elseBranch: Expr) = Conditional(cond, thenBranch, elseBranch)
+      }
+    }
+  }
+
   def Vector = Array(Double)
   def Matrix = Array(Array(Double))
   def DoubleD = Pair(Double, Double)
@@ -127,5 +142,6 @@ object DSL {
   def tan = ScalarFunctionConstants.tan(freshTypeVar)
   def log = ScalarFunctionConstants.log(freshTypeVar)
   def exp = ScalarFunctionConstants.exp(freshTypeVar)
+  def sqrt = ScalarFunctionConstants.sqrt(freshTypeVar)
 }
 

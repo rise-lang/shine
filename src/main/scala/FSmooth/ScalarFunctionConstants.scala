@@ -54,6 +54,11 @@ object ScalarFunctionConstants {
     override def copy(t: Type): Constants = exp(t)
   }
 
+  case class sqrt(override val t: Type) extends Constants(t) {
+    override def typeScheme: Type = implNum(Num => Num -> Num )
+    override def copy(t: Type): Constants = sqrt(t)
+  }
+
   case class `>`(override val t: Type) extends Constants(t) {
     override def typeScheme: Type = implNum(Num => (Num -> Num) -> Bool )
     override def copy(t: Type): Constants = `>`(t)
