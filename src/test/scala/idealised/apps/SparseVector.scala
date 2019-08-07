@@ -370,9 +370,9 @@ class SparseVector extends idealised.util.Tests {
               fun(ArrayType(m, float))(vector =>
                 depZip(xCoords, values)
                   // DepArrayType(n, i => ArrayType(lenF(i), TupleType(IndexType(m), float)))
-                  :>> depMapGlobal(
+                  :>> depMapGlobal(fun(pair => zip(Fst(pair, None), Snd(pair, None)) :>>
                   oclReduceSeq(fun(pair => fun(accum => accum + Snd(pair, None) * Idx(vector, Fst(pair, None)))),0.0f, PrivateMemory)
-                )
+                ))
               )
             )
           )
@@ -397,19 +397,20 @@ class SparseVector extends idealised.util.Tests {
     val n: Int = 1024 // number of rows
     val m: Int = 512  // length of vector (max length of row)
     val dict: Array[Int] = Array.tabulate(n)(_ => random.nextInt(m-1)+1) // length of rows (of max m length)
-    val matrix: Array[Array[(Int, Float)]] = Array.tabulate(n)(rowIdx => Array.tabulate(dict(rowIdx))(_ => (random.nextInt(m), randomValue)) ) // matrix values (as pairs of x-coord + value)
+    val xCoords: Array[Array[Int]] = Array.tabulate(n)(rowIdx => Array.tabulate(dict(rowIdx))(_ => random.nextInt(m)))
+    val values: Array[Array[Float]] = Array.tabulate(n)(rowIdx => Array.tabulate(dict(rowIdx))(_ => randomValue)) // matrix values (as pairs of x-coord + value)
     val vector: Array[Float] = Array.tabulate(m)(_ => randomValue) // vector values
 
     // compute gold output
-    val gold = matrix.map( row =>
-      row.foldLeft(0.0f) { (accum, pair) =>
+    val gold = xCoords.zip(values).map( row =>
+      row._1.zip(row._2).foldLeft(0.0f) { (accum, pair) =>
         accum + pair._2 * vector(pair._1)
       }
     )
 
     import idealised.OpenCL._
-    val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Int] `,` Array[Array[(Int, Float)]] `,` Array[Float] `)=>` Array[Float]](1, n)
-    val (output, _) = runKernel(n `,` m `,` dict `,` matrix `,` vector)
+    val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Int] `,` Array[Array[Int]] `,` Array[Array[Float]] `,` Array[Float] `)=>` Array[Float]](1, n)
+    val (output, _) = runKernel(n `,` m `,` dict `,` xCoords `,` values `,` vector)
 
     assert(gold sameElements output)
 

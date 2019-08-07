@@ -318,6 +318,15 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         }
         case _ => error("Expected a C-Integer-Expression followed by a tuple access on the path.")
       }
+
+      case DepZip(_, _, _, e1, e2) => path match {
+        case (i: CIntExpr) :: (xj : TupleAccess) :: ps => xj match {
+          case FstMember => exp(e1, env, i :: ps, cont)
+          case SndMember => exp(e2, env, i :: ps, cont)
+        }
+        case _ => error("Expected a C-Integer-Expression followed by a tuple access on the path.")
+      }
+
       case Unzip(_, _, _, _) => ???
 
       case Record(_, _, e1, e2) => path match {

@@ -20,7 +20,7 @@ final case class DepZip(n: Nat,
     (n: Nat) ->: (ft1: NatToData) ->: (ft2: NatToData) ->:
       (e1 :: ExpType(DepArrayType(n, ft1))) ->:
         (e2 :: ExpType(DepArrayType(n, ft2))) ->:
-          ExpType(DepArrayType(n, i => RecordType(ft2(i), ft2(i))))
+          ExpType(DepArrayType(n, i => RecordType(ft1(i), ft2(i))))
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     DepZip(f.nat(n), f.natToData(ft1), f.natToData(ft2), VisitAndRebuild(e1, f), VisitAndRebuild(e2, f))
