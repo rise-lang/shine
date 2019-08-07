@@ -61,10 +61,12 @@ class Printer extends idealised.C.AST.CPrinter {
       case s: StructType => print(s"struct ${s.name} ${p.name}")
       case _: UnionType => ???
       case a: ArrayType =>
-        print(s"${a.getBaseType} ${p.name}[${ a.getSizes match {
+        val addr = if (p.addressSpace == OpenCL.PrivateMemory) "" else s"${toString(p.addressSpace)} "
+        val size = a.getSizes match {
           case None => ""
           case Some(s) => s
-        } }]")
+        }
+        print(s"$addr${a.getBaseType} ${p.name}[$size]")
       case pt: PointerType => print(s"${toString(p.addressSpace)} ${pt.valueType}* restrict ${p.name}")
     }
   }
