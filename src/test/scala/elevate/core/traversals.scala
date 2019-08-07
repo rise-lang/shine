@@ -22,74 +22,27 @@ import lift.core.types.NatKind
 
 class traversals extends idealised.util.Tests {
 
-  test("simple") {
+  test("rewrite simple elevate strategy") {
     val expr = fun(f => fun(g => map(f) >> map(g)))
     val strategy = body(body(body(mapFusion `;` function(mapLastFission))))
-    val printTest = mapped(mapFusion)
-    val printTest2 = fmap(mapFusion)
-    val printTest3 = tileND(2)(4)
-
-    val printed =function(argumentOf(map)(body(function(splitJoin(4)) `;` LCNF `;` RNF))) `;`
-      function(splitJoin(4)) `;`
-      LCNF `;`
-      RNF `;`
-      LCNF `;`
-      RNF `;`
-      LCNF `;`
-      argument(argument(function(argumentOf(map)(body(idAfter `;` createTransposePair `;` LCNF `;` argument(mapMapFBeforeTranspose)))) `;` LCNF `;` RNF)) `;`
-      LCNF `;`
-      RNF `;`
-      LCNF `;`
-      RNF `;`
-      RNF
-
-
 
     val metaStrategy = inBody(inBody(bodyFission))(strategy)
     val newStrategy = metaStrategy.get
-    println("------------------")
-    println(strategy)
-    println(newStrategy)
-    println(printTest)
-    println(printTest2)
-    println("------------------")
-    println(printTest3)
-    println(printed)
-    println("------------------")
-    println(newStrategy(expr))
-    println(strategy(expr))
+    assert(strategy != newStrategy)
+    assert(newStrategy(expr).get == strategy(expr).get)
   }
 
   test("simplification") {
     val input2D = λ(i => λ(f => **!(f) $ i))
     val orig = body(body(tileND(2)(tileSize)))
-    val printed = body(body(
-      function(argumentOf(map)(body(function(splitJoin(4)) `;` LCNF `;` RNF))) `;`
-        function(splitJoin(4)) `;`
-        LCNF `;`
-        RNF `;`
-//        LCNF `;`
-//        RNF `;`
-//        LCNF `;`
-//        LCNF `;`
-        argument(argument(function(argumentOf(map)(body(idAfter `;` createTransposePair `;` LCNF `;` argument(mapMapFBeforeTranspose)))) `;` LCNF `;` RNF)) `;`
-        LCNF `;`
-        RNF //`;`
-//        LCNF `;`
-//        RNF `;`
-//        RNF
-    ))
+    println(orig)
 
-    val x = Lambda(Identifier("e1"), Lambda(Identifier("e2"), Apply(Apply(map, Lambda(Identifier("e3"), Apply(Apply(map, Lambda(Identifier("e4"), Apply(Identifier("e2"), Identifier("e4")))), Identifier("e3")))), Identifier("e1"))))
+    val oldTiling = body(body(function(argumentOf(map)(body(function(splitJoin(4)) `;` LCNF `;` RNF))) `;` function(splitJoin(4)) `;` LCNF `;` RNF `;` LCNF `;` RNF `;` LCNF `;` argument(argument(function(argumentOf(map)(body(idAfter `;` createTransposePair `;` LCNF `;` argument(mapMapFBeforeTranspose)))) `;` LCNF `;` RNF)) `;` LCNF `;` RNF `;` LCNF `;` RNF `;` RNF))
+    val simplified = body(body(function(argumentOf(map)(body(function(splitJoin(4))))) `;` function(splitJoin(4)) `;` RNF `;` LCNF `;` argument(argument(function(argumentOf(map)(body(idAfter `;` createTransposePair `;` LCNF `;` argument(mapMapFBeforeTranspose)))) `;` RNF))))
 
-    assert(input2D == x)
 
-    //println(toReusableString(input2D))
-
-    //println(orig)
-
-    assert(betaEtaEquals(orig(input2D).get, printed(input2D).get))
-    println(printed(input2D).get)
+    //assert(betaEtaEquals(orig(input2D).get, printed(input2D).get))
+    //println(printed(input2D).get)
   }
 
   test("RNF did not normalize") {

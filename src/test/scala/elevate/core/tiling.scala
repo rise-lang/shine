@@ -325,7 +325,7 @@ class tiling extends idealised.util.Tests {
 
     val tiled = (LCNF `;` CNF `;` oncetd(tileND(2)(4)) `;` BENF `;` RNF)(backward)
     println(tiled)
-    infer(tiled)
+    //infer(tiled)
   }
 
   test("map fission issue when used with zip") {
