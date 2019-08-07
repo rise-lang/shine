@@ -64,14 +64,12 @@ class ExamplesFromICFP2019Paper extends idealised.util.Tests {
   }
 
   test("Example1: uMv^T") {
-    val f = let(fun( (u, M, v) =>
-        let( vectorToMatrix(u) ).beIn(um =>
-        let( matrixTranspose(vectorToMatrix(v)) ).beIn(vt =>
-        let( matrixMult(um, matrixMult(M, vt)) ).beIn(m =>
-        m.get(idx(0)).get(idx(0))
-        )))
-    )).beIn(f =>
-      f
+    val f = fun( (u, M, v) =>
+      let( vectorToMatrix(u) ).beIn(um =>
+      let( matrixTranspose(vectorToMatrix(v)) ).beIn(vt =>
+      let( matrixMult(um, matrixMult(M, vt)) ).beIn(m =>
+      m.get(idx(0)).get(idx(0))
+      )))
     )
     println(f)
     println("f = " + TypeInference.infer(f))
