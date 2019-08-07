@@ -23,7 +23,7 @@ object DSL {
     def apply(e: Expr): Expr = lifting.liftFunExpr(f).value(Seq(e))
     def apply(e1: Expr, e2: Expr): Expr = lifting.liftFunExpr(f).value(Seq(e1, e2))
     def apply(e1: Expr, e2: Expr, e3: Expr): Expr = lifting.liftFunExpr(f).value(Seq(e1, e2, e3))
-    def apply(es: Seq[Expr]): Expr = lifting.liftFunExpr(f).value(es)
+    def applySeq(es: Seq[Expr]): Expr = lifting.liftFunExpr(f).value(es)
   }
 
   implicit class Get(e0: Expr) {
@@ -103,6 +103,8 @@ object DSL {
       val e3 = Identifier(freshName("e"))
       Abstraction(Seq(e0, e1, e2, e3), f(e0, e1, e2, e3))
     }
+
+    def apply(p: (Seq[Identifier], Expr)) = Abstraction(p._1, p._2)
   }
 
   object let {
