@@ -2,7 +2,9 @@ package FSmooth
 
 import FSmooth.DSL._
 
+//noinspection DuplicatedCode
 object MSmooth {
+  // vector constructs
   def vectorRange = fun(n =>
     build(n, fun(i => i)) )
 
@@ -52,11 +54,37 @@ object MSmooth {
     let(matrixTranspose(m2)).beIn(m2T =>
       matrixMult(m1, m2T) ))) )
 
+  // matrix constructs
+  def matrixRows = fun(m =>
+    len(m) )
+
   def matrixCols = fun(m =>
     len(m.get(idx(0))) )
 
-  def matrixRows = fun(m =>
-    len(m) )
+  def matrixZeros = fun( (r, c) =>
+    build(r, fun(i => vectorFill(c, scalar(0.0)))) )
+
+  def matrixOnes = fun( (r, c) =>
+    build(r, fun(i => vectorFill(c, scalar(1.0)))) )
+
+  def matrixEye = fun(n =>
+    build(n, fun(i => vectorHot(n, i))) )
+
+  def matrixHot = fun( (n, m, r, c) =>
+    build(n, fun(i =>
+      build(m, fun(j =>
+        `if` ((i `=:=` r) `&&` (j `=:=` c))
+          `then` scalar(1.0)
+          `else` scalar(0.0) )) )) )
+
+  def matrixMap = fun( (m, f) =>
+    build(len(m), fun(i => f(m.get(i)))) )
+
+  def matrixMap2 = fun( (m1, m2, f) =>
+    build(len(m1), fun(i => f(m1.get(i), m2.get(i)))) )
+
+  def matrixAdd = fun( (m1, m2) =>
+    matrixMap2(m1, m2, vectorAdd) )
 
   def matrixTranspose = fun(m =>
     build(matrixCols(m), fun(i =>
@@ -68,4 +96,7 @@ object MSmooth {
       build(matrixRows(m1), fun(i =>
         build(matrixCols(m2), fun(j =>
           vectorDot(m1.get(i), m2T.get(j)) )) )) ) )
+
+  def matrixTrace = fun(m =>
+    ifold(fun( (s, i) => s + m.get(i).get(i) ), scalar(0.0), len(m)) )
 }

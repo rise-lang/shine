@@ -38,13 +38,29 @@ class ExamplesFromICFP2019Paper extends idealised.util.Tests {
   }
 
   test("Type inference MSmooth matrix constructs") {
+    println("matrixRows = " + TypeInference.infer(matrixRows))
+
     println("matrixCols = " + TypeInference.infer(matrixCols))
 
-    println("matrixRows = " + TypeInference.infer(matrixRows))
+    println("matrixZeros = " + TypeInference.infer(matrixZeros))
+
+    println("matrixOnes = " + TypeInference.infer(matrixOnes))
+
+    println("matrixEye = " + TypeInference.infer(matrixEye))
+
+    println("matrixHot = " + TypeInference.infer(matrixHot))
+
+    println("matrixMap = " + TypeInference.infer(matrixMap))
+
+    println("matrixMap2 = " + TypeInference.infer(matrixMap2))
+
+    println("matrixAdd = " + TypeInference.infer(matrixAdd))
 
     println("matrixTranspose = " + TypeInference.infer(matrixTranspose))
 
     println("matrixMult = " + TypeInference.infer(matrixMult))
+
+    println("matrixTrace = " + TypeInference.infer(matrixTrace))
   }
 
   test("Example1: uMv^T") {
