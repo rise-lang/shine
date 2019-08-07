@@ -2,17 +2,17 @@ package FSmooth
 
 object DSL {
   implicit final class TypeConstructorsForward(private val t: ExpressionType) extends AnyVal {
-    @inline def ->(r: Type): Seq[Type] = Seq(t, r)
-    @inline def ->(r: ExpressionType): FunType = FunType(Seq(t), r)
+    @inline def ->(r: Type): PartialFunType = PartialFunType(t, r)
+    @inline def ->(r: ExpressionType): FunType = FunType(t, r)
   }
 
-  implicit final class SeqTypeConstructorsForward(private val ts: Seq[Type]) extends AnyVal {
-    @inline def ->(r: Type): Seq[Type] = ts :+ r
-    @inline def ->(r: ExpressionType): FunType = FunType(ts, r)
+  implicit final class SeqTypeConstructorsForward(private val pt: PartialFunType) extends AnyVal {
+    @inline def ->(r: Type): PartialFunType = PartialFunType(pt, r)
+    @inline def ->(r: ExpressionType): FunType = FunType(pt, r)
   }
   implicit final class FunTypeConstructorsForward(private val t: FunType) extends AnyVal {
-    @inline def ->(r: Type): Seq[Type] = t.inTs :+ t.outT:+ r
-    @inline def ->(r: ExpressionType): FunType = FunType(t.inTs :+ t.outT, r)
+    @inline def ->(r: Type): PartialFunType = PartialFunType(PartialFunType(t.inT, t.outT), r)
+    @inline def ->(r: ExpressionType): FunType = FunType(PartialFunType(t.inT, t.outT), r)
   }
 
   implicit final class TupleTypeConstructors(private val a: ExpressionType) extends AnyVal {
@@ -27,21 +27,21 @@ object DSL {
   }
 
   implicit class Get(e0: Expr) {
-    def get(e1: Expr): Expr = VectorFunctionConstants.get(None)(e0)(e1)
+    def get(e1: Expr): Expr = VectorFunctionConstants.get(None)(e0, e1)
   }
 
   implicit class Bob(lhs: Expr) {
-    def +(rhs: Expr): Expr = ScalarFunctionConstants.`+`(None)(lhs)(rhs)
-    def -(rhs: Expr): Expr = ScalarFunctionConstants.`-`(None)(lhs)(rhs)
-    def *(rhs: Expr): Expr = ScalarFunctionConstants.`*`(None)(lhs)(rhs)
-    def /(rhs: Expr): Expr = ScalarFunctionConstants.`/`(None)(lhs)(rhs)
-    def **(rhs: Expr): Expr = ScalarFunctionConstants.`**`(None)(lhs)(rhs)
-    def >(rhs: Expr): Expr = ScalarFunctionConstants.`>`(None)(lhs)(rhs)
-    def <(rhs: Expr): Expr = ScalarFunctionConstants.`<`(None)(lhs)(rhs)
-    def =:=(rhs: Expr): Expr = ScalarFunctionConstants.`=:=`(None)(lhs)(rhs)
-    def <>(rhs: Expr): Expr = ScalarFunctionConstants.`<>`(None)(lhs)(rhs)
-    def &&(rhs: Expr): Expr = ScalarFunctionConstants.`&&`(None)(lhs)(rhs)
-    def ||(rhs: Expr): Expr = ScalarFunctionConstants.`||`(None)(lhs)(rhs)
+    def +(rhs: Expr): Expr = ScalarFunctionConstants.`+`(None)(lhs, rhs)
+    def -(rhs: Expr): Expr = ScalarFunctionConstants.`-`(None)(lhs, rhs)
+    def *(rhs: Expr): Expr = ScalarFunctionConstants.`*`(None)(lhs, rhs)
+    def /(rhs: Expr): Expr = ScalarFunctionConstants.`/`(None)(lhs, rhs)
+    def **(rhs: Expr): Expr = ScalarFunctionConstants.`**`(None)(lhs, rhs)
+    def >(rhs: Expr): Expr = ScalarFunctionConstants.`>`(None)(lhs, rhs)
+    def <(rhs: Expr): Expr = ScalarFunctionConstants.`<`(None)(lhs, rhs)
+    def =:=(rhs: Expr): Expr = ScalarFunctionConstants.`=:=`(None)(lhs, rhs)
+    def <>(rhs: Expr): Expr = ScalarFunctionConstants.`<>`(None)(lhs, rhs)
+    def &&(rhs: Expr): Expr = ScalarFunctionConstants.`&&`(None)(lhs, rhs)
+    def ||(rhs: Expr): Expr = ScalarFunctionConstants.`||`(None)(lhs, rhs)
   }
 
   def Vector = Array(Double)

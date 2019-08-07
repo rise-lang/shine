@@ -26,7 +26,7 @@ object TypeInference {
       val newX = Identifier(x.name, Some(TypeVar(freshName("T"))))
       val extendedEnv = env ++ Map((newX.name, newX.t.get))
       Let(newX, annotate(init, extendedEnv), annotate(e, extendedEnv), Some(TypeVar(freshName("T"))))
-    case c: Constants => c.copy(TypeVar("freshName"))
+    case c: Constants => c.copy(TypeVar(freshName("T")))
     case _: CardinalityValue | _: IndexValue | _: ScalarValue => e
   }
 
@@ -39,9 +39,9 @@ object TypeInference {
       if (ts.length != xs.length) throw new Exception("This should not happen")
       e.t match {
         case Some(et: ExpressionType) =>
-          collect(e) ++ Set(Constraint(t, FunType(ts, et)))
+          collect(e) ++ Set(Constraint(t, FunType(ts.reduce(PartialFunType), et)))
         case Some(tv: TypeVar) =>
-          collect(e) ++ Set(Constraint(t, FunType(ts, ExpressionTypeVar(tv.name))))
+          collect(e) ++ Set(Constraint(t, FunType(ts.reduce(PartialFunType), ExpressionTypeVar(tv.name))))
         case _ => throw new Exception("This should not happen")
       }
     case Application(f, es, Some(t)) =>
@@ -53,7 +53,7 @@ object TypeInference {
       val ts = es.flatMap(_.t)
       if (ts.length != es.length) throw new Exception("This should not happen")
       es.map(collect).foldLeft(collect(f))(_ ++ _) ++ Set(
-        Constraint(f.t.get, FunType(ts, et))
+        Constraint(f.t.get, FunType(ts.reduce(PartialFunType), et))
       )
     case Conditional(cond, thenBranch, elseBranch, Some(t)) =>
       collect(cond) ++ collect(thenBranch) ++ collect(elseBranch) ++ Set(
@@ -102,11 +102,14 @@ object TypeInference {
     def substitute(ty: Type, tv: TypeVar, replacement: Type): Type = {
       ty match {
         case _: Num | Bool => ty
-        case FunType(inTs, outT) =>
+        case FunType(inT, outT) =>
           FunType(
-            inTs.map(substitute(_, tv, replacement)),
-            substitute(outT, tv, replacement)
-          )
+            substitute(inT, tv, replacement),
+            substitute(outT, tv, replacement).asInstanceOf[ExpressionType])
+        case PartialFunType(inT, outT) =>
+          PartialFunType(
+            substitute(inT, tv, replacement),
+            substitute(outT, tv, replacement))
         case Array(elemType) =>
           Array(substitute(elemType, tv, replacement).asInstanceOf[ExpressionType])
         case Pair(fst, snd) =>
@@ -114,7 +117,12 @@ object TypeInference {
         case tv2: TypeVar =>
           if (tv == tv2) replacement else ty
         case tv2: ExpressionTypeVar =>
-          if (tv.name == tv2.name) replacement else ty
+          if (tv.name == tv2.name) {
+            replacement match {
+              case e: ExpressionType => e
+              case _ => ty
+            }
+          } else ty
       }
     }
 
@@ -149,18 +157,22 @@ object TypeInference {
       case (Index, Index) => Substitution.empty
       case (Card, Card) => Substitution.empty
       case (Bool, Bool) => Substitution.empty
-      case (FunType(ts1, r1), FunType(ts2, r2)) if ts1.length == ts2.length =>
-        unify(
-          (ts1 zip ts2).map(p => Constraint(p._1, p._2)).toSet ++
-          Set(Constraint(r1, r2)))
-      case (FunType(ts1, r1), FunType(Seq(tv: TypeVar), r2)) =>
-        unify(
-          Set(Constraint(
-            ts1.tail.foldLeft(ts1.head){ (t1, t2) =>
-              FunType(Seq(t1), t2)
-            }, tv),
-            Constraint(r1, r2))
-        )
+      case (FunType(t1, r1), FunType(t2, r2)) =>
+        unify(Set(
+          Constraint(t1, t2),
+          Constraint(r1, r2)))
+      case (PartialFunType(t1, r1), PartialFunType(t2, r2)) =>
+        unify(Set(
+          Constraint(t1, t2),
+          Constraint(r1, r2)))
+      case (PartialFunType(t1, r1: ExpressionType), FunType(t2, r2)) =>
+        unify(Set(
+          Constraint(t1, t2),
+          Constraint(r1, r2)))
+      case (FunType(t1, r1), PartialFunType(t2, r2: ExpressionType)) =>
+        unify(Set(
+          Constraint(t1, t2),
+          Constraint(r1, r2)))
       case (Array(t1), Array(t2)) => unify(Set(Constraint(t1, t2)))
       case (Pair(f1, s1), Pair(f2, s2)) => unify(Set(Constraint(f1, f2), Constraint(s2, s2)))
       case (TypeVar(tv), ty) => unifyVar(tv, ty)
@@ -185,7 +197,7 @@ object TypeInference {
 
   private def occurs(tv: String, ty: Type): Boolean = {
     ty match {
-      case FunType(ps, r) => ps.exists(occurs(tv, _)) || occurs(tv, r)
+      case FunType(p, r) => occurs(tv, p) || occurs(tv, r)
       case TypeVar(tv2) => tv == tv2
       case ExpressionTypeVar(tv2) => tv == tv2
       case _ => false
@@ -194,41 +206,9 @@ object TypeInference {
 
   def infer(e: Expr, gamma: Environment = Map()): Expr = {
     val annotatedExpr = annotate(e, gamma)
+//    println(annotatedExpr)
     val constraints = collect(annotatedExpr)
     val subst = unify(constraints)
     subst(annotatedExpr)
   }
-
-//  def infer[E <: Expr](e: E, gamma: Environment): E = e match {
-//    case i@Identifier(_, mt) =>
-//      try {
-//        val t = gamma(i)
-//        if (mt.exists(_ != t)) {
-//          throw new Exception(s"Type mismatch: $t vs. ${mt.get}")
-//        }
-//        Identifier(i.name, Some(t)).asInstanceOf[E]
-//      } catch {
-//        case _: NoSuchElementException => throw new Exception("Undefined Identifier")
-//      }
-//
-//    case Abstraction(xs, e) =>
-//      val newXs = xs.map(infer(_, gamma))
-//      val newE = infer(e, gamma ++ newXs.map(i => (i, i.t.get) ))
-//      Abstraction(newXs, newE).asInstanceOf[E]
-//
-//    case Application(f, es) =>
-//      Application(infer(f, gamma), es.map(infer(_, gamma))).asInstanceOf[E]
-//
-//    case Conditional(cond, thenBranch, elseBranch) =>
-//      Conditional(infer(cond, gamma), infer(thenBranch, gamma), infer(elseBranch, gamma)).asInstanceOf[E]
-//
-//    case c: Constants => ???
-//
-//    case Let(x, init, e) =>
-//
-//
-//    case _: CardinalityValue | _: IndexValue | _: ScalarValue => e
-//  }
-
-
 }

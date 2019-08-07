@@ -9,7 +9,10 @@ final case class Identifier(name: String,
 
 final case class Abstraction(xs: Seq[Identifier], e: Expr,
                              override val t: Option[Type] = None) extends Expr(t) {
-  override def toString: String = s"fun ${xs.mkString(" ")} -> $e"
+  override def toString: String = t match {
+    case Some(FunType(inT, outT)) => s"fun (${xs.mkString(" ")} : $inT) -> ($e): $outT"
+    case _ => s"fun ${xs.mkString(" ")} -> $e"
+  }
 
   override def equals(obj: Any): Boolean = obj match {
     case other: Abstraction => e == lifting.liftFunExpr(other).value(xs)
@@ -19,7 +22,7 @@ final case class Abstraction(xs: Seq[Identifier], e: Expr,
 
 final case class Application(f: Expr, es: Seq[Expr],
                              override val t: Option[Type] = None) extends Expr(t) {
-  override def toString: String = s"($f ${es.mkString(" ")})"
+  override def toString: String = s"($f (${es.mkString(") (")}))"
 }
 
 final case class ScalarValue(n: Double) extends Expr(Some(Double))

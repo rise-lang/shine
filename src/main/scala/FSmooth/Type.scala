@@ -6,8 +6,12 @@ final case class TypeVar(name: String) extends Type
 
 sealed trait ExpressionType extends Type
 
-final case class FunType(inTs: Seq[Type], outT: Type) extends Type {
-  override def toString: String = s"(${inTs.mkString(" -> ")} -> $outT)"
+final case class PartialFunType(inT: Type, outT: Type) extends Type {
+  override def toString: String = s"($inT -> $outT)"
+}
+
+final case class FunType(inT: Type, outT: ExpressionType) extends Type {
+  override def toString: String = s"($inT -> $outT)"
 }
 
 final case class ExpressionTypeVar(name: String) extends ExpressionType
