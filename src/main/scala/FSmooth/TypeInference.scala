@@ -1,72 +1,73 @@
 package FSmooth
 
-import FSmooth.DSL.freshName
-
 import scala.collection.immutable
 
 //noinspection DuplicatedCode
 object TypeInference {
   type Environment = immutable.Map[String, Type]
 
-  private def annotate(e: Expr, env: Environment): Expr = e match {
+  private def checkIdentifierAreInBound(e: Expr, env: Environment): Unit = e match {
     case i: Identifier =>
       env.get(i.name) match {
-        case Some(t) => Identifier(i.name, Some(t))
+        case Some(_) =>
         case None => throw new Exception(s"Unbound Identifier: $i with env: $env")
       }
-    case Abstraction(xs, e, None) =>
-      val newXs = xs.map(i => Identifier(i.name, Some(TypeVar(freshName("T")))))
-      val extendedEnv = env ++ newXs.map(i => (i.name, i.t.get))
-      Abstraction(newXs, annotate(e, extendedEnv), Some(TypeVar(freshName("T"))))
-    case Application(f, es, None) =>
-      Application(annotate(f, env), es.map(annotate(_, env)), Some(TypeVar(freshName("T"))))
-    case Conditional(cond, thenBranch, elseBranch, None) =>
-      Conditional(annotate(cond, env), annotate(thenBranch, env), annotate(elseBranch, env), Some(TypeVar(freshName("T"))))
-    case Let(x, init, e, None) =>
-      val newX = Identifier(x.name, Some(TypeVar(freshName("T"))))
-      val extendedEnv = env ++ Map((newX.name, newX.t.get))
-      Let(newX, annotate(init, extendedEnv), annotate(e, extendedEnv), Some(TypeVar(freshName("T"))))
-    case c: Constants => c.copy(TypeVar(freshName("T")))
-    case _: CardinalityValue | _: IndexValue | _: ScalarValue => e
+    case Abstraction(xs, e, _) =>
+      val newXs = xs.map(i => Identifier(i.name))
+      val extendedEnv = env ++ newXs.map(i => (i.name, i.t))
+      checkIdentifierAreInBound(e, extendedEnv)
+    case Application(f, es, _) =>
+      checkIdentifierAreInBound(f, env)
+      es.foreach(checkIdentifierAreInBound(_, env))
+    case Conditional(cond, thenBranch, elseBranch, _) =>
+      checkIdentifierAreInBound(cond, env)
+      checkIdentifierAreInBound(thenBranch, env)
+      checkIdentifierAreInBound(elseBranch, env)
+    case Let(x, init, e, _) =>
+      val newX = Identifier(x.name)
+      val extendedEnv = env ++ Map((newX.name, newX.t))
+      checkIdentifierAreInBound(init, extendedEnv)
+      checkIdentifierAreInBound(e, extendedEnv)
+    case _: Constants | _: CardinalityValue | _: IndexValue | _: ScalarValue =>
   }
 
   private case class Constraint(a: Type, b: Type)
 
   private def collect(e: Expr): Set[Constraint] = e match {
     case _: Identifier => Set.empty
-    case Abstraction(xs, e, Some(t)) =>
-      val ts = xs.flatMap(_.t)
+    case Abstraction(xs, e, t) =>
+      val ts = xs.map(_.t)
       if (ts.length != xs.length) throw new Exception("This should not happen")
       e.t match {
-        case Some(et: ExpressionType) =>
+        case et: ExpressionType =>
           collect(e) ++ Set(Constraint(t, FunType(ts.reduce(PartialFunType), et)))
-        case Some(tv: TypeVar) =>
+        case tv: TypeVar =>
           collect(e) ++ Set(Constraint(t, FunType(ts.reduce(PartialFunType), ExpressionTypeVar(tv.name))))
         case _ => throw new Exception("This should not happen")
       }
-    case Application(f, es, Some(t)) =>
+    case Application(f, es, t) =>
       val et = t match {
         case et: ExpressionType => et
         case tv: TypeVar => ExpressionTypeVar(tv.name)
         case _ =>  throw new Exception("This should not happen")
       }
-      val ts = es.flatMap(_.t)
+      val ts = es.map(_.t)
       if (ts.length != es.length) throw new Exception("This should not happen")
       es.map(collect).foldLeft(collect(f))(_ ++ _) ++ Set(
-        Constraint(f.t.get, FunType(ts.reduce(PartialFunType), et))
+        Constraint(f.t, FunType(ts.reduce(PartialFunType), et))
       )
-    case Conditional(cond, thenBranch, elseBranch, Some(t)) =>
+    case Conditional(cond, thenBranch, elseBranch, t) =>
       collect(cond) ++ collect(thenBranch) ++ collect(elseBranch) ++ Set(
-        Constraint(cond.t.get, Bool),
-        Constraint(thenBranch.t.get, t),
-        Constraint(elseBranch.t.get, t)
+        Constraint(cond.t, Bool),
+        Constraint(thenBranch.t, t),
+        Constraint(elseBranch.t, t)
       )
-    case Let(x, init, e, Some(t)) =>
+    case Let(x, init, e, t) =>
       collect(init) ++ collect(e) ++ Set(
-        Constraint(t, e.t.get),
-        Constraint(x.t.get, init.t.get)
+        Constraint(t, e.t),
+        Constraint(x.t, init.t)
       )
-    case c: Constants => Set(Constraint(c.typeScheme, c.t.get))
+    case c: Constants => Set(Constraint(c.typeScheme, c.t))
     case _: CardinalityValue | _: IndexValue | _: ScalarValue => Set()
   }
 
@@ -90,13 +91,13 @@ object TypeInference {
     }
 
     def apply(e: Expr): Expr = e match {
-      case Identifier(name, t) => Identifier(name, t.map(apply))
-      case Abstraction(xs, e, t) => Abstraction(xs.map(i => apply(i).asInstanceOf[Identifier]), apply(e), t.map(apply))
-      case Application(f, es, t) => Application(apply(f), es.map(apply), t.map(apply))
+      case Identifier(name, t) => Identifier(name, apply(t))
+      case Abstraction(xs, e, t) => Abstraction(xs.map(i => apply(i).asInstanceOf[Identifier]), apply(e), apply(t))
+      case Application(f, es, t) => Application(apply(f), es.map(apply), apply(t))
       case _: ScalarValue | _: IndexValue | _: CardinalityValue => e
-      case c: Constants => c.copy(apply(c.t.get))
-      case Let(x, init, e, t) => Let(apply(x).asInstanceOf[Identifier], apply(init), apply(e), t.map(apply))
-      case Conditional(cond, thenBranch, elseBranch, t) => Conditional(apply(cond), apply(thenBranch), apply(elseBranch), t.map(apply))
+      case c: Constants => c.copy(apply(c.t))
+      case Let(x, init, e, t) => Let(apply(x).asInstanceOf[Identifier], apply(init), apply(e), apply(t))
+      case Conditional(cond, thenBranch, elseBranch, t) => Conditional(apply(cond), apply(thenBranch), apply(elseBranch), apply(t))
     }
 
     def substitute(ty: Type, tv: TypeVar, replacement: Type): Type = {
@@ -205,10 +206,9 @@ object TypeInference {
   }
 
   def infer(e: Expr, gamma: Environment = Map()): Expr = {
-    val annotatedExpr = annotate(e, gamma)
-//    println(annotatedExpr)
-    val constraints = collect(annotatedExpr)
+    checkIdentifierAreInBound(e, gamma)
+    val constraints = collect(e)
     val subst = unify(constraints)
-    subst(annotatedExpr)
+    subst(e)
   }
 }

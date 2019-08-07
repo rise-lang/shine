@@ -27,21 +27,21 @@ object DSL {
   }
 
   implicit class Get(e0: Expr) {
-    def get(e1: Expr): Expr = VectorFunctionConstants.get(None)(e0, e1)
+    def get(e1: Expr): Expr = VectorFunctionConstants.get(freshTypeVar)(e0, e1)
   }
 
   implicit class Bob(lhs: Expr) {
-    def +(rhs: Expr): Expr = ScalarFunctionConstants.`+`(None)(lhs, rhs)
-    def -(rhs: Expr): Expr = ScalarFunctionConstants.`-`(None)(lhs, rhs)
-    def *(rhs: Expr): Expr = ScalarFunctionConstants.`*`(None)(lhs, rhs)
-    def /(rhs: Expr): Expr = ScalarFunctionConstants.`/`(None)(lhs, rhs)
-    def **(rhs: Expr): Expr = ScalarFunctionConstants.`**`(None)(lhs, rhs)
-    def >(rhs: Expr): Expr = ScalarFunctionConstants.`>`(None)(lhs, rhs)
-    def <(rhs: Expr): Expr = ScalarFunctionConstants.`<`(None)(lhs, rhs)
-    def =:=(rhs: Expr): Expr = ScalarFunctionConstants.`=:=`(None)(lhs, rhs)
-    def <>(rhs: Expr): Expr = ScalarFunctionConstants.`<>`(None)(lhs, rhs)
-    def &&(rhs: Expr): Expr = ScalarFunctionConstants.`&&`(None)(lhs, rhs)
-    def ||(rhs: Expr): Expr = ScalarFunctionConstants.`||`(None)(lhs, rhs)
+    def +(rhs: Expr): Expr = ScalarFunctionConstants.`+`(freshTypeVar)(lhs, rhs)
+    def -(rhs: Expr): Expr = ScalarFunctionConstants.`-`(freshTypeVar)(lhs, rhs)
+    def *(rhs: Expr): Expr = ScalarFunctionConstants.`*`(freshTypeVar)(lhs, rhs)
+    def /(rhs: Expr): Expr = ScalarFunctionConstants.`/`(freshTypeVar)(lhs, rhs)
+    def **(rhs: Expr): Expr = ScalarFunctionConstants.`**`(freshTypeVar)(lhs, rhs)
+    def >(rhs: Expr): Expr = ScalarFunctionConstants.`>`(freshTypeVar)(lhs, rhs)
+    def <(rhs: Expr): Expr = ScalarFunctionConstants.`<`(freshTypeVar)(lhs, rhs)
+    def =:=(rhs: Expr): Expr = ScalarFunctionConstants.`=:=`(freshTypeVar)(lhs, rhs)
+    def <>(rhs: Expr): Expr = ScalarFunctionConstants.`<>`(freshTypeVar)(lhs, rhs)
+    def &&(rhs: Expr): Expr = ScalarFunctionConstants.`&&`(freshTypeVar)(lhs, rhs)
+    def ||(rhs: Expr): Expr = ScalarFunctionConstants.`||`(freshTypeVar)(lhs, rhs)
   }
 
   def Vector = Array(Double)
@@ -51,6 +51,8 @@ object DSL {
   def MatrixD = Array(Array(Pair(Double, Double)))
 
   def freshName: String => String = lift.core.freshName.apply
+  def freshTypeVar: TypeVar = TypeVar(DSL.freshName("T"))
+  def freshExprTypeVar: ExpressionTypeVar = ExpressionTypeVar(DSL.freshName("T"))
 
   def implM(f: ExpressionTypeVar => Type): Type = {
     f(ExpressionTypeVar(freshName("M")))
@@ -111,19 +113,19 @@ object DSL {
     def apply(d: Double): ScalarValue = ScalarValue(d)
   }
 
-  def build = VectorFunctionConstants.build(None)
-  def ifold = VectorFunctionConstants.ifold(None)
-  def get = VectorFunctionConstants.get(None)
-  def len = VectorFunctionConstants.length(None)
+  def build = VectorFunctionConstants.build(freshTypeVar)
+  def ifold = VectorFunctionConstants.ifold(freshTypeVar)
+  def get = VectorFunctionConstants.get(freshTypeVar)
+  def len = VectorFunctionConstants.length(freshTypeVar)
 
-  def pair = PairFunctionConstants.pair(None)
-  def fst = PairFunctionConstants.fst(None)
-  def snd = PairFunctionConstants.snd(None)
+  def pair = PairFunctionConstants.pair(freshTypeVar)
+  def fst = PairFunctionConstants.fst(freshTypeVar)
+  def snd = PairFunctionConstants.snd(freshTypeVar)
 
-  def sign = ScalarFunctionConstants.sign(None)
-  def cos = ScalarFunctionConstants.cos(None)
-  def tan = ScalarFunctionConstants.tan(None)
-  def log = ScalarFunctionConstants.log(None)
-  def exp = ScalarFunctionConstants.exp(None)
+  def sign = ScalarFunctionConstants.sign(freshTypeVar)
+  def cos = ScalarFunctionConstants.cos(freshTypeVar)
+  def tan = ScalarFunctionConstants.tan(freshTypeVar)
+  def log = ScalarFunctionConstants.log(freshTypeVar)
+  def exp = ScalarFunctionConstants.exp(freshTypeVar)
 }
 
