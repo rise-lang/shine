@@ -46,6 +46,10 @@ object depMapSeqUnroll {
   def apply(f: Expr, x: Expr): DepMapSeqUnroll = DepMapSeqUnroll(nFun(_ => f), x, None)
 }
 
+object depZip {
+  def apply(lhs: Expr, rhs: Expr): DepZip = DepZip(lhs, rhs, None)
+}
+
 
 object mapSeq {
   def apply(f: Expr): Expr = fun(x => mapSeq(f, x))

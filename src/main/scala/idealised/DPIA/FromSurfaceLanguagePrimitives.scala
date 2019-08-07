@@ -249,6 +249,21 @@ object FromSurfaceLanguagePrimitives {
             FromSurfaceLanguage.asPhrase[DPIA.Types.ExpType](rhs)))
       }
 
+      case DepZip(lhs, rhs, _) => ( (lhs.t, rhs.t) : @unchecked) match {
+        case (Some(DepArrayType(n, _)), Some(DepArrayType(m, ft2))) if n == m =>
+          val lhsDPIA = FromSurfaceLanguage.asPhrase[DPIA.Types.ExpType](lhs)
+          val ft1 = lhsDPIA.t.dataType match  {
+            case DPIA.Types.DepArrayType(_, ft1) => ft1
+            case _ => throw new Exception("This should not happen")
+          }
+          val rhsDPIA = FromSurfaceLanguage.asPhrase[DPIA.Types.ExpType](rhs)
+          val ft2 = rhsDPIA.t.dataType match {
+            case DPIA.Types.DepArrayType(_, ft2) => ft2
+            case _ => throw new Exception("This should not happen")
+          }
+          Some(FunctionalPrimitives.DepZip(n, ft1, ft2, lhsDPIA, rhsDPIA))
+      }
+
       case OpenCLFunction(name, inTs, outT, args) =>
         Some(idealised.OpenCL.FunctionalPrimitives.OpenCLFunction(
           name, inTs.map(DPIA.Types.DataType(_)), DPIA.Types.DataType(outT),
