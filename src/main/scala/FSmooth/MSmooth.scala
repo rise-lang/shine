@@ -99,4 +99,6 @@ object MSmooth {
 
   def matrixTrace = fun(m =>
     ifold(fun( (s, i) => s + m.get(i).get(i) ), scalar(0.0), len(m)) )
+
+  def matrixZip: Expr = ???
 }

@@ -23,6 +23,7 @@ object DSL {
     def apply(e: Expr): Expr = lifting.liftFunExpr(f).value(Seq(e))
     def apply(e1: Expr, e2: Expr): Expr = lifting.liftFunExpr(f).value(Seq(e1, e2))
     def apply(e1: Expr, e2: Expr, e3: Expr): Expr = lifting.liftFunExpr(f).value(Seq(e1, e2, e3))
+    def apply(e1: Expr, e2: Expr, e3: Expr, e4: Expr): Expr = lifting.liftFunExpr(f).value(Seq(e1, e2, e3, e4))
     def applySeq(es: Seq[Expr]): Expr = lifting.liftFunExpr(f).value(es)
   }
 

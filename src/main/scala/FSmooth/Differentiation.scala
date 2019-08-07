@@ -25,9 +25,23 @@ object Differentiation {
   // free variables
   def fvs(e: Expr): Seq[Identifier] = ???
 
-  def A0(v: Identifier, x: Identifier): Expr = ???
+  def A0(v: Identifier, x: Identifier): Expr = {
+    if (v == x) pair(x, scalar(1)) else pair(v, scalar(0))
+  }
 
-  def A1(v: Identifier, x: Identifier, r: Expr): Expr = ???
+  def A1(v: Identifier, x: Identifier, r: Expr): Expr = {
+    if (v == x) {
+      vectorZip(x, vectorHot(len(x), r))
+    } else {
+      vectorZip(v, vectorFill(len(v), scalar(0.0)))
+    }
+  }
 
-  def A2(v: Identifier, x: Identifier, r: Expr, c: Expr): Expr = ???
+  def A2(v: Identifier, x: Identifier, r: Expr, c: Expr): Expr = {
+    if (v == x) {
+      matrixZip(x, matrixHot(matrixRows(x), matrixCols(x), r, c))
+    } else {
+      matrixZip(v, matrixZeros(matrixRows(v), matrixCols(v)))
+    }
+  }
 }
