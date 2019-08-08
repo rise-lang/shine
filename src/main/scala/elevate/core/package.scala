@@ -10,6 +10,7 @@ package object core {
   type Meta = Strategy[Elevate] // Meta = Strategies for Elevate
   type Elevate = Strategy[Lift] // Elevate = Strategies for Lift
   type Lift = Expr
+  type FSmooth = _root_.FSmooth.Expr
 
   implicit class Then[P](f: Strategy[P]) {
     def `;`(s: Strategy[P]): Strategy[P] = seq[P](f,s)

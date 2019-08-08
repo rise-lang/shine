@@ -74,4 +74,9 @@ class ExamplesFromICFP2019Paper extends idealised.util.Tests {
     println(f)
     println("f = " + TypeInference.infer(f))
   }
+
+  test("Example5: Matrix Transpose") {
+    val e = fun(M => matrixTranspose(matrixTranspose(M)))
+    println(e)
+  }
 }
