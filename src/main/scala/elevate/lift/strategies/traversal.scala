@@ -71,6 +71,7 @@ object traversal {
   case class body(s: Elevate) extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
       case Lambda(x, f) => s(f).mapSuccess(Lambda(x, _) )
+      case DepLambda(x, f) => s(f).mapSuccess(DepLambda(x, _) )
       case _ => Failure(s)
     }
     override def toString = s"body($s)"

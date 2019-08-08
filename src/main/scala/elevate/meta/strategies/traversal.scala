@@ -4,7 +4,7 @@ import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
 import elevate.lift.strategies.traversal._
 import elevate.meta.strategies.traversal._
-import elevate.core.{Elevate, Lift, Meta, Strategy}
+import elevate.core.{Elevate, Failure, Lift, Meta, Strategy, Success}
 
 object traversal {
   // todo can we get replace Lift with P?
@@ -13,7 +13,12 @@ object traversal {
     override def some: Strategy[Elevate] => Strategy[Elevate] = s => ???
 
     override def oneHandlingState: Boolean => Strategy[Elevate] => Strategy[Elevate] = carryOverState => s => {
-      case seq(f,s) => ???
+      case seq(first,second) => s(first) match {
+        case Success(x: Elevate) => Success(seq(x, second))
+        case Failure(state) => if (carryOverState)
+          state(second).mapSuccess(seq(first,_)) else
+          s(second).mapSuccess(seq(first,_))
+      }
       case downup2(p1,p2) => ???
 
       case all(s) => ???
@@ -21,9 +26,9 @@ object traversal {
       case some(s) => ???
 
       case body(p) => s(p).mapSuccess(body)
-      case function(p) => ???
-      case argument(p) => ???
-      case argumentOf(x,p) => ???
+      case function(p) => s(p).mapSuccess(function)
+      case argument(p) => s(p).mapSuccess(argument)
+      case argumentOf(x,p) => s(p).mapSuccess(argumentOf(x,_))
 
       case oncetd(p) => s(p).mapSuccess(oncetd[Lift](_))
       case topdown(p) => s(p).mapSuccess(topdown[Lift](_))
@@ -36,6 +41,8 @@ object traversal {
       case somebu(p) => s(p).mapSuccess(somebu[Lift](_))
       case position(i) => ???
       case skip(n) => ???
+        // what to do for rules?
+      case x => /*println(s"???: $x");*/Failure(s)
     }
   }
 

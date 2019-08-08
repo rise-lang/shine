@@ -9,6 +9,7 @@ import elevate.lift.strategies.traversal._
 import elevate.meta.rules.fission._
 import elevate.lift.rules.movement._
 import elevate.lift.strategies.tiling._
+import elevate.lift.strategies.util._
 import elevate.lift._
 import elevate.lift.rules
 import elevate.lift.rules.algorithmic._
@@ -53,10 +54,28 @@ class traversals extends idealised.util.Tests {
         argument(argument(function(argumentOf(map,body(idAfter `;` createTransposePair `;` LCNF `;` argument(mapMapFBeforeTranspose)))) `;` RNF))))
 
     val normalized = FNF(simplified).get
+    println(normalized)
+    val normalizedModified = body(body(function(argumentOf(map,body(function(splitJoin(4))))))) `;`
+    inferType `;`
+      body(body(function(splitJoin(4)))) `;`
+      inferType `;`
+      body(body(RNF)) `;`
+      inferType `;`
+      body(body(LCNF)) `;`
+      inferType `;`
+      body(body(argument(argument(function(argumentOf(map,body(idAfter))))))) `;`
+      inferType `;`
+      body(body(argument(argument(function(argumentOf(map,body(createTransposePair))))))) `;`
+      inferType `;`
+      body(body(argument(argument(function(argumentOf(map,body(LCNF))))))) `;`
+      inferType `;`
+      body(body(argument(argument(function(argumentOf(map,body(argument(mapMapFBeforeTranspose)))))))) `;`
+      inferType `;`
+      body(body(argument(argument(RNF))))
 
 
-    //assert(betaEtaEquals(orig(input2D).get, printed(input2D).get))
-    //println(printed(input2D).get)
+    assert(oldTiling(input2D).get == simplified(input2D).get)
+    assert(oldTiling(input2D).get == normalizedModified(input2D).get)
   }
 
   test("RNF did not normalize") {

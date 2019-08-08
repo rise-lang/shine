@@ -5,6 +5,7 @@ import java.io.{File, PrintWriter}
 import elevate.core.strategies.basic
 import elevate.lift.strategies.traversal._
 import elevate.lift.strategies.normalForm._
+import elevate.meta.rules.fission._
 import elevate.lift.strategies.tiling._
 import elevate.core.strategies.traversal._
 import elevate.core.strategies.basic._
@@ -323,8 +324,13 @@ class tiling extends idealised.util.Tests {
         )
       )
 
-    val tiled = (LCNF `;` CNF `;` oncetd(tileND(2)(4)) `;` BENF `;` RNF)(backward)
+    // goes into typedexpr
+    val tiled = applyNTimes(3)(body)((printLambda `;` tileND(2)(4)))(backward)
     println(tiled)
+    val normalized = FNF(applyNTimes(7)(body)(debug[Lift]("") `;` tileND(2)(4))).get
+    val rewritten = normalized(backward).get
+    //println(normalized)
+    //println(tiled)
     //infer(tiled)
   }
 
