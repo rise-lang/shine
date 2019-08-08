@@ -12,8 +12,8 @@ final case class Identifier(name: String,
 final case class Abstraction(params: Seq[Identifier], body: Expr,
                              override val t: Type = freshTypeVar) extends Expr(t) {
   override def toString: String = t match {
-    case FunType(inT, outT) => s"fun (${params.mkString(" ")} : $inT) -> ($body): $outT"
-    case _ => s"fun ${params.mkString(" ")} -> $body"
+    //case FunType(inT, outT) => s"fun (${params.mkString(" ")} : $inT) -> ($body): $outT"
+    case _ => s"fun ${params.mkString(" ")} -> \n$body"
   }
 
   override def equals(obj: Any): Boolean = obj match {
