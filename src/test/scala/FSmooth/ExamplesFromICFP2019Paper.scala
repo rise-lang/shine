@@ -79,4 +79,12 @@ class ExamplesFromICFP2019Paper extends idealised.util.Tests {
     val e = fun(M => matrixTranspose(matrixTranspose(M)))
     println(e)
   }
+
+  test("Free variables") {
+    val y = Variable(freshName("y"))
+    val z = Variable(freshName("z"))
+    assert( Differentiation.fvs( fun(x => x) ) == Seq() )
+    assert( Differentiation.fvs( fun(x => x + y) ) == Seq(y) )
+    assert( Differentiation.fvs( fun(x => z + x + y) ) == Seq(z, y) )
+  }
 }

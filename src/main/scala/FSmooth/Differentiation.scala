@@ -2,9 +2,12 @@ package FSmooth
 
 import DSL._
 import FSmooth.MSmooth._
+import FSmooth.traversal._
+
+import scala.collection.mutable
 
 object Differentiation {
-  def deriv(e: Expr, x: Identifier): Expr = {
+  def deriv(e: Expr, x: Variable): Expr = {
     val vi = fvs(e)
     x.t match {
       case Double =>
@@ -23,13 +26,33 @@ object Differentiation {
   def D(e: Expr): Expr = ???
 
   // free variables
-  def fvs(e: Expr): Seq[Identifier] = ???
+  def fvs(expr: Expr): Seq[Variable] = {
+    val free = mutable.Buffer[Variable]()
+    case class Visitor(bound: Set[Variable]) extends traversal.Visitor {
+      override def apply(e: Expr): traversal.Result[Expr] = {
+        e match {
+          case Abstraction(params, _, _) =>
+            Continue(e, Visitor(bound ++ params))
+          case Let(x, value, body, _) =>
+            apply(value) // visit value
+            traversal.DepthFirstLocalResult(body, Visitor(bound ++ Set(x))) // visit body
+            Stop(e)
+          case v: Variable =>
+            if (!bound.contains(v)) { free += v }
+            Stop(v)
+          case _ => Continue(e, this)
+        }
+      }
+    }
+    traversal.DepthFirstLocalResult(expr, Visitor(Set()))
+    free
+  }
 
-  def A0(v: Identifier, x: Identifier): Expr = {
+  def A0(v: Variable, x: Variable): Expr = {
     if (v == x) pair(x, scalar(1)) else pair(v, scalar(0))
   }
 
-  def A1(v: Identifier, x: Identifier, r: Expr): Expr = {
+  def A1(v: Variable, x: Variable, r: Expr): Expr = {
     if (v == x) {
       vectorZip(x, vectorHot(len(x), r))
     } else {
@@ -37,7 +60,7 @@ object Differentiation {
     }
   }
 
-  def A2(v: Identifier, x: Identifier, r: Expr, c: Expr): Expr = {
+  def A2(v: Variable, x: Variable, r: Expr, c: Expr): Expr = {
     if (v == x) {
       matrixZip(x, matrixHot(matrixRows(x), matrixCols(x), r, c))
     } else {

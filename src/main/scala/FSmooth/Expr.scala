@@ -4,12 +4,12 @@ import FSmooth.DSL.freshTypeVar
 
 abstract class Expr(val t: Type)
 
-final case class Identifier(name: String,
-                            override val t: Type = freshTypeVar) extends Expr(t) {
+final case class Variable(name: String,
+                          override val t: Type = freshTypeVar) extends Expr(t) {
   override def toString: String = name
 }
 
-final case class Abstraction(params: Seq[Identifier], body: Expr,
+final case class Abstraction(params: Seq[Variable], body: Expr,
                              override val t: Type = freshTypeVar) extends Expr(t) {
   override def toString: String = t match {
     //case FunType(inT, outT) => s"fun (${params.mkString(" ")} : $inT) -> ($body): $outT"
@@ -27,7 +27,7 @@ final case class Application(fun: Expr, args: Seq[Expr],
   override def toString: String = s"($fun (${args.mkString(") (")}))"
 }
 
-final case class Let(x: Identifier, value: Expr, body: Expr,
+final case class Let(x: Variable, value: Expr, body: Expr,
                      override val t: Type = freshTypeVar) extends Expr(t) {
   override def toString: String = s"let $x = $value in\n $body"
 }

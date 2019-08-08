@@ -7,7 +7,7 @@ object TypeInference {
   type Environment = immutable.Map[String, Type]
 
   private def checkIdentifierAreInBound(e: Expr, env: Environment): Unit = e match {
-    case i: Identifier =>
+    case i: Variable =>
       env.get(i.name) match {
         case Some(_) =>
         case None => throw new Exception(s"Unbound Identifier: $i with env: $env")
@@ -32,7 +32,7 @@ object TypeInference {
   private case class Constraint(a: Type, b: Type)
 
   private def collect(e: Expr): Set[Constraint] = e match {
-    case _: Identifier => Set.empty
+    case _: Variable => Set.empty
     case Abstraction(xs, e, t) =>
       val ts = xs.map(_.t)
       if (ts.length != xs.length) throw new Exception("This should not happen")
@@ -89,12 +89,12 @@ object TypeInference {
     }
 
     def apply(e: Expr): Expr = e match {
-      case Identifier(name, t) => Identifier(name, apply(t))
-      case Abstraction(xs, e, t) => Abstraction(xs.map(i => apply(i).asInstanceOf[Identifier]), apply(e), apply(t))
+      case Variable(name, t) => Variable(name, apply(t))
+      case Abstraction(xs, e, t) => Abstraction(xs.map(i => apply(i).asInstanceOf[Variable]), apply(e), apply(t))
       case Application(f, es, t) => Application(apply(f), es.map(apply), apply(t))
       case _: ScalarValue | _: IndexValue | _: CardinalityValue => e
       case c: Constants => c.copyWithType(apply(c.t))
-      case Let(x, init, e, t) => Let(apply(x).asInstanceOf[Identifier], apply(init), apply(e), apply(t))
+      case Let(x, init, e, t) => Let(apply(x).asInstanceOf[Variable], apply(init), apply(e), apply(t))
       case Conditional(cond, thenBranch, elseBranch, t) => Conditional(apply(cond), apply(thenBranch), apply(elseBranch), apply(t))
     }
 

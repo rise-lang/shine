@@ -9,7 +9,7 @@ object traversal {
     // todo finish
     override def all: Strategy[FSmooth] => Strategy[FSmooth] =  s => {
       case Abstraction(i, body, t) => s(body).mapSuccess(Abstraction(i, _, t))
-      case i:Identifier => Success(i)
+      case i:Variable => Success(i)
       case Application(f, args, t) => ???
       case Let(x, value, body, t) => ???
       case Conditional(cond, thenBranch, elseBranch, t) => ???
@@ -22,12 +22,13 @@ object traversal {
     // todo finish
     override def oneHandlingState: Boolean => Strategy[FSmooth] => Strategy[FSmooth] = carryOverState => s => {
       case Abstraction(i, body, t) => s(body).mapSuccess(Abstraction(i, _, t))
-      case i:Identifier => Success(i)
+      case i:Variable => Success(i)
       case Application(f, args, t) => s(f) match {
-        case Success(f: FSmooth) => Success(Application(_, args))
+        case Success(f: FSmooth) => ??? // Success(Application(_, args))
         case Failure(state) => {
           val strategy = if(carryOverState) state else s
           val test = args.zip(args).map(x => (strategy(x._1), x._2))
+          ???
         }
       }
       case Let(x, value, body, t) => s(value) match {
