@@ -15,6 +15,7 @@ object basic {
   case class seq[P](f: Strategy[P], s: Strategy[P]) extends Strategy[P] {
     def apply(e: P): RewriteResult[P] = f(e).flatMapSuccess(s)
     override def toString = s"$f `;` $s"
+    //override def toString = s"seq($f,$s)"
   }
 
   case class leftChoice[P](f: Strategy[P], s: Strategy[P]) extends Strategy[P] {

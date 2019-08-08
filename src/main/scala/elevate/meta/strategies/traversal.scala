@@ -27,6 +27,7 @@ object traversal {
 
       case body(p) => s(p).mapSuccess(body)
       case function(p) => s(p).mapSuccess(function)
+      case inTyped(p) => s(p).mapSuccess(inTyped)
       case argument(p) => s(p).mapSuccess(argument)
       case argumentOf(x,p) => s(p).mapSuccess(argumentOf(x,_))
 
@@ -41,7 +42,7 @@ object traversal {
       case somebu(p) => s(p).mapSuccess(somebu[Lift](_))
       case position(i) => ???
       case skip(n) => ???
-        // what to do for rules?
+        // todo rules should fail but everything else should be a warning or something similar
       case x => /*println(s"???: $x");*/Failure(s)
     }
   }

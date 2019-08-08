@@ -4,19 +4,23 @@ import java.io.{File, PrintWriter}
 
 import elevate.core.strategies.basic
 import elevate.lift.strategies.traversal._
+import elevate.meta.strategies.traversal._
 import elevate.lift.strategies.normalForm._
 import elevate.meta.rules.fission._
 import elevate.lift.strategies.tiling._
+import elevate.lift.rules.movement._
 import elevate.core.strategies.traversal._
 import elevate.core.strategies.basic._
 import elevate.lift._
 import elevate.util._
 import elevate.lift.rules._
+import elevate.lift.strategies.util._
 import elevate.lift.rules.algorithmic._
 import idealised.util.gen
 import lift.core.DSL._
-import lift.core.{Apply, DepLambda, Expr, Identifier, Lambda, NatIdentifier, TypedExpr}
+import lift.core._
 import lift.core.primitives._
+import lift.core.semantics.FloatData
 import lift.core.types.{ArrayType, NatKind, float, infer}
 import org.scalatest.Ignore
 
@@ -325,13 +329,38 @@ class tiling extends idealised.util.Tests {
       )
 
     // goes into typedexpr
-    val tiled = applyNTimes(3)(body)((printLambda `;` tileND(2)(4)))(backward)
-    println(tiled)
-    val normalized = FNF(applyNTimes(7)(body)(debug[Lift]("") `;` tileND(2)(4))).get
-    val rewritten = normalized(backward).get
-    //println(normalized)
-    //println(tiled)
-    //infer(tiled)
+
+    val tiling = applyNTimes(3)(body)(
+      inTyped(
+        applyNTimes(5)(body)(
+          tileND(2)(4))))
+    val tiled = tiling(backward).get
+
+    val normalized = FNF(tiling).get
+    val rewritten = normalized(backward)
+
+    println("----")
+    println(tiling)
+    println("----")
+    println(normalized)
+    println("----")
+    //println(rewritten)
+
+    val debug =
+      body(body(body(inTyped(body(body(body(body(body(function(argumentOf(map,body(function(splitJoin(4)))))))))))))) `;`
+      body(body(body(inTyped(body(body(body(body(body(function(splitJoin(4))))))))))) `;`
+        body(body(body(inTyped(body(body(body(body(body(RNF))))))))) `;`
+        body(body(body(inTyped(body(body(body(body(body(LCNF))))))))) `;`
+        body(body(body(inTyped(body(body(body(body(body(argument(argument(function(argumentOf(map,body(idAfter)))))))))))))) `;`
+        body(body(body(inTyped(body(body(body(body(body(argument(argument(function(argumentOf(map,body(createTransposePair)))))))))))))) `;`
+        body(body(body(inTyped(body(body(body(body(body(argument(argument(function(argumentOf(map,body(LCNF)))))))))))))) `;`
+        peek(x => exprToDot("/home/bastian/development/rewriting/dot", "working", x, dotPrinter(_))) `;` debugln("##################### 7") `;`
+        body(body(body(inTyped(body(body(body(body(body(argument(argument(function(argumentOf(map,body(argument(mapMapFBeforeTranspose))))))))))))))) `;`
+        peek(x => exprToDot("/home/bastian/development/rewriting/dot", "broken", x, dotPrinter(_))) `;` debugln("##################### 8") `;`
+        body(body(body(inTyped(body(body(body(body(body(argument(argument(RNF)))))))))))
+
+    debug(backward)
+
   }
 
   test("map fission issue when used with zip") {

@@ -68,7 +68,16 @@ object traversal {
     }
   }
 
-  case class body(s: Elevate) extends Strategy[Lift] {
+  case class inTyped(s: Elevate) extends Elevate {
+    def apply(e: Lift): RewriteResult[Lift] = e match {
+      case TypedExpr(e, t) => s(e).mapSuccess(TypedExpr(_, t) )
+      case _ => Failure(s)
+    }
+    override def toString = s"inTyped($s)"
+  }
+
+
+  case class body(s: Elevate) extends Elevate {
     def apply(e: Lift): RewriteResult[Lift] = e match {
       case Lambda(x, f) => s(f).mapSuccess(Lambda(x, _) )
       case DepLambda(x, f) => s(f).mapSuccess(DepLambda(x, _) )
@@ -77,7 +86,7 @@ object traversal {
     override def toString = s"body($s)"
   }
 
-  case class function(s: Elevate) extends Strategy[Lift] {
+  case class function(s: Elevate) extends Elevate {
     def apply(e: Lift): RewriteResult[Lift] = e match {
       case Apply(f, e) => s(f).mapSuccess(Apply(_, e))
       case _ => Failure(s)
