@@ -9,27 +9,27 @@ final case class Identifier(name: String,
   override def toString: String = name
 }
 
-final case class Abstraction(xs: Seq[Identifier], e: Expr,
+final case class Abstraction(params: Seq[Identifier], body: Expr,
                              override val t: Type = freshTypeVar) extends Expr(t) {
   override def toString: String = t match {
-    case FunType(inT, outT) => s"fun (${xs.mkString(" ")} : $inT) -> ($e): $outT"
-    case _ => s"fun ${xs.mkString(" ")} -> $e"
+    case FunType(inT, outT) => s"fun (${params.mkString(" ")} : $inT) -> ($body): $outT"
+    case _ => s"fun ${params.mkString(" ")} -> $body"
   }
 
   override def equals(obj: Any): Boolean = obj match {
-    case other: Abstraction => e == lifting.liftFunExpr(other).value(xs)
+    case other: Abstraction => body == lifting.liftFunExpr(other).value(params)
     case _ => false
   }
 }
 
-final case class Application(f: Expr, es: Seq[Expr],
+final case class Application(fun: Expr, args: Seq[Expr],
                              override val t: Type = freshTypeVar) extends Expr(t) {
-  override def toString: String = s"($f (${es.mkString(") (")}))"
+  override def toString: String = s"($fun (${args.mkString(") (")}))"
 }
 
-final case class Let(x: Identifier, init: Expr, e: Expr,
+final case class Let(x: Identifier, value: Expr, body: Expr,
                      override val t: Type = freshTypeVar) extends Expr(t) {
-  override def toString: String = s"let $x = $init in\n $e"
+  override def toString: String = s"let $x = $value in\n $body"
 }
 
 final case class Conditional(cond: Expr, thenBranch: Expr, elseBranch: Expr,

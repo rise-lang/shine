@@ -6,7 +6,7 @@ final case class TypeVar(name: String) extends Type
 
 sealed trait ExpressionType extends Type
 
-final case class PartialFunType(inT: Type, outT: Type) extends Type {
+final case class IncompleteFunType(inT: Type, outT: Type) extends Type {
   override def toString: String = s"($inT -> $outT)"
 }
 

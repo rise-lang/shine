@@ -58,7 +58,7 @@ object rules {
 
   case object lengthBuild extends Strategy[FSmooth] {
     def apply(e: FSmooth): RewriteResult[FSmooth] = e match {
-      case Application(`length`(_), Seq(Application(Application(`build`(_), e0, _), e1, _), _), _) =>
+      case Application(`length`(_), Seq(Application(Application(`build`(_), Seq(e0), _), e1, _), _), _) =>
         Success(e0) // e0 == Seq[Expr] ?!
       case  _ => Failure(lengthBuild)
     }

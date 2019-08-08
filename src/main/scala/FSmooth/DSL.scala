@@ -2,17 +2,17 @@ package FSmooth
 
 object DSL {
   implicit final class TypeConstructorsForward(private val t: ExpressionType) extends AnyVal {
-    @inline def ->(r: Type): PartialFunType = PartialFunType(t, r)
+    @inline def ->(r: Type): IncompleteFunType = IncompleteFunType(t, r)
     @inline def ->(r: ExpressionType): FunType = FunType(t, r)
   }
 
-  implicit final class SeqTypeConstructorsForward(private val pt: PartialFunType) extends AnyVal {
-    @inline def ->(r: Type): PartialFunType = PartialFunType(pt, r)
+  implicit final class SeqTypeConstructorsForward(private val pt: IncompleteFunType) extends AnyVal {
+    @inline def ->(r: Type): IncompleteFunType = IncompleteFunType(pt, r)
     @inline def ->(r: ExpressionType): FunType = FunType(pt, r)
   }
   implicit final class FunTypeConstructorsForward(private val t: FunType) extends AnyVal {
-    @inline def ->(r: Type): PartialFunType = PartialFunType(PartialFunType(t.inT, t.outT), r)
-    @inline def ->(r: ExpressionType): FunType = FunType(PartialFunType(t.inT, t.outT), r)
+    @inline def ->(r: Type): IncompleteFunType = IncompleteFunType(IncompleteFunType(t.inT, t.outT), r)
+    @inline def ->(r: ExpressionType): FunType = FunType(IncompleteFunType(t.inT, t.outT), r)
   }
 
   implicit final class TupleTypeConstructors(private val a: ExpressionType) extends AnyVal {

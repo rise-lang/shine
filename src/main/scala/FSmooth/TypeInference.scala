@@ -13,8 +13,7 @@ object TypeInference {
         case None => throw new Exception(s"Unbound Identifier: $i with env: $env")
       }
     case Abstraction(xs, e, _) =>
-      val newXs = xs.map(i => Identifier(i.name))
-      val extendedEnv = env ++ newXs.map(i => (i.name, i.t))
+      val extendedEnv = env ++ xs.map(i => (i.name, i.t))
       checkIdentifierAreInBound(e, extendedEnv)
     case Application(f, es, _) =>
       checkIdentifierAreInBound(f, env)
@@ -24,8 +23,7 @@ object TypeInference {
       checkIdentifierAreInBound(thenBranch, env)
       checkIdentifierAreInBound(elseBranch, env)
     case Let(x, init, e, _) =>
-      val newX = Identifier(x.name)
-      val extendedEnv = env ++ Map((newX.name, newX.t))
+      val extendedEnv = env ++ Map((x.name, x.t))
       checkIdentifierAreInBound(init, extendedEnv)
       checkIdentifierAreInBound(e, extendedEnv)
     case _: Constants | _: CardinalityValue | _: IndexValue | _: ScalarValue =>
@@ -40,9 +38,9 @@ object TypeInference {
       if (ts.length != xs.length) throw new Exception("This should not happen")
       e.t match {
         case et: ExpressionType =>
-          collect(e) ++ Set(Constraint(t, FunType(ts.reduce(PartialFunType), et)))
+          collect(e) ++ Set(Constraint(t, FunType(ts.reduce(IncompleteFunType), et)))
         case tv: TypeVar =>
-          collect(e) ++ Set(Constraint(t, FunType(ts.reduce(PartialFunType), ExpressionTypeVar(tv.name))))
+          collect(e) ++ Set(Constraint(t, FunType(ts.reduce(IncompleteFunType), ExpressionTypeVar(tv.name))))
         case _ => throw new Exception("This should not happen")
       }
     case Application(f, es, t) =>
@@ -54,7 +52,7 @@ object TypeInference {
       val ts = es.map(_.t)
       if (ts.length != es.length) throw new Exception("This should not happen")
       es.map(collect).foldLeft(collect(f))(_ ++ _) ++ Set(
-        Constraint(f.t, FunType(ts.reduce(PartialFunType), et))
+        Constraint(f.t, FunType(ts.reduce(IncompleteFunType), et))
       )
     case Conditional(cond, thenBranch, elseBranch, t) =>
       collect(cond) ++ collect(thenBranch) ++ collect(elseBranch) ++ Set(
@@ -107,8 +105,8 @@ object TypeInference {
           FunType(
             substitute(inT, tv, replacement),
             substitute(outT, tv, replacement).asInstanceOf[ExpressionType])
-        case PartialFunType(inT, outT) =>
-          PartialFunType(
+        case IncompleteFunType(inT, outT) =>
+          IncompleteFunType(
             substitute(inT, tv, replacement),
             substitute(outT, tv, replacement))
         case Array(elemType) =>
@@ -162,15 +160,15 @@ object TypeInference {
         unify(Set(
           Constraint(t1, t2),
           Constraint(r1, r2)))
-      case (PartialFunType(t1, r1), PartialFunType(t2, r2)) =>
+      case (IncompleteFunType(t1, r1), IncompleteFunType(t2, r2)) =>
         unify(Set(
           Constraint(t1, t2),
           Constraint(r1, r2)))
-      case (PartialFunType(t1, r1: ExpressionType), FunType(t2, r2)) =>
+      case (IncompleteFunType(t1, r1: ExpressionType), FunType(t2, r2)) =>
         unify(Set(
           Constraint(t1, t2),
           Constraint(r1, r2)))
-      case (FunType(t1, r1), PartialFunType(t2, r2: ExpressionType)) =>
+      case (FunType(t1, r1), IncompleteFunType(t2, r2: ExpressionType)) =>
         unify(Set(
           Constraint(t1, t2),
           Constraint(r1, r2)))
