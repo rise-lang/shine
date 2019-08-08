@@ -3,6 +3,9 @@ package FSmooth
 import FSmooth.traversal._
 
 object substitute {
+  def apply(expr: Expr, `for`: Expr, in: Expr): Expr =
+    apply(Seq(expr), Seq(`for`), in)
+
   def apply(exprs: Seq[Expr], `for`: Seq[Expr], in: Expr): Expr = {
     object Visitor extends traversal.Visitor {
       override def apply(e: Expr): Result[Expr] = {

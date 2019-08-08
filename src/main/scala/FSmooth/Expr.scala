@@ -45,5 +45,5 @@ final case class CardinalityValue(N: Int) extends Expr(Card)
 
 abstract class Constants(t: Type) extends Expr(t) {
   def typeScheme: Type
-  def copy(t: Type): Constants
+  def copyWithType(t: Type): Constants
 }
