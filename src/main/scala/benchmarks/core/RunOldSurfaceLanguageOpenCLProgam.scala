@@ -1,7 +1,7 @@
 package benchmarks.core
 
 import idealised.DPIA
-import idealised.OpenCL.KernelWithSizes
+import idealised.OpenCL.{GlobalSize, KernelWithSizes, LocalSize}
 import idealised.SurfaceLanguage.Expr
 import idealised.SurfaceLanguage.Types.TypeInference
 import idealised.utils.{Display, Time, TimeSpan}
@@ -25,7 +25,7 @@ abstract class RunOldSurfaceLanguageOpenCLProgam(val verbose:Boolean) {
   protected def runScalaProgram(input:Input):Array[Float]
 
   private def compile(localSize:ArithExpr, globalSize:ArithExpr):KernelWithSizes = {
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(localSize, globalSize)(DPIA.FromSurfaceLanguage(TypeInference(this.expr, Map())))
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(LocalSize(localSize), GlobalSize(globalSize))(DPIA.FromSurfaceLanguage(TypeInference(this.expr, Map())))
 
     if(verbose) {
       println(kernel.code)

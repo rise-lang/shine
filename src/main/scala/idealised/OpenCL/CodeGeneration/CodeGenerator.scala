@@ -13,7 +13,7 @@ import idealised.DPIA.Types._
 import idealised.DPIA._
 import idealised.OpenCL.FunctionalPrimitives.OpenCLFunction
 import idealised.OpenCL.ImperativePrimitives._
-import idealised.OpenCL.{NDRange, BuiltInFunction}
+import idealised.OpenCL.{BuiltInFunction, GlobalSize, LocalSize, NDRange}
 import idealised._
 import lift.arithmetic
 import lift.arithmetic._
@@ -21,15 +21,15 @@ import lift.arithmetic._
 import scala.collection.{immutable, mutable}
 
 object CodeGenerator {
-  def apply(localSize: Option[NDRange], globalSize: Option[NDRange]): CodeGenerator =
+  def apply(localSize: Option[LocalSize], globalSize: Option[GlobalSize]): CodeGenerator =
     new CodeGenerator(mutable.ListBuffer[Decl](), immutable.Map[String, arithmetic.Range](), localSize, globalSize)
 }
 
 class CodeGenerator(override val decls: CCodeGenerator.Declarations,
                     override val ranges: CCodeGenerator.Ranges,
                     //TODO Use information about sizes. Sizes are currently not used in the CodeGenerator.
-                    localSize: Option[NDRange],
-                    globalSize: Option[NDRange])
+                    localSize: Option[LocalSize],
+                    globalSize: Option[GlobalSize])
   extends CCodeGenerator(decls, ranges) {
   override def name: String = "OpenCL"
 

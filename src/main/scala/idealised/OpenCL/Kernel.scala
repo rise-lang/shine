@@ -46,11 +46,10 @@ case class Kernel(decls: Seq[C.AST.Decl],
     val kernelF = kernel.as[ScalaFunction`(`Array[Float]`)=>`Array[Float]]
     val (result, time) = kernelF(xs `;`)
     */
-  def as[F <: FunctionHelper](localSize: NDRange, globalSize: NDRange)
+  def as[F <: FunctionHelper](localSize: LocalSize, globalSize: GlobalSize)
                              (implicit ev: F#T <:< HList): F#T => (F#R, TimeSpan[Time.ms]) = {
     hArgs: F#T => {
       val args: List[Any] = hArgs.toList
-
       val (sizeVarMap, outputArg, inputArgs) = createKernelArgs(inputParams, args)
       val kernelArgs = outputArg::inputArgs
 
@@ -58,10 +57,10 @@ case class Kernel(decls: Seq[C.AST.Decl],
       val kernelJNI = opencl.executor.Kernel.create(c, kernel.name, "")
 
       List(localSize match {
-        case x if !x.isEvaluable => Some(s"OpenCL local size is not evaluable (currently set to $x)")
+        case LocalSize(x) if !x.isEvaluable => Some(s"OpenCL local size is not evaluable (currently set to $x)")
         case _ => None
       }, globalSize match {
-        case x if !x.isEvaluable => Some(s"OpenCL local size is not evaluable (currently set to $x)")
+        case GlobalSize(x) if !x.isEvaluable => Some(s"OpenCL local size is not evaluable (currently set to $x)")
         case _ => None
       }).filter(_.isDefined).map(_.get) match {
         case Nil =>
@@ -72,12 +71,12 @@ case class Kernel(decls: Seq[C.AST.Decl],
 
       val lengthMapping = sizeVarMap.asInstanceOf[Map[Nat,Nat]]
       val runtime = Executor.execute(kernelJNI,
-        ArithExpr.substitute(localSize.x, lengthMapping).eval,
-        ArithExpr.substitute(localSize.y, lengthMapping).eval,
-        ArithExpr.substitute(localSize.z, lengthMapping).eval,
-        ArithExpr.substitute(globalSize.x, lengthMapping).eval,
-        ArithExpr.substitute(globalSize.y, lengthMapping).eval,
-        ArithExpr.substitute(globalSize.z, lengthMapping).eval,
+        ArithExpr.substitute(localSize.size.x, lengthMapping).eval,
+        ArithExpr.substitute(localSize.size.y, lengthMapping).eval,
+        ArithExpr.substitute(localSize.size.z, lengthMapping).eval,
+        ArithExpr.substitute(globalSize.size.x, lengthMapping).eval,
+        ArithExpr.substitute(globalSize.size.y, lengthMapping).eval,
+        ArithExpr.substitute(globalSize.size.z, lengthMapping).eval,
         kernelArgs.toArray
         )
 
@@ -283,8 +282,8 @@ case class Kernel(decls: Seq[C.AST.Decl],
 }
 
 sealed case class KernelWithSizes(kernel: Kernel,
-                                  localSize: NDRange,
-                                  globalSize: NDRange) {
+                                  localSize: LocalSize,
+                                  globalSize: GlobalSize) {
   def as[F <: FunctionHelper](implicit ev: F#T <:< HList): F#T => (F#R, TimeSpan[Time.ms]) =
     kernel.as[F](localSize, globalSize)
 
@@ -294,10 +293,10 @@ sealed case class KernelWithSizes(kernel: Kernel,
 sealed case class KernelNoSizes(kernel: Kernel) {
   //noinspection TypeAnnotation
   def as[F <: FunctionHelper](implicit ev: F#T <:< HList) = new {
-    def apply(localSize: NDRange, globalSize: NDRange): F#T => (F#R, TimeSpan[Time.ms]) =
+    def apply(localSize: LocalSize, globalSize: GlobalSize): F#T => (F#R, TimeSpan[Time.ms]) =
       kernel.as[F](localSize, globalSize)
 
-    def withSizes(localSize: NDRange, globalSize: NDRange): F#T => (F#R, TimeSpan[Time.ms]) =
+    def withSizes(localSize: LocalSize, globalSize: GlobalSize): F#T => (F#R, TimeSpan[Time.ms]) =
       kernel.as[F](localSize, globalSize)
   }
 

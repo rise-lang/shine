@@ -64,7 +64,7 @@ object dmapExample extends App{
   def printKernel(expr: Expr) {
     //def generate(e:Expr) = idealised.OpenMP.ProgramGenerator.makeCode(TypeInference(e, Map()).toPhrase)
     def generate(e:Expr) =
-      KernelGenerator.makeCode(localSize = 8, globalSize = 8)(DPIA.FromSurfaceLanguage(TypeInference(e, Map())))
+      KernelGenerator.makeCode(LocalSize(8), GlobalSize(8))(DPIA.FromSurfaceLanguage(TypeInference(e, Map())))
     println(generate(expr).code)
   }
 
@@ -83,7 +83,7 @@ object dmapExample extends App{
   Executor.loadAndInit()
   import idealised.OpenCL._
   val kernel = idealised.OpenCL.KernelGenerator
-    .makeCode(localSize = 1, globalSize = 1)(DPIA.FromSurfaceLanguage(TypeInference(triangleVectorMultGlobalFused(actualN), Map())))
+    .makeCode(LocalSize(1), GlobalSize(1))(DPIA.FromSurfaceLanguage(TypeInference(triangleVectorMultGlobalFused(actualN), Map())))
   println(kernel.code)
 
   val inputVector = Array.tabulate(actualN)(id => id + 1.0f)

@@ -17,8 +17,7 @@ import scala.language.implicitConversions
 
 //noinspection VariablePatternShadow
 object KernelGenerator {
-  def makeCode[T <: PhraseType, L, G](localSize: L, globalSize: G)(originalPhrase: Phrase[T])
-                                     (implicit toLRange: L => NDRange, toGRange: G => NDRange): OpenCL.KernelWithSizes = {
+  def makeCode[T <: PhraseType](localSize: LocalSize, globalSize: GlobalSize)(originalPhrase: Phrase[T]): OpenCL.KernelWithSizes = {
     val (phrase, params, defs) = getPhraseAndParams(originalPhrase, Seq(), Seq())
     makeKernel("KERNEL", phrase, params.reverse, defs.reverse, Some(localSize), Some(globalSize)).right.get
   }
@@ -44,8 +43,8 @@ object KernelGenerator {
                          p: Phrase[ExpType],
                          inputParams: Seq[Identifier[ExpType]],
                          letNatDefs:Seq[(LetNatIdentifier, Phrase[ExpType])],
-                         localSize: Option[NDRange],
-                         globalSize: Option[NDRange]): Either[OpenCL.KernelNoSizes, OpenCL.KernelWithSizes] = {
+                         localSize: Option[LocalSize],
+                         globalSize: Option[GlobalSize]): Either[OpenCL.KernelNoSizes, OpenCL.KernelWithSizes] = {
 
     val outParam = createOutputParam(outT = p.t)
 

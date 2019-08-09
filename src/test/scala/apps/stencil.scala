@@ -1,7 +1,7 @@
 package apps
 
 import benchmarks.core.{CorrectnessCheck, RunOpenCLProgram}
-import idealised.OpenCL.KernelWithSizes
+import idealised.OpenCL.{GlobalSize, KernelWithSizes, LocalSize}
 import idealised.util.gen
 import idealised.utils.Time.ms
 import idealised.utils.{Display, TimeSpan}
@@ -19,8 +19,8 @@ class stencil extends idealised.util.Tests {
 
   private case class StencilResult(inputSize: Int,
                                    stencilSize: Int,
-                                   localSize: Int,
-                                   globalSize: Int,
+                                   localSize: LocalSize,
+                                   globalSize: GlobalSize,
                                    code: String,
                                    runtimeMs: Double,
                                    correctness: CorrectnessCheck
@@ -43,7 +43,7 @@ class stencil extends idealised.util.Tests {
 
     def stencilSize: Int
 
-    override def makeSummary(localSize: Int, globalSize: Int, code: String, runtimeMs: Double, correctness: CorrectnessCheck): StencilResult = {
+    override def makeSummary(localSize: LocalSize, globalSize: GlobalSize, code: String, runtimeMs: Double, correctness: CorrectnessCheck): StencilResult = {
       StencilResult(
         inputSize = inputSize,
         stencilSize = stencilSize,
@@ -184,18 +184,18 @@ class stencil extends idealised.util.Tests {
   }
 
   test("Basic 1D addition stencil") {
-    BasicStencil1D(1024, 5).run(localSize = 4, globalSize = 4).correctness.check()
+    BasicStencil1D(1024, 5).run(LocalSize(4), GlobalSize(4)).correctness.check()
   }
 
   ignore("Partitioned 1D addition stencil, with specialised area handling") {
-    PartitionedStencil1D(256, 3).run(localSize = 4, globalSize = 32).correctness.check()
+    PartitionedStencil1D(256, 3).run(LocalSize(4), GlobalSize(32)).correctness.check()
   }
 
   test("Basic 2D addition stencil") {
-    BasicStencil2D(256, stencilSize = 11).run(localSize = 2, globalSize = 4).correctness.check()
+    BasicStencil2D(256, stencilSize = 11).run(LocalSize(2), GlobalSize(4)).correctness.check()
   }
 
   ignore("Partitioned 2D addition stencil") {
-    PartitionedStencil2D(inputSize = 1024, stencilSize = 11).run(localSize = 4, globalSize = 1024).correctness.check()
+    PartitionedStencil2D(inputSize = 1024, stencilSize = 11).run(LocalSize(4), GlobalSize(1024)).correctness.check()
   }
 }
