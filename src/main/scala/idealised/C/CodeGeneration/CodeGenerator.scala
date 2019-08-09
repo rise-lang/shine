@@ -958,23 +958,19 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
   }
 
 
-  private def visitAndGenerateNat[N <: C.AST.Node](node:N, env:Environment):N = {
-    C.AST.Nodes.VisitAndRebuild(node, new C.AST.Nodes.VisitAndRebuild.Visitor() {
-      override def post(n: Node): Node =
-        n match {
-          case C.AST.ArithmeticExpr(ae) => genNat(ae, env)
-          case other => other
+  private def visitAndGenerateNat(node:Stmt, env:Environment):Stmt = {
+    C.AST.Nodes.VisitAndGenerateStmt(node, new C.AST.Nodes.VisitAndGenerateStmt.Visitor() {
+      override def onExpr(e: Expr, cont: Expr => Stmt): Stmt = e match {
+        case C.AST.ArithmeticExpr(ae) => genNat(ae, env, cont)
+        case other => cont(other)
       }
     })
   }
 
-
-  def genNat(n: Nat,
-          env: Environment): Expr = {
-
-    def boolExp(b:BoolExpr, env:Environment):C.AST.Expr = b match {
-      case BoolExpr.True => C.AST.Literal("true")
-      case BoolExpr.False => C.AST.Literal("false")
+  override def genNat(n:Nat, env:Environment, cont:Expr => Stmt):Stmt = {
+    def boolExp(b:BoolExpr, env:Environment, cont:Expr => Stmt):Stmt= b match {
+      case BoolExpr.True => cont(C.AST.Literal("true"))
+      case BoolExpr.False => cont(C.AST.Literal("false"))
       case BoolExpr.ArithPredicate(lhs, rhs, op) =>
         val cOp = op match {
           case ArithPredicate.Operator.!= => C.AST.BinaryOperator.!=
@@ -984,51 +980,149 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           case ArithPredicate.Operator.> => C.AST.BinaryOperator.>
           case ArithPredicate.Operator.>= => C.AST.BinaryOperator.>=
         }
-        C.AST.BinaryExpr(C.AST.ArithmeticExpr(lhs), cOp, C.AST.ArithmeticExpr(rhs))
+        genNat(lhs, env, lhs => genNat(rhs, env, rhs => cont( C.AST.BinaryExpr(lhs, cOp, rhs))))
     }
-    import C.AST
-    n match {
-      case Cst(c) => AST.Literal(c.toString)
-      case Pow(b, ex) =>
-        ex match {
-          case Cst(2) => AST.BinaryExpr(genNat(b, env),AST.BinaryOperator.*, genNat(b, env))
-          case _ => AST.Cast(AST.Type.int, AST.FunCall(AST.DeclRef("pow"), immutable.Seq(
-            AST.Cast(AST.Type.float, genNat(b, env)), AST.Cast(AST.Type.float, genNat(b, env)))
-          ))
-        }
-      case Log(b, x) => AST.Cast(AST.Type.int, AST.FunCall(AST.DeclRef("log" + b), immutable.Seq(
-        AST.Cast(AST.Type.float, genNat(x, env)))
-      ))
-      case Prod(es) => es.foldLeft(AST.Literal("1"):AST.Expr)((accum:AST.Expr, e:ArithExpr) => {
-        e match {
-          case Pow(b, Cst(-1)) => C.AST.BinaryExpr(accum, AST.BinaryOperator./, genNat(b, env))
-          case _ => C.AST.BinaryExpr(accum, AST.BinaryOperator.*, genNat(e, env))
-        }
-      })
-      case Sum(es) => es.map(genNat(_, env)).reduceOption(AST.BinaryExpr(_, AST.BinaryOperator.+, _)).getOrElse(AST.Literal("0"))
-      case Mod(a, n) => AST.BinaryExpr(genNat(a, env), AST.BinaryOperator.%, genNat(n, env))
-      case v:Var => C.AST.DeclRef(v.toString)
-      case IntDiv(n, d) => AST.BinaryExpr(genNat(n, env), AST.BinaryOperator./, genNat(d, env))
-      case lu:Lookup => AST.FunCall(AST.DeclRef(s"lookup${lu.id}"), immutable.Seq(AST.Literal(lu.index.toString)))
 
-      case lift.arithmetic.IfThenElse(cond, trueBranch, falseBranch) => AST.TernaryExpr(
-        boolExp(cond, env), genNat(trueBranch, env), genNat(falseBranch, env))
-
-      case natFunCall: NatFunCall =>
-        if(natFunCall.args.isEmpty) {
-          env.inlLetNatEnv(natFunCall.fun)
-        } else {
-          AST.FunCall(AST.DeclRef(natFunCall.name), natFunCall.args.map({
-            case NatArg(n) => genNat(n, env)
-            case LetNatIdArg(ident) => env.inlLetNatEnv(ident)
-          }))
-        }
-
-      case sp: SteppedCase => genNat(sp.intoIfChain(), env)
-      case otherwise => throw new Exception(s"Don't know how to print $otherwise")
+    /**
+      * General form of expression generation algorithm from a series of nats,
+      * Used by sum and product
+      *
+      *
+      * @param nats The series of nats from which the expression is generated
+      * @param behavior For each input nat, this function returns both the actual nat we wish to generate
+      *                 (It's not always the input nat, as in the case of Pow-in-Prod) and the binary operator
+      *                 used
+      * @param default In case the nat list is empty, we shall return this value
+      * @param cont The cont of the generation
+      * @param accum Internal accumulator used across iterations
+      * @return
+      */
+    def genBinopFold(nats:Iterable[Nat],
+                     behavior:Nat => (Nat, C.AST.BinaryOperator.Value),
+                     default:Expr,
+                     cont:Expr => Stmt,
+                     accum:Option[Expr] = None):Stmt = {
+      nats.headOption match {
+        case None => cont(accum.getOrElse(default))
+        case Some(nat) =>
+          accum match {
+            case None => genNat(nat, env, exp => genBinopFold(nats.tail, behavior, default, cont, Some(exp)))
+            case Some(acc) =>
+              val (natToGenerate,op) = behavior(nat)
+              genNat(natToGenerate, env, exp => genBinopFold(nats.tail, behavior, default, cont, Some(C.AST.BinaryExpr(acc, op, exp))))
+          }
+      }
     }
+
+       import C.AST
+       n match {
+         case Cst(c) => cont(AST.Literal(c.toString))
+         case Pow(b, ex) =>
+           ex match {
+             case Cst(2) =>
+               genNat(b, env, b => cont(AST.BinaryExpr(b,AST.BinaryOperator.*, b)))
+             case _ =>
+               genNat(b, env, b =>
+                 genNat(ex, env, ex =>
+                   cont(AST.Cast(AST.Type.int, AST.FunCall(AST.DeclRef("pow"), immutable.Seq(
+                     AST.Cast(AST.Type.float, b), AST.Cast(AST.Type.float, ex))))
+                   )
+                 )
+               )
+           }
+         case Log(b, x) =>
+           genNat(b, env, b =>
+             genNat(x, env, x =>
+               cont(AST.Cast(AST.Type.int, AST.FunCall(AST.DeclRef("log" + b), immutable.Seq(
+                 AST.Cast(AST.Type.float, x))
+               )))
+             )
+           )
+
+         case Prod(es) =>
+           genBinopFold(
+             es, {
+               case Pow(b, Cst(-1)) => (b, AST.BinaryOperator./)
+               case e => (e, AST.BinaryOperator.*)
+             }, AST.Literal("0"), cont
+           )
+
+         case Sum(es) =>
+           genBinopFold(es, n => (n, AST.BinaryOperator.+), AST.Literal("0"), cont)
+
+         case Mod(a, n) =>
+           genNat(a, env, a => genNat(n, env, n => cont(AST.BinaryExpr(a, AST.BinaryOperator.%, n))))
+         case v:Var => cont(C.AST.DeclRef(v.toString))
+         case IntDiv(n, d) =>
+           genNat(n, env, n => genNat(d, env, d => cont(AST.BinaryExpr(n, AST.BinaryOperator./, d))))
+
+         case lu:Lookup => cont(AST.FunCall(AST.DeclRef(s"lookup${lu.id}"), immutable.Seq(AST.Literal(lu.index.toString))))
+
+         case lift.arithmetic.IfThenElse(cond, trueBranch, falseBranch) =>
+           boolExp(cond, env,
+             cond => genNat(trueBranch, env,
+               trueBranch => genNat(falseBranch, env,
+                 falseBranch => cont(AST.TernaryExpr(cond, trueBranch, falseBranch)))))
+
+
+         case natFunCall: NatFunCall =>
+           if(natFunCall.args.isEmpty) {
+             cont(env.inlLetNatEnv(natFunCall.fun))
+           } else {
+             def rec(worklist:Iterable[NatFunArg], accum:immutable.Seq[Expr], cont:immutable.Seq[Expr] => Stmt):Stmt = {
+               worklist.headOption match {
+                 case None => cont(accum)
+                 case Some(arg) => arg match {
+                   case NatArg(n) => genNat(n, env, n => rec(worklist.tail, accum :+ n, cont))
+                   case LetNatIdArg(ident) => rec(worklist.tail, accum :+ env.inlLetNatEnv(ident), cont)
+                 }
+               }
+             }
+
+             rec(natFunCall.args, immutable.Seq(), exprs => cont(AST.FunCall(AST.DeclRef(natFunCall.name), exprs)))
+           }
+
+         case sp: SteppedCase => genNat(sp.intoIfChain(), env, cont)
+
+         case BigSum(variable, body) =>
+             genNat(variable.from, env, from => {
+               genNat(variable.upTo, env, upTo => {
+                 genNat(body, env, bodyE => {
+                   val loopVar = C.AST.DeclRef(variable.toString)
+
+                   val init = C.AST.DeclStmt(C.AST.VarDecl(loopVar.name, C.AST.Type.int, init = Some(from)))
+                   val cond = C.AST.BinaryExpr(loopVar, C.AST.BinaryOperator.<, upTo)
+                   val increment = C.AST.Assignment(loopVar, C.AST.ArithmeticExpr(NamedVar(loopVar.name, variable.range) + 1))
+
+                   val accumVar = C.AST.VarDecl(freshName("accum_"), C.AST.Type.int, Some(AST.Literal("0")))
+
+
+                   val forLoop = C.AST.ForLoop(init,
+                     cond,
+                     increment,
+                     Block(
+                       immutable.Seq(
+                         C.AST.ExprStmt(C.AST.Assignment(
+                           C.AST.DeclRef(accumVar.name),
+                           C.AST.BinaryExpr(C.AST.DeclRef(accumVar.name), C.AST.BinaryOperator.+, bodyE)
+                         ))
+                       )
+                     )
+                   )
+
+                   C.AST.Stmts(
+                     C.AST.Stmts(
+                        C.AST.DeclStmt(accumVar),
+                        forLoop
+                     ),
+                     cont(C.AST.DeclRef(accumVar.name))
+                   )
+                 })
+               })
+             })
+         case otherwise => throw new Exception(s"Don't know how to print $otherwise")
+       }
   }
-
 
   protected def genPad(n: Nat, l: Nat, r: Nat,
                        left: Expr, right: Expr,

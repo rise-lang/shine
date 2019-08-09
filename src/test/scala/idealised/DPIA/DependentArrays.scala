@@ -32,4 +32,19 @@ class DependentArrays extends idealised.util.Tests {
     SyntaxChecker.checkOpenCL(code)
     println(code)
   }
+
+  test("Big sum generates a for loop") {
+    val f =
+      nFun(n =>
+        fun(DepArrayType(n, i =>
+          ArrayType(i % 4, int)))(array => depMapSeq(fun(x => mapSeq(fun(y => y + 1), x) ), array)))
+
+    val p = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(TypeInference(f, Map())))
+
+    val code = p.code
+    SyntaxChecker.checkOpenCL(code)
+    println(code)
+
+    "for".r.findAllIn(code).length shouldBe 4
+  }
 }
