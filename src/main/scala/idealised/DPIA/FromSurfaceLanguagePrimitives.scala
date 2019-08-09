@@ -215,8 +215,8 @@ object FromSurfaceLanguagePrimitives {
           FromSurfaceLanguage.asPhrase[DPIA.Types.ExpType](e)
         ))
 
-      case Cast(bt, e, _) => e.t match {
-        case Some(edt: BasicType) => {
+      case Cast(bt, e, _) => (e.t: @unchecked) match {
+        case Some(edt: BasicType) =>
           def toDPIABasicType(bt: DataType): DPIA.Types.BasicType = {
             bt match {
               case SurfaceLanguage.Types.NatType => DPIA.Types.NatType
@@ -231,7 +231,6 @@ object FromSurfaceLanguagePrimitives {
 
           Some(FunctionalPrimitives.Cast(toDPIABasicType(edt), toDPIABasicType(bt),
             FromSurfaceLanguage.asPhrase[ExpType](e)))
-        }
       }
 
       case Tuple(fst, snd, _) => ( (fst.t, snd.t) : @unchecked) match {
@@ -272,7 +271,7 @@ object FromSurfaceLanguagePrimitives {
             FromSurfaceLanguage.asPhrase[DPIA.Types.ExpType](array)))
       }
 
-      case to: To => to.t match {
+      case to: To => (to.t : @unchecked) match {
         case Some(dt: DataType) =>
           Some(makeDPIATo(to)(dt, FromSurfaceLanguage.asPhrase[DPIA.Types.ExpType](to.input)))
       }

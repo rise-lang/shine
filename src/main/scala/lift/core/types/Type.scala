@@ -75,7 +75,7 @@ object double extends ScalarType { override def toString: String = "double" }
 object NatType extends ScalarType { override def toString: String = "nat"}
 
 final case class IndexType(size: Nat) extends BasicType {
-  override def toString: String = s"idx($size)"
+  override def toString: String = s"idx[$size]"
 }
 
 // TODO: enforce ScalarType

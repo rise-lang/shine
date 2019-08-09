@@ -13,6 +13,7 @@ object traversal {
     s => {
       case Identifier(_) => None
       case Lambda(x, e) => Some(s(e).mapSuccess(Lambda(x, _)))
+      case Apply(f, e) => throw new Exception("This should not happen")
       case DepLambda(x, e) => x match {
         case n: NatIdentifier => Some(s(e).mapSuccess(DepLambda[NatKind](n, _)))
         case dt: DataTypeIdentifier => Some(s(e).mapSuccess(DepLambda[DataKind](dt, _)))
@@ -22,8 +23,6 @@ object traversal {
         case dt: DataType => Some(s(f).mapSuccess(DepApply[DataKind](_, dt)))
       }
       case Literal(_) => None
-      case Index(_, _) => None
-      case NatExpr(_) => None
       case TypedExpr(e, t) => Some(s(e).mapSuccess(TypedExpr(_, t)))
       case ff: ForeignFunction => None
       case p: Primitive => None
@@ -83,6 +82,8 @@ object traversal {
   def oncebu: Strategy => Strategy = s => ((e: Expr) => one(oncebu(s))(e)) <+ s
 
   def alltd: Strategy => Strategy = s => s <+ (e => all(alltd(s))(e))
+
+  def tryAll: Strategy => Strategy = s => ((e: Expr) => all(tryAll(`try`(s)))(e)) `;` `try`(s)
 
   def sometd: Strategy => Strategy = s => s <+ (e => some(sometd(s))(e))
 

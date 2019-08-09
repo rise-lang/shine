@@ -100,7 +100,7 @@ object HoistMemoryAllocations {
                   case OpenCL.Global =>
                     throw new Exception("This should not happen")
                 }
-              case AddressSpace.Private =>
+              case AddressSpace.Private | AddressSpace.Constant | AddressSpaceIdentifier(_) =>
                 throw new Exception("This can't happen")
             }
         }

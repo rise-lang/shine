@@ -1,6 +1,7 @@
 package lift.core
 
 import lift.arithmetic.NamedVar
+import lift.core.semantics._
 import lift.core.types._
 
 object traversal {
@@ -53,11 +54,11 @@ object traversal {
               case n2n: NatToNat    => DepApply[NatToNatKind](apply(f, v), v.visitN2N(n2n).value)
               case n2d: NatToData   => DepApply[NatToDataKind](apply(f, v), v.visitN2D(n2d).value)
             }
-            case l: Literal => l
-            case Index(n, size) =>
-              Index(v.visitNat(n).value, v.visitNat(size).value)
-            case NatExpr(n) =>
-              NatExpr(v.visitNat(n).value)
+            case l: Literal => l.d match {
+              case NatData(n)       => Literal(NatData(v.visitNat(n).value))
+              case IndexData(i, n)  => Literal(IndexData(v.visitNat(i).value, v.visitNat(n).value))
+              case _ => l
+            }
             case TypedExpr(e, t) =>
               TypedExpr(apply(e, v), v.visitType(t).value)
             // could be avoided if foreign fun could be parametric
@@ -114,11 +115,13 @@ object traversal {
             case dt: DataType => chainDT(apply(f, v), dt).map(r => DepApply[DataKind](r._1, r._2))
             case a: AddressSpace => chainA(apply(f, v), a).map(r => DepApply[AddressSpaceKind](r._1, r._2))
           }
-          case l: Literal => Continue(l, v)
-          case Index(n, size) =>
-            chainN(v.visitNat(n), size).map(r => Index(r._1, r._2))
-          case NatExpr(n) =>
-            v.visitNat(n).map(NatExpr)
+          case l: Literal => l.d match {
+            case NatData(n) =>
+              v.visitNat(n).map(r => Literal(NatData(r)))
+            case IndexData(i, n) =>
+              chainN(v.visitNat(i), n).map(r => Literal(IndexData(r._1, r._2)))
+            case _ => Continue(l, v)
+          }
           case TypedExpr(e, t) =>
             chainT(apply(e, v), t).map(r => TypedExpr(r._1, r._2))
           // could be avoided if foreign fun could be parametric

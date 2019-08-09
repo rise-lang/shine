@@ -1,12 +1,13 @@
 package idealised.OpenCL.CodeGeneration
 
+import idealised.DPIA._
 import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives.AsIndex
 import idealised.DPIA.Phrases._
-import idealised.DPIA.Types.{AccType, CommType, ExpType, PairType, PhraseType, read}
+import idealised.DPIA.Types._
 import idealised.OpenCL.AST.ParamDecl
 import idealised.OpenCL.FunctionalPrimitives.OpenCLFunction
-import idealised.OpenCL.AddressSpace
+import idealised.OpenCL.CodeGeneration.HoistMemoryAllocations.AllocationInfo
 import idealised.{C, DPIA, OpenCL}
 
 import scala.collection.mutable
@@ -19,14 +20,24 @@ import scala.collection.mutable
 object AdaptKernelParameters {
 
   def apply(originalPhrase: Phrase[CommType],
-            params: Seq[ParamDecl],
-            inputParams: Seq[Identifier[ExpType]]
-           ): (Phrase[CommType], Seq[ParamDecl]) = {
-    val (newParams, scalarParamsInGlobalOrLocalMemory) = adaptParamDecls(params, inputParams)
+            out: Identifier[AccType],
+            ins: Seq[Identifier[ExpType]],
+            intermediateAllocations: Seq[AllocationInfo],
+            gen: CodeGenerator
+           ): (Phrase[CommType], Identifier[AccType], Seq[Identifier[ExpType]], Seq[AllocationInfo], Seq[ParamDecl]) = {
+    val params = makeParams(out, ins, intermediateAllocations, gen)
+    val (newParams, scalarParamsInGlobalOrLocalMemory) = adaptParamDecls(params, ins)
 
     val rewrittenPhrase = VisitAndRebuild(originalPhrase, Visitor(scalarParamsInGlobalOrLocalMemory))
 
-    (rewrittenPhrase, newParams)
+    def rewriteIdentifier[T <: PhraseType](x: Identifier[T]): Identifier[T] =
+      if (scalarParamsInGlobalOrLocalMemory(x.name)) identifierAsSingletonArray(x) else x
+    val rewrittenOut = rewriteIdentifier(out)
+    val rewrittenIns = ins.map(rewriteIdentifier)
+    val rewrittenIntermediates = intermediateAllocations.map(alloc => AllocationInfo(alloc.addressSpace,
+      rewriteIdentifier(alloc.identifier)))
+
+    (rewrittenPhrase, rewrittenOut, rewrittenIns, rewrittenIntermediates, newParams)
   }
 
   private def adaptParamDecls(params: Seq[ParamDecl],
@@ -38,10 +49,10 @@ object AdaptKernelParameters {
         case _: C.AST.BasicType =>
           paramDecl.addressSpace match {
             case AddressSpace.Global | AddressSpace.Local =>
-              // remember scalar parameters in global or local memory and change their type to an
-              // array of size 1
+              // remember scalar parameters in global or local memory and change their type to pointers
               scalarParamsInGlobalOrLocalMemory.add(paramDecl.name)
-              paramDecl.copy(t = C.AST.ArrayType(paramDecl.t, Some(1)))
+              paramDecl.copy(t = C.AST.PointerType(paramDecl.t,
+                const = inputParams.map(_.name).contains(paramDecl.name)))
             case _ => paramDecl
           }
         case at: C.AST.ArrayType =>
@@ -97,23 +108,70 @@ object AdaptKernelParameters {
         case _ => Continue(p, this)
       }
     }
+  }
 
-    private def identifierAsSingletonArray[T <: PhraseType](i: Identifier[T]): Identifier[T] = {
-      i.`type` match {
-        case _: ExpType =>
-          val ie = i.asInstanceOf[Identifier[ExpType]]
-          ie.copy(`type` = ExpType(DPIA.Types.ArrayType(1, ie.`type`.dataType), read)).asInstanceOf[Identifier[T]]
-        case _: AccType =>
-          val ia = i.asInstanceOf[Identifier[AccType]]
-          ia.copy(`type` = AccType(DPIA.Types.ArrayType(1, ia.`type`.dataType))).asInstanceOf[Identifier[T]]
-        case PairType(_: ExpType, _: AccType) =>
-          val ip = i.asInstanceOf[Identifier[PairType[ExpType, AccType]]]
-          ip.copy(`type` = PairType(
-            ExpType(DPIA.Types.ArrayType(1, ip.`type`.t1.dataType), read),
-              AccType(DPIA.Types.ArrayType(1, ip.`type`.t2.dataType)))).asInstanceOf[Identifier[T]]
-      }
+  private def identifierAsSingletonArray[T <: PhraseType](i: Identifier[T]): Identifier[T] = {
+    i.`type` match {
+      case _: ExpType =>
+        val ie = i.asInstanceOf[Identifier[ExpType]]
+        ie.copy(`type` = ExpType(DPIA.Types.ArrayType(1, ie.`type`.dataType), read)).asInstanceOf[Identifier[T]]
+      case _: AccType =>
+        val ia = i.asInstanceOf[Identifier[AccType]]
+        ia.copy(`type` = AccType(DPIA.Types.ArrayType(1, ia.`type`.dataType))).asInstanceOf[Identifier[T]]
+      case PairType(_: ExpType, _: AccType) =>
+        val ip = i.asInstanceOf[Identifier[PairType[ExpType, AccType]]]
+        ip.copy(`type` = PairType(
+          ExpType(DPIA.Types.ArrayType(1, ip.`type`.t1.dataType), read),
+          AccType(DPIA.Types.ArrayType(1, ip.`type`.t2.dataType)))).asInstanceOf[Identifier[T]]
     }
   }
 
+  private def makeParams(out: Identifier[AccType],
+                         ins: Seq[Identifier[ExpType]],
+                         intermediateAllocations: Seq[AllocationInfo],
+                         gen: CodeGenerator): Seq[OpenCL.AST.ParamDecl] = {
+    Seq(makeGlobalParam(out, gen)) ++ // first the output parameter ...
+      ins.map(makeInputParam(_, gen)) ++ // ... then the input parameters ...
+      intermediateAllocations.map(makeParam(_, gen)) //++  ... then the intermediate buffers ...
+  }
 
+  // pass arrays via global and scalar + tuple values via private memory
+  private def makeInputParam(i: Identifier[_], gen: CodeGenerator): OpenCL.AST.ParamDecl = {
+    getDataType(i) match {
+      case _: ArrayType => makeGlobalParam(i, gen)
+      case _: DepArrayType => makeGlobalParam(i, gen)
+      case _: BasicType => makePrivateParam(i, gen)
+      case _: RecordType => makePrivateParam(i, gen)
+      case _: DataTypeIdentifier => throw new Exception("This should not happen")
+      case _: NatToDataApply =>  throw new Exception("This should not happen")
+    }
+  }
+
+  private def makeGlobalParam(i: Identifier[_], gen: CodeGenerator): OpenCL.AST.ParamDecl = {
+    OpenCL.AST.ParamDecl(
+      i.name,
+      gen.typ(getDataType(i)),
+      AddressSpace.Global)
+  }
+
+  private def makePrivateParam(i: Identifier[_], gen: CodeGenerator): OpenCL.AST.ParamDecl = {
+    OpenCL.AST.ParamDecl(
+      i.name,
+      gen.typ(getDataType(i)),
+      AddressSpace.Private)
+  }
+
+  private def makeParam(allocInfo: AllocationInfo, gen: CodeGenerator): OpenCL.AST.ParamDecl = {
+    OpenCL.AST.ParamDecl(
+      allocInfo.identifier.name,
+      gen.typ(getDataType(allocInfo.identifier)),
+      allocInfo.addressSpace)
+  }
+
+  private def getDataType(i: Identifier[_]): DataType = i.t match {
+    case ExpType(dataType, _) => dataType
+    case AccType(dataType) => dataType
+    case PairType(ExpType(dt1, _), AccType(dt2)) if dt1 == dt2 => dt1
+    case _ => throw new Exception("This should not happen")
+  }
 }

@@ -64,8 +64,16 @@ object DSL {
     def |>(f: Expr): Expr = f.apply(e)
   }
 
+  implicit class FunPipeReverse(f: Expr) {
+    def $(e: Expr): Expr = f.apply(e)
+  }
+
   implicit class FunComp(f: Expr) {
     def >>(g: Expr): Expr = fun(x => g(f(x)))
+  }
+
+  implicit class FunCompReverse(f: Expr) {
+    def o(g: Expr): Expr = fun(x => f(g(x)))
   }
 
   // function values
@@ -256,16 +264,17 @@ object DSL {
     f(AddressSpaceIdentifier(freshName("_w")))
   }
 
-  implicit def wrapInNatExpr(n: Nat): NatExpr = NatExpr(n)
+  implicit def wrapInNatExpr(n: Nat): Literal = Literal(NatData(n))
 
-  def mapNatExpr(n: Expr, f: Nat => Nat): NatExpr = {
-    NatExpr(f(Internal.natFromNatExpr(n)))
+  def mapNatExpr(n: Expr, f: Nat => Nat): Literal = {
+    Literal(NatData(f(Internal.natFromNatExpr(n))))
   }
 
   private object Internal {
+    @scala.annotation.tailrec
     def natFromNatExpr(e: Expr): Nat = {
       e match {
-        case NatExpr(n) => n
+        case Literal(NatData(n)) => n
 
         case _: Identifier      => ??? // NamedVar(i.name, StartFromRange(0))
         case Apply(fun, arg)    => fun match {
@@ -278,7 +287,6 @@ object DSL {
         }
         case DepApply(fun, arg) => natFromNatExpr(lifting.liftDepFunExpr(fun).value(arg))
         case Literal(_)         => throw new Exception("This should never happen")
-        case Index(_, _)        => ???
         case TypedExpr(te, _)   => natFromNatExpr(te)
         case pt => throw new Exception(s"Expected exp[nat] but found $pt.")
       }

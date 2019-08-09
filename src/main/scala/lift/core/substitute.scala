@@ -2,7 +2,8 @@ package lift.core
 
 import lift.core.types._
 import lift.arithmetic._
-import traversal.{Result, Stop, Continue}
+import lift.core.semantics.NatData
+import traversal.{Continue, Result, Stop}
 
 object substitute {
 
@@ -44,7 +45,7 @@ object substitute {
         e match {
           case Identifier(name) =>
             if (`for`.name == name) {
-              Stop(NatExpr(ae))
+              Stop(Literal(NatData(ae)))
             } else {
               Continue(e, this)
             }

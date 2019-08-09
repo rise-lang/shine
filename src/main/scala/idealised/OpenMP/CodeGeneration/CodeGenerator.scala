@@ -131,6 +131,8 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         case Nil =>
           exp(e, env, Nil, e =>
             cont(C.AST.Literal("(" + s"($st[$n]){" + C.AST.Printer(e) + "})")))
+
+        case _ => error(s"Didn't expect path: $path")
       }
       case IdxVec(_, _, i, e) => CCodeGen.codeGenIdx(i, e, env, path, cont)
       case _ =>             super.exp(phrase, env, path, cont)
@@ -280,10 +282,13 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         case (_: ScalarType, Nil) =>
           CCodeGen.codeGenForeignFunction(funDecl, inTs, outT, args, env, ps, cont)
 
-        // This has to be generalised at some point ...
+        // TODO: This has to be generalised at some point ...
         case (VectorType(_, elemType), i :: Nil) =>
           // this is not really generic, to treat all arguments the same ...
-          val inTs_ = inTs.map { case VectorType(_, et) => et }
+          val inTs_ = inTs.map {
+            case VectorType(_, et) => et
+            case _ => throw new Exception("This should not happen")
+          }
           funDecl.definition match {
             case Some(funDef) =>
               addDeclaration(

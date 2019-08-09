@@ -6,7 +6,6 @@ import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives.AsIndex
 import idealised.DPIA.LetNatIdentifier
 import idealised.DPIA.Phrases._
-import idealised.DPIA.Semantics.OperationalSemantics.IndexData
 import idealised.DPIA.Types._
 import lift.arithmetic.Cst
 
@@ -67,12 +66,10 @@ object ProgramGenerator {
     outT.dataType match {
       case _: BasicType =>
         identifier("output", AccType(ArrayType(Cst(1), outT.dataType)))
-      case _: ArrayType =>
+      case _: ArrayType | _: DepArrayType =>
         identifier("output", AccType(outT.dataType))
-      case _: DPIA.Types.DepArrayType =>
-        identifier("output", AccType(outT.dataType))
-      case _: RecordType => ???
-      case _: DataTypeIdentifier => ???
+      case _: RecordType => throw new Exception("Records as output parameters currently not supported")
+      case _: DataTypeIdentifier | _: NatToDataApply => throw new Exception("This should not happen")
     }
   }
 

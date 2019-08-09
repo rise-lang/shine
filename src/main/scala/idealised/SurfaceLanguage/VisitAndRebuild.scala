@@ -1,7 +1,7 @@
 package idealised.SurfaceLanguage
 
-import idealised.DPIA.LetNatIdentifier
 import idealised.DPIA.Types.NatToNatLambda
+import idealised.DPIA.LetNatIdentifier
 import idealised.SurfaceLanguage.Types._
 
 object VisitAndRebuild {

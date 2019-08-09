@@ -57,10 +57,11 @@ object fromLift {
             )
         }
 
-        case l.Literal(d)   =>  Literal(data(d))
-        case l.Index(n, sz) =>  Literal(OpSem.IndexData(n, IndexType(sz)))
-        case l.NatExpr(n)   =>  Natural(n)
-        case p: l.Primitive =>  primitive(p, t)
+          case l.Literal(d)   =>  d match {
+            case ls.NatData(n)  => Natural(n)
+            case _              => Literal(data(d))
+          }
+          case p: l.Primitive =>  primitive(p, t)
 
         case _: l.TypedExpr => ??? // do not expect typed expr
       }
@@ -71,6 +72,8 @@ object fromLift {
     case lt.AddressSpace.Global => AddressSpace.Global
     case lt.AddressSpace.Local => AddressSpace.Local
     case lt.AddressSpace.Private => AddressSpace.Private
+    case lt.AddressSpace.Constant => AddressSpace.Constant
+    case lt.AddressSpaceIdentifier(_) => throw new Exception("This should not happen")
   }
 
   def scalarType(t: lt.ScalarType): ScalarType = t match {
@@ -124,6 +127,7 @@ object fromLift {
         case n2n: lt.NatToNatIdentifier   => natToNatIdentifier(n2n)  `()->:` `type`(t)
         case n2d: lt.NatToDataIdentifier  => natToDataIdentifier(n2d) `()->:` `type`(t)
       }
+    case _: lt.TypeIdentifier => throw new Exception("This should not happen")
   }
 
   def data(d: ls.Data): OpSem.Data = d match {
@@ -132,8 +136,9 @@ object fromLift {
     case ls.BoolData(b) => OpSem.BoolData(b)
     case ls.IntData(i) => OpSem.IntData(i)
     case ls.FloatData(f) => OpSem.FloatData(f)
-    case ls.DoubleData(f) => OpSem.DoubleData(f)
+    case ls.DoubleData(d) => OpSem.DoubleData(d)
     case ls.VectorData(v) => OpSem.VectorData(v.map(data(_)).toVector)
+    case ls.IndexData(i, n) => OpSem.IndexData(i, n)
   }
 
   import idealised.DPIA.FunctionalPrimitives._
@@ -592,6 +597,7 @@ object fromLift {
         case _ => ???
       }
       case lt.DepFunType(_, _) => throw new Exception("This should not be possible")
+      case lt.TypeIdentifier(_) => throw new Exception("This should not happen")
     }
   }
 

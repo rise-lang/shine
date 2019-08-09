@@ -1,6 +1,6 @@
 package elevate.core.strategies
 
-import elevate.core.{Failure, Strategy, Success}
+import elevate.core.{Strategy, Success}
 import lift.core.Expr
 
 object basic {
@@ -29,10 +29,12 @@ object basic {
   def repeatNTimes: Int => Strategy => Strategy =
     n => s => if (n > 0) { s `;` repeatNTimes(n-1)(s) } else { id }
 
-  def print: Strategy = print("")
-  def print(msg: String): Strategy = peek(e => println(s"$msg $e"))
+  def debug: Strategy = debug("")
+  def debug(msg: String): Strategy = peek(e => println(s"$msg $e"))
+  def debugln(msg: String): Strategy = debug(msg + "\n")
+
+  def print(msg: String): Strategy = peek(e => println(msg))
 
   def applyNTimes: Int => (Strategy => Strategy) => Strategy => Strategy =
     i => f => s => if(i <= 0) s else applyNTimes(i-1)(f)(f(s))
-
 }

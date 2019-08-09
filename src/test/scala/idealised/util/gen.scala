@@ -8,25 +8,25 @@ object gen {
     idealised.DPIA.fromLift(typed_e)
   }
 
-  def CProgram(e: lift.core.Expr): idealised.C.Program = {
+  def CProgram(e: lift.core.Expr, name: String = "foo"): idealised.C.Program = {
     val dpia_e = toDPIA(e)
-    val p = idealised.C.ProgramGenerator.makeCode(dpia_e)
+    val p = idealised.C.ProgramGenerator.makeCode(dpia_e, name)
     SyntaxChecker(p.code)
     println(p.code)
     p
   }
 
-  def OpenMPProgram(e: lift.core.Expr): idealised.OpenMP.Program = {
+  def OpenMPProgram(e: lift.core.Expr, name: String = "foo"): idealised.OpenMP.Program = {
     val dpia_e = toDPIA(e)
-    val p = idealised.OpenMP.ProgramGenerator.makeCode(dpia_e)
+    val p = idealised.OpenMP.ProgramGenerator.makeCode(dpia_e, name)
     SyntaxChecker(p.code)
     println(p.code)
     p
   }
 
-  def OpenCLKernel(e: lift.core.Expr): idealised.OpenCL.KernelNoSizes = {
+  def OpenCLKernel(e: lift.core.Expr, name: String = "foo"): idealised.OpenCL.KernelNoSizes = {
     val dpia_e = toDPIA(e)
-    val p = idealised.OpenCL.KernelGenerator.makeCode(dpia_e)
+    val p = idealised.OpenCL.KernelGenerator.makeCode(dpia_e, name)
     SyntaxChecker.checkOpenCL(p.code)
     println(p.code)
     p

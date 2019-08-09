@@ -4,6 +4,8 @@ import idealised.DPIA.Phrases._
 import idealised.DPIA.Types.{PhraseTypeParser, _}
 import lift.arithmetic._
 
+import com.github.ghik.silencer.silent
+
 import scala.language.{implicitConversions, reflectiveCalls}
 
 package object DPIA {
@@ -19,138 +21,6 @@ package object DPIA {
   type Nat = ArithExpr
   type NatIdentifier = NamedVar with Kind.Identifier
 
-  object NatIdentifier {
-    def apply(name: String): NatIdentifier = new NamedVar(name) with Kind.Identifier
-    def apply(name: String, range: Range): NatIdentifier = new NamedVar(name, range) with Kind.Identifier
-  }
-
-  case class LetNatIdentifier(id:NatIdentifier) {
-    def name:String = id.name
-
-    def apply(args:Any*):NatFunCall = {
-      NatFunCall(this, args.map({
-        case n:Nat => NatArg(n)
-        case id:LetNatIdentifier => LetNatIdArg(id)
-        case other =>
-          throw new Exception(s"Invalid parameter to NatFunCall ${this.name} $other, must either bet a Nat or a LetNatIdentifier")
-      }))
-    }
-  }
-
-  object LetNatIdentifier {
-    def apply():LetNatIdentifier = {
-      LetNatIdentifier(NatIdentifier("nFun"))
-    }
-  }
-
-  sealed trait NatFunArg
-  case class NatArg(n:Nat) extends NatFunArg
-  case class LetNatIdArg(letNatIdentifier: LetNatIdentifier) extends NatFunArg
-
-
-  class NatFunCall(val fun:LetNatIdentifier, val args:Seq[NatFunArg]) extends ArithExprFunction(fun.id.name)  {
-    override def visitAndRebuild(f: Nat => Nat): Nat = NatFunCall(fun, args.map {
-      case NatArg(n) => NatArg(f(n))
-      case other => other
-    })
-
-    override def freeVariables: Set[Var] = args.map({
-      case NatArg(arg) => ArithExpr.freeVariables(arg)
-      case _ => Set[Var]()
-    }).reduceOption(_.union(_)).getOrElse(Set())
-
-    def callAndParameterListString =
-      s"${fun.id.name}(${args.map{
-        arg =>
-          val nat:Nat = arg match {
-            case NatArg(n) => n
-            case LetNatIdArg(LetNatIdentifier(id)) => id
-          }
-          nat.toString
-      }.reduceOption(_ + "," + _).getOrElse("")})"
-
-    override lazy val toString = s"⌈${this.callAndParameterListString}⌉"
-
-    override val HashSeed = 0x31111112
-
-    override def equals(that: Any): Boolean = that match {
-      case f: NatFunCall => this.name.equals(f.name) && this.args == f.args
-      case _ => false
-    }
-  }
-
-  object NatFunCall {
-    def apply(fun:LetNatIdentifier, args:Seq[NatFunArg]) = new NatFunCall(fun, args)
-
-    def unapply(arg: NatFunCall): Option[(LetNatIdentifier, Seq[NatFunArg])] = Some(arg.fun, arg.args)
-  }
-
-
-//  case class NatNatTypeFunction private(x:NatIdentifier, body:Nat) {
-//    //NatNatLambdas have an interesting comparison behavior, as we do not define
-//    //equality for them as simple syntactic equality: we just want to make sure their bodies
-//    //are equal up-to renaming of the binder.
-//
-//    //However, just updating equals is not sufficient, as many data structures, such as HashMaps,
-//    //use hashCodes as proxy for equality. In order to make sure this property is respected, we ignore
-//    //the identifier variable, and just take the hash of the body evaluated at a known point
-//    override def hashCode(): Int = this(NamedVar("comparisonDummy")).hashCode()
-//
-//    def apply(n: Nat): Nat = ArithExpr.substitute(body, Map((x, n)))
-//
-//    override def toString: String = s"($x:nat) -> $body"
-//
-//    override def equals(obj: Any): Boolean = {
-//      obj match {
-//        case other:NatNatTypeFunction => body == other(x)
-//        case _ => false
-//      }
-//    }
-//  }
-//
-//  object NatNatTypeFunction {
-//    def apply(upperBound:Nat, f:NatIdentifier => Nat):NatNatTypeFunction = {
-//      val x = NatIdentifier(freshName("n"), RangeAdd(0, upperBound, 1))
-//      NatNatTypeFunction(x, f(x))
-//    }
-//
-//    def apply(upperBound:Nat, id:NatIdentifier, body:Nat):NatNatTypeFunction = {
-//      val x = NamedVar(freshName("n"), RangeAdd(0, upperBound, 1))
-//      NatNatTypeFunction(x, x => ArithExpr.substitute(body, Map((id, x))))
-//    }
-//  }
-//
-//  case class NatDataTypeFunction(x:NatIdentifier, body:DataType) {
-//    //See hash code of NatNatTypeFunction
-//    override def hashCode(): Int = this(NamedVar("ComparisonDummy")).hashCode()
-//
-//    def apply(n:Nat):DataType = DataType.substitute(n, `for`=x, `in`=body)
-//
-//    override def toString: String = s"($x:nat) -> $body"
-//
-//    override def equals(obj: Any): Boolean = {
-//      obj match {
-//        case other:NatDataTypeFunction =>
-//          val subbedOther = other(x)
-//          val eq = body == subbedOther
-//          eq
-//        case _ => false
-//      }
-//    }
-//  }
-//
-//  object NatDataTypeFunction {
-//    def apply(upperBound:Nat, f:NatIdentifier => DataType):NatDataTypeFunction = {
-//      val x = NatIdentifier(freshName("n"), RangeAdd(0, upperBound, 1))
-//      NatDataTypeFunction(x, f(x))
-//    }
-//
-//    def apply(upperBound:Nat, id:NatIdentifier, body:DataType):NatDataTypeFunction = {
-//      val x = NamedVar(freshName("n"), RangeAdd(0, upperBound, 1))
-//      NatDataTypeFunction(x, x => DataType.substitute(x, `for`=id, `in`=body))
-//    }
-//  }
-
   object Nat {
     def substitute[N <: Nat](ae: Nat, `for`: NatIdentifier, in: N): N = {
       in.visitAndRebuild {
@@ -163,6 +33,11 @@ package object DPIA {
         case e => e
       }.asInstanceOf[N]
     }
+  }
+
+  object NatIdentifier {
+    def apply(name: String): NatIdentifier = new NamedVar(name) with Kind.Identifier
+    def apply(name: String, range: Range): NatIdentifier = new NamedVar(name, range) with Kind.Identifier
   }
 
   // note: this is an easy fix to avoid name conflicts between lift and dpia

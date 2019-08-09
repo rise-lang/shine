@@ -151,7 +151,7 @@ object Phrase {
           case Natural(n) =>
             val v = NatIdentifier(`for` match {
               case Identifier(name, _) => name
-              case _ => ???
+              case _ => throw new Exception("This should never happen")
             })
 
             ph.t match {
@@ -196,25 +196,25 @@ object Phrase {
             case i:Identifier[ExpType] => NamedVar(i.name, RangeAdd(0, n, 1))
             case Apply(fun, arg) => NatFromIndexExpr(liftFunction(fun).reducing(arg))
             case BinOp(op, lhs, rhs) => binOpToNat(op, NatFromIndexExpr(lhs), NatFromIndexExpr(rhs))
-            case DPIA.Phrases.IfThenElse(_, _, _) => ???
+            case DPIA.Phrases.IfThenElse(_, _, _) => throw new Exception("This should never happen")
             case Literal(lit) => lit match {
-              case i: IndexData => i.n
+              case i: IndexData => i.i
               case _ => throw new Exception("This should never happen")
             }
-            case Natural(_) => throw new Exception("This should never happen")
             case DepApply(fun, arg) => (fun, arg) match {
               case (f, a: Nat) =>
                 NatFromIndexExpr(liftDependentFunction[NatKind, ExpType](f.asInstanceOf[Phrase[NatKind `()->:` ExpType]])(a))
+              case _ => throw new Exception("This should never happen")
             }
             case Proj1(pair) => NatFromIndexExpr(liftPair(pair)._1)
             case Proj2(pair) => NatFromIndexExpr(liftPair(pair)._2)
-//            case TypeDependentApply(fun, arg) => NatFromIndexExpr(liftTypeDependentFunction(fun)(arg))
             case UnaryOp(op, e) => unOpToNat(op, NatFromIndexExpr(e))
             case prim: ExpPrimitive => prim match {
               //TODO can we use our knowledge of n somehow?
               case AsIndex(n, e) => NatFromNatExpr(e)
-              case _ => ???
+              case _ => throw new Exception("This should never happen")
             }
+            case Natural(_) | LetNat(_, _, _) => throw new Exception("This should never happen")
           }
         case _ => throw new Exception("This should never happen")
       }
@@ -228,11 +228,12 @@ object Phrase {
             case i: Identifier[ExpType] => NamedVar(i.name, StartFromRange(0))
             case Apply(fun, arg) => NatFromNatExpr(liftFunction(fun).reducing(arg))
             case BinOp(op, lhs, rhs) => binOpToNat(op, NatFromNatExpr(lhs), NatFromNatExpr(rhs))
-            case DPIA.Phrases.IfThenElse(_, _, _) => ???
+            case DPIA.Phrases.IfThenElse(_, _, _) => throw new Exception("This should never happen")
             case Literal(_) => throw new Exception("This should never happen")
             case DepApply(fun, arg) => (fun, arg) match {
               case (f, a: Nat) =>
                 NatFromNatExpr(liftDependentFunction[NatKind, ExpType](f.asInstanceOf[Phrase[NatKind `()->:` ExpType]])(a))
+              case _ => throw new Exception("This should never happen")
             }
             case Proj1(pair) => NatFromNatExpr(liftPair(pair)._1)
             case Proj2(pair) => NatFromNatExpr(liftPair(pair)._2)
@@ -240,8 +241,9 @@ object Phrase {
             case prim: ExpPrimitive => prim match {
               //TODO can we use our knowledge of n somehow?
               case IndexAsNat(n, e) => NatFromIndexExpr(e)
-              case _ => ???
+              case _ => throw new Exception("This should never happen")
             }
+            case LetNat(_, _, _) => throw new Exception("This should never happen")
           }
         case pt => throw new Exception(s"Expected exp[nat] but found $pt.")
       }

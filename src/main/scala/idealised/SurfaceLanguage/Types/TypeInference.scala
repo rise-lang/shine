@@ -82,6 +82,7 @@ object TypeInference {
 
         val bodyExpr = inferType(body, subs)
         bodyExpr.t match {
+          case None => error(bodyExpr.toString, msg = "Cannot infer body type in LetNat")
           case Some(t) =>  LetNat(binder, defn, bodyExpr, Some(t))
         }
 

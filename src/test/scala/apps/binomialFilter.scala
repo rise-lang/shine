@@ -15,8 +15,7 @@ import elevate.lift.rules.algorithmic._
 import elevate.lift.rules.movement._
 import elevate.lift.strategies.algorithmic._
 
-import idealised.C
-import idealised.util.{Execute, SyntaxChecker}
+import idealised.util.{Execute, gen}
 
 object binomialFilter {
   // Binomial filter, convolution is separable:
@@ -132,7 +131,7 @@ class binomialFilter extends idealised.util.Tests {
     val Dv = dot(weights1d)
 
     val steps = Seq[(Strategy, Expr)](
-      (id,
+      (strategies.basic.id,
         P >> *(Sh) >> Sv >> *(T) >> *(*(fun(nbh => dot(weights2d)(join(nbh)))))),
       (oncetd(separateDotT),
         P >> *(Sh) >> Sv >> *(T) >> *(*(T >> *(Dv) >> Dh))),
@@ -185,7 +184,7 @@ class binomialFilter extends idealised.util.Tests {
     val Dv = dot(weights1d)
 
     val steps = Seq[(Strategy, Expr)](
-      (id,
+      (strategies.basic.id,
         P >> *(Sh) >> Sv >> *(T) >> *(*(fun(nbh => dot(weights2d)(join(nbh)))))),
       (oncetd(separateDotT),
         P >> *(Sh) >> Sv >> *(T) >> *(*(T >> *(Dv) >> Dh))),
@@ -219,25 +218,18 @@ class binomialFilter extends idealised.util.Tests {
     s_eq(pick(result).get, betaEtaNormalForm(regrot).get)
   }
 
-  def program(name: String, e: Expr): C.Program = {
+  def wrapExpr(e: Expr): Expr = {
     val szr = lift.arithmetic.RangeAdd(3, lift.arithmetic.PosInf, 1)
-    val typed = types.infer(
-      nFun(szr, h => nFun(szr, w => fun(ArrayType(h, ArrayType(w, float)))(a => e(a))))
-    )
-    val phrase = idealised.DPIA.fromLift(typed)
-    val program = C.ProgramGenerator.makeCode(phrase, name)
-    SyntaxChecker(program.code)
-    println(program.code)
-    program
+    nFun(szr, h => nFun(szr, w => fun(ArrayType(h, ArrayType(w, float)))(a => e(a))))
   }
 
-  lazy val ref_prog = program("blur_ref", reference)
+  lazy val ref_prog = gen.CProgram(wrapExpr(reference), "blur_ref")
   test("blur compiles to C code") {
     ref_prog
   }
 
   def check_ref(e: Expr) = {
-    val prog = program("blur", e)
+    val prog = gen.CProgram(wrapExpr(e), "blur")
     val testCode =
       s"""
 #include <stdio.h>
@@ -290,13 +282,29 @@ int main(int argc, char** argv) {
   }
 
   test("register rotation blur with unroll should contain no modulo or division") {
-    val code = program("blur",
-      padClamp2D(1) >> slide(3)(1) >> mapSeq(transpose >>
-        map(dotSeqUnroll(weights1d)) >>
-        slideSeq(slideSeq.Values)(3)(1) >>
-        map(dotSeqUnroll(weights1d))
-      )).code
+    val e = padClamp2D(1) >> slide(3)(1) >> mapSeq(transpose >>
+      map(dotSeqUnroll(weights1d)) >>
+      slideSeq(slideSeq.Values)(3)(1) >>
+      map(dotSeqUnroll(weights1d))
+    )
+    val code = gen.CProgram(wrapExpr(e), "blur").code
     " % ".r.findAllIn(code).length shouldBe 0
     " / ".r.findAllIn(code).length shouldBe 0
+  }
+
+  test("compiling OpenCL private arrays should unroll loops") {
+    import lift.OpenCL.primitives._
+
+    val dotSeqPrivate = fun(a => fun(b =>
+      zip(a)(b) |> map(mulT) |> oclReduceSeq(AddressSpace.Private)(add)(l(0.0f))
+    ))
+
+    val e = padClamp2D(1) >> slide3x3 >> mapGlobal(0)(mapGlobal(1)(
+      toPrivate(mapSeq(dotSeqPrivate(weights1d))) >>
+      dotSeqPrivate(weights1d)
+    ))
+
+    val code = gen.OpenCLKernel(wrapExpr(e), "blur").code
+    "for \\(".r.findAllIn(code).length shouldBe 2
   }
 }
