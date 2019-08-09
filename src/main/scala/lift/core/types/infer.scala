@@ -16,7 +16,7 @@ object infer {
     val mutableConstraints = mutable.Set[Constraint]()
     val typed_e = constrainTypes(e, mutableConstraints, mutable.Map())
     val constraints = mutableConstraints.toSet
-    constraints.foreach(println)
+//    constraints.foreach(println)
 
     // solve the constraints
     val bound = boundIdentifiers(typed_e)
@@ -68,7 +68,7 @@ object infer {
         val te = typed(e)
         val ot = fresh()
         val constraint = TypeConstraint(tf.t, FunType(te.t, ot))
-        println(s"Constraint for expression `$expr' is `$constraint'")
+//        println(s"Constraint for expression `$expr' is `$constraint'")
         constraints += constraint
         TypedExpr(Apply(tf, te), ot)
 
@@ -104,7 +104,7 @@ object infer {
       case TypedExpr(e, t) =>
         val te = typed(e)
         val constraint = TypeConstraint(te.t, t)
-        println(s"Constraint for expression `$expr' is `$constraint'")
+//        println(s"Constraint for expression `$expr' is `$constraint'")
         constraints += constraint
         te
 

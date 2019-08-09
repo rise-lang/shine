@@ -77,6 +77,21 @@ class gemm extends idealised.util.TestsWithExecutor {
   object ocl {
     import lift.OpenCL.primitives._
 
+    val sequential =
+      nFun((n, m, k) =>
+        fun((n`.`k`.`float) ->: (k`.`m`.`float) ->: (n`.`m`.`float) ->: float ->: float ->: (n`.`m`.`float))
+        ((a, b, c, alpha, beta) =>
+
+          zip(a, c) |> mapSeq(fun(ac =>
+            zip(transpose(b), ac._2) |> mapSeq(fun(bc =>
+              zip(ac._1, bc._1) |>
+                oclReduceSeq(AddressSpace.Private)(fun( (y, acc) => acc + (y._1 * y._2)), l(0.0f)) |>
+                fun(x => (x * alpha) + (beta * bc._2))
+            ))
+          ))
+        )
+      )
+
     val p1: Nat = 2
     val p2: Nat = 2
     val p3: Nat = 4
@@ -88,11 +103,11 @@ class gemm extends idealised.util.TestsWithExecutor {
     val mali_GEMM =
       nFun((n, m, k) =>
         fun((m`.`k`.`float) ->: (n`.`k`.`float) ->: (m`.`n`.`float) ->: float ->: float ->: (m`.`n`.`float))
-        ((a, b, c, alpha, beta) =>
+        ((A, B, C, alpha, beta) =>
 
-          zip( split(p2)(a), split(p2)(c) ) |>
+          zip( split(p2)(A), split(p2)(C) ) |>
             mapGlobal(0)(fun(ac =>
-              zip( split(p2)(b), split(p1)(transpose(ac._2)) ) |>
+              zip( split(p2)(B), split(p1)(transpose(ac._2)) ) |>
                 mapGlobal(1)(fun(bc =>
                   zip( split(p3)(transpose(ac._1)), split(p3)(transpose(bc._1)) ) |>
                     oclReduceSeq(AddressSpace.Private)(fun((p236, p67) =>
@@ -134,25 +149,68 @@ class gemm extends idealised.util.TestsWithExecutor {
     gen.OpenCLKernel(ocl.mali_GEMM)
   }
 
+  test("OpenCL sequential gemm versions produce the expected result") {
+    import idealised.OpenCL._
+    import scala.util.Random
+
+    val random = new Random()
+
+    val n = 512
+    val m = 256
+    val k = 512
+    val A = Array.fill(n, k)((random.nextInt(10) + 1).toFloat)
+    val B = Array.fill(k, m)((random.nextInt(10) + 1).toFloat)
+    val C = Array.fill(n, m)((random.nextInt(10) + 1).toFloat)
+    val alpha = 2.0f
+    val beta = 3.0f
+
+    val gold = matrixMatrixMultiply(A, B, C, alpha, beta)
+
+    val localSize = n
+    val globalSize = n
+
+    val runKernel = gen.OpenCLKernel(ocl.sequential).as[ScalaFunction `(`
+      Int `,` Int `,` Int `,`
+      Array[Array[Float]] `,`
+      Array[Array[Float]] `,`
+      Array[Array[Float]] `,`
+      Float `,`
+      Float `)=>` Array[Float]]
+    val (flatOutput, _) = runKernel(localSize, globalSize)(n `,` m `,` k `,` A `,` B `,` C `,` alpha `,` beta)
+    val output: Array[Array[Float]] = flatOutput.grouped(m).toArray
+
+//    println("output:")
+//    println(output.map(_.mkString("[", ", ", "]")).mkString("[ ", ",\n", " ]"))
+//    println("gold:")
+//    println(gold.map(_.mkString("[", ", ", "]")).mkString("[ ", ",\n", " ]"))
+
+    (output zip gold).foreach { case (outputRow, goldRow) =>
+      assert(outputRow sameElements goldRow)
+    }
+  }
+
   test("OpenCL gemm versions produce the expected result") {
     import idealised.OpenCL._
     import scala.util.Random
 
     val random = new Random()
 
-    val n = 10
-    val m = 10
-    val k = 10
-    val A = Array.fill(n, k)(random.nextFloat)
-    val B = Array.fill(k, m)(random.nextFloat)
-    val C = Array.fill(n, m)(random.nextFloat)
+    val n = 8
+    val m = 4
+    val k = 8
+    val A = Array.fill(n, k)(1.0f) //((random.nextInt(10) + 1).toFloat)
+    val B = Array.fill(k, m)(1.0f) //((random.nextInt(10) + 1).toFloat)
+    val C = Array.fill(n, m)(1.0f) //(((random.nextInt(10) + 1).toFloat)
     val alpha = 2.0f
     val beta = 3.0f
 
+    val gold = matrixMatrixMultiply(A, B, C, alpha, beta)
+
+    println("A:")
     println(A.map(_.mkString("[", ", ", "]")).mkString("[ ", ",\n", " ]"))
 
-    val localSize = 1
-    val globalSize = 1
+    val localSize = n
+    val globalSize = n
 
     val runKernel = gen.OpenCLKernel(ocl.mali_GEMM).as[ScalaFunction `(`
       Int `,` Int `,` Int `,`
@@ -161,9 +219,12 @@ class gemm extends idealised.util.TestsWithExecutor {
       Array[Array[Float]] `,`
       Float `,`
       Float `)=>` Array[Float]]
-    val (flatOutput, time) = runKernel(localSize, globalSize)(n `,` m `,` k `,` A `,` B `,` C `,` alpha `,` beta)
+    val (flatOutput, _) = runKernel(localSize, globalSize)(n `,` m `,` k `,` A `,` B `,` C `,` alpha `,` beta)
 
-    val output: Array[Array[Float]] = flatOutput.grouped(10).toArray
+    val output: Array[Array[Float]] = flatOutput.grouped(m).toArray
+    println("output:")
     println(output.map(_.mkString("[", ", ", "]")).mkString("[ ", ",\n", " ]"))
+    println("gold:")
+    println(gold.map(_.mkString("[", ", ", "]")).mkString("[ ", ",\n", " ]"))
   }
 }
