@@ -300,7 +300,7 @@ int main(int argc, char** argv) {
     ))
 
     val e = padClamp2D(1) >> slide3x3 >> mapGlobal(0)(mapGlobal(1)(
-      toPrivate(mapSeq(dotSeqPrivate(weights1d))) >>
+      toPrivateFun(mapSeq(dotSeqPrivate(weights1d))) >>
       dotSeqPrivate(weights1d)
     ))
 

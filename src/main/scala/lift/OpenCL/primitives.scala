@@ -47,9 +47,14 @@ object primitives {
     override def t: Type = implDT(t => aFunT(a => t ->: t))
   }
 
+  def toFun(to: Expr, f: Expr): Expr = fun(x => to(f(x)))
+
   val toGlobal: Expr = toMem(lift.core.types.AddressSpace.Global)
+  def toGlobalFun(f: Expr): Expr = toFun(toGlobal, f)
   val toLocal: Expr = toMem(lift.core.types.AddressSpace.Local)
+  def toLocalFun(f: Expr): Expr = toFun(toLocal, f)
   val toPrivate: Expr = toMem(lift.core.types.AddressSpace.Private)
+  def toPrivateFun(f: Expr): Expr = toFun(toPrivate, f)
 
   object oclReduceSeq extends Primitive {
     override def t: Type = aFunT(a => core.reduceSeq.t)
