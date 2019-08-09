@@ -198,15 +198,14 @@ class asum extends idealised.util.TestsWithExecutor {
         split(8192) |>
         mapWorkGroup(
           split(128) >>
-            toLocal(reduceSeq(add)(l(0.0f))) >>
+            toLocalFun(mapLocal(oclReduceSeq(AddressSpace.Private)(add)(l(0.0f)))) >>
             iterate(6)(nFun(_ =>
-              split(2) >>
-                toLocal(mapLocal(reduceSeq(add)(l(0.0f))))
+              split(2) >> mapLocal(oclReduceSeq(AddressSpace.Private)(add)(l(0.0f)))
             ))
         ) |> join
     ))
     // FIXME: wrong type, check the expression?
-    ignore("AMD/Nvidia second kernel derived compiles to syntactically correct OpenCL code") {
+    test("AMD/Nvidia second kernel derived compiles to syntactically correct OpenCL code") {
       val phrase = idealised.DPIA.fromLift(infer(amdNvidiaDerived2))
       val N = phrase.t.asInstanceOf[idealised.DPIA.`(nat)->:`[ExpType]].x
       val p = OpenCL.KernelGenerator.makeCode(LocalSize(128), GlobalSize(N))(phrase)
