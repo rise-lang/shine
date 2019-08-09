@@ -75,11 +75,20 @@ object AdaptKernelBody {
 
           // unroll previously identified loops
           case loop: ForLoop if loopVars.contains(loop.init.decl.name) =>
-            val seq = (0 until inferLoopTripCount(loop)).foldLeft(Seq[Stmt]())( (seq, i) => {
-              val nestedBlock = C.AST.Nodes.VisitAndRebuild(loop.body, Visitor(privateArrayVars, map.updated(loop.init.decl.name, Literal(i.toString))))
-              nestedBlock.body.foldLeft(seq)(_ :+ _)
+            val block = (0 until inferLoopTripCount(loop)).foldLeft(Block())( (block, i) => {
+              C.AST.Nodes.VisitAndRebuild(loop.body, Visitor(privateArrayVars, map.updated(loop.init.decl.name, Literal(i.toString)))) match {
+                case Block(stmts) =>
+                  // keep block nesting if there are names declared inside
+                  if ( stmts.exists(exists(_, _.isInstanceOf[DeclStmt])) ) {
+                    block + Block(stmts)
+                  } else {
+                    stmts.foldLeft(block)(_ + _)
+                  }
+              }
             })
-            val result = seq.foldLeft(Comment(s"unrolled loop"): Stmt)( (stmt, v) => Stmts(stmt, v))
+
+            val result = block.body.foldLeft(Comment(s"unrolled loop"): Stmt)( (stmt, v) => Stmts(stmt, v))
+
             Continue(result, this)
 
           case _ => Continue(n, this)
@@ -88,6 +97,23 @@ object AdaptKernelBody {
     }
 
     C.AST.Nodes.VisitAndRebuild(block, Visitor(mutable.Set(), Map()))
+  }
+
+  private def exists(n: Node, pred: Node => Boolean): Boolean = {
+    var seen = false
+    case object Vistor extends C.AST.Nodes.VisitAndRebuild.Visitor {
+      override def pre(n: Node): Vistor.Result = {
+        if (pred(n)) {
+          seen = true
+          Stop(n)
+        } else {
+          Continue(n, this)
+        }
+      }
+    }
+
+    C.AST.Nodes.VisitAndRebuild(n, Vistor)
+    seen
   }
 
   // compute the number of iterations to be performed by the given loop
