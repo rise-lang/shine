@@ -10,7 +10,7 @@ class ArrayToPrivate extends idealised.util.TestsWithExecutor {
     import lift.OpenCL.primitives._
 
     val e = nFun(n => fun(ArrayType(n, ArrayType(3, float)))(a =>
-      a |> mapGlobal(toPrivate(mapSeq(fun(x => x + l(1.0f)))))
+      a |> mapGlobal(fun(y => toPrivate(mapSeq(fun(x => x + l(1.0f)))(y)) |> mapSeq(fun(x => x))))
     ))
 
     val code = gen.OpenCLKernel(e).code

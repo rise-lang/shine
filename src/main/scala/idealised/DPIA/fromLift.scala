@@ -73,7 +73,7 @@ object fromLift {
     case lt.AddressSpace.Local => AddressSpace.Local
     case lt.AddressSpace.Private => AddressSpace.Private
     case lt.AddressSpace.Constant => AddressSpace.Constant
-    case lt.AddressSpaceIdentifier(_) => throw new Exception("This should not happen")
+    case lt.AddressSpaceIdentifier(name) => AddressSpaceIdentifier(name)
   }
 
   def scalarType(t: lt.ScalarType): ScalarType = t match {
@@ -565,9 +565,10 @@ object fromLift {
       lt.FunType(la: lt.DataType, _)))
       =>
         val a = dataType(la)
-        val as = addressSpace(las)
-        fun[ExpType](exp"[$a, $write]", e =>
-          To(as, a, e))
+        val as = addressSpaceIdentifier(las)
+        DepLambda[AddressSpaceKind](as)(
+          fun[ExpType](exp"[$a, $write]", e =>
+            To(as, a, e)))
 
       case (core.reduce, _) =>
         throw new Exception(s"$p has no implementation")
