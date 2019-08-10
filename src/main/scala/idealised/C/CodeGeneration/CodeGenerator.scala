@@ -1052,9 +1052,14 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
          case Mod(a, n) =>
            genNat(a, env, a => genNat(n, env, n => cont(AST.BinaryExpr(a, AST.BinaryOperator.%, n))))
+
          case v:Var => cont(C.AST.DeclRef(v.toString))
+
          case IntDiv(n, d) =>
            genNat(n, env, n => genNat(d, env, d => cont(AST.BinaryExpr(n, AST.BinaryOperator./, d))))
+
+         case LShift(a, b) =>
+           genNat(a, env, a => genNat(b, env, b => cont(AST.BinaryExpr(a, AST.BinaryOperator.<<, b))))
 
          case lu:Lookup => cont(AST.FunCall(AST.DeclRef(s"lookup${lu.id}"), immutable.Seq(AST.Literal(lu.index.toString))))
 

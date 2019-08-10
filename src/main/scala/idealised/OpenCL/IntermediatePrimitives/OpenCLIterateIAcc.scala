@@ -8,7 +8,7 @@ import idealised.DPIA.Phrases._
 import idealised.DPIA.Types._
 import idealised.DPIA._
 import idealised.OpenCL.DSL.newDoubleBuffer
-import lift.arithmetic.NamedVar
+import lift.arithmetic.{Cst, NamedVar, RangeAdd}
 
 object OpenCLIterateIAcc {
   def apply(a: AddressSpace,
@@ -26,7 +26,7 @@ object OpenCLIterateIAcc {
     newDoubleBuffer(a, dt"[$sz.$dt]", dt"[$m.$dt]", ArrayType(sz, dt), in, out,
       (v, swap, done) => {
         `for`(k, ip => {
-          val i = NamedVar(ip.name)
+          val i = NamedVar(ip.name, RangeAdd(Cst(0), k, Cst(1)))
 
           val isz = n.pow(k - i) * m
           val osz = n.pow(k - i - 1) * m
