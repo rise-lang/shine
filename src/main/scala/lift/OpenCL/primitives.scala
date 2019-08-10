@@ -59,4 +59,11 @@ object primitives {
   object oclReduceSeq extends Primitive {
     override def t: Type = aFunT(a => core.reduceSeq.t)
   }
+
+  object oclIterate extends Primitive {
+    override def t: Type = aFunT(a => implN(n => implN(m => nFunT(k => implDT(t =>
+      nFunT(l => ArrayType(l * n, t) ->: ArrayType(l, t)) ->:
+        ArrayType(m * n.pow(k), t) ->: ArrayType(m, t)
+    )))))
+  }
 }

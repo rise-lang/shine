@@ -5,7 +5,6 @@ import idealised.DPIA.Compilation.TranslationContext
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised.OpenCL.AddressSpace
 import idealised.OpenCL.DSL._
 
 import scala.language.reflectiveCalls
@@ -20,7 +19,7 @@ object OpenCLReduceSeqI {
             out: Phrase[ExpType ->: CommType])
            (implicit context: TranslationContext): Phrase[CommType] =
   {
-    newWithAddrSpace(initAddrSpace, dt2, acc =>
+    `new`(initAddrSpace)(dt2, acc =>
       (acc.wr :=|dt2| init) `;`
         `for`(n, i => f(in `@` i)(acc.rd)(acc.wr)) `;`
         out(acc.rd)

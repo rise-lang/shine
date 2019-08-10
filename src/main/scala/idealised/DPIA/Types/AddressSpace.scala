@@ -3,13 +3,13 @@ package idealised.DPIA.Types
 sealed trait AddressSpace
 
 object AddressSpace {
-  object Global extends AddressSpace { override def toString = "Global" }
+  object Global extends AddressSpace { override def toString = "global" }
 
-  object Local extends AddressSpace { override def toString = "Local" }
+  object Local extends AddressSpace { override def toString = "local" }
 
-  object Private extends AddressSpace { override def toString = "Private" }
+  object Private extends AddressSpace { override def toString = "private" }
 
-  object Constant extends AddressSpace { override def toString = "Constant" }
+  object Constant extends AddressSpace { override def toString = "constant" }
 
   //Maybe not needed
   //final case class RecordAddrSpace(fst: AddrSpace, snd: AddrSpace) extends AddrSpace {

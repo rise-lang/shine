@@ -22,8 +22,8 @@ final case class OpenCLReduceSeq(n: Nat,
   override val t: ExpType =
     (n: Nat) ->: (dt1: DataType) ->: (dt2: DataType) ->:
       (f :: t"exp[$dt1, $read] -> exp[$dt2, $read] -> exp[$dt2, $read]") ->:
-      (init :: exp"[$dt2, $read]") ->: (initAddrSpace : AddressSpace) ->:
-      (array :: exp"[$n.$dt1, $read]") ->: exp"[$dt2, $read]"
+        (init :: exp"[$dt2, $read]") ->: (initAddrSpace : AddressSpace) ->:
+          (array :: exp"[$n.$dt1, $read]") ->: exp"[$dt2, $read]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     OpenCLReduceSeq(fun.nat(n), fun.addressSpace(initAddrSpace), fun.data(dt1), fun.data(dt2),
@@ -44,9 +44,7 @@ final case class OpenCLReduceSeq(n: Nat,
       con(init)(λ(exp"[$dt2, $write]")(Y =>
         OpenCLReduceSeqI(n, initAddrSpace, dt1, dt2,
           λ(exp"[$dt1, $read]")(x => λ(exp"[$dt2, $read]")(y => λ(acc"[$dt2]")(o => acc( f(x)(y) )( o )))),
-          //TODO acceptor takes r which should be Write
-          Y, X, λ(exp"[$dt2, $read]")(r => acc(r)(A)))(context)))))
-
+          Y, X, λ(exp"[$dt2, $write]")(r => acc(r)(A)))(context)))))
   }
 
   override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])

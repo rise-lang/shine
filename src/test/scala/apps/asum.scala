@@ -199,12 +199,12 @@ class asum extends idealised.util.TestsWithExecutor {
         mapWorkGroup(
           split(128) >>
             toLocalFun(mapLocal(oclReduceSeq(AddressSpace.Private)(add)(l(0.0f)))) >>
-            iterate(6)(nFun(_ =>
+            toLocalFun(oclIterate(AddressSpace.Local)(6)(nFun(_ =>
               split(2) >> mapLocal(oclReduceSeq(AddressSpace.Private)(add)(l(0.0f)))
-            ))
+            ))) >> mapLocal(fun(x => x))
         ) |> join
     ))
-    // FIXME: wrong type, check the expression?
+
     test("AMD/Nvidia second kernel derived compiles to syntactically correct OpenCL code") {
       val phrase = idealised.DPIA.fromLift(infer(amdNvidiaDerived2))
       val N = phrase.t.asInstanceOf[idealised.DPIA.`(nat)->:`[ExpType]].x
@@ -213,8 +213,8 @@ class asum extends idealised.util.TestsWithExecutor {
       SyntaxChecker.checkOpenCL(p.code)
     }
 
-    ignore("AMD/Nvidia second kernel executes correctly") {
-      val n = 32 * 1024
+    test("AMD/Nvidia second kernel executes correctly") {
+      val n = 8192
       val input = generatePositiveInput(n)
       val gold = computeAsum(input)
 

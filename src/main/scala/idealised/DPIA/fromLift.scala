@@ -534,6 +534,23 @@ object fromLift {
               fun[ExpType](exp"[$insz.$a, $read]", e =>
                 Iterate(n, m, k, a, f, e))))
 
+      case (ocl.oclIterate,
+      lt.DepFunType(la: lt.AddressSpaceIdentifier,
+      lt.DepFunType(k: l.NatIdentifier,
+      lt.FunType(lt.DepFunType(ll: l.NatIdentifier,
+      lt.FunType(lt.ArrayType(ln, _), _)),
+      lt.FunType(lt.ArrayType(insz, _), lt.ArrayType(m, ldt))))))
+      =>
+        val l = natIdentifier(ll)
+        val n = ln /^ l
+        val dt = dataType(ldt)
+        val a = addressSpaceIdentifier(la)
+        DepLambda[AddressSpaceKind](a)(
+          DepLambda[NatKind](natIdentifier(k))(
+            fun[`(nat)->:`[ExpType ->: ExpType]](l `()->:` (exp"[$ln.$dt, $read]" ->: exp"[$l.$dt, $read]"), f =>
+              fun[ExpType](exp"[$insz.$dt, $read]", e =>
+                OpenCLIterate(a, n, m, k, dt, f, e)))))
+
       case (core.asVector,
       lt.DepFunType(n: l.NatIdentifier,
       lt.FunType(lt.ArrayType(mn, la: lt.ScalarType), lt.ArrayType(m, _))))

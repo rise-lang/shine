@@ -54,6 +54,7 @@ object PhraseType {
     case (dt: DataType, forDt: DataTypeIdentifier)  => substitute(dt, forDt, in)
     case (n: Nat, forN: NatIdentifier)              => substitute(n, forN, in)
     case (a: AddressSpace, forA: AddressSpaceIdentifier) => substitute(a, forA, in)
+    case _ => println(s"$x for ${`for`}"); ???
   }
 
   def substitute[T <: PhraseType](dt: DataType,

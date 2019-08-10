@@ -13,7 +13,7 @@ object Printer {
 class Printer extends idealised.C.AST.CPrinter {
   override def printDecl(d: Decl): Unit = d match {
     case k: OpenCL.AST.KernelDecl => printKernelDecl(k)
-    case p: OpenCL.AST.ParamDecl => printParamDecl(p)
+    case p: ParamDecl => printParamDecl(p)
     case v: OpenCL.AST.VarDecl => printVarDecl(v)
     case _ => super.printDecl(d)
   }
@@ -61,29 +61,33 @@ class Printer extends idealised.C.AST.CPrinter {
       case b: BasicType => print(s"${b.name} ${p.name}")
       case s: StructType => print(s"struct ${s.name} ${p.name}")
       case _: UnionType => ???
-      case a: ArrayType =>
-        val addr = if (p.addressSpace == AddressSpace.Private) "" else s"${toString(p.addressSpace)} "
-        val size = a.getSizes match {
-          case None => ""
-          case Some(s) => s
-        }
-        print(s"$addr${a.getBaseType} ${p.name}[$size]")
-      case pt: PointerType => print(s"${toString(p.addressSpace)} ${pt.valueType}* restrict ${p.name}")
+      case _: ArrayType => throw new Exception("Arrays as parameters are not supported")
+//        val addr = if (a.a == AddressSpace.Private) "" else s"${toString(a.a)} "
+//        val size = a.getSizes match {
+//          case None => ""
+//          case Some(s) => s
+//        }
+//        print(s"$addr${a.getBaseType} ${p.name}[$size]")
+      case pt: OpenCL.AST.PointerType => print(s"${toString(pt.a)} ${pt.valueType}* restrict ${p.name}")
+      case _: idealised.C.AST.PointerType => throw new Exception("Pointer without address space unsupported in OpenCL")
     }
   }
 
   private def printVarDecl(v: VarDecl): Unit = {
+    if (v.addressSpace != AddressSpace.Private) print(s"${v.addressSpace} ")
     if (v.t.const) print("const ")
     v.t match {
-      case b: BasicType if v.addressSpace == AddressSpace.Private => print(s"${b.name} ${v.name}")
-      case s: StructType if v.addressSpace == AddressSpace.Private => print(s"struct ${s.name} ${v.name}")
-      case a: ArrayType if v.addressSpace == AddressSpace.Private =>
+      case b: BasicType => print(s"${b.name} ${v.name}")
+      case s: StructType => print(s"struct ${s.name} ${v.name}")
+      case a: ArrayType =>
         // float name[s];
         print(s"${a.getBaseType} ${v.name}[${ a.getSizes match {
           case None => ""
           case Some(s) => s
         } }]")
-      case p: PointerType => print(s"${toString(v.addressSpace)} ${p.valueType}* ${v.name}")
+      case p: PointerType => print(s"${toString(p.a)} ${p.valueType}* ${v.name}")
+      case _: idealised.C.AST.PointerType => throw new Exception("This should not happen")
+      case _: idealised.C.AST.UnionType => ???
     }
     v.init match {
       case None =>

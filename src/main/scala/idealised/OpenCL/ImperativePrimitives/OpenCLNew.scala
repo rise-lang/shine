@@ -9,12 +9,12 @@ import idealised.DPIA._
 
 import scala.xml.Elem
 
-final case class OpenCLNew(addrSpace: AddressSpace,
+final case class OpenCLNew(a: AddressSpace,
                            dt: DataType,
                            f: Phrase[VarType ->: CommType]) extends CommandPrimitive {
 
   override val t: CommType =
-    (addrSpace: AddressSpace) ->: (dt: DataType) ->:
+    (a: AddressSpace) ->: (dt: DataType) ->:
       (f :: t"var[$dt] -> comm") ->: comm
 
   override def eval(s: Store): Store = {
@@ -25,13 +25,13 @@ final case class OpenCLNew(addrSpace: AddressSpace,
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommType] = {
-    OpenCLNew(addrSpace, fun.data(dt), VisitAndRebuild(f, fun))
+    OpenCLNew(fun.addressSpace(a), fun.data(dt), VisitAndRebuild(f, fun))
   }
 
-  override def prettyPrint: String = s"(new ${PrettyPhrasePrinter(f)})"
+  override def prettyPrint: String = s"(new $a ${PrettyPhrasePrinter(f)})"
 
   override def xmlPrinter: Elem =
-    <new addrSpace={ToString(addrSpace)} dt={ToString(dt)}>
+    <new addrSpace={ToString(a)} dt={ToString(dt)}>
       {Phrases.xmlPrinter(f)}
     </new>
 }

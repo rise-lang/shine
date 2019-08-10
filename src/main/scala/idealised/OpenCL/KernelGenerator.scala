@@ -3,7 +3,7 @@ package idealised.OpenCL
 import java.io.{File, PrintWriter}
 
 import idealised._
-import idealised.C.AST.DeclRef
+import idealised.C.AST.{DeclRef, ParamDecl}
 import idealised.DPIA.Compilation._
 import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
@@ -27,6 +27,7 @@ object KernelGenerator {
     makeKernel(name, phrase, params.reverse, defs.reverse, None, None).left.get
   }
 
+//  @scala.annotation.tailrec
   private def getPhraseAndParams[_ <: PhraseType](p: Phrase[_],
                                                   ps: Seq[Identifier[ExpType]],
                                                   defs:Seq[(LetNatIdentifier, Phrase[ExpType])]
@@ -119,7 +120,7 @@ object KernelGenerator {
                                     ins: Seq[Identifier[ExpType]],
                                     intermediateAllocations: Seq[AllocationInfo],
                                     gen: CodeGeneration.CodeGenerator
-                                   ): (Phrase[CommType], Identifier[AccType], Seq[Identifier[ExpType]], Seq[AllocationInfo], Seq[OpenCL.AST.ParamDecl]) = {
+                                   ): (Phrase[CommType], Identifier[AccType], Seq[Identifier[ExpType]], Seq[AllocationInfo], Seq[ParamDecl]) = {
     AdaptKernelParameters(p, out, ins, intermediateAllocations, gen) |> { r =>
       val p = r._1
       xmlPrinter.writeToFile("/tmp/p5.xml", p)
@@ -134,7 +135,7 @@ object KernelGenerator {
     AdaptKernelBody(body)
   }
 
-  private def makeKernelFunction(name: String, params: Seq[OpenCL.AST.ParamDecl], body: C.AST.Block): OpenCL.AST.KernelDecl = {
+  private def makeKernelFunction(name: String, params: Seq[ParamDecl], body: C.AST.Block): OpenCL.AST.KernelDecl = {
     OpenCL.AST.KernelDecl(name, params = params, body = body, attribute = None)
   }
 

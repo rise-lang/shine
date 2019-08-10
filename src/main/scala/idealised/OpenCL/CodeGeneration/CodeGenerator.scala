@@ -1,6 +1,6 @@
 package idealised.OpenCL.CodeGeneration
 
-import idealised.C.AST.{ArraySubscript, BasicType, Decl}
+import idealised.C.AST.{ArraySubscript, BasicType, Decl, DeclStmt, PointerType}
 import idealised.C.CodeGeneration.CodeGenerator.CIntExpr
 import idealised.C.CodeGeneration.{CodeGenerator => CCodeGenerator}
 import idealised.DPIA.FunctionalPrimitives._
@@ -11,9 +11,10 @@ import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics.VectorData
 import idealised.DPIA.Types._
 import idealised.DPIA._
+import idealised.OpenCL.AST.Barrier
 import idealised.OpenCL.FunctionalPrimitives.OpenCLFunction
 import idealised.OpenCL.ImperativePrimitives._
-import idealised.OpenCL.{BuiltInFunction, GlobalSize, LocalSize, NDRange}
+import idealised.OpenCL.{BuiltInFunction, GlobalSize, LocalSize}
 import idealised._
 import lift.arithmetic
 import lift.arithmetic._
@@ -58,9 +59,12 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         case _ => super.cmd(phrase, env)
       }
 
-      case OpenCLNew(addrSpace, dt, Lambda(v, p)) => OpenCLCodeGen.codeGenOpenCLNew(dt, addrSpace, v, p, env)
-
+      case OpenCLNew(a, dt, Lambda(v, p)) => OpenCLCodeGen.codeGenOpenCLNew(a, dt, v, p, env)
       case _: New => throw new Exception("New without address space found in OpenCL program.")
+
+      case OpenCLNewDoubleBuffer(a, _, _, dt, n, in, out, Lambda(ps, p)) =>
+        OpenCLCodeGen.codeGenOpenCLNewDoubleBuffer(a, ArrayType(n, dt), in, out, ps, p, env)
+      case _: NewDoubleBuffer => throw new Exception("NewDoubleBuffer without address space found in OpenCL program.")
 
       case _ => super.cmd(phrase, env)
     }
@@ -168,8 +172,8 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
   }
 
   protected object OpenCLCodeGen {
-    def codeGenOpenCLNew(dt: DataType,
-                         addressSpace: DPIA.Types.AddressSpace,
+    def codeGenOpenCLNew(a: AddressSpace,
+                         dt: DataType,
                          v: Identifier[VarType],
                          p: Phrase[CommType],
                          env: Environment): Stmt = {
@@ -178,10 +182,63 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       val vC = C.AST.DeclRef(v.name)
 
       C.AST.Block(immutable.Seq(
-        C.AST.DeclStmt(OpenCL.AST.VarDecl(vC.name, typ(dt), addressSpace)),
+        C.AST.DeclStmt(OpenCL.AST.VarDecl(vC.name, typ(dt), a)),
         cmd(Phrase.substitute(Pair(ve, va), `for` = v, `in` = p),
           env updatedIdentEnv (ve -> vC)
             updatedIdentEnv (va -> vC))))
+    }
+
+    def codeGenOpenCLNewDoubleBuffer(a: AddressSpace,
+                                     dt: ArrayType,
+                                     in: Phrase[ExpType],
+                                     out: Phrase[AccType],
+                                     ps: Identifier[VarType x CommType x CommType],
+                                     p: Phrase[CommType],
+                                     env: Environment): Stmt = {
+      import C.AST._
+      import BinaryOperator._
+      import UnaryOperator._
+
+      val ve = Identifier(s"${ps.name}_e", ps.t.t1.t1.t1)
+      val va = Identifier(s"${ps.name}_a", ps.t.t1.t1.t2)
+      val done = Identifier(s"${ps.name}_swap", ps.t.t1.t2)
+      val swap = Identifier(s"${ps.name}_done", ps.t.t2)
+
+      val tmp1 = DeclRef(freshName("tmp1_"))
+      val tmp2 = DeclRef(freshName("tmp2_"))
+      val in_ptr = DeclRef(freshName("in_ptr_"))
+      val out_ptr = DeclRef(freshName("out_ptr_"))
+      val flag = DeclRef(freshName("flag_"))
+
+      Block(immutable.Seq(
+        // create variables: `tmp1', `tmp2`, `in_ptr', and `out_ptr'
+        DeclStmt(OpenCL.AST.VarDecl(tmp1.name, typ(dt), a)),
+        DeclStmt(OpenCL.AST.VarDecl(tmp2.name, typ(dt), a)),
+        exp(in, env, CIntExpr(0) :: Nil, e => makePointerDecl(in_ptr.name, a, dt.elemType, UnaryExpr(&, e))),
+        makePointerDecl(out_ptr.name, a, dt.elemType, tmp1),
+        // create boolean flag used for swapping
+        DeclStmt(VarDecl(flag.name, Type.uchar, Some(Literal("1")))),
+        // generate body
+        cmd(
+          Phrase.substitute(Pair(Pair(Pair(ve, va), swap), done), `for` = ps, `in` = p),
+          env updatedIdentEnv (ve -> in_ptr) updatedIdentEnv (va -> out_ptr)
+            updatedCommEnv (swap -> {
+            Block(immutable.Seq(
+              ExprStmt(Assignment(in_ptr, TernaryExpr(flag, tmp1, tmp2))),
+              ExprStmt(Assignment(out_ptr, TernaryExpr(flag, tmp2, tmp1))),
+              // toggle flag with xor
+              ExprStmt(Assignment(flag, BinaryExpr(flag, ^, Literal("1")))),
+              Barrier(true, true)
+            ))
+          })
+            updatedCommEnv (done -> {
+            Block(immutable.Seq(
+              ExprStmt(Assignment(in_ptr, TernaryExpr(flag, tmp1, tmp2))),
+              acc(out, env, CIntExpr(0) :: Nil, o => ExprStmt(Assignment(out_ptr, UnaryExpr(&, o)))),
+              Barrier(true, true)
+            ))
+          }))
+      ))
     }
 
     def codeGenOpenCLParFor(f: OpenCLParFor,
@@ -290,6 +347,16 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         }
         case _ => CCodeGen.codeGenLiteral(d)
       }
+    }
+
+    def makePointerDecl(name: String,
+                        a: AddressSpace,
+                        elemType: DataType,
+                        expr: Expr): Stmt = {
+      import idealised.C.AST._
+      import idealised.OpenCL.AST.{VarDecl, PointerType}
+      DeclStmt(
+        VarDecl(name, PointerType(a, typ(elemType)), AddressSpace.Private, Some(expr)))
     }
   }
 

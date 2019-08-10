@@ -1,11 +1,10 @@
 package idealised.OpenCL.CodeGeneration
 
-import idealised.DPIA._
+import idealised.C.AST.ParamDecl
 import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives.AsIndex
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types._
-import idealised.OpenCL.AST.ParamDecl
 import idealised.OpenCL.FunctionalPrimitives.OpenCLFunction
 import idealised.OpenCL.CodeGeneration.HoistMemoryAllocations.AllocationInfo
 import idealised.{C, DPIA, OpenCL}
@@ -40,30 +39,30 @@ object AdaptKernelParameters {
     (rewrittenPhrase, rewrittenOut, rewrittenIns, rewrittenIntermediates, newParams)
   }
 
-  private def adaptParamDecls(params: Seq[ParamDecl],
-                      inputParams: Seq[Identifier[ExpType]]): (Seq[ParamDecl], Set[String]) = {
+  private def adaptParamDecls(params: Seq[(AddressSpace, ParamDecl)],
+                              inputParams: Seq[Identifier[ExpType]]): (Seq[ParamDecl], Set[String]) = {
     val scalarParamsInGlobalOrLocalMemory = mutable.Set[String]()
 
-    val newParams = params.map(paramDecl => {
+    val newParams = params.map{ case (aSpace, paramDecl) =>
       paramDecl.t match {
         case _: C.AST.BasicType =>
-          paramDecl.addressSpace match {
+          aSpace match {
             case AddressSpace.Global | AddressSpace.Local =>
               // remember scalar parameters in global or local memory and change their type to pointers
               scalarParamsInGlobalOrLocalMemory.add(paramDecl.name)
-              paramDecl.copy(t = C.AST.PointerType(paramDecl.t,
-                const = inputParams.map(_.name).contains(paramDecl.name)))
+              ParamDecl(paramDecl.name,
+                OpenCL.AST.PointerType(aSpace, paramDecl.t, const = inputParams.map(_.name).contains(paramDecl.name)))
             case _ => paramDecl
           }
         case at: C.AST.ArrayType =>
           // turn array types into flat pointers
-          paramDecl.copy(t = C.AST.PointerType(at.getBaseType,
+          ParamDecl(paramDecl.name, OpenCL.AST.PointerType(aSpace, at.getBaseType,
             // ... and make input parameters const
             const = inputParams.map(_.name).contains(paramDecl.name)))
 
         case _ => paramDecl
       }
-    })
+    }
 
     (newParams, scalarParamsInGlobalOrLocalMemory.toSet)
   }
@@ -129,14 +128,14 @@ object AdaptKernelParameters {
   private def makeParams(out: Identifier[AccType],
                          ins: Seq[Identifier[ExpType]],
                          intermediateAllocations: Seq[AllocationInfo],
-                         gen: CodeGenerator): Seq[OpenCL.AST.ParamDecl] = {
+                         gen: CodeGenerator): Seq[(AddressSpace, ParamDecl)] = {
     Seq(makeGlobalParam(out, gen)) ++ // first the output parameter ...
       ins.map(makeInputParam(_, gen)) ++ // ... then the input parameters ...
       intermediateAllocations.map(makeParam(_, gen)) //++  ... then the intermediate buffers ...
   }
 
   // pass arrays via global and scalar + tuple values via private memory
-  private def makeInputParam(i: Identifier[_], gen: CodeGenerator): OpenCL.AST.ParamDecl = {
+  private def makeInputParam(i: Identifier[_], gen: CodeGenerator): (AddressSpace, ParamDecl) = {
     getDataType(i) match {
       case _: ArrayType => makeGlobalParam(i, gen)
       case _: DepArrayType => makeGlobalParam(i, gen)
@@ -147,25 +146,16 @@ object AdaptKernelParameters {
     }
   }
 
-  private def makeGlobalParam(i: Identifier[_], gen: CodeGenerator): OpenCL.AST.ParamDecl = {
-    OpenCL.AST.ParamDecl(
-      i.name,
-      gen.typ(getDataType(i)),
-      AddressSpace.Global)
+  private def makeGlobalParam(i: Identifier[_], gen: CodeGenerator): (AddressSpace, ParamDecl) = {
+    (AddressSpace.Global, ParamDecl(i.name,gen.typ(getDataType(i))))
   }
 
-  private def makePrivateParam(i: Identifier[_], gen: CodeGenerator): OpenCL.AST.ParamDecl = {
-    OpenCL.AST.ParamDecl(
-      i.name,
-      gen.typ(getDataType(i)),
-      AddressSpace.Private)
+  private def makePrivateParam(i: Identifier[_], gen: CodeGenerator): (AddressSpace, ParamDecl) = {
+    (AddressSpace.Private, ParamDecl(i.name, gen.typ(getDataType(i))))
   }
 
-  private def makeParam(allocInfo: AllocationInfo, gen: CodeGenerator): OpenCL.AST.ParamDecl = {
-    OpenCL.AST.ParamDecl(
-      allocInfo.identifier.name,
-      gen.typ(getDataType(allocInfo.identifier)),
-      allocInfo.addressSpace)
+  private def makeParam(allocInfo: AllocationInfo, gen: CodeGenerator): (AddressSpace, ParamDecl) = {
+    (allocInfo.addressSpace, ParamDecl(allocInfo.identifier.name, gen.typ(getDataType(allocInfo.identifier))))
   }
 
   private def getDataType(i: Identifier[_]): DataType = i.t match {

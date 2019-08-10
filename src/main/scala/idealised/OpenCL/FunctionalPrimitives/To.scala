@@ -7,7 +7,7 @@ import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics.{Data, Store}
 import idealised.DPIA.Types._
 import idealised.DPIA.{Phrases, _}
-import idealised.OpenCL.DSL.newWithAddrSpace
+import idealised.OpenCL.DSL.`new`
 
 import scala.xml.Elem
 
@@ -53,6 +53,6 @@ final case class To(addrSpace: AddressSpace,
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
-    newWithAddrSpace(addrSpace, dt, tmp => acc(input)(tmp.wr) `;` C(tmp.rd) )
+    `new`(addrSpace)(dt, tmp => acc(input)(tmp.wr) `;` C(tmp.rd) )
   }
 }

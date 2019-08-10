@@ -28,7 +28,7 @@ final case class NewDoubleBuffer(dt1: DataType,
     NewDoubleBuffer(fun.data(dt1), fun.data(dt2), fun.data(dt3), fun.nat(n), VisitAndRebuild(in, fun), VisitAndRebuild(out, fun), VisitAndRebuild(f, fun))
   }
 
-  override def prettyPrint: String = s"(new $${PrettyPhrasePrinter(f)})"
+  override def prettyPrint: String = s"(newDoubleBuffer ${PrettyPhrasePrinter(f)})"
 
   override def xmlPrinter: Elem =
     <newDoubleBuffer dt1={ToString(dt1)}>
