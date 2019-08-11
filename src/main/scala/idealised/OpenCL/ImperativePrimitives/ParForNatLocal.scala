@@ -22,7 +22,7 @@ final case class ParForNatLocal(dim:Int)(override val n:Nat,
 
   //  override lazy val init: OclFunction = get_local_id(dim, RangeAdd(0, env.localSize, 1))
 
-  override lazy val init: BuiltInFunction = get_local_id(dim, RangeAdd(0, ?, 1))
+  override lazy val init: BuiltInFunction = get_local_id(dim)
 
   override lazy val step: BuiltInFunction = get_local_size(dim, local_size_range)
 

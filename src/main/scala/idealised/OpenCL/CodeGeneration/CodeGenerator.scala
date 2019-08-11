@@ -88,7 +88,8 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
           acc(a, env, CIntExpr(i * m) :: Nil, {
             case ArraySubscript(v, idx) =>
               // the continuation has to add the value ...
-              cont( C.AST.FunCall(C.AST.DeclRef(s"vstore$m"), immutable.Seq(idx, v)) )
+              val newIdx = C.AST.BinaryExpr(idx, C.AST.BinaryOperator./, C.AST.Literal(m.toString) )
+              cont( C.AST.FunCall(C.AST.DeclRef(s"vstore$m"), immutable.Seq(newIdx, v)) )
           })
         case _ =>           error(s"Expected path to be not empty")
       }
@@ -126,10 +127,11 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       case AsVector(n, _, _, e) => path match {
         case (i : CIntExpr) :: (j : CIntExpr) :: ps => exp(e, env, CIntExpr((i * n) + j) :: ps, cont)
         case (i : CIntExpr) :: Nil =>
-          exp(e, env, CIntExpr(i * n) :: Nil, {
+          exp(e, env, CIntExpr(i * n) :: Nil, { // i * n
             case ArraySubscript(v, idx) =>
               // TODO: check that idx is the right offset ...
-              cont( C.AST.FunCall(C.AST.DeclRef(s"vload$n"), immutable.Seq(idx, v)) )
+              val newIdx = C.AST.BinaryExpr(idx, C.AST.BinaryOperator./, C.AST.Literal(n.toString) )
+              cont( C.AST.FunCall(C.AST.DeclRef(s"vload$n"), immutable.Seq(newIdx, v)) )
           })
         case _ => error(s"Expected path to have two elements")
       }
@@ -263,30 +265,28 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
       env.updatedIdentEnv(i -> cI) |> (env => {
 
-        val test = range.numVals
-        val min = test.min
-        val max = test.max
-      range.numVals match {
-        // iteration count is 0 => skip body; no code to be emitted
-        case Cst(0) => C.AST.Comment("iteration count is 0, no loop emitted")
-        // iteration count is 1 => no loop
-        case Cst(1) =>
-          C.AST.Stmts(C.AST.Stmts(
-            C.AST.Comment("iteration count is exactly 1, no loop emitted"),
-            C.AST.DeclStmt(C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0))))),
-            updatedGen.cmd(p, env))
-        case _ if range.numVals.min == NegInf && range.numVals.max == Cst(1) =>
-          C.AST.Stmts(
-            C.AST.DeclStmt(init),
-            C.AST.IfThenElse(cond, updatedGen.cmd(p, env) , None)
-          )
-        // default case
-        case _ =>
-          C.AST.Stmts(
-            C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
-              C.AST.Block(immutable.Seq(updatedGen.cmd(p, env)))),
-            f.synchronize)
-      }}))})
+        range.numVals match {
+          // iteration count is 0 => skip body; no code to be emitted
+          case Cst(0) => C.AST.Comment("iteration count is 0, no loop emitted")
+          // iteration count is 1 => no loop
+          case Cst(1) =>
+            C.AST.Stmts(C.AST.Stmts(
+              C.AST.Comment("iteration count is exactly 1, no loop emitted"),
+              C.AST.DeclStmt(C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0))))),
+              updatedGen.cmd(p, env))
+          case _ if (range.start.min.min == Cst(0) && range.stop == Cst(1)) ||
+                    (range.numVals.min == NegInf && range.numVals.max == Cst(1)) =>
+            C.AST.Block(collection.Seq(
+              C.AST.DeclStmt(init),
+              C.AST.IfThenElse(cond, updatedGen.cmd(p, env) , None)
+            ))
+          // default case
+          case _ =>
+            C.AST.Stmts(
+              C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
+                C.AST.Block(immutable.Seq(updatedGen.cmd(p, env)))),
+              f.synchronize)
+        }}))})
     }
 
     def codeGenOpenCLParForNat(f: OpenCLParForNat,

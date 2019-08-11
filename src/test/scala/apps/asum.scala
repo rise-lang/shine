@@ -126,7 +126,7 @@ class asum extends idealised.util.TestsWithExecutor {
       SyntaxChecker.checkOpenCL(p.code)
     }
 
-    ignore("Intel derived no warp executes correctly") {
+    test("Intel derived no warp executes correctly") {
       val n = 16777216
       val input = generateInput(n)
       val gold = computeAsum(input)
@@ -245,7 +245,7 @@ class asum extends idealised.util.TestsWithExecutor {
       SyntaxChecker.checkOpenCL(p.code)
     }
 
-    ignore("AMD kernel derived executes correctly") {
+    test("AMD kernel derived executes correctly") {
       val n = 16777216
       val input = generateInput(n)
       val gold = computeAsum(input)
