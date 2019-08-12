@@ -79,41 +79,41 @@ object DSL {
   }
 
   object fun {
-    def apply(f: Identifier => Expr): Abstraction = {
-      val e = Identifier(freshName("e"))
+    def apply(f: Variable => Expr): Abstraction = {
+      val e = Variable(freshName("e"))
       Abstraction(Seq(e), f(e))
     }
 
-    def apply(f: (Identifier, Identifier) => Expr): Abstraction = {
-      val e0 = Identifier(freshName("e"))
-      val e1 = Identifier(freshName("e"))
+    def apply(f: (Variable, Variable) => Expr): Abstraction = {
+      val e0 = Variable(freshName("e"))
+      val e1 = Variable(freshName("e"))
       Abstraction(Seq(e0, e1), f(e0, e1))
     }
 
-    def apply(f: (Identifier, Identifier, Identifier) => Expr): Abstraction = {
-      val e0 = Identifier(freshName("e"))
-      val e1 = Identifier(freshName("e"))
-      val e2 = Identifier(freshName("e"))
+    def apply(f: (Variable, Variable, Variable) => Expr): Abstraction = {
+      val e0 = Variable(freshName("e"))
+      val e1 = Variable(freshName("e"))
+      val e2 = Variable(freshName("e"))
       Abstraction(Seq(e0, e1, e2), f(e0, e1, e2))
     }
 
-    def apply(f: (Identifier, Identifier, Identifier, Identifier) => Expr): Abstraction = {
-      val e0 = Identifier(freshName("e"))
-      val e1 = Identifier(freshName("e"))
-      val e2 = Identifier(freshName("e"))
-      val e3 = Identifier(freshName("e"))
+    def apply(f: (Variable, Variable, Variable, Variable) => Expr): Abstraction = {
+      val e0 = Variable(freshName("e"))
+      val e1 = Variable(freshName("e"))
+      val e2 = Variable(freshName("e"))
+      val e3 = Variable(freshName("e"))
       Abstraction(Seq(e0, e1, e2, e3), f(e0, e1, e2, e3))
     }
 
-    def apply(p: (Seq[Identifier], Expr)) = Abstraction(p._1, p._2)
+    def apply(p: (Seq[Variable], Expr)) = Abstraction(p._1, p._2)
   }
 
   object let {
     def apply(init: Expr): Object {
-      def beIn(f: Identifier => Expr): Let
+      def beIn(f: Variable => Expr): Let
     } = new {
-      def beIn(f: Identifier => Expr): Let = {
-        val e = Identifier(freshName("e"))
+      def beIn(f: Variable => Expr): Let = {
+        val e = Variable(freshName("e"))
         Let(e, init, f(e))
       }
     }

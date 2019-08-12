@@ -2,9 +2,12 @@ package FSmooth
 
 import DSL._
 import FSmooth.MSmooth._
+import FSmooth.traversal._
+
+import scala.collection.mutable
 
 object Differentiation {
-  def deriv(e: Expr, x: Identifier): Expr = {
+  def deriv(e: Expr, x: Variable): Expr = {
     val vi = fvs(e)
     x.t match {
       case Double =>
@@ -20,16 +23,68 @@ object Differentiation {
     }
   }
 
-  def D(e: Expr): Expr = ???
+  def D(e: Expr): Expr = e match {
+    case Application(VectorFunctionConstants.build(_), Seq(e0, e1), _) =>
+      build( fst(D(e0)), fun(i => D(e1) (pair(i, scalar(0)))) )
+    case Application(VectorFunctionConstants.ifold(_), Seq(e0, e1, e2), _) =>
+      ifold( fun( (x, i) => D(e0) (x, pair(i, scalar(0)))), D(e1), fst(D(e2)) )
+    case Application(VectorFunctionConstants.get(_), Seq(e0, e1), _) =>
+      D(e0).get(fst(D(e1)))
+    case Application(VectorFunctionConstants.length(_), Seq(e0), _) =>
+      pair(len(D(e0)), scalar(0))
+    case Application(PairFunctionConstants.pair(_), Seq(e0, e1), _) =>
+      pair(D(e0), D(e1))
+    case Application(PairFunctionConstants.fst(_), Seq(e0), _) =>
+      fst(D(e0))
+    case Application(PairFunctionConstants.snd(_), Seq(e0), _) =>
+      snd(D(e0))
+    case Application(e0, Seq(e1), _)  => D(e0) (D(e1))
+    case Abstraction(Seq(x), e, _)    => fun(Seq(mark(x)) -> D(e))
+    case v: Variable                  => mark(v)
+    case Let(x, e1, e2, _)            => Let(mark(x), D(e1), D(e2))
+    case Conditional(e1, e2, e3, _)   =>`if` (fst(D(e1))) `then` D(e2) `else` D(e3)
+    case ScalarValue(e)               => pair(P(e), E(e))
+  }
+
+  def P(e: Double) = ???
+  def E(e: Double) = ???
+
+  def mark(v: Variable): Variable = {
+    v.copy(v.name + "_")
+  }
 
   // free variables
-  def fvs(e: Expr): Seq[Identifier] = ???
+  def fvs(expr: Expr): Seq[Variable] = {
+    val free = mutable.Buffer[Variable]()
 
-  def A0(v: Identifier, x: Identifier): Expr = {
+    def visit(e: Expr, bound: Set[Variable]): Unit = e match {
+      case Abstraction(params, body, _) =>
+        visit(body, bound ++ params)
+      case Application(fun, args, _) =>
+        visit(fun, bound)
+        args.foreach(visit(_, bound))
+      case Let(x, value, body, _) =>
+        visit(value, bound)
+        visit(body, bound + x)
+      case Conditional(c, tr, el, _) =>
+        visit(c, bound)
+        visit(tr, bound)
+        visit(el, bound)
+      case v: Variable =>
+        if (!bound.contains(v)) { free += v }
+      case ScalarValue(_) | IndexValue(_) |
+           CardinalityValue(_) | _: Constants =>
+    }
+
+    visit(expr, Set())
+    free
+  }
+
+  def A0(v: Variable, x: Variable): Expr = {
     if (v == x) pair(x, scalar(1)) else pair(v, scalar(0))
   }
 
-  def A1(v: Identifier, x: Identifier, r: Expr): Expr = {
+  def A1(v: Variable, x: Variable, r: Expr): Expr = {
     if (v == x) {
       vectorZip(x, vectorHot(len(x), r))
     } else {
@@ -37,7 +92,7 @@ object Differentiation {
     }
   }
 
-  def A2(v: Identifier, x: Identifier, r: Expr, c: Expr): Expr = {
+  def A2(v: Variable, x: Variable, r: Expr, c: Expr): Expr = {
     if (v == x) {
       matrixZip(x, matrixHot(matrixRows(x), matrixCols(x), r, c))
     } else {

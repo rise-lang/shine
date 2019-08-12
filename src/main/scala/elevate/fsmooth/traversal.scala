@@ -9,7 +9,7 @@ object traversal {
   implicit object FSmoothTraversable extends elevate.core.strategies.Traversable[FSmooth] {
     override def all: Strategy[FSmooth] => Strategy[FSmooth] =  s => {
       case Abstraction(i, body, t) => s(body).mapSuccess(Abstraction(i, _, t))
-      case i:Identifier => Success(i)
+      case i:Variable => Success(i)
 
       case Application(f, args, t) =>
         val allRewritten = s(f) +: args.map(s(_))
@@ -38,7 +38,7 @@ object traversal {
 
     override def oneHandlingState: Boolean => Strategy[FSmooth] => Strategy[FSmooth] = carryOverState => s => {
       case Abstraction(i, body, t) => s(body).mapSuccess(Abstraction(i, _, t))
-      case i:Identifier => Failure(s)
+      case i:Variable => Failure(s)
 
       case Application(f, args, t) => s(f) match {
         case Success(f: FSmooth) => Success(Application(s(f).get, args, t))

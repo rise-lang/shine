@@ -31,7 +31,7 @@ object traversal {
             case Application(f, es, t) => Application(apply(f, v), es.map(apply(_, v)), t)
             case Let(x, init, e, t) => Let(x, apply(init, v), apply(e, v), t)
             case Conditional(c, tr, el, t) => Conditional(apply(c, v), apply(tr, v), apply(el, v), t)
-            case Identifier(_, _) | ScalarValue(_) | IndexValue(_) |
+            case Variable(_, _) | ScalarValue(_) | IndexValue(_) |
                  CardinalityValue(_) | _: Constants
               => c.value
           }

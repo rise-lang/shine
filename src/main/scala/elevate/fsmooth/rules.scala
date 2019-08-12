@@ -169,7 +169,7 @@ object rules {
   case object foldInsertFun extends Strategy[FSmooth] {
     def apply(e: FSmooth): RewriteResult[FSmooth] = e match {
       case Application(`ifold`(_), Seq(f, z, n), _) =>
-        val (a, i) = (Identifier("a"), Identifier("i"))
+        val (a, i) = (Variable("a"), Variable("i"))
         Success(Application(VectorFunctionConstants.`ifold`(freshTypeVar), Seq(
           Abstraction(Seq(a, i), Application(f, Seq(a, Application(ScalarFunctionConstants.`+`(freshTypeVar), Seq(i, ScalarValue(1)))))),
           Application(f, Seq(z, ScalarValue(0))),
