@@ -79,7 +79,7 @@ class gemm extends idealised.util.TestsWithExecutor {
 
     val sequential =
       nFun((n, m, k) =>
-        fun((n`.`k`.`float) ->: (k`.`m`.`float) ->: (n`.`m`.`float) ->: float ->: float ->: (n`.`m`.`float))
+        fun((m`.`k`.`float) ->: (k`.`n`.`float) ->: (m`.`n`.`float) ->: float ->: float ->: (m`.`n`.`float))
         ((a, b, c, alpha, beta) =>
 
           zip(a, c) |> mapSeq(fun(ac =>
@@ -158,9 +158,9 @@ class gemm extends idealised.util.TestsWithExecutor {
     val n = 512
     val m = 256
     val k = 512
-    val A = Array.fill(n, k)((random.nextInt(10) + 1).toFloat)
-    val B = Array.fill(k, m)((random.nextInt(10) + 1).toFloat)
-    val C = Array.fill(n, m)((random.nextInt(10) + 1).toFloat)
+    val A = Array.fill(m, k)((random.nextInt(10) + 1).toFloat)
+    val B = Array.fill(k, n)((random.nextInt(10) + 1).toFloat)
+    val C = Array.fill(m, n)((random.nextInt(10) + 1).toFloat)
     val alpha = 2.0f
     val beta = 3.0f
 
@@ -173,8 +173,8 @@ class gemm extends idealised.util.TestsWithExecutor {
       Array[Array[Float]] `,`
       Float `,`
       Float `)=>` Array[Float]]
-    val (flatOutput, _) = runKernel(LocalSize(128), GlobalSize(n))(n `,` m `,` k `,` A `,` B `,` C `,` alpha `,` beta)
-    val output: Array[Array[Float]] = flatOutput.grouped(m).toArray
+    val (flatOutput, _) = runKernel(LocalSize(128), GlobalSize(m))(n `,` m `,` k `,` A `,` B `,` C `,` alpha `,` beta)
+    val output: Array[Array[Float]] = flatOutput.grouped(n).toArray
 
 //    println("output:")
 //    println(output.map(_.mkString("[", ", ", "]")).mkString("[ ", ",\n", " ]"))
@@ -192,19 +192,16 @@ class gemm extends idealised.util.TestsWithExecutor {
 
     val random = new Random()
 
-    val n = 8
-    val m = 4
-    val k = 8
-    val A = Array.fill(n, k)(1.0f) //((random.nextInt(10) + 1).toFloat)
-    val B = Array.fill(k, m)(1.0f) //((random.nextInt(10) + 1).toFloat)
-    val C = Array.fill(n, m)(1.0f) //(((random.nextInt(10) + 1).toFloat)
-    val alpha = 2.0f
-    val beta = 3.0f
+    val n = 512
+    val m = 256
+    val k = 512
+    val A = Array.fill(m, k)(1.0f) //((random.nextInt(10) + 1).toFloat)
+    val B = Array.fill(k, n)(1.0f) //((random.nextInt(10) + 1).toFloat)
+    val C = Array.fill(m, n)(1.0f) //(((random.nextInt(10) + 1).toFloat)
+    val alpha = 1.0f
+    val beta = 1.0f
 
     val gold = matrixMatrixMultiply(A, B, C, alpha, beta)
-
-    println("A:")
-    println(A.map(_.mkString("[", ", ", "]")).mkString("[ ", ",\n", " ]"))
 
     val runKernel = gen.OpenCLKernel(ocl.mali_GEMM).as[ScalaFunction `(`
       Int `,` Int `,` Int `,`
@@ -213,12 +210,16 @@ class gemm extends idealised.util.TestsWithExecutor {
       Array[Array[Float]] `,`
       Float `,`
       Float `)=>` Array[Float]]
-    val (flatOutput, _) = runKernel(LocalSize(1), GlobalSize(n))(n `,` m `,` k `,` A `,` B `,` C `,` alpha `,` beta)
+    val (flatOutput, _) = runKernel(LocalSize((2, 2)), GlobalSize((n/2, n/2)))(n `,` m `,` k `,` A `,` B `,` C `,` alpha `,` beta)
 
-    val output: Array[Array[Float]] = flatOutput.grouped(m).toArray
-    println("output:")
-    println(output.map(_.mkString("[", ", ", "]")).mkString("[ ", ",\n", " ]"))
-    println("gold:")
-    println(gold.map(_.mkString("[", ", ", "]")).mkString("[ ", ",\n", " ]"))
+    val output: Array[Array[Float]] = flatOutput.grouped(n).toArray
+//    println("output:")
+//    println(output.map(_.mkString("[", ", ", "]")).mkString("[ ", ",\n", " ]"))
+//    println("gold:")
+//    println(gold.map(_.mkString("[", ", ", "]")).mkString("[ ", ",\n", " ]"))
+
+    (output zip gold).foreach { case (outputRow, goldRow) =>
+      assert(outputRow sameElements goldRow)
+    }
   }
 }
