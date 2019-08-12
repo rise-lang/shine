@@ -1,34 +1,64 @@
 package elevate.fsmooth
 
-import elevate.core.{FSmooth, Failure, RewriteResult, Strategy, Success}
+import elevate.core._
+import elevate.core.strategies.predicate._
 import _root_.FSmooth._
 
 object traversal {
 
   implicit object FSmoothTraversable extends elevate.core.strategies.Traversable[FSmooth] {
-    // todo finish
     override def all: Strategy[FSmooth] => Strategy[FSmooth] =  s => {
       case Abstraction(i, body, t) => s(body).mapSuccess(Abstraction(i, _, t))
       case i:Identifier => Success(i)
-      case Application(f, args, t) => ???
-      case Let(x, value, body, t) => ???
-      case Conditional(cond, thenBranch, elseBranch, t) => ???
+
+      case Application(f, args, t) =>
+        val allRewritten = s(f) +: args.map(s(_))
+        if (allRewritten.forall(rewriteResultToBoolean))
+          Success(Application(s(f).get, args.map(s(_).get)))
+        else
+          Failure(s)
+
+      case Let(x, value, body, t) =>
+        (s(value), s(body)) match {
+          case (Success(v), Success(b)) => Success(Let(x, v, b))
+          case _ => Failure(s)
+        }
+
+      case Conditional(cond, thenBranch, elseBranch, t) =>
+        (s(cond), s(thenBranch), s(elseBranch)) match {
+          case (Success(c), Success(t), Success(e)) => Success(Conditional(c,t,e))
+          case _ => Failure(s)
+        }
+
       case s:ScalarValue => Success(s)
       case i:IndexValue => Success(i)
       case c:CardinalityValue => Success(c)
       case c:Constants => Success(c)
     }
 
-    // todo finish
     override def oneHandlingState: Boolean => Strategy[FSmooth] => Strategy[FSmooth] = carryOverState => s => {
       case Abstraction(i, body, t) => s(body).mapSuccess(Abstraction(i, _, t))
-      case i:Identifier => Success(i)
+      case i:Identifier => Failure(s)
+
       case Application(f, args, t) => s(f) match {
-        case Success(f: FSmooth) => Success(Application(_, args))
+        case Success(f: FSmooth) => Success(Application(s(f).get, args, t))
         case Failure(state) => {
           val strategy = if(carryOverState) state else s
-          val test = args.zip(args).map(x => (strategy(x._1), x._2))
-        }
+          args.foldLeft[(Boolean, RewriteResult[FSmooth])](true, Failure(s))(
+            (state,expr) => {
+              val (cont, result) = (state._1, state._2)
+              if (cont) strategy(expr) match {
+                case Success(rewrittenExpr) =>
+                  val newArgs = args.foldLeft[Seq[Expr]](Seq())((list, curr) => {
+                    val newExpr = if (curr == expr) rewrittenExpr else curr
+                    list :+ newExpr
+                  })
+                  (false,Success(Application(f, newArgs)))
+                case f:Failure[FSmooth] => (true,f)
+              } else (cont, result)
+            }
+          )
+        }._2
       }
       case Let(x, value, body, t) => s(value) match {
         case Success(f: FSmooth) => Success(Let(x, f, body, t))
@@ -36,6 +66,7 @@ object traversal {
           state(body).mapSuccess(Let(x, value, _, t)) else
           s(body).mapSuccess(Let(x, value, _, t))
       }
+
       case Conditional(cond, thenBranch, elseBranch, t) => s(cond) match {
         case Success(f: FSmooth) => Success(Conditional(f, thenBranch, elseBranch))
         case Failure(state) => if (carryOverState)
@@ -47,11 +78,13 @@ object traversal {
               s(elseBranch).mapSuccess(Conditional(cond, thenBranch, _, t))
           }
       }
-      case s:ScalarValue => Success(s)
-      case i:IndexValue => Success(i)
-      case c:CardinalityValue => Success(c)
-      case c:Constants => Success(c)
+      case sv:ScalarValue => Failure(s)
+      case i:IndexValue => Failure(s)
+      case c:CardinalityValue => Failure(s)
+      case c:Constants => Failure(s)
     }
+
+    // todo implement
     override def some: Strategy[FSmooth] => Strategy[FSmooth] = ???
   }
 }

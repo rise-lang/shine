@@ -2,6 +2,12 @@ package FSmooth
 
 import FSmooth.DSL._
 import FSmooth.MSmooth._
+import elevate.core.strategies.basic.{id, repeat}
+import elevate.core.strategies.traversal.oncetd
+import elevate.core.{FSmooth, Strategy}
+import elevate.fsmooth.rules._
+import elevate.fsmooth.traversal._
+import elevate.lift.strategies
 
 class ExamplesFromICFP2019Paper extends idealised.util.Tests {
 
@@ -77,6 +83,11 @@ class ExamplesFromICFP2019Paper extends idealised.util.Tests {
 
   test("Example5: Matrix Transpose") {
     val e = fun(M => matrixTranspose(matrixTranspose(M)))
+    def normalize: Strategy[FSmooth] => Strategy[FSmooth] =
+      s => repeat(oncetd(s))
+
+    println(normalize(buildGet <+ lengthBuild <+ letPartialEvaluation <+ conditionalPartialEvalution <+ conditionApplication <+ letApplication <+ funToLet <+ letFission <+ letInitDuplication).apply(e))
+    println("--")
     println(e)
   }
 }
