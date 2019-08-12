@@ -16,7 +16,7 @@ object infer {
     val mutableConstraints = mutable.Set[Constraint]()
     val typed_e = constrainTypes(e, mutableConstraints, mutable.Map())
     val constraints = mutableConstraints.toSet
-//    constraints.foreach(println)
+    constraints.foreach(println)
 
     // solve the constraints
     val bound = boundIdentifiers(typed_e)
@@ -68,7 +68,7 @@ object infer {
         val te = typed(e)
         val ot = fresh()
         val constraint = TypeConstraint(tf.t, FunType(te.t, ot))
-//        println(s"Constraint for expression `$expr' is `$constraint'")
+        println(s"Constraint for expression `$expr' is `$constraint'")
         constraints += constraint
         TypedExpr(Apply(tf, te), ot)
 
@@ -104,7 +104,7 @@ object infer {
       case TypedExpr(e, t) =>
         val te = typed(e)
         val constraint = TypeConstraint(te.t, t)
-//        println(s"Constraint for expression `$expr' is `$constraint'")
+        println(s"Constraint for expression `$expr' is `$constraint'")
         constraints += constraint
         te
 
@@ -269,8 +269,8 @@ object infer {
     case TypeConstraint(a, b) => (a, b) match {
       case (i: TypeIdentifier, _) => Some(unifyTypeIdent(i, b))
       case (_, i: TypeIdentifier) => Some(unifyTypeIdent(i, a))
-      case (i: DataTypeIdentifier, _) => Some(unifyDataTypeIdent(i, b))
-      case (_, i: DataTypeIdentifier) => Some(unifyDataTypeIdent(i, a))
+      case (i: DataTypeIdentifier, dt: DataType) => Some(unifyDataTypeIdent(i, dt))
+      case (dt: DataType, i: DataTypeIdentifier) => Some(unifyDataTypeIdent(i, dt))
       case (b1: BasicType, b2: BasicType) if b1 == b2 =>
         Some(Solution())
       case (IndexType(sa), IndexType(sb)) =>
@@ -339,7 +339,7 @@ object infer {
   }
 
   // FIXME: datatypes and types are mixed up
-  def unifyDataTypeIdent(i: DataTypeIdentifier, t: Type)
+  def unifyDataTypeIdent(i: DataTypeIdentifier, t: DataType)
                         (implicit bound: mutable.Set[Kind.Identifier]): Solution = {
     t match {
       case j: DataTypeIdentifier =>

@@ -1,8 +1,10 @@
 package apps
 
 import idealised.util.gen
+import lift.arithmetic.Cst
 import lift.core.DSL._
-import lift.core.Nat
+import lift.core.{Expr, Nat}
+import lift.core.HighLevelConstructs._
 import lift.core.primitives._
 import lift.core.types._
 
@@ -92,24 +94,25 @@ class gemm extends idealised.util.TestsWithExecutor {
         )
       )
 
-    val p1: Nat = 2
-    val p2: Nat = 2
-    val p3: Nat = 4
-    val vw: Nat = 4
+    val mali_GEMM = {
+      val p1: Nat = 2
+      val p2: Nat = 2
+      val p3: Nat = 4
+      val vw: Nat = 4
 
-    val zeros = implN(n => implN(m =>
-      generate(fun(IndexType(m))(_ => generate(fun(IndexType(n))(_ => l(0.0f) )))) ))
+      val zeros = implN(n => implN(m =>
+        generate(fun(IndexType(m))(_ => generate(fun(IndexType(n))(_ => l(0.0f)))))))
 
-    val mali_GEMM =
+
       nFun((n, m, k) =>
-        fun((m`.`k`.`float) ->: (n`.`k`.`float) ->: (m`.`n`.`float) ->: float ->: float ->: (m`.`n`.`float))
+        fun((m `.` k `.` float) ->: (n `.` k `.` float) ->: (m `.` n `.` float) ->: float ->: float ->: (m `.` n `.` float))
         ((A, B, C, alpha, beta) =>
 
-          zip( split(p2)(A), split(p2)(C) ) |>
+          zip(split(p2)(A), split(p2)(C)) |>
             mapGlobal(0)(fun(ac =>
-              zip( split(p2)(B), split(p1)(transpose(ac._2)) ) |>
+              zip(split(p2)(B), split(p1)(transpose(ac._2))) |>
                 mapGlobal(1)(fun(bc =>
-                  zip( split(p3)(transpose(ac._1)), split(p3)(transpose(bc._1)) ) |>
+                  zip(split(p3)(transpose(ac._1)), split(p3)(transpose(bc._1))) |>
                     oclReduceSeq(AddressSpace.Private)(fun((p236, p67) =>
                       zip(p67, transpose(p236._1)) |>
                         mapSeq(fun(p54 =>
@@ -119,18 +122,90 @@ class gemm extends idealised.util.TestsWithExecutor {
                                 mapSeq(fun(x => p157._1 + dot(x)))
                             )) |> join
                         ))
-                      ), zeros) |>
+                    ), zeros) |>
                     fun(p235 =>
                       zip(p235, transpose(bc._2)) |>
                         mapSeq(fun(p237 =>
                           zip(p237._1, p237._2) |>
-                            mapSeq(fun(p64 => (p64._1 * alpha) + (p64._2 * beta) ))
+                            mapSeq(fun(p64 => (p64._1 * alpha) + (p64._2 * beta)))
                         ))
                     ) |> transpose
                 )) |> join |> transpose
             )) |> join
         )
       )
+    }
+
+    val keplerBest = {
+      val v3: Nat = 128
+      val v4: Nat = 4
+      val v5: Nat = 8
+      val v6: Nat = 64
+      val v7: Nat = 8
+
+      def tile: Expr = nFun(s1 => nFun(s2 =>
+        map(map(transpose) o split(s2) o transpose) o split(s1) ))
+      println(s"\ntile : ${infer(tile).t}\n")
+
+      val zeros = nFun(n1 => nFun(n2 => nFun(n3 => nFun(n4 =>
+        generate(fun(IndexType(n4))(_ =>
+          generate(fun(IndexType(n3))(_ =>
+            generate(fun(IndexType(n2))(_ =>
+              generate(fun(IndexType(n1))(_ => l(0.0f)))))))))))))
+      println(s"\nzeros : ${infer(zeros).t}\n")
+
+      def id: Expr = fun(x => x)
+
+      def tile2: Expr = nFun(s1 => nFun(s2 => implN(n1 => implN(n2 => fun(ArrayType(n1, ArrayType(n2, float)))(x =>
+        transpose (map (transpose) (split (s1) (map (split (s2)) (x))))  )))))
+      println(s"\ntile2 : ${infer(tile2).t}\n")
+
+      println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+
+      nFun((n, m, k) =>
+        fun((k`.`m`.`float) ->: (k`.`n`.`float) ->: (m`.`n`.`float) ->: float ->: float ->: (m`.`n`.`float))
+        ((A, B, C, alpha, beta) =>
+          zip (tile2 (v7) (v6) (A)) (tile (v6) (v3) (C))
+          |> mapWorkGroup(1)(fun( ((k/^8)`.`8`.`64`.`float) x ((n/^128)`.`64`.`128`.`float) )(p2 =>
+            zip (tile2 (v7) (v3) (B)) (p2._2)
+            |> mapWorkGroup(0)(fun( ((k/^8)`.`8`.`128`.`float) x (Cst(64)`.`128`.`float) )(p3 =>
+              zip (p2._1) (p3._1)
+              |> reduceSeq (fun( Cst(8)`.`32`.`8`.`4`.`float )(p14 => fun( (Cst(8)`.`64`.`float) x (Cst(8)`.`128`.`float) )(p15 =>
+                p15 |> toLocalFun (fun(p29 =>
+                  zip (p29._1) (p29._2)
+                  |> unzip (mapLocal(1) (fun(p31 =>
+                    pair (mapLocal(0) (id) (p31._1)) (mapLocal(0) (id) (p31._2)) )))
+                )) |> fun( (Cst(8)`.`64`.`float) x (Cst(8)`.`128`.`float) )(p16 =>
+                  zip (p14) (split (v5) (transpose (p16._1)))
+                  |> mapLocal(1) (fun(p17 =>
+                    zip (p17._1) (split (v4) (reorderWithStride (v3/v4) (transpose (p16._2))))
+                    |> mapLocal(0) (fun(p18 =>
+                      zip (transpose (p17._2)) (transpose (p18._2))
+                      |> reduceSeq (fun( (p20, p21) =>
+                        p21 |>
+                          toPrivateFun (fun(p25 =>
+                            pair (mapSeq (fun(p27 => p27) (p25._1))) (mapSeq (fun(p28 => p28)) (p25._2)) ))
+                          |> fun(p22 =>
+                          zip (p20) (p22._1) |> mapSeq (fun(p23 =>
+                            zip (p23._1) (p22._2) |> mapSeq (fun(p24 =>
+                              p24._1 + (p23._2 * p24._2) )) )) ) )) (p18._1)
+                        |> mapSeq (id) ))
+                      |> join ))))))
+                (zeros (v4) (v5) (v3 * Cst(1) /^ v4) (v6 * Cst(1) /^ v5) |> mapLocal(1) (mapLocal(0) (mapSeq (mapSeq (id)))))
+              |> toGlobalFun (mapSeq (fun(x =>
+                zip (x) (split (v5) (p3._2)) |> mapLocal(1) (fun(y =>
+                  zip (y._1) (split (v4) (reorderWithStride (v3/v4) (transpose (y._2)))) |> mapLocal(2) (fun(z =>
+                    zip (z._1) (transpose (z._2)) |> mapSeq (fun(a =>
+                      zip (a._1) (a._2) |> mapSeq (fun(x =>
+                        (x._1 * alpha) + (x._2 * beta) )))))))))))
+              |> transpose |> map (fun(p4 =>
+                transpose (join (map (fun(p6 => transpose (map (transpose) (transpose (p6))))) (transpose (p4))))
+                |> map (fun(p5 => reorderWithStride (v3 / v4) (p5)))
+              )) |> join |> transpose
+            )) |> join |> transpose
+          )) |> join
+        ))
+    }
   }
 
   test("Sequential gemm type inference works") {
@@ -141,12 +216,20 @@ class gemm extends idealised.util.TestsWithExecutor {
     gen.CProgram(sequential)
   }
 
-  test("OpenCL gemm versions type inference works") {
+  test("mali gemm type inference works") {
     infer(ocl.mali_GEMM)
   }
 
-  test("OpenCL gemm versions compiles to syntactically correct kernel") {
+  test("mali gemm compiles to syntactically correct kernel") {
     gen.OpenCLKernel(ocl.mali_GEMM)
+  }
+
+  test("Kepler best type inference works") {
+    infer(ocl.keplerBest)
+  }
+
+  test("Kepler best compiles to syntactically correct kernel") {
+    gen.OpenCLKernel(ocl.keplerBest)
   }
 
   test("OpenCL sequential gemm versions produce the expected result") {
