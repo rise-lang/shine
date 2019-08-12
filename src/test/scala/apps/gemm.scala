@@ -160,37 +160,40 @@ class gemm extends idealised.util.TestsWithExecutor {
         transpose (map (transpose) (split (s1) (map (split (s2)) (x))))  )))))
       println(s"\ntile2 : ${infer(tile2).t}\n")
 
+      def redOp: Expr = fun((8`.`32`.`8`.`4`.`float) ->: ( (8`.`64`.`float) x (8`.`128`.`float) ) ->: (8`.`32`.`8`.`4`.`float) )((p14, p15) =>
+        p15 |> toLocalFun (fun(p29 =>
+          (zip (p29._1 :: (8`.`64`.`float)) (p29._2 :: (8`.`128`.`float)) :: (8`.`((64`.`float) x (128`.`float) )))
+            |> mapLocal(1) (fun((64`.`float) x (128`.`float))(p31 => pair (mapLocal(0) (id) (p31._1)) (mapLocal(0) (id) (p31._2))))
+            |> unzip
+        )) |> fun( (8`.`64`.`float) x (8`.`128`.`float) )(p16 =>
+          zip (p14) (split (v5) (transpose (p16._1)) :: (8`.`8`.`8`.`float))
+            |> mapLocal(1) (fun( ((32`.`8`.`4`.`float) x (8`.`8`.`float)) ->: (32`.`8`.`4`.`float) )(p17 =>
+            zip (p17._1) (split (v4) (reorderWithStride (v3/v4) (transpose (p16._2))))
+              |> mapLocal(0) (fun(((8`.`4`.`float) x (4`.`8`.`float)) ->: (8`.`4`.`float) )(p18 =>
+              zip (transpose (p17._2)) (transpose (p18._2))
+                |> reduceSeq (fun((8`.`4`.`float) ->: ((8`.`float) x (4`.`float)) ->: (8`.`4`.`float))( (p20, p21) =>
+                  toPrivate (pair (mapSeq (id) (p21._1)) (mapSeq (id) (p21._2)))
+                  |> fun(((8`.`float) x (4`.`float)) ->: (8`.`4`.`float))(p22 =>
+                    (zip (p20) (p22._1)) |> mapSeq (fun(p23 =>
+                      (zip (p23._1) (p22._2)) |> mapSeq (fun(p24 =>
+                      p24._1 + (p23._2 * p24._2) )) )) )))
+              (p18._1)
+            ))
+          ))
+        ))
+      println(s"\nredOp : ${infer(redOp).t}\n")
+
       println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
       nFun((n, m, k) =>
         fun((k`.`m`.`float) ->: (k`.`n`.`float) ->: (m`.`n`.`float) ->: float ->: float ->: (m`.`n`.`float))
         ((A, B, C, alpha, beta) =>
           zip (tile2 (v7) (v6) (A)) (tile (v6) (v3) (C))
-          |> mapWorkGroup(1)(fun( ((k/^8)`.`8`.`64`.`float) x ((n/^128)`.`64`.`128`.`float) )(p2 =>
+          |> mapWorkGroup(1)(fun( (((k/^8)`.`8`.`64`.`float) x ((n/^128)`.`64`.`128`.`float)) ->: (64`.`n`.`1`.`float) )(p2 =>
             zip (tile2 (v7) (v3) (B)) (p2._2)
-            |> mapWorkGroup(0)(fun( ((k/^8)`.`8`.`128`.`float) x (Cst(64)`.`128`.`float) )(p3 =>
+            |> mapWorkGroup(0)(fun( (((k/^8)`.`8`.`128`.`float) x (Cst(64)`.`128`.`float)) ->: (128`.`64`.`1`.`float) )(p3 =>
               zip (p2._1) (p3._1)
-              |> reduceSeq (fun( Cst(8)`.`32`.`8`.`4`.`float )(p14 => fun( (Cst(8)`.`64`.`float) x (Cst(8)`.`128`.`float) )(p15 =>
-                p15 |> toLocalFun (fun(p29 =>
-                  zip (p29._1) (p29._2)
-                  |> unzip (mapLocal(1) (fun(p31 =>
-                    pair (mapLocal(0) (id) (p31._1)) (mapLocal(0) (id) (p31._2)) )))
-                )) |> fun( (Cst(8)`.`64`.`float) x (Cst(8)`.`128`.`float) )(p16 =>
-                  zip (p14) (split (v5) (transpose (p16._1)))
-                  |> mapLocal(1) (fun(p17 =>
-                    zip (p17._1) (split (v4) (reorderWithStride (v3/v4) (transpose (p16._2))))
-                    |> mapLocal(0) (fun(p18 =>
-                      zip (transpose (p17._2)) (transpose (p18._2))
-                      |> reduceSeq (fun( (p20, p21) =>
-                        p21 |>
-                          toPrivateFun (fun(p25 =>
-                            pair (mapSeq (fun(p27 => p27) (p25._1))) (mapSeq (fun(p28 => p28)) (p25._2)) ))
-                          |> fun(p22 =>
-                          zip (p20) (p22._1) |> mapSeq (fun(p23 =>
-                            zip (p23._1) (p22._2) |> mapSeq (fun(p24 =>
-                              p24._1 + (p23._2 * p24._2) )) )) ) )) (p18._1)
-                        |> mapSeq (id) ))
-                      |> join ))))))
+              |> reduceSeq (redOp)
                 (zeros (v4) (v5) (v3 * Cst(1) /^ v4) (v6 * Cst(1) /^ v5) |> mapLocal(1) (mapLocal(0) (mapSeq (mapSeq (id)))))
               |> toGlobalFun (mapSeq (fun(x =>
                 zip (x) (split (v5) (p3._2)) |> mapLocal(1) (fun(y =>

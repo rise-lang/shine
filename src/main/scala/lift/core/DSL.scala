@@ -1,6 +1,6 @@
 package lift.core
 
-import lift.arithmetic.RangeAdd
+import lift.arithmetic.{Cst, RangeAdd}
 import lift.core.types._
 import lift.core.semantics._
 
@@ -318,6 +318,11 @@ object DSL {
   implicit final class ArrayTypeConstructors(private val n: Nat) extends AnyVal {
     @inline def `.`(m: Nat): ArrayTypeConstructorHelper = ArrayTypeConstructorHelper(Seq(n, m))
     @inline def `.`(dt: DataType): ArrayType = ArrayType(n, dt)
+  }
+
+  implicit final class ArrayTypeConstructorsFromInt(private val n: Int) extends AnyVal {
+    @inline def `.`(m: Nat): ArrayTypeConstructorHelper = ArrayTypeConstructorHelper(Seq(Cst(n), m))
+    @inline def `.`(dt: DataType): ArrayType = ArrayType(Cst(n), dt)
   }
 
   object foreignFun {
