@@ -19,6 +19,16 @@ abstract class AbstractMapLoop(n: Nat,
                out: Phrase[AccType])
               (implicit context: TranslationContext): Phrase[CommType]
 
+  override def acceptorTranslation(A: Phrase[AccType])
+                                  (implicit context: TranslationContext): Phrase[CommType] = {
+    import TranslationToImperative._
+
+    con(array)(λ(exp"[$n.$dt1, $read]")(x =>
+      makeMapI(n, dt1, dt2,
+        λ(exp"[$dt1, $read]")(x => λ(acc"[$dt2]")(o => acc(f(x))(o))),
+        x, A)))
+  }
+
   override def mapAcceptorTranslation(g: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
                                      (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._

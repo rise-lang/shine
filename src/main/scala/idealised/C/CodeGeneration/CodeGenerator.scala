@@ -318,7 +318,11 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         }
         case _ => error("Expected a C-Integer-Expression followed by a tuple access on the path.")
       }
-      case Unzip(_, _, _, _) => ???
+      case Unzip(_, _, _, e) => path match {
+        case (xj : TupleAccess) :: (i: CIntExpr) :: ps =>
+          exp(e, env, i :: xj :: ps, cont)
+        case _ => error("Expected a tuple access followed by a C-Integer-Expression on the path.")
+      }
 
       case Record(_, _, e1, e2) => path match {
         case (xj : TupleAccess) :: ps => xj match {
@@ -818,34 +822,30 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       C.AST.BinaryExpr(e1, op, e2)
     }
 
+    @scala.annotation.tailrec
     def generateAccess(dt: DataType,
                        accuExpr: Expr,
                        path: Path,
                        env: Environment): Expr = {
-      path match {
-        case Nil => accuExpr
-        case (xj: TupleAccess) :: ps =>
-          val tuAccPos = xj match {
-            case FstMember => "_fst"
-            case SndMember => "_snd"
+      (path, dt) match {
+        case (Nil, _) => accuExpr
+        case ((xj: TupleAccess) :: ps, RecordType(fst, snd)) =>
+          val (suffix, memberType) = xj match {
+            case FstMember => ("_fst", fst)
+            case SndMember => ("_snd", snd)
           }
-          generateAccess(dt, C.AST.StructMemberAccess(accuExpr, C.AST.DeclRef(tuAccPos)), ps, env)
-        case (i: CIntExpr) :: _ =>
-          dt match {
-            case _: VectorType =>
-              val data = C.AST.StructMemberAccess(accuExpr, C.AST.DeclRef("data"))
-              C.AST.ArraySubscript(data, C.AST.ArithmeticExpr(i))
-            case at: ArrayType =>
-              val (k, ps) = flattenArrayIndices(at, path)
-              generateAccess(dt, C.AST.ArraySubscript(accuExpr, C.AST.ArithmeticExpr(k)), ps, env)
-
-            case dat: DepArrayType =>
-              val (k, ps) = flattenArrayIndices(dat, path)
-              generateAccess(dt, C.AST.ArraySubscript(accuExpr, C.AST.ArithmeticExpr(k)), ps, env)
-            case x => throw new Exception(s"Expected an ArrayType that is accessed by the index but found $x instead.")
-          }
-        case _ =>
-          throw new Exception(s"Can't generate access for `$dt' with `${path.mkString("[", "::", "]")}'")
+          generateAccess(memberType, C.AST.StructMemberAccess(accuExpr, C.AST.DeclRef(suffix)), ps, env)
+        case ((i: CIntExpr) :: _, _: VectorType) =>
+          val data = C.AST.StructMemberAccess(accuExpr, C.AST.DeclRef("data"))
+          C.AST.ArraySubscript(data, C.AST.ArithmeticExpr(i))
+        case ((i: CIntExpr) :: _, at: ArrayType) =>
+            val (k, ps) = flattenArrayIndices(at, path)
+            generateAccess(dt, C.AST.ArraySubscript(accuExpr, C.AST.ArithmeticExpr(k)), ps, env)
+        case ((i: CIntExpr) :: _, dat: DepArrayType) =>
+            val (k, ps) = flattenArrayIndices(dat, path)
+            generateAccess(dt, C.AST.ArraySubscript(accuExpr, C.AST.ArithmeticExpr(k)), ps, env)
+        case (_, _) =>
+          throw new Exception(s"Can't generate access for `$dt' with `${path.mkString("[ ", " :: ", " ]")}'")
       }
     }
 
