@@ -13,7 +13,7 @@ class fft extends idealised.util.Tests {
     val cospi = foreignFun("cospi", double ->: double)
     val sinpi = foreignFun("sinpi", double ->: double)
 
-    val cmultandsum = fun(vt => fun(acc => {
+    val cmultandsum = fun(acc => fun(vt => {
       val lres = acc._1 + (vt._1._1 * vt._2._1 - vt._1._2 * vt._2._2)
       val rres = acc._2 + (vt._1._2 * vt._2._1 + vt._1._1 * vt._2._2)
       pair(lres)(rres)

@@ -18,10 +18,10 @@ final case class OpenCLReduceSeq(f: Expr,
       TypeInference(init, subs) |> (init =>
         (init.t, array.t) match {
           case (Some(dt2: DataType), Some(ArrayType(_, dt1))) =>
-            setParamsAndInferTypes(f, dt1, dt2, subs) |> (f =>
+            setParamsAndInferTypes(f, dt2, dt1, subs) |> (f =>
               f.t match {
                 case Some(FunctionType(t1, FunctionType(t2, t3))) =>
-                  if (dt1 == t1 && dt2 == t2 && dt2 == t3) {
+                  if (dt2 == t1 && dt1 == t2 && dt2 == t3) {
                     OpenCLReduceSeq(f, init, initAddrSpace, array, Some(dt2))
                   } else {
                     error(this.toString,

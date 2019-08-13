@@ -21,7 +21,7 @@ object OpenCLReduceSeqI {
   {
     `new`(initAddrSpace)(dt2, acc =>
       (acc.wr :=|dt2| init) `;`
-        `for`(n, i => f(in `@` i)(acc.rd)(acc.wr)) `;`
+        `for`(n, i => f(acc.rd)(in `@` i)(acc.wr)) `;`
         out(acc.rd)
     )
   }

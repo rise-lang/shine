@@ -33,7 +33,7 @@ abstract class AbstractReduce(n: Nat,
 
   override val t: ExpType =
     (n: Nat) ->: (dt1: DataType) ->: (dt2: DataType) ->:
-      (f :: t"exp[$dt1, $read] -> exp[$dt2, $read] -> exp[$dt2, $write]") ->:
+      (f :: t"exp[$dt2, $read] -> exp[$dt1, $read] -> exp[$dt2, $write]") ->:
         (init :: exp"[$dt2, $write]") ->:
           (array :: exp"[$n.$dt1, $read]") ->: exp"[$dt2, $read]"
 
@@ -78,7 +78,7 @@ abstract class AbstractReduce(n: Nat,
     con(array)(λ(exp"[$n.$dt1, $read]")(X =>
       con(init)(λ(exp"[$dt2, $read]")(Y =>
         makeReduceI(n, dt1, dt2,
-          λ(exp"[$dt1, $read]")(x => λ(exp"[$dt2, $read]")(y => λ(acc"[$dt2]")(o => acc( f(x)(y) )( o ) ))),
+          λ(exp"[$dt2, $read]")(x => λ(exp"[$dt1, $read]")(y => λ(acc"[$dt2]")(o => acc( f(x)(y) )( o ) ))),
           Y, X, C)))))
   }
 

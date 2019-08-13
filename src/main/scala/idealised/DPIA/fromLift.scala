@@ -224,7 +224,7 @@ object fromLift {
       =>
         val a = dataType(la)
         val b = dataType(lb)
-        fun[ExpType ->: ExpType ->: ExpType](exp"[$a, $read]" ->: exp"[$b, $read]" ->: exp"[$b, $write]", f =>
+        fun[ExpType ->: ExpType ->: ExpType](exp"[$b, $read]" ->: exp"[$a, $read]" ->: exp"[$b, $write]", f =>
           fun[ExpType](exp"[$b, $read]", i =>
             fun[ExpType](exp"[$n.$a, $read]", e =>
               ReduceSeq(n, a, b, f, i, e))))
@@ -239,7 +239,7 @@ object fromLift {
         val b = dataType(lb)
         val i_space = addressSpaceIdentifier(i)
         DepLambda[AddressSpaceKind](i_space)(
-          fun[ExpType ->: ExpType ->: ExpType](exp"[$a, $read]" ->: exp"[$b, $read]" ->: exp"[$b, $write]", f =>
+          fun[ExpType ->: ExpType ->: ExpType](exp"[$b, $read]" ->: exp"[$a, $read]" ->: exp"[$b, $write]", f =>
             fun[ExpType](exp"[$b, $read]", i =>
               fun[ExpType](exp"[$n.$a, $read]", e =>
                 OpenCLReduceSeq(n, i_space, a, b, f, i, e)))))
@@ -251,7 +251,7 @@ object fromLift {
       =>
         val a = dataType(la)
         val b = dataType(lb)
-        fun[ExpType ->: ExpType ->: ExpType](exp"[$a, $read]" ->: exp"[$b, $read]" ->: exp"[$b, $write]", f =>
+        fun[ExpType ->: ExpType ->: ExpType](exp"[$b, $read]" ->: exp"[$a, $read]" ->: exp"[$b, $write]", f =>
           fun[ExpType](exp"[$b, $read]", i =>
             fun[ExpType](exp"[$n.$a, $read]", e =>
               ReduceSeqUnroll(n, a, b, f, i, e))))

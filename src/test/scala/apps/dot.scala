@@ -14,7 +14,7 @@ class dot extends idealised.util.Tests {
   private def ysT(N : NatIdentifier) = ArrayType(N, float)
 
   private val mulT = fun(x => fst(x) * snd(x))
-  private val add = fun(x => fun(a => x + a))
+  private val add = fun(a => fun(x => a + x))
 
   private val simpleDotProduct = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
     zip(xs)(ys) |> mapSeq(mulT) |> reduceSeq(add)(l(0.0f))
@@ -56,7 +56,7 @@ class dot extends idealised.util.Tests {
       |> mapPar(
         split(2048) >>
         mapSeq(
-          reduceSeq(fun(x => add(mulT(x))))(vectorFromScalar(l(0.0f)))
+          reduceSeq(fun(a => fun(x => a + mulT(x))))(vectorFromScalar(l(0.0f)))
         )
       ) |> join |> asScalar
     )))
@@ -74,7 +74,7 @@ class dot extends idealised.util.Tests {
         |> mapPar(
           split(8192) >>
           mapSeq(
-            reduceSeq(fun(x => add(mulT(x))))(vectorFromScalar(l(0.0f)))
+            reduceSeq(fun(a => fun(x => a + mulT(x))))(vectorFromScalar(l(0.0f)))
           )
         ) |> join |> asScalar
       )))
@@ -91,7 +91,7 @@ class dot extends idealised.util.Tests {
         mapPar(
           split(2048) >>
             mapSeq(
-              reduceSeq(fun(x => add(mulT(x))))(l(0.0f))
+              reduceSeq(fun(a => fun(x => a + mulT(x))))(l(0.0f))
             )
         ) |> join
     )))
@@ -126,7 +126,7 @@ class dot extends idealised.util.Tests {
           mapWorkGroup(
             split(8192) >>
               mapLocal(
-                oclReduceSeq(AddressSpace.Private)(fun(x => add(mulT(x))))(vectorFromScalar(l(0.0f)))
+                oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => a + mulT(x))))(vectorFromScalar(l(0.0f)))
               )
           ) |> join |> asScalar
       )))
@@ -141,7 +141,7 @@ class dot extends idealised.util.Tests {
           mapWorkGroup(
             split(2048) >>
               mapLocal(
-                oclReduceSeq(AddressSpace.Private)(fun(x => fun(a => mulT(x) + a)))(l(0.0f))
+                oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => a + mulT(x))))(l(0.0f))
               )
           ) |> join
       )))
@@ -156,7 +156,7 @@ class dot extends idealised.util.Tests {
           mapWorkGroup(
             split(128) >>
               mapLocal(
-                oclReduceSeq(AddressSpace.Private)(fun(x => fun(a => x + a)))(l(0.0f))
+                oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => a + x)))(l(0.0f))
               )
           ) |> join
       ))
@@ -172,7 +172,7 @@ class dot extends idealised.util.Tests {
             reorderWithStride(128) >>
               split(2048) >>
               mapLocal(
-                oclReduceSeq(AddressSpace.Private)(fun(x => fun(a => mulT(x) + a)))(l(0.0f))
+                oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => a + mulT(x))))(l(0.0f))
               )
           ) |> join
       )))

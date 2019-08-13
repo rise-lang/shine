@@ -48,7 +48,7 @@ class asum extends idealised.util.TestsWithExecutor {
           asVector(4) >>
           split(8192) >>
           mapSeq(
-            reduceSeq(fun(x => fun(a => abs(float4)(x) + a)))(vectorFromScalar(l(0.0f)))
+            reduceSeq(fun(a => fun(x => abs(float4)(x) + a)))(vectorFromScalar(l(0.0f)))
           ) >> asScalar
         ) |> join
     ))
@@ -113,7 +113,7 @@ class asum extends idealised.util.TestsWithExecutor {
           asVector(4) >>
             split(8192) >>
             mapLocal(
-              oclReduceSeq(AddressSpace.Private)(fun(x => fun(a => abs(float4)(x) + a)))(vectorFromScalar(l(0.0f)))
+              oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => abs(float4)(x) + a)))(vectorFromScalar(l(0.0f)))
             ) >> asScalar
         ) |> join
     ))
@@ -170,7 +170,7 @@ class asum extends idealised.util.TestsWithExecutor {
           reorderWithStride(128) >>
             split(2048) >>
             mapLocal(
-              oclReduceSeq(AddressSpace.Private)(fun(x => fun(a => abs(float)(x) + a)))(l(0.0f))
+              oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => abs(float)(x) + a)))(l(0.0f))
             )
         ) |> join
     ))
@@ -232,7 +232,7 @@ class asum extends idealised.util.TestsWithExecutor {
             reorderWithStride(64) >>
             split(2048) >>
             mapLocal(
-              oclReduceSeq(AddressSpace.Private)(fun(x => fun(a => abs(float2)(x) + a)))(vectorFromScalar(l(0.0f)))
+              oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => abs(float2)(x) + a)))(vectorFromScalar(l(0.0f)))
             ) >> asScalar
         ) |> join
     ))

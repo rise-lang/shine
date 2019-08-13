@@ -38,7 +38,7 @@ object FromSurfaceLanguagePrimitives {
 
       case red: AbstractReduce => (red.f.t, red.init.t, red.array.t) match {
         case (Some(FunctionType(t1, FunctionType(t2, t3))), Some(dt2: DataType), Some(ArrayType(n, dt1)))
-          if dt1 == t1 && dt2 == t2 && dt2 == t3 =>
+          if dt2 == t1 && dt1 == t2 && dt2 == t3 =>
           Some(makeDPIAReduce(red)(n, dt1, dt2,
             FromSurfaceLanguage.asPhrase[DPIA.Types.FunType[ExpType, DPIA.Types.FunType[ExpType, ExpType]]](red.f),
             FromSurfaceLanguage.asPhrase[ExpType](red.init),
@@ -264,7 +264,7 @@ object FromSurfaceLanguagePrimitives {
 
       case OpenCLReduceSeq(f, init, initAddrSpace, array, _) => ( (f.t, init.t, array.t) : @unchecked) match {
         case (Some(FunctionType(t1, FunctionType(t2, t3))), Some(dt2: DataType), Some(ArrayType(n, dt1)))
-          if dt1 == t1 && dt2 == t2 && dt2 == t3 =>
+          if dt2 == t1 && dt1 == t2 && dt2 == t3 =>
           Some(idealised.OpenCL.FunctionalPrimitives.OpenCLReduceSeq(n, initAddrSpace, dt1, dt2,
             FromSurfaceLanguage.asPhrase[DPIA.Types.FunType[DPIA.Types.ExpType, DPIA.Types.FunType[DPIA.Types.ExpType, DPIA.Types.ExpType]]](f),
             FromSurfaceLanguage.asPhrase[DPIA.Types.ExpType](init),

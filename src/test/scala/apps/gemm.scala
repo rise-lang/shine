@@ -9,7 +9,7 @@ import lift.core.primitives._
 import lift.core.types._
 
 //noinspection TypeAnnotation
-class gemm extends idealised.util.TestsWithExecutor {
+class gemm extends idealised.util.Tests { //TestsWithExecutor {
 
   val epsilon = 1.0f
 
@@ -69,7 +69,7 @@ class gemm extends idealised.util.TestsWithExecutor {
          zip(a, c) |> mapSeq(fun(ac =>
            zip(transpose(b), ac._2) |> mapSeq(fun(bc =>
              zip(ac._1, bc._1) |>
-               reduceSeq(fun( (y, acc) => acc + (y._1 * y._2)), l(0.0f)) |>
+               reduceSeq(fun( (acc, y) => acc + (y._1 * y._2)), l(0.0f)) |>
                fun(x => (x * alpha) + (beta * bc._2))
            ))
          ))
@@ -87,7 +87,7 @@ class gemm extends idealised.util.TestsWithExecutor {
           zip(a, c) |> mapSeq(fun(ac =>
             zip(transpose(b), ac._2) |> mapSeq(fun(bc =>
               zip(ac._1, bc._1) |>
-                oclReduceSeq(AddressSpace.Private)(fun( (y, acc) => acc + (y._1 * y._2)), l(0.0f)) |>
+                oclReduceSeq(AddressSpace.Private)(fun( (acc, y) => acc + (y._1 * y._2)), l(0.0f)) |>
                 fun(x => (x * alpha) + (beta * bc._2))
             ))
           ))
@@ -113,7 +113,7 @@ class gemm extends idealised.util.TestsWithExecutor {
               zip(split(p2)(B), split(p1)(transpose(ac._2))) |>
                 mapGlobal(1)(fun(bc =>
                   zip(split(p3)(transpose(ac._1)), split(p3)(transpose(bc._1))) |>
-                    oclReduceSeq(AddressSpace.Private)(fun((p236, p67) =>
+                    oclReduceSeq(AddressSpace.Private)(fun((p67, p236) =>
                       zip(p67, transpose(p236._1)) |>
                         mapSeq(fun(p54 =>
                           zip(p54._1, transpose(p236._2)) |>
@@ -163,7 +163,7 @@ class gemm extends idealised.util.TestsWithExecutor {
       def redOp: Expr = fun((8`.`32`.`8`.`4`.`float) ->: ( (8`.`64`.`float) x (8`.`128`.`float) ) ->: (8`.`32`.`8`.`4`.`float) )((p14, p15) =>
         p15 |> toLocalFun (fun(p29 =>
           (zip (p29._1 :: (8`.`64`.`float)) (p29._2 :: (8`.`128`.`float)) :: (8`.`((64`.`float) x (128`.`float) )))
-            |> mapLocal(1) (fun((64`.`float) x (128`.`float))(p31 => pair (mapLocal(0) (id) (p31._1)) (mapLocal(0) (id) (p31._2))))
+            |> mapLocal(1) (fun((64`.`float) x (128`.`float))(p31 => pair (mapLocal(0) (id) (p31._1)) (mapLocal(0) (id) (p31._2)) ))
             |> unzip
         )) |> fun( (8`.`64`.`float) x (8`.`128`.`float) )(p16 =>
           zip (p14) (split (v5) (transpose (p16._1)) :: (8`.`8`.`8`.`float))

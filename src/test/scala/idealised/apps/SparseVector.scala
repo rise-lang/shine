@@ -109,7 +109,7 @@ class SparseVector extends idealised.util.Tests {
       fun(ArrayType(n, TupleType(IndexType(m), float)))(sparse =>
         fun(ArrayType(m, float))(dense =>
           sparse :>> split(n) :>> mapGlobal(
-            oclReduceSeq(fun(pair => fun(accum => accum + Snd(pair, None) * Idx(dense, Fst(pair, None)))),0.0f, AddressSpace.Private))
+            oclReduceSeq(fun(accum => fun(pair => accum + Snd(pair, None) * Idx(dense, Fst(pair, None)))),0.0f, AddressSpace.Private))
         )
       )
     )
@@ -158,7 +158,7 @@ class SparseVector extends idealised.util.Tests {
         fun(ArrayType(n, float))(sparse =>
           fun(ArrayType(m, float))(dense =>
             zip(indices, sparse) :>> split(n) :>> mapGlobal(
-              oclReduceSeq(fun(pair => fun(accum => accum + Snd(pair, None) * Idx(dense, Fst(pair, None)))),0.0f, AddressSpace.Private))
+              oclReduceSeq(fun(accum => fun(pair => accum + Snd(pair, None) * Idx(dense, Fst(pair, None)))),0.0f, AddressSpace.Private))
           )
         )
       )
@@ -207,7 +207,7 @@ class SparseVector extends idealised.util.Tests {
         nFun(k => fun(ArrayType(k, TupleType(IndexType(m), float)))(vector =>
           matrix :>> mapGlobal(fun(row =>
             vector :>> oclReduceSeq(
-              fun(pair => fun(accum => accum + Snd(pair, None) * Idx(row, Fst(pair, None)))), 0.0f, AddressSpace.Private)
+              fun(accum => fun(pair => accum + Snd(pair, None) * Idx(row, Fst(pair, None)))), 0.0f, AddressSpace.Private)
           ))
         ))
       )
@@ -257,7 +257,7 @@ class SparseVector extends idealised.util.Tests {
             fun(ArrayType(k, float))(sparse =>
               matrix :>> mapGlobal(fun(row =>
                 zip(indices, sparse) :>> oclReduceSeq(
-                  fun(pair => fun(accum => accum + Snd(pair, None) * Idx(row, Fst(pair, None)))), 0.0f, AddressSpace.Private)
+                  fun(accum => fun(pair => accum + Snd(pair, None) * Idx(row, Fst(pair, None)))), 0.0f, AddressSpace.Private)
               ))
             ))
         )
