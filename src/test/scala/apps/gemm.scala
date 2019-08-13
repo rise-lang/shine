@@ -162,51 +162,50 @@ class gemm extends idealised.util.Tests { //TestsWithExecutor {
 
       def redOp: Expr = fun((8`.`32`.`8`.`4`.`float) ->: ( (8`.`64`.`float) x (8`.`128`.`float) ) ->: (8`.`32`.`8`.`4`.`float) )((p14, p15) =>
         p15 |> toLocalFun (fun(p29 =>
-          (zip (p29._1 :: (8`.`64`.`float)) (p29._2 :: (8`.`128`.`float)) :: (8`.`((64`.`float) x (128`.`float) )))
-            |> mapLocal(1) (fun((64`.`float) x (128`.`float))(p31 => pair (mapLocal(0) (id) (p31._1)) (mapLocal(0) (id) (p31._2)) ))
+          zip (p29._1) (p29._2)
+            |> mapLocal(1) (fun(p31 => pair (mapLocal(0) (id) (p31._1)) (mapLocal(0) (id) (p31._2)) ))
             |> unzip
-        )) |> fun( (8`.`64`.`float) x (8`.`128`.`float) )(p16 =>
-          zip (p14) (split (v5) (transpose (p16._1)) :: (8`.`8`.`8`.`float))
-            |> mapLocal(1) (fun( ((32`.`8`.`4`.`float) x (8`.`8`.`float)) ->: (32`.`8`.`4`.`float) )(p17 =>
+        )) |> fun(p16 =>
+          zip (p14) (split (v5) (transpose (p16._1)))
+            |> mapLocal(1) (fun(p17 =>
             zip (p17._1) (split (v4) (reorderWithStride (v3/v4) (transpose (p16._2))))
-              |> mapLocal(0) (fun(((8`.`4`.`float) x (4`.`8`.`float)) ->: (8`.`4`.`float) )(p18 =>
+              |> mapLocal(0) (fun(p18 =>
               zip (transpose (p17._2)) (transpose (p18._2))
-                |> reduceSeq (fun((8`.`4`.`float) ->: ((8`.`float) x (4`.`float)) ->: (8`.`4`.`float))( (p20, p21) =>
+                |> reduceSeq (fun( (p20, p21) =>
                   toPrivate (pair (mapSeq (id) (p21._1)) (mapSeq (id) (p21._2)))
-                  |> fun(((8`.`float) x (4`.`float)) ->: (8`.`4`.`float))(p22 =>
-                    (zip (p20) (p22._1)) |> mapSeq (fun(p23 =>
-                      (zip (p23._1) (p22._2)) |> mapSeq (fun(p24 =>
-                      p24._1 + (p23._2 * p24._2) )) )) )))
-              (p18._1)
+                  |> fun(p22 =>
+                    zip (p20) (p22._1) |> mapSeq (fun(p23 =>
+                      zip (p23._1) (p22._2) |> mapSeq (fun(p24 =>
+                        p24._1 + (p23._2 * p24._2) )) )) ))) (p18._1)
             ))
           ))
         ))
       println(s"\nredOp : ${infer(redOp).t}\n")
 
-      println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-
       nFun((n, m, k) =>
         fun((k`.`m`.`float) ->: (k`.`n`.`float) ->: (m`.`n`.`float) ->: float ->: float ->: (m`.`n`.`float))
         ((A, B, C, alpha, beta) =>
           zip (tile2 (v7) (v6) (A)) (tile (v6) (v3) (C))
-          |> mapWorkGroup(1)(fun( (((k/^8)`.`8`.`64`.`float) x ((n/^128)`.`64`.`128`.`float)) ->: (64`.`n`.`1`.`float) )(p2 =>
+          |> mapWorkGroup(1)(fun( (((k/^8)`.`8`.`64`.`float) x ((n/^128)`.`64`.`128`.`float)) ->: (64`.`n`.`float) )(p2 =>
             zip (tile2 (v7) (v3) (B)) (p2._2)
-            |> mapWorkGroup(0)(fun( (((k/^8)`.`8`.`128`.`float) x (Cst(64)`.`128`.`float)) ->: (128`.`64`.`1`.`float) )(p3 =>
+            |> mapWorkGroup(0)(fun( (((k/^8)`.`8`.`128`.`float) x (64`.`128`.`float)) ->: (128`.`64`.`float) )(p3 =>
               zip (p2._1) (p3._1)
               |> reduceSeq (redOp)
                 (zeros (v4) (v5) (v3 * Cst(1) /^ v4) (v6 * Cst(1) /^ v5) |> mapLocal(1) (mapLocal(0) (mapSeq (mapSeq (id)))))
-              |> toGlobalFun (mapSeq (fun(x =>
+              |> toGlobalFun (fun(x =>
                 zip (x) (split (v5) (p3._2)) |> mapLocal(1) (fun(y =>
                   zip (y._1) (split (v4) (reorderWithStride (v3/v4) (transpose (y._2)))) |> mapLocal(2) (fun(z =>
                     zip (z._1) (transpose (z._2)) |> mapSeq (fun(a =>
                       zip (a._1) (a._2) |> mapSeq (fun(x =>
-                        (x._1 * alpha) + (x._2 * beta) )))))))))))
-              |> transpose |> map (fun(p4 =>
-                transpose (join (map (fun(p6 => transpose (map (transpose) (transpose (p6))))) (transpose (p4))))
-                |> map (fun(p5 => reorderWithStride (v3 / v4) (p5)))
+                        (x._1 * alpha) + (x._2 * beta) ))))))))))
+              |> map (fun(p4 =>
+                map (transpose) (p4)
+                |> join
+                |> transpose
+                |> map (reorderWithStride (v3 / v4))
               )) |> join |> transpose
             )) |> join |> transpose
-          )) |> join
+          ))  |> join
         ))
     }
   }
