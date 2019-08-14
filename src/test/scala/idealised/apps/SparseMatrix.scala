@@ -160,7 +160,7 @@ class SparseMatrix extends idealised.util.Tests {
     val p = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(typed))
 
     val code = p.code
-    SyntaxChecker.checkOpenCL(code)
+    //SyntaxChecker.checkOpenCL(code)
     println(code)
 
     Executor.loadAndInit()
@@ -234,7 +234,7 @@ class SparseMatrix extends idealised.util.Tests {
     val p = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(typed))
 
     val code = p.code
-    SyntaxChecker.checkOpenCL(code)
+    //SyntaxChecker.checkOpenCL(code)
     println(code)
 
     Executor.loadAndInit()
@@ -285,17 +285,25 @@ class SparseMatrix extends idealised.util.Tests {
 
   //Benchmarking session, move somewhere else
 
-  ignore("Benchmark no zip") {
+  test("Benchmark no zip") {
     val inputSizes = Seq((1024, 1024), (2048, 2048), (4096, 4096), (8192, 8192))
     val localSizes = Seq(1, 2, 4, 8, 16, 32, 64)
 
-    benchmark("No zip", inputSizes, localSizes)(offsetBasedMMWithZip)
+    benchmark("No zip", inputSizes, localSizes)(offsetBasedMMNoZip)
   }
 
-  ignore("Benchmark with zip") {
+  test("Benchmark with zip") {
     val inputSizes = Seq((1024, 1024), (2048, 2048), (4096, 4096), (8192, 8192))
     val localSizes = Seq(1, 2, 4, 8, 16, 32, 64)
 
+    benchmark("With zip", inputSizes, localSizes)(offsetBasedMMWithZip)
+  }
+
+  test("Benchmark both") {
+    val inputSizes = Seq((1024, 1024), (2048, 2048), (4096, 4096))
+    val localSizes = Seq(1, 2, 4, 8, 16, 32, 64, 128)
+
+    benchmark("No zip", inputSizes, localSizes)(offsetBasedMMNoZip)
     benchmark("With zip", inputSizes, localSizes)(offsetBasedMMWithZip)
   }
 
