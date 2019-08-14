@@ -134,7 +134,12 @@ class SparseMatrix extends idealised.util.Tests {
     Executor.shutdown()
   }
 
-  test("Offset based matrix multiply") {
+  /**
+    * @param n number of rows
+    * @param m length of vector (max length of row)
+    * @param localSize local sizes
+    */
+  private def offsetBasedMMNoZip(n:Int, m:Int, localSize:Int):Double = {
     val f = nFun(n => nFun(m =>
       fun(ArrayType(n + 1, int))(dict =>
         letNat(nFun(i => Idx(dict, AsIndex(n + 1, i))), lookup =>
@@ -164,8 +169,6 @@ class SparseMatrix extends idealised.util.Tests {
     def randomValue = random.nextInt(9).toFloat + 1
 
     // input values
-    val n: Int = 1024 // number of rows
-    val m: Int = 512  // length of vector (max length of row)
     val rowLengths: Array[Int] = Array.tabulate(n)(_ => random.nextInt(m-1)+1)
     val dict: Array[Int] = rowLengths.scan(0)(_+_) // offset into rows (of max m length)
     val matrix: Array[Array[(Int, Float)]] = Array.tabulate(n)(rowIdx => Array.tabulate(rowLengths(rowIdx))(_ => (random.nextInt(m), randomValue)) ) // matrix values (as pairs of x-coord + value)
@@ -179,8 +182,8 @@ class SparseMatrix extends idealised.util.Tests {
     )
 
     import idealised.OpenCL._
-    val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Int] `,` Array[Array[(Int, Float)]] `,` Array[Float] `)=>` Array[Float]](1, n)
-    val (output, _) = runKernel(n `,` m `,` dict `,` matrix `,` vector)
+    val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Int] `,` Array[Array[(Int, Float)]] `,` Array[Float] `)=>` Array[Float]](localSize, n)
+    val (output, time) = runKernel(n `,` m `,` dict `,` matrix `,` vector)
 
     assert(gold sameElements output)
 
@@ -194,9 +197,20 @@ class SparseMatrix extends idealised.util.Tests {
     //    println(s"\nOutput\n: ${print1D(output)}")
 
     Executor.shutdown()
+
+    time.value
   }
 
-  test("Offset based matrix multiply using zip") {
+  test("Offset based matrix multiply") {
+   offsetBasedMMNoZip(1024, 512, 1)
+  }
+
+  /**
+    * @param n number of rows
+    * @param m length of vector (max length of row)
+    * @param localSize local sizes
+    */
+  private def offsetBasedMMWithZip(n:Int, m:Int, localSize:Int):Double = {
     val f = nFun(n => nFun(m =>
       fun(ArrayType(n + 1, int))(dict =>
         letNat(nFun(i => Idx(dict, AsIndex(n + 1, i))), lookup =>
@@ -229,8 +243,6 @@ class SparseMatrix extends idealised.util.Tests {
     def randomValue = random.nextInt(9).toFloat + 1
 
     // input values
-    val n: Int = 1024 // number of rows
-    val m: Int = 512  // length of vector (max length of row)
     val rowLengths: Array[Int] = Array.tabulate(n)(_ => random.nextInt(m-1)+1)
     val dict: Array[Int] = rowLengths.scan(0)(_+_) // offset into rows (of max m length)
     val xCoords: Array[Array[Int]] = Array.tabulate(n)(rowIdx => Array.tabulate(rowLengths(rowIdx))(_ => random.nextInt(m)))
@@ -245,8 +257,8 @@ class SparseMatrix extends idealised.util.Tests {
     )
 
     import idealised.OpenCL._
-    val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Int] `,` Array[Array[Int]] `,` Array[Array[Float]] `,` Array[Float] `)=>` Array[Float]](1, n)
-    val (output, _) = runKernel(n `,` m `,` dict `,` xCoords `,` values `,` vector)
+    val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Int] `,` Array[Array[Int]] `,` Array[Array[Float]] `,` Array[Float] `)=>` Array[Float]](localSize, n)
+    val (output, time) = runKernel(n `,` m `,` dict `,` xCoords `,` values `,` vector)
 
     assert(gold sameElements output)
     /*
@@ -262,5 +274,42 @@ class SparseMatrix extends idealised.util.Tests {
      */
 
     Executor.shutdown()
+
+    time.value
+  }
+
+  test("Offset based matrix multiply using zip") {
+    offsetBasedMMWithZip(1024, 1024, 1)
+  }
+
+
+  //Benchmarking session, move somewhere else
+
+  ignore("Benchmark no zip") {
+    val inputSizes = Seq((1024, 1024), (2048, 2048), (4096, 4096), (8192, 8192))
+    val localSizes = Seq(1, 2, 4, 8, 16, 32, 64)
+
+    benchmark("No zip", inputSizes, localSizes)(offsetBasedMMWithZip)
+  }
+
+  ignore("Benchmark with zip") {
+    val inputSizes = Seq((1024, 1024), (2048, 2048), (4096, 4096), (8192, 8192))
+    val localSizes = Seq(1, 2, 4, 8, 16, 32, 64)
+
+    benchmark("With zip", inputSizes, localSizes)(offsetBasedMMWithZip)
+  }
+
+  private def benchmark(name:String, inputSizes:Seq[(Int, Int)], localSizes:Seq[Int])(compute:(Int, Int, Int) => Double) = {
+    val entries = inputSizes.flatMap({
+      case (n, m) => localSizes.map(localSize => {
+        val time = compute(n, m, localSize)
+        val text = s"n:$n \t m:$m \t localSize:$localSize \t time:$time"
+        println(text)
+        text
+      })
+    })
+
+    println(name)
+    entries.foreach(println)
   }
 }
