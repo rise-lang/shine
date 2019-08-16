@@ -26,8 +26,8 @@ object Benchmark {
           println(s"Loaded matrix of size ${(matrix.numRows, matrix.numCols, matrix.entries.length)}")
 
 
-          val localSizes = Seq(4, 8, 16, 32, 64)
-          val globalSizes = Seq(2048, 4096, 8192)
+          val localSizes = Seq(4, 8, 16, 32, 64, 128)
+          val globalSizes = Seq(8192, 16384, 32768, 65536)
 
           for {
             localSize <- localSizes
