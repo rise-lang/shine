@@ -9,7 +9,7 @@ case class COOMatrix(numRows:Int, numCols:Int, entries:Array[((Int,Int),Float)])
 
 case class TwoArrayCSR(numRows:Int, numCols:Int, offsets:Array[Int], entries:Array[Array[(Int, Float)]])
 
-case class ThreeArrayCSR(numRows:Int, numCols:Int, offsets:Array[Int], colIdx:Array[Int], entries:Array[Float])
+case class ThreeArrayCSR(numRows:Int, numCols:Int, offsets:Array[Int], colIdx:Array[Array[Int]], entries:Array[Array[Float]])
 
 
 object COOMatrix {
@@ -80,8 +80,8 @@ object TwoArrayCSR {
 object ThreeArrayCSR {
   def apply(spm:COOMatrix):ThreeArrayCSR = {
     val offsetBuffer = new ArrayBuffer[Int]()
-    val nnzIdxBuffer = new ArrayBuffer[Int]()
-    val nnzValueBuffer = new ArrayBuffer[Float]()
+    val nnzIdxBuffer = new ArrayBuffer[Array[Int]]()
+    val nnzValueBuffer = new ArrayBuffer[Array[Float]]()
     var offset = 0
 
     spm.entries.groupBy { case ((rowIdx, _) , _) => rowIdx }.toSeq.sortBy(_._1).foreach {
@@ -89,10 +89,8 @@ object ThreeArrayCSR {
         offsetBuffer += offset
         val sortedRow = row.sortBy { case ((_, colIdx), _) => colIdx }
         offset += sortedRow.length
-        sortedRow.foreach{ case ((_, colIdx), value) => {
-          nnzIdxBuffer += colIdx - 1
-          nnzValueBuffer += value
-        }}
+        nnzIdxBuffer += sortedRow.map{ case ((_, colIdx), _) => colIdx - 1 }
+        nnzValueBuffer += sortedRow.map { case ((_, _), x) => x }
     }
 
     new ThreeArrayCSR(spm.numRows, spm.numCols, offsetBuffer.toArray, nnzIdxBuffer.toArray, nnzValueBuffer.toArray)
