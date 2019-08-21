@@ -179,6 +179,12 @@ object fromLift {
       =>
         makeMap(MapSeq, n, la, lb)
 
+      case (core.mapSeqUnroll,
+      lt.FunType(lt.FunType(_, lb: lt.DataType),
+      lt.FunType(lt.ArrayType(n, la: lt.DataType), _)))
+      =>
+        makeMap(MapSeqUnroll, n, la, lb)
+
       case (omp.mapPar,
       lt.FunType(lt.FunType(_, lb: lt.DataType),
       lt.FunType(lt.ArrayType(n, la: lt.DataType), _)))
