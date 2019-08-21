@@ -2,7 +2,7 @@ package idealised.DPIA.FunctionalPrimitives
 
 import idealised.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import idealised.DPIA.DSL._
-import idealised.DPIA.ImperativePrimitives.ReorderAcc
+import idealised.DPIA.ImperativePrimitives.{JoinAcc, ReorderAcc}
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
@@ -44,6 +44,14 @@ final case class Reorder(n: Nat,
         ArrayData(res.toVector)
       case _ => throw new Exception("This should not happen")
     }
+  }
+
+  override def fedeTranslation(env: scala.Predef.Map[Identifier[ExpType], Identifier[AccType]])
+                     (C: Phrase[AccType ->: AccType]) : Phrase[AccType] = {
+    import TranslationToImperative._
+
+    val otype = C.t.inT.dataType
+    fedAcc(env)(input)(λ(acc"[$otype]")(o => ReorderAcc(n, dt, idxFinv, C(o))))
   }
 
   override def acceptorTranslation(A: Phrase[AccType])

@@ -60,6 +60,34 @@ object TranslationToImperative {
     }
   }
 
+  def fedAcc(env: Map[Identifier[ExpType], Identifier[AccType]])
+            (E: Phrase[ExpType])
+            (C: Phrase[AccType ->: AccType]) : Phrase[AccType] = {
+    E match {
+      case ep: ExpPrimitive => ep.fedeTranslation(env)(C)
+      case x: Identifier[ExpType] =>
+        env.get(x) match {
+          case Some(o) => C(o)
+          case None => ???
+        }
+
+      // on the fly beta-reduction
+      case Apply(fun, arg) => fedAcc(env)(Lifting.liftFunction(fun).reducing(arg))(C)
+      case DepApply(fun, arg) => arg match {
+        case a: Nat => fedAcc(env)(Lifting.liftDependentFunction[NatKind, ExpType](fun.asInstanceOf[Phrase[NatKind `()->:` ExpType]])(a))(C)
+        case a: DataType => fedAcc(env)(Lifting.liftDependentFunction[DataKind, ExpType](fun.asInstanceOf[Phrase[DataKind `()->:` ExpType]])(a))(C)
+      }
+
+      case IfThenElse(cond, thenP, elseP) => ???
+
+      case Proj1(_) => throw new Exception("This should never happen")
+      case Proj2(_) => throw new Exception("This should never happen")
+
+      case LetNat(_, _, _) => throw new Exception("This should never happen")
+      case _ => ???
+    }
+  }
+
   def mapAcc(f: Phrase[ExpType ->: ExpType], E: Phrase[ExpType])
             (A: Phrase[AccType])
             (implicit context: TranslationContext): Phrase[CommType] = {

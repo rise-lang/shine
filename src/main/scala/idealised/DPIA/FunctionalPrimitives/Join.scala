@@ -2,7 +2,7 @@ package idealised.DPIA.FunctionalPrimitives
 
 import idealised.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import idealised.DPIA.DSL._
-import idealised.DPIA.ImperativePrimitives.JoinAcc
+import idealised.DPIA.ImperativePrimitives.{JoinAcc, SplitAcc}
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
@@ -46,6 +46,14 @@ final case class Join(n: Nat,
     <join n={ToString(n)} m={ToString(m)} w={ToString(w)} dt={ToString(dt)}>
       {Phrases.xmlPrinter(array)}
     </join>
+
+  override def fedeTranslation(env: scala.Predef.Map[Identifier[ExpType], Identifier[AccType]])
+                     (C: Phrase[AccType ->: AccType]) : Phrase[AccType] = {
+    import TranslationToImperative._
+
+    val otype = C.t.inT.dataType
+    fedAcc(env)(array)(λ(acc"[$otype]")(o => JoinAcc(n, m, dt, C(o))))
+  }
 
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommType] = {

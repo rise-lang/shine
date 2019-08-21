@@ -1,5 +1,6 @@
 package idealised.DPIA.FunctionalPrimitives
 
+import idealised.DPIA.Compilation.TranslationToImperative.acc
 import idealised.DPIA.Compilation.{CodeGenerator, TranslationContext, TranslationToImperative}
 import idealised.DPIA.DSL._
 import idealised.DPIA.ImperativePrimitives.SplitAcc
@@ -52,6 +53,14 @@ final case class Split(n: Nat,
     <split n={ToString(n)} m={ToString(m)} dt={ToString(dt)}>
       {Phrases.xmlPrinter(array)}
     </split>
+
+  override def fedeTranslation(env: scala.Predef.Map[Identifier[ExpType], Identifier[AccType]])
+                     (C: Phrase[AccType ->: AccType]) : Phrase[AccType] = {
+    import TranslationToImperative._
+
+    val otype = C.t.inT.dataType
+    fedAcc(env)(array)(λ(acc"[$otype]")(o => SplitAcc(n, m, dt, C(o))))
+  }
 
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommType] = {

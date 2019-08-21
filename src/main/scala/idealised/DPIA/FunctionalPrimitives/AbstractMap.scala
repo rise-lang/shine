@@ -43,7 +43,8 @@ abstract class AbstractMap(n: Nat,
 
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommType] = {
-    mapAcceptorTranslation(fun(exp"[$dt2, $read]")(x => x), A)
+    //mapAcceptorTranslation(fun(exp"[$dt2, $read]")(x => x), A)
+    ???
   }
 
   override def prettyPrint: String =

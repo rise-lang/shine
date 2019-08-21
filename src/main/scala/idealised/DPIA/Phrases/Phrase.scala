@@ -275,8 +275,11 @@ sealed trait Primitive[T <: PhraseType] extends Phrase[T] {
   def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[T]
 }
 
-trait ExpPrimitive extends Primitive[ExpType] {
+abstract class ExpPrimitive extends Primitive[ExpType] {
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Data
+
+  def fedeTranslation(env: Map[Identifier[ExpType], Identifier[AccType]])
+                     (C: Phrase[AccType ->: AccType]) : Phrase[AccType] = ???
 
   def acceptorTranslation(A: Phrase[AccType])
                          (implicit context: TranslationContext): Phrase[CommType]
