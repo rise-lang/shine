@@ -24,7 +24,7 @@ final case class Map(n: Nat,
     val x = Identifier(freshName("fede_x"), ExpType(dt1, read))
 
     val otype = AccType(dt2)
-    val o = Identifier(freshName("fede_y"), otype)
+    val o = Identifier(freshName("fede_o"), otype)
 
     fedAcc(env)(array)(λ(env.toList.head._2.t)(y =>
       MapAcc(n, dt2, dt1,
