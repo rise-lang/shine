@@ -18,30 +18,31 @@ final case class Map(n: Nat,
   override def makeMap: (Nat, DataType, DataType, Phrase[ExpType ->: ExpType], Phrase[ExpType]) => AbstractMap = Map
 
   override def fedeTranslation(env: scala.Predef.Map[Identifier[ExpType], Identifier[AccType]])
-                     (C: Phrase[AccType ->: AccType]) : Phrase[AccType] = {
+                              (C: Phrase[AccType ->: AccType]) : Phrase[AccType] = {
     import TranslationToImperative._
 
+    val x = Identifier("fede_x", ExpType(dt1, read))
+
+    //TODO Dangerous! This can capture free variables!
     val otype = AccType(dt2)
+    val y = Identifier("fede_y", otype)
 
-    val x = Identifier("x", ExpType(dt1, read))
-    val o = Identifier("o", otype)
-
-    fedAcc(env)(array)(λ(otype)(o =>
+    fedAcc(env)(array)(λ(env.toList.head._2.t)(o =>
       MapAcc(n, dt2, dt1,
-        Lambda(o,(fedAcc(scala.Predef.Map((x, o)))(f(x))(λ(otype)(x => x)))), C(o))))
+        Lambda(y,fedAcc(scala.Predef.Map((x, y)))(f(x))(λ(otype)(x => x))), C(o))))
   }
 
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
-    val otype = AccType(dt2)
+    val x = Identifier("fede_x", ExpType(dt1, read))
 
-    val x = Identifier("x", ExpType(dt1, read))
-    val o = Identifier("o", otype)
+    val otype = AccType(dt2)
+    val o = Identifier("fede_o", otype)
 
     acc(array)(MapAcc(n, dt2, dt1,
-      Lambda(o,(fedAcc(scala.Predef.Map((x, o)))(f(x))(λ(otype)(x => x)))),
+      Lambda(o,fedAcc(scala.Predef.Map((x, o)))(f(x))(λ(otype)(x => x))),
       A))
   }
 
