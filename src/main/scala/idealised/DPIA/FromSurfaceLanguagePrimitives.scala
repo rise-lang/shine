@@ -261,7 +261,7 @@ object FromSurfaceLanguagePrimitives {
             FromSurfaceLanguage.asPhrase[DPIA.Types.FunType[DPIA.Types.ExpType, DPIA.Types.FunType[DPIA.Types.ExpType, DPIA.Types.ExpType]]](f),
             FromSurfaceLanguage.asPhrase[DPIA.Types.ExpType](init),
             initAddrSpace,
-            FromSurfaceLanguage.asPhrase[DPIA.Types.ExpType](array)))
+            FromSurfaceLanguage.asPhrase[DPIA.Types.ExpType](array), unroll = false))
       }
 
       case to: To => ( (to.f.t, to.input.t) : @unchecked) match {
