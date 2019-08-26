@@ -2,6 +2,7 @@ package FSmooth
 
 import FSmooth.DSL._
 import FSmooth.MSmooth._
+import FSmooth.VectorFunctionConstants.length
 import elevate.core.strategies.basic.{id, repeat}
 import elevate.core.strategies.traversal.oncetd
 import elevate.core.{FSmooth, Strategy}
@@ -81,14 +82,34 @@ class ExamplesFromICFP2019Paper extends idealised.util.Tests {
     println("f = " + TypeInference.infer(f))
   }
 
+  // todo generalize
+  def normalize: Strategy[FSmooth] => Strategy[FSmooth] =
+    s => repeat(oncetd(s))
+
   test("Example5: Matrix Transpose") {
     val e = fun(M => matrixTranspose(matrixTranspose(M)))
-    def normalize: Strategy[FSmooth] => Strategy[FSmooth] =
-      s => repeat(oncetd(s))
 
     println(normalize(buildGet <+ lengthBuild <+ letPartialEvaluation <+ conditionalPartialEvalution <+ conditionApplication <+ letApplication <+ funToLet <+ letFission <+ letInitDuplication).apply(e))
     println("--")
     println(e)
+  }
+
+  test("Example6: Simplification") {
+    val input = fun((v, I) => Let(I, matrixEye(Application(len, Seq(v))),
+      Application(build, Seq(
+        Application(len, Seq(v)),
+        fun(i => Application(ifold, Seq(
+          Application(len, Seq(v)), ScalarValue(0), fun((a, j) =>
+            a + Application(get, Seq(v, j)) * Application(get, Seq(Application(get, Seq(I, j)), i))
+        )))))
+    )))
+
+    //val strategy0 = normalize(buildGet <+ lengthBuild <+ letPartialEvaluation <+ conditionalPartialEvalution)
+    val strategy0 = oncetd(letPartialEvaluation)
+    println(input)
+    println("--")
+    println(strategy0.apply(input))
+
   }
 
   test("Free variables") {

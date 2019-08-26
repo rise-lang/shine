@@ -9,9 +9,9 @@ object substitute {
   def apply(exprs: Seq[Expr], `for`: Seq[Expr], in: Expr): Expr = {
     object Visitor extends traversal.Visitor {
       override def apply(e: Expr): Result[Expr] = {
-        val pos = `for`.indexOf(e)
+        val pos = exprs.indexOf(e)
         if (pos != -1) {
-          Stop(exprs(pos))
+          Stop(`for`(pos))
         } else {
           Continue(e, this)
         }

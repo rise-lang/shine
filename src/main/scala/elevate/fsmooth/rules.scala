@@ -23,7 +23,9 @@ object rules {
 
   case object letPartialEvaluation extends Strategy[FSmooth] {
     def apply(e: FSmooth): RewriteResult[FSmooth] = e match {
-      case Let(x, e0, e1, _) => Success(substitute(Seq(x), Seq(e0), e1))
+      case Let(x, e0, e1, _) =>
+        println(s"---------------\nsubstitution:\nx:$x,\n===\nfor:$e0,\n===\nin:$e1\n\n")
+        Success(substitute(x, e0, e1))
       case _ => Failure(letPartialEvaluation)
     }
   }
