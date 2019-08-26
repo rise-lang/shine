@@ -12,8 +12,9 @@ import lift.arithmetic.{ArithExpr, Cst}
 import opencl.executor.Executor
 
 import scala.language.{implicitConversions, postfixOps}
-/*
+
 class triangleVectorMultNoExecutor extends idealised.util.Tests {
+  /*
   val mult = fun(x => x._1 * x._2)
 
   val add = fun(x => fun(y => x + y))
@@ -205,5 +206,5 @@ class triangleVectorMultNoExecutor extends idealised.util.Tests {
 
     assert(result.correct)
   }
-}
 */
+}

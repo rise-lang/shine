@@ -8,7 +8,7 @@ import idealised.DPIA.Types._
 import idealised.DPIA._
 import lift.arithmetic.{Cst, RangeAdd}
 
-
+case class ParForReduce() {}
 // Can't inherit from AbstractParFor
 //case class ParForReduce(override val n: Nat,
 //                        override val dt: DataType,
