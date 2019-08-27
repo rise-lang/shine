@@ -12,8 +12,9 @@ object MSmooth {
     build(n, fun(i => e)) )
 
   def vectorHot = fun( (n, i) =>
-    build(n, fun(j =>
-      `if` (i `=:=` j) `then` scalar(1.0) `else` scalar(0.0))) )
+      Application(build, Seq(n, fun(j => Conditional(i `=:=` j, scalar(1.0), scalar(0.0)) ))))
+//    build(n, fun(j =>
+//      `if` (i `=:=` j) `then` scalar(1.0) `else` scalar(0.0))) )
 
   def vectorMap = fun( (v, f) =>
     build(len(v), fun(i => f(v.get(i)))) )
@@ -68,7 +69,9 @@ object MSmooth {
     build(r, fun(i => vectorFill(c, scalar(1.0)))) )
 
   def matrixEye = fun(n =>
-    build(n, fun(i => vectorHot(n, i))) )
+    //build(n, fun(i => vectorHot(n, i)))
+    Application(build, Seq(n, fun(i => Application(vectorHot, Seq(n, i)))))
+  )
 
   def matrixHot = fun( (n, m, r, c) =>
     build(n, fun(i =>

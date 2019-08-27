@@ -1,6 +1,7 @@
 package elevate.fsmooth
 
 import elevate.core._
+import elevate.fsmooth.traversal._
 import _root_.FSmooth.VectorFunctionConstants.build
 import _root_.FSmooth._
 import _root_.FSmooth.DSL._
@@ -21,11 +22,18 @@ object rules {
     }
   }
 
+  case object funToLet2 extends Strategy[FSmooth] {
+    def apply(e: FSmooth): RewriteResult[FSmooth] = e match {
+      case Application(Abstraction(Seq(x,y), e0, _), Seq(e1, e2), _) => Success(
+        Let(x, e1, Let(y, e2, e0))
+      )
+      case _ => Failure(funToLet2)
+    }
+  }
+
   case object letPartialEvaluation extends Strategy[FSmooth] {
     def apply(e: FSmooth): RewriteResult[FSmooth] = e match {
-      case Let(x, e0, e1, _) =>
-        println(s"---------------\nsubstitution:\nx:$x,\n===\nfor:$e0,\n===\nin:$e1\n\n")
-        Success(substitute(x, e0, e1))
+      case Let(x, e0, e1, _) => Success(substitute(x, e0, e1))
       case _ => Failure(letPartialEvaluation)
     }
   }
@@ -128,7 +136,7 @@ object rules {
   case object conditionalPartialEvalution extends Strategy[FSmooth] {
     def apply(e: FSmooth): RewriteResult[FSmooth] = e match {
       case Conditional(e0, e1, e2, _) =>
-        Success(Conditional(e0, substitute(Seq(e0), Seq(`true`), e1), substitute(Seq(e0), Seq(`false`), e1)))
+        Success(Conditional(e0, substitute(e0, `true`, e1), substitute(e0, `false`, e2)))
       case _ => Failure(conditionalPartialEvalution)
     }
   }
@@ -137,6 +145,14 @@ object rules {
     def apply(e: FSmooth): RewriteResult[FSmooth] = e match {
       case Application(f, Seq(Conditional(e0, e1, e2, _)), _) =>
         Success(Conditional(e0, Application(f, Seq(e1)), Application(f, Seq(e2))))
+      case _ => Failure(conditionApplication)
+    }
+  }
+
+  case object conditionApplication2 extends Strategy[FSmooth] {
+    def apply(e: FSmooth): RewriteResult[FSmooth] = e match {
+      case Application(f, Seq(arg0, Conditional(e0, e1, e2, _)), _) =>
+        Success(Conditional(e0, Application(f, Seq(arg0, e1)), Application(f, Seq(arg0, e2))))
       case _ => Failure(conditionApplication)
     }
   }
@@ -189,16 +205,17 @@ object rules {
     }
   }
 
-  // todo implement traversable for fsmooth
-//  case object foldConditional extends Strategy[FSmooth] {
-//    def apply(e: FSmooth): RewriteResult[FSmooth] = e match {
-//      case Application(`ifold`(_), Seq(
-//      Abstraction(Seq(a1, i1), Conditional(Application(`=:=`(_), Seq(i2, e0), _), e1, a2, _), _), z, n), _)
-//        if a1 == a2 && i1 == i2 && !contains[FSmooth](a1).apply(e0) => !contains(i1).apply(e0)
-//        Success(Let(a1, z, Let(i1, e0, e1)))
-//      case _ => Failure(foldConditional)
-//    }
-//  }
+  case object foldConditional extends Strategy[FSmooth] {
+    def apply(e: FSmooth): RewriteResult[FSmooth] = e match {
+      case Application(`ifold`(_), Seq(
+        Abstraction(Seq(a1, i1), Conditional(Application(`=:=`(_), Seq(i2, e0), _), e1, a2, _), _),
+        z,
+        n), _) =>
+        //if a1 == a2 && i1 == i2 && !contains[FSmooth](a1).apply(e0) && !contains[FSmooth](i1).apply(e0) =>
+        Success(Let(a1, z, Let(i1, e0, e1)))
+      case _ => Failure(foldConditional)
+    }
+  }
 
   // tuple normalisation rules
 
