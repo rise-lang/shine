@@ -7,6 +7,7 @@ import idealised.OpenCL.SurfaceLanguage.DSL.{depMapGlobal, oclReduceSeq}
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Primitives.{AsIndex, Fst, Idx, Snd}
 import idealised.SurfaceLanguage.Types._
+import lift.arithmetic.Cst
 import opencl.executor.Executor
 
 import scala.util.Random
@@ -57,7 +58,7 @@ object Benchmark {
 
         Executor.loadAndInit()
 
-        {
+        /*{
           println("Two arrays...")
           val matrix = TwoArrayCSR(cooMatrix)
           for {
@@ -66,7 +67,7 @@ object Benchmark {
           } {
             csrTwoArrays(file.getName, matrix)(localSize, globalSize, 10.0)(printout)
           }
-        }
+        }*/
 
         {
           println("Three arrays...")
@@ -75,7 +76,7 @@ object Benchmark {
             localSize <- localSizes
             globalSize <- globalSizes
           } {
-            csrThreeArrays(file.getName, matrix)(localSize, globalSize, 10.0)(printout)
+            csrThreeArraysCoalesced(file.getName, matrix)(localSize, globalSize, 10.0)(printout)
           }
         }
 
@@ -135,6 +136,81 @@ object Benchmark {
     val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Int] `,` Array[Array[(Int, Float)]] `,` Array[Float] `)=>` Array[Float]](localSize, globalSize)
     val runF = () => runKernel(n `,` m `,` dict `,` matrix `,` vector)
     val (output, time) = repeatNTimes(numReps, runF)(_._2.value)
+
+    val wrongCount = gold.zip(output).map(x => Math.abs(x._1 - x._2)).count(_ > allowedEps)
+    //assert(wrongCount == 0)
+
+    printout(s"name=$name, n=$n, m=$m, localSize=$localSize, globalSize=$globalSize, version=csrThreeArr, runtime=$time, incorrect=$wrongCount")
+    time
+  }
+
+
+  private def csrThreeArraysCoalesced(name:String, spm:ThreeArrayCSR)(localSize:Int, globalSize:Int, allowedEps:Double)(printout:String => Unit) = {
+    val f = nFun(n => nFun(m =>
+      fun(ArrayType(n + 1, int))(dict =>
+        letNat(nFun(i => Idx(dict, AsIndex(n + 1, i))), lookup =>
+          fun(DepArrayType(n, i => ArrayType(lookup(i + 1) - lookup(i), IndexType(m))))(xCoords =>
+            fun(DepArrayType(n, i => ArrayType(lookup(i + 1) - lookup(i), float)))(values =>
+              fun(ArrayType(m, float))(vector =>
+                depZip(xCoords, values) :>> depMapGlobal.withIndex(nFun(rowID =>
+                  fun(twoRows => {
+                    def rowLength = lookup(rowID+1) - lookup(rowID)
+                    def chunkedRowXs = Fst(twoRows) :>> split(32)
+                    def chunkedRowVals = Snd(twoRows) :>> split(32)
+                    zip(chunkedRowXs, chunkedRowVals) :>> printType("row") :>> printType("Zipped") :>>
+                      mapSeq(fun(rowPair => zip(Fst(rowPair), Snd(rowPair)) :>> printType("split") :>>
+                        oclReduceSeq(fun(pair => fun(accum => accum + Snd(pair) * Idx(vector, Fst(pair)))), 0.0f, PrivateMemory) :>> printType("reduce result")
+                      )) :>> printType("map Seq result")
+                }))
+              )
+            )
+          )
+        )
+      )
+    )))
+
+    val typed = TypeInference(f, Map())
+
+    val p = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(typed))
+
+    //SyntaxChecker.checkOpenCL(code)
+    println(p.code)
+
+    val random = new Random
+    def randomValue = random.nextInt(9).toFloat + 1
+
+    // input values
+    val n = spm.numRows
+    val m = spm.numCols
+    // input values
+    val dict: Array[Int] = spm.offsets
+    val xCoords: Array[Array[Int]] = spm.colIdx
+    val values: Array[Array[Float]] = spm.entries
+    val vector: Array[Float] = Array.tabulate(m)(_ => randomValue) // vector values
+
+
+    // compute gold output
+    val gold = xCoords.zip(values).map( row =>
+      row._1.zip(row._2).foldLeft(0.0f) { (accum, pair) =>
+        accum + pair._2 * vector(pair._1)
+      }
+    )
+    import idealised.OpenCL._
+    val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Int] `,` Array[Array[Int]] `,` Array[Array[Float]] `,` Array[Float] `)=>` Array[Float]](localSize, globalSize)
+    val runF = () => runKernel(n `,` m `,` dict `,` xCoords `,` values `,` vector)
+
+    val (output, time) = repeatNTimes(numReps, runF)(_._2.value)
+    /*
+       def print1D[T]: Array[T] => String = x => x.mkString("[", ", ", "]")
+        def print2D[T]: Array[Array[T]] => String = x => x.map(print1D).mkString("[\n  ", ",\n  ", "\n]")
+        println(s"Vector\n: ${print1D(vector)}")
+        println(s"Matrix\n: ${print2D(xCoords.zip(values).map(x => x._1.zip(x._2)))}")
+        println(s"Row lengths\n: ${print1D(rowLengths)}")
+        println(s"Dict\n: ${print1D(dict)}")
+        println(s"\nGold\n: ${print1D(gold)}")
+        println(s"\nOutput\n: ${print1D(output)}")
+
+     */
 
     val wrongCount = gold.zip(output).map(x => Math.abs(x._1 - x._2)).count(_ > allowedEps)
     //assert(wrongCount == 0)

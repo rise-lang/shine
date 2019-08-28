@@ -1,12 +1,13 @@
 package idealised.apps
 
-import idealised.OpenCL.{GlobalMemory, PrivateMemory, ScalaFunction}
-import idealised.OpenCL.SurfaceLanguage.DSL.{depMapGlobal, mapGlobal, oclReduceSeq}
+import idealised.OpenCL.PrivateMemory
+import idealised.OpenCL.SurfaceLanguage.DSL.{depMapGlobal, oclReduceSeq}
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Primitives.{AsIndex, Fst, Idx, Snd}
 import idealised.SurfaceLanguage.Types._
 import idealised.util.SyntaxChecker
 import opencl.executor.Executor
+
 import scala.util.Random
 
 class SparseMatrix extends idealised.util.Tests {
@@ -280,44 +281,5 @@ class SparseMatrix extends idealised.util.Tests {
 
   test("Offset based matrix multiply using zip") {
     offsetBasedMMWithZip(1024, 1024, 1)
-  }
-
-
-  //Benchmarking session, move somewhere else
-
-  test("Benchmark no zip") {
-    val inputSizes = Seq((1024, 1024), (2048, 2048), (4096, 4096), (8192, 8192))
-    val localSizes = Seq(1, 2, 4, 8, 16, 32, 64)
-
-    benchmark("No zip", inputSizes, localSizes)(offsetBasedMMNoZip)
-  }
-
-  test("Benchmark with zip") {
-    val inputSizes = Seq((1024, 1024), (2048, 2048), (4096, 4096), (8192, 8192))
-    val localSizes = Seq(1, 2, 4, 8, 16, 32, 64)
-
-    benchmark("With zip", inputSizes, localSizes)(offsetBasedMMWithZip)
-  }
-
-  test("Benchmark both") {
-    val inputSizes = Seq((1024, 1024), (2048, 2048), (4096, 4096))
-    val localSizes = Seq(1, 2, 4, 8, 16, 32, 64, 128)
-
-    benchmark("No zip", inputSizes, localSizes)(offsetBasedMMNoZip)
-    benchmark("With zip", inputSizes, localSizes)(offsetBasedMMWithZip)
-  }
-
-  private def benchmark(name:String, inputSizes:Seq[(Int, Int)], localSizes:Seq[Int])(compute:(Int, Int, Int) => Double) = {
-    val entries = inputSizes.flatMap({
-      case (n, m) => localSizes.map(localSize => {
-        val time = compute(n, m, localSize)
-        val text = s"n:$n \t m:$m \t localSize:$localSize \t time:$time"
-        println(text)
-        text
-      })
-    })
-
-    println(name)
-    entries.foreach(println)
   }
 }

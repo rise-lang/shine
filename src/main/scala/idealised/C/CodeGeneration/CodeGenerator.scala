@@ -1089,6 +1089,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
          case sp: SteppedCase => genNat(sp.intoIfChain(), env, cont)
 
          case BigSum(variable, body) =>
+             println(s"Generating for loop for big sum $n")
              genNat(variable.from, env, from => {
                genNat(variable.upTo, env, upTo => {
                  genNat(body, env, bodyE => {
