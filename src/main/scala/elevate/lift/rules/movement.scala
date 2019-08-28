@@ -32,19 +32,22 @@ object movement {
       case a@Apply(
       `transpose`,
       Apply(
-      Apply(`map`, Lambda(n7, Apply(
-      Apply(`map`, Lambda(n6, Apply(
+      mapMapF@Apply(`map`, Lambda(n7, Apply(
+              Apply(`map`, Lambda(n6, Apply(
       f, n61))), n71))),
       arg
       )
       ) if contains[Lift](n6).apply(n61) && contains[Lift](n7).apply(n71) =>
-        println("=====")
-        println(a)
-        println("-----")
-        println(n7)
-        println(n6)
-        println("=====")
-        Success(arg |> transpose |> map(map(f)))
+//        println("===== a:")
+//        println(a)
+//        println("----- arg:")
+//        println(arg)
+        //println(n6)
+//        println("----- f:")
+//        println(f)
+//        println("=====")
+        //Success(arg |> transpose |> map(map(f)))
+        Success(arg |> transpose |> mapMapF)
       case _ => Failure(mapMapFBeforeTranspose)
     }
     override def toString = "mapMapFBeforeTranspose"

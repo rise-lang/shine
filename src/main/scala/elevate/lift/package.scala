@@ -31,9 +31,9 @@ package object lift {
   }
 
   def dotPrinter(expr: Expr,
-                 printEdgeLabels: Boolean = false,
+                 printEdgeLabels: Boolean = true,
                  inlineApply: Boolean = false,
-                 inlineTypedExpr: Boolean = false,
+                 inlineTypedExpr: Boolean = true,
                  inlineLambdaIdentifier: Boolean = false): String = {
 
     @scala.annotation.tailrec

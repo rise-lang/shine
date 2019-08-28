@@ -339,11 +339,11 @@ class tiling extends idealised.util.Tests {
     val normalized = FNF(tiling).get
     val rewritten = normalized(backward)
 
-    println("----")
-    println(tiling)
-    println("----")
-    println(normalized)
-    println("----")
+//    println("----")
+//    println(tiling)
+//    println("----")
+//    println(normalized)
+//    println("----")
     //println(rewritten)
 
     val debug =
@@ -354,12 +354,14 @@ class tiling extends idealised.util.Tests {
         body(body(body(inTyped(body(body(body(body(body(argument(argument(function(argumentOf(map,body(idAfter)))))))))))))) `;`
         body(body(body(inTyped(body(body(body(body(body(argument(argument(function(argumentOf(map,body(createTransposePair)))))))))))))) `;`
         body(body(body(inTyped(body(body(body(body(body(argument(argument(function(argumentOf(map,body(LCNF)))))))))))))) `;`
-        peek(x => exprToDot("/home/bastian/development/rewriting/dot", "working", x, dotPrinter(_))) `;` debugln("##################### 7") `;`
-        body(body(body(inTyped(body(body(body(body(body(argument(argument(function(argumentOf(map,body(argument(mapMapFBeforeTranspose))))))))))))))) `;`
-        peek(x => exprToDot("/home/bastian/development/rewriting/dot", "broken", x, dotPrinter(_))) `;` debugln("##################### 8") `;`
-        body(body(body(inTyped(body(body(body(body(body(argument(argument(RNF)))))))))))
+        peek(x => exprToDot("/home/bastian/development/rewriting/dot", "working", x, dotPrinter(_))) `;` debugln("##################### 7") //`;`
+        //body(body(body(inTyped(body(body(body(body(body(argument(argument(function(argumentOf(map,body(argument(mapMapFBeforeTranspose))))))))))))))) `;`
+        //peek(x => exprToDot("/home/bastian/development/rewriting/dot", "broken", x, dotPrinter(_))) `;` debugln("##################### 8") `;` inferType `;`
+        //body(body(body(inTyped(body(body(body(body(body(argument(argument(RNF)))))))))))
 
-    debug(backward)
+    val result = debug(backward)
+    val types = infer(result)
+    exprToDot("/home/bastian/development/rewriting/dot", "broken", types, dotPrinter(_))
 
   }
 
