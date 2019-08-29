@@ -3,7 +3,7 @@ package benchmarks.sparse
 import java.io.{File, FileWriter}
 
 import idealised.OpenCL.PrivateMemory
-import idealised.OpenCL.SurfaceLanguage.DSL.{depMapGlobal, oclReduceSeq}
+import idealised.OpenCL.SurfaceLanguage.DSL.{depMapGlobal, depMapWorkgroup, mapLocal, oclReduceSeq}
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Primitives.{AsIndex, Fst, Idx, Snd}
 import idealised.SurfaceLanguage.Types._
@@ -152,15 +152,15 @@ object Benchmark {
           fun(DepArrayType(n, i => ArrayType(lookup(i + 1) - lookup(i), IndexType(m))))(xCoords =>
             fun(DepArrayType(n, i => ArrayType(lookup(i + 1) - lookup(i), float)))(values =>
               fun(ArrayType(m, float))(vector =>
-                depZip(xCoords, values) :>> depMapGlobal.withIndex(nFun(rowID =>
+                depZip(xCoords, values) :>> depMapWorkgroup.withIndex(nFun(rowID =>
                   fun(twoRows => {
                     def rowLength = lookup(rowID+1) - lookup(rowID)
                     def chunkedRowXs = Fst(twoRows) :>> split(32)
                     def chunkedRowVals = Snd(twoRows) :>> split(32)
-                    zip(chunkedRowXs, chunkedRowVals) :>> printType("row") :>> printType("Zipped") :>>
-                      mapSeq(fun(rowPair => zip(Fst(rowPair), Snd(rowPair)) :>> printType("split") :>>
-                        oclReduceSeq(fun(pair => fun(accum => accum + Snd(pair) * Idx(vector, Fst(pair)))), 0.0f, PrivateMemory) :>> printType("reduce result")
-                      )) :>> printType("map Seq result")
+                    zip(chunkedRowXs, chunkedRowVals) :>>
+                      mapLocal(fun(rowPair => zip(Fst(rowPair), Snd(rowPair)) :>>
+                        oclReduceSeq(fun(pair => fun(accum => accum + Snd(pair) * Idx(vector, Fst(pair)))), 0.0f, PrivateMemory)
+                      )) :>> oclReduceSeq(fun(x => fun(y => x + y)), 0.0f, PrivateMemory)
                 }))
               )
             )
@@ -230,7 +230,7 @@ object Benchmark {
                 depZip(xCoords, values) :>> depMapGlobal(fun(pair => zip(Fst(pair, None), Snd(pair, None)) :>>
                   oclReduceSeq(fun(pair => fun(accum => accum + Snd(pair, None) * Idx(vector, Fst(pair, None)))), 0.0f, PrivateMemory)
                 )
-                )
+                )  :>> printType("Final result")
               )
             )
           )

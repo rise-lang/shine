@@ -250,7 +250,7 @@ class SparseMatrix extends idealised.util.Tests {
     val values: Array[Array[Float]] = Array.tabulate(n)(rowIdx => Array.tabulate(rowLengths(rowIdx))(_ => randomValue)) // matrix values (as pairs of x-coord + value)
     val vector: Array[Float] = Array.tabulate(m)(_ => randomValue) // vector values
 
-    // compute gold output
+    // compute gold outputt
     val gold = xCoords.zip(values).map( row =>
       row._1.zip(row._2).foldLeft(0.0f) { (accum, pair) =>
         accum + pair._2 * vector(pair._1)
