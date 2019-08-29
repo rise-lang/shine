@@ -328,23 +328,13 @@ class tiling extends idealised.util.Tests {
         )
       )
 
-    // goes into typedexpr
-
     val tiling = applyNTimes(3)(body)(
       inTyped(
         applyNTimes(5)(body)(
           tileND(2)(4))))
-    val tiled = tiling(backward).get
 
     val normalized = FNF(tiling).get
     val rewritten = normalized(backward)
-
-//    println("----")
-//    println(tiling)
-//    println("----")
-//    println(normalized)
-//    println("----")
-    //println(rewritten)
 
     val debug =
       body(body(body(inTyped(body(body(body(body(body(function(argumentOf(map,body(function(splitJoin(4)))))))))))))) `;`
@@ -353,16 +343,12 @@ class tiling extends idealised.util.Tests {
         body(body(body(inTyped(body(body(body(body(body(LCNF))))))))) `;`
         body(body(body(inTyped(body(body(body(body(body(argument(argument(function(argumentOf(map,body(idAfter)))))))))))))) `;`
         body(body(body(inTyped(body(body(body(body(body(argument(argument(function(argumentOf(map,body(createTransposePair)))))))))))))) `;`
-        body(body(body(inTyped(body(body(body(body(body(argument(argument(function(argumentOf(map,body(LCNF)))))))))))))) `;`
-        peek(x => exprToDot("/home/bastian/development/rewriting/dot", "working", x, dotPrinter(_))) `;` debugln("##################### 7") //`;`
+        body(body(body(inTyped(body(body(body(body(body(argument(argument(function(argumentOf(map,body(LCNF))))))))))))))
         //body(body(body(inTyped(body(body(body(body(body(argument(argument(function(argumentOf(map,body(argument(mapMapFBeforeTranspose))))))))))))))) `;`
-        //peek(x => exprToDot("/home/bastian/development/rewriting/dot", "broken", x, dotPrinter(_))) `;` debugln("##################### 8") `;` inferType `;`
         //body(body(body(inTyped(body(body(body(body(body(argument(argument(RNF)))))))))))
 
     val result = debug(backward)
     val types = infer(result)
-    exprToDot("/home/bastian/development/rewriting/dot", "broken", types, dotPrinter(_))
-
   }
 
   test("map fission issue when used with zip") {

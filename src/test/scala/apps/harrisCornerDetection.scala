@@ -10,7 +10,6 @@ import idealised._
 import idealised.util.SyntaxChecker
 
 object harrisCornerDetection {
-  /*
   val mulT = binomialFilter.mulT
   val add = binomialFilter.add
   val sq = fun(x => x * x)
@@ -87,6 +86,4 @@ class harrisCornerDetection extends idealised.util.Tests {
   test("harris compiles to C code") {
     program("harris", harrisCornerDetection.e)
   }
-
-   */
 }

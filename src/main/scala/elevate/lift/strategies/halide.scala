@@ -13,7 +13,6 @@ object halide {
     def shiftDimension(i: Int): Strategy[Lift] = {
       i match {
         case 1 => loopInterchange
-        //case x => shiftDimension(i-1) `;` moveTowardsArgument(i-1)(loopInterchangeAtLevel(x-1))
         case x => loopInterchangeAtLevel(x-1) `;` moveTowardsArgument(1)(shiftDimension(i-1))
       }
     }

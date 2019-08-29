@@ -7,24 +7,24 @@ import elevate.core.{Lift, RewriteResult, Strategy, Success}
 
 package object lift {
 
-  def printExpr : Strategy[Lift] = peek[Lift](p => println(s"${toReusableString(p)}"))
-  def printLambda(msg: String) : Strategy[Lift] = peek[Lift](p => println(s"$msg \n${toReusableString(p)}"))
+  def printExpr : Strategy[Lift] = peek[Lift](p => println(s"${toEvaluableString(p)}"))
+  def printExpr(msg: String) : Strategy[Lift] = peek[Lift](p => println(s"$msg \n${toEvaluableString(p)}"))
 
-  def toReusableString(e: Lift): String = {
+  def toEvaluableString(e: Lift): String = {
     e match {
       case Identifier(name) => s"""Identifier("id$name")""" // id prefix prevents name clashes with freshName
-      case Lambda(x, e) => s"Lambda(${toReusableString(x)}, ${toReusableString(e)})"
-      case Apply(f, e) => s"Apply(${toReusableString(f)}, ${toReusableString(e)})"
+      case Lambda(x, e) => s"Lambda(${toEvaluableString(x)}, ${toEvaluableString(e)})"
+      case Apply(f, e) => s"Apply(${toEvaluableString(f)}, ${toEvaluableString(e)})"
       case DepLambda(x, e) => x match {
-        case n: NatIdentifier => s"""DepLambda[NatKind]("id$n", ${toReusableString(e)})"""
-        case dt: DataTypeIdentifier => s"""DepLambda[DataKind]("id$dt", ${toReusableString(e)})"""
+        case n: NatIdentifier => s"""DepLambda[NatKind]("id$n", ${toEvaluableString(e)})"""
+        case dt: DataTypeIdentifier => s"""DepLambda[DataKind]("id$dt", ${toEvaluableString(e)})"""
       }
       case DepApply(f, x) => x match {
-        case n: Nat => s"DepApply[NatKind](${toReusableString(f)}, $n)"
-        case dt: DataType => s"DepApply[DataKind](${toReusableString(f)}, $dt)"
+        case n: Nat => s"DepApply[NatKind](${toEvaluableString(f)}, $n)"
+        case dt: DataType => s"DepApply[DataKind](${toEvaluableString(f)}, $dt)"
       }
       case Literal(d) => s"Literal($d)"
-      case TypedExpr(e, t) => toReusableString(e)//??? // do types print reusably as well?
+      case TypedExpr(e, t) => toEvaluableString(e)
       case ff: primitives.ForeignFunction => ff.toString
       case p: Primitive => p.toString
     }

@@ -38,15 +38,6 @@ object movement {
       arg
       )
       ) if contains[Lift](n6).apply(n61) && contains[Lift](n7).apply(n71) =>
-//        println("===== a:")
-//        println(a)
-//        println("----- arg:")
-//        println(arg)
-        //println(n6)
-//        println("----- f:")
-//        println(f)
-//        println("=====")
-        //Success(arg |> transpose |> map(map(f)))
         Success(arg |> transpose |> mapMapF)
       case _ => Failure(mapMapFBeforeTranspose)
     }
