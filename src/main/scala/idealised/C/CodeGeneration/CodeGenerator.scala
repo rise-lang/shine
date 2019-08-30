@@ -838,21 +838,22 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case ((i: CIntExpr) :: _, _: VectorType) =>
           val data = C.AST.StructMemberAccess(accuExpr, C.AST.DeclRef("data"))
           C.AST.ArraySubscript(data, C.AST.ArithmeticExpr(i))
-        case ((i: CIntExpr) :: _, at: ArrayType) =>
-            val (k, ps) = flattenArrayIndices(at, path)
-            generateAccess(dt, C.AST.ArraySubscript(accuExpr, C.AST.ArithmeticExpr(k)), ps, env)
-        case ((i: CIntExpr) :: _, dat: DepArrayType) =>
-            val (k, ps) = flattenArrayIndices(dat, path)
-            generateAccess(dt, C.AST.ArraySubscript(accuExpr, C.AST.ArithmeticExpr(k)), ps, env)
+        case ((_: CIntExpr) :: _, at: ArrayType) =>
+            val (et, i, ps) = flattenArrayIndices(at, path)
+            generateAccess(et, C.AST.ArraySubscript(accuExpr, C.AST.ArithmeticExpr(i)), ps, env)
+        case ((_: CIntExpr) :: _, dat: DepArrayType) =>
+            val (et, i, ps) = flattenArrayIndices(dat, path)
+            generateAccess(et, C.AST.ArraySubscript(accuExpr, C.AST.ArithmeticExpr(i)), ps, env)
         case (_, _) =>
           throw new Exception(s"Can't generate access for `$dt' with `${path.mkString("[ ", " :: ", " ]")}'")
       }
     }
 
-    def flattenArrayIndices(dt: DataType, path: Path): (Nat, Path) = {
+    def flattenArrayIndices(dt: DataType, path: Path): (DataType, Nat, Path) = {
       assert(dt.isInstanceOf[ArrayType] || dt.isInstanceOf[DepArrayType])
 
-      val (indicesAsPathElements, rest) = path.splitAt(countArrayLayers(dt))
+      val arrayLayers = countArrayLayers(dt)
+      val (indicesAsPathElements, rest) = path.splitAt(arrayLayers)
       indicesAsPathElements.foreach(i => assert(i.isInstanceOf[CIntExpr]))
       val indices = indicesAsPathElements.map(_.asInstanceOf[CIntExpr].num)
       assert(rest.isEmpty || !rest.head.isInstanceOf[CIntExpr])
@@ -860,10 +861,10 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       val subMap = buildSubMap(dt, indices)
 
-      (ArithExpr.substitute(flattenIndices(dt, indices), subMap), rest)
+      (removeArrayLayers(dt, arrayLayers), ArithExpr.substitute(flattenIndices(dt, indices), subMap), rest)
     }
 
-    def countArrayLayers(dataType: DataType):Int = {
+    def countArrayLayers(dataType: DataType): Int = {
       dataType match {
         case ArrayType(_, et) => 1 + countArrayLayers(et)
         case DepArrayType(_, NatToDataLambda(_ ,et)) => 1 + countArrayLayers(et)
@@ -871,7 +872,20 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       }
     }
 
-    def flattenIndices(dataType: DataType, indicies:List[Nat]):Nat = {
+    @scala.annotation.tailrec
+    def removeArrayLayers(dataType: DataType, arrayLayers: Int): DataType = {
+      if (arrayLayers == 0) {
+        dataType
+      } else {
+        dataType match {
+          case ArrayType(_, et) => removeArrayLayers(et, arrayLayers - 1)
+          case DepArrayType(_, NatToDataLambda(_, et)) => removeArrayLayers(et, arrayLayers - 1) // ???
+          case _ => ???
+        }
+      }
+    }
+
+    def flattenIndices(dataType: DataType, indicies:List[Nat]): Nat = {
       (dataType, indicies) match {
         case (array:ArrayType, index::rest) =>
           numberOfElementsUntil(array, index) + flattenIndices(array.elemType, rest)
@@ -887,11 +901,11 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     }
 
     //Computes the total number of element in an array at a given offset
-    def numberOfElementsUntil(dt:ArrayType, at:Nat):Nat = {
+    def numberOfElementsUntil(dt:ArrayType, at:Nat): Nat = {
       DataType.getTotalNumberOfElements(dt.elemType)*at
     }
 
-    def numberOfElementsUntil(dt:DepArrayType, at:Nat):Nat = {
+    def numberOfElementsUntil(dt:DepArrayType, at:Nat): Nat = {
       dt.elemFType match {
         case NatToDataLambda(x, body) =>
           BigSum(from=0, upTo = at-1, `for`=x, DataType.getTotalNumberOfElements(body))
