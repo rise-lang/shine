@@ -24,7 +24,7 @@ object Lifting {
       case p2: Proj2[a, K `()->:` T] =>
         val pair = liftPair(p2.pair)
         liftDependentFunction(pair._2)
-      case Identifier(_, _) | IfThenElse(_, _, _) | idealised.DPIA.Phrases.LetNat(_, _, _) =>
+      case Identifier(_, _) | IfThenElse(_, _, _) | LetNat(_, _, _) =>
         throw new Exception("This should never happen")
     }
   }
@@ -68,7 +68,7 @@ object Lifting {
       case p2: Proj2[a, ExpType ->: T] =>
         val pair = liftPair(p2.pair)
         liftFunctionToNatLambda(pair._2)
-      case Identifier(_, _) | IfThenElse(_, _, _) | idealised.DPIA.Phrases.LetNat(_, _, _) =>
+      case Identifier(_, _) | IfThenElse(_, _, _) | LetNat(_, _, _) =>
         throw new Exception("This should never happen")
     }
   }
@@ -91,7 +91,7 @@ object Lifting {
       case p2: Proj2[a, T1 x T2] =>
         val pair = liftPair(p2.pair)
         liftPair(pair._2)
-      case Identifier(_, _) | IfThenElse(_, _, _) | idealised.DPIA.Phrases.LetNat(_, _, _) =>
+      case Identifier(_, _) | IfThenElse(_, _, _) | LetNat(_, _, _)=>
         throw new Exception("This should never happen")
     }
   }
