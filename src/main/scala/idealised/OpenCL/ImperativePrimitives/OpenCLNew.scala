@@ -29,7 +29,7 @@ final case class OpenCLNew(dt: DataType,
     OpenCLNew(fun.data(dt), addressSpace, VisitAndRebuild(f, fun))
   }
 
-  override def prettyPrint: String = s"(new ${PrettyPhrasePrinter(f)})"
+  override def prettyPrint: String = s"(new $addressSpace ${PrettyPhrasePrinter(f)})"
 
   override def xmlPrinter: Elem =
     <new dt={ToString(dt)} addressSpace={ToString(addressSpace)}>

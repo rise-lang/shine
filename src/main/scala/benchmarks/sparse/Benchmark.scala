@@ -3,7 +3,7 @@ package benchmarks.sparse
 import java.io.{File, FileWriter}
 
 import idealised.OpenCL.PrivateMemory
-import idealised.OpenCL.SurfaceLanguage.DSL.{depMapGlobal, depMapWorkgroup, mapLocal, oclReduceSeq}
+import idealised.OpenCL.SurfaceLanguage.DSL.{depMapGlobal, depMapWorkgroup, mapLocal, oclReduceSeq, toLocal}
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Primitives.{AsIndex, Fst, Idx, Snd}
 import idealised.SurfaceLanguage.Types._
@@ -155,12 +155,12 @@ object Benchmark {
                 depZip(xCoords, values) :>> depMapWorkgroup.withIndex(nFun(rowID =>
                   fun(twoRows => {
                     def rowLength = lookup(rowID+1) - lookup(rowID)
-                    def chunkedRowXs = Fst(twoRows) :>> split(32)
-                    def chunkedRowVals = Snd(twoRows) :>> split(32)
+                    def chunkedRowXs = Fst(twoRows) :>> pad(0, rowLength % 32, AsIndex(m, Cst(0))) :>> split(32)
+                    def chunkedRowVals = Snd(twoRows) :>> pad(0, rowLength % 32, 0.0f) :>> split(32)
                     zip(chunkedRowXs, chunkedRowVals) :>>
                       mapLocal(fun(rowPair => zip(Fst(rowPair), Snd(rowPair)) :>>
-                        oclReduceSeq(fun(pair => fun(accum => accum + Snd(pair) * Idx(vector, Fst(pair)))), 0.0f, PrivateMemory)
-                      )) :>> oclReduceSeq(fun(x => fun(y => x + y)), 0.0f, PrivateMemory)
+                        toLocal(oclReduceSeq(fun(pair => fun(accum => accum + Snd(pair) * Idx(vector, Fst(pair)))), 0.0f, PrivateMemory))
+                      )) :>> oclReduceSeq(fun(x => fun(y => x + y)), 1.0f, PrivateMemory)
                 }))
               )
             )

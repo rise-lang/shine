@@ -306,8 +306,8 @@ object FromSurfaceLanguagePrimitives {
 
     case MapGlobal(dim) =>
       (n, dt1, dt2, f, array) => idealised.OpenCL.FunctionalPrimitives.MapGlobal(dim)(n, dt1, dt2, f, array)
-    case MapLocal(dim) =>
-      (n, dt1, dt2, f, array) => idealised.OpenCL.FunctionalPrimitives.MapLocal(dim)(n, dt1, dt2, f, array)
+    case MapLocal(dim, addressSpace) =>
+      (n, dt1, dt2, f, array) => idealised.OpenCL.FunctionalPrimitives.MapLocal(dim, addressSpace)(n, dt1, dt2, f, array)
     case MapWorkGroup(dim) =>
       (n, dt1, dt2, f, array) => idealised.OpenCL.FunctionalPrimitives.MapWorkGroup(dim)(n, dt1, dt2, f, array)
   }
