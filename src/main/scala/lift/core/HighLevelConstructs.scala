@@ -3,6 +3,7 @@ package lift.core
 import lift.core.DSL._
 import lift.core.types._
 import lift.core.primitives._
+import lift.core.semantics.NatData
 
 object HighLevelConstructs {
   val slide2D: Expr = nFun(sz => nFun(st => fun(a =>
@@ -13,9 +14,9 @@ object HighLevelConstructs {
     nFun(s => {
       val f =
         implN(n =>
-          fun(IndexType(n))(i => i /* FIXME {
-            mapIndexExpr(i, j => (j / (n /^ s)) + s * (j % (n /^ s)))
-          }*/))
+          fun(IndexType(n))(i => natAsIndex(n)(
+            (indexAsNat(i) / (n /^ s)) + ((s: Expr) * (indexAsNat(i) % (n /^ s)))
+          )))
       reorder(f)(f)
     })
   }

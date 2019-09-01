@@ -20,14 +20,11 @@ class fft extends idealised.util.Tests {
     }))
 
     // TODO compare with previous implementations again
-    val reorderedB =
+    val reorderedB: Expr =
       generate(fun(IndexType(LPrevIter))(i =>
         generate(fun(IndexType(p))(j =>
           generate(fun(IndexType(p))(k => {
-            // TODO use treatNatExprAsNat properly (look at it again)
-            val exponentWoMinus2 =
-              mapNatExpr(mapNatExpr(indexAsNat(j), j => j * LPrevIter) +
-                mapNatExpr(indexAsNat(i), i => i) * mapNatExpr(indexAsNat(k), k => k / (p * LPrevIter)), x => x)
+            val exponentWoMinus2 = (j * (LPrevIter: Nat)) + i * (k / (p * (LPrevIter: Nat)))
             val exponent = (cast(exponentWoMinus2) :: float) * l(-2.0)
             pair(cast(cospi(exponent) :: float))(cast(sinpi(exponent) :: float))
           }))))))

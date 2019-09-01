@@ -1,7 +1,7 @@
 package idealised.DPIA
 
 import idealised.DPIA.Compilation.TranslationContext
-import idealised.DPIA.FunctionalPrimitives.{AsIndex, DepIdx, Idx, IdxVec, IndexAsNat}
+import idealised.DPIA.FunctionalPrimitives.{DepIdx, Idx, IdxVec, AsIndex}
 import idealised.DPIA.ImperativePrimitives._
 import idealised.DPIA.Phrases.{BinOp, Literal, Natural, Pair, Phrase, Proj1, Proj2, UnaryOp}
 import idealised.DPIA.Semantics.OperationalSemantics.{FloatData, IntData}
@@ -123,7 +123,6 @@ package object DSL {
 
   implicit class VarExtensions(v: Phrase[VarType]) {
     def rd: Proj1[ExpType, AccType] = π1(v)
-
     def wr: Proj2[ExpType, AccType] = π2(v)
   }
 
@@ -132,16 +131,9 @@ package object DSL {
     def _2: Proj2[T1, T2] = π2(v)
   }
 
-  def mapNatExpr(natExpr: Phrase[ExpType], f: Nat => Nat): Phrase[ExpType] = {
-    Natural(f(Phrase.Internal.NatFromNatExpr(natExpr)))
-  }
-
-  // this is safe as long as `f' returns a Nat value of less than `n'
-  def mapIndexExpr(indexExpr: Phrase[ExpType], f: Nat => Nat): Phrase[ExpType] = {
-    indexExpr.t match {
-      case ExpType(IndexType(n), _) => AsIndex(n, mapNatExpr(IndexAsNat(n, indexExpr), f))
-      case x => throw new Exception(s"Expected ExpType(IndexType(n), _) found: $x")
-    }
+  def mapTransientNat(natExpr: Phrase[ExpType], f: Nat => Nat): Phrase[ExpType] = {
+    Phrase.Internal.exprFromTransientNat(
+      Phrase.Internal.transientNatFromExpr(natExpr).map(f))
   }
 
   implicit def toLiteralInt(i: Int): Literal = Literal(IntData(i))
