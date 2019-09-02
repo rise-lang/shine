@@ -1,7 +1,9 @@
 package idealised.DPIA
 import idealised.SurfaceLanguage.DSL._
+import idealised.SurfaceLanguage.Primitives.{AsIndex, Idx}
 import idealised.SurfaceLanguage.Types._
 import idealised.util.SyntaxChecker
+import lift.arithmetic.Cst
 
 class LetNat extends idealised.util.Tests{
 
@@ -24,8 +26,8 @@ class LetNat extends idealised.util.Tests{
   test("Simple functions with no capture") {
     val program = nFun(n =>
       fun(ArrayType(n, float))(xs =>
-        letNat(fun(int)(x => x + 2), f =>
-          letNat(fun(int)(x => x + 1), g =>
+        letNat(nFun(x => x + 2), f =>
+          letNat(nFun(x => x + 1), g =>
             letNat(5, five =>
               mapSeq(fun(x => x))(take(g(f(five())), xs))
             )
@@ -59,4 +61,21 @@ class LetNat extends idealised.util.Tests{
     println(code)
   }
 
+
+  test("Captured value") {
+    val f = nFun(n =>
+      fun(ArrayType(n, int))(values =>
+      fun(ArrayType(n, IndexType(10)))(dict =>
+        letNat(Idx(dict, AsIndex(n, Cst(0))), index => mapSeq(fun(x => x + 1), take(index(), values)))
+    ))
+    )
+
+    val typed = TypeInference(f, Map())
+
+    val p = idealised.OpenCL.KernelGenerator.makeCode(idealised.DPIA.FromSurfaceLanguage(typed))
+
+    val code = p.code
+    SyntaxChecker.checkOpenCL(code)
+    println(code)
+  }
 }

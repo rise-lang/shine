@@ -174,7 +174,7 @@ object fromLift {
       lt.FunType(lt.FunType(_, lb: lt.DataType),
       lt.FunType(lt.ArrayType(n, la: lt.DataType), _)))
       =>
-        makeMap(MapLocal(dim), n, la, lb)
+        makeMap(MapLocal(dim, LocalMemory), n, la, lb)
 
       case (ocl.mapWorkGroup(dim),
       lt.FunType(lt.FunType(_, lb: lt.DataType),
