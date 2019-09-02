@@ -137,6 +137,21 @@ object Phrase {
       override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
         p match {
           case `for` => Stop(ph.asInstanceOf[Phrase[T]])
+          case Natural(n) =>
+            val v = NatIdentifier(`for` match {
+              case Identifier(name, _) => name
+              case _ => throw new Exception("This should never happen")
+            })
+
+            ph.t match {
+              case ExpType(NatType, _) =>
+                Stop(Natural(Nat.substitute(
+                  Internal.transientNatFromExpr(ph.asInstanceOf[Phrase[ExpType]]).n, v, n)).asInstanceOf[Phrase[T]])
+              case ExpType(IndexType(_), _) =>
+                Stop(Natural(Nat.substitute(
+                  Internal.transientNatFromExpr(ph.asInstanceOf[Phrase[ExpType]]).n, v, n)).asInstanceOf[Phrase[T]])
+              case _ => Continue(p, this)
+            }
           case _ => Continue(p, this)
         }
       }
@@ -187,10 +202,10 @@ object Phrase {
       p match {
         case i: Identifier[ExpType] => p.t match {
           case ExpType(IndexType(n), _) =>
-            val v = NamedVar(s"id_${i.name}", RangeAdd(0, n, 1))
+            val v = NamedVar(i.name, RangeAdd(0, n, 1))
             TransientNat(v, Map(v -> IndexAsNat(n, i)))
           case ExpType(NatType, _) =>
-            val v = NamedVar(s"id_${i.name}", RangeAdd(0, lift.arithmetic.PosInf, 1))
+            val v = NamedVar(i.name, RangeAdd(0, lift.arithmetic.PosInf, 1))
             TransientNat(v, Map(v -> i))
           case _ => throw new Exception("This should never happen")
         }
@@ -199,7 +214,7 @@ object Phrase {
           //TODO can we use our knowledge of n somehow?
           case AsIndex(n, e) => transientNatFromExpr(e)
           case IndexAsNat(_, e) => transientNatFromExpr(e)
-          case _ => throw new Exception("This should never happen")
+          case _ => throw new Exception(s"This should never happen ($prim)")
         }
         case UnaryOp(op, e) =>
           transientNatFromExpr(e).map(unOpToNat(op, _))

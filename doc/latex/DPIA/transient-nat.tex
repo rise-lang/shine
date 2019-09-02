@@ -29,7 +29,7 @@ In our implementation, arithmetic expressions of $\natkind$ are simplified. To a
 \begin{figure}
   \begin{displaymath}
     \begin{array}{lcl}
-      \exprFromTransientNat{\x, \eta)} &=& \text{if } \exists x' = \eta(\x) \text{ then } x' \text{ else } \x \\
+      \exprFromTransientNat{\x, \eta)} &=& \text{if } \exists x'. \eta(\x) = x' \text{ then } x' \text{ else } \x \\
       \exprFromTransientNat{(\underline{\ell}, _)} &=& \underline{\ell} : \tyexp{\natkind}{\_} \\
       \exprFromTransientNat{(n \oplus m, \eta)} &=& \exprFromTransientNat{n, \eta} \oplus \exprFromTransientNat{m, \eta} \\
     \end{array}
