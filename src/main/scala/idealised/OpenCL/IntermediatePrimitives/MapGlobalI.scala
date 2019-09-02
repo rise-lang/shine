@@ -14,6 +14,7 @@ final case class MapGlobalI(dim: Int) {
             out: Phrase[AccType])
            (implicit context: TranslationContext): Phrase[CommType] =
   {
+    comment("mapGlobal")`;`
     ParForGlobal(dim)(n, dt2, out,
       λ(exp"[idx($n), $read]")(i => λ(acc"[$dt2]")(a => f(in `@` i)(a))))
   }

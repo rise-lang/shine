@@ -19,6 +19,7 @@ object ReduceSeqI {
   {
     `new`(dt2, acc =>
       (acc.wr :=|dt2| init) `;`
+        comment("reduceSeq")`;`
         `for`(n, i => f(acc.rd)(in `@` i)(acc.wr), unroll) `;`
         out(acc.rd)
     )

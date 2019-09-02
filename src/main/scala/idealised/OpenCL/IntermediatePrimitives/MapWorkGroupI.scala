@@ -16,6 +16,7 @@ final case class MapWorkGroupI(dim: Int) {
             out: Phrase[AccType])
            (implicit context: TranslationContext): Phrase[CommType] =
   {
+    comment("mapWorkgroup")`;`
     ParForWorkGroup(dim)(n, dt2, out, λ(exp"[idx($n), $read]")(i => λ(acc"[$dt2]")(a => {
 
       //      val access = (out `@` 0) `@` 0 // TODO: this is totally not generic ...

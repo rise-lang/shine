@@ -53,6 +53,10 @@ object `for` {
     For(n, λ(exp"[idx($n), $read]")( i => f(i) ), unroll)
 }
 
+object comment {
+  def apply(comment: String): Comment = Comment(comment)
+}
+
 object fst {
   def apply(record: Phrase[ExpType]): Fst = {
     record.t match {
