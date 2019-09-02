@@ -244,6 +244,9 @@ object Phrase {
     def exprFromTransientNat(tn: TransientNat): Phrase[ExpType] =
       eitherAsExpr(reconstructTransientNat(tn))
 
+    // In the formalism, all nat constructs are reconstructed as exp constructs,
+    // but in this implementation we preserve nat subexpressions that do not need to be reconstructed
+    // (the ones that do not contain any exp identifier)
     private def reconstructTransientNat(tn: TransientNat): Either[Nat, Phrase[ExpType]] = {
       import lift.arithmetic._
 

@@ -1,0 +1,38 @@
+\clearpage
+\section{Transient nats}
+
+\newcommand{\transientNatFromExpr}[1]{\textsc{Transient}_{\exp \to \natkind}(#1)}
+\newcommand{\exprFromTransientNat}[1]{\textsc{Transient}_{\natkind \to \exp}(#1)}
+
+In our implementation, arithmetic expressions of $\natkind$ are simplified. To also simplify arithmetic expressions of $\tyexp{\natkind}{\_}$ or $\tyexp{\tyidx[\_]}{\_}$, we define how to temporarily transform such expressions into $\natkind$ expressions. This allows to leverage the simplification process on $\natkind$, but the transformation mingles $\tyexp{\natkind}{\_}$ identifiers with $\natkind$ identifiers, and has to be properly reversed by going back to $\tyexp{\natkind}{\_}$ after the simplification has been performed.
+
+\begin{figure}
+  \begin{displaymath}
+    \begin{array}{lcl}
+      \transientNatFromExpr{\x : \tyexp{\tyidx[n]}{\_}} &=& (\x : \natkind, \x : \natkind \mapsto \prim{indexAsNat}~n~(\x : \tyexp{\tyidx[n]}{\_})) \\
+      \transientNatFromExpr{\x : \tyexp{\natkind}{\_}} &=& (\x : \natkind, \x : \natkind \mapsto \x : \tyexp{\natkind}{\_}) \\
+      \transientNatFromExpr{\underline{\ell} : \tyexp{\natkind}{\_}} &=& (\ell : \natkind, \emptyset) \\
+      \transientNatFromExpr{\prim{asIndex}~n~e} &=& \transientNatFromExpr{e} \\
+      \transientNatFromExpr{\prim{indexAsNat}~n~e} &=& \transientNatFromExpr{e} \\
+      \transientNatFromExpr{\prim{negate}~e} &=&
+        \text{let } \transientNatFromExpr{e} = (n, \eta) \text{ in} \\
+        &&(-1 * n, \eta) \\
+      \transientNatFromExpr{e_1 + e_2} &=&
+        \text{let } \transientNatFromExpr{e_1} = (n_1, \eta_1) \text{ in} \\
+        &&\text{let } \transientNatFromExpr{e_2} = (n_2, \eta_2) \text{ in} \\
+        &&(n_1 + n_2, \eta_1 \circ \eta_2) \\
+    \end{array}
+  \end{displaymath}
+  \caption{Going from expressions to transient nats}
+\end{figure}
+
+\begin{figure}
+  \begin{displaymath}
+    \begin{array}{lcl}
+      \exprFromTransientNat{\x, \eta)} &=& \text{if } \exists x' = \eta(\x) \text{ then } x' \text{ else } \x \\
+      \exprFromTransientNat{(\underline{\ell}, _)} &=& \underline{\ell} : \tyexp{\natkind}{\_} \\
+      \exprFromTransientNat{(n \oplus m, \eta)} &=& \exprFromTransientNat{n, \eta} \oplus \exprFromTransientNat{m, \eta} \\
+    \end{array}
+  \end{displaymath}
+  \caption{Going from transient nats to expressions}
+\end{figure}

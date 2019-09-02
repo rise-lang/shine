@@ -3,7 +3,6 @@ package lift.core
 import lift.core.DSL._
 import lift.core.types._
 import lift.core.primitives._
-import lift.core.semantics.NatData
 
 object HighLevelConstructs {
   val slide2D: Expr = nFun(sz => nFun(st => fun(a =>
