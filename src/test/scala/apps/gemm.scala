@@ -257,11 +257,6 @@ class gemm extends idealised.util.TestsWithExecutor {
     val (flatOutput, _) = runKernel(LocalSize(128), GlobalSize(m))(n `,` m `,` k `,` A `,` B `,` C `,` alpha `,` beta)
     val output: Array[Array[Float]] = flatOutput.grouped(n).toArray
 
-//    println("output:")
-//    println(output.map(_.mkString("[", ", ", "]")).mkString("[ ", ",\n", " ]"))
-//    println("gold:")
-//    println(gold.map(_.mkString("[", ", ", "]")).mkString("[ ", ",\n", " ]"))
-
     (output zip gold).foreach { case (outputRow, goldRow) =>
       assert(outputRow sameElements goldRow)
     }
@@ -294,10 +289,6 @@ class gemm extends idealised.util.TestsWithExecutor {
     val (flatOutput, _) = runKernel(LocalSize((2, 2)), GlobalSize((n/2, n/2)))(n `,` m `,` k `,` A `,` B `,` C `,` alpha `,` beta)
 
     val output: Array[Array[Float]] = flatOutput.grouped(n).toArray
-//    println("output:")
-//    println(output.map(_.mkString("[", ", ", "]")).mkString("[ ", ",\n", " ]"))
-//    println("gold:")
-//    println(gold.map(_.mkString("[", ", ", "]")).mkString("[ ", ",\n", " ]"))
 
     (output zip gold).foreach { case (outputRow, goldRow) =>
       assert(outputRow sameElements goldRow)
@@ -331,10 +322,6 @@ class gemm extends idealised.util.TestsWithExecutor {
     val (flatOutput, _) = runKernel(LocalSize((2, 2)), GlobalSize((n/2, n/2)))(n `,` m `,` k `,` A `,` B `,` C `,` alpha `,` beta)
 
     val output: Array[Array[Float]] = flatOutput.grouped(n).toArray
-    //    println("output:")
-    //    println(output.map(_.mkString("[", ", ", "]")).mkString("[ ", ",\n", " ]"))
-    //    println("gold:")
-    //    println(gold.map(_.mkString("[", ", ", "]")).mkString("[ ", ",\n", " ]"))
 
     (output zip gold).foreach { case (outputRow, goldRow) =>
       assert(outputRow sameElements goldRow)
