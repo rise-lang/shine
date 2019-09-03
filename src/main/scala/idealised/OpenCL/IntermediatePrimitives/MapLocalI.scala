@@ -14,6 +14,7 @@ final case class MapLocalI(dim: Int) {
             out: Phrase[AccType])
            (implicit context: TranslationContext): Phrase[CommType] =
   {
+    comment("mapLocal")`;`
     ParForLocal(dim)(n, dt2, out,
       λ(exp"[idx($n), $read]")(i => λ(acc"[$dt2]")(a => f(in `@` i)(a))))
   }

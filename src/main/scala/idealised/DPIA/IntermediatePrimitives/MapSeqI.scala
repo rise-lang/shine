@@ -13,6 +13,7 @@ object MapSeqI {
             out: Phrase[AccType])
            (implicit context: TranslationContext): Phrase[CommType] =
   {
+    comment("mapSeq")`;`
     `for`(n, i => f(in `@` i)(out `@` i))
   }
 }

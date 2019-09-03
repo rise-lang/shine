@@ -257,17 +257,12 @@ class gemm extends idealised.util.TestsWithExecutor {
     val (flatOutput, _) = runKernel(LocalSize(128), GlobalSize(m))(n `,` m `,` k `,` A `,` B `,` C `,` alpha `,` beta)
     val output: Array[Array[Float]] = flatOutput.grouped(n).toArray
 
-//    println("output:")
-//    println(output.map(_.mkString("[", ", ", "]")).mkString("[ ", ",\n", " ]"))
-//    println("gold:")
-//    println(gold.map(_.mkString("[", ", ", "]")).mkString("[ ", ",\n", " ]"))
-
     (output zip gold).foreach { case (outputRow, goldRow) =>
       assert(outputRow sameElements goldRow)
     }
   }
 
-  test("OpenCL gemm versions produce the expected result") {
+  test("OpenCL mali_gemm version produces the expected result") {
     import idealised.OpenCL._
     import scala.util.Random
 
@@ -294,10 +289,39 @@ class gemm extends idealised.util.TestsWithExecutor {
     val (flatOutput, _) = runKernel(LocalSize((2, 2)), GlobalSize((n/2, n/2)))(n `,` m `,` k `,` A `,` B `,` C `,` alpha `,` beta)
 
     val output: Array[Array[Float]] = flatOutput.grouped(n).toArray
-//    println("output:")
-//    println(output.map(_.mkString("[", ", ", "]")).mkString("[ ", ",\n", " ]"))
-//    println("gold:")
-//    println(gold.map(_.mkString("[", ", ", "]")).mkString("[ ", ",\n", " ]"))
+
+    (output zip gold).foreach { case (outputRow, goldRow) =>
+      assert(outputRow sameElements goldRow)
+    }
+  }
+
+  test("OpenCL keplerBest version produces the expected result") {
+    import idealised.OpenCL._
+    import scala.util.Random
+
+    val random = new Random()
+
+    val n = 512
+    val m = 256
+    val k = 512
+    val A = Array.fill(m, k)(1.0f) //((random.nextInt(10) + 1).toFloat)
+    val B = Array.fill(k, n)(1.0f) //((random.nextInt(10) + 1).toFloat)
+    val C = Array.fill(m, n)(1.0f) //(((random.nextInt(10) + 1).toFloat)
+    val alpha = 1.0f
+    val beta = 1.0f
+
+    val gold = matrixMatrixMultiply(A, B, C, alpha, beta)
+
+    val runKernel = gen.OpenCLKernel(ocl.keplerBest).as[ScalaFunction `(`
+      Int `,` Int `,` Int `,`
+      Array[Array[Float]] `,`
+      Array[Array[Float]] `,`
+      Array[Array[Float]] `,`
+      Float `,`
+      Float `)=>` Array[Float]]
+    val (flatOutput, _) = runKernel(LocalSize((2, 2)), GlobalSize((n/2, n/2)))(n `,` m `,` k `,` A `,` B `,` C `,` alpha `,` beta)
+
+    val output: Array[Array[Float]] = flatOutput.grouped(n).toArray
 
     (output zip gold).foreach { case (outputRow, goldRow) =>
       assert(outputRow sameElements goldRow)

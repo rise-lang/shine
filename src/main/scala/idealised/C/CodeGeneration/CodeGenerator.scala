@@ -154,6 +154,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case LetNat(binder, defn, body) => generateLetNat(binder, defn, env, (gen, env) => gen.cmd(body, env))
 
+      case Comment(comment) => C.AST.Comment(comment)
 
       case Apply(_, _) | DepApply(_, _) |
            _: CommandPrimitive =>
@@ -422,7 +423,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     def typeToStructNameComponent(t:DataType):String = {
       t match {
         case IndexType(_) => freshName("idx")
-        case _ => t.toString
+        case _ => t.toString.replace('.', '_')
       }
     }
 
@@ -443,7 +444,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           case _: NatToDataIdentifier =>  throw new Exception("This should not happen")
         }
       case r: idealised.DPIA.Types.RecordType =>
-        C.AST.StructType(typeToStructNameComponent(r.fst) + "_" + typeToStructNameComponent(r.snd), immutable.Seq(
+        C.AST.StructType("Record_" + typeToStructNameComponent(r.fst) + "_" + typeToStructNameComponent(r.snd), immutable.Seq(
           (typ(r.fst), "_fst"),
           (typ(r.snd), "_snd")))
       case _: idealised.DPIA.Types.DataTypeIdentifier => throw new Exception("This should not happen")
