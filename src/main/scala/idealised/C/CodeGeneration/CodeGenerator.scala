@@ -650,26 +650,13 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             updatedGen.cmd(p, env updatedIdentEnv (i -> cI)))
 
         case _ =>
+          assert(!unroll)
+          val init = C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0)))
+          val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
+          val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + 1))
 
-          if(unroll) {
-            val statements = for(index <- rangeAddToScalaRange(range)) yield {
-              val indexPhrase = AsIndex(n, Natural(index))
-              val newPhrase = Phrase.substitute(ph=indexPhrase,`for`=i, in=p)
-              immutable.Seq(updatedGen.cmd(newPhrase, env))
-            }
-            C.AST.Block(
-              C.AST.Comment(s"Unrolling from ${range.start} until ${range.stop} by increments of ${range.step}") +:
-                statements.flatten
-            )
-          } else {
-            // default case
-            val init = C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0)))
-            val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
-            val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + 1))
-
-            C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
-              C.AST.Block(immutable.Seq(updatedGen.cmd(p, env updatedIdentEnv (i -> cI)))))
-          }
+          C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
+            C.AST.Block(immutable.Seq(updatedGen.cmd(p, env updatedIdentEnv (i -> cI)))))
       }})
     }
 
@@ -696,38 +683,15 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             updatedGen.cmd(p, env))
 
         case _ =>
-          // default case
           val init = C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0)))
           val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
           val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + 1))
 
-          if(unroll) {
-            val statements = for (index <- rangeAddToScalaRange(range)) yield {
-              updatedGen.generateNatDependentBody(`for` = i, `phrase`=p, at = Cst(index), env).body
-            }
-            C.AST.Block(
-              C.AST.Comment(s"Unrolling from ${range.start} until ${range.stop} by increments of ${range.step}") +:
-              statements.flatten
-            )
-          } else {
-            val body = updatedGen.generateNatDependentBody(`for` = i, `phrase` = p, at = NamedVar(cI.name, range), env)
-
-            C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
-              body
-            )
-          }
+          assert(!unroll)
+          C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
+            updatedGen.generateNatDependentBody(`for` = i, `phrase` = p, at = NamedVar(cI.name, range), env)
+          )
       }})
-    }
-
-    private def rangeAddToScalaRange(range:RangeAdd) = {
-      val (start,stop,step) = {
-        try {
-          (range.start.evalLong, range.stop.evalLong, range.step.evalLong)
-        } catch {
-          case _:NotEvaluableException => throw new Exception(s"Cannot evaluate range $range in loop unrolling")
-        }
-      }
-      start until stop by step
     }
 
     def codeGenIdxAcc(i: Phrase[ExpType],
