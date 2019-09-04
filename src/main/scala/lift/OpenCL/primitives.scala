@@ -60,4 +60,7 @@ object primitives {
     override def t: Type = core.reduceSeq.t
   }
 
+  case class oclReduceSeqUnroll(init_space: AddressSpace) extends Primitive {
+    override def t: Type = core.reduceSeq.t
+  }
 }

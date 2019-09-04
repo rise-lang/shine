@@ -208,7 +208,6 @@ object fromLift {
             fun[ExpType](exp"[$n.$a]", e =>
               ReduceSeq(n, a, b, f, i, e))))
 
-
       case (ocl.oclReduceSeq(i_space),
       lt.FunType(_,
       lt.FunType(lb: lt.DataType,
@@ -219,7 +218,7 @@ object fromLift {
         fun[ExpType ->: ExpType ->: ExpType](exp"[$a]" ->: exp"[$b]" ->: exp"[$b]", f =>
           fun[ExpType](exp"[$b]", i =>
             fun[ExpType](exp"[$n.$a]", e =>
-              OpenCLReduceSeq(n, a, b, f, i, i_space, e))))
+              OpenCLReduceSeq(n, a, b, f, i, i_space, e, unroll = false))))
 
       case (core.reduceSeqUnroll,
       lt.FunType(_,
@@ -232,6 +231,18 @@ object fromLift {
           fun[ExpType](exp"[$b]", i =>
             fun[ExpType](exp"[$n.$a]", e =>
               ReduceSeqUnroll(n, a, b, f, i, e))))
+
+      case (ocl.oclReduceSeqUnroll(i_space),
+      lt.FunType(_,
+      lt.FunType(lb: lt.DataType,
+      lt.FunType(lt.ArrayType(n, la), _))))
+      =>
+        val a = dataType(la)
+        val b = dataType(lb)
+        fun[ExpType ->: ExpType ->: ExpType](exp"[$a]" ->: exp"[$b]" ->: exp"[$b]", f =>
+          fun[ExpType](exp"[$b]", i =>
+            fun[ExpType](exp"[$n.$a]", e =>
+              OpenCLReduceSeq(n, a, b, f, i, i_space, e, unroll = true))))
 
       case (core.scanSeq,
       lt.FunType(_,
