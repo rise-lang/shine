@@ -163,7 +163,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
   }
 
   override def genNat(n: Nat, env: Environment, cont:Expr => Stmt): Stmt = n match {
-    case of: BuiltInFunction => cont(C.AST.Literal(of.toOCLString))
+    case of: BuiltInFunctionCall => cont(C.AST.Literal(of.toOCLString))
     case _ => super.genNat(n, env, cont)
   }
 

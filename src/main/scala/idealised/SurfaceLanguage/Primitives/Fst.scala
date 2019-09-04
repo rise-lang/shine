@@ -4,7 +4,7 @@ import idealised.SurfaceLanguage
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage.{Expr, PrimitiveExpr}
 
-final case class Fst(tuple: Expr, override val t: Option[DataType])
+final case class Fst(tuple: Expr, override val t: Option[DataType] = None)
   extends PrimitiveExpr
 {
 

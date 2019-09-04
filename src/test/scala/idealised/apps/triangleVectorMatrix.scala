@@ -13,8 +13,7 @@ import opencl.executor.Executor
 
 import scala.language.{implicitConversions, postfixOps}
 
-class triangleVectorMultNoExecutor extends idealised.util.Tests {
-  /*
+class triangleVectorMatrix extends idealised.util.Tests {
   val mult = fun(x => x._1 * x._2)
 
   val add = fun(x => fun(y => x + y))
@@ -68,7 +67,7 @@ class triangleVectorMultNoExecutor extends idealised.util.Tests {
   def triangleVectorMultGlobalFused(N:ArithExpr): Expr =
     fun(DepArrayType(N, i => ArrayType(i + 1, float)))(triangle =>
       fun(ArrayType(N, float))(vector =>
-        depMapGlobal(fun(row => zip(row, take(Macros.GetLength(row), vector)) :>> reduceSeq(multSumAcc, 0.0f)
+        depMapGlobal(fun(row => zip(row, take(Macros.GetLength(row), vector)) :>> oclReduceSeq(multSumAcc, 0.0f, PrivateMemory)
         ), triangle)
       )
     )
@@ -206,5 +205,4 @@ class triangleVectorMultNoExecutor extends idealised.util.Tests {
 
     assert(result.correct)
   }
-*/
 }

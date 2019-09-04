@@ -25,9 +25,9 @@ final case class ParForWorkGroup(dim: Int)(override val n: Nat,
 
   override val name: String = freshName("wg_id_")
 
-  override lazy val init: BuiltInFunction = get_group_id(dim, RangeAdd(0, num_groups, 1))
+  override lazy val init: BuiltInFunctionCall = get_group_id(dim, RangeAdd(0, num_groups, 1))
 
-  override lazy val step: BuiltInFunction = get_num_groups(dim, num_groups_range)
+  override lazy val step: BuiltInFunctionCall = get_num_groups(dim, num_groups_range)
 
   lazy val num_groups_range: RangeAdd =
     if (num_groups == ?) ContinuousRange(1, PosInf)

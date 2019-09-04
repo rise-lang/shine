@@ -24,9 +24,9 @@ final case class ParForNatGlobal(dim:Int)(override val n:Nat,
   //
   //  override lazy val step: OclFunction = get_global_size(dim, RangeAdd(env.globalSize, env.globalSize + 1, 1))
 
-  override lazy val init: BuiltInFunction = get_global_id(dim, RangeAdd(0, ?, 1))
+  override lazy val init: BuiltInFunctionCall = get_global_id(dim, RangeAdd(0, ?, 1))
 
-  override lazy val step: BuiltInFunction = get_global_size(dim, RangeAdd(?, ? + 1, 1))
+  override lazy val step: BuiltInFunctionCall = get_global_size(dim, RangeAdd(?, ? + 1, 1))
 
   override def synchronize: Stmt = Comment("par for global sync")
 }

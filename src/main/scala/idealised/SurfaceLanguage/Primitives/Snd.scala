@@ -5,7 +5,7 @@ import idealised.SurfaceLanguage.{Expr, PrimitiveExpr}
 import idealised.SurfaceLanguage.Types._
 
 final case class Snd(tuple: Expr,
-                     override val t: Option[DataType])
+                     override val t: Option[DataType] = None)
   extends PrimitiveExpr {
 
   override def inferType(subs: TypeInference.SubstitutionMap): Snd = {
