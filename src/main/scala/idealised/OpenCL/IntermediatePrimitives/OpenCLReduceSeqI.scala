@@ -19,6 +19,7 @@ object OpenCLReduceSeqI {
             out: Phrase[ExpType ->: CommType])
            (implicit context: TranslationContext): Phrase[CommType] =
   {
+    comment("oclReduceSeq")`;`
     `new`(initAddrSpace)(dt2, acc =>
       (acc.wr :=|dt2| init) `;`
         `for`(n, i => f(acc.rd)(in `@` i)(acc.wr)) `;`

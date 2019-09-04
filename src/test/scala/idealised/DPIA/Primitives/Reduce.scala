@@ -2,8 +2,10 @@ package idealised.DPIA.Primitives
 
 import lift.core.DSL._
 import lift.core.types._
-import lift.core.primitives.{reduceSeq, map, mapSeq}
+import lift.core.primitives._
 import idealised.util.gen
+import lift.OpenCL.primitives.{mapLocal, oclReduceSeq, toPrivateFun}
+import lift.arithmetic.Cst
 
 class Reduce extends idealised.util.Tests {
   val add = fun(a => fun(b => a + b))
@@ -48,5 +50,20 @@ class Reduce extends idealised.util.Tests {
         )))
 
     gen.CProgram(e).code
+  }
+
+  test("oclReduceSeq does no automatic copy of its initial accumulator value") {
+    val zeros = nFun(n1 =>
+            generate(fun(IndexType(n1))(_ => l(0.0f))))
+
+    //TODO check that private memory array has constant size
+    val e =
+      nFun(m => nFun(n => fun(m`.`n`.`float)(arr2D => arr2D
+        |> oclReduceSeq (AddressSpace.Private)
+                        (fun(n`.`float ->: n`.`float ->: n`.`float)((acc, arr1D) =>
+                          zip (acc) (arr1D) |> mapSeq (fun(t => t._1 + t._2))))
+          (generate(fun(IndexType(n))(_ => l(0.0f))) |> toPrivateFun(mapSeq (fun(x => x)))))))
+
+    gen.OpenCLKernel(e).code
   }
 }

@@ -182,29 +182,210 @@ class gemm extends idealised.util.TestsWithExecutor {
         fun((k`.`m`.`float) ->: (k`.`n`.`float) ->: (m`.`n`.`float) ->: float ->: float ->: (m`.`n`.`float))
         ((A, B, C, alpha, beta) =>
           zip (tile2 (v7) (v6) (A)) (tile (v6) (v3) (C))
-          |> mapWorkGroup(1)(fun(p2 =>
+          |> mapWorkGroup(1)(
+            //BEGIN mapWorkGroup(1) Function
+            fun(p2 =>
             zip (tile2 (v7) (v3) (B)) (p2._2)
-            |> mapWorkGroup(0)(fun(p3 =>
+            |> mapWorkGroup(0)(
+              //BEGIN mapWorkGroup(0) Function
+              fun(p3 =>
               zip (p2._1) (p3._1)
               |> oclReduceSeq (AddressSpace.Private) (redOp)
                 (zeros (v4) (v5) (v3 * Cst(1) /^ v4) (v6 * Cst(1) /^ v5) |> toPrivateFun(mapLocal(1) (mapLocal(0) (mapSeq (mapSeq (id))))))
+              //TODO following function shuould eventually write to global
+              //mapSeq was removed because reduce does not wrap reduced results in arrays anymore
               |> fun(x =>
-                zip (x) (split (v5) (p3._2)) |> toPrivateFun(mapLocal(1) (fun(y =>
-                  zip (y._1) (split (v4) (reorderWithStride (v3/v4) (transpose (y._2)))) |> mapLocal(2) (fun(z =>
+                zip (x) (split (v5) (p3._2))
+                  //TODO Should write intermediate results into private mem? What exactly does old Lift code mean here?
+                  |> mapLocal(1) (fun(y =>
+                  zip (y._1) (split (v4) (reorderWithStride (v3/v4) (transpose (y._2)))) |> mapLocal(0) (fun(z =>
                     zip (z._1) (transpose (z._2)) |> mapSeq (fun(a =>
                       zip (a._1) (a._2) |> mapSeq (fun(x =>
-                        (x._1 * alpha) + (x._2 * beta) ))))))))))
-              |> mapSeq (fun(p4 =>
-                toPrivate(mapSeq (transpose) (p4))
+                        (x._1 * alpha) + (x._2 * beta) )))))))))
+              //))
+              //|> transpose
+              |> map (fun(p4 => p4
+                |> map (transpose)
+
+                //|> transpose
+                //|> map (transpose o map(transpose) o transpose)
                 |> join
                 |> transpose
-                |> mapSeq (reorderWithStride (v3 / v4))
+                |> map (reorderWithStride (v3 / v4))
               )) |> join |> transpose
-            )) |> join |> transpose
-          ))  |> join
+            )
+            //END mapWorkGroup(0) Function
+            ) |> join |> transpose
+          )
+         //END mapWorkGroup(1) Function
+          )  |> join
         ))
     }
   }
+
+//  val keplerBestRev = {
+//    val v3: Nat = 128
+//    val v4: Nat = 4
+//    val v5: Nat = 8
+//    val v6: Nat = 64
+//    val v7: Nat = 8
+//
+//    def tile: Expr = nFun(s1 => nFun(s2 =>
+//      map(map(transpose) o split(s2) o transpose) o split(s1) ))
+//
+//    val zeros = nFun(n1 => nFun(n2 => nFun(n3 => nFun(n4 =>
+//      generate(fun(IndexType(n4))(_ =>
+//        generate(fun(IndexType(n3))(_ =>
+//          generate(fun(IndexType(n2))(_ =>
+//            generate(fun(IndexType(n1))(_ => l(0.0f)))))))))))))
+//
+//    def id: Expr = fun(x => x)
+//
+//    def tile2: Expr = nFun(s1 => nFun(s2 => implN(n1 => implN(n2 => fun(ArrayType(n1, ArrayType(n2, float)))(x =>
+//      transpose (map (transpose) (split (s1) (map (split (s2)) (x))))  )))))
+//
+//    import lift.OpenCL.primitives._
+//    val kernel =
+//    fun((k`.`m`.`float) ->: (k`.`n`.`float) ->: (m`.`n`.`float) ->: float ->: float ->: (m`.`n`.`float))
+//    ((A, B, C, alpha, beta) =>
+//      join() $
+//        MapWrg(1)(
+//          //BEGIN mapWg(1) function
+//          fun((p_2) =>
+//          (TransposeW(),
+//            (Join(),
+//              (MapWrg(0)(
+//                //BEGIN mapWg(0) function
+//                fun((p_3) =>
+//                (TransposeW(),
+//                  (Join(),
+//                    (Map(fun((p_4)
+//                    => (Map(fun((p_5)
+//                      => (Scatter(ReorderWithStride(v__3 / v__4)), p_5))),
+//                        (TransposeW(),
+//                          (Join(),
+//                            (Map(fun((p_6) =>
+//                              (TransposeW(),
+//                                (Map(fun((p_7) =>
+//                                  (TransposeW(), p_7))),
+//                                  (TransposeW(), p_6))))),
+//                              (TransposeW(), p_4))))))),
+//                      (TransposeW(),
+//
+//                        (toGlobal(MapSeq(fun(x =>
+//                          MapLcl(1)(fun(y =>
+//                            MapLcl(0)(fun( z =>
+//                              MapSeq(fun(a =>
+//                                MapSeq(fun(x =>
+//                                  add(
+//                                    toPrivate(mult)(Get(x, 0), alpha),
+//                                    toPrivate(mult)(Get(x, 1), beta)
+//                                  )
+//                                )) $ Zip(Get(a, 0), Get(a, 1))
+//                              )) $ Zip(Get(z, 0), Transpose() $ Get(z, 1))
+//                            )) $ Zip(Get(y, 0), Split(v__4) o ReorderStride(v__3 / v__4) o Transpose() $ Get(y, 1))
+//                          )) $ Zip(x, Split(v__5) $ Get(p_3, 1))
+//                        ))),
+//                          (ReduceSeq(
+//                            //BEGIN reduce operator
+//                            fun((p_14, p_15) =>
+//                            (fun((p_16) =>
+//                              (MapLcl(1)(fun((p_17) =>
+//                                (Join(),
+//                                  (MapLcl(0)(fun((p_18) =>
+//                                    (MapSeq(fun((p_19) => p_19)),
+//                                      (ReduceSeq(fun((p_20, p_21) =>
+//                                        (fun((p_22) =>
+//                                          (MapSeq(fun((p_23) =>
+//                                            (MapSeq(fun((p_24) =>
+//                                              (add,
+//                                                (Get(0), p_24),
+//                                                (mult, FunCall(Get(1), p_23),
+//                                                  (Get(1), p_24))
+//                                              ))
+//                                            ), (Zip(2),
+//                                              (Get(0), p_23),
+//                                              (Get(1), p_22))))),
+//                                            (Zip(2), p_20,
+//                                              (Get(0), p_22)))),
+//                                          (toPrivate(fun((p_25) =>
+//                                            (fun((p_26) =>
+//                                              (Tuple(2),
+//                                                (MapSeq(fun((p_27) =>
+//                                                  (id, p_27))),
+//                                                  (Get(0), p_26)),
+//                                                (MapSeq(fun((p_28) =>
+//                                                  (id, p_28))),
+//                                                  (Get(1), p_26)))), p_25))), p_21)))),
+//                                        (Get(0), p_18),
+//                                        (Zip(2),
+//                                          (Transpose(),
+//                                            (Get(1), p_17)),
+//                                          (Transpose(),
+//                                            (Get(1), p_18))))))),
+//                                    (Zip(2),
+//                                      (Get(0), p_17),
+//                                      (Split(v__4),
+//                                        (Gather(ReorderWithStride(v__3 / v__4)),
+//                                          (Transpose(),
+//                                            (Get(1), p_16))))))))),
+//                                (Zip(2), p_14,
+//                                  (Split(v__5),
+//                                    (Transpose(),
+//                                      (Get(0), p_16)))))),
+//                              (toLocal(fun((p_29) =>
+//                                (fun((p_30) =>
+//                                  (Unzip(),
+//                                    (MapLcl(1)(fun((p_31) =>
+//                                      (Tuple(2),
+//                                        (MapLcl(0)(fun((p_32) =>
+//                                          (id, p_32))),
+//                                          (Get(0), p_31)),
+//                                        (MapLcl(0)(fun((p_33) =>
+//                                          (id, p_33))),
+//                                          (Get(1), p_31))))),
+//                                      (Zip(2),
+//                                        (Get(0), p_30),
+//                                        (Get(1), p_30))))), p_29))), p_15)))),
+//                                      //END reduce operator
+//
+//                            //BEGIN copy accumulator value for reduce
+//                            (MapLcl(1)(fun((p_34) =>
+//                              (MapLcl(0)(fun((p_35) =>
+//                                (MapSeq(fun((p_36) =>
+//                                  (MapSeq(fun((p_37) =>
+//                                    (id, p_37))), p_36))), p_35))), p_34))),
+//                              Value(0.0f, ArrayTypeWSWC(ArrayTypeWSWC(ArrayTypeWSWC(ArrayTypeWSWC(Float, v__4), v__5), v__3 * 1 /^ v__4), v__6 * 1 /^ v__5))),
+//                            //END copy accumulator value for reduce
+//
+//                            //BEGIN reduce input
+//                            (Zip(2), Get(p_2, 0), Get(p_3, 0)))
+//                          //END reduce input
+//                        )
+//
+//                      )))))
+//                //END mapWg(0) function
+//              ),
+//                //BEGIN input mapWg(0)
+//                Zip((Transpose(),
+//                  (Map(fun((p_38) =>
+//                    (Transpose(), p_38))),
+//                    (Split(v__7),
+//                      (Map(fun((p_39) =>
+//                        (Split(v__3), p_39))), B)))), Get(p_2, 1))
+//                //END input mapWg(0)
+//              ))))
+//            //END mapWg(1) function
+//        ),
+//          //BEGIN input mapWg(1)
+//          Zip((Transpose(),
+//            (Map(fun((p_40) =>
+//              (Transpose(), p_40))),
+//              (Split(v__7),
+//                (Map(fun((p_41) =>
+//                  (Split(v__6), p_41))), A)))), Tile(v__6, v__3) $ C))))
+//          //END input mapWg(1)
+//  }
 
   test("Sequential gemm type inference works") {
     infer(sequential)
