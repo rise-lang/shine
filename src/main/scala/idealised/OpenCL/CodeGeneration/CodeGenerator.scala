@@ -99,8 +99,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
                    cont: Expr => Stmt): Stmt = {
     phrase match {
       case Phrases.Literal(n) => (path, n.dataType) match {
-        case (Nil, _: VectorType)       => cont( OpenCLCodeGen.codeGenLiteral(n) )
-        case (i :: Nil, _: VectorType)  => ???
+        case (Nil, _: VectorType) => cont(OpenCLCodeGen.codeGenLiteral(n))
         case _ => super.exp(phrase, env, path, cont)
       }
       case UnaryOp(op, e) => phrase.t.dataType match {
@@ -119,18 +118,26 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
           ))
         case _ => super.exp(phrase, env, path, cont)
       }
-      case AsVector(n, _, _, e) => path match {
-        case (i : CIntExpr) :: (j : CIntExpr) :: ps => exp(e, env, CIntExpr((i * n) + j) :: ps, cont)
+      case AsVector(n, m, dt, e) => path match {
+        case (i : CIntExpr) :: (j : CIntExpr) :: ps =>
+          exp(e, env, CIntExpr((i * n) + j) :: ps, cont)
         case (i : CIntExpr) :: Nil =>
-          exp(e, env, CIntExpr(i * n) :: Nil, {
-            case ArraySubscript(v, idx) =>
-              // TODO: check that idx is the right offset ...
-              cont( C.AST.FunCall(C.AST.DeclRef(s"vload$n"), immutable.Seq(idx, v)) )
+          OpenCLCodeGen.codeGenVectorLiteral(n.eval, dt, j =>
+            Idx(n * m, dt, AsIndex(n * m, Natural((i * n) + j)), e),
+            env, cont
+          )
+          /* TODO: think more about this
+          // TODO: address space, memory and offset ...
+          exp(e, env, CIntExpr(i * n) :: Nil, e2 =>
+              cont(C.AST.FunCall(C.AST.DeclRef(s"vload$n"), immutable.Seq(C.AST.Literal("0"), e2)))
+            case _ => ???
           })
+          */
         case _ => error(s"Expected path to have two elements")
       }
       case AsScalar(_, m, _, e) => path match {
-        case (i : CIntExpr) :: ps =>     exp(e, env, CIntExpr(i / m) :: ps, cont)
+        case (i : CIntExpr) :: ps =>
+          exp(e, env, CIntExpr(i / m) :: CIntExpr(i % m) :: ps, cont)
         case _ =>           error(s"Expected path to be not empty")
       }
       // TODO: this has to be refactored
@@ -142,7 +149,9 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
         case Nil =>
           exp(e, env, Nil, e =>
-            cont(C.AST.Literal(s"($st$n)(" + C.AST.Printer(e) + ")")))
+            cont(OpenCL.AST.VectorLiteral(
+              OpenCL.AST.VectorType(n, typ(st).asInstanceOf[C.AST.BasicType]),
+              immutable.Seq(e))))
 
         case _ => error(s"Didn't expect path: $path")
       }
@@ -198,38 +207,40 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
       applySubstitutions(n, env.identEnv) |> (n => {
 
-      val init = OpenCL.AST.VarDecl(cI.name, C.AST.Type.int, OpenCL.PrivateMemory, init = Some(C.AST.ArithmeticExpr(f.init)))
-      val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
-      val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + f.step))
+        val init = OpenCL.AST.VarDecl(cI.name, C.AST.Type.int, OpenCL.PrivateMemory, init = Some(C.AST.ArithmeticExpr(f.init)))
+        val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
+        val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + f.step))
 
-      Phrase.substitute(a `@` i, `for` = o, `in` = p) |> (p =>
+        Phrase.substitute(a `@` i, `for` = o, `in` = p) |> (p =>
 
-      env.updatedIdentEnv(i -> cI) |> (env => {
+          env.updatedIdentEnv(i -> cI) |> (env => {
 
-        val test = range.numVals
-        val min = test.min
-        val max = test.max
-      range.numVals match {
-        // iteration count is 0 => skip body; no code to be emitted
-        case Cst(0) => C.AST.Comment("iteration count is 0, no loop emitted")
-        // iteration count is 1 => no loop
-        case Cst(1) =>
-          C.AST.Stmts(C.AST.Stmts(
-            C.AST.Comment("iteration count is exactly 1, no loop emitted"),
-            C.AST.DeclStmt(C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0))))),
-            updatedGen.cmd(p, env))
-        case _ if range.numVals.min == NegInf && range.numVals.max == Cst(1) =>
-          C.AST.Stmts(
-            C.AST.DeclStmt(init),
-            C.AST.IfThenElse(cond, updatedGen.cmd(p, env) , None)
-          )
-        // default case
-        case _ =>
-          C.AST.Stmts(
-            C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
-              C.AST.Block(immutable.Seq(updatedGen.cmd(p, env)))),
-            f.synchronize)
-      }}))})
+            val test = range.numVals
+            val min = test.min
+            val max = test.max
+            range.numVals match {
+              // iteration count is 0 => skip body; no code to be emitted
+              case Cst(0) => C.AST.Comment("iteration count is 0, no loop emitted")
+              // iteration count is 1 => no loop
+              case Cst(1) =>
+                C.AST.Stmts(C.AST.Stmts(
+                  C.AST.Comment("iteration count is exactly 1, no loop emitted"),
+                  C.AST.DeclStmt(C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0))))),
+                  updatedGen.cmd(p, env))
+              case _ if range.numVals.min == NegInf && range.numVals.max == Cst(1) =>
+                C.AST.Stmts(
+                  C.AST.DeclStmt(init),
+                  C.AST.IfThenElse(cond, updatedGen.cmd(p, env), None)
+                )
+              // default case
+              case _ =>
+                C.AST.Stmts(
+                  C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
+                    C.AST.Block(immutable.Seq(updatedGen.cmd(p, env)))),
+                  f.synchronize)
+            }
+          }))
+      })
     }
 
     def codeGenOpenCLParForNat(f: OpenCLParForNat,
@@ -265,32 +276,44 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
               range.numVals match {
                 // iteration count is 0 => skip body; no code to be emitted
                 case Cst(0) => C.AST.Comment("iteration count is 0, no loop emitted")
-                  // TODO: substitute a `@d` Cst(0) earlier ...
-//                // iteration count is 1 => no loop
-//                case Cst(1) =>
-//                  C.AST.Stmts(C.AST.Stmts(
-//                    C.AST.Comment("iteration count is exactly 1, no loop emitted"),
-//                    C.AST.DeclStmt(C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0))))),
-//                    updatedGen.cmd(p, env))
+                // TODO: substitute a `@d` Cst(0) earlier ...
+                //                // iteration count is 1 => no loop
+                //                case Cst(1) =>
+                //                  C.AST.Stmts(C.AST.Stmts(
+                //                    C.AST.Comment("iteration count is exactly 1, no loop emitted"),
+                //                    C.AST.DeclStmt(C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0))))),
+                //                    updatedGen.cmd(p, env))
                 // default case
                 case _ =>
                   C.AST.Stmts(
                     C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
                       C.AST.Block(immutable.Seq(updatedGen.cmd(p, env)))),
                     f.synchronize)
-              })))})
+              })))
+      })
     }
 
     def codeGenLiteral(d: OperationalSemantics.Data): Expr = {
       d match {
-        case VectorData(vector) => d.dataType match {
-          case VectorType(n, elemType) =>
-            C.AST.Literal("(" + s"($elemType$n)" + vector.mkString("{", ",", "}") + ")")
-          case _ => error("This should not happen")
-        }
+        case VectorData(vector) =>
+          OpenCL.AST.VectorLiteral(
+            typ(d.dataType).asInstanceOf[OpenCL.AST.VectorType],
+            vector.map(codeGenLiteral))
         case _ => CCodeGen.codeGenLiteral(d)
       }
     }
-  }
 
+    def codeGenVectorLiteral(n: Int, dt: ScalarType,
+                             f: Int => Phrase[ExpType],
+                             env: Environment,
+                             cont: Expr => Stmt,
+                             elements: Vector[Expr] = Vector()): Stmt = {
+      if (elements.length < n) {
+        exp(f(elements.length), env, Nil, e =>
+          codeGenVectorLiteral(n, dt, f, env, cont, elements :+ e))
+      } else {
+        cont(OpenCL.AST.VectorLiteral(typ(VectorType(n, dt)).asInstanceOf[OpenCL.AST.VectorType], elements))
+      }
+    }
+  }
 }

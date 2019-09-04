@@ -405,7 +405,7 @@ object infer {
       case _ if !ArithExpr.contains(n, i) && !bound(i) => Solution.subs(i, n)
       case p: Prod => unifyProd(p, i)
       case s: Sum => unifySum(s, i)
-      case _ => ???
+      case _ => error(s"cannot unify $i and $n")
     }
   }
 

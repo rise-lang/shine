@@ -17,7 +17,11 @@ class Printer extends idealised.C.AST.CPrinter {
     case _ => super.printDecl(d)
   }
 
-  override def printExpr(e: Expr): Unit = super.printExpr(e)
+  override def printExpr(e: Expr): Unit = e match {
+    case vs: VectorSubscript => printVectorSubscript(vs)
+    case vl: VectorLiteral => printVectorLiteral(vl)
+    case _ => super.printExpr(e)
+  }
 
   override def printStmt(s: Stmt): Unit = s match {
     case b: Barrier =>
@@ -96,5 +100,28 @@ class Printer extends idealised.C.AST.CPrinter {
     case OpenCL.GlobalMemory  => "global"
     case OpenCL.LocalMemory   => "local"
     case OpenCL.PrivateMemory => "private"
+  }
+
+  def printVectorSubscript(vs: VectorSubscript): Unit = {
+    printExpr(vs.vector)
+    vs.index match {
+      case ArithmeticExpr(lift.arithmetic.Cst(c)) =>
+        print(s".s$c")
+      case Literal(str) =>
+        print(s".s$str")
+      case _ => throw new Exception(s"did not expect ${vs.index}")
+    }
+  }
+
+  def printVectorLiteral(vl: VectorLiteral): Unit = {
+    val VectorType(m, dt, _) = vl.t
+    print(s"($dt$m)")
+    print("(")
+    printExpr(vl.values.head)
+    for (v <- vl.values.tail) {
+      print(", ")
+      printExpr(v)
+    }
+    print(")")
   }
 }

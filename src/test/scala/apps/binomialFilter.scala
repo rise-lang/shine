@@ -308,4 +308,20 @@ int main(int argc, char** argv) {
     val code = gen.OpenCLKernel(wrapExpr(e), "blur").code
     "for \\(".r.findAllIn(code).length shouldBe 2
   }
+
+  test("compiling OpenCL shuffle should generate valid code") {
+    import lift.OpenCL.primitives._
+    import idealised.OpenCL.PrivateMemory
+
+    val dotSeqVecUnroll = fun(a => fun(b =>
+      zip(a)(b) |> map(mulT) |> oclReduceSeqUnroll(PrivateMemory)(add)(vectorFromScalar(l(0.0f)))
+    ))
+
+    val e = fun(ArrayType(3, VectorType(4, float)))(xs =>
+      xs |> asScalar |> drop(3) |> take(6) |> slide(4)(1) |> join |> asVector(4)
+      |> dotSeqVecUnroll(map(vectorFromScalar)(weights1d))
+    )
+
+    gen.OpenCLKernel(e)
+  }
 }

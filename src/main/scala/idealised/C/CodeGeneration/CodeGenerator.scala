@@ -861,8 +861,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       val (indicesAsPathElements, rest) = path.splitAt(countArrayLayers(dt))
       indicesAsPathElements.foreach(i => assert(i.isInstanceOf[CIntExpr]))
       val indices = indicesAsPathElements.map(_.asInstanceOf[CIntExpr].num)
-      assert(rest.isEmpty || !rest.head.isInstanceOf[CIntExpr])
-
+      // assert(rest.isEmpty || !rest.head.isInstanceOf[CIntExpr])
 
       val subMap = buildSubMap(dt, indices)
 

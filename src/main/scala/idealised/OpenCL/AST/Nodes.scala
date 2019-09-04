@@ -42,3 +42,29 @@ case class Barrier(local: Boolean, global: Boolean) extends Stmt {
 
   override def visitAndGenerateStmt(v: VisitAndGenerateStmt.Visitor): Stmt = this
 }
+
+case class VectorLiteral(t: VectorType, values: Seq[Expr]) extends Expr {
+  override def visitAndRebuild(v: VisitAndRebuild.Visitor): VectorLiteral =
+    VectorLiteral(v(t).asInstanceOf[VectorType], values.map(VisitAndRebuild(_, v)))
+
+  override def visitAndGenerateStmt(v: VisitAndGenerateStmt.Visitor, cont: Expr => Stmt): Stmt = {
+    def rec(todo: Seq[Expr], done: Seq[Expr]): Stmt = {
+      todo match {
+        case Nil => cont(VectorLiteral(t, done))
+        case e +: rest => VisitAndGenerateStmt(e, v, e2 => rec(rest, done :+ e2))
+      }
+    }
+
+    rec(values, Seq())
+  }
+}
+
+case class VectorSubscript(vector: Expr, index: Expr) extends Expr {
+  override def visitAndRebuild(v: VisitAndRebuild.Visitor): Node =
+    VectorSubscript(VisitAndRebuild(vector, v), VisitAndRebuild(index, v))
+
+  override def visitAndGenerateStmt(v: VisitAndGenerateStmt.Visitor, cont: Expr => Stmt): Stmt =
+    VisitAndGenerateStmt(vector, v, vector2 =>
+      VisitAndGenerateStmt(index, v, index2 =>
+        cont(VectorSubscript(vector2, index2))))
+}
