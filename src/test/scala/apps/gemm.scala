@@ -413,9 +413,9 @@ class gemm extends idealised.util.TestsWithExecutor {
 
     val random = new Random()
 
-    val n = 512
-    val m = 256
-    val k = 512
+    val n = 64
+    val m = 32
+    val k = 64
     val A = Array.fill(m, k)((random.nextInt(10) + 1).toFloat)
     val B = Array.fill(k, n)((random.nextInt(10) + 1).toFloat)
     val C = Array.fill(m, n)((random.nextInt(10) + 1).toFloat)
@@ -431,7 +431,7 @@ class gemm extends idealised.util.TestsWithExecutor {
       Array[Array[Float]] `,`
       Float `,`
       Float `)=>` Array[Float]]
-    val (flatOutput, _) = runKernel(LocalSize(128), GlobalSize(m))(n `,` m `,` k `,` A `,` B `,` C `,` alpha `,` beta)
+    val (flatOutput, _) = runKernel(LocalSize(1), GlobalSize(1))(n `,` m `,` k `,` A `,` B `,` C `,` alpha `,` beta)
     val output: Array[Array[Float]] = flatOutput.grouped(n).toArray
 
     (output zip gold).foreach { case (outputRow, goldRow) =>
