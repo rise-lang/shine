@@ -78,6 +78,10 @@ object primitives {
     override def t: Type = map.t
   }
 
+  case object mapSeqUnroll extends Primitive {
+    override def t: Type = map.t
+  }
+
   case object natAsIndex extends Primitive {
     override def t: Type = nFunT(n => NatType ->: IndexType(n))
   }
