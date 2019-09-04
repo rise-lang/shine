@@ -159,6 +159,12 @@ object fromLift {
     // TODO: remove surface language
 
     (p, t) match {
+      case (core.printType,
+        lt.FunType(lt: lt.DataType, _))
+      =>
+        val t = dataType(lt)
+        fun[ExpType](exp"[$t, $read]", e => PrintType(t, e))
+
       case (core.`natAsIndex`,
       lt.DepFunType(n: l.NatIdentifier,
       lt.FunType(lt.NatType, lt.IndexType(_))))

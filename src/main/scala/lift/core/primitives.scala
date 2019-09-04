@@ -244,4 +244,8 @@ object primitives {
       t ->: VectorType(n, t)
     ))
   }
+
+  case object printType extends Primitive {
+    override def t: Type = implDT(t => t ->: t)
+  }
 }

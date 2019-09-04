@@ -202,13 +202,9 @@ class gemm extends idealised.util.TestsWithExecutor {
                     zip (z._1) (transpose (z._2)) |> mapSeq (fun(a =>
                       zip (a._1) (a._2) |> mapSeq (fun(x =>
                         (x._1 * alpha) + (x._2 * beta) )))))))))
-              //))
-              //|> transpose
+              |> printType
               |> map (fun(p4 => p4
                 |> map (transpose)
-
-                //|> transpose
-                //|> map (transpose o map(transpose) o transpose)
                 |> join
                 |> transpose
                 |> map (reorderWithStride (v3 / v4))

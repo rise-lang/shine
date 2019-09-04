@@ -4,6 +4,7 @@ import lift.core.DSL._
 import lift.core.types._
 import lift.core.primitives._
 import idealised.util.gen
+import idealised.util.gen.toDPIA
 import lift.OpenCL.primitives.{mapLocal, oclReduceSeq, toPrivateFun}
 import lift.arithmetic.Cst
 
@@ -64,6 +65,6 @@ class Reduce extends idealised.util.Tests {
                           zip (acc) (arr1D) |> mapSeq (fun(t => t._1 + t._2))))
           (generate(fun(IndexType(n))(_ => l(0.0f))) |> toPrivateFun(mapSeq (fun(x => x)))))))
 
-    gen.OpenCLKernel(e).code
+    fail("no idea how to check this")
   }
 }
