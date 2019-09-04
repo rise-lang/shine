@@ -1,8 +1,8 @@
 package idealised.DPIA.Phrases
 
 import idealised.DPIA.Compilation.TranslationContext
-import idealised.DPIA.FunctionalPrimitives.{AsIndex, IndexAsNat}
-import idealised.DPIA.Lifting.{liftFunction, liftDependentFunction, liftPair}
+import idealised.DPIA.FunctionalPrimitives.AsIndex
+import idealised.DPIA.Lifting.{liftDependentFunction, liftFunction, liftPair}
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics.{IndexData, NatData}
 import idealised.DPIA.Types._
@@ -108,17 +108,6 @@ final case class BinOp(op: SurfaceLanguage.Operators.Binary.Value, lhs: Phrase[E
            Operators.Binary.EQ => exp"[$bool, $read]"
       case _ => (lhs.t.dataType, rhs.t.dataType) match {
         case (t1, t2) if t1 == t2 => ExpType(t1, read)
-        // TODO: Think about this more thoroughly ...
-        case (IndexType(n), `int`) =>
-          ExpType(IndexType(n), read)
-        //              ExpType(IndexType(OperationalSemantics.toScalaOp(op)(n, OperationalSemantics.evalIntExp(rhs))))
-        case (`int`, IndexType(n)) =>
-          ExpType(IndexType(n), read)
-        //              ExpType(IndexType(OperationalSemantics.toScalaOp(op)(OperationalSemantics.evalIntExp(lhs), n)))
-        case (IndexType(n), IndexType(_)) =>
-          //              ExpType(IndexType(OperationalSemantics.toScalaOp(op)(n, m)))
-          ExpType(IndexType(n), read)
-
         case (lhsT, rhsT) =>
           throw new TypeException(s"Failed type checking: found" +
             s"`$lhsT' and `$rhsT', but expected them to match.")
@@ -156,11 +145,11 @@ object Phrase {
 
             ph.t match {
               case ExpType(NatType, _) =>
-                  Stop(Natural(Nat.substitute(
-                    Internal.NatFromNatExpr(ph.asInstanceOf[Phrase[ExpType]]), v, n)).asInstanceOf[Phrase[T]])
+                Stop(Natural(Nat.substitute(
+                  Internal.transientNatFromExpr(ph.asInstanceOf[Phrase[ExpType]]).n, v, n)).asInstanceOf[Phrase[T]])
               case ExpType(IndexType(_), _) =>
-                  Stop(Natural(Nat.substitute(
-                    Internal.NatFromIndexExpr(ph.asInstanceOf[Phrase[ExpType]]), v, n)).asInstanceOf[Phrase[T]])
+                Stop(Natural(Nat.substitute(
+                  Internal.transientNatFromExpr(ph.asInstanceOf[Phrase[ExpType]]).n, v, n)).asInstanceOf[Phrase[T]])
               case _ => Continue(p, this)
             }
           case _ => Continue(p, this)
@@ -189,67 +178,69 @@ object Phrase {
 
 
   object Internal {
-    def NatFromIndexExpr(p: Phrase[ExpType]): Nat = {
-      p.t match {
-        case ExpType(IndexType(n), _) =>
-          p match {
-            case i:Identifier[ExpType] => NamedVar(i.name, RangeAdd(0, n, 1))
-            case Apply(fun, arg) => NatFromIndexExpr(liftFunction(fun).reducing(arg))
-            case BinOp(op, lhs, rhs) => binOpToNat(op, NatFromIndexExpr(lhs), NatFromIndexExpr(rhs))
-            case DPIA.Phrases.IfThenElse(_, _, _) => throw new Exception("This should never happen")
-            case Literal(lit) => lit match {
-              case i: IndexData => i.i
-              case _ => throw new Exception("This should never happen")
-            }
-            case DepApply(fun, arg) => (fun, arg) match {
-              case (f, a: Nat) =>
-                NatFromIndexExpr(liftDependentFunction[NatKind, ExpType](f.asInstanceOf[Phrase[NatKind `()->:` ExpType]])(a))
-              case _ => throw new Exception("This should never happen")
-            }
-            case Proj1(pair) => NatFromIndexExpr(liftPair(pair)._1)
-            case Proj2(pair) => NatFromIndexExpr(liftPair(pair)._2)
-            case UnaryOp(op, e) => unOpToNat(op, NatFromIndexExpr(e))
-            case prim: ExpPrimitive => prim match {
-              //TODO can we use our knowledge of n somehow?
-              case AsIndex(n, e) => NatFromNatExpr(e)
-              case _ => throw new Exception("This should never happen")
-            }
-            case Natural(_) | LetNat(_, _, _) => throw new Exception("This should never happen")
-          }
-        case _ => throw new Exception("This should never happen")
+    case class TransientNat(n: Nat,
+                            identifiers: Map[NamedVar, Phrase[ExpType]]) {
+      def map(f: Nat => Nat): TransientNat =
+        TransientNat(f(n), identifiers)
+
+      def bind(f: Nat => TransientNat): TransientNat = {
+        val other = f(n)
+        TransientNat(other.n, identifiers ++ other.identifiers)
       }
     }
 
-    def NatFromNatExpr(p: Phrase[ExpType]): Nat = {
-      p.t match {
-        case ExpType(NatType, _) =>
-          p match {
-            case Natural(n) => n
-            case i: Identifier[ExpType] => NamedVar(i.name, StartFromRange(0))
-            case Apply(fun, arg) => NatFromNatExpr(liftFunction(fun).reducing(arg))
-            case BinOp(op, lhs, rhs) => binOpToNat(op, NatFromNatExpr(lhs), NatFromNatExpr(rhs))
-            case DPIA.Phrases.IfThenElse(_, _, _) => throw new Exception("This should never happen")
-            case Literal(_) => throw new Exception("This should never happen")
-            case DepApply(fun, arg) => (fun, arg) match {
-              case (f, a: Nat) =>
-                NatFromNatExpr(liftDependentFunction[NatKind, ExpType](f.asInstanceOf[Phrase[NatKind `()->:` ExpType]])(a))
-              case _ => throw new Exception("This should never happen")
-            }
-            case Proj1(pair) => NatFromNatExpr(liftPair(pair)._1)
-            case Proj2(pair) => NatFromNatExpr(liftPair(pair)._2)
-            case UnaryOp(op, e) => unOpToNat(op, NatFromNatExpr(e))
-            case prim: ExpPrimitive => prim match {
-              //TODO can we use our knowledge of n somehow?
-              case IndexAsNat(n, e) => NatFromIndexExpr(e)
-              case _ => throw new Exception("This should never happen")
-            }
-            case LetNat(_, _, _) => throw new Exception("This should never happen")
-          }
-        case pt => throw new Exception(s"Expected exp[nat] but found $pt.")
+    object TransientNat {
+      def apply(n: Nat): TransientNat = TransientNat(n, Map.empty)
+    }
+
+    // returns a transient nat corresponding to an exp[nat] or exp[idx[n]]
+    // it allows to leverage nat simplification but should not be used in any exp[_] before being converted back
+    // this is because expression Identifiers are temporarily embedded as NamedVars
+    def transientNatFromExpr(p: Phrase[ExpType]): TransientNat = {
+      import idealised.DPIA.FunctionalPrimitives.IndexAsNat
+
+      p match {
+        case i: Identifier[ExpType] => p.t match {
+          case ExpType(IndexType(n), _) =>
+            val v = NamedVar(i.name, RangeAdd(0, n, 1))
+            TransientNat(v, Map(v -> IndexAsNat(n, i)))
+          case ExpType(NatType, _) =>
+            val v = NamedVar(i.name, RangeAdd(0, lift.arithmetic.PosInf, 1))
+            TransientNat(v, Map(v -> i))
+          case _ => throw new Exception("This should never happen")
+        }
+        case Natural(n) => TransientNat(n)
+        case prim: ExpPrimitive => prim match {
+          //TODO can we use our knowledge of n somehow?
+          case AsIndex(n, e) => transientNatFromExpr(e)
+          case IndexAsNat(_, e) => transientNatFromExpr(e)
+          case _ => throw new Exception(s"This should never happen ($prim)")
+        }
+        case UnaryOp(op, e) =>
+          transientNatFromExpr(e).map(unOpToNat(op, _))
+        case BinOp(op, lhs, rhs) =>
+          transientNatFromExpr(lhs).bind(l =>
+            transientNatFromExpr(rhs).map(r =>
+              binOpToNat(op, l, r)))
+        case Apply(fun, arg) => transientNatFromExpr(liftFunction(fun).reducing(arg))
+        case DPIA.Phrases.IfThenElse(_, _, _) => throw new Exception("This should never happen")
+        case Literal(lit) => lit match {
+          case _ => throw new Exception("This should never happen")
+          // NatData is Natural
+          // IndexData is AsIndex
+        }
+        case DepApply(fun, arg) => (fun, arg) match {
+          case (f, a: Nat) =>
+            transientNatFromExpr(liftDependentFunction[NatKind, ExpType](f.asInstanceOf[Phrase[NatKind `()->:` ExpType]])(a))
+          case _ => ???
+        }
+        case Proj1(pair) => transientNatFromExpr(liftPair(pair)._1)
+        case Proj2(pair) => transientNatFromExpr(liftPair(pair)._2)
+        case LetNat(_, _, _) => ???
       }
     }
 
-    def binOpToNat(op:Operators.Binary.Value, n1:Nat, n2:Nat): Nat = {
+    def binOpToNat(op: Operators.Binary.Value, n1: Nat, n2: Nat): Nat = {
       import Operators.Binary._
 
       op match {
@@ -263,7 +254,61 @@ object Phrase {
       }
     }
 
-    def unOpToNat(op:Operators.Unary.Value, n:Nat):Nat = ???
+    def unOpToNat(op: Operators.Unary.Value, n: Nat): Nat = ???
+
+    def exprFromTransientNat(tn: TransientNat): Phrase[ExpType] =
+      eitherAsExpr(reconstructTransientNat(tn))
+
+    // In the formalism, all nat constructs are reconstructed as exp constructs,
+    // but in this implementation we preserve nat subexpressions that do not need to be reconstructed
+    // (the ones that do not contain any exp identifier)
+    private def reconstructTransientNat(tn: TransientNat): Either[Nat, Phrase[ExpType]] = {
+      import lift.arithmetic._
+
+      val reconstruct = (n: Nat) =>
+        reconstructTransientNat(TransientNat(n, tn.identifiers))
+      tn.n match {
+        case v: NamedVar => tn.identifiers.get(v).map(Right(_)).getOrElse(Left(v))
+        case c: Cst => Left(c)
+        case Sum(ps) => reconstructTransientBinOpFold(
+          Operators.Binary.ADD, reconstruct, ps)
+        case Prod(ps) => reconstructTransientBinOpFold(
+          Operators.Binary.MUL, reconstruct, ps)
+        case IntDiv(n, d) =>
+          reconstructTransientBinOp(Operators.Binary.DIV,
+            reconstruct(n), reconstruct(d))
+        case Mod(x, m) =>
+          reconstructTransientBinOp(Operators.Binary.MOD,
+            reconstruct(x), reconstruct(m))
+        case Pow(b, e) =>
+          Left(Pow(reconstruct(b).left.get, reconstruct(e).left.get))
+        case Log(b, x) =>
+          Left(Log(reconstruct(b).left.get, reconstruct(x).left.get))
+        case _ => throw new Exception(s"did not expect ${tn.n}")
+      }
+    }
+
+    private def reconstructTransientBinOpFold(op: Operators.Binary.Value,
+                                              reconstruct: Nat => Either[Nat, Phrase[ExpType]],
+                                              seq: Seq[Nat]): Either[Nat, Phrase[ExpType]] =
+      seq.map(reconstruct).reduce[Either[Nat, Phrase[ExpType]]]({
+        case (a, b) => reconstructTransientBinOp(op, a, b)
+      })
+
+    private def reconstructTransientBinOp(op: Operators.Binary.Value,
+                                          a: Either[Nat, Phrase[ExpType]],
+                                          b: Either[Nat, Phrase[ExpType]]): Either[Nat, Phrase[ExpType]] = {
+      (a, b) match {
+        case (Left(na), Left(nb)) => Left(binOpToNat(op, na, nb))
+        case _ => Right(BinOp(op, eitherAsExpr(a), eitherAsExpr(b)))
+      }
+    }
+
+    private def eitherAsExpr(e: Either[Nat, Phrase[ExpType]]): Phrase[ExpType] =
+      e match {
+        case Left(n) => Natural(n)
+        case Right(e) => e
+      }
   }
 }
 

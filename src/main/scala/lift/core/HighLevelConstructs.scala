@@ -13,9 +13,9 @@ object HighLevelConstructs {
     nFun(s => {
       val f =
         implN(n =>
-          fun(IndexType(n))(i => i /* FIXME {
-            mapIndexExpr(i, j => (j / (n /^ s)) + s * (j % (n /^ s)))
-          }*/))
+          fun(IndexType(n))(i => natAsIndex(n)(
+            (indexAsNat(i) / (n /^ s)) + ((s: Expr) * (indexAsNat(i) % (n /^ s)))
+          )))
       reorder(f)(f)
     })
   }
