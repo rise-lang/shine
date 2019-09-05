@@ -36,9 +36,6 @@ abstract class AbstractMapLoop(n: Nat,
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])
                                       (implicit context: TranslationContext): Phrase[CommType] = {
-    import TranslationToImperative._
-
-    `new`(dt"[$n.$dt2]", λ(exp"[$n.$dt2, $read]" x acc"[$n.$dt2]")(tmp =>
-      acc(this)(tmp.wr) `;` C(tmp.rd) ))
+    ???
   }
 }
