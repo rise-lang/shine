@@ -266,33 +266,6 @@ object DSL {
 
   implicit def wrapInNatExpr(n: Nat): Literal = Literal(NatData(n))
 
-  def mapNatExpr(n: Expr, f: Nat => Nat): Literal = {
-    Literal(NatData(f(Internal.natFromNatExpr(n))))
-  }
-
-  private object Internal {
-    @scala.annotation.tailrec
-    def natFromNatExpr(e: Expr): Nat = {
-      e match {
-        case Literal(NatData(n)) => n
-
-        case _: Identifier      => ??? // NamedVar(i.name, StartFromRange(0))
-        case Apply(fun, arg)    => fun match {
-          case l: Lambda => natFromNatExpr(lifting.liftFunExpr(l).value(arg))
-          case p: Primitive       => p match {
-            case _: primitives.indexAsNat.type => natFromNatExpr(arg)
-            case _ => ???
-          }
-          case _ => ???
-        }
-        case DepApply(fun, arg) => natFromNatExpr(lifting.liftDepFunExpr(fun).value(arg))
-        case Literal(_)         => throw new Exception("This should never happen")
-        case TypedExpr(te, _)   => natFromNatExpr(te)
-        case pt => throw new Exception(s"Expected exp[nat] but found $pt.")
-      }
-    }
-  }
-
   def l(i: Int): Literal = Literal(IntData(i))
   def l(f: Float): Literal = Literal(FloatData(f))
   def l(d: Double): Literal = Literal(DoubleData(d))

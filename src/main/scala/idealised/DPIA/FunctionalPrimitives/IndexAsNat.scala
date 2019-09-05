@@ -7,6 +7,7 @@ import idealised.DPIA.Types._
 import idealised.DPIA.DSL._
 import idealised.DPIA._
 import idealised.DPIA.Compilation._
+import idealised.DPIA.Semantics.OperationalSemantics.{IndexData, NatData}
 
 import scala.xml.Elem
 import scala.language.reflectiveCalls
@@ -28,7 +29,12 @@ final case class IndexAsNat(n: Nat, e: Phrase[ExpType])
   def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] =
     IndexAsNat(fun.nat(n), VisitAndRebuild(e, fun))
 
-  def eval(s: OperationalSemantics.Store): OperationalSemantics.Data = ???
+  def eval(s: OperationalSemantics.Store): OperationalSemantics.Data = {
+    OperationalSemantics.eval(s, e) match {
+      case IndexData(i, _) => NatData(i)
+      case d => throw new Exception(s"Expected IndexData but found $d.")
+    }
+  }
 
   def acceptorTranslation(A: Phrase[AccType])
                          (implicit context: TranslationContext): Phrase[CommType] = {

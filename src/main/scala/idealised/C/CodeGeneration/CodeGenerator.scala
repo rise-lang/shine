@@ -239,7 +239,16 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                    path: Path,
                    cont: Expr => Stmt) : Stmt =
   {
-    phrase match {
+    // TODO: think about this more thoroughly
+    val simplified_phrase = phrase.t.dataType match {
+      case IndexType(_) | NatType
+        if (!phrase.isInstanceOf[idealised.DPIA.Phrases.Identifier[_]])
+      =>
+        try { mapTransientNat(phrase, x => x) }
+        catch { case _: Exception => phrase }
+      case _ => phrase
+    }
+    simplified_phrase match {
       case i@Identifier(_, ExpType(dt, _)) => cont(CCodeGen.generateAccess(dt,
         env.identEnv.applyOrElse(i, (_: Phrase[_]) => {
           throw new Exception(s"Expected to find `$i' in the environment: `${env.identEnv}'")
@@ -709,7 +718,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           }
       }})
     }
-
 
     private def rangeAddToScalaRange(range:RangeAdd) = {
       val (start,stop,step) = {

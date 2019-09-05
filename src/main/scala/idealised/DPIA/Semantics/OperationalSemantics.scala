@@ -246,8 +246,9 @@ object OperationalSemantics {
   }
 
   def evalIndexExp(s: Store, p: Phrase[ExpType]): Nat = {
-    eval(s, p) match {
-      case IndexData(i, _) => i
+    import idealised.DPIA.DSL.mapTransientNat
+    eval(s, mapTransientNat(p, x => x)) match {
+      case NatData(i) => i
       case IntData(i) => i
       case _ => throw new Exception("This should never happen")
     }
@@ -261,6 +262,7 @@ object OperationalSemantics {
     eval(s, p) match {
       case IntData(i) => i
       case IndexData(i, _) => i.eval
+      case NatData(i) => i.eval
       case _ => throw new Exception("This should never happen")
     }
   }

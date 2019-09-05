@@ -166,20 +166,20 @@ object FromSurfaceLanguagePrimitives {
 
           val transposeFunction =
             λ(ExpType(IndexType(n * m), read))(i => {
-              mapIndexExpr(i, j => {
+              AsIndex(n * m, mapTransientNat(i, j => {
                 val col = (j % n) * m
                 val row = j / n
                 row + col
-              })
+              }))
             })
 
           val transposeInverseFunction =
             λ(ExpType(IndexType(n * m), read))(i => {
-              mapIndexExpr(i, j => {
+              AsIndex(n * m, mapTransientNat(i, j => {
                 val col = (j % m) * n
                 val row = j / m
                 row + col
-              })
+              }))
             })
 
           Some(Split(n, m, Types.read, // TODO
