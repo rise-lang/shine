@@ -192,7 +192,7 @@ class gemm extends idealised.util.TestsWithExecutor {
               zip (p2._1) (p3._1)
               |> oclReduceSeq (AddressSpace.Private) (redOp)
                 (zeros (v4) (v5) (v3 * Cst(1) /^ v4) (v6 * Cst(1) /^ v5)
-                  |> mapLocal(1) (mapLocal(0) (toPrivateFun(mapSeq (mapSeq (id))))))
+                  |> mapLocal(1) (mapLocal(0) (mapSeq (mapSeq (id)))))
               //TODO following function shuould eventually write to global
               //mapSeq was removed because reduce does not wrap reduced results in arrays anymore
               |> fun(x =>
