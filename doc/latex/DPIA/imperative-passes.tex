@@ -1,0 +1,11 @@
+\clearpage
+\section{Imperative DPIA passes}
+
+We perform some passes on the imperative DPIA after translation to imperative, and before code generation. First, $FlagPrivateArrayLoops$ looks at identifiers that are used to index into private memory and, in order to replace these identifiers with constants, marks all loops introducing such identifiers as needing to be unrolled. Then, $UnrollLoops$ effectively unrolls the loops that were marked to be unrolled. This also includes loops introduced by unrolling primitives such as $\prim{mapSeqUnroll}$.
+
+$$ FlagPrivateArrayLoops: \tycomm \to \tycomm $$
+
+$$ UnrollLoops: \tycomm \to \tycomm $$
+
+% TODO: semantics, examples?
+% TODO: failures in the type?
