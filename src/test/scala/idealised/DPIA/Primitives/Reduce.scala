@@ -2,13 +2,18 @@ package idealised.DPIA.Primitives
 
 import lift.core.DSL._
 import lift.core.types._
+import lift.core.types.AddressSpace
 import lift.core.primitives._
+import lift.OpenCL.primitives._
 import idealised.util.gen
-import idealised.util.gen.toDPIA
+import idealised.OpenCL._
 import lift.OpenCL.primitives.{mapLocal, oclReduceSeq, toPrivateFun}
-import lift.arithmetic.Cst
+import lift.core.{Expr, Literal}
+import lift.core.semantics.{IndexData, NatData}
 
-class Reduce extends idealised.util.Tests {
+import scala.language.postfixOps
+
+class Reduce extends idealised.util.TestsWithExecutor {
   val add = fun(a => fun(b => a + b))
 
   test("Simple example should generate syntactic valid C code with one loop") {
@@ -53,18 +58,74 @@ class Reduce extends idealised.util.Tests {
     gen.CProgram(e).code
   }
 
-  test("oclReduceSeq does no automatic copy of its initial accumulator value") {
-    val zeros = nFun(n1 =>
-            generate(fun(IndexType(n1))(_ => l(0.0f))))
+  test("oclReduceSeq produces correct result over 2D array using private memory") {
+    import scala.util.Random
 
-    //TODO check that private memory array has constant size
-    val e =
-      nFun(m => nFun(n => fun(m`.`n`.`float)(arr2D => arr2D
-        |> oclReduceSeq (AddressSpace.Private)
-                        (fun(n`.`float ->: n`.`float ->: n`.`float)((acc, arr1D) =>
-                          zip (acc) (arr1D) |> mapSeq (fun(t => t._1 + t._2))))
-          (generate(fun(IndexType(n))(_ => l(0.0f))) |> toPrivateFun(mapSeq (fun(x => x)))))))
+    val random = new Random()
 
-    fail("no idea how to check this")
+    val initExp = nFun(n =>
+      generate(fun(IndexType(n))(_ => l(0.0f)))
+        |> mapSeq (fun(x => x)))
+
+    val e = nFun((m, n) =>
+              fun(m`.`n`.`float)(arr =>
+                arr |> oclReduceSeq (AddressSpace.Private)
+                                    (fun((in1, in2) => zip (in1) (in2) |> mapSeq (fun(t => t._1 + t._2))))
+                                    (initExp (n))))
+
+    val m = 64
+    val n = 64
+    val A = Array.fill(m, n)((random.nextInt(10) + 1).toFloat)
+
+    val gold = A.reduce((row1, row2) => row1.zip(row2).map(in => in._1 + in._2))
+
+    val runKernel = gen.OpenCLKernel(e(m)(n)).as[ScalaFunction `(`
+      Array[Array[Float]] `)=>` Array[Float]]
+    val (out, _)  = runKernel(LocalSize(1), GlobalSize(1))(A`;`)
+
+    assertResult(gold)(out)
+  }
+
+  test("Record access to specify initial accumulator value of reduceSeq generates syntactically valid C code") {
+    val n = 8
+    val initRecordExp =
+      (zip (generate(fun(IndexType(n))(_ => l(0.0f))) |> mapSeq (fun(x => x)))
+           (generate(fun(IndexType(n))(_ => l(0.0f))))
+        |> idx(natAsIndex (n) (Literal(NatData(0)))))
+
+    def e(init : Expr) = nFun(n =>
+      fun(n`.`float)(arr =>
+        arr |> reduceSeq (fun(_ + _))  (init)))
+
+    println("Fst:")
+    gen.CProgram(e(initRecordExp._1)).code
+    println("Snd:")
+    gen.CProgram(e(initRecordExp._2)).code
+  }
+
+  test("Record access to specify initial accumulator value of oclReduceSeq produces correct result") {
+    import scala.util.Random
+
+    val random = new Random()
+
+    val initRecordExp = pair(l(0.0f), l(0.0f))
+
+    def e(init : Expr) = nFun(n =>
+      fun(n`.`float)(arr =>
+        arr |> oclReduceSeq (AddressSpace.Global) (fun(_ + _))  (init)))
+
+    val n = 64
+    val A = Array.fill(n)((random.nextInt(10) + 1).toFloat)
+
+    val gold = A.sum
+
+    def runKernel(initWithRecordAccess: Expr) =
+      gen.OpenCLKernel(e(initWithRecordAccess)).as[ScalaFunction `(`Int`,`Array[Float]`)=>`Array[Float]]
+
+    val (out1, _) = runKernel(initRecordExp._1)(LocalSize(1), GlobalSize(1))(n `,` A)
+    val (out2, _) = runKernel(initRecordExp._2)(LocalSize(1), GlobalSize(1))(n `,` A)
+
+    assertResult(gold)(out1(0))
+    assertResult(gold)(out2(0))
   }
 }

@@ -601,6 +601,9 @@ object fromLift {
 
       case (core.reduce, _) =>
         throw new Exception(s"$p has no implementation")
+
+      case (p, _) =>
+        throw new Exception(s"Missing rule for $p")
     }
   }
 
