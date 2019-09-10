@@ -200,22 +200,10 @@ object Phrase {
       import idealised.DPIA.FunctionalPrimitives.IndexAsNat
 
       p match {
-        case i: Identifier[ExpType] => p.t match {
-          case ExpType(IndexType(n), _) =>
-            val v = NamedVar(i.name, RangeAdd(0, n, 1))
-            TransientNat(v, Map(v -> IndexAsNat(n, i)))
-          case ExpType(NatType, _) =>
-            val v = NamedVar(i.name, RangeAdd(0, lift.arithmetic.PosInf, 1))
-            TransientNat(v, Map(v -> i))
-          case _ => throw new Exception("This should never happen")
-        }
         case Natural(n) => TransientNat(n)
-        case prim: ExpPrimitive => prim match {
-          //TODO can we use our knowledge of n somehow?
-          case AsIndex(n, e) => transientNatFromExpr(e)
-          case IndexAsNat(_, e) => transientNatFromExpr(e)
-          case _ => throw new Exception(s"This should never happen ($prim)")
-        }
+        //TODO can we use our knowledge of n somehow?
+        case AsIndex(n, e) => transientNatFromExpr(e)
+        case IndexAsNat(_, e) => transientNatFromExpr(e)
         case UnaryOp(op, e) =>
           transientNatFromExpr(e).map(unOpToNat(op, _))
         case BinOp(op, lhs, rhs) =>
@@ -223,7 +211,6 @@ object Phrase {
             transientNatFromExpr(rhs).map(r =>
               binOpToNat(op, l, r)))
         case Apply(fun, arg) => transientNatFromExpr(liftFunction(fun).reducing(arg))
-        case DPIA.Phrases.IfThenElse(_, _, _) => throw new Exception("This should never happen")
         case Literal(lit) => lit match {
           case _ => throw new Exception("This should never happen")
           // NatData is Natural
@@ -236,7 +223,22 @@ object Phrase {
         }
         case Proj1(pair) => transientNatFromExpr(liftPair(pair)._1)
         case Proj2(pair) => transientNatFromExpr(liftPair(pair)._2)
-        case LetNat(_, _, _) => ???
+        case _ =>
+          val name = p match {
+            // using the same identifier name should not be necessary
+            // once Identifier and NamedVar are cleanly separated in all the code base
+            case i: Identifier[ExpType] => i.name
+            case _ => freshName("exp")
+          }
+          p.t match {
+            case ExpType(IndexType(n), _) =>
+              val v = NamedVar(name, RangeAdd(0, n, 1))
+              TransientNat(v, Map(v -> IndexAsNat(n, p)))
+            case ExpType(NatType, _) =>
+              val v = NamedVar(name, RangeAdd(0, lift.arithmetic.PosInf, 1))
+              TransientNat(v, Map(v -> p))
+            case _ => throw new Exception("This should never happen")
+          }
       }
     }
 

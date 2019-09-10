@@ -241,11 +241,12 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
   {
     // TODO: think about this more thoroughly
     val simplified_phrase = phrase.t.dataType match {
-      case IndexType(_) | NatType
-        if (!phrase.isInstanceOf[idealised.DPIA.Phrases.Identifier[_]])
-      =>
-        try { mapTransientNat(phrase, x => x) }
-        catch { case _: Exception => phrase }
+      case IndexType(_) | NatType =>
+        mapTransientNat(phrase, x => x) match {
+          // this leads to infinite recursion
+          case IndexAsNat(_, p) if p == phrase => phrase
+          case sp => sp
+        }
       case _ => phrase
     }
     simplified_phrase match {
