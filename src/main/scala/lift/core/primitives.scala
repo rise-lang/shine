@@ -248,4 +248,8 @@ object primitives {
       t ->: VectorType(n, t)
     ))
   }
+
+  case class printType(msg: String = "") extends Primitive {
+    override def t: Type = implDT(t => t ->: t)
+  }
 }
