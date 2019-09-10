@@ -33,7 +33,7 @@ object rules {
 
   case object letPartialEvaluation extends Strategy[FSmooth] {
     def apply(e: FSmooth): RewriteResult[FSmooth] = e match {
-      case Let(x, e0, e1, _) => Success(substitute(x, e0, e1))
+      case Let(x, e0, e1, _) => Success(replace(x).`with`(e0).in(e1))
       case _ => Failure(letPartialEvaluation)
     }
   }
@@ -136,7 +136,9 @@ object rules {
   case object conditionalPartialEvalution extends Strategy[FSmooth] {
     def apply(e: FSmooth): RewriteResult[FSmooth] = e match {
       case Conditional(e0, e1, e2, _) =>
-        Success(Conditional(e0, substitute(e0, `true`, e1), substitute(e0, `false`, e2)))
+        Success(Conditional(e0,
+          replace(e0).`with`(`true`).in(e1),
+          replace(e0).`with`(`false`).in(e2)))
       case _ => Failure(conditionalPartialEvalution)
     }
   }

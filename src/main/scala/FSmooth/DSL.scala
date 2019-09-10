@@ -60,6 +60,11 @@ object DSL {
     }
   }
 
+  implicit class TypeAnnotation(t: Type) {
+    def ::(e: Expr): Expr = e.setType(t)
+    def `:`(e: Expr): Expr = e.setType(t)
+  }
+
   def Vector = Array(Double)
   def Matrix = Array(Array(Double))
   def DoubleD = Pair(Double, Double)

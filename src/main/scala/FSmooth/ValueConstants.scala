@@ -4,7 +4,7 @@ package FSmooth
 object ValueConstants {
   sealed abstract class ValueConstants(override val t: Type) extends Constants(t) {
     override def typeScheme: Type = t
-    override def copyWithType(t: Type): Constants = this
+    override def setType(t: Type): Constants = this
   }
 
   case object `true` extends ValueConstants(Bool)

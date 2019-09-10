@@ -8,20 +8,20 @@ object PairFunctionConstants {
     override def typeScheme: Type = implM(M1 => implM(M2 =>
       M1 -> M2 -> (M1 x M2)
     ))
-    override def copyWithType(t: Type): Constants = pair(t)
+    override def setType(t: Type): Constants = pair(t)
   }
 
   case class fst(override val t: Type) extends Constants(t) {
     override def typeScheme: Type = implM(M1 => implM(M2 =>
       (M1 x M2) -> M1
     ))
-    override def copyWithType(t: Type): Constants = fst(t)
+    override def setType(t: Type): Constants = fst(t)
   }
 
   case class snd(override val t: Type) extends Constants(t) {
     override def typeScheme: Type = implM(M1 => implM(M2 =>
       (M1 x M2) -> M2
     ))
-    override def copyWithType(t: Type): Constants = snd(t)
+    override def setType(t: Type): Constants = snd(t)
   }
 }

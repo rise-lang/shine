@@ -93,7 +93,7 @@ object TypeInference {
       case Abstraction(xs, e, t) => Abstraction(xs.map(i => apply(i).asInstanceOf[Variable]), apply(e), apply(t))
       case Application(f, es, t) => Application(apply(f), es.map(apply), apply(t))
       case _: ScalarValue | _: IndexValue | _: CardinalityValue => e
-      case c: Constants => c.copyWithType(apply(c.t))
+      case c: Constants => c.setType(apply(c.t))
       case Let(x, init, e, t) => Let(apply(x).asInstanceOf[Variable], apply(init), apply(e), apply(t))
       case Conditional(cond, thenBranch, elseBranch, t) => Conditional(apply(cond), apply(thenBranch), apply(elseBranch), apply(t))
     }
