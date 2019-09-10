@@ -1,7 +1,7 @@
 package elevate.lift.strategies
 
 import com.github.ghik.silencer.silent
-import elevate.core.{Failure, Strategy, Success}
+import elevate.core.{Failure, Lift, RewriteResult, Strategy, Success}
 import lift.core.DSL._
 import lift.core._
 
@@ -11,10 +11,12 @@ object algorithmic {
 
   // fission of the first function to be applied inside a map
   // *(g >> .. >> f) -> *g >> *(.. >> f)
-  def mapFirstFission: Strategy = {
-    case Apply(primitives.map, Lambda(x, gx)) =>
-      Success(mapFirstFissionRec(x, fun(e => e), gx))
-    case _ => Failure(mapFirstFission)
+  case object mapFirstFission extends Strategy[Lift] {
+    def apply(e: Lift): RewriteResult[Lift] = e match {
+      case Apply(primitives.map, Lambda(x, gx)) =>
+        Success(mapFirstFissionRec(x, fun(e => e), gx))
+      case _ => Failure(mapFirstFission)
+    }
   }
 
   // TODO: this should be expressed with elevate strategies
@@ -32,10 +34,12 @@ object algorithmic {
 
   // fission of all the functions chained inside a map
   // *(g >> .. >> f) -> *g >> .. >> *f
-  def mapFullFission: Strategy = {
-    case Apply(primitives.map, Lambda(x, gx)) =>
-      Success(mapFullFissionRec(x, gx))
-    case _ => Failure(mapFullFission)
+  case object mapFullFission extends Strategy[Lift] {
+    def apply(e: Lift): RewriteResult[Lift] = e match {
+      case Apply(primitives.map, Lambda(x, gx)) =>
+        Success(mapFullFissionRec(x, gx))
+      case _ => Failure(mapFullFission)
+    }
   }
 
   // TODO: this should be expressed with elevate strategies

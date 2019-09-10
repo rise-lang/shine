@@ -12,49 +12,49 @@ import scala.language.implicitConversions
 
 class fmap extends idealised.util.Tests {
 
-  implicit def rewriteResultToExpr(r: RewriteResult): Expr = r.get
+  implicit def rewriteResultToExpr(r: RewriteResult[Expr]): Expr = r.get
   def testMultiple(list: List[Expr], gold: Expr) = {
     assert(list.forall(betaEtaEquals(_, gold)))
   }
 
   test("fmap basic level0") {
     assert(betaEtaEquals(
-      one(one(`**f >> T -> T >> **f`))(λ(f => **(f) >> T)),
+      one(one(`**f >> T -> T >> **f`)).apply(λ(f => **(f) >> T)),
       λ(f => T >> **(f)))
     )
   }
 
   test("fmap basic level1") {
     assert(betaEtaEquals(
-      one(one(fmapRNF(`**f >> T -> T >> **f`)))(λ(f => ***(f) >> *(T))),
+      one(one(fmapRNF(`**f >> T -> T >> **f`))).apply(λ(f => ***(f) >> *(T))),
       λ(f => *(T) >> ***(f)))
     )
   }
 
   test("fmap basic level2") {
     assert(betaEtaEquals(
-      one(one(fmapRNF(fmapRNF(`**f >> T -> T >> **f`))))(λ(f => ****(f) >> **(T))),
+      one(one(fmapRNF(fmapRNF(`**f >> T -> T >> **f`)))).apply(λ(f => ****(f) >> **(T))),
       λ(f => **(T) >> ****(f)))
     )
   }
 
   test("fmap basic level3") {
     assert(betaEtaEquals(
-      one(one(fmapRNF(fmapRNF(fmapRNF(`**f >> T -> T >> **f`)))))(λ(f => *****(f) >> ***(T))),
+      one(one(fmapRNF(fmapRNF(fmapRNF(`**f >> T -> T >> **f`))))).apply(λ(f => *****(f) >> ***(T))),
       λ(f => ***(T) >> *****(f)))
     )
   }
 
   test("fmap basic level4") {
     assert(betaEtaEquals(
-      one(one(fmapRNF(fmapRNF(fmapRNF(fmapRNF(`**f >> T -> T >> **f`))))))(λ(f => ******(f) >> ****(T))),
+      one(one(fmapRNF(fmapRNF(fmapRNF(fmapRNF(`**f >> T -> T >> **f`)))))).apply(λ(f => ******(f) >> ****(T))),
       λ(f => ****(T) >> ******(f)))
     )
   }
 
   test("fmap basic level4 alternative") {
     assert(betaEtaEquals(
-      one(one(mapped(`**f >> T -> T >> **f`)))(λ(f => ******(f) >> ****(T))),
+      one(one(mapped(`**f >> T -> T >> **f`))).apply(λ(f => ******(f) >> ****(T))),
       λ(f => ****(T) >> ******(f)))
     )
   }
@@ -89,8 +89,8 @@ class fmap extends idealised.util.Tests {
     // ...or we could simply "find" the place automatically
     testMultiple(
       List(
-        oncetd(mapped(`**f >> T -> T >> **f`))(λ(f => ***(f) >> *(T) >> *(S))),
-        oncetd(fmapRNF(`**f >> T -> T >> **f`))(λ(f => ***(f) >> *(T) >> *(S)))
+        oncetd(mapped(`**f >> T -> T >> **f`)).apply(λ(f => ***(f) >> *(T) >> *(S))),
+        oncetd(fmapRNF(`**f >> T -> T >> **f`)).apply(λ(f => ***(f) >> *(T) >> *(S)))
       ), λ(f => *(T) >> ***(f) >> *(S))
     )
 
@@ -113,8 +113,8 @@ class fmap extends idealised.util.Tests {
 
     testMultiple(
       List(
-        oncetd(mapped(`**f >> T -> T >> **f`))(λ(f => ****(f) >> **(T) >> *(S))),
-        oncetd(fmapRNF(fmapRNF(`**f >> T -> T >> **f`)))(λ(f => ****(f) >> **(T) >> *(S)))
+        oncetd(mapped(`**f >> T -> T >> **f`)).apply(λ(f => ****(f) >> **(T) >> *(S))),
+        oncetd(fmapRNF(fmapRNF(`**f >> T -> T >> **f`))).apply(λ(f => ****(f) >> **(T) >> *(S)))
       ), λ(f => **(T) >> ****(f) >> *(S))
     )
   }
