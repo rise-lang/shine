@@ -59,6 +59,7 @@ object fromLift {
 
           case l.Literal(d)   =>  d match {
             case ls.NatData(n)  => Natural(n)
+            case ls.IndexData(i, n)  => FunctionalPrimitives.AsIndex(n, Natural(i))
             case _              => Literal(data(d))
           }
           case p: l.Primitive =>  primitive(p, t)

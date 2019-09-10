@@ -70,7 +70,7 @@ object lifting {
   def liftDependentFunctionType[K <: Kind](ty: Type): K#T => Type = {
     ty match {
       case DepFunType(x, t) => (a: K#T) => substitute.kindInType(a, `for`=x, in=t)
-      case _ => ???
+      case _ => throw new Exception(s"did not expect $ty")
     }
   }
 }

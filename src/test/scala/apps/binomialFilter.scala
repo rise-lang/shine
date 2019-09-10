@@ -36,10 +36,8 @@ object binomialFilter {
     zip(a)(b) |> map(mulT) |> reduceSeqUnroll(add)(l(0.0f))
   ))
 
-  val weights2d = l(ArrayData(
-    Array(1, 2, 1, 2, 4, 2, 1, 2, 1).map(f => FloatData(f / 16.0f))))
-  val weights1d = l(ArrayData(
-    Array(1, 2, 1).map(f => FloatData(f / 4.0f))))
+  val weights2d = larr(Seq(1, 2, 1, 2, 4, 2, 1, 2, 1).map(f => FloatData(f / 16.0f)))
+  val weights1d = larr(Seq(1, 2, 1).map(f => FloatData(f / 4.0f)))
 
   val slide3x3 = map(slide(3)(1)) >> slide(3)(1) >> map(transpose)
 
