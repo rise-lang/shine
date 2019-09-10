@@ -17,7 +17,8 @@ final case class OpenCLReduceSeq(n: Nat,
                                  f: Phrase[ExpType ->: ExpType ->: ExpType],
                                  init: Phrase[ExpType],
                                  initAddrSpace: AddressSpace,
-                                 array: Phrase[ExpType])
+                                 array: Phrase[ExpType],
+                                 unroll: Boolean)
   extends ExpPrimitive
 {
   override val t: ExpType =
@@ -28,7 +29,7 @@ final case class OpenCLReduceSeq(n: Nat,
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     OpenCLReduceSeq(fun.nat(n), fun.data(dt1), fun.data(dt2),
-      VisitAndRebuild(f, fun), VisitAndRebuild(init, fun), initAddrSpace, VisitAndRebuild(array, fun))
+      VisitAndRebuild(f, fun), VisitAndRebuild(init, fun), initAddrSpace, VisitAndRebuild(array, fun), unroll)
   }
 
   override def eval(s: Store): Data = ???
@@ -56,7 +57,7 @@ final case class OpenCLReduceSeq(n: Nat,
       con(init)(λ(exp"[$dt2]")(Y =>
         OpenCLReduceSeqI(n, dt1, dt2,
           λ(exp"[$dt1]")(x => λ(exp"[$dt2]")(y => λ(acc"[$dt2]")(o => acc( f(x)(y) )( o )))),
-          Y, initAddrSpace, X, C)(context)))))
+          Y, initAddrSpace, X, C, unroll)(context)))))
   }
 
   override def xmlPrinter: Elem =

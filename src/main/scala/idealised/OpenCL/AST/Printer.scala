@@ -2,7 +2,7 @@ package idealised.OpenCL.AST
 
 import idealised.C.AST._
 import idealised.OpenCL
-import idealised.OpenCL.{NDRange, BuiltInFunction}
+import idealised.OpenCL.{NDRange, BuiltInFunctionCall}
 import lift.arithmetic.ArithExpr
 
 object Printer {
@@ -32,7 +32,7 @@ class Printer extends idealised.C.AST.CPrinter {
   override def typeName(t: Type): String = super.typeName(t)
 
   override def toString(e: ArithExpr): String = e match {
-    case of: BuiltInFunction => of.toOCLString
+    case of: BuiltInFunctionCall => of.toOCLString
 
     case _ => super.toString(e)
   }
@@ -61,10 +61,12 @@ class Printer extends idealised.C.AST.CPrinter {
       case s: StructType => print(s"struct ${s.name} ${p.name}")
       case _: UnionType => ???
       case a: ArrayType =>
-        print(s"${a.getBaseType} ${p.name}[${ a.getSizes match {
+        val addr = if (p.addressSpace == OpenCL.PrivateMemory) "" else s"${toString(p.addressSpace)} "
+        val size = a.getSizes match {
           case None => ""
           case Some(s) => s
-        } }]")
+        }
+        print(s"$addr${a.getBaseType} ${p.name}[$size]")
       case pt: PointerType => print(s"${toString(p.addressSpace)} ${pt.valueType}* restrict ${p.name}")
     }
   }

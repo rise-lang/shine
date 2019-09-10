@@ -1,6 +1,6 @@
 package idealised.apps
 
-import idealised.OpenCL.{GlobalMemory, PrivateMemory, ScalaFunction}
+import idealised.OpenCL.PrivateMemory
 import idealised.OpenCL.SurfaceLanguage.DSL.{mapGlobal, oclReduceSeq}
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Primitives.{Fst, Idx, Snd}

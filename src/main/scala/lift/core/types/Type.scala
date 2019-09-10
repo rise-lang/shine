@@ -150,9 +150,14 @@ final case class NatToNatIdentifier(name: String) extends NatToNat with Kind.Ide
   override lazy val toString: String = name
 }
 
-final class NatToNatApply(val f: NatToNat, val n: Nat) extends ArithExprFunction(s"$f($n)") {
+final class NatToNatApply(val f: NatToNat, val n: Nat) extends ArithExprFunctionCall(s"$f($n)") {
   override def visitAndRebuild(f: Nat => Nat): Nat = this
   override lazy val toString: String = s"$f($n)"
+
+  override def exposedArgs: Seq[Nat] = Seq(n)
+
+  override def substituteExposedArgs(subMap: Map[Nat, SimplifiedExpr]): ArithExprFunctionCall =
+    new NatToNatApply(f, subMap.getOrElse(n,n))
 }
 object NatToNatApply {
   def apply(f: NatToNat, n: Nat): Nat = f match {

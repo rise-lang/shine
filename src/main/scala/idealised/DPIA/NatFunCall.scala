@@ -1,17 +1,29 @@
 package idealised.DPIA
 
-import lift.arithmetic.{ArithExpr, ArithExprFunction, Var}
+import lift.arithmetic.{ArithExpr, ArithExprFunctionCall, SimplifiedExpr, Var}
 
 sealed trait NatFunArg
 case class NatArg(n:Nat) extends NatFunArg
 case class LetNatIdArg(letNatIdentifier: LetNatIdentifier) extends NatFunArg
 
 
-class NatFunCall(val fun:LetNatIdentifier, val args:Seq[NatFunArg]) extends ArithExprFunction(fun.id.name)  {
-  override def visitAndRebuild(f: Nat => Nat): Nat = NatFunCall(fun, args.map {
-    case NatArg(n) => NatArg(f(n))
+class NatFunCall(val fun:LetNatIdentifier, val args:Seq[NatFunArg]) extends ArithExprFunctionCall(fun.id.name)  {
+  override def visitAndRebuild(f: Nat => Nat): Nat = f(NatFunCall(fun, args.map {
+    case NatArg(n) => NatArg(n.visitAndRebuild(f))
     case other => other
-  })
+  }))
+
+  override def exposedArgs: Seq[Nat] = args.map({
+    case NatArg(n) => Some(n)
+    case _ => None
+  }).filter(_.isDefined).map(_.get)
+
+  override def substituteExposedArgs(subMap: Map[Nat, SimplifiedExpr]): ArithExprFunctionCall = {
+    new NatFunCall(fun, args.map {
+      case NatArg(x) => NatArg(subMap.getOrElse(x, x))
+      case other => other
+    })
+  }
 
   override def freeVariables: Set[Var] = args.map({
     case NatArg(arg) => ArithExpr.freeVariables(arg)

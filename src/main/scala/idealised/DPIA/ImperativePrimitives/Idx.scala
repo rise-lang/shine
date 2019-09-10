@@ -77,8 +77,10 @@ final case class Idx(n: Nat,
 object Idx {
   def apply(index: Phrase[ExpType], array: Phrase[ExpType]): Idx = {
     (index.t, array.t) match {
-      case (ExpType(IndexType(n1)), ExpType(ArrayType(n2, dt_))) if n1 == n2 =>
-        Idx(n1, dt_, index, array)
+      case (ExpType(IndexType(n1)), ExpType(ArrayType(n2, dt_)))  =>
+        if (n1 == n2) {
+          Idx(n1, dt_, index, array)
+        } else error(n1.toString, n2.toString)
       case x => error(x.toString, "(exp[idx(n)], exp[n.dt])")
     }
   }

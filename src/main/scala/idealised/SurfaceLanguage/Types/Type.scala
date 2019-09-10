@@ -166,12 +166,17 @@ object Type {
     in match {
       case _: ScalarType                  => in
       case IndexType(size)                => IndexType(sn(size))
-      case ArrayType(size, elemType)      => ArrayType(sn(size), sdt(elemType))
+      case ArrayType(size, elemType)      =>
+        ArrayType(sn(size), sdt(elemType))
       case VectorType(size, elemType)     => VectorType(sn(size), sdt(elemType).asInstanceOf[ScalarType])
-      case DepArrayType(size, elemType)   => DepArrayType(sn(size), st(elemType).asInstanceOf[NatDependentDataType])
+      case DepArrayType(size, elemType)   =>
+        DepArrayType(sn(size), st(elemType).asInstanceOf[NatDependentDataType])
       case TupleType(ts@_*)               => TupleType(ts.map(sdt): _*)
       case FunctionType(inT, outT)        => FunctionType(st(inT), st(outT))
-      case DependentFunctionType(x, body) => DependentFunctionType(x, st(body))
+      case DependentFunctionType(x, body) => x match {
+        case n: NatIdentifier if n == `for` => throw new Exception("Substituting the binder is dangerous")
+        case _ => DependentFunctionType(x, st(body))
+      }
       case dt: DataTypeIdentifier         => dt
     }
   }

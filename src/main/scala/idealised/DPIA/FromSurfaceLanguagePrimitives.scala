@@ -249,6 +249,21 @@ object FromSurfaceLanguagePrimitives {
             FromSurfaceLanguage.asPhrase[DPIA.Types.ExpType](rhs)))
       }
 
+      case DepZip(lhs, rhs, _) => ( (lhs.t, rhs.t) : @unchecked) match {
+        case (Some(DepArrayType(n, _)), Some(DepArrayType(m, ft2))) if n == m =>
+          val lhsDPIA = FromSurfaceLanguage.asPhrase[DPIA.Types.ExpType](lhs)
+          val ft1 = lhsDPIA.t.dataType match  {
+            case DPIA.Types.DepArrayType(_, ft1) => ft1
+            case _ => throw new Exception("This should not happen")
+          }
+          val rhsDPIA = FromSurfaceLanguage.asPhrase[DPIA.Types.ExpType](rhs)
+          val ft2 = rhsDPIA.t.dataType match {
+            case DPIA.Types.DepArrayType(_, ft2) => ft2
+            case _ => throw new Exception("This should not happen")
+          }
+          Some(FunctionalPrimitives.DepZip(n, ft1, ft2, lhsDPIA, rhsDPIA))
+      }
+
       case OpenCLFunction(name, inTs, outT, args) =>
         Some(idealised.OpenCL.FunctionalPrimitives.OpenCLFunction(
           name, inTs.map(DPIA.Types.DataType(_)), DPIA.Types.DataType(outT),
@@ -261,7 +276,7 @@ object FromSurfaceLanguagePrimitives {
             FromSurfaceLanguage.asPhrase[DPIA.Types.FunType[DPIA.Types.ExpType, DPIA.Types.FunType[DPIA.Types.ExpType, DPIA.Types.ExpType]]](f),
             FromSurfaceLanguage.asPhrase[DPIA.Types.ExpType](init),
             initAddrSpace,
-            FromSurfaceLanguage.asPhrase[DPIA.Types.ExpType](array)))
+            FromSurfaceLanguage.asPhrase[DPIA.Types.ExpType](array), unroll = false))
       }
 
       case to: To => ( (to.f.t, to.input.t) : @unchecked) match {
@@ -291,8 +306,8 @@ object FromSurfaceLanguagePrimitives {
 
     case MapGlobal(dim) =>
       (n, dt1, dt2, f, array) => idealised.OpenCL.FunctionalPrimitives.MapGlobal(dim)(n, dt1, dt2, f, array)
-    case MapLocal(dim) =>
-      (n, dt1, dt2, f, array) => idealised.OpenCL.FunctionalPrimitives.MapLocal(dim)(n, dt1, dt2, f, array)
+    case MapLocal(dim, addressSpace) =>
+      (n, dt1, dt2, f, array) => idealised.OpenCL.FunctionalPrimitives.MapLocal(dim, addressSpace)(n, dt1, dt2, f, array)
     case MapWorkGroup(dim) =>
       (n, dt1, dt2, f, array) => idealised.OpenCL.FunctionalPrimitives.MapWorkGroup(dim)(n, dt1, dt2, f, array)
   }

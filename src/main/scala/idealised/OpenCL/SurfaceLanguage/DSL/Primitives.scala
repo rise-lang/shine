@@ -1,8 +1,8 @@
 package idealised.OpenCL.SurfaceLanguage.DSL
 
-import idealised.OpenCL.AddressSpace
+import idealised.OpenCL.{AddressSpace, LocalMemory}
 import idealised.OpenCL.SurfaceLanguage.Primitives._
-import idealised.SurfaceLanguage.DSL.{nFun, fun}
+import idealised.SurfaceLanguage.DSL.{fun, nFun}
 import idealised.SurfaceLanguage.Types._
 import idealised.SurfaceLanguage.{Expr, _}
 
@@ -72,18 +72,18 @@ object depMapWorkgroup {
 
 //noinspection TypeAnnotation
 object mapLocal {
-  def apply(f: Expr): Expr = mapLocal(0)(f)
-  def apply(f: Expr, x: Expr): MapLocal = mapLocal(0)(f, x)
+  def apply(f: Expr): Expr = mapLocal(0, LocalMemory)(f)
+  def apply(f: Expr, x: Expr): MapLocal = mapLocal(0, LocalMemory)(f, x)
 
   def withIndex(f: Expr): Expr = fun(x => withIndex(f,x))
   def withIndex(f: Expr, x:Expr): DepMapLocal= DepMapLocal(0)(f, x)
 
-  def apply(dim: Int) = new {
+  def apply(dim: Int, addressSpace: AddressSpace) = new {
     def apply(f: Expr): Expr =
-      fun(x => MapLocal(dim)(f, x))
+      fun(x => MapLocal(dim, addressSpace)(f, x))
 
     def apply(f: Expr, x: Expr): MapLocal =
-      MapLocal(dim)(f, x)
+      MapLocal(dim, addressSpace)(f, x)
   }
 }
 
