@@ -9,11 +9,12 @@ import idealised.DPIA.{Phrases, _}
 
 import scala.xml.Elem
 
-final case class PrintType(dt: DataType,
+final case class PrintType(msg: String,
+                           dt: DataType,
                            input: Phrase[ExpType])
   extends ExpPrimitive {
 
-  println(s"DPIA-Level Type: $dt")
+  println(s"$msg : $dt (DPIA level)")
 
   override val t: ExpType =
     (dt: DataType) ->:
@@ -23,7 +24,7 @@ final case class PrintType(dt: DataType,
   override def eval(s: Store): Data = OperationalSemantics.eval(s, input)
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    PrintType(fun.data(dt), VisitAndRebuild(input, fun))
+    PrintType(msg, fun.data(dt), VisitAndRebuild(input, fun))
   }
 
   override def prettyPrint: String = s"printType(${PrettyPhrasePrinter(input)})"

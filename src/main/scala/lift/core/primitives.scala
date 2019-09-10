@@ -249,7 +249,7 @@ object primitives {
     ))
   }
 
-  case object printType extends Primitive {
+  case class printType(msg: String = "") extends Primitive {
     override def t: Type = implDT(t => t ->: t)
   }
 }
