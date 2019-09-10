@@ -114,9 +114,9 @@ object primitives {
   }
 
   case object reduce extends Primitive {
-    override def t: Type = implN(n => implA(a => implDT(t =>
+    override def t: Type = implN(n => implDT(t =>
       (t ->: t ->: t) ->: t ->: ArrayType(n, t) ->: t
-    )))
+    ))
   }
 
   case object reduceSeq extends Primitive {
@@ -247,5 +247,9 @@ object primitives {
     override def t: Type = implN(n => implDT(t =>
       t ->: VectorType(n, t)
     ))
+  }
+
+  case class printType(msg: String = "") extends Primitive {
+    override def t: Type = implDT(t => t ->: t)
   }
 }

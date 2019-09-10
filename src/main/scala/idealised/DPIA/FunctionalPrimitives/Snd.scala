@@ -39,7 +39,11 @@ final case class Snd(dt1: DataType,
 
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommType] = {
-    ???
+    import TranslationToImperative._
+
+    //TODO Assignments for general types should not be allowed, making this definition invalid
+    assert(dt2 match { case _ : BasicType => true; case _ => false })
+    con(record)(λ(exp"[$dt1 x $dt2, $read]")(x => A :=|dt2| Snd(dt1, dt2, x)) )
   }
 
   override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])

@@ -18,6 +18,7 @@ object ReduceSeqI {
            (implicit context: TranslationContext): Phrase[CommType] =
   {
     `new`(dt2, acc =>
+      //TODO implicit decisions happening here!
       (acc.wr :=|dt2| init) `;`
         comment("reduceSeq")`;`
         `for`(n, i => f(acc.rd)(in `@` i)(acc.wr), unroll) `;`

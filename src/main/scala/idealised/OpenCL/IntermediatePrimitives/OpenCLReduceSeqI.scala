@@ -2,6 +2,7 @@ package idealised.OpenCL.IntermediatePrimitives
 
 import idealised.DPIA.DSL.{`new` => _, _}
 import idealised.DPIA.Compilation.TranslationContext
+import idealised.DPIA.Compilation.TranslationToImperative.acc
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types._
 import idealised.DPIA._
@@ -17,12 +18,14 @@ object OpenCLReduceSeqI {
             init: Phrase[ExpType],
             in: Phrase[ExpType],
             out: Phrase[ExpType ->: CommType])
-           (implicit context: TranslationContext): Phrase[CommType] =
-  {
-    `new`(initAddrSpace)(dt2, acc =>
-      (acc.wr :=|dt2| init) `;`
-        `for`(n, i => f(acc.rd)(in `@` i)(acc.wr)) `;`
-        out(acc.rd)
-    )
+           (implicit context: TranslationContext): Phrase[CommType] = {
+    //TODO this check should not be necessary
+    assert(dt2 match { case _: BasicType => true; case _ => false })
+    comment("oclReduceSeq") `;`
+      `new`(initAddrSpace)(dt2, accumulator =>
+        acc(init)(accumulator.wr) `;`
+          `for`(n, i => f(accumulator.rd)(in `@` i)(accumulator.wr)) `;`
+          out(accumulator.rd)
+      )
   }
 }

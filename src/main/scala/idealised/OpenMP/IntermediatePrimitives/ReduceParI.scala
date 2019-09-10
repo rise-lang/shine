@@ -7,6 +7,7 @@ import idealised.DPIA._
 
 import scala.language.reflectiveCalls
 
+//TODO Probably shouldn't exist!
 object ReduceParI {
   def apply(n: Nat, dt1: DataType, dt2: DataType,
             f: Phrase[ExpType ->: ExpType ->: AccType ->: CommType],

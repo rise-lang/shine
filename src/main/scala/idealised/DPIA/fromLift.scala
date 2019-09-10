@@ -159,6 +159,13 @@ object fromLift {
     // TODO: remove surface language
 
     (p, t) match {
+      case (core.printType(msg),
+        lt.FunType(lt: lt.DataType, _))
+      =>
+        val t = dataType(lt)
+        println(s"$msg : $t (Lift level)")
+        fun[ExpType](exp"[$t, $read]", e => PrintType(msg, t, e))
+
       case (core.`natAsIndex`,
       lt.DepFunType(n: l.NatIdentifier,
       lt.FunType(lt.NatType, lt.IndexType(_))))
@@ -595,6 +602,9 @@ object fromLift {
 
       case (core.reduce, _) =>
         throw new Exception(s"$p has no implementation")
+
+      case (p, _) =>
+        throw new Exception(s"Missing rule for $p")
     }
   }
 

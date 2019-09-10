@@ -182,26 +182,39 @@ class gemm extends idealised.util.TestsWithExecutor {
         fun((k`.`m`.`float) ->: (k`.`n`.`float) ->: (m`.`n`.`float) ->: float ->: float ->: (m`.`n`.`float))
         ((A, B, C, alpha, beta) =>
           zip (tile2 (v7) (v6) (A)) (tile (v6) (v3) (C))
-          |> mapWorkGroup(1)(fun(p2 =>
+          |> mapWorkGroup(1)(
+            //BEGIN mapWorkGroup(1) Function
+            fun(p2 =>
             zip (tile2 (v7) (v3) (B)) (p2._2)
-            |> mapWorkGroup(0)(fun(p3 =>
+            |> mapWorkGroup(0)(
+              //BEGIN mapWorkGroup(0) Function
+              fun(p3 =>
               zip (p2._1) (p3._1)
               |> oclReduceSeq (AddressSpace.Private) (redOp)
-                (zeros (v4) (v5) (v3 * Cst(1) /^ v4) (v6 * Cst(1) /^ v5) |> toPrivateFun(mapLocal(1) (mapLocal(0) (mapSeq (mapSeq (id))))))
+                (zeros (v4) (v5) (v3 * Cst(1) /^ v4) (v6 * Cst(1) /^ v5)
+                  |> mapLocal(1) (mapLocal(0) (mapSeq (mapSeq (id)))))
+              //TODO following function shuould eventually write to global
+              //mapSeq was removed because reduce does not wrap reduced results in arrays anymore
               |> fun(x =>
-                zip (x) (split (v5) (p3._2)) |> toPrivateFun(mapLocal(1) (fun(y =>
-                  zip (y._1) (split (v4) (reorderWithStride (v3/v4) (transpose (y._2)))) |> mapLocal(2) (fun(z =>
+                zip (x) (split (v5) (p3._2))
+                  //TODO Should write intermediate results into private mem? What exactly does old Lift code mean here?
+                  |> mapLocal(1) (fun(y =>
+                  zip (y._1) (split (v4) (reorderWithStride (v3/v4) (transpose (y._2)))) |> mapLocal(0) (fun(z =>
                     zip (z._1) (transpose (z._2)) |> mapSeq (fun(a =>
                       zip (a._1) (a._2) |> mapSeq (fun(x =>
-                        (x._1 * alpha) + (x._2 * beta) ))))))))))
-              |> mapSeq (fun(p4 =>
-                toPrivate(mapSeq (transpose) (p4))
+                        (x._1 * alpha) + (x._2 * beta) )))))))))
+              |> map (fun(p4 => p4
+                |> map (transpose)
                 |> join
                 |> transpose
-                |> mapSeq (reorderWithStride (v3 / v4))
+                |> map (reorderWithStride (v3 / v4))
               )) |> join |> transpose
-            )) |> join |> transpose
-          ))  |> join
+            )
+            //END mapWorkGroup(0) Function
+            ) |> join |> transpose
+          )
+         //END mapWorkGroup(1) Function
+          )  |> join
         ))
     }
   }
@@ -236,9 +249,9 @@ class gemm extends idealised.util.TestsWithExecutor {
 
     val random = new Random()
 
-    val n = 512
-    val m = 256
-    val k = 512
+    val n = 64
+    val m = 32
+    val k = 64
     val A = Array.fill(m, k)((random.nextInt(10) + 1).toFloat)
     val B = Array.fill(k, n)((random.nextInt(10) + 1).toFloat)
     val C = Array.fill(m, n)((random.nextInt(10) + 1).toFloat)
@@ -254,7 +267,7 @@ class gemm extends idealised.util.TestsWithExecutor {
       Array[Array[Float]] `,`
       Float `,`
       Float `)=>` Array[Float]]
-    val (flatOutput, _) = runKernel(LocalSize(128), GlobalSize(m))(n `,` m `,` k `,` A `,` B `,` C `,` alpha `,` beta)
+    val (flatOutput, _) = runKernel(LocalSize(1), GlobalSize(1))(n `,` m `,` k `,` A `,` B `,` C `,` alpha `,` beta)
     val output: Array[Array[Float]] = flatOutput.grouped(n).toArray
 
     (output zip gold).foreach { case (outputRow, goldRow) =>

@@ -13,9 +13,9 @@
           \prim{map}&:&\{\n : \natkind\} \to \{\dtone~\dttwo : \datatype\} \to (\dtone \to \dttwo) \to \lArray{n}{\dtone} \to \lArray{\n}{\dttwo} \\
           \prim{mapSeq}&:&\{\n : \natkind\} \to \{\dtone~\dttwo : \datatype\} \to (\dtone \to \dttwo) \to \lArray{n}{\dtone} \to \lArray{\n}{\dttwo} \\
   
-          \prim{reduce}&:&\{\n : \natkind\} \to \{\avar : \addrkind\} \to \{\dt : \datatype\} \to (\dt \to \dt \to \dt) \to \dt \to \lArray{\n}{\dt} \to \dt\\
-          \prim{reduceSeq}&:&\{\n : \natkind\} \to \{\avar : \addrkind\} \to \{\dtone~\dttwo : \datatype\} \to (\dtone \to \dttwo \to \dttwo) \to \dttwo \to \lArray{\n}{\dtone} \to \dttwo\\
-          \prim{reduceSeqUnroll}&:&\{\n : \natkind\} \to \{\avar : \addrkind\} \to \{\dtone~\dttwo : \datatype\} \to (\dtone \to \dttwo \to \dttwo) \to \dttwo \to \lArray{\n}{\dtone} \to \dttwo\\
+          \prim{reduce}&:&\{\n : \natkind\} \to \{\dt : \datatype\} \to (\dt \to \dt \to \dt) \to \dt \to \lArray{\n}{\dt} \to \dt\\
+          \prim{reduceSeq}&:&\{\n : \natkind\} \to \{\dtone~\dttwo : \datatype\} \to (\dtone \to \dttwo \to \dttwo) \to \dttwo \to \lArray{\n}{\dtone} \to \dttwo\\
+          \prim{reduceSeqUnroll}&:&\{\n : \natkind\} \to \{\dtone~\dttwo : \datatype\} \to (\dtone \to \dttwo \to \dttwo) \to \dttwo \to \lArray{\n}{\dtone} \to \dttwo\\
           \prim{scanSeq}&:&\{\n : \natkind\} \to \{\dtone~\dttwo : \datatype\} \to (\dtone \to \dttwo \to \dttwo) \to \dttwo \to \lArray{\n}{\dtone} \to \lArray{\n}{\dttwo}\\
           \prim{iterate}&:&\{\n~\m : \natkind\} \to (\nat{k} : \natkind) \to \{\dt : \datatype\} \to ((\nat{l} : \natkind) \to \lArray{\nat{l\n}}{\dt} \to \lArray{\nat{l}}{\dt}) \to \lArray{\nat{(\m \cdot \n^{k})}}{\dt} \to \lArray{\m}{\dt}\\
           
@@ -98,4 +98,15 @@
   \end{tabular*}
   \caption{OpenMP Primitives}
   \label{fig:omp-primitives}
+\end{figure}
+
+\begin{figure}
+  \footnotesize
+  \begin{tabular*}{\linewidth}{>{$}l<{$}@{\hspace{0.4em}}>{$}c<{$}>{$}l<{$}}
+    \prim{asVector}&:&(\n : \natkind) \to \{\m : \natkind\} \to \{\dtone : \datatype\} \to \lArray{(\m \times \n)}{\dtone} \to \lArray{\m}{\lVector{\n}{\dtone}}\\
+    \prim{asScalar}&:&\{\n~\m : \natkind\} \to \{\dtone : \datatype\} \to \lArray{\m}{\lVector{\n}{\dtone}} \to \lArray{(\m \times \n)}{\dtone} \\
+    \prim{vectorFromScalar}&:&\{\n : \natkind\} \to \{\dtone : \datatype\} \to \dtone \to \lVector{n}{\dtone} \\
+  \end{tabular*}
+  \caption{Vector Primitives}
+  \label{fig:vector-primitives}
 \end{figure}

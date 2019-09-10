@@ -6,7 +6,7 @@ import idealised.DPIA.Types.{CommType, comm}
 
 import scala.xml.Elem
 
-case class Comment(comment : String) extends CommandPrimitive {
+final case class Comment(comment : String) extends CommandPrimitive {
 
   override val t: CommType = comm
 

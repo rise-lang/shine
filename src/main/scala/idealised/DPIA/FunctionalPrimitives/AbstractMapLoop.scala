@@ -38,6 +38,7 @@ abstract class AbstractMapLoop(n: Nat,
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
+    //TODO should be removed
     `new`(dt"[$n.$dt2]", λ(exp"[$n.$dt2, $read]" x acc"[$n.$dt2]")(tmp =>
       acc(this)(tmp.wr) `;` C(tmp.rd) ))
   }
