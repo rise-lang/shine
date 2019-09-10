@@ -25,7 +25,7 @@ abstract class RunOldSurfaceLanguageOpenCLProgam(val verbose:Boolean) {
   protected def runScalaProgram(input:Input):Array[Float]
 
   private def compile(localSize:ArithExpr, globalSize:ArithExpr):KernelWithSizes = {
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(LocalSize(localSize), GlobalSize(globalSize))(DPIA.FromSurfaceLanguage(TypeInference(this.expr, Map())))
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(LocalSize(localSize), GlobalSize(globalSize))(DPIA.FromSurfaceLanguage(TypeInference(this.expr, Map())), "kernel")
 
     if(verbose) {
       println(kernel.code)

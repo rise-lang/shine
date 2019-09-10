@@ -14,7 +14,7 @@ import idealised.DPIA._
 import idealised.OpenCL.AST.Barrier
 import idealised.OpenCL.FunctionalPrimitives.OpenCLFunction
 import idealised.OpenCL.ImperativePrimitives._
-import idealised.OpenCL.{BuiltInFunction, GlobalSize, LocalSize}
+import idealised.OpenCL.{BuiltInFunction, GlobalSize, LocalSize, get_global_id, get_group_id, get_local_id}
 import idealised._
 import lift.arithmetic
 import lift.arithmetic._
@@ -252,14 +252,14 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
                             p: Phrase[CommType],
                             env: Environment): Stmt = {
       val cI = C.AST.DeclRef(f.name)
-      val range = RangeAdd(f.init, n, f.step)
+      val range = useWorkItemSizesForParForIfSupplied(f, n)
       val updatedGen = updatedRanges(cI.name, range)
 
       applySubstitutions(n, env.identEnv) |> (n => {
 
-      val init = OpenCL.AST.VarDecl(cI.name, C.AST.Type.int, AddressSpace.Private, init = Some(C.AST.ArithmeticExpr(f.init)))
+      val init = OpenCL.AST.VarDecl(cI.name, C.AST.Type.int, AddressSpace.Private, init = Some(C.AST.ArithmeticExpr(range.start)))
       val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
-      val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + f.step))
+      val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + range.step))
 
       Phrase.substitute(a `@` i, `for` = o, `in` = p) |> (p =>
 
@@ -289,6 +289,24 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         }}))})
     }
 
+    def useWorkItemSizesForParForIfSupplied(f: OpenCLParFor, n: Nat): RangeAdd = {
+      f match {
+        case fg@ParForGlobal(dim) => {
+          val gSize = if (globalSize.isEmpty) fg.step else globalSize.get.size(dim)
+          RangeAdd(get_global_id(dim, ContinuousRange(0, gSize)), n, gSize)
+        }
+        case fl@ParForLocal(dim) => {
+          val lSize = if (localSize.isEmpty) fl.step else localSize.get.size(dim)
+          RangeAdd(get_local_id(dim, ContinuousRange(0, lSize)), n, lSize)
+        }
+        case fw@ParForWorkGroup(dim) => {
+          val wgSize = if (localSize.isEmpty || globalSize.isEmpty) fw.step
+                       else globalSize.get.size(dim) /^ localSize.get.size(dim)
+          RangeAdd(get_group_id(dim, ContinuousRange(0, wgSize)), n, wgSize)
+        }
+      }
+    }
+
     def codeGenOpenCLParForNat(f: OpenCLParForNat,
                                n: Nat,
                                a: Phrase[AccType],
@@ -297,14 +315,14 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
                                p: Phrase[CommType],
                                env: Environment): Stmt = {
       val cI = C.AST.DeclRef(f.name)
-      val range = RangeAdd(f.init, n, f.step)
+      val range = useWorkItemSizesForParForNatIfSupplied(f, n)
       val updatedGen = updatedRanges(cI.name, range)
 
       applySubstitutions(n, env.identEnv) |> (n => {
 
-        val init = OpenCL.AST.VarDecl(cI.name, C.AST.Type.int, AddressSpace.Private, init = Some(C.AST.ArithmeticExpr(f.init)))
+        val init = OpenCL.AST.VarDecl(cI.name, C.AST.Type.int, AddressSpace.Private, init = Some(C.AST.ArithmeticExpr(range.start)))
         val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
-        val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + f.step))
+        val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + range.step))
 
         // FIRST we must substitute in the indexing of o in the phrase
         Phrase.substitute(a `@d` i, `for` = o, `in` = p) |> (p =>
@@ -336,6 +354,24 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
                       C.AST.Block(immutable.Seq(updatedGen.cmd(p, env)))),
                     f.synchronize)
               })))})
+    }
+
+    def useWorkItemSizesForParForNatIfSupplied(f: OpenCLParForNat, n: Nat): RangeAdd = {
+      f match {
+        case fg@ParForNatGlobal(dim) => {
+          val gSize = if (globalSize.isEmpty) fg.step else globalSize.get.size(dim)
+          RangeAdd(get_global_id(dim, ContinuousRange(0, gSize)), n, gSize)
+        }
+        case fl@ParForNatLocal(dim) => {
+          val lSize = if (localSize.isEmpty) fl.step else localSize.get.size(dim)
+          RangeAdd(get_local_id(dim, ContinuousRange(0, lSize)), n, lSize)
+        }
+        case fw@ParForNatWorkGroup(dim) => {
+          val wgSize = if (localSize.isEmpty || globalSize.isEmpty) fw.step
+                       else globalSize.get.size(dim) /^ localSize.get.size(dim)
+          RangeAdd(get_group_id(dim, ContinuousRange(0, wgSize)), n, wgSize)
+        }
+      }
     }
 
     def codeGenLiteral(d: OperationalSemantics.Data): Expr = {

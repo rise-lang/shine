@@ -36,7 +36,7 @@ object transposeApp extends App {
     println(s"Type: ${lambda.t}")
 
     println(s"-- $name --")
-    val kernel = KernelGenerator.makeCode(LocalSize(1), GlobalSize(1))(lambda)
+    val kernel = KernelGenerator.makeCode(LocalSize(1), GlobalSize(1))(lambda, "KERNEL")
     println(kernel.code)
 
     val fun = kernel.as[ScalaFunction `(` Array[Array[Float]] `)=>` Array[Float] ]
