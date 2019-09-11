@@ -1,6 +1,7 @@
 package idealised.C.CodeGeneration
 
 import idealised.C.AST.{Block, Node}
+import idealised.DPIA.Compilation.SimplifyNats
 import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives._
 import idealised.DPIA.ImperativePrimitives._
@@ -239,17 +240,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                    path: Path,
                    cont: Expr => Stmt) : Stmt =
   {
-    // TODO: think about this more thoroughly
-    val simplified_phrase = phrase.t.dataType match {
-      case IndexType(_) | NatType =>
-        mapTransientNat(phrase, x => x) match {
-          // this leads to infinite recursion
-          case IndexAsNat(_, p) if p == phrase => phrase
-          case sp => sp
-        }
-      case _ => phrase
-    }
-    simplified_phrase match {
+    phrase match {
       case i@Identifier(_, ExpType(dt, _)) => cont(CCodeGen.generateAccess(dt,
         env.identEnv.applyOrElse(i, (_: Phrase[_]) => {
           throw new Exception(s"Expected to find `$i' in the environment: `${env.identEnv}'")
@@ -419,8 +410,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case ForeignFunction(f, inTs, outT, args) =>
         CCodeGen.codeGenForeignFunction(f, inTs, outT, args, env, path, cont)
 
-      case Proj1(pair) => exp(Lifting.liftPair(pair)._1, env, path, cont)
-      case Proj2(pair) => exp(Lifting.liftPair(pair)._2, env, path, cont)
+      case Proj1(pair) => exp(SimplifyNats.simplifyIndexAndNatExp(Lifting.liftPair(pair)._1), env, path, cont)
+      case Proj2(pair) => exp(SimplifyNats.simplifyIndexAndNatExp(Lifting.liftPair(pair)._2), env, path, cont)
 
       case Apply(_, _) | DepApply(_, _) |
            Phrases.IfThenElse(_, _, _) | LetNat(_, _, _) | _: ExpPrimitive =>

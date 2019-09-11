@@ -9,6 +9,11 @@ object HighLevelConstructs {
     a |> map(slide(sz)(st)) |> slide(sz)(st) |> map(transpose)
   )))
 
+  val slide3D: Expr = nFun(sz => nFun(st =>
+    map(slide2D(sz)(st)) >> slide(sz)(st)
+      >> map(transpose >> map(transpose))
+  ))
+
   val reorderWithStride: Expr = {
     nFun(s => {
       val f =
