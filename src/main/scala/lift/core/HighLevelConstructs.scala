@@ -29,4 +29,14 @@ object HighLevelConstructs {
       nFun(b => fun(x => padCst(b)(b)(generate(fun(IndexType(n))(_ => x))) >> map(padCst(b)(b)(x))))
     )
   }
+
+  // TODO: Investigate. this might be wrong
+  val partition2D: Expr = {
+    import lift.arithmetic.SteppedCase
+    nFun(outerSize => nFun(innerSize =>
+      map(
+        partition(3)(n2nFun(m => SteppedCase(m, Seq(outerSize, innerSize, outerSize))))
+      ) >> partition(3)(n2nFun(m => SteppedCase(m, Seq(outerSize, innerSize, outerSize))))
+    ))
+  }
 }

@@ -1,7 +1,7 @@
 package idealised.DPIA.Types
 
 import idealised.DPIA.Nat
-import idealised.{DPIA, SurfaceLanguage}
+import idealised.DPIA
 import lift.arithmetic.{ArithExpr, BigSum}
 
 import scala.language.implicitConversions
@@ -87,18 +87,6 @@ final case class DataTypeIdentifier(name: String) extends DataType with Kind.Ide
   override def toString: String = name
 }
 
-object ScalarType {
-  implicit def apply(st: SurfaceLanguage.Types.ScalarType): ScalarType = {
-    st match {
-      case SurfaceLanguage.Types.NatType => NatType
-      case SurfaceLanguage.Types.bool => bool
-      case SurfaceLanguage.Types.int => int
-      case SurfaceLanguage.Types.float => float
-      case SurfaceLanguage.Types.double => double
-    }
-  }
-}
-
 object DataType {
 
   def substitute[T <: DataType](dt: DataType, `for`: DataType, in: T): T = {
@@ -136,26 +124,6 @@ object DataType {
     in match {
       case i: NatToDataIdentifier => i
       case NatToDataLambda(x, body) => NatToDataLambda(x, substitute(ae, `for`, body))
-    }
-  }
-
-  implicit def apply(dt: SurfaceLanguage.Types.DataType): DataType = {
-    dt match {
-      case bt: SurfaceLanguage.Types.BasicType => bt match {
-        case st: SurfaceLanguage.Types.ScalarType => ScalarType(st)
-        case vt: SurfaceLanguage.Types.VectorType => VectorType(vt.size, ScalarType(vt.elemType))
-        case it: SurfaceLanguage.Types.IndexType => IndexType(it.size)
-      }
-      case ct: SurfaceLanguage.Types.ComposedType => ct match {
-        case at: SurfaceLanguage.Types.ArrayType => ArrayType(at.size, DataType(at.elemType))
-        case dat:SurfaceLanguage.Types.DepArrayType =>
-          DepArrayType(dat.size, x => DataType.substitute(x, `for`= dat.elemType.x, in=DataType(dat.elemType.t)))
-        case tt: SurfaceLanguage.Types.TupleType =>
-          assert(tt.elemTypes.size == 2)
-          //noinspection ZeroIndexToHead
-          RecordType(DataType(tt.elemTypes(0)), DataType(tt.elemTypes(1)))
-      }
-      case i: SurfaceLanguage.Types.DataTypeIdentifier => DataTypeIdentifier(i.name)
     }
   }
 

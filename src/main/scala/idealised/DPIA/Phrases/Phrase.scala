@@ -7,9 +7,7 @@ import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics.{IndexData, NatData}
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised.{DPIA, SurfaceLanguage}
-import idealised.SurfaceLanguage.Operators
-import lift.arithmetic.{NamedVar, RangeAdd, StartFromRange}
+import lift.arithmetic.{NamedVar, RangeAdd}
 
 import scala.language.{postfixOps, reflectiveCalls}
 
@@ -92,13 +90,13 @@ final case class IfThenElse[T <: PhraseType](cond: Phrase[ExpType], thenP: Phras
   override val t: T = thenP.t
 }
 
-final case class UnaryOp(op: SurfaceLanguage.Operators.Unary.Value, p: Phrase[ExpType])
+final case class UnaryOp(op: Operators.Unary.Value, p: Phrase[ExpType])
   extends Phrase[ExpType] {
 
   override val t: ExpType = p.t
 }
 
-final case class BinOp(op: SurfaceLanguage.Operators.Binary.Value, lhs: Phrase[ExpType], rhs: Phrase[ExpType])
+final case class BinOp(op: Operators.Binary.Value, lhs: Phrase[ExpType], rhs: Phrase[ExpType])
   extends Phrase[ExpType] {
 
   override val t: ExpType =
@@ -345,4 +343,21 @@ trait AccPrimitive extends Primitive[AccType] {
 
 trait CommandPrimitive extends Primitive[CommType] {
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Store
+}
+
+object Operators {
+  object Unary extends Enumeration {
+    val NEG: Unary.Value = Value("-")
+  }
+
+  object Binary extends Enumeration {
+    val ADD: Binary.Value = Value("+")
+    val SUB: Binary.Value = Value("-")
+    val MUL: Binary.Value = Value("*")
+    val DIV: Binary.Value = Value("/")
+    val MOD: Binary.Value = Value("%")
+    val GT: Binary.Value = Value(">")
+    val LT: Binary.Value = Value("<")
+    val EQ: Binary.Value = Value("==")
+  }
 }

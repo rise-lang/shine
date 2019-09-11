@@ -1,3 +1,4 @@
+/* TODO
 package idealised.apps
 
 import benchmarks.core.{CorrectnessCheck, RunOldSurfaceLanguageOpenCLProgam}
@@ -189,3 +190,4 @@ class stencilOldSurfaceLanguage extends Tests {
     PartitionedStencil2D(inputSize = 1024, stencilSize = 11).run(localSize = 4, globalSize = 1024).correctness.check()
   }
 }
+*/

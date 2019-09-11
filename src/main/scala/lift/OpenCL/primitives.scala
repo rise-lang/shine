@@ -9,6 +9,8 @@ import scala.language.implicitConversions
 object primitives {
   sealed trait Primitive extends lift.core.Primitive
 
+  // TODO? depMapGlobal, depMapLocal, depMapWorkGroup
+
   case class mapGlobal(dim: Int) extends Primitive {
     override def t: Type = core.map.t
   }

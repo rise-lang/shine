@@ -1,3 +1,4 @@
+/*
 package idealised.DPIA
 
 import idealised.OpenCL.SurfaceLanguage.DSL._
@@ -86,3 +87,4 @@ class NatDepLambdaGen extends idealised.util.TestsWithExecutor {
     kernelF(LocalSize(1),GlobalSize(1))((M`;`) `,` N `,` mSplit `,` nSplit `,` xs)
   }
 }
+ */

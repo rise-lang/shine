@@ -3,29 +3,12 @@ package idealised.DPIA.Semantics
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised.SurfaceLanguage.Operators
 import lift.arithmetic.ArithExpr
 
 import scala.collection.immutable.HashMap
 import scala.language.{implicitConversions, postfixOps, reflectiveCalls}
 
 object OperationalSemantics {
-
-  object Data {
-    def apply(d: idealised.SurfaceLanguage.Semantics.Data): Data = {
-      d match {
-        case idealised.SurfaceLanguage.Semantics.BoolData(b) => BoolData(b)
-        case idealised.SurfaceLanguage.Semantics.IntData(i) => IntData(i)
-        case idealised.SurfaceLanguage.Semantics.FloatData(f) => FloatData(f)
-        case idealised.SurfaceLanguage.Semantics.DoubleData(f) => DoubleData(f)
-        case idealised.SurfaceLanguage.Semantics.IndexData(n, t) => IndexData(n, t.size)
-        case idealised.SurfaceLanguage.Semantics.TupleData(t @_*) => RecordData( Data(t(0)), Data(t(1)) )
-        case idealised.SurfaceLanguage.Semantics.ArrayData(a) => ArrayData(a.map(Data(_)).toVector)
-        case idealised.SurfaceLanguage.Semantics.VectorData(v) => VectorData(v.map(Data(_)).toVector)
-      }
-    }
-  }
-
   sealed abstract class Data(val dataType: DataType)
   final case class IndexData(i: Nat, n: Nat) extends Data(IndexType(n))
 
