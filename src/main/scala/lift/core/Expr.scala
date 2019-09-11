@@ -8,14 +8,6 @@ final case class Identifier(name: String) extends Expr {
   override def toString: String = name
 }
 
-object _identifier {
-  def unapply(e: Expr): Option[String] = e match {
-    case TypedExpr(Identifier(n), _) => Some(n)
-    case Identifier(n) => Some(n)
-    case _ => None
-  }
-}
-
 final case class Lambda(x: Identifier, e: Expr) extends Expr {
   override def toString: String = s"λ$x. $e"
 

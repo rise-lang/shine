@@ -21,6 +21,14 @@ object extractors {
     }
   }
 
+  object _identifier {
+    def unapply(e: Expr): Option[String] = e match {
+      case TypedExpr(Identifier(n), _) => Some(n)
+      case Identifier(n) => Some(n)
+      case _ => None
+    }
+  }
+
   object _lambda {
     def unapply(e: Expr): Option[(Identifier, Expr)] = e match {
       case TypedExpr(Lambda(x,e), _) => Some((x,e))
