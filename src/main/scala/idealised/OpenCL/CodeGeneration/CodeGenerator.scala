@@ -39,10 +39,10 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
   override def cmd(phrase: Phrase[CommType], env: Environment): Stmt = {
     phrase match {
-      case f@OpenCLParFor(n, dt, a, Lambda(i, Lambda(o, p))) =>
+      case f@OpenCLParFor(n, dt, a, Lambda(i, Lambda(o, p)), _, _, _) =>
         OpenCLCodeGen.codeGenOpenCLParFor(f, n, dt, a, i, o, p, env)
 
-      case f@OpenCLParForNat(n, _, a, DepLambda(i: NatIdentifier, Lambda(o, p))) =>
+      case f@OpenCLParForNat(n, _, a, DepLambda(i: NatIdentifier, Lambda(o, p)), _, _, _) =>
         OpenCLCodeGen.codeGenOpenCLParForNat(f, n, a, i, o, p, env)
 
       case Assign(dt, a, e) => dt match {
@@ -251,8 +251,9 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
                             o: Phrase[AccType],
                             p: Phrase[CommType],
                             env: Environment): Stmt = {
+      assert(!f.unroll)
       val cI = C.AST.DeclRef(f.name)
-      val range = useWorkItemSizesForParForIfSupplied(f, n)
+      val range = RangeAdd(f.init, n, f.step)
       val updatedGen = updatedRanges(cI.name, range)
 
       applySubstitutions(n, env.identEnv) |> (n => {
@@ -289,24 +290,6 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         }}))})
     }
 
-    def useWorkItemSizesForParForIfSupplied(f: OpenCLParFor, n: Nat): RangeAdd = {
-      f match {
-        case fg@ParForGlobal(dim) => {
-          val gSize = if (globalSize.isEmpty) fg.step else globalSize.get.size(dim)
-          RangeAdd(get_global_id(dim, ContinuousRange(0, gSize)), n, gSize)
-        }
-        case fl@ParForLocal(dim) => {
-          val lSize = if (localSize.isEmpty) fl.step else localSize.get.size(dim)
-          RangeAdd(get_local_id(dim, ContinuousRange(0, lSize)), n, lSize)
-        }
-        case fw@ParForWorkGroup(dim) => {
-          val wgSize = if (localSize.isEmpty || globalSize.isEmpty) fw.step
-                       else globalSize.get.size(dim) /^ localSize.get.size(dim)
-          RangeAdd(get_group_id(dim, ContinuousRange(0, wgSize)), n, wgSize)
-        }
-      }
-    }
-
     def codeGenOpenCLParForNat(f: OpenCLParForNat,
                                n: Nat,
                                a: Phrase[AccType],
@@ -314,8 +297,9 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
                                o: Phrase[AccType],
                                p: Phrase[CommType],
                                env: Environment): Stmt = {
+      assert(!f.unroll)
       val cI = C.AST.DeclRef(f.name)
-      val range = useWorkItemSizesForParForNatIfSupplied(f, n)
+      val range = RangeAdd(f.init, n, f.step)
       val updatedGen = updatedRanges(cI.name, range)
 
       applySubstitutions(n, env.identEnv) |> (n => {
@@ -354,24 +338,6 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
                       C.AST.Block(immutable.Seq(updatedGen.cmd(p, env)))),
                     f.synchronize)
               })))})
-    }
-
-    def useWorkItemSizesForParForNatIfSupplied(f: OpenCLParForNat, n: Nat): RangeAdd = {
-      f match {
-        case fg@ParForNatGlobal(dim) => {
-          val gSize = if (globalSize.isEmpty) fg.step else globalSize.get.size(dim)
-          RangeAdd(get_global_id(dim, ContinuousRange(0, gSize)), n, gSize)
-        }
-        case fl@ParForNatLocal(dim) => {
-          val lSize = if (localSize.isEmpty) fl.step else localSize.get.size(dim)
-          RangeAdd(get_local_id(dim, ContinuousRange(0, lSize)), n, lSize)
-        }
-        case fw@ParForNatWorkGroup(dim) => {
-          val wgSize = if (localSize.isEmpty || globalSize.isEmpty) fw.step
-                       else globalSize.get.size(dim) /^ localSize.get.size(dim)
-          RangeAdd(get_group_id(dim, ContinuousRange(0, wgSize)), n, wgSize)
-        }
-      }
     }
 
     def codeGenLiteral(d: OperationalSemantics.Data): Expr = {

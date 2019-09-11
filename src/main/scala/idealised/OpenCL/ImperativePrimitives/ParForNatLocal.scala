@@ -12,21 +12,20 @@ import lift.arithmetic.{?, ContinuousRange, PosInf, RangeAdd}
 final case class ParForNatLocal(dim:Int)(override val n:Nat,
                                          override val ft:NatToData,
                                          override val out:Phrase[AccType],
-                                         override val body: Phrase[`(nat)->:`[AccType ->: CommType]])
-  extends OpenCLParForNat(n, ft, out, body) {
-  override val makeParForNat = ParForNatLocal(dim) _
+                                         override val body: Phrase[`(nat)->:`[AccType ->: CommType]],
+                                         init: Nat = get_local_id(dim),
+                                         step: Nat = get_local_size(dim),
+                                         unroll: Boolean = false)
+  extends OpenCLParForNat(n, ft, out, body, init, step, unroll) {
+
+  def makeParForNat =
+    (n, ft, out, body) => ParForNatLocal(dim)(n, ft, out, body, init, step, unroll)
 
   override val parallelismLevel = OpenCL.Local
 
   override val name: String = freshName("l_id_")
 
-  //  override lazy val init: OclFunction = get_local_id(dim, RangeAdd(0, env.localSize, 1))
-
-  override lazy val init: BuiltInFunction = get_local_id(dim)
-
-  override lazy val step: BuiltInFunction = get_local_size(dim, local_size_range)
-
-  lazy val local_size_range: RangeAdd = ContinuousRange(1, PosInf)
+//  lazy val local_size_range: RangeAdd = ContinuousRange(1, PosInf)
   //    if (env.localSize == ?) ContinuousRange(1, PosInf)
   //    else RangeAdd(env.localSize, env.localSize + 1, 1)
 

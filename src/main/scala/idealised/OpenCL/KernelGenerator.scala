@@ -55,7 +55,7 @@ object KernelGenerator {
 
     checkTypes(p) |> (p =>
 
-    rewriteToImperative(p, outParam) |> (p =>
+    rewriteToImperative(p, outParam, localSize, globalSize) |> (p =>
 
     hoistMemoryAllocations(p) |> { case (p, intermediateAllocations) =>
 
@@ -100,13 +100,15 @@ object KernelGenerator {
     identifier("output", AccType(outT.dataType))
   }
 
-  private def rewriteToImperative(p: Phrase[ExpType], a: Phrase[AccType]): Phrase[CommType] = {
-    UnrollLoops(FlagPrivateArrayLoops(TranslationToImperative.acc(p)(a)(
+  private def rewriteToImperative(p: Phrase[ExpType], a: Phrase[AccType],
+                                  localSize: Option[LocalSize], globalSize: Option[GlobalSize]): Phrase[CommType] = {
+    val flaggedExpr = FlagPrivateArrayLoops(InjectWorkItemSizes(localSize, globalSize)(TranslationToImperative.acc(p)(a)(
       new idealised.OpenCL.TranslationContext) |> (p => {
       xmlPrinter.writeToFile("/tmp/p2.xml", p)
       TypeCheck(p) // TODO: only in debug
       p
     })))
+    UnrollLoops(flaggedExpr)
   }
 
   private def hoistMemoryAllocations(p: Phrase[CommType]): (Phrase[CommType], List[AllocationInfo]) = {

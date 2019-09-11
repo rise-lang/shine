@@ -633,6 +633,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                    p: Phrase[CommType],
                    unroll:Boolean,
                    env: Environment): Stmt = {
+      assert(!unroll)
       val cI = C.AST.DeclRef(freshName("i_"))
       val range = RangeAdd(0, n, 1)
       val updatedGen = updatedRanges(cI.name, range)
@@ -651,7 +652,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             updatedGen.cmd(p, env updatedIdentEnv (i -> cI)))
 
         case _ =>
-          assert(!unroll)
           val init = C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0)))
           val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
           val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + 1))
@@ -666,6 +666,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                       p: Phrase[CommType],
                       unroll:Boolean,
                       env: Environment): Stmt = {
+      assert(!unroll)
       val cI = C.AST.DeclRef(freshName("i_"))
       val range = RangeAdd(0, n, 1)
       val updatedGen = updatedRanges(cI.name, range)
@@ -688,7 +689,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
           val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + 1))
 
-          assert(!unroll)
           C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
             updatedGen.generateNatDependentBody(`for` = i, `phrase` = p, at = NamedVar(cI.name, range), env)
           )

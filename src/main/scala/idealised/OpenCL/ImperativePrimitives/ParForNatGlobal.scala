@@ -12,9 +12,14 @@ import lift.arithmetic.{?, RangeAdd}
 final case class ParForNatGlobal(dim:Int)(override val n:Nat,
                                           override val ft:NatToData,
                                           override val out:Phrase[AccType],
-                                          override val body: Phrase[`(nat)->:`[AccType ->: CommType]])
-  extends OpenCLParForNat(n, ft, out, body) {
-  override val makeParForNat = ParForNatGlobal(dim) _
+                                          override val body: Phrase[`(nat)->:`[AccType ->: CommType]],
+                                          init: Nat = get_global_id(dim),
+                                          step: Nat = get_global_size(dim),
+                                          unroll: Boolean = false)
+  extends OpenCLParForNat(n, ft, out, body, init, step, unroll) {
+
+  def makeParForNat =
+    (n, ft, out, body) => ParForNatGlobal(dim)(n, ft, out, body, init, step, unroll)
 
   override val parallelismLevel: OpenCL.Global.type = OpenCL.Global
 
@@ -23,10 +28,6 @@ final case class ParForNatGlobal(dim:Int)(override val n:Nat,
   //  override lazy val init: OclFunction = get_global_id(dim, RangeAdd(0, env.globalSize, 1))
   //
   //  override lazy val step: OclFunction = get_global_size(dim, RangeAdd(env.globalSize, env.globalSize + 1, 1))
-
-  override lazy val init: BuiltInFunction = get_global_id(dim)
-
-  override lazy val step: BuiltInFunction = get_global_size(dim, RangeAdd(?, ? + 1, 1))
 
   override def synchronize: Stmt = Comment("par for global sync")
 }

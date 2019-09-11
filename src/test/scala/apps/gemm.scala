@@ -1,5 +1,6 @@
 package apps
 
+import idealised.OpenCL.{GlobalSize, LocalSize}
 import idealised.util.gen
 import lift.arithmetic.Cst
 import lift.core.DSL._
@@ -122,7 +123,7 @@ class gemm extends idealised.util.TestsWithExecutor {
                                 mapSeq(fun(x => p157._1 + dot(x)))
                             )) |> join
                         ))
-                    ), zeros) |>
+                    ), zeros |> mapSeq (fun(x => x))) |>
                     fun(p235 =>
                       zip(p235, transpose(bc._2)) |>
                         mapSeq(fun(p237 =>
@@ -173,7 +174,7 @@ class gemm extends idealised.util.TestsWithExecutor {
                   |> fun(p22 =>
                     zip (p20) (p22._1) |> mapSeq (fun(p23 =>
                       zip (p23._1) (p22._2) |> mapSeq (fun(p24 =>
-                        p24._1 + (p23._2 * p24._2) )) )) ))) (p18._1)
+                        p24._1 + (p23._2 * p24._2) )) )) ))) (p18._1 |> mapSeq (fun(x => x)))
             ))
           ))
         ))
@@ -240,7 +241,7 @@ class gemm extends idealised.util.TestsWithExecutor {
   }
 
   test("Kepler best compiles to syntactically correct kernel") {
-    gen.OpenCLKernel(ocl.keplerBest)
+    gen.OpenCLKernel(LocalSize((16,8,1)), GlobalSize((256, 128, 1)))(ocl.keplerBest(1024)(1024)(1024), "KERNEL")
   }
 
   test("OpenCL sequential gemm versions produce the expected result") {
@@ -314,9 +315,9 @@ class gemm extends idealised.util.TestsWithExecutor {
 
     val random = new Random()
 
-    val n = 512
-    val m = 256
-    val k = 512
+    val n = 1024
+    val m = 1024
+    val k = 1024
     val A = Array.fill(m, k)(1.0f) //((random.nextInt(10) + 1).toFloat)
     val B = Array.fill(k, n)(1.0f) //((random.nextInt(10) + 1).toFloat)
     val C = Array.fill(m, n)(1.0f) //(((random.nextInt(10) + 1).toFloat)

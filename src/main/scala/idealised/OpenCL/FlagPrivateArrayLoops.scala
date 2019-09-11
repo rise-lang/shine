@@ -6,7 +6,7 @@ import idealised.DPIA.Types._
 import idealised.DPIA.ImperativePrimitives.{For, ForNat, IdxAcc}
 import idealised.DPIA.FunctionalPrimitives.Idx
 import idealised.DPIA.Semantics.OperationalSemantics.ArrayData
-import idealised.OpenCL.ImperativePrimitives.OpenCLNew
+import idealised.OpenCL.ImperativePrimitives._
 
 import scala.collection.mutable
 
@@ -15,6 +15,7 @@ object FlagPrivateArrayLoops {
     val vs = varsToEliminate(p)
     val p2 = eliminateLoopVars(p, vs)
     if (vs.nonEmpty) {
+      println(s"To eliminate: $vs")
       throw new Exception(s"could not eliminate variables $vs")
     }
     p2
@@ -40,6 +41,10 @@ object FlagPrivateArrayLoops {
         case Literal(ArrayData(_)) =>
           eliminateVars ++= indexVars
           Stop(p)
+        //TODO Dangerous. collectVars can find private vars that are not the acceptor (e.g. in A@i if i is private var). Instead translate ParFor to For first?
+        case OpenCLParFor(_, _, out, Lambda(i: Identifier[_], Lambda(o: Identifier[_], body)), _, _, _) if collectAccIdent(out).exists(privateVars(_)) =>
+          eliminateVars += i.name
+          Continue(p, this.copy(privateVars = privateVars + o))
         case _ =>
           Continue(p, this)
       }
@@ -59,6 +64,28 @@ object FlagPrivateArrayLoops {
         case ForNat(n, body @ DepLambda(i: NatIdentifier, _), _) if eliminateVars(i.name) =>
           eliminateVars -= i.name
           Continue(ForNat(n, body, unroll = true), this)
+        case pf@OpenCLParFor(n, dt, out, body @ Lambda(i: Identifier[_], _), init, step, _)
+          if eliminateVars(i.name) =>
+            eliminateVars -= i.name
+            pf match {
+              case ParForGlobal(dim) =>
+                Continue(ParForGlobal(dim)(n, dt, out, body, init, step, unroll = true), this)
+              case ParForLocal(dim) =>
+                Continue(ParForLocal(dim)(n, dt, out, body, init, step, unroll = true), this)
+              case ParForWorkGroup(dim) =>
+                Continue(ParForWorkGroup(dim)(n, dt, out, body, init, step, unroll = true), this)
+            }
+        case pf@OpenCLParForNat(n, dt, out, body @ DepLambda(i: NatIdentifier, _), init, step, _)
+          if eliminateVars(i.name) =>
+            eliminateVars -= i.name
+            pf match {
+              case ParForNatGlobal(dim) =>
+                Continue(ParForNatGlobal(dim)(n, dt, out, body, init, step, unroll = true), this)
+              case ParForNatLocal(dim) =>
+                Continue(ParForNatLocal(dim)(n, dt, out, body, init, step, unroll = true), this)
+              case ParForNatWorkGroup(dim) =>
+                Continue(ParForNatWorkGroup(dim)(n, dt, out, body, init, step, unroll = true), this)
+        }
         case _ =>
           Continue(p, this)
       }
@@ -77,6 +104,25 @@ object FlagPrivateArrayLoops {
       override def phrase[T2 <: PhraseType](p: Phrase[T2]): Result[Phrase[T2]] = {
         p match {
           case i: Identifier[_] => vars += i.name
+          case _ =>
+        }
+        Continue(p, this)
+      }
+    })
+
+    vars.toSet
+  }
+
+  private def collectAccIdent[T <: PhraseType](p: Phrase[T]): Set[Identifier[_]] = {
+    var vars = mutable.Set[Identifier[_]]()
+
+    VisitAndRebuild(p, new VisitAndRebuild.Visitor {
+      override def phrase[T2 <: PhraseType](p: Phrase[T2]): Result[Phrase[T2]] = {
+        p match {
+          case i: Identifier[_]  => i.`type` match {
+            case _: AccType => vars += i
+            case _ =>
+          }
           case _ =>
         }
         Continue(p, this)
