@@ -11,7 +11,7 @@ import idealised.utils._
 import idealised.util.gen
 
 class acoustic3D extends idealised.util.TestsWithExecutor {
-  val getNumNeighbours = foreignFun("idxF", Seq("i", "j", "k", "m", "n", "o"),
+  private val getNumNeighbours = foreignFun("idxF", Seq("i", "j", "k", "m", "n", "o"),
     """{
       |  int count = 6;
       |  if (i == (m - 1) || i == 0){ count--; }
@@ -21,7 +21,7 @@ class acoustic3D extends idealised.util.TestsWithExecutor {
       |}""".stripMargin,
     int ->: int ->: int ->: int ->: int ->: int ->: int)
 
-  val generateNumNeighbours = nFun(o => nFun(n => nFun(m =>
+  private val generateNumNeighbours = nFun(o => nFun(n => nFun(m =>
     generate(fun(k =>
       generate(fun(j =>
         generate(fun(i =>
@@ -29,27 +29,27 @@ class acoustic3D extends idealised.util.TestsWithExecutor {
             (cast(m: Expr))(cast(n: Expr))(cast(o: Expr))))))))
   )))
 
-  val getCF = foreignFun("getCF", Seq("neigh", "cfB", "cfI"),
+  private val getCF = foreignFun("getCF", Seq("neigh", "cfB", "cfI"),
     "{ if (neigh < 6) { return cfB; } else { return cfI; } }",
     int ->: float ->: float ->: float)
 
-  val SR = 441.0f
-  val alpha = 0.005f
-  val c = 344.0f
-  val NF = 4410
-  val k = 1.0f / SR
-  val h = Math.sqrt(3.0f) * c * k
-  val lambda = c * k / h
+  private val SR = 441.0f
+  private val alpha = 0.005f
+  private val c = 344.0f
+  private val NF = 4410
+  private val k = 1.0f / SR
+  private val h = Math.sqrt(3.0f) * c * k
+  private val lambda = c * k / h
 
-  val loss1 = 1.0f / (1.0f + lambda * alpha)
-  val loss2 = 1.0f - lambda * alpha
+  private val loss1 = 1.0f / (1.0f + lambda * alpha)
+  private val loss2 = 1.0f - lambda * alpha
 
-  val l2 = l(((c * c * k * k) / (h * h)).toFloat)
-  val cf1 = Array(loss1.toFloat, 1.0f).map(l)
-  val cf21 = Array(loss2.toFloat, 1.0f).map(l)
+  private val l2 = l(((c * c * k * k) / (h * h)).toFloat)
+  private val cf1 = Array(loss1.toFloat, 1.0f).map(l)
+  private val cf21 = Array(loss2.toFloat, 1.0f).map(l)
 
-  val sz: Nat = 3
-  val st: Nat = 1
+  private val sz: Nat = 3
+  private val st: Nat = 1
 
   val acoustic: Expr = fun(
     (3`.`3`.`3`.`TupleType(float, TupleType(float, int))) ->: float
@@ -73,7 +73,7 @@ class acoustic3D extends idealised.util.TestsWithExecutor {
     ) * cf
   })
 
-  val zip3D: Expr = zipND(3)
+  private val zip3D: Expr = zipND(3)
 
   val stencil: Expr = nFun(o => nFun(n => nFun(m => fun(
     ((o + 2)`.`(n + 2)`.`(m + 2)`.`float) ->:
@@ -99,17 +99,13 @@ class acoustic3D extends idealised.util.TestsWithExecutor {
       $ zip3D(mat1)(zip3D(mat2)(generateNumNeighbours(o+2)(n+2)(m+2)))
   ))))
 
-  val N = 128
-  val M = 64
-  val O = 32
-  val localSize = LocalSize((32, 4, 1))
-  val globalSize = GlobalSize((N, M, 1))
+  private val N = 128
+  private val M = 64
+  private val O = 32
+  private val localSize = LocalSize((32, 4, 1))
+  private val globalSize = GlobalSize((N, M, 1))
 
-  test("stencil compiles to syntactically correct OpenCL") {
-    gen.OpenCLKernel(stencil)
-  }
-
-  def runOriginalKernel(name: String,
+  def runExternalKernel(name: String,
                         mat1: Array[Array[Array[Float]]],
                         mat2: Array[Array[Array[Float]]]): (Array[Float], TimeSpan[Time.ms]) = {
     import opencl.executor._
@@ -157,20 +153,20 @@ class acoustic3D extends idealised.util.TestsWithExecutor {
     val random = new scala.util.Random()
     val mat1 = Array.fill(O + 2, N + 2, M + 2)(random.nextInt(1000).toFloat)
     val mat2 = Array.fill(O + 2, N + 2, M + 2)(random.nextInt(1000).toFloat)
-    val (out1, t1) = runOriginalKernel("oldAcoustic3D.cl", mat1, mat2)
-    val (out2, t2) = runOriginalKernel("oldAcoustic3DMSS.cl", mat1, mat2)
-    val (out3, t3) = runKernel(gen.OpenCLKernel(stencil), mat1, mat2)
-    val (out4, t4) = runKernel(gen.OpenCLKernel(stencilMSS), mat1, mat2)
+
+    val runs = Seq(
+      runExternalKernel("oldAcoustic3D.cl", mat1, mat2),
+      runExternalKernel("oldAcoustic3DMSS.cl", mat1, mat2),
+      runKernel(gen.OpenCLKernel(stencil), mat1, mat2),
+      runKernel(gen.OpenCLKernel(stencilMSS), mat1, mat2)
+    )
 
     def check(a: Array[Float], b: Array[Float]): Unit =
       a.zip(b).foreach { case (a, b) => assert(Math.abs(a - b) < 0.01) }
 
-    check(out1, out2)
-    check(out1, out3)
-    check(out1, out4)
-    println(s"t1: $t1")
-    println(s"t2: $t2")
-    println(s"t3: $t3")
-    println(s"t4: $t4")
+    runs.tail.foreach(r => check(r._1, runs.head._1))
+    runs.zipWithIndex.foreach { case (r, i) =>
+      println(s"t$i: ${r._2}")
+    }
   }
 }
