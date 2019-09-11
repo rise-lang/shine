@@ -7,6 +7,17 @@ import elevate.core.{Lift, RewriteResult, Strategy, Success}
 
 package object lift {
 
+  def sameButOneMayBeTyped(a: Lift, b: Lift): Boolean = {
+    a match {
+      case x if x == b => true
+      case TypedExpr(x, _) if x == b => true
+      case _ => b match {
+        case TypedExpr(x, _) if x == a => true
+        case _ => false
+      }
+    }
+  }
+
   def printExpr : Strategy[Lift] = peek[Lift](p => println(s"${toEvaluableString(p)}"))
   def printExpr(msg: String) : Strategy[Lift] = peek[Lift](p => println(s"$msg \n${toEvaluableString(p)}"))
 
@@ -16,7 +27,7 @@ package object lift {
       case Lambda(x, e) => s"Lambda(${toEvaluableString(x)}, ${toEvaluableString(e)})"
       case Apply(f, e) => s"Apply(${toEvaluableString(f)}, ${toEvaluableString(e)})"
       case DepLambda(x, e) => x match {
-        case n: NatIdentifier => s"""DepLambda[NatKind]("id$n", ${toEvaluableString(e)})"""
+        case n: NatIdentifier => s"""DepLambda[NatKind](NatIdentifier("id$n"), ${toEvaluableString(e)})"""
         case dt: DataTypeIdentifier => s"""DepLambda[DataKind]("id$dt", ${toEvaluableString(e)})"""
       }
       case DepApply(f, x) => x match {
@@ -130,7 +141,7 @@ package object lift {
         case DepApply(f, e) =>
           val fun = getID(f)
           val arg = getID(e)
-          s"""$parent ${attr(fillWhite + Label("apply").toString)}
+          s"""$parent ${attr(fillWhite + Label("depApply").toString)}
              |$parent -> $fun ${addEdgeLabel(edgeLabel("fun"))};
              |$parent -> $arg ${addEdgeLabel(edgeLabel("arg"))};
              |$arg ${attr(fillWhite + Label(e.toString).toString)}

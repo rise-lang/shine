@@ -7,7 +7,8 @@ import elevate.lift.strategies.traversal._
 import elevate.core.strategies.basic._
 import elevate.lift.strategies.normalForm._
 import elevate.util._
-import lift.core.Expr
+import elevate.lift._
+import lift.core._
 import lift.core.primitives._
 import lift.core.DSL._
 import lift.core.types.{float, infer}

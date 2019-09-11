@@ -249,7 +249,7 @@ class tiling extends idealised.util.Tests {
 
   // todo: this should use mapSeqCompute and CNF instead of RNF
   // ... but mapAcceptorTranslation for split is missing
-  val lower: Strategy[Lift] = LCNF `;` RNF `;` normalize(specialize.mapSeq) `;` BENF
+  val lower: Strategy[Lift] = LCNF `;` CNF `;` normalize(specialize.mapSeq) `;` BENF
 
   val identity = dtFun(t => foreignFun("identity", Seq("y"), "{ return y; }", t ->: t))
   val floatId: Expr = identity(float)
@@ -286,31 +286,7 @@ class tiling extends idealised.util.Tests {
     println(gen.CProgram(lower(tiled)))
   }
 
-  /// LOOP INTERCHANGE
-
-   test("simple loop interchange") {
-     assert(betaEtaEquals(
-       body(body(loopInterchange))(λ(i => λ(f => **!(f) $ i))),
-       λ(i => λ(f => (T o **(f) o T) $ i))
-     ))
-   }
-
-  test("interchange innermost two loops in loop nest of depth 3") {
-    val input = λ(i => λ(f => ***!(f) $ i))
-    val gold = λ(i => λ(f => (*(T) o ***(f) o *(T)) $ i))
-
-    assert(betaEtaEquals(
-      body(body(loopInterchangeAtLevel(1)))(input),
-      gold
-    ))
-
-    assert(betaEtaEquals(
-      body(body(fmap(loopInterchange) `;` LCNF `;` RNF))(input),
-      gold
-    ))
-   }
-
-  /// REAL APPLICATIONS
+ /// REAL APPLICATIONS
 
   // todo WIP
   test("tile gemm") {
