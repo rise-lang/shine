@@ -71,7 +71,6 @@ class algorithmic extends idealised.util.Tests {
 
     infer(mapReduce)
 
-    exprToDot("/home/bastian/development/rewriting/dot", "input", infer(mapReduce), dotPrinter(_))
     val typedGold = infer(reduceMap)
     val typedRewrite = infer(rewrite)
 
@@ -327,9 +326,6 @@ class algorithmic extends idealised.util.Tests {
 
       val rnf = (RNF `;` BENF)(mm).get
 
-      exprToDot("/home/bastian/development/rewriting/dot", "untyped", mm, dotPrinter(_))
-      exprToDot("/home/bastian/development/rewriting/dot", "typed", rnf, dotPrinter(_))
-
     val lower: Strategy[Lift] = normalize(specialize.mapSeq <+ specialize.reduceSeq)
     println(gen.CProgram(infer(lower(rnf).get)))
 
@@ -434,7 +430,6 @@ class algorithmic extends idealised.util.Tests {
 
     val tiled = oncetd(tileND(2)(16)).apply(mm)
     infer(tiled)
-    exprToDot("/home/bastian/development/rewriting/dot", "input", tiled, dotPrinter(_))
   }
 
   test("reduce rows") {

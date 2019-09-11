@@ -29,7 +29,7 @@ object algorithmic {
 
    def apply(e: Lift): RewriteResult[Lift] = e match {
 
-      case a@_apply(_apply(_map(), _lambda(mapVar, _apply(
+      case _apply(_apply(_map(), _lambda(mapVar, _apply(
            _apply(_apply(_reduce(), op), init :: (dt:DataType)), reduceArg))),
            input@(_ :: ArrayType(size, ArrayType(_,_)))) =>
 
@@ -50,7 +50,7 @@ object algorithmic {
               transpose(input)
             )
           // zipped input (see test "MM to MM-LoopMKN")
-          case x@_apply(_apply(_zip(), u), v) =>
+          case _apply(_apply(_zip(), u), v) =>
             val notToBeTransposed = if (sameButOneMayBeTyped(mapVar, u)) v else u
             reduceMap(
               zippedMapArg = (y, acc) => zip(map(fun(bs => pair(bs, fst(y)))) $ snd(y), acc),
@@ -59,8 +59,7 @@ object algorithmic {
             // input is tile1.tile2.dim.(float,float)
             // dim needs to be reduced -> we need dim.tile1.tile2.(float,float)
             // todo what's the general case? How to (re-)order dimensions here?
-          case x =>
-            exprToDot("/home/bastian/development/rewriting/dot", "left", a, dotPrinter(_))
+          case _ =>
             val result = reduceMap(
               (y, acc) => zip(y, acc),
               (transpose o map(transpose)) $ input
