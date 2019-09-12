@@ -48,16 +48,6 @@ class Reduce extends idealised.util.TestsWithExecutor {
     "for".r.findAllIn(code).length shouldBe 2
   }
 
-  test("Fusing a reduce into a map from the other side should generate syntactic valide C code") {
-    val e =
-      nFun(h => nFun(w =>
-        fun(ArrayType(h, ArrayType(w, float)))(a =>
-          a |> mapSeq(mapSeq(fun(x => x))) |> map(reduceSeq(add)(l(0.0f)))
-        )))
-
-    gen.CProgram(e).code
-  }
-
   test("oclReduceSeq produces correct result over 2D array using private memory") {
     import scala.util.Random
 

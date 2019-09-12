@@ -4,8 +4,8 @@ import elevate.core.{Failure, Strategy, Success}
 import elevate.lift.strategies.predicate._
 import lift.core._
 import lift.core.DSL._
+import lift.core.types._
 import lift.core.primitives.{id, join, map, split, transpose}
-
 
 //noinspection MutatorLikeMethodIsParameterless
 object algorithmic {
@@ -66,5 +66,18 @@ object algorithmic {
   def `T >> T -> `: Strategy = {
     case Apply(`transpose`, Apply(`transpose`, x)) => Success(x)
     case _ => Failure(removeTransposePair)
+  }
+
+  // slideSeq fusion
+  import lift.core.primitives.slideSeq
+  import lift.OpenCL.primitives.oclSlideSeq
+
+  def slideSeqFusion: Strategy = `slideSeq(f) >> map(g) -> slideSeq(f >> g)`
+  def `slideSeq(f) >> map(g) -> slideSeq(f >> g)`: Strategy = {
+    case Apply(Apply(`map`, g), Apply(Apply(DepApply(DepApply(slideSeq(rot), sz: Nat), sp: Nat), f), e)) =>
+      Success(slideSeq(rot)(sz)(sp)(f >> g)(e))
+    case Apply(Apply(`map`, g), Apply(Apply(DepApply(DepApply(DepApply(oclSlideSeq(rot), a: AddressSpace), sz: Nat), sp: Nat), f), e)) =>
+      Success(oclSlideSeq(rot)(a)(sz)(sp)(f >> g)(e))
+    case _ => Failure(slideSeqFusion)
   }
 }

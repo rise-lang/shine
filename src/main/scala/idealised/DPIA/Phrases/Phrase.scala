@@ -329,10 +329,6 @@ abstract class ExpPrimitive extends Primitive[ExpType] {
   def acceptorTranslation(A: Phrase[AccType])
                          (implicit context: TranslationContext): Phrase[CommType]
 
-  def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType],
-                             A: Phrase[AccType])
-                            (implicit context: TranslationContext): Phrase[CommType]
-
   def continuationTranslation(C: Phrase[ExpType ->: CommType])
                              (implicit context: TranslationContext): Phrase[CommType]
 }

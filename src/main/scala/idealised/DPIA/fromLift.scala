@@ -319,13 +319,16 @@ object fromLift {
       case (core.slideSeq(rot),
       lt.DepFunType(sz: l.NatIdentifier,
       lt.DepFunType(sp: l.NatIdentifier,
-      lt.FunType(lt.ArrayType(insz, la), lt.ArrayType(n, _)))))
+      lt.FunType(_,
+      lt.FunType(lt.ArrayType(insz, ls), lt.ArrayType(n, lt))))))
       =>
-        val a = dataType(la)
+        val s = dataType(ls)
+        val t = dataType(lt)
         DepLambda[NatKind](natIdentifier(sz))(
           DepLambda[NatKind](natIdentifier(sp))(
-            fun[ExpType](exp"[$insz.$a, $read]", e =>
-              SlideSeq(rot, n, sz, sp, a, e))))
+            fun[ExpType ->: ExpType](ExpType(s, read) ->: ExpType(t, write), f =>
+              fun[ExpType](exp"[$insz.$s, $read]", e =>
+                SlideSeq(rot, n, sz, sp, s, t, f, e)))))
 
       case (core.reorder,
       lt.FunType(_,

@@ -2,6 +2,7 @@ package elevate.lift.rules
 
 import elevate.core._
 import lift.core._
+import lift.core.DSL._
 import lift.core.primitives._
 
 object specialize {
@@ -25,7 +26,9 @@ object specialize {
   }
 
   def slideSeq(rot: primitives.slideSeq.Rotate): Strategy = {
-    case primitives.slide => Success(primitives.slideSeq(rot))
+    case primitives.slide => Success(nFun(sz => nFun(sp =>
+      primitives.slideSeq(rot)(sz)(sp)(fun(x => x))
+    )))
     case _ => Failure(slideSeq(rot))
   }
 }
