@@ -19,8 +19,6 @@ object OpenCLReduceSeqI {
             in: Phrase[ExpType],
             out: Phrase[ExpType ->: CommType])
            (implicit context: TranslationContext): Phrase[CommType] = {
-    //TODO this check should not be necessary
-    assert(dt2 match { case _: BasicType => true; case _ => false })
     comment("oclReduceSeq") `;`
       `new`(initAddrSpace)(dt2, accumulator =>
         acc(init)(accumulator.wr) `;`

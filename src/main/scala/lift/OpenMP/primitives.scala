@@ -6,6 +6,8 @@ import lift.core.{primitives => core}
 object primitives {
   sealed trait Primitive extends lift.core.Primitive
 
+  // TODO? depMapPar
+
   case object mapPar extends Primitive {
     override def t: Type = core.map.t
   }
