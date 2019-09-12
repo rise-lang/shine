@@ -44,6 +44,17 @@ object HighLevelConstructs {
       } else {
         pair(a)(b)
       }
+
     fun(a => fun(b => rec(n, a, b)))
+  }
+
+  // TODO: Investigate. this might be wrong
+  val partition2D: Expr = {
+    import lift.arithmetic.SteppedCase
+    nFun(outerSize => nFun(innerSize =>
+      map(
+        partition(3)(n2nFun(m => SteppedCase(m, Seq(outerSize, innerSize, outerSize))))
+      ) >> partition(3)(n2nFun(m => SteppedCase(m, Seq(outerSize, innerSize, outerSize))))
+    ))
   }
 }

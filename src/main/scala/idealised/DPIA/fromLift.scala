@@ -4,7 +4,6 @@ import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.{OperationalSemantics => OpSem}
 import idealised.DPIA.Types._
-import idealised.SurfaceLanguage.Operators
 import lift.core.{semantics => ls, types => lt}
 import lift.{core => l}
 
@@ -156,8 +155,6 @@ object fromLift {
     import idealised.OpenMP.FunctionalPrimitives._
     import lift.OpenCL.{primitives => ocl}
     import lift.OpenMP.{primitives => omp}
-
-    // TODO: remove surface language
 
     (p, t) match {
       case (core.printType(msg),

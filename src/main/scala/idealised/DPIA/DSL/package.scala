@@ -6,7 +6,7 @@ import idealised.DPIA.ImperativePrimitives._
 import idealised.DPIA.Phrases.{BinOp, Literal, Natural, Pair, Phrase, Proj1, Proj2, UnaryOp}
 import idealised.DPIA.Semantics.OperationalSemantics.{FloatData, IntData}
 import idealised.DPIA.Types._
-import idealised.SurfaceLanguage.Operators
+import idealised.DPIA.Phrases.Operators
 
 import scala.language.{implicitConversions, reflectiveCalls}
 

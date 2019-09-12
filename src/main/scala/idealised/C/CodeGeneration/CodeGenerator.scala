@@ -10,7 +10,6 @@ import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised.SurfaceLanguage.Operators
 import idealised._
 import lift.arithmetic.BoolExpr.ArithPredicate
 import lift.arithmetic.{NamedVar, _}
@@ -895,8 +894,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       }).filter(_.isDefined).map(_.get).toMap[Nat, Nat]
     }
 
-    implicit def convertBinaryOp(op: idealised.SurfaceLanguage.Operators.Binary.Value): idealised.C.AST.BinaryOperator.Value = {
-      import idealised.SurfaceLanguage.Operators.Binary._
+    implicit def convertBinaryOp(op: Operators.Binary.Value): idealised.C.AST.BinaryOperator.Value = {
+      import Operators.Binary._
       op match {
         case ADD => C.AST.BinaryOperator.+
         case SUB => C.AST.BinaryOperator.-
@@ -909,8 +908,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       }
     }
 
-    implicit def convertUnaryOp(op: idealised.SurfaceLanguage.Operators.Unary.Value): idealised.C.AST.UnaryOperator.Value = {
-      import idealised.SurfaceLanguage.Operators.Unary._
+    implicit def convertUnaryOp(op: Operators.Unary.Value): idealised.C.AST.UnaryOperator.Value = {
+      import Operators.Unary._
       op match {
         case NEG => C.AST.UnaryOperator.-
       }

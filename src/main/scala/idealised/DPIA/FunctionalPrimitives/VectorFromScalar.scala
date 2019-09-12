@@ -37,7 +37,7 @@ final case class VectorFromScalar(n: Nat,
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
-    con(arg)(λ(exp"[$dt, $read]")(e => A :=|dt| VectorFromScalar(n, dt, e) ))
+    con(arg)(λ(exp"[$dt, $read]")(e => A :=|VectorType(n, dt)| VectorFromScalar(n, dt, e) ))
   }
 
   override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
