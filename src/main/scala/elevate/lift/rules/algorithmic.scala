@@ -74,10 +74,10 @@ object algorithmic {
 
   def slideSeqFusion: Strategy = `slideSeq(f) >> map(g) -> slideSeq(f >> g)`
   def `slideSeq(f) >> map(g) -> slideSeq(f >> g)`: Strategy = {
-    case Apply(Apply(`map`, g), Apply(Apply(DepApply(DepApply(slideSeq(rot), sz: Nat), sp: Nat), f), e)) =>
-      Success(slideSeq(rot)(sz)(sp)(f >> g)(e))
-    case Apply(Apply(`map`, g), Apply(Apply(DepApply(DepApply(DepApply(oclSlideSeq(rot), a: AddressSpace), sz: Nat), sp: Nat), f), e)) =>
-      Success(oclSlideSeq(rot)(a)(sz)(sp)(f >> g)(e))
+    case Apply(Apply(`map`, g), Apply(Apply(Apply(DepApply(DepApply(slideSeq(rot), sz: Nat), sp: Nat), wr), f), e)) =>
+      Success(slideSeq(rot)(sz)(sp)(wr)(f >> g)(e))
+    case Apply(Apply(`map`, g), Apply(Apply(Apply(DepApply(DepApply(DepApply(oclSlideSeq(rot), a: AddressSpace), sz: Nat), sp: Nat), wr), f), e)) =>
+      Success(oclSlideSeq(rot)(a)(sz)(sp)(wr)(f >> g)(e))
     case _ => Failure(slideSeqFusion)
   }
 }

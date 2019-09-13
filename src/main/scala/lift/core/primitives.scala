@@ -157,7 +157,8 @@ object primitives {
 
   case class slideSeq(rot: slideSeq.Rotate) extends Primitive {
     override def t: Type = implN(n => nFunT(sz => nFunT(sp => implDT(s => implDT(t => {
-      (ArrayType(sz, s) ->: t) ->: ArrayType(sp * n + sz - sp, s) ->: ArrayType(n, t)
+      (s ->: s) ->: (ArrayType(sz, s) ->: t) ->:
+        ArrayType(sp * n + sz - sp, s) ->: ArrayType(n, t)
     })))))
   }
 

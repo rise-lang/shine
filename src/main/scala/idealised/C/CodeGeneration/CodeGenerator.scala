@@ -142,9 +142,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case NewDoubleBuffer(_, _, dt, n, in, out, Lambda(ps, p)) =>
         CCodeGen.codeGenNewDoubleBuffer(ArrayType(n, dt), in, out, ps, p, env)
 
-      case NewRegRot(n, dt, Lambda(registers, Lambda(rotate, body))) =>
-        CCodeGen.codeGenNewRegRot(n, dt, registers, rotate, body, env)
-
       case For(n, Lambda(i, p), unroll) => CCodeGen.codeGenFor(n, i, p, unroll, env)
 
       case ForNat(n, DepLambda(i: NatIdentifier, p), unroll) => CCodeGen.codeGenForNat(n, i, p, unroll, env)
@@ -419,11 +416,13 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
   }
 
   override def typ(dt: DataType): Type = {
-
     def typeToStructNameComponent(t:DataType):String = {
       t match {
-        case IndexType(_) => freshName("idx")
-        case _ => t.toString.replace('.', '_')
+        case IndexType(n) => s"idx$n"
+        case ArrayType(n, t) => s"${n}_${typeToStructNameComponent(t)}"
+        case RecordType(a, b) => s"_${typeToStructNameComponent(a)}_${typeToStructNameComponent(b)}_"
+        case _: BasicType => t.toString
+        case _ => ???
       }
     }
 
@@ -583,39 +582,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
               acc(out, env, CIntExpr(0) :: Nil, o => ExprStmt(Assignment(out_ptr, UnaryExpr(&, o))))))
           }))
       ))
-    }
-
-    def codeGenNewRegRot(n: Nat,
-                         dt: DataType,
-                         registers: Identifier[VarType],
-                         rotate: Identifier[CommType],
-                         body: Phrase[CommType],
-                         env: Environment): Stmt = {
-      import C.AST._
-
-      val re = Identifier(s"${registers.name}_e", registers.t.t1)
-      val ra = Identifier(s"${registers.name}_a", registers.t.t2)
-      val rot = Identifier(s"${rotate.name}_rotate", rotate.t)
-
-      val registerCount = n.eval // FIXME: this is a quick solution
-      // TODO: variable array
-      // val rs = (0 until registerCount).map(i => DeclRef(freshName(s"r${i}_"))).toArray
-
-      val rs = DeclRef(freshName(s"rs_"))
-      val rst = DPIA.Types.ArrayType(n, dt)
-
-      Block(
-        // rs.map(r => DeclStmt(VarDecl(r.name, typ(dt))))
-        Array(DeclStmt(VarDecl(rs.name, typ(rst))))
-          :+ cmd(
-          Phrase.substitute(immutable.Map(registers -> Pair(re, ra), rotate -> rot), `in` = body),
-          env updatedIdentEnv (re -> rs) updatedIdentEnv (ra -> rs)
-            updatedCommEnv (rot -> Block(
-            // (1 until registerCount).map(i => Assignment(rs(i-1), rs(i)))
-            (1 until registerCount).map(i => ExprStmt(Assignment(generateAccess(rst, rs, CIntExpr(i - 1) :: Nil, env), generateAccess(rst, rs, CIntExpr(i) :: Nil, env))))
-          ))
-        )
-      )
     }
 
     def codeGenFor(n: Nat,

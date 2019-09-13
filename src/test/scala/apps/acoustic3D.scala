@@ -4,9 +4,8 @@ import lift.core._
 import lift.core.DSL._
 import lift.core.types._
 import lift.core.primitives._
-import idealised.OpenCL._
-import lift.OpenCL.primitives._
 import lift.core.HighLevelConstructs._
+import lift.OpenCL.primitives._
 import idealised.utils._
 import idealised.util.gen
 
@@ -85,6 +84,7 @@ class acoustic3D extends idealised.util.TestsWithExecutor {
       $ zip3D(mat1)(zip3D(mat2)(generateNumNeighbours(o+2)(n+2)(m+2)))
   ))))
 
+  val id = fun(x => x)
   val stencilMSS: Expr = nFun(o => nFun(n => nFun(m => fun(
     ((o + 2)`.`(n + 2)`.`(m + 2)`.`float) ->:
     ((o + 2)`.`(n + 2)`.`(m + 2)`.`float) ->:
@@ -92,13 +92,15 @@ class acoustic3D extends idealised.util.TestsWithExecutor {
   )((mat1, mat2) =>
     transpose o map(transpose) o transpose o
     mapGlobal(0)(mapGlobal(1)(
-      // TODO: mapSeqSlide
-      mapSeq(acoustic) o slide(sz)(st)
+      // private in original expression, but cannot generate code for that yet
+      // could also be local, but need to use mapWorkGroup and mapLocal
+      oclSlideSeq(slideSeq.Values)(AddressSpace.Global)(sz)(st)(mapSeqUnroll(mapSeqUnroll(id)))(acoustic)
         o transpose o map(transpose)
     )) o transpose o slide2D(sz)(st) o map(transpose) o transpose
       $ zip3D(mat1)(zip3D(mat2)(generateNumNeighbours(o+2)(n+2)(m+2)))
   ))))
 
+  import idealised.OpenCL._
   private val N = 128
   private val M = 64
   private val O = 32

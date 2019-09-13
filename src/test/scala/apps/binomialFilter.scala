@@ -59,7 +59,7 @@ object binomialFilter {
   val regrot =
     padClamp2D(1) >> slide(3)(1) >> mapSeq(transpose >>
       map(dotSeq(weights1d)) >>
-      slideSeq(slideSeq.Values)(3)(1)(dotSeq(weights1d))
+      slideSeq(slideSeq.Values)(3)(1)(fun(x => x))(dotSeq(weights1d))
     )
 
   val norm = betaEtaNormalForm
@@ -283,7 +283,7 @@ int main(int argc, char** argv) {
   test("register rotation blur with unroll should contain no modulo or division") {
     val e = padClamp2D(1) >> slide(3)(1) >> mapSeq(transpose >>
       map(dotSeqUnroll(weights1d)) >>
-      slideSeq(slideSeq.Values)(3)(1)(dotSeqUnroll(weights1d))
+      slideSeq(slideSeq.Values)(3)(1)(fun(x => x))(dotSeqUnroll(weights1d))
     )
     val code = gen.CProgram(wrapExpr(e), "blur").code
     " % ".r.findAllIn(code).length shouldBe 0

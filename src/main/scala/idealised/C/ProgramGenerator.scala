@@ -133,8 +133,9 @@ object ProgramGenerator {
         case s: C.AST.StructType =>
           decls += C.AST.StructTypeDecl(
             s.print,
-            s.fields.map{ case (ty, name) => C.AST.VarDecl(name, ty) }
+            s.fields.map { case (ty, name) => C.AST.VarDecl(name, ty) }
           )
+          s.fields.foreach { case (ty, _) => collect(ty) }
         case at: C.AST.ArrayType => collect(at.elemType)
         case pt: C.AST.PointerType => collect(pt.valueType)
         case ut: C.AST.UnionType => ut.fields.foreach(collect)

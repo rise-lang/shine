@@ -10,7 +10,7 @@ class SlideSeq extends idealised.util.Tests {
 
   test("Simple example should generate C code producing the expected result on a test") {
     val e = nFun(n => fun(ArrayType(n, int))(a =>
-      a |> slideSeq(slideSeq.Values)(3)(1)(reduceSeq(add)(l(0)))
+      a |> slideSeq(slideSeq.Values)(3)(1)(fun(x => x))(reduceSeq(add)(l(0)))
     ))
     val p = gen.CProgram(e)
 
