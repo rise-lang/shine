@@ -92,9 +92,7 @@ class acoustic3D extends idealised.util.TestsWithExecutor {
   )((mat1, mat2) =>
     transpose o map(transpose) o transpose o
     mapGlobal(0)(mapGlobal(1)(
-      // private in original expression, but cannot generate code for that yet
-      // could also be local, but need to use mapWorkGroup and mapLocal
-      oclSlideSeq(slideSeq.Values)(AddressSpace.Global)(sz)(st)(mapSeqUnroll(mapSeqUnroll(id)))(acoustic)
+      oclSlideSeq(slideSeq.Values)(AddressSpace.Private)(sz)(st)(mapSeqUnroll(mapSeqUnroll(id)))(acoustic)
         o transpose o map(transpose)
     )) o transpose o slide2D(sz)(st) o map(transpose) o transpose
       $ zip3D(mat1)(zip3D(mat2)(generateNumNeighbours(o+2)(n+2)(m+2)))
@@ -157,18 +155,16 @@ class acoustic3D extends idealised.util.TestsWithExecutor {
     val mat2 = Array.fill(O + 2, N + 2, M + 2)(random.nextInt(1000).toFloat)
 
     val runs = Seq(
-      runExternalKernel("oldAcoustic3D.cl", mat1, mat2),
-      runExternalKernel("oldAcoustic3DMSS.cl", mat1, mat2),
-      runKernel(gen.OpenCLKernel(stencil), mat1, mat2),
-      runKernel(gen.OpenCLKernel(stencilMSS), mat1, mat2)
+      ("original", runExternalKernel("oldAcoustic3D.cl", mat1, mat2)),
+      ("originalMSS", runExternalKernel("oldAcoustic3DMSS.cl", mat1, mat2)),
+      ("dpia", runKernel(gen.OpenCLKernel(stencil), mat1, mat2)),
+      ("dpiaMSS", runKernel(gen.OpenCLKernel(stencilMSS), mat1, mat2))
     )
 
     def check(a: Array[Float], b: Array[Float]): Unit =
       a.zip(b).foreach { case (a, b) => assert(Math.abs(a - b) < 0.01) }
 
-    runs.tail.foreach(r => check(r._1, runs.head._1))
-    runs.zipWithIndex.foreach { case (r, i) =>
-      println(s"t$i: ${r._2}")
-    }
+    runs.tail.foreach(r => check(r._2._1, runs.head._2._1))
+    runs.foreach(r => println(s"${r._1} time: ${r._2._2}"))
   }
 }

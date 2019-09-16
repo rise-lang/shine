@@ -797,7 +797,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     def countArrayLayers(dataType: DataType): Int = {
       dataType match {
         case ArrayType(_, et) => 1 + countArrayLayers(et)
-        case DepArrayType(_, NatToDataLambda(_ ,et)) => 1 + countArrayLayers(et)
+        case DepArrayType(_, NatToDataLambda(_ ,etq)) => 1 + countArrayLayers(et)
         case _ => 0
       }
     }

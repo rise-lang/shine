@@ -30,7 +30,7 @@ object SlideSeqIValues {
       // prologue initialisation
       MapSeqI(size - 1, dt1, dt1, write_dt1,
         Take(size - 1, inputSize - size + 1, read, dt1, input),
-        TakeAcc(size - 1, size - size + 1, dt1, rs.wr)) `;`
+        TakeAcc(size - 1, size - size + 1, dt1, rs.wr), unroll = true) `;`
       // core loop
       ForNat(n, _Λ_[NatKind](i => {
         // load current value
@@ -39,7 +39,7 @@ object SlideSeqIValues {
         // rotate
         MapSeqI(size - 1, dt1, dt1, write_dt1,
           Drop(1, size - 1, read, dt1, rs.rd),
-          TakeAcc(size - 1, 1, dt1, rs.wr))
+          TakeAcc(size - 1, 1, dt1, rs.wr), unroll = true)
       }), unroll = false)
     }))
   }
