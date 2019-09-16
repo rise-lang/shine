@@ -42,7 +42,7 @@ class asum extends idealised.util.Tests {
       input |>
         split(32768) |>
         mapPar(
-          asVector(4) >>
+          asVectorAligned(4) >>
           split(8192) >>
           mapSeq(
             reduceSeq(fun(x => fun(a => abs(float4)(x) + a)))(vectorFromScalar(l(0.0f)))
@@ -96,7 +96,7 @@ class asum extends idealised.util.Tests {
         input |>
           split(32768) |>
           mapWorkGroup(
-            asVector(4) >>
+            asVectorAligned(4) >>
               split(8192) >>
               mapLocal(
                 oclReduceSeq(PrivateMemory)(fun(x => fun(a => abs(float4)(x) + a)))(vectorFromScalar(l(0.0f)))
@@ -174,7 +174,7 @@ class asum extends idealised.util.Tests {
         input |>
           split(4096 * 128) |>
           mapWorkGroup(
-            asVector(2) >>
+            asVectorAligned(2) >>
               reorderWithStride(64) >>
               split(2048) >>
               mapLocal(

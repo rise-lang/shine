@@ -80,7 +80,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
           acc(a, env, CIntExpr((i * m) + j) :: ps, cont)
 
         case (i : CIntExpr) :: Nil =>
-
+          // TODO: check alignment and use pointer with correct address space
           acc(a, env, CIntExpr(i * m) :: Nil, {
             case ArraySubscript(v, idx) =>
               // the continuation has to add the value ...
@@ -126,14 +126,19 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
             Idx(n * m, dt, AsIndex(n * m, Natural((i * n) + j)), e),
             env, cont
           )
-          /* TODO: think more about this
-          // TODO: address space, memory and offset ...
-          exp(e, env, CIntExpr(i * n) :: Nil, e2 =>
-              cont(C.AST.FunCall(C.AST.DeclRef(s"vload$n"), immutable.Seq(C.AST.Literal("0"), e2)))
-            case _ => ???
+        case _ => error(s"unexpected $path")
+      }
+      case AsVectorAligned(n, _, _, e) => path match {
+        case (i : CIntExpr) :: (j : CIntExpr) :: ps =>
+          exp(e, env, CIntExpr((i * n) + j) :: ps, cont)
+        case (i : CIntExpr) :: Nil =>
+          // TODO: use pointer with correct address space
+          exp(e, env, CIntExpr(i * n) :: Nil, {
+            case ArraySubscript(v, idx) =>
+              cont(C.AST.FunCall(C.AST.DeclRef(s"vload$n"), immutable.Seq(idx, v)))
+            case e2 => error(s"unexpected $e2")
           })
-          */
-        case _ => error(s"Expected path to have two elements")
+        case _ => error(s"unexpected $path")
       }
       case AsScalar(_, m, _, e) => path match {
         case (i : CIntExpr) :: ps =>

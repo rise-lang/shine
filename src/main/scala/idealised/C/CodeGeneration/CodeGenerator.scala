@@ -838,15 +838,16 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           generateAccess(dt, C.AST.StructMemberAccess(accuExpr, C.AST.DeclRef(tuAccPos)), ps, env)
         case (i: CIntExpr) :: _ =>
           dt match {
+            // TODO: should this be in OpenCL backend?
             case _: VectorType =>
-              val data = C.AST.StructMemberAccess(accuExpr, C.AST.DeclRef("data"))
-              C.AST.ArraySubscript(data, C.AST.ArithmeticExpr(i))
+              OpenCL.AST.VectorSubscript(accuExpr, C.AST.ArithmeticExpr(i))
             case at: ArrayType =>
               val (k, ps) = flattenArrayIndices(at, path)
-              generateAccess(dt, C.AST.ArraySubscript(accuExpr, C.AST.ArithmeticExpr(k)), ps, env)
+              generateAccess(at.elemType, C.AST.ArraySubscript(accuExpr, C.AST.ArithmeticExpr(k)), ps, env)
 
             case dat: DepArrayType =>
               val (k, ps) = flattenArrayIndices(dat, path)
+              // TODO: should give proper dt
               generateAccess(dt, C.AST.ArraySubscript(accuExpr, C.AST.ArithmeticExpr(k)), ps, env)
             case x => throw new Exception(s"Expected an ArrayType that is accessed by the index but found $x instead.")
           }
@@ -861,6 +862,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       val (indicesAsPathElements, rest) = path.splitAt(countArrayLayers(dt))
       indicesAsPathElements.foreach(i => assert(i.isInstanceOf[CIntExpr]))
       val indices = indicesAsPathElements.map(_.asInstanceOf[CIntExpr].num)
+      // vector indexing also uses CIntExpr
       // assert(rest.isEmpty || !rest.head.isInstanceOf[CIntExpr])
 
       val subMap = buildSubMap(dt, indices)

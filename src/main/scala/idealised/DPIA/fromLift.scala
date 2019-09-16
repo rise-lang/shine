@@ -527,6 +527,15 @@ object fromLift {
           fun[ExpType](exp"[$mn.$a]", e =>
             AsVector(n, m, a, e)))
 
+      case (core.asVectorAligned,
+      lt.DepFunType(n: l.NatIdentifier,
+      lt.FunType(lt.ArrayType(mn, la: lt.ScalarType), lt.ArrayType(m, _))))
+      =>
+        val a = scalarType(la)
+        DepLambda[NatKind](natIdentifier(n))(
+          fun[ExpType](exp"[$mn.$a]", e =>
+            AsVectorAligned(n, m, a, e)))
+
       case (core.asScalar, lt.FunType(lt.ArrayType(m, lt.VectorType(n, la: lt.ScalarType)), _))
       =>
         val a = scalarType(la)

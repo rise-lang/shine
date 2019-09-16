@@ -266,4 +266,12 @@ object primitives {
       a ->: VectorType(n, a)
     ))
   }
+
+  // TODO: track alignment in type system?
+
+  case object asVectorAligned extends Primitive {
+    override def t: Type = nFunT(n => implN(m => implDT(a =>
+      ArrayType(m * n, a) ->: ArrayType(m, VectorType(n, a))
+    )))
+  }
 }

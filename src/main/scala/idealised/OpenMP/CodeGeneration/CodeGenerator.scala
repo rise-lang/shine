@@ -5,7 +5,7 @@ import idealised.C.AST.{ArraySubscript, Assignment, Decl}
 import idealised.C.CodeGeneration.{CodeGenerator => CCodeGenerator}
 import idealised.C.CodeGeneration.CodeGenerator.CIntExpr
 import idealised.DPIA.DSL._
-import idealised.DPIA.FunctionalPrimitives.{AsScalar, AsVector, ForeignFunction, VectorFromScalar}
+import idealised.DPIA.FunctionalPrimitives.{AsScalar, AsVectorAligned, ForeignFunction, VectorFromScalar}
 import idealised.DPIA.ImperativePrimitives._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
@@ -101,7 +101,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       }
       case ForeignFunction(f, inTs, outT, args) =>
         OpenMPCodeGen.codeGenForeignFunction(f, inTs, outT, args, env, path, cont)
-      case AsVector(n, _, dt, e) => path match {
+      case AsVectorAligned(n, _, dt, e) => path match {
         case (i : CIntExpr) :: (j : CIntExpr) :: ps =>
           exp(e, env, CIntExpr((i * n) + j) :: ps, cont)
 

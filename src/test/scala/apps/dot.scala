@@ -51,7 +51,7 @@ class dot extends idealised.util.Tests {
     import lift.OpenMP.primitives._
 
     val dotCPUVector1 = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
-      zip(asVector(4)(xs))(asVector(4)(ys))
+      zip(asVectorAligned(4)(xs))(asVectorAligned(4)(ys))
       |> split(2048 * 64)
       |> mapPar(
         split(2048) >>
@@ -69,7 +69,7 @@ class dot extends idealised.util.Tests {
 
     val intelDerivedNoWarpDot1 = nFun(n =>
       fun(xsT(n))(xs => fun(ysT(n))(ys =>
-        zip(xs |> asVector(4))(ys |> asVector(4))
+        zip(xs |> asVectorAligned(4))(ys |> asVectorAligned(4))
         |> split(8192)
         |> mapPar(
           split(8192) >>
@@ -122,7 +122,7 @@ class dot extends idealised.util.Tests {
 
     test("Intel derived no warp dot product 1 compiles to syntactically correct OpenCL") {
       val intelDerivedNoWarpDot1 = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
-        zip(xs |> asVector(4))(ys |> asVector(4)) |>
+        zip(xs |> asVectorAligned(4))(ys |> asVectorAligned(4)) |>
           split(8192) |>
           mapWorkGroup(
             split(8192) >>
