@@ -166,7 +166,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                    path: Path,
                    cont: Expr => Stmt): Stmt = {
     phrase match {
-      case i@Identifier(_, AccType(dt)) => cont(CCodeGen.generateAccess(dt,
+      case i@Identifier(_, AccType(dt)) => cont(generateAccess(dt,
         env.identEnv.applyOrElse(i, (_: Phrase[_]) => {
           throw new Exception(s"Expected to find `$i' in the environment: `${env.identEnv}'")
         }), path, env))
@@ -239,7 +239,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                    cont: Expr => Stmt) : Stmt =
   {
     phrase match {
-      case i@Identifier(_, ExpType(dt)) => cont(CCodeGen.generateAccess(dt,
+      case i@Identifier(_, ExpType(dt)) => cont(generateAccess(dt,
         env.identEnv.applyOrElse(i, (_: Phrase[_]) => {
           throw new Exception(s"Expected to find `$i' in the environment: `${env.identEnv}'")
         }), path, env))
@@ -456,6 +456,36 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     }
   }
 
+  override def generateAccess(dt: DataType,
+                              expr: Expr,
+                              path: Path,
+                              env: Environment): Expr = {
+    path match {
+      case Nil => expr
+      case (xj: TupleAccess) :: ps => dt match {
+        case rt: RecordType =>
+          val (structMember, dt2) = xj match {
+            case FstMember => ("_fst", rt.fst)
+            case SndMember => ("_snd", rt.snd)
+          }
+          generateAccess(dt2, C.AST.StructMemberAccess(expr, C.AST.DeclRef(structMember)), ps, env)
+        case _ => throw new Exception("expected tuple type")
+      }
+      case (_: CIntExpr) :: _ =>
+        dt match {
+          case at: ArrayType =>
+            val (dt2, k, ps) = CCodeGen.flattenArrayIndices(at, path)
+            generateAccess(dt2, C.AST.ArraySubscript(expr, C.AST.ArithmeticExpr(k)), ps, env)
+
+          case dat: DepArrayType =>
+            val (dt2, k, ps) = CCodeGen.flattenArrayIndices(dat, path)
+            generateAccess(dt2, C.AST.ArraySubscript(expr, C.AST.ArithmeticExpr(k)), ps, env)
+          case x => throw new Exception(s"Expected an ArrayType that is accessed by the index but found $x instead.")
+        }
+      case _ =>
+        throw new Exception(s"Can't generate access for `$dt' with `${path.mkString("[", "::", "]")}'")
+    }
+  }
 
   private def generateLetNat[T <: PhraseType](binder:LetNatIdentifier,
                              defn:Phrase[T],
@@ -824,42 +854,11 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       C.AST.BinaryExpr(e1, op, e2)
     }
 
-    def generateAccess(dt: DataType,
-                       accuExpr: Expr,
-                       path: Path,
-                       env: Environment): Expr = {
-      path match {
-        case Nil => accuExpr
-        case (xj: TupleAccess) :: ps =>
-          val tuAccPos = xj match {
-            case FstMember => "_fst"
-            case SndMember => "_snd"
-          }
-          generateAccess(dt, C.AST.StructMemberAccess(accuExpr, C.AST.DeclRef(tuAccPos)), ps, env)
-        case (i: CIntExpr) :: _ =>
-          dt match {
-            // TODO: should this be in OpenCL backend?
-            case _: VectorType =>
-              OpenCL.AST.VectorSubscript(accuExpr, C.AST.ArithmeticExpr(i))
-            case at: ArrayType =>
-              val (k, ps) = flattenArrayIndices(at, path)
-              generateAccess(at.elemType, C.AST.ArraySubscript(accuExpr, C.AST.ArithmeticExpr(k)), ps, env)
-
-            case dat: DepArrayType =>
-              val (k, ps) = flattenArrayIndices(dat, path)
-              // TODO: should give proper dt
-              generateAccess(dt, C.AST.ArraySubscript(accuExpr, C.AST.ArithmeticExpr(k)), ps, env)
-            case x => throw new Exception(s"Expected an ArrayType that is accessed by the index but found $x instead.")
-          }
-        case _ =>
-          throw new Exception(s"Can't generate access for `$dt' with `${path.mkString("[", "::", "]")}'")
-      }
-    }
-
-    def flattenArrayIndices(dt: DataType, path: Path): (Nat, Path) = {
+    def flattenArrayIndices(dt: DataType, path: Path): (DataType, Nat, Path) = {
       assert(dt.isInstanceOf[ArrayType] || dt.isInstanceOf[DepArrayType])
 
-      val (indicesAsPathElements, rest) = path.splitAt(countArrayLayers(dt))
+      val (arrayLayers, dt2) = peelArrayLayers(dt)
+      val (indicesAsPathElements, rest) = path.splitAt(arrayLayers)
       indicesAsPathElements.foreach(i => assert(i.isInstanceOf[CIntExpr]))
       val indices = indicesAsPathElements.map(_.asInstanceOf[CIntExpr].num)
       // vector indexing also uses CIntExpr
@@ -867,14 +866,18 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       val subMap = buildSubMap(dt, indices)
 
-      (ArithExpr.substitute(flattenIndices(dt, indices), subMap), rest)
+      (dt2, ArithExpr.substitute(flattenIndices(dt, indices), subMap), rest)
     }
 
-    def countArrayLayers(dataType: DataType):Int = {
+    def peelArrayLayers(dataType: DataType): (Int, DataType) = {
       dataType match {
-        case ArrayType(_, et) => 1 + countArrayLayers(et)
-        case DepArrayType(_, NatToDataLambda(_ ,et)) => 1 + countArrayLayers(et)
-        case _ => 0
+        case ArrayType(_, et) =>
+          val (n, dt) = peelArrayLayers(et)
+          (n + 1, dt)
+        case DepArrayType(_, NatToDataLambda(_, et)) =>
+          val (n, dt) = peelArrayLayers(et)
+          (n + 1, dt)
+        case _ => (0, dataType)
       }
     }
 

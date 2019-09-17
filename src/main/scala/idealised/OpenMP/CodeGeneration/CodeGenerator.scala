@@ -152,6 +152,18 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
     }
   }
 
+  override def generateAccess(dt: DataType,
+                              expr: Expr,
+                              path: Path,
+                              env: Environment): Expr = {
+    (path, dt) match {
+      case ((i: CIntExpr) :: _, _: VectorType) =>
+        val data = C.AST.StructMemberAccess(expr, C.AST.DeclRef("data"))
+        C.AST.ArraySubscript(data, C.AST.ArithmeticExpr(i))
+      case _ => super.generateAccess(dt, expr, path, env)
+    }
+  }
+
   protected object OpenMPCodeGen {
     def codeGenParFor(n: Nat,
                       dt: DataType,

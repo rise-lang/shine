@@ -176,6 +176,17 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
     case _ => super.typ(dt)
   }
 
+  override def generateAccess(dt: DataType,
+                              expr: Expr,
+                              path: Path,
+                              env: Environment): Expr = {
+    (path, dt) match {
+      case ((i: CIntExpr) :: _, _: VectorType) =>
+        OpenCL.AST.VectorSubscript(expr, C.AST.ArithmeticExpr(i))
+      case _ => super.generateAccess(dt, expr, path, env)
+    }
+  }
+
   override def genNat(n: Nat, env: Environment, cont:Expr => Stmt): Stmt = n match {
     case of: BuiltInFunctionCall => cont(C.AST.Literal(of.toOCLString))
     case _ => super.genNat(n, env, cont)
