@@ -44,7 +44,7 @@ final case class Fst(dt1: DataType,
     import TranslationToImperative._
 
     //TODO Assignments for general types should not be allowed, making this definition invalid
-    assert(dt2 match { case _ : BasicType => true; case _ => false })
+    assert(dt1 match { case _ : BasicType => true; case _ => false })
     con(record)(λ(exp"[$dt1 x $dt2, $read]")(x => A :=|dt1| Fst(dt1, dt2, x)) )
   }
 
