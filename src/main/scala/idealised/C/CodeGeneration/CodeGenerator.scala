@@ -413,7 +413,9 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case DepIdx(_, _, i, e) => exp(e, env, CIntExpr(i) :: path, cont)
 
       case ForeignFunction(f, inTs, outT, args) =>
-        CCodeGen.codeGenForeignFunction(f, inTs, outT, args, env, path, cont)
+        CCodeGen.codeGenForeignFunction(f, inTs, outT, args, env, path, fe =>
+          cont(CCodeGen.generateAccess(outT, fe, path, env))
+        )
 
       case Proj1(pair) => exp(SimplifyNats.simplifyIndexAndNatExp(Lifting.liftPair(pair)._1), env, path, cont)
       case Proj2(pair) => exp(SimplifyNats.simplifyIndexAndNatExp(Lifting.liftPair(pair)._2), env, path, cont)
@@ -430,7 +432,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case IndexType(n) => s"idx$n"
         case ArrayType(n, t) => s"${n}_${typeToStructNameComponent(t)}"
         case RecordType(a, b) => s"_${typeToStructNameComponent(a)}_${typeToStructNameComponent(b)}_"
-        case _: BasicType => t.toString
+        case _: BasicType => typ(t).toString
         case _ => ???
       }
     }

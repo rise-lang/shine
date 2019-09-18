@@ -102,25 +102,25 @@ class acoustic3D extends idealised.util.TestsWithExecutor {
   private val N = 128
   private val M = 64
   private val O = 32
-  private val localSize = LocalSize((32, 4, 1))
-  private val globalSize = GlobalSize((N, M, 1))
+  private val localSize = LocalSize((32, 4))
+  private val globalSize = GlobalSize((N, M))
 
-  def runExternalKernel(name: String,
+  def runOriginalKernel(name: String,
                         mat1: Array[Array[Array[Float]]],
                         mat2: Array[Array[Array[Float]]]): (Array[Float], TimeSpan[Time.ms]) = {
     import opencl.executor._
 
-    val source = io.Source.fromFile(s"src/test/scala/apps/$name")
+    val source = io.Source.fromFile(s"src/test/scala/apps/originalLift/$name")
     val code = try source.getLines.mkString("\n") finally source.close
     val kernelJNI = Kernel.create(code, "KERNEL", "")
 
     val float_bytes = 4
     val output_bytes = O * N * M * float_bytes
     val g_out = GlobalArg.createOutput(output_bytes)
-    val g_mat1 = GlobalArg.createInput(mat1.flatten.flatten)
-    val g_mat2 = GlobalArg.createInput(mat2.flatten.flatten)
     val kernelArgs = Array(
-      g_mat1, g_mat2, g_out,
+      GlobalArg.createInput(mat1.flatten.flatten),
+      GlobalArg.createInput(mat2.flatten.flatten),
+      g_out,
       ValueArg.create(M), ValueArg.create(N), ValueArg.create(O)
     )
 
@@ -151,18 +151,18 @@ class acoustic3D extends idealised.util.TestsWithExecutor {
 
   test("acoustic stencils produce same results") {
     val random = new scala.util.Random()
-    val mat1 = Array.fill(O + 2, N + 2, M + 2)(random.nextInt(1000).toFloat)
-    val mat2 = Array.fill(O + 2, N + 2, M + 2)(random.nextInt(1000).toFloat)
+    val mat1 = Array.fill(O + 2, N + 2, M + 2)(random.nextFloat * random.nextInt(1000))
+    val mat2 = Array.fill(O + 2, N + 2, M + 2)(random.nextFloat * random.nextInt(1000))
 
     val runs = Seq(
-      ("original", runExternalKernel("oldAcoustic3D.cl", mat1, mat2)),
-      ("originalMSS", runExternalKernel("oldAcoustic3DMSS.cl", mat1, mat2)),
+      ("original", runOriginalKernel("acoustic3D.cl", mat1, mat2)),
+      ("originalMSS", runOriginalKernel("acoustic3DMSS.cl", mat1, mat2)),
       ("dpia", runKernel(gen.OpenCLKernel(stencil), mat1, mat2)),
       ("dpiaMSS", runKernel(gen.OpenCLKernel(stencilMSS), mat1, mat2))
     )
 
     def check(a: Array[Float], b: Array[Float]): Unit =
-      a.zip(b).foreach { case (a, b) => assert(Math.abs(a - b) < 0.01) }
+      a.zip(b).foreach { case (a, b) => assert(Math.abs(a - b) < 0.001) }
 
     runs.tail.foreach(r => check(r._2._1, runs.head._2._1))
     runs.foreach(r => println(s"${r._1} time: ${r._2._2}"))
