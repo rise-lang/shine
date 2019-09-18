@@ -161,7 +161,6 @@ object fromLift {
         lt.FunType(lt: lt.DataType, _))
       =>
         val t = dataType(lt)
-        println(s"$msg : $t (Lift level)")
         fun[ExpType](exp"[$t, $read]", e => PrintType(msg, t, e))
 
       case (core.`natAsIndex`,

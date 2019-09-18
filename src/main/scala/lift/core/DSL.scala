@@ -254,7 +254,19 @@ object DSL {
     f(NatIdentifier(freshName("_n")))
   }
 
+
+  def implT[A](f: TypeIdentifier => A): A = {
+    f(TypeIdentifier(freshName("_t")))
+  }
   def implDT[A](f: DataTypeIdentifier => A): A = {
+    f(DataTypeIdentifier(freshName("_dt")))
+  }
+  // TODO: BasicTypeIdentifier
+  def implBT[A](f: DataTypeIdentifier => A): A = {
+    f(DataTypeIdentifier(freshName("_dt")))
+  }
+  // TODO: ScalarTypeIdentifier
+  def implST[A](f: DataTypeIdentifier => A): A = {
     f(DataTypeIdentifier(freshName("_dt")))
   }
 

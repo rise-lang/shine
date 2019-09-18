@@ -23,7 +23,9 @@ object infer {
     val solution = solve(constraints)(bound)
 
     // apply the solution
-    solution(typed_e).asInstanceOf[TypedExpr]
+    val r = solution(typed_e).asInstanceOf[TypedExpr]
+    printTypesAndTypeHoles(r)
+    r
   }
 
   def error(msg: String): Nothing =
@@ -442,5 +444,25 @@ object infer {
   def occurs(i: DataTypeIdentifier, t: Type): Boolean = t match {
     case FunType(it, ot) => occurs(i, it) || occurs(i, ot)
     case _ => false
+  }
+
+  def printTypesAndTypeHoles(expr: TypedExpr): Unit = {
+    var holeFound = false
+    traversal.DepthFirstLocalResult(expr, new traversal.Visitor {
+      override def visitExpr(e: Expr): traversal.Result[Expr] = {
+        e match {
+          case TypedExpr(primitives.typeHole(msg), t) =>
+            println(s"found type hole $msg: $t")
+            holeFound = true
+          case TypedExpr(primitives.printType(msg), t) =>
+            println(s"$msg : $t (Lift level)")
+          case _ =>
+        }
+        traversal.Continue(e, this)
+      }
+    })
+    if (holeFound) {
+      error("type holes were found")
+    }
   }
 }
