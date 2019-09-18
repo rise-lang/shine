@@ -376,6 +376,15 @@ object fromLift {
             fun[ExpType](exp"[$n.$a, $read]", e =>
               Reorder(n, a, idxF, idxFinv, e))))
 
+      case (core.gather,
+      lt.FunType(lt.ArrayType(m, _),
+      lt.FunType(lt.ArrayType(n, la), _)))
+      =>
+        val a = dataType(la)
+        fun[ExpType](exp"[$m.idx($n), $read]", y =>
+          fun[ExpType](exp"[$n.$a, $read]", x =>
+            Gather(n, m, a, y, x)))
+
       case (core.transpose,
       lt.FunType(lt.ArrayType(n, lt.ArrayType(m, la)), _))
       =>

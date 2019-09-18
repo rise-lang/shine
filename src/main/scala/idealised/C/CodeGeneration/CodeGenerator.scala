@@ -359,6 +359,13 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
 
+      case Gather(n, m, dt, y, e) => path match {
+        case (i: CIntExpr) :: ps =>
+          val yi = Idx(m, IndexType(n), AsIndex(m, Natural(i)), y)
+          exp(Idx(n, dt, yi, e), env, ps, cont)
+        case _ => error(s"unexpected $path")
+      }
+
       case PadClamp(n, l, r, _, e) => path match {
         case (i: CIntExpr) :: ps =>
           exp(e, env, CIntExpr(0) :: ps, left =>

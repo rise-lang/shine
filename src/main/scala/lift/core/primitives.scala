@@ -142,6 +142,12 @@ object primitives {
     ))
   }
 
+  case object gather extends Primitive {
+    override def t: Type = implN(n => implN(m => implDT(t =>
+      ArrayType(m, IndexType(n)) ->: ArrayType(n, t) ->: ArrayType(m, t)
+    )))
+  }
+
   case object scanSeq extends Primitive {
     override def t: Type = implN(n => implDT(s => implDT(t =>
       (s ->: t ->: t) ->: t ->: ArrayType(n, s) ->: ArrayType(n, t)
