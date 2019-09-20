@@ -309,12 +309,15 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error(s"Expected path to contain at least two elements")
       }
 
-      case Zip(_, _, _, e1, e2) => path match {
+      case Zip(n, dt1, dt2, e1, e2) => path match {
         case (i: CIntExpr) :: (xj : TupleAccess) :: ps => xj match {
           case FstMember => exp(e1, env, i :: ps, cont)
           case SndMember => exp(e2, env, i :: ps, cont)
         }
-        case _ => error("Expected a C-Integer-Expression followed by a tuple access on the path.")
+        case (i: CIntExpr) :: Nil =>
+          val j = AsIndex(n, Natural(i))
+          exp(Record(dt1, dt2, Idx(n, dt1, j, e1), Idx(n, dt2, j, e2)), env, Nil, cont)
+        case _ => error(s"unexpected $path")
       }
 
       case Unzip(_, _, _, e) => path match {
@@ -331,12 +334,15 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error("Expected a C-Integer-Expression followed by a tuple access on the path.")
       }
 
-      case Record(_, _, e1, e2) => path match {
+      case r @ Record(_, _, e1, e2) => path match {
         case (xj : TupleAccess) :: ps => xj match {
           case FstMember => exp(e1, env, ps, cont)
           case SndMember => exp(e2, env, ps, cont)
         }
-        case _ => error("Expected a tuple access on the path.")
+        case Nil =>
+          exp(e1, env, Nil, ec1 =>
+            exp(e2, env, Nil, ec2 => cont(C.AST.RecordLiteral(typ(r.t.dataType), ec1, ec2))))
+        case _ => error(s"unexpected $path")
       }
       case Fst(_, _, e) => exp(e, env, FstMember :: path, cont)
       case Snd(_, _, e) => exp(e, env, SndMember :: path, cont)
@@ -692,7 +698,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case ArrayData(a) =>
           C.AST.ArrayLiteral(typ(d.dataType).asInstanceOf[C.AST.ArrayType], a.map(codeGenLiteral))
         case RecordData(fst, snd) =>
-          C.AST.RecordLiteral(codeGenLiteral(fst), codeGenLiteral(snd))
+          C.AST.RecordLiteral(typ(d.dataType), codeGenLiteral(fst), codeGenLiteral(snd))
         case VectorData(_) => throw new Exception("VectorData not supported in C")
       }
     }
