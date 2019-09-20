@@ -30,11 +30,6 @@ final case class MapRead(n: Nat,
                                   (implicit context: TranslationContext): Phrase[CommType] =
     throw new Exception("This should not happen")
 
-
-  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommType] =
-    throw new Exception("This should not happen")
-
   override def continuationTranslation(C: Phrase[->:[ExpType, CommType]])
                                       (implicit context: TranslationContext): Phrase[CommType] =
     throw new Exception("This should not happen")

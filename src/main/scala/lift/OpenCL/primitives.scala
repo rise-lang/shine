@@ -68,4 +68,8 @@ object primitives {
         ArrayType(m * n.pow(k), t) ->: ArrayType(m, t)
     )))))
   }
+
+  case class oclSlideSeq(rot: core.slideSeq.Rotate) extends Primitive {
+    override def t: Type = aFunT(a => core.slideSeq(rot).t)
+  }
 }

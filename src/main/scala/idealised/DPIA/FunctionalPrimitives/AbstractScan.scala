@@ -51,18 +51,13 @@ abstract  class AbstractScan(n: Nat,
 
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommType] = {
-    mapAcceptorTranslation(fun(exp"[$dt1, $read]")(x => x), A)
-  }
-
-  override def mapAcceptorTranslation(g: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(array)(λ(exp"[$n.$dt1, $read]")(x =>
       con(init)(λ(exp"[$dt2, $read]")(y =>
         makeScanI(n, dt1, dt2,
           λ(exp"[$dt1, $read]")(x => λ(exp"[$dt2, $read]")(y => λ(acc"[$dt2]")(o =>
-            acc(g(f(x)(y)))(o)))),
+            acc(f(x)(y))(o)))),
           y, x, A)
       )
       ))

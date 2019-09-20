@@ -1,6 +1,7 @@
 package idealised.C.CodeGeneration
 
 import idealised.C.AST.{Block, Node}
+import idealised.DPIA.Compilation.SimplifyNats
 import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives._
 import idealised.DPIA.ImperativePrimitives._
@@ -141,9 +142,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case NewDoubleBuffer(_, _, dt, n, in, out, Lambda(ps, p)) =>
         CCodeGen.codeGenNewDoubleBuffer(ArrayType(n, dt), in, out, ps, p, env)
 
-      case NewRegRot(n, dt, Lambda(registers, Lambda(rotate, body))) =>
-        CCodeGen.codeGenNewRegRot(n, dt, registers, rotate, body, env)
-
       case For(n, Lambda(i, p), unroll) => CCodeGen.codeGenFor(n, i, p, unroll, env)
 
       case ForNat(n, DepLambda(i: NatIdentifier, p), unroll) => CCodeGen.codeGenForNat(n, i, p, unroll, env)
@@ -238,17 +236,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                    path: Path,
                    cont: Expr => Stmt) : Stmt =
   {
-    // TODO: think about this more thoroughly
-    val simplified_phrase = phrase.t.dataType match {
-      case IndexType(_) | NatType =>
-        mapTransientNat(phrase, x => x) match {
-          // this leads to infinite recursion
-          case IndexAsNat(_, p) if p == phrase => phrase
-          case sp => sp
-        }
-      case _ => phrase
-    }
-    simplified_phrase match {
+    phrase match {
       case i@Identifier(_, ExpType(dt, _)) => cont(CCodeGen.generateAccess(dt,
         env.identEnv.applyOrElse(i, (_: Phrase[_]) => {
           throw new Exception(s"Expected to find `$i' in the environment: `${env.identEnv}'")
@@ -418,8 +406,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case ForeignFunction(f, inTs, outT, args) =>
         CCodeGen.codeGenForeignFunction(f, inTs, outT, args, env, path, cont)
 
-      case Proj1(pair) => exp(Lifting.liftPair(pair)._1, env, path, cont)
-      case Proj2(pair) => exp(Lifting.liftPair(pair)._2, env, path, cont)
+      case Proj1(pair) => exp(SimplifyNats.simplifyIndexAndNatExp(Lifting.liftPair(pair)._1), env, path, cont)
+      case Proj2(pair) => exp(SimplifyNats.simplifyIndexAndNatExp(Lifting.liftPair(pair)._2), env, path, cont)
 
       case Apply(_, _) | DepApply(_, _) |
            Phrases.IfThenElse(_, _, _) | LetNat(_, _, _) | _: ExpPrimitive =>
@@ -428,11 +416,13 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
   }
 
   override def typ(dt: DataType): Type = {
-
     def typeToStructNameComponent(t:DataType):String = {
       t match {
-        case IndexType(_) => freshName("idx")
-        case _ => t.toString.replace('.', '_')
+        case IndexType(n) => s"idx$n"
+        case ArrayType(n, t) => s"${n}_${typeToStructNameComponent(t)}"
+        case RecordType(a, b) => s"_${typeToStructNameComponent(a)}_${typeToStructNameComponent(b)}_"
+        case _: BasicType => t.toString
+        case _ => ???
       }
     }
 
@@ -592,39 +582,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
               acc(out, env, CIntExpr(0) :: Nil, o => ExprStmt(Assignment(out_ptr, UnaryExpr(&, o))))))
           }))
       ))
-    }
-
-    def codeGenNewRegRot(n: Nat,
-                         dt: DataType,
-                         registers: Identifier[VarType],
-                         rotate: Identifier[CommType],
-                         body: Phrase[CommType],
-                         env: Environment): Stmt = {
-      import C.AST._
-
-      val re = Identifier(s"${registers.name}_e", registers.t.t1)
-      val ra = Identifier(s"${registers.name}_a", registers.t.t2)
-      val rot = Identifier(s"${rotate.name}_rotate", rotate.t)
-
-      val registerCount = n.eval // FIXME: this is a quick solution
-      // TODO: variable array
-      // val rs = (0 until registerCount).map(i => DeclRef(freshName(s"r${i}_"))).toArray
-
-      val rs = DeclRef(freshName(s"rs_"))
-      val rst = DPIA.Types.ArrayType(n, dt)
-
-      Block(
-        // rs.map(r => DeclStmt(VarDecl(r.name, typ(dt))))
-        Array(DeclStmt(VarDecl(rs.name, typ(rst))))
-          :+ cmd(
-          Phrase.substitute(immutable.Map(registers -> Pair(re, ra), rotate -> rot), `in` = body),
-          env updatedIdentEnv (re -> rs) updatedIdentEnv (ra -> rs)
-            updatedCommEnv (rot -> Block(
-            // (1 until registerCount).map(i => Assignment(rs(i-1), rs(i)))
-            (1 until registerCount).map(i => ExprStmt(Assignment(generateAccess(rst, rs, CIntExpr(i - 1) :: Nil, env), generateAccess(rst, rs, CIntExpr(i) :: Nil, env))))
-          ))
-        )
-      )
     }
 
     def codeGenFor(n: Nat,

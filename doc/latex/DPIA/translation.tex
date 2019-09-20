@@ -18,9 +18,6 @@ It is important that these translations satisfy the following equivalences.
   \semA{E}_\delta(A) \simeq A :=_\delta E
 
   \semE{E}_\delta(C) \simeq C(E)
-
-
-  \semM{F}{E}_{N.\delta_2}(A) = \semA{\prim{map}~N~\delta_1~\delta_2~F~E}_{N.\delta_2}(A) \simeq A :=_{N.\delta_2} \prim{map}~N~\delta_1~\delta_2~F~E
 \end{mathpar}}
 \caption{Translation}
 \end{figure}
@@ -130,27 +127,6 @@ It is important that these translations satisfy the following equivalences.
     \end{array}
   \end{displaymath}
   \caption{Continuation-passing Translation}\label{fig:con-trans}
-\end{figure}
-
-\begin{figure}
-  \begin{displaymath}
-    \begin{array}{lcl}
-      \semM{G}{\prim{map}~N~\delta_1~\delta_2~F~E}_{N.\delta_3}(A)
-      &=& \semM{\lambda x.~G~(F~x)}{E}_{N.\delta_3}(A) % TODO? composition symbol
-      \\
-      \semM{G}{\prim{mapPar}~N~\delta_1~\delta_2~F~E}_{N.\delta_3}(A)
-      &=& \semE{E}_{N.\delta_1}(\lambda x.~\prim{mapParI}~N~\delta_1~\delta_2~(\lambda x~o. \semA{G~(F~x)}_{\delta_3}(o))~x~A)
-      \\
-      \semM{G}{\prim{mapSeq}~N~\delta_1~\delta_2~F~E}_{N.\delta_3}(A)
-      &=& \semE{E}_{N.\delta_1}(\lambda x.~\prim{mapSeqI}~N~\delta_1~\delta_2~(\lambda x~o. \semA{G~(F~x)}_{\delta_3}(o))~x~A)
-      \medskip\\
-
-      \semM{G}{\prim{join}~N~M~\delta_1~E}_{NM.\delta_2}(A)
-      &=& \semM{\prim{map}~M~\delta_1~\delta_2~G}{E}_{N.M.\delta_2}(\prim{joinAcc}~N~M~\delta_1~A)
-      \\
-    \end{array}
-  \end{displaymath}
-  \caption{Acceptor-passing map translation}\label{fig:map-acc-trans}
 \end{figure}
 
 % For the continuation translation, the intuition is that, given an element input, we can continue some later translation with the output of the function. We introduce the \prim{mapRead} primitive which is passed through to the following stages:

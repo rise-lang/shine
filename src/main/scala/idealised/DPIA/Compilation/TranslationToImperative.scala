@@ -88,30 +88,6 @@ object TranslationToImperative {
     }
   }
 
-  def mapAcc(f: Phrase[ExpType ->: ExpType], E: Phrase[ExpType])
-            (A: Phrase[AccType])
-            (implicit context: TranslationContext): Phrase[CommType] = {
-    E match {
-      case ep: ExpPrimitive => ep.mapAcceptorTranslation(f, A)
-
-      // on the fly beta-reduction
-      case Apply(fun, arg) => mapAcc(f, Lifting.liftFunction(fun).reducing(arg))(A)
-      case DepApply(fun, arg) =>  arg match {
-        case a: Nat =>
-          mapAcc(f, Lifting.liftDependentFunction[NatKind, ExpType](fun.asInstanceOf[Phrase[NatKind `()->:` ExpType]])(a))(A)
-        case a: DataType =>
-          mapAcc(f, Lifting.liftDependentFunction[DataKind, ExpType](fun.asInstanceOf[Phrase[DataKind `()->:` ExpType]])(a))(A)
-      }
-
-      case IfThenElse(cond, thenP, elseP) =>
-        con(cond)(λ(cond.t) { x =>
-          `if` (x) `then` mapAcc(f, thenP)(A) `else` mapAcc(f, elseP)(A)
-        })
-
-      case _ => throw new Exception("This should never happen")
-    }
-  }
-
   def con(E: Phrase[ExpType])
          (C: Phrase[ExpType ->: CommType])
          (implicit context: TranslationContext): Phrase[CommType] = {
