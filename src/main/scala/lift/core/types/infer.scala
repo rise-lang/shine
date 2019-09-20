@@ -454,7 +454,7 @@ object infer {
           case TypedExpr(primitives.typeHole(msg), t) =>
             println(s"found type hole $msg: $t")
             holeFound = true
-          case TypedExpr(primitives.printType(msg), t) =>
+          case TypedExpr(primitives.printType(msg), FunType(t, _)) =>
             println(s"$msg : $t (Lift level)")
           case _ =>
         }
