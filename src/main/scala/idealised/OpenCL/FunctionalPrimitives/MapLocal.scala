@@ -7,11 +7,11 @@ import idealised.DPIA.Types._
 import idealised.DPIA._
 import idealised.OpenCL.IntermediatePrimitives.MapLocalI
 
-final case class MapLocal(dim: Int)(n: Nat,
-                                    dt1: DataType,
-                                    dt2: DataType,
-                                    f: Phrase[ExpType ->: ExpType],
-                                    array: Phrase[ExpType])
+final case class MapLocal(dim: Int)(override val n: Nat,
+                                    override val dt1: DataType,
+                                    override val dt2: DataType,
+                                    override val f: Phrase[ExpType ->: ExpType],
+                                    override val array: Phrase[ExpType])
   extends AbstractMapLoop(n, dt1, dt2, f, array)
 {
   override def makeMap = MapLocal(dim)

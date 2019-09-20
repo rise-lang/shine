@@ -6,11 +6,11 @@ import idealised.DPIA.Phrases._
 import idealised.DPIA.Types._
 import idealised.DPIA._
 
-final case class MapSeqUnroll(n: Nat,
-                              dt1: DataType,
-                              dt2: DataType,
-                              f: Phrase[ExpType ->: ExpType],
-                              array: Phrase[ExpType])
+final case class MapSeqUnroll(override val n: Nat,
+                              override val dt1: DataType,
+                              override val dt2: DataType,
+                              override val f: Phrase[ExpType ->: ExpType],
+                              override val array: Phrase[ExpType])
   extends AbstractMapLoop(n, dt1, dt2, f, array)
 {
   override def makeMap = MapSeqUnroll
