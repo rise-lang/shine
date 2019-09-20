@@ -25,11 +25,10 @@ object specialize {
     case _ => Failure(reduceSeq)
   }
 
-  def slideSeq(rot: primitives.slideSeq.Rotate): Strategy = {
+  def slideSeq(rot: primitives.slideSeq.Rotate, write_dt1: Expr): Strategy = {
     case primitives.slide => Success(nFun(sz => nFun(sp =>
-      // TODO: ask for write_dt1?
-      primitives.slideSeq(rot)(sz)(sp)(fun(x => x))(fun(x => x))
+      primitives.slideSeq(rot)(sz)(sp)(write_dt1)(fun(x => x))
     )))
-    case _ => Failure(slideSeq(rot))
+    case _ => Failure(slideSeq(rot, write_dt1))
   }
 }

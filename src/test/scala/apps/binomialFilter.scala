@@ -24,6 +24,7 @@ object binomialFilter {
   // 2 4 2 ~ 2 x 1 2 1
   // 1 2 1   1
 
+  val id = fun(x => x)
   val mulT = fun(x => fst(x) * snd(x))
   val add = fun(x => fun(a => x + a))
   val dot = fun(a => fun(b =>
@@ -59,7 +60,7 @@ object binomialFilter {
   val regrot =
     padClamp2D(1) >> slide(3)(1) >> mapSeq(transpose >>
       map(dotSeq(weights1d)) >>
-      slideSeq(slideSeq.Values)(3)(1)(fun(x => x))(dotSeq(weights1d))
+      slideSeq(slideSeq.Values)(3)(1)(id)(dotSeq(weights1d))
     )
 
   val norm = betaEtaNormalForm
@@ -210,7 +211,7 @@ class binomialFilter extends idealised.util.Tests {
     })
 
     val pick = repeatNTimes(2)(oncetd(specialize.reduceSeq)) `;`
-      oncetd(specialize.slideSeq(slideSeq.Values)) `;`
+      oncetd(specialize.slideSeq(slideSeq.Values, id)) `;`
       betaEtaNormalForm `;`
       oncetd(algorithmic.slideSeqFusion) `;`
       oncetd(specialize.mapSeq)
@@ -283,7 +284,7 @@ int main(int argc, char** argv) {
   test("register rotation blur with unroll should contain no modulo or division") {
     val e = padClamp2D(1) >> slide(3)(1) >> mapSeq(transpose >>
       map(dotSeqUnroll(weights1d)) >>
-      slideSeq(slideSeq.Values)(3)(1)(fun(x => x))(dotSeqUnroll(weights1d))
+      slideSeq(slideSeq.Values)(3)(1)(id)(dotSeqUnroll(weights1d))
     )
     val code = gen.CProgram(wrapExpr(e), "blur").code
     " % ".r.findAllIn(code).length shouldBe 0
