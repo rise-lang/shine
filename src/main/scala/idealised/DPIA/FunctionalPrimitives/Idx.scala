@@ -23,17 +23,6 @@ final case class Idx(n: Nat,
         (array :: exp"[$n.$dt, $read]") ->:
           exp"[$dt, $read]"
 
-//  override def inferTypes: Idx = {
-//    import TypeInference._
-//    val index_ = TypeInference(index)
-//    val array_ = TypeInference(array)
-//    (index_.t, array_.t) match {
-//      case (ExpType(IndexType(n1)), ExpType(ArrayType(n2, dt_))) if n1 == n2 =>
-//        Idx(n1, dt_, index_, array_)
-//      case x => error(x.toString, "(exp[idx(n)], exp[n.dt])")
-//    }
-//  }
-
   override def eval(s: Store): Data = {
     (OperationalSemantics.eval(s, array), OperationalSemantics.eval(s, index)) match {
       case (ArrayData(xs), IntData(i)) => xs(i)

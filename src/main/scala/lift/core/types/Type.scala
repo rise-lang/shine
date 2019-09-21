@@ -103,7 +103,6 @@ object float8 extends VectorType(8, float)
 
 object float16 extends VectorType(16, float)
 
-
 final class NatToDataApply(val f: NatToData, val n: Nat) extends DataType {
   override def toString: String = s"$f($n)"
 }

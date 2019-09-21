@@ -5,7 +5,7 @@ import idealised.DPIA.Phrases.Phrase
 import idealised.DPIA.Types.{AccType, CommType, NatToData}
 import idealised.DPIA.{->:, Nat, `(nat)->:`, freshName}
 import idealised.OpenCL
-import idealised.OpenCL.{BuiltInFunction, get_group_id, get_num_groups}
+import idealised.OpenCL.{BuiltInFunctionCall, get_group_id, get_num_groups}
 import lift.arithmetic.{?, ContinuousRange, PosInf, RangeAdd}
 
 final case class ParForNatWorkGroup(dim:Int)(override val n:Nat,
@@ -24,9 +24,9 @@ final case class ParForNatWorkGroup(dim:Int)(override val n:Nat,
 
   override val name: String = freshName("wg_id_")
 
-  override lazy val init: BuiltInFunction = get_group_id(dim)
+  override lazy val init: BuiltInFunctionCall = get_group_id(dim)
 
-  override lazy val step: BuiltInFunction = get_num_groups(dim, num_groups_range)
+  override lazy val step: BuiltInFunctionCall = get_num_groups(dim, num_groups_range)
 
   lazy val num_groups_range: RangeAdd =
     if (num_groups == ?) ContinuousRange(1, PosInf)
