@@ -16,7 +16,7 @@ import lift.core.types.{float, infer}
 import scala.language.implicitConversions
 
 
-class movement extends idealised.util.Tests {
+class movement extends util.Tests {
 
   implicit def rewriteResultToExpr(r: RewriteResult[Expr]): Expr = r.get
   val norm = LCNF

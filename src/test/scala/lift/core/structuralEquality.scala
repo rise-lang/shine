@@ -4,7 +4,7 @@ import lift.core.DSL._
 import lift.core.types._
 import lift.core.primitives._
 
-class structuralEquality extends idealised.util.Tests {
+class structuralEquality extends util.Tests {
   test("identity") {
     assert(fun(x => x) == fun(y => y))
   }

@@ -3,9 +3,9 @@ package idealised.DPIA.Primitives
 import lift.core.DSL._
 import lift.core.types._
 import lift.core.primitives.mapSeq
-import idealised.util.gen
+import util.gen
 
-class Map extends idealised.util.Tests {
+class Map extends util.Tests {
   test("Simple 1D map example should generate syntactic valid C code with one for loop") {
     val e =
       nFun(n => fun(ArrayType(n, float))(xs =>

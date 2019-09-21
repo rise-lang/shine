@@ -1,6 +1,6 @@
 package apps
 
-import idealised.util.gen
+import util.gen
 import lift.arithmetic.Cst
 import lift.core.DSL._
 import lift.core.{Expr, Nat}
@@ -9,7 +9,7 @@ import lift.core.primitives._
 import lift.core.types._
 
 //noinspection TypeAnnotation
-class gemm extends idealised.util.TestsWithExecutor {
+class gemm extends util.TestsWithExecutor {
 
   val epsilon = 1.0f
 

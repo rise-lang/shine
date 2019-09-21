@@ -7,9 +7,9 @@ import lift.core.primitives._
 import lift.core.HighLevelConstructs._
 import lift.OpenCL.primitives._
 import idealised.utils._
-import idealised.util.gen
+import util.gen
 
-class acoustic3D extends idealised.util.TestsWithExecutor {
+class acoustic3D extends util.TestsWithExecutor {
   private val getNumNeighbours = foreignFun("idxF", Seq("i", "j", "k", "m", "n", "o"),
     """{
       |  int count = 6;
@@ -94,7 +94,7 @@ class acoustic3D extends idealised.util.TestsWithExecutor {
     mapGlobal(0)(mapGlobal(1)(
       oclSlideSeq(slideSeq.Values)(AddressSpace.Private)(sz)(st)(mapSeqUnroll(mapSeqUnroll(id)))(acoustic)
         o transpose o map(transpose)
-    )) o transpose o slide2D(sz)(st) o map(transpose) o transpose
+    )) o transpose o slide2D(sz, st) o map(transpose) o transpose
       $ zip3D(mat1)(zip3D(mat2)(generateNumNeighbours(o+2)(n+2)(m+2)))
   ))))
 
@@ -154,17 +154,11 @@ class acoustic3D extends idealised.util.TestsWithExecutor {
     val mat1 = Array.fill(O + 2, N + 2, M + 2)(random.nextFloat * random.nextInt(1000))
     val mat2 = Array.fill(O + 2, N + 2, M + 2)(random.nextFloat * random.nextInt(1000))
 
-    val runs = Seq(
+    util.runsWithSameResult(Seq(
       ("original", runOriginalKernel("acoustic3D.cl", mat1, mat2)),
       ("originalMSS", runOriginalKernel("acoustic3DMSS.cl", mat1, mat2)),
       ("dpia", runKernel(gen.OpenCLKernel(stencil), mat1, mat2)),
       ("dpiaMSS", runKernel(gen.OpenCLKernel(stencilMSS), mat1, mat2))
-    )
-
-    def check(a: Array[Float], b: Array[Float]): Unit =
-      a.zip(b).foreach { case (a, b) => assert(Math.abs(a - b) < 0.001) }
-
-    runs.tail.foreach(r => check(r._2._1, runs.head._2._1))
-    runs.foreach(r => println(s"${r._1} time: ${r._2._2}"))
+    ))
   }
 }

@@ -3,9 +3,9 @@ package idealised.DPIA.Primitives
 import lift.core.DSL._
 import lift.core.types._
 import lift.core.primitives.{split, map, mapSeq}
-import idealised.util.gen
+import util.gen
 
-class Split extends idealised.util.Tests {
+class Split extends util.Tests {
 
   test("Simple split example should generate syntactic valid C code with two for loops") {
     val e =

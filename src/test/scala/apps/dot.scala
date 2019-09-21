@@ -6,9 +6,9 @@ import lift.core.DSL._
 import lift.core.types._
 import lift.core.primitives._
 import lift.core.HighLevelConstructs.reorderWithStride
-import idealised.util.gen
+import util.gen
 
-class dot extends idealised.util.Tests {
+class dot extends util.Tests {
 
   private def xsT(N : NatIdentifier) = ArrayType(N, float)
   private def ysT(N : NatIdentifier) = ArrayType(N, float)

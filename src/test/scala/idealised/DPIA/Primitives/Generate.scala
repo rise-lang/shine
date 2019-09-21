@@ -4,9 +4,9 @@ import lift.core._
 import lift.core.DSL._
 import lift.core.types._
 import lift.core.primitives._
-import idealised.util.gen
+import util.gen
 
-class Generate extends idealised.util.Tests {
+class Generate extends util.Tests {
   val id = fun(x => x)
   val addT = fun(x => fst(x) + snd(x))
   val cos = foreignFun("callCos", Seq("x"), "{ return cos(x); }", double ->: double)

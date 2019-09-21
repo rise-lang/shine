@@ -4,10 +4,10 @@ import lift.core.DSL._
 import lift.core.types._
 import lift.core.primitives._
 import lift.OpenCL.primitives._
-import idealised.util.gen
+import util.gen
 import idealised.utils.{Time, TimeSpan}
 
-class molecularDynamics extends idealised.util.TestsWithExecutor {
+class molecularDynamics extends util.TestsWithExecutor {
   val mdCompute = foreignFun("updateF",
     Seq("f", "ipos", "jpos", "cutsq", "lj1", "lj2"),
     """{
@@ -136,15 +136,9 @@ class molecularDynamics extends idealised.util.TestsWithExecutor {
     val particlesTuple = particles.sliding(4, 4).map { case Array(a, b, c, d) => (a, b, c, d) }.toArray
     val neighbours = buildNeighbourList(particlesTuple, M).transpose
 
-    val runs = Seq(
+    util.runsWithSameResult(Seq(
       ("original", runOriginalKernel("MolecularDynamics.cl", particles, neighbours)),
       ("dpia", runKernel(gen.OpenCLKernel(shoc), particles, neighbours))
-    )
-
-    def check(a: Array[Float], b: Array[Float]): Unit =
-      a.zip(b).foreach { case (a, b) => assert(Math.abs(a - b) < 0.001) }
-
-    runs.tail.foreach(r => check(r._2._1, runs.head._2._1))
-    runs.foreach(r => println(s"${r._1} time: ${r._2._2}"))
+    ))
   }
 }

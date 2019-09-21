@@ -5,9 +5,9 @@ import lift.core.types._
 import lift.core.primitives._
 import lift.OpenCL.primitives._
 import lift.OpenMP.primitives._
-import idealised.util.gen
+import util.gen
 
-class StructDecl extends idealised.util.Tests {
+class StructDecl extends util.Tests {
   val id = fun(x => x)
   val addT = fun(t => t._1 + t._2)
 

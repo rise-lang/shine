@@ -5,9 +5,9 @@ import lift.core.types._
 import lift.core.primitives._
 import lift.core.HighLevelConstructs.padClamp2D
 
-import idealised.util.gen
+import util.gen
 
-class Pad extends idealised.util.Tests {
+class Pad extends util.Tests {
   test("Simple C constant pad input and copy") {
     val e = nFun(n => fun(ArrayType(n, float))(xs =>
       xs |> padCst(2)(3)(l(5.0f)) |> mapSeq(fun(x => x))

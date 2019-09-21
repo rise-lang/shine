@@ -22,7 +22,7 @@ import lift.core.primitives.{join, map, split}
 import lift.core.types.NatKind
 
 
-class traversals extends idealised.util.Tests {
+class traversals extends util.Tests {
 
   test("rewrite simple elevate strategy") {
     val expr = fun(f => fun(g => map(f) >> map(g)))

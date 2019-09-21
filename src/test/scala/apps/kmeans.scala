@@ -4,10 +4,10 @@ import lift.core.DSL._
 import lift.core.types._
 import lift.core.primitives._
 import lift.OpenCL.primitives._
-import idealised.util.gen
+import util.gen
 import idealised.utils.{Time, TimeSpan}
 
-class kmeans extends idealised.util.TestsWithExecutor {
+class kmeans extends util.TestsWithExecutor {
   val update = fun(float ->: (float x float) ->: float)((dist, pair) =>
     dist + (pair._1 - pair._2) * (pair._1 - pair._2)
   )
@@ -94,17 +94,9 @@ class kmeans extends idealised.util.TestsWithExecutor {
     val features = Array.fill(F, P)(random.nextFloat)
     val clusters = Array.fill(C, F)(random.nextFloat)
 
-    val runs = Seq(
+    util.runsWithSameResult(Seq(
       ("original", runOriginalKernel("KMeans.cl", features, clusters)),
       ("dpia", runKernel(gen.OpenCLKernel(kmeans), features, clusters))
-    )
-
-    def check(a: Array[Int], b: Array[Int]): Unit = {
-      a.length == b.length
-      a.zip(b).foreach { case (a, b) => assert(a == b) }
-    }
-
-    runs.tail.foreach(r => check(r._2._1, runs.head._2._1))
-    runs.foreach(r => println(s"${r._1} time: ${r._2._2}"))
+    ))
   }
 }

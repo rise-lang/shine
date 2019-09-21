@@ -4,10 +4,10 @@ import lift.core.DSL._
 import lift.core.types._
 import lift.core.primitives._
 import lift.OpenCL.primitives._
-import idealised.util.gen
+import util.gen
 import idealised.utils.{Time, TimeSpan}
 
-class nbody extends idealised.util.TestsWithExecutor {
+class nbody extends util.TestsWithExecutor {
   val calcAcc = foreignFun("calcAcc",
     Seq("p1", "p2", "deltaT", "espSqr", "acc"),
     """{
@@ -97,8 +97,7 @@ class nbody extends idealised.util.TestsWithExecutor {
                         vel: Array[Float]): (Array[Float], TimeSpan[Time.ms]) = {
     import opencl.executor._
 
-    val source = io.Source.fromFile(s"src/test/scala/apps/originalLift/$name")
-    val code = try source.getLines.mkString("\n") finally source.close
+    val code = util.readFile(s"src/test/scala/apps/originalLift/$name")
     val kernelJNI = Kernel.create(code, "KERNEL", "")
 
     val float_bytes = 4
@@ -149,18 +148,12 @@ class nbody extends idealised.util.TestsWithExecutor {
     val localSizeNVIDIA = LocalSize((tileX, tileY))
     val globalSizeNVIDIA = GlobalSize((N, tileY))
 
-    val runs = Seq(
+    util.runsWithSameResult(Seq(
       ("original AMD", runOriginalKernel("NBody-AMD.cl", localSizeAMD, globalSizeAMD, pos, vel)),
       ("original NVIDIA", runOriginalKernel("NBody-NVIDIA.cl", localSizeNVIDIA, globalSizeNVIDIA, pos, vel)),
       ("dpia AMD", runKernel(gen.OpenCLKernel(amd), localSizeAMD, globalSizeAMD, pos, vel)),
       ("dpia NVIDIA", runKernel(gen.OpenCLKernel(nvidia), localSizeNVIDIA, globalSizeNVIDIA, pos, vel))
-    )
-
-    def check(a: Array[Float], b: Array[Float]): Unit =
-      a.zip(b).foreach { case (a, b) => assert(Math.abs(a - b) < 0.001) }
-
-    runs.tail.foreach(r => check(r._2._1, runs.head._2._1))
-    runs.foreach(r => println(s"${r._1} time: ${r._2._2}"))
+    ))
   }
 
   test("nbody AMD version calls update only once") {

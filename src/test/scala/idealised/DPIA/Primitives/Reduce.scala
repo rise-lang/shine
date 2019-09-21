@@ -5,7 +5,7 @@ import lift.core.types._
 import lift.core.types.AddressSpace
 import lift.core.primitives._
 import lift.OpenCL.primitives._
-import idealised.util.gen
+import util.gen
 import idealised.OpenCL._
 import lift.OpenCL.primitives.{mapLocal, oclReduceSeq, toPrivateFun}
 import lift.core.{Expr, Literal}
@@ -13,7 +13,7 @@ import lift.core.semantics.{IndexData, NatData}
 
 import scala.language.postfixOps
 
-class Reduce extends idealised.util.TestsWithExecutor {
+class Reduce extends util.TestsWithExecutor {
   val add = fun(a => fun(b => a + b))
 
   test("Simple example should generate syntactic valid C code with one loop") {

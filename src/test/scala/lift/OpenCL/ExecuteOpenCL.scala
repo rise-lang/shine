@@ -6,11 +6,11 @@ import lift.core.DSL._
 import lift.core.types._
 import lift.core.primitives._
 import lift.OpenCL.primitives._
-import idealised.util.gen
+import util.gen
 
 import scala.language.{postfixOps, reflectiveCalls}
 
-class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
+class ExecuteOpenCL extends util.TestsWithExecutor {
   test("Running a simple kernel with generic input size") {
     val f: Expr = nFun(n => fun(ArrayType(n, int))(
       xs => xs |> mapSeq(fun(x => x + l(1)))))

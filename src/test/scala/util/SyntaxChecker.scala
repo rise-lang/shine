@@ -1,4 +1,4 @@
-package idealised.util
+package util
 
 import sys.process._
 

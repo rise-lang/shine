@@ -4,9 +4,9 @@ import lift.core.DSL._
 import lift.core.types._
 import lift.core.primitives._
 import lift.OpenCL.primitives._
-import idealised.util.gen
+import util.gen
 
-class Let extends idealised.util.Tests {
+class Let extends util.Tests {
   val id = fun(x => x)
 
   // TODO: it feels like toMem and let are closely related, should be merged?

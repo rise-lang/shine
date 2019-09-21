@@ -4,10 +4,10 @@ import lift.core.DSL._
 import lift.core.types._
 import lift.core.primitives._
 import lift.OpenCL.primitives._
-import idealised.util.gen
+import util.gen
 import idealised.utils.{Time, TimeSpan}
 
-class nearestNeighbour extends idealised.util.TestsWithExecutor {
+class nearestNeighbour extends util.TestsWithExecutor {
   val distance = foreignFun("distance_", Seq("loc", "lat", "lng"),
     "{ return sqrt((lat - loc._fst) * (lat - loc._fst) + (lng - loc._snd) * (lng -  loc._snd)); }",
     (float x float) ->: float ->: float ->: float)
@@ -74,15 +74,9 @@ class nearestNeighbour extends idealised.util.TestsWithExecutor {
     val lat = random.nextFloat
     val lng = random.nextFloat
 
-    val runs = Seq(
+    util.runsWithSameResult(Seq(
       ("original", runOriginalKernel("NearestNeighbour.cl", locations, lat, lng)),
       ("dpia", runKernel(gen.OpenCLKernel(nn), locations, lat, lng))
-    )
-
-    def check(a: Array[Float], b: Array[Float]): Unit =
-      a.zip(b).foreach { case (a, b) => assert(Math.abs(a - b) < 0.001) }
-
-    runs.tail.foreach(r => check(r._2._1, runs.head._2._1))
-    runs.foreach(r => println(s"${r._1} time: ${r._2._2}"))
+    ))
   }
 }

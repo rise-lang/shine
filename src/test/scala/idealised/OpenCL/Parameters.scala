@@ -2,9 +2,9 @@ package idealised.OpenCL
 
 import lift.core.DSL._
 import lift.core.types._
-import idealised.util.gen
+import util.gen
 
-class Parameters extends idealised.util.Tests {
+class Parameters extends util.Tests {
   val m = 4 // vector width
 
   test("Output scalar") {
