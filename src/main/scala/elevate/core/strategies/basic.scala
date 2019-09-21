@@ -1,40 +1,76 @@
 package elevate.core.strategies
 
-import elevate.core.{Strategy, Success}
-import lift.core.Expr
+import elevate.core._
+import elevate.core.strategies.traversal.oncetd
+import elevate.lift.strategies.traversal._
+import elevate.meta.strategies.traversal._
 
 object basic {
 
-  def id: Strategy =
-    e => Success(e)
+  case class id[P]() extends Strategy[P] {
+    def apply(e: P) = Success(e)
+    override def toString = s"id"
+  }
 
-  def seq: Strategy => Strategy => Strategy =
-    f => s => e => f(e).flatMapSuccess(s(_))
+  case class seq[P](f: Strategy[P], s: Strategy[P]) extends Strategy[P] {
+    def apply(e: P): RewriteResult[P] = f(e).flatMapSuccess(s)
+    override def toString = s"$f `;` $s"
+  }
 
-  def leftChoice: Strategy => Strategy => Strategy =
-    f => s => e => f(e).flatMapFailure(_ => s(e))
+  case class leftChoice[P](f: Strategy[P], s: Strategy[P]) extends Strategy[P] {
+    def apply(e: P): RewriteResult[P] = f(e).flatMapFailure(_ => s(e))
+    override def toString = s"leftChoice($f,$s)"
+  }
 
-  def `try`: Strategy => Strategy =
-    s => leftChoice(s)(id)
+  case class `try`[P](s: Strategy[P]) extends Strategy[P] {
+    def apply(e: P): RewriteResult[P] = leftChoice[P](s, id())(e)
+    override def toString = s"try($s)"
+  }
 
-  def peek(f: Expr => Unit): Strategy =
-    e => { f(e); Success(e) }
+  case class peek[P](f: P => Unit) extends Strategy[P] {
+    def apply(e: P): RewriteResult[P] = {f(e); Success(e)}
+    override def toString = s"peek(...)"
+  }
 
-  def repeat: Strategy => Strategy =
-    s => `try`(s `;` (e => repeat(s)(e)))
+  case class repeat[P](s: Strategy[P]) extends Strategy[P] {
+    def apply(e: P): RewriteResult[P] = `try`(s `;` repeat(s))(e)
+    override def toString = s"repeat($s)"
+  }
 
-  def countingRepeat: (Int => Strategy) => Int => Strategy =
-    s => i => `try`(s(i) `;` (e => countingRepeat(s)(i+1)(e)))
+  case class countingRepeat[P](s: Int => Strategy[P], i: Int) extends Strategy[P] {
+    def apply(e: P): RewriteResult[P] = (`try`(s(i) `;` countingRepeat(s, i + 1))) (e)
+    override def toString = s"countingRepeat(${s(i)}, $i)"
+  }
 
-  def repeatNTimes: Int => Strategy => Strategy =
-    n => s => if (n > 0) { s `;` repeatNTimes(n-1)(s) } else { id }
+  case class repeatNTimes[P](n: Int, s: Strategy[P]) extends Strategy[P] {
+    def apply(e :P): RewriteResult[P] = if (n > 0) {(s `;` repeatNTimes(n - 1, s))(e)} else { id()(e) }
+    override def toString = "repeat" + n + s"times($s)"
+  }
 
-  def debug: Strategy = debug("")
-  def debug(msg: String): Strategy = peek(e => println(s"$msg $e"))
-  def debugln(msg: String): Strategy = debug(msg + "\n")
+  def show[P]: Strategy[P] = debug("")
 
-  def print(msg: String): Strategy = peek(e => println(msg))
+  case class debug[P](msg: String) extends Strategy[P] {
+    def apply(e: P): RewriteResult[P] = peek[P](p => println(s"$msg $p"))(e)
+    override def toString = "debug(...)"
+  }
 
-  def applyNTimes: Int => (Strategy => Strategy) => Strategy => Strategy =
-    i => f => s => if(i <= 0) s else applyNTimes(i-1)(f)(f(s))
+  case class debugln[P](msg: String) extends Strategy[P] {
+    def apply(e: P): RewriteResult[P] = debug[P](msg + "\n")(e)
+    override def toString = "debugln(...)"
+  }
+
+  case class print[P](msg: String) extends Strategy[P] {
+    def apply(e: P): RewriteResult[P] = peek[P](_ => println(msg))(e)
+    override def toString = "print(...)"
+  }
+
+  def applyNTimes[P]: Int => (Strategy[P] => Strategy[P]) => Strategy[P] => Strategy[P] =
+    i => f => s => if(i <= 0) s else applyNTimes[P](i-1)(f)(f(s))
+
+  // todo generalize
+  def normalize: Strategy[Lift] => Strategy[Lift] =
+    s => repeat(oncetd(s))
+
+  def normalizeElevate: Strategy[Elevate] => Strategy[Elevate] =
+    s => repeat(oncetd(s))
 }

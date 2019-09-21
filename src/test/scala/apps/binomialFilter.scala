@@ -10,6 +10,7 @@ import lift.core.HighLevelConstructs.padClamp2D
 import elevate.core._
 import elevate.lift.strategies.normalForm._
 import elevate.core.strategies.basic._
+import elevate.lift.strategies.traversal._
 import elevate.lift.rules._
 import elevate.lift.rules.algorithmic._
 import elevate.lift.rules.movement._
@@ -65,7 +66,7 @@ object binomialFilter {
 
   val norm = betaEtaNormalForm
 
-  val separateDot: Strategy = {
+  val separateDot: Strategy[Lift] = {
     case Apply(Apply(Apply(`reduce`, rf), init), Apply(Apply(`map`, mf), Apply(Apply(`zip`, w), Apply(`join`, nbh))))
     if rf == norm(add).get && init == l(0.0f) && mf == norm(mulT).get && w == weights2d
     =>
@@ -73,7 +74,7 @@ object binomialFilter {
     case _ => Failure(separateDot)
   }
 
-  val separateDotT: Strategy = {
+  val separateDotT: Strategy[Lift] = {
     case Apply(Apply(Apply(`reduce`, rf), init), Apply(Apply(`map`, mf), Apply(Apply(`zip`, w), Apply(`join`, nbh))))
       if rf == norm(add).get && init == l(0.0f) && mf == norm(mulT).get && w == weights2d
     =>
@@ -97,7 +98,7 @@ class binomialFilter extends idealised.util.Tests {
 
     val s =
       oncetd(specialize.reduceSeq) `;`
-        repeatNTimes(2)(oncetd(specialize.mapSeq))
+        repeatNTimes(2, oncetd(specialize.mapSeq))
     s_eq(s(highLevel).get, reference)
   }
 
@@ -108,8 +109,8 @@ class binomialFilter extends idealised.util.Tests {
     val s =
       BENF `;`
       oncetd(separateDot) `;`
-        repeatNTimes(2)(oncetd(specialize.reduceSeq)) `;`
-        repeatNTimes(2)(oncetd(specialize.mapSeq)) `;`
+        repeatNTimes(2, oncetd(specialize.reduceSeq)) `;`
+        repeatNTimes(2, oncetd(specialize.mapSeq)) `;`
        BENF
 
     s_eq(s(highLevel).get,
@@ -128,8 +129,8 @@ class binomialFilter extends idealised.util.Tests {
     val Dh = dot(weights1d)
     val Dv = dot(weights1d)
 
-    val steps = Seq[(Strategy, Expr)](
-      (strategies.basic.id,
+    val steps = Seq[(Elevate, Lift)](
+      (strategies.basic.id(),
         P >> *(Sh) >> Sv >> *(T) >> *(*(fun(nbh => dot(weights2d)(join(nbh)))))),
       (oncetd(separateDotT),
         P >> *(Sh) >> Sv >> *(T) >> *(*(T >> *(Dv) >> Dh))),
@@ -163,9 +164,9 @@ class binomialFilter extends idealised.util.Tests {
         result
     })
 
-    val pick = repeatNTimes(2)(oncetd(specialize.reduceSeq)) `;`
-      repeatNTimes(2)(oncetd(specialize.mapSeq)) `;`
-      repeatNTimes(2)(skip(1)(specialize.mapSeq))
+    val pick = repeatNTimes(2, oncetd(specialize.reduceSeq)) `;`
+      repeatNTimes(2, oncetd(specialize.mapSeq)) `;`
+      repeatNTimes(2, skip(1)(specialize.mapSeq))
     s_eq(pick(result).get, betaEtaNormalForm(separated).get)
   }
 
@@ -181,8 +182,8 @@ class binomialFilter extends idealised.util.Tests {
     val Dh = dot(weights1d)
     val Dv = dot(weights1d)
 
-    val steps = Seq[(Strategy, Expr)](
-      (strategies.basic.id,
+    val steps = Seq[(Elevate, Lift)](
+      (strategies.basic.id(),
         P >> *(Sh) >> Sv >> *(T) >> *(*(fun(nbh => dot(weights2d)(join(nbh)))))),
       (oncetd(separateDotT),
         P >> *(Sh) >> Sv >> *(T) >> *(*(T >> *(Dv) >> Dh))),
@@ -210,7 +211,7 @@ class binomialFilter extends idealised.util.Tests {
       result
     })
 
-    val pick = repeatNTimes(2)(oncetd(specialize.reduceSeq)) `;`
+    val pick = repeatNTimes(2, oncetd(specialize.reduceSeq)) `;`
       oncetd(specialize.slideSeq(slideSeq.Values, id)) `;`
       betaEtaNormalForm `;`
       oncetd(algorithmic.slideSeqFusion) `;`

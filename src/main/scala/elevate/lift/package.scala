@@ -1,13 +1,50 @@
 package elevate
 
 import _root_.lift.core._
+import _root_.lift.core.types._
+import elevate.core.strategies.basic.peek
+import elevate.core.{Lift, RewriteResult, Strategy, Success}
 
 package object lift {
 
+  def sameButOneMayBeTyped(a: Lift, b: Lift): Boolean = {
+    a match {
+      case x if x == b => true
+      case TypedExpr(x, _) if x == b => true
+      case _ => b match {
+        case TypedExpr(x, _) if x == a => true
+        case _ => false
+      }
+    }
+  }
+
+  def printExpr : Strategy[Lift] = peek[Lift](p => println(s"${toEvaluableString(p)}"))
+  def printExpr(msg: String) : Strategy[Lift] = peek[Lift](p => println(s"$msg \n${toEvaluableString(p)}"))
+
+  def toEvaluableString(e: Lift): String = {
+    e match {
+      case Identifier(name) => s"""Identifier("id$name")""" // id prefix prevents name clashes with freshName
+      case Lambda(x, e) => s"Lambda(${toEvaluableString(x)}, ${toEvaluableString(e)})"
+      case Apply(f, e) => s"Apply(${toEvaluableString(f)}, ${toEvaluableString(e)})"
+      case DepLambda(x, e) => x match {
+        case n: NatIdentifier => s"""DepLambda[NatKind](NatIdentifier("id$n"), ${toEvaluableString(e)})"""
+        case dt: DataTypeIdentifier => s"""DepLambda[DataKind]("id$dt", ${toEvaluableString(e)})"""
+      }
+      case DepApply(f, x) => x match {
+        case n: Nat => s"DepApply[NatKind](${toEvaluableString(f)}, $n)"
+        case dt: DataType => s"DepApply[DataKind](${toEvaluableString(f)}, $dt)"
+      }
+      case Literal(d) => s"Literal($d)"
+      case TypedExpr(e, t) => toEvaluableString(e)
+      case ff: ForeignFunction => ff.toString
+      case p: Primitive => p.toString
+    }
+  }
+
   def dotPrinter(expr: Expr,
-                 printEdgeLabels: Boolean = false,
+                 printEdgeLabels: Boolean = true,
                  inlineApply: Boolean = false,
-                 inlineTypedExpr: Boolean = false,
+                 inlineTypedExpr: Boolean = true,
                  inlineLambdaIdentifier: Boolean = false): String = {
 
     @scala.annotation.tailrec
@@ -45,7 +82,7 @@ package object lift {
             "\"" + s + "\\n"+ty.get + "\""
           else "<" + decorations(s) + ">"
 
-          s"[label=$label]"
+          s"label=$label"
         }
       }
 
@@ -104,7 +141,7 @@ package object lift {
         case DepApply(f, e) =>
           val fun = getID(f)
           val arg = getID(e)
-          s"""$parent ${attr(fillWhite + Label("apply").toString)}
+          s"""$parent ${attr(fillWhite + Label("depApply").toString)}
              |$parent -> $fun ${addEdgeLabel(edgeLabel("fun"))};
              |$parent -> $arg ${addEdgeLabel(edgeLabel("arg"))};
              |$arg ${attr(fillWhite + Label(e.toString).toString)}

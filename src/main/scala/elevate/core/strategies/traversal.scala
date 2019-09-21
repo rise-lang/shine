@@ -6,100 +6,90 @@ import lift.core.types._
 import lift.core._
 
 object traversal {
-
   // generic one-level traversal operators
 
-  private def traverseSingleSubexpression: Strategy => Expr => Option[RewriteResult] =
-    s => {
-      case Identifier(_) => None
-      case Lambda(x, e) => Some(s(e).mapSuccess(Lambda(x, _)))
-      case Apply(f, e) => throw new Exception("This should not happen")
-      case DepLambda(x, e) => x match {
-        case n: NatIdentifier => Some(s(e).mapSuccess(DepLambda[NatKind](n, _)))
-        case dt: DataTypeIdentifier => Some(s(e).mapSuccess(DepLambda[DataKind](dt, _)))
-      }
-      case DepApply(f, x) => x match {
-        case n: Nat => Some(s(f).mapSuccess(DepApply[NatKind](_, n)))
-        case dt: DataType => Some(s(f).mapSuccess(DepApply[DataKind](_, dt)))
-      }
-      case Literal(_) => None
-      case TypedExpr(e, t) => Some(s(e).mapSuccess(TypedExpr(_, t)))
-      case ff: ForeignFunction => None
-      case p: Primitive => None
-    }
-
   // applies s to all direct subexpressions
-  def all: Strategy => Strategy = s => {
-    case Apply(f, e) => s(f).flatMapSuccess(a => s(e).mapSuccess(b => Apply(a, b)))
-
-    case x => traverseSingleSubexpression(s)(x) match {
-      case Some(r) => r
-      case None => Success(x)
-    }
-  }
-
-  private def oneHandlingState(carryOverState: Boolean) : Strategy => Strategy = s => {
-    case Apply(f, e) => s(f) match {
-        case Success(x) => Success(Apply(x,e))
-        case Failure(state) => if(carryOverState)
-          state(e).mapSuccess(Apply(f, _)) else
-          s(e).mapSuccess(Apply(f, _))
-      }
-    case x => traverseSingleSubexpression(s)(x) match {
-      case Some(r) => r
-      case None => Failure(s)
-    }
+  case class all[P: Traversable](s: Strategy[P]) extends Strategy[P] {
+    def apply(p: P): RewriteResult[P] = implicitly[Traversable[P]].all(s)(p)
   }
 
   // applies s to one direct subexpression
-  def one: Strategy => Strategy = oneHandlingState(false)
-  def oneWithState: Strategy => Strategy = oneHandlingState(true)
+  case class oneHandlingState[P: Traversable](carryOverState: Boolean, s: Strategy[P]) extends Strategy[P] {
+    def apply(p: P): RewriteResult[P] = implicitly[Traversable[P]].oneHandlingState(carryOverState)(s)(p)
+  }
+
+  object one {
+    def apply[P: Traversable](s: Strategy[P]) = oneHandlingState(carryOverState = false, s)
+  }
+
+  object oneWithState {
+    def apply[P: Traversable](s: Strategy[P]) = oneHandlingState(carryOverState = true, s)
+  }
 
   // applies s to at least one direct subexpression and as many as possible
-  def some: Strategy => Strategy = s => {
-    case Apply(f, e) => (s(f), s(e)) match {
-      case (Failure(_), Failure(_)) => Failure(s)
-      case (x, y) => Success(Apply(x.getExprOrElse(f), y.getExprOrElse(e)))
-    }
-    case x => traverseSingleSubexpression(s)(x) match {
-      case Some(r) => r
-      case None => Failure(s)
-    }
+  case class some[P: Traversable](s: Strategy[P]) extends Strategy[P] {
+    def apply(p: P): RewriteResult[P] = implicitly[Traversable[P]].some(s)(p)
   }
 
   // generic traversal strategies
 
-  def topdown: Strategy => Strategy = s => s `;` (e => all(topdown(s))(e))
+  case class oncetd[P: Traversable](s: Strategy[P]) extends Strategy[P] {
+    def apply(p: P): RewriteResult[P] = (s <+ one(oncetd(s))) (p)
+    override def toString = s"oncetd($s)"
+  }
 
-  def bottomup: Strategy => Strategy = s => ((e: Expr) => all(bottomup(s))(e)) `;` s
+  case class topdown[P: Traversable](s: Strategy[P]) extends Strategy[P] {
+    def apply(p: P): RewriteResult[P] = (s `;` all(topdown(s))) (p)
+  }
 
-  def downup: Strategy => Strategy = s => s `;` (e => (all(downup(s)) `;` s)(e))
+  case class tryAll[P: Traversable](s: Strategy[P]) extends Strategy[P] {
+    def apply(p: P): RewriteResult[P] = (all(tryAll(`try`(s))) `;` `try`(s)) (p)
+    override def toString = s"tryAll($s)"
+  }
 
-  def downup2: Strategy => Strategy => Strategy = s1 => s2 => s1 `;` (e => (all(downup2(s1)(s2)) `;` s2)(e))
+  case class bottomup[P: Traversable](s: Strategy[P]) extends Strategy[P] {
+    def apply(p: P): RewriteResult[P] = (all(bottomup(s)) `;` s) (p)
+  }
 
-  def oncetd: Strategy => Strategy = s => s <+ (e => one(oncetd(s))(e))
+  case class downup[P: Traversable](s: Strategy[P]) extends Strategy[P] {
+    def apply(p: P): RewriteResult[P] = (s `;` (all(downup(s)) `;` s)) (p)
+  }
 
-  def oncebu: Strategy => Strategy = s => ((e: Expr) => one(oncebu(s))(e)) <+ s
+  case class downup2[P: Traversable](s1: Strategy[P], s2: Strategy[P]) extends Strategy[P] {
+    def apply(p: P): RewriteResult[P] = (s1 `;` (all(downup2(s1, s2)) `;` s2)) (p)
+  }
 
-  def alltd: Strategy => Strategy = s => s <+ (e => all(alltd(s))(e))
+  case class oncebu[P: Traversable](s: Strategy[P]) extends Strategy[P] {
+    def apply(p: P): RewriteResult[P] = (one(oncebu(s)) <+ s)(p)
+  }
 
-  def tryAll: Strategy => Strategy = s => ((e: Expr) => all(tryAll(`try`(s)))(e)) `;` `try`(s)
+  case class alltd[P: Traversable](s: Strategy[P]) extends Strategy[P] {
+    def apply(p: P): RewriteResult[P] = (s <+ all(alltd(s)))(p)
+  }
 
-  def sometd: Strategy => Strategy = s => s <+ (e => some(sometd(s))(e))
+  case class sometd[P: Traversable](s: Strategy[P]) extends Strategy[P] {
+    def apply(p: P): RewriteResult[P] = (s <+ some(sometd(s)))(p)
+  }
 
-  def somebu: Strategy => Strategy = s => ((e: Expr) => some(somebu(s))(e)) <+ s
+  case class somebu[P: Traversable](s: Strategy[P]) extends Strategy[P] {
+    def apply(p: P): RewriteResult[P] = (some(somebu(s)) <+ s)(p)
+  }
 
-  def position(n: Int): Strategy => Strategy = s => if(n <= 0) s else oneWithState(position(n-1)(s))
+  case class position[P: Traversable](n: Int)(s: Strategy[P]) extends Strategy[P] {
+    def apply(p: P): RewriteResult[P] = if (n <= 0) s(p) else oneWithState(position(n - 1)(s)).apply(p)
+  }
 
-  def skip(n: Int): Strategy => Strategy = s => e => s(e) match {
-    case Failure(a) =>
-      oneWithState(skip(n)(a))(e)
-    case Success(r) if n <= 0 =>
-      Success(r)
-    case Success(_) if n > 0 =>
-      oneWithState(skip(n - 1)(s))(e)
+  case class skip[P: Traversable](n: Int)(s: Strategy[P]) extends Strategy[P] {
+    def apply(p: P): RewriteResult[P] = s(p) match {
+      case Failure(a) =>
+        oneWithState(skip(n)(a)).apply(p)
+      case Success(r) if n <= 0 =>
+        Success(r)
+      case Success(_) if n > 0 =>
+        oneWithState(skip(n - 1)(s)).apply(p)
+    }
   }
 
   // todo figure out whats wrong here
-  def innermost: Strategy => Strategy = s => bottomup(`try`(e => (s `;` innermost(s))(e)))
+  //def innermost: Strategy[Lift] => Strategy[Lift] = s => bottomup(`try`(e => (s `;` innermost(s))(e))) }
 }

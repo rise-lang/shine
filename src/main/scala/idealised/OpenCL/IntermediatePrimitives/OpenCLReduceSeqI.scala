@@ -17,12 +17,13 @@ object OpenCLReduceSeqI {
             f: Phrase[ExpType ->: ExpType ->: AccType ->: CommType],
             init: Phrase[ExpType],
             in: Phrase[ExpType],
-            out: Phrase[ExpType ->: CommType])
+            out: Phrase[ExpType ->: CommType],
+            unroll: Boolean)
            (implicit context: TranslationContext): Phrase[CommType] = {
     comment("oclReduceSeq") `;`
       `new`(initAddrSpace)(dt2, accumulator =>
         acc(init)(accumulator.wr) `;`
-          `for`(n, i => f(accumulator.rd)(in `@` i)(accumulator.wr)) `;`
+          `for`(n, i => f(accumulator.rd)(in `@` i)(accumulator.wr), unroll) `;`
           out(accumulator.rd)
       )
   }

@@ -3,11 +3,14 @@ package elevate.core
 import lift.core._
 import lift.core.DSL._
 import lift.core.primitives.map
+import elevate.core.strategies.basic._
 import elevate.lift.rules._
 import elevate.lift.rules.algorithmic.{mapFusion, mapLastFission}
 import elevate.lift.strategies.algorithmic.{mapFirstFission, mapFullFission}
 import strategies.traversal._
 import elevate.lift.strategies.normalForm._
+import elevate.lift.strategies.traversal._
+
 
 class fission_fusion extends idealised.util.Tests {
   val norm = normalize(betaReduction <+ etaReduction)
@@ -18,7 +21,7 @@ class fission_fusion extends idealised.util.Tests {
     }
   }
 
-  def check(a: Expr, fis: Strategy, b: Expr, fus: Strategy): Unit = {
+  def check(a: Expr, fis: Strategy[Lift], b: Expr, fus: Strategy[Lift]): Unit = {
     eq(fis(a).get, b)
     eq(fus(b).get, a)
   }

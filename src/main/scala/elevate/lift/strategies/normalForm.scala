@@ -1,9 +1,10 @@
 package elevate.lift.strategies
 
-import elevate.core.{Failure, Strategy, Success}
+import elevate.core.{Failure, Lift, RewriteResult, Strategy, Success}
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
 import elevate.lift.strategies.traversal._
+import elevate.core.strategies.predicate._
 import elevate.lift.strategies.predicate._
 import elevate.lift.strategies.algorithmic._
 import elevate.lift.rules._
@@ -14,19 +15,30 @@ import lift.core.primitives.map
 
 object normalForm {
 
-  def normalize: Strategy => Strategy =
-    s => repeat(oncetd(s))
+  case object BENF extends Strategy[Lift] {
+    def apply(e: Lift): RewriteResult[Lift] = betaEtaNormalForm(e)
+    override def toString = "BENF"
+  }
+  def betaEtaNormalForm: Strategy[Lift] =
+    normalize(etaReduction <+ betaReduction)
 
-  def BENF: Strategy = betaEtaNormalForm
-  def betaEtaNormalForm: Strategy = normalize(betaReduction <+ etaReduction)
+  case object LCNF extends Strategy[Lift] {
+    def apply(e: Lift): RewriteResult[Lift] = lambdaCalculusNormalForm(e)
+    override def toString = "LCNF"
+  }
+  def lambdaCalculusNormalForm: Strategy[Lift] =
+    BENF `;` normalize(argumentOf(map, (isNotLambda `;` etaAbstraction)))
 
-  def LCNF: Strategy = lambdaCalculusNormalForm
-  def lambdaCalculusNormalForm: Strategy =
-    BENF `;` tryAll(argumentOf(map)(isLambda <+ etaAbstraction))
+  case object RNF extends Strategy[Lift] {
+    def apply(e: Lift): RewriteResult[Lift] = rewriteNormalForm(e)
+    override def toString = "RNF"
+  }
+  def rewriteNormalForm: Strategy[Lift] = normalize(LCNF `;` mapLastFission) `;` LCNF
 
-  def RNF: Strategy = rewriteNormalForm
-  def rewriteNormalForm: Strategy = normalize(mapLastFission) `;` LCNF
+  case object CNF extends Strategy[Lift] {
+    def apply(e: Lift): RewriteResult[Lift] = codegenNormalForm(e)
+    override def toString = "CNF"
+  }
+  def codegenNormalForm: Strategy[Lift] = normalize(mapFusion)
 
-  def CNF: Strategy = codegenNormalForm
-  def codegenNormalForm: Strategy = normalize(mapFusion)
 }
