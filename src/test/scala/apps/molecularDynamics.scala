@@ -36,13 +36,12 @@ class molecularDynamics extends idealised.util.TestsWithExecutor {
     split(128) |>
     mapWorkGroup(
       mapLocal(fun(p =>
-        // TODO: let
-        toPrivate(p._1) |> fun(particle =>
+        toPrivate(p._1) |> let(fun(particle =>
           gather(p._2)(particles) |>
           oclReduceSeq(AddressSpace.Private)(fun(force => fun(n =>
             mdCompute(force)(particle)(n)(cutsq)(lj1)(lj2)
           )))(vectorFromScalar(l(0.0f)))
-        )
+        ))
       ))
     ) |> join
   )))

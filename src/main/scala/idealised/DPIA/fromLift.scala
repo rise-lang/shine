@@ -567,6 +567,14 @@ object fromLift {
         fun[ExpType](ExpType(a, read), x =>
           Cast(a, b, x))
 
+      case (core.let, lt.FunType(lt.FunType(la: lt.DataType, lb: lt.DataType), _))
+      =>
+        val a = dataType(la)
+        val b = dataType(lb)
+        fun[ExpType ->: ExpType](exp"[$a, $read]" ->: exp"[$b, $read]", f =>
+          fun[ExpType](ExpType(a, read), x =>
+            Let(a, b, x, f)))
+
       case (l.ForeignFunction(decl, la), _)
       =>
         val (inTs, outT) = foreignFunIO(la)

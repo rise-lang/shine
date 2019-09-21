@@ -68,7 +68,7 @@ class nbody extends idealised.util.TestsWithExecutor {
             // TODO: is this the correct address space?
             oclReduceSeq(AddressSpace.Local)(
               fun(tileY`.`tileX`.`float4)(acc => fun(tileY`.`tileX`.`float4)(p2 =>
-                fun((tileY`.`tileX`.`float4) ->: (tileY`.`tileX`.`float4))(p2Local => // TODO: let
+                let(fun((tileY`.`tileX`.`float4) ->: (tileY`.`tileX`.`float4))(p2Local =>
                   mapLocal(1)(fun(((tileX`.`float4) x (tileX`.`float4)) ->: (tileX`.`float4))(accDim2 =>
                     mapLocal(0)(fun(((float4 x float4) x float4) ->: float4)(p1 =>
                       oclReduceSeq(AddressSpace.Private)(fun(float4 ->: float4 ->: float4)((acc, p2) =>
@@ -76,7 +76,7 @@ class nbody extends idealised.util.TestsWithExecutor {
                       ))(p1._2)(accDim2._1)
                     )) $ zip(newP1Chunk)(accDim2._2)
                   )) $ zip(p2Local)(acc)
-                ) $ toLocal(mapLocal(1)(mapLocal(0)(id))(p2))
+                )) $ toLocal(mapLocal(1)(mapLocal(0)(id))(p2))
             )))(mapLocal(1)(mapLocal(0)(id))(generate(fun(_ => generate(fun(_ => vectorFromScalar(l(0.0f))))))))
             o split(tileY) o split(tileX) $ pos
           // TODO: toPrivate when it works..
@@ -163,8 +163,7 @@ class nbody extends idealised.util.TestsWithExecutor {
     runs.foreach(r => println(s"${r._1} time: ${r._2._2}"))
   }
 
-  // TODO
-  ignore("nbody AMD version calls update only once") {
+  test("nbody AMD version calls update only once") {
     val code = gen.OpenCLKernel(amd).code
     "update\\(".r.findAllIn(code).length shouldBe 2
   }
