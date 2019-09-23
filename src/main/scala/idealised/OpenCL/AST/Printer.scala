@@ -33,7 +33,7 @@ class Printer extends idealised.C.AST.CPrinter {
   override def typeName(t: Type): String = super.typeName(t)
 
   override def toString(e: ArithExpr): String = e match {
-    case of: BuiltInFunction => of.toOCLString
+    case of: BuiltInFunction => of.toString
 
     case _ => super.toString(e)
   }

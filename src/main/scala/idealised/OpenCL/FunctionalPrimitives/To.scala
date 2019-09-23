@@ -2,8 +2,8 @@ package idealised.OpenCL.FunctionalPrimitives
 
 import idealised.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import idealised.DPIA.DSL.{`new` => _, _}
-import idealised.DPIA.FunctionalPrimitives.{Map, MapSeq, Record}
-import idealised.DPIA.ImperativePrimitives.MapAcc
+import idealised.DPIA.FunctionalPrimitives.{Fst, Map, MapSeq, Record, Snd}
+import idealised.DPIA.ImperativePrimitives.{MapAcc, RecordAcc, RecordAcc1}
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics.{Data, Store}
@@ -11,7 +11,7 @@ import idealised.DPIA.Types.AddressSpace.Private
 import idealised.DPIA.Types._
 import idealised.DPIA.{Phrases, _}
 import idealised.OpenCL.DSL.`new`
-import idealised.OpenCL.ImperativePrimitives.{IdxDistributeAcc, IdxDistribute}
+import idealised.OpenCL.ImperativePrimitives.{IdxDistribute, IdxDistributeAcc}
 import idealised.OpenCL.{Global, Local, ParallelismLevel, Sequential, WorkGroup, get_global_size, get_local_size, get_num_groups}
 
 import scala.annotation.tailrec
@@ -61,59 +61,73 @@ final case class To(addrSpace: AddressSpace,
 
     val parallInfo = visitAndGatherInformation(input, List.empty).reverse
     val adjDataType = adjustedSizeDataType(dt, parallInfo)
-    val instAdjAcc = adjustedAcceptor(parallInfo, adjDataType, dt) _
-    val instAdjExpr = adjustedExpr(parallInfo, adjDataType, dt) _
+    val adjAcc = adjustedAcceptor(parallInfo, adjDataType, dt) _
+    val adjExpr = adjustedExpr(parallInfo, adjDataType, dt) _
 
     println(s"The old data type: $dt : $addrSpace : $input")
     println(s"The new data type: $adjDataType")
 
-    `new`(addrSpace)(adjDataType, tmp => acc(input)(instAdjAcc(tmp.wr)) `;` C(instAdjExpr(tmp.rd)) )
+    `new`(addrSpace)(adjDataType, tmp => acc(input)(adjAcc(tmp.wr)) `;` C(adjExpr(tmp.rd)) )
   }
 
-  private def adjustedAcceptor(parallInfo: List[(ParallelismLevel, Int)], adjDt: DataType,
-                               oldDt: DataType)(A: Phrase[AccType]): Phrase[AccType] = {
-    val (parallLevel, dim) = parallInfo.head
-    val stride: Nat =
-      parallLevel match {
-        case Global => get_global_size(dim)
-        case WorkGroup => get_num_groups(dim)
-        case Local => get_local_size(dim)
-        case Sequential => 1
+  private def adjustedAcceptor(parallInfo: List[(ParallelismLevel, Int)], adjDt: DataType, oldDt: DataType)
+                              (A: Phrase[AccType]): Phrase[AccType] = {
+    if (parallInfo.isEmpty) A
+    else {
+      val (parallLevel, dim) = parallInfo.head
+      val stride = determineStride(parallLevel, dim)
+
+      (adjDt, oldDt) match {
+        case (ArrayType(adjSize, adjElemT), ArrayType(oldSize, oldElemT)) =>
+          val outerDimension = IdxDistributeAcc(adjSize, oldSize, stride, parallLevel, adjElemT, A)
+
+          val arr = identifier(freshName("x"), acc"[$adjElemT]")
+          val mappedBody = adjustedAcceptor(parallInfo.tail, adjElemT, oldElemT)(arr)
+
+          MapAcc(oldSize, adjElemT, mappedBody.t.dataType, Lambda(arr, mappedBody), outerDimension)
+
+        case (RecordType(adjDt1, adjDt2), RecordType(oldDt1, oldDt2)) =>
+          RecordAcc(oldDt1, oldDt2,
+            adjustedAcceptor(parallInfo, adjDt1, oldDt1)(RecordAcc1(adjDt1, adjDt2, A)),
+            adjustedAcceptor(parallInfo, adjDt1, oldDt1)(RecordAcc1(adjDt1, adjDt2, A)))
+
+        case _ => throw new Exception(s"Expected array types but found ajdDt: $adjDt, oldDt: $oldDt.")
       }
-
-    (adjDt, oldDt) match {
-      case (ArrayType(adjSize, adjElemT@ArrayType(adjSizeIn, adjElemInT)),
-            ArrayType(oldSize, _@ArrayType(oldSizeIn, _))) =>
-
-        val outDim = IdxDistributeAcc(adjSize, oldSize, stride, parallLevel, adjElemT, A)
-
-        MapAcc(oldSize, adjElemT, ArrayType(oldSizeIn, adjElemInT),
-          fun(acc"[$adjElemT]")(arr => IdxDistributeAcc(adjSizeIn, oldSizeIn, stride, parallLevel, adjElemInT, arr)),
-            outDim)
-      case _ => throw new Exception("surprise")
     }
   }
 
   private def adjustedExpr(parallInfo: List[(ParallelismLevel, Int)], adjDt: DataType,
                            oldDt: DataType)(E: Phrase[ExpType]): Phrase[ExpType] = {
+    if (parallInfo.isEmpty) E
+    else {
+      val (parallLevel, dim) = parallInfo.head
+      val stride = determineStride(parallLevel, dim)
 
-    val (parallLevel, dim) = parallInfo.head
-    val stride: Nat =
-      parallLevel match {
-        case Global => get_global_size(dim)
-        case WorkGroup => get_num_groups(dim)
-        case Local => get_local_size(dim)
-        case Sequential => 1
+      (adjDt, oldDt) match {
+        case (ArrayType(adjSize, adjElemT), ArrayType(oldSize, oldElemT)) =>
+          val outerDimension = IdxDistribute(adjSize, oldSize, stride, parallLevel, adjElemT, E)
+
+          val arr = identifier(freshName("arr"), exp"[$adjElemT, $read]")
+          val mappedBody = adjustedExpr(parallInfo.tail, adjElemT, oldElemT)(arr)
+
+          Map(oldSize, adjElemT, mappedBody.t.dataType, Lambda(arr, mappedBody), outerDimension)
+
+        case (RecordType(adjDt1, adjDt2), RecordType(oldDt1, oldDt2)) =>
+          Record(oldDt1, oldDt2,
+            adjustedExpr(parallInfo, adjDt1, oldDt1)(Fst(adjDt1, adjDt2, E)),
+            adjustedExpr(parallInfo, adjDt2, oldDt2)(Snd(adjDt1, adjDt2, E)))
+
+        case _ => throw new Exception(s"Found unexpected ajdDt: $adjDt, oldDt: $oldDt.")
       }
+    }
+  }
 
-    (adjDt, oldDt) match {
-      case (ArrayType(adjSize, adjElemT@ArrayType(adjSizeIn, adjElemInT)),
-            ArrayType(oldSize, _@ArrayType(oldSizeIn, _))) =>
-
-        Map(oldSize, adjElemT, ArrayType(oldSizeIn, adjElemInT),
-          fun(exp"[$adjElemT, $read]")(arr => IdxDistribute(adjSizeIn, oldSizeIn, stride, parallLevel, adjElemInT, arr)),
-            IdxDistribute(adjSize, oldSize, stride, parallLevel, adjElemT, E))
-      case _ => throw new Exception("surprise")
+  private def determineStride(parallLevel: ParallelismLevel, dim: Int): Nat = {
+    parallLevel match {
+      case Global => get_global_size(dim)
+      case WorkGroup => get_num_groups(dim)
+      case Local => get_local_size(dim)
+      case Sequential => 1
     }
   }
 
@@ -128,7 +142,7 @@ final case class To(addrSpace: AddressSpace,
 
 
           case ((Global, _), AddressSpace.Local) =>
-            throw new Exception("This should probably not happen") //TODO think about this case
+            throw new Exception("This should probably not happen")
 
           case ((WorkGroup, dim), AddressSpace.Local) =>
             ArrayType(ceilingDiv(n, get_num_groups(dim)), adjustedSizeDataType(elemType, is))

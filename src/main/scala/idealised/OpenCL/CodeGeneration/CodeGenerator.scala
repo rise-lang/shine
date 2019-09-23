@@ -94,6 +94,12 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         case _ =>           error(s"Expected path to be not empty")
       }
       case IdxVecAcc(_, _, i, a) => CCodeGen.codeGenIdxAcc(i, a, env, path, cont)
+
+      case IdxDistributeAcc(_, _, stride, _, _, a) => path match {
+        case (i : CIntExpr) :: ps => acc(a, env, CIntExpr(i / stride) :: ps, cont)
+        case _ => error(s"Expected a C-Integer-Expression on the path.")
+      }
+
       case _ => super.acc(phrase, env, path, cont)
     }
   }
@@ -158,6 +164,16 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       case OpenCLFunction(name, _, _, args) =>
         CCodeGen.codeGenForeignCall(name, args, env, Nil, cont)
 
+      case Map(n, dt, _, f, e) => path match {
+        case (i : CIntExpr) :: ps => exp( f( Idx(n, dt, AsIndex(n, Natural(i)), e) ), env, ps, cont)
+        case _ => error(s"Expected a C-Integer-Expression on the path.")
+      }
+
+      case IdxDistribute(_, _, stride, _, _, e) => path match {
+        case (i : CIntExpr) :: ps => exp(e, env, CIntExpr(i / stride) :: ps, cont)
+        case _ => error(s"Expected a C-Integer-Expression on the path.")
+      }
+
       case _ => super.exp(phrase, env, path, cont)
     }
   }
@@ -169,7 +185,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
   }
 
   override def genNat(n: Nat, env: Environment, cont:Expr => Stmt): Stmt = n match {
-    case of: BuiltInFunction => cont(C.AST.Literal(of.toOCLString))
+    case of: BuiltInFunction => cont(C.AST.Literal(of.toString))
     case _ => super.genNat(n, env, cont)
   }
 
