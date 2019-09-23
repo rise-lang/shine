@@ -304,6 +304,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
       case idealised.DPIA.Types.double => output.asDoubleArray()
       // TODO: generalize
       case idealised.DPIA.Types.RecordType(idealised.DPIA.Types.float4, idealised.DPIA.Types.float4) => output.asFloatArray()
+      case idealised.DPIA.Types.RecordType(idealised.DPIA.Types.float, idealised.DPIA.Types.float) => output.asFloatArray()
       case idealised.DPIA.Types.float4 => output.asFloatArray()
       case _ => throw new IllegalArgumentException("Return type of the given lambda expression " +
         "not supported: " + dt.toString)

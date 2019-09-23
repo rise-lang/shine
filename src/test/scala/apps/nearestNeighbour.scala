@@ -30,8 +30,7 @@ class nearestNeighbour extends util.TestsWithExecutor {
                         lng: Float): (Array[Float], TimeSpan[Time.ms]) = {
     import opencl.executor._
 
-    val source = io.Source.fromFile(s"src/test/scala/apps/originalLift/$name")
-    val code = try source.getLines.mkString("\n") finally source.close
+    val code = util.readFile(s"src/test/scala/apps/originalLift/$name")
     val kernelJNI = Kernel.create(code, "KERNEL", "")
 
     val float_bytes = 4
