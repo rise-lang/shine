@@ -121,7 +121,7 @@ class asum extends idealised.util.TestsWithExecutor {
     test("Intel derived no warp compiles to syntactically correct OpenCL code") {
       val phrase = idealised.DPIA.fromLift(infer(intelDerivedNoWarp1))
       val N = phrase.t.asInstanceOf[idealised.DPIA.`(nat)->:`[ExpType]].x
-      val p = OpenCL.KernelGenerator.makeCode(LocalSize(128), GlobalSize(N))(phrase)
+      val p = OpenCL.KernelGenerator.makeCode(LocalSize(128), GlobalSize(N))(phrase, "KERNEL")
       println(p.code)
       SyntaxChecker.checkOpenCL(p.code)
     }
@@ -147,7 +147,7 @@ class asum extends idealised.util.TestsWithExecutor {
     test("Second kernel of Intel derived compiles to syntactically correct OpenCL code") {
       val phrase = idealised.DPIA.fromLift(infer(intelDerived2))
       val N = phrase.t.asInstanceOf[idealised.DPIA.`(nat)->:`[ExpType]].x
-      val p = OpenCL.KernelGenerator.makeCode(LocalSize(128), GlobalSize(N))(phrase)
+      val p = OpenCL.KernelGenerator.makeCode(LocalSize(128), GlobalSize(N))(phrase, "KERNEL")
       println(p.code)
       SyntaxChecker.checkOpenCL(p.code)
     }
@@ -178,7 +178,7 @@ class asum extends idealised.util.TestsWithExecutor {
     test("Nvidia kernel derived compiles to syntactically correct OpenCL code") {
       val phrase = idealised.DPIA.fromLift(infer(nvidiaDerived1))
       val N = phrase.t.asInstanceOf[idealised.DPIA.`(nat)->:`[ExpType]].x
-      val p = OpenCL.KernelGenerator.makeCode(LocalSize(128), GlobalSize(N))(phrase)
+      val p = OpenCL.KernelGenerator.makeCode(LocalSize(128), GlobalSize(N))(phrase, "KERNEL")
       println(p.code)
       SyntaxChecker.checkOpenCL(p.code)
     }
@@ -208,7 +208,7 @@ class asum extends idealised.util.TestsWithExecutor {
     test("AMD/Nvidia second kernel derived compiles to syntactically correct OpenCL code") {
       val phrase = idealised.DPIA.fromLift(infer(amdNvidiaDerived2))
       val N = phrase.t.asInstanceOf[idealised.DPIA.`(nat)->:`[ExpType]].x
-      val p = OpenCL.KernelGenerator.makeCode(LocalSize(128), GlobalSize(N))(phrase)
+      val p = OpenCL.KernelGenerator.makeCode(LocalSize(128), GlobalSize(N))(phrase, "KERNEL")
       println(p.code)
       SyntaxChecker.checkOpenCL(p.code)
     }
@@ -240,7 +240,7 @@ class asum extends idealised.util.TestsWithExecutor {
     test("AMD kernel derived compiles to syntactically correct OpenCL code") {
       val phrase = idealised.DPIA.fromLift(infer(amdDerived1))
       val N = phrase.t.asInstanceOf[idealised.DPIA.`(nat)->:`[ExpType]].x
-      val p = OpenCL.KernelGenerator.makeCode(LocalSize(128), GlobalSize(N))(phrase)
+      val p = OpenCL.KernelGenerator.makeCode(LocalSize(128), GlobalSize(N))(phrase, "KERNEL")
       println(p.code)
       SyntaxChecker.checkOpenCL(p.code)
     }

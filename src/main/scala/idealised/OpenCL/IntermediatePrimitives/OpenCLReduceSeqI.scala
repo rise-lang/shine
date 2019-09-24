@@ -21,8 +21,6 @@ object OpenCLReduceSeqI {
             out: Phrase[ExpType ->: CommType])
            (implicit context: TranslationContext): Phrase[CommType] = {
     val (adjAcc, adjExpr, adjDt) = AdjustArraySizesForAllocations(init, dt2, initAddrSpace)
-    println(s"OldDt: $dt2")
-    println(s"Adjusted: $adjDt")
 
     comment("oclReduceSeq") `;`
       `new` (initAddrSpace) (adjDt, accumulator =>

@@ -14,7 +14,7 @@ import idealised.DPIA._
 import idealised.OpenCL.AST.Barrier
 import idealised.OpenCL.FunctionalPrimitives.OpenCLFunction
 import idealised.OpenCL.ImperativePrimitives._
-import idealised.OpenCL.{BuiltInFunction, GlobalSize, LocalSize}
+import idealised.OpenCL.{BuiltInFunction, GlobalSize, LocalSize, get_global_id, get_group_id, get_local_id}
 import idealised._
 import lift.arithmetic
 import lift.arithmetic._
@@ -22,6 +22,7 @@ import lift.arithmetic._
 import scala.collection.{immutable, mutable}
 
 object CodeGenerator {
+  //TODO remove unused local and global size
   def apply(localSize: Option[LocalSize], globalSize: Option[GlobalSize]): CodeGenerator =
     new CodeGenerator(mutable.ListBuffer[Decl](), immutable.Map[String, arithmetic.Range](), localSize, globalSize)
 }
@@ -39,10 +40,10 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
   override def cmd(phrase: Phrase[CommType], env: Environment): Stmt = {
     phrase match {
-      case f@OpenCLParFor(n, dt, a, Lambda(i, Lambda(o, p))) =>
+      case f@OpenCLParFor(n, dt, a, Lambda(i, Lambda(o, p)), _, _, _) =>
         OpenCLCodeGen.codeGenOpenCLParFor(f, n, dt, a, i, o, p, env)
 
-      case f@OpenCLParForNat(n, _, a, DepLambda(i: NatIdentifier, Lambda(o, p))) =>
+      case f@OpenCLParForNat(n, _, a, DepLambda(i: NatIdentifier, Lambda(o, p)), _, _, _) =>
         OpenCLCodeGen.codeGenOpenCLParForNat(f, n, a, i, o, p, env)
 
       case Assign(dt, a, e) => dt match {
@@ -273,15 +274,16 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
                             o: Phrase[AccType],
                             p: Phrase[CommType],
                             env: Environment): Stmt = {
+      assert(!f.unroll)
       val cI = C.AST.DeclRef(f.name)
       val range = RangeAdd(f.init, n, f.step)
       val updatedGen = updatedRanges(cI.name, range)
 
       applySubstitutions(n, env.identEnv) |> (n => {
 
-      val init = OpenCL.AST.VarDecl(cI.name, C.AST.Type.int, AddressSpace.Private, init = Some(C.AST.ArithmeticExpr(f.init)))
+      val init = OpenCL.AST.VarDecl(cI.name, C.AST.Type.int, AddressSpace.Private, init = Some(C.AST.ArithmeticExpr(range.start)))
       val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
-      val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + f.step))
+      val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + range.step))
 
       Phrase.substitute(a `@` i, `for` = o, `in` = p) |> (p =>
 
@@ -318,15 +320,16 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
                                o: Phrase[AccType],
                                p: Phrase[CommType],
                                env: Environment): Stmt = {
+      assert(!f.unroll)
       val cI = C.AST.DeclRef(f.name)
       val range = RangeAdd(f.init, n, f.step)
       val updatedGen = updatedRanges(cI.name, range)
 
       applySubstitutions(n, env.identEnv) |> (n => {
 
-        val init = OpenCL.AST.VarDecl(cI.name, C.AST.Type.int, AddressSpace.Private, init = Some(C.AST.ArithmeticExpr(f.init)))
+        val init = OpenCL.AST.VarDecl(cI.name, C.AST.Type.int, AddressSpace.Private, init = Some(C.AST.ArithmeticExpr(range.start)))
         val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
-        val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + f.step))
+        val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + range.step))
 
         // FIRST we must substitute in the indexing of o in the phrase
         Phrase.substitute(a `@d` i, `for` = o, `in` = p) |> (p =>

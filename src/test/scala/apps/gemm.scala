@@ -1,5 +1,6 @@
 package apps
 
+import idealised.OpenCL.{GlobalSize, LocalSize}
 import idealised.util.gen
 import lift.arithmetic.Cst
 import lift.core.DSL._
@@ -160,6 +161,7 @@ class gemm extends idealised.util.TestsWithExecutor {
       def redOp: Expr = fun((8`.`32`.`8`.`4`.`float) ->: ( (8`.`64`.`float) x (8`.`128`.`float) ) ->: (8`.`32`.`8`.`4`.`float) )((p14, p15) =>
         p15 |> (fun(p29 =>
           zip (p29._1) (p29._2)
+            //TODO? In contrast to old code. This creates a struct of arrays.
             |> toLocalFun(mapLocal(1) (fun(p31 => pair (mapLocal(0) (id) (p31._1)) (mapLocal(0) (id) (p31._2)) )))
             |> unzip
         )) |> fun(p16 =>
@@ -169,11 +171,15 @@ class gemm extends idealised.util.TestsWithExecutor {
               |> mapLocal(0) (fun(p18 =>
               zip (transpose (p17._2)) (transpose (p18._2))
                 |> oclReduceSeq (AddressSpace.Private) (fun( (p20, p21) =>
-                  (pair (toPrivate(mapSeq (id) (p21._1))) (toPrivate(mapSeq (id) (p21._2))))
+                //TODO maybe this subexpression could be much cleaner more efficient and express the same
+                pair (toPrivate(mapSeq (id) (p21._1))) (toPrivate(mapSeq (id) (p21._2)))
                   |> fun(p22 =>
+                    //TODO something goes horribly wrong in the following part.
+                    //Two additional loops are generated and unexpected values are being accessed
+                    //It looks like CSE or better Let is needed.
                     zip (p20) (p22._1) |> mapSeq (fun(p23 =>
                       zip (p23._1) (p22._2) |> mapSeq (fun(p24 =>
-                        p24._1 + (p23._2 * p24._2) )) )) ))) (p18._1 |> mapSeq (mapSeq (id)))
+                        p24._1 + (p23._2 * p24._2) )) )) ))) (p18._1 |> mapSeq (mapSeq (fun(x => x))) )
             ))
           ))
         ))
@@ -239,7 +245,7 @@ class gemm extends idealised.util.TestsWithExecutor {
   }
 
   test("Kepler best compiles to syntactically correct kernel") {
-    gen.OpenCLKernel(ocl.keplerBest)
+    gen.OpenCLKernel(LocalSize((16,4,1)), GlobalSize((256, 128, 1)))(ocl.keplerBest(1024)(1024)(1024), "KERNEL")
   }
 
   test("OpenCL sequential gemm versions produce the expected result") {
@@ -313,9 +319,9 @@ class gemm extends idealised.util.TestsWithExecutor {
 
     val random = new Random()
 
-    val n = 512
-    val m = 256
-    val k = 512
+    val n = 1024
+    val m = 1024
+    val k = 1024
     val A = Array.fill(m, k)(1.0f) //((random.nextInt(10) + 1).toFloat)
     val B = Array.fill(k, n)(1.0f) //((random.nextInt(10) + 1).toFloat)
     val C = Array.fill(m, n)(1.0f) //(((random.nextInt(10) + 1).toFloat)

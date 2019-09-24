@@ -9,6 +9,7 @@ import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types._
 import idealised.DPIA._
+import idealised.OpenCL.AST.RequiredWorkGroupSize
 import idealised.OpenCL.CodeGeneration.HoistMemoryAllocations.AllocationInfo
 import idealised.OpenCL.CodeGeneration.{AdaptKernelBody, AdaptKernelParameters, HoistMemoryAllocations}
 
@@ -17,9 +18,10 @@ import scala.language.implicitConversions
 
 //noinspection VariablePatternShadow
 object KernelGenerator {
-  def makeCode[T <: PhraseType](localSize: LocalSize, globalSize: GlobalSize)(originalPhrase: Phrase[T]): OpenCL.KernelWithSizes = {
+  def makeCode[T <: PhraseType](localSize: LocalSize, globalSize: GlobalSize)
+                               (originalPhrase: Phrase[T], name: String): OpenCL.KernelWithSizes = {
     val (phrase, params, defs) = getPhraseAndParams(originalPhrase, Seq(), Seq())
-    makeKernel("KERNEL", phrase, params.reverse, defs.reverse, Some(localSize), Some(globalSize)).right.get
+    makeKernel(name, phrase, params.reverse, defs.reverse, Some(localSize), Some(globalSize)).right.get
   }
 
   def makeCode[T <: PhraseType](originalPhrase: Phrase[T], name: String = "KERNEL"): OpenCL.KernelNoSizes = {
@@ -53,7 +55,7 @@ object KernelGenerator {
 
     checkTypes(p) |> (p =>
 
-    rewriteToImperative(p, outParam) |> (p =>
+    rewriteToImperative(p, outParam, localSize, globalSize) |> (p =>
 
     hoistMemoryAllocations(p) |> { case (p, intermediateAllocations) =>
 
@@ -75,7 +77,7 @@ object KernelGenerator {
       val typeDeclarations = C.ProgramGenerator.collectTypeDeclarations(code, kernelParams)
 
       val oclKernel = OpenCL.Kernel(declarations ++ typeDeclarations,
-            kernel = makeKernelFunction(name, kernelParams, adaptKernelBody (C.AST.Block (Seq (code) ) ) ),
+            kernel = makeKernelFunction(name, kernelParams, adaptKernelBody(C.AST.Block(Seq(code))), localSize),
             outputParam = outParam,
             inputParams = inputParams,
             intermediateParams = intermediateAllocations.map (_.identifier))
@@ -98,13 +100,16 @@ object KernelGenerator {
     identifier("output", AccType(outT.dataType))
   }
 
-  private def rewriteToImperative(p: Phrase[ExpType], a: Phrase[AccType]): Phrase[CommType] = {
-    UnrollLoops(FlagPrivateArrayLoops(TranslationToImperative.acc(p)(a)(
+  private def rewriteToImperative(p: Phrase[ExpType], a: Phrase[AccType],
+                                  localSize: Option[LocalSize], globalSize: Option[GlobalSize]): Phrase[CommType] = {
+    val injectedSizes = InjectWorkItemSizes(localSize, globalSize)(TranslationToImperative.acc(p)(a)(
       new idealised.OpenCL.TranslationContext) |> (p => {
       xmlPrinter.writeToFile("/tmp/p2.xml", p)
       TypeCheck(p) // TODO: only in debug
       p
-    })))
+    }))
+
+    UnrollLoops(FlagPrivateArrayLoops(injectedSizes))
   }
 
   private def hoistMemoryAllocations(p: Phrase[CommType]): (Phrase[CommType], List[AllocationInfo]) = {
@@ -135,8 +140,11 @@ object KernelGenerator {
     AdaptKernelBody(body)
   }
 
-  private def makeKernelFunction(name: String, params: Seq[ParamDecl], body: C.AST.Block): OpenCL.AST.KernelDecl = {
-    OpenCL.AST.KernelDecl(name, params = params, body = body, attribute = None)
+  private def makeKernelFunction(name: String,
+                                 params: Seq[ParamDecl],
+                                 body: C.AST.Block, localSize: Option[LocalSize]): OpenCL.AST.KernelDecl = {
+    OpenCL.AST.KernelDecl(name, params = params, body = body,
+                          attribute = if (localSize.isEmpty) None else Some(RequiredWorkGroupSize(localSize.get.size)))
   }
 
 }
