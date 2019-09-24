@@ -122,7 +122,7 @@ class gemm extends idealised.util.TestsWithExecutor {
                                 mapSeq(fun(x => p157._1 + dot(x)))
                             )) |> join
                         ))
-                    ), zeros) |>
+                    ), zeros |> mapSeq (fun(x => x)) ) |>
                     fun(p235 =>
                       zip(p235, transpose(bc._2)) |>
                         mapSeq(fun(p237 =>
@@ -169,11 +169,11 @@ class gemm extends idealised.util.TestsWithExecutor {
               |> mapLocal(0) (fun(p18 =>
               zip (transpose (p17._2)) (transpose (p18._2))
                 |> oclReduceSeq (AddressSpace.Private) (fun( (p20, p21) =>
-                  toPrivate (pair (mapSeq (id) (p21._1)) (mapSeq (id) (p21._2)))
+                  (pair (toPrivate(mapSeq (id) (p21._1))) (toPrivate(mapSeq (id) (p21._2))))
                   |> fun(p22 =>
                     zip (p20) (p22._1) |> mapSeq (fun(p23 =>
                       zip (p23._1) (p22._2) |> mapSeq (fun(p24 =>
-                        p24._1 + (p23._2 * p24._2) )) )) ))) (p18._1)
+                        p24._1 + (p23._2 * p24._2) )) )) ))) (p18._1 |> mapSeq (mapSeq (id)))
             ))
           ))
         ))
@@ -193,7 +193,6 @@ class gemm extends idealised.util.TestsWithExecutor {
               |> oclReduceSeq (AddressSpace.Private) (redOp)
                 (zeros (v4) (v5) (v3 * Cst(1) /^ v4) (v6 * Cst(1) /^ v5)
                   |> mapLocal(1) (mapLocal(0) (mapSeq (mapSeq (id)))))
-              //TODO following function shuould eventually write to global
               //mapSeq was removed because reduce does not wrap reduced results in arrays anymore
               |> fun(x =>
                 zip (x) (split (v5) (p3._2))

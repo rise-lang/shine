@@ -1,7 +1,7 @@
 package idealised.OpenCL.CodeGeneration
 
 import idealised.C.AST.{ArraySubscript, BasicType, Decl, DeclStmt, PointerType}
-import idealised.C.CodeGeneration.CodeGenerator.CIntExpr
+import idealised.C.CodeGeneration.CodeGenerator.{CIntExpr, FstMember, SndMember}
 import idealised.C.CodeGeneration.{CodeGenerator => CCodeGenerator}
 import idealised.DPIA.FunctionalPrimitives._
 import idealised.DPIA.ImperativePrimitives._
@@ -98,6 +98,12 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       case IdxDistributeAcc(_, _, stride, _, _, a) => path match {
         case (i : CIntExpr) :: ps => acc(a, env, CIntExpr(i / stride) :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
+      }
+
+      case RecordAcc(_, _, fst, snd) => path match {
+        case FstMember :: ps => acc(fst, env, ps, cont)
+        case SndMember :: ps => acc(snd, env, ps, cont)
+        case _ => error("Expected a tuple access on the path.")
       }
 
       case _ => super.acc(phrase, env, path, cont)
