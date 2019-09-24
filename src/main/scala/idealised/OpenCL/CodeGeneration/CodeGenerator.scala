@@ -22,6 +22,7 @@ import lift.arithmetic._
 import scala.collection.{immutable, mutable}
 
 object CodeGenerator {
+  //TODO remove unused local and global size
   def apply(localSize: Option[LocalSize], globalSize: Option[GlobalSize]): CodeGenerator =
     new CodeGenerator(mutable.ListBuffer[Decl](), immutable.Map[String, arithmetic.Range](), localSize, globalSize)
 }

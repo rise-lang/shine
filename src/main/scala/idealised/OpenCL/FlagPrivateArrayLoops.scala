@@ -24,27 +24,27 @@ object FlagPrivateArrayLoops {
   private def varsToEliminate(p: Phrase[CommType]): mutable.Set[String] = {
     var eliminateVars = mutable.Set[String]()
 
-    case class Visitor(privateVars: Set[Identifier[_]],
-                       indexVars: Set[String])
+    case class Visitor(privMemIdent: Set[Identifier[_]],
+                       indexingIdent: Set[String])
       extends VisitAndRebuild.Visitor
     {
       override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = p match {
         case OpenCLNew(AddressSpace.Private, _, Lambda(i: Identifier[_], _)) =>
-          Continue(p, this.copy(privateVars = privateVars + i))
+          Continue(p, this.copy(privMemIdent = privMemIdent + i))
         case Idx(_, _, i, _) =>
-          Continue(p, this.copy(indexVars = indexVars ++ collectVars(i)))
+          Continue(p, this.copy(indexingIdent = indexingIdent ++ collectIndexingIdents(i)))
         case IdxAcc(_, _, i, _) =>
-          Continue(p, this.copy(indexVars = indexVars ++ collectVars(i)))
-        case i: Identifier[_] if privateVars(i) =>
-          eliminateVars ++= indexVars
+          Continue(p, this.copy(indexingIdent = indexingIdent ++ collectIndexingIdents(i)))
+        case i: Identifier[_] if privMemIdent(i) =>
+          eliminateVars ++= indexingIdent
           Stop(p)
         case Literal(ArrayData(_)) =>
-          eliminateVars ++= indexVars
+          eliminateVars ++= indexingIdent
           Stop(p)
-        //TODO Dangerous. collectVars can find private vars that are not the acceptor (e.g. in A@i if i is private var). Instead translate ParFor to For first?
-        case OpenCLParFor(_, _, out, Lambda(i: Identifier[_], Lambda(o: Identifier[_], body)), _, _, _) if collectAccIdent(out).exists(privateVars(_)) =>
+        //TODO Dangerous. collectIndexingIdents can find private vars that are not the acceptor (e.g. in A@i if i is private var). Instead translate ParFor to For first?
+        case OpenCLParFor(_, _, out, Lambda(i: Identifier[_], Lambda(o: Identifier[_], body)), _, _, _) if collectAccIdent(out).exists(privMemIdent(_)) =>
           eliminateVars += i.name
-          Continue(p, this.copy(privateVars = privateVars + o))
+          Continue(p, this.copy(privMemIdent = privMemIdent + o))
         case _ =>
           Continue(p, this)
       }
@@ -92,7 +92,7 @@ object FlagPrivateArrayLoops {
     })
   }
 
-  private def collectVars[T <: PhraseType](p: Phrase[T]): Set[String] = {
+  private def collectIndexingIdents[T <: PhraseType](p: Phrase[T]): Set[String] = {
     var vars = mutable.Set[String]()
 
     VisitAndRebuild(p, new VisitAndRebuild.Visitor {

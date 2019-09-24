@@ -161,6 +161,7 @@ class gemm extends idealised.util.TestsWithExecutor {
       def redOp: Expr = fun((8`.`32`.`8`.`4`.`float) ->: ( (8`.`64`.`float) x (8`.`128`.`float) ) ->: (8`.`32`.`8`.`4`.`float) )((p14, p15) =>
         p15 |> (fun(p29 =>
           zip (p29._1) (p29._2)
+            //TODO? In contrast to old code. This creates a struct of arrays.
             |> toLocalFun(mapLocal(1) (fun(p31 => pair (mapLocal(0) (id) (p31._1)) (mapLocal(0) (id) (p31._2)) )))
             |> unzip
         )) |> fun(p16 =>
@@ -170,11 +171,15 @@ class gemm extends idealised.util.TestsWithExecutor {
               |> mapLocal(0) (fun(p18 =>
               zip (transpose (p17._2)) (transpose (p18._2))
                 |> oclReduceSeq (AddressSpace.Private) (fun( (p20, p21) =>
-                  toPrivate (pair (mapSeq (id) (p21._1)) (mapSeq (id) (p21._2)))
+                //TODO maybe this subexpression could be much cleaner more efficient and express the same
+                pair (toPrivate(mapSeq (id) (p21._1))) (toPrivate(mapSeq (id) (p21._2)))
                   |> fun(p22 =>
+                    //TODO something goes horribly wrong in the following part.
+                    //Two additional loops are generated and unexpected values are being accessed
+                    //It looks like CSE or better Let is needed.
                     zip (p20) (p22._1) |> mapSeq (fun(p23 =>
                       zip (p23._1) (p22._2) |> mapSeq (fun(p24 =>
-                        p24._1 + (p23._2 * p24._2) )) )) ))) (p18._1 |> mapSeq (fun(x => x)))
+                        p24._1 + (p23._2 * p24._2) )) )) ))) (p18._1 |> mapSeq (mapSeq (fun(x => x))) )
             ))
           ))
         ))
@@ -241,7 +246,7 @@ class gemm extends idealised.util.TestsWithExecutor {
   }
 
   test("Kepler best compiles to syntactically correct kernel") {
-    gen.OpenCLKernel(LocalSize((16,8,1)), GlobalSize((256, 128, 1)))(ocl.keplerBest(1024)(1024)(1024), "KERNEL")
+    gen.OpenCLKernel(LocalSize((16,4,1)), GlobalSize((256, 128, 1)))(ocl.keplerBest(1024)(1024)(1024), "KERNEL")
   }
 
   test("OpenCL sequential gemm versions produce the expected result") {
