@@ -23,6 +23,12 @@ object primitives {
     )))
   }
 
+  case object depZip extends Primitive {
+    override def t: Type = implN(n => implN2DT(ft1 => implN2DT(ft2 =>
+      DepArrayType(n, ft1) ->: DepArrayType(n, ft2) ->: DepArrayType(n, n2dtFun(i => TupleType(ft1(i), ft2(i))))
+    )))
+  }
+
   case object drop extends Primitive {
     override def t: Type = nFunT(n => implN(m => implDT(t =>
       ArrayType(n + m, t) ->: ArrayType(m, t)

@@ -3,7 +3,7 @@ package idealised.OpenCL.AST
 import idealised.C.AST._
 import idealised.DPIA.Types.AddressSpaceIdentifier
 import idealised.OpenCL
-import idealised.OpenCL.{AddressSpace, BuiltInFunction, NDRange}
+import idealised.OpenCL.{AddressSpace, NDRange, BuiltInFunctionCall}
 import lift.arithmetic.ArithExpr
 
 object Printer {
@@ -33,7 +33,7 @@ class Printer extends idealised.C.AST.CPrinter {
   override def typeName(t: Type): String = super.typeName(t)
 
   override def toString(e: ArithExpr): String = e match {
-    case of: BuiltInFunction => of.toString
+    case of: BuiltInFunctionCall => of.toString
 
     case _ => super.toString(e)
   }

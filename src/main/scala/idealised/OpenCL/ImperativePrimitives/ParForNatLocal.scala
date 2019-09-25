@@ -6,7 +6,7 @@ import idealised.DPIA.Types.{AccType, CommType, NatToData}
 import idealised.DPIA.{->:, Nat, `(nat)->:`, freshName}
 import idealised.OpenCL
 import idealised.OpenCL.AST.Barrier
-import idealised.OpenCL.{BuiltInFunction, get_local_id, get_local_size}
+import idealised.OpenCL.{get_local_id, get_local_size}
 import lift.arithmetic.{?, ContinuousRange, PosInf, RangeAdd}
 
 final case class ParForNatLocal(dim:Int)(override val n:Nat,

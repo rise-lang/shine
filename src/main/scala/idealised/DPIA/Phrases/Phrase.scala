@@ -284,7 +284,7 @@ object Phrase {
           Left(Pow(reconstruct(b).left.get, reconstruct(e).left.get))
         case Log(b, x) =>
           Left(Log(reconstruct(b).left.get, reconstruct(x).left.get))
-        case f: ArithExprFunction => Left(f)
+        case f: ArithExprFunctionCall => Left(f)
         case _ => throw new Exception(s"did not expect ${tn.n}")
       }
     }

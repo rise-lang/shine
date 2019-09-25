@@ -16,7 +16,7 @@ class To extends idealised.util.TestsWithExecutor {
                 |> toPrivateFun(mapLocal(1) (mapLocal(0) (mapSeq (mapSeq (fun(x => x))))))
                 |> mapLocal(1) (mapLocal(0) (mapSeq (mapSeq (fun(x => x))))) ))
 
-    gen.OpenCLKernel(e(4)(4)(2)(2))
+    gen.OpenCLKernel(LocalSize((4, 2, 1)), GlobalSize((4, 2, 1)))(e(4)(4)(2)(2), "KERNEL")
 
     //Expected: Outer-most 2 dimensions have size of the ceiling of dividing by get_local_size(dim).
     // Inner dimensions stay the same.
@@ -29,7 +29,7 @@ class To extends idealised.util.TestsWithExecutor {
           |> toPrivateFun(mapGlobal(1) (mapGlobal(0) (fun(x => x))))
           |> mapGlobal(1) (mapGlobal(0) (fun(x => x)))))
 
-    gen.OpenCLKernel(e(4)(4))
+    gen.OpenCLKernel(LocalSize((1, 1, 1)), GlobalSize((4, 2, 1)))(e(4)(4), "KERNEL")
 
     //Expected: Dimensions have size of the ceiling of dividing by get_global_size(dim)
   }
@@ -42,7 +42,7 @@ class To extends idealised.util.TestsWithExecutor {
           |> toPrivateFun(mapLocal(1) (fun(x => pair(x |> mapLocal(0) (fun(x => x)), x |> mapLocal(0) (fun(x => x))))))
           |> mapLocal(1) (fun(t => pair(t._1 |> mapLocal(0) (fun(x => x)), t._2 |> mapLocal(0) (fun(x => x)))))))
 
-    gen.OpenCLKernel(e(4)(8))
+    gen.OpenCLKernel(LocalSize((4, 4, 1)), GlobalSize((4, 8, 1)))(e(4)(8), "KERNEL")
 
     //Expected: Outer dimension has size of the ceiling of dividing by get_local_size(dim).
     // In RecordType dimensions are adapted as well.

@@ -4,7 +4,7 @@ import idealised.DPIA.ImperativePrimitives.Assign
 import idealised.DPIA.Nat
 import idealised.DPIA.Phrases.{Phrase, VisitAndRebuild}
 import idealised.DPIA.Types.{CommType, DataType, PhraseType}
-import idealised.OpenCL.ImperativePrimitives.{IdxDistribute, IdxDistributeAcc, OpenCLNew, OpenCLParFor, OpenCLParForNat, ParForGlobal, ParForLocal, ParForNatGlobal, ParForNatLocal, ParForNatWorkGroup, ParForWorkGroup}
+import idealised.OpenCL.ImperativePrimitives.{OpenCLParFor, OpenCLParForNat, ParForGlobal, ParForLocal, ParForNatGlobal, ParForNatLocal, ParForNatWorkGroup, ParForWorkGroup}
 import lift.arithmetic.{ArithExpr, ContinuousRange, RangeAdd}
 
 object InjectWorkItemSizes {

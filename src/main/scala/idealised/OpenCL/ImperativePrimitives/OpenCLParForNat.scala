@@ -4,7 +4,7 @@ import idealised.C.AST.Stmt
 import idealised.DPIA.Phrases.Phrase
 import idealised.DPIA.Types._
 import idealised.DPIA.{->:, Nat, `(nat)->:`}
-import idealised.OpenCL.BuiltInFunction
+import idealised.OpenCL.BuiltInFunctionCall
 import idealised.OpenMP.ImperativePrimitives.AbstractParForNat
 
 abstract class OpenCLParForNat(n: Nat,

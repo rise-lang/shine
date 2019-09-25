@@ -42,10 +42,6 @@ final case class IdxDistribute(m: Nat,
                                   (implicit context: TranslationContext): Phrase[CommType] =
     ???
 
-  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommType] =
-    ???
-
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])
                                       (implicit context: TranslationContext): Phrase[CommType] =
     ???

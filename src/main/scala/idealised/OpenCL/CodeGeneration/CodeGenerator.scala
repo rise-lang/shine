@@ -14,7 +14,7 @@ import idealised.DPIA._
 import idealised.OpenCL.AST.Barrier
 import idealised.OpenCL.FunctionalPrimitives.OpenCLFunction
 import idealised.OpenCL.ImperativePrimitives._
-import idealised.OpenCL.{BuiltInFunction, GlobalSize, LocalSize, get_global_id, get_group_id, get_local_id}
+import idealised.OpenCL.{BuiltInFunctionCall, GlobalSize, LocalSize, get_global_id, get_group_id, get_local_id}
 import idealised._
 import lift.arithmetic
 import lift.arithmetic._
@@ -192,7 +192,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
   }
 
   override def genNat(n: Nat, env: Environment, cont:Expr => Stmt): Stmt = n match {
-    case of: BuiltInFunction => cont(C.AST.Literal(of.toString))
+    case of: BuiltInFunctionCall => cont(C.AST.Literal(of.toString))
     case _ => super.genNat(n, env, cont)
   }
 

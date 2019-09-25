@@ -16,7 +16,8 @@ final case class OpenCLReduceSeq(n: Nat,
                                  dt2: DataType,
                                  f: Phrase[ExpType ->: ExpType ->: ExpType],
                                  init: Phrase[ExpType],
-                                 array: Phrase[ExpType])
+                                 array: Phrase[ExpType],
+                                 unroll: Boolean)
   extends ExpPrimitive
 {
   override val t: ExpType =
@@ -27,7 +28,7 @@ final case class OpenCLReduceSeq(n: Nat,
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     OpenCLReduceSeq(fun.nat(n), fun.addressSpace(initAddrSpace), fun.data(dt1), fun.data(dt2),
-      VisitAndRebuild(f, fun), VisitAndRebuild(init, fun), VisitAndRebuild(array, fun))
+      VisitAndRebuild(f, fun), VisitAndRebuild(init, fun), VisitAndRebuild(array, fun), unroll)
   }
 
   override def eval(s: Store): Data = ???
@@ -45,7 +46,7 @@ final case class OpenCLReduceSeq(n: Nat,
     con(array)(λ(exp"[$n.$dt1, $read]")(X =>
       OpenCLReduceSeqI(n, initAddrSpace, dt1, dt2,
         λ(exp"[$dt2, $read]")(x => λ(exp"[$dt1, $read]")(y => λ(acc"[$dt2]")(o => acc( f(x)(y) )( o )))),
-        init, X, λ(exp"[$dt2, $write]")(r => acc(r)(A)))(context)))
+        init, X, λ(exp"[$dt2, $write]")(r => acc(r)(A)), unroll)(context)))
   }
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])
@@ -56,7 +57,7 @@ final case class OpenCLReduceSeq(n: Nat,
     con(array)(λ(exp"[$n.$dt1, $read]")(X =>
       OpenCLReduceSeqI(n, initAddrSpace, dt1, dt2,
         λ(exp"[$dt2, $read]")(x => λ(exp"[$dt1, $read]")(y => λ(acc"[$dt2]")(o => acc( f(x)(y) )( o )))),
-        init, X, C)(context)))
+        init, X, C, unroll)(context)))
   }
 
   override def xmlPrinter: Elem =

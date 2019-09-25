@@ -131,6 +131,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
     //Match up corresponding dpia parameter/intermediate parameter/scala argument (when present) in a covenience
     //structure
     val arguments = constructArguments(inputs, intermediateParameters, this.kernel.params.tail)
+
     //First, we want to find all the parameter mappings
     val sizeVarMapping = collectSizeVars(arguments, Map())
     //Now generate the input kernel args
@@ -277,14 +278,22 @@ case class Kernel(decls: Seq[C.AST.Decl],
       case ad: Array[Array[Array[Double]]] => createGlobalArg(ad.flatten.flatten)
       case ad: Array[Array[Array[Array[Double]]]] => createGlobalArg(ad.flatten.flatten.flatten)
 
-      case pairs:Array[(Int, Float)]@unchecked =>
-        val intArray = pairs.flatMap{case (x,y) => Iterable(x, java.lang.Float.floatToIntBits(y))}
-        createGlobalArg(intArray)
-
+      case p: Array[(_, _)] => p.head match {
+          case (_: Int, _: Float) =>
+            GlobalArg.createInput(flattenToArrayOfInts(p.asInstanceOf[Array[(Int, Float)]]))
+        }
+      case pp: Array[Array[(_, _)]] => pp.head.head match {
+        case (_: Int, _: Float) =>
+          GlobalArg.createInput(pp.flatMap(a => flattenToArrayOfInts(a.asInstanceOf[Array[(Int, Float)]])))
+      }
 
       case _ => throw new IllegalArgumentException("Kernel argument is of unsupported type: " +
         arg.getClass.getName)
     }
+  }
+
+  private def flattenToArrayOfInts(a: Array[(Int, Float)]): Array[Int] = {
+    a.flatMap{ case (x,y) => Iterable(x, java.lang.Float.floatToIntBits(y)) }
   }
 
   private def castToOutputType[R](dt: DataType, output: GlobalArg): R = {

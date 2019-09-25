@@ -18,14 +18,15 @@ object OpenCLReduceSeqI {
             f: Phrase[ExpType ->: ExpType ->: AccType ->: CommType],
             init: Phrase[ExpType],
             in: Phrase[ExpType],
-            out: Phrase[ExpType ->: CommType])
+            out: Phrase[ExpType ->: CommType],
+            unroll: Boolean)
            (implicit context: TranslationContext): Phrase[CommType] = {
     val (adjAcc, adjExpr, adjDt) = AdjustArraySizesForAllocations(init, dt2, initAddrSpace)
 
     comment("oclReduceSeq") `;`
       `new` (initAddrSpace) (adjDt, accumulator =>
         acc(init)(adjAcc(accumulator.wr)) `;`
-          `for`(n, i => f(adjExpr(accumulator.rd))(in `@` i)(adjAcc(accumulator.wr))) `;`
+          `for`(n, i => f(adjExpr(accumulator.rd))(in `@` i)(adjAcc(accumulator.wr)), unroll) `;`
           out(adjExpr(accumulator.rd))
       )
   }

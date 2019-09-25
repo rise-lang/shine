@@ -21,46 +21,43 @@ package object OpenCL {
                                 (implicit intToNat: R => (Nat, Nat, Nat)): NDRange =
     NDRange(ndRange._1, ndRange._2, ndRange._3)
 
-  // This class models OpenCL built in functions that can appear inside of arithmetic expressions
-  // examples are get_global_size(0), or get_local_id(1), but also OpenCL math functions, e.g., ceil or sin
-
   object get_num_groups {
     def apply(param:Int, range : Range = ContinuousRange(1, PosInf)) =
-      BuiltInFunction("get_num_groups", param, range)
+      BuiltInFunctionCall("get_num_groups", param, range)
   }
 
   object get_global_size {
     def apply(param: Int, range : Range = ContinuousRange(1, PosInf)) =
-      BuiltInFunction("get_global_size", param, range)
+      BuiltInFunctionCall("get_global_size", param, range)
   }
 
   object get_local_size {
     def apply(param: Int, range : Range = ContinuousRange(1, PosInf)) =
-      BuiltInFunction("get_local_size", param, range)
+      BuiltInFunctionCall("get_local_size", param, range)
   }
 
   object get_local_id {
     def apply(param:Int) =
-      BuiltInFunction("get_local_id", param, ContinuousRange(0, get_local_size(param)))
+      BuiltInFunctionCall("get_local_id", param, ContinuousRange(0, get_local_size(param)))
 
     def apply(param:Int, range: Range) =
-      BuiltInFunction("get_local_id", param, range)
+      BuiltInFunctionCall("get_local_id", param, range)
   }
 
   object get_global_id {
     def apply(param:Int) =
-      BuiltInFunction("get_global_id", param, ContinuousRange(0, get_global_size(param)))
+      BuiltInFunctionCall("get_global_id", param, ContinuousRange(0, get_global_size(param)))
 
     def apply(param:Int, range: Range) =
-      BuiltInFunction("get_global_id", param, range)
+      BuiltInFunctionCall("get_global_id", param, range)
   }
 
   object get_group_id {
     def apply(param:Int) =
-      BuiltInFunction("get_group_id", param, ContinuousRange(0, get_num_groups(param)))
+      BuiltInFunctionCall("get_group_id", param, ContinuousRange(0, get_num_groups(param)))
 
     def apply(param:Int, range: Range) =
-      BuiltInFunction("get_group_id", param, range)
+      BuiltInFunctionCall("get_group_id", param, range)
   }
 
   @silent("define classes/objects inside of package objects")

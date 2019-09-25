@@ -4,18 +4,23 @@ import java.io.{File, PrintWriter}
 
 import elevate.core.strategies.basic
 import elevate.lift.strategies.traversal._
+import elevate.meta.strategies.traversal._
 import elevate.lift.strategies.normalForm._
-import elevate.core.strategies.tiling._
+import elevate.meta.rules.fission._
+import elevate.lift.strategies.tiling._
+import elevate.lift.rules.movement._
 import elevate.core.strategies.traversal._
 import elevate.core.strategies.basic._
 import elevate.lift._
 import elevate.util._
 import elevate.lift.rules._
+import elevate.lift.strategies.util._
 import elevate.lift.rules.algorithmic._
 import idealised.util.gen
 import lift.core.DSL._
-import lift.core.{Apply, DepLambda, Expr, Identifier, Lambda, NatIdentifier, TypedExpr}
+import lift.core._
 import lift.core.primitives._
+import lift.core.semantics.FloatData
 import lift.core.types.{ArrayType, NatKind, float, infer}
 import org.scalatest.Ignore
 
@@ -23,7 +28,7 @@ import scala.language.implicitConversions
 
 class tiling extends idealised.util.Tests {
 
-  implicit def rewriteResultToExpr(r: RewriteResult): Expr = r.get
+  implicit def rewriteResultToExpr(r: RewriteResult[Expr]): Expr = r.get
 
   test("LCNF") {
     assert(betaEtaEquals(
@@ -45,7 +50,7 @@ class tiling extends idealised.util.Tests {
   /// TILING ONE LOOP
 
   test("tileND - tile one loop 1D") {
-    println(body(body(tileND(1)(tileSize)))(λ(i => λ(f => *(f) $ i))))
+    println(body(body(tileND(1)(tileSize)) `;` BENF)(λ(i => λ(f => *(f) $ i))))
     println(λ(i => λ(f => (J o **(f) o S) $ i)))
     assert(betaEtaEquals(
       body(body(tileND(1)(tileSize)))(λ(i => λ(f => *(f) $ i))),
@@ -244,14 +249,14 @@ class tiling extends idealised.util.Tests {
 
   // todo: this should use mapSeqCompute and CNF instead of RNF
   // ... but mapAcceptorTranslation for split is missing
-  val lower: Strategy = LCNF `;` RNF `;` normalize(specialize.mapSeq) `;` BENF
+  val lower: Strategy[Lift] = LCNF `;` CNF `;` normalize(specialize.mapSeq) `;` BENF
 
   val identity = dtFun(t => foreignFun("identity", Seq("y"), "{ return y; }", t ->: t))
   val floatId: Expr = identity(float)
 
   test("codegen 1D tiles") {
     val highLevel = wrapInLambda(1, i => *(floatId) $ i, inputT(1, _))
-    val tiled = one(body(tileND(1)(tileSize)))(highLevel).get
+    val tiled = one(body(tileND(1)(tileSize))).apply(highLevel).get
 
     println(gen.CProgram(lower(highLevel)))
     println(gen.CProgram(lower(tiled)))
@@ -261,7 +266,7 @@ class tiling extends idealised.util.Tests {
   //TODO make this work without implicit array assignments
   ignore("codegen 2D tiles") {
     val highLevel = wrapInLambda(2, i => **!(floatId) $ i, inputT(2, _))
-    val tiled = one(one(body(tileND(2)(tileSize))))(highLevel).get
+    val tiled = one(one(body(tileND(2)(tileSize)))).apply(highLevel).get
 
     println(gen.CProgram(lower(highLevel)))
     println(gen.CProgram(lower(tiled)))
@@ -270,7 +275,7 @@ class tiling extends idealised.util.Tests {
   //TODO make this work without implicit array assignments
   ignore("codegen 3D tiles") {
     val highLevel = wrapInLambda(3, i => ***!(floatId) $ i, inputT(3, _))
-    val tiled = one(one(one(body(tileNDList(List(4,8,16))))))(highLevel).get
+    val tiled = one(one(one(body(tileNDList(List(4,8,16)))))).apply(highLevel).get
 
     println(gen.CProgram(lower(highLevel)))
     println(gen.CProgram(lower(tiled)))
@@ -279,37 +284,13 @@ class tiling extends idealised.util.Tests {
   //TODO make this work without implicit array assignments
   ignore("codegen two innermost of three loops") {
     val highLevel = wrapInLambda(3, i => ***!(floatId) $ i, inputT(3, _))
-    val tiled = one(one(one(body(fmap(tileND(2)(tileSize))))))(highLevel).get
+    val tiled = one(one(one(body(fmap(tileND(2)(tileSize)))))).apply(highLevel).get
 
     println(gen.CProgram(lower(highLevel)))
     println(gen.CProgram(lower(tiled)))
   }
 
-  /// LOOP INTERCHANGE
-
-   test("simple loop interchange") {
-     assert(betaEtaEquals(
-       body(body(loopInterchange))(λ(i => λ(f => **!(f) $ i))),
-       λ(i => λ(f => (T o **(f) o T) $ i))
-     ))
-   }
-
-  test("interchange innermost two loops in loop nest of depth 3") {
-    val input = λ(i => λ(f => ***!(f) $ i))
-    val gold = λ(i => λ(f => (*(T) o ***(f) o *(T)) $ i))
-
-    assert(betaEtaEquals(
-      body(body(loopInterchangeAtLevel(1)))(input),
-      gold
-    ))
-
-    assert(betaEtaEquals(
-      body(body(fmap(loopInterchange) `;` LCNF `;` RNF))(input),
-      gold
-    ))
-   }
-
-  /// REAL APPLICATIONS
+ /// REAL APPLICATIONS
 
   // todo WIP
   test("tile gemm") {
@@ -320,15 +301,34 @@ class tiling extends idealised.util.Tests {
           map(fun(ac =>
             map(fun(bc =>
               (fun(x => (x * alpha) + beta * bc._2) o
-                reduce(fun((acc, y) => acc + (y._1 * y._2)), l(0.0f))) $
+                reduceSeq(fun(acc => fun(y => acc + (y._1 * y._2))), l(0.0f))) $
             zip(ac._1, bc._1))) $
           zip(transpose(b),ac._2))) $
         zip(a, c)
         )
       )
 
-    val tiled = (LCNF `;` CNF `;` oncetd(tileND(2)(4)) `;` BENF `;` RNF)(backward)
-    //infer(tiled)
+    val tiling = applyNTimes(3)(body)(
+      inTyped(
+        applyNTimes(5)(body)(
+          tileND(2)(4))))
+
+    val normalized = FNF(tiling).get
+    val rewritten = normalized(backward)
+
+    val debug =
+      body(body(body(inTyped(body(body(body(body(body(function(argumentOf(map,body(function(splitJoin(4)))))))))))))) `;`
+      body(body(body(inTyped(body(body(body(body(body(function(splitJoin(4))))))))))) `;`
+        body(body(body(inTyped(body(body(body(body(body(RNF))))))))) `;`
+        body(body(body(inTyped(body(body(body(body(body(LCNF))))))))) `;`
+        body(body(body(inTyped(body(body(body(body(body(argument(argument(function(argumentOf(map,body(idAfter)))))))))))))) `;`
+        body(body(body(inTyped(body(body(body(body(body(argument(argument(function(argumentOf(map,body(createTransposePair)))))))))))))) `;`
+        body(body(body(inTyped(body(body(body(body(body(argument(argument(function(argumentOf(map,body(LCNF))))))))))))))
+        //body(body(body(inTyped(body(body(body(body(body(argument(argument(function(argumentOf(map,body(argument(mapMapFBeforeTranspose))))))))))))))) `;`
+        //body(body(body(inTyped(body(body(body(body(body(argument(argument(RNF)))))))))))
+
+    val result = debug(backward)
+    val types = infer(result)
   }
 
   test("map fission issue when used with zip") {
@@ -350,8 +350,15 @@ class tiling extends idealised.util.Tests {
 
   test("normalform actually normalizes") {
     val gold = λ(i => λ(f => (J o **(f) o S) $ i))
-    assert(betaEtaEquals((RNF `;` BENF)(λ(i => λ(f => (J o **(f) o S) $ i))), gold))
-    assert(betaEtaEquals((RNF `;` RNF `;` BENF)(λ(i => λ(f => (J o **(f) o S) $ i))), gold))
-    assert(betaEtaEquals((RNF `;` RNF `;` RNF `;` BENF)(λ(i => λ(f => (J o **(f) o S) $ i))), gold))
+    assert(betaEtaEquals((RNF `;` BENF) (λ(i => λ(f => (J o **(f) o S) $ i))), gold))
+    assert(betaEtaEquals((RNF `;` RNF `;` BENF) (λ(i => λ(f => (J o **(f) o S) $ i))), gold))
+    assert(betaEtaEquals((RNF `;` RNF `;` RNF `;` BENF) (λ(i => λ(f => (J o **(f) o S) $ i))), gold))
+
+    val gold2 = LCNF(λ(i => λ(f => (J o **(f) o S) $ i))).get
+    assert((LCNF `;` LCNF)(λ(i => λ(f => (J o **(f) o S) $ i))).get == gold2)
+    assert((LCNF `;` LCNF `;` LCNF)(λ(i => λ(f => (J o **(f) o S) $ i))).get == gold2)
+
+    val gold3 = (LCNF `;` RNF)(λ(i => λ(f => (J o **(f) o S) $ i))).get
+    assert((LCNF `;` RNF `;` LCNF `;` RNF)(λ(i => λ(f => (J o **(f) o S) $ i))).get == gold3)
   }
 }
