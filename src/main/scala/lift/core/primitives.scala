@@ -5,9 +5,14 @@ import lift.core.DSL._
 import lift.core.types._
 
 object primitives {
-  // TODO: ask for basic type parameters
+  case object let extends Primitive {
+    override def t: Type = implDT(s => implDT(t =>
+      (s ->: t) ->: (s ->: t)
+    ))
+  }
+
   case object cast extends Primitive {
-    override def t: Type = implDT(s => implDT(t => s ->: t))
+    override def t: Type = implBT(s => implBT(t => s ->: t))
   }
 
   case object depJoin extends Primitive {
@@ -143,6 +148,12 @@ object primitives {
     ))
   }
 
+  case object gather extends Primitive {
+    override def t: Type = implN(n => implN(m => implDT(t =>
+      ArrayType(m, IndexType(n)) ->: ArrayType(n, t) ->: ArrayType(m, t)
+    )))
+  }
+
   case object scanSeq extends Primitive {
     override def t: Type = implN(n => implDT(s => implDT(t =>
       (s ->: t ->: t) ->: t ->: ArrayType(n, s) ->: ArrayType(n, t)
@@ -238,27 +249,30 @@ object primitives {
   }
 
   // TODO: should vectorisation be in the core or not?
-  // TODO: ask for a scalar type parameter instead of casting
 
   case object asVector extends Primitive {
-    override def t: Type = nFunT(n => implN(m => implDT(t =>
+    override def t: Type = nFunT(n => implN(m => implST(t =>
       ArrayType(m * n, t) ->: ArrayType(m, VectorType(n, t))
     )))
   }
 
   case object asScalar extends Primitive {
-    override def t: Type = implN(n => implN(m => implDT(t =>
+    override def t: Type = implN(n => implN(m => implST(t =>
       ArrayType(m, VectorType(n, t)) ->: ArrayType(m * n, t)
     )))
   }
 
   case object vectorFromScalar extends Primitive {
-    override def t: Type = implN(n => implDT(t =>
+    override def t: Type = implN(n => implST(t =>
       t ->: VectorType(n, t)
     ))
   }
 
   case class printType(msg: String = "") extends Primitive {
-    override def t: Type = implDT(t => t ->: t)
+    override def t: Type = implT(t => t ->: t)
+  }
+
+  case class typeHole(msg: String = "") extends Primitive {
+    override def t: Type = implT(t => t)
   }
 }

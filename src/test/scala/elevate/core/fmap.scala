@@ -10,7 +10,7 @@ import lift.core.DSL._
 import scala.language.implicitConversions
 
 
-class fmap extends idealised.util.Tests {
+class fmap extends util.Tests {
 
   implicit def rewriteResultToExpr(r: RewriteResult[Expr]): Expr = r.get
   def testMultiple(list: List[Expr], gold: Expr) = {

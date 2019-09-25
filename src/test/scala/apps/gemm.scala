@@ -1,7 +1,7 @@
 package apps
 
+import util.gen
 import idealised.OpenCL.{GlobalSize, LocalSize}
-import idealised.util.gen
 import lift.arithmetic.Cst
 import lift.core.DSL._
 import lift.core.{Expr, Nat}
@@ -10,7 +10,7 @@ import lift.core.primitives._
 import lift.core.types._
 
 //noinspection TypeAnnotation
-class gemm extends idealised.util.TestsWithExecutor {
+class gemm extends util.TestsWithExecutor {
 
   val epsilon = 1.0f
 
@@ -319,9 +319,9 @@ class gemm extends idealised.util.TestsWithExecutor {
 
     val random = new Random()
 
-    val n = 1024
-    val m = 1024
-    val k = 1024
+    val n = 512
+    val m = 256
+    val k = 512
     val A = Array.fill(m, k)(1.0f) //((random.nextInt(10) + 1).toFloat)
     val B = Array.fill(k, n)(1.0f) //((random.nextInt(10) + 1).toFloat)
     val C = Array.fill(m, n)(1.0f) //(((random.nextInt(10) + 1).toFloat)

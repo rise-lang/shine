@@ -1,4 +1,4 @@
-package idealised.util
+package util
 
 import idealised.DPIA
 import idealised.OpenCL.{GlobalSize, LocalSize}

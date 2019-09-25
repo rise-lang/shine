@@ -127,15 +127,15 @@ object ProgramGenerator {
   }
 
   def collectTypeDeclarations(code: C.AST.Stmt, params: Seq[C.AST.ParamDecl]): Seq[C.AST.Decl] = {
-    def visitor(decls: mutable.Set[C.AST.Decl]): C.AST.Nodes.VisitAndRebuild.Visitor = new C.AST.Nodes.VisitAndRebuild.Visitor {
+    def visitor(decls: mutable.ArrayBuffer[C.AST.Decl]): C.AST.Nodes.VisitAndRebuild.Visitor = new C.AST.Nodes.VisitAndRebuild.Visitor {
       def collect(t: C.AST.Type): Unit = t match {
         case _: C.AST.BasicType =>
         case s: C.AST.StructType =>
+          s.fields.foreach { case (ty, _) => collect(ty) }
           decls += C.AST.StructTypeDecl(
             s.print,
             s.fields.map { case (ty, name) => C.AST.VarDecl(name, ty) }
           )
-          s.fields.foreach { case (ty, _) => collect(ty) }
         case at: C.AST.ArrayType => collect(at.elemType)
         case pt: C.AST.PointerType => collect(pt.valueType)
         case ut: C.AST.UnionType => ut.fields.foreach(collect)
@@ -144,13 +144,13 @@ object ProgramGenerator {
       override def apply(t: C.AST.Type): C.AST.Type = { collect(t) ; t }
     }
 
-    val allocTypeDecls = mutable.Set[C.AST.Decl]()
+    val allocTypeDecls = mutable.ArrayBuffer[C.AST.Decl]()
     code.visitAndRebuild(visitor(allocTypeDecls))
 
-    val paramTypeDecls = mutable.Set[C.AST.Decl]()
+    val paramTypeDecls = mutable.ArrayBuffer[C.AST.Decl]()
     params.foreach(_.visitAndRebuild(visitor(paramTypeDecls)))
 
-    (allocTypeDecls ++ paramTypeDecls).toSeq
+    (allocTypeDecls ++ paramTypeDecls).distinct
   }
 
   private def getDataType(i: Identifier[_]): DataType = i.t match {

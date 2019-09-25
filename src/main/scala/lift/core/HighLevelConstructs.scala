@@ -5,12 +5,16 @@ import lift.core.types._
 import lift.core.primitives._
 
 object HighLevelConstructs {
-  val slide2D: Expr = nFun(sz => nFun(st => fun(a =>
-    a |> map(slide(sz)(st)) |> slide(sz)(st) |> map(transpose)
-  )))
+  def slide2D(sz: Nat, st: Nat): Expr = slide2D(sz, st, sz, st)
+  def slide2D(szOuter: Nat, stOuter: Nat,
+              szInner: Nat, stInner: Nat): Expr =
+    map(slide(szInner)(stInner)) >> slide(szOuter)(stOuter) >> map(transpose)
+
+  val unslide2D: Expr =
+    map(transpose >> map(join)) >> join
 
   val slide3D: Expr = nFun(sz => nFun(st =>
-    map(slide2D(sz)(st)) >> slide(sz)(st)
+    map(slide2D(sz, st)) >> slide(sz, st)
       >> map(transpose >> map(transpose))
   ))
 
@@ -25,9 +29,11 @@ object HighLevelConstructs {
     })
   }
 
-  val padClamp2D: Expr = {
-    nFun(b => map(padClamp(b)(b)) >> padClamp(b)(b))
-  }
+  def padClamp2D(b: Nat): Expr = padClamp2D(b, b, b, b)
+  def padClamp2D(l: Nat, r: Nat): Expr = padClamp2D(l, r, l, r)
+  def padClamp2D(lOuter: Nat, rOuter: Nat,
+                 lInner: Nat, rInner: Nat): Expr =
+    map(padClamp(lInner)(rInner)) >> padClamp(lOuter)(rOuter)
 
   val padCst2D: Expr = {
     nFun(n =>

@@ -3,9 +3,9 @@ package apps
 import lift.core.DSL._
 import lift.core.types._
 import lift.core.primitives._
-import idealised.util.gen
+import util.gen
 
-class scan extends idealised.util.Tests {
+class scan extends util.Tests {
   private val simpleScan = fun(ArrayType(8, float))(array =>
     array |> scanSeq(fun(x => fun(a => a + x)))(l(0.0f))
   )

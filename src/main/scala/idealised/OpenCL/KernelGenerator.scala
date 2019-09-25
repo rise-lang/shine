@@ -76,7 +76,7 @@ object KernelGenerator {
 
       val typeDeclarations = C.ProgramGenerator.collectTypeDeclarations(code, kernelParams)
 
-      val oclKernel = OpenCL.Kernel(declarations ++ typeDeclarations,
+      val oclKernel = OpenCL.Kernel(typeDeclarations ++ declarations,
             kernel = makeKernelFunction(name, kernelParams, adaptKernelBody(C.AST.Block(Seq(code))), localSize),
             outputParam = outParam,
             inputParams = inputParams,

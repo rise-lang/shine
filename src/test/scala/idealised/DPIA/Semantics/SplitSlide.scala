@@ -4,9 +4,9 @@ import lift.core.DSL._
 import lift.core.types._
 import lift.core.primitives._
 
-import idealised.util.gen
+import util.gen
 
-class SplitSlide extends idealised.util.Tests {
+class SplitSlide extends util.Tests {
 
   val n = 8
   val sz = 3

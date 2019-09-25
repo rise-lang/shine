@@ -3,9 +3,9 @@ package idealised.DPIA.Primitives
 import lift.core.DSL._
 import lift.core.types._
 import lift.core.primitives._
-import idealised.util.gen
+import util.gen
 
-class Take extends idealised.util.Tests {
+class Take extends util.Tests {
 
   test ("Simple take example") {
     val e = fun(ArrayType(128, int))(a =>

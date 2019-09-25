@@ -6,13 +6,13 @@ import lift.core.primitives.{transpose, mapSeq}
 
 import benchmarks.core.SimpleRunOpenCLProgram
 import idealised.OpenCL.KernelWithSizes
-import idealised.util.{Execute, gen}
+import util.{Execute, gen}
 import idealised.utils.Time.ms
 import idealised.utils.TimeSpan
 
 import scala.util.Random
 
-class Transpose extends idealised.util.Tests {
+class Transpose extends util.Tests {
   test("Simple transpose should produce the expected result on a test") {
     def checkResult(e: lift.core.Expr) = {
       val p = gen.CProgram(e)

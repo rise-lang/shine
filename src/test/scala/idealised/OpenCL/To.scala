@@ -1,13 +1,13 @@
 package idealised.OpenCL
 
-import idealised.util.gen
+import util.gen
 import lift.core.primitives._
 import lift.core.DSL._
 import lift.core.types._
 import lift.core.types.AddressSpace._
 import lift.OpenCL.primitives._
 
-class To extends idealised.util.TestsWithExecutor {
+class To extends util.TestsWithExecutor {
 
   test("To creates OpenCLNew with appropriate data type: private mem with two mapLocal nesting two mapSeq") {
     val e = nFun((m, n, o, p) =>

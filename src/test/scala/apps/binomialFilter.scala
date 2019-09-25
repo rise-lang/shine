@@ -16,7 +16,7 @@ import elevate.lift.rules.algorithmic._
 import elevate.lift.rules.movement._
 import elevate.lift.strategies.algorithmic._
 
-import idealised.util.{Execute, gen}
+import util.{Execute, gen}
 
 object binomialFilter {
   // Binomial filter, convolution is separable:
@@ -83,7 +83,7 @@ object binomialFilter {
   }
 }
 
-class binomialFilter extends idealised.util.Tests {
+class binomialFilter extends util.Tests {
   import binomialFilter._
 
   def s_eq(a: Expr, b: Expr): Unit = {

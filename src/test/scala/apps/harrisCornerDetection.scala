@@ -7,7 +7,7 @@ import lift.core.DSL._
 import lift.core.types._
 import lift.core.HighLevelConstructs._
 
-import idealised.util.gen
+import util.gen
 
 object harrisCornerDetection {
   val mulT = binomialFilter.mulT
@@ -73,7 +73,7 @@ object harrisCornerDetection {
   })))
 }
 
-class harrisCornerDetection extends idealised.util.Tests {
+class harrisCornerDetection extends util.Tests {
   test("harris compiles to C code") {
     gen.CProgram(harrisCornerDetection.e, "harris")
   }

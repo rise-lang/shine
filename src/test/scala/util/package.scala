@@ -1,5 +1,3 @@
-package idealised
-
 import java.io.{File, PrintWriter}
 
 import com.github.ghik.silencer.silent
@@ -38,5 +36,17 @@ package object util {
       }
     }
     tmp
+  }
+
+  def readFile(path: String): String = {
+    val source = io.Source.fromFile(path)
+    try source.getLines.mkString("\n") finally source.close
+  }
+
+  import idealised.utils.{Time, TimeSpan}
+  def runsWithSameResult[R, U <: Time.Unit](runs: Seq[(String, (R, TimeSpan[U]))])
+                                           (implicit assertSame: AssertSame[R]): Unit = {
+    runs.tail.foreach(r => assertSame(r._2._1, runs.head._2._1, s"${r._1} had a different result"))
+    runs.foreach(r => println(s"${r._1} time: ${r._2._2}"))
   }
 }

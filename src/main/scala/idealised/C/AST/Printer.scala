@@ -341,11 +341,12 @@ class CPrinter extends Printer {
   }
 
   private def printRecordLiteral(rl: RecordLiteral): Unit = {
-    print("{")
+    print(s"(${rl.t})")
+    print("{ ")
     printExpr(rl.fst)
-    print(",")
+    print(", ")
     printExpr(rl.snd)
-    print("}")
+    print(" }")
   }
 
   private def printArithmeticExpr(a: ArithmeticExpr): Unit = {

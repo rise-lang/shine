@@ -7,13 +7,13 @@ import lift.core.HighLevelConstructs.slide2D
 
 import benchmarks.core.SimpleRunOpenCLProgram
 import idealised.OpenCL.KernelWithSizes
-import idealised.util.gen
+import util.gen
 import idealised.utils.Time.ms
 import idealised.utils.TimeSpan
 
 import scala.util.Random
 
-class Slide extends idealised.util.Tests {
+class Slide extends util.Tests {
 
   test("Simple slide example should generate syntactic valid C code with two for loops") {
     val e =

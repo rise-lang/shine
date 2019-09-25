@@ -3,7 +3,7 @@ package lift.core
 import lift.core.DSL._
 import lift.core.types._
 
-class infer extends idealised.util.Tests {
+class infer extends util.Tests {
   test("Infer int addition type") {
     val typed = infer(l(1) + l(2))
     assert(typed.t == int)

@@ -4,7 +4,7 @@ import benchmarks.core.SimpleRunOpenCLProgram
 import idealised.DPIA
 import idealised.DPIA.Nat
 import idealised.OpenCL.{GlobalSize, KernelWithSizes, LocalSize}
-import idealised.util.SyntaxChecker
+import util.SyntaxChecker
 import idealised.utils.Time.ms
 import idealised.utils.TimeSpan
 import lift.arithmetic._
@@ -16,7 +16,7 @@ import lift.core.types._
 import scala.util.Random
 
 
-class Partition extends idealised.util.Tests {
+class Partition extends util.Tests {
   ignore("Simple partition into a triangle C") {
     val lenF = n2nFun((i: NatIdentifier) => i + 1)
 

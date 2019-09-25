@@ -7,12 +7,12 @@ import lift.core.types._
 import lift.core.DSL._
 import lift.core.primitives._
 import lift.core.HighLevelConstructs.reorderWithStride
-import idealised.util.{SyntaxChecker, gen}
+import util.{SyntaxChecker, gen}
 
 import scala.util.Random
 
 //noinspection TypeAnnotation
-class asum extends idealised.util.TestsWithExecutor {
+class asum extends util.TestsWithExecutor {
 
   def inputT(n : NatIdentifier) = ArrayType(n, float)
   val abs = dtFun(t => foreignFun("my_abs", Seq("y"), "{ return fabs(y); }", t ->: t))

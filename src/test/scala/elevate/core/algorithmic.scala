@@ -9,7 +9,7 @@ import elevate.meta.rules.fission.FNF
 import elevate.lift.strategies.tiling._
 import elevate.lift.rules.movement._
 import elevate.util._
-import idealised.util.gen
+import util.gen
 import lift.core.DSL._
 import lift.core.{Apply, DepLambda, Expr, NatIdentifier}
 import lift.core.primitives._
@@ -22,7 +22,7 @@ import elevate.lift.strategies.tiling.{loopInterchange, loopInterchangeAtLevel}
 
 import scala.language.implicitConversions
 
-class algorithmic extends idealised.util.Tests {
+class algorithmic extends util.Tests {
 
   implicit def rewriteResultToExpr(r: RewriteResult[Expr]): Expr = r.get
 

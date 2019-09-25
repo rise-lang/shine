@@ -90,14 +90,11 @@ object DSL {
     }
 
     def apply(f: Identifier => Expr): Expr = untyped(f)
-
     def apply(f: (Identifier, Identifier) => Expr): Expr = untyped(f)
-
     def apply(f: (Identifier, Identifier, Identifier) => Expr): Expr = untyped(f)
-
     def apply(f: (Identifier, Identifier, Identifier, Identifier) => Expr): Expr = untyped(f)
-
     def apply(f: (Identifier, Identifier, Identifier, Identifier, Identifier) => Expr): Expr = untyped(f)
+    def apply(f: (Identifier, Identifier, Identifier, Identifier, Identifier, Identifier) => Expr): Expr = untyped(f)
 
     private def untyped(f: Identifier => Expr): Expr = {
       val e = Identifier(freshName("e"))
@@ -124,17 +121,19 @@ object DSL {
       Lambda(e, untyped((e1, e2, e3, e4) => f(e, e1, e2, e3, e4)))
     }
 
+    private def untyped(f: (Identifier, Identifier, Identifier, Identifier, Identifier, Identifier) => Expr): Expr = {
+      val e = Identifier(freshName("e"))
+      Lambda(e, untyped((e1, e2, e3, e4, e5) => f(e, e1, e2, e3, e4, e5)))
+    }
+
     //noinspection TypeAnnotation
     def apply(ft: FunType[Type, Type]) = new {
       def apply(f: Identifier => Expr): TypedExpr = untyped(f) :: ft
-
       def apply(f: (Identifier, Identifier) => Expr): TypedExpr = untyped(f) :: ft
-
       def apply(f: (Identifier, Identifier, Identifier) => Expr): TypedExpr = untyped(f) :: ft
-
       def apply(f: (Identifier, Identifier, Identifier, Identifier) => Expr): TypedExpr = untyped(f) :: ft
-
       def apply(f: (Identifier, Identifier, Identifier, Identifier, Identifier) => Expr): TypedExpr = untyped(f) :: ft
+      def apply(f: (Identifier, Identifier, Identifier, Identifier, Identifier, Identifier) => Expr): TypedExpr = untyped(f) :: ft
     }
   }
 
@@ -254,7 +253,19 @@ object DSL {
     f(NatIdentifier(freshName("_n")))
   }
 
+
+  def implT[A](f: TypeIdentifier => A): A = {
+    f(TypeIdentifier(freshName("_t")))
+  }
   def implDT[A](f: DataTypeIdentifier => A): A = {
+    f(DataTypeIdentifier(freshName("_dt")))
+  }
+  // TODO: BasicTypeIdentifier
+  def implBT[A](f: DataTypeIdentifier => A): A = {
+    f(DataTypeIdentifier(freshName("_dt")))
+  }
+  // TODO: ScalarTypeIdentifier
+  def implST[A](f: DataTypeIdentifier => A): A = {
     f(DataTypeIdentifier(freshName("_dt")))
   }
 
