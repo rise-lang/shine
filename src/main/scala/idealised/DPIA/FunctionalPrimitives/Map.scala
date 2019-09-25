@@ -45,13 +45,6 @@ final case class Map(override val n: Nat,
       A))
   }
 
-  override def mapAcceptorTranslation(g: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommType] = {
-    import TranslationToImperative._
-
-    mapAcc(g o f, array)(A)
-  }
-
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._

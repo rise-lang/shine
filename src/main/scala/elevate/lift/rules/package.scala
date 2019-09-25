@@ -3,11 +3,16 @@ package elevate.lift
 import elevate.core.{Failure, Strategy, Success}
 import elevate.lift.strategies.predicate._
 import lift.core._
+import lift.core.types._
 
 package object rules {
 
   def betaReduction: Strategy = {
     case Apply(f, x) => lifting.liftFunExpr(f) match {
+      case lifting.Reducing(lf) => Success(lf(x))
+      case _ => Failure(betaReduction)
+    }
+    case DepApply(f, x: Nat) => lifting.liftDepFunExpr[NatKind](f) match {
       case lifting.Reducing(lf) => Success(lf(x))
       case _ => Failure(betaReduction)
     }

@@ -102,12 +102,12 @@ object KernelGenerator {
 
   private def rewriteToImperative(p: Phrase[ExpType], a: Phrase[AccType],
                                   localSize: Option[LocalSize], globalSize: Option[GlobalSize]): Phrase[CommType] = {
-    UnrollLoops(FlagPrivateArrayLoops(InjectWorkItemSizes(localSize, globalSize)(TranslationToImperative.acc(p)(a)(
+    SimplifyNats(UnrollLoops(FlagPrivateArrayLoops(InjectWorkItemSizes(localSize, globalSize)(TranslationToImperative.acc(p)(a)(
       new idealised.OpenCL.TranslationContext) |> (p => {
       xmlPrinter.writeToFile("/tmp/p2.xml", p)
       TypeCheck(p) // TODO: only in debug
       p
-    }))))
+    })))))
   }
 
   private def hoistMemoryAllocations(p: Phrase[CommType]): (Phrase[CommType], List[AllocationInfo]) = {

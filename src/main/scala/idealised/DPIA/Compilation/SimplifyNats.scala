@@ -1,0 +1,32 @@
+package idealised.DPIA.Compilation
+
+import idealised.DPIA._
+import idealised.DPIA.Phrases._
+import idealised.DPIA.Types._
+import idealised.DPIA.FunctionalPrimitives.AsIndex
+
+object SimplifyNats {
+  def apply(p: Phrase[CommType]): Phrase[CommType] = {
+    VisitAndRebuild(p, new VisitAndRebuild.Visitor {
+      override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
+        p match {
+          // don't touch identifiers that can be introduced by lambdas
+          case _: Identifier[T] => Continue(p, this)
+          case _ => p.t match {
+            case _: ExpType => Stop(simplifyIndexAndNatExp(p.asInstanceOf[Phrase[ExpType]])
+              .asInstanceOf[Phrase[T]])
+            case _ => Continue(p, this)
+          }
+        }
+      }
+    })
+  }
+
+  def simplifyIndexAndNatExp(p: Phrase[ExpType]): Phrase[ExpType] = {
+    p.t.dataType match {
+      case IndexType(n) => AsIndex(n, DSL.mapTransientNat(p, x => x))
+      case NatType => DSL.mapTransientNat(p, x => x)
+      case _ => p
+    }
+  }
+}

@@ -86,12 +86,12 @@ object ProgramGenerator {
       case (lhsT, rhsT) => throw new Exception(s" $lhsT and $rhsT should match")
     }
 
-    UnrollLoops(TranslationToImperative.acc(p)(output)(
+    SimplifyNats(UnrollLoops(TranslationToImperative.acc(p)(output)(
       new idealised.C.TranslationContext) |> (p => {
       xmlPrinter.writeToFile("/tmp/p2.xml", p)
       TypeCheck(p) // TODO: only in debug
       p
-    }))
+    })))
   }
 
   def makeFunction(params: Seq[C.AST.ParamDecl], body: C.AST.Block, name: String): C.AST.FunDecl = {
@@ -133,8 +133,9 @@ object ProgramGenerator {
         case s: C.AST.StructType =>
           decls += C.AST.StructTypeDecl(
             s.print,
-            s.fields.map{ case (ty, name) => C.AST.VarDecl(name, ty) }
+            s.fields.map { case (ty, name) => C.AST.VarDecl(name, ty) }
           )
+          s.fields.foreach { case (ty, _) => collect(ty) }
         case at: C.AST.ArrayType => collect(at.elemType)
         case pt: C.AST.PointerType => collect(pt.valueType)
         case ut: C.AST.UnionType => ut.fields.foreach(collect)

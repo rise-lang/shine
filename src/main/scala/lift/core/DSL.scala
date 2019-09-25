@@ -28,6 +28,12 @@ object DSL {
     def _2: Expr = primitives.snd(lhs)
   }
 
+  implicit class Indexing(e: Expr) {
+    import lift.core.primitives._
+
+    def `@`(i: Expr): Expr = idx(i)(e)
+  }
+
   implicit class TypeAnnotation(t: Type) {
     def ::(e: Expr): TypedExpr = TypedExpr(e, t)
     def `:`(e: Expr): TypedExpr = TypedExpr(e, t)
@@ -269,8 +275,9 @@ object DSL {
   def l(i: Int): Literal = Literal(IntData(i))
   def l(f: Float): Literal = Literal(FloatData(f))
   def l(d: Double): Literal = Literal(DoubleData(d))
-  def l(v: VectorData): Literal = Literal(v)
-  def l(a: ArrayData): Literal = Literal(a)
+  def lidx(i: Nat, n: Nat): Literal = Literal(IndexData(i, n))
+  def lvec(v: Seq[ScalarData]): Literal = Literal(VectorData(v))
+  def larr(a: Seq[Data]): Literal = Literal(ArrayData(a))
 
   implicit final class TypeConstructors(private val r: Type) extends AnyVal {
     @inline def ->:(t: Type): FunType[Type, Type] = FunType(t, r)

@@ -42,15 +42,10 @@ final case class MapVec(n: Nat,
 
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommType] = {
-    mapAcceptorTranslation(fun(exp"[$dt1, $read]")(x => x), A)
-  }
-
-  override def mapAcceptorTranslation(g: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(array)(λ(exp"[${VectorType(n, dt1)}, $read]")(x =>
-      MapVecI(n, dt1, dt2, λ(exp"[$dt1, $read]")(x => λ(acc"[$dt2]")(o => acc(g(f(x)))(o))), x, A)))
+      MapVecI(n, dt1, dt2, λ(exp"[$dt1, $read]")(x => λ(acc"[$dt2]")(o => acc(f(x))(o))), x, A)))
   }
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])

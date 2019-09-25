@@ -5,9 +5,9 @@ import lift.core.primitives._
 import lift.core.semantics._
 import lift.core.DSL._
 import lift.core.types._
+import lift.core.HighLevelConstructs._
 
-import idealised._
-import idealised.util.SyntaxChecker
+import idealised.util.gen
 
 object harrisCornerDetection {
   val mulT = binomialFilter.mulT
@@ -23,16 +23,15 @@ object harrisCornerDetection {
   val sobelXA = Array(Array(-1, 0, 1), Array(2, 0, 2), Array(-1, 0, 1))
       .map(a => a.map(v => FloatData(v / 8.0f)))
 
-  val sobelX = l(ArrayData(sobelXA.flatten: Array[Data]))
-  val sobelY = l(ArrayData(sobelXA.transpose.flatten: Array[Data]))
+  val sobelX = larr(sobelXA.flatten : Array[Data])
+  val sobelY = larr(sobelXA.transpose.flatten : Array[Data])
 
   val slide3x3 = map(slide(3)(1)) >> slide(3)(1) >> map(transpose)
 
   def stencil3x3(weights: Expr): Expr =
     slide3x3 >> mapSeq(mapSeq(fun(nbh => dotSeq(weights)(join(nbh)))))
 
-  val zip2d = fun(a => fun(b =>
-    zip(a)(b) |> map(fun(al_bl => zip(fst(al_bl))(snd(al_bl))))))
+  val zip2D = zipND(2)
 
   val gaussian: Expr = binomialFilter.regrot
 
@@ -44,13 +43,13 @@ object harrisCornerDetection {
 
     val ixx = mapSeq(mapSeq(sq))(ix)
     val iyy = mapSeq(mapSeq(sq))(iy)
-    val ixy = zip2d(ix)(iy) |> mapSeq(mapSeq(mulT))
+    val ixy = zip2D(ix)(iy) |> mapSeq(mapSeq(mulT))
 
     val sxx = gaussian(ixx)
     val sxy = gaussian(ixy)
     val syy = gaussian(iyy)
 
-    val coarsity = zip2d(sxx)(zip2d(syy)(sxy)) |> mapSeq(mapSeq(fun(s => {
+    val coarsity = zip2D(sxx)(zip2D(syy)(sxy)) |> mapSeq(mapSeq(fun(s => {
       val sxx = fst(s)
       val syy = fst(snd(s))
       val sxy = snd(snd(s))
@@ -75,15 +74,7 @@ object harrisCornerDetection {
 }
 
 class harrisCornerDetection extends idealised.util.Tests {
-  def program(name: String, e: Expr): C.Program = {
-    val phrase = idealised.DPIA.fromLift(infer(e))
-    val program = C.ProgramGenerator.makeCode(phrase, name)
-    SyntaxChecker(program.code)
-    println(program.code)
-    program
-  }
-
   test("harris compiles to C code") {
-    program("harris", harrisCornerDetection.e)
+    gen.CProgram(harrisCornerDetection.e, "harris")
   }
 }

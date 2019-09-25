@@ -69,19 +69,6 @@ final case class Split(n: Nat,
     acc(array)(SplitAcc(n, m, dt, A))
   }
 
-  // TODO?
-  override def mapAcceptorTranslation(g: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommType] = {
-    import TranslationToImperative._
-
-    // A : acc[m.n.float]
-    // g : exp[n.float] -> exp[n.float]
-    // ? : exp[float] -> exp[float]
-
-    // mapAcc(fun(exp"[$dt, $read]")(x => g(x)), array)(A)
-    ???
-  }
-
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._

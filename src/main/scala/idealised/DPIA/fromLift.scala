@@ -58,6 +58,7 @@ object fromLift {
 
           case l.Literal(d)   =>  d match {
             case ls.NatData(n)  => Natural(n)
+            case ls.IndexData(i, n)  => FunctionalPrimitives.AsIndex(n, Natural(i))
             case _              => Literal(data(d))
           }
           case p: l.Primitive =>  primitive(p, t)
@@ -318,13 +319,37 @@ object fromLift {
       case (core.slideSeq(rot),
       lt.DepFunType(sz: l.NatIdentifier,
       lt.DepFunType(sp: l.NatIdentifier,
-      lt.FunType(lt.ArrayType(insz, la), lt.ArrayType(n, _)))))
+      lt.FunType(_,
+      lt.FunType(_,
+      lt.FunType(lt.ArrayType(insz, ls), lt.ArrayType(n, lt)))))))
       =>
-        val a = dataType(la)
+        val s = dataType(ls)
+        val t = dataType(lt)
         DepLambda[NatKind](natIdentifier(sz))(
           DepLambda[NatKind](natIdentifier(sp))(
-            fun[ExpType](exp"[$insz.$a, $read]", e =>
-              SlideSeq(rot, n, sz, sp, a, e))))
+            fun[ExpType ->: ExpType](ExpType(s, read) ->: ExpType(s, write), write_dt1 =>
+              fun[ExpType ->: ExpType](exp"[$sz.$s, $read]" ->: ExpType(t, write), f =>
+                fun[ExpType](exp"[$insz.$s, $read]", e =>
+                  SlideSeq(rot, n, sz, sp, s, t, write_dt1, f, e))))))
+
+      case (ocl.oclSlideSeq(rot),
+      lt.DepFunType(la: lt.AddressSpaceIdentifier,
+      lt.DepFunType(sz: l.NatIdentifier,
+      lt.DepFunType(sp: l.NatIdentifier,
+      lt.FunType(_,
+      lt.FunType(_,
+      lt.FunType(lt.ArrayType(insz, ls), lt.ArrayType(n, lt))))))))
+      =>
+        val s = dataType(ls)
+        val t = dataType(lt)
+        val a = addressSpaceIdentifier(la)
+        DepLambda[AddressSpaceKind](a)(
+          DepLambda[NatKind](natIdentifier(sz))(
+            DepLambda[NatKind](natIdentifier(sp))(
+              fun[ExpType ->: ExpType](ExpType(s, read) ->: ExpType(s, write), write_dt1 =>
+                fun[ExpType ->: ExpType](exp"[$sz.$s, $read]" ->: ExpType(t, write), f =>
+                  fun[ExpType](exp"[$insz.$s, $read]", e =>
+                    OpenCLSlideSeq(rot, a, n, sz, sp, s, t, write_dt1, f, e)))))))
 
       case (core.reorder,
       lt.FunType(_,
