@@ -40,8 +40,8 @@ object FlagPrivateArrayLoops {
         case Literal(ArrayData(_)) =>
           eliminateVars ++= indexingIdent
           Stop(p)
-        //TODO Dangerous. collectIndexingIdents can find private vars that are not the acceptor (e.g. in A@i if i is private var). Instead translate ParFor to For first?
-        case OpenCLParFor(_, _, out, Lambda(i: Identifier[_], Lambda(o: Identifier[_], body)), _, _, _) if collectAccIdent(out).exists(privMemIdent(_)) =>
+        case OpenCLParFor(_, _, out, Lambda(i: Identifier[_], Lambda(o: Identifier[_], _)), _, _, _)
+        if collectIdent(out).exists(privMemIdent(_)) =>
           eliminateVars += i.name
           Continue(p, this.copy(privMemIdent = privMemIdent + o))
         case _ =>
@@ -112,16 +112,13 @@ object FlagPrivateArrayLoops {
     vars.toSet
   }
 
-  private def collectAccIdent[T <: PhraseType](p: Phrase[T]): Set[Identifier[_]] = {
+  private def collectIdent[T <: PhraseType](p: Phrase[T]): Set[Identifier[_]] = {
     var vars = mutable.Set[Identifier[_]]()
 
     VisitAndRebuild(p, new VisitAndRebuild.Visitor {
       override def phrase[T2 <: PhraseType](p: Phrase[T2]): Result[Phrase[T2]] = {
         p match {
-          case i: Identifier[_]  => i.`type` match {
-            case _: AccType => vars += i
-            case _ =>
-          }
+          case i: Identifier[_]  => vars += i
           case _ =>
         }
         Continue(p, this)

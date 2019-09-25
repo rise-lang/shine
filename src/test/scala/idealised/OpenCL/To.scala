@@ -78,9 +78,10 @@ class To extends idealised.util.TestsWithExecutor {
                     |> mapLocal(0) (fun(zippedDim3Row => zip (zippedDim3Row._1) (zippedDim3Row._2)
                       |> mapSeq (fun(zippedDim2Row => zip (zippedDim2Row._1) (zippedDim2Row._2)
                         |> mapSeq (fun(zippedDim1Row => zippedDim1Row._1 + zippedDim1Row._2))))))) )))
-            (zeros (m) (n) (o) (p) |> mapLocal(1) (mapLocal(0) (mapSeq (mapSeq (fun(x => x))))))))
+            (zeros (m) (n) (o) (p) |> mapLocal(1) (mapLocal(0) (mapSeq (mapSeq (fun(x => x))))))
+          |> mapLocal(1) (mapLocal(0) (mapSeq (mapSeq (fun(x => x)))))))
 
-    gen.OpenCLKernel(e(8)(4)(4)(2)(2))
+    gen.OpenCLKernel(LocalSize((2, 2, 1)), GlobalSize((8, 8, 1)))(e(8)(4)(4)(2)(2), "KERNEL")
 
     //Expected: Outer-most 2 dimensions have size of the ceiling of dividing by get_local_size(dim).
     // Inner dimensions stay the same.

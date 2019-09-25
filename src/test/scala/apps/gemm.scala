@@ -180,6 +180,7 @@ class gemm extends idealised.util.TestsWithExecutor {
                     zip (p20) (p22._1) |> mapSeq (fun(p23 =>
                       zip (p23._1) (p22._2) |> mapSeq (fun(p24 =>
                         p24._1 + (p23._2 * p24._2) )) )) ))) (p18._1 |> mapSeq (mapSeq (fun(x => x))) )
+                |> mapSeq (mapSeq (fun(x => x)))
             ))
           ))
         ))

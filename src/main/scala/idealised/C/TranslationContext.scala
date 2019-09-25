@@ -22,10 +22,6 @@ class TranslationContext() extends idealised.DPIA.Compilation.TranslationContext
         assign(dt1, recordAcc1(dt1, dt2, lhs), fst(rhs)) `;` assign(dt2, recordAcc2(dt1, dt2, lhs), snd(rhs))
 
       //TODO makes a decision. Not allowed!
-      case ArrayType(n, et) =>
-        MapSeqI(n, et, et, λ(ExpType(et, read))(x => λ(AccType(et))(a => assign(et, a, x) )), rhs, lhs)(this)
-
-      //TODO makes a decision. Not allowed!
       case DepArrayType(n, ft) =>
 
         val k = DPIA.NatIdentifier(freshName("k"))
