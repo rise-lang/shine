@@ -12,7 +12,7 @@ import elevate.lift.strategies.normalForm._
 import elevate.lift.strategies.traversal._
 
 
-class fission_fusion extends util.Tests {
+class fission_fusion extends test_util.Tests {
   val norm = normalize(betaReduction <+ etaReduction)
 
   def eq(a: Expr, b: Expr): Unit = {

@@ -22,7 +22,7 @@ import elevate.lift.strategies.tiling.{loopInterchange, loopInterchangeAtLevel}
 
 import scala.language.implicitConversions
 
-class algorithmic extends util.Tests {
+class algorithmic extends test_util.Tests {
 
   implicit def rewriteResultToExpr(r: RewriteResult[Expr]): Expr = r.get
 

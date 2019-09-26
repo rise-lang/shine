@@ -9,7 +9,7 @@ import lift.core.primitives._
 import lift.core.types._
 
 //noinspection TypeAnnotation
-class gemm extends util.TestsWithExecutor {
+class gemm extends test_util.TestsWithExecutor {
 
   val epsilon = 1.0f
 

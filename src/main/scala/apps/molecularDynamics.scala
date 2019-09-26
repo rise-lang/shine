@@ -1,14 +1,13 @@
 package apps
 
+import lift.core._
 import lift.core.DSL._
 import lift.core.types._
 import lift.core.primitives._
 import lift.OpenCL.primitives._
-import util.gen
-import idealised.utils.{Time, TimeSpan}
 
-class molecularDynamics extends util.TestsWithExecutor {
-  val mdCompute = foreignFun("updateF",
+object molecularDynamics {
+  private val mdCompute = foreignFun("updateF",
     Seq("f", "ipos", "jpos", "cutsq", "lj1", "lj2"),
     """{
       |  // Calculate distance
@@ -27,23 +26,23 @@ class molecularDynamics extends util.TestsWithExecutor {
       |  }
       |  return f;
       }""".stripMargin,
-      float4 ->: float4 ->: float4 ->: float ->: float ->: float ->: float4)
+    float4 ->: float4 ->: float4 ->: float ->: float ->: float ->: float4)
 
-  val shoc = nFun(n => nFun(m => fun(
+  val shoc: Expr = nFun(n => nFun(m => fun(
     (n`.`float4) ->: (m`.`n`.`IndexType(n)) ->: float ->: float ->: float ->: (n`.`float4)
   )((particles, neighbourIds, cutsq, lj1, lj2) =>
     zip(particles)(transpose(neighbourIds)) |>
-    split(128) |>
-    mapWorkGroup(
-      mapLocal(fun(p =>
-        toPrivate(p._1) |> let(fun(particle =>
-          gather(p._2)(particles) |>
-          oclReduceSeq(AddressSpace.Private)(fun(force => fun(n =>
-            mdCompute(force)(particle)(n)(cutsq)(lj1)(lj2)
-          )))(vectorFromScalar(l(0.0f)))
+      split(128) |>
+      mapWorkGroup(
+        mapLocal(fun(p =>
+          toPrivate(p._1) |> let(fun(particle =>
+            gather(p._2)(particles) |>
+              oclReduceSeq(AddressSpace.Private)(fun(force => fun(n =>
+                mdCompute(force)(particle)(n)(cutsq)(lj1)(lj2)
+              )))(vectorFromScalar(l(0.0f)))
+          ))
         ))
-      ))
-    ) |> join
+      ) |> join
   )))
 
   def buildNeighbourList(position: Array[(Float, Float, Float, Float)], maxNeighbours: Int): Array[Array[Int]] = {
@@ -77,22 +76,25 @@ class molecularDynamics extends util.TestsWithExecutor {
   }
 
   import idealised.OpenCL._
-  val N = 1024
-  val M = 128
-  val cutsq = 16.0f
-  val lj1 = 1.5f
-  val lj2 = 2.0f
+  import util.{Time, TimeSpan}
 
-  val localSize = LocalSize(128)
-  val globalSize = GlobalSize(N)
+  private val cutsq = 16.0f
+  private val lj1 = 1.5f
+  private val lj2 = 2.0f
 
   def runOriginalKernel(name: String,
                         particles: Array[Float],
                         neighbours: Array[Array[Int]]): (Array[Float], TimeSpan[Time.ms]) = {
     import opencl.executor._
 
-    val code = util.readFile(s"src/test/scala/apps/originalLift/$name")
+    val code = util.readFile(s"src/main/scala/apps/originalLift/$name")
     val kernelJNI = Kernel.create(code, "KERNEL", "")
+
+    assert(particles.length % 4 == 0)
+    val N = particles.length / 4
+    val M = neighbours.length
+    val localSize = LocalSize(128)
+    val globalSize = GlobalSize(N)
 
     val float_bytes = 4
     val float4_bytes = 4 * float_bytes
@@ -123,21 +125,15 @@ class molecularDynamics extends util.TestsWithExecutor {
   def runKernel(k: KernelNoSizes,
                 particles: Array[Float],
                 neighbours: Array[Array[Int]]): (Array[Float], TimeSpan[Time.ms]) = {
+    assert(particles.length % 4 == 0)
+    val N = particles.length / 4
+    val M = neighbours.length
+    val localSize = LocalSize(128)
+    val globalSize = GlobalSize(N)
+
     val f = k.as[ScalaFunction `(`
       Int `,` Int `,` Array[Float] `,` Array[Array[Int]] `,` Float `,` Float `,` Float
       `)=>` Array[Float]]
     f(localSize, globalSize)(N `,` M `,` particles `,` neighbours `,` cutsq `,` lj1 `,` lj2)
-  }
-
-  test("molecular dynamics versions produce same results") {
-    val random = new scala.util.Random()
-    val particles = Array.fill(N * 4)(random.nextFloat() * 20.0f)
-    val particlesTuple = particles.sliding(4, 4).map { case Array(a, b, c, d) => (a, b, c, d) }.toArray
-    val neighbours = buildNeighbourList(particlesTuple, M).transpose
-
-    util.runsWithSameResult(Seq(
-      ("original", runOriginalKernel("MolecularDynamics.cl", particles, neighbours)),
-      ("dpia", runKernel(gen.OpenCLKernel(shoc), particles, neighbours))
-    ))
   }
 }

@@ -2,9 +2,8 @@ package apps
 
 import benchmarks.core.{CorrectnessCheck, RunOpenCLProgram}
 import idealised.OpenCL.{GlobalSize, KernelWithSizes, LocalSize}
-import util.gen
-import idealised.utils.Time.ms
-import idealised.utils.{Display, TimeSpan}
+import util.{Display, TimeSpan, gen}
+import util.Time.ms
 import lift.OpenCL.primitives._
 import lift.arithmetic.SteppedCase
 import lift.core.DSL._
@@ -15,7 +14,7 @@ import lift.core.HighLevelConstructs._
 
 import scala.util.Random
 
-class stencil extends util.Tests {
+class stencil extends test_util.Tests {
 
   private case class StencilResult(inputSize: Int,
                                    stencilSize: Int,
@@ -73,7 +72,7 @@ class stencil extends util.Tests {
     final override type Input = Array[Float]
 
     final def scalaProgram: Array[Float] => Array[Float] = (xs: Array[Float]) => {
-      import idealised.utils.ScalaPatterns.pad
+      import util.ScalaPatterns.pad
       pad(xs, padSize, 0.0f).sliding(stencilSize, 1).map(nbh => nbh.foldLeft(0.0f)(_ + _))
     }.toArray
 
@@ -130,7 +129,7 @@ class stencil extends util.Tests {
     }
 
     final def scalaProgram: Array[Array[Float]] => Array[Array[Float]] = (grid: Array[Array[Float]]) => {
-      import idealised.utils.ScalaPatterns._
+      import util.ScalaPatterns._
       slide2D(pad2D(grid, padSize, 0.0f), stencilSize).map(_.map(tileStencil))
     }
 

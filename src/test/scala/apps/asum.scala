@@ -12,7 +12,7 @@ import util.{SyntaxChecker, gen}
 import scala.util.Random
 
 //noinspection TypeAnnotation
-class asum extends util.TestsWithExecutor {
+class asum extends test_util.TestsWithExecutor {
 
   def inputT(n : NatIdentifier) = ArrayType(n, float)
   val abs = dtFun(t => foreignFun("my_abs", Seq("y"), "{ return fabs(y); }", t ->: t))

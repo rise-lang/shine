@@ -8,7 +8,7 @@ import util.gen
 
 import lift.arithmetic.Cst
 
-class Reorder extends util.Tests {
+class Reorder extends test_util.Tests {
   test("Simple gather example should generate syntactic valid C code with two one loops") {
     val e = nFun(n => fun(ArrayType(n, float))(xs =>
       xs |> reorderWithStride(128) |> mapSeq(fun(x => x))

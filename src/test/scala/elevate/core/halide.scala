@@ -8,7 +8,7 @@ import elevate.util._
 import lift.core.DSL._
 import lift.core.types.infer
 
-class halide extends util.Tests {
+class halide extends test_util.Tests {
 
   test("generic reorder 1D") {
     val expr = λ(i => λ(f => *!(f) $ i))

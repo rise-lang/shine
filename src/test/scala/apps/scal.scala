@@ -6,7 +6,7 @@ import lift.core.types._
 import lift.core.primitives._
 import util.gen
 
-class scal extends util.Tests {
+class scal extends test_util.Tests {
 
   private val simpleScal = nFun(n => fun(ArrayType(n, float))(input => fun(float)(alpha =>
     input |> mapSeq(fun(x => alpha * x))

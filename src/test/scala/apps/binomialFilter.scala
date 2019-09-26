@@ -83,7 +83,7 @@ object binomialFilter {
   }
 }
 
-class binomialFilter extends util.Tests {
+class binomialFilter extends test_util.Tests {
   import binomialFilter._
 
   def s_eq(a: Expr, b: Expr): Unit = {

@@ -4,7 +4,7 @@ import lift.core.DSL._
 import lift.core.types._
 import util.gen
 
-class Parameters extends util.Tests {
+class Parameters extends test_util.Tests {
   val m = 4 // vector width
 
   test("Output scalar") {

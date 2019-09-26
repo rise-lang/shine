@@ -1,14 +1,15 @@
 package apps
 
+import lift.core._
 import lift.core.DSL._
 import lift.core.types._
 import lift.core.primitives._
 import lift.OpenCL.primitives._
-import util.gen
-import idealised.utils.{Time, TimeSpan}
 
-class nbody extends util.TestsWithExecutor {
-  val calcAcc = foreignFun("calcAcc",
+object nbody {
+  private val id = fun(x => x)
+
+  private val calcAcc = foreignFun("calcAcc",
     Seq("p1", "p2", "deltaT", "espSqr", "acc"),
     """{
       |  float4 r;
@@ -24,7 +25,7 @@ class nbody extends util.TestsWithExecutor {
       |""".stripMargin,
     float4 ->: float4 ->: float ->: float ->: float4 ->: float4
   )
-  val update = foreignFun("update",
+  private val update = foreignFun("update",
     Seq("pos", "vel", "deltaT", "acceleration"),
     """{
       |  float4 newPos;
@@ -38,24 +39,22 @@ class nbody extends util.TestsWithExecutor {
     float4 ->: float4 ->: float ->: float4 ->: TupleType(float4, float4)
   )
 
-  val amd = nFun(n => fun(
+  val amd: Expr = nFun(n => fun(
     (n`.`float4) ->: (n`.`float4) ->: float ->: float ->: (n`.`(float4 x float4))
   )((pos, vel, espSqr, deltaT) =>
     mapGlobal(fun(p1 =>
       update(fst(p1))(snd(p1))(deltaT) o
-      oclReduceSeq(AddressSpace.Private)(fun((acc, p2) =>
-        calcAcc(fst(p1))(p2)(deltaT)(espSqr)(acc)
-      ))(vectorFromScalar(l(0.0f))) $ pos
+        oclReduceSeq(AddressSpace.Private)(fun((acc, p2) =>
+          calcAcc(fst(p1))(p2)(deltaT)(espSqr)(acc)
+        ))(vectorFromScalar(l(0.0f))) $ pos
     )) $ zip(pos)(vel)
   ))
-
-  val id = fun(x => x)
 
   val tileX = 256
   val tileY = 1
 
   // TODO: compare generated code to original
-  val nvidia = nFun(n => fun(
+  val nvidia: Expr = nFun(n => fun(
     (n`.`float4) ->: (n`.`float4) ->: float ->: float ->: (n`.`(float4 x float4))
   )((pos, vel, espSqr, deltaT) =>
     join o join o mapWorkGroup(1)(
@@ -77,16 +76,17 @@ class nbody extends util.TestsWithExecutor {
                     )) $ zip(newP1Chunk)(accDim2._2)
                   )) $ zip(p2Local)(acc)
                 )) $ toLocal(mapLocal(1)(mapLocal(0)(id))(p2))
-            )))(mapLocal(1)(mapLocal(0)(id))(generate(fun(_ => generate(fun(_ => vectorFromScalar(l(0.0f))))))))
+              )))(mapLocal(1)(mapLocal(0)(id))(generate(fun(_ => generate(fun(_ => vectorFromScalar(l(0.0f))))))))
             o split(tileY) o split(tileX) $ pos
           // TODO: toPrivate when it works..
-          ) $ zip(toLocal(mapLocal(id)(unzip(p1Chunk)._1)))(unzip(p1Chunk)._2)
+        ) $ zip(toLocal(mapLocal(id)(unzip(p1Chunk)._1)))(unzip(p1Chunk)._2)
       )) o split(tileX)
     ) o split(n) $ zip(pos)(vel)
   ))
 
   import idealised.OpenCL._
-  private val N = 512
+  import util.{Time, TimeSpan}
+
   private val deltaT = 0.005f
   private val espSqr = 500.0f
 
@@ -97,8 +97,11 @@ class nbody extends util.TestsWithExecutor {
                         vel: Array[Float]): (Array[Float], TimeSpan[Time.ms]) = {
     import opencl.executor._
 
-    val code = util.readFile(s"src/test/scala/apps/originalLift/$name")
+    val code = util.readFile(s"src/main/scala/apps/originalLift/$name")
     val kernelJNI = Kernel.create(code, "KERNEL", "")
+
+    assert(pos.length % 4 == 0)
+    val N = pos.length / 4
 
     val float_bytes = 4
     val float4_bytes = 4 * float_bytes
@@ -131,33 +134,13 @@ class nbody extends util.TestsWithExecutor {
                 globalSize: GlobalSize,
                 pos: Array[Float],
                 vel: Array[Float]): (Array[Float], TimeSpan[Time.ms]) = {
+    assert(pos.length % 4 == 0)
+    val N = pos.length / 4
+
     val f = k.as[ScalaFunction `(`
       Int `,` Array[Float] `,` Array[Float] `,` Float `,` Float
-    `)=>` Array[Float]]
+      `)=>` Array[Float]]
     f(localSize, globalSize)(N `,` pos `,` vel `,` espSqr `,` deltaT)
   }
 
-  test("nbody versions produce same results") {
-    val random = new scala.util.Random()
-    val pos = Array.fill(N * 4)(random.nextFloat * random.nextInt(10))
-    val vel = Array.fill(N * 4)(random.nextFloat * random.nextInt(10))
-
-    val localSizeAMD = LocalSize(128)
-    val globalSizeAMD = GlobalSize(N)
-
-    val localSizeNVIDIA = LocalSize((tileX, tileY))
-    val globalSizeNVIDIA = GlobalSize((N, tileY))
-
-    util.runsWithSameResult(Seq(
-      ("original AMD", runOriginalKernel("NBody-AMD.cl", localSizeAMD, globalSizeAMD, pos, vel)),
-      ("original NVIDIA", runOriginalKernel("NBody-NVIDIA.cl", localSizeNVIDIA, globalSizeNVIDIA, pos, vel)),
-      ("dpia AMD", runKernel(gen.OpenCLKernel(amd), localSizeAMD, globalSizeAMD, pos, vel)),
-      ("dpia NVIDIA", runKernel(gen.OpenCLKernel(nvidia), localSizeNVIDIA, globalSizeNVIDIA, pos, vel))
-    ))
-  }
-
-  test("nbody AMD version calls update only once") {
-    val code = gen.OpenCLKernel(amd).code
-    "update\\(".r.findAllIn(code).length shouldBe 2
-  }
 }

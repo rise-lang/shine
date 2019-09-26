@@ -6,7 +6,7 @@ import lift.core.DSL._
 import lift.core.primitives._
 import lift.core.types.float
 
-class dotPrinter extends util.Tests {
+class dotPrinter extends test_util.Tests {
 
   def exprToDot(path: String, name: String, e: Expr, dot: Expr => String): Unit = {
     import java.io._

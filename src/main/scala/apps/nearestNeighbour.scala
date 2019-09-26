@@ -1,28 +1,23 @@
 package apps
 
+import lift.core._
 import lift.core.DSL._
 import lift.core.types._
-import lift.core.primitives._
 import lift.OpenCL.primitives._
-import util.gen
-import idealised.utils.{Time, TimeSpan}
 
-class nearestNeighbour extends util.TestsWithExecutor {
-  val distance = foreignFun("distance_", Seq("loc", "lat", "lng"),
+object nearestNeighbour {
+  private val distance = foreignFun("distance_", Seq("loc", "lat", "lng"),
     "{ return sqrt((lat - loc._fst) * (lat - loc._fst) + (lng - loc._snd) * (lng -  loc._snd)); }",
     (float x float) ->: float ->: float ->: float)
 
-  val nn = nFun(n => fun(
+  val nn: Expr = nFun(n => fun(
     (n`.`(float x float)) ->: float ->: float ->: (n`.`float)
   )((locations, lat, lng) =>
     locations |> mapGlobal(fun(loc => distance(loc)(lat)(lng)))
   ))
 
   import idealised.OpenCL._
-  val N = 1024
-
-  val localSize = LocalSize(128)
-  val globalSize = GlobalSize(N)
+  import util.{Time, TimeSpan}
 
   def runOriginalKernel(name: String,
                         locations: Array[Float],
@@ -30,8 +25,13 @@ class nearestNeighbour extends util.TestsWithExecutor {
                         lng: Float): (Array[Float], TimeSpan[Time.ms]) = {
     import opencl.executor._
 
-    val code = util.readFile(s"src/test/scala/apps/originalLift/$name")
+    val code = util.readFile(s"src/main/scala/apps/originalLift/$name")
     val kernelJNI = Kernel.create(code, "KERNEL", "")
+
+    assert(locations.length % 2 == 0)
+    val N = locations.length / 2
+    val localSize = LocalSize(128)
+    val globalSize = GlobalSize(N)
 
     val float_bytes = 4
     val output_bytes = N * float_bytes
@@ -61,21 +61,15 @@ class nearestNeighbour extends util.TestsWithExecutor {
                 locations: Array[Float],
                 lat: Float,
                 lng: Float): (Array[Float], TimeSpan[Time.ms]) = {
+    assert(locations.length % 2 == 0)
+    val N = locations.length / 2
+    val localSize = LocalSize(128)
+    val globalSize = GlobalSize(N)
+
     val f = k.as[ScalaFunction `(`
       Int `,` Array[Float] `,` Float `,` Float
-    `)=>` Array[Float]]
+      `)=>` Array[Float]]
     f(localSize, globalSize)(N `,` locations `,` lat `,` lng)
   }
 
-  test("nearest neighbour versions produce same results") {
-    val random = new scala.util.Random()
-    val locations = Array.fill(2 * N)(random.nextFloat)
-    val lat = random.nextFloat
-    val lng = random.nextFloat
-
-    util.runsWithSameResult(Seq(
-      ("original", runOriginalKernel("NearestNeighbour.cl", locations, lat, lng)),
-      ("dpia", runKernel(gen.OpenCLKernel(nn), locations, lat, lng))
-    ))
-  }
 }

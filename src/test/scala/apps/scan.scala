@@ -5,7 +5,7 @@ import lift.core.types._
 import lift.core.primitives._
 import util.gen
 
-class scan extends util.Tests {
+class scan extends test_util.Tests {
   private val simpleScan = fun(ArrayType(8, float))(array =>
     array |> scanSeq(fun(x => fun(a => a + x)))(l(0.0f))
   )

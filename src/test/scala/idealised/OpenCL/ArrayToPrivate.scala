@@ -5,7 +5,7 @@ import lift.core.types._
 import lift.core.primitives._
 import util.gen
 
-class ArrayToPrivate extends util.Tests {
+class ArrayToPrivate extends test_util.Tests {
   test("generate OpenCL code with array in private memory") {
     import lift.OpenCL.primitives._
 

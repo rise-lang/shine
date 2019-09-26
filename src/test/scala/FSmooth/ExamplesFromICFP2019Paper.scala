@@ -10,7 +10,7 @@ import elevate.fsmooth.rules._
 import elevate.fsmooth.traversal._
 import elevate.lift.strategies
 
-class ExamplesFromICFP2019Paper extends util.Tests {
+class ExamplesFromICFP2019Paper extends test_util.Tests {
 
   test("Type inference MSmooth vector constructs") {
     println("vectorRange = " + TypeInference.infer(vectorRange))

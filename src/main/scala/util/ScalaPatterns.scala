@@ -1,4 +1,4 @@
-package idealised.utils
+package util
 
 import scala.reflect.ClassTag
 

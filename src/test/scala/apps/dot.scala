@@ -8,7 +8,7 @@ import lift.core.primitives._
 import lift.core.HighLevelConstructs.reorderWithStride
 import util.gen
 
-class dot extends util.Tests {
+class dot extends test_util.Tests {
 
   private def xsT(N : NatIdentifier) = ArrayType(N, float)
   private def ysT(N : NatIdentifier) = ArrayType(N, float)

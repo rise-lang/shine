@@ -73,7 +73,7 @@ object harrisCornerDetection {
   })))
 }
 
-class harrisCornerDetection extends util.Tests {
+class harrisCornerDetection extends test_util.Tests {
   test("harris compiles to C code") {
     gen.CProgram(harrisCornerDetection.e, "harris")
   }
