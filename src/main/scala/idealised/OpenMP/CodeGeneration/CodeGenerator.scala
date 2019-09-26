@@ -5,7 +5,7 @@ import idealised.C.AST.{ArraySubscript, Assignment, Decl}
 import idealised.C.CodeGeneration.{CodeGenerator => CCodeGenerator}
 import idealised.C.CodeGeneration.CodeGenerator.CIntExpr
 import idealised.DPIA.DSL._
-import idealised.DPIA.FunctionalPrimitives.{AsScalar, AsVector, ForeignFunction, IdxVec, VectorFromScalar}
+import idealised.DPIA.FunctionalPrimitives.{AsScalar, AsVectorAligned, ForeignFunction, IdxVec, VectorFromScalar}
 import idealised.DPIA.ImperativePrimitives._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
@@ -101,7 +101,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       }
       case ForeignFunction(f, inTs, outT, args) =>
         OpenMPCodeGen.codeGenForeignFunction(f, inTs, outT, args, env, path, cont)
-      case AsVector(n, _, dt, e) => path match {
+      case AsVectorAligned(n, _, dt, e) => path match {
         case (i : CIntExpr) :: (j : CIntExpr) :: ps =>
           exp(e, env, CIntExpr((i * n) + j) :: ps, cont)
 
@@ -149,6 +149,18 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         C.AST.StructType(s"${v.elemType}${v.size}",
           immutable.Seq((C.AST.ArrayType(typ(v.elemType), Some(v.size)), "data")))
       case _ => super.typ(dt)
+    }
+  }
+
+  override def generateAccess(dt: DataType,
+                              expr: Expr,
+                              path: Path,
+                              env: Environment): Expr = {
+    (path, dt) match {
+      case ((i: CIntExpr) :: _, _: VectorType) =>
+        val data = C.AST.StructMemberAccess(expr, C.AST.DeclRef("data"))
+        C.AST.ArraySubscript(data, C.AST.ArithmeticExpr(i))
+      case _ => super.generateAccess(dt, expr, path, env)
     }
   }
 

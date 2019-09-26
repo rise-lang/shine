@@ -45,7 +45,7 @@ class asum extends test_util.TestsWithExecutor {
       input |>
         split(32768) |>
         mapPar(
-          asVector(4) >>
+          asVectorAligned(4) >>
           split(8192) >>
           mapSeq(
             reduceSeq(fun(a => fun(x => abs(float4)(x) + a)))(vectorFromScalar(l(0.0f)))
@@ -110,7 +110,7 @@ class asum extends test_util.TestsWithExecutor {
       input |>
         split(32768) |>
         mapWorkGroup(
-          asVector(4) >>
+          asVectorAligned(4) >>
             split(8192) >>
             mapLocal(
               oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => abs(float4)(x) + a)))(vectorFromScalar(l(0.0f)))
@@ -228,7 +228,7 @@ class asum extends test_util.TestsWithExecutor {
       input |>
         split(4096 * 128) |>
         mapWorkGroup(
-          asVector(2) >>
+          asVectorAligned(2) >>
             reorderWithStride(64) >>
             split(2048) >>
             mapLocal(

@@ -119,7 +119,7 @@ class gemm extends test_util.TestsWithExecutor {
                         mapSeq(fun(p54 =>
                           zip(p54._1, transpose(p236._2)) |>
                             mapSeq(fun(p157 =>
-                              zip(asVector(vw)(p54._2), asVector(vw)(p157._2)) |>
+                              zip(asVectorAligned(vw)(p54._2), asVectorAligned(vw)(p157._2)) |>
                                 mapSeq(fun(x => p157._1 + dot(x)))
                             )) |> join
                         ))
