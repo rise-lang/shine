@@ -163,7 +163,8 @@ class gemm extends util.TestsWithExecutor {
             //TODO? In contrast to old code. This creates a struct of arrays.
             |> toLocalFun(mapLocal(1) (fun(p31 => pair (mapLocal(0) (id) (p31._1)) (mapLocal(0) (id) (p31._2)) )))
             |> unzip
-        )) |> fun(p16 =>
+          //TODO think about let much more. Is this even correct? unzip is no wrapped in toLocalFun
+        )) |> let(fun(p16 =>
           zip (p14) (split (v5) (transpose (p16._1)))
             |> mapLocal(1) (fun(p17 =>
             zip (p17._1) (split (v4) (reorderWithStride (v3/v4) (transpose (p16._2))))
@@ -171,18 +172,19 @@ class gemm extends util.TestsWithExecutor {
               zip (transpose (p17._2)) (transpose (p18._2))
                 |> oclReduceSeq (AddressSpace.Private) (fun( (p20, p21) =>
                 //TODO maybe this subexpression could be much cleaner more efficient and express the same
+                // It is possible that the toPrivate around pair leads to less loops together with let. Is this even correct now?
                 pair (toPrivate(mapSeq (id) (p21._1))) (toPrivate(mapSeq (id) (p21._2)))
-                  |> fun(p22 =>
+                  |> let(fun(p22 =>
                     //TODO something goes horribly wrong in the following part.
                     //Two additional loops are generated and unexpected values are being accessed
                     //It looks like CSE or better Let is needed.
                     zip (p20) (p22._1) |> mapSeq (fun(p23 =>
                       zip (p23._1) (p22._2) |> mapSeq (fun(p24 =>
-                        p24._1 + (p23._2 * p24._2) )) )) ))) (p18._1 |> mapSeq (mapSeq (fun(x => x))) )
+                        p24._1 + (p23._2 * p24._2) )) )) )))) (p18._1 |> mapSeq (mapSeq (fun(x => x))) )
                 |> mapSeq (mapSeq (fun(x => x)))
             ))
           ))
-        ))
+        )))
 
       nFun((n, m, k) =>
         fun((k`.`m`.`float) ->: (k`.`n`.`float) ->: (m`.`n`.`float) ->: float ->: float ->: (m`.`n`.`float))
@@ -245,7 +247,7 @@ class gemm extends util.TestsWithExecutor {
   }
 
   test("Kepler best compiles to syntactically correct kernel") {
-    gen.OpenCLKernel(LocalSize((16,4,1)), GlobalSize((256, 128, 1)))(ocl.keplerBest(1024)(1024)(1024), "KERNEL")
+    gen.OpenCLKernel(LocalSize((32,8,1)), GlobalSize((256, 128, 1)))(ocl.keplerBest, "KERNEL")
   }
 
   test("OpenCL sequential gemm versions produce the expected result") {
@@ -313,7 +315,7 @@ class gemm extends util.TestsWithExecutor {
     }
   }
 
-  ignore("OpenCL keplerBest version produces the expected result") {
+  test("OpenCL keplerBest version produces the expected result") {
     import idealised.OpenCL._
     import scala.util.Random
 
