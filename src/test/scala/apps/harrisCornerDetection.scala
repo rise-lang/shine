@@ -11,7 +11,6 @@ import util.gen
 
 object harrisCornerDetection {
   val mulT = binomialFilter.mulT
-  val add = binomialFilter.add
   val sq = fun(x => x * x)
   val dot = binomialFilter.dot
   val dotSeq = binomialFilter.dotSeq
@@ -33,7 +32,7 @@ object harrisCornerDetection {
 
   val zip2D = zipND(2)
 
-  val gaussian: Expr = binomialFilter.regrot
+  val gaussian: Expr = binomialFilter.regRotSeq
 
   val szr = lift.arithmetic.RangeAdd(3, lift.arithmetic.PosInf, 1)
   // TODO: store temporaries
