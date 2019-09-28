@@ -23,4 +23,17 @@ package object util {
     val source = io.Source.fromFile(path)
     try source.getLines.mkString("\n") finally source.close
   }
+
+  def assertSame[T](a: T, b: T, msg: String)
+                   (implicit same: AssertSame[T]): Unit = {
+    same(a, b, msg)
+  }
+
+  def withExecutor[T](f: => T): T = {
+    import opencl.executor._
+
+    Executor.loadLibrary()
+    Executor.init()
+    try { f } finally { Executor.shutdown() }
+  }
 }

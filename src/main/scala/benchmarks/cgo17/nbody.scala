@@ -3,7 +3,7 @@ package benchmarks.cgo17
 import apps.nbody._
 import benchmarks.core._
 import idealised.OpenCL._
-import util.gen
+import util._
 
 object nbody {
   def main(args: Array[String]): Unit = {

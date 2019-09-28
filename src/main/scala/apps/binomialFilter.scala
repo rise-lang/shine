@@ -27,8 +27,7 @@ object binomialFilter {
     zip(a)(b) |> map(mulT) |> reduceSeqUnroll(add)(l(0.0f))
   ))
   val dotSeqVecUnroll: Expr = fun(a => fun(b =>
-    // TODO: Private
-    zip(a)(b) |> map(mulT) |> oclReduceSeqUnroll(AddressSpace.Global)(add)(vectorFromScalar(l(0.0f)))
+    zip(a)(b) |> map(mulT) |> oclReduceSeqUnroll(AddressSpace.Private)(add)(vectorFromScalar(l(0.0f)))
   ))
 
   val weights2d: Expr = larr(Seq(1, 2, 1, 2, 4, 2, 1, 2, 1).map(f => FloatData(f / 16.0f)))
@@ -80,11 +79,16 @@ object binomialFilter {
     val Dv = Dh
     val shuffle =
       asScalar >> drop(3) >> take(6) >> slide(4)(1) >> join >> asVector(4)
-    map(padClamp(4)(4) >> asVector(4)) >> padClamp(1)(1) >>
-    slide(3)(1) >> mapGlobal(transpose >>
+    // map(padClamp(4)(4) >> asVectorAligned(4)) >> padClamp(1)(1) >>
+    map(implN(w => fun(w`.`float)(x =>
+      x |> asVectorAligned(4)
+        |> padCst(1)(0)(vectorFromScalar(x `@` lidx(0, w)))
+        |> padCst(0)(1)(vectorFromScalar(x `@` lidx(w - 1, w)))
+    ))) >> padClamp(1)(1) >>
+    // TODO: mapGlobal
+    slide(3)(1) >> mapSeq(transpose >>
       map(Dh) >>
-      // TODO: Private
-      oclSlideSeq(slideSeq.Values)(AddressSpace.Global)(3)(1)(id)(shuffle >> Dv)
+      oclSlideSeq(slideSeq.Values)(AddressSpace.Private)(3)(1)(id)(shuffle >> Dv)
     )
   }
 }
