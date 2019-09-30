@@ -7,13 +7,18 @@ import elevate.lift.extractors._
 import elevate.core.{Failure, Lift, RewriteResult, Strategy, Success}
 import elevate.lift.rules.algorithmic.untype
 import lift.core._
-import lift.core.types.infer
+import lift.core.types._
 
 package object rules {
 
   case object betaReduction extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
       case _apply(f, x) => lifting.liftFunExpr(f) match {
+        case lifting.Reducing(lf) => Success(lf(x))
+        case _ => Failure(betaReduction)
+      }
+      // TODO: typed
+      case DepApply(f, x: Nat) => lifting.liftDepFunExpr[NatKind](f) match {
         case lifting.Reducing(lf) => Success(lf(x))
         case _ => Failure(betaReduction)
       }

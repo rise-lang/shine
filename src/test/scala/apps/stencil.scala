@@ -1,7 +1,7 @@
 package apps
 
 import benchmarks.core.{CorrectnessCheck, RunOpenCLProgram}
-import idealised.OpenCL._
+import idealised.OpenCL.{GlobalSize, KernelWithSizes, LocalSize}
 import idealised.util.gen
 import idealised.utils.Time.ms
 import idealised.utils.{Display, TimeSpan}
@@ -19,8 +19,8 @@ class stencil extends idealised.util.Tests {
 
   private case class StencilResult(inputSize: Int,
                                    stencilSize: Int,
-                                   localSize: Int,
-                                   globalSize: Int,
+                                   localSize: LocalSize,
+                                   globalSize: GlobalSize,
                                    code: String,
                                    runtimeMs: Double,
                                    correctness: CorrectnessCheck
@@ -43,7 +43,7 @@ class stencil extends idealised.util.Tests {
 
     def stencilSize: Int
 
-    override def makeSummary(localSize: Int, globalSize: Int, code: String, runtimeMs: Double, correctness: CorrectnessCheck): StencilResult = {
+    override def makeSummary(localSize: LocalSize, globalSize: GlobalSize, code: String, runtimeMs: Double, correctness: CorrectnessCheck): StencilResult = {
       StencilResult(
         inputSize = inputSize,
         stencilSize = stencilSize,
@@ -90,7 +90,7 @@ class stencil extends idealised.util.Tests {
         input |>
           padCst(padSize)(padSize)(l(0.0f)) |>
           slide(stencilSize)(1) |>
-          mapGlobal( oclReduceSeq(PrivateMemory)(add)(l(0.0f)) )
+          mapGlobal( oclReduceSeq(AddressSpace.Private)(add)(l(0.0f)) )
       ))
     }
   }
@@ -103,7 +103,7 @@ class stencil extends idealised.util.Tests {
           padCst(padSize)(padSize)(l(0.0f)) |>
           slide(stencilSize)(1) |>
           partition(3)(n2nFun(m => SteppedCase(m, Seq(padSize, n - 2 * padSize + ((1 + stencilSize) % 2), padSize)))) |>
-          depMapSeq(mapGlobal(fun(nbh => oclReduceSeq(PrivateMemory)(add)(l(0.0f))(nbh)))) |>
+          depMapSeq(mapGlobal(fun(nbh => oclReduceSeq(AddressSpace.Private)(add)(l(0.0f))(nbh)))) |>
           join
       ))
     }
@@ -145,7 +145,7 @@ class stencil extends idealised.util.Tests {
         input |>
           padCst2D(padSize)(padSize)(l(0.0f)) |>
           slide2D(stencilSize)(1) |>
-          mapGlobal(1)(mapGlobal(0)(fun(nbh => join(nbh) |> oclReduceSeq(PrivateMemory)(add)(l(0.0f)))))
+          mapGlobal(1)(mapGlobal(0)(fun(nbh => join(nbh) |> oclReduceSeq(AddressSpace.Private)(add)(l(0.0f)))))
       )
       )
     }
@@ -162,7 +162,7 @@ class stencil extends idealised.util.Tests {
           partition(3)(n2nFun(m => SteppedCase(m, Seq(padSize, n - 2 * padSize, padSize)))) |>
           depMapSeq(
             //mapGlobal(0)(depMapSeqUnroll(mapGlobal(1)(join() >>> reduceSeq(add, 0.0f))))
-            mapGlobal(1)(mapGlobal(0)(join >> oclReduceSeq(PrivateMemory)(add)(l(0.0f))))
+            mapGlobal(1)(mapGlobal(0)(join >> oclReduceSeq(AddressSpace.Private)(add)(l(0.0f))))
           ) |>
           join
       ))
@@ -171,7 +171,7 @@ class stencil extends idealised.util.Tests {
 
   private val simpleStencil = nFun(n => fun(ArrayType(n, float))(xs =>
     xs |> slide(3)(1) |> mapSeq(fun(nbh =>
-      nbh |> reduceSeq(fun(x => fun(a => x + a)))(l(0.0f))
+      nbh |> reduceSeq(fun(a => fun(x => a + x)))(l(0.0f))
     ))
   ))
 
@@ -184,18 +184,18 @@ class stencil extends idealised.util.Tests {
   }
 
   test("Basic 1D addition stencil") {
-    BasicStencil1D(1024, 5).run(localSize = 4, globalSize = 4).correctness.check()
+    BasicStencil1D(1024, 5).run(LocalSize(4), GlobalSize(4)).correctness.check()
   }
 
   ignore("Partitioned 1D addition stencil, with specialised area handling") {
-    PartitionedStencil1D(256, 3).run(localSize = 4, globalSize = 32).correctness.check()
+    PartitionedStencil1D(256, 3).run(LocalSize(4), GlobalSize(32)).correctness.check()
   }
 
   test("Basic 2D addition stencil") {
-    BasicStencil2D(256, stencilSize = 11).run(localSize = 2, globalSize = 4).correctness.check()
+    BasicStencil2D(256, stencilSize = 11).run(LocalSize(2), GlobalSize(4)).correctness.check()
   }
 
   ignore("Partitioned 2D addition stencil") {
-    PartitionedStencil2D(inputSize = 1024, stencilSize = 11).run(localSize = 4, globalSize = 1024).correctness.check()
+    PartitionedStencil2D(inputSize = 1024, stencilSize = 11).run(LocalSize(4), GlobalSize(1024)).correctness.check()
   }
 }

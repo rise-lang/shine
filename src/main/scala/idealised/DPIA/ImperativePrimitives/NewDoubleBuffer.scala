@@ -18,7 +18,7 @@ final case class NewDoubleBuffer(dt1: DataType,
 
   override val t: CommType =
     (dt1: DataType) ->: (dt2: DataType) ->: (dt3: DataType) ->: (n: Nat) ->:
-      (in :: exp"[$dt1]") ->:
+      (in :: exp"[$dt1, $read]") ->:
         (out :: acc"[$dt2]") ->:
           (f :: (((varT"[$n.$dt3]" x comm) x comm) ->: comm) ) ->: comm
 
@@ -28,7 +28,7 @@ final case class NewDoubleBuffer(dt1: DataType,
     NewDoubleBuffer(fun.data(dt1), fun.data(dt2), fun.data(dt3), fun.nat(n), VisitAndRebuild(in, fun), VisitAndRebuild(out, fun), VisitAndRebuild(f, fun))
   }
 
-  override def prettyPrint: String = s"(new $${PrettyPhrasePrinter(f)})"
+  override def prettyPrint: String = s"(newDoubleBuffer ${PrettyPhrasePrinter(f)})"
 
   override def xmlPrinter: Elem =
     <newDoubleBuffer dt1={ToString(dt1)}>

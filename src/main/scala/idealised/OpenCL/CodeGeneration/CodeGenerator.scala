@@ -1,6 +1,6 @@
 package idealised.OpenCL.CodeGeneration
 
-import idealised.C.AST.{ArraySubscript, BasicType, Decl}
+import idealised.C.AST.{ArraySubscript, BasicType, Decl, DeclStmt, PointerType}
 import idealised.C.CodeGeneration.CodeGenerator.CIntExpr
 import idealised.C.CodeGeneration.{CodeGenerator => CCodeGenerator}
 import idealised.DPIA.FunctionalPrimitives._
@@ -11,9 +11,10 @@ import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics.VectorData
 import idealised.DPIA.Types._
 import idealised.DPIA._
+import idealised.OpenCL.AST.Barrier
 import idealised.OpenCL.FunctionalPrimitives.OpenCLFunction
 import idealised.OpenCL.ImperativePrimitives._
-import idealised.OpenCL._
+import idealised.OpenCL.{BuiltInFunctionCall, GlobalSize, LocalSize}
 import idealised._
 import lift.arithmetic
 import lift.arithmetic._
@@ -21,15 +22,15 @@ import lift.arithmetic._
 import scala.collection.{immutable, mutable}
 
 object CodeGenerator {
-  def apply(localSize: Option[NDRange], globalSize: Option[NDRange]): CodeGenerator =
+  def apply(localSize: Option[LocalSize], globalSize: Option[GlobalSize]): CodeGenerator =
     new CodeGenerator(mutable.ListBuffer[Decl](), immutable.Map[String, arithmetic.Range](), localSize, globalSize)
 }
 
 class CodeGenerator(override val decls: CCodeGenerator.Declarations,
                     override val ranges: CCodeGenerator.Ranges,
                     //TODO Use information about sizes. Sizes are currently not used in the CodeGenerator.
-                    localSize: Option[NDRange],
-                    globalSize: Option[NDRange])
+                    localSize: Option[LocalSize],
+                    globalSize: Option[GlobalSize])
   extends CCodeGenerator(decls, ranges) {
   override def name: String = "OpenCL"
 
@@ -58,9 +59,12 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         case _ => super.cmd(phrase, env)
       }
 
-      case OpenCLNew(dt, addrSpace, Lambda(v, p)) => OpenCLCodeGen.codeGenOpenCLNew(dt, addrSpace, v, p, env)
-
+      case OpenCLNew(a, dt, Lambda(v, p)) => OpenCLCodeGen.codeGenOpenCLNew(a, dt, v, p, env)
       case _: New => throw new Exception("New without address space found in OpenCL program.")
+
+      case OpenCLNewDoubleBuffer(a, _, _, dt, n, in, out, Lambda(ps, p)) =>
+        OpenCLCodeGen.codeGenOpenCLNewDoubleBuffer(a, ArrayType(n, dt), in, out, ps, p, env)
+      case _: NewDoubleBuffer => throw new Exception("NewDoubleBuffer without address space found in OpenCL program.")
 
       case _ => super.cmd(phrase, env)
     }
@@ -84,7 +88,8 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
           acc(a, env, CIntExpr(i * m) :: Nil, {
             case ArraySubscript(v, idx) =>
               // the continuation has to add the value ...
-              cont( C.AST.FunCall(C.AST.DeclRef(s"vstore$m"), immutable.Seq(idx, v)) )
+              val newIdx = C.AST.BinaryExpr(idx, C.AST.BinaryOperator./, C.AST.Literal(m.toString) )
+              cont( C.AST.FunCall(C.AST.DeclRef(s"vstore$m"), immutable.Seq(newIdx, v)) )
           })
         case _ =>           error(s"Expected path to be not empty")
       }
@@ -122,10 +127,11 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       case AsVector(n, _, _, e) => path match {
         case (i : CIntExpr) :: (j : CIntExpr) :: ps => exp(e, env, CIntExpr((i * n) + j) :: ps, cont)
         case (i : CIntExpr) :: Nil =>
-          exp(e, env, CIntExpr(i * n) :: Nil, {
+          exp(e, env, CIntExpr(i * n) :: Nil, { // i * n
             case ArraySubscript(v, idx) =>
               // TODO: check that idx is the right offset ...
-              cont( C.AST.FunCall(C.AST.DeclRef(s"vload$n"), immutable.Seq(idx, v)) )
+              val newIdx = C.AST.BinaryExpr(idx, C.AST.BinaryOperator./, C.AST.Literal(n.toString) )
+              cont( C.AST.FunCall(C.AST.DeclRef(s"vload$n"), immutable.Seq(newIdx, v)) )
           })
         case _ => error(s"Expected path to have two elements")
       }
@@ -168,8 +174,8 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
   }
 
   protected object OpenCLCodeGen {
-    def codeGenOpenCLNew(dt: DataType,
-                         addressSpace: AddressSpace,
+    def codeGenOpenCLNew(a: AddressSpace,
+                         dt: DataType,
                          v: Identifier[VarType],
                          p: Phrase[CommType],
                          env: Environment): Stmt = {
@@ -178,10 +184,63 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       val vC = C.AST.DeclRef(v.name)
 
       C.AST.Block(immutable.Seq(
-        C.AST.DeclStmt(OpenCL.AST.VarDecl(vC.name, typ(dt), addressSpace)),
+        C.AST.DeclStmt(OpenCL.AST.VarDecl(vC.name, typ(dt), a)),
         cmd(Phrase.substitute(Pair(ve, va), `for` = v, `in` = p),
           env updatedIdentEnv (ve -> vC)
             updatedIdentEnv (va -> vC))))
+    }
+
+    def codeGenOpenCLNewDoubleBuffer(a: AddressSpace,
+                                     dt: ArrayType,
+                                     in: Phrase[ExpType],
+                                     out: Phrase[AccType],
+                                     ps: Identifier[VarType x CommType x CommType],
+                                     p: Phrase[CommType],
+                                     env: Environment): Stmt = {
+      import C.AST._
+      import BinaryOperator._
+      import UnaryOperator._
+
+      val ve = Identifier(s"${ps.name}_e", ps.t.t1.t1.t1)
+      val va = Identifier(s"${ps.name}_a", ps.t.t1.t1.t2)
+      val done = Identifier(s"${ps.name}_swap", ps.t.t1.t2)
+      val swap = Identifier(s"${ps.name}_done", ps.t.t2)
+
+      val tmp1 = DeclRef(freshName("tmp1_"))
+      val tmp2 = DeclRef(freshName("tmp2_"))
+      val in_ptr = DeclRef(freshName("in_ptr_"))
+      val out_ptr = DeclRef(freshName("out_ptr_"))
+      val flag = DeclRef(freshName("flag_"))
+
+      Block(immutable.Seq(
+        // create variables: `tmp1', `tmp2`, `in_ptr', and `out_ptr'
+        DeclStmt(OpenCL.AST.VarDecl(tmp1.name, typ(dt), a)),
+        DeclStmt(OpenCL.AST.VarDecl(tmp2.name, typ(dt), a)),
+        exp(in, env, CIntExpr(0) :: Nil, e => makePointerDecl(in_ptr.name, a, dt.elemType, UnaryExpr(&, e))),
+        makePointerDecl(out_ptr.name, a, dt.elemType, tmp1),
+        // create boolean flag used for swapping
+        DeclStmt(VarDecl(flag.name, Type.uchar, Some(Literal("1")))),
+        // generate body
+        cmd(
+          Phrase.substitute(Pair(Pair(Pair(ve, va), swap), done), `for` = ps, `in` = p),
+          env updatedIdentEnv (ve -> in_ptr) updatedIdentEnv (va -> out_ptr)
+            updatedCommEnv (swap -> {
+            Block(immutable.Seq(
+              ExprStmt(Assignment(in_ptr, TernaryExpr(flag, tmp1, tmp2))),
+              ExprStmt(Assignment(out_ptr, TernaryExpr(flag, tmp2, tmp1))),
+              // toggle flag with xor
+              ExprStmt(Assignment(flag, BinaryExpr(flag, ^, Literal("1")))),
+              Barrier(true, true)
+            ))
+          })
+            updatedCommEnv (done -> {
+            Block(immutable.Seq(
+              ExprStmt(Assignment(in_ptr, TernaryExpr(flag, tmp1, tmp2))),
+              acc(out, env, CIntExpr(0) :: Nil, o => ExprStmt(Assignment(out_ptr, UnaryExpr(&, o)))),
+              Barrier(true, true)
+            ))
+          }))
+      ))
     }
 
     def codeGenOpenCLParFor(f: OpenCLParFor,
@@ -198,7 +257,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
       applySubstitutions(n, env.identEnv) |> (n => {
 
-      val init = OpenCL.AST.VarDecl(cI.name, C.AST.Type.int, OpenCL.PrivateMemory, init = Some(C.AST.ArithmeticExpr(f.init)))
+      val init = OpenCL.AST.VarDecl(cI.name, C.AST.Type.int, AddressSpace.Private, init = Some(C.AST.ArithmeticExpr(f.init)))
       val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
       val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + f.step))
 
@@ -206,30 +265,28 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
       env.updatedIdentEnv(i -> cI) |> (env => {
 
-        val test = range.numVals
-        val min = test.min
-        val max = test.max
-      range.numVals match {
-        // iteration count is 0 => skip body; no code to be emitted
-        case Cst(0) => C.AST.Comment("iteration count is 0, no loop emitted")
-        // iteration count is 1 => no loop
-        case Cst(1) =>
-          C.AST.Stmts(C.AST.Stmts(
-            C.AST.Comment("iteration count is exactly 1, no loop emitted"),
-            C.AST.DeclStmt(C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0))))),
-            updatedGen.cmd(p, env))
-        case _ if range.numVals.min == NegInf && range.numVals.max == Cst(1) =>
-          C.AST.Stmts(
-            C.AST.DeclStmt(init),
-            C.AST.IfThenElse(cond, updatedGen.cmd(p, env) , None)
-          )
-        // default case
-        case _ =>
-          C.AST.Stmts(
-            C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
-              C.AST.Block(immutable.Seq(updatedGen.cmd(p, env)))),
-            f.synchronize)
-      }}))})
+        range.numVals match {
+          // iteration count is 0 => skip body; no code to be emitted
+          case Cst(0) => C.AST.Comment("iteration count is 0, no loop emitted")
+          // iteration count is 1 => no loop
+          case Cst(1) =>
+            C.AST.Stmts(C.AST.Stmts(
+              C.AST.Comment("iteration count is exactly 1, no loop emitted"),
+              C.AST.DeclStmt(C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0))))),
+              updatedGen.cmd(p, env))
+          case _ if (range.start.min.min == Cst(0) && range.stop == Cst(1)) ||
+                    (range.numVals.min == NegInf && range.numVals.max == Cst(1)) =>
+            C.AST.Block(collection.Seq(
+              C.AST.DeclStmt(init),
+              C.AST.IfThenElse(cond, updatedGen.cmd(p, env) , None)
+            ))
+          // default case
+          case _ =>
+            C.AST.Stmts(
+              C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
+                C.AST.Block(immutable.Seq(updatedGen.cmd(p, env)))),
+              f.synchronize)
+        }}))})
     }
 
     def codeGenOpenCLParForNat(f: OpenCLParForNat,
@@ -245,7 +302,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
       applySubstitutions(n, env.identEnv) |> (n => {
 
-        val init = OpenCL.AST.VarDecl(cI.name, C.AST.Type.int, OpenCL.PrivateMemory, init = Some(C.AST.ArithmeticExpr(f.init)))
+        val init = OpenCL.AST.VarDecl(cI.name, C.AST.Type.int, AddressSpace.Private, init = Some(C.AST.ArithmeticExpr(f.init)))
         val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
         val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + f.step))
 
@@ -257,8 +314,8 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
             env.copy(identEnv = env.identEnv.map {
               case (Identifier(name, AccType(dt)), declRef) =>
                 (Identifier(name, AccType(DataType.substitute(NamedVar(cI.name, range), `for` = i, in = dt))), declRef)
-              case (Identifier(name, ExpType(dt)), declRef) =>
-                (Identifier(name, ExpType(DataType.substitute(NamedVar(cI.name, range), `for` = i, in = dt))), declRef)
+              case (Identifier(name, ExpType(dt, read)), declRef) =>
+                (Identifier(name, ExpType(DataType.substitute(NamedVar(cI.name, range), `for` = i, in = dt), read)), declRef)
               case x => x
             }) |> (env =>
 
@@ -290,6 +347,16 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         }
         case _ => CCodeGen.codeGenLiteral(d)
       }
+    }
+
+    def makePointerDecl(name: String,
+                        a: AddressSpace,
+                        elemType: DataType,
+                        expr: Expr): Stmt = {
+      import idealised.C.AST._
+      import idealised.OpenCL.AST.{VarDecl, PointerType}
+      DeclStmt(
+        VarDecl(name, PointerType(a, typ(elemType)), AddressSpace.Private, Some(expr)))
     }
   }
 

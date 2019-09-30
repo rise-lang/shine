@@ -1,19 +1,19 @@
-package idealised.apps
-
-import idealised.OpenCL.SurfaceLanguage.DSL._
-import idealised.OpenCL._
-import idealised.OpenMP.SurfaceLanguage.DSL.depMapPar
-import idealised.SurfaceLanguage.DSL._
-import idealised.SurfaceLanguage.Types._
-import idealised.SurfaceLanguage._
-import idealised.util.SyntaxChecker
-import idealised.utils.Display
-import lift.arithmetic.{ArithExpr, Cst}
-import opencl.executor.Executor
-
-import scala.language.{implicitConversions, postfixOps}
-
-class triangleVectorMatrix extends idealised.util.Tests {
+//package idealised.apps
+//
+//import idealised.OpenCL.SurfaceLanguage.DSL._
+//import idealised.OpenCL._
+//import idealised.OpenMP.SurfaceLanguage.DSL.depMapPar
+//import idealised.SurfaceLanguage.DSL._
+//import idealised.SurfaceLanguage.Types._
+//import idealised.SurfaceLanguage._
+//import idealised.util.SyntaxChecker
+//import idealised.utils.Display
+//import lift.arithmetic.{ArithExpr, Cst}
+//import opencl.executor.Executor
+//
+//import scala.language.{implicitConversions, postfixOps}
+/*
+class triangleVectorMultNoExecutor extends idealised.util.Tests {
   val mult = fun(x => x._1 * x._2)
 
   val add = fun(x => fun(y => x + y))
@@ -206,3 +206,4 @@ class triangleVectorMatrix extends idealised.util.Tests {
     assert(result.correct)
   }
 }
+*/

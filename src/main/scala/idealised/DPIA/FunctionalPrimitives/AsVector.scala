@@ -18,8 +18,8 @@ final case class AsVector(n: Nat,
 
   override val t: ExpType =
     (n: Nat) ->: (m: Nat) ->: (dt: ScalarType) ->:
-      (array :: exp"[${m * n}.$dt]") ->:
-        exp"[$m.${VectorType(n, dt)}]"
+      (array :: exp"[${m * n}.$dt, $read]") ->:
+        exp"[$m.${VectorType(n, dt)}, $read]"
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     AsVector(f.nat(n), f.nat(m), f.data(dt), VisitAndRebuild(array, f))
@@ -40,10 +40,6 @@ final case class AsVector(n: Nat,
 
     acc(array)(AsVectorAcc(n, m, dt, A))
   }
-
-  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommType] =
-    ???
 
   override def continuationTranslation(C: Phrase[->:[ExpType, CommType]])
                                       (implicit context: TranslationContext): Phrase[CommType] = {

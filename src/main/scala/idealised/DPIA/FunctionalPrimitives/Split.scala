@@ -1,5 +1,6 @@
 package idealised.DPIA.FunctionalPrimitives
 
+import idealised.DPIA.Compilation.TranslationToImperative.acc
 import idealised.DPIA.Compilation.{CodeGenerator, TranslationContext, TranslationToImperative}
 import idealised.DPIA.DSL._
 import idealised.DPIA.ImperativePrimitives.SplitAcc
@@ -13,16 +14,17 @@ import scala.xml.Elem
 
 final case class Split(n: Nat,
                        m: Nat,
+                       w: AccessType,
                        dt: DataType,
                        array: Phrase[ExpType])
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (n: Nat) ->: (m: Nat) ->: (dt: DataType) ->:
-      (array :: exp"[${m * n}.$dt]") ->: exp"[$m.$n.$dt]"
+    (n: Nat) ->: (m: Nat) ->: (w: AccessType) ->: (dt: DataType) ->:
+      (array :: exp"[${m * n}.$dt, $w]") ->: exp"[$m.$n.$dt, $w]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    Split(fun.nat(n), fun.nat(m), fun.data(dt), VisitAndRebuild(array, fun))
+    Split(fun.nat(n), fun.nat(m), fun.access(w), fun.data(dt), VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): Data = {
@@ -52,6 +54,14 @@ final case class Split(n: Nat,
       {Phrases.xmlPrinter(array)}
     </split>
 
+  override def fedeTranslation(env: scala.Predef.Map[Identifier[ExpType], Identifier[AccType]])
+                     (C: Phrase[AccType ->: AccType]) : Phrase[AccType] = {
+    import TranslationToImperative._
+
+    val otype = C.t.inT.dataType
+    fedAcc(env)(array)(λ(acc"[$otype]")(o => SplitAcc(n, m, dt, C(o))))
+  }
+
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
@@ -59,15 +69,10 @@ final case class Split(n: Nat,
     acc(array)(SplitAcc(n, m, dt, A))
   }
 
-  // TODO?
-  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommType] =
-    ???
-
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
-    con(array)(λ(exp"[${m * n}.$dt]")(x => C(Split(n, m, dt, x)) ))
+    con(array)(λ(exp"[${m * n}.$dt, $read]")(x => C(Split(n, m, w, dt, x)) ))
   }
 }

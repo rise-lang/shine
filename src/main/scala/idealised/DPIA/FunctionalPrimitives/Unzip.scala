@@ -20,8 +20,8 @@ final case class Unzip(n: Nat,
 
   override val t: ExpType =
     (n: Nat) ->: (dt1: DataType) ->: (dt2: DataType) ->:
-      (e :: exp"[$n.($dt1 x $dt2)]") ->:
-      ExpType(RecordType(ArrayType(n, dt1), ArrayType(n, dt2)))
+      (e :: exp"[$n.($dt1 x $dt2), $read]") ->:
+      ExpType(RecordType(ArrayType(n, dt1), ArrayType(n, dt2)), read)
 
   // TODO: fix parsing of this:
 //        exp"[($n.$dt1 x $n.$dt2)]"
@@ -48,7 +48,7 @@ final case class Unzip(n: Nat,
 
   override def xmlPrinter: Elem =
     <unzip n={ToString(n)} dt1={ToString(dt1)} dt2={ToString(dt2)}>
-      <e type={ToString(ExpType(ArrayType(n, dt1)))}>
+      <e type={ToString(ExpType(ArrayType(n, dt1), read))}>
         {Phrases.xmlPrinter(e)}
       </e>
     </unzip>
@@ -57,20 +57,16 @@ final case class Unzip(n: Nat,
                                   (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
-    con(e)(λ(exp"[$n.($dt1 x $dt2)]")(x =>
+    con(e)(λ(exp"[$n.($dt1 x $dt2), $read]")(x =>
       A :=|RecordType(ArrayType(n, dt1), ArrayType(n, dt2))| Unzip(n, dt1, dt2, x)
     ))
   }
-
-  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommType] =
-    ???
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
-    con(e)(λ(exp"[$n.($dt1 x $dt2)]")(x =>
+    con(e)(λ(exp"[$n.($dt1 x $dt2), $read]")(x =>
       C(Unzip(n, dt1, dt2, x)) ))
   }
 }

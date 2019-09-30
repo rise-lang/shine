@@ -52,6 +52,7 @@ libraryDependencies ++= Seq(
   compilerPlugin("com.github.ghik" %% "silencer-plugin" % "1.4.0"),
   "com.github.ghik" %% "silencer-lib" % "1.4.0" % Provided
 )
+
 // exclude the ArithExpr library sources
 scalacOptions += s"-P:silencer:pathFilters=${baseDirectory.value}/lib/ArithExpr/src/main/"
 

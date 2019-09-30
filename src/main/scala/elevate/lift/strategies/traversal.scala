@@ -29,7 +29,7 @@ object traversal {
         case dt: DataType => Some(s(f).mapSuccess(DepApply[DataKind](_, dt) ))
       }
       case Literal(_) => None
-      case ff: primitives.ForeignFunction => None
+      case ff: ForeignFunction => None
       case _:Primitive => None
     }
 
@@ -82,7 +82,11 @@ object traversal {
   case class body(s: Elevate) extends Elevate {
     def apply(e: Lift): RewriteResult[Lift] = e match {
       case _lambda(x, f) => s(f).mapSuccess(Lambda(x, _) )
-      case _depLambda(x, f) => s(f).mapSuccess(DepLambda(x, _) )
+      case _depLambda(x: NatIdentifier, f) => s(f).mapSuccess(DepLambda[NatKind](x, _))
+      case _depLambda(x: DataTypeIdentifier, f) => s(f).mapSuccess(DepLambda[DataKind](x, _))
+      case _depLambda(x: AddressSpaceIdentifier, f) => s(f).mapSuccess(DepLambda[AddressSpaceKind](x, _))
+      case _depLambda(x: NatToNatIdentifier, f) => s(f).mapSuccess(DepLambda[NatToNatKind](x, _))
+      case _depLambda(x: NatToDataIdentifier, f) => s(f).mapSuccess(DepLambda[NatToDataKind](x, _))
       case _ => Failure(s)
     }
     override def toString = s"body($s)"

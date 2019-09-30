@@ -1,6 +1,6 @@
 package apps
 
-import idealised.DPIA.Types.ExpType
+import idealised.DPIA.Types.{ExpType, read, write}
 import lift.core._
 import lift.core.DSL._
 import lift.core.types._
@@ -14,7 +14,7 @@ class dot extends idealised.util.Tests {
   private def ysT(N : NatIdentifier) = ArrayType(N, float)
 
   private val mulT = fun(x => fst(x) * snd(x))
-  private val add = fun(x => fun(a => x + a))
+  private val add = fun(a => fun(x => a + x))
 
   private val simpleDotProduct = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
     zip(xs)(ys) |> mapSeq(mulT) |> reduceSeq(add)(l(0.0f))
@@ -36,7 +36,7 @@ class dot extends idealised.util.Tests {
 
     val N = phrase.t.asInstanceOf[`(nat)->:`[ExpType ->: ExpType]].x
     val dt = float
-    assertResult(N `()->:` (exp"[$N.$dt]" ->: exp"[$N.$dt]" ->: exp"[$dt]")) {
+    assertResult(N `()->:` (exp"[$N.$dt, $read]" ->: exp"[$N.$dt, $read]" ->: exp"[$dt, $write]")) {
       phrase.t
     }
   }
@@ -56,7 +56,7 @@ class dot extends idealised.util.Tests {
       |> mapPar(
         split(2048) >>
         mapSeq(
-          reduceSeq(fun(x => add(mulT(x))))(vectorFromScalar(l(0.0f)))
+          reduceSeq(fun(a => fun(x => a + mulT(x))))(vectorFromScalar(l(0.0f)))
         )
       ) |> join |> asScalar
     )))
@@ -74,7 +74,7 @@ class dot extends idealised.util.Tests {
         |> mapPar(
           split(8192) >>
           mapSeq(
-            reduceSeq(fun(x => add(mulT(x))))(vectorFromScalar(l(0.0f)))
+            reduceSeq(fun(a => fun(x => a + mulT(x))))(vectorFromScalar(l(0.0f)))
           )
         ) |> join |> asScalar
       )))
@@ -91,7 +91,7 @@ class dot extends idealised.util.Tests {
         mapPar(
           split(2048) >>
             mapSeq(
-              reduceSeq(fun(x => add(mulT(x))))(l(0.0f))
+              reduceSeq(fun(a => fun(x => a + mulT(x))))(l(0.0f))
             )
         ) |> join
     )))
@@ -118,7 +118,6 @@ class dot extends idealised.util.Tests {
 
   { // OpenCL
     import lift.OpenCL.primitives._
-    import idealised.OpenCL.PrivateMemory
 
     test("Intel derived no warp dot product 1 compiles to syntactically correct OpenCL") {
       val intelDerivedNoWarpDot1 = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
@@ -127,7 +126,7 @@ class dot extends idealised.util.Tests {
           mapWorkGroup(
             split(8192) >>
               mapLocal(
-                oclReduceSeq(PrivateMemory)(fun(x => add(mulT(x))))(vectorFromScalar(l(0.0f)))
+                oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => a + mulT(x))))(vectorFromScalar(l(0.0f)))
               )
           ) |> join |> asScalar
       )))
@@ -142,7 +141,7 @@ class dot extends idealised.util.Tests {
           mapWorkGroup(
             split(2048) >>
               mapLocal(
-                oclReduceSeq(PrivateMemory)(fun(x => fun(a => mulT(x) + a)))(l(0.0f))
+                oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => a + mulT(x))))(l(0.0f))
               )
           ) |> join
       )))
@@ -157,7 +156,7 @@ class dot extends idealised.util.Tests {
           mapWorkGroup(
             split(128) >>
               mapLocal(
-                oclReduceSeq(PrivateMemory)(fun(x => fun(a => x + a)))(l(0.0f))
+                oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => a + x)))(l(0.0f))
               )
           ) |> join
       ))
@@ -173,7 +172,7 @@ class dot extends idealised.util.Tests {
             reorderWithStride(128) >>
               split(2048) >>
               mapLocal(
-                oclReduceSeq(PrivateMemory)(fun(x => fun(a => mulT(x) + a)))(l(0.0f))
+                oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => a + mulT(x))))(l(0.0f))
               )
           ) |> join
       )))
@@ -188,9 +187,9 @@ class dot extends idealised.util.Tests {
           split(128) |>
           mapWorkGroup(
             split(2) >>
-              toLocal(mapLocal(oclReduceSeq(PrivateMemory)(add)(l(0.0f)))) >>
+              toLocal(mapLocal(oclReduceSeq(AddressSpace.Private)(add)(l(0.0f)))) >>
               iterate(6)(nFun(_ =>
-                split(2) >> toLocal(mapLocal(oclReduceSeq(PrivateMemory)(add)(l(0.0f))))
+                split(2) >> toLocal(mapLocal(oclReduceSeq(AddressSpace.Private)(add)(l(0.0f))))
               ))
           ) |> join
       ))

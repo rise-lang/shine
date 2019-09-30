@@ -20,8 +20,8 @@ final case class OpenCLFunction(name: String,
 
   override val t: ExpType =
     (inTs zip args).foreach{
-      case (inT, arg) => arg :: exp"[$inT]"
-    } ->: exp"[$outT]"
+      case (inT, arg) => arg :: exp"[$inT, $read]"
+    } ->: exp"[$outT, $read]"
 
   override def visitAndRebuild(f: Visitor): Phrase[ExpType] = {
     OpenCLFunction(name, inTs.map(f.data), f.data(outT), args.map(VisitAndRebuild(_, f)))
@@ -50,20 +50,16 @@ final case class OpenCLFunction(name: String,
       ts match {
         // with only one argument left to process return the assignment of the OpenCLFunction call
         case Seq( (arg, inT) ) =>
-          con(arg)(λ(exp"[$inT]")(e =>
+          con(arg)(λ(exp"[$inT, $read]")(e =>
             A :=|outT| OpenCLFunction(name, inTs :+ inT, outT, exps :+ e) ))
         // with a `tail` of arguments left, recurse
         case Seq( (arg, inT), tail@_* ) =>
-          con(arg)(λ(exp"[$inT]")(e => recurse(tail, exps :+ e, inTs :+ inT) ))
+          con(arg)(λ(exp"[$inT, $read]")(e => recurse(tail, exps :+ e, inTs :+ inT) ))
       }
     }
 
     recurse(args zip inTs, Seq(), Seq())
   }
-
-  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommType] =
-    ???
 
   override def continuationTranslation(C: Phrase[->:[ExpType, CommType]])
                                       (implicit context: TranslationContext): Phrase[CommType] = {
@@ -75,10 +71,10 @@ final case class OpenCLFunction(name: String,
       ts match {
         // with only one argument left to process continue with the OpenCLFunction call
         case Seq( (arg, inT) ) =>
-          con(arg)(λ(exp"[$inT]")(e => C(OpenCLFunction(name, inTs :+ inT, outT, es :+ e)) ))
+          con(arg)(λ(exp"[$inT, $read]")(e => C(OpenCLFunction(name, inTs :+ inT, outT, es :+ e)) ))
         // with a `tail` of arguments left, recurse
         case Seq( (arg, inT), tail@_* ) =>
-          con(arg)(λ(exp"[$inT]")(e => recurse(tail, es :+ e, inTs :+ inT) ))
+          con(arg)(λ(exp"[$inT, $read]")(e => recurse(tail, es :+ e, inTs :+ inT) ))
       }
     }
 

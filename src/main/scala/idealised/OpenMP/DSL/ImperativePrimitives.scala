@@ -13,7 +13,7 @@ object parFor {
             dt: DataType,
             out: Phrase[AccType],
             f: Phrase[ExpType] => Phrase[AccType] => Phrase[CommType]): ParFor =
-    ParFor(n, dt, out, λ(exp"[idx($n)]")( i => λ(acc"[$dt]")( o => f(i)(o) )))
+    ParFor(n, dt, out, λ(exp"[idx($n), $read]")( i => λ(acc"[$dt]")( o => f(i)(o) )))
 }
 
 object `parForVec` {
@@ -21,7 +21,7 @@ object `parForVec` {
             st: ScalarType,
             out: Phrase[AccType],
             f: Phrase[ExpType] => Phrase[AccType] => Phrase[CommType]): ForVec =
-    ForVec(n, st, out, λ(exp"[idx($n)]")(i => λ(acc"[$st]")(o => f(i)(o) )))
+    ForVec(n, st, out, λ(exp"[idx($n), $read]")(i => λ(acc"[$st]")(o => f(i)(o) )))
 }
 
 object parForNat {

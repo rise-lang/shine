@@ -1,6 +1,7 @@
 package idealised.C.CodeGeneration
 
-import idealised.C.AST.{Block, Node}
+import idealised.C.AST.Block
+import idealised.DPIA.Compilation.SimplifyNats
 import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives._
 import idealised.DPIA.ImperativePrimitives._
@@ -9,7 +10,6 @@ import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised.SurfaceLanguage.Operators
 import idealised._
 import lift.arithmetic.BoolExpr.ArithPredicate
 import lift.arithmetic.{NamedVar, _}
@@ -142,9 +142,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case NewDoubleBuffer(_, _, dt, n, in, out, Lambda(ps, p)) =>
         CCodeGen.codeGenNewDoubleBuffer(ArrayType(n, dt), in, out, ps, p, env)
 
-      case NewRegRot(n, dt, Lambda(registers, Lambda(rotate, body))) =>
-        CCodeGen.codeGenNewRegRot(n, dt, registers, rotate, body, env)
-
       case For(n, Lambda(i, p), unroll) => CCodeGen.codeGenFor(n, i, p, unroll, env)
 
       case ForNat(n, DepLambda(i: NatIdentifier, p), unroll) => CCodeGen.codeGenForNat(n, i, p, unroll, env)
@@ -154,6 +151,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case LetNat(binder, defn, body) => generateLetNat(binder, defn, env, (gen, env) => gen.cmd(body, env))
 
+      case Comment(comment) => C.AST.Comment(comment)
 
       case Apply(_, _) | DepApply(_, _) |
            _: CommandPrimitive =>
@@ -239,7 +237,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                    cont: Expr => Stmt) : Stmt =
   {
     phrase match {
-      case i@Identifier(_, ExpType(dt)) => cont(CCodeGen.generateAccess(dt,
+      case i@Identifier(_, ExpType(dt, _)) => cont(CCodeGen.generateAccess(dt,
         env.identEnv.applyOrElse(i, (_: Phrase[_]) => {
           throw new Exception(s"Expected to find `$i' in the environment: `${env.identEnv}'")
         }), path, env))
@@ -296,11 +294,11 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case AsIndex(_, e) => exp(e, env, path, cont)
 
-      case Split(n, _, _, e) => path match {
+      case Split(n, _, _, _, e) => path match {
         case (i : CIntExpr) :: (j : CIntExpr) :: ps => exp(e, env, CIntExpr(n * i + j) :: ps, cont)
         case _ => error(s"Expected two C-Integer-Expressions on the path.")
       }
-      case Join(_, m, _, e) => path match {
+      case Join(_, m, _, _, e) => path match {
         case (i : CIntExpr) :: ps => exp(e, env, CIntExpr(i / m) :: CIntExpr(i % m) :: ps, cont)
         case _ => error(s"Expected two C-Integer-Expressions on the path.")
       }
@@ -319,6 +317,12 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error("Expected a C-Integer-Expression followed by a tuple access on the path.")
       }
 
+      case Unzip(_, _, _, e) => path match {
+        case (xj : TupleAccess) :: (i: CIntExpr) :: ps =>
+          exp(e, env, i :: xj :: ps, cont)
+        case _ => error("Expected a tuple access followed by a C-Integer-Expression on the path.")
+      }
+
       case DepZip(_, _, _, e1, e2) => path match {
         case (i: CIntExpr) :: (xj : TupleAccess) :: ps => xj match {
           case FstMember => exp(e1, env, i :: ps, cont)
@@ -326,8 +330,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         }
         case _ => error("Expected a C-Integer-Expression followed by a tuple access on the path.")
       }
-
-      case Unzip(_, _, _, _) => ???
 
       case Record(_, _, e1, e2) => path match {
         case (xj : TupleAccess) :: ps => xj match {
@@ -339,9 +341,9 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case Fst(_, _, e) => exp(e, env, FstMember :: path, cont)
       case Snd(_, _, e) => exp(e, env, SndMember :: path, cont)
 
-      case Take(_, _, _, e) => exp(e, env, path, cont)
+      case Take(_, _, _, _, e) => exp(e, env, path, cont)
 
-      case Drop(n, _, _, e) => path match {
+      case Drop(n, _, _, _, e) => path match {
         case (i : CIntExpr) :: ps => exp(e, env, CIntExpr(i + n) :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
@@ -378,7 +380,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error(s"Expected two C-Integer-Expressions on the path.")
       }
 
-      case TransposeDepArray(_, _, _, _, e) => path match {
+      case TransposeDepArray(_, _, _, e) => path match {
         case (i : CIntExpr)::(j : CIntExpr) :: ps => exp(e, env, CIntExpr(j) :: CIntExpr(i) :: ps , cont)
         case _ => error(s"Expected two C-Integer-Expressions on the path.")
       }
@@ -386,7 +388,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case MapRead(n, dt1, dt2, f, e) => path match {
         case (i : CIntExpr) :: ps =>
           val continue_cmd =
-            Identifier[ExpType ->: CommType](s"continue_$freshName", ExpType(dt2) ->: comm)
+            Identifier[ExpType ->: CommType](s"continue_$freshName", ExpType(dt2, read) ->: comm)
 
           cmd(f(
             Idx(n, dt1, AsIndex(n, Natural(i)), e)
@@ -399,7 +401,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case GenerateCont(n, dt, f) => path match {
         case (i : CIntExpr) :: ps =>
           val continue_cmd =
-            Identifier[ExpType ->: CommType](s"continue_$freshName", ExpType(dt) ->: comm)
+            Identifier[ExpType ->: CommType](s"continue_$freshName", ExpType(dt, read) ->: comm)
 
           cmd(f(AsIndex(n, Natural(i)))(continue_cmd),
             env updatedContEnv (continue_cmd -> (e => env => exp(e, env, ps, cont))))
@@ -413,8 +415,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case ForeignFunction(f, inTs, outT, args) =>
         CCodeGen.codeGenForeignFunction(f, inTs, outT, args, env, path, cont)
 
-      case Proj1(pair) => exp(Lifting.liftPair(pair)._1, env, path, cont)
-      case Proj2(pair) => exp(Lifting.liftPair(pair)._2, env, path, cont)
+      case Proj1(pair) => exp(SimplifyNats.simplifyIndexAndNatExp(Lifting.liftPair(pair)._1), env, path, cont)
+      case Proj2(pair) => exp(SimplifyNats.simplifyIndexAndNatExp(Lifting.liftPair(pair)._2), env, path, cont)
 
       case Apply(_, _) | DepApply(_, _) |
            Phrases.IfThenElse(_, _, _) | LetNat(_, _, _) | _: ExpPrimitive =>
@@ -423,11 +425,13 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
   }
 
   override def typ(dt: DataType): Type = {
-
     def typeToStructNameComponent(t:DataType):String = {
       t match {
-        case IndexType(_) => freshName("idx")
-        case _ => t.toString
+        case IndexType(n) => s"idx$n"
+        case ArrayType(n, t) => s"${n}_${typeToStructNameComponent(t)}"
+        case RecordType(a, b) => s"_${typeToStructNameComponent(a)}_${typeToStructNameComponent(b)}_"
+        case _: BasicType => t.toString
+        case _ => ???
       }
     }
 
@@ -448,7 +452,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           case _: NatToDataIdentifier =>  throw new Exception("This should not happen")
         }
       case r: idealised.DPIA.Types.RecordType =>
-        C.AST.StructType(typeToStructNameComponent(r.fst) + "_" + typeToStructNameComponent(r.snd), immutable.Seq(
+        C.AST.StructType("Record_" + typeToStructNameComponent(r.fst) + "_" + typeToStructNameComponent(r.snd), immutable.Seq(
           (typ(r.fst), "_fst"),
           (typ(r.snd), "_snd")))
       case _: idealised.DPIA.Types.DataTypeIdentifier => throw new Exception("This should not happen")
@@ -462,7 +466,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                              env:Environment,
                              cont:(CodeGenerator ,Environment) => Stmt):Stmt = {
     cont(this, env updatedNatEnv((binder, defn.asInstanceOf[Phrase[PhraseType]])))
-
   }
 
   /* Take a phrase representing a function (may have multiple level of lambas/DepLambda[NatKind, _]), and a series of arguments,
@@ -514,8 +517,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       val newIdentEnv = env.identEnv.map {
         case (Identifier(name, AccType(dt)), declRef) =>
           (Identifier(name, AccType(DataType.substitute(at, `for`, in = dt))), declRef)
-        case (Identifier(name, ExpType(dt)), declRef) =>
-          (Identifier(name, ExpType(DataType.substitute(at, `for`, in = dt))), declRef)
+        case (Identifier(name, ExpType(dt, a)), declRef) =>
+          (Identifier(name, ExpType(DataType.substitute(at, `for`, in = dt), a)), declRef)
         case x => x
       }
       C.AST.Block(immutable.Seq(this.cmd(p, env.copy(identEnv = newIdentEnv))))
@@ -586,39 +589,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       ))
     }
 
-    def codeGenNewRegRot(n: Nat,
-                         dt: DataType,
-                         registers: Identifier[VarType],
-                         rotate: Identifier[CommType],
-                         body: Phrase[CommType],
-                         env: Environment): Stmt = {
-      import C.AST._
-
-      val re = Identifier(s"${registers.name}_e", registers.t.t1)
-      val ra = Identifier(s"${registers.name}_a", registers.t.t2)
-      val rot = Identifier(s"${rotate.name}_rotate", rotate.t)
-
-      val registerCount = n.eval // FIXME: this is a quick solution
-      // TODO: variable array
-      // val rs = (0 until registerCount).map(i => DeclRef(freshName(s"r${i}_"))).toArray
-
-      val rs = DeclRef(freshName(s"rs_"))
-      val rst = DPIA.Types.ArrayType(n, dt)
-
-      Block(
-        // rs.map(r => DeclStmt(VarDecl(r.name, typ(dt))))
-        Array(DeclStmt(VarDecl(rs.name, typ(rst))))
-          :+ cmd(
-          Phrase.substitute(immutable.Map(registers -> Pair(re, ra), rotate -> rot), `in` = body),
-          env updatedIdentEnv (re -> rs) updatedIdentEnv (ra -> rs)
-            updatedCommEnv (rot -> Block(
-            // (1 until registerCount).map(i => Assignment(rs(i-1), rs(i)))
-            (1 until registerCount).map(i => ExprStmt(Assignment(generateAccess(rst, rs, CIntExpr(i - 1) :: Nil, env), generateAccess(rst, rs, CIntExpr(i) :: Nil, env))))
-          ))
-        )
-      )
-    }
-
     def codeGenFor(n: Nat,
                    i: Identifier[ExpType],
                    p: Phrase[CommType],
@@ -642,26 +612,13 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             updatedGen.cmd(p, env updatedIdentEnv (i -> cI)))
 
         case _ =>
+          assert(!unroll)
+          val init = C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0)))
+          val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
+          val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + 1))
 
-          if(unroll) {
-            val statements = for(index <- rangeAddToScalaRange(range)) yield {
-              val indexPhrase = AsIndex(n, Natural(index))
-              val newPhrase = Phrase.substitute(ph=indexPhrase,`for`=i, in=p)
-              immutable.Seq(updatedGen.cmd(newPhrase, env))
-            }
-            C.AST.Block(
-              C.AST.Comment(s"Unrolling from ${range.start} until ${range.stop} by increments of ${range.step}") +:
-                statements.flatten
-            )
-          } else {
-            // default case
-            val init = C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0)))
-            val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
-            val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + 1))
-
-            C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
-              C.AST.Block(immutable.Seq(updatedGen.cmd(p, env updatedIdentEnv (i -> cI)))))
-          }
+          C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
+            C.AST.Block(immutable.Seq(updatedGen.cmd(p, env updatedIdentEnv (i -> cI)))))
       }})
     }
 
@@ -688,39 +645,15 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             updatedGen.cmd(p, env))
 
         case _ =>
-          // default case
           val init = C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0)))
           val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
           val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + 1))
 
-          if(unroll) {
-            val statements = for (index <- rangeAddToScalaRange(range)) yield {
-              updatedGen.generateNatDependentBody(`for` = i, `phrase`=p, at = Cst(index), env).body
-            }
-            C.AST.Block(
-              C.AST.Comment(s"Unrolling from ${range.start} until ${range.stop} by increments of ${range.step}") +:
-              statements.flatten
-            )
-          } else {
-            val body = updatedGen.generateNatDependentBody(`for` = i, `phrase` = p, at = NamedVar(cI.name, range), env)
-
-            C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
-              body
-            )
-          }
+          assert(!unroll)
+          C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
+            updatedGen.generateNatDependentBody(`for` = i, `phrase` = p, at = NamedVar(cI.name, range), env)
+          )
       }})
-    }
-
-
-    private def rangeAddToScalaRange(range:RangeAdd) = {
-      val (start,stop,step) = {
-        try {
-          (range.start.evalLong, range.stop.evalLong, range.step.evalLong)
-        } catch {
-          case _:NotEvaluableException => throw new Exception(s"Cannot evaluate range $range in loop unrolling")
-        }
-      }
-      start until stop by step
     }
 
     def codeGenIdxAcc(i: Phrase[ExpType],
@@ -824,41 +757,38 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       C.AST.BinaryExpr(e1, op, e2)
     }
 
+    @scala.annotation.tailrec
     def generateAccess(dt: DataType,
                        accuExpr: Expr,
                        path: Path,
                        env: Environment): Expr = {
-      path match {
-        case Nil => accuExpr
-        case (xj: TupleAccess) :: ps =>
-          val tuAccPos = xj match {
-            case FstMember => "_fst"
-            case SndMember => "_snd"
+      (path, dt) match {
+        case (Nil, _) => accuExpr
+        case ((xj: TupleAccess) :: ps, RecordType(fst, snd)) =>
+          val (suffix, memberType) = xj match {
+            case FstMember => ("_fst", fst)
+            case SndMember => ("_snd", snd)
           }
-          generateAccess(dt, C.AST.StructMemberAccess(accuExpr, C.AST.DeclRef(tuAccPos)), ps, env)
-        case (i: CIntExpr) :: _ =>
-          dt match {
-            case _: VectorType =>
-              val data = C.AST.StructMemberAccess(accuExpr, C.AST.DeclRef("data"))
-              C.AST.ArraySubscript(data, C.AST.ArithmeticExpr(i))
-            case at: ArrayType =>
-              val (k, ps) = flattenArrayIndices(at, path)
-              generateAccess(dt, C.AST.ArraySubscript(accuExpr, C.AST.ArithmeticExpr(k)), ps, env)
-
-            case dat: DepArrayType =>
-              val (k, ps) = flattenArrayIndices(dat, path)
-              generateAccess(dt, C.AST.ArraySubscript(accuExpr, C.AST.ArithmeticExpr(k)), ps, env)
-            case x => throw new Exception(s"Expected an ArrayType that is accessed by the index but found $x instead.")
-          }
-        case _ =>
-          throw new Exception(s"Can't generate access for `$dt' with `${path.mkString("[", "::", "]")}'")
+          generateAccess(memberType, C.AST.StructMemberAccess(accuExpr, C.AST.DeclRef(suffix)), ps, env)
+        case ((i: CIntExpr) :: _, _: VectorType) =>
+          val data = C.AST.StructMemberAccess(accuExpr, C.AST.DeclRef("data"))
+          C.AST.ArraySubscript(data, C.AST.ArithmeticExpr(i))
+        case ((_: CIntExpr) :: _, at: ArrayType) =>
+            val (et, i, ps) = flattenArrayIndices(at, path)
+            generateAccess(et, C.AST.ArraySubscript(accuExpr, C.AST.ArithmeticExpr(i)), ps, env)
+        case ((_: CIntExpr) :: _, dat: DepArrayType) =>
+            val (et, i, ps) = flattenArrayIndices(dat, path)
+            generateAccess(et, C.AST.ArraySubscript(accuExpr, C.AST.ArithmeticExpr(i)), ps, env)
+        case (_, _) =>
+          throw new Exception(s"Can't generate access for `$dt' with `${path.mkString("[ ", " :: ", " ]")}'")
       }
     }
 
-    def flattenArrayIndices(dt: DataType, path: Path): (Nat, Path) = {
+    def flattenArrayIndices(dt: DataType, path: Path): (DataType, Nat, Path) = {
       assert(dt.isInstanceOf[ArrayType] || dt.isInstanceOf[DepArrayType])
 
-      val (indicesAsPathElements, rest) = path.splitAt(countArrayLayers(dt))
+      val arrayLayers = countArrayLayers(dt)
+      val (indicesAsPathElements, rest) = path.splitAt(arrayLayers)
       indicesAsPathElements.foreach(i => assert(i.isInstanceOf[CIntExpr]))
       val indices = indicesAsPathElements.map(_.asInstanceOf[CIntExpr].num)
       assert(rest.isEmpty || !rest.head.isInstanceOf[CIntExpr])
@@ -866,10 +796,10 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       val subMap = buildSubMap(dt, indices)
 
-      (ArithExpr.substitute(flattenIndices(dt, indices), subMap), rest)
+      (removeArrayLayers(dt, arrayLayers), ArithExpr.substitute(flattenIndices(dt, indices), subMap), rest)
     }
 
-    def countArrayLayers(dataType: DataType):Int = {
+    def countArrayLayers(dataType: DataType): Int = {
       dataType match {
         case ArrayType(_, et) => 1 + countArrayLayers(et)
         case DepArrayType(_, NatToDataLambda(_ ,et)) => 1 + countArrayLayers(et)
@@ -877,7 +807,20 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       }
     }
 
-    def flattenIndices(dataType: DataType, indicies:List[Nat]):Nat = {
+    @scala.annotation.tailrec
+    def removeArrayLayers(dataType: DataType, arrayLayers: Int): DataType = {
+      if (arrayLayers == 0) {
+        dataType
+      } else {
+        dataType match {
+          case ArrayType(_, et) => removeArrayLayers(et, arrayLayers - 1)
+          case DepArrayType(_, NatToDataLambda(_, et)) => removeArrayLayers(et, arrayLayers - 1) // ???
+          case _ => ???
+        }
+      }
+    }
+
+    def flattenIndices(dataType: DataType, indicies:List[Nat]): Nat = {
       (dataType, indicies) match {
         case (array:ArrayType, index::rest) =>
           numberOfElementsUntil(array, index) + flattenIndices(array.elemType, rest)
@@ -893,11 +836,11 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     }
 
     //Computes the total number of element in an array at a given offset
-    def numberOfElementsUntil(dt:ArrayType, at:Nat):Nat = {
+    def numberOfElementsUntil(dt:ArrayType, at:Nat): Nat = {
       DataType.getTotalNumberOfElements(dt.elemType)*at
     }
 
-    def numberOfElementsUntil(dt:DepArrayType, at:Nat):Nat = {
+    def numberOfElementsUntil(dt:DepArrayType, at:Nat): Nat = {
       dt.elemFType match {
         case NatToDataLambda(x, body) =>
           BigSum(from=0, upTo = at-1, `for`=x, DataType.getTotalNumberOfElements(body))
@@ -922,8 +865,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       }).filter(_.isDefined).map(_.get).toMap[Nat, Nat]
     }
 
-    implicit def convertBinaryOp(op: idealised.SurfaceLanguage.Operators.Binary.Value): idealised.C.AST.BinaryOperator.Value = {
-      import idealised.SurfaceLanguage.Operators.Binary._
+    implicit def convertBinaryOp(op: Operators.Binary.Value): idealised.C.AST.BinaryOperator.Value = {
+      import Operators.Binary._
       op match {
         case ADD => C.AST.BinaryOperator.+
         case SUB => C.AST.BinaryOperator.-
@@ -936,8 +879,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       }
     }
 
-    implicit def convertUnaryOp(op: idealised.SurfaceLanguage.Operators.Unary.Value): idealised.C.AST.UnaryOperator.Value = {
-      import idealised.SurfaceLanguage.Operators.Unary._
+    implicit def convertUnaryOp(op: Operators.Unary.Value): idealised.C.AST.UnaryOperator.Value = {
+      import Operators.Unary._
       op match {
         case NEG => C.AST.UnaryOperator.-
       }
@@ -956,7 +899,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                                    identEnv: immutable.Map[Identifier[_ <: BasePhraseTypes], C.AST.DeclRef]): Nat = {
     // lift the substitutions from the Phrase level to the ArithExpr level
     val substitionMap = identEnv.filter(_._1.t match {
-      case ExpType(IndexType(_)) => true
+      case ExpType(IndexType(_), _) => true
       case AccType(IndexType(_)) => true
       case _ => false
     }).map(i => (NamedVar(i._1.name), NamedVar(i._2.name))).toMap[ArithExpr, ArithExpr]
@@ -1058,9 +1001,14 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
          case Mod(a, n) =>
            genNat(a, env, a => genNat(n, env, n => cont(AST.BinaryExpr(a, AST.BinaryOperator.%, n))))
+
          case v:Var => cont(C.AST.DeclRef(v.toString))
+
          case IntDiv(n, d) =>
            genNat(n, env, n => genNat(d, env, d => cont(AST.BinaryExpr(n, AST.BinaryOperator./, d))))
+
+         case LShift(a, b) =>
+           genNat(a, env, a => genNat(b, env, b => cont(AST.BinaryExpr(a, AST.BinaryOperator.<<, b))))
 
          case lu:Lookup => cont(AST.FunCall(AST.DeclRef(s"lookup${lu.id}"), immutable.Seq(AST.Literal(lu.index.toString))))
 

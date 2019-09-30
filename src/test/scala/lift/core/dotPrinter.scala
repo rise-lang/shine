@@ -46,7 +46,7 @@ class dotPrinter extends idealised.util.Tests {
           zip(a, c) |> map(fun(ac =>
             zip(transpose(b), ac._2) |> map(fun(bc =>
               zip(ac._1, bc._1) |>
-                reduce(fun( (y, acc) => acc + (y._1 * y._2)), l(0.0f)) |>
+                reduceSeq(fun( (acc, y) => acc + (y._1 * y._2)), l(0.0f)) |>
                 fun(x => (x * alpha) + (beta * bc._2))
             ))
           ))

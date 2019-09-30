@@ -7,16 +7,16 @@ import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics.{Data, Store}
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import lift.core.primitives
+import lift.{core => lc}
 
 import scala.language.reflectiveCalls
 import scala.xml.Elem
 
 object ForeignFunction {
-  val Declaration: primitives.ForeignFunction.Decl.type = lift.core.primitives.ForeignFunction.Decl
-  val Definition: primitives.ForeignFunction.Def.type = lift.core.primitives.ForeignFunction.Def
-  type Declaration = lift.core.primitives.ForeignFunction.Decl
-  type Definition = lift.core.primitives.ForeignFunction.Def
+  val Declaration: lc.ForeignFunction.Decl.type = lc.ForeignFunction.Decl
+  val Definition: lc.ForeignFunction.Def.type = lc.ForeignFunction.Def
+  type Declaration = lc.ForeignFunction.Decl
+  type Definition = lc.ForeignFunction.Def
 }
 
 final case class ForeignFunction(funDecl: ForeignFunction.Declaration,
@@ -27,8 +27,8 @@ final case class ForeignFunction(funDecl: ForeignFunction.Declaration,
 
   override val t: ExpType =
     (inTs zip args).foreach {
-      case (inT, arg) => arg :: exp"[$inT]"
-    } ->: exp"[$outT]"
+      case (inT, arg) => arg :: exp"[$inT, $read]"
+    } ->: exp"[$outT, $read]"
 
   override def eval(s: Store): Data = ???
 
@@ -42,20 +42,16 @@ final case class ForeignFunction(funDecl: ForeignFunction.Declaration,
       ts match {
         // with only one argument left to process return the assignment of the function call
         case Seq((arg, inT)) =>
-          con(arg)(λ(exp"[$inT]")(e =>
+          con(arg)(λ(exp"[$inT, $read]")(e =>
             A :=| outT | ForeignFunction(funDecl, inTs :+ inT, outT, exps :+ e)))
         // with a `tail` of arguments left, recurse
         case Seq((arg, inT), tail@_*) =>
-          con(arg)(λ(exp"[$inT]")(e => recurse(tail, exps :+ e, inTs :+ inT)))
+          con(arg)(λ(exp"[$inT, $read]")(e => recurse(tail, exps :+ e, inTs :+ inT)))
       }
     }
 
     recurse(args zip inTs, Seq(), Seq())
   }
-
-  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommType] =
-    ???
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])
                                       (implicit context: TranslationContext): Phrase[CommType] = {
@@ -67,11 +63,11 @@ final case class ForeignFunction(funDecl: ForeignFunction.Declaration,
       ts match {
         // with only one argument left to process return the assignment of the function call
         case Seq( (arg, inT) ) =>
-          con(arg)(λ(exp"[$inT]")(e =>
+          con(arg)(λ(exp"[$inT, $read]")(e =>
             C( ForeignFunction(funDecl, inTs :+ inT, outT, exps :+ e) )) )
         // with a `tail` of arguments left, recurse
         case Seq( (arg, inT), tail@_* ) =>
-          con(arg)(λ(exp"[$inT]")(e => recurse(tail, exps :+ e, inTs :+ inT) ))
+          con(arg)(λ(exp"[$inT, $read]")(e => recurse(tail, exps :+ e, inTs :+ inT) ))
       }
     }
 

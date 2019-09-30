@@ -29,7 +29,7 @@ final case class MapAcc(n: Nat,
 
   override def xmlPrinter: Elem =
     <mapAcc n={ToString(n)} dt1={ToString(dt1)} dt2={ToString(dt2)}>
-      <f type={ToString(ExpType(dt1) ->: ExpType(dt2))}>
+      <f type={ToString(AccType(dt1) ->: AccType(dt2))}>
         {Phrases.xmlPrinter(f)}
       </f>
       <input type={ToString(AccType(ArrayType(n, dt1)))}>

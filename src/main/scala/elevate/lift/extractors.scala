@@ -2,7 +2,7 @@ package elevate.lift
 
 import lift.core.primitives._
 import lift.core.types.{Kind, Type}
-import lift.core.{Apply, DepApply, DepLambda, Expr, Identifier, Lambda, Literal, Primitive, TypedExpr, semantics}
+import lift.core.{ForeignFunction, Apply, DepApply, DepLambda, Expr, Identifier, Lambda, Literal, Primitive, TypedExpr, semantics}
 
 object extractors {
 
@@ -104,10 +104,11 @@ object extractors {
     }
   }
 
-  object _reduce {
-    def unapply(e: Expr): Boolean = e match {
-      case _typed(`reduce`) => true
-      case _ => false
+  object _reduceX {
+    def unapply(e: Expr): Option[Expr] = e match {
+      case _typed(`reduce`) => Some(`reduce`)
+      case _typed(`reduceSeq`) => Some(`reduceSeq`)
+      case _ => None
     }
   }
 

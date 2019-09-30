@@ -1,10 +1,11 @@
 package idealised.DPIA
 
-import idealised.SurfaceLanguage.DSL._
-import idealised.OpenCL.SurfaceLanguage.DSL._
-import idealised.OpenMP.SurfaceLanguage.DSL._
-import idealised.SurfaceLanguage.Types._
-import idealised.util.SyntaxChecker
+import lift.core.DSL._
+import lift.core.types._
+import lift.core.primitives._
+import lift.OpenCL.primitives._
+import lift.OpenMP.primitives._
+import idealised.util.gen
 
 class StructDecl extends idealised.util.Tests {
   val id = fun(x => x)
@@ -12,67 +13,49 @@ class StructDecl extends idealised.util.Tests {
 
   test("Program with tuples in output and tuple input, can be generated in C.") {
     val tupleOut = fun(ArrayType(8, TupleType(float, float)))(xs =>
-      xs :>> mapSeq(id)
+      xs |> mapSeq(id)
     )
 
-    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(tupleOut, Map()))
-    val program = idealised.C.ProgramGenerator.makeCode(phrase)
-    println(program.code)
-    SyntaxChecker(program.code)
+    gen.CProgram(tupleOut)
   }
 
   test("Program with tuples in output and input, can be generated in OpenMP.") {
     val tupleOut = fun(ArrayType(8, TupleType(float, float)))(xs =>
-      xs :>> mapPar(id)
+      xs |> mapPar(id)
     )
 
-    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(tupleOut, Map()))
-    val program = idealised.OpenMP.ProgramGenerator.makeCode(phrase)
-    println(program.code)
-    SyntaxChecker(program.code)
+    gen.OpenMPProgram(tupleOut)
   }
 
   test("Program with tuples in input and output, can be generated in OpenCL.") {
     val tupleOut = fun(ArrayType(8, TupleType(float, float)))(xs =>
-      xs :>> mapSeq(id)
+      xs |> mapSeq(id)
     )
 
-    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(tupleOut, Map()))
-    val program = idealised.OpenCL.KernelGenerator.makeCode(phrase)
-    println(program.code)
-    SyntaxChecker.checkOpenCL(program.code)
+    gen.OpenCLKernel(tupleOut)
   }
 
   test("Program using intermediary tuples but not in input or output, can be generated in C.") {
     val tupleOut = fun(ArrayType(8, float))(xs =>
       fun(ArrayType(8, float))(ys =>
-        zip(xs, ys) :>> mapSeq(id) :>> mapSeq(addT)))
+        zip(xs, ys) |> mapSeq(id) |> mapSeq(addT)))
 
-    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(tupleOut, Map()))
-    val program = idealised.C.ProgramGenerator.makeCode(phrase)
-    println(program.code)
-    SyntaxChecker(program.code)
+    gen.CProgram(tupleOut)
   }
 
   test("Program using intermediary tuples but not in input or output, can be generated in OpenMP.") {
     val tupleOut = fun(ArrayType(8, float))(xs =>
       fun(ArrayType(8, float))(ys =>
-        zip(xs, ys) :>> mapPar(id) :>> mapPar(addT)))
+        zip(xs, ys) |> mapPar(id) |> mapPar(addT)))
 
-    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(tupleOut, Map()))
-    val program = idealised.OpenMP.ProgramGenerator.makeCode(phrase)
-    println(program.code)
-    SyntaxChecker(program.code)
+    gen.OpenMPProgram(tupleOut)
   }
 
   test("Program using intermediary tuples but not in input or output, can be generated in OpenCL.") {
     val tupleOut = fun(ArrayType(8, float))(xs =>
       fun(ArrayType(8, float))(ys =>
-        zip(xs, ys) :>> toGlobal(mapSeq(id)) :>> mapSeq(addT)))
+        zip(xs, ys) |> mapSeq(id) |> fun(x => toGlobal(x)) |> mapSeq(addT)))
 
-    val phrase = idealised.DPIA.FromSurfaceLanguage(TypeInference(tupleOut, Map()))
-    val program = idealised.OpenCL.KernelGenerator.makeCode(phrase)
-    println(program.code)
-    SyntaxChecker.checkOpenCL(program.code)
+    gen.OpenCLKernel(tupleOut)
   }
 }

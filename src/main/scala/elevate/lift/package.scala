@@ -36,7 +36,7 @@ package object lift {
       }
       case Literal(d) => s"Literal($d)"
       case TypedExpr(e, t) => toEvaluableString(e)
-      case ff: primitives.ForeignFunction => ff.toString
+      case ff: ForeignFunction => ff.toString
       case p: Primitive => p.toString
     }
   }

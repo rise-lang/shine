@@ -34,9 +34,9 @@ abstract  class AbstractScan(n: Nat,
 
   override val t: ExpType =
     (n: Nat) ->: (dt1: DataType) ->: (dt2: DataType) ->:
-      (f :: t"exp[$dt1] -> exp[$dt2] -> exp[$dt2]") ->:
-        (init :: exp"[$dt2]") ->:
-          (array :: exp"[$n.$dt1]") ->: exp"[$n.$dt2]"
+      (f :: t"exp[$dt1, $read] -> exp[$dt2, $read] -> exp[$dt2, $write]") ->:
+        (init :: exp"[$dt2, $write]") ->:
+          (array :: exp"[$n.$dt1, $read]") ->: exp"[$n.$dt2, $read]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     makeScan(fun.nat(n), fun.data(dt1), fun.data(dt2),
@@ -51,18 +51,13 @@ abstract  class AbstractScan(n: Nat,
 
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommType] = {
-    mapAcceptorTranslation(fun(exp"[$dt1]")(x => x), A)
-  }
-
-  override def mapAcceptorTranslation(g: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
-    con(array)(λ(exp"[$n.$dt1]")(x =>
-      con(init)(λ(exp"[$dt2]")(y =>
+    con(array)(λ(exp"[$n.$dt1, $read]")(x =>
+      con(init)(λ(exp"[$dt2, $read]")(y =>
         makeScanI(n, dt1, dt2,
-          λ(exp"[$dt1]")(x => λ(exp"[$dt2]")(y => λ(acc"[$dt2]")(o =>
-            acc(g(f(x)(y)))(o)))),
+          λ(exp"[$dt1, $read]")(x => λ(exp"[$dt2, $read]")(y => λ(acc"[$dt2]")(o =>
+            acc(f(x)(y))(o)))),
           y, x, A)
       )
       ))
@@ -73,19 +68,19 @@ abstract  class AbstractScan(n: Nat,
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
-    `new`(dt"[$n.$dt2]", λ(exp"[$n.$dt2]" x acc"[$n.$dt2]")(tmp =>
+    `new`(dt"[$n.$dt2]", λ(exp"[$n.$dt2, $read]" x acc"[$n.$dt2]")(tmp =>
       acc(this)(tmp.wr) `;` C(tmp.rd) ))
   }
 
   override def xmlPrinter: Elem =
     <reduce n={ToString(n)} dt1={ToString(dt1)} dt2={ToString(dt2)}>
-      <f type={ToString(ExpType(dt1) ->: ExpType(dt2) ->: ExpType(dt2))}>
+      <f type={ToString(ExpType(dt1, read) ->: ExpType(dt2, read) ->: ExpType(dt2, read))}>
         {Phrases.xmlPrinter(f)}
       </f>
-      <init type={ToString(ExpType(dt2))}>
+      <init type={ToString(ExpType(dt2, read))}>
         {Phrases.xmlPrinter(init)}
       </init>
-      <input type={ToString(ExpType(ArrayType(n, dt1)))}>
+      <input type={ToString(ExpType(ArrayType(n, dt1), read))}>
         {Phrases.xmlPrinter(array)}
       </input>
     </reduce>.copy(label = {

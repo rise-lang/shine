@@ -11,7 +11,7 @@ import idealised._
 
 object HoistMemoryAllocations {
 
-  case class AllocationInfo(addressSpace: idealised.OpenCL.AddressSpace,
+  case class AllocationInfo(addressSpace: AddressSpace,
                             identifier: Identifier[VarType])
 
   def apply(originalPhrase: Phrase[CommType]): (Phrase[CommType], List[AllocationInfo]) = {
@@ -72,15 +72,15 @@ object HoistMemoryAllocations {
                   Visitor(ParForInfo(pf.parallelismLevel, Left(loopIndex), pf.n) :: parForInfos))
               case _ => throw new Exception("This should not happen")
             }
-          case OpenCLNew(_, addressSpace, Lambda(variable, body))  if addressSpace != OpenCL.PrivateMemory =>
+          case OpenCLNew(addressSpace, _, Lambda(variable, body))  if addressSpace != AddressSpace.Private =>
             Stop(
-              replaceNew(addressSpace.asInstanceOf[idealised.OpenCL.AddressSpace],
+              replaceNew(addressSpace.asInstanceOf[AddressSpace],
                 variable, body)).asInstanceOf[Result[Phrase[T]]]
           case _ => Continue(p, this)
         }
       }
 
-      private def replaceNew(addressSpace: idealised.OpenCL.AddressSpace,
+      private def replaceNew(addressSpace: AddressSpace,
                              variable: Identifier[VarType],
                              body: Phrase[CommType]): Phrase[CommType] = {
         // Replace `new` node by looking through the information from the `par for`s, ...
@@ -89,9 +89,9 @@ object HoistMemoryAllocations {
           // as well as the index `i` and length `n` of a `par for` ...
           case ((oldVariable, oldBody), ParForInfo(parallelismLevel, i, n)) =>
             addressSpace match {
-              case OpenCL.GlobalMemory =>
+              case AddressSpace.Global =>
                 performRewrite(oldVariable, oldBody, i, n)
-              case OpenCL.LocalMemory =>
+              case AddressSpace.Local =>
                 parallelismLevel match {
                   case OpenCL.Local | OpenCL.Sequential =>
                     performRewrite(oldVariable, oldBody, i, n)
@@ -100,7 +100,7 @@ object HoistMemoryAllocations {
                   case OpenCL.Global =>
                     throw new Exception("This should not happen")
                 }
-              case OpenCL.PrivateMemory =>
+              case AddressSpace.Private | AddressSpace.Constant | AddressSpaceIdentifier(_) =>
                 throw new Exception("This can't happen")
             }
         }

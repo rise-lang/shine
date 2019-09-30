@@ -15,7 +15,7 @@ final case class ReorderAcc(n: Nat,
 {
   override val t: AccType =
     (n: Nat) ->: (dt: DataType) ->:
-      (idxF :: t"exp[idx($n)] -> exp[idx($n)]") ->:
+      (idxF :: t"exp[idx($n), $read] -> exp[idx($n), $read]") ->:
         (array :: acc"[$n.$dt]") ->:
           acc"[$n.$dt]"
 

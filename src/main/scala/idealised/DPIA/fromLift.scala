@@ -4,7 +4,6 @@ import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.{OperationalSemantics => OpSem}
 import idealised.DPIA.Types._
-import idealised.SurfaceLanguage.Operators
 import lift.core.{semantics => ls, types => lt}
 import lift.{core => l}
 
@@ -37,6 +36,8 @@ object fromLift {
             DepLambda[NatKind](natIdentifier(n))(expression(e))
           case dt: lt.DataTypeIdentifier =>
             DepLambda[DataKind](dataTypeIdentifier(dt))(expression(e))
+          case a: lt.AddressSpaceIdentifier =>
+            DepLambda[AddressSpaceKind](addressSpaceIdentifier(a))(expression(e))
         }
         case l.DepApply(f, x) => x match {
           case n: Nat =>
@@ -48,10 +49,16 @@ object fromLift {
               expression(f).asInstanceOf[Phrase[DepFunType[DataKind, PhraseType]]],
               dataType(dt)
             )
+          case a: lt.AddressSpace =>
+            DepApply[AddressSpaceKind, PhraseType]( // TODO: should we try to reduce by lifting here?
+              expression(f).asInstanceOf[Phrase[DepFunType[AddressSpaceKind, PhraseType]]],
+              addressSpace(a)
+            )
         }
 
           case l.Literal(d)   =>  d match {
             case ls.NatData(n)  => Natural(n)
+            case ls.IndexData(i, n)  => FunctionalPrimitives.AsIndex(n, Natural(i))
             case _              => Literal(data(d))
           }
           case p: l.Primitive =>  primitive(p, t)
@@ -60,6 +67,14 @@ object fromLift {
       }
     case _ => ??? // expected typed expr
     }
+
+  def addressSpace(a: lt.AddressSpace): AddressSpace = a match {
+    case lt.AddressSpace.Global => AddressSpace.Global
+    case lt.AddressSpace.Local => AddressSpace.Local
+    case lt.AddressSpace.Private => AddressSpace.Private
+    case lt.AddressSpace.Constant => AddressSpace.Constant
+    case lt.AddressSpaceIdentifier(name) => AddressSpaceIdentifier(name)
+  }
 
   def scalarType(t: lt.ScalarType): ScalarType = t match {
     case lt.bool => bool
@@ -92,13 +107,19 @@ object fromLift {
     case lt.NatToDataIdentifier(x) => NatToDataIdentifier(x)
   }
 
+  def ntn(ntn: lt.NatToNat): NatToNat= ntn match {
+    case lt.NatToNatLambda(n, body) => NatToNatLambda(natIdentifier(n), body)
+    case lt.NatToNatIdentifier(x) => NatToNatIdentifier(x)
+  }
+
   def dataTypeIdentifier(dt: lt.DataTypeIdentifier): DataTypeIdentifier = DataTypeIdentifier(dt.name)
   def natIdentifier(n: l.NatIdentifier): NatIdentifier = NatIdentifier(n.name, n.range)
+  def addressSpaceIdentifier(a: lt.AddressSpaceIdentifier): AddressSpaceIdentifier = AddressSpaceIdentifier(a.name)
   def natToNatIdentifier(n: lt.NatToNatIdentifier): NatToNatIdentifier = NatToNatIdentifier(n.name)
   def natToDataIdentifier(n: lt.NatToDataIdentifier): NatToDataIdentifier = NatToDataIdentifier(n.name)
 
   def `type`(ty: lt.Type): PhraseType = ty match {
-    case dt: lt.DataType      => ExpType(dataType(dt))
+    case dt: lt.DataType => ExpType(dataType(dt), read)
     case lt.FunType(i, o)     => `type`(i) ->: `type`(o)
     case lt.DepFunType(i, t)  => i match {
         case dt: lt.DataTypeIdentifier    => dataTypeIdentifier(dt)   `()->:` `type`(t)
@@ -106,6 +127,7 @@ object fromLift {
         case n2n: lt.NatToNatIdentifier   => natToNatIdentifier(n2n)  `()->:` `type`(t)
         case n2d: lt.NatToDataIdentifier  => natToDataIdentifier(n2d) `()->:` `type`(t)
       }
+    case _: lt.TypeIdentifier => throw new Exception("This should not happen")
   }
 
   def data(d: ls.Data): OpSem.Data = d match {
@@ -130,20 +152,24 @@ object fromLift {
 
   def primitive(p: l.Primitive, t: lt.Type): Phrase[_ <: PhraseType] = {
     import idealised.OpenCL.FunctionalPrimitives._
-    import idealised.OpenCL.{GlobalMemory, LocalMemory, PrivateMemory}
     import idealised.OpenMP.FunctionalPrimitives._
     import lift.OpenCL.{primitives => ocl}
     import lift.OpenMP.{primitives => omp}
 
-    // TODO: remove surface language
-
     (p, t) match {
-      case (core.asIndex,
+      case (core.printType(msg),
+        lt.FunType(lt: lt.DataType, _))
+      =>
+        val t = dataType(lt)
+        println(s"$msg : $t (Lift level)")
+        fun[ExpType](exp"[$t, $read]", e => PrintType(msg, t, e))
+
+      case (core.`natAsIndex`,
       lt.DepFunType(n: l.NatIdentifier,
       lt.FunType(lt.NatType, lt.IndexType(_))))
       =>
         DepLambda[NatKind](natIdentifier(n))(
-          fun[ExpType](exp"[$NatType]", e =>
+          fun[ExpType](ExpType(NatType, read), e =>
             AsIndex(n, e)))
 
       case (core.map,
@@ -157,6 +183,12 @@ object fromLift {
       lt.FunType(lt.ArrayType(n, la: lt.DataType), _)))
       =>
         makeMap(MapSeq, n, la, lb)
+
+      case (core.mapSeqUnroll,
+      lt.FunType(lt.FunType(_, lb: lt.DataType),
+      lt.FunType(lt.ArrayType(n, la: lt.DataType), _)))
+      =>
+        makeMap(MapSeqUnroll, n, la, lb)
 
       case (omp.mapPar,
       lt.FunType(lt.FunType(_, lb: lt.DataType),
@@ -174,7 +206,7 @@ object fromLift {
       lt.FunType(lt.FunType(_, lb: lt.DataType),
       lt.FunType(lt.ArrayType(n, la: lt.DataType), _)))
       =>
-        makeMap(MapLocal(dim, LocalMemory), n, la, lb)
+        makeMap(MapLocal(dim), n, la, lb)
 
       case (ocl.mapWorkGroup(dim),
       lt.FunType(lt.FunType(_, lb: lt.DataType),
@@ -191,9 +223,9 @@ object fromLift {
         val b = ntd(lb)
         val k = natIdentifier(lk)
         fun[`(nat)->:`[ExpType ->: ExpType]](
-          k `()->:` (ExpType(a(k)) ->: ExpType(b(k)))
+          k `()->:` (ExpType(a(k), read) ->: ExpType(b(k), read))
           , f =>
-          fun[ExpType](ExpType(DepArrayType(n, a)), e =>
+          fun[ExpType](ExpType(DepArrayType(n, a), read), e =>
             DepMapSeq(n, a, b, f, e)))
 
       case (core.reduceSeq,
@@ -203,22 +235,10 @@ object fromLift {
       =>
         val a = dataType(la)
         val b = dataType(lb)
-        fun[ExpType ->: ExpType ->: ExpType](exp"[$a]" ->: exp"[$b]" ->: exp"[$b]", f =>
-          fun[ExpType](exp"[$b]", i =>
-            fun[ExpType](exp"[$n.$a]", e =>
+        fun[ExpType ->: ExpType ->: ExpType](exp"[$b, $read]" ->: exp"[$a, $read]" ->: exp"[$b, $write]", f =>
+          fun[ExpType](exp"[$b, $read]", i =>
+            fun[ExpType](exp"[$n.$a, $read]", e =>
               ReduceSeq(n, a, b, f, i, e))))
-
-      case (ocl.oclReduceSeq(i_space),
-      lt.FunType(_,
-      lt.FunType(lb: lt.DataType,
-      lt.FunType(lt.ArrayType(n, la), _))))
-      =>
-        val a = dataType(la)
-        val b = dataType(lb)
-        fun[ExpType ->: ExpType ->: ExpType](exp"[$a]" ->: exp"[$b]" ->: exp"[$b]", f =>
-          fun[ExpType](exp"[$b]", i =>
-            fun[ExpType](exp"[$n.$a]", e =>
-              OpenCLReduceSeq(n, a, b, f, i, i_space, e, unroll = false))))
 
       case (core.reduceSeqUnroll,
       lt.FunType(_,
@@ -227,22 +247,40 @@ object fromLift {
       =>
         val a = dataType(la)
         val b = dataType(lb)
-        fun[ExpType ->: ExpType ->: ExpType](exp"[$a]" ->: exp"[$b]" ->: exp"[$b]", f =>
-          fun[ExpType](exp"[$b]", i =>
-            fun[ExpType](exp"[$n.$a]", e =>
+        fun[ExpType ->: ExpType ->: ExpType](exp"[$b, $read]" ->: exp"[$a, $read]" ->: exp"[$b, $write]", f =>
+          fun[ExpType](exp"[$b, $read]", i =>
+            fun[ExpType](exp"[$n.$a, $read]", e =>
               ReduceSeqUnroll(n, a, b, f, i, e))))
 
-      case (ocl.oclReduceSeqUnroll(i_space),
+      case (ocl.oclReduceSeq,
+      lt.DepFunType(i: lt.AddressSpaceIdentifier,
       lt.FunType(_,
       lt.FunType(lb: lt.DataType,
-      lt.FunType(lt.ArrayType(n, la), _))))
+      lt.FunType(lt.ArrayType(n, la), _)))))
       =>
         val a = dataType(la)
         val b = dataType(lb)
-        fun[ExpType ->: ExpType ->: ExpType](exp"[$a]" ->: exp"[$b]" ->: exp"[$b]", f =>
-          fun[ExpType](exp"[$b]", i =>
-            fun[ExpType](exp"[$n.$a]", e =>
-              OpenCLReduceSeq(n, a, b, f, i, i_space, e, unroll = true))))
+        val i_space = addressSpaceIdentifier(i)
+        DepLambda[AddressSpaceKind](i_space)(
+          fun[ExpType ->: ExpType ->: ExpType](exp"[$b, $read]" ->: exp"[$a, $read]" ->: exp"[$b, $write]", f =>
+            fun[ExpType](exp"[$b, $read]", i =>
+              fun[ExpType](exp"[$n.$a, $read]", e =>
+                OpenCLReduceSeq(n, i_space, a, b, f, i, e, unroll = false)))))
+
+      case (ocl.oclReduceSeqUnroll,
+      lt.DepFunType(i: lt.AddressSpaceIdentifier,
+      lt.FunType(_,
+      lt.FunType(lb: lt.DataType,
+      lt.FunType(lt.ArrayType(n, la), _)))))
+      =>
+        val a = dataType(la)
+        val b = dataType(lb)
+        val i_space = addressSpaceIdentifier(i)
+        DepLambda[AddressSpaceKind](i_space)(
+          fun[ExpType ->: ExpType ->: ExpType](exp"[$a]" ->: exp"[$b]" ->: exp"[$b]", f =>
+            fun[ExpType](exp"[$b]", i =>
+              fun[ExpType](exp"[$n.$a]", e =>
+                OpenCLReduceSeq(n, i_space, a, b, f, i, e, unroll = true)))))
 
       case (core.scanSeq,
       lt.FunType(_,
@@ -251,9 +289,9 @@ object fromLift {
       =>
         val a = dataType(la)
         val b = dataType(lb)
-        fun[ExpType ->: ExpType ->: ExpType](exp"[$a]" ->: exp"[$b]" ->: exp"[$b]", f =>
-          fun[ExpType](exp"[$b]", i =>
-            fun[ExpType](exp"[$n.$a]", e =>
+        fun[ExpType ->: ExpType ->: ExpType](exp"[$a, $read]" ->: exp"[$b, $read]" ->: exp"[$b, $write]", f =>
+          fun[ExpType](exp"[$b, $write]", i =>
+            fun[ExpType](exp"[$n.$a, $read]", e =>
               ScanSeq(n, a, b, f, i, e))))
 
       case (core.depJoin,
@@ -261,24 +299,26 @@ object fromLift {
         =>
         val a = dataType(la)
         val lenF: NatToNatLambda = ??? // fromLift(llenF)
-        fun[ExpType](exp"[$n.${NatToDataLambda(n, (i:NatIdentifier) => ArrayType(lenF(i), a))}]", e =>
+        fun[ExpType](exp"[$n.${NatToDataLambda(n, (i:NatIdentifier) => ArrayType(lenF(i), a))}, $read]", e =>
           DepJoin(n, lenF, a, e))
 
       case (core.join,
       lt.FunType(lt.ArrayType(n, lt.ArrayType(m, la)), _))
       =>
         val a = dataType(la)
-        fun[ExpType](exp"[$n.$m.$a]", e =>
-          Join(n, m, a, e))
+        val w = read // TODO
+        fun[ExpType](exp"[$n.$m.$a, $w]", e =>
+          Join(n, m, w, a, e))
 
       case (core.split,
       lt.DepFunType(n: l.NatIdentifier,
-      lt.FunType(lt.ArrayType(insz, la), lt.ArrayType(m, _))))
+      lt.FunType(lt.ArrayType(mn, la), lt.ArrayType(m, _))))
       =>
         val a = dataType(la)
+        val w = read // TODO
         DepLambda[NatKind](natIdentifier(n))(
-          fun[ExpType](exp"[$insz.$a]", e =>
-            Split(n, m, a, e)))
+          fun[ExpType](exp"[$mn.$a, $w]", e =>
+            Split(n, m, w, a, e)))
 
       case (core.slide,
       lt.DepFunType(sz: l.NatIdentifier,
@@ -288,19 +328,43 @@ object fromLift {
         val a = dataType(la)
         DepLambda[NatKind](natIdentifier(sz))(
           DepLambda[NatKind](natIdentifier(sp))(
-            fun[ExpType](exp"[$insz.$a]", e =>
+            fun[ExpType](exp"[$insz.$a, $read]", e =>
               Slide(n, sz, sp, a, e))))
 
       case (core.slideSeq(rot),
       lt.DepFunType(sz: l.NatIdentifier,
       lt.DepFunType(sp: l.NatIdentifier,
-      lt.FunType(lt.ArrayType(insz, la), lt.ArrayType(n, _)))))
+      lt.FunType(_,
+      lt.FunType(_,
+      lt.FunType(lt.ArrayType(insz, ls), lt.ArrayType(n, lt)))))))
       =>
-        val a = dataType(la)
+        val s = dataType(ls)
+        val t = dataType(lt)
         DepLambda[NatKind](natIdentifier(sz))(
           DepLambda[NatKind](natIdentifier(sp))(
-            fun[ExpType](exp"[$insz.$a]", e =>
-              SlideSeq(rot, n, sz, sp, a, e))))
+            fun[ExpType ->: ExpType](ExpType(s, read) ->: ExpType(s, write), write_dt1 =>
+              fun[ExpType ->: ExpType](exp"[$sz.$s, $read]" ->: ExpType(t, write), f =>
+                fun[ExpType](exp"[$insz.$s, $read]", e =>
+                  SlideSeq(rot, n, sz, sp, s, t, write_dt1, f, e))))))
+
+      case (ocl.oclSlideSeq(rot),
+      lt.DepFunType(la: lt.AddressSpaceIdentifier,
+      lt.DepFunType(sz: l.NatIdentifier,
+      lt.DepFunType(sp: l.NatIdentifier,
+      lt.FunType(_,
+      lt.FunType(_,
+      lt.FunType(lt.ArrayType(insz, ls), lt.ArrayType(n, lt))))))))
+      =>
+        val s = dataType(ls)
+        val t = dataType(lt)
+        val a = addressSpaceIdentifier(la)
+        DepLambda[AddressSpaceKind](a)(
+          DepLambda[NatKind](natIdentifier(sz))(
+            DepLambda[NatKind](natIdentifier(sp))(
+              fun[ExpType ->: ExpType](ExpType(s, read) ->: ExpType(s, write), write_dt1 =>
+                fun[ExpType ->: ExpType](exp"[$sz.$s, $read]" ->: ExpType(t, write), f =>
+                  fun[ExpType](exp"[$insz.$s, $read]", e =>
+                    OpenCLSlideSeq(rot, a, n, sz, sp, s, t, write_dt1, f, e)))))))
 
       case (core.reorder,
       lt.FunType(_,
@@ -308,9 +372,9 @@ object fromLift {
       lt.FunType(lt.ArrayType(n, la), _))))
       =>
         val a = dataType(la)
-        fun[ExpType ->: ExpType](exp"[idx($n)]" ->: exp"[idx($n)]", idxF =>
-          fun[ExpType ->: ExpType](exp"[idx($n)]" ->: exp"[idx($n)]", idxFinv =>
-            fun[ExpType](exp"[$n.$a]", e =>
+        fun[ExpType ->: ExpType](exp"[idx($n), $read]" ->: exp"[idx($n), $read]", idxF =>
+          fun[ExpType ->: ExpType](exp"[idx($n), $read]" ->: exp"[idx($n), $read]", idxFinv =>
+            fun[ExpType](exp"[$n.$a, $read]", e =>
               Reorder(n, a, idxF, idxFinv, e))))
 
       case (core.transpose,
@@ -319,37 +383,38 @@ object fromLift {
         val a = dataType(la)
 
         val transposeFunction =
-          λ(ExpType(IndexType(n * m)))(i => {
-            mapIndexExpr(i, j => {
+          λ(ExpType(IndexType(n * m), read))(i => {
+            AsIndex(n * m, mapTransientNat(i, j => {
               val col = (j % n) * m
               val row = j / n
               row + col
-            })
+            }))
           })
 
         val transposeInverseFunction =
-          λ(ExpType(IndexType(n * m)))(i => {
-            mapIndexExpr(i, j => {
+          λ(ExpType(IndexType(n * m), read))(i => {
+            AsIndex(n * m, mapTransientNat(i, j => {
               val col = (j % m) * n
               val row = j / m
               row + col
-            })
+            }))
           })
 
-        fun[ExpType](exp"[$n.$m.$a]", e =>
-          Split(n, m, a,
+        fun[ExpType](exp"[$n.$m.$a, $read]", e =>
+          Split(n, m, read, a,
             Reorder(n * m, a, transposeFunction, transposeInverseFunction,
-              Join(n, m, a, e))))
+              Join(n, m, read, a, e))))
 
       case (core.take,
       lt.DepFunType(n: l.NatIdentifier,
-      lt.FunType(lt.ArrayType(nm, la), _)))
+      lt.FunType(lt.ArrayType(nm, la), lw)))
       =>
         val m = nm - n
         val a = dataType(la)
+        val w = read // TODO
         DepLambda[NatKind](natIdentifier(n))(
-          fun[ExpType](exp"[$nm.$a]", e =>
-            Take(n, m, a, e)))
+          fun[ExpType](exp"[$nm.$a, $w]", e =>
+            Take(n, m, w, a, e)))
 
       case (core.drop,
       lt.DepFunType(n: l.NatIdentifier,
@@ -357,9 +422,10 @@ object fromLift {
       =>
         val m = nm - n
         val a = dataType(la)
+        val w = read // TODO
         DepLambda[NatKind](natIdentifier(n))(
-          fun[ExpType](exp"[$nm.$a]", e =>
-            Drop(n, m, a, e)))
+          fun[ExpType](exp"[$nm.$a, $w]", e =>
+            Drop(n, m, w, a, e)))
 
       case (core.padCst,
       lt.DepFunType(l: l.NatIdentifier,
@@ -370,8 +436,8 @@ object fromLift {
         val a = dataType(la)
         DepLambda[NatKind](natIdentifier(l))(
           DepLambda[NatKind](natIdentifier(r))(
-            fun[ExpType](exp"[$a]", cst =>
-                fun[ExpType](exp"[$n.$a]", e =>
+            fun[ExpType](exp"[$a, $read]", cst =>
+                fun[ExpType](exp"[$n.$a, $read]", e =>
                   Pad(n, l, r, a, cst, e)))))
 
       case (core.padClamp,
@@ -382,7 +448,7 @@ object fromLift {
         val a = dataType(la)
         DepLambda[NatKind](natIdentifier(l))(
           DepLambda[NatKind](natIdentifier(r))(
-              fun[ExpType](exp"[$n.$a]", e =>
+              fun[ExpType](exp"[$n.$a, $read]", e =>
                 PadClamp(n, l, r, a, e))))
 
       case (core.unzip,
@@ -392,7 +458,7 @@ object fromLift {
       =>
         val a = dataType(la)
         val b = dataType(lb)
-        fun[ExpType](exp"[$n.($a x $b)]", e =>
+        fun[ExpType](exp"[$n.($a x $b), $read]", e =>
             Unzip(n, a, b, e))
 
       case (core.zip,
@@ -401,8 +467,8 @@ object fromLift {
       =>
         val a = dataType(la)
         val b = dataType(lb)
-        fun[ExpType](exp"[$n.$a]", x =>
-          fun[ExpType](exp"[$n.$b]", y =>
+        fun[ExpType](exp"[$n.$a, $read]", x =>
+          fun[ExpType](exp"[$n.$b, $read]", y =>
             Zip(n, a, b, x, y)))
 
       case (core.fst,
@@ -410,14 +476,14 @@ object fromLift {
       =>
         val a = dataType(la)
         val b = dataType(lb)
-        fun[ExpType](exp"[$a x $b]", e => Fst(a, b, e))
+        fun[ExpType](exp"[($a x $b), $read]", e => Fst(a, b, e))
 
       case (core.snd,
       lt.FunType(lt.TupleType(la, lb), _))
       =>
         val a = dataType(la)
         val b = dataType(lb)
-        fun[ExpType](exp"[$a x $b]", e => Snd(a, b, e))
+        fun[ExpType](exp"[($a x $b), $read]", e => Snd(a, b, e))
 
       case (core.pair,
       lt.FunType(la: lt.DataType,
@@ -425,8 +491,8 @@ object fromLift {
       =>
         val a = dataType(la)
         val b = dataType(lb)
-        fun[ExpType](exp"[$a]", x =>
-          fun[ExpType](exp"[$b]", y =>
+        fun[ExpType](exp"[$a, $read]", x =>
+          fun[ExpType](exp"[$b, $read]", y =>
             Record(a, b, x, y)))
 
       case (core.idx,
@@ -434,66 +500,66 @@ object fromLift {
       lt.FunType(lt.ArrayType(n, la), _)))
       =>
         val a = dataType(la)
-        fun[ExpType](exp"[idx($n)]", i =>
-          fun[ExpType](exp"[$n.$a]", e =>
-            ImperativePrimitives.Idx(n, a, i, e)))
+        fun[ExpType](exp"[idx($n), $read]", i =>
+          fun[ExpType](exp"[$n.$a, $read]", e =>
+            FunctionalPrimitives.Idx(n, a, i, e)))
 
       case (core.select,
       lt.FunType(_,
       lt.FunType(la: lt.DataType, _)))
       =>
         val a = dataType(la)
-        fun[ExpType](ExpType(bool), c =>
-          fun[ExpType](ExpType(a), tExpr =>
-            fun[ExpType](ExpType(a), fExpr =>
+        fun[ExpType](ExpType(bool, read), c =>
+          fun[ExpType](ExpType(a, read), tExpr =>
+            fun[ExpType](ExpType(a, read), fExpr =>
               IfThenElse(c, tExpr, fExpr))))
 
       case (core.neg, lt.FunType(la: lt.DataType, _)) =>
         val a = dataType(la)
-        fun[ExpType](exp"[$a]", e => UnaryOp(Operators.Unary.NEG, e))
+        fun[ExpType](exp"[$a, $read]", e => UnaryOp(Operators.Unary.NEG, e))
 
       case (core.add, lt.FunType(la: lt.DataType, _)) =>
         val a = dataType(la)
-        fun[ExpType](exp"[$a]", e1 =>
-          fun[ExpType](exp"[$a]", e2 => BinOp(Operators.Binary.ADD, e1, e2)))
+        fun[ExpType](exp"[$a, $read]", e1 =>
+          fun[ExpType](exp"[$a, $read]", e2 => BinOp(Operators.Binary.ADD, e1, e2)))
       case (core.sub, lt.FunType(la: lt.DataType, _)) =>
         val a = dataType(la)
-        fun[ExpType](exp"[$a]", e1 =>
-          fun[ExpType](exp"[$a]", e2 => BinOp(Operators.Binary.SUB, e1, e2)))
+        fun[ExpType](exp"[$a, $read]", e1 =>
+          fun[ExpType](exp"[$a, $read]", e2 => BinOp(Operators.Binary.SUB, e1, e2)))
       case (core.mul, lt.FunType(la: lt.DataType, _)) =>
         val a = dataType(la)
-        fun[ExpType](exp"[$a]", e1 =>
-          fun[ExpType](exp"[$a]", e2 => BinOp(Operators.Binary.MUL, e1, e2)))
+        fun[ExpType](exp"[$a, $read]", e1 =>
+          fun[ExpType](exp"[$a, $read]", e2 => BinOp(Operators.Binary.MUL, e1, e2)))
       case (core.div, lt.FunType(la: lt.DataType, _)) =>
         val a = dataType(la)
-        fun[ExpType](exp"[$a]", e1 =>
-          fun[ExpType](exp"[$a]", e2 => BinOp(Operators.Binary.DIV, e1, e2)))
+        fun[ExpType](exp"[$a, $read]", e1 =>
+          fun[ExpType](exp"[$a, $read]", e2 => BinOp(Operators.Binary.DIV, e1, e2)))
       case (core.mod, lt.FunType(la: lt.DataType, _)) =>
         val a = dataType(la)
-        fun[ExpType](exp"[$a]", e1 =>
-          fun[ExpType](exp"[$a]", e2 => BinOp(Operators.Binary.MOD, e1, e2)))
+        fun[ExpType](exp"[$a, $read]", e1 =>
+          fun[ExpType](exp"[$a, $read]", e2 => BinOp(Operators.Binary.MOD, e1, e2)))
 
       case (core.gt, lt.FunType(la: lt.DataType, _)) =>
         val a = dataType(la)
-        fun[ExpType](exp"[$a]", e1 =>
-          fun[ExpType](exp"[$a]", e2 => BinOp(Operators.Binary.GT, e1, e2)))
+        fun[ExpType](exp"[$a, $read]", e1 =>
+          fun[ExpType](exp"[$a, $read]", e2 => BinOp(Operators.Binary.GT, e1, e2)))
       case (core.lt, lt.FunType(la: lt.DataType, _)) =>
         val a = dataType(la)
-        fun[ExpType](exp"[$a]", e1 =>
-          fun[ExpType](exp"[$a]", e2 => BinOp(Operators.Binary.LT, e1, e2)))
+        fun[ExpType](exp"[$a, $read]", e1 =>
+          fun[ExpType](exp"[$a, $read]", e2 => BinOp(Operators.Binary.LT, e1, e2)))
       case (core.equal, lt.FunType(la: lt.DataType, _)) =>
         val a = dataType(la)
-        fun[ExpType](exp"[$a]", e1 =>
-          fun[ExpType](exp"[$a]", e2 => BinOp(Operators.Binary.EQ, e1, e2)))
+        fun[ExpType](exp"[$a, $read]", e1 =>
+          fun[ExpType](exp"[$a, $read]", e2 => BinOp(Operators.Binary.EQ, e1, e2)))
 
       case (core.cast, lt.FunType(la: lt.BasicType, lb: lt.BasicType))
       =>
         val a = basicType(la)
         val b = basicType(lb)
-        fun[ExpType](ExpType(a), x =>
+        fun[ExpType](ExpType(a, read), x =>
           Cast(a, b, x))
 
-      case (core.ForeignFunction(decl, la), _)
+      case (l.ForeignFunction(decl, la), _)
       =>
         val (inTs, outT) = foreignFunIO(la)
         wrapForeignFun(decl, inTs, outT, Vector())
@@ -501,7 +567,7 @@ object fromLift {
       case (core.generate, lt.FunType(_, lt.ArrayType(n, la)))
       =>
         val a = dataType(la)
-        fun[ExpType ->: ExpType](exp"[idx($n)]" ->: exp"[$a]", f =>
+        fun[ExpType ->: ExpType](exp"[idx($n), $read]" ->: exp"[$a, $read]", f =>
           Generate(n, a, f))
 
       case (core.iterate,
@@ -514,9 +580,26 @@ object fromLift {
         val n = ln /^ l
         val a = dataType(la)
         DepLambda[NatKind](natIdentifier(k))(
-          fun[`(nat)->:`[ExpType ->: ExpType]](l `()->:` (exp"[$ln.$a]" ->: exp"[$l.$a]"), f =>
-              fun[ExpType](exp"[$insz.$a]", e =>
+          fun[`(nat)->:`[ExpType ->: ExpType]](l `()->:` (exp"[$ln.$a, $read]" ->: exp"[$l.$a, $read]"), f =>
+              fun[ExpType](exp"[$insz.$a, $read]", e =>
                 Iterate(n, m, k, a, f, e))))
+
+      case (ocl.oclIterate,
+      lt.DepFunType(la: lt.AddressSpaceIdentifier,
+      lt.DepFunType(k: l.NatIdentifier,
+      lt.FunType(lt.DepFunType(ll: l.NatIdentifier,
+      lt.FunType(lt.ArrayType(ln, _), _)),
+      lt.FunType(lt.ArrayType(insz, _), lt.ArrayType(m, ldt))))))
+      =>
+        val l = natIdentifier(ll)
+        val n = ln /^ l
+        val dt = dataType(ldt)
+        val a = addressSpaceIdentifier(la)
+        DepLambda[AddressSpaceKind](a)(
+          DepLambda[NatKind](natIdentifier(k))(
+            fun[`(nat)->:`[ExpType ->: ExpType]](l `()->:` (exp"[$ln.$dt, $read]" ->: exp"[$l.$dt, $read]"), f =>
+              fun[ExpType](exp"[$insz.$dt, $read]", e =>
+                OpenCLIterate(a, n, m, k, dt, f, e)))))
 
       case (core.asVector,
       lt.DepFunType(n: l.NatIdentifier,
@@ -524,41 +607,41 @@ object fromLift {
       =>
         val a = scalarType(la)
         DepLambda[NatKind](natIdentifier(n))(
-          fun[ExpType](exp"[$mn.$a]", e =>
+          fun[ExpType](exp"[$mn.$a, $read]", e =>
             AsVector(n, m, a, e)))
 
       case (core.asScalar, lt.FunType(lt.ArrayType(m, lt.VectorType(n, la: lt.ScalarType)), _))
       =>
         val a = scalarType(la)
-        fun[ExpType](ExpType(ArrayType(m, VectorType(n, a))), e =>
+        fun[ExpType](ExpType(ArrayType(m, VectorType(n, a)), read), e =>
           AsScalar(m, n, a, e))
 
       case (core.vectorFromScalar, lt.FunType(_, lt.VectorType(n, la: lt.ScalarType)))
       =>
         val a = scalarType(la)
-        fun[ExpType](ExpType(a), e =>
+        fun[ExpType](ExpType(a, read), e =>
           VectorFromScalar(n, a, e))
 
       case (core.indexAsNat, lt.FunType(lt.IndexType(n), lt.NatType))
       =>
-        fun[ExpType](exp"[idx($n)]", e =>
+        fun[ExpType](exp"[idx($n), $read]", e =>
           IndexAsNat(n, e))
 
-      case (ocl.to(i_space),
-      lt.FunType(lt.FunType(la: lt.DataType, lb: lt.DataType), _))
+      case (ocl.`toMem`,
+      lt.DepFunType(las: lt.AddressSpaceIdentifier,
+      lt.FunType(la: lt.DataType, _)))
       =>
         val a = dataType(la)
-        val b = dataType(lb)
-        fun[ExpType ->: ExpType](exp"[$a]" ->: exp"[$b]", f =>
-          fun[ExpType](exp"[$a]", e =>
-            i_space match {
-              case GlobalMemory => ToGlobal(a, b, f, e)
-              case LocalMemory => ToLocal(a, b, f, e)
-              case PrivateMemory => ToPrivate(a, b, f, e)
-            }))
+        val as = addressSpaceIdentifier(las)
+        DepLambda[AddressSpaceKind](as)(
+          fun[ExpType](exp"[$a, $write]", e =>
+            To(as, a, e)))
 
-      case (core.reduce, _) | (core.scan, _) =>
+      case (core.reduce, _) =>
         throw new Exception(s"$p has no implementation")
+
+      case (p, _) =>
+        throw new Exception(s"Missing rule for $p")
     }
   }
 
@@ -568,8 +651,8 @@ object fromLift {
                       lb: lt.DataType): Phrase[_ <: PhraseType] = {
     val a = dataType(la)
     val b = dataType(lb)
-    fun[ExpType ->: ExpType](ExpType(a) ->: ExpType(b), f =>
-      fun[ExpType](exp"[$n.$a]", e =>
+    fun[ExpType ->: ExpType](ExpType(a, read) ->: ExpType(b, write), f =>
+      fun[ExpType](exp"[$n.$a, $read]", e =>
         map(n, a, b, f, e)))
   }
 
@@ -585,16 +668,17 @@ object fromLift {
         case _ => ???
       }
       case lt.DepFunType(_, _) => throw new Exception("This should not be possible")
+      case lt.TypeIdentifier(_) => throw new Exception("This should not happen")
     }
   }
 
-  def wrapForeignFun(decl: core.ForeignFunction.Decl,
+  def wrapForeignFun(decl: l.ForeignFunction.Decl,
                      intTs: Vector[DataType],
                      outT: DataType,
                      args: Vector[Phrase[ExpType]]): Phrase[_ <: PhraseType] = {
     val i = args.length
     if (i < intTs.length) {
-      fun[ExpType](ExpType(intTs(i)), a =>
+      fun[ExpType](ExpType(intTs(i), read), a =>
         wrapForeignFun(decl, intTs, outT, args :+ a))
     } else {
       ForeignFunction(decl, intTs, outT, args)

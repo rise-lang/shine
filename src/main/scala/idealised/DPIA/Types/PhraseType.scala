@@ -8,8 +8,8 @@ sealed trait PhraseType
 
 sealed abstract class BasePhraseTypes extends PhraseType
 
-final case class ExpType(dataType: DataType) extends BasePhraseTypes {
-  override def toString = s"exp[$dataType]"
+final case class ExpType(dataType: DataType, accessType: AccessType) extends BasePhraseTypes {
+  override def toString = s"exp[$dataType, $accessType]"
 }
 
 final case class AccType(dataType: DataType) extends BasePhraseTypes {
@@ -47,11 +47,14 @@ object PhraseType {
   def substitute[K <: Kind, T <: PhraseType](x: K#T, `for`: K#I, in: Phrase[T]): Phrase[T] = (x, `for`) match {
     case (dt: DataType, forDt: DataTypeIdentifier)  => substitute(dt, forDt, in)
     case (n: Nat, forN: NatIdentifier)              => substitute(n, forN, in)
+    case (a: AddressSpace, forA: AddressSpaceIdentifier) => substitute(a, forA, in)
   }
 
   def substitute[K <: Kind](x: K#T, `for`: K#I, in: PhraseType): PhraseType = (x, `for`) match {
     case (dt: DataType, forDt: DataTypeIdentifier)  => substitute(dt, forDt, in)
     case (n: Nat, forN: NatIdentifier)              => substitute(n, forN, in)
+    case (a: AddressSpace, forA: AddressSpaceIdentifier) => substitute(a, forA, in)
+    case _ => throw new Exception(s"could not substitute $x for ${`for`}")
   }
 
   def substitute[T <: PhraseType](dt: DataType,
@@ -71,7 +74,7 @@ object PhraseType {
   def substitute(dt: DataType, `for`: DataType, in: PhraseType): PhraseType = {
     in match {
       case b: BasePhraseTypes => b match {
-        case e: ExpType => ExpType(DataType.substitute(dt, `for`, e.dataType))
+        case e: ExpType => ExpType(DataType.substitute(dt, `for`, e.dataType), e.accessType)
         case a: AccType => AccType(DataType.substitute(dt, `for`, a.dataType))
       }
       case c: CommType => c
@@ -121,7 +124,7 @@ object PhraseType {
   def substitute(ae: Nat, `for`: Nat, in: PhraseType): PhraseType = {
     in match {
       case b: BasePhraseTypes => b match {
-        case e: ExpType => ExpType(DataType.substitute(ae, `for`, e.dataType))
+        case e: ExpType => ExpType(DataType.substitute(ae, `for`, e.dataType), e.accessType)
         case a: AccType => AccType(DataType.substitute(ae, `for`, a.dataType))
       }
       case c: CommType => c
@@ -136,4 +139,21 @@ object PhraseType {
     }
   }
 
+  def substitute[T <: PhraseType](addr: AddressSpace,
+                                  `for`: AddressSpaceIdentifier,
+                                  in: Phrase[T]): Phrase[T] = {
+
+    object Visitor extends Phrases.VisitAndRebuild.Visitor {
+      override def addressSpace(a: AddressSpace): AddressSpace =
+        if (a == `for`) { addr } else { a }
+    }
+
+    Phrases.VisitAndRebuild(in, Visitor)
+  }
+
+  def substitute(addr: AddressSpace,
+                 `for`: AddressSpaceIdentifier,
+                 in: PhraseType): PhraseType = {
+    in
+  }
 }

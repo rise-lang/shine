@@ -19,7 +19,7 @@ final case class Partition(n: Nat,
 
   override val t: ExpType =
     (n: Nat) ->: (m: Nat) ->: (lenF: NatToNat) ->: (dt: DataType) ->:
-      (array :: exp"[$n.$dt]") ->: exp"[$m.${NatToDataLambda(m, (i:NatIdentifier) => ArrayType(lenF(i), dt))}]"
+      (array :: exp"[$n.$dt, $read]") ->: exp"[$m.${NatToDataLambda(m, (i:NatIdentifier) => ArrayType(lenF(i), dt))}, $read]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     Partition(fun.nat(n), fun.nat(m), fun.natToNat(lenF), fun.data(dt), VisitAndRebuild(array, fun))
@@ -39,14 +39,10 @@ final case class Partition(n: Nat,
     ???
   }
 
-  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommType] =
-    ???
-
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
-    con(array)(λ(exp"[$n.$dt]")(x => C(Partition(n, m, lenF, dt, x)) ))
+    con(array)(λ(exp"[$n.$dt, $read]")(x => C(Partition(n, m, lenF, dt, x)) ))
   }
 }

@@ -18,7 +18,7 @@ final case class Snd(dt1: DataType,
 
   override val t: ExpType =
     (dt1: DataType) ->: (dt2: DataType) ->:
-      (record :: exp"[$dt1 x $dt2]") ->: exp"[$dt2]"
+      (record :: exp"[$dt1 x $dt2, $read]") ->: exp"[$dt2, $read]"
 
   override def eval(s: Store): Data = {
     OperationalSemantics.eval(s, record) match {
@@ -40,16 +40,15 @@ final case class Snd(dt1: DataType,
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
-    con(record)(λ(exp"[$dt1 x $dt2]")(x => A :=|dt2| Snd(dt1, dt2, x) ))
-  }
 
-  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommType] =
-    ???
+    //TODO Assignments for general types should not be allowed, making this definition invalid
+    assert(dt2 match { case _ : BasicType => true; case _ => false })
+    con(record)(λ(exp"[$dt1 x $dt2, $read]")(x => A :=|dt2| Snd(dt1, dt2, x)) )
+  }
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
-    con(record)(λ(exp"[$dt1 x $dt2]")(x => C(Snd(dt1, dt2, x)) ))
+    con(record)(λ(exp"[$dt1 x $dt2, $read]")(x => C(Snd(dt1, dt2, x)) ))
   }
 }

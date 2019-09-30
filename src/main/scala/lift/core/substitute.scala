@@ -9,15 +9,14 @@ object substitute {
 
   // substitute in Expr
 
-  def apply[K <: Kind](x: K#T, `for`: K#I, in: Expr): Expr =  (x, `for`) match {
-    case (n: Nat, forN: NatIdentifier) => apply(n, forN, in)
-    case (dt: DataType, forDt: DataTypeIdentifier) => apply(dt, forDt, in)
+  def kindInExpr[K <: Kind](x: K#T, `for`: K#I, in: Expr): Expr =  (x, `for`) match {
+    case (n: Nat, forN: NatIdentifier) => natInExpr(n, forN, in)
+    case (dt: DataType, forDt: DataTypeIdentifier) => dataTypeInExpr(dt, forDt, in)
   }
 
-
-  def apply(expr: Expr, `for`: Expr, in: Expr): Expr = {
+  def exprInExpr(expr: Expr, `for`: Expr, in: Expr): Expr = {
     object Visitor extends traversal.Visitor {
-      override def apply(e: Expr): Result[Expr] = {
+      override def visitExpr(e: Expr): Result[Expr] = {
         if (`for` == e) { Stop(expr) } else { Continue(e, this) }
       }
     }
@@ -25,24 +24,24 @@ object substitute {
     traversal.DepthFirstLocalResult(in, Visitor)
   }
 
-  def apply(dt: DataType,
-            `for`: DataTypeIdentifier,
-            in: Expr): Expr = {
+  def dataTypeInExpr(dt: DataType,
+                     `for`: DataTypeIdentifier,
+                     in: Expr): Expr = {
 
     object Visitor extends traversal.Visitor {
-      override def apply[T <: Type](in: T): Result[T] =
-        Continue(substitute(dt, `for`, in), this)
+      override def visitType[T <: Type](in: T): Result[T] =
+        Continue(substitute.typeInType(dt, `for`, in), this)
     }
 
     traversal.DepthFirstLocalResult(in, Visitor)
   }
 
-  def apply(ae: Nat,
-            `for`: NatIdentifier,
-            in: Expr): Expr = {
+  def natInExpr(ae: Nat,
+                `for`: NatIdentifier,
+                in: Expr): Expr = {
 
     object Visitor extends traversal.Visitor {
-      override def apply(e: Expr): Result[Expr] = {
+      override def visitExpr(e: Expr): Result[Expr] = {
         e match {
           case Identifier(name) =>
             if (`for`.name == name) {
@@ -54,11 +53,11 @@ object substitute {
         }
       }
 
-      override def apply(e: Nat): Result[Nat] =
-        Continue(substitute(ae, `for`, e), this)
+      override def visitNat(e: Nat): Result[Nat] =
+        Continue(substitute.natInNat(ae, `for`, e), this)
 
-      override def apply[T <: Type](t: T): Result[T] =
-        Continue(substitute(ae, `for`, t), this)
+      override def visitType[T <: Type](t: T): Result[T] =
+        Continue(substitute.natInType(ae, `for`, t), this)
     }
 
     traversal.DepthFirstLocalResult(in, Visitor)
@@ -66,40 +65,60 @@ object substitute {
 
   // substitute in Type
 
-  def apply[K <: Kind, T <: Type](x: K#T, `for`: K#I, in: T): T =  (x, `for`) match {
-    case (n: Nat, forN: NatIdentifier)                => apply(n, forN, in)
-    case (dt: DataType, forDt: DataTypeIdentifier)    => apply(dt, forDt, in)
-    case (n2n: NatToNat, forN2N: NatToNatIdentifier)  => apply(n2n, forN2N, in)
+  def kindInType[K <: Kind, T <: Type](x: K#T, `for`: K#I, in: T): T =  (x, `for`) match {
+    case (dt: DataType, forDt: DataTypeIdentifier)        => typeInType(dt, forDt, in)
+    case (n: Nat, forN: NatIdentifier)                    => natInType(n, forN, in)
+    case (a: AddressSpace, forA: AddressSpaceIdentifier)  => addressSpaceInType(a, forA, in)
+    case (n2n: NatToNat, forN2N: NatToNatIdentifier)  => n2nInType(n2n, forN2N, in)
   }
 
-  def apply[T <: Type](ae: Nat, `for`: NamedVar, in: T): T = {
+  def typeInType[B <: Type](ty: Type, `for`: Type, in: B): B = {
     case class Visitor() extends traversal.Visitor {
-      override def apply(n: Nat): Result[Nat] =
-        Continue(substitute(ae, `for`, n), this)
+      override def visitType[T <: Type](t: T): traversal.Result[T] = {
+        if (`for` == t) {
+          Stop(ty.asInstanceOf[T])
+        } else {
+          Continue(t, this)
+        }
+      }
+    }
+    traversal.types.DepthFirstLocalResult(in, Visitor())
+  }
+
+  def natInType[T <: Type](n: Nat, `for`: NamedVar, in: T): T = {
+    case class Visitor() extends traversal.Visitor {
+      override def visitNat(in: Nat): Result[Nat] =
+        Continue(substitute.natInNat(n, `for`, in), this)
     }
 
     traversal.types.DepthFirstLocalResult(in, Visitor())
   }
 
-  def apply[A <: Type, B <: Type](ty: A, `for`: A, in: B): B = {
+  def natInDataType(n: Nat, `for`: NamedVar, in: DataType): DataType = {
     case class Visitor() extends traversal.Visitor {
-      override def apply[T <: Type](t: T): traversal.Result[T] =
-        t match {
-          case NatToDataApply(n2d1, x) => `for` match {
-            case NatToDataApply(n2d2, y: NamedVar) if n2d1 == n2d2 =>
-                Stop(substitute(x, y, ty).asInstanceOf[T])
-            case _ => Continue(t, this)
-          }
-          case _ if `for` == t => Stop(ty.asInstanceOf[T])
-          case _ => Continue(t, this)
+      override def visitNat(in: Nat): Result[Nat] =
+        Continue(substitute.natInNat(n, `for`, in), this)
+    }
+
+    traversal.types.DepthFirstLocalResult.data(in, Visitor())
+  }
+
+  def addressSpaceInType[T <: Type](a: AddressSpace, `for`: AddressSpaceIdentifier, in: T): T = {
+    case class Visitor() extends traversal.Visitor {
+      override def visitAddressSpace(b: AddressSpace): Result[AddressSpace] =
+        if (`for` == b) {
+          Stop(a)
+        } else {
+          Continue(b, this)
         }
     }
+
     traversal.types.DepthFirstLocalResult(in, Visitor())
   }
 
-  def apply[T <: Type](n2n: NatToNat, `for`: NatToNatIdentifier, in: T): T = {
+  def n2nInType[T <: Type](n2n: NatToNat, `for`: NatToNatIdentifier, in: T): T = {
     case class Visitor() extends traversal.Visitor {
-      override def apply(n: NatToNat): Result[NatToNat] =
+      override def visitN2N(n: NatToNat): Result[NatToNat] =
         if (`for` == n) {
           Stop(n2n)
         } else {
@@ -109,9 +128,9 @@ object substitute {
     traversal.types.DepthFirstLocalResult(in, Visitor())
   }
 
-  def apply[T <: Type](n2d: NatToData, `for`: NatToDataIdentifier, in: T): T = {
+  def n2dInType[T <: Type](n2d: NatToData, `for`: NatToDataIdentifier, in: T): T = {
     case class Visitor() extends traversal.Visitor {
-      override def apply(n: NatToData): Result[NatToData] =
+      override def visitN2D(n: NatToData): Result[NatToData] =
         if (`for` == n) {
           Stop(n2d)
         } else {
@@ -123,7 +142,7 @@ object substitute {
 
   // substitute in Nat
 
-  def apply(ae: Nat, `for`: NamedVar, in: Nat): Nat = {
+  def natInNat(ae: Nat, `for`: NamedVar, in: Nat): Nat = {
     in.visitAndRebuild {
       case v: NamedVar =>
         if (`for`.name == v.name) {
@@ -135,9 +154,15 @@ object substitute {
     }
   }
 
+  // substitute in AddressSpace
+
+  def addressSpaceInAddressSpace(a: AddressSpace, `for`: AddressSpaceIdentifier, in: AddressSpace): AddressSpace = {
+    if (in == `for`) { a } else { in }
+  }
+
   // substitute in NatToData
 
-  def apply(n: NatToData, `for`: NatToData, in: NatToData): NatToData = {
+  def n2dInN2d(n: NatToData, `for`: NatToData, in: NatToData): NatToData = {
     in match {
       case i: NatToDataIdentifier => if (i == `for`) n else in
       case _ => in

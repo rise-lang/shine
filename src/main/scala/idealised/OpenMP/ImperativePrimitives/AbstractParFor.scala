@@ -20,7 +20,7 @@ abstract class AbstractParFor[T <: DataType](val n: Nat,
   override val t: CommType =
     (n: Nat) ->: (dt: DataType) ->:
       (out :: acc"[$n.$dt]") ->:
-        (body :: t"exp[idx($n)] -> acc[$dt] -> comm") ->:
+        (body :: t"exp[idx($n), $read] -> acc[$dt] -> comm") ->:
           comm
 
   override def eval(s: Store): Store = {
@@ -46,7 +46,7 @@ abstract class AbstractParFor[T <: DataType](val n: Nat,
       <output type={ToString(AccType(ArrayType(n, dt)))}>
         {Phrases.xmlPrinter(out)}
       </output>
-      <body type={ToString(ExpType(IndexType(n)) ->: AccType(dt) ->: CommType())}>
+      <body type={ToString(ExpType(IndexType(n), read) ->: AccType(dt) ->: CommType())}>
         {Phrases.xmlPrinter(body)}
       </body>
     </parFor>.copy(label = {

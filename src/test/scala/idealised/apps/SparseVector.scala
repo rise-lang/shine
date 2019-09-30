@@ -1,6 +1,7 @@
+/* TODO
 package idealised.apps
 
-import idealised.OpenCL.PrivateMemory
+import idealised.OpenCL.AddressSpace
 import idealised.OpenCL.SurfaceLanguage.DSL.{mapGlobal, oclReduceSeq}
 import idealised.SurfaceLanguage.DSL._
 import idealised.SurfaceLanguage.Primitives.{Fst, Idx, Snd}
@@ -46,7 +47,7 @@ class SparseVector extends idealised.util.Tests {
       val dense = (0 until length).map(_ => random.nextFloat()).toArray
 
       import idealised.OpenCL._
-      val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[(Int, Float)] `,` Array[Float] `)=>` Array[Float]](1, length)
+      val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[(Int, Float)] `,` Array[Float] `)=>` Array[Float]](LocalSize(1), GlobalSize(length))
       val (output, _) = runKernel(numEntries `,` length `,` indices.zip(sparse) `,` dense)
 
       Executor.shutdown()
@@ -93,7 +94,7 @@ class SparseVector extends idealised.util.Tests {
       val dense = (0 until length).map(_ => random.nextFloat()).toArray
 
       import idealised.OpenCL._
-      val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Int] `,` Array[Float] `,` Array[Float] `)=>` Array[Float]](1, length)
+      val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Int] `,` Array[Float] `,` Array[Float] `)=>` Array[Float]](LocalSize(1), GlobalSize(length))
       val (output, _) = runKernel(numEntries `,` length `,` indices `,` sparse `,` dense)
 
       Executor.shutdown()
@@ -109,7 +110,7 @@ class SparseVector extends idealised.util.Tests {
       fun(ArrayType(n, TupleType(IndexType(m), float)))(sparse =>
         fun(ArrayType(m, float))(dense =>
           sparse :>> split(n) :>> mapGlobal(
-            oclReduceSeq(fun(pair => fun(accum => accum + Snd(pair, None) * Idx(dense, Fst(pair, None)))),0.0f, PrivateMemory))
+            oclReduceSeq(fun(accum => fun(pair => accum + Snd(pair, None) * Idx(dense, Fst(pair, None)))),0.0f, AddressSpace.Private))
         )
       )
     )
@@ -140,7 +141,7 @@ class SparseVector extends idealised.util.Tests {
       val dense = (0 until length).map(_ => random.nextFloat()).toArray
 
       import idealised.OpenCL._
-      val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[(Int, Float)] `,` Array[Float] `)=>` Array[Float]](1, length)
+      val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[(Int, Float)] `,` Array[Float] `)=>` Array[Float]](LocalSize(1),GlobalSize( length))
       val (output, _) = runKernel(numEntries `,` length `,` indices.zip(sparse) `,` dense)
 
       Executor.shutdown()
@@ -158,7 +159,7 @@ class SparseVector extends idealised.util.Tests {
         fun(ArrayType(n, float))(sparse =>
           fun(ArrayType(m, float))(dense =>
             zip(indices, sparse) :>> split(n) :>> mapGlobal(
-              oclReduceSeq(fun(pair => fun(accum => accum + Snd(pair, None) * Idx(dense, Fst(pair, None)))),0.0f, PrivateMemory))
+              oclReduceSeq(fun(accum => fun(pair => accum + Snd(pair, None) * Idx(dense, Fst(pair, None)))),0.0f, AddressSpace.Private))
           )
         )
       )
@@ -190,7 +191,7 @@ class SparseVector extends idealised.util.Tests {
       val dense = (0 until length).map(_ => random.nextFloat()).toArray
 
       import idealised.OpenCL._
-      val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Int] `,` Array[Float] `,` Array[Float] `)=>` Array[Float]](1, length)
+      val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Int] `,` Array[Float] `,` Array[Float] `)=>` Array[Float]](LocalSize(1), GlobalSize(length))
       val (output, _) = runKernel(numEntries `,` length `,` indices `,` sparse `,` dense)
 
       Executor.shutdown()
@@ -207,7 +208,7 @@ class SparseVector extends idealised.util.Tests {
         nFun(k => fun(ArrayType(k, TupleType(IndexType(m), float)))(vector =>
           matrix :>> mapGlobal(fun(row =>
             vector :>> oclReduceSeq(
-              fun(pair => fun(accum => accum + Snd(pair, None) * Idx(row, Fst(pair, None)))), 0.0f, PrivateMemory)
+              fun(accum => fun(pair => accum + Snd(pair, None) * Idx(row, Fst(pair, None)))), 0.0f, AddressSpace.Private)
           ))
         ))
       )
@@ -238,7 +239,7 @@ class SparseVector extends idealised.util.Tests {
       val vector = Array.tabulate(numEntries)(_ => random.nextFloat())
 
       import idealised.OpenCL._
-      val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Array[Float]] `,` Int `,` Array[(Int, Float)] `)=>` Array[Float]](1, length)
+      val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Array[Float]] `,` Int `,` Array[(Int, Float)] `)=>` Array[Float]](LocalSize(1), GlobalSize(length))
       val (output, _) = runKernel(length `,` length `,` matrix `,` numEntries `,` indices.zip(vector))
 
       Executor.shutdown()
@@ -257,7 +258,7 @@ class SparseVector extends idealised.util.Tests {
             fun(ArrayType(k, float))(sparse =>
               matrix :>> mapGlobal(fun(row =>
                 zip(indices, sparse) :>> oclReduceSeq(
-                  fun(pair => fun(accum => accum + Snd(pair, None) * Idx(row, Fst(pair, None)))), 0.0f, PrivateMemory)
+                  fun(accum => fun(pair => accum + Snd(pair, None) * Idx(row, Fst(pair, None)))), 0.0f, AddressSpace.Private)
               ))
             ))
         )
@@ -290,7 +291,7 @@ class SparseVector extends idealised.util.Tests {
       val vector = Array.tabulate(numEntries)(_ => random.nextFloat())
 
       import idealised.OpenCL._
-      val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Array[Float]] `,` Int `,` Array[Int] `,` Array[Float] `)=>` Array[Float]](1, length)
+      val runKernel = p.kernel.as[ScalaFunction `(` Int `,` Int `,` Array[Array[Float]] `,` Int `,` Array[Int] `,` Array[Float] `)=>` Array[Float]](LocalSize(1), GlobalSize(length))
       val (output, _) = runKernel(length `,` length `,` matrix `,` numEntries `,` indices `,` vector)
 
       Executor.shutdown()
@@ -301,3 +302,4 @@ class SparseVector extends idealised.util.Tests {
     runTest()
   }
 }
+*/

@@ -18,8 +18,8 @@ final case class VectorFromScalar(n: Nat,
 
   override val t: ExpType =
     (n: Nat) ->: (dt: ScalarType) ->:
-      (arg :: exp"[$dt]") ->:
-        exp"[${VectorType(n, dt)}]"
+      (arg :: exp"[$dt, $read]") ->:
+        exp"[${VectorType(n, dt)}, $read]"
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     VectorFromScalar(f.nat(n), f.data(dt), VisitAndRebuild(arg, f))
@@ -37,16 +37,12 @@ final case class VectorFromScalar(n: Nat,
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
-    con(arg)(λ(exp"[$dt]")(e => A :=|dt| VectorFromScalar(n, dt, e) ))
+    con(arg)(λ(exp"[$dt, $read]")(e => A :=|VectorType(n, dt)| VectorFromScalar(n, dt, e) ))
   }
-
-  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommType] =
-    ???
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
-    con(arg)(λ(exp"[$dt]")(e => C(VectorFromScalar(n, dt, e)) ))
+    con(arg)(λ(exp"[$dt, $read]")(e => C(VectorFromScalar(n, dt, e)) ))
   }
 }

@@ -238,7 +238,7 @@ class tiling extends idealised.util.Tests {
   }
 
   def wrapInLambda(dim: Int,
-                   f: TypedExpr => Expr,
+                   f: Expr => Expr,
                    genInputType: List[NatIdentifier] => ArrayType,
                    natIds: List[NatIdentifier] = List()): DepLambda[NatKind] = {
     dim match {
@@ -297,7 +297,7 @@ class tiling extends idealised.util.Tests {
           map(fun(ac =>
             map(fun(bc =>
               (fun(x => (x * alpha) + beta * bc._2) o
-                reduce(fun((y, acc) => acc + (y._1 * y._2)), l(0.0f))) $
+                reduceSeq(fun(acc => fun(y => acc + (y._1 * y._2))), l(0.0f))) $
             zip(ac._1, bc._1))) $
           zip(transpose(b),ac._2))) $
         zip(a, c)

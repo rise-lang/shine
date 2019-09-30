@@ -6,7 +6,6 @@ import lift.core.types._
 import lift.core._
 
 object traversal {
-
   // generic one-level traversal operators
 
   // applies s to all direct subexpressions

@@ -15,7 +15,7 @@ final case class Cast(dt1: BasicType, dt2: BasicType, e: Phrase[ExpType])
 
   override val t: ExpType =
     (dt1: BasicType) ->: (dt2: BasicType) ->:
-      (e :: exp"[$dt1]") ->: exp"[$dt2]"
+      (e :: exp"[$dt1, $read]") ->: exp"[$dt2, $read]"
 
   def prettyPrint: String =
     s"${this.getClass.getSimpleName} (${PrettyPhrasePrinter(e)})"
@@ -32,9 +32,6 @@ final case class Cast(dt1: BasicType, dt2: BasicType, e: Phrase[ExpType])
 
   def acceptorTranslation(A: Phrase[AccType])
                          (implicit context: TranslationContext): Phrase[CommType] = ???
-
-  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommType] = ???
 
   def continuationTranslation(C: Phrase[ExpType ->: CommType])
                              (implicit context: TranslationContext): Phrase[CommType] = {

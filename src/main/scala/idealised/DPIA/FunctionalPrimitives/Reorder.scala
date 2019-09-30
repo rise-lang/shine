@@ -2,7 +2,7 @@ package idealised.DPIA.FunctionalPrimitives
 
 import idealised.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import idealised.DPIA.DSL._
-import idealised.DPIA.ImperativePrimitives.ReorderAcc
+import idealised.DPIA.ImperativePrimitives.{JoinAcc, ReorderAcc}
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
@@ -20,10 +20,10 @@ final case class Reorder(n: Nat,
 {
   override val t: ExpType =
     (n: Nat) ->: (dt: DataType) ->:
-      (idxF :: t"exp[idx($n)] -> exp[idx($n)]") ->:
-      (idxFinv :: t"exp[idx($n)] -> exp[idx($n)]") ->:
-      (input :: exp"[$n.$dt]") ->:
-      exp"[$n.$dt]"
+      (idxF :: t"exp[idx($n), $read] -> exp[idx($n), $read]") ->:
+        (idxFinv :: t"exp[idx($n), $read] -> exp[idx($n), $read]") ->:
+          (input :: exp"[$n.$dt, $read]") ->:
+            exp"[$n.$dt, $read]"
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     Reorder(f.nat(n), f.data(dt),
@@ -46,6 +46,14 @@ final case class Reorder(n: Nat,
     }
   }
 
+  override def fedeTranslation(env: scala.Predef.Map[Identifier[ExpType], Identifier[AccType]])
+                     (C: Phrase[AccType ->: AccType]) : Phrase[AccType] = {
+    import TranslationToImperative._
+
+    val otype = C.t.inT.dataType
+    fedAcc(env)(input)(λ(acc"[$otype]")(o => ReorderAcc(n, dt, idxFinv, C(o))))
+  }
+
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
@@ -53,18 +61,11 @@ final case class Reorder(n: Nat,
     acc(input)(ReorderAcc(n, dt, idxFinv, A))
   }
 
-  override def mapAcceptorTranslation(g: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommType] = {
-    import TranslationToImperative._
-
-    mapAcc(g, input)(ReorderAcc(n, dt, idxFinv, A))
-  }
-
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
-    con(input)(λ(exp"[$n.$dt]")(x => C(Reorder(n, dt, idxF, idxFinv, x)) ))
+    con(input)(λ(exp"[$n.$dt, $read]")(x => C(Reorder(n, dt, idxF, idxFinv, x)) ))
   }
 
   override def prettyPrint: String = s"(reorder idxF ${PrettyPhrasePrinter(input)})"

@@ -1,3 +1,4 @@
+/*
 package idealised.apps
 
 import idealised.OpenCL.PrivateMemory
@@ -283,3 +284,4 @@ class SparseMatrix extends idealised.util.Tests {
     offsetBasedMMWithZip(1024, 1024, 1)
   }
 }
+*/

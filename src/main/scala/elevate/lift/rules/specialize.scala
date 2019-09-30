@@ -2,9 +2,8 @@ package elevate.lift.rules
 
 import elevate.core.{Failure, Lift, RewriteResult, Strategy, Success}
 import elevate.lift.extractors._
-import lift.OpenCL.primitives.mapGlobal
-import lift.core.{Apply, Lambda, primitives}
-import lift.core.primitives._
+import lift.core._
+import lift.core.DSL._
 
 object specialize {
 
@@ -44,11 +43,13 @@ object specialize {
     override def toString = "reduceSeq"
   }
 
-  case class slideSeq(rot: primitives.slideSeq.Rotate) extends Strategy[Lift] {
+  case class slideSeq(rot: primitives.slideSeq.Rotate, write_dt1: Expr) extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case primitives.slide => Success(primitives.slideSeq(rot))
-      case _ => Failure(slideSeq(rot))
+      case primitives.slide => Success(nFun(sz => nFun(sp =>
+        primitives.slideSeq(rot)(sz)(sp)(write_dt1)(fun(x => x))
+      )))
+      case _ => Failure(slideSeq(rot, write_dt1))
     }
-    override def toString = s"slideSeq($rot)"
+    override def toString = s"slideSeq($rot, $write_dt1)"
   }
 }

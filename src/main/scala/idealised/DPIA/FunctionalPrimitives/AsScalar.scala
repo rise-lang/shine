@@ -18,8 +18,8 @@ final case class AsScalar(n: Nat,
 
   override val t: ExpType =
     (n: Nat) ->: (m: Nat) ->: (dt: ScalarType) ->:
-      (array :: exp"[$n.${VectorType(m, dt)}]") ->:
-        exp"[${n * m}.$dt]"
+      (array :: exp"[$n.${VectorType(m, dt)}, $read]") ->:
+        exp"[${n * m}.$dt, $read]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     AsScalar(fun.nat(n), fun.nat(m), fun.data(dt), VisitAndRebuild(array, fun))
@@ -39,10 +39,6 @@ final case class AsScalar(n: Nat,
     import TranslationToImperative._
     acc(array)(AsScalarAcc(n, m, dt, A))
   }
-
-  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommType] =
-    ???
 
   override def continuationTranslation(C: Phrase[->:[ExpType, CommType]])
                                       (implicit context: TranslationContext): Phrase[CommType] = {

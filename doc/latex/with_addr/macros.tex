@@ -1,0 +1,82 @@
+\newcommand{\phrasetype}{\mathsf{phrase}}
+\newcommand{\passivetype}{\mathsf{passive}}
+\newcommand{\datatype}{\mathsf{data}}
+\newcommand{\natkind}{\mathsf{nat}}
+\newcommand{\addrkind}{\mathsf{addr}}
+\newcommand{\vwkind}{\mathsf{width}}
+\newcommand{\num}{\mathsf{num}}
+\newcommand{\sem}[1]{\llbracket #1 \rrbracket}
+\newcommand{\interfere}{\mathrel\triangledown}
+\newcommand{\indep}{\mathrel\triangle}
+\newcommand{\objspace}{\mathord{\dagger}}
+
+\newcommand{\kw}[1]{\mathrm{#1}}
+
+\newcommand{\tycomm}{\mathsf{comm}}
+\newcommand{\tyexp}{\mathsf{exp}}
+\newcommand{\typush}{\mathsf{push}}
+\newcommand{\tymem}{\mathsf{mem}}
+\newcommand{\tyacc}{\mathsf{acc}}
+\newcommand{\tyvar}{\mathsf{var}}
+\newcommand{\tyidx}{\mathsf{idx}}
+
+\newcommand{\pureto}{\to_{\textrm{p}}}
+
+\newcommand{\multiset}[1]{\lbag #1 \rbag}
+
+\newcommand{\DPIA}{\ensuremath{\mathsf{DPIA}}\xspace}
+\newcommand{\IA}{\ensuremath{\mathsf{IA}}\xspace}
+
+% judgements
+\newcommand{\typ}[5]{#1 \mid #2; #3 \vdash #4 : #5}
+\newcommand{\typd}{\typ{\Delta}}
+
+\newcommand{\semA}[1]{\mathcal{A}\llparenthesis #1 \rrparenthesis}
+\newcommand{\semM}[2]{\mathcal{M}(#1, |#2|)}
+\newcommand{\semE}[1]{\mathcal{C}\llparenthesis #1 \rrparenthesis}
+
+\newcommand{\projone}[1]{#1.1}
+\newcommand{\projtwo}[1]{#1.2}
+
+\newcommand{\prim}[1]{\bm{\mathsf{#1}}}
+
+\newcommand{\mapI}{\ensuremath{\prim{mapI}}\xspace}
+\newcommand{\reduceI}{\ensuremath{\prim{reduceI}}\xspace}
+
+%% object variables for data types
+%% \newcommand{\dt}{\delta}
+%% \newcommand{\dtone}{\delta_1}
+%% \newcommand{\dttwo}{\delta_2}
+
+%% \newcommand{\dt}{d}
+%% \newcommand{\dtone}{d_1}
+%% \newcommand{\dttwo}{d_2}
+
+\newcommand{\dt}{t}
+\newcommand{\dtone}{s}
+\newcommand{\dttwo}{t}
+
+
+
+\newcommand{\ie}{\emph{i.e.},\xspace}
+\newcommand{\eg}{\emph{e.g.},\xspace}
+\newcommand{\etal}{et al.\xspace}
+
+% comments
+\newcommand{\Comment}[2]{{\par\noindent\small\color{red} \framebox{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule}{\textbf{#1:} #2}}}}
+\newcommand{\todo}[1]{\Comment{TODO}{#1}}
+
+\newcommand{\sam}[1]{\Comment{Sam}{#1}}
+
+\newcommand{\mathrightfill}{\hskip \textwidth minus \textwidth \strut}
+
+% shading
+\definecolor{shade}{RGB}{223,223,223}
+\newcommand\shade[1]{\setlength{\fboxsep}{0pt}\colorbox{shade}{\ensuremath{#1}}}
+
+% environments
+\renewenvironment{displaymath}{\small\[}{\]\normalsize\ignorespacesafterend}
+\newenvironment{smallequation}{\small\begin{equation}}{\end{equation}\normalsize\ignorespacesafterend}
+
+% possessive citation, i.e.: This is Adam's [1999] paper.
+\newcommand\citeapos[1]{\citeauthor{#1}'s \citeyear{#1}}

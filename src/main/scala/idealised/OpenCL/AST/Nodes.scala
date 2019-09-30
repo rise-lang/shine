@@ -28,14 +28,14 @@ case class VarDecl(override val name: String,
     OpenCL.AST.VarDecl(name, v(t), addressSpace, init.map(VisitAndRebuild(_, v)))
 }
 
-case class ParamDecl(override val name: String,
-                     override val t: Type,
-                     addressSpace: OpenCL.AddressSpace)
-  extends C.AST.ParamDecl(name, t)
-{
-  override def visitAndRebuild(v: VisitAndRebuild.Visitor): ParamDecl =
-    OpenCL.AST.ParamDecl(name, v(t), addressSpace)
-}
+//case class ParamDecl(override val name: String,
+//                     override val t: Type,
+//                     addressSpace: OpenCL.AddressSpace)
+//  extends C.AST.ParamDecl(name, t)
+//{
+//  override def visitAndRebuild(v: VisitAndRebuild.Visitor): ParamDecl =
+//    OpenCL.AST.ParamDecl(name, v(t), addressSpace)
+//}
 
 case class Barrier(local: Boolean, global: Boolean) extends Stmt {
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Barrier = this

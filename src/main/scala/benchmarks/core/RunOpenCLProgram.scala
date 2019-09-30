@@ -1,7 +1,7 @@
 package benchmarks.core
 
 import idealised.DPIA
-import idealised.OpenCL.KernelWithSizes
+import idealised.OpenCL.{GlobalSize, KernelWithSizes, LocalSize}
 import idealised.utils.{Display, Time, TimeSpan}
 import lift.arithmetic.ArithExpr
 import lift.core.Expr
@@ -20,11 +20,11 @@ abstract class RunOpenCLProgram(val verbose:Boolean) {
 
   protected def makeInput(random:Random):Input
 
-  def makeSummary(localSize:Int, globalSize:Int, code:String, runtimeMs:Double, correctness: CorrectnessCheck):Summary
+  def makeSummary(localSize:LocalSize, globalSize:GlobalSize, code:String, runtimeMs:Double, correctness: CorrectnessCheck):Summary
 
   protected def runScalaProgram(input:Input):Array[Float]
 
-  private def compile(localSize:ArithExpr, globalSize:ArithExpr):KernelWithSizes = {
+  private def compile(localSize:LocalSize, globalSize:GlobalSize):KernelWithSizes = {
     val kernel = idealised.OpenCL.KernelGenerator.makeCode(localSize, globalSize)(DPIA.fromLift(infer(this.expr)))
 
     if(verbose) {
@@ -35,7 +35,7 @@ abstract class RunOpenCLProgram(val verbose:Boolean) {
 
   protected def runKernel(k: KernelWithSizes, input: Input): (Array[Float], TimeSpan[Time.ms])
 
-  final def run(localSize:Int, globalSize:Int):Summary = {
+  final def run(localSize:LocalSize, globalSize:GlobalSize):Summary = {
     opencl.executor.Executor.loadAndInit()
 
     val (scalaOutput, kernel, kernelOutput, time) = try {
@@ -61,8 +61,8 @@ abstract class SimpleRunOpenCLProgram(override val verbose: Boolean)
 
   final type Summary = Result
 
-  case class Result(localSize: Int,
-                    globalSize: Int,
+  case class Result(localSize: LocalSize,
+                    globalSize: GlobalSize,
                     code: String,
                     runtimeMs: Double,
                     correctness: CorrectnessCheck
@@ -75,6 +75,6 @@ abstract class SimpleRunOpenCLProgram(override val verbose: Boolean)
       s" correct = ${correctness.display}"
   }
 
-  override def makeSummary(localSize: Int, globalSize: Int, code: String, runtimeMs: Double, correctness: CorrectnessCheck): Result =
+  override def makeSummary(localSize: LocalSize, globalSize: GlobalSize, code: String, runtimeMs: Double, correctness: CorrectnessCheck): Result =
     Result(localSize, globalSize, code, runtimeMs, correctness)
 }

@@ -35,14 +35,16 @@ object lifting {
         f => Expanding((e: Expr) => Apply(f, e)))
 
     p match {
-      case Lambda(x, body)  => Reducing((e: Expr) => substitute(e, `for` = x, in = body))
-      case Apply(f, e)      => chain(liftFunExpr(f).map(lf => lf(e)))
-      case DepApply(f, x)   => x match {
-        case n: Nat         => chain(liftDepFunExpr[NatKind](f).map(lf => lf(n)))
-        case t: DataType    => chain(liftDepFunExpr[DataKind](f).map(lf => lf(t)))
-        case n2n: NatToNat  => chain(liftDepFunExpr[NatToNatKind](f).map(lf => lf(n2n)))
+      case Lambda(x, body)    => Reducing((e: Expr) => substitute.exprInExpr(e, `for` = x, in = body))
+      case Apply(f, e)        => chain(liftFunExpr(f).map(lf => lf(e)))
+      case DepApply(f, x)     => x match {
+        case t: DataType      => chain(liftDepFunExpr[DataKind](f).map(lf => lf(t)))
+        case n: Nat           => chain(liftDepFunExpr[NatKind](f).map(lf => lf(n)))
+        case a: AddressSpace  => chain(liftDepFunExpr[AddressSpaceKind](f).map(lf => lf(a)))
+        case n2n: NatToNat    => chain(liftDepFunExpr[NatToNatKind](f).map(lf => lf(n2n)))
+        case n2d: NatToData   => chain(liftDepFunExpr[NatToDataKind](f).map(lf => lf(n2d)))
       }
-      case _                => chain(Expanding(p))
+      case _                  => chain(Expanding(p))
     }
   }
 
@@ -52,21 +54,23 @@ object lifting {
         f => Expanding((x: K#T) => DepApply[K](f, x)))
 
     p match {
-      case DepLambda(x, e)  => Reducing((a: K#T) => substitute(a, `for` = x, in = e))
-      case Apply(f, e)      => chain(liftFunExpr(f).map(lf => lf(e)))
-      case DepApply(f, x)   => x match {
-        case n: Nat         => chain(liftDepFunExpr[NatKind](f).map(lf => lf(n)))
-        case t: DataType    => chain(liftDepFunExpr[DataKind](f).map(lf => lf(t)))
-        case n2n: NatToNat  => chain(liftDepFunExpr[NatToNatKind](f).map(lf => lf(n2n)))
+      case DepLambda(x, e)    => Reducing((a: K#T) => substitute.kindInExpr(a, `for` = x, in = e))
+      case Apply(f, e)        => chain(liftFunExpr(f).map(lf => lf(e)))
+      case DepApply(f, x)     => x match {
+        case t: DataType      => chain(liftDepFunExpr[DataKind](f).map(lf => lf(t)))
+        case n: Nat           => chain(liftDepFunExpr[NatKind](f).map(lf => lf(n)))
+        case a: AddressSpace  => chain(liftDepFunExpr[AddressSpaceKind](f).map(lf => lf(a)))
+        case n2n: NatToNat    => chain(liftDepFunExpr[NatToNatKind](f).map(lf => lf(n2n)))
+        case n2d: NatToData   => chain(liftDepFunExpr[NatToDataKind](f).map(lf => lf(n2d)))
       }
-      case _                => chain(Expanding(p))
+      case _                  => chain(Expanding(p))
     }
   }
 
   def liftDependentFunctionType[K <: Kind](ty: Type): K#T => Type = {
     ty match {
-      case DepFunType(x, t) => (a: K#T) => substitute(a, `for`=x, in=t)
-      case _ => ???
+      case DepFunType(x, t) => (a: K#T) => substitute.kindInType(a, `for`=x, in=t)
+      case _ => throw new Exception(s"did not expect $ty")
     }
   }
 }

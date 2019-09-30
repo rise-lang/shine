@@ -21,7 +21,8 @@ object ProgramGenerator {
                                             defs:Seq[(LetNatIdentifier, Phrase[ExpType])])
       : (Phrase[ExpType], Seq[Identifier[ExpType]], Seq[(LetNatIdentifier, Phrase[ExpType])]) = p match {
         case l: Lambda[ExpType, _]@unchecked => getPhraseAndParams(l.body, l.param +: ps, defs)
-        case ndl: DepLambda[_, _] => getPhraseAndParams(ndl.body, Identifier(ndl.x.name, ExpType(int)) +: ps, defs)
+        case ndl: DepLambda[_, _] =>
+          getPhraseAndParams(ndl.body, Identifier(ndl.x.name, ExpType(int, read)) +: ps, defs)
         case ln:LetNat[ExpType, _]@unchecked => getPhraseAndParams(ln.body, ps, (ln.binder, ln.defn) +: defs)
         case ep: Phrase[ExpType]@unchecked => (ep, ps.reverse, defs.reverse)
       }
@@ -85,12 +86,12 @@ object ProgramGenerator {
       case (lhsT, rhsT) => throw new Exception(s" $lhsT and $rhsT should match")
     }
 
-    TranslationToImperative.acc(p)(output)(
+    SimplifyNats(UnrollLoops(TranslationToImperative.acc(p)(output)(
       new idealised.C.TranslationContext) |> (p => {
       xmlPrinter.writeToFile("/tmp/p2.xml", p)
       TypeCheck(p) // TODO: only in debug
       p
-    })
+    })))
   }
 
   def makeFunction(params: Seq[C.AST.ParamDecl], body: C.AST.Block, name: String): C.AST.FunDecl = {
@@ -132,8 +133,9 @@ object ProgramGenerator {
         case s: C.AST.StructType =>
           decls += C.AST.StructTypeDecl(
             s.print,
-            s.fields.map{ case (ty, name) => C.AST.VarDecl(name, ty) }
+            s.fields.map { case (ty, name) => C.AST.VarDecl(name, ty) }
           )
+          s.fields.foreach { case (ty, _) => collect(ty) }
         case at: C.AST.ArrayType => collect(at.elemType)
         case pt: C.AST.PointerType => collect(pt.valueType)
         case ut: C.AST.UnionType => ut.fields.foreach(collect)
@@ -152,9 +154,9 @@ object ProgramGenerator {
   }
 
   private def getDataType(i: Identifier[_]): DataType = i.t match {
-    case ExpType(dataType) => dataType
+    case ExpType(dataType, _) => dataType
     case AccType(dataType) => dataType
-    case PairType(ExpType(dt1), AccType(dt2)) if dt1 == dt2 => dt1
+    case PairType(ExpType(dt1, _), AccType(dt2)) if dt1 == dt2 => dt1
     case _ => throw new Exception("This should not happen")
   }
 

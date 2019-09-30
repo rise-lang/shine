@@ -1,3 +1,4 @@
+/*
 package idealised.DPIA
 
 import idealised.OpenCL.SurfaceLanguage.DSL._
@@ -18,7 +19,7 @@ class NatDepLambdaGen extends idealised.util.TestsWithExecutor {
         fun(ArrayType(n, float))(in => in :>> split(x) :>> map(split(y)) :>> mapGlobal(mapSeq(mapSeq(id)))))
 
     val compiledProg =
-      idealised.OpenCL.KernelGenerator.makeCode(8, 32)(idealised.DPIA.FromSurfaceLanguage(TypeInference(natDepProg, Map())))
+      idealised.OpenCL.KernelGenerator.makeCode(LocalSize(8), GlobalSize(32))(idealised.DPIA.FromSurfaceLanguage(TypeInference(natDepProg, Map())))
     println(compiledProg.code)
     SyntaxChecker.checkOpenCL(compiledProg.code)
   }
@@ -64,8 +65,9 @@ class NatDepLambdaGen extends idealised.util.TestsWithExecutor {
               x :>> tile(tileRows)(tileColumns) :>>
                 mapWorkgroup(1)(mapWorkgroup(0)(fun(tile =>
                   tile :>>
-                    toGlobal(mapLocal(1)(mapLocal(0)(toLocal(id))) >>>
-                      transpose()) :>>
+                    mapLocal(1)(mapLocal(0)(fun(x => toLocal(x)))) :>>
+                    transpose() :>>
+                    fun(x => toGlobal(x)) :>>
                 transpose()))))))))// :>> untile2D)))
 
     val kernel =
@@ -82,6 +84,7 @@ class NatDepLambdaGen extends idealised.util.TestsWithExecutor {
     val nSplit = 2
     val xs = Array.tabulate(M)(i => Array.fill(N)(1.0f * i))
 
-    kernelF(1,1)((M`;`) `,` N `,` mSplit `,` nSplit `,` xs)
+    kernelF(LocalSize(1),GlobalSize(1))((M`;`) `,` N `,` mSplit `,` nSplit `,` xs)
   }
 }
+ */

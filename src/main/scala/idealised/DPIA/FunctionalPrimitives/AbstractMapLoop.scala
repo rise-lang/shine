@@ -19,13 +19,18 @@ abstract class AbstractMapLoop(n: Nat,
                out: Phrase[AccType])
               (implicit context: TranslationContext): Phrase[CommType]
 
-  override def mapAcceptorTranslation(g: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommType] = {
+  def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType],
+                             A: Phrase[AccType])
+                            (implicit context: TranslationContext): Phrase[CommType] = {
+    ???
+  }
+  override def acceptorTranslation(A: Phrase[AccType])
+                                  (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
-    con(array)(λ(exp"[$n.$dt1]")(x =>
+    con(array)(λ(exp"[$n.$dt1, $read]")(x =>
       makeMapI(n, dt1, dt2,
-        λ(exp"[$dt1]")(x => λ(acc"[${g.t.outT.dataType}]")(o => acc(g(f(x)))(o))),
+        λ(exp"[$dt1, $read]")(x => λ(acc"[$dt2]")(o => acc(f(x))(o))),
         x, A)))
   }
 
@@ -33,7 +38,8 @@ abstract class AbstractMapLoop(n: Nat,
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
-    `new`(dt"[$n.$dt2]", λ(exp"[$n.$dt2]" x acc"[$n.$dt2]")(tmp =>
+    //TODO should be removed
+    `new`(dt"[$n.$dt2]", λ(exp"[$n.$dt2, $read]" x acc"[$n.$dt2]")(tmp =>
       acc(this)(tmp.wr) `;` C(tmp.rd) ))
   }
 }

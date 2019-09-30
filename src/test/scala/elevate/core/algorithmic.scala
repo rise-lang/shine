@@ -64,8 +64,8 @@ class algorithmic extends idealised.util.Tests {
     val reduceMap =
       DepLambda[NatKind](M, DepLambda[NatKind](N,
         fun(ArrayType(M, ArrayType(N, float)))(i =>
-          reduce(fun((y, acc) =>
-            map(addTuple) $ zip(y, acc)))(generate(fun(IndexType(M) ->: float)(_ => l(0.0f)))) $ transpose(i))))
+          reduce(fun((acc, y) =>
+            map(addTuple) $ zip(acc, y)))(generate(fun(IndexType(M) ->: float)(_ => l(0.0f)))) $ transpose(i))))
 
     val rewrite = body(body(body(liftReduce))).apply(infer(mapReduce)).get
 
@@ -87,7 +87,7 @@ class algorithmic extends idealised.util.Tests {
         fun(ArrayType(K, ArrayType(N, float)))(b =>
           map(fun(ak =>
             map(fun(bk =>
-              (reduce(fun((y, acc) => acc + (y._1 * y._2)), l(0.0f))) $
+              (reduceSeq(fun((acc, y) => acc + (y._1 * y._2)), l(0.0f))) $
                 zip(ak, bk))) $ transpose(b) )) $ a)))))).get)
 
     def goldMKN(reduceFun: Expr): Expr = {
@@ -95,7 +95,7 @@ class algorithmic extends idealised.util.Tests {
         fun(ArrayType(M, ArrayType(K, float)))(a =>
           fun(ArrayType(K, ArrayType(N, float)))(b =>
             map(fun(ak =>
-              reduce(
+              reduceSeq(
                 reduceFun,
                 generate(fun(IndexType(N) ->: float)(_ => l(0.0f)))
               ) $
@@ -107,7 +107,7 @@ class algorithmic extends idealised.util.Tests {
     }
 
     val goldMKNVersion1 = goldMKN(
-      fun((y, acc) => // y :: (float, N.float); acc :: N.float
+      fun((acc, y) => // y :: (float, N.float); acc :: N.float
         mapSeq(fun(t => fst(t) + snd(t))) $
           zip(acc,
             mapSeq(fun(bs => bs * fst(y))) $ snd(y))
@@ -115,7 +115,7 @@ class algorithmic extends idealised.util.Tests {
     )
 
     val goldMKNAlternative = goldMKN(
-     fun((aBN, acc) => { // akB :: (float, N.float); acc :: N.float
+     fun((acc, aBN) => { // akB :: (float, N.float); acc :: N.float
        val BN = snd(aBN)
        val as = fst(aBN)
        map(fun(t => fst(t) + (fst(snd(t)) * snd(snd(t))))) $
@@ -133,7 +133,6 @@ class algorithmic extends idealised.util.Tests {
 
     // todo something's wrong with the way of comparing typed expressions
     //assert(typedRewrite == typedGold)
-
     val gold = normalize(untype)(typedGold).get
     val rewrite = normalize(untype)(typedGold).get
 
@@ -150,8 +149,8 @@ class algorithmic extends idealised.util.Tests {
         fun(ArrayType(M, ArrayType(K, float)))(a =>
           fun(ArrayType(K, ArrayType(N, float)))(b =>
             map(fun(ak =>
-              reduce(
-                fun((y, acc) => { // akB :: (float, N.float); acc :: N.float
+              reduceSeq(
+                fun((acc, y) => { // akB :: (float, N.float); acc :: N.float
                   map(fun(t => fst(t) + (fst(snd(t)) * snd(snd(t))))) $
                     /* N.(float, (float, float))*/
                     zip(acc,
@@ -172,7 +171,7 @@ class algorithmic extends idealised.util.Tests {
         fun(ArrayType(M, ArrayType(K, float)))(a =>
           fun(ArrayType(K, ArrayType(N, float)))(b =>
             reduce(
-              fun((y2, acc2) => // y2 :: (M.float, N.float); acc2 :: M.N.float
+              fun((acc2, y2) => // y2 :: (M.float, N.float); acc2 :: M.N.float
                 map(fun(x => // x :: M.(float, N.float)
                   map(fun(bnAcc => // bnAcc :: N.(float, float)
                     mul(fst(x),fst(bnAcc)) + snd(bnAcc))) $
@@ -187,7 +186,7 @@ class algorithmic extends idealised.util.Tests {
       )))
 
     // taken from input
-    val op = fun((y, acc) => { // akB :: (float, N.float); acc :: N.float
+    val op = fun((acc, y) => { // akB :: (float, N.float); acc :: N.float
       map(fun(t => fst(t) + (fst(snd(t)) * snd(snd(t))))) $
         /* N.(float, (float, float))*/
         zip(acc,
@@ -199,12 +198,12 @@ class algorithmic extends idealised.util.Tests {
       DepLambda[NatKind](M, DepLambda[NatKind](N, DepLambda[NatKind](K,
         fun(ArrayType(M, ArrayType(K, float)))(a =>
           fun(ArrayType(K, ArrayType(N, float)))(b =>
-            reduce(
-              fun((y, acc) => // y :: (M.float, N.float); acc :: M.N.float
+            reduceSeq(
+              fun((acc, y) => // y :: (M.float, N.float); acc :: M.N.float
                 map(fun(x => // x :: M.((float, N.float), N.float)
                   Apply(Apply(op, fst(x)), snd(x)))) $
                   // M.((float, N.float), N.float)
-                  zip(map(fun(t => pair(t,snd(y)))) $ fst(y), acc)),
+                  zip(acc, map(fun(t => pair(t,snd(y)))) $ fst(y))),
               // generate zeros :: M.N.float
               generate(fun(IndexType(M) ->: ArrayType(N, float))(_ =>
                 generate(fun(IndexType(N) ->: float)(_ => l(0.0f) ))))
@@ -218,12 +217,12 @@ class algorithmic extends idealised.util.Tests {
       DepLambda[NatKind](M, DepLambda[NatKind](N, DepLambda[NatKind](K,
         fun(ArrayType(M, ArrayType(K, float)))(a =>
           fun(ArrayType(K, ArrayType(N, float)))(b =>
-            reduce(
-              fun((y, acc) => // y :: (M.float, N.float); acc :: M.N.float
+            reduceSeq(
+              fun((acc, y) => // y :: (M.float, N.float); acc :: M.N.float
                 map(fun(x => // x :: M.((float, N.float), N.float)
                   Apply(Apply(op, fst(x)), snd(x)))) $
                   // M.((N.float, float), N.float)
-                  zip(map(fun(t => pair(t,fst(y)))) $ snd(y), acc)),
+                  zip(acc, map(fun(t => pair(t,fst(y)))) $ snd(y))),
               // generate zeros :: M.N.float
               generate(fun(IndexType(M) ->: ArrayType(N, float))(_ =>
                 generate(fun(IndexType(N) ->: float)(_ => l(0.0f) ))))
@@ -245,7 +244,7 @@ class algorithmic extends idealised.util.Tests {
         fun(ArrayType(M, ArrayType(K, float)))(a =>
           fun(ArrayType(K, ArrayType(N, float)))(b =>
             reduceSeq(
-              fun((y, acc) => // y :: (M.float, N.float); acc :: M.N.float
+              fun((acc, y) => // y :: (M.float, N.float); acc :: M.N.float
                 mapSeq(fun(x => // x :: M.((float, N.float), N.float)
                   Apply(Apply(fun((y, acc) => { // akB :: (float, N.float); acc :: N.float
                     mapSeq(fun(t => fst(t) + (fst(snd(t)) * snd(snd(t))))) $
@@ -277,7 +276,7 @@ class algorithmic extends idealised.util.Tests {
         fun(ArrayType(K, ArrayType(N, float)))(b =>
           map(fun(ak =>
             map(fun(bk =>
-              (reduce(fun((y, acc) => acc + (y._1 * y._2)), l(0.0f))) $
+              (reduceSeq(fun((acc, y) => acc + (y._1 * y._2)), l(0.0f))) $
                 zip(ak, bk))) $ transpose(b) )) $ a)))))).get
 
     val typedMM = infer(mm)
@@ -321,7 +320,7 @@ class algorithmic extends idealised.util.Tests {
             fun(ArrayType(K, ArrayType(N, float)))(b =>
               map(fun(ak =>
                 map(fun(bk =>
-                  (reduce(fun((y, acc) => acc + (y._1 * y._2)), l(0.0f))) $
+                  (reduceSeq(fun((acc, y) => acc + (y._1 * y._2)), l(0.0f))) $
                     zip(ak, bk))) $ transpose(b) )) $ a)))))).get
 
       val rnf = (RNF `;` BENF)(mm).get
@@ -340,7 +339,7 @@ class algorithmic extends idealised.util.Tests {
         ((a, b) =>
           map(fun(ak =>
             map(fun(bk =>
-              (reduceSeq(fun((y, acc) => acc + (y._1 * y._2)), l(0.0f))) $
+              (reduceSeq(fun((acc, y) => acc + (y._1 * y._2)), l(0.0f))) $
                 zip(ak, bk))) $ transpose(b) )) $ a
         )
       )

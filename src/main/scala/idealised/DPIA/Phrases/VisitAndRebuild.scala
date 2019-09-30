@@ -22,6 +22,10 @@ object VisitAndRebuild {
       case i: NatToDataIdentifier => i
     }).asInstanceOf[N]
 
+    def access(w: AccessType): AccessType = w
+
+    def addressSpace(a: AddressSpace): AddressSpace = a
+
     abstract class Result[+T]
     case class Stop[T <: PhraseType](p: Phrase[T]) extends Result[Phrase[T]]
     case class Continue[T <: PhraseType](p: Phrase[T], v: Visitor) extends Result[Phrase[T]]
@@ -76,7 +80,7 @@ object VisitAndRebuild {
   }
 
   private def visitPhraseTypeAndRebuild(phraseType: PhraseType, v: Visitor): PhraseType = phraseType match {
-    case ExpType(dt)                => ExpType(v.data(dt))
+    case ExpType(dt, w)                 => ExpType(v.data(dt), v.access(w))
     case AccType(dt)                => AccType(v.data(dt))
     case CommType()                 => CommType()
     case PairType(t1, t2)           => PairType(visitPhraseTypeAndRebuild(t1, v), visitPhraseTypeAndRebuild(t2, v))

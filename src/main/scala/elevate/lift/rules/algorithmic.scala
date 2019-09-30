@@ -11,8 +11,7 @@ import elevate.lift.extractors._
 import lift.core._
 import lift.core.DSL._
 import lift.core.primitives._
-import lift.core.types.{ArrayType, DataType, FunType, IndexType}
-
+import lift.core.types._
 
 //noinspection MutatorLikeMethodIsParameterless
 object algorithmic {
@@ -30,13 +29,13 @@ object algorithmic {
    def apply(e: Lift): RewriteResult[Lift] = e match {
 
       case _apply(_apply(_map(), _lambda(mapVar, _apply(
-           _apply(_apply(_reduce(), op), init :: (dt:DataType)), reduceArg))),
+           _apply(_apply(_reduceX(rx), op), init :: (dt:DataType)), reduceArg))),
            input@(_ :: ArrayType(size, ArrayType(_,_)))) =>
 
-    def reduceMap(zippedMapArg : (Expr, Expr) => Expr, reduceArg: Expr): RewriteResult[Lift] = {
+        def reduceMap(zippedMapArg : (Expr, Expr) => Expr, reduceArg: Expr): RewriteResult[Lift] = {
           Success(
-            reduce(fun((y, acc) => // y :: 16.n793.(float,float), acc:: 16.32.(float)
-              map(fun(x => Apply(Apply(op, fst(x)), snd(x)))) $ zippedMapArg(y, acc)
+            rx(fun((acc, y) => // y :: 16.n793.(float,float), acc:: 16.32.(float)
+              map(fun(x => Apply(Apply(op, fst(x)), snd(x)))) $ zippedMapArg(acc, y)
             ))(generate(fun(IndexType(size) ->: dt)(_ => init))) $ reduceArg
           )
         }
@@ -46,14 +45,14 @@ object algorithmic {
           // for some reason mapVar might be untyped, hence simply trying `==` fails
           case x if sameButOneMayBeTyped(x, mapVar) =>
             reduceMap(
-              (y, acc) => zip(y, acc),
+              (acc, y) => zip(acc, y),
               transpose(input)
             )
           // zipped input (see test "MM to MM-LoopMKN")
           case _apply(_apply(_zip(), u), v) =>
             val notToBeTransposed = if (sameButOneMayBeTyped(mapVar, u)) v else u
             reduceMap(
-              zippedMapArg = (y, acc) => zip(map(fun(bs => pair(bs, fst(y)))) $ snd(y), acc),
+              zippedMapArg = (acc, y) => zip(acc, map(fun(bs => pair(bs, fst(y)))) $ snd(y)),
               reduceArg = zip(notToBeTransposed, transpose(input))
             )
             // input is tile1.tile2.dim.(float,float)
@@ -61,7 +60,7 @@ object algorithmic {
             // todo what's the general case? How to (re-)order dimensions here?
           case _ =>
             val result = reduceMap(
-              (y, acc) => zip(y, acc),
+              (acc, y) => zip(acc, y),
               (transpose o map(transpose)) $ input
             )
             result
@@ -151,5 +150,18 @@ object algorithmic {
       case TypedExpr(e, _) => Success(e)
       case _ => Failure(untype)
     }
+  }
+
+  // slideSeq fusion
+  import lift.core.primitives.slideSeq
+  import lift.OpenCL.primitives.oclSlideSeq
+
+  def slideSeqFusion: Strategy[Lift] = `slideSeq(f) >> map(g) -> slideSeq(f >> g)`
+  def `slideSeq(f) >> map(g) -> slideSeq(f >> g)`: Strategy[Lift] = {
+    case Apply(Apply(`map`, g), Apply(Apply(Apply(DepApply(DepApply(slideSeq(rot), sz: Nat), sp: Nat), wr), f), e)) =>
+      Success(slideSeq(rot)(sz)(sp)(wr)(f >> g)(e))
+    case Apply(Apply(`map`, g), Apply(Apply(Apply(DepApply(DepApply(DepApply(oclSlideSeq(rot), a: AddressSpace), sz: Nat), sp: Nat), wr), f), e)) =>
+      Success(oclSlideSeq(rot)(a)(sz)(sp)(wr)(f >> g)(e))
+    case _ => Failure(slideSeqFusion)
   }
 }

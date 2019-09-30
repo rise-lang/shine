@@ -13,18 +13,19 @@ import scala.xml.Elem
 // this takes n many elements from an array of n + m elements
 final case class Take(n: Nat,
                       m: Nat,
+                      w: AccessType,
                       dt: DataType,
                       array: Phrase[ExpType])
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (n: Nat) ->: (m: Nat) ->: (dt: DataType) ->:
-      (array :: exp"[${n + m}.$dt]") ->: exp"[$n.$dt]"
+    (n: Nat) ->: (m: Nat) ->: (w: AccessType) ->: (dt: DataType) ->:
+      (array :: exp"[${n + m}.$dt, $w]") ->: exp"[$n.$dt, $w]"
 
   override def eval(s: Store): Data = ???
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    Take(fun.nat(n), fun.nat(m), fun.data(dt), VisitAndRebuild(array, fun))
+    Take(fun.nat(n), fun.nat(m), fun.access(w), fun.data(dt), VisitAndRebuild(array, fun))
   }
 
   override def acceptorTranslation(A: Phrase[AccType])
@@ -33,14 +34,10 @@ final case class Take(n: Nat,
     ???
   }
 
-  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommType] =
-    ???
-
   override def continuationTranslation(C: Phrase[->:[ExpType, CommType]])
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
-    con(array)(λ(exp"[${n + m}.$dt]")(x => C(Take(n, m, dt, x))))
+    con(array)(λ(exp"[${n + m}.$dt, $read]")(x => C(Take(n, m, w, dt, x))))
   }
 
   override def xmlPrinter: Elem =

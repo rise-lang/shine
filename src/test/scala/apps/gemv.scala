@@ -36,7 +36,7 @@ class gemv extends idealised.util.Tests {
             mapWorkGroup(fun(t =>
               zip(xs, t._1) |>
                 split(n) |>
-                toLocal(mapLocal(reduceSeq(fun(x => fun(a => mult(x) + a)), l(0.0f)))) |>
+                toLocalFun(mapLocal(reduceSeq(fun(a => fun(x => mult(x) + a)), l(0.0f)))) |>
                 mapLocal(fun(x => (alpha * x) + (t._2 * beta)))
             )) |>
             join
@@ -51,9 +51,9 @@ class gemv extends idealised.util.Tests {
               zip(xs, t._1) |>
                 reorderWithStride(128) |>
                 split(n /^ 128) |>
-                toLocal(mapLocal(reduceSeq(fun(x => fun(a => mult(x) + a)), l(0.0f)))) |>
+                toLocalFun(mapLocal(reduceSeq(fun(a => fun(x => mult(x) + a)), l(0.0f)))) |>
                 split(128) |>
-                toLocal(mapLocal(reduceSeq(add, l(0.0f)))) |>
+                toLocalFun(mapLocal(reduceSeq(add, l(0.0f)))) |>
                 mapLocal(fun(x => (alpha * x) + (t._2 * beta)))
             )) |>
             join
@@ -68,8 +68,8 @@ class gemv extends idealised.util.Tests {
               zip(xs, t._1) |>
                 reorderWithStride(128) |>
                 split(n /^ 128) |>
-                toLocal(mapLocal(reduceSeq(fun(x => fun(a => mult(x) + a)), l(0.0f)))) |>
-                toLocal(reduceSeq(add, l(0.0f))) |>
+                toLocalFun(mapLocal(reduceSeq(fun(a => fun(x => mult(x) + a)), l(0.0f)))) |>
+                toLocalFun(reduceSeq(add, l(0.0f))) |>
                 fun(x => (alpha * x) + (t._2 * beta))
             ))
         ))
@@ -86,7 +86,7 @@ class gemv extends idealised.util.Tests {
             mapPar(fun(t =>
               zip(xs, t._1) |>
                 split(n) |>
-                mapSeq(reduceSeq(fun(x => fun(a => mult(x) + a)), l(0.0f))) |>
+                mapSeq(reduceSeq(fun(a => fun(x => mult(x) + a)), l(0.0f))) |>
                 mapSeq(fun(x => (alpha * x) + (t._2 * beta)))
             )) |>
             join

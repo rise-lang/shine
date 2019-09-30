@@ -21,9 +21,9 @@ final case class Iterate(n: Nat,
   override val t: ExpType = {
     val l = f.t.x
     (n: Nat) ->: (m: Nat) ->: (k: Nat) ->: (dt: DataType) ->:
-      (f :: t"($l : nat) -> exp[${l * n}.$dt] -> exp[$l.$dt]") ->:
-        (array :: exp"[${m * n.pow(k)}.$dt]") ->:
-          exp"[$m.$dt]"
+      (f :: t"($l : nat) -> exp[${l * n}.$dt, $read] -> exp[$l.$dt, $read]") ->:
+        (array :: exp"[${m * n.pow(k)}.$dt, $read]") ->:
+          exp"[$m.$dt, $read]"
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
@@ -47,10 +47,10 @@ final case class Iterate(n: Nat,
   override def xmlPrinter: Elem = {
     val l = f.t.x
     <iterate n={ToString(n)} m={ToString(m)} k={ToString(k)} dt={ToString(dt)}>
-      <f type={ToString(l ->: ExpType(ArrayType(l, dt)) ->: ExpType(ArrayType(l /^ n, dt)))}>
+      <f type={ToString(l ->: ExpType(ArrayType(l, dt), read) ->: ExpType(ArrayType(l /^ n, dt), read))}>
         {Phrases.xmlPrinter(f)}
       </f>
-      <input type={ToString(ExpType(ArrayType(m, dt)))}>
+      <input type={ToString(ExpType(ArrayType(m, dt), read))}>
         {Phrases.xmlPrinter(array)}
       </input>
     </iterate>
@@ -63,16 +63,11 @@ final case class Iterate(n: Nat,
                                   (implicit context: TranslationContext): Phrase[CommType] = {
     import idealised.DPIA.Compilation.TranslationToImperative._
 
-    con(array)(λ(exp"[${m * n.pow(k)}.$dt]")(x =>
+    con(array)(λ(exp"[${m * n.pow(k)}.$dt, $read]")(x =>
       IterateIAcc(n, m, k, dt, A,
-        _Λ_[NatKind](l => λ(acc"[$l.$dt]")(o => λ(exp"[${l * n}.$dt]")(x => acc(f(l)(x))(o)))),
+        _Λ_[NatKind](l => λ(acc"[$l.$dt]")(o => λ(exp"[${l * n}.$dt, $read]")(x => acc(f(l)(x))(o)))),
         x) ))
   }
-
-  // TODO
-  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommType] =
-    ???
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])
                                       (implicit context: TranslationContext): Phrase[CommType] = {

@@ -17,7 +17,7 @@ class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
 
     val kernel = gen.OpenCLKernel(f)
 
-    val kernelF = kernel.as[ScalaFunction`(`Int`,`Array[Int]`)=>`Array[Int]].withSizes(1, 1)
+    val kernelF = kernel.as[ScalaFunction`(`Int`,`Array[Int]`)=>`Array[Int]].withSizes(LocalSize(1), GlobalSize(1))
     val xs = Array.fill(8)(0)
 
     val (result, time) = kernelF(8`,`xs)
@@ -34,7 +34,7 @@ class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
 
     val kernel = gen.OpenCLKernel(f)
 
-    val kernelF = kernel.as[ScalaFunction`(`Array[Int]`)=>`Array[Int]].withSizes(1, 1)
+    val kernelF = kernel.as[ScalaFunction`(`Array[Int]`)=>`Array[Int]].withSizes(LocalSize(1), GlobalSize(1))
     val xs = Array.fill(n)(0)
 
     val (result, time) = kernelF(xs`;`)
@@ -54,7 +54,7 @@ class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
     val kernelF = kernel.as[ScalaFunction`(`Array[Int]`,`Int`)=>`Array[Int]]
     val xs = Array.fill(n)(0)
 
-    val (result, _) = kernelF(1, 1)(xs`,`n)
+    val (result, _) = kernelF(LocalSize(1), GlobalSize(1))(xs`,`n)
 
     val gold = Array.fill(n)(1)
     assertResult(gold)(result)
@@ -68,7 +68,7 @@ class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
 
     val kernel = gen.OpenCLKernel(f)
 
-    val kernelF = kernel.as[ScalaFunction`(`Int`,`Int`,`Array[Array[Int]]`)=>`Array[Int]].withSizes(1, 1)
+    val kernelF = kernel.as[ScalaFunction`(`Int`,`Int`,`Array[Array[Int]]`)=>`Array[Int]].withSizes(LocalSize(1), GlobalSize(1))
     val xs = Array.fill(m)(Array.fill(n)(0))
 
     val (result, time) =  kernelF(m`,`n`,`xs)
@@ -89,7 +89,7 @@ class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
     val kernelF = kernel.as[ScalaFunction`(`Int`,`Array[Int]`,`Int`)=>`Array[Int]]
 
     val xs = Array.fill(n)(2)
-    val (result, _) =  kernelF(1,1)(n`,`xs`,`s)
+    val (result, _) =  kernelF(LocalSize(1), GlobalSize(1))(n`,`xs`,`s)
 
     val gold = xs.map(x => x + 1)
     assertResult(gold)(result)
@@ -102,7 +102,7 @@ class ExecuteOpenCL extends idealised.util.TestsWithExecutor {
 
     val kernel = gen.OpenCLKernel(f)
 
-    val kernelF = kernel.as[ScalaFunction`(`Array[Int]`)=>`Array[Int]].withSizes(1, 1)
+    val kernelF = kernel.as[ScalaFunction`(`Array[Int]`)=>`Array[Int]].withSizes(LocalSize(1), GlobalSize(1))
     val xs = Array.fill(n)(0)
 
     val (result, time) =  kernelF(xs`;`)

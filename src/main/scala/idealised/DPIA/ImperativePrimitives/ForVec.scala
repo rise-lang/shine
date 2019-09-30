@@ -19,7 +19,7 @@ final case class ForVec(n: Nat,
   override val t: CommType =
     (n: Nat) ->: (dt: ScalarType) ->:
       (out :: acc"[${VectorType(n, dt)}]") ->:
-        (body :: t"exp[idx($n)] -> acc[$dt] -> comm") ->:
+        (body :: t"exp[idx($n), $read] -> acc[$dt] -> comm") ->:
           comm
 
   override def eval(s: Store): Store = {
@@ -45,7 +45,7 @@ final case class ForVec(n: Nat,
       <output type={ToString(AccType(VectorType(n, dt)))}>
         {Phrases.xmlPrinter(out)}
       </output>
-      <body type={ToString(ExpType(IndexType(n)) ->: AccType(dt) ->: CommType())}>
+      <body type={ToString(ExpType(IndexType(n), read) ->: AccType(dt) ->: CommType())}>
         {Phrases.xmlPrinter(body)}
       </body>
     </forVec>

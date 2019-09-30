@@ -16,7 +16,7 @@ final case class Cycle(n: Nat,
   extends ExpPrimitive
 {
   override val t: ExpType =
-    (n: Nat) ->: (m: Nat) ->: (dt: DataType) ->: (input :: exp"[$m.$dt]") ->: exp"[$n.$dt]"
+    (n: Nat) ->: (m: Nat) ->: (dt: DataType) ->: (input :: exp"[$m.$dt, $read]") ->: exp"[$n.$dt, $read]"
 
   override def eval(s: Store): Data = {
     OperationalSemantics.eval(s, input) match {
@@ -34,15 +34,10 @@ final case class Cycle(n: Nat,
                                   (implicit context: TranslationContext): Phrase[CommType] =
     ???
 
-
-  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommType] =
-    ???
-
   override def continuationTranslation(C: Phrase[->:[ExpType, CommType]])
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
-    con(input)(fun(exp"[$m.$dt")(x => C(Cycle(n, m, dt, x))))
+    con(input)(fun(exp"[$m.$dt, $read]")(x => C(Cycle(n, m, dt, x))))
   }
 
   override def xmlPrinter: xml.Elem =

@@ -1,0 +1,425 @@
+% -*- eval: (visual-line-mode) -*-
+
+DPIA is a dialect of \citeapos{Reynolds97} \emph{Idealised Algol}, extended with interference control via a substructural type system \cite{OHearnPTT99}. We saw some examples of \DPIA in the previous section. We now highlight the major features of \DPIA, and then give the formal presentation of its types (\autoref{sec:types}), typing (\autoref{sec:typing-rules}), and data parallel programming primitives (\autoref{sec:dpia-prims}).
+
+Idealised Algol is built around Reynolds' observation that we can use typed $\lambda$-calculus as a powerful macro language for imperative programming. The base types of the system are what would normally be the syntactic categories of a first order imperative language: $\tycomm$ is the type of commands, or statements; $\tyexp$ is the type of expressions, or r-values; and $\tyacc$ is the type of acceptors or l-values (entities that can be assigned to). The syntactic constructs of the language are expressed as constants in the language. For imperative programming, these include: $\mathsf{skip} : \tycomm$ for doing nothing; $(;) : \tycomm \times \tycomm \to \tycomm$ for sequencing; and $(:=) : \tyacc \times \tyexp \to \tycomm$ for assignment. Declaration of new variables has a higher order type, $\prim{new} : (\tyacc \times \tyexp \to \tycomm) \to \tycomm$: we supply a command that requires an additional piece of storage to work with, and $\prim{new}$ allocates the variable, runs the command, and deallocates, following a block structured stack discipline.
+
+% The typing of $\mathsf{new}$ indicates a useful programming pattern in Idealised Algol. We can think of terms with types of the form $Y \to (X \to \tycomm) \to \tycomm$ as implementing ``objects'' with interfaces $X$, using existing objects with interface $Y$. A canonical example is the counter object:
+% \begin{displaymath}
+%   \begin{array}{l}
+%     \mathsf{counter} : \tyacc \to (\tycomm \to \tycomm) \to \tycomm \\
+%     \mathsf{counter}~o~\mathit{body} = \prim{new}~(\lambda \langle v_{wr},v_{rd} \rangle.~\mathit{body}~(v_{wr} := v_{rd} + 1); o := v_{rd})
+%   \end{array}
+% \end{displaymath}
+% Given a client, $\mathit{body}$, and a place to write the final count to, $\mathit{o}$, $\mathsf{counter}$ allocates a new variable using $\mathsf{new}$ and hands $\mathit{body}$ the restricted capability to only affect this variable by incrementing it. Once $\mathit{body}$ has finished, the final value of the counter is written to $o$.
+
+% This implementation of $\mathsf{counter}$ uses $\lambda$-abstraction to hide its internal state from $\mathit{body}$, preventing any programming errors that would occur if $\mathit{body}$ were able to interfere with $\mathsf{counter}$'s internal state. However, in original Idealised Algol, $\mathsf{counter}$ can only encapsulate what it creates. It is possible for both $\mathsf{counter}$ and $\mathit{body}$ to write to $o$, potentially producing confusing results. \citeapos{Reynolds78} \emph{Syntactic Control of Interference} proposed a discipline that prevents such interference from taking place. Under interference control, $\mathit{body}$ and $\mathit{o}$ may only share identifiers that are used \emph{passively} (i.e., read only). In use, interference control acts like Rust's \emph{borrow checker} \cite{klabnik18rust}. In a term of the form $\mathsf{counter}~o~(\lambda \mathit{inc}.~P); Q$, the variable $o$ may not be used in $P$, except through $\mathit{inc}$. We may say that $\mathit{inc}$, the interface to the counter, has borrowed the resources owned by $o$. In the continuation command $Q$, this borrow ends and $o$'s resources may be used directly again.
+
+% We use this \emph{safe resource reinterpretation} pattern multiple times in \DPIA to provide abstracted access to low level parallelisation capabilities. At the lowest level, we have the $\prim{parfor}$ primitive:
+% \begin{displaymath}
+%   \prim{parfor}:(n : \natkind) \to (\dt : \datatype) \to \tyacc[n.\dt] \to (\tyexp[\mathsf{idx}[n]] \to \tyacc[\dt] \pureto \tycomm) \to \tycomm
+% \end{displaymath}
+% The type of $\prim{parfor}$ is more elaborate than before to allow for datatype and size polymorphism, but the essence is this: the latter two of $\prim{parfor}$'s arguments are an $\tyacc$eptor for writing results to, and a $\tycomm$and for implementing the body of the loop. The same interference control discipline as above ensures that the body of the loop cannot write to the array chosen for output, except through the $\tyacc$eptor it is give, eliminating some potential data races. The $\mathrm{p}$ subscript on the type of the body indicates that this $\tycomm$and must be passive, meaning that it cannot write to any state which it is not explicitly handed. Thus, it is possible to safely implement $\prim{parfor}$ as a parallel for loop. We use this same pattern to safely implement our intermediate level data parallel functions in \autoref{sec:translation-ii} and our vectorisation and double buffering extensions in \autoref{sec:extensions}.
+
+\subsection{The Types of \DPIA}
+\label{sec:types}
+
+The type system of \DPIA refines the $\tyexp, \tyacc, \tycomm$ \emph{phrase types} described above by parameterising $\tyexp$ressions and $\tyacc$eptors by \emph{data types}, which classify data (integers, floats, arrays, \emph{etc.}).
+To facilitate interference control, we identify a subset of phrase types which are \emph{passive} (\autoref{sec:passive-types}), i.e.~essentially read-only, and so are safe to share across parallel threads. (We elaborate on what ``essentially read-only'' means in \autoref{sec:passive-types} and \autoref{sec:typing-rules}.)
+
+\subsubsection{Kinding rules}
+\label{sec:kinding-rules}
+
+\begin{figure}[t]
+  \small
+  \begin{minipage}{0.3\linewidth}
+    \begin{mathpar}
+      \kappa ::= \datatype \mid \phrasetype \mid \natkind \mid \addrkind
+    \end{mathpar}
+    \subcaption{Kinds}\label{fig:kinds}
+  \end{minipage}%
+  \begin{minipage}{0.3\linewidth}
+    \begin{mathpar}
+      \inferrule*
+      {x : \kappa \in \Delta}
+      {\Delta \vdash x : \kappa}
+    \end{mathpar}
+    \subcaption{Kinding Structural Rules}\label{fig:structural-kinding}
+  \end{minipage}
+  \begin{minipage}{0.3\linewidth}
+    \begin{mathpar}
+       \inferrule
+       {\models \forall \sigma : \mathit{dom}(\Delta) \to \mathbb{N}.\sigma(M) = \sigma(N)}
+       {\Delta \vdash M \equiv N : \natkind}
+    \end{mathpar}
+    \subcaption{Type Equality}\label{fig:equality-kinding}
+  \end{minipage}
+
+  \medskip
+
+  \begin{minipage}{1.0\linewidth}
+    \begin{mathpar}
+      \inferrule*
+      { }
+      {\Delta \vdash \underline{\ell} : \natkind}
+
+      \inferrule*
+      {\Delta \vdash M : \natkind \\ \Delta \vdash N : \natkind}
+      {\Delta \vdash M + N : \natkind}
+
+      \inferrule*
+      {\Delta \vdash M : \natkind \\ \Delta \vdash N : \natkind}
+      {\Delta \vdash M * N : \natkind}
+    \end{mathpar}
+    \subcaption{Natural numbers}\label{fig:natural-number-kinding}
+  \end{minipage}
+
+  \medskip
+    
+  \begin{minipage}{1.0\linewidth}
+      \begin{mathpar}
+      \inferrule*
+      {\alpha \in \{\mathsf{global, local, private (, constant)\}}}
+      {\Delta \vdash \alpha : \addrkind}
+
+      \inferrule*
+      {\Delta \vdash \alpha_1 : \addrkind \\\\ \Delta \vdash \alpha_2 : \addrkind}
+      {\Delta \vdash \alpha_1 \times \alpha_2 : \addrkind}
+      \end{mathpar}
+      \subcaption{Address Spaces}\label{fig:address-space-kinding}
+  \end{minipage}
+
+  \medskip
+
+  \begin{minipage}{1.0\linewidth}
+    \begin{mathpar}
+      \inferrule*
+      { }
+      {\Delta \vdash \mathsf{num} : \datatype}
+
+      \inferrule*
+      {\Delta \vdash N : \natkind}
+      {\Delta \vdash \tyidx[N] : \datatype}
+
+      \inferrule*
+      {\Delta \vdash N : \natkind \\\\ \Delta \vdash \delta : \datatype}
+      {\Delta \vdash N.\delta : \datatype}
+
+      \inferrule*
+      {\Delta \vdash \delta_1 : \datatype \\\\ \Delta \vdash \delta_2 : \datatype}
+      {\Delta \vdash \delta_1 \times \delta_2 : \datatype}
+    \end{mathpar}
+    \subcaption{Data Types}\label{fig:data-type-kinding}
+  \end{minipage}
+
+  \medskip
+
+  \begin{minipage}{1.0\linewidth}
+    \begin{mathpar}
+      \inferrule*
+      {\Delta \vdash \delta : \datatype}
+      {\Delta \vdash \tyexp[\delta] : \phrasetype}
+
+      \inferrule*
+      {\Delta \vdash \delta : \datatype}
+      {\Delta \vdash \typush[\delta] : \phrasetype}
+
+      \inferrule*
+      {\Delta \vdash \delta : \datatype \\\\ \Delta \vdash \alpha : \addrkind}
+      {\Delta \vdash \tymem[\delta, \alpha] : \phrasetype}
+
+      \inferrule*
+      {\Delta \vdash \delta : \datatype \\\\ \Delta \vdash \alpha : \addrkind}
+      {\Delta \vdash \tyacc[\delta, \alpha] : \phrasetype}
+
+      \inferrule*
+      { }
+      {\Delta \vdash \tycomm : \phrasetype}
+
+      \inferrule*
+      {\Delta \vdash \theta_1 : \phrasetype \\
+        \Delta \vdash \theta_2 : \phrasetype}
+      {\Delta \vdash \theta_1 \times \theta_2 : \phrasetype}
+
+      \inferrule*
+      {\Delta \vdash \theta_1 : \phrasetype \\\\
+        \Delta \vdash \theta_2 : \phrasetype}
+      {\Delta \vdash \theta_1 \to \theta_2 : \phrasetype}
+
+      \inferrule*
+      {\Delta \vdash \theta_1 : \phrasetype \\\\
+        \Delta \vdash \theta_2 : \phrasetype}
+      {\Delta \vdash \theta_1 \pureto \theta_2 : \phrasetype}
+
+      \inferrule*
+      {\Delta, x : \kappa \vdash \theta : \phrasetype \\ \kappa \in \{\natkind, \addrkind, \datatype\}}
+      {\Delta \vdash (x\mathord:\kappa) \to \theta : \phrasetype}
+    \end{mathpar}
+    \subcaption{Phrase Types}\label{fig:phrase-type-kinding}
+  \end{minipage}
+
+  \begin{minipage}{1.0\linewidth}
+    \begin{mathpar}
+      \inferrule*
+      {\Delta \vdash \delta : \datatype}
+      {\Delta \vdash \tyexp[\delta] : \passivetype}
+
+      \inferrule*
+      {\Delta \vdash \phi_1 : \passivetype \\
+        \Delta \vdash \phi_2 : \passivetype}
+      {\Delta \vdash \phi_1 \times \phi_2 : \passivetype}
+
+      \inferrule*
+      {\Delta \vdash \theta : \phrasetype \\
+        \Delta \vdash \phi : \passivetype}
+      {\Delta \vdash \theta \to \phi : \passivetype}
+
+      \inferrule*
+      {\Delta \vdash \theta_1 : \phrasetype \\
+        \Delta \vdash \theta_2 : \phrasetype}
+      {\Delta \vdash \theta_1 \pureto \theta_2 : \passivetype}
+
+      \inferrule*
+      {\Delta, x : \kappa \vdash \phi : \passivetype \\ \kappa \in \{\natkind,\datatype\}}
+      {\Delta \vdash (x\mathord:\kappa) \to \phi : \passivetype}
+    \end{mathpar}
+    \subcaption{Passive Types}
+    \label{fig:passive-types}
+  \end{minipage}
+
+  \caption{Well-formed Types}
+  \label{fig:types}
+\end{figure}
+
+We extend SCIR with both data type and size polymorphism, so we need a kind system. \autoref{fig:types} presents the kinding rules for \DPIA types. The kinds $\kappa$ of \DPIA include the major classifications into data types ($\datatype$) and phrase types ($\phrasetype$), along with the kind of type-level natural numbers ($\natkind$). Types may contain variables, so we use a kinding judgement $\Delta \vdash \tau : \kappa$, which states that type $\tau$ has kind $\kappa$ in kinding context $\Delta$. \autoref{fig:structural-kinding} gives the variable rule that permits the use of type variables in well-kinded types. \autoref{fig:natural-number-kinding} presents the rules for type-level natural numbers: either numeric literals $\underline{\ell}$, addition $M + N$, or multiplication $M * N$ (where $M$ and $N$ range over terms of kind $\natkind$). We write $M N$ as syntactic sugar for $M * N$.
+
+The rules for data types are presented in \autoref{fig:data-type-kinding}. We use $\delta$ to range over data types. The base types are $\mathsf{num}$ for numbers; and a data type of array indexes $\tyidx[M]$, parameterised by the size of the array. There are two compound types of data. For any data type $\delta$ and natural number term $M$, $M.\delta$ is the data type of homogeneous arrays of $\delta$s of size $M$. We opt for a concise notation for array types as they are pervasive in data parallel programming. Heterogeneous compound data types (records) are built using the rule for $\delta_1 \times \delta_2$.
+
+The phrase types of \DPIA are given in \autoref{fig:phrase-type-kinding}. We use $\theta$ to range over phrase types. For each data type $\delta$, there are phrase types $\mathsf{exp}[\delta]$ for \emph{expression} phrases that produce data of type $\delta$, and $\mathsf{acc}[\delta]$ for \emph{acceptor} phrases that consume data of type $\delta$. The $\mathsf{comm}$ phrase type classifies \emph{command} phrases that may modify the store. Phrases that can be used in two different ways, $\theta_1$ or $\theta_2$, are classified using the phrase product type $\theta_1 \times \theta_2$. This type is distinct from the \emph{data} product type $\delta_1 \times \delta_2$: the data type represents a pair of data values; the phrase type represents an ``interface'' that offers two possible ``methods''.
+The final three phrase types are all variants of parameterised phrase types. The phrase types $\theta_1 \to \theta_2$ and $\theta_1 \pureto \theta_2$ classify phrase functions. The $\mathrm{p}$ subscript denotes passive functions. The phrase type $(x\mathord:\kappa) \to \theta$ classifies a phrase that is parameterised either by a data type or a natural number. We find it convenient to allow lowercase letters to range over both term variables and type variables.
+
+The types of \DPIA include arithmetic expressions, so we have a non trivial notion of equality between types, written $\Delta \vdash \tau_1 \equiv \tau_2 : \kappa$. The key type equality rule is given in \autoref{fig:equality-kinding}: two arithmetic expressions are equal if they are equal as natural numbers for all interpretations ($\sigma$) of their free variables. This equality is lifted to all other types by structural congruence.
+
+\subsubsection{Passive Types}
+\label{sec:passive-types}
+
+\autoref{fig:passive-types} identifies the subset of phrase types that classify passive phrases. The opposite of passive is \emph{active}. We use $\phi$ to range over passive phrase types. An expression phrase type $\mathsf{exp}[\delta]$ is always passive --- phrases of this type can, by definition, only read the store. A compound phrase type is always passive if its component phrase types are all passive. Furthermore, a passive function type $\theta_1 \pureto \theta_2$ is always passive, and a plain function type is passive whenever its return type is passive (irrespective of the argument type).
+%
+Passive types are essentially read-only. The one exception whereby a phrase of passive type may modify the store is a passive function with active argument and return types. Such a function can only modify the part of the store addressable through the active phrase it is supplied with as an argument.
+
+\subsection{Typing Rules for \DPIA}
+\label{sec:typing-rules}
+
+The typing judgement of \DPIA follows the SCIR system of \citet{OHearnPTT99} in distinguishing between passive and active uses of identifiers. Our judgement also has a kinding context for size and data type polymorphism. The judgement form has the following structure:
+\begin{displaymath}
+  \typd{\Pi}{\Gamma}{P}{\theta}
+\end{displaymath}
+where $\Delta$ is the kinding context, $\Pi$ is a context of passively used identifiers, $\Gamma$ is a context of actively used identifiers, $P$ is a program phrase, and $\theta$ is a phrase type. All the types in $\Pi$ and $\Gamma$ are phrase types well-kinded by $\Delta$. The phrase type $\theta$ must also be well-kinded by $\Delta$. The order of entries does not matter. The contexts $\Delta$ and $\Pi$ allow contraction and weakening; context $\Gamma$ does not.
+
+The typing rules of \DPIA are given in \autoref{fig:typing-rules}. These rules define how variable phrases are formed, how parameterised and compound phrases are introduced and eliminated, and how passive and active types are managed. Any particular application of \DPIA is specified by giving a collection of primitive phrases \textsc{Primitives}, each of which has a closed phrase type. We describe a collection for data parallel programming in \autoref{sec:dpia-prims}, and extend it in \autoref{sec:extensions}.
+
+\autoref{fig:structural-rules} presents the rule for forming variable phrases, implicit conversion between equal types, and the use of primitives. At point of use, all variables are considered to be used actively. If the final phrase type is passive, then an active use may be converted to a passive one by the \TirName{Passify} rule. Primitives may be used in any context. \autoref{fig:intro-elim-rules} presents the rules for parameterised and compound phrases. These are all standard typed $\lambda$-calculus style rules, except the use of separate contexts for a function and its arguments in the \TirName{App} rule. This ensures that every function and its argument use non-interfering active resources, maintaining the invariant that distinct identifiers refer to non-interfering phrases. Note that we do not require separate contexts for the two parts of a compound phrase in the \TirName{Pair} rule. Compound phrases offer two ways of interacting with the \emph{same} underlying resource (as in the with ($\with$) rule from Linear Logic).
+
+\autoref{fig:active-passive-rules} describes how passive and active uses of variables are managed. The \TirName{Activate} rule allows any variable that has been used passively to be treated as if it were used actively. The \TirName{Passify} rule allows active uses to be treated as passive, as long as the final phrase type is passive. The \TirName{Promote} rule turns functions into passive functions, as long as they do not contain any free variables used actively. The \TirName{Derelict} rule indicates that a passive function can always be seen as a normal function, if required.
+
+\begin{figure*}[t]
+  \small
+  \begin{minipage}{1.0\linewidth}
+    \begin{mathpar}
+      \inferrule* [right=Var]
+      {x : \theta \in \Gamma}
+      {\typd{\Pi}{\Gamma}{x}{\theta}}
+
+      \inferrule* [right=Conv]
+      {\typd{\Pi}{\Gamma}{P}{\theta_1} \\\\
+        \Delta \vdash \theta_1 \equiv \theta_2 : \phrasetype}
+      {\typd{\Pi}{\Gamma}{P}{\theta_2}}
+
+      \inferrule* [right=Prim]
+      {\mathsf{prim} : \theta \in \textsc{Primitives}}
+      {\typd{\Pi}{\Gamma}{\mathsf{prim}}{\theta}}
+    \end{mathpar}
+    \subcaption{Structural Rules}\label{fig:structural-rules}
+  \end{minipage}
+
+  \medskip
+
+  \begin{minipage}{1.0\linewidth}
+    \begin{mathpar}
+      \inferrule* [right=Lam]
+      {\typd{\Pi}{\Gamma, x : \theta_1}{P}{\theta_2}}
+      {\typd{\Pi}{\Gamma}{\lambda x.P}{\theta_1 \to \theta_2}}
+
+      \inferrule* [right=App]
+      {\typd{\Pi}{\Gamma_1}{P}{\theta_1 \to \theta_2} \\
+        \typd{\Pi}{\Gamma_2}{Q}{\theta_1}}
+      {\typd{\Pi}{\Gamma_1, \Gamma_2}{P~Q}{\theta_2}}\medskip
+    \end{mathpar}
+    \begin{mathpar}
+      \inferrule* [right=TLam]
+      {\typ{\Delta, x : \kappa}{\Pi}{\Gamma}{P}{\theta} \\
+        x \not\in \mathit{ftv}(\Pi, \Gamma)}
+      {\typd{\Pi}{\Gamma}{\Lambda x. P}{(x \mathord: \kappa) \to \theta}}
+
+      \inferrule* [right=TApp]
+      {\typd{\Pi}{\Gamma}{P}{(x \mathord:\kappa) \to \theta} \\
+        \Delta \vdash \tau : \kappa}
+      {\typd{\Pi}{\Gamma}{P~\tau}{\theta[\tau/x]}}\medskip
+    \end{mathpar}
+    \begin{mathpar}
+      \inferrule* [right=Pair]
+      {\typd{\Pi}{\Gamma}{P}{\theta_1} \\
+        \typd{\Pi}{\Gamma}{Q}{\theta_2}}
+      {\typd{\Pi}{\Gamma}{\langle P, Q \rangle}{\theta_1 \times \theta_2}}
+
+      \inferrule* [right=Proj]
+      {\typd{\Pi}{\Gamma}{P}{\theta_1 \times \theta_2}}
+      {\typd{\Pi}{\Gamma}{P.i}{\theta_i}}
+    \end{mathpar}
+    \subcaption{Introduction and Elimination Rules}\label{fig:intro-elim-rules}
+  \end{minipage}
+
+  \medskip
+
+  \begin{minipage}{1.0\linewidth}
+    \begin{mathpar}
+        \inferrule*[right=Read]
+        %{\Delta \vdash \alpha : \addrkind \\
+        % \Delta \vdash \delta : \datatype \\
+        % Not needed because the kinding rules imply the kinds of \alpha and \delta
+        {\typd{\Pi}{\Gamma}{P}{\tymem[\delta, \alpha]}}
+        {\typd{\Pi}{\Gamma}{P}{\tyexp[\delta]}}
+
+        \inferrule*[right=Push Literal]
+        {\typd{\Pi}{\Gamma}{P}{\tyexp[\mathsf{num}]}}
+        {\typd{\Pi}{\Gamma}{P}{\typush[\mathsf{num}]}}
+    \end{mathpar}
+  \end{minipage}
+
+  \medskip
+
+  \begin{minipage}{1.0\linewidth}
+    \begin{mathpar}
+      \inferrule* [right=Activate]
+      {\typd{\Pi, x : \theta}{\Gamma}{P}{\theta'}}
+      {\typd{\Pi}{\Gamma, x : \theta}{P}{\theta'}}
+
+      \inferrule* [right=Passify]
+      {\typd{\Pi}{\Gamma, x : \theta}{P}{\phi}}
+      {\typd{\Pi, x : \theta}{\Gamma}{P}{\phi}}\medskip
+    \end{mathpar}
+    \begin{mathpar}
+      \inferrule* [right=Promote]
+      {\typd{\Pi}{\cdot}{P}{\theta_1 \to \theta_2}}
+      {\typd{\Pi}{\cdot}{P}{\theta_1 \pureto \theta_2}}
+
+      \inferrule* [right=Derelict]
+      {\typd{\Pi}{\Gamma}{P}{\theta_1 \pureto \theta_2}}
+      {\typd{\Pi}{\Gamma}{P}{\theta_1 \to \theta_2}}
+    \end{mathpar}
+    \subcaption{Active and Passive Phrase Rules}\label{fig:active-passive-rules}
+  \end{minipage}
+
+  \caption{Typing Rules: Indexed Affine $\lambda$-Calculus with Passivity \cite{OHearnPTT99}}
+  \label{fig:typing-rules}
+\end{figure*}
+
+\paragraph{\DPIA's functional sub-language} By inspection of the rules, we can see that if we restrict to phrase types constructed from $\tyexp[\delta]$, functions, polymorphic functions, and tuples, then the constraints on multiple uses of variables in \DPIA cease to apply. Therefore, \DPIA has a sub-language that has the same type system as a normal (non-substructural) typed $\lambda$-calculus with base types for numbers, arrays and tuples, and a limited form of polymorphism. When we introduce the functional primitives for \DPIA in the next section, we will enrich this $\lambda$-calculus with arithmetic, array manipulators, and higher-order array combinators. It is this purely functional sub-language of \DPIA that allows us to embed functional data parallel programs in a semantics preserving way.
+
+\subsection{Data Parallel Programming Primitives}
+\label{sec:dpia-prims}
+
+% TODO: should we move OpenMP primitives elsewhere?
+
+\begin{figure}[H]
+  \footnotesize
+  \begin{minipage}{1.0\linewidth} \begin{tabular*}{\linewidth}{>{$}l<{$}@{\hspace{0.4em}}>{$}c<{$}>{$}l<{$}}
+      \underline{\ell}&:&\tyexp[\mathsf{num}] \text{ for all }\mathsf{num} \text{ expressions type conversion to } \typush \text{ possible.}\\
+        \prim{negate}&:&\tyexp[\mathsf{num}] \to \tyexp[\mathsf{num}] \\
+        (+,*,/,-)   &:&\tyexp[\mathsf{num}] \times \tyexp[\mathsf{num}] \to \tyexp[\mathsf{num}]\\
+
+        \prim{toMem}&:&(a : \addrkind) \to (\dt : \datatype) \to \typush[\dt] \to \tymem[\dt, a]\\
+        &&\text{(remember the address space? currently only usefull example checking global mem in the end.}\\
+        &&\text{What about scatter for private mem?)}\\
+        \prim{mapSeq}&:&(n : \natkind) \to (\dtone~\dttwo : \datatype) \to (\tyexp[\dtone] \to \typush[\dttwo]) \to \tyexp[n.\dtone] \to \typush[n.\dttwo] \\
+        \prim{mapPar}&:&(n : \natkind) \to (\dtone~\dttwo : \datatype) \to (\tyexp[\dtone] \to \typush[\dttwo]) \to \tyexp[n.\dtone] \to \typush[n.\dttwo] \\
+
+        \prim{reduceSeq}&:&(n : \natkind) \to (a : \addrkind) \to (\dtone~\dttwo : \datatype) \to
+        (\tyexp[\dtone] \to \tyexp[\dttwo] \to \typush[\dttwo]) \to \tymem[\dttwo, a] \to \tyexp[n.\dtone] \to \tyexp[\dttwo]\\
+        &&\text{(using mem allows passing an expression and inferring the address space.)}\\
+        &&\text{(how would I be able to use a scatter for e.g. the last assignment?)}\bigskip\\
+
+        \prim{split}&:&(n~m : \natkind) \to (\dt : \datatype) \to \tyexp[nm.\dt] \to \tyexp[m.n.\dt] \\
+        \prim{split}&:&(n~m : \natkind) \to (a : \addrkind) \to (\dt : \datatype) \to \tymem[nm.\dt, a] \to \tymem[m.n.\dt, a]\\
+        && \text{ (implicit type conversion problematic? we want to remember that something is in memory)}\\
+        \prim{join}&:&(n~m : \natkind) \to (\dt : \datatype) \to \tyexp[n.m.\dt] \to \tyexp[nm.\dt] \\
+        \prim{join}&:&(n~m : \natkind) \to (a : \addrkind) \to (\dt : \datatype) \to \tymem[n.m.\dt, a] \to \tymem[nm.\dt, a] \text{ (like split)}\bigskip\\
+
+        \prim{gather}&:&(n : \natkind) \to (\dt : \datatype) \to (\tyexp[\tyidx[n]] \to \tyexp[\tyidx[n]]) \to \tyexp[n.\dt] \to \tyexp[n.\dt]\\
+        \prim{scatter}&:&(n : \natkind) \to (a : \addrkind) \to (\dt : \datatype) \to (\tyexp[\tyidx[n]] \to \tyexp[\tyidx[n]]) \to \tymem[n.\dt, a] \to \tymem[n.\dt, a]\\
+        && \text{this is why we need }\tymem\bigskip\\
+
+        \prim{drop}&:&(n~m : \natkind) \to (\dt : \datatype) \to \tyexp[(n + m).\dt] \to \tyexp[m.\dt] \\
+        \prim{drop}&:&(n~m : \natkind) \to (a : \addrkind) \to (\dt : \datatype) \to \tymem[(n + m).\dt, a] \to \tymem[m.\dt, a] \\
+        \prim{take}&:&(n~m : \natkind) \to (\dt : \datatype) \to \tyexp[(n + m).\dt] \to \tyexp[n.\dt] \\
+        \prim{take}&:&(n~m : \natkind) \to (a : \addrkind) \to (\dt : \datatype) \to \tymem[(n + m).\dt, a] \to \tymem[n.\dt, a] \\
+        && \text{(debatable. maybe drop and take should always force a new write?)}\\
+        \prim{pad}&:&(n~l~r : \natkind) \to (\dt : \datatype) \to \tyexp[\dt] \to \tyexp[n.\dt] \to \tyexp[(l + n + r).\dt] \\
+        \prim{slide}&:&(n~sz~sp : \natkind) \to (\dt : \datatype) \to \tyexp[(sp \times n + sz - sp).\dt] \to \tyexp[n.sz.\dt] \bigskip\\
+
+        \prim{zip}&:&(n : \natkind) \to (\dtone~\dttwo : \datatype) \to \tyexp[n.\dtone] \to \tyexp[n.\dttwo] \to \tyexp[n.(\dtone \times \dttwo)] \\
+
+        \prim{pair}&:&(\dtone~\dttwo: \datatype) \to \tyexp[\dtone] \to \tyexp[\dttwo] \to \tyexp[\dtone \times \dttwo]\\
+        \prim{pair}&:&(a~b : \addrkind) \to (\dtone~\dttwo: \datatype) \to \tymem[\dtone, a] \to \tymem[\dttwo, b] \to \tymem[\dtone \times \dttwo, a \times b]\\
+        &&\text{does it make sense to allow a pair where the elements are in different address spaces?}\\
+        &&\text{e.g. to pass the pair to a lambda?}\\
+        \prim{fst}&:&(\dtone~\dttwo : \datatype) \to \tyexp[\dtone \times \dttwo] \to \tyexp[\dtone] \\
+        \prim{fst}&:&(\dtone~\dttwo : \datatype) \to (a~b : \addrkind) \to \tymem[\dtone \times \dttwo, a \times b] \to \tymem[\dtone, a] \\
+        \prim{snd}&:&(\dtone~\dttwo : \datatype) \to \tyexp[\dtone \times \dttwo] \to \tyexp[\dttwo] \\
+        \prim{idx} &:&(n : \natkind) \to (\dt : \datatype) \to \tyexp[n.\dt] \to \tyexp[\tyidx[n]] \to \tyexp[\dt] \\ % TODO? order differs from implementation, and is inside imperative primitives
+    \end{tabular*}
+    \subcaption{Functional primitives}\label{fig:func-prim}
+  \end{minipage}
+
+  \vspace{1em}
+
+  \begin{minipage}{1.0\linewidth}
+  \begin{tabular*}{\linewidth}{>{$}l<{$}>{$}c<{$}>{$}l<{$}}
+        (\mathord;)&:&\tycomm \times \tycomm \to \tycomm \\
+        \prim{skip}&:&\tycomm \\
+        \prim{new}&:&(a : \addrkind) \to (\dt : \datatype) \to (\tyvar[\dt, a] \to \tycomm) \to \tycomm
+        \qquad (\text{where }\mathsf{var}[\dt, a] = \tyacc[\dt, a] \times \tymem[\dt, a] : \phrasetype) \\
+        (:=_a)&:&(a : \addrkind) \to \tyacc[\mathsf{num}, a] \times \tymem[\mathsf{num}, a] \to \tycomm \\
+        \prim{for}&:&(n : \natkind) \to (\tyexp[\tyidx[n]] \to \tycomm) \to \tycomm \\
+        \prim{parfor}&:&(n : \natkind) \to (a : \addrkind) \to (\dt : \datatype) \to \tyacc[n.\dt, a] \to (\tyexp[\tyidx[n]] \to \tyacc[\dt, a] \pureto \tycomm) \to \tycomm \bigskip\\
+
+        \prim{splitAcc}&:&(n~m : \natkind) \to (a : \addrkind) \to (\dt : \datatype) \to \tyacc[m.n.\dt, a] \to \tyacc[nm.\dt, a] \\
+        \prim{joinAcc}&:&(n~m : \natkind) \to (a : \addrkind) \to (\dt : \datatype) \to \tyacc[nm.\dt, a] \to \tyacc[n.m.\dt, a] \\
+        \prim{zipAcc_1} &:&(n : \natkind) \to (\dtone~\dttwo : \datatype) \to \tyacc[n.\dtone \times \dttwo] \to \tyacc[n.\dtone] \\
+        \prim{zipAcc_2} &:&(n : \natkind) \to (\dtone~\dttwo : \datatype) \to \tyacc[n.\dtone \times \dttwo] \to \tyacc[n.\dttwo] \\
+        \prim{pairAcc_1}&:&(a : \addrkind) \to (\dtone~\dttwo : \datatype) \to \tyacc[\dtone \times \dttwo, a] \to \tyacc[\dtone, a] \\
+        \prim{pairAcc_2}&:&(a : \addrkind) \to (\dtone~\dttwo : \datatype) \to \tyacc[\dtone \times \dttwo, a] \to \tyacc[\dttwo, a] \\
+        \prim{idxAcc} &:&(n : \natkind) \to (\dt : \datatype) \to \tyacc[n.\dt] \to \tyexp[\tyidx[n]] \to \tyacc[\dt] \\
+    \end{tabular*}
+    \subcaption{Imperative primitives}\label{fig:imp-prim}
+  \end{minipage}
+
+  \vspace{2em}
+
+  \begin{minipage}{1.0\linewidth}
+    \begin{tabular*}{\linewidth}{>{$}l<{$}@{\hspace{.25em}}>{$}c<{$}>{$}l<{$}}
+        \prim{mapSeqI}   &:& (n : \natkind) \to (\alpha : \addrkind) \to (\dtone~\dttwo : \datatype) \to
+                            (\tyexp[\dtone] \to \tyacc[\dttwo, \alpha] \to \tycomm) \to \tyexp[n.\dtone] \to \tyacc[n.\dttwo, \alpha] \to \tycomm \\
+        \prim{mapParI}   &:& (n : \natkind) \to (\alpha : \addrkind) \to (\dtone~\dttwo : \datatype) \to
+        (\tyexp[\dtone] \to \tyacc[\dttwo, \alpha] \pureto \tycomm) \to \tyexp[n.\dtone] \to \tyacc[n.\dttwo, \alpha] \to \tycomm \\
+        \prim{reduceSeqI}&:& (n: \natkind) \to (\alpha : \addrkind) \to (\dtone~\dttwo : \datatype) \to (\tyexp[\dtone] \to \tyexp[\dttwo] \to \tyacc[\dttwo, \alpha] \to \tycomm) \to \\
+        & & \qquad \to \tymem[\dttwo, \alpha] \to \tyexp[n.\dtone] \to (\typush[t] \to \tycomm) \to \tycomm \\
+    \end{tabular*}
+    \subcaption{Intermediate imperative macros}\label{fig:imp-intermediate}
+  \end{minipage}
+
+  \vspace{1em}
+
+  \caption{Data Parallel Programming Primitives, Functional and Imperative}
+  \label{fig:primitives}
+\end{figure}

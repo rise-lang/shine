@@ -1,6 +1,6 @@
 package lift.core
 
-import lift.arithmetic.RangeAdd
+import lift.arithmetic.{Cst, RangeAdd}
 import lift.core.types._
 import lift.core.semantics._
 
@@ -28,6 +28,12 @@ object DSL {
     def _2: Expr = primitives.snd(lhs)
   }
 
+  implicit class Indexing(e: Expr) {
+    import lift.core.primitives._
+
+    def `@`(i: Expr): Expr = idx(i)(e)
+  }
+
   implicit class TypeAnnotation(t: Type) {
     def ::(e: Expr): TypedExpr = TypedExpr(e, t)
     def `:`(e: Expr): TypedExpr = TypedExpr(e, t)
@@ -39,6 +45,8 @@ object DSL {
     def apply(e: Expr): Expr = liftFunExpr(f).value(e)
     def apply(n: Nat): Expr = liftDepFunExpr[NatKind](f).value(n)
     def apply(dt: DataType): Expr = liftDepFunExpr[DataKind](f).value(dt)
+    def apply(a: AddressSpace): Expr = liftDepFunExpr[AddressSpaceKind](f).value(a)
+
     def apply(n2n: NatToNat): Expr = liftDepFunExpr[NatToNatKind](f).value(n2n)
 
     def apply(e1: Expr, e2: Expr): Expr = {
@@ -76,15 +84,12 @@ object DSL {
 
   // function values
   object fun {
-    def apply(f: Identifier => Expr): Expr = {
+    def apply(t: Type)(f: Expr => Expr): Expr = {
       val x = Identifier(freshName("e"))
-      Lambda(x, f(x))
+      Lambda(x, f(TypedExpr(x, t)))
     }
 
-    def apply(dt: DataType)(f: TypedExpr => Expr): Expr = {
-      val x = Identifier(freshName("e"))
-      Lambda(x, f(TypedExpr(x, dt)))
-    }
+    def apply(f: Identifier => Expr): Expr = untyped(f)
 
     def apply(f: (Identifier, Identifier) => Expr): Expr = untyped(f)
 
@@ -175,7 +180,7 @@ object DSL {
     }
   }
 
-  // type level functions
+  // type level lambdas
   object n2dtFun {
     def apply(f: NatIdentifier => DataType): NatToDataLambda = {
       val x = NatIdentifier(freshName("n2dt"))
@@ -237,6 +242,13 @@ object DSL {
     }
   }
 
+  object aFunT {
+    def apply(f: AddressSpaceIdentifier => Type): Type = {
+      val x = AddressSpaceIdentifier(freshName("a"))
+      DepFunType[AddressSpaceKind, Type](x, f(x))
+    }
+  }
+
   // types with implicit type parameters
   def implN[A](f: NatIdentifier => A): A = {
     f(NatIdentifier(freshName("_n")))
@@ -254,40 +266,18 @@ object DSL {
     f(NatToDataIdentifier(freshName("_n2dt")))
   }
 
+  def implA[A](f: AddressSpaceIdentifier => A): A = {
+    f(AddressSpaceIdentifier(freshName("_w")))
+  }
+
   implicit def wrapInNatExpr(n: Nat): Literal = Literal(NatData(n))
-
-  def mapNatExpr(n: Expr, f: Nat => Nat): Literal = {
-    Literal(NatData(f(Internal.natFromNatExpr(n))))
-  }
-
-  private object Internal {
-    @scala.annotation.tailrec
-    def natFromNatExpr(e: Expr): Nat = {
-      e match {
-        case Literal(NatData(n)) => n
-
-        case _: Identifier      => ??? // NamedVar(i.name, StartFromRange(0))
-        case Apply(fun, arg)    => fun match {
-          case l: Lambda => natFromNatExpr(lifting.liftFunExpr(l).value(arg))
-          case p: Primitive       => p match {
-            case _: primitives.indexAsNat.type => natFromNatExpr(arg)
-            case _ => ???
-          }
-          case _ => ???
-        }
-        case DepApply(fun, arg) => natFromNatExpr(lifting.liftDepFunExpr(fun).value(arg))
-        case Literal(_)         => throw new Exception("This should never happen")
-        case TypedExpr(te, _)   => natFromNatExpr(te)
-        case pt => throw new Exception(s"Expected exp[nat] but found $pt.")
-      }
-    }
-  }
 
   def l(i: Int): Literal = Literal(IntData(i))
   def l(f: Float): Literal = Literal(FloatData(f))
   def l(d: Double): Literal = Literal(DoubleData(d))
-  def l(v: VectorData): Literal = Literal(v)
-  def l(a: ArrayData): Literal = Literal(a)
+  def lidx(i: Nat, n: Nat): Literal = Literal(IndexData(i, n))
+  def lvec(v: Seq[ScalarData]): Literal = Literal(VectorData(v))
+  def larr(a: Seq[Data]): Literal = Literal(ArrayData(a))
 
   implicit final class TypeConstructors(private val r: Type) extends AnyVal {
     @inline def ->:(t: Type): FunType[Type, Type] = FunType(t, r)
@@ -310,14 +300,19 @@ object DSL {
     @inline def `.`(dt: DataType): ArrayType = ArrayType(n, dt)
   }
 
+  implicit final class ArrayTypeConstructorsFromInt(private val n: Int) extends AnyVal {
+    @inline def `.`(m: Nat): ArrayTypeConstructorHelper = ArrayTypeConstructorHelper(Seq(Cst(n), m))
+    @inline def `.`(dt: DataType): ArrayType = ArrayType(Cst(n), dt)
+  }
+
   object foreignFun {
     def apply(name: String, t: Type): Expr = {
-      primitives.ForeignFunction(primitives.ForeignFunction.Decl(name, None), t)
+      ForeignFunction(ForeignFunction.Decl(name, None), t)
     }
 
     def apply(name: String, params: Seq[String], body: String, t: Type): Expr = {
-      primitives.ForeignFunction(primitives.ForeignFunction.Decl(name,
-        Some(primitives.ForeignFunction.Def(params, body))), t)
+      ForeignFunction(ForeignFunction.Decl(name,
+        Some(ForeignFunction.Def(params, body))), t)
     }
   }
 }

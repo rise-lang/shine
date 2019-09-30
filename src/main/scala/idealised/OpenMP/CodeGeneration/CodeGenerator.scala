@@ -5,7 +5,7 @@ import idealised.C.AST.{ArraySubscript, Assignment, Decl}
 import idealised.C.CodeGeneration.{CodeGenerator => CCodeGenerator}
 import idealised.C.CodeGeneration.CodeGenerator.CIntExpr
 import idealised.DPIA.DSL._
-import idealised.DPIA.FunctionalPrimitives.{AsScalar, AsVector, ForeignFunction, VectorFromScalar}
+import idealised.DPIA.FunctionalPrimitives.{AsScalar, AsVector, ForeignFunction, IdxVec, VectorFromScalar}
 import idealised.DPIA.ImperativePrimitives._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
@@ -217,8 +217,8 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       env.copy(identEnv = env.identEnv.map {
         case (Identifier(name, AccType(dt)), declRef) =>
           (Identifier(name, AccType(DataType.substitute(NamedVar(cI.name, range), `for` = i, in = dt))), declRef)
-        case (Identifier(name, ExpType(dt)), declRef) =>
-          (Identifier(name, ExpType(DataType.substitute(NamedVar(cI.name, range), `for` = i, in = dt))), declRef)
+        case (Identifier(name, ExpType(dt, w)), declRef) =>
+          (Identifier(name, ExpType(DataType.substitute(NamedVar(cI.name, range), `for` = i, in = dt), w)), declRef)
         case x => x
       }) |> (env =>
 

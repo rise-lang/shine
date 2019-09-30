@@ -6,13 +6,10 @@ package object types {
   type NatDepFunType[T <: Type] = DepFunType[NatKind, T]
   type NatToNatDepFunType[T <: Type] = DepFunType[NatToNatKind, T]
   type NatToDataDepFunType[T <: Type] = DepFunType[NatToDataKind, T]
-  type NatDepDataType = NatDepFunType[DataType]
 
   type ->[T1 <: Type, T2 <: Type] = FunType[T1, T2]
   type `(nat)->`[T <: Type] = NatDepFunType[T]
-  type `(nat)->dt` = NatDepDataType
   type `(dt)->`[T <: Type] = DataDepFunType[T]
   type `(nat->nat)->`[T <: Type] = NatToNatDepFunType[T]
   type `(nat->data)->`[T <: Type] = NatToDataDepFunType[T]
-
 }

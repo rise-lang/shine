@@ -32,8 +32,8 @@ object IterateIAcc {
           val osz = n.pow(k - i - 1) * m
           f.apply(osz)
             .apply(TakeAcc(osz, sz - osz, dt, v.wr))
-            .apply(Take(isz, sz - isz, dt, v.rd)) `;`
-            IfThenElse(ip < AsIndex(k, Natural(k - 1)), swap, done)
+            .apply(Take(isz, sz - isz, read, dt, v.rd)) `;`
+            IfThenElse(ip < AsIndex(k, Natural(k - 2)), swap, done)
         })
       })
   }

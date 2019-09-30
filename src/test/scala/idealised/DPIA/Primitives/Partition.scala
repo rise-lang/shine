@@ -3,7 +3,7 @@ package idealised.DPIA.Primitives
 import benchmarks.core.SimpleRunOpenCLProgram
 import idealised.DPIA
 import idealised.DPIA.Nat
-import idealised.OpenCL.KernelWithSizes
+import idealised.OpenCL.{GlobalSize, KernelWithSizes, LocalSize}
 import idealised.util.SyntaxChecker
 import idealised.utils.Time.ms
 import idealised.utils.TimeSpan
@@ -65,6 +65,6 @@ class Partition extends idealised.util.Tests {
       }
     }
 
-    Run().run(1, 1).correctness.check()
+    Run().run(LocalSize(1), GlobalSize(1)).correctness.check()
   }
 }

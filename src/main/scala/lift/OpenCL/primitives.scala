@@ -1,8 +1,5 @@
 package lift.OpenCL
 
-// TODO: move
-import idealised.OpenCL.AddressSpace
-
 import lift.core.DSL._
 import lift.core.types._
 import lift.core.{Expr, primitives => core}
@@ -11,6 +8,8 @@ import scala.language.implicitConversions
 
 object primitives {
   sealed trait Primitive extends lift.core.Primitive
+
+  // TODO? depMapGlobal, depMapLocal, depMapWorkGroup
 
   case class mapGlobal(dim: Int) extends Primitive {
     override def t: Type = core.map.t
@@ -46,21 +45,35 @@ object primitives {
   }
 
 
-  case class to(space: AddressSpace) extends Primitive {
-    override def t: Type = implDT(a => implDT(b =>
-      (a ->: b) ->: (a ->: b)
-    ))
+  object toMem extends Primitive {
+    override def t: Type = implDT(t => aFunT(a => t ->: t))
   }
 
-  val toGlobal = to(idealised.OpenCL.GlobalMemory)
-  val toLocal = to(idealised.OpenCL.LocalMemory)
-  val toPrivate = to(idealised.OpenCL.PrivateMemory)
+  def toFun(to: Expr, f: Expr): Expr = fun(x => to(f(x)))
 
-  case class oclReduceSeq(init_space: AddressSpace) extends Primitive {
-    override def t: Type = core.reduceSeq.t
+  val toGlobal: Expr = toMem(lift.core.types.AddressSpace.Global)
+  def toGlobalFun(f: Expr): Expr = toFun(toGlobal, f)
+  val toLocal: Expr = toMem(lift.core.types.AddressSpace.Local)
+  def toLocalFun(f: Expr): Expr = toFun(toLocal, f)
+  val toPrivate: Expr = toMem(lift.core.types.AddressSpace.Private)
+  def toPrivateFun(f: Expr): Expr = toFun(toPrivate, f)
+
+  object oclReduceSeq extends Primitive {
+    override def t: Type = aFunT(a => core.reduceSeq.t)
   }
 
-  case class oclReduceSeqUnroll(init_space: AddressSpace) extends Primitive {
-    override def t: Type = core.reduceSeq.t
+  object oclReduceSeqUnroll extends Primitive {
+    override def t: Type = oclReduceSeq.t
+  }
+
+  object oclIterate extends Primitive {
+    override def t: Type = aFunT(a => implN(n => implN(m => nFunT(k => implDT(t =>
+      nFunT(l => ArrayType(l * n, t) ->: ArrayType(l, t)) ->:
+        ArrayType(m * n.pow(k), t) ->: ArrayType(m, t)
+    )))))
+  }
+
+  case class oclSlideSeq(rot: core.slideSeq.Rotate) extends Primitive {
+    override def t: Type = aFunT(a => core.slideSeq(rot).t)
   }
 }

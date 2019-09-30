@@ -25,6 +25,7 @@ object binomialFilter {
   // 2 4 2 ~ 2 x 1 2 1
   // 1 2 1   1
 
+  val id = fun(x => x)
   val mulT = fun(x => fst(x) * snd(x))
   val add = fun(x => fun(a => x + a))
   val dot = fun(a => fun(b =>
@@ -37,10 +38,8 @@ object binomialFilter {
     zip(a)(b) |> map(mulT) |> reduceSeqUnroll(add)(l(0.0f))
   ))
 
-  val weights2d = l(ArrayData(
-    Array(1, 2, 1, 2, 4, 2, 1, 2, 1).map(f => FloatData(f / 16.0f))))
-  val weights1d = l(ArrayData(
-    Array(1, 2, 1).map(f => FloatData(f / 4.0f))))
+  val weights2d = larr(Seq(1, 2, 1, 2, 4, 2, 1, 2, 1).map(f => FloatData(f / 16.0f)))
+  val weights1d = larr(Seq(1, 2, 1).map(f => FloatData(f / 4.0f)))
 
   val slide3x3 = map(slide(3)(1)) >> slide(3)(1) >> map(transpose)
 
@@ -62,8 +61,7 @@ object binomialFilter {
   val regrot =
     padClamp2D(1) >> slide(3)(1) >> mapSeq(transpose >>
       map(dotSeq(weights1d)) >>
-      slideSeq(slideSeq.Values)(3)(1) >>
-      map(dotSeq(weights1d))
+      slideSeq(slideSeq.Values)(3)(1)(id)(dotSeq(weights1d))
     )
 
   val norm = betaEtaNormalForm
@@ -214,7 +212,9 @@ class binomialFilter extends idealised.util.Tests {
     })
 
     val pick = repeatNTimes(2, oncetd(specialize.reduceSeq)) `;`
-      oncetd(specialize.slideSeq(slideSeq.Values)) `;`
+      oncetd(specialize.slideSeq(slideSeq.Values, id)) `;`
+      betaEtaNormalForm `;`
+      oncetd(algorithmic.slideSeqFusion) `;`
       oncetd(specialize.mapSeq)
     s_eq(pick(result).get, betaEtaNormalForm(regrot).get)
   }
@@ -285,8 +285,7 @@ int main(int argc, char** argv) {
   test("register rotation blur with unroll should contain no modulo or division") {
     val e = padClamp2D(1) >> slide(3)(1) >> mapSeq(transpose >>
       map(dotSeqUnroll(weights1d)) >>
-      slideSeq(slideSeq.Values)(3)(1) >>
-      map(dotSeqUnroll(weights1d))
+      slideSeq(slideSeq.Values)(3)(1)(id)(dotSeqUnroll(weights1d))
     )
     val code = gen.CProgram(wrapExpr(e), "blur").code
     " % ".r.findAllIn(code).length shouldBe 0
@@ -295,14 +294,13 @@ int main(int argc, char** argv) {
 
   test("compiling OpenCL private arrays should unroll loops") {
     import lift.OpenCL.primitives._
-    import idealised.OpenCL.PrivateMemory
 
     val dotSeqPrivate = fun(a => fun(b =>
-      zip(a)(b) |> map(mulT) |> oclReduceSeq(PrivateMemory)(add)(l(0.0f))
+      zip(a)(b) |> map(mulT) |> oclReduceSeq(AddressSpace.Private)(add)(l(0.0f))
     ))
 
     val e = padClamp2D(1) >> slide3x3 >> mapGlobal(0)(mapGlobal(1)(
-      toPrivate(mapSeq(dotSeqPrivate(weights1d))) >>
+      toPrivateFun(mapSeq(dotSeqPrivate(weights1d))) >>
       dotSeqPrivate(weights1d)
     ))
 

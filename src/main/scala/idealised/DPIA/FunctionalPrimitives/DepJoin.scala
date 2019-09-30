@@ -8,7 +8,7 @@ import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import lift.arithmetic.{ArithExpr, BigSum}
+import lift.arithmetic.BigSum
 
 import scala.xml.Elem
 
@@ -20,8 +20,8 @@ final case class DepJoin(n: Nat,
 
   override val t: ExpType = {
     (n: Nat) ->: (lenF: NatToNat) ->: (dt: DataType) ->:
-      (array :: exp"[$n.${NatToDataLambda(n, (i:NatIdentifier) => ArrayType(lenF(i), dt))}]") ->:
-        exp"[${BigSum(from = 0, upTo = n - 1, i => lenF(i))}.$dt]"
+      (array :: exp"[$n.${NatToDataLambda(n, (i:NatIdentifier) => ArrayType(lenF(i), dt))}, $read]") ->:
+        exp"[${BigSum(from = 0, upTo = n - 1, i => lenF(i))}.$dt, $read]"
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
@@ -55,13 +55,11 @@ final case class DepJoin(n: Nat,
     acc(array)(DepJoinAcc(n, lenF, dt, A))
   }
 
-  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])(implicit context: TranslationContext): Phrase[CommType] = ???
-
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
-    con(array)(λ(exp"[$n.${NatToDataLambda(n, (i:NatIdentifier) => ArrayType(lenF(i), dt))}]")(x =>
+    con(array)(λ(exp"[$n.${NatToDataLambda(n, (i:NatIdentifier) => ArrayType(lenF(i), dt))}, $read]")(x =>
       C(DepJoin(n, lenF, dt, x)) ))
   }
 }

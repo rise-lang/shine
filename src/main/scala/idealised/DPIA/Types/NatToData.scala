@@ -7,7 +7,7 @@ sealed trait NatToData {
   def apply(n: Nat): DataType = NatToDataApply(this, n)
 }
 
-case class NatToDataLambda private (x:NatIdentifier, body:DataType) extends NatToData {
+case class NatToDataLambda(x:NatIdentifier, body:DataType) extends NatToData {
   //See hash code of NatNatTypeFunction
   override def hashCode(): Int = this.apply(NamedVar("ComparisonDummy")).hashCode()
 
@@ -25,11 +25,6 @@ object NatToDataLambda {
   def apply(upperBound: Nat, f: NatIdentifier => DataType): NatToDataLambda = {
     val n = NatIdentifier(freshName("n"), RangeAdd(0, upperBound, 1))
     NatToDataLambda(n, f(n))
-  }
-
-  def apply(upperBound: Nat, id: NatIdentifier, body: DataType): NatToDataLambda = {
-    val n = NamedVar(freshName("n"), RangeAdd(0, upperBound, 1))
-    NatToDataLambda(n, x => DataType.substitute(x, `for`=id, `in`=body))
   }
 }
 

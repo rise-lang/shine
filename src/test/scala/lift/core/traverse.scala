@@ -14,19 +14,19 @@ class traverse extends idealised.util.Tests {
 
   class TraceVisitor(var trace: mutable.ArrayBuffer[Any]) extends Visitor
   {
-    override def apply(e: Expr): Result[Expr] = {
+    override def visitExpr(e: Expr): Result[Expr] = {
       println(e)
       trace += e
       Continue(e, this)
     }
 
-    override def apply(ae: Nat): Result[Nat] = {
+    override def visitNat(ae: Nat): Result[Nat] = {
       println(ae)
       trace += ae
       Continue(ae, this)
     }
 
-    override def apply[T <: Type](t: T): Result[T] = {
+    override def visitType[T <: Type](t: T): Result[T] = {
       println(t)
       trace += t
       Continue(t, this)
@@ -64,6 +64,11 @@ class traverse extends idealised.util.Tests {
     trace.zip(expected).foreach({ case (x, e) => e(x) })
   }
 
+/* TODO?
+  test("traverse an expression depth-first with types") {
+  }
+*/
+
   test("traverse an expression depth-first with stop and update") {
     val expected = {
       Seq(
@@ -77,13 +82,13 @@ class traverse extends idealised.util.Tests {
 
     val trace = mutable.ArrayBuffer[Any]()
     class Visitor extends TraceVisitor(trace) {
-      override def apply(expr: Expr): Result[Expr] = {
+      override def visitExpr(expr: Expr): Result[Expr] = {
         expr match {
           case Apply(Apply(`map`, _), e) =>
             val r = Apply(fun(x => x), e)
             println(r)
             Stop(r)
-          case _ => super.apply(expr)
+          case _ => super.visitExpr(expr)
         }
       }
     }
@@ -111,7 +116,7 @@ class traverse extends idealised.util.Tests {
     ))
 
     class Visitor extends traversal.Visitor {
-      override def apply(expr: Expr): Result[Expr] = {
+      override def visitExpr(expr: Expr): Result[Expr] = {
         expr match {
           case Apply(`map`, f) =>
             println(f)

@@ -1,0 +1,147 @@
+\begin{figure}[b]
+    \footnotesize
+    \begin{minipage}{1.0\linewidth}
+      \begin{mathpar}
+        \kappa ::= \addrkind \mid \ntnkind \mid \ntdkind \mid \natkind \mid \datatype \mid \type
+      \end{mathpar}
+      \subcaption{Kinds}\label{fig:lift-kinds}
+    \end{minipage}
+
+    \medskip
+
+    \begin{minipage}{0.4\linewidth}
+      \begin{mathpar}
+        \inferrule*
+        {\x : \kappa \in \Delta}
+        {\Delta \vdash \x : \kappa}
+      \end{mathpar}
+      \subcaption{Kinding Structural Rules}\label{fig:lift-structural-kinding}
+    \end{minipage}
+    %
+    \begin{minipage}{0.4\linewidth}
+      \begin{mathpar}
+         \inferrule
+         {\models \forall \sigma : \mathit{dom}(\Delta) \to \mathbb{N}.\sigma(\Nat{N}) = \sigma(\Nat{M})}
+         {\Delta \vdash \Nat{N} \equiv \Nat{M} : \natkind}
+      \end{mathpar}
+      \subcaption{Type Equality}\label{fig:lift-equality-kinding}
+    \end{minipage}
+  
+    \medskip
+      
+    \begin{minipage}{.4\linewidth}
+      \begin{mathpar}
+        \inferrule*
+        {\A \in \{\mathsf{global, local, private, constant\}}}
+        {\Delta \vdash \A : \addrkind}
+  
+      \end{mathpar}
+      \subcaption{Address Spaces}\label{fig:lift-address-space-kinding}
+    \end{minipage}
+
+    \medskip
+
+    \begin{minipage}{.4\linewidth}
+      \begin{mathpar}
+        \inferrule*
+        {\Delta, \n : \natkind \vdash \Nat{M} : \natkind}
+        {\Delta \vdash \lNtN{\n}{\Nat{M}} : \ntnkind}
+      \end{mathpar}
+      \subcaption{$\natkind$ to $\natkind$ type level functions}\label{fig:lift-nat2nat-kinding}
+    \end{minipage}
+    %
+    \begin{minipage}{.4\linewidth}
+      \begin{mathpar}
+        \inferrule*
+        {\Delta, \n : \natkind \vdash \DT : \datatype}
+        {\Delta \vdash \lNtDT{\n}{\DT} : \ntdkind}
+  
+      \end{mathpar}
+      \subcaption{$\natkind$ to $\datatype$ type level functions}\label{fig:lift-nat2data-kinding}
+    \end{minipage}
+
+    \medskip
+  
+    \begin{minipage}{1.0\linewidth}
+      \begin{mathpar}
+        \inferrule*
+        { }
+        {\Delta \vdash \underline{\ell} : \natkind}
+  
+        \inferrule*
+        {\Delta \vdash \Nat{N} : \natkind \\ \Delta \vdash \Nat{M} : \natkind \\ \oplus \in \{+,*,\ldots\}}
+        {\Delta \vdash \Nat{N} \oplus \Nat{M} : \natkind}
+
+        \inferrule*
+        {\Delta \vdash \FN : \ntnkind \\ \Delta \vdash \Nat{M} : \natkind}
+        {\Delta \vdash \FN~\Nat{M} : \natkind}
+      \end{mathpar}
+      \subcaption{Natural numbers}\label{fig:lift-natural-number-kinding}
+    \end{minipage}
+  
+    \medskip
+  
+    \begin{minipage}{1.0\linewidth}
+      \begin{mathpar}
+        \inferrule*
+        { }
+        {\Delta \vdash \basic : \datatype}
+
+        \inferrule*
+        { }
+        {\Delta \vdash \natkind : \datatype}
+  
+        \inferrule*
+        {\Delta \vdash \N : \natkind}
+        {\Delta \vdash \tyidx[\N] : \datatype}
+  
+        \inferrule*
+        {\Delta \vdash \DTone : \datatype \\\\ \Delta \vdash \DTtwo : \datatype}
+        {\Delta \vdash \lPair{\DTone}{\DTtwo} : \datatype}
+
+        \inferrule*
+        {\Delta \vdash \N : \natkind \\\\ \Delta \vdash \DT : \datatype}
+        {\Delta \vdash \lArray{\N}{\DT} : \datatype}
+
+        \inferrule*
+        {\Delta \vdash \N : \natkind \\\\ \Delta \vdash \FDT : \ntdkind}
+        {\Delta \vdash \lDepArray{\N}{\FDT} : \datatype}
+
+        \inferrule*
+        {\Delta \vdash \FDT : \ntdkind \\ \Delta \vdash \N : \natkind}
+        {\Delta \vdash \FDT~\N : \datatype}
+      \end{mathpar}
+      \subcaption{Data Types}\label{fig:lift-data-type-kinding}
+    \end{minipage}
+  
+    \medskip
+  
+    \begin{minipage}{1.0\linewidth}
+      \begin{mathpar}
+        \inferrule*
+        {\Delta \vdash \DT : \datatype}
+        {\Delta \vdash \DT : \type}
+  
+        \inferrule*
+        {\Delta \vdash \TYone : \type \\\\
+         \Delta \vdash \TYtwo : \type}
+        {\Delta \vdash \TYone \to \TYtwo : \type}
+  
+        \inferrule*
+        {\Delta, \x : \kappa \vdash \TY : \type \\ \kappa \in
+          \left\{
+            \begin{array}{l}
+            \addrkind,\arcr
+            \ntnkind, \ntdkind,\arcr
+            \natkind, \datatype
+            \end{array}
+          \right\}
+        }
+        {\Delta \vdash (\x\mathord:\kappa) \to \TY : \type}
+      \end{mathpar}
+      \subcaption{Types}\label{fig:lift-phrase-type-kinding}
+    \end{minipage}
+  
+    \caption{Well-formed Types}
+    \label{fig:lift-types}
+  \end{figure}

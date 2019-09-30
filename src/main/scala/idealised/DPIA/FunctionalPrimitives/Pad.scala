@@ -20,8 +20,8 @@ final case class Pad(n: Nat,
 
   override val t: ExpType =
     (n: Nat) ->: (l: Nat) ->: (r: Nat) ->: (dt: DataType) ->:
-      (padExp :: exp"[$dt]") ->:
-      (array :: exp"[$n.$dt]") ->: exp"[${l + n + r}.$dt]"
+      (padExp :: exp"[$dt, $read]") ->:
+        (array :: exp"[$n.$dt, $read]") ->: exp"[${l + n + r}.$dt, $read]"
 
   override def eval(s: Store): Data = ???
 
@@ -35,15 +35,11 @@ final case class Pad(n: Nat,
     ???
   }
 
-  override def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType], A: Phrase[AccType])
-                                     (implicit context: TranslationContext): Phrase[CommType] =
-    ???
-
   override def continuationTranslation(C: Phrase[->:[ExpType, CommType]])
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
-    con(array)(λ(exp"[$n.$dt]")(x =>
-      con(padExp)(λ(exp"[$dt]")(p =>
+    con(array)(λ(exp"[$n.$dt, $read]")(x =>
+      con(padExp)(λ(exp"[$dt, $read]")(p =>
         C(Pad(n, l, r, dt, p, x))))))
   }
 

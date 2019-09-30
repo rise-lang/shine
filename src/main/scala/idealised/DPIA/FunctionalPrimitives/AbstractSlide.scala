@@ -21,8 +21,8 @@ abstract class AbstractSlide(n: Nat,
 
   override val t: ExpType =
     (n: Nat) ->: (sz: Nat) ->: (sp: Nat) ->: (dt: DataType) ->:
-      (input :: exp"[$inputSize.$dt]") ->:
-        exp"[$n.$sz.$dt]"
+      (input :: exp"[$inputSize.$dt, $read]") ->:
+        exp"[$n.$sz.$dt, $read]"
 
   override def eval(s: Store): OperationalSemantics.Data = {
     OperationalSemantics.eval(s, input) match {

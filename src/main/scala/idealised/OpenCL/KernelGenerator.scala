@@ -3,7 +3,7 @@ package idealised.OpenCL
 import java.io.{File, PrintWriter}
 
 import idealised._
-import idealised.C.AST.DeclRef
+import idealised.C.AST.{DeclRef, ParamDecl}
 import idealised.DPIA.Compilation._
 import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
@@ -17,8 +17,7 @@ import scala.language.implicitConversions
 
 //noinspection VariablePatternShadow
 object KernelGenerator {
-  def makeCode[T <: PhraseType, L, G](localSize: L, globalSize: G)(originalPhrase: Phrase[T])
-                                     (implicit toLRange: L => NDRange, toGRange: G => NDRange): OpenCL.KernelWithSizes = {
+  def makeCode[T <: PhraseType](localSize: LocalSize, globalSize: GlobalSize)(originalPhrase: Phrase[T]): OpenCL.KernelWithSizes = {
     val (phrase, params, defs) = getPhraseAndParams(originalPhrase, Seq(), Seq())
     makeKernel("KERNEL", phrase, params.reverse, defs.reverse, Some(localSize), Some(globalSize)).right.get
   }
@@ -28,13 +27,14 @@ object KernelGenerator {
     makeKernel(name, phrase, params.reverse, defs.reverse, None, None).left.get
   }
 
+//  @scala.annotation.tailrec
   private def getPhraseAndParams[_ <: PhraseType](p: Phrase[_],
                                                   ps: Seq[Identifier[ExpType]],
                                                   defs:Seq[(LetNatIdentifier, Phrase[ExpType])]
                                                  ): (Phrase[ExpType], Seq[Identifier[ExpType]], Seq[(LetNatIdentifier, Phrase[ExpType])]) = {
     p match {
       case l: Lambda[ExpType, _]@unchecked => getPhraseAndParams(l.body, l.param +: ps, defs)
-      case ndl: DepLambda[NatKind, _]@unchecked => getPhraseAndParams(ndl.body, Identifier(ndl.x.name, ExpType(int)) +: ps, defs)
+      case ndl: DepLambda[NatKind, _]@unchecked => getPhraseAndParams(ndl.body, Identifier(ndl.x.name, ExpType(int, read)) +: ps, defs)
       case ln:LetNat[ExpType, _]@unchecked => getPhraseAndParams(ln.body, ps, (ln.binder, ln.defn) +: defs)
       case ep: Phrase[ExpType]@unchecked => (ep, ps, defs)
     }
@@ -44,8 +44,8 @@ object KernelGenerator {
                          p: Phrase[ExpType],
                          inputParams: Seq[Identifier[ExpType]],
                          letNatDefs:Seq[(LetNatIdentifier, Phrase[ExpType])],
-                         localSize: Option[NDRange],
-                         globalSize: Option[NDRange]): Either[OpenCL.KernelNoSizes, OpenCL.KernelWithSizes] = {
+                         localSize: Option[LocalSize],
+                         globalSize: Option[GlobalSize]): Either[OpenCL.KernelNoSizes, OpenCL.KernelWithSizes] = {
 
     val outParam = createOutputParam(outT = p.t)
 
@@ -99,12 +99,12 @@ object KernelGenerator {
   }
 
   private def rewriteToImperative(p: Phrase[ExpType], a: Phrase[AccType]): Phrase[CommType] = {
-    TranslationToImperative.acc(p)(a)(
+    SimplifyNats(UnrollLoops(FlagPrivateArrayLoops(TranslationToImperative.acc(p)(a)(
       new idealised.OpenCL.TranslationContext) |> (p => {
       xmlPrinter.writeToFile("/tmp/p2.xml", p)
       TypeCheck(p) // TODO: only in debug
       p
-    })
+    }))))
   }
 
   private def hoistMemoryAllocations(p: Phrase[CommType]): (Phrase[CommType], List[AllocationInfo]) = {
@@ -120,7 +120,7 @@ object KernelGenerator {
                                     ins: Seq[Identifier[ExpType]],
                                     intermediateAllocations: Seq[AllocationInfo],
                                     gen: CodeGeneration.CodeGenerator
-                                   ): (Phrase[CommType], Identifier[AccType], Seq[Identifier[ExpType]], Seq[AllocationInfo], Seq[OpenCL.AST.ParamDecl]) = {
+                                   ): (Phrase[CommType], Identifier[AccType], Seq[Identifier[ExpType]], Seq[AllocationInfo], Seq[ParamDecl]) = {
     AdaptKernelParameters(p, out, ins, intermediateAllocations, gen) |> { r =>
       val p = r._1
       xmlPrinter.writeToFile("/tmp/p5.xml", p)
@@ -135,7 +135,7 @@ object KernelGenerator {
     AdaptKernelBody(body)
   }
 
-  private def makeKernelFunction(name: String, params: Seq[OpenCL.AST.ParamDecl], body: C.AST.Block): OpenCL.AST.KernelDecl = {
+  private def makeKernelFunction(name: String, params: Seq[ParamDecl], body: C.AST.Block): OpenCL.AST.KernelDecl = {
     OpenCL.AST.KernelDecl(name, params = params, body = body, attribute = None)
   }
 
