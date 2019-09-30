@@ -7,7 +7,7 @@ import lift.core.DSL._
 
 import scala.collection.mutable
 
-class traverse extends idealised.util.Tests {
+class traverse extends test_util.Tests {
   val e = nFun(h => nFun(w => fun(ArrayType(h, ArrayType(w, float)))(input =>
     map(map(fun(x => x)))(input)
   )))

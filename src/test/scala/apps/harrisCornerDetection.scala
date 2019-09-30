@@ -7,11 +7,10 @@ import lift.core.DSL._
 import lift.core.types._
 import lift.core.HighLevelConstructs._
 
-import idealised.util.gen
+import util.gen
 
 object harrisCornerDetection {
   val mulT = binomialFilter.mulT
-  val add = binomialFilter.add
   val sq = fun(x => x * x)
   val dot = binomialFilter.dot
   val dotSeq = binomialFilter.dotSeq
@@ -33,7 +32,7 @@ object harrisCornerDetection {
 
   val zip2D = zipND(2)
 
-  val gaussian: Expr = binomialFilter.regrot
+  val gaussian: Expr = binomialFilter.regRotSeq
 
   val szr = lift.arithmetic.RangeAdd(3, lift.arithmetic.PosInf, 1)
   // TODO: store temporaries
@@ -73,7 +72,7 @@ object harrisCornerDetection {
   })))
 }
 
-class harrisCornerDetection extends idealised.util.Tests {
+class harrisCornerDetection extends test_util.Tests {
   test("harris compiles to C code") {
     gen.CProgram(harrisCornerDetection.e, "harris")
   }

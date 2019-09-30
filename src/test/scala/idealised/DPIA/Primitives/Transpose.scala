@@ -2,17 +2,12 @@ package idealised.DPIA.Primitives
 
 import lift.core.DSL._
 import lift.core.types._
-import lift.core.primitives.{transpose, mapSeq}
-
+import lift.core.primitives.{mapSeq, transpose}
 import benchmarks.core.SimpleRunOpenCLProgram
 import idealised.OpenCL.KernelWithSizes
-import idealised.util.{Execute, gen}
-import idealised.utils.Time.ms
-import idealised.utils.TimeSpan
+import util.{Execute, TimeSpan, gen}
 
-import scala.util.Random
-
-class Transpose extends idealised.util.Tests {
+class Transpose extends test_util.Tests {
   test("Simple transpose should produce the expected result on a test") {
     def checkResult(e: lift.core.Expr) = {
       val p = gen.CProgram(e)

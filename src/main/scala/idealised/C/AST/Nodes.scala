@@ -150,7 +150,7 @@ abstract class Literal(val code: String) extends Expr
 
 abstract class ArrayLiteral(val t: ArrayType, val inits: Seq[Expr]) extends Expr
 
-abstract class RecordLiteral(val fst: Expr, val snd: Expr) extends Expr
+abstract class RecordLiteral(val t: Type, val fst: Expr, val snd: Expr) extends Expr
 
 abstract class ArithmeticExpr(val ae: lift.arithmetic.ArithExpr) extends Expr
 
@@ -342,8 +342,8 @@ object ArrayLiteral {
 }
 
 object RecordLiteral {
-  def apply(fst: Expr, snd: Expr): RecordLiteral = DefaultImplementations.RecordLiteral(fst, snd)
-  def unapply(arg: RecordLiteral): Option[(Expr, Expr)] = Some((arg.fst, arg.snd))
+  def apply(t: Type, fst: Expr, snd: Expr): RecordLiteral = DefaultImplementations.RecordLiteral(t, fst, snd)
+  def unapply(arg: RecordLiteral): Option[(Type, Expr, Expr)] = Some((arg.t, arg.fst, arg.snd))
 }
 
 object ArithmeticExpr {
@@ -641,12 +641,13 @@ object DefaultImplementations {
     }
   }
 
-  case class RecordLiteral(override val fst: Expr, override val snd: Expr) extends C.AST.RecordLiteral(fst, snd) {
+  case class RecordLiteral(override val t: Type, override val fst: Expr, override val snd: Expr) extends C.AST.RecordLiteral(t, fst, snd) {
     override def visitAndRebuild(v: VisitAndRebuild.Visitor): RecordLiteral =
-      RecordLiteral(VisitAndRebuild(fst, v), VisitAndRebuild(snd, v))
+      RecordLiteral(v(t), VisitAndRebuild(fst, v), VisitAndRebuild(snd, v))
 
     override def visitAndGenerateStmt(v: VisitAndGenerateStmt.Visitor, cont: Expr => Stmt): Stmt =
-      VisitAndGenerateStmt(fst, v, fstE => VisitAndGenerateStmt(snd, v, sndE => cont(RecordLiteral(fstE, sndE))))
+      VisitAndGenerateStmt(fst, v, fstE =>
+        VisitAndGenerateStmt(snd, v, sndE => cont(RecordLiteral(t, fstE, sndE))))
   }
 
   case class ArithmeticExpr(override val ae: lift.arithmetic.ArithExpr) extends C.AST.ArithmeticExpr(ae) {

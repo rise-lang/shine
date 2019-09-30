@@ -164,7 +164,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                    path: Path,
                    cont: Expr => Stmt): Stmt = {
     phrase match {
-      case i@Identifier(_, AccType(dt)) => cont(CCodeGen.generateAccess(dt,
+      case i@Identifier(_, AccType(dt)) => cont(generateAccess(dt,
         env.identEnv.applyOrElse(i, (_: Phrase[_]) => {
           throw new Exception(s"Expected to find `$i' in the environment: `${env.identEnv}'")
         }), path, env))
@@ -237,7 +237,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                    cont: Expr => Stmt) : Stmt =
   {
     phrase match {
-      case i@Identifier(_, ExpType(dt, _)) => cont(CCodeGen.generateAccess(dt,
+      case i@Identifier(_, ExpType(dt, _)) => cont(generateAccess(dt,
         env.identEnv.applyOrElse(i, (_: Phrase[_]) => {
           throw new Exception(s"Expected to find `$i' in the environment: `${env.identEnv}'")
         }), path, env))
@@ -309,12 +309,15 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error(s"Expected path to contain at least two elements")
       }
 
-      case Zip(_, _, _, e1, e2) => path match {
+      case Zip(n, dt1, dt2, e1, e2) => path match {
         case (i: CIntExpr) :: (xj : TupleAccess) :: ps => xj match {
           case FstMember => exp(e1, env, i :: ps, cont)
           case SndMember => exp(e2, env, i :: ps, cont)
         }
-        case _ => error("Expected a C-Integer-Expression followed by a tuple access on the path.")
+        case (i: CIntExpr) :: Nil =>
+          val j = AsIndex(n, Natural(i))
+          exp(Record(dt1, dt2, Idx(n, dt1, j, e1), Idx(n, dt2, j, e2)), env, Nil, cont)
+        case _ => error(s"unexpected $path")
       }
 
       case Unzip(_, _, _, e) => path match {
@@ -331,12 +334,15 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error("Expected a C-Integer-Expression followed by a tuple access on the path.")
       }
 
-      case Record(_, _, e1, e2) => path match {
+      case r @ Record(_, _, e1, e2) => path match {
         case (xj : TupleAccess) :: ps => xj match {
           case FstMember => exp(e1, env, ps, cont)
           case SndMember => exp(e2, env, ps, cont)
         }
-        case _ => error("Expected a tuple access on the path.")
+        case Nil =>
+          exp(e1, env, Nil, ec1 =>
+            exp(e2, env, Nil, ec2 => cont(C.AST.RecordLiteral(typ(r.t.dataType), ec1, ec2))))
+        case _ => error(s"unexpected $path")
       }
       case Fst(_, _, e) => exp(e, env, FstMember :: path, cont)
       case Snd(_, _, e) => exp(e, env, SndMember :: path, cont)
@@ -357,6 +363,13 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case (i : CIntExpr) :: ps =>
           exp(a, env, CIntExpr(OperationalSemantics.evalIndexExp(idxF(AsIndex(n, Natural(i))))) :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
+      }
+
+      case Gather(n, m, dt, y, e) => path match {
+        case (i: CIntExpr) :: ps =>
+          val yi = Idx(m, IndexType(n), AsIndex(m, Natural(i)), y)
+          exp(Idx(n, dt, yi, e), env, ps, cont)
+        case _ => error(s"unexpected $path")
       }
 
       case PadClamp(n, l, r, _, e) => path match {
@@ -413,7 +426,9 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case DepIdx(_, _, i, e) => exp(e, env, CIntExpr(i) :: path, cont)
 
       case ForeignFunction(f, inTs, outT, args) =>
-        CCodeGen.codeGenForeignFunction(f, inTs, outT, args, env, path, cont)
+        CCodeGen.codeGenForeignFunction(f, inTs, outT, args, env, path, fe =>
+          cont(generateAccess(outT, fe, path, env))
+        )
 
       case Proj1(pair) => exp(SimplifyNats.simplifyIndexAndNatExp(Lifting.liftPair(pair)._1), env, path, cont)
       case Proj2(pair) => exp(SimplifyNats.simplifyIndexAndNatExp(Lifting.liftPair(pair)._2), env, path, cont)
@@ -430,7 +445,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case IndexType(n) => s"idx$n"
         case ArrayType(n, t) => s"${n}_${typeToStructNameComponent(t)}"
         case RecordType(a, b) => s"_${typeToStructNameComponent(a)}_${typeToStructNameComponent(b)}_"
-        case _: BasicType => t.toString
+        case _: BasicType => typ(t).toString
         case _ => ???
       }
     }
@@ -460,6 +475,36 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
     }
   }
 
+  override def generateAccess(dt: DataType,
+                              expr: Expr,
+                              path: Path,
+                              env: Environment): Expr = {
+    path match {
+      case Nil => expr
+      case (xj: TupleAccess) :: ps => dt match {
+        case rt: RecordType =>
+          val (structMember, dt2) = xj match {
+            case FstMember => ("_fst", rt.fst)
+            case SndMember => ("_snd", rt.snd)
+          }
+          generateAccess(dt2, C.AST.StructMemberAccess(expr, C.AST.DeclRef(structMember)), ps, env)
+        case _ => throw new Exception("expected tuple type")
+      }
+      case (_: CIntExpr) :: _ =>
+        dt match {
+          case at: ArrayType =>
+            val (dt2, k, ps) = CCodeGen.flattenArrayIndices(at, path)
+            generateAccess(dt2, C.AST.ArraySubscript(expr, C.AST.ArithmeticExpr(k)), ps, env)
+
+          case dat: DepArrayType =>
+            val (dt2, k, ps) = CCodeGen.flattenArrayIndices(dat, path)
+            generateAccess(dt2, C.AST.ArraySubscript(expr, C.AST.ArithmeticExpr(k)), ps, env)
+          case x => throw new Exception(s"Expected an ArrayType that is accessed by the index but found $x instead.")
+        }
+      case _ =>
+        throw new Exception(s"Can't generate access for `$dt' with `${path.mkString("[", "::", "]")}'")
+    }
+  }
 
   private def generateLetNat[T <: PhraseType](binder:LetNatIdentifier,
                              defn:Phrase[T],
@@ -683,7 +728,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case ArrayData(a) =>
           C.AST.ArrayLiteral(typ(d.dataType).asInstanceOf[C.AST.ArrayType], a.map(codeGenLiteral))
         case RecordData(fst, snd) =>
-          C.AST.RecordLiteral(codeGenLiteral(fst), codeGenLiteral(snd))
+          C.AST.RecordLiteral(typ(d.dataType), codeGenLiteral(fst), codeGenLiteral(snd))
         case VectorData(_) => throw new Exception("VectorData not supported in C")
       }
     }
@@ -757,66 +802,30 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       C.AST.BinaryExpr(e1, op, e2)
     }
 
-    @scala.annotation.tailrec
-    def generateAccess(dt: DataType,
-                       accuExpr: Expr,
-                       path: Path,
-                       env: Environment): Expr = {
-      (path, dt) match {
-        case (Nil, _) => accuExpr
-        case ((xj: TupleAccess) :: ps, RecordType(fst, snd)) =>
-          val (suffix, memberType) = xj match {
-            case FstMember => ("_fst", fst)
-            case SndMember => ("_snd", snd)
-          }
-          generateAccess(memberType, C.AST.StructMemberAccess(accuExpr, C.AST.DeclRef(suffix)), ps, env)
-        case ((i: CIntExpr) :: _, _: VectorType) =>
-          val data = C.AST.StructMemberAccess(accuExpr, C.AST.DeclRef("data"))
-          C.AST.ArraySubscript(data, C.AST.ArithmeticExpr(i))
-        case ((_: CIntExpr) :: _, at: ArrayType) =>
-            val (et, i, ps) = flattenArrayIndices(at, path)
-            generateAccess(et, C.AST.ArraySubscript(accuExpr, C.AST.ArithmeticExpr(i)), ps, env)
-        case ((_: CIntExpr) :: _, dat: DepArrayType) =>
-            val (et, i, ps) = flattenArrayIndices(dat, path)
-            generateAccess(et, C.AST.ArraySubscript(accuExpr, C.AST.ArithmeticExpr(i)), ps, env)
-        case (_, _) =>
-          throw new Exception(s"Can't generate access for `$dt' with `${path.mkString("[ ", " :: ", " ]")}'")
-      }
-    }
-
     def flattenArrayIndices(dt: DataType, path: Path): (DataType, Nat, Path) = {
       assert(dt.isInstanceOf[ArrayType] || dt.isInstanceOf[DepArrayType])
 
-      val arrayLayers = countArrayLayers(dt)
+      val (arrayLayers, dt2) = peelArrayLayers(dt)
       val (indicesAsPathElements, rest) = path.splitAt(arrayLayers)
       indicesAsPathElements.foreach(i => assert(i.isInstanceOf[CIntExpr]))
       val indices = indicesAsPathElements.map(_.asInstanceOf[CIntExpr].num)
-      assert(rest.isEmpty || !rest.head.isInstanceOf[CIntExpr])
-
+      // vector indexing also uses CIntExpr
+      // assert(rest.isEmpty || !rest.head.isInstanceOf[CIntExpr])
 
       val subMap = buildSubMap(dt, indices)
 
-      (removeArrayLayers(dt, arrayLayers), ArithExpr.substitute(flattenIndices(dt, indices), subMap), rest)
+      (dt2, ArithExpr.substitute(flattenIndices(dt, indices), subMap), rest)
     }
 
-    def countArrayLayers(dataType: DataType): Int = {
+    def peelArrayLayers(dataType: DataType): (Int, DataType) = {
       dataType match {
-        case ArrayType(_, et) => 1 + countArrayLayers(et)
-        case DepArrayType(_, NatToDataLambda(_ ,et)) => 1 + countArrayLayers(et)
-        case _ => 0
-      }
-    }
-
-    @scala.annotation.tailrec
-    def removeArrayLayers(dataType: DataType, arrayLayers: Int): DataType = {
-      if (arrayLayers == 0) {
-        dataType
-      } else {
-        dataType match {
-          case ArrayType(_, et) => removeArrayLayers(et, arrayLayers - 1)
-          case DepArrayType(_, NatToDataLambda(_, et)) => removeArrayLayers(et, arrayLayers - 1) // ???
-          case _ => ???
-        }
+        case ArrayType(_, et) =>
+          val (n, dt) = peelArrayLayers(et)
+          (n + 1, dt)
+        case DepArrayType(_, NatToDataLambda(_, et)) =>
+          val (n, dt) = peelArrayLayers(et)
+          (n + 1, dt)
+        case _ => (0, dataType)
       }
     }
 

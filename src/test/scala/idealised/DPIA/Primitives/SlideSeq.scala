@@ -3,9 +3,9 @@ package idealised.DPIA.Primitives
 import lift.core.DSL._
 import lift.core.types._
 import lift.core.primitives.{slideSeq, map, reduceSeq}
-import idealised.util.{Execute, gen}
+import util.{Execute, gen}
 
-class SlideSeq extends idealised.util.Tests {
+class SlideSeq extends test_util.Tests {
   val add = fun(a => fun(b => a + b))
 
   test("Simple example should generate C code producing the expected result on a test") {

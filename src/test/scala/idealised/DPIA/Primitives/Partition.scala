@@ -4,9 +4,7 @@ import benchmarks.core.SimpleRunOpenCLProgram
 import idealised.DPIA
 import idealised.DPIA.Nat
 import idealised.OpenCL.{GlobalSize, KernelWithSizes, LocalSize}
-import idealised.util.SyntaxChecker
-import idealised.utils.Time.ms
-import idealised.utils.TimeSpan
+import util.{SyntaxChecker, TimeSpan, Time}
 import lift.arithmetic._
 import lift.core.DSL._
 import lift.core._
@@ -16,7 +14,7 @@ import lift.core.types._
 import scala.util.Random
 
 
-class Partition extends idealised.util.Tests {
+class Partition extends test_util.Tests {
   ignore("Simple partition into a triangle C") {
     val lenF = n2nFun((i: NatIdentifier) => i + 1)
 
@@ -57,7 +55,7 @@ class Partition extends idealised.util.Tests {
         (Array.fill(padAmount)(0.0f) ++ input ++ Array.fill(padAmount)(0.0f)).map(x => x + 1.0f)
       }
 
-      override protected def runKernel(k: KernelWithSizes, input: Array[Float]): (Array[Float], TimeSpan[ms]) = {
+      override protected def runKernel(k: KernelWithSizes, input: Array[Float]): (Array[Float], TimeSpan[Time.ms]) = {
         import idealised.OpenCL._
 
         val kernelFun = k.as[ScalaFunction `(` Int `,` Input `)=>` Array[Float]]

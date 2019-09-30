@@ -16,7 +16,7 @@ import elevate.util._
 import elevate.lift.rules._
 import elevate.lift.strategies.util._
 import elevate.lift.rules.algorithmic._
-import idealised.util.gen
+import util.gen
 import lift.core.DSL._
 import lift.core._
 import lift.core.primitives._
@@ -26,7 +26,7 @@ import org.scalatest.Ignore
 
 import scala.language.implicitConversions
 
-class tiling extends idealised.util.Tests {
+class tiling extends test_util.Tests {
 
   implicit def rewriteResultToExpr(r: RewriteResult[Expr]): Expr = r.get
 

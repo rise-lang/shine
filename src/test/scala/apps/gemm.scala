@@ -1,6 +1,6 @@
 package apps
 
-import idealised.util.gen
+import util.gen
 import lift.arithmetic.Cst
 import lift.core.DSL._
 import lift.core.{Expr, Nat}
@@ -9,7 +9,7 @@ import lift.core.primitives._
 import lift.core.types._
 
 //noinspection TypeAnnotation
-class gemm extends idealised.util.TestsWithExecutor {
+class gemm extends test_util.TestsWithExecutor {
 
   val epsilon = 1.0f
 
@@ -119,7 +119,7 @@ class gemm extends idealised.util.TestsWithExecutor {
                         mapSeq(fun(p54 =>
                           zip(p54._1, transpose(p236._2)) |>
                             mapSeq(fun(p157 =>
-                              zip(asVector(vw)(p54._2), asVector(vw)(p157._2)) |>
+                              zip(asVectorAligned(vw)(p54._2), asVectorAligned(vw)(p157._2)) |>
                                 mapSeq(fun(x => p157._1 + dot(x)))
                             )) |> join
                         ))

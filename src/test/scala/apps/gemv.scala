@@ -3,11 +3,11 @@ package apps
 import lift.core.DSL._
 import lift.core.primitives._
 import lift.core.types._
-import idealised.util.gen
+import util.gen
 import lift.core.HighLevelConstructs.reorderWithStride
 
 //noinspection TypeAnnotation
-class gemv extends idealised.util.Tests {
+class gemv extends test_util.Tests {
 
   // we can use implicit type parameters and type annotations to specify the function type of mult
   val mult  = implDT(dt => fun(x => x._1 * x._2) :: ((dt x dt) ->: dt))

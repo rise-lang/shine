@@ -74,16 +74,8 @@ object TypeCheck {
   }
 
   def check(found: PhraseType, expected: PhraseType): Unit = {
-    (found, expected) match {
-      case (_: ExpType, _) | (_, _: ExpType) |
-           (_: AccType, _) | (_, _: AccType) =>
-        if (found != expected) {
-          error(found, expected)
-        }
-      case _ => // TODO: structural equality
-        if (found != expected) {
-          println(s"Type warning: found $found expected $expected")
-        }
+    if (found != expected) {
+      error(found, expected)
     }
   }
 

@@ -7,12 +7,12 @@ import lift.core.types._
 import lift.core.DSL._
 import lift.core.primitives._
 import lift.core.HighLevelConstructs.reorderWithStride
-import idealised.util.{SyntaxChecker, gen}
+import util.{SyntaxChecker, gen}
 
 import scala.util.Random
 
 //noinspection TypeAnnotation
-class asum extends idealised.util.TestsWithExecutor {
+class asum extends test_util.TestsWithExecutor {
 
   def inputT(n : NatIdentifier) = ArrayType(n, float)
   val abs = dtFun(t => foreignFun("my_abs", Seq("y"), "{ return fabs(y); }", t ->: t))
@@ -45,7 +45,7 @@ class asum extends idealised.util.TestsWithExecutor {
       input |>
         split(32768) |>
         mapPar(
-          asVector(4) >>
+          asVectorAligned(4) >>
           split(8192) >>
           mapSeq(
             reduceSeq(fun(a => fun(x => abs(float4)(x) + a)))(vectorFromScalar(l(0.0f)))
@@ -110,7 +110,7 @@ class asum extends idealised.util.TestsWithExecutor {
       input |>
         split(32768) |>
         mapWorkGroup(
-          asVector(4) >>
+          asVectorAligned(4) >>
             split(8192) >>
             mapLocal(
               oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => abs(float4)(x) + a)))(vectorFromScalar(l(0.0f)))
@@ -228,7 +228,7 @@ class asum extends idealised.util.TestsWithExecutor {
       input |>
         split(4096 * 128) |>
         mapWorkGroup(
-          asVector(2) >>
+          asVectorAligned(2) >>
             reorderWithStride(64) >>
             split(2048) >>
             mapLocal(

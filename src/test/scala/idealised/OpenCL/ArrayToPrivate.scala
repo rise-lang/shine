@@ -3,9 +3,9 @@ package idealised.OpenCL
 import lift.core.DSL._
 import lift.core.types._
 import lift.core.primitives._
-import idealised.util.gen
+import util.gen
 
-class ArrayToPrivate extends idealised.util.Tests {
+class ArrayToPrivate extends test_util.Tests {
   test("generate OpenCL code with array in private memory") {
     import lift.OpenCL.primitives._
 

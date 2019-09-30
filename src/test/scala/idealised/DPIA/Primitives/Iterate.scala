@@ -3,9 +3,9 @@ package idealised.DPIA.Primitives
 import lift.core.DSL._
 import lift.core.types._
 import lift.core.primitives._
-import idealised.util.gen
+import util.gen
 
-class Iterate extends idealised.util.Tests {
+class Iterate extends test_util.Tests {
   val add = fun(a => fun(b => a + b))
 
   test("Simple iterate example should generate syntactic valid C code ") {

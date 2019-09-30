@@ -2,9 +2,8 @@ package apps
 
 import benchmarks.core.{CorrectnessCheck, RunOpenCLProgram}
 import idealised.OpenCL.{GlobalSize, KernelWithSizes, LocalSize}
-import idealised.util.gen
-import idealised.utils.Time.ms
-import idealised.utils.{Display, TimeSpan}
+import util.{Display, TimeSpan, gen}
+import util.Time.ms
 import lift.OpenCL.primitives._
 import lift.arithmetic.SteppedCase
 import lift.core.DSL._
@@ -15,7 +14,7 @@ import lift.core.HighLevelConstructs._
 
 import scala.util.Random
 
-class stencil extends idealised.util.Tests {
+class stencil extends test_util.Tests {
 
   private case class StencilResult(inputSize: Int,
                                    stencilSize: Int,
@@ -73,7 +72,7 @@ class stencil extends idealised.util.Tests {
     final override type Input = Array[Float]
 
     final def scalaProgram: Array[Float] => Array[Float] = (xs: Array[Float]) => {
-      import idealised.utils.ScalaPatterns.pad
+      import util.ScalaPatterns.pad
       pad(xs, padSize, 0.0f).sliding(stencilSize, 1).map(nbh => nbh.foldLeft(0.0f)(_ + _))
     }.toArray
 
@@ -130,7 +129,7 @@ class stencil extends idealised.util.Tests {
     }
 
     final def scalaProgram: Array[Array[Float]] => Array[Array[Float]] = (grid: Array[Array[Float]]) => {
-      import idealised.utils.ScalaPatterns._
+      import util.ScalaPatterns._
       slide2D(pad2D(grid, padSize, 0.0f), stencilSize).map(_.map(tileStencil))
     }
 
@@ -144,7 +143,7 @@ class stencil extends idealised.util.Tests {
       nFun(n => fun(ArrayType(n, ArrayType(n, float)))(input =>
         input |>
           padCst2D(padSize)(padSize)(l(0.0f)) |>
-          slide2D(stencilSize)(1) |>
+          slide2D(stencilSize, 1) |>
           mapGlobal(1)(mapGlobal(0)(fun(nbh => join(nbh) |> oclReduceSeq(AddressSpace.Private)(add)(l(0.0f)))))
       )
       )
@@ -157,7 +156,7 @@ class stencil extends idealised.util.Tests {
       nFun(n => fun(ArrayType(n, ArrayType(n, float)))(input =>
         input |>
           padCst2D(padSize)(padSize)(l(0.0f)) |>
-          slide2D(stencilSize)(1) |>
+          slide2D(stencilSize, 1) |>
           //partition2D(padSize, N - 2*padSize + ((1 + stencilSize) % 2)) :>>
           partition(3)(n2nFun(m => SteppedCase(m, Seq(padSize, n - 2 * padSize, padSize)))) |>
           depMapSeq(

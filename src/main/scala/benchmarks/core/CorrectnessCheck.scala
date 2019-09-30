@@ -1,6 +1,6 @@
 package benchmarks.core
 
-import idealised.utils.Display
+import util.Display
 
 sealed trait CorrectnessCheck extends Display{
   final def isCorrect:Boolean = this == Correct

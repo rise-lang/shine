@@ -6,7 +6,7 @@ import lift.core.DSL._
 import lift.core.primitives._
 import lift.OpenCL.primitives._
 
-class fft extends idealised.util.Tests {
+class fft extends test_util.Tests {
   def createStockhamIterationLambda(p: Int, LPrevIter: Int, N: Int): Expr = {
     val r = N / (LPrevIter * p)
 

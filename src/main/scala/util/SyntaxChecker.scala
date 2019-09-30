@@ -1,8 +1,7 @@
-package idealised.util
-
-import sys.process._
+package util
 
 import scala.language.postfixOps
+import scala.sys.process._
 
 object SyntaxChecker {
 

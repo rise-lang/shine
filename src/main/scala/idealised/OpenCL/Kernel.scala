@@ -5,9 +5,9 @@ import idealised.DPIA.Phrases.Identifier
 import idealised.DPIA.Types._
 import idealised.DPIA._
 import idealised.{C, OpenCL}
-import idealised.utils._
 import lift.arithmetic._
 import opencl.executor._
+import util.{Time, TimeSpan}
 
 import scala.collection.immutable.List
 import scala.collection.{Seq, immutable}
@@ -302,6 +302,10 @@ case class Kernel(decls: Seq[C.AST.Decl],
       case idealised.DPIA.Types.float  => output.asFloatArray()
       case idealised.DPIA.Types.int    => output.asIntArray()
       case idealised.DPIA.Types.double => output.asDoubleArray()
+      // TODO: generalize
+      case idealised.DPIA.Types.RecordType(idealised.DPIA.Types.float4, idealised.DPIA.Types.float4) => output.asFloatArray()
+      case idealised.DPIA.Types.RecordType(idealised.DPIA.Types.float, idealised.DPIA.Types.float) => output.asFloatArray()
+      case idealised.DPIA.Types.float4 => output.asFloatArray()
       case _ => throw new IllegalArgumentException("Return type of the given lambda expression " +
         "not supported: " + dt.toString)
     }).asInstanceOf[R]
@@ -336,6 +340,13 @@ case class Kernel(decls: Seq[C.AST.Decl],
       }
     case _: NatToDataApply =>  throw new Exception("This should not happen")
     case _: DataTypeIdentifier => throw new Exception("This should not happen")
+  }
+
+  case class SizeInByte(value: Nat) {
+    def *(rhs: Nat) = SizeInByte(value * rhs)
+    def +(rhs: SizeInByte) = SizeInByte(value + rhs.value)
+
+    override def toString = s"$value bytes"
   }
 
   private implicit class SubstitutionsHelper(size: SizeInByte) {
