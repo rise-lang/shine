@@ -223,7 +223,7 @@ object primitives {
   }
 
   case object add extends Primitive {
-    override def t: Type = implDT(t => t ->: t ->: t)
+    override def t: Type = implBT(t => t ->: t ->: t)
   }
   case object sub extends Primitive {
     override def t: Type = add.t
@@ -239,7 +239,7 @@ object primitives {
   }
 
   case object gt extends Primitive {
-    override def t: Type = implDT(t => t ->: t ->: bool)
+    override def t: Type = implBT(t => t ->: t ->: bool)
   }
   case object lt extends Primitive {
     override def t: Type = gt.t

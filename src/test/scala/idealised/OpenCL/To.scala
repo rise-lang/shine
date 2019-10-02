@@ -7,8 +7,7 @@ import lift.core.types._
 import lift.core.types.AddressSpace._
 import lift.OpenCL.primitives._
 
-class To extends test_util.TestsWithExecutor {
-
+class To extends test_util.Tests {
   test("To creates OpenCLNew with appropriate data type: private mem with two mapLocal nesting two mapSeq") {
     val e = nFun((m, n, o, p) =>
               fun(m`.`n`.`o`.`p`.`float)(xs =>

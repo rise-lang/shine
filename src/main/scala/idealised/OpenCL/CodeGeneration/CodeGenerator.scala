@@ -100,7 +100,14 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       case RecordAcc(_, _, fst, snd) => path match {
         case FstMember :: ps => acc(fst, env, ps, cont)
         case SndMember :: ps => acc(snd, env, ps, cont)
-        case _ => error("Expected a tuple access on the path.")
+        case Nil =>
+          // FIXME: hacky
+          acc(fst, env, Nil, { case C.AST.StructMemberAccess(a1, _) =>
+            acc(snd, env, Nil, { case C.AST.StructMemberAccess(a2, _) =>
+              assert(a1 == a2)
+              cont(a1)
+            })})
+        case _ => error(s"did not expect $path")
       }
 
       case _ => super.acc(phrase, env, path, cont)
@@ -181,11 +188,6 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
       case OpenCLFunction(name, _, _, args) =>
         CCodeGen.codeGenForeignCall(name, args, env, Nil, cont)
-
-      case Map(n, dt, _, f, e) => path match {
-        case (i : CIntExpr) :: ps => exp( f( Idx(n, dt, AsIndex(n, Natural(i)), e) ), env, ps, cont)
-        case _ => error(s"Expected a C-Integer-Expression on the path.")
-      }
 
       case IdxDistribute(_, _, stride, _, _, e) => path match {
         case (i : CIntExpr) :: ps => exp(e, env, CIntExpr(i / stride) :: ps, cont)
@@ -320,12 +322,14 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
               C.AST.Comment("iteration count is exactly 1, no loop emitted"),
               C.AST.DeclStmt(C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0))))),
               updatedGen.cmd(p, env))
+            /* FIXME?
           case _ if (range.start.min.min == Cst(0) && range.stop == Cst(1)) ||
                     (range.numVals.min == NegInf && range.numVals.max == Cst(1)) =>
             C.AST.Block(collection.Seq(
               C.AST.DeclStmt(init),
               C.AST.IfThenElse(cond, updatedGen.cmd(p, env) , None)
             ))
+             */
           // default case
           case _ =>
             C.AST.Stmts(

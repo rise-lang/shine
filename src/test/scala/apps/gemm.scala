@@ -315,7 +315,7 @@ class gemm extends test_util.TestsWithExecutor {
     }
   }
 
-  test("OpenCL keplerBest version produces the expected result") {
+  ignore("OpenCL keplerBest version produces the expected result") {
     import idealised.OpenCL._
     import scala.util.Random
 
@@ -332,14 +332,14 @@ class gemm extends test_util.TestsWithExecutor {
 
     val gold = matrixMatrixMultiply(A, B, C, alpha, beta)
 
-    val runKernel = gen.OpenCLKernel(ocl.keplerBest).as[ScalaFunction `(`
+    val runKernel = gen.OpenCLKernel(LocalSize((2, 2)), GlobalSize((n/2, n/2)))(ocl.keplerBest, "KERNEL").as[ScalaFunction `(`
       Int `,` Int `,` Int `,`
       Array[Array[Float]] `,`
       Array[Array[Float]] `,`
       Array[Array[Float]] `,`
       Float `,`
       Float `)=>` Array[Float]]
-    val (flatOutput, _) = runKernel(LocalSize((2, 2)), GlobalSize((n/2, n/2)))(n `,` m `,` k `,` A `,` B `,` C `,` alpha `,` beta)
+    val (flatOutput, _) = runKernel(n `,` m `,` k `,` A `,` B `,` C `,` alpha `,` beta)
 
     val output: Array[Array[Float]] = flatOutput.grouped(n).toArray
 

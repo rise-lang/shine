@@ -30,12 +30,13 @@ object AdjustArraySizesForAllocations {
                                                  parallInfo: List[ParallelismInfo]): List[ParallelismInfo] = {
     p match {
       case mG@MapGlobal(dim) => visitAndGatherInformation(mG.f, BasicInfo(Global, dim) :: parallInfo)
-
       case mWG@MapWorkGroup(dim) => visitAndGatherInformation(mWG.f, BasicInfo(WorkGroup, dim) :: parallInfo)
-
       case mL@MapLocal(dim) => visitAndGatherInformation(mL.f, BasicInfo(Local, dim) :: parallInfo)
-
       case mS: MapSeq => visitAndGatherInformation(mS.f, BasicInfo(Sequential, -1) :: parallInfo)
+      case mS: MapSeqUnroll => visitAndGatherInformation(mS.f, BasicInfo(Sequential, -1) :: parallInfo)
+
+      // FIXME: works for scalars
+      case _: OpenCLReduceSeq | _: OpenCLIterate => parallInfo
 
       case t: Record => {
         val fstInfo = visitAndGatherInformation(t.fst, List.empty)
@@ -44,8 +45,20 @@ object AdjustArraySizesForAllocations {
       }
 
       case Lambda(_, p) => visitAndGatherInformation(p, parallInfo)
+      case Fst(_, _, p) => visitAndGatherInformation(p, parallInfo) match {
+        case Nil => Nil
+        case RecordInfo(fst, _) :: Nil => fst
+        case pi => error(s"did not expect $pi")
+      }
+      case Snd(_, _, p) => visitAndGatherInformation(p, parallInfo) match {
+        case Nil => Nil
+        case RecordInfo(_, snd) :: Nil => snd
+        case pi => error(s"did not expect $pi")
+      }
 
-      case _: Identifier[_] | _: Literal | _: Natural => parallInfo
+      case _: Identifier[_] | _: Literal | _: Natural |
+           _: VectorFromScalar | _: Cast | _: ForeignFunction |
+           _: BinOp | _: UnaryOp => parallInfo
 
       case pattern => throw new Exception(s"this should not happen for now: $pattern")
     }
