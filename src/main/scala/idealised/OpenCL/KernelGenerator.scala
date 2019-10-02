@@ -51,7 +51,7 @@ object KernelGenerator {
 
     val outParam = createOutputParam(outT = p.t)
 
-    val gen = OpenCL.CodeGeneration.CodeGenerator(localSize, globalSize)
+    val gen = OpenCL.CodeGeneration.CodeGenerator()
 
     checkTypes(p) |> (p =>
 

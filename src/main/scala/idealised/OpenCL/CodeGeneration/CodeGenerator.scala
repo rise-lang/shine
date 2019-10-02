@@ -14,7 +14,7 @@ import idealised.DPIA._
 import idealised.OpenCL.AST.Barrier
 import idealised.OpenCL.FunctionalPrimitives.OpenCLFunction
 import idealised.OpenCL.ImperativePrimitives._
-import idealised.OpenCL.{BuiltInFunctionCall, GlobalSize, LocalSize, get_global_id, get_group_id, get_local_id}
+import idealised.OpenCL.{BuiltInFunctionCall, GlobalSize, LocalSize}
 import idealised._
 import lift.arithmetic
 import lift.arithmetic._
@@ -22,21 +22,17 @@ import lift.arithmetic._
 import scala.collection.{immutable, mutable}
 
 object CodeGenerator {
-  //TODO remove unused local and global size
-  def apply(localSize: Option[LocalSize], globalSize: Option[GlobalSize]): CodeGenerator =
-    new CodeGenerator(mutable.ListBuffer[Decl](), immutable.Map[String, arithmetic.Range](), localSize, globalSize)
+  def apply(): CodeGenerator =
+    new CodeGenerator(mutable.ListBuffer[Decl](), immutable.Map[String, arithmetic.Range]())
 }
 
 class CodeGenerator(override val decls: CCodeGenerator.Declarations,
-                    override val ranges: CCodeGenerator.Ranges,
-                    //TODO Use information about sizes. Sizes are currently not used in the CodeGenerator.
-                    localSize: Option[LocalSize],
-                    globalSize: Option[GlobalSize])
+                    override val ranges: CCodeGenerator.Ranges)
   extends CCodeGenerator(decls, ranges) {
   override def name: String = "OpenCL"
 
   override def updatedRanges(key: String, value: lift.arithmetic.Range): CodeGenerator =
-    new CodeGenerator(decls, ranges.updated(key, value), localSize, globalSize)
+    new CodeGenerator(decls, ranges.updated(key, value))
 
   override def cmd(phrase: Phrase[CommType], env: Environment): Stmt = {
     phrase match {

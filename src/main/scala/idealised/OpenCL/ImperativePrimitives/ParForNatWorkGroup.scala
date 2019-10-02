@@ -21,15 +21,7 @@ final case class ParForNatWorkGroup(dim:Int)(override val n:Nat,
 
   override val parallelismLevel = OpenCL.WorkGroup
 
-//  lazy val num_groups: Nat = ?
-  //    if (env.globalSize == ? || env.localSize == ?) ?
-  //    else env.globalSize /^ env.localSize
-
   override val name: String = freshName("wg_id_")
-
-//  lazy val num_groups_range: RangeAdd =
-//    if (num_groups == ?) ContinuousRange(1, PosInf)
-//    else RangeAdd(num_groups, num_groups + 1, 1)
 
   override def synchronize: Stmt = Comment("par for workgroup sync")
 }

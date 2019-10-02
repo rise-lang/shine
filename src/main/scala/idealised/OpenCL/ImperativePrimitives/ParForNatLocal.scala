@@ -25,9 +25,5 @@ final case class ParForNatLocal(dim:Int)(override val n:Nat,
 
   override val name: String = freshName("l_id_")
 
-//  lazy val local_size_range: RangeAdd = ContinuousRange(1, PosInf)
-  //    if (env.localSize == ?) ContinuousRange(1, PosInf)
-  //    else RangeAdd(env.localSize, env.localSize + 1, 1)
-
   override def synchronize: Stmt = Barrier(local = true, global = true)
 }

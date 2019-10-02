@@ -23,27 +23,27 @@ object FlagPrivateArrayLoops {
   private def varsToEliminate(p: Phrase[CommType]): mutable.Set[String] = {
     var eliminateVars = mutable.Set[String]()
 
-    case class Visitor(privMemIdent: Set[Identifier[_]],
-                       indexingIdent: Set[String])
+    case class Visitor(privMemIdents: Set[Identifier[_]],
+                       indexingIdents: Set[String])
       extends VisitAndRebuild.Visitor
     {
       override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = p match {
         case OpenCLNew(AddressSpace.Private, _, Lambda(i: Identifier[_], _)) =>
-          Continue(p, this.copy(privMemIdent = privMemIdent + i))
+          Continue(p, this.copy(privMemIdents = privMemIdents + i))
         case Idx(_, _, i, _) =>
-          Continue(p, this.copy(indexingIdent = indexingIdent ++ collectIndexingIdents(i)))
+          Continue(p, this.copy(indexingIdents = indexingIdents ++ collectIndexingIdents(i)))
         case IdxAcc(_, _, i, _) =>
-          Continue(p, this.copy(indexingIdent = indexingIdent ++ collectIndexingIdents(i)))
-        case i: Identifier[_] if privMemIdent(i) =>
-          eliminateVars ++= indexingIdent
+          Continue(p, this.copy(indexingIdents = indexingIdents ++ collectIndexingIdents(i)))
+        case i: Identifier[_] if privMemIdents(i) =>
+          eliminateVars ++= indexingIdents
           Stop(p)
         case Literal(ArrayData(_)) =>
-          eliminateVars ++= indexingIdent
+          eliminateVars ++= indexingIdents
           Stop(p)
         case OpenCLParFor(_, _, out, Lambda(i: Identifier[_], Lambda(o: Identifier[_], _)), _, _, _)
-        if collectIdent(out).exists(privMemIdent(_)) =>
+        if collectIdents(out).exists(privMemIdents(_)) =>
           eliminateVars += i.name
-          Continue(p, this.copy(privMemIdent = privMemIdent + o))
+          Continue(p, this.copy(privMemIdents = privMemIdents + o))
         case _ =>
           Continue(p, this)
       }
@@ -92,39 +92,39 @@ object FlagPrivateArrayLoops {
   }
 
   private def collectIndexingIdents[T <: PhraseType](p: Phrase[T]): Set[String] = {
-    var vars = mutable.Set[String]()
+    var idents = mutable.Set[String]()
 
     VisitAndRebuild(p, new VisitAndRebuild.Visitor {
       override def nat[N <: Nat](n: N): N = {
-        vars ++= n.varList.map(_.name)
+        idents ++= n.varList.map(_.name)
         n
       }
 
       override def phrase[T2 <: PhraseType](p: Phrase[T2]): Result[Phrase[T2]] = {
         p match {
-          case i: Identifier[_] => vars += i.name
+          case i: Identifier[_] => idents += i.name
           case _ =>
         }
         Continue(p, this)
       }
     })
 
-    vars.toSet
+    idents.toSet
   }
 
-  private def collectIdent[T <: PhraseType](p: Phrase[T]): Set[Identifier[_]] = {
-    var vars = mutable.Set[Identifier[_]]()
+  private def collectIdents[T <: PhraseType](p: Phrase[T]): Set[Identifier[_]] = {
+    var idents = mutable.Set[Identifier[_]]()
 
     VisitAndRebuild(p, new VisitAndRebuild.Visitor {
       override def phrase[T2 <: PhraseType](p: Phrase[T2]): Result[Phrase[T2]] = {
         p match {
-          case i: Identifier[_]  => vars += i
+          case i: Identifier[_]  => idents += i
           case _ =>
         }
         Continue(p, this)
       }
     })
 
-    vars.toSet
+    idents.toSet
   }
 }

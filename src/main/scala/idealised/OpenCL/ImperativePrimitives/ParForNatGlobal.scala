@@ -25,9 +25,5 @@ final case class ParForNatGlobal(dim:Int)(override val n:Nat,
 
   override val name: String = freshName("gl_id_")
 
-  //  override lazy val init: OclFunction = get_global_id(dim, RangeAdd(0, env.globalSize, 1))
-  //
-  //  override lazy val step: OclFunction = get_global_size(dim, RangeAdd(env.globalSize, env.globalSize + 1, 1))
-
   override def synchronize: Stmt = Comment("par for global sync")
 }
