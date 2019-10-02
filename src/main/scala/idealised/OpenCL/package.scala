@@ -39,25 +39,16 @@ package object OpenCL {
   object get_local_id {
     def apply(param:Int) =
       BuiltInFunctionCall("get_local_id", param, ContinuousRange(0, get_local_size(param)))
-
-    def apply(param:Int, range: Range) =
-      BuiltInFunctionCall("get_local_id", param, range)
   }
 
   object get_global_id {
     def apply(param:Int) =
       BuiltInFunctionCall("get_global_id", param, ContinuousRange(0, get_global_size(param)))
-
-    def apply(param:Int, range: Range) =
-      BuiltInFunctionCall("get_global_id", param, range)
   }
 
   object get_group_id {
     def apply(param:Int) =
       BuiltInFunctionCall("get_group_id", param, ContinuousRange(0, get_num_groups(param)))
-
-    def apply(param:Int, range: Range) =
-      BuiltInFunctionCall("get_group_id", param, range)
   }
 
   @silent("define classes/objects inside of package objects")

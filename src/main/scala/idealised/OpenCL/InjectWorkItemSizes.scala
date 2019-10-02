@@ -26,38 +26,6 @@ object InjectWorkItemSizes {
                                    globalSize.get.size(2) /^ localSize.get.size(2))
 
     VisitAndRebuild(p, new VisitAndRebuild.Visitor {
-      override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = p match {
-        case f@OpenCLParFor(n, dt, out, body, _, step, _) => f match {
-          case ParForGlobal(dim) => {
-            val init = get_global_id(dim, ContinuousRange(0, gSizes(dim)))
-            Continue (ParForGlobal(dim)(n, dt, out, body, init, gSizes(dim)), this)
-          }
-          case ParForLocal(dim) => {
-            val init = get_local_id(dim, ContinuousRange(0, lSizes(dim)))
-            Continue (ParForLocal(dim)(n, dt, out, body, init, lSizes(dim)), this)
-          }
-          case ParForWorkGroup(dim) => {
-            val init = get_group_id(dim, ContinuousRange(0, numGroups(dim)))
-            Continue (ParForWorkGroup(dim)(n, dt, out, body, init, numGroups(dim)), this)
-          }
-        }
-        case f@OpenCLParForNat(n, ft, out, body, _, step, _) => f match {
-          case ParForNatGlobal(dim) => {
-            val init = get_global_id(dim, ContinuousRange(0, gSizes(dim)))
-            Continue (ParForNatGlobal(dim)(n, ft, out, body, init, gSizes(dim)), this)
-          }
-          case ParForNatLocal(dim) => {
-            val init = get_local_id(dim, ContinuousRange(0, lSizes(dim)))
-            Continue (ParForNatLocal(dim)(n, ft, out, body, init, lSizes(dim)), this)
-          }
-          case ParForNatWorkGroup(dim) => {
-            val init = get_group_id(dim, ContinuousRange(0, numGroups(dim)))
-            Continue (ParForNatWorkGroup(dim)(n, ft, out, body, init, numGroups(dim)), this)
-          }
-        }
-        case _ => Continue(p, this)
-      }
-
       override def data[T <: DataType](dt: T): T =
         DataType.substitute(numGroups(2), get_num_groups(2),
           DataType.substitute(numGroups(1), get_num_groups(1),

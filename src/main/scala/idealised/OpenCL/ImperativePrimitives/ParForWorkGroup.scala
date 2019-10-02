@@ -18,8 +18,8 @@ final case class ParForWorkGroup(dim: Int)(override val n: Nat,
                                            unroll: Boolean = false)
   extends OpenCLParFor(n, dt, out, body, init, step, unroll) {
 
-  override val makeParFor =
-    (n: Nat, dt: DataType, out: Phrase[AccType], body: Phrase[ExpType ->: AccType ->: CommType]) =>
+  override val makeCLParFor =
+    (n: Nat, dt: DataType, out: Phrase[AccType], body: Phrase[ExpType ->: AccType ->: CommType], init: Nat, step: Nat) =>
       ParForWorkGroup(dim)(n, dt, out, body, init, step, unroll)
 
   override val parallelismLevel = OpenCL.WorkGroup

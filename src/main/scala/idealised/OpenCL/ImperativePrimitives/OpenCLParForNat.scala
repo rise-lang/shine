@@ -16,6 +16,10 @@ abstract class OpenCLParForNat(n: Nat,
                                val unroll: Boolean)
   extends AbstractParForNat(n, ft, out, body) {
 
+  // TODO: This should not extend OpenMP's par for
+  // it should include init and step in visitAndRebuild
+  assert(false)
+
   def parallelismLevel: idealised.OpenCL.ParallelismLevel
 
   //  protected var env: OpenCLOldCodeGenerator.Environment = _

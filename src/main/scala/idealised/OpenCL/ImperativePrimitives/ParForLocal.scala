@@ -20,8 +20,8 @@ final case class ParForLocal(dim: Int)(override val n: Nat,
                                        unroll: Boolean = false)
   extends OpenCLParFor(n, dt, out, body, init, step, unroll) {
 
-  override val makeParFor =
-    (n: Nat, dt: DataType, out: Phrase[AccType], body: Phrase[ExpType ->: AccType ->: CommType]) =>
+  override val makeCLParFor =
+    (n: Nat, dt: DataType, out: Phrase[AccType], body: Phrase[ExpType ->: AccType ->: CommType], init: Nat, step: Nat) =>
       ParForLocal(dim)(n, dt, out, body, init, step, unroll)
 
   override val parallelismLevel = OpenCL.Local
