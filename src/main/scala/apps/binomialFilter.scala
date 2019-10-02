@@ -85,8 +85,7 @@ object binomialFilter {
         |> padCst(1)(0)(vectorFromScalar(x `@` lidx(0, w)))
         |> padCst(0)(1)(vectorFromScalar(x `@` lidx(w - 1, w)))
     ))) >> padClamp(1)(1) >>
-    // TODO: mapGlobal
-    slide(3)(1) >> mapSeq(transpose >>
+    slide(3)(1) >> mapGlobal(transpose >>
       map(Dh) >>
       oclSlideSeq(slideSeq.Values)(AddressSpace.Private)(3)(1)(id)(shuffle >> Dv)
     )
