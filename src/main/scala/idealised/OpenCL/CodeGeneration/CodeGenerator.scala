@@ -85,7 +85,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
           acc(a, env, CIntExpr((i * m) + j) :: ps, cont)
 
         case (i : CIntExpr) :: Nil =>
-
+          // TODO: check alignment and use pointer with correct address space
           acc(a, env, CIntExpr(i * m) :: Nil, {
             case ArraySubscript(v, idx) =>
               // the continuation has to add the value ...
@@ -117,8 +117,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
                    cont: Expr => Stmt): Stmt = {
     phrase match {
       case Phrases.Literal(n) => (path, n.dataType) match {
-        case (Nil, _: VectorType)       => cont( OpenCLCodeGen.codeGenLiteral(n) )
-        case (i :: Nil, _: VectorType)  => ???
+        case (Nil, _: VectorType) => cont(OpenCLCodeGen.codeGenLiteral(n))
         case _ => super.exp(phrase, env, path, cont)
       }
       case UnaryOp(op, e) => phrase.t.dataType match {
@@ -137,19 +136,33 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
           ))
         case _ => super.exp(phrase, env, path, cont)
       }
-      case AsVector(n, _, _, e) => path match {
-        case (i : CIntExpr) :: (j : CIntExpr) :: ps => exp(e, env, CIntExpr((i * n) + j) :: ps, cont)
+      case AsVector(n, m, dt, e) => path match {
+        case (i : CIntExpr) :: (j : CIntExpr) :: ps =>
+          exp(e, env, CIntExpr((i * n) + j) :: ps, cont)
+        case (i : CIntExpr) :: Nil =>
+          OpenCLCodeGen.codeGenVectorLiteral(n.eval, dt, j =>
+            Idx(n * m, dt, AsIndex(n * m, Natural((i * n) + j)), e),
+            env, cont
+          )
+        case _ => error(s"unexpected $path")
+      }
+      case AsVectorAligned(n, _, _, e) => path match {
+        case (i : CIntExpr) :: (j : CIntExpr) :: ps =>
+          exp(e, env, CIntExpr((i * n) + j) :: ps, cont)
         case (i : CIntExpr) :: Nil =>
           exp(e, env, CIntExpr(i * n) :: Nil, { // i * n
             case ArraySubscript(v, idx) =>
+              // TODO: use pointer with correct address space
               // TODO: check that idx is the right offset ...
               val newIdx = C.AST.BinaryExpr(idx, C.AST.BinaryOperator./, C.AST.Literal(n.toString) )
               cont( C.AST.FunCall(C.AST.DeclRef(s"vload$n"), immutable.Seq(newIdx, v)) )
+            case e2 => error(s"unexpected $e2")
           })
-        case _ => error(s"Expected path to have two elements")
+        case _ => error(s"unexpected $path")
       }
       case AsScalar(_, m, _, e) => path match {
-        case (i : CIntExpr) :: ps =>     exp(e, env, CIntExpr(i / m) :: ps, cont)
+        case (i : CIntExpr) :: ps =>
+          exp(e, env, CIntExpr(i / m) :: CIntExpr(i % m) :: ps, cont)
         case _ =>           error(s"Expected path to be not empty")
       }
       // TODO: this has to be refactored
@@ -161,7 +174,9 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
         case Nil =>
           exp(e, env, Nil, e =>
-            cont(C.AST.Literal(s"($st$n)(" + C.AST.Printer(e) + ")")))
+            cont(OpenCL.AST.VectorLiteral(
+              OpenCL.AST.VectorType(n, typ(st).asInstanceOf[C.AST.BasicType]),
+              immutable.Seq(e))))
 
         case _ => error(s"Didn't expect path: $path")
       }
@@ -189,6 +204,17 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
     case VectorType(n, elemType) =>
       OpenCL.AST.VectorType(n, super.typ(elemType).asInstanceOf[BasicType])
     case _ => super.typ(dt)
+  }
+
+  override def generateAccess(dt: DataType,
+                              expr: Expr,
+                              path: Path,
+                              env: Environment): Expr = {
+    (path, dt) match {
+      case ((i: CIntExpr) :: _, _: VectorType) =>
+        OpenCL.AST.VectorSubscript(expr, C.AST.ArithmeticExpr(i))
+      case _ => super.generateAccess(dt, expr, path, env)
+    }
   }
 
   override def genNat(n: Nat, env: Environment, cont:Expr => Stmt): Stmt = n match {
@@ -347,29 +373,29 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
               range.numVals match {
                 // iteration count is 0 => skip body; no code to be emitted
                 case Cst(0) => C.AST.Comment("iteration count is 0, no loop emitted")
-                  // TODO: substitute a `@d` Cst(0) earlier ...
-//                // iteration count is 1 => no loop
-//                case Cst(1) =>
-//                  C.AST.Stmts(C.AST.Stmts(
-//                    C.AST.Comment("iteration count is exactly 1, no loop emitted"),
-//                    C.AST.DeclStmt(C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0))))),
-//                    updatedGen.cmd(p, env))
+                // TODO: substitute a `@d` Cst(0) earlier ...
+                //                // iteration count is 1 => no loop
+                //                case Cst(1) =>
+                //                  C.AST.Stmts(C.AST.Stmts(
+                //                    C.AST.Comment("iteration count is exactly 1, no loop emitted"),
+                //                    C.AST.DeclStmt(C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0))))),
+                //                    updatedGen.cmd(p, env))
                 // default case
                 case _ =>
                   C.AST.Stmts(
                     C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
                       C.AST.Block(immutable.Seq(updatedGen.cmd(p, env)))),
                     f.synchronize)
-              })))})
+              })))
+      })
     }
 
     def codeGenLiteral(d: OperationalSemantics.Data): Expr = {
       d match {
-        case VectorData(vector) => d.dataType match {
-          case VectorType(n, elemType) =>
-            C.AST.Literal("(" + s"($elemType$n)" + vector.mkString("{", ",", "}") + ")")
-          case _ => error("This should not happen")
-        }
+        case VectorData(vector) =>
+          OpenCL.AST.VectorLiteral(
+            typ(d.dataType).asInstanceOf[OpenCL.AST.VectorType],
+            vector.map(codeGenLiteral))
         case _ => CCodeGen.codeGenLiteral(d)
       }
     }
@@ -383,6 +409,18 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       DeclStmt(
         VarDecl(name, PointerType(a, typ(elemType)), AddressSpace.Private, Some(expr)))
     }
-  }
 
+    def codeGenVectorLiteral(n: Int, dt: ScalarType,
+                             f: Int => Phrase[ExpType],
+                             env: Environment,
+                             cont: Expr => Stmt,
+                             elements: Vector[Expr] = Vector()): Stmt = {
+      if (elements.length < n) {
+        exp(f(elements.length), env, Nil, e =>
+          codeGenVectorLiteral(n, dt, f, env, cont, elements :+ e))
+      } else {
+        cont(OpenCL.AST.VectorLiteral(typ(VectorType(n, dt)).asInstanceOf[OpenCL.AST.VectorType], elements))
+      }
+    }
+  }
 }

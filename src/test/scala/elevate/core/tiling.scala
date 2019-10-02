@@ -26,7 +26,7 @@ import org.scalatest.Ignore
 
 import scala.language.implicitConversions
 
-class tiling extends util.Tests {
+class tiling extends test_util.Tests {
 
   implicit def rewriteResultToExpr(r: RewriteResult[Expr]): Expr = r.get
 

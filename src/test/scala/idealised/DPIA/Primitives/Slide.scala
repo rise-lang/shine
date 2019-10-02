@@ -2,18 +2,13 @@ package idealised.DPIA.Primitives
 
 import lift.core.DSL._
 import lift.core.types._
-import lift.core.primitives.{slide, map, mapSeq}
+import lift.core.primitives.{map, mapSeq, slide}
 import lift.core.HighLevelConstructs.slide2D
-
 import benchmarks.core.SimpleRunOpenCLProgram
 import idealised.OpenCL.KernelWithSizes
-import util.gen
-import idealised.utils.Time.ms
-import idealised.utils.TimeSpan
+import util.{TimeSpan, gen}
 
-import scala.util.Random
-
-class Slide extends util.Tests {
+class Slide extends test_util.Tests {
 
   test("Simple slide example should generate syntactic valid C code with two for loops") {
     val e =

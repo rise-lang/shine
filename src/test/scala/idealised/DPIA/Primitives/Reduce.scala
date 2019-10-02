@@ -13,7 +13,7 @@ import lift.core.semantics.{IndexData, NatData}
 
 import scala.language.postfixOps
 
-class Reduce extends util.TestsWithExecutor {
+class Reduce extends test_util.TestsWithExecutor {
   val add = fun(a => fun(b => a + b))
 
   test("Simple example should generate syntactic valid C code with one loop") {

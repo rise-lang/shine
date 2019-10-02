@@ -5,7 +5,7 @@ import lift.core.types._
 import lift.core.primitives.mapSeq
 import util.gen
 
-class Map extends util.Tests {
+class Map extends test_util.Tests {
   test("Simple 1D map example should generate syntactic valid C code with one for loop") {
     val e =
       nFun(n => fun(ArrayType(n, float))(xs =>

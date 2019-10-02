@@ -5,7 +5,7 @@ import lift.core.types._
 import lift.core.primitives.{split, map, mapSeq}
 import util.gen
 
-class Split extends util.Tests {
+class Split extends test_util.Tests {
 
   test("Simple split example should generate syntactic valid C code with two for loops") {
     val e =

@@ -7,7 +7,7 @@ import lift.core.primitives._
 import lift.core.semantics.NatData
 import util.gen
 
-class NatExpr extends util.Tests {
+class NatExpr extends test_util.Tests {
   test("Nat can be used as DataType inside of an expression in C.") {
     gen.CProgram(fun(NatType)(n => n + Literal(NatData(1))))
   }

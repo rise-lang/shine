@@ -6,7 +6,7 @@ import lift.core.primitives._
 
 import util.gen
 
-class SplitSlide extends util.Tests {
+class SplitSlide extends test_util.Tests {
 
   val n = 8
   val sz = 3

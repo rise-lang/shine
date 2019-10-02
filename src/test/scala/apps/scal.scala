@@ -6,7 +6,7 @@ import lift.core.types._
 import lift.core.primitives._
 import util.gen
 
-class scal extends util.Tests {
+class scal extends test_util.Tests {
 
   private val simpleScal = nFun(n => fun(ArrayType(n, float))(input => fun(float)(alpha =>
     input |> mapSeq(fun(x => alpha * x))
@@ -30,7 +30,7 @@ class scal extends util.Tests {
       input |>
         split(4 * 128 * 128) |>
         mapPar(
-          asVector(4) >>
+          asVectorAligned(4) >>
             split(128) >>
             mapSeq(mapSeq(
               fun(x => vectorFromScalar(alpha) * x)
@@ -49,7 +49,7 @@ class scal extends util.Tests {
       input |>
         split(4 * 128 * 128) |>
         mapPar(
-          asVector(4) >>
+          asVectorAligned(4) >>
             mapSeq(
               fun(x => vectorFromScalar(alpha) * x)
             ) >> asScalar
@@ -95,7 +95,7 @@ class scal extends util.Tests {
         input |>
           split(4 * 128 * 128) |>
           mapWorkGroup(
-            asVector(4) >>
+            asVectorAligned(4) >>
               split(128) >>
               mapLocal(mapSeq(
                 fun(x => vectorFromScalar(alpha) * x)

@@ -7,7 +7,7 @@ import lift.OpenCL.primitives._
 import lift.OpenMP.primitives._
 import util.gen
 
-class StructDecl extends util.Tests {
+class StructDecl extends test_util.Tests {
   val id = fun(x => x)
   val addT = fun(t => t._1 + t._2)
 

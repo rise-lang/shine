@@ -250,6 +250,13 @@ object primitives {
 
   // TODO: should vectorisation be in the core or not?
 
+  // TODO: track alignment in type system?
+  case object asVectorAligned extends Primitive {
+    override def t: Type = nFunT(n => implN(m => implDT(a =>
+      ArrayType(m * n, a) ->: ArrayType(m, VectorType(n, a))
+    )))
+  }
+
   case object asVector extends Primitive {
     override def t: Type = nFunT(n => implN(m => implST(t =>
       ArrayType(m * n, t) ->: ArrayType(m, VectorType(n, t))

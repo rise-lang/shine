@@ -2,10 +2,9 @@ package benchmarks.core
 
 import idealised.DPIA
 import idealised.OpenCL.{GlobalSize, KernelWithSizes, LocalSize}
-import idealised.utils.{Display, Time, TimeSpan}
-import lift.arithmetic.ArithExpr
 import lift.core.Expr
 import lift.core.types.infer
+import util.{Display, Time, TimeSpan}
 
 import scala.util.Random
 

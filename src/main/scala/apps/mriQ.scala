@@ -5,10 +5,8 @@ import lift.core.DSL._
 import lift.core.types._
 import lift.core.primitives._
 import lift.OpenCL.primitives._
-import idealised.utils._
-import util.gen
 
-class mriQ extends util.TestsWithExecutor {
+object mriQ {
   private val phiMag = foreignFun("phiMag", Seq("phiR", "phiI"),
     "{ return phiR * phiR + phiI * phiI; }",
     float ->: float ->: float)
@@ -39,32 +37,33 @@ class mriQ extends util.TestsWithExecutor {
     (x`.`float) `x3 ->:` (x`.`float) ->: (x`.`float) ->: (k`.`(float x float x float x float)) ->: (x`.`(float x float))
   )((x, y, z, Qr, Qi, kvalues) =>
     zip(x)(zip(y)(zip(z)(zip(Qr)(Qi)))) |>
-    mapGlobal(fun(t =>
-      toPrivate(t._1) |> let(fun(sX =>
-        toPrivate(t._2._1) |> let(fun(sY =>
-          toPrivate(t._2._2._1) |> let(fun(sZ =>
-            kvalues |> oclReduceSeq(AddressSpace.Private)(fun((acc, p) =>
-              qFun(sX)(sY)(sZ)(p._1._1._1)(p._1._1._2)(p._1._2)(p._2)(acc)
-            ))(pair(t._2._2._2._1, t._2._2._2._2))
+      mapGlobal(fun(t =>
+        toPrivate(t._1) |> let(fun(sX =>
+          toPrivate(t._2._1) |> let(fun(sY =>
+            toPrivate(t._2._2._1) |> let(fun(sZ =>
+              kvalues |> oclReduceSeq(AddressSpace.Private)(fun((acc, p) =>
+                qFun(sX)(sY)(sZ)(p._1._1._1)(p._1._1._2)(p._1._2)(p._2)(acc)
+              ))(pair(t._2._2._2._1, t._2._2._2._2))
+            ))
           ))
         ))
       ))
-    ))
   )))
 
   import idealised.OpenCL._
-  private val K = 32
-  private val X = 32
+  import util.{Time, TimeSpan}
 
   def runOriginalComputePhiMag(name: String,
-                               localSize: LocalSize,
-                               globalSize: GlobalSize,
                                phiR: Array[Float],
                                phiI: Array[Float]): (Array[Float], TimeSpan[Time.ms]) = {
     import opencl.executor._
 
-    val code = util.readFile(s"src/test/scala/apps/originalLift/$name")
+    val code = util.readFile(s"src/main/scala/apps/originalLift/$name")
     val kernelJNI = Kernel.create(code, "KERNEL", "")
+
+    val K = phiR.length
+    val localSize = LocalSize(1)
+    val globalSize = GlobalSize(K)
 
     val float_bytes = 4
     val output_bytes = K * float_bytes
@@ -90,9 +89,20 @@ class mriQ extends util.TestsWithExecutor {
     (output, TimeSpan.inMilliseconds(runtime))
   }
 
+  def runComputePhiMag(k: KernelNoSizes,
+                       phiR: Array[Float],
+                       phiI: Array[Float]): (Array[Float], TimeSpan[Time.ms]) = {
+    val K = phiR.length
+    val localSize = LocalSize(1)
+    val globalSize = GlobalSize(K)
+
+    val f = k.as[ScalaFunction `(`
+      Int `,` Array[Float] `,` Array[Float]
+      `)=>` Array[Float]]
+    f(localSize, globalSize)(K `,` phiR `,` phiI)
+  }
+
   def runOriginalComputeQ(name: String,
-                          localSize: LocalSize,
-                          globalSize: GlobalSize,
                           x: Array[Float],
                           y: Array[Float],
                           z: Array[Float],
@@ -101,8 +111,14 @@ class mriQ extends util.TestsWithExecutor {
                           kvalues: Array[Float]): (Array[Float], TimeSpan[Time.ms]) = {
     import opencl.executor._
 
-    val code = util.readFile(s"src/test/scala/apps/originalLift/$name")
+    val code = util.readFile(s"src/main/scala/apps/originalLift/$name")
     val kernelJNI = Kernel.create(code, "KERNEL", "")
+
+    val X = x.length
+    assert(kvalues.length % 4 == 0)
+    val K = kvalues.length / 4
+    val localSize = LocalSize(1)
+    val globalSize = GlobalSize(X)
 
     val float_bytes = 4
     val output_bytes = 2 * X * float_bytes
@@ -133,63 +149,24 @@ class mriQ extends util.TestsWithExecutor {
     (output, TimeSpan.inMilliseconds(runtime))
   }
 
-  def runComputePhiMag(k: KernelNoSizes,
-                       localSize: LocalSize,
-                       globalSize: GlobalSize,
-                       phiR: Array[Float],
-                       phiI: Array[Float]): (Array[Float], TimeSpan[Time.ms]) = {
-    val f = k.as[ScalaFunction `(`
-      Int `,` Array[Float] `,` Array[Float]
-      `)=>` Array[Float]]
-    f(localSize, globalSize)(K `,` phiR `,` phiI)
-  }
-
   def runComputeQ(k: KernelNoSizes,
-                  localSize: LocalSize,
-                  globalSize: GlobalSize,
                   x: Array[Float],
                   y: Array[Float],
                   z: Array[Float],
                   Qr: Array[Float],
                   Qi: Array[Float],
                   kvalues: Array[Float]): (Array[Float], TimeSpan[Time.ms]) = {
+    val X = x.length
+    assert(kvalues.length % 4 == 0)
+    val K = kvalues.length / 4
+    val localSize = LocalSize(1)
+    val globalSize = GlobalSize(X)
+
     val f = k.as[ScalaFunction `(`
       Int `,` Int `,`
       Array[Float] `,` Array[Float] `,` Array[Float] `,`
       Array[Float] `,` Array[Float] `,` Array[Float]
       `)=>` Array[Float]]
     f(localSize, globalSize)(K `,` X `,` x `,` y `,` z `,` Qr `,` Qi `,` kvalues)
-  }
-
-  test("computePhiMag versions produce same results") {
-    val random = new scala.util.Random()
-    val phiR = Array.fill(K)(random.nextFloat)
-    val phiI = Array.fill(K)(random.nextFloat)
-
-    val localSize = LocalSize(1)
-    val globalSize = GlobalSize(K)
-
-    util.runsWithSameResult(Seq(
-      ("original", runOriginalComputePhiMag("CGO17_ComputePhiMag.cl", localSize, globalSize, phiR, phiI)),
-      ("dpia", runComputePhiMag(gen.OpenCLKernel(computePhiMag), localSize, globalSize, phiR, phiI))
-    ))
-  }
-
-  test("computeQ versions produce same results") {
-    val random = new scala.util.Random()
-    val x = Array.fill(X)(random.nextFloat)
-    val y = Array.fill(X)(random.nextFloat)
-    val z = Array.fill(X)(random.nextFloat)
-    val Qr = Array.fill(X)(random.nextFloat)
-    val Qi = Array.fill(X)(random.nextFloat)
-    val kvalues = Array.fill(4 * K)(random.nextFloat)
-
-    val localSize = LocalSize(1)
-    val globalSize = GlobalSize(X)
-
-    util.runsWithSameResult(Seq(
-      ("original", runOriginalComputeQ("CGO17_ComputeQ.cl", localSize, globalSize, x, y, z, Qr, Qi, kvalues)),
-      ("dpia", runComputeQ(gen.OpenCLKernel(computeQ), localSize, globalSize, x, y, z, Qr, Qi, kvalues))
-    ))
   }
 }

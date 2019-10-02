@@ -13,10 +13,8 @@ object HighLevelConstructs {
   val unslide2D: Expr =
     map(transpose >> map(join)) >> join
 
-  val slide3D: Expr = nFun(sz => nFun(st =>
-    map(slide2D(sz, st)) >> slide(sz, st)
-      >> map(transpose >> map(transpose))
-  ))
+  def slide3D(sz: Nat, st: Nat): Expr =
+    map(slide2D(sz, st)) >> slide(sz)(st) >> map(transpose >> map(transpose))
 
   val reorderWithStride: Expr = {
     nFun(s => {
