@@ -40,9 +40,9 @@ final case class IdxDistribute(m: Nat,
 
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommType] =
-    ???
+    throw new Exception("This should never happen.")
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])
                                       (implicit context: TranslationContext): Phrase[CommType] =
-    ???
+    throw new Exception("This should never happen.")
 }
