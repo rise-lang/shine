@@ -54,7 +54,7 @@ final case class To(addrSpace: AddressSpace,
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
-    val (adjAcc, adjExpr, adjDataType) = AdjustArraySizesForAllocations(input, dt, addrSpace)
-    `new` (addrSpace) (adjDataType, tmp => acc(input)(adjAcc(tmp.wr)) `;` C(adjExpr(tmp.rd)))
+    val adj = AdjustArraySizesForAllocations(input, dt, addrSpace)
+    `new` (addrSpace) (adj.dt, tmp => acc(input)(adj.accF(tmp.wr)) `;` C(adj.exprF(tmp.rd)))
   }
 }

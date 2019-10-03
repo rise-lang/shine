@@ -10,20 +10,22 @@ import idealised.OpenCL.FunctionalPrimitives._
 import idealised.OpenCL.ImperativePrimitives._
 
 object AdjustArraySizesForAllocations {
-  type DataTypeAdjusment = (Phrase[AccType] => Phrase[AccType], Phrase[ExpType] => Phrase[ExpType], DataType)
+  case class DataTypeAdjustment(accF: Phrase[AccType] => Phrase[AccType],
+                                exprF: Phrase[ExpType] => Phrase[ExpType],
+                                dt: DataType)
 
   trait ParallelismInfo
   case class BasicInfo(parallLevel: ParallelismLevel, dim: Int) extends ParallelismInfo
   case class RecordInfo(fst: List[ParallelismInfo], snd: List[ParallelismInfo]) extends ParallelismInfo
 
-  def apply[T <: PhraseType](p: Phrase[T], dt: DataType, addrSpace: AddressSpace): DataTypeAdjusment = {
+  def apply[T <: PhraseType](p: Phrase[T], dt: DataType, addrSpace: AddressSpace): DataTypeAdjustment = {
 
     val parallInfo = visitAndGatherInformation(p, List.empty).reverse
     val adjDataType = adjustedSizeDataType(dt, parallInfo, addrSpace)
     val adjAcc = adjustedAcceptor(parallInfo, adjDataType, dt, addrSpace) _
     val adjExpr = adjustedExpr(parallInfo, adjDataType, dt, addrSpace) _
 
-    (adjAcc, adjExpr, adjDataType)
+    DataTypeAdjustment(adjAcc, adjExpr, adjDataType)
   }
 
   private def visitAndGatherInformation[T <: PhraseType](p: Phrase[T],
