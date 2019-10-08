@@ -244,14 +244,15 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case Phrases.Literal(n) => cont(path match {
         case Nil =>
-            n.dataType match {
-              case _: IndexType => CCodeGen.codeGenLiteral(n)
-              case _: ScalarType => CCodeGen.codeGenLiteral(n)
-              case _ => error ("Expected an IndexType or ScalarType.")
-          }
-        case (i : CIntExpr) :: Nil =>
           n.dataType match {
-            case _: ArrayType => C.AST.ArraySubscript(CCodeGen.codeGenLiteral(n), C.AST.ArithmeticExpr(i))
+            case _: IndexType => CCodeGen.codeGenLiteral(n)
+            case _: ScalarType => CCodeGen.codeGenLiteral(n)
+            case _ => error ("Expected an IndexType or ScalarType.")
+          }
+        case (_ : CIntExpr) :: _ =>
+          n.dataType match {
+            case _: ArrayType =>
+              generateAccess(n.dataType, CCodeGen.codeGenLiteral(n), path, env)
             case _ => error("Expected an ArrayType.")
           }
         // case (_ :: _ :: Nil, _: ArrayType) => C.AST.Literal("0.0f") // TODO: (used in gemm like this) !!!!!!!
@@ -725,8 +726,11 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case IndexData(i, _)  => C.AST.ArithmeticExpr(i)
         case _: IntData | _: FloatData | _: DoubleData | _: BoolData =>
           C.AST.Literal(d.toString)
-        case ArrayData(a) =>
-          C.AST.ArrayLiteral(typ(d.dataType).asInstanceOf[C.AST.ArrayType], a.map(codeGenLiteral))
+        case ArrayData(a) => d.dataType match {
+          case ArrayType(_, ArrayType(_, _)) =>
+            codeGenLiteral(ArrayData(a.flatten(d => d.asInstanceOf[ArrayData].a)))
+          case _ => C.AST.ArrayLiteral(typ(d.dataType).asInstanceOf[C.AST.ArrayType], a.map(codeGenLiteral))
+        }
         case RecordData(fst, snd) =>
           C.AST.RecordLiteral(typ(d.dataType), codeGenLiteral(fst), codeGenLiteral(snd))
         case VectorData(_) => throw new Exception("VectorData not supported in C")

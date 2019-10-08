@@ -1,6 +1,6 @@
 package apps
 
-import binomialFilter._
+import separableConvolution2D._
 import lift.core._
 import lift.core.types._
 import lift.core.primitives._
@@ -8,9 +8,10 @@ import lift.core.DSL._
 import lift.core.HighLevelConstructs._
 import util.gen
 
-class binomialFilterCheck extends test_util.Tests {
-  private def computeGold(h: Int, w: Int,
-                          input: Array[Array[Float]]): Array[Array[Float]] = {
+object separableConvolution2DCheck {
+  def computeGold(h: Int, w: Int,
+                  input: Array[Array[Float]],
+                  weights: Array[Array[Float]]): Array[Array[Float]] = {
     val output = Array.fill(h, w)(Float.NaN)
     val lastY = h - 1
     val lastX = w - 1
@@ -23,16 +24,30 @@ class binomialFilterCheck extends test_util.Tests {
         val c0 = if (x > 0) x - 1 else 0
         val c1 = x
         val c2 = if (x < lastX) x + 1 else lastX
-        output(y)(x) = (
-          1.0f * r0(c0) + 2.0f * r0(c1) + 1.0f * r0(c2) +
-          2.0f * r1(c0) + 4.0f * r1(c1) + 2.0f * r1(c2) +
-          1.0f * r2(c0) + 2.0f * r2(c1) + 1.0f * r2(c2)
-          ) / 16.0f
+        output(y)(x) =
+          weights(0)(0) * r0(c0) + weights(0)(1) * r0(c1) + weights(0)(2) * r0(c2) +
+            weights(1)(0) * r1(c0) + weights(1)(1) * r1(c1) + weights(1)(2) * r1(c2) +
+            weights(2)(0) * r2(c0) + weights(2)(1) * r2(c1) + weights(2)(2) * r2(c2)
       }
     }
 
     output
   }
+
+  def computeGold(h: Int, w: Int,
+                  input: Array[Array[Float]],
+                  weights: Expr): Array[Array[Float]] = {
+    import lift.core.semantics._
+    weights match {
+      case Literal(ArrayData(a)) => computeGold(h, w, input,
+        a.map(r => r.asInstanceOf[ArrayData].a.map(x => x.asInstanceOf[FloatData].f).toArray).toArray)
+      case _ => ???
+    }
+  }
+}
+
+class separableConvolution2DCheck extends test_util.Tests {
+  import separableConvolution2DCheck._
 
   private def wrapExpr(e: Expr): Expr = {
     // at least 3 for one scalar sliding window
@@ -47,7 +62,7 @@ class binomialFilterCheck extends test_util.Tests {
   private def checkC(e: Expr): Unit = {
     val random = new scala.util.Random()
     val input = Array.fill(H, W)(random.nextFloat)
-    val gold = computeGold(H, W, input)
+    val gold = computeGold(H, W, input, binomialWeights2d)
 
     val prog = gen.CProgram(wrapExpr(e))
     val testCode =
@@ -79,19 +94,19 @@ int main(int argc, char** argv) {
   }
 
   test("baseSeq compiles to C Code that passes checks") {
-    checkC(baseSeq)
+    checkC(baseSeq(binomialWeights2d))
   }
 
   test("factorisedSeq compiles to C code that passes checks") {
-    checkC(factorisedSeq)
+    checkC(factorisedSeq(binomialWeightsV)(binomialWeightsH))
   }
 
   test("separatedSeq compiles to C code that passes checks") {
-    checkC(separatedSeq)
+    checkC(separatedSeq(binomialWeightsV)(binomialWeightsH))
   }
 
   test("regRotSeq compiles to C code that passes checks") {
-    checkC(regRotSeq)
+    checkC(regRotSeq(binomialWeightsV)(binomialWeightsH))
   }
 
   import idealised.OpenCL.{LocalSize, GlobalSize}
@@ -103,7 +118,7 @@ int main(int argc, char** argv) {
 
     val random = new scala.util.Random()
     val input = Array.fill(H, W)(random.nextFloat)
-    val gold = computeGold(H, W, input).flatten
+    val gold = computeGold(H, W, input, binomialWeights2d).flatten
 
     val kernel = gen.OpenCLKernel(wrapExpr(e))
     val run = kernel.as[ScalaFunction `(`
@@ -116,15 +131,15 @@ int main(int argc, char** argv) {
 
   test("regRotPar compiles to valid OpenCL that passes checks") {
     util.withExecutor {
-      checkOCL(LocalSize(1), GlobalSize(1), regRotPar)
+      checkOCL(LocalSize(1), GlobalSize(1), regRotPar(binomialWeightsV)(binomialWeightsH))
     }
   }
 
-  test("register rotation blur with unroll should contain no modulo or division") {
+  test("register rotation binomial with unroll should contain no modulo or division") {
     val id: Expr = fun(x => x)
     val e = padClamp2D(1) >> slide(3)(1) >> mapSeq(transpose >>
-      map(dotSeqUnroll(weights1d)) >>
-      slideSeq(slideSeq.Values)(3)(1)(id)(dotSeqUnroll(weights1d))
+      map(dotSeqUnroll(binomialWeightsV)) >>
+      slideSeq(slideSeq.Values)(3)(1)(id)(dotSeqUnroll(binomialWeightsH))
     )
     val code = gen.CProgram(wrapExpr(e), "blur").code
     " % ".r.findAllIn(code).length shouldBe 0
@@ -139,8 +154,8 @@ int main(int argc, char** argv) {
     ))
 
     val e = padClamp2D(1) >> slide2D(3, 1) >> mapGlobal(0)(mapGlobal(1)(
-      toPrivateFun(mapSeq(dotSeqPrivate(weights1d))) >>
-        dotSeqPrivate(weights1d)
+      toPrivateFun(mapSeq(dotSeqPrivate(binomialWeightsV))) >>
+        dotSeqPrivate(binomialWeightsH)
     ))
 
     val code = gen.OpenCLKernel(wrapExpr(e), "blur").code
