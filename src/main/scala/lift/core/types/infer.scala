@@ -323,6 +323,10 @@ object infer {
       case (_, s: lift.arithmetic.Sum) => nat.unifySum(s, a)
       case (p: lift.arithmetic.Prod, _) => nat.unifyProd(p, b)
       case (_, p: lift.arithmetic.Prod) => nat.unifyProd(p, a)
+      case (p: lift.arithmetic.Pow, _) => nat.unifyProd(p, b)
+      case (_, p: lift.arithmetic.Pow) => nat.unifyProd(p, a)
+      case (p: lift.arithmetic.IntDiv, _) => nat.unifyProd(p, b)
+      case (_, p: lift.arithmetic.IntDiv) => nat.unifyProd(p, a)
       case _ => error(s"cannot unify $a and $b")
     })
 
@@ -406,7 +410,7 @@ object infer {
       None
     }
 
-    def unifyProd(p: Prod, n: Nat)
+    def unifyProd(p: Nat, n: Nat)
                  (implicit bound: mutable.Set[Kind.Identifier]): Solution = {
       // n = p --> 1 = p * (1/n)
       tryPivots(p /^ n, 1).get
