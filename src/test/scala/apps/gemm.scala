@@ -238,6 +238,7 @@ class gemm extends test_util.TestsWithExecutor {
     infer(ocl.keplerBest)
   }
 
+  // TODO
   ignore("Kepler best compiles to syntactically correct kernel") {
     gen.OpenCLKernel(ocl.keplerBest)
   }

@@ -10,7 +10,7 @@ import lift.arithmetic.RangeAdd
 package object DSL {
 
   private def parForBodyFunction(n:Nat, ft:NatToData, f:NatIdentifier => Phrase[AccType] => Phrase[CommType]) = {
-    _Λ_(idx => λ(acc"[${ft(idx)}]")(o => f(idx)(o)), RangeAdd(0, n, 1))
+    nFun(idx => λ(acc"[${ft(idx)}]")(o => f(idx)(o)), RangeAdd(0, n, 1))
   }
 
   object parForNatGlobal {

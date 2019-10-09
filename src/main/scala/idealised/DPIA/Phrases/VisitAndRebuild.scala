@@ -49,8 +49,8 @@ object VisitAndRebuild {
           case Apply(p, q) =>
             Apply(apply(p, v), apply(q, v))
 
-          case DepLambda(a, p) =>
-            DepLambda(a, apply(p, v))
+          case dl @ DepLambda(a, p) =>
+            DepLambda(a, apply(p, v))(dl.kn)
 
           case DepApply(p, a) =>
             DepApply(apply(p, v), a)
@@ -86,7 +86,7 @@ object VisitAndRebuild {
     case PairType(t1, t2)           => PairType(visitPhraseTypeAndRebuild(t1, v), visitPhraseTypeAndRebuild(t2, v))
     case FunType(inT, outT)         => FunType(visitPhraseTypeAndRebuild(inT, v), visitPhraseTypeAndRebuild(outT, v))
     case PassiveFunType(inT, outT)  => PassiveFunType(visitPhraseTypeAndRebuild(inT, v), visitPhraseTypeAndRebuild(outT, v))
-    case DepFunType(x, t)           => DepFunType(x, visitPhraseTypeAndRebuild(t, v))
+    case df @ DepFunType(x, t)           => DepFunType(x, visitPhraseTypeAndRebuild(t, v))(df.kn)
   }
 
 }

@@ -10,7 +10,9 @@ import util.gen
 
 object harrisCornerDetection {
   private val C2D = separableConvolution2D
+  private val id = C2D.id
   private val mulT = C2D.mulT
+  private val sq = fun(x => x * x)
   private val zip2D = zipND(2)
 
   private val szr = lift.arithmetic.RangeAdd(20, lift.arithmetic.PosInf, 1)
@@ -48,6 +50,43 @@ object harrisCornerDetection {
     })))
   )))
 
+  private def ul(l: Expr): semantics.Data = l match {
+    case Literal(d) => d
+    case _ => ???
+  }
+  private val sobelXYMuls = nFun(szr, h => nFun(szr, w => fun(
+    (h`.`w`.`float) ->: ((h`.`w`.`float) x ((h`.`w`.`float) x (h`.`w`.`float)))
+  )(input => {
+    val shuffle =
+      asScalar >> drop(3) >> take(6) >> slide(4)(1) >> join >> asVector(4)
+    input |>
+    map(implN(w => fun(w`.`float)(x =>
+      x |> asVectorAligned(4)
+        |> padCst(1)(0)(vectorFromScalar(x `@` lidx(0, w)))
+        |> padCst(0)(1)(vectorFromScalar(x `@` lidx(w - 1, w)))
+    ))) |> padClamp(1)(1) |> slide(3)(1) |> mapGlobal(transpose >>
+      map(fun(vNbh =>
+        larr(Seq(ul(C2D.sobelXWeightsV), ul(C2D.sobelYWeightsV))) |>
+        map(fun(vWs => C2D.weightsSeqVecUnroll(vWs)(vNbh)))
+      )) >>
+      oclSlideSeq(slideSeq.Values)(AddressSpace.Private)(3)(1)(id)(
+        transpose >> map(shuffle) >>
+          zip(larr(Seq(ul(C2D.sobelXWeightsH), ul(C2D.sobelYWeightsH)))) >>
+          map(fun(hWsNbh =>
+            C2D.weightsSeqVecUnroll(hWsNbh._1)(hWsNbh._2)
+          )) >>
+          fun(ixiy => {
+            val ix = ixiy `@` lidx(0, 2)
+            val iy = ixiy `@` lidx(1, 2)
+            pair(sq(ix), pair(ix * iy, sq(iy)))
+          })
+      ) >>
+      unzip >> fun(t => pair(t._1, unzip(t._2))) >>
+      fun(t => pair(asScalar(t._1), pair(asScalar(t._2._1), asScalar(t._2._2))))
+    ) >>
+    unzip >> fun(t => pair(t._1, unzip(t._2)))
+  })))
+
   /* TODO?
   val threshold = coarsity :>> mapSeq(mapSeq(fun(c =>
     if (c <= threshold) { 0.0f } else { c }
@@ -61,11 +100,11 @@ object harrisCornerDetection {
   import idealised.OpenCL._
   import util.{Time, TimeSpan}
 
-  case class Kernels(sobelX: KernelNoSizes,
-                     sobelY: KernelNoSizes,
-                     mul: KernelNoSizes,
-                     gaussian: KernelNoSizes,
-                     coarsity: KernelNoSizes) {
+  case class NoPipe(sobelX: KernelNoSizes,
+                    sobelY: KernelNoSizes,
+                    mul: KernelNoSizes,
+                    gaussian: KernelNoSizes,
+                    coarsity: KernelNoSizes) {
     def run(input: Array[Array[Float]],
             kappa: Float): (Array[Float], Seq[(String, TimeSpan[Time.ms])]) = {
       val H = input.length
@@ -121,11 +160,26 @@ object harrisCornerDetection {
     }
   }
 
-  def genOCLKernels(): Kernels = Kernels(
-    gen.OpenCLKernel(sobelX),
-    gen.OpenCLKernel(sobelY),
-    gen.OpenCLKernel(mul),
-    gen.OpenCLKernel(gaussian),
-    gen.OpenCLKernel(coarsity)
-  )
+  object NoPipe {
+    def create: NoPipe = NoPipe(
+      gen.OpenCLKernel(sobelX),
+      gen.OpenCLKernel(sobelY),
+      gen.OpenCLKernel(mul),
+      gen.OpenCLKernel(gaussian),
+      gen.OpenCLKernel(coarsity)
+    )
+  }
+
+  case class HalfPipe2(sobelXYMuls: KernelNoSizes) {
+    def run(input: Array[Array[Float]],
+            kappa: Float): (Array[Float], Seq[(String, TimeSpan[Time.ms])]) = {
+      ???
+    }
+  }
+
+  object HalfPipe2 {
+    def create: HalfPipe2 = HalfPipe2(
+      gen.OpenCLKernel(sobelXYMuls)
+    )
+  }
 }

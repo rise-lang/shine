@@ -3,7 +3,7 @@ package idealised.DPIA
 import idealised.DPIA.Compilation.TranslationContext
 import idealised.DPIA.FunctionalPrimitives.{DepIdx, Idx, IdxVec, AsIndex}
 import idealised.DPIA.ImperativePrimitives._
-import idealised.DPIA.Phrases.{BinOp, Literal, Natural, Pair, Phrase, Proj1, Proj2, UnaryOp}
+import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics.{FloatData, IntData}
 import idealised.DPIA.Types._
 import idealised.DPIA.Phrases.Operators

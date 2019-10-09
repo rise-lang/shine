@@ -1,7 +1,7 @@
 package idealised.DPIA.DSL
 
 import idealised.DPIA.Phrases._
-import idealised.DPIA.Types.{Kind, NatKind, PhraseType}
+import idealised.DPIA.Types._
 import idealised.DPIA._
 
 object identifier {
@@ -24,29 +24,29 @@ object \ extends funDef
 
 object λ extends funDef
 
-trait depFunDef {
-
+object nFun {
   def apply[T <: PhraseType](f: NatIdentifier => Phrase[T],
-                             range: lift.arithmetic.Range): DepLambda[NatKind, T] = {
+                             range: lift.arithmetic.Range)
+                            (implicit w: Kind.IdentifierMaker[NatKind]): DepLambda[NatKind, T] = {
     val x = NatIdentifier(freshName("n"), range)
     DepLambda[NatKind, T](x, f(x))
   }
-
-  def apply[K <: Kind]: Object {
-    def apply[T <: PhraseType](f: K#I => Phrase[T])
-                              (implicit w: Kind.IdentifierMaker[K]): DepLambda[K, T]
-  } = new {
-    def apply[T <: PhraseType](f: K#I => Phrase[T])
-                              (implicit w: Kind.IdentifierMaker[K]): DepLambda[K, T] = {
-      val x = w.makeIdentifier()
-      DepLambda[K, T](x, f(x))
-    }
-  }
-
 }
 
-object depFun extends funDef
+trait depFunDef {
+  def apply[K <: Kind](): Object {
+    def apply[T <: PhraseType](f: K#I => Phrase[T])
+                              (implicit kn: KindName[K], w: Kind.IdentifierMaker[K]): DepLambda[K, T]
+  } = new {
+    def apply[T <: PhraseType](f: K#I => Phrase[T])
+                              (implicit kn: KindName[K], w: Kind.IdentifierMaker[K]): DepLambda[K, T] = {
+      val x = w.makeIdentifier()
+      DepLambda(x, f(x))
+    }
+  }
+}
 
+object depFun extends depFunDef
 object _Λ_ extends depFunDef
 
 object π1 {

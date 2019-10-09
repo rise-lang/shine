@@ -71,8 +71,9 @@ object separableConvolution2D {
   val dotSeqUnroll: Expr = fun(a => fun(b =>
     zip(a)(b) |> map(mulT) |> reduceSeqUnroll(add)(l(0.0f))
   ))
-  val dotSeqVecUnroll: Expr = fun(a => fun(b =>
-    zip(a)(b) |> map(mulT) |> oclReduceSeqUnroll(AddressSpace.Private)(add)(vectorFromScalar(l(0.0f)))
+  val weightsSeqVecUnroll: Expr = fun(weights => fun(vectors =>
+    zip(map(vectorFromScalar)(weights))(vectors) |>
+      map(mulT) |> oclReduceSeqUnroll(AddressSpace.Private)(add)(vectorFromScalar(l(0.0f)))
   ))
 
   val base: Expr = fun(3`.`3`.`float)(weights2d =>
@@ -126,8 +127,8 @@ object separableConvolution2D {
     )
   ))
   val regRotPar: Expr = fun(3`.`float)(weightsV => fun(3`.`float)(weightsH => {
-    val Dh = dotSeqVecUnroll(map(vectorFromScalar)(weightsH))
-    val Dv = dotSeqVecUnroll(map(vectorFromScalar)(weightsV))
+    val Dv = weightsSeqVecUnroll(weightsV)
+    val Dh = weightsSeqVecUnroll(weightsH)
     val shuffle =
       asScalar >> drop(3) >> take(6) >> slide(4)(1) >> join >> asVector(4)
     // map(padClamp(4)(4) >> asVectorAligned(4)) >> padClamp(1)(1) >>
@@ -137,8 +138,8 @@ object separableConvolution2D {
         |> padCst(0)(1)(vectorFromScalar(x `@` lidx(w - 1, w)))
     ))) >> padClamp(1)(1) >>
     slide(3)(1) >> mapGlobal(transpose >>
-      map(Dh) >>
-      oclSlideSeq(slideSeq.Values)(AddressSpace.Private)(3)(1)(id)(shuffle >> Dv) >>
+      map(Dv) >>
+      oclSlideSeq(slideSeq.Values)(AddressSpace.Private)(3)(1)(id)(shuffle >> Dh) >>
       asScalar
     )
   }))

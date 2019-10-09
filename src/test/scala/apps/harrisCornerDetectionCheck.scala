@@ -34,17 +34,22 @@ class harrisCornerDetectionCheck extends test_util.TestsWithExecutor {
   private val kappa = 1.2f
   private val threshold = 1.4f
 
-  test("harris compiles to C code") {
+  test("harris produces expected result") {
     val random = new scala.util.Random()
     val input = Array.fill(H, W)(random.nextFloat)
     val gold = computeGold(H, W, input, kappa).flatten
-    val (res, ts) = genOCLKernels().run(input, kappa)
-    util.assertSame(gold, res, "output is different from gold")
-    var totalT = TimeSpan.inMilliseconds(0.0f)
-    ts.foreach { case (n, t) =>
-      println(s"$n: $t")
-      totalT = totalT + t
-    }
-    println(s"total: $totalT")
+    val runs = Seq(
+      // "no pipe" -> NoPipe.create.run(input, kappa),
+      "half pipe 2" -> HalfPipe2.create.run(input, kappa)
+    )
+    runs.foreach(r => {
+      assertSame(r._2._1, gold, s"${r._1} output is different from gold")
+      var totalT = TimeSpan.inMilliseconds(0.0f)
+      r._2._2.foreach { case (n, t) =>
+        println(s"$n: $t")
+        totalT = totalT + t
+      }
+      println(s"${r._1}: $totalT")
+    })
   }
 }
