@@ -39,7 +39,7 @@ class harrisCornerDetectionCheck extends test_util.TestsWithExecutor {
     val input = Array.fill(H, W)(random.nextFloat)
     val gold = computeGold(H, W, input, kappa).flatten
     val runs = Seq(
-      // "no pipe" -> NoPipe.create.run(input, kappa),
+      "no pipe" -> NoPipe.create.run(input, kappa),
       "half pipe 2" -> HalfPipe2.create.run(input, kappa)
     )
     runs.foreach(r => {

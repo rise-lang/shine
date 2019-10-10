@@ -44,6 +44,12 @@ object primitives {
     override def t: Type = implDT(s => implDT(t => TupleType(s, t) ->: s))
   }
 
+  case object mapFst extends Primitive {
+    override def t: Type = implDT(s => implDT(t => implDT(s2 =>
+      (s ->: s2) ->: TupleType(s, t) ->: TupleType(s2, t)
+    )))
+  }
+
   case object generate extends Primitive {
     override def t: Type = implN(n => implDT(t =>
       (IndexType(n) ->: t) ->: ArrayType(n, t)
@@ -181,6 +187,12 @@ object primitives {
 
   case object snd extends Primitive {
     override def t: Type = implDT(s => implDT(t => TupleType(s, t) ->: t))
+  }
+
+  case object mapSnd extends Primitive {
+    override def t: Type = implDT(s => implDT(t => implDT(t2 =>
+      (t ->: t2) ->: TupleType(s, t) ->: TupleType(s, t2)
+    )))
   }
 
   case object split extends Primitive {

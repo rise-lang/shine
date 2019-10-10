@@ -194,7 +194,11 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case (i : CIntExpr) :: ps => acc(a, env, i :: SndMember :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
-      case UnzipAcc(_, _, _, _) => ???
+      case UnzipAcc(_, _, _, a) => path match {
+        case (i: CIntExpr) :: FstMember :: ps => acc(a, env, FstMember :: i :: ps, cont)
+        case (i: CIntExpr) :: SndMember :: ps => acc(a, env, SndMember :: i :: ps, cont)
+        case _ => error(s"unexpected $path")
+      }
 
       case TakeAcc(_, _, _, a) => acc(a, env, path, cont)
       case DropAcc(n, _, _, a) => path match {
@@ -216,6 +220,16 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case MapAcc(n, dt, _, f, a) => path match {
         case (i : CIntExpr) :: ps => acc( f( IdxAcc(n, dt, AsIndex(n, Natural(i)), a) ), env, ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
+      }
+      case MapFstAcc(_, dt2, dt3, f, a) => path match {
+        case FstMember :: ps => acc(f(RecordAcc1(dt3, dt2, a)), env, ps, cont)
+        case SndMember :: ps => acc(  RecordAcc2(dt3, dt2, a) , env, ps, cont)
+        case _ => error(s"unexpected $path")
+      }
+      case MapSndAcc(dt1, _, dt3, f, a) => path match {
+        case FstMember :: ps => acc(  RecordAcc1(dt1, dt3, a) , env, ps, cont)
+        case SndMember :: ps => acc(f(RecordAcc2(dt1, dt3, a)), env, ps, cont)
+        case _ => error(s"unexpected $path")
       }
 
       case IdxAcc(_, _, i, a) => CCodeGen.codeGenIdxAcc(i, a, env, path, cont)

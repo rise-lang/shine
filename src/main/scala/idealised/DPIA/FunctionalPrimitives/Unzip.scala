@@ -53,13 +53,17 @@ final case class Unzip(n: Nat,
       </e>
     </unzip>
 
+  override def fedeTranslation(env: Predef.Map[Identifier[ExpType], Identifier[AccType]])(C: Phrase[AccType ->: AccType]): Phrase[AccType] = {
+    import TranslationToImperative._
+
+    fedAcc(env)(e)(fun(acc"[${C.t.inT.dataType}]")(o => UnzipAcc(n, dt1, dt2, C(o))))
+  }
+
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
-    con(e)(λ(exp"[$n.($dt1 x $dt2), $read]")(x =>
-      A :=|RecordType(ArrayType(n, dt1), ArrayType(n, dt2))| Unzip(n, dt1, dt2, x)
-    ))
+    acc(e)(UnzipAcc(n, dt1, dt2, A))
   }
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])

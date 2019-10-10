@@ -69,22 +69,23 @@ object harrisCornerDetection {
         larr(Seq(ul(C2D.sobelXWeightsV), ul(C2D.sobelYWeightsV))) |>
         map(fun(vWs => C2D.weightsSeqVecUnroll(vWs)(vNbh)))
       )) >>
-      oclSlideSeq(slideSeq.Values)(AddressSpace.Private)(3)(1)(id)(
+      oclSlideSeq(slideSeq.Values)(AddressSpace.Private)(3)(1)(mapSeqUnroll(id))(
         transpose >> map(shuffle) >>
           zip(larr(Seq(ul(C2D.sobelXWeightsH), ul(C2D.sobelYWeightsH)))) >>
-          map(fun(hWsNbh =>
+          // TODO: this triggers an extra copy
+          toPrivateFun(mapSeqUnroll(fun(hWsNbh =>
             C2D.weightsSeqVecUnroll(hWsNbh._1)(hWsNbh._2)
-          )) >>
-          fun(ixiy => {
+          ))) >>
+          let(fun(ixiy => {
             val ix = ixiy `@` lidx(0, 2)
             val iy = ixiy `@` lidx(1, 2)
             pair(sq(ix), pair(ix * iy, sq(iy)))
-          })
+          }))
       ) >>
-      unzip >> fun(t => pair(t._1, unzip(t._2))) >>
-      fun(t => pair(asScalar(t._1), pair(asScalar(t._2._1), asScalar(t._2._2))))
+      unzip >> mapSnd(unzip) >>
+      mapFst(asScalar) >> mapSnd(mapFst(asScalar) >> mapSnd(asScalar))
     ) >>
-    unzip >> fun(t => pair(t._1, unzip(t._2)))
+    unzip >> mapSnd(unzip)
   })))
 
   /* TODO?

@@ -486,12 +486,32 @@ object fromLift {
         val b = dataType(lb)
         fun[ExpType](exp"[($a x $b), $read]", e => Fst(a, b, e))
 
+      case (core.mapFst,
+      lt.FunType(lt.FunType(la: lt.DataType, la2: lt.DataType),
+      lt.FunType(lt.TupleType(_, lb), _)))
+      =>
+        val a = dataType(la)
+        val a2 = dataType(la2)
+        val b = dataType(lb)
+        fun[ExpType ->: ExpType](exp"[$a, $read]" ->: exp"[$a2, $read]", f =>
+          fun[ExpType](exp"[($a x $b), $read]", e => MapFst(a, b, a2, f, e)))
+
       case (core.snd,
       lt.FunType(lt.TupleType(la, lb), _))
       =>
         val a = dataType(la)
         val b = dataType(lb)
         fun[ExpType](exp"[($a x $b), $read]", e => Snd(a, b, e))
+
+      case (core.mapSnd,
+      lt.FunType(lt.FunType(lb: lt.DataType, lb2: lt.DataType),
+      lt.FunType(lt.TupleType(la, _), _)))
+      =>
+        val a = dataType(la)
+        val b = dataType(lb)
+        val b2 = dataType(lb2)
+        fun[ExpType ->: ExpType](exp"[$b, $read]" ->: exp"[$b2, $read]", f =>
+          fun[ExpType](exp"[($a x $b), $read]", e => MapSnd(a, b, b2, f, e)))
 
       case (core.pair,
       lt.FunType(la: lt.DataType,
