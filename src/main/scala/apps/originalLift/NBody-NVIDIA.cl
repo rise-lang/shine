@@ -61,11 +61,7 @@ Tuple2_float4_float4 update(float4 pos, float4 vel, float deltaT, float4 acceler
 }
 kernel __attribute((reqd_work_group_size(256,1,1)))
 void KERNEL(const global float* restrict v__36, const global float* restrict v__37, float v__38, float v__39, global Tuple2_float4_float4* v__54, int v_N_1){
-    #ifndef WORKGROUP_GUARD
-    #define WORKGROUP_GUARD
-    #endif
-    WORKGROUP_GUARD
-    {
+
         // Static local memory
         local float v__46[1024];
         // Typed Value memory
@@ -121,5 +117,4 @@ void KERNEL(const global float* restrict v__36, const global float* restrict v__
                 // end unroll
             }
         }
-    }
 }
