@@ -138,6 +138,65 @@ object harrisCornerDetection {
     )
   })))
 
+  private val sobelXY = nFun(hRange, h => nFun(wRange, w => fun(
+    (h`.`w`.`float) ->: (2`.`h`.`w`.`float)
+  )(input =>
+    input |>
+      map(fun(w`.`float)(x =>
+        x |> asVectorAligned(4)
+          |> padCst(1)(0)(vectorFromScalar(x `@` lidx(0, w)))
+          |> padCst(0)(1)(vectorFromScalar(x `@` lidx(w - 1, w)))
+      )) |> padClamp(1)(1) |> slide(3)(1) |> mapGlobal(transpose >>
+      map(fun(vNbh =>
+        larr(Seq(ul(C2D.sobelXWeightsV), ul(C2D.sobelYWeightsV))) |>
+          map(fun(vWs => C2D.weightsSeqVecUnroll(vWs)(vNbh)))
+      )) >>
+      oclSlideSeq(slideSeq.Values)(AddressSpace.Private)(3)(1)(mapSeqUnroll(id))(
+        transpose >> map(shuffle) >>
+          zip(larr(Seq(ul(C2D.sobelXWeightsH), ul(C2D.sobelYWeightsH)))) >>
+          mapSeqUnroll(fun(hWsNbh =>
+            C2D.weightsSeqVecUnroll(hWsNbh._1)(hWsNbh._2)
+          ))
+      ) >> transpose >> map(asScalar)
+    ) >> transpose
+  )))
+  private val mulGaussianCoarsity = nFun(hRange, h => nFun(wRange, w => fun(
+    (2`.`h`.`w`.`float) ->: float ->: (h`.`w`.`float)
+  )((input, kappa) =>
+    input |>
+    map(map(fun(w`.`float)(x =>
+      x |> asVectorAligned(4)
+        |> padCst(1)(0)(vectorFromScalar(x `@` lidx(0, w)))
+        |> padCst(0)(1)(vectorFromScalar(x `@` lidx(w - 1, w)))
+    ))) |>
+    map(padClamp(1)(1)) |>
+    transpose |> map(transpose) |> // H.W.2.vf
+    map(map(fun(ixiy => {
+      val ix = ixiy `@` lidx(0, 2)
+      val iy = ixiy `@` lidx(1, 2)
+      // TODO? array literal
+      generate(fun(i =>
+        select(equal(i)(lidx(0, 3)))(sq(ix))(
+          select(equal(i)(lidx(1, 3)))(ix * iy)(
+            sq(iy)))
+      ))
+    }))) |>
+    slide(3)(1) |> mapGlobal(
+      transpose >> map(transpose) >>
+      map(map(C2D.weightsSeqVecUnroll(C2D.binomialWeightsV))) >>
+      oclSlideSeq(slideSeq.Values)(AddressSpace.Private)(3)(1)(mapSeqUnroll(id))(
+        transpose >> map(shuffle) >>
+        toPrivateFun(mapSeqUnroll(C2D.weightsSeqVecUnroll(C2D.binomialWeightsH))) >>
+        let(fun(s => {
+          val sxx = s `@` lidx(0, 3)
+          val sxy = s `@` lidx(1, 3)
+          val syy = s `@` lidx(2, 3)
+          coarsityVector(sxx)(sxy)(syy)(kappa)
+        }))
+      ) >> asScalar
+    )
+  )))
+
   /* TODO?
   val threshold = coarsity :>> mapSeq(mapSeq(fun(c =>
     if (c <= threshold) { 0.0f } else { c }
@@ -262,6 +321,42 @@ object harrisCornerDetection {
       HalfPipe2(
         gen.OpenCLKernel(sobelXYMuls),
         gen.OpenCLKernel(gaussianCoarsity)
+      )
+  }
+
+  case class HalfPipe1(sobelXY: KernelNoSizes,
+                       mulGaussianCoarsity: KernelNoSizes) {
+    def run(input: Array[Array[Float]],
+            kappa: Float): (Array[Float], Seq[(String, TimeSpan[Time.ms])]) = {
+      val H = input.length
+      val W = input(0).length
+
+      val localSize = LocalSize(1)
+      val globalSize = GlobalSize(H)
+
+      val fSxy = sobelXY.as[ScalaFunction `(`
+        Int `,` Int `,` Array[Array[Float]]
+        `)=>` Array[Float]]
+      def asIs[B] = as3D[Float, B](H, W)
+      val (is, ist) = asIs(fSxy(localSize, globalSize)(H `,` W `,` input))
+
+      val fMGC = mulGaussianCoarsity.as[ScalaFunction `(`
+        Int `,` Int `,` Array[Array[Array[Float]]] `,` Float
+        `)=>` Array[Float]]
+      val (k, kt) = fMGC(localSize, globalSize)(H `,` W `,` is `,` kappa)
+
+      (k, Seq(
+        "Ix, Iy" -> ist,
+        "K" -> kt
+      ))
+    }
+  }
+
+  object HalfPipe1 {
+    def create: HalfPipe1 =
+      HalfPipe1(
+        gen.OpenCLKernel(sobelXY),
+        gen.OpenCLKernel(mulGaussianCoarsity)
       )
   }
 
