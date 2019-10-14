@@ -8,52 +8,14 @@ import lift.core.DSL._
 import lift.core.HighLevelConstructs._
 import util.gen
 
-object separableConvolution2DCheck {
-  def computeGold(h: Int, w: Int,
-                  input: Array[Array[Float]],
-                  weights: Array[Array[Float]]): Array[Array[Float]] = {
-    val output = Array.fill(h, w)(Float.NaN)
-    val lastY = h - 1
-    val lastX = w - 1
-
-    for (y <- input.indices) {
-      val r0 = if (y > 0) input(y - 1) else input(0)
-      val r1 = input(y)
-      val r2 = if (y < lastY) input(y + 1) else input(lastY)
-      for (x <- r1.indices) {
-        val c0 = if (x > 0) x - 1 else 0
-        val c1 = x
-        val c2 = if (x < lastX) x + 1 else lastX
-        output(y)(x) =
-          weights(0)(0) * r0(c0) + weights(0)(1) * r0(c1) + weights(0)(2) * r0(c2) +
-            weights(1)(0) * r1(c0) + weights(1)(1) * r1(c1) + weights(1)(2) * r1(c2) +
-            weights(2)(0) * r2(c0) + weights(2)(1) * r2(c1) + weights(2)(2) * r2(c2)
-      }
-    }
-
-    output
-  }
-
-  def computeGold(h: Int, w: Int,
-                  input: Array[Array[Float]],
-                  weights: Expr): Array[Array[Float]] = {
-    import lift.core.semantics._
-    weights match {
-      case Literal(ArrayData(a)) => computeGold(h, w, input,
-        a.map(r => r.asInstanceOf[ArrayData].a.map(x => x.asInstanceOf[FloatData].f).toArray).toArray)
-      case _ => ???
-    }
-  }
-}
-
 class separableConvolution2DCheck extends test_util.Tests {
-  import separableConvolution2DCheck._
-
   private def wrapExpr(e: Expr): Expr = {
+    import lift.arithmetic.{RangeAdd, PosInf}
     // at least 3 for one scalar sliding window
     // at least 3*4 = 12 for one vector sliding window
-    val from = (n: Int) => lift.arithmetic.RangeAdd(n, lift.arithmetic.PosInf, 1)
-    nFun(from(3), h => nFun(from(12), w => fun(h`.`w`.`float)(a => e(a))))
+    nFun(RangeAdd(3, PosInf, 1), h =>
+      nFun(RangeAdd(12, PosInf, 4), w =>
+        fun(h`.`w`.`float)(a => e(a))))
   }
 
   private val H = 20

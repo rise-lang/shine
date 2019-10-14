@@ -973,19 +973,18 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       * @param accum Internal accumulator used across iterations
       * @return
       */
-    def genBinopFold(nats:Iterable[Nat],
-                     behavior:Nat => (Nat, C.AST.BinaryOperator.Value),
-                     default:Expr,
-                     cont:Expr => Stmt,
-                     accum:Option[Expr] = None):Stmt = {
+    def genBinopFold(nats: Iterable[Nat],
+                     op: C.AST.BinaryOperator.Value,
+                     default: Expr,
+                     cont: Expr => Stmt,
+                     accum: Option[Expr] = None): Stmt = {
       nats.headOption match {
         case None => cont(accum.getOrElse(default))
         case Some(nat) =>
           accum match {
-            case None => genNat(nat, env, exp => genBinopFold(nats.tail, behavior, default, cont, Some(exp)))
+            case None => genNat(nat, env, exp => genBinopFold(nats.tail, op, default, cont, Some(exp)))
             case Some(acc) =>
-              val (natToGenerate,op) = behavior(nat)
-              genNat(natToGenerate, env, exp => genBinopFold(nats.tail, behavior, default, cont, Some(C.AST.BinaryExpr(acc, op, exp))))
+              genNat(nat, env, exp => genBinopFold(nats.tail, op, default, cont, Some(C.AST.BinaryExpr(acc, op, exp))))
           }
       }
     }
@@ -1015,18 +1014,23 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
              )
            )
 
-         case Prod(es) =>
-           genBinopFold(
-             es, {
-               case Pow(b, Cst(-1)) => (b, AST.BinaryOperator./)
-               case e => (e, AST.BinaryOperator.*)
-             }, AST.Literal("0"), cont
-           )
+         // a /^ b
+         case Prod(a :: Pow(b, Cst(-1)) :: Nil) =>
+           if (a % b != Cst(0)) {
+             println(s"WARNING: $a /^ $b might have a fractional part")
+           }
+           genNat(a, env, lhs =>
+             genNat(b, env, rhs =>
+                cont(C.AST.BinaryExpr(lhs, C.AST.BinaryOperator./, rhs))))
 
-         case Sum(es) =>
-           genBinopFold(es, n => (n, AST.BinaryOperator.+), AST.Literal("0"), cont)
+         case Prod(es) => genBinopFold(es, AST.BinaryOperator.*, AST.Literal("0"), cont)
+
+         case Sum(es) => genBinopFold(es, AST.BinaryOperator.+, AST.Literal("0"), cont)
 
          case Mod(a, n) =>
+           if (lift.arithmetic.ArithExpr.mightBeNegative(a)) {
+             println(s"WARNING: $a % $n might operate on negative values")
+           }
            genNat(a, env, a => genNat(n, env, n => cont(AST.BinaryExpr(a, AST.BinaryOperator.%, n))))
 
          case v:Var => cont(C.AST.DeclRef(v.toString))
@@ -1110,8 +1114,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                        array: Phrase[ExpType],
                        env: Environment,
                        cont: Expr => Stmt): Stmt = {
-
-    exp(array, env, CIntExpr(i - l) ::ps, arrayExpr => {
+    // FIXME: we should know that (i - l) is in [0; n[ here
+    exp(array, env, CIntExpr(i - l) :: ps, arrayExpr => {
 
       def cOperator(op:ArithPredicate.Operator.Value):C.AST.BinaryOperator.Value = op match {
         case ArithPredicate.Operator.< => C.AST.BinaryOperator.<

@@ -401,25 +401,25 @@ object infer {
     }
 
     def tryPivots(n: Nat, value: Nat)
-                 (implicit bound: mutable.Set[Kind.Identifier]): Option[Solution] = {
+                 (implicit bound: mutable.Set[Kind.Identifier]): Solution = {
       val pivots = potentialPivots(n)
       pivots.foreach(pivotSolution(_, n, value) match {
-        case Some(s) => return Some(s)
+        case Some(s) => return s
         case None =>
       })
-      None
+      error(s"could not pivot $n = $value")
     }
 
     def unifyProd(p: Nat, n: Nat)
                  (implicit bound: mutable.Set[Kind.Identifier]): Solution = {
       // n = p --> 1 = p * (1/n)
-      tryPivots(p /^ n, 1).get
+      tryPivots(p /^ n, 1)
     }
 
     def unifySum(s: Sum, n: Nat)
                 (implicit bound: mutable.Set[Kind.Identifier]): Solution = {
       // n = s --> 0 = s + (-n)
-      tryPivots(s - n, 0).get
+      tryPivots(s - n, 0)
     }
 
     def unifyIdent(i: NamedVar, n: Nat)

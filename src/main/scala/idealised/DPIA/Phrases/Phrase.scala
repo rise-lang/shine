@@ -7,6 +7,7 @@ import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics.{IndexData, NatData}
 import idealised.DPIA.Types._
 import idealised.DPIA._
+import lift.arithmetic.BoolExpr.ArithPredicate
 import lift.arithmetic.{NamedVar, RangeAdd}
 
 import scala.language.{postfixOps, reflectiveCalls}
@@ -287,6 +288,12 @@ object Phrase {
           Left(Pow(reconstruct(b).left.get, reconstruct(e).left.get))
         case Log(b, x) =>
           Left(Log(reconstruct(b).left.get, reconstruct(x).left.get))
+        case lift.arithmetic.IfThenElse(test, t, e) =>
+          Left(lift.arithmetic.IfThenElse(test.visitAndRebuild(x => reconstruct(x).left.get),
+            reconstruct(t).left.get,
+            reconstruct(e).left.get))
+        case PosInf => Left(PosInf)
+        case f: ArithExprFunctionCall => Left(f)
         case _ => throw new Exception(s"did not expect ${tn.n}")
       }
     }
