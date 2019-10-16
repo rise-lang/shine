@@ -5,10 +5,11 @@ import lift.core.DSL._
 import lift.core.types._
 
 object primitives {
-  case object let extends Primitive {
+  case class Let()(override val t: Type) extends Primitive(t) {
     override def typeScheme: Type = implDT(s => implDT(t =>
       (s ->: t) ->: (s ->: t)
     ))
+    override def setType(t: Type): Let = Let()(t)
   }
 
   case object cast extends Primitive {

@@ -68,7 +68,7 @@ final case class TypedExpr(e: Expr, t: Type) extends Expr {
 }
 */
 
-abstract class Primitive(t: Type) extends Expr(t) {
+abstract class Primitive(override val t: Type) extends Expr(t) {
   def typeScheme: Type
   override def setType(t: Type): Primitive
 }
