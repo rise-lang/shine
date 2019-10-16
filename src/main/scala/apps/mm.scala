@@ -7,11 +7,11 @@ import lift.core.primitives._
 import lift.OpenCL.primitives._
 
 object mm {
-  private val mulT = separableConvolution2D.mulT
+  private val id = fun(x => x)
+  private val mulT = binomialFilter.mulT
   private val dotSeq = fun(a => fun(b =>
     zip(a)(b) |> map(mulT) |> oclReduceSeq(AddressSpace.Private)(add)(l(0.0f))
   ))
-  private val id = fun(x => x)
 
   // the first matrix input is transposed
 
@@ -140,5 +140,61 @@ object mm {
     }
 
     output
+  }
+
+  import idealised.OpenCL._
+  import util._
+
+  def runOriginal(name: String,
+                  localSize: LocalSize,
+                  globalSize: GlobalSize,
+                  At: Array[Array[Float]],
+                  B: Array[Array[Float]]): (Array[Float], TimeSpan[Time.ms]) = {
+    import opencl.executor._
+
+    val O = At.length
+    val N = At(0).length
+    val M = B(0).length
+
+    val code = util.readFile(s"src/main/scala/apps/originalLift/$name")
+    val kernelJNI = Kernel.create(code, "KERNEL", "")
+
+    val float_bytes = 4
+    val output_bytes = N * M * float_bytes
+    val g_out = GlobalArg.createOutput(output_bytes)
+    val kernelArgs = Array(
+      GlobalArg.createInput(At.flatten),
+      GlobalArg.createInput(B.flatten),
+      g_out,
+      ValueArg.create(O), ValueArg.create(N), ValueArg.create(M)
+    )
+
+    val runtime = Executor.execute(kernelJNI,
+      localSize.size.x.eval, localSize.size.y.eval, localSize.size.z.eval,
+      globalSize.size.x.eval, globalSize.size.y.eval, globalSize.size.z.eval,
+      kernelArgs
+    )
+
+    val output = g_out.asFloatArray()
+
+    kernelArgs.foreach(_.dispose)
+    kernelJNI.dispose()
+
+    (output, TimeSpan.inMilliseconds(runtime))
+  }
+
+  def runKernel(kernel: KernelNoSizes,
+                localSize: LocalSize,
+                globalSize: GlobalSize,
+                At: Array[Array[Float]],
+                B: Array[Array[Float]]): (Array[Float], TimeSpan[Time.ms]) = {
+    val O = At.length
+    val N = At(0).length
+    val M = B(0).length
+
+    val run = kernel.as[ScalaFunction `(`
+      Int `,` Int `,` Int `,` Array[Array[Float]] `,` Array[Array[Float]]
+      `)=>` Array[Float]]
+    run(localSize, globalSize)(N `,` M `,` O `,` At `,` B)
   }
 }
