@@ -9,49 +9,65 @@ import lift.core.HighLevelConstructs._
 import util.gen
 
 class binomialFilterCheck extends test_util.Tests {
+  private def computeGold(h: Int, w: Int,
+                          input: Array[Array[Float]]): Array[Array[Float]] = {
+    val output = Array.fill(h, w)(Float.NaN)
+    val lastY = h - 1
+    val lastX = w - 1
+
+    for (y <- input.indices) {
+      val r0 = if (y > 0) input(y - 1) else input(0)
+      val r1 = input(y)
+      val r2 = if (y < lastY) input(y + 1) else input(lastY)
+      for (x <- r1.indices) {
+        val c0 = if (x > 0) x - 1 else 0
+        val c1 = x
+        val c2 = if (x < lastX) x + 1 else lastX
+        output(y)(x) = (
+          1.0f * r0(c0) + 2.0f * r0(c1) + 1.0f * r0(c2) +
+          2.0f * r1(c0) + 4.0f * r1(c1) + 2.0f * r1(c2) +
+          1.0f * r2(c0) + 2.0f * r2(c1) + 1.0f * r2(c2)
+          ) / 16.0f
+      }
+    }
+
+    output
+  }
+
   private def wrapExpr(e: Expr): Expr = {
-    val szr = lift.arithmetic.RangeAdd(3, lift.arithmetic.PosInf, 1)
-    nFun(szr, h => nFun(szr, w => fun(h`.`w`.`float)(a => e(a))))
+    // at least 3 for one scalar sliding window
+    // at least 3*4 = 12 for one vector sliding window
+    val from = (n: Int) => lift.arithmetic.RangeAdd(n, lift.arithmetic.PosInf, 1)
+    nFun(from(3), h => nFun(from(12), w => fun(h`.`w`.`float)(a => e(a))))
   }
 
-  lazy val baseSeqC: idealised.C.Program =
-    gen.CProgram(wrapExpr(baseSeq), "blur_base")
+  private val H = 20
+  private val W = 80
 
-  test("baseSeq compiles to C Code") {
-    baseSeqC
-  }
+  private def checkC(e: Expr): Unit = {
+    val random = new scala.util.Random()
+    val input = Array.fill(H, W)(random.nextFloat)
+    val gold = computeGold(H, W, input)
 
-  private def checkC(e: Expr) = {
-    val prog = gen.CProgram(wrapExpr(e), "blur")
+    val prog = gen.CProgram(wrapExpr(e))
     val testCode =
       s"""
 #include <stdio.h>
 
-${baseSeqC.code}
-
 ${prog.code}
 
 int main(int argc, char** argv) {
-  const int H = 20;
-  const int W = 80;
+  float input[$H * $W] = { ${input.flatten.mkString(", ")} };
 
-  float input[H * W];
-  for (int y = 0; y < H; y++) {
-    for (int x = 0; x < W; x++) {
-      input[y * W + x] = 0.3f * y + 0.6f * x;
-    }
-  }
+  float gold[$H * $W] = { ${gold.flatten.mkString(", ")} };
 
-  float reference[H * W];
-  ${baseSeqC.function.name}(reference, H, W, input);
+  float output[$H * $W];
+  ${prog.function.name}(output, $H, $W, input);
 
-  float output[H * W];
-  ${prog.function.name}(output, H, W, input);
-
-  for (int i = 0; i < (H * W); i++) {
-    float delta = reference[i] - output[i];
+  for (int i = 0; i < ($H * $W); i++) {
+    float delta = gold[i] - output[i];
     if (delta < -0.001 || 0.001 < delta) {
-      fprintf(stderr, "difference with reference is too big: %f\\n", delta);
+      fprintf(stderr, "difference with gold is too big: %f\\n", delta);
       return 1;
     }
   }
@@ -60,6 +76,10 @@ int main(int argc, char** argv) {
 }
 """
     util.Execute(testCode)
+  }
+
+  test("baseSeq compiles to C Code that passes checks") {
+    checkC(baseSeq)
   }
 
   test("factorisedSeq compiles to C code that passes checks") {
@@ -74,9 +94,30 @@ int main(int argc, char** argv) {
     checkC(regRotSeq)
   }
 
-  // TODO + check output
-  ignore("regRotPar compiles to valid OpenCL") {
-    gen.OpenCLKernel(wrapExpr(regRotPar))
+  import idealised.OpenCL.{LocalSize, GlobalSize}
+
+  private def checkOCL(localSize: LocalSize,
+                       globalSize: GlobalSize,
+                       e: Expr): Unit = {
+    import idealised.OpenCL._
+
+    val random = new scala.util.Random()
+    val input = Array.fill(H, W)(random.nextFloat)
+    val gold = computeGold(H, W, input).flatten
+
+    val kernel = gen.OpenCLKernel(wrapExpr(e))
+    val run = kernel.as[ScalaFunction `(`
+      Int `,` Int `,` Array[Array[Float]]
+    `)=>` Array[Float]]
+    val (output, time) = run(localSize, globalSize)(H `,` W `,` input)
+    util.assertSame(output, gold, "output is different from gold")
+    println(s"time: $time")
+  }
+
+  test("regRotPar compiles to valid OpenCL that passes checks") {
+    util.withExecutor {
+      checkOCL(LocalSize(1), GlobalSize(1), regRotPar)
+    }
   }
 
   test("register rotation blur with unroll should contain no modulo or division") {
@@ -104,20 +145,5 @@ int main(int argc, char** argv) {
 
     val code = gen.OpenCLKernel(wrapExpr(e), "blur").code
     "for \\(".r.findAllIn(code).length shouldBe 2
-  }
-
-  test("compiling OpenCL shuffle should generate valid code") {
-    import lift.OpenCL.primitives._
-
-    val dotSeqVecUnroll = fun(a => fun(b =>
-      zip(a)(b) |> map(mulT) |> oclReduceSeqUnroll(AddressSpace.Private)(add)(vectorFromScalar(l(0.0f)))
-    ))
-
-    val e = fun(ArrayType(3, VectorType(4, float)))(xs =>
-      xs |> asScalar |> drop(3) |> take(6) |> slide(4)(1) |> join |> asVector(4)
-        |> dotSeqVecUnroll(map(vectorFromScalar)(weights1d))
-    )
-
-    gen.OpenCLKernel(e)
   }
 }

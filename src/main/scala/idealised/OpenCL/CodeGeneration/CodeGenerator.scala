@@ -153,13 +153,11 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         case (i : CIntExpr) :: (j : CIntExpr) :: ps =>
           exp(e, env, CIntExpr((i * n) + j) :: ps, cont)
         case (i : CIntExpr) :: Nil =>
-          exp(e, env, CIntExpr(i * n) :: Nil, { // i * n
-            case ArraySubscript(v, idx) =>
-              // TODO: use pointer with correct address space
-              // TODO: check that idx is the right offset ...
-              val newIdx = C.AST.BinaryExpr(idx, C.AST.BinaryOperator./, C.AST.Literal(n.toString) )
-              cont( C.AST.FunCall(C.AST.DeclRef(s"vload$n"), immutable.Seq(newIdx, v)) )
-            case e2 => error(s"unexpected $e2")
+          exp(e, env, CIntExpr(i * n) :: Nil, arrayE => {
+            // TODO: use pointer with correct address space
+            // TODO: check that idx is the right offset ...
+            val ptr = C.AST.UnaryExpr(C.AST.UnaryOperator.&, arrayE)
+            cont( C.AST.FunCall(C.AST.DeclRef(s"vload$n"), immutable.Seq(C.AST.Literal("0"), ptr)) )
           })
         case _ => error(s"unexpected $path")
       }

@@ -15,7 +15,7 @@ object FlagPrivateArrayLoops {
     val vs = varsToEliminate(p)
     val p2 = eliminateLoopVars(p, vs)
     if (vs.nonEmpty) {
-      throw new Exception(s"could not eliminate variables $vs")
+      println(s"WARNING: could not eliminate variables $vs")
     }
     p2
   }
