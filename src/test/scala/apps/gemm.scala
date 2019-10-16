@@ -1,6 +1,7 @@
 package apps
 
 import util.gen
+import idealised.OpenCL.{GlobalSize, LocalSize}
 import lift.arithmetic.Cst
 import lift.core.DSL._
 import lift.core.{Expr, Nat}
@@ -159,23 +160,31 @@ class gemm extends test_util.TestsWithExecutor {
       def redOp: Expr = fun((8`.`32`.`8`.`4`.`float) ->: ( (8`.`64`.`float) x (8`.`128`.`float) ) ->: (8`.`32`.`8`.`4`.`float) )((p14, p15) =>
         p15 |> (fun(p29 =>
           zip (p29._1) (p29._2)
+            //TODO? In contrast to old code. This creates a struct of arrays.
             |> toLocalFun(mapLocal(1) (fun(p31 => pair (mapLocal(0) (id) (p31._1)) (mapLocal(0) (id) (p31._2)) )))
             |> unzip
-        )) |> fun(p16 =>
+          //TODO think about let much more. Is this even correct? unzip is no wrapped in toLocalFun
+        )) |> let(fun(p16 =>
           zip (p14) (split (v5) (transpose (p16._1)))
             |> mapLocal(1) (fun(p17 =>
             zip (p17._1) (split (v4) (reorderWithStride (v3/v4) (transpose (p16._2))))
               |> mapLocal(0) (fun(p18 =>
               zip (transpose (p17._2)) (transpose (p18._2))
                 |> oclReduceSeq (AddressSpace.Private) (fun( (p20, p21) =>
-                  toPrivate (pair (mapSeq (id) (p21._1)) (mapSeq (id) (p21._2)))
-                  |> fun(p22 =>
+                //TODO maybe this subexpression could be much cleaner more efficient and express the same
+                // It is possible that the toPrivate around pair leads to less loops together with let. Is this even correct now?
+                pair (toPrivate(mapSeq (id) (p21._1))) (toPrivate(mapSeq (id) (p21._2)))
+                  |> let(fun(p22 =>
+                    //TODO something goes horribly wrong in the following part.
+                    //Two additional loops are generated and unexpected values are being accessed
+                    //It looks like CSE or better Let is needed.
                     zip (p20) (p22._1) |> mapSeq (fun(p23 =>
                       zip (p23._1) (p22._2) |> mapSeq (fun(p24 =>
-                        p24._1 + (p23._2 * p24._2) )) )) ))) (p18._1)
+                        p24._1 + (p23._2 * p24._2) )) )) )))) (p18._1 |> mapSeq (mapSeq (fun(x => x))) )
+                |> mapSeq (mapSeq (fun(x => x)))
             ))
           ))
-        ))
+        )))
 
       nFun((n, m, k) =>
         fun((k`.`m`.`float) ->: (k`.`n`.`float) ->: (m`.`n`.`float) ->: float ->: float ->: (m`.`n`.`float))
@@ -192,7 +201,6 @@ class gemm extends test_util.TestsWithExecutor {
               |> oclReduceSeq (AddressSpace.Private) (redOp)
                 (zeros (v4) (v5) (v3 * Cst(1) /^ v4) (v6 * Cst(1) /^ v5)
                   |> mapLocal(1) (mapLocal(0) (mapSeq (mapSeq (id)))))
-              //TODO following function shuould eventually write to global
               //mapSeq was removed because reduce does not wrap reduced results in arrays anymore
               |> fun(x =>
                 zip (x) (split (v5) (p3._2))
@@ -238,8 +246,8 @@ class gemm extends test_util.TestsWithExecutor {
     infer(ocl.keplerBest)
   }
 
-  ignore("Kepler best compiles to syntactically correct kernel") {
-    gen.OpenCLKernel(ocl.keplerBest)
+  test("Kepler best compiles to syntactically correct kernel") {
+    gen.OpenCLKernel(LocalSize((32,8,1)), GlobalSize((256, 128, 1)))(ocl.keplerBest, "KERNEL")
   }
 
   test("OpenCL sequential gemm versions produce the expected result") {
@@ -324,14 +332,14 @@ class gemm extends test_util.TestsWithExecutor {
 
     val gold = matrixMatrixMultiply(A, B, C, alpha, beta)
 
-    val runKernel = gen.OpenCLKernel(ocl.keplerBest).as[ScalaFunction `(`
+    val runKernel = gen.OpenCLKernel(LocalSize((2, 2)), GlobalSize((n/2, n/2)))(ocl.keplerBest, "KERNEL").as[ScalaFunction `(`
       Int `,` Int `,` Int `,`
       Array[Array[Float]] `,`
       Array[Array[Float]] `,`
       Array[Array[Float]] `,`
       Float `,`
       Float `)=>` Array[Float]]
-    val (flatOutput, _) = runKernel(LocalSize((2, 2)), GlobalSize((n/2, n/2)))(n `,` m `,` k `,` A `,` B `,` C `,` alpha `,` beta)
+    val (flatOutput, _) = runKernel(n `,` m `,` k `,` A `,` B `,` C `,` alpha `,` beta)
 
     val output: Array[Array[Float]] = flatOutput.grouped(n).toArray
 

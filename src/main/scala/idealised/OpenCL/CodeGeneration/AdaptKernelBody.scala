@@ -23,7 +23,9 @@ object AdaptKernelBody {
   // In OpenCL we unroll arrays in private memory
   private object unrollPrivateArrays {
     def apply(body: C.AST.Block): C.AST.Block = {
-      assert(identifyLoopsToUnroll(body).isEmpty)
+      if (identifyLoopsToUnroll(body).nonEmpty) {
+        println("WARNING: loops that should have been unrolled remain in the OpenCL code")
+      }
       body
     }
 

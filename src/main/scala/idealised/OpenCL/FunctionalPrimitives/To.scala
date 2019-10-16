@@ -2,13 +2,19 @@ package idealised.OpenCL.FunctionalPrimitives
 
 import idealised.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import idealised.DPIA.DSL.{`new` => _, _}
+import idealised.DPIA.FunctionalPrimitives.{Fst, Map, MapSeq, Record, Snd}
+import idealised.DPIA.ImperativePrimitives.{MapAcc, RecordAcc, RecordAcc1, RecordAcc2}
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics.{Data, Store}
+import idealised.DPIA.Types.AddressSpace.Private
 import idealised.DPIA.Types._
 import idealised.DPIA.{Phrases, _}
 import idealised.OpenCL.DSL.`new`
+import idealised.OpenCL.ImperativePrimitives.{IdxDistribute, IdxDistributeAcc}
+import idealised.OpenCL.{AdjustArraySizesForAllocations, Global, Local, ParallelismLevel, Sequential, WorkGroup, get_global_size, get_local_size, get_num_groups}
 
+import scala.annotation.tailrec
 import scala.xml.Elem
 
 final case class To(addrSpace: AddressSpace,
@@ -17,7 +23,7 @@ final case class To(addrSpace: AddressSpace,
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (addrSpace : AddressSpace) ->: (dt: DataType) ->:
+    (addrSpace: AddressSpace) ->: (dt: DataType) ->:
       (input :: exp"[$dt, $write]") ->: exp"[$dt, $read]"
 
   override def eval(s: Store): Data = OperationalSemantics.eval(s, input)
@@ -48,6 +54,7 @@ final case class To(addrSpace: AddressSpace,
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
-    `new`(addrSpace)(dt, tmp => acc(input)(tmp.wr) `;` C(tmp.rd) )
+    val adj = AdjustArraySizesForAllocations(input, dt, addrSpace)
+    `new` (addrSpace) (adj.dt, tmp => acc(input)(adj.accF(tmp.wr)) `;` C(adj.exprF(tmp.rd)))
   }
 }

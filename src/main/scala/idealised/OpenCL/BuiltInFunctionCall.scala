@@ -8,7 +8,7 @@ import lift.arithmetic.{ArithExprFunctionCall, Range, RangeUnknown, Sign, Simpli
 class BuiltInFunctionCall private(name: String, val param: Int, range: Range)
   extends ArithExprFunctionCall(name, range) {
 
-  lazy val toOCLString = s"$name($param)"
+  override lazy val toString = s"$name($param)"
 
   override lazy val digest: Int = HashSeed ^ /*range.digest() ^*/ name.hashCode ^ param
 
