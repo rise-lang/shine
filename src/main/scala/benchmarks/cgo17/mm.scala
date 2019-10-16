@@ -13,6 +13,7 @@ object mm {
 
     val localSize = LocalSize((32, 8))
     val globalSize = GlobalSize((M/4, N/8))
+    // FIXME: input sizes should remain variable in globalSize during codegen
     val amdKernel = Kernel.forgetSizes(gen.OpenCLKernel(localSize, globalSize)(amd, "KERNEL"))
     val nvidiaKernel = Kernel.forgetSizes(gen.OpenCLKernel(localSize, globalSize)(nvidia, "KERNEL"))
 
