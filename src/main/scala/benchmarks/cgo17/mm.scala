@@ -2,7 +2,7 @@ package benchmarks.cgo17
 
 import apps.mm._
 import benchmarks.core._
-import idealised.OpenCL.{GlobalSize, LocalSize}
+import idealised.OpenCL._
 import util._
 
 object mm {
@@ -13,8 +13,8 @@ object mm {
 
     val localSize = LocalSize((32, 8))
     val globalSize = GlobalSize((M/4, N/8))
-    val amdKernel = gen.OpenCLKernel(amd)
-    val nvidiaKernel = gen.OpenCLKernel(nvidia)
+    val amdKernel = Kernel.forgetSizes(gen.OpenCLKernel(localSize, globalSize)(amd, "KERNEL"))
+    val nvidiaKernel = Kernel.forgetSizes(gen.OpenCLKernel(localSize, globalSize)(nvidia, "KERNEL"))
 
     val stats = Seq(
       ("original AMD", benchmark(sampleCount, runOriginal("CGO17_MMAMD.cl",

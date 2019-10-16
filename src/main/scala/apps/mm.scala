@@ -105,7 +105,7 @@ object mm {
                     ))
                   ))(p17._1 // v4.v3.f
                     |> mapSeq(mapSeq(id)) // TODO: think about that
-                  )
+                  ) |> mapSeq(mapSeq(id)) // TODO: think about that
                 ))
               ))
             ))
