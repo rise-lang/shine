@@ -21,13 +21,13 @@ class Acoustic3D extends test_util.TestsWithExecutor {
     val kernelJNI = Kernel.create(code, "KERNEL", "")
 
     val float_bytes = 4
-    val output_bytes = N * M * float_bytes
+    val output_bytes = O * N * M * float_bytes
     val g_out = GlobalArg.createOutput(output_bytes)
     val kernelArgs = Array(
       GlobalArg.createInput(mat1.flatten.flatten),
       GlobalArg.createInput(mat2.flatten.flatten),
       g_out,
-      ValueArg.create(O), ValueArg.create(N), ValueArg.create(M)
+      ValueArg.create(M), ValueArg.create(N), ValueArg.create(O)
     )
 
     val runtime = Executor.execute(kernelJNI,
