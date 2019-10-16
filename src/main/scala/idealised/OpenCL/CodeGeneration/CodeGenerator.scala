@@ -93,6 +93,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       case IdxVecAcc(_, _, i, a) => CCodeGen.codeGenIdxAcc(i, a, env, path, cont)
 
       case IdxDistributeAcc(_, _, stride, _, _, a) => path match {
+        // TODO: ensure that i % stride == init ?
         case (i : CIntExpr) :: ps => acc(a, env, CIntExpr(i / stride) :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
@@ -188,6 +189,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         CCodeGen.codeGenForeignCall(name, args, env, Nil, cont)
 
       case IdxDistribute(_, _, stride, _, _, e) => path match {
+        // TODO: ensure that i % stride == init ?
         case (i : CIntExpr) :: ps => exp(e, env, CIntExpr(i / stride) :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
