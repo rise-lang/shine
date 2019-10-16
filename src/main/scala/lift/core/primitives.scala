@@ -6,7 +6,7 @@ import lift.core.types._
 
 object primitives {
   case object let extends Primitive {
-    override def t: Type = implDT(s => implDT(t =>
+    override def typeScheme: Type = implDT(s => implDT(t =>
       (s ->: t) ->: (s ->: t)
     ))
   }
