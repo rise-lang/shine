@@ -49,13 +49,17 @@ final case class Idx(n: Nat,
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
-    con(array)(λ(exp"[$n.$dt, $read]")(x => A :=| dt | Idx(n, dt, index, x)))
+    con(array)(λ(exp"[$n.$dt, $read]")(x =>
+      con(index)(fun(index.t)(i =>
+        A :=| dt | Idx(n, dt, i, x)))))
   }
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
-    con(array)(λ(exp"[$n.$dt, $read]")(e => C(Idx(n, dt, index, e))))
+    con(array)(λ(exp"[$n.$dt, $read]")(e =>
+      con(index)(fun(index.t)(i =>
+        C(Idx(n, dt, i, e))))))
   }
 }
 

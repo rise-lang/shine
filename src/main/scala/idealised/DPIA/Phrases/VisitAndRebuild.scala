@@ -52,8 +52,21 @@ object VisitAndRebuild {
           case dl @ DepLambda(a, p) =>
             DepLambda(a, apply(p, v))(dl.kn)
 
-          case DepApply(p, a) =>
-            DepApply(apply(p, v), a)
+          case DepApply(p, x) => x match {
+            case a: Nat =>
+              DepApply[NatKind, T](apply(p, v).asInstanceOf[Phrase[NatKind `()->:` T]], v.nat(a))
+            case a: DataType =>
+              DepApply[DataKind, T](apply(p, v).asInstanceOf[Phrase[DataKind `()->:` T]], v.data(a))
+            case a: AddressSpace =>
+              DepApply[AddressSpaceKind, T](apply(p, v).asInstanceOf[Phrase[AddressSpaceKind `()->:` T]], v.addressSpace(a))
+            case a: AccessType =>
+              DepApply[AccessKind, T](apply(p, v).asInstanceOf[Phrase[AccessKind `()->:` T]], v.access(a))
+            case a: NatToNat =>
+              DepApply[NatToNatKind, T](apply(p, v).asInstanceOf[Phrase[NatToNatKind `()->:` T]], v.natToNat(a))
+            case a: NatToData =>
+              DepApply[NatToDataKind, T](apply(p, v).asInstanceOf[Phrase[NatToDataKind `()->:` T]], v.natToData(a))
+            case a: PhraseType => ???
+          }
 
           case LetNat(binder, defn, body) => LetNat(binder, apply(defn, v), apply(body, v))
 

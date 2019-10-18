@@ -34,7 +34,9 @@ object KernelGenerator {
                                                  ): (Phrase[ExpType], Seq[Identifier[ExpType]], Seq[(LetNatIdentifier, Phrase[ExpType])]) = {
     p match {
       case l: Lambda[ExpType, _]@unchecked => getPhraseAndParams(l.body, l.param +: ps, defs)
+      case Apply(f, a) => getPhraseAndParams(Lifting.liftFunction(f).reducing(a), ps, defs)
       case ndl: DepLambda[NatKind, _]@unchecked => getPhraseAndParams(ndl.body, Identifier(ndl.x.name, ExpType(int, read)) +: ps, defs)
+      case DepApply(f, a) => getPhraseAndParams(Lifting.liftDependentFunction(f)(a), ps, defs)
       case ln:LetNat[ExpType, _]@unchecked => getPhraseAndParams(ln.body, ps, (ln.binder, ln.defn) +: defs)
       case ep: Phrase[ExpType]@unchecked => (ep, ps, defs)
     }

@@ -72,7 +72,9 @@ abstract class AbstractDepMap(n: Nat,
   override def xmlPrinter: Elem = {
     val k = f match {
       case DepLambda(k_ : NatIdentifier, _) => k_
-      case _ => throw new Exception("This should not happen")
+      case _ =>
+        println("WARNING: this should not happen?")
+        return <map>???</map>
     }
     <map n={ToString(n)} ft1={ToString(ft1)} ft2={ToString(ft2)}>
       <f type={ToString(k ->: ExpType(ft1(k), read) ->: ExpType(ft2(k), write))}>

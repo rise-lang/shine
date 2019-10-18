@@ -41,12 +41,10 @@ object DSL {
 
   implicit class FunCall(f: Expr) {
     def apply(e: Expr): Expr = Apply(f, e)
-
-    import lifting._
-    def apply(n: Nat): Expr = liftDepFunExpr[NatKind](f).value(n)
-    def apply(dt: DataType): Expr = liftDepFunExpr[DataKind](f).value(dt)
-    def apply(a: AddressSpace): Expr = liftDepFunExpr[AddressSpaceKind](f).value(a)
-    def apply(n2n: NatToNat): Expr = liftDepFunExpr[NatToNatKind](f).value(n2n)
+    def apply(n: Nat): Expr = DepApply[NatKind](f, n)
+    def apply(dt: DataType): Expr = DepApply[DataKind](f, dt)
+    def apply(a: AddressSpace): Expr = DepApply[AddressSpaceKind](f, a)
+    def apply(n2n: NatToNat): Expr = DepApply[NatToNatKind](f, n2n)
 
     def apply(e1: Expr, e2: Expr): Expr =
       f(e1)(e2)

@@ -27,9 +27,9 @@ object fromLift {
           case _ => ???
         }
         case l.Apply(f, e) =>
-          Lifting.liftFunction( // TODO: should we try to reduce by lifting here?
-            expression(f).asInstanceOf[Phrase[FunType[PhraseType, PhraseType]]])
-            .value(expression(e).asInstanceOf[Phrase[PhraseType]])
+          val f2 = expression(f).asInstanceOf[Phrase[FunType[PhraseType, PhraseType]]]
+          val e2 = expression(e).asInstanceOf[Phrase[PhraseType]]
+          Apply(f2, e2)
 
         case l.DepLambda(x, e) => x match {
           case n: l.NatIdentifier =>
@@ -41,16 +41,16 @@ object fromLift {
         }
         case l.DepApply(f, x) => x match {
           case n: Nat =>
-            DepApply[NatKind, PhraseType]( // TODO: should we try to reduce by lifting here?
+            DepApply[NatKind, PhraseType](
               expression(f).asInstanceOf[Phrase[DepFunType[NatKind, PhraseType]]],
               n)
           case dt: lt.DataType =>
-            DepApply[DataKind, PhraseType]( // TODO: should we try to reduce by lifting here?
+            DepApply[DataKind, PhraseType](
               expression(f).asInstanceOf[Phrase[DepFunType[DataKind, PhraseType]]],
               dataType(dt)
             )
           case a: lt.AddressSpace =>
-            DepApply[AddressSpaceKind, PhraseType]( // TODO: should we try to reduce by lifting here?
+            DepApply[AddressSpaceKind, PhraseType](
               expression(f).asInstanceOf[Phrase[DepFunType[AddressSpaceKind, PhraseType]]],
               addressSpace(a)
             )
@@ -61,7 +61,7 @@ object fromLift {
             case ls.IndexData(i, n)  => FunctionalPrimitives.AsIndex(n, Natural(i))
             case _              => Literal(data(d))
           }
-          case p: l.Primitive =>  primitive(p, t)
+          case p: l.Primitive => primitive(p, t)
 
         case _: l.TypedExpr => ??? // do not expect typed expr
       }
