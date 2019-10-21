@@ -2,7 +2,7 @@ package primitiveMacro
 
 import scala.annotation.{StaticAnnotation, compileTimeOnly}
 import scala.language.experimental.macros
-import scala.reflect.macros.whitebox
+import scala.reflect.macros.blackbox
 import scala.reflect.macros.whitebox.Context
 
 object Primitive {
@@ -12,7 +12,7 @@ object Primitive {
     def macroTransform(annottees: Any*): Any = macro Impl.primitive
   }
 
-  class Impl(val c: whitebox.Context) {
+  class Impl(val c: blackbox.Context) {
 
     import c.universe._
 
@@ -29,11 +29,11 @@ object Primitive {
     def fromClassDef: ClassDef => ClassDef = {
       case q"case class $name(..$params) extends $_ {..$body} " =>
         val r = q"""
-            case class $name(..$params)(override val t: Type) extends lift.core.Primitive(t) {
+            case class $name(..$params) extends Primitive {
               override def setType(t: Type): $name = ${name.asInstanceOf[c.TypeName].toTermName}(..${params.map({
                 case q"$_ val $n: $_ " => n
                 case q"$_ val $n: $_ = $_" => n
-                case x => c.abort(c.enclosingPosition, s"expected a parameter, but got $x")})})(t)
+                case x => c.abort(c.enclosingPosition, s"expected a parameter, but got $x")})})
               ..$body
             }
          """

@@ -1,6 +1,7 @@
 package lift.core
 
 import lift.core.types._
+import lift.core.DSL._
 
 object lifting {
   sealed trait Result[+T] {
@@ -32,7 +33,7 @@ object lifting {
   def liftFunExpr(p: Expr): Result[Expr => Expr] = {
     def chain(r: Result[Expr]): Result[Expr => Expr] =
       r.bind(liftFunExpr,
-        f => Expanding((e: Expr) => Apply(f, e)))
+        f => Expanding((e: Expr) => _apply(f, e)))
 
     p match {
       case Lambda(x, body)    => Reducing((e: Expr) => substitute.exprInExpr(e, `for` = x, in = body))
@@ -51,7 +52,7 @@ object lifting {
   def liftDepFunExpr[K <: Kind](p: Expr): Result[K#T => Expr] = {
     def chain(r: Result[Expr]): Result[K#T => Expr] =
       r.bind(liftDepFunExpr,
-        f => Expanding((x: K#T) => DepApply[K](f, x)))
+        f => Expanding((x: K#T) => depApply[K](f, x)))
 
     p match {
       case DepLambda(x, e)    => Reducing((a: K#T) => substitute.kindInExpr(a, `for` = x, in = e))

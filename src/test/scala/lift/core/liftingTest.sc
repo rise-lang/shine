@@ -1,14 +1,57 @@
-import lift.core.DSL._
-import lift.core.semantics._
-import lift.core._
+object newName {
+  private var counter = 0
 
-val const = fun(x => fun(x => l(5))) $ l(2)
-val const0 = Apply(fun(x => fun(x => Literal(IntData(5)))), Literal(IntData(2)))
-val const1 = fun(x => Literal(IntData(5)))
-val liftConst0 = lifting.liftFunExpr(const0)
-val liftConst1 = lifting.liftFunExpr(const1)
-println(liftConst0.map(f => f(Identifier("x"))))
-println(liftConst1.map(f => f(Identifier("x"))))
+  def apply(prefix: String): String = {
+    counter += 1
+    prefix + counter
+  }
+}
 
-val cbn = fun(y => fun(x => x + x) $ y + l(2))
-val dt = nFun(n => l(5))
+trait T
+
+case class TI(n: String) extends T
+
+case class TB() extends T
+
+def newTName: T = TI(newName("t"))
+
+abstract class E {
+  val t: T
+  def setA(t: T): E
+}
+
+final case class L(x: String)(override val t: T = newTName) extends E {
+  override def toString = s"${this.t}__$x"
+  override def setA(t: T) = this.copy(x)(t)
+}
+
+final case class M(x: String)(override val t: T = newTName) extends E {
+  override def toString = s"${this.t}__$x"
+  override def setA(t: T) = this.copy(x)(t)
+}
+
+abstract class P extends E {
+  val pt: String
+  override val t: T = newTName
+  override def setA(t: T) = this
+}
+
+final case class D() extends P {
+  override def toString = s"${this.t}__${this.pt}"
+  override val pt = "xxx"
+}
+
+final case class U() extends P {
+  override def toString = s"${this.t}__${this.pt}"
+  override val pt = "yyy"
+}
+
+L("a")()
+L("b")(TB())
+val x = M("a")()
+val y = x.setA(TB())
+val n = D()
+val m = n.setA(TB())
+U()
+D()
+U()

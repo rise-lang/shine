@@ -3,11 +3,10 @@ package lift.core
 import lift.arithmetic.BigSum
 import lift.core.DSL._
 import lift.core.types._
+import lift.core.Primitive
 import primitiveMacro.Primitive.primitive
 
 object primitives {
-  // make the IDE happy
-  sealed abstract class Primitive {def typeScheme: Type}
 
   @primitive case class Let() extends Primitive {
     override def typeScheme: Type = implDT(s => implDT(t =>
@@ -46,6 +45,12 @@ object primitives {
 
   @primitive case class Fst() extends Primitive {
     override def typeScheme: Type = implDT(s => implDT(t => TupleType(s, t) ->: s))
+  }
+
+  @primitive case class Gather() extends Primitive {
+    override def typeScheme: Type = implN(n => implN(m => implDT(t =>
+      ArrayType(m, IndexType(n)) ->: ArrayType(n, t) ->: ArrayType(m, t)
+    )))
   }
 
   @primitive case class Generate() extends Primitive {
@@ -101,13 +106,6 @@ object primitives {
     override def typeScheme: Type = nFunT(n => NatType ->: IndexType(n))
   }
 
-  @primitive case class Partition() extends Primitive {
-    override def typeScheme: Type = implN(n => implDT(dt =>
-      nFunT(m => n2nFunT(lenF =>
-        ArrayType(n, dt) ->: DepArrayType(m, n2dtFun(m)(i => ArrayType(lenF(i), dt)))
-      ))))
-  }
-
   // TODO? could be expressed in terms of a pad idx -> val
   @primitive case class PadCst() extends Primitive {
     override def typeScheme: Type = implN(n => nFunT(l => nFunT(q => implDT(t =>
@@ -120,6 +118,13 @@ object primitives {
     override def typeScheme: Type = implN(n => nFunT(l => nFunT(q => implDT(t =>
       ArrayType(n, t) ->: ArrayType(l + n + q, t)
     ))))
+  }
+
+  @primitive case class Partition() extends Primitive {
+    override def typeScheme: Type = implN(n => implDT(dt =>
+      nFunT(m => n2nFunT(lenF =>
+        ArrayType(n, dt) ->: DepArrayType(m, n2dtFun(m)(i => ArrayType(lenF(i), dt)))
+      ))))
   }
 
   @primitive case class Pair() extends Primitive {
@@ -150,12 +155,6 @@ object primitives {
         (IndexType(n) ->: IndexType(n)) ->: // idxFinv
           ArrayType(n, t) ->: ArrayType(n, t)
     ))
-  }
-
-  @primitive case class Gather() extends Primitive {
-    override def typeScheme: Type = implN(n => implN(m => implDT(t =>
-      ArrayType(m, IndexType(n)) ->: ArrayType(n, t) ->: ArrayType(m, t)
-    )))
   }
 
   @primitive case class ScanSeq() extends Primitive {
@@ -210,10 +209,6 @@ object primitives {
     override def typeScheme: Type = implDT(t => bool ->: t ->: t ->: t)
   }
 
-  @primitive case class Neg() extends Primitive {
-    override def typeScheme: Type = implDT(t => t ->: t)
-  }
-
   @primitive case class Unzip() extends Primitive {
     override def typeScheme: Type = implN(n => implDT(dt1 => implDT(dt2 =>
       ArrayType(n, TupleType(dt1, dt2)) ->: TupleType(ArrayType(n, dt1), ArrayType(n, dt2))
@@ -224,6 +219,10 @@ object primitives {
     override def typeScheme: Type = implN(n => implDT(a => implDT(b =>
       ArrayType(n, a) ->: ArrayType(n, b) ->: ArrayType(n, TupleType(a, b))
     )))
+  }
+
+  @primitive case class Neg() extends Primitive {
+    override def typeScheme: Type = implDT(t => t ->: t)
   }
 
   @primitive case class Add() extends Primitive {
