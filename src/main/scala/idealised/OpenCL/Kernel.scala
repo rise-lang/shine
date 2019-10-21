@@ -51,7 +51,29 @@ case class Kernel(decls: Seq[C.AST.Decl],
     hArgs: F#T => {
       val args: List[Any] = hArgs.toList
       assert(inputParams.length == args.length)
-      val (sizeVarMap, outputArg, inputArgs) = createKernelArgs(inputParams zip args, intermediateParams)
+
+      //Match up corresponding dpia parameter/intermediate parameter/scala argument (when present) in a covenience
+      //structure
+      val arguments = constructArguments(inputParams zip args, intermediateParams, this.kernel.params.tail)
+
+      //First, we want to find all the parameter mappings
+      val numGroups: NDRange = (
+        globalSize.size.x /^ localSize.size.x,
+        globalSize.size.y /^ localSize.size.y,
+        globalSize.size.z /^ localSize.size.z)
+      val sizeVarMapping = collectSizeVars(arguments, Map(
+        get_num_groups(0) -> numGroups.x,
+        get_num_groups(1) -> numGroups.y,
+        get_num_groups(2) -> numGroups.z,
+        get_local_size(0) -> localSize.size.x,
+        get_local_size(1) -> localSize.size.y,
+        get_local_size(2) -> localSize.size.z,
+        get_global_size(0) -> globalSize.size.x,
+        get_global_size(1) -> globalSize.size.y,
+        get_global_size(2) -> globalSize.size.z
+      ))
+
+      val (outputArg, inputArgs) = createKernelArgs(arguments, sizeVarMapping)
       val kernelArgs = outputArg :: inputArgs
 
       val kernelJNI = opencl.executor.Kernel.create(code, kernel.name, "")
@@ -69,14 +91,13 @@ case class Kernel(decls: Seq[C.AST.Decl],
           throw new Exception(errorMessage)
       }
 
-      val lengthMapping = sizeVarMap.asInstanceOf[Map[Nat,Nat]]
       val runtime = Executor.execute(kernelJNI,
-        ArithExpr.substitute(localSize.size.x, lengthMapping).eval,
-        ArithExpr.substitute(localSize.size.y, lengthMapping).eval,
-        ArithExpr.substitute(localSize.size.z, lengthMapping).eval,
-        ArithExpr.substitute(globalSize.size.x, lengthMapping).eval,
-        ArithExpr.substitute(globalSize.size.y, lengthMapping).eval,
-        ArithExpr.substitute(globalSize.size.z, lengthMapping).eval,
+        ArithExpr.substitute(localSize.size.x, sizeVarMapping).eval,
+        ArithExpr.substitute(localSize.size.y, sizeVarMapping).eval,
+        ArithExpr.substitute(localSize.size.z, sizeVarMapping).eval,
+        ArithExpr.substitute(globalSize.size.x, sizeVarMapping).eval,
+        ArithExpr.substitute(globalSize.size.y, sizeVarMapping).eval,
+        ArithExpr.substitute(globalSize.size.z, sizeVarMapping).eval,
         kernelArgs.toArray
         )
 
@@ -125,31 +146,24 @@ case class Kernel(decls: Seq[C.AST.Decl],
     * From the dpia paramters and the scala arguments, returns a Map of identifiers to sizes for "size vars",
     * the output kernel argument, and all the input kernel arguments
    */
-  private def createKernelArgs(inputs: Seq[(Identifier[ExpType], Any)],
-                               intermediateParameters: Seq[Identifier[VarType]]
-                              ):(Map[NatIdentifier, Nat], GlobalArg, List[KernelArg]) = {
-    //Match up corresponding dpia parameter/intermediate parameter/scala argument (when present) in a covenience
-    //structure
-    val arguments = constructArguments(inputs, intermediateParameters, this.kernel.params.tail)
-
-    //First, we want to find all the parameter mappings
-    val sizeVarMapping = collectSizeVars(arguments, Map())
+  private def createKernelArgs(arguments: Seq[Argument],
+                               sizeVariables: Map[Nat, Nat]): (GlobalArg, List[KernelArg]) = {
     //Now generate the input kernel args
     println(s"Create input arguments")
-    val kernelArguments = createInputKernelArgs(arguments, sizeVarMapping)
+    val kernelArguments = createInputKernelArgs(arguments, sizeVariables)
     //Finally, create the output
     println(s"Create output argument")
-    val kernelOutput = createOutputKernelArg(sizeVarMapping)
+    val kernelOutput = createOutputKernelArg(sizeVariables)
 
-    (sizeVarMapping, kernelOutput, kernelArguments)
+    (kernelOutput, kernelArguments)
   }
 
   /**
    * Iterates through all the input arguments, collecting the values of all int-typed input parameters, which may appear
     * in the sizes of the other arguments.
    */
-  private def collectSizeVars(arguments:List[Argument], sizeVariables:Map[NatIdentifier, Nat]):Map[NatIdentifier, Nat] = {
-    def recordSizeVariable( sizeVariables:Map[NatIdentifier, Nat], arg:Argument) = {
+  private def collectSizeVars(arguments: List[Argument], sizeVariables: Map[Nat, Nat]): Map[Nat, Nat] = {
+    def recordSizeVariable(sizeVariables:Map[Nat, Nat], arg:Argument) = {
       arg.identifier.t match {
         case ExpType(idealised.DPIA.Types.int, read) =>
           arg.argValue match {
@@ -163,7 +177,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
       }
     }
 
-    arguments.foldLeft(Map[NatIdentifier, Nat]())(recordSizeVariable)
+    arguments.foldLeft(sizeVariables)(recordSizeVariable)
   }
 
   private def createLocalArg(sizeInByte: Long): LocalArg = {
@@ -212,14 +226,14 @@ case class Kernel(decls: Seq[C.AST.Decl],
     * @param sizeVariables
     * @return
     */
-  private def createInputKernelArgs(arguments:List[Argument], sizeVariables:Map[NatIdentifier, Nat]):List[KernelArg] = {
+  private def createInputKernelArgs(arguments: Seq[Argument], sizeVariables: Map[Nat, Nat]):List[KernelArg] = {
 
     //Helper for the creation of intermdiate arguments
-    def createIntermediateArg(arg:Argument, sizeVariables:Map[NatIdentifier, Nat]):KernelArg = {
+    def createIntermediateArg(arg: Argument, sizeVariables: Map[Nat, Nat]): KernelArg = {
       //Get the size of bytes, potentially with free variables
       val rawSize = sizeInByte(arg.identifier.t.dataType)
       //Try to substitue away all the free variables
-      val cleanSize = ArithExpr.substitute(rawSize.value, sizeVariables.asInstanceOf[Map[Nat, Nat]])
+      val cleanSize = ArithExpr.substitute(rawSize.value, sizeVariables)
       Try(cleanSize.evalLong) match {
         case Success(actualSize) =>
           arg.parameter.t match {
@@ -249,9 +263,9 @@ case class Kernel(decls: Seq[C.AST.Decl],
     }
   }
 
-  private def createOutputKernelArg(sizeVariables:Map[NatIdentifier,Nat]):GlobalArg = {
+  private def createOutputKernelArg(sizeVariables:Map[Nat,Nat]):GlobalArg = {
     val rawSize = sizeInByte(this.outputParam.t.dataType).value
-    val cleanSize = ArithExpr.substitute(rawSize, sizeVariables.asInstanceOf[Map[Nat,Nat]])
+    val cleanSize = ArithExpr.substitute(rawSize, sizeVariables)
     Try(cleanSize.evalLong) match {
       case Success(actualSize) => createGlobalArg(actualSize)
       case Failure(_) => throw new Exception(s"Could not evaluate $cleanSize")

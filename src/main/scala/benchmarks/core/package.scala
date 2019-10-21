@@ -11,10 +11,4 @@ package object core {
     val med = sorted_samples(sorted_samples.length / 2)
     TimeStat(min, max, med)
   }
-
-  def withExecutor[T](f: => T): T = {
-    Executor.loadLibrary()
-    Executor.init()
-    try { f } finally { Executor.shutdown() }
-  }
 }

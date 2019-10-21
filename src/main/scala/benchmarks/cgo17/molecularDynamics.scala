@@ -2,7 +2,7 @@ package benchmarks.cgo17
 
 import apps.molecularDynamics._
 import benchmarks.core._
-import util.gen
+import util._
 
 object molecularDynamics {
   def main(args: Array[String]): Unit = {

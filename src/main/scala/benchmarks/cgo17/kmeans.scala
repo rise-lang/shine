@@ -2,7 +2,7 @@ package benchmarks.cgo17
 
 import apps.kmeans._
 import benchmarks.core._
-import util.gen
+import util._
 
 object kmeans {
   def main(args: Array[String]): Unit = {

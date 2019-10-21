@@ -2,7 +2,7 @@ package benchmarks.cgo17
 
 import apps.mriQ._
 import benchmarks.core._
-import util.gen
+import util._
 
 object mriQ {
   def main(args: Array[String]): Unit = {
