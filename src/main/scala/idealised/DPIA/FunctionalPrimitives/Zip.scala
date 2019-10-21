@@ -31,7 +31,7 @@ final case class Zip(n: Nat,
     (OperationalSemantics.eval(s, e1), OperationalSemantics.eval(s, e2)) match {
       case (ArrayData(lhsE), ArrayData(rhsE)) =>
         ArrayData((lhsE zip rhsE) map { p =>
-          RecordData(p._1, p._2)
+          PairData(p._1, p._2)
         })
 
       case _ => throw new Exception("This should not happen")

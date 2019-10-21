@@ -52,7 +52,7 @@ object acoustic3D {
   private val st: Nat = 1
 
   val acoustic: Expr = fun(
-    (3`.`3`.`3`.`TupleType(float, TupleType(float, int))) ->: float
+    (3`.`3`.`3`.`PairType(float, PairType(float, int))) ->: float
   )(tile => {
     val x = tile `@` lidx(1, 3) `@` lidx(1, 3) `@` lidx(1, 3) |> snd |> snd
     val cf = toPrivate(getCF(x)(cf1(0))(cf1(1)))

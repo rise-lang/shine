@@ -45,11 +45,6 @@ Tuple_float_float computeQ(float sX, float sY, float sZ, float Kx, float Ky, flo
 }}
 
 kernel void KERNEL(int v_K_0, int bla, const global float* restrict v__20, const global float* restrict v__21, const global float* restrict v__22, const global float* restrict v__23, const global float* restrict v__24, const global Tuple_float_float_float_float* restrict v__25, global Tuple_float_float* v__36, int v_X_3){
-#ifndef WORKGROUP_GUARD
-#define WORKGROUP_GUARD
-#endif
-WORKGROUP_GUARD
-{
   /* Static local memory */
   /* Typed Value memory */
   float v__29;
@@ -83,5 +78,4 @@ WORKGROUP_GUARD
       /* end map_seq */
     }
   }
-}
 }

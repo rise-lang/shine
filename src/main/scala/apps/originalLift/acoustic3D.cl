@@ -63,11 +63,6 @@ float add(float x, float y){
     }
 }
 kernel void KERNEL(const global float* restrict v__50, const global float* restrict v__51, global float* v__94, int v_M_0, int v_N_1, int v_O_2){
-    #ifndef WORKGROUP_GUARD
-    #define WORKGROUP_GUARD
-    #endif
-    WORKGROUP_GUARD
-    {
         // Static local memory
         // Typed Value memory
         float v__57; 
@@ -131,5 +126,4 @@ kernel void KERNEL(const global float* restrict v__50, const global float* restr
                 }
             }
         }
-    }
 }

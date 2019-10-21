@@ -58,31 +58,31 @@ object comment {
 }
 
 object fst {
-  def apply(record: Phrase[ExpType]): Fst = {
-    record.t match {
-      case ExpType(RecordType(dt1, dt2), _) => Fst(dt1, dt2, record)
+  def apply(pair: Phrase[ExpType]): Fst = {
+    pair.t match {
+      case ExpType(PairType(dt1, dt2), _) => Fst(dt1, dt2, pair)
       case x => error(x.toString, "ExpType(RecordType)")
     }
   }
 }
 
 object snd {
-  def apply(record: Phrase[ExpType]): Snd = {
-    record.t match {
-      case ExpType(RecordType(dt1, dt2), _) => Snd(dt1, dt2, record)
+  def apply(pair: Phrase[ExpType]): Snd = {
+    pair.t match {
+      case ExpType(PairType(dt1, dt2), _) => Snd(dt1, dt2, pair)
       case x => error(x.toString, "ExpType(RecordType)")
     }
   }
 }
 
-object recordAcc1 {
-  def apply(fstT: DataType, sndT: DataType, record: Phrase[AccType]): RecordAcc1 =
-    RecordAcc1(fstT, sndT, record)
+object pairAcc1 {
+  def apply(fstT: DataType, sndT: DataType, record: Phrase[AccType]): PairAcc1 =
+    PairAcc1(fstT, sndT, record)
 }
 
 object recordAcc2 {
-  def apply(fstT: DataType, sndT: DataType, record: Phrase[AccType]): RecordAcc2 =
-    RecordAcc2(fstT, sndT, record)
+  def apply(fstT: DataType, sndT: DataType, record: Phrase[AccType]): PairAcc2 =
+    PairAcc2(fstT, sndT, record)
 }
 
 object skip extends Skip
