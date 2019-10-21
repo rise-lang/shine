@@ -46,10 +46,8 @@ object DepArrayType {
   }
 }
 
-final case class TupleType(elemTypes: DataType*) extends ComposedType {
-  assert(elemTypes.size == 2)
-
-  override def toString: String = elemTypes.map(_.toString).mkString("(", ", ", ")")
+final case class PairType(p1: DataType, p2: DataType) extends ComposedType {
+  override def toString: String = s"($p1, $p2)"
 }
 
 

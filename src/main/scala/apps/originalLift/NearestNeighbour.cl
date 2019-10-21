@@ -13,11 +13,6 @@ float distance_(Tuple2_float_float loc, float lat, float lng){
     }
 }
 kernel void KERNEL(const global Tuple2_float_float* restrict v__4, float v__5, float v__6, global float* v__8, int v_N_0){
-    #ifndef WORKGROUP_GUARD
-    #define WORKGROUP_GUARD
-    #endif
-    WORKGROUP_GUARD
-    {
         // Static local memory
         // Typed Value memory
         // Private Memory
@@ -26,6 +21,5 @@ kernel void KERNEL(const global Tuple2_float_float* restrict v__4, float v__5, f
             int v_gl_id_3 = get_global_id(0); 
             v__8[v_gl_id_3] = distance_(v__4[v_gl_id_3], v__5, v__6); 
         }
-    }
 }
 

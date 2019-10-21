@@ -33,7 +33,7 @@ object PrettyPhrasePrinter {
 
       case Natural(n) => n.toString
 
-      case Pair(fst, snd) => s"(${apply(fst)}, ${apply(snd)})"
+      case PhrasePair(fst, snd) => s"(${apply(fst)}, ${apply(snd)})"
 
       case c: Primitive[_] => c.prettyPrint
     }

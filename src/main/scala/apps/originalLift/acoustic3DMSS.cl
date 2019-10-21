@@ -63,11 +63,6 @@ float subtractTuple(Tuple2_float_float x){
     }
 }
 kernel void KERNEL(const global float* restrict v__336, const global float* restrict v__337, global float* v__379, int v_M_0, int v_N_1, int v_O_2){
-    #ifndef WORKGROUP_GUARD
-    #define WORKGROUP_GUARD
-    #endif
-    WORKGROUP_GUARD
-    {
         // Static local memory
         // Typed Value memory
         float v__342; 
@@ -457,5 +452,4 @@ kernel void KERNEL(const global float* restrict v__336, const global float* rest
                 // end mapSeqSlide
             }
         }
-    }
 }

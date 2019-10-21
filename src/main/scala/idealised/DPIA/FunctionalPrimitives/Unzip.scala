@@ -21,7 +21,7 @@ final case class Unzip(n: Nat,
   override val t: ExpType =
     (n: Nat) ->: (dt1: DataType) ->: (dt2: DataType) ->:
       (e :: exp"[$n.($dt1 x $dt2), $read]") ->:
-      ExpType(RecordType(ArrayType(n, dt1), ArrayType(n, dt2)), read)
+      ExpType(PairType(ArrayType(n, dt1), ArrayType(n, dt2)), read)
 
   // TODO: fix parsing of this:
 //        exp"[($n.$dt1 x $n.$dt2)]"
@@ -34,11 +34,11 @@ final case class Unzip(n: Nat,
     OperationalSemantics.eval(s, e) match {
       case ArrayData(xs) =>
         val (lhs, rhs) = xs.foldLeft(Vector[Data](), Vector[Data]()){
-          case (vs: (Vector[Data], Vector[Data]), p: RecordData) =>
+          case (vs: (Vector[Data], Vector[Data]), p: PairData) =>
             (vs._1 :+ p.fst, vs._2 :+ p.snd)
           case _ => throw new Exception("This should not happen")
         }
-        RecordData(ArrayData(lhs), ArrayData(rhs))
+        PairData(ArrayData(lhs), ArrayData(rhs))
 
       case _ => throw new Exception("This should not happen")
     }
@@ -60,7 +60,7 @@ final case class Unzip(n: Nat,
     /*
     TODO this introduces implicit copies
     con(e)(λ(exp"[$n.($dt1 x $dt2), $read]")(x =>
-      A :=|RecordType(ArrayType(n, dt1), ArrayType(n, dt2))| Unzip(n, dt1, dt2, x)
+      A :=|PairType(ArrayType(n, dt1), ArrayType(n, dt2))| Unzip(n, dt1, dt2, x)
     ))
 
      */

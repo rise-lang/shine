@@ -30,7 +30,7 @@ object primitives {
 
   case object depZip extends Primitive {
     override def t: Type = implN(n => implN2DT(ft1 => implN2DT(ft2 =>
-      DepArrayType(n, ft1) ->: DepArrayType(n, ft2) ->: DepArrayType(n, n2dtFun(i => TupleType(ft1(i), ft2(i))))
+      DepArrayType(n, ft1) ->: DepArrayType(n, ft2) ->: DepArrayType(n, n2dtFun(i => PairType(ft1(i), ft2(i))))
     )))
   }
 
@@ -41,7 +41,7 @@ object primitives {
   }
 
   case object fst extends Primitive {
-    override def t: Type = implDT(s => implDT(t => TupleType(s, t) ->: s))
+    override def t: Type = implDT(s => implDT(t => PairType(s, t) ->: s))
   }
 
   case object generate extends Primitive {
@@ -120,7 +120,7 @@ object primitives {
 
   case object pair extends Primitive {
     override def t: Type = implDT(s => implDT(t =>
-      s ->: t ->: TupleType(s, t)
+      s ->: t ->: PairType(s, t)
     ))
   }
 
@@ -180,7 +180,7 @@ object primitives {
   }
 
   case object snd extends Primitive {
-    override def t: Type = implDT(s => implDT(t => TupleType(s, t) ->: t))
+    override def t: Type = implDT(s => implDT(t => PairType(s, t) ->: t))
   }
 
   case object split extends Primitive {
@@ -212,13 +212,13 @@ object primitives {
 
   case object unzip extends Primitive {
     override def t: Type = implN(n => implDT(dt1 => implDT(dt2 =>
-      ArrayType(n, TupleType(dt1, dt2)) ->: TupleType(ArrayType(n, dt1), ArrayType(n, dt2))
+      ArrayType(n, PairType(dt1, dt2)) ->: PairType(ArrayType(n, dt1), ArrayType(n, dt2))
     )))
   }
 
   case object zip extends Primitive {
     override def t: Type = implN(n => implDT(a => implDT(b =>
-      ArrayType(n, a) ->: ArrayType(n, b) ->: ArrayType(n, TupleType(a, b))
+      ArrayType(n, a) ->: ArrayType(n, b) ->: ArrayType(n, PairType(a, b))
     )))
   }
 
