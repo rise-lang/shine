@@ -61,65 +61,59 @@ Tuple2_float4_float4 update(float4 pos, float4 vel, float deltaT, float4 acceler
 }
 kernel __attribute((reqd_work_group_size(256,1,1)))
 void KERNEL(const global float* restrict v__36, const global float* restrict v__37, float v__38, float v__39, global Tuple2_float4_float4* v__54, int v_N_1){
-    #ifndef WORKGROUP_GUARD
-    #define WORKGROUP_GUARD
-    #endif
-    WORKGROUP_GUARD
+    // Static local memory
+    local float v__46[1024];
+    // Typed Value memory
+    float4 v__43;
+    // Private Memory
+    float4 v_v__41_1_104;
+    float4 v_v__44_1_105;
+    // iteration count is exactly 1, no loop emitted
     {
-        // Static local memory
-        local float v__46[1024];
-        // Typed Value memory
-        float4 v__43; 
-        // Private Memory
-        float4 v_v__41_1_104; 
-        float4 v_v__44_1_105; 
+        int v_wg_id_22 = get_group_id(1);
         // iteration count is exactly 1, no loop emitted
         {
-            int v_wg_id_22 = get_group_id(1); 
-            // iteration count is exactly 1, no loop emitted
-            {
-                int v_wg_id_23 = get_group_id(0); 
-                // unroll
-                v_v__41_1_104 = idF4(vload4(((256 * v_wg_id_23) + (v_N_1 * v_wg_id_22) + get_local_id(0)),v__36 + 0)); 
-                // end unroll
-                barrier(CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE);
-                float4 v_tmp_102 = 0.0f; 
-                v__43 = v_tmp_102; 
-                // unroll
-                // unroll
-                v_v__44_1_105 = idF4(v__43); 
-                // end unroll
-                // end unroll
-                // reduce_seq
-                for (int v_i_28 = 0; (v_i_28 < ((v_N_1)/(256))); v_i_28 = (1 + v_i_28)){
+            int v_wg_id_23 = get_group_id(0);
+            // unroll
+            v_v__41_1_104 = idF4(vload4(((256 * v_wg_id_23) + (v_N_1 * v_wg_id_22) + get_local_id(0)),v__36 + 0));
+            // end unroll
+            barrier(CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE);
+            float4 v_tmp_102 = 0.0f;
+            v__43 = v_tmp_102;
+            // unroll
+            // unroll
+            v_v__44_1_105 = idF4(v__43);
+            // end unroll
+            // end unroll
+            // reduce_seq
+            for (int v_i_28 = 0; (v_i_28 < ((v_N_1)/(256))); v_i_28 = (1 + v_i_28)){
+                // iteration count is exactly 1, no loop emitted
+                {
+                    int v_l_id_29 = get_local_id(1);
                     // iteration count is exactly 1, no loop emitted
                     {
-                        int v_l_id_29 = get_local_id(1); 
-                        // iteration count is exactly 1, no loop emitted
-                        {
-                            int v_l_id_30 = get_local_id(0); 
-                            vstore4(idF4(vload4((v_l_id_30 + (256 * v_i_28) + (256 * v_l_id_29)),v__36 + 0)),(v_l_id_30 + (256 * v_l_id_29)),v__46); 
-                        }
+                        int v_l_id_30 = get_local_id(0);
+                        vstore4(idF4(vload4((v_l_id_30 + (256 * v_i_28) + (256 * v_l_id_29)),v__36 + 0)),(v_l_id_30 + (256 * v_l_id_29)),v__46);
                     }
-                    barrier(CLK_LOCAL_MEM_FENCE);
-                    // unroll
-                    // unroll
-                    // reduce_seq
-                    for (int v_i_33 = 0; (v_i_33 < 256); v_i_33 = (1 + v_i_33)){
-                        v_v__44_1_105 = calcAcc(v_v__41_1_104, vload4((v_i_33 + (256 * get_local_id(1))),v__46 + 0), v__39, v__38, v_v__44_1_105); 
-                    }
-                    // end reduce_seq
-                    // end unroll
-                    // end unroll
-                    barrier(CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE);
+                }
+                barrier(CLK_LOCAL_MEM_FENCE);
+                // unroll
+                // unroll
+                // reduce_seq
+                for (int v_i_33 = 0; (v_i_33 < 256); v_i_33 = (1 + v_i_33)){
+                    v_v__44_1_105 = calcAcc(v_v__41_1_104, vload4((v_i_33 + (256 * get_local_id(1))),v__46 + 0), v__39, v__38, v_v__44_1_105);
                 }
                 // end reduce_seq
-                // unroll
-                // unroll
-                v__54[((256 * v_wg_id_23) + (256 * get_local_id(1)) + (v_N_1 * v_wg_id_22) + get_local_id(0))] = update(v_v__41_1_104, vload4(((256 * v_wg_id_23) + (v_N_1 * v_wg_id_22) + get_local_id(0)),v__37 + 0), v__39, v_v__44_1_105); 
                 // end unroll
                 // end unroll
+                barrier(CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE);
             }
+            // end reduce_seq
+            // unroll
+            // unroll
+            v__54[((256 * v_wg_id_23) + (256 * get_local_id(1)) + (v_N_1 * v_wg_id_22) + get_local_id(0))] = update(v_v__41_1_104, vload4(((256 * v_wg_id_23) + (v_N_1 * v_wg_id_22) + get_local_id(0)),v__37 + 0), v__39, v_v__44_1_105);
+            // end unroll
+            // end unroll
         }
     }
 }

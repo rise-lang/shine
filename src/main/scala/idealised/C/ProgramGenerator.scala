@@ -67,7 +67,7 @@ object ProgramGenerator {
         identifier("output", AccType(ArrayType(Cst(1), outT.dataType)))
       case _: ArrayType | _: DepArrayType =>
         identifier("output", AccType(outT.dataType))
-      case _: RecordType => throw new Exception("Records as output parameters currently not supported")
+      case _: PairType => throw new Exception("Pairs as output parameters currently not supported")
       case _: DataTypeIdentifier | _: NatToDataApply => throw new Exception("This should not happen")
     }
   }
@@ -114,7 +114,7 @@ object ProgramGenerator {
       case DepArrayType(_, NatToDataLambda(_, dt)) =>
         val baseDt = DataType.getBaseDataType(dt)
         C.AST.PointerType(gen.typ(baseDt))
-      case r : RecordType => gen.typ(r)
+      case r : PairType => gen.typ(r)
       case t : BasicType => gen.typ(t)
       case _: DataTypeIdentifier | _: NatToDataApply | DepArrayType(_, NatToDataIdentifier(_)) =>
         throw new Exception("This should not happen")
@@ -156,7 +156,7 @@ object ProgramGenerator {
   private def getDataType(i: Identifier[_]): DataType = i.t match {
     case ExpType(dataType, _) => dataType
     case AccType(dataType) => dataType
-    case PairType(ExpType(dt1, _), AccType(dt2)) if dt1 == dt2 => dt1
+    case PhrasePairType(ExpType(dt1, _), AccType(dt2)) if dt1 == dt2 => dt1
     case _ => throw new Exception("This should not happen")
   }
 

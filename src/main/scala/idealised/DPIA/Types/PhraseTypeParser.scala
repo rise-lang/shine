@@ -76,7 +76,7 @@ class PhraseTypeParser(val string: String,
 
   def parseRecordOrBaseType(dt: DataType): DataType = {
     peakToken match {
-      case "x" => nextToken; RecordType(dt, parseDataType)
+      case "x" => nextToken; PairType(dt, parseDataType)
       case "]" => dt
       case "," => dt
       case ")" => nextToken; parseRecordOrBaseType(dt)
@@ -224,7 +224,7 @@ class PhraseTypeParser(val string: String,
     val pt1 = parseBasePhraseType
     if (!hasToken) return pt1
     nextToken match {
-      case "x" => PairType(pt1, parsePhraseType)
+      case "x" => PhrasePairType(pt1, parsePhraseType)
       case "->" => FunType(pt1, parsePhraseType)
       case _ => error
     }

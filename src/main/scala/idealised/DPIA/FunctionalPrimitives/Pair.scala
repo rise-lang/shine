@@ -10,10 +10,10 @@ import idealised.DPIA._
 
 import scala.xml.Elem
 
-final case class Record(dt1: DataType,
-                        dt2: DataType,
-                        fst: Phrase[ExpType],
-                        snd: Phrase[ExpType])
+final case class Pair(dt1: DataType,
+                      dt2: DataType,
+                      fst: Phrase[ExpType],
+                      snd: Phrase[ExpType])
   extends ExpPrimitive {
 
   override val t: ExpType =
@@ -21,13 +21,13 @@ final case class Record(dt1: DataType,
       (fst :: exp"[$dt1, $read]") ->: (snd :: exp"[$dt2, $read]") ->: exp"[$dt1 x $dt2, $read]"
 
   override def eval(s: Store): Data = {
-    RecordData(
+    PairData(
       OperationalSemantics.eval(s, fst),
       OperationalSemantics.eval(s, snd))
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    Record(fun.data(dt1), fun.data(dt2),
+    Pair(fun.data(dt1), fun.data(dt2),
       VisitAndRebuild(fst, fun), VisitAndRebuild(snd, fun))
   }
 
@@ -48,7 +48,7 @@ final case class Record(dt1: DataType,
                                   (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
-    acc(fst)(recordAcc1(dt1, dt2, A)) `;`
+    acc(fst)(pairAcc1(dt1, dt2, A)) `;`
       acc(snd)(recordAcc2(dt1, dt2, A))
   }
 
@@ -58,6 +58,6 @@ final case class Record(dt1: DataType,
 
     con(fst)(λ(exp"[$dt1, $read]")(x =>
       con(snd)(λ(exp"[$dt2, $read]")(y =>
-        C(Record(dt1, dt2, x, y)) )) ))
+        C(Pair(dt1, dt2, x, y)) )) ))
   }
 }

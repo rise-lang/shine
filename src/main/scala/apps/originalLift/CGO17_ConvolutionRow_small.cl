@@ -13,7 +13,6 @@ float multAndSumUp(float acc, float l, float r){
   { return acc + (l * r); }
 }
 kernel void KERNEL(const global float* restrict v__174, const global float* restrict v__175, global float* v__183){
-{
   /* Static local memory */
   local float v__177[1296];
   /* Typed Value memory */
@@ -131,6 +130,6 @@ kernel void KERNEL(const global float* restrict v__174, const global float* rest
       }
     }
   }
-}}
+}
 
 

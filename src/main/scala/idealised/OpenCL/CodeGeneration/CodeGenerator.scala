@@ -232,7 +232,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
       C.AST.Block(immutable.Seq(
         C.AST.DeclStmt(OpenCL.AST.VarDecl(vC.name, typ(dt), a)),
-        cmd(Phrase.substitute(Pair(ve, va), `for` = v, `in` = p),
+        cmd(Phrase.substitute(PhrasePair(ve, va), `for` = v, `in` = p),
           env updatedIdentEnv (ve -> vC)
             updatedIdentEnv (va -> vC))))
     }
@@ -269,7 +269,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         DeclStmt(VarDecl(flag.name, Type.uchar, Some(Literal("1")))),
         // generate body
         cmd(
-          Phrase.substitute(Pair(Pair(Pair(ve, va), swap), done), `for` = ps, `in` = p),
+          Phrase.substitute(PhrasePair(PhrasePair(PhrasePair(ve, va), swap), done), `for` = ps, `in` = p),
           env updatedIdentEnv (ve -> in_ptr) updatedIdentEnv (va -> out_ptr)
             updatedCommEnv (swap -> {
             Block(immutable.Seq(

@@ -50,7 +50,7 @@ object DepArrayType {
   }
 }
 
-final case class RecordType(fst: DataType, snd: DataType) extends ComposedType {
+final case class PairType(fst: DataType, snd: DataType) extends ComposedType {
   override def toString: String = s"($fst x $snd)"
 }
 
@@ -96,7 +96,7 @@ object DataType {
       (in match {
         case _: BasicType => in
         case a: ArrayType => ArrayType(a.size, substitute(dt, `for`, a.elemType))
-        case r: RecordType => RecordType(substitute(dt, `for`, r.fst), substitute(dt, `for`, r.snd))
+        case r: PairType => PairType(substitute(dt, `for`, r.fst), substitute(dt, `for`, r.snd))
       }).asInstanceOf[T]
     }
   }
@@ -115,8 +115,8 @@ object DataType {
         DepArrayType(newSize, newElemFType)
       case v: VectorType =>
         VectorType(ArithExpr.substitute(v.size, Map((`for`, ae))), v.elemType)
-      case r: RecordType =>
-        RecordType(substitute(ae, `for`, r.fst), substitute(ae, `for`, r.snd))
+      case r: PairType =>
+        PairType(substitute(ae, `for`, r.fst), substitute(ae, `for`, r.snd))
     }).asInstanceOf[T]
   }
 
@@ -129,7 +129,7 @@ object DataType {
 
   def getTotalNumberOfElements(dt: DataType): Nat = dt match {
     case _: BasicType => 1
-    case _: RecordType => 1
+    case _: PairType => 1
     case a: ArrayType => getTotalNumberOfElements(a.elemType) * a.size
     case a: DepArrayType =>
       a.elemFType match {
@@ -142,7 +142,7 @@ object DataType {
 
   def getSize(dt: DataType): Nat = dt match {
     case _: IndexType | _: ScalarType => 1
-    case _: RecordType => 1 // TODO: is this correct?
+    case _: PairType => 1 // TODO: is this correct?
     case VectorType(size, _) => size
     case ArrayType(size, _) => size
     case DepArrayType(size, _) => size
@@ -158,15 +158,15 @@ object DataType {
   @scala.annotation.tailrec
   def getBaseDataType(dt: DataType): DataType = dt match {
     case _: BasicType => dt
-    case _: RecordType => dt
+    case _: PairType => dt
     case _: DataTypeIdentifier => dt
     case ArrayType(_, elemType) => getBaseDataType(elemType)
     case DepArrayType(_, NatToDataLambda(_, elemType)) => getBaseDataType(elemType)
     case DepArrayType(_, _) | _: NatToDataApply => throw new Exception("This should not happen")
   }
 
-  implicit class RecordTypeConstructor(dt1: DataType) {
-    def x(dt2: DataType) = RecordType(dt1, dt2)
+  implicit class PairTypeConstructor(dt1: DataType) {
+    def x(dt2: DataType) = PairType(dt1, dt2)
   }
 
   implicit class ArrayTypeConstructor(s: Nat) {

@@ -68,7 +68,7 @@ object ProgramGenerator {
         identifier("output", AccType(ArrayType(Cst(1), outT.dataType)))
       case _: ArrayType | _: DepArrayType =>
         identifier("output", AccType(outT.dataType))
-      case _: RecordType => throw new Exception("Records as output parameters currently not supported")
+      case _: PairType => throw new Exception("Pairs as output parameters currently not supported")
       case _: DataTypeIdentifier | _: NatToDataApply => throw new Exception("This should not happen")
     }
   }

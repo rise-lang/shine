@@ -18,12 +18,7 @@ float add(float x, float y){
 float mult(float l, float r){
   { return l * r; }
 }
-kernel void KERNEL(const global float* restrict v__70, const global float* restrict v__71, global float* v__93, int v_K_4, int v_M_3, int v_N_5){ 
-#ifndef WORKGROUP_GUARD
-#define WORKGROUP_GUARD
-#endif
-WORKGROUP_GUARD
-{
+kernel void KERNEL(const global float* restrict v__70, const global float* restrict v__71, global float* v__93, int v_K_4, int v_M_3, int v_N_5){
   /* Static local memory */
   local float v__78[2048] __attribute__ ((aligned(16)));
   local float v__77[1024] __attribute__ ((aligned(16)));
@@ -406,4 +401,4 @@ WORKGROUP_GUARD
       /* end map_seq */
     }
   }
-}}
+}

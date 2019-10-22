@@ -36,7 +36,7 @@ object nbody {
       |  newVel.w = vel.w;
       |  return (struct Record_float4_float4){ newPos, newVel };
       |}""".stripMargin,
-    float4 ->: float4 ->: float ->: float4 ->: TupleType(float4, float4)
+    float4 ->: float4 ->: float ->: float4 ->: PairType(float4, float4)
   )
 
   val amd: Expr = nFun(n => fun(

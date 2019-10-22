@@ -12,7 +12,7 @@ class StructDecl extends test_util.Tests {
   val addT = fun(t => t._1 + t._2)
 
   test("Program with tuples in output and tuple input, can be generated in C.") {
-    val tupleOut = fun(ArrayType(8, TupleType(float, float)))(xs =>
+    val tupleOut = fun(ArrayType(8, PairType(float, float)))(xs =>
       xs |> mapSeq(id)
     )
 
@@ -20,7 +20,7 @@ class StructDecl extends test_util.Tests {
   }
 
   test("Program with tuples in output and input, can be generated in OpenMP.") {
-    val tupleOut = fun(ArrayType(8, TupleType(float, float)))(xs =>
+    val tupleOut = fun(ArrayType(8, PairType(float, float)))(xs =>
       xs |> mapPar(id)
     )
 
@@ -28,7 +28,7 @@ class StructDecl extends test_util.Tests {
   }
 
   test("Program with tuples in input and output, can be generated in OpenCL.") {
-    val tupleOut = fun(ArrayType(8, TupleType(float, float)))(xs =>
+    val tupleOut = fun(ArrayType(8, PairType(float, float)))(xs =>
       xs |> mapSeq(id)
     )
 
