@@ -5,7 +5,7 @@ import lift.core.DSL._
 import lift.core.types._
 import lift.core.primitives._
 import lift.core.HighLevelConstructs._
-import lift.OpenCL.primitives._
+import lift.OpenCL.DSL._
 
 object acoustic3D {
   private val getNumNeighbours = foreignFun("idxF", Seq("i", "j", "k", "m", "n", "o"),
