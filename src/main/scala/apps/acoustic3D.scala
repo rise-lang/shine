@@ -90,7 +90,7 @@ object acoustic3D {
   )((mat1, mat2) =>
     transpose o map(transpose) o transpose o
       mapGlobal(0)(mapGlobal(1)(
-        oclSlideSeq(slideSeq.Values)(AddressSpace.Private)(sz)(st)(mapSeqUnroll(mapSeqUnroll(id)))(acoustic)
+        oclSlideSeq(SlideSeq.Values)(AddressSpace.Private)(sz)(st)(mapSeqUnroll(mapSeqUnroll(id)))(acoustic)
           o transpose o map(transpose)
       )) o transpose o slide2D(sz, st) o map(transpose) o transpose
       $ zip3D(mat1)(zip3D(mat2)(generateNumNeighbours(o+2)(n+2)(m+2)))

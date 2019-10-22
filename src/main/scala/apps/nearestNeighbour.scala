@@ -3,7 +3,7 @@ package apps
 import lift.core._
 import lift.core.DSL._
 import lift.core.types._
-import lift.OpenCL.primitives._
+import lift.OpenCL.DSL._
 
 object nearestNeighbour {
   private val distance = foreignFun("distance_", Seq("loc", "lat", "lng"),

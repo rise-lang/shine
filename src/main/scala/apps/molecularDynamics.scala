@@ -4,7 +4,7 @@ import lift.core._
 import lift.core.DSL._
 import lift.core.types._
 import lift.core.primitives._
-import lift.OpenCL.primitives._
+import lift.OpenCL.DSL._
 
 object molecularDynamics {
   private val mdCompute = foreignFun("updateF",

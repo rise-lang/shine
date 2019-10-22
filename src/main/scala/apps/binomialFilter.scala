@@ -4,7 +4,7 @@ import lift.core._
 import lift.core.DSL._
 import lift.core.types._
 import lift.core.primitives._
-import lift.OpenCL.primitives._
+import lift.OpenCL.DSL._
 import lift.core.HighLevelConstructs._
 import lift.core.semantics.FloatData
 
@@ -73,7 +73,7 @@ object binomialFilter {
   val regRotSeq: Expr =
     padClamp2D(1) >> slide(3)(1) >> mapSeq(transpose >>
       map(dotSeq(weights1d)) >>
-      slideSeq(slideSeq.Values)(3)(1)(id)(dotSeq(weights1d))
+      slideSeq(SlideSeq.Values)(3)(1)(id)(dotSeq(weights1d))
     )
   val regRotPar: Expr = {
     val Dh = dotSeqVecUnroll(map(vectorFromScalar)(weights1d))
@@ -84,7 +84,7 @@ object binomialFilter {
     slide(3)(1) >> mapGlobal(transpose >>
       map(Dh) >>
       // TODO: Private
-      oclSlideSeq(slideSeq.Values)(AddressSpace.Global)(3)(1)(id)(shuffle >> Dv)
+      oclSlideSeq(SlideSeq.Values)(AddressSpace.Global)(3)(1)(id)(shuffle >> Dv)
     )
   }
 }

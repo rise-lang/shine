@@ -2,7 +2,7 @@ package elevate.lift
 
 import lift.core.primitives._
 import lift.core.types.{Kind, Type}
-import lift.core.{ForeignFunction, Apply, DepApply, DepLambda, Expr, Identifier, Lambda, Literal, Primitive, TypedExpr, semantics}
+import lift.core.{ForeignFunction, Apply, DepApply, DepLambda, Expr, Identifier, Lambda, Literal, Primitive, semantics}
 
 object extractors {
 
