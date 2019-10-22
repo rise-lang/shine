@@ -50,31 +50,26 @@ int select_(Tuple3_float_int_int tuple){
     }
 }
 kernel void KERNEL(const global float* restrict ps, const global float* restrict cs, global int* output, int C, int F, int P){
-    #ifndef WORKGROUP_GUARD
-    #define WORKGROUP_GUARD
-    #endif
-    WORKGROUP_GUARD
-    {
         // Static local memory
         // Typed Value memory
-        Tuple3_float_int_int acc1; 
-        float acc2; 
+        Tuple3_float_int_int acc1;
+        float acc2;
         // Private Memory
         for (int gid0 = get_global_id(0); (gid0 < P); gid0 = (gid0 + get_global_size(0))){
-            Tuple3_float_int_int v_tmp_45 = {3.40282347e+38, 0, 0}; 
-            acc1 = v_tmp_45; 
+            Tuple3_float_int_int v_tmp_45 = {3.40282347e+38, 0, 0};
+            acc1 = v_tmp_45;
             // reduce_seq
             for (int i = 0; (i < C); i = (1 + i)){
-                float v_tmp_46 = 0.0f; 
-                acc2 = v_tmp_46; 
+                float v_tmp_46 = 0.0f;
+                acc2 = v_tmp_46;
                 // reduce_seq
                 for (int j = 0; (j < F); j = (1 + j)){
-                    acc2 = update(acc2, (Tuple2_float_float){ps[(gid0 + (P * j))], cs[(j + (F * i))]}); 
+                    acc2 = update(acc2, (Tuple2_float_float){ps[(gid0 + (P * j))], cs[(j + (F * i))]});
                 }
                 // end reduce_seq
                 // map_seq
                 // unroll
-                acc1 = test(acc2, acc1); 
+                acc1 = test(acc2, acc1);
                 // end unroll
                 // end map_seq
             }
@@ -82,17 +77,16 @@ kernel void KERNEL(const global float* restrict ps, const global float* restrict
             // map_seq
             // iteration count is exactly 1, no loop emitted
             {
-                int v_i_15 = 0; 
+                int v_i_15 = 0;
                 // map_seq
                 // iteration count is exactly 1, no loop emitted
                 {
-                    int v_i_16 = 0; 
-                    output[gid0] = select_(acc1); 
+                    int v_i_16 = 0;
+                    output[gid0] = select_(acc1);
                 }
                 // end map_seq
             }
             // end map_seq
         }
-    }
 }
 

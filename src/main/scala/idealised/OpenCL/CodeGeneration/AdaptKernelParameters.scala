@@ -75,20 +75,20 @@ object AdaptKernelParameters {
     override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
       p match {
         case p1: Proj1[T, _] => p1.pair match {
-          case i: Identifier[PairType[T, _]] if scalarParamsInGlobalOrLocalMemory.contains(i.name) =>
+          case i: Identifier[PhrasePairType[T, _]] if scalarParamsInGlobalOrLocalMemory.contains(i.name) =>
             val j = i.`type` match {
-              case PairType(_: ExpType, _: AccType) =>
-                identifierAsSingletonArray(i.asInstanceOf[Identifier[PairType[ExpType, AccType]]])
+              case PhrasePairType(_: ExpType, _: AccType) =>
+                identifierAsSingletonArray(i.asInstanceOf[Identifier[PhrasePairType[ExpType, AccType]]])
             }
             Stop((Proj1(j) `@` zero).asInstanceOf[Phrase[T]])
           case _ => Continue(p, this)
         }
 
         case p2: Proj2[_, T] => p2.pair match {
-          case i: Identifier[PairType[_, T]] if scalarParamsInGlobalOrLocalMemory.contains(i.name) =>
+          case i: Identifier[PhrasePairType[_, T]] if scalarParamsInGlobalOrLocalMemory.contains(i.name) =>
             val j = i.`type` match {
-              case PairType(_: ExpType, _: AccType) =>
-                identifierAsSingletonArray(i.asInstanceOf[Identifier[PairType[ExpType, AccType]]])
+              case PhrasePairType(_: ExpType, _: AccType) =>
+                identifierAsSingletonArray(i.asInstanceOf[Identifier[PhrasePairType[ExpType, AccType]]])
             }
             Stop((Proj2(j) `@` zero).asInstanceOf[Phrase[T]])
           case _ => Continue(p, this)
@@ -117,9 +117,9 @@ object AdaptKernelParameters {
       case _: AccType =>
         val ia = i.asInstanceOf[Identifier[AccType]]
         ia.copy(`type` = AccType(DPIA.Types.ArrayType(1, ia.`type`.dataType))).asInstanceOf[Identifier[T]]
-      case PairType(_: ExpType, _: AccType) =>
-        val ip = i.asInstanceOf[Identifier[PairType[ExpType, AccType]]]
-        ip.copy(`type` = PairType(
+      case PhrasePairType(_: ExpType, _: AccType) =>
+        val ip = i.asInstanceOf[Identifier[PhrasePairType[ExpType, AccType]]]
+        ip.copy(`type` = PhrasePairType(
           ExpType(DPIA.Types.ArrayType(1, ip.`type`.t1.dataType), read),
           AccType(DPIA.Types.ArrayType(1, ip.`type`.t2.dataType)))).asInstanceOf[Identifier[T]]
     }
@@ -140,7 +140,7 @@ object AdaptKernelParameters {
       case _: ArrayType => makeGlobalParam(i, gen)
       case _: DepArrayType => makeGlobalParam(i, gen)
       case _: BasicType => makePrivateParam(i, gen)
-      case _: RecordType => makePrivateParam(i, gen)
+      case _: PairType => makePrivateParam(i, gen)
       case _: DataTypeIdentifier => throw new Exception("This should not happen")
       case _: NatToDataApply =>  throw new Exception("This should not happen")
     }
@@ -161,7 +161,7 @@ object AdaptKernelParameters {
   private def getDataType(i: Identifier[_]): DataType = i.t match {
     case ExpType(dataType, _) => dataType
     case AccType(dataType) => dataType
-    case PairType(ExpType(dt1, _), AccType(dt2)) if dt1 == dt2 => dt1
+    case PhrasePairType(ExpType(dt1, _), AccType(dt2)) if dt1 == dt2 => dt1
     case _ => throw new Exception("This should not happen")
   }
 }

@@ -25,4 +25,4 @@ final case class VectorData(v: Seq[ScalarData]) extends Data(VectorType(v.length
 
 final case class ArrayData(a: Seq[Data]) extends Data(ArrayType(a.length, a.head.dataType))
 
-final case class TupleData(t: Data*) extends Data(TupleType(t.map(_.dataType):_*))
+final case class PairData(p1: Data, p2: Data) extends Data(PairType(p1.dataType, p2.dataType))

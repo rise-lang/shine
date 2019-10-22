@@ -317,8 +317,8 @@ case class Kernel(decls: Seq[C.AST.Decl],
       case idealised.DPIA.Types.int    => output.asIntArray()
       case idealised.DPIA.Types.double => output.asDoubleArray()
       // TODO: generalize
-      case idealised.DPIA.Types.RecordType(idealised.DPIA.Types.float4, idealised.DPIA.Types.float4) => output.asFloatArray()
-      case idealised.DPIA.Types.RecordType(idealised.DPIA.Types.float, idealised.DPIA.Types.float) => output.asFloatArray()
+      case idealised.DPIA.Types.PairType(idealised.DPIA.Types.float4, idealised.DPIA.Types.float4) => output.asFloatArray()
+      case idealised.DPIA.Types.PairType(idealised.DPIA.Types.float, idealised.DPIA.Types.float) => output.asFloatArray()
       case idealised.DPIA.Types.float4 => output.asFloatArray()
       case _ => throw new IllegalArgumentException("Return type of the given lambda expression " +
         "not supported: " + dt.toString)
@@ -329,7 +329,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
     i.t match {
       case ExpType(dataType, _) => dataType
       case AccType(dataType) => dataType
-      case PairType(ExpType(dt1, _), AccType(dt2)) if dt1 == dt2 => dt1
+      case PhrasePairType(ExpType(dt1, _), AccType(dt2)) if dt1 == dt2 => dt1
       case _ => throw new Exception("This should not happen")
     }
   }
@@ -343,7 +343,7 @@ case class Kernel(decls: Seq[C.AST.Decl],
     }
     case _: IndexType   => SizeInByte(4) // == sizeof(int)
     case v: VectorType  => sizeInByte(v.elemType) * v.size
-    case r: RecordType  => sizeInByte(r.fst) + sizeInByte(r.snd)
+    case r: PairType  => sizeInByte(r.fst) + sizeInByte(r.snd)
     case a: ArrayType   => sizeInByte(a.elemType) * a.size
     case a: DepArrayType =>
       a.elemFType match {

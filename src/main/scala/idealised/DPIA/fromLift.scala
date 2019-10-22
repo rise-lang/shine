@@ -98,7 +98,7 @@ object fromLift {
     case i: lt.DataTypeIdentifier => dataTypeIdentifier(i)
     case lt.ArrayType(sz, et) => ArrayType(sz, dataType(et))
     case lt.DepArrayType(sz, f) => DepArrayType(sz, ntd(f))
-    case lt.TupleType(a, b) => RecordType(dataType(a), dataType(b))
+    case lt.PairType(a, b) => PairType(dataType(a), dataType(b))
     case lt.NatToDataApply(f, n) => NatToDataApply(ntd(f), n)
   }
 
@@ -132,13 +132,14 @@ object fromLift {
 
   def data(d: ls.Data): OpSem.Data = d match {
     case ls.ArrayData(a) => OpSem.ArrayData(a.map(data).toVector)
-    case ls.TupleData(a, b) => OpSem.RecordData(data(a), data(b))
+    case ls.PairData(a, b) => OpSem.PairData(data(a), data(b))
     case ls.BoolData(b) => OpSem.BoolData(b)
     case ls.IntData(i) => OpSem.IntData(i)
     case ls.FloatData(f) => OpSem.FloatData(f)
     case ls.DoubleData(d) => OpSem.DoubleData(d)
     case ls.VectorData(v) => OpSem.VectorData(v.map(data(_)).toVector)
     case ls.IndexData(i, n) => OpSem.IndexData(i, n)
+    case ls.NatData(n) => OpSem.NatData(n)
   }
 
   import idealised.DPIA.FunctionalPrimitives._
@@ -461,8 +462,8 @@ object fromLift {
 
       case (core.unzip,
       lt.FunType(
-      lt.ArrayType(n, lt.TupleType(la, lb)),
-      lt.TupleType(lt.ArrayType(_, _), lt.ArrayType(_, _))))
+      lt.ArrayType(n, lt.PairType(la, lb)),
+      lt.PairType(lt.ArrayType(_, _), lt.ArrayType(_, _))))
       =>
         val a = dataType(la)
         val b = dataType(lb)
@@ -480,14 +481,14 @@ object fromLift {
             Zip(n, a, b, x, y)))
 
       case (core.fst,
-      lt.FunType(lt.TupleType(la, lb), _))
+      lt.FunType(lt.PairType(la, lb), _))
       =>
         val a = dataType(la)
         val b = dataType(lb)
         fun[ExpType](exp"[($a x $b), $read]", e => Fst(a, b, e))
 
       case (core.snd,
-      lt.FunType(lt.TupleType(la, lb), _))
+      lt.FunType(lt.PairType(la, lb), _))
       =>
         val a = dataType(la)
         val b = dataType(lb)
@@ -501,7 +502,7 @@ object fromLift {
         val b = dataType(lb)
         fun[ExpType](exp"[$a, $read]", x =>
           fun[ExpType](exp"[$b, $read]", y =>
-            Record(a, b, x, y)))
+            Pair(a, b, x, y)))
 
       case (core.idx,
       lt.FunType(_,

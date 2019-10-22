@@ -78,7 +78,7 @@ object Lifting {
     p match {
       case i: Identifier[T1 x T2] =>
         (Identifier[T1](i.name + "_1", i.t.t1), Identifier[T2](i.name + "_2", i.t.t2))
-      case pair: Pair[T1, T2] => (pair.fst, pair.snd)
+      case pair: PhrasePair[T1, T2] => (pair.fst, pair.snd)
       case app: Apply[_, T1 x T2] =>
         val fun = liftFunction(app.fun).reducing
         liftPair(fun(app.arg))
