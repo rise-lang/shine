@@ -16,57 +16,55 @@ object fromLift {
   }
 
   def expression(expr: l.Expr): Phrase[_ <: PhraseType] = expr match {
-    case l.TypedExpr(typedExpr, t) =>
-      typedExpr match {
-        case l.Identifier(name) =>
-          Identifier(name, `type`(t))
+    case l.Identifier(name) =>
+      Identifier(name, `type`(expr.t))
 
-        case l.Lambda(x, e) => t match {
-          case lt.FunType(i, _) =>
-            Lambda(Identifier(x.name, `type`(i)), expression(e))
-          case _ => ???
-        }
-        case l.Apply(f, e) =>
-          Lifting.liftFunction( // TODO: should we try to reduce by lifting here?
-            expression(f).asInstanceOf[Phrase[FunType[PhraseType, PhraseType]]])
-            .value(expression(e).asInstanceOf[Phrase[PhraseType]])
-
-        case l.DepLambda(x, e) => x match {
-          case n: l.NatIdentifier =>
-            DepLambda[NatKind](natIdentifier(n))(expression(e))
-          case dt: lt.DataTypeIdentifier =>
-            DepLambda[DataKind](dataTypeIdentifier(dt))(expression(e))
-          case a: lt.AddressSpaceIdentifier =>
-            DepLambda[AddressSpaceKind](addressSpaceIdentifier(a))(expression(e))
-        }
-        case l.DepApply(f, x) => x match {
-          case n: Nat =>
-            DepApply[NatKind, PhraseType]( // TODO: should we try to reduce by lifting here?
-              expression(f).asInstanceOf[Phrase[DepFunType[NatKind, PhraseType]]],
-              n)
-          case dt: lt.DataType =>
-            DepApply[DataKind, PhraseType]( // TODO: should we try to reduce by lifting here?
-              expression(f).asInstanceOf[Phrase[DepFunType[DataKind, PhraseType]]],
-              dataType(dt)
-            )
-          case a: lt.AddressSpace =>
-            DepApply[AddressSpaceKind, PhraseType]( // TODO: should we try to reduce by lifting here?
-              expression(f).asInstanceOf[Phrase[DepFunType[AddressSpaceKind, PhraseType]]],
-              addressSpace(a)
-            )
-        }
-
-          case l.Literal(d)   =>  d match {
-            case ls.NatData(n)  => Natural(n)
-            case ls.IndexData(i, n)  => FunctionalPrimitives.AsIndex(n, Natural(i))
-            case _              => Literal(data(d))
-          }
-          case p: l.Primitive =>  primitive(p, t)
-
-        case _: l.TypedExpr => ??? // do not expect typed expr
-      }
-    case _ => ??? // expected typed expr
+    case l.Lambda(x, e) => expr.t match {
+      case lt.FunType(i, _) =>
+        Lambda(Identifier(x.name, `type`(i)), expression(e))
+      case _ => ???
     }
+
+    case l.Apply(f, e) =>
+      Lifting.liftFunction( // TODO: should we try to reduce by lifting here?
+        expression(f).asInstanceOf[Phrase[FunType[PhraseType, PhraseType]]])
+        .value(expression(e).asInstanceOf[Phrase[PhraseType]])
+
+    case l.DepLambda(x, e) => x match {
+      case n: l.NatIdentifier =>
+        DepLambda[NatKind](natIdentifier(n))(expression(e))
+      case dt: lt.DataTypeIdentifier =>
+        DepLambda[DataKind](dataTypeIdentifier(dt))(expression(e))
+      case a: lt.AddressSpaceIdentifier =>
+        DepLambda[AddressSpaceKind](addressSpaceIdentifier(a))(expression(e))
+    }
+
+    case l.DepApply(f, x) => x match {
+      case n: Nat =>
+        DepApply[NatKind, PhraseType]( // TODO: should we try to reduce by lifting here?
+          expression(f).asInstanceOf[Phrase[DepFunType[NatKind, PhraseType]]],
+          n)
+      case dt: lt.DataType =>
+        DepApply[DataKind, PhraseType]( // TODO: should we try to reduce by lifting here?
+          expression(f).asInstanceOf[Phrase[DepFunType[DataKind, PhraseType]]],
+          dataType(dt)
+        )
+      case a: lt.AddressSpace =>
+        DepApply[AddressSpaceKind, PhraseType]( // TODO: should we try to reduce by lifting here?
+          expression(f).asInstanceOf[Phrase[DepFunType[AddressSpaceKind, PhraseType]]],
+          addressSpace(a)
+        )
+    }
+
+    case l.Literal(d) => d match {
+      case ls.NatData(n) => Natural(n)
+      case ls.IndexData(i, n) => FunctionalPrimitives.AsIndex(n, Natural(i))
+      case _ => Literal(data(d))
+    }
+
+    case p: l.Primitive => primitive(p, expr.t)
+    case _ => ??? // should be unreachable
+  }
 
   def addressSpace(a: lt.AddressSpace): AddressSpace = a match {
     case lt.AddressSpace.Global => AddressSpace.Global
