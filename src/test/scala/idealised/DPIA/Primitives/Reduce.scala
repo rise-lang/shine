@@ -61,7 +61,8 @@ class Reduce extends test_util.TestsWithExecutor {
               fun(m`.`n`.`float)(arr =>
                 arr |> oclReduceSeq (AddressSpace.Private)
                                     (fun((in1, in2) => zip (in1) (in2) |> mapSeq (fun(t => t._1 + t._2))))
-                                    (initExp (n))))
+                                    (initExp (n))
+                    |> mapSeq (fun(x => x))))
 
     val m = 64
     val n = 64

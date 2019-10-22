@@ -3,6 +3,7 @@ package idealised.OpenCL
 import lift.core.DSL._
 import lift.core.types._
 import util.gen
+import lift.core.primitives.mapSeq
 
 class Parameters extends test_util.Tests {
   val m = 4 // vector width
@@ -16,6 +17,6 @@ class Parameters extends test_util.Tests {
   }
 
   test("Output array") {
-    gen.OpenCLKernel(nFun(n => fun(ArrayType(n, float))(vs => vs)))
+    gen.OpenCLKernel(nFun(n => fun(ArrayType(n, float))(vs => vs |> mapSeq (fun(x => x)))))
   }
 }

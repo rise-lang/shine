@@ -14,25 +14,19 @@ import idealised.OpenCL._
 final case class ParForLocal(dim: Int)(override val n: Nat,
                                        override val dt: DataType,
                                        override val out: Phrase[AccType],
-                                       override val body: Phrase[ExpType ->: AccType ->: CommType])
-  extends OpenCLParFor(n, dt, out, body) {
+                                       override val body: Phrase[ExpType ->: AccType ->: CommType],
+                                       init: Nat = get_local_id(dim),
+                                       step: Nat = get_local_size(dim),
+                                       unroll: Boolean = false)
+  extends OpenCLParFor(n, dt, out, body, init, step, unroll) {
 
-  override def makeParFor = ParForLocal(dim)
+  override val makeCLParFor =
+    (n: Nat, dt: DataType, out: Phrase[AccType], body: Phrase[ExpType ->: AccType ->: CommType], init: Nat, step: Nat) =>
+      ParForLocal(dim)(n, dt, out, body, init, step, unroll)
 
   override val parallelismLevel = OpenCL.Local
 
   override val name: String = freshName("l_id_")
 
-//  override lazy val init: OclFunction = get_local_id(dim, RangeAdd(0, env.localSize, 1))
-
-  override lazy val init: BuiltInFunctionCall = get_local_id(dim)
-
-  override lazy val step: BuiltInFunctionCall = get_local_size(dim, local_size_range)
-
-  lazy val local_size_range: RangeAdd = ContinuousRange(1, PosInf)
-//    if (env.localSize == ?) ContinuousRange(1, PosInf)
-//    else RangeAdd(env.localSize, env.localSize + 1, 1)
-
   override def synchronize: Stmt = Barrier(local = true, global = true)
-
 }

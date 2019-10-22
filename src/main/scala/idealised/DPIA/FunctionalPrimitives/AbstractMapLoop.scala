@@ -6,11 +6,11 @@ import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types._
 
-abstract class AbstractMapLoop(n: Nat,
-                               dt1: DataType,
-                               dt2: DataType,
-                               f: Phrase[ExpType ->: ExpType],
-                               array: Phrase[ExpType])
+abstract class AbstractMapLoop(override val n: Nat,
+                               override val dt1: DataType,
+                               override val dt2: DataType,
+                               override val f: Phrase[ExpType ->: ExpType],
+                               override val array: Phrase[ExpType])
   extends AbstractMap(n, dt1, dt2, f, array)
 {
   def makeMapI(n: Nat, dt1: DataType, dt2: DataType,
