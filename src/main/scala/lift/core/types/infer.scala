@@ -11,7 +11,7 @@ case class InferenceException(msg: String) extends Exception {
 }
 
 object infer {
-  def apply(e: Expr): TypedExpr = {
+  def apply(e: Expr): Expr = {
     // build set of constraints
     val mutableConstraints = mutable.Set[Constraint]()
     val typed_e = constrainTypes(e, mutableConstraints, mutable.Map())
@@ -23,7 +23,7 @@ object infer {
     val solution = solve(constraints)(bound)
 
     // apply the solution
-    val r = solution(typed_e).asInstanceOf[TypedExpr]
+    val r = solution(typed_e)
     printTypesAndTypeHoles(r)
     r
   }
@@ -48,22 +48,22 @@ object infer {
   def constrainTypes(expr: Expr,
                      constraints: mutable.Set[Constraint],
                      identifierT: scala.collection.mutable.Map[Identifier, Type]
-                    ): TypedExpr = {
+                    ): Expr = {
     def fresh(): Type = TypeIdentifier(freshName("_t"))
-    def typed(e: Expr): TypedExpr = constrainTypes(e, constraints, identifierT)
+    def typed(e: Expr): Expr = constrainTypes(e, constraints, identifierT)
 
     expr match {
       case i: Identifier =>
         val t = identifierT
           .getOrElse(i, error(s"$i has no type in the environment"))
-        TypedExpr(i, t)
+        i.setType(t)
 
       case Lambda(x, e) =>
         val xt = fresh()
         identifierT update (x, xt)
         val te = typed(e)
         identifierT remove x
-        TypedExpr(Lambda(x, te), FunType(xt, te.t))
+        Lambda(x, te)(FunType(xt, te.t))
 
       case Apply(f, e) =>
         val tf = typed(f)
@@ -72,49 +72,44 @@ object infer {
         val constraint = TypeConstraint(tf.t, FunType(te.t, ot))
         //println(s"Constraint for expression `$expr' is `$constraint'")
         constraints += constraint
-        TypedExpr(Apply(tf, te), ot)
+        Apply(tf, te)(ot)
 
       case DepLambda(x, e) => x match {
         case n: NatIdentifier =>
           val te = typed(e)
-          TypedExpr(DepLambda[NatKind](n, te), DepFunType[NatKind, Type](n, te.t))
+          DepLambda[NatKind](n, te)(DepFunType[NatKind, Type](n, te.t))
         case dt: DataTypeIdentifier =>
           val te = typed(e)
-          TypedExpr(DepLambda[DataKind](dt, te), DepFunType[DataKind, Type](dt, te.t))
+          DepLambda[DataKind](dt, te)(DepFunType[DataKind, Type](dt, te.t))
         case n2n: NatToNatIdentifier =>
           val te = typed(e)
-          TypedExpr(DepLambda[NatToNatKind](n2n, te), DepFunType[NatToNatKind, Type](n2n, te.t))
+          DepLambda[NatToNatKind](n2n, te)(DepFunType[NatToNatKind, Type](n2n, te.t))
       }
 
       case DepApply(f, x) => x match {
         case n: Nat =>
           val tf = typed(f)
-          TypedExpr(DepApply[NatKind](tf, n), liftDependentFunctionType[NatKind](tf.t)(n))
+          DepApply[NatKind](tf, n)(liftDependentFunctionType[NatKind](tf.t)(n))
         case dt: DataType =>
           val tf = typed(f)
-          TypedExpr(DepApply[DataKind](tf, dt), liftDependentFunctionType[DataKind](tf.t)(dt))
+          DepApply[DataKind](tf, dt)(liftDependentFunctionType[DataKind](tf.t)(dt))
         case a: AddressSpace =>
           val tf = typed(f)
-          TypedExpr(DepApply[AddressSpaceKind](tf, a), liftDependentFunctionType[AddressSpaceKind](tf.t)(a))
+          DepApply[AddressSpaceKind](tf, a)(liftDependentFunctionType[AddressSpaceKind](tf.t)(a))
         case n2n: NatToNat =>
           val tf = typed(f)
-          TypedExpr(DepApply[NatToNatKind](tf, n2n), liftDependentFunctionType[NatToNatKind](tf.t)(n2n))
+          DepApply[NatToNatKind](tf, n2n)(liftDependentFunctionType[NatToNatKind](tf.t)(n2n))
       }
 
-      case l: Literal => TypedExpr(l, l.d.dataType)
+      case l: Literal => l
 
-      case TypedExpr(e, t) =>
-        val te = typed(e)
-        val constraint = TypeConstraint(te.t, t)
-        //println(s"Constraint for expression `$expr' is `$constraint'")
-        constraints += constraint
-        te
-
-      case p: Primitive => TypedExpr(p, p.t)
+      case p: Primitive =>
+        constraints += TypeConstraint(p.t, p.typeScheme)
+        p
     }
   }
 
-  def boundIdentifiers(expr: TypedExpr): mutable.Set[Kind.Identifier] = {
+  def boundIdentifiers(expr: Expr): mutable.Set[Kind.Identifier] = {
     import traversal.{Result, Continue}
 
     val bound = mutable.Set[Kind.Identifier]()
@@ -446,16 +441,16 @@ object infer {
     case _ => false
   }
 
-  def printTypesAndTypeHoles(expr: TypedExpr): Unit = {
+  def printTypesAndTypeHoles(expr: Expr): Unit = {
     var holeFound = false
     traversal.DepthFirstLocalResult(expr, new traversal.Visitor {
       override def visitExpr(e: Expr): traversal.Result[Expr] = {
         e match {
-          case TypedExpr(primitives.typeHole(msg), t) =>
-            println(s"found type hole $msg: $t")
+          case h: primitives.TypeHole =>
+            println(s"found type hole ${h.msg}: ${h.t}")
             holeFound = true
-          case TypedExpr(primitives.printType(msg), FunType(t, _)) =>
-            println(s"$msg : $t (Lift level)")
+          case p: primitives.PrintType =>
+            println(s"${p.msg} : ${p.t} (Lift level)")
           case _ =>
         }
         traversal.Continue(e, this)
