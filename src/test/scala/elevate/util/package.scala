@@ -25,22 +25,22 @@ package object util {
 
   // map in LCNF
   def *!(x: Expr): Expr = {
-    val i = Identifier(freshName("e"))
-    map(Lambda(i, Apply(x, i)))
+    val i = identifier(freshName("e"))
+    map(lambda(i, `apply`(x, i)))
   }
 
   def **!(x: Expr): Expr = {
-    val i = Identifier(freshName("e"))
-    map(Lambda(i, Apply(*!(x), i)))
+    val i = identifier(freshName("e"))
+    map(lambda(i, `apply`(*!(x), i)))
   }
 
   def ***!(x: Expr): Expr = {
-    val i = Identifier(freshName("e"))
-    map(Lambda(i, Apply(**!(x), i)))
+    val i = identifier(freshName("e"))
+    map(lambda(i, `apply`(**!(x), i)))
   }
 
   def ****!(x: Expr): Expr = {
-    val i = Identifier(freshName("e"))
-    map(Lambda(i, Apply(***!(x), i)))
+    val i = identifier(freshName("e"))
+    map(lambda(i, `apply`(***!(x), i)))
   }
 }

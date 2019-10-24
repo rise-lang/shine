@@ -57,12 +57,12 @@ class algorithmic extends test_util.Tests {
     val addTuple = fun(x => fst(x) + snd(x))
 
     val mapReduce = LCNF(
-      DepLambda[NatKind](M, DepLambda[NatKind](N,
+      depLambda[NatKind](M, depLambda[NatKind](N,
       fun(ArrayType(M, ArrayType(N, float)))(i =>
         map(reduce(fun(x => fun(a => x + a)))(l(0.0f) :: float)) $ i)))).get
 
     val reduceMap =
-      DepLambda[NatKind](M, DepLambda[NatKind](N,
+      depLambda[NatKind](M, depLambda[NatKind](N,
         fun(ArrayType(M, ArrayType(N, float)))(i =>
           reduce(fun((acc, y) =>
             map(addTuple) $ zip(acc, y)))(generate(fun(IndexType(M) ->: float)(_ => l(0.0f)))) $ transpose(i))))
@@ -82,7 +82,7 @@ class algorithmic extends test_util.Tests {
     val N = NatIdentifier("N")
     val K = NatIdentifier("K")
 
-    val mm = infer(LCNF(DepLambda[NatKind](M, DepLambda[NatKind](N, DepLambda[NatKind](K,
+    val mm = infer(LCNF(depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
       fun(ArrayType(M, ArrayType(K, float)))(a =>
         fun(ArrayType(K, ArrayType(N, float)))(b =>
           map(fun(ak =>
@@ -91,7 +91,7 @@ class algorithmic extends test_util.Tests {
                 zip(ak, bk))) $ transpose(b) )) $ a)))))).get)
 
     def goldMKN(reduceFun: Expr): Expr = {
-      DepLambda[NatKind](M, DepLambda[NatKind](N, DepLambda[NatKind](K,
+      depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
         fun(ArrayType(M, ArrayType(K, float)))(a =>
           fun(ArrayType(K, ArrayType(N, float)))(b =>
             map(fun(ak =>
@@ -133,8 +133,8 @@ class algorithmic extends test_util.Tests {
 
     // todo something's wrong with the way of comparing typed expressions
     //assert(typedRewrite == typedGold)
-    val gold = normalize(untype)(typedGold).get
-    val rewrite = normalize(untype)(typedGold).get
+    //val gold = normalize(untype)(typedGold).get
+    //val rewrite = normalize(untype)(typedGold).get
 
 
   }
@@ -145,7 +145,7 @@ class algorithmic extends test_util.Tests {
     val K = NatIdentifier("K")
 
     val mmMKN: Expr = {
-      DepLambda[NatKind](M, DepLambda[NatKind](N, DepLambda[NatKind](K,
+      depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
         fun(ArrayType(M, ArrayType(K, float)))(a =>
           fun(ArrayType(K, ArrayType(N, float)))(b =>
             map(fun(ak =>
@@ -167,7 +167,7 @@ class algorithmic extends test_util.Tests {
 
     // this one is handwritten and uses zip2d
     val goldKMN =
-      DepLambda[NatKind](M, DepLambda[NatKind](N, DepLambda[NatKind](K,
+      depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
         fun(ArrayType(M, ArrayType(K, float)))(a =>
           fun(ArrayType(K, ArrayType(N, float)))(b =>
             reduce(
@@ -195,13 +195,13 @@ class algorithmic extends test_util.Tests {
 
     // this one is constructed more similar to what the rewrite rules will create
     val goldKMNAlternative =
-      DepLambda[NatKind](M, DepLambda[NatKind](N, DepLambda[NatKind](K,
+      depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
         fun(ArrayType(M, ArrayType(K, float)))(a =>
           fun(ArrayType(K, ArrayType(N, float)))(b =>
             reduceSeq(
               fun((acc, y) => // y :: (M.float, N.float); acc :: M.N.float
                 map(fun(x => // x :: M.((float, N.float), N.float)
-                  Apply(Apply(op, fst(x)), snd(x)))) $
+                  `apply`(`apply`(op, fst(x)), snd(x)))) $
                   // M.((float, N.float), N.float)
                   zip(acc, map(fun(t => pair(t,snd(y)))) $ fst(y))),
               // generate zeros :: M.N.float
@@ -214,13 +214,13 @@ class algorithmic extends test_util.Tests {
 
     // unfortunately, the order of zip arguments is important
     val goldKMNAlternative2 =
-      DepLambda[NatKind](M, DepLambda[NatKind](N, DepLambda[NatKind](K,
+      depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
         fun(ArrayType(M, ArrayType(K, float)))(a =>
           fun(ArrayType(K, ArrayType(N, float)))(b =>
             reduceSeq(
               fun((acc, y) => // y :: (M.float, N.float); acc :: M.N.float
                 map(fun(x => // x :: M.((float, N.float), N.float)
-                  Apply(Apply(op, fst(x)), snd(x)))) $
+                  `apply`(`apply`(op, fst(x)), snd(x)))) $
                   // M.((N.float, float), N.float)
                   zip(acc, map(fun(t => pair(t,fst(y)))) $ snd(y))),
               // generate zeros :: M.N.float
@@ -237,16 +237,16 @@ class algorithmic extends test_util.Tests {
     val loopKMN = (oncetd(liftReduce)).apply(infer(mmMKN)).get
 
     infer(loopKMN)
-    assert(untypeExpr(goldKMNAlternative2) == untypeExpr(loopKMN))
+    assert(goldKMNAlternative2 == loopKMN)
 
     val goldKMNAlternative2LowLevel =
-      DepLambda[NatKind](M, DepLambda[NatKind](N, DepLambda[NatKind](K,
+      depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
         fun(ArrayType(M, ArrayType(K, float)))(a =>
           fun(ArrayType(K, ArrayType(N, float)))(b =>
             reduceSeq(
               fun((acc, y) => // y :: (M.float, N.float); acc :: M.N.float
                 mapSeq(fun(x => // x :: M.((float, N.float), N.float)
-                  Apply(Apply(fun((y, acc) => { // akB :: (float, N.float); acc :: N.float
+                  `apply`(`apply`(fun((y, acc) => { // akB :: (float, N.float); acc :: N.float
                     mapSeq(fun(t => fst(t) + (fst(snd(t)) * snd(snd(t))))) $
                       /* N.(float, (float, float))*/
                       zip(acc,
@@ -271,7 +271,7 @@ class algorithmic extends test_util.Tests {
     val K = NatIdentifier("K")
 
     val mm =
-      LCNF(DepLambda[NatKind](M, DepLambda[NatKind](N, DepLambda[NatKind](K,
+      LCNF(depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
       fun(ArrayType(M, ArrayType(K, float)))(a =>
         fun(ArrayType(K, ArrayType(N, float)))(b =>
           map(fun(ak =>
@@ -282,7 +282,7 @@ class algorithmic extends test_util.Tests {
     val typedMM = infer(mm)
 
     // sanity check
-    assert(untypeExpr(mm) == untypeExpr(typedMM))
+    assert(mm == typedMM)
 
     val tile = body(body(body(body(body(tileND(2)(32)))))) `;` LCNF
 
@@ -295,7 +295,7 @@ class algorithmic extends test_util.Tests {
     // these should be correct, it's just that the mapAcceptorTranslation for split is not defined yet
     val lower: Strategy[Lift] = LCNF `;` CNF `;` normalize(specialize.mapSeq <+ specialize.reduceSeq) `;` BENF
     println(gen.CProgram(infer(lower(typedUntyped).get)))
-    assert(untypeExpr(untyped) == untypeExpr(typed))
+    assert(untyped == typed)
 
     /// TILE + REORDER
 
@@ -315,7 +315,7 @@ class algorithmic extends test_util.Tests {
       val K = NatIdentifier("K")
 
       val mm =
-        LCNF(DepLambda[NatKind](M, DepLambda[NatKind](N, DepLambda[NatKind](K,
+        LCNF(depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
           fun(ArrayType(M, ArrayType(K, float)))(a =>
             fun(ArrayType(K, ArrayType(N, float)))(b =>
               map(fun(ak =>
@@ -350,7 +350,7 @@ class algorithmic extends test_util.Tests {
 
     // loop ordering: M -> K -> N
     val mmLoopMKN =
-      DepLambda[NatKind](M, DepLambda[NatKind](N, DepLambda[NatKind](K,
+      depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
         fun(ArrayType(M, ArrayType(K, float)))(a =>
           fun(ArrayType(K, ArrayType(N, float)))(b =>
             mapSeq(fun(ak =>
@@ -370,7 +370,7 @@ class algorithmic extends test_util.Tests {
 
     // loop ordering: M -> K -> N
     val mmLoopMKNFused =
-      DepLambda[NatKind](M, DepLambda[NatKind](N, DepLambda[NatKind](K,
+      depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
         fun(ArrayType(M, ArrayType(K, float)))(a =>
           fun(ArrayType(K, ArrayType(N, float)))(b =>
             mapSeq(fun(ak =>
@@ -388,7 +388,7 @@ class algorithmic extends test_util.Tests {
 
     // loop ordering: K -> M -> N
     val mmOuterProduct =
-      DepLambda[NatKind](M, DepLambda[NatKind](N, DepLambda[NatKind](K,
+      depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
         fun(ArrayType(M, ArrayType(K, float)))(a =>
           fun(ArrayType(K, ArrayType(N, float)))(b =>
             reduceSeq(
@@ -409,7 +409,7 @@ class algorithmic extends test_util.Tests {
 
     // loop ordering: K -> M -> N
     val mmOuterProductFusedComputation =
-      DepLambda[NatKind](M, DepLambda[NatKind](N, DepLambda[NatKind](K,
+      depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
         fun(ArrayType(M, ArrayType(K, float)))(a =>
           fun(ArrayType(K, ArrayType(N, float)))(b =>
             reduceSeq(

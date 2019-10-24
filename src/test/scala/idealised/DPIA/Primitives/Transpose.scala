@@ -2,7 +2,7 @@ package idealised.DPIA.Primitives
 
 import lift.core.DSL._
 import lift.core.types._
-import lift.core.primitives.{mapSeq, transpose}
+import lift.core.primitives._
 import benchmarks.core.SimpleRunOpenCLProgram
 import idealised.OpenCL.KernelWithSizes
 import util.{Execute, TimeSpan, gen}

@@ -12,7 +12,7 @@ import lift.arithmetic.SimplifiedExpr
 import scala.xml.Elem
 
 // performs a sequential slide, taking advantage of the space/time overlapping reuse opportunity
-final case class OpenCLSlideSeq(rot: lp.slideSeq.Rotate,
+final case class OpenCLSlideSeq(rot: lp.SlideSeq.Rotate,
                                 a: AddressSpace,
                                 n: Nat,
                                 sz: Nat,
@@ -52,8 +52,8 @@ final case class OpenCLSlideSeq(rot: lp.slideSeq.Rotate,
     import idealised.OpenCL.IntermediatePrimitives.OpenCLSlideSeqIValues
 
     val I = rot match {
-      case lp.slideSeq.Values => OpenCLSlideSeqIValues.apply _
-      case lp.slideSeq.Indices => ??? // SlideSeqIIndices.apply _
+      case lp.SlideSeq.Values => OpenCLSlideSeqIValues.apply _
+      case lp.SlideSeq.Indices => ??? // SlideSeqIIndices.apply _
     }
 
     con(input)(fun(exp"[$inputSize.$dt1, $read]")(x =>

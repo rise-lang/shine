@@ -7,11 +7,11 @@ import elevate.lift.strategies.predicate._
 import elevate.core.strategies.traversal._
 import elevate.lift.strategies.traversal._
 import elevate.lift._
-import elevate.lift.extractors._
 import lift.core._
 import lift.core.DSL._
 import lift.core.primitives._
 import lift.core.types._
+import elevate.lift.extractors._
 
 //noinspection MutatorLikeMethodIsParameterless
 object algorithmic {
@@ -28,14 +28,14 @@ object algorithmic {
 
    def apply(e: Lift): RewriteResult[Lift] = e match {
 
-      case _apply(_apply(_map(), _lambda(mapVar, _apply(
-           _apply(_apply(_reduceX(rx), op), init :: (dt:DataType)), reduceArg))),
-           input@(_ :: ArrayType(size, ArrayType(_,_)))) =>
+      case Apply(Apply(Map(), Lambda(mapVar, Apply(
+           Apply(Apply(rx @ (Reduce() | ReduceSeq()), op), init :: (dt: DataType)), reduceArg))),
+           input @ (_ :: ArrayType(size, ArrayType(_,_)))) =>
 
         def reduceMap(zippedMapArg : (Expr, Expr) => Expr, reduceArg: Expr): RewriteResult[Lift] = {
           Success(
             rx(fun((acc, y) => // y :: 16.n793.(float,float), acc:: 16.32.(float)
-              map(fun(x => Apply(Apply(op, fst(x)), snd(x)))) $ zippedMapArg(acc, y)
+              map(fun(x => DSL.`apply`(DSL.`apply`(op, fst(x)), snd(x)))) $ zippedMapArg(acc, y)
             ))(generate(fun(IndexType(size) ->: dt)(_ => init))) $ reduceArg
           )
         }
@@ -43,14 +43,14 @@ object algorithmic {
         reduceArg match {
           // simple case (see test "lift reduce")
           // for some reason mapVar might be untyped, hence simply trying `==` fails
-          case x if sameButOneMayBeTyped(x, mapVar) =>
+          case x if x == mapVar =>
             reduceMap(
               (acc, y) => zip(acc, y),
               transpose(input)
             )
           // zipped input (see test "MM to MM-LoopMKN")
-          case _apply(_apply(_zip(), u), v) =>
-            val notToBeTransposed = if (sameButOneMayBeTyped(mapVar, u)) v else u
+          case Apply(Apply(Zip(), u), v) =>
+            val notToBeTransposed = if (mapVar == u) v else u
             reduceMap(
               zippedMapArg = (acc, y) => zip(acc, map(fun(bs => pair(bs, fst(y)))) $ snd(y)),
               reduceArg = zip(notToBeTransposed, transpose(input))
@@ -75,7 +75,7 @@ object algorithmic {
   def  splitJoin(n: Nat): Strategy[Lift] = `*f -> S >> **f >> J`(n: Nat)
   case class `*f -> S >> **f >> J`(n: Nat) extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case _apply(_map(), f) => Success(split(n) >> map(map(f)) >> join)
+      case Apply(Map(), f) => Success(split(n) >> map(map(f)) >> join)
       case _ => Failure(splitJoin(n))
     }
     override def toString = s"splitJoin($n)"
@@ -85,7 +85,7 @@ object algorithmic {
   def mapFusion: Strategy[Lift] = `*g >> *f -> *(g >> f)`
   case object `*g >> *f -> *(g >> f)` extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case _apply(_apply(_map(), f), _apply(_apply(_map(), g), arg)) =>
+      case Apply(Apply(Map(), f), Apply(Apply(Map(), g), arg)) =>
         Success(map(g >> f)(arg))
       case _ => Failure(mapFusion)
     }
@@ -101,8 +101,8 @@ object algorithmic {
     // in this case we would return some form of map(id):
     // ((map λe4. (e4: K.float)) e743))
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case y@_apply(_map(), _lambda(x, _apply(f, gx))) if !contains[Lift](x).apply(f) && !isIdentifier(gx) =>
-        Success(Apply(`map`, Lambda(x, gx)) >> map(f))
+      case y @ Apply(Map(), Lambda(x, Apply(f, gx))) if !contains[Lift](x).apply(f) && !isIdentifier(gx) =>
+        Success(DSL.`apply`(map, lambda(x, gx)) >> map(f))
       case _ => Failure(mapLastFission)
     }
     override def toString = s"mapLastFission"
@@ -119,7 +119,7 @@ object algorithmic {
   def liftId: Strategy[Lift] = `id -> *id`
   case object `id -> *id` extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case _apply(`id`, arg) => Success(Apply(map(id), arg))
+      case Apply(Id(), arg) => Success(DSL.`apply`(map(id), arg))
       case _ => Failure(liftId)
     }
     override def toString = "liftId"
@@ -128,7 +128,7 @@ object algorithmic {
   def createTransposePair: Strategy[Lift] = `id -> T >> T`
   case object `id -> T >> T` extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case _apply(`id`, arg) => Success(Apply(transpose >> transpose, arg))
+      case Apply(Id(), arg) => Success(DSL.`apply`(transpose >> transpose, arg))
       case _ => Failure(createTransposePair)
     }
     override def toString = "createTransposePair"
@@ -139,28 +139,30 @@ object algorithmic {
   def removeTransposePair: Strategy[Lift] = `T >> T -> `
   case object `T >> T -> ` extends Strategy[Lift]  {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case _apply(_transpose(), _apply(_transpose(), x)) => Success(x)
+      case Apply(Transpose(), Apply(Transpose(), x)) => Success(x)
       case _ => Failure(removeTransposePair)
     }
     override def toString = "createTransposePair"
   }
 
+  /*
   case object untype extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
       case TypedExpr(e, _) => Success(e)
       case _ => Failure(untype)
     }
   }
+   */
 
   // slideSeq fusion
-  import lift.core.primitives.slideSeq
-  import lift.OpenCL.primitives.oclSlideSeq
+  import lift.OpenCL.primitives._
+  import lift.OpenCL.DSL._
 
   def slideSeqFusion: Strategy[Lift] = `slideSeq(f) >> map(g) -> slideSeq(f >> g)`
   def `slideSeq(f) >> map(g) -> slideSeq(f >> g)`: Strategy[Lift] = {
-    case Apply(Apply(`map`, g), Apply(Apply(Apply(DepApply(DepApply(slideSeq(rot), sz: Nat), sp: Nat), wr), f), e)) =>
+    case Apply(Apply(Map(), g), Apply(Apply(Apply(DepApply(DepApply(SlideSeq(rot), sz: Nat), sp: Nat), wr), f), e)) =>
       Success(slideSeq(rot)(sz)(sp)(wr)(f >> g)(e))
-    case Apply(Apply(`map`, g), Apply(Apply(Apply(DepApply(DepApply(DepApply(oclSlideSeq(rot), a: AddressSpace), sz: Nat), sp: Nat), wr), f), e)) =>
+    case Apply(Apply(Map(), g), Apply(Apply(Apply(DepApply(DepApply(DepApply(OclSlideSeq(rot), a: AddressSpace), sz: Nat), sp: Nat), wr), f), e)) =>
       Success(oclSlideSeq(rot)(a)(sz)(sp)(wr)(f >> g)(e))
     case _ => Failure(slideSeqFusion)
   }

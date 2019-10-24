@@ -79,6 +79,7 @@ class gemm extends test_util.TestsWithExecutor {
 
   object ocl {
     import lift.OpenCL.primitives._
+    import lift.OpenCL.DSL._
 
     val sequential =
       nFun((n, m, k) =>

@@ -33,7 +33,7 @@ class Pad extends test_util.Tests {
   }
 
   test("Simple OpenMP constant pad input and copy") {
-    import lift.OpenMP.primitives._
+    import lift.OpenMP.DSL._
 
     val e = nFun(n => fun(ArrayType(n, float))( xs =>
       xs |> padCst(2)(3)(l(5.0f)) |> mapPar(fun(x => x))
@@ -43,7 +43,7 @@ class Pad extends test_util.Tests {
   }
 
   test("Simple OpenCL pad input and copy") {
-    import lift.OpenCL.primitives._
+    import lift.OpenCL.DSL._
 
     val e = nFun(n => fun(ArrayType(n, float))( xs =>
       xs |> padCst(2)(3)(l(5.0f)) |> mapGlobal(fun(x => x))
@@ -53,7 +53,7 @@ class Pad extends test_util.Tests {
   }
 
   test("OpenCL Pad only left") {
-    import lift.OpenCL.primitives._
+    import lift.OpenCL.DSL._
 
     val e = nFun(n => fun(ArrayType(n, float))( xs =>
       xs |> padCst(2)(0)(l(5.0f)) |> mapGlobal(fun(x => x))
@@ -63,7 +63,7 @@ class Pad extends test_util.Tests {
   }
 
   test("OpenCL Pad only right") {
-    import lift.OpenCL.primitives._
+    import lift.OpenCL.DSL._
 
     val e = nFun(n => fun(ArrayType(n, float))( xs =>
       xs |> padCst(0)(3)(l(5.0f)) |> mapGlobal(fun(x => x))

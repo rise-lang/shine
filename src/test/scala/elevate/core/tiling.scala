@@ -304,22 +304,19 @@ class tiling extends test_util.Tests {
         )
       )
 
-    val tiling = applyNTimes(3)(body)(
-      inTyped(
-        applyNTimes(5)(body)(
-          tileND(2)(4))))
+    val tiling = applyNTimes(3)(body)(applyNTimes(5)(body)(tileND(2)(4)))
 
     val normalized = FNF(tiling).get
     val rewritten = normalized(backward)
 
     val debug =
-      body(body(body(inTyped(body(body(body(body(body(function(argumentOf(map,body(function(splitJoin(4)))))))))))))) `;`
-      body(body(body(inTyped(body(body(body(body(body(function(splitJoin(4))))))))))) `;`
-        body(body(body(inTyped(body(body(body(body(body(RNF))))))))) `;`
-        body(body(body(inTyped(body(body(body(body(body(LCNF))))))))) `;`
-        body(body(body(inTyped(body(body(body(body(body(argument(argument(function(argumentOf(map,body(idAfter)))))))))))))) `;`
-        body(body(body(inTyped(body(body(body(body(body(argument(argument(function(argumentOf(map,body(createTransposePair)))))))))))))) `;`
-        body(body(body(inTyped(body(body(body(body(body(argument(argument(function(argumentOf(map,body(LCNF))))))))))))))
+      body(body(body(body(body(body(body(body(function(argumentOf(map,body(function(splitJoin(4))))))))))))) `;`
+      body(body(body(body(body(body(body(body(function(splitJoin(4)))))))))) `;`
+        body(body(body(body(body(body(body(body(RNF)))))))) `;`
+        body(body(body(body(body(body(body(body(LCNF)))))))) `;`
+        body(body(body(body(body(body(body(body(argument(argument(function(argumentOf(map,body(idAfter))))))))))))) `;`
+        body(body(body(body(body(body(body(body(argument(argument(function(argumentOf(map,body(createTransposePair))))))))))))) `;`
+        body(body(body(body(body(body(body(body(argument(argument(function(argumentOf(map,body(LCNF)))))))))))))
         //body(body(body(inTyped(body(body(body(body(body(argument(argument(function(argumentOf(map,body(argument(mapMapFBeforeTranspose))))))))))))))) `;`
         //body(body(body(inTyped(body(body(body(body(body(argument(argument(RNF)))))))))))
 

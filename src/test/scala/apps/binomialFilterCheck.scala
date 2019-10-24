@@ -83,7 +83,7 @@ int main(int argc, char** argv) {
     val id: Expr = fun(x => x)
     val e = padClamp2D(1) >> slide(3)(1) >> mapSeq(transpose >>
       map(dotSeqUnroll(weights1d)) >>
-      slideSeq(slideSeq.Values)(3)(1)(id)(dotSeqUnroll(weights1d))
+      slideSeq(SlideSeq.Values)(3)(1)(id)(dotSeqUnroll(weights1d))
     )
     val code = gen.CProgram(wrapExpr(e), "blur").code
     " % ".r.findAllIn(code).length shouldBe 0
@@ -91,7 +91,7 @@ int main(int argc, char** argv) {
   }
 
   test("compiling OpenCL private arrays should unroll loops") {
-    import lift.OpenCL.primitives._
+    import lift.OpenCL.DSL._
 
     val dotSeqPrivate = fun(a => fun(b =>
       zip(a)(b) |> map(mulT) |> oclReduceSeq(AddressSpace.Private)(add)(l(0.0f))
@@ -107,7 +107,7 @@ int main(int argc, char** argv) {
   }
 
   test("compiling OpenCL shuffle should generate valid code") {
-    import lift.OpenCL.primitives._
+    import lift.OpenCL.DSL._
 
     val dotSeqVecUnroll = fun(a => fun(b =>
       zip(a)(b) |> map(mulT) |> oclReduceSeqUnroll(AddressSpace.Private)(add)(vectorFromScalar(l(0.0f)))

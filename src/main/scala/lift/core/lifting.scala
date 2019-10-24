@@ -33,7 +33,7 @@ object lifting {
   def liftFunExpr(p: Expr): Result[Expr => Expr] = {
     def chain(r: Result[Expr]): Result[Expr => Expr] =
       r.bind(liftFunExpr,
-        f => Expanding((e: Expr) => _apply(f, e)))
+        f => Expanding((e: Expr) => `apply`(f, e)))
 
     p match {
       case Lambda(x, body)    => Reducing((e: Expr) => substitute.exprInExpr(e, `for` = x, in = body))

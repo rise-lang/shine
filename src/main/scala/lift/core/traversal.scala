@@ -103,30 +103,24 @@ object traversal {
             //chainT(chain(apply(f, v), e, apply(e, _)), expr.t)
             //chain(apply(f, v), (e, expr.t), v => chainT(apply(e, v), expr.t))
             //apply(f, v) ==> apply(e, v) ==> chainT
-            chainT(chainE(apply(f, v), e), expr.t).map{case ((f, e), t) => Apply(f, e)(t)}
+            chainT(chainE(apply(f, v), e), expr.t).map { case ((f, e), t) => Apply(f, e)(t) }
           case DepLambda(x, e) => x match {
-            case n: NatIdentifier       => chainT(
-              chainE(v.visitNat(n), e).map(r =>
-              DepLambda[NatKind]((r._1: @unchecked) match { case a: NamedVar => NatIdentifier(a) }, r._2))
-              , expr.t).map{case ((x, e), t) => DepLambda(x, e)(t)}
-            case dt: DataTypeIdentifier => chainT(
-              chainE(v.visitType(dt), e).map(r => DepLambda[DataKind](r._1, r._2))
-              , expr.t).map{case ((x, e), t) => DepLambda(x, e)(t)}
-            case a: AddressSpace => chainT(
-              chainE(v.visitAddressSpace(a), e).map(r =>
-              DepLambda[AddressSpaceKind](r._1.asInstanceOf[AddressSpaceIdentifier], r._2))
-              , expr.t).map{case ((x, e), t) => DepLambda(x, e)(t)}
+            case n: NatIdentifier => chainT(chainE(v.visitNat(n), e), expr.t)
+              .map { case ((x, e), t) =>
+                DepLambda[NatKind]((x: @unchecked) match { case a: NamedVar => NatIdentifier(a) }, e)(t)
+              }
+            case dt: DataTypeIdentifier => chainT(chainE(v.visitType(dt), e), expr.t)
+              .map { case ((x, e), t) => DepLambda[DataKind](x, e)(t) }
+            case a: AddressSpace => chainT(chainE(v.visitAddressSpace(a), e), expr.t)
+              .map { case ((x, e), t) => DepLambda[AddressSpaceKind](x.asInstanceOf[AddressSpaceIdentifier], e)(t) }
           }
           case DepApply(f, x) => x match {
-            case n: Nat       => chainT(
-              chainN(apply(f, v), n).map(r => DepApply[NatKind](r._1, r._2))
-              , expr.t).map{case ((f, x), t) => DepApply(f, x)(t)}
-            case dt: DataType => chainT(
-              chainDT(apply(f, v), dt).map(r => DepApply[DataKind](r._1, r._2))
-              , expr.t).map{case ((f, x), t) => DepApply(f, x)(t)}
-            case a: AddressSpace => chainT(
-              chainA(apply(f, v), a).map(r => DepApply[AddressSpaceKind](r._1, r._2))
-              , expr.t).map{case ((f, x), t) => DepApply(f, x)(t)}
+            case n: Nat => chainT(chainN(apply(f, v), n), expr.t)
+              .map { case ((f, x), t) => DepApply[NatKind](f, x)(t) }
+            case dt: DataType => chainT(chainDT(apply(f, v), dt), expr.t)
+              .map { case ((f, x), t) => DepApply[DataKind](f, x)(t) }
+            case a: AddressSpace => chainT(chainA(apply(f, v), a), expr.t)
+              .map { case ((f, x), t) => DepApply[AddressSpaceKind](f, x)(t) }
           }
           case l: Literal => l.d match {
             case NatData(n) =>

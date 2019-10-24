@@ -7,7 +7,7 @@ import lift.core.primitives._
 import lift.OpenCL.primitives._
 import util.gen
 import idealised.OpenCL._
-import lift.OpenCL.primitives.{mapLocal, oclReduceSeq, toPrivateFun}
+import lift.OpenCL.DSL._
 import lift.core.{Expr, Literal}
 import lift.core.semantics.{IndexData, NatData}
 

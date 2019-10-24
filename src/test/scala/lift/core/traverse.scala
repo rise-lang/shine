@@ -43,12 +43,11 @@ class traverse extends test_util.Tests {
         { case _: Lambda => () },
         { case _: Apply => () },
         { case _: Apply => () },
-        { case `map` => () },
+        { case _: Map => () },
         { case _: Apply => () },
-        { case `map` => () },
+        { case _: Map => () },
         { case _: Lambda => () },
         { case _: Identifier => () },
-        { case _: TypedExpr => () },
         { case _: Identifier => () },
         { case ArrayType(_, ArrayType(_, _: ScalarType)) => () }
       ) : Seq[Any => Unit]
@@ -84,8 +83,8 @@ class traverse extends test_util.Tests {
     class Visitor extends TraceVisitor(trace) {
       override def visitExpr(expr: Expr): Result[Expr] = {
         expr match {
-          case Apply(Apply(`map`, _), e) =>
-            val r = Apply(fun(x => x), e)
+          case Apply(Apply(Map(), _), e) =>
+            val r = `apply`(fun(x => x), e)
             println(r)
             Stop(r)
           case _ => super.visitExpr(expr)
@@ -100,7 +99,7 @@ class traverse extends test_util.Tests {
       case traversal.Stop(r) =>
         assert(r ==
           nFun(h => nFun(w => fun(ArrayType(h, ArrayType(w, float)))(input =>
-            Apply(fun(x => x), input)
+            `apply`(fun(x => x), input)
           )))
         )
       case _ => throw new Exception("the traversal should have stopped")
@@ -118,7 +117,7 @@ class traverse extends test_util.Tests {
     class Visitor extends traversal.Visitor {
       override def visitExpr(expr: Expr): Result[Expr] = {
         expr match {
-          case Apply(`map`, f) =>
+          case Apply(Map(), f) =>
             println(f)
             Stop(f)
           case _ => Continue(expr, this)
@@ -132,8 +131,8 @@ class traverse extends test_util.Tests {
     (result: @unchecked) match {
       case traversal.Stop(r) =>
         val expected = nFun(n => fun(ArrayType(n, float))(input => {
-          val x = Identifier(freshName("x"))
-          Apply(Lambda(x, x), input |> map(fun(x => x)))
+          val x = identifier(freshName("x"))
+          `apply`(lambda(x, x), input |> map(fun(x => x)))
         }))
         assert(r == expected)
     }

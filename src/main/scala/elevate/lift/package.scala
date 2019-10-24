@@ -7,17 +7,6 @@ import elevate.core.{Lift, RewriteResult, Strategy, Success}
 
 package object lift {
 
-  def sameButOneMayBeTyped(a: Lift, b: Lift): Boolean = {
-    a match {
-      case x if x == b => true
-      case TypedExpr(x, _) if x == b => true
-      case _ => b match {
-        case TypedExpr(x, _) if x == a => true
-        case _ => false
-      }
-    }
-  }
-
   def printExpr : Strategy[Lift] = peek[Lift](p => println(s"${toEvaluableString(p)}"))
   def printExpr(msg: String) : Strategy[Lift] = peek[Lift](p => println(s"$msg \n${toEvaluableString(p)}"))
 
@@ -35,7 +24,6 @@ package object lift {
         case dt: DataType => s"DepApply[DataKind](${toEvaluableString(f)}, $dt)"
       }
       case Literal(d) => s"Literal($d)"
-      case TypedExpr(e, t) => toEvaluableString(e)
       case ff: ForeignFunction => ff.toString
       case p: Primitive => p.toString
     }
@@ -44,13 +32,11 @@ package object lift {
   def dotPrinter(expr: Expr,
                  printEdgeLabels: Boolean = true,
                  inlineApply: Boolean = false,
-                 inlineTypedExpr: Boolean = true,
                  inlineLambdaIdentifier: Boolean = false): String = {
 
     @scala.annotation.tailrec
     def getID(x: Any): String = x match {
       case Apply(f,_) if inlineApply => getID(f)
-      case TypedExpr(x,_) if inlineTypedExpr => getID(x)
       case i:Identifier if !inlineLambdaIdentifier => i.toString
       case _ =>freshName("node")
     }
@@ -59,7 +45,6 @@ package object lift {
                          parent: String,
                          printEdgeLabels: Boolean,
                          inlineApply: Boolean,
-                         inlineTypedExpr: Boolean,
                          inlineLambdaIdentifier: Boolean,
                          ty: Option[String]): String = {
 
@@ -92,7 +77,7 @@ package object lift {
       def recurse(e: Expr,
                   parent: String,
                   ty: Option[String]): String =
-        genNodesAndEdges(e, parent, printEdgeLabels, inlineApply, inlineTypedExpr, inlineLambdaIdentifier, ty)
+        genNodesAndEdges(e, parent, printEdgeLabels, inlineApply, inlineLambdaIdentifier, ty)
 
       def binaryNode(nodeLabel: String, a: (Expr, String), b: (Expr, String)): String = {
         val aID = getID(a._1)
@@ -147,27 +132,13 @@ package object lift {
              |$arg ${attr(fillWhite + Label(e.toString).toString)}
              |${recurse(f, fun, None)}""".stripMargin
 
-        case TypedExpr(e, t) if inlineTypedExpr =>
-          val formattedType = t.toString.replaceAll("->", "-\\\\>")
-          s"${recurse(e, parent, Some(formattedType))}"
-
-        case TypedExpr(e, t) if !inlineTypedExpr =>
-          val expr = getID(e)
-          val ty = getID(t)
-          val formattedType = t.toString.replaceAll("->", "-\\\\>")
-          s"""$parent ${attr(fillWhite + Label("TypedExpr").toString)}
-             |$parent -> $expr ${addEdgeLabel(edgeLabel("expr"))}
-             |$parent -> $ty ${addEdgeLabel(edgeLabel("type"))}
-             |$ty [label="$formattedType"]
-             |${recurse(e, expr, None)}""".stripMargin
-
         case l: Literal => s"$parent ${attr(fillWhite + Label(l.toString).italic.toString)}"
         case i: Identifier => s"$parent ${attr(fillWhite + Label(i.toString).italic.toString)}"
         case p: Primitive => s"$parent ${attr(fillGray + Label(p.toString).bold.toString)}"
       }
     }
 
-    val content = genNodesAndEdges(expr, getID(expr), printEdgeLabels, inlineApply, inlineTypedExpr, inlineLambdaIdentifier, None)
+    val content = genNodesAndEdges(expr, getID(expr), printEdgeLabels, inlineApply, inlineLambdaIdentifier, None)
     s"""
        |digraph graphname
        |{

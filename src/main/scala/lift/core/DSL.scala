@@ -11,7 +11,7 @@ object DSL {
 
   def identifier(name: String): Identifier = Identifier(name)()
   def lambda(x: Identifier, e: Expr): Lambda = Lambda(x, e)()
-  def _apply(f: Expr, e: Expr): Apply = Apply(f, e)()
+  def `apply`(f: Expr, e: Expr): Apply = Apply(f, e)()
   def depLambda[K <: Kind](x: K#I, e: Expr)(implicit kn: KindName[K]): DepLambda[K] = DepLambda[K](x, e)()(kn)
   def depApply[K <: Kind](f: Expr, x: K#T): DepApply[K] = DepApply[K](f, x)()
   def literal(d: semantics.Data): Literal = Literal(d)
@@ -64,8 +64,12 @@ object DSL {
   def equal: Equal = primitives.Equal()()
 
   def asVector: AsVector = primitives.AsVector()()
+  def asVectorAligned: AsVectorAligned = primitives.AsVectorAligned()()
   def asScalar: AsScalar = primitives.AsScalar()()
   def vectorFromScalar: VectorFromScalar = primitives.VectorFromScalar()()
+
+  def printType(msg: String): PrintType = PrintType(msg)()
+  def typeHole(msg: String): TypeHole = TypeHole(msg)()
 
   implicit class Ops(lhs: Expr) {
     import lift.core.primitives._

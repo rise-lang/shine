@@ -2,7 +2,7 @@ package idealised.DPIA.Primitives
 
 import lift.core.DSL._
 import lift.core.types._
-import lift.core.primitives.{slideSeq, map, reduceSeq}
+import lift.core.primitives._
 import util.{Execute, gen}
 
 class SlideSeq extends test_util.Tests {
@@ -10,7 +10,7 @@ class SlideSeq extends test_util.Tests {
 
   test("Simple example should generate C code producing the expected result on a test") {
     val e = nFun(n => fun(ArrayType(n, int))(a =>
-      a |> slideSeq(slideSeq.Values)(3)(1)(fun(x => x))(reduceSeq(add)(l(0)))
+      a |> slideSeq(SlideSeq.Values)(3)(1)(fun(x => x))(reduceSeq(add)(l(0)))
     ))
     val p = gen.CProgram(e)
 

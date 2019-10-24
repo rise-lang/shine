@@ -24,7 +24,7 @@ class scal extends test_util.Tests {
 
   // OpenMP
   test("scalIntel compiles to syntactically correct OpenMP") {
-    import lift.OpenMP.primitives._
+    import lift.OpenMP.DSL._
 
     val scalIntel = nFun(n => fun(ArrayType(n, float))(input => fun(float)(alpha =>
       input |>
@@ -43,7 +43,7 @@ class scal extends test_util.Tests {
   }
 
   test("scalIntel2 compiles to syntactically correct OpenMP") {
-    import lift.OpenMP.primitives._
+    import lift.OpenMP.DSL._
 
     val scalIntel2 = nFun(n => fun(ArrayType(n, float))(input => fun(float)(alpha =>
       input |>
@@ -61,7 +61,7 @@ class scal extends test_util.Tests {
 
   // OpenCL
   {
-    import lift.OpenCL.primitives._
+    import lift.OpenCL.DSL._
 
     val scalWgLcl = (fst: Nat, snd: Nat) =>
       nFun(n => fun(ArrayType(n, float))(input => fun(float)(alpha =>

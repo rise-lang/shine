@@ -5,6 +5,7 @@ import idealised.OpenCL.{GlobalSize, KernelWithSizes, LocalSize}
 import util.{Display, TimeSpan, gen}
 import util.Time.ms
 import lift.OpenCL.primitives._
+import lift.OpenCL.DSL._
 import lift.arithmetic.SteppedCase
 import lift.core.DSL._
 import lift.core.Expr
