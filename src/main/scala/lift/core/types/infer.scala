@@ -59,7 +59,7 @@ object infer {
         i.setType(t)
 
       case Lambda(x, e) =>
-        val xt = fresh()
+        val xt = x.t
         identifierT update (x, xt)
         val te = typed(e)
         identifierT remove x

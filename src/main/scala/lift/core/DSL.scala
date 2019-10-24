@@ -149,8 +149,8 @@ object DSL {
   // function values
   object fun {
     def apply(t: Type)(f: Expr => Expr): Expr = {
-      val x = identifier(freshName("e"))
-      lambda(x, f(x.setType(t)))
+      val x = identifier(freshName("e")).setType(t)
+      lambda(x, f(x))
     }
 
     def apply(f: Identifier => Expr): Expr = untyped(f)

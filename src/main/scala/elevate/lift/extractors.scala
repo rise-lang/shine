@@ -6,9 +6,7 @@ import lift.core.types._
 object extractors {
 
   object :: {
-    def unapply(e: Expr): Option[(Expr, Type)] = e match {
-      case _ => Some((e, e.t))
-    }
+    def unapply(e: Expr): Option[(Expr, Type)] = Some((e, e.t))
   }
 
 }
