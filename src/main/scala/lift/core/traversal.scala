@@ -36,9 +36,9 @@ object traversal {
         case c: Continue[Expr] =>
           val v = c.v
           c.value match {
-            case i: Identifier => i
+            case i: Identifier => i.setType(v.visitType(i.t).value)
             case Lambda(x, e) =>
-              Lambda(x, apply(e, v))(v.visitType(expr.t).value)
+              Lambda(apply(x, v).asInstanceOf[Identifier], apply(e, v))(v.visitType(expr.t).value)
             case Apply(f, e) =>
               Apply(apply(f, v), apply(e, v))(v.visitType(expr.t).value)
             case DepLambda(x, e) => x match {
@@ -62,7 +62,7 @@ object traversal {
             // could be avoided if foreign fun could be parametric
             case ForeignFunction(decl, t) =>
               ForeignFunction(decl, v.visitType(t).value)
-            case p: Primitive => p
+            case p: Primitive => p.setType(v.visitType(p.t).value)
           }
       }
     }

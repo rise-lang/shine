@@ -15,6 +15,7 @@ object Primitive {
   class Impl(val c: blackbox.Context) {
 
     import c.universe._
+    import c.universe.Flag._
 
     def primitive(annottees: c.Expr[Any]*): c.Expr[Any] = {
       annottees.map(_.tree) match {
@@ -36,10 +37,26 @@ object Primitive {
                 case x => c.abort(c.enclosingPosition, s"expected a parameter, but got $x")})})(t)
               ..$body
             }
-         """
+         """.asInstanceOf[ClassDef]
+        val noCaseAccessorForType = r match {
+          case ClassDef(mods, name, tparams, impl @ Template(parents, self, body)) =>
+            val newBody = body.map {
+              case ValDef(mods, name, tpt, rhs) if name.toString == "t" =>
+                val newMods = if (mods.hasFlag(CASEACCESSOR)) {
+                  mods.asInstanceOf[scala.reflect.internal.Trees#Modifiers]
+                    .&~(CASEACCESSOR.asInstanceOf[Long]).asInstanceOf[Modifiers]
+                } else {
+                  mods
+                }
+                ValDef(newMods, name, tpt, rhs)
+              case d => d
+            }
+            ClassDef(mods, name, tparams, Template(parents, self, newBody))
+          case _ => c.abort(c.enclosingPosition, "should be impossible")
+        }
         // for debugging
-        // c.error(c.enclosingPosition, s"generated $r")
-        r.asInstanceOf[ClassDef]
+        // c.warning(c.enclosingPosition, s"generated\n$noCaseAccessorForType")
+        noCaseAccessorForType
       case _ => c.abort(c.enclosingPosition, "expected a case class extends Primitive")
     }
   }

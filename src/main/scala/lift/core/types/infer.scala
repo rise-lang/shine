@@ -68,7 +68,7 @@ object infer {
       case Apply(f, e) =>
         val tf = typed(f)
         val te = typed(e)
-        val ot = fresh()
+        val ot = expr.t
         val constraint = TypeConstraint(tf.t, FunType(te.t, ot))
         //println(s"Constraint for expression `$expr' is `$constraint'")
         constraints += constraint
@@ -104,8 +104,9 @@ object infer {
       case l: Literal => l
 
       case p: Primitive =>
-        constraints += TypeConstraint(p.t, p.typeScheme)
-        p
+        val ts = p.typeScheme
+        constraints += TypeConstraint(p.t, ts)
+        p.setType(ts)
     }
   }
 
@@ -124,16 +125,11 @@ object infer {
       }
 
       override def visitType[T <: Type](t: T): Result[T] = {
-        val r = traversal.types.DepthFirstLocalResult(t, new traversal.Visitor() {
-          override def visitType[U <: Type](t: U): Result[U] = {
-            t match {
-              case DepFunType(x, _) => bound += x
-              case _ =>
-            }
-            Continue(t, this)
-          }
-        })
-        Continue(r, this)
+        t match {
+          case DepFunType(x, _) => bound += x
+          case _ =>
+        }
+        Continue(t, this)
       }
     }
 
@@ -183,8 +179,8 @@ object infer {
     }
 
     def apply(a: AddressSpace): AddressSpace = {
-      as.foldLeft(a) { case (result, (aa, ab)) =>
-        substitute.addressSpaceInAddressSpace(ab, `for` = aa, in = result)
+      as.foldLeft(a) {
+        case (result, (aa, ab)) => substitute.addressSpaceInAddressSpace(ab, `for` = aa, in = result)
       }
     }
 
