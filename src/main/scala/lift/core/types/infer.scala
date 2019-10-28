@@ -66,7 +66,7 @@ object infer {
         val ft = FunType(xt, te.t)
         val constraint = TypeConstraint(expr.t, ft)
         constraints += constraint
-        Lambda(x, te)(ft)
+        Lambda(x, te)(expr.t)
 
       case Apply(f, e) =>
         val tf = typed(f)
@@ -107,7 +107,7 @@ object infer {
 
       case p: Primitive =>
         val ts = p.typeScheme
-        constraints += TypeConstraint(p.t, ts)
+        // constraints += TypeConstraint(p.t, ts)
         p.setType(ts)
     }
   }
@@ -300,9 +300,19 @@ object infer {
             substitute.typeInType(dt, `for`=dtb, in=tb)),
           TypeConstraint(dt, dta), TypeConstraint(dt, dtb)
         )))
+       /*
+      case (DepFunType(asa: AddressSpaceIdentifier, ta), DepFunType(asb: AddressSpaceIdentifier, tb)) =>
+        val as = AddressSpaceIdentifier(freshName("a"))
+        bound += as
+        bound -= asa
+        bound -= asb
+        Some(solve(Set(
+          TypeConstraint(substitute.typeInType(as, `for`=asa, in=ta))
+        )))
+
+        */
       case (_: NatToDataApply, dt: DataType) => Some(Solution.subs(a, dt)) // substitute apply by data type
       case (dt: DataType, _: NatToDataApply) => Some(Solution.subs(b, dt)) // substitute apply by data type
-
       case _ => error(s"cannot unify $a and $b")
     }
 
