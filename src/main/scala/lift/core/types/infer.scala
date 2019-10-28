@@ -63,16 +63,18 @@ object infer {
         identifierT update (x, xt)
         val te = typed(e)
         identifierT remove x
-        Lambda(x, te)(FunType(xt, te.t))
+        val ft = FunType(xt, te.t)
+        val constraint = TypeConstraint(expr.t, ft)
+        constraints += constraint
+        Lambda(x, te)(ft)
 
       case Apply(f, e) =>
         val tf = typed(f)
         val te = typed(e)
-        val ot = expr.t
-        val constraint = TypeConstraint(tf.t, FunType(te.t, ot))
+        val constraint = TypeConstraint(tf.t, FunType(te.t, expr.t))
         //println(s"Constraint for expression `$expr' is `$constraint'")
         constraints += constraint
-        Apply(tf, te)(ot)
+        Apply(tf, te)(expr.t)
 
       case DepLambda(x, e) => x match {
         case n: NatIdentifier =>
