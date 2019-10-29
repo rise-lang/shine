@@ -92,7 +92,7 @@ object traversal {
 
   case class function(s: Elevate) extends Elevate {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case Apply(f, e) => s(f).mapSuccess(Apply(_, e)(e.t))
+      case ap @ Apply(f, x) => s(f).mapSuccess(Apply(_, x)(ap.t))
       case _ => Failure(s)
     }
     override def toString = s"function($s)"
@@ -108,18 +108,18 @@ object traversal {
 
   case class argument(s: Elevate) extends Elevate {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case Apply(f, e) => s(e).mapSuccess(Apply(f, _)(e.t))
+      case ap @ Apply(f, x) => s(x).mapSuccess(Apply(f, _)(ap.t))
       case _ => Failure(s)
     }
     override def toString = s"argument($s)"
   }
 
-  case class argumentOf(x: Primitive, s: Elevate) extends Elevate {
+  case class argumentOf(p: Primitive, s: Elevate) extends Elevate {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case Apply(f, e) if f == x => s(e).mapSuccess(Apply(f, _)(e.t))
+      case ap @ Apply(f, x) if f == p => s(x).mapSuccess(Apply(f, _)(ap.t))
       case _ => Failure(s)
     }
-    override def toString = s"argumentOf($x,$s)"
+    override def toString = s"argumentOf($p,$s)"
   }
 
   // applying a strategy to an expression applied to a lift `map`. Example:

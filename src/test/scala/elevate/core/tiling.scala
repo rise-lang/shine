@@ -255,32 +255,32 @@ class tiling extends test_util.Tests {
   val floatId: Expr = identity(float)
 
   test("codegen 1D tiles") {
-    val highLevel = wrapInLambda(1, i => *(floatId) $ i, inputT(1, _))
-    val tiled = one(body(tileND(1)(tileSize))).apply(highLevel).get
+    val highLevel = infer(wrapInLambda(1, i => *(floatId) $ i, inputT(1, _)))
+    val tiled = infer(one(body(tileND(1)(tileSize))).apply(highLevel).get)
 
     println(gen.CProgram(lower(highLevel)))
     println(gen.CProgram(lower(tiled)))
   }
 
   test("codegen 2D tiles") {
-    val highLevel = wrapInLambda(2, i => **!(floatId) $ i, inputT(2, _))
-    val tiled = one(one(body(tileND(2)(tileSize)))).apply(highLevel).get
+    val highLevel = infer(wrapInLambda(2, i => **!(floatId) $ i, inputT(2, _)))
+    val tiled = infer(one(one(body(tileND(2)(tileSize)))).apply(highLevel).get)
 
     println(gen.CProgram(lower(highLevel)))
     println(gen.CProgram(lower(tiled)))
   }
 
   test("codegen 3D tiles") {
-    val highLevel = wrapInLambda(3, i => ***!(floatId) $ i, inputT(3, _))
-    val tiled = one(one(one(body(tileNDList(List(4,8,16)))))).apply(highLevel).get
+    val highLevel = infer(wrapInLambda(3, i => ***!(floatId) $ i, inputT(3, _)))
+    val tiled = infer(one(one(one(body(tileNDList(List(4,8,16)))))).apply(highLevel).get)
 
     println(gen.CProgram(lower(highLevel)))
     println(gen.CProgram(lower(tiled)))
   }
 
   test("codegen two innermost of three loops") {
-    val highLevel = wrapInLambda(3, i => ***!(floatId) $ i, inputT(3, _))
-    val tiled = one(one(one(body(fmap(tileND(2)(tileSize)))))).apply(highLevel).get
+    val highLevel = infer(wrapInLambda(3, i => ***!(floatId) $ i, inputT(3, _)))
+    val tiled = infer(one(one(one(body(fmap(tileND(2)(tileSize)))))).apply(highLevel).get)
 
     println(gen.CProgram(lower(highLevel)))
     println(gen.CProgram(lower(tiled)))
