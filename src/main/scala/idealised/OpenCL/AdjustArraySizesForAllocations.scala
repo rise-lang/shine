@@ -57,6 +57,11 @@ object AdjustArraySizesForAllocations {
         case RecordInfo(_, snd) :: Nil => snd
         case pi => error(s"did not expect $pi")
       }
+      case AsScalar(_, _, _, p) => visitAndGatherInformation(p, parallInfo)
+
+      // TODO: think more thoroughly about split and join
+      case Split(_, _, _, _, p) => visitAndGatherInformation(p, parallInfo)
+      case Join(_, _, _, _, p) => visitAndGatherInformation(p, parallInfo)
 
       case _: Identifier[_] | _: Literal | _: Natural |
            _: VectorFromScalar | _: Cast | _: ForeignFunction |

@@ -391,3 +391,8 @@ sealed case class KernelNoSizes(kernel: Kernel) {
 
   def code: String= kernel.code
 }
+
+object Kernel {
+  implicit def forgetSizes(k: KernelWithSizes): KernelNoSizes =
+    KernelNoSizes(k.kernel)
+}
