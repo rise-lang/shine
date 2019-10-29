@@ -68,7 +68,7 @@ final case class LetNat[T1 <: PhraseType, T2 <: PhraseType](binder:LetNatIdentif
   override val t: T2 = body.t
 }
 
-final case class Pair[T1 <: PhraseType, T2 <: PhraseType](fst: Phrase[T1], snd: Phrase[T2])
+final case class PhrasePair[T1 <: PhraseType, T2 <: PhraseType](fst: Phrase[T1], snd: Phrase[T2])
   extends Phrase[T1 x T2] {
 
   override val t: x[T1, T2] = fst.t x snd.t

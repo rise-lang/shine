@@ -32,7 +32,7 @@ class fft extends test_util.Tests {
     val modPReorder = split(p) |> transpose |> join
     val createY = split(r) |> modPReorder |> transpose
 
-    fun(ArrayType(N, TupleType(float, float)))(x =>
+    fun(ArrayType(N, PairType(float, float)))(x =>
       x |> createY |> map(
         split(LPrevIter) |> transpose
       ) |> map(fun(yChunkRow =>

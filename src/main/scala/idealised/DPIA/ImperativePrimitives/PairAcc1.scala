@@ -9,31 +9,31 @@ import idealised.DPIA._
 
 import scala.xml.Elem
 
-final case class RecordAcc1(dt1: DataType,
-                            dt2: DataType,
-                            record: Phrase[AccType])
+final case class PairAcc1(dt1: DataType,
+                          dt2: DataType,
+                          pair: Phrase[AccType])
   extends AccPrimitive {
 
   override val t: AccType =
     (dt1: DataType) ->: (dt2: DataType) ->:
-      (record :: acc"[$dt1 x $dt2]") ->:
+      (pair :: acc"[$dt1 x $dt2]") ->:
         acc"[$dt1]"
 
   override def eval(s: Store): AccIdentifier = {
-    OperationalSemantics.eval(s, record) match {
-      case r: RecordIdentifier => r.fst
+    OperationalSemantics.eval(s, pair) match {
+      case r: PairIdentifier => r.fst
       case _ => throw new Exception("This should not happen")
     }
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] =
-    RecordAcc1(fun.data(dt1), fun.data(dt2), VisitAndRebuild(record, fun))
+    PairAcc1(fun.data(dt1), fun.data(dt2), VisitAndRebuild(pair, fun))
 
 
   override def xmlPrinter: Elem =
     <recordAcc1 dt1={ToString(dt1)} dt2={ToString(dt2)}>
-      {Phrases.xmlPrinter(record)}
+      {Phrases.xmlPrinter(pair)}
     </recordAcc1>
 
-  override def prettyPrint: String = s"(RecordAcc1 ${PrettyPhrasePrinter(record)})"
+  override def prettyPrint: String = s"(RecordAcc1 ${PrettyPhrasePrinter(pair)})"
 }

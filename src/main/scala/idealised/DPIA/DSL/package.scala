@@ -139,6 +139,6 @@ package object DSL {
   implicit def toLiteralInt(i: Int): Literal = Literal(IntData(i))
   implicit def toLiteralFloat(f: Float): Literal = Literal(FloatData(f))
 
-  implicit def toPair[T1 <: PhraseType, T2 <: PhraseType](pair: (Phrase[T1], Phrase[T2])): Pair[T1, T2] =
-    Phrases.Pair(pair._1, pair._2)
+  implicit def toPair[T1 <: PhraseType, T2 <: PhraseType](pair: (Phrase[T1], Phrase[T2])): PhrasePair[T1, T2] =
+    Phrases.PhrasePair(pair._1, pair._2)
 }

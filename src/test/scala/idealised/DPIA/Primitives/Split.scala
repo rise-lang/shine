@@ -40,12 +40,4 @@ class Split extends test_util.Tests {
 
     "for".r.findAllIn(code).length shouldBe 3
   }
-
-  ignore("Split mapAcc translation could work with functions working on independent elements") {
-    val e = nFun(n => fun(ArrayType(n, float))(xs =>
-      xs |> mapSeq(fun(x => x)) |> split(8) |> map(fun(x => x))
-    ))
-
-    gen.CProgram(e)
-  }
 }

@@ -285,7 +285,7 @@ object DSL {
   }
 
   implicit final class TupleTypeConstructors(private val a: DataType) extends AnyVal {
-    @inline def x(b: DataType): TupleType = TupleType(a, b)
+    @inline def x(b: DataType): PairType = PairType(a, b)
   }
 
   final case class ArrayTypeConstructorHelper(ns: Seq[Nat]) {

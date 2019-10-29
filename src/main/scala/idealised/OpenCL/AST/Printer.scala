@@ -37,18 +37,19 @@ class Printer extends idealised.C.AST.CPrinter {
   override def typeName(t: Type): String = super.typeName(t)
 
   override def toString(e: ArithExpr): String = e match {
-    case of: BuiltInFunctionCall => of.toOCLString
+    case of: BuiltInFunctionCall => of.toString
 
     case _ => super.toString(e)
   }
 
   private def printKernelDecl(k: KernelDecl): Unit = {
+    print("__kernel")
     k.attribute match {
       case Some(RequiredWorkGroupSize(NDRange(x, y, z))) =>
-        println(s"__attribute__ ((reqd_work_group_size($x, $y, $z)))")
+        print(s" __attribute__ ((reqd_work_group_size($x, $y, $z)))")
       case None =>
     }
-    println("__kernel")
+    println("")
     print(s"void ${k.name}(")
     k.params.foreach(p => {
       printDecl(p)

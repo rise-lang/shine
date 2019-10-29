@@ -12,26 +12,19 @@ import idealised.OpenCL._
 final case class ParForWorkGroup(dim: Int)(override val n: Nat,
                                            override val dt: DataType,
                                            override val out: Phrase[AccType],
-                                           override val body: Phrase[ExpType ->: AccType ->: CommType])
-  extends OpenCLParFor(n, dt, out, body) {
+                                           override val body: Phrase[ExpType ->: AccType ->: CommType],
+                                           init: Nat = get_group_id(dim),
+                                           step: Nat = get_num_groups(dim),
+                                           unroll: Boolean = false)
+  extends OpenCLParFor(n, dt, out, body, init, step, unroll) {
 
-  lazy val num_groups: Nat = ?
-//    if (env.globalSize == ? || env.localSize == ?) ?
-//    else env.globalSize /^ env.localSize
-
-  override def makeParFor = ParForWorkGroup(dim)
+  override val makeCLParFor =
+    (n: Nat, dt: DataType, out: Phrase[AccType], body: Phrase[ExpType ->: AccType ->: CommType], init: Nat, step: Nat) =>
+      ParForWorkGroup(dim)(n, dt, out, body, init, step, unroll)
 
   override val parallelismLevel = OpenCL.WorkGroup
 
   override val name: String = freshName("wg_id_")
-
-  override lazy val init: BuiltInFunctionCall = get_group_id(dim)
-
-  override lazy val step: BuiltInFunctionCall = get_num_groups(dim, num_groups_range)
-
-  lazy val num_groups_range: RangeAdd =
-    if (num_groups == ?) ContinuousRange(1, PosInf)
-    else RangeAdd(num_groups, num_groups + 1, 1)
 
   override def synchronize: Stmt = Comment("par for workgroup sync")
 

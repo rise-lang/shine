@@ -79,7 +79,7 @@ object xmlPrinter {
 
       case Natural(n) => <nat>{n}</nat>
 
-      case Pair(fst, snd) =>
+      case PhrasePair(fst, snd) =>
         <pair>
           <fst type={ToString(fst.t)}>{apply(fst)}</fst>
           <snd type={ToString(snd.t)}>{apply(snd)}</snd>

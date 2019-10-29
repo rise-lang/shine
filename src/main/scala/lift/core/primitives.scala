@@ -30,7 +30,7 @@ object primitives {
 
   case object depZip extends Primitive {
     override def t: Type = implN(n => implN2DT(ft1 => implN2DT(ft2 =>
-      DepArrayType(n, ft1) ->: DepArrayType(n, ft2) ->: DepArrayType(n, n2dtFun(i => TupleType(ft1(i), ft2(i))))
+      DepArrayType(n, ft1) ->: DepArrayType(n, ft2) ->: DepArrayType(n, n2dtFun(i => PairType(ft1(i), ft2(i))))
     )))
   }
 
@@ -41,12 +41,12 @@ object primitives {
   }
 
   case object fst extends Primitive {
-    override def t: Type = implDT(s => implDT(t => TupleType(s, t) ->: s))
+    override def t: Type = implDT(s => implDT(t => PairType(s, t) ->: s))
   }
 
   case object mapFst extends Primitive {
     override def t: Type = implDT(s => implDT(t => implDT(s2 =>
-      (s ->: s2) ->: TupleType(s, t) ->: TupleType(s2, t)
+      (s ->: s2) ->: PairType(s, t) ->: PairType(s2, t)
     )))
   }
 
@@ -126,7 +126,7 @@ object primitives {
 
   case object pair extends Primitive {
     override def t: Type = implDT(s => implDT(t =>
-      s ->: t ->: TupleType(s, t)
+      s ->: t ->: PairType(s, t)
     ))
   }
 
@@ -186,12 +186,12 @@ object primitives {
   }
 
   case object snd extends Primitive {
-    override def t: Type = implDT(s => implDT(t => TupleType(s, t) ->: t))
+    override def t: Type = implDT(s => implDT(t => PairType(s, t) ->: t))
   }
 
   case object mapSnd extends Primitive {
     override def t: Type = implDT(s => implDT(t => implDT(t2 =>
-      (t ->: t2) ->: TupleType(s, t) ->: TupleType(s, t2)
+      (t ->: t2) ->: PairType(s, t) ->: PairType(s, t2)
     )))
   }
 
@@ -224,18 +224,18 @@ object primitives {
 
   case object unzip extends Primitive {
     override def t: Type = implN(n => implDT(dt1 => implDT(dt2 =>
-      ArrayType(n, TupleType(dt1, dt2)) ->: TupleType(ArrayType(n, dt1), ArrayType(n, dt2))
+      ArrayType(n, PairType(dt1, dt2)) ->: PairType(ArrayType(n, dt1), ArrayType(n, dt2))
     )))
   }
 
   case object zip extends Primitive {
     override def t: Type = implN(n => implDT(a => implDT(b =>
-      ArrayType(n, a) ->: ArrayType(n, b) ->: ArrayType(n, TupleType(a, b))
+      ArrayType(n, a) ->: ArrayType(n, b) ->: ArrayType(n, PairType(a, b))
     )))
   }
 
   case object add extends Primitive {
-    override def t: Type = implDT(t => t ->: t ->: t)
+    override def t: Type = implBT(t => t ->: t ->: t)
   }
   case object sub extends Primitive {
     override def t: Type = add.t
@@ -251,7 +251,7 @@ object primitives {
   }
 
   case object gt extends Primitive {
-    override def t: Type = implDT(t => t ->: t ->: bool)
+    override def t: Type = implBT(t => t ->: t ->: bool)
   }
   case object lt extends Primitive {
     override def t: Type = gt.t

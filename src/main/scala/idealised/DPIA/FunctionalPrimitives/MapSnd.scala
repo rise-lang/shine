@@ -27,7 +27,7 @@ final case class MapSnd(dt1: DataType,
   override def eval(s: Store): Data = {
     val fE = OperationalSemantics.eval(s, f)
     OperationalSemantics.eval(s, record) match {
-      case r: RecordData => RecordData(r.fst, OperationalSemantics.eval(s, fE(Literal(r.snd))))
+      case r: PairData => PairData(r.fst, OperationalSemantics.eval(s, fE(Literal(r.snd))))
       case _ => throw new Exception("This should not happen")
     }
   }

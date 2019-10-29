@@ -276,8 +276,8 @@ object infer {
         Some(solve(Seq(NatConstraint(sa, sb), TypeConstraint(ea, eb))))
       case (DepArrayType(sa, ea), DepArrayType(sb, eb)) =>
         Some(solve(Seq(NatConstraint(sa, sb), NatToDataConstraint(ea, eb))))
-      case (TupleType(ea@_*), TupleType(eb@_*)) =>
-        Some(solve((ea zip eb).map{ case (aa, bb) => TypeConstraint(aa, bb) }))
+      case (PairType(pa1, pa2), PairType(pb1, pb2)) =>
+        Some(solve(Seq(TypeConstraint(pa1, pb1), TypeConstraint(pa2, pb2))))
       case (FunType(ina, outa), FunType(inb, outb)) =>
         Some(solve(Seq(TypeConstraint(ina, inb), TypeConstraint(outa, outb))))
       case (DepFunType(na: NatIdentifier, ta), DepFunType(nb: NatIdentifier, tb)) =>

@@ -10,11 +10,11 @@ import idealised.DPIA._
 
 import scala.xml.Elem
 
-abstract class AbstractMap(n: Nat,
-                           dt1: DataType,
-                           dt2: DataType,
-                           f: Phrase[ExpType ->: ExpType],
-                           array: Phrase[ExpType])
+abstract class AbstractMap(val n: Nat,
+                           val dt1: DataType,
+                           val dt2: DataType,
+                           val f: Phrase[ExpType ->: ExpType],
+                           val array: Phrase[ExpType])
   extends ExpPrimitive {
 
   def makeMap: (Nat, DataType, DataType, Phrase[ExpType ->: ExpType], Phrase[ExpType]) => AbstractMap

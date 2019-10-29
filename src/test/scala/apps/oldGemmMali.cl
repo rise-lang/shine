@@ -34,11 +34,6 @@ float mult(float l, float r){
     }
 }
 kernel void KERNEL(const global float* restrict v__31, const global float* restrict v__32, const global float* restrict v__33, float v__34, float v__35, global float* v__57, global float* v__53, global float* v__55, int v_K_2, int v_M_1, int v_N_0){
-    #ifndef WORKGROUP_GUARD
-    #define WORKGROUP_GUARD
-    #endif
-    WORKGROUP_GUARD
-    {
         // Static local memory
         // Typed Value memory
         float v__38; 
@@ -173,5 +168,4 @@ kernel void KERNEL(const global float* restrict v__31, const global float* restr
                 // end map_seq
             }
         }
-    }
 }

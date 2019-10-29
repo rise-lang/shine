@@ -70,7 +70,7 @@ object VisitAndRebuild {
 
           case LetNat(binder, defn, body) => LetNat(binder, apply(defn, v), apply(body, v))
 
-          case Pair(p, q) => Pair(apply(p, v), apply(q, v))
+          case PhrasePair(p, q) => PhrasePair(apply(p, v), apply(q, v))
 
           case Proj1(p) => Proj1(apply(p, v))
 
@@ -96,7 +96,7 @@ object VisitAndRebuild {
     case ExpType(dt, w)                 => ExpType(v.data(dt), v.access(w))
     case AccType(dt)                => AccType(v.data(dt))
     case CommType()                 => CommType()
-    case PairType(t1, t2)           => PairType(visitPhraseTypeAndRebuild(t1, v), visitPhraseTypeAndRebuild(t2, v))
+    case PhrasePairType(t1, t2)           => PhrasePairType(visitPhraseTypeAndRebuild(t1, v), visitPhraseTypeAndRebuild(t2, v))
     case FunType(inT, outT)         => FunType(visitPhraseTypeAndRebuild(inT, v), visitPhraseTypeAndRebuild(outT, v))
     case PassiveFunType(inT, outT)  => PassiveFunType(visitPhraseTypeAndRebuild(inT, v), visitPhraseTypeAndRebuild(outT, v))
     case df @ DepFunType(x, t)           => DepFunType(x, visitPhraseTypeAndRebuild(t, v))(df.kn)
