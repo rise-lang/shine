@@ -35,7 +35,7 @@ object HighLevelConstructs {
 
   val padCst2D: Expr = {
     nFun(n =>
-      nFun(b => fun(x => padCst(b)(b)(generate(fun(IndexType(n))(_ => x))) >> map(padCst(b)(b)(x))))
+      nFun(b => fun(x => padCst(n)(b)(generate(fun(_ => x))) >> map(padCst(n)(b)(x))))
     )
   }
 

@@ -56,10 +56,10 @@ class algorithmic extends test_util.Tests {
 
     val addTuple = fun(x => fst(x) + snd(x))
 
-    val mapReduce = LCNF(
+    val mapReduce = LCNF(infer(
       depLambda[NatKind](M, depLambda[NatKind](N,
       fun(ArrayType(M, ArrayType(N, float)))(i =>
-        map(reduce(fun(x => fun(a => x + a)))(l(0.0f) :: float)) $ i)))).get
+        map(reduce(fun(x => fun(a => x + a)))(l(0.0f) :: float)) $ i))))).get
 
     val reduceMap =
       depLambda[NatKind](M, depLambda[NatKind](N,
