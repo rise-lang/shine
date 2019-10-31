@@ -96,9 +96,10 @@ object traversal {
       visit.visitExpr(expr) match {
         case Stop(r) => Stop(r)
         case Continue(c, v) => c match {
-          case i: Identifier => Continue(i, v)
+          case i: Identifier => v.visitType(i.t).map(t => i.setType(t))
           case Lambda(x, e) =>
-            chainT(apply(e, v), expr.t).map(r => Lambda(x, r._1)(r._2))
+            chainT(chainE(apply(x, v), e), expr.t)
+              .map{case ((x, e), t) => Lambda(x.asInstanceOf[Identifier], e)(t)}
           case Apply(f, e) =>
             //chainT(chain(apply(f, v), e, apply(e, _)), expr.t)
             //chain(apply(f, v), (e, expr.t), v => chainT(apply(e, v), expr.t))
@@ -132,7 +133,7 @@ object traversal {
           // could be avoided if foreign fun could be parametric
           case ForeignFunction(decl, t) =>
             v.visitType(t).map(ForeignFunction(decl, _))
-          case p: Primitive => Continue(p, v)
+          case p: Primitive => v.visitType(p.t).map(t => p.setType(t))
         }
       }
     }

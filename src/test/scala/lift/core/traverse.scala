@@ -41,15 +41,29 @@ class traverse extends test_util.Tests {
         { case _: DepLambda[NatKind]@unchecked => () },
         { case _: NatIdentifier => () },
         { case _: Lambda => () },
+        { case _: Identifier => ()},
+        { case ArrayType(_, ArrayType(_, _: ScalarType)) => ()},
         { case _: Apply => () },
         { case _: Apply => () },
         { case _: Map => () },
+        { case _: TypeIdentifier => () },
         { case _: Apply => () },
         { case _: Map => () },
+        { case _: TypeIdentifier => () },
         { case _: Lambda => () },
         { case _: Identifier => () },
+        { case _: TypeIdentifier => () },
         { case _: Identifier => () },
-        { case ArrayType(_, ArrayType(_, _: ScalarType)) => () }
+        { case _: TypeIdentifier => () },
+        { case _: TypeIdentifier => () },
+        { case _: TypeIdentifier => () },
+        { case _: TypeIdentifier => () },
+        { case _: Identifier => () },
+        { case ArrayType(_, ArrayType(_, _: ScalarType)) => () },
+        { case _: TypeIdentifier => () },
+        { case _: TypeIdentifier => () },
+        { case _: TypeIdentifier => () },
+        { case _: TypeIdentifier => () }
       ) : Seq[Any => Unit]
     }
 
@@ -75,7 +89,9 @@ class traverse extends test_util.Tests {
         { case _: NatIdentifier => () },
         { case _: DepLambda[NatKind]@unchecked => () },
         { case _: NatIdentifier => () },
-        { case _: Lambda => () }
+        { case _: Lambda => () },
+        { case _: Identifier => () },
+        { case ArrayType(_, ArrayType(_, _: ScalarType)) => () }
       ) : Seq[Any => Unit]
     }
 

@@ -66,7 +66,7 @@ object infer {
         val ft = FunType(xt, te.t)
         val constraint = TypeConstraint(expr.t, ft)
         constraints += constraint
-        Lambda(x, te)(expr.t)
+        Lambda(x, te)(ft)
 
       case Apply(f, e) =>
         val tf = typed(f)
@@ -107,7 +107,6 @@ object infer {
 
       case p: Primitive =>
         val ts = p.typeScheme
-        // constraints += TypeConstraint(p.t, ts)
         p.setType(ts)
     }
   }
@@ -127,11 +126,16 @@ object infer {
       }
 
       override def visitType[T <: Type](t: T): Result[T] = {
-        t match {
-          case DepFunType(x, _) => bound += x
-          case _ =>
-        }
-        Continue(t, this)
+        val r = traversal.types.DepthFirstLocalResult(t, new traversal.Visitor() {
+          override def visitType[U <: Type](u: U): Result[U] = {
+            u match {
+              case DepFunType(x, _) => bound += x
+              case _ =>
+            }
+            Continue(u, this)
+          }
+        })
+        Continue(r, this)
       }
     }
 
@@ -300,6 +304,7 @@ object infer {
             substitute.typeInType(dt, `for`=dtb, in=tb)),
           TypeConstraint(dt, dta), TypeConstraint(dt, dtb)
         )))
+      case (DepFunType(asa: AddressSpaceIdentifier, ta), DepFunType(asb: AddressSpaceIdentifier, tb)) => ???
       case (_: NatToDataApply, dt: DataType) => Some(Solution.subs(a, dt)) // substitute apply by data type
       case (dt: DataType, _: NatToDataApply) => Some(Solution.subs(b, dt)) // substitute apply by data type
       case _ => error(s"cannot unify $a and $b")

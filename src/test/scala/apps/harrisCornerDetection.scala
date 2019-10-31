@@ -30,7 +30,7 @@ object harrisCornerDetection {
   def stencil3x3(weights: Expr): Expr =
     slide3x3 >> mapSeq(mapSeq(fun(nbh => dotSeq(weights)(join(nbh)))))
 
-  val zip2D = zipND(2)
+  def zip2D = zipND(2)
 
   val gaussian: Expr = binomialFilter.regRotSeq
 

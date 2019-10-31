@@ -38,6 +38,8 @@ object Primitive {
               ..$body
             }
          """.asInstanceOf[ClassDef]
+        // the Scala macro bug: https://github.com/scala/bug/issues/10589
+        // the workaround: https://stackoverflow.com/questions/52222122/workaround-for-scala-macro-annotation-bug
         val noCaseAccessorForType = r match {
           case ClassDef(mods, name, tparams, impl @ Template(parents, self, body)) =>
             val newBody = body.map {

@@ -30,8 +30,8 @@ object acoustic3D {
     "{ if (neigh < 6) { return cfB; } else { return cfI; } }",
     int ->: float ->: float ->: float)
 
-  private val id = fun(x => x)
-  private val zip3D: Expr = zipND(3)
+  private def id = fun(x => x)
+  private def zip3D: Expr = zipND(3)
 
   private val SR = 441.0f
   private val alpha = 0.005f
