@@ -983,9 +983,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       *
       *
       * @param nats The series of nats from which the expression is generated
-      * @param behavior For each input nat, this function returns both the actual nat we wish to generate
-      *                 (It's not always the input nat, as in the case of Pow-in-Prod) and the binary operator
-      *                 used
+      * @param op The binary operator used
       * @param default In case the nat list is empty, we shall return this value
       * @param cont The cont of the generation
       * @param accum Internal accumulator used across iterations
