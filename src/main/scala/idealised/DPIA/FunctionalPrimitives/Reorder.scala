@@ -37,7 +37,7 @@ final case class Reorder(n: Nat,
     val idxFE = OperationalSemantics.eval(s, idxF)
     OperationalSemantics.eval(s, input) match {
       case ArrayData(a) =>
-        val res = new Array[Data](a.length)
+        val res = new scala.Array[Data](a.length)
         for (i <- a.indices) {
           res(i) = a(OperationalSemantics.evalIndexExp(s, idxFE(i)).eval)
         }

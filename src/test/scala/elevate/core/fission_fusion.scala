@@ -22,8 +22,10 @@ class fission_fusion extends test_util.Tests {
   }
 
   def check(a: Expr, fis: Strategy[Lift], b: Expr, fus: Strategy[Lift]): Unit = {
-    eq(fis(a).get, b)
-    eq(fus(b).get, a)
+    val na = norm(a).get
+    val nb = norm(b).get
+    eq(fis(na).get, nb)
+    eq(fus(nb).get, na)
   }
 
   test("last fission, chain of 2") {

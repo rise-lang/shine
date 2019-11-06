@@ -29,25 +29,15 @@ object Kind {
   implicit object AccessTypeIdentifierMaker extends IdentifierMaker[AccessKind] {
     override def makeIdentifier(): AccessTypeIdentifier = AccessTypeIdentifier(DPIA.freshName("access"))
   }
+}
 
-  def formatKindName(s: String): String =
-    s.dropWhile(_!='$').drop(1).takeWhile(_!='$') match {
-      case "NatIdentifier" => "nat"
-      case "DataTypeIdentifier" => "data"
-      case "AddressSpaceIdentifier" => "addressSpace"
-      case "AccessTypeIdentifier" => "access"
-      case "NatToNatIdentifier" => "nat->nat"
-      case "NatToDataIdentifier" => "nat->data"
-    }
+sealed trait PhraseKind extends Kind {
+  override type T = PhraseType
 }
 
 sealed trait DataKind extends Kind {
   override type T = DataType
   override type I = DataTypeIdentifier
-}
-
-sealed trait PhraseKind extends Kind {
-  override type T = PhraseType
 }
 
 sealed trait NatKind extends Kind {
@@ -73,4 +63,32 @@ sealed trait NatToNatKind extends Kind {
 sealed trait NatToDataKind extends Kind {
   override type T = NatToData
   override type I = NatToDataIdentifier
+}
+
+trait KindName[K <: Kind] {
+  def get: String
+}
+
+object KindName {
+  implicit val typeKN: KindName[PhraseKind] = new KindName[PhraseKind] {
+    def get = "phrase"
+  }
+  implicit val dataKN: KindName[DataKind] = new KindName[DataKind] {
+    def get = "data"
+  }
+  implicit val natKN: KindName[NatKind] = new KindName[NatKind] {
+    def get = "nat"
+  }
+  implicit val addressSpaceKN: KindName[AddressSpaceKind] = new KindName[AddressSpaceKind] {
+    def get = "addressSpace"
+  }
+  implicit val accessKN: KindName[AccessKind] = new KindName[AccessKind] {
+    def get = "access"
+  }
+  implicit val n2nKN: KindName[NatToNatKind] = new KindName[NatToNatKind] {
+    def get = "nat->nat"
+  }
+  implicit val n2dtKN: KindName[NatToDataKind] = new KindName[NatToDataKind] {
+    def get = "nat->data"
+  }
 }

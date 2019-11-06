@@ -7,6 +7,7 @@ import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics.{IndexData, NatData}
 import idealised.DPIA.Types._
 import idealised.DPIA._
+import lift.arithmetic.BoolExpr.ArithPredicate
 import lift.arithmetic.{NamedVar, RangeAdd}
 
 import scala.language.{postfixOps, reflectiveCalls}
@@ -38,16 +39,19 @@ final case class Apply[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 ->: T2
 }
 
 final case class DepLambda[K <: Kind, T <: PhraseType](x: K#I, body: Phrase[T])
+                                                      (implicit val kn: KindName[K])
   extends Phrase[K `()->:` T] {
   override val t: DepFunType[K, T] = DepFunType[K, T](x, body.t)
-  override def toString: String = s"Λ(${x.name} : ${x.getClass.getName.dropWhile(_!='$').drop(1).takeWhile(_!='$')}). $body"
+  override def toString: String = s"Λ(${x.name} : ${kn.get}). $body"
 }
 
 object DepLambda {
   def apply[K <: Kind](x: K#I): Object {
-    def apply[T <: PhraseType](body: Phrase[T]): DepLambda[K, T]
+    def apply[T <: PhraseType](body: Phrase[T])
+                              (implicit kn: KindName[K]): DepLambda[K, T]
   } = new {
-    def apply[T <: PhraseType](body: Phrase[T]) = DepLambda(x, body)
+    def apply[T <: PhraseType](body: Phrase[T])
+                              (implicit kn: KindName[K]): DepLambda[K, T] = DepLambda(x, body)
   }
 }
 
@@ -284,6 +288,11 @@ object Phrase {
           Left(Pow(reconstruct(b).left.get, reconstruct(e).left.get))
         case Log(b, x) =>
           Left(Log(reconstruct(b).left.get, reconstruct(x).left.get))
+        case lift.arithmetic.IfThenElse(test, t, e) =>
+          Left(lift.arithmetic.IfThenElse(test.visitAndRebuild(x => reconstruct(x).left.get),
+            reconstruct(t).left.get,
+            reconstruct(e).left.get))
+        case PosInf => Left(PosInf)
         case f: ArithExprFunctionCall => Left(f)
         case _ => throw new Exception(s"did not expect ${tn.n}")
       }

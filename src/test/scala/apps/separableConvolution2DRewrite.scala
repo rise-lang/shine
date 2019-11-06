@@ -1,8 +1,9 @@
 package apps
 
-import binomialFilter._
+import separableConvolution2D._
 
 import lift.core._
+import lift.core.types._
 import lift.core.primitives._
 import lift.core.DSL._
 import lift.core.HighLevelConstructs._
@@ -17,34 +18,38 @@ import elevate.lift.strategies.normalForm._
 import elevate.lift.strategies.algorithmic._
 import elevate.lift.strategies.traversal._
 
-class binomialFilterRewrite extends test_util.Tests {
+class separableConvolution2DRewrite extends test_util.Tests {
   private val idE: Expr = fun(x => x)
   private val idS: Strategy[Lift] = strategies.basic.id()
+
+  private val weights2d = binomialWeights2d
+  private val weightsV = binomialWeightsV
+  private val weightsH = binomialWeightsH
 
   private val * = map
   private val T = transpose
   private val P = padClamp2D(1)
   private val Sh = slide(3)(1)
   private val Sv = slide(3)(1)
-  private val Dh = dot(weights1d)
-  private val Dv = dot(weights1d)
+  private val Dh = dot(weightsH :: (3`.`float))
+  private val Dv = dot(weightsV :: (3`.`float))
 
   private def ben_eq(a: Expr, b: Expr): Boolean =
     betaEtaNormalForm(a).get == betaEtaNormalForm(b).get
 
   private val separateDot: Strategy[Lift] = {
-    case Apply(Apply(Apply(`reduce`, rf), init), Apply(Apply(`map`, mf), Apply(Apply(`zip`, w), Apply(`join`, nbh))))
-      if ben_eq(rf, add) && init == l(0.0f) && ben_eq(mf, mulT) && w == weights2d
+    case Apply(Apply(Apply(`reduce`, rf), init), Apply(Apply(`map`, mf), Apply(Apply(`zip`, Apply(`join`, w)), Apply(`join`, nbh))))
+      if ben_eq(rf, add) && init == l(0.0f) && ben_eq(mf, mulT) && w == weights2d :: (3`.`3`.`float)
     =>
-      Success(nbh |> map(dot(weights1d)) |> dot(weights1d))
+      Success(nbh |> map(dot(weightsH :: (3`.`float))) |> dot(weightsV :: (3`.`float)))
     case _ => Failure(separateDot)
   }
 
   private val separateDotT: Strategy[Lift] = {
-    case Apply(Apply(Apply(`reduce`, rf), init), Apply(Apply(`map`, mf), Apply(Apply(`zip`, w), Apply(`join`, nbh))))
-      if ben_eq(rf, add) && init == l(0.0f) && ben_eq(mf, mulT) && w == weights2d
+    case Apply(Apply(Apply(`reduce`, rf), init), Apply(Apply(`map`, mf), Apply(Apply(`zip`, Apply(`join`, w)), Apply(`join`, nbh))))
+      if ben_eq(rf, add) && init == l(0.0f) && ben_eq(mf, mulT) && w == weights2d :: (3`.`3`.`float)
     =>
-      Success(nbh |> transpose |> map(dot(weights1d)) |> dot(weights1d))
+      Success(nbh |> transpose |> map(dot(weightsV :: (3`.`float))) |> dot(weightsH :: (3`.`float)))
     case _ => Failure(separateDotT)
   }
 
@@ -64,15 +69,15 @@ class binomialFilterRewrite extends test_util.Tests {
   //// algorithmic
 
   test("base to factorise") {
-    rewrite_steps(base, Seq(
-      oncetd(separateDot) -> factorised
+    rewrite_steps(base(weights2d), Seq(
+      oncetd(separateDot) -> factorised(weightsV)(weightsH)
     ))
   }
 
   test("base to scanline") {
-    rewrite_steps(base, Seq(
+    rewrite_steps(base(weights2d), Seq(
       idS
-        -> (P >> *(Sh) >> Sv >> *(T) >> *(*(fun(nbh => dot(weights2d)(join(nbh)))))),
+        -> (P >> *(Sh) >> Sv >> *(T) >> *(*(fun(nbh => dot(join(weights2d :: (3`.`3`.`float)))(join(nbh)))))),
       oncetd(separateDotT)
         -> (P >> *(Sh) >> Sv >> *(T) >> *(*(T >> *(Dv) >> Dh))),
       oncetd(`*f >> S -> S >> **f`)
@@ -92,12 +97,12 @@ class binomialFilterRewrite extends test_util.Tests {
       oncetd(`S >> **f -> *f >> S`)
         -> (P >> Sv >> *(T >> *(Dv) >> Sh >> *(Dh))),
       idS
-        -> scanline
+        -> scanline(weightsV)(weightsH)
     ))
   }
 
   test("scanline to separated") {
-    rewrite_steps(scanline, Seq(
+    rewrite_steps(scanline(weightsV)(weightsH), Seq(
       idS
         -> (P >> Sv >> *(T >> *(Dv) >> Sh >> *(Dh))),
       repeatNTimes(2, oncetd(mapFirstFission))
@@ -105,54 +110,54 @@ class binomialFilterRewrite extends test_util.Tests {
       skip(1)(mapFusion)
         -> (P >> Sv >> *(T >> *(Dv)) >> *(Sh >> *(Dh))),
       idS
-        -> separated
+        -> separated(weightsV)(weightsH)
     ))
   }
 
   //// lowering
 
   test("base to baseSeq") {
-    rewrite_steps(base, Seq(
-      (oncetd(specialize.reduceSeq) `;`
+    rewrite_steps(base(weights2d), Seq(
+      (oncetd(specialize.reduceSeqUnroll) `;`
         repeatNTimes(2, oncetd(specialize.mapSeq)))
-        -> baseSeq
+        -> baseSeq(weights2d)
     ))
   }
 
   test("factorised to factorisedSeq") {
-    rewrite_steps(factorised, Seq(
-      (repeatNTimes(2, oncetd(specialize.reduceSeq)) `;`
+    rewrite_steps(factorised(weightsV)(weightsH), Seq(
+      (repeatNTimes(2, oncetd(specialize.reduceSeqUnroll)) `;`
         repeatNTimes(2, oncetd(specialize.mapSeq)))
-        -> factorisedSeq
+        -> factorisedSeq(weightsV)(weightsH)
     ))
   }
 
   test("separated to separatedSeq") {
-    rewrite_steps(separated, Seq(
-      (repeatNTimes(2, oncetd(specialize.reduceSeq)) `;`
+    rewrite_steps(separated(weightsV)(weightsH), Seq(
+      (repeatNTimes(2, oncetd(specialize.reduceSeqUnroll)) `;`
         repeatNTimes(2, oncetd(specialize.mapSeq)) `;`
         repeatNTimes(2, skip(1)(specialize.mapSeq)))
-        -> separatedSeq
+        -> separatedSeq(weightsV)(weightsH)
     ))
   }
 
   test("scanline to scanlineSeq") {
-    rewrite_steps(scanline, Seq(
-      (repeatNTimes(2, oncetd(specialize.reduceSeq)) `;`
+    rewrite_steps(scanline(weightsV)(weightsH), Seq(
+      (repeatNTimes(2, oncetd(specialize.reduceSeqUnroll)) `;`
         repeatNTimes(2, oncetd(specialize.mapSeq)) `;`
         skip(1)(specialize.mapSeq))
-        -> scanlineSeq
+        -> scanlineSeq(weightsV)(weightsH)
     ))
   }
 
   test("scanline to regRotSeq") {
-    rewrite_steps(scanline, Seq(
-      (repeatNTimes(2, oncetd(specialize.reduceSeq)) `;`
+    rewrite_steps(scanline(weightsV)(weightsH), Seq(
+      (repeatNTimes(2, oncetd(specialize.reduceSeqUnroll)) `;`
         oncetd(specialize.slideSeq(slideSeq.Values, idE)) `;`
         betaEtaNormalForm `;`
         oncetd(algorithmic.slideSeqFusion) `;`
         oncetd(specialize.mapSeq))
-        -> regRotSeq
+        -> regRotSeq(weightsV)(weightsH)
     ))
   }
 

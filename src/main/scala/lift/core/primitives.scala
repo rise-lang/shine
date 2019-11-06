@@ -44,10 +44,23 @@ object primitives {
     override def t: Type = implDT(s => implDT(t => PairType(s, t) ->: s))
   }
 
+  case object mapFst extends Primitive {
+    override def t: Type = implDT(s => implDT(t => implDT(s2 =>
+      (s ->: s2) ->: PairType(s, t) ->: PairType(s2, t)
+    )))
+  }
+
   case object generate extends Primitive {
     override def t: Type = implN(n => implDT(t =>
       (IndexType(n) ->: t) ->: ArrayType(n, t)
     ))
+  }
+
+  case class array(n: Int) extends Primitive {
+    private def tRec(m: Int, dt: DataType): Type =
+      if (m <= 0) { ArrayType(n, dt) }
+      else { dt ->: tRec(m - 1, dt) }
+    override def t: Type = implDT(t => tRec(n, t))
   }
 
   case object idx extends Primitive {
@@ -181,6 +194,12 @@ object primitives {
 
   case object snd extends Primitive {
     override def t: Type = implDT(s => implDT(t => PairType(s, t) ->: t))
+  }
+
+  case object mapSnd extends Primitive {
+    override def t: Type = implDT(s => implDT(t => implDT(t2 =>
+      (t ->: t2) ->: PairType(s, t) ->: PairType(s, t2)
+    )))
   }
 
   case object split extends Primitive {

@@ -2,6 +2,10 @@ package util
 
 case class TimeSpan[U <: Time.Unit](value: Double, unit: Time.Unit) {
   override def toString: String = value.toString + " " + unit.toString
+
+  def +(other: TimeSpan[U]): TimeSpan[U] = {
+    TimeSpan(value + other.value, unit)
+  }
 }
 
 object TimeSpan {

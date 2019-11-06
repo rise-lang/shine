@@ -43,6 +43,15 @@ object specialize {
     override def toString = "reduceSeq"
   }
 
+  case object reduceSeqUnroll extends Strategy[Lift] {
+    def apply(e: Lift): RewriteResult[Lift] = e match {
+      case primitives.reduce => Success(primitives.reduceSeqUnroll)
+      case primitives.reduceSeq => Success(primitives.reduceSeqUnroll)
+      case _ => Failure(reduceSeqUnroll)
+    }
+    override def toString = "reduceSeqUnroll"
+  }
+
   case class slideSeq(rot: primitives.slideSeq.Rotate, write_dt1: Expr) extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
       case primitives.slide => Success(nFun(sz => nFun(sp =>

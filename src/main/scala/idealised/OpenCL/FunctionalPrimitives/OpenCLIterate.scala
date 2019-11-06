@@ -56,7 +56,7 @@ final case class OpenCLIterate(a: AddressSpace,
 
     con(array)(λ(exp"[${m * n.pow(k)}.$dt, $read]")(x =>
       OpenCLIterateIAcc(a, n, m, k, dt, A,
-        _Λ_[NatKind](l => λ(acc"[$l.$dt]")(o => λ(exp"[${l * n}.$dt, $read]")(x => acc(f(l)(x))(o)))),
+        _Λ_[NatKind]()(l => λ(acc"[$l.$dt]")(o => λ(exp"[${l * n}.$dt, $read]")(x => acc(f(l)(x))(o)))),
         x) ))
   }
 
