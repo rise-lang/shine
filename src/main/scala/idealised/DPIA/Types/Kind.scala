@@ -74,3 +74,31 @@ sealed trait NatToDataKind extends Kind {
   override type T = NatToData
   override type I = NatToDataIdentifier
 }
+
+trait KindName[K <: Kind] {
+  def get: String
+}
+
+object KindName {
+  implicit val phraseKN: KindName[PhraseKind] = new KindName[PhraseKind] {
+    def get = "phrase"
+  }
+  implicit val natKN: KindName[NatKind] = new KindName[NatKind] {
+    def get = "nat"
+  }
+  implicit val dataKN: KindName[DataKind] = new KindName[DataKind] {
+    def get = "data"
+  }
+  implicit val addressSpaceKN: KindName[AddressSpaceKind] = new KindName[AddressSpaceKind] {
+    def get = "addressSpace"
+  }
+  implicit val accessKN: KindName[AccessKind] = new KindName[AccessKind] {
+    def get = "access"
+  }
+  implicit val n2nKN: KindName[NatToNatKind] = new KindName[NatToNatKind] {
+    def get = "nat->nat"
+  }
+  implicit val n2dtKN: KindName[NatToDataKind] = new KindName[NatToDataKind] {
+    def get = "nat->data"
+  }
+}

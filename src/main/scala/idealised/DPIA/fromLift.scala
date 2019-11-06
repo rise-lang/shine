@@ -25,11 +25,11 @@ object fromLift {
       case _ => ???
     }
 
-    case l.Apply(f, e) =>
-      Lifting.liftFunction( // TODO: should we try to reduce by lifting here?
-        expression(f).asInstanceOf[Phrase[FunType[PhraseType, PhraseType]]])
-        .value(expression(e).asInstanceOf[Phrase[PhraseType]])
-
+    case l.App(f, e) => {
+      val ef = expression(f).asInstanceOf[Phrase[FunType[PhraseType, PhraseType]]]
+      val ee = expression(e).asInstanceOf[Phrase[PhraseType]]
+      Apply(ef, ee)
+    }
     case l.DepLambda(x, e) => x match {
       case n: l.NatIdentifier =>
         DepLambda[NatKind](natIdentifier(n))(expression(e))
@@ -39,7 +39,7 @@ object fromLift {
         DepLambda[AddressSpaceKind](addressSpaceIdentifier(a))(expression(e))
     }
 
-    case l.DepApply(f, x) => x match {
+    case l.DepApp(f, x) => x match {
       case n: Nat =>
         DepApply[NatKind, PhraseType]( // TODO: should we try to reduce by lifting here?
           expression(f).asInstanceOf[Phrase[DepFunType[NatKind, PhraseType]]],
@@ -126,6 +126,7 @@ object fromLift {
         case n2d: lt.NatToDataIdentifier  => natToDataIdentifier(n2d) `()->:` `type`(t)
       }
     case _: lt.TypeIdentifier => throw new Exception("This should not happen")
+    case lt.TypePlaceholder => throw new Exception("This should not happen")
   }
 
   def data(d: ls.Data): OpSem.Data = d match {
@@ -573,9 +574,9 @@ object fromLift {
           fun[ExpType](ExpType(a, read), x =>
             Let(a, b, x, f)))
 
-      case (l.ForeignFunction(decl, la), _)
+      case (f @ l.ForeignFunction(decl), _)
       =>
-        val (inTs, outT) = foreignFunIO(la)
+        val (inTs, outT) = foreignFunIO(f.t)
         wrapForeignFun(decl, inTs, outT, Vector())
 
       case (core.Generate(), lt.FunType(_, lt.ArrayType(n, la)))
@@ -692,6 +693,7 @@ object fromLift {
       }
       case lt.DepFunType(_, _) => throw new Exception("This should not be possible")
       case lt.TypeIdentifier(_) => throw new Exception("This should not happen")
+      case lt.TypePlaceholder => throw new Exception("This should not happen")
     }
   }
 

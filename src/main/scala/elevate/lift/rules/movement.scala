@@ -23,15 +23,15 @@ object movement {
   def mapMapFBeforeTranspose: Strategy[Lift] = `**f >> T -> T >> **f`
   case object `**f >> T -> T >> **f` extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case Apply(
+      case App(
       Transpose(),
-      Apply(Apply(Map(), Apply(Map(), f)), y)) =>
+      App(App(Map(), App(Map(), f)), y)) =>
         Success(y |> transpose |> map(map(f)))
       // LCNF
-      case Apply(Transpose(),
-      Apply(
-      mapMapF @ Apply(Map(), Lambda(n7, Apply(
-                Apply(Map(), Lambda(n6, Apply(
+      case App(Transpose(),
+      App(
+      mapMapF @ App(Map(), Lambda(n7, App(
+                App(Map(), Lambda(n6, App(
       f, n61))), n71))),
       arg
       )
@@ -45,9 +45,9 @@ object movement {
   def transposeBeforeMapMapF: Strategy[Lift] = `T >> **f -> **f >> T`
   case object `T >> **f -> **f >> T` extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case Apply(
-      Apply(Map() , Apply(Map(), f)),
-      Apply(Transpose() , y)) =>
+      case App(
+      App(Map() , App(Map(), f)),
+      App(Transpose() , y)) =>
         Success(y |> map(map(f)) |> transpose)
       case _ => Failure(transposeBeforeMapMapF)
     }
@@ -57,17 +57,17 @@ object movement {
   // split/slide
 
   private def isSplitOrSlide(s: Expr): Boolean = s match {
-    case DepApply(DepApply(Slide(), _: Nat), _: Nat) => true
-    case DepApply(Split(), _: Nat) => true
+    case DepApp(DepApp(Slide(), _: Nat), _: Nat) => true
+    case DepApp(Split(), _: Nat) => true
     case _ => false
   }
 
   def slideBeforeMapMapF: Strategy[Lift] = `S >> **f -> *f >> S`
   case object `S >> **f -> *f >> S` extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case Apply(
-      Apply(Map(), Apply(Map(), f)),
-      Apply(s, y)) if isSplitOrSlide(s) =>
+      case App(
+      App(Map(), App(Map(), f)),
+      App(s, y)) if isSplitOrSlide(s) =>
         Success(y |> map(f) |> s)
       case _ => Failure(slideBeforeMapMapF)
     }
@@ -77,9 +77,9 @@ object movement {
   def mapFBeforeSlide: Strategy[Lift] = `*f >> S -> S >> **f`
   case object `*f >> S -> S >> **f` extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case Apply(
+      case App(
       s,
-      Apply(Apply(Map(), f), y)) if isSplitOrSlide(s) =>
+      App(App(Map(), f), y)) if isSplitOrSlide(s) =>
         Success(y |> s |> map(map(f)))
       case _ => Failure(mapFBeforeSlide)
     }
@@ -91,9 +91,9 @@ object movement {
   def joinBeforeMapF: Strategy[Lift] = `J >> *f -> **f >> J`
   case object `J >> *f -> **f >> J` extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case Apply(
-      Apply(Map(), f),
-      Apply(Join(), y)
+      case App(
+      App(Map(), f),
+      App(Join(), y)
       ) =>
         Success(y |> map(map(f)) >> join)
       case _ => Failure(joinBeforeMapF)
@@ -104,9 +104,9 @@ object movement {
   def mapMapFBeforeJoin: Strategy[Lift] = `**f >> J -> J >> *f`
   case object `**f >> J -> J >> *f` extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case Apply(
+      case App(
       Join(),
-      Apply(Apply(map, Apply(Map(), f)), y)
+      App(App(map, App(Map(), f)), y)
       ) =>
         Success(y |> join |> map(f))
       case _ => Failure(mapMapFBeforeJoin)
@@ -120,9 +120,9 @@ object movement {
   def transposeBeforeSlide: Strategy[Lift] = `T >> S -> *S >> T >> *T`
   case object `T >> S -> *S >> T >> *T` extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case Apply(
+      case App(
       s,
-      Apply(Transpose(), y)
+      App(Transpose(), y)
       ) if isSplitOrSlide(s) =>
         Success(y |> map(s) |> transpose >> map(transpose))
       case _ => Failure(transposeBeforeSlide)
@@ -133,9 +133,9 @@ object movement {
   def transposeBeforeMapSlide: Strategy[Lift] = `T >> *S -> S >> *T >> T`
   case object `T >> *S -> S >> *T >> T` extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case Apply(
-      Apply(Map(), s),
-      Apply(Transpose(), y)
+      case App(
+      App(Map(), s),
+      App(Transpose(), y)
       ) if isSplitOrSlide(s) =>
         Success(y |> s |> map(transpose) |> transpose)
       case _ => Failure(transposeBeforeMapSlide)
@@ -146,9 +146,9 @@ object movement {
   def mapSlideBeforeTranspose: Strategy[Lift] = `*S >> T -> T >> S >> *T`
   case object `*S >> T -> T >> S >> *T` extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case Apply(
+      case App(
       Transpose(),
-      Apply(Apply(Map(), s), y)
+      App(App(Map(), s), y)
       ) if isSplitOrSlide(s) =>
         Success(y |> transpose >> s >> map(transpose))
       case _ => Failure(mapSlideBeforeTranspose)
@@ -161,9 +161,9 @@ object movement {
   def joinBeforeTranspose: Strategy[Lift] = `J >> T -> *T >> T >> *J`
   case object `J >> T -> *T >> T >> *J` extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case Apply(
+      case App(
       Transpose(),
-      Apply(Join(), y)
+      App(Join(), y)
       ) =>
         Success(y |> map(transpose) |> transpose |> map(join))
       case _ => Failure(joinBeforeTranspose)
@@ -174,9 +174,9 @@ object movement {
   def transposeBeforeMapJoin: Strategy[Lift] = `T >> *J -> *T >> J >> T`
   case object `T >> *J -> *T >> J >> T` extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case Apply(
-      Apply(Map(), Join()),
-      Apply(Transpose(), y)
+      case App(
+      App(Map(), Join()),
+      App(Transpose(), y)
       ) =>
         Success(y |> map(transpose) |> join |> transpose)
       case _ => Failure(transposeBeforeMapJoin)
@@ -187,9 +187,9 @@ object movement {
   def mapTransposeBeforeJoin: Strategy[Lift] = `*T >> J -> T >> *J >> T`
   case object `*T >> J -> T >> *J >> T` extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case Apply(
+      case App(
       Join(),
-      Apply(Apply(Map(), Transpose()), y)
+      App(App(Map(), Transpose()), y)
       ) =>
         Success(y |> transpose |> map(join) |> transpose)
       case _ => Failure(mapTransposeBeforeJoin)
@@ -200,9 +200,9 @@ object movement {
   def mapJoinBeforeTranspose: Strategy[Lift] = `*J >> T -> T >> *T >> J`
   case object `*J >> T -> T >> *T >> J` extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case Apply(
+      case App(
       Transpose(),
-      Apply(Apply(Map(), Join()), y)
+      App(App(Map(), Join()), y)
       ) =>
         Success(y |> transpose |> map(transpose) |> join)
       case _ => Failure(mapJoinBeforeTranspose)
@@ -215,9 +215,9 @@ object movement {
   def joinBeforeJoin: Strategy[Lift] = `J >> J -> *J >> J`
   case object `J >> J -> *J >> J` extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case Apply(
+      case App(
       Join(),
-      Apply(Join(), y)
+      App(Join(), y)
       ) =>
         Success(y |> map(join) >> join)
       case _ => Failure(joinBeforeJoin)
@@ -228,9 +228,9 @@ object movement {
   def mapJoinBeforeJoin: Strategy[Lift] = `*J >> J -> J >> J`
   case object `*J >> J -> J >> J` extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case Apply(
+      case App(
       Join(),
-      Apply(Apply(Map(), Join()), y)
+      App(App(Map(), Join()), y)
       ) =>
         Success(y |> join |> join)
       case _ => Failure(mapJoinBeforeJoin)
@@ -243,9 +243,9 @@ object movement {
   def slideBeforeSplit: Strategy[Lift] = `slide(n)(s) >> split(k) -> slide(k+n-s)(k) >> map(slide(n)(s))`
   case object `slide(n)(s) >> split(k) -> slide(k+n-s)(k) >> map(slide(n)(s))` extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case Apply(
-      DepApply(Split(), k: Nat),
-      Apply(DepApply(DepApply(Slide(), n: Nat), s: Nat), y)
+      case App(
+      DepApp(Split(), k: Nat),
+      App(DepApp(DepApp(Slide(), n: Nat), s: Nat), y)
       ) =>
         Success(y |> slide(k + n - s)(k) |> map(slide(n)(s)))
       case _ => Failure(slideBeforeSplit)

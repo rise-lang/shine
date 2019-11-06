@@ -20,7 +20,7 @@ object binomialFilter {
   val dot: Expr = fun(a => fun(b =>
     zip(a)(b) |> map(mulT) |> reduce(add)(l(0.0f))
   ))
-  def dotSeq: Expr = fun(a => fun(b =>
+  val dotSeq: Expr = fun(a => fun(b =>
     zip(a)(b) |> map(mulT) |> reduceSeq(add)(l(0.0f))
   ))
   val dotSeqUnroll: Expr = fun(a => fun(b =>

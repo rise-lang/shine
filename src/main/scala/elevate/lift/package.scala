@@ -14,12 +14,12 @@ package object lift {
     e match {
       case Identifier(name) => s"""Identifier("id$name")""" // id prefix prevents name clashes with freshName
       case Lambda(x, e) => s"Lambda(${toEvaluableString(x)}, ${toEvaluableString(e)})"
-      case Apply(f, e) => s"Apply(${toEvaluableString(f)}, ${toEvaluableString(e)})"
+      case App(f, e) => s"Apply(${toEvaluableString(f)}, ${toEvaluableString(e)})"
       case DepLambda(x, e) => x match {
         case n: NatIdentifier => s"""DepLambda[NatKind](NatIdentifier("id$n"), ${toEvaluableString(e)})"""
         case dt: DataTypeIdentifier => s"""DepLambda[DataKind]("id$dt", ${toEvaluableString(e)})"""
       }
-      case DepApply(f, x) => x match {
+      case DepApp(f, x) => x match {
         case n: Nat => s"DepApply[NatKind](${toEvaluableString(f)}, $n)"
         case dt: DataType => s"DepApply[DataKind](${toEvaluableString(f)}, $dt)"
       }
@@ -36,7 +36,7 @@ package object lift {
 
     @scala.annotation.tailrec
     def getID(x: Any): String = x match {
-      case Apply(f,_) if inlineApply => getID(f)
+      case App(f,_) if inlineApply => getID(f)
       case i:Identifier if !inlineLambdaIdentifier => i.toString
       case _ =>freshName("node")
     }
@@ -100,9 +100,9 @@ package object lift {
              |$parent -> $expr ${addEdgeLabel(edgeLabel("body"))};
              |${recurse(e, expr, None)}""".stripMargin
 
-        case Apply(f, e) if !inlineApply => binaryNode("apply", (f, "fun"), (e, "arg"))
+        case App(f, e) if !inlineApply => binaryNode("apply", (f, "fun"), (e, "arg"))
 
-        case Apply(f, e) if inlineApply =>
+        case App(f, e) if inlineApply =>
           val expr = getID(e)
           s"""$parent -> $expr ${addEdgeLabel(edgeLabel("apply"))}
              |${recurse(f, parent, None)}
@@ -123,7 +123,7 @@ package object lift {
              |$parent -> $expr ${addEdgeLabel(edgeLabel("body"))};
              |${recurse(e, expr, None)}""".stripMargin
 
-        case DepApply(f, e) =>
+        case DepApp(f, e) =>
           val fun = getID(f)
           val arg = getID(e)
           s"""$parent ${attr(fillWhite + Label("depApply").toString)}

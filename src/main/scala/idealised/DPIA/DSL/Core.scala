@@ -1,7 +1,7 @@
 package idealised.DPIA.DSL
 
 import idealised.DPIA.Phrases._
-import idealised.DPIA.Types.{Kind, NatKind, PhraseType}
+import idealised.DPIA.Types._
 import idealised.DPIA._
 
 object identifier {
@@ -27,17 +27,18 @@ object λ extends funDef
 trait depFunDef {
 
   def apply[T <: PhraseType](f: NatIdentifier => Phrase[T],
-                             range: lift.arithmetic.Range): DepLambda[NatKind, T] = {
-    val x = NatIdentifier(freshName("n"), range)
+                             range: lift.arithmetic.Range)
+                            (implicit w: Kind.IdentifierMaker[NatKind]): DepLambda[NatKind, T] = {
+    val x = w.makeIdentifier()
     DepLambda[NatKind, T](x, f(x))
   }
 
   def apply[K <: Kind]: Object {
     def apply[T <: PhraseType](f: K#I => Phrase[T])
-                              (implicit w: Kind.IdentifierMaker[K]): DepLambda[K, T]
+                              (implicit w: Kind.IdentifierMaker[K], kn: KindName[K]): DepLambda[K, T]
   } = new {
     def apply[T <: PhraseType](f: K#I => Phrase[T])
-                              (implicit w: Kind.IdentifierMaker[K]): DepLambda[K, T] = {
+                              (implicit w: Kind.IdentifierMaker[K], kn: KindName[K]): DepLambda[K, T] = {
       val x = w.makeIdentifier()
       DepLambda[K, T](x, f(x))
     }

@@ -22,8 +22,8 @@ object traversal {
 
   class Visitor {
     def visitExpr(e: Expr): Result[Expr] = Continue(e, this)
-    def visitNat(ae: Nat): Result[Nat] = Continue(ae, this)
     def visitType[T <: Type](t: T): Result[T] = Continue(t, this)
+    def visitNat(ae: Nat): Result[Nat] = Continue(ae, this)
     def visitAddressSpace(a: AddressSpace): Result[AddressSpace] = Continue(a, this)
     def visitN2N(n2n: NatToNat): Result[NatToNat] = Continue(n2n, this)
     def visitN2D(n2d: NatToData): Result[NatToData] = Continue(n2d, this)
@@ -39,29 +39,26 @@ object traversal {
             case i: Identifier => i.setType(v.visitType(i.t).value)
             case Lambda(x, e) =>
               Lambda(apply(x, v).asInstanceOf[Identifier], apply(e, v))(v.visitType(expr.t).value)
-            case Apply(f, e) =>
-              Apply(apply(f, v), apply(e, v))(v.visitType(expr.t).value)
+            case App(f, e) =>
+              App(apply(f, v), apply(e, v))(v.visitType(expr.t).value)
             case DepLambda(x, e) => x match {
               case n: NatIdentifier => DepLambda[NatKind]((v.visitNat(n).value: @unchecked) match {
                 case a: NamedVar => NatIdentifier(a)
               }, apply(e, v))(v.visitType(expr.t).value)
               case dt: DataTypeIdentifier => DepLambda[DataKind](v.visitType(dt).value, apply(e, v))(v.visitType(expr.t).value)
             }
-            case DepApply(f, x) => x match {
-              case n: Nat           => DepApply[NatKind](apply(f, v), v.visitNat(n).value)(v.visitType(expr.t).value)
-              case dt: DataType     => DepApply[DataKind](apply(f, v), v.visitType(dt).value)(v.visitType(expr.t).value)
-              case a: AddressSpace  => DepApply[AddressSpaceKind](apply(f, v), v.visitAddressSpace(a).value)(v.visitType(expr.t).value)
-              case n2n: NatToNat    => DepApply[NatToNatKind](apply(f, v), v.visitN2N(n2n).value)(v.visitType(expr.t).value)
-              case n2d: NatToData   => DepApply[NatToDataKind](apply(f, v), v.visitN2D(n2d).value)(v.visitType(expr.t).value)
+            case DepApp(f, x) => x match {
+              case n: Nat           => DepApp[NatKind](apply(f, v), v.visitNat(n).value)(v.visitType(expr.t).value)
+              case dt: DataType     => DepApp[DataKind](apply(f, v), v.visitType(dt).value)(v.visitType(expr.t).value)
+              case a: AddressSpace  => DepApp[AddressSpaceKind](apply(f, v), v.visitAddressSpace(a).value)(v.visitType(expr.t).value)
+              case n2n: NatToNat    => DepApp[NatToNatKind](apply(f, v), v.visitN2N(n2n).value)(v.visitType(expr.t).value)
+              case n2d: NatToData   => DepApp[NatToDataKind](apply(f, v), v.visitN2D(n2d).value)(v.visitType(expr.t).value)
             }
             case l: Literal => l.d match {
               case NatData(n)       => Literal(NatData(v.visitNat(n).value))
               case IndexData(i, n)  => Literal(IndexData(v.visitNat(i).value, v.visitNat(n).value))
               case _ => l
             }
-            // could be avoided if foreign fun could be parametric
-            case ForeignFunction(decl, t) =>
-              ForeignFunction(decl, v.visitType(t).value)
             case p: Primitive => p.setType(v.visitType(p.t).value)
           }
       }
@@ -100,11 +97,8 @@ object traversal {
           case Lambda(x, e) =>
             chainT(chainE(apply(x, v), e), expr.t)
               .map{case ((x, e), t) => Lambda(x.asInstanceOf[Identifier], e)(t)}
-          case Apply(f, e) =>
-            //chainT(chain(apply(f, v), e, apply(e, _)), expr.t)
-            //chain(apply(f, v), (e, expr.t), v => chainT(apply(e, v), expr.t))
-            //apply(f, v) ==> apply(e, v) ==> chainT
-            chainT(chainE(apply(f, v), e), expr.t).map { case ((f, e), t) => Apply(f, e)(t) }
+          case App(f, e) =>
+            chainT(chainE(apply(f, v), e), expr.t).map { case ((f, e), t) => App(f, e)(t) }
           case DepLambda(x, e) => x match {
             case n: NatIdentifier => chainT(chainE(v.visitNat(n), e), expr.t)
               .map { case ((x, e), t) =>
@@ -115,13 +109,13 @@ object traversal {
             case a: AddressSpace => chainT(chainE(v.visitAddressSpace(a), e), expr.t)
               .map { case ((x, e), t) => DepLambda[AddressSpaceKind](x.asInstanceOf[AddressSpaceIdentifier], e)(t) }
           }
-          case DepApply(f, x) => x match {
+          case DepApp(f, x) => x match {
             case n: Nat => chainT(chainN(apply(f, v), n), expr.t)
-              .map { case ((f, x), t) => DepApply[NatKind](f, x)(t) }
+              .map { case ((f, x), t) => DepApp[NatKind](f, x)(t) }
             case dt: DataType => chainT(chainDT(apply(f, v), dt), expr.t)
-              .map { case ((f, x), t) => DepApply[DataKind](f, x)(t) }
+              .map { case ((f, x), t) => DepApp[DataKind](f, x)(t) }
             case a: AddressSpace => chainT(chainA(apply(f, v), a), expr.t)
-              .map { case ((f, x), t) => DepApply[AddressSpaceKind](f, x)(t) }
+              .map { case ((f, x), t) => DepApp[AddressSpaceKind](f, x)(t) }
           }
           case l: Literal => l.d match {
             case NatData(n) =>
@@ -130,9 +124,6 @@ object traversal {
               chainN(v.visitNat(i), n).map(r => Literal(IndexData(r._1, r._2)))
             case _ => Continue(l, v)
           }
-          // could be avoided if foreign fun could be parametric
-          case ForeignFunction(decl, t) =>
-            v.visitType(t).map(ForeignFunction(decl, _))
           case p: Primitive => v.visitType(p.t).map(t => p.setType(t))
         }
       }
@@ -164,6 +155,7 @@ object traversal {
                     DepFunType[NatToDataKind, Type](v.visitN2D(n2d).value.asInstanceOf[NatToDataIdentifier], apply(t, v))
                 }
               case i: TypeIdentifier => i
+              case TypePlaceholder => TypePlaceholder
             }).asInstanceOf[T]
         }
       }

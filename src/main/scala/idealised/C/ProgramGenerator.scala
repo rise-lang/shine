@@ -3,7 +3,7 @@ package idealised.C
 import idealised.DPIA.Compilation._
 import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives.AsIndex
-import idealised.DPIA.LetNatIdentifier
+import idealised.DPIA.{LetNatIdentifier, Lifting}
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types._
 import idealised._
@@ -20,6 +20,8 @@ object ProgramGenerator {
                                             ps: Seq[Identifier[ExpType]],
                                             defs:Seq[(LetNatIdentifier, Phrase[ExpType])])
       : (Phrase[ExpType], Seq[Identifier[ExpType]], Seq[(LetNatIdentifier, Phrase[ExpType])]) = p match {
+        case Apply(f, a) => getPhraseAndParams(Lifting.liftFunction(f).reducing(a), ps, defs)
+        case DepApply(f, a) => getPhraseAndParams(Lifting.liftDependentFunction(f)(a), ps, defs)
         case l: Lambda[ExpType, _]@unchecked => getPhraseAndParams(l.body, l.param +: ps, defs)
         case ndl: DepLambda[_, _] =>
           getPhraseAndParams(ndl.body, Identifier(ndl.x.name, ExpType(int, read)) +: ps, defs)

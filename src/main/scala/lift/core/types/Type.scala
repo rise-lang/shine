@@ -5,6 +5,8 @@ import lift.arithmetic.RangeAdd
 
 sealed trait Type
 
+object TypePlaceholder extends Type
+
 final case class TypeIdentifier(name: String) extends Type {
   override def toString: String = name
 }

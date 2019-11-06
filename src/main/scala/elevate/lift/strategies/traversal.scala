@@ -14,16 +14,16 @@ object traversal {
 
   def traverseSingleSubexpression: Strategy[Lift] => Lift => Option[RewriteResult[Lift]] =
     s => {
-      case Apply(_,_) => throw new Exception("this should not happen")
+      case App(_,_) => throw new Exception("this should not happen")
       case Identifier(_) => None
       case l @ Lambda(x, e) => Some(s(e).mapSuccess(Lambda(x, _)(l.t)))
       case dl @ DepLambda(x, e) => x match {
         case n: NatIdentifier => Some(s(e).mapSuccess(DepLambda[NatKind](n, _)(dl.t)))
         case dt: DataTypeIdentifier => Some(s(e).mapSuccess(DepLambda[DataKind](dt, _)(dl.t)))
       }
-      case da @ DepApply(f, x) => x match {
-        case n: Nat => Some(s(f).mapSuccess(DepApply[NatKind](_, n)(da.t)))
-        case dt: DataType => Some(s(f).mapSuccess(DepApply[DataKind](_, dt)(da.t)))
+      case da @ DepApp(f, x) => x match {
+        case n: Nat => Some(s(f).mapSuccess(DepApp[NatKind](_, n)(da.t)))
+        case dt: DataType => Some(s(f).mapSuccess(DepApp[DataKind](_, dt)(da.t)))
       }
       case Literal(_) => None
       case ff: ForeignFunction => None
@@ -32,7 +32,7 @@ object traversal {
 
   implicit object LiftTraversable extends elevate.core.strategies.Traversable[Lift] {
     override def all: Strategy[Lift] => Strategy[Lift] = s => {
-      case ap @ Apply(f, e) => s(f).flatMapSuccess(a => s(e).mapSuccess(b => Apply(a, b)(ap.t)))
+      case ap @ App(f, e) => s(f).flatMapSuccess(a => s(e).mapSuccess(b => App(a, b)(ap.t)))
 
       case x => traverseSingleSubexpression(s)(x) match {
         case Some(r) => r
@@ -42,11 +42,11 @@ object traversal {
 
     override def oneHandlingState: Boolean => Strategy[Lift] => Strategy[Lift] =
       carryOverState => s => {
-        case a @ Apply(f, e) => s(f) match {
-          case Success(x: Lift) => Success(Apply(x, e)(a.t))
+        case a @ App(f, e) => s(f) match {
+          case Success(x: Lift) => Success(App(x, e)(a.t))
           case Failure(state) => if (carryOverState)
-            state(e).mapSuccess(Apply(f, _)(a.t)) else
-            s(e).mapSuccess(Apply(f, _)(a.t))
+            state(e).mapSuccess(App(f, _)(a.t)) else
+            s(e).mapSuccess(App(f, _)(a.t))
         }
         case x => traverseSingleSubexpression(s)(x) match {
           case Some(r) => r
@@ -55,9 +55,9 @@ object traversal {
       }
 
     override def some: Strategy[Lift] => Strategy[Lift] = s => {
-      case a @ Apply(f, e) => (s(f), s(e)) match {
+      case a @ App(f, e) => (s(f), s(e)) match {
         case (Failure(_), Failure(_)) => Failure(s)
-        case (x, y) => Success(Apply(x.getProgramOrElse(f), y.getProgramOrElse(e))(a.t))
+        case (x, y) => Success(App(x.getProgramOrElse(f), y.getProgramOrElse(e))(a.t))
       }
 
       case x => traverseSingleSubexpression(s)(x) match {
@@ -92,7 +92,7 @@ object traversal {
 
   case class function(s: Elevate) extends Elevate {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case ap @ Apply(f, x) => s(f).mapSuccess(Apply(_, x)(ap.t))
+      case ap @ App(f, x) => s(f).mapSuccess(App(_, x)(ap.t))
       case _ => Failure(s)
     }
     override def toString = s"function($s)"
@@ -108,7 +108,7 @@ object traversal {
 
   case class argument(s: Elevate) extends Elevate {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case ap @ Apply(f, x) => s(x).mapSuccess(Apply(f, _)(ap.t))
+      case ap @ App(f, x) => s(x).mapSuccess(App(f, _)(ap.t))
       case _ => Failure(s)
     }
     override def toString = s"argument($s)"
@@ -116,7 +116,7 @@ object traversal {
 
   case class argumentOf(p: Primitive, s: Elevate) extends Elevate {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case ap @ Apply(f, x) if f == p => s(x).mapSuccess(Apply(f, _)(ap.t))
+      case ap @ App(f, x) if f == p => s(x).mapSuccess(App(f, _)(ap.t))
       case _ => Failure(s)
     }
     override def toString = s"argumentOf($p,$s)"

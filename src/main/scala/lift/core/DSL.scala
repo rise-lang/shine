@@ -11,9 +11,9 @@ object DSL {
 
   def identifier(name: String): Identifier = Identifier(name)()
   def lambda(x: Identifier, e: Expr): Lambda = Lambda(x, e)()
-  def `apply`(f: Expr, e: Expr): Apply = Apply(f, e)()
+  def app(f: Expr, e: Expr): App = App(f, e)()
   def depLambda[K <: Kind](x: K#I, e: Expr)(implicit kn: KindName[K]): DepLambda[K] = DepLambda[K](x, e)()(kn)
-  def depApply[K <: Kind](f: Expr, x: K#T): DepApply[K] = DepApply[K](f, x)()
+  def depApp[K <: Kind](f: Expr, x: K#T): DepApp[K] = DepApp[K](f, x)()
   def literal(d: semantics.Data): Literal = Literal(d)
 
   def let: Let = primitives.Let()()
@@ -99,34 +99,36 @@ object DSL {
   }
 
   implicit class TypeAnnotation(t: Type) {
-    def ::(e: Expr): Expr = e.setType(t)
-    def `:`(e: Expr): Expr = e.setType(t)
+    def ::(e: Expr): Expr =
+      if (e.t == TypePlaceholder) e.setType(t)
+      else sys.error("type annotation can only replace a TypePlaceholder")
+    def `:`(e: Expr): Expr = e :: t
   }
 
   implicit class FunCall(f: Expr) {
-    import lift.core.lifting._
+    // import lift.core.lifting._
 
-    def apply(e: Expr): Expr = liftFunExpr(f).value(e)
-    def apply(n: Nat): Expr = liftDepFunExpr[NatKind](f).value(n)
-    def apply(dt: DataType): Expr = liftDepFunExpr[DataKind](f).value(dt)
-    def apply(a: AddressSpace): Expr = liftDepFunExpr[AddressSpaceKind](f).value(a)
+    def apply(e: Expr): Expr = app(f, e)
+    def apply(n: Nat): Expr = depApp[NatKind](f, n)
+    def apply(dt: DataType): Expr = depApp[DataKind](f, dt)
+    def apply(a: AddressSpace): Expr = depApp[AddressSpaceKind](f, a)
 
-    def apply(n2n: NatToNat): Expr = liftDepFunExpr[NatToNatKind](f).value(n2n)
+    def apply(n2n: NatToNat): Expr = depApp[NatToNatKind](f, n2n)
 
     def apply(e1: Expr, e2: Expr): Expr = {
-      liftFunExpr(f).value(e1).apply(e2)
+      f(e1)(e2)
     }
 
     def apply(e1: Expr, e2: Expr, e3: Expr): Expr = {
-      liftFunExpr(f).value(e1).apply(e2, e3)
+      f(e1)(e2)(e3)
     }
 
     def apply(e1: Expr, e2: Expr, e3: Expr, e4: Expr): Expr = {
-      liftFunExpr(f).value(e1).apply(e2, e3, e4)
+      f(e1)(e2)(e3)(e4)
     }
 
     def apply(e1: Expr, e2: Expr, e3: Expr, e4: Expr, e5: Expr): Expr = {
-      liftFunExpr(f).value(e1).apply(e2, e3, e4, e5)
+      f(e1)(e2)(e3)(e4)(e5)
     }
   }
 
@@ -384,12 +386,12 @@ object DSL {
 
   object foreignFun {
     def apply(name: String, t: Type): Expr = {
-      ForeignFunction(ForeignFunction.Decl(name, None), t)
+      ForeignFunction(ForeignFunction.Decl(name, None))(t)
     }
 
     def apply(name: String, params: Seq[String], body: String, t: Type): Expr = {
       ForeignFunction(ForeignFunction.Decl(name,
-        Some(ForeignFunction.Def(params, body))), t)
+        Some(ForeignFunction.Def(params, body))))(t)
     }
   }
 }

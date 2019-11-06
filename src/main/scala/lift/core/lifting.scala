@@ -33,12 +33,12 @@ object lifting {
   def liftFunExpr(p: Expr): Result[Expr => Expr] = {
     def chain(r: Result[Expr]): Result[Expr => Expr] =
       r.bind(liftFunExpr,
-        f => Expanding((e: Expr) => `apply`(f, e)))
+        f => Expanding((e: Expr) => app(f, e)))
 
     p match {
       case Lambda(x, body)    => Reducing((e: Expr) => substitute.exprInExpr(e, `for` = x, in = body))
-      case Apply(f, e)        => chain(liftFunExpr(f).map(lf => lf(e)))
-      case DepApply(f, x)     => x match {
+      case App(f, e)        => chain(liftFunExpr(f).map(lf => lf(e)))
+      case DepApp(f, x)     => x match {
         case t: DataType      => chain(liftDepFunExpr[DataKind](f).map(lf => lf(t)))
         case n: Nat           => chain(liftDepFunExpr[NatKind](f).map(lf => lf(n)))
         case a: AddressSpace  => chain(liftDepFunExpr[AddressSpaceKind](f).map(lf => lf(a)))
@@ -52,12 +52,12 @@ object lifting {
   def liftDepFunExpr[K <: Kind](p: Expr): Result[K#T => Expr] = {
     def chain(r: Result[Expr]): Result[K#T => Expr] =
       r.bind(liftDepFunExpr,
-        f => Expanding((x: K#T) => depApply[K](f, x)))
+        f => Expanding((x: K#T) => depApp[K](f, x)))
 
     p match {
       case DepLambda(x, e)    => Reducing((a: K#T) => substitute.kindInExpr(a, `for` = x, in = e))
-      case Apply(f, e)        => chain(liftFunExpr(f).map(lf => lf(e)))
-      case DepApply(f, x)     => x match {
+      case App(f, e)        => chain(liftFunExpr(f).map(lf => lf(e)))
+      case DepApp(f, x)     => x match {
         case t: DataType      => chain(liftDepFunExpr[DataKind](f).map(lf => lf(t)))
         case n: Nat           => chain(liftDepFunExpr[NatKind](f).map(lf => lf(n)))
         case a: AddressSpace  => chain(liftDepFunExpr[AddressSpaceKind](f).map(lf => lf(a)))

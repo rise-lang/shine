@@ -28,14 +28,14 @@ object algorithmic {
 
    def apply(e: Lift): RewriteResult[Lift] = e match {
 
-      case Apply(Apply(Map(), Lambda(mapVar, Apply(
-           Apply(Apply(rx @ (Reduce() | ReduceSeq()), op), init :: (dt: DataType)), reduceArg))),
+      case App(App(Map(), Lambda(mapVar, App(
+           App(App(rx @ (Reduce() | ReduceSeq()), op), init :: (dt: DataType)), reduceArg))),
            input @ (_ :: ArrayType(size, ArrayType(_,_)))) =>
 
         def reduceMap(zippedMapArg : (Expr, Expr) => Expr, reduceArg: Expr): RewriteResult[Lift] = {
           Success(
             rx(fun((acc, y) => // y :: 16.n793.(float,float), acc:: 16.32.(float)
-              map(fun(x => DSL.`apply`(DSL.`apply`(op, fst(x)), snd(x)))) $ zippedMapArg(acc, y)
+              map(fun(x => DSL.app(DSL.app(op, fst(x)), snd(x)))) $ zippedMapArg(acc, y)
             ))(generate(fun(IndexType(size) ->: dt)(_ => init))) $ reduceArg
           )
         }
@@ -49,7 +49,7 @@ object algorithmic {
               transpose(input)
             )
           // zipped input (see test "MM to MM-LoopMKN")
-          case Apply(Apply(Zip(), u), v) =>
+          case App(App(Zip(), u), v) =>
             val notToBeTransposed = if (mapVar == u) v else u
             reduceMap(
               zippedMapArg = (acc, y) => zip(acc, map(fun(bs => pair(bs, fst(y)))) $ snd(y)),
@@ -75,7 +75,7 @@ object algorithmic {
   def  splitJoin(n: Nat): Strategy[Lift] = `*f -> S >> **f >> J`(n: Nat)
   case class `*f -> S >> **f >> J`(n: Nat) extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case Apply(Map(), f) => Success(split(n) >> map(map(f)) >> join)
+      case App(Map(), f) => Success(split(n) >> map(map(f)) >> join)
       case _ => Failure(splitJoin(n))
     }
     override def toString = s"splitJoin($n)"
@@ -85,7 +85,7 @@ object algorithmic {
   def mapFusion: Strategy[Lift] = `*g >> *f -> *(g >> f)`
   case object `*g >> *f -> *(g >> f)` extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case Apply(Apply(Map(), f), Apply(Apply(Map(), g), arg)) =>
+      case App(App(Map(), f), App(App(Map(), g), arg)) =>
         Success(map(g >> f)(arg))
       case _ => Failure(mapFusion)
     }
@@ -101,8 +101,8 @@ object algorithmic {
     // in this case we would return some form of map(id):
     // ((map λe4. (e4: K.float)) e743))
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case y @ Apply(Map(), Lambda(x, Apply(f, gx))) if !contains[Lift](x).apply(f) && !isIdentifier(gx) =>
-        Success(DSL.`apply`(map, lambda(x, gx)) >> map(f))
+      case y @ App(Map(), Lambda(x, App(f, gx))) if !contains[Lift](x).apply(f) && !isIdentifier(gx) =>
+        Success(DSL.app(map, lambda(x, gx)) >> map(f))
       case _ => Failure(mapLastFission)
     }
     override def toString = s"mapLastFission"
@@ -119,7 +119,7 @@ object algorithmic {
   def liftId: Strategy[Lift] = `id -> *id`
   case object `id -> *id` extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case Apply(Id(), arg) => Success(DSL.`apply`(map(id), arg))
+      case App(Id(), arg) => Success(DSL.app(map(id), arg))
       case _ => Failure(liftId)
     }
     override def toString = "liftId"
@@ -128,7 +128,7 @@ object algorithmic {
   def createTransposePair: Strategy[Lift] = `id -> T >> T`
   case object `id -> T >> T` extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case Apply(Id(), arg) => Success(DSL.`apply`(transpose >> transpose, arg))
+      case App(Id(), arg) => Success(DSL.app(transpose >> transpose, arg))
       case _ => Failure(createTransposePair)
     }
     override def toString = "createTransposePair"
@@ -139,7 +139,7 @@ object algorithmic {
   def removeTransposePair: Strategy[Lift] = `T >> T -> `
   case object `T >> T -> ` extends Strategy[Lift]  {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case Apply(Transpose(), Apply(Transpose(), x)) => Success(x)
+      case App(Transpose(), App(Transpose(), x)) => Success(x)
       case _ => Failure(removeTransposePair)
     }
     override def toString = "createTransposePair"
@@ -160,9 +160,9 @@ object algorithmic {
 
   def slideSeqFusion: Strategy[Lift] = `slideSeq(f) >> map(g) -> slideSeq(f >> g)`
   def `slideSeq(f) >> map(g) -> slideSeq(f >> g)`: Strategy[Lift] = {
-    case Apply(Apply(Map(), g), Apply(Apply(Apply(DepApply(DepApply(SlideSeq(rot), sz: Nat), sp: Nat), wr), f), e)) =>
+    case App(App(Map(), g), App(App(App(DepApp(DepApp(SlideSeq(rot), sz: Nat), sp: Nat), wr), f), e)) =>
       Success(slideSeq(rot)(sz)(sp)(wr)(f >> g)(e))
-    case Apply(Apply(Map(), g), Apply(Apply(Apply(DepApply(DepApply(DepApply(OclSlideSeq(rot), a: AddressSpace), sz: Nat), sp: Nat), wr), f), e)) =>
+    case App(App(Map(), g), App(App(App(DepApp(DepApp(DepApp(OclSlideSeq(rot), a: AddressSpace), sz: Nat), sp: Nat), wr), f), e)) =>
       Success(oclSlideSeq(rot)(a)(sz)(sp)(wr)(f >> g)(e))
     case _ => Failure(slideSeqFusion)
   }

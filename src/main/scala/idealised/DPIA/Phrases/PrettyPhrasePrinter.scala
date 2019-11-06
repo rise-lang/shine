@@ -25,7 +25,7 @@ object PrettyPhrasePrinter {
 
       case Lambda(param, body) => s"λ ${apply(param)}: ${param.t} -> ${apply(body)}"
 
-      case DepLambda(param, body) => s"Λ (${param.name}: ${Kind.formatKindName(param.getClass.getName)}) -> ${apply(body)}"
+      case dl @ DepLambda(param, body) => s"Λ (${param.name}: ${dl.kn.get}) -> ${apply(body)}"
 
       case LetNat(binder, defn, body) => s"nLet ${binder.name} = ${apply(defn)} in ${apply(body)}"
 

@@ -13,7 +13,7 @@ object algorithmic {
   // *(g >> .. >> f) -> *g >> *(.. >> f)
   case object mapFirstFission extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case Apply(primitives.Map(), Lambda(x, gx)) =>
+      case App(primitives.Map(), Lambda(x, gx)) =>
         Success(mapFirstFissionRec(x, fun(e => e), gx))
       case _ => Failure(mapFirstFission)
     }
@@ -23,7 +23,7 @@ object algorithmic {
   @silent
   private def mapFirstFissionRec(x: Identifier, f: Expr, gx: Expr): Expr = {
     gx match {
-      case Apply(f2, gx2) =>
+      case App(f2, gx2) =>
         if (gx2 == x) {
           map(f2) >> map(f)
         } else {
@@ -36,7 +36,7 @@ object algorithmic {
   // *(g >> .. >> f) -> *g >> .. >> *f
   case object mapFullFission extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case Apply(primitives.Map(), Lambda(x, gx)) =>
+      case App(primitives.Map(), Lambda(x, gx)) =>
         Success(mapFullFissionRec(x, gx))
       case _ => Failure(mapFullFission)
     }
@@ -46,7 +46,7 @@ object algorithmic {
   @silent
   def mapFullFissionRec(x: Identifier, gx: Expr): Expr = {
     gx match {
-      case Apply(f, gx2) =>
+      case App(f, gx2) =>
         if (gx2 == x) {
           map(f)
         } else {

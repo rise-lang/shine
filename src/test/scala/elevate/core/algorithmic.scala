@@ -11,7 +11,7 @@ import elevate.lift.rules.movement._
 import elevate.util._
 import util.gen
 import lift.core.DSL._
-import lift.core.{Apply, DepLambda, Expr, NatIdentifier}
+import lift.core.{App, DepLambda, Expr, NatIdentifier}
 import lift.core.primitives._
 import lift.core.types.{ArrayType, IndexType, NatKind, float, infer}
 import elevate.lift._
@@ -59,7 +59,7 @@ class algorithmic extends test_util.Tests {
     val mapReduce = LCNF(infer(
       depLambda[NatKind](M, depLambda[NatKind](N,
       fun(ArrayType(M, ArrayType(N, float)))(i =>
-        map(reduce(fun(x => fun(a => x + a)))(l(0.0f) :: float)) $ i))))).get
+        map(reduce(fun(x => fun(a => x + a)))(l(0.0f))) $ i))))).get
 
     val reduceMap =
       depLambda[NatKind](M, depLambda[NatKind](N,
@@ -67,7 +67,7 @@ class algorithmic extends test_util.Tests {
           reduce(fun((acc, y) =>
             map(addTuple) $ zip(acc, y)))(generate(fun(IndexType(M) ->: float)(_ => l(0.0f)))) $ transpose(i))))
 
-    val rewrite = body(body(body(liftReduce))).apply(infer(mapReduce)).get
+    val rewrite = body(body(liftReduce)).apply(mapReduce).get
 
     infer(mapReduce)
 
@@ -201,7 +201,7 @@ class algorithmic extends test_util.Tests {
             reduceSeq(
               fun((acc, y) => // y :: (M.float, N.float); acc :: M.N.float
                 map(fun(x => // x :: M.((float, N.float), N.float)
-                  `apply`(`apply`(op, fst(x)), snd(x)))) $
+                  app(app(op, fst(x)), snd(x)))) $
                   // M.((float, N.float), N.float)
                   zip(acc, map(fun(t => pair(t,snd(y)))) $ fst(y))),
               // generate zeros :: M.N.float
@@ -220,7 +220,7 @@ class algorithmic extends test_util.Tests {
             reduceSeq(
               fun((acc, y) => // y :: (M.float, N.float); acc :: M.N.float
                 map(fun(x => // x :: M.((float, N.float), N.float)
-                  `apply`(`apply`(op, fst(x)), snd(x)))) $
+                  app(app(op, fst(x)), snd(x)))) $
                   // M.((N.float, float), N.float)
                   zip(acc, map(fun(t => pair(t,fst(y)))) $ snd(y))),
               // generate zeros :: M.N.float
@@ -246,7 +246,7 @@ class algorithmic extends test_util.Tests {
             reduceSeq(
               fun((acc, y) => // y :: (M.float, N.float); acc :: M.N.float
                 mapSeq(fun(x => // x :: M.((float, N.float), N.float)
-                  `apply`(`apply`(fun((y, acc) => { // akB :: (float, N.float); acc :: N.float
+                  app(app(fun((y, acc) => { // akB :: (float, N.float); acc :: N.float
                     mapSeq(fun(t => fst(t) + (fst(snd(t)) * snd(snd(t))))) $
                       /* N.(float, (float, float))*/
                       zip(acc,

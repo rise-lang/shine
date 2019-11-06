@@ -27,9 +27,9 @@ object specialize {
   case object mapSeqCompute extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
       // (mapSeq λη1. (my_abs η1))
-      case Apply(m @ Map(), l @ Lambda(_, Apply(ForeignFunction(_, _), _))) => Success(Apply(MapSeq()(m.t), l)(e.t))
+      case App(m @ Map(), l @ Lambda(_, App(ForeignFunction(_), _))) => Success(App(MapSeq()(m.t), l)(e.t))
       // (map λη1. ((mapSeq λη2. (my_abs η2)) η1))
-      case Apply(m @ Map(), l @ Lambda(_, Apply(Apply(MapSeq(), _), _))) => Success(Apply(MapSeq()(m.t), l)(e.t))
+      case App(m @ Map(), l @ Lambda(_, App(App(MapSeq(), _), _))) => Success(App(MapSeq()(m.t), l)(e.t))
       case _ => Failure(mapSeqCompute)
     }
     override def toString = "mapSeqCompute"

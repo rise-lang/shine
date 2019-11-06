@@ -33,7 +33,7 @@ class binomialFilterRewrite extends test_util.Tests {
     betaEtaNormalForm(a).get == betaEtaNormalForm(b).get
 
   private val separateDot: Strategy[Lift] = {
-    case Apply(Apply(Apply(Reduce(), rf), init), Apply(Apply(Map(), mf), Apply(Apply(Zip(), w), Apply(Join(), nbh))))
+    case App(App(App(Reduce(), rf), init), App(App(Map(), mf), App(App(Zip(), w), App(Join(), nbh))))
       if ben_eq(rf, add) && init == l(0.0f) && ben_eq(mf, mulT) && w == weights2d
     =>
       Success(nbh |> map(dot(weights1d)) |> dot(weights1d))
@@ -41,7 +41,7 @@ class binomialFilterRewrite extends test_util.Tests {
   }
 
   private val separateDotT: Strategy[Lift] = {
-    case Apply(Apply(Apply(Reduce(), rf), init), Apply(Apply(Map(), mf), Apply(Apply(Zip(), w), Apply(Join(), nbh))))
+    case App(App(App(Reduce(), rf), init), App(App(Map(), mf), App(App(Zip(), w), App(Join(), nbh))))
       if ben_eq(rf, add) && init == l(0.0f) && ben_eq(mf, mulT) && w == weights2d
     =>
       Success(nbh |> transpose |> map(dot(weights1d)) |> dot(weights1d))

@@ -10,13 +10,13 @@ object primitives {
 
   // TODO? depMapPar
 
-  @primitive case class MapPar()(override val t: Type = freshTypeIdentifier) extends Primitive {
+  @primitive case class MapPar()(override val t: Type = TypePlaceholder) extends Primitive {
     override def typeScheme: Type = implN(n => implDT(s => implDT(t =>
       (s ->: t) ->: ArrayType(n, s) ->: ArrayType(n, t)
     )))
   }
 
-  @primitive case class ReducePar()(override val t: Type = freshTypeIdentifier) extends Primitive {
+  @primitive case class ReducePar()(override val t: Type = TypePlaceholder) extends Primitive {
     override def typeScheme: Type = implN(n => implDT(t =>
       (t ->: t ->: t) ->: t ->: ArrayType(n, t) ->: t
     ))

@@ -30,7 +30,7 @@ object Primitive {
     def fromClassDef: ClassDef => ClassDef = {
       case q"case class $name(..$params)(..$_) extends $_ {..$body} " =>
         val r = q"""
-            case class $name(..$params)(override val t: Type = freshTypeIdentifier) extends Primitive {
+            case class $name(..$params)(override val t: Type = TypePlaceholder) extends Primitive {
               override def setType(t: Type): $name = ${name.asInstanceOf[c.TypeName].toTermName}(..${params.map({
                 case q"$_ val $n: $_ " => n
                 case q"$_ val $n: $_ = $_" => n
