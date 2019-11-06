@@ -1,6 +1,6 @@
 package apps
 
-import util.gen
+import util.{Time, TimeSpan, gen}
 import idealised.OpenCL.{GlobalSize, LocalSize}
 import lift.arithmetic.Cst
 import lift.core.DSL._
@@ -106,8 +106,12 @@ class gemm extends test_util.TestsWithExecutor {
         generate(fun(IndexType(m))(_ => generate(fun(IndexType(n))(_ => l(0.0f)))))
         |> mapSeq(mapSeq(id))))
 
+
       nFun((n, m, k) =>
         fun((m `.` k `.` float) ->: (n `.` k `.` float) ->: (m `.` n `.` float) ->: float ->: float ->: (m `.` n `.` float))
+        /*
+         * The matrix B is assumed to be transposed already!
+         */
         ((A, B, C, alpha, beta) =>
 
           zip(split(p2)(A), split(p2)(C)) |>
@@ -188,6 +192,10 @@ class gemm extends test_util.TestsWithExecutor {
 
       nFun((n, m, k) =>
         fun((k`.`m`.`float) ->: (k`.`n`.`float) ->: (m`.`n`.`float) ->: float ->: float ->: (m`.`n`.`float))
+        /*
+         * The matrix A is probably assumed to be transposed already.
+         * Wrong results for input sizes smaller than: M = 64, N = 128, K = 64
+         */
         ((A, B, C, alpha, beta) =>
           zip (tile2 (v7) (v6) (A)) (tile (v6) (v3) (C))
           |> mapWorkGroup(1)(
@@ -290,10 +298,10 @@ class gemm extends test_util.TestsWithExecutor {
 
     val n = 512
     val m = 256
-    val k = 512
-    val A = Array.fill(m, k)(1.0f) //((random.nextInt(10) + 1).toFloat)
-    val B = Array.fill(k, n)(1.0f) //((random.nextInt(10) + 1).toFloat)
-    val C = Array.fill(m, n)(1.0f) //(((random.nextInt(10) + 1).toFloat)
+    val k = 64
+    val A = Array.fill(m, k)((random.nextInt(10) + 1).toFloat)
+    val B = Array.fill(k, n)((random.nextInt(10) + 1).toFloat)
+    val C = Array.fill(m, n)((random.nextInt(10) + 1).toFloat)
     val alpha = 1.0f
     val beta = 1.0f
 
@@ -306,7 +314,7 @@ class gemm extends test_util.TestsWithExecutor {
       Array[Array[Float]] `,`
       Float `,`
       Float `)=>` Array[Float]]
-    val (flatOutput, _) = runKernel(LocalSize((2, 2)), GlobalSize((n/2, n/2)))(n `,` m `,` k `,` A `,` B `,` C `,` alpha `,` beta)
+    val (flatOutput, _) = runKernel(LocalSize((2, 2)), GlobalSize((n/2, n/2)))(n `,` m `,` k `,` A `,` B.transpose `,` C `,` alpha `,` beta)
 
     val output: Array[Array[Float]] = flatOutput.grouped(n).toArray
 
@@ -315,36 +323,86 @@ class gemm extends test_util.TestsWithExecutor {
     }
   }
 
-  ignore("OpenCL keplerBest version produces the expected result") {
+  def runOriginal(name: String,
+                  localSize: LocalSize,
+                  globalSize: GlobalSize,
+                  At: Array[Array[Float]],
+                  B: Array[Array[Float]],
+                  C: Array[Array[Float]],
+                  alpha: Float,
+                  beta: Float): (Array[Float], TimeSpan[Time.ms]) = {
+    import opencl.executor._
+
+    val K = At.length
+    val M = At(0).length
+    val N = B(0).length
+
+    val code = util.readFile(s"src/main/scala/apps/originalLift/$name")
+    val kernelJNI = Kernel.create(code, "KERNEL", "")
+
+    val float_bytes = 4
+    val output_bytes = N * M * float_bytes
+    val g_out = GlobalArg.createOutput(output_bytes)
+    val kernelArgs = Array(
+      GlobalArg.createInput(At.flatten),
+      GlobalArg.createInput(B.flatten),
+      GlobalArg.createInput(C.flatten),
+      ValueArg.create(alpha),
+      ValueArg.create(beta),
+      g_out,
+      ValueArg.create(K), ValueArg.create(M), ValueArg.create(N)
+    )
+
+    val runtime = Executor.execute(kernelJNI,
+      localSize.size.x.eval, localSize.size.y.eval, localSize.size.z.eval,
+      globalSize.size.x.eval, globalSize.size.y.eval, globalSize.size.z.eval,
+      kernelArgs
+    )
+
+    val output = g_out.asFloatArray()
+
+    kernelArgs.foreach(_.dispose)
+    kernelJNI.dispose()
+
+    (output, TimeSpan.inMilliseconds(runtime))
+  }
+
+  test("OpenCL keplerBest version produces the expected result") {
     import idealised.OpenCL._
     import scala.util.Random
 
     val random = new Random()
 
-    val n = 512
-    val m = 256
-    val k = 512
-    val A = Array.fill(m, k)(1.0f) //((random.nextInt(10) + 1).toFloat)
-    val B = Array.fill(k, n)(1.0f) //((random.nextInt(10) + 1).toFloat)
-    val C = Array.fill(m, n)(1.0f) //(((random.nextInt(10) + 1).toFloat)
+    val m = 64
+    val n = 128
+    val k = 64
+    val A = Array.fill(m, k)((random.nextInt(10) + 1).toFloat)
+    val B = Array.fill(k, n)((random.nextInt(10) + 1).toFloat)
+    val C = Array.fill(m, n)((random.nextInt(10) + 1).toFloat)
     val alpha = 1.0f
     val beta = 1.0f
 
-    val gold = matrixMatrixMultiply(A, B, C, alpha, beta)
+    val imperGold = matrixMatrixMultiply(A, B, C, alpha, beta)
 
-    val runKernel = gen.OpenCLKernel(LocalSize((2, 2)), GlobalSize((n/2, n/2)))(ocl.keplerBest, "KERNEL").as[ScalaFunction `(`
+    val genedKernel = gen.OpenCLKernel(LocalSize((32,8,1)), GlobalSize((256, 128, 1)))(ocl.keplerBest, "KERNEL")
+
+    val runKernel = genedKernel.as[ScalaFunction `(`
       Int `,` Int `,` Int `,`
       Array[Array[Float]] `,`
       Array[Array[Float]] `,`
       Array[Array[Float]] `,`
       Float `,`
       Float `)=>` Array[Float]]
-    val (flatOutput, _) = runKernel(n `,` m `,` k `,` A `,` B `,` C `,` alpha `,` beta)
+    val (flatOutput, _) = runKernel(n `,` m `,` k `,` A.transpose `,` B `,` C `,` alpha `,` beta)
 
     val output: Array[Array[Float]] = flatOutput.grouped(n).toArray
 
-    (output zip gold).foreach { case (outputRow, goldRow) =>
+    val (gold, _) =
+      runOriginal("keplerSgemm.cl", LocalSize((32, 8)), GlobalSize((256, 128)), A.transpose, B, C, alpha, beta)
+
+    (output zip imperGold).foreach { case (outputRow, goldRow) =>
       assert(outputRow sameElements goldRow)
     }
+    assert(flatOutput sameElements gold)
   }
 }

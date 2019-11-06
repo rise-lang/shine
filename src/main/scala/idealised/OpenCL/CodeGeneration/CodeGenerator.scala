@@ -320,7 +320,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
           case Cst(1) =>
             C.AST.Stmts(C.AST.Stmts(
               C.AST.Comment("iteration count is exactly 1, no loop emitted"),
-              C.AST.DeclStmt(C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0))))),
+              C.AST.DeclStmt(C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(f.init))))),
               updatedGen.cmd(p, env))
             /* FIXME?
           case _ if (range.start.min.min == Cst(0) && range.stop == Cst(1)) ||
