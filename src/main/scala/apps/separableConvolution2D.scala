@@ -35,22 +35,22 @@ object separableConvolution2D {
   // -1  0 +1     1
   // -2  0 +2  ~  2 x -1  0 +1
   // -1  0 +1     1
-  val sobelXWeights2d: Expr = weights2d(1.0f, Seq(
+  val sobelXWeights2d: Expr = weights2d(1.0f / 8.0f, Seq(
     Seq(-1, 0, +1),
     Seq(-2, 0, +2),
     Seq(-1, 0, +1)
   ))
-  val sobelXWeightsV: Expr = weights1d(1.0f, Seq(
+  val sobelXWeightsV: Expr = weights1d(1.0f / 4.0f, Seq(
     1, 2, 1
   ))
-  val sobelXWeightsH: Expr = weights1d(1.0f, Seq(
+  val sobelXWeightsH: Expr = weights1d(1.0f / 2.0f, Seq(
     -1, 0, +1
   ))
   // Sy:
   // -1 -2 -1     -1
   //  0  0  0  ~   0 x 1 2 1
   // +1 +2 +1     +1
-  val sobelYWeights2d: Expr = weights2d(1.0f, Seq(
+  val sobelYWeights2d: Expr = weights2d(1.0f / 8.0f, Seq(
     Seq(-1, -2, -1),
     Seq( 0,  0,  0),
     Seq(+1, +2, +1)
@@ -82,7 +82,7 @@ object separableConvolution2D {
   )
   val baseSeq: Expr = fun(3`.`3`.`float)(weights2d =>
     padClamp2D(1) >> slide2D(3, 1) >>
-      mapSeq(mapSeq(fun(nbh => dotSeq(join(weights2d))(join(nbh)))))
+      mapSeq(mapSeq(fun(nbh => dotSeqUnroll(join(weights2d))(join(nbh)))))
   )
 
   val factorised: Expr = fun(3`.`float)(weightsV => fun(3`.`float)(weightsH =>
@@ -91,7 +91,7 @@ object separableConvolution2D {
   ))
   val factorisedSeq: Expr = fun(3`.`float)(weightsV => fun(3`.`float)(weightsH =>
     padClamp2D(1) >> slide2D(3, 1) >>
-      mapSeq(mapSeq(map(dotSeq(weightsH)) >> dotSeq(weightsV)))
+      mapSeq(mapSeq(map(dotSeqUnroll(weightsH)) >> dotSeqUnroll(weightsV)))
   ))
 
   val separated: Expr = fun(3`.`float)(weightsV => fun(3`.`float)(weightsH => {
@@ -100,8 +100,8 @@ object separableConvolution2D {
     padClamp2D(1) >> vertical >> horizontal
   }))
   val separatedSeq: Expr =  fun(3`.`float)(weightsV => fun(3`.`float)(weightsH => {
-    val horizontal = mapSeq(slide(3)(1) >> mapSeq(dotSeq(weightsH)))
-    val vertical = slide(3)(1) >> mapSeq(transpose >> mapSeq(dotSeq(weightsV)))
+    val horizontal = mapSeq(slide(3)(1) >> mapSeq(dotSeqUnroll(weightsH)))
+    val vertical = slide(3)(1) >> mapSeq(transpose >> mapSeq(dotSeqUnroll(weightsV)))
     padClamp2D(1) >> vertical >> horizontal
   }))
 
@@ -114,16 +114,16 @@ object separableConvolution2D {
   ))
   val scanlineSeq: Expr = fun(3`.`float)(weightsV => fun(3`.`float)(weightsH =>
     padClamp2D(1) >> slide(3)(1) >> mapSeq(transpose >>
-      mapSeq(dotSeq(weightsV)) >>
+      mapSeq(dotSeqUnroll(weightsV)) >>
       slide(3)(1) >>
-      mapSeq(dotSeq(weightsH))
+      mapSeq(dotSeqUnroll(weightsH))
     )
   ))
 
   val regRotSeq: Expr = fun(3`.`float)(weightsV => fun(3`.`float)(weightsH =>
     padClamp2D(1) >> slide(3)(1) >> mapSeq(transpose >>
-      map(dotSeq(weightsV)) >>
-      slideSeq(slideSeq.Values)(3)(1)(id)(dotSeq(weightsH))
+      map(dotSeqUnroll(weightsV)) >>
+      slideSeq(slideSeq.Values)(3)(1)(id)(dotSeqUnroll(weightsH))
     )
   ))
   val regRotPar: Expr = fun(3`.`float)(weightsV => fun(3`.`float)(weightsH => {

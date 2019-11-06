@@ -56,6 +56,13 @@ object primitives {
     ))
   }
 
+  case class array(n: Int) extends Primitive {
+    private def tRec(m: Int, dt: DataType): Type =
+      if (m <= 0) { ArrayType(n, dt) }
+      else { dt ->: tRec(m - 1, dt) }
+    override def t: Type = implDT(t => tRec(n, t))
+  }
+
   case object idx extends Primitive {
     override def t: Type = implN(n => implDT(t =>
       IndexType(n) ->: ArrayType(n, t) ->: t

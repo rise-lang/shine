@@ -118,7 +118,7 @@ class separableConvolution2DRewrite extends test_util.Tests {
 
   test("base to baseSeq") {
     rewrite_steps(base(weights2d), Seq(
-      (oncetd(specialize.reduceSeq) `;`
+      (oncetd(specialize.reduceSeqUnroll) `;`
         repeatNTimes(2, oncetd(specialize.mapSeq)))
         -> baseSeq(weights2d)
     ))
@@ -126,7 +126,7 @@ class separableConvolution2DRewrite extends test_util.Tests {
 
   test("factorised to factorisedSeq") {
     rewrite_steps(factorised(weightsV)(weightsH), Seq(
-      (repeatNTimes(2, oncetd(specialize.reduceSeq)) `;`
+      (repeatNTimes(2, oncetd(specialize.reduceSeqUnroll)) `;`
         repeatNTimes(2, oncetd(specialize.mapSeq)))
         -> factorisedSeq(weightsV)(weightsH)
     ))
@@ -134,7 +134,7 @@ class separableConvolution2DRewrite extends test_util.Tests {
 
   test("separated to separatedSeq") {
     rewrite_steps(separated(weightsV)(weightsH), Seq(
-      (repeatNTimes(2, oncetd(specialize.reduceSeq)) `;`
+      (repeatNTimes(2, oncetd(specialize.reduceSeqUnroll)) `;`
         repeatNTimes(2, oncetd(specialize.mapSeq)) `;`
         repeatNTimes(2, skip(1)(specialize.mapSeq)))
         -> separatedSeq(weightsV)(weightsH)
@@ -143,7 +143,7 @@ class separableConvolution2DRewrite extends test_util.Tests {
 
   test("scanline to scanlineSeq") {
     rewrite_steps(scanline(weightsV)(weightsH), Seq(
-      (repeatNTimes(2, oncetd(specialize.reduceSeq)) `;`
+      (repeatNTimes(2, oncetd(specialize.reduceSeqUnroll)) `;`
         repeatNTimes(2, oncetd(specialize.mapSeq)) `;`
         skip(1)(specialize.mapSeq))
         -> scanlineSeq(weightsV)(weightsH)
@@ -152,7 +152,7 @@ class separableConvolution2DRewrite extends test_util.Tests {
 
   test("scanline to regRotSeq") {
     rewrite_steps(scanline(weightsV)(weightsH), Seq(
-      (repeatNTimes(2, oncetd(specialize.reduceSeq)) `;`
+      (repeatNTimes(2, oncetd(specialize.reduceSeqUnroll)) `;`
         oncetd(specialize.slideSeq(slideSeq.Values, idE)) `;`
         betaEtaNormalForm `;`
         oncetd(algorithmic.slideSeqFusion) `;`

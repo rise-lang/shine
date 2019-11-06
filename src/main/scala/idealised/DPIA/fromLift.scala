@@ -607,6 +607,9 @@ object fromLift {
         fun[ExpType ->: ExpType](exp"[idx($n), $read]" ->: exp"[$a, $read]", f =>
           Generate(n, a, f))
 
+      case (core.array(_), lt) =>
+        wrapArray(lt, Vector())
+
       case (core.iterate,
       lt.DepFunType(k: l.NatIdentifier,
       lt.FunType(lt.DepFunType(ll: l.NatIdentifier,
@@ -728,6 +731,16 @@ object fromLift {
         wrapForeignFun(decl, intTs, outT, args :+ a))
     } else {
       ForeignFunction(decl, intTs, outT, args)
+    }
+  }
+
+  def wrapArray(t: lt.Type, elements: Vector[Phrase[ExpType]]): Phrase[_ <: PhraseType] = {
+    t match {
+      case lt.ArrayType(_, et) => Array(dataType(et), elements)
+      case lt.FunType(in: lt.DataType, t2) =>
+        fun[ExpType](ExpType(dataType(in), read), e =>
+          wrapArray(t2, elements :+ e))
+      case _ => error(s"did not expect $t")
     }
   }
 }

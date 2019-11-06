@@ -1,6 +1,7 @@
 package idealised.C.CodeGeneration
 
 import idealised.C.AST.Block
+import idealised.C.AST.DefaultImplementations.ArrayLiteral
 import idealised.DPIA.Compilation.SimplifyNats
 import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives._
@@ -263,13 +264,15 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             case _: ScalarType => CCodeGen.codeGenLiteral(n)
             case _ => error ("Expected an IndexType or ScalarType.")
           }
-        case (_ : CIntExpr) :: _ =>
-          n.dataType match {
-            case _: ArrayType =>
-              generateAccess(n.dataType, CCodeGen.codeGenLiteral(n), path, env)
+        case (i : CIntExpr) :: ps =>
+          (n, n.dataType) match {
+            case (ArrayData(elems), ArrayType(_, et)) => try {
+              generateAccess(et, CCodeGen.codeGenLiteral(elems(i.eval)), ps, env)
+            } catch {
+              case NotEvaluableException() => error(s"could not evaluate $i")
+            }
             case _ => error("Expected an ArrayType.")
           }
-        // case (_ :: _ :: Nil, _: ArrayType) => C.AST.Literal("0.0f") // TODO: (used in gemm like this) !!!!!!!
         case _ => error(s"Unexpected: $n $path")
       })
 
@@ -440,6 +443,15 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           cmd(f(AsIndex(n, Natural(i)))(continue_cmd),
             env updatedContEnv (continue_cmd -> (e => env => exp(e, env, ps, cont))))
         case _ => error(s"Expected path to be not empty")
+      }
+
+      case Array(_, elems) => path match {
+        case (i: CIntExpr) :: ps => try {
+          exp(elems(i.eval), env, ps, cont)
+        } catch {
+          case NotEvaluableException() => error(s"could not evaluate $i")
+        }
+        case _ => error(s"did not expect $path")
       }
 
       case Idx(_, _, i, e) => CCodeGen.codeGenIdx(i, e, env, path, cont)
