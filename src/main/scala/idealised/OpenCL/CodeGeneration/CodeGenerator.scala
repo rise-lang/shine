@@ -82,11 +82,10 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
         case (i : CIntExpr) :: Nil =>
           // TODO: check alignment and use pointer with correct address space
-          acc(a, env, CIntExpr(i * m) :: Nil, {
-            case ArraySubscript(v, idx) =>
-              // the continuation has to add the value ...
-              val newIdx = C.AST.BinaryExpr(idx, C.AST.BinaryOperator./, C.AST.Literal(m.toString) )
-              cont( C.AST.FunCall(C.AST.DeclRef(s"vstore$m"), immutable.Seq(newIdx, v)) )
+          acc(a, env, CIntExpr(i * m) :: Nil, array => {
+            // the continuation has to add the value ...
+            val ptr = C.AST.UnaryExpr(C.AST.UnaryOperator.&, array)
+            cont(C.AST.FunCall(C.AST.DeclRef(s"vstore$m"), immutable.Seq(C.AST.Literal("0"), ptr)))
           })
         case _ =>           error(s"Expected path to be not empty")
       }

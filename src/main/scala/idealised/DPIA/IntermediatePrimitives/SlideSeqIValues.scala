@@ -32,7 +32,7 @@ object SlideSeqIValues {
         Take(size - 1, inputSize - size + 1, read, dt1, input),
         TakeAcc(size - 1, size - size + 1, dt1, rs.wr), unroll = true) `;`
       // core loop
-      ForNat(n, _Λ_[NatKind](i => {
+      ForNat(n, _Λ_[NatKind]()(i => {
         // load current value
         write_dt1(Drop(size - 1, inputSize - size + 1, read, dt1, input) `@` i)(rs.wr `@` (size - 1)) `;`
         f(rs.rd)(output `@` i) `;` // body

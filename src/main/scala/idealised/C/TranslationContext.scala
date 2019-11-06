@@ -23,11 +23,8 @@ class TranslationContext() extends idealised.DPIA.Compilation.TranslationContext
 
       //TODO makes a decision. Not allowed!
       case DepArrayType(n, ft) =>
-
-        val k = DPIA.NatIdentifier(freshName("k"))
-
         DepMapSeqI(n, ft, ft,
-          DepLambda[NatKind](k)(
+          depFun[NatKind]()(k =>
             λ(ExpType(ft(k), read))(x => λ(AccType( ft(k) ))(a => assign(ft(k), a, x) ))),
           rhs, lhs)(this)
 

@@ -38,7 +38,8 @@ abstract class AbstractMapLoop(override val n: Nat,
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
-    //TODO should be removed
+    println("WARNING: map loop continuation translation allocates memory")
+    // TODO should be removed
     `new`(dt"[$n.$dt2]", λ(exp"[$n.$dt2, $read]" x acc"[$n.$dt2]")(tmp =>
       acc(this)(tmp.wr) `;` C(tmp.rd) ))
   }

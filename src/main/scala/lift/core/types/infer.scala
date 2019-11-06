@@ -13,9 +13,9 @@ case class InferenceException(msg: String) extends Exception {
 object infer {
   def apply(e: Expr): TypedExpr = {
     // build set of constraints
-    val mutableConstraints = mutable.Set[Constraint]()
+    val mutableConstraints = mutable.ArrayBuffer[Constraint]()
     val typed_e = constrainTypes(e, mutableConstraints, mutable.Map())
-    val constraints = mutableConstraints.toSet
+    val constraints = mutableConstraints.toSeq
     //constraints.foreach(println)
 
     // solve the constraints
@@ -44,9 +44,12 @@ object infer {
   case class NatToDataConstraint(a: NatToData, b: NatToData) extends Constraint {
     override def toString: String = s"$a  ~  $b"
   }
+  case class DepConstraint[K <: Kind](d: Type, v: K#T, t: Type) extends Constraint {
+    override def toString: String = s"($d $v)  ~  $t"
+  }
 
   def constrainTypes(expr: Expr,
-                     constraints: mutable.Set[Constraint],
+                     constraints: mutable.ArrayBuffer[Constraint],
                      identifierT: scala.collection.mutable.Map[Identifier, Type]
                     ): TypedExpr = {
     def fresh(): Type = TypeIdentifier(freshName("_t"))
@@ -86,20 +89,11 @@ object infer {
           TypedExpr(DepLambda[NatToNatKind](n2n, te), DepFunType[NatToNatKind, Type](n2n, te.t))
       }
 
-      case DepApply(f, x) => x match {
-        case n: Nat =>
-          val tf = typed(f)
-          TypedExpr(DepApply[NatKind](tf, n), liftDependentFunctionType[NatKind](tf.t)(n))
-        case dt: DataType =>
-          val tf = typed(f)
-          TypedExpr(DepApply[DataKind](tf, dt), liftDependentFunctionType[DataKind](tf.t)(dt))
-        case a: AddressSpace =>
-          val tf = typed(f)
-          TypedExpr(DepApply[AddressSpaceKind](tf, a), liftDependentFunctionType[AddressSpaceKind](tf.t)(a))
-        case n2n: NatToNat =>
-          val tf = typed(f)
-          TypedExpr(DepApply[NatToNatKind](tf, n2n), liftDependentFunctionType[NatToNatKind](tf.t)(n2n))
-      }
+      case DepApply(f, x) =>
+        val tf = typed(f)
+        val ot = fresh()
+        constraints += DepConstraint(tf.t, x, ot)
+        TypedExpr(DepApply(tf, x), ot)
 
       case l: Literal => TypedExpr(l, l.d.dataType)
 
@@ -225,7 +219,7 @@ object infer {
             case Some(NatToDataLambda(x, body)) =>
               // ... and then the `NatToDataApply` is replaced
               // with the body of the `NatToDataLambda` appropriately substituted ...
-              solve(Set(TypeConstraint(substitute.natInDataType(n, `for`=x, in=body), b)))
+              solve(Seq(TypeConstraint(substitute.natInDataType(n, `for`=x, in=body), b)))
             case _ => Solution()
           }
         case _ => Solution()
@@ -233,7 +227,7 @@ object infer {
       }.foldLeft(s)(combine)
     }
 
-    def apply(constraints: Set[Constraint]): Set[Constraint] = {
+    def apply(constraints: Seq[Constraint]): Seq[Constraint] = {
       constraints.map {
         case TypeConstraint(a, b) =>
           TypeConstraint(apply(a), apply(b))
@@ -243,25 +237,24 @@ object infer {
           NatConstraint(apply(a), apply(b))
         case NatToDataConstraint(a, b) =>
           NatToDataConstraint(apply(a), apply(b))
+        case DepConstraint(d, v: Nat, t) =>
+          DepConstraint[NatKind](apply(d), apply(v), apply(t))
+        case DepConstraint(d, v: DataType, t) =>
+          DepConstraint[DataKind](apply(d), apply(v).asInstanceOf[DataType], apply(t))
+        case DepConstraint(d, v: AddressSpace, t) =>
+          DepConstraint[AddressSpaceKind](apply(d), apply(v), apply(t))
       }
     }
   }
 
-  def solve(cs: Set[Constraint])
+  def solve(cs: Seq[Constraint])
            (implicit bound: mutable.Set[Kind.Identifier]): Solution = {
-    if (cs.isEmpty) {
-      Solution()
-    } else {
-      @scala.annotation.tailrec
-      def solveAt(pos:Int):Solution = {
-        if(pos >= cs.size) error(s"cannot solve constraints")
-        val element = cs.toSeq(pos)
-        solveOne(element) match {
-          case Some(s) => s ++ solve(s.apply(cs - element))
-          case None => solveAt(pos + 1)
-        }
+    cs match {
+      case Nil => Solution()
+      case c +: rest => solveOne(c) match {
+        case Some(s) => s ++ solve(s.apply(rest))
+        case None => error(s"cannot solve constraints $cs")
       }
-      solveAt(0)
     }
   }
 
@@ -278,35 +271,34 @@ object infer {
       case (IndexType(sa), IndexType(sb)) =>
         solveOne(NatConstraint(sa, sb))
       case (ArrayType(sa, ea), ArrayType(sb, eb)) =>
-        Some(solve(Set(NatConstraint(sa, sb), TypeConstraint(ea, eb))))
+        Some(solve(Seq(NatConstraint(sa, sb), TypeConstraint(ea, eb))))
       case (VectorType(sa, ea), VectorType(sb, eb)) =>
-        Some(solve(Set(NatConstraint(sa, sb), TypeConstraint(ea, eb))))
+        Some(solve(Seq(NatConstraint(sa, sb), TypeConstraint(ea, eb))))
       case (DepArrayType(sa, ea), DepArrayType(sb, eb)) =>
-        Some(solve(Set(NatConstraint(sa, sb), NatToDataConstraint(ea, eb))))
+        Some(solve(Seq(NatConstraint(sa, sb), NatToDataConstraint(ea, eb))))
       case (PairType(pa1, pa2), PairType(pb1, pb2)) =>
-        Some(solve(Set(TypeConstraint(pa1, pb1), TypeConstraint(pa2, pb2))))
-//        Some(solve((ea zip eb).map{ case (aa, bb) => TypeConstraint(aa, bb) }.toSet))
+        Some(solve(Seq(TypeConstraint(pa1, pb1), TypeConstraint(pa2, pb2))))
       case (FunType(ina, outa), FunType(inb, outb)) =>
-        Some(solve(Set(TypeConstraint(ina, inb), TypeConstraint(outa, outb))))
+        Some(solve(Seq(TypeConstraint(ina, inb), TypeConstraint(outa, outb))))
       case (DepFunType(na: NatIdentifier, ta), DepFunType(nb: NatIdentifier, tb)) =>
         val n = NatIdentifier(freshName("n"))
         bound += n
         bound -= na
         bound -= nb
-        Some(solve(Set(
+        Some(solve(Seq(
+          NatConstraint(n, na), NatConstraint(n, nb),
           TypeConstraint(substitute.natInType(n, `for`=na, in=ta),
-            substitute.natInType(n, `for`=nb, in=tb)),
-          NatConstraint(n, na), NatConstraint(n, nb)
+            substitute.natInType(n, `for`=nb, in=tb))
         )))
       case (DepFunType(dta: DataTypeIdentifier, ta), DepFunType(dtb: DataTypeIdentifier, tb)) =>
         val dt = DataTypeIdentifier(freshName("t"))
         bound += dt
         bound -= dta
         bound -= dtb
-        Some(solve(Set(
+        Some(solve(Seq(
+          TypeConstraint(dt, dta), TypeConstraint(dt, dtb),
           TypeConstraint(substitute.typeInType(dt, `for`=dta, in=ta),
-            substitute.typeInType(dt, `for`=dtb, in=tb)),
-          TypeConstraint(dt, dta), TypeConstraint(dt, dtb)
+            substitute.typeInType(dt, `for`=dtb, in=tb))
         )))
       case (_: NatToDataApply, dt: DataType) => Some(Solution.subs(a, dt)) // substitute apply by data type
       case (dt: DataType, _: NatToDataApply) => Some(Solution.subs(b, dt)) // substitute apply by data type
@@ -324,8 +316,17 @@ object infer {
       case (_, s: lift.arithmetic.Sum) => nat.unifySum(s, a)
       case (p: lift.arithmetic.Prod, _) => nat.unifyProd(p, b)
       case (_, p: lift.arithmetic.Prod) => nat.unifyProd(p, a)
+      case (p: lift.arithmetic.Pow, _) => nat.unifyProd(p, b)
+      case (_, p: lift.arithmetic.Pow) => nat.unifyProd(p, a)
+      case (p: lift.arithmetic.IntDiv, _) => nat.unifyProd(p, b)
+      case (_, p: lift.arithmetic.IntDiv) => nat.unifyProd(p, a)
       case _ => error(s"cannot unify $a and $b")
     })
+
+    case DepConstraint(d: DepFunType[_, _], v, t) =>
+      Some(solve(Seq(TypeConstraint(liftDependentFunctionType(d)(v), t))))
+    case d: DepConstraint[_] =>
+      error(s"unexpected $d")
 
     case NatToDataConstraint(a, b) => (a, b) match {
       case (i: NatToDataIdentifier, _) => Some(natToData.unifyIdent(i, b))
@@ -358,22 +359,27 @@ object infer {
   private object nat {
     import lift.arithmetic._
 
-    // collect free variables with only 1 occurrence
-    def potentialPivots(n: Nat)
-                       (implicit bound: mutable.Set[Kind.Identifier]): Set[NamedVar] = {
+    def freeOccurences(n: Nat)
+                      (implicit bound: mutable.Set[Kind.Identifier]): Map[NamedVar, Integer] = {
       val free_occurrences = mutable.Map[NamedVar, Integer]()
         .withDefault(_ => 0)
       ArithExpr.visit(n, {
         case v: NamedVar if !bound(NatIdentifier(v)) => free_occurrences(v) += 1
         case _ =>
       })
+      free_occurrences.toMap
+    }
 
-      free_occurrences.foldLeft(Set[NamedVar]())({ case (potential, (v, c)) =>
+    // collect free variables with only 1 occurrence
+    def potentialPivots(n: Nat)
+                       (implicit bound: mutable.Set[Kind.Identifier]): Set[NamedVar] = {
+      freeOccurences(n).foldLeft(Set[NamedVar]())({ case (potential, (v, c)) =>
         if (c == 1) { potential + v }
         else { potential }
       })
     }
 
+    @scala.annotation.tailrec
     def pivotSolution(pivot: NamedVar, n: Nat, value: Nat)
                      (implicit bound: mutable.Set[Kind.Identifier]): Option[Solution] = {
       n match {
@@ -398,25 +404,24 @@ object infer {
     }
 
     def tryPivots(n: Nat, value: Nat)
-                 (implicit bound: mutable.Set[Kind.Identifier]): Option[Solution] = {
-      val pivots = potentialPivots(n)
-      pivots.foreach(pivotSolution(_, n, value) match {
-        case Some(s) => return Some(s)
+                 (implicit bound: mutable.Set[Kind.Identifier]): Solution = {
+      potentialPivots(n).foreach(pivotSolution(_, n, value) match {
+        case Some(s) => return s
         case None =>
       })
-      None
+      error(s"could not pivot $n = $value")
     }
 
-    def unifyProd(p: Prod, n: Nat)
+    def unifyProd(p: Nat, n: Nat)
                  (implicit bound: mutable.Set[Kind.Identifier]): Solution = {
       // n = p --> 1 = p * (1/n)
-      tryPivots(p /^ n, 1).get
+      tryPivots(p /^ n, 1)
     }
 
     def unifySum(s: Sum, n: Nat)
                 (implicit bound: mutable.Set[Kind.Identifier]): Solution = {
       // n = s --> 0 = s + (-n)
-      tryPivots(s - n, 0).get
+      tryPivots(s - n, 0)
     }
 
     def unifyIdent(i: NamedVar, n: Nat)

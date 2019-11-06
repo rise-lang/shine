@@ -40,30 +40,20 @@ object DSL {
   }
 
   implicit class FunCall(f: Expr) {
-    import lift.core.lifting._
+    def apply(e: Expr): Expr = Apply(f, e)
+    def apply(n: Nat): Expr = DepApply[NatKind](f, n)
+    def apply(dt: DataType): Expr = DepApply[DataKind](f, dt)
+    def apply(a: AddressSpace): Expr = DepApply[AddressSpaceKind](f, a)
+    def apply(n2n: NatToNat): Expr = DepApply[NatToNatKind](f, n2n)
 
-    def apply(e: Expr): Expr = liftFunExpr(f).value(e)
-    def apply(n: Nat): Expr = liftDepFunExpr[NatKind](f).value(n)
-    def apply(dt: DataType): Expr = liftDepFunExpr[DataKind](f).value(dt)
-    def apply(a: AddressSpace): Expr = liftDepFunExpr[AddressSpaceKind](f).value(a)
-
-    def apply(n2n: NatToNat): Expr = liftDepFunExpr[NatToNatKind](f).value(n2n)
-
-    def apply(e1: Expr, e2: Expr): Expr = {
-      liftFunExpr(f).value(e1).apply(e2)
-    }
-
-    def apply(e1: Expr, e2: Expr, e3: Expr): Expr = {
-      liftFunExpr(f).value(e1).apply(e2, e3)
-    }
-
-    def apply(e1: Expr, e2: Expr, e3: Expr, e4: Expr): Expr = {
-      liftFunExpr(f).value(e1).apply(e2, e3, e4)
-    }
-
-    def apply(e1: Expr, e2: Expr, e3: Expr, e4: Expr, e5: Expr): Expr = {
-      liftFunExpr(f).value(e1).apply(e2, e3, e4, e5)
-    }
+    def apply(e1: Expr, e2: Expr): Expr =
+      f(e1)(e2)
+    def apply(e1: Expr, e2: Expr, e3: Expr): Expr =
+      f(e1)(e2)(e3)
+    def apply(e1: Expr, e2: Expr, e3: Expr, e4: Expr): Expr =
+      f(e1)(e2)(e3)(e4)
+    def apply(e1: Expr, e2: Expr, e3: Expr, e4: Expr, e5: Expr): Expr =
+      f(e1)(e2)(e3)(e4)(e5)
   }
 
   implicit class FunPipe(e: Expr) {

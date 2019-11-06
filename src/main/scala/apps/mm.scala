@@ -8,7 +8,7 @@ import lift.OpenCL.primitives._
 
 object mm {
   private val id = fun(x => x)
-  private val mulT = binomialFilter.mulT
+  private val mulT = separableConvolution2D.mulT
   private val dotSeq = fun(a => fun(b =>
     zip(a)(b) |> map(mulT) |> oclReduceSeq(AddressSpace.Private)(add)(l(0.0f))
   ))

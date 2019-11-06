@@ -38,8 +38,9 @@ final case class PassiveFunType[T <: PhraseType, +R <: PhraseType](inT: T, outT:
 }
 
 final case class DepFunType[K <: Kind, +R <: PhraseType](x: K#I, t: R)
+                                                        (implicit val kn: KindName[K])
   extends PhraseType {
-  override def toString = s"(${x.name}: ${Kind.formatKindName(x.getClass.getName)}) -> $t"
+  override def toString = s"(${x.name}: ${kn.get}) -> $t"
 }
 
 object PhraseType {
@@ -85,7 +86,7 @@ object PhraseType {
       case pf: PassiveFunType[_, _] =>
         PassiveFunType(substitute(dt, `for`, pf.inT), substitute(dt, `for`, pf.outT))
       case df: DepFunType[_, _] =>
-        DepFunType(df.x, substitute(dt, `for`, df.t))
+        DepFunType(df.x, substitute(dt, `for`, df.t))(df.kn)
     }
   }
 
@@ -135,7 +136,7 @@ object PhraseType {
       case pf: PassiveFunType[_, _] =>
         PassiveFunType(substitute(ae, `for`, pf.inT), substitute(ae, `for`, pf.outT))
       case df: DepFunType[_, _] =>
-        DepFunType(df.x, substitute(ae, `for`, df.t))
+        DepFunType(df.x, substitute(ae, `for`, df.t))(df.kn)
     }
   }
 

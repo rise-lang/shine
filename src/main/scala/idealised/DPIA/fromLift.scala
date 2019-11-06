@@ -27,9 +27,9 @@ object fromLift {
           case _ => ???
         }
         case l.Apply(f, e) =>
-          Lifting.liftFunction( // TODO: should we try to reduce by lifting here?
-            expression(f).asInstanceOf[Phrase[FunType[PhraseType, PhraseType]]])
-            .value(expression(e).asInstanceOf[Phrase[PhraseType]])
+          val f2 = expression(f).asInstanceOf[Phrase[FunType[PhraseType, PhraseType]]]
+          val e2 = expression(e).asInstanceOf[Phrase[PhraseType]]
+          Apply(f2, e2)
 
         case l.DepLambda(x, e) => x match {
           case n: l.NatIdentifier =>
@@ -41,16 +41,16 @@ object fromLift {
         }
         case l.DepApply(f, x) => x match {
           case n: Nat =>
-            DepApply[NatKind, PhraseType]( // TODO: should we try to reduce by lifting here?
+            DepApply[NatKind, PhraseType](
               expression(f).asInstanceOf[Phrase[DepFunType[NatKind, PhraseType]]],
               n)
           case dt: lt.DataType =>
-            DepApply[DataKind, PhraseType]( // TODO: should we try to reduce by lifting here?
+            DepApply[DataKind, PhraseType](
               expression(f).asInstanceOf[Phrase[DepFunType[DataKind, PhraseType]]],
               dataType(dt)
             )
           case a: lt.AddressSpace =>
-            DepApply[AddressSpaceKind, PhraseType]( // TODO: should we try to reduce by lifting here?
+            DepApply[AddressSpaceKind, PhraseType](
               expression(f).asInstanceOf[Phrase[DepFunType[AddressSpaceKind, PhraseType]]],
               addressSpace(a)
             )
@@ -61,7 +61,7 @@ object fromLift {
             case ls.IndexData(i, n)  => FunctionalPrimitives.AsIndex(n, Natural(i))
             case _              => Literal(data(d))
           }
-          case p: l.Primitive =>  primitive(p, t)
+          case p: l.Primitive => primitive(p, t)
 
         case _: l.TypedExpr => ??? // do not expect typed expr
       }
@@ -487,12 +487,32 @@ object fromLift {
         val b = dataType(lb)
         fun[ExpType](exp"[($a x $b), $read]", e => Fst(a, b, e))
 
+      case (core.mapFst,
+      lt.FunType(lt.FunType(la: lt.DataType, la2: lt.DataType),
+      lt.FunType(lt.PairType(_, lb), _)))
+      =>
+        val a = dataType(la)
+        val a2 = dataType(la2)
+        val b = dataType(lb)
+        fun[ExpType ->: ExpType](exp"[$a, $read]" ->: exp"[$a2, $read]", f =>
+          fun[ExpType](exp"[($a x $b), $read]", e => MapFst(a, b, a2, f, e)))
+
       case (core.snd,
       lt.FunType(lt.PairType(la, lb), _))
       =>
         val a = dataType(la)
         val b = dataType(lb)
         fun[ExpType](exp"[($a x $b), $read]", e => Snd(a, b, e))
+
+      case (core.mapSnd,
+      lt.FunType(lt.FunType(lb: lt.DataType, lb2: lt.DataType),
+      lt.FunType(lt.PairType(la, _), _)))
+      =>
+        val a = dataType(la)
+        val b = dataType(lb)
+        val b2 = dataType(lb2)
+        fun[ExpType ->: ExpType](exp"[$b, $read]" ->: exp"[$b2, $read]", f =>
+          fun[ExpType](exp"[($a x $b), $read]", e => MapSnd(a, b, b2, f, e)))
 
       case (core.pair,
       lt.FunType(la: lt.DataType,
@@ -586,6 +606,9 @@ object fromLift {
         val a = dataType(la)
         fun[ExpType ->: ExpType](exp"[idx($n), $read]" ->: exp"[$a, $read]", f =>
           Generate(n, a, f))
+
+      case (core.array(_), lt) =>
+        wrapArray(lt, Vector())
 
       case (core.iterate,
       lt.DepFunType(k: l.NatIdentifier,
@@ -708,6 +731,16 @@ object fromLift {
         wrapForeignFun(decl, intTs, outT, args :+ a))
     } else {
       ForeignFunction(decl, intTs, outT, args)
+    }
+  }
+
+  def wrapArray(t: lt.Type, elements: Vector[Phrase[ExpType]]): Phrase[_ <: PhraseType] = {
+    t match {
+      case lt.ArrayType(_, et) => Array(dataType(et), elements)
+      case lt.FunType(in: lt.DataType, t2) =>
+        fun[ExpType](ExpType(dataType(in), read), e =>
+          wrapArray(t2, elements :+ e))
+      case _ => error(s"did not expect $t")
     }
   }
 }
