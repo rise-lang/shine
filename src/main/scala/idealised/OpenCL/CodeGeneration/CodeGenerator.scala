@@ -11,7 +11,6 @@ import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics.VectorData
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised.OpenCL.AST.Barrier
 import idealised.OpenCL.FunctionalPrimitives.OpenCLFunction
 import idealised.OpenCL.ImperativePrimitives._
 import idealised.OpenCL.{BuiltInFunctionCall, GlobalSize, LocalSize}
@@ -61,6 +60,9 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
       case OpenCLNewDoubleBuffer(a, _, _, dt, n, in, out, Lambda(ps, p)) =>
         OpenCLCodeGen.codeGenOpenCLNewDoubleBuffer(a, ArrayType(n, dt), in, out, ps, p, env)
+
+      case Barrier(left, right) => OpenCL.AST.Barrier(left, right)
+
       case _: NewDoubleBuffer => throw new Exception("NewDoubleBuffer without address space found in OpenCL program.")
 
       case _ => super.cmd(phrase, env)
@@ -277,14 +279,14 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
               ExprStmt(Assignment(out_ptr, TernaryExpr(flag, tmp2, tmp1))),
               // toggle flag with xor
               ExprStmt(Assignment(flag, BinaryExpr(flag, ^, Literal("1")))),
-              Barrier(true, true)
+              OpenCL.AST.Barrier(true, true)
             ))
           })
             updatedCommEnv (done -> {
             Block(immutable.Seq(
               ExprStmt(Assignment(in_ptr, TernaryExpr(flag, tmp1, tmp2))),
               acc(out, env, CIntExpr(0) :: Nil, o => ExprStmt(Assignment(out_ptr, UnaryExpr(&, o)))),
-              Barrier(true, true)
+              OpenCL.AST.Barrier(true, true)
             ))
           }))
       ))
