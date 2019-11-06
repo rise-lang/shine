@@ -24,30 +24,29 @@ object \ extends funDef
 
 object λ extends funDef
 
-trait depFunDef {
-
+object nFun {
   def apply[T <: PhraseType](f: NatIdentifier => Phrase[T],
                              range: lift.arithmetic.Range)
                             (implicit w: Kind.IdentifierMaker[NatKind]): DepLambda[NatKind, T] = {
-    val x = w.makeIdentifier()
+    val x = NatIdentifier(freshName("n"), range)
     DepLambda[NatKind, T](x, f(x))
   }
+}
 
-  def apply[K <: Kind]: Object {
+trait depFunDef {
+  def apply[K <: Kind](): Object {
     def apply[T <: PhraseType](f: K#I => Phrase[T])
                               (implicit w: Kind.IdentifierMaker[K], kn: KindName[K]): DepLambda[K, T]
   } = new {
     def apply[T <: PhraseType](f: K#I => Phrase[T])
                               (implicit w: Kind.IdentifierMaker[K], kn: KindName[K]): DepLambda[K, T] = {
       val x = w.makeIdentifier()
-      DepLambda[K, T](x, f(x))
+      DepLambda(x, f(x))
     }
   }
-
 }
 
-object depFun extends funDef
-
+object depFun extends depFunDef
 object _Λ_ extends depFunDef
 
 object π1 {

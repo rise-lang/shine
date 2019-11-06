@@ -29,25 +29,15 @@ object Kind {
   implicit object AccessTypeIdentifierMaker extends IdentifierMaker[AccessKind] {
     override def makeIdentifier(): AccessTypeIdentifier = AccessTypeIdentifier(DPIA.freshName("access"))
   }
+}
 
-  def formatKindName(s: String): String =
-    s.dropWhile(_!='$').drop(1).takeWhile(_!='$') match {
-      case "NatIdentifier" => "nat"
-      case "DataTypeIdentifier" => "data"
-      case "AddressSpaceIdentifier" => "addressSpace"
-      case "AccessTypeIdentifier" => "access"
-      case "NatToNatIdentifier" => "nat->nat"
-      case "NatToDataIdentifier" => "nat->data"
-    }
+sealed trait PhraseKind extends Kind {
+  override type T = PhraseType
 }
 
 sealed trait DataKind extends Kind {
   override type T = DataType
   override type I = DataTypeIdentifier
-}
-
-sealed trait PhraseKind extends Kind {
-  override type T = PhraseType
 }
 
 sealed trait NatKind extends Kind {

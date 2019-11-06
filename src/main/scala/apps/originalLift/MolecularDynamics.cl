@@ -31,11 +31,6 @@ float4 id4(float4 x){
     }
 }
 kernel void KERNEL(const global float* restrict v__11, const global int* restrict v__12, float v__13, float v__14, float v__15, global float* v__23, int v_M_1, int v_N_0){
-    #ifndef WORKGROUP_GUARD
-    #define WORKGROUP_GUARD
-    #endif
-    WORKGROUP_GUARD
-    {
         // Static local memory
         // Typed Value memory
         float4 v__18; 
@@ -60,5 +55,4 @@ kernel void KERNEL(const global float* restrict v__11, const global int* restric
                 // end map_seq
             }
         }
-    }
 }

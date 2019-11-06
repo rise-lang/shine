@@ -3,7 +3,7 @@ package benchmarks.cgo17
 import apps.convolution._
 import lift.core.DSL._
 import benchmarks.core._
-import util.gen
+import util._
 
 object convolution {
   def withSize(N: Int, sampleCount: Int, originalSuffix: String): Unit = {

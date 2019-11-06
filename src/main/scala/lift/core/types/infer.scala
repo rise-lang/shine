@@ -282,8 +282,8 @@ object infer {
         Some(solve(Seq(NatConstraint(sa, sb), TypeConstraint(ea, eb))))
       case (DepArrayType(sa, ea), DepArrayType(sb, eb)) =>
         Some(solve(Seq(NatConstraint(sa, sb), NatToDataConstraint(ea, eb))))
-      case (TupleType(ea@_*), TupleType(eb@_*)) =>
-        Some(solve((ea zip eb).map{ case (aa, bb) => TypeConstraint(aa, bb) }))
+      case (PairType(pa1, pa2), PairType(pb1, pb2)) =>
+        Some(solve(Seq(TypeConstraint(pa1, pb1), TypeConstraint(pa2, pb2))))
       case (FunType(ina, outa), FunType(inb, outb)) =>
         Some(solve(Seq(TypeConstraint(ina, inb), TypeConstraint(outa, outb))))
       case (DepFunType(na: NatIdentifier, ta), DepFunType(nb: NatIdentifier, tb)) =>
@@ -292,9 +292,9 @@ object infer {
         bound -= na
         bound -= nb
         Some(solve(Seq(
+          NatConstraint(n, na), NatConstraint(n, nb),
           TypeConstraint(substitute.natInType(n, `for`=na, in=ta),
-            substitute.natInType(n, `for`=nb, in=tb)),
-          NatConstraint(n, na), NatConstraint(n, nb)
+            substitute.natInType(n, `for`=nb, in=tb))
         )))
       case (DepFunType(dta: DataTypeIdentifier, ta), DepFunType(dtb: DataTypeIdentifier, tb)) =>
         val dt = DataTypeIdentifier(freshName("t"))
@@ -302,9 +302,9 @@ object infer {
         bound -= dta
         bound -= dtb
         Some(solve(Seq(
+          TypeConstraint(dt, dta), TypeConstraint(dt, dtb),
           TypeConstraint(substitute.typeInType(dt, `for`=dta, in=ta),
-            substitute.typeInType(dt, `for`=dtb, in=tb)),
-          TypeConstraint(dt, dta), TypeConstraint(dt, dtb)
+            substitute.typeInType(dt, `for`=dtb, in=tb))
         )))
       case (DepFunType(asa: AddressSpaceIdentifier, ta), DepFunType(asb: AddressSpaceIdentifier, tb)) => ???
       case (_: NatToDataApply, dt: DataType) => Some(Solution.subs(a, dt)) // substitute apply by data type
@@ -327,6 +327,10 @@ object infer {
       case (_, s: lift.arithmetic.Sum) => nat.unifySum(s, a)
       case (p: lift.arithmetic.Prod, _) => nat.unifyProd(p, b)
       case (_, p: lift.arithmetic.Prod) => nat.unifyProd(p, a)
+      case (p: lift.arithmetic.Pow, _) => nat.unifyProd(p, b)
+      case (_, p: lift.arithmetic.Pow) => nat.unifyProd(p, a)
+      case (p: lift.arithmetic.IntDiv, _) => nat.unifyProd(p, b)
+      case (_, p: lift.arithmetic.IntDiv) => nat.unifyProd(p, a)
       case _ => error(s"cannot unify $a and $b")
     })
 
@@ -361,22 +365,27 @@ object infer {
   private object nat {
     import lift.arithmetic._
 
-    // collect free variables with only 1 occurrence
-    def potentialPivots(n: Nat)
-                       (implicit bound: mutable.Set[Kind.Identifier]): Set[NamedVar] = {
+    def freeOccurences(n: Nat)
+                      (implicit bound: mutable.Set[Kind.Identifier]): Map[NamedVar, Integer] = {
       val free_occurrences = mutable.Map[NamedVar, Integer]()
         .withDefault(_ => 0)
       ArithExpr.visit(n, {
         case v: NamedVar if !bound(NatIdentifier(v)) => free_occurrences(v) += 1
         case _ =>
       })
+      free_occurrences.toMap
+    }
 
-      free_occurrences.foldLeft(Set[NamedVar]())({ case (potential, (v, c)) =>
+    // collect free variables with only 1 occurrence
+    def potentialPivots(n: Nat)
+                       (implicit bound: mutable.Set[Kind.Identifier]): Set[NamedVar] = {
+      freeOccurences(n).foldLeft(Set[NamedVar]())({ case (potential, (v, c)) =>
         if (c == 1) { potential + v }
         else { potential }
       })
     }
 
+    @scala.annotation.tailrec
     def pivotSolution(pivot: NamedVar, n: Nat, value: Nat)
                      (implicit bound: mutable.Set[Kind.Identifier]): Option[Solution] = {
       n match {
@@ -401,25 +410,24 @@ object infer {
     }
 
     def tryPivots(n: Nat, value: Nat)
-                 (implicit bound: mutable.Set[Kind.Identifier]): Option[Solution] = {
-      val pivots = potentialPivots(n)
-      pivots.foreach(pivotSolution(_, n, value) match {
-        case Some(s) => return Some(s)
+                 (implicit bound: mutable.Set[Kind.Identifier]): Solution = {
+      potentialPivots(n).foreach(pivotSolution(_, n, value) match {
+        case Some(s) => return s
         case None =>
       })
-      None
+      error(s"could not pivot $n = $value")
     }
 
-    def unifyProd(p: Prod, n: Nat)
+    def unifyProd(p: Nat, n: Nat)
                  (implicit bound: mutable.Set[Kind.Identifier]): Solution = {
       // n = p --> 1 = p * (1/n)
-      tryPivots(p /^ n, 1).get
+      tryPivots(p /^ n, 1)
     }
 
     def unifySum(s: Sum, n: Nat)
                 (implicit bound: mutable.Set[Kind.Identifier]): Solution = {
       // n = s --> 0 = s + (-n)
-      tryPivots(s - n, 0).get
+      tryPivots(s - n, 0)
     }
 
     def unifyIdent(i: NamedVar, n: Nat)

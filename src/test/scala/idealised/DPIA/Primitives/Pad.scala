@@ -8,6 +8,8 @@ import lift.core.HighLevelConstructs.padClamp2D
 import util.gen
 
 class Pad extends test_util.Tests {
+  private val id = fun(x => x)
+
   test("Simple C constant pad input and copy") {
     val e = nFun(n => fun(ArrayType(n, float))(xs =>
       xs |> padCst(2)(3)(l(5.0f)) |> mapSeq(fun(x => x))
@@ -70,6 +72,40 @@ class Pad extends test_util.Tests {
     ))
 
     gen.OpenCLKernel(e)
+  }
+
+  // FIXME
+  ignore("OpenCL pad before or after transpose") {
+    import lift.OpenCL.DSL._
+
+    val range = lift.arithmetic.RangeAdd(1, lift.arithmetic.PosInf, 1)
+    val k1 = gen.OpenCLKernel(nFun(range, n =>
+      fun((4`.`n`.`int) ->: ((n+2)`.`4`.`int))(xs =>
+        xs |> transpose |> padClamp(1)(1) |> mapGlobal(mapSeqUnroll(id))
+      )
+    ))
+    val k2 = gen.OpenCLKernel(nFun(range, n =>
+      fun((4`.`n`.`int) ->: ((n+2)`.`4`.`int))(xs =>
+        xs |> map(padClamp(1)(1)) |> transpose |> mapGlobal(mapSeqUnroll(id))
+      )
+    ))
+
+    val N = 20
+    val random = new scala.util.Random()
+    val input = Array.fill(4, N)(random.nextInt)
+
+    import idealised.OpenCL._
+    val localSize = LocalSize(1)
+    val globalSize = GlobalSize(1)
+
+    val f1 = k1.as[ScalaFunction `(` Int `,` Array[Array[Int]] `)=>`Array[Int]]
+    val f2 = k2.as[ScalaFunction `(` Int `,` Array[Array[Int]] `)=>`Array[Int]]
+
+    val ((r1, _), (r2, _)) = util.withExecutor {
+      (f1(localSize, globalSize)(N `,` input),
+        f2(localSize, globalSize)(N `,` input))
+    }
+    util.assertSame(r1, r2, "results are different")
   }
 
   /* TODO

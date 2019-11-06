@@ -7,10 +7,11 @@ import primitiveMacro.Primitive.primitive
 
 object primitives {
 
-  @primitive case class Let()(override val t: Type = TypePlaceholder) extends Primitive {
-    override def typeScheme: Type = implDT(s => implDT(t =>
-      (s ->: t) ->: (s ->: t)
-    ))
+  @primitive case class ArrayCons(n: Int)(override val t: Type = TypePlaceholder) extends Primitive {
+    private def tRec(m: Int, dt: DataType): Type =
+      if (m <= 0) { ArrayType(n, dt) }
+      else { dt ->: tRec(m - 1, dt) }
+    override def typeScheme: Type = implDT(t => tRec(n, t))
   }
 
   @primitive case class Cast()(override val t: Type = TypePlaceholder) extends Primitive {
@@ -32,7 +33,7 @@ object primitives {
 
   @primitive case class DepZip()(override val t: Type = TypePlaceholder) extends Primitive {
     override def typeScheme: Type = implN(n => implN2DT(ft1 => implN2DT(ft2 =>
-      DepArrayType(n, ft1) ->: DepArrayType(n, ft2) ->: DepArrayType(n, n2dtFun(i => TupleType(ft1(i), ft2(i))))
+      DepArrayType(n, ft1) ->: DepArrayType(n, ft2) ->: DepArrayType(n, n2dtFun(i => PairType(ft1(i), ft2(i))))
     )))
   }
 
@@ -43,7 +44,7 @@ object primitives {
   }
 
   @primitive case class Fst()(override val t: Type = TypePlaceholder) extends Primitive {
-    override def typeScheme: Type = implDT(s => implDT(t => TupleType(s, t) ->: s))
+    override def typeScheme: Type = implDT(s => implDT(t => PairType(s, t) ->: s))
   }
 
   @primitive case class Gather()(override val t: Type = TypePlaceholder) extends Primitive {
@@ -87,9 +88,27 @@ object primitives {
     )))
   }
 
+  @primitive case class Let()(override val t: Type = TypePlaceholder) extends Primitive {
+    override def typeScheme: Type = implDT(s => implDT(t =>
+      (s ->: t) ->: (s ->: t)
+    ))
+  }
+
   @primitive case class Map()(override val t: Type = TypePlaceholder) extends Primitive {
     override def typeScheme: Type = implN(n => implDT(s => implDT(t =>
       (s ->: t) ->: ArrayType(n, s) ->: ArrayType(n, t)
+    )))
+  }
+
+  @primitive case class MapFst()(override val t: Type = TypePlaceholder) extends Primitive {
+    override def typeScheme: Type = implDT(s => implDT(t => implDT(s2 =>
+      (s ->: s2) ->: PairType(s, t) ->: PairType(s2, t)
+    )))
+  }
+
+  @primitive case class MapSnd()(override val t: Type = TypePlaceholder) extends Primitive {
+    override def typeScheme: Type = implDT(s => implDT(t => implDT(t2 =>
+      (t ->: t2) ->: PairType(s, t) ->: PairType(s, t2)
     )))
   }
 
@@ -132,7 +151,7 @@ object primitives {
 
   @primitive case class Pair()(override val t: Type = TypePlaceholder) extends Primitive {
     override def typeScheme: Type = implDT(s => implDT(t =>
-      s ->: t ->: TupleType(s, t)
+      s ->: t ->: PairType(s, t)
     ))
   }
 
@@ -188,7 +207,7 @@ object primitives {
   }
 
   @primitive case class Snd()(override val t: Type = TypePlaceholder) extends Primitive {
-    override def typeScheme: Type = implDT(s => implDT(t => TupleType(s, t) ->: t))
+    override def typeScheme: Type = implDT(s => implDT(t => PairType(s, t) ->: t))
   }
 
   @primitive case class Split()(override val t: Type = TypePlaceholder) extends Primitive {
@@ -216,50 +235,50 @@ object primitives {
 
   @primitive case class Unzip()(override val t: Type = TypePlaceholder) extends Primitive {
     override def typeScheme: Type = implN(n => implDT(dt1 => implDT(dt2 =>
-      ArrayType(n, TupleType(dt1, dt2)) ->: TupleType(ArrayType(n, dt1), ArrayType(n, dt2))
+      ArrayType(n, PairType(dt1, dt2)) ->: PairType(ArrayType(n, dt1), ArrayType(n, dt2))
     )))
   }
 
   @primitive case class Zip()(override val t: Type = TypePlaceholder) extends Primitive {
     override def typeScheme: Type = implN(n => implDT(a => implDT(b =>
-      ArrayType(n, a) ->: ArrayType(n, b) ->: ArrayType(n, TupleType(a, b))
+      ArrayType(n, a) ->: ArrayType(n, b) ->: ArrayType(n, PairType(a, b))
     )))
   }
 
   @primitive case class Neg()(override val t: Type = TypePlaceholder) extends Primitive {
-    override def typeScheme: Type = implDT(t => t ->: t)
+    override def typeScheme: Type = implBT(t => t ->: t)
   }
 
   @primitive case class Add()(override val t: Type = TypePlaceholder) extends Primitive {
-    override def typeScheme: Type = implDT(t => t ->: t ->: t)
+    override def typeScheme: Type = implBT(t => t ->: t ->: t)
   }
 
   @primitive case class Sub()(override val t: Type = TypePlaceholder) extends Primitive {
-    override def typeScheme: Type = implDT(t => t ->: t ->: t)
+    override def typeScheme: Type = implBT(t => t ->: t ->: t)
   }
 
   @primitive case class Mul()(override val t: Type = TypePlaceholder) extends Primitive {
-    override def typeScheme: Type = implDT(t => t ->: t ->: t)
+    override def typeScheme: Type = implBT(t => t ->: t ->: t)
   }
 
   @primitive case class Div()(override val t: Type = TypePlaceholder) extends Primitive {
-    override def typeScheme: Type = implDT(t => t ->: t ->: t)
+    override def typeScheme: Type = implBT(t => t ->: t ->: t)
   }
 
   @primitive case class Mod()(override val t: Type = TypePlaceholder) extends Primitive {
-    override def typeScheme: Type = implDT(t => t ->: t ->: t)
+    override def typeScheme: Type = implBT(t => t ->: t ->: t)
   }
 
   @primitive case class Gt()(override val t: Type = TypePlaceholder) extends Primitive {
-    override def typeScheme: Type = implDT(t => t ->: t ->: bool)
+    override def typeScheme: Type = implBT(t => t ->: t ->: bool)
   }
 
   @primitive case class Lt()(override val t: Type = TypePlaceholder) extends Primitive {
-    override def typeScheme: Type = implDT(t => t ->: t ->: bool)
+    override def typeScheme: Type = implBT(t => t ->: t ->: bool)
   }
 
   @primitive case class Equal()(override val t: Type = TypePlaceholder) extends Primitive {
-    override def typeScheme: Type = implDT(t => t ->: t ->: bool)
+    override def typeScheme: Type = implBT(t => t ->: t ->: bool)
   }
 
   // TODO: should vectorisation be in the core or not?

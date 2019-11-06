@@ -17,7 +17,7 @@ object DepMapSeqI {
             out: Phrase[AccType])
            (implicit context: TranslationContext): Phrase[CommType] =
   {
-    ForNat(n, _Λ_( i => f(i)(in `@d` i)(out `@d` i), RangeAdd(0, n, 1)), unroll = false)
+    ForNat(n, nFun(i => f(i)(in `@d` i)(out `@d` i), RangeAdd(0, n, 1)), unroll = false)
   }
 }
 
@@ -30,6 +30,6 @@ object DepMapSeqIUnroll {
             out: Phrase[AccType])
            (implicit context: TranslationContext): Phrase[CommType] =
   {
-    ForNat(n, _Λ_( i => f(i)(in `@d` i)(out `@d` i), RangeAdd(0, n, 1)), unroll = true)
+    ForNat(n, nFun(i => f(i)(in `@d` i)(out `@d` i), RangeAdd(0, n, 1)), unroll = true)
   }
 }

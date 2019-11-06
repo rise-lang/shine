@@ -30,6 +30,7 @@ object fromLift {
       val ee = expression(e).asInstanceOf[Phrase[PhraseType]]
       Apply(ef, ee)
     }
+
     case l.DepLambda(x, e) => x match {
       case n: l.NatIdentifier =>
         DepLambda[NatKind](natIdentifier(n))(expression(e))
@@ -41,16 +42,16 @@ object fromLift {
 
     case l.DepApp(f, x) => x match {
       case n: Nat =>
-        DepApply[NatKind, PhraseType]( // TODO: should we try to reduce by lifting here?
+        DepApply[NatKind, PhraseType](
           expression(f).asInstanceOf[Phrase[DepFunType[NatKind, PhraseType]]],
           n)
       case dt: lt.DataType =>
-        DepApply[DataKind, PhraseType]( // TODO: should we try to reduce by lifting here?
+        DepApply[DataKind, PhraseType](
           expression(f).asInstanceOf[Phrase[DepFunType[DataKind, PhraseType]]],
           dataType(dt)
         )
       case a: lt.AddressSpace =>
-        DepApply[AddressSpaceKind, PhraseType]( // TODO: should we try to reduce by lifting here?
+        DepApply[AddressSpaceKind, PhraseType](
           expression(f).asInstanceOf[Phrase[DepFunType[AddressSpaceKind, PhraseType]]],
           addressSpace(a)
         )
@@ -96,7 +97,7 @@ object fromLift {
     case i: lt.DataTypeIdentifier => dataTypeIdentifier(i)
     case lt.ArrayType(sz, et) => ArrayType(sz, dataType(et))
     case lt.DepArrayType(sz, f) => DepArrayType(sz, ntd(f))
-    case lt.TupleType(a, b) => RecordType(dataType(a), dataType(b))
+    case lt.PairType(a, b) => PairType(dataType(a), dataType(b))
     case lt.NatToDataApply(f, n) => NatToDataApply(ntd(f), n)
   }
 
@@ -131,13 +132,14 @@ object fromLift {
 
   def data(d: ls.Data): OpSem.Data = d match {
     case ls.ArrayData(a) => OpSem.ArrayData(a.map(data).toVector)
-    case ls.TupleData(a, b) => OpSem.RecordData(data(a), data(b))
+    case ls.PairData(a, b) => OpSem.PairData(data(a), data(b))
     case ls.BoolData(b) => OpSem.BoolData(b)
     case ls.IntData(i) => OpSem.IntData(i)
     case ls.FloatData(f) => OpSem.FloatData(f)
     case ls.DoubleData(d) => OpSem.DoubleData(d)
     case ls.VectorData(v) => OpSem.VectorData(v.map(data(_)).toVector)
     case ls.IndexData(i, n) => OpSem.IndexData(i, n)
+    case ls.NatData(n) => OpSem.NatData(n)
   }
 
   import idealised.DPIA.FunctionalPrimitives._
@@ -460,8 +462,8 @@ object fromLift {
 
       case (core.Unzip(),
       lt.FunType(
-      lt.ArrayType(n, lt.TupleType(la, lb)),
-      lt.TupleType(lt.ArrayType(_, _), lt.ArrayType(_, _))))
+      lt.ArrayType(n, lt.PairType(la, lb)),
+      lt.PairType(lt.ArrayType(_, _), lt.ArrayType(_, _))))
       =>
         val a = dataType(la)
         val b = dataType(lb)
@@ -479,18 +481,38 @@ object fromLift {
             Zip(n, a, b, x, y)))
 
       case (core.Fst(),
-      lt.FunType(lt.TupleType(la, lb), _))
+      lt.FunType(lt.PairType(la, lb), _))
       =>
         val a = dataType(la)
         val b = dataType(lb)
         fun[ExpType](exp"[($a x $b), $read]", e => Fst(a, b, e))
 
+      case (core.MapFst(),
+      lt.FunType(lt.FunType(la: lt.DataType, la2: lt.DataType),
+      lt.FunType(lt.PairType(_, lb), _)))
+      =>
+        val a = dataType(la)
+        val a2 = dataType(la2)
+        val b = dataType(lb)
+        fun[ExpType ->: ExpType](exp"[$a, $read]" ->: exp"[$a2, $read]", f =>
+          fun[ExpType](exp"[($a x $b), $read]", e => MapFst(a, b, a2, f, e)))
+
       case (core.Snd(),
-      lt.FunType(lt.TupleType(la, lb), _))
+      lt.FunType(lt.PairType(la, lb), _))
       =>
         val a = dataType(la)
         val b = dataType(lb)
         fun[ExpType](exp"[($a x $b), $read]", e => Snd(a, b, e))
+
+      case (core.MapSnd(),
+      lt.FunType(lt.FunType(lb: lt.DataType, lb2: lt.DataType),
+      lt.FunType(lt.PairType(la, _), _)))
+      =>
+        val a = dataType(la)
+        val b = dataType(lb)
+        val b2 = dataType(lb2)
+        fun[ExpType ->: ExpType](exp"[$b, $read]" ->: exp"[$b2, $read]", f =>
+          fun[ExpType](exp"[($a x $b), $read]", e => MapSnd(a, b, b2, f, e)))
 
       case (core.Pair(),
       lt.FunType(la: lt.DataType,
@@ -500,7 +522,7 @@ object fromLift {
         val b = dataType(lb)
         fun[ExpType](exp"[$a, $read]", x =>
           fun[ExpType](exp"[$b, $read]", y =>
-            Record(a, b, x, y)))
+            Pair(a, b, x, y)))
 
       case (core.Idx(),
       lt.FunType(_,
@@ -584,6 +606,9 @@ object fromLift {
         val a = dataType(la)
         fun[ExpType ->: ExpType](exp"[idx($n), $read]" ->: exp"[$a, $read]", f =>
           Generate(n, a, f))
+
+      case (core.ArrayCons(_), lt) =>
+        wrapArray(lt, Vector())
 
       case (core.Iterate(),
       lt.DepFunType(k: l.NatIdentifier,
@@ -707,6 +732,16 @@ object fromLift {
         wrapForeignFun(decl, intTs, outT, args :+ a))
     } else {
       ForeignFunction(decl, intTs, outT, args)
+    }
+  }
+
+  def wrapArray(t: lt.Type, elements: Vector[Phrase[ExpType]]): Phrase[_ <: PhraseType] = {
+    t match {
+      case lt.ArrayType(_, et) => Array(dataType(et), elements)
+      case lt.FunType(in: lt.DataType, t2) =>
+        fun[ExpType](ExpType(dataType(in), read), e =>
+          wrapArray(t2, elements :+ e))
+      case _ => error(s"did not expect $t")
     }
   }
 }

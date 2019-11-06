@@ -6,11 +6,11 @@ import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types._
 
-abstract class AbstractMapLoop(n: Nat,
-                               dt1: DataType,
-                               dt2: DataType,
-                               f: Phrase[ExpType ->: ExpType],
-                               array: Phrase[ExpType])
+abstract class AbstractMapLoop(override val n: Nat,
+                               override val dt1: DataType,
+                               override val dt2: DataType,
+                               override val f: Phrase[ExpType ->: ExpType],
+                               override val array: Phrase[ExpType])
   extends AbstractMap(n, dt1, dt2, f, array)
 {
   def makeMapI(n: Nat, dt1: DataType, dt2: DataType,
@@ -38,7 +38,8 @@ abstract class AbstractMapLoop(n: Nat,
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
-    //TODO should be removed
+    println("WARNING: map loop continuation translation allocates memory")
+    // TODO should be removed
     `new`(dt"[$n.$dt2]", λ(exp"[$n.$dt2, $read]" x acc"[$n.$dt2]")(tmp =>
       acc(this)(tmp.wr) `;` C(tmp.rd) ))
   }

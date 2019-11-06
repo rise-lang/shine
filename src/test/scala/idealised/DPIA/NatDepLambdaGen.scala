@@ -19,7 +19,8 @@ class NatDepLambdaGen extends idealised.util.TestsWithExecutor {
         fun(ArrayType(n, float))(in => in :>> split(x) :>> map(split(y)) :>> mapGlobal(mapSeq(mapSeq(id)))))
 
     val compiledProg =
-      idealised.OpenCL.KernelGenerator.makeCode(LocalSize(8), GlobalSize(32))(idealised.DPIA.FromSurfaceLanguage(TypeInference(natDepProg, Map())))
+      idealised.OpenCL.KernelGenerator
+        .makeCode(LocalSize(8), GlobalSize(32))(idealised.DPIA.FromSurfaceLanguage(TypeInference(natDepProg, Map())), "KERNEL")
     println(compiledProg.code)
     SyntaxChecker.checkOpenCL(compiledProg.code)
   }

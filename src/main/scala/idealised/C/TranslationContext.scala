@@ -18,20 +18,13 @@ class TranslationContext() extends idealised.DPIA.Compilation.TranslationContext
       case _: IndexType => Assign(dt, lhs, rhs)
 
       //TODO think about this more thoroughly
-      case RecordType(dt1, dt2) => Assign(dt, lhs, rhs)
+      case PairType(_, _) => Assign(dt, lhs, rhs)
         // assign(dt1, recordAcc1(dt1, dt2, lhs), fst(rhs)) `;` assign(dt2, recordAcc2(dt1, dt2, lhs), snd(rhs))
 
       //TODO makes a decision. Not allowed!
-      case ArrayType(n, et) =>
-        MapSeqI(n, et, et, λ(ExpType(et, read))(x => λ(AccType(et))(a => assign(et, a, x) )), rhs, lhs)(this)
-
-      //TODO makes a decision. Not allowed!
       case DepArrayType(n, ft) =>
-
-        val k = DPIA.NatIdentifier(freshName("k"))
-
         DepMapSeqI(n, ft, ft,
-          DepLambda[NatKind](k)(
+          depFun[NatKind]()(k =>
             λ(ExpType(ft(k), read))(x => λ(AccType( ft(k) ))(a => assign(ft(k), a, x) ))),
           rhs, lhs)(this)
 

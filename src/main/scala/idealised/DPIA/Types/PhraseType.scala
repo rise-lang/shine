@@ -22,7 +22,7 @@ sealed case class CommType() extends PhraseType {
 
 object comm extends CommType
 
-final case class PairType[T1 <: PhraseType, T2 <: PhraseType](t1: T1, t2: T2)
+final case class PhrasePairType[T1 <: PhraseType, T2 <: PhraseType](t1: T1, t2: T2)
   extends PhraseType {
   override def toString = s"$t1 x $t2"
 }
@@ -79,13 +79,13 @@ object PhraseType {
         case a: AccType => AccType(DataType.substitute(dt, `for`, a.dataType))
       }
       case c: CommType => c
-      case p: PairType[_, _] =>
-        PairType(substitute(dt, `for`, p.t1), substitute(dt, `for`, p.t2))
+      case p: PhrasePairType[_, _] =>
+        PhrasePairType(substitute(dt, `for`, p.t1), substitute(dt, `for`, p.t2))
       case f: FunType[_, _] =>
         FunType(substitute(dt, `for`, f.inT), substitute(dt, `for`, f.outT))
       case pf: PassiveFunType[_, _] =>
         PassiveFunType(substitute(dt, `for`, pf.inT), substitute(dt, `for`, pf.outT))
-      case df: DepFunType[k, _] => // put a k here to make the IDE happy
+      case df: DepFunType[_, _] =>
         DepFunType(df.x, substitute(dt, `for`, df.t))(df.kn)
     }
   }
@@ -129,13 +129,13 @@ object PhraseType {
         case a: AccType => AccType(DataType.substitute(ae, `for`, a.dataType))
       }
       case c: CommType => c
-      case p: PairType[_, _] =>
-        PairType(substitute(ae, `for`, p.t1), substitute(ae, `for`, p.t2))
+      case p: PhrasePairType[_, _] =>
+        PhrasePairType(substitute(ae, `for`, p.t1), substitute(ae, `for`, p.t2))
       case f: FunType[_, _] =>
         FunType(substitute(ae, `for`, f.inT), substitute(ae, `for`, f.outT))
       case pf: PassiveFunType[_, _] =>
         PassiveFunType(substitute(ae, `for`, pf.inT), substitute(ae, `for`, pf.outT))
-      case df: DepFunType[k, _] => // put a k here to make the IDE happy
+      case df: DepFunType[_, _] =>
         DepFunType(df.x, substitute(ae, `for`, df.t))(df.kn)
     }
   }

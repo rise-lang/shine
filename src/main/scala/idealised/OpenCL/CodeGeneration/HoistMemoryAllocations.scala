@@ -1,12 +1,12 @@
 package idealised.OpenCL.CodeGeneration
 
+import lift.arithmetic.ArithExpr.Math.Min
 import idealised.DPIA.DSL._
 import idealised.DPIA.ImperativePrimitives._
 import idealised.DPIA.Phrases.{VisitAndRebuild, _}
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised.OpenCL.ImperativePrimitives.{OpenCLNew, OpenCLParFor}
-import idealised.OpenMP.ImperativePrimitives.ParForNat
+import idealised.OpenCL.ImperativePrimitives.{OpenCLNew, OpenCLParFor, OpenCLParForNat}
 import idealised._
 
 object HoistMemoryAllocations {
@@ -31,8 +31,8 @@ object HoistMemoryAllocations {
   private class VisitorScope(var replacedAllocations: List[AllocationInfo]) {
 
     case class ParForInfo(parallelismLevel: idealised.OpenCL.ParallelismLevel,
-                          loopIndex: Either[Identifier[ExpType],Nat],
-                          length: Nat)
+                          allocations: Nat,
+                          allocation: Either[Identifier[ExpType],Nat])
 
     case class Visitor(parForInfos: List[ParForInfo]) extends VisitAndRebuild.Visitor {
 
@@ -40,42 +40,24 @@ object HoistMemoryAllocations {
 
       override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
         p match {
-          case f: For =>
-            f.body match {
-              case Lambda(loopIndex, _) =>
-                Continue(f,
-                  Visitor(ParForInfo(OpenCL.Sequential, Left(loopIndex), f.n) :: parForInfos))
-              case _ => throw new Exception("This should not happen")
-            }
-
-          case f: ForNat =>
-            f.body match {
-              case DepLambda(loopIndex: NatIdentifier, _) =>
-                Continue(f,
-                  Visitor(ParForInfo(OpenCL.Sequential, Right(loopIndex), f.n) :: parForInfos))
-              case _ => throw new Exception("This should not happen")
-            }
-
-          case pf:ParForNat =>
-            pf.body match {
-              case DepLambda(loopIndex: NatIdentifier, _) =>
-                Continue(pf,
-                  Visitor(ParForInfo(OpenCL.Global, Right(loopIndex), pf.n) :: parForInfos))
-              case _ => throw new Exception("This should not happen")
-            }
-
-          // remember param and length for each `par for`
+          // 1 thread only needs 1 allocation
+          // `t` threads need `t` individual allocations
+          // we also do not need more allocations that loop iterations
+          case f: For => Continue(f,
+            Visitor(ParForInfo(OpenCL.Sequential, Min(1, f.n), Right(0)) :: parForInfos))
+          case f: ForNat => Continue(f,
+            Visitor(ParForInfo(OpenCL.Sequential, Min(1, f.n), Right(0)) :: parForInfos))
           case pf: OpenCLParFor =>
-            pf.body match {
-              case Lambda(loopIndex, _) =>
-                Continue(pf,
-                  Visitor(ParForInfo(pf.parallelismLevel, Left(loopIndex), pf.n) :: parForInfos))
-              case _ => throw new Exception("This should not happen")
-            }
+            val t = pf.step
+            Continue(pf,
+              Visitor(ParForInfo(pf.parallelismLevel, Min(t, pf.n), Right(pf.init)) :: parForInfos))
+          case pfn: OpenCLParForNat => ???
+
           case OpenCLNew(addressSpace, _, Lambda(variable, body))  if addressSpace != AddressSpace.Private =>
-            Stop(
+            Stop( // TODO? there might be fors and news in the body
               replaceNew(addressSpace.asInstanceOf[AddressSpace],
                 variable, body)).asInstanceOf[Result[Phrase[T]]]
+
           case _ => Continue(p, this)
         }
       }
@@ -87,10 +69,10 @@ object HoistMemoryAllocations {
         val (finalVariable, finalBody) = parForInfos.foldLeft((variable, body)) {
           // ... to rewrite the new's body given the oldParam, oldBody,
           // as well as the index `i` and length `n` of a `par for` ...
-          case ((oldVariable, oldBody), ParForInfo(parallelismLevel, i, n)) =>
+          case ((oldVariable, oldBody), ParForInfo(parallelismLevel, n, i)) =>
             addressSpace match {
               case AddressSpace.Global =>
-                performRewrite(oldVariable, oldBody, i, n)
+                  performRewrite(oldVariable, oldBody, i, n)
               case AddressSpace.Local =>
                 parallelismLevel match {
                   case OpenCL.Local | OpenCL.Sequential =>
@@ -116,10 +98,10 @@ object HoistMemoryAllocations {
                                  oldBody: Phrase[CommType],
                                  i: Either[Identifier[ExpType],Nat],
                                  n: Nat): (Identifier[VarType], Phrase[CommType]) = {
-        // Create `newParam' with a new type ...
+        // Create `newVariable' with `n` times more memory ...
         val newVariable = Identifier(oldVariable.name, varT"[$n.${oldVariable.t.t1.dataType}]")
-        // ... and substitute all occurrences of the oldParam with
-        // the newParam indexed by the `par for` index, ...
+        // ... and substitute all occurrences of `oldVariable` with
+        // `newVariable` indexed by the index `i`, ...
         val newBody = i match {
           case Left(identExpr) =>
             Phrase.substitute(

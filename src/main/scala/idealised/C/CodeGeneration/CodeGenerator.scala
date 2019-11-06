@@ -1,6 +1,7 @@
 package idealised.C.CodeGeneration
 
 import idealised.C.AST.Block
+import idealised.C.AST.DefaultImplementations.ArrayLiteral
 import idealised.DPIA.Compilation.SimplifyNats
 import idealised.DPIA.DSL._
 import idealised.DPIA.FunctionalPrimitives._
@@ -52,9 +53,9 @@ object CodeGenerator {
   }
 
   sealed trait PathExpr
-  sealed trait TupleAccess extends PathExpr
-  final case object FstMember extends TupleAccess
-  final case object SndMember extends TupleAccess
+  sealed trait PairAccess extends PathExpr
+  final case object FstMember extends PairAccess
+  final case object SndMember extends PairAccess
   final case class CIntExpr(num: Nat) extends PathExpr
   implicit def cIntExprToNat(cexpr: CIntExpr): Nat = cexpr.num
 
@@ -183,8 +184,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error(s"Expected two C-Integer-Expressions on the path.")
       }
 
-      case RecordAcc1(_, _, a) => acc(a, env, FstMember :: path, cont)
-      case RecordAcc2(_, _, a) => acc(a, env, SndMember :: path, cont)
+      case PairAcc1(_, _, a) => acc(a, env, FstMember :: path, cont)
+      case PairAcc2(_, _, a) => acc(a, env, SndMember :: path, cont)
 
       case ZipAcc1(_, _, _, a) => path match {
         case (i : CIntExpr) :: ps => acc(a, env, i :: FstMember :: ps, cont)
@@ -194,7 +195,11 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case (i : CIntExpr) :: ps => acc(a, env, i :: SndMember :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
-      case UnzipAcc(_, _, _, _) => ???
+      case UnzipAcc(_, _, _, a) => path match {
+        case (i: CIntExpr) :: FstMember :: ps => acc(a, env, FstMember :: i :: ps, cont)
+        case (i: CIntExpr) :: SndMember :: ps => acc(a, env, SndMember :: i :: ps, cont)
+        case _ => error(s"unexpected $path")
+      }
 
       case TakeAcc(_, _, _, a) => acc(a, env, path, cont)
       case DropAcc(n, _, _, a) => path match {
@@ -216,6 +221,16 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case MapAcc(n, dt, _, f, a) => path match {
         case (i : CIntExpr) :: ps => acc( f( IdxAcc(n, dt, AsIndex(n, Natural(i)), a) ), env, ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
+      }
+      case MapFstAcc(_, dt2, dt3, f, a) => path match {
+        case FstMember :: ps => acc(f(PairAcc1(dt3, dt2, a)), env, ps, cont)
+        case SndMember :: ps => acc(  PairAcc2(dt3, dt2, a) , env, ps, cont)
+        case _ => error(s"unexpected $path")
+      }
+      case MapSndAcc(dt1, _, dt3, f, a) => path match {
+        case FstMember :: ps => acc(  PairAcc1(dt1, dt3, a) , env, ps, cont)
+        case SndMember :: ps => acc(f(PairAcc2(dt1, dt3, a)), env, ps, cont)
+        case _ => error(s"unexpected $path")
       }
 
       case IdxAcc(_, _, i, a) => CCodeGen.codeGenIdxAcc(i, a, env, path, cont)
@@ -244,17 +259,20 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case Phrases.Literal(n) => cont(path match {
         case Nil =>
-            n.dataType match {
-              case _: IndexType => CCodeGen.codeGenLiteral(n)
-              case _: ScalarType => CCodeGen.codeGenLiteral(n)
-              case _ => error ("Expected an IndexType or ScalarType.")
-          }
-        case (i : CIntExpr) :: Nil =>
           n.dataType match {
-            case _: ArrayType => C.AST.ArraySubscript(CCodeGen.codeGenLiteral(n), C.AST.ArithmeticExpr(i))
+            case _: IndexType => CCodeGen.codeGenLiteral(n)
+            case _: ScalarType => CCodeGen.codeGenLiteral(n)
+            case _ => error ("Expected an IndexType or ScalarType.")
+          }
+        case (i : CIntExpr) :: ps =>
+          (n, n.dataType) match {
+            case (ArrayData(elems), ArrayType(_, et)) => try {
+              generateAccess(et, CCodeGen.codeGenLiteral(elems(i.eval)), ps, env)
+            } catch {
+              case NotEvaluableException() => error(s"could not evaluate $i")
+            }
             case _ => error("Expected an ArrayType.")
           }
-        // case (_ :: _ :: Nil, _: ArrayType) => C.AST.Literal("0.0f") // TODO: (used in gemm like this) !!!!!!!
         case _ => error(s"Unexpected: $n $path")
       })
 
@@ -310,32 +328,32 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       }
 
       case Zip(n, dt1, dt2, e1, e2) => path match {
-        case (i: CIntExpr) :: (xj : TupleAccess) :: ps => xj match {
+        case (i: CIntExpr) :: (xj : PairAccess) :: ps => xj match {
           case FstMember => exp(e1, env, i :: ps, cont)
           case SndMember => exp(e2, env, i :: ps, cont)
         }
         case (i: CIntExpr) :: Nil =>
           val j = AsIndex(n, Natural(i))
-          exp(Record(dt1, dt2, Idx(n, dt1, j, e1), Idx(n, dt2, j, e2)), env, Nil, cont)
+          exp(Pair(dt1, dt2, Idx(n, dt1, j, e1), Idx(n, dt2, j, e2)), env, Nil, cont)
         case _ => error(s"unexpected $path")
       }
 
       case Unzip(_, _, _, e) => path match {
-        case (xj : TupleAccess) :: (i: CIntExpr) :: ps =>
+        case (xj : PairAccess) :: (i: CIntExpr) :: ps =>
           exp(e, env, i :: xj :: ps, cont)
         case _ => error("Expected a tuple access followed by a C-Integer-Expression on the path.")
       }
 
       case DepZip(_, _, _, e1, e2) => path match {
-        case (i: CIntExpr) :: (xj : TupleAccess) :: ps => xj match {
+        case (i: CIntExpr) :: (xj : PairAccess) :: ps => xj match {
           case FstMember => exp(e1, env, i :: ps, cont)
           case SndMember => exp(e2, env, i :: ps, cont)
         }
         case _ => error("Expected a C-Integer-Expression followed by a tuple access on the path.")
       }
 
-      case r @ Record(_, _, e1, e2) => path match {
-        case (xj : TupleAccess) :: ps => xj match {
+      case r @ Pair(_, _, e1, e2) => path match {
+        case (xj : PairAccess) :: ps => xj match {
           case FstMember => exp(e1, env, ps, cont)
           case SndMember => exp(e2, env, ps, cont)
         }
@@ -398,6 +416,12 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error(s"Expected two C-Integer-Expressions on the path.")
       }
 
+      case Map(n, dt, _, f, e) => path match {
+        case (i : CIntExpr) :: ps => exp( f( Idx(n, dt, AsIndex(n, Natural(i)), e) ), env, ps, cont)
+        case _ => error(s"Expected a C-Integer-Expression on the path.")
+      }
+
+      // TODO: we could get rid of that
       case MapRead(n, dt1, dt2, f, e) => path match {
         case (i : CIntExpr) :: ps =>
           val continue_cmd =
@@ -419,6 +443,15 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           cmd(f(AsIndex(n, Natural(i)))(continue_cmd),
             env updatedContEnv (continue_cmd -> (e => env => exp(e, env, ps, cont))))
         case _ => error(s"Expected path to be not empty")
+      }
+
+      case Array(_, elems) => path match {
+        case (i: CIntExpr) :: ps => try {
+          exp(elems(i.eval), env, ps, cont)
+        } catch {
+          case NotEvaluableException() => error(s"could not evaluate $i")
+        }
+        case _ => error(s"did not expect $path")
       }
 
       case Idx(_, _, i, e) => CCodeGen.codeGenIdx(i, e, env, path, cont)
@@ -444,7 +477,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       t match {
         case IndexType(n) => s"idx$n"
         case ArrayType(n, t) => s"${n}_${typeToStructNameComponent(t)}"
-        case RecordType(a, b) => s"_${typeToStructNameComponent(a)}_${typeToStructNameComponent(b)}_"
+        case PairType(a, b) => s"_${typeToStructNameComponent(a)}_${typeToStructNameComponent(b)}_"
         case _: BasicType => typ(t).toString
         case _ => ???
       }
@@ -466,7 +499,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             C.AST.ArrayType(typ(body), Some(a.size)) // TODO: be more precise with the size?
           case _: NatToDataIdentifier =>  throw new Exception("This should not happen")
         }
-      case r: idealised.DPIA.Types.RecordType =>
+      case r: idealised.DPIA.Types.PairType =>
         C.AST.StructType("Record_" + typeToStructNameComponent(r.fst) + "_" + typeToStructNameComponent(r.snd), immutable.Seq(
           (typ(r.fst), "_fst"),
           (typ(r.snd), "_snd")))
@@ -481,8 +514,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                               env: Environment): Expr = {
     path match {
       case Nil => expr
-      case (xj: TupleAccess) :: ps => dt match {
-        case rt: RecordType =>
+      case (xj: PairAccess) :: ps => dt match {
+        case rt: PairType =>
           val (structMember, dt2) = xj match {
             case FstMember => ("_fst", rt.fst)
             case SndMember => ("_snd", rt.snd)
@@ -581,7 +614,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       C.AST.Block(immutable.Seq(
         C.AST.DeclStmt(C.AST.VarDecl(vC.name, typ(dt))),
-        cmd(Phrase.substitute(Pair(ve, va), `for` = v, `in` = p),
+        cmd(Phrase.substitute(PhrasePair(ve, va), `for` = v, `in` = p),
           env updatedIdentEnv (ve -> vC)
             updatedIdentEnv (va -> vC))))
     }
@@ -617,7 +650,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         DeclStmt(VarDecl(flag.name, Type.uchar, Some(Literal("1")))),
         // generate body
         cmd(
-          Phrase.substitute(Pair(Pair(Pair(ve, va), swap), done), `for` = ps, `in` = p),
+          Phrase.substitute(PhrasePair(PhrasePair(PhrasePair(ve, va), swap), done), `for` = ps, `in` = p),
           env updatedIdentEnv (ve -> in_ptr) updatedIdentEnv (va -> out_ptr)
             updatedCommEnv (swap -> {
             Block(immutable.Seq(
@@ -639,6 +672,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                    p: Phrase[CommType],
                    unroll:Boolean,
                    env: Environment): Stmt = {
+      assert(!unroll)
       val cI = C.AST.DeclRef(freshName("i_"))
       val range = RangeAdd(0, n, 1)
       val updatedGen = updatedRanges(cI.name, range)
@@ -657,7 +691,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             updatedGen.cmd(p, env updatedIdentEnv (i -> cI)))
 
         case _ =>
-          assert(!unroll)
           val init = C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0)))
           val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
           val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + 1))
@@ -672,6 +705,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                       p: Phrase[CommType],
                       unroll:Boolean,
                       env: Environment): Stmt = {
+      assert(!unroll)
       val cI = C.AST.DeclRef(freshName("i_"))
       val range = RangeAdd(0, n, 1)
       val updatedGen = updatedRanges(cI.name, range)
@@ -694,7 +728,6 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           val cond = C.AST.BinaryExpr(cI, C.AST.BinaryOperator.<, C.AST.ArithmeticExpr(n))
           val increment = C.AST.Assignment(cI, C.AST.ArithmeticExpr(NamedVar(cI.name, range) + 1))
 
-          assert(!unroll)
           C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
             updatedGen.generateNatDependentBody(`for` = i, `phrase` = p, at = NamedVar(cI.name, range), env)
           )
@@ -725,9 +758,12 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case IndexData(i, _)  => C.AST.ArithmeticExpr(i)
         case _: IntData | _: FloatData | _: DoubleData | _: BoolData =>
           C.AST.Literal(d.toString)
-        case ArrayData(a) =>
-          C.AST.ArrayLiteral(typ(d.dataType).asInstanceOf[C.AST.ArrayType], a.map(codeGenLiteral))
-        case RecordData(fst, snd) =>
+        case ArrayData(a) => d.dataType match {
+          case ArrayType(_, ArrayType(_, _)) =>
+            codeGenLiteral(ArrayData(a.flatten(d => d.asInstanceOf[ArrayData].a)))
+          case _ => C.AST.ArrayLiteral(typ(d.dataType).asInstanceOf[C.AST.ArrayType], a.map(codeGenLiteral))
+        }
+        case PairData(fst, snd) =>
           C.AST.RecordLiteral(typ(d.dataType), codeGenLiteral(fst), codeGenLiteral(snd))
         case VectorData(_) => throw new Exception("VectorData not supported in C")
       }
@@ -947,27 +983,24 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       *
       *
       * @param nats The series of nats from which the expression is generated
-      * @param behavior For each input nat, this function returns both the actual nat we wish to generate
-      *                 (It's not always the input nat, as in the case of Pow-in-Prod) and the binary operator
-      *                 used
+      * @param op The binary operator used
       * @param default In case the nat list is empty, we shall return this value
       * @param cont The cont of the generation
       * @param accum Internal accumulator used across iterations
       * @return
       */
-    def genBinopFold(nats:Iterable[Nat],
-                     behavior:Nat => (Nat, C.AST.BinaryOperator.Value),
-                     default:Expr,
-                     cont:Expr => Stmt,
-                     accum:Option[Expr] = None):Stmt = {
+    def genBinopFold(nats: Iterable[Nat],
+                     op: C.AST.BinaryOperator.Value,
+                     default: Expr,
+                     cont: Expr => Stmt,
+                     accum: Option[Expr] = None): Stmt = {
       nats.headOption match {
         case None => cont(accum.getOrElse(default))
         case Some(nat) =>
           accum match {
-            case None => genNat(nat, env, exp => genBinopFold(nats.tail, behavior, default, cont, Some(exp)))
+            case None => genNat(nat, env, exp => genBinopFold(nats.tail, op, default, cont, Some(exp)))
             case Some(acc) =>
-              val (natToGenerate,op) = behavior(nat)
-              genNat(natToGenerate, env, exp => genBinopFold(nats.tail, behavior, default, cont, Some(C.AST.BinaryExpr(acc, op, exp))))
+              genNat(nat, env, exp => genBinopFold(nats.tail, op, default, cont, Some(C.AST.BinaryExpr(acc, op, exp))))
           }
       }
     }
@@ -997,18 +1030,23 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
              )
            )
 
-         case Prod(es) =>
-           genBinopFold(
-             es, {
-               case Pow(b, Cst(-1)) => (b, AST.BinaryOperator./)
-               case e => (e, AST.BinaryOperator.*)
-             }, AST.Literal("0"), cont
-           )
+         // a /^ b
+         case Prod(a :: Pow(b, Cst(-1)) :: Nil) =>
+           if (a % b != Cst(0)) {
+             println(s"WARNING: $a /^ $b might have a fractional part")
+           }
+           genNat(a, env, lhs =>
+             genNat(b, env, rhs =>
+                cont(C.AST.BinaryExpr(lhs, C.AST.BinaryOperator./, rhs))))
 
-         case Sum(es) =>
-           genBinopFold(es, n => (n, AST.BinaryOperator.+), AST.Literal("0"), cont)
+         case Prod(es) => genBinopFold(es, AST.BinaryOperator.*, AST.Literal("0"), cont)
+
+         case Sum(es) => genBinopFold(es, AST.BinaryOperator.+, AST.Literal("0"), cont)
 
          case Mod(a, n) =>
+           if (lift.arithmetic.ArithExpr.mightBeNegative(a)) {
+             println(s"WARNING: $a % $n might operate on negative values")
+           }
            genNat(a, env, a => genNat(n, env, n => cont(AST.BinaryExpr(a, AST.BinaryOperator.%, n))))
 
          case v:Var => cont(C.AST.DeclRef(v.toString))
@@ -1092,8 +1130,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
                        array: Phrase[ExpType],
                        env: Environment,
                        cont: Expr => Stmt): Stmt = {
-
-    exp(array, env, CIntExpr(i - l) ::ps, arrayExpr => {
+    // FIXME: we should know that (i - l) is in [0; n[ here
+    exp(array, env, CIntExpr(i - l) :: ps, arrayExpr => {
 
       def cOperator(op:ArithPredicate.Operator.Value):C.AST.BinaryOperator.Value = op match {
         case ArithPredicate.Operator.< => C.AST.BinaryOperator.<

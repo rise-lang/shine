@@ -28,7 +28,7 @@ object SlideSeqIIndices {
       MapSeqI(size - 1, dt1, dt1, fun(ExpType(dt1, read))(exp => fun(AccType(dt1))(acc => acc :=| dt1 | exp)),
         Take(size - 1, inputSize - size + 1, read, dt1, input),
         TakeAcc(size - 1, size - size + 1, dt1, buffer.wr)) `;`
-        ForNat(n, _Λ_[NatKind](i => {
+        ForNat(n, _Λ_[NatKind]()(i => {
           ((DropAcc(size - 1, n, dt1,
             CycleAcc(size - 1 + n, size, dt1, buffer.wr)) `@` i) :=| dt1 |
             (Drop(size - 1, inputSize - size + 1, read, dt1, input) `@` i)) `;`

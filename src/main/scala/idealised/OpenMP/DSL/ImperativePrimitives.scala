@@ -26,6 +26,6 @@ object `parForVec` {
 
 object parForNat {
   def apply(n:Nat, ft:NatToData, out:Phrase[AccType], f:NatIdentifier => Phrase[AccType] => Phrase[CommType]):ParForNat = {
-    ParForNat(n, ft, out, _Λ_(idx => λ(acc"[${ft(idx)}]")(o => f(idx)(o)), RangeAdd(0, n, 1)))
+    ParForNat(n, ft, out, nFun(idx => λ(acc"[${ft(idx)}]")(o => f(idx)(o)), RangeAdd(0, n, 1)))
   }
 }

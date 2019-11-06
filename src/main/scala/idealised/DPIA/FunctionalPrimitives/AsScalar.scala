@@ -34,6 +34,11 @@ final case class AsScalar(n: Nat,
       {Phrases.xmlPrinter(array)}
     </asScalar>
 
+  override def fedeTranslation(env: Predef.Map[Identifier[ExpType], Identifier[AccType]])(C: Phrase[AccType ->: AccType]): Phrase[AccType] = {
+    import TranslationToImperative._
+    fedAcc(env)(array)(fun(acc"[${C.t.inT.dataType}]")(o => AsScalarAcc(n, m, dt, C(o))))
+  }
+
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._

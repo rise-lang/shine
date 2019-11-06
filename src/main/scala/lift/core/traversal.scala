@@ -169,7 +169,7 @@ object traversal {
               case i: DataTypeIdentifier => i
               case ArrayType(n, e) => ArrayType(v.visitNat(n).value, data(e, v))
               case DepArrayType(n, fdt) => DepArrayType(v.visitNat(n).value, v.visitN2D(fdt).value)
-              case TupleType(ts@_*) => TupleType(ts.map(data(_, v)): _*)
+              case PairType(p1, p2) => PairType(data(p1, v), data(p2, v))
               case s: ScalarType => s
               case IndexType(n) => IndexType(v.visitNat(n).value)
               case VectorType(n, e) => VectorType(v.visitNat(n).value, data(e, v))
@@ -223,10 +223,9 @@ object traversal {
               chainDT(v.visitNat(n), e).map(r => ArrayType(r._1, r._2))
             case DepArrayType(n, fdt) =>
               chain(v.visitNat(n), fdt, _.visitN2D(fdt)).map(r => DepArrayType(r._1, r._2))
-            case TupleType(ts@_*) =>
-              ts.foldLeft(Continue(Vector(), v): Result[Vector[DataType]])({ case (r, t) =>
-                chainDT(r, t).map(x => x._1 :+ x._2)
-              }).map(ts => TupleType(ts: _*))
+            case PairType(p1, p2) =>
+              chainDT(chainDT(Continue(Vector(), v), p1).map(x => x._1 :+ x._2), p2)
+                .map(x => x._1 :+ x._2).map(ts => PairType(ts(0), ts(1)))
             case s: ScalarType => Continue(s, v)
             case IndexType(n) => v.visitNat(n).map(IndexType)
             case VectorType(n, e) =>

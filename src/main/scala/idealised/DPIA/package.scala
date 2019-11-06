@@ -43,7 +43,7 @@ package object DPIA {
   // note: this is an easy fix to avoid name conflicts between lift and dpia
   val freshName: lift.core.freshName.type = lift.core.freshName
 
-  type x[T1 <: PhraseType, T2 <: PhraseType] = PairType[T1, T2]
+  type x[T1 <: PhraseType, T2 <: PhraseType] = PhrasePairType[T1, T2]
   type ->:[T <: PhraseType, R <: PhraseType] = FunType[T, R]
   type `->p:`[T <: PhraseType, R <: PhraseType] = PassiveFunType[T, R]
   type `()->:`[K <: Kind, R <: PhraseType] = DepFunType[K, R]
@@ -52,7 +52,7 @@ package object DPIA {
   type VarType = ExpType x AccType
 
   object VarType {
-    def apply(dt: DataType): PairType[ExpType, AccType] = ExpType(dt, read) x AccType(dt)
+    def apply(dt: DataType): PhrasePairType[ExpType, AccType] = ExpType(dt, read) x AccType(dt)
   }
 
   //noinspection TypeAnnotation
@@ -92,7 +92,7 @@ package object DPIA {
   }
 
   implicit class PairTypeConstructor[T1 <: PhraseType](t1: T1) {
-    def x[T2 <: PhraseType](t2: T2) = PairType(t1, t2)
+    def x[T2 <: PhraseType](t2: T2) = PhrasePairType(t1, t2)
   }
 
   implicit class FunTypeConstructor[R <: PhraseType](r: R) {

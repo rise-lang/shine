@@ -16,6 +16,6 @@ class Parameters extends test_util.Tests {
   }
 
   test("Output array") {
-    gen.OpenCLKernel(nFun(n => fun(ArrayType(n, float))(vs => vs)))
+    gen.OpenCLKernel(nFun(n => fun(ArrayType(n, float))(vs => vs |> mapSeq (fun(x => x)))))
   }
 }

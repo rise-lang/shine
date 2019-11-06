@@ -43,9 +43,9 @@ case class Assign(dt: DataType,
             }
           })
 
-        case RecordIdentifier(fstI, sndI) =>
+        case PairIdentifier(fstI, sndI) =>
           rhs match {
-            case RecordData(fstD, sndD) =>
+            case PairData(fstD, sndD) =>
               val s1 = evalAssign(s, fstI, fstD, continuation)
               evalAssign(s1, sndI, sndD, continuation)
             case _ => throw new Exception("This should not happen")

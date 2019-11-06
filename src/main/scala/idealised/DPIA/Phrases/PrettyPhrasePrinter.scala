@@ -1,6 +1,6 @@
 package idealised.DPIA.Phrases
 
-import idealised.DPIA.Types.{Kind, PhraseType}
+import idealised.DPIA.Types._
 
 object PrettyPhrasePrinter {
 
@@ -33,7 +33,7 @@ object PrettyPhrasePrinter {
 
       case Natural(n) => n.toString
 
-      case Pair(fst, snd) => s"(${apply(fst)}, ${apply(snd)})"
+      case PhrasePair(fst, snd) => s"(${apply(fst)}, ${apply(snd)})"
 
       case c: Primitive[_] => c.prettyPrint
     }

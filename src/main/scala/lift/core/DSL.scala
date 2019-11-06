@@ -16,7 +16,7 @@ object DSL {
   def depApp[K <: Kind](f: Expr, x: K#T): DepApp[K] = DepApp[K](f, x)()
   def literal(d: semantics.Data): Literal = Literal(d)
 
-  def let: Let = primitives.Let()()
+  def array(n: Int): ArrayCons = primitives.ArrayCons(n)()
   def cast: Cast = primitives.Cast()()
   def depJoin: DepJoin = primitives.DepJoin()()
   def depMapSeq: DepMapSeq = primitives.DepMapSeq()()
@@ -30,7 +30,10 @@ object DSL {
   def indexAsNat: IndexAsNat = primitives.IndexAsNat()()
   def iterate: Iterate = primitives.Iterate()()
   def join: Join = primitives.Join()()
+  def let: Let = primitives.Let()()
   def map: Map = primitives.Map()()
+  def mapFst: MapFst = primitives.MapFst()()
+  def mapSnd: MapSnd = primitives.MapSnd()()
   def mapSeq: MapSeq = primitives.MapSeq()()
   def mapSeqUnroll: MapSeqUnroll = primitives.MapSeqUnroll()()
   def natAsIndex: NatAsIndex = primitives.NatAsIndex()()
@@ -101,7 +104,7 @@ object DSL {
   implicit class TypeAnnotation(t: Type) {
     def ::(e: Expr): Expr =
       if (e.t == TypePlaceholder) e.setType(t)
-      else sys.error("type annotation can only replace a TypePlaceholder")
+      else if (e.t == t) e else sys.error("type annotation can only replace a TypePlaceholder")
     def `:`(e: Expr): Expr = e :: t
   }
 
@@ -363,7 +366,7 @@ object DSL {
   }
 
   implicit final class TupleTypeConstructors(private val a: DataType) extends AnyVal {
-    @inline def x(b: DataType): TupleType = TupleType(a, b)
+    @inline def x(b: DataType): PairType = PairType(a, b)
   }
 
   final case class ArrayTypeConstructorHelper(ns: Seq[Nat]) {

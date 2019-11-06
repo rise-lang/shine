@@ -30,7 +30,7 @@ object OperationalSemantics {
     case _ => throw new Exception("This should not happen")
   }))
   final case class ArrayData(a: Vector[Data]) extends Data(ArrayType(a.length, a.head.dataType))
-  final case class RecordData(fst: Data, snd: Data) extends Data(RecordType(fst.dataType, snd.dataType))
+  final case class PairData(fst: Data, snd: Data) extends Data(PairType(fst.dataType, snd.dataType))
 
   object makeArrayData {
     def apply(seq: Data*) = ArrayData(Vector(seq: _*))
@@ -40,7 +40,7 @@ object OperationalSemantics {
   case class NamedIdentifier(name: String) extends AccIdentifier
   case class ArrayAccessIdentifier(array: AccIdentifier, index: Nat) extends AccIdentifier
   case class VectorAccessIdentifier(vector: AccIdentifier, index: Nat) extends AccIdentifier
-  case class RecordIdentifier(fst: AccIdentifier, snd: AccIdentifier) extends AccIdentifier
+  case class PairIdentifier(fst: AccIdentifier, snd: AccIdentifier) extends AccIdentifier
 
   implicit def IntToIntData(i: Int): IntData = IntData(i)
 
@@ -146,7 +146,7 @@ object OperationalSemantics {
         p match {
           case i: Identifier[T1 x T2] =>
             (Identifier[T1](i.name, i.t.t1), Identifier[T2](i.name, i.t.t2))
-          case pair: Pair[T1, T2] => (pair.fst, pair.snd)
+          case pair: PhrasePair[T1, T2] => (pair.fst, pair.snd)
           case Apply(_, _) | DepApply(_, _) |
                IfThenElse(_, _, _) | Proj1(_) | Proj2(_) | LetNat(_, _, _) =>
             throw new Exception("This should never happen")

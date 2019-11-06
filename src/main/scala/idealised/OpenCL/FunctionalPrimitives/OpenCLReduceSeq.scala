@@ -41,7 +41,8 @@ final case class OpenCLReduceSeq(n: Nat,
                                   (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
-    //TODO same for ReduceSeq/AbstractReduce
+    //TODO This is wrong!
+    println("WARNING: opencl reduce seq acceptor translation is deprecated, implicit copies might happen")
     con(array)(λ(exp"[$n.$dt1, $read]")(X =>
       OpenCLReduceSeqI(n, initAddrSpace, dt1, dt2,
         λ(exp"[$dt2, $read]")(x => λ(exp"[$dt1, $read]")(y => λ(acc"[$dt2]")(o => acc( f(x)(y) )( o )))),
