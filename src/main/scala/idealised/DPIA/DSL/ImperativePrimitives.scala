@@ -87,7 +87,3 @@ object recordAcc2 {
 }
 
 object skip extends Skip
-
-object barrier {
-  def apply(local: Boolean = true, global: Boolean = true) = Barrier(local, global)
-}

@@ -1,12 +1,11 @@
 package idealised.DPIA.Compilation
 
-import idealised.DPIA.DSL.{barrier, comment, skip}
 import idealised.DPIA._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types._
 import idealised.DPIA.ImperativePrimitives.{Comment, For, ForNat, IdxAcc, Seq}
 import idealised.DPIA.FunctionalPrimitives.AsIndex
-import idealised.OpenCL.ImperativePrimitives.{Barrier, OpenCLParFor, ParForGlobal, ParForLocal, ParForNatGlobal, ParForNatLocal, ParForNatWorkGroup, ParForWorkGroup}
+import idealised.OpenCL.ImperativePrimitives.OpenCLParFor
 import lift.arithmetic.Cst
 import lift.arithmetic.ArithExpr.isSmaller
 
@@ -15,22 +14,15 @@ object UnrollLoops {
     val r = VisitAndRebuild(p, new VisitAndRebuild.Visitor {
       override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = p match {
         case For(n, Lambda(ident: Identifier[_], body), true) =>
-          Continue(unrollLoop(n, init=0, step=1, i => Phrase.substitute(AsIndex(n, Natural(i)), `for`=ident, in=body), skip), this)
+          Continue(unrollLoop(n, init=0, step=1, i => Phrase.substitute(AsIndex(n, Natural(i)), `for`=ident, in=body)), this)
         case ForNat(n, DepLambda(ident: NatIdentifier, body), true) =>
-          Continue(unrollLoop(n, init=0, step=1, i => PhraseType.substitute(i, `for`=ident, in=body), skip), this)
-        case oclParFor@OpenCLParFor(n, dt, out, Lambda(ident: Identifier[_], Lambda(identOut: Identifier[_], body)), init, step, true) =>
+          Continue(unrollLoop(n, init=0, step=1, i => PhraseType.substitute(i, `for`=ident, in=body)), this)
+        case OpenCLParFor(n, _, out, Lambda(ident: Identifier[_], Lambda(identOut: Identifier[_], body)), init, step, true) =>
           out.t.dataType match {
             case ArrayType(_, elemType) =>
               Continue(unrollLoop(n, init, step, i => Phrase.substitute(IdxAcc(n, elemType, AsIndex(n, Natural(i)), out),
                 `for`=identOut,
-                Phrase.substitute(AsIndex(n, Natural(i)), `for`=ident, in=body)),
-                oclParFor match {
-                  //TODO think about barriers more! This generates too many barriers and maybe not enough in non-loop cases.
-                  case _: ParForGlobal => comment("ParForGlobal sync")
-                  case _: ParForWorkGroup => comment("ParForWorkGroup Sync")
-                  case _: ParForLocal => barrier()
-                }
-              ), this)
+                Phrase.substitute(AsIndex(n, Natural(i)), `for`=ident, in=body))), this)
             case _ => throw new Exception("OpenCLParFor acceptor has to be of ArrayType.")
           }
         case _ =>
@@ -41,7 +33,7 @@ object UnrollLoops {
   }
 
   def unrollLoop(n: Nat, init: Nat, step: Nat,
-                 genBody: Nat => Phrase[CommType], sync: Phrase[CommType]): Phrase[CommType] = {
+                 genBody: Nat => Phrase[CommType]): Phrase[CommType] = {
     import lift.arithmetic.NotEvaluableException
 
     val stopMax = try {
@@ -71,7 +63,7 @@ object UnrollLoops {
       Seq(prev, genBody(index))
     })
 
-    Seq(tmp, sync)
+    tmp
   }
 
   def ceilDiv(a: Int, b: Int) : Int = {

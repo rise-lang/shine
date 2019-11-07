@@ -61,7 +61,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       case OpenCLNewDoubleBuffer(a, _, _, dt, n, in, out, Lambda(ps, p)) =>
         OpenCLCodeGen.codeGenOpenCLNewDoubleBuffer(a, ArrayType(n, dt), in, out, ps, p, env)
 
-      case Barrier(left, right) => OpenCL.AST.Barrier(left, right)
+      case Barrier(localMemFence, globalMemFence) => OpenCL.AST.Barrier(localMemFence, globalMemFence)
 
       case _: NewDoubleBuffer => throw new Exception("NewDoubleBuffer without address space found in OpenCL program.")
 
