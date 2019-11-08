@@ -1,3 +1,10 @@
+// WARNING: This kernel depends on work-items sizes of
+// localSize: 32,8,1
+// globalSize: 256,128,1
+// and on input dimensions of
+// M = 512
+// N = 256
+// K = 64
 #ifndef Tuple2_float_float_DEFINED
 #define Tuple2_float_float_DEFINED
 typedef struct __attribute__((aligned(4))){
@@ -169,11 +176,11 @@ void KERNEL(const global float* restrict v__67, const global float* restrict v__
     float v_v__104_30_976;
     float v_v__104_31_977;
     float v_v__104_32_978;
-    // iteration count is exactly 1, no loop emitted
-    {
+    // iteration count is exactly 1 or less, no loop emitted
+    if ((get_group_id(1) < 8)){
         int v_wg_id_40 = get_group_id(1);
-        // iteration count is exactly 1, no loop emitted
-        {
+        // iteration count is exactly 1 or less, no loop emitted
+        if ((get_group_id(0) < 2)){
             int v_wg_id_41 = get_group_id(0);
             float v_tmp_421 = 0.0f;
             v__74 = v_tmp_421;
