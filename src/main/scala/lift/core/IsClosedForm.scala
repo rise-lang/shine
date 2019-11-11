@@ -36,7 +36,7 @@ object IsClosedForm {
               case DepFunType(x: DataTypeIdentifier, _) => Continue(t, this.copy(boundT = boundT + x))
               case i: DataTypeIdentifier if !boundT(i) => throw FreeVariable(t)
               case DepArrayType(_, elementTypeFun) => elementTypeFun match {
-                case i:NatToDataIdentifier => if(boundNatDataTypeFun(i)) throw FreeVariable(t) else Continue(t, this)
+                case i: NatToDataIdentifier => if(!boundNatDataTypeFun(i)) throw FreeVariable(t) else Continue(t, this)
                 case NatToDataLambda(x, _) =>  Continue(t, this.copy(boundN = boundN + x))
               }
               case _ => Continue(t, this)

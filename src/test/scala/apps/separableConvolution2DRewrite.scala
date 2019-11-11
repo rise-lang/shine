@@ -151,7 +151,7 @@ class separableConvolution2DRewrite extends test_util.Tests {
   }
 
   test("scanline to regRotSeq") {
-    rewrite_steps(scanline, Seq(
+    rewrite_steps(scanline(weightsV)(weightsH), Seq(
       (repeatNTimes(2, oncetd(specialize.reduceSeqUnroll)) `;`
         oncetd(specialize.slideSeq(SlideSeq.Values, idE)) `;`
         betaEtaNormalForm `;`

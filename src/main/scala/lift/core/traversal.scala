@@ -174,11 +174,13 @@ object traversal {
               case IndexType(n) => IndexType(v.visitNat(n).value)
               case VectorType(n, e) => VectorType(v.visitNat(n).value, data(e, v))
               case NatToDataApply(ndtf, n) =>
+                /*
                 val newNDTF = ndtf match {
                   case i: NatToDataIdentifier => i
                   case NatToDataLambda(x, t) => NatToDataLambda(x, data(t, v))
                 }
-                NatToDataApply(newNDTF, v.visitNat(n).value)
+                */
+                NatToDataApply(v.visitN2D(ndtf).value, v.visitNat(n).value)
             }).asInstanceOf[DT]
         }
       }

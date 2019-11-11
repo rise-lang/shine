@@ -189,7 +189,7 @@ object primitives {
 
   @primitive case class Slide()(override val t: Type = TypePlaceholder) extends Primitive {
     override def typeScheme: Type = implN(n => nFunT(sz => nFunT(sp => implDT(t => {
-      ArrayType(sp * n + sz - sp, t) ->: ArrayType(n, ArrayType(sz, t))
+      ArrayType(sp * n + sz, t) ->: ArrayType(1 + n, ArrayType(sz, t))
     }))))
   }
 
@@ -202,7 +202,7 @@ object primitives {
   @primitive case class SlideSeq(rot: SlideSeq.Rotate)(override val t: Type = TypePlaceholder) extends Primitive {
     override def typeScheme: Type = implN(n => nFunT(sz => nFunT(sp => implDT(s => implDT(t => {
       (s ->: s) ->: (ArrayType(sz, s) ->: t) ->:
-        ArrayType(sp * n + sz - sp, s) ->: ArrayType(n, t)
+        ArrayType(sp * n + sz, s) ->: ArrayType(1 + n, t)
     })))))
   }
 

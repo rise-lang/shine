@@ -14,9 +14,9 @@ case class InferenceException(msg: String) extends Exception {
 object infer {
   def apply(e: Expr): Expr = {
     // build set of constraints
-    val constraintList = mutable.ArrayBuffer[mutable.ListBuffer[Constraint]](mutable.ListBuffer[Constraint]())
-    val typed_e = constrainTypes(e, constraintList, 0, mutable.Map())
-    val constraints = constraintList.reverse.flatten.toSeq
+    val constraintList = mutable.ArrayBuffer[Constraint]()
+    val typed_e = constrainTypes(e, constraintList, mutable.Map())
+    val constraints = constraintList.toSeq
     //constraints.foreach(println)
 
     // solve the constraints
@@ -50,15 +50,10 @@ object infer {
   }
 
   def constrainTypes(expr: Expr,
-                     constraints: mutable.ArrayBuffer[mutable.ListBuffer[Constraint]],
-                     scopeIndex: Int,
+                     constraints: mutable.ArrayBuffer[Constraint],
                      env: mutable.Map[String, Type]
                     ): Expr = {
-    def typed(e: Expr): Expr = constrainTypes(e, constraints, scopeIndex, env)
-    def typedWithin(e: Expr) = {
-      constraints += mutable.ListBuffer[Constraint]()
-      constrainTypes(e, constraints, scopeIndex + 1, env)
-    }
+    def typed(e: Expr): Expr = constrainTypes(e, constraints, env)
     def genType(e: Expr): Type = if (e.t == TypePlaceholder) freshTypeIdentifier else e.t
 
     expr match {
@@ -75,7 +70,7 @@ object infer {
         val ft = FunType(tx.t, te.t)
         val exprT = genType(expr)
         val constraint = TypeConstraint(exprT, ft)
-        constraints(scopeIndex) += constraint
+        constraints += constraint
         Lambda(tx, te)(ft)
 
       case App(f, e) =>
@@ -83,7 +78,7 @@ object infer {
         val te = typed(e)
         val exprT = genType(expr)
         val constraint = TypeConstraint(tf.t, FunType(te.t, exprT))
-        constraints(scopeIndex) += constraint
+        constraints += constraint
         App(tf, te)(exprT)
 
       case DepLambda(x, e) =>
@@ -100,14 +95,14 @@ object infer {
             DepLambda[NatToNatKind](n2n, te)(DepFunType[NatToNatKind, Type](n2n, te.t))
         }
         val constraint = TypeConstraint(exprT, tf.t)
-        constraints(scopeIndex) += constraint
+        constraints += constraint
         tf
 
       case DepApp(f, x) =>
-        val tf = typedWithin(f)
+        val tf = typed(f)
         val exprT = genType(expr)
         val constraint = DepConstraint(tf.t, x, exprT)
-        constraints(scopeIndex) += constraint
+        constraints += constraint
         DepApp(tf, x)(exprT)
 
       case l: Literal => l
@@ -258,7 +253,7 @@ object infer {
   def solve(cs: Seq[Constraint])
            (implicit bound: mutable.Set[Kind.Identifier]): Solution = cs match {
     case Nil => Solution()
-    case c +: cs => solveOne(c)match {
+    case c +: cs => solveOne(c) match {
       case Some(s) => s ++ solve(s.apply(cs))
       case None => error(s"cannot solve $c")
     }
@@ -291,21 +286,15 @@ object infer {
         bound += n
         bound -= na
         bound -= nb
-        Some(solve(Seq(
-          NatConstraint(n, na), NatConstraint(n, nb),
-          TypeConstraint(substitute.natInType(n, `for`=na, in=ta),
-            substitute.natInType(n, `for`=nb, in=tb))
-        )))
+        Some(solve(Seq(NatConstraint(n, na), NatConstraint(n, nb),
+          TypeConstraint(ta, tb))))
       case (DepFunType(dta: DataTypeIdentifier, ta), DepFunType(dtb: DataTypeIdentifier, tb)) =>
         val dt = DataTypeIdentifier(freshName("t"))
         bound += dt
         bound -= dta
         bound -= dtb
-        Some(solve(Seq(
-          TypeConstraint(dt, dta), TypeConstraint(dt, dtb),
-          TypeConstraint(substitute.typeInType(dt, `for`=dta, in=ta),
-            substitute.typeInType(dt, `for`=dtb, in=tb))
-        )))
+        Some(solve(Seq(TypeConstraint(dt, dta), TypeConstraint(dt, dtb),
+          TypeConstraint(ta, tb))))
       case (DepFunType(asa: AddressSpaceIdentifier, ta), DepFunType(asb: AddressSpaceIdentifier, tb)) => ???
       case (_: NatToDataApply, dt: DataType) => Some(Solution.subs(a, dt)) // substitute apply by data type
       case (dt: DataType, _: NatToDataApply) => Some(Solution.subs(b, dt)) // substitute apply by data type
