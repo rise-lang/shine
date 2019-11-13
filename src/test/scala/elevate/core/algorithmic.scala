@@ -82,13 +82,13 @@ class algorithmic extends test_util.Tests {
     val N = NatIdentifier("N")
     val K = NatIdentifier("K")
 
-    val mm = infer(LCNF(depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
+    val mm = LCNF(infer(depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
       fun(ArrayType(M, ArrayType(K, float)))(a =>
         fun(ArrayType(K, ArrayType(N, float)))(b =>
           map(fun(ak =>
             map(fun(bk =>
               (reduceSeq(fun((acc, y) => acc + (y._1 * y._2)), l(0.0f))) $
-                zip(ak, bk))) $ transpose(b) )) $ a)))))).get)
+                zip(ak, bk))) $ transpose(b) )) $ a))))))).get
 
     def goldMKN(reduceFun: Expr): Expr = {
       depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
@@ -128,7 +128,7 @@ class algorithmic extends test_util.Tests {
     infer(goldMKNVersion1)
     val typedGold = infer(goldMKNAlternative)
 
-    val loopMKN = (oncetd(liftReduce) `;` oncetd(removeTransposePair)).apply(mm).get
+    val loopMKN = (oncetd(liftReduce) `;` LCNF `;` oncetd(removeTransposePair)).apply(mm).get
     val typedRewrite = infer(loopMKN)
 
     // todo something's wrong with the way of comparing typed expressions

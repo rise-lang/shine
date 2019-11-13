@@ -28,15 +28,14 @@ object algorithmic {
 
    def apply(e: Lift): RewriteResult[Lift] = e match {
 
-      case App(App(Map(), Lambda(mapVar, App(
-           App(App(rx @ (Reduce() | ReduceSeq()), op), init :: (dt: DataType)), reduceArg))),
-           input @ (_ :: ArrayType(size, ArrayType(_,_)))) =>
+      case App(Map(), Lambda(mapVar, App(App(App(rx @ (Reduce() | ReduceSeq()), op),
+           init :: (dt: DataType)), reduceArg))) :: FunType(ArrayType(size, ArrayType(_,_)), _) =>
 
         def reduceMap(zippedMapArg : (Expr, Expr) => Expr, reduceArg: Expr): RewriteResult[Lift] = {
           Success(
             rx(fun((acc, y) => // y :: 16.n793.(float,float), acc:: 16.32.(float)
               map(fun(x => DSL.app(DSL.app(op, fst(x)), snd(x)))) $ zippedMapArg(acc, y)
-            ))(generate(fun(IndexType(size) ->: dt)(_ => init))) $ reduceArg
+            ))(generate(fun(IndexType(size) ->: dt)(_ => init))) o reduceArg
           )
         }
 
@@ -46,14 +45,14 @@ object algorithmic {
           case x if x == mapVar =>
             reduceMap(
               (acc, y) => zip(acc, y),
-              transpose(input)
+              transpose
             )
           // zipped input (see test "MM to MM-LoopMKN")
           case App(App(Zip(), u), v) =>
             val notToBeTransposed = if (mapVar == u) v else u
             reduceMap(
               zippedMapArg = (acc, y) => zip(acc, map(fun(bs => pair(bs, fst(y)))) $ snd(y)),
-              reduceArg = zip(notToBeTransposed, transpose(input))
+              reduceArg = zip(notToBeTransposed) o transpose
             )
             // input is tile1.tile2.dim.(float,float)
             // dim needs to be reduced -> we need dim.tile1.tile2.(float,float)
@@ -61,7 +60,7 @@ object algorithmic {
           case _ =>
             val result = reduceMap(
               (acc, y) => zip(acc, y),
-              (transpose o map(transpose)) $ input
+              transpose o map(transpose)
             )
             result
         }
