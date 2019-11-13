@@ -390,6 +390,7 @@ object fromLift {
       lt.FunType(lt.ArrayType(n, lt.ArrayType(m, la)), _))
       =>
         val a = dataType(la)
+/* FIXME?
 
         val transposeFunction =
           λ(ExpType(IndexType(n * m), read))(i => {
@@ -413,6 +414,10 @@ object fromLift {
           Split(n, m, read, a,
             Reorder(n * m, a, transposeFunction, transposeInverseFunction,
               Join(n, m, read, a, e))))
+
+ */
+        fun[ExpType](exp"[$n.$m.$a, $read]", e =>
+          Transpose(n, m, a, e))
 
       case (core.take,
       lt.DepFunType(n: l.NatIdentifier,

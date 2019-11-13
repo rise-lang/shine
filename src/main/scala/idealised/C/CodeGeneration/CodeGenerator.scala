@@ -184,6 +184,11 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error(s"Expected two C-Integer-Expressions on the path.")
       }
 
+      case TransposeAcc(_, _, _, a) => path match {
+        case (i: CIntExpr) :: (j: CIntExpr) :: ps => acc(a, env, j :: i :: ps, cont)
+        case _ => error(s"did not expect $path")
+      }
+
       case PairAcc1(_, _, a) => acc(a, env, FstMember :: path, cont)
       case PairAcc2(_, _, a) => acc(a, env, SndMember :: path, cont)
 
@@ -409,6 +414,11 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case Slide(_, _, s2, _, e) => path match {
         case (i : CIntExpr) :: (j : CIntExpr) :: ps => exp(e, env, CIntExpr(i * s2 + j) :: ps, cont)
         case _ => error(s"Expected two C-Integer-Expressions on the path.")
+      }
+
+      case Transpose(_, _, _, e) => path match {
+        case (i: CIntExpr) :: (j: CIntExpr) :: ps => exp(e, env, j :: i :: ps, cont)
+        case _ => error(s"did not expect $path")
       }
 
       case TransposeDepArray(_, _, _, e) => path match {
