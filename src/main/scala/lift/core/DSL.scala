@@ -108,6 +108,14 @@ object DSL {
     def `:`(e: Expr): Expr = e :: t
   }
 
+  implicit class TypeEqual(a: Type) {
+    def =~=(b: Type): Boolean = (a, b) match {
+      case (TypePlaceholder, _) => true
+      case (_, TypePlaceholder) => true
+      case _ => a == b
+    }
+  }
+
   implicit class FunCall(f: Expr) {
     // import lift.core.lifting._
 
