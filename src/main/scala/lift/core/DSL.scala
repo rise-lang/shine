@@ -104,7 +104,8 @@ object DSL {
   implicit class TypeAnnotation(t: Type) {
     def ::(e: Expr): Expr =
       if (e.t == TypePlaceholder) e.setType(t)
-      else if (e.t == t) e else sys.error("type annotation can only replace a TypePlaceholder")
+      else if (e.t == t) e else
+        throw TypeException(s"tried to replace ${e.t} with ${t}, but type annotation can only replace a TypePlaceholder")
     def `:`(e: Expr): Expr = e :: t
   }
 
@@ -117,7 +118,6 @@ object DSL {
   }
 
   implicit class FunCall(f: Expr) {
-    // import lift.core.lifting._
 
     def apply(e: Expr): Expr = app(f, e)
     def apply(n: Nat): Expr = depApp[NatKind](f, n)

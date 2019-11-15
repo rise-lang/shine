@@ -8,7 +8,7 @@ import idealised.OpenCL._
 class Convolution extends test_util.TestsWithExecutor {
   private val inputSize_small = 4096
 
-  ignore("convolution versions produce same results") {
+  test("convolution versions produce same results") {
     val N = inputSize_small // TODO: this is still big for a test
     val random = new scala.util.Random()
     val matrix = Array.fill(N, N)(random.nextFloat * 10.0f)

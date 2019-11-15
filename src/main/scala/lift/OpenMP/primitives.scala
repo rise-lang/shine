@@ -6,7 +6,7 @@ import lift.core.{Primitive, primitives => core}
 import primitiveMacro.Primitive.primitive
 
 object primitives {
-  //sealed trait Primitive extends lift.core.Primitive
+  sealed trait Primitive extends lift.core.Primitive
 
   // TODO? depMapPar
 

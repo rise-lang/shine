@@ -45,8 +45,8 @@ object infer {
   case class NatToDataConstraint(a: NatToData, b: NatToData) extends Constraint {
     override def toString: String = s"$a  ~  $b"
   }
-  case class DepConstraint[K <: Kind](a: Type, x: K#T, b: Type) extends Constraint {
-    override def toString: String = s"$a ($x) ~ $b"
+  case class DepConstraint[K <: Kind](df: Type, arg: K#T, t: Type) extends Constraint {
+    override def toString: String = s"$df ($arg) ~ $t"
   }
 
   def constrainTypes(expr: Expr,
@@ -60,7 +60,7 @@ object infer {
       case i: Identifier =>
         val t = env
           .getOrElse(i.name, error(s"$i has no type in the environment"))
-        i.setType(t)
+        i :: t
 
       case Lambda(x, e) =>
         val tx = x.setType(genType(x))
@@ -240,12 +240,12 @@ object infer {
           NatConstraint(apply(a), apply(b))
         case NatToDataConstraint(a, b) =>
           NatToDataConstraint(apply(a), apply(b))
-        case DepConstraint(a, x: Nat, b) =>
-          DepConstraint[NatKind](apply(a), apply(x), apply(b))
-        case DepConstraint(a, x: DataType, b) =>
-          DepConstraint[DataKind](apply(a), apply(x).asInstanceOf[DataType], apply(b))
-        case DepConstraint(a, x: AddressSpace, b) =>
-          DepConstraint[AddressSpaceKind](apply(a), apply(x), apply(b))
+        case DepConstraint(df, arg: Nat, t) =>
+          DepConstraint[NatKind](apply(df), apply(arg), apply(t))
+        case DepConstraint(df, arg: DataType, t) =>
+          DepConstraint[DataKind](apply(df), apply(arg).asInstanceOf[DataType], apply(t))
+        case DepConstraint(df, arg: AddressSpace, t) =>
+          DepConstraint[AddressSpaceKind](apply(df), apply(arg), apply(t))
       }
     }
   }
@@ -301,9 +301,9 @@ object infer {
       case _ => error(s"cannot unify $a and $b")
     }
 
-    case DepConstraint(a, x, b) => Some(a match {
-      case _: DepFunType[_, _] => solve(Seq(TypeConstraint(liftDependentFunctionType(a)(x), b)))
-      case _ => error(s"expected a dependent function type, but got $a")
+    case DepConstraint(df, arg, t) => Some(df match {
+      case _: DepFunType[_, _] => solve(Seq(TypeConstraint(liftDependentFunctionType(df)(arg), t)))
+      case _ => error(s"expected a dependent function type, but got $df")
     })
 
     case NatConstraint(a, b) => Some((a, b) match {

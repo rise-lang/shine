@@ -33,11 +33,9 @@ object HighLevelConstructs {
                  lInner: Nat, rInner: Nat): Expr =
     map(padClamp(lInner)(rInner)) >> padClamp(lOuter)(rOuter)
 
-  val padCst2D: Expr = {
-    nFun(n =>
-      nFun(b => fun(x => padCst(n)(b)(generate(fun(_ => x))) >> map(padCst(n)(b)(x))))
-    )
-  }
+  def padCst2D(n: Nat): Expr = padCst2D(n, n)
+  def padCst2D(n: Nat, b: Nat): Expr =
+    fun(x => padCst(n)(b)(generate(fun(_ => x))) >> map(padCst(n)(b)(x)))
 
   def zipND(n: Int): Expr = {
     def rec(n: Int, a: Expr, b: Expr): Expr =

@@ -144,15 +144,6 @@ object algorithmic {
     override def toString = "createTransposePair"
   }
 
-  /*
-  case object untype extends Strategy[Lift] {
-    def apply(e: Lift): RewriteResult[Lift] = e match {
-      case TypedExpr(e, _) => Success(e)
-      case _ => Failure(untype)
-    }
-  }
-   */
-
   // slideSeq fusion
   import lift.OpenCL.primitives._
   import lift.OpenCL.DSL._

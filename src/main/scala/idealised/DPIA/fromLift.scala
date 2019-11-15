@@ -22,7 +22,7 @@ object fromLift {
     case l.Lambda(x, e) => expr.t match {
       case lt.FunType(i, _) =>
         Lambda(Identifier(x.name, `type`(i)), expression(e))
-      case _ => ???
+      case _ => error(expr.t.toString, "a function type")
     }
 
     case l.App(f, e) => {
@@ -64,7 +64,6 @@ object fromLift {
     }
 
     case p: l.Primitive => primitive(p, expr.t)
-    case _ => ??? // should be unreachable
   }
 
   def addressSpace(a: lt.AddressSpace): AddressSpace = a match {
@@ -126,8 +125,7 @@ object fromLift {
         case n2n: lt.NatToNatIdentifier   => natToNatIdentifier(n2n)  `()->:` `type`(t)
         case n2d: lt.NatToDataIdentifier  => natToDataIdentifier(n2d) `()->:` `type`(t)
       }
-    case _: lt.TypeIdentifier => throw new Exception("This should not happen")
-    case lt.TypePlaceholder => throw new Exception("This should not happen")
+    case lt.TypeIdentifier(_) | lt.TypePlaceholder => throw new Exception("This should not happen")
   }
 
   def data(d: ls.Data): OpSem.Data = d match {
@@ -717,8 +715,7 @@ object fromLift {
         case _ => ???
       }
       case lt.DepFunType(_, _) => throw new Exception("This should not be possible")
-      case lt.TypeIdentifier(_) => throw new Exception("This should not happen")
-      case lt.TypePlaceholder => throw new Exception("This should not happen")
+      case lt.TypeIdentifier(_) | lt.TypePlaceholder => throw new Exception("This should not happen")
     }
   }
 

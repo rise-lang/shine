@@ -65,10 +65,12 @@ final case class DepApp[K <: Kind](f: Expr, x: K#T)
 final case class Literal(d: semantics.Data) extends Expr {
   override val t: Type = d.dataType
   override def toString: String = s"$d"
-  override def setType(t: Type): Literal = sys.error("the type of a Literal should never be changed")
+  override def setType(t: Type): Literal =
+    throw TypeException("tried to set the type of a Literal, whose type should never be changed")
 }
 
 abstract class Primitive extends Expr {
   def typeScheme: Type
-  override def setType(t: Type): Primitive = sys.error("setType method should be overridden")
+  override def setType(t: Type): Primitive =
+    throw TypeException("setType method should be overridden")
 }
