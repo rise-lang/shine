@@ -1,5 +1,9 @@
 package lift.core
 
+case class RenderException(msg: String) extends Exception {
+  override def toString = s"render exception: $msg"
+}
+
 object DrawTree {
   case class UnicodeConfig
   (wireHSym: String, wireVSym: String,
@@ -8,7 +12,7 @@ object DrawTree {
    convLSym: String, convRSym: String, convLRSym: String, convUSym: String)
 
   def genUnicodeConfig(s: String): UnicodeConfig = {
-    if (s.length < 11) sys.error("not a valid Unicode Config")
+    if (s.length < 11) throw RenderException("not a valid Unicode Config")
     else {
       val wireV = s(0).toString
       val connL = s(1).toString
@@ -178,14 +182,14 @@ object DrawTree {
 
 object DrawAST {
   import lift.core.DrawTree._
-  def drawAST(e: Expr): String = drawTree(ast(e))
-  def drawAST(cfg: UnicodeConfig, e: Expr): String = drawTree(cfg, ast(e))
-  def ast(e: Expr): RenderUnicodeDraw = e match {
+  def drawAST(e: Expr): String = drawTree(renderAST(e))
+  def drawAST(cfg: UnicodeConfig, e: Expr): String = drawTree(cfg, renderAST(e))
+  def renderAST(e: Expr): RenderUnicodeDraw = e match {
       case i: Identifier => line(i.name)
-      case Lambda(x, e) => block(s"λ${x.name}", ast(e))
-      case App(f, e) => ast(f) :+> ast(e)
-      case dl @ DepLambda(x, e) => block(s"Λ${x.name}:${dl.kn.get}", ast(e))
-      case DepApp(f, x) => line(x.toString) <+: ast(f)
+      case Lambda(x, e) => block(s"λ${x.name}", renderAST(e))
+      case App(f, e) => renderAST(f) :+> renderAST(e)
+      case dl @ DepLambda(x, e) => block(s"Λ${x.name}:${dl.kn.get}", renderAST(e))
+      case DepApp(f, x) => line(x.toString) <+: renderAST(f)
       case l: Literal => line(l.toString)
       case p: Primitive => line(p.toString)
   }
@@ -196,29 +200,29 @@ object LessBrackets {
   def lessBrackets(e: Expr, wrapped: Boolean): String = e match {
     case i: Identifier => i.name
     case Lambda(x, e) => {
-      val sx = lessBrackets(x)
-      val se = lessBrackets(e)
-      if (wrapped) s"<λ$sx. $se>" else s"λ$sx. $se"
+      val xs = lessBrackets(x)
+      val es = lessBrackets(e)
+      if (wrapped) s"<λ$xs. $es>" else s"λ$xs. $es"
     }
     case App(f, e) => {
-      val sf = f match {
+      val fs = f match {
         case _: Lambda => lessBrackets(f, wrapped = true)
         case _ => lessBrackets(f)
       }
-      val se = lessBrackets(e, wrapped = true)
-      if (wrapped) s"($sf $se)" else s"$sf $se"
+      val es = lessBrackets(e, wrapped = true)
+      if (wrapped) s"($fs $es)" else s"$fs $es"
     }
     case dl @ DepLambda(x, e) => {
-      val sx = s"${x.name}: ${dl.kn.get}"
-      val se = lessBrackets(e)
-      if (wrapped) s"[Λ$sx. $se]" else s"Λ$sx. $se"
+      val xs = s"${x.name}:${dl.kn.get}"
+      val es = lessBrackets(e)
+      if (wrapped) s"[Λ$xs. $es]" else s"Λ$xs. $es"
     }
     case DepApp(f, x) => {
-      val sf = f match {
+      val fs = f match {
         case _: DepLambda[_] => lessBrackets(f, wrapped = true)
         case _ => lessBrackets(f)
       }
-      if (wrapped) s"($sf $x)" else s"$sf $x"
+      if (wrapped) s"($fs $x)" else s"$fs $x"
     }
     case l: Literal => l.toString
     case p: Primitive => p.toString
@@ -228,7 +232,7 @@ object LessBrackets {
 object ShowLift {
   import lift.core.DrawAST._
   import lift.core.LessBrackets._
-  def showLift(e: Expr): String = if (size(e) >= 20) drawAST(e) else lessBrackets(e)
+  def showLift(e: Expr): String = if (size(e) >= 15) drawAST(e) else lessBrackets(e)
   def size(e: Expr): Int = e match {
     case _: Identifier => 1
     case Lambda(x, e) => size(x) + size(e)
@@ -237,5 +241,91 @@ object ShowLift {
     case DepApp(f, _) => size(f) + 1
     case _: Literal => 1
     case _: Primitive => 1
+  }
+}
+
+object ShowLiftCompact {
+  import lift.core.DrawTree._
+  import lift.core.semantics._
+  def showLiftCompact(e: Expr): String = showLiftCompact(e, 15)
+  def showLiftCompact(e: Expr, inlineSize: Int): String = drawTree(renderASTCompact(e)(inlineSize)._3)
+  def renderASTCompact(e: Expr, wrapped: Boolean = false)
+                      (implicit inlineSize: Int): (Boolean, Int, RenderUnicodeDraw) = e match {
+    case i: Identifier => (true, 1, line(i.name))
+    case Lambda(x, e) => {
+      val xs = x.name
+      val (eInline, eSize, er) = renderASTCompact(e)
+      val newSize = eSize + 1
+      if ((inlineSize > 0) && eInline) {
+        crush(er) match {
+          case Line(es) =>
+            val ls = s"λ$xs. $es"
+            (true, newSize, if (wrapped) wrappedLine("<", ls, ">") else line(ls))
+        }
+      } else (false, newSize, block(s"λ$xs", er))
+    }
+    case App(f, e) => {
+      val (fInline, fSize, fr) = f match {
+        case _: Lambda => renderASTCompact(f, wrapped = true)
+        case _ => renderASTCompact(f)
+      }
+      val (_, eSize, er) = renderASTCompact(e, wrapped = true)
+      val newSize = fSize + eSize
+      if ((inlineSize > 0) && (fInline && (eSize == 1)) || (newSize <= inlineSize)) {
+        (crush(fr), crush(er)) match {
+          case (Line(fs), Line(es)) =>
+            val as = s"$fs $es"
+            (true, newSize, if (wrapped) wrappedLine("(", as, ")") else line(as))
+        }
+      } else (false, newSize, unwrap(fr) :+> unwrap(er))
+    }
+    case dl @ DepLambda(x, e) => {
+      val xs = s"${x.name}:${dl.kn.get}"
+      val (eInline, eSize, er) = renderASTCompact(e)
+      val newSize = eSize + 1
+      if ((inlineSize > 0) && eInline) {
+        crush(er) match {
+          case Line(es) =>
+            val dls = s"Λ$xs. $es"
+            (true, newSize, if (wrapped) wrappedLine("[", dls, "]") else line(dls))
+        }
+      } else (false, newSize, block(s"Λ$xs", er))
+    }
+    case DepApp(f, x) => {
+      val (fInline, fSize, fr) = f match {
+        case _: DepLambda[_] => renderASTCompact(f, wrapped = true)
+        case _ => renderASTCompact(f)
+      }
+      val xs = x.toString
+      val newSize = fSize + 1
+      if ((inlineSize > 0) && fInline) {
+        crush(fr) match {
+          case Line(fs) =>
+            val das = s"$fs $xs"
+            (true, newSize, if (wrapped) wrappedLine("(", das, ")") else line(das))
+        }
+      } else (false, newSize, line(xs) <+: unwrap(fr))
+    }
+    case l @ Literal(d) => (true, dataSize(d), line(l.toString))
+    case p: Primitive => (true, 1, line(p.toString))
+  }
+  case class WrappedLine(l: String, s: String, r: String) extends RenderUnicodeDraw {
+    def draw(cxt: Cxt)(implicit cfg: UnicodeConfig) =
+      UnicodeDraw(Seq.empty, Seq.empty, Seq(cfg.wireHSym +: Seq(l + s + r)), Seq.empty)
+  }
+  def wrappedLine(l: String, s: String, r: String) = WrappedLine(l, s, r)
+  def unwrap(d: RenderUnicodeDraw): RenderUnicodeDraw = d match {
+    case WrappedLine(_, s, _) => Line(s)
+    case d => d
+  }
+  def crush(d: RenderUnicodeDraw): RenderUnicodeDraw = d match {
+    case WrappedLine(l, s, r) => Line(l + s + r)
+    case d => d
+  }
+  def dataSize(d: Data): Int = d match {
+    case VectorData(v) => v.length
+    case ArrayData(a) => a.foldLeft(0)((acc, now) => acc + dataSize(now))
+    case PairData(p1, p2) => dataSize(p1) + dataSize(p2)
+    case _ => 1
   }
 }

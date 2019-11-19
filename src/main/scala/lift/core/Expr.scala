@@ -3,6 +3,7 @@ package lift.core
 import lift.core.types._
 import lift.core.DSL._
 import lift.core.ShowLift._
+import lift.core.ShowLiftCompact._
 
 sealed abstract class Expr {
   val t: Type
@@ -11,13 +12,13 @@ sealed abstract class Expr {
 
 final case class Identifier(name: String)
                            (override val t: Type = TypePlaceholder) extends Expr {
-  override def toString: String = showLift(this)
+  override def toString: String = showLiftCompact(this)
   override def setType(t: Type): Identifier = this.copy(name)(t)
 }
 
 final case class Lambda(x: Identifier, e: Expr)
                        (override val t: Type = TypePlaceholder) extends Expr {
-  override def toString: String = showLift(this)
+  override def toString: String = showLiftCompact(this)
 
   override def equals(obj: Any): Boolean = obj match {
     case other: Lambda => e == lifting.liftFunExpr(other).value(x)
@@ -29,7 +30,7 @@ final case class Lambda(x: Identifier, e: Expr)
 
 final case class App(f: Expr, e: Expr)
                     (override val t: Type = TypePlaceholder) extends Expr {
-  override def toString: String = showLift(this)
+  override def toString: String = showLiftCompact(this)
 
   override def setType(t: Type): App = this.copy(f, e)(t)
 }
@@ -37,7 +38,7 @@ final case class App(f: Expr, e: Expr)
 final case class DepLambda[K <: Kind](x: K#I, e: Expr)
                                      (override val t: Type = TypePlaceholder)
                                      (implicit val kn: KindName[K]) extends Expr {
-  override def toString: String = showLift(this)
+  override def toString: String = showLiftCompact(this)
 
   override def equals(obj: Any): Boolean = obj match {
     case other: DepLambda[K] => e == lifting.liftDepFunExpr[K](other).value(x)
@@ -49,7 +50,7 @@ final case class DepLambda[K <: Kind](x: K#I, e: Expr)
 
 final case class DepApp[K <: Kind](f: Expr, x: K#T)
                                   (override val t: Type = TypePlaceholder) extends Expr {
-  override def toString: String = showLift(this)
+  override def toString: String = showLiftCompact(this)
 
   override def setType(t: Type): DepApp[K] = this.copy(f, x)(t)
 }
