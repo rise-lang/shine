@@ -333,10 +333,8 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
              */
           // default case
           case _ =>
-            C.AST.Stmts(
-              C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
-                C.AST.Block(immutable.Seq(updatedGen.cmd(p, env)))),
-              f.synchronize)
+            C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
+              C.AST.Block(immutable.Seq(updatedGen.cmd(p, env))))
         }}))})
     }
 
@@ -383,10 +381,8 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
                 //                    updatedGen.cmd(p, env))
                 // default case
                 case _ =>
-                  C.AST.Stmts(
-                    C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
-                      C.AST.Block(immutable.Seq(updatedGen.cmd(p, env)))),
-                    f.synchronize)
+                  C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
+                    C.AST.Block(immutable.Seq(updatedGen.cmd(p, env))))
               })))
       })
     }

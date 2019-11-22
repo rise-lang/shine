@@ -6,7 +6,7 @@ import idealised.OpenCL.{GlobalSize, LocalSize}
 import lift.core.types._
 
 //noinspection TypeAnnotation
-class gemm extends test_util.TestsWithExecutor {
+class sgemmCheck extends test_util.TestsWithExecutor {
 
   val epsilon = 1.0f
 

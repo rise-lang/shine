@@ -25,7 +25,4 @@ final case class ParForWorkGroup(dim: Int)(override val n: Nat,
   override val parallelismLevel = OpenCL.WorkGroup
 
   override val name: String = freshName("wg_id_")
-
-  override def synchronize: Stmt = Comment("par for workgroup sync")
-
 }

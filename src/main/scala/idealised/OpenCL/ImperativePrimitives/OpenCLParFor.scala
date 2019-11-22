@@ -29,8 +29,6 @@ abstract class OpenCLParFor(val n: Nat,
 
   def name: String
 
-  def synchronize: Stmt
-
   override def eval(s: Store): Store = ???
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommType] = {

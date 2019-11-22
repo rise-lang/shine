@@ -25,6 +25,4 @@ final case class ParForGlobal(dim: Int)(override val n: Nat,
   override val parallelismLevel = OpenCL.Global
 
   override val name: String = freshName("gl_id_")
-
-  override def synchronize: Stmt = Comment("par for global sync")
 }
