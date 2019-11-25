@@ -27,6 +27,4 @@ final case class ParForLocal(dim: Int)(override val n: Nat,
   override val parallelismLevel = OpenCL.Local
 
   override val name: String = freshName("l_id_")
-
-  override def synchronize: Stmt = Barrier(local = true, global = true)
 }

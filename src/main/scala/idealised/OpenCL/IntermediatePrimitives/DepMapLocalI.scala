@@ -4,7 +4,7 @@ import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases.Phrase
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised.OpenCL.DSL.parForNatLocal
+import idealised.OpenCL.DSL.{barrier, parForNatLocal}
 
 final case class DepMapLocalI(dim:Int) {
   def apply(n: Nat,
@@ -15,6 +15,7 @@ final case class DepMapLocalI(dim:Int) {
             out: Phrase[AccType])
            (implicit context: TranslationContext): Phrase[CommType] =
   {
-    parForNatLocal(dim)(n, ft2, out, idx => a => f(idx)(in `@d` idx)(a))
+    parForNatLocal(dim)(n, ft2, out, idx => a => f(idx)(in `@d` idx)(a))`;`
+    barrier()
   }
 }
