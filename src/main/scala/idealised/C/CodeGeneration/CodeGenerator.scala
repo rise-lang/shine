@@ -1013,6 +1013,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
              case Cst(2) =>
                genNat(b, env, b => cont(AST.BinaryExpr(b,AST.BinaryOperator.*, b)))
              case _ =>
+               // FIXME: this often generates functionally incorrect code
                genNat(b, env, b =>
                  genNat(ex, env, ex =>
                    cont(AST.Cast(AST.Type.int, AST.FunCall(AST.DeclRef("pow"), immutable.Seq(
@@ -1030,16 +1031,24 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
              )
            )
 
-         // a /^ b
-         case Prod(a :: Pow(b, Cst(-1)) :: Nil) =>
-           if (a % b != Cst(0)) {
-             println(s"WARNING: $a /^ $b might have a fractional part")
+         case Prod(es) =>
+           var (num, denum) = es.partition({
+             case Pow(_, Cst(-1)) => false
+             case _ => true
+           })
+           denum = denum.map({ case Pow(b, Cst(-1)) => b })
+           if (denum.nonEmpty) { // num /^ denum
+             val aNum = num.fold(1: ArithExpr)(_*_)
+             val aDenum = denum.fold(1: ArithExpr)(_*_)
+             if (aNum % aDenum != Cst(0)) {
+               println(s"WARNING: $aNum /^ $aDenum might have a fractional part")
+             }
+             genBinopFold(num, AST.BinaryOperator.*, AST.Literal("0"), lhs =>
+               genBinopFold(denum, AST.BinaryOperator.*, AST.Literal("0"), rhs =>
+                 cont(C.AST.BinaryExpr(lhs, C.AST.BinaryOperator./, rhs))))
+           } else {
+             genBinopFold(es, AST.BinaryOperator.*, AST.Literal("0"), cont)
            }
-           genNat(a, env, lhs =>
-             genNat(b, env, rhs =>
-                cont(C.AST.BinaryExpr(lhs, C.AST.BinaryOperator./, rhs))))
-
-         case Prod(es) => genBinopFold(es, AST.BinaryOperator.*, AST.Literal("0"), cont)
 
          case Sum(es) => genBinopFold(es, AST.BinaryOperator.+, AST.Literal("0"), cont)
 
