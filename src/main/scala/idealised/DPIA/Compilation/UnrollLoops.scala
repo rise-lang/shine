@@ -17,7 +17,7 @@ object UnrollLoops {
           Continue(unrollLoop(n, init=0, step=1, i => Phrase.substitute(AsIndex(n, Natural(i)), `for`=ident, in=body)), this)
         case ForNat(n, DepLambda(ident: NatIdentifier, body), true) =>
           Continue(unrollLoop(n, init=0, step=1, i => PhraseType.substitute(i, `for`=ident, in=body)), this)
-        case OpenCLParFor(n, dt, out, Lambda(ident: Identifier[_], Lambda(identOut: Identifier[_], body)), init, step, true) =>
+        case OpenCLParFor(n, _, out, Lambda(ident: Identifier[_], Lambda(identOut: Identifier[_], body)), init, step, true) =>
           out.t.dataType match {
             case ArrayType(_, elemType) =>
               Continue(unrollLoop(n, init, step, i => Phrase.substitute(IdxAcc(n, elemType, AsIndex(n, Natural(i)), out),
@@ -32,7 +32,8 @@ object UnrollLoops {
     r
   }
 
-  def unrollLoop(n: Nat, init: Nat, step: Nat, genBody: Nat => Phrase[CommType]): Phrase[CommType] = {
+  def unrollLoop(n: Nat, init: Nat, step: Nat,
+                 genBody: Nat => Phrase[CommType]): Phrase[CommType] = {
     import lift.arithmetic.NotEvaluableException
 
     val stopMax = try {

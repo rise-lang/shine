@@ -16,7 +16,7 @@ object DSL {
   def depApp[K <: Kind](f: Expr, x: K#T): DepApp[K] = DepApp[K](f, x)()
   def literal(d: semantics.Data): Literal = Literal(d)
 
-  def array(n: Int): ArrayCons = primitives.ArrayCons(n)()
+  def makeArray(n: Int): MakeArray = primitives.MakeArray(n)()
   def cast: Cast = primitives.Cast()()
   def depJoin: DepJoin = primitives.DepJoin()()
   def depMapSeq: DepMapSeq = primitives.DepMapSeq()()
@@ -104,12 +104,20 @@ object DSL {
   implicit class TypeAnnotation(t: Type) {
     def ::(e: Expr): Expr =
       if (e.t == TypePlaceholder) e.setType(t)
-      else if (e.t == t) e else sys.error("type annotation can only replace a TypePlaceholder")
+      else if (e.t == t) e else
+        throw TypeException(s"tried to replace ${e.t} with ${t}, but type annotation can only replace a TypePlaceholder")
     def `:`(e: Expr): Expr = e :: t
   }
 
+  implicit class TypeEqual(a: Type) {
+    def =~=(b: Type): Boolean = (a, b) match {
+      case (TypePlaceholder, _) => true
+      case (_, TypePlaceholder) => true
+      case _ => a == b
+    }
+  }
+
   implicit class FunCall(f: Expr) {
-    // import lift.core.lifting._
 
     def apply(e: Expr): Expr = app(f, e)
     def apply(n: Nat): Expr = depApp[NatKind](f, n)

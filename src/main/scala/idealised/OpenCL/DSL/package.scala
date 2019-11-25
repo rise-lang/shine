@@ -52,4 +52,8 @@ package object DSL {
         f(v, swap, done)
       }))
   }
+
+  object barrier {
+    def apply(local: Boolean = true, global: Boolean = true) = Barrier(local, global)
+  }
 }

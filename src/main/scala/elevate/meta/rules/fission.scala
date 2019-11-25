@@ -21,15 +21,7 @@ object fission {
     }
     override def toString = "functionFission"
   }
-/*
-  case object inTypedFission extends Strategy[Elevate] {
-    def apply(e: Elevate): RewriteResult[Elevate] = e match {
-      case inTyped(seq(f,s)) => Success(seq(inTyped(f),inTyped(s)))
-      case _ => Failure(inTypedFission)
-    }
-    override def toString = "inTypedFission"
-  }
-*/
+
   case object argumentFission extends Strategy[Elevate] {
     def apply(e: Elevate): RewriteResult[Elevate] = e match {
       case argument(seq(f,s)) => Success(seq(argument(f),argument(s)))

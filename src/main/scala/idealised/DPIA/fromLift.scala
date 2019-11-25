@@ -22,7 +22,7 @@ object fromLift {
     case l.Lambda(x, e) => expr.t match {
       case lt.FunType(i, _) =>
         Lambda(Identifier(x.name, `type`(i)), expression(e))
-      case _ => ???
+      case _ => error(expr.t.toString, "a function type")
     }
 
     case l.App(f, e) => {
@@ -64,7 +64,6 @@ object fromLift {
     }
 
     case p: l.Primitive => primitive(p, expr.t)
-    case _ => ??? // should be unreachable
   }
 
   def addressSpace(a: lt.AddressSpace): AddressSpace = a match {
@@ -126,8 +125,7 @@ object fromLift {
         case n2n: lt.NatToNatIdentifier   => natToNatIdentifier(n2n)  `()->:` `type`(t)
         case n2d: lt.NatToDataIdentifier  => natToDataIdentifier(n2d) `()->:` `type`(t)
       }
-    case _: lt.TypeIdentifier => throw new Exception("This should not happen")
-    case lt.TypePlaceholder => throw new Exception("This should not happen")
+    case lt.TypeIdentifier(_) | lt.TypePlaceholder => throw new Exception("This should not happen")
   }
 
   def data(d: ls.Data): OpSem.Data = d match {
@@ -390,6 +388,7 @@ object fromLift {
       lt.FunType(lt.ArrayType(n, lt.ArrayType(m, la)), _))
       =>
         val a = dataType(la)
+/* FIXME?
 
         val transposeFunction =
           λ(ExpType(IndexType(n * m), read))(i => {
@@ -413,6 +412,10 @@ object fromLift {
           Split(n, m, read, a,
             Reorder(n * m, a, transposeFunction, transposeInverseFunction,
               Join(n, m, read, a, e))))
+
+ */
+        fun[ExpType](exp"[$n.$m.$a, $read]", e =>
+          Transpose(n, m, a, e))
 
       case (core.Take(),
       lt.DepFunType(n: l.NatIdentifier,
@@ -607,7 +610,7 @@ object fromLift {
         fun[ExpType ->: ExpType](exp"[idx($n), $read]" ->: exp"[$a, $read]", f =>
           Generate(n, a, f))
 
-      case (core.ArrayCons(_), lt) =>
+      case (core.MakeArray(_), lt) =>
         wrapArray(lt, Vector())
 
       case (core.Iterate(),
@@ -717,8 +720,7 @@ object fromLift {
         case _ => ???
       }
       case lt.DepFunType(_, _) => throw new Exception("This should not be possible")
-      case lt.TypeIdentifier(_) => throw new Exception("This should not happen")
-      case lt.TypePlaceholder => throw new Exception("This should not happen")
+      case lt.TypeIdentifier(_) | lt.TypePlaceholder => throw new Exception("This should not happen")
     }
   }
 

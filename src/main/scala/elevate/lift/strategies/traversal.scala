@@ -67,16 +67,6 @@ object traversal {
     }
   }
 
-  /*
-  case class inTyped(s: Elevate) extends Elevate {
-    def apply(e: Lift): RewriteResult[Lift] = e match {
-      case TypedExpr(e, t) => s(e).mapSuccess(TypedExpr(_, t) )
-      case _ => Failure(s)
-    }
-    override def toString = s"inTyped($s)"
-  }
-  */
-
   case class body(s: Elevate) extends Elevate {
     def apply(e: Lift): RewriteResult[Lift] = e match {
       case Lambda(x, f) => s(f).mapSuccess(Lambda(x, _)(e.t))

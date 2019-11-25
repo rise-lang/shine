@@ -29,15 +29,27 @@ object Primitive {
 
     def makeStringName(s: String): String = Character.toLowerCase(s.charAt(0)) + s.substring(1)
 
+    def makeArgs(p: Seq[Tree]): Seq[TermName] = p.map({
+      case q"$_ val $n: $_ " => n
+      case q"$_ val $n: $_ = $_" => n
+      case x => c.abort(c.enclosingPosition, s"expected a parameter, but got $x")})
+      .asInstanceOf[Seq[TermName]]
+
+    def makeChain(a: TermName, props: Seq[TermName]): Tree =
+      if (props.isEmpty) q"true" else q"(${a}.${props.head} == ${props.head}) && ${makeChain(a, props.tail)}"
+
     def fromClassDef: ClassDef => ClassDef = {
       case q"case class $name(..$params)(..$_) extends $_ {..$body} " =>
         val r = q"""
             case class $name(..$params)(override val t: Type = TypePlaceholder) extends Primitive {
+              override def equals(obj: Any) = obj match {
+                case ${TermName("p")} : ${name.asInstanceOf[c.TypeName]} =>
+                  ${makeChain(TermName("p"), makeArgs(params.asInstanceOf[Seq[Tree]]))} && (${TermName("p")}.t =~= t)
+                case _ => false
+              }
               override def toString: String = ${Literal(Constant(makeStringName(name.toString())))}
-              override def setType(t: Type): $name = ${name.asInstanceOf[c.TypeName].toTermName}(..${params.map({
-                case q"$_ val $n: $_ " => n
-                case q"$_ val $n: $_ = $_" => n
-                case x => c.abort(c.enclosingPosition, s"expected a parameter, but got $x")})})(t)
+              override def setType(t: Type): $name =
+                ${name.asInstanceOf[c.TypeName].toTermName}(..${makeArgs(params.asInstanceOf[Seq[Tree]])})(t)
               ..$body
             }
          """.asInstanceOf[ClassDef]

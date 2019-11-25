@@ -7,7 +7,7 @@ import primitiveMacro.Primitive.primitive
 
 object primitives {
 
-  @primitive case class ArrayCons(n: Int)(override val t: Type = TypePlaceholder) extends Primitive {
+  @primitive case class MakeArray(n: Int)(override val t: Type = TypePlaceholder) extends Primitive {
     private def tRec(m: Int, dt: DataType): Type =
       if (m <= 0) { ArrayType(n, dt) }
       else { dt ->: tRec(m - 1, dt) }
