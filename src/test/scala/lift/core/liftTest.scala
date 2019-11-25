@@ -5,12 +5,17 @@ import lift.core.HighLevelConstructs._
 import lift.core.primitives._
 import lift.core.semantics.Data
 import lift.core.types._
-import lift.core.DrawAST._
-import lift.core.DrawTree._
 import apps.convolution._
 
 class liftTest extends test_util.Tests {
   test("some random tests here") {
-    println(blurXTiled2D)
+    val probe: Expr => Boolean = {
+      case _: PadClamp => true
+      case _ => false
+    }
+    val x = blurXTiled2D
+    println(x)
+    val y = blurYTiled2DTiledLoadingTransposed
+    println(y)
   }
 }
