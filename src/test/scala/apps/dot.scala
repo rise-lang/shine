@@ -48,7 +48,7 @@ class dot extends test_util.Tests {
 
   // OpenMP
   test("Dot product CPU vector 1 compiles to syntactically correct OpenMP") {
-    import lift.OpenMP.primitives._
+    import lift.OpenMP.DSL._
 
     val dotCPUVector1 = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
       zip(asVectorAligned(4)(xs))(asVectorAligned(4)(ys))
@@ -65,7 +65,7 @@ class dot extends test_util.Tests {
   }
 
   test("Intel derived no warp dot product 1 compiles to syntactically correct OpenMP") {
-    import lift.OpenMP.primitives._
+    import lift.OpenMP.DSL._
 
     val intelDerivedNoWarpDot1 = nFun(n =>
       fun(xsT(n))(xs => fun(ysT(n))(ys =>
@@ -83,7 +83,7 @@ class dot extends test_util.Tests {
   }
 
   test("Dot product CPU 1 compiles to syntactically correct OpenMP") {
-    import lift.OpenMP.primitives._
+    import lift.OpenMP.DSL._
 
     val dotCPU1 = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
       zip(xs)(ys) |>
@@ -100,7 +100,7 @@ class dot extends test_util.Tests {
   }
 
   test("Dot product CPU 2 compiles to syntactically correct OpenMP") {
-    import lift.OpenMP.primitives._
+    import lift.OpenMP.DSL._
 
     val dotCPU2 = nFun(n => fun(xsT(n))(in =>
       in |>
@@ -117,7 +117,7 @@ class dot extends test_util.Tests {
   }
 
   { // OpenCL
-    import lift.OpenCL.primitives._
+    import lift.OpenCL.DSL._
 
     test("Intel derived no warp dot product 1 compiles to syntactically correct OpenCL") {
       val intelDerivedNoWarpDot1 = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>

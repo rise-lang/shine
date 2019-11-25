@@ -2,7 +2,7 @@ package idealised.DPIA.Primitives
 
 import lift.core.DSL._
 import lift.core.types._
-import lift.core.primitives.{map, mapSeq, slide}
+import lift.core.primitives._
 import lift.core.HighLevelConstructs.slide2D
 import benchmarks.core.SimpleRunOpenCLProgram
 import idealised.OpenCL.KernelWithSizes

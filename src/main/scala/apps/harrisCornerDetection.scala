@@ -3,8 +3,9 @@ package apps
 import lift.core._
 import lift.core.DSL._
 import lift.core.types._
-import lift.core.primitives.{typeHole, _}
+import lift.core.primitives._
 import lift.OpenCL.primitives._
+import lift.OpenCL.DSL._
 import lift.core.HighLevelConstructs._
 import util.gen
 
@@ -77,12 +78,12 @@ object harrisCornerDetection {
         |> padCst(0)(1)(vectorFromScalar(x `@` lidx(w - 1, w)))
     )) |> padClamp(1)(1) |> slide(3)(1) |> mapGlobal(transpose >>
       map(fun(vNbh =>
-        array(2)(C2D.sobelXWeightsV)(C2D.sobelYWeightsV) |>
+        makeArray(2)(C2D.sobelXWeightsV)(C2D.sobelYWeightsV) |>
         map(fun(vWs => C2D.weightsSeqVecUnroll(vWs)(vNbh)))
       )) >>
-      oclSlideSeq(slideSeq.Values)(AddressSpace.Private)(3)(1)(mapSeqUnroll(id))(
+      oclSlideSeq(SlideSeq.Values)(AddressSpace.Private)(3)(1)(mapSeqUnroll(id))(
         transpose >> map(shuffle) >>
-          zip(array(2)(C2D.sobelXWeightsH)(C2D.sobelYWeightsH)) >>
+          zip(makeArray(2)(C2D.sobelXWeightsH)(C2D.sobelYWeightsH)) >>
           // TODO: this triggers an extra copy
           toPrivateFun(mapSeqUnroll(fun(hWsNbh =>
             C2D.weightsSeqVecUnroll(hWsNbh._1)(hWsNbh._2)
@@ -90,7 +91,7 @@ object harrisCornerDetection {
           let(fun(ixiy => {
             val ix = ixiy `@` lidx(0, 2)
             val iy = ixiy `@` lidx(1, 2)
-            array(3)(sq(ix))(ix * iy)(sq(iy)) |> mapSeqUnroll(id)
+            makeArray(3)(sq(ix))(ix * iy)(sq(iy)) |> mapSeqUnroll(id)
           }))
       ) >> transpose >> map(asScalar)
     ) >> transpose
@@ -118,7 +119,7 @@ object harrisCornerDetection {
     slide(3)(1) |> mapGlobal(
       transpose >> map(transpose) >>
       map(map(C2D.weightsSeqVecUnroll(C2D.binomialWeightsV))) >>
-      oclSlideSeq(slideSeq.Values)(AddressSpace.Private)(3)(1)(mapSeqUnroll(id))(
+      oclSlideSeq(SlideSeq.Values)(AddressSpace.Private)(3)(1)(mapSeqUnroll(id))(
         transpose >> map(shuffle) >>
         toPrivateFun(mapSeqUnroll(C2D.weightsSeqVecUnroll(C2D.binomialWeightsH))) >>
         let(fun(s => {
@@ -141,12 +142,12 @@ object harrisCornerDetection {
           |> padCst(0)(1)(vectorFromScalar(x `@` lidx(w - 1, w)))
       )) |> padClamp(1)(1) |> slide(3)(1) |> mapGlobal(transpose >>
       map(fun(vNbh =>
-        array(2)(C2D.sobelXWeightsV)(C2D.sobelYWeightsV) |>
+        makeArray(2)(C2D.sobelXWeightsV)(C2D.sobelYWeightsV) |>
           map(fun(vWs => C2D.weightsSeqVecUnroll(vWs)(vNbh)))
       )) >>
-      oclSlideSeq(slideSeq.Values)(AddressSpace.Private)(3)(1)(mapSeqUnroll(id))(
+      oclSlideSeq(SlideSeq.Values)(AddressSpace.Private)(3)(1)(mapSeqUnroll(id))(
         transpose >> map(shuffle) >>
-          zip(array(2)(C2D.sobelXWeightsH)(C2D.sobelYWeightsH)) >>
+          zip(makeArray(2)(C2D.sobelXWeightsH)(C2D.sobelYWeightsH)) >>
           mapSeqUnroll(fun(hWsNbh =>
             C2D.weightsSeqVecUnroll(hWsNbh._1)(hWsNbh._2)
           ))
@@ -167,12 +168,12 @@ object harrisCornerDetection {
     map(map(fun(ixiy => {
       val ix = ixiy `@` lidx(0, 2)
       val iy = ixiy `@` lidx(1, 2)
-      array(3)(sq(ix))(ix * iy)(sq(iy))
+      makeArray(3)(sq(ix))(ix * iy)(sq(iy))
     }))) |>
     slide(3)(1) |> mapGlobal(
       transpose >> map(transpose) >>
       map(map(C2D.weightsSeqVecUnroll(C2D.binomialWeightsV))) >>
-      oclSlideSeq(slideSeq.Values)(AddressSpace.Private)(3)(1)(mapSeqUnroll(id))(
+      oclSlideSeq(SlideSeq.Values)(AddressSpace.Private)(3)(1)(mapSeqUnroll(id))(
         transpose >> map(shuffle) >>
         toPrivateFun(mapSeqUnroll(C2D.weightsSeqVecUnroll(C2D.binomialWeightsH))) >>
         let(fun(s => {

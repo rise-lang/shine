@@ -70,14 +70,14 @@ trait KindName[K <: Kind] {
 }
 
 object KindName {
-  implicit val typeKN: KindName[PhraseKind] = new KindName[PhraseKind] {
+  implicit val phraseKN: KindName[PhraseKind] = new KindName[PhraseKind] {
     def get = "phrase"
-  }
-  implicit val dataKN: KindName[DataKind] = new KindName[DataKind] {
-    def get = "data"
   }
   implicit val natKN: KindName[NatKind] = new KindName[NatKind] {
     def get = "nat"
+  }
+  implicit val dataKN: KindName[DataKind] = new KindName[DataKind] {
+    def get = "data"
   }
   implicit val addressSpaceKN: KindName[AddressSpaceKind] = new KindName[AddressSpaceKind] {
     def get = "addressSpace"

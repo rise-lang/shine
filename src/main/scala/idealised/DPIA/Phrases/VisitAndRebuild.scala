@@ -52,20 +52,20 @@ object VisitAndRebuild {
           case dl @ DepLambda(a, p) =>
             DepLambda(a, apply(p, v))(dl.kn)
 
-          case DepApply(p, x) => x match {
-            case a: Nat =>
-              DepApply[NatKind, T](apply(p, v).asInstanceOf[Phrase[NatKind `()->:` T]], v.nat(a))
-            case a: DataType =>
-              DepApply[DataKind, T](apply(p, v).asInstanceOf[Phrase[DataKind `()->:` T]], v.data(a))
-            case a: AddressSpace =>
-              DepApply[AddressSpaceKind, T](apply(p, v).asInstanceOf[Phrase[AddressSpaceKind `()->:` T]], v.addressSpace(a))
-            case a: AccessType =>
-              DepApply[AccessKind, T](apply(p, v).asInstanceOf[Phrase[AccessKind `()->:` T]], v.access(a))
-            case a: NatToNat =>
-              DepApply[NatToNatKind, T](apply(p, v).asInstanceOf[Phrase[NatToNatKind `()->:` T]], v.natToNat(a))
-            case a: NatToData =>
-              DepApply[NatToDataKind, T](apply(p, v).asInstanceOf[Phrase[NatToDataKind `()->:` T]], v.natToData(a))
-            case a: PhraseType => ???
+          case DepApply(p, a) => a match {
+            case n: Nat =>
+              DepApply[NatKind, T](apply(p, v).asInstanceOf[Phrase[NatKind `()->:` T]], v.nat(n))
+            case dt: DataType =>
+              DepApply[DataKind, T](apply(p, v).asInstanceOf[Phrase[DataKind `()->:` T]], v.data(dt))
+            case ad: AddressSpace =>
+              DepApply[AddressSpaceKind, T](apply(p, v).asInstanceOf[Phrase[AddressSpaceKind `()->:` T]], v.addressSpace(ad))
+            case ac: AccessType =>
+              DepApply[AccessKind, T](apply(p, v).asInstanceOf[Phrase[AccessKind `()->:` T]], v.access(ac))
+            case n2n: NatToNat =>
+              DepApply[NatToNatKind, T](apply(p, v).asInstanceOf[Phrase[NatToNatKind `()->:` T]], v.natToNat(n2n))
+            case n2d: NatToData =>
+              DepApply[NatToDataKind, T](apply(p, v).asInstanceOf[Phrase[NatToDataKind `()->:` T]], v.natToData(n2d))
+            case ph: PhraseType => ???
           }
 
           case LetNat(binder, defn, body) => LetNat(binder, apply(defn, v), apply(body, v))
@@ -99,7 +99,7 @@ object VisitAndRebuild {
     case PhrasePairType(t1, t2)           => PhrasePairType(visitPhraseTypeAndRebuild(t1, v), visitPhraseTypeAndRebuild(t2, v))
     case FunType(inT, outT)         => FunType(visitPhraseTypeAndRebuild(inT, v), visitPhraseTypeAndRebuild(outT, v))
     case PassiveFunType(inT, outT)  => PassiveFunType(visitPhraseTypeAndRebuild(inT, v), visitPhraseTypeAndRebuild(outT, v))
-    case df @ DepFunType(x, t)           => DepFunType(x, visitPhraseTypeAndRebuild(t, v))(df.kn)
+    case dft @ DepFunType(x, t)           => DepFunType(x, visitPhraseTypeAndRebuild(t, v))(dft.kn)
   }
 
 }

@@ -107,7 +107,7 @@ int main(int argc, char** argv) {
     val id: Expr = fun(x => x)
     val e = padClamp2D(1) >> slide(3)(1) >> mapSeq(transpose >>
       map(dotSeqUnroll(binomialWeightsV)) >>
-      slideSeq(slideSeq.Values)(3)(1)(id)(dotSeqUnroll(binomialWeightsH))
+      slideSeq(SlideSeq.Values)(3)(1)(id)(dotSeqUnroll(binomialWeightsH))
     )
     val code = gen.CProgram(wrapExpr(e), "blur").code
     " % ".r.findAllIn(code).length shouldBe 0
@@ -115,7 +115,7 @@ int main(int argc, char** argv) {
   }
 
   test("compiling OpenCL private arrays should unroll loops") {
-    import lift.OpenCL.primitives._
+    import lift.OpenCL.DSL._
 
     val dotSeqPrivate = fun(a => fun(b =>
       zip(a)(b) |> map(mulT) |> oclReduceSeq(AddressSpace.Private)(add)(l(0.0f))

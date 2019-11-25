@@ -2,7 +2,7 @@ package idealised.DPIA.Primitives
 
 import lift.core.DSL._
 import lift.core.types._
-import lift.core.primitives.{split, map, mapSeq}
+import lift.core.primitives._
 import util.gen
 
 class Split extends test_util.Tests {

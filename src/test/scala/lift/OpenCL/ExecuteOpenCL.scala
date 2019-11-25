@@ -5,7 +5,7 @@ import lift.core._
 import lift.core.DSL._
 import lift.core.types._
 import lift.core.primitives._
-import lift.OpenCL.primitives._
+import lift.OpenCL.DSL._
 import util.gen
 
 import scala.language.{postfixOps, reflectiveCalls}

@@ -7,17 +7,6 @@ import elevate.core.{Lift, RewriteResult, Strategy, Success}
 
 package object lift {
 
-  def sameButOneMayBeTyped(a: Lift, b: Lift): Boolean = {
-    a match {
-      case x if x == b => true
-      case TypedExpr(x, _) if x == b => true
-      case _ => b match {
-        case TypedExpr(x, _) if x == a => true
-        case _ => false
-      }
-    }
-  }
-
   def printExpr : Strategy[Lift] = peek[Lift](p => println(s"${toEvaluableString(p)}"))
   def printExpr(msg: String) : Strategy[Lift] = peek[Lift](p => println(s"$msg \n${toEvaluableString(p)}"))
 
@@ -25,17 +14,16 @@ package object lift {
     e match {
       case Identifier(name) => s"""Identifier("id$name")""" // id prefix prevents name clashes with freshName
       case Lambda(x, e) => s"Lambda(${toEvaluableString(x)}, ${toEvaluableString(e)})"
-      case Apply(f, e) => s"Apply(${toEvaluableString(f)}, ${toEvaluableString(e)})"
+      case App(f, e) => s"Apply(${toEvaluableString(f)}, ${toEvaluableString(e)})"
       case DepLambda(x, e) => x match {
         case n: NatIdentifier => s"""DepLambda[NatKind](NatIdentifier("id$n"), ${toEvaluableString(e)})"""
         case dt: DataTypeIdentifier => s"""DepLambda[DataKind]("id$dt", ${toEvaluableString(e)})"""
       }
-      case DepApply(f, x) => x match {
+      case DepApp(f, x) => x match {
         case n: Nat => s"DepApply[NatKind](${toEvaluableString(f)}, $n)"
         case dt: DataType => s"DepApply[DataKind](${toEvaluableString(f)}, $dt)"
       }
       case Literal(d) => s"Literal($d)"
-      case TypedExpr(e, t) => toEvaluableString(e)
       case ff: ForeignFunction => ff.toString
       case p: Primitive => p.toString
     }
@@ -44,13 +32,11 @@ package object lift {
   def dotPrinter(expr: Expr,
                  printEdgeLabels: Boolean = true,
                  inlineApply: Boolean = false,
-                 inlineTypedExpr: Boolean = true,
                  inlineLambdaIdentifier: Boolean = false): String = {
 
     @scala.annotation.tailrec
     def getID(x: Any): String = x match {
-      case Apply(f,_) if inlineApply => getID(f)
-      case TypedExpr(x,_) if inlineTypedExpr => getID(x)
+      case App(f,_) if inlineApply => getID(f)
       case i:Identifier if !inlineLambdaIdentifier => i.toString
       case _ =>freshName("node")
     }
@@ -59,7 +45,6 @@ package object lift {
                          parent: String,
                          printEdgeLabels: Boolean,
                          inlineApply: Boolean,
-                         inlineTypedExpr: Boolean,
                          inlineLambdaIdentifier: Boolean,
                          ty: Option[String]): String = {
 
@@ -92,7 +77,7 @@ package object lift {
       def recurse(e: Expr,
                   parent: String,
                   ty: Option[String]): String =
-        genNodesAndEdges(e, parent, printEdgeLabels, inlineApply, inlineTypedExpr, inlineLambdaIdentifier, ty)
+        genNodesAndEdges(e, parent, printEdgeLabels, inlineApply, inlineLambdaIdentifier, ty)
 
       def binaryNode(nodeLabel: String, a: (Expr, String), b: (Expr, String)): String = {
         val aID = getID(a._1)
@@ -115,9 +100,9 @@ package object lift {
              |$parent -> $expr ${addEdgeLabel(edgeLabel("body"))};
              |${recurse(e, expr, None)}""".stripMargin
 
-        case Apply(f, e) if !inlineApply => binaryNode("apply", (f, "fun"), (e, "arg"))
+        case App(f, e) if !inlineApply => binaryNode("apply", (f, "fun"), (e, "arg"))
 
-        case Apply(f, e) if inlineApply =>
+        case App(f, e) if inlineApply =>
           val expr = getID(e)
           s"""$parent -> $expr ${addEdgeLabel(edgeLabel("apply"))}
              |${recurse(f, parent, None)}
@@ -138,7 +123,7 @@ package object lift {
              |$parent -> $expr ${addEdgeLabel(edgeLabel("body"))};
              |${recurse(e, expr, None)}""".stripMargin
 
-        case DepApply(f, e) =>
+        case DepApp(f, e) =>
           val fun = getID(f)
           val arg = getID(e)
           s"""$parent ${attr(fillWhite + Label("depApply").toString)}
@@ -147,27 +132,13 @@ package object lift {
              |$arg ${attr(fillWhite + Label(e.toString).toString)}
              |${recurse(f, fun, None)}""".stripMargin
 
-        case TypedExpr(e, t) if inlineTypedExpr =>
-          val formattedType = t.toString.replaceAll("->", "-\\\\>")
-          s"${recurse(e, parent, Some(formattedType))}"
-
-        case TypedExpr(e, t) if !inlineTypedExpr =>
-          val expr = getID(e)
-          val ty = getID(t)
-          val formattedType = t.toString.replaceAll("->", "-\\\\>")
-          s"""$parent ${attr(fillWhite + Label("TypedExpr").toString)}
-             |$parent -> $expr ${addEdgeLabel(edgeLabel("expr"))}
-             |$parent -> $ty ${addEdgeLabel(edgeLabel("type"))}
-             |$ty [label="$formattedType"]
-             |${recurse(e, expr, None)}""".stripMargin
-
         case l: Literal => s"$parent ${attr(fillWhite + Label(l.toString).italic.toString)}"
         case i: Identifier => s"$parent ${attr(fillWhite + Label(i.toString).italic.toString)}"
         case p: Primitive => s"$parent ${attr(fillGray + Label(p.toString).bold.toString)}"
       }
     }
 
-    val content = genNodesAndEdges(expr, getID(expr), printEdgeLabels, inlineApply, inlineTypedExpr, inlineLambdaIdentifier, None)
+    val content = genNodesAndEdges(expr, getID(expr), printEdgeLabels, inlineApply, inlineLambdaIdentifier, None)
     s"""
        |digraph graphname
        |{

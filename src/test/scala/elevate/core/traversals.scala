@@ -18,7 +18,7 @@ import elevate.lift.strategies.traversal.{body, function, inBody}
 import elevate.meta.rules.fission.bodyFission
 import lift.core.DSL._
 import lift.core._
-import lift.core.primitives.{join, map, split}
+import lift.core.primitives._
 import lift.core.types.NatKind
 
 
@@ -79,8 +79,8 @@ class traversals extends test_util.Tests {
   }
 
   test("RNF did not normalize") {
-    val expr2 = Apply(join, Apply(Apply(map, Lambda(Identifier("η125"), Apply(Apply(map, Lambda(Identifier("ee3"), Apply(join, Apply(Apply(map, Lambda(Identifier("η124"), Apply(Apply(map, Lambda(Identifier("η123"), Apply(Identifier("ee2"), Identifier("η123")))), Identifier("η124")))), Apply(DepApply[NatKind](split, 4), Identifier("ee3")))))), Identifier("η125")))), Apply(DepApply[NatKind](split, 4), Identifier("ee1"))))
-    val expr5 = Apply(join, Apply(Apply(map, Lambda(Identifier("η141"), Apply(Apply(map, Lambda(Identifier("η140"), Apply(join, Identifier("η140")))), Identifier("η141")))), Apply(Apply(map, Lambda(Identifier("η145"), Apply(Apply(map, Lambda(Identifier("η144"), Apply(Apply(map, Lambda(Identifier("η143"), Apply(Apply(map, Lambda(Identifier("η142"), Apply(Identifier("ee2"), Identifier("η142")))), Identifier("η143")))), Identifier("η144")))), Identifier("η145")))), Apply(Apply(map, Lambda(Identifier("η147"), Apply(Apply(map, Lambda(Identifier("η146"), Apply(DepApply[NatKind](split, 4), Identifier("η146")))), Identifier("η147")))), Apply(DepApply[NatKind](split, 4), Identifier("ee1"))))))
+    val expr2 = app(join, app(app(map, lambda(identifier("η125"), app(app(map, lambda(identifier("ee3"), app(join, app(app(map, lambda(identifier("η124"), app(app(map, lambda(identifier("η123"), app(identifier("ee2"), identifier("η123")))), identifier("η124")))), app(depApp[NatKind](split, 4), identifier("ee3")))))), identifier("η125")))), app(depApp[NatKind](split, 4), identifier("ee1"))))
+    val expr5 = app(join, app(app(map, lambda(identifier("η141"), app(app(map, lambda(identifier("η140"), app(join, identifier("η140")))), identifier("η141")))), app(app(map, lambda(identifier("η145"), app(app(map, lambda(identifier("η144"), app(app(map, lambda(identifier("η143"), app(app(map, lambda(identifier("η142"), app(identifier("ee2"), identifier("η142")))), identifier("η143")))), identifier("η144")))), identifier("η145")))), app(app(map, lambda(identifier("η147"), app(app(map, lambda(identifier("η146"), app(depApp[NatKind](split, 4), identifier("η146")))), identifier("η147")))), app(depApp[NatKind](split, 4), identifier("ee1"))))))
 
     assert(RNF(expr2).get == expr5)
   }

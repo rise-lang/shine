@@ -2,78 +2,59 @@ package lift.OpenCL
 
 import lift.core.DSL._
 import lift.core.types._
-import lift.core.{Expr, primitives => core}
-
-import scala.language.implicitConversions
+import lift.core.{Primitive, primitives => core}
+import primitiveMacro.Primitive.primitive
 
 object primitives {
   sealed trait Primitive extends lift.core.Primitive
 
   // TODO? depMapGlobal, depMapLocal, depMapWorkGroup
 
-  case class mapGlobal(dim: Int) extends Primitive {
-    override def t: Type = core.map.t
+  @primitive case class MapGlobal(dim: Int)(override val t: Type = TypePlaceholder) extends Primitive {
+    override def typeScheme: Type = implN(n => implDT(s => implDT(t =>
+      (s ->: t) ->: ArrayType(n, s) ->: ArrayType(n, t)
+    )))
   }
 
-  object mapGlobal {
-    def apply(): mapGlobal = mapGlobal(0)
-    def apply(e: Expr): Expr = mapGlobal(0)(e)
-
-    implicit def toMapGlobal(m: mapGlobal.type): mapGlobal = mapGlobal(0)
+  @primitive case class MapLocal(dim: Int)(override val t: Type = TypePlaceholder) extends Primitive {
+    override def typeScheme: Type = implN(n => implDT(s => implDT(t =>
+      (s ->: t) ->: ArrayType(n, s) ->: ArrayType(n, t)
+    )))
   }
 
-  case class mapLocal(dim: Int) extends Primitive {
-    override def t: Type = core.map.t
+  @primitive case class MapWorkGroup(dim: Int)(override val t: Type = TypePlaceholder) extends Primitive {
+    override def typeScheme: Type = implN(n => implDT(s => implDT(t =>
+      (s ->: t) ->: ArrayType(n, s) ->: ArrayType(n, t)
+    )))
   }
 
-  object mapLocal {
-    def apply(): mapLocal = mapLocal(0)
-    def apply(e: Expr): Expr = mapLocal(0)(e)
-
-    implicit def toMapLocal(m: mapLocal.type): mapLocal = mapLocal(0)
+  @primitive case class ToMem()(override val t: Type = TypePlaceholder) extends Primitive {
+    override def typeScheme: Type = implDT(t => aFunT(a => t ->: t))
   }
 
-  case class mapWorkGroup(dim: Int) extends Primitive {
-    override def t: Type = core.map.t
+  @primitive case class OclReduceSeq()(override val t: Type = TypePlaceholder) extends Primitive {
+    override def typeScheme: Type = aFunT(a => implN(n => implDT(s => implDT(t =>
+      (t ->: s ->: t) ->: t ->: ArrayType(n, s) ->: t
+    ))))
   }
 
-  object mapWorkGroup {
-    def apply(): mapWorkGroup = mapWorkGroup(0)
-    def apply(e: Expr): Expr = mapWorkGroup(0)(e)
-
-    implicit def toMapLocal(m: mapWorkGroup.type): mapWorkGroup = mapWorkGroup(0)
+  @primitive case class OclReduceSeqUnroll()(override val t: Type = TypePlaceholder) extends Primitive {
+    override def typeScheme: Type = aFunT(a => implN(n => implDT(s => implDT(t =>
+      (t ->: s ->: t) ->: t ->: ArrayType(n, s) ->: t
+    ))))
   }
 
-
-  object toMem extends Primitive {
-    override def t: Type = implDT(t => aFunT(a => t ->: t))
-  }
-
-  def toFun(to: Expr, f: Expr): Expr = fun(x => to(f(x)))
-
-  val toGlobal: Expr = toMem(lift.core.types.AddressSpace.Global)
-  def toGlobalFun(f: Expr): Expr = toFun(toGlobal, f)
-  val toLocal: Expr = toMem(lift.core.types.AddressSpace.Local)
-  def toLocalFun(f: Expr): Expr = toFun(toLocal, f)
-  val toPrivate: Expr = toMem(lift.core.types.AddressSpace.Private)
-  def toPrivateFun(f: Expr): Expr = toFun(toPrivate, f)
-
-  object oclReduceSeq extends Primitive {
-    override def t: Type = aFunT(a => core.reduceSeq.t)
-  }
-
-  object oclReduceSeqUnroll extends Primitive {
-    override def t: Type = oclReduceSeq.t
-  }
-
-  object oclIterate extends Primitive {
-    override def t: Type = aFunT(a => implN(n => implN(m => nFunT(k => implDT(t =>
+  @primitive case class OclIterate()(override val t: Type = TypePlaceholder) extends Primitive {
+    override def typeScheme: Type = aFunT(a => implN(n => implN(m => nFunT(k => implDT(t =>
       nFunT(l => ArrayType(l * n, t) ->: ArrayType(l, t)) ->:
         ArrayType(m * n.pow(k), t) ->: ArrayType(m, t)
     )))))
   }
 
-  case class oclSlideSeq(rot: core.slideSeq.Rotate) extends Primitive {
-    override def t: Type = aFunT(a => core.slideSeq(rot).t)
+  @primitive case class OclSlideSeq(rot: core.SlideSeq.Rotate)(override val t: Type = TypePlaceholder) extends Primitive {
+    override def typeScheme: Type = aFunT(a => implN(n => nFunT(sz => nFunT(sp => implDT(s => implDT(t => {
+      (s ->: s) ->: (ArrayType(sz, s) ->: t) ->:
+        ArrayType(sp * n + sz - sp, s) ->: ArrayType(n, t)
+    }))))))
   }
 }

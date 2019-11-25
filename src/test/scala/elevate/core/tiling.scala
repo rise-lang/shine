@@ -255,13 +255,12 @@ class tiling extends test_util.Tests {
   val floatId: Expr = identity(float)
 
   test("codegen 1D tiles") {
-    val highLevel = wrapInLambda(1, i => *(floatId) $ i, inputT(1, _))
-    val tiled = one(body(tileND(1)(tileSize))).apply(highLevel).get
+    val highLevel = infer(wrapInLambda(1, i => *(floatId) $ i, inputT(1, _)))
+    val tiled = infer(one(body(tileND(1)(tileSize))).apply(highLevel).get)
 
     println(gen.CProgram(lower(highLevel)))
     println(gen.CProgram(lower(tiled)))
   }
-
 
   //TODO make this work without implicit array assignments
   ignore("codegen 2D tiles") {
@@ -286,6 +285,7 @@ class tiling extends test_util.Tests {
     val highLevel = wrapInLambda(3, i => ***!(floatId) $ i, inputT(3, _))
     val tiled = one(one(one(body(fmap(tileND(2)(tileSize)))))).apply(highLevel).get
 
+
     println(gen.CProgram(lower(highLevel)))
     println(gen.CProgram(lower(tiled)))
   }
@@ -308,22 +308,19 @@ class tiling extends test_util.Tests {
         )
       )
 
-    val tiling = applyNTimes(3)(body)(
-      inTyped(
-        applyNTimes(5)(body)(
-          tileND(2)(4))))
+    val tiling = applyNTimes(3)(body)(applyNTimes(5)(body)(tileND(2)(4)))
 
     val normalized = FNF(tiling).get
     val rewritten = normalized(backward)
 
     val debug =
-      body(body(body(inTyped(body(body(body(body(body(function(argumentOf(map,body(function(splitJoin(4)))))))))))))) `;`
-      body(body(body(inTyped(body(body(body(body(body(function(splitJoin(4))))))))))) `;`
-        body(body(body(inTyped(body(body(body(body(body(RNF))))))))) `;`
-        body(body(body(inTyped(body(body(body(body(body(LCNF))))))))) `;`
-        body(body(body(inTyped(body(body(body(body(body(argument(argument(function(argumentOf(map,body(idAfter)))))))))))))) `;`
-        body(body(body(inTyped(body(body(body(body(body(argument(argument(function(argumentOf(map,body(createTransposePair)))))))))))))) `;`
-        body(body(body(inTyped(body(body(body(body(body(argument(argument(function(argumentOf(map,body(LCNF))))))))))))))
+      body(body(body(body(body(body(body(body(function(argumentOf(map,body(function(splitJoin(4))))))))))))) `;`
+      body(body(body(body(body(body(body(body(function(splitJoin(4)))))))))) `;`
+        body(body(body(body(body(body(body(body(RNF)))))))) `;`
+        body(body(body(body(body(body(body(body(LCNF)))))))) `;`
+        body(body(body(body(body(body(body(body(argument(argument(function(argumentOf(map,body(idAfter))))))))))))) `;`
+        body(body(body(body(body(body(body(body(argument(argument(function(argumentOf(map,body(createTransposePair))))))))))))) `;`
+        body(body(body(body(body(body(body(body(argument(argument(function(argumentOf(map,body(LCNF)))))))))))))
         //body(body(body(inTyped(body(body(body(body(body(argument(argument(function(argumentOf(map,body(argument(mapMapFBeforeTranspose))))))))))))))) `;`
         //body(body(body(inTyped(body(body(body(body(body(argument(argument(RNF)))))))))))
 

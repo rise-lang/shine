@@ -13,3 +13,4 @@ modules.xml
 *.out
 *.pdf
 *.gz
+*.sc

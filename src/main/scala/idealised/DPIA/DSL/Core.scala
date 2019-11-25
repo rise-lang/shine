@@ -36,10 +36,10 @@ object nFun {
 trait depFunDef {
   def apply[K <: Kind](): Object {
     def apply[T <: PhraseType](f: K#I => Phrase[T])
-                              (implicit kn: KindName[K], w: Kind.IdentifierMaker[K]): DepLambda[K, T]
+                              (implicit w: Kind.IdentifierMaker[K], kn: KindName[K]): DepLambda[K, T]
   } = new {
     def apply[T <: PhraseType](f: K#I => Phrase[T])
-                              (implicit kn: KindName[K], w: Kind.IdentifierMaker[K]): DepLambda[K, T] = {
+                              (implicit w: Kind.IdentifierMaker[K], kn: KindName[K]): DepLambda[K, T] = {
       val x = w.makeIdentifier()
       DepLambda(x, f(x))
     }

@@ -5,6 +5,7 @@ import idealised.OpenCL.{GlobalSize, KernelWithSizes, LocalSize}
 import util.{Display, TimeSpan, gen}
 import util.Time.ms
 import lift.OpenCL.primitives._
+import lift.OpenCL.DSL._
 import lift.arithmetic.SteppedCase
 import lift.core.DSL._
 import lift.core.Expr
@@ -156,7 +157,7 @@ class stencil extends test_util.Tests {
     override def expr = {
       nFun(n => fun(ArrayType(n, ArrayType(n, float)))(input =>
         input |>
-          padCst2D(padSize)(padSize)(l(0.0f)) |>
+          padCst2D(padSize)(l(0.0f)) |>
           slide2D(stencilSize, 1) |>
           //partition2D(padSize, N - 2*padSize + ((1 + stencilSize) % 2)) :>>
           partition(3)(n2nFun(m => SteppedCase(m, Seq(padSize, n - 2 * padSize, padSize)))) |>

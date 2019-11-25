@@ -5,6 +5,12 @@ import lift.arithmetic.RangeAdd
 
 sealed trait Type
 
+case class TypeException(msg: String) extends Exception {
+  override def toString = s"type exception: $msg"
+}
+
+object TypePlaceholder extends Type
+
 final case class TypeIdentifier(name: String) extends Type {
   override def toString: String = name
 }

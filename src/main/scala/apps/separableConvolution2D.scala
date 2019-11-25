@@ -6,6 +6,7 @@ import lift.core.types._
 import lift.core.semantics._
 import lift.core.primitives._
 import lift.OpenCL.primitives._
+import lift.OpenCL.DSL._
 import lift.core.HighLevelConstructs._
 
 object separableConvolution2D {
@@ -138,7 +139,7 @@ object separableConvolution2D {
   val regRotSeq: Expr = fun(3`.`float)(weightsV => fun(3`.`float)(weightsH =>
     padClamp2D(1) >> slide(3)(1) >> mapSeq(transpose >>
       map(dotSeqUnroll(weightsV)) >>
-      slideSeq(slideSeq.Values)(3)(1)(id)(dotSeqUnroll(weightsH))
+      slideSeq(SlideSeq.Values)(3)(1)(id)(dotSeqUnroll(weightsH))
     )
   ))
   val regRotPar: Expr = fun(3`.`float)(weightsV => fun(3`.`float)(weightsH => {
@@ -152,7 +153,7 @@ object separableConvolution2D {
     ))) >> padClamp(1)(1) >>
     slide(3)(1) >> mapGlobal(transpose >>
       map(Dv) >>
-      oclSlideSeq(slideSeq.Values)(AddressSpace.Private)(3)(1)(id)(shuffle >> Dh) >>
+      oclSlideSeq(SlideSeq.Values)(AddressSpace.Private)(3)(1)(id)(shuffle >> Dh) >>
       asScalar
     )
   }))

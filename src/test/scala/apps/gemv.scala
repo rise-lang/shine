@@ -26,7 +26,7 @@ class gemv extends test_util.Tests {
       ))
 
   object ocl {
-    import lift.OpenCL.primitives._
+    import lift.OpenCL.DSL._
 
     val fullMatrixVectorFusedOpenCL =
       nFun((n, m) =>
@@ -76,7 +76,7 @@ class gemv extends test_util.Tests {
   }
 
   object omp {
-    import lift.OpenMP.primitives._
+    import lift.OpenMP.DSL._
 
     val fullMatrixVectorFusedOpenMP =
       nFun((n, m) =>

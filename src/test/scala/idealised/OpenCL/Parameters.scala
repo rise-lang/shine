@@ -3,7 +3,6 @@ package idealised.OpenCL
 import lift.core.DSL._
 import lift.core.types._
 import util.gen
-import lift.core.primitives.mapSeq
 
 class Parameters extends test_util.Tests {
   val m = 4 // vector width

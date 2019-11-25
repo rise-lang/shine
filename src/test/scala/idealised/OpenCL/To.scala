@@ -6,6 +6,7 @@ import lift.core.DSL._
 import lift.core.types._
 import lift.core.types.AddressSpace._
 import lift.OpenCL.primitives._
+import lift.OpenCL.DSL._
 
 class To extends test_util.Tests {
   val id = fun(x => x)
@@ -66,10 +67,10 @@ class To extends test_util.Tests {
     "private memory accumulator with two mapLocal nesting two mapSeq") {
 
     val zeros = nFun(n1 => nFun(n2 => nFun(n3 => nFun(n4 =>
-      generate(fun(IndexType(n4))(_ =>
-        generate(fun(IndexType(n3))(_ =>
-          generate(fun(IndexType(n2))(_ =>
-            generate(fun(IndexType(n1))(_ => l(0.0f)))))))))))))
+      generate(fun(IndexType(n1))(_ =>
+        generate(fun(IndexType(n2))(_ =>
+          generate(fun(IndexType(n3))(_ =>
+            generate(fun(IndexType(n4))(_ => l(0.0f)))))))))))))
 
     val e = nFun((k, m, n, o, p) =>
       fun(k `.` m `.` n `.` o `.` p `.` float)(xs =>

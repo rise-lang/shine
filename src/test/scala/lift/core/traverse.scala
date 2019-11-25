@@ -41,16 +41,29 @@ class traverse extends test_util.Tests {
         { case _: DepLambda[NatKind]@unchecked => () },
         { case _: NatIdentifier => () },
         { case _: Lambda => () },
-        { case _: Apply => () },
-        { case _: Apply => () },
-        { case `map` => () },
-        { case _: Apply => () },
-        { case `map` => () },
+        { case _: Identifier => ()},
+        { case ArrayType(_, ArrayType(_, _: ScalarType)) => ()},
+        { case _: App => () },
+        { case _: App => () },
+        { case _: Map => () },
+        { case TypePlaceholder => () },
+        { case _: App => () },
+        { case _: Map => () },
+        { case TypePlaceholder => () },
         { case _: Lambda => () },
         { case _: Identifier => () },
-        { case _: TypedExpr => () },
+        { case TypePlaceholder => () },
         { case _: Identifier => () },
-        { case ArrayType(_, ArrayType(_, _: ScalarType)) => () }
+        { case TypePlaceholder => () },
+        { case TypePlaceholder => () },
+        { case TypePlaceholder => () },
+        { case TypePlaceholder => () },
+        { case _: Identifier => () },
+        { case ArrayType(_, ArrayType(_, _: ScalarType)) => () },
+        { case TypePlaceholder => () },
+        { case TypePlaceholder => () },
+        { case TypePlaceholder => () },
+        { case TypePlaceholder => () }
       ) : Seq[Any => Unit]
     }
 
@@ -76,7 +89,9 @@ class traverse extends test_util.Tests {
         { case _: NatIdentifier => () },
         { case _: DepLambda[NatKind]@unchecked => () },
         { case _: NatIdentifier => () },
-        { case _: Lambda => () }
+        { case _: Lambda => () },
+        { case _: Identifier => () },
+        { case ArrayType(_, ArrayType(_, _: ScalarType)) => () }
       ) : Seq[Any => Unit]
     }
 
@@ -84,8 +99,8 @@ class traverse extends test_util.Tests {
     class Visitor extends TraceVisitor(trace) {
       override def visitExpr(expr: Expr): Result[Expr] = {
         expr match {
-          case Apply(Apply(`map`, _), e) =>
-            val r = Apply(fun(x => x), e)
+          case App(App(Map(), _), e) =>
+            val r = app(fun(x => x), e)
             println(r)
             Stop(r)
           case _ => super.visitExpr(expr)
@@ -100,7 +115,7 @@ class traverse extends test_util.Tests {
       case traversal.Stop(r) =>
         assert(r ==
           nFun(h => nFun(w => fun(ArrayType(h, ArrayType(w, float)))(input =>
-            Apply(fun(x => x), input)
+            app(fun(x => x), input)
           )))
         )
       case _ => throw new Exception("the traversal should have stopped")
@@ -118,7 +133,7 @@ class traverse extends test_util.Tests {
     class Visitor extends traversal.Visitor {
       override def visitExpr(expr: Expr): Result[Expr] = {
         expr match {
-          case Apply(`map`, f) =>
+          case App(Map(), f) =>
             println(f)
             Stop(f)
           case _ => Continue(expr, this)
@@ -132,8 +147,8 @@ class traverse extends test_util.Tests {
     (result: @unchecked) match {
       case traversal.Stop(r) =>
         val expected = nFun(n => fun(ArrayType(n, float))(input => {
-          val x = Identifier(freshName("x"))
-          Apply(Lambda(x, x), input |> map(fun(x => x)))
+          val x = identifier(freshName("x"))
+          app(lambda(x, x), input |> map(fun(x => x)))
         }))
         assert(r == expected)
     }

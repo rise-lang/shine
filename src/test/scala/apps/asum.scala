@@ -39,7 +39,7 @@ class asum extends test_util.TestsWithExecutor {
 
   // OpenMP code gen
   test("Intel derived no warp compiles to syntactically correct OpenMP code") {
-    import lift.OpenMP.primitives._
+    import lift.OpenMP.DSL._
 
     val intelDerivedNoWarp1 = nFun(n => fun(inputT(n))(input =>
       input |>
@@ -57,7 +57,7 @@ class asum extends test_util.TestsWithExecutor {
   }
 
   test("Second kernel of Intel derived compiles to syntactically correct OpenMP code") {
-    import lift.OpenMP.primitives._
+    import lift.OpenMP.DSL._
 
     val intelDerived2 = nFun(n => fun(inputT(n))(input =>
       input |>
@@ -71,7 +71,7 @@ class asum extends test_util.TestsWithExecutor {
   }
 
   test("AMD/Nvidia second kernel derived compiles to syntactically correct OpenMP code") {
-    import lift.OpenMP.primitives._
+    import lift.OpenMP.DSL._
 
     val amdNvidiaDerived2 = nFun(n => fun(inputT(n))(input =>
       input |>
@@ -90,7 +90,7 @@ class asum extends test_util.TestsWithExecutor {
   }
 
   { // OpenCL code gen
-    import lift.OpenCL.primitives._
+    import lift.OpenCL.DSL._
     import idealised.OpenCL
 
     val random = new Random()

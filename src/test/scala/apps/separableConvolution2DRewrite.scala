@@ -38,7 +38,7 @@ class separableConvolution2DRewrite extends test_util.Tests {
     betaEtaNormalForm(a).get == betaEtaNormalForm(b).get
 
   private val separateDot: Strategy[Lift] = {
-    case Apply(Apply(Apply(`reduce`, rf), init), Apply(Apply(`map`, mf), Apply(Apply(`zip`, Apply(`join`, w)), Apply(`join`, nbh))))
+    case App(App(App(Reduce(), rf), init), App(App(Map(), mf), App(App(Zip(), App(Join(), w)), App(Join(), nbh))))
       if ben_eq(rf, add) && init == l(0.0f) && ben_eq(mf, mulT) && w == weights2d :: (3`.`3`.`float)
     =>
       Success(nbh |> map(dot(weightsH :: (3`.`float))) |> dot(weightsV :: (3`.`float)))
@@ -46,7 +46,7 @@ class separableConvolution2DRewrite extends test_util.Tests {
   }
 
   private val separateDotT: Strategy[Lift] = {
-    case Apply(Apply(Apply(`reduce`, rf), init), Apply(Apply(`map`, mf), Apply(Apply(`zip`, Apply(`join`, w)), Apply(`join`, nbh))))
+    case App(App(App(Reduce(), rf), init), App(App(Map(), mf), App(App(Zip(), App(Join(), w)), App(Join(), nbh))))
       if ben_eq(rf, add) && init == l(0.0f) && ben_eq(mf, mulT) && w == weights2d :: (3`.`3`.`float)
     =>
       Success(nbh |> transpose |> map(dot(weightsV :: (3`.`float))) |> dot(weightsH :: (3`.`float)))
@@ -60,7 +60,8 @@ class separableConvolution2DRewrite extends test_util.Tests {
 
   private def rewrite_steps(a: Expr, steps: Seq[(Strategy[Lift], Expr)]): Unit = {
     steps.foldLeft[Expr](a)({ case (e, (s, expected)) =>
-      val result = (betaEtaNormalForm `;` s)(e).get
+      val debug = betaEtaNormalForm(e).get
+      val result = s(debug).get
       assert_ben_eq(result, expected)
       result
     })
@@ -153,7 +154,7 @@ class separableConvolution2DRewrite extends test_util.Tests {
   test("scanline to regRotSeq") {
     rewrite_steps(scanline(weightsV)(weightsH), Seq(
       (repeatNTimes(2, oncetd(specialize.reduceSeqUnroll)) `;`
-        oncetd(specialize.slideSeq(slideSeq.Values, idE)) `;`
+        oncetd(specialize.slideSeq(SlideSeq.Values, idE)) `;`
         betaEtaNormalForm `;`
         oncetd(algorithmic.slideSeqFusion) `;`
         oncetd(specialize.mapSeq))

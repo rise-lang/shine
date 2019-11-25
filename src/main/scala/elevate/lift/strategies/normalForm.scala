@@ -10,7 +10,7 @@ import elevate.lift.strategies.algorithmic._
 import elevate.lift.rules._
 import elevate.lift.rules.algorithmic._
 import lift.core.{Expr, Lambda}
-import lift.core.primitives.map
+import lift.core.DSL._
 
 
 object normalForm {
