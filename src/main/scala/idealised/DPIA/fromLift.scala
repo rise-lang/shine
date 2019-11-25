@@ -605,7 +605,7 @@ object fromLift {
         fun[ExpType ->: ExpType](exp"[idx($n), $read]" ->: exp"[$a, $read]", f =>
           Generate(n, a, f))
 
-      case (core.ArrayCons(_), lt) =>
+      case (core.MakeArray(_), lt) =>
         wrapArray(lt, Vector())
 
       case (core.Iterate(),

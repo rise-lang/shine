@@ -16,7 +16,7 @@ object DSL {
   def depApp[K <: Kind](f: Expr, x: K#T): DepApp[K] = DepApp[K](f, x)()
   def literal(d: semantics.Data): Literal = Literal(d)
 
-  def array(n: Int): ArrayCons = primitives.ArrayCons(n)()
+  def makeArray(n: Int): MakeArray = primitives.MakeArray(n)()
   def cast: Cast = primitives.Cast()()
   def depJoin: DepJoin = primitives.DepJoin()()
   def depMapSeq: DepMapSeq = primitives.DepMapSeq()()

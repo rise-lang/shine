@@ -78,12 +78,12 @@ object harrisCornerDetection {
         |> padCst(0)(1)(vectorFromScalar(x `@` lidx(w - 1, w)))
     )) |> padClamp(1)(1) |> slide(3)(1) |> mapGlobal(transpose >>
       map(fun(vNbh =>
-        array(2)(C2D.sobelXWeightsV)(C2D.sobelYWeightsV) |>
+        makeArray(2)(C2D.sobelXWeightsV)(C2D.sobelYWeightsV) |>
         map(fun(vWs => C2D.weightsSeqVecUnroll(vWs)(vNbh)))
       )) >>
       oclSlideSeq(SlideSeq.Values)(AddressSpace.Private)(3)(1)(mapSeqUnroll(id))(
         transpose >> map(shuffle) >>
-          zip(array(2)(C2D.sobelXWeightsH)(C2D.sobelYWeightsH)) >>
+          zip(makeArray(2)(C2D.sobelXWeightsH)(C2D.sobelYWeightsH)) >>
           // TODO: this triggers an extra copy
           toPrivateFun(mapSeqUnroll(fun(hWsNbh =>
             C2D.weightsSeqVecUnroll(hWsNbh._1)(hWsNbh._2)
@@ -91,7 +91,7 @@ object harrisCornerDetection {
           let(fun(ixiy => {
             val ix = ixiy `@` lidx(0, 2)
             val iy = ixiy `@` lidx(1, 2)
-            array(3)(sq(ix))(ix * iy)(sq(iy)) |> mapSeqUnroll(id)
+            makeArray(3)(sq(ix))(ix * iy)(sq(iy)) |> mapSeqUnroll(id)
           }))
       ) >> transpose >> map(asScalar)
     ) >> transpose
@@ -142,12 +142,12 @@ object harrisCornerDetection {
           |> padCst(0)(1)(vectorFromScalar(x `@` lidx(w - 1, w)))
       )) |> padClamp(1)(1) |> slide(3)(1) |> mapGlobal(transpose >>
       map(fun(vNbh =>
-        array(2)(C2D.sobelXWeightsV)(C2D.sobelYWeightsV) |>
+        makeArray(2)(C2D.sobelXWeightsV)(C2D.sobelYWeightsV) |>
           map(fun(vWs => C2D.weightsSeqVecUnroll(vWs)(vNbh)))
       )) >>
       oclSlideSeq(SlideSeq.Values)(AddressSpace.Private)(3)(1)(mapSeqUnroll(id))(
         transpose >> map(shuffle) >>
-          zip(array(2)(C2D.sobelXWeightsH)(C2D.sobelYWeightsH)) >>
+          zip(makeArray(2)(C2D.sobelXWeightsH)(C2D.sobelYWeightsH)) >>
           mapSeqUnroll(fun(hWsNbh =>
             C2D.weightsSeqVecUnroll(hWsNbh._1)(hWsNbh._2)
           ))
@@ -168,7 +168,7 @@ object harrisCornerDetection {
     map(map(fun(ixiy => {
       val ix = ixiy `@` lidx(0, 2)
       val iy = ixiy `@` lidx(1, 2)
-      array(3)(sq(ix))(ix * iy)(sq(iy))
+      makeArray(3)(sq(ix))(ix * iy)(sq(iy))
     }))) |>
     slide(3)(1) |> mapGlobal(
       transpose >> map(transpose) >>
