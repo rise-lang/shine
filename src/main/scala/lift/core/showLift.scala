@@ -385,16 +385,41 @@ object ShowLiftCompactTrackTopDown {
 object ShowLift {
   import lift.core.DrawTree._
 
-  def showLift(expr: Expr, inlineSize: Int = 10,
-               cfg: UnicodeConfig = defaultUnicodeConfig): String =
+  val defaultInlineSize = 10
+
+  val spaceWireH = UnicodeConfig("│┍┝┕┝╩╦╬═  ")
+
+  val roundedCorner = UnicodeConfig("│╭├╰├╩╦╬═ ─")
+
+  def showLift(expr: Expr): String = showLiftCompactTrack(expr)
+
+  def showLiftCompact(expr: Expr, inlineSize: Int = defaultInlineSize,
+                      cfg: UnicodeConfig = defaultUnicodeConfig): String =
+    ShowLiftCompact(expr, inlineSize, cfg)
+
+  def showLiftCompactTrack(expr: Expr, inlineSize: Int = defaultInlineSize,
+                           cfg: UnicodeConfig = defaultUnicodeConfig): String =
     ShowLiftCompactTrack(expr, inlineSize, cfg)
 
-  def trackWith(probe: Expr => Boolean, expr: Expr, inlineSize: Int = 10,
+  def showLiftCompactTrackTD(expr: Expr, inlineSize: Int = defaultInlineSize,
+                             cfg: UnicodeConfig = defaultUnicodeConfig): String =
+    ShowLiftCompactTrackTopDown(expr, inlineSize, cfg)
+
+  def showLiftSingleLine(expr: Expr): String =
+    ShowLiftCompact(expr, Int.MaxValue, defaultUnicodeConfig).tail
+
+  def showLiftSingleLineTrack(expr: Expr): String =
+    ShowLiftCompactTrack(expr, Int.MaxValue, defaultUnicodeConfig).tail
+
+  def showLiftSingleLineTrackTD(expr: Expr): String =
+    ShowLiftCompactTrackTopDown(expr, Int.MaxValue, defaultUnicodeConfig).tail
+
+  def trackWith(probe: Expr => Boolean, expr: Expr, inlineSize: Int = defaultInlineSize,
                 cfg: UnicodeConfig = defaultUnicodeConfig): String =
     ShowLiftCompactTrack(probe, expr, inlineSize, cfg)
   def setGlobalProbe(probe: Expr => Boolean): Unit = ShowLiftCompactTrack.setProbe(probe)
 
-  def trackTDWith(probe: Expr => Boolean, expr: Expr, inlineSize: Int = 10,
+  def trackTDWith(probe: Expr => Boolean, expr: Expr, inlineSize: Int = defaultInlineSize,
                 cfg: UnicodeConfig = defaultUnicodeConfig): String =
     ShowLiftCompactTrackTopDown(probe, expr, inlineSize, cfg)
   def setTDGlobalProbe(probe: Expr => Boolean): Unit = ShowLiftCompactTrackTopDown.setProbe(probe)
