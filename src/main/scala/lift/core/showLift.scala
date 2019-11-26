@@ -181,18 +181,14 @@ class ShowLiftCompact {
   import lift.core.DrawTree._
   import lift.core.semantics._
 
-  def self(expr: Expr, wrapped: Boolean = false)
-          (implicit inlineSize: Int): (Boolean, Int, UnicodeDraw) =
-    drawASTCompact(expr, wrapped)(inlineSize)
-
-  private def drawASTCompact(expr: Expr, wrapped: Boolean = false)
-                    (implicit inlineSize: Int): (Boolean, Int, UnicodeDraw) = expr match {
+  def drawAST(expr: Expr, wrapped: Boolean = false)
+             (implicit inlineSize: Int): (Boolean, Int, UnicodeDraw) = expr match {
 
     case i: Identifier => (true, 1, line(i.name))
 
     case Lambda(x, e) =>
       val xs = x.name
-      val (eInline, eSize, er) = self(e)
+      val (eInline, eSize, er) = drawAST(e)
       val newSize = eSize + 1
       if ((inlineSize > 0) && eInline) {
         (true, newSize, er >~> (es => {
@@ -203,10 +199,10 @@ class ShowLiftCompact {
 
     case App(f, e) =>
       val (fInline, fSize, fr) = f match {
-        case _: Lambda => self(f, wrapped = true)
-        case _ => self(f)
+        case _: Lambda => drawAST(f, wrapped = true)
+        case _ => drawAST(f)
       }
-      val (_, eSize, er) = self(e, wrapped = true)
+      val (_, eSize, er) = drawAST(e, wrapped = true)
       val newSize = fSize + eSize
       if ((inlineSize > 0) && ((fInline && (eSize == 1)) || (newSize <= inlineSize))) {
         (true, newSize, fr >~> (fs => er >~> (es => {
@@ -217,7 +213,7 @@ class ShowLiftCompact {
 
     case dl @ DepLambda(x, e) =>
       val xs = s"${x.name}:${dl.kn.get}"
-      val (eInline, eSize, er) = self(e)
+      val (eInline, eSize, er) = drawAST(e)
       val newSize = eSize + 1
       if ((inlineSize > 0) && eInline) {
         (true, newSize, er >~> (es => {
@@ -228,8 +224,8 @@ class ShowLiftCompact {
 
     case DepApp(f, x) =>
       val (fInline, fSize, fr) = f match {
-        case _: DepLambda[_] => self(f, wrapped = true)
-        case _ => self(f)
+        case _: DepLambda[_] => drawAST(f, wrapped = true)
+        case _ => drawAST(f)
       }
       val xs = x.toString
       val newSize = fSize + 1
@@ -285,7 +281,7 @@ class ShowLiftCompact {
 object ShowLiftCompact {
   private val obj = new ShowLiftCompact
   def apply(expr: Expr, inlineSize: Int, cfg: UnicodeConfig): String = {
-    obj.self(expr)(inlineSize)._3.show(cfg)
+    obj.drawAST(expr)(inlineSize)._3.show(cfg)
   }
 }
 
@@ -316,9 +312,9 @@ class ShowLiftCompactTrack extends ShowLiftCompact {
   def flag(inline: Boolean, r: UnicodeDraw): Track =
     track(if (inline) modifyString(r, "⚑ " + _) else block("⚑", r))
 
-  override def self(expr: Expr, wrapped: Boolean = false)
-                   (implicit inlineSize: Int): (Boolean, Int, UnicodeDraw) = {
-    val (sInline, sSize, sr) = super.self(expr, wrapped)(inlineSize)
+  override def drawAST(expr: Expr, wrapped: Boolean = false)
+                      (implicit inlineSize: Int): (Boolean, Int, UnicodeDraw) = {
+    val (sInline, sSize, sr) = super.drawAST(expr, wrapped)(inlineSize)
     val tr = if (sr.isInstanceOf[Track]) {
       val srTarget = track(sr).target
       val r = if (sInline) srTarget else
@@ -345,28 +341,28 @@ object ShowLiftCompactTrack {
     obj.probe = newProbe
   }
   def apply(expr: Expr, inlineSize: Int, cfg: UnicodeConfig): String = {
-    obj.self(expr)(inlineSize)._3.show(cfg)
+    obj.drawAST(expr)(inlineSize)._3.show(cfg)
   }
   def apply(probe: Expr => Boolean, expr: Expr, inlineSize: Int, cfg: UnicodeConfig): String = {
     val temp = new ShowLiftCompactTrack
     temp.probe = probe
-    temp.self(expr)(inlineSize)._3.show(cfg)
+    temp.drawAST(expr)(inlineSize)._3.show(cfg)
   }
 }
 
 class ShowLiftCompactTrackTopDown extends ShowLiftCompactTrack {
   import lift.core.DrawTree._
 
-  override def self(expr: Expr, wrapped: Boolean = false)
-                   (implicit inlineSize: Int): (Boolean, Int, UnicodeDraw) = {
+  override def drawAST(expr: Expr, wrapped: Boolean = false)
+                      (implicit inlineSize: Int): (Boolean, Int, UnicodeDraw) = {
     if (probe(expr)) {
       val oldProbe = probe
       probe = _ => false
-      val (sInline, sSize, sr) = super.self(expr, wrapped)(inlineSize)
+      val (sInline, sSize, sr) = super.drawAST(expr, wrapped)(inlineSize)
       probe = oldProbe
       (sInline, sSize, flag(sInline, sr))
     } else {
-      super.self(expr, wrapped)(inlineSize)
+      super.drawAST(expr, wrapped)(inlineSize)
     }
   }
 }
@@ -377,12 +373,12 @@ object ShowLiftCompactTrackTopDown {
     obj.probe = newProbe
   }
   def apply(expr: Expr, inlineSize: Int, cfg: UnicodeConfig): String = {
-    obj.self(expr)(inlineSize)._3.show(cfg)
+    obj.drawAST(expr)(inlineSize)._3.show(cfg)
   }
   def apply(probe: Expr => Boolean, expr: Expr, inlineSize: Int, cfg: UnicodeConfig): String = {
     val temp = new ShowLiftCompactTrackTopDown
     temp.probe = probe
-    temp.self(expr)(inlineSize)._3.show(cfg)
+    temp.drawAST(expr)(inlineSize)._3.show(cfg)
   }
 }
 
