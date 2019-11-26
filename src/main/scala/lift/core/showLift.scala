@@ -388,8 +388,14 @@ object ShowLift {
   def showLift(expr: Expr, inlineSize: Int = 10,
                cfg: UnicodeConfig = defaultUnicodeConfig): String =
     ShowLiftCompactTrack(expr, inlineSize, cfg)
+
   def trackWith(probe: Expr => Boolean, expr: Expr, inlineSize: Int = 10,
                 cfg: UnicodeConfig = defaultUnicodeConfig): String =
     ShowLiftCompactTrack(probe, expr, inlineSize, cfg)
   def setGlobalProbe(probe: Expr => Boolean): Unit = ShowLiftCompactTrack.setProbe(probe)
+
+  def trackTDWith(probe: Expr => Boolean, expr: Expr, inlineSize: Int = 10,
+                cfg: UnicodeConfig = defaultUnicodeConfig): String =
+    ShowLiftCompactTrackTopDown(probe, expr, inlineSize, cfg)
+  def setTDGlobalProbe(probe: Expr => Boolean): Unit = ShowLiftCompactTrackTopDown.setProbe(probe)
 }
