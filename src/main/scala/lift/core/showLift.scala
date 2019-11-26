@@ -1,5 +1,7 @@
 package lift.core
 
+import lift.core.DrawTree.UnicodeConfig
+
 case class RenderException(msg: String) extends Exception {
   override def toString = s"render exception: $msg"
 }
@@ -266,7 +268,13 @@ class ShowLiftCompact {
     case _ => f("")
   }
 
-  def dataSize(d: Data): Int = d match {
+  def modifyString(d: UnicodeDraw, f: String => String): UnicodeDraw = d match {
+    case WrappedLine(l, s, r) => wrappedLine(l, f(s), r)
+    case Line(s) => line(f(s))
+    case _ => d
+  }
+
+  private def dataSize(d: Data): Int = d match {
     case VectorData(v) => v.length
     case ArrayData(a) => a.foldLeft(0)((acc, now) => acc + dataSize(now))
     case PairData(p1, p2) => dataSize(p1) + dataSize(p2)
@@ -275,14 +283,16 @@ class ShowLiftCompact {
 }
 
 object ShowLiftCompact {
-  val obj = new ShowLiftCompact
-  def apply(expr: Expr, inlineSize: Int = 10): String = {
-    obj.self(expr)(inlineSize)._3.show
+  private val obj = new ShowLiftCompact
+  def apply(expr: Expr, inlineSize: Int, cfg: UnicodeConfig): String = {
+    obj.self(expr)(inlineSize)._3.show(cfg)
   }
 }
 
-class ShowLiftCompactTrack(var probe: Expr => Boolean) extends ShowLiftCompact {
+class ShowLiftCompactTrack extends ShowLiftCompact {
   import lift.core.DrawTree._
+
+  var probe: Expr => Boolean = {_ => false}
 
   case class Track(target: UnicodeDraw) extends UnicodeDraw {
     def render(cxt: Cxt)(implicit cfg: UnicodeConfig): RenderUnicodeDraw = target.render(cxt)
@@ -303,10 +313,13 @@ class ShowLiftCompactTrack(var probe: Expr => Boolean) extends ShowLiftCompact {
     case _ => super.extractUnicodeDraw(d, f)
   }
 
+  def flag(inline: Boolean, r: UnicodeDraw): Track =
+    track(if (inline) modifyString(r, "⚑ " + _) else block("⚑", r))
+
   override def self(expr: Expr, wrapped: Boolean = false)
                    (implicit inlineSize: Int): (Boolean, Int, UnicodeDraw) = {
     val (sInline, sSize, sr) = super.self(expr, wrapped)(inlineSize)
-    if (sr.isInstanceOf[Track] || probe(expr)) {
+    val tr = if (sr.isInstanceOf[Track]) {
       val srTarget = track(sr).target
       val r = if (sInline) srTarget else
         expr match {
@@ -314,38 +327,73 @@ class ShowLiftCompactTrack(var probe: Expr => Boolean) extends ShowLiftCompact {
             case AddRight(a: Track, b: Track) => block("◆", a) :+> b
             case AddRight(a: Track, b) => block("▶", a) :+> b
             case AddRight(a, b: Track) => block("▼", a) :+> b
-            case AddRight(_, _) => srTarget
+            case AddRight(_, _) =>
+              throw RenderException("there should be a start point of tracking")
             case _ => throw RenderException("the way in which App is drawn is not expected")
           }
           case _ => srTarget
         }
-      val rMarked = if (sr.isInstanceOf[Track]) r else {
-        if (sInline) {
-          r match {
-            case Line(s) => line("⚑ " + s)
-            case _ => throw RenderException("impossible")
-          }
-        } else block("⚑", r)
-      }
-      (sInline, sSize, track(rMarked))
-    } else {
-      (sInline, sSize, sr)
-    }
+      track(r)
+    } else if (probe(expr)) flag(sInline, sr) else sr
+    (sInline, sSize, tr)
   }
 }
 
 object ShowLiftCompactTrack {
-  val obj = new ShowLiftCompactTrack(_ => false)
+  private val obj = new ShowLiftCompactTrack
   def setProbe(newProbe: Expr => Boolean): Unit = {
     obj.probe = newProbe
   }
-  def apply(expr: Expr): String = {
-    apply(expr, 10)
+  def apply(expr: Expr, inlineSize: Int, cfg: UnicodeConfig): String = {
+    obj.self(expr)(inlineSize)._3.show(cfg)
   }
-  def apply(expr: Expr, inlineSize: Int): String = {
-    obj.self(expr)(inlineSize)._3.show
+  def apply(probe: Expr => Boolean, expr: Expr, inlineSize: Int, cfg: UnicodeConfig): String = {
+    val temp = new ShowLiftCompactTrack
+    temp.probe = probe
+    temp.self(expr)(inlineSize)._3.show(cfg)
   }
-  def apply(probe: Expr => Boolean, expr: Expr, inlineSize: Int = 10): String = {
-    new ShowLiftCompactTrack(probe).self(expr)(inlineSize)._3.show
+}
+
+class ShowLiftCompactTrackTopDown extends ShowLiftCompactTrack {
+  import lift.core.DrawTree._
+
+  override def self(expr: Expr, wrapped: Boolean = false)
+                   (implicit inlineSize: Int): (Boolean, Int, UnicodeDraw) = {
+    if (probe(expr)) {
+      val oldProbe = probe
+      probe = _ => false
+      val (sInline, sSize, sr) = super.self(expr, wrapped)(inlineSize)
+      probe = oldProbe
+      (sInline, sSize, flag(sInline, sr))
+    } else {
+      super.self(expr, wrapped)(inlineSize)
+    }
   }
+}
+
+object ShowLiftCompactTrackTopDown {
+  private val obj = new ShowLiftCompactTrackTopDown
+  def setProbe(newProbe: Expr => Boolean): Unit = {
+    obj.probe = newProbe
+  }
+  def apply(expr: Expr, inlineSize: Int, cfg: UnicodeConfig): String = {
+    obj.self(expr)(inlineSize)._3.show(cfg)
+  }
+  def apply(probe: Expr => Boolean, expr: Expr, inlineSize: Int, cfg: UnicodeConfig): String = {
+    val temp = new ShowLiftCompactTrackTopDown
+    temp.probe = probe
+    temp.self(expr)(inlineSize)._3.show(cfg)
+  }
+}
+
+object ShowLift {
+  import lift.core.DrawTree._
+
+  def showLift(expr: Expr, inlineSize: Int = 10,
+               cfg: UnicodeConfig = defaultUnicodeConfig): String =
+    ShowLiftCompactTrack(expr, inlineSize, cfg)
+  def trackWith(probe: Expr => Boolean, expr: Expr, inlineSize: Int = 10,
+                cfg: UnicodeConfig = defaultUnicodeConfig): String =
+    ShowLiftCompactTrack(probe, expr, inlineSize, cfg)
+  def setGlobalProbe(probe: Expr => Boolean): Unit = ShowLiftCompactTrack.setProbe(probe)
 }
