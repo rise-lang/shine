@@ -38,27 +38,6 @@ class showLift extends test_util.Tests {
     val example = blurXTiled2D
     val show = trackWith(probe, example, 10, defaultUnicodeConfig)
     println(show)
-    assert(show ==
-      """─Λn6:nat─λe7─λe8─▶─λe28─▼─λe26─λe23─λe10. join (map <λe9. map join (transpose e9)> e10)
-        |                 │      │      │    └─mapWorkGroup
-        |                 │      │      │      ├─mapWorkGroup
-        |                 │      │      │      │ └─λe19─λe22─mapLocal
-        |                 │      │      │      │        │    ├─mapLocal
-        |                 │      │      │      │        │    │ └─λe2─λe3─oclReduceSeqUnroll Private
-        |                 │      │      │      │        │    │   │       ├─λe4. λe5. add e4 (mul (fst e5) (snd e5))
-        |                 │      │      │      │        │    │   │       ├─FloatData(0.0)
-        |                 │      │      │      │        │    │   │       └─zip (join e3) e2
-        |                 │      │      │      │        │    │   └─e8
-        |                 │      │      │      │        │    └─λe21─map transpose
-        |                 │      │      │      │        │      │    └─<λe20. slide 1 1 (map (slide 17 1) e20)> e21
-        |                 │      │      │      │        │      └─e22
-        |                 │      │      │      │        └─toMem Local (mapLocal (mapLocal <λe1. e1>) e19)
-        |                 │      │      │      └─e23
-        |                 │      │      └─λe25─map transpose
-        |                 │      │        │    └─<λe24. slide 4 4 (map (slide 144 128) e24)> e25
-        |                 │      │        └─e26
-        |                 │      └─<λe27. ⚑ padClamp 0 0 (map (⚑ padClamp 8 8) e27)> e28
-        |                 └─e7""".stripMargin)
   }
 
   test("compare the result with simple implementations") {
@@ -129,27 +108,5 @@ class showLift extends test_util.Tests {
     val example = blurXTiled2D
     val show = trackWith(probe, example, 10, UnicodeConfig("│╭├╰├╩╦╬═ ──"))
     println(show)
-    assert(show ==
-    """──Λn6:nat──λe7──λe8──▶──λe28──◆──λe26──◆──λe23──◆──λe10. join (map <⚑ λe9. map join (transpose e9)> e10)
-      |                     │        │        │        ╰──▶──▼──mapWorkGroup
-      |                     │        │        │           │  ╰──▼──mapWorkGroup
-      |                     │        │        │           │     ╰──λe19──◆──λe22──◆──▼──mapLocal
-      |                     │        │        │           │              │        │  ╰──▼──mapLocal
-      |                     │        │        │           │              │        │     ╰──▶──λe2──λe3──▶──▶──▼──oclReduceSeqUnroll Private
-      |                     │        │        │           │              │        │        │            │  │  ╰──λe4. ⚑ λe5. add e4 (mul (fst e5) (snd e5))
-      |                     │        │        │           │              │        │        │            │  ╰──FloatData(0.0)
-      |                     │        │        │           │              │        │        │            ╰──zip (join e3) e2
-      |                     │        │        │           │              │        │        ╰──e8
-      |                     │        │        │           │              │        ╰──▶──λe21──▼──map transpose
-      |                     │        │        │           │              │           │        ╰──<⚑ λe20. slide 1 1 (map (slide 17 1) e20)> e21
-      |                     │        │        │           │              │           ╰──e22
-      |                     │        │        │           │              ╰──toMem Local (mapLocal (mapLocal <⚑ λe1. e1>) e19)
-      |                     │        │        │           ╰──e23
-      |                     │        │        ╰──▶──λe25──▼──map transpose
-      |                     │        │           │        ╰──<⚑ λe24. slide 4 4 (map (slide 144 128) e24)> e25
-      |                     │        │           ╰──e26
-      |                     │        ╰──<⚑ λe27. padClamp 0 0 (map (padClamp 8 8) e27)> e28
-      |                     ╰──e7""".stripMargin
-    )
   }
 }
