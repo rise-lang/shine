@@ -64,7 +64,7 @@ final case class Literal(d: semantics.Data) extends Expr {
 
 abstract class Primitive extends Expr {
   def typeScheme: Type
-  val name: String = "Unknown Primitive"
+  val name: String = throw RenderException("the name of Primitive should be set")
   override def setType(t: Type): Primitive =
     throw TypeException("setType method should be overridden")
 }
