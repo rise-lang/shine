@@ -82,11 +82,11 @@ object DrawTree {
   }
 
   case class Line(s: String) extends UnicodeDraw {
-    def render(cxt: Cxt)(implicit cfg: UnicodeConfig) =
+    def render(cxt: Cxt)(implicit cfg: UnicodeConfig): RenderUnicodeDraw =
       RenderUnicodeDraw(Seq.empty, Seq.empty, Seq(cfg.wireHSym +: Seq(s)), Seq.empty)
   }
 
-  def line(s: String) = Line(s)
+  def line(s: String): Line = Line(s)
 
   case class AddLeft(a: UnicodeDraw, b: UnicodeDraw) extends UnicodeDraw {
     def render(cxt: Cxt)(implicit cfg: UnicodeConfig): RenderUnicodeDraw = {
@@ -153,7 +153,7 @@ object DrawTree {
     }
   }
 
-  def block(a: UnicodeDraw) = Block(a)
+  def block(a: UnicodeDraw): Block = Block(a)
 
   case class NamedBlock(n: String, a: UnicodeDraw) extends UnicodeDraw {
     def render(cxt: Cxt)(implicit cfg: UnicodeConfig): RenderUnicodeDraw = {
@@ -174,7 +174,7 @@ object DrawTree {
     }
   }
 
-  def block(n: String, a: UnicodeDraw) = NamedBlock(n, a)
+  def block(n: String, a: UnicodeDraw): NamedBlock = NamedBlock(n, a)
 }
 
 class ShowLiftCompact {
@@ -236,17 +236,17 @@ class ShowLiftCompact {
         }))
       } else (false, newSize, fr >@> (fd => line(xs) <+: fd))
 
-    case l @ Literal(d) => (true, dataSize(d), line(l.toString))
+    case Literal(d) => (true, dataSize(d), line(d.toString))
 
-    case p: Primitive => (true, 1, line(p.toString))
+    case p: Primitive => (true, 1, line(p.name))
   }
 
   case class WrappedLine(l: String, s: String, r: String) extends UnicodeDraw {
-    def render(cxt: Cxt)(implicit cfg: UnicodeConfig) =
+    def render(cxt: Cxt)(implicit cfg: UnicodeConfig): RenderUnicodeDraw =
       RenderUnicodeDraw(Seq.empty, Seq.empty, Seq(cfg.wireHSym +: Seq(l + s + r)), Seq.empty)
   }
 
-  def wrappedLine(l: String, s: String, r: String) = WrappedLine(l, s, r)
+  def wrappedLine(l: String, s: String, r: String): WrappedLine = WrappedLine(l, s, r)
 
   implicit class Extract(d: UnicodeDraw) {
     def >@>(f: UnicodeDraw => UnicodeDraw): UnicodeDraw = extractUnicodeDraw(d, f)
@@ -387,11 +387,11 @@ object ShowLift {
 
   val defaultInlineSize = 10
 
-  val spaceWireH = UnicodeConfig("│┍┝┕┝╩╦╬═  ")
+  val spaceWireH: UnicodeConfig = UnicodeConfig("│┍┝┕┝╩╦╬═  ")
 
-  val roundedCorner = UnicodeConfig("│╭├╰├╩╦╬═ ─")
+  val roundedCorner: UnicodeConfig = UnicodeConfig("│╭├╰├╩╦╬═ ─")
 
-  def showLift(expr: Expr): String = showLiftCompactTrack(expr)
+  def showLift(expr: Expr): String = showLiftCompactTrack(expr, cfg = spaceWireH)
 
   def showLiftCompact(expr: Expr, inlineSize: Int = defaultInlineSize,
                       cfg: UnicodeConfig = defaultUnicodeConfig): String =

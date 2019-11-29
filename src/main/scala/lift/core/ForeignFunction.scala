@@ -5,7 +5,7 @@ import lift.core.types.Type
 case class ForeignFunction(decl: ForeignFunction.Decl)(override val t: Type) extends Primitive {
   override def typeScheme: Type = t
   override def setType(t: Type): ForeignFunction = ForeignFunction(decl)(t)
-  override def toString: String = decl.name
+  override val name: String = decl.name
 }
 
 object ForeignFunction {

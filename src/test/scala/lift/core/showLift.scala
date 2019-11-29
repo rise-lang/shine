@@ -70,8 +70,8 @@ class showLift extends test_util.Tests {
         case App(f, e) => drawASTSimp(f) :+> drawASTSimp(e)
         case dl @ DepLambda(x, e) => block(s"Λ${x.name}:${dl.kn.get}", drawASTSimp(e))
         case DepApp(f, x) => line(x.toString) <+: drawASTSimp(f)
-        case l: Literal => line(l.toString)
-        case p: Primitive => line(p.toString)
+        case Literal(d) => line(d.toString)
+        case p: Primitive => line(p.name)
       }
     }
 
@@ -106,9 +106,9 @@ class showLift extends test_util.Tests {
           }
           if (wrapped) s"($fs $x)" else s"$fs $x"
 
-        case l: Literal => l.toString
+        case Literal(d) => d.toString
 
-        case p: Primitive => p.toString
+        case p: Primitive => p.name
       }
     }
 
