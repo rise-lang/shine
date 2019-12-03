@@ -1,7 +1,7 @@
 package lift.core.types
 
 import lift.arithmetic.NamedVar
-import lift.core.{Nat, NatIdentifier, substitute}
+import lift.core._
 
 sealed trait NatToData {
   def map(f:DataType => DataType): NatToData = this match {
@@ -14,7 +14,7 @@ sealed trait NatToData {
 
 case class NatToDataLambda private (x: NatIdentifier, body: DataType) extends NatToData {
   //See hash code of NatNatTypeFunction
-  override def hashCode(): Int = this.apply(NamedVar("ComparisonDummy")).hashCode()
+  override def hashCode(): Int = this.apply(NatIdentifier("ComparisonDummy")).hashCode()
 
   override def apply(a: Nat): DataType = substitute.natInDataType(a, `for`=x, in=body)
 
@@ -26,6 +26,13 @@ case class NatToDataLambda private (x: NatIdentifier, body: DataType) extends Na
   }
 }
 
-final case class NatToDataIdentifier(name: String) extends NatToData with Kind.Identifier {
+final case class NatToDataIdentifier(name: String, override val isExplicit: Boolean = false)
+  extends NatToData with Kind.Identifier with Kind.Explicitness {
   override def toString: String = name
+  override def asExplicit: NatToDataIdentifier = this.copy(isExplicit = true)
+  override def asImplicit: NatToDataIdentifier = this.copy(isExplicit = false)
+  override def equals(that: Any): Boolean = that match {
+    case n2d: NatToDataIdentifier => this.name == n2d.name
+    case _ => false
+  }
 }

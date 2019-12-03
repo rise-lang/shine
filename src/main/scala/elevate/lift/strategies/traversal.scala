@@ -20,13 +20,19 @@ object traversal {
       case dl @ DepLambda(x, e) => x match {
         case n: NatIdentifier => Some(s(e).mapSuccess(DepLambda[NatKind](n, _)(dl.t)))
         case dt: DataTypeIdentifier => Some(s(e).mapSuccess(DepLambda[DataKind](dt, _)(dl.t)))
+        case a: AddressSpaceIdentifier => Some(s(e).mapSuccess(DepLambda[AddressSpaceKind](a, _)(dl.t)))
+        case n2n: NatToNatIdentifier => Some(s(e).mapSuccess(DepLambda[NatToNatKind](n2n, _)(dl.t)))
+        case n2d: NatToDataIdentifier => Some(s(e).mapSuccess(DepLambda[NatToDataKind](n2d, _)(dl.t)))
       }
       case da @ DepApp(f, x) => x match {
         case n: Nat => Some(s(f).mapSuccess(DepApp[NatKind](_, n)(da.t)))
         case dt: DataType => Some(s(f).mapSuccess(DepApp[DataKind](_, dt)(da.t)))
+        case a: AddressSpace => Some(s(f).mapSuccess(DepApp[AddressSpaceKind](_, a)(da.t)))
+        case n2n: NatToNat => Some(s(f).mapSuccess(DepApp[NatToNatKind](_, n2n)(da.t)))
+        case n2d: NatToData => Some(s(f).mapSuccess(DepApp[NatToDataKind](_, n2d)(da.t)))
       }
       case Literal(_) => None
-      case ff: ForeignFunction => None
+      case _: ForeignFunction => None
       case _:Primitive => None
     }
 

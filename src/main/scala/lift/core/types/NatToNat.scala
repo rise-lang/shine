@@ -1,7 +1,7 @@
 package lift.core.types
 
 import lift.arithmetic.{ArithExpr, ArithExprFunctionCall, NamedVar, SimplifiedExpr}
-import lift.core.{Nat, NatIdentifier}
+import lift.core.{Nat}
 
 sealed trait NatToNat {
   def apply(n: Nat): Nat = NatToNatApply(this, n)
@@ -15,7 +15,7 @@ final case class NatToNatLambda private(x: NatIdentifier, body: Nat) extends Nat
   // However, just updating equals is not sufficient, as many data structures, such as HashMaps,
   // use hashCodes as proxy for equality. In order to make sure this property is respected, we ignore
   // the identifier variable, and just take the hash of the body evaluated at a known point
-  override def hashCode(): Int = this(NamedVar("comparisonDummy")).hashCode()
+  override def hashCode(): Int = this(NatIdentifier("comparisonDummy")).hashCode()
 
   override def apply(l: Nat): Nat = ArithExpr.substitute(body, Map((x, l)))
 
@@ -27,8 +27,15 @@ final case class NatToNatLambda private(x: NatIdentifier, body: Nat) extends Nat
   }
 }
 
-final case class NatToNatIdentifier(name: String) extends NatToNat with Kind.Identifier {
+final case class NatToNatIdentifier(name: String, override val isExplicit: Boolean = false)
+  extends NatToNat with Kind.Identifier with Kind.Explicitness {
   override lazy val toString: String = name
+  override def asExplicit: NatToNatIdentifier = this.copy(isExplicit = true)
+  override def asImplicit: NatToNatIdentifier = this.copy(isExplicit = false)
+  override def equals(that: Any): Boolean = that match {
+    case n2n: NatToNatIdentifier => this.name == n2n.name
+    case _ => false
+  }
 }
 
 final class NatToNatApply(val f: NatToNat, val n: Nat) extends ArithExprFunctionCall(s"$f($n)") {

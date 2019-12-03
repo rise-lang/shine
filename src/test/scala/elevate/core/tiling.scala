@@ -18,10 +18,11 @@ import elevate.lift.strategies.util._
 import elevate.lift.rules.algorithmic._
 import util.gen
 import lift.core.DSL._
+import lift.core.TypeLevelDSL._
 import lift.core._
 import lift.core.primitives._
 import lift.core.semantics.FloatData
-import lift.core.types.{ArrayType, NatKind, float, infer}
+import lift.core.types._
 import org.scalatest.Ignore
 
 import scala.language.implicitConversions

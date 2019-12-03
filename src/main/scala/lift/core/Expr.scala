@@ -1,7 +1,7 @@
 package lift.core
 
 import lift.core.types._
-import lift.core.DSL.TypeEqual
+import lift.core.TypeLevelDSL.TypeEqual
 
 sealed abstract class Expr {
   val t: Type
@@ -41,10 +41,9 @@ final case class App(f: Expr, e: Expr)
   }
 }
 
-final case class DepLambda[K <: Kind](x: K#I, e: Expr)
-                                     (override val t: Type = TypePlaceholder)
-                                     (implicit val kn: KindName[K]) extends Expr {
-  override def toString: String = s"Λ${x.name}: ${kn.get}. $e"
+final case class DepLambda[K <: Kind : KindName](x: K#I with Kind.Explicitness, e: Expr)
+                                                (override val t: Type = TypePlaceholder) extends Expr {
+  override def toString: String = s"Λ${x.name}: ${implicitly[KindName[K]].get}. $e"
   override def setType(t: Type): DepLambda[K] = this.copy(x, e)(t)
   override def equals(obj: Any): Boolean = obj match {
     case other: DepLambda[K] => (e == lifting.liftDepFunExpr[K](other).value(x)) && (other.t =~= t)

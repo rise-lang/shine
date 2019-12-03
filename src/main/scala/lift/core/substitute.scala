@@ -85,7 +85,7 @@ object substitute {
     traversal.types.DepthFirstLocalResult(in, Visitor())
   }
 
-  def natInType[T <: Type](n: Nat, `for`: NamedVar, in: T): T = {
+  def natInType[T <: Type](n: Nat, `for`: NatIdentifier, in: T): T = {
     case class Visitor() extends traversal.Visitor {
       override def visitNat(in: Nat): Result[Nat] =
         Continue(substitute.natInNat(n, `for`, in), this)
@@ -94,7 +94,7 @@ object substitute {
     traversal.types.DepthFirstLocalResult(in, Visitor())
   }
 
-  def natInDataType(n: Nat, `for`: NamedVar, in: DataType): DataType = {
+  def natInDataType(n: Nat, `for`: NatIdentifier, in: DataType): DataType = {
     case class Visitor() extends traversal.Visitor {
       override def visitNat(in: Nat): Result[Nat] =
         Continue(substitute.natInNat(n, `for`, in), this)
@@ -142,9 +142,9 @@ object substitute {
 
   // substitute in Nat
 
-  def natInNat(ae: Nat, `for`: NamedVar, in: Nat): Nat = {
+  def natInNat(ae: Nat, `for`: NatIdentifier, in: Nat): Nat = {
     in.visitAndRebuild {
-      case v: NamedVar =>
+      case v: NatIdentifier =>
         if (`for`.name == v.name) {
           ae
         } else {

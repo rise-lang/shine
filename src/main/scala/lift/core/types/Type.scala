@@ -11,7 +11,7 @@ case class TypeException(msg: String) extends Exception {
 
 object TypePlaceholder extends Type
 
-final case class TypeIdentifier(name: String) extends Type {
+final case class TypeIdentifier(name: String) extends Type with Kind.Identifier {
   override def toString: String = name
 }
 
@@ -19,9 +19,8 @@ final case class FunType[T1 <: Type, T2 <: Type](inT: T1, outT: T2) extends Type
   override def toString: String = s"($inT -> $outT)"
 }
 
-final case class DepFunType[K <: Kind, T <: Type](x: K#I, t: T)
-                                                 (implicit val kn: KindName[K]) extends Type {
-  override def toString: String = s"(${x.name}: ${kn.get} -> $t)"
+final case class DepFunType[K <: Kind : KindName, T <: Type](x: K#I with Kind.Explicitness, t: T) extends Type {
+  override def toString: String = s"(${x.name}: ${implicitly[KindName[K]].get} -> $t)"
 
   override def equals(obj: Any): Boolean = obj match {
     case other: DepFunType[K, _] => t == lifting.liftDependentFunctionType[K](other)(x)
@@ -31,8 +30,15 @@ final case class DepFunType[K <: Kind, T <: Type](x: K#I, t: T)
 
 sealed trait DataType extends Type
 
-final case class DataTypeIdentifier(name: String) extends DataType with Kind.Identifier {
+final case class DataTypeIdentifier(name: String, override val isExplicit: Boolean = false)
+  extends DataType with Kind.Identifier with Kind.Explicitness {
   override def toString: String = name
+  override def asExplicit: DataTypeIdentifier = this.copy(isExplicit = true)
+  override def asImplicit: DataTypeIdentifier = this.copy(isExplicit = false)
+  override def equals(that: Any): Boolean = that match {
+    case d: DataTypeIdentifier => this.name == d.name
+    case _ => false
+  }
 }
 
 sealed trait ComposedType extends DataType

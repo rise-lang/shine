@@ -2,6 +2,7 @@ package lift.core
 
 import lift.arithmetic.BigSum
 import lift.core.DSL._
+import lift.core.TypeLevelDSL._
 import lift.core.types._
 import primitiveMacro.Primitive.primitive
 

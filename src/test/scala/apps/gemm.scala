@@ -4,6 +4,7 @@ import util.gen
 import idealised.OpenCL.{GlobalSize, LocalSize}
 import lift.arithmetic.Cst
 import lift.core.DSL._
+import lift.core.TypeLevelDSL._
 import lift.core.{Expr, Nat}
 import lift.core.HighLevelConstructs._
 import lift.core.primitives._

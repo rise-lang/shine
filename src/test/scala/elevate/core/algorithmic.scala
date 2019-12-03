@@ -11,9 +11,10 @@ import elevate.lift.rules.movement._
 import elevate.util._
 import util.gen
 import lift.core.DSL._
-import lift.core.{App, DepLambda, Expr, NatIdentifier}
+import lift.core.TypeLevelDSL._
+import lift.core._
 import lift.core.primitives._
-import lift.core.types.{ArrayType, IndexType, NatKind, float, infer}
+import lift.core.types._
 import elevate.lift._
 import elevate.lift.strategies.normalForm._
 import elevate.lift.rules.algorithmic._

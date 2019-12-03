@@ -3,6 +3,7 @@ package lift.core
 import elevate.lift._
 import elevate.util._
 import lift.core.DSL._
+import lift.core.TypeLevelDSL._
 import lift.core.primitives._
 import lift.core.types.float
 

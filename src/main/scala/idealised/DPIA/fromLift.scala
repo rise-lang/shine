@@ -32,7 +32,7 @@ object fromLift {
     }
 
     case l.DepLambda(x, e) => x match {
-      case n: l.NatIdentifier =>
+      case n: lt.NatIdentifier =>
         DepLambda[NatKind](natIdentifier(n))(expression(e))
       case dt: lt.DataTypeIdentifier =>
         DepLambda[DataKind](dataTypeIdentifier(dt))(expression(e))
@@ -71,7 +71,7 @@ object fromLift {
     case lt.AddressSpace.Local => AddressSpace.Local
     case lt.AddressSpace.Private => AddressSpace.Private
     case lt.AddressSpace.Constant => AddressSpace.Constant
-    case lt.AddressSpaceIdentifier(name) => AddressSpaceIdentifier(name)
+    case lt.AddressSpaceIdentifier(name, _) => AddressSpaceIdentifier(name)
   }
 
   def scalarType(t: lt.ScalarType): ScalarType = t match {
@@ -102,16 +102,16 @@ object fromLift {
 
   def ntd(ntd: lt.NatToData): NatToData= ntd match {
     case lt.NatToDataLambda(n, body) => NatToDataLambda(natIdentifier(n), dataType(body))
-    case lt.NatToDataIdentifier(x) => NatToDataIdentifier(x)
+    case lt.NatToDataIdentifier(x, _) => NatToDataIdentifier(x)
   }
 
   def ntn(ntn: lt.NatToNat): NatToNat= ntn match {
     case lt.NatToNatLambda(n, body) => NatToNatLambda(natIdentifier(n), body)
-    case lt.NatToNatIdentifier(x) => NatToNatIdentifier(x)
+    case lt.NatToNatIdentifier(x, _) => NatToNatIdentifier(x)
   }
 
   def dataTypeIdentifier(dt: lt.DataTypeIdentifier): DataTypeIdentifier = DataTypeIdentifier(dt.name)
-  def natIdentifier(n: l.NatIdentifier): NatIdentifier = NatIdentifier(n.name, n.range)
+  def natIdentifier(n: lt.NatIdentifier): NatIdentifier = NatIdentifier(n.name, n.range)
   def addressSpaceIdentifier(a: lt.AddressSpaceIdentifier): AddressSpaceIdentifier = AddressSpaceIdentifier(a.name)
   def natToNatIdentifier(n: lt.NatToNatIdentifier): NatToNatIdentifier = NatToNatIdentifier(n.name)
   def natToDataIdentifier(n: lt.NatToDataIdentifier): NatToDataIdentifier = NatToDataIdentifier(n.name)
@@ -121,7 +121,7 @@ object fromLift {
     case lt.FunType(i, o)     => `type`(i) ->: `type`(o)
     case lt.DepFunType(i, t)  => i match {
         case dt: lt.DataTypeIdentifier    => dataTypeIdentifier(dt)   `()->:` `type`(t)
-        case n: l.NatIdentifier           => natIdentifier(n)         `()->:` `type`(t)
+        case n: lt.NatIdentifier           => natIdentifier(n)         `()->:` `type`(t)
         case n2n: lt.NatToNatIdentifier   => natToNatIdentifier(n2n)  `()->:` `type`(t)
         case n2d: lt.NatToDataIdentifier  => natToDataIdentifier(n2d) `()->:` `type`(t)
       }
@@ -163,7 +163,7 @@ object fromLift {
         fun[ExpType](exp"[$t, $read]", e => PrintType(msg, t, e))
 
       case (core.NatAsIndex(),
-      lt.DepFunType(n: l.NatIdentifier,
+      lt.DepFunType(n: lt.NatIdentifier,
       lt.FunType(lt.NatType, lt.IndexType(_))))
       =>
         DepLambda[NatKind](natIdentifier(n))(
@@ -214,7 +214,7 @@ object fromLift {
 
       case (core.DepMapSeq(),
       lt.FunType(
-      lt.DepFunType(lk: l.NatIdentifier, lt.FunType(_, _)),
+      lt.DepFunType(lk: lt.NatIdentifier, lt.FunType(_, _)),
       lt.FunType(lt.DepArrayType(n, la), lt.DepArrayType(_, lb))))
       =>
         val a = ntd(la)
@@ -309,7 +309,7 @@ object fromLift {
           Join(n, m, w, a, e))
 
       case (core.Split(),
-      lt.DepFunType(n: l.NatIdentifier,
+      lt.DepFunType(n: lt.NatIdentifier,
       lt.FunType(lt.ArrayType(mn, la), lt.ArrayType(m, _))))
       =>
         val a = dataType(la)
@@ -319,8 +319,8 @@ object fromLift {
             Split(n, m, w, a, e)))
 
       case (core.Slide(),
-      lt.DepFunType(sz: l.NatIdentifier,
-      lt.DepFunType(sp: l.NatIdentifier,
+      lt.DepFunType(sz: lt.NatIdentifier,
+      lt.DepFunType(sp: lt.NatIdentifier,
       lt.FunType(lt.ArrayType(insz, la), lt.ArrayType(n, _)))))
       =>
         val a = dataType(la)
@@ -330,8 +330,8 @@ object fromLift {
               Slide(n, sz, sp, a, e))))
 
       case (core.SlideSeq(rot),
-      lt.DepFunType(sz: l.NatIdentifier,
-      lt.DepFunType(sp: l.NatIdentifier,
+      lt.DepFunType(sz: lt.NatIdentifier,
+      lt.DepFunType(sp: lt.NatIdentifier,
       lt.FunType(_,
       lt.FunType(_,
       lt.FunType(lt.ArrayType(insz, ls), lt.ArrayType(n, lt)))))))
@@ -347,8 +347,8 @@ object fromLift {
 
       case (ocl.OclSlideSeq(rot),
       lt.DepFunType(la: lt.AddressSpaceIdentifier,
-      lt.DepFunType(sz: l.NatIdentifier,
-      lt.DepFunType(sp: l.NatIdentifier,
+      lt.DepFunType(sz: lt.NatIdentifier,
+      lt.DepFunType(sp: lt.NatIdentifier,
       lt.FunType(_,
       lt.FunType(_,
       lt.FunType(lt.ArrayType(insz, ls), lt.ArrayType(n, lt))))))))
@@ -413,7 +413,7 @@ object fromLift {
               Join(n, m, read, a, e))))
 
       case (core.Take(),
-      lt.DepFunType(n: l.NatIdentifier,
+      lt.DepFunType(n: lt.NatIdentifier,
       lt.FunType(lt.ArrayType(nm, la), lw)))
       =>
         val m = nm - n
@@ -424,7 +424,7 @@ object fromLift {
             Take(n, m, w, a, e)))
 
       case (core.Drop(),
-      lt.DepFunType(n: l.NatIdentifier,
+      lt.DepFunType(n: lt.NatIdentifier,
       lt.FunType(lt.ArrayType(nm, la), _)))
       =>
         val m = nm - n
@@ -435,8 +435,8 @@ object fromLift {
             Drop(n, m, w, a, e)))
 
       case (core.PadCst(),
-      lt.DepFunType(l: l.NatIdentifier,
-      lt.DepFunType(r: l.NatIdentifier,
+      lt.DepFunType(l: lt.NatIdentifier,
+      lt.DepFunType(r: lt.NatIdentifier,
       lt.FunType(_,
       lt.FunType(lt.ArrayType(n, la), _)))))
       =>
@@ -448,8 +448,8 @@ object fromLift {
                   Pad(n, l, r, a, cst, e)))))
 
       case (core.PadClamp(),
-      lt.DepFunType(l: l.NatIdentifier,
-      lt.DepFunType(r: l.NatIdentifier,
+      lt.DepFunType(l: lt.NatIdentifier,
+      lt.DepFunType(r: lt.NatIdentifier,
       lt.FunType(lt.ArrayType(n, la), _))))
       =>
         val a = dataType(la)
@@ -609,8 +609,8 @@ object fromLift {
         wrapArray(lt, Vector())
 
       case (core.Iterate(),
-      lt.DepFunType(k: l.NatIdentifier,
-      lt.FunType(lt.DepFunType(ll: l.NatIdentifier,
+      lt.DepFunType(k: lt.NatIdentifier,
+      lt.FunType(lt.DepFunType(ll: lt.NatIdentifier,
       lt.FunType(lt.ArrayType(ln, _), _)),
       lt.FunType(lt.ArrayType(insz, _), lt.ArrayType(m, la)))))
       =>
@@ -624,8 +624,8 @@ object fromLift {
 
       case (ocl.OclIterate(),
       lt.DepFunType(la: lt.AddressSpaceIdentifier,
-      lt.DepFunType(k: l.NatIdentifier,
-      lt.FunType(lt.DepFunType(ll: l.NatIdentifier,
+      lt.DepFunType(k: lt.NatIdentifier,
+      lt.FunType(lt.DepFunType(ll: lt.NatIdentifier,
       lt.FunType(lt.ArrayType(ln, _), _)),
       lt.FunType(lt.ArrayType(insz, _), lt.ArrayType(m, ldt))))))
       =>
@@ -640,7 +640,7 @@ object fromLift {
                 OpenCLIterate(a, n, m, k, dt, f, e)))))
 
       case (core.AsVector(),
-      lt.DepFunType(n: l.NatIdentifier,
+      lt.DepFunType(n: lt.NatIdentifier,
       lt.FunType(lt.ArrayType(mn, la: lt.ScalarType), lt.ArrayType(m, _))))
       =>
         val a = scalarType(la)
@@ -649,7 +649,7 @@ object fromLift {
             AsVector(n, m, a, e)))
 
       case (core.AsVectorAligned(),
-      lt.DepFunType(n: l.NatIdentifier,
+      lt.DepFunType(n: lt.NatIdentifier,
       lt.FunType(lt.ArrayType(mn, la: lt.ScalarType), lt.ArrayType(m, _))))
       =>
         val a = scalarType(la)
