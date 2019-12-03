@@ -2,7 +2,7 @@ package elevate.lift.strategies
 
 import com.github.ghik.silencer.silent
 import elevate.core.{Failure, Lift, RewriteResult, Strategy, Success}
-import lift.core.DSL._
+import lift.core.TypedDSL._
 import lift.core._
 
 object algorithmic {
@@ -14,20 +14,20 @@ object algorithmic {
   case object mapFirstFission extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
       case App(primitives.Map(), Lambda(x, gx)) =>
-        Success(mapFirstFissionRec(x, fun(e => e), gx))
+        Success(mapFirstFissionRec(x, fun(e => e), gx).matches(e.t))
       case _ => Failure(mapFirstFission)
     }
   }
 
   // TODO: this should be expressed with elevate strategies
   @silent
-  private def mapFirstFissionRec(x: Identifier, f: Expr, gx: Expr): Expr = {
+  private def mapFirstFissionRec(x: Identifier, f: TDSL[Lambda], gx: Expr): TDSL[Lambda] = {
     gx match {
       case App(f2, gx2) =>
         if (gx2 == x) {
           map(f2) >> map(f)
         } else {
-          mapFirstFissionRec(x, fun(e => f(f2(e))), gx2)
+          mapFirstFissionRec(x, fun(e => f(typed(f2)(e))), gx2)
         }
     }
   }
@@ -37,18 +37,18 @@ object algorithmic {
   case object mapFullFission extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
       case App(primitives.Map(), Lambda(x, gx)) =>
-        Success(mapFullFissionRec(x, gx))
+        Success(mapFullFissionRec(x, gx).matches(e.t))
       case _ => Failure(mapFullFission)
     }
   }
 
   // TODO: this should be expressed with elevate strategies
   @silent
-  def mapFullFissionRec(x: Identifier, gx: Expr): Expr = {
+  def mapFullFissionRec(x: Identifier, gx: Expr): TDSL[Lambda] = {
     gx match {
       case App(f, gx2) =>
         if (gx2 == x) {
-          map(f)
+          fun(x => map(f)(x))
         } else {
           mapFullFissionRec(x, gx2) >> map(f)
         }

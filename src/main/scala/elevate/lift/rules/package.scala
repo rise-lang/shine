@@ -6,18 +6,17 @@ import elevate.lift.strategies.traversal._
 import elevate.core.{Failure, Lift, RewriteResult, Strategy, Success}
 import lift.core._
 import lift.core.types._
-import lift.core.DSL._
+import lift.core.TypedDSL._
 
 package object rules {
 
   case object betaReduction extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case App(f, x) => lifting.liftFunExpr(f) match {
+      case App(f, x) => typedLifting.liftFunExpr(f) match {
         case lifting.Reducing(lf) => Success(lf(x))
         case _ => Failure(betaReduction)
       }
-      // TODO: typed
-      case DepApp(f, x: Nat) => lifting.liftDepFunExpr[NatKind](f) match {
+      case DepApp(f, x: Nat) => typedLifting.liftDepFunExpr[NatKind](f) match {
         case lifting.Reducing(lf) => Success(lf(x))
         case _ => Failure(betaReduction)
       }
@@ -35,11 +34,11 @@ package object rules {
   }
 
   case object etaAbstraction extends Strategy[Lift] {
-    // TODO? check that `f` is a function (i.e. has a function type)
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case f =>
+      case f if f.t.isInstanceOf[FunType[_, _]] =>
         val x = identifier(freshName("η"))
-        Success(lambda(x, DSL.app(f, x)))
+        Success(lambda(x, app(f, x)).matches(f.t))
+      case _ => Failure(etaAbstraction)
     }
     override def toString = "etaAbstraction"
   }

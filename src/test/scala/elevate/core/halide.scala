@@ -5,7 +5,7 @@ import elevate.lift.strategies.traversal.body
 import elevate.lift.strategies.normalForm._
 import elevate.lift.strategies.halide._
 import elevate.util._
-import lift.core.DSL.{reorder => _, _}
+import lift.core.TypedDSL.{reorder => _, _}
 import lift.core.types.infer
 
 class halide extends test_util.Tests {
@@ -16,7 +16,7 @@ class halide extends test_util.Tests {
   }
 
   test("generic reorder 1D") {
-    val expr = λ(i => λ(f => *!(f) $ i))
+    val expr = trivial(λ(i => λ(f => *!(f) $ i)))
     assert(body(body(reorder(Seq(1))))(expr).get == expr)
 
     try(body(body(reorder(Seq(1,2))))(expr).get) catch {

@@ -21,13 +21,15 @@ object TypedDSL {
   }
 
   final case class TDSL[T <: Expr](e: T) {
-    def matches(t: Type): Expr = TDSL.infer(e, t)
+    def matches(t: Type): T = TDSL.infer(e, t)
     def >>=[X <: Expr](f: T => TDSL[X]): TDSL[X] = f(e)
   }
 
   implicit def typed[T <: Expr](e: T): TDSL[Opaque] = TDSL(Opaque(e))
 
   def tdsl[T <: Expr](e: T): TDSL[T] = TDSL(e)
+
+  implicit def trivial[T <: Expr](d: TDSL[T]): T = d.matches(freshTypeIdentifier)
 
   object TDSL {
     case class Visitor(sol: Solution) extends traversal.Visitor {
@@ -41,13 +43,13 @@ object TypedDSL {
       override def visitN2D(n2d: NatToData): Result[NatToData] = Stop(sol(n2d))
     }
 
-    def infer(e: Expr, expected: Type): Expr = {
+    def infer[T <: Expr](e: T, expected: Type): T = {
       val constraints = mutable.ArrayBuffer[Constraint]()
       val typed_e = constrainTypes(e, constraints, mutable.Map())
       constraints += TypeConstraint(typed_e.t, expected)
       val solution = solve(constraints)
       val r = traversal.DepthFirstLocalResult(typed_e, Visitor(solution))
-      r
+      r.asInstanceOf[T]
     }
   }
 

@@ -10,7 +10,7 @@ import elevate.lift.strategies.algorithmic._
 import elevate.lift.rules._
 import elevate.lift.rules.algorithmic._
 import lift.core.{Expr, Lambda}
-import lift.core.DSL._
+import lift.core.TypedDSL._
 
 
 object normalForm {
@@ -27,7 +27,7 @@ object normalForm {
     override def toString = "LCNF"
   }
   def lambdaCalculusNormalForm: Strategy[Lift] =
-    BENF `;` normalize(argumentOf(map, (isNotLambda `;` etaAbstraction)))
+    BENF `;` normalize(argumentOf(lift.core.primitives.Map()(), (isNotLambda `;` etaAbstraction)))
 
   case object RNF extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = rewriteNormalForm(e)

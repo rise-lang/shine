@@ -2,7 +2,7 @@ package elevate.lift.strategies
 
 import elevate.core._
 import lift.core._
-import lift.core.DSL._
+import lift.core.TypedDSL._
 import elevate.lift.rules.algorithmic._
 import elevate.core.strategies.traversal._
 import elevate.core.strategies.basic._

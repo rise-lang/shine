@@ -10,7 +10,7 @@ import elevate.util._
 import elevate.lift._
 import lift.core._
 import lift.core.primitives._
-import lift.core.DSL._
+import lift.core.TypedDSL._
 import lift.core.TypeLevelDSL._
 import lift.core.types.{float, infer}
 
@@ -34,7 +34,7 @@ class movement extends test_util.Tests {
     testMultiple(
       List(
         norm(λ(f => *(λ(x => *(f)(x))) >> T)).get,
-        λ(f => **(f) >> T)
+        trivial(λ(f => **(f) >> T))
       ).map((show[Lift] `;` oncetd(`**f >> T -> T >> **f`))(_).get), gold
     )
   }

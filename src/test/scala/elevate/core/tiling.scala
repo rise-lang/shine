@@ -17,7 +17,7 @@ import elevate.lift.rules._
 import elevate.lift.strategies.util._
 import elevate.lift.rules.algorithmic._
 import util.gen
-import lift.core.DSL._
+import lift.core.TypedDSL._
 import lift.core.TypeLevelDSL._
 import lift.core._
 import lift.core.primitives._
@@ -238,8 +238,8 @@ class tiling extends test_util.Tests {
     case d => ArrayType(n.head, inputT(d-1, n.tail))
   }
 
-  def wrapInLambda(dim: Int,
-                   f: Expr => Expr,
+  def wrapInLambda[T <: Expr](dim: Int,
+                   f: TDSL[Identifier] => TDSL[T],
                    genInputType: List[NatIdentifier] => ArrayType,
                    natIds: List[NatIdentifier] = List()): DepLambda[NatKind] = {
     dim match {

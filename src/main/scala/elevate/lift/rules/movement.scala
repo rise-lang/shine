@@ -6,7 +6,7 @@ import elevate.core.{Failure, Lift, NotApplicable, RewriteResult, Strategy, Succ
 import elevate.lift.strategies.predicate._
 import lift.core._
 import lift.core.primitives._
-import lift.core.DSL._
+import lift.core.TypedDSL._
 
 // Describing possible movements between pairs of primitives
 
@@ -26,7 +26,7 @@ object movement {
       case App(
       Transpose(),
       App(App(Map(), App(Map(), f)), y)) =>
-        Success(y |> transpose |> map(map(f)))
+        Success((typed(y) |> transpose |> map(map(f))).matches(e.t))
       // LCNF
       case App(Transpose(),
       App(
@@ -36,7 +36,7 @@ object movement {
       arg
       )
       ) if contains[Lift](n6).apply(n61) && contains[Lift](n7).apply(n71) =>
-        Success(arg |> transpose |> mapMapF)
+        Success((typed(arg) |> transpose |> mapMapF).matches(e.t))
       case _ => Failure(mapMapFBeforeTranspose)
     }
     override def toString = "mapMapFBeforeTranspose"
@@ -48,7 +48,7 @@ object movement {
       case App(
       App(Map() , App(Map(), f)),
       App(Transpose() , y)) =>
-        Success(y |> map(map(f)) |> transpose)
+        Success((typed(y) |> map(map(f)) |> transpose).matches(e.t))
       case _ => Failure(transposeBeforeMapMapF)
     }
     override def toString = "transposeBeforeMapMapF"
@@ -68,7 +68,7 @@ object movement {
       case App(
       App(Map(), App(Map(), f)),
       App(s, y)) if isSplitOrSlide(s) =>
-        Success(y |> map(f) |> s)
+        Success((typed(y) |> map(f) |> s).matches(e.t))
       case _ => Failure(slideBeforeMapMapF)
     }
     override def toString = "slideBeforeMapMapF"
@@ -80,7 +80,7 @@ object movement {
       case App(
       s,
       App(App(Map(), f), y)) if isSplitOrSlide(s) =>
-        Success(y |> s |> map(map(f)))
+        Success((typed(y) |> s |> map(map(f))).matches(e.t))
       case _ => Failure(mapFBeforeSlide)
     }
     override def toString = "mapFBeforeSlide"
@@ -95,7 +95,7 @@ object movement {
       App(Map(), f),
       App(Join(), y)
       ) =>
-        Success(y |> map(map(f)) >> join)
+        Success((typed(y) |> map(map(f)) >> join).matches(e.t))
       case _ => Failure(joinBeforeMapF)
     }
     override def toString = "joinBeforeMapF"
@@ -106,9 +106,9 @@ object movement {
     def apply(e: Lift): RewriteResult[Lift] = e match {
       case App(
       Join(),
-      App(App(map, App(Map(), f)), y)
+      App(App(Map(), App(Map(), f)), y)
       ) =>
-        Success(y |> join |> map(f))
+        Success((typed(y) |> join |> map(f)).matches(e.t))
       case _ => Failure(mapMapFBeforeJoin)
     }
     override def toString = "mapMapFBeforeJoin"
@@ -124,7 +124,7 @@ object movement {
       s,
       App(Transpose(), y)
       ) if isSplitOrSlide(s) =>
-        Success(y |> map(s) |> transpose >> map(transpose))
+        Success((typed(y) |> map(s) |> transpose >> map(transpose)).matches(e.t))
       case _ => Failure(transposeBeforeSlide)
     }
     override def toString = "transposeBeforeSlide"
@@ -137,7 +137,7 @@ object movement {
       App(Map(), s),
       App(Transpose(), y)
       ) if isSplitOrSlide(s) =>
-        Success(y |> s |> map(transpose) |> transpose)
+        Success((typed(y) |> s |> map(transpose) |> transpose).matches(e.t))
       case _ => Failure(transposeBeforeMapSlide)
     }
     override def toString = "transposeBeforeMapSlide"
@@ -150,7 +150,7 @@ object movement {
       Transpose(),
       App(App(Map(), s), y)
       ) if isSplitOrSlide(s) =>
-        Success(y |> transpose >> s >> map(transpose))
+        Success((typed(y) |> transpose >> s >> map(transpose)).matches(e.t))
       case _ => Failure(mapSlideBeforeTranspose)
     }
     override def toString = "mapSlideBeforeTranspose"
@@ -165,7 +165,7 @@ object movement {
       Transpose(),
       App(Join(), y)
       ) =>
-        Success(y |> map(transpose) |> transpose |> map(join))
+        Success((typed(y) |> map(transpose) |> transpose |> map(join)).matches(e.t))
       case _ => Failure(joinBeforeTranspose)
     }
     override def toString = "joinBeforeTranspose"
@@ -178,7 +178,7 @@ object movement {
       App(Map(), Join()),
       App(Transpose(), y)
       ) =>
-        Success(y |> map(transpose) |> join |> transpose)
+        Success((typed(y) |> map(transpose) |> join |> transpose).matches(e.t))
       case _ => Failure(transposeBeforeMapJoin)
     }
     override def toString = "transposeBeforeMapJoin"
@@ -191,7 +191,7 @@ object movement {
       Join(),
       App(App(Map(), Transpose()), y)
       ) =>
-        Success(y |> transpose |> map(join) |> transpose)
+        Success((typed(y) |> transpose |> map(join) |> transpose).matches(e.t))
       case _ => Failure(mapTransposeBeforeJoin)
     }
     override def toString = "mapTransposeBeforeJoin"
@@ -204,7 +204,7 @@ object movement {
       Transpose(),
       App(App(Map(), Join()), y)
       ) =>
-        Success(y |> transpose |> map(transpose) |> join)
+        Success((typed(y) |> transpose |> map(transpose) |> join).matches(e.t))
       case _ => Failure(mapJoinBeforeTranspose)
     }
     override def toString = "mapJoinBeforeTranspose"
@@ -219,7 +219,7 @@ object movement {
       Join(),
       App(Join(), y)
       ) =>
-        Success(y |> map(join) >> join)
+        Success((typed(y) |> map(join) >> join).matches(e.t))
       case _ => Failure(joinBeforeJoin)
     }
     override def toString = "joinBeforeJoin"
@@ -232,7 +232,7 @@ object movement {
       Join(),
       App(App(Map(), Join()), y)
       ) =>
-        Success(y |> join |> join)
+        Success((typed(y) |> join |> join).matches(e.t))
       case _ => Failure(mapJoinBeforeJoin)
     }
     override def toString = "mapJoinBeforeJoin"
@@ -247,7 +247,7 @@ object movement {
       DepApp(Split(), k: Nat),
       App(DepApp(DepApp(Slide(), n: Nat), s: Nat), y)
       ) =>
-        Success(y |> slide(k + n - s)(k) |> map(slide(n)(s)))
+        Success((typed(y) |> slide(k + n - s)(k) |> map(slide(n)(s))).matches(e.t))
       case _ => Failure(slideBeforeSplit)
     }
     override def toString = "slideBeforeSplit"

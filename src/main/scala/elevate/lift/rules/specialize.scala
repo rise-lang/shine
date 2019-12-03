@@ -3,7 +3,7 @@ package elevate.lift.rules
 import elevate.core.{Failure, Lift, RewriteResult, Strategy, Success}
 import lift.core._
 import lift.core.primitives._
-import lift.core.DSL._
+import lift.core.TypedDSL._
 
 object specialize {
 
@@ -37,7 +37,7 @@ object specialize {
 
   case object reduceSeq extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case Reduce() => Success(DSL.reduceSeq)
+      case Reduce() => Success(ReduceSeq()(e.t))
       case _ => Failure(reduceSeq)
     }
     override def toString = "reduceSeq"
@@ -45,7 +45,7 @@ object specialize {
 
   case object reduceSeqUnroll extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case Reduce() | ReduceSeq() => Success(DSL.reduceSeqUnroll)
+      case Reduce() | ReduceSeq() => Success(ReduceSeqUnroll()(e.t))
       case _ => Failure(reduceSeqUnroll)
     }
     override def toString = "reduceSeqUnroll"
@@ -54,8 +54,8 @@ object specialize {
   case class slideSeq(rot: SlideSeq.Rotate, write_dt1: Expr) extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
       case Slide() => Success(nFun(sz => nFun(sp =>
-        DSL.slideSeq(rot)(sz)(sp)(write_dt1)(fun(x => x))
-      )))
+        TypedDSL.slideSeq(rot)(sz)(sp)(write_dt1)(fun(x => x))
+      )).matches(e.t))
       case _ => Failure(slideSeq(rot, write_dt1))
     }
     override def toString = s"slideSeq($rot, $write_dt1)"
