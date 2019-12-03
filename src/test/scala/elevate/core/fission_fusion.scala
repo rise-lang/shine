@@ -4,6 +4,7 @@ import lift.core._
 import lift.core.DSL._
 import lift.core.primitives.Map
 import elevate.core.strategies.basic._
+import elevate.lift.Lift
 import elevate.lift.rules._
 import elevate.lift.rules.algorithmic.{mapFusion, mapLastFission}
 import elevate.lift.strategies.algorithmic.{mapFirstFission, mapFullFission}
@@ -13,7 +14,7 @@ import elevate.lift.strategies.traversal._
 
 
 class fission_fusion extends test_util.Tests {
-  val norm = normalize(betaReduction <+ etaReduction)
+  val norm = normalize.apply(betaReduction <+ etaReduction)
 
   def eq(a: Expr, b: Expr): Unit = {
     if (norm(a).get != norm(b).get) {
@@ -73,6 +74,6 @@ class fission_fusion extends test_util.Tests {
       fun(f1 => fun(f2 => fun(f3 => map(f1 >> f2 >> f3)))),
       position(3)(mapFullFission),
       fun(f1 => fun(f2 => fun(f3 => map(f1) >> map(f2) >> map(f3)))),
-      normalize(mapFusion))
+      normalize.apply(mapFusion))
   }
 }

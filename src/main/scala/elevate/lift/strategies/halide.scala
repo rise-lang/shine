@@ -1,7 +1,8 @@
 package elevate.lift.strategies
 
-import elevate.core.{Elevate, Lift, Strategy}
+import elevate.core.Strategy
 import elevate.core.strategies.basic._
+import elevate.lift.Lift
 import elevate.lift.strategies.traversal._
 import elevate.lift.strategies.normalForm._
 import elevate.lift.strategies.tiling._

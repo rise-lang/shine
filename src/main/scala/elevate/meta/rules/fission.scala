@@ -1,10 +1,14 @@
 package elevate.meta.rules
 
-import elevate.core.{Elevate, Failure, Lift, Meta, RewriteResult, Strategy, Success}
 import elevate.core.strategies.basic._
-import elevate.lift.strategies.traversal._
+import elevate.core.{Failure, RewriteResult, Strategy, Success}
+import elevate.meta.strategies.traversal._
+import elevate.lift.Lift
+import elevate.lift.strategies.traversal.{argument, argumentOf, body, function}
 
 object fission {
+
+  type Elevate = Strategy[Lift]
 
   case object bodyFission extends Strategy[Elevate] {
     def apply(e: Elevate): RewriteResult[Elevate] = e match {
@@ -38,7 +42,7 @@ object fission {
     override def toString = "argumentFission"
   }
 
-  def FNF: Meta = normalizeElevate(bodyFission <+ functionFission <+ argumentFission <+ argumentOfFission)
+  def FNF: Strategy[Elevate] = normalize.apply(bodyFission <+ functionFission <+ argumentFission <+ argumentOfFission)
 
 
 

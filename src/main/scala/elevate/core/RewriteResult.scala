@@ -1,7 +1,7 @@
 package elevate.core
 
 sealed trait RewriteResult[P] {
-  def getProgramOrElse(e: P): P
+  def getProgramOrElse(p: P): P
   def get: P
 
   def mapSuccess(f: P => P): RewriteResult[P]
@@ -12,7 +12,7 @@ sealed trait RewriteResult[P] {
 }
 
 case class Success[P](p: P) extends RewriteResult[P] {
-  override def getProgramOrElse(u: P): P = p
+  override def getProgramOrElse(p: P): P = p
   override def get: P = p
 
   override def mapSuccess(f: P => P): RewriteResult[P] = Success(f(p))

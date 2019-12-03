@@ -1,6 +1,7 @@
 package elevate.core
 
 import elevate.core.strategies.basic.{debug, id}
+import elevate.lift.Lift
 import elevate.lift.strategies.traversal.body
 import elevate.lift.strategies.normalForm._
 import elevate.lift.strategies.halide._

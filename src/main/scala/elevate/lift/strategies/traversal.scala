@@ -6,6 +6,7 @@ import lift.core.DSL._
 import elevate.lift.rules.algorithmic._
 import elevate.core.strategies.traversal._
 import elevate.core.strategies.basic._
+import elevate.lift.Lift
 import elevate.lift.strategies.algorithmic._
 import elevate.lift.strategies.normalForm._
 import lift.core.types._
@@ -40,7 +41,11 @@ object traversal {
       }
     }
 
-    override def oneHandlingState: Boolean => Strategy[Lift] => Strategy[Lift] =
+
+    override def one: Strategy[Lift] => Strategy[Lift] = oneHandlingState(false)
+    override def oneUsingState: Strategy[Lift] => Strategy[Lift] = oneHandlingState(true)
+
+    def oneHandlingState: Boolean => Strategy[Lift] => Strategy[Lift] =
       carryOverState => s => {
         case a @ App(f, e) => s(f) match {
           case Success(x: Lift) => Success(App(x, e)(a.t))
@@ -67,7 +72,7 @@ object traversal {
     }
   }
 
-  case class body(s: Elevate) extends Elevate {
+  case class body(s: Strategy[Lift]) extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
       case Lambda(x, f) => s(f).mapSuccess(Lambda(x, _)(e.t))
       case DepLambda(x: NatIdentifier, f) => s(f).mapSuccess(DepLambda[NatKind](x, _)(e.t))
@@ -80,7 +85,7 @@ object traversal {
     override def toString = s"body($s)"
   }
 
-  case class function(s: Elevate) extends Elevate {
+  case class function(s: Strategy[Lift]) extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
       case ap @ App(f, x) => s(f).mapSuccess(App(_, x)(ap.t))
       case _ => Failure(s)
@@ -89,14 +94,14 @@ object traversal {
   }
 
   // todo move to meta package
-  case class inBody(s: Meta) extends Strategy[Elevate] {
-    def apply(e: Elevate): RewriteResult[Elevate] = e match {
-      case body(x: Elevate) => s(x).mapSuccess(body)
+  case class inBody(s: MetaStrategy[Lift]) extends MetaStrategy[Lift] {
+    def apply(e: Strategy[Lift]): RewriteResult[Strategy[Lift]] = e match {
+      case body(x: Strategy[Lift]) => s(x).mapSuccess(body)
       case _ => Failure(s)
     }
   }
 
-  case class argument(s: Elevate) extends Elevate {
+  case class argument(s: Strategy[Lift]) extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
       case ap @ App(f, x) => s(x).mapSuccess(App(f, _)(ap.t))
       case _ => Failure(s)
@@ -104,7 +109,7 @@ object traversal {
     override def toString = s"argument($s)"
   }
 
-  case class argumentOf(p: Primitive, s: Elevate) extends Elevate {
+  case class argumentOf(p: Primitive, s: Strategy[Lift]) extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
       case ap @ App(f, x) if f == p => s(x).mapSuccess(App(f, _)(ap.t))
       case _ => Failure(s)
@@ -117,17 +122,17 @@ object traversal {
   //  (map λe14. (transpose ((map (map e12)) e14)))      // result of `function`
   //       λe14. (transpose ((map (map e12)) e14))       // result of `argument`
   //             (transpose ((map (map e12)) e14))       // result of 'body' -> here we can apply s
-  def fmap: Elevate => Elevate = s => function(argumentOf(map, body(s)))
+  def fmap: Strategy[Lift] => Strategy[Lift] = s => function(argumentOf(map, body(s)))
 
   // fmap applied for expressions in rewrite normal form:
   // fuse -> fmap -> fission
-  def fmapRNF: Elevate => Elevate =
+  def fmapRNF: Strategy[Lift] => Strategy[Lift] =
     s => LCNF `;` mapFusion `;`
       LCNF `;` fmap(s) `;`
       LCNF `;` one(mapFullFission)
 
   // applying a strategy to an expression nested in one or multiple lift `map`s
-  def mapped: Elevate => Elevate =
+  def mapped: Strategy[Lift] => Strategy[Lift] =
     s => s <+ (e => fmapRNF(mapped(s))(e))
 
   // moves along RNF-normalized expression
@@ -135,6 +140,6 @@ object traversal {
   // move(0)(s) == s(***f o ****g o *h)
   // move(1)(s) == s(****g o *h)
   // move(2)(s) == s(*h)
-  def moveTowardsArgument: Int => Elevate => Elevate =
-    i => s => applyNTimes(i)((e: Elevate) => argument(e))(s)
+  def moveTowardsArgument: Int => Strategy[Lift] => Strategy[Lift] =
+    i => s => applyNTimes(i)((e: Strategy[Lift]) => argument(e))(s)
 }

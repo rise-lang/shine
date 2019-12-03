@@ -4,15 +4,22 @@ import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
 import elevate.lift.strategies.traversal._
 import elevate.meta.strategies.traversal._
-import elevate.core.{Elevate, Failure, Lift, Meta, Strategy, Success}
+import elevate.core.{Failure, Strategy, Success}
+import elevate.lift.Lift
 
 object traversal {
+
+  type Elevate = Strategy[Lift]
+
   // todo can we get replace Lift with P?
   implicit object ElevateTraversable extends elevate.core.strategies.Traversable[Elevate] {
     override def all: Strategy[Elevate] => Strategy[Elevate] = s => ???
     override def some: Strategy[Elevate] => Strategy[Elevate] = s => ???
 
-    override def oneHandlingState: Boolean => Strategy[Elevate] => Strategy[Elevate] = carryOverState => s => {
+    override def one: Strategy[Elevate] => Strategy[Elevate] = oneHandlingState(false)
+    override def oneUsingState: Strategy[Elevate] => Strategy[Elevate] = oneHandlingState(true)
+
+    def oneHandlingState: Boolean => Strategy[Elevate] => Strategy[Elevate] = carryOverState => s => {
       case seq(first,second) => s(first) match {
         case Success(x: Elevate) => Success(seq(x, second))
         case Failure(state) => if (carryOverState)
@@ -22,8 +29,9 @@ object traversal {
       case downup2(p1,p2) => ???
 
       case all(s) => ???
-      case oneHandlingState(state, s) => ???
+      case one(s) => ???
       case some(s) => ???
+      case oneUsingState(s) => ???
 
       case body(p) => s(p).mapSuccess(body)
       case function(p) => s(p).mapSuccess(function)

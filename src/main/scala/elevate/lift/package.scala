@@ -3,9 +3,11 @@ package elevate
 import _root_.lift.core._
 import _root_.lift.core.types._
 import elevate.core.strategies.basic.peek
-import elevate.core.{Lift, RewriteResult, Strategy, Success}
+import elevate.core.{RewriteResult, Strategy, Success}
 
 package object lift {
+
+  type Lift = Expr
 
   def printExpr : Strategy[Lift] = peek[Lift](p => println(s"${toEvaluableString(p)}"))
   def printExpr(msg: String) : Strategy[Lift] = peek[Lift](p => println(s"$msg \n${toEvaluableString(p)}"))

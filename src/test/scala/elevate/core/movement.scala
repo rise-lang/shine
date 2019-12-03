@@ -34,7 +34,7 @@ class movement extends test_util.Tests {
       List(
         norm(λ(f => *(λ(x => *(f)(x))) >> T)).get,
         λ(f => **(f) >> T)
-      ).map((show[Lift] `;` oncetd(`**f >> T -> T >> **f`))(_).get), gold
+      ).map((oncetd(`**f >> T -> T >> **f`)).apply(_).get), gold
     )
   }
 

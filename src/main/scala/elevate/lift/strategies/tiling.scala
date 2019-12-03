@@ -1,9 +1,9 @@
 package elevate.lift.strategies
 
-import elevate.core.{Elevate, Lift, Strategy}
+import elevate.core.Strategy
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal.oncetd
-import elevate.lift.{dotPrinter, exprToDot}
+import elevate.lift.{Lift, dotPrinter, exprToDot}
 import elevate.lift.rules.algorithmic._
 import elevate.lift.rules.movement._
 import elevate.lift.strategies.traversal._

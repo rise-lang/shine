@@ -263,7 +263,7 @@ class algorithmic extends test_util.Tests {
           ))
       )))
 
-    println(gen.CProgram(infer(goldKMNAlternative2LowLevel)))
+    println(gen.CProgram(infer(goldKMNAlternative2LowLevel)).code)
   }
 
   // FIXME
@@ -295,8 +295,8 @@ class algorithmic extends test_util.Tests {
     infer(typed)
 
     // these should be correct, it's just that the mapAcceptorTranslation for split is not defined yet
-    val lower: Strategy[Lift] = LCNF `;` CNF `;` normalize(specialize.mapSeq <+ specialize.reduceSeq) `;` BENF
-    println(gen.CProgram(infer(lower(typedUntyped).get)))
+    val lower: Strategy[Lift] = LCNF `;` CNF `;` normalize.apply(specialize.mapSeq <+ specialize.reduceSeq) `;` BENF
+    println(gen.CProgram(infer(lower(typedUntyped).get)).code)
     assert(untyped == typed)
 
     /// TILE + REORDER
@@ -308,7 +308,7 @@ class algorithmic extends test_util.Tests {
 
     val fixed = infer(reorder)
 
-    println(gen.CProgram(lower(fixed).get))
+    println(gen.CProgram(lower(fixed).get).code)
   }
 
   // FIXME
@@ -328,8 +328,8 @@ class algorithmic extends test_util.Tests {
 
       val rnf = (RNF `;` BENF)(mm).get
 
-    val lower: Strategy[Lift] = normalize(specialize.mapSeq <+ specialize.reduceSeq)
-    println(gen.CProgram(infer(lower(rnf).get)))
+    val lower: Strategy[Lift] = normalize.apply(specialize.mapSeq <+ specialize.reduceSeq)
+    println(gen.CProgram(infer(lower(rnf).get)).code)
 
    }
 

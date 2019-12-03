@@ -36,7 +36,10 @@ object traversal {
       case c:Constants => Success(c)
     }
 
-    override def oneHandlingState: Boolean => Strategy[FSmooth] => Strategy[FSmooth] = carryOverState => s => {
+    override def one: Strategy[FSmooth] => Strategy[FSmooth] = oneHandlingState(false)
+    override def oneUsingState: Strategy[FSmooth] => Strategy[FSmooth] = oneHandlingState(true)
+
+    def oneHandlingState: Boolean => Strategy[FSmooth] => Strategy[FSmooth] = carryOverState => s => {
       case Abstraction(i, body, t) => s(body).mapSuccess(Abstraction(i, _, t))
       case i:Variable => Failure(s)
 

@@ -1,9 +1,11 @@
 package elevate.lift.strategies
 
 import com.github.ghik.silencer.silent
-import elevate.core.{Failure, Lift, RewriteResult, Strategy, Success}
+import elevate.core.{Failure, RewriteResult, Strategy, Success}
+import elevate.lift.Lift
 import lift.core.DSL._
 import lift.core._
+
 
 object algorithmic {
   // TODO: only compose simpler rules

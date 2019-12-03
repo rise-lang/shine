@@ -1,6 +1,7 @@
 package elevate.lift.rules
 
-import elevate.core.{Failure, Lift, RewriteResult, Strategy, Success}
+import elevate.core.{Failure, RewriteResult, Strategy, Success}
+import elevate.lift.Lift
 import lift.core._
 import lift.core.primitives._
 import lift.core.DSL._

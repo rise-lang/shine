@@ -2,13 +2,12 @@ package FSmooth
 
 import FSmooth.DSL._
 import FSmooth.MSmooth._
-import FSmooth.VectorFunctionConstants.length
-import elevate.core.strategies.basic.{id, repeat}
+import elevate.core.strategies.basic.repeat
 import elevate.core.strategies.traversal.oncetd
-import elevate.core.{FSmooth, Strategy}
+import elevate.core.Strategy
+import elevate.fsmooth.FSmooth
 import elevate.fsmooth.rules._
 import elevate.fsmooth.traversal._
-import elevate.lift.strategies
 
 class ExamplesFromICFP2019Paper extends test_util.Tests {
 
