@@ -3,6 +3,7 @@ package benchmarks.cgo17
 import apps.mm._
 import benchmarks.core._
 import idealised.OpenCL._
+import idealised.DPIA
 import util._
 
 object mm {
@@ -11,11 +12,24 @@ object mm {
     val At = Array.fill(O, N)(rand.nextFloat * 10)
     val B = Array.fill(O, M)(rand.nextFloat * 10)
 
+
     val localSize = LocalSize((32, 8))
-    val globalSize = GlobalSize((M/4, N/8))
+    def globalSize = GlobalSize((M/4, N/8))
+    def globalSizeGen(phrase: DPIA.Phrases.Phrase[_ <: DPIA.Types.PhraseType]) = {
+      val t = phrase.t.asInstanceOf[DPIA.`(nat)->:`[DPIA.`(nat)->:`[
+        DPIA.Types.ExpType
+      ]]]
+      val n = t.x
+      val m = t.t.x
+      GlobalSize((m/4, n/8))
+    }
     // FIXME: input sizes should remain variable in globalSize during codegen
-    val amdKernel = Kernel.forgetSizes(gen.OpenCLKernel(localSize, globalSize)(amd, "KERNEL"))
-    val nvidiaKernel = Kernel.forgetSizes(gen.OpenCLKernel(localSize, globalSize)(nvidia, "KERNEL"))
+    val amdKernel = Kernel.forgetSizes(gen.OpenCLKernel(
+      phrase => (localSize, globalSizeGen(phrase))
+    )(amd, "KERNEL"))
+    val nvidiaKernel = Kernel.forgetSizes(gen.OpenCLKernel(
+      phrase => (localSize, globalSizeGen(phrase))
+    )(nvidia, "KERNEL"))
 
     val stats = Seq(
       ("original AMD", benchmark(sampleCount, runOriginal("CGO17_MMAMD.cl",
