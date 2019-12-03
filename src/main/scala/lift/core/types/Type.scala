@@ -9,7 +9,9 @@ case class TypeException(msg: String) extends Exception {
   override def toString = s"type exception: $msg"
 }
 
-object TypePlaceholder extends Type
+object TypePlaceholder extends Type {
+  override def toString = "?"
+}
 
 final case class TypeIdentifier(name: String) extends Type {
   override def toString: String = name

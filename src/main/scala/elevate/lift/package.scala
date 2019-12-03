@@ -31,6 +31,7 @@ package object lift {
 
   def dotPrinter(expr: Expr,
                  printEdgeLabels: Boolean = true,
+                 printTypes: Boolean = false,
                  inlineApply: Boolean = false,
                  inlineLambdaIdentifier: Boolean = false): String = {
 
@@ -45,8 +46,7 @@ package object lift {
                          parent: String,
                          printEdgeLabels: Boolean,
                          inlineApply: Boolean,
-                         inlineLambdaIdentifier: Boolean,
-                         ty: Option[String]): String = {
+                         inlineLambdaIdentifier: Boolean): String = {
 
       def attr(str: String): String = s"[$str]"
       def fill(c: String): String = s"fillcolor=$c "
@@ -54,17 +54,21 @@ package object lift {
       def fillGray = fill("\"#e6e2de\"")
       def fillBlack = fill("black")
 
+      def formatType(t: Type): String = t.toString.replaceAll(">", "\\\\>").replaceAll("<", "\\\\<")
+
       case class Label(s: String,
                        decorations: String => String = x => s"$x",
                        forEdge: Boolean = false){
         def bold: Label = this.copy(decorations = x => s"<b>${decorations(x)}</b>")
         def italic: Label = this.copy(decorations = x => s"<i>${decorations(x)}</i>")
         def gray: Label = this.copy(decorations = x => s"<font color='gray'>${decorations(x)}</font>")
+        def green: Label = this.copy(decorations = x => s"""<font color="#3C8031">${decorations(x)}</font>""")
+        def orange: Label = this.copy(decorations = x => s"""<font color="#F26035">${decorations(x)}</font>""")
         def edge: Label = this.copy(forEdge = true)
 
         override def toString: String = {
-          val label = if(ty.isDefined && !forEdge)
-            "\"" + s + "\\n"+ty.get + "\""
+          val label = if(!forEdge && printTypes)
+            "\"" + s + "\\n"+formatType(expr.t) + "\""
           else "<" + decorations(s) + ">"
 
           s"label=$label"
@@ -77,12 +81,12 @@ package object lift {
       def recurse(e: Expr,
                   parent: String,
                   ty: Option[String]): String =
-        genNodesAndEdges(e, parent, printEdgeLabels, inlineApply, inlineLambdaIdentifier, ty)
+        genNodesAndEdges(e, parent, printEdgeLabels, inlineApply, inlineLambdaIdentifier)
 
       def binaryNode(nodeLabel: String, a: (Expr, String), b: (Expr, String)): String = {
         val aID = getID(a._1)
         val bID = getID(b._1)
-        s"""$parent ${attr(fillWhite + Label(nodeLabel).toString)}
+        s"""$parent ${attr(fillWhite + Label(nodeLabel).bold.green.toString)}
            |$parent -> $aID ${addEdgeLabel(edgeLabel(a._2))};
            |$parent -> $bID ${addEdgeLabel(edgeLabel(b._2))};
            |${recurse(a._1, aID, None)}
@@ -111,10 +115,10 @@ package object lift {
         case DepLambda(x, e) if !inlineLambdaIdentifier =>
           val id = getID(x)
           val expr = getID(e)
-          s"""$parent ${attr(fillWhite + Label("Λ").toString)}
+          s"""$parent ${attr(fillWhite + Label("Λ").bold.green.toString)}
              |$parent -> $id ${addEdgeLabel(edgeLabel("id"))};
              |$parent -> $expr ${addEdgeLabel(edgeLabel("body"))};
-             |$id ${attr(fillWhite + Label(x.toString).toString)}
+             |$id ${attr(fillWhite + Label(x.toString).orange.toString)}
              |${recurse(e, expr, None)}""".stripMargin
 
         case DepLambda(x, e) if inlineLambdaIdentifier =>
@@ -132,16 +136,19 @@ package object lift {
              |$arg ${attr(fillWhite + Label(e.toString).toString)}
              |${recurse(f, fun, None)}""".stripMargin
 
-        case l: Literal => s"$parent ${attr(fillWhite + Label(l.toString).italic.toString)}"
-        case i: Identifier => s"$parent ${attr(fillWhite + Label(i.toString).italic.toString)}"
-        case p: Primitive => s"$parent ${attr(fillGray + Label(p.toString).bold.toString)}"
+        case l: Literal => s"$parent ${attr(fillWhite + Label(l.toString).orange.italic.toString)}"
+        case i: Identifier => s"$parent ${attr(fillWhite + Label(i.toString).orange.italic.toString)}"
+        case p: Primitive => s"$parent ${attr(fillGray + Label(p.toString).bold.green.toString)}"
       }
     }
 
-    val content = genNodesAndEdges(expr, getID(expr), printEdgeLabels, inlineApply, inlineLambdaIdentifier, None)
+    val content = genNodesAndEdges(expr, getID(expr), printEdgeLabels, inlineApply, inlineLambdaIdentifier)
     s"""
        |digraph graphname
        |{
+       |graph [fontname = "FiraCode"];
+       |node [fontname = "FiraCode"];
+       |edge [fontname = "FiraCode"];
        |node [shape="record",style="rounded, filled"]
        |$content
        |}
