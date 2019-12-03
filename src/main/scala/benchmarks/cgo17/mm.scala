@@ -21,7 +21,7 @@ object mm {
       ]]]
       val n = t.x
       val m = t.t.x
-      GlobalSize((m/4, n/8))
+      GlobalSize((m /^ 4, n /^ 8))
     }
     // FIXME: input sizes should remain variable in globalSize during codegen
     val amdKernel = Kernel.forgetSizes(gen.OpenCLKernel(
