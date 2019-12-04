@@ -118,6 +118,9 @@ case object dotPrinter {
      """.stripMargin
   }
 
+  // todo remove before pull-request
+  def exprToDot(name: String, e: Expr): Unit = exprToDot("/home/bastian/development/rewriting/dot", name, e, dotPrinter(_))
+
   def exprToDot(path: String, name: String, e: Expr, dot: Expr => String): Unit = {
     import java.io._
     import sys.process._

@@ -3,8 +3,7 @@ package elevate.rise.rules
 import elevate.core.strategies.predicate._
 import elevate.rise.rules.traversal._
 import elevate.core.{Failure, RewriteResult, Strategy, Success}
-import elevate.rise.Rise
-import elevate.rise.extractors.::
+import elevate.rise._
 import lift.core._
 import lift.core.primitives._
 import lift.core.DSL._

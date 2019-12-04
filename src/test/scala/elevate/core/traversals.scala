@@ -4,16 +4,15 @@ import elevate.util._
 import elevate.rise.strategies.normalForm._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
-import elevate.rise.meta.rules.fission._
 import elevate.rise.rules.movement._
 import elevate.rise.rules.traversal._
 import elevate.rise.strategies.tiling._
 import elevate.rise.strategies.util._
 import elevate.rise._
+import elevate.rise.meta.fission._
+import elevate.rise.meta.traversal.inBody
 import elevate.rise.rules.algorithmic._
 import elevate.rise.rules.traversal.{argument, argumentOf, body, function}
-import elevate.rise.meta.rules.fission.bodyFission
-import elevate.rise.meta.rules.traversal.inBody
 import lift.core.DSL._
 import lift.core.types.NatKind
 
@@ -50,7 +49,7 @@ class traversals extends test_util.Tests {
         argument(argument(function(argumentOf(map,body(idAfter `;` createTransposePair `;` LCNF `;` argument(mapMapFBeforeTranspose)))) `;` RNF))))
 
     val normalized = FNF(simplified).get
-    println(normalized.toString)
+    println(normalized)
     val normalizedModified = body(body(function(argumentOf(map,body(function(splitJoin(4))))))) `;`
     inferType `;`
       body(body(function(splitJoin(4)))) `;`

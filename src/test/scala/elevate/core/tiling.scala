@@ -3,19 +3,18 @@ package elevate.core
 import elevate.rise.rules.traversal._
 import elevate.rise.strategies.traversal._
 import elevate.rise.strategies.normalForm._
-import elevate.rise.meta.rules.fission._
 import elevate.rise.strategies.tiling._
 import elevate.core.strategies.traversal._
 import elevate.core.strategies.basic._
 import elevate.rise._
 import elevate.util._
 import elevate.rise.rules._
+import elevate.rise.meta.fission._
 import elevate.rise.rules.algorithmic._
 import util.gen
 import lift.core.DSL._
 import lift.core._
 import lift.core.types.{ArrayType, NatKind, float, infer}
-import idealised.C.Program.programToString
 
 import scala.language.implicitConversions
 

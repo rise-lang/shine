@@ -7,6 +7,7 @@ import elevate.rise.strategies.tiling._
 import elevate.util._
 import util.gen
 import lift.core.DSL._
+import lift.core.dotPrinter._
 import lift.core.{Expr, NatIdentifier}
 import lift.core.types.{ArrayType, IndexType, NatKind, float, infer}
 import elevate.rise._
@@ -17,11 +18,7 @@ import elevate.rise.rules.movement.liftReduce
 import elevate.rise.rules.{inferRise, lowering}
 import elevate.rise.strategies.tiling.{loopInterchange, loopInterchangeAtLevel}
 
-import scala.language.implicitConversions
-
 class algorithmic extends test_util.Tests {
-
-  implicit def rewriteResultToExpr(r: RewriteResult[Expr]): Expr = r.get
 
   /// LOOP INTERCHANGE
 
@@ -57,6 +54,8 @@ class algorithmic extends test_util.Tests {
       depLambda[NatKind](M, depLambda[NatKind](N,
       fun(ArrayType(M, ArrayType(N, float)))(i =>
         map(reduce(fun(x => fun(a => x + a)))(l(0.0f))) $ i))))).get
+
+    exprToDot("test", mapReduce)
 
     val reduceMap =
       depLambda[NatKind](M, depLambda[NatKind](N,

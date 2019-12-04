@@ -1,4 +1,4 @@
-package elevate.rise.meta.rules
+package elevate.rise.meta
 
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
