@@ -3,7 +3,7 @@ package elevate.rise.strategies
 import elevate.core.Strategy
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal.oncetd
-import elevate.rise.{Lift, dotPrinter, exprToDot}
+import elevate.rise.{Rise, dotPrinter, exprToDot}
 import elevate.rise.rules.algorithmic._
 import elevate.rise.rules.movement._
 import elevate.rise.strategies.traversal._
@@ -11,14 +11,14 @@ import elevate.rise.strategies.normalForm._
 
 object tiling {
 
-  def tileND: Int => Int => Strategy[Lift] = d => n => tileNDList(List.tabulate(d)(_ => n))
+  def tileND: Int => Int => Strategy[Rise] = d => n => tileNDList(List.tabulate(d)(_ => n))
 
-  def tileNDList: List[Int] => Strategy[Lift] =
+  def tileNDList: List[Int] => Strategy[Rise] =
     l => {
       tileNDRec(l.size)(l)
     }
 
-  def tileNDRec: Int => List[Int] => Strategy[Lift] =
+  def tileNDRec: Int => List[Int] => Strategy[Rise] =
     d => n => d match {
         case x if x <= 0 => id()
         // ((map f) arg)
@@ -37,7 +37,7 @@ object tiling {
   //    A.a.B.C.b.c => A.B.C.a.b.c
   //    (******f => *T o **T o ******f o **T o *T)
   // dim == 4 -> shift three levels ...
-  def shiftDim: Int => Strategy[Lift] =
+  def shiftDim: Int => Strategy[Rise] =
     d => {
       val joins = d
       val transposes = (1 to d-2).sum
@@ -46,7 +46,7 @@ object tiling {
 
   // position: how far to move right until we reach maps
   // level:    how deep transpose pairs are nested in maps
-  def shiftDimRec: Int => Int => Strategy[Lift] =
+  def shiftDimRec: Int => Int => Strategy[Rise] =
     position => level => LCNF `;`
       (level match {
       case 1 => moveTowardsArgument(position)(loopInterchangeAtLevel(1))
@@ -55,13 +55,13 @@ object tiling {
     })
 
   // in front of **f, creating transpose pairs, move one transpose over **f
-  def loopInterchange: Strategy[Lift] =
+  def loopInterchange: Strategy[Rise] =
       idAfter `;` createTransposePair `;` LCNF `;` argument(mapMapFBeforeTranspose)
 
   // level == 0: A.B.C.D => A.B.D.C
   //             ^ ^        ^ ^
   // level == 1: A.B.C.D => A.C.B.D
   //               ^ ^        ^ ^   ... and so on
-  def loopInterchangeAtLevel: Int => Strategy[Lift] =
-    level => applyNTimes(level)((e: Strategy[Lift]) => fmap(e))(loopInterchange) `;` RNF
+  def loopInterchangeAtLevel: Int => Strategy[Rise] =
+    level => applyNTimes(level)((e: Strategy[Rise]) => fmap(e))(loopInterchange) `;` RNF
 }

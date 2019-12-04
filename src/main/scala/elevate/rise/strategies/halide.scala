@@ -2,16 +2,16 @@ package elevate.rise.strategies
 
 import elevate.core.Strategy
 import elevate.core.strategies.basic._
-import elevate.rise.Lift
+import elevate.rise.Rise
 import elevate.rise.strategies.traversal._
 import elevate.rise.strategies.normalForm._
 import elevate.rise.strategies.tiling._
 
 object halide {
 
-  def reorder(perm: Seq[Int]): Strategy[Lift] = {
+  def reorder(perm: Seq[Int]): Strategy[Rise] = {
 
-    def shiftDimension(i: Int): Strategy[Lift] = {
+    def shiftDimension(i: Int): Strategy[Rise] = {
       i match {
         case 1 => loopInterchange
         case x => loopInterchangeAtLevel(x-1) `;` moveTowardsArgument(1)(shiftDimension(i-1))

@@ -5,11 +5,11 @@ import elevate.core.strategies.traversal._
 import elevate.rise.strategies.traversal._
 import elevate.meta.strategies.traversal._
 import elevate.core.{Failure, Strategy, Success}
-import elevate.rise.Lift
+import elevate.rise.Rise
 
 object traversal {
 
-  type Elevate = Strategy[Lift]
+  type Elevate = Strategy[Rise]
 
   // todo can we get replace Lift with P?
   implicit object ElevateTraversable extends elevate.core.strategies.Traversable[Elevate] {
@@ -38,15 +38,15 @@ object traversal {
       case argument(p) => s(p).mapSuccess(argument)
       case argumentOf(x,p) => s(p).mapSuccess(argumentOf(x,_))
 
-      case oncetd(p) => s(p).mapSuccess(oncetd[Lift](_))
-      case topdown(p) => s(p).mapSuccess(topdown[Lift](_))
-      case tryAll(p) => s(p).mapSuccess(tryAll[Lift](_))
-      case bottomup(p) => s(p).mapSuccess(bottomup[Lift](_))
-      case downup(p) => s(p).mapSuccess(downup[Lift](_))
-      case oncebu(p) => s(p).mapSuccess(oncebu[Lift](_))
-      case alltd(p) => s(p).mapSuccess(alltd[Lift](_))
-      case sometd(p) => s(p).mapSuccess(sometd[Lift](_))
-      case somebu(p) => s(p).mapSuccess(somebu[Lift](_))
+      case oncetd(p) => s(p).mapSuccess(oncetd[Rise](_))
+      case topdown(p) => s(p).mapSuccess(topdown[Rise](_))
+      case tryAll(p) => s(p).mapSuccess(tryAll[Rise](_))
+      case bottomup(p) => s(p).mapSuccess(bottomup[Rise](_))
+      case downup(p) => s(p).mapSuccess(downup[Rise](_))
+      case oncebu(p) => s(p).mapSuccess(oncebu[Rise](_))
+      case alltd(p) => s(p).mapSuccess(alltd[Rise](_))
+      case sometd(p) => s(p).mapSuccess(sometd[Rise](_))
+      case somebu(p) => s(p).mapSuccess(somebu[Rise](_))
       case position(i) => ???
       case skip(n) => ???
         // todo rules should fail but everything else should be a warning or something similar

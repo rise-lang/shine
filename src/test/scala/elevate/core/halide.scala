@@ -1,7 +1,7 @@
 package elevate.core
 
 import elevate.core.strategies.basic.{debug, id}
-import elevate.rise.Lift
+import elevate.rise.Rise
 import elevate.rise.strategies.traversal.body
 import elevate.rise.strategies.normalForm._
 import elevate.rise.strategies.halide._
@@ -10,7 +10,7 @@ import lift.core.DSL.{reorder => _, _}
 import lift.core.types.infer
 
 class halide extends test_util.Tests {
-  private def LCNFrewrite(a: Lift, s: Strategy[Lift], b: Lift): Unit = {
+  private def LCNFrewrite(a: Rise, s: Strategy[Rise], b: Rise): Unit = {
     val na = LCNF(a).get
     val nb = LCNF(b).get
     assert(s(na).get == nb)

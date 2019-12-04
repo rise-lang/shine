@@ -10,8 +10,8 @@ import lift.core.DSL._
 
 package object rules {
 
-  case object betaReduction extends Strategy[Lift] {
-    def apply(e: Lift): RewriteResult[Lift] = e match {
+  case object betaReduction extends Strategy[Rise] {
+    def apply(e: Rise): RewriteResult[Rise] = e match {
       case App(f, x) => lifting.liftFunExpr(f) match {
         case lifting.Reducing(lf) => Success(lf(x))
         case _ => Failure(betaReduction)
@@ -26,17 +26,17 @@ package object rules {
     override def toString = "betaReduction"
   }
 
-  case object etaReduction extends Strategy[Lift]  {
-    def apply(e: Lift): RewriteResult[Lift] = e match {
-      case Lambda(x1, App(f, x2)) if x1 == x2 && !contains[Lift](x1).apply(f) => Success(f)
+  case object etaReduction extends Strategy[Rise]  {
+    def apply(e: Rise): RewriteResult[Rise] = e match {
+      case Lambda(x1, App(f, x2)) if x1 == x2 && !contains[Rise](x1).apply(f) => Success(f)
       case _ => Failure(etaReduction)
     }
     override def toString = "etaReduction"
   }
 
-  case object etaAbstraction extends Strategy[Lift] {
+  case object etaAbstraction extends Strategy[Rise] {
     // TODO? check that `f` is a function (i.e. has a function type)
-    def apply(e: Lift): RewriteResult[Lift] = e match {
+    def apply(e: Rise): RewriteResult[Rise] = e match {
       case f =>
         val x = identifier(freshName("η"))
         Success(lambda(x, DSL.app(f, x)))
@@ -44,8 +44,8 @@ package object rules {
     override def toString = "etaAbstraction"
   }
 
-  case object inferLift extends Strategy[Lift] {
-    def apply(e: Lift): RewriteResult[Lift] = Success(infer(e))
+  case object inferLift extends Strategy[Rise] {
+    def apply(e: Rise): RewriteResult[Rise] = Success(infer(e))
   }
 
 }

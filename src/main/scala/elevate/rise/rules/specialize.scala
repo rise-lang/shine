@@ -1,23 +1,23 @@
 package elevate.rise.rules
 
 import elevate.core.{Failure, RewriteResult, Strategy, Success}
-import elevate.rise.Lift
+import elevate.rise.Rise
 import lift.core._
 import lift.core.primitives._
 import lift.core.DSL._
 
 object specialize {
 
-  case object mapSeq extends Strategy[Lift] {
-    def apply(e: Lift): RewriteResult[Lift] = e match {
+  case object mapSeq extends Strategy[Rise] {
+    def apply(e: Rise): RewriteResult[Rise] = e match {
       case m@Map() => Success(MapSeq()(m.t))
       case _       => Failure(mapSeq)
     }
     override def toString = "mapSeq"
   }
 
-  case object mapGlobal extends Strategy[Lift] {
-    def apply(e: Lift): RewriteResult[Lift] = e match {
+  case object mapGlobal extends Strategy[Rise] {
+    def apply(e: Rise): RewriteResult[Rise] = e match {
       case m @ Map() => Success(lift.OpenCL.primitives.MapGlobal(0)(m.t))
       case _ => Failure(mapGlobal)
     }
@@ -25,8 +25,8 @@ object specialize {
   }
 
   // only transforms maps which contain ForeignFunctions or mapSeqs
-  case object mapSeqCompute extends Strategy[Lift] {
-    def apply(e: Lift): RewriteResult[Lift] = e match {
+  case object mapSeqCompute extends Strategy[Rise] {
+    def apply(e: Rise): RewriteResult[Rise] = e match {
       // (mapSeq λη1. (my_abs η1))
       case App(m @ Map(), l @ Lambda(_, App(ForeignFunction(_), _))) => Success(App(MapSeq()(m.t), l)(e.t))
       // (map λη1. ((mapSeq λη2. (my_abs η2)) η1))
@@ -36,24 +36,24 @@ object specialize {
     override def toString = "mapSeqCompute"
   }
 
-  case object reduceSeq extends Strategy[Lift] {
-    def apply(e: Lift): RewriteResult[Lift] = e match {
+  case object reduceSeq extends Strategy[Rise] {
+    def apply(e: Rise): RewriteResult[Rise] = e match {
       case Reduce() => Success(DSL.reduceSeq)
       case _ => Failure(reduceSeq)
     }
     override def toString = "reduceSeq"
   }
 
-  case object reduceSeqUnroll extends Strategy[Lift] {
-    def apply(e: Lift): RewriteResult[Lift] = e match {
+  case object reduceSeqUnroll extends Strategy[Rise] {
+    def apply(e: Rise): RewriteResult[Rise] = e match {
       case Reduce() | ReduceSeq() => Success(DSL.reduceSeqUnroll)
       case _ => Failure(reduceSeqUnroll)
     }
     override def toString = "reduceSeqUnroll"
   }
 
-  case class slideSeq(rot: SlideSeq.Rotate, write_dt1: Expr) extends Strategy[Lift] {
-    def apply(e: Lift): RewriteResult[Lift] = e match {
+  case class slideSeq(rot: SlideSeq.Rotate, write_dt1: Expr) extends Strategy[Rise] {
+    def apply(e: Rise): RewriteResult[Rise] = e match {
       case Slide() => Success(nFun(sz => nFun(sp =>
         DSL.slideSeq(rot)(sz)(sp)(write_dt1)(fun(x => x))
       )))

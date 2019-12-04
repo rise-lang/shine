@@ -241,7 +241,7 @@ class tiling extends test_util.Tests {
 
   // todo: this should use mapSeqCompute and CNF instead of RNF
   // ... but mapAcceptorTranslation for split is missing
-  val lower: Strategy[Lift] = LCNF `;` CNF `;` normalize.apply(specialize.mapSeq) `;` BENF
+  val lower: Strategy[Rise] = LCNF `;` CNF `;` normalize.apply(specialize.mapSeq) `;` BENF
 
   val identity = dtFun(t => foreignFun("identity", Seq("y"), "{ return y; }", t ->: t))
   val floatId: Expr = identity(float)

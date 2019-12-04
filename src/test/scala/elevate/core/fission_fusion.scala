@@ -4,7 +4,7 @@ import lift.core._
 import lift.core.DSL._
 import lift.core.primitives.Map
 import elevate.core.strategies.basic._
-import elevate.rise.Lift
+import elevate.rise.Rise
 import elevate.rise.rules._
 import elevate.rise.rules.algorithmic.{mapFusion, mapLastFission}
 import elevate.rise.strategies.algorithmic.{mapFirstFission, mapFullFission}
@@ -22,7 +22,7 @@ class fission_fusion extends test_util.Tests {
     }
   }
 
-  def check(a: Expr, fis: Strategy[Lift], b: Expr, fus: Strategy[Lift]): Unit = {
+  def check(a: Expr, fis: Strategy[Rise], b: Expr, fus: Strategy[Rise]): Unit = {
     val na = norm(a).get
     val nb = norm(b).get
     eq(fis(na).get, nb)

@@ -23,15 +23,15 @@ object algorithmic {
   // J: join
 
   // lift reduce
-  def liftReduce: Strategy[Lift] = `map(reduce(...)) -> reduce(map(...))`
-  case object `map(reduce(...)) -> reduce(map(...))` extends Strategy[Lift] {
+  def liftReduce: Strategy[Rise] = `map(reduce(...)) -> reduce(map(...))`
+  case object `map(reduce(...)) -> reduce(map(...))` extends Strategy[Rise] {
 
-   def apply(e: Lift): RewriteResult[Lift] = e match {
+   def apply(e: Rise): RewriteResult[Rise] = e match {
 
       case App(Map(), Lambda(mapVar, App(App(App(rx @ (Reduce() | ReduceSeq()), op),
            init :: (dt: DataType)), reduceArg))) :: FunType(ArrayType(size, ArrayType(_,_)), _) =>
 
-        def reduceMap(zippedMapArg : (Expr, Expr) => Expr, reduceArgFun: Expr): RewriteResult[Lift] = {
+        def reduceMap(zippedMapArg : (Expr, Expr) => Expr, reduceArgFun: Expr): RewriteResult[Rise] = {
           Success(
             rx(fun((acc, y) => // y :: 16.n793.(float,float), acc:: 16.32.(float)
               map(fun(x => DSL.app(DSL.app(op, fst(x)), snd(x)))) $ zippedMapArg(acc, y)
@@ -71,9 +71,9 @@ object algorithmic {
   }
 
   // divide & conquer
-  def  splitJoin(n: Nat): Strategy[Lift] = `*f -> S >> **f >> J`(n: Nat)
-  case class `*f -> S >> **f >> J`(n: Nat) extends Strategy[Lift] {
-    def apply(e: Lift): RewriteResult[Lift] = e match {
+  def  splitJoin(n: Nat): Strategy[Rise] = `*f -> S >> **f >> J`(n: Nat)
+  case class `*f -> S >> **f >> J`(n: Nat) extends Strategy[Rise] {
+    def apply(e: Rise): RewriteResult[Rise] = e match {
       case App(Map(), f) => Success(split(n) >> map(map(f)) >> join)
       case _ => Failure(splitJoin(n))
     }
@@ -81,9 +81,9 @@ object algorithmic {
   }
 
   // fusion / fission
-  def mapFusion: Strategy[Lift] = `*g >> *f -> *(g >> f)`
-  case object `*g >> *f -> *(g >> f)` extends Strategy[Lift] {
-    def apply(e: Lift): RewriteResult[Lift] = e match {
+  def mapFusion: Strategy[Rise] = `*g >> *f -> *(g >> f)`
+  case object `*g >> *f -> *(g >> f)` extends Strategy[Rise] {
+    def apply(e: Rise): RewriteResult[Rise] = e match {
       case App(App(Map(), f), App(App(Map(), g), arg)) =>
         Success(map(g >> f)(arg))
       case _ => Failure(mapFusion)
@@ -92,15 +92,15 @@ object algorithmic {
   }
 
   // fission of the last function to be applied inside a map
-  def mapLastFission: Strategy[Lift] = `*(g >> .. >> f) -> *(g >> ..) >> *f`
-  case object `*(g >> .. >> f) -> *(g >> ..) >> *f` extends Strategy[Lift] {
+  def mapLastFission: Strategy[Rise] = `*(g >> .. >> f) -> *(g >> ..) >> *f`
+  case object `*(g >> .. >> f) -> *(g >> ..) >> *f` extends Strategy[Rise] {
     // this is an example where we don't want to fission if gx == Identifier:
     // (map λe4. (((((zip: (K.float -> (K.float -> K.(float, float)))) (e3: K.float)): (K.float -> K.(float, float))) (e4: K.float)): K.(float, float)))
     // gx == (e4: K.float)
     // in this case we would return some form of map(id):
     // ((map λe4. (e4: K.float)) e743))
-    def apply(e: Lift): RewriteResult[Lift] = e match {
-      case y @ App(Map(), Lambda(x, App(f, gx))) if !contains[Lift](x).apply(f) && !isIdentifier(gx) =>
+    def apply(e: Rise): RewriteResult[Rise] = e match {
+      case y @ App(Map(), Lambda(x, App(f, gx))) if !contains[Rise](x).apply(f) && !isIdentifier(gx) =>
         Success(DSL.app(map, lambda(x, gx)) >> map(f))
       case _ => Failure(mapLastFission)
     }
@@ -109,35 +109,35 @@ object algorithmic {
 
   // identities
 
-  def idAfter: Strategy[Lift] = ` -> id`
-  case object ` -> id` extends Strategy[Lift] {
-    def apply(e: Lift): RewriteResult[Lift] = Success(e |> id)
+  def idAfter: Strategy[Rise] = ` -> id`
+  case object ` -> id` extends Strategy[Rise] {
+    def apply(e: Rise): RewriteResult[Rise] = Success(e |> id)
     override def toString = "idAfter"
   }
 
-  def liftId: Strategy[Lift] = `id -> *id`
-  case object `id -> *id` extends Strategy[Lift] {
-    def apply(e: Lift): RewriteResult[Lift] = e match {
+  def liftId: Strategy[Rise] = `id -> *id`
+  case object `id -> *id` extends Strategy[Rise] {
+    def apply(e: Rise): RewriteResult[Rise] = e match {
       case App(Id(), arg) => Success(DSL.app(map(id), arg))
       case _ => Failure(liftId)
     }
     override def toString = "liftId"
   }
 
-  def createTransposePair: Strategy[Lift] = `id -> T >> T`
-  case object `id -> T >> T` extends Strategy[Lift] {
-    def apply(e: Lift): RewriteResult[Lift] = e match {
+  def createTransposePair: Strategy[Rise] = `id -> T >> T`
+  case object `id -> T >> T` extends Strategy[Rise] {
+    def apply(e: Rise): RewriteResult[Rise] = e match {
       case App(Id(), arg) => Success(DSL.app(transpose >> transpose, arg))
       case _ => Failure(createTransposePair)
     }
     override def toString = "createTransposePair"
   }
 
-  def `_-> T >> T`: Strategy[Lift] = idAfter `;` createTransposePair
+  def `_-> T >> T`: Strategy[Rise] = idAfter `;` createTransposePair
 
-  def removeTransposePair: Strategy[Lift] = `T >> T -> `
-  case object `T >> T -> ` extends Strategy[Lift]  {
-    def apply(e: Lift): RewriteResult[Lift] = e match {
+  def removeTransposePair: Strategy[Rise] = `T >> T -> `
+  case object `T >> T -> ` extends Strategy[Rise]  {
+    def apply(e: Rise): RewriteResult[Rise] = e match {
       case App(Transpose(), App(Transpose(), x)) => Success(x)
       case _ => Failure(removeTransposePair)
     }
@@ -148,8 +148,8 @@ object algorithmic {
   import lift.OpenCL.primitives._
   import lift.OpenCL.DSL._
 
-  def slideSeqFusion: Strategy[Lift] = `slideSeq(f) >> map(g) -> slideSeq(f >> g)`
-  def `slideSeq(f) >> map(g) -> slideSeq(f >> g)`: Strategy[Lift] = {
+  def slideSeqFusion: Strategy[Rise] = `slideSeq(f) >> map(g) -> slideSeq(f >> g)`
+  def `slideSeq(f) >> map(g) -> slideSeq(f >> g)`: Strategy[Rise] = {
     case App(App(Map(), g), App(App(App(DepApp(DepApp(SlideSeq(rot), sz: Nat), sp: Nat), wr), f), e)) =>
       Success(slideSeq(rot)(sz)(sp)(wr)(f >> g)(e))
     case App(App(Map(), g), App(App(App(DepApp(DepApp(DepApp(OclSlideSeq(rot), a: AddressSpace), sz: Nat), sp: Nat), wr), f), e)) =>

@@ -3,12 +3,12 @@ package elevate.meta.rules
 import elevate.core.strategies.basic._
 import elevate.core.{Failure, RewriteResult, Strategy, Success}
 import elevate.meta.strategies.traversal._
-import elevate.rise.Lift
+import elevate.rise.Rise
 import elevate.rise.strategies.traversal.{argument, argumentOf, body, function}
 
 object fission {
 
-  type Elevate = Strategy[Lift]
+  type Elevate = Strategy[Rise]
 
   case object bodyFission extends Strategy[Elevate] {
     def apply(e: Elevate): RewriteResult[Elevate] = e match {

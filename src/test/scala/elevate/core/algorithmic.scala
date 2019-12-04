@@ -291,7 +291,7 @@ class algorithmic extends test_util.Tests {
     infer(typed)
 
     // these should be correct, it's just that the mapAcceptorTranslation for split is not defined yet
-    val lower: Strategy[Lift] = LCNF `;` CNF `;` normalize.apply(specialize.mapSeq <+ specialize.reduceSeq) `;` BENF
+    val lower: Strategy[Rise] = LCNF `;` CNF `;` normalize.apply(specialize.mapSeq <+ specialize.reduceSeq) `;` BENF
     println(gen.CProgram(infer(lower(typedUntyped).get)).code)
     assert(untyped == typed)
 
@@ -324,7 +324,7 @@ class algorithmic extends test_util.Tests {
 
       val rnf = (RNF `;` BENF)(mm).get
 
-    val lower: Strategy[Lift] = normalize.apply(specialize.mapSeq <+ specialize.reduceSeq)
+    val lower: Strategy[Rise] = normalize.apply(specialize.mapSeq <+ specialize.reduceSeq)
     println(gen.CProgram(infer(lower(rnf).get)).code)
 
    }

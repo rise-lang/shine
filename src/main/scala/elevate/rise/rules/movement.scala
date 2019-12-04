@@ -3,7 +3,7 @@ package elevate.rise.rules
 import elevate.core.strategies.predicate._
 import elevate.rise.strategies.traversal._
 import elevate.core.{Failure, RewriteResult, Strategy, Success}
-import elevate.rise.Lift
+import elevate.rise.Rise
 import lift.core._
 import lift.core.primitives._
 import lift.core.DSL._
@@ -20,9 +20,9 @@ object movement {
 
   // transpose
 
-  def mapMapFBeforeTranspose: Strategy[Lift] = `**f >> T -> T >> **f`
-  case object `**f >> T -> T >> **f` extends Strategy[Lift] {
-    def apply(e: Lift): RewriteResult[Lift] = e match {
+  def mapMapFBeforeTranspose: Strategy[Rise] = `**f >> T -> T >> **f`
+  case object `**f >> T -> T >> **f` extends Strategy[Rise] {
+    def apply(e: Rise): RewriteResult[Rise] = e match {
       case App(
       Transpose(),
       App(App(Map(), App(Map(), f)), y)) =>
@@ -35,16 +35,16 @@ object movement {
       f, n61))), n71))),
       arg
       )
-      ) if contains[Lift](n6).apply(n61) && contains[Lift](n7).apply(n71) =>
+      ) if contains[Rise](n6).apply(n61) && contains[Rise](n7).apply(n71) =>
         Success(arg |> transpose |> mapMapF)
       case _ => Failure(mapMapFBeforeTranspose)
     }
     override def toString = "mapMapFBeforeTranspose"
   }
 
-  def transposeBeforeMapMapF: Strategy[Lift] = `T >> **f -> **f >> T`
-  case object `T >> **f -> **f >> T` extends Strategy[Lift] {
-    def apply(e: Lift): RewriteResult[Lift] = e match {
+  def transposeBeforeMapMapF: Strategy[Rise] = `T >> **f -> **f >> T`
+  case object `T >> **f -> **f >> T` extends Strategy[Rise] {
+    def apply(e: Rise): RewriteResult[Rise] = e match {
       case App(
       App(Map() , App(Map(), f)),
       App(Transpose() , y)) =>
@@ -62,9 +62,9 @@ object movement {
     case _ => false
   }
 
-  def slideBeforeMapMapF: Strategy[Lift] = `S >> **f -> *f >> S`
-  case object `S >> **f -> *f >> S` extends Strategy[Lift] {
-    def apply(e: Lift): RewriteResult[Lift] = e match {
+  def slideBeforeMapMapF: Strategy[Rise] = `S >> **f -> *f >> S`
+  case object `S >> **f -> *f >> S` extends Strategy[Rise] {
+    def apply(e: Rise): RewriteResult[Rise] = e match {
       case App(
       App(Map(), App(Map(), f)),
       App(s, y)) if isSplitOrSlide(s) =>
@@ -74,9 +74,9 @@ object movement {
     override def toString = "slideBeforeMapMapF"
   }
 
-  def mapFBeforeSlide: Strategy[Lift] = `*f >> S -> S >> **f`
-  case object `*f >> S -> S >> **f` extends Strategy[Lift] {
-    def apply(e: Lift): RewriteResult[Lift] = e match {
+  def mapFBeforeSlide: Strategy[Rise] = `*f >> S -> S >> **f`
+  case object `*f >> S -> S >> **f` extends Strategy[Rise] {
+    def apply(e: Rise): RewriteResult[Rise] = e match {
       case App(
       s,
       App(App(Map(), f), y)) if isSplitOrSlide(s) =>
@@ -88,9 +88,9 @@ object movement {
 
   // join
 
-  def joinBeforeMapF: Strategy[Lift] = `J >> *f -> **f >> J`
-  case object `J >> *f -> **f >> J` extends Strategy[Lift] {
-    def apply(e: Lift): RewriteResult[Lift] = e match {
+  def joinBeforeMapF: Strategy[Rise] = `J >> *f -> **f >> J`
+  case object `J >> *f -> **f >> J` extends Strategy[Rise] {
+    def apply(e: Rise): RewriteResult[Rise] = e match {
       case App(
       App(Map(), f),
       App(Join(), y)
@@ -101,9 +101,9 @@ object movement {
     override def toString = "joinBeforeMapF"
   }
 
-  def mapMapFBeforeJoin: Strategy[Lift] = `**f >> J -> J >> *f`
-  case object `**f >> J -> J >> *f` extends Strategy[Lift] {
-    def apply(e: Lift): RewriteResult[Lift] = e match {
+  def mapMapFBeforeJoin: Strategy[Rise] = `**f >> J -> J >> *f`
+  case object `**f >> J -> J >> *f` extends Strategy[Rise] {
+    def apply(e: Rise): RewriteResult[Rise] = e match {
       case App(
       Join(),
       App(App(map, App(Map(), f)), y)
@@ -117,9 +117,9 @@ object movement {
   // special-cases
   // slide + transpose
 
-  def transposeBeforeSlide: Strategy[Lift] = `T >> S -> *S >> T >> *T`
-  case object `T >> S -> *S >> T >> *T` extends Strategy[Lift] {
-    def apply(e: Lift): RewriteResult[Lift] = e match {
+  def transposeBeforeSlide: Strategy[Rise] = `T >> S -> *S >> T >> *T`
+  case object `T >> S -> *S >> T >> *T` extends Strategy[Rise] {
+    def apply(e: Rise): RewriteResult[Rise] = e match {
       case App(
       s,
       App(Transpose(), y)
@@ -130,9 +130,9 @@ object movement {
     override def toString = "transposeBeforeSlide"
   }
 
-  def transposeBeforeMapSlide: Strategy[Lift] = `T >> *S -> S >> *T >> T`
-  case object `T >> *S -> S >> *T >> T` extends Strategy[Lift] {
-    def apply(e: Lift): RewriteResult[Lift] = e match {
+  def transposeBeforeMapSlide: Strategy[Rise] = `T >> *S -> S >> *T >> T`
+  case object `T >> *S -> S >> *T >> T` extends Strategy[Rise] {
+    def apply(e: Rise): RewriteResult[Rise] = e match {
       case App(
       App(Map(), s),
       App(Transpose(), y)
@@ -143,9 +143,9 @@ object movement {
     override def toString = "transposeBeforeMapSlide"
   }
 
-  def mapSlideBeforeTranspose: Strategy[Lift] = `*S >> T -> T >> S >> *T`
-  case object `*S >> T -> T >> S >> *T` extends Strategy[Lift] {
-    def apply(e: Lift): RewriteResult[Lift] = e match {
+  def mapSlideBeforeTranspose: Strategy[Rise] = `*S >> T -> T >> S >> *T`
+  case object `*S >> T -> T >> S >> *T` extends Strategy[Rise] {
+    def apply(e: Rise): RewriteResult[Rise] = e match {
       case App(
       Transpose(),
       App(App(Map(), s), y)
@@ -158,9 +158,9 @@ object movement {
 
   // transpose + join
 
-  def joinBeforeTranspose: Strategy[Lift] = `J >> T -> *T >> T >> *J`
-  case object `J >> T -> *T >> T >> *J` extends Strategy[Lift] {
-    def apply(e: Lift): RewriteResult[Lift] = e match {
+  def joinBeforeTranspose: Strategy[Rise] = `J >> T -> *T >> T >> *J`
+  case object `J >> T -> *T >> T >> *J` extends Strategy[Rise] {
+    def apply(e: Rise): RewriteResult[Rise] = e match {
       case App(
       Transpose(),
       App(Join(), y)
@@ -171,9 +171,9 @@ object movement {
     override def toString = "joinBeforeTranspose"
   }
 
-  def transposeBeforeMapJoin: Strategy[Lift] = `T >> *J -> *T >> J >> T`
-  case object `T >> *J -> *T >> J >> T` extends Strategy[Lift] {
-    def apply(e: Lift): RewriteResult[Lift] = e match {
+  def transposeBeforeMapJoin: Strategy[Rise] = `T >> *J -> *T >> J >> T`
+  case object `T >> *J -> *T >> J >> T` extends Strategy[Rise] {
+    def apply(e: Rise): RewriteResult[Rise] = e match {
       case App(
       App(Map(), Join()),
       App(Transpose(), y)
@@ -184,9 +184,9 @@ object movement {
     override def toString = "transposeBeforeMapJoin"
   }
 
-  def mapTransposeBeforeJoin: Strategy[Lift] = `*T >> J -> T >> *J >> T`
-  case object `*T >> J -> T >> *J >> T` extends Strategy[Lift] {
-    def apply(e: Lift): RewriteResult[Lift] = e match {
+  def mapTransposeBeforeJoin: Strategy[Rise] = `*T >> J -> T >> *J >> T`
+  case object `*T >> J -> T >> *J >> T` extends Strategy[Rise] {
+    def apply(e: Rise): RewriteResult[Rise] = e match {
       case App(
       Join(),
       App(App(Map(), Transpose()), y)
@@ -197,9 +197,9 @@ object movement {
     override def toString = "mapTransposeBeforeJoin"
   }
 
-  def mapJoinBeforeTranspose: Strategy[Lift] = `*J >> T -> T >> *T >> J`
-  case object `*J >> T -> T >> *T >> J` extends Strategy[Lift] {
-    def apply(e: Lift): RewriteResult[Lift] = e match {
+  def mapJoinBeforeTranspose: Strategy[Rise] = `*J >> T -> T >> *T >> J`
+  case object `*J >> T -> T >> *T >> J` extends Strategy[Rise] {
+    def apply(e: Rise): RewriteResult[Rise] = e match {
       case App(
       Transpose(),
       App(App(Map(), Join()), y)
@@ -212,9 +212,9 @@ object movement {
 
   // join + join
 
-  def joinBeforeJoin: Strategy[Lift] = `J >> J -> *J >> J`
-  case object `J >> J -> *J >> J` extends Strategy[Lift] {
-    def apply(e: Lift): RewriteResult[Lift] = e match {
+  def joinBeforeJoin: Strategy[Rise] = `J >> J -> *J >> J`
+  case object `J >> J -> *J >> J` extends Strategy[Rise] {
+    def apply(e: Rise): RewriteResult[Rise] = e match {
       case App(
       Join(),
       App(Join(), y)
@@ -225,9 +225,9 @@ object movement {
     override def toString = "joinBeforeJoin"
   }
 
-  def mapJoinBeforeJoin: Strategy[Lift] = `*J >> J -> J >> J`
-  case object `*J >> J -> J >> J` extends Strategy[Lift] {
-    def apply(e: Lift): RewriteResult[Lift] = e match {
+  def mapJoinBeforeJoin: Strategy[Rise] = `*J >> J -> J >> J`
+  case object `*J >> J -> J >> J` extends Strategy[Rise] {
+    def apply(e: Rise): RewriteResult[Rise] = e match {
       case App(
       Join(),
       App(App(Map(), Join()), y)
@@ -240,9 +240,9 @@ object movement {
 
   // split + slide
 
-  def slideBeforeSplit: Strategy[Lift] = `slide(n)(s) >> split(k) -> slide(k+n-s)(k) >> map(slide(n)(s))`
-  case object `slide(n)(s) >> split(k) -> slide(k+n-s)(k) >> map(slide(n)(s))` extends Strategy[Lift] {
-    def apply(e: Lift): RewriteResult[Lift] = e match {
+  def slideBeforeSplit: Strategy[Rise] = `slide(n)(s) >> split(k) -> slide(k+n-s)(k) >> map(slide(n)(s))`
+  case object `slide(n)(s) >> split(k) -> slide(k+n-s)(k) >> map(slide(n)(s))` extends Strategy[Rise] {
+    def apply(e: Rise): RewriteResult[Rise] = e match {
       case App(
       DepApp(Split(), k: Nat),
       App(DepApp(DepApp(Slide(), n: Nat), s: Nat), y)

@@ -1,18 +1,18 @@
 package elevate
 
-import _root_.lift.core._
-import _root_.lift.core.types._
+import lift.core._
+import lift.core.types._
 import elevate.core.strategies.debug.peek
-import elevate.core.{RewriteResult, Strategy, Success}
+import elevate.core.Strategy
 
 package object rise {
 
-  type Lift = Expr
+  type Rise = Expr
 
-  def printExpr : Strategy[Lift] = peek[Lift](p => println(s"${toEvaluableString(p)}"))
-  def printExpr(msg: String) : Strategy[Lift] = peek[Lift](p => println(s"$msg \n${toEvaluableString(p)}"))
+  def printExpr : Strategy[Rise] = peek[Rise](p => println(s"${toEvaluableString(p)}"))
+  def printExpr(msg: String) : Strategy[Rise] = peek[Rise](p => println(s"$msg \n${toEvaluableString(p)}"))
 
-  def toEvaluableString(e: Lift): String = {
+  def toEvaluableString(e: Rise): String = {
     e match {
       case Identifier(name) => s"""Identifier("id$name")""" // id prefix prevents name clashes with freshName
       case Lambda(x, e) => s"Lambda(${toEvaluableString(x)}, ${toEvaluableString(e)})"
