@@ -47,7 +47,7 @@ object Primitive {
                   ${makeChain(TermName("p"), makeArgs(params.asInstanceOf[Seq[Tree]]))} && (${TermName("p")}.t =~= t)
                 case _ => false
               }
-              override def toString: String = ${Literal(Constant(makeStringName(name.toString())))}
+              override val name: String = ${Literal(Constant(makeStringName(name.toString())))}
               override def setType(t: Type): $name =
                 ${name.asInstanceOf[c.TypeName].toTermName}(..${makeArgs(params.asInstanceOf[Seq[Tree]])})(t)
               ..$body
