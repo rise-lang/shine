@@ -3,6 +3,20 @@ package elevate.core.strategies
 import elevate.core._
 import elevate.core.strategies.traversal.oncetd
 
+/* Inspired by:
+
+@inproceedings{DBLP:conf/icfp/VisserBT98,
+  author    = {Eelco Visser and
+               Zine{-}El{-}Abidine Benaissa and
+               Andrew P. Tolmach},
+  title     = {Building Program Optimizers with Rewriting Strategies},
+  booktitle = {{ICFP}},
+  pages     = {13--26},
+  publisher = {{ACM}},
+  year      = {1998}
+}
+
+ */
 object basic {
 
   // Naive Strategies

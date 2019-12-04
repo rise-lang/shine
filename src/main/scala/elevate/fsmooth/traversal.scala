@@ -2,11 +2,12 @@ package elevate.fsmooth
 
 import elevate.core._
 import elevate.core.strategies.predicate._
-import _root_.FSmooth._
+import FSmooth._
 
 object traversal {
 
   implicit object FSmoothTraversable extends elevate.core.strategies.Traversable[FSmooth] {
+
     override def all: Strategy[FSmooth] => Strategy[FSmooth] =  s => {
       case Abstraction(i, body, t) => s(body).mapSuccess(Abstraction(i, _, t))
       case i:Variable => Success(i)
@@ -39,9 +40,9 @@ object traversal {
     override def one: Strategy[FSmooth] => Strategy[FSmooth] = oneHandlingState(false)
     override def oneUsingState: Strategy[FSmooth] => Strategy[FSmooth] = oneHandlingState(true)
 
-    def oneHandlingState: Boolean => Strategy[FSmooth] => Strategy[FSmooth] = carryOverState => s => {
+    private def oneHandlingState: Boolean => Strategy[FSmooth] => Strategy[FSmooth] = carryOverState => s => {
       case Abstraction(i, body, t) => s(body).mapSuccess(Abstraction(i, _, t))
-      case i:Variable => Failure(s)
+      case _:Variable => Failure(s)
 
       case Application(f, args, t) => s(f) match {
         case Success(f: FSmooth) => Success(Application(s(f).get, args, t))
@@ -63,6 +64,7 @@ object traversal {
           )
         }._2
       }
+
       case Let(x, value, body, t) => s(value) match {
         case Success(f: FSmooth) => Success(Let(x, f, body, t))
         case Failure(state) => if (carryOverState)
@@ -81,13 +83,13 @@ object traversal {
               s(elseBranch).mapSuccess(Conditional(cond, thenBranch, _, t))
           }
       }
-      case sv:ScalarValue => Failure(s)
-      case i:IndexValue => Failure(s)
-      case c:CardinalityValue => Failure(s)
-      case c:Constants => Failure(s)
+
+      case _:ScalarValue => Failure(s)
+      case _:IndexValue => Failure(s)
+      case _:CardinalityValue => Failure(s)
+      case _:Constants => Failure(s)
     }
 
-    // todo implement
     override def some: Strategy[FSmooth] => Strategy[FSmooth] = ???
   }
 }
