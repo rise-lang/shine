@@ -32,3 +32,5 @@ case class Failure[P](s: Strategy[P]) extends RewriteResult[P] {
   override def mapFailure(f: Strategy[P] => Strategy[P]): RewriteResult[P] = Failure(f(s))
   override def flatMapFailure(f: Strategy[P] => RewriteResult[P]): RewriteResult[P] = f(s)
 }
+
+case class NotApplicable[P](s: Strategy[P]) extends Exception

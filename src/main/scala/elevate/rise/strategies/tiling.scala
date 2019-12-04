@@ -2,8 +2,7 @@ package elevate.rise.strategies
 
 import elevate.core.Strategy
 import elevate.core.strategies.basic._
-import elevate.core.strategies.traversal.oncetd
-import elevate.rise.{Rise, dotPrinter, exprToDot}
+import elevate.rise.Rise
 import elevate.rise.rules.algorithmic._
 import elevate.rise.rules.movement._
 import elevate.rise.strategies.traversal._

@@ -1,6 +1,5 @@
 package elevate.core
 
-import elevate.core.strategies.basic.{debug, id}
 import elevate.rise.Rise
 import elevate.rise.strategies.traversal.body
 import elevate.rise.strategies.normalForm._
