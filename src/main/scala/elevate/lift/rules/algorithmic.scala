@@ -119,7 +119,7 @@ object algorithmic {
   def liftId: Strategy[Lift] = `id -> *id`
   case object `id -> *id` extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case App(Id(), arg) => Success(app(map(id), arg).matches(e.t))
+      case App(i @ Id(), arg) => Success(app(map(i), arg).matches(e.t))
       case _ => Failure(liftId)
     }
     override def toString = "liftId"
