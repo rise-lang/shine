@@ -33,11 +33,12 @@ package object rules {
   }
 
   case object etaAbstraction extends Strategy[Rise] {
-    def apply(f: Rise): RewriteResult[Rise] = f.t match {
-      case FunType(_,_) =>
+    // todo check that f is funtype
+    def apply(f: Rise): RewriteResult[Rise] = {//f.t match {
+      //case FunType(_,_) =>
         val x = identifier(freshName("η"))
         Success(lambda(x, DSL.app(f, x)))
-      case _ => Failure(etaAbstraction)
+      //case _ => Failure(etaAbstraction)
     }
     override def toString = "etaAbstraction"
   }

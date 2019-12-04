@@ -14,7 +14,7 @@ object debug {
     override def toString: String = "debug"
   }
 
-  case class println[P](msg: String) extends Strategy[P] {
+  case class print[P](msg: String) extends Strategy[P] {
     def apply(e: P): RewriteResult[P] = peek[P](_ => println(msg))(e)
     override def toString: String = "println"
   }

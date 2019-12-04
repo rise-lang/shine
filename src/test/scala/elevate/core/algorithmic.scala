@@ -2,12 +2,12 @@ package elevate.core
 
 import elevate.core.strategies.traversal._
 import elevate.core.strategies.basic._
+import elevate.core.strategies.debug._
 import elevate.rise.rules.traversal._
 import elevate.rise.strategies.tiling._
 import elevate.util._
 import util.gen
 import lift.core.DSL._
-import lift.core.dotPrinter._
 import lift.core.{Expr, NatIdentifier}
 import lift.core.types.{ArrayType, IndexType, NatKind, float, infer}
 import elevate.rise._
@@ -55,22 +55,18 @@ class algorithmic extends test_util.Tests {
       fun(ArrayType(M, ArrayType(N, float)))(i =>
         map(reduce(fun(x => fun(a => x + a)))(l(0.0f))) $ i))))))
 
-    exprToDot("test", mapReduce)
-
     val reduceMap =
       depLambda[NatKind](M, depLambda[NatKind](N,
         fun(ArrayType(M, ArrayType(N, float)))(i =>
           reduce(fun((acc, y) =>
             map(addTuple) $ zip(acc, y)))(generate(fun(IndexType(M) ->: float)(_ => l(0.0f)))) $ transpose(i))))
 
-    println("hi")
-    val rewrite = body(body(liftReduce))(mapReduce).get
-    println("ho")
+    val rewrite = body(body(body(function(liftReduce))))(mapReduce).get
 
     infer(mapReduce)
 
-    val typedGold = infer(reduceMap)
-    val typedRewrite = infer(rewrite)
+    val typedGold = infer(LCNF(reduceMap))
+    val typedRewrite = infer(LCNF(rewrite))
 
     assert(typedRewrite == typedGold)
   }
@@ -80,13 +76,13 @@ class algorithmic extends test_util.Tests {
     val N = NatIdentifier("N")
     val K = NatIdentifier("K")
 
-    val mm = LCNF(infer(depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
+    val mm = infer(LCNF(infer(depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
       fun(ArrayType(M, ArrayType(K, float)))(a =>
         fun(ArrayType(K, ArrayType(N, float)))(b =>
           map(fun(ak =>
             map(fun(bk =>
               (reduceSeq(fun((acc, y) => acc + (y._1 * y._2)), l(0.0f))) $
-                zip(ak, bk))) $ transpose(b) )) $ a))))))).get
+                zip(ak, bk))) $ transpose(b) )) $ a))))))))
 
     def goldMKN(reduceFun: Expr): Expr = {
       depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
@@ -133,8 +129,6 @@ class algorithmic extends test_util.Tests {
     //assert(typedRewrite == typedGold)
     //val gold = normalize(untype)(typedGold).get
     //val rewrite = normalize(untype)(typedGold).get
-
-
   }
 
   // FIXME

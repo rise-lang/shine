@@ -263,7 +263,7 @@ object movement {
   case object liftReduce extends Strategy[Rise] {
     def apply(e: Rise): RewriteResult[Rise] = e match {
 
-      case App(Map(), Lambda(mapVar, App(App(App(rx @ (Reduce() | ReduceSeq()), op),
+      case App(Map(), Lambda(mapVar, App(App(App(rx@(Reduce() | ReduceSeq()), op),
       init :: (dt: DataType)), reduceArg))) :: FunType(ArrayType(size, ArrayType(_,_)), _) =>
 
         def reduceMap(zippedMapArg : (Expr, Expr) => Expr, reduceArgFun: Expr): RewriteResult[Rise] = {
