@@ -10,8 +10,8 @@ object specialize {
 
   case object mapSeq extends Strategy[Lift] {
     def apply(e: Lift): RewriteResult[Lift] = e match {
-      case m @ Map() => Success(MapSeq()(m.t))
-      case _ => Failure(mapSeq)
+      case m@Map() => Success(MapSeq()(m.t))
+      case _       => Failure(mapSeq)
     }
     override def toString = "mapSeq"
   }

@@ -2,7 +2,7 @@ package elevate
 
 import _root_.lift.core._
 import _root_.lift.core.types._
-import elevate.core.strategies.basic.peek
+import elevate.core.strategies.debug.peek
 import elevate.core.{RewriteResult, Strategy, Success}
 
 package object lift {

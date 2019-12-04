@@ -1,28 +1,20 @@
 package elevate.core
 
-import java.io.{File, PrintWriter}
-
-import elevate.core.strategies.basic
 import elevate.lift.strategies.traversal._
-import elevate.meta.strategies.traversal._
 import elevate.lift.strategies.normalForm._
 import elevate.meta.rules.fission._
 import elevate.lift.strategies.tiling._
-import elevate.lift.rules.movement._
 import elevate.core.strategies.traversal._
 import elevate.core.strategies.basic._
 import elevate.lift._
 import elevate.util._
 import elevate.lift.rules._
-import elevate.lift.strategies.util._
 import elevate.lift.rules.algorithmic._
 import util.gen
 import lift.core.DSL._
 import lift.core._
-import lift.core.primitives._
-import lift.core.semantics.FloatData
 import lift.core.types.{ArrayType, NatKind, float, infer}
-import org.scalatest.Ignore
+import idealised.C.Program.programToString
 
 import scala.language.implicitConversions
 
@@ -50,8 +42,8 @@ class tiling extends test_util.Tests {
   /// TILING ONE LOOP
 
   test("tileND - tile one loop 1D") {
-    println(body(body(tileND(1)(tileSize)) `;` BENF)(λ(i => λ(f => *(f) $ i))))
-    println(λ(i => λ(f => (J o **(f) o S) $ i)))
+    println(body(body(tileND(1)(tileSize)) `;` BENF)(λ(i => λ(f => *(f) $ i))).toString)
+    println(λ(i => λ(f => (J o **(f) o S) $ i)).toString)
     assert(betaEtaEquals(
       body(body(tileND(1)(tileSize)))(λ(i => λ(f => *(f) $ i))),
       λ(i => λ(f => (J o **(f) o S) $ i))
@@ -249,7 +241,7 @@ class tiling extends test_util.Tests {
 
   // todo: this should use mapSeqCompute and CNF instead of RNF
   // ... but mapAcceptorTranslation for split is missing
-  val lower: Strategy[Lift] = LCNF `;` CNF `;` normalize(specialize.mapSeq) `;` BENF
+  val lower: Strategy[Lift] = LCNF `;` CNF `;` normalize.apply(specialize.mapSeq) `;` BENF
 
   val identity = dtFun(t => foreignFun("identity", Seq("y"), "{ return y; }", t ->: t))
   val floatId: Expr = identity(float)

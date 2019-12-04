@@ -6,6 +6,7 @@ import idealised.DPIA.Types.{AccType, ExpType}
 
 import scala.language.implicitConversions
 
+
 case class Program(decls: Seq[C.AST.Decl],
                    function: C.AST.FunDecl,
                    outputParam: Identifier[AccType],
@@ -14,7 +15,8 @@ case class Program(decls: Seq[C.AST.Decl],
   def code: String = decls.map(C.AST.Printer(_)).mkString("\n") +
     "\n\n" +
     C.AST.Printer(function)
+}
 
+object Program {
   implicit def programToString(p: Program): String = p.code
-
 }

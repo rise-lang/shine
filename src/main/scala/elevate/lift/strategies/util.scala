@@ -1,7 +1,7 @@
 package elevate.lift.strategies
 
-import elevate.core.strategies.basic.peek
 import elevate.core.Strategy
+import elevate.core.strategies.debug.peek
 import elevate.lift.Lift
 import lift.core.types.infer
 
