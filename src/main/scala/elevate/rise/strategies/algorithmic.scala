@@ -1,8 +1,8 @@
-package elevate.lift.strategies
+package elevate.rise.strategies
 
 import com.github.ghik.silencer.silent
 import elevate.core.{Failure, RewriteResult, Strategy, Success}
-import elevate.lift.Lift
+import elevate.rise.Lift
 import lift.core.DSL._
 import lift.core._
 

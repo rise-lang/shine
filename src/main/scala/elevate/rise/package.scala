@@ -5,7 +5,7 @@ import _root_.lift.core.types._
 import elevate.core.strategies.debug.peek
 import elevate.core.{RewriteResult, Strategy, Success}
 
-package object lift {
+package object rise {
 
   type Lift = Expr
 

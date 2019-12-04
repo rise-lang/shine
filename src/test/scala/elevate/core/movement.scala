@@ -1,13 +1,13 @@
 package elevate.core
 
-import elevate.lift.rules.movement._
+import elevate.rise.rules.movement._
 import elevate.core.strategies.traversal._
 import elevate.core.strategies.predicate._
-import elevate.lift.strategies.traversal._
+import elevate.rise.strategies.traversal._
 import elevate.core.strategies.basic._
-import elevate.lift.strategies.normalForm._
+import elevate.rise.strategies.normalForm._
 import elevate.util._
-import elevate.lift._
+import elevate.rise._
 import lift.core._
 import lift.core.primitives._
 import lift.core.DSL._

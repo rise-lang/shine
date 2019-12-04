@@ -2,19 +2,19 @@ package elevate.core
 
 import elevate.core.strategies.traversal._
 import elevate.core.strategies.basic._
-import elevate.lift.strategies.traversal._
-import elevate.lift.strategies.tiling._
+import elevate.rise.strategies.traversal._
+import elevate.rise.strategies.tiling._
 import elevate.util._
 import util.gen
 import lift.core.DSL._
 import lift.core.{Expr, NatIdentifier}
 import lift.core.types.{ArrayType, IndexType, NatKind, float, infer}
-import elevate.lift._
-import elevate.lift.strategies.normalForm._
-import elevate.lift.strategies.traversal._
-import elevate.lift.rules.algorithmic._
-import elevate.lift.rules.{inferLift, specialize}
-import elevate.lift.strategies.tiling.{loopInterchange, loopInterchangeAtLevel}
+import elevate.rise._
+import elevate.rise.strategies.normalForm._
+import elevate.rise.strategies.traversal._
+import elevate.rise.rules.algorithmic._
+import elevate.rise.rules.{inferLift, specialize}
+import elevate.rise.strategies.tiling.{loopInterchange, loopInterchangeAtLevel}
 
 import scala.language.implicitConversions
 

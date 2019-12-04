@@ -1,4 +1,4 @@
-package elevate.lift
+package elevate.rise
 
 import lift.core._
 import lift.core.types._

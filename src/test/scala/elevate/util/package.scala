@@ -1,6 +1,6 @@
 package elevate
 
-import elevate.lift.strategies.normalForm.BENF
+import elevate.rise.strategies.normalForm.BENF
 import _root_.lift.core.primitives._
 import _root_.lift.core._
 import _root_.lift.core.DSL._

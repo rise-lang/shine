@@ -1,17 +1,17 @@
-package elevate.lift.rules
+package elevate.rise.rules
 
 import elevate.core.strategies.basic.seq
 import elevate.core._
 import elevate.core.strategies.predicate._
-import elevate.lift.strategies.predicate._
+import elevate.rise.strategies.predicate._
 import elevate.core.strategies.traversal._
-import elevate.lift.strategies.traversal._
-import elevate.lift._
+import elevate.rise.strategies.traversal._
+import elevate.rise._
 import lift.core._
 import lift.core.DSL._
 import lift.core.primitives._
 import lift.core.types._
-import elevate.lift.extractors._
+import elevate.rise.extractors._
 
 //noinspection MutatorLikeMethodIsParameterless
 object algorithmic {

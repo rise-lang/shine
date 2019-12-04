@@ -1,12 +1,12 @@
-package elevate.lift.strategies
+package elevate.rise.strategies
 
 import elevate.core.{RewriteResult, Strategy}
 import elevate.core.strategies.basic._
-import elevate.lift.strategies.traversal._
-import elevate.lift.Lift
-import elevate.lift.strategies.predicate._
-import elevate.lift.rules._
-import elevate.lift.rules.algorithmic._
+import elevate.rise.strategies.traversal._
+import elevate.rise.Lift
+import elevate.rise.strategies.predicate._
+import elevate.rise.rules._
+import elevate.rise.rules.algorithmic._
 import lift.core.DSL._
 
 

@@ -1,7 +1,7 @@
-package elevate.lift.strategies
+package elevate.rise.strategies
 
 import elevate.core.{Failure, RewriteResult, Strategy, Success}
-import elevate.lift.Lift
+import elevate.rise.Lift
 import lift.core.{Identifier, Lambda}
 
 import scala.language.implicitConversions

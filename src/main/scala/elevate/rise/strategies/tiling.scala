@@ -1,13 +1,13 @@
-package elevate.lift.strategies
+package elevate.rise.strategies
 
 import elevate.core.Strategy
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal.oncetd
-import elevate.lift.{Lift, dotPrinter, exprToDot}
-import elevate.lift.rules.algorithmic._
-import elevate.lift.rules.movement._
-import elevate.lift.strategies.traversal._
-import elevate.lift.strategies.normalForm._
+import elevate.rise.{Lift, dotPrinter, exprToDot}
+import elevate.rise.rules.algorithmic._
+import elevate.rise.rules.movement._
+import elevate.rise.strategies.traversal._
+import elevate.rise.strategies.normalForm._
 
 object tiling {
 

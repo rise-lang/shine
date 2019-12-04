@@ -1,8 +1,8 @@
 package elevate.core
 
-import elevate.lift.rules.movement._
+import elevate.rise.rules.movement._
 import elevate.core.strategies.traversal._
-import elevate.lift.strategies.traversal._
+import elevate.rise.strategies.traversal._
 import elevate.util._
 import lift.core.Expr
 import lift.core.DSL._

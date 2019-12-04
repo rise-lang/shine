@@ -7,15 +7,15 @@ import lift.core.primitives._
 import lift.core.DSL._
 import lift.core.HighLevelConstructs._
 import elevate.core._
-import elevate.lift.rules._
-import elevate.lift.rules.algorithmic._
-import elevate.lift.rules.movement._
+import elevate.rise.rules._
+import elevate.rise.rules.algorithmic._
+import elevate.rise.rules.movement._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
-import elevate.lift.Lift
-import elevate.lift.strategies.normalForm._
-import elevate.lift.strategies.algorithmic._
-import elevate.lift.strategies.traversal._
+import elevate.rise.Lift
+import elevate.rise.strategies.normalForm._
+import elevate.rise.strategies.algorithmic._
+import elevate.rise.strategies.traversal._
 
 class separableConvolution2DRewrite extends test_util.Tests {
   private val idE: Expr = fun(x => x)

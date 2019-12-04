@@ -1,14 +1,14 @@
-package elevate.lift.strategies
+package elevate.rise.strategies
 
 import elevate.core._
 import lift.core._
 import lift.core.DSL._
-import elevate.lift.rules.algorithmic._
+import elevate.rise.rules.algorithmic._
 import elevate.core.strategies.traversal._
 import elevate.core.strategies.basic._
-import elevate.lift.Lift
-import elevate.lift.strategies.algorithmic._
-import elevate.lift.strategies.normalForm._
+import elevate.rise.Lift
+import elevate.rise.strategies.algorithmic._
+import elevate.rise.strategies.normalForm._
 import lift.core.types._
 
 object traversal {

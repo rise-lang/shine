@@ -2,10 +2,10 @@ package elevate.meta.strategies
 
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
-import elevate.lift.strategies.traversal._
+import elevate.rise.strategies.traversal._
 import elevate.meta.strategies.traversal._
 import elevate.core.{Failure, Strategy, Success}
-import elevate.lift.Lift
+import elevate.rise.Lift
 
 object traversal {
 

@@ -1,8 +1,8 @@
-package elevate.lift.strategies
+package elevate.rise.strategies
 
 import elevate.core.Strategy
 import elevate.core.strategies.debug.peek
-import elevate.lift.Lift
+import elevate.rise.Lift
 import lift.core.types.infer
 
 object util {

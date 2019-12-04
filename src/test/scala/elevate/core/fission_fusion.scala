@@ -4,13 +4,13 @@ import lift.core._
 import lift.core.DSL._
 import lift.core.primitives.Map
 import elevate.core.strategies.basic._
-import elevate.lift.Lift
-import elevate.lift.rules._
-import elevate.lift.rules.algorithmic.{mapFusion, mapLastFission}
-import elevate.lift.strategies.algorithmic.{mapFirstFission, mapFullFission}
+import elevate.rise.Lift
+import elevate.rise.rules._
+import elevate.rise.rules.algorithmic.{mapFusion, mapLastFission}
+import elevate.rise.strategies.algorithmic.{mapFirstFission, mapFullFission}
 import strategies.traversal._
-import elevate.lift.strategies.normalForm._
-import elevate.lift.strategies.traversal._
+import elevate.rise.strategies.normalForm._
+import elevate.rise.strategies.traversal._
 
 
 class fission_fusion extends test_util.Tests {

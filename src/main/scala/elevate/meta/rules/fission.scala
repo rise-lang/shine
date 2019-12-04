@@ -3,8 +3,8 @@ package elevate.meta.rules
 import elevate.core.strategies.basic._
 import elevate.core.{Failure, RewriteResult, Strategy, Success}
 import elevate.meta.strategies.traversal._
-import elevate.lift.Lift
-import elevate.lift.strategies.traversal.{argument, argumentOf, body, function}
+import elevate.rise.Lift
+import elevate.rise.strategies.traversal.{argument, argumentOf, body, function}
 
 object fission {
 

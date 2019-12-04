@@ -1,11 +1,11 @@
-package elevate.lift.strategies
+package elevate.rise.strategies
 
 import elevate.core.Strategy
 import elevate.core.strategies.basic._
-import elevate.lift.Lift
-import elevate.lift.strategies.traversal._
-import elevate.lift.strategies.normalForm._
-import elevate.lift.strategies.tiling._
+import elevate.rise.Lift
+import elevate.rise.strategies.traversal._
+import elevate.rise.strategies.normalForm._
+import elevate.rise.strategies.tiling._
 
 object halide {
 

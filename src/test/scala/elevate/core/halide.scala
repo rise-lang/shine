@@ -1,10 +1,10 @@
 package elevate.core
 
 import elevate.core.strategies.basic.{debug, id}
-import elevate.lift.Lift
-import elevate.lift.strategies.traversal.body
-import elevate.lift.strategies.normalForm._
-import elevate.lift.strategies.halide._
+import elevate.rise.Lift
+import elevate.rise.strategies.traversal.body
+import elevate.rise.strategies.normalForm._
+import elevate.rise.strategies.halide._
 import elevate.util._
 import lift.core.DSL.{reorder => _, _}
 import lift.core.types.infer

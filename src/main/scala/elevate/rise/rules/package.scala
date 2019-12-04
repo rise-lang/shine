@@ -1,8 +1,8 @@
-package elevate.lift
+package elevate.rise
 
 import elevate.core.strategies.basic.normalize
 import elevate.core.strategies.predicate._
-import elevate.lift.strategies.traversal._
+import elevate.rise.strategies.traversal._
 import elevate.core.{Failure, RewriteResult, Strategy, Success}
 import lift.core._
 import lift.core.types._

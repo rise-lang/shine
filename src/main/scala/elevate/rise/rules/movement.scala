@@ -1,9 +1,9 @@
-package elevate.lift.rules
+package elevate.rise.rules
 
 import elevate.core.strategies.predicate._
-import elevate.lift.strategies.traversal._
+import elevate.rise.strategies.traversal._
 import elevate.core.{Failure, RewriteResult, Strategy, Success}
-import elevate.lift.Lift
+import elevate.rise.Lift
 import lift.core._
 import lift.core.primitives._
 import lift.core.DSL._
