@@ -50,10 +50,10 @@ class algorithmic extends test_util.Tests {
 
     val addTuple = fun(x => fst(x) + snd(x))
 
-    val mapReduce = LCNF(infer(
+    val mapReduce = infer(LCNF(infer(
       depLambda[NatKind](M, depLambda[NatKind](N,
       fun(ArrayType(M, ArrayType(N, float)))(i =>
-        map(reduce(fun(x => fun(a => x + a)))(l(0.0f))) $ i))))).get
+        map(reduce(fun(x => fun(a => x + a)))(l(0.0f))) $ i))))))
 
     exprToDot("test", mapReduce)
 
@@ -63,7 +63,9 @@ class algorithmic extends test_util.Tests {
           reduce(fun((acc, y) =>
             map(addTuple) $ zip(acc, y)))(generate(fun(IndexType(M) ->: float)(_ => l(0.0f)))) $ transpose(i))))
 
-    val rewrite = body(body(liftReduce)).apply(mapReduce).get
+    println("hi")
+    val rewrite = body(body(liftReduce))(mapReduce).get
+    println("ho")
 
     infer(mapReduce)
 

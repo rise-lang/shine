@@ -9,7 +9,6 @@ import lift.core._
 import lift.core.DSL._
 import lift.core.primitives._
 import lift.core.types._
-import elevate.rise.extractors._
 
 //noinspection MutatorLikeMethodIsParameterless
 object algorithmic {
