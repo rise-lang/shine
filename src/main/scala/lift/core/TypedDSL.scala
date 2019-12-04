@@ -20,7 +20,7 @@ object TypedDSL {
     override def toString: String = "opaque"
   }
 
-  final case class TDSL[T <: Expr](e: T) {
+  final case class TDSL[+T <: Expr](private val e: T) {
     def matches(t: Type): T = TDSL.infer(e, t)
     def >>=[X <: Expr](f: T => TDSL[X]): TDSL[X] = f(e)
   }

@@ -44,11 +44,11 @@ object algorithmic {
 
   // TODO: this should be expressed with elevate strategies
   @silent
-  def mapFullFissionRec(x: Identifier, gx: Expr): TDSL[Lambda] = {
+  def mapFullFissionRec(x: Identifier, gx: Expr): TDSL[Expr] = {
     gx match {
       case App(f, gx2) =>
         if (gx2 == x) {
-          fun(x => map(f)(x))
+          map(f)
         } else {
           mapFullFissionRec(x, gx2) >> map(f)
         }
