@@ -5,6 +5,7 @@ import elevate.core.strategies.basic._
 import elevate.rise.Rise
 import elevate.rise.rules.algorithmic._
 import elevate.rise.rules.movement._
+import elevate.rise.rules.traversal.{argument, function}
 import elevate.rise.strategies.traversal._
 import elevate.rise.strategies.normalForm._
 
@@ -13,16 +14,13 @@ object tiling {
   def tileND: Int => Int => Strategy[Rise] = d => n => tileNDList(List.tabulate(d)(_ => n))
 
   def tileNDList: List[Int] => Strategy[Rise] =
-    l => {
-      tileNDRec(l.size)(l)
-    }
-
-  def tileNDRec: Int => List[Int] => Strategy[Rise] =
-    d => n => d match {
+    n => n.size match {
         case x if x <= 0 => id()
         // ((map f) arg)
-        case 1 => function(splitJoin(n.head))
-        case i => fmap(tileNDRec(d-1)(n.tail)) `;` tileNDRec(1)(n) `;` shiftDim(i)
+        case 1 => function(splitJoin(n.head))      // loop-blocking
+        case i => fmap(tileNDList(n.tail)) `;`     // recurse
+                  function(splitJoin(n.head)) `;`  // loop-blocking
+                  shiftDim(i)                      // loop-interchange
       }
 
   // Notation: A.a -> a == tile dimension; A == original dimension

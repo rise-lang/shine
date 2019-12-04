@@ -1,8 +1,9 @@
 package elevate.core
 
+import elevate.rise.rules.traversal._
 import elevate.rise.strategies.traversal._
 import elevate.rise.strategies.normalForm._
-import elevate.meta.rules.fission._
+import elevate.rise.meta.rules.fission._
 import elevate.rise.strategies.tiling._
 import elevate.core.strategies.traversal._
 import elevate.core.strategies.basic._
@@ -241,7 +242,7 @@ class tiling extends test_util.Tests {
 
   // todo: this should use mapSeqCompute and CNF instead of RNF
   // ... but mapAcceptorTranslation for split is missing
-  val lower: Strategy[Rise] = LCNF `;` CNF `;` normalize.apply(specialize.mapSeq) `;` BENF
+  val lower: Strategy[Rise] = LCNF `;` CNF `;` normalize.apply(lowering.mapSeq) `;` BENF
 
   val identity = dtFun(t => foreignFun("identity", Seq("y"), "{ return y; }", t ->: t))
   val floatId: Expr = identity(float)

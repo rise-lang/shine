@@ -12,6 +12,14 @@ object predicate {
     case Success(_) => true
   }
 
+  case class not[P](s: Strategy[P]) extends Strategy[P] {
+    def apply(e: P): RewriteResult[P] = s(e) match {
+      case Success(_) => Failure(not(s))
+      case Failure(_) => Success(e)
+    }
+    override def toString = s"not($s)"
+  }
+
   case class isEqualTo[P](x: P) extends Strategy[P] {
     def apply(p: P): RewriteResult[P] =
       if (p == x) Success(p) else Failure(isEqualTo(x))

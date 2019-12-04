@@ -15,7 +15,7 @@ import elevate.core.strategies.traversal._
 import elevate.rise.Rise
 import elevate.rise.strategies.normalForm._
 import elevate.rise.strategies.algorithmic._
-import elevate.rise.strategies.traversal._
+import elevate.rise.rules.traversal._
 
 class separableConvolution2DRewrite extends test_util.Tests {
   private val idE: Expr = fun(x => x)
@@ -34,7 +34,7 @@ class separableConvolution2DRewrite extends test_util.Tests {
   private val Dv = dot(weightsV :: (3`.`float))
 
   private def ben_eq(a: Expr, b: Expr): Boolean =
-    betaEtaNormalForm(a).get == betaEtaNormalForm(b).get
+    BENF(a).get == BENF(b).get
 
   private val separateDot: Strategy[Rise] = {
     case App(App(App(Reduce(), rf), init), App(App(Map(), mf), App(App(Zip(), App(Join(), w)), App(Join(), nbh))))
@@ -59,7 +59,7 @@ class separableConvolution2DRewrite extends test_util.Tests {
 
   private def rewrite_steps(a: Expr, steps: Seq[(Strategy[Rise], Expr)]): Unit = {
     steps.foldLeft[Expr](a)({ case (e, (s, expected)) =>
-      val debug = betaEtaNormalForm(e).get
+      val debug = BENF(e).get
       val result = s(debug).get
       assert_ben_eq(result, expected)
       result
@@ -118,45 +118,45 @@ class separableConvolution2DRewrite extends test_util.Tests {
 
   test("base to baseSeq") {
     rewrite_steps(base(weights2d), Seq(
-      (oncetd(specialize.reduceSeqUnroll) `;`
-        repeatNTimes(2, oncetd(specialize.mapSeq)))
+      (oncetd(lowering.reduceSeqUnroll) `;`
+        repeatNTimes(2, oncetd(lowering.mapSeq)))
         -> baseSeq(weights2d)
     ))
   }
 
   test("factorised to factorisedSeq") {
     rewrite_steps(factorised(weightsV)(weightsH), Seq(
-      (repeatNTimes(2, oncetd(specialize.reduceSeqUnroll)) `;`
-        repeatNTimes(2, oncetd(specialize.mapSeq)))
+      (repeatNTimes(2, oncetd(lowering.reduceSeqUnroll)) `;`
+        repeatNTimes(2, oncetd(lowering.mapSeq)))
         -> factorisedSeq(weightsV)(weightsH)
     ))
   }
 
   test("separated to separatedSeq") {
     rewrite_steps(separated(weightsV)(weightsH), Seq(
-      (repeatNTimes(2, oncetd(specialize.reduceSeqUnroll)) `;`
-        repeatNTimes(2, oncetd(specialize.mapSeq)) `;`
-        repeatNTimes(2, skip(1)(specialize.mapSeq)))
+      (repeatNTimes(2, oncetd(lowering.reduceSeqUnroll)) `;`
+        repeatNTimes(2, oncetd(lowering.mapSeq)) `;`
+        repeatNTimes(2, skip(1)(lowering.mapSeq)))
         -> separatedSeq(weightsV)(weightsH)
     ))
   }
 
   test("scanline to scanlineSeq") {
     rewrite_steps(scanline(weightsV)(weightsH), Seq(
-      (repeatNTimes(2, oncetd(specialize.reduceSeqUnroll)) `;`
-        repeatNTimes(2, oncetd(specialize.mapSeq)) `;`
-        skip(1)(specialize.mapSeq))
+      (repeatNTimes(2, oncetd(lowering.reduceSeqUnroll)) `;`
+        repeatNTimes(2, oncetd(lowering.mapSeq)) `;`
+        skip(1)(lowering.mapSeq))
         -> scanlineSeq(weightsV)(weightsH)
     ))
   }
 
   test("scanline to regRotSeq") {
     rewrite_steps(scanline(weightsV)(weightsH), Seq(
-      (repeatNTimes(2, oncetd(specialize.reduceSeqUnroll)) `;`
-        oncetd(specialize.slideSeq(SlideSeq.Values, idE)) `;`
-        betaEtaNormalForm `;`
+      (repeatNTimes(2, oncetd(lowering.reduceSeqUnroll)) `;`
+        oncetd(lowering.slideSeq(SlideSeq.Values, idE)) `;`
+        BENF `;`
         oncetd(algorithmic.slideSeqFusion) `;`
-        oncetd(specialize.mapSeq))
+        oncetd(lowering.mapSeq))
         -> regRotSeq(weightsV)(weightsH)
     ))
   }

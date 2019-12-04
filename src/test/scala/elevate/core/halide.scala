@@ -1,7 +1,7 @@
 package elevate.core
 
 import elevate.rise.Rise
-import elevate.rise.strategies.traversal.body
+import elevate.rise.rules.traversal.body
 import elevate.rise.strategies.normalForm._
 import elevate.rise.strategies.halide._
 import elevate.util._

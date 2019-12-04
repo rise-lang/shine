@@ -2,7 +2,7 @@ package elevate.core
 
 import elevate.core.strategies.traversal._
 import elevate.core.strategies.basic._
-import elevate.rise.strategies.traversal._
+import elevate.rise.rules.traversal._
 import elevate.rise.strategies.tiling._
 import elevate.util._
 import util.gen
@@ -13,7 +13,8 @@ import elevate.rise._
 import elevate.rise.strategies.normalForm._
 import elevate.rise.strategies.traversal._
 import elevate.rise.rules.algorithmic._
-import elevate.rise.rules.{inferLift, specialize}
+import elevate.rise.rules.movement.liftReduce
+import elevate.rise.rules.{inferRise, lowering}
 import elevate.rise.strategies.tiling.{loopInterchange, loopInterchangeAtLevel}
 
 import scala.language.implicitConversions
@@ -291,14 +292,14 @@ class algorithmic extends test_util.Tests {
     infer(typed)
 
     // these should be correct, it's just that the mapAcceptorTranslation for split is not defined yet
-    val lower: Strategy[Rise] = LCNF `;` CNF `;` normalize.apply(specialize.mapSeq <+ specialize.reduceSeq) `;` BENF
+    val lower: Strategy[Rise] = LCNF `;` CNF `;` normalize.apply(lowering.mapSeq <+ lowering.reduceSeq) `;` BENF
     println(gen.CProgram(infer(lower(typedUntyped).get)).code)
     assert(untyped == typed)
 
     /// TILE + REORDER
 
     val tileReorder = body(body(body(body(body(tileNDList(List(16,32))))))) `;` LCNF `;`
-      inferLift `;` oncetd(liftReduce) `;` inferLift `;` oncetd(liftReduce)
+      inferRise `;` oncetd(liftReduce) `;` inferRise `;` oncetd(liftReduce)
 
     val reorder = tileReorder(mm).get
 
@@ -324,7 +325,7 @@ class algorithmic extends test_util.Tests {
 
       val rnf = (RNF `;` BENF)(mm).get
 
-    val lower: Strategy[Rise] = normalize.apply(specialize.mapSeq <+ specialize.reduceSeq)
+    val lower: Strategy[Rise] = normalize.apply(lowering.mapSeq <+ lowering.reduceSeq)
     println(gen.CProgram(infer(lower(rnf).get)).code)
 
    }

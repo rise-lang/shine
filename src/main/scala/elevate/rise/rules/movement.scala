@@ -1,16 +1,20 @@
 package elevate.rise.rules
 
 import elevate.core.strategies.predicate._
-import elevate.rise.strategies.traversal._
+import elevate.rise.rules.traversal._
 import elevate.core.{Failure, RewriteResult, Strategy, Success}
 import elevate.rise.Rise
+import elevate.rise.extractors.::
 import lift.core._
 import lift.core.primitives._
 import lift.core.DSL._
+import lift.core.types.{ArrayType, DataType, FunType, IndexType}
 
-// Describing possible movements between pairs of primitives
+// Describing possible movements between pairs of rise primitives (potentially nested in maps)
 
+// todo: should all rules expect LCNF-normalized expressions as input?
 object movement {
+
   // - Notation -
   // x >> y: piping operator, x then y
   // *f: map(f)
@@ -24,9 +28,9 @@ object movement {
   case object `**f >> T -> T >> **f` extends Strategy[Rise] {
     def apply(e: Rise): RewriteResult[Rise] = e match {
       case App(
-      Transpose(),
-      App(App(Map(), App(Map(), f)), y)) =>
-        Success(y |> transpose |> map(map(f)))
+        Transpose(),
+        App(App(Map(), App(Map(), f)), y)) =>
+          Success(y |> transpose |> map(map(f)))
       // LCNF
       case App(Transpose(),
       App(
@@ -58,8 +62,8 @@ object movement {
 
   private def isSplitOrSlide(s: Expr): Boolean = s match {
     case DepApp(DepApp(Slide(), _: Nat), _: Nat) => true
-    case DepApp(Split(), _: Nat) => true
-    case _ => false
+    case DepApp(Split(), _: Nat)                 => true
+    case _                                       => false
   }
 
   def slideBeforeMapMapF: Strategy[Rise] = `S >> **f -> *f >> S`
@@ -251,5 +255,54 @@ object movement {
       case _ => Failure(slideBeforeSplit)
     }
     override def toString = "slideBeforeSplit"
+  }
+
+
+  // nested map + reduce
+
+  // todo simplify
+  case object liftReduce extends Strategy[Rise] {
+    def apply(e: Rise): RewriteResult[Rise] = e match {
+
+      case App(Map(), Lambda(mapVar, App(App(App(rx @ (Reduce() | ReduceSeq()), op),
+      init :: (dt: DataType)), reduceArg))) :: FunType(ArrayType(size, ArrayType(_,_)), _) =>
+
+        def reduceMap(zippedMapArg : (Expr, Expr) => Expr, reduceArgFun: Expr): RewriteResult[Rise] = {
+          Success(
+            rx(fun((acc, y) =>
+              map(fun(x => DSL.app(DSL.app(op, fst(x)), snd(x)))) $ zippedMapArg(acc, y)
+            ))(generate(fun(IndexType(size) ->: dt)(_ => init))) o reduceArgFun
+          )
+        }
+
+        reduceArg match {
+          // simple case (see test "lift reduce")
+          case x if x == mapVar =>
+            reduceMap(
+              (acc, y) => zip(acc, y),
+              transpose
+            )
+
+          // zipped input (see test "MM to MM-LoopMKN")
+          case App(App(Zip(), u), v) =>
+            val notToBeTransposed = if (mapVar == u) v else u
+            reduceMap(
+              zippedMapArg = (acc, y) => zip(acc, map(fun(bs => pair(bs, fst(y)))) $ snd(y)),
+              reduceArgFun = zip(notToBeTransposed) o transpose
+            )
+          // input is tile1.tile2.dim.(float,float)
+          // dim needs to be reduced -> we need dim.tile1.tile2.(float,float)
+          // todo what's the general case? How to (re-)order dimensions here?
+          case _ =>
+            val result = reduceMap(
+              (acc, y) => zip(acc, y),
+              transpose o map(transpose)
+            )
+            result
+        }
+
+      case _ => Failure(liftReduce)
+    }
+    override def toString = "liftReduce"
   }
 }

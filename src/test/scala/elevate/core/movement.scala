@@ -2,16 +2,13 @@ package elevate.core
 
 import elevate.rise.rules.movement._
 import elevate.core.strategies.traversal._
-import elevate.core.strategies.predicate._
-import elevate.rise.strategies.traversal._
-import elevate.core.strategies.basic._
+import elevate.core.strategies.predicate.rewriteResultToBoolean
+import elevate.rise.rules.traversal._
 import elevate.rise.strategies.normalForm._
 import elevate.util._
-import elevate.rise._
 import lift.core._
-import lift.core.primitives._
 import lift.core.DSL._
-import lift.core.types.{float, infer}
+import lift.core.types.float
 
 import scala.language.implicitConversions
 

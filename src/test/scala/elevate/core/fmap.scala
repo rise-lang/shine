@@ -2,6 +2,7 @@ package elevate.core
 
 import elevate.rise.rules.movement._
 import elevate.core.strategies.traversal._
+import elevate.rise.rules.traversal._
 import elevate.rise.strategies.traversal._
 import elevate.util._
 import lift.core.Expr

@@ -1,24 +1,20 @@
 package elevate.core
 
-import elevate.rise.rules._
 import elevate.util._
 import elevate.rise.strategies.normalForm._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
-import elevate.rise.strategies.traversal._
-import elevate.meta.rules.fission._
+import elevate.rise.meta.rules.fission._
 import elevate.rise.rules.movement._
+import elevate.rise.rules.traversal._
 import elevate.rise.strategies.tiling._
 import elevate.rise.strategies.util._
 import elevate.rise._
-import elevate.rise.rules
 import elevate.rise.rules.algorithmic._
-import elevate.rise.strategies.predicate.isLambda
-import elevate.rise.strategies.traversal.{body, function, inBody}
-import elevate.meta.rules.fission.bodyFission
+import elevate.rise.rules.traversal.{argument, argumentOf, body, function}
+import elevate.rise.meta.rules.fission.bodyFission
+import elevate.rise.meta.rules.traversal.inBody
 import lift.core.DSL._
-import lift.core._
-import lift.core.primitives._
 import lift.core.types.NatKind
 
 
