@@ -35,7 +35,13 @@ object gen {
 
   def OpenCLKernel(localSize: LocalSize, globalSize: GlobalSize)
                   (e: lift.core.Expr, name: String): idealised.OpenCL.KernelWithSizes = {
+    OpenCLKernel(_ => (localSize, globalSize))(e, name)
+  }
+
+  def OpenCLKernel(localGlobalSize: DPIA.Phrases.Phrase[_ <: DPIA.Types.PhraseType] => (LocalSize, GlobalSize))
+                  (e: lift.core.Expr, name: String): idealised.OpenCL.KernelWithSizes = {
     val dpia_e = toDPIA(e)
+    val (localSize, globalSize) = localGlobalSize(dpia_e)
     val p = idealised.OpenCL.KernelGenerator.makeCode(localSize, globalSize)(dpia_e, name)
     println(p.code)
     SyntaxChecker.checkOpenCL(p.code)
