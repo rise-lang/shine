@@ -11,7 +11,7 @@ import elevate.rise.strategies.normalForm._
 import elevate.rise.strategies.tiling.{loopInterchange, loopInterchangeAtLevel, _}
 import elevate.rise.strategies.traversal._
 import elevate.util._
-import lift.core.DSL._
+import lift.core.TypedDSL._
 import lift.core.TypeLevelDSL._
 import lift.core._
 import lift.core.primitives._
@@ -217,7 +217,7 @@ class algorithmic extends test_util.Tests {
       )))
 
     // unfortunately, the order of zip arguments is important
-    val goldKMNAlternative2 =
+    val goldKMNAlternative2: Rise =
       depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
         fun(ArrayType(M, ArrayType(K, float)))(a =>
           fun(ArrayType(K, ArrayType(N, float)))(b =>
@@ -238,7 +238,7 @@ class algorithmic extends test_util.Tests {
     infer(goldKMNAlternative)
     infer(goldKMNAlternative2)
 
-    val loopKMN = (oncetd(liftReduce)).apply(infer(mmMKN)).get
+    val loopKMN: Rise = (oncetd(liftReduce)).apply(infer(mmMKN)).get
 
     infer(loopKMN)
     assert(goldKMNAlternative2 == loopKMN)
@@ -273,7 +273,7 @@ class algorithmic extends test_util.Tests {
     val N = NatIdentifier("N")
     val K = NatIdentifier("K")
 
-    val mm =
+    val mm: Rise =
       LCNF(depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
       fun(ArrayType(M, ArrayType(K, float)))(a =>
         fun(ArrayType(K, ArrayType(N, float)))(b =>
