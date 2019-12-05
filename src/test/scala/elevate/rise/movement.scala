@@ -1,26 +1,17 @@
-package elevate.core
+package elevate.rise
 
-import elevate.rise.rules.movement._
-import elevate.core.strategies.traversal._
 import elevate.core.strategies.predicate.rewriteResultToBoolean
+import elevate.core.strategies.traversal._
+import elevate.rise.rules.movement._
 import elevate.rise.rules.traversal._
 import elevate.rise.strategies.normalForm._
 import elevate.util._
-import lift.core._
 import lift.core.DSL._
 import lift.core.types.float
 
 import scala.language.implicitConversions
 
-
 class movement extends test_util.Tests {
-
-  implicit def rewriteResultToExpr(r: RewriteResult[Expr]): Expr = r.get
-  val norm = LCNF
-
-  def testMultiple(list: List[Expr], gold: Expr) = {
-    assert(list.forall(betaEtaEquals(_, gold)))
-  }
 
   // transpose
 
@@ -29,7 +20,7 @@ class movement extends test_util.Tests {
 
     testMultiple(
       List(
-        norm(λ(f => *(λ(x => *(f)(x))) >> T)).get,
+        LCNF(λ(f => *(λ(x => *(f)(x))) >> T)).get,
         λ(f => **(f) >> T)
       ).map((oncetd(`**f >> T -> T >> **f`)).apply(_).get), gold
     )

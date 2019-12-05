@@ -17,6 +17,3 @@ case class Program(decls: Seq[C.AST.Decl],
     C.AST.Printer(function)
 }
 
-object Program {
-  implicit def programToString(p: Program): String = p.code
-}

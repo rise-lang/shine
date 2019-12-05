@@ -1,26 +1,31 @@
-package elevate.core
+package elevate.rise
 
-import elevate.core.strategies.traversal._
+import elevate.core.Strategy
 import elevate.core.strategies.basic._
-import elevate.core.strategies.debug._
-import elevate.rise.rules.traversal._
-import elevate.rise.strategies.tiling._
-import elevate.util._
-import util.gen
-import lift.core.DSL._
-import lift.core.{Expr, NatIdentifier}
-import lift.core.types.{ArrayType, IndexType, NatKind, float, infer}
-import elevate.rise._
-import elevate.rise.strategies.normalForm._
-import elevate.rise.strategies.traversal._
+import elevate.core.strategies.traversal._
 import elevate.rise.rules.algorithmic._
 import elevate.rise.rules.movement.liftReduce
+import elevate.rise.rules.traversal._
 import elevate.rise.rules.{inferRise, lowering}
-import elevate.rise.strategies.tiling.{loopInterchange, loopInterchangeAtLevel}
+import elevate.rise.strategies.normalForm._
+import elevate.rise.strategies.tiling.{loopInterchange, loopInterchangeAtLevel, _}
+import elevate.rise.strategies.traversal._
+import elevate.util._
+import lift.core.DSL._
+import lift.core.types._
+import lift.core.{Expr, NatIdentifier}
+import util.gen
 
 class algorithmic extends test_util.Tests {
 
-  /// LOOP INTERCHANGE
+  // - Notation -
+  // x >> y: piping operator, x then y
+  // *f: map(f)
+  // T: transpose
+  // S: slide/split
+  // J: join
+
+  // Loop Interchange
 
   test("simple loop interchange") {
     assert(betaEtaEquals(
@@ -43,6 +48,8 @@ class algorithmic extends test_util.Tests {
       gold
     ))
   }
+
+  // Swap Nesting of map and reduce
 
   test("lift reduce") {
     def M = NatIdentifier("M")
@@ -70,6 +77,9 @@ class algorithmic extends test_util.Tests {
 
     assert(typedRewrite == typedGold)
   }
+
+
+  // Tests and Expressions related to loop reordering in Matrix Multiplication
 
   test("MM to MM-LoopMKN") {
     val M = NatIdentifier("M")
@@ -121,17 +131,13 @@ class algorithmic extends test_util.Tests {
 
     infer(goldMKNVersion1)
     val typedGold = infer(goldMKNAlternative)
-
     val loopMKN = (oncetd(liftReduce) `;` LCNF `;` oncetd(removeTransposePair)).apply(mm).get
     val typedRewrite = infer(loopMKN)
 
-    // todo something's wrong with the way of comparing typed expressions
-    //assert(typedRewrite == typedGold)
-    //val gold = normalize(untype)(typedGold).get
-    //val rewrite = normalize(untype)(typedGold).get
+    assert(typedRewrite == typedGold)
   }
 
-  // FIXME
+  // This one just serves as documentation for different mm-rise-expressions
   ignore("MM-LoopMKN to MM-LoopKMN") {
     val M = NatIdentifier("M")
     val N = NatIdentifier("N")
@@ -254,11 +260,9 @@ class algorithmic extends test_util.Tests {
               zip(b,transpose(a)) // :: K.(N.float, M.float)
           ))
       )))
-
-    println(gen.CProgram(infer(goldKMNAlternative2LowLevel)).code)
   }
 
-  // FIXME
+  // todo remove once PLDI-TVM tests are in
   ignore("mm tile + reorder") {
     val M = NatIdentifier("M")
     val N = NatIdentifier("N")
@@ -302,28 +306,6 @@ class algorithmic extends test_util.Tests {
 
     println(gen.CProgram(lower(fixed).get).code)
   }
-
-  // FIXME
-  ignore("map map zip") {
-      val M = NatIdentifier("M")
-      val N = NatIdentifier("N")
-      val K = NatIdentifier("K")
-
-      val mm =
-        LCNF(depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
-          fun(ArrayType(M, ArrayType(K, float)))(a =>
-            fun(ArrayType(K, ArrayType(N, float)))(b =>
-              map(fun(ak =>
-                map(fun(bk =>
-                  (reduceSeq(fun((acc, y) => acc + (y._1 * y._2)), l(0.0f))) $
-                    zip(ak, bk))) $ transpose(b) )) $ a)))))).get
-
-      val rnf = (RNF `;` BENF)(mm).get
-
-    val lower: Strategy[Rise] = normalize.apply(lowering.mapSeq <+ lowering.reduceSeq)
-    println(gen.CProgram(infer(lower(rnf).get)).code)
-
-   }
 
   test("tile mm") {
 

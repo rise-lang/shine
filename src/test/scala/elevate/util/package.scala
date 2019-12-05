@@ -1,16 +1,18 @@
 package elevate
 
-import elevate.rise.strategies.normalForm.BENF
-import _root_.lift.core.primitives._
-import _root_.lift.core._
 import _root_.lift.core.DSL._
+import _root_.lift.core._
+import elevate.rise.strategies.normalForm.BENF
 
 package object util {
+
+  // Rise-related utils
+
   def betaEtaEquals(a: Expr, b: Expr): Boolean = BENF(a).get == BENF(b).get
 
-  // notation
   val tileSize = 4
 
+  // notation
   def T: Expr = transpose
   def S: Expr = split(tileSize) //slide(3)(1)
   def J: Expr = join
@@ -42,5 +44,9 @@ package object util {
   def ****!(x: Expr): Expr = {
     val i = identifier(freshName("e"))
     map(lambda(i, app(***!(x), i)))
+  }
+
+  def testMultiple(list: List[Expr], gold: Expr) = {
+    assert(list.forall(betaEtaEquals(_, gold)))
   }
 }

@@ -1,26 +1,27 @@
-package elevate.core
+package elevate.rise
 
+import elevate.core.strategies.basic._
+import elevate.core.strategies.traversal._
+import elevate.core.{RewriteResult, Strategy}
+import elevate.rise.rules._
+import elevate.rise.rules.algorithmic._
 import elevate.rise.rules.traversal._
-import elevate.rise.strategies.traversal._
 import elevate.rise.strategies.normalForm._
 import elevate.rise.strategies.tiling._
-import elevate.core.strategies.traversal._
-import elevate.core.strategies.basic._
-import elevate.rise._
+import elevate.rise.strategies.traversal._
 import elevate.util._
-import elevate.rise.rules._
-import elevate.rise.meta.fission._
-import elevate.rise.rules.algorithmic._
-import util.gen
 import lift.core.DSL._
 import lift.core._
 import lift.core.types.{ArrayType, NatKind, float, infer}
+import util.gen
 
 import scala.language.implicitConversions
 
 class tiling extends test_util.Tests {
 
   implicit def rewriteResultToExpr(r: RewriteResult[Expr]): Expr = r.get
+
+  // Check that DSL makes sense
 
   test("LCNF") {
     assert(betaEtaEquals(
@@ -39,7 +40,7 @@ class tiling extends test_util.Tests {
     ))
   }
 
-  /// TILING ONE LOOP
+  // Tiling one loop
 
   test("tileND - tile one loop 1D") {
     println(body(body(tileND(1)(tileSize)) `;` BENF)(λ(i => λ(f => *(f) $ i))).toString)
@@ -117,7 +118,7 @@ class tiling extends test_util.Tests {
     ))
   }
 
-  /// TILING TWO LOOPS
+  // Tiling two loops
 
   test("tileND - tile two loops 2D") {
     assert(betaEtaEquals(
@@ -164,7 +165,7 @@ class tiling extends test_util.Tests {
     ))
   }
 
-  /// TILING THREE LOOPS
+  // Tiling three loops
 
   test("tileND - tile three loops 3D") {
     assert(betaEtaEquals(
@@ -204,7 +205,7 @@ class tiling extends test_util.Tests {
     ))
   }
 
-  /// TILING FOUR LOOPS
+  // Tiling four loops
 
   test("tileND - tile four loops 4D") {
     val input4D = λ(i => λ(f => ****!(f) $ i))
@@ -222,7 +223,7 @@ class tiling extends test_util.Tests {
     ))
   }
 
-  /// CODEGEN TESTS
+  // Codegen tests
 
   def inputT(dim: Int, n : List[NatIdentifier]): ArrayType = dim match {
     case 1 => ArrayType(n.head, float)
@@ -282,43 +283,7 @@ class tiling extends test_util.Tests {
     println(gen.CProgram(lower(tiled)))
   }
 
- /// REAL APPLICATIONS
-
-  // todo WIP
-  test("tile gemm") {
-    val backward =
-      nFun((m, n, k) =>
-        fun((m`.`k`.`float) ->: (k`.`n`.`float) ->: (m`.`n`.`float) ->: float ->: float ->: (m`.`n`.`float))
-        ((a, b, c, alpha, beta) =>
-          map(fun(ac =>
-            map(fun(bc =>
-              (fun(x => (x * alpha) + beta * bc._2) o
-                reduceSeq(fun(acc => fun(y => acc + (y._1 * y._2))), l(0.0f))) $
-            zip(ac._1, bc._1))) $
-          zip(transpose(b),ac._2))) $
-        zip(a, c)
-        )
-      )
-
-    val tiling = applyNTimes(3)(body)(applyNTimes(5)(body)(tileND(2)(4)))
-
-    val normalized = FNF(tiling).get
-    val rewritten = normalized(backward)
-
-    val debug =
-      body(body(body(body(body(body(body(body(function(argumentOf(map,body(function(splitJoin(4))))))))))))) `;`
-      body(body(body(body(body(body(body(body(function(splitJoin(4)))))))))) `;`
-        body(body(body(body(body(body(body(body(RNF)))))))) `;`
-        body(body(body(body(body(body(body(body(LCNF)))))))) `;`
-        body(body(body(body(body(body(body(body(argument(argument(function(argumentOf(map,body(idAfter))))))))))))) `;`
-        body(body(body(body(body(body(body(body(argument(argument(function(argumentOf(map,body(createTransposePair))))))))))))) `;`
-        body(body(body(body(body(body(body(body(argument(argument(function(argumentOf(map,body(LCNF)))))))))))))
-        //body(body(body(inTyped(body(body(body(body(body(argument(argument(function(argumentOf(map,body(argument(mapMapFBeforeTranspose))))))))))))))) `;`
-        //body(body(body(inTyped(body(body(body(body(body(argument(argument(RNF)))))))))))
-
-    val result = debug(backward)
-    val types = infer(result)
-  }
+ // Tests related to fixing some development issues
 
   test("map fission issue when used with zip") {
     def xsT(N : NatIdentifier) = ArrayType(N, float)

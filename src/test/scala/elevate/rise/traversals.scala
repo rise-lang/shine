@@ -1,18 +1,16 @@
-package elevate.core
+package elevate.rise
 
-import elevate.util._
-import elevate.rise.strategies.normalForm._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
-import elevate.rise.rules.movement._
-import elevate.rise.rules.traversal._
-import elevate.rise.strategies.tiling._
-import elevate.rise.strategies.util._
-import elevate.rise._
 import elevate.rise.meta.fission._
 import elevate.rise.meta.traversal.inBody
 import elevate.rise.rules.algorithmic._
-import elevate.rise.rules.traversal.{argument, argumentOf, body, function}
+import elevate.rise.rules.movement._
+import elevate.rise.rules.traversal.{argument, argumentOf, body, function, _}
+import elevate.rise.strategies.normalForm._
+import elevate.rise.strategies.tiling._
+import elevate.rise.strategies.util._
+import elevate.util._
 import lift.core.DSL._
 import lift.core.types.NatKind
 
@@ -82,7 +80,7 @@ class traversals extends test_util.Tests {
 
   test("id traversals") {
     val expr = fun(f => fun(g => map(f) >> map(g)))
-    val id = strategies.basic.id[Rise]()
+    val id = elevate.core.strategies.basic.id[Rise]()
 
     assert(
       List(
@@ -94,7 +92,6 @@ class traversals extends test_util.Tests {
         oncebu(id).apply(expr),
         alltd(id).apply(expr),
         sometd(id).apply(expr),
-        //innermost(id)(expr),
         somebu(id).apply(expr)
       ).forall(x => betaEtaEquals(x.get, expr))
     )

@@ -1,28 +1,27 @@
-package elevate.core
+package elevate.rise
 
-import lift.core._
-import lift.core.DSL._
+import elevate.core.Strategy
 import elevate.core.strategies.basic._
-import elevate.rise.Rise
-import elevate.rise.rules._
+import elevate.core.strategies.traversal.{oncetd, position}
 import elevate.rise.rules.algorithmic.{mapFusion, mapLastFission}
-import elevate.rise.strategies.algorithmic.{mapFirstFission, mapFullFission}
-import strategies.traversal._
 import elevate.rise.rules.traversal._
+import elevate.rise.strategies.algorithmic.{mapFirstFission, mapFullFission}
+import elevate.rise.strategies.normalForm.BENF
+import lift.core.DSL._
+import lift.core._
 
 
-class fission_fusion extends test_util.Tests {
-  val norm = normalize.apply(betaReduction <+ etaReduction)
+class fissionFusion extends test_util.Tests {
 
   def eq(a: Expr, b: Expr): Unit = {
-    if (norm(a).get != norm(b).get) {
+    if (BENF(a).get != BENF(b).get) {
       throw new Exception(s"expected structural equality:\n$a\n$b")
     }
   }
 
   def check(a: Expr, fis: Strategy[Rise], b: Expr, fus: Strategy[Rise]): Unit = {
-    val na = norm(a).get
-    val nb = norm(b).get
+    val na = BENF(a).get
+    val nb = BENF(b).get
     eq(fis(na).get, nb)
     eq(fus(nb).get, na)
   }
