@@ -11,7 +11,6 @@ import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics.VectorData
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import idealised.OpenCL.AST.Barrier
 import idealised.OpenCL.FunctionalPrimitives.OpenCLFunction
 import idealised.OpenCL.ImperativePrimitives._
 import idealised.OpenCL.{BuiltInFunctionCall, GlobalSize, LocalSize}
@@ -61,6 +60,9 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
       case OpenCLNewDoubleBuffer(a, _, _, dt, n, in, out, Lambda(ps, p)) =>
         OpenCLCodeGen.codeGenOpenCLNewDoubleBuffer(a, ArrayType(n, dt), in, out, ps, p, env)
+
+      case Barrier(localMemFence, globalMemFence) => OpenCL.AST.Barrier(localMemFence, globalMemFence)
+
       case _: NewDoubleBuffer => throw new Exception("NewDoubleBuffer without address space found in OpenCL program.")
 
       case _ => super.cmd(phrase, env)
@@ -276,14 +278,14 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
               ExprStmt(Assignment(out_ptr, TernaryExpr(flag, tmp2, tmp1))),
               // toggle flag with xor
               ExprStmt(Assignment(flag, BinaryExpr(flag, ^, Literal("1")))),
-              Barrier(true, true)
+              OpenCL.AST.Barrier(true, true)
             ))
           })
             updatedCommEnv (done -> {
             Block(immutable.Seq(
               ExprStmt(Assignment(in_ptr, TernaryExpr(flag, tmp1, tmp2))),
               acc(out, env, CIntExpr(0) :: Nil, o => ExprStmt(Assignment(out_ptr, UnaryExpr(&, o)))),
-              Barrier(true, true)
+              OpenCL.AST.Barrier(true, true)
             ))
           }))
       ))
@@ -319,7 +321,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
           case Cst(1) =>
             C.AST.Stmts(C.AST.Stmts(
               C.AST.Comment("iteration count is exactly 1, no loop emitted"),
-              C.AST.DeclStmt(C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(0))))),
+              C.AST.DeclStmt(C.AST.VarDecl(cI.name, C.AST.Type.int, init = Some(C.AST.ArithmeticExpr(f.init))))),
               updatedGen.cmd(p, env))
             /* FIXME?
           case _ if (range.start.min.min == Cst(0) && range.stop == Cst(1)) ||
@@ -331,10 +333,8 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
              */
           // default case
           case _ =>
-            C.AST.Stmts(
-              C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
-                C.AST.Block(immutable.Seq(updatedGen.cmd(p, env)))),
-              f.synchronize)
+            C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
+              C.AST.Block(immutable.Seq(updatedGen.cmd(p, env))))
         }}))})
     }
 
@@ -381,10 +381,8 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
                 //                    updatedGen.cmd(p, env))
                 // default case
                 case _ =>
-                  C.AST.Stmts(
-                    C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
-                      C.AST.Block(immutable.Seq(updatedGen.cmd(p, env)))),
-                    f.synchronize)
+                  C.AST.ForLoop(C.AST.DeclStmt(init), cond, increment,
+                    C.AST.Block(immutable.Seq(updatedGen.cmd(p, env))))
               })))
       })
     }

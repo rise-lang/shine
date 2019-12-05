@@ -62,7 +62,7 @@ object TypedDSL {
   def depApp[K <: Kind, T <: Expr](f: TDSL[T], x: K#T): TDSL[DepApp[K]] = f >>= (f => tdsl(DepApp[K](f, x)()))
   def literal(d: semantics.Data): TDSL[Literal] = tdsl(Literal(d))
 
-  def array(n: Int): TDSL[ArrayCons] = tdsl(primitives.ArrayCons(n)())
+  def array(n: Int): TDSL[MakeArray] = tdsl(primitives.MakeArray(n)())
   def cast: TDSL[Cast] = tdsl(primitives.Cast()())
   def depJoin: TDSL[DepJoin] = tdsl(primitives.DepJoin()())
   def depMapSeq: TDSL[DepMapSeq] = tdsl(primitives.DepMapSeq()())

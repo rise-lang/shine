@@ -75,8 +75,7 @@ class Pad extends test_util.Tests {
     gen.OpenCLKernel(e)
   }
 
-  // FIXME
-  ignore("OpenCL pad before or after transpose") {
+  test("OpenCL pad before or after transpose") {
     import lift.OpenCL.DSL._
 
     val range = lift.arithmetic.RangeAdd(1, lift.arithmetic.PosInf, 1)

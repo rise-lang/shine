@@ -5,6 +5,7 @@ import idealised.DPIA.ImperativePrimitives._
 import idealised.DPIA.Phrases.{Identifier, IfThenElse, Phrase}
 import idealised.DPIA.Types._
 import idealised.DPIA._
+import idealised.OpenCL.ImperativePrimitives.Barrier
 
 object `new` {
   def apply(dt: DataType,

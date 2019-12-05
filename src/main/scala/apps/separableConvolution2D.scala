@@ -121,6 +121,21 @@ object separableConvolution2D {
       mapSeq(dotSeqUnroll(weightsH))
     )
   ))
+  val shuffle: Expr =
+    asScalar >> drop(3) >> take(6) >> slide(4)(1) >> join >> asVector(4)
+  val scanlinePar: Expr = fun(3`.`float)(weightsV => fun(3`.`float)(weightsH =>
+    map(implN(w => fun(w`.`float)(x =>
+      x |> asVectorAligned(4)
+        |> padCst(1)(0)(vectorFromScalar(x `@` lidx(0, w)))
+        |> padCst(0)(1)(vectorFromScalar(x `@` lidx(w - 1, w)))
+    ))) >> padClamp(1)(1) >>
+    slide(3)(1) >> mapGlobal(transpose >>
+      toGlobalFun(mapSeq(weightsSeqVecUnroll(weightsV))) >>
+      slide(3)(1) >>
+      mapSeq(shuffle >> weightsSeqVecUnroll(weightsH)) >>
+      asScalar
+    )
+  ))
 
   val regRotSeq: Expr = fun(3`.`float)(weightsV => fun(3`.`float)(weightsH =>
     padClamp2D(1) >> slide(3)(1) >> mapSeq(transpose >>
@@ -131,8 +146,6 @@ object separableConvolution2D {
   val regRotPar: Expr = fun(3`.`float)(weightsV => fun(3`.`float)(weightsH => {
     val Dv = weightsSeqVecUnroll(weightsV)
     val Dh = weightsSeqVecUnroll(weightsH)
-    val shuffle =
-      asScalar >> drop(3) >> take(6) >> slide(4)(1) >> join >> asVector(4)
     // map(padClamp(4)(4) >> asVectorAligned(4)) >> padClamp(1)(1) >>
     map(implN(w => fun(w`.`float)(x =>
       x |> asVectorAligned(4)

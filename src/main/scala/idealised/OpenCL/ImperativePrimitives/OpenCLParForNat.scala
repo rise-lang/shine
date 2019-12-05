@@ -25,8 +25,6 @@ abstract class OpenCLParForNat(n: Nat,
   //  protected var env: OpenCLOldCodeGenerator.Environment = _
 
   def name: String
-
-  def synchronize: Stmt
 }
 
 object OpenCLParForNat

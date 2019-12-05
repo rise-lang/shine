@@ -32,11 +32,11 @@ object algorithmic {
       case App(Map(), Lambda(mapVar, App(App(App(rx @ (Reduce() | ReduceSeq()), op),
            init :: (dt: DataType)), reduceArg))) :: FunType(ArrayType(size, ArrayType(_,_)), _) =>
 
-        def reduceMap[A <: Expr, B <: Expr](zippedMapArg : (TDSL[Identifier], TDSL[Identifier]) => TDSL[A], reduceArg: TDSL[B]): RewriteResult[Lift] = {
+        def reduceMap[A <: Expr, B <: Expr](zippedMapArg : (TDSL[Identifier], TDSL[Identifier]) => TDSL[A], reduceArgFun: TDSL[B]): RewriteResult[Lift] = {
           Success(
             (typed(rx)(fun((acc, y) => // y :: 16.n793.(float,float), acc:: 16.32.(float)
               map(fun(x => app(app(op, fst(x)), snd(x)))) $ zippedMapArg(acc, y)
-            ))(generate(fun(IndexType(size) ->: dt)(_ => init))) o reduceArg).matches(e.t)
+            ))(generate(fun(IndexType(size) ->: dt)(_ => init))) o reduceArgFun).matches(e.t)
           )
         }
 
@@ -53,7 +53,7 @@ object algorithmic {
             val notToBeTransposed = if (mapVar == u) v else u
             reduceMap(
               zippedMapArg = (acc, y) => zip(acc, map(fun(bs => pair(bs, fst(y)))) $ snd(y)),
-              reduceArg = zip(notToBeTransposed) o transpose
+              reduceArgFun = zip(notToBeTransposed) o transpose
             )
             // input is tile1.tile2.dim.(float,float)
             // dim needs to be reduced -> we need dim.tile1.tile2.(float,float)
