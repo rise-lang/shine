@@ -21,7 +21,7 @@ object TypedDSL {
   }
 
   final case class TDSL[+T <: Expr](private val e: T) {
-    def matches(t: Type): T = TDSL.infer(e, t)
+    def matches(t: Type): Expr = TDSL.infer(e, t)
     def >>=[X <: Expr](f: T => TDSL[X]): TDSL[X] = f(e)
   }
 
@@ -29,7 +29,7 @@ object TypedDSL {
 
   def tdsl[T <: Expr](e: T): TDSL[T] = TDSL(e)
 
-  implicit def trivial[T <: Expr](d: TDSL[T]): T = d.matches(freshTypeIdentifier)
+  implicit def trivial(d: TDSL[Expr]): Expr = d.matches(freshTypeIdentifier)
 
   object TDSL {
     case class Visitor(sol: Solution) extends traversal.Visitor {
@@ -43,23 +43,23 @@ object TypedDSL {
       override def visitN2D(n2d: NatToData): Result[NatToData] = Stop(sol(n2d))
     }
 
-    def infer[T <: Expr](e: T, expected: Type): T = {
+    def infer(e: Expr, expected: Type): Expr = {
       val constraints = mutable.ArrayBuffer[Constraint]()
       val typed_e = constrainTypes(e, constraints, mutable.Map())
       constraints += TypeConstraint(typed_e.t, expected)
       val solution = solve(constraints)
       val r = traversal.DepthFirstLocalResult(typed_e, Visitor(solution))
-      r.asInstanceOf[T]
+      r
     }
   }
 
   def identifier(name: String): TDSL[Identifier] = tdsl(Identifier(name)())
-  def lambda[T <: Expr](x: TDSL[Identifier], e: TDSL[T]): TDSL[Lambda] =
-    x >>= (x => e >>= (e => tdsl[Lambda](Lambda(x, e)())))
-  def app[A <: Expr, B <: Expr](f: TDSL[A], e: TDSL[B]): TDSL[App] = f >>= (f => e >>= (e => tdsl(App(f, e)())))
-  def depLambda[K <: Kind : KindName, T <: Expr](x: K#I with Kind.Explicitness, e: TDSL[T]): TDSL[DepLambda[K]] =
+  def lambda(x: TDSL[Identifier], e: TDSL[Expr]): TDSL[Lambda] =
+    x >>= (x => e >>= (e => tdsl(Lambda(x, e)())))
+  def app(f: TDSL[Expr], e: TDSL[Expr]): TDSL[App] = f >>= (f => e >>= (e => tdsl(App(f, e)())))
+  def depLambda[K <: Kind : KindName](x: K#I with Kind.Explicitness, e: TDSL[Expr]): TDSL[DepLambda[K]] =
     e >>= (e => tdsl(DepLambda[K](x, e)()))
-  def depApp[K <: Kind, T <: Expr](f: TDSL[T], x: K#T): TDSL[DepApp[K]] = f >>= (f => tdsl(DepApp[K](f, x)()))
+  def depApp[K <: Kind](f: TDSL[Expr], x: K#T): TDSL[DepApp[K]] = f >>= (f => tdsl(DepApp[K](f, x)()))
   def literal(d: semantics.Data): TDSL[Literal] = tdsl(Literal(d))
 
   def array(n: Int): TDSL[MakeArray] = tdsl(primitives.MakeArray(n)())
@@ -120,17 +120,17 @@ object TypedDSL {
   def printType(msg: String): TDSL[PrintType] = tdsl(PrintType(msg)())
   def typeHole(msg: String): TDSL[TypeHole] = tdsl(TypeHole(msg)())
 
-  implicit class Ops[A <: Expr](lhs: TDSL[A]) {
+  implicit class Ops(lhs: TDSL[Expr]) {
 
     // binary
-    def +[B <: Expr](rhs: TDSL[B]): TDSL[App] = add(lhs)(rhs)
-    def -[B <: Expr](rhs: TDSL[B]): TDSL[App] = sub(lhs)(rhs)
-    def *[B <: Expr](rhs: TDSL[B]): TDSL[App] = mul(lhs)(rhs)
-    def /[B <: Expr](rhs: TDSL[B]): TDSL[App] = div(lhs)(rhs)
-    def %[B <: Expr](rhs: TDSL[B]): TDSL[App] = mod(lhs)(rhs)
-    def >[B <: Expr](rhs: TDSL[B]): TDSL[App] = gt(lhs)(rhs)
-    def <[B <: Expr](rhs: TDSL[B]): TDSL[App] = lt(lhs)(rhs)
-    def =:=[B <: Expr](rhs: TDSL[B]): TDSL[App] = equal(lhs)(rhs)
+    def +(rhs: TDSL[Expr]): TDSL[App] = add(lhs)(rhs)
+    def -(rhs: TDSL[Expr]): TDSL[App] = sub(lhs)(rhs)
+    def *(rhs: TDSL[Expr]): TDSL[App] = mul(lhs)(rhs)
+    def /(rhs: TDSL[Expr]): TDSL[App] = div(lhs)(rhs)
+    def %(rhs: TDSL[Expr]): TDSL[App] = mod(lhs)(rhs)
+    def >(rhs: TDSL[Expr]): TDSL[App] = gt(lhs)(rhs)
+    def <(rhs: TDSL[Expr]): TDSL[App] = lt(lhs)(rhs)
+    def =:=(rhs: TDSL[Expr]): TDSL[App] = equal(lhs)(rhs)
 
     // unary
     def unary_- : TDSL[App] = neg(lhs)
@@ -140,8 +140,8 @@ object TypedDSL {
     def _2: TDSL[App] = snd(lhs)
   }
 
-  implicit class Indexing[A <: Expr](e: TDSL[A]) {
-    def `@`[B <: Expr](i: TDSL[B]): TDSL[App] = idx(i)(e)
+  implicit class Indexing(e: TDSL[Expr]) {
+    def `@`(i: TDSL[Expr]): TDSL[App] = idx(i)(e)
   }
 
   implicit class TypeAnnotation(t: Type) {
@@ -152,144 +152,142 @@ object TypedDSL {
     def `:`[T <: Expr](e: TDSL[T]): TDSL[T] = e :: t
   }
 
-  implicit class FunCall[A <: Expr](f: TDSL[A]) {
+  implicit class FunCall(f: TDSL[Expr]) {
 
-    def apply[B <: Expr](e: TDSL[B]): TDSL[App] = app(f, e)
-    def apply(n: Nat): TDSL[DepApp[NatKind]] = depApp[NatKind, A](f, n)
-    def apply(dt: DataType): TDSL[DepApp[DataKind]] = depApp[DataKind, A](f, dt)
-    def apply(a: AddressSpace): TDSL[DepApp[AddressSpaceKind]] = depApp[AddressSpaceKind, A](f, a)
+    def apply(e: TDSL[Expr]): TDSL[App] = app(f, e)
+    def apply(n: Nat): TDSL[DepApp[NatKind]] = depApp[NatKind](f, n)
+    def apply(dt: DataType): TDSL[DepApp[DataKind]] = depApp[DataKind](f, dt)
+    def apply(a: AddressSpace): TDSL[DepApp[AddressSpaceKind]] = depApp[AddressSpaceKind](f, a)
 
-    def apply(n2n: NatToNat): TDSL[DepApp[NatToNatKind]] = depApp[NatToNatKind, A](f, n2n)
+    def apply(n2n: NatToNat): TDSL[DepApp[NatToNatKind]] = depApp[NatToNatKind](f, n2n)
 
-    def apply[B <: Expr, C <: Expr](e1: TDSL[B], e2: TDSL[C]): TDSL[App] = {
+    def apply(e1: TDSL[Expr], e2: TDSL[Expr]): TDSL[App] = {
       f(e1)(e2)
     }
 
-    def apply[B <: Expr, C <: Expr, D <: Expr](e1: TDSL[B], e2: TDSL[C], e3: TDSL[D]): TDSL[App] = {
+    def apply(e1: TDSL[Expr], e2: TDSL[Expr], e3: TDSL[Expr]): TDSL[App] = {
       f(e1)(e2)(e3)
     }
 
-    def apply[B <: Expr, C <: Expr, D <: Expr, E <: Expr]
-    (e1: TDSL[B], e2: TDSL[C], e3: TDSL[D], e4: TDSL[E]): TDSL[App] = {
+    def apply(e1: TDSL[Expr], e2: TDSL[Expr], e3: TDSL[Expr], e4: TDSL[Expr]): TDSL[App] = {
       f(e1)(e2)(e3)(e4)
     }
 
-    def apply[B <: Expr, C <: Expr, D <: Expr, E <: Expr, F <: Expr]
-    (e1: TDSL[B], e2: TDSL[C], e3: TDSL[D], e4: TDSL[E], e5: TDSL[F]): TDSL[App] = {
+    def apply(e1: TDSL[Expr], e2: TDSL[Expr], e3: TDSL[Expr], e4: TDSL[Expr], e5: TDSL[Expr]): TDSL[App] = {
       f(e1)(e2)(e3)(e4)(e5)
     }
   }
 
-  implicit class FunPipe[A <: Expr](e: TDSL[A]) {
-    def |>[B <: Expr](f: TDSL[B]): TDSL[App] = f.apply(e)
+  implicit class FunPipe(e: TDSL[Expr]) {
+    def |>(f: TDSL[Expr]): TDSL[App] = f.apply(e)
   }
 
-  implicit class FunPipeReverse[A <: Expr](f: TDSL[A]) {
-    def $[B <: Expr](e: TDSL[B]): TDSL[App] = f.apply(e)
+  implicit class FunPipeReverse(f: TDSL[Expr]) {
+    def $(e: TDSL[Expr]): TDSL[App] = f.apply(e)
   }
 
-  implicit class FunComp[A <: Expr](f: TDSL[A]) {
-    def >>[B <: Expr](g: TDSL[B]): TDSL[Lambda] = fun(x => g(f(x)))
+  implicit class FunComp(f: TDSL[Expr]) {
+    def >>(g: TDSL[Expr]): TDSL[Lambda] = fun(x => g(f(x)))
   }
 
-  implicit class FunCompReverse[A <: Expr](f: TDSL[A]) {
-    def o[B <: Expr](g: TDSL[B]): TDSL[Lambda] = fun(x => f(g(x)))
+  implicit class FunCompReverse(f: TDSL[Expr]) {
+    def o(g: TDSL[Expr]): TDSL[Lambda] = fun(x => f(g(x)))
   }
 
   // function values
   object fun {
-    def apply[T <: Expr](t: Type)(f: TDSL[Identifier] => TDSL[T]): TDSL[Lambda] = {
+    def apply(t: Type)(f: TDSL[Identifier] => TDSL[Expr]): TDSL[Lambda] = {
       val x = identifier(freshName("e")) >>= (i => tdsl(i.setType(t)))
       lambda(x, f(x))
     }
 
-    def apply[T <: Expr](f: TDSL[Identifier] => TDSL[T]): TDSL[Lambda] = untyped(f)
-    def apply[T <: Expr](f: (TDSL[Identifier], TDSL[Identifier]) => TDSL[T]): TDSL[Lambda] = untyped(f)
-    def apply[T <: Expr](f: (TDSL[Identifier], TDSL[Identifier], TDSL[Identifier]) => TDSL[T]): TDSL[Lambda] = untyped(f)
-    def apply[T <: Expr](f: (TDSL[Identifier], TDSL[Identifier], TDSL[Identifier], TDSL[Identifier]) => TDSL[T]): TDSL[Lambda] = untyped(f)
-    def apply[T <: Expr](f: (TDSL[Identifier], TDSL[Identifier], TDSL[Identifier], TDSL[Identifier], TDSL[Identifier]) => TDSL[T]): TDSL[Lambda] = untyped(f)
-    def apply[T <: Expr](f: (TDSL[Identifier], TDSL[Identifier], TDSL[Identifier], TDSL[Identifier], TDSL[Identifier], TDSL[Identifier]) => TDSL[T]): TDSL[Lambda] = untyped(f)
+    def apply(f: TDSL[Identifier] => TDSL[Expr]): TDSL[Lambda] = untyped(f)
+    def apply(f: (TDSL[Identifier], TDSL[Identifier]) => TDSL[Expr]): TDSL[Lambda] = untyped(f)
+    def apply(f: (TDSL[Identifier], TDSL[Identifier], TDSL[Identifier]) => TDSL[Expr]): TDSL[Lambda] = untyped(f)
+    def apply(f: (TDSL[Identifier], TDSL[Identifier], TDSL[Identifier], TDSL[Identifier]) => TDSL[Expr]): TDSL[Lambda] = untyped(f)
+    def apply(f: (TDSL[Identifier], TDSL[Identifier], TDSL[Identifier], TDSL[Identifier], TDSL[Identifier]) => TDSL[Expr]): TDSL[Lambda] = untyped(f)
+    def apply(f: (TDSL[Identifier], TDSL[Identifier], TDSL[Identifier], TDSL[Identifier], TDSL[Identifier], TDSL[Identifier]) => TDSL[Expr]): TDSL[Lambda] = untyped(f)
 
-    private def untyped[T <: Expr](f: TDSL[Identifier] => TDSL[T]): TDSL[Lambda] = {
+    private def untyped(f: TDSL[Identifier] => TDSL[Expr]): TDSL[Lambda] = {
       val e = identifier(freshName("e"))
       lambda(e, f(e))
     }
 
-    private def untyped[T <: Expr](f: (TDSL[Identifier], TDSL[Identifier]) => TDSL[T]): TDSL[Lambda] = {
+    private def untyped(f: (TDSL[Identifier], TDSL[Identifier]) => TDSL[Expr]): TDSL[Lambda] = {
       val e = identifier(freshName("e"))
       lambda(e, untyped(e1 => f(e, e1)))
     }
 
-    private def untyped[T <: Expr](f: (TDSL[Identifier], TDSL[Identifier], TDSL[Identifier]) => TDSL[T]): TDSL[Lambda] = {
+    private def untyped(f: (TDSL[Identifier], TDSL[Identifier], TDSL[Identifier]) => TDSL[Expr]): TDSL[Lambda] = {
       val e = identifier(freshName("e"))
       lambda(e, untyped((e1, e2) => f(e, e1, e2)))
     }
 
-    private def untyped[T <: Expr](f: (TDSL[Identifier], TDSL[Identifier], TDSL[Identifier], TDSL[Identifier]) => TDSL[T]): TDSL[Lambda] = {
+    private def untyped(f: (TDSL[Identifier], TDSL[Identifier], TDSL[Identifier], TDSL[Identifier]) => TDSL[Expr]): TDSL[Lambda] = {
       val e = identifier(freshName("e"))
       lambda(e, untyped((e1, e2, e3) => f(e, e1, e2, e3)))
     }
 
-    private def untyped[T <: Expr](f: (TDSL[Identifier], TDSL[Identifier], TDSL[Identifier], TDSL[Identifier], TDSL[Identifier]) => TDSL[T]): TDSL[Lambda] = {
+    private def untyped(f: (TDSL[Identifier], TDSL[Identifier], TDSL[Identifier], TDSL[Identifier], TDSL[Identifier]) => TDSL[Expr]): TDSL[Lambda] = {
       val e = identifier(freshName("e"))
       lambda(e, untyped((e1, e2, e3, e4) => f(e, e1, e2, e3, e4)))
     }
 
-    private def untyped[T <: Expr](f: (TDSL[Identifier], TDSL[Identifier], TDSL[Identifier], TDSL[Identifier], TDSL[Identifier], TDSL[Identifier]) => TDSL[T]): TDSL[Lambda] = {
+    private def untyped(f: (TDSL[Identifier], TDSL[Identifier], TDSL[Identifier], TDSL[Identifier], TDSL[Identifier], TDSL[Identifier]) => TDSL[Expr]): TDSL[Lambda] = {
       val e = identifier(freshName("e"))
       lambda(e, untyped((e1, e2, e3, e4, e5) => f(e, e1, e2, e3, e4, e5)))
     }
 
     //noinspection TypeAnnotation
     def apply(ft: FunType[Type, Type]) = new {
-      def apply[T <: Expr](f: TDSL[Identifier] => TDSL[T]): TDSL[Lambda] = untyped(f) :: ft
-      def apply[T <: Expr](f: (TDSL[Identifier], TDSL[Identifier]) => TDSL[T]): TDSL[Lambda] = untyped(f) :: ft
-      def apply[T <: Expr](f: (TDSL[Identifier], TDSL[Identifier], TDSL[Identifier]) => TDSL[T]): TDSL[Lambda] = untyped(f) :: ft
-      def apply[T <: Expr](f: (TDSL[Identifier], TDSL[Identifier], TDSL[Identifier], TDSL[Identifier]) => TDSL[T]): TDSL[Lambda] = untyped(f) :: ft
-      def apply[T <: Expr](f: (TDSL[Identifier], TDSL[Identifier], TDSL[Identifier], TDSL[Identifier], TDSL[Identifier]) => TDSL[T]): TDSL[Lambda] = untyped(f) :: ft
-      def apply[T <: Expr](f: (TDSL[Identifier], TDSL[Identifier], TDSL[Identifier], TDSL[Identifier], TDSL[Identifier], TDSL[Identifier]) => TDSL[T]): TDSL[Lambda] = untyped(f) :: ft
+      def apply(f: TDSL[Identifier] => TDSL[Expr]): TDSL[Lambda] = untyped(f) :: ft
+      def apply(f: (TDSL[Identifier], TDSL[Identifier]) => TDSL[Expr]): TDSL[Lambda] = untyped(f) :: ft
+      def apply(f: (TDSL[Identifier], TDSL[Identifier], TDSL[Identifier]) => TDSL[Expr]): TDSL[Lambda] = untyped(f) :: ft
+      def apply(f: (TDSL[Identifier], TDSL[Identifier], TDSL[Identifier], TDSL[Identifier]) => TDSL[Expr]): TDSL[Lambda] = untyped(f) :: ft
+      def apply(f: (TDSL[Identifier], TDSL[Identifier], TDSL[Identifier], TDSL[Identifier], TDSL[Identifier]) => TDSL[Expr]): TDSL[Lambda] = untyped(f) :: ft
+      def apply(f: (TDSL[Identifier], TDSL[Identifier], TDSL[Identifier], TDSL[Identifier], TDSL[Identifier], TDSL[Identifier]) => TDSL[Expr]): TDSL[Lambda] = untyped(f) :: ft
     }
   }
 
   object nFun {
-    def apply[T <: Expr](r: lift.arithmetic.Range, f: NatIdentifier => TDSL[T]): TDSL[DepLambda[NatKind]] = {
+    def apply(r: lift.arithmetic.Range, f: NatIdentifier => TDSL[Expr]): TDSL[DepLambda[NatKind]] = {
       val x = NatIdentifier(freshName("n"), r, isExplicit = true)
-      depLambda[NatKind, T](x, f(x))
+      depLambda[NatKind](x, f(x))
     }
 
-    def apply[T <: Expr](f: NatIdentifier => TDSL[T]): TDSL[DepLambda[NatKind]] = {
+    def apply(f: NatIdentifier => TDSL[Expr]): TDSL[DepLambda[NatKind]] = {
       nFun(lift.arithmetic.RangeAdd(0, lift.arithmetic.PosInf, 1), f)
     }
 
-    def apply[T <: Expr](f: (NatIdentifier, NatIdentifier) => TDSL[T]): TDSL[DepLambda[NatKind]] = {
+    def apply(f: (NatIdentifier, NatIdentifier) => TDSL[Expr]): TDSL[DepLambda[NatKind]] = {
       val r = lift.arithmetic.RangeAdd(0, lift.arithmetic.PosInf, 1)
       val n = NatIdentifier(freshName("n"), r, isExplicit = true)
-      depLambda[NatKind, DepLambda[NatKind]](n, nFun(f(n, _)))
+      depLambda[NatKind](n, nFun(f(n, _)))
     }
 
-    def apply[T <: Expr](f: (NatIdentifier, NatIdentifier, NatIdentifier) => TDSL[T]): TDSL[DepLambda[NatKind]] = {
+    def apply(f: (NatIdentifier, NatIdentifier, NatIdentifier) => TDSL[Expr]): TDSL[DepLambda[NatKind]] = {
       val r = lift.arithmetic.RangeAdd(0, lift.arithmetic.PosInf, 1)
       val n = NatIdentifier(freshName("n"), r, isExplicit = true)
-      depLambda[NatKind, DepLambda[NatKind]](n, nFun((n1, n2) => f(n, n1, n2)))
+      depLambda[NatKind](n, nFun((n1, n2) => f(n, n1, n2)))
     }
 
-    def apply[T <: Expr](f: (NatIdentifier, NatIdentifier, NatIdentifier, NatIdentifier) => TDSL[T]): TDSL[DepLambda[NatKind]] = {
+    def apply(f: (NatIdentifier, NatIdentifier, NatIdentifier, NatIdentifier) => TDSL[Expr]): TDSL[DepLambda[NatKind]] = {
       val r = lift.arithmetic.RangeAdd(0, lift.arithmetic.PosInf, 1)
       val n = NatIdentifier(freshName("n"), r, isExplicit = true)
-      depLambda[NatKind, DepLambda[NatKind]](n, nFun((n1, n2, n3) => f(n, n1, n2, n3)))
+      depLambda[NatKind](n, nFun((n1, n2, n3) => f(n, n1, n2, n3)))
     }
 
-    def apply[T <: Expr](f: (NatIdentifier, NatIdentifier, NatIdentifier, NatIdentifier, NatIdentifier) => TDSL[T]): TDSL[DepLambda[NatKind]] = {
+    def apply(f: (NatIdentifier, NatIdentifier, NatIdentifier, NatIdentifier, NatIdentifier) => TDSL[Expr]): TDSL[DepLambda[NatKind]] = {
       val r = lift.arithmetic.RangeAdd(0, lift.arithmetic.PosInf, 1)
       val n = NatIdentifier(freshName("n"), r, isExplicit = true)
-      depLambda[NatKind, DepLambda[NatKind]](n, nFun((n1, n2, n3, n4) => f(n, n1, n2, n3, n4)))
+      depLambda[NatKind](n, nFun((n1, n2, n3, n4) => f(n, n1, n2, n3, n4)))
     }
   }
 
   object dtFun {
-    def apply[T <: Expr](f: DataTypeIdentifier => TDSL[T]): TDSL[DepLambda[DataKind]] = {
+    def apply(f: DataTypeIdentifier => TDSL[Expr]): TDSL[DepLambda[DataKind]] = {
       val x = DataTypeIdentifier(freshName("dt"), isExplicit = true)
-      depLambda[DataKind, T](x, f(x))
+      depLambda[DataKind](x, f(x))
     }
   }
 

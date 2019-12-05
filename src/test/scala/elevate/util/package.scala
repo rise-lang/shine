@@ -19,37 +19,37 @@ package object util {
   def T: TDSL[Transpose] = transpose
   def S: TDSL[DepApp[NatKind]] = split(tileSize) //slide(3)(1)
   def J: TDSL[Join] = join
-  def *[T <: Rise](x: TDSL[T]): TDSL[App] = map(x)
-  def **[T <: Rise](x: TDSL[T]): TDSL[App] = map(map(x))
-  def ***[T <: Rise](x: TDSL[T]): TDSL[App] = map(map(map(x)))
-  def ****[T <: Rise](x: TDSL[T]): TDSL[App] = map(map(map(map(x))))
-  def *****[T <: Rise](x: TDSL[T]): TDSL[App] = map(map(map(map(map(x)))))
-  def ******[T <: Rise](x: TDSL[T]): TDSL[App] = map(map(map(map(map(map(x))))))
+  def *(x: TDSL[Rise]): TDSL[App] = map(x)
+  def **(x: TDSL[Rise]): TDSL[App] = map(map(x))
+  def ***(x: TDSL[Rise]): TDSL[App] = map(map(map(x)))
+  def ****(x: TDSL[Rise]): TDSL[App] = map(map(map(map(x))))
+  def *****(x: TDSL[Rise]): TDSL[App] = map(map(map(map(map(x)))))
+  def ******(x: TDSL[Rise]): TDSL[App] = map(map(map(map(map(map(x))))))
 
-  def λ[T <: Rise](f: TDSL[Identifier] => TDSL[T]): TDSL[Lambda] = fun(f)
+  def λ(f: TDSL[Identifier] => TDSL[Expr]): TDSL[Lambda] = fun(f)
 
   // map in LCNF
-  def *![T <: Rise](x: TDSL[T]): TDSL[App] = {
+  def *!(x: TDSL[Rise]): TDSL[App] = {
     val i = identifier(freshName("e"))
     map(lambda(i, app(x, i)))
   }
 
-  def **![T <: Rise](x: TDSL[T]): TDSL[App] = {
+  def **!(x: TDSL[Rise]): TDSL[App] = {
     val i = identifier(freshName("e"))
     map(lambda(i, app(*!(x), i)))
   }
 
-  def ***![T <: Rise](x: TDSL[T]): TDSL[App] = {
+  def ***!(x: TDSL[Rise]): TDSL[App] = {
     val i = identifier(freshName("e"))
     map(lambda(i, app(**!(x), i)))
   }
 
-  def ****![T <: Rise](x: TDSL[T]): TDSL[App] = {
+  def ****!(x: TDSL[Rise]): TDSL[App] = {
     val i = identifier(freshName("e"))
     map(lambda(i, app(***!(x), i)))
   }
 
-  def testMultiple(list: List[Rise], gold: Rise) = {
+  def testMultiple(list: List[Rise], gold: Rise): Unit = {
     assert(list.forall(betaEtaEquals(_, gold)))
   }
 }

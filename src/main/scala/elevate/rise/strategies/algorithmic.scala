@@ -21,7 +21,7 @@ object algorithmic {
     // TODO: this should be expressed with elevate strategies
     @silent
     @scala.annotation.tailrec
-    private def mapFirstFissionRec(x: Identifier, f: Expr, gx: Expr): Expr = {
+    private def mapFirstFissionRec(x: Identifier, f: Rise, gx: Rise): Rise = {
       gx match {
         case App(f2, gx2) =>
           if (gx2 == x) {
@@ -43,7 +43,7 @@ object algorithmic {
 
     // TODO: this should be expressed with elevate strategies
     @silent
-    def mapFullFissionRec(x: Identifier, gx: Expr): Expr = {
+    def mapFullFissionRec(x: Identifier, gx: Rise): Rise = {
       gx match {
         case App(f, gx2) =>
           if (gx2 == x) {
