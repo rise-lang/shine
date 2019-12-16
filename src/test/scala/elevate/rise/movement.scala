@@ -25,7 +25,7 @@ class movement extends test_util.Tests {
     testMultiple(
       List(
         LCNF(λ(f => *(λ(x => *(f)(x))) >> T)).get,
-        trivial(λ(f => **(f) >> T))
+        toExpr(λ(f => **(f) >> T))
       ).map((oncetd(`**f >> T -> T >> **f`)).apply(_).get), gold
     )
   }

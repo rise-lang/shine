@@ -11,8 +11,9 @@ import elevate.rise.strategies.normalForm._
 import elevate.rise.strategies.tiling._
 import elevate.rise.strategies.util._
 import elevate.util._
-import lift.core.DSL._
+import lift.core.TypedDSL._
 import lift.core.types.NatKind
+import lift.core.primitives._
 
 
 class traversals extends test_util.Tests {
@@ -24,7 +25,7 @@ class traversals extends test_util.Tests {
     val metaStrategy = inBody(inBody(bodyFission))(strategy)
     val newStrategy = metaStrategy.get
     assert(strategy != newStrategy)
-    assert(newStrategy(expr).get == strategy(expr).get)
+    assert(erase(newStrategy(expr).get) == erase(strategy(expr).get))
   }
 
   test("simplification") {
@@ -33,22 +34,22 @@ class traversals extends test_util.Tests {
     println(orig.toString)
 
     val oldTiling = body(body(
-      function(argumentOf(map,body(function(splitJoin(4)) `;` LCNF `;` RNF))) `;`
+      function(argumentOf(Map()(), body(function(splitJoin(4)) `;` LCNF `;` RNF))) `;`
         function(splitJoin(4)) `;`
         LCNF `;` RNF `;` LCNF `;` RNF `;` LCNF `;`
-        argument(argument(function(argumentOf(map,body(idAfter `;` createTransposePair `;` LCNF `;` argument(mapMapFBeforeTranspose)))) `;` LCNF `;` RNF)) `;`
+        argument(argument(function(argumentOf(Map()(), body(idAfter `;` createTransposePair `;` LCNF `;` argument(mapMapFBeforeTranspose)))) `;` LCNF `;` RNF)) `;`
         LCNF `;` RNF `;` LCNF `;` RNF `;` RNF
     ))
 
     val simplified = body(body(
-      function(argumentOf(map,body(function(splitJoin(4))))) `;`
+      function(argumentOf(Map()(), body(function(splitJoin(4))))) `;`
         function(splitJoin(4)) `;`
         RNF `;` LCNF `;`
-        argument(argument(function(argumentOf(map,body(idAfter `;` createTransposePair `;` LCNF `;` argument(mapMapFBeforeTranspose)))) `;` RNF))))
+        argument(argument(function(argumentOf(Map()(), body(idAfter `;` createTransposePair `;` LCNF `;` argument(mapMapFBeforeTranspose)))) `;` RNF))))
 
     val normalized = FNF(simplified).get
     println(normalized)
-    val normalizedModified = body(body(function(argumentOf(map,body(function(splitJoin(4))))))) `;`
+    val normalizedModified = body(body(function(argumentOf(Map()(), body(function(splitJoin(4))))))) `;`
     inferType `;`
       body(body(function(splitJoin(4)))) `;`
       inferType `;`
@@ -56,13 +57,13 @@ class traversals extends test_util.Tests {
       inferType `;`
       body(body(LCNF)) `;`
       inferType `;`
-      body(body(argument(argument(function(argumentOf(map,body(idAfter))))))) `;`
+      body(body(argument(argument(function(argumentOf(Map()(), body(idAfter))))))) `;`
       inferType `;`
-      body(body(argument(argument(function(argumentOf(map,body(createTransposePair))))))) `;`
+      body(body(argument(argument(function(argumentOf(Map()(), body(createTransposePair))))))) `;`
       inferType `;`
-      body(body(argument(argument(function(argumentOf(map,body(LCNF))))))) `;`
+      body(body(argument(argument(function(argumentOf(Map()(), body(LCNF))))))) `;`
       inferType `;`
-      body(body(argument(argument(function(argumentOf(map,body(argument(mapMapFBeforeTranspose)))))))) `;`
+      body(body(argument(argument(function(argumentOf(Map()(), body(argument(mapMapFBeforeTranspose)))))))) `;`
       inferType `;`
       body(body(argument(argument(RNF))))
 
@@ -75,7 +76,7 @@ class traversals extends test_util.Tests {
     val expr2 = app(join, app(app(map, lambda(identifier("η125"), app(app(map, lambda(identifier("ee3"), app(join, app(app(map, lambda(identifier("η124"), app(app(map, lambda(identifier("η123"), app(identifier("ee2"), identifier("η123")))), identifier("η124")))), app(depApp[NatKind](split, 4), identifier("ee3")))))), identifier("η125")))), app(depApp[NatKind](split, 4), identifier("ee1"))))
     val expr5 = app(join, app(app(map, lambda(identifier("η141"), app(app(map, lambda(identifier("η140"), app(join, identifier("η140")))), identifier("η141")))), app(app(map, lambda(identifier("η145"), app(app(map, lambda(identifier("η144"), app(app(map, lambda(identifier("η143"), app(app(map, lambda(identifier("η142"), app(identifier("ee2"), identifier("η142")))), identifier("η143")))), identifier("η144")))), identifier("η145")))), app(app(map, lambda(identifier("η147"), app(app(map, lambda(identifier("η146"), app(depApp[NatKind](split, 4), identifier("η146")))), identifier("η147")))), app(depApp[NatKind](split, 4), identifier("ee1"))))))
 
-    assert(RNF(expr2).get == expr5)
+    assert(RNF(expr2).get == toExpr(expr5))
   }
 
   test("id traversals") {

@@ -12,11 +12,11 @@ class halide extends test_util.Tests {
   private def LCNFrewrite(a: Rise, s: Strategy[Rise], b: Rise): Unit = {
     val na = LCNF(a).get
     val nb = LCNF(b).get
-    assert(s(na).get == nb)
+    assert(erase(s(na).get) == erase(nb))
   }
 
   test("generic reorder 1D") {
-    val expr = trivial(λ(i => λ(f => *!(f) $ i)))
+    val expr = toExpr(λ(i => λ(f => *!(f) $ i)))
     assert(body(body(reorder(Seq(1))))(expr).get == expr)
 
     try(body(body(reorder(Seq(1,2))))(expr).get) catch {

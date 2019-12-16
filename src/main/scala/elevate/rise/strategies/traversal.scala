@@ -1,7 +1,7 @@
 package elevate.rise.strategies
 
 import elevate.core._
-import lift.core.DSL._
+import lift.core.primitives._
 import elevate.rise.rules.algorithmic._
 import elevate.core.strategies.traversal._
 import elevate.core.strategies.basic._
@@ -17,7 +17,7 @@ object traversal {
   //  (map λe14. (transpose ((map (map e12)) e14)))      // result of `function`
   //       λe14. (transpose ((map (map e12)) e14))       // result of `argument`
   //             (transpose ((map (map e12)) e14))       // result of 'body' -> here we can apply s
-  def fmap: Strategy[Rise] => Strategy[Rise] = s => function(argumentOf(map, body(s)))
+  def fmap: Strategy[Rise] => Strategy[Rise] = s => function(argumentOf(Map()(), body(s)))
 
   // fmap applied for expressions in rewrite normal form:
   // fuse -> fmap -> fission

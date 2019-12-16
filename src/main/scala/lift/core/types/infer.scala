@@ -2,8 +2,8 @@ package lift.core.types
 
 import lift.core._
 import lift.core.lifting._
-import lift.core.DSL._
 import lift.core.TypeLevelDSL._
+import lift.core.primitives.Annotation
 
 import scala.collection.mutable
 
@@ -60,7 +60,7 @@ object infer {
       case i: Identifier =>
         val t = env
           .getOrElse(i.name, error(s"$i has no type in the environment"))
-        i :: t
+        i.setType(t)
 
       case Lambda(x, e) =>
         val tx = x.setType(genType(x))
@@ -104,6 +104,12 @@ object infer {
         val constraint = DepConstraint(tf.t, x, exprT)
         constraints += constraint
         DepApp(tf, x)(exprT)
+
+      case Annotation(e, t) =>
+        val te = typed(e)
+        val constraint = TypeConstraint(te.t, t)
+        constraints += constraint
+        te
 
       case l: Literal => l
 
@@ -179,6 +185,8 @@ object infer {
 
       // concatenating two solutions starts by combining them ...
       val s = combine(this, other)
+      s
+      /*
       // ... it then takes all the type values ...
       s.ts.map {
         // ... to look for `NatToDataApply` nodes that should be replaced by `b`,
@@ -195,6 +203,7 @@ object infer {
         case _ => Solution()
       // ... finally, all resulting solutions are combined into a single one by folding over them
       }.foldLeft(s)(combine)
+       */
     }
 
     def apply(constraints: Seq[Constraint]): Seq[Constraint] = {

@@ -9,7 +9,7 @@ class typedDSL extends test_util.Tests {
     val e =
       nFun(n => fun(DepArrayType(n, n2dtFun(i => (i+1)`.`float)) ->: DepArrayType(n, n2dtFun(i => (i+1)`.`float)))(xs =>
         xs |> depMapSeq(nFun(_ => mapSeq(fun(x => x))))))
-    val infered = e.matches(freshTypeIdentifier)
+    val infered: Expr = e
     println(infered)
   }
 }

@@ -142,30 +142,46 @@ object substitute {
 
   // substitute in Nat
 
-  def natInNat(ae: Nat, `for`: NatIdentifier, in: Nat): Nat = {
+  def natInNat(subs: Map[NatIdentifier, Nat], in: Nat): Nat = {
     in.visitAndRebuild {
-      case v: NatIdentifier =>
-        if (`for`.name == v.name) {
-          ae
-        } else {
-          v
-        }
-      case e => e
+      case i: NatIdentifier => subs.get(i) match {
+        case Some(n) => n
+        case None => i
+      }
+      case n => n
     }
   }
 
+  def natInNat(ae: Nat, `for`: NatIdentifier, in: Nat): Nat = natInNat(Map(`for` -> ae), in)
+
   // substitute in AddressSpace
+
+  def addressSpaceInAddressSpace(subs: Map[AddressSpaceIdentifier, AddressSpace], in: AddressSpace): AddressSpace = {
+    in match {
+      case i: AddressSpaceIdentifier => subs.get(i) match {
+        case Some(a) => a
+        case None => i
+      }
+      case a => a
+    }
+  }
 
   def addressSpaceInAddressSpace(a: AddressSpace, `for`: AddressSpaceIdentifier, in: AddressSpace): AddressSpace = {
     if (in == `for`) { a } else { in }
   }
 
   // substitute in NatToData
-
-  def n2dInN2d(n: NatToData, `for`: NatToData, in: NatToData): NatToData = {
+  def n2dInN2d(subs: Map[NatToDataIdentifier, NatToData], in: NatToData): NatToData = {
     in match {
-      case i: NatToDataIdentifier => if (i == `for`) n else in
-      case _ => in
+      case i: NatToDataIdentifier => subs.get(i) match {
+        case Some(n2d) => n2d
+        case None => i
+      }
+      case n2d => n2d
     }
+  }
+
+  def n2dInN2d(n2d: NatToData, `for`: NatToDataIdentifier, in: NatToData): NatToData = {
+    if (in == `for`) n2d else in
   }
 }

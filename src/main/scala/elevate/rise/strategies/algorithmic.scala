@@ -3,7 +3,7 @@ package elevate.rise.strategies
 import com.github.ghik.silencer.silent
 import elevate.core.{Failure, RewriteResult, Strategy, Success}
 import elevate.rise.Rise
-import lift.core.DSL._
+import lift.core.TypedDSL._
 import lift.core._
 
 object algorithmic {
@@ -14,20 +14,20 @@ object algorithmic {
   // *(g >> .. >> f) -> *g >> *(.. >> f)
   case object mapFirstFission extends Strategy[Rise] {
     def apply(e: Rise): RewriteResult[Rise] = e match {
-      case App(primitives.Map(), Lambda(x, gx)) => Success(mapFirstFissionRec(x, fun(e => e), gx))
+      case App(primitives.Map(), Lambda(x, gx)) => Success(mapFirstFissionRec(x, fun(e => e), gx) :: e.t)
       case _                                    => Failure(mapFirstFission)
     }
 
     // TODO: this should be expressed with elevate strategies
     @silent
     @scala.annotation.tailrec
-    private def mapFirstFissionRec(x: Identifier, f: Rise, gx: Rise): Rise = {
+    private def mapFirstFissionRec(x: Identifier, f: TDSL[Rise], gx: Rise): TDSL[Rise] = {
       gx match {
         case App(f2, gx2) =>
           if (gx2 == x) {
             map(f2) >> map(f)
           } else {
-            mapFirstFissionRec(x, fun(e => f(f2(e))), gx2)
+            mapFirstFissionRec(x, fun(e => f(typed(f2)(e))), gx2)
           }
       }
     }
@@ -37,13 +37,13 @@ object algorithmic {
   // *(g >> .. >> f) -> *g >> .. >> *f
   case object mapFullFission extends Strategy[Rise] {
     def apply(e: Rise): RewriteResult[Rise] = e match {
-      case App(primitives.Map(), Lambda(x, gx)) => Success(mapFullFissionRec(x, gx))
+      case App(primitives.Map(), Lambda(x, gx)) => Success(mapFullFissionRec(x, gx) :: e.t)
       case _                                    => Failure(mapFullFission)
     }
 
     // TODO: this should be expressed with elevate strategies
     @silent
-    def mapFullFissionRec(x: Identifier, gx: Rise): Rise = {
+    def mapFullFissionRec(x: Identifier, gx: Rise): TDSL[Rise] = {
       gx match {
         case App(f, gx2) =>
           if (gx2 == x) {

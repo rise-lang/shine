@@ -10,7 +10,7 @@ import elevate.rise.strategies.predicate._
 import elevate.rise.rules._
 import elevate.rise.rules.algorithmic._
 import elevate.rise.rules.traversal.{argumentOf, body, function}
-import lift.core.DSL._
+import lift.core.primitives._
 
 // todo think about better names!
 object normalForm {
@@ -26,10 +26,10 @@ object normalForm {
     def apply(e: Rise): RewriteResult[Rise] =
       (BENF `;`
         // there is no argument of a map which is not eta-abstracted, i.e., every argument of a map is a lambda
-        normalize.apply(argumentOf(map, (not(isLambda) `;` etaAbstraction))) `;`
+        normalize.apply(argumentOf(Map()(), (not(isLambda) `;` etaAbstraction))) `;`
         // a reduce always contains two lambdas declaring y and acc
-        normalize.apply(argumentOf(reduce, (not(isLambda) `;` etaAbstraction))) `;`
-        normalize.apply(argumentOf(reduce, body((not(isLambda) `;` etaAbstraction)))) `;`
+        normalize.apply(argumentOf(Reduce()(), (not(isLambda) `;` etaAbstraction))) `;`
+        normalize.apply(argumentOf(Reduce()(), body((not(isLambda) `;` etaAbstraction)))) `;`
         // there is no map(f) without an argument == there is no way to get to a map without visiting two applies
         // same for reduce and three applies
         normalize.apply(

@@ -11,7 +11,7 @@ package object util {
 
   // Rise-related utils
 
-  def betaEtaEquals(a: Rise, b: Rise): Boolean = BENF(a).get == BENF(b).get
+  def betaEtaEquals(a: Rise, b: Rise): Boolean = erase(BENF(a).get) == erase(BENF(b).get)
 
   val tileSize = 4
 

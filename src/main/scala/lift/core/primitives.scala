@@ -8,6 +8,13 @@ import primitiveMacro.Primitive.primitive
 
 object primitives {
 
+  case class Annotation(e: Expr, annotation: Type) extends Primitive {
+    override val t: Type = TypePlaceholder
+    override def typeScheme: Type = throw TypeException("cannot get the type scheme of an annotated Expr")
+    override def setType(t: Type): Annotation = throw TypeException("cannot set the type of an annotated Expr")
+    override def name: String = s"Annotated Expr: $annotation"
+  }
+
   @primitive case class MakeArray(n: Int)(override val t: Type = TypePlaceholder) extends Primitive {
     private def tRec(m: Int, dt: DataType): Type =
       if (m <= 0) { ArrayType(n, dt) }
