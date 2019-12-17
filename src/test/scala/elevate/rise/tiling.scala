@@ -26,7 +26,12 @@ class tiling extends test_util.Tests {
 
   implicit def rewriteResultToExpr(r: RewriteResult[Expr]): Expr = r.get
 
-  def betaEtaEquals(a: Rise, b: Rise): Boolean = erase(BENF(a).get) == erase(BENF(b).get)
+  def betaEtaEquals(a: Rise, b: Rise): Boolean = {
+    val na = BENF(a).get
+    val nb = BENF(b).get
+    val uab: Rise = toTDSL(na) :: nb.t
+    makeClosed(uab) == makeClosed(nb)
+  }
   // Check that DSL makes sense
 
   test("LCNF") {
@@ -214,17 +219,17 @@ class tiling extends test_util.Tests {
   // Tiling four loops
 
   test("tileND - tile four loops 4D") {
-    val input4D = λ(i => λ(f => ****!(f) $ i))
-    val gold = λ(i => λ(f => (
+    val input4D = makeClosed(λ(i => λ(f => ****!(f) $ i)))._1
+    val gold = makeClosed(λ(i => λ(f => (
       J o **(J) o ****(J) o ******(J) o
         *****(T) o ***(T) o ****(T) o *(T) o **(T) o ***(T) o
         ****(****(f)) o
         ***(T) o **(T) o *(T) o ****(T) o ***(T) o *****(T) o
         ******(S) o ****(S) o **(S) o S) $ i
-      ))
+      )))._1
 
     assert(betaEtaEquals(
-      body(body(tileND(4)(tileSize)))(input4D),
+      position(8)(tileND(4)(tileSize)).apply(input4D),
       gold
     ))
   }

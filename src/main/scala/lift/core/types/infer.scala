@@ -153,9 +153,12 @@ object infer {
     }
 
     def apply(n: Nat): Nat = {
+      substitute.natInNat(ns, n)
+      /*
       ns.foldLeft(n) {
         case (result, (na, nb)) => substitute.natInNat(nb, `for` = na, in = result)
       }
+      */
     }
 
     def apply(a: AddressSpace): AddressSpace = {

@@ -34,14 +34,14 @@ object movement {
       // LCNF
       case App(Transpose(),
       App(
-      App(Map(), Lambda(n7, App(
-                App(Map(), inner @ Lambda(n6, App(
+      App(Map(), lamA @ Lambda(n7, App(
+                App(Map(), lamB @ Lambda(n6, App(
       f, n61))), n71))),
       arg
       )
-      ) if contains[Rise](n6).apply(n61) && contains[Rise](n7).apply(n71) =>
+      ) if etaReduction(lamA) && etaReduction(lamB) =>
         // Success((typed(arg) |> transpose |> map(map(f))) :: e.t)
-        ??? // FIXME: this rule is wrong in the general case
+        Success((typed(arg) |> transpose |> map(map(f))) :: e.t)
       case _ => Failure(mapMapFBeforeTranspose)
     }
     override def toString = "mapMapFBeforeTranspose"
