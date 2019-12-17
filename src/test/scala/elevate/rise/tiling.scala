@@ -26,6 +26,7 @@ class tiling extends test_util.Tests {
 
   implicit def rewriteResultToExpr(r: RewriteResult[Expr]): Expr = r.get
 
+  def betaEtaEquals(a: Rise, b: Rise): Boolean = erase(BENF(a).get) == erase(BENF(b).get)
   // Check that DSL makes sense
 
   test("LCNF") {
@@ -314,10 +315,10 @@ class tiling extends test_util.Tests {
     assert(betaEtaEquals((RNF `;` RNF `;` RNF `;` BENF) (λ(i => λ(f => (J o **(f) o S) $ i))), gold))
 
     val gold2 = LCNF(λ(i => λ(f => (J o **(f) o S) $ i))).get
-    assert((LCNF `;` LCNF)(λ(i => λ(f => (J o **(f) o S) $ i))).get == gold2)
-    assert((LCNF `;` LCNF `;` LCNF)(λ(i => λ(f => (J o **(f) o S) $ i))).get == gold2)
+    assert(makeClosed((LCNF `;` LCNF)(λ(i => λ(f => (J o **(f) o S) $ i))).get) == makeClosed(gold2))
+    assert(makeClosed((LCNF `;` LCNF `;` LCNF)(λ(i => λ(f => (J o **(f) o S) $ i))).get) == makeClosed(gold2))
 
     val gold3 = (LCNF `;` RNF)(λ(i => λ(f => (J o **(f) o S) $ i))).get
-    assert((LCNF `;` RNF `;` LCNF `;` RNF)(λ(i => λ(f => (J o **(f) o S) $ i))).get == gold3)
+    assert(makeClosed((LCNF `;` RNF `;` LCNF `;` RNF)(λ(i => λ(f => (J o **(f) o S) $ i))).get) == makeClosed(gold3))
   }
 }

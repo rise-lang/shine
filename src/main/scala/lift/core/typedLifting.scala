@@ -32,7 +32,7 @@ object typedLifting {
     def chain(r: Result[Expr]): Result[K#T => Expr] =
       r.bind(liftDepFunExpr,
         f => Expanding((x: K#T) => depApp(f, x) :: (f.t match {
-          case DepFunType(_, t) => t
+          case DepFunType(_, _) => lifting.liftDependentFunctionType(f.t)(x)
           case _ => throw TypeException(s"$f cannot be lifted")
         })))
 

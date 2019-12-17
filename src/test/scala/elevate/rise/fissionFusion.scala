@@ -8,22 +8,27 @@ import elevate.rise.rules.traversal._
 import elevate.rise.strategies.algorithmic.{mapFirstFission, mapFullFission}
 import elevate.rise.strategies.normalForm.BENF
 import lift.core.TypedDSL._
+import lift.core.TypeLevelDSL._
+import lift.core.types._
 import lift.core._
+import elevate.util._
 
 
 class fissionFusion extends test_util.Tests {
 
   def eq(a: Expr, b: Expr): Unit = {
-    if (erase(BENF(a).get) != erase(BENF(b).get)) {
+    if (BENF(a).get != BENF(b).get) {
       throw new Exception(s"expected structural equality:\n$a\n$b")
     }
   }
 
   def check(a: Expr, fis: Strategy[Rise], b: Expr, fus: Strategy[Rise]): Unit = {
-    val na = BENF(a).get
-    val nb = BENF(b).get
-    eq(fis(na).get, nb)
-    eq(fus(nb).get, na)
+    val (closedA, nA) = makeClosed(a)
+    val (closedB, nB) = makeClosed(b)
+    val na = BENF(closedA).get
+    val nb = BENF(closedB).get
+    eq(position(nA)(fis).apply(na).get, nb)
+    eq(position(nB)(fus).apply(nb).get, na)
   }
 
   test("last fission, chain of 2") {

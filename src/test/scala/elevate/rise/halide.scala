@@ -1,18 +1,20 @@
 package elevate.rise
 
+import elevate.core.strategies.traversal._
 import elevate.core.{NotApplicable, Strategy}
-import elevate.rise.rules.traversal.body
+import elevate.rise.rules.traversal._
 import elevate.rise.strategies.halide._
 import elevate.rise.strategies.normalForm._
 import elevate.util._
 import lift.core.TypedDSL.{reorder => _, _}
-import lift.core.types.infer
 
 class halide extends test_util.Tests {
   private def LCNFrewrite(a: Rise, s: Strategy[Rise], b: Rise): Unit = {
-    val na = LCNF(a).get
-    val nb = LCNF(b).get
-    assert(erase(s(na).get) == erase(nb))
+    val (closedA, nA) = makeClosed(a)
+    val (closedB, nB) = makeClosed(b)
+    val na = LCNF(closedA).get
+    val nb = LCNF(closedB).get
+    assert(position(nA)(s).apply(na).get == nb)
   }
 
   test("generic reorder 1D") {

@@ -13,20 +13,53 @@ import scala.language.implicitConversions
 
 object TypedDSL {
 
-  final case class Opaque(e: Expr) extends Primitive {
+  implicit class TrivialSolutionConcat(a: Solution) {
+    def <>(b: Solution): Solution = new Solution(a.ts ++ b.ts, a.ns ++ b.ns, a.as ++ b.as, a.n2ds ++ b.n2ds)
+  }
+
+  final case class Opaque(e: Expr, ftvSubs: Solution = Solution())(override val t: Type = e.t) extends Primitive {
     import TypedDSL.Opaque._
-    override val t: Type = freeze(e.t)
     override def typeScheme: Type = e.t
-    override def setType(t: Type): Opaque = this
-    override def name: String = s"Opaque Expr: $t"
+    override def setType(t: Type): Opaque = {
+      val ftvSubs = getFTVSubs(t)
+      this.copy(ftvSubs = ftvSubs)(freeze(ftvSubs, t))
+    }
+    override def name: String = s"{Opaque Expr: $t}"
   }
 
   object Opaque {
+    def freeze(ftvSubs: Solution, t: Type): Type = new Solution(
+      ftvSubs.ts.mapValues(dt => dt.asInstanceOf[DataTypeIdentifier].asExplicit),
+      ftvSubs.ns.mapValues(n => n.asInstanceOf[NatIdentifier].asExplicit),
+      ftvSubs.as.mapValues(a => a.asInstanceOf[AddressSpaceIdentifier].asExplicit),
+      ftvSubs.n2ds.mapValues(n2d => n2d.asInstanceOf[NatToDataIdentifier].asExplicit)
+    )(t)
+
+    def getFTVSubs(t: Type): Solution = {
+      import scala.collection.immutable.Map
+      val emptySubs: (Map[Type, Type],
+        Map[NatIdentifier, Nat],
+        Map[AddressSpaceIdentifier, AddressSpace],
+        Map[NatToDataIdentifier, NatToData]) = (Map(), Map(), Map(), Map())
+      val ftvs = TopLevel.getFTVs(t)
+      val subs = ftvs.foldLeft(emptySubs)((subs, ftv) => subs match {
+        case (ts, ns, as, n2ds) => ftv match {
+          case _: TypeIdentifier => throw TypeException("TypeIdentifier cannot be frozen")
+          case i: DataTypeIdentifier => (ts ++ Map(i -> i), ns, as, n2ds)
+          case i: NatIdentifier => (ts, ns ++ Map(i -> i), as, n2ds)
+          case i: AddressSpaceIdentifier => (ts, ns, as ++ Map(i -> i), n2ds)
+          case i: NatToDataIdentifier => (ts, ns, as, n2ds ++ Map(i -> i))
+          case i => throw TypeException(s"${i.getClass} is not supported yet")
+        }
+      })
+      new Solution(subs._1, subs._2, subs._3, subs._4)
+    }
+    /*
     def freeze(t: Type): Type = traversal.types.DepthFirstLocalResult(t, new traversal.Visitor {
-      override def visitNat(ae: Nat): Result[Nat] = ae match {
-        case i: NatIdentifier => Stop(i.asExplicit)
-        case _ => Continue(ae, this)
-      }
+      override def visitNat(ae: Nat): Result[Nat] = Stop(ae.visitAndRebuild({
+        case i: NatIdentifier => i.asExplicit
+        case n => n
+      }))
       override def visitAddressSpace(a: AddressSpace): Result[AddressSpace] = a match {
         case i: AddressSpaceIdentifier => Stop(i.asExplicit)
         case _ => Continue(a, this)
@@ -45,9 +78,10 @@ object TypedDSL {
         case _ => Continue(t, this)
       }
     })
+     */
   }
 
-  final case class TopLevel(e: Expr, inst: Solution = Solution())(override val t: Type = TypePlaceholder) extends Primitive {
+  final case class TopLevel(e: Expr, inst: Solution = Solution())(override val t: Type = e.t) extends Primitive {
     import TypedDSL.TopLevel._
     override def typeScheme: Type = e.t
     override def setType(t: Type): TopLevel = {
@@ -68,28 +102,55 @@ object TypedDSL {
       val subs = ftvs.foldLeft(emptySubs)((subs, ftv) => subs match {
         case (ts, ns, as, n2ds) => ftv match {
           case i: TypeIdentifier => (ts ++ Map(i -> implT(identity)), ns, as, n2ds)
+          case i: DataTypeIdentifier => (ts ++ Map(i -> implDT(identity)), ns, as, n2ds)
           case i: NatIdentifier => (ts, ns ++ Map(i -> implN(identity)), as, n2ds)
           case i: AddressSpaceIdentifier => (ts, ns, as ++ Map(i -> implA(identity)), n2ds)
           case i: NatToDataIdentifier => (ts, ns, as, n2ds ++ Map(i -> implN2DT(identity)))
-          case _ => throw TypeException("Not supported yet")
+          case i => throw TypeException(s"${i.getClass} is not supported yet")
         }
       })
       new Solution(subs._1, subs._2, subs._3, subs._4)
     }
 
     def getFTVs(t: Type): Seq[Kind.Identifier] = {
-      val ftvs = mutable.Set[Kind.Identifier]()
+      val ftvs = mutable.ListBuffer[Kind.Identifier]()
       traversal.types.DepthFirstLocalResult(t, new traversal.Visitor {
         override def visitType[T <: Type](t: T): Result[T] = {
           t match {
-            case i: Kind.Identifier with Kind.Explicitness if ! i.isExplicit => ftvs += i
+            case i: DataTypeIdentifier if ! i.isExplicit => ftvs += i
             case i: TypeIdentifier => ftvs += i
             case _ =>
           }
           Continue(t, this)
         }
+        override def visitNat(ae: Nat): Result[Nat] = Stop(ae.visitAndRebuild({
+          case i: NatIdentifier => ftvs += i
+            i
+          case n => n
+        }))
+        override def visitAddressSpace(a: AddressSpace): Result[AddressSpace] = {
+          a match {
+            case i: AddressSpaceIdentifier if ! i.isExplicit => ftvs += i
+            case _ =>
+          }
+          Continue(a, this)
+        }
+        override def visitN2N(n2n: NatToNat): Result[NatToNat] = {
+          n2n match {
+            case i: NatToNatIdentifier if ! i.isExplicit => ftvs += i
+            case _ =>
+          }
+          Continue(n2n, this)
+        }
+        override def visitN2D(n2d: NatToData): Result[NatToData] = {
+          n2d match {
+            case i: NatToDataIdentifier if ! i.isExplicit => ftvs += i
+            case _ =>
+          }
+          Continue(n2d, this)
+        }
       })
-      ftvs.toSeq
+      ftvs.distinct.toSeq
     }
 
     case class Visitor(ftvSubs: Solution, sol: Solution) extends traversal.Visitor {
@@ -160,7 +221,7 @@ object TypedDSL {
     def >>=[X <: Expr](f: T => TDSL[X]): TDSL[X] = f(e)
   }
 
-  implicit def typed[T <: Expr](e: T): TDSL[Opaque] = TDSL(Opaque(e))
+  implicit def typed[T <: Expr](e: T): TDSL[Opaque] = TDSL(Opaque(e)())
 
   def toTDSL[T <: Expr](e: T): TDSL[T] = TDSL(e)
 
@@ -174,10 +235,12 @@ object TypedDSL {
     }
   })
 
+  def untyped(e: Expr): TDSL[Expr] = toTDSL(erase(e))
+
   object TDSL {
     case class Visitor(sol: Solution) extends traversal.Visitor {
       override def visitExpr(e: Expr): Result[Expr] = e match {
-        case Opaque(x) => Stop(x)
+        case Opaque(x, _) => Stop(x)
         case TopLevel(x, inst) => Stop(traversal.DepthFirstLocalResult(x, TopLevel.Visitor(inst, sol)))
         case _ => Continue(e, this)
       }
@@ -187,10 +250,90 @@ object TypedDSL {
       override def visitN2D(n2d: NatToData): Result[NatToData] = Stop(sol(n2d))
     }
 
+    def constrainTypes(expr: Expr,
+                       constraints: mutable.ArrayBuffer[Constraint],
+                       env: mutable.Map[String, Type]
+                      ): (Expr, Solution) = {
+      def constrained(e: Expr): (Expr, Solution) = constrainTypes(e, constraints, env)
+      def genType(e: Expr): Type = if (e.t == TypePlaceholder) freshTypeIdentifier else e.t
+
+      expr match {
+        case i: Identifier =>
+          val t = env
+            .getOrElse(i.name, error(s"$i has no type in the environment"))
+          (i.setType(t), Solution())
+
+        case Lambda(x, e) =>
+          val tx = x.setType(genType(x))
+          env update (tx.name, tx.t)
+          val (te, ftvSubsE) = constrained(e)
+          env remove tx.name
+          val ft = FunType(tx.t, te.t)
+          val exprT = genType(expr)
+          val constraint = TypeConstraint(exprT, ft)
+          constraints += constraint
+          (Lambda(tx, te)(ft), ftvSubsE)
+
+        case App(f, e) =>
+          val (tf, ftvSubsF) = constrained(f)
+          val (te, ftvSubsE) = constrained(e)
+          val exprT = genType(expr)
+          val constraint = TypeConstraint(tf.t, FunType(te.t, exprT))
+          constraints += constraint
+          (App(tf, te)(exprT), ftvSubsF <> ftvSubsE)
+
+        case DepLambda(x, e) =>
+          val (te, ftvSubsE) = constrained(e)
+          val exprT = genType(expr)
+          val tf = x match {
+            case n: NatIdentifier =>
+              DepLambda[NatKind](n, te)(DepFunType[NatKind, Type](n, te.t))
+            case dt: DataTypeIdentifier =>
+              DepLambda[DataKind](dt, te)(DepFunType[DataKind, Type](dt, te.t))
+            case ad: AddressSpaceIdentifier =>
+              DepLambda[AddressSpaceKind](ad, te)(DepFunType[AddressSpaceKind, Type](ad, te.t))
+            case n2n: NatToNatIdentifier =>
+              DepLambda[NatToNatKind](n2n, te)(DepFunType[NatToNatKind, Type](n2n, te.t))
+          }
+          val constraint = TypeConstraint(exprT, tf.t)
+          constraints += constraint
+          (tf, ftvSubsE)
+
+        case DepApp(f, x) =>
+          val (tf, ftvSubsF) = constrained(f)
+          val exprT = genType(expr)
+          val constraint = DepConstraint(tf.t, x, exprT)
+          constraints += constraint
+          (DepApp(tf, x)(exprT), ftvSubsF)
+
+        case Annotation(e, t) =>
+          val (te, ftvSubsE) = constrained(e)
+          val ftvSubsT = Opaque.getFTVSubs(t)
+          val constraint = TypeConstraint(te.t, Opaque.freeze(ftvSubsT, t))
+          constraints += constraint
+          (te, ftvSubsE <> ftvSubsT)
+
+        case o: Opaque =>
+          val frozenExpr = o.setType(o.typeScheme)
+          (frozenExpr, frozenExpr.ftvSubs)
+
+        case l: Literal => (l, Solution())
+
+        case p: Primitive => (p.setType(p.typeScheme), Solution())
+      }
+    }
+
     def infer(e: Expr): Expr = {
       val constraints = mutable.ArrayBuffer[Constraint]()
-      val typed_e = constrainTypes(e, constraints, mutable.Map())
-      val solution = solve(constraints)
+      val (typed_e, ftvSubs) = constrainTypes(e, constraints, mutable.Map())
+      val solution = solve(constraints) match {
+        case Solution(ts, ns, as, n2ds) => Solution(
+          ts.mapValues(t => ftvSubs(t)),
+          ns.mapValues(n => ftvSubs(n)),
+          as.mapValues(a => ftvSubs(a)),
+          n2ds.mapValues(n2d => ftvSubs(n2d))
+        )
+      }
       val r = traversal.DepthFirstLocalResult(typed_e, Visitor(solution))
       r
     }

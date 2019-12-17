@@ -57,28 +57,25 @@ class algorithmic extends test_util.Tests {
   // Swap Nesting of map and reduce
 
   test("lift reduce") {
-    def M = NatIdentifier("M")
-    def N = NatIdentifier("N")
+    val M = NatIdentifier("M", isExplicit = true)
+    val N = NatIdentifier("N", isExplicit = true)
 
     val addTuple = fun(x => fst(x) + snd(x))
 
-    val mapReduce = infer(LCNF(infer(
-      depLambda[NatKind](M, depLambda[NatKind](N,
+    val mapReduce = depLambda[NatKind](M, depLambda[NatKind](N,
       fun(ArrayType(M, ArrayType(N, float)))(i =>
-        map(reduce(fun(x => fun(a => x + a)))(l(0.0f))) $ i))))))
+        map(reduce(fun(x => fun(a => x + a)))(l(0.0f))) $ i)))
 
-    val reduceMap =
+    val reduceMap: Rise =
       depLambda[NatKind](M, depLambda[NatKind](N,
         fun(ArrayType(M, ArrayType(N, float)))(i =>
           reduce(fun((acc, y) =>
             map(addTuple) $ zip(acc, y)))(generate(fun(IndexType(M) ->: float)(_ => l(0.0f)))) $ transpose(i))))
 
-    val rewrite = body(body(body(function(liftReduce))))(mapReduce).get
+    val rewrite = body(body(body(function(liftReduce))))(LCNF(mapReduce)).get
 
-    infer(mapReduce)
-
-    val typedGold = infer(LCNF(reduceMap))
-    val typedRewrite = infer(LCNF(rewrite))
+    val typedGold = LCNF(reduceMap)
+    val typedRewrite = LCNF(rewrite)
 
     assert(typedRewrite == typedGold)
   }
@@ -91,15 +88,15 @@ class algorithmic extends test_util.Tests {
     val N = NatIdentifier("N")
     val K = NatIdentifier("K")
 
-    val mm = infer(LCNF(infer(depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
+    val mm = depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
       fun(ArrayType(M, ArrayType(K, float)))(a =>
         fun(ArrayType(K, ArrayType(N, float)))(b =>
           map(fun(ak =>
             map(fun(bk =>
               (reduceSeq(fun((acc, y) => acc + (y._1 * y._2)), l(0.0f))) $
-                zip(ak, bk))) $ transpose(b) )) $ a))))))))
+                zip(ak, bk))) $ transpose(b) )) $ a)))))
 
-    def goldMKN(reduceFun: Expr): Expr = {
+    def goldMKN(reduceFun: TDSL[Rise]): Rise = {
       depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
         fun(ArrayType(M, ArrayType(K, float)))(a =>
           fun(ArrayType(K, ArrayType(N, float)))(b =>

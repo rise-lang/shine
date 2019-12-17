@@ -1,6 +1,7 @@
 package lift.core
 
 import lift.core.DrawTree.UnicodeConfig
+import lift.core.primitives.Annotation
 
 case class RenderException(msg: String) extends Exception {
   override def toString = s"render exception: $msg"
@@ -237,6 +238,8 @@ class ShowLiftCompact {
       } else (false, newSize, fr >@> (fd => line(xs) <+: fd))
 
     case Literal(d) => (true, dataSize(d), line(d.toString))
+
+    case Annotation(e, _) => drawAST(e, wrapped)
 
     case p: Primitive => (true, 1, line(p.name))
   }

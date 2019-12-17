@@ -51,6 +51,7 @@ class showLift extends test_util.Tests {
         case dl @ DepLambda(x, e) => block(s"Λ${x.name}:${dl.kindName}", drawASTSimp(e))
         case DepApp(f, x) => line(x.toString) <+: drawASTSimp(f)
         case Literal(d) => line(d.toString)
+        case Annotation(e, _) => drawASTSimp(e)
         case p: Primitive => line(p.name)
       }
     }
@@ -87,6 +88,8 @@ class showLift extends test_util.Tests {
           if (wrapped) s"($fs $x)" else s"$fs $x"
 
         case Literal(d) => d.toString
+
+        case Annotation(e, _) => lessBrackets(e, wrapped)
 
         case p: Primitive => p.name
       }

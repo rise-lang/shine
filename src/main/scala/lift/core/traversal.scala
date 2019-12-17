@@ -43,7 +43,7 @@ object traversal {
               App(apply(f, v), apply(e, v))(v.visitType(a.t).value)
             case dl @ DepLambda(x, e) => x match {
               case n: NatIdentifier => DepLambda[NatKind]((v.visitNat(n).value: @unchecked) match {
-                case a: NamedVar => NatIdentifier(a)
+                case a: NamedVar => NatIdentifier(a, isExplicit = true)
               }, apply(e, v))(v.visitType(dl.t).value)
               case dt: DataTypeIdentifier => DepLambda[DataKind](v.visitType(dt).value, apply(e, v))(v.visitType(dl.t).value)
             }
@@ -102,7 +102,7 @@ object traversal {
           case DepLambda(x, e) => x match {
             case n: NatIdentifier => chainT(chainE(v.visitNat(n), e), expr.t)
               .map { case ((x, e), t) =>
-                DepLambda[NatKind]((x: @unchecked) match { case a: NamedVar => NatIdentifier(a) }, e)(t)
+                DepLambda[NatKind]((x: @unchecked) match { case a: NamedVar => NatIdentifier(a, isExplicit = true) }, e)(t)
               }
             case dt: DataTypeIdentifier => chainT(chainE(v.visitType(dt), e), expr.t)
               .map { case ((x, e), t) => DepLambda[DataKind](x, e)(t) }
@@ -143,7 +143,7 @@ object traversal {
               case DepFunType(x, t) => x match {
                   case n: NatIdentifier =>
                     DepFunType[NatKind, Type]((v.visitNat(n).value: @unchecked) match {
-                      case n: NamedVar => NatIdentifier(n.name, n.range)
+                      case n: NamedVar => NatIdentifier(n.name, n.range, isExplicit = true)
                     }, apply(t, v))
                   case dt: DataTypeIdentifier =>
                     DepFunType[DataKind, Type](data(dt, v), apply(t, v))
@@ -202,7 +202,7 @@ object traversal {
               case n: NatIdentifier =>
                 chainT(v.visitNat(n), t).map(r =>
                   DepFunType[NatKind, Type]((r._1: @unchecked) match {
-                    case n: NamedVar => NatIdentifier(n.name, n.range)
+                    case n: NamedVar => NatIdentifier(n.name, n.range, isExplicit = true)
                   }, r._2))
             }
             case i: TypeIdentifier => Continue(i, v)

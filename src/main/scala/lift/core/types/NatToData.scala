@@ -28,7 +28,7 @@ case class NatToDataLambda private (x: NatIdentifier, body: DataType) extends Na
 
 final case class NatToDataIdentifier(name: String, override val isExplicit: Boolean = false)
   extends NatToData with Kind.Identifier with Kind.Explicitness {
-  override def toString: String = name
+  override def toString: String = if (isExplicit) name else "_" + name
   override def asExplicit: NatToDataIdentifier = this.copy(isExplicit = true)
   override def asImplicit: NatToDataIdentifier = this.copy(isExplicit = false)
   override def equals(that: Any): Boolean = that match {

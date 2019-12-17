@@ -30,17 +30,19 @@ class movement extends test_util.Tests {
     )
   }
 
-  test("**f >> T - zip constraint") {
+  ignore("**f >> T - zip constraint") {
+    import elevate.rise.strategies._
+
     val test = λ(i => λ(f => (T o ***(f)) $ zip(i,i)))
 
-    val backward =
+    val backward: Expr =
       nFun((m, n, k) =>
-        fun((m`.`k`.`float) ->: (k`.`n`.`float) ->: (m`.`n`.`float) ->: float ->: float ->: (m`.`n`.`float))
+        fun((m`.`k`.`float) ->: (k`.`n`.`float) ->: (m`.`n`.`float) ->: float ->: float ->: (n`.`m`.`float))
         ((a, b, c, alpha, beta) =>
           (transpose o map(fun(ac =>
             map(fun(bc =>
               (fun(x => (x * alpha) + beta * bc._2) o
-                reduce(fun((acc, y) => acc + (y._1 * y._2)), l(0.0f))) $
+                reduceSeq(fun((acc, y) => acc + (y._1 * y._2)), l(0.0f))) $
                 zip(ac._1, bc._1))) $
               zip(transpose(b),ac._2)))) $
             zip(a, c)

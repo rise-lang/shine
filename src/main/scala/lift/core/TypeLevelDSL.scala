@@ -83,35 +83,35 @@ object TypeLevelDSL {
 
   // types with implicit type parameters
   def implN[A](f: NatIdentifier => A): A = {
-    f(NatIdentifier(freshName("_n")))
+    f(NatIdentifier(freshName("n")))
   }
 
 
   def implT[A](f: TypeIdentifier => A): A = {
-    f(TypeIdentifier(freshName("_t")))
+    f(TypeIdentifier(freshName("t")))
   }
   def implDT[A](f: DataTypeIdentifier => A): A = {
-    f(DataTypeIdentifier(freshName("_dt")))
+    f(DataTypeIdentifier(freshName("dt")))
   }
   // TODO: BasicTypeIdentifier
   def implBT[A](f: DataTypeIdentifier => A): A = {
-    f(DataTypeIdentifier(freshName("_dt")))
+    f(DataTypeIdentifier(freshName("dt")))
   }
   // TODO: ScalarTypeIdentifier
   def implST[A](f: DataTypeIdentifier => A): A = {
-    f(DataTypeIdentifier(freshName("_dt")))
+    f(DataTypeIdentifier(freshName("dt")))
   }
 
   def implN2N[A](f: NatToNat => A): A = {
-    f(NatToNatIdentifier(freshName("_n2n")))
+    f(NatToNatIdentifier(freshName("n2n")))
   }
 
   def implN2DT[A](f: NatToData => A): A = {
-    f(NatToDataIdentifier(freshName("_n2dt")))
+    f(NatToDataIdentifier(freshName("n2dt")))
   }
 
   def implA[A](f: AddressSpaceIdentifier => A): A = {
-    f(AddressSpaceIdentifier(freshName("_w")))
+    f(AddressSpaceIdentifier(freshName("w")))
   }
 
   def freshTypeIdentifier: Type = implT(identity)

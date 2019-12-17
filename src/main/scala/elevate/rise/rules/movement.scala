@@ -34,13 +34,14 @@ object movement {
       // LCNF
       case App(Transpose(),
       App(
-      mapMapF @ App(Map(), Lambda(n7, App(
+      App(Map(), Lambda(n7, App(
                 App(Map(), inner @ Lambda(n6, App(
       f, n61))), n71))),
       arg
       )
       ) if contains[Rise](n6).apply(n61) && contains[Rise](n7).apply(n71) =>
-        Success((typed(arg) |> transpose |> mapMapF) :: e.t)
+        // Success((typed(arg) |> transpose |> map(map(f))) :: e.t)
+        ??? // FIXME: this rule is wrong in the general case
       case _ => Failure(mapMapFBeforeTranspose)
     }
     override def toString = "mapMapFBeforeTranspose"
@@ -72,7 +73,7 @@ object movement {
       case App(
       App(Map(), App(Map(), f)),
       App(s, y)) if isSplitOrSlide(s) =>
-        Success((typed(y) |> map(f) |> s) :: e.t)
+        Success((typed(y) |> map(f) |> untyped(s)) :: e.t)
       case _ => Failure(slideBeforeMapMapF)
     }
     override def toString = "slideBeforeMapMapF"
@@ -84,7 +85,7 @@ object movement {
       case App(
       s,
       App(App(Map(), f), y)) if isSplitOrSlide(s) =>
-        Success((typed(y) |> s |> map(map(f))) :: e.t)
+        Success((typed(y) |> untyped(s) |> map(map(f))) :: e.t)
       case _ => Failure(mapFBeforeSlide)
     }
     override def toString = "mapFBeforeSlide"
@@ -128,7 +129,7 @@ object movement {
       s,
       App(Transpose(), y)
       ) if isSplitOrSlide(s) =>
-        Success((typed(y) |> map(s) |> transpose >> map(transpose)) :: e.t)
+        Success((typed(y) |> map(untyped(s)) |> transpose >> map(transpose)) :: e.t)
       case _ => Failure(transposeBeforeSlide)
     }
     override def toString = "transposeBeforeSlide"
@@ -141,7 +142,7 @@ object movement {
       App(Map(), s),
       App(Transpose(), y)
       ) if isSplitOrSlide(s) =>
-        Success((typed(y) |> s |> map(transpose) |> transpose) :: e.t)
+        Success((typed(y) |> untyped(s) |> map(transpose) |> transpose) :: e.t)
       case _ => Failure(transposeBeforeMapSlide)
     }
     override def toString = "transposeBeforeMapSlide"
@@ -154,7 +155,7 @@ object movement {
       Transpose(),
       App(App(Map(), s), y)
       ) if isSplitOrSlide(s) =>
-        Success((typed(y) |> transpose >> s >> map(transpose)) :: e.t)
+        Success((typed(y) |> transpose >> untyped(s) >> map(transpose)) :: e.t)
       case _ => Failure(mapSlideBeforeTranspose)
     }
     override def toString = "mapSlideBeforeTranspose"
@@ -269,7 +270,7 @@ object movement {
 
         def reduceMap(zippedMapArg : (TDSL[Rise], TDSL[Rise]) => TDSL[Rise], reduceArgFun: TDSL[Rise]): RewriteResult[Rise] = {
           Success((
-            typed(rx)(fun((acc, y) =>
+            untyped(rx)(fun((acc, y) =>
               map(fun(x => app(app(op, fst(x)), snd(x)))) $ zippedMapArg(acc, y)
             ))(generate(fun(IndexType(size) ->: dt)(_ => init))) o reduceArgFun
           ) :: e.t)

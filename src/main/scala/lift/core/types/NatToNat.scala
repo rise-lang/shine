@@ -29,7 +29,7 @@ final case class NatToNatLambda private(x: NatIdentifier, body: Nat) extends Nat
 
 final case class NatToNatIdentifier(name: String, override val isExplicit: Boolean = false)
   extends NatToNat with Kind.Identifier with Kind.Explicitness {
-  override lazy val toString: String = name
+  override def toString: String = if (isExplicit) name else "_" + name
   override def asExplicit: NatToNatIdentifier = this.copy(isExplicit = true)
   override def asImplicit: NatToNatIdentifier = this.copy(isExplicit = false)
   override def equals(that: Any): Boolean = that match {

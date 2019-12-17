@@ -7,6 +7,9 @@ class NatIdentifier(override val name: String,
                     override val range: Range = RangeUnknown,
                     override val isExplicit: Boolean = false)
   extends NamedVar(name, range) with types.Kind.Identifier with types.Kind.Explicitness {
+
+  override lazy val toString: String = if (isExplicit) name else "_" + name
+
   override def copy(r: Range): NatIdentifier = new NatIdentifier(name, r, isExplicit)
 
   override def asExplicit: NatIdentifier = new NatIdentifier(name, range, true)
