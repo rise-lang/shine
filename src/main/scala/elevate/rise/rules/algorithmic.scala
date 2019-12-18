@@ -52,7 +52,7 @@ object algorithmic {
     // ((map λe4. (e4: K.float)) e743))
     def apply(e: Rise): RewriteResult[Rise] = e match {
       case App(Map(), Lambda(x, App(f, gx))) if !contains[Rise](x).apply(f) && !isIdentifier(gx) =>
-        Success((app(map, lambda(toTDSL(x), gx)) >> map(f)) :: e.t)
+        Success((app(map, lambda(untyped(x), gx)) >> map(f)) :: e.t)
       case _ => Failure(mapLastFission)
     }
     override def toString = s"mapLastFission"

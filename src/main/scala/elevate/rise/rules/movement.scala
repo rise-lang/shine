@@ -34,14 +34,14 @@ object movement {
       // LCNF
       case App(Transpose(),
       App(
-      App(Map(), lamA @ Lambda(n7, App(
-                App(Map(), lamB @ Lambda(n6, App(
-      f, n61))), n71))),
+      App(Map(), lamA @ Lambda(_, App(
+                App(Map(), lamB @ Lambda(_, App(
+      f, _))), _))),
       arg
       )
       ) if etaReduction(lamA) && etaReduction(lamB) =>
         // Success((typed(arg) |> transpose |> map(map(f))) :: e.t)
-        Success((typed(arg) |> transpose |> map(map(f))) :: e.t)
+        Success((typed(arg) |> transpose |> map(fun(a => map(fun(b => typed(f)(b)))(a)))) :: e.t)
       case _ => Failure(mapMapFBeforeTranspose)
     }
     override def toString = "mapMapFBeforeTranspose"

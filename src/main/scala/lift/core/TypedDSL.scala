@@ -54,31 +54,6 @@ object TypedDSL {
       })
       new Solution(subs._1, subs._2, subs._3, subs._4)
     }
-    /*
-    def freeze(t: Type): Type = traversal.types.DepthFirstLocalResult(t, new traversal.Visitor {
-      override def visitNat(ae: Nat): Result[Nat] = Stop(ae.visitAndRebuild({
-        case i: NatIdentifier => i.asExplicit
-        case n => n
-      }))
-      override def visitAddressSpace(a: AddressSpace): Result[AddressSpace] = a match {
-        case i: AddressSpaceIdentifier => Stop(i.asExplicit)
-        case _ => Continue(a, this)
-      }
-      override def visitN2N(n2n: NatToNat): Result[NatToNat] = n2n match {
-        case i: NatToNatIdentifier => Stop(i.asExplicit)
-        case _ => Continue(n2n, this)
-      }
-      override def visitN2D(n2d: NatToData): Result[NatToData] = n2d match {
-        case i: NatToDataIdentifier => Stop(i.asExplicit)
-        case _ => Continue(n2d, this)
-      }
-      override def visitType[T <: Type](t: T): Result[T] = t match {
-        case i: DataTypeIdentifier => Stop(i.asExplicit.asInstanceOf[T])
-        case _: TypeIdentifier => throw TypeException("Cannot make an Expr with TypeIdentifier opaque")
-        case _ => Continue(t, this)
-      }
-    })
-     */
   }
 
   final case class TopLevel(e: Expr, inst: Solution = Solution())(override val t: Type = e.t) extends Primitive {
@@ -124,7 +99,7 @@ object TypedDSL {
           Continue(t, this)
         }
         override def visitNat(ae: Nat): Result[Nat] = Stop(ae.visitAndRebuild({
-          case i: NatIdentifier => ftvs += i
+          case i: NatIdentifier if ! i.isExplicit => ftvs += i
             i
           case n => n
         }))
@@ -225,17 +200,20 @@ object TypedDSL {
 
   def toTDSL[T <: Expr](e: T): TDSL[T] = TDSL(e)
 
-  implicit def toExpr(d: TDSL[Expr]): Expr = d.toExpr
+  implicit def toExpr[T <: Expr](d: TDSL[T]): Expr = d.toExpr
 
-  def topLevel(e: Expr): Expr = TopLevel(e)()
+  def topLevel(e: Expr): TopLevel = TopLevel(e)()
 
-  def erase(e: Expr): Expr = traversal.DepthFirstLocalResult(e, new traversal.Visitor {
+  implicit def tdslTopLevel[T <: Expr](d: TDSL[T]): TDSL[TopLevel] = toTDSL(topLevel(toExpr(d)))
+
+  def erase[T <: Expr](e: T): T = traversal.DepthFirstLocalResult(e, new traversal.Visitor {
     override def visitExpr(e: Expr): Result[Expr] = e match {
+      case l: Literal => Continue(l, this)
       case _ => Continue(e.setType(TypePlaceholder), this)
     }
-  })
+  }).asInstanceOf[T]
 
-  def untyped(e: Expr): TDSL[Expr] = toTDSL(erase(e))
+  def untyped[T <: Expr](e: T): TDSL[T] = toTDSL(erase(e))
 
   object TDSL {
     case class Visitor(sol: Solution) extends traversal.Visitor {

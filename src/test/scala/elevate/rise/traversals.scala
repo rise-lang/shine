@@ -68,8 +68,8 @@ class traversals extends test_util.Tests {
       body(body(argument(argument(RNF))))
 
 
-    assert(oldTiling(input2D).get == simplified(input2D).get)
-    assert(oldTiling(input2D).get == normalizedModified(input2D).get)
+    assert(makeClosed(oldTiling(input2D).get) == makeClosed(simplified(input2D).get))
+    assert(makeClosed(oldTiling(input2D).get) == makeClosed(normalizedModified(input2D).get))
   }
 
   test("RNF did not normalize") {

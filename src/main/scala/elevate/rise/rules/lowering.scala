@@ -60,7 +60,7 @@ object lowering {
   case class slideSeq(rot: SlideSeq.Rotate, write_dt1: Expr) extends Strategy[Rise] {
     def apply(e: Rise): RewriteResult[Rise] = e match {
       case Slide() => Success(nFun(sz => nFun(sp =>
-        TypedDSL.slideSeq(rot)(sz)(sp)(write_dt1)(fun(x => x))
+        TypedDSL.slideSeq(rot)(sz)(sp)(untyped(write_dt1))(fun(x => x))
       )) :: e.t)
       case _ => Failure(slideSeq(rot, write_dt1))
     }

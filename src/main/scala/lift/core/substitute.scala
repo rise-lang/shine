@@ -142,7 +142,7 @@ object substitute {
 
   // substitute in Nat
 
-  def natInNat(subs: Map[NatIdentifier, Nat], in: Nat): Nat = {
+  def natsInNat(subs: Map[NatIdentifier, Nat], in: Nat): Nat = {
     in.visitAndRebuild {
       case i: NatIdentifier => subs.get(i) match {
         case Some(n) => n
@@ -152,11 +152,11 @@ object substitute {
     }
   }
 
-  def natInNat(ae: Nat, `for`: NatIdentifier, in: Nat): Nat = natInNat(Map(`for` -> ae), in)
+  def natInNat(ae: Nat, `for`: NatIdentifier, in: Nat): Nat = natsInNat(Map(`for` -> ae), in)
 
   // substitute in AddressSpace
 
-  def addressSpaceInAddressSpace(subs: Map[AddressSpaceIdentifier, AddressSpace], in: AddressSpace): AddressSpace = {
+  def addressSpacesInAddressSpace(subs: Map[AddressSpaceIdentifier, AddressSpace], in: AddressSpace): AddressSpace = {
     in match {
       case i: AddressSpaceIdentifier => subs.get(i) match {
         case Some(a) => a
@@ -171,7 +171,7 @@ object substitute {
   }
 
   // substitute in NatToData
-  def n2dInN2d(subs: Map[NatToDataIdentifier, NatToData], in: NatToData): NatToData = {
+  def n2dsInN2d(subs: Map[NatToDataIdentifier, NatToData], in: NatToData): NatToData = {
     in match {
       case i: NatToDataIdentifier => subs.get(i) match {
         case Some(n2d) => n2d

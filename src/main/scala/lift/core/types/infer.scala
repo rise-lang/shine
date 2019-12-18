@@ -153,7 +153,7 @@ object infer {
     }
 
     def apply(n: Nat): Nat = {
-      substitute.natInNat(ns, n)
+      substitute.natsInNat(ns, n)
       /*
       ns.foldLeft(n) {
         case (result, (na, nb)) => substitute.natInNat(nb, `for` = na, in = result)
@@ -162,15 +162,21 @@ object infer {
     }
 
     def apply(a: AddressSpace): AddressSpace = {
+      substitute.addressSpacesInAddressSpace(as, a)
+      /*
       as.foldLeft(a) {
         case (result, (aa, ab)) => substitute.addressSpaceInAddressSpace(ab, `for` = aa, in = result)
       }
+      */
     }
 
     def apply(n2d: NatToData): NatToData = {
+      substitute.n2dsInN2d(n2ds, n2d)
+      /*
       n2ds.foldLeft(n2d) {
         case (result, (na, nb)) => substitute.n2dInN2d(nb, `for` = na, in = result)
       }
+      */
     }
 
     // concatenating two solutions into a single one

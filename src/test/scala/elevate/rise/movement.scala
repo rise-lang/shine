@@ -19,6 +19,13 @@ class movement extends test_util.Tests {
 
   // transpose
 
+  def betaEtaEquals(a: Rise, b: Rise): Boolean = {
+    val na = BENF(a).get
+    val nb = BENF(b).get
+    val uab: Rise = toTDSL(na) :: nb.t
+    makeClosed(uab) == makeClosed(nb)
+  }
+
   test("**f >> T -> T >> **f") {
     val gold = λ(f => T >> **(f))
 
@@ -30,6 +37,7 @@ class movement extends test_util.Tests {
     )
   }
 
+  // FIXME: Not work because mapMapFBeforeTranspose is not general enough
   ignore("**f >> T - zip constraint") {
     import elevate.rise.strategies._
 

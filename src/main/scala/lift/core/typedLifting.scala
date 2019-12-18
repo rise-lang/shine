@@ -9,7 +9,7 @@ object typedLifting {
   def liftFunExpr(p: Expr): Result[Expr => Expr] = {
     def chain(r: Result[Expr]): Result[Expr => Expr] =
       r.bind(liftFunExpr,
-        f => Expanding((e: Expr) => app(f, e) :: (f.t match {
+        f => Expanding((e: Expr) => App(f, e)(f.t match {
           case FunType(_, outT) => outT
           case _ => throw TypeException(s"$f cannot be lifted")
         })))
@@ -31,7 +31,7 @@ object typedLifting {
   def liftDepFunExpr[K <: Kind](p: Expr): Result[K#T => Expr] = {
     def chain(r: Result[Expr]): Result[K#T => Expr] =
       r.bind(liftDepFunExpr,
-        f => Expanding((x: K#T) => depApp(f, x) :: (f.t match {
+        f => Expanding((x: K#T) => DepApp(f, x)(f.t match {
           case DepFunType(_, _) => lifting.liftDependentFunctionType(f.t)(x)
           case _ => throw TypeException(s"$f cannot be lifted")
         })))
