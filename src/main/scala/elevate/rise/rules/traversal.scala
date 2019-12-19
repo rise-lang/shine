@@ -2,8 +2,8 @@ package elevate.rise.rules
 
 import elevate.core._
 import elevate.rise.Rise
-import lift.core._
-import lift.core.types._
+import rise.core._
+import rise.core.types._
 
 // implementing elevate.core.strategies.Traversable for Rise
 

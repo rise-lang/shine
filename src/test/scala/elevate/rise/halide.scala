@@ -6,7 +6,7 @@ import elevate.rise.rules.traversal._
 import elevate.rise.strategies.halide._
 import elevate.rise.strategies.normalForm._
 import elevate.util._
-import lift.core.TypedDSL.{reorder => _, _}
+import rise.core.TypedDSL.{reorder => _, _}
 
 class halide extends test_util.Tests {
   private def LCNFrewrite(a: Rise, s: Strategy[Rise], b: Rise): Unit = {

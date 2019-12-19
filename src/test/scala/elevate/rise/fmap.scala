@@ -6,8 +6,8 @@ import elevate.rise.rules.movement._
 import elevate.rise.rules.traversal._
 import elevate.rise.strategies.traversal._
 import elevate.util._
-import lift.core.TypedDSL._
-import lift.core.Expr
+import rise.core.TypedDSL._
+import rise.core.Expr
 
 import scala.language.implicitConversions
 

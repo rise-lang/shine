@@ -1,7 +1,7 @@
 package apps
 
 import mm._
-import lift.core._
+import rise.core._
 import idealised.OpenCL._
 import util._
 

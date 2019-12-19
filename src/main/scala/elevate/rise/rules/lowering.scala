@@ -2,9 +2,9 @@ package elevate.rise.rules
 
 import elevate.core.{Failure, RewriteResult, Strategy, Success}
 import elevate.rise.Rise
-import lift.core._
-import lift.core.primitives._
-import lift.core.TypedDSL._
+import rise.core._
+import rise.core.primitives._
+import rise.core.TypedDSL._
 
 object lowering {
 
@@ -20,7 +20,7 @@ object lowering {
 
   case class mapGlobal(dim: Int = 0) extends Strategy[Rise] {
     def apply(e: Rise): RewriteResult[Rise] = e match {
-      case Map() => Success(lift.OpenCL.TypedDSL.mapGlobal(dim) :: e.t)
+      case Map() => Success(rise.OpenCL.TypedDSL.mapGlobal(dim) :: e.t)
       case _       => Failure(mapGlobal(dim))
     }
     override def toString = "mapGlobal"

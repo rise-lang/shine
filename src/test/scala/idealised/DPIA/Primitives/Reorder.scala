@@ -1,12 +1,12 @@
 package idealised.DPIA.Primitives
 
-import lift.core.DSL._
-import lift.core.types._
-import lift.core.primitives._
-import lift.core.HighLevelConstructs.reorderWithStride
+import rise.core.DSL._
+import rise.core.types._
+import rise.core.primitives._
+import rise.core.HighLevelConstructs.reorderWithStride
 import util.gen
 
-import lift.arithmetic.Cst
+import rise.arithmetic.Cst
 
 class Reorder extends test_util.Tests {
   test("Simple gather example should generate syntactic valid C code with two one loops") {

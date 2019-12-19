@@ -7,7 +7,7 @@ import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics.{Data, Store}
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import lift.{core => lc}
+import rise.{core => lc}
 
 import scala.language.reflectiveCalls
 import scala.xml.Elem

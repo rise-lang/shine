@@ -5,7 +5,7 @@ import idealised.DPIA.Phrases.Identifier
 import idealised.DPIA.Types._
 import idealised.DPIA._
 import idealised.{C, OpenCL}
-import lift.arithmetic._
+import rise.arithmetic._
 import opencl.executor._
 import util.{Time, TimeSpan}
 

@@ -3,4 +3,4 @@
 	url = git@github.com:rise-lang/arithexpr.git
 [submodule "lib/executor"]
 	path = lib/executor
-	url = git@github.com:lift-project/executor.git
+	url = git@github.com:rise-lang/executor.git

@@ -1,10 +1,10 @@
 package idealised.DPIA.Primitives
 
-import lift.core._
-import lift.core.DSL._
-import lift.core.TypeLevelDSL._
-import lift.core.types._
-import lift.core.primitives._
+import rise.core._
+import rise.core.DSL._
+import rise.core.TypeLevelDSL._
+import rise.core.types._
+import rise.core.primitives._
 import util.gen
 
 class Generate extends test_util.Tests {

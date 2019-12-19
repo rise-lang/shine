@@ -7,7 +7,7 @@ import idealised.DPIA.FunctionalPrimitives.AsIndex
 import idealised.DPIA.LetNatIdentifier
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types._
-import lift.arithmetic.Cst
+import rise.arithmetic.Cst
 
 import scala.collection._
 

@@ -4,15 +4,15 @@ import benchmarks.core.{CorrectnessCheck, RunOpenCLProgram}
 import idealised.OpenCL.{GlobalSize, KernelWithSizes, LocalSize}
 import util.{Display, TimeSpan, gen}
 import util.Time.ms
-import lift.OpenCL.primitives._
-import lift.OpenCL.DSL._
-import lift.arithmetic.SteppedCase
-import lift.core.DSL._
-import lift.core.TypeLevelDSL._
-import lift.core.Expr
-import lift.core.primitives._
-import lift.core.types._
-import lift.core.HighLevelConstructs._
+import rise.OpenCL.primitives._
+import rise.OpenCL.DSL._
+import rise.arithmetic.SteppedCase
+import rise.core.DSL._
+import rise.core.TypeLevelDSL._
+import rise.core.Expr
+import rise.core.primitives._
+import rise.core.types._
+import rise.core.HighLevelConstructs._
 
 import scala.util.Random
 

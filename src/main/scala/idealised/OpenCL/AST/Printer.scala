@@ -4,7 +4,7 @@ import idealised.C.AST._
 import idealised.DPIA.Types.AddressSpaceIdentifier
 import idealised.OpenCL
 import idealised.OpenCL.{AddressSpace, NDRange, BuiltInFunctionCall}
-import lift.arithmetic.ArithExpr
+import rise.arithmetic.ArithExpr
 
 object Printer {
   def apply(n: Node): String = (new Printer).printNode(n)
@@ -113,7 +113,7 @@ class Printer extends idealised.C.AST.CPrinter {
   def printVectorSubscript(vs: VectorSubscript): Unit = {
     printExpr(vs.vector)
     vs.index match {
-      case ArithmeticExpr(lift.arithmetic.Cst(c)) =>
+      case ArithmeticExpr(rise.arithmetic.Cst(c)) =>
         print(s".s$c")
       case Literal(str) =>
         print(s".s$str")

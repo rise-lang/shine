@@ -3,7 +3,7 @@ package apps
 import sgemm._
 import util.{Time, TimeSpan, gen}
 import idealised.OpenCL.{GlobalSize, LocalSize}
-import lift.core.types._
+import rise.core.types._
 
 //noinspection TypeAnnotation
 class sgemmCheck extends test_util.TestsWithExecutor {

@@ -6,7 +6,7 @@ import idealised.DPIA.ImperativePrimitives.ForNat
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import lift.arithmetic.RangeAdd
+import rise.arithmetic.RangeAdd
 
 object DepMapSeqI {
   def apply(n: Nat,

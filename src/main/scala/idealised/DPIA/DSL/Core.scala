@@ -26,7 +26,7 @@ object λ extends funDef
 
 object nFun {
   def apply[T <: PhraseType](f: NatIdentifier => Phrase[T],
-                             range: lift.arithmetic.Range)
+                             range: rise.arithmetic.Range)
                             (implicit w: Kind.IdentifierMaker[NatKind]): DepLambda[NatKind, T] = {
     val x = NatIdentifier(freshName("n"), range)
     DepLambda[NatKind, T](x, f(x))

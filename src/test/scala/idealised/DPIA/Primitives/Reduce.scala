@@ -1,16 +1,16 @@
 package idealised.DPIA.Primitives
 
-import lift.core.DSL._
-import lift.core.TypeLevelDSL._
-import lift.core.types._
-import lift.core.types.AddressSpace
-import lift.core.primitives._
-import lift.OpenCL.primitives._
+import rise.core.DSL._
+import rise.core.TypeLevelDSL._
+import rise.core.types._
+import rise.core.types.AddressSpace
+import rise.core.primitives._
+import rise.OpenCL.primitives._
 import util.gen
 import idealised.OpenCL._
-import lift.OpenCL.DSL._
-import lift.core.{Expr, Literal}
-import lift.core.semantics.{IndexData, NatData}
+import rise.OpenCL.DSL._
+import rise.core.{Expr, Literal}
+import rise.core.semantics.{IndexData, NatData}
 
 import scala.language.postfixOps
 

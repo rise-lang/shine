@@ -4,11 +4,11 @@ import elevate.core.strategies.predicate._
 import elevate.rise.rules.traversal._
 import elevate.core.{Failure, RewriteResult, Strategy, Success}
 import elevate.rise._
-import lift.core._
-import lift.core.primitives._
-import lift.core.TypedDSL._
-import lift.core.TypeLevelDSL._
-import lift.core.types.{ArrayType, DataType, FunType, IndexType}
+import rise.core._
+import rise.core.primitives._
+import rise.core.TypedDSL._
+import rise.core.TypeLevelDSL._
+import rise.core.types.{ArrayType, DataType, FunType, IndexType}
 
 // Describing possible movements between pairs of rise primitives (potentially nested in maps)
 

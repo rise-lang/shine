@@ -1,9 +1,9 @@
 package idealised.DPIA.Primitives
 
-import lift.core.DSL._
-import lift.core.types._
-import lift.core.primitives._
-import lift.OpenCL.DSL._
+import rise.core.DSL._
+import rise.core.types._
+import rise.core.primitives._
+import rise.OpenCL.DSL._
 import util.gen
 
 class Let extends test_util.Tests {

@@ -1,14 +1,14 @@
 package apps
 
 import idealised.OpenCL.{AddressSpace => _, _}
-import lift.arithmetic.Cst
-import lift.core.HighLevelConstructs.reorderWithStride
-import lift.core._
-import lift.core.DSL._
-import lift.core.TypeLevelDSL._
-import lift.core.primitives._
-import lift.OpenCL.DSL._
-import lift.core.types._
+import rise.arithmetic.Cst
+import rise.core.HighLevelConstructs.reorderWithStride
+import rise.core._
+import rise.core.DSL._
+import rise.core.TypeLevelDSL._
+import rise.core.primitives._
+import rise.OpenCL.DSL._
+import rise.core.types._
 import util.{Time, TimeSpan, gen}
 
 object sgemm {

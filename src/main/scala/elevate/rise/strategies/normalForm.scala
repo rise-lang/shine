@@ -10,7 +10,7 @@ import elevate.rise.strategies.predicate._
 import elevate.rise.rules._
 import elevate.rise.rules.algorithmic._
 import elevate.rise.rules.traversal.{argumentOf, body, function}
-import lift.core.primitives._
+import rise.core.primitives._
 
 // todo think about better names!
 object normalForm {

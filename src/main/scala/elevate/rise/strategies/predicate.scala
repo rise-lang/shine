@@ -2,8 +2,8 @@ package elevate.rise.strategies
 
 import elevate.core.{Failure, RewriteResult, Strategy, Success}
 import elevate.rise.Rise
-import lift.core.primitives.{Generate, Let, Map, Reduce, Zip}
-import lift.core.{App, Identifier, Lambda}
+import rise.core.primitives.{Generate, Let, Map, Reduce, Zip}
+import rise.core.{App, Identifier, Lambda}
 
 import scala.language.implicitConversions
 

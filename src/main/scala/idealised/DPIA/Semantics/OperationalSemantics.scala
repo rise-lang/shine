@@ -3,7 +3,7 @@ package idealised.DPIA.Semantics
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import lift.arithmetic.ArithExpr
+import rise.arithmetic.ArithExpr
 
 import scala.collection.immutable.HashMap
 import scala.language.{implicitConversions, postfixOps, reflectiveCalls}

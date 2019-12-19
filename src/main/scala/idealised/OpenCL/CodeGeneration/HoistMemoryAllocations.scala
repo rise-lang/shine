@@ -1,6 +1,6 @@
 package idealised.OpenCL.CodeGeneration
 
-import lift.arithmetic.ArithExpr.Math.Min
+import rise.arithmetic.ArithExpr.Math.Min
 import idealised.DPIA.DSL._
 import idealised.DPIA.ImperativePrimitives._
 import idealised.DPIA.Phrases.{VisitAndRebuild, _}

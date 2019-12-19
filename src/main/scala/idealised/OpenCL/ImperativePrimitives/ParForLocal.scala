@@ -4,7 +4,7 @@ import idealised.DPIA.Phrases.Phrase
 import idealised.DPIA.Types.{AccType, CommType, DataType, ExpType}
 import idealised.DPIA._
 import idealised._
-import lift.arithmetic.{?, ContinuousRange, PosInf, RangeAdd}
+import rise.arithmetic.{?, ContinuousRange, PosInf, RangeAdd}
 import idealised.C.AST._
 import idealised.OpenCL.AST._
 import idealised.OpenCL._

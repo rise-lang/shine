@@ -11,11 +11,11 @@ import elevate.rise.strategies.normalForm._
 import elevate.rise.strategies.tiling.{loopInterchange, loopInterchangeAtLevel, _}
 import elevate.rise.strategies.traversal._
 import elevate.util._
-import lift.core.TypedDSL._
-import lift.core.TypeLevelDSL._
-import lift.core._
-import lift.core.primitives._
-import lift.core.types._
+import rise.core.TypedDSL._
+import rise.core.TypeLevelDSL._
+import rise.core._
+import rise.core.primitives._
+import rise.core.types._
 
 import scala.language.implicitConversions
 

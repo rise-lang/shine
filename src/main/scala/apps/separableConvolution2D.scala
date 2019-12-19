@@ -1,14 +1,14 @@
 package apps
 
-import lift.core._
-import lift.core.DSL._
-import lift.core.TypeLevelDSL._
-import lift.core.types._
-import lift.core.semantics._
-import lift.core.primitives._
-import lift.OpenCL.primitives._
-import lift.OpenCL.DSL._
-import lift.core.HighLevelConstructs._
+import rise.core._
+import rise.core.DSL._
+import rise.core.TypeLevelDSL._
+import rise.core.types._
+import rise.core.semantics._
+import rise.core.primitives._
+import rise.OpenCL.primitives._
+import rise.OpenCL.DSL._
+import rise.core.HighLevelConstructs._
 
 object separableConvolution2D {
   private def weights2d(scale: Float, ws: Seq[Seq[Int]]): Expr =
@@ -187,7 +187,7 @@ object separableConvolution2D {
   def computeGold(h: Int, w: Int,
                   input: Array[Array[Float]],
                   weights: Expr): Array[Array[Float]] = {
-    import lift.core.semantics._
+    import rise.core.semantics._
     weights match {
       case Literal(ArrayData(a)) => computeGold(h, w, input,
         a.map(r => r.asInstanceOf[ArrayData].a.map(x => x.asInstanceOf[FloatData].f).toArray).toArray)

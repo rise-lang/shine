@@ -1,12 +1,12 @@
 package apps
 
-import lift.core._
-import lift.core.DSL._
-import lift.core.TypeLevelDSL._
-import lift.core.types._
-import lift.core.primitives._
-import lift.OpenCL.primitives._
-import lift.OpenCL.DSL._
+import rise.core._
+import rise.core.DSL._
+import rise.core.TypeLevelDSL._
+import rise.core.types._
+import rise.core.primitives._
+import rise.OpenCL.primitives._
+import rise.OpenCL.DSL._
 
 object mm {
   private val id = fun(x => x)
