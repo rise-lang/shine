@@ -8,6 +8,7 @@ import lift.OpenCL.primitives._
 import lift.OpenCL.DSL._
 import lift.arithmetic.SteppedCase
 import lift.core.DSL._
+import lift.core.TypeLevelDSL._
 import lift.core.Expr
 import lift.core.primitives._
 import lift.core.types._

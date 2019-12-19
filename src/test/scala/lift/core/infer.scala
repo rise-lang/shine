@@ -1,6 +1,7 @@
 package lift.core
 
 import lift.core.DSL._
+import lift.core.TypeLevelDSL._
 import lift.core.types._
 
 class infer extends test_util.Tests {

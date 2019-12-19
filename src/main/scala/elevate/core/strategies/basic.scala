@@ -2,75 +2,71 @@ package elevate.core.strategies
 
 import elevate.core._
 import elevate.core.strategies.traversal.oncetd
-import elevate.lift.strategies.traversal._
-import elevate.meta.strategies.traversal._
 
+/* Inspired by:
+
+@inproceedings{DBLP:conf/icfp/VisserBT98,
+  author    = {Eelco Visser and
+               Zine{-}El{-}Abidine Benaissa and
+               Andrew P. Tolmach},
+  title     = {Building Program Optimizers with Rewriting Strategies},
+  booktitle = {{ICFP}},
+  pages     = {13--26},
+  publisher = {{ACM}},
+  year      = {1998}
+}
+
+ */
 object basic {
 
+  // Naive Strategies
+
   case class id[P]() extends Strategy[P] {
-    def apply(e: P) = Success(e)
-    override def toString = s"id"
+    def apply(p: P) = Success(p)
+    override def toString: String = "id"
   }
 
+  case class fail[P]() extends Strategy[P] {
+    def apply(p: P) = Failure(fail())
+    override def toString: String = "fail"
+  }
+
+  // Basic Strategy Combinators
+
   case class seq[P](f: Strategy[P], s: Strategy[P]) extends Strategy[P] {
-    def apply(e: P): RewriteResult[P] = f(e).flatMapSuccess(s)
-    override def toString = s"$f `;` $s"
+    def apply(p: P): RewriteResult[P] = f(p).flatMapSuccess(s)
+    override def toString: String = s"$f `;` $s"
   }
 
   case class leftChoice[P](f: Strategy[P], s: Strategy[P]) extends Strategy[P] {
-    def apply(e: P): RewriteResult[P] = f(e).flatMapFailure(_ => s(e))
-    override def toString = s"leftChoice($f,$s)"
+    def apply(p: P): RewriteResult[P] = f(p).flatMapFailure(_ => s(p))
+    override def toString: String = s"$f <+ $s"
   }
+
+  // Basic Strategies
 
   case class `try`[P](s: Strategy[P]) extends Strategy[P] {
-    def apply(e: P): RewriteResult[P] = leftChoice[P](s, id())(e)
-    override def toString = s"try($s)"
-  }
-
-  case class peek[P](f: P => Unit) extends Strategy[P] {
-    def apply(e: P): RewriteResult[P] = {f(e); Success(e)}
-    override def toString = s"peek(...)"
+    def apply(p: P): RewriteResult[P] = (s <+ id())(p)
+    override def toString: String = s"try($s)"
   }
 
   case class repeat[P](s: Strategy[P]) extends Strategy[P] {
-    def apply(e: P): RewriteResult[P] = `try`(s `;` repeat(s))(e)
-    override def toString = s"repeat($s)"
-  }
-
-  case class countingRepeat[P](s: Int => Strategy[P], i: Int) extends Strategy[P] {
-    def apply(e: P): RewriteResult[P] = (`try`(s(i) `;` countingRepeat(s, i + 1))) (e)
-    override def toString = s"countingRepeat(${s(i)}, $i)"
+    def apply(p: P): RewriteResult[P] = `try`(s `;` repeat(s))(p)
+    override def toString: String = s"repeat($s)"
   }
 
   case class repeatNTimes[P](n: Int, s: Strategy[P]) extends Strategy[P] {
-    def apply(e :P): RewriteResult[P] = if (n > 0) {(s `;` repeatNTimes(n - 1, s))(e)} else { id()(e) }
-    override def toString = "repeat" + n + s"times($s)"
+    def apply(p :P): RewriteResult[P] = if (n > 0) {(s `;` repeatNTimes(n - 1, s))(p)} else { id()(p) }
+    override def toString: String = "repeat" + n + s"times($s)"
   }
 
-  def show[P]: Strategy[P] = debug("")
+  // Normalize
 
-  case class debug[P](msg: String) extends Strategy[P] {
-    def apply(e: P): RewriteResult[P] = peek[P](p => println(s"$msg $p"))(e)
-    override def toString = "debug(...)"
-  }
+  def normalize[P: Traversable]: Strategy[P] => Strategy[P] =
+    s => repeat(oncetd.apply(s))
 
-  case class debugln[P](msg: String) extends Strategy[P] {
-    def apply(e: P): RewriteResult[P] = debug[P](msg + "\n")(e)
-    override def toString = "debugln(...)"
-  }
-
-  case class print[P](msg: String) extends Strategy[P] {
-    def apply(e: P): RewriteResult[P] = peek[P](_ => println(msg))(e)
-    override def toString = "print(...)"
-  }
+  // Strategy Factories
 
   def applyNTimes[P]: Int => (Strategy[P] => Strategy[P]) => Strategy[P] => Strategy[P] =
     i => f => s => if(i <= 0) s else applyNTimes[P](i-1)(f)(f(s))
-
-  // todo generalize
-  def normalize: Strategy[Lift] => Strategy[Lift] =
-    s => repeat(oncetd(s))
-
-  def normalizeElevate: Strategy[Elevate] => Strategy[Elevate] =
-    s => repeat(oncetd(s))
 }

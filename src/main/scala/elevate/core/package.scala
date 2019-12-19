@@ -1,16 +1,14 @@
 package elevate
 
-import _root_.lift.core._
 import elevate.core.strategies.basic._
+import scala.language.implicitConversions
 
 package object core {
 
   type Strategy[P] = P => RewriteResult[P]
+  type MetaStrategy[P] = Strategy[Strategy[P]]
 
-  type Meta = Strategy[Elevate] // Meta = Strategies for Elevate
-  type Elevate = Strategy[Lift] // Elevate = Strategies for Lift
-  type Lift = Expr
-  type FSmooth = _root_.FSmooth.Expr
+  implicit def rewriteResultToP[P](r: RewriteResult[P]): P = r.get
 
   implicit class Then[P](f: Strategy[P]) {
     def `;`(s: Strategy[P]): Strategy[P] = seq[P](f,s)

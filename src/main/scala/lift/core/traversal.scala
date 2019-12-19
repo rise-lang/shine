@@ -37,22 +37,22 @@ object traversal {
           val v = c.v
           c.value match {
             case i: Identifier => i.setType(v.visitType(i.t).value)
-            case Lambda(x, e) =>
-              Lambda(apply(x, v).asInstanceOf[Identifier], apply(e, v))(v.visitType(expr.t).value)
-            case App(f, e) =>
-              App(apply(f, v), apply(e, v))(v.visitType(expr.t).value)
-            case DepLambda(x, e) => x match {
+            case l @ Lambda(x, e) =>
+              Lambda(apply(x, v).asInstanceOf[Identifier], apply(e, v))(v.visitType(l.t).value)
+            case a @ App(f, e) =>
+              App(apply(f, v), apply(e, v))(v.visitType(a.t).value)
+            case dl @ DepLambda(x, e) => x match {
               case n: NatIdentifier => DepLambda[NatKind]((v.visitNat(n).value: @unchecked) match {
-                case a: NamedVar => NatIdentifier(a)
-              }, apply(e, v))(v.visitType(expr.t).value)
-              case dt: DataTypeIdentifier => DepLambda[DataKind](v.visitType(dt).value, apply(e, v))(v.visitType(expr.t).value)
+                case a: NamedVar => NatIdentifier(a, isExplicit = true)
+              }, apply(e, v))(v.visitType(dl.t).value)
+              case dt: DataTypeIdentifier => DepLambda[DataKind](v.visitType(dt).value, apply(e, v))(v.visitType(dl.t).value)
             }
-            case DepApp(f, x) => x match {
-              case n: Nat           => DepApp[NatKind](apply(f, v), v.visitNat(n).value)(v.visitType(expr.t).value)
-              case dt: DataType     => DepApp[DataKind](apply(f, v), v.visitType(dt).value)(v.visitType(expr.t).value)
-              case a: AddressSpace  => DepApp[AddressSpaceKind](apply(f, v), v.visitAddressSpace(a).value)(v.visitType(expr.t).value)
-              case n2n: NatToNat    => DepApp[NatToNatKind](apply(f, v), v.visitN2N(n2n).value)(v.visitType(expr.t).value)
-              case n2d: NatToData   => DepApp[NatToDataKind](apply(f, v), v.visitN2D(n2d).value)(v.visitType(expr.t).value)
+            case da @ DepApp(f, x) => x match {
+              case n: Nat           => DepApp[NatKind](apply(f, v), v.visitNat(n).value)(v.visitType(da.t).value)
+              case dt: DataType     => DepApp[DataKind](apply(f, v), v.visitType(dt).value)(v.visitType(da.t).value)
+              case a: AddressSpace  => DepApp[AddressSpaceKind](apply(f, v), v.visitAddressSpace(a).value)(v.visitType(da.t).value)
+              case n2n: NatToNat    => DepApp[NatToNatKind](apply(f, v), v.visitN2N(n2n).value)(v.visitType(da.t).value)
+              case n2d: NatToData   => DepApp[NatToDataKind](apply(f, v), v.visitN2D(n2d).value)(v.visitType(da.t).value)
             }
             case l: Literal => l.d match {
               case NatData(n)       => Literal(NatData(v.visitNat(n).value))
@@ -102,7 +102,7 @@ object traversal {
           case DepLambda(x, e) => x match {
             case n: NatIdentifier => chainT(chainE(v.visitNat(n), e), expr.t)
               .map { case ((x, e), t) =>
-                DepLambda[NatKind]((x: @unchecked) match { case a: NamedVar => NatIdentifier(a) }, e)(t)
+                DepLambda[NatKind]((x: @unchecked) match { case a: NamedVar => NatIdentifier(a, isExplicit = true) }, e)(t)
               }
             case dt: DataTypeIdentifier => chainT(chainE(v.visitType(dt), e), expr.t)
               .map { case ((x, e), t) => DepLambda[DataKind](x, e)(t) }
@@ -143,7 +143,7 @@ object traversal {
               case DepFunType(x, t) => x match {
                   case n: NatIdentifier =>
                     DepFunType[NatKind, Type]((v.visitNat(n).value: @unchecked) match {
-                      case n: NamedVar => NatIdentifier(n.name, n.range)
+                      case n: NamedVar => NatIdentifier(n.name, n.range, isExplicit = true)
                     }, apply(t, v))
                   case dt: DataTypeIdentifier =>
                     DepFunType[DataKind, Type](data(dt, v), apply(t, v))
@@ -202,7 +202,7 @@ object traversal {
               case n: NatIdentifier =>
                 chainT(v.visitNat(n), t).map(r =>
                   DepFunType[NatKind, Type]((r._1: @unchecked) match {
-                    case n: NamedVar => NatIdentifier(n.name, n.range)
+                    case n: NamedVar => NatIdentifier(n.name, n.range, isExplicit = true)
                   }, r._2))
             }
             case i: TypeIdentifier => Continue(i, v)

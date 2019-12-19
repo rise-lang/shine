@@ -1,6 +1,6 @@
 [submodule "lib/ArithExpr"]
 	path = lib/ArithExpr
-	url = git@bitbucket.org:cdubach/arithexpr.git
+	url = git@github.com:rise-lang/arithexpr.git
 [submodule "lib/executor"]
 	path = lib/executor
 	url = git@github.com:lift-project/executor.git

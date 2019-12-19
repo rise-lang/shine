@@ -4,6 +4,7 @@ import lift.arithmetic.{Cst, RangeAdd}
 import lift.core.types._
 import lift.core.semantics._
 import lift.core.primitives._
+import lift.core.TypeLevelDSL._
 
 import scala.language.implicitConversions
 
@@ -12,7 +13,7 @@ object DSL {
   def identifier(name: String): Identifier = Identifier(name)()
   def lambda(x: Identifier, e: Expr): Lambda = Lambda(x, e)()
   def app(f: Expr, e: Expr): App = App(f, e)()
-  def depLambda[K <: Kind](x: K#I, e: Expr)(implicit kn: KindName[K]): DepLambda[K] = DepLambda[K](x, e)()(kn)
+  def depLambda[K <: Kind : KindName](x: K#I with Kind.Explicitness, e: Expr): DepLambda[K] = DepLambda[K](x, e)()
   def depApp[K <: Kind](f: Expr, x: K#T): DepApp[K] = DepApp[K](f, x)()
   def literal(d: semantics.Data): Literal = Literal(d)
 
@@ -101,6 +102,7 @@ object DSL {
     def `@`(i: Expr): Expr = idx(i)(e)
   }
 
+  /*
   implicit class TypeAnnotation(t: Type) {
     def ::(e: Expr): Expr =
       if (e.t == TypePlaceholder) e.setType(t)
@@ -108,13 +110,11 @@ object DSL {
         throw TypeException(s"tried to replace ${e.t} with ${t}, but type annotation can only replace a TypePlaceholder")
     def `:`(e: Expr): Expr = e :: t
   }
+  */
 
-  implicit class TypeEqual(a: Type) {
-    def =~=(b: Type): Boolean = (a, b) match {
-      case (TypePlaceholder, _) => true
-      case (_, TypePlaceholder) => true
-      case _ => a == b
-    }
+  implicit class TypeAnnotation(t: Type) {
+    def ::(e: Expr): Expr = Annotation(e, t)
+    def `:`(e: Expr): Expr = e :: t
   }
 
   implicit class FunCall(f: Expr) {
@@ -216,7 +216,7 @@ object DSL {
 
   object nFun {
     def apply(r: lift.arithmetic.Range, f: NatIdentifier => Expr): DepLambda[NatKind] = {
-      val x = NatIdentifier(freshName("n"), r)
+      val x = NatIdentifier(freshName("n"), r, isExplicit = true)
       depLambda[NatKind](x, f(x))
     }
 
@@ -226,139 +226,35 @@ object DSL {
 
     def apply(f: (NatIdentifier, NatIdentifier) => Expr): DepLambda[NatKind] = {
       val r = lift.arithmetic.RangeAdd(0, lift.arithmetic.PosInf, 1)
-      val n = NatIdentifier(freshName("n"), r)
+      val n = NatIdentifier(freshName("n"), r, isExplicit = true)
       depLambda[NatKind](n, nFun( f(n, _) ))
     }
 
     def apply(f: (NatIdentifier, NatIdentifier, NatIdentifier) => Expr): DepLambda[NatKind] = {
       val r = lift.arithmetic.RangeAdd(0, lift.arithmetic.PosInf, 1)
-      val n = NatIdentifier(freshName("n"), r)
+      val n = NatIdentifier(freshName("n"), r, isExplicit = true)
       depLambda[NatKind](n, nFun( (n1, n2) => f(n, n1, n2) ))
     }
 
     def apply(f: (NatIdentifier, NatIdentifier, NatIdentifier, NatIdentifier) => Expr): DepLambda[NatKind] = {
       val r = lift.arithmetic.RangeAdd(0, lift.arithmetic.PosInf, 1)
-      val n = NatIdentifier(freshName("n"), r)
+      val n = NatIdentifier(freshName("n"), r, isExplicit = true)
       depLambda[NatKind](n, nFun( (n1, n2, n3) => f(n, n1, n2, n3) ))
     }
 
     def apply(f: (NatIdentifier, NatIdentifier, NatIdentifier, NatIdentifier, NatIdentifier) => Expr): DepLambda[NatKind] = {
       val r = lift.arithmetic.RangeAdd(0, lift.arithmetic.PosInf, 1)
-      val n = NatIdentifier(freshName("n"), r)
+      val n = NatIdentifier(freshName("n"), r, isExplicit = true)
       depLambda[NatKind](n, nFun( (n1, n2, n3, n4) => f(n, n1, n2, n3, n4) ))
     }
   }
 
   object dtFun {
     def apply(f: DataTypeIdentifier => Expr): DepLambda[DataKind] = {
-      val x = DataTypeIdentifier(freshName("dt"))
+      val x = DataTypeIdentifier(freshName("dt"), isExplicit = true)
       depLambda[DataKind](x, f(x))
     }
   }
-
-  // type level lambdas
-  object n2dtFun {
-    def apply(f: NatIdentifier => DataType): NatToDataLambda = {
-      val x = NatIdentifier(freshName("n2dt"))
-      NatToDataLambda(x, f(x))
-    }
-
-    def apply(r: lift.arithmetic.Range)(f: NatIdentifier => DataType): NatToDataLambda = {
-      val x = NatIdentifier(freshName("n2dt"), r)
-      NatToDataLambda(x, f(x))
-    }
-
-    def apply(upperBound: Nat)(f: NatIdentifier => DataType): NatToDataLambda = {
-      apply(RangeAdd(0, upperBound, 1))(f)
-    }
-  }
-
-  object n2nFun {
-    def apply(f: NatIdentifier => Nat): NatToNatLambda = {
-      val x = NatIdentifier(freshName("n2n"))
-      NatToNatLambda(x, f(x))
-    }
-
-    def apply(r: lift.arithmetic.Range)(f: NatIdentifier => Nat): NatToNatLambda = {
-      val x = NatIdentifier(freshName("n2n"), r)
-      NatToNatLambda(x, f(x))
-    }
-
-    def apply(upperBound: Nat)(f: NatIdentifier => Nat): NatToNatLambda = {
-      apply(RangeAdd(0, upperBound, 1))(f)
-    }
-  }
-
-  // dependent function types
-  object nFunT {
-    def apply(f: NatIdentifier => Type): Type = {
-      val x = NatIdentifier(freshName("n"))
-      DepFunType[NatKind, Type](x, f(x))
-    }
-  }
-
-  object dtFunT {
-    def apply(f: DataTypeIdentifier => Type): Type = {
-      val x = DataTypeIdentifier(freshName("dt"))
-      DepFunType[DataKind, Type](x, f(x))
-    }
-  }
-
-  object n2nFunT {
-    def apply(f: NatToNat => Type): Type = {
-      val x = NatToNatIdentifier(freshName("_n2n"))
-      DepFunType[NatToNatKind, Type](x, f(x))
-    }
-  }
-
-  object n2dtFunT {
-    def apply(f: NatToData => Type): Type = {
-      val x = NatToDataIdentifier(freshName("_n2dt"))
-      DepFunType[NatToDataKind, Type](x, f(x))
-    }
-  }
-
-  object aFunT {
-    def apply(f: AddressSpaceIdentifier => Type): Type = {
-      val x = AddressSpaceIdentifier(freshName("a"))
-      DepFunType[AddressSpaceKind, Type](x, f(x))
-    }
-  }
-
-  // types with implicit type parameters
-  def implN[A](f: NatIdentifier => A): A = {
-    f(NatIdentifier(freshName("_n")))
-  }
-
-
-  def implT[A](f: TypeIdentifier => A): A = {
-    f(TypeIdentifier(freshName("_t")))
-  }
-  def implDT[A](f: DataTypeIdentifier => A): A = {
-    f(DataTypeIdentifier(freshName("_dt")))
-  }
-  // TODO: BasicTypeIdentifier
-  def implBT[A](f: DataTypeIdentifier => A): A = {
-    f(DataTypeIdentifier(freshName("_dt")))
-  }
-  // TODO: ScalarTypeIdentifier
-  def implST[A](f: DataTypeIdentifier => A): A = {
-    f(DataTypeIdentifier(freshName("_dt")))
-  }
-
-  def implN2N[A](f: NatToNat => A): A = {
-    f(NatToNatIdentifier(freshName("_n2n")))
-  }
-
-  def implN2DT[A](f: NatToData => A): A = {
-    f(NatToDataIdentifier(freshName("_n2dt")))
-  }
-
-  def implA[A](f: AddressSpaceIdentifier => A): A = {
-    f(AddressSpaceIdentifier(freshName("_w")))
-  }
-
-  def freshTypeIdentifier: Type = implT(identity)
 
   implicit def wrapInNatExpr(n: Nat): Literal = literal(NatData(n))
 
@@ -368,32 +264,6 @@ object DSL {
   def lidx(i: Nat, n: Nat): Literal = literal(IndexData(i, n))
   def lvec(v: Seq[ScalarData]): Literal = literal(VectorData(v))
   def larr(a: Seq[Data]): Literal = literal(ArrayData(a))
-
-  implicit final class TypeConstructors(private val r: Type) extends AnyVal {
-    @inline def ->:(t: Type): FunType[Type, Type] = FunType(t, r)
-  }
-
-  implicit final class TupleTypeConstructors(private val a: DataType) extends AnyVal {
-    @inline def x(b: DataType): PairType = PairType(a, b)
-  }
-
-  final case class ArrayTypeConstructorHelper(ns: Seq[Nat]) {
-    @inline def `.`(n: Nat): ArrayTypeConstructorHelper = ArrayTypeConstructorHelper(ns :+ n)
-    @inline def `.`(dt: DataType): ArrayType = {
-      val nsr = ns.reverse
-      nsr.tail.foldLeft(ArrayType(nsr.head, dt))( (t, n) => ArrayType(n, t) )
-    }
-  }
-
-  implicit final class ArrayTypeConstructors(private val n: Nat) extends AnyVal {
-    @inline def `.`(m: Nat): ArrayTypeConstructorHelper = ArrayTypeConstructorHelper(Seq(n, m))
-    @inline def `.`(dt: DataType): ArrayType = ArrayType(n, dt)
-  }
-
-  implicit final class ArrayTypeConstructorsFromInt(private val n: Int) extends AnyVal {
-    @inline def `.`(m: Nat): ArrayTypeConstructorHelper = ArrayTypeConstructorHelper(Seq(Cst(n), m))
-    @inline def `.`(dt: DataType): ArrayType = ArrayType(Cst(n), dt)
-  }
 
   object foreignFun {
     def apply(name: String, t: Type): Expr = {

@@ -85,7 +85,7 @@ object substitute {
     traversal.types.DepthFirstLocalResult(in, Visitor())
   }
 
-  def natInType[T <: Type](n: Nat, `for`: NamedVar, in: T): T = {
+  def natInType[T <: Type](n: Nat, `for`: NatIdentifier, in: T): T = {
     case class Visitor() extends traversal.Visitor {
       override def visitNat(in: Nat): Result[Nat] =
         Continue(substitute.natInNat(n, `for`, in), this)
@@ -94,7 +94,7 @@ object substitute {
     traversal.types.DepthFirstLocalResult(in, Visitor())
   }
 
-  def natInDataType(n: Nat, `for`: NamedVar, in: DataType): DataType = {
+  def natInDataType(n: Nat, `for`: NatIdentifier, in: DataType): DataType = {
     case class Visitor() extends traversal.Visitor {
       override def visitNat(in: Nat): Result[Nat] =
         Continue(substitute.natInNat(n, `for`, in), this)
@@ -142,30 +142,46 @@ object substitute {
 
   // substitute in Nat
 
-  def natInNat(ae: Nat, `for`: NamedVar, in: Nat): Nat = {
+  def natsInNat(subs: Map[NatIdentifier, Nat], in: Nat): Nat = {
     in.visitAndRebuild {
-      case v: NamedVar =>
-        if (`for`.name == v.name) {
-          ae
-        } else {
-          v
-        }
-      case e => e
+      case i: NatIdentifier => subs.get(i) match {
+        case Some(n) => n
+        case None => i
+      }
+      case n => n
     }
   }
 
+  def natInNat(ae: Nat, `for`: NatIdentifier, in: Nat): Nat = natsInNat(Map(`for` -> ae), in)
+
   // substitute in AddressSpace
+
+  def addressSpacesInAddressSpace(subs: Map[AddressSpaceIdentifier, AddressSpace], in: AddressSpace): AddressSpace = {
+    in match {
+      case i: AddressSpaceIdentifier => subs.get(i) match {
+        case Some(a) => a
+        case None => i
+      }
+      case a => a
+    }
+  }
 
   def addressSpaceInAddressSpace(a: AddressSpace, `for`: AddressSpaceIdentifier, in: AddressSpace): AddressSpace = {
     if (in == `for`) { a } else { in }
   }
 
   // substitute in NatToData
-
-  def n2dInN2d(n: NatToData, `for`: NatToData, in: NatToData): NatToData = {
+  def n2dsInN2d(subs: Map[NatToDataIdentifier, NatToData], in: NatToData): NatToData = {
     in match {
-      case i: NatToDataIdentifier => if (i == `for`) n else in
-      case _ => in
+      case i: NatToDataIdentifier => subs.get(i) match {
+        case Some(n2d) => n2d
+        case None => i
+      }
+      case n2d => n2d
     }
+  }
+
+  def n2dInN2d(n2d: NatToData, `for`: NatToDataIdentifier, in: NatToData): NatToData = {
+    if (in == `for`) n2d else in
   }
 }

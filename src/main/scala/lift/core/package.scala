@@ -1,6 +1,7 @@
 package lift
 
 import lift.arithmetic._
+import lift.core.types._
 
 package object core {
   object freshName {
@@ -13,12 +14,24 @@ package object core {
   }
 
   type Nat = ArithExpr
-  type NatIdentifier = NamedVar with types.Kind.Identifier
+  //type NatIdentifier = NamedVar with types.Kind.Identifier with types.Kind.Binder
 
-  object NatIdentifier {
-    def apply(name: String): NatIdentifier = new NamedVar(name) with types.Kind.Identifier
-    def apply(name: String, range: Range): NatIdentifier = new NamedVar(name, range) with types.Kind.Identifier
-    def apply(nv: NamedVar): NatIdentifier = new NamedVar(nv.name, nv.range) with types.Kind.Identifier
+  def toEvaluableString(e: Expr): String = {
+    e match {
+      case Identifier(name) => s"""Identifier("id$name")""" // id prefix prevents name clashes with freshName
+      case Lambda(x, e) => s"Lambda(${toEvaluableString(x)}, ${toEvaluableString(e)})"
+      case App(f, e) => s"Apply(${toEvaluableString(f)}, ${toEvaluableString(e)})"
+      case DepLambda(x, e) => x match {
+        case n: NatIdentifier => s"""DepLambda[NatKind](NatIdentifier("id$n"), ${toEvaluableString(e)})"""
+        case dt: DataTypeIdentifier => s"""DepLambda[DataKind]("id$dt", ${toEvaluableString(e)})"""
+      }
+      case DepApp(f, x) => x match {
+        case n: Nat => s"DepApply[NatKind](${toEvaluableString(f)}, $n)"
+        case dt: DataType => s"DepApply[DataKind](${toEvaluableString(f)}, $dt)"
+      }
+      case Literal(d) => s"Literal($d)"
+      case ff: ForeignFunction => ff.toString
+      case p: Primitive => p.toString
+    }
   }
-
 }

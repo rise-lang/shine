@@ -11,10 +11,16 @@ object Kind {
   trait Identifier {
     def name: String
   }
+  trait Explicitness {
+    val isExplicit: Boolean
+    def asExplicit: Explicitness
+    def asImplicit: Explicitness
+  }
 }
 
 sealed trait TypeKind extends Kind {
   override type T = Type
+  override type I = TypeIdentifier
 }
 
 sealed trait DataKind extends Kind {
@@ -24,7 +30,7 @@ sealed trait DataKind extends Kind {
 
 sealed trait NatKind extends Kind {
   override type T = core.Nat
-  override type I = core.NatIdentifier
+  override type I = NatIdentifier
 }
 
 sealed trait AddressSpaceKind extends Kind {

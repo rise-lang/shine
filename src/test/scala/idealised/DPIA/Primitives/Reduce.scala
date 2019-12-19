@@ -1,6 +1,7 @@
 package idealised.DPIA.Primitives
 
 import lift.core.DSL._
+import lift.core.TypeLevelDSL._
 import lift.core.types._
 import lift.core.types.AddressSpace
 import lift.core.primitives._

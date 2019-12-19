@@ -1,7 +1,7 @@
 package lift.core
 
 import lift.core.types._
-import lift.core.DSL.TypeEqual
+import lift.core.TypeLevelDSL.TypeEqual
 import lift.core.ShowLift._
 
 sealed abstract class Expr {
@@ -23,7 +23,7 @@ final case class Lambda(x: Identifier, e: Expr)
                        (override val t: Type = TypePlaceholder) extends Expr {
   override def setType(t: Type): Lambda = this.copy(x, e)(t)
   override def equals(obj: Any): Boolean = obj match {
-    case other: Lambda => (other.x.t =~= x.t) && (e == lifting.liftFunExpr(other).value(x)) && (other.t =~= t)
+    case other: Lambda => (other.x.t =~= x.t) && (e == typedLifting.liftFunExpr(other).value(x)) && (other.t =~= t)
     case _ => false
   }
 }
@@ -37,12 +37,12 @@ final case class App(f: Expr, e: Expr)
   }
 }
 
-final case class DepLambda[K <: Kind](x: K#I, e: Expr)
-                                     (override val t: Type = TypePlaceholder)
-                                     (implicit val kn: KindName[K]) extends Expr {
+final case class DepLambda[K <: Kind : KindName](x: K#I with Kind.Explicitness, e: Expr)
+                                                (override val t: Type = TypePlaceholder) extends Expr {
+  val kindName: String = implicitly[KindName[K]].get
   override def setType(t: Type): DepLambda[K] = this.copy(x, e)(t)
   override def equals(obj: Any): Boolean = obj match {
-    case other: DepLambda[K] => (e == lifting.liftDepFunExpr[K](other).value(x)) && (other.t =~= t)
+    case other: DepLambda[K] => (e == typedLifting.liftDepFunExpr[K](other).value(x)) && (other.t =~= t)
     case _ => false
   }
 }

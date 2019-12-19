@@ -1,6 +1,7 @@
 package lift.OpenMP
 
 import lift.core.DSL._
+import lift.core.TypeLevelDSL._
 import lift.core.types._
 import lift.core.{Primitive, primitives => core}
 import primitiveMacro.Primitive.primitive
