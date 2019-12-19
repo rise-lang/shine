@@ -7,7 +7,7 @@ import idealised.DPIA.Types._
 import rise.core.{semantics => ls, types => lt}
 import rise.{core => l}
 
-object fromLift {
+object fromRise {
   def apply(expr: l.Expr): Phrase[_ <: PhraseType] = {
     if (!l.IsClosedForm(expr)) {
       throw new Exception(s"expression is not in closed form: $expr")

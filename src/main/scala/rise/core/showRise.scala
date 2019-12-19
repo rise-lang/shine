@@ -178,7 +178,7 @@ object DrawTree {
   def block(n: String, a: UnicodeDraw): NamedBlock = NamedBlock(n, a)
 }
 
-class ShowLiftCompact {
+class ShowRiseCompact {
   import rise.core.DrawTree._
   import rise.core.semantics._
 
@@ -281,14 +281,14 @@ class ShowLiftCompact {
   }
 }
 
-object ShowLiftCompact {
-  private val obj = new ShowLiftCompact
+object ShowRiseCompact {
+  private val obj = new ShowRiseCompact
   def apply(expr: Expr, inlineSize: Int, cfg: UnicodeConfig): String = {
     obj.drawAST(expr)(inlineSize)._3.show(cfg)
   }
 }
 
-class ShowLiftCompactTrack extends ShowLiftCompact {
+class ShowRiseCompactTrack extends ShowRiseCompact {
   import rise.core.DrawTree._
 
   var probe: Expr => Boolean = {_ => false}
@@ -338,8 +338,8 @@ class ShowLiftCompactTrack extends ShowLiftCompact {
   }
 }
 
-object ShowLiftCompactTrack {
-  private val obj = new ShowLiftCompactTrack
+object ShowRiseCompactTrack {
+  private val obj = new ShowRiseCompactTrack
   def setProbe(newProbe: Expr => Boolean): Unit = {
     obj.probe = newProbe
   }
@@ -347,13 +347,13 @@ object ShowLiftCompactTrack {
     obj.drawAST(expr)(inlineSize)._3.show(cfg)
   }
   def apply(probe: Expr => Boolean, expr: Expr, inlineSize: Int, cfg: UnicodeConfig): String = {
-    val temp = new ShowLiftCompactTrack
+    val temp = new ShowRiseCompactTrack
     temp.probe = probe
     temp.drawAST(expr)(inlineSize)._3.show(cfg)
   }
 }
 
-class ShowLiftCompactTrackTopDown extends ShowLiftCompactTrack {
+class ShowRiseCompactTrackTopDown extends ShowRiseCompactTrack {
   import rise.core.DrawTree._
 
   override def drawAST(expr: Expr, wrapped: Boolean = false)
@@ -370,8 +370,8 @@ class ShowLiftCompactTrackTopDown extends ShowLiftCompactTrack {
   }
 }
 
-object ShowLiftCompactTrackTopDown {
-  private val obj = new ShowLiftCompactTrackTopDown
+object ShowRiseCompactTrackTopDown {
+  private val obj = new ShowRiseCompactTrackTopDown
   def setProbe(newProbe: Expr => Boolean): Unit = {
     obj.probe = newProbe
   }
@@ -379,13 +379,13 @@ object ShowLiftCompactTrackTopDown {
     obj.drawAST(expr)(inlineSize)._3.show(cfg)
   }
   def apply(probe: Expr => Boolean, expr: Expr, inlineSize: Int, cfg: UnicodeConfig): String = {
-    val temp = new ShowLiftCompactTrackTopDown
+    val temp = new ShowRiseCompactTrackTopDown
     temp.probe = probe
     temp.drawAST(expr)(inlineSize)._3.show(cfg)
   }
 }
 
-object ShowLift {
+object ShowRise {
   import rise.core.DrawTree._
 
   val defaultInlineSize = 10
@@ -394,36 +394,36 @@ object ShowLift {
 
   val roundedCorner: UnicodeConfig = UnicodeConfig("│╭├╰├╩╦╬═ ─")
 
-  def showLift(expr: Expr): String = showLiftCompactTrack(expr, cfg = spaceWireH)
+  def showRise(expr: Expr): String = showRiseCompactTrack(expr, cfg = spaceWireH)
 
-  def showLiftCompact(expr: Expr, inlineSize: Int = defaultInlineSize,
+  def showRiseCompact(expr: Expr, inlineSize: Int = defaultInlineSize,
                       cfg: UnicodeConfig = defaultUnicodeConfig): String =
-    ShowLiftCompact(expr, inlineSize, cfg)
+    ShowRiseCompact(expr, inlineSize, cfg)
 
-  def showLiftCompactTrack(expr: Expr, inlineSize: Int = defaultInlineSize,
+  def showRiseCompactTrack(expr: Expr, inlineSize: Int = defaultInlineSize,
                            cfg: UnicodeConfig = defaultUnicodeConfig): String =
-    ShowLiftCompactTrack(expr, inlineSize, cfg)
+    ShowRiseCompactTrack(expr, inlineSize, cfg)
 
-  def showLiftCompactTrackTD(expr: Expr, inlineSize: Int = defaultInlineSize,
+  def showRiseCompactTrackTD(expr: Expr, inlineSize: Int = defaultInlineSize,
                              cfg: UnicodeConfig = defaultUnicodeConfig): String =
-    ShowLiftCompactTrackTopDown(expr, inlineSize, cfg)
+    ShowRiseCompactTrackTopDown(expr, inlineSize, cfg)
 
-  def showLiftSingleLine(expr: Expr): String =
-    ShowLiftCompact(expr, Int.MaxValue, defaultUnicodeConfig).tail
+  def showRiseSingleLine(expr: Expr): String =
+    ShowRiseCompact(expr, Int.MaxValue, defaultUnicodeConfig).tail
 
-  def showLiftSingleLineTrack(expr: Expr): String =
-    ShowLiftCompactTrack(expr, Int.MaxValue, defaultUnicodeConfig).tail
+  def showRiseSingleLineTrack(expr: Expr): String =
+    ShowRiseCompactTrack(expr, Int.MaxValue, defaultUnicodeConfig).tail
 
-  def showLiftSingleLineTrackTD(expr: Expr): String =
-    ShowLiftCompactTrackTopDown(expr, Int.MaxValue, defaultUnicodeConfig).tail
+  def showRiseSingleLineTrackTD(expr: Expr): String =
+    ShowRiseCompactTrackTopDown(expr, Int.MaxValue, defaultUnicodeConfig).tail
 
   def trackWith(probe: Expr => Boolean, expr: Expr, inlineSize: Int = defaultInlineSize,
                 cfg: UnicodeConfig = defaultUnicodeConfig): String =
-    ShowLiftCompactTrack(probe, expr, inlineSize, cfg)
-  def setGlobalProbe(probe: Expr => Boolean): Unit = ShowLiftCompactTrack.setProbe(probe)
+    ShowRiseCompactTrack(probe, expr, inlineSize, cfg)
+  def setGlobalProbe(probe: Expr => Boolean): Unit = ShowRiseCompactTrack.setProbe(probe)
 
   def trackTDWith(probe: Expr => Boolean, expr: Expr, inlineSize: Int = defaultInlineSize,
                 cfg: UnicodeConfig = defaultUnicodeConfig): String =
-    ShowLiftCompactTrackTopDown(probe, expr, inlineSize, cfg)
-  def setTDGlobalProbe(probe: Expr => Boolean): Unit = ShowLiftCompactTrackTopDown.setProbe(probe)
+    ShowRiseCompactTrackTopDown(probe, expr, inlineSize, cfg)
+  def setTDGlobalProbe(probe: Expr => Boolean): Unit = ShowRiseCompactTrackTopDown.setProbe(probe)
 }

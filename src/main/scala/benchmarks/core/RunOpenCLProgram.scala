@@ -24,7 +24,7 @@ abstract class RunOpenCLProgram(val verbose:Boolean) {
   protected def runScalaProgram(input:Input):Array[Float]
 
   private def compile(localSize:LocalSize, globalSize:GlobalSize):KernelWithSizes = {
-    val kernel = idealised.OpenCL.KernelGenerator.makeCode(localSize, globalSize)(DPIA.fromLift(infer(this.expr)), "KERNEL")
+    val kernel = idealised.OpenCL.KernelGenerator.makeCode(localSize, globalSize)(DPIA.fromRise(infer(this.expr)), "KERNEL")
 
     if(verbose) {
       println(kernel.code)

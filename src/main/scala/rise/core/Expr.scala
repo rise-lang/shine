@@ -2,12 +2,12 @@ package rise.core
 
 import rise.core.types._
 import rise.core.TypeLevelDSL.TypeEqual
-import rise.core.ShowLift._
+import rise.core.ShowRise._
 
 sealed abstract class Expr {
   val t: Type
   def setType(t: Type): Expr
-  override def toString: String = showLift(this)
+  override def toString: String = showRise(this)
 }
 
 final case class Identifier(name: String)

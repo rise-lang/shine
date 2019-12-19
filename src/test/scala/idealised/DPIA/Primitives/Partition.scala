@@ -25,7 +25,7 @@ class Partition extends test_util.Tests {
 
     println("\n" + slideExample + "\n")
 
-    val p = idealised.C.ProgramGenerator.makeCode(DPIA.fromLift(infer(slideExample)))
+    val p = idealised.C.ProgramGenerator.makeCode(DPIA.fromRise(infer(slideExample)))
     val code = p.code
     SyntaxChecker(code)
   }

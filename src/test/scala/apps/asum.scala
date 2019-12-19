@@ -120,7 +120,7 @@ class asum extends test_util.TestsWithExecutor {
     ))
 
     test("Intel derived no warp compiles to syntactically correct OpenCL code") {
-      val phrase = idealised.DPIA.fromLift(infer(intelDerivedNoWarp1))
+      val phrase = idealised.DPIA.fromRise(infer(intelDerivedNoWarp1))
       val N = phrase.t.asInstanceOf[idealised.DPIA.`(nat)->:`[ExpType]].x
       val p = OpenCL.KernelGenerator.makeCode(LocalSize(128), GlobalSize(N))(phrase, "KERNEL")
       println(p.code)
@@ -146,7 +146,7 @@ class asum extends test_util.TestsWithExecutor {
         ) |> join
     ))
     test("Second kernel of Intel derived compiles to syntactically correct OpenCL code") {
-      val phrase = idealised.DPIA.fromLift(infer(intelDerived2))
+      val phrase = idealised.DPIA.fromRise(infer(intelDerived2))
       val N = phrase.t.asInstanceOf[idealised.DPIA.`(nat)->:`[ExpType]].x
       val p = OpenCL.KernelGenerator.makeCode(LocalSize(128), GlobalSize(N))(phrase, "KERNEL")
       println(p.code)
@@ -177,7 +177,7 @@ class asum extends test_util.TestsWithExecutor {
     ))
 
     test("Nvidia kernel derived compiles to syntactically correct OpenCL code") {
-      val phrase = idealised.DPIA.fromLift(infer(nvidiaDerived1))
+      val phrase = idealised.DPIA.fromRise(infer(nvidiaDerived1))
       val N = phrase.t.asInstanceOf[idealised.DPIA.`(nat)->:`[ExpType]].x
       val p = OpenCL.KernelGenerator.makeCode(LocalSize(128), GlobalSize(N))(phrase, "KERNEL")
       println(p.code)
@@ -207,7 +207,7 @@ class asum extends test_util.TestsWithExecutor {
     ))
 
     test("AMD/Nvidia second kernel derived compiles to syntactically correct OpenCL code") {
-      val phrase = idealised.DPIA.fromLift(infer(amdNvidiaDerived2))
+      val phrase = idealised.DPIA.fromRise(infer(amdNvidiaDerived2))
       val N = phrase.t.asInstanceOf[idealised.DPIA.`(nat)->:`[ExpType]].x
       val p = OpenCL.KernelGenerator.makeCode(LocalSize(128), GlobalSize(N))(phrase, "KERNEL")
       println(p.code)
@@ -239,7 +239,7 @@ class asum extends test_util.TestsWithExecutor {
     ))
 
     test("AMD kernel derived compiles to syntactically correct OpenCL code") {
-      val phrase = idealised.DPIA.fromLift(infer(amdDerived1))
+      val phrase = idealised.DPIA.fromRise(infer(amdDerived1))
       val N = phrase.t.asInstanceOf[idealised.DPIA.`(nat)->:`[ExpType]].x
       val p = OpenCL.KernelGenerator.makeCode(LocalSize(128), GlobalSize(N))(phrase, "KERNEL")
       println(p.code)

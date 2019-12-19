@@ -7,9 +7,9 @@ import rise.core.primitives._
 import rise.core.DrawTree._
 import rise.core.HighLevelConstructs._
 import rise.core.types._
-import rise.core.ShowLift._
+import rise.core.ShowRise._
 
-class showLift extends test_util.Tests {
+class showRise extends test_util.Tests {
   private val id = fun(x => x)
 
   private val dotElemWeights = fun((weights, elem) =>
@@ -42,8 +42,8 @@ class showLift extends test_util.Tests {
   }
 
   test("compare the result with simple implementations") {
-    object ShowLiftSimp {
-      def showLiftSimp(e: Expr, cfg: UnicodeConfig): String = drawASTSimp(e).show(cfg)
+    object ShowRiseSimp {
+      def showRiseSimp(e: Expr, cfg: UnicodeConfig): String = drawASTSimp(e).show(cfg)
       def drawASTSimp(e: Expr): UnicodeDraw = e match {
         case i: Identifier => line(i.name)
         case Lambda(x, e) => block(s"λ${x.name}", drawASTSimp(e))
@@ -97,10 +97,10 @@ class showLift extends test_util.Tests {
 
     val example = blurXTiled2D
 
-    assert(showLiftCompact(example, 0, defaultUnicodeConfig)
-      == ShowLiftSimp.showLiftSimp(example, defaultUnicodeConfig))
+    assert(showRiseCompact(example, 0, defaultUnicodeConfig)
+      == ShowRiseSimp.showRiseSimp(example, defaultUnicodeConfig))
 
-    assert(showLiftCompact(example, 1024, defaultUnicodeConfig)
+    assert(showRiseCompact(example, 1024, defaultUnicodeConfig)
       == line(LessBrackets.lessBrackets(example)).show(defaultUnicodeConfig))
   }
 

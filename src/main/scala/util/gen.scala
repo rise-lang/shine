@@ -6,7 +6,7 @@ import idealised.OpenCL.{GlobalSize, LocalSize}
 object gen {
   private def toDPIA(e: rise.core.Expr): DPIA.Phrases.Phrase[_ <: DPIA.Types.PhraseType] = {
     val typed_e = rise.core.types.infer(e)
-    idealised.DPIA.fromLift(typed_e)
+    idealised.DPIA.fromRise(typed_e)
   }
 
   def CProgram(e: rise.core.Expr, name: String = "foo"): idealised.C.Program = {

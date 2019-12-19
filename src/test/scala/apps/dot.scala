@@ -32,7 +32,7 @@ class dot extends test_util.Tests {
   test("Simple dot product translation to phrase works and preserves types") {
     import idealised.DPIA.Types.float
     import idealised.DPIA._
-    val phrase = idealised.DPIA.fromLift(infer(simpleDotProduct))
+    val phrase = idealised.DPIA.fromRise(infer(simpleDotProduct))
 
     val N = phrase.t.asInstanceOf[`(nat)->:`[ExpType ->: ExpType]].x
     val dt = float
