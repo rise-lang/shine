@@ -38,9 +38,8 @@ class separableConvolution2DRewrite extends test_util.Tests {
   private def ben_eq(a: Expr, b: Expr): Boolean = {
     val na = BENF(a).get
     val nb = BENF(b).get
-    val uab: Rise = toTDSL(erase(na)) :: nb.t
-    val ubb: Rise = toTDSL(erase(nb)) :: nb.t
-    makeClosed(uab)._1 == makeClosed(ubb)._1
+    val uab: Rise = toTDSL(na) :: nb.t
+    makeClosed(uab)._1 == makeClosed(nb)._1
   }
 
   private val separateDot: Strategy[Rise] = {

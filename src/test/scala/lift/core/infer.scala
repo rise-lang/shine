@@ -13,12 +13,5 @@ class infer extends test_util.Tests {
   test("Infer partial int addition type") {
     val typed = infer(fun(x => l(1) + x))
     assert(typed.t == int ->: int)
-    val a = NatIdentifier("a")
-    val b = NatIdentifier("b")
-    val c = NatIdentifier("c")
-    val d = NatIdentifier("d")
-    val le = a + (b * d) + (-1 * c)
-    val re = a + (-1 * c) + (b * d)
-    assert(le == re)
   }
 }
