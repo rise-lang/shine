@@ -1,6 +1,7 @@
+ThisBuild / scalaVersion := "2.11.12"
+ThisBuild / organization := "org.lift-project"
+
 lazy val commonSettings = Seq(
-  version := "1.0",
-  scalaVersion := "2.11.12",
   scalacOptions ++= Seq(
     "-Xfatal-warnings",
     "-Xlint",
@@ -27,46 +28,43 @@ setup := {
   "echo y" #| "./setup.sh" !
 }
 
-lazy val root = (project in file("."))
-  .dependsOn(macroSub).settings(
-  commonSettings,
-  name := "idealised-OpenCL",
-  compile := ((compile in Compile) dependsOn setup).value,
-  test := ((test in Test) dependsOn setup).value,
-  javaOptions += "-Djava.library.path=lib/executor/lib/Executor/build",
+lazy val shine = (project in file("."))
+  .dependsOn(macroSub, arithExpr, executor)
+  .settings(
+    commonSettings,
+    name := "idealised-OpenCL",
+    version := "1.0",
+    compile := ((compile in Compile) dependsOn setup).value,
+    test := ((test in Test) dependsOn setup).value,
+    javaOptions += "-Djava.library.path=lib/executor/lib/Executor/build",
 
-  // Scala libraries
-  libraryDependencies += "org.scala-lang" % "scala-reflect" % "2.11.12",
-  libraryDependencies += "org.scala-lang" % "scala-compiler" % "2.11.12",
-  libraryDependencies += "org.scala-lang" % "scala-library" % "2.11.12",
-  libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.0.5",
+    // Scala libraries
+    libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+    libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
+    libraryDependencies += "org.scala-lang" % "scala-library" % scalaVersion.value,
+    libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.0.5",
 
-  // JUnit
-  libraryDependencies += "junit" % "junit" % "4.11",
+    // JUnit
+    libraryDependencies += "junit" % "junit" % "4.11",
 
-  // Scalatest
-  libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.5" % "test",
+    // Scalatest
+    libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.5" % "test",
 
-  // Silencer: Scala compiler plugin for warning suppression
-  libraryDependencies ++= Seq(
-    compilerPlugin("com.github.ghik" %% "silencer-plugin" % "1.4.0"),
-    "com.github.ghik" %% "silencer-lib" % "1.4.0" % Provided
-  ),
-
-  // exclude the ArithExpr library sources
-  scalacOptions += s"-P:silencer:pathFilters=${baseDirectory.value}/lib/ArithExpr/src/main/",
-
-  // Build ArithExpr
-  unmanagedSourceDirectories in Compile += baseDirectory.value / "lib/ArithExpr/src/main/",
-  unmanagedSourceDirectories in Test += baseDirectory.value / "lib/ArithExpr/src/main/",
-
-  // Build executor
-  unmanagedSourceDirectories in Compile += baseDirectory.value / "lib/executor/src/main/",
-  unmanagedSourceDirectories in Test += baseDirectory.value / "lib/executor/src/main/"
-)
+    // Silencer: Scala compiler plugin for warning suppression
+    libraryDependencies ++= Seq(
+      compilerPlugin("com.github.ghik" %% "silencer-plugin" % "1.4.0"),
+      "com.github.ghik" %% "silencer-lib" % "1.4.0" % Provided
+    )
+  )
 
 lazy val macroSub = (project in file("macros"))
   .settings(
+    name := "macros",
+    version := "1.0",
     commonSettings,
     libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
   )
+
+lazy val arithExpr = (project in file("lib/ArithExpr"))
+
+lazy val executor  = (project in file("lib/executor"))
