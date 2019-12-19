@@ -2,12 +2,12 @@ package apps
 
 import idealised.DPIA.Types.ExpType
 import idealised.OpenCL.{GlobalSize, LocalSize}
-import lift.core._
-import lift.core.types._
-import lift.core.DSL._
-import lift.core.TypeLevelDSL._
-import lift.core.primitives._
-import lift.core.HighLevelConstructs.reorderWithStride
+import rise.core._
+import rise.core.types._
+import rise.core.DSL._
+import rise.core.TypeLevelDSL._
+import rise.core.primitives._
+import rise.core.HighLevelConstructs.reorderWithStride
 import util.{SyntaxChecker, gen}
 
 import scala.util.Random
@@ -40,7 +40,7 @@ class asum extends test_util.TestsWithExecutor {
 
   // OpenMP code gen
   test("Intel derived no warp compiles to syntactically correct OpenMP code") {
-    import lift.OpenMP.DSL._
+    import rise.OpenMP.DSL._
 
     val intelDerivedNoWarp1 = nFun(n => fun(inputT(n))(input =>
       input |>
@@ -58,7 +58,7 @@ class asum extends test_util.TestsWithExecutor {
   }
 
   test("Second kernel of Intel derived compiles to syntactically correct OpenMP code") {
-    import lift.OpenMP.DSL._
+    import rise.OpenMP.DSL._
 
     val intelDerived2 = nFun(n => fun(inputT(n))(input =>
       input |>
@@ -72,7 +72,7 @@ class asum extends test_util.TestsWithExecutor {
   }
 
   test("AMD/Nvidia second kernel derived compiles to syntactically correct OpenMP code") {
-    import lift.OpenMP.DSL._
+    import rise.OpenMP.DSL._
 
     val amdNvidiaDerived2 = nFun(n => fun(inputT(n))(input =>
       input |>
@@ -91,7 +91,7 @@ class asum extends test_util.TestsWithExecutor {
   }
 
   { // OpenCL code gen
-    import lift.OpenCL.DSL._
+    import rise.OpenCL.DSL._
     import idealised.OpenCL
 
     val random = new Random()

@@ -11,9 +11,9 @@ import elevate.rise.strategies.normalForm._
 import elevate.rise.strategies.tiling._
 import elevate.rise.strategies.util._
 import elevate.util._
-import lift.core.TypedDSL._
-import lift.core.types.NatKind
-import lift.core.primitives._
+import rise.core.TypedDSL._
+import rise.core.types.NatKind
+import rise.core.primitives._
 
 
 class traversals extends test_util.Tests {

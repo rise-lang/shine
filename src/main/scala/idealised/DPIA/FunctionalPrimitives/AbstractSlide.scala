@@ -5,7 +5,7 @@ import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics.{ArrayData, Store}
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import lift.arithmetic.SimplifiedExpr
+import rise.arithmetic.SimplifiedExpr
 
 import scala.language.{postfixOps, reflectiveCalls}
 import scala.xml.Elem

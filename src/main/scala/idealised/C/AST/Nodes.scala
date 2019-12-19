@@ -2,7 +2,7 @@ package idealised.C.AST
 
 import idealised.C
 import idealised.C.AST.Nodes.{VisitAndGenerateStmt, VisitAndRebuild}
-import lift.arithmetic.ArithExpr
+import rise.arithmetic.ArithExpr
 
 /*
 * This implementation follows the design from the Lift repository by Adam Harries
@@ -152,7 +152,7 @@ abstract class ArrayLiteral(val t: ArrayType, val inits: Seq[Expr]) extends Expr
 
 abstract class RecordLiteral(val t: Type, val fst: Expr, val snd: Expr) extends Expr
 
-abstract class ArithmeticExpr(val ae: lift.arithmetic.ArithExpr) extends Expr
+abstract class ArithmeticExpr(val ae: rise.arithmetic.ArithExpr) extends Expr
 
 // visitor
 
@@ -347,7 +347,7 @@ object RecordLiteral {
 }
 
 object ArithmeticExpr {
-  def apply(ae: lift.arithmetic.ArithExpr): ArithmeticExpr = DefaultImplementations.ArithmeticExpr(ae)
+  def apply(ae: rise.arithmetic.ArithExpr): ArithmeticExpr = DefaultImplementations.ArithmeticExpr(ae)
   def unapply(arg: ArithmeticExpr): Option[ArithExpr] = Some(arg.ae)
 }
 
@@ -650,7 +650,7 @@ object DefaultImplementations {
         VisitAndGenerateStmt(snd, v, sndE => cont(RecordLiteral(t, fstE, sndE))))
   }
 
-  case class ArithmeticExpr(override val ae: lift.arithmetic.ArithExpr) extends C.AST.ArithmeticExpr(ae) {
+  case class ArithmeticExpr(override val ae: rise.arithmetic.ArithExpr) extends C.AST.ArithmeticExpr(ae) {
     override def visitAndRebuild(v: VisitAndRebuild.Visitor): ArithmeticExpr.this.type = this
 
     override def visitAndGenerateStmt(v: VisitAndGenerateStmt.Visitor, cont: Expr => Stmt): Stmt = cont(this)

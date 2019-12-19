@@ -2,7 +2,7 @@ package idealised
 
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types.{PhraseTypeParser, _}
-import lift.arithmetic._
+import rise.arithmetic._
 
 import com.github.ghik.silencer.silent
 
@@ -41,7 +41,7 @@ package object DPIA {
   }
 
   // note: this is an easy fix to avoid name conflicts between lift and dpia
-  val freshName: lift.core.freshName.type = lift.core.freshName
+  val freshName: rise.core.freshName.type = rise.core.freshName
 
   type x[T1 <: PhraseType, T2 <: PhraseType] = PhrasePairType[T1, T2]
   type ->:[T <: PhraseType, R <: PhraseType] = FunType[T, R]

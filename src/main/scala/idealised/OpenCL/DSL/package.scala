@@ -5,7 +5,7 @@ import idealised.DPIA.Phrases.Phrase
 import idealised.DPIA.Types._
 import idealised.DPIA._
 import idealised.OpenCL.ImperativePrimitives._
-import lift.arithmetic.RangeAdd
+import rise.arithmetic.RangeAdd
 
 package object DSL {
 

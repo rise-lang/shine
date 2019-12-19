@@ -1,11 +1,11 @@
 package apps
 
 import idealised.DPIA.Types.{ExpType, read, write}
-import lift.core._
-import lift.core.DSL._
-import lift.core.types._
-import lift.core.primitives._
-import lift.core.HighLevelConstructs.reorderWithStride
+import rise.core._
+import rise.core.DSL._
+import rise.core.types._
+import rise.core.primitives._
+import rise.core.HighLevelConstructs.reorderWithStride
 import util.gen
 
 class dot extends test_util.Tests {
@@ -48,7 +48,7 @@ class dot extends test_util.Tests {
 
   // OpenMP
   test("Dot product CPU vector 1 compiles to syntactically correct OpenMP") {
-    import lift.OpenMP.DSL._
+    import rise.OpenMP.DSL._
 
     val dotCPUVector1 = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
       zip(asVectorAligned(4)(xs))(asVectorAligned(4)(ys))
@@ -65,7 +65,7 @@ class dot extends test_util.Tests {
   }
 
   test("Intel derived no warp dot product 1 compiles to syntactically correct OpenMP") {
-    import lift.OpenMP.DSL._
+    import rise.OpenMP.DSL._
 
     val intelDerivedNoWarpDot1 = nFun(n =>
       fun(xsT(n))(xs => fun(ysT(n))(ys =>
@@ -83,7 +83,7 @@ class dot extends test_util.Tests {
   }
 
   test("Dot product CPU 1 compiles to syntactically correct OpenMP") {
-    import lift.OpenMP.DSL._
+    import rise.OpenMP.DSL._
 
     val dotCPU1 = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
       zip(xs)(ys) |>
@@ -100,7 +100,7 @@ class dot extends test_util.Tests {
   }
 
   test("Dot product CPU 2 compiles to syntactically correct OpenMP") {
-    import lift.OpenMP.DSL._
+    import rise.OpenMP.DSL._
 
     val dotCPU2 = nFun(n => fun(xsT(n))(in =>
       in |>
@@ -117,7 +117,7 @@ class dot extends test_util.Tests {
   }
 
   { // OpenCL
-    import lift.OpenCL.DSL._
+    import rise.OpenCL.DSL._
 
     test("Intel derived no warp dot product 1 compiles to syntactically correct OpenCL") {
       val intelDerivedNoWarpDot1 = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>

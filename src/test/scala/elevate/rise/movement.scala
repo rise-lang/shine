@@ -7,11 +7,11 @@ import elevate.rise.rules.traversal._
 import elevate.rise.strategies.normalForm._
 import elevate.util._
 import elevate.rise._
-import lift.core._
-import lift.core.primitives._
-import lift.core.TypedDSL._
-import lift.core.TypeLevelDSL._
-import lift.core.types.{float, infer}
+import rise.core._
+import rise.core.primitives._
+import rise.core.TypedDSL._
+import rise.core.TypeLevelDSL._
+import rise.core.types.{float, infer}
 
 import scala.language.implicitConversions
 

@@ -1,7 +1,7 @@
 package idealised.OpenCL
 
-import lift.core.DSL._
-import lift.core.types._
+import rise.core.DSL._
+import rise.core.types._
 import util.gen
 
 class Parameters extends test_util.Tests {

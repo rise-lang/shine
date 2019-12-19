@@ -1,8 +1,8 @@
 package idealised.DPIA.Semantics
 
-import lift.core.DSL._
-import lift.core.types._
-import lift.core.primitives._
+import rise.core.DSL._
+import rise.core.types._
+import rise.core.primitives._
 
 import util.gen
 

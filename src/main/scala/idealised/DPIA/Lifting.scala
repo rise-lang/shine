@@ -6,7 +6,7 @@ import idealised.DPIA.Types.{ExpType, Kind, PhraseType}
 import scala.language.{postfixOps, reflectiveCalls}
 
 object Lifting {
-  import lift.core.lifting.{Expanding, Reducing, Result}
+  import rise.core.lifting.{Expanding, Reducing, Result}
 
   def liftDependentFunction[K <: Kind, T <: PhraseType](p: Phrase[K `()->:` T]): K#T => Phrase[T] = {
     p match {

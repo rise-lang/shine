@@ -6,7 +6,7 @@ import idealised.DPIA.Types.{AccType, CommType, NatToData}
 import idealised.DPIA.{->:, Nat, `(nat)->:`, freshName}
 import idealised.OpenCL
 import idealised.OpenCL._
-import lift.arithmetic.{?, RangeAdd}
+import rise.arithmetic.{?, RangeAdd}
 
 //noinspection TypeAnnotation,ConvertibleToMethodValue
 final case class ParForNatGlobal(dim:Int)(override val n:Nat,

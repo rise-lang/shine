@@ -7,7 +7,7 @@ import idealised.DPIA.ImperativePrimitives.TakeAcc
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import lift.arithmetic.NamedVar
+import rise.arithmetic.NamedVar
 
 object IterateIAcc {
   def apply(n: Nat,

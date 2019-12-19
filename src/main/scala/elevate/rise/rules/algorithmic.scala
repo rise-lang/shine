@@ -5,10 +5,10 @@ import elevate.core.strategies.predicate._
 import elevate.rise.strategies.predicate._
 import elevate.rise.rules.traversal._
 import elevate.rise._
-import lift.core._
-import lift.core.TypedDSL._
-import lift.core.primitives._
-import lift.core.types._
+import rise.core._
+import rise.core.TypedDSL._
+import rise.core.primitives._
+import rise.core.types._
 
 //noinspection MutatorLikeMethodIsParameterless
 object algorithmic {
@@ -96,8 +96,8 @@ object algorithmic {
   }
 
   // slideSeq fusion
-  import lift.OpenCL.primitives._
-  import lift.OpenCL.TypedDSL._
+  import rise.OpenCL.primitives._
+  import rise.OpenCL.TypedDSL._
 
   def slideSeqFusion: Strategy[Rise] = `slideSeq(f) >> map(g) -> slideSeq(f >> g)`
   def `slideSeq(f) >> map(g) -> slideSeq(f >> g)`: Strategy[Rise] = {

@@ -1,7 +1,7 @@
 package elevate.rise.strategies
 
 import elevate.core._
-import lift.core.primitives._
+import rise.core.primitives._
 import elevate.rise.rules.algorithmic._
 import elevate.core.strategies.traversal._
 import elevate.core.strategies.basic._

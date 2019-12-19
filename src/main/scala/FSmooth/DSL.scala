@@ -71,7 +71,7 @@ object DSL {
   def VectorD = Array(Pair(Double, Double))
   def MatrixD = Array(Array(Pair(Double, Double)))
 
-  def freshName: String => String = lift.core.freshName.apply
+  def freshName: String => String = rise.core.freshName.apply
   def freshTypeVar: TypeVar = TypeVar(DSL.freshName("T"))
   def freshExprTypeVar: ExpressionTypeVar = ExpressionTypeVar(DSL.freshName("T"))
 

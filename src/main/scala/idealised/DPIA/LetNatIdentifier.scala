@@ -1,6 +1,6 @@
 package idealised.DPIA
 
-import lift.arithmetic.Cst
+import rise.arithmetic.Cst
 
 case class LetNatIdentifier(id:NatIdentifier) {
   def name:String = id.name

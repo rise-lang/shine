@@ -1,11 +1,11 @@
 package apps
 
-import lift.core.DSL._
-import lift.core.TypeLevelDSL._
-import lift.core.primitives._
-import lift.core.types._
+import rise.core.DSL._
+import rise.core.TypeLevelDSL._
+import rise.core.primitives._
+import rise.core.types._
 import util.gen
-import lift.core.HighLevelConstructs.reorderWithStride
+import rise.core.HighLevelConstructs.reorderWithStride
 
 //noinspection TypeAnnotation
 class gemv extends test_util.Tests {
@@ -27,7 +27,7 @@ class gemv extends test_util.Tests {
       ))
 
   object ocl {
-    import lift.OpenCL.DSL._
+    import rise.OpenCL.DSL._
 
     val fullMatrixVectorFusedOpenCL =
       nFun((n, m) =>
@@ -77,7 +77,7 @@ class gemv extends test_util.Tests {
   }
 
   object omp {
-    import lift.OpenMP.DSL._
+    import rise.OpenMP.DSL._
 
     val fullMatrixVectorFusedOpenMP =
       nFun((n, m) =>

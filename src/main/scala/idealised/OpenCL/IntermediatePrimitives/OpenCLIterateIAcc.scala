@@ -8,7 +8,7 @@ import idealised.DPIA.Phrases._
 import idealised.DPIA.Types._
 import idealised.DPIA._
 import idealised.OpenCL.DSL.newDoubleBuffer
-import lift.arithmetic.{Cst, NamedVar, RangeAdd}
+import rise.arithmetic.{Cst, NamedVar, RangeAdd}
 
 object OpenCLIterateIAcc {
   def apply(a: AddressSpace,

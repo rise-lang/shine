@@ -1,10 +1,10 @@
 package idealised.DPIA
 
-import lift.core._
-import lift.core.DSL._
-import lift.core.types._
-import lift.core.primitives._
-import lift.core.semantics.NatData
+import rise.core._
+import rise.core.DSL._
+import rise.core.types._
+import rise.core.primitives._
+import rise.core.semantics.NatData
 import util.gen
 
 class NatExpr extends test_util.Tests {

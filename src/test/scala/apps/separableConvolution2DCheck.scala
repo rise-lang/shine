@@ -1,17 +1,17 @@
 package apps
 
 import separableConvolution2D._
-import lift.core._
-import lift.core.types._
-import lift.core.primitives._
-import lift.core.DSL._
-import lift.core.TypeLevelDSL._
-import lift.core.HighLevelConstructs._
+import rise.core._
+import rise.core.types._
+import rise.core.primitives._
+import rise.core.DSL._
+import rise.core.TypeLevelDSL._
+import rise.core.HighLevelConstructs._
 import util.gen
 
 class separableConvolution2DCheck extends test_util.Tests {
   private def wrapExpr(e: Expr): Expr = {
-    import lift.arithmetic.{RangeAdd, PosInf}
+    import rise.arithmetic.{RangeAdd, PosInf}
     // at least 3 for one scalar sliding window
     // at least 3*4 = 12 for one vector sliding window
     nFun(RangeAdd(3, PosInf, 1), h =>
@@ -116,7 +116,7 @@ int main(int argc, char** argv) {
   }
 
   test("compiling OpenCL private arrays should unroll loops") {
-    import lift.OpenCL.DSL._
+    import rise.OpenCL.DSL._
 
     val dotSeqPrivate = fun(a => fun(b =>
       zip(a)(b) |> map(mulT) |> oclReduceSeq(AddressSpace.Private)(add)(l(0.0f))

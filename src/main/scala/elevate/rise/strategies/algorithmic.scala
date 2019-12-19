@@ -3,8 +3,8 @@ package elevate.rise.strategies
 import com.github.ghik.silencer.silent
 import elevate.core.{Failure, RewriteResult, Strategy, Success}
 import elevate.rise.Rise
-import lift.core.TypedDSL._
-import lift.core._
+import rise.core.TypedDSL._
+import rise.core._
 
 object algorithmic {
   // TODO: only compose simpler rules

@@ -1,8 +1,8 @@
 package idealised.DPIA.Primitives
 
-import lift.core.DSL._
-import lift.core.types._
-import lift.core.DSL.mapSeq
+import rise.core.DSL._
+import rise.core.types._
+import rise.core.DSL.mapSeq
 import util.gen
 
 class Map extends test_util.Tests {

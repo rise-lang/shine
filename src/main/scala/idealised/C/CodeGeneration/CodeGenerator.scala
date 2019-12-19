@@ -12,8 +12,8 @@ import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA._
 import idealised._
-import lift.arithmetic.BoolExpr.ArithPredicate
-import lift.arithmetic.{NamedVar, _}
+import rise.arithmetic.BoolExpr.ArithPredicate
+import rise.arithmetic.{NamedVar, _}
 
 import scala.collection.immutable.VectorBuilder
 import scala.collection.{immutable, mutable}
@@ -62,10 +62,10 @@ object CodeGenerator {
   type Path = immutable.List[PathExpr]
 
   type Declarations = mutable.ListBuffer[C.AST.Decl]
-  type Ranges = immutable.Map[String, lift.arithmetic.Range]
+  type Ranges = immutable.Map[String, rise.arithmetic.Range]
 
   def apply(): CodeGenerator =
-    new CodeGenerator(mutable.ListBuffer[C.AST.Decl](), immutable.Map[String, lift.arithmetic.Range]())
+    new CodeGenerator(mutable.ListBuffer[C.AST.Decl](), immutable.Map[String, rise.arithmetic.Range]())
 }
 
 class CodeGenerator(val decls: CodeGenerator.Declarations,
@@ -94,7 +94,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
   }
 
 
-  def updatedRanges(key: String, value: lift.arithmetic.Range): CodeGenerator =
+  def updatedRanges(key: String, value: rise.arithmetic.Range): CodeGenerator =
     new CodeGenerator(decls, ranges.updated(key, value))
 
   override def generate(phrase:Phrase[CommType],
@@ -1063,7 +1063,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
          case Sum(es) => genBinopFold(es, AST.BinaryOperator.+, AST.Literal("0"), cont)
 
          case Mod(a, n) =>
-           if (lift.arithmetic.ArithExpr.mightBeNegative(a)) {
+           if (rise.arithmetic.ArithExpr.mightBeNegative(a)) {
              println(s"WARNING: $a % $n might operate on negative values")
            }
            genNat(a, env, a => genNat(n, env, n => cont(AST.BinaryExpr(a, AST.BinaryOperator.%, n))))
@@ -1078,7 +1078,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
          case lu:Lookup => cont(AST.FunCall(AST.DeclRef(s"lookup${lu.id}"), immutable.Seq(AST.Literal(lu.index.toString))))
 
-         case lift.arithmetic.IfThenElse(cond, trueBranch, falseBranch) =>
+         case rise.arithmetic.IfThenElse(cond, trueBranch, falseBranch) =>
            boolExp(cond, env,
              cond => genNat(trueBranch, env,
                trueBranch => genNat(falseBranch, env,

@@ -1,10 +1,10 @@
 package idealised.DPIA.Primitives
 
 import util.gen
-import lift.core.DSL._
-import lift.core.TypeLevelDSL._
-import lift.core.primitives._
-import lift.core.types._
+import rise.core.DSL._
+import rise.core.TypeLevelDSL._
+import rise.core.primitives._
+import rise.core.types._
 
 class DepMap extends test_util.Tests {
   ignore("Simple triangle depMap example should generate syntactic valid C code with two for loop") {

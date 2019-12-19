@@ -7,10 +7,10 @@ import elevate.rise.rules.algorithmic.{mapFusion, mapLastFission}
 import elevate.rise.rules.traversal._
 import elevate.rise.strategies.algorithmic.{mapFirstFission, mapFullFission}
 import elevate.rise.strategies.normalForm.BENF
-import lift.core.TypedDSL._
-import lift.core.TypeLevelDSL._
-import lift.core.types._
-import lift.core._
+import rise.core.TypedDSL._
+import rise.core.TypeLevelDSL._
+import rise.core.types._
+import rise.core._
 import elevate.util._
 
 

@@ -1,15 +1,15 @@
 package idealised.DPIA.Primitives
 
-import lift.core.DSL._
-import lift.core.types._
-import lift.core.primitives._
+import rise.core.DSL._
+import rise.core.types._
+import rise.core.primitives._
 import benchmarks.core.SimpleRunOpenCLProgram
 import idealised.OpenCL.KernelWithSizes
 import util.{Execute, TimeSpan, gen}
 
 class Transpose extends test_util.Tests {
   test("Simple transpose should produce the expected result on a test") {
-    def checkResult(e: lift.core.Expr) = {
+    def checkResult(e: rise.core.Expr) = {
       val p = gen.CProgram(e)
 
       val testCode =

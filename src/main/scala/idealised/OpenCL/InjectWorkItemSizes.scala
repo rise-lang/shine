@@ -5,7 +5,7 @@ import idealised.DPIA.Nat
 import idealised.DPIA.Phrases.{Phrase, VisitAndRebuild}
 import idealised.DPIA.Types.{CommType, DataType, PhraseType}
 import idealised.OpenCL.ImperativePrimitives.{OpenCLParFor, OpenCLParForNat, ParForGlobal, ParForLocal, ParForNatGlobal, ParForNatLocal, ParForNatWorkGroup, ParForWorkGroup}
-import lift.arithmetic.{ArithExpr, ContinuousRange, RangeAdd}
+import rise.arithmetic.{ArithExpr, ContinuousRange, RangeAdd}
 
 object InjectWorkItemSizes {
   def apply(localSize: Option[LocalSize], globalSize: Option[GlobalSize])

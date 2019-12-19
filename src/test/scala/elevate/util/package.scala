@@ -2,10 +2,10 @@ package elevate
 
 import elevate.rise._
 import elevate.rise.strategies.normalForm.BENF
-import _root_.lift.core.primitives._
-import _root_.lift.core._
-import _root_.lift.core.types._
-import _root_.lift.core.TypedDSL._
+import _root_.rise.core.primitives._
+import _root_.rise.core._
+import _root_.rise.core.types._
+import _root_.rise.core.TypedDSL._
 
 package object util {
 
@@ -16,7 +16,7 @@ package object util {
   val tileSize = 4
 
   def makeClosed(e: Rise): (Rise, Int) = {
-    import _root_.lift.core.types.infer._
+    import _root_.rise.core.types.infer._
     import scala.collection.immutable.Map
     val emptySubs: (Map[Type, Type],
       Map[NatIdentifier, Nat],

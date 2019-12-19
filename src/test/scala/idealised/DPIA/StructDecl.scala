@@ -1,10 +1,10 @@
 package idealised.DPIA
 
-import lift.core.DSL._
-import lift.core.types._
-import lift.core.primitives._
-import lift.OpenCL.DSL._
-import lift.OpenMP.DSL._
+import rise.core.DSL._
+import rise.core.types._
+import rise.core.primitives._
+import rise.OpenCL.DSL._
+import rise.OpenMP.DSL._
 import util.gen
 
 class StructDecl extends test_util.Tests {

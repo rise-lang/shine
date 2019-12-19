@@ -1,6 +1,6 @@
 package idealised.C.AST
 
-import lift.arithmetic._
+import rise.arithmetic._
 import idealised.C
 
 sealed abstract class Type(val const: Boolean) {

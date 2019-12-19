@@ -1,7 +1,7 @@
 package apps
 
 import convolution._
-import lift.core.DSL._
+import rise.core.DSL._
 import util.gen
 import idealised.OpenCL._
 

@@ -5,12 +5,12 @@ import idealised.DPIA
 import idealised.DPIA.Nat
 import idealised.OpenCL.{GlobalSize, KernelWithSizes, LocalSize}
 import util.{SyntaxChecker, TimeSpan, Time}
-import lift.arithmetic._
-import lift.core.DSL._
-import lift.core.TypeLevelDSL._
-import lift.core._
-import lift.core.primitives._
-import lift.core.types._
+import rise.arithmetic._
+import rise.core.DSL._
+import rise.core.TypeLevelDSL._
+import rise.core._
+import rise.core.primitives._
+import rise.core.types._
 
 import scala.util.Random
 

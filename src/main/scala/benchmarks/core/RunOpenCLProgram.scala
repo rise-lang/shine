@@ -2,8 +2,8 @@ package benchmarks.core
 
 import idealised.DPIA
 import idealised.OpenCL.{GlobalSize, KernelWithSizes, LocalSize}
-import lift.core.Expr
-import lift.core.types.infer
+import rise.core.Expr
+import rise.core.types.infer
 import util.{Display, Time, TimeSpan}
 
 import scala.util.Random

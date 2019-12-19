@@ -1,13 +1,13 @@
 package apps
 
-import lift.core._
-import lift.core.DSL._
-import lift.core.TypeLevelDSL._
-import lift.core.types._
-import lift.core.primitives._
-import lift.OpenCL.primitives._
-import lift.OpenCL.DSL._
-import lift.core.HighLevelConstructs._
+import rise.core._
+import rise.core.DSL._
+import rise.core.TypeLevelDSL._
+import rise.core.types._
+import rise.core.primitives._
+import rise.OpenCL.primitives._
+import rise.OpenCL.DSL._
+import rise.core.HighLevelConstructs._
 import util.gen
 
 import scala.reflect.ClassTag
@@ -20,9 +20,9 @@ object harrisCornerDetection {
   private def zip2D(a: Expr, b: Expr) = zipND(2)(a)(b)
 
   // 5 for two scalar stencils of 3
-  private val hRange = lift.arithmetic.RangeAdd(5, lift.arithmetic.PosInf, 1)
+  private val hRange = rise.arithmetic.RangeAdd(5, rise.arithmetic.PosInf, 1)
   // 12 for one vector stencil of 3 (includes 2 scalar stencils of 3)
-  private val wRange = lift.arithmetic.RangeAdd(12, lift.arithmetic.PosInf, 4)
+  private val wRange = rise.arithmetic.RangeAdd(12, rise.arithmetic.PosInf, 4)
   private val sobelX = nFun(hRange, h => nFun(wRange, w => fun(
     (h`.`w`.`float) ->: (h`.`w`.`float)
   )(a =>

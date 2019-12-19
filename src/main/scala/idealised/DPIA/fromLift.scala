@@ -4,8 +4,8 @@ import idealised.DPIA.DSL._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.{OperationalSemantics => OpSem}
 import idealised.DPIA.Types._
-import lift.core.{semantics => ls, types => lt}
-import lift.{core => l}
+import rise.core.{semantics => ls, types => lt}
+import rise.{core => l}
 
 object fromLift {
   def apply(expr: l.Expr): Phrase[_ <: PhraseType] = {
@@ -141,7 +141,7 @@ object fromLift {
   }
 
   import idealised.DPIA.FunctionalPrimitives._
-  import lift.core.{primitives => core}
+  import rise.core.{primitives => core}
 
   def fun[T <: PhraseType](t: T,
                            f: Phrase[T] => Phrase[_ <: PhraseType]): Phrase[_ <: PhraseType] = {
@@ -152,8 +152,8 @@ object fromLift {
   def primitive(p: l.Primitive, t: lt.Type): Phrase[_ <: PhraseType] = {
     import idealised.OpenCL.FunctionalPrimitives._
     import idealised.OpenMP.FunctionalPrimitives._
-    import lift.OpenCL.{primitives => ocl}
-    import lift.OpenMP.{primitives => omp}
+    import rise.OpenCL.{primitives => ocl}
+    import rise.OpenMP.{primitives => omp}
 
     (p, t) match {
       case (core.PrintType(msg),

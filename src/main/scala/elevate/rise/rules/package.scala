@@ -3,9 +3,9 @@ package elevate.rise
 import elevate.core.strategies.predicate._
 import elevate.rise.rules.traversal._
 import elevate.core.{Failure, RewriteResult, Strategy, Success}
-import lift.core._
-import lift.core.types._
-import lift.core.TypedDSL._
+import rise.core._
+import rise.core.types._
+import rise.core.TypedDSL._
 
 package object rules {
 

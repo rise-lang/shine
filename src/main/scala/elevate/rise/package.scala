@@ -1,7 +1,7 @@
 package elevate
 
-import lift.core._
-import lift.core.types.Type
+import _root_.rise.core._
+import _root_.rise.core.types.Type
 
 package object rise {
   type Rise = Expr

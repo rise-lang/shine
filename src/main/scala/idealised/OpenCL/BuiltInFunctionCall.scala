@@ -1,7 +1,7 @@
 package idealised.OpenCL
 
 import idealised.DPIA.Nat
-import lift.arithmetic.{ArithExprFunctionCall, Range, RangeUnknown, Sign, SimplifiedExpr}
+import rise.arithmetic.{ArithExprFunctionCall, Range, RangeUnknown, Sign, SimplifiedExpr}
 
 // This class models OpenCL built in functions that can appear inside of arithmetic expressions
 // examples are get_global_size(0), or get_local_id(1), but also OpenCL math functions, e.g., ceil or sin
