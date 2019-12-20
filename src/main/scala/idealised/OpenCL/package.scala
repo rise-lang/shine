@@ -2,7 +2,7 @@ package idealised
 
 import com.github.ghik.silencer.silent
 import idealised.DPIA.Nat
-import rise.arithmetic._
+import arithexpr.arithmetic._
 
 import scala.language.implicitConversions
 

@@ -13,8 +13,8 @@ import idealised.DPIA.Semantics.OperationalSemantics.{ArrayData, VectorData}
 import idealised.DPIA.Types.{AccType, CommType, DataType, ExpType, PhraseType, ScalarType, VectorType}
 import idealised.DPIA.{Nat, NatIdentifier, Phrases, error, freshName}
 import idealised.OpenMP.ImperativePrimitives.{ParFor, ParForNat}
-import rise.arithmetic
-import rise.arithmetic._
+import arithexpr.arithmetic
+import arithexpr.arithmetic._
 
 import scala.collection.immutable.VectorBuilder
 import scala.collection.{immutable, mutable}
@@ -30,7 +30,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 {
   override def name: String = "OpenMP"
 
-  override def updatedRanges(key: String, value: rise.arithmetic.Range): CodeGenerator =
+  override def updatedRanges(key: String, value: arithexpr.arithmetic.Range): CodeGenerator =
     new CodeGenerator(decls, ranges.updated(key, value))
 
 

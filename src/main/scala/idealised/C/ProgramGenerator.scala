@@ -7,7 +7,7 @@ import idealised.DPIA.{LetNatIdentifier, Lifting}
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types._
 import idealised._
-import rise.arithmetic.{Cst, Var}
+import arithexpr.arithmetic.{Cst, Var}
 
 import scala.collection._
 

@@ -5,7 +5,7 @@ import idealised.DPIA
 import idealised.DPIA.Nat
 import idealised.OpenCL.{GlobalSize, KernelWithSizes, LocalSize}
 import util.{SyntaxChecker, TimeSpan, Time}
-import rise.arithmetic._
+import arithexpr.arithmetic._
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.core._

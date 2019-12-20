@@ -15,8 +15,8 @@ import idealised.OpenCL.FunctionalPrimitives.OpenCLFunction
 import idealised.OpenCL.ImperativePrimitives._
 import idealised.OpenCL.{BuiltInFunctionCall, GlobalSize, LocalSize}
 import idealised._
-import rise.arithmetic
-import rise.arithmetic._
+import arithexpr.arithmetic
+import arithexpr.arithmetic._
 
 import scala.collection.{immutable, mutable}
 
@@ -30,7 +30,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
   extends CCodeGenerator(decls, ranges) {
   override def name: String = "OpenCL"
 
-  override def updatedRanges(key: String, value: rise.arithmetic.Range): CodeGenerator =
+  override def updatedRanges(key: String, value: arithexpr.arithmetic.Range): CodeGenerator =
     new CodeGenerator(decls, ranges.updated(key, value))
 
   override def cmd(phrase: Phrase[CommType], env: Environment): Stmt = {

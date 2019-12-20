@@ -2,7 +2,7 @@ package idealised.C.AST
 
 import idealised.DPIA.NatFunCall
 import idealised.DPIA.Types.ExpType
-import rise.arithmetic._
+import arithexpr.arithmetic._
 
 trait Printer {
   def printNode(n: Node): String
@@ -376,7 +376,7 @@ class CPrinter extends Printer {
       case v: Var => v.toString
       case IntDiv(n, d) => "(" + toString(n) + " / " + toString(d) + ")"
       case lu: Lookup => "lookup" + lu.id + "(" + toString(lu.index) + ")"
-      case i: rise.arithmetic.IfThenElse =>
+      case i: arithexpr.arithmetic.IfThenElse =>
         s"((${toString(i.test)}) ? " +
           s"${toString(i.t)} : ${toString(i.e)})"
       case natFunCall:NatFunCall => natFunCall.callAndParameterListString

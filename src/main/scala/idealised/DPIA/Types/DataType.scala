@@ -2,7 +2,7 @@ package idealised.DPIA.Types
 
 import idealised.DPIA.Nat
 import idealised.DPIA
-import rise.arithmetic.{ArithExpr, BigSum}
+import arithexpr.arithmetic.{ArithExpr, BigSum}
 
 import scala.language.implicitConversions
 

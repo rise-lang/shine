@@ -6,8 +6,8 @@ import idealised.DPIA.Types._
 import idealised.DPIA.ImperativePrimitives.{Comment, For, ForNat, IdxAcc, Seq}
 import idealised.DPIA.FunctionalPrimitives.AsIndex
 import idealised.OpenCL.ImperativePrimitives.OpenCLParFor
-import rise.arithmetic.Cst
-import rise.arithmetic.ArithExpr.isSmaller
+import arithexpr.arithmetic.Cst
+import arithexpr.arithmetic.ArithExpr.isSmaller
 
 object UnrollLoops {
   def apply(p: Phrase[CommType]): Phrase[CommType] = {
@@ -34,7 +34,7 @@ object UnrollLoops {
 
   def unrollLoop(n: Nat, init: Nat, step: Nat,
                  genBody: Nat => Phrase[CommType]): Phrase[CommType] = {
-    import rise.arithmetic.NotEvaluableException
+    import arithexpr.arithmetic.NotEvaluableException
 
     val stopMax = try {
       n.max.eval

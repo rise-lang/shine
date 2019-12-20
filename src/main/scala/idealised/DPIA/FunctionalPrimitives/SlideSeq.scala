@@ -7,7 +7,7 @@ import idealised.DPIA.DSL._
 import idealised.DPIA.Types._
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics.{Data, Store}
-import rise.arithmetic.SimplifiedExpr
+import arithexpr.arithmetic.SimplifiedExpr
 
 import scala.xml.Elem
 

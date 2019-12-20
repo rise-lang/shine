@@ -78,7 +78,7 @@ class Pad extends test_util.Tests {
   test("OpenCL pad before or after transpose") {
     import rise.OpenCL.DSL._
 
-    val range = rise.arithmetic.RangeAdd(1, rise.arithmetic.PosInf, 1)
+    val range = arithexpr.arithmetic.RangeAdd(1, arithexpr.arithmetic.PosInf, 1)
     val k1 = gen.OpenCLKernel(nFun(range, n =>
       fun((4`.`n`.`int) ->: ((n+2)`.`4`.`int))(xs =>
         xs |> transpose |> padClamp(1)(1) |> mapGlobal(mapSeqUnroll(id))

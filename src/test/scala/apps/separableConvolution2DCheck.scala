@@ -11,7 +11,7 @@ import util.gen
 
 class separableConvolution2DCheck extends test_util.Tests {
   private def wrapExpr(e: Expr): Expr = {
-    import rise.arithmetic.{RangeAdd, PosInf}
+    import arithexpr.arithmetic.{RangeAdd, PosInf}
     // at least 3 for one scalar sliding window
     // at least 3*4 = 12 for one vector sliding window
     nFun(RangeAdd(3, PosInf, 1), h =>

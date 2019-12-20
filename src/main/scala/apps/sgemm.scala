@@ -1,7 +1,7 @@
 package apps
 
 import idealised.OpenCL.{AddressSpace => _, _}
-import rise.arithmetic.Cst
+import arithexpr.arithmetic.Cst
 import rise.core.HighLevelConstructs.reorderWithStride
 import rise.core._
 import rise.core.DSL._

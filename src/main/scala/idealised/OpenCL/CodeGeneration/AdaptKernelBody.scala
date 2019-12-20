@@ -3,7 +3,7 @@ package idealised.OpenCL.CodeGeneration
 import idealised.C.AST.{Nodes, _}
 import idealised.DPIA.Types.AddressSpace
 import idealised.{C, OpenCL}
-import rise.arithmetic.{IfThenElse => _, _}
+import arithexpr.arithmetic.{IfThenElse => _, _}
 
 import scala.collection.mutable
 

@@ -4,7 +4,7 @@ import idealised.DPIA.Phrases._
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import rise.arithmetic.{ArithExpr, BigSum}
+import arithexpr.arithmetic.{ArithExpr, BigSum}
 
 import scala.xml.Elem
 

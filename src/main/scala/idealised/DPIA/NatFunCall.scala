@@ -1,6 +1,6 @@
 package idealised.DPIA
 
-import rise.arithmetic.{ArithExpr, ArithExprFunctionCall, SimplifiedExpr, Var}
+import arithexpr.arithmetic.{ArithExpr, ArithExprFunctionCall, SimplifiedExpr, Var}
 
 sealed trait NatFunArg
 case class NatArg(n:Nat) extends NatFunArg

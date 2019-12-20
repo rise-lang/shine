@@ -1,42 +1,25 @@
 ThisBuild / scalaVersion := "2.11.12"
-ThisBuild / organization := "org.lift-project"
-
-lazy val commonSettings = Seq(
-  scalacOptions ++= Seq(
-    "-Xfatal-warnings",
-    "-Xlint",
-    "-Xmax-classfile-name", "100",
-    "-unchecked",
-    "-deprecation",
-    "-feature",
-    "-language:reflectiveCalls"
-  ),
-  fork := true,
-  resolvers ++= Seq(
-    Resolver.sonatypeRepo("releases"),
-    Resolver.sonatypeRepo("snapshots")
-  ),
-  addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
-)
-
-lazy val setup = taskKey[Unit]("Sets up the submodules")
-
-setup := {
-  import scala.language.postfixOps
-  import scala.sys.process._
-  //noinspection PostfixMethodCall
-  "echo y" #| "./setup.sh" !
-}
+ThisBuild / organization := "org.rise-lang"
 
 lazy val shine = (project in file("."))
-  .dependsOn(macroSub, arithExpr, executor)
+  .dependsOn(executor, rise, arithExpr)
   .settings(
-    commonSettings,
-    name := "idealised-OpenCL",
+    name    := "shine",
     version := "1.0",
-    compile := ((compile in Compile) dependsOn setup).value,
-    test := ((test in Test) dependsOn setup).value,
-    javaOptions += "-Djava.library.path=lib/executor/lib/Executor/build",
+
+    javaOptions ++= Seq("-Djava.library.path=lib/executor/lib/Executor/build", "-Xss8m"),
+
+    scalacOptions ++= Seq(
+      "-Xfatal-warnings",
+      "-Xlint",
+      "-Xmax-classfile-name", "100",
+      "-unchecked",
+      "-deprecation",
+      "-feature",
+      "-language:reflectiveCalls"
+    ),
+
+    fork := true,
 
     // Scala libraries
     libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
@@ -57,14 +40,8 @@ lazy val shine = (project in file("."))
     )
   )
 
-lazy val macroSub = (project in file("macros"))
-  .settings(
-    name := "macros",
-    version := "1.0",
-    commonSettings,
-    libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
-  )
+lazy val executor   = (project in file("lib/executor"))
 
-lazy val arithExpr = (project in file("lib/ArithExpr"))
+lazy val rise       = (project in file("lib/rise"))
 
-lazy val executor  = (project in file("lib/executor"))
+lazy val arithExpr  = (project in file("lib/rise/lib/arithexpr"))

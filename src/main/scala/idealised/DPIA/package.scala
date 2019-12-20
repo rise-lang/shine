@@ -2,7 +2,7 @@ package idealised
 
 import idealised.DPIA.Phrases._
 import idealised.DPIA.Types.{PhraseTypeParser, _}
-import rise.arithmetic._
+import arithexpr.arithmetic._
 
 import com.github.ghik.silencer.silent
 

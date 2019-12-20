@@ -1,7 +1,7 @@
 package idealised.DPIA.Types
 
 import idealised.DPIA.{Nat, NatIdentifier, freshName}
-import rise.arithmetic.{NamedVar, RangeAdd}
+import arithexpr.arithmetic.{NamedVar, RangeAdd}
 
 sealed trait NatToData {
   def apply(n: Nat): DataType = NatToDataApply(this, n)

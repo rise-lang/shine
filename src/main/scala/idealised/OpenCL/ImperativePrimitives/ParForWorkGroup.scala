@@ -5,7 +5,7 @@ import idealised.DPIA.Phrases.Phrase
 import idealised.DPIA.Types.{AccType, CommType, DataType, ExpType}
 import idealised.DPIA._
 import idealised._
-import rise.arithmetic.{?, ContinuousRange, PosInf, RangeAdd}
+import arithexpr.arithmetic.{?, ContinuousRange, PosInf, RangeAdd}
 import idealised.OpenCL._
 
 //noinspection TypeAnnotation

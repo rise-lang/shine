@@ -6,7 +6,7 @@ import rise.core.primitives._
 import rise.core.HighLevelConstructs.reorderWithStride
 import util.gen
 
-import rise.arithmetic.Cst
+import arithexpr.arithmetic.Cst
 
 class Reorder extends test_util.Tests {
   test("Simple gather example should generate syntactic valid C code with two one loops") {

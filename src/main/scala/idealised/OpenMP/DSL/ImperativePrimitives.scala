@@ -6,7 +6,7 @@ import idealised.DPIA.Phrases.Phrase
 import idealised.DPIA.Types._
 import idealised.DPIA._
 import idealised.OpenMP.ImperativePrimitives._
-import rise.arithmetic.RangeAdd
+import arithexpr.arithmetic.RangeAdd
 
 object parFor {
   def apply(n: Nat,

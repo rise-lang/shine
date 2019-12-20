@@ -8,7 +8,7 @@ import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics._
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import rise.arithmetic.BigSum
+import arithexpr.arithmetic.BigSum
 
 import scala.xml.Elem
 

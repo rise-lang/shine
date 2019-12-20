@@ -1,7 +1,7 @@
 package idealised.DPIA.Types
 
 import idealised.DPIA.{Nat, NatIdentifier, freshName}
-import rise.arithmetic.{ArithExpr, ArithExprFunctionCall, NamedVar, RangeAdd, SimplifiedExpr}
+import arithexpr.arithmetic.{ArithExpr, ArithExprFunctionCall, NamedVar, RangeAdd, SimplifiedExpr}
 
 sealed trait NatToNat  {
   def apply(n: Nat): Nat = NatToNatApply(this, n)

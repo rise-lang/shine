@@ -7,8 +7,8 @@ import idealised.DPIA.Semantics.OperationalSemantics
 import idealised.DPIA.Semantics.OperationalSemantics.{IndexData, NatData}
 import idealised.DPIA.Types._
 import idealised.DPIA._
-import rise.arithmetic.BoolExpr.ArithPredicate
-import rise.arithmetic.{NamedVar, RangeAdd}
+import arithexpr.arithmetic.BoolExpr.ArithPredicate
+import arithexpr.arithmetic.{NamedVar, RangeAdd}
 
 import scala.language.{postfixOps, reflectiveCalls}
 
@@ -237,7 +237,7 @@ object Phrase {
               val v = NamedVar(name, RangeAdd(0, n, 1))
               TransientNat(v, Map(v -> IndexAsNat(n, p)))
             case ExpType(NatType, _) =>
-              val v = NamedVar(name, RangeAdd(0, rise.arithmetic.PosInf, 1))
+              val v = NamedVar(name, RangeAdd(0, arithexpr.arithmetic.PosInf, 1))
               TransientNat(v, Map(v -> p))
             case _ => throw new Exception("This should never happen")
           }
@@ -267,7 +267,7 @@ object Phrase {
     // but in this implementation we preserve nat subexpressions that do not need to be reconstructed
     // (the ones that do not contain any exp identifier)
     private def reconstructTransientNat(tn: TransientNat): Either[Nat, Phrase[ExpType]] = {
-      import rise.arithmetic._
+      import arithexpr.arithmetic._
 
       val reconstruct = (n: Nat) =>
         reconstructTransientNat(TransientNat(n, tn.identifiers))
@@ -288,8 +288,8 @@ object Phrase {
           Left(Pow(reconstruct(b).left.get, reconstruct(e).left.get))
         case Log(b, x) =>
           Left(Log(reconstruct(b).left.get, reconstruct(x).left.get))
-        case rise.arithmetic.IfThenElse(test, t, e) =>
-          Left(rise.arithmetic.IfThenElse(test.visitAndRebuild(x => reconstruct(x).left.get),
+        case arithexpr.arithmetic.IfThenElse(test, t, e) =>
+          Left(arithexpr.arithmetic.IfThenElse(test.visitAndRebuild(x => reconstruct(x).left.get),
             reconstruct(t).left.get,
             reconstruct(e).left.get))
         case PosInf => Left(PosInf)

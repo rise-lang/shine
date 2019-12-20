@@ -6,7 +6,7 @@ import util.{Display, TimeSpan, gen}
 import util.Time.ms
 import rise.OpenCL.primitives._
 import rise.OpenCL.DSL._
-import rise.arithmetic.SteppedCase
+import arithexpr.arithmetic.SteppedCase
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.core.Expr
