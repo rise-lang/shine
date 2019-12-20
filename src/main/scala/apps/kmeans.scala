@@ -39,7 +39,7 @@ object kmeans {
     ))
   ))))
 
-  import idealised.OpenCL._
+  import shine.OpenCL._
   import util.{Time, TimeSpan}
 
   def runOriginalKernel(name: String,

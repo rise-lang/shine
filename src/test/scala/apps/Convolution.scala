@@ -3,7 +3,7 @@ package apps
 import convolution._
 import rise.core.DSL._
 import util.gen
-import idealised.OpenCL._
+import shine.OpenCL._
 
 class Convolution extends test_util.TestsWithExecutor {
   private val inputSize_small = 4096

@@ -1,6 +1,6 @@
 package apps
 
-import idealised.DPIA.Types.{ExpType, read, write}
+import shine.DPIA.Types.{ExpType, read, write}
 import rise.core._
 import rise.core.DSL._
 import rise.core.types._
@@ -30,9 +30,9 @@ class dot extends test_util.Tests {
   }
 
   test("Simple dot product translation to phrase works and preserves types") {
-    import idealised.DPIA.Types.float
-    import idealised.DPIA._
-    val phrase = idealised.DPIA.fromRise(infer(simpleDotProduct))
+    import shine.DPIA.Types.float
+    import shine.DPIA._
+    val phrase = shine.DPIA.fromRise(infer(simpleDotProduct))
 
     val N = phrase.t.asInstanceOf[`(nat)->:`[ExpType ->: ExpType]].x
     val dt = float

@@ -52,7 +52,7 @@ object convolution {
       o padClamp2D(8, 8, 0, 0) $ matrix
   ))
 
-  import idealised.OpenCL._
+  import shine.OpenCL._
 
   def blurXTiled2D_sizes(n: Int): (LocalSize, GlobalSize) = {
     assert(n % 8 == 0)

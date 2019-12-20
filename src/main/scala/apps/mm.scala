@@ -144,7 +144,7 @@ object mm {
     output
   }
 
-  import idealised.OpenCL._
+  import shine.OpenCL._
   import util._
 
   def runOriginal(name: String,

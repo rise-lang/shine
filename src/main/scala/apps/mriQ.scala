@@ -51,7 +51,7 @@ object mriQ {
       ))
   )))
 
-  import idealised.OpenCL._
+  import shine.OpenCL._
   import util.{Time, TimeSpan}
 
   def runOriginalComputePhiMag(name: String,

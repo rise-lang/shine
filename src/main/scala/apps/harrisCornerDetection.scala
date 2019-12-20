@@ -203,7 +203,7 @@ object harrisCornerDetection {
   )))
   */
 
-  import idealised.OpenCL._
+  import shine.OpenCL._
   import util.{Time, TimeSpan}
 
   // n x m . t => n.m.t

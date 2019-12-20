@@ -72,12 +72,12 @@ int main(int argc, char** argv) {
     checkC(regRotSeq(binomialWeightsV)(binomialWeightsH))
   }
 
-  import idealised.OpenCL.{LocalSize, GlobalSize}
+  import shine.OpenCL.{LocalSize, GlobalSize}
 
   private def checkOCL(localSize: LocalSize,
                        globalSize: GlobalSize,
                        e: Expr): Unit = {
-    import idealised.OpenCL._
+    import shine.OpenCL._
 
     val random = new scala.util.Random()
     val input = Array.fill(H, W)(random.nextFloat)

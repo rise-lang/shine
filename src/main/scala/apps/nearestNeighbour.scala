@@ -17,7 +17,7 @@ object nearestNeighbour {
     locations |> mapGlobal(fun(loc => distance(loc)(lat)(lng)))
   ))
 
-  import idealised.OpenCL._
+  import shine.OpenCL._
   import util.{Time, TimeSpan}
 
   def runOriginalKernel(name: String,

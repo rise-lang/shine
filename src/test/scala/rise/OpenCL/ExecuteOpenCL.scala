@@ -1,6 +1,6 @@
 package rise.OpenCL
 
-import idealised.OpenCL._
+import shine.OpenCL._
 import rise.core._
 import rise.core.DSL._
 import rise.core.types._

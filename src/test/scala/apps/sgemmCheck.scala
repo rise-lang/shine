@@ -2,7 +2,7 @@ package apps
 
 import sgemm._
 import util.{Time, TimeSpan, gen}
-import idealised.OpenCL.{GlobalSize, LocalSize}
+import shine.OpenCL.{GlobalSize, LocalSize}
 import rise.core.types._
 
 //noinspection TypeAnnotation

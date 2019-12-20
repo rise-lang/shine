@@ -1,6 +1,6 @@
 package apps
 
-import idealised.OpenCL.{AddressSpace => _, _}
+import shine.OpenCL.{AddressSpace => _, _}
 import arithexpr.arithmetic.Cst
 import rise.core.HighLevelConstructs.reorderWithStride
 import rise.core._
