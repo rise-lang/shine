@@ -1,7 +1,7 @@
 package apps
 
 import acoustic3D._
-import idealised.OpenCL._
+import shine.OpenCL._
 import util.{Time, TimeSpan, gen}
 
 class Acoustic3D extends test_util.TestsWithExecutor {

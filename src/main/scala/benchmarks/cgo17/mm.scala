@@ -2,8 +2,8 @@ package benchmarks.cgo17
 
 import apps.mm._
 import benchmarks.core._
-import idealised.OpenCL._
-import idealised.DPIA
+import shine.OpenCL._
+import shine.DPIA
 import util._
 
 object mm {

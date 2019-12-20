@@ -11,7 +11,7 @@ import util.gen
 
 class separableConvolution2DCheck extends test_util.Tests {
   private def wrapExpr(e: Expr): Expr = {
-    import rise.arithmetic.{RangeAdd, PosInf}
+    import arithexpr.arithmetic.{RangeAdd, PosInf}
     // at least 3 for one scalar sliding window
     // at least 3*4 = 12 for one vector sliding window
     nFun(RangeAdd(3, PosInf, 1), h =>
@@ -72,12 +72,12 @@ int main(int argc, char** argv) {
     checkC(regRotSeq(binomialWeightsV)(binomialWeightsH))
   }
 
-  import idealised.OpenCL.{LocalSize, GlobalSize}
+  import shine.OpenCL.{LocalSize, GlobalSize}
 
   private def checkOCL(localSize: LocalSize,
                        globalSize: GlobalSize,
                        e: Expr): Unit = {
-    import idealised.OpenCL._
+    import shine.OpenCL._
 
     val random = new scala.util.Random()
     val input = Array.fill(H, W)(random.nextFloat)

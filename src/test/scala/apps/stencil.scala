@@ -1,12 +1,12 @@
 package apps
 
 import benchmarks.core.{CorrectnessCheck, RunOpenCLProgram}
-import idealised.OpenCL.{GlobalSize, KernelWithSizes, LocalSize}
+import shine.OpenCL.{GlobalSize, KernelWithSizes, LocalSize}
 import util.{Display, TimeSpan, gen}
 import util.Time.ms
 import rise.OpenCL.primitives._
 import rise.OpenCL.DSL._
-import rise.arithmetic.SteppedCase
+import arithexpr.arithmetic.SteppedCase
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.core.Expr
@@ -57,7 +57,7 @@ class stencil extends test_util.Tests {
     }
 
     override protected def runKernel(k: KernelWithSizes, input: Input): (Array[Float], TimeSpan[ms]) = {
-      import idealised.OpenCL._
+      import shine.OpenCL._
 
       val kernelFun = k.as[ScalaFunction `(` Int `,` Input `)=>` Array[Float]]
       kernelFun(inputSize `,` input)

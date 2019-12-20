@@ -2,7 +2,7 @@ package apps
 
 import mm._
 import rise.core._
-import idealised.OpenCL._
+import shine.OpenCL._
 import util._
 
 class mmCheck extends test_util.TestsWithExecutor {

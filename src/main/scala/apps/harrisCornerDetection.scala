@@ -20,9 +20,9 @@ object harrisCornerDetection {
   private def zip2D(a: Expr, b: Expr) = zipND(2)(a)(b)
 
   // 5 for two scalar stencils of 3
-  private val hRange = rise.arithmetic.RangeAdd(5, rise.arithmetic.PosInf, 1)
+  private val hRange = arithexpr.arithmetic.RangeAdd(5, arithexpr.arithmetic.PosInf, 1)
   // 12 for one vector stencil of 3 (includes 2 scalar stencils of 3)
-  private val wRange = rise.arithmetic.RangeAdd(12, rise.arithmetic.PosInf, 4)
+  private val wRange = arithexpr.arithmetic.RangeAdd(12, arithexpr.arithmetic.PosInf, 4)
   private val sobelX = nFun(hRange, h => nFun(wRange, w => fun(
     (h`.`w`.`float) ->: (h`.`w`.`float)
   )(a =>
@@ -203,7 +203,7 @@ object harrisCornerDetection {
   )))
   */
 
-  import idealised.OpenCL._
+  import shine.OpenCL._
   import util.{Time, TimeSpan}
 
   // n x m . t => n.m.t

@@ -85,7 +85,7 @@ object nbody {
     ) o split(n) $ zip(pos)(vel)
   ))
 
-  import idealised.OpenCL._
+  import shine.OpenCL._
   import util.{Time, TimeSpan}
 
   private val deltaT = 0.005f

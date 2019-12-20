@@ -76,7 +76,7 @@ object molecularDynamics {
     neighbourList
   }
 
-  import idealised.OpenCL._
+  import shine.OpenCL._
   import util.{Time, TimeSpan}
 
   private val cutsq = 16.0f

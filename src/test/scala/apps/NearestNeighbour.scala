@@ -2,7 +2,7 @@ package apps
 
 import nearestNeighbour._
 import util.{Time, TimeSpan, gen}
-import idealised.OpenCL._
+import shine.OpenCL._
 
 class NearestNeighbour extends test_util.TestsWithExecutor {
   private val N = 512

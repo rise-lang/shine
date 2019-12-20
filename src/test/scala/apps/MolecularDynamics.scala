@@ -2,7 +2,7 @@ package apps
 
 import molecularDynamics._
 import util.{Time, TimeSpan, gen}
-import idealised.OpenCL._
+import shine.OpenCL._
 
 class MolecularDynamics extends test_util.TestsWithExecutor {
   private val N = 1024

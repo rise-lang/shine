@@ -2,7 +2,7 @@ package benchmarks.cgo17
 
 import apps.nbody._
 import benchmarks.core._
-import idealised.OpenCL._
+import shine.OpenCL._
 import util._
 
 object nbody {
