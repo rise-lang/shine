@@ -2,7 +2,7 @@ ThisBuild / scalaVersion := "2.11.12"
 ThisBuild / organization := "org.rise-lang"
 
 lazy val shine = (project in file("."))
-  .dependsOn(executor, rise, arithExpr)
+  .dependsOn(executor, rise)
   .settings(
     name    := "shine",
     version := "1.0",
@@ -43,5 +43,3 @@ lazy val shine = (project in file("."))
 lazy val executor   = (project in file("lib/executor"))
 
 lazy val rise       = (project in file("lib/rise"))
-
-lazy val arithExpr  = (project in file("lib/rise/lib/arithexpr"))
