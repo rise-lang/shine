@@ -1,0 +1,127 @@
+
+\begin{figure}
+    \begin{minipage}{1.0\linewidth}
+      \begin{displaymath}
+        \begin{array}{l@{\hspace{0.4em}}c@{\hspace{0.4em}}l}
+          \codegenComm{\prim{skip}, \eta}
+          &=& \texttt{/* skip */}
+          \\
+          \codegenComm{P_1; P_2, \eta}
+          &=& \begin{array}[t]{@{}l}
+                \codegenComm{P_1, \eta}~\codegenComm{P_2, \eta}
+              \end{array}
+          \\
+          \codegenComm{A := E, \eta}
+          &=& \codegenAcc{\num}{A, \eta, []}\texttt{ = }\codegenExp{\num}{E, \eta, []}\texttt{;}
+          \\
+          \codegenComm{\prim{new}~\delta~(\lambda v.~P), \eta}
+          &=& \texttt{\{}~
+              \begin{array}[t]{@{}l}
+                \codegenData{\delta}~\texttt{v;} \\
+                \codegenComm{P[(v_a,v_e)/v], \eta[v_a \mapsto \texttt{v}, v_e \mapsto \texttt{v}]}\ \texttt{\}}
+              \end{array}
+          \\
+          \codegenComm{\prim{for}~n~(\lambda i.~P), \eta}
+          &=& \begin{array}[t]{@{}l}
+                \texttt{for(int i = 0; i < $n$; i += 1) \{} \\
+                \quad \codegenComm{P, \eta[i \mapsto \texttt{i}]} \ \texttt{\}}
+              \end{array}
+          \\
+          \codegenComm{\prim{parfor}~n~\delta~A~(\lambda i~o.~P)~E, \eta}
+          &=& \begin{array}[t]{@{}l}
+                \texttt{\#pragma omp parallel for}\\
+                \texttt{for(int i = 0; i < $n$; i += 1) \{ }\\
+                \quad \codegenComm{P[\prim{idxAcc}~n~\delta~A~i/o], \eta[i \mapsto \texttt{i}]}\ \texttt{\}}
+              \end{array}
+        \end{array}
+      \end{displaymath}
+      \subcaption{\DPIA commands to OpenMP C statements}\label{fig:codegen-comm}
+    \end{minipage}
+  
+    \bigskip
+  
+    \begin{minipage}{1.0\linewidth}
+      \begin{displaymath}
+        \begin{array}{@{}l@{~}c@{~}l@{}}
+          \codegenAcc{\delta}{x, \eta, \mathit{ps}}
+          &=& \eta(x)(\mathit{reverse}~\mathit{ps})
+          \\
+          \codegenAcc{\mathsf{\delta}}{\prim{idxAcc}~N~\delta~A~I, \eta, \mathit{ps}}
+          &=& \begin{array}[t]{@{}l}
+            \codegenAcc{N.\delta}{A, \eta,\\ \quad\codegenExp{\tyidx[n]}{I, \eta, []} :: \mathit{ps})}
+          \end{array}
+          \\
+          \codegenAcc{NM.\delta}{\prim{splitAcc}~N~M~\delta~A, \eta, \texttt{i} :: \mathit{ps}}
+          &=& \codegenAcc{N.M.\delta}{A, \eta, \texttt{i/}M :: \texttt{i\%}M :: \mathit{ps}}
+          \\
+          \codegenAcc{N.M.\delta}{\prim{joinAcc}~n~M~\delta~A, \eta, \texttt{i} :: \texttt{j} :: \mathit{ps}}
+          &=& \codegenAcc{NM.\delta}{A, \eta, \texttt{i*}M\texttt{+j} :: \mathit{ps}}
+          \\
+          \codegenAcc{\delta_1}{\prim{pairAcc_1}~\delta_1~\delta_2~A, \eta, \mathit{ps}}
+          &=& \codegenAcc{\delta_1\times\delta_2}{A, \eta, \texttt{.x1} :: \mathit{ps}}
+          \\
+          \codegenAcc{\delta_2}{\prim{pairAcc_2}~\delta_1~\delta_2~A, \eta, \mathit{ps}}
+          &=& \codegenAcc{\delta_1\times\delta_2}{A, \eta, \texttt{.x2} :: \mathit{ps}}
+          \\
+          \codegenAcc{N.\delta_1}{\prim{zipAcc_1}~N~\delta_1~\delta_2~A, \eta, \texttt{i} :: \mathit{ps}}
+          &=& \codegenAcc{N.(\delta_1\times\delta_2)}{A, \eta, \texttt{i} :: \texttt{.x1} :: \mathit{ps}}
+          \\
+          \codegenAcc{N.\delta_2}{\prim{zipAcc_2}~N~\delta_1~\delta_2~A, \eta, \texttt{i} :: \mathit{ps}}
+          &=& \codegenAcc{N.(\delta_1\times\delta_2)}{A, \eta, \texttt{i} :: \texttt{.x2} :: \mathit{ps}}
+        \end{array}
+      \end{displaymath}
+      \subcaption{\DPIA acceptors to C l-values}\label{fig:codegen-acc}
+    \end{minipage}
+  
+    \bigskip
+  
+    \begin{minipage}{1.0\linewidth}
+      \begin{displaymath}
+        \begin{array}{@{}l@{~}c@{~}l@{}}
+          \codegenExp{\delta}{x, \eta, \mathit{ps}}
+          &=& \eta(x)(\mathit{reverse}~\mathit{ps})
+          \\
+          \codegenExp{\num}{\underline{\ell}, \eta, []}
+          &=& \ell
+          \\
+          \codegenExp{\num}{\prim{negate}~E, \eta, []}
+          &=& \texttt{(}\texttt{-}~\codegenExp{\num}{E, \eta, []}\texttt{)}
+          \\
+          \codegenExp{\num}{E_1 + E_2, \eta, []}
+          &=& \texttt{(}
+          \begin{array}[t]{@{}l}
+            \codegenExp{\num}{E_1, \eta, []}\\
+            \texttt{+ }\codegenExp{\num}{E_2, \eta, []}\texttt{)}
+          \end{array}
+          \\
+          \codegenExp{N.(\delta_1 \times \delta_2)}{\prim{zip}~N~\delta_1~\delta_2~E_1~E_2, \eta, \texttt{i} :: \texttt{.x}j :: \mathit{ps}}
+          &=& \codegenExp{N.\delta_j}{E_j, \eta, \texttt{i} :: \mathit{ps}}
+          \\
+          \codegenExp{M.N.\delta}{\prim{split}~N~M~\delta~E, \eta, \texttt{i} :: \texttt{j} :: \mathit{ps}}
+          &=& \codegenExp{MN.\delta}{E, \eta, \texttt{i*}n\texttt{+j} :: \mathit{ps}}
+          \\
+          \codegenExp{MN.\delta}{\prim{join}~N~M~\delta~E, \eta, \texttt{i} :: \mathit{ps}}
+          &=& \codegenExp{M.N.\delta}{E, \eta, \texttt{i/}n :: \texttt{i\%}n :: \mathit{ps}}
+          \\
+          \codegenExp{\delta_1 \times \delta_2}{\prim{pair}~\delta_1~\delta_2~E_1~E_2, \eta, \texttt{.x}j :: \mathit{ps}}
+          &=& \codegenExp{\delta_j}{E_j, \eta, \mathit{ps}}
+          \\
+          \codegenExp{\delta_1}{\prim{fst}~\delta_1~\delta_2~E, \eta, \mathit{ps}}
+          &=& \codegenExp{\delta_1 \times \delta_2}{E, \eta, \texttt{.x1} :: \mathit{ps}}
+          \\
+          \codegenExp{\delta_2}{\prim{snd}~\delta_1~\delta_2~E, \eta, \mathit{ps}}
+          &=& \codegenExp{\delta_1 \times \delta_2}{E, \eta, \texttt{.x2} :: \mathit{ps}}
+          \\
+          \codegenExp{\delta}{\prim{idx}~N~\delta~E~I, \eta, \mathit{ps}}
+          &=&
+          \begin{array}[t]{@{}l}
+            \textsc{CodeGen}_{\mathsf{exp}[N.\delta]}(E, \eta,\\ \quad\codegenExp{\tyidx[N]}{I, \eta, []} :: \mathit{ps})
+          \end{array}
+        \end{array}
+      \end{displaymath}
+      \subcaption{\DPIA expressions to C r-values}\label{fig:codegen-exp}
+    \end{minipage}
+  
+    \caption{Translation of Purely Imperative \DPIA to parallel OpenMP C}
+    \label{fig:codegen}
+  \end{figure}

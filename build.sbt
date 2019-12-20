@@ -1,68 +1,45 @@
-name := "idealised-OpenCL"
+ThisBuild / scalaVersion := "2.11.12"
+ThisBuild / organization := "org.rise-lang"
 
-version := "1.0"
+lazy val shine = (project in file("."))
+  .dependsOn(executor, rise)
+  .settings(
+    name    := "shine",
+    version := "1.0",
 
-scalaVersion := "2.11.12"
+    javaOptions ++= Seq("-Djava.library.path=lib/executor/lib/Executor/build", "-Xss16m"),
 
-compile := ((compile in Compile) dependsOn setup).value
-test := ((test in Test) dependsOn setup).value
+    scalacOptions ++= Seq(
+      "-Xfatal-warnings",
+      "-Xlint",
+      "-Xmax-classfile-name", "100",
+      "-unchecked",
+      "-deprecation",
+      "-feature",
+      "-language:reflectiveCalls"
+    ),
 
-lazy val setup = taskKey[Unit]("Sets up the submodules")
+    fork := true,
 
-setup := {
-  import scala.language.postfixOps
-  import scala.sys.process._
-  //noinspection PostfixMethodCall
-  "echo y" #| "./setup.sh" !
-}
+    // Scala libraries
+    libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+    libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
+    libraryDependencies += "org.scala-lang" % "scala-library" % scalaVersion.value,
+    libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.0.5",
 
+    // JUnit
+    libraryDependencies += "junit" % "junit" % "4.11",
 
-scalacOptions ++= Seq("-Xmax-classfile-name", "100", "-unchecked", "-deprecation", "-feature")
+    // Scalatest
+    libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.5" % "test",
 
-fork := true
-javaOptions += "-Djava.library.path=lib/executor/lib/Executor/build"
+    // Silencer: Scala compiler plugin for warning suppression
+    libraryDependencies ++= Seq(
+      compilerPlugin("com.github.ghik" %% "silencer-plugin" % "1.4.0"),
+      "com.github.ghik" %% "silencer-lib" % "1.4.0" % Provided
+    )
+  )
 
-resolvers ++= Seq(
-  Resolver.sonatypeRepo("releases"),
-  Resolver.sonatypeRepo("snapshots")
-)
+lazy val executor   = (project in file("lib/executor"))
 
-
-// Scala libraries
-libraryDependencies += "org.scala-lang" % "scala-reflect" % "2.11.12"
-libraryDependencies += "org.scala-lang" % "scala-compiler" % "2.11.12"
-libraryDependencies += "org.scala-lang" % "scala-library" % "2.11.12"
-libraryDependencies += "com.typesafe.play" %% "play-json" % "2.3.10"
-
-libraryDependencies += "org.scala-lang.modules" % "scala-xml_2.11" % "1.0.4"
-
-libraryDependencies += "jline" % "jline" % "2.12.1"
-
-// JUnit
-libraryDependencies += "junit" % "junit" % "4.11"
-libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % "test"
-
-// ScalaCheck
-libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.13.0" % "test"
-
-// Scalatest
-libraryDependencies += "org.scalactic" %% "scalactic" % "3.0.5"
-libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.5" % "test"
-
-// TODO: Pick one for argument parsing
-libraryDependencies += "commons-cli" % "commons-cli" % "1.3.1"
-libraryDependencies += "org.clapper" %% "argot" % "1.0.3"
-
-// Logging
-libraryDependencies += "ch.qos.logback" %  "logback-classic" % "1.1.7"
-libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.4.0"
-
-libraryDependencies += "com.chuusai" %% "shapeless" % "2.3.2"
-
-// Build ArithExpr
-unmanagedSourceDirectories in Compile += baseDirectory.value / "lib/ArithExpr/src/main/"
-unmanagedSourceDirectories in Test += baseDirectory.value / "lib/ArithExpr/src/main/"
-
-// Build executor
-unmanagedSourceDirectories in Compile += baseDirectory.value / "lib/executor/src/main/"
-unmanagedSourceDirectories in Test += baseDirectory.value / "lib/executor/src/main/"
+lazy val rise       = (project in file("lib/rise"))

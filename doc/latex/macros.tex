@@ -1,21 +1,43 @@
+\newcommand{\type}{\mathsf{type}}
+\newcommand{\passivetype}{\mathsf{passiveT}}
+
 \newcommand{\phrasetype}{\mathsf{phrase}}
-\newcommand{\passivetype}{\mathsf{passive}}
+\newcommand{\passivephrasetype}{\mathsf{passivePhrase}}
+\newcommand{\access}{\mathsf{access}}
 \newcommand{\datatype}{\mathsf{data}}
 \newcommand{\natkind}{\mathsf{nat}}
+\newcommand{\addrkind}{\mathsf{addrSpace}}
+\newcommand{\ntnkind}{\natkind\hspace{-.25em}\rightarrow\hspace{-.25em}\natkind}
+\newcommand{\ntdkind}{\natkind\hspace{-.25em}\rightarrow\hspace{-.25em}\datatype}
 \newcommand{\vwkind}{\mathsf{width}}
+\newcommand{\readacc}{\mathtt{R}}
+\newcommand{\writeacc}{\mathtt{W}}
 \newcommand{\num}{\mathsf{num}}
 \newcommand{\sem}[1]{\llbracket #1 \rrbracket}
 \newcommand{\interfere}{\mathrel\triangledown}
 \newcommand{\indep}{\mathrel\triangle}
 \newcommand{\objspace}{\mathord{\dagger}}
+\newcommand{\basic}{\mathsf{basic}}
 
 \newcommand{\kw}[1]{\mathrm{#1}}
 
+\newcommand{\tyval}[2]{\ensuremath{#1_{#2}}}
 \newcommand{\tycomm}{\mathsf{comm}}
-\newcommand{\tyexp}{\mathsf{exp}}
-\newcommand{\tyacc}{\mathsf{acc}}
+\newcommand{\tyexp}[2]{\mathsf{exp}[#1, #2]}
+\newcommand{\typush}{\mathsf{push}}
+\newcommand{\tymem}{\mathsf{mem}}
+\newcommand{\tyacc}[1]{\mathsf{acc}[#1]}
 \newcommand{\tyvar}{\mathsf{var}}
 \newcommand{\tyidx}{\mathsf{idx}}
+
+% \usepackage{fdsymbol}
+
+\newcommand{\lArray}[2]{#1\scalebox{.9}{\text{\raisebox{-.25em}{$\bullet$}}}#2}
+\newcommand{\lDepArray}[2]{#1\scalebox{.5}{\text{\raisebox{-.25em}{$\blacksquare$}}}#2}
+\newcommand{\lVector}[2]{\left<#1\right>#2}
+\newcommand{\lPair}[2]{#1 \times #2}
+\newcommand{\lNtDT}[2]{#1\mapsto#2}
+\newcommand{\lNtN}[2]{#1\mapsto#2}
 
 \newcommand{\pureto}{\to_{\textrm{p}}}
 
@@ -49,9 +71,83 @@
 %% \newcommand{\dtone}{d_1}
 %% \newcommand{\dttwo}{d_2}
 
+% meta variables
+
+% access
+\newcommand{\W}{\omega}
+\newcommand{\Wone}{\omega_1}
+\newcommand{\Wtwo}{\omega_2}
+
+% addrSpace
+\newcommand{\A}{\alpha}
+\newcommand{\Aone}{\alpha_1}
+\newcommand{\Atwo}{\alpha_2}
+
+% nat->nat
+\newcommand{\FN}{F_\N}
+\newcommand{\FNone}{F_\None}
+\newcommand{\FNtwo}{F_\Ntwo}
+
+% nat->data
+\newcommand{\FDT}{F_\DT}
+\newcommand{\FDTone}{F_\DTone}
+\newcommand{\FDTtwo}{F_\DTtwo}
+
+% nat
+\newcommand{\Nat}[1]{#1}
+\newcommand{\N}{\Nat{N}}
+
+% data
+\newcommand{\DT}{T}
+\newcommand{\DTone}{S}
+\newcommand{\DTtwo}{T}
+
+% type
+\newcommand{\TY}{\theta}
+\newcommand{\TYone}{\theta_1}
+\newcommand{\TYtwo}{\theta_2}
+
+% variables
+
+% expression values
+\newcommand{\x}{x}
+\newcommand{\xone}{x}
+\newcommand{\xtwo}{y}
+
+\newcommand{\Prog}{P}
+\newcommand{\Progone}{P}
+\newcommand{\Progtwo}{Q}
+
+% access
+\newcommand{\wvar}{w}
+\newcommand{\wvarone}{w_1}
+\newcommand{\wvartwo}{w_2}
+
+% addrSpace
+\newcommand{\avar}{a}
+\newcommand{\avarone}{a_1}
+\newcommand{\avartwo}{a_2}
+
+% nat->nat
+\newcommand{\fn}{f_\N}
+\newcommand{\fnone}{f_\None}
+\newcommand{\fntwo}{f_\Ntwo}
+
+% nat->data
+\newcommand{\fdt}{f_\DT}
+\newcommand{\fdtone}{f_\DTone}
+\newcommand{\fdttwo}{f_\DTtwo}
+
+% nat
+\newcommand{\nat}[1]{#1}
+\newcommand{\n}{\nat{n}}
+\newcommand{\m}{\nat{m}}
+
+% data
 \newcommand{\dt}{t}
 \newcommand{\dtone}{s}
 \newcommand{\dttwo}{t}
+\newcommand{\dtzero}{r}
 
 
 
@@ -77,3 +173,7 @@
 
 % possessive citation, i.e.: This is Adam's [1999] paper.
 \newcommand\citeapos[1]{\citeauthor{#1}'s \citeyear{#1}}
+
+\makeatletter % allow us to mention @-commands
+\def\arcr{\@arraycr}
+\makeatother
