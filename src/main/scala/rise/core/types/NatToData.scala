@@ -1,6 +1,6 @@
 package rise.core.types
 
-import rise.arithmetic.NamedVar
+import arithexpr.arithmetic.NamedVar
 import rise.core._
 
 sealed trait NatToData {

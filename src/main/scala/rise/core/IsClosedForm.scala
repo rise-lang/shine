@@ -1,6 +1,6 @@
 package rise.core
 
-import rise.arithmetic.NamedVar
+import arithexpr.arithmetic.NamedVar
 import rise.core.traversal.{Continue, Result}
 import rise.core.types._
 

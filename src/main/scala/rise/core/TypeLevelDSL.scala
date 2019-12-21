@@ -1,6 +1,6 @@
 package rise.core
 
-import rise.arithmetic.{Cst, RangeAdd}
+import arithexpr.arithmetic.{Cst, RangeAdd}
 import rise.core.types._
 
 object TypeLevelDSL {
@@ -19,7 +19,7 @@ object TypeLevelDSL {
       NatToDataLambda(x, f(x))
     }
 
-    def apply(r: rise.arithmetic.Range)(f: NatIdentifier => DataType): NatToDataLambda = {
+    def apply(r: arithexpr.arithmetic.Range)(f: NatIdentifier => DataType): NatToDataLambda = {
       val x = NatIdentifier(freshName("n2dt"), r, isExplicit = true)
       NatToDataLambda(x, f(x))
     }
@@ -35,7 +35,7 @@ object TypeLevelDSL {
       NatToNatLambda(x, f(x))
     }
 
-    def apply(r: rise.arithmetic.Range)(f: NatIdentifier => Nat): NatToNatLambda = {
+    def apply(r: arithexpr.arithmetic.Range)(f: NatIdentifier => Nat): NatToNatLambda = {
       val x = NatIdentifier(freshName("n2n"), r, isExplicit = true)
       NatToNatLambda(x, f(x))
     }

@@ -1,6 +1,6 @@
 package rise.core.types
 
-import rise.arithmetic.{ArithExpr, ArithExprFunctionCall, NamedVar, SimplifiedExpr}
+import arithexpr.arithmetic.{ArithExpr, ArithExprFunctionCall, NamedVar, SimplifiedExpr}
 import rise.core.{Nat}
 
 sealed trait NatToNat {

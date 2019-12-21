@@ -1,7 +1,7 @@
 package rise.core
 
 import rise.core.types._
-import rise.arithmetic._
+import arithexpr.arithmetic._
 import rise.core.semantics.NatData
 import traversal.{Continue, Result, Stop}
 

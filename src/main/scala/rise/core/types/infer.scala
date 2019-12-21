@@ -293,14 +293,14 @@ object infer {
       case _ if a == b => Solution()
       // case _ if !nat.potentialPivots(a).isEmpty => nat.tryPivots(a, b)
       // case _ if !nat.potentialPivots(b).isEmpty => nat.tryPivots(b, a)
-      case (s: rise.arithmetic.Sum, _) => nat.unifySum(s, b)
-      case (_, s: rise.arithmetic.Sum) => nat.unifySum(s, a)
-      case (p: rise.arithmetic.Prod, _) => nat.unifyProd(p, b)
-      case (_, p: rise.arithmetic.Prod) => nat.unifyProd(p, a)
-      case (p: rise.arithmetic.Pow, _) => nat.unifyProd(p, b)
-      case (_, p: rise.arithmetic.Pow) => nat.unifyProd(p, a)
-      case (p: rise.arithmetic.IntDiv, _) => nat.unifyProd(p, b)
-      case (_, p: rise.arithmetic.IntDiv) => nat.unifyProd(p, a)
+      case (s: arithexpr.arithmetic.Sum, _) => nat.unifySum(s, b)
+      case (_, s: arithexpr.arithmetic.Sum) => nat.unifySum(s, a)
+      case (p: arithexpr.arithmetic.Prod, _) => nat.unifyProd(p, b)
+      case (_, p: arithexpr.arithmetic.Prod) => nat.unifyProd(p, a)
+      case (p: arithexpr.arithmetic.Pow, _) => nat.unifyProd(p, b)
+      case (_, p: arithexpr.arithmetic.Pow) => nat.unifyProd(p, a)
+      case (p: arithexpr.arithmetic.IntDiv, _) => nat.unifyProd(p, b)
+      case (_, p: arithexpr.arithmetic.IntDiv) => nat.unifyProd(p, a)
       case _ => error(s"cannot unify $a and $b")
     })
 
@@ -331,7 +331,7 @@ object infer {
   }
 
   private object nat {
-    import rise.arithmetic._
+    import arithexpr.arithmetic._
 
     def freeOccurences(n: Nat): Map[NatIdentifier, Integer] = {
       val free_occurrences = mutable.Map[NatIdentifier, Integer]()

@@ -53,7 +53,7 @@ object HighLevelConstructs {
 
   // TODO: Investigate. this might be wrong
   val partition2D: Expr = {
-    import rise.arithmetic.SteppedCase
+    import arithexpr.arithmetic.SteppedCase
     nFun(outerSize => nFun(innerSize =>
       map(
         partition(3)(n2nFun(m => SteppedCase(m, Seq(outerSize, innerSize, outerSize))))

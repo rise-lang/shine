@@ -1,6 +1,6 @@
 package rise.core.types
 
-import rise.arithmetic._
+import arithexpr.arithmetic._
 import rise.core.types
 
 class NatIdentifier(override val name: String,

@@ -520,35 +520,35 @@ object TypedDSL {
   }
 
   object nFun {
-    def apply(r: rise.arithmetic.Range, f: NatIdentifier => TDSL[Expr]): TDSL[DepLambda[NatKind]] = {
+    def apply(r: arithexpr.arithmetic.Range, f: NatIdentifier => TDSL[Expr]): TDSL[DepLambda[NatKind]] = {
       val x = NatIdentifier(freshName("n"), r, isExplicit = true)
       depLambda[NatKind](x, f(x))
     }
 
     def apply(f: NatIdentifier => TDSL[Expr]): TDSL[DepLambda[NatKind]] = {
-      nFun(rise.arithmetic.RangeAdd(0, rise.arithmetic.PosInf, 1), f)
+      nFun(arithexpr.arithmetic.RangeAdd(0, arithexpr.arithmetic.PosInf, 1), f)
     }
 
     def apply(f: (NatIdentifier, NatIdentifier) => TDSL[Expr]): TDSL[DepLambda[NatKind]] = {
-      val r = rise.arithmetic.RangeAdd(0, rise.arithmetic.PosInf, 1)
+      val r = arithexpr.arithmetic.RangeAdd(0, arithexpr.arithmetic.PosInf, 1)
       val n = NatIdentifier(freshName("n"), r, isExplicit = true)
       depLambda[NatKind](n, nFun(f(n, _)))
     }
 
     def apply(f: (NatIdentifier, NatIdentifier, NatIdentifier) => TDSL[Expr]): TDSL[DepLambda[NatKind]] = {
-      val r = rise.arithmetic.RangeAdd(0, rise.arithmetic.PosInf, 1)
+      val r = arithexpr.arithmetic.RangeAdd(0, arithexpr.arithmetic.PosInf, 1)
       val n = NatIdentifier(freshName("n"), r, isExplicit = true)
       depLambda[NatKind](n, nFun((n1, n2) => f(n, n1, n2)))
     }
 
     def apply(f: (NatIdentifier, NatIdentifier, NatIdentifier, NatIdentifier) => TDSL[Expr]): TDSL[DepLambda[NatKind]] = {
-      val r = rise.arithmetic.RangeAdd(0, rise.arithmetic.PosInf, 1)
+      val r = arithexpr.arithmetic.RangeAdd(0, arithexpr.arithmetic.PosInf, 1)
       val n = NatIdentifier(freshName("n"), r, isExplicit = true)
       depLambda[NatKind](n, nFun((n1, n2, n3) => f(n, n1, n2, n3)))
     }
 
     def apply(f: (NatIdentifier, NatIdentifier, NatIdentifier, NatIdentifier, NatIdentifier) => TDSL[Expr]): TDSL[DepLambda[NatKind]] = {
-      val r = rise.arithmetic.RangeAdd(0, rise.arithmetic.PosInf, 1)
+      val r = arithexpr.arithmetic.RangeAdd(0, arithexpr.arithmetic.PosInf, 1)
       val n = NatIdentifier(freshName("n"), r, isExplicit = true)
       depLambda[NatKind](n, nFun((n1, n2, n3, n4) => f(n, n1, n2, n3, n4)))
     }

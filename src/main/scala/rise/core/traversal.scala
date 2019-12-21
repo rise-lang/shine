@@ -1,6 +1,6 @@
 package rise.core
 
-import rise.arithmetic.NamedVar
+import arithexpr.arithmetic.NamedVar
 import rise.core.semantics._
 import rise.core.types._
 

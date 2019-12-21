@@ -1,6 +1,6 @@
 package rise
 
-import rise.arithmetic._
+import arithexpr.arithmetic._
 import rise.core.types._
 
 package object core {

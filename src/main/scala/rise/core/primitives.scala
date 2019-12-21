@@ -1,6 +1,6 @@
 package rise.core
 
-import rise.arithmetic.BigSum
+import arithexpr.arithmetic.BigSum
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.core.types._
