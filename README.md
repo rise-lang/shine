@@ -1,3 +1,4 @@
+### Overview
 This repository contains an implementation of the Shine compiler for the RISE language
 which is used as the main compiler of the RISE project (https://rise-lang.org/).
 
@@ -24,3 +25,10 @@ The source code for the compiler is organised into sub-packages of the `shine` p
     This package also defines extensions in form of additional patterns
     added to the RISE language and `DPIA`.
 
+### Setup
+Prerequisits: Java 8+ SDK, `git`
+1. Clone the `shine` repository to a directory of your choice that we call `$SHINE_ROOT`.
+2. In `$SHINE_ROOT`, run `setup.sh` to download all required submodules and build the Executor library that is used for running OpenCL tests.
+3. Download IDEA IntelliJ (http://www.jetbrains.com/idea/) and and choose to install the Scala Plugin during setup.
+4. Launch IntelliJ. From the menu choose `File` -> `Open...`. Then, select `$SHINE_ROOT` and press `OK`.
+5. From the menu bar choose `Run` -> `Edit Configurations...`. Under `Templates` choose `ScalaTest` and add the following line to `VM parameters`: `-Djava.library.path=lib/executor/lib/Executor/build -Xss16m` (this will tell IntelliJ where to find the Executor library and use 16MB of thread stack size which is needed for arithmetic simplifactions sometimes).
