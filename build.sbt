@@ -2,6 +2,7 @@ ThisBuild / scalaVersion := "2.11.12"
 ThisBuild / organization := "org.rise-lang"
 
 lazy val shine = (project in file("."))
+  .aggregate(executor)
   .dependsOn(executor, rise)
   .settings(
     name    := "shine",
