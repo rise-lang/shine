@@ -1,7 +1,6 @@
 package rise.core
 
 import rise.core.types._
-import arithexpr.arithmetic._
 import rise.core.semantics.NatData
 import traversal.{Continue, Result, Stop}
 
@@ -10,8 +9,12 @@ object substitute {
   // substitute in Expr
 
   def kindInExpr[K <: Kind](x: K#T, `for`: K#I, in: Expr): Expr =  (x, `for`) match {
-    case (n: Nat, forN: NatIdentifier) => natInExpr(n, forN, in)
-    case (dt: DataType, forDt: DataTypeIdentifier) => dataTypeInExpr(dt, forDt, in)
+    case (dt: DataType, forDt: DataTypeIdentifier)        => dataTypeInExpr(dt, forDt, in)
+    case (n: Nat, forN: NatIdentifier)                    => natInExpr(n, forN, in)
+    case (a: AddressSpace, forA: AddressSpaceIdentifier)  => addressSpaceInExpr(a, forA, in)
+    case (n2n: NatToNat, forN2N: NatToNatIdentifier)      => n2nInExpr(n2n, forN2N, in)
+    case (n2d: NatToData, forN2D: NatToDataIdentifier)    => n2dInExpr(n2d, forN2D, in)
+    case (_, _) => ???
   }
 
   def exprInExpr(expr: Expr, `for`: Expr, in: Expr): Expr = {
@@ -63,13 +66,27 @@ object substitute {
     traversal.DepthFirstLocalResult(in, Visitor)
   }
 
+  def addressSpaceInExpr(a: AddressSpace,
+                         `for`: AddressSpaceIdentifier,
+                         in: Expr): Expr = ???
+  
+  def n2nInExpr(n2n: NatToNat,
+                `for`: NatToNatIdentifier,
+                in: Expr): Expr = ???
+
+  def n2dInExpr(n2d: NatToData,
+                `for`: NatToDataIdentifier,
+                in: Expr): Expr = ???
+
   // substitute in Type
 
   def kindInType[K <: Kind, T <: Type](x: K#T, `for`: K#I, in: T): T =  (x, `for`) match {
     case (dt: DataType, forDt: DataTypeIdentifier)        => typeInType(dt, forDt, in)
     case (n: Nat, forN: NatIdentifier)                    => natInType(n, forN, in)
     case (a: AddressSpace, forA: AddressSpaceIdentifier)  => addressSpaceInType(a, forA, in)
-    case (n2n: NatToNat, forN2N: NatToNatIdentifier)  => n2nInType(n2n, forN2N, in)
+    case (n2n: NatToNat, forN2N: NatToNatIdentifier)      => n2nInType(n2n, forN2N, in)
+    case (n2d: NatToData, forN2D: NatToDataIdentifier)    => n2dInType(n2d, forN2D, in)
+    case (_, _) => ???
   }
 
   def typeInType[B <: Type](ty: Type, `for`: Type, in: B): B = {

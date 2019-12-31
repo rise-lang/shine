@@ -1,9 +1,7 @@
 package rise.core.semantics
 
-import rise.core.{Literal, Nat}
+import rise.core.Nat
 import rise.core.types._
-
-import scala.language.implicitConversions
 
 sealed abstract class Data(val dataType: DataType)
 

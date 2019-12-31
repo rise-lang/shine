@@ -1,9 +1,8 @@
 package rise.OpenCL
 
-import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.core.types._
-import rise.core.{Primitive, primitives => core}
+import rise.core.{primitives => core}
 import primitiveMacro.Primitive.primitive
 
 object primitives {
