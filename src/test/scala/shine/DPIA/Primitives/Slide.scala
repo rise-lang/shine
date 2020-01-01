@@ -2,11 +2,7 @@ package shine.DPIA.Primitives
 
 import rise.core.DSL._
 import rise.core.types._
-import rise.core.primitives._
-import rise.core.HighLevelConstructs.slide2D
-import benchmarks.core.SimpleRunOpenCLProgram
-import shine.OpenCL.KernelWithSizes
-import util.{TimeSpan, gen}
+import util.gen
 
 class Slide extends test_util.Tests {
 

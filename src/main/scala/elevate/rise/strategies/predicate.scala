@@ -5,8 +5,6 @@ import elevate.rise.Rise
 import rise.core.primitives.{Generate, Let, Map, Reduce, Zip}
 import rise.core.{App, Identifier, Lambda}
 
-import scala.language.implicitConversions
-
 object predicate {
 
   // Matching Single Nodes

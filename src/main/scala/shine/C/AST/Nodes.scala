@@ -1,8 +1,8 @@
 package shine.C.AST
 
+import arithexpr.arithmetic.ArithExpr
 import shine.C
 import shine.C.AST.Nodes.{VisitAndGenerateStmt, VisitAndRebuild}
-import arithexpr.arithmetic.ArithExpr
 
 /*
 * This implementation follows the design from the Lift repository by Adam Harries

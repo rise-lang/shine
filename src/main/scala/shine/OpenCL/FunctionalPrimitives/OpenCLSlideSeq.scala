@@ -1,13 +1,13 @@
 package shine.OpenCL.FunctionalPrimitives
 
+import arithexpr.arithmetic.SimplifiedExpr
 import rise.core.{primitives => lp}
 import shine.DPIA.Compilation.{TranslationContext, TranslationToImperative}
-import shine.DPIA._
 import shine.DPIA.DSL._
-import shine.DPIA.Types._
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics.{Data, Store}
-import arithexpr.arithmetic.SimplifiedExpr
+import shine.DPIA.Types._
+import shine.DPIA._
 
 import scala.xml.Elem
 

@@ -2,10 +2,8 @@ package apps
 
 import separableConvolution2D._
 import rise.core._
-import rise.core.types._
 import rise.core.primitives._
 import rise.core.TypedDSL._
-import rise.core.TypeLevelDSL._
 import rise.core.HighLevelConstructs._
 import elevate.core._
 import elevate.rise.rules._

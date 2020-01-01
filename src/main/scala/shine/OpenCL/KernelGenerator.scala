@@ -2,7 +2,6 @@ package shine.OpenCL
 
 import java.io.{File, PrintWriter}
 
-import shine._
 import shine.C.AST.{DeclRef, ParamDecl}
 import shine.DPIA.Compilation._
 import shine.DPIA.DSL._
@@ -12,9 +11,9 @@ import shine.DPIA._
 import shine.OpenCL.AST.RequiredWorkGroupSize
 import shine.OpenCL.CodeGeneration.HoistMemoryAllocations.AllocationInfo
 import shine.OpenCL.CodeGeneration.{AdaptKernelBody, AdaptKernelParameters, HoistMemoryAllocations}
+import shine._
 
 import scala.collection._
-import scala.language.implicitConversions
 
 //noinspection VariablePatternShadow
 object KernelGenerator {

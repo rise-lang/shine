@@ -7,8 +7,8 @@ import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics.{Data, Store}
 import shine.DPIA.Types._
 import shine.DPIA.{Phrases, _}
+import shine.OpenCL.AdjustArraySizesForAllocations
 import shine.OpenCL.DSL.`new`
-import shine.OpenCL.{AdjustArraySizesForAllocations}
 
 import scala.xml.Elem
 

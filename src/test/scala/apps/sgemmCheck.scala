@@ -1,7 +1,7 @@
 package apps
 
 import sgemm._
-import util.{Time, TimeSpan, gen}
+import util.gen
 import shine.OpenCL.{GlobalSize, LocalSize}
 import rise.core.types._
 

@@ -1,7 +1,7 @@
 package shine.DPIA.Types
 
-import shine.DPIA.{Nat, NatIdentifier, freshName}
 import arithexpr.arithmetic.{NamedVar, RangeAdd}
+import shine.DPIA.{Nat, NatIdentifier, freshName}
 
 sealed trait NatToData {
   def apply(n: Nat): DataType = NatToDataApply(this, n)

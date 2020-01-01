@@ -1,11 +1,12 @@
 package shine.OpenMP.CodeGeneration
 
-import shine._
-import shine.C.AST.{ArraySubscript, Assignment, Decl}
-import shine.C.CodeGeneration.{CodeGenerator => CCodeGenerator}
+import arithexpr.arithmetic
+import arithexpr.arithmetic._
+import shine.C.AST.{ArraySubscript, Decl}
 import shine.C.CodeGeneration.CodeGenerator.CIntExpr
+import shine.C.CodeGeneration.{CodeGenerator => CCodeGenerator}
 import shine.DPIA.DSL._
-import shine.DPIA.FunctionalPrimitives.{AsScalar, AsVectorAligned, ForeignFunction, IdxVec, VectorFromScalar}
+import shine.DPIA.FunctionalPrimitives._
 import shine.DPIA.ImperativePrimitives._
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
@@ -13,10 +14,8 @@ import shine.DPIA.Semantics.OperationalSemantics.{ArrayData, VectorData}
 import shine.DPIA.Types.{AccType, CommType, DataType, ExpType, PhraseType, ScalarType, VectorType}
 import shine.DPIA.{Nat, NatIdentifier, Phrases, error, freshName}
 import shine.OpenMP.ImperativePrimitives.{ParFor, ParForNat}
-import arithexpr.arithmetic
-import arithexpr.arithmetic._
+import shine._
 
-import scala.collection.immutable.VectorBuilder
 import scala.collection.{immutable, mutable}
 
 object CodeGenerator {

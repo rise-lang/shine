@@ -1,13 +1,12 @@
 package shine.DPIA.IntermediatePrimitives
 
-import shine.DPIA.Compilation.TranslationContext
+import arithexpr.arithmetic.NamedVar
 import shine.DPIA.DSL._
 import shine.DPIA.FunctionalPrimitives.{AsIndex, Take}
 import shine.DPIA.ImperativePrimitives.TakeAcc
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA._
-import arithexpr.arithmetic.NamedVar
 
 object IterateIAcc {
   def apply(n: Nat,
@@ -16,8 +15,7 @@ object IterateIAcc {
             dt: DataType,
             out: Phrase[AccType],
             f: Phrase[`(nat)->:`[AccType ->: ExpType ->: CommType]],
-            in: Phrase[ExpType])
-           (implicit context: TranslationContext): Phrase[CommType] =
+            in: Phrase[ExpType]): Phrase[CommType] =
   {
     val sz = n.pow(k) * m
 

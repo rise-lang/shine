@@ -1,12 +1,8 @@
 package shine
 
-import shine.DPIA.Phrases._
-import shine.DPIA.Types.{PhraseTypeParser, _}
 import arithexpr.arithmetic._
-
-import com.github.ghik.silencer.silent
-
-import scala.language.{implicitConversions, reflectiveCalls}
+import shine.DPIA.Phrases._
+import shine.DPIA.Types._
 
 package object DPIA {
 
@@ -92,7 +88,7 @@ package object DPIA {
   }
 
   implicit class PairTypeConstructor[T1 <: PhraseType](t1: T1) {
-    def x[T2 <: PhraseType](t2: T2) = PhrasePairType(t1, t2)
+    def x[T2 <: PhraseType](t2: T2): T1 x T2 = PhrasePairType(t1, t2)
   }
 
   implicit class FunTypeConstructor[R <: PhraseType](r: R) {
@@ -100,7 +96,7 @@ package object DPIA {
   }
 
   implicit class PassiveFunTypeConstructor[R <: PhraseType](r: R) {
-    def `->p:`[T <: PhraseType](t: T) = PassiveFunType(t, r)
+    def `->p:`[T <: PhraseType](t: T): T `->p:` R = PassiveFunType(t, r)
   }
 
   implicit class DepFunTypeConstructor[R <: PhraseType](r: R) {

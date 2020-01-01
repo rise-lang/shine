@@ -19,14 +19,14 @@ class rewriteExamples extends test_util.Tests {
   }
 
   test("Example6: Simplification") {
-    val input = fun((v, I) => Let(I, Application(matrixEye, Seq(Application(len, Seq(v)))),
-      Application(build, Seq(
-        Application(len, Seq(v)),
-        fun(i => Application(ifold, Seq(
-          Application(len, Seq(v)), ScalarValue(0), fun((a, j) =>
-            a + Application(get, Seq(v, j)) * Application(get, Seq(Application(get, Seq(I, j)), i))
-          )))))
-      )))
+    // val input = fun((v, I) => Let(I, Application(matrixEye, Seq(Application(len, Seq(v)))),
+    //   Application(build, Seq(
+    //     Application(len, Seq(v)),
+    //     fun(i => Application(ifold, Seq(
+    //       Application(len, Seq(v)), ScalarValue(0), fun((a, j) =>
+    //         a + Application(get, Seq(v, j)) * Application(get, Seq(Application(get, Seq(I, j)), i))
+    //       )))))
+    //   )))
 
     // the order of ifold arguments is incorrect in the paper
     val inputFixed = fun((v, I) => Let(I, Application(matrixEye, Seq(Application(len, Seq(v)))),

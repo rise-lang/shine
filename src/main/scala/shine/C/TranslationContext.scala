@@ -1,12 +1,10 @@
 package shine.C
 
-import shine.DPIA
 import shine.DPIA.DSL._
 import shine.DPIA.ImperativePrimitives.Assign
-import shine.DPIA.IntermediatePrimitives.{DepMapSeqI, MapSeqI}
-import shine.DPIA.Phrases.{DepLambda, Phrase}
+import shine.DPIA.IntermediatePrimitives.DepMapSeqI
+import shine.DPIA.Phrases.Phrase
 import shine.DPIA.Types._
-import shine.DPIA.freshName
 
 class TranslationContext() extends shine.DPIA.Compilation.TranslationContext {
   override def assign(dt: DataType,
@@ -26,7 +24,7 @@ class TranslationContext() extends shine.DPIA.Compilation.TranslationContext {
         DepMapSeqI(n, ft, ft,
           depFun[NatKind]()(k =>
             λ(ExpType(ft(k), read))(x => λ(AccType( ft(k) ))(a => assign(ft(k), a, x) ))),
-          rhs, lhs)(this)
+          rhs, lhs)
 
       case x => throw new Exception(s"Don't know how to assign value of type $x")
     }

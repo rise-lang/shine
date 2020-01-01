@@ -1,5 +1,6 @@
 package shine.DPIA.Phrases
 
+import arithexpr.arithmetic.{NamedVar, RangeAdd}
 import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.FunctionalPrimitives.AsIndex
 import shine.DPIA.Lifting.{liftDependentFunction, liftFunction, liftPair}
@@ -7,10 +8,6 @@ import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics.{IndexData, NatData}
 import shine.DPIA.Types._
 import shine.DPIA._
-import arithexpr.arithmetic.BoolExpr.ArithPredicate
-import arithexpr.arithmetic.{NamedVar, RangeAdd}
-
-import scala.language.{postfixOps, reflectiveCalls}
 
 sealed trait Phrase[T <: PhraseType] {
   val t: T // TODO? perform type checking at the same time

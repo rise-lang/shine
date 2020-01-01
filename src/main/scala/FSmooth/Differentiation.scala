@@ -2,7 +2,6 @@ package FSmooth
 
 import DSL._
 import FSmooth.MSmooth._
-import FSmooth.traversal._
 
 import scala.collection.mutable
 

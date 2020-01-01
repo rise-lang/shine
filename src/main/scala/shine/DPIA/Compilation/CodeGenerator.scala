@@ -1,9 +1,9 @@
 package shine.DPIA.Compilation
 
 import shine.C.CodeGeneration.{CodeGenerator => CCodeGenerator}
-import shine.DPIA.{LetNatIdentifier, Nat}
 import shine.DPIA.Phrases.Phrase
 import shine.DPIA.Types.{AccType, CommType, DataType, ExpType}
+import shine.DPIA.{LetNatIdentifier, Nat}
 
 trait CodeGenerator[Environment, Path, Stmt, Expr, Decl, Ident, Type] {
   def name: String

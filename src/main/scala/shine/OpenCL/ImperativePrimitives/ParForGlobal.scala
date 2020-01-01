@@ -1,6 +1,5 @@
 package shine.OpenCL.ImperativePrimitives
 
-import shine.C.AST._
 import shine.DPIA.Phrases.Phrase
 import shine.DPIA.Types.{AccType, CommType, DataType, ExpType}
 import shine.DPIA._

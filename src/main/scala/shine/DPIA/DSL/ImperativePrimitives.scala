@@ -5,7 +5,6 @@ import shine.DPIA.ImperativePrimitives._
 import shine.DPIA.Phrases.{Identifier, IfThenElse, Phrase}
 import shine.DPIA.Types._
 import shine.DPIA._
-import shine.OpenCL.ImperativePrimitives.Barrier
 
 object `new` {
   def apply(dt: DataType,

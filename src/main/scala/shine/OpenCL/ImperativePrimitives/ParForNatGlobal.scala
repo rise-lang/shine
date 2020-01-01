@@ -1,12 +1,10 @@
 package shine.OpenCL.ImperativePrimitives
 
-import shine.C.AST.{Comment, Stmt}
 import shine.DPIA.Phrases.Phrase
 import shine.DPIA.Types.{AccType, CommType, NatToData}
 import shine.DPIA.{->:, Nat, `(nat)->:`, freshName}
 import shine.OpenCL
 import shine.OpenCL._
-import arithexpr.arithmetic.{?, RangeAdd}
 
 //noinspection TypeAnnotation,ConvertibleToMethodValue
 final case class ParForNatGlobal(dim:Int)(override val n:Nat,

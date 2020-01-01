@@ -1,10 +1,9 @@
 package shine.DPIA.ImperativePrimitives
 
-import shine.DPIA._
-import shine.DPIA.DSL._
-import shine.DPIA.Types._
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics.{AccIdentifier, Store}
+import shine.DPIA.Types._
+import shine.DPIA._
 
 final case class CycleAcc(n: Nat,
                           m: Nat,

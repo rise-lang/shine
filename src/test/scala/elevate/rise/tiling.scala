@@ -13,10 +13,7 @@ import elevate.util._
 import rise.core.TypedDSL._
 import rise.core.TypeLevelDSL._
 import rise.core._
-import rise.core.primitives._
-import rise.core.semantics.FloatData
 import rise.core.types._
-import org.scalatest.Ignore
 import rise.core.types.{ArrayType, NatKind, float, infer}
 import util.gen
 

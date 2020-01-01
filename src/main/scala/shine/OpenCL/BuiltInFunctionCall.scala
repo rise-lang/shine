@@ -1,7 +1,7 @@
 package shine.OpenCL
 
-import shine.DPIA.Nat
 import arithexpr.arithmetic.{ArithExprFunctionCall, Range, RangeUnknown, Sign, SimplifiedExpr}
+import shine.DPIA.Nat
 
 // This class models OpenCL built in functions that can appear inside of arithmetic expressions
 // examples are get_global_size(0), or get_local_id(1), but also OpenCL math functions, e.g., ceil or sin

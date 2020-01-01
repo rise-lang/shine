@@ -1,9 +1,9 @@
 package shine.DPIA.Compilation
 
-import shine.DPIA._
+import shine.DPIA.FunctionalPrimitives.AsIndex
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
-import shine.DPIA.FunctionalPrimitives.AsIndex
+import shine.DPIA._
 
 object SimplifyNats {
   def apply(p: Phrase[CommType]): Phrase[CommType] = {

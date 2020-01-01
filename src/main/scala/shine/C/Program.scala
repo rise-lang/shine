@@ -1,11 +1,8 @@
 package shine.C
 
-import shine._
 import shine.DPIA.Phrases.Identifier
 import shine.DPIA.Types.{AccType, ExpType}
-
-import scala.language.implicitConversions
-
+import shine._
 
 case class Program(decls: Seq[C.AST.Decl],
                    function: C.AST.FunDecl,

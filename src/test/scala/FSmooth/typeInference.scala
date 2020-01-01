@@ -2,10 +2,6 @@ package FSmooth
 
 import FSmooth.DSL._
 import FSmooth.MSmooth._
-import elevate.core.strategies.traversal._
-import elevate.core.strategies.basic.normalize
-import elevate.fsmooth.rules._
-import elevate.fsmooth.traversal._
 
 class typeInference extends test_util.Tests {
 

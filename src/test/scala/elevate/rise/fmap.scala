@@ -1,16 +1,12 @@
 package elevate.rise
 
 import elevate.core.strategies.traversal._
-import elevate.core.{Failure, RewriteResult, Success}
+import elevate.core.{Failure, Success}
 import elevate.rise.rules.movement._
 import elevate.rise.rules.traversal._
 import elevate.rise.strategies.traversal._
 import elevate.util._
 import rise.core.TypedDSL._
-import rise.core.Expr
-
-import scala.language.implicitConversions
-
 
 class fmap extends test_util.Tests {
 

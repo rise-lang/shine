@@ -1,9 +1,8 @@
 package shine.OpenCL.AST
 
-import shine.C
 import shine.C.AST.Nodes.{VisitAndGenerateStmt, VisitAndRebuild}
 import shine.C.AST._
-import shine.OpenCL
+import shine.{C, OpenCL}
 
 case class RequiredWorkGroupSize(localSize: OpenCL.NDRange)
 

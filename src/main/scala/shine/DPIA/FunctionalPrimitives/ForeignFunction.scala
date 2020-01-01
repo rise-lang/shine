@@ -1,5 +1,6 @@
 package shine.DPIA.FunctionalPrimitives
 
+import rise.{core => lc}
 import shine.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases.VisitAndRebuild.Visitor
@@ -7,7 +8,6 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics.{Data, Store}
 import shine.DPIA.Types._
 import shine.DPIA._
-import rise.{core => lc}
 
 import scala.language.reflectiveCalls
 import scala.xml.Elem

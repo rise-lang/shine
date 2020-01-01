@@ -1,7 +1,6 @@
 package shine.OpenCL.ImperativePrimitives
 
-import shine.C.AST.Stmt
-import shine.DPIA.Phrases.{CommandPrimitive, Phrase, PrettyPhrasePrinter, ToString, VisitAndRebuild}
+import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics.Store
 import shine.DPIA.Types._
 import shine.DPIA._

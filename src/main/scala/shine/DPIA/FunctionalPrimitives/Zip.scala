@@ -1,6 +1,6 @@
 package shine.DPIA.FunctionalPrimitives
 
-import shine.DPIA.Compilation.{CodeGenerator, TranslationContext, TranslationToImperative}
+import shine.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import shine.DPIA.DSL._
 import shine.DPIA.ImperativePrimitives.{ZipAcc1, ZipAcc2}
 import shine.DPIA.Phrases._

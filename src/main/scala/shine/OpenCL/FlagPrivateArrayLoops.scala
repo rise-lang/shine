@@ -1,11 +1,11 @@
 package shine.OpenCL
 
-import shine.DPIA._
-import shine.DPIA.Phrases._
-import shine.DPIA.Types._
-import shine.DPIA.ImperativePrimitives.{For, ForNat, IdxAcc}
 import shine.DPIA.FunctionalPrimitives.Idx
+import shine.DPIA.ImperativePrimitives.{For, ForNat, IdxAcc}
+import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics.ArrayData
+import shine.DPIA.Types._
+import shine.DPIA._
 import shine.OpenCL.ImperativePrimitives._
 
 import scala.collection.mutable
@@ -21,7 +21,7 @@ object FlagPrivateArrayLoops {
   }
 
   private def varsToEliminate(p: Phrase[CommType]): mutable.Set[String] = {
-    var eliminateVars = mutable.Set[String]()
+    val eliminateVars = mutable.Set[String]()
 
     case class Visitor(privMemIdents: Set[Identifier[_]],
                        indexingIdents: Set[String])
@@ -92,7 +92,7 @@ object FlagPrivateArrayLoops {
   }
 
   private def collectIndexingIdents[T <: PhraseType](p: Phrase[T]): Set[String] = {
-    var idents = mutable.Set[String]()
+    val idents = mutable.Set[String]()
 
     VisitAndRebuild(p, new VisitAndRebuild.Visitor {
       override def nat[N <: Nat](n: N): N = {
@@ -113,7 +113,7 @@ object FlagPrivateArrayLoops {
   }
 
   private def collectIdents[T <: PhraseType](p: Phrase[T]): Set[Identifier[_]] = {
-    var idents = mutable.Set[Identifier[_]]()
+    val idents = mutable.Set[Identifier[_]]()
 
     VisitAndRebuild(p, new VisitAndRebuild.Visitor {
       override def phrase[T2 <: PhraseType](p: Phrase[T2]): Result[Phrase[T2]] = {

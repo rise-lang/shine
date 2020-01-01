@@ -4,13 +4,11 @@ import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.core.types._
 import rise.core.types.AddressSpace
-import rise.core.primitives._
-import rise.OpenCL.primitives._
 import util.gen
 import shine.OpenCL._
 import rise.OpenCL.DSL._
 import rise.core.{Expr, Literal}
-import rise.core.semantics.{IndexData, NatData}
+import rise.core.semantics.NatData
 
 import scala.language.postfixOps
 

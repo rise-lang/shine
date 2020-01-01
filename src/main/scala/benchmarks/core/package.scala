@@ -1,6 +1,5 @@
 package benchmarks
 
-import opencl.executor.Executor
 import util.{Time, TimeSpan}
 
 package object core {

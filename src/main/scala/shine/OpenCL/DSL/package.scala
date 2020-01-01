@@ -1,11 +1,11 @@
 package shine.OpenCL
 
+import arithexpr.arithmetic.RangeAdd
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases.Phrase
 import shine.DPIA.Types._
 import shine.DPIA._
 import shine.OpenCL.ImperativePrimitives._
-import arithexpr.arithmetic.RangeAdd
 
 package object DSL {
 

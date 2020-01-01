@@ -8,8 +8,6 @@ import elevate.rise.rules.traversal._
 import elevate.rise.strategies.algorithmic.{mapFirstFission, mapFullFission}
 import elevate.rise.strategies.normalForm.BENF
 import rise.core.TypedDSL._
-import rise.core.TypeLevelDSL._
-import rise.core.types._
 import rise.core._
 import elevate.util._
 

@@ -1,10 +1,8 @@
 package shine.DPIA.Types
 
-import shine.DPIA.Nat
-import shine.DPIA
 import arithexpr.arithmetic.{ArithExpr, BigSum}
-
-import scala.language.implicitConversions
+import shine.DPIA
+import shine.DPIA.Nat
 
 sealed trait DataType
 

@@ -1,11 +1,10 @@
 package shine.DPIA.FunctionalPrimitives
 
-import shine.DPIA.Compilation.TranslationContext
+import shine.DPIA.Compilation.{TranslationContext, _}
+import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Types._
-import shine.DPIA.DSL._
-import shine.DPIA.Compilation._
 import shine.DPIA._
 
 import scala.xml.Elem

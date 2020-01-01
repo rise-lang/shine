@@ -1,5 +1,6 @@
 package shine.DPIA.FunctionalPrimitives
 
+import arithexpr.arithmetic.BigSum
 import shine.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import shine.DPIA.DSL._
 import shine.DPIA.ImperativePrimitives.DepJoinAcc
@@ -8,7 +9,6 @@ import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
 import shine.DPIA._
-import arithexpr.arithmetic.BigSum
 
 import scala.xml.Elem
 

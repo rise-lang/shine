@@ -1,12 +1,12 @@
 package shine.OpenMP.DSL
 
+import arithexpr.arithmetic.RangeAdd
 import shine.DPIA.DSL._
 import shine.DPIA.ImperativePrimitives.ForVec
 import shine.DPIA.Phrases.Phrase
 import shine.DPIA.Types._
 import shine.DPIA._
 import shine.OpenMP.ImperativePrimitives._
-import arithexpr.arithmetic.RangeAdd
 
 object parFor {
   def apply(n: Nat,

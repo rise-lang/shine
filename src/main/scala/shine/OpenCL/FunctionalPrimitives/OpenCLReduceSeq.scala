@@ -1,12 +1,12 @@
 package shine.OpenCL.FunctionalPrimitives
 
 import shine.DPIA.Compilation._
-import shine.DPIA.Phrases._
-import shine.DPIA.Types._
 import shine.DPIA.DSL._
+import shine.DPIA.Phrases._
+import shine.DPIA.Semantics.OperationalSemantics._
+import shine.DPIA.Types._
 import shine.DPIA._
 import shine.OpenCL.IntermediatePrimitives.OpenCLReduceSeqI
-import shine.DPIA.Semantics.OperationalSemantics._
 
 import scala.xml.Elem
 

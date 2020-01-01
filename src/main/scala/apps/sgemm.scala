@@ -6,10 +6,9 @@ import rise.core.HighLevelConstructs.reorderWithStride
 import rise.core._
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
-import rise.core.primitives._
 import rise.OpenCL.DSL._
 import rise.core.types._
-import util.{Time, TimeSpan, gen}
+import util.{Time, TimeSpan}
 
 object sgemm {
   // we can use implicit type parameters and type annotations to specify the function type of mult

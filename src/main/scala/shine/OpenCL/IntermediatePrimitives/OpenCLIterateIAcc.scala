@@ -1,6 +1,6 @@
 package shine.OpenCL.IntermediatePrimitives
 
-import shine.DPIA.Compilation.TranslationContext
+import arithexpr.arithmetic.{Cst, NamedVar, RangeAdd}
 import shine.DPIA.DSL.{newDoubleBuffer => _, _}
 import shine.DPIA.FunctionalPrimitives._
 import shine.DPIA.ImperativePrimitives.TakeAcc
@@ -8,7 +8,6 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA._
 import shine.OpenCL.DSL.newDoubleBuffer
-import arithexpr.arithmetic.{Cst, NamedVar, RangeAdd}
 
 object OpenCLIterateIAcc {
   def apply(a: AddressSpace,
@@ -18,8 +17,7 @@ object OpenCLIterateIAcc {
             dt: DataType,
             out: Phrase[AccType],
             f: Phrase[`(nat)->:`[AccType ->: ExpType ->: CommType]],
-            in: Phrase[ExpType])
-           (implicit context: TranslationContext): Phrase[CommType] =
+            in: Phrase[ExpType]): Phrase[CommType] =
   {
     val sz = n.pow(k) * m
 

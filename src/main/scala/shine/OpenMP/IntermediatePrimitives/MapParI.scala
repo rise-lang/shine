@@ -1,6 +1,5 @@
 package shine.OpenMP.IntermediatePrimitives
 
-import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases.Phrase
 import shine.DPIA.Types.{AccType, CommType, DataType, ExpType}
@@ -11,8 +10,7 @@ object MapParI {
   def apply(n: Nat, dt1: DataType, dt2: DataType,
             f: Phrase[ExpType ->: AccType ->: CommType],
             in: Phrase[ExpType],
-            out: Phrase[AccType])
-           (implicit context: TranslationContext): Phrase[CommType] =
+            out: Phrase[AccType]): Phrase[CommType] =
   {
     parFor(n, dt2, out, i => a => f(in `@` i)(a))
   }

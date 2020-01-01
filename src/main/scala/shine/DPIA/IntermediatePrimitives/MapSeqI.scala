@@ -1,6 +1,5 @@
 package shine.DPIA.IntermediatePrimitives
 
-import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
@@ -11,8 +10,7 @@ object MapSeqI {
             f: Phrase[ExpType ->: AccType ->: CommType],
             in: Phrase[ExpType],
             out: Phrase[AccType],
-            unroll: Boolean = false)
-           (implicit context: TranslationContext): Phrase[CommType] =
+            unroll: Boolean = false): Phrase[CommType] =
   {
     comment("mapSeq")`;`
     `for`(n, i => f(in `@` i)(out `@` i), unroll)

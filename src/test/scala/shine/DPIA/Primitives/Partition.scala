@@ -9,7 +9,6 @@ import arithexpr.arithmetic._
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.core._
-import rise.core.primitives._
 import rise.core.types._
 
 import scala.util.Random

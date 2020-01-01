@@ -9,7 +9,6 @@ import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
 import shine.DPIA.{Phrases, _}
 
-import scala.language.reflectiveCalls
 import scala.xml.Elem
 
 final case class Unzip(n: Nat,
@@ -33,7 +32,7 @@ final case class Unzip(n: Nat,
   override def eval(s: Store): Data = {
     OperationalSemantics.eval(s, e) match {
       case ArrayData(xs) =>
-        val (lhs, rhs) = xs.foldLeft(Vector[Data](), Vector[Data]()){
+        val (lhs, rhs) = xs.foldLeft((Vector[Data](), Vector[Data]())){
           case (vs: (Vector[Data], Vector[Data]), p: PairData) =>
             (vs._1 :+ p.fst, vs._2 :+ p.snd)
           case _ => throw new Exception("This should not happen")

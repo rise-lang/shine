@@ -2,10 +2,10 @@ package shine.OpenMP.FunctionalPrimitives
 
 import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.FunctionalPrimitives.AbstractReduce
-import shine.OpenMP.IntermediatePrimitives.ReduceParI
 import shine.DPIA.Phrases.Phrase
 import shine.DPIA.Types.{AccType, CommType, DataType, ExpType}
 import shine.DPIA._
+import shine.OpenMP.IntermediatePrimitives.ReduceParI
 
 //noinspection TypeAnnotation
 final case class ReducePar(n: Nat,

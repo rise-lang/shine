@@ -1,7 +1,7 @@
 package shine.DPIA.Types
 
+import arithexpr.arithmetic._
 import shine.DPIA.{Nat, NatIdentifier, freshName}
-import arithexpr.arithmetic.{ArithExpr, ArithExprFunctionCall, NamedVar, RangeAdd, SimplifiedExpr}
 
 sealed trait NatToNat  {
   def apply(n: Nat): Nat = NatToNatApply(this, n)
