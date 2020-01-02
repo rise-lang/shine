@@ -7,7 +7,6 @@ import shine.DPIA.Semantics.OperationalSemantics.{Data, Store}
 import shine.DPIA.Types.{AccType, CommType, DataType, ExpType, _}
 import shine.DPIA.{->:, Nat, Phrases, _}
 
-import scala.language.reflectiveCalls
 import scala.xml.Elem
 
 // TODO: invalid for empty array

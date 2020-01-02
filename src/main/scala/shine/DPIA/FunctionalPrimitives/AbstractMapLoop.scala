@@ -1,10 +1,10 @@
 package shine.DPIA.FunctionalPrimitives
 
-import shine.DPIA.Compilation.{TranslationToImperative, TranslationContext}
-import shine.DPIA._
+import shine.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
+import shine.DPIA._
 
 abstract class AbstractMapLoop(override val n: Nat,
                                override val dt1: DataType,

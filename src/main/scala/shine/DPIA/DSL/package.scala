@@ -1,14 +1,13 @@
 package shine.DPIA
 
 import shine.DPIA.Compilation.TranslationContext
-import shine.DPIA.FunctionalPrimitives.{DepIdx, Idx, IdxVec, AsIndex}
+import shine.DPIA.FunctionalPrimitives.{AsIndex, DepIdx, Idx, IdxVec}
 import shine.DPIA.ImperativePrimitives._
-import shine.DPIA.Phrases._
+import shine.DPIA.Phrases.{Operators, _}
 import shine.DPIA.Semantics.OperationalSemantics.{FloatData, IntData}
 import shine.DPIA.Types._
-import shine.DPIA.Phrases.Operators
 
-import scala.language.{implicitConversions, reflectiveCalls}
+import scala.language.implicitConversions
 
 package object DSL {
 

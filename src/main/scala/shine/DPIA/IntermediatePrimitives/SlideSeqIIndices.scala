@@ -1,12 +1,12 @@
 package shine.DPIA.IntermediatePrimitives
 
 import shine.DPIA.Compilation.TranslationContext
-import shine.DPIA._
 import shine.DPIA.DSL._
-import shine.DPIA.Types._
-import shine.DPIA.Phrases._
 import shine.DPIA.FunctionalPrimitives.{Cycle, Drop, Take}
 import shine.DPIA.ImperativePrimitives.{CycleAcc, DropAcc, ForNat, TakeAcc}
+import shine.DPIA.Phrases._
+import shine.DPIA.Types._
+import shine.DPIA._
 
 import scala.language.reflectiveCalls
 

@@ -1,13 +1,13 @@
 package shine.DPIA.FunctionalPrimitives
 
+import arithexpr.arithmetic.SimplifiedExpr
 import rise.core.{primitives => lp}
 import shine.DPIA.Compilation.{TranslationContext, TranslationToImperative}
-import shine.DPIA._
 import shine.DPIA.DSL._
-import shine.DPIA.Types._
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics.{Data, Store}
-import arithexpr.arithmetic.SimplifiedExpr
+import shine.DPIA.Types._
+import shine.DPIA._
 
 import scala.xml.Elem
 
@@ -46,7 +46,7 @@ final case class SlideSeq(rot: lp.SlideSeq.Rotate,
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
-    import shine.DPIA.IntermediatePrimitives.{SlideSeqIValues, SlideSeqIIndices}
+    import shine.DPIA.IntermediatePrimitives.SlideSeqIValues
 
     val I = rot match {
       case lp.SlideSeq.Values => SlideSeqIValues.apply _

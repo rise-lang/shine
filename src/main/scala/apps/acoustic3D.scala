@@ -37,7 +37,7 @@ object acoustic3D {
   private val SR = 441.0f
   private val alpha = 0.005f
   private val c = 344.0f
-  private val NF = 4410
+  // private val NF = 4410
   private val k = 1.0f / SR
   private val h = Math.sqrt(3.0f) * c * k
   private val lambda = c * k / h

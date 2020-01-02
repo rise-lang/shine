@@ -2,7 +2,6 @@ package shine.DPIA.Primitives
 
 import rise.core.DSL._
 import rise.core.types._
-import rise.core.primitives._
 import util.gen
 
 class Iterate extends test_util.Tests {

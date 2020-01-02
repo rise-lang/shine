@@ -2,7 +2,6 @@ package shine.DPIA.Semantics
 
 import rise.core.DSL._
 import rise.core.types._
-import rise.core.primitives._
 
 import util.gen
 

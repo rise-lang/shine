@@ -2,7 +2,6 @@ package shine.DPIA.Primitives
 
 import rise.core.DSL._
 import rise.core.types._
-import rise.core.primitives._
 import rise.core.HighLevelConstructs.reorderWithStride
 import util.gen
 

@@ -1,11 +1,9 @@
 package shine.OpenCL
 
-import shine.DPIA.ImperativePrimitives.Assign
+import arithexpr.arithmetic.ArithExpr
 import shine.DPIA.Nat
 import shine.DPIA.Phrases.{Phrase, VisitAndRebuild}
-import shine.DPIA.Types.{CommType, DataType, PhraseType}
-import shine.OpenCL.ImperativePrimitives.{OpenCLParFor, OpenCLParForNat, ParForGlobal, ParForLocal, ParForNatGlobal, ParForNatLocal, ParForNatWorkGroup, ParForWorkGroup}
-import arithexpr.arithmetic.{ArithExpr, ContinuousRange, RangeAdd}
+import shine.DPIA.Types.{CommType, DataType}
 
 object InjectWorkItemSizes {
   def apply(localSize: Option[LocalSize], globalSize: Option[GlobalSize])

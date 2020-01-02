@@ -1,12 +1,11 @@
 package shine.DPIA.IntermediatePrimitives
 
-import shine.DPIA.Compilation.TranslationContext
-import shine.DPIA._
 import shine.DPIA.DSL._
 import shine.DPIA.FunctionalPrimitives.{Drop, Take}
 import shine.DPIA.ImperativePrimitives._
-import shine.DPIA.Types._
 import shine.DPIA.Phrases._
+import shine.DPIA.Types._
+import shine.DPIA._
 
 import scala.language.reflectiveCalls
 
@@ -19,8 +18,7 @@ object SlideSeqIValues {
             write_dt1: Phrase[ExpType ->: AccType ->: CommType],
             f: Phrase[ExpType ->: AccType ->: CommType],
             input: Phrase[ExpType],
-            output: Phrase[AccType])
-           (implicit context: TranslationContext): Phrase[CommType] =
+            output: Phrase[AccType]): Phrase[CommType] =
   {
     assert(step.eval == 1) // FIXME?
     val inputSize = step * n + size - step

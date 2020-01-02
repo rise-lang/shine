@@ -7,7 +7,6 @@ import shine.DPIA.Semantics.OperationalSemantics.{Data, Store}
 import shine.DPIA.Types.{AccType, CommType, DataType, ExpType, _}
 import shine.DPIA.{->:, Nat, Phrases, _}
 
-import scala.language.reflectiveCalls
 import scala.xml.Elem
 
 // this drops n many elements from an array of n + m elements
@@ -30,7 +29,6 @@ final case class Drop(n: Nat,
 
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommType] = {
-    import TranslationToImperative._
     //TODO if this is not needed then the AccessType param is not needed either
     ???
   }

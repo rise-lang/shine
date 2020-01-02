@@ -14,10 +14,7 @@ import elevate.util._
 import rise.core.TypedDSL._
 import rise.core.TypeLevelDSL._
 import rise.core._
-import rise.core.primitives._
 import rise.core.types._
-
-import scala.language.implicitConversions
 
 import util.gen
 
@@ -167,6 +164,7 @@ class algorithmic extends test_util.Tests {
     }
 
     // this one is handwritten and uses zip2d
+    /*
     val goldKMN =
       depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
         fun(ArrayType(M, ArrayType(K, float)))(a =>
@@ -185,6 +183,7 @@ class algorithmic extends test_util.Tests {
               zip(transpose(a), b) // :: K.(M.float, N.float)
           ))
       )))
+    */
 
     // taken from input
     val op = fun((acc, y) => { // akB :: (float, N.float); acc :: N.float
@@ -240,6 +239,7 @@ class algorithmic extends test_util.Tests {
     infer(loopKMN)
     assert(goldKMNAlternative2 == loopKMN)
 
+    /*
     val goldKMNAlternative2LowLevel =
       depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
         fun(ArrayType(M, ArrayType(K, float)))(a =>
@@ -262,6 +262,7 @@ class algorithmic extends test_util.Tests {
               zip(b,transpose(a)) // :: K.(N.float, M.float)
           ))
       )))
+    */
   }
 
   // todo remove once PLDI-TVM tests are in
@@ -323,11 +324,12 @@ class algorithmic extends test_util.Tests {
         )
       )
 
-    val M = NatIdentifier("M")
-    val N = NatIdentifier("N")
-    val K = NatIdentifier("K")
+    // val M = NatIdentifier("M")
+    // val N = NatIdentifier("N")
+    // val K = NatIdentifier("K")
 
     // loop ordering: M -> K -> N
+    /*
     val mmLoopMKN =
       depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
         fun(ArrayType(M, ArrayType(K, float)))(a =>
@@ -346,8 +348,10 @@ class algorithmic extends test_util.Tests {
           )
         )
       )))
+    */
 
     // loop ordering: M -> K -> N
+    /*
     val mmLoopMKNFused =
       depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
         fun(ArrayType(M, ArrayType(K, float)))(a =>
@@ -364,8 +368,10 @@ class algorithmic extends test_util.Tests {
           )
         )
       )))
+    */
 
     // loop ordering: K -> M -> N
+    /*
     val mmOuterProduct =
       depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
         fun(ArrayType(M, ArrayType(K, float)))(a =>
@@ -385,8 +391,10 @@ class algorithmic extends test_util.Tests {
               zip(transpose(a), b) // :: K.(M.float, N.float)
           ))
       )))
+    */
 
     // loop ordering: K -> M -> N
+    /*
     val mmOuterProductFusedComputation =
       depLambda[NatKind](M, depLambda[NatKind](N, depLambda[NatKind](K,
         fun(ArrayType(M, ArrayType(K, float)))(a =>
@@ -405,6 +413,7 @@ class algorithmic extends test_util.Tests {
               zip(transpose(a), b) // :: K.(M.float, N.float)
           ))
       )))
+    */
 
     val tiled = oncetd(tileND(2)(16)).apply(mm)
     infer(tiled)

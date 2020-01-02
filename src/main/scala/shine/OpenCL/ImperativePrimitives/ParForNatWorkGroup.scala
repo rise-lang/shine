@@ -1,6 +1,5 @@
 package shine.OpenCL.ImperativePrimitives
 
-import shine.C.AST.{Comment, Stmt}
 import shine.DPIA.Phrases.Phrase
 import shine.DPIA.Types.{AccType, CommType, NatToData}
 import shine.DPIA.{->:, Nat, `(nat)->:`, freshName}

@@ -1,15 +1,15 @@
 package shine.DPIA.FunctionalPrimitives
 
 import shine.DPIA.Compilation._
+import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
-import shine.DPIA.Types._
-import shine.DPIA.DSL._
 import shine.DPIA.Semantics.OperationalSemantics.{IndexData, NatData}
+import shine.DPIA.Types._
 import shine.DPIA._
 
-import scala.xml.Elem
 import scala.language.reflectiveCalls
+import scala.xml.Elem
 
 final case class AsIndex(n: Nat, e: Phrase[ExpType])
   extends ExpPrimitive {

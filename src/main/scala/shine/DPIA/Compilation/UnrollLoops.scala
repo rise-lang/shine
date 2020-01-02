@@ -1,13 +1,13 @@
 package shine.DPIA.Compilation
 
-import shine.DPIA._
+import arithexpr.arithmetic.ArithExpr.isSmaller
+import arithexpr.arithmetic.Cst
+import shine.DPIA.FunctionalPrimitives.AsIndex
+import shine.DPIA.ImperativePrimitives._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
-import shine.DPIA.ImperativePrimitives.{Comment, For, ForNat, IdxAcc, Seq}
-import shine.DPIA.FunctionalPrimitives.AsIndex
+import shine.DPIA._
 import shine.OpenCL.ImperativePrimitives.OpenCLParFor
-import arithexpr.arithmetic.Cst
-import arithexpr.arithmetic.ArithExpr.isSmaller
 
 object UnrollLoops {
   def apply(p: Phrase[CommType]): Phrase[CommType] = {

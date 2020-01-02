@@ -6,7 +6,6 @@ import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
 import shine.DPIA._
 
-import scala.language.reflectiveCalls
 import scala.xml.Elem
 
 case class Assign(dt: DataType,

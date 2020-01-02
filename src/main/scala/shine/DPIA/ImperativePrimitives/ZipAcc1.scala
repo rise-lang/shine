@@ -1,6 +1,5 @@
 package shine.DPIA.ImperativePrimitives
 
-import shine.DPIA.Compilation.CodeGenerator
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._

@@ -2,7 +2,6 @@ package apps
 
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
-import rise.core.primitives._
 import rise.core.types._
 import util.gen
 import rise.core.HighLevelConstructs.reorderWithStride

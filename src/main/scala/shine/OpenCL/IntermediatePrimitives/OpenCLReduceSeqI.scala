@@ -1,15 +1,13 @@
 package shine.OpenCL.IntermediatePrimitives
 
-import shine.DPIA.DSL.{`new` => _, _}
 import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.Compilation.TranslationToImperative.acc
+import shine.DPIA.DSL.{`new` => _, _}
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA._
 import shine.OpenCL.AdjustArraySizesForAllocations
 import shine.OpenCL.DSL._
-
-import scala.language.reflectiveCalls
 
 object OpenCLReduceSeqI {
   def apply(n: Nat,

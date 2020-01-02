@@ -1,11 +1,10 @@
 package shine.DPIA
 
-import shine.DPIA.DSL._
+import rise.core.{semantics => ls, types => lt}
+import rise.{core => l}
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.{OperationalSemantics => OpSem}
 import shine.DPIA.Types._
-import rise.core.{semantics => ls, types => lt}
-import rise.{core => l}
 
 object fromRise {
   def apply(expr: l.Expr): Phrase[_ <: PhraseType] = {
@@ -140,8 +139,8 @@ object fromRise {
     case ls.NatData(n) => OpSem.NatData(n)
   }
 
-  import shine.DPIA.FunctionalPrimitives._
   import rise.core.{primitives => core}
+  import shine.DPIA.FunctionalPrimitives._
 
   def fun[T <: PhraseType](t: T,
                            f: Phrase[T] => Phrase[_ <: PhraseType]): Phrase[_ <: PhraseType] = {
@@ -150,10 +149,10 @@ object fromRise {
   }
 
   def primitive(p: l.Primitive, t: lt.Type): Phrase[_ <: PhraseType] = {
-    import shine.OpenCL.FunctionalPrimitives._
-    import shine.OpenMP.FunctionalPrimitives._
     import rise.OpenCL.{primitives => ocl}
     import rise.OpenMP.{primitives => omp}
+    import shine.OpenCL.FunctionalPrimitives._
+    import shine.OpenMP.FunctionalPrimitives._
 
     (p, t) match {
       case (core.PrintType(msg),

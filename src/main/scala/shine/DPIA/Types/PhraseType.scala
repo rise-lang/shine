@@ -45,17 +45,24 @@ final case class DepFunType[K <: Kind, +R <: PhraseType](x: K#I, t: R)
 
 object PhraseType {
 
-  def substitute[K <: Kind, T <: PhraseType](x: K#T, `for`: K#I, in: Phrase[T]): Phrase[T] = (x, `for`) match {
-    case (dt: DataType, forDt: DataTypeIdentifier)  => substitute(dt, forDt, in)
-    case (n: Nat, forN: NatIdentifier)              => substitute(n, forN, in)
-    case (a: AddressSpace, forA: AddressSpaceIdentifier) => substitute(a, forA, in)
+  def substitute[K <: Kind, T <: PhraseType](x: K#T, `for`: K#I, in: Phrase[T]): Phrase[T] =(x, `for`) match {
+    case (dt: DataType, forDt: DataTypeIdentifier)        => substitute(dt, forDt, in)
+    case (n: Nat, forN: NatIdentifier)                    => substitute(n, forN, in)
+    case (a: AddressSpace, forA: AddressSpaceIdentifier)  => substitute(a, forA, in)
+    case (a: AccessType, forA: AccessTypeIdentifier)      => ??? //substitute(a, forA, in)
+    case (n2n: NatToNat, fotN2N: NatToNatIdentifier)      => ??? //substitute(n2n, forN2N, in)
+    case (n2d: NatToData, fotN2D: NatToDataIdentifier)    => ??? //substitute(n2d, forN2D, in)
+    case _ => throw new Exception(s"could not substitute $x for ${`for`} in $in")
   }
 
   def substitute[K <: Kind](x: K#T, `for`: K#I, in: PhraseType): PhraseType = (x, `for`) match {
-    case (dt: DataType, forDt: DataTypeIdentifier)  => substitute(dt, forDt, in)
-    case (n: Nat, forN: NatIdentifier)              => substitute(n, forN, in)
-    case (a: AddressSpace, forA: AddressSpaceIdentifier) => substitute(a, forA, in)
-    case _ => throw new Exception(s"could not substitute $x for ${`for`}")
+    case (dt: DataType, forDt: DataTypeIdentifier)        => substitute(dt, forDt, in)
+    case (n: Nat, forN: NatIdentifier)                    => substitute(n, forN, in)
+    case (a: AddressSpace, forA: AddressSpaceIdentifier)  => substitute(a, forA, in)
+    case (a: AccessType, forA: AccessTypeIdentifier)      => ??? //substitute(a, forA, in)
+    case (n2n: NatToNat, fotN2N: NatToNatIdentifier)      => ??? //substitute(n2n, forN2N, in)
+    case (n2d: NatToData, fotN2D: NatToDataIdentifier)    => ??? //substitute(n2d, forN2D, in)
+    case _ => throw new Exception(s"could not substitute $x for ${`for`} in $in")
   }
 
   def substitute[T <: PhraseType](dt: DataType,

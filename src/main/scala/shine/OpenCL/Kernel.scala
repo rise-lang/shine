@@ -1,16 +1,16 @@
 package shine.OpenCL
 
+import arithexpr.arithmetic._
+import opencl.executor._
 import shine.C.AST.ParamDecl
 import shine.DPIA.Phrases.Identifier
 import shine.DPIA.Types._
 import shine.DPIA._
 import shine.{C, OpenCL}
-import arithexpr.arithmetic._
-import opencl.executor._
 import util.{Time, TimeSpan}
 
 import scala.collection.immutable.List
-import scala.collection.{Seq, immutable}
+import scala.collection.Seq
 import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
 
@@ -295,10 +295,12 @@ case class Kernel(decls: Seq[C.AST.Decl],
       case p: Array[(_, _)] => p.head match {
           case (_: Int, _: Float) =>
             GlobalArg.createInput(flattenToArrayOfInts(p.asInstanceOf[Array[(Int, Float)]]))
+          case _ => ???
         }
       case pp: Array[Array[(_, _)]] => pp.head.head match {
         case (_: Int, _: Float) =>
           GlobalArg.createInput(pp.flatMap(a => flattenToArrayOfInts(a.asInstanceOf[Array[(Int, Float)]])))
+        case _ => ???
       }
 
       case _ => throw new IllegalArgumentException("Kernel argument is of unsupported type: " +
@@ -323,15 +325,6 @@ case class Kernel(decls: Seq[C.AST.Decl],
       case _ => throw new IllegalArgumentException("Return type of the given lambda expression " +
         "not supported: " + dt.toString)
     }).asInstanceOf[R]
-  }
-
-  private implicit def getDataType(i: Identifier[_]): DataType = {
-    i.t match {
-      case ExpType(dataType, _) => dataType
-      case AccType(dataType) => dataType
-      case PhrasePairType(ExpType(dt1, _), AccType(dt2)) if dt1 == dt2 => dt1
-      case _ => throw new Exception("This should not happen")
-    }
   }
 
   private def sizeInByte(dt: DataType): SizeInByte = dt match {
@@ -361,12 +354,6 @@ case class Kernel(decls: Seq[C.AST.Decl],
     def +(rhs: SizeInByte) = SizeInByte(value + rhs.value)
 
     override def toString = s"$value bytes"
-  }
-
-  private implicit class SubstitutionsHelper(size: SizeInByte) {
-    def `with`(valueMap: immutable.Map[Nat, Nat]): SizeInByte = {
-      SizeInByte(ArithExpr.substitute(size.value, valueMap))
-    }
   }
 }
 

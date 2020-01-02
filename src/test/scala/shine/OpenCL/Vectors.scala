@@ -2,7 +2,6 @@ package shine.OpenCL
 
 import rise.core.DSL._
 import rise.core.types._
-import rise.core.primitives._
 import rise.OpenCL.DSL._
 import util.gen
 

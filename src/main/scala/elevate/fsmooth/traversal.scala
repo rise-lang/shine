@@ -48,7 +48,7 @@ object traversal {
         case Success(f: FSmooth) => Success(Application(s(f).get, args, t))
         case Failure(state) => {
           val strategy = if(carryOverState) state else s
-          args.foldLeft[(Boolean, RewriteResult[FSmooth])](true, Failure(s))(
+          args.foldLeft[(Boolean, RewriteResult[FSmooth])]((true, Failure(s)))(
             (state,expr) => {
               val (cont, result) = (state._1, state._2)
               if (cont) strategy(expr) match {

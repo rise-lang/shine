@@ -4,7 +4,6 @@ import rise.core._
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.core.types._
-import rise.core.primitives._
 import util.gen
 
 class Generate extends test_util.Tests {

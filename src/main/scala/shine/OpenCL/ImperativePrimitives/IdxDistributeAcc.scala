@@ -1,10 +1,9 @@
 package shine.OpenCL.ImperativePrimitives
 
-import shine.DPIA.{Nat, Phrases}
-import shine.DPIA.Phrases.{AccPrimitive, Phrase, PrettyPhrasePrinter, ToString, VisitAndRebuild}
+import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics.{AccIdentifier, Store}
 import shine.DPIA.Types._
-import shine.DPIA._
+import shine.DPIA.{Nat, Phrases, _}
 import shine.OpenCL.ParallelismLevel
 
 import scala.xml.Elem

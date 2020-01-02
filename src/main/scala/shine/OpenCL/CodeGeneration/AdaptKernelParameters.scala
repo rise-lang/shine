@@ -5,8 +5,8 @@ import shine.DPIA.DSL._
 import shine.DPIA.FunctionalPrimitives.AsIndex
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
-import shine.OpenCL.FunctionalPrimitives.OpenCLFunction
 import shine.OpenCL.CodeGeneration.HoistMemoryAllocations.AllocationInfo
+import shine.OpenCL.FunctionalPrimitives.OpenCLFunction
 import shine.{C, DPIA, OpenCL}
 
 import scala.collection.mutable
@@ -70,27 +70,29 @@ object AdaptKernelParameters {
   private case class Visitor(scalarParamsInGlobalOrLocalMemory: Set[String])
     extends VisitAndRebuild.Visitor
   {
-    val zero = AsIndex(1, Natural(0))
+    val zero: AsIndex = AsIndex(1, Natural(0))
 
     override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
       p match {
         case p1: Proj1[T, _] => p1.pair match {
           case i: Identifier[PhrasePairType[T, _]] if scalarParamsInGlobalOrLocalMemory.contains(i.name) =>
-            val j = i.`type` match {
+            i.`type` match {
               case PhrasePairType(_: ExpType, _: AccType) =>
-                identifierAsSingletonArray(i.asInstanceOf[Identifier[PhrasePairType[ExpType, AccType]]])
+                val j = identifierAsSingletonArray(i.asInstanceOf[Identifier[PhrasePairType[ExpType, AccType]]])
+                Stop((Proj1(j) `@` zero).asInstanceOf[Phrase[T]])
+              case _ => Continue(p, this)
             }
-            Stop((Proj1(j) `@` zero).asInstanceOf[Phrase[T]])
           case _ => Continue(p, this)
         }
 
         case p2: Proj2[_, T] => p2.pair match {
           case i: Identifier[PhrasePairType[_, T]] if scalarParamsInGlobalOrLocalMemory.contains(i.name) =>
-            val j = i.`type` match {
+            i.`type` match {
               case PhrasePairType(_: ExpType, _: AccType) =>
-                identifierAsSingletonArray(i.asInstanceOf[Identifier[PhrasePairType[ExpType, AccType]]])
+                val j = identifierAsSingletonArray(i.asInstanceOf[Identifier[PhrasePairType[ExpType, AccType]]])
+                Stop((Proj2(j) `@` zero).asInstanceOf[Phrase[T]])
+              case _ => Continue(p, this)
             }
-            Stop((Proj2(j) `@` zero).asInstanceOf[Phrase[T]])
           case _ => Continue(p, this)
         }
 

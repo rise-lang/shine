@@ -1,10 +1,10 @@
 package shine.DPIA.ImperativePrimitives
 
 import shine.DPIA.Compilation.TranslationContext
-import shine.DPIA._
-import shine.DPIA.Types._
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics._
+import shine.DPIA.Types._
+import shine.DPIA._
 
 import scala.xml.Elem
 

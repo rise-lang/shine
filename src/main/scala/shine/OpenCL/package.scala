@@ -1,8 +1,8 @@
 package shine
 
+import arithexpr.arithmetic._
 import com.github.ghik.silencer.silent
 import shine.DPIA.Nat
-import arithexpr.arithmetic._
 
 import scala.language.implicitConversions
 

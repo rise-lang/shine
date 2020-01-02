@@ -7,7 +7,7 @@ class harrisCornerDetectionCheck extends test_util.TestsWithExecutor {
   private val H = 20
   private val W = 80
   private val kappa = 1.2f
-  private val threshold = 1.4f
+  // private val threshold = 1.4f
 
   test("harris produces expected result") {
     val random = new scala.util.Random()

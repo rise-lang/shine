@@ -4,13 +4,11 @@ import benchmarks.core.{CorrectnessCheck, RunOpenCLProgram}
 import shine.OpenCL.{GlobalSize, KernelWithSizes, LocalSize}
 import util.{Display, TimeSpan, gen}
 import util.Time.ms
-import rise.OpenCL.primitives._
 import rise.OpenCL.DSL._
 import arithexpr.arithmetic.SteppedCase
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.core.Expr
-import rise.core.primitives._
 import rise.core.types._
 import rise.core.HighLevelConstructs._
 

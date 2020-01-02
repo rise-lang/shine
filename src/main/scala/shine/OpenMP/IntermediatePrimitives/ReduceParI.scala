@@ -5,8 +5,6 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA._
 
-import scala.language.reflectiveCalls
-
 //TODO Probably shouldn't exist!
 object ReduceParI {
   def apply(n: Nat, dt1: DataType, dt2: DataType,

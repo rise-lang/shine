@@ -1,10 +1,10 @@
 package shine.DPIA.ImperativePrimitives
 
+import arithexpr.arithmetic.BigSum
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
 import shine.DPIA._
-import arithexpr.arithmetic.{ArithExpr, BigSum}
 
 import scala.xml.Elem
 

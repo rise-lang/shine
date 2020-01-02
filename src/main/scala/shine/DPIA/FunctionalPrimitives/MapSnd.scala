@@ -9,7 +9,6 @@ import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
 import shine.DPIA._
 
-import scala.language.reflectiveCalls
 import scala.xml.Elem
 
 final case class MapSnd(dt1: DataType,

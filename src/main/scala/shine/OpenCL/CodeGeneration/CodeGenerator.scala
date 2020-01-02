@@ -1,22 +1,22 @@
 package shine.OpenCL.CodeGeneration
 
-import shine.C.AST.{ArraySubscript, BasicType, Decl, DeclStmt, PointerType}
+import arithexpr.arithmetic
+import arithexpr.arithmetic._
+import shine.C.AST.{BasicType, Decl}
 import shine.C.CodeGeneration.CodeGenerator.{CIntExpr, FstMember, SndMember}
 import shine.C.CodeGeneration.{CodeGenerator => CCodeGenerator}
+import shine.DPIA.DSL._
 import shine.DPIA.FunctionalPrimitives._
 import shine.DPIA.ImperativePrimitives._
 import shine.DPIA.Phrases._
-import shine.DPIA.DSL._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics.VectorData
 import shine.DPIA.Types._
 import shine.DPIA._
+import shine.OpenCL.BuiltInFunctionCall
 import shine.OpenCL.FunctionalPrimitives.OpenCLFunction
 import shine.OpenCL.ImperativePrimitives._
-import shine.OpenCL.{BuiltInFunctionCall, GlobalSize, LocalSize}
 import shine._
-import arithexpr.arithmetic
-import arithexpr.arithmetic._
 
 import scala.collection.{immutable, mutable}
 
@@ -402,7 +402,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
                         elemType: DataType,
                         expr: Expr): Stmt = {
       import shine.C.AST._
-      import shine.OpenCL.AST.{VarDecl, PointerType}
+      import shine.OpenCL.AST.{PointerType, VarDecl}
       DeclStmt(
         VarDecl(name, PointerType(a, typ(elemType)), AddressSpace.Private, Some(expr)))
     }

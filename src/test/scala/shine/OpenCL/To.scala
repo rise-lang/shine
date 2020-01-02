@@ -1,12 +1,10 @@
 package shine.OpenCL
 
 import util.gen
-import rise.core.primitives._
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.core.types._
 import rise.core.types.AddressSpace._
-import rise.OpenCL.primitives._
 import rise.OpenCL.DSL._
 
 class To extends test_util.Tests {
@@ -105,7 +103,8 @@ class To extends test_util.Tests {
       a |> mapSeq(toGlobalFun(mapSeq(add1)) >> mapSeq(id))
     ))
 
-    val code = gen.OpenCLKernel(e).code
+    //val code =
+      gen.OpenCLKernel(e).code
     // `3.float` should be allocated, indexing should not depend on the outer loop
     // this assumes that there is only one thread running because there is no parallel map
   }
@@ -115,7 +114,8 @@ class To extends test_util.Tests {
       a |> mapGlobal(toGlobalFun(mapSeq(add1)) >> mapSeq(id))
     ))
 
-    val code = gen.OpenCLKernel(e).code
+    //val code =
+      gen.OpenCLKernel(e).code
     // `max(nthreads, n).3.float` should be allocated, indexing should depend on get_global_id(0)
   }
 
@@ -127,7 +127,8 @@ class To extends test_util.Tests {
       )
     ))
 
-    val code = gen.OpenCLKernel(e).code
+    //val code =
+      gen.OpenCLKernel(e).code
     // first inner loop, first memory write:
     // `max(nthreads, n).float` should be allocated, indexing should depend on get_global_id(0)
     // first inner loop, second memory write:

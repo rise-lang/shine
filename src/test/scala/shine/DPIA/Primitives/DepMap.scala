@@ -3,7 +3,6 @@ package shine.DPIA.Primitives
 import util.gen
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
-import rise.core.primitives._
 import rise.core.types._
 
 class DepMap extends test_util.Tests {

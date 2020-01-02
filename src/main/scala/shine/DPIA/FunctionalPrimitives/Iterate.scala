@@ -71,7 +71,6 @@ final case class Iterate(n: Nat,
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])
                                       (implicit context: TranslationContext): Phrase[CommType] = {
-    import shine.DPIA.Compilation.TranslationToImperative._
 
     ???
   }

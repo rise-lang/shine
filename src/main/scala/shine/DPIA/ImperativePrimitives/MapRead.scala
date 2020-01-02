@@ -1,12 +1,10 @@
 package shine.DPIA.ImperativePrimitives
 
 import shine.DPIA.Compilation.TranslationContext
-import shine.DPIA._
-import shine.DPIA.Types._
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics._
-
-import scala.language.reflectiveCalls
+import shine.DPIA.Types._
+import shine.DPIA._
 
 final case class MapRead(n: Nat,
                          dt1: DataType,

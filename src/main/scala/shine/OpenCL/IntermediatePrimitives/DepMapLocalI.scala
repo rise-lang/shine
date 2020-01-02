@@ -1,5 +1,5 @@
 package shine.OpenCL.IntermediatePrimitives
-import shine.DPIA.Compilation.TranslationContext
+
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases.Phrase
 import shine.DPIA.Types._
@@ -12,8 +12,7 @@ final case class DepMapLocalI(dim:Int) {
             ft2:NatToData,
             f: Phrase[`(nat)->:`[ExpType ->: AccType ->: CommType]],
             in: Phrase[ExpType],
-            out: Phrase[AccType])
-           (implicit context: TranslationContext): Phrase[CommType] =
+            out: Phrase[AccType]): Phrase[CommType] =
   {
     parForNatLocal(dim)(n, ft2, out, idx => a => f(idx)(in `@d` idx)(a))`;`
     barrier()

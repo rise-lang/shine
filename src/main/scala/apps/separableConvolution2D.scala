@@ -6,7 +6,6 @@ import rise.core.TypeLevelDSL._
 import rise.core.types._
 import rise.core.semantics._
 import rise.core.primitives._
-import rise.OpenCL.primitives._
 import rise.OpenCL.DSL._
 import rise.core.HighLevelConstructs._
 
