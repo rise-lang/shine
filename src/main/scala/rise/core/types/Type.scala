@@ -13,33 +13,45 @@ object TypePlaceholder extends Type {
   override def toString = "?"
 }
 
-final case class TypeIdentifier(name: String) extends Type with Kind.Identifier {
+final case class TypeIdentifier(name: String)
+    extends Type
+    with Kind.Identifier {
   override def toString: String = "_" + name
 }
 
-final case class FunType[T1 <: Type, T2 <: Type](inT: T1, outT: T2) extends Type {
+final case class FunType[T1 <: Type, T2 <: Type](inT: T1, outT: T2)
+    extends Type {
   override def toString: String = s"($inT -> $outT)"
 }
 
-final case class DepFunType[K <: Kind : KindName, T <: Type](x: K#I with Kind.Explicitness, t: T) extends Type {
-  override def toString: String = s"(${x.name}: ${implicitly[KindName[K]].get} -> $t)"
+final case class DepFunType[K <: Kind: KindName, T <: Type](
+    x: K#I with Kind.Explicitness,
+    t: T
+) extends Type {
+  override def toString: String =
+    s"(${x.name}: ${implicitly[KindName[K]].get} -> $t)"
 
   override def equals(obj: Any): Boolean = obj match {
-    case other: DepFunType[K, _] => t == lifting.liftDependentFunctionType[K](other)(x)
+    case other: DepFunType[K, _] =>
+      t == lifting.liftDependentFunctionType[K](other)(x)
     case _ => false
   }
 }
 
 sealed trait DataType extends Type
 
-final case class DataTypeIdentifier(name: String, override val isExplicit: Boolean = false)
-  extends DataType with Kind.Identifier with Kind.Explicitness {
+final case class DataTypeIdentifier(
+    name: String,
+    override val isExplicit: Boolean = false
+) extends DataType
+    with Kind.Identifier
+    with Kind.Explicitness {
   override def toString: String = if (isExplicit) name else "_" + name
   override def asExplicit: DataTypeIdentifier = this.copy(isExplicit = true)
   override def asImplicit: DataTypeIdentifier = this.copy(isExplicit = false)
   override def equals(that: Any): Boolean = that match {
     case d: DataTypeIdentifier => this.name == d.name
-    case _ => false
+    case _                     => false
   }
 }
 
@@ -64,9 +76,7 @@ final case class PairType(p1: DataType, p2: DataType) extends ComposedType {
   override def toString: String = s"($p1, $p2)"
 }
 
-
 sealed trait BasicType extends DataType
-
 
 sealed trait ScalarType extends BasicType
 
@@ -84,7 +94,7 @@ object float extends ScalarType {
 
 object double extends ScalarType { override def toString: String = "double" }
 
-object NatType extends ScalarType { override def toString: String = "nat"}
+object NatType extends ScalarType { override def toString: String = "nat" }
 
 final case class IndexType(size: Nat) extends BasicType {
   override def toString: String = s"idx[$size]"
@@ -125,5 +135,6 @@ object NatToDataApply {
     case i: NatToDataIdentifier => new NatToDataApply(i, n)
   }
 
-  def unapply(arg: NatToDataApply): Option[(NatToData, Nat)] = Some((arg.f, arg.n))
+  def unapply(arg: NatToDataApply): Option[(NatToData, Nat)] =
+    Some((arg.f, arg.n))
 }

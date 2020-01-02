@@ -2,7 +2,8 @@ package rise.core
 
 import rise.core.types.Type
 
-case class ForeignFunction(decl: ForeignFunction.Decl)(override val t: Type) extends Primitive {
+case class ForeignFunction(decl: ForeignFunction.Decl)(override val t: Type)
+    extends Primitive {
   override def typeScheme: Type = t
   override def setType(t: Type): ForeignFunction = ForeignFunction(decl)(t)
   override val name: String = decl.name

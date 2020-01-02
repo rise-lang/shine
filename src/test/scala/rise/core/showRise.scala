@@ -20,21 +20,27 @@ class showRise extends test_util.Tests {
     }))(l(0.0f))(zip(join(elem))(weights))
   )
 
-  private val blurXTiled2D: Expr = nFun(n => fun(
-    (n`.`n`.`float) ->: (17`.`float) ->: (n`.`n`.`float)
-  )((matrix, weights) =>
-    unslide2D o mapWorkGroup(1)(mapWorkGroup(0)(fun(tile =>
-      mapLocal(1)(mapLocal(0)(dotElemWeights(weights)))
-        o slide2D(1, 1, 17, 1)
-        $ toLocal(mapLocal(1)(mapLocal(0)(id))(tile))
-    ))) o slide2D(4, 4, 144, 128)
-      o padClamp2D(0, 0, 8, 8) $ matrix
-  ))
+  private val blurXTiled2D: Expr = nFun(n =>
+    fun(
+      (n `.` n `.` float) ->: (17 `.` float) ->: (n `.` n `.` float)
+    )((matrix, weights) =>
+      unslide2D o mapWorkGroup(1)(
+        mapWorkGroup(0)(
+          fun(tile =>
+            mapLocal(1)(mapLocal(0)(dotElemWeights(weights)))
+              o slide2D(1, 1, 17, 1)
+              $ toLocal(mapLocal(1)(mapLocal(0)(id))(tile))
+          )
+        )
+      ) o slide2D(4, 4, 144, 128)
+        o padClamp2D(0, 0, 8, 8) $ matrix
+    )
+  )
 
   test("show blurXTiled2D as an example") {
     val probe: Expr => Boolean = {
       case _: PadClamp => true
-      case _ => false
+      case _           => false
     }
     val example = blurXTiled2D
     val show = trackWith(probe, example, 10, defaultUnicodeConfig)
@@ -43,16 +49,18 @@ class showRise extends test_util.Tests {
 
   test("compare the result with simple implementations") {
     object ShowRiseSimp {
-      def showRiseSimp(e: Expr, cfg: UnicodeConfig): String = drawASTSimp(e).show(cfg)
+      def showRiseSimp(e: Expr, cfg: UnicodeConfig): String =
+        drawASTSimp(e).show(cfg)
       def drawASTSimp(e: Expr): UnicodeDraw = e match {
         case i: Identifier => line(i.name)
-        case Lambda(x, e) => block(s"λ${x.name}", drawASTSimp(e))
-        case App(f, e) => drawASTSimp(f) :+> drawASTSimp(e)
-        case dl @ DepLambda(x, e) => block(s"Λ${x.name}:${dl.kindName}", drawASTSimp(e))
-        case DepApp(f, x) => line(x.toString) <+: drawASTSimp(f)
-        case Literal(d) => line(d.toString)
+        case Lambda(x, e)  => block(s"λ${x.name}", drawASTSimp(e))
+        case App(f, e)     => drawASTSimp(f) :+> drawASTSimp(e)
+        case dl @ DepLambda(x, e) =>
+          block(s"Λ${x.name}:${dl.kindName}", drawASTSimp(e))
+        case DepApp(f, x)     => line(x.toString) <+: drawASTSimp(f)
+        case Literal(d)       => line(d.toString)
         case Annotation(e, _) => drawASTSimp(e)
-        case p: Primitive => line(p.name)
+        case p: Primitive     => line(p.name)
       }
     }
 
@@ -70,7 +78,7 @@ class showRise extends test_util.Tests {
         case App(f, e) =>
           val fs = f match {
             case _: Lambda => lessBrackets(f, wrapped = true)
-            case _ => lessBrackets(f)
+            case _         => lessBrackets(f)
           }
           val es = lessBrackets(e, wrapped = true)
           if (wrapped) s"($fs $es)" else s"$fs $es"
@@ -83,7 +91,7 @@ class showRise extends test_util.Tests {
         case DepApp(f, x) =>
           val fs = f match {
             case _: DepLambda[_] => lessBrackets(f, wrapped = true)
-            case _ => lessBrackets(f)
+            case _               => lessBrackets(f)
           }
           if (wrapped) s"($fs $x)" else s"$fs $x"
 
@@ -97,17 +105,23 @@ class showRise extends test_util.Tests {
 
     val example = blurXTiled2D
 
-    assert(showRiseCompact(example, 0, defaultUnicodeConfig)
-      == ShowRiseSimp.showRiseSimp(example, defaultUnicodeConfig))
+    assert(
+      showRiseCompact(example, 0, defaultUnicodeConfig)
+        == ShowRiseSimp.showRiseSimp(example, defaultUnicodeConfig)
+    )
 
-    assert(showRiseCompact(example, 1024, defaultUnicodeConfig)
-      == line(LessBrackets.lessBrackets(example)).show(defaultUnicodeConfig))
+    assert(
+      showRiseCompact(example, 1024, defaultUnicodeConfig)
+        == line(LessBrackets.lessBrackets(example)).show(defaultUnicodeConfig)
+    )
   }
 
-  test("change the configuration (rounded corners and extended horizontal connections)") {
+  test(
+    "change the configuration (rounded corners and extended horizontal connections)"
+  ) {
     val probe: Expr => Boolean = {
       case _: Lambda => true
-      case _ => false
+      case _         => false
     }
     val example = blurXTiled2D
     val show = trackWith(probe, example, 10, UnicodeConfig("│╭├╰├╩╦╬═ ──"))

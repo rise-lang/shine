@@ -24,7 +24,8 @@ object DSL {
     def apply(): MapWorkGroup = MapWorkGroup(0)()
     def apply(e: Expr): Expr = MapWorkGroup(0)()(e)
     def apply(dim: Int): Expr = MapWorkGroup(dim)()
-    implicit def toMapWorkGroup(m: MapWorkGroup.type): MapWorkGroup = MapWorkGroup(0)()
+    implicit def toMapWorkGroup(m: MapWorkGroup.type): MapWorkGroup =
+      MapWorkGroup(0)()
   }
 
   def toMem: ToMem = ToMem()()

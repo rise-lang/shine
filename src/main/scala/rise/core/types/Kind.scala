@@ -62,9 +62,10 @@ object KindName {
   implicit val natKN: KindName[NatKind] = new KindName[NatKind] {
     def get = "nat"
   }
-  implicit val addressSpaceKN: KindName[AddressSpaceKind] = new KindName[AddressSpaceKind] {
-    def get = "addressSpace"
-  }
+  implicit val addressSpaceKN: KindName[AddressSpaceKind] =
+    new KindName[AddressSpaceKind] {
+      def get = "addressSpace"
+    }
   implicit val n2nKN: KindName[NatToNatKind] = new KindName[NatToNatKind] {
     def get = "nat->nat"
   }

@@ -6,8 +6,7 @@ import rise.core.types._
 
 object HighLevelConstructs {
   def slide2D(sz: Nat, st: Nat): Expr = slide2D(sz, st, sz, st)
-  def slide2D(szOuter: Nat, stOuter: Nat,
-              szInner: Nat, stInner: Nat): Expr =
+  def slide2D(szOuter: Nat, stOuter: Nat, szInner: Nat, stInner: Nat): Expr =
     map(slide(szInner)(stInner)) >> slide(szOuter)(stOuter) >> map(transpose)
 
   val unslide2D: Expr =
@@ -20,17 +19,19 @@ object HighLevelConstructs {
     nFun(s => {
       val f =
         implN(n =>
-          fun(IndexType(n))(i => natAsIndex(n)(
-            (indexAsNat(i) / (n /^ s)) + ((s: Expr) * (indexAsNat(i) % (n /^ s)))
-          )))
+          fun(IndexType(n))(i =>
+            natAsIndex(n)(
+              (indexAsNat(i) / (n /^ s)) + ((s: Expr) * (indexAsNat(i) % (n /^ s)))
+            )
+          )
+        )
       reorder(f)(f)
     })
   }
 
   def padClamp2D(b: Nat): Expr = padClamp2D(b, b, b, b)
   def padClamp2D(l: Nat, r: Nat): Expr = padClamp2D(l, r, l, r)
-  def padClamp2D(lOuter: Nat, rOuter: Nat,
-                 lInner: Nat, rInner: Nat): Expr =
+  def padClamp2D(lOuter: Nat, rOuter: Nat, lInner: Nat, rInner: Nat): Expr =
     map(padClamp(lInner)(rInner)) >> padClamp(lOuter)(rOuter)
 
   def padCst2D(n: Nat): Expr = padCst2D(n, n)
@@ -53,10 +54,16 @@ object HighLevelConstructs {
   // TODO: Investigate. this might be wrong
   val partition2D: Expr = {
     import arithexpr.arithmetic.SteppedCase
-    nFun(outerSize => nFun(innerSize =>
-      map(
-        partition(3)(n2nFun(m => SteppedCase(m, Seq(outerSize, innerSize, outerSize))))
-      ) >> partition(3)(n2nFun(m => SteppedCase(m, Seq(outerSize, innerSize, outerSize))))
-    ))
+    nFun(outerSize =>
+      nFun(innerSize =>
+        map(
+          partition(3)(
+            n2nFun(m => SteppedCase(m, Seq(outerSize, innerSize, outerSize)))
+          )
+        ) >> partition(3)(
+          n2nFun(m => SteppedCase(m, Seq(outerSize, innerSize, outerSize)))
+        )
+      )
+    )
   }
 }

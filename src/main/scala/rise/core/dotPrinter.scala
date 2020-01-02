@@ -6,17 +6,21 @@ case object dotPrinter {
 
   def apply(expr: Expr): String = generateDotString(expr)
 
-  def generateDotString(expr: Expr,
-                        inlineLambdaIdentifier: Boolean = false): String = {
+  def generateDotString(
+      expr: Expr,
+      inlineLambdaIdentifier: Boolean = false
+  ): String = {
 
     def getID(x: Any): String = x match {
-      case i:Identifier if !inlineLambdaIdentifier => i.toString
-      case _ =>freshName("node")
+      case i: Identifier if !inlineLambdaIdentifier => i.toString
+      case _                                        => freshName("node")
     }
 
-    def generateNodesAndEdges(expr: Expr,
-                              parent: String,
-                              inlineLambdaIdentifier: Boolean): String = {
+    def generateNodesAndEdges(
+        expr: Expr,
+        parent: String,
+        inlineLambdaIdentifier: Boolean
+    ): String = {
 
       def attr(str: String): String = s"[$str]"
       def fill(c: String): String = s"fillcolor=$c "
@@ -24,47 +28,65 @@ case object dotPrinter {
       def fillGray: String = fill("\"#e6e2de\"")
       def fillBlack: String = fill("black")
 
-      def formatType(t: Type): String = t.toString.replaceAll(">", "\\\\>").replaceAll("<", "\\\\<")
+      def formatType(t: Type): String =
+        t.toString.replaceAll(">", "\\\\>").replaceAll("<", "\\\\<")
 
-      case class Label(s: String,
-                       decorations: String => String = x => s"$x",
-                       forEdge: Boolean = false){
-        def bold: Label = this.copy(decorations = x => s"<b>${decorations(x)}</b>")
-        def italic: Label = this.copy(decorations = x => s"<i>${decorations(x)}</i>")
-        def gray: Label = this.copy(decorations = x => s"<font color='gray'>${decorations(x)}</font>")
-        def green: Label = this.copy(decorations = x => s"""<font color="#3C8031">${decorations(x)}</font>""")
-        def orange: Label = this.copy(decorations = x => s"""<font color="#F26035">${decorations(x)}</font>""")
+      case class Label(
+          s: String,
+          decorations: String => String = x => s"$x",
+          forEdge: Boolean = false
+      ) {
+        def bold: Label =
+          this.copy(decorations = x => s"<b>${decorations(x)}</b>")
+        def italic: Label =
+          this.copy(decorations = x => s"<i>${decorations(x)}</i>")
+        def gray: Label =
+          this.copy(decorations =
+            x => s"<font color='gray'>${decorations(x)}</font>"
+          )
+        def green: Label =
+          this.copy(decorations =
+            x => s"""<font color="#3C8031">${decorations(x)}</font>"""
+          )
+        def orange: Label =
+          this.copy(decorations =
+            x => s"""<font color="#F26035">${decorations(x)}</font>"""
+          )
         def edge: Label = this.copy(forEdge = true)
 
         override def toString: String = {
-          val label = if(!forEdge)
-            "\"" + s + "\\n"+formatType(expr.t) + "\""
-          else "<" + decorations(s) + ">"
+          val label =
+            if (!forEdge)
+              "\"" + s + "\\n" + formatType(expr.t) + "\""
+            else "<" + decorations(s) + ">"
 
           s"label=$label"
         }
       }
 
-      val edgeLabel = (x: String) => attr(fillBlack + Label(x).gray.edge.toString)
+      val edgeLabel = (x: String) =>
+        attr(fillBlack + Label(x).gray.edge.toString)
 
-      def recurse(e: Expr,
-                  parent: String,
-                  ty: Option[String]): String =
+      def recurse(e: Expr, parent: String, ty: Option[String]): String =
         generateNodesAndEdges(e, parent, inlineLambdaIdentifier)
 
-      def binaryNode(nodeLabel: String, a: (Expr, String), b: (Expr, String)): String = {
+      def binaryNode(
+          nodeLabel: String,
+          a: (Expr, String),
+          b: (Expr, String)
+      ): String = {
         val aID = getID(a._1)
         val bID = getID(b._1)
         s"""$parent ${attr(fillWhite + Label(nodeLabel).bold.green.toString)}
            |$parent -> $aID ${edgeLabel(a._2)};
            |$parent -> $bID ${edgeLabel(b._2)};
            |${recurse(a._1, aID, None)}
-           |${recurse(b._1, bID, None)}""".
-          stripMargin
+           |${recurse(b._1, bID, None)}""".stripMargin
       }
 
       expr match {
-        case Lambda(i, e) if !inlineLambdaIdentifier => binaryNode("λ", (i, "id"), (e, "body"))
+        case Lambda(i, e) if !inlineLambdaIdentifier =>
+          binaryNode("λ", (i, "id"), (e, "body"))
 
         case Lambda(i, e) if inlineLambdaIdentifier =>
           val expr = getID(e)
@@ -98,13 +120,17 @@ case object dotPrinter {
              |$arg ${attr(fillWhite + Label(e.toString).toString)}
              |${recurse(f, fun, None)}""".stripMargin
 
-        case l: Literal => s"$parent ${attr(fillWhite + Label(l.toString).orange.italic.toString)}"
-        case i: Identifier => s"$parent ${attr(fillWhite + Label(i.toString).orange.italic.toString)}"
-        case p: Primitive => s"$parent ${attr(fillGray + Label(p.toString).bold.green.toString)}"
+        case l: Literal =>
+          s"$parent ${attr(fillWhite + Label(l.toString).orange.italic.toString)}"
+        case i: Identifier =>
+          s"$parent ${attr(fillWhite + Label(i.toString).orange.italic.toString)}"
+        case p: Primitive =>
+          s"$parent ${attr(fillGray + Label(p.toString).bold.green.toString)}"
       }
     }
 
-    val content = generateNodesAndEdges(expr, getID(expr), inlineLambdaIdentifier)
+    val content =
+      generateNodesAndEdges(expr, getID(expr), inlineLambdaIdentifier)
 
     s"""
        |digraph graphname
@@ -119,13 +145,19 @@ case object dotPrinter {
   }
 
   // todo remove before pull-request
-  def exprToDot(name: String, e: Expr): Unit = exprToDot("/home/bastian/development/rewriting/dot", name, e, dotPrinter(_))
+  def exprToDot(name: String, e: Expr): Unit =
+    exprToDot("/home/bastian/development/rewriting/dot", name, e, dotPrinter(_))
 
-  def exprToDot(path: String, name: String, e: Expr, dot: Expr => String): Unit = {
+  def exprToDot(
+      path: String,
+      name: String,
+      e: Expr,
+      dot: Expr => String
+  ): Unit = {
     import java.io._
     import sys.process._
 
-    val w =new PrintWriter(new File(s"$path/$name.dot"))
+    val w = new PrintWriter(new File(s"$path/$name.dot"))
     w.write(dot(e))
     w.flush()
     w.close()
