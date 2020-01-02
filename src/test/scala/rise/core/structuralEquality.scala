@@ -3,7 +3,6 @@ package rise.core
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.core.types._
-import rise.core.primitives._
 
 class structuralEquality extends test_util.Tests {
   test("identity") {

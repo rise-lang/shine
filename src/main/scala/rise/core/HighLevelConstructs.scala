@@ -3,7 +3,6 @@ package rise.core
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.core.types._
-import rise.core.primitives._
 
 object HighLevelConstructs {
   def slide2D(sz: Nat, st: Nat): Expr = slide2D(sz, st, sz, st)

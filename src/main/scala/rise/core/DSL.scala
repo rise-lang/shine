@@ -1,10 +1,8 @@
 package rise.core
 
-import arithexpr.arithmetic.{Cst, RangeAdd}
 import rise.core.types._
 import rise.core.semantics._
 import rise.core.primitives._
-import rise.core.TypeLevelDSL._
 
 import scala.language.implicitConversions
 
@@ -76,8 +74,6 @@ object DSL {
   def typeHole(msg: String): TypeHole = TypeHole(msg)()
 
   implicit class Ops(lhs: Expr) {
-    import rise.core.primitives._
-
     // binary
     def +(rhs: Expr): Expr = add(lhs)(rhs)
     def -(rhs: Expr): Expr = sub(lhs)(rhs)
@@ -97,8 +93,6 @@ object DSL {
   }
 
   implicit class Indexing(e: Expr) {
-    import rise.core.primitives._
-
     def `@`(i: Expr): Expr = idx(i)(e)
   }
 

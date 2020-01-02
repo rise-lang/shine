@@ -1,6 +1,5 @@
 package rise.core
 
-import rise.core.TypedDSL._
 import rise.core.types._
 import rise.core.lifting.{Result, Reducing, Expanding}
 
