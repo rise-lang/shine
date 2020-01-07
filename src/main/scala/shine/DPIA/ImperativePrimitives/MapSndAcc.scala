@@ -1,14 +1,10 @@
 package shine.DPIA.ImperativePrimitives
 
-import shine.DPIA.Compilation.{TranslationContext, TranslationToImperative}
-import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
-import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
 import shine.DPIA._
 
-import scala.language.reflectiveCalls
 import scala.xml.Elem
 
 final case class MapSndAcc(dt1: DataType,

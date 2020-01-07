@@ -3,6 +3,8 @@ project
 target
 modules.xml
 .vscode
+.metals
+.bloop
 
 *.aux
 *.bbl

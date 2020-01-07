@@ -2,7 +2,7 @@ package shine.DPIA.FunctionalPrimitives
 
 import shine.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import shine.DPIA.DSL._
-import shine.DPIA.ImperativePrimitives.{JoinAcc, ReorderAcc}
+import shine.DPIA.ImperativePrimitives.ReorderAcc
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics._

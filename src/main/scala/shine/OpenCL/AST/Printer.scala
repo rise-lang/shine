@@ -1,10 +1,10 @@
 package shine.OpenCL.AST
 
+import arithexpr.arithmetic.ArithExpr
 import shine.C.AST._
 import shine.DPIA.Types.AddressSpaceIdentifier
 import shine.OpenCL
-import shine.OpenCL.{AddressSpace, NDRange, BuiltInFunctionCall}
-import arithexpr.arithmetic.ArithExpr
+import shine.OpenCL.{AddressSpace, BuiltInFunctionCall, NDRange}
 
 object Printer {
   def apply(n: Node): String = (new Printer).printNode(n)

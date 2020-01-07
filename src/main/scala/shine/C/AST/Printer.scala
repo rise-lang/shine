@@ -1,8 +1,7 @@
 package shine.C.AST
 
-import shine.DPIA.NatFunCall
-import shine.DPIA.Types.ExpType
 import arithexpr.arithmetic._
+import shine.DPIA.NatFunCall
 
 trait Printer {
   def printNode(n: Node): String

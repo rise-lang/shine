@@ -1,9 +1,9 @@
 package shine.DPIA.Semantics
 
+import arithexpr.arithmetic.ArithExpr
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA._
-import arithexpr.arithmetic.ArithExpr
 
 import scala.collection.immutable.HashMap
 import scala.language.{implicitConversions, postfixOps, reflectiveCalls}

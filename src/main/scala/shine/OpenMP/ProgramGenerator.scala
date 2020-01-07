@@ -1,13 +1,13 @@
 package shine.OpenMP
 
-import shine._
+import arithexpr.arithmetic.Cst
 import shine.DPIA.Compilation._
 import shine.DPIA.DSL._
 import shine.DPIA.FunctionalPrimitives.AsIndex
 import shine.DPIA.LetNatIdentifier
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
-import arithexpr.arithmetic.Cst
+import shine._
 
 import scala.collection._
 

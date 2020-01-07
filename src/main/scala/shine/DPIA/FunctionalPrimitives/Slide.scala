@@ -6,7 +6,7 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA._
 
-import scala.language.{postfixOps, reflectiveCalls}
+import scala.language.reflectiveCalls
 
 final case class Slide(n: Nat,
                        sz: Nat,

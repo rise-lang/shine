@@ -6,14 +6,10 @@ import elevate.rise.rules.movement._
 import elevate.rise.rules.traversal._
 import elevate.rise.strategies.normalForm._
 import elevate.util._
-import elevate.rise._
 import rise.core._
-import rise.core.primitives._
 import rise.core.TypedDSL._
 import rise.core.TypeLevelDSL._
-import rise.core.types.{float, infer}
-
-import scala.language.implicitConversions
+import rise.core.types.float
 
 class movement extends test_util.Tests {
 
@@ -39,9 +35,7 @@ class movement extends test_util.Tests {
 
   // FIXME: Not work because mapMapFBeforeTranspose is not general enough
   ignore("**f >> T - zip constraint") {
-    import elevate.rise.strategies._
-
-    val test = λ(i => λ(f => (T o ***(f)) $ zip(i,i)))
+    // val test = λ(i => λ(f => (T o ***(f)) $ zip(i,i)))
 
     val backward: Expr =
       nFun((m, n, k) =>

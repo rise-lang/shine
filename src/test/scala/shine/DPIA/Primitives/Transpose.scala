@@ -2,10 +2,7 @@ package shine.DPIA.Primitives
 
 import rise.core.DSL._
 import rise.core.types._
-import rise.core.primitives._
-import benchmarks.core.SimpleRunOpenCLProgram
-import shine.OpenCL.KernelWithSizes
-import util.{Execute, TimeSpan, gen}
+import util.{Execute, gen}
 
 class Transpose extends test_util.Tests {
   test("Simple transpose should produce the expected result on a test") {

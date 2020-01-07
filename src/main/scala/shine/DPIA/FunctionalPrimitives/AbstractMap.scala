@@ -1,7 +1,6 @@
 package shine.DPIA.FunctionalPrimitives
 
 import shine.DPIA.Compilation.TranslationContext
-import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics._

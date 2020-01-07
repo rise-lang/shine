@@ -1,7 +1,6 @@
 package elevate.rise.rules
 
 import elevate.core.strategies.predicate._
-import elevate.rise.rules.traversal._
 import elevate.core.{Failure, RewriteResult, Strategy, Success}
 import elevate.rise._
 import rise.core._

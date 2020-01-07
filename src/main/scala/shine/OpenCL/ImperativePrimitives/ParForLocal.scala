@@ -3,11 +3,8 @@ package shine.OpenCL.ImperativePrimitives
 import shine.DPIA.Phrases.Phrase
 import shine.DPIA.Types.{AccType, CommType, DataType, ExpType}
 import shine.DPIA._
-import shine._
-import arithexpr.arithmetic.{?, ContinuousRange, PosInf, RangeAdd}
-import shine.C.AST._
-import shine.OpenCL.AST._
 import shine.OpenCL._
+import shine._
 
 
 //noinspection TypeAnnotation

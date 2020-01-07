@@ -1,7 +1,8 @@
 package shine.C.CodeGeneration
 
+import arithexpr.arithmetic.BoolExpr.ArithPredicate
+import arithexpr.arithmetic.{NamedVar, _}
 import shine.C.AST.Block
-import shine.C.AST.DefaultImplementations.ArrayLiteral
 import shine.DPIA.Compilation.SimplifyNats
 import shine.DPIA.DSL._
 import shine.DPIA.FunctionalPrimitives._
@@ -12,8 +13,6 @@ import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
 import shine.DPIA._
 import shine._
-import arithexpr.arithmetic.BoolExpr.ArithPredicate
-import arithexpr.arithmetic.{NamedVar, _}
 
 import scala.collection.immutable.VectorBuilder
 import scala.collection.{immutable, mutable}

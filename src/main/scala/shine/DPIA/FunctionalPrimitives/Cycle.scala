@@ -1,12 +1,12 @@
 package shine.DPIA.FunctionalPrimitives
 
 import shine.DPIA.Compilation.{TranslationContext, TranslationToImperative}
-import shine.DPIA._
 import shine.DPIA.DSL._
-import shine.DPIA.Types._
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics.{ArrayData, Data, Store}
+import shine.DPIA.Types._
+import shine.DPIA._
 
 // cycles on the m elements of an array (modulo indexing) to produce an array of n elements
 final case class Cycle(n: Nat,

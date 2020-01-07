@@ -1,7 +1,7 @@
 package shine.DPIA
 
-import shine.DPIA.Types.TypeCheck._
 import shine.DPIA.Phrases.{Phrase, ToString}
+import shine.DPIA.Types.TypeCheck._
 
 
 package object Types {

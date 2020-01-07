@@ -1,6 +1,5 @@
 package shine.DPIA.FunctionalPrimitives
 
-import shine.DPIA.Compilation.TranslationToImperative.acc
 import shine.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import shine.DPIA.DSL._
 import shine.DPIA.ImperativePrimitives.{MapAcc, MapRead}

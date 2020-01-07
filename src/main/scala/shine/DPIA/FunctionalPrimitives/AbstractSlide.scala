@@ -1,13 +1,12 @@
 package shine.DPIA.FunctionalPrimitives
 
+import arithexpr.arithmetic.SimplifiedExpr
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics.{ArrayData, Store}
 import shine.DPIA.Types._
 import shine.DPIA._
-import arithexpr.arithmetic.SimplifiedExpr
 
-import scala.language.{postfixOps, reflectiveCalls}
 import scala.xml.Elem
 
 abstract class AbstractSlide(n: Nat,

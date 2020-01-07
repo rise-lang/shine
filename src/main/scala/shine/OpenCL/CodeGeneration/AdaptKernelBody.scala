@@ -1,9 +1,9 @@
 package shine.OpenCL.CodeGeneration
 
+import arithexpr.arithmetic.{IfThenElse => _}
 import shine.C.AST.{Nodes, _}
 import shine.DPIA.Types.AddressSpace
 import shine.{C, OpenCL}
-import arithexpr.arithmetic.{IfThenElse => _, _}
 
 import scala.collection.mutable
 

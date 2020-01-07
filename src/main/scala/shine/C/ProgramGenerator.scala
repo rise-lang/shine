@@ -1,13 +1,13 @@
 package shine.C
 
+import arithexpr.arithmetic.{Cst, Var}
 import shine.DPIA.Compilation._
 import shine.DPIA.DSL._
 import shine.DPIA.FunctionalPrimitives.AsIndex
-import shine.DPIA.{LetNatIdentifier, Lifting}
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
+import shine.DPIA.{LetNatIdentifier, Lifting}
 import shine._
-import arithexpr.arithmetic.{Cst, Var}
 
 import scala.collection._
 

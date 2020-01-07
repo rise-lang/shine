@@ -1,10 +1,8 @@
 package shine.OpenCL.ImperativePrimitives
 
-import shine.C.AST.Stmt
 import shine.DPIA.Phrases.Phrase
 import shine.DPIA.Types._
 import shine.DPIA.{->:, Nat, `(nat)->:`}
-import shine.OpenCL.BuiltInFunctionCall
 import shine.OpenMP.ImperativePrimitives.AbstractParForNat
 
 abstract class OpenCLParForNat(n: Nat,

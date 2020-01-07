@@ -15,7 +15,7 @@ class dotPrinterTests extends test_util.Tests {
     w.write(dot(e))
     w.flush()
     w.close()
-    val test = s"dot -Tpdf $path/$name.dot -o $path/$name.pdf".!
+    s"dot -Tpdf $path/$name.dot -o $path/$name.pdf".!
   }
 
   test("simple *f") {

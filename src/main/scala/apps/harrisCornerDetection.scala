@@ -1,13 +1,10 @@
 package apps
 
-import rise.core._
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.core.types._
 import rise.core.primitives._
-import rise.OpenCL.primitives._
 import rise.OpenCL.DSL._
-import rise.core.HighLevelConstructs._
 import util.gen
 
 import scala.reflect.ClassTag
@@ -17,7 +14,7 @@ object harrisCornerDetection {
   private val id = C2D.id
   private val mulT = C2D.mulT
   private val sq = fun(x => x * x)
-  private def zip2D(a: Expr, b: Expr) = zipND(2)(a)(b)
+  // private def zip2D(a: Expr, b: Expr) = zipND(2)(a)(b)
 
   // 5 for two scalar stencils of 3
   private val hRange = arithexpr.arithmetic.RangeAdd(5, arithexpr.arithmetic.PosInf, 1)
