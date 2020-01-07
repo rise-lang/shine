@@ -25,7 +25,7 @@ class mmCheck extends test_util.TestsWithExecutor {
     println(s"time: $time")
   }
 
-  test("amd matrix multiplication produces expected result") {
+  ignore("amd matrix multiplication produces expected result") {
     val (at, b, gold) = randGold()
     val runs = Seq(
       "original" -> runOriginal("CGO17_MMAMD.cl",
@@ -39,7 +39,7 @@ class mmCheck extends test_util.TestsWithExecutor {
     })
   }
 
-  test("nvidia matrix multplication produces expected result") {
+  ignore("nvidia matrix multplication produces expected result") {
     val (at, b, gold) = randGold()
     val runs = Seq(
       "original" -> runOriginal("CGO17_MMNVIDIA.cl",
