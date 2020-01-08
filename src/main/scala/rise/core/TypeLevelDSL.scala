@@ -8,7 +8,7 @@ object TypeLevelDSL {
     def =~=(b: Type): Boolean = (a, b) match {
       case (TypePlaceholder, _) => true
       case (_, TypePlaceholder) => true
-      case _ => a == b
+      case _                    => a == b
     }
   }
 
@@ -19,12 +19,16 @@ object TypeLevelDSL {
       NatToDataLambda(x, f(x))
     }
 
-    def apply(r: arithexpr.arithmetic.Range)(f: NatIdentifier => DataType): NatToDataLambda = {
+    def apply(
+        r: arithexpr.arithmetic.Range
+    )(f: NatIdentifier => DataType): NatToDataLambda = {
       val x = NatIdentifier(freshName("n2dt"), r, isExplicit = true)
       NatToDataLambda(x, f(x))
     }
 
-    def apply(upperBound: Nat)(f: NatIdentifier => DataType): NatToDataLambda = {
+    def apply(
+        upperBound: Nat
+    )(f: NatIdentifier => DataType): NatToDataLambda = {
       apply(RangeAdd(0, upperBound, 1))(f)
     }
   }
@@ -35,7 +39,9 @@ object TypeLevelDSL {
       NatToNatLambda(x, f(x))
     }
 
-    def apply(r: arithexpr.arithmetic.Range)(f: NatIdentifier => Nat): NatToNatLambda = {
+    def apply(
+        r: arithexpr.arithmetic.Range
+    )(f: NatIdentifier => Nat): NatToNatLambda = {
       val x = NatIdentifier(freshName("n2n"), r, isExplicit = true)
       NatToNatLambda(x, f(x))
     }
@@ -86,7 +92,6 @@ object TypeLevelDSL {
     f(NatIdentifier(freshName("n")))
   }
 
-
   def implT[A](f: TypeIdentifier => A): A = {
     f(TypeIdentifier(freshName("t")))
   }
@@ -120,25 +125,31 @@ object TypeLevelDSL {
     @inline def ->:(t: Type): FunType[Type, Type] = FunType(t, r)
   }
 
-  implicit final class TupleTypeConstructors(private val a: DataType) extends AnyVal {
+  implicit final class TupleTypeConstructors(private val a: DataType)
+      extends AnyVal {
     @inline def x(b: DataType): PairType = PairType(a, b)
   }
 
   final case class ArrayTypeConstructorHelper(ns: Seq[Nat]) {
-    @inline def `.`(n: Nat): ArrayTypeConstructorHelper = ArrayTypeConstructorHelper(ns :+ n)
+    @inline def `.`(n: Nat): ArrayTypeConstructorHelper =
+      ArrayTypeConstructorHelper(ns :+ n)
     @inline def `.`(dt: DataType): ArrayType = {
       val nsr = ns.reverse
-      nsr.tail.foldLeft(ArrayType(nsr.head, dt))( (t, n) => ArrayType(n, t) )
+      nsr.tail.foldLeft(ArrayType(nsr.head, dt))((t, n) => ArrayType(n, t))
     }
   }
 
-  implicit final class ArrayTypeConstructors(private val n: Nat) extends AnyVal {
-    @inline def `.`(m: Nat): ArrayTypeConstructorHelper = ArrayTypeConstructorHelper(Seq(n, m))
+  implicit final class ArrayTypeConstructors(private val n: Nat)
+      extends AnyVal {
+    @inline def `.`(m: Nat): ArrayTypeConstructorHelper =
+      ArrayTypeConstructorHelper(Seq(n, m))
     @inline def `.`(dt: DataType): ArrayType = ArrayType(n, dt)
   }
 
-  implicit final class ArrayTypeConstructorsFromInt(private val n: Int) extends AnyVal {
-    @inline def `.`(m: Nat): ArrayTypeConstructorHelper = ArrayTypeConstructorHelper(Seq(Cst(n), m))
+  implicit final class ArrayTypeConstructorsFromInt(private val n: Int)
+      extends AnyVal {
+    @inline def `.`(m: Nat): ArrayTypeConstructorHelper =
+      ArrayTypeConstructorHelper(Seq(Cst(n), m))
     @inline def `.`(dt: DataType): ArrayType = ArrayType(Cst(n), dt)
   }
 }

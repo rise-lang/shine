@@ -8,28 +8,39 @@ object substitute {
 
   // substitute in Expr
 
-  def kindInExpr[K <: Kind](x: K#T, `for`: K#I, in: Expr): Expr =  (x, `for`) match {
-    case (dt: DataType, forDt: DataTypeIdentifier)        => dataTypeInExpr(dt, forDt, in)
-    case (n: Nat, forN: NatIdentifier)                    => natInExpr(n, forN, in)
-    case (a: AddressSpace, forA: AddressSpaceIdentifier)  => addressSpaceInExpr(a, forA, in)
-    case (n2n: NatToNat, forN2N: NatToNatIdentifier)      => n2nInExpr(n2n, forN2N, in)
-    case (n2d: NatToData, forN2D: NatToDataIdentifier)    => n2dInExpr(n2d, forN2D, in)
-    case (_, _) => ???
-  }
+  def kindInExpr[K <: Kind](x: K#T, `for`: K#I, in: Expr): Expr =
+    (x, `for`) match {
+      case (dt: DataType, forDt: DataTypeIdentifier) =>
+        dataTypeInExpr(dt, forDt, in)
+      case (n: Nat, forN: NatIdentifier) => natInExpr(n, forN, in)
+      case (a: AddressSpace, forA: AddressSpaceIdentifier) =>
+        addressSpaceInExpr(a, forA, in)
+      case (n2n: NatToNat, forN2N: NatToNatIdentifier) =>
+        n2nInExpr(n2n, forN2N, in)
+      case (n2d: NatToData, forN2D: NatToDataIdentifier) =>
+        n2dInExpr(n2d, forN2D, in)
+      case (_, _) => ???
+    }
 
   def exprInExpr(expr: Expr, `for`: Expr, in: Expr): Expr = {
     object Visitor extends traversal.Visitor {
       override def visitExpr(e: Expr): Result[Expr] = {
-        if (`for` == e) { Stop(expr) } else { Continue(e, this) }
+        if (`for` == e) {
+          Stop(expr)
+        } else {
+          Continue(e, this)
+        }
       }
     }
 
     traversal.DepthFirstLocalResult(in, Visitor)
   }
 
-  def dataTypeInExpr(dt: DataType,
-                     `for`: DataTypeIdentifier,
-                     in: Expr): Expr = {
+  def dataTypeInExpr(
+      dt: DataType,
+      `for`: DataTypeIdentifier,
+      in: Expr
+  ): Expr = {
 
     object Visitor extends traversal.Visitor {
       override def visitType[T <: Type](in: T): Result[T] =
@@ -39,9 +50,7 @@ object substitute {
     traversal.DepthFirstLocalResult(in, Visitor)
   }
 
-  def natInExpr(ae: Nat,
-                `for`: NatIdentifier,
-                in: Expr): Expr = {
+  def natInExpr(ae: Nat, `for`: NatIdentifier, in: Expr): Expr = {
 
     object Visitor extends traversal.Visitor {
       override def visitExpr(e: Expr): Result[Expr] = {
@@ -66,28 +75,32 @@ object substitute {
     traversal.DepthFirstLocalResult(in, Visitor)
   }
 
-  def addressSpaceInExpr(a: AddressSpace,
-                         `for`: AddressSpaceIdentifier,
-                         in: Expr): Expr = ???
-  
-  def n2nInExpr(n2n: NatToNat,
-                `for`: NatToNatIdentifier,
-                in: Expr): Expr = ???
+  def addressSpaceInExpr(
+      a: AddressSpace,
+      `for`: AddressSpaceIdentifier,
+      in: Expr
+  ): Expr = ???
 
-  def n2dInExpr(n2d: NatToData,
-                `for`: NatToDataIdentifier,
-                in: Expr): Expr = ???
+  def n2nInExpr(n2n: NatToNat, `for`: NatToNatIdentifier, in: Expr): Expr = ???
+
+  def n2dInExpr(n2d: NatToData, `for`: NatToDataIdentifier, in: Expr): Expr =
+    ???
 
   // substitute in Type
 
-  def kindInType[K <: Kind, T <: Type](x: K#T, `for`: K#I, in: T): T =  (x, `for`) match {
-    case (dt: DataType, forDt: DataTypeIdentifier)        => typeInType(dt, forDt, in)
-    case (n: Nat, forN: NatIdentifier)                    => natInType(n, forN, in)
-    case (a: AddressSpace, forA: AddressSpaceIdentifier)  => addressSpaceInType(a, forA, in)
-    case (n2n: NatToNat, forN2N: NatToNatIdentifier)      => n2nInType(n2n, forN2N, in)
-    case (n2d: NatToData, forN2D: NatToDataIdentifier)    => n2dInType(n2d, forN2D, in)
-    case (_, _) => ???
-  }
+  def kindInType[K <: Kind, T <: Type](x: K#T, `for`: K#I, in: T): T =
+    (x, `for`) match {
+      case (dt: DataType, forDt: DataTypeIdentifier) =>
+        typeInType(dt, forDt, in)
+      case (n: Nat, forN: NatIdentifier) => natInType(n, forN, in)
+      case (a: AddressSpace, forA: AddressSpaceIdentifier) =>
+        addressSpaceInType(a, forA, in)
+      case (n2n: NatToNat, forN2N: NatToNatIdentifier) =>
+        n2nInType(n2n, forN2N, in)
+      case (n2d: NatToData, forN2D: NatToDataIdentifier) =>
+        n2dInType(n2d, forN2D, in)
+      case (_, _) => ???
+    }
 
   def typeInType[B <: Type](ty: Type, `for`: Type, in: B): B = {
     case class Visitor() extends traversal.Visitor {
@@ -120,7 +133,11 @@ object substitute {
     traversal.types.DepthFirstLocalResult.data(in, Visitor())
   }
 
-  def addressSpaceInType[T <: Type](a: AddressSpace, `for`: AddressSpaceIdentifier, in: T): T = {
+  def addressSpaceInType[T <: Type](
+      a: AddressSpace,
+      `for`: AddressSpaceIdentifier,
+      in: T
+  ): T = {
     case class Visitor() extends traversal.Visitor {
       override def visitAddressSpace(b: AddressSpace): Result[AddressSpace] =
         if (`for` == b) {
@@ -133,7 +150,11 @@ object substitute {
     traversal.types.DepthFirstLocalResult(in, Visitor())
   }
 
-  def n2nInType[T <: Type](n2n: NatToNat, `for`: NatToNatIdentifier, in: T): T = {
+  def n2nInType[T <: Type](
+      n2n: NatToNat,
+      `for`: NatToNatIdentifier,
+      in: T
+  ): T = {
     case class Visitor() extends traversal.Visitor {
       override def visitN2N(n: NatToNat): Result[NatToNat] =
         if (`for` == n) {
@@ -145,7 +166,11 @@ object substitute {
     traversal.types.DepthFirstLocalResult(in, Visitor())
   }
 
-  def n2dInType[T <: Type](n2d: NatToData, `for`: NatToDataIdentifier, in: T): T = {
+  def n2dInType[T <: Type](
+      n2d: NatToData,
+      `for`: NatToDataIdentifier,
+      in: T
+  ): T = {
     case class Visitor() extends traversal.Visitor {
       override def visitN2D(n: NatToData): Result[NatToData] =
         if (`for` == n) {
@@ -161,44 +186,66 @@ object substitute {
 
   def natsInNat(subs: Map[NatIdentifier, Nat], in: Nat): Nat = {
     in.visitAndRebuild {
-      case i: NatIdentifier => subs.get(i) match {
-        case Some(n) => n
-        case None => i
-      }
+      case i: NatIdentifier =>
+        subs.get(i) match {
+          case Some(n) => n
+          case None    => i
+        }
       case n => n
     }
   }
 
-  def natInNat(ae: Nat, `for`: NatIdentifier, in: Nat): Nat = natsInNat(Map(`for` -> ae), in)
+  def natInNat(ae: Nat, `for`: NatIdentifier, in: Nat): Nat =
+    natsInNat(Map(`for` -> ae), in)
 
   // substitute in AddressSpace
 
-  def addressSpacesInAddressSpace(subs: Map[AddressSpaceIdentifier, AddressSpace], in: AddressSpace): AddressSpace = {
+  def addressSpacesInAddressSpace(
+      subs: Map[AddressSpaceIdentifier, AddressSpace],
+      in: AddressSpace
+  ): AddressSpace = {
     in match {
-      case i: AddressSpaceIdentifier => subs.get(i) match {
-        case Some(a) => a
-        case None => i
-      }
+      case i: AddressSpaceIdentifier =>
+        subs.get(i) match {
+          case Some(a) => a
+          case None    => i
+        }
       case a => a
     }
   }
 
-  def addressSpaceInAddressSpace(a: AddressSpace, `for`: AddressSpaceIdentifier, in: AddressSpace): AddressSpace = {
-    if (in == `for`) { a } else { in }
+  def addressSpaceInAddressSpace(
+      a: AddressSpace,
+      `for`: AddressSpaceIdentifier,
+      in: AddressSpace
+  ): AddressSpace = {
+    if (in == `for`) {
+      a
+    } else {
+      in
+    }
   }
 
   // substitute in NatToData
-  def n2dsInN2d(subs: Map[NatToDataIdentifier, NatToData], in: NatToData): NatToData = {
+  def n2dsInN2d(
+      subs: Map[NatToDataIdentifier, NatToData],
+      in: NatToData
+  ): NatToData = {
     in match {
-      case i: NatToDataIdentifier => subs.get(i) match {
-        case Some(n2d) => n2d
-        case None => i
-      }
+      case i: NatToDataIdentifier =>
+        subs.get(i) match {
+          case Some(n2d) => n2d
+          case None      => i
+        }
       case n2d => n2d
     }
   }
 
-  def n2dInN2d(n2d: NatToData, `for`: NatToDataIdentifier, in: NatToData): NatToData = {
+  def n2dInN2d(
+      n2d: NatToData,
+      `for`: NatToDataIdentifier,
+      in: NatToData
+  ): NatToData = {
     if (in == `for`) n2d else in
   }
 }

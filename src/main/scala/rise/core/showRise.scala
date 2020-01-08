@@ -8,11 +8,19 @@ case class RenderException(msg: String) extends Exception {
 }
 
 object DrawTree {
-  case class UnicodeConfig
-  (wireHSym: String, wireVSym: String,
-   connLSym: String, connLLSym: String, connRSym: String, connRRSym: String,
-   spaceSym: String,
-   convLSym: String, convRSym: String, convLRSym: String, convUSym: String)
+  case class UnicodeConfig(
+      wireHSym: String,
+      wireVSym: String,
+      connLSym: String,
+      connLLSym: String,
+      connRSym: String,
+      connRRSym: String,
+      spaceSym: String,
+      convLSym: String,
+      convRSym: String,
+      convLRSym: String,
+      convUSym: String
+  )
 
   object UnicodeConfig {
     def apply(s: String): UnicodeConfig = {
@@ -50,10 +58,12 @@ object DrawTree {
 
   val defaultUnicodeConfig: UnicodeConfig = UnicodeConfig("│┌├└├╩╦╬═ ─")
 
-  case class RenderUnicodeDraw(farLeft: Seq[Seq[String]],
-                               nearLeft: Seq[Seq[String]],
-                               nearRight: Seq[Seq[String]],
-                               farRight: Seq[Seq[String]]) {
+  case class RenderUnicodeDraw(
+      farLeft: Seq[Seq[String]],
+      nearLeft: Seq[Seq[String]],
+      nearRight: Seq[Seq[String]],
+      farRight: Seq[Seq[String]]
+  ) {
     override def toString: String = {
       (farLeft.map(_.mkString) ++ nearLeft.map(_.mkString)
         ++ nearRight.map(_.mkString) ++ farRight.map(_.mkString)).mkString("\n")
@@ -67,24 +77,30 @@ object DrawTree {
   final case object U extends Cxt
 
   def mergeCxt(a: Cxt, b: Cxt): Cxt = (a, b) match {
-    case (_, U) => U
-    case (U, c) => c
+    case (_, U)  => U
+    case (U, c)  => c
     case (LR, _) => LR
     case (_, LR) => LR
-    case (L, L) => L
-    case (L, R) => LR
-    case (R, R) => R
-    case (R, L) => LR
+    case (L, L)  => L
+    case (L, R)  => LR
+    case (R, R)  => R
+    case (R, L)  => LR
   }
 
   abstract class UnicodeDraw {
-    def render(cxt: Cxt)(implicit cfg: UnicodeConfig) : RenderUnicodeDraw
-    def show(implicit cfg: UnicodeConfig = defaultUnicodeConfig): String = render(U).toString
+    def render(cxt: Cxt)(implicit cfg: UnicodeConfig): RenderUnicodeDraw
+    def show(implicit cfg: UnicodeConfig = defaultUnicodeConfig): String =
+      render(U).toString
   }
 
   case class Line(s: String) extends UnicodeDraw {
     def render(cxt: Cxt)(implicit cfg: UnicodeConfig): RenderUnicodeDraw =
-      RenderUnicodeDraw(Seq.empty, Seq.empty, Seq(cfg.wireHSym +: Seq(s)), Seq.empty)
+      RenderUnicodeDraw(
+        Seq.empty,
+        Seq.empty,
+        Seq(cfg.wireHSym +: Seq(s)),
+        Seq.empty
+      )
   }
 
   def line(s: String): Line = Line(s)
@@ -98,7 +114,8 @@ object DrawTree {
       val conn = if (cxt == L || cxt == LR) cfg.connLLSym else cfg.connLSym
       val wireL = if (cxt == L || cxt == LR) wireV else space
       val fl = ra.farLeft.map(wireL +: _) ++ ra.nearLeft.map(wireL +: _)
-      val nl = (((conn +: ra.nearRight.head) +: ra.nearRight.tail.map(wireV +: _))
+      val nl = (((conn +: ra.nearRight.head) +: ra.nearRight.tail
+        .map(wireV +: _))
         ++ ra.farRight.map(wireV +: _) ++ rb.farLeft ++ rb.nearLeft)
       val nr = rb.nearRight
       val fr = rb.farRight
@@ -117,8 +134,9 @@ object DrawTree {
       val fl = ra.farLeft
       val nl = ra.nearLeft
       val nr = (ra.nearRight ++ ra.farRight ++ rb.farLeft.map(wireV +: _)
-          ++ rb.nearLeft.map(wireV +: _))
-      val fr = (((conn +: rb.nearRight.head) +: rb.nearRight.tail.map(wireR +: _))
+        ++ rb.nearLeft.map(wireV +: _))
+      val fr = (((conn +: rb.nearRight.head) +: rb.nearRight.tail
+        .map(wireR +: _))
         ++ rb.farRight.map(wireR +: _))
       RenderUnicodeDraw(fl, nl, nr, fr)
     }
@@ -138,10 +156,10 @@ object DrawTree {
       val wireV = cfg.wireVSym
       val wireH = cfg.wireHSym
       val conv = cxt match {
-        case L => cfg.convLSym
-        case R => cfg.convRSym
+        case L  => cfg.convLSym
+        case R  => cfg.convRSym
         case LR => cfg.convLRSym
-        case _ => cfg.convUSym
+        case _  => cfg.convUSym
       }
       val space = cfg.spaceSym
       val wireL = if (cxt == L || cxt == LR) wireV else space
@@ -162,7 +180,7 @@ object DrawTree {
       val wireV = cfg.wireVSym
       val wireH = cfg.wireHSym
       val space = cfg.spaceSym
-      val extraSpace = space.substring(0,1) * (n.length - 1)
+      val extraSpace = space.substring(0, 1) * (n.length - 1)
       val wireL = if (cxt == L || cxt == LR) wireV else space
       val wireR = if (cxt == R || cxt == LR) wireV else space
       val fl = (ra.farLeft.map(x => wireL +: (extraSpace +: x))
@@ -182,8 +200,9 @@ class ShowRiseCompact {
   import rise.core.DrawTree._
   import rise.core.semantics._
 
-  def drawAST(expr: Expr, wrapped: Boolean = false)
-             (implicit inlineSize: Int): (Boolean, Int, UnicodeDraw) = expr match {
+  def drawAST(expr: Expr, wrapped: Boolean = false)(
+      implicit inlineSize: Int
+  ): (Boolean, Int, UnicodeDraw) = expr match {
 
     case i: Identifier => (true, 1, line(i.name))
 
@@ -201,15 +220,22 @@ class ShowRiseCompact {
     case App(f, e) =>
       val (fInline, fSize, fr) = f match {
         case _: Lambda => drawAST(f, wrapped = true)
-        case _ => drawAST(f)
+        case _         => drawAST(f)
       }
       val (_, eSize, er) = drawAST(e, wrapped = true)
       val newSize = fSize + eSize
       if ((inlineSize > 0) && ((fInline && (eSize == 1)) || (newSize <= inlineSize))) {
-        (true, newSize, fr >~> (fs => er >~> (es => {
-          val as = s"$fs $es"
-          if (wrapped) wrappedLine("(", as, ")") else line(as)
-        })))
+        (
+          true,
+          newSize,
+          fr >~> (
+              fs =>
+                er >~> (es => {
+                  val as = s"$fs $es"
+                  if (wrapped) wrappedLine("(", as, ")") else line(as)
+                })
+            )
+        )
       } else (false, newSize, fr >@> (fd => er >@> (ed => fd :+> ed)))
 
     case dl @ DepLambda(x, e) =>
@@ -226,7 +252,7 @@ class ShowRiseCompact {
     case DepApp(f, x) =>
       val (fInline, fSize, fr) = f match {
         case _: DepLambda[_] => drawAST(f, wrapped = true)
-        case _ => drawAST(f)
+        case _               => drawAST(f)
       }
       val xs = x.toString
       val newSize = fSize + 1
@@ -246,38 +272,49 @@ class ShowRiseCompact {
 
   case class WrappedLine(l: String, s: String, r: String) extends UnicodeDraw {
     def render(cxt: Cxt)(implicit cfg: UnicodeConfig): RenderUnicodeDraw =
-      RenderUnicodeDraw(Seq.empty, Seq.empty, Seq(cfg.wireHSym +: Seq(l + s + r)), Seq.empty)
+      RenderUnicodeDraw(
+        Seq.empty,
+        Seq.empty,
+        Seq(cfg.wireHSym +: Seq(l + s + r)),
+        Seq.empty
+      )
   }
 
-  def wrappedLine(l: String, s: String, r: String): WrappedLine = WrappedLine(l, s, r)
+  def wrappedLine(l: String, s: String, r: String): WrappedLine =
+    WrappedLine(l, s, r)
 
   implicit class Extract(d: UnicodeDraw) {
-    def >@>(f: UnicodeDraw => UnicodeDraw): UnicodeDraw = extractUnicodeDraw(d, f)
+    def >@>(f: UnicodeDraw => UnicodeDraw): UnicodeDraw =
+      extractUnicodeDraw(d, f)
     def >~>(f: String => UnicodeDraw): UnicodeDraw = extractString(d, f)
   }
 
-  def extractUnicodeDraw(d: UnicodeDraw, f: UnicodeDraw => UnicodeDraw): UnicodeDraw = d match {
+  def extractUnicodeDraw(
+      d: UnicodeDraw,
+      f: UnicodeDraw => UnicodeDraw
+  ): UnicodeDraw = d match {
     case WrappedLine(_, s, _) => f(line(s))
-    case d => f(d)
+    case d                    => f(d)
   }
 
-  def extractString(d: UnicodeDraw, f: String => UnicodeDraw): UnicodeDraw = d match {
-    case WrappedLine(l, s, r) => f(l + s + r)
-    case Line(s) => f(s)
-    case _ => f("")
-  }
+  def extractString(d: UnicodeDraw, f: String => UnicodeDraw): UnicodeDraw =
+    d match {
+      case WrappedLine(l, s, r) => f(l + s + r)
+      case Line(s)              => f(s)
+      case _                    => f("")
+    }
 
   def modifyString(d: UnicodeDraw, f: String => String): UnicodeDraw = d match {
     case WrappedLine(l, s, r) => wrappedLine(l, f(s), r)
-    case Line(s) => line(f(s))
-    case _ => d
+    case Line(s)              => line(f(s))
+    case _                    => d
   }
 
   private def dataSize(d: Data): Int = d match {
-    case VectorData(v) => v.length
-    case ArrayData(a) => a.foldLeft(0)((acc, now) => acc + dataSize(now))
+    case VectorData(v)    => v.length
+    case ArrayData(a)     => a.foldLeft(0)((acc, now) => acc + dataSize(now))
     case PairData(p1, p2) => dataSize(p1) + dataSize(p2)
-    case _ => 1
+    case _                => 1
   }
 }
 
@@ -291,49 +328,68 @@ object ShowRiseCompact {
 class ShowRiseCompactTrack extends ShowRiseCompact {
   import rise.core.DrawTree._
 
-  var probe: Expr => Boolean = {_ => false}
+  var probe: Expr => Boolean = { _ =>
+    false
+  }
 
   case class Track(target: UnicodeDraw) extends UnicodeDraw {
-    def render(cxt: Cxt)(implicit cfg: UnicodeConfig): RenderUnicodeDraw = target.render(cxt)
+    def render(cxt: Cxt)(implicit cfg: UnicodeConfig): RenderUnicodeDraw =
+      target.render(cxt)
   }
 
   def track(d: UnicodeDraw): Track = d match {
     case Track(target) => track(target)
-    case _ => Track(d)
+    case _             => Track(d)
   }
 
-  override def extractString(d: UnicodeDraw, f: String => UnicodeDraw): UnicodeDraw = d match {
+  override def extractString(
+      d: UnicodeDraw,
+      f: String => UnicodeDraw
+  ): UnicodeDraw = d match {
     case Track(target) => extractString(target, s => track(f(s)))
-    case _ => super.extractString(d, f)
+    case _             => super.extractString(d, f)
   }
 
-  override def extractUnicodeDraw(d: UnicodeDraw, f: UnicodeDraw => UnicodeDraw): UnicodeDraw = d match {
+  override def extractUnicodeDraw(
+      d: UnicodeDraw,
+      f: UnicodeDraw => UnicodeDraw
+  ): UnicodeDraw = d match {
     case Track(target) => extractUnicodeDraw(target, d => track(f(track(d))))
-    case _ => super.extractUnicodeDraw(d, f)
+    case _             => super.extractUnicodeDraw(d, f)
   }
 
   def flag(inline: Boolean, r: UnicodeDraw): Track =
     track(if (inline) modifyString(r, "⚑ " + _) else block("⚑", r))
 
-  override def drawAST(expr: Expr, wrapped: Boolean = false)
-                      (implicit inlineSize: Int): (Boolean, Int, UnicodeDraw) = {
+  override def drawAST(expr: Expr, wrapped: Boolean = false)(
+      implicit inlineSize: Int
+  ): (Boolean, Int, UnicodeDraw) = {
     val (sInline, sSize, sr) = super.drawAST(expr, wrapped)(inlineSize)
     val tr = if (sr.isInstanceOf[Track]) {
       val srTarget = track(sr).target
-      val r = if (sInline) srTarget else
-        expr match {
-          case _: App => srTarget match {
-            case AddRight(a: Track, b: Track) => block("◆", a) :+> b
-            case AddRight(a: Track, b) => block("▶", a) :+> b
-            case AddRight(a, b: Track) => block("▼", a) :+> b
-            case AddRight(_, _) =>
-              throw RenderException("there should be a start point of tracking")
-            case _ => throw RenderException("the way in which App is drawn is not expected")
+      val r =
+        if (sInline) srTarget
+        else
+          expr match {
+            case _: App =>
+              srTarget match {
+                case AddRight(a: Track, b: Track) => block("◆", a) :+> b
+                case AddRight(a: Track, b)        => block("▶", a) :+> b
+                case AddRight(a, b: Track)        => block("▼", a) :+> b
+                case AddRight(_, _) =>
+                  throw RenderException(
+                    "there should be a start point of tracking"
+                  )
+                case _ =>
+                  throw RenderException(
+                    "the way in which App is drawn is not expected"
+                  )
+              }
+            case _ => srTarget
           }
-          case _ => srTarget
-        }
       track(r)
-    } else if (probe(expr)) flag(sInline, sr) else sr
+    } else if (probe(expr)) flag(sInline, sr)
+    else sr
     (sInline, sSize, tr)
   }
 }
@@ -346,7 +402,12 @@ object ShowRiseCompactTrack {
   def apply(expr: Expr, inlineSize: Int, cfg: UnicodeConfig): String = {
     obj.drawAST(expr)(inlineSize)._3.show(cfg)
   }
-  def apply(probe: Expr => Boolean, expr: Expr, inlineSize: Int, cfg: UnicodeConfig): String = {
+  def apply(
+      probe: Expr => Boolean,
+      expr: Expr,
+      inlineSize: Int,
+      cfg: UnicodeConfig
+  ): String = {
     val temp = new ShowRiseCompactTrack
     temp.probe = probe
     temp.drawAST(expr)(inlineSize)._3.show(cfg)
@@ -356,8 +417,9 @@ object ShowRiseCompactTrack {
 class ShowRiseCompactTrackTopDown extends ShowRiseCompactTrack {
   import rise.core.DrawTree._
 
-  override def drawAST(expr: Expr, wrapped: Boolean = false)
-                      (implicit inlineSize: Int): (Boolean, Int, UnicodeDraw) = {
+  override def drawAST(expr: Expr, wrapped: Boolean = false)(
+      implicit inlineSize: Int
+  ): (Boolean, Int, UnicodeDraw) = {
     if (probe(expr)) {
       val oldProbe = probe
       probe = _ => false
@@ -378,7 +440,12 @@ object ShowRiseCompactTrackTopDown {
   def apply(expr: Expr, inlineSize: Int, cfg: UnicodeConfig): String = {
     obj.drawAST(expr)(inlineSize)._3.show(cfg)
   }
-  def apply(probe: Expr => Boolean, expr: Expr, inlineSize: Int, cfg: UnicodeConfig): String = {
+  def apply(
+      probe: Expr => Boolean,
+      expr: Expr,
+      inlineSize: Int,
+      cfg: UnicodeConfig
+  ): String = {
     val temp = new ShowRiseCompactTrackTopDown
     temp.probe = probe
     temp.drawAST(expr)(inlineSize)._3.show(cfg)
@@ -394,18 +461,28 @@ object ShowRise {
 
   val roundedCorner: UnicodeConfig = UnicodeConfig("│╭├╰├╩╦╬═ ─")
 
-  def showRise(expr: Expr): String = showRiseCompactTrack(expr, cfg = spaceWireH)
+  def showRise(expr: Expr): String =
+    showRiseCompactTrack(expr, cfg = spaceWireH)
 
-  def showRiseCompact(expr: Expr, inlineSize: Int = defaultInlineSize,
-                      cfg: UnicodeConfig = defaultUnicodeConfig): String =
+  def showRiseCompact(
+      expr: Expr,
+      inlineSize: Int = defaultInlineSize,
+      cfg: UnicodeConfig = defaultUnicodeConfig
+  ): String =
     ShowRiseCompact(expr, inlineSize, cfg)
 
-  def showRiseCompactTrack(expr: Expr, inlineSize: Int = defaultInlineSize,
-                           cfg: UnicodeConfig = defaultUnicodeConfig): String =
+  def showRiseCompactTrack(
+      expr: Expr,
+      inlineSize: Int = defaultInlineSize,
+      cfg: UnicodeConfig = defaultUnicodeConfig
+  ): String =
     ShowRiseCompactTrack(expr, inlineSize, cfg)
 
-  def showRiseCompactTrackTD(expr: Expr, inlineSize: Int = defaultInlineSize,
-                             cfg: UnicodeConfig = defaultUnicodeConfig): String =
+  def showRiseCompactTrackTD(
+      expr: Expr,
+      inlineSize: Int = defaultInlineSize,
+      cfg: UnicodeConfig = defaultUnicodeConfig
+  ): String =
     ShowRiseCompactTrackTopDown(expr, inlineSize, cfg)
 
   def showRiseSingleLine(expr: Expr): String =
@@ -417,13 +494,23 @@ object ShowRise {
   def showRiseSingleLineTrackTD(expr: Expr): String =
     ShowRiseCompactTrackTopDown(expr, Int.MaxValue, defaultUnicodeConfig).tail
 
-  def trackWith(probe: Expr => Boolean, expr: Expr, inlineSize: Int = defaultInlineSize,
-                cfg: UnicodeConfig = defaultUnicodeConfig): String =
+  def trackWith(
+      probe: Expr => Boolean,
+      expr: Expr,
+      inlineSize: Int = defaultInlineSize,
+      cfg: UnicodeConfig = defaultUnicodeConfig
+  ): String =
     ShowRiseCompactTrack(probe, expr, inlineSize, cfg)
-  def setGlobalProbe(probe: Expr => Boolean): Unit = ShowRiseCompactTrack.setProbe(probe)
+  def setGlobalProbe(probe: Expr => Boolean): Unit =
+    ShowRiseCompactTrack.setProbe(probe)
 
-  def trackTDWith(probe: Expr => Boolean, expr: Expr, inlineSize: Int = defaultInlineSize,
-                cfg: UnicodeConfig = defaultUnicodeConfig): String =
+  def trackTDWith(
+      probe: Expr => Boolean,
+      expr: Expr,
+      inlineSize: Int = defaultInlineSize,
+      cfg: UnicodeConfig = defaultUnicodeConfig
+  ): String =
     ShowRiseCompactTrackTopDown(probe, expr, inlineSize, cfg)
-  def setTDGlobalProbe(probe: Expr => Boolean): Unit = ShowRiseCompactTrackTopDown.setProbe(probe)
+  def setTDGlobalProbe(probe: Expr => Boolean): Unit =
+    ShowRiseCompactTrackTopDown.setProbe(probe)
 }
