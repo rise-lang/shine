@@ -1,0 +1,17 @@
+name: Scala CI
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    container: michelsteuwer/docker-scala-opencl:scala2.12.10sbt1.3.5opencl2.0
+
+    steps:
+      - uses: actions/checkout@v1
+      - name: Checkout submodules
+        uses: textbook/git-checkout-submodule-action@2.0.0
+      - name: Run tests
+        run: sbt test
