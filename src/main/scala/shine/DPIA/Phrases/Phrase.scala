@@ -9,7 +9,7 @@ import shine.DPIA.Semantics.OperationalSemantics.{IndexData, NatData}
 import shine.DPIA.Types._
 import shine.DPIA._
 
-sealed trait Phrase[T <: PhraseType] {
+sealed trait Phrase[+T <: PhraseType] {
   val t: T // TODO? perform type checking at the same time
 }
 
@@ -30,7 +30,7 @@ final case class Lambda[T1 <: PhraseType, T2 <: PhraseType](param: Identifier[T1
 final case class Apply[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 ->: T2], arg: Phrase[T1])
   extends Phrase[T2] {
 
-  TypeCheck.check(fun.t.inT, arg.t) // FIXME: redundant with type checking
+  TypeCheck.subTypeCheck(arg.t, fun.t.inT) // FIXME: redundant with type checking
   override val t: T2 = fun.t.outT
   override def toString: String = s"($fun $arg)"
 }

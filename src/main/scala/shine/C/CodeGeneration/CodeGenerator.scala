@@ -425,7 +425,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error(s"Expected two C-Integer-Expressions on the path.")
       }
 
-      case Map(n, dt, _, f, e) => path match {
+      case Map(n, dt, _, _, f, e) => path match {
         case (i : CIntExpr) :: ps => exp( f( Idx(n, dt, AsIndex(n, Natural(i)), e) ), env, ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }

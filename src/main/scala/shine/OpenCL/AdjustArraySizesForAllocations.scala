@@ -131,7 +131,9 @@ object AdjustArraySizesForAllocations {
           val arr = identifier(freshName("arr"), exp"[$adjElemT, $read]")
           val mapFunBody = adjustedExpr(parallInfo.tail, adjElemT, oldElemT, addrSpace)(arr)
 
-          Map(oldSize, adjElemT, mapFunBody.t.dataType, Lambda(arr, mapFunBody), outerDimension)
+          val accessType = outerDimension.t.accessType
+
+          Map(oldSize, adjElemT, mapFunBody.t.dataType, accessType, Lambda(arr, mapFunBody), outerDimension)
 
         case (PairType(adjDt1, adjDt2), PairType(oldDt1, oldDt2)) =>
           parallInfo match {

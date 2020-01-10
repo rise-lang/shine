@@ -1,12 +1,11 @@
 package shine.DPIA.Types
 
-import shine.DPIA.Phrases._
 import shine.DPIA._
+import shine.DPIA.Phrases._
 
 class TypeException(msg: String) extends Exception(msg)
 
 object TypeCheck {
-
   def apply[T <: PhraseType](phrase: Phrase[T]): Unit = {
     phrase match {
       case Identifier(_, _) =>
@@ -16,7 +15,8 @@ object TypeCheck {
       case Apply(p, q) =>
         TypeCheck(p)
         TypeCheck(q)
-        check(p.t.inT, q.t)
+        if(!(q.t `<` p.t.inT))
+          error(q.t, p.t.inT)
 
       case DepLambda(_, p) => TypeCheck(p)
 
@@ -74,9 +74,7 @@ object TypeCheck {
   }
 
   def check(found: PhraseType, expected: PhraseType): Unit = {
-    if (found != expected) {
-      error(found, expected)
-    }
+    if (!(found `<` expected)) error(found, expected)
   }
 
   def check(found: PhraseType, test: PhraseType => Unit): Unit = {
@@ -87,6 +85,24 @@ object TypeCheck {
     def checkType(pt: PhraseType): Unit = {
       TypeCheck(p)
       check(p.t, pt)
+    }
+  }
+
+  implicit class SubTypeCheckHelper(subType: PhraseType) {
+    def `<`(superType: PhraseType): Boolean = {
+      subTypeCheck(subType, superType)
+    }
+  }
+
+  def subTypeCheck(subType: PhraseType, superType: PhraseType): Boolean = {
+    if (subType == superType) return true
+
+    (subType, superType) match {
+      case (ExpType(bSub: BasicType, accessSub), ExpType(bSuper, _)) =>
+        bSub == bSuper && accessSub == read
+      case (FunType(subInT, subOutT), FunType(superInT, superOutT)) =>
+        subTypeCheck(superInT, subInT) && subTypeCheck(subOutT,  superOutT)
+      case _ => false
     }
   }
 }

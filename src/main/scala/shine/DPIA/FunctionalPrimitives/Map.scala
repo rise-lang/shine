@@ -4,17 +4,30 @@ import shine.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import shine.DPIA.DSL._
 import shine.DPIA.ImperativePrimitives.{MapAcc, MapRead}
 import shine.DPIA.Phrases._
+import shine.DPIA.Semantics.OperationalSemantics
+import shine.DPIA.Semantics.OperationalSemantics.{Data, Store}
 import shine.DPIA.Types._
 import shine.DPIA._
 
-final case class Map(override val n: Nat,
-                     override val dt1: DataType,
-                     override val dt2: DataType,
-                     override val f: Phrase[ExpType ->: ExpType],
-                     override val array: Phrase[ExpType])
-  extends AbstractMap(n, dt1, dt2, f, array)
+import scala.xml.Elem
+
+final case class Map(n: Nat,
+                     dt1: DataType,
+                     dt2: DataType,
+                     access: AccessType,
+                     f: Phrase[ExpType ->: ExpType],
+                     array: Phrase[ExpType])
+  extends ExpPrimitive
 {
-  override def makeMap: (Nat, DataType, DataType, Phrase[ExpType ->: ExpType], Phrase[ExpType]) => AbstractMap = Map
+  override val t: ExpType =
+    (n: Nat) ->: (dt1: DataType) ->: (dt2: DataType) ->: (access: AccessType) ->:
+      (f :: t"exp[$dt1, $access] -> exp[$dt2, $access]") ->:
+      (array :: exp"[$n.$dt1, $access]") ->: exp"[$n.$dt2, $access]"
+
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
+    Map(fun.nat(n), fun.data(dt1), fun.data(dt2), fun.access(access),
+      VisitAndRebuild(f, fun), VisitAndRebuild(array, fun))
+  }
 
   override def fedeTranslation(env: scala.Predef.Map[Identifier[ExpType], Identifier[AccType]])
                               (C: Phrase[AccType ->: AccType]) : Phrase[AccType] = {
@@ -55,4 +68,22 @@ final case class Map(override val n: Nat,
             con(f(a))(fun(exp"[$dt2, $read]")(b => Apply(cont, b))))),
         x))))
   }
+
+  override def eval(s: Store): Data = ???
+
+  override def prettyPrint: String =
+    s"${this.getClass.getSimpleName} (${PrettyPhrasePrinter(f)}) (${PrettyPhrasePrinter(array)})"
+
+  override def xmlPrinter: Elem =
+    <map n={ToString(n)} dt1={ToString(dt1)} dt2={ToString(dt2)} access={ToString(access)}>
+      <f type={ToString(ExpType(dt1, access) ->: ExpType(dt2, access))}>
+        {Phrases.xmlPrinter(f)}
+      </f>
+      <input type={ToString(ExpType(ArrayType(n, dt1), access))}>
+        {Phrases.xmlPrinter(array)}
+      </input>
+    </map>.copy(label = {
+      val name = this.getClass.getSimpleName
+      Character.toLowerCase(name.charAt(0)) + name.substring(1)
+    })
 }

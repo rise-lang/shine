@@ -40,7 +40,9 @@ final case class SlideSeq(rot: lp.SlideSeq.Rotate,
   }
 
   override def eval(s: Store): Data = {
-    Map(n, ArrayType(sz, dt1), dt2, f, Slide(n, sz, sp, dt1, input)).eval(s)
+    //FIXME
+    //Map(n, ArrayType(sz, dt1), dt2, f, Slide(n, sz, sp, dt1, input)).eval(s)
+    ???
   }
 
   override def acceptorTranslation(A: Phrase[AccType])

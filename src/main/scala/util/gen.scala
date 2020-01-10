@@ -4,7 +4,7 @@ import shine.DPIA
 import shine.OpenCL.{GlobalSize, LocalSize}
 
 object gen {
-  private def toDPIA(e: rise.core.Expr): DPIA.Phrases.Phrase[_ <: DPIA.Types.PhraseType] = {
+  def toDPIA(e: rise.core.Expr): DPIA.Phrases.Phrase[_ <: DPIA.Types.PhraseType] = {
     val typed_e = rise.core.types.infer(e)
     shine.DPIA.fromRise(typed_e)
   }
