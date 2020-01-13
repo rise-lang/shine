@@ -1,10 +1,8 @@
 package rise.core
 
-import arithexpr.arithmetic.{Cst, RangeAdd}
 import rise.core.types._
 import rise.core.semantics._
 import rise.core.primitives._
-import rise.core.TypeLevelDSL._
 
 import scala.language.implicitConversions
 
@@ -13,7 +11,10 @@ object DSL {
   def identifier(name: String): Identifier = Identifier(name)()
   def lambda(x: Identifier, e: Expr): Lambda = Lambda(x, e)()
   def app(f: Expr, e: Expr): App = App(f, e)()
-  def depLambda[K <: Kind : KindName](x: K#I with Kind.Explicitness, e: Expr): DepLambda[K] = DepLambda[K](x, e)()
+  def depLambda[K <: Kind: KindName](
+      x: K#I with Kind.Explicitness,
+      e: Expr
+  ): DepLambda[K] = DepLambda[K](x, e)()
   def depApp[K <: Kind](f: Expr, x: K#T): DepApp[K] = DepApp[K](f, x)()
   def literal(d: semantics.Data): Literal = Literal(d)
 
@@ -48,7 +49,8 @@ object DSL {
   def reorder: Reorder = primitives.Reorder()()
   def scanSeq: ScanSeq = primitives.ScanSeq()()
   def slide: Slide = primitives.Slide()()
-  def slideSeq(roprimT: SlideSeq.Rotate): SlideSeq = primitives.SlideSeq(roprimT)()
+  def slideSeq(roprimT: SlideSeq.Rotate): SlideSeq =
+    primitives.SlideSeq(roprimT)()
   def snd: Snd = primitives.Snd()()
   def split: Split = primitives.Split()()
   def take: Take = primitives.Take()()
@@ -76,8 +78,6 @@ object DSL {
   def typeHole(msg: String): TypeHole = TypeHole(msg)()
 
   implicit class Ops(lhs: Expr) {
-    import rise.core.primitives._
-
     // binary
     def +(rhs: Expr): Expr = add(lhs)(rhs)
     def -(rhs: Expr): Expr = sub(lhs)(rhs)
@@ -97,8 +97,6 @@ object DSL {
   }
 
   implicit class Indexing(e: Expr) {
-    import rise.core.primitives._
-
     def `@`(i: Expr): Expr = idx(i)(e)
   }
 
@@ -110,7 +108,7 @@ object DSL {
         throw TypeException(s"tried to replace ${e.t} with ${t}, but type annotation can only replace a TypePlaceholder")
     def `:`(e: Expr): Expr = e :: t
   }
-  */
+   */
 
   implicit class TypeAnnotation(t: Type) {
     def ::(e: Expr): Expr = Annotation(e, t)
@@ -168,10 +166,24 @@ object DSL {
 
     def apply(f: Identifier => Expr): Expr = untyped(f)
     def apply(f: (Identifier, Identifier) => Expr): Expr = untyped(f)
-    def apply(f: (Identifier, Identifier, Identifier) => Expr): Expr = untyped(f)
-    def apply(f: (Identifier, Identifier, Identifier, Identifier) => Expr): Expr = untyped(f)
-    def apply(f: (Identifier, Identifier, Identifier, Identifier, Identifier) => Expr): Expr = untyped(f)
-    def apply(f: (Identifier, Identifier, Identifier, Identifier, Identifier, Identifier) => Expr): Expr = untyped(f)
+    def apply(f: (Identifier, Identifier, Identifier) => Expr): Expr =
+      untyped(f)
+    def apply(
+        f: (Identifier, Identifier, Identifier, Identifier) => Expr
+    ): Expr = untyped(f)
+    def apply(
+        f: (Identifier, Identifier, Identifier, Identifier, Identifier) => Expr
+    ): Expr = untyped(f)
+    def apply(
+        f: (
+            Identifier,
+            Identifier,
+            Identifier,
+            Identifier,
+            Identifier,
+            Identifier
+        ) => Expr
+    ): Expr = untyped(f)
 
     private def untyped(f: Identifier => Expr): Expr = {
       val e = identifier(freshName("e"))
@@ -183,22 +195,37 @@ object DSL {
       lambda(e, untyped(e1 => f(e, e1)))
     }
 
-    private def untyped(f: (Identifier, Identifier, Identifier) => Expr): Expr = {
+    private def untyped(
+        f: (Identifier, Identifier, Identifier) => Expr
+    ): Expr = {
       val e = identifier(freshName("e"))
       lambda(e, untyped((e1, e2) => f(e, e1, e2)))
     }
 
-    private def untyped(f: (Identifier, Identifier, Identifier, Identifier) => Expr): Expr = {
+    private def untyped(
+        f: (Identifier, Identifier, Identifier, Identifier) => Expr
+    ): Expr = {
       val e = identifier(freshName("e"))
       lambda(e, untyped((e1, e2, e3) => f(e, e1, e2, e3)))
     }
 
-    private def untyped(f: (Identifier, Identifier, Identifier, Identifier, Identifier) => Expr): Expr = {
+    private def untyped(
+        f: (Identifier, Identifier, Identifier, Identifier, Identifier) => Expr
+    ): Expr = {
       val e = identifier(freshName("e"))
       lambda(e, untyped((e1, e2, e3, e4) => f(e, e1, e2, e3, e4)))
     }
 
-    private def untyped(f: (Identifier, Identifier, Identifier, Identifier, Identifier, Identifier) => Expr): Expr = {
+    private def untyped(
+        f: (
+            Identifier,
+            Identifier,
+            Identifier,
+            Identifier,
+            Identifier,
+            Identifier
+        ) => Expr
+    ): Expr = {
       val e = identifier(freshName("e"))
       lambda(e, untyped((e1, e2, e3, e4, e5) => f(e, e1, e2, e3, e4, e5)))
     }
@@ -207,15 +234,38 @@ object DSL {
     def apply(ft: FunType[Type, Type]) = new {
       def apply(f: Identifier => Expr): Expr = untyped(f) :: ft
       def apply(f: (Identifier, Identifier) => Expr): Expr = untyped(f) :: ft
-      def apply(f: (Identifier, Identifier, Identifier) => Expr): Expr = untyped(f) :: ft
-      def apply(f: (Identifier, Identifier, Identifier, Identifier) => Expr): Expr = untyped(f) :: ft
-      def apply(f: (Identifier, Identifier, Identifier, Identifier, Identifier) => Expr): Expr = untyped(f) :: ft
-      def apply(f: (Identifier, Identifier, Identifier, Identifier, Identifier, Identifier) => Expr): Expr = untyped(f) :: ft
+      def apply(f: (Identifier, Identifier, Identifier) => Expr): Expr =
+        untyped(f) :: ft
+      def apply(
+          f: (Identifier, Identifier, Identifier, Identifier) => Expr
+      ): Expr = untyped(f) :: ft
+      def apply(
+          f: (
+              Identifier,
+              Identifier,
+              Identifier,
+              Identifier,
+              Identifier
+          ) => Expr
+      ): Expr = untyped(f) :: ft
+      def apply(
+          f: (
+              Identifier,
+              Identifier,
+              Identifier,
+              Identifier,
+              Identifier,
+              Identifier
+          ) => Expr
+      ): Expr = untyped(f) :: ft
     }
   }
 
   object nFun {
-    def apply(r: arithexpr.arithmetic.Range, f: NatIdentifier => Expr): DepLambda[NatKind] = {
+    def apply(
+        r: arithexpr.arithmetic.Range,
+        f: NatIdentifier => Expr
+    ): DepLambda[NatKind] = {
       val x = NatIdentifier(freshName("n"), r, isExplicit = true)
       depLambda[NatKind](x, f(x))
     }
@@ -227,25 +277,37 @@ object DSL {
     def apply(f: (NatIdentifier, NatIdentifier) => Expr): DepLambda[NatKind] = {
       val r = arithexpr.arithmetic.RangeAdd(0, arithexpr.arithmetic.PosInf, 1)
       val n = NatIdentifier(freshName("n"), r, isExplicit = true)
-      depLambda[NatKind](n, nFun( f(n, _) ))
+      depLambda[NatKind](n, nFun(f(n, _)))
     }
 
-    def apply(f: (NatIdentifier, NatIdentifier, NatIdentifier) => Expr): DepLambda[NatKind] = {
+    def apply(
+        f: (NatIdentifier, NatIdentifier, NatIdentifier) => Expr
+    ): DepLambda[NatKind] = {
       val r = arithexpr.arithmetic.RangeAdd(0, arithexpr.arithmetic.PosInf, 1)
       val n = NatIdentifier(freshName("n"), r, isExplicit = true)
-      depLambda[NatKind](n, nFun( (n1, n2) => f(n, n1, n2) ))
+      depLambda[NatKind](n, nFun((n1, n2) => f(n, n1, n2)))
     }
 
-    def apply(f: (NatIdentifier, NatIdentifier, NatIdentifier, NatIdentifier) => Expr): DepLambda[NatKind] = {
+    def apply(
+        f: (NatIdentifier, NatIdentifier, NatIdentifier, NatIdentifier) => Expr
+    ): DepLambda[NatKind] = {
       val r = arithexpr.arithmetic.RangeAdd(0, arithexpr.arithmetic.PosInf, 1)
       val n = NatIdentifier(freshName("n"), r, isExplicit = true)
-      depLambda[NatKind](n, nFun( (n1, n2, n3) => f(n, n1, n2, n3) ))
+      depLambda[NatKind](n, nFun((n1, n2, n3) => f(n, n1, n2, n3)))
     }
 
-    def apply(f: (NatIdentifier, NatIdentifier, NatIdentifier, NatIdentifier, NatIdentifier) => Expr): DepLambda[NatKind] = {
+    def apply(
+        f: (
+            NatIdentifier,
+            NatIdentifier,
+            NatIdentifier,
+            NatIdentifier,
+            NatIdentifier
+        ) => Expr
+    ): DepLambda[NatKind] = {
       val r = arithexpr.arithmetic.RangeAdd(0, arithexpr.arithmetic.PosInf, 1)
       val n = NatIdentifier(freshName("n"), r, isExplicit = true)
-      depLambda[NatKind](n, nFun( (n1, n2, n3, n4) => f(n, n1, n2, n3, n4) ))
+      depLambda[NatKind](n, nFun((n1, n2, n3, n4) => f(n, n1, n2, n3, n4)))
     }
   }
 
@@ -270,9 +332,15 @@ object DSL {
       ForeignFunction(ForeignFunction.Decl(name, None))(t)
     }
 
-    def apply(name: String, params: Seq[String], body: String, t: Type): Expr = {
-      ForeignFunction(ForeignFunction.Decl(name,
-        Some(ForeignFunction.Def(params, body))))(t)
+    def apply(
+        name: String,
+        params: Seq[String],
+        body: String,
+        t: Type
+    ): Expr = {
+      ForeignFunction(
+        ForeignFunction.Decl(name, Some(ForeignFunction.Def(params, body)))
+      )(t)
     }
   }
 }

@@ -3,7 +3,6 @@ package primitiveMacro
 import scala.annotation.{StaticAnnotation, compileTimeOnly}
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
-import scala.reflect.macros.whitebox.Context
 
 object Primitive {
 

@@ -1,4 +1,4 @@
-ThisBuild / scalaVersion := "2.11.12"
+ThisBuild / scalaVersion := "2.12.10"
 ThisBuild / organization := "org.rise-lang"
 
 lazy val commonSettings = Seq(
@@ -34,10 +34,10 @@ lazy val rise = (project in file("."))
         "org.scala-lang" % "scala-library" % scalaVersion.value,
         // testing
         "junit" % "junit" % "4.11",
-        "org.scalatest" %% "scalatest" % "3.0.5" % "test",
+        "org.scalatest" %% "scalatest" % "3.1.0" % "test",
         // Silencer: Scala compiler plugin for warning suppression
-        compilerPlugin("com.github.ghik" %% "silencer-plugin" % "1.4.0"),
-        "com.github.ghik" %% "silencer-lib" % "1.4.0" % Provided
+        compilerPlugin("com.github.ghik" % "silencer-plugin" % "1.4.3" cross CrossVersion.full),
+        "com.github.ghik" % "silencer-lib" % "1.4.3" % Provided cross CrossVersion.full
     )
   )
 
