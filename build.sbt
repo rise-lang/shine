@@ -3,7 +3,7 @@ ThisBuild / organization := "org.rise-lang"
 
 lazy val shine = (project in file("."))
   .aggregate(executor)
-  .dependsOn(executor, rise)
+  .dependsOn(executor, elevate, rise)
   .settings(
     name    := "shine",
     version := "1.0",
@@ -44,3 +44,5 @@ lazy val shine = (project in file("."))
 lazy val executor   = (project in file("lib/executor"))
 
 lazy val rise       = (project in file("lib/rise"))
+
+lazy val elevate    = (project in file("lib/elevate"))

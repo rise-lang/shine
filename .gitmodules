@@ -4,3 +4,6 @@
 [submodule "lib/rise"]
 	path = lib/rise
 	url = https://github.com/rise-lang/rise.git
+[submodule "lib/elevate"]
+	path = lib/elevate
+	url = https://github.com/elevate-lang/elevate.git
