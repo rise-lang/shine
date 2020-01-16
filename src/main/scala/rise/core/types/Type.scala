@@ -25,8 +25,8 @@ final case class FunType[T1 <: Type, T2 <: Type](inT: T1, outT: T2)
 }
 
 final case class DepFunType[K <: Kind: KindName, T <: Type](
-  x: K#I with Kind.Explicitness,
-  t: T
+    x: K#I with Kind.Explicitness,
+    t: T
 ) extends Type {
   override def toString: String =
     s"(${x.name}: ${implicitly[KindName[K]].get} -> $t)"
@@ -40,9 +40,10 @@ final case class DepFunType[K <: Kind: KindName, T <: Type](
 
 sealed trait DataType extends Type
 
-final case class DataTypeIdentifier(name: String,
-                                    override val isExplicit: Boolean = false)
-    extends DataType
+final case class DataTypeIdentifier(
+    name: String,
+    override val isExplicit: Boolean = false
+) extends DataType
     with Kind.Identifier
     with Kind.Explicitness {
   override def toString: String = if (isExplicit) name else "_" + name
