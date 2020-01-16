@@ -11,25 +11,31 @@ class Pad extends test_util.Tests {
   private val id = fun(x => x)
 
   test("Simple C constant pad input and copy") {
-    val e = nFun(n => fun(ArrayType(n, f32))(xs =>
-      xs |> padCst(2)(3)(l(5.0f)) |> mapSeq(fun(x => x))
-    ))
+    val e = nFun(n =>
+      fun(ArrayType(n, f32))(xs =>
+        xs |> padCst(2)(3)(l(5.0f)) |> mapSeq(fun(x => x))
+      )
+    )
 
     gen.CProgram(e)
   }
 
   test("Simple C clamp pad input and copy") {
-    val e = nFun(n => fun(ArrayType(n, f32))(xs =>
-      xs |> padClamp(2)(3) |> mapSeq(fun(x => x))
-    ))
+    val e = nFun(n =>
+      fun(ArrayType(n, f32))(xs => xs |> padClamp(2)(3) |> mapSeq(fun(x => x)))
+    )
 
     gen.CProgram(e)
   }
 
   test("2D C clamp pad input and copy") {
-    val e = nFun(n => nFun(m => fun(ArrayType(n, ArrayType(m, f32)))(xs =>
-      xs |> padClamp2D(2) |> mapSeq(mapSeq(fun(x => x)))
-    )))
+    val e = nFun(n =>
+      nFun(m =>
+        fun(ArrayType(n, ArrayType(m, f32)))(xs =>
+          xs |> padClamp2D(2) |> mapSeq(mapSeq(fun(x => x)))
+        )
+      )
+    )
 
     gen.CProgram(e)
   }
@@ -37,9 +43,11 @@ class Pad extends test_util.Tests {
   test("Simple OpenMP constant pad input and copy") {
     import rise.OpenMP.DSL._
 
-    val e = nFun(n => fun(ArrayType(n, f32))( xs =>
-      xs |> padCst(2)(3)(l(5.0f)) |> mapPar(fun(x => x))
-    ))
+    val e = nFun(n =>
+      fun(ArrayType(n, f32))(xs =>
+        xs |> padCst(2)(3)(l(5.0f)) |> mapPar(fun(x => x))
+      )
+    )
 
     gen.OpenMPProgram(e)
   }
@@ -47,9 +55,11 @@ class Pad extends test_util.Tests {
   test("Simple OpenCL pad input and copy") {
     import rise.OpenCL.DSL._
 
-    val e = nFun(n => fun(ArrayType(n, f32))( xs =>
-      xs |> padCst(2)(3)(l(5.0f)) |> mapGlobal(fun(x => x))
-    ))
+    val e = nFun(n =>
+      fun(ArrayType(n, f32))(xs =>
+        xs |> padCst(2)(3)(l(5.0f)) |> mapGlobal(fun(x => x))
+      )
+    )
 
     gen.OpenCLKernel(e)
   }
@@ -57,9 +67,11 @@ class Pad extends test_util.Tests {
   test("OpenCL Pad only left") {
     import rise.OpenCL.DSL._
 
-    val e = nFun(n => fun(ArrayType(n, f32))( xs =>
-      xs |> padCst(2)(0)(l(5.0f)) |> mapGlobal(fun(x => x))
-    ))
+    val e = nFun(n =>
+      fun(ArrayType(n, f32))(xs =>
+        xs |> padCst(2)(0)(l(5.0f)) |> mapGlobal(fun(x => x))
+      )
+    )
 
     gen.OpenCLKernel(e)
   }
@@ -67,9 +79,11 @@ class Pad extends test_util.Tests {
   test("OpenCL Pad only right") {
     import rise.OpenCL.DSL._
 
-    val e = nFun(n => fun(ArrayType(n, f32))( xs =>
-      xs |> padCst(0)(3)(l(5.0f)) |> mapGlobal(fun(x => x))
-    ))
+    val e = nFun(n =>
+      fun(ArrayType(n, f32))(xs =>
+        xs |> padCst(0)(3)(l(5.0f)) |> mapGlobal(fun(x => x))
+      )
+    )
 
     gen.OpenCLKernel(e)
   }
@@ -78,16 +92,26 @@ class Pad extends test_util.Tests {
     import rise.OpenCL.DSL._
 
     val range = arithexpr.arithmetic.RangeAdd(1, arithexpr.arithmetic.PosInf, 1)
-    val k1 = gen.OpenCLKernel(nFun(range, n =>
-      fun((4`.`n`.`int) ->: ((n+2)`.`4`.`int))(xs =>
-        xs |> transpose |> padClamp(1)(1) |> mapGlobal(mapSeqUnroll(id))
+    val k1 = gen.OpenCLKernel(
+      nFun(
+        range,
+        n =>
+          fun((4 `.` n `.` int) ->: ((n + 2) `.` 4 `.` int))(xs =>
+            xs |> transpose |> padClamp(1)(1) |> mapGlobal(mapSeqUnroll(id))
+          )
       )
-    ))
-    val k2 = gen.OpenCLKernel(nFun(range, n =>
-      fun((4`.`n`.`int) ->: ((n+2)`.`4`.`int))(xs =>
-        xs |> map(padClamp(1)(1)) |> transpose |> mapGlobal(mapSeqUnroll(id))
+    )
+    val k2 = gen.OpenCLKernel(
+      nFun(
+        range,
+        n =>
+          fun((4 `.` n `.` int) ->: ((n + 2) `.` 4 `.` int))(xs =>
+            xs |> map(padClamp(1)(1)) |> transpose |> mapGlobal(
+              mapSeqUnroll(id)
+            )
+          )
       )
-    ))
+    )
 
     val N = 20
     val random = new scala.util.Random()
@@ -97,12 +121,14 @@ class Pad extends test_util.Tests {
     val localSize = LocalSize(1)
     val globalSize = GlobalSize(1)
 
-    val f1 = k1.as[ScalaFunction `(` Int `,` Array[Array[Int]] `)=>`Array[Int]]
-    val f2 = k2.as[ScalaFunction `(` Int `,` Array[Array[Int]] `)=>`Array[Int]]
+    val f1 = k1.as[ScalaFunction `(` Int `,` Array[Array[Int]] `)=>` Array[Int]]
+    val f2 = k2.as[ScalaFunction `(` Int `,` Array[Array[Int]] `)=>` Array[Int]]
 
     val ((r1, _), (r2, _)) = util.withExecutor {
-      (f1(localSize, globalSize)(N `,` input),
-        f2(localSize, globalSize)(N `,` input))
+      (
+        f1(localSize, globalSize)(N `,` input),
+        f2(localSize, globalSize)(N `,` input)
+      )
     }
     util.assertSame(r1, r2, "results are different")
   }
@@ -145,5 +171,5 @@ class Pad extends test_util.Tests {
       Run().run(localSize = 1, globalSize = 1).correctness.check()
     }
 
-   */
+ */
 }

@@ -26,13 +26,11 @@ class Reduce extends test_util.TestsWithExecutor {
 
   test("Fusing a reduce into a map should generate syntactic valid C code") {
     val e =
-      nFun(
-        h =>
-          nFun(
-            w =>
-              fun(ArrayType(h, ArrayType(w, f32)))(
-                a => a |> map(reduceSeq(add)(l(0.0f))) |> mapSeq(fun(x => x))
-            )
+      nFun(h =>
+        nFun(w =>
+          fun(ArrayType(h, ArrayType(w, f32)))(a =>
+            a |> map(reduceSeq(add)(l(0.0f))) |> mapSeq(fun(x => x))
+          )
         )
       )
 
@@ -43,14 +41,11 @@ class Reduce extends test_util.TestsWithExecutor {
     "Fusing a reduce into another should generate syntactic valid C code with two loops"
   ) {
     val e =
-      nFun(
-        h =>
-          nFun(
-            w =>
-              fun(ArrayType(h, ArrayType(w, f32)))(
-                a =>
-                  a |> map(reduceSeq(add)(l(0.0f))) |> reduceSeq(add)(l(0.0f))
-            )
+      nFun(h =>
+        nFun(w =>
+          fun(ArrayType(h, ArrayType(w, f32)))(a =>
+            a |> map(reduceSeq(add)(l(0.0f))) |> reduceSeq(add)(l(0.0f))
+          )
         )
       )
 
@@ -66,20 +61,17 @@ class Reduce extends test_util.TestsWithExecutor {
 
     val random = new Random()
 
-    val initExp = nFun(
-      n =>
-        generate(fun(IndexType(n))(_ => l(0.0f)))
-          |> mapSeq(fun(x => x))
+    val initExp = nFun(n =>
+      generate(fun(IndexType(n))(_ => l(0.0f)))
+        |> mapSeq(fun(x => x))
     )
 
-    val e = nFun(
-      (m, n) =>
-        fun(m `.` n `.` f32)(
-          arr =>
-            arr |> oclReduceSeq(AddressSpace.Private)(
-              fun((in1, in2) => zip(in1)(in2) |> mapSeq(fun(t => t._1 + t._2)))
-            )(initExp(n))
-              |> mapSeq(fun(x => x))
+    val e = nFun((m, n) =>
+      fun(m `.` n `.` f32)(arr =>
+        arr |> oclReduceSeq(AddressSpace.Private)(
+          fun((in1, in2) => zip(in1)(in2) |> mapSeq(fun(t => t._1 + t._2)))
+        )(initExp(n))
+          |> mapSeq(fun(x => x))
       )
     )
 
@@ -129,10 +121,9 @@ class Reduce extends test_util.TestsWithExecutor {
     val initRecordExp = pair(l(0.0f), l(0.0f))
 
     def e(init: Expr) =
-      nFun(
-        n =>
-          fun(n `.` f32)(
-            arr => arr |> oclReduceSeq(AddressSpace.Global)(fun(_ + _))(init)
+      nFun(n =>
+        fun(n `.` f32)(arr =>
+          arr |> oclReduceSeq(AddressSpace.Global)(fun(_ + _))(init)
         )
       )
 

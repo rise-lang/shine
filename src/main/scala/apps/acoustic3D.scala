@@ -22,31 +22,25 @@ object acoustic3D {
     int ->: int ->: int ->: int ->: int ->: int ->: int
   )
 
-  private val generateNumNeighbours = nFun(
-    o =>
-      nFun(
-        n =>
-          nFun(
-            m =>
-              generate(
-                fun(
-                  k =>
-                    generate(
-                      fun(
-                        j =>
-                          generate(
-                            fun(
-                              i =>
-                                getNumNeighbours(cast(i))(cast(j))(cast(k))(
-                                  cast(m: Expr)
-                                )(cast(n: Expr))(cast(o: Expr))
-                            )
-                        )
-                      )
+  private val generateNumNeighbours = nFun(o =>
+    nFun(n =>
+      nFun(m =>
+        generate(
+          fun(k =>
+            generate(
+              fun(j =>
+                generate(
+                  fun(i =>
+                    getNumNeighbours(cast(i))(cast(j))(cast(k))(
+                      cast(m: Expr)
+                    )(cast(n: Expr))(cast(o: Expr))
                   )
                 )
+              )
             )
+          )
         )
+      )
     )
   )
 
@@ -103,54 +97,46 @@ object acoustic3D {
         ((stencil * maskedValStencil) - (valueMat1 * cf2))) * cf
     })
 
-  val stencil: Expr = nFun(
-    o =>
-      nFun(
-        n =>
-          nFun(
-            m =>
-              fun(
-                ((o + 2) `.` (n + 2) `.` (m + 2) `.` f32) ->:
-                  ((o + 2) `.` (n + 2) `.` (m + 2) `.` f32) ->:
-                  (o `.` n `.` m `.` f32)
-              )(
-                (mat1, mat2) =>
-                  mapGlobal(2)(mapGlobal(1)(mapGlobal(0)(acoustic)))
-                    o slide3D(sz, st)
-                    $ zip3D(mat1)(
-                      zip3D(mat2)(generateNumNeighbours(o + 2)(n + 2)(m + 2))
-                  )
+  val stencil: Expr = nFun(o =>
+    nFun(n =>
+      nFun(m =>
+        fun(
+          ((o + 2) `.` (n + 2) `.` (m + 2) `.` f32) ->:
+            ((o + 2) `.` (n + 2) `.` (m + 2) `.` f32) ->:
+            (o `.` n `.` m `.` f32)
+        )((mat1, mat2) =>
+          mapGlobal(2)(mapGlobal(1)(mapGlobal(0)(acoustic)))
+            o slide3D(sz, st)
+            $ zip3D(mat1)(
+              zip3D(mat2)(generateNumNeighbours(o + 2)(n + 2)(m + 2))
             )
         )
+      )
     )
   )
 
-  val stencilMSS: Expr = nFun(
-    o =>
-      nFun(
-        n =>
-          nFun(
-            m =>
-              fun(
-                ((o + 2) `.` (n + 2) `.` (m + 2) `.` f32) ->:
-                  ((o + 2) `.` (n + 2) `.` (m + 2) `.` f32) ->:
-                  (o `.` n `.` m `.` f32)
-              )(
-                (mat1, mat2) =>
-                  transpose o map(transpose) o transpose o
-                    mapGlobal(0)(
-                      mapGlobal(1)(
-                        oclSlideSeq(SlideSeq.Values)(AddressSpace.Private)(sz)(
-                          st
-                        )(mapSeqUnroll(mapSeqUnroll(id)))(acoustic)
-                          o transpose o map(transpose)
-                      )
-                    ) o transpose o slide2D(sz, st) o map(transpose) o transpose
-                    $ zip3D(mat1)(
-                      zip3D(mat2)(generateNumNeighbours(o + 2)(n + 2)(m + 2))
-                  )
+  val stencilMSS: Expr = nFun(o =>
+    nFun(n =>
+      nFun(m =>
+        fun(
+          ((o + 2) `.` (n + 2) `.` (m + 2) `.` f32) ->:
+            ((o + 2) `.` (n + 2) `.` (m + 2) `.` f32) ->:
+            (o `.` n `.` m `.` f32)
+        )((mat1, mat2) =>
+          transpose o map(transpose) o transpose o
+            mapGlobal(0)(
+              mapGlobal(1)(
+                oclSlideSeq(SlideSeq.Values)(AddressSpace.Private)(sz)(
+                  st
+                )(mapSeqUnroll(mapSeqUnroll(id)))(acoustic)
+                  o transpose o map(transpose)
+              )
+            ) o transpose o slide2D(sz, st) o map(transpose) o transpose
+            $ zip3D(mat1)(
+              zip3D(mat2)(generateNumNeighbours(o + 2)(n + 2)(m + 2))
             )
         )
+      )
     )
   )
 }

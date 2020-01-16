@@ -11,7 +11,7 @@ import util.gen
 
 class separableConvolution2DCheck extends test_util.Tests {
   private def wrapExpr(e: Expr): Expr = {
-    import arithexpr.arithmetic.{RangeAdd, PosInf}
+    import arithexpr.arithmetic.{PosInf, RangeAdd}
     // at least 3 for one scalar sliding window
     // at least 3*4 = 12 for one vector sliding window
     nFun(
@@ -73,11 +73,13 @@ int main(int argc, char** argv) {
     checkC(regRotSeq(binomialWeightsV)(binomialWeightsH))
   }
 
-  import shine.OpenCL.{LocalSize, GlobalSize}
+  import shine.OpenCL.{GlobalSize, LocalSize}
 
-  private def checkOCL(localSize: LocalSize,
-                       globalSize: GlobalSize,
-                       e: Expr): Unit = {
+  private def checkOCL(
+      localSize: LocalSize,
+      globalSize: GlobalSize,
+      e: Expr
+  ): Unit = {
     import shine.OpenCL._
 
     val random = new scala.util.Random()
@@ -132,13 +134,11 @@ int main(int argc, char** argv) {
   test("compiling OpenCL private arrays should unroll loops") {
     import rise.OpenCL.DSL._
 
-    val dotSeqPrivate = fun(
-      a =>
-        fun(
-          b =>
-            zip(a)(b) |> map(mulT) |> oclReduceSeq(AddressSpace.Private)(add)(
-              l(0.0f)
-          )
+    val dotSeqPrivate = fun(a =>
+      fun(b =>
+        zip(a)(b) |> map(mulT) |> oclReduceSeq(AddressSpace.Private)(add)(
+          l(0.0f)
+        )
       )
     )
 

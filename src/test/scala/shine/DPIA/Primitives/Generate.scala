@@ -14,9 +14,9 @@ class Generate extends test_util.Tests {
   test(
     "Very simple one-dimensional generate generates syntactically correct code in C."
   ) {
-    val e = nFun(
-      n => generate(fun(IndexType(n))(i => cast(i) + l(1.0))) |> mapSeq(id)
-    )
+    val e =
+      nFun(n => generate(fun(IndexType(n))(i => cast(i) + l(1.0))) |> mapSeq(id)
+      )
     gen.CProgram(e)
   }
 
@@ -25,48 +25,41 @@ class Generate extends test_util.Tests {
       "generates syntactically correct code in C."
   ) {
     val e =
-      nFun(
-        n => generate(fun(IndexType(n))(i => indexAsNat(i) + n)) |> mapSeq(id)
+      nFun(n =>
+        generate(fun(IndexType(n))(i => indexAsNat(i) + n)) |> mapSeq(id)
       )
     gen.CProgram(e)
   }
 
   test("One-dimensional generate generates syntactically correct code in C.") {
-    val e = nFun(
-      n =>
-        fun(ArrayType(n, f64))(
-          in =>
-            zip(in)(
-              generate(fun(IndexType(n))(i => cos(cast(indexAsNat(i) + n))))
-            )
-              |> mapSeq(addT)
+    val e = nFun(n =>
+      fun(ArrayType(n, f64))(in =>
+        zip(in)(
+          generate(fun(IndexType(n))(i => cos(cast(indexAsNat(i) + n))))
+        )
+          |> mapSeq(addT)
       )
     )
     gen.CProgram(e)
   }
 
   test("Two-dimensional generate generates syntactically correct code in C.") {
-    val e = nFun(
-      m =>
-        nFun(
-          n =>
-            fun(ArrayType(m, ArrayType(n, f64)))(
-              in =>
-                zip(in)(
-                  generate(
-                    fun(IndexType(m))(
-                      i =>
-                        generate(
-                          fun(IndexType(n))(
-                            j =>
-                              cos(cast((indexAsNat(j) + n) * indexAsNat(i) + m))
-                          )
-                      )
-                    )
+    val e = nFun(m =>
+      nFun(n =>
+        fun(ArrayType(m, ArrayType(n, f64)))(in =>
+          zip(in)(
+            generate(
+              fun(IndexType(m))(i =>
+                generate(
+                  fun(IndexType(n))(j =>
+                    cos(cast((indexAsNat(j) + n) * indexAsNat(i) + m))
                   )
                 )
-                  |> mapSeq(fun(t => zip(fst(t))(snd(t)) |> mapSeq(addT)))
+              )
+            )
           )
+            |> mapSeq(fun(t => zip(fst(t))(snd(t)) |> mapSeq(addT)))
+        )
       )
     )
     gen.CProgram(e)
@@ -81,20 +74,18 @@ class Generate extends test_util.Tests {
 
     val reorderedB =
       generate(
-        fun(IndexType(LPrevIter))(
-          i =>
-            generate(
-              fun(IndexType(p))(
-                j =>
-                  generate(fun(IndexType(p))(k => {
-                    val exponentWoMinus2 = (j * LPrevIter) + i * (k / (p * LPrevIter))
-                    val exponent = (cast(exponentWoMinus2) :: f64) * l(-2.0)
-                    pair(
-                      cast(foreignFun("cospi", f64 ->: f64)(exponent)) :: f32,
-                      cast(foreignFun("sinpi", f64 ->: f64)(exponent)) :: f32
-                    )
-                  }))
-              )
+        fun(IndexType(LPrevIter))(i =>
+          generate(
+            fun(IndexType(p))(j =>
+              generate(fun(IndexType(p))(k => {
+                val exponentWoMinus2 = (j * LPrevIter) + i * (k / (p * LPrevIter))
+                val exponent = (cast(exponentWoMinus2) :: f64) * l(-2.0)
+                pair(
+                  cast(foreignFun("cospi", f64 ->: f64)(exponent)) :: f32,
+                  cast(foreignFun("sinpi", f64 ->: f64)(exponent)) :: f32
+                )
+              }))
+            )
           )
         )
       )

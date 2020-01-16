@@ -82,12 +82,13 @@ object fromRise {
   }
 
   def scalarType(t: lt.ScalarType): ScalarType = t match {
-    case lt.bool    => bool
-    case lt.int     => int
-    case lt.i8 | lt.i16 | lt.i32 | lt.i64 | lt.u8 | lt.u16 | lt.u32 | lt.u64 => ???
-    case lt.`f16` => ???
-    case lt.`f32` => float
-    case lt.`f64` => double
+    case lt.bool => bool
+    case lt.int  => int
+    case lt.i8 | lt.i16 | lt.i32 | lt.i64 | lt.u8 | lt.u16 | lt.u32 | lt.u64 =>
+      ???
+    case lt.`f16`   => ???
+    case lt.`f32`   => float
+    case lt.`f64`   => double
     case lt.NatType => NatType
   }
 
@@ -126,7 +127,7 @@ object fromRise {
   def natIdentifier(n: lt.NatIdentifier): NatIdentifier =
     NatIdentifier(n.name, n.range)
   def addressSpaceIdentifier(
-    a: lt.AddressSpaceIdentifier
+      a: lt.AddressSpaceIdentifier
   ): AddressSpaceIdentifier = AddressSpaceIdentifier(a.name)
   def natToNatIdentifier(n: lt.NatToNatIdentifier): NatToNatIdentifier =
     NatToNatIdentifier(n.name)
@@ -166,8 +167,8 @@ object fromRise {
   import shine.DPIA.FunctionalPrimitives._
 
   def fun[T <: PhraseType](
-    t: T,
-    f: Phrase[T] => Phrase[_ <: PhraseType]
+      t: T,
+      f: Phrase[T] => Phrase[_ <: PhraseType]
   ): Phrase[_ <: PhraseType] = {
     val x = Identifier(freshName("x"), t)
     Lambda(x, f(x))
@@ -274,7 +275,7 @@ object fromRise {
             fun[ExpType](
               ExpType(DepArrayType(n, a), read),
               e => DepMapSeq(n, a, b, f, e)
-          )
+            )
         )
 
       case (
@@ -295,8 +296,8 @@ object fromRise {
                 fun[ExpType](
                   exp"[$n.$a, $read]",
                   e => ReduceSeq(n, a, b, f, i, e)
-              )
-          )
+                )
+            )
         )
 
       case (
@@ -317,8 +318,8 @@ object fromRise {
                 fun[ExpType](
                   exp"[$n.$a, $read]",
                   e => ReduceSeqUnroll(n, a, b, f, i, e)
-              )
-          )
+                )
+            )
         )
 
       case (
@@ -345,8 +346,8 @@ object fromRise {
                     exp"[$n.$a, $read]",
                     e =>
                       OpenCLReduceSeq(n, i_space, a, b, f, i, e, unroll = false)
-                )
-            )
+                  )
+              )
           )
         )
 
@@ -374,8 +375,8 @@ object fromRise {
                     exp"[$n.$a, $read]",
                     e =>
                       OpenCLReduceSeq(n, i_space, a, b, f, i, e, unroll = true)
-                )
-            )
+                  )
+              )
           )
         )
 
@@ -397,8 +398,8 @@ object fromRise {
                 fun[ExpType](
                   exp"[$n.$a, $read]",
                   e => ScanSeq(n, a, b, f, i, e)
-              )
-          )
+                )
+            )
         )
 
       case (
@@ -476,8 +477,8 @@ object fromRise {
                     fun[ExpType](
                       exp"[$insz.$s, $read]",
                       e => SlideSeq(rot, n, sz, sp, s, t, write_dt1, f, e)
-                  )
-              )
+                    )
+                )
             )
           )
         )
@@ -527,9 +528,9 @@ object fromRise {
                             write_dt1,
                             f,
                             e
-                        )
-                    )
-                )
+                          )
+                      )
+                  )
               )
             )
           )
@@ -549,8 +550,8 @@ object fromRise {
                 fun[ExpType](
                   exp"[$n.$a, $read]",
                   e => Reorder(n, a, idxF, idxFinv, e)
-              )
-          )
+                )
+            )
         )
 
       case (
@@ -745,7 +746,7 @@ object fromRise {
             fun[ExpType](
               exp"[$n.$a, $read]",
               e => FunctionalPrimitives.Idx(n, a, i, e)
-          )
+            )
         )
 
       case (core.Select(), lt.FunType(_, lt.FunType(la: lt.DataType, _))) =>
@@ -759,8 +760,8 @@ object fromRise {
                 fun[ExpType](
                   ExpType(a, read),
                   fExpr => IfThenElse(c, tExpr, fExpr)
-              )
-          )
+                )
+            )
         )
 
       case (core.Neg(), lt.FunType(la: lt.DataType, _)) =>
@@ -775,7 +776,7 @@ object fromRise {
             fun[ExpType](
               exp"[$a, $read]",
               e2 => BinOp(Operators.Binary.ADD, e1, e2)
-          )
+            )
         )
       case (core.Sub(), lt.FunType(la: lt.DataType, _)) =>
         val a = dataType(la)
@@ -785,7 +786,7 @@ object fromRise {
             fun[ExpType](
               exp"[$a, $read]",
               e2 => BinOp(Operators.Binary.SUB, e1, e2)
-          )
+            )
         )
       case (core.Mul(), lt.FunType(la: lt.DataType, _)) =>
         val a = dataType(la)
@@ -795,7 +796,7 @@ object fromRise {
             fun[ExpType](
               exp"[$a, $read]",
               e2 => BinOp(Operators.Binary.MUL, e1, e2)
-          )
+            )
         )
       case (core.Div(), lt.FunType(la: lt.DataType, _)) =>
         val a = dataType(la)
@@ -805,7 +806,7 @@ object fromRise {
             fun[ExpType](
               exp"[$a, $read]",
               e2 => BinOp(Operators.Binary.DIV, e1, e2)
-          )
+            )
         )
       case (core.Mod(), lt.FunType(la: lt.DataType, _)) =>
         val a = dataType(la)
@@ -815,7 +816,7 @@ object fromRise {
             fun[ExpType](
               exp"[$a, $read]",
               e2 => BinOp(Operators.Binary.MOD, e1, e2)
-          )
+            )
         )
 
       case (core.Gt(), lt.FunType(la: lt.DataType, _)) =>
@@ -826,7 +827,7 @@ object fromRise {
             fun[ExpType](
               exp"[$a, $read]",
               e2 => BinOp(Operators.Binary.GT, e1, e2)
-          )
+            )
         )
       case (core.Lt(), lt.FunType(la: lt.DataType, _)) =>
         val a = dataType(la)
@@ -836,7 +837,7 @@ object fromRise {
             fun[ExpType](
               exp"[$a, $read]",
               e2 => BinOp(Operators.Binary.LT, e1, e2)
-          )
+            )
         )
       case (core.Equal(), lt.FunType(la: lt.DataType, _)) =>
         val a = dataType(la)
@@ -846,7 +847,7 @@ object fromRise {
             fun[ExpType](
               exp"[$a, $read]",
               e2 => BinOp(Operators.Binary.EQ, e1, e2)
-          )
+            )
         )
 
       case (core.Cast(), lt.FunType(la: lt.BasicType, lb: lt.BasicType)) =>
@@ -902,7 +903,7 @@ object fromRise {
               fun[ExpType](
                 exp"[$insz.$a, $read]",
                 e => Iterate(n, m, k, a, f, e)
-            )
+              )
           )
         )
 
@@ -934,7 +935,7 @@ object fromRise {
                 fun[ExpType](
                   exp"[$insz.$dt, $read]",
                   e => OpenCLIterate(a, n, m, k, dt, f, e)
-              )
+                )
             )
           )
         )
@@ -1004,14 +1005,18 @@ object fromRise {
     }
   }
 
-  private def makeMap(map: (Nat,
-                            DataType,
-                            DataType,
-                            Phrase[ExpType ->: ExpType],
-                            Phrase[ExpType]) => Phrase[_ <: PhraseType],
-                      n: Nat,
-                      la: lt.DataType,
-                      lb: lt.DataType): Phrase[_ <: PhraseType] = {
+  private def makeMap(
+      map: (
+          Nat,
+          DataType,
+          DataType,
+          Phrase[ExpType ->: ExpType],
+          Phrase[ExpType]
+      ) => Phrase[_ <: PhraseType],
+      n: Nat,
+      la: lt.DataType,
+      lb: lt.DataType
+  ): Phrase[_ <: PhraseType] = {
     val a = dataType(la)
     val b = dataType(lb)
     fun[ExpType ->: ExpType](
@@ -1039,10 +1044,12 @@ object fromRise {
     }
   }
 
-  def wrapForeignFun(decl: l.ForeignFunction.Decl,
-                     intTs: Vector[DataType],
-                     outT: DataType,
-                     args: Vector[Phrase[ExpType]]): Phrase[_ <: PhraseType] = {
+  def wrapForeignFun(
+      decl: l.ForeignFunction.Decl,
+      intTs: Vector[DataType],
+      outT: DataType,
+      args: Vector[Phrase[ExpType]]
+  ): Phrase[_ <: PhraseType] = {
     val i = args.length
     if (i < intTs.length) {
       fun[ExpType](
@@ -1054,8 +1061,10 @@ object fromRise {
     }
   }
 
-  def wrapArray(t: lt.Type,
-                elements: Vector[Phrase[ExpType]]): Phrase[_ <: PhraseType] = {
+  def wrapArray(
+      t: lt.Type,
+      elements: Vector[Phrase[ExpType]]
+  ): Phrase[_ <: PhraseType] = {
     t match {
       case lt.ArrayType(_, et) => Array(dataType(et), elements)
       case lt.FunType(in: lt.DataType, t2) =>

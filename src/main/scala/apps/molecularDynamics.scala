@@ -33,49 +33,44 @@ object molecularDynamics {
     )
   )
 
-  val shoc: Expr = nFun(
-    n =>
-      nFun(
-        m =>
-          fun(
-            (n `.` vec(4, f32)) ->: (m `.` n `.` IndexType(n)) ->: f32 ->: f32 ->: f32 ->: (n `.` vec(
-              4,
-              f32
-            ))
-          )(
-            (particles, neighbourIds, cutsq, lj1, lj2) =>
-              zip(particles)(transpose(neighbourIds)) |>
-                split(128) |>
-                mapWorkGroup(
-                  mapLocal(
-                    fun(
-                      p =>
-                        toPrivate(p._1) |> let(
-                          fun(
-                            particle =>
-                              gather(p._2)(particles) |>
-                                oclReduceSeq(AddressSpace.Private)(
-                                  fun(
-                                    force =>
-                                      fun(
-                                        n =>
-                                          mdCompute(force)(particle)(n)(cutsq)(
-                                            lj1
-                                          )(lj2)
-                                    )
-                                  )
-                                )(vectorFromScalar(l(0.0f)))
+  val shoc: Expr = nFun(n =>
+    nFun(m =>
+      fun(
+        (n `.` vec(4, f32)) ->: (m `.` n `.` IndexType(n)) ->: f32 ->: f32 ->: f32 ->: (n `.` vec(
+          4,
+          f32
+        ))
+      )((particles, neighbourIds, cutsq, lj1, lj2) =>
+        zip(particles)(transpose(neighbourIds)) |>
+          split(128) |>
+          mapWorkGroup(
+            mapLocal(
+              fun(p =>
+                toPrivate(p._1) |> let(
+                  fun(particle =>
+                    gather(p._2)(particles) |>
+                      oclReduceSeq(AddressSpace.Private)(
+                        fun(force =>
+                          fun(n =>
+                            mdCompute(force)(particle)(n)(cutsq)(
+                              lj1
+                            )(lj2)
                           )
-                      )
-                    )
+                        )
+                      )(vectorFromScalar(l(0.0f)))
                   )
-                ) |> join
-        )
+                )
+              )
+            )
+          ) |> join
+      )
     )
   )
 
-  def buildNeighbourList(position: Array[(Float, Float, Float, Float)],
-                         maxNeighbours: Int): Array[Array[Int]] = {
+  def buildNeighbourList(
+      position: Array[(Float, Float, Float, Float)],
+      maxNeighbours: Int
+  ): Array[Array[Int]] = {
     val neighbourList = Array.ofDim[Int](position.length, maxNeighbours)
 
     for (i <- position.indices) {
@@ -113,9 +108,9 @@ object molecularDynamics {
   private val lj2 = 2.0f
 
   def runOriginalKernel(
-    name: String,
-    particles: Array[Float],
-    neighbours: Array[Array[Int]]
+      name: String,
+      particles: Array[Float],
+      neighbours: Array[Array[Int]]
   ): (Array[Float], TimeSpan[Time.ms]) = {
     import opencl.executor._
 
@@ -163,9 +158,9 @@ object molecularDynamics {
   }
 
   def runKernel(
-    k: KernelNoSizes,
-    particles: Array[Float],
-    neighbours: Array[Array[Int]]
+      k: KernelNoSizes,
+      particles: Array[Float],
+      neighbours: Array[Array[Int]]
   ): (Array[Float], TimeSpan[Time.ms]) = {
     assert(particles.length % 4 == 0)
     val N = particles.length / 4

@@ -7,8 +7,8 @@ import rise.core.types._
 import rise.OpenCL.DSL._
 
 object kmeans {
-  private val update = fun(f32 ->: (f32 x f32) ->: f32)(
-    (dist, pair) => dist + (pair._1 - pair._2) * (pair._1 - pair._2)
+  private val update = fun(f32 ->: (f32 x f32) ->: f32)((dist, pair) =>
+    dist + (pair._1 - pair._2) * (pair._1 - pair._2)
   )
 
   private val testF = foreignFun(
@@ -29,35 +29,30 @@ object kmeans {
 
   private val select = fun(tuple => tuple._2._2)
 
-  val kmeans: Expr = nFun(
-    p =>
-      nFun(
-        c =>
-          nFun(
-            f =>
-              fun((f `.` p `.` f32) ->: (c `.` f `.` f32) ->: (p `.` int))(
-                (features, clusters) =>
-                  features |> transpose |> mapGlobal(
-                    fun(
-                      feature =>
-                        clusters |> oclReduceSeq(AddressSpace.Private)(
-                          fun(
-                            tuple =>
-                              fun(cluster => {
-                                val dist = zip(feature)(cluster) |> oclReduceSeq(
-                                  AddressSpace.Private
-                                )(update)(l(0.0f))
-                                testF(dist)(tuple)
-                              })
-                          )
-                        )(
-                          pair(cast(l(3.40282347e+38)) :: f32)(pair(l(0))(l(0)))
-                        ) |>
-                        select
-                    )
-                )
+  val kmeans: Expr = nFun(p =>
+    nFun(c =>
+      nFun(f =>
+        fun((f `.` p `.` f32) ->: (c `.` f `.` f32) ->: (p `.` int))(
+          (features, clusters) =>
+            features |> transpose |> mapGlobal(
+              fun(feature =>
+                clusters |> oclReduceSeq(AddressSpace.Private)(
+                  fun(tuple =>
+                    fun(cluster => {
+                      val dist = zip(feature)(cluster) |> oclReduceSeq(
+                        AddressSpace.Private
+                      )(update)(l(0.0f))
+                      testF(dist)(tuple)
+                    })
+                  )
+                )(
+                  pair(cast(l(3.40282347e+38)) :: f32)(pair(l(0))(l(0)))
+                ) |>
+                  select
+              )
             )
         )
+      )
     )
   )
 
@@ -65,9 +60,9 @@ object kmeans {
   import util.{Time, TimeSpan}
 
   def runOriginalKernel(
-    name: String,
-    features: Array[Array[Float]],
-    clusters: Array[Array[Float]]
+      name: String,
+      features: Array[Array[Float]],
+      clusters: Array[Array[Float]]
   ): (Array[Int], TimeSpan[Time.ms]) = {
     import opencl.executor._
 
@@ -112,9 +107,9 @@ object kmeans {
   }
 
   def runKernel(
-    k: KernelNoSizes,
-    features: Array[Array[Float]],
-    clusters: Array[Array[Float]]
+      k: KernelNoSizes,
+      features: Array[Array[Float]],
+      clusters: Array[Array[Float]]
   ): (Array[Int], TimeSpan[Time.ms]) = {
     val C = clusters.length
     val F = features.length

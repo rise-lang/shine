@@ -14,21 +14,22 @@ object nearestNeighbour {
     (f32 x f32) ->: f32 ->: f32 ->: f32
   )
 
-  val nn: Expr = nFun(
-    n =>
-      fun((n `.` (f32 x f32)) ->: f32 ->: f32 ->: (n `.` f32))(
-        (locations, lat, lng) =>
-          locations |> mapGlobal(fun(loc => distance(loc)(lat)(lng)))
+  val nn: Expr = nFun(n =>
+    fun((n `.` (f32 x f32)) ->: f32 ->: f32 ->: (n `.` f32))(
+      (locations, lat, lng) =>
+        locations |> mapGlobal(fun(loc => distance(loc)(lat)(lng)))
     )
   )
 
   import shine.OpenCL._
   import util.{Time, TimeSpan}
 
-  def runOriginalKernel(name: String,
-                        locations: Array[Float],
-                        lat: Float,
-                        lng: Float): (Array[Float], TimeSpan[Time.ms]) = {
+  def runOriginalKernel(
+      name: String,
+      locations: Array[Float],
+      lat: Float,
+      lng: Float
+  ): (Array[Float], TimeSpan[Time.ms]) = {
     import opencl.executor._
 
     val code = util.readFile(s"src/main/scala/apps/originalLift/$name")
@@ -69,10 +70,12 @@ object nearestNeighbour {
     (output, TimeSpan.inMilliseconds(runtime))
   }
 
-  def runKernel(k: KernelNoSizes,
-                locations: Array[Float],
-                lat: Float,
-                lng: Float): (Array[Float], TimeSpan[Time.ms]) = {
+  def runKernel(
+      k: KernelNoSizes,
+      locations: Array[Float],
+      lat: Float,
+      lng: Float
+  ): (Array[Float], TimeSpan[Time.ms]) = {
     assert(locations.length % 2 == 0)
     val N = locations.length / 2
     val localSize = LocalSize(128)

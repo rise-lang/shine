@@ -21,13 +21,11 @@ class Map extends test_util.Tests {
     "Simple 2D map example should generate syntactic valid C code with two for loop"
   ) {
     val e =
-      nFun(
-        n =>
-          nFun(
-            m =>
-              fun(ArrayType(n, ArrayType(m, f32)))(
-                xs => xs |> mapSeq(mapSeq(fun(x => x)))
-            )
+      nFun(n =>
+        nFun(m =>
+          fun(ArrayType(n, ArrayType(m, f32)))(xs =>
+            xs |> mapSeq(mapSeq(fun(x => x)))
+          )
         )
       )
 
@@ -40,16 +38,13 @@ class Map extends test_util.Tests {
     "Simple 3D map example should generate syntactic valid C code with three for loop"
   ) {
     val e =
-      nFun(
-        n =>
-          nFun(
-            m =>
-              nFun(
-                o =>
-                  fun(ArrayType(n, ArrayType(m, ArrayType(o, f32))))(
-                    xs => xs |> mapSeq(mapSeq(mapSeq(fun(x => x))))
-                )
+      nFun(n =>
+        nFun(m =>
+          nFun(o =>
+            fun(ArrayType(n, ArrayType(m, ArrayType(o, f32))))(xs =>
+              xs |> mapSeq(mapSeq(mapSeq(fun(x => x))))
             )
+          )
         )
       )
 
