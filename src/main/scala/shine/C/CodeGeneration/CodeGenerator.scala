@@ -381,7 +381,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
 
-      case Reorder(n, _, idxF, _, a) => path match {
+      case Reorder(n, _, _, idxF, _, a) => path match {
         case (i : CIntExpr) :: ps =>
           exp(a, env, CIntExpr(OperationalSemantics.evalIndexExp(idxF(AsIndex(n, Natural(i))))) :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")

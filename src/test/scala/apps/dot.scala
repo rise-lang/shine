@@ -15,6 +15,7 @@ class dot extends test_util.Tests {
   private val add = fun(a => fun(x => a + x))
 
   private val simpleDotProduct = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
+    //TODO introduce ToMem primitive for C
     zip(xs)(ys) |> mapSeq(mulT) |> reduceSeq(add)(l(0.0f))
   )))
 

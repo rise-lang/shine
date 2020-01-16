@@ -4,7 +4,6 @@ import shine.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import shine.DPIA.DSL._
 import shine.DPIA.ImperativePrimitives.{MapAcc, MapRead}
 import shine.DPIA.Phrases._
-import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics.{Data, Store}
 import shine.DPIA.Types._
 import shine.DPIA._
@@ -33,7 +32,8 @@ final case class Map(n: Nat,
                               (C: Phrase[AccType ->: AccType]) : Phrase[AccType] = {
     import TranslationToImperative._
 
-    val x = Identifier(freshName("fede_x"), ExpType(dt1, read))
+    //TODO Understand the Fede Translation better and choose correct AccessType for x!!!
+    val x = Identifier(freshName("fede_x"), ExpType(dt1, write))
 
     val otype = AccType(dt2)
     val o = Identifier(freshName("fede_o"), otype)
@@ -47,7 +47,7 @@ final case class Map(n: Nat,
                                   (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
-    val x = Identifier(freshName("fede_x"), ExpType(dt1, read))
+    val x = Identifier(freshName("fede_x"), ExpType(dt1, write))
 
     val otype = AccType(dt2)
     val o = Identifier(freshName("fede_o"), otype)

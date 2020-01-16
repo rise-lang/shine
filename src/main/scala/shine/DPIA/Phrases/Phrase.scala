@@ -9,7 +9,7 @@ import shine.DPIA.Semantics.OperationalSemantics.{IndexData, NatData}
 import shine.DPIA.Types._
 import shine.DPIA._
 
-sealed trait Phrase[+T <: PhraseType] {
+sealed trait Phrase[T <: PhraseType] {
   val t: T // TODO? perform type checking at the same time
 }
 

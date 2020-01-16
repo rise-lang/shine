@@ -22,8 +22,8 @@ final case class OpenCLReduceSeq(n: Nat,
 {
   override val t: ExpType =
     (n: Nat) ->: (dt1: DataType) ->: (dt2: DataType) ->:
-      (f :: t"exp[$dt2, $read] -> exp[$dt1, $read] -> exp[$dt2, $read]") ->:
-        (init :: exp"[$dt2, $read]") ->: (initAddrSpace : AddressSpace) ->:
+      (f :: t"exp[$dt2, $read] -> exp[$dt1, $read] -> exp[$dt2, $write]") ->:
+        (init :: exp"[$dt2, $write]") ->: (initAddrSpace : AddressSpace) ->:
           (array :: exp"[$n.$dt1, $read]") ->: exp"[$dt2, $read]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
@@ -46,7 +46,7 @@ final case class OpenCLReduceSeq(n: Nat,
     con(array)(λ(exp"[$n.$dt1, $read]")(X =>
       OpenCLReduceSeqI(n, initAddrSpace, dt1, dt2,
         λ(exp"[$dt2, $read]")(x => λ(exp"[$dt1, $read]")(y => λ(acc"[$dt2]")(o => acc( f(x)(y) )( o )))),
-        init, X, λ(exp"[$dt2, $write]")(r => acc(r)(A)), unroll)(context)))
+        init, X, λ(exp"[$dt2, $read]")(r => acc(r)(A)), unroll)(context)))
   }
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])

@@ -49,7 +49,7 @@ object PhraseType {
     case (dt: DataType, forDt: DataTypeIdentifier)        => substitute(dt, forDt, in)
     case (n: Nat, forN: NatIdentifier)                    => substitute(n, forN, in)
     case (a: AddressSpace, forA: AddressSpaceIdentifier)  => substitute(a, forA, in)
-    case (a: AccessType, forA: AccessTypeIdentifier)      => ??? //substitute(a, forA, in)
+    case (a: AccessType, forA: AccessTypeIdentifier)      => substitute(a, forA, in)
     case (n2n: NatToNat, fotN2N: NatToNatIdentifier)      => ??? //substitute(n2n, forN2N, in)
     case (n2d: NatToData, fotN2D: NatToDataIdentifier)    => ??? //substitute(n2d, forN2D, in)
     case _ => throw new Exception(s"could not substitute $x for ${`for`} in $in")
@@ -150,12 +150,10 @@ object PhraseType {
   def substitute[T <: PhraseType](addr: AddressSpace,
                                   `for`: AddressSpaceIdentifier,
                                   in: Phrase[T]): Phrase[T] = {
-
     object Visitor extends Phrases.VisitAndRebuild.Visitor {
       override def addressSpace(a: AddressSpace): AddressSpace =
         if (a == `for`) { addr } else { a }
     }
-
     Phrases.VisitAndRebuild(in, Visitor)
   }
 
@@ -163,5 +161,14 @@ object PhraseType {
                  `for`: AddressSpaceIdentifier,
                  in: PhraseType): PhraseType = {
     in
+  }
+
+  def substitute[T <: PhraseType](acc: AccessType,
+                                  `for`: AccessTypeIdentifier,
+                                  in: Phrase[T]): Phrase[T] = {
+    object Visitor extends Phrases.VisitAndRebuild.Visitor {
+      override def access(w: AccessType): AccessType = if (w == `for`) acc else w
+    }
+    Phrases.VisitAndRebuild(in, Visitor)
   }
 }

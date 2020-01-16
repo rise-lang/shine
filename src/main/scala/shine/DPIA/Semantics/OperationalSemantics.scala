@@ -48,29 +48,28 @@ object OperationalSemantics {
 
   def eval[T <: PhraseType, R](s: Store, p: Phrase[T])
                               (implicit evaluator: Evaluator[T, R]): R = {
-//    p match {
-//      case app: Apply[a, T] =>
-//        val fun: Phrase[a] => Phrase[T] = eval(s, app.fun)
-//        eval(s, fun(app.arg))
-//
-//      case p1: Proj1[a, b] =>
-//        val pair: (Phrase[a], Phrase[b]) = eval(s, p1.pair)
-//        eval(s, pair._1)
-//
-//      case p2: Proj2[a, b] =>
-//        val pair: (Phrase[a], Phrase[b]) = eval(s, p2.pair)
-//        eval(s, pair._2)
-//
-//      case IfThenElse(cond, thenP, elseP) =>
-//        if (evalCondExp(s, cond)) {
-//          eval(s, thenP)
-//        } else {
-//          eval(s, elseP)
-//        }
-//
-//      case _ => evaluator(s, p)
-//    }
-    ???
+    p match {
+      case app: Apply[a, T] =>
+        val fun: Phrase[a] => Phrase[T] = eval(s, app.fun)
+        eval(s, fun(app.arg))
+
+      case p1: Proj1[a, b] =>
+        val pair: (Phrase[a], Phrase[b]) = eval(s, p1.pair)
+        eval(s, pair._1)
+
+      case p2: Proj2[a, b] =>
+        val pair: (Phrase[a], Phrase[b]) = eval(s, p2.pair)
+        eval(s, pair._2)
+
+      case IfThenElse(cond, thenP, elseP) =>
+        if (evalCondExp(s, cond)) {
+          eval(s, thenP)
+        } else {
+          eval(s, elseP)
+        }
+
+      case _ => evaluator(s, p)
+    }
   }
 
   trait Evaluator[T <: PhraseType, R] {
