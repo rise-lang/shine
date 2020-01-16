@@ -16,9 +16,9 @@ final case class BoolData(b: Boolean) extends ScalarData(bool)
 
 final case class IntData(i: Int) extends ScalarData(int)
 
-final case class FloatData(f: Float) extends ScalarData(float)
+final case class FloatData(f: Float) extends ScalarData(f32)
 
-final case class DoubleData(d: Double) extends ScalarData(double)
+final case class DoubleData(d: Double) extends ScalarData(f64)
 
 final case class VectorData(v: Seq[ScalarData])
     extends Data(VectorType(v.length, v.head.dataType))
