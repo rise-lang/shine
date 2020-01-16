@@ -12,8 +12,9 @@ class SplitSlide extends test_util.Tests {
   val sp = 1
 
   test("slide-split") {
-    val e = fun(ArrayType(130, float))(xs =>
-      xs |> slide(sz)(sp) |> split(n) |> mapSeq(mapSeq(mapSeq(fun(x => x))))
+    val e = fun(ArrayType(130, f32))(
+      xs =>
+        xs |> slide(sz)(sp) |> split(n) |> mapSeq(mapSeq(mapSeq(fun(x => x))))
     )
 
     val code = gen.CProgram(e).code
@@ -22,8 +23,11 @@ class SplitSlide extends test_util.Tests {
   }
 
   test("slide-map(slide)") {
-    val e = fun(ArrayType(130, float))(xs =>
-      xs |> slide(n+sz-sp)(n) |> map(slide(sz)(sp)) |> mapSeq(mapSeq(mapSeq(fun(x => x))))
+    val e = fun(ArrayType(130, f32))(
+      xs =>
+        xs |> slide(n + sz - sp)(n) |> map(slide(sz)(sp)) |> mapSeq(
+          mapSeq(mapSeq(fun(x => x)))
+      )
     )
 
     val code = gen.CProgram(e).code

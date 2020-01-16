@@ -14,9 +14,9 @@ import scala.util.Random
 //noinspection TypeAnnotation
 class asum extends test_util.TestsWithExecutor {
 
-  def inputT(n : NatIdentifier) = ArrayType(n, float)
+  def inputT(n : NatIdentifier) = ArrayType(n, f32)
   val abs = dtFun(t => foreignFun("my_abs", Seq("y"), "{ return fabs(y); }", t ->: t))
-  val fabs = abs(float)
+  val fabs = abs(f32)
   val add = fun(x => fun(a => x + a))
 
   val high_level = nFun(n => fun(inputT(n))(input =>
@@ -27,7 +27,7 @@ class asum extends test_util.TestsWithExecutor {
     val typed = infer(high_level)
 
     val N = typed.t.asInstanceOf[NatDepFunType[_ <: Type]].x
-    assertResult(DepFunType[NatKind, Type](N, FunType(inputT(N), float))) {
+    assertResult(DepFunType[NatKind, Type](N, FunType(inputT(N), f32))) {
       typed.t
     }
   }
@@ -48,7 +48,7 @@ class asum extends test_util.TestsWithExecutor {
           asVectorAligned(4) >>
           split(8192) >>
           mapSeq(
-            reduceSeq(fun(a => fun(x => abs(float4)(x) + a)))(vectorFromScalar(l(0.0f)))
+            reduceSeq(fun(a => fun(x => abs(vec(4, f32))(x) + a)))(vectorFromScalar(l(0.0f)))
           ) >> asScalar
         ) |> join
     ))
@@ -113,7 +113,7 @@ class asum extends test_util.TestsWithExecutor {
           asVectorAligned(4) >>
             split(8192) >>
             mapLocal(
-              oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => abs(float4)(x) + a)))(vectorFromScalar(l(0.0f)))
+              oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => abs(vec(4, f32))(x) + a)))(vectorFromScalar(l(0.0f)))
             ) >> asScalar
         ) |> join
     ))
@@ -170,7 +170,7 @@ class asum extends test_util.TestsWithExecutor {
           reorderWithStride(128) >>
             split(2048) >>
             mapLocal(
-              oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => abs(float)(x) + a)))(l(0.0f))
+              oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => abs(f32)(x) + a)))(l(0.0f))
             )
         ) |> join
     ))
@@ -232,7 +232,7 @@ class asum extends test_util.TestsWithExecutor {
             reorderWithStride(64) >>
             split(2048) >>
             mapLocal(
-              oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => abs(float2)(x) + a)))(vectorFromScalar(l(0.0f)))
+              oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => abs(vec(2, f32))(x) + a)))(vectorFromScalar(l(0.0f)))
             ) >> asScalar
         ) |> join
     ))

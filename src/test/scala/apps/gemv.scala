@@ -12,12 +12,12 @@ class gemv extends test_util.Tests {
   // we can use implicit type parameters and type annotations to specify the function type of mult
   val mult  = implDT(dt => fun(x => x._1 * x._2) :: ((dt x dt) ->: dt))
   val add   = fun(x => fun(y => x + y))
-  val scal  = implN(n => fun(xs => fun(a => mapSeq(fun(x => a * x), xs))) :: (ArrayType(n, float) ->: float ->: ArrayType(n, float)))
+  val scal  = implN(n => fun(xs => fun(a => mapSeq(fun(x => a * x), xs))) :: (ArrayType(n, f32) ->: f32 ->: ArrayType(n, f32)))
   val dot   = fun(xs => fun(ys => zip(xs, ys) |> mapSeq(mult) |> reduceSeq(add, l(0.0f))))
 
   val high_level =
     nFun((n, m) =>
-      fun((m`.`n`.`float) ->: (n`.`float) ->: (m`.`float) ->: float ->: float ->: (m`.`float))
+      fun((m`.`n`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->: (m`.`f32))
          ((mat, xs, ys, alpha, beta) =>
 
         zip(mapSeq(fun(row => alpha * dot(row, xs)), mat), scal(ys, beta)) |>
@@ -30,7 +30,7 @@ class gemv extends test_util.Tests {
 
     val fullMatrixVectorFusedOpenCL =
       nFun((n, m) =>
-        fun((m `.` n `.` float) ->: (n `.` float) ->: (m `.` float) ->: float ->: float ->: (m `.` float))
+        fun((m `.` n `.` f32) ->: (n `.` f32) ->: (m `.` f32) ->: f32 ->: f32 ->: (m `.` f32))
         ((mat, xs, ys, alpha, beta) =>
           zip(mat, ys) |>
             mapWorkGroup(fun(t =>
@@ -44,7 +44,7 @@ class gemv extends test_util.Tests {
 
     val fullMatrixVectorFusedOpenCLAMD =
       nFun((n, m) =>
-        fun((m `.` n `.` float) ->: (n `.` float) ->: (m `.` float) ->: float ->: float ->: (m `.` float))
+        fun((m `.` n `.` f32) ->: (n `.` f32) ->: (m `.` f32) ->: f32 ->: f32 ->: (m `.` f32))
         ((mat, xs, ys, alpha, beta) =>
           zip(mat, ys) |>
             mapWorkGroup(fun(t =>
@@ -61,7 +61,7 @@ class gemv extends test_util.Tests {
 
     val keplerBest =
       nFun((n, m) =>
-        fun((m `.` n `.` float) ->: (n `.` float) ->: (m `.` float) ->: float ->: float ->: (m `.` float))
+        fun((m `.` n `.` f32) ->: (n `.` f32) ->: (m `.` f32) ->: f32 ->: f32 ->: (m `.` f32))
         ((mat, xs, ys, alpha, beta) =>
           zip(mat, ys) |>
             mapWorkGroup(fun(t =>
@@ -80,7 +80,7 @@ class gemv extends test_util.Tests {
 
     val fullMatrixVectorFusedOpenMP =
       nFun((n, m) =>
-        fun((m `.` n `.` float) ->: (n `.` float) ->: (m `.` float) ->: float ->: float ->: (m `.` float))
+        fun((m `.` n `.` f32) ->: (n `.` f32) ->: (m `.` f32) ->: f32 ->: f32 ->: (m `.` f32))
         ((mat, xs, ys, alpha, beta) =>
           zip(mat, ys) |>
             mapPar(fun(t =>
@@ -101,9 +101,9 @@ class gemv extends test_util.Tests {
     assertResult(
       DepFunType(N,
         DepFunType(M,
-            ArrayType(M, ArrayType(N, float)) ->:
-              (ArrayType(N, float) ->: (ArrayType(M, float) ->:
-                (float ->: (float ->: ArrayType(M, float)))))))) {
+            ArrayType(M, ArrayType(N, f32)) ->:
+              (ArrayType(N, f32) ->: (ArrayType(M, f32) ->:
+                (f32 ->: (f32 ->: ArrayType(M, f32)))))))) {
       typed.t
     }
   }

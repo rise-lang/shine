@@ -7,15 +7,20 @@ import rise.core.types._
 import rise.OpenCL.DSL._
 
 object nearestNeighbour {
-  private val distance = foreignFun("distance_", Seq("loc", "lat", "lng"),
+  private val distance = foreignFun(
+    "distance_",
+    Seq("loc", "lat", "lng"),
     "{ return sqrt((lat - loc._fst) * (lat - loc._fst) + (lng - loc._snd) * (lng -  loc._snd)); }",
-    (float x float) ->: float ->: float ->: float)
+    (f32 x f32) ->: f32 ->: f32 ->: f32
+  )
 
-  val nn: Expr = nFun(n => fun(
-    (n`.`(float x float)) ->: float ->: float ->: (n`.`float)
-  )((locations, lat, lng) =>
-    locations |> mapGlobal(fun(loc => distance(loc)(lat)(lng)))
-  ))
+  val nn: Expr = nFun(
+    n =>
+      fun((n `.` (f32 x f32)) ->: f32 ->: f32 ->: (n `.` f32))(
+        (locations, lat, lng) =>
+          locations |> mapGlobal(fun(loc => distance(loc)(lat)(lng)))
+    )
+  )
 
   import shine.OpenCL._
   import util.{Time, TimeSpan}
@@ -39,14 +44,20 @@ object nearestNeighbour {
     val g_out = GlobalArg.createOutput(output_bytes)
     val kernelArgs = Array(
       GlobalArg.createInput(locations),
-      ValueArg.create(lat), ValueArg.create(lng),
+      ValueArg.create(lat),
+      ValueArg.create(lng),
       g_out,
       ValueArg.create(N)
     )
 
-    val runtime = Executor.execute(kernelJNI,
-      localSize.size.x.eval, localSize.size.y.eval, localSize.size.z.eval,
-      globalSize.size.x.eval, globalSize.size.y.eval, globalSize.size.z.eval,
+    val runtime = Executor.execute(
+      kernelJNI,
+      localSize.size.x.eval,
+      localSize.size.y.eval,
+      localSize.size.z.eval,
+      globalSize.size.x.eval,
+      globalSize.size.y.eval,
+      globalSize.size.z.eval,
       kernelArgs
     )
 
@@ -67,9 +78,11 @@ object nearestNeighbour {
     val localSize = LocalSize(128)
     val globalSize = GlobalSize(N)
 
-    val f = k.as[ScalaFunction `(`
-      Int `,` Array[Float] `,` Float `,` Float
-      `)=>` Array[Float]]
+    val f = k.as[
+      ScalaFunction `(`
+        Int `,` Array[Float] `,` Float `,` Float
+        `)=>` Array[Float]
+    ]
     f(localSize, globalSize)(N `,` locations `,` lat `,` lng)
   }
 

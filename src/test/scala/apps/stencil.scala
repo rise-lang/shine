@@ -85,7 +85,7 @@ class stencil extends test_util.Tests {
   private case class BasicStencil1D(inputSize: Int, stencilSize: Int) extends Stencil1DProgramRun {
 
     override def expr: Expr = {
-      nFun(n => fun(ArrayType(n, float))(input =>
+      nFun(n => fun(ArrayType(n, f32))(input =>
         input |>
           padCst(padSize)(padSize)(l(0.0f)) |>
           slide(stencilSize)(1) |>
@@ -97,7 +97,7 @@ class stencil extends test_util.Tests {
   private case class PartitionedStencil1D(inputSize: Int, stencilSize: Int) extends Stencil1DProgramRun {
 
     override def expr: Expr = {
-      nFun(n => fun(ArrayType(n, float))(input =>
+      nFun(n => fun(ArrayType(n, f32))(input =>
         input |>
           padCst(padSize)(padSize)(l(0.0f)) |>
           slide(stencilSize)(1) |>
@@ -140,7 +140,7 @@ class stencil extends test_util.Tests {
 
   private case class BasicStencil2D(inputSize: Int, stencilSize: Int) extends Stencil2DProgramRun {
     override def expr = {
-      nFun(n => fun(ArrayType(n, ArrayType(n, float)))(input =>
+      nFun(n => fun(ArrayType(n, ArrayType(n, f32)))(input =>
         input |>
         padCst2D(padSize)(l(0.0f)) |>
         slide2D(stencilSize, 1) |>
@@ -154,7 +154,7 @@ class stencil extends test_util.Tests {
   private case class PartitionedStencil2D(inputSize: Int, stencilSize: Int) extends Stencil2DProgramRun {
 
     override def expr = {
-      nFun(n => fun(ArrayType(n, ArrayType(n, float)))(input =>
+      nFun(n => fun(ArrayType(n, ArrayType(n, f32)))(input =>
         input |>
           padCst2D(padSize)(l(0.0f)) |>
           slide2D(stencilSize, 1) |>
@@ -169,7 +169,7 @@ class stencil extends test_util.Tests {
     }
   }
 
-  private val simpleStencil = nFun(n => fun(ArrayType(n, float))(xs =>
+  private val simpleStencil = nFun(n => fun(ArrayType(n, f32))(xs =>
     xs |> slide(3)(1) |> mapSeq(fun(nbh =>
       nbh |> reduceSeq(fun(a => fun(x => a + x)))(l(0.0f))
     ))
