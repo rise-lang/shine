@@ -317,7 +317,10 @@ object TypedDSL {
       expr match {
         case i: Identifier =>
           val t = env
-            .getOrElse(i.name, error(s"$i has no type in the environment"))
+            .getOrElse(
+              i.name,
+              error(s"$i has no type in the environment")(Seq())
+            )
           (i.setType(t), Solution())
 
         case Lambda(x, e) =>
@@ -387,7 +390,7 @@ object TypedDSL {
     def infer(e: Expr): Expr = {
       val constraints = mutable.ArrayBuffer[Constraint]()
       val (typed_e, ftvSubs) = constrainTypes(e, constraints, mutable.Map())
-      val solution = solve(constraints) match {
+      val solution = solve(constraints, Seq()) match {
         case Solution(ts, ns, as, n2ds) =>
           Solution(
             ts.mapValues(t => ftvSubs(t)),

@@ -7,8 +7,10 @@ import rise.core.primitives.Annotation
 
 import scala.collection.mutable
 
-case class InferenceException(msg: String) extends Exception {
-  override def toString = s"inference exception: $msg"
+case class InferenceException(msg: String, trace: Seq[infer.Constraint])
+    extends Exception {
+  override def toString =
+    s"inference exception: $msg\n${trace.mkString("---- trace ----\n", "\n", "\n---------------")}"
 }
 
 object infer {
@@ -21,7 +23,7 @@ object infer {
 
     // solve the constraints
     //val bound = boundIdentifiers(typed_e)
-    val solution = solve(constraints)
+    val solution = solve(constraints, Seq())
 
     // apply the solution
     val r = solution(typed_e)
@@ -29,8 +31,8 @@ object infer {
     r
   }
 
-  def error(msg: String): Nothing =
-    throw InferenceException(msg)
+  def error(msg: String)(implicit trace: Seq[Constraint]): Nothing =
+    throw InferenceException(msg, trace)
 
   trait Constraint
   case class TypeConstraint(a: Type, b: Type) extends Constraint {
@@ -64,7 +66,7 @@ object infer {
     expr match {
       case i: Identifier =>
         val t = env
-          .getOrElse(i.name, error(s"$i has no type in the environment"))
+          .getOrElse(i.name, error(s"$i has no type in the environment")(Seq()))
         i.setType(t)
 
       case Lambda(x, e) =>
@@ -258,112 +260,114 @@ object infer {
     }
   }
 
-  def solve(cs: Seq[Constraint]): Solution = cs match {
+  def solve(cs: Seq[Constraint], trace: Seq[Constraint]): Solution = cs match {
     case Nil => Solution()
     case c +: cs =>
-      solveOne(c) match {
-        case Some(s) => s ++ solve(s.apply(cs))
-        case None    => error(s"cannot solve $c")
-      }
+      val s = solveOne(c, trace)
+      s ++ solve(s.apply(cs), trace)
   }
 
-  @scala.annotation.tailrec
-  def solveOne(c: Constraint): Option[Solution] = c match {
-    case TypeConstraint(a, b) =>
-      (a, b) match {
-        case (i: TypeIdentifier, _) => Some(unifyTypeIdent(i, b))
-        case (_, i: TypeIdentifier) => Some(unifyTypeIdent(i, a))
-        case (i: DataTypeIdentifier, dt: DataType) =>
-          Some(unifyDataTypeIdent(i, dt))
-        case (dt: DataType, i: DataTypeIdentifier) =>
-          Some(unifyDataTypeIdent(i, dt))
-        case (b1: BasicType, b2: BasicType) if b1 == b2 =>
-          Some(Solution())
-        case (IndexType(sa), IndexType(sb)) =>
-          solveOne(NatConstraint(sa, sb))
-        case (ArrayType(sa, ea), ArrayType(sb, eb)) =>
-          Some(solve(Seq(NatConstraint(sa, sb), TypeConstraint(ea, eb))))
-        case (VectorType(sa, ea), VectorType(sb, eb)) =>
-          Some(solve(Seq(NatConstraint(sa, sb), TypeConstraint(ea, eb))))
-        case (DepArrayType(sa, ea), DepArrayType(sb, eb)) =>
-          Some(solve(Seq(NatConstraint(sa, sb), NatToDataConstraint(ea, eb))))
-        case (PairType(pa1, pa2), PairType(pb1, pb2)) =>
-          Some(solve(Seq(TypeConstraint(pa1, pb1), TypeConstraint(pa2, pb2))))
-        case (FunType(ina, outa), FunType(inb, outb)) =>
-          Some(solve(Seq(TypeConstraint(ina, inb), TypeConstraint(outa, outb))))
-        case (
-            DepFunType(na: NatIdentifier, ta),
-            DepFunType(nb: NatIdentifier, tb)
-            ) =>
-          val n = NatIdentifier(freshName("n"), isExplicit = true)
-          Some(
-            solve(
+  def solveOne(c: Constraint, trace: Seq[Constraint]): Solution = {
+    implicit val _trace: Seq[Constraint] = trace
+    def decomposed(cs: Seq[Constraint]) = solve(cs, c +: trace)
+
+    c match {
+      case TypeConstraint(a, b) =>
+        (a, b) match {
+          case (i: TypeIdentifier, _) => unifyTypeIdent(i, b)
+          case (_, i: TypeIdentifier) => unifyTypeIdent(i, a)
+          case (i: DataTypeIdentifier, dt: DataType) =>
+            unifyDataTypeIdent(i, dt)
+          case (dt: DataType, i: DataTypeIdentifier) =>
+            unifyDataTypeIdent(i, dt)
+          case (b1: BasicType, b2: BasicType) if b1 == b2 =>
+            Solution()
+          case (IndexType(sa), IndexType(sb)) =>
+            decomposed(Seq(NatConstraint(sa, sb)))
+          case (ArrayType(sa, ea), ArrayType(sb, eb)) =>
+            decomposed(Seq(NatConstraint(sa, sb), TypeConstraint(ea, eb)))
+          case (VectorType(sa, ea), VectorType(sb, eb)) =>
+            decomposed(Seq(NatConstraint(sa, sb), TypeConstraint(ea, eb)))
+          case (DepArrayType(sa, ea), DepArrayType(sb, eb)) =>
+            decomposed(Seq(NatConstraint(sa, sb), NatToDataConstraint(ea, eb)))
+          case (PairType(pa1, pa2), PairType(pb1, pb2)) =>
+            decomposed(Seq(TypeConstraint(pa1, pb1), TypeConstraint(pa2, pb2)))
+          case (FunType(ina, outa), FunType(inb, outb)) =>
+            decomposed(
+              Seq(TypeConstraint(ina, inb), TypeConstraint(outa, outb))
+            )
+          case (
+              DepFunType(na: NatIdentifier, ta),
+              DepFunType(nb: NatIdentifier, tb)
+              ) =>
+            val n = NatIdentifier(freshName("n"), isExplicit = true)
+            decomposed(
               Seq(
                 NatConstraint(n, na.asImplicit),
                 NatConstraint(n, nb.asImplicit),
                 TypeConstraint(ta, tb)
               )
             )
-          )
-        case (
-            DepFunType(dta: DataTypeIdentifier, ta),
-            DepFunType(dtb: DataTypeIdentifier, tb)
-            ) =>
-          val dt = DataTypeIdentifier(freshName("t"), isExplicit = true)
-          Some(
-            solve(
+          case (
+              DepFunType(dta: DataTypeIdentifier, ta),
+              DepFunType(dtb: DataTypeIdentifier, tb)
+              ) =>
+            val dt = DataTypeIdentifier(freshName("t"), isExplicit = true)
+            decomposed(
               Seq(
                 TypeConstraint(dt, dta.asImplicit),
                 TypeConstraint(dt, dtb.asImplicit),
                 TypeConstraint(ta, tb)
               )
             )
-          )
-        case (
-            DepFunType(asa: AddressSpaceIdentifier, ta),
-            DepFunType(asb: AddressSpaceIdentifier, tb)
-            ) =>
-          ???
-        case (_: NatToDataApply, dt: DataType) =>
-          Some(Solution.subs(a, dt)) // substitute apply by data type
-        case (dt: DataType, _: NatToDataApply) =>
-          Some(Solution.subs(b, dt)) // substitute apply by data type
-        case _ => error(s"cannot unify $a and $b")
-      }
+          case (
+              DepFunType(asa: AddressSpaceIdentifier, ta),
+              DepFunType(asb: AddressSpaceIdentifier, tb)
+              ) =>
+            ???
+          case (_: NatToDataApply, dt: DataType) =>
+            Solution.subs(a, dt) // substitute apply by data type
+          case (dt: DataType, _: NatToDataApply) =>
+            Solution.subs(b, dt) // substitute apply by data type
+          case _ => error(s"cannot unify $a and $b")
+        }
 
-    case DepConstraint(df, arg, t) =>
-      Some(df match {
-        case _: DepFunType[_, _] =>
-          solve(Seq(TypeConstraint(liftDependentFunctionType(df)(arg), t)))
-        case _ => error(s"expected a dependent function type, but got $df")
-      })
+      case DepConstraint(df, arg, t) =>
+        df match {
+          case _: DepFunType[_, _] =>
+            decomposed(
+              Seq(TypeConstraint(liftDependentFunctionType(df)(arg), t))
+            )
+          case _ => error(s"expected a dependent function type, but got $df")
+        }
 
-    case NatConstraint(a, b) =>
-      Some((a, b) match {
-        case (i: NatIdentifier, _) => nat.unifyIdent(i, b)
-        case (_, i: NatIdentifier) => nat.unifyIdent(i, a)
-        case _ if a == b           => Solution()
-        // case _ if !nat.potentialPivots(a).isEmpty => nat.tryPivots(a, b)
-        // case _ if !nat.potentialPivots(b).isEmpty => nat.tryPivots(b, a)
-        case (s: arithexpr.arithmetic.Sum, _)    => nat.unifySum(s, b)
-        case (_, s: arithexpr.arithmetic.Sum)    => nat.unifySum(s, a)
-        case (p: arithexpr.arithmetic.Prod, _)   => nat.unifyProd(p, b)
-        case (_, p: arithexpr.arithmetic.Prod)   => nat.unifyProd(p, a)
-        case (p: arithexpr.arithmetic.Pow, _)    => nat.unifyProd(p, b)
-        case (_, p: arithexpr.arithmetic.Pow)    => nat.unifyProd(p, a)
-        case (p: arithexpr.arithmetic.IntDiv, _) => nat.unifyProd(p, b)
-        case (_, p: arithexpr.arithmetic.IntDiv) => nat.unifyProd(p, a)
-        case _                                   => error(s"cannot unify $a and $b")
-      })
+      case NatConstraint(a, b) =>
+        (a, b) match {
+          case (i: NatIdentifier, _) => nat.unifyIdent(i, b)
+          case (_, i: NatIdentifier) => nat.unifyIdent(i, a)
+          case _ if a == b           => Solution()
+          // case _ if !nat.potentialPivots(a).isEmpty => nat.tryPivots(a, b)
+          // case _ if !nat.potentialPivots(b).isEmpty => nat.tryPivots(b, a)
+          case (s: arithexpr.arithmetic.Sum, _)    => nat.unifySum(s, b)
+          case (_, s: arithexpr.arithmetic.Sum)    => nat.unifySum(s, a)
+          case (p: arithexpr.arithmetic.Prod, _)   => nat.unifyProd(p, b)
+          case (_, p: arithexpr.arithmetic.Prod)   => nat.unifyProd(p, a)
+          case (p: arithexpr.arithmetic.Pow, _)    => nat.unifyProd(p, b)
+          case (_, p: arithexpr.arithmetic.Pow)    => nat.unifyProd(p, a)
+          case (p: arithexpr.arithmetic.IntDiv, _) => nat.unifyProd(p, b)
+          case (_, p: arithexpr.arithmetic.IntDiv) => nat.unifyProd(p, a)
+          case _                                   => error(s"cannot unify $a and $b")
+        }
 
-    case NatToDataConstraint(a, b) =>
-      (a, b) match {
-        case (i: NatToDataIdentifier, _) => Some(natToData.unifyIdent(i, b))
-        case (_, i: NatToDataIdentifier) => Some(natToData.unifyIdent(i, a))
-        case _ if a == b                 => Some(Solution())
-        case _                           => error(s"cannot unify $a and $b")
-      }
+      case NatToDataConstraint(a, b) =>
+        (a, b) match {
+          case (i: NatToDataIdentifier, _) => natToData.unifyIdent(i, b)
+          case (_, i: NatToDataIdentifier) => natToData.unifyIdent(i, a)
+          case _ if a == b                 => Solution()
+          case _                           => error(s"cannot unify $a and $b")
+        }
 
+    }
   }
 
   def unifyTypeIdent(i: TypeIdentifier, t: Type): Solution = {
@@ -371,7 +375,9 @@ object infer {
   }
 
   // FIXME: datatypes and types are mixed up
-  def unifyDataTypeIdent(i: DataTypeIdentifier, t: DataType): Solution = {
+  def unifyDataTypeIdent(i: DataTypeIdentifier, t: DataType)(
+      implicit trace: Seq[Constraint]
+  ): Solution = {
     t match {
       case j: DataTypeIdentifier =>
         if (i == j) {
@@ -445,7 +451,9 @@ object infer {
       }
     }
 
-    def tryPivots(n: Nat, value: Nat): Solution = {
+    def tryPivots(n: Nat, value: Nat)(
+        implicit trace: Seq[Constraint]
+    ): Solution = {
       potentialPivots(n).foreach(pivotSolution(_, n, value) match {
         case Some(s) => return s
         case None    =>
@@ -453,17 +461,19 @@ object infer {
       error(s"could not pivot $n = $value")
     }
 
-    def unifyProd(p: Nat, n: Nat): Solution = {
+    def unifyProd(p: Nat, n: Nat)(implicit trace: Seq[Constraint]): Solution = {
       // n = p --> 1 = p * (1/n)
       tryPivots(p /^ n, 1)
     }
 
-    def unifySum(s: Sum, n: Nat): Solution = {
+    def unifySum(s: Sum, n: Nat)(implicit trace: Seq[Constraint]): Solution = {
       // n = s --> 0 = s + (-n)
       tryPivots(s - n, 0)
     }
 
-    def unifyIdent(i: NatIdentifier, n: Nat): Solution = n match {
+    def unifyIdent(i: NatIdentifier, n: Nat)(
+        implicit trace: Seq[Constraint]
+    ): Solution = n match {
       case j: NatIdentifier =>
         if (i == j) {
           Solution()
@@ -483,7 +493,9 @@ object infer {
   }
 
   object natToData {
-    def unifyIdent(i: NatToDataIdentifier, n: NatToData): Solution = n match {
+    def unifyIdent(i: NatToDataIdentifier, n: NatToData)(
+        implicit trace: Seq[Constraint]
+    ): Solution = n match {
       case j: NatToDataIdentifier =>
         if (i == j) {
           Solution()
@@ -518,7 +530,7 @@ object infer {
       }
     )
     if (holeFound) {
-      error("type holes were found")
+      error("type holes were found")(Seq())
     }
   }
 }
