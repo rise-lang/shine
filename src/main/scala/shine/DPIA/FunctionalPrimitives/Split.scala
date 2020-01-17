@@ -19,7 +19,7 @@ final case class Split(n: Nat,
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (n: Nat) ->: (m: Nat) ->: (w: AccessType) ->: (dt: DataType) ->:
+    (n: Nat) ->: (m: Nat) ->: (dt: DataType) ->: (w: AccessType) ->:
       (array :: exp"[${m * n}.$dt, $w]") ->: exp"[$m.$n.$dt, $w]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {

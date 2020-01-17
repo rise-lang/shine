@@ -322,7 +322,7 @@ object fromRise {
           fun[FunType[ExpType, ExpType]](exp"[$in, $ai]" ->: exp"[$out, $ai]",
             f => fun[ExpType](exp"[$n.$in, $ai]", arr => Map(n, in, out, ai, f, arr))))
 
-        if (args.length >= 2) {
+        if (args.length == 2) {
           val access = args(1).asInstanceOf[Phrase[ExpType]].t.accessType
           val fwAcc =
             //If the function is parametric over the access type
@@ -641,12 +641,17 @@ object fromRise {
               Join(n, m, read, a, e))))
 
  */
-        //FIXME fails if Transpose appears unapplied as a function argument, same goes for other primitives as well
-        val access = args.head.asInstanceOf[Phrase[ExpType]].t.accessType
+        val ai = accessTypeIdentifier()
         val unappPrim =
-          fun[ExpType](exp"[$n.$m.$a, $access]", e =>
-            Transpose(n, m, a, access, e))
-        applyAllExistingArgs(unappPrim, args, nonPhraseArgs)
+          DepLambda[AccessKind](ai)(
+            fun[ExpType](exp"[$n.$m.$a, $ai]", e =>
+              Transpose(n, m, a, ai, e)))
+
+        if (args.nonEmpty) {
+          val access = args.head.asInstanceOf[Phrase[ExpType]].t.accessType
+          val withAccess = Lifting.liftDependentFunction(unappPrim)(access)
+          applyAllExistingArgs(unappPrim, args, nonPhraseArgs)
+        } else unappPrim
 
       case (core.Take(),
       rt.DepFunType(n: rt.NatIdentifier,
@@ -775,11 +780,18 @@ object fromRise {
       =>
         val a = dataType(la)
         val b = dataType(lb)
+        val ai = accessTypeIdentifier()
         val unappPrim =
-          fun[ExpType](exp"[$a, $read]", x =>
-            fun[ExpType](exp"[$b, $read]", y =>
-              Pair(a, b, x, y)))
-        applyAllExistingArgs(unappPrim, args, nonPhraseArgs)
+          DepLambda[AccessKind](ai)(
+            fun[ExpType](exp"[$a, $ai]", x =>
+              fun[ExpType](exp"[$b, $ai]", y =>
+                Pair(a, b, ai, x, y))))
+
+        if (args.nonEmpty) {
+          val access = args.head.asInstanceOf[Phrase[ExpType]].t.accessType
+          val withAccess = Lifting.liftDependentFunction(unappPrim)(access)
+          applyAllExistingArgs(withAccess, args, nonPhraseArgs)
+        } else unappPrim
 
       case (core.Idx(),
       rt.FunType(_,

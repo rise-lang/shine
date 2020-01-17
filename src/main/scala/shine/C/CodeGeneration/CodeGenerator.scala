@@ -338,7 +338,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         }
         case (i: CIntExpr) :: Nil =>
           val j = AsIndex(n, Natural(i))
-          exp(Pair(dt1, dt2, Idx(n, dt1, j, e1), Idx(n, dt2, j, e2)), env, Nil, cont)
+          exp(Pair(dt1, dt2, read, Idx(n, dt1, j, e1), Idx(n, dt2, j, e2)), env, Nil, cont)
         case _ => error(s"unexpected $path")
       }
 
@@ -356,7 +356,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error("Expected a C-Integer-Expression followed by a tuple access on the path.")
       }
 
-      case r @ Pair(_, _, e1, e2) => path match {
+      case r @ Pair(_, _, _, e1, e2) => path match {
         case (xj : PairAccess) :: ps => xj match {
           case FstMember => exp(e1, env, ps, cont)
           case SndMember => exp(e2, env, ps, cont)
@@ -415,7 +415,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error(s"Expected two C-Integer-Expressions on the path.")
       }
 
-      case Transpose(_, _, _, e) => path match {
+      case Transpose(_, _, _, _, e) => path match {
         case (i: CIntExpr) :: (j: CIntExpr) :: ps => exp(e, env, j :: i :: ps, cont)
         case _ => error(s"did not expect $path")
       }

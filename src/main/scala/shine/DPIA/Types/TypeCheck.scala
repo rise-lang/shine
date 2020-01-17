@@ -15,7 +15,7 @@ object TypeCheck {
       case Apply(p, q) =>
         TypeCheck(p)
         TypeCheck(q)
-        if(!(q.t `<` p.t.inT))
+        if(!(q.t `<=` p.t.inT))
           error(q.t, p.t.inT)
 
       case DepLambda(_, p) => TypeCheck(p)
@@ -74,7 +74,7 @@ object TypeCheck {
   }
 
   def check(found: PhraseType, expected: PhraseType): Unit = {
-    if (!(found `<` expected)) error(found, expected)
+    if (!(found `<=` expected)) error(found, expected)
   }
 
   def check(found: PhraseType, test: PhraseType => Unit): Unit = {
@@ -89,7 +89,7 @@ object TypeCheck {
   }
 
   implicit class SubTypeCheckHelper(subType: PhraseType) {
-    def `<`(superType: PhraseType): Boolean = {
+    def `<=`(superType: PhraseType): Boolean = {
       subTypeCheck(subType, superType)
     }
   }
