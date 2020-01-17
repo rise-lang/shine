@@ -85,7 +85,9 @@ object DSL {
     def /(rhs: Expr): Expr = div(lhs)(rhs)
     def %(rhs: Expr): Expr = mod(lhs)(rhs)
     def >(rhs: Expr): Expr = gt(lhs)(rhs)
+    def >=(rhs: Expr): Expr = neg(lhs < rhs) // TODO: dedicated primitive?
     def <(rhs: Expr): Expr = lt(lhs)(rhs)
+    def <=(rhs: Expr): Expr = neg(lhs > rhs) // TODO: dedicated primitive?
     def =:=(rhs: Expr): Expr = equal(lhs)(rhs)
 
     // unary
