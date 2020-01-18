@@ -208,6 +208,11 @@ object primitives {
       )
   }
 
+  @primitive case class ToMem()(override val t: Type = TypePlaceholder)
+    extends Primitive {
+    override def typeScheme: Type = implDT(t => t ->: t)
+  }
+
   @primitive case class NatAsIndex()(override val t: Type = TypePlaceholder)
       extends Primitive {
     override def typeScheme: Type = nFunT(n => NatType ->: IndexType(n))
