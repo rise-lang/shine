@@ -1,8 +1,7 @@
 package shine.DPIA
 
 import scala.language.existentials
-
-import shine.DPIA.Phrases._
+import shine.DPIA.Phrases.{Identifier, _}
 import shine.DPIA.Semantics.{OperationalSemantics => OpSem}
 import shine.DPIA.Types._
 import rise.core.{semantics => rs, types => rt}
@@ -15,7 +14,7 @@ object fromRise {
     if (!r.IsClosedForm(expr)) {
       throw new Exception(s"expression is not in closed form: $expr")
     }
-    expression(expr).left.get
+    expression(expr, Map()).left.get
   }
 
   private def arity(ft: rt.Type): Int = {
@@ -34,32 +33,49 @@ object fromRise {
   private final case class AppliedPrimitiveArgs(p: r.Primitive,
                                                 args: List[Phrase[_ <: PhraseType]],
                                                 nonPhraseArgs: List[Kind#T])
+  private type IdentMap = Map[r.Identifier, Identifier[_ <: PhraseType]]
 
-  private def expression(expr: r.Expr): Either[Phrase[_ <: PhraseType], AppliedPrimitiveArgs] = expr match {
-    case r.Identifier(name) =>
-      Left(Identifier(name, `type`(expr.t)))
+  private def expression(expr: r.Expr,
+                         identMap: IdentMap): Either[Phrase[_ <: PhraseType], AppliedPrimitiveArgs] = expr match {
+    case ri: r.Identifier =>
+      Left(identMap(ri))
 
     case r.Lambda(x, e) => expr.t match {
       case rt.FunType(i, _) =>
-        Left(Lambda(Identifier(x.name, `type`(i)), expression(e).left.get))
+        //FIXME doesn't work if e is a partially applied primitive
+        val ident = Identifier(x.name, `type`(i))
+        Left(
+          Lambda(ident,  expression(e,  identMap + (x -> ident)).left.get))
       case _ => error(expr.t.toString, "a function type")
     }
 
     case r.App(f, e) => {
-      val ee = expression(e) match {
+      val ee = expression(e, identMap) match {
         case Left(le) => le
         case Right(appargs) =>
             primitive(appargs.p, appargs.args.reverse, appargs.nonPhraseArgs.reverse)
       }
 
       f match {
+        case r.Lambda(x, e) =>
+          val ident = Identifier(x.name, ee.t)
+          val l = Lambda(ident, expression(e, identMap + (x -> ident)).left.get)
+          val reducedF = ee.t match {
+            case _: ExpType => Lifting.liftFunction(
+              l.asInstanceOf[Lambda[ExpType, _ <: PhraseType]]).reducing(ee.asInstanceOf[Phrase[ExpType]])
+            case _: FunType[_, _] => Lifting.liftFunction(
+              l.asInstanceOf[Lambda[FunType[_, _], _ <: PhraseType]]).reducing(ee.asInstanceOf[Phrase[FunType[_, _]]])
+            case _: DepFunType[_, _] => Lifting.liftFunction(
+              l.asInstanceOf[Lambda[DepFunType[_, _], _ <: PhraseType]]).reducing(ee.asInstanceOf[Phrase[DepFunType[_, _]]])
+          }
+          Left(reducedF)
         case fp: r.Primitive =>
           if (arity(fp.t) == 1)
             Left(primitive(fp, ee :: Nil, Nil))
           else
             Right(AppliedPrimitiveArgs(fp, ee :: Nil, Nil))
         case _ => {
-          expression(f) match {
+          expression(f, identMap) match {
             case Right(AppliedPrimitiveArgs(p, args, npArgs)) =>
               if (arity(p.t) == args.length + npArgs.length + 1)
                 Left(primitive(p, (ee :: args).reverse, npArgs.reverse))
@@ -96,7 +112,7 @@ object fromRise {
     }
 
     case r.DepLambda(x, e) =>
-      val appE = expression(e) match {
+      val appE = expression(e, identMap) match {
         case Left(ee) => ee
         case Right(appargs) => primitive(appargs.p, appargs.args, appargs.nonPhraseArgs)
       }
@@ -118,7 +134,7 @@ object fromRise {
           else
             Right(AppliedPrimitiveArgs(fp, Nil, kind(x) :: Nil))
         case _ =>
-          expression(f) match {
+          expression(f, identMap) match {
             case Right(AppliedPrimitiveArgs(p, args, npArgs)) =>
               if(arity(p.t) == args.length + npArgs.length + 1)
                 Left(primitive(p, args.reverse, (kind(x) :: npArgs).reverse))
@@ -650,7 +666,7 @@ object fromRise {
         if (args.nonEmpty) {
           val access = args.head.asInstanceOf[Phrase[ExpType]].t.accessType
           val withAccess = Lifting.liftDependentFunction(unappPrim)(access)
-          applyAllExistingArgs(unappPrim, args, nonPhraseArgs)
+          applyAllExistingArgs(withAccess, args, nonPhraseArgs)
         } else unappPrim
 
       case (core.Take(),
@@ -726,11 +742,19 @@ object fromRise {
       =>
         val a = dataType(la)
         val b = dataType(lb)
+        val ai = accessTypeIdentifier()
         val unappPrim =
-          fun[ExpType](exp"[$n.$a, $read]", x =>
-            fun[ExpType](exp"[$n.$b, $read]", y =>
-              Zip(n, a, b, x, y)))
-        applyAllExistingArgs(unappPrim, args, nonPhraseArgs)
+          DepLambda[AccessKind](ai)(
+            fun[ExpType](exp"[$n.$a, $ai]", x =>
+              fun[ExpType](exp"[$n.$b, $ai]", y =>
+                Zip(n, a, b, ai, x, y))))
+
+        if (args.nonEmpty) {
+          val access = args.head.asInstanceOf[Phrase[ExpType]].t.accessType
+          val withAccess = Lifting.liftDependentFunction(unappPrim)(access)
+          applyAllExistingArgs(withAccess, args, nonPhraseArgs)
+        } else
+          unappPrim
 
       case (core.Fst(),
       rt.FunType(rt.PairType(la, lb), _))
@@ -996,7 +1020,15 @@ object fromRise {
             IndexAsNat(n, e))
         applyAllExistingArgs(unappPrim, args, nonPhraseArgs)
 
-      case (ocl.ToMem(),
+      case (core.ToMem(), rt.FunType(ra: rt.DataType, _))
+      =>
+        val a = dataType(ra)
+        val unappPrim =
+          fun[ExpType](exp"[$a, $write]", e =>
+            ToMem(a, e))
+        applyAllExistingArgs(unappPrim, args, nonPhraseArgs)
+
+      case (ocl.OclToMem(),
       rt.DepFunType(las: rt.AddressSpaceIdentifier,
       rt.FunType(la: rt.DataType, _)))
       =>

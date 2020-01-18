@@ -1,6 +1,6 @@
 package shine.DPIA
 
-import rise.core.DSL._
+import rise.core.DSL.{fun, _}
 import rise.core.types._
 import rise.OpenCL.DSL._
 import rise.OpenMP.DSL._
@@ -37,7 +37,7 @@ class StructDecl extends test_util.Tests {
   test("Program using intermediary tuples but not in input or output, can be generated in C.") {
     val tupleOut = fun(ArrayType(8, float))(xs =>
       fun(ArrayType(8, float))(ys =>
-        zip(xs, ys) |> mapSeq(id) |> mapSeq(addT)))
+        zip(xs, ys) |> toMemFun(mapSeq(id)) |> mapSeq(addT)))
 
     gen.CProgram(tupleOut)
   }
@@ -45,7 +45,7 @@ class StructDecl extends test_util.Tests {
   test("Program using intermediary tuples but not in input or output, can be generated in OpenMP.") {
     val tupleOut = fun(ArrayType(8, float))(xs =>
       fun(ArrayType(8, float))(ys =>
-        zip(xs, ys) |> mapPar(id) |> mapPar(addT)))
+        zip(xs, ys) |> toMemFun(mapPar(id)) |> mapPar(addT)))
 
     gen.OpenMPProgram(tupleOut)
   }
@@ -54,7 +54,6 @@ class StructDecl extends test_util.Tests {
     val tupleOut = fun(ArrayType(8, float))(xs =>
       fun(ArrayType(8, float))(ys =>
         zip(xs, ys) |> mapSeq(id) |> fun(x => toGlobal(x)) |> mapSeq(addT)))
-
     gen.OpenCLKernel(tupleOut)
   }
 }

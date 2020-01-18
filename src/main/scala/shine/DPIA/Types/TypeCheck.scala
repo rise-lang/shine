@@ -94,15 +94,27 @@ object TypeCheck {
     }
   }
 
-  def subTypeCheck(subType: PhraseType, superType: PhraseType): Boolean = {
+  //TODO make private and remove possibly superfluous type checking although types are checking during
+  // object construction
+  private def subTypeCheck(subType: PhraseType, superType: PhraseType): Boolean = {
     if (subType == superType) return true
 
     (subType, superType) match {
-      case (ExpType(bSub: BasicType, accessSub), ExpType(bSuper, _)) =>
-        bSub == bSuper && accessSub == read
+      case (ExpType(bSub: DataType, accessSub), ExpType(bSuper, _)) =>
+        bSub == bSuper && dataTypeNotComposedOfArrayTypes(bSub) && accessSub == read
       case (FunType(subInT, subOutT), FunType(superInT, superOutT)) =>
         subTypeCheck(superInT, subInT) && subTypeCheck(subOutT,  superOutT)
+      case (DepFunType(subInT, subOutT), DepFunType(superInT, superOutT)) =>
+        subInT == superInT && subTypeCheck(subOutT, superOutT)
       case _ => false
     }
+  }
+
+  //TODO How do we deal with NatToData etc?
+  private def dataTypeNotComposedOfArrayTypes(composed: DataType): Boolean = composed match {
+      case _: BasicType => true
+      case PairType(first, second) =>
+        dataTypeNotComposedOfArrayTypes(first) && dataTypeNotComposedOfArrayTypes(second)
+      case _ => false
   }
 }

@@ -13,16 +13,15 @@ class gemv extends test_util.Tests {
   val mult  = implDT(dt => fun(x => x._1 * x._2) :: ((dt x dt) ->: dt))
   val add   = fun(x => fun(y => x + y))
   val scal  = implN(n => fun(xs => fun(a => mapSeq(fun(x => a * x), xs))) :: (ArrayType(n, float) ->: float ->: ArrayType(n, float)))
-  val dot   = fun(xs => fun(ys => zip(xs, ys) |> mapSeq(mult) |> reduceSeq(add, l(0.0f))))
+  val dot   = fun(xs => fun(ys => zip(xs, ys) |> toMemFun(mapSeq(mult)) |> reduceSeq(add, l(0.0f))))
 
   val high_level =
     nFun((n, m) =>
       fun((m`.`n`.`float) ->: (n`.`float) ->: (m`.`float) ->: float ->: float ->: (m`.`float))
          ((mat, xs, ys, alpha, beta) =>
 
-        zip(mapSeq(fun(row => alpha * dot(row, xs)), mat), scal(ys, beta)) |>
+        toMem(zip(mapSeq(fun(row => alpha * dot(row, xs)), mat), scal(ys, beta))) |>
           mapSeq(fun(x => x._1 + x._2))
-
       ))
 
   object ocl {
@@ -86,7 +85,7 @@ class gemv extends test_util.Tests {
             mapPar(fun(t =>
               zip(xs, t._1) |>
                 split(n) |>
-                mapSeq(reduceSeq(fun(a => fun(x => mult(x) + a)), l(0.0f))) |>
+                toMemFun(mapSeq(reduceSeq(fun(a => fun(x => mult(x) + a)), l(0.0f)))) |>
                 mapSeq(fun(x => (alpha * x) + (t._2 * beta)))
             )) |>
             join
