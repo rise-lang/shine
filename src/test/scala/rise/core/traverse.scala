@@ -10,8 +10,7 @@ import scala.collection.mutable
 class traverse extends test_util.Tests {
   val e = nFun(h =>
     nFun(w =>
-      fun(ArrayType(h, ArrayType(w, float)))(input =>
-        map(map(fun(x => x)))(input)
+      fun(ArrayType(h, ArrayType(w, f32)))(input => map(map(fun(x => x)))(input)
       )
     )
   )
@@ -120,7 +119,7 @@ class traverse extends test_util.Tests {
           r ==
             nFun(h =>
               nFun(w =>
-                fun(ArrayType(h, ArrayType(w, float)))(input =>
+                fun(ArrayType(h, ArrayType(w, f32)))(input =>
                   app(fun(x => x), input)
                 )
               )
@@ -135,7 +134,7 @@ class traverse extends test_util.Tests {
 
   test("traverse an expression depth-first with global stop") {
     val e = nFun(n =>
-      fun(ArrayType(n, float))(input =>
+      fun(ArrayType(n, f32))(input =>
         input |> map(fun(x => x)) |> map(fun(x => x))
       )
     )
@@ -157,7 +156,7 @@ class traverse extends test_util.Tests {
     (result: @unchecked) match {
       case traversal.Stop(r) =>
         val expected = nFun(n =>
-          fun(ArrayType(n, float))(input => {
+          fun(ArrayType(n, f32))(input => {
             val x = identifier(freshName("x"))
             app(lambda(x, x), input |> map(fun(x => x)))
           })

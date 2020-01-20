@@ -22,7 +22,7 @@ class showRise extends test_util.Tests {
 
   private val blurXTiled2D: Expr = nFun(n =>
     fun(
-      (n `.` n `.` float) ->: (17 `.` float) ->: (n `.` n `.` float)
+      (n `.` n `.` f32) ->: (17 `.` f32) ->: (n `.` n `.` f32)
     )((matrix, weights) =>
       unslide2D o mapWorkGroup(1)(
         mapWorkGroup(0)(

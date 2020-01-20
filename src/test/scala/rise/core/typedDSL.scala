@@ -9,9 +9,9 @@ class typedDSL extends test_util.Tests {
     val e =
       nFun(n =>
         fun(
-          DepArrayType(n, n2dtFun(i => (i + 1) `.` float)) ->: DepArrayType(
+          DepArrayType(n, n2dtFun(i => (i + 1) `.` f32)) ->: DepArrayType(
             n,
-            n2dtFun(i => (i + 1) `.` float)
+            n2dtFun(i => (i + 1) `.` f32)
           )
         )(xs => xs |> depMapSeq(nFun(_ => mapSeq(fun(x => x)))))
       )

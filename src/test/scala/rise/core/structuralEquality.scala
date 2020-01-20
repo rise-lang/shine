@@ -58,7 +58,7 @@ class structuralEquality extends test_util.Tests {
       )
         !=
           nFun(m =>
-            fun(ArrayType(m, float))(b =>
+            fun(ArrayType(m, f32))(b =>
               reduceSeq(fun(y => fun(x => y + x)))(0)(b)
             )
           )

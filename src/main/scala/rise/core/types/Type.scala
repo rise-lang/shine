@@ -88,11 +88,19 @@ object int extends ScalarType {
   override def toString: String = "int"
 }
 
-object float extends ScalarType {
-  override def toString: String = "float"
-}
+object i8 extends ScalarType { override def toString: String = "i8" }
+object i16 extends ScalarType { override def toString: String = "i16" }
+object i32 extends ScalarType { override def toString: String = "i32" }
+object i64 extends ScalarType { override def toString: String = "i64" }
 
-object double extends ScalarType { override def toString: String = "double" }
+object u8 extends ScalarType { override def toString: String = "u8" }
+object u16 extends ScalarType { override def toString: String = "u16" }
+object u32 extends ScalarType { override def toString: String = "u32" }
+object u64 extends ScalarType { override def toString: String = "u64" }
+
+object f16 extends ScalarType { override def toString: String = "f16" }
+object f32 extends ScalarType { override def toString: String = "f32" }
+object f64 extends ScalarType { override def toString: String = "f64" }
 
 object NatType extends ScalarType { override def toString: String = "nat" }
 
@@ -105,25 +113,9 @@ sealed case class VectorType(size: Nat, elemType: DataType) extends BasicType {
   override def toString: String = s"<$size>$elemType"
 }
 
-object int2 extends VectorType(2, int)
-
-object int3 extends VectorType(3, int)
-
-object int4 extends VectorType(4, int)
-
-object int8 extends VectorType(8, int)
-
-object int16 extends VectorType(16, int)
-
-object float2 extends VectorType(2, float)
-
-object float3 extends VectorType(3, float)
-
-object float4 extends VectorType(4, float)
-
-object float8 extends VectorType(8, float)
-
-object float16 extends VectorType(16, float)
+object vec {
+  def apply(size: Nat, elemType: DataType) = VectorType(size, elemType)
+}
 
 final class NatToDataApply(val f: NatToData, val n: Nat) extends DataType {
   override def toString: String = s"$f($n)"
