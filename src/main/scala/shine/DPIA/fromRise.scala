@@ -82,13 +82,19 @@ object fromRise {
   }
 
   def scalarType(t: lt.ScalarType): ScalarType = t match {
-    case lt.bool => bool
-    case lt.int  => int
-    case lt.i8 | lt.i16 | lt.i32 | lt.i64 | lt.u8 | lt.u16 | lt.u32 | lt.u64 =>
-      ???
-    case lt.`f16`   => ???
-    case lt.`f32`   => float
-    case lt.`f64`   => double
+    case lt.bool    => bool
+    case lt.int     => int
+    case lt.i8      => i8
+    case lt.i16     => i16
+    case lt.i32     => i32
+    case lt.i64     => i64
+    case lt.u8      => u8
+    case lt.u16     => u16
+    case lt.u32     => u32
+    case lt.u64     => u64
+    case lt.`f16`   => f16
+    case lt.`f32`   => f32
+    case lt.`f64`   => f64
     case lt.NatType => NatType
   }
 

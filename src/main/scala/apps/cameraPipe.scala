@@ -221,7 +221,7 @@ object cameraPipe {
         makeArray(2)( makeArray(2)(b_gr_o.expr, b_r_o.expr), makeArray(2)(b_b_o.expr, b_gb_o.expr) )  // b
       ) /* 3.2.2.H.W.f */ |> map(
         map( // 2.H.W.f
-          transpose >> map(transpose) >> join // H.(W * 2).f
+          transpose >> map(transpose >> join) // H.(W * 2).f
         ) // 2.H.(W * 2).f
           >> transpose >> join // (H * 2).(W * 2).f
       )
