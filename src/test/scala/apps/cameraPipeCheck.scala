@@ -194,8 +194,49 @@ int main(int argc, char** argv) {
   }
 
   test("color correction passes checks") {
-    println("color correction: " + printTime(infer(color_correct)).t)
-    // TODO: functional correctness
+    val typed = printTime(infer(color_correct))
+    println(s"color correction: ${typed.t}")
+    val lower: Strategy[Rise] = LCNF `;` CNF `;`
+      repeatNTimes(2, oncetd(lowering.mapSeq)) `;`
+      oncetd(lowering.mapSeqUnroll)
+    val lowered = printTime(lower(typed).get)
+    println(s"lowered: ${lowered}")
+    val prog = gen.CProgram(lowered)
+    // TODO: investigate output difference of 1
+    val testCode =
+      s"""
+${cHeader}
+
+${prog.code}
+
+int main(int argc, char** argv) {
+  int16_t input[3 * (2*$N - 8) * (2*$M - 8)] = { ${goldDemosaic.mkString(", ")} };
+  int16_t gold[3 * (2*$N - 8) * (2*$M - 8)] = { ${goldCorrected.mkString(", ")} };
+
+  float matrix_3200[3 * 4] = { ${matrix_3200.mkString(", ")} };
+  float matrix_7000[3 * 4] = { ${matrix_7000.mkString(", ")} };
+  float color_temp = ${color_temp};
+
+  int16_t output[3 * (2*$N - 8) * (2*$M - 8)];
+  ${prog.function.name}(output,
+    2*$N - 8, 2*$M - 8, 3, 4,
+    input, matrix_3200, matrix_7000, color_temp);
+
+  for (int i = 0; i < 3 * (2*$N - 8) * (2*$M - 8); i++) {
+    int16_t d = gold[i] != output[i];
+    if (d < -1 || d > 1) {
+      fprintf(stderr, "%d != %d\\n", gold[i], output[i]);
+      return 1;
+    }
+    if (d != 0) {
+      fprintf(stderr, "WARNING: %d != %d\\n", gold[i], output[i]);
+    }
+  }
+
+  return 0;
+}
+"""
+    util.Execute(testCode)
   }
 
   test("apply curve passes checks") {
