@@ -6,21 +6,22 @@ import rise.core.types._
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 
-// import elevate.core._
-// import elevate.rise.rules._
-import elevate.rise.rules.algorithmic._
+import elevate.core._
+import elevate.rise.Rise
+import elevate.rise.rules._
+// import elevate.rise.rules.algorithmic._
 // import elevate.rise.rules.movement._
 import elevate.core.strategies.basic._
-// import elevate.core.strategies.traversal._
+import elevate.core.strategies.traversal._
 import elevate.rise.strategies.normalForm._
 // import elevate.rise.strategies.algorithmic._
 import elevate.rise.rules.traversal._
 
 class cameraPipeCheck extends test_util.TestsWithExecutor {
-  // these test values are taken from Halide
+  val N = 8
+  val M = 10
 
-  val H = 1920
-  val W = 2560
+  // test values are taken from Halide
   val color_temp = 3700
   val gamma = 2.0f
   val contrast = 50
@@ -71,13 +72,47 @@ class cameraPipeCheck extends test_util.TestsWithExecutor {
       .map(_.toInt)
 
   test("hot pixel suppression passes checks") {
-    println(
-      "hot pixel suppression: " + printTime(infer(hot_pixel_suppression)).t
-    )
-    // TODO: functional correctness
-    println(hot_pixel_suppression)
-    println((BENF `;` normalize.apply(mapFusion))(hot_pixel_suppression))
-    // gen.CProgram(hot_pixel_suppression)
+    val typed = printTime(infer(hot_pixel_suppression))
+    println(s"hot pixel suppression: ${typed.t}")
+    val lower: Strategy[Rise] = LCNF `;` CNF `;` repeatNTimes(2, oncetd(lowering.mapSeq)) `;` BENF
+    val lowered = printTime(lower(infer(hot_pixel_suppression)).get)
+    println(s"lowered: ${lowered}")
+    val prog = gen.CProgram(lowered)
+    val testCode =
+    s"""
+#include <stdio.h>
+#include <stdint.h>
+
+int16_t min(int16_t a, int16_t b) {
+  return (a < b) ? a : b;
+}
+int16_t max(int16_t a, int16_t b) {
+  return (a > b) ? a : b;
+}
+int16_t clamp(int16_t v, int16_t l, int16_t h) {
+  return min(max(v, l), h);
+}
+
+${prog.code}
+
+int main(int argc, char** argv) {
+  int16_t input[($N*2 + 4) * ($M*2 + 4)] = { ${goldInput.mkString(", ")} };
+  int16_t gold[($N*2) * ($M*2)] = { ${goldDenoised.mkString(", ")} };
+
+  int16_t output[($N*2) * ($M*2)];
+  ${prog.function.name}(output, ($N*2 + 4), ($M*2 + 4), input);
+
+  for (int i = 0; i < ($N*2) * ($M*2); i++) {
+    if (gold[i] != output[i]) {
+      fprintf(stderr, "%d != %d\\n", gold[i], output[i]);
+      return 1;
+    }
+  }
+
+  return 0;
+}
+"""
+    util.Execute(testCode)
   }
 
   test("deinterleave passes checks") {
