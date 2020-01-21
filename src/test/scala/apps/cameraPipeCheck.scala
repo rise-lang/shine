@@ -223,7 +223,7 @@ int main(int argc, char** argv) {
     input, matrix_3200, matrix_7000, color_temp);
 
   for (int i = 0; i < 3 * (2*$N - 8) * (2*$M - 8); i++) {
-    int16_t d = gold[i] != output[i];
+    int16_t d = gold[i] - output[i];
     if (d < -1 || d > 1) {
       fprintf(stderr, "%d != %d\\n", gold[i], output[i]);
       return 1;
@@ -239,9 +239,44 @@ int main(int argc, char** argv) {
     util.Execute(testCode)
   }
 
-  test("apply curve passes checks") {
-    println("apply curve: " + printTime(infer(apply_curve)).t)
-    // TODO: functional correctness
+  // TODO: fix codegen
+  ignore("apply curve passes checks") {
+    val typed = printTime(infer(apply_curve))
+    println(s"apply curve: ${typed.t}")
+    val lower: Strategy[Rise] = LCNF `;` CNF `;`
+      repeatNTimes(3, oncetd(lowering.mapSeq))
+    val lowered = printTime(lower(typed).get)
+    println(s"lowered: ${lowered}")
+    val prog = gen.CProgram(lowered)
+    val testCode =
+      s"""
+${cHeader}
+
+${prog.code}
+
+int main(int argc, char** argv) {
+  int16_t input[3 * (2*$N - 8) * (2*$M - 8)] = { ${goldCorrected.mkString(", ")} };
+  uint8_t gold[3 * (2*$N - 8) * (2*$M - 8)] = { ${goldCurved.mkString(", ")} };
+
+  uint8_t output[3 * (2*$N - 8) * (2*$M - 8)];
+  ${prog.function.name}(output, 2*$N - 8, 2*$M - 8,
+    input, ${gamma}, ${contrast}, ${black_level}, ${white_level});
+
+  for (int i = 0; i < 3 * (2*$N - 8) * (2*$M - 8); i++) {
+    int16_t d = (int16_t)gold[i] - (int16_t)output[i];
+    if (d < -1 || d > 1) {
+      fprintf(stderr, "%d != %d\\n", gold[i], output[i]);
+      return 1;
+    }
+    if (d != 0) {
+      fprintf(stderr, "WARNING: %d != %d\\n", gold[i], output[i]);
+    }
+  }
+
+  return 0;
+}
+"""
+    util.Execute(testCode)
   }
 
   test("sharpen passes checks") {
