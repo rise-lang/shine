@@ -71,14 +71,7 @@ class cameraPipeCheck extends test_util.TestsWithExecutor {
       .split(' ')
       .map(_.toInt)
 
-  test("hot pixel suppression passes checks") {
-    val typed = printTime(infer(hot_pixel_suppression))
-    println(s"hot pixel suppression: ${typed.t}")
-    val lower: Strategy[Rise] = LCNF `;` CNF `;` repeatNTimes(2, oncetd(lowering.mapSeq)) `;` BENF
-    val lowered = printTime(lower(infer(hot_pixel_suppression)).get)
-    println(s"lowered: ${lowered}")
-    val prog = gen.CProgram(lowered)
-    val testCode =
+  val cHeader =
     s"""
 #include <stdio.h>
 #include <stdint.h>
@@ -92,6 +85,18 @@ int16_t max(int16_t a, int16_t b) {
 int16_t clamp(int16_t v, int16_t l, int16_t h) {
   return min(max(v, l), h);
 }
+"""
+
+  test("hot pixel suppression passes checks") {
+    val typed = printTime(infer(hot_pixel_suppression))
+    println(s"hot pixel suppression: ${typed.t}")
+    val lower: Strategy[Rise] = LCNF `;` CNF `;` repeatNTimes(2, oncetd(lowering.mapSeq)) `;` BENF
+    val lowered = printTime(lower(typed).get)
+    println(s"lowered: ${lowered}")
+    val prog = gen.CProgram(lowered)
+    val testCode =
+    s"""
+${cHeader}
 
 ${prog.code}
 
@@ -116,12 +121,48 @@ int main(int argc, char** argv) {
   }
 
   test("deinterleave passes checks") {
-    println("deinterleave: " + printTime(infer(deinterleave)).t)
-    // TODO: functional correctness
+    val typed = printTime(infer(nFun(h => nFun(w =>
+      deinterleave(h)(w) >> mapSeq(mapSeq(mapSeq(fun(x => x))))
+    ))))
+    println(s"deinterleave: ${typed.t}")
+    /*
+    val lower: Strategy[Rise] = LCNF `;` CNF `;` repeatNTimes(1, oncetd(lowering.mapSeq)) `;` BENF
+    val lowered = printTime(lower(typed).get)
+     */
+    val lowered = typed
+    println(s"lowered: ${lowered}")
+    val prog = gen.CProgram(lowered)
+    val testCode =
+      s"""
+${cHeader}
+
+${prog.code}
+
+int main(int argc, char** argv) {
+  int16_t input[($N*2) * ($M*2)] = { ${goldDenoised.mkString(", ")} };
+  int16_t gold[4 * $N * $M] = { ${goldDeinterleaved.mkString(", ")} };
+
+  int16_t output[4 * $N * $M];
+  ${prog.function.name}(output, $N, $M, input);
+
+  for (int i = 0; i < 4 * $N * $M; i++) {
+    if (gold[i] != output[i]) {
+      fprintf(stderr, "%d != %d\\n", gold[i], output[i]);
+      return 1;
+    }
+  }
+
+  return 0;
+}
+"""
+    util.Execute(testCode)
   }
 
   test("demosaic passes checks") {
-    println("demosaic: " + printTime(infer(demosaic)).t)
+    val typed = printTime(infer(demosaic))
+    println(s"demosaic: ${typed.t}")
+    val lower: Strategy[Rise] = LCNF `;` CNF `;` repeatNTimes(2, oncetd(lowering.mapSeq)) `;` BENF
+    val lowered = printTime(lower(typed).get)
     // TODO: functional correctness
   }
 
