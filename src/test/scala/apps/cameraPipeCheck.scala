@@ -125,7 +125,7 @@ int main(int argc, char** argv) {
       deinterleave(h)(w) >> mapSeq(mapSeq(mapSeq(fun(x => x))))
     ))))
     println(s"deinterleave: ${typed.t}")
-    /*
+    /* TODO
     val lower: Strategy[Rise] = LCNF `;` CNF `;` repeatNTimes(1, oncetd(lowering.mapSeq)) `;` BENF
     val lowered = printTime(lower(typed).get)
      */
@@ -158,12 +158,39 @@ int main(int argc, char** argv) {
     util.Execute(testCode)
   }
 
-  test("demosaic passes checks") {
+  // TODO
+  ignore("demosaic passes checks") {
     val typed = printTime(infer(demosaic))
     println(s"demosaic: ${typed.t}")
-    val lower: Strategy[Rise] = LCNF `;` CNF `;` repeatNTimes(2, oncetd(lowering.mapSeq)) `;` BENF
+    // TODO
+    val lower: Strategy[Rise] = strategies.basic.id()
     val lowered = printTime(lower(typed).get)
-    // TODO: functional correctness
+    println(s"lowered: ${lowered}")
+    val prog = gen.CProgram(lowered)
+    val testCode =
+      s"""
+${cHeader}
+
+${prog.code}
+
+int main(int argc, char** argv) {
+  int16_t input[4 * $N * $M] = { ${goldDeinterleaved.mkString(", ")} };
+  int16_t gold[3 * (2*$N - 8) * (2*$M - 8)] = { ${goldDemosaic.mkString(", ")} };
+
+  int16_t output[3 * (2*$N - 8) * (2*$M - 8)];
+  ${prog.function.name}(output, $N, $M, input);
+
+  for (int i = 0; i < 3 * (2*$N - 8) * (2*$M - 8); i++) {
+    if (gold[i] != output[i]) {
+      fprintf(stderr, "%d != %d\\n", gold[i], output[i]);
+      return 1;
+    }
+  }
+
+  return 0;
+}
+"""
+    util.Execute(testCode)
   }
 
   test("color correction passes checks") {

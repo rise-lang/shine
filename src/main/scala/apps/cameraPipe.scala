@@ -103,8 +103,8 @@ object cameraPipe {
     )
   }
 
-  val demosaic: Expr = implN(ho => implN(wo => nFun(h => nFun(w => fun(
-    (4`.`h`.`w`.`i16) ->: (3`.`ho`.`wo`.`i16)
+  val demosaic: Expr = nFun(h => nFun(w => fun(
+    (4`.`h`.`w`.`i16) ->: (3`.`(2*h - 8)`.`(2*w - 8)`.`i16)
   )(deinterleaved => {
     // x_y = the value of channel x at a site in the input of channel y
     // gb = green sites in the blue rows
@@ -226,7 +226,7 @@ object cameraPipe {
           >> transpose >> join // (H * 2).(W * 2).f
       )
     }))))))))))))))))))))))))
-  })))))
+  })))
 
   val hot_pixel_suppression = nFun(h => nFun(w => fun(
     (h`.`w`.`i16) ->: ((h-4)`.`(w-4)`.`i16)
