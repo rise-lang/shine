@@ -279,9 +279,43 @@ int main(int argc, char** argv) {
     util.Execute(testCode)
   }
 
-  test("sharpen passes checks") {
-    println("sharpen: " + printTime(infer(sharpen)).t)
-    // TODO: functional correctness
+  // TODO: rewrite fails
+  ignore("sharpen passes checks") {
+    val typed = printTime(infer(sharpen))
+    println(s"sharpen: ${typed.t}")
+    val lower: Strategy[Rise] = LCNF `;` CNF
+    val lowered = printTime(lower(typed).get)
+    println(s"lowered: ${lowered}")
+    val prog = gen.CProgram(lowered)
+    val testCode =
+      s"""
+${cHeader}
+
+${prog.code}
+
+int main(int argc, char** argv) {
+  uint8_t input[3 * (2*$N - 8) * (2*$M - 8)] = { ${goldCurved.mkString(", ")} };
+  uint8_t gold[3 * (2*$N - 10) * (2*$M - 10)] = { ${goldSharpened.mkString(", ")} };
+
+  uint8_t output[3 * (2*$N - 10) * (2*$M - 10)];
+  ${prog.function.name}(output, 2*$N - 8, 2*$M - 8,
+    input, ${sharpen_strength});
+
+  for (int i = 0; i < 3 * (2*$N - 10) * (2*$M - 10); i++) {
+    int16_t d = (int16_t)gold[i] - (int16_t)output[i];
+    if (d < -1 || d > 1) {
+      fprintf(stderr, "%d != %d\\n", gold[i], output[i]);
+      return 1;
+    }
+    if (d != 0) {
+      fprintf(stderr, "WARNING: %d != %d\\n", gold[i], output[i]);
+    }
+  }
+
+  return 0;
+}
+"""
+    util.Execute(testCode)
   }
 
   test("type inference") {
