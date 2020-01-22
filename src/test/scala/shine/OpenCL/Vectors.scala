@@ -11,22 +11,18 @@ class Vectors extends test_util.Tests {
 
   test("generate OpenCL code for vectorized load & store") {
     gen.OpenCLKernel(
-      nFun(n =>
-        fun(ArrayType(n * vs, f32))(a =>
-          a |> asVectorAligned(vs) |> mapGlobal(id) |> asScalar
-        )
-      )
+      nFun(n => fun(ArrayType(n * vs, f32))(a =>
+        a |> asVectorAligned(vs) |> mapGlobal(id) |> asScalar
+      ))
     )
   }
 
   // FIXME: generates invalid vstore
   test("generate OpenCL code for unaligned vector load & store") {
     gen.OpenCLKernel(
-      nFun(n =>
-        fun(ArrayType(n * vs, f32))(a =>
-          a |> drop(1) |> asVector(vs) |> mapGlobal(id) |> asScalar
-        )
-      )
+      nFun(n => fun(ArrayType(n * vs, f32))(a =>
+        a |> drop(1) |> asVector(vs) |> mapGlobal(id) |> asScalar
+      ))
     )
   }
 }

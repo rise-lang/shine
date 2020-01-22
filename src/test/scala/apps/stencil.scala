@@ -17,13 +17,13 @@ import scala.util.Random
 class stencil extends test_util.Tests {
 
   private case class StencilResult(
-      inputSize: Int,
-      stencilSize: Int,
-      localSize: LocalSize,
-      globalSize: GlobalSize,
-      code: String,
-      runtimeMs: Double,
-      correctness: CorrectnessCheck
+    inputSize: Int,
+    stencilSize: Int,
+    localSize: LocalSize,
+    globalSize: GlobalSize,
+    code: String,
+    runtimeMs: Double,
+    correctness: CorrectnessCheck
   ) extends Display {
 
     def display: String =
@@ -37,7 +37,8 @@ class stencil extends test_util.Tests {
   }
 
   sealed abstract private class StencilBaseProgramRun
-      extends RunOpenCLProgram(verbose = false) {
+    extends RunOpenCLProgram(verbose = false)
+  {
     final type Summary = StencilResult
 
     def inputSize: Int
@@ -45,11 +46,11 @@ class stencil extends test_util.Tests {
     def stencilSize: Int
 
     override def makeSummary(
-        localSize: LocalSize,
-        globalSize: GlobalSize,
-        code: String,
-        runtimeMs: Double,
-        correctness: CorrectnessCheck
+      localSize: LocalSize,
+      globalSize: GlobalSize,
+      code: String,
+      runtimeMs: Double,
+      correctness: CorrectnessCheck
     ): StencilResult = {
       StencilResult(
         inputSize = inputSize,
@@ -63,8 +64,8 @@ class stencil extends test_util.Tests {
     }
 
     override protected def runKernel(
-        k: KernelWithSizes,
-        input: Input
+      k: KernelWithSizes,
+      input: Input
     ): (Array[Float], TimeSpan[ms]) = {
       import shine.OpenCL._
 
@@ -74,8 +75,8 @@ class stencil extends test_util.Tests {
   }
 
   private trait Stencil1DProgramRun extends StencilBaseProgramRun {
-
-    val inputMinRange: Int = stencilSize //Used for `starts with` simplification
+    // Used for `starts with` simplification
+    val inputMinRange: Int = stencilSize
 
     final val padSize = stencilSize / 2
     println(stencilSize)
@@ -94,56 +95,42 @@ class stencil extends test_util.Tests {
       Array.fill(inputSize)(random.nextFloat())
 
     final override protected def runScalaProgram(
-        input: Array[Float]
+      input: Array[Float]
     ): Array[Float] = scalaProgram(input)
 
   }
 
   private case class BasicStencil1D(inputSize: Int, stencilSize: Int)
-      extends Stencil1DProgramRun {
-
+    extends Stencil1DProgramRun
+  {
     override def expr: Expr = {
-      nFun(n =>
-        fun(ArrayType(n, f32))(input =>
-          input |>
-            padCst(padSize)(padSize)(l(0.0f)) |>
-            slide(stencilSize)(1) |>
-            mapGlobal(oclReduceSeq(AddressSpace.Private)(add)(l(0.0f)))
-        )
-      )
+      nFun(n => fun(ArrayType(n, f32))(input =>
+        input |>
+        padCst(padSize)(padSize)(l(0.0f)) |>
+        slide(stencilSize)(1) |>
+        mapGlobal(oclReduceSeq(AddressSpace.Private)(add)(l(0.0f)))
+      ))
     }
   }
 
   private case class PartitionedStencil1D(inputSize: Int, stencilSize: Int)
-      extends Stencil1DProgramRun {
-
+    extends Stencil1DProgramRun
+  {
     override def expr: Expr = {
-      nFun(n =>
-        fun(ArrayType(n, f32))(input =>
-          input |>
-            padCst(padSize)(padSize)(l(0.0f)) |>
-            slide(stencilSize)(1) |>
-            partition(3)(
-              n2nFun(m =>
-                SteppedCase(
-                  m,
-                  Seq(
-                    padSize,
-                    n - 2 * padSize + ((1 + stencilSize) % 2),
-                    padSize
-                  )
-                )
-              )
-            ) |>
-            depMapSeq(
-              mapGlobal(
-                fun(nbh => oclReduceSeq(AddressSpace.Private)(add)(l(0.0f))(nbh)
-                )
-              )
-            ) |>
-            join
-        )
-      )
+      nFun(n => fun(ArrayType(n, f32))(input =>
+        input |>
+        padCst(padSize)(padSize)(l(0.0f)) |>
+        slide(stencilSize)(1) |>
+        partition(3)(n2nFun(m =>
+          SteppedCase(m,
+            Seq(padSize, n - 2 * padSize + ((1 + stencilSize) % 2), padSize)
+          )
+        )) |>
+        depMapSeq(mapGlobal(fun(nbh =>
+          oclReduceSeq(AddressSpace.Private)(add)(l(0.0f))(nbh)
+        ))) |>
+        join
+      ))
     }
   }
 
@@ -154,16 +141,18 @@ class stencil extends test_util.Tests {
 
     final override type Input = Array[Array[Float]]
 
-    protected val padSize = stencilSize / 2
+    protected val padSize: Int = stencilSize / 2
 
     def expr: Expr
 
     final override protected def makeInput(
-        random: Random
+      random: Random
     ): Array[Array[Float]] =
       Array.fill(inputSize)(Array.fill(inputSize)(random.nextFloat()))
 
-    final override protected def runScalaProgram(input: Array[Array[Float]]) =
+    final override protected def runScalaProgram(
+      input: Array[Array[Float]]
+    ): Array[Float] =
       scalaProgram(input).flatten
 
     private def tileStencil(input: Array[Array[Float]]): Float = {
@@ -182,60 +171,49 @@ class stencil extends test_util.Tests {
   }
 
   private case class BasicStencil2D(inputSize: Int, stencilSize: Int)
-      extends Stencil2DProgramRun {
-    override def expr = {
-      nFun(n =>
-        fun(ArrayType(n, ArrayType(n, f32)))(input =>
-          input |>
-            padCst2D(padSize)(l(0.0f)) |>
-            slide2D(stencilSize, 1) |>
-            mapGlobal(1)(
-              mapGlobal(0)(
-                fun(nbh =>
-                  join(nbh) |> oclReduceSeq(AddressSpace.Private)(add)(l(0.0f))
-                )
-              )
-            )
-        )
-      )
+    extends Stencil2DProgramRun
+  {
+    override def expr: Expr = {
+      nFun(n => fun(ArrayType(n, ArrayType(n, f32)))(input =>
+        input |>
+        padCst2D(padSize)(l(0.0f)) |>
+        slide2D(stencilSize, 1) |>
+        mapGlobal(1)(mapGlobal(0)(fun(nbh =>
+          join(nbh) |> oclReduceSeq(AddressSpace.Private)(add)(l(0.0f))
+        )))
+      ))
     }
   }
 
   private case class PartitionedStencil2D(inputSize: Int, stencilSize: Int)
-      extends Stencil2DProgramRun {
+    extends Stencil2DProgramRun
+  {
 
-    override def expr = {
-      nFun(n =>
-        fun(ArrayType(n, ArrayType(n, f32)))(input =>
-          input |>
-            padCst2D(padSize)(l(0.0f)) |>
-            slide2D(stencilSize, 1) |>
-            //partition2D(padSize, N - 2*padSize + ((1 + stencilSize) % 2)) :>>
-            partition(3)(
-              n2nFun(m => SteppedCase(m, Seq(padSize, n - 2 * padSize, padSize))
-              )
-            ) |>
-            depMapSeq(
-              //mapGlobal(0)(depMapSeqUnroll(mapGlobal(1)(join() >>> reduceSeq(add, 0.0f))))
-              mapGlobal(1)(
-                mapGlobal(0)(
-                  join >> oclReduceSeq(AddressSpace.Private)(add)(l(0.0f))
-                )
-              )
-            ) |>
-            join
-        )
-      )
+    override def expr: Expr = {
+      nFun(n => fun(ArrayType(n, ArrayType(n, f32)))(input =>
+        input |>
+        padCst2D(padSize)(l(0.0f)) |>
+        slide2D(stencilSize, 1) |>
+        // partition2D(padSize, N - 2*padSize + ((1 + stencilSize) % 2)) :>>
+        partition(3)(n2nFun(m =>
+          SteppedCase(m, Seq(padSize, n - 2 * padSize, padSize))
+        )) |>
+        depMapSeq(
+          // mapGlobal(0)(depMapSeqUnroll(mapGlobal(1)(join() >>> reduceSeq(add, 0.0f))))
+          mapGlobal(1)(mapGlobal(0)(
+            join >> oclReduceSeq(AddressSpace.Private)(add)(l(0.0f))
+          ))
+        ) |>
+        join
+      ))
     }
   }
 
-  private val simpleStencil = nFun(n =>
-    fun(ArrayType(n, f32))(xs =>
-      xs |> slide(3)(1) |> mapSeq(
-        fun(nbh => nbh |> reduceSeq(fun(a => fun(x => a + x)))(l(0.0f)))
-      )
-    )
-  )
+  private val simpleStencil = nFun(n => fun(ArrayType(n, f32))(xs =>
+    xs |> slide(3)(1) |> mapSeq(fun(nbh =>
+      nbh |> reduceSeq(fun(a => fun(x => a + x)))(l(0.0f))
+    ))
+  ))
 
   test("Simple stencil compiles to syntactically correct C") {
     gen.CProgram(simpleStencil)
