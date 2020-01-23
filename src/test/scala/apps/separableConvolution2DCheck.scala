@@ -14,10 +14,9 @@ class separableConvolution2DCheck extends test_util.Tests {
     import arithexpr.arithmetic.{PosInf, RangeAdd}
     // at least 3 for one scalar sliding window
     // at least 3*4 = 12 for one vector sliding window
-    nFun(
-      RangeAdd(3, PosInf, 1),
-      h => nFun(RangeAdd(12, PosInf, 4), w => fun(h `.` w `.` f32)(a => e(a)))
-    )
+    nFun(RangeAdd(3, PosInf, 1), h =>
+      nFun(RangeAdd(12, PosInf, 4), w =>
+        fun(h `.` w `.` f32)(a => e(a))))
   }
 
   private val H = 20
@@ -76,9 +75,9 @@ int main(int argc, char** argv) {
   import shine.OpenCL.{GlobalSize, LocalSize}
 
   private def checkOCL(
-      localSize: LocalSize,
-      globalSize: GlobalSize,
-      e: Expr
+    localSize: LocalSize,
+    globalSize: GlobalSize,
+    e: Expr
   ): Unit = {
     import shine.OpenCL._
 
@@ -87,11 +86,9 @@ int main(int argc, char** argv) {
     val gold = computeGold(H, W, input, binomialWeights2d).flatten
 
     val kernel = gen.OpenCLKernel(wrapExpr(e))
-    val run = kernel.as[
-      ScalaFunction `(`
-        Int `,` Int `,` Array[Array[Float]]
-        `)=>` Array[Float]
-    ]
+    val run = kernel.as[ScalaFunction `(`
+      Int `,` Int `,` Array[Array[Float]]
+      `)=>` Array[Float]]
     val (output, time) = run(localSize, globalSize)(H `,` W `,` input)
     util.assertSame(output, gold, "output is different from gold")
     println(s"time: $time")
@@ -99,9 +96,7 @@ int main(int argc, char** argv) {
 
   test("regRotPar compiles to valid OpenCL that passes checks") {
     util.withExecutor {
-      checkOCL(
-        LocalSize(1),
-        GlobalSize(4),
+      checkOCL(LocalSize(1), GlobalSize(4),
         regRotPar(binomialWeightsV)(binomialWeightsH)
       )
     }
@@ -109,9 +104,7 @@ int main(int argc, char** argv) {
 
   test("scanlinePar compiles to valid OpenCL that passes checks") {
     util.withExecutor {
-      checkOCL(
-        LocalSize(1),
-        GlobalSize(4),
+      checkOCL(LocalSize(1), GlobalSize(4),
         scanlinePar(binomialWeightsV)(binomialWeightsH)
       )
     }
@@ -123,8 +116,8 @@ int main(int argc, char** argv) {
     val id: Expr = fun(x => x)
     val e = padClamp2D(1) >> slide(3)(1) >> mapSeq(
       transpose >>
-        map(dotSeqUnroll(binomialWeightsV)) >>
-        slideSeq(SlideSeq.Values)(3)(1)(id)(dotSeqUnroll(binomialWeightsH))
+      map(dotSeqUnroll(binomialWeightsV)) >>
+      slideSeq(SlideSeq.Values)(3)(1)(id)(dotSeqUnroll(binomialWeightsH))
     )
     val code = gen.CProgram(wrapExpr(e), "blur").code
     " % ".r.findAllIn(code).length shouldBe 0
@@ -134,20 +127,14 @@ int main(int argc, char** argv) {
   test("compiling OpenCL private arrays should unroll loops") {
     import rise.OpenCL.DSL._
 
-    val dotSeqPrivate = fun(a =>
-      fun(b =>
-        zip(a)(b) |> map(mulT) |> oclReduceSeq(AddressSpace.Private)(add)(
-          l(0.0f)
-        )
-      )
-    )
+    val dotSeqPrivate = fun(a => fun(b =>
+      zip(a)(b) |> map(mulT) |> oclReduceSeq(AddressSpace.Private)(add)(l(0.0f))
+    ))
 
-    val e = padClamp2D(1) >> slide2D(3, 1) >> mapGlobal(0)(
-      mapGlobal(1)(
-        toPrivateFun(mapSeq(dotSeqPrivate(binomialWeightsV))) >>
-          dotSeqPrivate(binomialWeightsH)
-      )
-    )
+    val e = padClamp2D(1) >> slide2D(3, 1) >> mapGlobal(0)(mapGlobal(1)(
+      toPrivateFun(mapSeq(dotSeqPrivate(binomialWeightsV))) >>
+      dotSeqPrivate(binomialWeightsH)
+    ))
 
     val code = gen.OpenCLKernel(wrapExpr(e), "blur").code
     "for \\(".r.findAllIn(code).length shouldBe 2

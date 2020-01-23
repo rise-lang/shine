@@ -1120,40 +1120,22 @@ class CodeGenerator(
       })
     }
 
-    def codeGenIdxAcc(
-        i: Phrase[ExpType],
-        a: Phrase[AccType],
-        env: Environment,
-        ps: Path,
-        cont: Expr => Stmt
-    ): Stmt = {
-      exp(
-        i,
-        env,
-        Nil, {
-          case C.AST.Literal(text) =>
-            acc(a, env, CIntExpr(Cst(text.toInt)) :: ps, cont)
-          case C.AST.DeclRef(name) =>
-            acc(a, env, CIntExpr(NamedVar(name, ranges(name))) :: ps, cont)
-          case C.AST.ArithmeticExpr(ae) => acc(a, env, CIntExpr(ae) :: ps, cont)
-          case cExpr: C.AST.Expr =>
-            val arithVar = NamedVar(freshName("idxAcc"))
-            acc(
-              a,
-              env,
-              CIntExpr(arithVar) :: ps,
-              generated =>
-                C.AST.Block(
-                  immutable.Seq(
-                    C.AST.DeclStmt(
-                      C.AST.VarDecl(arithVar.name, C.AST.Type.int, Some(cExpr))
-                    ),
-                    cont(generated)
-                  )
-                )
-            )
-        }
-      )
+    def codeGenIdxAcc(i: Phrase[ExpType],
+                      a: Phrase[AccType],
+                      env: Environment,
+                      ps: Path,
+                      cont: Expr => Stmt): Stmt = {
+      exp(i, env, Nil, {
+        case C.AST.Literal(text) => acc(a, env, CIntExpr(Cst(text.toInt)) :: ps, cont)
+        case C.AST.DeclRef(name) => acc(a, env, CIntExpr(NamedVar(name, ranges(name))) :: ps, cont)
+        case C.AST.ArithmeticExpr(ae) => acc(a, env, CIntExpr(ae) :: ps, cont)
+        case cExpr:C.AST.Expr =>
+          val arithVar = NamedVar(freshName("idxAcc"))
+          C.AST.Block(immutable.Seq(
+            C.AST.DeclStmt(C.AST.VarDecl(arithVar.name, C.AST.Type.int, Some(cExpr))),
+            acc(a, env, CIntExpr(arithVar) :: ps, cont)
+          ))
+      })
     }
 
     def codeGenLiteral(d: OperationalSemantics.Data): Expr = {
@@ -1189,38 +1171,21 @@ class CodeGenerator(
       C.AST.UnaryExpr(op, e)
     }
 
-    def codeGenIdx(
-        i: Phrase[ExpType],
-        e: Phrase[ExpType],
-        env: Environment,
-        ps: Path,
-        cont: Expr => Stmt
-    ): Stmt = {
-      exp(
-        i,
-        env,
-        Nil, {
-          case C.AST.DeclRef(name) =>
-            exp(e, env, CIntExpr(NamedVar(name, ranges(name))) :: ps, cont)
-          case C.AST.ArithmeticExpr(ae) => exp(e, env, CIntExpr(ae) :: ps, cont)
-          case cExpr: C.AST.Expr =>
-            val arithVar = NamedVar(freshName("idx"))
-            exp(
-              e,
-              env,
-              CIntExpr(arithVar) :: ps,
-              generated =>
-                C.AST.Block(
-                  immutable.Seq(
-                    C.AST.DeclStmt(
-                      C.AST.VarDecl(arithVar.name, C.AST.Type.int, Some(cExpr))
-                    ),
-                    cont(generated)
-                  )
-                )
-            )
-        }
-      )
+    def codeGenIdx(i: Phrase[ExpType],
+                   e: Phrase[ExpType],
+                   env: Environment,
+                   ps: Path,
+                   cont: Expr => Stmt): Stmt = {
+      exp(i, env, Nil, {
+        case C.AST.DeclRef(name) => exp(e, env, CIntExpr(NamedVar(name, ranges(name))) :: ps, cont)
+        case C.AST.ArithmeticExpr(ae) => exp(e, env, CIntExpr(ae) :: ps, cont)
+        case cExpr:C.AST.Expr =>
+          val arithVar = NamedVar(freshName("idx"))
+          C.AST.Block(immutable.Seq(
+            C.AST.DeclStmt(C.AST.VarDecl(arithVar.name, C.AST.Type.int, Some(cExpr))),
+            exp(e, env, CIntExpr(arithVar) :: ps, cont)
+          ))
+      })
     }
 
     def codeGenForeignFunction(

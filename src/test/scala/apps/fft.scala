@@ -13,51 +13,45 @@ class fft extends test_util.Tests {
     val cospi = foreignFun("cospi", f64 ->: f64)
     val sinpi = foreignFun("sinpi", f64 ->: f64)
 
-    val cmultandsum = fun(acc =>
-      fun(vt => {
-        val lres = acc._1 + (vt._1._1 * vt._2._1 - vt._1._2 * vt._2._2)
-        val rres = acc._2 + (vt._1._2 * vt._2._1 + vt._1._1 * vt._2._2)
-        pair(lres)(rres)
-      })
-    )
+    val cmultandsum = fun(acc => fun(vt => {
+      val lres = acc._1 + (vt._1._1 * vt._2._1 - vt._1._2 * vt._2._2)
+      val rres = acc._2 + (vt._1._2 * vt._2._1 + vt._1._1 * vt._2._2)
+      pair(lres)(rres)
+    }))
 
     // TODO compare with previous implementations again
     val reorderedB: Expr =
-      generate(
-        fun(IndexType(LPrevIter))(i =>
-          generate(
-            fun(IndexType(p))(j =>
-              generate(fun(IndexType(p))(k => {
-                val exponentWoMinus2 = (j * (LPrevIter: Nat)) + i * (k / (p * (LPrevIter: Nat)))
-                val exponent = (cast(exponentWoMinus2) :: f32) * l(-2.0)
-                pair(cast(cospi(exponent) :: f32))(
-                  cast(sinpi(exponent) :: f32)
-                )
-              }))
-            )
-          )
-        )
-      )
+      generate(fun(IndexType(LPrevIter))(i =>
+        generate(fun(IndexType(p))(j =>
+          generate(fun(IndexType(p))(k => {
+            val exponentWoMinus2 =
+              (j * (LPrevIter: Nat)) + i * (k / (p * (LPrevIter: Nat)))
+            val exponent = (cast(exponentWoMinus2) :: f32) * l(-2.0)
+            pair(cast(cospi(exponent) :: f32))(cast(sinpi(exponent) :: f32))
+          }))
+        ))
+      ))
 
     val modPReorder = split(p) |> transpose |> join
     val createY = split(r) |> modPReorder |> transpose
 
     fun(ArrayType(N, PairType(f32, f32)))(x =>
-      x |> createY |> map(split(LPrevIter) |> transpose) |> map(
-        fun(yChunkRow => zip(yChunkRow)(reorderedB))
-      ) |> mapGlobal(
-        mapSeq(fun(yChunkWithBrow => {
-          val yChunk = yChunkWithBrow._1
-          val Brow = yChunkWithBrow._2
-          Brow |> mapSeq(
-            fun(Bchunk =>
-              zip(yChunk)(Bchunk) |> reduceSeq(cmultandsum)(
-                pair(l(0.0f))(l(0.0f))
-              )
+      x |> createY |> map(
+        split(LPrevIter) |> transpose
+      ) |> map(fun(yChunkRow =>
+        zip(yChunkRow)(reorderedB))
+      ) |> mapGlobal(mapSeq(fun(yChunkWithBrow => {
+        val yChunk = yChunkWithBrow._1
+        val Brow = yChunkWithBrow._2
+        Brow |> mapSeq(
+          fun(Bchunk =>
+            zip(yChunk)(Bchunk) |> reduceSeq(cmultandsum)(
+              pair(l(0.0f))(l(0.0f))
             )
           )
-        }))
-      ) |> join |> split(LPrevIter) |> mapSeq(transpose |> join) |> transpose |> join
+        )
+      }))) |> join |> split(LPrevIter) |>
+        mapSeq(transpose |> join) |> transpose |> join
     )
   }
 
