@@ -557,6 +557,8 @@ object fromRise {
       case (core.Neg(), lt.FunType(la: lt.DataType, _)) =>
         val a = dataType(la)
         fun[ExpType](exp"[$a, $read]", e => UnaryOp(Operators.Unary.NEG, e))
+      case (core.Not(), _) =>
+        fun[ExpType](exp"[$bool, $read]", e => UnaryOp(Operators.Unary.NOT, e))
 
       case (core.Add(), lt.FunType(la: lt.DataType, _)) =>
         val a = dataType(la)

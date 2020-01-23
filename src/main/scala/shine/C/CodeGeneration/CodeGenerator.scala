@@ -1359,6 +1359,7 @@ class CodeGenerator(
       import Operators.Unary._
       op match {
         case NEG => C.AST.UnaryOperator.-
+        case NOT => C.AST.UnaryOperator.!
       }
     }
 

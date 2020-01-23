@@ -29,7 +29,6 @@ class cameraPipeCheck extends test_util.TestsWithExecutor {
   val black_level = 25
   val white_level = 1023
 
-  // format: off
   val matrix_3200 = Array(
     1.6697f, -0.2693f, -0.4004f, -42.4346f,
     -0.3576f, 1.0615f, 1.5949f, -37.1158f,
@@ -40,7 +39,6 @@ class cameraPipeCheck extends test_util.TestsWithExecutor {
     -0.3826f, 1.5906f, -0.2080f, -25.4311f,
     -0.0888f, -0.7344f, 2.2832f, -20.0826f
   )
-  // format: on
 
   val goldInput: Array[Int] =
     "69 150 103 184 137 218 171 252 205 30 239 64 17 98 51 132 85 166 119 200 153 234 187 12 174 191 80 97 242 3 148 165 54 71 216 233 122 139 28 45 190 207 96 113 2 19 164 181 215 168 249 202 27 236 61 14 95 48 129 82 163 116 197 150 231 184 9 218 43 252 77 30 192 81 98 243 4 149 166 55 72 217 234 123 140 29 46 191 208 97 114 3 20 165 182 71 105 186 139 220 173 254 207 32 241 66 19 100 53 134 87 168 121 202 155 236 189 14 223 48 210 227 116 133 22 39 184 201 90 107 252 13 158 175 64 81 226 243 132 149 38 55 200 217 251 204 29 238 63 16 97 50 131 84 165 118 199 152 233 186 11 220 45 254 79 32 113 66 228 117 134 23 40 185 202 91 108 253 14 159 176 65 82 227 244 133 150 39 56 201 218 107 141 222 175 0 209 34 243 68 21 102 55 136 89 170 123 204 157 238 191 16 225 50 3 84 246 7 152 169 58 75 220 237 126 143 32 49 194 211 100 117 6 23 168 185 74 91 236 253 31 240 65 18 99 52 133 86 167 120 201 154 235 188 13 222 47 0 81 34 115 68 149 102 8 153 170 59 76 221 238 127 144 33 50 195 212 101 118 7 24 169 186 75 92 237 254 143 177 2 211 36 245 70 23 104 57 138 91 172 125 206 159 240 193 18 227 52 5 86 39 120 26 43 188 205 94 111 0 17 162 179 68 85 230 247 136 153 42 59 204 221 110 127 16 33 67 20 101 54 135 88 169 122 203 156 237 190 15 224 49 2 83 36 117 70 151 104 185 138 44 189 206 95 112 1 18 163 180 69 86 231 248 137 154 43 60 205 222 111 128 17 34 179 213 38 247 72 25 106 59 140 93 174 127 208 161 242 195 20 229 54 7 88 41 122 75 156 62 79 224 241 130 147 36 53 198 215 104 121 10 27 172 189 78 95 240 1 146 163 52 69 103 56 137 90 171 124 205 158 239 192 17 226 51 4 85 38 119 72 153 106 187 140 221 174 80 225 242 131 148 37 54 199 216 105 122 11 28 173 190 79 96 241 2 147 164 53 70 215"
@@ -75,16 +73,27 @@ class cameraPipeCheck extends test_util.TestsWithExecutor {
     s"""
 #include <stdio.h>
 #include <stdint.h>
+#include <math.h>
 
-int16_t min(int16_t a, int16_t b) {
+int16_t min_i16(int16_t a, int16_t b) {
   return (a < b) ? a : b;
 }
-int16_t max(int16_t a, int16_t b) {
+int16_t max_i16(int16_t a, int16_t b) {
   return (a > b) ? a : b;
 }
-int16_t clamp(int16_t v, int16_t l, int16_t h) {
-  return min(max(v, l), h);
+int16_t clamp_i16(int16_t v, int16_t l, int16_t h) {
+  return min_i16(max_i16(v, l), h);
 }
+float min_f32(float a, float b) {
+  return (a < b) ? a : b;
+}
+float max_f32(float a, float b) {
+  return (a > b) ? a : b;
+}
+float clamp_f32(float v, float l, float h) {
+  return min_f32(max_f32(v, l), h);
+}
+#define pow_f32 powf
 """
 
   test("hot pixel suppression passes checks") {
@@ -239,12 +248,10 @@ int main(int argc, char** argv) {
     util.Execute(testCode)
   }
 
-  // TODO: fix codegen
-  ignore("apply curve passes checks") {
+  test("apply curve passes checks") {
     val typed = printTime(infer(apply_curve))
     println(s"apply curve: ${typed.t}")
-    val lower: Strategy[Rise] = LCNF `;` CNF `;`
-      repeatNTimes(3, oncetd(lowering.mapSeq))
+    val lower: Strategy[Rise] = LCNF `;` CNF `;` repeatNTimes(3, oncetd(lowering.mapSeq))
     val lowered = printTime(lower(typed).get)
     println(s"lowered: ${lowered}")
     val prog = gen.CProgram(lowered)
@@ -263,13 +270,9 @@ int main(int argc, char** argv) {
     input, ${gamma}, ${contrast}, ${black_level}, ${white_level});
 
   for (int i = 0; i < 3 * (2*$N - 8) * (2*$M - 8); i++) {
-    int16_t d = (int16_t)gold[i] - (int16_t)output[i];
-    if (d < -1 || d > 1) {
+    if (gold[i] != output[i]) {
       fprintf(stderr, "%d != %d\\n", gold[i], output[i]);
       return 1;
-    }
-    if (d != 0) {
-      fprintf(stderr, "WARNING: %d != %d\\n", gold[i], output[i]);
     }
   }
 
@@ -336,7 +339,7 @@ int main(int argc, char** argv) {
         nFun(h =>
           nFun(w =>
             fun(h `.` w `.` 2 `.` i16)(a =>
-              point_abs_diff(Image(0, w, 0, h, a)).expr
+              pointAbsDiff(Image(0, w, 0, h, a)).expr
             )
           )
         )
