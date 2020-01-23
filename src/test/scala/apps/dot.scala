@@ -14,11 +14,9 @@ class dot extends test_util.Tests {
   private val mulT = fun(x => fst(x) * snd(x))
   private val add = fun(a => fun(x => a + x))
 
-  private val simpleDotProduct = nFun(n =>
-    fun(xsT(n))(xs =>
-      fun(ysT(n))(ys => zip(xs)(ys) |> mapSeq(mulT) |> reduceSeq(add)(l(0.0f)))
-    )
-  )
+  private val simpleDotProduct = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
+    zip(xs)(ys) |> mapSeq(mulT) |> reduceSeq(add)(l(0.0f))
+  )))
 
   test("Simple dot product type inference works") {
     val typed = infer(simpleDotProduct)
@@ -54,22 +52,16 @@ class dot extends test_util.Tests {
   test("Dot product CPU vector 1 compiles to syntactically correct OpenMP") {
     import rise.OpenMP.DSL._
 
-    val dotCPUVector1 = nFun(n =>
-      fun(xsT(n))(xs =>
-        fun(ysT(n))(ys =>
-          zip(asVectorAligned(4)(xs))(asVectorAligned(4)(ys))
-            |> split(2048 * 64)
-            |> mapPar(
-              split(2048) >>
-                mapSeq(
-                  reduceSeq(fun(a => fun(x => a + mulT(x))))(
-                    vectorFromScalar(l(0.0f))
-                  )
-                )
-            ) |> join |> asScalar
+    val dotCPUVector1 = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
+      zip(asVectorAligned(4)(xs))(asVectorAligned(4)(ys))
+      |> split(2048 * 64)
+      |> mapPar(
+        split(2048) >>
+        mapSeq(
+          reduceSeq(fun(a => fun(x => a + mulT(x))))(vectorFromScalar(l(0.0f)))
         )
-      )
-    )
+      ) |> join |> asScalar
+    )))
 
     gen.OpenMPProgram(dotCPUVector1)
   }
@@ -79,22 +71,16 @@ class dot extends test_util.Tests {
   ) {
     import rise.OpenMP.DSL._
 
-    val intelDerivedNoWarpDot1 = nFun(n =>
-      fun(xsT(n))(xs =>
-        fun(ysT(n))(ys =>
-          zip(xs |> asVectorAligned(4))(ys |> asVectorAligned(4))
-            |> split(8192)
-            |> mapPar(
-              split(8192) >>
-                mapSeq(
-                  reduceSeq(fun(a => fun(x => a + mulT(x))))(
-                    vectorFromScalar(l(0.0f))
-                  )
-                )
-            ) |> join |> asScalar
+    val intelDerivedNoWarpDot1 = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
+      zip(xs |> asVectorAligned(4))(ys |> asVectorAligned(4))
+      |> split(8192)
+      |> mapPar(
+        split(8192) >>
+        mapSeq(
+          reduceSeq(fun(a => fun(x => a + mulT(x))))(vectorFromScalar(l(0.0f)))
         )
-      )
-    )
+      ) |> join |> asScalar
+    )))
 
     gen.OpenMPProgram(intelDerivedNoWarpDot1)
   }
@@ -102,20 +88,16 @@ class dot extends test_util.Tests {
   test("Dot product CPU 1 compiles to syntactically correct OpenMP") {
     import rise.OpenMP.DSL._
 
-    val dotCPU1 = nFun(n =>
-      fun(xsT(n))(xs =>
-        fun(ysT(n))(ys =>
-          zip(xs)(ys) |>
-            split(2048 * 128) |>
-            mapPar(
-              split(2048) >>
-                mapSeq(
-                  reduceSeq(fun(a => fun(x => a + mulT(x))))(l(0.0f))
-                )
-            ) |> join
+    val dotCPU1 = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
+      zip(xs)(ys) |>
+      split(2048 * 128) |>
+      mapPar(
+        split(2048) >>
+        mapSeq(
+          reduceSeq(fun(a => fun(x => a + mulT(x))))(l(0.0f))
         )
-      )
-    )
+      ) |> join
+    )))
 
     gen.OpenMPProgram(dotCPU1)
   }
@@ -123,18 +105,16 @@ class dot extends test_util.Tests {
   test("Dot product CPU 2 compiles to syntactically correct OpenMP") {
     import rise.OpenMP.DSL._
 
-    val dotCPU2 = nFun(n =>
-      fun(xsT(n))(in =>
-        in |>
-          split(128) |>
-          mapPar(
-            split(128) >>
-              mapSeq(
-                reduceSeq(add)(l(0.0f))
-              )
-          ) |> join
-      )
-    )
+    val dotCPU2 = nFun(n => fun(xsT(n))(in =>
+      in |>
+      split(128) |>
+      mapPar(
+        split(128) >>
+        mapSeq(
+          reduceSeq(add)(l(0.0f))
+        )
+      ) |> join
+    ))
 
     gen.OpenMPProgram(dotCPU2)
   }
@@ -145,110 +125,90 @@ class dot extends test_util.Tests {
     test(
       "Intel derived no warp dot product 1 compiles to syntactically correct OpenCL"
     ) {
-      val intelDerivedNoWarpDot1 = nFun(n =>
-        fun(xsT(n))(xs =>
-          fun(ysT(n))(ys =>
-            zip(xs |> asVectorAligned(4))(ys |> asVectorAligned(4)) |>
-              split(8192) |>
-              mapWorkGroup(
-                split(8192) >>
-                  mapLocal(
-                    oclReduceSeq(AddressSpace.Private)(
-                      fun(a => fun(x => a + mulT(x)))
-                    )(vectorFromScalar(l(0.0f)))
-                  )
-              ) |> join |> asScalar
+      val intelDerivedNoWarpDot1 = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
+        zip(xs |> asVectorAligned(4))(ys |> asVectorAligned(4)) |>
+        split(8192) |>
+        mapWorkGroup(
+          split(8192) >>
+          mapLocal(
+            oclReduceSeq(AddressSpace.Private)(fun(a => fun(x => a + mulT(x))))
+            (vectorFromScalar(l(0.0f)))
           )
-        )
-      )
+        ) |> join |> asScalar
+      )))
 
       gen.OpenCLKernel(intelDerivedNoWarpDot1)
     }
 
     test("Dot product CPU 1 compiles to syntactically correct OpenCL") {
-      val dotCPU1 = nFun(n =>
-        fun(xsT(n))(xs =>
-          fun(ysT(n))(ys =>
-            zip(xs)(ys) |>
-              split(2048 * 128) |>
-              mapWorkGroup(
-                split(2048) >>
-                  mapLocal(
-                    oclReduceSeq(AddressSpace.Private)(
-                      fun(a => fun(x => a + mulT(x)))
-                    )(l(0.0f))
-                  )
-              ) |> join
+      val dotCPU1 = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
+        zip(xs)(ys) |>
+        split(2048 * 128) |>
+        mapWorkGroup(
+          split(2048) >>
+          mapLocal(
+            oclReduceSeq(AddressSpace.Private)(
+              fun(a => fun(x => a + mulT(x)))
+            )(l(0.0f))
           )
-        )
-      )
+        ) |> join
+      )))
 
       gen.OpenCLKernel(dotCPU1)
     }
 
     test("Dot product CPU 2 compiles to syntactically correct OpenCL") {
-      val dotCPU2 =
-        nFun(n =>
-          fun(xsT(n))(in =>
-            in |>
-              split(128) |>
-              mapWorkGroup(
-                split(128) >>
-                  mapLocal(
-                    oclReduceSeq(AddressSpace.Private)(
-                      fun(a => fun(x => a + x))
-                    )(l(0.0f))
-                  )
-              ) |> join
+      val dotCPU2 = nFun(n => fun(xsT(n))(in =>
+        in |>
+        split(128) |>
+        mapWorkGroup(
+          split(128) >>
+          mapLocal(
+            oclReduceSeq(AddressSpace.Private)(
+              fun(a => fun(x => a + x))
+            )(l(0.0f))
           )
-        )
+        ) |> join
+      ))
 
       gen.OpenCLKernel(dotCPU2)
     }
 
     test("Dot product 1 compiles to syntactically correct OpenCL") {
-      val dotProduct1 = nFun(n =>
-        fun(xsT(n))(xs =>
-          fun(ysT(n))(ys =>
-            zip(xs)(ys) |>
-              split(2048 * 128) |>
-              mapWorkGroup(
-                reorderWithStride(128) >>
-                  split(2048) >>
-                  mapLocal(
-                    oclReduceSeq(AddressSpace.Private)(
-                      fun(a => fun(x => a + mulT(x)))
-                    )(l(0.0f))
-                  )
-              ) |> join
+      val dotProduct1 = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
+        zip(xs)(ys) |>
+        split(2048 * 128) |>
+        mapWorkGroup(
+          reorderWithStride(128) >>
+          split(2048) >>
+          mapLocal(
+            oclReduceSeq(AddressSpace.Private)(
+              fun(a => fun(x => a + mulT(x)))
+            )(l(0.0f))
           )
-        )
-      )
+        ) |> join
+      )))
 
       gen.OpenCLKernel(dotProduct1)
     }
 
     // FIXME: SyntaxChecker fails
     ignore("Dot product 2 compiles to syntactically correct OpenCL") {
-      val dotProduct2 = nFun(n =>
-        fun(xsT(n))(in =>
-          in |>
-            split(128) |>
-            mapWorkGroup(
-              split(2) >>
-                toLocal(
-                  mapLocal(oclReduceSeq(AddressSpace.Private)(add)(l(0.0f)))
-                ) >>
-                iterate(6)(
-                  nFun(_ =>
-                    split(2) >> toLocal(
-                      mapLocal(oclReduceSeq(AddressSpace.Private)(add)(l(0.0f)))
-                    )
-                  )
-                )
-            ) |> join
-        )
-      )
+      val dotProduct2 = nFun(n => fun(xsT(n))(in =>
+        in |>
+        split(128) |>
+        mapWorkGroup(
+          split(2) >>
+          toLocal(
+            mapLocal(oclReduceSeq(AddressSpace.Private)(add)(l(0.0f)))
+          ) >>
+          iterate(6)(nFun(_ =>
+            split(2) >> toLocal(
+              mapLocal(oclReduceSeq(AddressSpace.Private)(add)(l(0.0f)))
+            )
+          ))
+        ) |> join
+      ))
 
       gen.OpenCLKernel(dotProduct2)
     }

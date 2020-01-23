@@ -41,8 +41,8 @@ final case class ArrayType(size: Nat, elemType: DataType) extends ComposedType {
 }
 
 final case class DepArrayType private (size: Nat, elemFType: NatToData)
-    extends ComposedType {
-
+  extends ComposedType
+{
   override def toString: String = s"$size.$elemFType"
 
   override def equals(that: Any): Boolean = that match {
@@ -64,7 +64,8 @@ final case class PairType(fst: DataType, snd: DataType) extends ComposedType {
 }
 
 sealed case class VectorType(size: Nat, elemType: ScalarType)
-    extends BasicType {
+  extends BasicType
+{
   override def toString: String = s"<$size>$elemType"
 }
 
@@ -95,8 +96,8 @@ object NatToDataApply {
 }
 
 final case class DataTypeIdentifier(name: String)
-    extends DataType
-    with Kind.Identifier {
+  extends DataType with Kind.Identifier
+{
   override def toString: String = name
 }
 
@@ -122,10 +123,8 @@ object DataType {
       case i: IndexType =>
         IndexType(ArithExpr.substitute(i.size, Map((`for`, ae))))
       case a: ArrayType =>
-        ArrayType(
-          ArithExpr.substitute(a.size, Map((`for`, ae))),
-          substitute(ae, `for`, a.elemType)
-        )
+        ArrayType(ArithExpr.substitute(a.size, Map((`for`, ae))),
+          substitute(ae, `for`, a.elemType))
       case a: DepArrayType =>
         val subMap = Map((`for`, ae))
         val newSize = ArithExpr.substitute(a.size, subMap)
@@ -148,17 +147,13 @@ object DataType {
 
   def getTotalNumberOfElements(dt: DataType): Nat = dt match {
     case _: BasicType => 1
-    case _: PairType  => 1
+    case _: PairType => 1
     case a: ArrayType => getTotalNumberOfElements(a.elemType) * a.size
     case a: DepArrayType =>
       a.elemFType match {
         case NatToDataLambda(x, body) =>
-          BigSum(
-            from = 0,
-            upTo = a.size - 1,
-            `for` = x,
-            `in` = getTotalNumberOfElements(body)
-          )
+          BigSum(from = 0, upTo = a.size - 1,
+            `for` = x, `in` = getTotalNumberOfElements(body))
         case NatToDataIdentifier(_) =>
           throw new Exception("This should not happen")
       }
@@ -168,10 +163,10 @@ object DataType {
 
   def getSize(dt: DataType): Nat = dt match {
     case _: IndexType | _: ScalarType => 1
-    case _: PairType                  => 1 // TODO: is this correct?
-    case VectorType(size, _)          => size
-    case ArrayType(size, _)           => size
-    case DepArrayType(size, _)        => size
+    case _: PairType => 1 // TODO: is this correct?
+    case VectorType(size, _) => size
+    case ArrayType(size, _) => size
+    case DepArrayType(size, _) => size
     case _: DataTypeIdentifier | _: NatToDataApply =>
       throw new Exception("This should not happen")
   }
@@ -185,9 +180,9 @@ object DataType {
 
   @scala.annotation.tailrec
   def getBaseDataType(dt: DataType): DataType = dt match {
-    case _: BasicType           => dt
-    case _: PairType            => dt
-    case _: DataTypeIdentifier  => dt
+    case _: BasicType => dt
+    case _: PairType => dt
+    case _: DataTypeIdentifier => dt
     case ArrayType(_, elemType) => getBaseDataType(elemType)
     case DepArrayType(_, NatToDataLambda(_, elemType)) =>
       getBaseDataType(elemType)

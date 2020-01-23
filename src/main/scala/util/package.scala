@@ -25,9 +25,9 @@ package object util {
     finally source.close
   }
 
-  def assertSame[T](a: T, b: T, msg: String)(
-      implicit same: AssertSame[T]
-  ): Unit = {
+  def assertSame[T](a: T, b: T, msg: String)
+    (implicit same: AssertSame[T]): Unit =
+  {
     same(a, b, msg)
   }
 
@@ -36,11 +36,8 @@ package object util {
 
     Executor.loadLibrary()
     Executor.init()
-    try {
-      f
-    } finally {
-      Executor.shutdown()
-    }
+    try f
+    finally Executor.shutdown()
   }
 
   def printTime[T](block: => T): T = {
