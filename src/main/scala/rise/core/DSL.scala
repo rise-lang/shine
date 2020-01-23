@@ -60,6 +60,7 @@ object DSL {
   def zip: Zip = primitives.Zip()()
 
   def neg: Neg = primitives.Neg()()
+  def not: Not = primitives.Not()()
   def add: Add = primitives.Add()()
   def sub: Sub = primitives.Sub()()
   def mul: Mul = primitives.Mul()()
@@ -85,13 +86,14 @@ object DSL {
     def /(rhs: Expr): Expr = div(lhs)(rhs)
     def %(rhs: Expr): Expr = mod(lhs)(rhs)
     def >(rhs: Expr): Expr = gt(lhs)(rhs)
-    def >=(rhs: Expr): Expr = neg(lhs < rhs) // TODO: dedicated primitive?
+    def >=(rhs: Expr): Expr = not(lhs < rhs) // TODO: dedicated primitive?
     def <(rhs: Expr): Expr = lt(lhs)(rhs)
-    def <=(rhs: Expr): Expr = neg(lhs > rhs) // TODO: dedicated primitive?
+    def <=(rhs: Expr): Expr = not(lhs > rhs) // TODO: dedicated primitive?
     def =:=(rhs: Expr): Expr = equal(lhs)(rhs)
 
     // unary
     def unary_- : Expr = neg(lhs)
+    def unary_! : Expr = not(lhs)
 
     // pair accesses
     def _1: Expr = fst(lhs)

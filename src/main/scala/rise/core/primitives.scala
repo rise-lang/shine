@@ -423,6 +423,11 @@ object primitives {
     override def typeScheme: Type = implBT(t => t ->: t)
   }
 
+  @primitive case class Not()(override val t: Type = TypePlaceholder)
+    extends Primitive {
+    override def typeScheme: Type = bool ->: bool
+  }
+
   @primitive case class Add()(override val t: Type = TypePlaceholder)
       extends Primitive {
     override def typeScheme: Type = implBT(t => t ->: t ->: t)
