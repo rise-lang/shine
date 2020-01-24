@@ -20,7 +20,7 @@ class Partition extends test_util.Tests {
 
     val slideExample =
       nFun(n =>
-        fun(ArrayType(n, float))(xs => xs |> partition.apply(3)(lenF) |> depMapSeq(mapSeq(fun(x => x)))))
+        fun(ArrayType(n, f32))(xs => xs |> partition.apply(3)(lenF) |> depMapSeq(mapSeq(fun(x => x)))))
 
     println("\n" + slideExample + "\n")
 
@@ -35,7 +35,7 @@ class Partition extends test_util.Tests {
     def lenF(n: Nat) = n2nFun((i: NatIdentifier) => SteppedCase(3, n, 3)(i))
 
     val padAndPartition: Expr = nFun(n =>
-      fun(ArrayType(n, float))(xs => xs |>
+      fun(ArrayType(n, f32))(xs => xs |>
         padCst(padAmount)(padAmount)(l(0.0f)) |>
         partition(3)(lenF(n)) |>
         depMapSeq(mapSeq(fun(x => x + l(1.0f))))))

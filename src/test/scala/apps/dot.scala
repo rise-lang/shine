@@ -8,8 +8,8 @@ import util.gen
 
 class dot extends test_util.Tests {
 
-  private def xsT(N : NatIdentifier) = ArrayType(N, float)
-  private def ysT(N : NatIdentifier) = ArrayType(N, float)
+  private def xsT(N : NatIdentifier) = ArrayType(N, f32)
+  private def ysT(N : NatIdentifier) = ArrayType(N, f32)
 
   private val mulT = fun(x => fst(x) * snd(x))
   private val add = fun(a => fun(x => a + x))
@@ -22,7 +22,7 @@ class dot extends test_util.Tests {
     val typed = infer(simpleDotProduct)
 
     val N = typed.t.asInstanceOf[NatDepFunType[_ <: Type]].x
-    assertResult(DepFunType[NatKind, Type](N, FunType(xsT(N), FunType(ysT(N), float)))) {
+    assertResult(DepFunType[NatKind, Type](N, FunType(xsT(N), FunType(ysT(N), f32)))) {
       typed.t
     }
   }

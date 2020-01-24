@@ -26,26 +26,33 @@ object molecularDynamics {
       |  }
       |  return f;
       }""".stripMargin,
-    float4 ->: float4 ->: float4 ->: float ->: float ->: float ->: float4)
+    vec(4, f32) ->: vec(4, f32) ->: vec(4, f32) ->:
+      f32 ->: f32 ->: f32 ->:
+      vec(4, f32))
 
   val shoc: Expr = nFun(n => nFun(m => fun(
-    (n`.`float4) ->: (m`.`n`.`IndexType(n)) ->: float ->: float ->: float ->: (n`.`float4)
-  )((particles, neighbourIds, cutsq, lj1, lj2) =>
-    zip(particles)(transpose(neighbourIds)) |>
+    (n`.`vec(4, f32)) ->: (m`.`n`.`IndexType(n)) ->:
+      f32 ->: f32 ->: f32 ->:
+      (n`.`vec(4, f32))
+    )((particles, neighbourIds, cutsq, lj1, lj2) =>
+      zip(particles)(transpose(neighbourIds)) |>
       split(128) |>
       mapWorkGroup(
         mapLocal(fun(p =>
           toPrivate(p._1) |> let(fun(particle =>
             gather(p._2)(particles) |>
-              oclReduceSeq(AddressSpace.Private)(fun(force => fun(n =>
-                mdCompute(force)(particle)(n)(cutsq)(lj1)(lj2)
-              )))(vectorFromScalar(l(0.0f)))
+            oclReduceSeq(AddressSpace.Private)(fun(force => fun(n =>
+              mdCompute(force)(particle)(n)(cutsq)(lj1)(lj2)
+            )))(vectorFromScalar(l(0.0f)))
           ))
         ))
       ) |> join
   )))
 
-  def buildNeighbourList(position: Array[(Float, Float, Float, Float)], maxNeighbours: Int): Array[Array[Int]] = {
+  def buildNeighbourList(
+    position: Array[(Float, Float, Float, Float)],
+    maxNeighbours: Int
+  ): Array[Array[Int]] = {
     val neighbourList = Array.ofDim[Int](position.length, maxNeighbours)
 
     for (i <- position.indices) {
@@ -61,7 +68,7 @@ object molecularDynamics {
           val delz = ipos._3 - jpos._3
 
           val distIJ = delx * delx + dely * dely + delz * delz
-          currDist =  (j, distIJ) :: currDist
+          currDist = (j, distIJ) :: currDist
         }
       }
 
@@ -82,9 +89,11 @@ object molecularDynamics {
   private val lj1 = 1.5f
   private val lj2 = 2.0f
 
-  def runOriginalKernel(name: String,
-                        particles: Array[Float],
-                        neighbours: Array[Array[Int]]): (Array[Float], TimeSpan[Time.ms]) = {
+  def runOriginalKernel(
+    name: String,
+    particles: Array[Float],
+    neighbours: Array[Array[Int]]
+  ): (Array[Float], TimeSpan[Time.ms]) = {
     import opencl.executor._
 
     val code = util.readFile(s"src/main/scala/apps/originalLift/$name")
@@ -122,9 +131,11 @@ object molecularDynamics {
     (output, TimeSpan.inMilliseconds(runtime))
   }
 
-  def runKernel(k: KernelNoSizes,
-                particles: Array[Float],
-                neighbours: Array[Array[Int]]): (Array[Float], TimeSpan[Time.ms]) = {
+  def runKernel(
+    k: KernelNoSizes,
+    particles: Array[Float],
+    neighbours: Array[Array[Int]]
+  ): (Array[Float], TimeSpan[Time.ms]) = {
     assert(particles.length % 4 == 0)
     val N = particles.length / 4
     val M = neighbours.length
@@ -132,8 +143,12 @@ object molecularDynamics {
     val globalSize = GlobalSize(N)
 
     val f = k.as[ScalaFunction `(`
-      Int `,` Int `,` Array[Float] `,` Array[Array[Int]] `,` Float `,` Float `,` Float
+      Int `,` Int `,`
+      Array[Float] `,` Array[Array[Int]] `,`
+      Float `,` Float `,` Float
       `)=>` Array[Float]]
-    f(localSize, globalSize)(N `,` M `,` particles `,` neighbours `,` cutsq `,` lj1 `,` lj2)
+    f(localSize, globalSize)(
+      N `,` M `,` particles `,` neighbours `,` cutsq `,` lj1 `,` lj2
+    )
   }
 }
