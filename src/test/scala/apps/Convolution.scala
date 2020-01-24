@@ -14,8 +14,8 @@ class Convolution extends test_util.TestsWithExecutor {
     val matrix = Array.fill(N, N)(random.nextFloat * 10.0f)
     val weights = Array.fill(17)(random.nextFloat)
 
-    val (lsX, gsX) = blurXTiled2D_sizes(N)
-    val (lsY, gsY) = blurYTiled2DTiledLoadingTransposed_sizes(N)
+    val (lsX, gsX) = blurXTiled2DSizes(N)
+    val (lsY, gsY) = blurYTiled2DTiledLoadingTransposedSizes(N)
 
     test_util.runsWithSameResult(Seq(
       ("originalX (CG017)", runOriginalKernel("CGO17_ConvolutionColumn_small.cl",
