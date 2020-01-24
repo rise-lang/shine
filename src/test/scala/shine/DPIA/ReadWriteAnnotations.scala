@@ -3,7 +3,6 @@ package shine.DPIA
 import rise.core.DSL._
 import rise.core.types._
 import shine.DPIA.Types.TypeCheck
-import util.gen
 
 class ReadWriteAnnotations extends test_util.Tests {
 
@@ -22,8 +21,8 @@ class ReadWriteAnnotations extends test_util.Tests {
       nFun(n => fun(ArrayType(n, float))(xs =>
         xs |> mapSeq(fun(x => x))))
 
-    //val dpia_e = util.gen.toDPIA(e)
-    //TypeCheck(dpia_e)
+    val dpia_e = util.gen.toDPIA(e)
+    TypeCheck(dpia_e)
   }
 
   test ("Use of access type subtyping types two nested mapSeqs kernel.") {
@@ -31,8 +30,8 @@ class ReadWriteAnnotations extends test_util.Tests {
       nFun(m => nFun(n => fun(ArrayType(m, ArrayType(n, float)))(xs =>
         xs |> mapSeq(mapSeq(fun(x => x))))))
 
-    //val dpia_e = util.gen.toDPIA(e)
-    //TypeCheck(dpia_e)
+    val dpia_e = util.gen.toDPIA(e)
+    TypeCheck(dpia_e)
   }
 
   test ("Use of access type subtyping types three nested mapSeqs kernel.") {
@@ -40,7 +39,7 @@ class ReadWriteAnnotations extends test_util.Tests {
       nFun(m => nFun(n => nFun(o => fun(ArrayType(m, ArrayType(n, ArrayType(o, float))))(xs =>
         xs |> mapSeq(mapSeq(mapSeq(fun(x => x))))))))
 
-    //val dpia_e = util.gen.toDPIA(e)
-    //TypeCheck(dpia_e)
+    val dpia_e = util.gen.toDPIA(e)
+    TypeCheck(dpia_e)
   }
 }

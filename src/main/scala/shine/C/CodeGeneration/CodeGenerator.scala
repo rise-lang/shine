@@ -331,7 +331,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error(s"Expected path to contain at least two elements")
       }
 
-      case Zip(n, dt1, dt2, e1, e2) => path match {
+      case Zip(n, dt1, dt2, _, e1, e2) => path match {
         case (i: CIntExpr) :: (xj : PairAccess) :: ps => xj match {
           case FstMember => exp(e1, env, i :: ps, cont)
           case SndMember => exp(e2, env, i :: ps, cont)

@@ -1,5 +1,7 @@
 package shine.DPIA
 
+import rise.core.types.Kind
+
 import scala.language.existentials
 import shine.DPIA.Phrases.{Identifier, _}
 import shine.DPIA.Semantics.{OperationalSemantics => OpSem}
@@ -10,11 +12,86 @@ import rise.{core => r}
 import scala.annotation.tailrec
 
 object fromRise {
+  private type TranslKernelParamNotTranslBodyInfo = (Phrase[_ <: PhraseType], r.Expr, Identifier[ExpType], IdentMap)
+  private type IdentMap = Map[r.Identifier, Identifier[_ <: PhraseType]]
+  private final case class AppliedPrimitiveArgs(p: r.Primitive,
+                                                args: List[Phrase[_ <: PhraseType]],
+                                                nonPhraseArgs: List[Kind#T])
+
   def apply(expr: r.Expr): Phrase[_ <: PhraseType] = {
     if (!r.IsClosedForm(expr)) {
       throw new Exception(s"expression is not in closed form: $expr")
     }
-    expression(expr, Map()).left.get
+
+    val (translKernelParamFuns, untranslKernelBody, identMap) = {
+      val (translKernelParamFunsUnbound, body, bodyIdent, identMap) = kernelParamFunctions(expr, Map())
+      (Lambda(bodyIdent, translKernelParamFunsUnbound), body, identMap)
+    }
+    val translKernelBody = expression(untranslKernelBody, identMap).left.get
+    val liftedKernelParamFuns = Lifting.liftFunction(translKernelParamFuns)
+    val translatedKernel = liftedKernelParamFuns.reducing(translKernelBody.asInstanceOf[Phrase[ExpType]])
+
+    translatedKernel
+  }
+
+  private def kernelParamFunctions(expr: r.Expr,
+                                   identMap: IdentMap): TranslKernelParamNotTranslBodyInfo = {
+    expr match {
+      case r.DepLambda(x, e) => x match {
+        case n: rt.NatIdentifier =>
+          val (ee, body, bodyIdent, updIdentMap) = kernelParamFunctions(e, identMap)
+          (DepLambda[NatKind](natIdentifier(n))(ee), body, bodyIdent, updIdentMap)
+        case dt: rt.DataTypeIdentifier =>
+          val (ee, body, bodyIdent, updIdentMap) = kernelParamFunctions(e, identMap)
+          (DepLambda[DataKind](dataTypeIdentifier(dt))(ee), body, bodyIdent, updIdentMap)
+        case a: rt.AddressSpaceIdentifier =>
+          val (ee, body, bodyIdent, updIdentMap) = kernelParamFunctions(e, identMap)
+          (DepLambda[AddressSpaceKind](addressSpaceIdentifier(a))(ee), body, bodyIdent, updIdentMap)
+      }
+      case r.Lambda(x, e) =>
+        val ident = Identifier(x.name, `type`(x.t))
+        val (ee, body, bodyIdent, updIdentMap) = kernelParamFunctions(e, identMap + (x -> ident))
+        (Lambda(ident, ee), body, bodyIdent, updIdentMap)
+      case r.DepApp(f, x) =>
+        kernelParamFunctions(r.lifting.liftDepFunExpr(f).reducing(x), identMap)
+
+      case body =>
+        `type`(body.t) match {
+          case ExpType(dt, _) =>
+            val bodyIdent = Identifier(freshName("body"), ExpType(dt, write))
+            (bodyIdent, body, bodyIdent, identMap)
+          case _: FunType[_, _] | _: DepFunType[_, _] => body match {
+            case r.App(f, e) =>
+              r.lifting.liftFunExpr(f) match {
+                case red: r.lifting.Reducing[r.Expr => r.Expr] =>
+                  kernelParamFunctions(red.reducing(e), identMap)
+                case _: r.lifting.Expanding[_] =>
+                  throw new Exception("This should never happen.")
+              }
+            case r.DepApp(f, x) =>
+              f.t match {
+                case rt.DepFunType(_, _) =>
+                  val reduced = r.lifting.liftDepFunExpr(f) match {
+                    case r.lifting.Reducing(v) =>
+                      x match {
+                        case addr: rt.AddressSpaceKind#T =>
+                          v.asInstanceOf[rt.AddressSpaceKind#T => r.Expr](addr)
+                        case nat: rt.NatKind#T =>
+                          v.asInstanceOf[rt.NatKind#T => r.Expr](nat)
+                        case data: rt.DataKind#T =>
+                          v.asInstanceOf[rt.DataKind#T => r.Expr](data)
+                      }
+                    case _: r.lifting.Expanding[_] =>
+                      throw new Exception("This should never happen.")
+                  }
+                  kernelParamFunctions(reduced, identMap)
+                case _ => throw new Exception("This should never happen.")
+              }
+            case _ => throw new Exception("This should never happen.")
+          }
+          case _ => throw new Exception("This should never happen.")
+        }
+    }
   }
 
   private def arity(ft: rt.Type): Int = {
@@ -30,10 +107,10 @@ object fromRise {
     tailrecArity(ft, accum = 0)
   }
 
-  private final case class AppliedPrimitiveArgs(p: r.Primitive,
-                                                args: List[Phrase[_ <: PhraseType]],
-                                                nonPhraseArgs: List[Kind#T])
-  private type IdentMap = Map[r.Identifier, Identifier[_ <: PhraseType]]
+  private def phraseForInferredFunctionType(f: r.Expr, inT: PhraseType, outT: PhraseType): Phrase[_ <: PhraseType] = {
+    // TODO This is the way. Maybe do for all types.
+    //  This way the entire algorithm is much closer to type inference as well!
+  }
 
   private def expression(expr: r.Expr,
                          identMap: IdentMap): Either[Phrase[_ <: PhraseType], AppliedPrimitiveArgs] = expr match {
@@ -43,9 +120,15 @@ object fromRise {
     case r.Lambda(x, e) => expr.t match {
       case rt.FunType(i, _) =>
         //FIXME doesn't work if e is a partially applied primitive
-        val ident = Identifier(x.name, `type`(i))
-        Left(
-          Lambda(ident,  expression(e,  identMap + (x -> ident)).left.get))
+        val ai = accessTypeIdentifier()
+        //FIXME this hardcodes choosing the access type for the existing tests
+        val ident = Identifier(x.name, `type`(i) match {
+          case ExpType(dt, _) => ExpType(dt, ai)
+          case _ => ???
+        })
+        val depLamb = DepLambda[AccessKind](ai)(Lambda(ident,  expression(e,  identMap + (x -> ident)).left.get))
+        Left(depLamb)
+
       case _ => error(expr.t.toString, "a function type")
     }
 
@@ -112,19 +195,13 @@ object fromRise {
     }
 
     case r.DepLambda(x, e) =>
+      //FIXME doesn't bind the later newly introduced KindIdentifier
       val appE = expression(e, identMap) match {
         case Left(ee) => ee
         case Right(appargs) => primitive(appargs.p, appargs.args, appargs.nonPhraseArgs)
       }
 
-      x match {
-        case n: rt.NatIdentifier =>
-          Left(DepLambda[NatKind](natIdentifier(n))(appE))
-        case dt: rt.DataTypeIdentifier =>
-          Left(DepLambda[DataKind](dataTypeIdentifier(dt))(appE))
-        case a: rt.AddressSpaceIdentifier =>
-          Left(DepLambda[AddressSpaceKind](addressSpaceIdentifier(a))(appE))
-      }
+      createDepLambdaWithKindIdent(x, appE)
 
     case r.DepApp(f, x) =>
       f match {
@@ -163,6 +240,17 @@ object fromRise {
     }
 
     case p: r.Primitive => Left(primitive(p, Nil, Nil))
+  }
+
+  private def createDepLambdaWithKindIdent(x: rt.Kind#I with Kind.Explicitness, appE: Phrase[_ <: PhraseType]) = {
+    x match {
+      case n: rt.NatIdentifier =>
+        Left(DepLambda[NatKind](natIdentifier(n))(appE))
+      case dt: rt.DataTypeIdentifier =>
+        Left(DepLambda[DataKind](dataTypeIdentifier(dt))(appE))
+      case a: rt.AddressSpaceIdentifier =>
+        Left(DepLambda[AddressSpaceKind](addressSpaceIdentifier(a))(appE))
+    }
   }
 
   def addressSpace(a: rt.AddressSpace): AddressSpace = a match {
@@ -390,7 +478,15 @@ object fromRise {
       rt.FunType(rt.ArrayType(n, la: rt.DataType), _)))
       =>
         val unappPrim = makeLoopMap(MapLocal(dim), n, la, lb, args)
-        applyAllExistingArgs(unappPrim, args, nonPhraseArgs)
+        val ia = if (args.nonEmpty) {
+          args.head match {
+            case dl: DepLambda[_, t2] =>
+              Lifting.liftDependentFunction(dl.asInstanceOf[DepLambda[AccessKind, t2]])(read)
+            case _ => args.head
+          }
+        } else args.head
+
+        applyAllExistingArgs(unappPrim, ia :: args.tail, nonPhraseArgs)
 
       case (ocl.MapWorkGroup(dim),
       rt.FunType(rt.FunType(_, lb: rt.DataType),
@@ -915,11 +1011,18 @@ object fromRise {
       =>
         val a = dataType(la)
         val b = dataType(lb)
+        val ai = accessTypeIdentifier()
         val unappPrim =
-          fun[ExpType ->: ExpType](exp"[$a, $read]" ->: exp"[$b, $read]", f =>
-            fun[ExpType](ExpType(a, read), x =>
-              Let(a, b, x, f)))
-        applyAllExistingArgs(unappPrim, args, nonPhraseArgs)
+          DepLambda[AccessKind](ai)(
+            fun[ExpType ->: ExpType](exp"[$a, $read]" ->: exp"[$b, $ai]", f =>
+              fun[ExpType](ExpType(a, read), x =>
+                Let(a, b, ai, x, f))))
+
+        if (args.nonEmpty) {
+          val access = args.head.asInstanceOf[Phrase[FunType[ExpType, ExpType]]].t.outT.accessType
+          val withAccess = Lifting.liftDependentFunction(unappPrim)(access)
+          applyAllExistingArgs(withAccess, args, nonPhraseArgs)
+        } else unappPrim
 
       case (f @ r.ForeignFunction(decl), _)
       =>

@@ -1,6 +1,6 @@
 package apps
 
-import shine.DPIA.Types.{ExpType, TypeCheck, read, write}
+import shine.DPIA.Types.{ExpType, read, write}
 import shine.DPIA.Types.TypeCheck._
 import rise.core.DSL._
 import rise.core.types._
