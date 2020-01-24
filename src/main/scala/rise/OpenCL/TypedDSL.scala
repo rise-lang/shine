@@ -35,7 +35,7 @@ object TypedDSL {
       toTDSL(MapWorkGroup(0)())
   }
 
-  def toMem: TDSL[ToMem] = toTDSL(ToMem()())
+  def toMem: TDSL[OclToMem] = toTDSL(OclToMem()())
   def toFun[A <: Expr, B <: Expr](
       to: TDSL[A],
       f: TDSL[B]

@@ -43,7 +43,7 @@ object primitives {
       )
   }
 
-  @primitive case class ToMem()(override val t: Type = TypePlaceholder)
+  @primitive case class OclToMem()(override val t: Type = TypePlaceholder)
       extends Primitive {
     override def typeScheme: Type = implDT(t => aFunT(a => t ->: t))
   }
