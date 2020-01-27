@@ -75,7 +75,30 @@ object IsClosedForm {
     } catch {
       case FreeVariable(v) =>
         println(s"free variable $v")
-        false
+/*
+        case class TraceVisitor(trace: Seq[Expr]) extends traversal.Visitor {
+            override def visitExpr(e: Expr): Result[Expr] = {
+              Continue(e, Vist(e +: trace))
+            }
+
+            override def visitType[T <: Type](t: T): Result[T] =
+              traversal.Stop(traversal.types.DepthFirstLocalResult(t,
+                new traversal.Visitor {
+                  override def visitType[U <: Type](t: U): Result[U] = {
+                    if (t == v) {
+                      println(trace.headOption.map(_.t))
+                      println("-- trace --")
+                      println(trace.mkString("\n"))
+                      println("----")
+                      throw new Exception("")
+                    }
+                    Continue(t, this)
+                  }
+                }))
+          }
+          traversal.DepthFirstLocalResult(expr, TraceVisitor(Nil))
+*/
+          false
     }
   }
 

@@ -15,6 +15,13 @@ case class InferenceException(msg: String, trace: Seq[infer.Constraint])
 
 object infer {
   def apply(e: Expr): Expr = {
+    e.t match {
+      case TypePlaceholder => ()
+      case _ =>
+        // TODO: remove (shine issue #31)
+        println("WARNING: skipping type inference")
+        return e
+    }
     // build set of constraints
     val constraintList = mutable.ArrayBuffer[Constraint]()
     val typed_e = constrainTypes(e, constraintList, mutable.Map())
