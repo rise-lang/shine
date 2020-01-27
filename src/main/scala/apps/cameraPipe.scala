@@ -385,19 +385,35 @@ object cameraPipe {
     )
   })))
 
+  val camera_pipe = nFun(h => nFun(w => nFun(hm => nFun(wm => fun(
+    ((2*(h+2))`.`(2*(w+2))`.`i16) ->:
+      (hm`.`wm`.`f32) ->: (hm`.`wm`.`f32) ->: f32 ->: (
+      f32 ->: f32 ->: int ->: int ->:
+      f32 ->:
+      (3`.`(2*(h-2))`.`(2*(w-2))`.`u8))
+  )((input, matrix_3200, matrix_7000, color_temp) =>
+    fun(
+      f32 ->: f32 ->: int ->: int ->: f32 ->: (3`.`(2*(h-2))`.`(2*(w-2))`.`u8)
+    )((gamma, contrast, blackLevel, whiteLevel, sharpen_strength) =>
+      input |>
+      hot_pixel_suppression(2*(h+2))(2*(w+2)) >>
+      deinterleave(h)(w) >>
+      demosaic(h)(w) >>
+      fun(x => color_correct(2*(h-2))(2*(w-2))(hm)(wm)(x)
+        (matrix_3200)(matrix_7000)(color_temp)) >>
+      mapSeqUnroll(mapSeq(mapSeq(fun(x => x)))) >> // TODO: remove
+      fun(x => apply_curve(2*(h-2))(2*(w-2))(x)
+        (gamma)(contrast)(blackLevel)(whiteLevel)) >>
+      mapSeq(mapSeq(mapSeq(fun(x => x)))) // TODO: remove
+        /* TODO: sharpen
+      fun(x => sharpen(2*(h-2))(2*(w-2))(x)(sharpen_strength))
+         */
+    )
+  )))))
   /* TODO
   val shift = ??? >> map(map(fun(p => cast(p) :: i16)))
-
   val camera_pipe = nFun(h => nFun(w => fun(
     (h`.`w`.`u16) ->: (3`.`((h - 24) / 32) * 32)`.`((w - 32) / 32) * 32)`.`u8)
-  )(input =>
-    shift >>
-    hot_pixel_suppression >>
-    deinterleave >>
-    demosaic >>
-    color_correct >>
-    apply_curve >>
-    sharpen
-  )))
+  )
   */
 }

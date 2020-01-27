@@ -334,6 +334,44 @@ int main(int argc, char** argv) {
     util.Execute(testCode)
   }
 
+  test("camera pipe passes checks") {
+    val typed = printTime(infer(camera_pipe))
+    val prog = printTime(gen.CProgram(typed))
+    val testCode =
+      s"""
+${cHeader}
+
+${prog.code}
+
+int main(int argc, char** argv) {
+  int16_t input[($N*2 + 4) * ($M*2 + 4)] = { ${goldInput.mkString(", ")} };
+  uint8_t gold[3 * (2*$N - 4) * (2*$M - 4)] = { ${goldCurved.mkString(", ")} };
+
+  float matrix_3200[3 * 4] = { ${matrix_3200.mkString(", ")} };
+  float matrix_7000[3 * 4] = { ${matrix_7000.mkString(", ")} };
+
+  uint8_t output[3 * (2*$N - 4) * (2*$M - 4)];
+  ${prog.function.name}(output, $N, $M, 3, 4,
+    input, matrix_3200, matrix_7000, ${color_temp},
+     ${gamma}, ${contrast}, ${black_level}, ${white_level}, ${sharpen_strength});
+
+  for (int i = 0; i < 3 * (2*$N - 4) * (2*$M - 4); i++) {
+    int16_t d = gold[i] - output[i];
+    if (d < -1 || d > 1) {
+      fprintf(stderr, "%d != %d\\n", gold[i], output[i]);
+      return 1;
+    }
+    if (d != 0) {
+      fprintf(stderr, "WARNING: %d != %d\\n", gold[i], output[i]);
+    }
+  }
+
+  return 0;
+}
+"""
+    util.Execute(testCode)
+  }
+
   test("type inference") {
     val avgt = infer(avg(i16)(i32))
     println("avg: " + avgt.t)
