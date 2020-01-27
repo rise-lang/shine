@@ -45,10 +45,16 @@ object fromRise {
           expression(f).asInstanceOf[Phrase[DepFunType[NatKind, PhraseType]]],
           n)
       case dt: lt.DataType =>
-        DepApply[DataKind, PhraseType](
-          expression(f).asInstanceOf[Phrase[DepFunType[DataKind, PhraseType]]],
-          dataType(dt)
-        )
+        // TODO: remove this hack (shine issue #32)
+        rise.core.lifting.liftDepFunExpr[rise.core.types.DataKind](f) match {
+          case rise.core.lifting.Reducing(r) =>
+            expression(r(dt))
+          case _ =>
+            DepApply[DataKind, PhraseType](
+              expression(f).asInstanceOf[Phrase[DepFunType[DataKind, PhraseType]]],
+              dataType(dt)
+            )
+        }
       case a: lt.AddressSpace =>
         DepApply[AddressSpaceKind, PhraseType](
           expression(f).asInstanceOf[Phrase[DepFunType[AddressSpaceKind, PhraseType]]],
@@ -703,7 +709,7 @@ object fromRise {
         throw new Exception(s"$p has no implementation")
 
       case (p, _) =>
-        throw new Exception(s"Missing rule for $p")
+        throw new Exception(s"Missing rule for $p : ${p.t}")
     }
   }
 

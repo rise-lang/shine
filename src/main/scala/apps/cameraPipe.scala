@@ -20,7 +20,7 @@ object cameraPipe {
   def lu8(v: Int): Expr = cast(l(v)) :: u8
 
   // average two positive values rounding up
-  val avg: Expr = implDT(dt => dtFun(compute_dt => fun(
+  val avg: Expr = dtFun(dt => dtFun(compute_dt => fun(
     dt ->: dt ->: dt
   )((a, b) => {
     val cast_ = fun(a => cast(a) :: compute_dt)
@@ -48,7 +48,7 @@ object cameraPipe {
 
   // point-wise avg
   def interpolate(img: Image): Image = mapImage(img, fun(2`.`i16)(x =>
-    avg(i32)(x `@` lidx(0, 2), x `@` lidx(1, 2))
+    avg(i16)(i32)(x `@` lidx(0, 2), x `@` lidx(1, 2))
   ))
   // point-wise abs_diff
   def pointAbsDiff(img: Image): Image = mapImage(img, fun(2`.`i16)(x =>
@@ -107,7 +107,7 @@ object cameraPipe {
   }
 
   val demosaic: Expr = nFun(h => nFun(w => fun(
-    (4`.`h`.`w`.`i16) ->: (3`.`(2*h - 8)`.`(2*w - 8)`.`i16)
+    (4`.`h`.`w`.`i16) ->: (3`.`(2*h - 4)`.`(2*w - 4)`.`i16)
   )(deinterleaved => {
     // x_y = the value of channel x at a site in the input of channel y
     // gb = green sites in the blue rows
@@ -184,32 +184,32 @@ object cameraPipe {
     // we also correct our interpolations using
     // the second derivative of green at the same sites.
     letImage(correct(
-      interpolate(stencilCollect(Seq((0, 0), (1, -1)), r_r)),
+      interpolate(stencilCollect(Seq((0, 0), (-1, 1)), r_r)),
       g_b,
-      interpolate(stencilCollect(Seq((0, 0), (1, -1)), g_r))
+      interpolate(stencilCollect(Seq((0, 0), (-1, 1)), g_r))
     ), rp_b =>
-    letImage(pointAbsDiff(stencilCollect(Seq((0, 0), (1, -1)), r_r)), rpd_b =>
+    letImage(pointAbsDiff(stencilCollect(Seq((0, 0), (-1, 1)), r_r)), rpd_b =>
     letImage(correct(
-      interpolate(stencilCollect(Seq((0, -1), (1, 0)), r_r)),
+      interpolate(stencilCollect(Seq((-1, 0), (0, 1)), r_r)),
       g_b,
-      interpolate(stencilCollect(Seq((0, -1), (1, 0)), g_r))
+      interpolate(stencilCollect(Seq((-1, 0), (0, 1)), g_r))
     ), rn_b =>
-    letImage(pointAbsDiff(stencilCollect(Seq((0, -1), (1, 0)), r_r)), rnd_b =>
+    letImage(pointAbsDiff(stencilCollect(Seq((-1, 0), (0, 1)), r_r)), rnd_b =>
 
     letImage(select_interpolation(rp_b, rpd_b, rn_b, rnd_b), r_b =>
 
     letImage(correct(
-      interpolate(stencilCollect(Seq((0, 0), (-1, 1)), b_b)),
+      interpolate(stencilCollect(Seq((0, 0), (1, -1)), b_b)),
       g_r,
-      interpolate(stencilCollect(Seq((0, 0), (-1, 1)), g_b))
+      interpolate(stencilCollect(Seq((0, 0), (1, -1)), g_b))
     ), bp_r =>
-    letImage(pointAbsDiff(stencilCollect(Seq((0, 0), (-1, 1)), b_b)), bpd_r =>
+    letImage(pointAbsDiff(stencilCollect(Seq((0, 0), (1, -1)), b_b)), bpd_r =>
     letImage(correct(
-      interpolate(stencilCollect(Seq((0, 1), (-1, 0)), b_b)),
+      interpolate(stencilCollect(Seq((1, 0), (0, -1)), b_b)),
       g_r,
-      interpolate(stencilCollect(Seq((0, 1), (-1, 0)), g_b))
+      interpolate(stencilCollect(Seq((1, 0), (0, -1)), g_b))
     ), bn_r =>
-    letImage(pointAbsDiff(stencilCollect(Seq((0, 1), (-1, 0)), b_b)), bnd_r =>
+    letImage(pointAbsDiff(stencilCollect(Seq((1, 0), (0, -1)), b_b)), bnd_r =>
 
     letImage(select_interpolation(bp_r, bpd_r, bn_r, bnd_r), b_r => {
       val Seq(
@@ -231,8 +231,11 @@ object cameraPipe {
         makeArray(2)(
           makeArray(2)(b_gr_o.expr, b_r_o.expr),
           makeArray(2)(b_b_o.expr, b_gb_o.expr))  // b
-      ) /* 3.2.2.H.W.f */ |> map(
-        map( // 2.H.W.f
+      ) /* 3.2.2.H.W.f */ |>
+        // -- TODO: remove
+        mapSeqUnroll(mapSeqUnroll(mapSeqUnroll(mapSeq(mapSeq(fun(x => x)))))) >>
+        // --
+        map(map( // 2.H.W.f
           transpose >> map(transpose >> join) // H.(W * 2).f
         ) // 2.H.(W * 2).f
           >> transpose >> join // (H * 2).(W * 2).f
@@ -340,11 +343,11 @@ object cameraPipe {
     )
   })))
 
-  val blur121: Expr = implDT(dt => dtFun(compute_dt => fun(
+  val blur121: Expr = dtFun(dt => dtFun(compute_dt => fun(
     (3`.`dt) ->: dt
   )(vs =>
-    avg(compute_dt)(
-      avg(compute_dt)(vs `@` lidx(0, 3), vs `@` lidx(1, 3)),
+    avg(dt)(compute_dt)(
+      avg(dt)(compute_dt)(vs `@` lidx(0, 3), vs `@` lidx(1, 3)),
       vs `@` lidx(2, 3))
   )))
 
@@ -361,11 +364,11 @@ object cameraPipe {
         val plane = Image(0, w, 0, h, plane_)
         letImage(mapImage(
           stencilCollect(Seq((0, -1), (0, 0), (0, 1)), plane),
-          blur121(u16)),
+          blur121(u8)(u16)),
           unsharp_y =>
         letImage(mapImage(
           stencilCollect(Seq((-1, 0), (0, 0), (1, 0)), unsharp_y),
-          blur121(u16)),
+          blur121(u8)(u16)),
           unsharp => {
           val Seq(pl, un) = intersectImages(Seq(plane, unsharp))
           letImage(mapImage(zipImage(pl, un), fun(p =>
@@ -374,7 +377,7 @@ object cameraPipe {
             val Seq(pl, ma) = intersectImages(Seq(plane, mask))
             mapImage(zipImage(pl, ma), fun(p =>
               u8_sat(i16)((cast(p._1) :: i16) +
-                (p._2 * cast(strength_x32) :: i16) / li16(32))
+                (p._2 * (cast(strength_x32) :: i16)) / li16(32))
             )).expr
           })
         }))
