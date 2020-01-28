@@ -1,8 +1,8 @@
 package shine.DPIA
 
-import rise.core.types.Kind
-
 import scala.language.existentials
+
+import rise.core.types.Kind
 import shine.DPIA.Phrases.{Identifier, _}
 import shine.DPIA.Semantics.{OperationalSemantics => OpSem}
 import shine.DPIA.Types._
@@ -110,6 +110,7 @@ object fromRise {
   private def phraseForInferredFunctionType(f: r.Expr, inT: PhraseType, outT: PhraseType): Phrase[_ <: PhraseType] = {
     // TODO This is the way. Maybe do for all types.
     //  This way the entire algorithm is much closer to type inference as well!
+    ???
   }
 
   private def expression(expr: r.Expr,
