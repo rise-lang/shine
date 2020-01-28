@@ -1,4 +1,7 @@
 ### Overview
+
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/efe2919980194123b990a9cc416f3eaf)](https://app.codacy.com/gh/rise-lang/shine?utm_source=github.com&utm_medium=referral&utm_content=rise-lang/shine&utm_campaign=Badge_Grade_Dashboard)
+
 This repository contains an implementation of the Shine compiler for the RISE language
 which is used as the main compiler of the RISE project (https://rise-lang.org/).
 
