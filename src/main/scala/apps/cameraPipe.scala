@@ -344,8 +344,8 @@ object cameraPipe {
     (3`.`dt) ->: dt
   )(vs =>
     avg(dt)(compute_dt)(
-      avg(dt)(compute_dt)(vs `@` lidx(0, 3), vs `@` lidx(1, 3)),
-      vs `@` lidx(2, 3))
+      avg(dt)(compute_dt)(vs `@` lidx(0, 3), vs `@` lidx(2, 3)),
+      vs `@` lidx(1, 3))
   )))
 
   val sharpen: Expr = nFun(h => nFun(w => fun(
@@ -353,9 +353,9 @@ object cameraPipe {
   )((input, strength) => {
     // convert sharpening strength to 2.5 fixed point.
     // this allows sharpening in the range [0, 4].
-    val u8_sat = dtFun(dt => fun(x =>
+    def u8_sat(dt: DataType) = fun(x =>
       cast(clamp(dt)(x, cast(l(0)) :: dt, cast(l(255)) :: dt)) :: u8
-    ))
+    )
     u8_sat(f32)(strength * l(32.0f)) |> fun(strength_x32 =>
       input |> map(fun(plane_ => {
         val plane = Image(0, w, 0, h, plane_)
@@ -367,14 +367,12 @@ object cameraPipe {
           stencilCollect(Seq((-1, 0), (0, 0), (1, 0)), unsharp_y),
           blur121(u8)(u16)),
           unsharp => {
-          val Seq(pl, un) = intersectImages(Seq(plane, unsharp))
-          letImage(mapImage(zipImage(pl, un), fun(p =>
+          letImage(mapImage(zipImage(plane, unsharp), fun(p =>
             (cast(p._1) :: i16) - (cast(p._2) :: i16)
           )), mask => {
-            val Seq(pl, ma) = intersectImages(Seq(plane, mask))
-            mapImage(zipImage(pl, ma), fun(p =>
-              u8_sat(i16)((cast(p._1) :: i16) +
-                (p._2 * (cast(strength_x32) :: i16)) / li16(32))
+            mapImage(zipImage(plane, mask), fun(p =>
+              u8_sat(i16)((cast(p._1) :: i16)
+                + (p._2 * (cast(strength_x32) :: i16)) / li16(32))
             )).expr
           })
         }))
@@ -382,15 +380,20 @@ object cameraPipe {
     )
   })))
 
+  /* TODO: Halide reference is casting and shifting the input
+  val shift = ??? >> map(map(fun(p => cast(p) :: i16)))
+  camera_pipe:
+    (h`.`w`.`u16) ->: (3`.`((h - 24) / 32) * 32)`.`((w - 32) / 32) * 32)`.`u8)
+  */
   val camera_pipe: Expr = nFun(h => nFun(w => nFun(hm => nFun(wm => fun(
     ((2*(h+2))`.`(2*(w+2))`.`i16) ->:
       (hm`.`wm`.`f32) ->: (hm`.`wm`.`f32) ->: f32 ->: (
       f32 ->: f32 ->: int ->: int ->:
       f32 ->:
-      (3`.`(2*(h-2))`.`(2*(w-2))`.`u8))
+      (3`.`(2*(h-3))`.`(2*(w-3))`.`u8))
   )((input, matrix_3200, matrix_7000, color_temp) =>
     fun(
-      f32 ->: f32 ->: int ->: int ->: f32 ->: (3`.`(2*(h-2))`.`(2*(w-2))`.`u8)
+      f32 ->: f32 ->: int ->: int ->: f32 ->: (3`.`(2*(h-3))`.`(2*(w-3))`.`u8)
     )((gamma, contrast, blackLevel, whiteLevel, sharpen_strength) =>
       input |>
       hot_pixel_suppression(2*(h+2))(2*(w+2)) >>
@@ -401,16 +404,9 @@ object cameraPipe {
       mapSeqUnroll(mapSeq(mapSeq(fun(x => x)))) >> // TODO: remove
       fun(x => apply_curve(2*(h-2))(2*(w-2))(x)
         (gamma)(contrast)(blackLevel)(whiteLevel)) >>
-      mapSeq(mapSeq(mapSeq(fun(x => x)))) // TODO: remove
-      /* TODO: sharpen
-      fun(x => sharpen(2*(h-2))(2*(w-2))(x)(sharpen_strength))
-      */
+      mapSeq(mapSeq(mapSeq(fun(x => x)))) >> // TODO: remove
+      fun(x => sharpen(2*(h-2))(2*(w-2))(x)(sharpen_strength)) >>
+      mapSeq(mapSeq(mapSeq(fun(x => x))))
     )
   )))))
-  /* TODO
-  val shift = ??? >> map(map(fun(p => cast(p) :: i16)))
-  val camera_pipe = nFun(h => nFun(w => fun(
-    (h`.`w`.`u16) ->: (3`.`((h - 24) / 32) * 32)`.`((w - 32) / 32) * 32)`.`u8)
-  )
-  */
 }
