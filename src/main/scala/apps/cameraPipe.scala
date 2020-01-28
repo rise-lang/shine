@@ -23,9 +23,9 @@ object cameraPipe {
   val avg: Expr = dtFun(dt => dtFun(compute_dt => fun(
     dt ->: dt ->: dt
   )((a, b) => {
-    val cast_ = fun(a => cast(a) :: compute_dt)
+    val cdt = fun(a => cast(a) :: compute_dt)
     // FIXME: avoid literal casts?
-    cast((cast_(a) + cast_(b) + cast_(l(1))) / cast_(l(2))) :: dt
+    cast((cdt(a) + cdt(b) + cdt(l(1))) / cdt(l(2))) :: dt
   })))
 
   case class Image(
@@ -35,16 +35,15 @@ object cameraPipe {
   )
 
   def letImage(img: Image, f: Image => Expr): Expr =
-    img.expr |> fun(x =>
-      f(Image(img.xBeg, img.xEnd, img.yBeg, img.yEnd, x))
-    )
+    img.expr |> fun(x => f(Image(img.xBeg, img.xEnd, img.yBeg, img.yEnd, x)))
 
   def mapImage(img: Image, f: Expr): Image =
     Image(img.xBeg, img.xEnd, img.yBeg, img.yEnd, img.expr |> map(map(f)))
 
-  def zipImage(a: Image, b: Image): Image =
-    // TODO: check a and b regions?
-    Image(a.xBeg, a.xEnd, a.yBeg, a.yEnd, zipND(2)(a.expr, b.expr))
+  def zipImage(a: Image, b: Image): Image = {
+    val Seq(ai, bi) = intersectImages(Seq(a, b))
+    Image(ai.xBeg, ai.xEnd, ai.yBeg, ai.yEnd, zipND(2)(ai.expr, bi.expr))
+  }
 
   // point-wise avg
   def interpolate(img: Image): Image = mapImage(img, fun(2`.`i16)(x =>
@@ -122,16 +121,14 @@ object cameraPipe {
     // first calculate green at the red and blue sites
 
     def select_interpolation(
-      a_ : Image, ad_ : Image, b_ : Image, bd_ : Image
+      a: Image, ad: Image, b: Image, bd: Image
     ): Image = {
-      val Seq(a, ad, b, bd) = intersectImages(Seq(a_, ad_, b_, bd_))
       mapImage(zipImage(zipImage(a, ad), zipImage(b, bd)), fun(ab =>
         select(snd(fst(ab)) < snd(snd(ab)), fst(fst(ab)), fst(snd(ab)))
       ))
     }
 
-    def correct(a_ : Image, b_ : Image, c_ : Image): Image = {
-      val Seq(a, b, c) = intersectImages(Seq(a_, b_, c_))
+    def correct(a: Image, b: Image, c: Image): Image = {
       mapImage(zipImage(a, zipImage(b, c)), fun(a_bc =>
         fst(a_bc) + (fst(snd(a_bc)) - snd(snd(a_bc)))
       ))
@@ -243,7 +240,7 @@ object cameraPipe {
     }))))))))))))))))))))))))
   })))
 
-  val hot_pixel_suppression = nFun(h => nFun(w => fun(
+  val hot_pixel_suppression: Expr = nFun(h => nFun(w => fun(
     (h`.`w`.`i16) ->: ((h-4)`.`(w-4)`.`i16)
   )(input =>
     mapImage(
@@ -257,7 +254,7 @@ object cameraPipe {
     ).expr
   )))
 
-  val deinterleave = nFun(h => nFun(w => fun(
+  val deinterleave: Expr = nFun(h => nFun(w => fun(
     ((2*h)`.`(2*w)`.`i16) ->: (4`.`h`.`w`.`i16)
   )(raw =>
     raw |>
@@ -267,7 +264,7 @@ object cameraPipe {
       join // 4.h.w.
   )))
 
-  val color_correct = nFun(h => nFun(w => nFun(hm => nFun(wm => fun(
+  val color_correct: Expr = nFun(h => nFun(w => nFun(hm => nFun(wm => fun(
     (3`.`h`.`w`.`i16) ->:
       (hm`.`wm`.`f32) ->: (hm`.`wm`.`f32) ->: f32 ->:
       (3`.`h`.`w`.`i16)
@@ -302,7 +299,7 @@ object cameraPipe {
     )
   })))))
 
-  val apply_curve = nFun(h => nFun(w => fun(
+  val apply_curve: Expr = nFun(h => nFun(w => fun(
     (3`.`h`.`w`.`i16) ->: f32 ->: f32 ->: int ->: int ->: (3`.`h`.`w`.`u8)
   )((input, gamma, contrast, blackLevel, whiteLevel) => {
     // val lutResample = 1 // how much to resample the LUT by when sampling it
@@ -351,7 +348,7 @@ object cameraPipe {
       vs `@` lidx(2, 3))
   )))
 
-  val sharpen = nFun(h => nFun(w => fun(
+  val sharpen: Expr = nFun(h => nFun(w => fun(
     (3`.`h`.`w`.`u8) ->: f32 ->: (3`.`(h-2)`.`(w-2)`.`u8)
   )((input, strength) => {
     // convert sharpening strength to 2.5 fixed point.
@@ -385,7 +382,7 @@ object cameraPipe {
     )
   })))
 
-  val camera_pipe = nFun(h => nFun(w => nFun(hm => nFun(wm => fun(
+  val camera_pipe: Expr = nFun(h => nFun(w => nFun(hm => nFun(wm => fun(
     ((2*(h+2))`.`(2*(w+2))`.`i16) ->:
       (hm`.`wm`.`f32) ->: (hm`.`wm`.`f32) ->: f32 ->: (
       f32 ->: f32 ->: int ->: int ->:
@@ -405,9 +402,9 @@ object cameraPipe {
       fun(x => apply_curve(2*(h-2))(2*(w-2))(x)
         (gamma)(contrast)(blackLevel)(whiteLevel)) >>
       mapSeq(mapSeq(mapSeq(fun(x => x)))) // TODO: remove
-        /* TODO: sharpen
+      /* TODO: sharpen
       fun(x => sharpen(2*(h-2))(2*(w-2))(x)(sharpen_strength))
-         */
+      */
     )
   )))))
   /* TODO
