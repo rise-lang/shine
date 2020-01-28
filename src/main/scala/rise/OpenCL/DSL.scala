@@ -28,7 +28,7 @@ object DSL {
       MapWorkGroup(0)()
   }
 
-  def toMem: ToMem = ToMem()()
+  def toMem: OclToMem = OclToMem()()
   def toFun(to: Expr, f: Expr): Expr = fun(x => to(f(x)))
   val toGlobal: Expr = toMem(rise.core.types.AddressSpace.Global)
   def toGlobalFun(f: Expr): Expr = toFun(toGlobal, f)

@@ -18,6 +18,8 @@ object DSL {
   def depApp[K <: Kind](f: Expr, x: K#T): DepApp[K] = DepApp[K](f, x)()
   def literal(d: semantics.Data): Literal = Literal(d)
 
+  def toMem: ToMem = ToMem()()
+  def toMemFun(f: Expr): Expr = fun(x => toMem(f(x)))
   def makeArray(n: Int): MakeArray = primitives.MakeArray(n)()
   def cast: Cast = primitives.Cast()()
   def depJoin: DepJoin = primitives.DepJoin()()
