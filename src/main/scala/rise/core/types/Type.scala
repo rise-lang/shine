@@ -53,6 +53,7 @@ final case class DataTypeIdentifier(
     case d: DataTypeIdentifier => this.name == d.name
     case _                     => false
   }
+  override def hashCode(): Int = this.name.hashCode()
 }
 
 sealed trait ComposedType extends DataType

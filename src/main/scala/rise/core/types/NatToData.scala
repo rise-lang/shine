@@ -41,4 +41,5 @@ final case class NatToDataIdentifier(
     case n2d: NatToDataIdentifier => this.name == n2d.name
     case _                        => false
   }
+  override def hashCode(): Int = this.name.hashCode()
 }

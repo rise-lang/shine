@@ -27,4 +27,5 @@ final case class AddressSpaceIdentifier(
     case a: AddressSpaceIdentifier => this.name == a.name
     case _                         => false
   }
+  override def hashCode(): Int = this.name.hashCode()
 }
