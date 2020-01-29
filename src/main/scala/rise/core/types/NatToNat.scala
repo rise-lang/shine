@@ -42,6 +42,7 @@ final case class NatToNatIdentifier(
     case n2n: NatToNatIdentifier => this.name == n2n.name
     case _                       => false
   }
+  override def hashCode(): Int = this.name.hashCode()
 }
 
 final class NatToNatApply(val f: NatToNat, val n: Nat)

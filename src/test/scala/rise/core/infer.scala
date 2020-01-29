@@ -14,4 +14,22 @@ class infer extends test_util.Tests {
     val typed = infer(fun(x => l(1) + x))
     assert(typed.t == int ->: int)
   }
+
+  test("Type inference should be idempotent") {
+    val add: Expr = dtFun(dt0 => dtFun(dt1 => fun(
+      dt0 ->: dt0 ->: dt0
+    )((a, b) => {
+      cast((cast(a) :: dt1) + (cast(b) :: dt1)) :: dt0
+    })))
+
+    val once: Expr = infer(add)
+
+    val twice: Expr = infer(once)
+
+    assert(IsClosedForm(once))
+
+    assert(IsClosedForm(twice))
+
+    assert(once == twice)
+  }
 }
