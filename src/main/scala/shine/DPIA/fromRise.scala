@@ -681,7 +681,7 @@ object fromRise {
         fun[ExpType](exp"[idx($n), $read]", e =>
           IndexAsNat(n, e))
 
-      case (ocl.ToMem(),
+      case (ocl.OclToMem(),
       lt.DepFunType(las: lt.AddressSpaceIdentifier,
       lt.FunType(la: lt.DataType, _)))
       =>
