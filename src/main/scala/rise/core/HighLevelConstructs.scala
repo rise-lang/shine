@@ -51,6 +51,10 @@ object HighLevelConstructs {
     fun(a => fun(b => rec(n, a, b)))
   }
 
+  val takeBut: Expr = nFun(n =>
+    implN(m => implDT(dt => take(m) :: ((m + n) `.` dt) ->: (m `.` dt)))
+  )
+
   // TODO: Investigate. this might be wrong
   val partition2D: Expr = {
     import arithexpr.arithmetic.SteppedCase
