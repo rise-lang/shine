@@ -17,7 +17,8 @@ object infer {
   def apply(e: Expr): Expr = {
     // build set of constraints
     val constraintList = mutable.ArrayBuffer[Constraint]()
-    val typed_e = constrainTypes(e, constraintList, mutable.Map())
+    val unique_e = uniqueNames.enforce(e)
+    val typed_e = constrainTypes(unique_e, constraintList, mutable.Map())
     val constraints = constraintList.toSeq
     //constraints.foreach(println)
 
@@ -387,9 +388,11 @@ object infer {
         } else if (!j.isExplicit) {
           Solution.subs(j, i)
         } else {
-          error(s"cannot unify $i and $j, they are both bound")
+          error(s"cannot unify $i and $j, they are both explicit")
         }
-      case _ if occurs(i, t)  => error(s"circular use: $i occurs in $t")
+      case _ if i.isExplicit =>
+        error(s"cannot substitute $i, it is explicit")
+      case _ if occurs(i, t) => error(s"circular use: $i occurs in $t")
       case _ if !i.isExplicit => Solution.subs(i, t)
     }
   }
