@@ -51,7 +51,7 @@ object HighLevelConstructs {
     fun(a => fun(b => rec(n, a, b)))
   }
 
-  val takeBut: Expr = nFun(n =>
+  val dropLast: Expr = nFun(n =>
     implN(m => implDT(dt => take(m) :: ((m + n) `.` dt) ->: (m `.` dt)))
   )
 
