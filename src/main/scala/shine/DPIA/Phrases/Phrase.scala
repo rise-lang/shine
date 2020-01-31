@@ -141,10 +141,10 @@ object Phrase {
               Identifier(idMap.getOrElse(name, name),
                 VisitAndRebuild.visitPhraseTypeAndRebuild(t, this)).asInstanceOf[Phrase[T]])
             case l @ Lambda(x, _) =>
-              val newMap = idMap + (x.name -> freshName("s"))
+              val newMap = idMap + (x.name -> freshName(x.name.takeWhile(_.isLetter)))
               Continue(l, Renaming(newMap))
             case dl @ DepLambda(x, _) =>
-              val newMap = idMap + (x.name -> freshName("s"))
+              val newMap = idMap + (x.name -> freshName(x.name.takeWhile(_.isLetter)))
               Continue(dl, Renaming(newMap))
             case _ => Continue(p, this)
           }
