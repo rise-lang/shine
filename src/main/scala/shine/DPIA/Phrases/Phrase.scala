@@ -132,10 +132,51 @@ object Phrase {
   def substitute[T1 <: PhraseType, T2 <: PhraseType](ph: Phrase[T1],
                                                      `for`: Phrase[T1],
                                                      in: Phrase[T2]): Phrase[T2] = {
+    var substCounter = 0
     object Visitor extends VisitAndRebuild.Visitor {
+      def renaming[X <: PhraseType](p: Phrase[X], proc: String => String): Phrase[X] = {
+        case class Renaming(idMap: Map[String, String]) extends VisitAndRebuild.Visitor {
+          override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = p match {
+            case Identifier(name, t) => Stop(
+              Identifier(idMap(name),
+                VisitAndRebuild.visitPhraseTypeAndRebuild(t, this)).asInstanceOf[Phrase[T]])
+            case Lambda(x, b) =>
+              val newMap = idMap + (x.name -> proc(x.name))
+              Stop(Lambda(VisitAndRebuild(x, Renaming(newMap)).asInstanceOf[Identifier[PhraseType]],
+                VisitAndRebuild(b, Renaming(newMap))))
+            case dl@DepLambda(x, _) =>
+              val newMap = idMap + (x.name -> proc(x.name))
+              Continue(dl, Renaming(newMap))
+            case _ => Continue(p, this)
+          }
+
+          override def nat[N <: Nat](n: N): N = n.visitAndRebuild({
+            case i: NatIdentifier => idMap.get(i.name) match {
+              case Some(newName) => NatIdentifier(newName)
+              case None => i
+            }
+            case ae => ae
+          }).asInstanceOf[N]
+
+          override def data[T <: DataType](dt: T): T = (dt match {
+            case i: DataTypeIdentifier => idMap.get(i.name) match {
+              case Some(newName) => DataTypeIdentifier(newName)
+              case None => i
+            }
+            case dt => dt
+          }).asInstanceOf[T]
+        }
+        VisitAndRebuild(p, Renaming(Map()))
+      }
       override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
         p match {
-          case `for` => Stop(ph.asInstanceOf[Phrase[T]])
+          case `for` =>
+            substCounter += 1
+            Stop(if (substCounter == 0) {
+              ph.asInstanceOf[Phrase[T]]
+            } else {
+              renaming(ph, s => s"$s$substCounter").asInstanceOf[Phrase[T]]
+            })
           case Natural(n) =>
             val v = NatIdentifier(`for` match {
               case Identifier(name, _) => name
