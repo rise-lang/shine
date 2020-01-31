@@ -52,7 +52,7 @@ object VisitAndRebuild {
           case DepLambda(a, p) => a match {
             case n: NatIdentifier =>
               DepLambda[NatKind, PhraseType](
-                v.nat(n).asInstanceOf[NatIdentifier], apply(p, v))
+                NatIdentifier(v.nat(n).asInstanceOf[arithexpr.arithmetic.NamedVar].name), apply(p, v))
             case dt: DataTypeIdentifier =>
               DepLambda[DataKind, PhraseType](
                 v.data(dt).asInstanceOf[DataTypeIdentifier], apply(p, v))
@@ -121,7 +121,7 @@ object VisitAndRebuild {
     case DepFunType(x, t)           => x match {
       case n: NatIdentifier =>
         DepFunType[NatKind, PhraseType](
-          v.nat(n).asInstanceOf[NatIdentifier], visitPhraseTypeAndRebuild(t, v))
+          NatIdentifier(v.nat(n).asInstanceOf[arithexpr.arithmetic.NamedVar].name), visitPhraseTypeAndRebuild(t, v))
       case dt: DataTypeIdentifier =>
         DepFunType[DataKind, PhraseType](
           v.data(dt).asInstanceOf[DataTypeIdentifier], visitPhraseTypeAndRebuild(t, v))

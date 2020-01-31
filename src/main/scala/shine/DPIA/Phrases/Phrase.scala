@@ -134,18 +134,17 @@ object Phrase {
                                                      in: Phrase[T2]): Phrase[T2] = {
     var substCounter = 0
     object Visitor extends VisitAndRebuild.Visitor {
-      def renaming[X <: PhraseType](p: Phrase[X], proc: String => String): Phrase[X] = {
+      def renaming[X <: PhraseType](p: Phrase[X]): Phrase[X] = {
         case class Renaming(idMap: Map[String, String]) extends VisitAndRebuild.Visitor {
           override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = p match {
             case Identifier(name, t) => Stop(
-              Identifier(idMap(name),
+              Identifier(idMap.getOrElse(name, name),
                 VisitAndRebuild.visitPhraseTypeAndRebuild(t, this)).asInstanceOf[Phrase[T]])
-            case Lambda(x, b) =>
-              val newMap = idMap + (x.name -> proc(x.name))
-              Stop(Lambda(VisitAndRebuild(x, Renaming(newMap)).asInstanceOf[Identifier[PhraseType]],
-                VisitAndRebuild(b, Renaming(newMap))))
-            case dl@DepLambda(x, _) =>
-              val newMap = idMap + (x.name -> proc(x.name))
+            case l @ Lambda(x, _) =>
+              val newMap = idMap + (x.name -> freshName("s"))
+              Continue(l, Renaming(newMap))
+            case dl @ DepLambda(x, _) =>
+              val newMap = idMap + (x.name -> freshName("s"))
               Continue(dl, Renaming(newMap))
             case _ => Continue(p, this)
           }
@@ -171,12 +170,9 @@ object Phrase {
       override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
         p match {
           case `for` =>
+            val newPh = if (substCounter == 0) ph else renaming(ph)
             substCounter += 1
-            Stop(if (substCounter == 0) {
-              ph.asInstanceOf[Phrase[T]]
-            } else {
-              renaming(ph, s => s"$s$substCounter").asInstanceOf[Phrase[T]]
-            })
+            Stop(newPh.asInstanceOf[Phrase[T]])
           case Natural(n) =>
             val v = NatIdentifier(`for` match {
               case Identifier(name, _) => name
