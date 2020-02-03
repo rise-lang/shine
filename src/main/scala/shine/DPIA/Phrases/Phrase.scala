@@ -150,18 +150,14 @@ object Phrase {
           }
 
           override def nat[N <: Nat](n: N): N = n.visitAndRebuild({
-            case i: NatIdentifier => idMap.get(i.name) match {
-              case Some(newName) => NatIdentifier(newName)
-              case None => i
-            }
+            case i: NatIdentifier =>
+              NatIdentifier(idMap.getOrElse(i.name, i.name))
             case ae => ae
           }).asInstanceOf[N]
 
           override def data[T <: DataType](dt: T): T = (dt match {
-            case i: DataTypeIdentifier => idMap.get(i.name) match {
-              case Some(newName) => DataTypeIdentifier(newName)
-              case None => i
-            }
+            case i: DataTypeIdentifier =>
+              DataTypeIdentifier(idMap.getOrElse(i.name, i.name))
             case dt => dt
           }).asInstanceOf[T]
         }
