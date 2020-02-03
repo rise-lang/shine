@@ -27,8 +27,11 @@ object VisitAndRebuild {
     def addressSpace(a: AddressSpace): AddressSpace = a
 
     abstract class Result[+T]
+
     case class Stop[T <: PhraseType](p: Phrase[T]) extends Result[Phrase[T]]
+
     case class Continue[T <: PhraseType](p: Phrase[T], v: Visitor) extends Result[Phrase[T]]
+
   }
 
   def apply[T <: PhraseType](phrase: Phrase[T], v: Visitor): Phrase[T] = {
@@ -173,9 +176,8 @@ object VisitAndRebuild {
       }
     }
 
-  private def visitDataTypeAndRebuild(dt: DataType, v: Visitor): DataType = {
-    val newData = v.data(dt)
-    newData match {
+  private def visitDataTypeAndRebuild(dt: DataType, v: Visitor): DataType =
+    v.data(dt) match {
       case i: IndexType => IndexType(v.nat(i.size))
       case a: ArrayType =>
         ArrayType(v.nat(a.size), visitDataTypeAndRebuild(a.elemType, v))
@@ -184,7 +186,6 @@ object VisitAndRebuild {
       case r: PairType =>
         PairType(visitDataTypeAndRebuild(r.fst, v),
           visitDataTypeAndRebuild(r.snd, v))
-      case _ => newData
+      case d => d
     }
-  }
 }
