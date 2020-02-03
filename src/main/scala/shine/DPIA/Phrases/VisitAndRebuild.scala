@@ -173,8 +173,9 @@ object VisitAndRebuild {
       }
     }
 
-  private def visitDataTypeAndRebuild(dt: DataType, v: Visitor): DataType =
-    v.data(dt) match {
+  private def visitDataTypeAndRebuild(dt: DataType, v: Visitor): DataType = {
+    val newData = v.data(dt)
+    newData match {
       case i: IndexType => IndexType(v.nat(i.size))
       case a: ArrayType =>
         ArrayType(v.nat(a.size), visitDataTypeAndRebuild(a.elemType, v))
@@ -183,6 +184,7 @@ object VisitAndRebuild {
       case r: PairType =>
         PairType(visitDataTypeAndRebuild(r.fst, v),
           visitDataTypeAndRebuild(r.snd, v))
-      case d => d
+      case _ => newData
     }
+  }
 }
