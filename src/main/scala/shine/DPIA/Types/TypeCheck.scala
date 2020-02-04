@@ -94,14 +94,13 @@ object TypeCheck {
     }
   }
 
-  //TODO make private and remove possibly superfluous type checking although types are checking during
-  // object construction
   private def subTypeCheck(subType: PhraseType, superType: PhraseType): Boolean = {
     if (subType == superType) return true
 
+    //FIXME does not account for AccessTypeIdentifiers
     (subType, superType) match {
       case (ExpType(bSub: DataType, accessSub), ExpType(bSuper, _)) =>
-        bSub == bSuper && dataTypeNotComposedOfArrayTypes(bSub) && accessSub == read
+        bSub == bSuper && notContainingArrayType(bSub) && accessSub == read
       case (FunType(subInT, subOutT), FunType(superInT, superOutT)) =>
         subTypeCheck(superInT, subInT) && subTypeCheck(subOutT,  superOutT)
       case (DepFunType(subInT, subOutT), DepFunType(superInT, superOutT)) =>
@@ -111,10 +110,10 @@ object TypeCheck {
   }
 
   //TODO How do we deal with NatToData etc?
-  private def dataTypeNotComposedOfArrayTypes(composed: DataType): Boolean = composed match {
+  private def notContainingArrayType(composed: DataType): Boolean = composed match {
       case _: BasicType => true
       case PairType(first, second) =>
-        dataTypeNotComposedOfArrayTypes(first) && dataTypeNotComposedOfArrayTypes(second)
+        notContainingArrayType(first) && notContainingArrayType(second)
       case _ => false
   }
 }

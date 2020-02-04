@@ -33,7 +33,7 @@ final case class Map(n: Nat,
     import TranslationToImperative._
 
     //TODO Understand the Fede Translation better and choose correct AccessType for x!!!
-    val x = Identifier(freshName("fede_x"), ExpType(dt1, write))
+    val x = Identifier(freshName("fede_x"), ExpType(dt1, access))
 
     val otype = AccType(dt2)
     val o = Identifier(freshName("fede_o"), otype)

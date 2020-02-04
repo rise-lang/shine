@@ -81,7 +81,8 @@ object NatToDataApply {
   def unapply(arg: NatToDataApply): Option[(NatToData, Nat)] = Some((arg.f, arg.n))
 }
 
-final case class DataTypeIdentifier(name: String) extends DataType with Kind.Identifier {
+final case class DataTypeIdentifier(name: String)
+  extends DataType with Kind.Identifier {
   override def toString: String = name
 }
 

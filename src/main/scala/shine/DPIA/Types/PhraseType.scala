@@ -6,13 +6,14 @@ import shine.DPIA._
 
 sealed trait PhraseType
 
-sealed abstract class BasePhraseTypes extends PhraseType
+sealed abstract class BasePhraseType extends PhraseType
 
-final case class ExpType(dataType: DataType, accessType: AccessType) extends BasePhraseTypes {
+final case class ExpType(dataType: DataType, accessType: AccessType)
+  extends BasePhraseType {
   override def toString = s"exp[$dataType, $accessType]"
 }
 
-final case class AccType(dataType: DataType) extends BasePhraseTypes {
+final case class AccType(dataType: DataType) extends BasePhraseType {
   override def toString = s"acc[$dataType]"
 }
 
@@ -22,8 +23,9 @@ sealed case class CommType() extends PhraseType {
 
 object comm extends CommType
 
-final case class PhrasePairType[T1 <: PhraseType, T2 <: PhraseType](t1: T1, t2: T2)
-  extends PhraseType {
+final case class PhrasePairType[T1 <: PhraseType, T2 <: PhraseType](
+  t1: T1,
+  t2: T2) extends PhraseType {
   override def toString = s"$t1 x $t2"
 }
 
@@ -43,7 +45,29 @@ final case class DepFunType[K <: Kind, +R <: PhraseType](x: K#I, t: R)
   override def toString = s"(${x.name}: ${kn.get}) -> $t"
 }
 
+final case class PhraseTypeIdentifier(name: String)
+  extends PhraseType {
+  override def toString = s"_${name}"
+}
+
 object PhraseType {
+
+  def substitute(pt: PhraseType,
+                `for`: PhraseTypeIdentifier,
+                in: PhraseType
+  ): PhraseType = in match {
+    case pair: PhrasePairType[_, _] =>
+      PhrasePairType(
+        substitute(pt, `for`, pair.t1),
+        substitute(pt, `for`, pair.t2))
+    case f: FunType[_, _] =>
+      FunType(substitute(pt, `for`, f.inT), substitute(pt, `for`, f.outT))
+    case df: DepFunType[_, _] =>
+        DepFunType(df.x, substitute (pt, `for`, df.t) ) (df.kn)
+    case i: PhraseTypeIdentifier => if (i == `for`) pt else i
+    case self => self
+  }
+
 
   def substitute[K <: Kind, T <: PhraseType](x: K#T, `for`: K#I, in: Phrase[T]): Phrase[T] =(x, `for`) match {
     case (dt: DataType, forDt: DataTypeIdentifier)        => substitute(dt, forDt, in)
@@ -81,7 +105,7 @@ object PhraseType {
 
   def substitute(dt: DataType, `for`: DataType, in: PhraseType): PhraseType = {
     in match {
-      case b: BasePhraseTypes => b match {
+      case b: BasePhraseType => b match {
         case e: ExpType => ExpType(DataType.substitute(dt, `for`, e.dataType), e.accessType)
         case a: AccType => AccType(DataType.substitute(dt, `for`, a.dataType))
       }
@@ -131,7 +155,7 @@ object PhraseType {
 
   def substitute(ae: Nat, `for`: Nat, in: PhraseType): PhraseType = {
     in match {
-      case b: BasePhraseTypes => b match {
+      case b: BasePhraseType => b match {
         case e: ExpType => ExpType(DataType.substitute(ae, `for`, e.dataType), e.accessType)
         case a: AccType => AccType(DataType.substitute(ae, `for`, a.dataType))
       }

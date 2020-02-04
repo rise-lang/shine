@@ -18,6 +18,7 @@ final case class DepJoin(n: Nat,
                          array: Phrase[ExpType])
   extends ExpPrimitive {
 
+  //FIXME should be polymorphic over the access type
   override val t: ExpType = {
     (n: Nat) ->: (lenF: NatToNat) ->: (dt: DataType) ->:
       (array :: exp"[$n.${NatToDataLambda(n, (i:NatIdentifier) => ArrayType(lenF(i), dt))}, $read]") ->:

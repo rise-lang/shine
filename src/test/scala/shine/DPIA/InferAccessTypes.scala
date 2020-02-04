@@ -2,7 +2,7 @@ package shine.DPIA
 
 import rise.core.DSL._
 import rise.core.types.infer
-import shine.DPIA.inferDPIATypes._
+import shine.DPIA.inferAccessAnnotation._
 import shine.DPIA.RiseExprAnnotated._
 import shine.DPIA.Types.{read, write}
 import shine.DPIA.access.{AccessTypeAnnotation, DataType, FunType}
@@ -17,14 +17,14 @@ class InferAccessTypes extends test_util.Tests {
       FunType(DataType(read), DataType(read)))
 
   test("(read -> read) is inferred for id.") {
-    val inferredId = inferDPIATypes(id)
+    val inferredId = inferAccessAnnotation(id)
     assertResult(annotId)(inferredId)
   }
 
   test("(read -> write) is inferred for id over array with mapSeq") {
     val arrIdent = identifier(rise.core.freshName("arrIdent"))
     val arrId = infer(lambda(arrIdent, arrIdent |> mapSeq(id)))
-    val inferredArrId = inferDPIATypes(arrId)
+    val inferredArrId = inferAccessAnnotation(arrId)
     val annotArrId =
       Lambda[AccessTypeAnnotation](
         Identifier(arrIdent.name, DataType(read)),

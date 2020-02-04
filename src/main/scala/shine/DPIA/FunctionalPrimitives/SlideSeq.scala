@@ -12,6 +12,7 @@ import shine.DPIA._
 import scala.xml.Elem
 
 // performs a sequential slide, taking advantage of the space/time overlapping reuse opportunity
+//TODO should this be polymorphic over the access type?tex
 final case class SlideSeq(rot: lp.SlideSeq.Rotate,
                           n: Nat,
                           sz: Nat,

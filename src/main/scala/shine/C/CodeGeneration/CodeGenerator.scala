@@ -20,12 +20,12 @@ import scala.language.implicitConversions
 
 object CodeGenerator {
 
-  final case class Environment(identEnv: immutable.Map[Identifier[_ <: BasePhraseTypes], C.AST.DeclRef],
+  final case class Environment(identEnv: immutable.Map[Identifier[_ <: BasePhraseType], C.AST.DeclRef],
                                commEnv: immutable.Map[Identifier[CommType], C.AST.Stmt],
                                contEnv: immutable.Map[Identifier[ExpType ->: CommType], Phrase[ExpType] => Environment => C.AST.Stmt],
                                letNatEnv: immutable.Map[LetNatIdentifier, Phrase[PhraseType]]
                               ) {
-    def updatedIdentEnv(kv: (Identifier[_ <: BasePhraseTypes], C.AST.DeclRef)): Environment = {
+    def updatedIdentEnv(kv: (Identifier[_ <: BasePhraseType], C.AST.DeclRef)): Environment = {
       this.copy(identEnv = identEnv + kv)
     }
 
@@ -950,7 +950,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
   }
 
   protected def applySubstitutions(n: Nat,
-                                   identEnv: immutable.Map[Identifier[_ <: BasePhraseTypes], C.AST.DeclRef]): Nat = {
+                                   identEnv: immutable.Map[Identifier[_ <: BasePhraseType], C.AST.DeclRef]): Nat = {
     // lift the substitutions from the Phrase level to the ArithExpr level
     val substitionMap = identEnv.filter(_._1.t match {
       case ExpType(IndexType(_), _) => true

@@ -17,6 +17,7 @@ final case class Unzip(n: Nat,
                        e: Phrase[ExpType])
   extends ExpPrimitive {
 
+  //FIXME has to be polymorphic over the access type
   override val t: ExpType =
     (n: Nat) ->: (dt1: DataType) ->: (dt2: DataType) ->:
       (e :: exp"[$n.($dt1 x $dt2), $read]") ->:

@@ -8,6 +8,7 @@ import shine.DPIA._
 
 import scala.language.reflectiveCalls
 
+//FIXME should be polymorphic over the access type
 final case class Slide(n: Nat,
                        sz: Nat,
                        sp: Nat,
@@ -22,8 +23,7 @@ final case class Slide(n: Nat,
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
-
-    con(this)(λ(exp"[$n.$sz.$dt, $read]")(x => A :=|dt"[$n.$sz.$dt]"| x ))
+    ???
   }
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])

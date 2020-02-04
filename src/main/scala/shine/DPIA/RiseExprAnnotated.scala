@@ -1,48 +1,47 @@
 package shine.DPIA
 
-import rise.core.Expr
 import rise.core.types.{Kind, KindName}
-import rise.{core => r}
+import shine.DPIA.Types.PhraseType
 
 private object RiseExprAnnotated {
-  sealed abstract class Expr[M <: MetaData] {
-    val meta: M
+  sealed abstract class Expr {
+    val pt: PhraseType
   }
 
-  final case class Identifier[M <: MetaData](
+  final case class Identifier(
     name: String,
-    override val meta: M
-  ) extends Expr[M]
+    override val pt: PhraseType
+  ) extends Expr
 
-  final case class Lambda[M <: MetaData](
-    x: Identifier[M],
-    e: Expr[M],
-    override val meta: M
-  ) extends Expr[M]
+  final case class Lambda(
+    x: Identifier,
+    e: Expr,
+    override val pt: PhraseType
+  ) extends Expr
 
-  final case class App[M <: MetaData](
-    f: Expr[M],
-    e: Expr[M],
-    override val meta: M
-  ) extends Expr[M]
+  final case class App(
+    f: Expr,
+    e: Expr,
+    override val pt: PhraseType
+  ) extends Expr
 
-  final case class DepLambda[M <: MetaData, K <: Kind: KindName](
+  final case class DepLambda[K <: Kind: KindName](
     x: K#I with Kind.Explicitness,
-    e: Expr[M],
-    override val meta: M
-  ) extends Expr[M]
+    e: Expr,
+    override val pt: PhraseType
+  ) extends Expr
 
-  final case class DepApp[M <: MetaData, K <: Kind](
-    f: Expr[M],
+  final case class DepApp[K <: Kind](
+    f: Expr,
     x: K#T,
-    override val meta: M
-  ) extends Expr[M]
+    override val pt: PhraseType
+  ) extends Expr
 
-  final case class Literal[M <: MetaData](
-    override val meta: M
-  ) extends Expr[M]
+  final case class Literal(
+    override val pt: PhraseType
+  ) extends Expr
 
-  final case class Primitive[M <: MetaData](
-    override val meta: M
-  ) extends Expr[M]
+  final case class Primitive(
+    override val pt: PhraseType
+  ) extends Expr
 }
