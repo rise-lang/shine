@@ -380,11 +380,10 @@ object cameraPipe {
     )
   })))
 
-  /* TODO: Halide reference is casting and shifting the input
-  val shift = ??? >> map(map(fun(p => cast(p) :: i16)))
-  camera_pipe:
-    (h`.`w`.`u16) ->: (3`.`((h - 24) / 32) * 32)`.`((w - 32) / 32) * 32)`.`u8)
-  */
+  // TODO: Halide reference is casting and shifting the input
+  // val shift = ??? >> map(map(fun(p => cast(p) :: i16)))
+  // camera_pipe:
+  // (h`.`w`.`u16) ->: (3`.`((h - 24) / 32) * 32)`.`((w - 32) / 32) * 32)`.`u8)
 
   val camera_pipe: Expr = nFun(h => nFun(w => nFun(hm => nFun(wm => fun(
     ((2*(h+2))`.`(2*(w+2))`.`i16) ->:

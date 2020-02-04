@@ -37,8 +37,8 @@ class dot extends test_util.Tests {
     val N = phrase.t.asInstanceOf[`(nat)->:`[ExpType ->: ExpType]].x
     val dt = f32
     assertResult(
-      N `()->:` exp"[$N.$dt, $read]" ->: exp"[$N.$dt, $read]" ->:
-        exp"[$dt, $write]"
+      N `()->:` (exp"[$N.$dt, $read]" ->: exp"[$N.$dt, $read]" ->:
+        exp"[$dt, $write]")
     ) {
       phrase.t
     }

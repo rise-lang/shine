@@ -63,7 +63,8 @@ sealed case class VectorType(size: Nat, elemType: ScalarType)
 }
 
 object vec {
-  def apply(size: Nat, elemType: ScalarType) = VectorType(size, elemType)
+  def apply(size: Nat, elemType: ScalarType): VectorType =
+    VectorType(size, elemType)
 }
 
 final class NatToDataApply(val f: NatToData, val n: Nat) extends DataType {
