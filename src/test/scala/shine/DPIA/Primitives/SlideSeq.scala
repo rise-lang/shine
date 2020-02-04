@@ -8,12 +8,8 @@ import util.{Execute, gen}
 class SlideSeq extends test_util.Tests {
   val add = fun(a => fun(b => a + b))
 
-  test("Simple example should generate C code producing the expected result on a test") {
-    val e = nFun(n => fun(ArrayType(n, int))(a =>
-      a |> slideSeq(Values)(3)(1)(fun(x => x))(reduceSeq(add)(l(0)))
-    ))
+  def check3pSum(e: rise.core.Expr): Unit = {
     val p = gen.CProgram(e)
-
     val testCode = s"""
 #include <stdio.h>
 
@@ -41,7 +37,17 @@ int main(int argc, char** argv) {
 }
 """
     Execute(testCode)
+  }
 
-    println(testCode)
+  test("3 point sum value rotation: generated C code gives the expected result") {
+    check3pSum(nFun(n => fun(ArrayType(n, int))(a =>
+      a |> slideSeq(Values)(3)(1)(fun(x => x))(reduceSeq(add)(l(0)))
+    )))
+  }
+
+  test("3 point sum index rotation: generated C code gives the expected result") {
+    check3pSum(nFun(n => fun(ArrayType(n, int))(a =>
+      a |> slideSeq(Indices)(3)(1)(fun(x => x))(reduceSeq(add)(l(0)))
+    )))
   }
 }

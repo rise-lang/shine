@@ -47,11 +47,11 @@ final case class SlideSeq(rot: lp.SlideSeq.Rotate,
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
-    import shine.DPIA.IntermediatePrimitives.SlideSeqIValues
+    import shine.DPIA.IntermediatePrimitives.{SlideSeqIValues, SlideSeqIIndices}
 
     val I = rot match {
       case lp.SlideSeq.Values => SlideSeqIValues.apply _
-      case lp.SlideSeq.Indices => ??? // SlideSeqIIndices.apply _
+      case lp.SlideSeq.Indices => SlideSeqIIndices.apply _
     }
 
     con(input)(fun(expT(inputSize`.`dt1, read))(x =>

@@ -1,8 +1,9 @@
-package shine.DPIA.IntermediatePrimitives
+package shine.OpenCL.IntermediatePrimitives
 
 import shine.DPIA.DSL._
-import shine.DPIA.FunctionalPrimitives.{Drop, Take}
-import shine.DPIA.ImperativePrimitives._
+import shine.DPIA.FunctionalPrimitives.{Cycle, Drop, Take}
+import shine.DPIA.ImperativePrimitives.{CycleAcc, DropAcc, ForNat, TakeAcc}
+import shine.DPIA.IntermediatePrimitives.MapSeqI
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA.Types.DataType._
@@ -10,8 +11,9 @@ import shine.DPIA._
 
 import scala.language.reflectiveCalls
 
-object SlideSeqIValues {
+object OpenCLSlideSeqIIndices {
   def apply(
+    a: AddressSpace,
     n: Nat,
     size: Nat,
     step: Nat,
@@ -26,24 +28,24 @@ object SlideSeqIValues {
     val inputSize = step * n + size - step
 
     // TODO: unroll flags?
-    `new`(size`.`dt1, fun(varT(size`.`dt1))(rs => {
+    shine.OpenCL.DSL.`new`(a)(size`.`dt1, buffer => {
       // prologue initialisation
       MapSeqI(size - 1, dt1, dt1, write_dt1,
         Take(size - 1, inputSize - size + 1, read, dt1, input),
-        TakeAcc(size - 1, size - size + 1, dt1, rs.wr), unroll = true) `;`
+        TakeAcc(size - 1, size - size + 1, dt1, buffer.wr)) `;`
       // core loop
       ForNat(n, _Λ_[NatKind]()(i => {
         // load next value
         write_dt1(
-          Drop(size - 1, inputSize - size + 1, read, dt1, input) `@` i
-        )(rs.wr `@` (size - 1)) `;`
+          Drop(size - 1, inputSize - size + 1, read, dt1, input) `@` i,
+        )(DropAcc(size - 1, n, dt1,
+          CycleAcc(size - 1 + n, size, dt1, buffer.wr)) `@` i
+        ) `;`
         // compute
-        f(rs.rd)(output `@` i) `;`
-        // rotate
-        MapSeqI(size - 1, dt1, dt1, write_dt1,
-          Drop(1, size - 1, read, dt1, rs.rd),
-          TakeAcc(size - 1, 1, dt1, rs.wr), unroll = true)
+        f(Take(3, n - i - 3, read, dt1,
+          Drop(i, n - i, read, dt1, Cycle(n, size, dt1, buffer.rd)))
+        )(output `@` i)
       }), unroll = false)
-    }))
+    })
   }
 }

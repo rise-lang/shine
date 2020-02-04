@@ -12,7 +12,8 @@ import shine.DPIA._
 
 import scala.xml.Elem
 
-// performs a sequential slide, taking advantage of the space/time overlapping reuse opportunity
+// performs a sequential slide,
+// taking advantage of the space/time overlapping reuse opportunity
 final case class OpenCLSlideSeq(rot: lp.SlideSeq.Rotate,
                                 a: AddressSpace,
                                 n: Nat,
@@ -28,7 +29,8 @@ final case class OpenCLSlideSeq(rot: lp.SlideSeq.Rotate,
   val inputSize: Nat with SimplifiedExpr = sp * n + sz - sp
 
   override val t: ExpType =
-    (a: AddressSpace) ~>: (n: Nat) ~>: (sz: Nat) ~>: (sp: Nat) ~>: (dt1: DataType) ~>: (dt2: DataType) ~>:
+    (a: AddressSpace) ~>: (n: Nat) ~>: (sz: Nat) ~>: (sp: Nat) ~>:
+      (dt1: DataType) ~>: (dt2: DataType) ~>:
       (write_dt1 :: expT(dt1, read) ->: expT(dt1, write)) ~>:
       (f :: expT(sz`.`dt1, read) ->: expT(dt2, write)) ~>:
       (input :: expT(inputSize`.`dt1, read)) ~>:
@@ -36,7 +38,8 @@ final case class OpenCLSlideSeq(rot: lp.SlideSeq.Rotate,
 
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     OpenCLSlideSeq(rot,
-      v.addressSpace(a), v.nat(n), v.nat(sz), v.nat(sp), v.data(dt1), v.data(dt2),
+      v.addressSpace(a), v.nat(n), v.nat(sz), v.nat(sp),
+      v.data(dt1), v.data(dt2),
       VisitAndRebuild(write_dt1, v),
       VisitAndRebuild(f, v),
       VisitAndRebuild(input, v))
@@ -48,13 +51,14 @@ final case class OpenCLSlideSeq(rot: lp.SlideSeq.Rotate,
   }
 
   override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommType] = {
+                                  (implicit context: TranslationContext)
+  : Phrase[CommType] = {
     import TranslationToImperative._
-    import shine.OpenCL.IntermediatePrimitives.OpenCLSlideSeqIValues
+    import shine.OpenCL.IntermediatePrimitives.{OpenCLSlideSeqIValues, OpenCLSlideSeqIIndices}
 
     val I = rot match {
       case lp.SlideSeq.Values => OpenCLSlideSeqIValues.apply _
-      case lp.SlideSeq.Indices => ??? // SlideSeqIIndices.apply _
+      case lp.SlideSeq.Indices => OpenCLSlideSeqIIndices.apply _
     }
 
     con(input)(fun(expT(inputSize`.`dt1, read))(x =>
