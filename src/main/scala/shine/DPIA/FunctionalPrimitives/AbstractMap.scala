@@ -5,6 +5,7 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 import scala.xml.Elem
@@ -19,9 +20,9 @@ abstract class AbstractMap(val n: Nat,
   def makeMap: (Nat, DataType, DataType, Phrase[ExpType ->: ExpType], Phrase[ExpType]) => AbstractMap
 
   override val t: ExpType =
-    (n: Nat) ->: (dt1: DataType) ->: (dt2: DataType) ->:
-      (f :: t"exp[$dt1, $read] -> exp[$dt2, $write]") ->:
-      (array :: exp"[$n.$dt1, $read]") ->: exp"[$n.$dt2, $write]"
+    (n: Nat) ~>: (dt1: DataType) ~>: (dt2: DataType) ~>:
+      (f :: expT(dt1, read) ->: expT(dt2, write)) ~>:
+      (array :: expT(n`.`dt1, read)) ~>: expT(n`.`dt2, write)
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     makeMap(fun.nat(n), fun.data(dt1), fun.data(dt2), VisitAndRebuild(f, fun), VisitAndRebuild(array, fun))

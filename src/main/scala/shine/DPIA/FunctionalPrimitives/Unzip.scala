@@ -7,6 +7,7 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA.{Phrases, _}
 
 import scala.xml.Elem
@@ -18,9 +19,9 @@ final case class Unzip(n: Nat,
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (n: Nat) ->: (dt1: DataType) ->: (dt2: DataType) ->:
-      (e :: exp"[$n.($dt1 x $dt2), $read]") ->:
-      ExpType(PairType(ArrayType(n, dt1), ArrayType(n, dt2)), read)
+    (n: Nat) ~>: (dt1: DataType) ~>: (dt2: DataType) ~>:
+      (e :: expT(n`.`(dt1 x dt2), read)) ~>:
+      expT((n`.`dt1) x (n`.`dt2), read)
 
   // TODO: fix parsing of this:
 //        exp"[($n.$dt1 x $n.$dt2)]"
@@ -55,7 +56,7 @@ final case class Unzip(n: Nat,
   override def fedeTranslation(env: Predef.Map[Identifier[ExpType], Identifier[AccType]])(C: Phrase[AccType ->: AccType]): Phrase[AccType] = {
     import TranslationToImperative._
 
-    fedAcc(env)(e)(fun(acc"[${C.t.inT.dataType}]")(o => UnzipAcc(n, dt1, dt2, C(o))))
+    fedAcc(env)(e)(fun(accT(C.t.inT.dataType))(o => UnzipAcc(n, dt1, dt2, C(o))))
   }
 
   override def acceptorTranslation(A: Phrase[AccType])
@@ -69,7 +70,7 @@ final case class Unzip(n: Nat,
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
-    con(e)(λ(exp"[$n.($dt1 x $dt2), $read]")(x =>
+    con(e)(λ(expT(n`.`(dt1 x dt2), read))(x =>
       C(Unzip(n, dt1, dt2, x)) ))
   }
 }

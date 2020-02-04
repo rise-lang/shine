@@ -5,6 +5,7 @@ import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 import scala.language.reflectiveCalls
@@ -16,9 +17,9 @@ final case class VectorFromScalar(n: Nat,
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (n: Nat) ->: (dt: ScalarType) ->:
-      (arg :: exp"[$dt, $read]") ->:
-        exp"[${VectorType(n, dt)}, $read]"
+    (n: Nat) ~>: (dt: ScalarType) ~>:
+      (arg :: expT(dt, read)) ~>:
+        expT(vec(n, dt), read)
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     VectorFromScalar(f.nat(n), f.data(dt), VisitAndRebuild(arg, f))
@@ -36,12 +37,12 @@ final case class VectorFromScalar(n: Nat,
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
-    con(arg)(λ(exp"[$dt, $read]")(e => A :=|VectorType(n, dt)| VectorFromScalar(n, dt, e) ))
+    con(arg)(λ(expT(dt, read))(e => A :=|VectorType(n, dt)| VectorFromScalar(n, dt, e) ))
   }
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
-    con(arg)(λ(exp"[$dt, $read]")(e => C(VectorFromScalar(n, dt, e)) ))
+    con(arg)(λ(expT(dt, read))(e => C(VectorFromScalar(n, dt, e)) ))
   }
 }

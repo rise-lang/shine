@@ -5,6 +5,7 @@ import shine.DPIA.FunctionalPrimitives.{Drop, Take}
 import shine.DPIA.ImperativePrimitives._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 import scala.language.reflectiveCalls
@@ -24,7 +25,7 @@ object SlideSeqIValues {
     val inputSize = step * n + size - step
 
     // TODO: unroll flags?
-    `new`(ArrayType(size, dt1), fun(exp"[$size.$dt1, $read]" x acc"[$size.$dt1]")(rs => {
+    `new`(size`.`dt1, fun(varT(size`.`dt1))(rs => {
       // prologue initialisation
       MapSeqI(size - 1, dt1, dt1, write_dt1,
         Take(size - 1, inputSize - size + 1, read, dt1, input),

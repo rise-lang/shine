@@ -19,9 +19,9 @@ final case class MapFst(dt1: DataType,
 {
 
   override val t: ExpType =
-    (dt1: DataType) ->: (dt2: DataType) ->: (dt3: DataType) ->:
-      (f :: exp"[$dt1, $read]" ->: exp"[$dt3, $read]") ->:
-      (record :: exp"[$dt1 x $dt2, $read]") ->: exp"[$dt3 x $dt2, $read]"
+    (dt1: DataType) ~>: (dt2: DataType) ~>: (dt3: DataType) ~>:
+      (f :: expT(dt1, read) ->: expT(dt3, read)) ~>:
+      (record :: expT(dt1 x dt2, read)) ~>: expT(dt3 x dt2, read)
 
   override def eval(s: Store): Data = {
     val fE = OperationalSemantics.eval(s, f)

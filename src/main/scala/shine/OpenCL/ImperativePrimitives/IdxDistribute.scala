@@ -4,6 +4,7 @@ import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics.{Data, Store}
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA.{Nat, Phrases, _}
 import shine.OpenCL.ParallelismLevel
 
@@ -18,9 +19,9 @@ final case class IdxDistribute(m: Nat,
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (m: Nat) ->: (n: Nat) ->: (stride: Nat) ->: (dt: DataType) ->:
-      (array :: exp"[$m.$dt, $read]") ->:
-        exp"[$n.$dt, $read]"
+    (m: Nat) ~>: (n: Nat) ~>: (stride: Nat) ~>: (dt: DataType) ~>:
+      (array :: expT(m`.`dt, read)) ~>:
+        expT(n`.`dt, read)
 
   override def eval(s: Store): Data = ???
 

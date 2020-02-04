@@ -5,6 +5,7 @@ import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 import scala.xml.Elem
@@ -18,8 +19,8 @@ final case class Partition(n: Nat,
 
 
   override val t: ExpType =
-    (n: Nat) ->: (m: Nat) ->: (lenF: NatToNat) ->: (dt: DataType) ->:
-      (array :: exp"[$n.$dt, $read]") ->: exp"[$m.${NatToDataLambda(m, (i:NatIdentifier) => ArrayType(lenF(i), dt))}, $read]"
+    (n: Nat) ~>: (m: Nat) ~>: (lenF: NatToNat) ~>: (dt: DataType) ~>:
+      (array :: expT(n`.`dt, read)) ~>: expT(m`.d`{ i => lenF(i)`.`dt }, read)
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     Partition(fun.nat(n), fun.nat(m), fun.natToNat(lenF), fun.data(dt), VisitAndRebuild(array, fun))
@@ -43,6 +44,6 @@ final case class Partition(n: Nat,
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
-    con(array)(λ(exp"[$n.$dt, $read]")(x => C(Partition(n, m, lenF, dt, x)) ))
+    con(array)(λ(expT(n`.`dt, read))(x => C(Partition(n, m, lenF, dt, x)) ))
   }
 }

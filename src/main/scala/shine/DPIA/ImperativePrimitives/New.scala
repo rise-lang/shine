@@ -14,8 +14,8 @@ final case class New(dt: DataType,
   extends CommandPrimitive {
 
   override val t: CommType =
-    (dt: DataType) ->: /* (addressSpace: AddressSpace) -> */
-      (f :: t"var[$dt] -> comm") ->: comm
+    (dt: DataType) ~>: /* (addressSpace: AddressSpace) -> */
+      (f :: varT(dt) ->: comm) ~>: comm
 
   override def eval(s: Store): Store = {
     val f_ = OperationalSemantics.eval(s, f)

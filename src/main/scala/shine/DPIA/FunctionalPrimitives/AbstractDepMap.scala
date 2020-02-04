@@ -6,6 +6,7 @@ import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 import scala.xml.Elem
@@ -20,10 +21,10 @@ abstract class AbstractDepMap(n: Nat,
 
   override val t: ExpType = {
     val k = f.t.x
-    (n: Nat) ->: (ft1: NatToData) ->: (ft2: NatToData) ->:
-      (f :: t"($k : nat) -> exp[${ ft1(k) }, $read] -> exp[${ ft2(k) }, $write]") ->:
-        (array :: ExpType(DepArrayType(n, ft1), read)) ->: // (array :: exp"[$n.$ft1, $read]") ->:
-          ExpType(DepArrayType(n, ft2), write) // exp"[$n.$ft2, $write]"
+    (n: Nat) ~>: (ft1: NatToData) ~>: (ft2: NatToData) ~>:
+      (f :: k ->: expT(ft1(k), read) ->: expT(ft2(k), write)) ~>:
+        (array :: expT(n`.d`ft1, read)) ~>: // (array :: exp"[$n.$ft1, $read]") ->:
+          expT(n`.d`ft2, write) // exp"[$n.$ft2, $write]"
   }
 
   override def acceptorTranslation(A: Phrase[AccType])
@@ -31,8 +32,8 @@ abstract class AbstractDepMap(n: Nat,
     import shine.DPIA.Compilation.TranslationToImperative._
     import shine.DPIA._
 
-    con(array)(λ(exp"[$n.$ft1, $read]")(x =>
-      makeMapI(n, ft1, ft2, _Λ_[NatKind]()((k: NatIdentifier) => λ(exp"[${ft1(k)}, $read]")(x => λ(acc"[${ft2(k)}]")(o => {
+    con(array)(λ(expT(n`.d`ft1, read))(x =>
+      makeMapI(n, ft1, ft2, _Λ_[NatKind]()((k: NatIdentifier) => λ(expT(ft1(k), read))(x => λ(accT(ft2(k)))(o => {
         acc(f(k)(x))(o)
       }))), x, A)))
   }
@@ -41,7 +42,7 @@ abstract class AbstractDepMap(n: Nat,
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
-    `new`(dt"[$n.$ft2]", λ(exp"[$n.$ft2, $read]" x acc"[$n.$ft2]")(tmp =>
+    `new`(n`.d`ft2, λ(varT(n`.d`ft2))(tmp =>
       acc(this)(tmp.wr) `;` C(tmp.rd) ))
   }
 
@@ -77,7 +78,7 @@ abstract class AbstractDepMap(n: Nat,
         return <map>???</map>
     }
     <map n={ToString(n)} ft1={ToString(ft1)} ft2={ToString(ft2)}>
-      <f type={ToString(k ->: ExpType(ft1(k), read) ->: ExpType(ft2(k), write))}>
+      <f type={ToString(k ~>: ExpType(ft1(k), read) ->: ExpType(ft2(k), write))}>
         {Phrases.xmlPrinter(f)}
       </f>
       <input type={ToString(ExpType(DepArrayType(n, ft1), read))}>

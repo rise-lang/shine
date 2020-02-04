@@ -92,7 +92,7 @@ object AdjustArraySizesForAllocations {
 
           val outerDimension = IdxDistributeAcc(adjSize, oldSize, stride, parallLevel, adjElemT, A)
 
-          val arr = identifier(freshName("x"), acc"[$adjElemT]")
+          val arr = identifier(freshName("x"), accT(adjElemT))
           val mapFunBody = adjustedAcceptor(parallInfo.tail, adjElemT, oldElemT, addrSpace)(arr)
 
           MapAcc(oldSize, adjElemT, mapFunBody.t.dataType, Lambda(arr, mapFunBody), outerDimension)
@@ -128,7 +128,7 @@ object AdjustArraySizesForAllocations {
 
           val outerDimension = IdxDistribute(adjSize, oldSize, stride, parallLevel, adjElemT, E)
 
-          val arr = identifier(freshName("arr"), exp"[$adjElemT, $read]")
+          val arr = identifier(freshName("arr"), expT(adjElemT, read))
           val mapFunBody = adjustedExpr(parallInfo.tail, adjElemT, oldElemT, addrSpace)(arr)
 
           Map(oldSize, adjElemT, mapFunBody.t.dataType, Lambda(arr, mapFunBody), outerDimension)

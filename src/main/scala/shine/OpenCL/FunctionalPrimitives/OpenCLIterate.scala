@@ -5,6 +5,7 @@ import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA.{Phrases, _}
 import shine.OpenCL.IntermediatePrimitives.OpenCLIterateIAcc
 
@@ -21,10 +22,10 @@ final case class OpenCLIterate(a: AddressSpace,
 
   override val t: ExpType = {
     val l = f.t.x
-    (a: AddressSpace) ->: (n: Nat) ->: (m: Nat) ->: (k: Nat) ->: (dt: DataType) ->:
-      (f :: t"($l : nat) -> exp[${l * n}.$dt, $read] -> exp[$l.$dt, $read]") ->:
-        (array :: exp"[${m * n.pow(k)}.$dt, $read]") ->:
-          exp"[$m.$dt, $read]"
+    (a: AddressSpace) ~>: (n: Nat) ~>: (m: Nat) ~>: (k: Nat) ~>: (dt: DataType) ~>:
+      (f :: l ->: expT({l * n}`.`dt, read) ->: expT(l`.`dt, read)) ~>:
+        (array :: expT({m * n.pow(k)}`.`dt, read)) ~>:
+          expT(m`.`dt, read)
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
@@ -38,7 +39,7 @@ final case class OpenCLIterate(a: AddressSpace,
   override def xmlPrinter: Elem = {
     val l = f.t.x
     <oclIterate a={ToString(a)} n={ToString(n)} m={ToString(m)} k={ToString(k)} dt={ToString(dt)}>
-      <f type={ToString(l ->: ExpType(ArrayType(l, dt), read) ->: ExpType(ArrayType(l /^ n, dt), read))}>
+      <f type={ToString(l ~>: ExpType(ArrayType(l, dt), read) ->: ExpType(ArrayType(l /^ n, dt), read))}>
         {Phrases.xmlPrinter(f)}
       </f>
       <input type={ToString(ExpType(ArrayType(m, dt), read))}>
@@ -54,9 +55,9 @@ final case class OpenCLIterate(a: AddressSpace,
                                   (implicit context: TranslationContext): Phrase[CommType] = {
     import shine.DPIA.Compilation.TranslationToImperative._
 
-    con(array)(λ(exp"[${m * n.pow(k)}.$dt, $read]")(x =>
+    con(array)(λ(expT({m * n.pow(k)}`.`dt, read))(x =>
       OpenCLIterateIAcc(a, n, m, k, dt, A,
-        _Λ_[NatKind]()(l => λ(acc"[$l.$dt]")(o => λ(exp"[${l * n}.$dt, $read]")(x => acc(f(l)(x))(o)))),
+        _Λ_[NatKind]()(l => λ(accT(l`.`dt))(o => λ(expT({l * n}`.`dt, read))(x => acc(f(l)(x))(o)))),
         x) ))
   }
 

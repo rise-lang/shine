@@ -5,6 +5,7 @@ import shine.DPIA.DSL.{λ, _}
 import shine.DPIA.Phrases.{ExpPrimitive, Phrase, VisitAndRebuild}
 import shine.DPIA.Semantics.OperationalSemantics.{Data, Store}
 import shine.DPIA.Types.{AccType, CommType, DataType, ExpType, _}
+import shine.DPIA.Types.DataType._
 import shine.DPIA.{->:, Nat, Phrases, _}
 
 import scala.xml.Elem
@@ -18,8 +19,8 @@ final case class PadClamp(n: Nat,
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (n: Nat) ->: (l: Nat) ->: (r: Nat) ->: (dt: DataType) ->:
-      (array :: exp"[$n.$dt, $read]") ->: exp"[${l + n + r}.$dt, $read]"
+    (n: Nat) ~>: (l: Nat) ~>: (r: Nat) ~>: (dt: DataType) ~>:
+      (array :: expT(n`.`dt, read)) ~>: expT({l + n + r}`.`dt, read)
 
   override def eval(s: Store): Data = ???
 
@@ -34,7 +35,7 @@ final case class PadClamp(n: Nat,
   override def continuationTranslation(C: Phrase[->:[ExpType, CommType]])
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
-    con(array)(λ(exp"[$n.$dt, $read]")(x => C(PadClamp(n, l, r, dt, x))))
+    con(array)(λ(expT(n`.`dt, read))(x => C(PadClamp(n, l, r, dt, x))))
   }
 
   override def xmlPrinter: Elem =

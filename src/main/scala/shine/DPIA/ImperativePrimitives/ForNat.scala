@@ -14,7 +14,7 @@ final case class ForNat(n: Nat,
 
   override val t: CommType = {
     val k = body.t.x
-    (n: Nat) ->: (body :: t"($k:nat) -> comm") ->: comm
+    (n: Nat) ~>: (body :: k ->: comm) ~>: comm
   }
   override def eval(s: Store): Store = ???
 

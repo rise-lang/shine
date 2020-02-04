@@ -4,6 +4,7 @@ import shine.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 import scala.language.reflectiveCalls
@@ -23,13 +24,13 @@ final case class Slide(n: Nat,
                                   (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
-    con(this)(λ(exp"[$n.$sz.$dt, $read]")(x => A :=|dt"[$n.$sz.$dt]"| x ))
+    con(this)(λ(expT(n`.`(sz`.`dt), read))(x => A :=|(n`.`(sz`.`dt))| x ))
   }
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
-    con(input)(λ(exp"[$inputSize.$dt, $read]")(x => C(Slide(n, sz, sp, dt, x)) ))
+    con(input)(λ(expT(inputSize`.`dt, read))(x => C(Slide(n, sz, sp, dt, x)) ))
   }
 }

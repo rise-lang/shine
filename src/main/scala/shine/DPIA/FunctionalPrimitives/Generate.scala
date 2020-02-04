@@ -6,6 +6,7 @@ import shine.DPIA.ImperativePrimitives.GenerateCont
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 import scala.xml.Elem
@@ -16,9 +17,9 @@ final case class Generate(n: Nat,
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (n: Nat) ->: (dt: DataType) ->:
-      (f :: t"exp[idx($n), $read] -> exp[$dt, $read]") ->:
-        exp"[$n.$dt, $read]"
+    (n: Nat) ~>: (dt: DataType) ~>:
+      (f :: expT(idx(n), read) ->: expT(dt, read)) ~>:
+        expT(n`.`dt, read)
 
   def prettyPrint: String =
     s"${this.getClass.getSimpleName} (${PrettyPhrasePrinter(f)})"
@@ -48,9 +49,9 @@ final case class Generate(n: Nat,
 
     // note: would not be necessary if generate was defined as indices + map
     C(GenerateCont(n, dt,
-      fun(exp"[idx($n), $read]")(i =>
-        fun(exp"[$dt, $read]" ->: (comm: CommType))(cont =>
-          con(f(i))(fun(exp"[$dt, $read]")(g => Apply(cont, g)))
+      fun(expT(idx(n), read))(i =>
+        fun(expT(dt, read) ->: (comm: CommType))(cont =>
+          con(f(i))(fun(expT(dt, read))(g => Apply(cont, g)))
         ))
     ))
   }

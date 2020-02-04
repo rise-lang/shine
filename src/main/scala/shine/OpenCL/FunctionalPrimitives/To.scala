@@ -18,8 +18,8 @@ final case class To(addrSpace: AddressSpace,
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (addrSpace: AddressSpace) ->: (dt: DataType) ->:
-      (input :: exp"[$dt, $write]") ->: exp"[$dt, $read]"
+    (addrSpace: AddressSpace) ~>: (dt: DataType) ~>:
+      (input :: expT(dt, write)) ~>: expT(dt, read)
 
   override def eval(s: Store): Data = OperationalSemantics.eval(s, input)
 

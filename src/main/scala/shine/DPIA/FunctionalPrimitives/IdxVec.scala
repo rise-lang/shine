@@ -6,6 +6,7 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA.{Phrases, _}
 
 import scala.language.reflectiveCalls
@@ -18,10 +19,10 @@ final case class IdxVec(n: Nat,
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (n: Nat) ->: (st: ScalarType) ->:
-      (index :: exp"[idx($n), $read]") ->:
-        (vector :: exp"[${VectorType(n, st)}, $read]") ->:
-          exp"[$st, $read]"
+    (n: Nat) ~>: (st: ScalarType) ~>:
+      (index :: expT(idx(n), read)) ~>:
+        (vector :: expT(vec(n, st), read)) ~>:
+          expT(st, read)
 
   override def eval(s: Store): Data = {
     (OperationalSemantics.eval(s, vector), OperationalSemantics.eval(s, index)) match {
@@ -49,13 +50,13 @@ final case class IdxVec(n: Nat,
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
-    con(vector)(λ(exp"[${VectorType(n, st)}, $read]")(x => A :=| st | IdxVec(n, st, index, x)))
+    con(vector)(λ(expT(vec(n, st), read))(x => A :=| st | IdxVec(n, st, index, x)))
   }
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
-    con(vector)(λ(exp"[${VectorType(n, st)}, $read]")(e => C(IdxVec(n, st, index, e))))
+    con(vector)(λ(expT(vec(n, st), read))(e => C(IdxVec(n, st, index, e))))
   }
 }
 
