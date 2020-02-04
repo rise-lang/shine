@@ -72,7 +72,7 @@
    <parameter name="illegalImports"><![CDATA[sun._,java.awt._]]></parameter>
   </parameters>
  </check>
- <check level="warning" class="org.scalastyle.scalariform.LowercasePatternMatchChecker" enabled="true"/>
+ <check level="warning" class="org.scalastyle.scalariform.LowercasePatternMatchChecker" enabled="false"/>
  <check level="warning" class="org.scalastyle.scalariform.MethodLengthChecker" enabled="true">
   <parameters>
    <parameter name="maxLength"><![CDATA[60]]></parameter>
