@@ -7,7 +7,6 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
-import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 import scala.xml.Elem

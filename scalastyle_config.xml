@@ -7,7 +7,7 @@
  <check level="warning" class="org.scalastyle.file.FileLineLengthChecker" enabled="true">
   <parameters>
    <parameter name="maxLineLength"><![CDATA[80]]></parameter>
-   <parameter name="tabSize"><![CDATA[4]]></parameter>
+   <parameter name="tabSize"><![CDATA[2]]></parameter>
   </parameters>
  </check>
  <check level="error" class="org.scalastyle.file.FileTabChecker" enabled="true"/>
@@ -72,7 +72,7 @@
    <parameter name="illegalImports"><![CDATA[sun._,java.awt._]]></parameter>
   </parameters>
  </check>
- <check level="warning" class="org.scalastyle.scalariform.LowercasePatternMatchChecker" enabled="true"/>
+ <check level="warning" class="org.scalastyle.scalariform.LowercasePatternMatchChecker" enabled="false"/>
  <check level="warning" class="org.scalastyle.scalariform.MethodLengthChecker" enabled="true">
   <parameters>
    <parameter name="maxLength"><![CDATA[60]]></parameter>

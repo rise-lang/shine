@@ -194,7 +194,7 @@ ${prog.code}
 int main(int argc, char** argv) {
   int16_t input[4 * $N * $M] = { ${goldDeinterleaved.mkString(", ")} };
   int16_t gold[3 * (2*$N - 4) * (2*$M - 4)] =
-   { ${goldDemosaic.mkString(", ")} };
+    { ${goldDemosaic.mkString(", ")} };
 
   int16_t output[3 * (2*$N - 4) * (2*$M - 4)];
   ${prog.function.name}(output, $N, $M, input);
@@ -230,9 +230,9 @@ ${prog.code}
 
 int main(int argc, char** argv) {
   int16_t input[3 * (2*$N - 4) * (2*$M - 4)] =
-   { ${goldDemosaic.mkString(", ")} };
+    { ${goldDemosaic.mkString(", ")} };
   int16_t gold[3 * (2*$N - 4) * (2*$M - 4)] =
-   { ${goldCorrected.mkString(", ")} };
+    { ${goldCorrected.mkString(", ")} };
 
   float matrix_3200[3 * 4] = { ${matrix_3200.mkString(", ")} };
   float matrix_7000[3 * 4] = { ${matrix_7000.mkString(", ")} };
@@ -276,9 +276,9 @@ ${prog.code}
 
 int main(int argc, char** argv) {
   int16_t input[3 * (2*$N - 4) * (2*$M - 4)] =
-   { ${goldCorrected.mkString(", ")} };
+    { ${goldCorrected.mkString(", ")} };
   uint8_t gold[3 * (2*$N - 4) * (2*$M - 4)] =
-   { ${goldCurved.mkString(", ")} };
+    { ${goldCurved.mkString(", ")} };
 
   uint8_t output[3 * (2*$N - 4) * (2*$M - 4)];
   ${prog.function.name}(output, 2*$N - 4, 2*$M - 4,
@@ -316,9 +316,9 @@ ${prog.code}
 
 int main(int argc, char** argv) {
   uint8_t input[3 * (2*$N - 4) * (2*$M - 4)] =
-   { ${goldCurved.mkString(", ")} };
+    { ${goldCurved.mkString(", ")} };
   uint8_t gold[3 * (2*$N - 6) * (2*$M - 6)] =
-   { ${goldSharpened.mkString(", ")} };
+    { ${goldSharpened.mkString(", ")} };
 
   uint8_t output[3 * (2*$N - 6) * (2*$M - 6)];
   ${prog.function.name}(output, 2*$N - 4, 2*$M - 4,
@@ -351,7 +351,7 @@ ${prog.code}
 int main(int argc, char** argv) {
   int16_t input[($N*2 + 4) * ($M*2 + 4)] = { ${goldInput.mkString(", ")} };
   uint8_t gold[3 * (2*$N - 6) * (2*$M - 6)] =
-   { ${goldSharpened.mkString(", ")} };
+    { ${goldSharpened.mkString(", ")} };
 
   float matrix_3200[3 * 4] = { ${matrix_3200.mkString(", ")} };
   float matrix_7000[3 * 4] = { ${matrix_7000.mkString(", ")} };
@@ -359,8 +359,8 @@ int main(int argc, char** argv) {
   uint8_t output[3 * (2*$N - 6) * (2*$M - 6)];
   ${prog.function.name}(output, $N, $M, 3, 4,
     input, matrix_3200, matrix_7000, ${color_temp},
-     ${gamma}, ${contrast}, ${black_level}, ${white_level},
-     ${sharpen_strength});
+    ${gamma}, ${contrast}, ${black_level}, ${white_level},
+    ${sharpen_strength});
 
   for (int i = 0; i < 3 * (2*$N - 6) * (2*$M - 6); i++) {
     if (gold[i] != output[i]) {
@@ -377,25 +377,31 @@ int main(int argc, char** argv) {
   }
 
   test("type inference") {
-    val avgt = infer(avg(i16)(i32))
-    println("avg: " + avgt.t)
-    println(IsClosedForm(avgt))
+    def assertClosedT(e: rise.core.Expr, t: Type): Unit = {
+      val typed = infer(e)
+      assert(typed.t == t)
+      assert(IsClosedForm(typed))
+    }
 
-    println(shine.DPIA.fromRise(avgt))
+    assertClosedT(avg(i16)(i32), i16 ->: i16 ->: i16)
+    assertClosedT(blur121(i16)(i32), (3`.`i16) ->: i16)
 
-    val blurt = infer(blur121(i16)(i32))
-    println("blur: " + blurt.t)
-    println(IsClosedForm(blurt))
+    assertClosedT(
+      nFun(h => nFun(w => fun(
+        (h`.`w`.`2`.`i16) ->: (h`.`w`.`i16)
+      )(a =>
+        interpolate(Image(0, w, 0, h, a)).expr
+      ))),
+      nFunT(h => nFunT(w => (h`.`w`.`2`.`i16) ->: (h`.`w`.`i16)))
+    )
 
-    println("interpolate: " + infer(nFun(h => nFun(w => fun(
-      h `.` w `.` 2 `.` i16
-    )(a =>
-      interpolate(Image(0, w, 0, h, a)).expr
-    )))).t)
-    println("point_abs_diff: " + infer(nFun(h => nFun(w => fun(
-      h `.` w `.` 2 `.` i16
-    )(a =>
-      pointAbsDiff(Image(0, w, 0, h, a)).expr
-    )))).t)
+    assertClosedT(
+      nFun(h => nFun(w => fun(
+        (h`.`w`.`2`.`i16) ->: (h`.`w`.`u16)
+      )(a =>
+        pointAbsDiff(Image(0, w, 0, h, a)).expr
+      ))),
+      nFunT(h => nFunT(w => (h`.`w`.`2`.`i16) ->: (h`.`w`.`u16)))
+    )
   }
 }

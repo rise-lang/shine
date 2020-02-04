@@ -67,9 +67,7 @@ class dot extends test_util.Tests {
     gen.OpenMPProgram(dotCPUVector1)
   }
 
-  test(
-    "Intel derived no warp dot product 1 compiles to syntactically correct OpenMP"
-  ) {
+  test("Intel derived no warp dot product 1 compiles to syntactically correct OpenMP") {
     import rise.OpenMP.DSL._
 
     val intelDerivedNoWarpDot1 = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
@@ -123,9 +121,7 @@ class dot extends test_util.Tests {
   { // OpenCL
     import rise.OpenCL.DSL._
 
-    test(
-      "Intel derived no warp dot product 1 compiles to syntactically correct OpenCL"
-    ) {
+    test("Intel derived no warp dot product 1 compiles to syntactically correct OpenCL") {
       val intelDerivedNoWarpDot1 = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
         zip(xs |> asVectorAligned(4))(ys |> asVectorAligned(4)) |>
         split(8192) |>

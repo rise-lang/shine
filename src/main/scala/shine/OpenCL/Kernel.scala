@@ -314,17 +314,33 @@ case class Kernel(decls: Seq[C.AST.Decl],
 
   private def castToOutputType[R](dt: DataType, output: GlobalArg): R = {
     assert(dt.isInstanceOf[ArrayType] || dt.isInstanceOf[DepArrayType])
-    (DataType.getBaseDataType(dt) match {
-      case shine.DPIA.Types.f32 => output.asFloatArray()
+    (getOutputType(dt) match {
       case shine.DPIA.Types.int => output.asIntArray()
+      case shine.DPIA.Types.f32 => output.asFloatArray()
       case shine.DPIA.Types.f64 => output.asDoubleArray()
-      // TODO: generalize
-      case shine.DPIA.Types.PairType(shine.DPIA.Types.float4, shine.DPIA.Types.float4) => output.asFloatArray()
-      case shine.DPIA.Types.PairType(shine.DPIA.Types.f32, shine.DPIA.Types.f32) => output.asFloatArray()
-      case shine.DPIA.Types.float4 => output.asFloatArray()
       case _ => throw new IllegalArgumentException("Return type of the given lambda expression " +
         "not supported: " + dt.toString)
     }).asInstanceOf[R]
+  }
+
+  private def getOutputType(dt: DataType): DataType = dt match {
+    case _: ScalarType => dt
+    case _: IndexType => int
+    case _: DataTypeIdentifier => dt
+    case VectorType(_, elem) => elem
+    case PairType(fst, snd) =>
+      val fstO = getOutputType(fst)
+      val sndO = getOutputType(snd)
+      if (fstO != sndO) {
+        throw new IllegalArgumentException("no supported output type " +
+          s"for heterogeneous pair: ${dt}")
+      }
+      fstO
+    case ArrayType(_, elemType) => getOutputType(elemType)
+    case DepArrayType(_, NatToDataLambda(_, elemType)) =>
+      getOutputType(elemType)
+    case DepArrayType(_, _) | _: NatToDataApply =>
+      throw new Exception("This should not happen")
   }
 
   private def sizeInByte(dt: DataType): SizeInByte = dt match {
