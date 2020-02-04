@@ -754,10 +754,10 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case C.AST.ArithmeticExpr(ae) => acc(a, env, CIntExpr(ae) :: ps, cont)
         case cExpr:C.AST.Expr =>
           val arithVar = NamedVar(freshName("idxAcc"))
-          acc(a, env, CIntExpr(arithVar) :: ps, generated => C.AST.Block(immutable.Seq(
+          C.AST.Block(immutable.Seq(
             C.AST.DeclStmt(C.AST.VarDecl(arithVar.name, C.AST.Type.int, Some(cExpr))),
-            cont(generated)
-          )))
+            acc(a, env, CIntExpr(arithVar) :: ps, cont)
+          ))
       })
     }
 
@@ -792,10 +792,10 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case C.AST.ArithmeticExpr(ae) => exp(e, env, CIntExpr(ae) :: ps, cont)
         case cExpr:C.AST.Expr =>
           val arithVar = NamedVar(freshName("idx"))
-          exp(e, env, CIntExpr(arithVar) :: ps, generated => C.AST.Block(immutable.Seq(
+          C.AST.Block(immutable.Seq(
             C.AST.DeclStmt(C.AST.VarDecl(arithVar.name, C.AST.Type.int, Some(cExpr))),
-            cont(generated)
-          )))
+            exp(e, env, CIntExpr(arithVar) :: ps, cont)
+          ))
       })
     }
 

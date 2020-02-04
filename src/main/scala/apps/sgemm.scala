@@ -14,14 +14,14 @@ object sgemm {
   // we can use implicit type parameters and type annotations to specify the function type of mult
   val mult  = implDT(dt => fun(x => x._1 * x._2) :: ((dt x dt) ->: dt))
   val add   = fun(x => fun(y => x + y))
-  val scal  = implN(n => fun(xs => fun(a => mapSeq(fun(x => a * x), xs))) :: (ArrayType(n, float) ->: float ->: ArrayType(n, float)))
-  val dot = fun(x => foreignFun("dot", float4 ->: float4 ->: float)(x._1, x._2))
+  val scal  = implN(n => fun(xs => fun(a => mapSeq(fun(x => a * x), xs))) :: (ArrayType(n, f32) ->: f32 ->: ArrayType(n, f32)))
+  val dot = fun(x => foreignFun("dot", vec(4, f32) ->: vec(4, f32) ->: f32)(x._1, x._2))
   def id: Expr = fun(x => x)
 
   object c {
     val sequential =
       nFun((n, m, k) =>
-        fun((n`.`k`.`float) ->: (k`.`m`.`float) ->: (n`.`m`.`float) ->: float ->: float ->: (n`.`m`.`float))
+        fun((n`.`k`.`f32) ->: (k`.`m`.`f32) ->: (n`.`m`.`f32) ->: f32 ->: f32 ->: (n`.`m`.`f32))
         ((a, b, c, alpha, beta) =>
 
           zip(a, c) |> mapSeq(fun(ac =>
@@ -37,7 +37,7 @@ object sgemm {
 
   val sequential =
     nFun((n, m, k) =>
-      fun((m`.`k`.`float) ->: (k`.`n`.`float) ->: (m`.`n`.`float) ->: float ->: float ->: (m`.`n`.`float))
+      fun((m`.`k`.`f32) ->: (k`.`n`.`f32) ->: (m`.`n`.`f32) ->: f32 ->: f32 ->: (m`.`n`.`f32))
       ((a, b, c, alpha, beta) =>
 
         zip(a, c) |> mapSeq(fun(ac =>
@@ -62,7 +62,7 @@ object sgemm {
 
 
     nFun((n, m, k) =>
-      fun((m `.` k `.` float) ->: (n `.` k `.` float) ->: (m `.` n `.` float) ->: float ->: float ->: (m `.` n `.` float))
+      fun((m `.` k `.` f32) ->: (n `.` k `.` f32) ->: (m `.` n `.` f32) ->: f32 ->: f32 ->: (m `.` n `.` f32))
       /*
        * The matrix B is assumed to be transposed already!
        */
@@ -112,10 +112,10 @@ object sgemm {
           generate(fun(IndexType(n2))(_ =>
             generate(fun(IndexType(n1))(_ => l(0.0f)))))))))))))
 
-    def tile2: Expr = nFun(s1 => nFun(s2 => implN(n1 => implN(n2 => fun(ArrayType(n1, ArrayType(n2, float)))(x =>
+    def tile2: Expr = nFun(s1 => nFun(s2 => implN(n1 => implN(n2 => fun(ArrayType(n1, ArrayType(n2, f32)))(x =>
       transpose (map (transpose) (split (s1) (map (split (s2)) (x))))  )))))
 
-    def redOp: Expr = fun((8`.`32`.`8`.`4`.`float) ->: ( (8`.`64`.`float) x (8`.`128`.`float) ) ->: (8`.`32`.`8`.`4`.`float) )((p14, p15) =>
+    def redOp: Expr = fun((8`.`32`.`8`.`4`.`f32) ->: ( (8`.`64`.`f32) x (8`.`128`.`f32) ) ->: (8`.`32`.`8`.`4`.`f32) )((p14, p15) =>
       p15 |> (fun(p29 =>
         zip (p29._1) (p29._2)
           |> toLocalFun(mapLocal(1) (fun(p31 => pair (mapLocal(0) (id) (p31._1)) (mapLocal(0) (id) (p31._2)) )))
@@ -138,7 +138,7 @@ object sgemm {
       )))
 
     nFun((n, m, k) =>
-      fun((k`.`m`.`float) ->: (k`.`n`.`float) ->: (m`.`n`.`float) ->: float ->: float ->: (m`.`n`.`float))
+      fun((k`.`m`.`f32) ->: (k`.`n`.`f32) ->: (m`.`n`.`f32) ->: f32 ->: f32 ->: (m`.`n`.`f32))
       /*
        * The matrix A is assumed to be transposed already.
        */
