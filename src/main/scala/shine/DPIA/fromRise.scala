@@ -320,7 +320,6 @@ object fromRise {
       case (core.DepJoin(),
         lt.FunType(lt.DepArrayType(n, llenF), lt.ArrayType(_, la)))
         =>
-        val a = dataType(la)
         ???
 
       case (core.Join(),

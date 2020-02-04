@@ -62,17 +62,9 @@ sealed case class VectorType(size: Nat, elemType: ScalarType)
   override def toString: String = s"<$size>$elemType"
 }
 
-object int2 extends VectorType(2, int)
-object int3 extends VectorType(3, int)
-object int4 extends VectorType(4, int)
-object int8 extends VectorType(8, int)
-object int16 extends VectorType(16, int)
-
-object float2 extends VectorType(2, f32)
-object float3 extends VectorType(3, f32)
-object float4 extends VectorType(4, f32)
-object float8 extends VectorType(8, f32)
-object float16 extends VectorType(16, f32)
+object vec {
+  def apply(size: Nat, elemType: ScalarType) = VectorType(size, elemType)
+}
 
 final class NatToDataApply(val f: NatToData, val n: Nat) extends DataType {
   override def toString: String = s"$f($n)"
