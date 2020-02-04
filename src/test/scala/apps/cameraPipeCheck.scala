@@ -374,25 +374,31 @@ int main(int argc, char** argv) {
   }
 
   test("type inference") {
-    val avgt = infer(avg(i16)(i32))
-    println("avg: " + avgt.t)
-    println(IsClosedForm(avgt))
+    def assertClosedT(e: rise.core.Expr, t: Type): Unit = {
+      val typed = infer(e)
+      assert(typed.t == t)
+      assert(IsClosedForm(typed))
+    }
 
-    println(shine.DPIA.fromRise(avgt))
+    assertClosedT(avg(i16)(i32), i16 ->: i16 ->: i16)
+    assertClosedT(blur121(i16)(i32), (3`.`i16) ->: i16)
 
-    val blurt = infer(blur121(i16)(i32))
-    println("blur: " + blurt.t)
-    println(IsClosedForm(blurt))
+    assertClosedT(
+      nFun(h => nFun(w => fun(
+        (h`.`w`.`2`.`i16) ->: (h`.`w`.`i16)
+      )(a =>
+        interpolate(Image(0, w, 0, h, a)).expr
+      ))),
+      nFunT(h => nFunT(w => (h`.`w`.`2`.`i16) ->: (h`.`w`.`i16)))
+    )
 
-    println("interpolate: " + infer(nFun(h => nFun(w => fun(
-      h `.` w `.` 2 `.` i16
-    )(a =>
-      interpolate(Image(0, w, 0, h, a)).expr
-    )))).t)
-    println("point_abs_diff: " + infer(nFun(h => nFun(w => fun(
-      h `.` w `.` 2 `.` i16
-    )(a =>
-      pointAbsDiff(Image(0, w, 0, h, a)).expr
-    )))).t)
+    assertClosedT(
+      nFun(h => nFun(w => fun(
+        (h`.`w`.`2`.`i16) ->: (h`.`w`.`u16)
+      )(a =>
+        pointAbsDiff(Image(0, w, 0, h, a)).expr
+      ))),
+      nFunT(h => nFunT(w => (h`.`w`.`2`.`i16) ->: (h`.`w`.`u16)))
+    )
   }
 }

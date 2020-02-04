@@ -37,7 +37,8 @@ class dot extends test_util.Tests {
     val N = phrase.t.asInstanceOf[`(nat)->:`[ExpType ->: ExpType]].x
     val dt = f32
     assertResult(
-      N `()->:` (exp"[$N.$dt, $read]" ->: exp"[$N.$dt, $read]" ->: exp"[$dt, $write]")
+      N `()->:` exp"[$N.$dt, $read]" ->: exp"[$N.$dt, $read]" ->:
+        exp"[$dt, $write]"
     ) {
       phrase.t
     }
@@ -66,9 +67,7 @@ class dot extends test_util.Tests {
     gen.OpenMPProgram(dotCPUVector1)
   }
 
-  test(
-    "Intel derived no warp dot product 1 compiles to syntactically correct OpenMP"
-  ) {
+  test("Intel derived no warp dot product 1 compiles to syntactically correct OpenMP") {
     import rise.OpenMP.DSL._
 
     val intelDerivedNoWarpDot1 = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
@@ -122,9 +121,7 @@ class dot extends test_util.Tests {
   { // OpenCL
     import rise.OpenCL.DSL._
 
-    test(
-      "Intel derived no warp dot product 1 compiles to syntactically correct OpenCL"
-    ) {
+    test("Intel derived no warp dot product 1 compiles to syntactically correct OpenCL") {
       val intelDerivedNoWarpDot1 = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
         zip(xs |> asVectorAligned(4))(ys |> asVectorAligned(4)) |>
         split(8192) |>

@@ -44,13 +44,6 @@ final case class DepArrayType private (size: Nat, elemFType: NatToData)
   extends ComposedType
 {
   override def toString: String = s"$size.$elemFType"
-
-  override def equals(that: Any): Boolean = that match {
-    case DepArrayType(size_, elemFType_) =>
-      val eq = size == size_ && elemFType == elemFType_
-      eq
-    case _ => false
-  }
 }
 
 object DepArrayType {

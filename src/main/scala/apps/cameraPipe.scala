@@ -385,9 +385,10 @@ object cameraPipe {
   camera_pipe:
     (h`.`w`.`u16) ->: (3`.`((h - 24) / 32) * 32)`.`((w - 32) / 32) * 32)`.`u8)
   */
+
   val camera_pipe: Expr = nFun(h => nFun(w => nFun(hm => nFun(wm => fun(
     ((2*(h+2))`.`(2*(w+2))`.`i16) ->:
-      (hm`.`wm`.`f32) ->: (hm`.`wm`.`f32) ->: f32 ->: (
+    (hm`.`wm`.`f32) ->: (hm`.`wm`.`f32) ->: f32 ->: (
       f32 ->: f32 ->: int ->: int ->:
       f32 ->:
       (3`.`(2*(h-3))`.`(2*(w-3))`.`u8))
