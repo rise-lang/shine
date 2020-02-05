@@ -106,11 +106,11 @@ float clamp_f32(float v, float l, float h) {
 """
 
   test("hot pixel suppression passes checks") {
-    val typed = printTime(infer(hot_pixel_suppression))
+    val typed = printTime("infer", infer(hot_pixel_suppression))
     println(s"hot pixel suppression: ${typed.t}")
     val lower: Strategy[Rise] = LCNF `;` CNF `;`
       repeatNTimes(2, oncetd(lowering.mapSeq))
-    val lowered = printTime(lower(typed).get)
+    val lowered = printTime("lower", lower(typed).get)
     println(s"lowered: ${lowered}")
     val prog = gen.CProgram(lowered)
     val testCode =
@@ -140,7 +140,7 @@ int main(int argc, char** argv) {
   }
 
   test("deinterleave passes checks") {
-    val typed = printTime(infer(nFun(h => nFun(w =>
+    val typed = printTime("infer", infer(nFun(h => nFun(w =>
       deinterleave(h)(w) >> mapSeq(mapSeq(mapSeq(fun(x => x))))
     ))))
     println(s"deinterleave: ${typed.t}")
@@ -177,14 +177,8 @@ int main(int argc, char** argv) {
     util.Execute(testCode)
   }
 
-  test("demosaic passes checks") {
-    val typed = printTime(infer(demosaic))
-    println(s"demosaic: ${typed.t}")
-    // TODO
-    val lower: Strategy[Rise] = strategies.basic.id()
-    val lowered = printTime(lower(typed).get)
-    println(s"lowered: ${lowered}")
-    val prog = gen.CProgram(lowered)
+  def checkDemosaic(lowered: Rise): Unit = {
+    val prog = printTime("codegen", gen.CProgram(lowered))
     val testCode =
       s"""
 ${cHeader}
@@ -209,16 +203,42 @@ int main(int argc, char** argv) {
   return 0;
 }
 """
-    util.Execute(testCode)
+    printTime("execute", util.Execute(testCode))
+  }
+
+  test("demosaic passes checks") {
+    val typed = printTime("infer", infer(nFun(h => nFun(w =>
+      demosaic(h)(w) >> mapSeqUnroll(mapSeq(mapSeq(fun(x => x))))
+    ))))
+    println(s"demosaic: ${typed.t}")
+    // TODO
+    val lower: Strategy[Rise] = strategies.basic.id()
+    val lowered = printTime("lower", lower(typed).get)
+    checkDemosaic(lowered)
+  }
+
+  test("demosaic passes checks with reordering") {
+    val typed = printTime("infer", infer(nFun(h => nFun(w =>
+      demosaic(h)(w) >> transpose >> map(transpose) >>
+      split(2) >> mapSeq(mapSeqUnroll(
+        mapSeq(
+          mapSeqUnroll(fun(x => x)))
+      )) >> join >> map(transpose) >> transpose
+    ))))
+    println(s"demosaic: ${typed.t}")
+    // TODO
+    val lower: Strategy[Rise] = strategies.basic.id()
+    val lowered = printTime("lower", lower(typed).get)
+    checkDemosaic(lowered)
   }
 
   test("color correction passes checks") {
-    val typed = printTime(infer(color_correct))
+    val typed = printTime("infer", infer(color_correct))
     println(s"color correction: ${typed.t}")
     val lower: Strategy[Rise] = LCNF `;` CNF `;`
       repeatNTimes(2, oncetd(lowering.mapSeq)) `;`
       oncetd(lowering.mapSeqUnroll)
-    val lowered = printTime(lower(typed).get)
+    val lowered = printTime("lower", lower(typed).get)
     println(s"lowered: ${lowered}")
     val prog = gen.CProgram(lowered)
     // TODO: investigate output difference of 1
@@ -261,11 +281,11 @@ int main(int argc, char** argv) {
   }
 
   test("apply curve passes checks") {
-    val typed = printTime(infer(apply_curve))
+    val typed = printTime("infer", infer(apply_curve))
     println(s"apply curve: ${typed.t}")
     val lower: Strategy[Rise] = LCNF `;` CNF `;`
       repeatNTimes(3, oncetd(lowering.mapSeq))
-    val lowered = printTime(lower(typed).get)
+    val lowered = printTime("lower", lower(typed).get)
     println(s"lowered: ${lowered}")
     val prog = gen.CProgram(lowered)
     val testCode =
@@ -298,14 +318,14 @@ int main(int argc, char** argv) {
   }
 
   test("sharpen passes checks") {
-    val typed = printTime(infer(nFun(h => nFun(w => fun(
+    val typed = printTime("infer", infer(nFun(h => nFun(w => fun(
       (3`.`h`.`w`.`u8) ->: f32 ->: (3`.`(h-2)`.`(w-2)`.`u8)
     )((input, strength) =>
       sharpen(h)(w)(input)(strength) |> mapSeq(mapSeq(mapSeq(fun(x => x))))
     )))))
     println(s"sharpen: ${typed.t}")
     val lower: Strategy[Rise] = strategies.basic.id()
-    val lowered = printTime(lower(typed).get)
+    val lowered = printTime("lower", lower(typed).get)
     println(s"lowered: ${lowered}")
     val prog = gen.CProgram(lowered)
     val testCode =
@@ -338,10 +358,8 @@ int main(int argc, char** argv) {
   }
 
   test("camera pipe passes checks") {
-    val typed = printTime(infer(camera_pipe))
-    val prog = printTime(gen.CProgram(typed))
-    prog
-    /*
+    val typed = printTime("infer", infer(camera_pipe))
+    val prog = printTime("codegen", gen.CProgram(typed))
     val testCode =
       s"""
 ${cHeader}
@@ -372,8 +390,7 @@ int main(int argc, char** argv) {
   return 0;
 }
 """
-    util.Execute(testCode)
-    */
+    printTime("execute", util.Execute(testCode))
   }
 
   test("type inference") {

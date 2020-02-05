@@ -40,7 +40,7 @@ package object util {
     finally Executor.shutdown()
   }
 
-  def printTime[T](block: => T): T = {
+  def printTime[T](msg: String, block: => T): T = {
     val start = System.currentTimeMillis()
     val result = block
     val end = System.currentTimeMillis()
@@ -54,7 +54,7 @@ package object util {
     val millisStr = s"${milliseconds}ms"
     val secondsStr = if (seconds > 0) s"${seconds}s " else ""
     val minutesStr = if (minutes > 0) s"${minutes}mn " else ""
-    println(s"elapsed time: ${minutesStr}${secondsStr}${millisStr}")
+    println(s"${msg}: ${minutesStr}${secondsStr}${millisStr}")
     result
   }
 }
