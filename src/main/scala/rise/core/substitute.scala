@@ -185,14 +185,8 @@ object substitute {
   // substitute in Nat
 
   def natsInNat(subs: Map[NatIdentifier, Nat], in: Nat): Nat = {
-    in.visitAndRebuild {
-      case i: NatIdentifier =>
-        subs.get(i) match {
-          case Some(n) => n
-          case None    => i
-        }
-      case n => n
-    }
+    import arithexpr.arithmetic.ArithExpr
+    ArithExpr.substitute(in, subs.asInstanceOf[Map[ArithExpr, ArithExpr]])
   }
 
   def natInNat(ae: Nat, `for`: NatIdentifier, in: Nat): Nat =
