@@ -4,12 +4,19 @@ import cameraPipe._
 import util._
 import rise.core.IsClosedForm
 import rise.core.types._
+import rise.core.dotPrinter._
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import elevate.core._
+import elevate.core.strategies.debug.peek
+import elevate.core.strategies.basic._
+import elevate.core.strategies.predicate._
+import elevate.core.strategies.{predicate, basic}
 import elevate.rise.Rise
 import elevate.rise.rules._
-// import elevate.rise.rules.algorithmic._
+import elevate.rise.rules.lowering.{isComputation, mapSeqCompute}
+import elevate.rise.strategies.predicate._
+import elevate.rise.rules.algorithmic._
 // import elevate.rise.rules.movement._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
@@ -105,12 +112,53 @@ float clamp_f32(float v, float l, float h) {
 #define pow_f32 powf
 """
 
+  val insertCopyAtEnd: Strategy[Rise] =
+  // if...
+    `try`(
+      // ...there is no computation in the AST...
+      predicate.not(oncetd(isComputation)) `;`
+        // ...insert copy: .
+        oncetd(
+          // ...skip all (Dep-)Lambdas...
+          // ( <+ can be read as `or` ) -> maybe introduce `||` notation?
+          predicate.not(isDepLambda <+ isLambda) `;`
+            // ...insert Id() and transform it to an actual copy
+            idAfter `;` normalize.apply(liftId) `;` oncetd(idToCopy)
+        )
+    ) // end-try
+
+  def allIf(cond: Strategy[Rise], s: Strategy[Rise]): Strategy[Rise] =
+    (cond `;` strategies.traversal.all(s)) <+ basic.id[Rise]()
+
+  val p = predicate.not(isApplied(isApplied(isMakeArray)))
+
+  case class traverseWhile(predicate: Strategy[Rise],
+                           s: Strategy[Rise]) extends Strategy[Rise] {
+    def apply(p: Rise): RewriteResult[Rise] =
+      (`try`(s) `;`
+       `if`(predicate)
+          (strategies.traversal.all(traverseWhile(predicate, s))))(p)
+  }
+
+  // todo this is not doing what I want yet!
+  // it should stop traversing as soon as it hits an Apply(makeArray, arg)
+  val lowerSelectedMaps: Strategy[Rise] =
+    //normalize.apply(mapSeqCompute)
+    traverseWhile(p, mapSeqCompute)
+
+
+  // CNF can only be used if we want to lower a single stage
+  val naiveLowering: Strategy[Rise] =
+    LCNF `;` // normalize AST
+    CNF `;`  // fuse all maps
+    insertCopyAtEnd `;`
+    // lower all maps required for codegen
+    lowerSelectedMaps
+
   test("hot pixel suppression passes checks") {
     val typed = printTime(infer(hot_pixel_suppression))
     println(s"hot pixel suppression: ${typed.t}")
-    val lower: Strategy[Rise] = LCNF `;` CNF `;`
-      repeatNTimes(2, oncetd(lowering.mapSeq))
-    val lowered = printTime(lower(typed).get)
+    val lowered = printTime(naiveLowering(typed).get)
     println(s"lowered: ${lowered}")
     val prog = gen.CProgram(lowered)
     val testCode =
@@ -141,14 +189,10 @@ int main(int argc, char** argv) {
 
   test("deinterleave passes checks") {
     val typed = printTime(infer(nFun(h => nFun(w =>
-      deinterleave(h)(w) >> mapSeq(mapSeq(mapSeq(fun(x => x))))
+      deinterleave(h)(w)  // >> mapSeq(mapSeq(mapSeq(fun(x => x))))
     ))))
     println(s"deinterleave: ${typed.t}")
-    /* TODO
-    val lower: Strategy[Rise] =
-    val lowered = printTime(lower(typed).get)
-     */
-    val lowered = typed
+    val lowered = printTime(naiveLowering(typed).get)
     println(s"lowered: ${lowered}")
     val prog = gen.CProgram(lowered)
     val testCode =
@@ -215,10 +259,10 @@ int main(int argc, char** argv) {
   test("color correction passes checks") {
     val typed = printTime(infer(color_correct))
     println(s"color correction: ${typed.t}")
-    val lower: Strategy[Rise] = LCNF `;` CNF `;`
-      repeatNTimes(2, oncetd(lowering.mapSeq)) `;`
-      oncetd(lowering.mapSeqUnroll)
-    val lowered = printTime(lower(typed).get)
+    // val lower: Strategy[Rise] = LCNF `;` CNF `;`
+    //   repeatNTimes(2, oncetd(lowering.mapSeq)) `;`
+    //   oncetd(lowering.mapSeqUnroll)
+    val lowered = printTime(naiveLowering(typed).get)
     println(s"lowered: ${lowered}")
     val prog = gen.CProgram(lowered)
     // TODO: investigate output difference of 1
