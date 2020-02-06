@@ -314,30 +314,52 @@ case class Kernel(decls: Seq[C.AST.Decl],
 
   private def castToOutputType[R](dt: DataType, output: GlobalArg): R = {
     assert(dt.isInstanceOf[ArrayType] || dt.isInstanceOf[DepArrayType])
-    (DataType.getBaseDataType(dt) match {
-      case shine.DPIA.Types.float  => output.asFloatArray()
-      case shine.DPIA.Types.int    => output.asIntArray()
-      case shine.DPIA.Types.double => output.asDoubleArray()
-      // TODO: generalize
-      case shine.DPIA.Types.PairType(shine.DPIA.Types.float4, shine.DPIA.Types.float4) => output.asFloatArray()
-      case shine.DPIA.Types.PairType(shine.DPIA.Types.float, shine.DPIA.Types.float) => output.asFloatArray()
-      case shine.DPIA.Types.float4 => output.asFloatArray()
+    (getOutputType(dt) match {
+      case shine.DPIA.Types.int => output.asIntArray()
+      case shine.DPIA.Types.f32 => output.asFloatArray()
+      case shine.DPIA.Types.f64 => output.asDoubleArray()
       case _ => throw new IllegalArgumentException("Return type of the given lambda expression " +
         "not supported: " + dt.toString)
     }).asInstanceOf[R]
   }
 
+  private def getOutputType(dt: DataType): DataType = dt match {
+    case _: ScalarType => dt
+    case _: IndexType => int
+    case _: DataTypeIdentifier => dt
+    case VectorType(_, elem) => elem
+    case PairType(fst, snd) =>
+      val fstO = getOutputType(fst)
+      val sndO = getOutputType(snd)
+      if (fstO != sndO) {
+        throw new IllegalArgumentException("no supported output type " +
+          s"for heterogeneous pair: ${dt}")
+      }
+      fstO
+    case ArrayType(_, elemType) => getOutputType(elemType)
+    case DepArrayType(_, NatToDataLambda(_, elemType)) =>
+      getOutputType(elemType)
+    case DepArrayType(_, _) | _: NatToDataApply =>
+      throw new Exception("This should not happen")
+  }
+
   private def sizeInByte(dt: DataType): SizeInByte = dt match {
     case s: ScalarType => s match {
-      case shine.DPIA.Types.bool    => SizeInByte(1)
+      case shine.DPIA.Types.bool => SizeInByte(1)
       case shine.DPIA.Types.int | shine.DPIA.Types.NatType => SizeInByte(4)
-      case shine.DPIA.Types.float   => SizeInByte(4)
-      case shine.DPIA.Types.double  => SizeInByte(8)
+      case shine.DPIA.Types.u8 | shine.DPIA.Types.i8 =>
+        SizeInByte(1)
+      case shine.DPIA.Types.u16 | shine.DPIA.Types.i16 | shine.DPIA.Types.f16 =>
+        SizeInByte(2)
+      case shine.DPIA.Types.u32 | shine.DPIA.Types.i32 | shine.DPIA.Types.f32 =>
+        SizeInByte(4)
+      case shine.DPIA.Types.u64 | shine.DPIA.Types.i64 | shine.DPIA.Types.f64 =>
+        SizeInByte(8)
     }
-    case _: IndexType   => SizeInByte(4) // == sizeof(int)
-    case v: VectorType  => sizeInByte(v.elemType) * v.size
-    case r: PairType  => sizeInByte(r.fst) + sizeInByte(r.snd)
-    case a: ArrayType   => sizeInByte(a.elemType) * a.size
+    case _: IndexType => SizeInByte(4) // == sizeof(int)
+    case v: VectorType => sizeInByte(v.elemType) * v.size
+    case r: PairType => sizeInByte(r.fst) + sizeInByte(r.snd)
+    case a: ArrayType => sizeInByte(a.elemType) * a.size
     case a: DepArrayType =>
       a.elemFType match {
         case NatToDataLambda(x, body) =>

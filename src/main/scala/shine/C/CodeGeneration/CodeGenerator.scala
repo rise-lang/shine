@@ -496,8 +496,17 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case b: shine.DPIA.Types.BasicType => b match {
         case shine.DPIA.Types.bool => C.AST.Type.int
         case shine.DPIA.Types.int | shine.DPIA.Types.NatType => C.AST.Type.int
-        case shine.DPIA.Types.float => C.AST.Type.float
-        case shine.DPIA.Types.double => C.AST.Type.double
+        case shine.DPIA.Types.u8 => C.AST.Type.u8
+        case shine.DPIA.Types.u16 => C.AST.Type.u16
+        case shine.DPIA.Types.u32 => C.AST.Type.u32
+        case shine.DPIA.Types.u64 => C.AST.Type.u64
+        case shine.DPIA.Types.i8 => C.AST.Type.i8
+        case shine.DPIA.Types.i16 => C.AST.Type.i16
+        case shine.DPIA.Types.i32 => C.AST.Type.i32
+        case shine.DPIA.Types.i64 => C.AST.Type.i64
+        case shine.DPIA.Types.f16 => ???
+        case shine.DPIA.Types.f32 => C.AST.Type.float
+        case shine.DPIA.Types.f64 => C.AST.Type.double
         case _: shine.DPIA.Types.IndexType => C.AST.Type.int
         case _: shine.DPIA.Types.VectorType =>throw new Exception("Vector types in C are not supported")
       }
@@ -937,6 +946,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       import Operators.Unary._
       op match {
         case NEG => C.AST.UnaryOperator.-
+        case NOT => C.AST.UnaryOperator.!
       }
     }
 

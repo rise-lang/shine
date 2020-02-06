@@ -384,6 +384,7 @@ trait CommandPrimitive extends Primitive[CommType] {
 object Operators {
   object Unary extends Enumeration {
     val NEG: Unary.Value = Value("-")
+    val NOT: Unary.Value = Value("!")
   }
 
   object Binary extends Enumeration {

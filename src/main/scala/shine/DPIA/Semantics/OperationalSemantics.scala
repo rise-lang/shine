@@ -19,10 +19,10 @@ object OperationalSemantics {
     override def toString: String = i.toString
   }
 //  final case class Int4Data(i0: Int, i1: Int, i2: Int, i3: Int) extends Data(int4)
-  final case class FloatData(f: Float) extends Data(float) {
+  final case class FloatData(f: Float) extends Data(f32) {
     override def toString: String = f.toString + "f"
   }
-  final case class DoubleData(d: Double) extends Data(double) {
+  final case class DoubleData(d: Double) extends Data(f64) {
     override def toString: String = d.toString
   }
   final case class VectorData(a: Vector[Data]) extends Data(VectorType(a.length, a.head.dataType match {

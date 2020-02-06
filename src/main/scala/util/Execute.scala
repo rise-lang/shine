@@ -12,7 +12,7 @@ object Execute {
     try {
       val src = writeToTempFile("code-", ".c", code).getAbsolutePath
       val bin = createTempFile("bin-", "").getAbsolutePath
-      (s"clang -O2 $src -o $bin" !!)
+      (s"clang -O2 $src -o $bin -lm" !!)
       (s"$bin" !!)
     } catch {
       case e: Throwable =>

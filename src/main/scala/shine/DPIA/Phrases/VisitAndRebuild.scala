@@ -46,7 +46,7 @@ object VisitAndRebuild {
           case Lambda(x, p) =>
             apply(x, v) match {
               case newX: Identifier[_] => Lambda(newX, apply(p, v))
-              case _ => throw new Exception("This should not happen")
+              case badX => throw new Exception(s"${badX} is not an identifier")
             }
 
           case Apply(p, q) =>
