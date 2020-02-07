@@ -118,6 +118,7 @@ object PhraseType {
         PassiveFunType(substitute(dt, `for`, pf.inT), substitute(dt, `for`, pf.outT))
       case df: DepFunType[_, _] =>
         DepFunType(df.x, substitute(dt, `for`, df.t))(df.kn)
+      case pti: PhraseTypeIdentifier => pti
     }
   }
 
@@ -170,6 +171,7 @@ object PhraseType {
         PassiveFunType(substitute(ae, `for`, pf.inT), substitute(ae, `for`, pf.outT))
       case df: DepFunType[_, _] =>
         DepFunType(df.x, substitute(ae, `for`, df.t))(df.kn)
+      case pti: PhraseTypeIdentifier => pti
     }
   }
 
@@ -196,5 +198,15 @@ object PhraseType {
       override def access(w: AccessType): AccessType = if (w == `for`) acc else w
     }
     Phrases.VisitAndRebuild(in, Visitor)
+  }
+
+  def substitute(
+    acc: AccessType,
+    `for`: AccessTypeIdentifier,
+    in: PhraseType): PhraseType = {
+    object Visitor extends Phrases.VisitAndRebuild.Visitor {
+      override def access(w: AccessType): AccessType = if (w == `for`) acc else w
+    }
+    Phrases.VisitAndRebuild.visitPhraseTypeAndRebuild(in, Visitor)
   }
 }

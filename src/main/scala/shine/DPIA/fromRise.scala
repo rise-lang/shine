@@ -176,43 +176,43 @@ object fromRise {
       lt.FunType(lt.FunType(_, lb: lt.DataType),
       lt.FunType(lt.ArrayType(n, la: lt.DataType), _)))
       =>
-        makeMap(Map, n, la, lb)
+        ??? //makeMap(Map, n, la, lb)
 
       case (core.MapSeq(),
       lt.FunType(lt.FunType(_, lb: lt.DataType),
       lt.FunType(lt.ArrayType(n, la: lt.DataType), _)))
       =>
-        makeMap(MapSeq, n, la, lb)
+        makeMapLoop(MapSeq, n, la, lb)
 
       case (core.MapSeqUnroll(),
       lt.FunType(lt.FunType(_, lb: lt.DataType),
       lt.FunType(lt.ArrayType(n, la: lt.DataType), _)))
       =>
-        makeMap(MapSeqUnroll, n, la, lb)
+        makeMapLoop(MapSeqUnroll, n, la, lb)
 
       case (omp.MapPar(),
       lt.FunType(lt.FunType(_, lb: lt.DataType),
       lt.FunType(lt.ArrayType(n, la: lt.DataType), _)))
       =>
-        makeMap(MapPar, n, la, lb)
+        makeMapLoop(MapPar, n, la, lb)
 
       case (ocl.MapGlobal(dim),
       lt.FunType(lt.FunType(_, lb: lt.DataType),
       lt.FunType(lt.ArrayType(n, la: lt.DataType), _)))
       =>
-        makeMap(MapGlobal(dim), n, la, lb)
+        makeMapLoop(MapGlobal(dim), n, la, lb)
 
       case (ocl.MapLocal(dim),
       lt.FunType(lt.FunType(_, lb: lt.DataType),
       lt.FunType(lt.ArrayType(n, la: lt.DataType), _)))
       =>
-        makeMap(MapLocal(dim), n, la, lb)
+        makeMapLoop(MapLocal(dim), n, la, lb)
 
       case (ocl.MapWorkGroup(dim),
       lt.FunType(lt.FunType(_, lb: lt.DataType),
       lt.FunType(lt.ArrayType(n, la: lt.DataType), _)))
       =>
-        makeMap(MapWorkGroup(dim), n, la, lb)
+        makeMapLoop(MapWorkGroup(dim), n, la, lb)
 
       case (core.DepMapSeq(),
       lt.FunType(
@@ -372,10 +372,11 @@ object fromRise {
       lt.FunType(lt.ArrayType(n, la), _))))
       =>
         val a = dataType(la)
-        fun[ExpType ->: ExpType](exp"[idx($n), $read]" ->: exp"[idx($n), $read]", idxF =>
-          fun[ExpType ->: ExpType](exp"[idx($n), $read]" ->: exp"[idx($n), $read]", idxFinv =>
-            fun[ExpType](exp"[$n.$a, $read]", e =>
-              Reorder(n, a, idxF, idxFinv, e))))
+//        fun[ExpType ->: ExpType](exp"[idx($n), $read]" ->: exp"[idx($n), $read]", idxF =>
+//          fun[ExpType ->: ExpType](exp"[idx($n), $read]" ->: exp"[idx($n), $read]", idxFinv =>
+//            fun[ExpType](exp"[$n.$a, $read]", e =>
+//              Reorder(n, a, idxF, idxFinv, e))))
+        ???
 
       case (core.Gather(),
       lt.FunType(lt.ArrayType(m, _),
@@ -416,8 +417,9 @@ object fromRise {
               Join(n, m, read, a, e))))
 
  */
-        fun[ExpType](exp"[$n.$m.$a, $read]", e =>
-          Transpose(n, m, a, e))
+//        fun[ExpType](exp"[$n.$m.$a, $read]", e =>
+//          Transpose(n, m, a, e))
+        ???
 
       case (core.Take(),
       lt.DepFunType(n: lt.NatIdentifier,
@@ -481,9 +483,10 @@ object fromRise {
       =>
         val a = dataType(la)
         val b = dataType(lb)
-        fun[ExpType](exp"[$n.$a, $read]", x =>
-          fun[ExpType](exp"[$n.$b, $read]", y =>
-            Zip(n, a, b, x, y)))
+//        fun[ExpType](exp"[$n.$a, $read]", x =>
+//          fun[ExpType](exp"[$n.$b, $read]", y =>
+//            Zip(n, a, b, x, y)))
+        ???
 
       case (core.Fst(),
       lt.FunType(lt.PairType(la, lb), _))
@@ -525,9 +528,10 @@ object fromRise {
       =>
         val a = dataType(la)
         val b = dataType(lb)
-        fun[ExpType](exp"[$a, $read]", x =>
-          fun[ExpType](exp"[$b, $read]", y =>
-            Pair(a, b, x, y)))
+//        fun[ExpType](exp"[$a, $read]", x =>
+//          fun[ExpType](exp"[$b, $read]", y =>
+//            Pair(a, b, x, y)))
+        ???
 
       case (core.Idx(),
       lt.FunType(_,
@@ -597,9 +601,10 @@ object fromRise {
       =>
         val a = dataType(la)
         val b = dataType(lb)
-        fun[ExpType ->: ExpType](exp"[$a, $read]" ->: exp"[$b, $read]", f =>
-          fun[ExpType](ExpType(a, read), x =>
-            Let(a, b, x, f)))
+//        fun[ExpType ->: ExpType](exp"[$a, $read]" ->: exp"[$b, $read]", f =>
+//          fun[ExpType](ExpType(a, read), x =>
+//            Let(a, b, x, f)))
+        ???
 
       case (f @ l.ForeignFunction(decl), _)
       =>
@@ -667,8 +672,9 @@ object fromRise {
       case (core.AsScalar(), lt.FunType(lt.ArrayType(m, lt.VectorType(n, la: lt.ScalarType)), _))
       =>
         val a = scalarType(la)
-        fun[ExpType](ExpType(ArrayType(m, VectorType(n, a)), read), e =>
-          AsScalar(m, n, a, e))
+//        fun[ExpType](ExpType(ArrayType(m, VectorType(n, a)), read), e =>
+//          AsScalar(m, n, a, e))
+        ???
 
       case (core.VectorFromScalar(), lt.FunType(_, lt.VectorType(n, la: lt.ScalarType)))
       =>
@@ -698,8 +704,19 @@ object fromRise {
         throw new Exception(s"Missing rule for $p")
     }
   }
+  private def makeMap(map: (Nat, DataType, DataType, AccessType, Phrase[ExpType ->: ExpType], Phrase[ExpType]) => Phrase[_ <: PhraseType],
+                      n: Nat,
+                      la: lt.DataType,
+                      lb: lt.DataType,
+                      access: AccessType): Phrase[_ <: PhraseType] = {
+    val a = dataType(la)
+    val b = dataType(lb)
+    fun[ExpType ->: ExpType](ExpType(a, read) ->: ExpType(b, write), f =>
+      fun[ExpType](exp"[$n.$a, $read]", e =>
+        map(n, a, b, access, f, e)))
+  }
 
-  private def makeMap(map: (Nat, DataType, DataType, Phrase[ExpType ->: ExpType], Phrase[ExpType]) => Phrase[_ <: PhraseType],
+  private def makeMapLoop(map: (Nat, DataType, DataType, Phrase[ExpType ->: ExpType], Phrase[ExpType]) => Phrase[_ <: PhraseType],
                       n: Nat,
                       la: lt.DataType,
                       lb: lt.DataType): Phrase[_ <: PhraseType] = {

@@ -174,6 +174,7 @@ object VisitAndRebuild {
             v.natToData(n2d).asInstanceOf[NatToDataIdentifier],
             visitPhraseTypeAndRebuild(t, v))
       }
+      case pti: PhraseTypeIdentifier => pti
     }
 
   private def visitDataTypeAndRebuild(dt: DataType, v: Visitor): DataType =

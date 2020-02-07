@@ -18,7 +18,7 @@ class ReadWriteAnnotations extends test_util.Tests {
 
   test ("Use of access type subtyping types mapSeq kernel.") {
     val e =
-      nFun(n => fun(ArrayType(n, float))(xs =>
+      nFun(n => fun(ArrayType(n, f32))(xs =>
         xs |> mapSeq(fun(x => x))))
 
     val dpia_e = util.gen.toDPIA(e)
@@ -27,7 +27,7 @@ class ReadWriteAnnotations extends test_util.Tests {
 
   test ("Use of access type subtyping types two nested mapSeqs kernel.") {
     val e =
-      nFun(m => nFun(n => fun(ArrayType(m, ArrayType(n, float)))(xs =>
+      nFun(m => nFun(n => fun(ArrayType(m, ArrayType(n, f32)))(xs =>
         xs |> mapSeq(mapSeq(fun(x => x))))))
 
     val dpia_e = util.gen.toDPIA(e)
@@ -36,7 +36,7 @@ class ReadWriteAnnotations extends test_util.Tests {
 
   test ("Use of access type subtyping types three nested mapSeqs kernel.") {
     val e =
-      nFun(m => nFun(n => nFun(o => fun(ArrayType(m, ArrayType(n, ArrayType(o, float))))(xs =>
+      nFun(m => nFun(n => nFun(o => fun(ArrayType(m, ArrayType(n, ArrayType(o, f32))))(xs =>
         xs |> mapSeq(mapSeq(mapSeq(fun(x => x))))))))
 
     val dpia_e = util.gen.toDPIA(e)
