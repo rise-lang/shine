@@ -388,13 +388,11 @@ object cameraPipe {
     )
   })))
 
-  // TODO: Halide reference is casting and shifting the input
-  // val shift = ??? >> map(map(fun(p => cast(p) :: i16)))
-  // camera_pipe:
+  // TODO? Halide reference in/out:
   // (h`.`w`.`u16) ->: (3`.`((h - 24) / 32) * 32)`.`((w - 32) / 32) * 32)`.`u8)
 
   val camera_pipe: Expr = nFun(h => nFun(w => nFun(hm => nFun(wm => fun(
-    ((2*(h+2))`.`(2*(w+2))`.`i16) ->:
+    ((2*(h+2)+38)`.`(2*(w+2)+22)`.`u16) ->:
     (hm`.`wm`.`f32) ->: (hm`.`wm`.`f32) ->: f32 ->: (
       f32 ->: f32 ->: int ->: int ->:
       f32 ->:
@@ -404,6 +402,15 @@ object cameraPipe {
       f32 ->: f32 ->: int ->: int ->: f32 ->: (3`.`(2*(h-3))`.`(2*(w-3))`.`u8)
     )((gamma, contrast, blackLevel, whiteLevel, sharpen_strength) =>
       input |>
+      // shift things inwards to give us enough padding on the
+      // boundaries so that we don't need to check bounds. We're going
+      // to make a 2560x1920 output image, just like the FCam pipe,
+      // so shift by 16, 12.
+      // TODO? use image DSL
+      map(drop(16 - 5) >> dropLast(6 + 5)) >> drop(12 - 5) >> dropLast(26 + 5) >>
+      // We also convert it to be signed, so we can deal with
+      // values that fall below 0 during processing.
+      map(map(fun(p => cast(p) :: i16))) >>
       hot_pixel_suppression(2*(h+2))(2*(w+2)) >>
       deinterleave(h)(w) >>
       demosaic(h)(w) >>
