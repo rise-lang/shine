@@ -5,7 +5,7 @@ import rise.core.types._
 import rise.core.primitives.SlideSeq._
 import util.{Execute, gen}
 
-class SlideSeq extends test_util.Tests {
+class SlideSeq extends shine.test_util.Tests {
   val add = fun(a => fun(b => a + b))
 
   test("Simple example should generate C code producing the expected result on a test") {

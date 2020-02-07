@@ -4,7 +4,7 @@ import nbody._
 import util.gen
 import shine.OpenCL._
 
-class NBody extends test_util.TestsWithExecutor {
+class NBody extends shine.test_util.TestsWithExecutor {
   private val N = 512
 
   test("nbody versions produce same results") {

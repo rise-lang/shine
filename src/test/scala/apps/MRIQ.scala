@@ -3,7 +3,7 @@ package apps
 import mriQ._
 import util.gen
 
-class MRIQ extends test_util.TestsWithExecutor {
+class MRIQ extends shine.test_util.TestsWithExecutor {
   private val K = 32
   private val X = 32
 

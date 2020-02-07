@@ -12,7 +12,7 @@ import rise.core.semantics.NatData
 
 import scala.language.postfixOps
 
-class Reduce extends test_util.TestsWithExecutor {
+class Reduce extends shine.test_util.TestsWithExecutor {
   val add = fun(a => fun(b => a + b))
 
   test("Simple example should generate syntactic valid C code with one loop") {

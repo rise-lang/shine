@@ -6,7 +6,7 @@ import rise.core.types._
 import rise.core.HighLevelConstructs.reorderWithStride
 import util.gen
 
-class dot extends test_util.Tests {
+class dot extends shine.test_util.Tests {
 
   private def xsT(N: NatIdentifier) = ArrayType(N, f32)
   private def ysT(N: NatIdentifier) = ArrayType(N, f32)

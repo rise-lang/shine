@@ -5,7 +5,7 @@ import rise.core.DSL._
 import util.gen
 import shine.OpenCL._
 
-class Convolution extends test_util.TestsWithExecutor {
+class Convolution extends shine.test_util.TestsWithExecutor {
   private val inputSize_small = 4096
 
   test("convolution versions produce same results") {

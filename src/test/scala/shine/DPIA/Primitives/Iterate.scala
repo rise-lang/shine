@@ -4,7 +4,7 @@ import rise.core.DSL._
 import rise.core.types._
 import util.gen
 
-class Iterate extends test_util.Tests {
+class Iterate extends shine.test_util.Tests {
   val add = fun(a => fun(b => a + b))
 
   test("Simple iterate example should generate syntactic valid C code ") {
