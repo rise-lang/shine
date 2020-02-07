@@ -9,7 +9,7 @@ import rise.core.HighLevelConstructs._
 import rise.core.types._
 import rise.core.ShowRise._
 
-class showRise extends test_util.Tests {
+class showRise extends rise.test_util.Tests {
   private val id = fun(x => x)
 
   private val dotElemWeights = fun((weights, elem) =>
