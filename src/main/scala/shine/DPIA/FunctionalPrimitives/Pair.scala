@@ -12,13 +12,14 @@ import scala.xml.Elem
 
 final case class Pair(dt1: DataType,
                       dt2: DataType,
+                      access: AccessType,
                       fst: Phrase[ExpType],
                       snd: Phrase[ExpType])
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (dt1: DataType) ->: (dt2: DataType) ->:
-      (fst :: exp"[$dt1, $read]") ->: (snd :: exp"[$dt2, $read]") ->: exp"[$dt1 x $dt2, $read]"
+    (dt1: DataType) ->: (dt2: DataType) ->: (access: AccessType) ->:
+      (fst :: exp"[$dt1, $access]") ->: (snd :: exp"[$dt2, $access]") ->: exp"[$dt1 x $dt2, $access]"
 
   override def eval(s: Store): Data = {
     PairData(
@@ -27,7 +28,7 @@ final case class Pair(dt1: DataType,
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    Pair(fun.data(dt1), fun.data(dt2),
+    Pair(fun.data(dt1), fun.data(dt2), fun.access(access),
       VisitAndRebuild(fst, fun), VisitAndRebuild(snd, fun))
   }
 
@@ -35,7 +36,7 @@ final case class Pair(dt1: DataType,
     s"(${PrettyPhrasePrinter(fst)}, ${PrettyPhrasePrinter(snd)})"
 
   override def xmlPrinter: Elem =
-    <record>
+    <record access={ToString(access)}>
       <fst>
         {Phrases.xmlPrinter(fst)}
       </fst>
@@ -49,7 +50,7 @@ final case class Pair(dt1: DataType,
     import TranslationToImperative._
 
     acc(fst)(pairAcc1(dt1, dt2, A)) `;`
-      acc(snd)(recordAcc2(dt1, dt2, A))
+      acc(snd)(pairAcc2(dt1, dt2, A))
   }
 
   override def continuationTranslation(C: Phrase[->:[ExpType, CommType]])
@@ -58,6 +59,6 @@ final case class Pair(dt1: DataType,
 
     con(fst)(λ(exp"[$dt1, $read]")(x =>
       con(snd)(λ(exp"[$dt2, $read]")(y =>
-        C(Pair(dt1, dt2, x, y)) )) ))
+        C(Pair(dt1, dt2, access, x, y)) )) ))
   }
 }

@@ -18,14 +18,14 @@ class gemv extends test_util.Tests {
     )) :: (ArrayType(n, f32) ->: f32 ->: ArrayType(n, f32))
   )
   val dot = fun(xs => fun(ys =>
-    zip(xs, ys) |> mapSeq(mult) |> reduceSeq(add, l(0.0f))
+    zip(xs, ys) |> toMemFun(mapSeq(mult)) |> reduceSeq(add, l(0.0f))
   ))
 
   val high_level = nFun((n, m) => fun(
     (m`.`n`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->:
       (m`.`f32)
   )((mat, xs, ys, alpha, beta) =>
-    zip(mapSeq(fun(row => alpha * dot(row, xs)), mat), scal(ys, beta)) |>
+    toMem(zip(mapSeq(fun(row => alpha * dot(row, xs)), mat), scal(ys, beta))) |>
       mapSeq(fun(x => x._1 + x._2))
   ))
 
@@ -95,7 +95,7 @@ class gemv extends test_util.Tests {
       mapPar(fun(t =>
         zip(xs, t._1) |>
         split(n) |>
-        mapSeq(reduceSeq(fun(a => fun(x => mult(x) + a)), l(0.0f))) |>
+        toMemFun(mapSeq(reduceSeq(fun(a => fun(x => mult(x) + a)), l(0.0f)))) |>
         mapSeq(fun(x => (alpha * x) + (t._2 * beta)))
       )) |>
       join

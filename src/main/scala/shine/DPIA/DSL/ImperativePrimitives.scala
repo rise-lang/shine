@@ -80,7 +80,7 @@ object pairAcc1 {
     PairAcc1(fstT, sndT, record)
 }
 
-object recordAcc2 {
+object pairAcc2 {
   def apply(fstT: DataType, sndT: DataType, record: Phrase[AccType]): PairAcc2 =
     PairAcc2(fstT, sndT, record)
 }

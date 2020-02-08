@@ -1,6 +1,7 @@
 package apps
 
-import shine.DPIA.Types.{read, write, ExpType}
+import shine.DPIA.Types.{ExpType, read, write}
+import shine.DPIA.Types.TypeCheck._
 import rise.core.DSL._
 import rise.core.types._
 import rise.core.HighLevelConstructs.reorderWithStride
@@ -15,7 +16,7 @@ class dot extends test_util.Tests {
   private val add = fun(a => fun(x => a + x))
 
   private val simpleDotProduct = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
-    zip(xs)(ys) |> mapSeq(mulT) |> reduceSeq(add)(l(0.0f))
+    zip(xs)(ys) |> toMemFun(mapSeq(mulT)) |> reduceSeq(add)(l(0.0f))
   )))
 
   test("Simple dot product type inference works") {
@@ -36,12 +37,9 @@ class dot extends test_util.Tests {
 
     val N = phrase.t.asInstanceOf[`(nat)->:`[ExpType ->: ExpType]].x
     val dt = f32
-    assertResult(
-      N `()->:` (exp"[$N.$dt, $read]" ->: exp"[$N.$dt, $read]" ->:
-        exp"[$dt, $write]")
-    ) {
-      phrase.t
-    }
+    assert(phrase.t `<=`
+      (N `()->:`
+        (exp"[$N.$dt, $read]" ->: exp"[$N.$dt, $read]" ->: exp"[$dt, $write]")))
   }
 
   // C

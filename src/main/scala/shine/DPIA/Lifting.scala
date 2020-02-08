@@ -1,7 +1,7 @@
 package shine.DPIA
 
 import shine.DPIA.Phrases._
-import shine.DPIA.Types.{ExpType, Kind, PhraseType}
+import shine.DPIA.Types._
 
 import scala.language.{postfixOps, reflectiveCalls}
 
@@ -95,4 +95,11 @@ object Lifting {
         throw new Exception("This should never happen")
     }
   }
+
+  def liftDependentFunctionType[K <: Kind](ty: PhraseType): K#T => PhraseType =
+    ty match {
+      case DepFunType(x, t) =>
+        (a: K#T) => PhraseType.substitute(a, x, t)
+      case _ => throw new Exception(s"did not expect $ty")
+    }
 }

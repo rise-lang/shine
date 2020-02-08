@@ -20,12 +20,13 @@ import scala.language.implicitConversions
 
 object CodeGenerator {
 
-  final case class Environment(identEnv: immutable.Map[Identifier[_ <: BasePhraseTypes], C.AST.DeclRef],
-                               commEnv: immutable.Map[Identifier[CommType], C.AST.Stmt],
-                               contEnv: immutable.Map[Identifier[ExpType ->: CommType], Phrase[ExpType] => Environment => C.AST.Stmt],
-                               letNatEnv: immutable.Map[LetNatIdentifier, Phrase[PhraseType]]
-                              ) {
-    def updatedIdentEnv(kv: (Identifier[_ <: BasePhraseTypes], C.AST.DeclRef)): Environment = {
+  final case class Environment(
+    identEnv: immutable.Map[Identifier[_ <: BasePhraseType], C.AST.DeclRef],
+    commEnv: immutable.Map[Identifier[CommType], C.AST.Stmt],
+    contEnv: immutable.Map[Identifier[ExpType ->: CommType], Phrase[ExpType] => Environment => C.AST.Stmt],
+    letNatEnv: immutable.Map[LetNatIdentifier, Phrase[PhraseType]]
+  ) {
+    def updatedIdentEnv(kv: (Identifier[_ <: BasePhraseType], C.AST.DeclRef)): Environment = {
       this.copy(identEnv = identEnv + kv)
     }
 
@@ -33,7 +34,9 @@ object CodeGenerator {
       this.copy(commEnv = commEnv + kv)
     }
 
-    def updatedContEnv(kv: (Identifier[ExpType ->: CommType], Phrase[ExpType] => Environment => C.AST.Stmt)): Environment = {
+    def updatedContEnv(
+      kv: (Identifier[ExpType ->: CommType],
+      Phrase[ExpType] => Environment => C.AST.Stmt)): Environment = {
       this.copy(contEnv = contEnv + kv)
     }
 
@@ -331,14 +334,14 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error(s"Expected path to contain at least two elements")
       }
 
-      case Zip(n, dt1, dt2, e1, e2) => path match {
+      case Zip(n, dt1, dt2, _, e1, e2) => path match {
         case (i: CIntExpr) :: (xj : PairAccess) :: ps => xj match {
           case FstMember => exp(e1, env, i :: ps, cont)
           case SndMember => exp(e2, env, i :: ps, cont)
         }
         case (i: CIntExpr) :: Nil =>
           val j = AsIndex(n, Natural(i))
-          exp(Pair(dt1, dt2, Idx(n, dt1, j, e1), Idx(n, dt2, j, e2)), env, Nil, cont)
+          exp(Pair(dt1, dt2, read, Idx(n, dt1, j, e1), Idx(n, dt2, j, e2)), env, Nil, cont)
         case _ => error(s"unexpected $path")
       }
 
@@ -356,7 +359,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error("Expected a C-Integer-Expression followed by a tuple access on the path.")
       }
 
-      case r @ Pair(_, _, e1, e2) => path match {
+      case r @ Pair(_, _, _, e1, e2) => path match {
         case (xj : PairAccess) :: ps => xj match {
           case FstMember => exp(e1, env, ps, cont)
           case SndMember => exp(e2, env, ps, cont)
@@ -381,7 +384,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
 
-      case Reorder(n, _, idxF, _, a) => path match {
+      case Reorder(n, _, _, idxF, _, a) => path match {
         case (i : CIntExpr) :: ps =>
           exp(a, env, CIntExpr(OperationalSemantics.evalIndexExp(idxF(AsIndex(n, Natural(i))))) :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
@@ -415,7 +418,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error(s"Expected two C-Integer-Expressions on the path.")
       }
 
-      case Transpose(_, _, _, e) => path match {
+      case Transpose(_, _, _, _, e) => path match {
         case (i: CIntExpr) :: (j: CIntExpr) :: ps => exp(e, env, j :: i :: ps, cont)
         case _ => error(s"did not expect $path")
       }
@@ -425,7 +428,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error(s"Expected two C-Integer-Expressions on the path.")
       }
 
-      case Map(n, dt, _, f, e) => path match {
+      case Map(n, dt, _, _, f, e) => path match {
         case (i : CIntExpr) :: ps => exp( f( Idx(n, dt, AsIndex(n, Natural(i)), e) ), env, ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
@@ -960,7 +963,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
   }
 
   protected def applySubstitutions(n: Nat,
-                                   identEnv: immutable.Map[Identifier[_ <: BasePhraseTypes], C.AST.DeclRef]): Nat = {
+                                   identEnv: immutable.Map[Identifier[_ <: BasePhraseType], C.AST.DeclRef]): Nat = {
     // lift the substitutions from the Phrase level to the ArithExpr level
     val substitionMap = identEnv.filter(_._1.t match {
       case ExpType(IndexType(_), _) => true

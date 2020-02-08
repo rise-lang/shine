@@ -9,6 +9,7 @@ import shine.DPIA.Types._
 import shine.DPIA.{LetNatIdentifier, Lifting}
 import shine._
 
+import scala.annotation.tailrec
 import scala.collection._
 
 object ProgramGenerator {
@@ -16,6 +17,7 @@ object ProgramGenerator {
   def makeCode[T <: PhraseType](originalPhrase: Phrase[T],
                                 name: String = "foo"): Program = {
 
+    @tailrec
     def getPhraseAndParams[_ <: PhraseType](p: Phrase[_],
                                             ps: Seq[Identifier[ExpType]],
                                             defs:Seq[(LetNatIdentifier, Phrase[ExpType])])

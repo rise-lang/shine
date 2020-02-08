@@ -10,19 +10,21 @@ import shine.DPIA._
 
 import scala.xml.Elem
 
-final case class Let(dt1: DataType, dt2: DataType,
+final case class Let(dt1: DataType,
+                     dt2: DataType,
+                     access: AccessType,
                      value: Phrase[ExpType],
                      f: Phrase[ExpType ->: ExpType])
   extends ExpPrimitive
 {
   override val t: ExpType =
-    (dt1: DataType) ->: (dt2: DataType) ->:
+    (dt1: DataType) ->: (dt2: DataType) ->: (access: AccessType) ->:
       (value :: exp"[$dt1, $read]") ->:
-      (f :: t"exp[$dt1, $read] -> exp[$dt2, $read]") ->:
-      exp"[$dt2, $read]"
+      (f :: t"exp[$dt1, $read] -> exp[$dt2, $access]") ->:
+      exp"[$dt2, $access]"
 
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] =
-    Let(v.data(dt1), v.data(dt2),
+    Let(v.data(dt1), v.data(dt2), v.access(access),
       VisitAndRebuild(value, v),
       VisitAndRebuild(f, v))
 
@@ -41,7 +43,7 @@ final case class Let(dt1: DataType, dt2: DataType,
   override def prettyPrint: String = s"(let ${PrettyPhrasePrinter(value)} ${PrettyPhrasePrinter(f)})"
 
   override def xmlPrinter: Elem =
-    <let dt1={ToString(dt1)} dt2={ToString(dt2)}>
+    <let dt1={ToString(dt1)} dt2={ToString(dt2)} access={ToString(access)}>
       <value>{Phrases.xmlPrinter(value)}</value>
       <f>{Phrases.xmlPrinter(f)}</f>
     </let>

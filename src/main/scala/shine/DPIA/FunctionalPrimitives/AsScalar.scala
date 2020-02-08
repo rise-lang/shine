@@ -13,16 +13,17 @@ import scala.xml.Elem
 final case class AsScalar(n: Nat,
                           m: Nat,
                           dt: ScalarType,
+                          access: AccessType,
                           array: Phrase[ExpType])
   extends ExpPrimitive {
 
   override val t: ExpType =
     (n: Nat) ->: (m: Nat) ->: (dt: ScalarType) ->:
-      (array :: exp"[$n.${VectorType(m, dt)}, $read]") ->:
-        exp"[${n * m}.$dt, $read]"
+      (array :: exp"[$n.${VectorType(m, dt)}, $access]") ->:
+        exp"[${n * m}.$dt, $access]"
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    AsScalar(fun.nat(n), fun.nat(m), fun.data(dt), VisitAndRebuild(array, fun))
+    AsScalar(fun.nat(n), fun.nat(m), fun.data(dt), fun.access(access), VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): Data = ???
@@ -30,7 +31,7 @@ final case class AsScalar(n: Nat,
   override def prettyPrint: String = s"(asScalar ${PrettyPhrasePrinter(array)})"
 
   override def xmlPrinter: Elem =
-    <asScalar n={ToString(n)}>
+    <asScalar n={ToString(n)} access={ToString(access)}>
       {Phrases.xmlPrinter(array)}
     </asScalar>
 
@@ -48,6 +49,6 @@ final case class AsScalar(n: Nat,
   override def continuationTranslation(C: Phrase[->:[ExpType, CommType]])
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
-    con(array)(λ(array.t)(x => C(AsScalar(n, m, dt, x)) ))
+    con(array)(λ(array.t)(x => C(AsScalar(n, m, dt, access, x)) ))
   }
 }

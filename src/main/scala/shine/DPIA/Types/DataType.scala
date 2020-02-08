@@ -82,8 +82,7 @@ object NatToDataApply {
 }
 
 final case class DataTypeIdentifier(name: String)
-  extends DataType with Kind.Identifier
-{
+  extends DataType with Kind.Identifier {
   override def toString: String = name
 }
 

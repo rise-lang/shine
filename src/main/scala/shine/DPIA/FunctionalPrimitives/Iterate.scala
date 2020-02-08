@@ -21,9 +21,9 @@ final case class Iterate(n: Nat,
   override val t: ExpType = {
     val l = f.t.x
     (n: Nat) ->: (m: Nat) ->: (k: Nat) ->: (dt: DataType) ->:
-      (f :: t"($l : nat) -> exp[${l * n}.$dt, $read] -> exp[$l.$dt, $read]") ->:
+      (f :: t"($l : nat) -> exp[${l * n}.$dt, $read] -> exp[$l.$dt, $write]") ->:
         (array :: exp"[${m * n.pow(k)}.$dt, $read]") ->:
-          exp"[$m.$dt, $read]"
+          exp"[$m.$dt, $write]"
   }
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {

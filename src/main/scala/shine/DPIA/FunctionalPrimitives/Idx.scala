@@ -17,6 +17,7 @@ final case class Idx(n: Nat,
                      array: Phrase[ExpType])
   extends ExpPrimitive {
 
+  //TODO Answer Question: should this be polymorphic over the access type?
   override val t: ExpType =
     (n: Nat) ->: (dt: DataType) ->:
       (index :: exp"[idx($n), $read]") ->:
@@ -49,6 +50,7 @@ final case class Idx(n: Nat,
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
+    //FIXME the general assignment shouldn't be allowed.
     con(array)(λ(exp"[$n.$dt, $read]")(x =>
       con(index)(fun(index.t)(i =>
         A :=| dt | Idx(n, dt, i, x)))))

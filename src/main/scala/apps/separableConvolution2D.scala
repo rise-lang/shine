@@ -103,9 +103,9 @@ object separableConvolution2D {
   }))
   val separatedSeq: Expr = fun(3`.`f32)(weightsV => fun(3`.`f32)(weightsH => {
     val horizontal = mapSeq(slide(3)(1) >> mapSeq(dotSeqUnroll(weightsH)))
-    val vertical = slide(3)(1) >> mapSeq(
+    val vertical = slide(3)(1) >> toMemFun(mapSeq(
       transpose >> mapSeq(dotSeqUnroll(weightsV))
-    )
+    ))
     padClamp2D(1) >> vertical >> horizontal
   }))
 

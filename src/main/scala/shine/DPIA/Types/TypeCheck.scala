@@ -1,12 +1,11 @@
 package shine.DPIA.Types
 
-import shine.DPIA.Phrases._
 import shine.DPIA._
+import shine.DPIA.Phrases._
 
 class TypeException(msg: String) extends Exception(msg)
 
 object TypeCheck {
-
   def apply[T <: PhraseType](phrase: Phrase[T]): Unit = {
     phrase match {
       case Identifier(_, _) =>
@@ -16,7 +15,8 @@ object TypeCheck {
       case Apply(p, q) =>
         TypeCheck(p)
         TypeCheck(q)
-        check(p.t.inT, q.t)
+        if(!(q.t `<=` p.t.inT))
+          error(q.t, p.t.inT)
 
       case DepLambda(_, p) => TypeCheck(p)
 
@@ -74,9 +74,7 @@ object TypeCheck {
   }
 
   def check(found: PhraseType, expected: PhraseType): Unit = {
-    if (found != expected) {
-      error(found, expected)
-    }
+    if (!(found `<=` expected)) error(found, expected)
   }
 
   def check(found: PhraseType, test: PhraseType => Unit): Unit = {
@@ -88,5 +86,33 @@ object TypeCheck {
       TypeCheck(p)
       check(p.t, pt)
     }
+  }
+
+  implicit class SubTypeCheckHelper(subType: PhraseType) {
+    def `<=`(superType: PhraseType): Boolean = {
+      subTypeCheck(subType, superType)
+    }
+  }
+
+  private def subTypeCheck(subType: PhraseType, superType: PhraseType): Boolean = {
+    if (subType == superType) return true
+
+    (subType, superType) match {
+      case (ExpType(bSub: DataType, accessSub), ExpType(bSuper, _)) =>
+        bSub == bSuper && notContainingArrayType(bSub) && accessSub == read
+      case (FunType(subInT, subOutT), FunType(superInT, superOutT)) =>
+        subTypeCheck(superInT, subInT) && subTypeCheck(subOutT,  superOutT)
+      case (DepFunType(subInT, subOutT), DepFunType(superInT, superOutT)) =>
+        subInT == superInT && subTypeCheck(subOutT, superOutT)
+      case _ => false
+    }
+  }
+
+  //TODO How do we deal with NatToData etc?
+  private def notContainingArrayType(composed: DataType): Boolean = composed match {
+      case _: BasicType => true
+      case PairType(first, second) =>
+        notContainingArrayType(first) && notContainingArrayType(second)
+      case _ => false
   }
 }

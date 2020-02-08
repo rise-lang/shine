@@ -11,7 +11,8 @@ import shine.DPIA._
 
 import scala.xml.Elem
 
-// performs a sequential slide, taking advantage of the space/time overlapping reuse opportunity
+// performs a sequential slide, taking advantage of the space/time
+// overlapping reuse opportunity
 final case class SlideSeq(rot: lp.SlideSeq.Rotate,
                           n: Nat,
                           sz: Nat,
@@ -26,7 +27,8 @@ final case class SlideSeq(rot: lp.SlideSeq.Rotate,
   val inputSize: Nat with SimplifiedExpr = sp * n + sz - sp
 
   override val t: ExpType =
-    (n: Nat) ->: (sz: Nat) ->: (sp: Nat) ->: (dt1: DataType) ->: (dt2: DataType) ->:
+    (n: Nat) ->: (sz: Nat) ->: (sp: Nat) ->:
+      (dt1: DataType) ->: (dt2: DataType) ->:
       (write_dt1 :: t"exp[$dt1, $read] -> exp[$dt1, $write]") ->:
       (f :: t"exp[$sz.$dt1, $read] -> exp[$dt2, $write]") ->:
       (input :: exp"[$inputSize.$dt1, $read]") ->:
@@ -40,11 +42,13 @@ final case class SlideSeq(rot: lp.SlideSeq.Rotate,
   }
 
   override def eval(s: Store): Data = {
-    Map(n, ArrayType(sz, dt1), dt2, f, Slide(n, sz, sp, dt1, input)).eval(s)
+    Map(n, ArrayType(sz, dt1), dt2, read, f,
+      Slide(n, sz, sp, dt1, input)).eval(s)
   }
 
-  override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommType] = {
+  override def acceptorTranslation(
+    A: Phrase[AccType])(
+    implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
     import shine.DPIA.IntermediatePrimitives.SlideSeqIValues
 
@@ -63,8 +67,9 @@ final case class SlideSeq(rot: lp.SlideSeq.Rotate,
       )))
   }
 
-  override def continuationTranslation(C: Phrase[ExpType ->: CommType])
-                                      (implicit context: TranslationContext): Phrase[CommType] = {
+  override def continuationTranslation(
+    C: Phrase[ExpType ->: CommType])(
+    implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     `new`(dt"[$n.$dt2]", fun(exp"[$n.$dt2, $read]" x acc"[$n.$dt2]")(tmp =>
@@ -73,10 +78,12 @@ final case class SlideSeq(rot: lp.SlideSeq.Rotate,
   }
 
   override def prettyPrint: String =
-    s"(slideSeq $sz $sp ${PrettyPhrasePrinter(f)} ${PrettyPhrasePrinter(input)})"
+    s"(slideSeq" +
+      s"$sz $sp ${PrettyPhrasePrinter(f)} ${PrettyPhrasePrinter(input)})"
 
   override def xmlPrinter: Elem =
-    <slideSeq n={ToString(n)} sz={ToString(sz)} sp={ToString(sp)} dt1={ToString(dt1)} dt2={ToString(dt2)}>
+    <slideSeq n={ToString(n)} sz={ToString(sz)}
+              sp={ToString(sp)} dt1={ToString(dt1)} dt2={ToString(dt2)}>
       <f>{Phrases.xmlPrinter(f)}</f>
       <input>{Phrases.xmlPrinter(input)}</input>
     </slideSeq>

@@ -6,13 +6,14 @@ import shine.DPIA._
 
 sealed trait PhraseType
 
-sealed abstract class BasePhraseTypes extends PhraseType
+sealed abstract class BasePhraseType extends PhraseType
 
-final case class ExpType(dataType: DataType, accessType: AccessType) extends BasePhraseTypes {
+final case class ExpType(dataType: DataType, accessType: AccessType)
+  extends BasePhraseType {
   override def toString = s"exp[$dataType, $accessType]"
 }
 
-final case class AccType(dataType: DataType) extends BasePhraseTypes {
+final case class AccType(dataType: DataType) extends BasePhraseType {
   override def toString = s"acc[$dataType]"
 }
 
@@ -22,8 +23,9 @@ sealed case class CommType() extends PhraseType {
 
 object comm extends CommType
 
-final case class PhrasePairType[T1 <: PhraseType, T2 <: PhraseType](t1: T1, t2: T2)
-  extends PhraseType {
+final case class PhrasePairType[T1 <: PhraseType, T2 <: PhraseType](
+  t1: T1,
+  t2: T2) extends PhraseType {
   override def toString = s"$t1 x $t2"
 }
 
@@ -49,7 +51,7 @@ object PhraseType {
     case (dt: DataType, forDt: DataTypeIdentifier)        => substitute(dt, forDt, in)
     case (n: Nat, forN: NatIdentifier)                    => substitute(n, forN, in)
     case (a: AddressSpace, forA: AddressSpaceIdentifier)  => substitute(a, forA, in)
-    case (a: AccessType, forA: AccessTypeIdentifier)      => ??? //substitute(a, forA, in)
+    case (a: AccessType, forA: AccessTypeIdentifier)      => substitute(a, forA, in)
     case (n2n: NatToNat, fotN2N: NatToNatIdentifier)      => ??? //substitute(n2n, forN2N, in)
     case (n2d: NatToData, fotN2D: NatToDataIdentifier)    => ??? //substitute(n2d, forN2D, in)
     case _ => throw new Exception(s"could not substitute $x for ${`for`} in $in")
@@ -81,7 +83,7 @@ object PhraseType {
 
   def substitute(dt: DataType, `for`: DataType, in: PhraseType): PhraseType = {
     in match {
-      case b: BasePhraseTypes => b match {
+      case b: BasePhraseType => b match {
         case e: ExpType => ExpType(DataType.substitute(dt, `for`, e.dataType), e.accessType)
         case a: AccType => AccType(DataType.substitute(dt, `for`, a.dataType))
       }
@@ -133,7 +135,7 @@ object PhraseType {
 
   def substitute(ae: Nat, `for`: Nat, in: PhraseType): PhraseType = {
     in match {
-      case b: BasePhraseTypes => b match {
+      case b: BasePhraseType => b match {
         case e: ExpType => ExpType(DataType.substitute(ae, `for`, e.dataType), e.accessType)
         case a: AccType => AccType(DataType.substitute(ae, `for`, a.dataType))
       }
@@ -152,12 +154,10 @@ object PhraseType {
   def substitute[T <: PhraseType](addr: AddressSpace,
                                   `for`: AddressSpaceIdentifier,
                                   in: Phrase[T]): Phrase[T] = {
-
     object Visitor extends Phrases.VisitAndRebuild.Visitor {
       override def addressSpace(a: AddressSpace): AddressSpace =
         if (a == `for`) { addr } else { a }
     }
-
     Phrases.VisitAndRebuild(in, Visitor)
   }
 
@@ -165,5 +165,24 @@ object PhraseType {
                  `for`: AddressSpaceIdentifier,
                  in: PhraseType): PhraseType = {
     in
+  }
+
+  def substitute[T <: PhraseType](acc: AccessType,
+                                  `for`: AccessTypeIdentifier,
+                                  in: Phrase[T]): Phrase[T] = {
+    object Visitor extends Phrases.VisitAndRebuild.Visitor {
+      override def access(w: AccessType): AccessType = if (w == `for`) acc else w
+    }
+    Phrases.VisitAndRebuild(in, Visitor)
+  }
+
+  def substitute(
+    acc: AccessType,
+    `for`: AccessTypeIdentifier,
+    in: PhraseType): PhraseType = {
+    object Visitor extends Phrases.VisitAndRebuild.Visitor {
+      override def access(w: AccessType): AccessType = if (w == `for`) acc else w
+    }
+    Phrases.VisitAndRebuild.visitPhraseTypeAndRebuild(in, Visitor)
   }
 }
