@@ -32,7 +32,6 @@ final case class Map(n: Nat,
                               (C: Phrase[AccType ->: AccType]) : Phrase[AccType] = {
     import TranslationToImperative._
 
-    //TODO Understand the Fede Translation better and choose correct AccessType for x!!!
     val x = Identifier(freshName("fede_x"), ExpType(dt1, access))
 
     val otype = AccType(dt2)

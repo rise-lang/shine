@@ -45,29 +45,7 @@ final case class DepFunType[K <: Kind, +R <: PhraseType](x: K#I, t: R)
   override def toString = s"(${x.name}: ${kn.get}) -> $t"
 }
 
-final case class PhraseTypeIdentifier(name: String)
-  extends PhraseType {
-  override def toString = s"_${name}"
-}
-
 object PhraseType {
-
-  def substitute(pt: PhraseType,
-                `for`: PhraseTypeIdentifier,
-                in: PhraseType
-  ): PhraseType = in match {
-    case pair: PhrasePairType[_, _] =>
-      PhrasePairType(
-        substitute(pt, `for`, pair.t1),
-        substitute(pt, `for`, pair.t2))
-    case f: FunType[_, _] =>
-      FunType(substitute(pt, `for`, f.inT), substitute(pt, `for`, f.outT))
-    case df: DepFunType[_, _] =>
-        DepFunType(df.x, substitute (pt, `for`, df.t) ) (df.kn)
-    case i: PhraseTypeIdentifier => if (i == `for`) pt else i
-    case self => self
-  }
-
 
   def substitute[K <: Kind, T <: PhraseType](x: K#T, `for`: K#I, in: Phrase[T]): Phrase[T] =(x, `for`) match {
     case (dt: DataType, forDt: DataTypeIdentifier)        => substitute(dt, forDt, in)
@@ -118,7 +96,6 @@ object PhraseType {
         PassiveFunType(substitute(dt, `for`, pf.inT), substitute(dt, `for`, pf.outT))
       case df: DepFunType[_, _] =>
         DepFunType(df.x, substitute(dt, `for`, df.t))(df.kn)
-      case pti: PhraseTypeIdentifier => pti
     }
   }
 
@@ -171,7 +148,6 @@ object PhraseType {
         PassiveFunType(substitute(ae, `for`, pf.inT), substitute(ae, `for`, pf.outT))
       case df: DepFunType[_, _] =>
         DepFunType(df.x, substitute(ae, `for`, df.t))(df.kn)
-      case pti: PhraseTypeIdentifier => pti
     }
   }
 

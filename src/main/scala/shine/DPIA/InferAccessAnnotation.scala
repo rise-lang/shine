@@ -1,27 +1,29 @@
 package shine.DPIA
 
 import rise.{core => r}
-import rise.core.{Expr, lifting, types => rt}
-import rise.core.types.Kind
-import rise.core.primitives.MapSeq
+import rise.core.{types => rt}
+import rise.core.{primitives => rp}
 import shine.DPIA.Types._
-import shine.DPIA.Types.TypeCheck._
-import shine.DPIA.{RiseExprAnnotated => rea}
 import shine.DPIA.Types.TypeCheck.SubTypeCheckHelper
 
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.language.implicitConversions
 
-private case object inferAccessAnnotation {
-
+object inferAccess {
   def apply(e: r.Expr): Map[r.Expr, PhraseType] = {
+    val infer = new InferAccessAnnotation()
+    infer(e)
+  }
+}
+
+private class InferAccessAnnotation() {
+  def apply(e: r.Expr): Predef.Map[r.Expr, PhraseType] = {
     inferPhraseTypes(e, Map.empty, isKernelParamFun = true)
     ptAnnotationMap.toMap
   }
 
   private type Context = Map[r.Identifier, PhraseType]
-
   private type SubstMap = Predef.Map[AccessTypeIdentifier, AccessType]
   //No occurs check needed, because rw annotations cannot contain variables
   private case class Subst(
@@ -54,11 +56,13 @@ private case object inferAccessAnnotation {
     private def appendSubstMap(
       s: SubstMap,
       res: SubstMap): SubstMap = {
-      appendSubstMap(
-        s.tail,
-        if (!res.contains(s.head._1)) res + s.head
-        else error(
-          s"Unexpectedly assigning var ${s.head._1} multiple times."))
+      if (s.nonEmpty)
+        appendSubstMap(
+          s.tail,
+          if (!res.contains(s.head._1)) res + s.head
+          else error(
+            s"Unexpectedly assigning var ${s.head._1} multiple times."))
+      else res
     }
 
     def merge(s: Subst): Subst = {
@@ -71,15 +75,16 @@ private case object inferAccessAnnotation {
       s: SubstMap,
       res: SubstMap
     ): SubstMap = {
-      val newElem = s.head
-      mergeSubstMap(
-        s.tail,
-        if (res.contains(newElem._1) && res(newElem._1) == newElem._2)
-          res + newElem
-        else error(
-          s"Trying to assign two different values" +
-            s"${res(newElem._1)} and ${newElem._2} to ${newElem._1}")
-      )
+      if (s.nonEmpty) {
+        val newElem = s.head
+        mergeSubstMap(
+          s.tail,
+          if (res.contains(newElem._1) && res(newElem._1) == newElem._2)
+            res + newElem
+          else error(
+            s"Trying to assign two different values" +
+              s"${res(newElem._1)} and ${newElem._2} to ${newElem._1}"))
+      } else res
     }
 
     def +(i: AccessTypeIdentifier, pt: AccessType): Subst = {
@@ -115,7 +120,7 @@ private case object inferAccessAnnotation {
         depLambda(depL, ctx, isKernelParamFun)
       case depA: r.DepApp[_] =>
         depApp(depA, ctx, addsKernelParam(e, isKernelParamFun))
-      case p: r.Primitive => ??? //primitive(p, ctx)
+      case p: r.Primitive => primitive(p)
     }
   }
 
@@ -131,7 +136,7 @@ private case object inferAccessAnnotation {
         //arguments of ExpType only.
         val dt = inT.asInstanceOf[rt.DataType]
         ExpType(dataType(dt), read)
-      } else freshPhraseTypeIdentifier()
+      } else `type`(lambda.x.t)
 
     val ctxWithX = ctx updated(lambda.x, xType)
     val (eType, eSubst) =
@@ -149,14 +154,11 @@ private case object inferAccessAnnotation {
   ): (PhraseType, Subst) = {
     val (fType, fSubst) = inferPhraseTypes(app.f, ctx, isKernelParamFun)
     val (eType, eSubst) = inferPhraseTypes(app.e, fSubst(ctx), isKernelParamFun)
-    val outT = freshPhraseTypeIdentifier()
+    val eSubstFType =
+      eSubst(fType).asInstanceOf[FunType[_ <: PhraseType, _ <: PhraseType]]
 
-    val subst =
-      subUnifyPhraseType(
-        eSubst(fType).asInstanceOf[FunType[_ <: PhraseType, _]].inT,
-        FunType(eType, outT))
-
-    val appType = subst(outT)
+    val subst = subUnifyPhraseType(eType, eSubstFType.inT)
+    val appType = subst(eSubstFType.outT)
     ptAnnotationMap update(app, appType)
     (appType, subst(eSubst(fSubst)))
   }
@@ -178,6 +180,8 @@ private case object inferAccessAnnotation {
             addressSpaceIdentifier(ad), eType)
         case n2n: rt.NatToNatIdentifier =>
           DepFunType[NatToNatKind, PhraseType](natToNatIdentifier(n2n), eType)
+        case n2d: rt.NatToDataIdentifier =>
+          DepFunType[NatToDataKind, PhraseType](natToDataIdentifier(n2d), eType)
       }
     ptAnnotationMap update(depLambda, depLambdaType)
     (depLambdaType, eSubst)
@@ -209,14 +213,57 @@ private case object inferAccessAnnotation {
 
   private def primitive(
     p: r.Primitive,
-    ctx: Context,
   ): (PhraseType, Subst) = {
     p match {
-      case MapSeq() => ???
-//        val mapT = p.t.asInstanceOf[Fun]
-//          FunType(
-//            FunType(ExpType(read), DataType(write)),
-//            FunType(DataType(read), DataType(write)))
+      case rp.MapSeq() =>
+        val rMapSeqT = p.t.asInstanceOf[
+          rt.FunType[rt.FunType[rt.DataType, rt.DataType],
+            rt.FunType[rt.DataType, rt.DataType]]
+        ]
+        val rFInT = rMapSeqT.inT.inT
+        val rFOutT = rMapSeqT.inT.outT
+        val rArrT = rMapSeqT.outT.inT
+        val rMapOutT = rMapSeqT.outT.outT
+
+        val mapSeqType = FunType(
+          FunType(ExpType(dataType(rFInT), read),
+            ExpType(dataType(rFOutT), write)),
+          FunType(ExpType(dataType(rArrT), read),
+            ExpType(dataType(rMapOutT), write)))
+        (mapSeqType, Subst())
+
+      case rp.Map() =>
+        val rMapT = p.t.asInstanceOf[
+          rt.FunType[rt.FunType[rt.DataType, rt.DataType],
+            rt.FunType[rt.DataType, rt.DataType]]
+        ]
+        val rFInT = rMapT.inT.inT
+        val rFOutT = rMapT.inT.outT
+        val rArrT = rMapT.outT.inT
+        val rMapOutT = rMapT.outT.outT
+
+        val ai = accessTypeIdentifier()
+        val mapType = FunType(
+          FunType(ExpType(dataType(rFInT), ai),
+            ExpType(dataType(rFOutT), ai)),
+          FunType(ExpType(dataType(rArrT), ai),
+            ExpType(dataType(rMapOutT), ai)))
+        (mapType, Subst())
+
+      case rp.Transpose() =>
+        val rTransposeT = p.t.asInstanceOf[rt.FunType[rt.DataType, rt.DataType]]
+
+        val ai = accessTypeIdentifier()
+        val transposeType = FunType(ExpType(dataType(rTransposeT.inT), ai),
+          ExpType(dataType(rTransposeT.outT), ai))
+        (transposeType, Subst())
+
+      case rp.ToMem() =>
+        val rToMemT = p.t.asInstanceOf[rt.FunType[rt.DataType, rt.DataType]]
+
+        val toMemType = FunType(ExpType(dataType(rToMemT.inT), write),
+          ExpType(dataType(rToMemT.outT), read))
+        (toMemType, Subst())
     }
   }
 
@@ -231,9 +278,6 @@ private case object inferAccessAnnotation {
       }
     else false
 
-  private def freshPhraseTypeIdentifier(): PhraseTypeIdentifier =
-    PhraseTypeIdentifier(freshName("free"))
-
   private def subUnifyPhraseType(
     less: PhraseType,
     larger: PhraseType,
@@ -243,7 +287,7 @@ private case object inferAccessAnnotation {
           case (li: AccessTypeIdentifier, _) => Subst() + (li, ra)
           case (_, ri: AccessTypeIdentifier) => Subst() + (ri, la)
           case _ => if (le `<=` re) Subst()
-            else error(s"Cannot subunify $less and $larger.")
+                    else error(s"Cannot subunify $less and $larger.")
         }
       case (FunType(lin, lout), FunType(rin, rout)) =>
         val argSubst = subUnifyPhraseType(rin, lin)
@@ -252,14 +296,6 @@ private case object inferAccessAnnotation {
         subUnifyPhraseType(la, ra)
       case _ => error(s"Cannot subunify $less and $larger.")
     }
-
-  def kind[K <: Kind](k: rt.Kind#T): K#T = k match {
-    case addr: rt.AddressSpaceKind#T => addressSpace(addr).asInstanceOf[K#T]
-    case dt: rt.DataKind#T => dataType(dt).asInstanceOf[K#T]
-    case nat: rt.NatKind#T => nat.asInstanceOf[K#T]
-    //TODO NatToNat and NatToData Missing!
-    case _ => throw new Exception("This should never happen")
-  }
 
   def dataTypeIdentifier(dt: rt.DataTypeIdentifier): DataTypeIdentifier =
     DataTypeIdentifier(dt.name)
@@ -274,6 +310,22 @@ private case object inferAccessAnnotation {
     NatToDataIdentifier(n.name)
   def accessTypeIdentifier(): AccessTypeIdentifier =
     AccessTypeIdentifier(freshName("access"))
+
+  def `type`(ty: rt.Type): PhraseType = ty match {
+    case dt: rt.DataType =>
+      ExpType(dataType(dt), accessTypeIdentifier())
+    case rt.FunType(i, o) => `type`(i) ->: `type`(o)
+    case rt.DepFunType(i, t) => i match {
+      case dt: rt.DataTypeIdentifier => dataTypeIdentifier(dt) `()->:` `type`(t)
+      case n: rt.NatIdentifier => natIdentifier(n) `()->:` `type`(t)
+      case n2n: rt.NatToNatIdentifier =>
+        natToNatIdentifier(n2n) `()->:` `type`(t)
+      case n2d: rt.NatToDataIdentifier =>
+        natToDataIdentifier(n2d) `()->:` `type`(t)
+    }
+    case rt.TypeIdentifier(_) | rt.TypePlaceholder =>
+      throw new Exception("This should not happen")
+  }
 
   def dataType(t: rt.DataType): DataType = t match {
     case bt: rt.BasicType => basicType(bt)
