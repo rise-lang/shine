@@ -65,28 +65,6 @@ private class InferAccessAnnotation() {
       else res
     }
 
-    def merge(s: Subst): Subst = {
-      val merged = mergeSubstMap(s.substMap, this.substMap)
-      Subst(merged)
-    }
-
-    @tailrec
-    private def mergeSubstMap(
-      s: SubstMap,
-      res: SubstMap
-    ): SubstMap = {
-      if (s.nonEmpty) {
-        val newElem = s.head
-        mergeSubstMap(
-          s.tail,
-          if (res.contains(newElem._1) && res(newElem._1) == newElem._2)
-            res + newElem
-          else error(
-            s"Trying to assign two different values" +
-              s"${res(newElem._1)} and ${newElem._2} to ${newElem._1}"))
-      } else res
-    }
-
     def +(i: AccessTypeIdentifier, pt: AccessType): Subst = {
       if (substMap contains i)
         throw new Exception(
