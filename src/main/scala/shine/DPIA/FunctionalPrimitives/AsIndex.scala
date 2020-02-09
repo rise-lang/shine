@@ -11,6 +11,7 @@ import shine.DPIA._
 import scala.language.reflectiveCalls
 import scala.xml.Elem
 
+//FIXME should this be parametric over the access type?
 final case class AsIndex(n: Nat, e: Phrase[ExpType])
   extends ExpPrimitive {
 

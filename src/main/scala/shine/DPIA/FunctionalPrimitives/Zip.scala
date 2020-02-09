@@ -11,21 +11,23 @@ import shine.DPIA.{Phrases, _}
 
 import scala.xml.Elem
 
-final case class Zip(n: Nat,
-                     dt1: DataType,
-                     dt2: DataType,
-                     access: AccessType,
-                     e1: Phrase[ExpType],
-                     e2: Phrase[ExpType])
-  extends ExpPrimitive {
+final case class Zip(
+  n: Nat,
+  dt1: DataType,
+  dt2: DataType,
+  access: AccessType,
+  e1: Phrase[ExpType],
+  e2: Phrase[ExpType]
+) extends ExpPrimitive {
 
   override val t: ExpType =
-    (n: Nat) ->: (dt1: DataType) ->: (dt2: DataType) ->: (access: AccessType) ->:
-      (e1 :: exp"[$n.$dt1, $access]") ->:
-       (e2 :: exp"[$n.$dt2, $access]") ->: exp"[$n.($dt1 x $dt2), $access]"
+    (n: Nat) ->: (dt1: DataType) ->: (dt2: DataType) ->:
+      (access: AccessType) ->: (e1 :: exp"[$n.$dt1, $access]") ->:
+        (e2 :: exp"[$n.$dt2, $access]") ->: exp"[$n.($dt1 x $dt2), $access]"
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    Zip(f.nat(n), f.data(dt1), f.data(dt2), f.access(access), VisitAndRebuild(e1, f), VisitAndRebuild(e2, f))
+    Zip(f.nat(n), f.data(dt1), f.data(dt2), f.access(access),
+      VisitAndRebuild(e1, f), VisitAndRebuild(e2, f))
   }
 
   override def eval(s: Store): Data = {
@@ -43,7 +45,8 @@ final case class Zip(n: Nat,
     s"(zip ${PrettyPhrasePrinter(e1)} ${PrettyPhrasePrinter(e2)})"
 
   override def xmlPrinter: Elem =
-    <zip n={ToString(n)} dt1={ToString(dt1)} dt2={ToString(dt2)} access={ToString(access)}>
+    <zip n={ToString(n)} dt1={ToString(dt1)} dt2={ToString(dt2)}
+         access={ToString(access)}>
       <lhs type={ToString(ExpType(ArrayType(n, dt1), access))}>
         {Phrases.xmlPrinter(e1)}
       </lhs>
@@ -52,16 +55,18 @@ final case class Zip(n: Nat,
       </rhs>
     </zip>
 
-  override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommType] = {
+  override def acceptorTranslation(A: Phrase[AccType])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] = {
     import TranslationToImperative._
 
     acc(e1)(ZipAcc1(n, dt1, dt2, A)) `;`
       acc(e2)(ZipAcc2(n, dt1, dt2, A))
   }
 
-  override def continuationTranslation(C: Phrase[ExpType ->: CommType])
-                                      (implicit context: TranslationContext): Phrase[CommType] = {
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(e1)(λ(exp"[$n.$dt1, $read]")(x =>

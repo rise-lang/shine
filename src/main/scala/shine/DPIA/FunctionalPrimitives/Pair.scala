@@ -10,16 +10,18 @@ import shine.DPIA._
 
 import scala.xml.Elem
 
-final case class Pair(dt1: DataType,
-                      dt2: DataType,
-                      access: AccessType,
-                      fst: Phrase[ExpType],
-                      snd: Phrase[ExpType])
-  extends ExpPrimitive {
+final case class Pair(
+  dt1: DataType,
+  dt2: DataType,
+  access: AccessType,
+  fst: Phrase[ExpType],
+  snd: Phrase[ExpType]
+) extends ExpPrimitive {
 
   override val t: ExpType =
     (dt1: DataType) ->: (dt2: DataType) ->: (access: AccessType) ->:
-      (fst :: exp"[$dt1, $access]") ->: (snd :: exp"[$dt2, $access]") ->: exp"[$dt1 x $dt2, $access]"
+      (fst :: exp"[$dt1, $access]") ->: (snd :: exp"[$dt2, $access]") ->:
+        exp"[$dt1 x $dt2, $access]"
 
   override def eval(s: Store): Data = {
     PairData(
@@ -27,7 +29,9 @@ final case class Pair(dt1: DataType,
       OperationalSemantics.eval(s, snd))
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
+  override def visitAndRebuild(
+    fun: VisitAndRebuild.Visitor
+  ): Phrase[ExpType] = {
     Pair(fun.data(dt1), fun.data(dt2), fun.access(access),
       VisitAndRebuild(fst, fun), VisitAndRebuild(snd, fun))
   }
@@ -45,16 +49,18 @@ final case class Pair(dt1: DataType,
       </snd>
     </record>
 
-  override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommType] = {
+  override def acceptorTranslation(A: Phrase[AccType])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] = {
     import TranslationToImperative._
 
     acc(fst)(pairAcc1(dt1, dt2, A)) `;`
       acc(snd)(pairAcc2(dt1, dt2, A))
   }
 
-  override def continuationTranslation(C: Phrase[->:[ExpType, CommType]])
-                                      (implicit context: TranslationContext): Phrase[CommType] = {
+  override def continuationTranslation(C: Phrase[->:[ExpType, CommType]])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(fst)(λ(exp"[$dt1, $read]")(x =>

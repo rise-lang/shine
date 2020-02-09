@@ -50,12 +50,12 @@ object AdjustArraySizesForAllocations {
       case Lambda(_, p) => visitAndGatherInformation(p, parallInfo)
       case DepApply(f, _) => visitAndGatherInformation(f, parallInfo)
       case DepLambda(_, p) => visitAndGatherInformation(p, parallInfo)
-      case Fst(_, _, p) => visitAndGatherInformation(p, parallInfo) match {
+      case Fst(_, _, _, p) => visitAndGatherInformation(p, parallInfo) match {
         case Nil => Nil
         case RecordInfo(fst, _) :: Nil => fst
         case pi => error(s"did not expect $pi")
       }
-      case Snd(_, _, p) => visitAndGatherInformation(p, parallInfo) match {
+      case Snd(_, _, _, p) => visitAndGatherInformation(p, parallInfo) match {
         case Nil => Nil
         case RecordInfo(_, snd) :: Nil => snd
         case pi => error(s"did not expect $pi")
@@ -137,8 +137,8 @@ object AdjustArraySizesForAllocations {
         case (PairType(adjDt1, adjDt2), PairType(oldDt1, oldDt2)) =>
           parallInfo match {
             case (ri: RecordInfo) :: _ => Pair(oldDt1, oldDt2, read,
-              adjustedExpr(ri.fst, adjDt1, oldDt1, addrSpace)(Fst(adjDt1, adjDt2, E)),
-              adjustedExpr(ri.snd, adjDt2, oldDt2, addrSpace)(Snd(adjDt1, adjDt2, E)))
+              adjustedExpr(ri.fst, adjDt1, oldDt1, addrSpace)(Fst(adjDt1, adjDt2, read, E)),
+              adjustedExpr(ri.snd, adjDt2, oldDt2, addrSpace)(Snd(adjDt1, adjDt2, read, E)))
             case _ => throw new Exception("This should never happen.")
           }
 

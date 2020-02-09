@@ -12,9 +12,9 @@ import shine.OpenCL.DSL.`new`
 
 import scala.xml.Elem
 
-final case class To(addrSpace: AddressSpace,
-                    dt: DataType,
-                    input: Phrase[ExpType])
+final case class OclToMem(addrSpace: AddressSpace,
+                          dt: DataType,
+                          input: Phrase[ExpType])
   extends ExpPrimitive {
 
   override val t: ExpType =
@@ -23,8 +23,11 @@ final case class To(addrSpace: AddressSpace,
 
   override def eval(s: Store): Data = OperationalSemantics.eval(s, input)
 
-  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    To(fun.addressSpace(addrSpace), fun.data(dt), VisitAndRebuild(input, fun))
+  override def visitAndRebuild(
+    fun: VisitAndRebuild.Visitor
+  ): Phrase[ExpType] = {
+    OclToMem(fun.addressSpace(addrSpace), fun.data(dt),
+      VisitAndRebuild(input, fun))
   }
 
   override def prettyPrint: String =
@@ -40,16 +43,16 @@ final case class To(addrSpace: AddressSpace,
       Character.toLowerCase(name.charAt(0)) + name.substring(1)
     })
 
-  override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommType] = {
-    ???
-  }
+  override def acceptorTranslation(A: Phrase[AccType])(
+    implicit context: TranslationContext): Phrase[CommType] = ???
 
-  override def continuationTranslation(C: Phrase[->:[ExpType, CommType]])
-                                      (implicit context: TranslationContext): Phrase[CommType] = {
+  override def continuationTranslation(C: Phrase[->:[ExpType, CommType]])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] = {
     import TranslationToImperative._
 
     val adj = AdjustArraySizesForAllocations(input, dt, addrSpace)
-    `new` (addrSpace) (adj.dt, tmp => acc(input)(adj.accF(tmp.wr)) `;` C(adj.exprF(tmp.rd)))
+    `new` (addrSpace) (adj.dt, tmp =>
+      acc(input)(adj.accF(tmp.wr)) `;` C(adj.exprF(tmp.rd)))
   }
 }

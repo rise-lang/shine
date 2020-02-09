@@ -11,6 +11,7 @@ import shine.DPIA._
 
 import scala.xml.Elem
 
+//TODO should probably be parametric over the access type
 final case class MapFst(dt1: DataType,
                         dt2: DataType,
                         dt3: DataType,

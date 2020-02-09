@@ -57,24 +57,6 @@ object comment {
   def apply(comment: String): Comment = Comment(comment)
 }
 
-object fst {
-  def apply(pair: Phrase[ExpType]): Fst = {
-    pair.t match {
-      case ExpType(PairType(dt1, dt2), _) => Fst(dt1, dt2, pair)
-      case x => error(x.toString, "ExpType(RecordType)")
-    }
-  }
-}
-
-object snd {
-  def apply(pair: Phrase[ExpType]): Snd = {
-    pair.t match {
-      case ExpType(PairType(dt1, dt2), _) => Snd(dt1, dt2, pair)
-      case x => error(x.toString, "ExpType(RecordType)")
-    }
-  }
-}
-
 object pairAcc1 {
   def apply(fstT: DataType, sndT: DataType, record: Phrase[AccType]): PairAcc1 =
     PairAcc1(fstT, sndT, record)

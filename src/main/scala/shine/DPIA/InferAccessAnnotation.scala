@@ -5,19 +5,18 @@ import rise.core.{types => rt}
 import rise.core.{primitives => rp}
 import shine.DPIA.Types._
 import shine.DPIA.Types.TypeCheck.SubTypeCheckHelper
+import shine.DPIA.fromRise._
 
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.language.implicitConversions
 
 object inferAccess {
-  def apply(e: r.Expr): Map[r.Expr, PhraseType] = {
-    val infer = new InferAccessAnnotation()
-    infer(e)
-  }
+  def apply(e: r.Expr): Map[r.Expr, PhraseType] = new InferAccessAnnotation()(e)
 }
 
 private class InferAccessAnnotation() {
+
   def apply(e: r.Expr): Predef.Map[r.Expr, PhraseType] = {
     inferPhraseTypes(e, Map.empty, isKernelParamFun = true)
     ptAnnotationMap.toMap
@@ -90,19 +89,19 @@ private class InferAccessAnnotation() {
         ptAnnotationMap update(lit, lpt)
         (lpt, Subst())
       case l: r.Lambda =>
-        lambda(l, e.t.asInstanceOf[rt.FunType[rt.Type, _]].inT,
+        inferLambda(l, e.t.asInstanceOf[rt.FunType[rt.Type, _]].inT,
           ctx, isKernelParamFun)
       case appl: r.App =>
-        app(appl, ctx, addsKernelParam(e, isKernelParamFun))
+        inferApp(appl, ctx, addsKernelParam(e, isKernelParamFun))
       case depL: r.DepLambda[_] =>
-        depLambda(depL, ctx, isKernelParamFun)
+        inferDepLambda(depL, ctx, isKernelParamFun)
       case depA: r.DepApp[_] =>
-        depApp(depA, ctx, addsKernelParam(e, isKernelParamFun))
-      case p: r.Primitive => primitive(p)
+        inferDepApp(depA, ctx, addsKernelParam(e, isKernelParamFun))
+      case p: r.Primitive => inferPrimitive(p)
     }
   }
 
-  private def lambda(
+  private def inferLambda(
     lambda: r.Lambda,
     inT: rt.Type,
     ctx: Context,
@@ -125,7 +124,7 @@ private class InferAccessAnnotation() {
     (lambdaType, eSubst)
   }
 
-  private def app(
+  private def inferApp(
     app: r.App,
     ctx: Context,
     isKernelParamFun: Boolean
@@ -141,7 +140,7 @@ private class InferAccessAnnotation() {
     (appType, subst(eSubst(fSubst)))
   }
 
-  private def depLambda(
+  private def inferDepLambda(
     depLambda: r.DepLambda[_],
     ctx: Context,
     kernelParamFun: Boolean
@@ -165,7 +164,7 @@ private class InferAccessAnnotation() {
     (depLambdaType, eSubst)
   }
 
-  private def depApp(
+  private def inferDepApp(
     depApp: r.DepApp[_],
     ctx: Context,
     kernelParamFun: Boolean
@@ -189,10 +188,8 @@ private class InferAccessAnnotation() {
     (depAppType, fSubst)
   }
 
-  private def primitive(
-    p: r.Primitive,
-  ): (PhraseType, Subst) = {
-    p match {
+  private def inferPrimitive(p: r.Primitive): (PhraseType, Subst) = {
+    val primitiveType = p match {
       case rp.MapSeq() =>
         val rMapSeqT = p.t.asInstanceOf[
           rt.FunType[rt.FunType[rt.DataType, rt.DataType],
@@ -203,12 +200,11 @@ private class InferAccessAnnotation() {
         val rArrT = rMapSeqT.outT.inT
         val rMapOutT = rMapSeqT.outT.outT
 
-        val mapSeqType = FunType(
+        FunType(
           FunType(ExpType(dataType(rFInT), read),
             ExpType(dataType(rFOutT), write)),
           FunType(ExpType(dataType(rArrT), read),
             ExpType(dataType(rMapOutT), write)))
-        (mapSeqType, Subst())
 
       case rp.Map() =>
         val rMapT = p.t.asInstanceOf[
@@ -221,28 +217,28 @@ private class InferAccessAnnotation() {
         val rMapOutT = rMapT.outT.outT
 
         val ai = accessTypeIdentifier()
-        val mapType = FunType(
+        FunType(
           FunType(ExpType(dataType(rFInT), ai),
             ExpType(dataType(rFOutT), ai)),
           FunType(ExpType(dataType(rArrT), ai),
             ExpType(dataType(rMapOutT), ai)))
-        (mapType, Subst())
 
       case rp.Transpose() =>
         val rTransposeT = p.t.asInstanceOf[rt.FunType[rt.DataType, rt.DataType]]
 
         val ai = accessTypeIdentifier()
-        val transposeType = FunType(ExpType(dataType(rTransposeT.inT), ai),
+        FunType(ExpType(dataType(rTransposeT.inT), ai),
           ExpType(dataType(rTransposeT.outT), ai))
-        (transposeType, Subst())
 
       case rp.ToMem() =>
         val rToMemT = p.t.asInstanceOf[rt.FunType[rt.DataType, rt.DataType]]
 
-        val toMemType = FunType(ExpType(dataType(rToMemT.inT), write),
+        FunType(ExpType(dataType(rToMemT.inT), write),
           ExpType(dataType(rToMemT.outT), read))
-        (toMemType, Subst())
     }
+
+    ptAnnotationMap update(p, primitiveType)
+    (primitiveType, Subst())
   }
 
   private def addsKernelParam(
@@ -260,103 +256,18 @@ private class InferAccessAnnotation() {
     less: PhraseType,
     larger: PhraseType,
   ): Subst = (less, larger) match {
-      case (le@ExpType(ldt, la), re@ExpType(rdt, ra)) if ldt == rdt =>
-        (la, ra) match {
-          case (li: AccessTypeIdentifier, _) => Subst() + (li, ra)
-          case (_, ri: AccessTypeIdentifier) => Subst() + (ri, la)
-          case _ => if (le `<=` re) Subst()
+    case (le@ExpType(ldt, la), re@ExpType(rdt, ra)) if ldt == rdt =>
+      (la, ra) match {
+        case (li: AccessTypeIdentifier, _) => Subst() + (li, ra)
+        case (_, ri: AccessTypeIdentifier) => Subst() + (ri, la)
+        case _ => if (le `<=` re) Subst()
                     else error(s"Cannot subunify $less and $larger.")
-        }
-      case (FunType(lin, lout), FunType(rin, rout)) =>
-        val argSubst = subUnifyPhraseType(rin, lin)
-        subUnifyPhraseType(argSubst(lout), argSubst(rout))
-      case (DepFunType(lx, la), DepFunType(rx, ra)) if lx == rx =>
-        subUnifyPhraseType(la, ra)
-      case _ => error(s"Cannot subunify $less and $larger.")
-    }
-
-  def dataTypeIdentifier(dt: rt.DataTypeIdentifier): DataTypeIdentifier =
-    DataTypeIdentifier(dt.name)
-  def natIdentifier(n: rt.NatIdentifier): NatIdentifier =
-    NatIdentifier(n.name, n.range)
-  def addressSpaceIdentifier(
-    a: rt.AddressSpaceIdentifier
-  ): AddressSpaceIdentifier = AddressSpaceIdentifier(a.name)
-  def natToNatIdentifier(n: rt.NatToNatIdentifier): NatToNatIdentifier =
-    NatToNatIdentifier(n.name)
-  def natToDataIdentifier(n: rt.NatToDataIdentifier): NatToDataIdentifier =
-    NatToDataIdentifier(n.name)
-  def accessTypeIdentifier(): AccessTypeIdentifier =
-    AccessTypeIdentifier(freshName("access"))
-
-  def `type`(ty: rt.Type): PhraseType = ty match {
-    case dt: rt.DataType => ExpType(dataType(dt), read)
-    case rt.FunType(i, o) => `type`(i) ->: `type`(o)
-    case rt.DepFunType(i, t) => i match {
-      case dt: rt.DataTypeIdentifier =>
-        dataTypeIdentifier(dt) `()->:` `type`(t)
-      case n: rt.NatIdentifier =>
-        natIdentifier(n) `()->:` `type`(t)
-      case n2n: rt.NatToNatIdentifier =>
-        natToNatIdentifier(n2n) `()->:` `type`(t)
-      case n2d: rt.NatToDataIdentifier =>
-        natToDataIdentifier(n2d) `()->:` `type`(t)
-    }
-    case rt.TypeIdentifier(_) | rt.TypePlaceholder =>
-      throw new Exception("This should not happen")
-  }
-
-  def dataType(t: rt.DataType): DataType = t match {
-    case bt: rt.BasicType => basicType(bt)
-    case i: rt.DataTypeIdentifier => dataTypeIdentifier(i)
-    case rt.ArrayType(sz, et) => ArrayType(sz, dataType(et))
-    case rt.DepArrayType(sz, f) => DepArrayType(sz, ntd(f))
-    case rt.PairType(a, b) => PairType(dataType(a), dataType(b))
-    case rt.NatToDataApply(f, n) => NatToDataApply(ntd(f), n)
-  }
-
-  def basicType(t: rt.BasicType): BasicType = t match {
-    case st: rt.ScalarType => scalarType(st)
-    case rt.IndexType(sz) => IndexType(sz)
-    case rt.VectorType(sz, et) => et match {
-      case e : rt.ScalarType => VectorType(sz, scalarType(e))
-      case _ => ???
-    }
-  }
-
-  def scalarType(t: rt.ScalarType): ScalarType = t match {
-    case rt.bool => bool
-    case rt.int => int
-    case rt.i8 => i8
-    case rt.i16 => i16
-    case rt.i32 => i32
-    case rt.i64 => i64
-    case rt.u8 => u8
-    case rt.u16 => u16
-    case rt.u32 => u32
-    case rt.u64 => u64
-    case rt.f16 => f16
-    case rt.f32 => f32
-    case rt.f64 => f64
-    case rt.NatType => NatType
-  }
-
-  def addressSpace(a: rt.AddressSpace): AddressSpace = a match {
-    case rt.AddressSpace.Global => AddressSpace.Global
-    case rt.AddressSpace.Local => AddressSpace.Local
-    case rt.AddressSpace.Private => AddressSpace.Private
-    case rt.AddressSpace.Constant => AddressSpace.Constant
-    case rt.AddressSpaceIdentifier(name, _) => AddressSpaceIdentifier(name)
-  }
-
-  def ntd(ntd: rt.NatToData): NatToData= ntd match {
-    case rt.NatToDataLambda(n, body) =>
-      NatToDataLambda(natIdentifier(n), dataType(body))
-    case rt.NatToDataIdentifier(x, _) => NatToDataIdentifier(x)
-  }
-
-  def ntn(ntn: rt.NatToNat): NatToNat= ntn match {
-    case rt.NatToNatLambda(n, body) => NatToNatLambda(natIdentifier(n), body)
-    case rt.NatToNatIdentifier(x, _) => NatToNatIdentifier(x)
+      }
+    case (FunType(lin, lout), FunType(rin, rout)) =>
+      val argSubst = subUnifyPhraseType(rin, lin)
+      subUnifyPhraseType(argSubst(lout), argSubst(rout))
+    case (DepFunType(lx, la), DepFunType(rx, ra)) if lx == rx =>
+      subUnifyPhraseType(la, ra)
+    case _ => error(s"Cannot subunify $less and $larger.")
   }
 }

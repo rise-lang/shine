@@ -12,13 +12,13 @@ import shine.DPIA.{Phrases, _}
 import scala.xml.Elem
 
 final case class Reorder(n: Nat,
-                         dt: DataType,
-                         access: AccessType,
-                         idxF: Phrase[ExpType ->: ExpType],
-                         idxFinv: Phrase[ExpType ->: ExpType],
-                         input: Phrase[ExpType])
-  extends ExpPrimitive
-{
+  dt: DataType,
+  access: AccessType,
+  idxF: Phrase[ExpType ->: ExpType],
+  idxFinv: Phrase[ExpType ->: ExpType],
+  input: Phrase[ExpType]
+) extends ExpPrimitive {
+
   override val t: ExpType =
     (n: Nat) ->: (dt: DataType) ->:
       (idxF :: t"exp[idx($n), $read] -> exp[idx($n), $read]") ->:

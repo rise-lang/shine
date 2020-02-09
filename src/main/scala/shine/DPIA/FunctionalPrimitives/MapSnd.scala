@@ -11,6 +11,7 @@ import shine.DPIA._
 
 import scala.xml.Elem
 
+//TODO should probably be polymorphic over the access type
 final case class MapSnd(dt1: DataType,
                         dt2: DataType,
                         dt3: DataType,

@@ -31,8 +31,8 @@ final case class Lambda[T1 <: PhraseType, T2 <: PhraseType](param: Identifier[T1
 final case class Apply[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 ->: T2], arg: Phrase[T1])
   extends Phrase[T2] {
 
-  //FIXME: redundant with type checking
   override val t: T2 = {
+    //FIXME: redundant with type checking
     assert(arg.t `<=` fun.t.inT)
     fun.t.outT
   }

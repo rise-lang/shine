@@ -11,23 +11,25 @@ import shine.DPIA.{Phrases, _}
 
 import scala.xml.Elem
 
-final case class Unzip(n: Nat,
-                       dt1: DataType,
-                       dt2: DataType,
-                       e: Phrase[ExpType])
-  extends ExpPrimitive {
+final case class Unzip(
+  n: Nat,
+  dt1: DataType,
+  dt2: DataType,
+  access: AccessType,
+  e: Phrase[ExpType]
+) extends ExpPrimitive {
 
-  //FIXME has to be polymorphic over the access type
   override val t: ExpType =
     (n: Nat) ->: (dt1: DataType) ->: (dt2: DataType) ->:
-      (e :: exp"[$n.($dt1 x $dt2), $read]") ->:
-      ExpType(PairType(ArrayType(n, dt1), ArrayType(n, dt2)), read)
+      (access: AccessType) ->: (e :: exp"[$n.($dt1 x $dt2), $access]") ->:
+      ExpType(PairType(ArrayType(n, dt1), ArrayType(n, dt2)), access)
 
   // TODO: fix parsing of this:
 //        exp"[($n.$dt1 x $n.$dt2)]"
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    Unzip(f.nat(n), f.data(dt1), f.data(dt2), VisitAndRebuild(e, f))
+    Unzip(f.nat(n), f.data(dt1), f.data(dt2), f.access(access),
+      VisitAndRebuild(e, f))
   }
 
   override def eval(s: Store): Data = {
@@ -47,30 +49,38 @@ final case class Unzip(n: Nat,
   override def prettyPrint: String = s"(unzip ${PrettyPhrasePrinter(e)})"
 
   override def xmlPrinter: Elem =
-    <unzip n={ToString(n)} dt1={ToString(dt1)} dt2={ToString(dt2)}>
-      <e type={ToString(ExpType(ArrayType(n, dt1), read))}>
+    <unzip n={ToString(n)} dt1={ToString(dt1)} dt2={ToString(dt2)}
+           access={ToString(access)}>
+      <e type={ToString(ExpType(ArrayType(n, dt1), access))}>
         {Phrases.xmlPrinter(e)}
       </e>
     </unzip>
 
-  override def fedeTranslation(env: Predef.Map[Identifier[ExpType], Identifier[AccType]])(C: Phrase[AccType ->: AccType]): Phrase[AccType] = {
+  override def fedeTranslation(
+    env: Predef.Map[Identifier[ExpType],
+    Identifier[AccType]])(
+    C: Phrase[AccType ->: AccType]
+  ): Phrase[AccType] = {
     import TranslationToImperative._
 
-    fedAcc(env)(e)(fun(acc"[${C.t.inT.dataType}]")(o => UnzipAcc(n, dt1, dt2, C(o))))
+    fedAcc(env)(e)(fun(acc"[${C.t.inT.dataType}]")(o =>
+      UnzipAcc(n, dt1, dt2, C(o))))
   }
 
-  override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommType] = {
+  override def acceptorTranslation(A: Phrase[AccType])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] = {
     import TranslationToImperative._
 
     acc(e)(UnzipAcc(n, dt1, dt2, A))
   }
 
-  override def continuationTranslation(C: Phrase[ExpType ->: CommType])
-                                      (implicit context: TranslationContext): Phrase[CommType] = {
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(e)(λ(exp"[$n.($dt1 x $dt2), $read]")(x =>
-      C(Unzip(n, dt1, dt2, x)) ))
+      C(Unzip(n, dt1, dt2, read, x)) ))
   }
 }
