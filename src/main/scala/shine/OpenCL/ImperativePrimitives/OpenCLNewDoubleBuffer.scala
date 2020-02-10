@@ -3,6 +3,7 @@ package shine.OpenCL.ImperativePrimitives
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 import scala.xml.Elem
@@ -17,11 +18,9 @@ final case class OpenCLNewDoubleBuffer(a: AddressSpace,
                                        f: Phrase[(ExpType x AccType x CommType x CommType) ->: CommType])
   extends CommandPrimitive {
 
-  override val t: CommType =
-    (a: AddressSpace) ->: (dt1: DataType) ->: (dt2: DataType) ->: (dt3: DataType) ->: (n: Nat) ->:
-      (in :: exp"[$dt1, $read]") ->:
-        (out :: acc"[$dt2]") ->:
-          (f :: (((varT"[$n.$dt3]" x comm) x comm) ->: comm) ) ->: comm
+  in :: expT(dt1, read)
+  out :: accT(dt2)
+  f :: (((varT(n`.`dt3) x comm) x comm) ->: comm)
 
   override def eval(s: Store): Store = ???
 

@@ -44,7 +44,17 @@ package object util {
     val start = System.currentTimeMillis()
     val result = block
     val end = System.currentTimeMillis()
-    println(s"elapsed time: ${end - start} ms")
+
+    val elapsed = end - start
+    val milliseconds = elapsed % 1000
+    val rest = elapsed / 1000
+    val seconds = rest % 60
+    val minutes = rest / 60
+
+    val millisStr = s"${milliseconds}ms"
+    val secondsStr = if (seconds > 0) s"${seconds}s " else ""
+    val minutesStr = if (minutes > 0) s"${minutes}mn " else ""
+    println(s"elapsed time: ${minutesStr}${secondsStr}${millisStr}")
     result
   }
 }

@@ -18,16 +18,6 @@ package object Types {
     }
   }
 
-  implicit final class ArrowType[T <: PhraseType](t: T) {
-    @inline def ->: (dt: DataType): T = t
-    @inline def ->: (n: Nat): T = t
-    @inline def ->: (addressSpace: AddressSpace): T = t
-    @inline def ->: (accessType: AccessType): T = t
-    @inline def ->: (ntn: NatToNat): T = t
-    @inline def ->: (ntd: NatToData): T = t
-    @inline def ->: (unit: Unit): T = t
-  }
-
   type NatDependentFunctionType[T <: PhraseType] = DepFunType[NatKind, T]
 
   object NatDependentFunctionType {

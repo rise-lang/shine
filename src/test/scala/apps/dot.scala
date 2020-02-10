@@ -31,14 +31,14 @@ class dot extends test_util.Tests {
 
   test("Simple dot product translation to phrase works and preserves types") {
     import shine.DPIA.Types.f32
+    import shine.DPIA.Types.DataType._
     import shine.DPIA._
     val phrase = shine.DPIA.fromRise(infer(simpleDotProduct))
 
     val N = phrase.t.asInstanceOf[`(nat)->:`[ExpType ->: ExpType]].x
     val dt = f32
     assertResult(
-      N `()->:` (exp"[$N.$dt, $read]" ->: exp"[$N.$dt, $read]" ->:
-        exp"[$dt, $write]")
+      N ->: (expT(N`.`dt, read) ->: expT(N`.`dt, read) ->: expT(dt, write))
     ) {
       phrase.t
     }

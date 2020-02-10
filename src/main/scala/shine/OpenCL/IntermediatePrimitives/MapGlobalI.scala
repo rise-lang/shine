@@ -4,6 +4,7 @@ import shine.DPIA.DSL._
 import shine.DPIA.Phrases.Phrase
 import shine.DPIA.Types.{AccType, CommType, DataType, ExpType, read}
 import shine.DPIA._
+import shine.DPIA.Types.DataType._
 import shine.OpenCL.ImperativePrimitives.ParForGlobal
 
 final case class MapGlobalI(dim: Int) {
@@ -14,6 +15,6 @@ final case class MapGlobalI(dim: Int) {
   {
     comment("mapGlobal")`;`
     ParForGlobal(dim)(n, dt2, out,
-      λ(exp"[idx($n), $read]")(i => λ(acc"[$dt2]")(a => f(in `@` i)(a))))
+      λ(expT(idx(n), read))(i => λ(accT(dt2))(a => f(in `@` i)(a))))
   }
 }

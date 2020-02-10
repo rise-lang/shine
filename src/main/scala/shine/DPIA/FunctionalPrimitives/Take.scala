@@ -5,6 +5,7 @@ import shine.DPIA.DSL.{λ, _}
 import shine.DPIA.Phrases.{ExpPrimitive, Phrase, VisitAndRebuild}
 import shine.DPIA.Semantics.OperationalSemantics.{Data, Store}
 import shine.DPIA.Types.{AccType, CommType, DataType, ExpType, _}
+import shine.DPIA.Types.DataType._
 import shine.DPIA.{->:, Nat, Phrases, _}
 
 import scala.xml.Elem
@@ -17,9 +18,8 @@ final case class Take(n: Nat,
                       array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override val t: ExpType =
-    (n: Nat) ->: (m: Nat) ->: (w: AccessType) ->: (dt: DataType) ->:
-      (array :: exp"[${n + m}.$dt, $w]") ->: exp"[$n.$dt, $w]"
+  array :: expT({n + m}`.`dt, w)
+  override val t: ExpType = expT(n`.`dt, w)
 
   override def eval(s: Store): Data = ???
 
@@ -35,7 +35,7 @@ final case class Take(n: Nat,
   override def continuationTranslation(C: Phrase[->:[ExpType, CommType]])
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
-    con(array)(λ(exp"[${n + m}.$dt, $read]")(x => C(Take(n, m, w, dt, x))))
+    con(array)(λ(expT({n + m}`.`dt, read))(x => C(Take(n, m, w, dt, x))))
   }
 
   override def xmlPrinter: Elem =

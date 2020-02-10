@@ -34,7 +34,7 @@ object TypeCheck {
         TypeCheck(cond)
         TypeCheck(thenP)
         TypeCheck(elseP)
-        check(cond.t, exp"[$int, $read]" | exp"[$bool, $read]")
+        check(cond.t, expT(int, read) | expT(bool, read))
         check(thenP.t, elseP.t)
 
       case Literal(_) =>

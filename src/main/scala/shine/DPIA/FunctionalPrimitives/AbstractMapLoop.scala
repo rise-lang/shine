@@ -4,6 +4,7 @@ import shine.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 abstract class AbstractMapLoop(override val n: Nat,
@@ -28,9 +29,9 @@ abstract class AbstractMapLoop(override val n: Nat,
                                   (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
-    con(array)(λ(exp"[$n.$dt1, $read]")(x =>
+    con(array)(λ(expT(n`.`dt1, read))(x =>
       makeMapI(n, dt1, dt2,
-        λ(exp"[$dt1, $read]")(x => λ(acc"[$dt2]")(o => acc(f(x))(o))),
+        λ(expT(dt1, read))(x => λ(accT(dt2))(o => acc(f(x))(o))),
         x, A)))
   }
 
@@ -40,7 +41,7 @@ abstract class AbstractMapLoop(override val n: Nat,
 
     println("WARNING: map loop continuation translation allocates memory")
     // TODO should be removed
-    `new`(dt"[$n.$dt2]", λ(exp"[$n.$dt2, $read]" x acc"[$n.$dt2]")(tmp =>
+    `new`(n`.`dt2, λ(varT(n`.`dt2))(tmp =>
       acc(this)(tmp.wr) `;` C(tmp.rd) ))
   }
 }

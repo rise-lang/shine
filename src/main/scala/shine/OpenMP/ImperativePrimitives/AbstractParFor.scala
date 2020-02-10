@@ -7,6 +7,7 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 import scala.xml.Elem
@@ -17,11 +18,8 @@ abstract class AbstractParFor[T <: DataType](val n: Nat,
                                              val body: Phrase[ExpType ->: AccType ->: CommType])
   extends CommandPrimitive {
 
-  override val t: CommType =
-    (n: Nat) ->: (dt: DataType) ->:
-      (out :: acc"[$n.$dt]") ->:
-        (body :: t"exp[idx($n), $read] -> acc[$dt] -> comm") ->:
-          comm
+  out :: accT(n`.`dt)
+  body :: expT(idx(n), read) ->: accT(dt) ->: comm
 
   override def eval(s: Store): Store = {
     val nE = evalIndexExp(s, AsIndex(n, Natural(n)))
