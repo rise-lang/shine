@@ -16,8 +16,8 @@ final case class Array(dt: DataType,
 
   private def tRec(m: Int): ExpType =
     if (m <= 0) { expT({elements.length : Nat}`.`dt, read) }
-    else { dt ~>: tRec(m - 1) }
-  override val t: ExpType = (dt: DataType) ~>: tRec(elements.length)
+    else { tRec(m - 1) }
+  override val t: ExpType = tRec(elements.length)
 
   def prettyPrint: String =
     s"${this.getClass.getSimpleName} (${elements.flatMap(PrettyPhrasePrinter(_))})"

@@ -18,10 +18,8 @@ final case class IdxDistribute(m: Nat,
                                array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override val t: ExpType =
-    (m: Nat) ~>: (n: Nat) ~>: (stride: Nat) ~>: (dt: DataType) ~>:
-      (array :: expT(m`.`dt, read)) ~>:
-        expT(n`.`dt, read)
+  array :: expT(m`.`dt, read)
+  override val t: ExpType = expT(n`.`dt, read)
 
   override def eval(s: Store): Data = ???
 

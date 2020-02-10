@@ -16,10 +16,8 @@ final case class Fst(dt1: DataType,
                      pair: Phrase[ExpType]) extends ExpPrimitive
 {
 
-  override val t: ExpType =
-    (dt1: DataType) ~>: (dt2: DataType) ~>:
-      (pair :: expT(dt1 x dt2, read)) ~>: expT(dt1, read)
-
+  pair :: expT(dt1 x dt2, read)
+  override val t: ExpType = expT(dt1, read)
 
   override def eval(s: Store): Data = {
     OperationalSemantics.eval(s, pair) match {

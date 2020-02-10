@@ -14,10 +14,8 @@ final case class DepIdxAcc(n: Nat,
                            array: Phrase[AccType])
   extends AccPrimitive {
 
-  override val t: AccType =
-    (n: Nat) ~>: (ft:NatToData) ~>: (index: Nat) ~>:
-      (array :: accT(n`.d`ft)) ~>:
-        accT(ft(index))
+  array :: accT(n`.d`ft)
+  override val t: AccType = accT(ft(index))
 
   override def eval(s: Store): AccIdentifier = {
 //    val arrayE = OperationalSemantics.eval(s, array)

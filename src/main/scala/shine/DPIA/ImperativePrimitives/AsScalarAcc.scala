@@ -14,10 +14,8 @@ final case class AsScalarAcc(n: Nat,
                              array: Phrase[AccType])
   extends AccPrimitive {
 
-  override val t: AccType =
-    (n: Nat) ~>: (m: Nat) ~>: (dt: ScalarType) ~>:
-      (array :: accT((m * n)`.`dt)) ~>:
-        accT(n`.`vec(m, dt))
+  array :: accT((m * n)`.`dt)
+  override val t: AccType = accT(n`.`vec(m, dt))
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {
     AsScalarAcc(fun.nat(n), fun.nat(m), fun.data(dt), VisitAndRebuild(array, fun))

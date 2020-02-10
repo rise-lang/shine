@@ -16,10 +16,9 @@ final case class Pair(dt1: DataType,
                       snd: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override val t: ExpType =
-    (dt1: DataType) ~>: (dt2: DataType) ~>:
-      (fst :: expT(dt1, read)) ~>: (snd :: expT(dt2, read)) ~>:
-      expT(dt1 x dt2, read)
+  fst :: expT(dt1, read)
+  snd :: expT(dt2, read)
+  override val t: ExpType = expT(dt1 x dt2, read)
 
   override def eval(s: Store): Data = {
     PairData(

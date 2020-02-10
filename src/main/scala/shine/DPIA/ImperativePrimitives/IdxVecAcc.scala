@@ -15,11 +15,9 @@ final case class IdxVecAcc(n: Nat,
                            vector: Phrase[AccType])
   extends AccPrimitive {
 
-  override val t: AccType =
-    (n: Nat) ~>: (st: ScalarType) ~>:
-      (index :: expT(idx(n), read)) ~>:
-        (vector :: accT(vec(n, st))) ~>:
-          accT(st)
+  index :: expT(idx(n), read)
+  vector :: accT(vec(n, st))
+  override val t: AccType = accT(st)
 
   override def eval(s: Store): AccIdentifier = {
     val vectorE = OperationalSemantics.eval(s, vector)

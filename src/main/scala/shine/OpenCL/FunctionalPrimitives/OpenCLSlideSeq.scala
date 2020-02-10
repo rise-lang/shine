@@ -27,12 +27,10 @@ final case class OpenCLSlideSeq(rot: lp.SlideSeq.Rotate,
 {
   val inputSize: Nat with SimplifiedExpr = sp * n + sz - sp
 
-  override val t: ExpType =
-    (a: AddressSpace) ~>: (n: Nat) ~>: (sz: Nat) ~>: (sp: Nat) ~>: (dt1: DataType) ~>: (dt2: DataType) ~>:
-      (write_dt1 :: expT(dt1, read) ->: expT(dt1, write)) ~>:
-      (f :: expT(sz`.`dt1, read) ->: expT(dt2, write)) ~>:
-      (input :: expT(inputSize`.`dt1, read)) ~>:
-      expT(n`.`dt2, write)
+  write_dt1 :: expT(dt1, read) ->: expT(dt1, write)
+  f :: expT(sz`.`dt1, read) ->: expT(dt2, write)
+  input :: expT(inputSize`.`dt1, read)
+  override val t: ExpType = expT(n`.`dt2, write)
 
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     OpenCLSlideSeq(rot,

@@ -19,11 +19,9 @@ final case class DepJoin(n: Nat,
                          array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override val t: ExpType = {
-    (n: Nat) ~>: (lenF: NatToNat) ~>: (dt: DataType) ~>:
-      (array :: expT(n`.d`{ i => lenF(i)`.`dt }, read)) ~>:
-        expT(BigSum(from = 0, upTo = n - 1, i => lenF(i))`.`dt, read)
-  }
+  array :: expT(n`.d`{ i => lenF(i)`.`dt }, read)
+  override val t: ExpType =
+    expT(BigSum(from = 0, upTo = n - 1, i => lenF(i))`.`dt, read)
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     DepJoin(fun.nat(n), fun.natToNat(lenF), fun.data(dt), VisitAndRebuild(array, fun))

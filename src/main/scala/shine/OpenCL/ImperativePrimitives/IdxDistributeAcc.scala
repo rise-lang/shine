@@ -17,9 +17,8 @@ final case class IdxDistributeAcc(m: Nat,
                                   array: Phrase[AccType])
   extends AccPrimitive {
 
-  override val t: AccType =
-    (m: Nat) ~>: (n: Nat) ~>: (stride: Nat) ~>: (dt: DataType) ~>:
-      (array :: accT(m`.`dt)) ~>: accT(n`.`dt)
+  array :: accT(m`.`dt)
+  override val t: AccType = accT(n`.`dt)
 
   override def eval(s: Store): AccIdentifier = ???
 

@@ -19,9 +19,8 @@ final case class Split(n: Nat,
                        array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override val t: ExpType =
-    (n: Nat) ~>: (m: Nat) ~>: (w: AccessType) ~>: (dt: DataType) ~>:
-      (array :: expT({m * n}`.`dt, w)) ~>: expT(m`.`(n`.`dt), w)
+  array :: expT({m * n}`.`dt, w)
+  override val t: ExpType = expT(m`.`(n`.`dt), w)
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     Split(fun.nat(n), fun.nat(m), fun.access(w), fun.data(dt), VisitAndRebuild(array, fun))
