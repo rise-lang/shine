@@ -6,6 +6,7 @@ import shine.DPIA.ImperativePrimitives.AsVectorAcc
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 import scala.xml.Elem
@@ -19,9 +20,9 @@ final case class AsVector(
 ) extends ExpPrimitive {
 
   override val t: ExpType =
-    (n: Nat) ->: (m: Nat) ->: (dt: ScalarType) ->:
-      (array :: exp"[${m * n}.$dt, $access]") ->:
-        exp"[$m.${VectorType(n, dt)}, $access]"
+    (n: Nat) ~>: (m: Nat) ~>: (dt: ScalarType) ~>:
+      (array :: expT({m * n}`.`dt, access)) ~>:
+        expT(m`.`vec(n, dt), access)
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     AsVector(f.nat(n), f.nat(m), f.data(dt), f.access(access),

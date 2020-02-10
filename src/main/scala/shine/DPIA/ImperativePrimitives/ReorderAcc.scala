@@ -3,6 +3,7 @@ package shine.DPIA.ImperativePrimitives
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 import scala.xml.Elem
@@ -14,10 +15,10 @@ final case class ReorderAcc(n: Nat,
   extends AccPrimitive
 {
   override val t: AccType =
-    (n: Nat) ->: (dt: DataType) ->:
-      (idxF :: t"exp[idx($n), $read] -> exp[idx($n), $read]") ->:
-        (array :: acc"[$n.$dt]") ->:
-          acc"[$n.$dt]"
+    (n: Nat) ~>: (dt: DataType) ~>:
+      (idxF :: expT(idx(n), read) ->: expT(idx(n), read)) ~>:
+        (array :: accT(n`.`dt)) ~>:
+          accT(n`.`dt)
 
   override def eval(s: Store): AccIdentifier = ???
 

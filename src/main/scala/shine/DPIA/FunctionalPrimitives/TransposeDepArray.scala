@@ -5,6 +5,7 @@ import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 import scala.xml.Elem
@@ -16,9 +17,9 @@ final case class TransposeDepArray(n:Nat,
   extends ExpPrimitive {
 
   override val t: ExpType = {
-    (n: Nat) ->: (m: Nat) ->:
-      (array :: exp"[$n.${DepArrayType(m, k => f(k))}, $read]") ->:
-      exp"[${DepArrayType(m, k => ArrayType(n, f(k)))}, $read]"
+    (n: Nat) ~>: (m: Nat) ~>:
+      (array :: expT(n`.`(m`.d`f), read)) ~>:
+      expT(m`.d`{ k => n`.`f(k) }, read)
   }
 
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] = {
@@ -31,7 +32,7 @@ final case class TransposeDepArray(n:Nat,
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])(implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
-    con(array)(λ(exp"[$n.${DepArrayType(m, k => f(k))}, $read]")(x => C(TransposeDepArray(n, m, f, x))))
+    con(array)(λ(expT(n`.`(m`.d`f), read))(x => C(TransposeDepArray(n, m, f, x))))
   }
 
   override def xmlPrinter: Elem = {

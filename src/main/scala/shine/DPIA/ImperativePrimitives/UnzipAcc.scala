@@ -3,6 +3,7 @@ package shine.DPIA.ImperativePrimitives
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 import scala.xml.Elem
@@ -15,9 +16,9 @@ final case class UnzipAcc(n: Nat,
 {
 
   override val t: AccType =
-    (n: Nat) ->: (dt1: DataType) ->: (dt2: DataType) ->:
-      (a :: AccType(PairType(ArrayType(n, dt1), ArrayType(n, dt2)))) ->:
-        acc"[$n.($dt1 x $dt2)]"
+    (n: Nat) ~>: (dt1: DataType) ~>: (dt2: DataType) ~>:
+      (a :: accT((n`.`dt1) x (n`.`dt2))) ~>:
+        accT(n`.`(dt1 x dt2))
 
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {

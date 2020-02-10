@@ -46,12 +46,6 @@ final case class DepArrayType private (size: Nat, elemFType: NatToData)
   override def toString: String = s"$size.$elemFType"
 }
 
-object DepArrayType {
-  def apply(size: Nat, f: DPIA.NatIdentifier => DataType): DepArrayType = {
-    DepArrayType(size, NatToDataLambda(size, f))
-  }
-}
-
 final case class PairType(fst: DataType, snd: DataType) extends ComposedType {
   override def toString: String = s"($fst x $snd)"
 }
@@ -63,6 +57,7 @@ sealed case class VectorType(size: Nat, elemType: ScalarType)
 }
 
 object vec {
+  @inline
   def apply(size: Nat, elemType: ScalarType): VectorType =
     VectorType(size, elemType)
 }
@@ -179,7 +174,14 @@ object DataType {
     def x(dt2: DataType) = PairType(dt1, dt2)
   }
 
-  implicit class ArrayTypeConstructor(s: Nat) {
-    def `.`(dt: DataType) = ArrayType(s, dt)
+  implicit final class ArrayTypeConstructor(s: Nat) {
+    @inline def `.`(dt: DataType): ArrayType = ArrayType(s, dt)
+    @inline def `.d`(ft: NatToData): DepArrayType =
+      DepArrayType(s, ft)
+    @inline def `.d`(f: DPIA.NatIdentifier => DataType): DepArrayType =
+      DepArrayType(s, NatToDataLambda(s, f))
   }
+
+  @inline
+  def idx(n: Nat): IndexType = IndexType(n)
 }

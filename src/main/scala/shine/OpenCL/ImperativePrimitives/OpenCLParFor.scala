@@ -3,6 +3,7 @@ package shine.OpenCL.ImperativePrimitives
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics.Store
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 import scala.xml.Elem
@@ -17,9 +18,9 @@ abstract class OpenCLParFor(val n: Nat,
   extends CommandPrimitive {
 
   override val t: CommType =
-    (n: Nat) ->: (dt: DataType) ->:
-      (out :: acc"[$n.$dt]") ->:
-      (body :: t"exp[idx($n), $read] -> acc[$dt] -> comm") ->:
+    (n: Nat) ~>: (dt: DataType) ~>:
+      (out :: accT(n`.`dt)) ~>:
+      (body :: expT(idx(n), read) ->: accT(dt) ->: comm) ~>:
       comm
 
   def parallelismLevel: shine.OpenCL.ParallelismLevel

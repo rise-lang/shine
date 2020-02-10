@@ -14,9 +14,9 @@ final case class MapSndAcc(dt1: DataType,
                            record: Phrase[AccType]) extends AccPrimitive
 {
   override val t: AccType =
-    (dt1: DataType) ->: (dt2: DataType) ->: (dt3: DataType) ->:
-      (f :: acc"[$dt3]" ->: acc"[$dt2]") ->:
-      (record :: acc"[$dt1 x $dt3]") ->: acc"[$dt1 x $dt2]"
+    (dt1: DataType) ~>: (dt2: DataType) ~>: (dt3: DataType) ~>:
+      (f :: accT(dt3) ->: accT(dt2)) ~>:
+      (record :: accT(dt1 x dt3)) ~>: accT(dt1 x dt2)
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {
     MapSndAcc(fun.data(dt1), fun.data(dt2), fun.data(dt3),

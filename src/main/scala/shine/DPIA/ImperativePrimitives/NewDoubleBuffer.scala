@@ -3,6 +3,7 @@ package shine.DPIA.ImperativePrimitives
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 import scala.xml.Elem
@@ -17,10 +18,10 @@ final case class NewDoubleBuffer(dt1: DataType,
   extends CommandPrimitive {
 
   override val t: CommType =
-    (dt1: DataType) ->: (dt2: DataType) ->: (dt3: DataType) ->: (n: Nat) ->:
-      (in :: exp"[$dt1, $read]") ->:
-        (out :: acc"[$dt2]") ->:
-          (f :: (((varT"[$n.$dt3]" x comm) x comm) ->: comm) ) ->: comm
+    (dt1: DataType) ~>: (dt2: DataType) ~>: (dt3: DataType) ~>: (n: Nat) ~>:
+      (in :: expT(dt1, read)) ~>:
+        (out :: accT(dt2)) ~>:
+          (f :: (((varT(n`.`dt3) x comm) x comm) ->: comm)) ~>: comm
 
   override def eval(s: Store): Store = ???
 

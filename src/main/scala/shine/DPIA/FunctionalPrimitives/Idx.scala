@@ -6,6 +6,7 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA.{Phrases, _}
 
 import scala.language.reflectiveCalls
@@ -19,23 +20,28 @@ final case class Idx(n: Nat,
 
   //TODO Answer Question: should this be polymorphic over the access type?
   override val t: ExpType =
-    (n: Nat) ->: (dt: DataType) ->:
-      (index :: exp"[idx($n), $read]") ->:
-        (array :: exp"[$n.$dt, $read]") ->:
-          exp"[$dt, $read]"
+    (n: Nat) ~>: (dt: DataType) ~>:
+      (index :: expT(idx(n), read)) ~>:
+        (array :: expT(n`.`dt, read)) ~>:
+          expT(dt, read)
 
   override def eval(s: Store): Data = {
-    (OperationalSemantics.eval(s, array), OperationalSemantics.eval(s, index)) match {
+    (OperationalSemantics.eval(s, array),
+     OperationalSemantics.eval(s, index)) match {
       case (ArrayData(xs), IntData(i)) => xs(i)
       case _ => throw new Exception("This should not happen")
     }
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    Idx(fun.nat(n), fun.data(dt), VisitAndRebuild(index, fun), VisitAndRebuild(array, fun))
+  override def visitAndRebuild(
+    fun: VisitAndRebuild.Visitor
+  ): Phrase[ExpType] = {
+    Idx(fun.nat(n), fun.data(dt),
+      VisitAndRebuild(index, fun), VisitAndRebuild(array, fun))
   }
 
-  override def prettyPrint: String = s"(${PrettyPhrasePrinter(array)})[${PrettyPhrasePrinter(index)}]"
+  override def prettyPrint: String =
+    s"(${PrettyPhrasePrinter(array)})[${PrettyPhrasePrinter(index)}]"
 
   override def xmlPrinter: Elem =
     <idx n={ToString(n)} dt={ToString(dt)}>
@@ -47,19 +53,21 @@ final case class Idx(n: Nat,
       </index>
     </idx>
 
-  override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommType] = {
+  override def acceptorTranslation(A: Phrase[AccType])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] = {
     import TranslationToImperative._
     //FIXME the general assignment shouldn't be allowed.
-    con(array)(λ(exp"[$n.$dt, $read]")(x =>
+    con(array)(λ(expT(n`.`dt, read))(x =>
       con(index)(fun(index.t)(i =>
         A :=| dt | Idx(n, dt, i, x)))))
   }
 
-  override def continuationTranslation(C: Phrase[ExpType ->: CommType])
-                                      (implicit context: TranslationContext): Phrase[CommType] = {
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] = {
     import TranslationToImperative._
-    con(array)(λ(exp"[$n.$dt, $read]")(e =>
+    con(array)(λ(expT(n`.`dt, read))(e =>
       con(index)(fun(index.t)(i =>
         C(Idx(n, dt, i, e))))))
   }
@@ -68,7 +76,8 @@ final case class Idx(n: Nat,
 object Idx {
   def apply(index: Phrase[ExpType], array: Phrase[ExpType]): Idx = {
     (index.t, array.t) match {
-      case (ExpType(IndexType(n1), _: read.type), ExpType(ArrayType(n2, dt_), _: read.type)) if n1 == n2 =>
+      case (ExpType(IndexType(n1), _: read.type),
+            ExpType(ArrayType(n2, dt_), _: read.type)) if n1 == n2 =>
         Idx(n1, dt_, index, array)
       case x => error(x.toString, "(exp[idx(n)], exp[n.dt])")
     }

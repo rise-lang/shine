@@ -7,6 +7,7 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA.{Phrases, _}
 
 import scala.xml.Elem
@@ -20,9 +21,9 @@ final case class Unzip(
 ) extends ExpPrimitive {
 
   override val t: ExpType =
-    (n: Nat) ->: (dt1: DataType) ->: (dt2: DataType) ->:
-      (access: AccessType) ->: (e :: exp"[$n.($dt1 x $dt2), $access]") ->:
-      ExpType(PairType(ArrayType(n, dt1), ArrayType(n, dt2)), access)
+    (n: Nat) ~>: (dt1: DataType) ~>: (dt2: DataType) ~>:
+      (access: AccessType) ~>: (e :: expT(n`.`(dt1 x dt2), access)) ~>:
+      expT((n`.`dt1) x (n`.`dt2), access)
 
   // TODO: fix parsing of this:
 //        exp"[($n.$dt1 x $n.$dt2)]"
@@ -63,7 +64,7 @@ final case class Unzip(
   ): Phrase[AccType] = {
     import TranslationToImperative._
 
-    fedAcc(env)(e)(fun(acc"[${C.t.inT.dataType}]")(o =>
+    fedAcc(env)(e)(fun(accT(C.t.inT.dataType))(o =>
       UnzipAcc(n, dt1, dt2, C(o))))
   }
 
@@ -80,7 +81,7 @@ final case class Unzip(
   ): Phrase[CommType] = {
     import TranslationToImperative._
 
-    con(e)(λ(exp"[$n.($dt1 x $dt2), $read]")(x =>
-      C(Unzip(n, dt1, dt2, read, x)) ))
+    con(e)(λ(expT(n`.`(dt1 x dt2), read))(x =>
+      C(Unzip(n, dt1, dt2, access, x)) ))
   }
 }

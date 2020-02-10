@@ -19,9 +19,9 @@ final case class Pair(
 ) extends ExpPrimitive {
 
   override val t: ExpType =
-    (dt1: DataType) ->: (dt2: DataType) ->: (access: AccessType) ->:
-      (fst :: exp"[$dt1, $access]") ->: (snd :: exp"[$dt2, $access]") ->:
-        exp"[$dt1 x $dt2, $access]"
+    (dt1: DataType) ~>: (dt2: DataType) ~>: (access: AccessType) ~>:
+      (fst :: expT(dt1, access)) ~>: (snd :: expT(dt2, access)) ~>:
+        expT(dt1 x dt2, access)
 
   override def eval(s: Store): Data = {
     PairData(
@@ -63,8 +63,8 @@ final case class Pair(
   ): Phrase[CommType] = {
     import TranslationToImperative._
 
-    con(fst)(λ(exp"[$dt1, $read]")(x =>
-      con(snd)(λ(exp"[$dt2, $read]")(y =>
+    con(fst)(λ(expT(dt1, read))(x =>
+      con(snd)(λ(expT(dt2, read))(y =>
         C(Pair(dt1, dt2, access, x, y)) )) ))
   }
 }

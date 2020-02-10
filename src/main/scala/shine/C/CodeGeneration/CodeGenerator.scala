@@ -345,7 +345,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error(s"unexpected $path")
       }
 
-      case Unzip(_, _, _, e) => path match {
+      case Unzip(_, _, _, _, e) => path match {
         case (xj : PairAccess) :: (i: CIntExpr) :: ps =>
           exp(e, env, i :: xj :: ps, cont)
         case _ => error("Expected a tuple access followed by a C-Integer-Expression on the path.")
@@ -369,8 +369,8 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             exp(e2, env, Nil, ec2 => cont(C.AST.RecordLiteral(typ(r.t.dataType), ec1, ec2))))
         case _ => error(s"unexpected $path")
       }
-      case Fst(_, _, e) => exp(e, env, FstMember :: path, cont)
-      case Snd(_, _, e) => exp(e, env, SndMember :: path, cont)
+      case Fst(_, _, _, e) => exp(e, env, FstMember :: path, cont)
+      case Snd(_, _, _, e) => exp(e, env, SndMember :: path, cont)
 
       case Take(_, _, _, _, e) => exp(e, env, path, cont)
 

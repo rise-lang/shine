@@ -32,14 +32,14 @@ class dot extends test_util.Tests {
 
   test("Simple dot product translation to phrase works and preserves types") {
     import shine.DPIA.Types.f32
+    import shine.DPIA.Types.DataType._
     import shine.DPIA._
     val phrase = shine.DPIA.fromRise(infer(simpleDotProduct))
 
     val N = phrase.t.asInstanceOf[`(nat)->:`[ExpType ->: ExpType]].x
     val dt = f32
     assert(phrase.t `<=`
-      (N `()->:`
-        (exp"[$N.$dt, $read]" ->: exp"[$N.$dt, $read]" ->: exp"[$dt, $write]")))
+      N ->: (expT(N`.`dt, read) ->: expT(N`.`dt, read) ->: expT(dt, write)))
   }
 
   // C
@@ -65,7 +65,8 @@ class dot extends test_util.Tests {
     gen.OpenMPProgram(dotCPUVector1)
   }
 
-  test("Intel derived no warp dot product 1 compiles to syntactically correct OpenMP") {
+  test("Intel derived no warp dot product 1 compiles to" +
+    "syntactically correct OpenMP") {
     import rise.OpenMP.DSL._
 
     val intelDerivedNoWarpDot1 = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
@@ -119,7 +120,8 @@ class dot extends test_util.Tests {
   { // OpenCL
     import rise.OpenCL.DSL._
 
-    test("Intel derived no warp dot product 1 compiles to syntactically correct OpenCL") {
+    test("Intel derived no warp dot product 1 compiles to" +
+      "syntactically correct OpenCL") {
       val intelDerivedNoWarpDot1 = nFun(n => fun(xsT(n))(xs => fun(ysT(n))(ys =>
         zip(xs |> asVectorAligned(4))(ys |> asVectorAligned(4)) |>
         split(8192) |>

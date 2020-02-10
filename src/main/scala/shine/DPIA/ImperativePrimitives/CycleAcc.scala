@@ -3,6 +3,7 @@ package shine.DPIA.ImperativePrimitives
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics.{AccIdentifier, Store}
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 final case class CycleAcc(n: Nat,
@@ -12,8 +13,8 @@ final case class CycleAcc(n: Nat,
   extends AccPrimitive
 {
   override val t: AccType =
-    (n: Nat) ->: (m: Nat) ->: (dt: DataType) ->:
-      (input :: acc"[$m.$dt]") ->: acc"[$n.$dt]"
+    (n: Nat) ~>: (m: Nat) ~>: (dt: DataType) ~>:
+      (input :: accT(m`.`dt)) ~>: accT(n`.`dt)
 
   override def eval(s: Store): AccIdentifier = ???
 

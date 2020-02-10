@@ -7,6 +7,7 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 import scala.xml.Elem
@@ -33,10 +34,10 @@ abstract class AbstractReduce(n: Nat,
                  (implicit context: TranslationContext): Phrase[CommType]
 
   override val t: ExpType =
-    (n: Nat) ->: (dt1: DataType) ->: (dt2: DataType) ->:
-      (f :: t"exp[$dt2, $read] -> exp[$dt1, $read] -> exp[$dt2, $write]") ->:
-        (init :: exp"[$dt2, $write]") ->:
-          (array :: exp"[$n.$dt1, $read]") ->: exp"[$dt2, $read]"
+    (n: Nat) ~>: (dt1: DataType) ~>: (dt2: DataType) ~>:
+      (f :: expT(dt2, read) ->: expT(dt1, read) ->: expT(dt2, write)) ~>:
+        (init :: expT(dt2, write)) ~>:
+          (array :: expT(n`.`dt1, read)) ~>: expT(dt2, read)
 
   override def visitAndRebuild(
     fun: VisitAndRebuild.Visitor
@@ -69,7 +70,7 @@ abstract class AbstractReduce(n: Nat,
   ): Phrase[CommType] = {
     import TranslationToImperative._
 
-    con(this)(λ(exp"[$dt2, $read]")(r => acc(r)(A)))
+    con(this)(λ(expT(dt2, read))(r => acc(r)(A)))
   }
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])(
@@ -77,12 +78,12 @@ abstract class AbstractReduce(n: Nat,
   ): Phrase[CommType] = {
     import TranslationToImperative._
 
-    con(array)(λ(exp"[$n.$dt1, $read]")(X =>
-      con(init)(λ(exp"[$dt2, $read]")(Y =>
+    con(array)(λ(expT(n`.`dt1, read))(X =>
+      con(init)(λ(expT(dt2, read))(Y =>
         makeReduceI(n, dt1, dt2,
-          λ(exp"[$dt2, $read]")(x =>
-            λ(exp"[$dt1, $read]")(y =>
-              λ(acc"[$dt2]")(o => acc( f(x)(y) )( o ) ))),
+          λ(expT(dt2, read))(x =>
+            λ(expT(dt1, read))(y =>
+              λ(accT(dt2))(o => acc( f(x)(y) )( o ) ))),
           Y, X, C)))))
   }
 

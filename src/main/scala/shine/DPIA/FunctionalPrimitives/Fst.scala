@@ -19,8 +19,9 @@ final case class Fst(
 ) extends ExpPrimitive {
 
   override val t: ExpType =
-    (dt1: DataType) ->: (dt2: DataType) ->: (access: AccessType) ->:
-      (pair :: exp"[$dt1 x $dt2, $access]") ->: exp"[$dt1, $access]"
+    (dt1: DataType) ~>: (dt2: DataType) ~>: (access: AccessType) ~>:
+      (pair :: expT(dt1 x dt2, access)) ~>: expT(dt1, access)
+
 
   override def eval(s: Store): Data = {
     OperationalSemantics.eval(s, pair) match {
@@ -50,14 +51,14 @@ final case class Fst(
 
     //TODO Assignments for general types should not be allowed, making this definition invalid
     dt1 match { case _ : BasicType => ; case _ => error(s"$dt1 assign") }
-    con(pair)(λ(exp"[$dt1 x $dt2, $read]")(x =>
-      A :=|dt1| Fst(dt1, dt2, access, x)) )
+    con(pair)(λ(expT(dt1 x dt2, read))(x =>
+      A :=|dt1| Fst(dt1, dt2, access, x)))
   }
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])(
     implicit context: TranslationContext
   ): Phrase[CommType] = {
     import TranslationToImperative._
-    con(pair)(λ(exp"[$dt1 x $dt2, $read]")(x => C(Fst(dt1, dt2, access, x))))
+    con(pair)(λ(expT(dt1 x dt2, read))(x => C(Fst(dt1, dt2, access, x))))
   }
 }

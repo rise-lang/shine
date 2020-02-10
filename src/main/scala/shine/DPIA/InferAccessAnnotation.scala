@@ -317,13 +317,13 @@ private class InferAccessAnnotation() {
     case rt.FunType(i, o) => `type`(i) ->: `type`(o)
     case rt.DepFunType(i, t) => i match {
       case dt: rt.DataTypeIdentifier =>
-        dataTypeIdentifier(dt) `()->:` `type`(t)
+        dataTypeIdentifier(dt) ->: `type`(t)
       case n: rt.NatIdentifier =>
-        natIdentifier(n) `()->:` `type`(t)
+        natIdentifier(n) ->: `type`(t)
       case n2n: rt.NatToNatIdentifier =>
-        natToNatIdentifier(n2n) `()->:` `type`(t)
+        natToNatIdentifier(n2n) ->: `type`(t)
       case n2d: rt.NatToDataIdentifier =>
-        natToDataIdentifier(n2d) `()->:` `type`(t)
+        natToDataIdentifier(n2d) ->: `type`(t)
     }
     case rt.TypeIdentifier(_) | rt.TypePlaceholder =>
       throw new Exception("This should not happen")

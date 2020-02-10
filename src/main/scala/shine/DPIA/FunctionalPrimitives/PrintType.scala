@@ -18,8 +18,9 @@ final case class PrintType(msg: String,
   println(s"$msg : $dt (DPIA level)")
 
   override val t: ExpType =
-    (dt: DataType) ->: (access: AccessType) ->:
-      (input :: exp"[$dt, $access]") ->: exp"[$dt, $access]"
+    (dt: DataType) ~>: (access: AccessType) ~>:
+      (input :: expT(dt, access)) ~>: expT(dt, access)
+
 
   override def eval(s: Store): Data = OperationalSemantics.eval(s, input)
 

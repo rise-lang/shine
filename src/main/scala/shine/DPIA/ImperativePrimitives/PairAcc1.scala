@@ -14,9 +14,9 @@ final case class PairAcc1(dt1: DataType,
   extends AccPrimitive {
 
   override val t: AccType =
-    (dt1: DataType) ->: (dt2: DataType) ->:
-      (pair :: acc"[$dt1 x $dt2]") ->:
-        acc"[$dt1]"
+    (dt1: DataType) ~>: (dt2: DataType) ~>:
+      (pair :: accT(dt1 x dt2)) ~>:
+        accT(dt1)
 
   override def eval(s: Store): AccIdentifier = {
     OperationalSemantics.eval(s, pair) match {

@@ -6,6 +6,7 @@ import shine.DPIA.IntermediatePrimitives.IterateIAcc
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA.{Phrases, _}
 
 import scala.xml.Elem
@@ -20,10 +21,10 @@ final case class Iterate(n: Nat,
 
   override val t: ExpType = {
     val l = f.t.x
-    (n: Nat) ->: (m: Nat) ->: (k: Nat) ->: (dt: DataType) ->:
-      (f :: t"($l : nat) -> exp[${l * n}.$dt, $read] -> exp[$l.$dt, $write]") ->:
-        (array :: exp"[${m * n.pow(k)}.$dt, $read]") ->:
-          exp"[$m.$dt, $write]"
+    (n: Nat) ~>: (m: Nat) ~>: (k: Nat) ~>: (dt: DataType) ~>:
+      (f :: l ->: expT({l * n}`.`dt, read) ->: expT(l`.`dt, write)) ~>:
+        (array :: expT({m * n.pow(k)}`.`dt, read)) ~>:
+          expT(m`.`dt, write)
   }
 
   override def visitAndRebuild(
@@ -69,10 +70,10 @@ final case class Iterate(n: Nat,
   ): Phrase[CommType] = {
     import shine.DPIA.Compilation.TranslationToImperative._
 
-    con(array)(λ(exp"[${m * n.pow(k)}.$dt, $read]")(x =>
+    con(array)(λ(expT({m * n.pow(k)}`.`dt, read))(x =>
       IterateIAcc(n, m, k, dt, A,
-        _Λ_[NatKind]()(l => λ(acc"[$l.$dt]")(o =>
-          λ(exp"[${l * n}.$dt, $read]")(x => acc(f(l)(x))(o)))),
+        _Λ_[NatKind]()(l => λ(accT(l`.`dt))(o =>
+          λ(expT({l * n}`.`dt, read))(x => acc(f(l)(x))(o)))),
         x) ))
   }
 

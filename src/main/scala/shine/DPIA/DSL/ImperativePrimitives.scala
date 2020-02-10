@@ -4,6 +4,7 @@ import shine.DPIA.FunctionalPrimitives.{Fst, Snd}
 import shine.DPIA.ImperativePrimitives._
 import shine.DPIA.Phrases.{Identifier, IfThenElse, Phrase}
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 object `new` {
@@ -13,7 +14,7 @@ object `new` {
 
   def apply(dt: DataType,
             f: Phrase[VarType] => Phrase[CommType]): New =
-    New(dt, λ(exp"[$dt, $read]" x acc"[$dt]")( v => f(v) ))
+    New(dt, λ(varT(dt))( v => f(v) ))
 }
 
 object newDoubleBuffer {
@@ -23,7 +24,7 @@ object newDoubleBuffer {
             in: Phrase[ExpType],
             out: Phrase[AccType],
             f: (Phrase[VarType], Phrase[CommType], Phrase[CommType]) => Phrase[CommType]) =
-    NewDoubleBuffer(dt1, dt2, dt3.elemType, dt3.size, in, out, λ(varT"[$dt1]" x CommType() x CommType())(ps => {
+    NewDoubleBuffer(dt1, dt2, dt3.elemType, dt3.size, in, out, λ(varT(dt1) x CommType() x CommType())(ps => {
       val    v: Phrase[VarType]  = ps._1._1
       val swap: Phrase[CommType] = ps._1._2
       val done: Phrase[CommType] = ps._2
@@ -50,7 +51,7 @@ object `if` {
 object `for` {
   def apply(n: Nat,
             f: Identifier[ExpType] => Phrase[CommType], unroll:Boolean = false): For =
-    For(n, λ(exp"[idx($n), $read]")( i => f(i) ), unroll)
+    For(n, λ(expT(idx(n), read))( i => f(i) ), unroll)
 }
 
 object comment {

@@ -4,6 +4,7 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 import scala.xml.Elem
@@ -15,10 +16,10 @@ final case class IdxAcc(n: Nat,
   extends AccPrimitive {
 
   override val t: AccType =
-    (n: Nat) ->: (dt: DataType) ->:
-      (index :: exp"[idx($n), $read]") ->:
-        (array :: acc"[$n.$dt]") ->:
-          acc"[$dt]"
+    (n: Nat) ~>: (dt: DataType) ~>:
+      (index :: expT(idx(n), read)) ~>:
+        (array :: accT(n`.`dt)) ~>:
+          accT(dt)
 
   override def eval(s: Store): AccIdentifier = {
     val arrayE = OperationalSemantics.eval(s, array)

@@ -16,12 +16,14 @@ final case class ToMem(dt: DataType,
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (dt: DataType) ->:
-      (input :: exp"[$dt, $write]") ->: exp"[$dt, $read]"
+    (dt: DataType) ~>:
+      (input :: expT(dt, write)) ~>: expT(dt, read)
 
   override def eval(s: Store): Data = OperationalSemantics.eval(s, input)
 
-  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
+  override def visitAndRebuild(
+    fun: VisitAndRebuild.Visitor
+  ): Phrase[ExpType] = {
     ToMem(fun.data(dt), VisitAndRebuild(input, fun))
   }
 
@@ -38,13 +40,13 @@ final case class ToMem(dt: DataType,
       Character.toLowerCase(name.charAt(0)) + name.substring(1)
     })
 
-  override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommType] = {
-    ???
-  }
+  override def acceptorTranslation(A: Phrase[AccType])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] = ???
 
-  override def continuationTranslation(C: Phrase[->:[ExpType, CommType]])
-                                      (implicit context: TranslationContext): Phrase[CommType] = {
+  override def continuationTranslation(C: Phrase[->:[ExpType, CommType]])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] = {
     import TranslationToImperative._
 
     `new` (dt, tmp => acc(input)(tmp.wr) `;` C(tmp.rd))

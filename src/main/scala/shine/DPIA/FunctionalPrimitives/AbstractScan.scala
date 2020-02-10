@@ -6,12 +6,11 @@ import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 import scala.xml.Elem
-/**
-  * Created by federico on 13/01/18.
-  */
+
 abstract  class AbstractScan(n: Nat,
                              dt1: DataType,
                              dt2: DataType,
@@ -21,10 +20,10 @@ abstract  class AbstractScan(n: Nat,
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (n: Nat) ->: (dt1: DataType) ->: (dt2: DataType) ->:
-      (f :: t"exp[$dt1, $read] -> exp[$dt2, $read] -> exp[$dt2, $write]") ->:
-      (init :: exp"[$dt2, $write]") ->:
-      (array :: exp"[$n.$dt1, $read]") ->: exp"[$n.$dt2, $read]"
+    (n: Nat) ~>: (dt1: DataType) ~>: (dt2: DataType) ~>:
+      (f :: expT(dt1, read) ->: expT(dt2, read) ->: expT(dt2, write)) ~>:
+      (init :: expT(dt2, write)) ~>:
+      (array :: expT(n`.`dt1, read)) ~>: expT(n`.`dt2, read)
 
   def makeScan: (Nat, DataType, DataType,
     Phrase[ExpType ->: ExpType ->: ExpType], Phrase[ExpType], Phrase[ExpType]
@@ -39,9 +38,7 @@ abstract  class AbstractScan(n: Nat,
                 out: Phrase[AccType])
                (implicit context: TranslationContext): Phrase[CommType]
 
-  override def visitAndRebuild(
-    fun: VisitAndRebuild.Visitor
-  ): Phrase[ExpType] = {
+  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     makeScan(fun.nat(n), fun.data(dt1), fun.data(dt2),
       VisitAndRebuild(f, fun), VisitAndRebuild(init, fun),
       VisitAndRebuild(array, fun))
@@ -58,11 +55,11 @@ abstract  class AbstractScan(n: Nat,
   ): Phrase[CommType] = {
     import TranslationToImperative._
 
-    con(array)(λ(exp"[$n.$dt1, $read]")(x =>
-      con(init)(λ(exp"[$dt2, $write]")(y =>
+    con(array)(λ(expT(n`.`dt1, read))(x =>
+      con(init)(λ(expT(dt2, write))(y =>
         makeScanI(n, dt1, dt2,
-          λ(exp"[$dt1, $read]")(x =>
-            λ(exp"[$dt2, $write]")(y => λ(acc"[$dt2]")(o =>
+          λ(expT(dt1, read))(x =>
+            λ(expT(dt2, write))(y => λ(accT(dt2))(o =>
             acc(f(x)(y))(o)))),
           y, x, A)
       )
@@ -75,7 +72,7 @@ abstract  class AbstractScan(n: Nat,
   ): Phrase[CommType] = {
     import TranslationToImperative._
 
-    `new`(dt"[$n.$dt2]", λ(exp"[$n.$dt2, $read]" x acc"[$n.$dt2]")(tmp =>
+    `new`(n`.`dt2, λ(varT(n`.`dt2))(tmp =>
       acc(this)(tmp.wr) `;` C(tmp.rd) ))
   }
 

@@ -7,6 +7,7 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA.{Phrases, _}
 
 import scala.xml.Elem
@@ -21,9 +22,9 @@ final case class Zip(
 ) extends ExpPrimitive {
 
   override val t: ExpType =
-    (n: Nat) ->: (dt1: DataType) ->: (dt2: DataType) ->:
-      (access: AccessType) ->: (e1 :: exp"[$n.$dt1, $access]") ->:
-        (e2 :: exp"[$n.$dt2, $access]") ->: exp"[$n.($dt1 x $dt2), $access]"
+    (n: Nat) ~>: (dt1: DataType) ~>: (dt2: DataType) ~>:
+      (access: AccessType) ~>: (e1 :: expT(n`.`dt1, access)) ~>:
+       (e2 :: expT(n`.`dt2, access)) ~>: expT(n`.`(dt1 x dt2), access)
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     Zip(f.nat(n), f.data(dt1), f.data(dt2), f.access(access),
@@ -69,8 +70,8 @@ final case class Zip(
   ): Phrase[CommType] = {
     import TranslationToImperative._
 
-    con(e1)(λ(exp"[$n.$dt1, $read]")(x =>
-      con(e2)(λ(exp"[$n.$dt2, $read]")(y =>
+    con(e1)(λ(expT(n`.`dt1, read))(x =>
+      con(e2)(λ(expT(n`.`dt2, read))(y =>
         C(Zip(n, dt1, dt2, access, x, y)) )) ))
   }
 }

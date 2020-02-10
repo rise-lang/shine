@@ -6,6 +6,7 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 import scala.xml.Elem
@@ -17,9 +18,9 @@ final case class ForVec(n: Nat,
   extends CommandPrimitive
 {
   override val t: CommType =
-    (n: Nat) ->: (dt: ScalarType) ->:
-      (out :: acc"[${VectorType(n, dt)}]") ->:
-        (body :: t"exp[idx($n), $read] -> acc[$dt] -> comm") ->:
+    (n: Nat) ~>: (dt: ScalarType) ~>:
+      (out :: accT(vec(n, dt))) ~>:
+        (body :: expT(idx(n), read) ->: accT(dt) ->: comm) ~>:
           comm
 
   override def eval(s: Store): Store = {

@@ -6,24 +6,29 @@ import shine.DPIA.ImperativePrimitives.AsScalarAcc
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 import scala.xml.Elem
 
-final case class AsScalar(n: Nat,
-                          m: Nat,
-                          dt: ScalarType,
-                          access: AccessType,
-                          array: Phrase[ExpType])
-  extends ExpPrimitive {
+final case class AsScalar(
+  n: Nat,
+  m: Nat,
+  dt: ScalarType,
+  access: AccessType,
+  array: Phrase[ExpType]
+) extends ExpPrimitive {
 
   override val t: ExpType =
-    (n: Nat) ->: (m: Nat) ->: (dt: ScalarType) ->:
-      (array :: exp"[$n.${VectorType(m, dt)}, $access]") ->:
-        exp"[${n * m}.$dt, $access]"
+    (n: Nat) ~>: (m: Nat) ~>: (dt: ScalarType) ~>:
+      (array :: expT(n`.`vec(m, dt), access)) ~>:
+        expT({n * m}`.`dt, access)
 
-  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    AsScalar(fun.nat(n), fun.nat(m), fun.data(dt), fun.access(access), VisitAndRebuild(array, fun))
+  override def visitAndRebuild(
+    fun: VisitAndRebuild.Visitor
+  ): Phrase[ExpType] = {
+    AsScalar(fun.nat(n), fun.nat(m), fun.data(dt), fun.access(access),
+      VisitAndRebuild(array, fun))
   }
 
   override def eval(s: Store): Data = ???
@@ -35,19 +40,27 @@ final case class AsScalar(n: Nat,
       {Phrases.xmlPrinter(array)}
     </asScalar>
 
-  override def fedeTranslation(env: Predef.Map[Identifier[ExpType], Identifier[AccType]])(C: Phrase[AccType ->: AccType]): Phrase[AccType] = {
+  override def fedeTranslation(
+    env: Predef.Map[Identifier[ExpType],
+      Identifier[AccType]]
+  )(
+    C: Phrase[AccType ->: AccType]
+  ): Phrase[AccType] = {
     import TranslationToImperative._
-    fedAcc(env)(array)(fun(acc"[${C.t.inT.dataType}]")(o => AsScalarAcc(n, m, dt, C(o))))
+    fedAcc(env)(array)(fun(accT(C.t.inT.dataType))(o =>
+      AsScalarAcc(n, m, dt, C(o))))
   }
 
-  override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommType] = {
+  override def acceptorTranslation(A: Phrase[AccType])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] = {
     import TranslationToImperative._
     acc(array)(AsScalarAcc(n, m, dt, A))
   }
 
-  override def continuationTranslation(C: Phrase[->:[ExpType, CommType]])
-                                      (implicit context: TranslationContext): Phrase[CommType] = {
+  override def continuationTranslation(C: Phrase[->:[ExpType, CommType]])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] = {
     import TranslationToImperative._
     con(array)(λ(array.t)(x => C(AsScalar(n, m, dt, access, x)) ))
   }
