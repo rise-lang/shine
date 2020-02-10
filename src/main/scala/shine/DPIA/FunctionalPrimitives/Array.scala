@@ -14,10 +14,7 @@ final case class Array(dt: DataType,
                        elements: Vector[Phrase[ExpType]])
   extends ExpPrimitive {
 
-  private def tRec(m: Int): ExpType =
-    if (m <= 0) { expT({elements.length : Nat}`.`dt, read) }
-    else { tRec(m - 1) }
-  override val t: ExpType = tRec(elements.length)
+  override val t: ExpType = expT({elements.length : Nat}`.`dt, read)
 
   def prettyPrint: String =
     s"${this.getClass.getSimpleName} (${elements.flatMap(PrettyPhrasePrinter(_))})"
