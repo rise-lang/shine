@@ -1,9 +1,13 @@
 package shine.DPIA
 
+import arithexpr.arithmetic.ArithExpr
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
+import rise.{core => r}
 import rise.core.{types => rt}
+import shine.C.AST.DefaultImplementations.ArithmeticExpr
 import shine.DPIA.Types._
+import shine.DPIA.{fromRise => fr}
 
 class InferAccessTypes extends test_util.Tests {
   test("(read -> read) is inferred for id over float.") {
@@ -94,5 +98,14 @@ class InferAccessTypes extends test_util.Tests {
       ExpType(ArrayType(8, f32), read), ExpType(ArrayType(8, f32), read))
 
     assertResult(expecPt)(infPt)
+  }
+
+  test("(read -> read) with split on input") {
+    val splitArray = rt.infer(nFun(n => fun(8`.`rt.f32)(arr =>
+      arr |> split(n))))
+    val infPt = inferAccess(splitArray)(splitArray).asInstanceOf[
+      DepFunType[NatKind, FunType[ExpType, ExpType]]
+    ]
+    assertResult(read)(infPt.t.outT.accessType)
   }
 }

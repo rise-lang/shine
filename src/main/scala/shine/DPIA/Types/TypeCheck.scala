@@ -98,8 +98,11 @@ object TypeCheck {
     if (subType == superType) return true
 
     (subType, superType) match {
-      case (ExpType(bSub: DataType, accessSub), ExpType(bSuper, _)) =>
-        bSub == bSuper && notContainingArrayType(bSub) && accessSub == read
+      case (ExpType(bSub: DataType, accessSub), ExpType(bSuper, accessSuper))
+        if bSub == bSuper =>
+        accessSub.isInstanceOf[AccessTypeIdentifier] ||
+          accessSuper.isInstanceOf[AccessTypeIdentifier] ||
+            (accessSub == read && notContainingArrayType(bSub))
       case (FunType(subInT, subOutT), FunType(superInT, superOutT)) =>
         subTypeCheck(superInT, subInT) && subTypeCheck(subOutT,  superOutT)
       case (DepFunType(subInT, subOutT), DepFunType(superInT, superOutT)) =>

@@ -18,7 +18,6 @@ final case class Fst(
   pair: Phrase[ExpType]
 ) extends ExpPrimitive {
 
-  //FIXME this should be polymorphic over the access type
   override val t: ExpType =
     (dt1: DataType) ->: (dt2: DataType) ->: (access: AccessType) ->:
       (pair :: exp"[$dt1 x $dt2, $access]") ->: exp"[$dt1, $access]"

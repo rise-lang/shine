@@ -259,8 +259,9 @@ object fromRise {
       rt.FunType(rt.ArrayType(mn, la), rt.ArrayType(m, _))))
       =>
         val a = dataType(la)
-        val w =
-          pt(p).asInstanceOf[FunType[ExpType, ExpType]].inT.accessType
+        val w = pt(p).asInstanceOf[
+          DepFunType[NatKind, FunType[ExpType, ExpType]]
+        ].t.inT.accessType
         DepLambda[NatKind](natIdentifier(n))(
           fun[ExpType](exp"[$mn.$a, $w]", e =>
             Split(n, m, w, a, e)))
@@ -388,7 +389,8 @@ object fromRise {
         val m = nm - n
         val a = dataType(la)
         val w =
-          pt(p).asInstanceOf[FunType[ExpType, ExpType]].inT.accessType
+          pt(p).asInstanceOf[
+            DepFunType[NatKind, FunType[ExpType, ExpType]]].t.inT.accessType
         DepLambda[NatKind](natIdentifier(n))(
           fun[ExpType](exp"[$nm.$a, $w]", e =>
             Take(n, m, w, a, e)))
@@ -400,11 +402,11 @@ object fromRise {
         val m = nm - n
         val a = dataType(la)
         val w =
-          pt(p).asInstanceOf[FunType[ExpType, ExpType]].inT.accessType
+          pt(p).asInstanceOf[
+            DepFunType[NatKind, FunType[ExpType, ExpType]]].t.inT.accessType
         DepLambda[NatKind](natIdentifier(n))(
-          DepLambda[NatKind](natIdentifier(n))(
-          fun[ExpType](exp"[$nm.$a, $w]", e =>
-            Drop(n, m, w, a, e))))
+        fun[ExpType](exp"[$nm.$a, $w]", e =>
+          Drop(n, m, w, a, e)))
 
       case (core.PadCst(),
       rt.DepFunType(l: rt.NatIdentifier,
@@ -648,8 +650,9 @@ object fromRise {
       rt.FunType(rt.ArrayType(mn, la: rt.ScalarType), rt.ArrayType(m, _))))
       =>
         val a = scalarType(la)
-        val w =
-          pt(p).asInstanceOf[FunType[ExpType, ExpType]].inT.accessType
+        val w = pt(p).asInstanceOf[
+          DepFunType[NatKind, FunType[ExpType, ExpType]]
+        ].t.inT.accessType
         DepLambda[NatKind](natIdentifier(n))(
           fun[ExpType](exp"[$mn.$a, $w]", e =>
             AsVector(n, m, a, w, e)))
@@ -777,24 +780,6 @@ object fromRise {
           wrapArray(t2, elements :+ e))
       case _ => error(s"did not expect $t")
     }
-  }
-
-
-  def `type`(ty: rt.Type): PhraseType = ty match {
-    case dt: rt.DataType => ExpType(dataType(dt), read)
-    case rt.FunType(i, o) => `type`(i) ->: `type`(o)
-    case rt.DepFunType(i, t) => i match {
-      case dt: rt.DataTypeIdentifier =>
-        dataTypeIdentifier(dt) `()->:` `type`(t)
-      case n: rt.NatIdentifier =>
-        natIdentifier(n) `()->:` `type`(t)
-      case n2n: rt.NatToNatIdentifier =>
-        natToNatIdentifier(n2n) `()->:` `type`(t)
-      case n2d: rt.NatToDataIdentifier =>
-        natToDataIdentifier(n2d) `()->:` `type`(t)
-    }
-    case rt.TypeIdentifier(_) | rt.TypePlaceholder =>
-      throw new Exception("This should not happen")
   }
 
   def addressSpace(a: rt.AddressSpace): AddressSpace = a match {

@@ -32,7 +32,6 @@ final case class Apply[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 ->: T2
   extends Phrase[T2] {
 
   override val t: T2 = {
-    //FIXME: redundant with type checking
     assert(arg.t `<=` fun.t.inT)
     fun.t.outT
   }
