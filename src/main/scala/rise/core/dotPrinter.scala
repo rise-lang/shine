@@ -8,6 +8,7 @@ case object dotPrinter {
 
   def generateDotString(
       expr: Expr,
+      printTypes: Boolean = false,
       inlineLambdaIdentifier: Boolean = false
   ): String = {
 
@@ -19,6 +20,7 @@ case object dotPrinter {
     def generateNodesAndEdges(
         expr: Expr,
         parent: String,
+        printTypes: Boolean,
         inlineLambdaIdentifier: Boolean
     ): String = {
 
@@ -29,7 +31,9 @@ case object dotPrinter {
       def fillBlack: String = fill("black")
 
       def formatType(t: Type): String =
-        t.toString.replaceAll(">", "\\\\>").replaceAll("<", "\\\\<")
+        if(printTypes)
+          t.toString.replaceAll(">", "\\\\>").replaceAll("<", "\\\\<")
+        else ""
 
       case class Label(
           s: String,
@@ -68,7 +72,7 @@ case object dotPrinter {
         attr(fillBlack + Label(x).gray.edge.toString)
 
       def recurse(e: Expr, parent: String, ty: Option[String]): String =
-        generateNodesAndEdges(e, parent, inlineLambdaIdentifier)
+        generateNodesAndEdges(e, parent, printTypes, inlineLambdaIdentifier)
 
       def binaryNode(
           nodeLabel: String,
@@ -130,7 +134,7 @@ case object dotPrinter {
     }
 
     val content =
-      generateNodesAndEdges(expr, getID(expr), inlineLambdaIdentifier)
+      generateNodesAndEdges(expr, getID(expr), printTypes, inlineLambdaIdentifier)
 
     s"""
        |digraph graphname
