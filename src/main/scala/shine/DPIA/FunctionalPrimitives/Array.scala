@@ -5,6 +5,7 @@ import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 import scala.xml.Elem
@@ -13,10 +14,7 @@ final case class Array(dt: DataType,
                        elements: Vector[Phrase[ExpType]])
   extends ExpPrimitive {
 
-  private def tRec(m: Int): ExpType =
-    if (m <= 0) { exp"[${elements.length : Nat}.$dt, $read]" }
-    else { dt ->: tRec(m - 1) }
-  override val t: ExpType = (dt: DataType) ->: tRec(elements.length)
+  override val t: ExpType = expT({elements.length : Nat}`.`dt, read)
 
   def prettyPrint: String =
     s"${this.getClass.getSimpleName} (${elements.flatMap(PrettyPhrasePrinter(_))})"
@@ -42,7 +40,7 @@ final case class Array(dt: DataType,
 
     def rec(func: Vector[Phrase[ExpType]], imp: Vector[Phrase[ExpType]]): Phrase[CommType] = {
       func match {
-        case xf +: func => con(xf)(fun(exp"[$dt, $read]")(xi =>
+        case xf +: func => con(xf)(fun(expT(dt, read))(xi =>
           rec(func, imp :+ xi)
         ))
         case _ => C(Array(dt, imp))

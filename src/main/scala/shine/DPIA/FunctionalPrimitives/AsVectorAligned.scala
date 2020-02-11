@@ -6,6 +6,7 @@ import shine.DPIA.ImperativePrimitives.AsVectorAcc
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 import scala.xml.Elem
@@ -16,10 +17,8 @@ final case class AsVectorAligned(n: Nat,
                                  array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override val t: ExpType =
-    (n: Nat) ->: (m: Nat) ->: (dt: ScalarType) ->:
-      (array :: exp"[${m * n}.$dt, $read]") ->:
-        exp"[$m.${VectorType(n, dt)}, $read]"
+  array :: expT({m * n}`.`dt, read)
+  override val t: ExpType = expT(m`.`vec(n, dt), read)
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     AsVectorAligned(f.nat(n), f.nat(m), f.data(dt), VisitAndRebuild(array, f))

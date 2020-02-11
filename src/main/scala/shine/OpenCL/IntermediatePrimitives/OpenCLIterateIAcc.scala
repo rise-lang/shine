@@ -6,6 +6,7 @@ import shine.DPIA.FunctionalPrimitives._
 import shine.DPIA.ImperativePrimitives.TakeAcc
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 import shine.OpenCL.DSL.newDoubleBuffer
 
@@ -21,7 +22,7 @@ object OpenCLIterateIAcc {
   {
     val sz = n.pow(k) * m
 
-    newDoubleBuffer(a, dt"[$sz.$dt]", dt"[$m.$dt]", ArrayType(sz, dt), in, out,
+    newDoubleBuffer(a, sz`.`dt, m`.`dt, sz`.`dt, in, out,
       (v, swap, done) => {
         `for`(k, ip => {
           val i = NamedVar(ip.name, RangeAdd(Cst(0), k, Cst(1)))

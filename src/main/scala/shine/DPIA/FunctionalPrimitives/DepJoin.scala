@@ -8,6 +8,7 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 import scala.xml.Elem
@@ -18,11 +19,9 @@ final case class DepJoin(n: Nat,
                          array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override val t: ExpType = {
-    (n: Nat) ->: (lenF: NatToNat) ->: (dt: DataType) ->:
-      (array :: exp"[$n.${NatToDataLambda(n, (i:NatIdentifier) => ArrayType(lenF(i), dt))}, $read]") ->:
-        exp"[${BigSum(from = 0, upTo = n - 1, i => lenF(i))}.$dt, $read]"
-  }
+  array :: expT(n`.d`{ i => lenF(i)`.`dt }, read)
+  override val t: ExpType =
+    expT(BigSum(from = 0, upTo = n - 1, i => lenF(i))`.`dt, read)
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     DepJoin(fun.nat(n), fun.natToNat(lenF), fun.data(dt), VisitAndRebuild(array, fun))
@@ -59,7 +58,7 @@ final case class DepJoin(n: Nat,
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
-    con(array)(λ(exp"[$n.${NatToDataLambda(n, (i:NatIdentifier) => ArrayType(lenF(i), dt))}, $read]")(x =>
+    con(array)(λ(expT(n`.d`{ i => lenF(i)`.`dt }, read))(x =>
       C(DepJoin(n, lenF, dt, x)) ))
   }
 }

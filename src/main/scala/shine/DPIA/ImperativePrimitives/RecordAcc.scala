@@ -13,10 +13,9 @@ final case class RecordAcc(dt1: DataType,
                            snd: Phrase[AccType])
   extends AccPrimitive {
 
-  override val t: AccType =
-    (dt1: DataType) ->: (dt2: DataType) ->:
-      (fst :: acc"[$dt1]") ->: (snd :: acc"[$dt2]") ->:
-    acc"[$dt1 x $dt2]"
+  fst :: accT(dt1)
+  snd :: accT(dt2)
+  override val t: AccType = accT(dt1 x dt2)
 
   override def eval(s: Store): AccIdentifier = ???
 

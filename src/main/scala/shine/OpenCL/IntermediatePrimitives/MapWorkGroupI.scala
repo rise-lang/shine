@@ -3,6 +3,7 @@ package shine.OpenCL.IntermediatePrimitives
 import shine.DPIA.DSL.{λ, _}
 import shine.DPIA.Phrases.Phrase
 import shine.DPIA.Types.{AccType, CommType, DataType, ExpType, read}
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 import shine.OpenCL.ImperativePrimitives.ParForWorkGroup
 
@@ -13,7 +14,7 @@ final case class MapWorkGroupI(dim: Int) {
             out: Phrase[AccType]): Phrase[CommType] =
   {
     comment("mapWorkgroup")`;`
-    ParForWorkGroup(dim)(n, dt2, out, λ(exp"[idx($n), $read]")(i => λ(acc"[$dt2]")(a => {
+    ParForWorkGroup(dim)(n, dt2, out, λ(expT(idx(n), read))(i => λ(accT(dt2))(a => {
 
       //      val access = (out `@` 0) `@` 0 // TODO: this is totally not generic ...
       //      TypeChecker(access)

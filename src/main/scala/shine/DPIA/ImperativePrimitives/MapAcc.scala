@@ -3,6 +3,7 @@ package shine.DPIA.ImperativePrimitives
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 import scala.xml.Elem
@@ -14,10 +15,9 @@ final case class MapAcc(n: Nat,
                         array: Phrase[AccType])
   extends AccPrimitive {
 
-  override val t: AccType =
-    (n: Nat) ->: (dt1: DataType) ->: (dt2: DataType) ->:
-      (f :: t"acc[$dt1] -> acc[$dt2]") ->:
-      (array :: acc"[$n.$dt1]") ->: acc"[$n.$dt2]"
+  f :: accT(dt1) ->: accT(dt2)
+  array :: accT(n`.`dt1)
+  override val t: AccType = accT(n`.`dt2)
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {
     MapAcc(fun.nat(n), fun.data(dt1), fun.data(dt2), VisitAndRebuild(f, fun), VisitAndRebuild(array, fun))

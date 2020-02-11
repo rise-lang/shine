@@ -4,6 +4,7 @@ import shine.DPIA.Compilation.TranslationContext
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 import scala.xml.Elem
@@ -15,10 +16,8 @@ final case class GenerateCont(n: Nat,
                               f: Phrase[ExpType ->: ((ExpType ->: CommType) ->: CommType)])
   extends ExpPrimitive
 {
-  override val t: ExpType =
-    (n: Nat) ->: (dt: DataType) ->:
-      (f :: exp"[idx($n), $read]" ->: t"exp[$dt, $read] -> comm" ->: comm) ->:
-      exp"[$n.$dt, $read]"
+  f :: expT(idx(n), read) ->: (expT(dt, read) ->: comm) ->: comm
+  override val t: ExpType = expT(n`.`dt, read)
 
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     GenerateCont(v.nat(n), v.data(dt), VisitAndRebuild(f, v))

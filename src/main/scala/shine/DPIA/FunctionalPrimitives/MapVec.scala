@@ -18,10 +18,10 @@ final case class MapVec(n: Nat,
                         array: Phrase[ExpType])
   extends ExpPrimitive
 {
-  override val t: ExpType =
-    (n: Nat) ->: (dt1: ScalarType) ->: (dt2: ScalarType) ->:
-      (f :: t"exp[$dt1, $read] -> exp[$dt2, $write]") ->:
-        (array :: exp"[${VectorType(n, dt1)}, $read]") ->: exp"[${VectorType(n, dt2)}, $write]"
+
+  f :: expT(dt1, read) ->: expT(dt2, write)
+  array :: expT(vec(n, dt1), read)
+  override val t: ExpType = expT(vec(n, dt2), write)
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     MapVec(fun.nat(n), fun.data(dt1), fun.data(dt2), VisitAndRebuild(f, fun), VisitAndRebuild(array, fun))
@@ -44,16 +44,16 @@ final case class MapVec(n: Nat,
                                   (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
-    con(array)(λ(exp"[${VectorType(n, dt1)}, $read]")(x =>
-      MapVecI(n, dt1, dt2, λ(exp"[$dt1, $read]")(x => λ(acc"[$dt2]")(o => acc(f(x))(o))), x, A)))
+    con(array)(λ(expT(vec(n, dt1), read))(x =>
+      MapVecI(n, dt1, dt2, λ(expT(dt1, read))(x => λ(accT(dt2))(o => acc(f(x))(o))), x, A)))
   }
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
-    `new`(dt"[${VectorType(n, dt2)}]",
-      λ(exp"[${VectorType(n, dt2)}, $read]" x acc"[${VectorType(n, dt2)}]")(tmp =>
+    `new`(vec(n, dt2),
+      λ(varT(vec(n, dt2)))(tmp =>
         acc(this)(tmp.wr) `;`
           C(tmp.rd) )
       )

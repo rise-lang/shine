@@ -5,6 +5,7 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics.{ArrayData, Store}
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 import scala.xml.Elem
@@ -18,10 +19,8 @@ abstract class AbstractSlide(n: Nat,
 {
   val inputSize: Nat with SimplifiedExpr = sp * n + sz - sp
 
-  override val t: ExpType =
-    (n: Nat) ->: (sz: Nat) ->: (sp: Nat) ->: (dt: DataType) ->:
-      (input :: exp"[$inputSize.$dt, $read]") ->:
-        exp"[$n.$sz.$dt, $read]"
+  input :: expT(inputSize`.`dt, read)
+  override val t: ExpType = expT(n`.`(sz`.`dt), read)
 
   override def eval(s: Store): OperationalSemantics.Data = {
     OperationalSemantics.eval(s, input) match {

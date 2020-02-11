@@ -7,6 +7,7 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 import scala.xml.Elem
@@ -18,9 +19,8 @@ final case class Split(n: Nat,
                        array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override val t: ExpType =
-    (n: Nat) ->: (m: Nat) ->: (w: AccessType) ->: (dt: DataType) ->:
-      (array :: exp"[${m * n}.$dt, $w]") ->: exp"[$m.$n.$dt, $w]"
+  array :: expT({m * n}`.`dt, w)
+  override val t: ExpType = expT(m`.`(n`.`dt), w)
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     Split(fun.nat(n), fun.nat(m), fun.access(w), fun.data(dt), VisitAndRebuild(array, fun))
@@ -58,7 +58,7 @@ final case class Split(n: Nat,
     import TranslationToImperative._
 
     val otype = C.t.inT.dataType
-    fedAcc(env)(array)(λ(acc"[$otype]")(o => SplitAcc(n, m, dt, C(o))))
+    fedAcc(env)(array)(λ(accT(otype))(o => SplitAcc(n, m, dt, C(o))))
   }
 
   override def acceptorTranslation(A: Phrase[AccType])
@@ -72,6 +72,6 @@ final case class Split(n: Nat,
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
-    con(array)(λ(exp"[${m * n}.$dt, $read]")(x => C(Split(n, m, w, dt, x)) ))
+    con(array)(λ(expT({m * n}`.`dt, read))(x => C(Split(n, m, w, dt, x)) ))
   }
 }

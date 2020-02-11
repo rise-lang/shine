@@ -104,7 +104,7 @@ final case class BinOp(op: Operators.Binary.Value, lhs: Phrase[ExpType], rhs: Ph
     op match {
       case Operators.Binary.GT |
            Operators.Binary.LT |
-           Operators.Binary.EQ => exp"[$bool, $read]"
+           Operators.Binary.EQ => expT(bool, read)
       case _ => (lhs.t.dataType, rhs.t.dataType) match {
         case (t1, t2) if t1 == t2 => ExpType(t1, read)
         case (lhsT, rhsT) =>
@@ -378,6 +378,7 @@ trait AccPrimitive extends Primitive[AccType] {
 }
 
 trait CommandPrimitive extends Primitive[CommType] {
+  override val t: CommType = comm
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Store
 }
 

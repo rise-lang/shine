@@ -13,6 +13,9 @@ class NatFunCall(val fun:LetNatIdentifier, val args:Seq[NatFunArg]) extends Arit
     case other => other
   }))
 
+  override def substitute(subs: collection.Map[Nat, Nat]): Option[Nat] =
+    ???
+
   override def exposedArgs: Seq[Nat] = args.map({
     case NatArg(n) => Some(n)
     case _ => None

@@ -6,6 +6,7 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA.{Phrases, _}
 
 import scala.language.reflectiveCalls
@@ -17,11 +18,9 @@ final case class Idx(n: Nat,
                      array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override val t: ExpType =
-    (n: Nat) ->: (dt: DataType) ->:
-      (index :: exp"[idx($n), $read]") ->:
-        (array :: exp"[$n.$dt, $read]") ->:
-          exp"[$dt, $read]"
+  index :: expT(idx(n), read)
+  array :: expT(n`.`dt, read)
+  override val t: ExpType = expT(dt, read)
 
   override def eval(s: Store): Data = {
     (OperationalSemantics.eval(s, array), OperationalSemantics.eval(s, index)) match {
@@ -49,7 +48,7 @@ final case class Idx(n: Nat,
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
-    con(array)(λ(exp"[$n.$dt, $read]")(x =>
+    con(array)(λ(expT(n`.`dt, read))(x =>
       con(index)(fun(index.t)(i =>
         A :=| dt | Idx(n, dt, i, x)))))
   }
@@ -57,7 +56,7 @@ final case class Idx(n: Nat,
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
-    con(array)(λ(exp"[$n.$dt, $read]")(e =>
+    con(array)(λ(expT(n`.`dt, read))(e =>
       con(index)(fun(index.t)(i =>
         C(Idx(n, dt, i, e))))))
   }

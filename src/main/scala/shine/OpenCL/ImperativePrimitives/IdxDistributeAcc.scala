@@ -3,6 +3,7 @@ package shine.OpenCL.ImperativePrimitives
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics.{AccIdentifier, Store}
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA.{Nat, Phrases, _}
 import shine.OpenCL.ParallelismLevel
 
@@ -16,9 +17,8 @@ final case class IdxDistributeAcc(m: Nat,
                                   array: Phrase[AccType])
   extends AccPrimitive {
 
-  override val t: AccType =
-    (m: Nat) ->: (n: Nat) ->: (stride: Nat) ->: (dt: DataType) ->:
-      (array :: acc"[$m.$dt]") ->: acc"[$n.$dt]"
+  array :: accT(m`.`dt)
+  override val t: AccType = accT(n`.`dt)
 
   override def eval(s: Store): AccIdentifier = ???
 

@@ -6,6 +6,7 @@ import shine.DPIA.FunctionalPrimitives.{AsIndex, Take}
 import shine.DPIA.ImperativePrimitives.TakeAcc
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 object IterateIAcc {
@@ -19,7 +20,7 @@ object IterateIAcc {
   {
     val sz = n.pow(k) * m
 
-    newDoubleBuffer(dt"[$sz.$dt]", dt"[$m.$dt]", ArrayType(sz, dt), in, out,
+    newDoubleBuffer(sz`.`dt, m`.`dt, sz`.`dt, in, out,
       (v: Phrase[VarType],
        swap: Phrase[CommType],
        done: Phrase[CommType]) => {

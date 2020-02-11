@@ -5,6 +5,7 @@ import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 import scala.xml.Elem
@@ -15,10 +16,8 @@ final case class DepIdx(n: Nat,
                         array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override val t: ExpType =
-    (n: Nat) ->: (ft: NatToData) ->: (index: Nat) ->:
-      (array :: exp"[$n.$ft, $read]") ->:
-        exp"[${ft(index)}, $read]"
+  array :: expT(n`.d`ft, read)
+  override val t: ExpType = expT(ft(index), read)
 
   //  override def inferTypes: Idx = {
   //    import TypeInference._
@@ -55,13 +54,13 @@ final case class DepIdx(n: Nat,
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
-    con(array)(λ(exp"[$n.$ft, $read]")(x => A :=| {ft(index)} | DepIdx(n, ft, index, x)))
+    con(array)(λ(expT(n`.d`ft, read))(x => A :=| {ft(index)} | DepIdx(n, ft, index, x)))
 
   }
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
-    con(array)(λ(exp"[$n.$ft, $read]")(e => C(DepIdx(n, ft, index, e))))
+    con(array)(λ(expT(n`.d`ft, read))(e => C(DepIdx(n, ft, index, e))))
   }
 }
