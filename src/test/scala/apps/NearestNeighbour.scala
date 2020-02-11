@@ -12,7 +12,7 @@ class NearestNeighbour extends shine.test_util.TestsWithExecutor {
     val lat = random.nextFloat
     val lng = random.nextFloat
 
-    test_util.runsWithSameResult(Seq(
+    shine.test_util.runsWithSameResult(Seq(
       ("original", runOriginalKernel("NearestNeighbour.cl", locations, lat, lng)),
       ("dpia", runKernel(gen.OpenCLKernel(nn), locations, lat, lng))
     ))

@@ -17,13 +17,13 @@ class Convolution extends shine.test_util.TestsWithExecutor {
     val (lsX, gsX) = blurXTiled2DSizes(N)
     val (lsY, gsY) = blurYTiled2DTiledLoadingTransposedSizes(N)
 
-    test_util.runsWithSameResult(Seq(
+    shine.test_util.runsWithSameResult(Seq(
       ("originalX (CG017)", runOriginalKernel("CGO17_ConvolutionColumn_small.cl",
         N, lsX, gsX, matrix, weights)),
       ("dpiaX", runKernel(gen.OpenCLKernel(blurXTiled2D(N)),
         lsX, gsX, matrix, weights))
     ))
-    test_util.runsWithSameResult(Seq(
+    shine.test_util.runsWithSameResult(Seq(
       ("originalY (CG017)", runOriginalKernel("CGO17_ConvolutionRow_small.cl",
         N, lsY, gsY, matrix, weights)),
       ("dpiaY", runKernel(gen.OpenCLKernel(blurYTiled2DTiledLoadingTransposed(N)),
