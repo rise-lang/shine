@@ -16,11 +16,8 @@ final case class TransposeDepArray(n:Nat,
                                    array:Phrase[ExpType])
   extends ExpPrimitive {
 
-  override val t: ExpType = {
-    (n: Nat) ~>: (m: Nat) ~>:
-      (array :: expT(n`.`(m`.d`f), read)) ~>:
-      expT(m`.d`{ k => n`.`f(k) }, read)
-  }
+  array :: expT(n`.`(m`.d`f), read)
+  override val t: ExpType = expT(m`.d`{ k => n`.`f(k) }, read)
 
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     TransposeDepArray(v.nat(n), v.nat(m), v.natToData(f), VisitAndRebuild(array, v))

@@ -6,7 +6,7 @@ import rise.core.types._
 import rise.core.semantics.NatData
 import util.gen
 
-class NatExpr extends test_util.Tests {
+class NatExpr extends shine.test_util.Tests {
   test("Nat can be used as DataType inside of an expression in C.") {
     gen.CProgram(fun(NatType)(n => n + Literal(NatData(1))))
   }

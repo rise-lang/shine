@@ -18,14 +18,12 @@ abstract class AbstractDepMap(n: Nat,
                               f: Phrase[`(nat)->:`[ExpType ->: ExpType]],
                               array: Phrase[ExpType])
   extends ExpPrimitive {
-
-  override val t: ExpType = {
+  {
     val k = f.t.x
-    (n: Nat) ~>: (ft1: NatToData) ~>: (ft2: NatToData) ~>:
-      (f :: k ->: expT(ft1(k), read) ->: expT(ft2(k), write)) ~>:
-        (array :: expT(n`.d`ft1, read)) ~>: // (array :: exp"[$n.$ft1, $read]") ->:
-          expT(n`.d`ft2, write) // exp"[$n.$ft2, $write]"
+    f :: k ->: expT(ft1(k), read) ->: expT(ft2(k), write)
+    array :: expT(n `.d` ft1, read)
   }
+  override val t: ExpType = expT(n`.d`ft2, write)
 
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommType] = {
@@ -78,7 +76,7 @@ abstract class AbstractDepMap(n: Nat,
         return <map>???</map>
     }
     <map n={ToString(n)} ft1={ToString(ft1)} ft2={ToString(ft2)}>
-      <f type={ToString(k ~>: ExpType(ft1(k), read) ->: ExpType(ft2(k), write))}>
+      <f type={ToString(k ->: ExpType(ft1(k), read) ->: ExpType(ft2(k), write))}>
         {Phrases.xmlPrinter(f)}
       </f>
       <input type={ToString(ExpType(DepArrayType(n, ft1), read))}>

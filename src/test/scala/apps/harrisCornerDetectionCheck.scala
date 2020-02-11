@@ -3,7 +3,7 @@ package apps
 import harrisCornerDetection._
 import util._
 
-class harrisCornerDetectionCheck extends test_util.TestsWithExecutor {
+class harrisCornerDetectionCheck extends shine.test_util.TestsWithExecutor {
   private val H = 20
   private val W = 80
   private val kappa = 1.2f

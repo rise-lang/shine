@@ -17,11 +17,9 @@ final case class DepZip(n: Nat,
                         e2: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override val t: ExpType =
-    (n: Nat) ~>: (ft1: NatToData) ~>: (ft2: NatToData) ~>:
-      (e1 :: expT(n`.d`ft1, read)) ~>:
-        (e2 :: expT(n`.d`ft2, read)) ~>:
-          expT(n`.d`{ i => PairType(ft1(i), ft2(i)) }, read)
+  e1 :: expT(n`.d`ft1, read)
+  e2 :: expT(n`.d`ft2, read)
+  override val t: ExpType = expT(n`.d`{ i => PairType(ft1(i), ft2(i)) }, read)
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     DepZip(f.nat(n), f.natToData(ft1), f.natToData(ft2), VisitAndRebuild(e1, f), VisitAndRebuild(e2, f))

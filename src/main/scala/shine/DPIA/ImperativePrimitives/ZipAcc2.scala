@@ -14,9 +14,8 @@ final case class ZipAcc2(n: Nat,
                          array: Phrase[AccType])
   extends AccPrimitive {
 
-  override val t: AccType =
-    (n: Nat) ~>: (dt1: DataType) ~>: (dt2: DataType) ~>:
-      (array :: accT(n`.`(dt1 x dt2))) ~>: accT(n`.`dt2)
+  array :: accT(n`.`(dt1 x dt2))
+  override val t: AccType = accT(n`.`dt2)
 
   override def eval(s: Store): AccIdentifier = ???
 

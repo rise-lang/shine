@@ -51,6 +51,8 @@ final class NatToNatApply(val f: NatToNat, val n: Nat) extends ArithExprFunction
 
   override def substituteExposedArgs(subMap: Map[Nat, SimplifiedExpr]): ArithExprFunctionCall =
     new NatToNatApply(f, subMap.getOrElse(n, n))
+
+  override def substitute(subs: collection.Map[Nat, Nat]): Option[Nat] = ???
 }
 
 object NatToNatApply {

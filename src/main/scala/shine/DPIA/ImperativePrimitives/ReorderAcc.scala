@@ -14,11 +14,10 @@ final case class ReorderAcc(n: Nat,
                             array: Phrase[AccType])
   extends AccPrimitive
 {
-  override val t: AccType =
-    (n: Nat) ~>: (dt: DataType) ~>:
-      (idxF :: expT(idx(n), read) ->: expT(idx(n), read)) ~>:
-        (array :: accT(n`.`dt)) ~>:
-          accT(n`.`dt)
+
+  idxF :: expT(idx(n), read) ->: expT(idx(n), read)
+  array :: accT(n`.`dt)
+  override val t: AccType = accT(n`.`dt)
 
   override def eval(s: Store): AccIdentifier = ???
 

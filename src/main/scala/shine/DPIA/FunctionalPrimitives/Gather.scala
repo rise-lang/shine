@@ -16,11 +16,9 @@ final case class Gather(n: Nat, m: Nat, dt: DataType,
                         input: Phrase[ExpType])
   extends ExpPrimitive
 {
-  override val t: ExpType =
-    (n: Nat) ~>: (m: Nat) ~>: (dt: DataType) ~>:
-      (indices :: expT(m`.`idx(n), read)) ~>:
-      (input :: expT(n`.`dt, read)) ~>:
-      expT(m`.`dt, read)
+  indices :: expT(m`.`idx(n), read)
+  input :: expT(n`.`dt, read)
+  override val t: ExpType = expT(m`.`dt, read)
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] =
     Gather(f.nat(n), f.nat(m), f.data(dt),

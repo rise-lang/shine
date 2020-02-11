@@ -25,6 +25,10 @@ class BuiltInFunctionCall private(name: String, val param: Int, range: Range)
   override def visitAndRebuild(f: Nat => Nat): Nat =
     f(new BuiltInFunctionCall(name, param, range.visitAndRebuild(f)))
 
+  override def substitute(subs: collection.Map[Nat, Nat]): Option[Nat] =
+    subs.get(this).orElse(
+      range.substitute(subs).map(new BuiltInFunctionCall(name, param, _)))
+
   override def exposedArgs: Seq[Nat] = Seq()
 
   override def substituteExposedArgs(subMap: Map[Nat, SimplifiedExpr]): ArithExprFunctionCall = this

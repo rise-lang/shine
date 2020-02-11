@@ -5,7 +5,7 @@ import rise.core.TypeLevelDSL._
 import rise.core.types._
 import util._
 
-class Select extends test_util.Tests {
+class Select extends shine.test_util.Tests {
   val id = fun(x => x)
 
   test("select from generate") {

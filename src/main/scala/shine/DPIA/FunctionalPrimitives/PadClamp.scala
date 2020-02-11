@@ -18,9 +18,8 @@ final case class PadClamp(n: Nat,
                           array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override val t: ExpType =
-    (n: Nat) ~>: (l: Nat) ~>: (r: Nat) ~>: (dt: DataType) ~>:
-      (array :: expT(n`.`dt, read)) ~>: expT({l + n + r}`.`dt, read)
+  array :: expT(n`.`dt, read)
+  override val t: ExpType = expT({l + n + r}`.`dt, read)
 
   override def eval(s: Store): Data = ???
 

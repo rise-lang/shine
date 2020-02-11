@@ -19,12 +19,10 @@ final case class Reorder(n: Nat,
                          input: Phrase[ExpType])
   extends ExpPrimitive
 {
-  override val t: ExpType =
-    (n: Nat) ~>: (dt: DataType) ~>:
-      (idxF :: expT(idx(n), read) ->: expT(idx(n), read)) ~>:
-        (idxFinv :: expT(idx(n), read) ->: expT(idx(n), read)) ~>:
-          (input :: expT(n`.`dt, read)) ~>:
-            expT(n`.`dt, read)
+  idxF :: expT(idx(n), read) ->: expT(idx(n), read)
+  idxFinv :: expT(idx(n), read) ->: expT(idx(n), read)
+  input :: expT(n`.`dt, read)
+  override val t: ExpType = expT(n`.`dt, read)
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     Reorder(f.nat(n), f.data(dt),

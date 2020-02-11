@@ -16,10 +16,8 @@ final case class GenerateCont(n: Nat,
                               f: Phrase[ExpType ->: ((ExpType ->: CommType) ->: CommType)])
   extends ExpPrimitive
 {
-  override val t: ExpType =
-    (n: Nat) ~>: (dt: DataType) ~>:
-      (f :: expT(idx(n), read) ->: (expT(dt, read) ->: comm) ->: comm) ~>:
-      expT(n`.`dt, read)
+  f :: expT(idx(n), read) ->: (expT(dt, read) ->: comm) ->: comm
+  override val t: ExpType = expT(n`.`dt, read)
 
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     GenerateCont(v.nat(n), v.data(dt), VisitAndRebuild(f, v))
