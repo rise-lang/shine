@@ -4,8 +4,8 @@ import rise.core.DSL._
 import rise.core.types._
 import util.gen
 
-class scan extends test_util.Tests {
-  private val simpleScan = fun(ArrayType(8, float))(array =>
+class scan extends shine.test_util.Tests {
+  private val simpleScan = fun(ArrayType(8, f32))(array =>
     array |> scanSeq(fun(x => fun(a => a + x)))(l(0.0f))
   )
 

@@ -88,10 +88,12 @@ package object DPIA {
   }
 
   implicit class PairTypeConstructor[T1 <: PhraseType](t1: T1) {
+    @inline
     def x[T2 <: PhraseType](t2: T2): T1 x T2 = PhrasePairType(t1, t2)
   }
 
   implicit class FunTypeConstructor[R <: PhraseType](r: R) {
+    @inline
     def ->:[T <: PhraseType](t: T): T ->: R = FunType(t, r)
   }
 
@@ -100,33 +102,16 @@ package object DPIA {
   }
 
   implicit class DepFunTypeConstructor[R <: PhraseType](r: R) {
-    def `()->:`(i: DataTypeIdentifier): `()->:`[DataKind, R] = DepFunType[DataKind, R](i, r)
-    def `()->:`(n: NatIdentifier): `()->:`[NatKind, R] = DepFunType[NatKind, R](n, r)
-    def `()->:`(n: NatToNatIdentifier): `()->:`[NatToNatKind, R] = DepFunType[NatToNatKind, R](n, r)
-    def `()->:`(n: NatToDataIdentifier): `()->:`[NatToDataKind, R] = DepFunType[NatToDataKind, R](n, r)
+    def ->:(i: DataTypeIdentifier): `()->:`[DataKind, R] = DepFunType[DataKind, R](i, r)
+    def ->:(n: NatIdentifier): `()->:`[NatKind, R] = DepFunType[NatKind, R](n, r)
+    def ->:(n: NatToNatIdentifier): `()->:`[NatToNatKind, R] = DepFunType[NatToNatKind, R](n, r)
+    def ->:(n: NatToDataIdentifier): `()->:`[NatToDataKind, R] = DepFunType[NatToDataKind, R](n, r)
   }
 
-
-  implicit class PhraseTypeHelper(val sc: StringContext) extends AnyVal {
-    def t(args: Any*): PhraseType = {
-      new PhraseTypeParser(sc.s(args:_*), sc.parts, args.iterator).parsePhraseType
-    }
-
-    def exp(args: Any*): ExpType = {
-      new PhraseTypeParser("exp" + sc.s(args:_*), sc.parts, args.iterator).parseExpType
-    }
-
-    def acc(args: Any*): AccType = {
-      new PhraseTypeParser("acc" + sc.s(args:_*), sc.parts, args.iterator).parseAccType
-    }
-
-    def varT(args: Any*): VarType = {
-      new PhraseTypeParser("var" + sc.s(args:_*), sc.parts, args.iterator).parseVarType
-    }
-
-    def dt(args: Any*): DataType = {
-      new PhraseTypeParser(sc.s(args:_*), sc.parts, args.iterator).parseWrappedDataType
-    }
-  }
-
+  @inline
+  def expT(dt: DataType, a: AccessType): ExpType = ExpType(dt, a)
+  @inline
+  def accT(dt: DataType): AccType = AccType(dt)
+  @inline
+  def varT(dt: DataType): VarType = ExpType(dt, read) x AccType(dt)
 }

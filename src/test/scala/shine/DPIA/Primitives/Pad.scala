@@ -7,11 +7,11 @@ import rise.core.HighLevelConstructs.padClamp2D
 
 import util.gen
 
-class Pad extends test_util.Tests {
+class Pad extends shine.test_util.Tests {
   private val id = fun(x => x)
 
   test("Simple C constant pad input and copy") {
-    val e = nFun(n => fun(ArrayType(n, float))(xs =>
+    val e = nFun(n => fun(ArrayType(n, f32))(xs =>
       xs |> padCst(2)(3)(l(5.0f)) |> mapSeq(fun(x => x))
     ))
 
@@ -19,7 +19,7 @@ class Pad extends test_util.Tests {
   }
 
   test("Simple C clamp pad input and copy") {
-    val e = nFun(n => fun(ArrayType(n, float))(xs =>
+    val e = nFun(n => fun(ArrayType(n, f32))(xs =>
       xs |> padClamp(2)(3) |> mapSeq(fun(x => x))
     ))
 
@@ -27,7 +27,7 @@ class Pad extends test_util.Tests {
   }
 
   test("2D C clamp pad input and copy") {
-    val e = nFun(n => nFun(m => fun(ArrayType(n, ArrayType(m, float)))(xs =>
+    val e = nFun(n => nFun(m => fun(ArrayType(n, ArrayType(m, f32)))(xs =>
       xs |> padClamp2D(2) |> mapSeq(mapSeq(fun(x => x)))
     )))
 
@@ -37,7 +37,7 @@ class Pad extends test_util.Tests {
   test("Simple OpenMP constant pad input and copy") {
     import rise.OpenMP.DSL._
 
-    val e = nFun(n => fun(ArrayType(n, float))( xs =>
+    val e = nFun(n => fun(ArrayType(n, f32))( xs =>
       xs |> padCst(2)(3)(l(5.0f)) |> mapPar(fun(x => x))
     ))
 
@@ -47,7 +47,7 @@ class Pad extends test_util.Tests {
   test("Simple OpenCL pad input and copy") {
     import rise.OpenCL.DSL._
 
-    val e = nFun(n => fun(ArrayType(n, float))( xs =>
+    val e = nFun(n => fun(ArrayType(n, f32))( xs =>
       xs |> padCst(2)(3)(l(5.0f)) |> mapGlobal(fun(x => x))
     ))
 
@@ -57,7 +57,7 @@ class Pad extends test_util.Tests {
   test("OpenCL Pad only left") {
     import rise.OpenCL.DSL._
 
-    val e = nFun(n => fun(ArrayType(n, float))( xs =>
+    val e = nFun(n => fun(ArrayType(n, f32))( xs =>
       xs |> padCst(2)(0)(l(5.0f)) |> mapGlobal(fun(x => x))
     ))
 
@@ -67,7 +67,7 @@ class Pad extends test_util.Tests {
   test("OpenCL Pad only right") {
     import rise.OpenCL.DSL._
 
-    val e = nFun(n => fun(ArrayType(n, float))( xs =>
+    val e = nFun(n => fun(ArrayType(n, f32))( xs =>
       xs |> padCst(0)(3)(l(5.0f)) |> mapGlobal(fun(x => x))
     ))
 
@@ -114,7 +114,7 @@ class Pad extends test_util.Tests {
 
       val f = nFun(
         n => nFun(m =>
-          fun(ArrayType(n, ArrayType(m, float)))(xs => xs :>> pad2D(m, Cst(padAmount), Cst(padAmount), FloatData(padValue)) :>> mapSeq(mapSeq(fun(x => x))))
+          fun(ArrayType(n, ArrayType(m, f32)))(xs => xs :>> pad2D(m, Cst(padAmount), Cst(padAmount), FloatData(padValue)) :>> mapSeq(mapSeq(fun(x => x))))
         )
       )
 

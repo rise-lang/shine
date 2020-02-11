@@ -7,11 +7,12 @@ import rise.core.types._
 import rise.OpenCL.DSL._
 
 object mriQ {
-  private val phiMag = foreignFun("phiMag", Seq("phiR", "phiI"),
+  private val phiMag = foreignFun("phiMag",
+    Seq("phiR", "phiI"),
     "{ return phiR * phiR + phiI * phiI; }",
-    float ->: float ->: float)
+    f32 ->: f32 ->: f32)
 
-  private implicit class MultiInput(o: Type) {
+  implicit private class MultiInput(o: Type) {
     def `x3 ->:`(i: Type): FunType[Type, Type] =
       i ->: i ->: i ->: o
   }
@@ -25,37 +26,39 @@ object mriQ {
       |  acc._snd = acc._snd + PhiMag * sin(expArg);
       |  return acc;
       |}""".stripMargin,
-    float `x3 ->:` float `x3 ->:` float ->: (float x float) ->: (float x float))
+    f32 `x3 ->:` f32 `x3 ->:` f32 ->: (f32 x f32) ->: (f32 x f32))
 
   val computePhiMag: Expr = nFun(k => fun(
-    (k`.`float) ->: (k`.`float) ->: (k`.`float)
+    (k `.` f32) ->: (k `.` f32) ->: (k `.` f32)
   )((phiR, phiI) =>
     mapGlobal(fun(t => phiMag(t._1)(t._2)))(zip(phiR)(phiI))
   ))
 
   val computeQ: Expr = nFun(k => nFun(x => fun(
-    (x`.`float) `x3 ->:` (x`.`float) ->: (x`.`float) ->: (k`.`(float x float x float x float)) ->: (x`.`(float x float))
+    (x `.` f32) `x3 ->:` (x `.` f32) ->: (x `.` f32) ->: (k `.` (f32 x f32 x f32 x f32)) ->: (x `.` (f32 x f32))
   )((x, y, z, Qr, Qi, kvalues) =>
     zip(x)(zip(y)(zip(z)(zip(Qr)(Qi)))) |>
-      mapGlobal(fun(t =>
-        toPrivate(t._1) |> let(fun(sX =>
-          toPrivate(t._2._1) |> let(fun(sY =>
-            toPrivate(t._2._2._1) |> let(fun(sZ =>
-              kvalues |> oclReduceSeq(AddressSpace.Private)(fun((acc, p) =>
-                qFun(sX)(sY)(sZ)(p._1._1._1)(p._1._1._2)(p._1._2)(p._2)(acc)
-              ))(pair(t._2._2._2._1, t._2._2._2._2))
-            ))
+    mapGlobal(fun(t =>
+      toPrivate(t._1) |> let(fun(sX =>
+        toPrivate(t._2._1) |> let(fun(sY =>
+          toPrivate(t._2._2._1) |> let(fun(sZ =>
+            kvalues |> oclReduceSeq(AddressSpace.Private)(fun((acc, p) =>
+              qFun(sX)(sY)(sZ)(p._1._1._1)(p._1._1._2)(p._1._2)(p._2)(acc)
+            ))(pair(t._2._2._2._1, t._2._2._2._2))
           ))
         ))
       ))
+    ))
   )))
 
   import shine.OpenCL._
   import util.{Time, TimeSpan}
 
-  def runOriginalComputePhiMag(name: String,
-                               phiR: Array[Float],
-                               phiI: Array[Float]): (Array[Float], TimeSpan[Time.ms]) = {
+  def runOriginalComputePhiMag(
+    name: String,
+    phiR: Array[Float],
+    phiI: Array[Float]
+  ): (Array[Float], TimeSpan[Time.ms]) = {
     import opencl.executor._
 
     val code = util.readFile(s"src/main/scala/apps/originalLift/$name")
@@ -89,9 +92,11 @@ object mriQ {
     (output, TimeSpan.inMilliseconds(runtime))
   }
 
-  def runComputePhiMag(k: KernelNoSizes,
-                       phiR: Array[Float],
-                       phiI: Array[Float]): (Array[Float], TimeSpan[Time.ms]) = {
+  def runComputePhiMag(
+    k: KernelNoSizes,
+    phiR: Array[Float],
+    phiI: Array[Float]
+  ): (Array[Float], TimeSpan[Time.ms]) = {
     val K = phiR.length
     val localSize = LocalSize(1)
     val globalSize = GlobalSize(K)
@@ -102,13 +107,15 @@ object mriQ {
     f(localSize, globalSize)(K `,` phiR `,` phiI)
   }
 
-  def runOriginalComputeQ(name: String,
-                          x: Array[Float],
-                          y: Array[Float],
-                          z: Array[Float],
-                          Qr: Array[Float],
-                          Qi: Array[Float],
-                          kvalues: Array[Float]): (Array[Float], TimeSpan[Time.ms]) = {
+  def runOriginalComputeQ(
+    name: String,
+    x: Array[Float],
+    y: Array[Float],
+    z: Array[Float],
+    Qr: Array[Float],
+    Qi: Array[Float],
+    kvalues: Array[Float]
+  ): (Array[Float], TimeSpan[Time.ms]) = {
     import opencl.executor._
 
     val code = util.readFile(s"src/main/scala/apps/originalLift/$name")
@@ -149,13 +156,15 @@ object mriQ {
     (output, TimeSpan.inMilliseconds(runtime))
   }
 
-  def runComputeQ(k: KernelNoSizes,
-                  x: Array[Float],
-                  y: Array[Float],
-                  z: Array[Float],
-                  Qr: Array[Float],
-                  Qi: Array[Float],
-                  kvalues: Array[Float]): (Array[Float], TimeSpan[Time.ms]) = {
+  def runComputeQ(
+    k: KernelNoSizes,
+    x: Array[Float],
+    y: Array[Float],
+    z: Array[Float],
+    Qr: Array[Float],
+    Qi: Array[Float],
+    kvalues: Array[Float]
+  ): (Array[Float], TimeSpan[Time.ms]) = {
     val X = x.length
     assert(kvalues.length % 4 == 0)
     val K = kvalues.length / 4
@@ -167,6 +176,8 @@ object mriQ {
       Array[Float] `,` Array[Float] `,` Array[Float] `,`
       Array[Float] `,` Array[Float] `,` Array[Float]
       `)=>` Array[Float]]
-    f(localSize, globalSize)(K `,` X `,` x `,` y `,` z `,` Qr `,` Qi `,` kvalues)
+    f(localSize, globalSize)(
+      K `,` X `,` x `,` y `,` z `,` Qr `,` Qi `,` kvalues
+    )
   }
 }

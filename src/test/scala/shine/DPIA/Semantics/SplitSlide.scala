@@ -5,14 +5,14 @@ import rise.core.types._
 
 import util.gen
 
-class SplitSlide extends test_util.Tests {
+class SplitSlide extends shine.test_util.Tests {
 
   val n = 8
   val sz = 3
   val sp = 1
 
   test("slide-split") {
-    val e = fun(ArrayType(130, float))(xs =>
+    val e = fun(ArrayType(130, f32))(xs =>
       xs |> slide(sz)(sp) |> split(n) |> mapSeq(mapSeq(mapSeq(fun(x => x))))
     )
 
@@ -22,8 +22,10 @@ class SplitSlide extends test_util.Tests {
   }
 
   test("slide-map(slide)") {
-    val e = fun(ArrayType(130, float))(xs =>
-      xs |> slide(n+sz-sp)(n) |> map(slide(sz)(sp)) |> mapSeq(mapSeq(mapSeq(fun(x => x))))
+    val e = fun(ArrayType(130, f32))(xs =>
+      xs |> slide(n + sz - sp)(n) |> map(slide(sz)(sp)) |> mapSeq(
+        mapSeq(mapSeq(fun(x => x)))
+      )
     )
 
     val code = gen.CProgram(e).code

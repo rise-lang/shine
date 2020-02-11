@@ -4,7 +4,7 @@ import rise.core.DSL._
 import rise.core.types._
 import util.{Execute, gen}
 
-class Transpose extends test_util.Tests {
+class Transpose extends shine.test_util.Tests {
   test("Simple transpose should produce the expected result on a test") {
     def checkResult(e: rise.core.Expr) = {
       val p = gen.CProgram(e)

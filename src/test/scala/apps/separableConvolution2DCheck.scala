@@ -9,14 +9,14 @@ import rise.core.TypeLevelDSL._
 import rise.core.HighLevelConstructs._
 import util.gen
 
-class separableConvolution2DCheck extends test_util.Tests {
+class separableConvolution2DCheck extends shine.test_util.Tests {
   private def wrapExpr(e: Expr): Expr = {
-    import arithexpr.arithmetic.{RangeAdd, PosInf}
+    import arithexpr.arithmetic.{PosInf, RangeAdd}
     // at least 3 for one scalar sliding window
     // at least 3*4 = 12 for one vector sliding window
     nFun(RangeAdd(3, PosInf, 1), h =>
       nFun(RangeAdd(12, PosInf, 4), w =>
-        fun(h`.`w`.`float)(a => e(a))))
+        fun(h `.` w `.` f32)(a => e(a))))
   }
 
   private val H = 20
@@ -72,11 +72,13 @@ int main(int argc, char** argv) {
     checkC(regRotSeq(binomialWeightsV)(binomialWeightsH))
   }
 
-  import shine.OpenCL.{LocalSize, GlobalSize}
+  import shine.OpenCL.{GlobalSize, LocalSize}
 
-  private def checkOCL(localSize: LocalSize,
-                       globalSize: GlobalSize,
-                       e: Expr): Unit = {
+  private def checkOCL(
+    localSize: LocalSize,
+    globalSize: GlobalSize,
+    e: Expr
+  ): Unit = {
     import shine.OpenCL._
 
     val random = new scala.util.Random()
@@ -86,7 +88,7 @@ int main(int argc, char** argv) {
     val kernel = gen.OpenCLKernel(wrapExpr(e))
     val run = kernel.as[ScalaFunction `(`
       Int `,` Int `,` Array[Array[Float]]
-    `)=>` Array[Float]]
+      `)=>` Array[Float]]
     val (output, time) = run(localSize, globalSize)(H `,` W `,` input)
     util.assertSame(output, gold, "output is different from gold")
     println(s"time: $time")
@@ -94,19 +96,26 @@ int main(int argc, char** argv) {
 
   test("regRotPar compiles to valid OpenCL that passes checks") {
     util.withExecutor {
-      checkOCL(LocalSize(1), GlobalSize(4), regRotPar(binomialWeightsV)(binomialWeightsH))
+      checkOCL(LocalSize(1), GlobalSize(4),
+        regRotPar(binomialWeightsV)(binomialWeightsH)
+      )
     }
   }
 
   test("scanlinePar compiles to valid OpenCL that passes checks") {
     util.withExecutor {
-      checkOCL(LocalSize(1), GlobalSize(4), scanlinePar(binomialWeightsV)(binomialWeightsH))
+      checkOCL(LocalSize(1), GlobalSize(4),
+        scanlinePar(binomialWeightsV)(binomialWeightsH)
+      )
     }
   }
 
-  test("register rotation binomial with unroll should contain no modulo or division") {
+  test(
+    "register rotation binomial with unroll should contain no modulo or division"
+  ) {
     val id: Expr = fun(x => x)
-    val e = padClamp2D(1) >> slide(3)(1) >> mapSeq(transpose >>
+    val e = padClamp2D(1) >> slide(3)(1) >> mapSeq(
+      transpose >>
       map(dotSeqUnroll(binomialWeightsV)) >>
       slideSeq(SlideSeq.Values)(3)(1)(id)(dotSeqUnroll(binomialWeightsH))
     )
@@ -124,7 +133,7 @@ int main(int argc, char** argv) {
 
     val e = padClamp2D(1) >> slide2D(3, 1) >> mapGlobal(0)(mapGlobal(1)(
       toPrivateFun(mapSeq(dotSeqPrivate(binomialWeightsV))) >>
-        dotSeqPrivate(binomialWeightsH)
+      dotSeqPrivate(binomialWeightsH)
     ))
 
     val code = gen.OpenCLKernel(wrapExpr(e), "blur").code

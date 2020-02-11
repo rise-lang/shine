@@ -3,6 +3,7 @@ package shine.DPIA.ImperativePrimitives
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 import scala.xml.Elem
@@ -13,9 +14,8 @@ final case class ZipAcc1(n: Nat,
                          array: Phrase[AccType])
   extends AccPrimitive {
 
-  override val t: AccType =
-    (n: Nat) ->: (dt1: DataType) ->: (dt2: DataType) ->:
-      (array :: acc"[$n.($dt1 x $dt2)]") ->: acc"[$n.$dt1]"
+  array :: accT(n`.`(dt1 x dt2))
+  override val t: AccType = accT(n`.`dt1)
 
   override def eval(s: Store): AccIdentifier = ???
 

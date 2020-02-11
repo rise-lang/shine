@@ -6,6 +6,7 @@ import shine.DPIA.ImperativePrimitives.AsScalarAcc
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 import scala.xml.Elem
@@ -16,10 +17,8 @@ final case class AsScalar(n: Nat,
                           array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override val t: ExpType =
-    (n: Nat) ->: (m: Nat) ->: (dt: ScalarType) ->:
-      (array :: exp"[$n.${VectorType(m, dt)}, $read]") ->:
-        exp"[${n * m}.$dt, $read]"
+  array :: expT(n`.`vec(m, dt), read)
+  override val t: ExpType = expT({n * m}`.`dt, read)
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     AsScalar(fun.nat(n), fun.nat(m), fun.data(dt), VisitAndRebuild(array, fun))
@@ -36,7 +35,7 @@ final case class AsScalar(n: Nat,
 
   override def fedeTranslation(env: Predef.Map[Identifier[ExpType], Identifier[AccType]])(C: Phrase[AccType ->: AccType]): Phrase[AccType] = {
     import TranslationToImperative._
-    fedAcc(env)(array)(fun(acc"[${C.t.inT.dataType}]")(o => AsScalarAcc(n, m, dt, C(o))))
+    fedAcc(env)(array)(fun(accT(C.t.inT.dataType))(o => AsScalarAcc(n, m, dt, C(o))))
   }
 
   override def acceptorTranslation(A: Phrase[AccType])

@@ -23,7 +23,7 @@ object nbody {
       |  return res;
       |}
       |""".stripMargin,
-    float4 ->: float4 ->: float ->: float ->: float4 ->: float4
+    vec(4, f32) ->: vec(4, f32) ->: f32 ->: f32 ->: vec(4, f32) ->: vec(4, f32)
   )
   private val update = foreignFun("update",
     Seq("pos", "vel", "deltaT", "acceleration"),
@@ -36,11 +36,11 @@ object nbody {
       |  newVel.w = vel.w;
       |  return (struct Record_float4_float4){ newPos, newVel };
       |}""".stripMargin,
-    float4 ->: float4 ->: float ->: float4 ->: PairType(float4, float4)
+    vec(4, f32) ->: vec(4, f32) ->: f32 ->: vec(4, f32) ->: PairType(vec(4, f32), vec(4, f32))
   )
 
   val amd: Expr = nFun(n => fun(
-    (n`.`float4) ->: (n`.`float4) ->: float ->: float ->: (n`.`(float4 x float4))
+    (n`.`vec(4, f32)) ->: (n`.`vec(4, f32)) ->: f32 ->: f32 ->: (n`.`(vec(4, f32) x vec(4, f32)))
   )((pos, vel, espSqr, deltaT) =>
     mapGlobal(fun(p1 =>
       update(fst(p1))(snd(p1))(deltaT) o
@@ -55,22 +55,22 @@ object nbody {
 
   // TODO: compare generated code to original
   val nvidia: Expr = nFun(n => fun(
-    (n`.`float4) ->: (n`.`float4) ->: float ->: float ->: (n`.`(float4 x float4))
+    (n`.`vec(4, f32)) ->: (n`.`vec(4, f32)) ->: f32 ->: f32 ->: (n`.`(vec(4, f32) x vec(4, f32)))
   )((pos, vel, espSqr, deltaT) =>
     join o join o mapWorkGroup(1)(
-      join o mapWorkGroup(0)(fun((tileX`.`(float4 x float4)) ->: (tileY`.`tileX`.`(float4 x float4)))(p1Chunk =>
-        fun(tileX`.`(float4 x float4))(newP1Chunk =>
-          mapLocal(1)(fun(tileX`.`float4)(bla =>
-            mapLocal(0)(fun((float4 x float4) x float4)(p1 =>
+      join o mapWorkGroup(0)(fun((tileX`.`(vec(4, f32) x vec(4, f32))) ->: (tileY`.`tileX`.`(vec(4, f32) x vec(4, f32))))(p1Chunk =>
+        fun(tileX`.`(vec(4, f32) x vec(4, f32)))(newP1Chunk =>
+          mapLocal(1)(fun(tileX`.`vec(4, f32))(bla =>
+            mapLocal(0)(fun((vec(4, f32) x vec(4, f32)) x vec(4, f32))(p1 =>
               update(p1._1._1)(p1._1._2)(deltaT)(p1._2)
             ))(zip(newP1Chunk)(bla)))) o
             // TODO: is this the correct address space?
             oclReduceSeq(AddressSpace.Local)(
-              fun(tileY`.`tileX`.`float4)(acc => fun(tileY`.`tileX`.`float4)(p2 =>
-                let(fun((tileY`.`tileX`.`float4) ->: (tileY`.`tileX`.`float4))(p2Local =>
-                  mapLocal(1)(fun(((tileX`.`float4) x (tileX`.`float4)) ->: (tileX`.`float4))(accDim2 =>
-                    mapLocal(0)(fun(((float4 x float4) x float4) ->: float4)(p1 =>
-                      oclReduceSeq(AddressSpace.Private)(fun(float4 ->: float4 ->: float4)((acc, p2) =>
+              fun(tileY`.`tileX`.`vec(4, f32))(acc => fun(tileY`.`tileX`.`vec(4, f32))(p2 =>
+                let(fun((tileY`.`tileX`.`vec(4, f32)) ->: (tileY`.`tileX`.`vec(4, f32)))(p2Local =>
+                  mapLocal(1)(fun(((tileX`.`vec(4, f32)) x (tileX`.`vec(4, f32))) ->: (tileX`.`vec(4, f32)))(accDim2 =>
+                    mapLocal(0)(fun(((vec(4, f32) x vec(4, f32)) x vec(4, f32)) ->: vec(4, f32))(p1 =>
+                      oclReduceSeq(AddressSpace.Private)(fun(vec(4, f32) ->: vec(4, f32) ->: vec(4, f32))((acc, p2) =>
                         calcAcc(p1._1._1)(p2)(deltaT)(espSqr)(acc)
                       ))(p1._2)(accDim2._1)
                     )) $ zip(newP1Chunk)(accDim2._2)

@@ -117,9 +117,11 @@ object PhraseType {
         }
       }
 
-      override def nat[N <: Nat](n: N): N = Nat.substitute(ae, `for`, in=n)
+      override def nat[N <: Nat](n: N): N =
+        Nat.substitute(ae, `for`, in=n)
 
-      override def data[DT <: DataType](dt: DT): DT = DataType.substitute(ae, `for`, in=dt)
+      override def data[DT <: DataType](dt: DT): DT =
+        DataType.substitute(ae, `for`, in=dt)
     }
 
     val p = Phrases.VisitAndRebuild(in, Visitor)

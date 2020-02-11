@@ -104,7 +104,7 @@ final case class BinOp(op: Operators.Binary.Value, lhs: Phrase[ExpType], rhs: Ph
     op match {
       case Operators.Binary.GT |
            Operators.Binary.LT |
-           Operators.Binary.EQ => exp"[$bool, $read]"
+           Operators.Binary.EQ => expT(bool, read)
       case _ => (lhs.t.dataType, rhs.t.dataType) match {
         case (t1, t2) if t1 == t2 => ExpType(t1, read)
         case (lhsT, rhsT) =>
@@ -132,10 +132,43 @@ object Phrase {
   def substitute[T1 <: PhraseType, T2 <: PhraseType](ph: Phrase[T1],
                                                      `for`: Phrase[T1],
                                                      in: Phrase[T2]): Phrase[T2] = {
+    var substCounter = 0
     object Visitor extends VisitAndRebuild.Visitor {
+      def renaming[X <: PhraseType](p: Phrase[X]): Phrase[X] = {
+        case class Renaming(idMap: Map[String, String]) extends VisitAndRebuild.Visitor {
+          override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = p match {
+            case Identifier(name, t) => Stop(
+              Identifier(idMap.getOrElse(name, name),
+                VisitAndRebuild.visitPhraseTypeAndRebuild(t, this)).asInstanceOf[Phrase[T]])
+            case l @ Lambda(x, _) =>
+              val newMap = idMap + (x.name -> freshName(x.name.takeWhile(_.isLetter)))
+              Continue(l, Renaming(newMap))
+            case dl @ DepLambda(x, _) =>
+              val newMap = idMap + (x.name -> freshName(x.name.takeWhile(_.isLetter)))
+              Continue(dl, Renaming(newMap))
+            case _ => Continue(p, this)
+          }
+
+          override def nat[N <: Nat](n: N): N = n.visitAndRebuild({
+            case i: NatIdentifier =>
+              NatIdentifier(idMap.getOrElse(i.name, i.name))
+            case ae => ae
+          }).asInstanceOf[N]
+
+          override def data[T <: DataType](dt: T): T = (dt match {
+            case i: DataTypeIdentifier =>
+              DataTypeIdentifier(idMap.getOrElse(i.name, i.name))
+            case dt => dt
+          }).asInstanceOf[T]
+        }
+        VisitAndRebuild(p, Renaming(Map()))
+      }
       override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = {
         p match {
-          case `for` => Stop(ph.asInstanceOf[Phrase[T]])
+          case `for` =>
+            val newPh = if (substCounter == 0) ph else renaming(ph)
+            substCounter += 1
+            Stop(newPh.asInstanceOf[Phrase[T]])
           case Natural(n) =>
             val v = NatIdentifier(`for` match {
               case Identifier(name, _) => name
@@ -345,12 +378,14 @@ trait AccPrimitive extends Primitive[AccType] {
 }
 
 trait CommandPrimitive extends Primitive[CommType] {
+  override val t: CommType = comm
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Store
 }
 
 object Operators {
   object Unary extends Enumeration {
     val NEG: Unary.Value = Value("-")
+    val NOT: Unary.Value = Value("!")
   }
 
   object Binary extends Enumeration {

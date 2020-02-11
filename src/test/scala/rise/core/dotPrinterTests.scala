@@ -3,9 +3,9 @@ package rise.core
 import elevate.util._
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
-import rise.core.types.float
+import rise.core.types.f32
 
-class dotPrinterTests extends test_util.Tests {
+class dotPrinterTests extends shine.test_util.Tests {
 
   def exprToDot(path: String, name: String, e: Expr, dot: Expr => String): Unit = {
     import java.io._
@@ -39,7 +39,7 @@ class dotPrinterTests extends test_util.Tests {
   test("gemm") {
     val gemm =
       nFun((n, m, k) =>
-        fun((n`.`k`.`float) ->: (k`.`m`.`float) ->: (n`.`m`.`float) ->: float ->: float ->: (n`.`m`.`float))
+        fun((n`.`k`.`f32) ->: (k`.`m`.`f32) ->: (n`.`m`.`f32) ->: f32 ->: f32 ->: (n`.`m`.`f32))
         ((a, b, c, alpha, beta) =>
 
           zip(a, c) |> map(fun(ac =>

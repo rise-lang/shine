@@ -3,7 +3,7 @@ package apps
 import mriQ._
 import util.gen
 
-class MRIQ extends test_util.TestsWithExecutor {
+class MRIQ extends shine.test_util.TestsWithExecutor {
   private val K = 32
   private val X = 32
 
@@ -12,7 +12,7 @@ class MRIQ extends test_util.TestsWithExecutor {
     val phiR = Array.fill(K)(random.nextFloat)
     val phiI = Array.fill(K)(random.nextFloat)
 
-    test_util.runsWithSameResult(Seq(
+    shine.test_util.runsWithSameResult(Seq(
       ("original", runOriginalComputePhiMag("CGO17_ComputePhiMag.cl", phiR, phiI)),
       ("dpia", runComputePhiMag(gen.OpenCLKernel(computePhiMag), phiR, phiI))
     ))
@@ -27,7 +27,7 @@ class MRIQ extends test_util.TestsWithExecutor {
     val Qi = Array.fill(X)(random.nextFloat)
     val kvalues = Array.fill(4 * K)(random.nextFloat)
 
-    test_util.runsWithSameResult(Seq(
+    shine.test_util.runsWithSameResult(Seq(
       ("original", runOriginalComputeQ("CGO17_ComputeQ.cl", x, y, z, Qr, Qi, kvalues)),
       ("dpia", runComputeQ(gen.OpenCLKernel(computeQ), x, y, z, Qr, Qi, kvalues))
     ))

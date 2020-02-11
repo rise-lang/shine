@@ -4,6 +4,7 @@ package shine.OpenMP.ImperativePrimitives
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 import scala.xml.Elem
@@ -14,13 +15,9 @@ abstract class AbstractParForNat(val n: Nat,
                                  val body: Phrase[`(nat)->:`[AccType ->: CommType]])
   extends CommandPrimitive {
 
-  override val t: CommType = {
+  out :: accT(n`.d`ft)
+  body :: body.t.x ->: accT(ft(body.t.x)) ->: comm
 
-    (n: Nat) ->: (ft: NatToData) ->:
-      (out :: acc"[${DepArrayType(n, ft)}]") ->:
-       (body :: t"(${body.t.x}:nat) -> acc[${ft(body.t.x)}] -> comm") ->:
-          comm
-  }
   override def eval(s: Store): Store = ???
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommType] = {

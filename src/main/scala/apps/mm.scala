@@ -16,7 +16,7 @@ object mm {
   // the first matrix input is transposed
 
   val sequential: Expr = nFun((n, m, o) => fun(
-    (o`.`n`.`float) ->: (o`.`m`.`float) ->: (n`.`m`.`float)
+    (o`.`n`.`f32) ->: (o`.`m`.`f32) ->: (n`.`m`.`f32)
   )((at, b) =>
     transpose(at) |> mapSeq(fun(aRow =>
       transpose(b) |> mapSeq(fun(bCol =>
@@ -31,12 +31,12 @@ object mm {
     val vw = 4
 
     nFun((n, m, o) => fun(
-      (o`.`n`.`float) ->: (o`.`m`.`float) ->: (n`.`m`.`float)
+      (o`.`n`.`f32) ->: (o`.`m`.`f32) ->: (n`.`m`.`f32)
     )((at, b) =>
       split(v4)(transpose(at)) |> // Mo.Mi.o.f
-      mapGlobal(1)(fun(v4`.`o`.`float)(p3 =>
+      mapGlobal(1)(fun(v4`.`o`.`f32)(p3 =>
         split(v3)(transpose(b)) |> // No.Ni.o.f
-        mapGlobal(0)(fun(v3`.`o`.`float)(p4 =>
+        mapGlobal(0)(fun(v3`.`o`.`f32)(p4 =>
           zip(transpose(p3))(transpose(p4)) |> // o.(Mi.f x Ni.f)
           oclReduceSeq(AddressSpace.Private)(fun((p6, p7) =>
             toPrivate(pair(mapSeq(id)(p7._1),
@@ -48,7 +48,7 @@ object mm {
                   ))(zip(p8._1)(x._2))
                 ))(zip(p6)(x._1))
               ))
-          ))(mapSeq(mapSeq(id))(generate(fun(_ => generate(fun(_ => l(0.0f)))))) :: (v4`.`v3`.`float)) |> //
+          ))(mapSeq(mapSeq(id))(generate(fun(_ => generate(fun(_ => l(0.0f)))))) :: (v4`.`v3`.`f32)) |> //
           mapSeq(asScalar o mapSeq(id) o asVector(vw)) |>
           transpose // v3.v4.f
         )) |> join |> transpose
@@ -65,7 +65,7 @@ object mm {
     val v8 = 16
 
     nFun((n, m, o) => fun(
-      (o`.`n`.`float) ->: (o`.`m`.`float) ->: (n`.`m`.`float)
+      (o`.`n`.`f32) ->: (o`.`m`.`f32) ->: (n`.`m`.`f32)
     )((at, b) =>
       at |>
       map(split(v5)) |> split(v8) |> // O'.v8.N'.v5.f

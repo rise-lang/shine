@@ -3,6 +3,7 @@ package shine.DPIA.ImperativePrimitives
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 import scala.xml.Elem
@@ -14,9 +15,8 @@ final case class DropAcc(n: Nat,
                          array: Phrase[AccType])
   extends AccPrimitive {
 
-  override val t: AccType =
-    (n: Nat) ->: (m: Nat) ->: (dt: DataType) ->:
-      (array :: acc"[${n + m}.$dt]") ->: acc"[${m - n}.$dt]"
+  array :: accT({n + m}`.`dt)
+  override val t: AccType = accT({m - n}`.`dt)
 
   override def eval(s: Store): AccIdentifier = ???
 

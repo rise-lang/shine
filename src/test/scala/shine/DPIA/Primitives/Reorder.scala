@@ -7,9 +7,9 @@ import util.gen
 
 import arithexpr.arithmetic.Cst
 
-class Reorder extends test_util.Tests {
+class Reorder extends shine.test_util.Tests {
   test("Simple gather example should generate syntactic valid C code with two one loops") {
-    val e = nFun(n => fun(ArrayType(n, float))(xs =>
+    val e = nFun(n => fun(ArrayType(n, f32))(xs =>
       xs |> reorderWithStride(128) |> mapSeq(fun(x => x))
     ))
 
@@ -19,7 +19,7 @@ class Reorder extends test_util.Tests {
   }
 
   test("Simple 2D gather example should generate syntactic valid C code with two two loops") {
-    val e = nFun(n => nFun(m => fun(ArrayType(n, ArrayType(m, float)))(xs =>
+    val e = nFun(n => nFun(m => fun(ArrayType(n, ArrayType(m, f32)))(xs =>
       xs |> map(reorderWithStride(128)) |> mapSeq(mapSeq(fun(x => x)))
     )))
 
@@ -29,7 +29,7 @@ class Reorder extends test_util.Tests {
   }
 
   test("Simple scatter example should generate syntactic valid C code with two one loops") {
-    val e = nFun(n => fun(ArrayType(n, float))(xs =>
+    val e = nFun(n => fun(ArrayType(n, f32))(xs =>
       xs |> mapSeq(fun(x => x)) |> reorderWithStride(Cst(128))
     ))
 
@@ -39,7 +39,7 @@ class Reorder extends test_util.Tests {
   }
 
   test("Simple 2D scatter example should generate syntactic valid C code with two two loops") {
-    val e = nFun(n => nFun(m => fun(ArrayType(n, ArrayType(m, float)))(xs =>
+    val e = nFun(n => nFun(m => fun(ArrayType(n, ArrayType(m, f32)))(xs =>
       xs |> mapSeq(mapSeq(fun(x => x))) |> map(reorderWithStride(Cst(128)))
     )))
 

@@ -27,8 +27,11 @@ object VisitAndRebuild {
     def addressSpace(a: AddressSpace): AddressSpace = a
 
     abstract class Result[+T]
+
     case class Stop[T <: PhraseType](p: Phrase[T]) extends Result[Phrase[T]]
+
     case class Continue[T <: PhraseType](p: Phrase[T], v: Visitor) extends Result[Phrase[T]]
+
   }
 
   def apply[T <: PhraseType](phrase: Phrase[T], v: Visitor): Phrase[T] = {
@@ -43,32 +46,71 @@ object VisitAndRebuild {
           case Lambda(x, p) =>
             apply(x, v) match {
               case newX: Identifier[_] => Lambda(newX, apply(p, v))
-              case _ => throw new Exception("This should not happen")
+              case badX => throw new Exception(s"${badX} is not an identifier")
             }
 
           case Apply(p, q) =>
             Apply(apply(p, v), apply(q, v))
 
-          case dl @ DepLambda(a, p) =>
-            DepLambda(a, apply(p, v))(dl.kn)
+          case DepLambda(a, p) => a match {
+            case n: NatIdentifier =>
+              DepLambda[NatKind, PhraseType](
+                NatIdentifier(
+                  v.nat(n).asInstanceOf[arithexpr.arithmetic.NamedVar].name),
+                apply(p, v))
+            case dt: DataTypeIdentifier =>
+              DepLambda[DataKind, PhraseType](
+                v.data(dt).asInstanceOf[DataTypeIdentifier],
+                apply(p, v))
+            case ad: AddressSpaceIdentifier =>
+              DepLambda[AddressSpaceKind, PhraseType](
+                v.addressSpace(ad).asInstanceOf[AddressSpaceIdentifier],
+                apply(p, v))
+            case ac: AccessTypeIdentifier =>
+              DepLambda[AccessKind, PhraseType](
+                v.access(ac).asInstanceOf[AccessTypeIdentifier],
+                apply(p, v))
+            case n2n: NatToNatIdentifier =>
+              DepLambda[NatToNatKind, PhraseType](
+                v.natToNat(n2n).asInstanceOf[NatToNatIdentifier],
+                apply(p, v))
+            case n2d: NatToDataIdentifier =>
+              DepLambda[NatToDataKind, PhraseType](
+                v.natToData(n2d).asInstanceOf[NatToDataIdentifier],
+                apply(p, v))
+            case _ => ???
+          }
 
           case DepApply(p, a) => a match {
             case n: Nat =>
-              DepApply[NatKind, T](apply(p, v).asInstanceOf[Phrase[NatKind `()->:` T]], v.nat(n))
+              DepApply[NatKind, T](
+                apply(p, v).asInstanceOf[Phrase[NatKind `()->:` T]],
+                v.nat(n))
             case dt: DataType =>
-              DepApply[DataKind, T](apply(p, v).asInstanceOf[Phrase[DataKind `()->:` T]], v.data(dt))
+              DepApply[DataKind, T](
+                apply(p, v).asInstanceOf[Phrase[DataKind `()->:` T]],
+                visitDataTypeAndRebuild(dt, v))
             case ad: AddressSpace =>
-              DepApply[AddressSpaceKind, T](apply(p, v).asInstanceOf[Phrase[AddressSpaceKind `()->:` T]], v.addressSpace(ad))
+              DepApply[AddressSpaceKind, T](
+                apply(p, v).asInstanceOf[Phrase[AddressSpaceKind `()->:` T]],
+                v.addressSpace(ad))
             case ac: AccessType =>
-              DepApply[AccessKind, T](apply(p, v).asInstanceOf[Phrase[AccessKind `()->:` T]], v.access(ac))
+              DepApply[AccessKind, T](
+                apply(p, v).asInstanceOf[Phrase[AccessKind `()->:` T]],
+                v.access(ac))
             case n2n: NatToNat =>
-              DepApply[NatToNatKind, T](apply(p, v).asInstanceOf[Phrase[NatToNatKind `()->:` T]], v.natToNat(n2n))
+              DepApply[NatToNatKind, T](
+                apply(p, v).asInstanceOf[Phrase[NatToNatKind `()->:` T]],
+                v.natToNat(n2n))
             case n2d: NatToData =>
-              DepApply[NatToDataKind, T](apply(p, v).asInstanceOf[Phrase[NatToDataKind `()->:` T]], v.natToData(n2d))
+              DepApply[NatToDataKind, T](
+                apply(p, v).asInstanceOf[Phrase[NatToDataKind `()->:` T]],
+                v.natToData(n2d))
             case ph: PhraseType => ???
           }
 
-          case LetNat(binder, defn, body) => LetNat(binder, apply(defn, v), apply(body, v))
+          case LetNat(binder, defn, body) =>
+            LetNat(binder, apply(defn, v), apply(body, v))
 
           case PhrasePair(p, q) => PhrasePair(apply(p, v), apply(q, v))
 
@@ -92,14 +134,58 @@ object VisitAndRebuild {
     }
   }
 
-  private def visitPhraseTypeAndRebuild(phraseType: PhraseType, v: Visitor): PhraseType = phraseType match {
-    case ExpType(dt, w)                 => ExpType(v.data(dt), v.access(w))
-    case AccType(dt)                => AccType(v.data(dt))
-    case CommType()                 => CommType()
-    case PhrasePairType(t1, t2)           => PhrasePairType(visitPhraseTypeAndRebuild(t1, v), visitPhraseTypeAndRebuild(t2, v))
-    case FunType(inT, outT)         => FunType(visitPhraseTypeAndRebuild(inT, v), visitPhraseTypeAndRebuild(outT, v))
-    case PassiveFunType(inT, outT)  => PassiveFunType(visitPhraseTypeAndRebuild(inT, v), visitPhraseTypeAndRebuild(outT, v))
-    case dft @ DepFunType(x, t)           => DepFunType(x, visitPhraseTypeAndRebuild(t, v))(dft.kn)
-  }
+  def visitPhraseTypeAndRebuild(pt: PhraseType, v: Visitor): PhraseType =
+    pt match {
+      case ExpType(dt, w) => ExpType(
+        visitDataTypeAndRebuild(dt, v),
+        v.access(w))
+      case AccType(dt) => AccType(visitDataTypeAndRebuild(dt, v))
+      case CommType() => CommType()
+      case PhrasePairType(t1, t2) => PhrasePairType(
+        visitPhraseTypeAndRebuild(t1, v), visitPhraseTypeAndRebuild(t2, v))
+      case FunType(inT, outT) => FunType(
+        visitPhraseTypeAndRebuild(inT, v), visitPhraseTypeAndRebuild(outT, v))
+      case PassiveFunType(inT, outT) => PassiveFunType(
+        visitPhraseTypeAndRebuild(inT, v), visitPhraseTypeAndRebuild(outT, v))
+      case DepFunType(x, t) => x match {
+        case n: NatIdentifier =>
+          DepFunType[NatKind, PhraseType](
+            NatIdentifier(
+              v.nat(n).asInstanceOf[arithexpr.arithmetic.NamedVar].name),
+            visitPhraseTypeAndRebuild(t, v))
+        case dt: DataTypeIdentifier =>
+          DepFunType[DataKind, PhraseType](
+            v.data(dt).asInstanceOf[DataTypeIdentifier],
+            visitPhraseTypeAndRebuild(t, v))
+        case ad: AddressSpaceIdentifier =>
+          DepFunType[AddressSpaceKind, PhraseType](
+            v.addressSpace(ad).asInstanceOf[AddressSpaceIdentifier],
+            visitPhraseTypeAndRebuild(t, v))
+        case ac: AccessTypeIdentifier =>
+          DepFunType[AccessKind, PhraseType](
+            v.access(ac).asInstanceOf[AccessTypeIdentifier],
+            visitPhraseTypeAndRebuild(t, v))
+        case n2n: NatToNatIdentifier =>
+          DepFunType[NatToNatKind, PhraseType](
+            v.natToNat(n2n).asInstanceOf[NatToNatIdentifier],
+            visitPhraseTypeAndRebuild(t, v))
+        case n2d: NatToDataIdentifier =>
+          DepFunType[NatToDataKind, PhraseType](
+            v.natToData(n2d).asInstanceOf[NatToDataIdentifier],
+            visitPhraseTypeAndRebuild(t, v))
+      }
+    }
 
+  private def visitDataTypeAndRebuild(dt: DataType, v: Visitor): DataType =
+    v.data(dt) match {
+      case i: IndexType => IndexType(v.nat(i.size))
+      case a: ArrayType =>
+        ArrayType(v.nat(a.size), visitDataTypeAndRebuild(a.elemType, v))
+      case vec: VectorType =>
+        VectorType(v.nat(vec.size), v.data(vec.elemType))
+      case r: PairType =>
+        PairType(visitDataTypeAndRebuild(r.fst, v),
+          visitDataTypeAndRebuild(r.snd, v))
+      case d => d
+    }
 }

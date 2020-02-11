@@ -13,8 +13,8 @@ case class Assign(dt: DataType,
                   rhs: Phrase[ExpType])
   extends CommandPrimitive {
 
-  override val t: CommType =
-    (dt: DataType) ->: (lhs :: acc"[$dt]") ->: (rhs :: exp"[$dt, $read]") ->: comm
+  lhs :: accT(dt)
+  rhs :: expT(dt, read)
 
   override def eval(s: Store): Store = {
     def evalAssign(s: Store, lhs: AccIdentifier, rhs: Data,

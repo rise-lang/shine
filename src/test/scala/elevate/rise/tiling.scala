@@ -14,12 +14,12 @@ import rise.core.TypedDSL._
 import rise.core.TypeLevelDSL._
 import rise.core._
 import rise.core.types._
-import rise.core.types.{ArrayType, NatKind, float, infer}
+import rise.core.types.{ArrayType, NatKind, f32, infer}
 import util.gen
 
 import scala.language.implicitConversions
 
-class tiling extends test_util.Tests {
+class tiling extends shine.test_util.Tests {
 
   implicit def rewriteResultToExpr(r: RewriteResult[Expr]): Expr = r.get
 
@@ -234,7 +234,7 @@ class tiling extends test_util.Tests {
   // Codegen tests
 
   def inputT(dim: Int, n : List[NatIdentifier]): ArrayType = dim match {
-    case 1 => ArrayType(n.head, float)
+    case 1 => ArrayType(n.head, f32)
     case d => ArrayType(n.head, inputT(d-1, n.tail))
   }
 
@@ -253,7 +253,7 @@ class tiling extends test_util.Tests {
   val lower: Strategy[Rise] = LCNF `;` CNF `;` normalize.apply(lowering.mapSeq) `;` BENF
 
   val identity = dtFun(t => foreignFun("identity", Seq("y"), "{ return y; }", t ->: t))
-  val floatId: Expr = identity(float)
+  val floatId: Expr = identity(f32)
 
   test("codegen 1D tiles") {
     val highLevel = infer(wrapInLambda(1, i => *(floatId) $ i, inputT(1, _)))
@@ -294,8 +294,8 @@ class tiling extends test_util.Tests {
  // Tests related to fixing some development issues
 
   test("map fission issue when used with zip") {
-    def xsT(N : NatIdentifier) = ArrayType(N, float)
-    def ysT(N : NatIdentifier) = ArrayType(N, float)
+    def xsT(N : NatIdentifier) = ArrayType(N, f32)
+    def ysT(N : NatIdentifier) = ArrayType(N, f32)
 
     val mulT = fun(x => fst(x) * snd(x))
 

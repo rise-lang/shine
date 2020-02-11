@@ -12,12 +12,12 @@ import rise.core.semantics.NatData
 
 import scala.language.postfixOps
 
-class Reduce extends test_util.TestsWithExecutor {
+class Reduce extends shine.test_util.TestsWithExecutor {
   val add = fun(a => fun(b => a + b))
 
   test("Simple example should generate syntactic valid C code with one loop") {
     val e =
-      nFun(n => fun(ArrayType(n, float))(a =>
+      nFun(n => fun(ArrayType(n, f32))(a =>
         a |> reduceSeq(add)(l(0.0f))))
 
     val code = gen.CProgram(e).code
@@ -28,7 +28,7 @@ class Reduce extends test_util.TestsWithExecutor {
   test("Fusing a reduce into a map should generate syntactic valid C code") {
     val e =
       nFun(h => nFun(w =>
-        fun(ArrayType(h, ArrayType(w, float)))(a =>
+        fun(ArrayType(h, ArrayType(w, f32)))(a =>
           a |> map(reduceSeq(add)(l(0.0f))) |> mapSeq(fun(x => x))
         )))
 
@@ -38,7 +38,7 @@ class Reduce extends test_util.TestsWithExecutor {
   test("Fusing a reduce into another should generate syntactic valid C code with two loops") {
     val e =
       nFun(h => nFun(w =>
-        fun(ArrayType(h, ArrayType(w, float)))(a =>
+        fun(ArrayType(h, ArrayType(w, f32)))(a =>
           a |> map(reduceSeq(add)(l(0.0f))) |> reduceSeq(add)(l(0.0f))
       )))
 
@@ -57,7 +57,7 @@ class Reduce extends test_util.TestsWithExecutor {
         |> mapSeq (fun(x => x)))
 
     val e = nFun((m, n) =>
-              fun(m`.`n`.`float)(arr =>
+              fun(m`.`n`.`f32)(arr =>
                 arr |> oclReduceSeq (AddressSpace.Private)
                                     (fun((in1, in2) => zip (in1) (in2) |> mapSeq (fun(t => t._1 + t._2))))
                                     (initExp (n))
@@ -84,7 +84,7 @@ class Reduce extends test_util.TestsWithExecutor {
         |> idx(natAsIndex (n) (Literal(NatData(0)))))
 
     def e(init : Expr) = nFun(n =>
-      fun(n`.`float)(arr =>
+      fun(n`.`f32)(arr =>
         arr |> reduceSeq (fun(_ + _))  (init)))
 
     println("Fst:")
@@ -101,7 +101,7 @@ class Reduce extends test_util.TestsWithExecutor {
     val initRecordExp = pair(l(0.0f), l(0.0f))
 
     def e(init : Expr) = nFun(n =>
-      fun(n`.`float)(arr =>
+      fun(n`.`f32)(arr =>
         arr |> oclReduceSeq (AddressSpace.Global) (fun(_ + _))  (init)))
 
     val n = 64

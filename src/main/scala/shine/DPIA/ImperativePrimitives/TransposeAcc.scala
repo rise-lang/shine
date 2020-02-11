@@ -3,6 +3,7 @@ package shine.DPIA.ImperativePrimitives
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 import scala.xml.Elem
@@ -11,10 +12,9 @@ final case class TransposeAcc(n: Nat, m: Nat, dt: DataType,
                               array: Phrase[AccType])
   extends AccPrimitive
 {
-  override val t: AccType =
-    (n: Nat) ->: (m: Nat) ->: (dt: DataType) ->:
-      (array :: acc"[$m.$n.$dt]") ->:
-        acc"[$n.$m.$dt]"
+
+  array :: accT(m`.`(n`.`dt))
+  override val t: AccType = accT(n`.`(m`.`dt))
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {
     TransposeAcc(fun.nat(n), fun.nat(m), fun.data(dt), VisitAndRebuild(array, fun))

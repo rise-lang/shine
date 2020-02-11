@@ -13,10 +13,9 @@ final case class MapFstAcc(dt1: DataType,
                            f: Phrase[AccType ->: AccType],
                            record: Phrase[AccType]) extends AccPrimitive
 {
-  override val t: AccType =
-    (dt1: DataType) ->: (dt2: DataType) ->: (dt3: DataType) ->:
-      (f :: acc"[$dt3]" ->: acc"[$dt1]") ->:
-      (record :: acc"[$dt3 x $dt2]") ->: acc"[$dt1 x $dt2]"
+  f :: accT(dt3) ->: accT(dt1)
+  record :: accT(dt3 x dt2)
+  override val t: AccType = accT(dt1 x dt2)
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {
     MapFstAcc(fun.data(dt1), fun.data(dt2), fun.data(dt3),

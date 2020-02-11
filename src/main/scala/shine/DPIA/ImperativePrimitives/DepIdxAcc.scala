@@ -3,6 +3,7 @@ package shine.DPIA.ImperativePrimitives
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 import scala.xml.Elem
@@ -13,10 +14,8 @@ final case class DepIdxAcc(n: Nat,
                            array: Phrase[AccType])
   extends AccPrimitive {
 
-  override val t: AccType =
-    (n: Nat) ->: (ft:NatToData) ->: (index: Nat) ->:
-      (array :: acc"[$n.$ft]") ->:
-        acc"[${ft(index)}]"
+  array :: accT(n`.d`ft)
+  override val t: AccType = accT(ft(index))
 
   override def eval(s: Store): AccIdentifier = {
 //    val arrayE = OperationalSemantics.eval(s, array)

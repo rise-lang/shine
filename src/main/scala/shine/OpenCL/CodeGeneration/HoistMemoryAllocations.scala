@@ -5,6 +5,7 @@ import shine.DPIA.DSL._
 import shine.DPIA.ImperativePrimitives._
 import shine.DPIA.Phrases.{VisitAndRebuild, _}
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 import shine.OpenCL.ImperativePrimitives.{OpenCLNew, OpenCLParFor, OpenCLParForNat}
 import shine._
@@ -99,7 +100,7 @@ object HoistMemoryAllocations {
                                  i: Either[Identifier[ExpType],Nat],
                                  n: Nat): (Identifier[VarType], Phrase[CommType]) = {
         // Create `newVariable' with `n` times more memory ...
-        val newVariable = Identifier(oldVariable.name, varT"[$n.${oldVariable.t.t1.dataType}]")
+        val newVariable = Identifier(oldVariable.name, varT(n`.`oldVariable.t.t1.dataType))
         // ... and substitute all occurrences of `oldVariable` with
         // `newVariable` indexed by the index `i`, ...
         val newBody = i match {

@@ -6,6 +6,7 @@ import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics.{IndexData, NatData}
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 import scala.language.reflectiveCalls
@@ -14,8 +15,8 @@ import scala.xml.Elem
 final case class IndexAsNat(n: Nat, e: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override val t: ExpType =
-    (n: Nat) ->: (e :: exp"[idx($n), $read]") ->: exp"[$NatType, $read]"
+  e :: expT(idx(n), read)
+  override val t: ExpType = expT(NatType, read)
 
   def prettyPrint: String =
     s"${this.getClass.getSimpleName} (${PrettyPhrasePrinter(e)})"
@@ -39,7 +40,7 @@ final case class IndexAsNat(n: Nat, e: Phrase[ExpType])
                          (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
-    con(e)(λ(exp"[${IndexType(n)}, $read]")(x =>
+    con(e)(λ(expT(idx(n), read))(x =>
       A :=|NatType| IndexAsNat(n, x)))
   }
 
@@ -47,7 +48,7 @@ final case class IndexAsNat(n: Nat, e: Phrase[ExpType])
                              (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
-    con(e)(λ(exp"[${IndexType(n)}, $read]")(x =>
+    con(e)(λ(expT(idx(n), read))(x =>
       C(IndexAsNat(n, x))))
   }
 }

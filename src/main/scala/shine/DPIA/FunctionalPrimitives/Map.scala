@@ -5,6 +5,7 @@ import shine.DPIA.DSL._
 import shine.DPIA.ImperativePrimitives.{MapAcc, MapRead}
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 final case class Map(override val n: Nat,
@@ -48,11 +49,11 @@ final case class Map(override val n: Nat,
                                       (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
-    con(array)(λ(exp"[$n.$dt1, $read]")(x =>
+    con(array)(λ(expT(n`.`dt1, read))(x =>
       C(MapRead(n, dt1, dt2,
-        fun(exp"[$dt1, $read]")(a =>
-          fun(exp"[$dt2, $read]" ->: (comm: CommType))(cont =>
-            con(f(a))(fun(exp"[$dt2, $read]")(b => Apply(cont, b))))),
+        fun(expT(dt1, read))(a =>
+          fun(expT(dt2, read) ->: (comm: CommType))(cont =>
+            con(f(a))(fun(expT(dt2, read))(b => Apply(cont, b))))),
         x))))
   }
 }

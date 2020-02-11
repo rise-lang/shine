@@ -2,15 +2,15 @@ package shine.DPIA.Primitives
 
 import rise.core.DSL._
 import rise.core.types._
-import rise.core.primitives._
+import rise.core.primitives.SlideSeq._
 import util.{Execute, gen}
 
-class SlideSeq extends test_util.Tests {
+class SlideSeq extends shine.test_util.Tests {
   val add = fun(a => fun(b => a + b))
 
   test("Simple example should generate C code producing the expected result on a test") {
     val e = nFun(n => fun(ArrayType(n, int))(a =>
-      a |> slideSeq(SlideSeq.Values)(3)(1)(fun(x => x))(reduceSeq(add)(l(0)))
+      a |> slideSeq(Values)(3)(1)(fun(x => x))(reduceSeq(add)(l(0)))
     ))
     val p = gen.CProgram(e)
 

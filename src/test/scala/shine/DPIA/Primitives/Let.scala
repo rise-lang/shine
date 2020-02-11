@@ -5,7 +5,7 @@ import rise.core.types._
 import rise.OpenCL.DSL._
 import util.gen
 
-class Let extends test_util.Tests {
+class Let extends shine.test_util.Tests {
   val id = fun(x => x)
 
   // TODO: it feels like toMem and let are closely related, should be merged?

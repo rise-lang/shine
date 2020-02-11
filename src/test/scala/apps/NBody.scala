@@ -4,7 +4,7 @@ import nbody._
 import util.gen
 import shine.OpenCL._
 
-class NBody extends test_util.TestsWithExecutor {
+class NBody extends shine.test_util.TestsWithExecutor {
   private val N = 512
 
   test("nbody versions produce same results") {
@@ -18,7 +18,7 @@ class NBody extends test_util.TestsWithExecutor {
     val localSizeNVIDIA = LocalSize((tileX, tileY))
     val globalSizeNVIDIA = GlobalSize((N, tileY))
 
-    test_util.runsWithSameResult(Seq(
+    shine.test_util.runsWithSameResult(Seq(
       ("original AMD", runOriginalKernel("NBody-AMD.cl", localSizeAMD, globalSizeAMD, pos, vel)),
       ("original NVIDIA", runOriginalKernel("NBody-NVIDIA.cl", localSizeNVIDIA, globalSizeNVIDIA, pos, vel)),
       ("dpia AMD", runKernel(gen.OpenCLKernel(amd), localSizeAMD, globalSizeAMD, pos, vel)),

@@ -7,6 +7,7 @@ import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics.{Data, Store}
 import shine.DPIA.Types._
+import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
 import scala.xml.Elem
@@ -26,12 +27,10 @@ final case class OpenCLSlideSeq(rot: lp.SlideSeq.Rotate,
 {
   val inputSize: Nat with SimplifiedExpr = sp * n + sz - sp
 
-  override val t: ExpType =
-    (a: AddressSpace) ->: (n: Nat) ->: (sz: Nat) ->: (sp: Nat) ->: (dt1: DataType) ->: (dt2: DataType) ->:
-      (write_dt1 :: t"exp[$dt1, $read] -> exp[$dt1, $write]") ->:
-      (f :: t"exp[$sz.$dt1, $read] -> exp[$dt2, $write]") ->:
-      (input :: exp"[$inputSize.$dt1, $read]") ->:
-      exp"[$n.$dt2, $write]"
+  write_dt1 :: expT(dt1, read) ->: expT(dt1, write)
+  f :: expT(sz`.`dt1, read) ->: expT(dt2, write)
+  input :: expT(inputSize`.`dt1, read)
+  override val t: ExpType = expT(n`.`dt2, write)
 
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     OpenCLSlideSeq(rot,
@@ -56,12 +55,12 @@ final case class OpenCLSlideSeq(rot: lp.SlideSeq.Rotate,
       case lp.SlideSeq.Indices => ??? // SlideSeqIIndices.apply _
     }
 
-    con(input)(fun(exp"[$inputSize.$dt1, $read]")(x =>
+    con(input)(fun(expT(inputSize`.`dt1, read))(x =>
       I(a, n, sz, sp, dt1, dt2,
-        fun(exp"[$dt1, $read]")(x =>
-          fun(acc"[$dt1]")(o => acc(write_dt1(x))(o))),
-        fun(exp"[$sz.$dt1, $read]")(x =>
-          fun(acc"[$dt2]")(o => acc(f(x))(o))),
+        fun(expT(dt1, read))(x =>
+          fun(accT(dt1))(o => acc(write_dt1(x))(o))),
+        fun(expT(sz`.`dt1, read))(x =>
+          fun(accT(dt2))(o => acc(f(x))(o))),
         x, A
       )))
   }

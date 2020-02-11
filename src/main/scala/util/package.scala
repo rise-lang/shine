@@ -21,11 +21,13 @@ package object util {
 
   def readFile(path: String): String = {
     val source = io.Source.fromFile(path)
-    try source.getLines.mkString("\n") finally source.close
+    try source.getLines.mkString("\n")
+    finally source.close
   }
 
   def assertSame[T](a: T, b: T, msg: String)
-                   (implicit same: AssertSame[T]): Unit = {
+    (implicit same: AssertSame[T]): Unit =
+  {
     same(a, b, msg)
   }
 
@@ -34,6 +36,25 @@ package object util {
 
     Executor.loadLibrary()
     Executor.init()
-    try { f } finally { Executor.shutdown() }
+    try f
+    finally Executor.shutdown()
+  }
+
+  def printTime[T](block: => T): T = {
+    val start = System.currentTimeMillis()
+    val result = block
+    val end = System.currentTimeMillis()
+
+    val elapsed = end - start
+    val milliseconds = elapsed % 1000
+    val rest = elapsed / 1000
+    val seconds = rest % 60
+    val minutes = rest / 60
+
+    val millisStr = s"${milliseconds}ms"
+    val secondsStr = if (seconds > 0) s"${seconds}s " else ""
+    val minutesStr = if (minutes > 0) s"${minutes}mn " else ""
+    println(s"elapsed time: ${minutesStr}${secondsStr}${millisStr}")
+    result
   }
 }

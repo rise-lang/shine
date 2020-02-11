@@ -73,6 +73,16 @@ object Type {
   val int = BasicType("int")
   val const_int = BasicType("int", const = true)
 
+  val u8 = BasicType("uint8_t")
+  val u16 = BasicType("uint16_t")
+  val u32 = BasicType("uint32_t")
+  val u64 = BasicType("uint64_t")
+
+  val i8 = BasicType("int8_t")
+  val i16 = BasicType("int16_t")
+  val i32 = BasicType("int32_t")
+  val i64 = BasicType("int64_t")
+
   val float = BasicType("float")
   val const_float = BasicType("float", const = true)
 
