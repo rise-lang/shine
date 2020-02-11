@@ -4,7 +4,7 @@ import rise.core.DSL._
 import rise.core.types._
 import util.gen
 
-class Parameters extends test_util.Tests {
+class Parameters extends shine.test_util.Tests {
   val m = 4 // vector width
 
   test("Output scalar") {

@@ -5,7 +5,7 @@ import rise.core.types._
 
 import util.gen
 
-class SplitSlide extends test_util.Tests {
+class SplitSlide extends shine.test_util.Tests {
 
   val n = 8
   val sz = 3

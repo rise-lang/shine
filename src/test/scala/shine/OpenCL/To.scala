@@ -7,7 +7,7 @@ import rise.core.types._
 import rise.core.types.AddressSpace._
 import rise.OpenCL.DSL._
 
-class To extends test_util.Tests {
+class To extends shine.test_util.Tests {
   val id = fun(x => x)
   val add1 = fun(x => x + l(1.0f))
 

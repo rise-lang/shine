@@ -4,7 +4,7 @@ import rise.core.DSL._
 import rise.core.types._
 import util.gen
 
-class Slide extends test_util.Tests {
+class Slide extends shine.test_util.Tests {
 
   test("Simple slide example should generate syntactic valid C code with two for loops") {
     val e =
