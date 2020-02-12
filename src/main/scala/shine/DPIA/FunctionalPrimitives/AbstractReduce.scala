@@ -64,14 +64,9 @@ abstract class AbstractReduce(n: Nat,
     s"${this.getClass.getSimpleName} (${PrettyPhrasePrinter(f)}) " +
       s"(${PrettyPhrasePrinter(init)}) (${PrettyPhrasePrinter(array)})"
 
-
   override def acceptorTranslation(A: Phrase[AccType])(
     implicit context: TranslationContext
-  ): Phrase[CommType] = {
-    import TranslationToImperative._
-
-    con(this)(λ(expT(dt2, read))(r => acc(r)(A)))
-  }
+  ): Phrase[CommType] = ???
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])(
     implicit context: TranslationContext

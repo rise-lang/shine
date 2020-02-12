@@ -98,11 +98,9 @@ object TypeCheck {
     if (subType == superType) return true
 
     (subType, superType) match {
-      case (ExpType(bSub: DataType, accessSub), ExpType(bSuper, accessSuper))
+      case (ExpType(bSub: DataType, accessSub), ExpType(bSuper, _))
         if bSub == bSuper =>
-        accessSub.isInstanceOf[AccessTypeIdentifier] ||
-          accessSuper.isInstanceOf[AccessTypeIdentifier] ||
-            (accessSub == read && notContainingArrayType(bSub))
+          accessSub == read && notContainingArrayType(bSub)
       case (FunType(subInT, subOutT), FunType(superInT, superOutT)) =>
         subTypeCheck(superInT, subInT) && subTypeCheck(subOutT,  superOutT)
       case (DepFunType(subInT, subOutT), DepFunType(superInT, superOutT)) =>
@@ -112,7 +110,7 @@ object TypeCheck {
   }
 
   //TODO How do we deal with NatToData etc?
-  private def notContainingArrayType(composed: DataType): Boolean = composed match {
+  def notContainingArrayType(composed: DataType): Boolean = composed match {
       case _: BasicType => true
       case PairType(first, second) =>
         notContainingArrayType(first) && notContainingArrayType(second)

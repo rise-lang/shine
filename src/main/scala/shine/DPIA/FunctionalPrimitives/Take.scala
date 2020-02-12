@@ -24,17 +24,19 @@ final case class Take(n: Nat,
 
   override def eval(s: Store): Data = ???
 
-  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    Take(fun.nat(n), fun.nat(m), fun.access(w), fun.data(dt), VisitAndRebuild(array, fun))
+  override def visitAndRebuild(
+    fun: VisitAndRebuild.Visitor
+  ): Phrase[ExpType] = {
+    Take(fun.nat(n), fun.nat(m), fun.access(w), fun.data(dt),
+      VisitAndRebuild(array, fun))
   }
 
-  override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommType] = {
-    ???
-  }
+  override def acceptorTranslation(A: Phrase[AccType])(
+    implicit context: TranslationContext): Phrase[CommType] = ???
 
-  override def continuationTranslation(C: Phrase[->:[ExpType, CommType]])
-                                      (implicit context: TranslationContext): Phrase[CommType] = {
+  override def continuationTranslation(C: Phrase[->:[ExpType, CommType]])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] = {
     import TranslationToImperative._
     con(array)(λ(expT({n + m}`.`dt, read))(x => C(Take(n, m, w, dt, x))))
   }

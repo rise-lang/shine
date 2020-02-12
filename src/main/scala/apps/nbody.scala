@@ -64,6 +64,7 @@ object nbody {
             mapLocal(0)(fun((vec(4, f32) x vec(4, f32)) x vec(4, f32))(p1 =>
               update(p1._1._1)(p1._1._2)(deltaT)(p1._2)
             ))(zip(newP1Chunk)(bla)))) o
+            //TODO THIS SHOULD NOT TYPECHECK!
             // TODO: is this the correct address space?
             oclReduceSeq(AddressSpace.Local)(
               fun(tileY`.`tileX`.`vec(4, f32))(acc => fun(tileY`.`tileX`.`vec(4, f32))(p2 =>

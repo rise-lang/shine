@@ -88,7 +88,7 @@ object DataType {
       dt.asInstanceOf[T]
     } else {
       (in match {
-        case _: BasicType => in
+        case _: BasicType | _: DataTypeIdentifier => in
         case a: ArrayType =>
           ArrayType(a.size, substitute(dt, `for`, a.elemType))
         case r: PairType =>

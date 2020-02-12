@@ -31,12 +31,7 @@ final case class Cast(dt1: BasicType, dt2: BasicType, e: Phrase[ExpType])
 
   def acceptorTranslation(A: Phrase[AccType])(
     implicit context: TranslationContext
-  ): Phrase[CommType] = {
-    import TranslationToImperative._
-
-    //FIXME general assignment should be disallowed!
-    con(e)(λ(e.t)(x => A :=|dt2| Cast(dt1, dt2, x)) )
-  }
+  ): Phrase[CommType] = ???
 
   def continuationTranslation(C: Phrase[ExpType ->: CommType])(
     implicit context: TranslationContext

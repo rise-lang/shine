@@ -19,9 +19,16 @@ object TranslationToImperative {
          (A: Phrase[AccType])
          (implicit context: TranslationContext): Phrase[CommType] = {
     E match {
-      case x: Identifier[ExpType] => A :=|x.t.dataType| x
+      case e
+        if TypeCheck.notContainingArrayType(e.t.dataType)
+          && e.t.accessType == read =>
+        con(e)(λ(e.t)(a => A :=|e.t.dataType| a))
 
       case c: Literal => A :=|c.t.dataType| c
+
+      //TODO remove this should be covered by the first case
+      // from here
+      case x: Identifier[ExpType] => A :=|x.t.dataType| x
 
       case n: Natural => A :=|n.t.dataType| n
 
@@ -36,6 +43,7 @@ object TranslationToImperative {
             A :=|b.t.dataType| BinOp(op, x, y)
           ))
         ))
+      //TODO to here
 
       case ep: ExpPrimitive => ep.acceptorTranslation(A)
 

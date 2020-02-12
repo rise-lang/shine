@@ -47,8 +47,9 @@ final case class OpenCLReduceSeq(
     implicit context: TranslationContext
   ): Phrase[CommType] = ???
 
-  override def continuationTranslation(C: Phrase[ExpType ->: CommType])
-                                      (implicit context: TranslationContext): Phrase[CommType] = {
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(array)(λ(expT(n`.`dt1, read))(X =>

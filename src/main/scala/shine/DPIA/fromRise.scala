@@ -2,6 +2,7 @@ package shine.DPIA
 
 import rise.core.{semantics => rs, types => rt}
 import rise.{core => r}
+import rise.core.substitute.dataTypeInExpr
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.{OperationalSemantics => OpSem}
 import shine.DPIA.Types._
@@ -17,41 +18,90 @@ object fromRise {
 
   def expression(
     expr: r.Expr,
-    pt: Map[r.Expr, PhraseType]): Phrase[_ <: PhraseType] = expr match {
+    ptMap: Map[r.Expr, PhraseType]): Phrase[_ <: PhraseType] = expr match {
+
     case r.Identifier(name) =>
-      Identifier(name, pt(expr))
+      Identifier(name, ptMap(expr))
 
     case r.Lambda(x, e) =>
-      Lambda(Identifier(x.name, pt(x)), expression(e, pt))
+      Lambda(Identifier(x.name, ptMap(x)), expression(e, ptMap))
 
     case r.App(f, e) => {
-      val ef = expression(f, pt)
+      val ef = expression(f, ptMap)
         .asInstanceOf[Phrase[FunType[PhraseType, PhraseType]]]
-      val ee = expression(e, pt).asInstanceOf[Phrase[PhraseType]]
+      val ee = expression(e, ptMap).asInstanceOf[Phrase[PhraseType]]
       Apply(ef, ee)
     }
 
     case r.DepLambda(x, e) => x match {
       case ni: rt.NatIdentifier =>
-        DepLambda[NatKind](natIdentifier(ni))(expression(e, pt))
+        DepLambda[NatKind](natIdentifier(ni))(expression(e, ptMap))
       case dti: rt.DataTypeIdentifier =>
-        DepLambda[DataKind](dataTypeIdentifier(dti))(expression(e, pt))
+        DepLambda[DataKind](dataTypeIdentifier(dti))(expression(e, ptMap))
       case addri: rt.AddressSpaceIdentifier =>
         DepLambda[AddressSpaceKind](
-          addressSpaceIdentifier(addri))(expression(e, pt))
+          addressSpaceIdentifier(addri))(expression(e, ptMap))
     }
 
     case r.DepApp(f, x) =>
       def depApp[K <: Kind](f: r.Expr, arg: K#T): DepApply[K, PhraseType] =
         DepApply[K, PhraseType](
-          expression(f, pt).asInstanceOf[Phrase[DepFunType[K, PhraseType]]],
+          expression(f, ptMap).asInstanceOf[Phrase[DepFunType[K, PhraseType]]],
           arg)
 
       x match {
         case n: Nat => depApp[NatKind](f, n)
         case dt: rt.DataType =>
-          r.lifting.liftDepFunExpr[rise.core.types.DataKind](f) match {
-            case r.lifting.Reducing(r) => expression(r(dt), pt)
+          r.lifting.liftDepFunExpr[rt.DataKind](f) match {
+            case r.lifting.Reducing(r) =>
+              //Because of the following reduction, we need to substitute
+              // the data type identifier in the types of the subexpressions.
+              //Otherwise we would look for expressions with types that
+              // contain type variables which have been removed by
+              // the reduction.
+              val updPtMap = ptMap.map({ case (e, pt) =>
+                val depFunT = f.t.asInstanceOf[
+                  rt.DepFunType[rt.DataKind, rt.Type]]
+
+                case class TypeVisitor() extends rise.core.traversal.Visitor {
+                  import rise.core.types._
+                  import rise.core.traversal._
+
+                  override def visitType[T <: Type](t: T): Result[T] =
+                    t match {
+                      case DepFunType(x, _) if depFunT.x.equals(x) =>
+                        Stop(t)
+                      case _ =>
+                        if (depFunT.x == t)
+                          Stop(dt.asInstanceOf[T])
+                        else Continue(t, this)
+                    }
+                }
+
+                case class Visitor() extends rise.core.traversal.Visitor {
+                  import rise.core.{Expr, DepLambda, Identifier}
+                  import rise.core.types._
+                  import rise.core.traversal._
+
+                  override def visitType[T <: Type](t: T): Result[T] =
+                    Continue(
+                      types.DepthFirstLocalResult(t, TypeVisitor()), this)
+
+                  override def visitExpr(e: Expr): Result[Expr] =
+                    e match {
+                      case DepLambda(x, e) if x == depFunT.x => Stop(e)
+                      case i@Identifier(name) =>
+                        Continue(e, this)
+                      case _ => Continue(e, this)
+                    }
+                }
+                val updEt =
+                  rise.core.traversal.DepthFirstLocalResult(e, Visitor())
+
+                (updEt, pt)
+              })
+
+              expression(r(dt), updPtMap)
             case _ => depApp[DataKind](f, dataType(dt))
           }
         case a: rt.AddressSpace => depApp[AddressSpaceKind](f, addressSpace(a))
@@ -63,7 +113,7 @@ object fromRise {
       case _ => Literal(data(d))
     }
 
-    case p: r.Primitive => primitive(p, p.t, pt)
+    case p: r.Primitive => primitive(p, p.t, ptMap)
   }
 
   def data(d: rs.Data): OpSem.Data = d match {
@@ -92,7 +142,7 @@ object fromRise {
   def primitive(
     p: r.Primitive,
     t: rt.Type,
-    pt: Predef.Map[r.Expr, PhraseType]
+    ptMap: Predef.Map[r.Expr, PhraseType]
   ): Phrase[_ <: PhraseType] = {
     import rise.OpenCL.{primitives => ocl}
     import rise.OpenMP.{primitives => omp}
@@ -104,7 +154,7 @@ object fromRise {
         rt.FunType(lt: rt.DataType, _))
       =>
         val w =
-          pt(p).asInstanceOf[FunType[ExpType, ExpType]].inT.accessType
+          ptMap(p).asInstanceOf[FunType[ExpType, ExpType]].inT.accessType
         val t = dataType(lt)
         fun[ExpType](expT(t, w), e => PrintType(msg, t, w, e))
 
@@ -118,7 +168,7 @@ object fromRise {
 
       case (core.Map(), _)
       =>
-        makeMap(Map, pt(p))
+        makeMap(Map, ptMap(p))
 
       case (core.MapSeq(),
       rt.FunType(rt.FunType(_, lb: rt.DataType),
@@ -254,7 +304,7 @@ object fromRise {
       =>
         val a = dataType(la)
         val w =
-          pt(p).asInstanceOf[FunType[ExpType, ExpType]].inT.accessType
+          ptMap(p).asInstanceOf[FunType[ExpType, ExpType]].inT.accessType
         fun[ExpType](expT(n`.`(m`.`a), w), e =>
           Join(n, m, w, a, e))
 
@@ -263,7 +313,7 @@ object fromRise {
       rt.FunType(rt.ArrayType(mn, la), rt.ArrayType(m, _))))
       =>
         val a = dataType(la)
-        val w = pt(p).asInstanceOf[
+        val w = ptMap(p).asInstanceOf[
           DepFunType[NatKind, FunType[ExpType, ExpType]]
         ].t.inT.accessType
         DepLambda[NatKind](natIdentifier(n))(
@@ -327,7 +377,7 @@ object fromRise {
       =>
         val a = dataType(la)
         val w =
-          pt(p).asInstanceOf[
+          ptMap(p).asInstanceOf[
             FunType[
               FunType[ExpType, ExpType],
               FunType[
@@ -356,7 +406,7 @@ object fromRise {
       =>
         val a = dataType(la)
         val w =
-          pt(p).asInstanceOf[FunType[ExpType, ExpType]].inT.accessType
+          ptMap(p).asInstanceOf[FunType[ExpType, ExpType]].inT.accessType
 /* FIXME?
 
         val transposeFunction =
@@ -393,7 +443,7 @@ object fromRise {
         val m = nm - n
         val a = dataType(la)
         val w =
-          pt(p).asInstanceOf[
+          ptMap(p).asInstanceOf[
             DepFunType[NatKind, FunType[ExpType, ExpType]]].t.inT.accessType
         DepLambda[NatKind](natIdentifier(n))(
           fun[ExpType](expT(nm`.`a, w), e =>
@@ -406,7 +456,7 @@ object fromRise {
         val m = nm - n
         val a = dataType(la)
         val w =
-          pt(p).asInstanceOf[
+          ptMap(p).asInstanceOf[
             DepFunType[NatKind, FunType[ExpType, ExpType]]].t.inT.accessType
         DepLambda[NatKind](natIdentifier(n))(
           fun[ExpType](expT(nm`.`a, w), e =>
@@ -444,7 +494,7 @@ object fromRise {
         val a = dataType(la)
         val b = dataType(lb)
         val w =
-          pt(p).asInstanceOf[FunType[ExpType, ExpType]].inT.accessType
+          ptMap(p).asInstanceOf[FunType[ExpType, ExpType]].inT.accessType
         fun[ExpType](expT(n`.`(a x b), w), e =>
             Unzip(n, a, b, w, e))
 
@@ -455,7 +505,7 @@ object fromRise {
         val a = dataType(la)
         val b = dataType(lb)
         val w =
-          pt(p).asInstanceOf[
+          ptMap(p).asInstanceOf[
             FunType[ExpType, FunType[ExpType, ExpType]]
           ].inT.accessType
         fun[ExpType](expT(n`.`a, w), x =>
@@ -468,7 +518,7 @@ object fromRise {
         val a = dataType(la)
         val b = dataType(lb)
         val w =
-          pt(p).asInstanceOf[FunType[ExpType, ExpType]].inT.accessType
+          ptMap(p).asInstanceOf[FunType[ExpType, ExpType]].inT.accessType
         fun[ExpType](expT(a x b, w), e => Fst(a, b, w, e))
 
       case (core.MapFst(),
@@ -487,7 +537,7 @@ object fromRise {
         val a = dataType(la)
         val b = dataType(lb)
         val w =
-          pt(p).asInstanceOf[FunType[ExpType, ExpType]].inT.accessType
+          ptMap(p).asInstanceOf[FunType[ExpType, ExpType]].inT.accessType
         fun[ExpType](expT(a x b, w), e => Snd(a, b, w, e))
 
       case (core.MapSnd(),
@@ -507,7 +557,7 @@ object fromRise {
         val a = dataType(la)
         val b = dataType(lb)
         val w =
-          pt(p).asInstanceOf[
+          ptMap(p).asInstanceOf[
             FunType[ExpType, FunType[ExpType, ExpType]]
           ].inT.accessType
         fun[ExpType](expT(a, w), x =>
@@ -594,7 +644,7 @@ object fromRise {
         val a = dataType(la)
         val b = dataType(lb)
         val w =
-          pt(p).asInstanceOf[
+          ptMap(p).asInstanceOf[
             FunType[ExpType, FunType[PhraseType, ExpType]]
           ].outT.outT.accessType
         fun[ExpType ->: ExpType](expT(a, read) ->: expT(b, w), f =>
@@ -654,7 +704,7 @@ object fromRise {
       rt.FunType(rt.ArrayType(mn, la: rt.ScalarType), rt.ArrayType(m, _))))
       =>
         val a = scalarType(la)
-        val w = pt(p).asInstanceOf[
+        val w = ptMap(p).asInstanceOf[
           DepFunType[NatKind, FunType[ExpType, ExpType]]
         ].t.inT.accessType
         DepLambda[NatKind](natIdentifier(n))(
@@ -675,7 +725,7 @@ object fromRise {
       =>
         val a = scalarType(la)
         val w =
-          pt(p).asInstanceOf[FunType[ExpType, ExpType]].inT.accessType
+          ptMap(p).asInstanceOf[FunType[ExpType, ExpType]].inT.accessType
         fun[ExpType](expT(m`.`vec(n, a), w), e =>
           AsScalar(m, n, a, w, e))
 
