@@ -3,7 +3,7 @@ package rise.core
 import arithexpr.arithmetic.BigSum
 import rise.core.TypeLevelDSL._
 import rise.core.types._
-import primitiveMacro.Primitive.primitive
+import rise.macros.Primitive.primitive
 
 object primitives {
 
@@ -131,9 +131,9 @@ object primitives {
       implN(n =>
         implN(m =>
           nFunT(k =>
-            implDT(t => 
+            implDT(t =>
               nFunT(l =>
-                ArrayType(l * n, t) ->: ArrayType(l, t)) ->: 
+                ArrayType(l * n, t) ->: ArrayType(l, t)) ->:
                   ArrayType(m * n.pow(k), t)->: ArrayType(m, t)
             )
           )
