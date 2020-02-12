@@ -407,24 +407,31 @@ object cameraPipe {
       // boundaries so that we don't need to check bounds. We're going
       // to make a 2560x1920 output image, just like the FCam pipe,
       // so shift by 16, 12.
-      // TODO? use image DSL
-      map(drop(16 - 5) >> dropLast(6 + 5)) >>
-      drop(12 - 5) >> dropLast(26 + 5) >>
       // We also convert it to be signed, so we can deal with
       // values that fall below 0 during processing.
       map(map(fun(p => cast(p) :: i16))) >>
-      hot_pixel_suppression(2*(h+2))(2*(w+2)) >>
-      deinterleave(h)(w) >>
-      demosaic(h)(w) >>
+      hot_pixel_suppression(2*(h+2)+38)(2*(w+2)+22) >>
+      // 2*h+38, 2*w+22
+      deinterleave(h+19)(w+11) >>
+      // 4, h+19, w+11
+      demosaic(h+19)(w+11) >>
       mapSeqUnroll(mapSeq(mapSeq(fun(x => x)))) >> // TODO: remove
-      fun(x => color_correct(2*(h-2))(2*(w-2))(hm)(wm)(x)
+      // 3, 2*h + 34, 2*w + 18
+      fun(x => color_correct(2*h+34)(2*w+18)(hm)(wm)(x)
         (matrix_3200)(matrix_7000)(color_temp)) >>
       mapSeqUnroll(mapSeq(mapSeq(fun(x => x)))) >> // TODO: remove
-      fun(x => apply_curve(2*(h-2))(2*(w-2))(x)
+      fun(x => apply_curve(2*h+34)(2*w+18)(x)
         (gamma)(contrast)(blackLevel)(whiteLevel)) >>
       mapSeq(mapSeq(mapSeq(fun(x => x)))) >> // TODO: remove
-      fun(x => sharpen(2*(h-2))(2*(w-2))(x)(sharpen_strength)) >>
-      mapSeq(mapSeq(mapSeq(fun(x => x))))
+      fun(x => sharpen(2*h+34)(2*w+18)(x)(sharpen_strength)) >>
+      // 3, 2*h + 32, 2*w + 16
+      // TODO? use image DSL
+      // TODO: move drop up towards input
+      map(
+        implN(w => map(drop(16 - 5) >> take(w))) >>
+        implN(h => drop(12 - 5) >> take(h))
+      ) >>
+      mapSeq(mapSeq(mapSeq(fun(x => x)))) // TODO: remove
     )))))))))
   ))))
 }
