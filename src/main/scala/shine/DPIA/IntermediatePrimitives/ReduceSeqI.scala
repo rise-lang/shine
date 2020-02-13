@@ -1,12 +1,11 @@
 package shine.DPIA.IntermediatePrimitives
 
 import shine.DPIA.Compilation.TranslationContext
+import shine.DPIA.Compilation.TranslationToImperative.acc
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA._
-
-import scala.language.reflectiveCalls
 
 object ReduceSeqI {
   def apply(n: Nat, dt1: DataType, dt2: DataType,
@@ -17,12 +16,11 @@ object ReduceSeqI {
             unroll: Boolean = false)
            (implicit context: TranslationContext): Phrase[CommType] =
   {
-    `new`(dt2, acc =>
-      //TODO implicit decisions happening here!
-      (acc.wr :=|dt2| init) `;`
-        comment("reduceSeq")`;`
-        `for`(n, i => f(acc.rd)(in `@` i)(acc.wr), unroll) `;`
-        out(acc.rd)
+    comment("reduceSeq")`;`
+    `new`(dt2, accum =>
+      acc(init)(accum.wr) `;`
+        `for`(n, i => f(accum.rd)(in `@` i)(accum.wr), unroll) `;`
+        out(accum.rd)
     )
   }
 }
