@@ -3,6 +3,7 @@ package apps
 import rise.core._
 import rise.core.types._
 import rise.core.DSL._
+import rise.OpenMP.DSL.mapPar
 import rise.core.TypeLevelDSL._
 import rise.core.HighLevelConstructs._
 
@@ -162,6 +163,7 @@ object cameraPipe {
     letImage(interpolate(stencilCollect(Seq((1, 0), (0, 0)), g_gr)), gh_r =>
     letImage(pointAbsDiff(stencilCollect(Seq((1, 0), (0, 0)), g_gr)), ghd_r =>
 
+    // TODO: mapPar and use elevate
     memImage(mapSeq(mapSeq(fun(x => x))),
       select_interpolation(gh_r, ghd_r, gv_r, gvd_r), g_r =>
 
@@ -170,6 +172,7 @@ object cameraPipe {
     letImage(interpolate(stencilCollect(Seq((-1, 0), (0, 0)), g_gb)), gh_b =>
     letImage(pointAbsDiff(stencilCollect(Seq((-1, 0), (0, 0)), g_gb)), ghd_b =>
 
+    // TODO: mapPar and use elevate
     memImage(mapSeq(mapSeq(fun(x => x))),
       select_interpolation(gh_b, ghd_b, gv_b, gvd_b), g_b =>
 
@@ -293,6 +296,7 @@ object cameraPipe {
       zipND(2)(matrix_3200, matrix_7000) |>
         map(map(fun(p => p._1 * alpha + p._2 * (l(1.0f) - alpha)))) >>
           map(map(fun(v => cast(v * l(256.0f)) :: i16))) // Q8.8 fixed point
+      // TODO: use elevate
       ) |> mapSeq(mapSeq(fun(x => x))) |> let(fun(matrix =>
         input |> transpose >>
         map(transpose >> map(map(cast :: (i16 ->: i32)))) // H.W.3.i32
@@ -346,6 +350,7 @@ object cameraPipe {
       ) :: u8
       // add guard band outside of (minraw, maxRaw]
       select(x <= minRaw, lu8(0), select(x > maxRaw, lu8(255), v))
+    // TODO: use elevate
     })) |> mapSeq(fun(x => x)) |> let(fun(curve =>
       input |> map(map(map(fun(p =>
         curve `@` (
@@ -431,7 +436,7 @@ object cameraPipe {
         implN(h => drop(12 - 5) >> take(h))) >>
       // TODO: reorder and store with elevate
       transpose >> map(transpose) >>
-      split(2) >> mapSeq(mapSeqUnroll(
+      split(2) >> mapPar(mapSeqUnroll(
         mapSeq(mapSeqUnroll(fun(x => x)))
       )) >> join >> map(transpose) >> transpose >>
       // --
@@ -439,20 +444,20 @@ object cameraPipe {
         (matrix_3200)(matrix_7000)(color_temp)) >>
       // TODO: reorder and store with elevate
       transpose >> map(transpose) >>
-      mapSeq(mapSeq(mapSeqUnroll(fun(x => x)))) >>
+      mapPar(mapSeq(mapSeqUnroll(fun(x => x)))) >>
       map(transpose) >> transpose >>
       // --
       fun(x => apply_curve(2*h-4)(2*w-4)(x)
         (gamma)(contrast)(blackLevel)(whiteLevel)) >>
       // TODO: reorder and store with elevate
       transpose >> map(transpose) >>
-      mapSeq(mapSeq(mapSeqUnroll(fun(x => x)))) >>
+      mapPar(mapSeq(mapSeqUnroll(fun(x => x)))) >>
       map(transpose) >> transpose >>
       // --
       fun(x => sharpen(2*h-4)(2*w-4)(x)(sharpen_strength)) >>
       // TODO: reorder and store with elevate
       transpose >> map(transpose) >>
-      mapSeq(mapSeq(mapSeqUnroll(fun(x => x)))) >>
+      mapPar(mapSeq(mapSeqUnroll(fun(x => x)))) >>
       map(transpose) >> transpose
       // --
     )))))))))
