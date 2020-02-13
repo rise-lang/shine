@@ -411,26 +411,19 @@ object cameraPipe {
       // values that fall below 0 during processing.
       map(map(fun(p => cast(p) :: i16))) >>
       hot_pixel_suppression(2*(h+2)+38)(2*(w+2)+22) >>
-      // 2*h+38, 2*w+22
       deinterleave(h+19)(w+11) >>
-      // 4, h+19, w+11
       demosaic(h+19)(w+11) >>
+      map( // TODO: move up towards input
+        implN(w => map(drop(16 - 5) >> take(w))) >>
+        implN(h => drop(12 - 5) >> take(h))) >>
       mapSeqUnroll(mapSeq(mapSeq(fun(x => x)))) >> // TODO: remove
-      // 3, 2*h + 34, 2*w + 18
-      fun(x => color_correct(2*h+34)(2*w+18)(hm)(wm)(x)
+      fun(x => color_correct(2*h-4)(2*w-4)(hm)(wm)(x)
         (matrix_3200)(matrix_7000)(color_temp)) >>
       mapSeqUnroll(mapSeq(mapSeq(fun(x => x)))) >> // TODO: remove
-      fun(x => apply_curve(2*h+34)(2*w+18)(x)
+      fun(x => apply_curve(2*h-4)(2*w-4)(x)
         (gamma)(contrast)(blackLevel)(whiteLevel)) >>
       mapSeq(mapSeq(mapSeq(fun(x => x)))) >> // TODO: remove
-      fun(x => sharpen(2*h+34)(2*w+18)(x)(sharpen_strength)) >>
-      // 3, 2*h + 32, 2*w + 16
-      // TODO? use image DSL
-      // TODO: move drop up towards input
-      map(
-        implN(w => map(drop(16 - 5) >> take(w))) >>
-        implN(h => drop(12 - 5) >> take(h))
-      ) >>
+      fun(x => sharpen(2*h-4)(2*w-4)(x)(sharpen_strength)) >>
       mapSeq(mapSeq(mapSeq(fun(x => x)))) // TODO: remove
     )))))))))
   ))))
