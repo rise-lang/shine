@@ -419,19 +419,42 @@ object cameraPipe {
       map(map(fun(p => cast(p) :: i16))) >>
       hot_pixel_suppression(2*(h+2)+38)(2*(w+2)+22) >>
       deinterleave(h+19)(w+11) >>
+      /*
+      // TODO: reorder and store with elevate
+      transpose >> map(transpose) >>
+      mapSeq(mapSeq(mapSeqUnroll(fun(x => x)))) >>
+      map(transpose) >> transpose >>
+      */
       demosaic(h+19)(w+11) >>
       map( // TODO: move up towards input
         implN(w => map(drop(16 - 5) >> take(w))) >>
         implN(h => drop(12 - 5) >> take(h))) >>
-      mapSeqUnroll(mapSeq(mapSeq(fun(x => x)))) >> // TODO: remove
+      // TODO: reorder and store with elevate
+      transpose >> map(transpose) >>
+      split(2) >> mapSeq(mapSeqUnroll(
+        mapSeq(mapSeqUnroll(fun(x => x)))
+      )) >> join >> map(transpose) >> transpose >>
+      // --
       fun(x => color_correct(2*h-4)(2*w-4)(hm)(wm)(x)
         (matrix_3200)(matrix_7000)(color_temp)) >>
-      mapSeqUnroll(mapSeq(mapSeq(fun(x => x)))) >> // TODO: remove
+      // TODO: reorder and store with elevate
+      transpose >> map(transpose) >>
+      mapSeq(mapSeq(mapSeqUnroll(fun(x => x)))) >>
+      map(transpose) >> transpose >>
+      // --
       fun(x => apply_curve(2*h-4)(2*w-4)(x)
         (gamma)(contrast)(blackLevel)(whiteLevel)) >>
-      mapSeq(mapSeq(mapSeq(fun(x => x)))) >> // TODO: remove
+      // TODO: reorder and store with elevate
+      transpose >> map(transpose) >>
+      mapSeq(mapSeq(mapSeqUnroll(fun(x => x)))) >>
+      map(transpose) >> transpose >>
+      // --
       fun(x => sharpen(2*h-4)(2*w-4)(x)(sharpen_strength)) >>
-      mapSeq(mapSeq(mapSeq(fun(x => x)))) // TODO: remove
+      // TODO: reorder and store with elevate
+      transpose >> map(transpose) >>
+      mapSeq(mapSeq(mapSeqUnroll(fun(x => x)))) >>
+      map(transpose) >> transpose
+      // --
     )))))))))
   ))))
 }
