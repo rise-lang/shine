@@ -8,7 +8,7 @@ case object dotPrinter {
 
   def generateDotString(
       expr: Expr,
-      printTypes: Boolean = false,
+      printTypes: Boolean = true,
       inlineLambdaIdentifier: Boolean = false
   ): String = {
 
@@ -28,6 +28,7 @@ case object dotPrinter {
       def fill(c: String): String = s"fillcolor=$c "
       def fillWhite: String = fill("white")
       def fillGray: String = fill("\"#e6e2de\"")
+      def fillDarkGray: String = fill("\"#9a9a9a\"")
       def fillBlack: String = fill("black")
 
       def formatType(t: Type): String =
@@ -48,10 +49,10 @@ case object dotPrinter {
           this.copy(decorations =
             x => s"<font color='gray'>${decorations(x)}</font>"
           )
-        def green: Label =
-          this.copy(decorations =
-            x => s"""<font color="#3C8031">${decorations(x)}</font>"""
-          )
+        //def green: Label =
+        //  this.copy(decorations =
+        //    x => s"""<font color="#3C8031">${decorations(x)}</font>"""
+        //  )
         def orange: Label =
           this.copy(decorations =
             x => s"""<font color="#F26035">${decorations(x)}</font>"""
@@ -60,7 +61,7 @@ case object dotPrinter {
 
         override def toString: String = {
           val label =
-            if (!forEdge)
+            if (!forEdge && printTypes)
               "\"" + s + "\\n" + formatType(expr.t) + "\""
             else "<" + decorations(s) + ">"
 
@@ -81,7 +82,7 @@ case object dotPrinter {
       ): String = {
         val aID = getID(a._1)
         val bID = getID(b._1)
-        s"""$parent ${attr(fillWhite + Label(nodeLabel).bold.green.toString)}
+        s"""$parent ${attr(fillWhite + Label(nodeLabel).toString)}
            |$parent -> $aID ${edgeLabel(a._2)};
            |$parent -> $bID ${edgeLabel(b._2)};
            |${recurse(a._1, aID, None)}
@@ -103,7 +104,7 @@ case object dotPrinter {
         case DepLambda(x, e) if !inlineLambdaIdentifier =>
           val id = getID(x)
           val expr = getID(e)
-          s"""$parent ${attr(fillWhite + Label("Λ").bold.green.toString)}
+          s"""$parent ${attr(fillWhite + Label("Λ").bold.toString)}
              |$parent -> $id ${edgeLabel("id")};
              |$parent -> $expr ${edgeLabel("body")};
              |$id ${attr(fillWhite + Label(x.toString).orange.toString)}
@@ -125,11 +126,14 @@ case object dotPrinter {
              |${recurse(f, fun, None)}""".stripMargin
 
         case l: Literal =>
-          s"$parent ${attr(fillWhite + Label(l.toString).orange.italic.toString)}"
+          s"$parent ${attr(fillWhite + Label(l.toString.trim).orange.italic.toString)}"
         case i: Identifier =>
-          s"$parent ${attr(fillWhite + Label(i.toString).orange.italic.toString)}"
-        case p: Primitive =>
-          s"$parent ${attr(fillGray + Label(p.toString).bold.green.toString)}"
+          s"$parent ${attr(fillWhite + Label(i.toString.trim).orange.italic.toString)}"
+        case p: Primitive => p match {
+          case primitives.MapSeq() => s"$parent ${attr(fillDarkGray + Label(p.toString.trim).bold.toString)}"
+          case primitives.ReduceSeq() => s"$parent ${attr(fillDarkGray + Label(p.toString.trim).bold.toString)}"
+          case _ => s"$parent ${attr(fillGray + Label(p.toString.trim).bold.toString)}"
+        }
       }
     }
 
