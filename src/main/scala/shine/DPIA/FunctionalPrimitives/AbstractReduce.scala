@@ -80,7 +80,7 @@ abstract class AbstractReduce(n: Nat,
       makeReduceI(n, dt1, dt2,
         λ(expT(dt2, read))(x =>
           λ(expT(dt1, read))(y =>
-            λ(accT(dt2))(o => acc( f(x)(y) )( o )))),
+            λ(accT(dt2))(o => acc(f(x)(y))(o)))),
         init, X, C)(context)))
   }
 
