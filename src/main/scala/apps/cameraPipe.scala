@@ -293,7 +293,7 @@ object cameraPipe {
       zipND(2)(matrix_3200, matrix_7000) |>
         map(map(fun(p => p._1 * alpha + p._2 * (l(1.0f) - alpha)))) >>
           map(map(fun(v => cast(v * l(256.0f)) :: i16))) // Q8.8 fixed point
-      ) |> fun(matrix =>
+      ) |> mapSeq(mapSeq(fun(x => x))) |> let(fun(matrix =>
         input |> transpose >>
         map(transpose >> map(map(cast :: (i16 ->: i32)))) // H.W.3.i32
         >> map(map(fun(irgb => {
@@ -311,7 +311,7 @@ object cameraPipe {
         map(map(map(fun(rgb =>
           cast(rgb / li32(256)) :: i16
         ))) >> transpose) >> transpose
-    )
+    ))
   })))))
 
   val apply_curve: Expr = nFun(h => nFun(w => fun(
@@ -346,13 +346,13 @@ object cameraPipe {
       ) :: u8
       // add guard band outside of (minraw, maxRaw]
       select(x <= minRaw, lu8(0), select(x > maxRaw, lu8(255), v))
-    })) |> fun(curve =>
+    })) |> mapSeq(fun(x => x)) |> let(fun(curve =>
       input |> map(map(map(fun(p =>
         curve `@` (
           cast(clamp(i16)(p, li16(0), li16(1023))) :: IndexType(1024)
         )
       ))))
-    )
+    ))
   })))
 
   val blur121: Expr = dtFun(dt => dtFun(compute_dt => fun(
