@@ -76,8 +76,9 @@ float clamp_f32(float v, float l, float h) {
 """
 
   val ctyToFormat: String => String = {
+    case "uint16_t" => "%hu"
     case "int16_t" => "%hd"
-    case "uint8_t" => "%hu"
+    case "uint8_t" => "%hhu"
   }
 
   def read_csv(cty: String): String = s"""
@@ -134,12 +135,12 @@ int main(int argc, char** argv) {
   }
 
   if (differences > 0) {
-    fprintf(stderr, "WARNING: %lu differences\\n", differences);
+    fprintf(stderr, "WARNING: %zu differences\\n", differences);
   }
 
   int exit_status = 0;
   if (errors > 0) {
-    fprintf(stderr, "ERROR: %lu errors\\n", errors);
+    fprintf(stderr, "ERROR: %zu errors\\n", errors);
     exit_status = 1;
   }
 
@@ -234,11 +235,10 @@ int main(int argc, char** argv) {
       lowered, fName => s"""
   float matrix_3200[3 * 4] = { ${matrix_3200.mkString(", ")} };
   float matrix_7000[3 * 4] = { ${matrix_7000.mkString(", ")} };
-  float color_temp = ${color_temp};
 
   ${fName}(output,
     2*$N - 4, 2*$M - 4, 3, 4,
-    input, matrix_3200, matrix_7000, color_temp);
+    input, matrix_3200, matrix_7000, ${color_temp});
 """,
       3 * (2*N - 4) * (2*M - 4), "int16_t", "demosaiced.dump",
       3 * (2*N - 4) * (2*M - 4), "int16_t", "corrected.dump",
@@ -284,43 +284,24 @@ ${fName}(output, 2*$N - 4, 2*$M - 4, input, ${sharpen_strength});
     )
   }
 
-  // TODO: update
+  // TODO: read the same input size as Halide
   ignore("camera pipe passes checks") {
-    /*
     val typed = printTime("infer", infer(camera_pipe))
-    val prog = printTime("codegen", gen.CProgram(typed))
-    val testCode =
-      s"""
-${cHeader}
-
-${prog.code}
-
-int main(int argc, char** argv) {
-  int16_t input[($N*2 + 4) * ($M*2 + 4)] = { ${goldInput.mkString(", ")} };
-  uint8_t gold[3 * (2*$N - 6) * (2*$M - 6)] =
-    { ${goldSharpened.mkString(", ")} };
-
+    check(
+      typed, fName => s"""
   float matrix_3200[3 * 4] = { ${matrix_3200.mkString(", ")} };
   float matrix_7000[3 * 4] = { ${matrix_7000.mkString(", ")} };
 
-  uint8_t output[3 * (2*$N - 6) * (2*$M - 6)];
-  ${prog.function.name}(output, $N, $M, 3, 4,
+  ${fName}(output, $N, $M, 3, 4,
     input, matrix_3200, matrix_7000, ${color_temp},
     ${gamma}, ${contrast}, ${black_level}, ${white_level},
     ${sharpen_strength});
-
-  for (int i = 0; i < 3 * (2*$N - 6) * (2*$M - 6); i++) {
-    if (gold[i] != output[i]) {
-      fprintf(stderr, "%d != %d\\n", gold[i], output[i]);
-      return 1;
-    }
-  }
-
-  return 0;
-}
-"""
-    printTime("execute", util.Execute(testCode))
-     */
+""",
+      // the shifted dump is the same as the input dump
+      (2*N + 42) * (2*M + 26), "uint16_t", "shifted.dump",
+      3 * (2*N - 6) * (2*M - 6), "uint8_t", "sharpened.dump",
+      0
+    )
   }
 
   test("type inference") {

@@ -37,6 +37,11 @@ object cameraPipe {
   def letImage(img: Image, f: Image => Expr): Expr =
     img.expr |> fun(x => f(Image(img.xBeg, img.xEnd, img.yBeg, img.yEnd, x)))
 
+  // TODO: use elevate instead
+  def memImage(write: Expr, img: Image, f: Image => Expr): Expr =
+    img.expr |> write |> let(fun(x =>
+      f(Image(img.xBeg, img.xEnd, img.yBeg, img.yEnd, x))))
+
   def mapImage(img: Image, f: Expr): Image =
     Image(img.xBeg, img.xEnd, img.yBeg, img.yEnd, img.expr |> map(map(f)))
 
@@ -157,14 +162,16 @@ object cameraPipe {
     letImage(interpolate(stencilCollect(Seq((1, 0), (0, 0)), g_gr)), gh_r =>
     letImage(pointAbsDiff(stencilCollect(Seq((1, 0), (0, 0)), g_gr)), ghd_r =>
 
-    letImage(select_interpolation(gh_r, ghd_r, gv_r, gvd_r), g_r =>
+    memImage(mapSeq(mapSeq(fun(x => x))),
+      select_interpolation(gh_r, ghd_r, gv_r, gvd_r), g_r =>
 
     letImage(interpolate(stencilCollect(Seq((0, 1), (0, 0)), g_gr)), gv_b =>
     letImage(pointAbsDiff(stencilCollect(Seq((0, 1), (0, 0)), g_gr)), gvd_b =>
     letImage(interpolate(stencilCollect(Seq((-1, 0), (0, 0)), g_gb)), gh_b =>
     letImage(pointAbsDiff(stencilCollect(Seq((-1, 0), (0, 0)), g_gb)), ghd_b =>
 
-    letImage(select_interpolation(gh_b, ghd_b, gv_b, gvd_b), g_b =>
+    memImage(mapSeq(mapSeq(fun(x => x))),
+      select_interpolation(gh_b, ghd_b, gv_b, gvd_b), g_b =>
 
     // next interpolate red at gr by first interpolating,
     // then correcting using the error green would have had if we had
