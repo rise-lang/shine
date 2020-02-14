@@ -9,7 +9,7 @@ import elevate.rise.rules.lowering.lowerToC
 import elevate.rise.rules.movement._
 import elevate.rise.strategies.tiling._
 import elevate.rise.strategies.normalForm._
-import elevate.test_util
+import shine.test_util
 import rise.core.dotPrinter._
 import rise.core.TypedDSL._
 import rise.core.types.{ArrayType, f32, infer}
