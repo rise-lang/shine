@@ -3,8 +3,8 @@ package shine.DPIA
 import rise.{core => r}
 import rise.core.{types => rt}
 import rise.core.{primitives => rp}
+import rise.OpenMP.{primitives => rompp}
 import rise.OpenCL.{primitives => roclp}
-import shine.DPIA.Phrases.{DepApply, Phrase}
 import shine.DPIA.Types._
 import shine.DPIA.Types.TypeCheck.SubTypeCheckHelper
 import shine.DPIA.fromRise._
@@ -23,16 +23,16 @@ private class InferAccessAnnotation() {
     val (ePt, substAcc) =
       inferPhraseTypes(e, Map.empty, isKernelParamFun = true)
     val fullySubstitutedPtMap = substAcc(ptAnnotationMap.toMap)
-    if (!specWritingOut(ePt))
-      error(s"The program $e does not specify how to write the result" +
-        "into output")
+    if (!funOutIsWrite(ePt))
+      error("The program does not specify how to write the result " +
+        s"of the program into output:\n $e")
     fullySubstitutedPtMap
   }
 
   @tailrec
-  private def specWritingOut(ePt: PhraseType): Boolean = ePt match {
-    case DepFunType(_, t) => specWritingOut(t)
-    case FunType(_, t) => specWritingOut(t)
+  private def funOutIsWrite(ePt: PhraseType): Boolean = ePt match {
+    case DepFunType(_, t) => funOutIsWrite(t)
+    case FunType(_, t) => funOutIsWrite(t)
     case expT: ExpType => expT `<=` ExpType(expT.dataType, write)
     case _ => throw error("This should never happen.")
   }
@@ -218,8 +218,8 @@ private class InferAccessAnnotation() {
 
   private def inferPrimitive(p: r.Primitive): (PhraseType, Subst) = {
     val primitiveType = p match {
-      case roclp.MapGlobal(_) | roclp.MapWorkGroup(_)
-           | roclp.MapLocal(_) | rp.MapSeq() | rp.MapSeqUnroll() =>
+      case roclp.MapGlobal(_) | roclp.MapWorkGroup(_) | roclp.MapLocal(_)
+           | rompp.MapPar() | rp.MapSeq() | rp.MapSeqUnroll() =>
         val rMapT = p.t.asInstanceOf[
           rt.FunType[rt.FunType[rt.DataType, rt.DataType],
             rt.FunType[rt.DataType, rt.DataType]]]
@@ -275,8 +275,10 @@ private class InferAccessAnnotation() {
         FunType(ExpType(dataType(rT.inT), ai),
           ExpType(dataType(rT.outT), ai))
 
-      case rp.VectorFromScalar() | rp.Cast() | rp.Neg() | rp.Not() =>
+      case rp.VectorFromScalar() | rp.Cast() | rp.Neg() | rp.Not()
+           | rp.IndexAsNat() =>
         val rT = p.t.asInstanceOf[rt.FunType[rt.DataType, rt.DataType]]
+
         FunType(ExpType(dataType(rT.inT), read),
           ExpType(dataType(rT.outT), read))
 
@@ -284,15 +286,15 @@ private class InferAccessAnnotation() {
         val rT = p.t.asInstanceOf[
           rt.FunType[rt.FunType[rt.DataType, rt.DataType],
             rt.FunType[rt.DataType, rt.DataType]]]
-        val rBoundT = rT.inT.outT
-        val rOutT = rT.outT.outT
+        val inT = dataType(rT.inT.inT)
+        val outT = dataType(rT.inT.outT)
 
         val ai = accessTypeIdentifier()
         FunType(
-          FunType(ExpType(dataType(rBoundT), read),
-            ExpType(dataType(rOutT), ai)),
-          FunType(ExpType(dataType(rBoundT), read),
-            ExpType(dataType(rOutT), ai)))
+          FunType(ExpType(inT, read),
+            ExpType(outT, ai)),
+          FunType(ExpType(inT, read),
+            ExpType(outT, ai)))
 
       case rp.Split() | rp.AsVector() | rp.AsVectorAligned() | rp.Drop()
            | rp.Take() =>
@@ -317,7 +319,7 @@ private class InferAccessAnnotation() {
           FunType(ExpType(dataType(sndT), ai), ExpType(dataType(outT), ai)))
 
       case rp.Idx() | rp.Add() | rp.Sub() | rp.Mul() | rp.Div() | rp.Gt()
-           | rp.Lt() | rp.Equal() =>
+           | rp.Lt() | rp.Equal() | rp.Mod() | rp.Gather() =>
         val rT = p.t.asInstanceOf[
           rt.FunType[rt.DataType, rt.FunType[rt.DataType, rt.DataType]]]
 
@@ -325,7 +327,16 @@ private class InferAccessAnnotation() {
           FunType(ExpType(dataType(rT.outT.inT), read),
             ExpType(dataType(rT.outT.outT), read)))
 
-      case rp.ReduceSeq() | rp.ReduceSeqUnroll() =>
+      case rp.NatAsIndex() =>
+        val rT = p.t.asInstanceOf[
+          rt.DepFunType[rt.NatKind, rt.FunType[rt.DataType, rt.DataType]]]
+
+        DepFunType[NatKind, PhraseType](
+          natIdentifier(rT.x),
+          FunType(ExpType(dataType(rT.t.inT), read),
+            ExpType(dataType(rT.t.outT), read)))
+
+      case rp.ReduceSeq() | rp.ReduceSeqUnroll()=>
         val rT = p.t.asInstanceOf[
           rt.FunType[
             rt.FunType[rt.DataType, rt.FunType[rt.DataType, rt.DataType]],
@@ -340,16 +351,31 @@ private class InferAccessAnnotation() {
           FunType(ExpType(initDt, write),
             FunType(ExpType(arrDt, read), ExpType(initDt, read))))
 
+      case  rp.ScanSeq() =>
+        val rT = p.t.asInstanceOf[
+          rt.FunType[
+            rt.FunType[rt.DataType, rt.FunType[rt.DataType, rt.DataType]],
+            rt.FunType[rt.DataType, rt.FunType[rt.DataType, rt.DataType]]]]
+        val initDt = dataType(rT.outT.inT)
+        val arrDt = dataType(rT.outT.outT.inT)
+        val elemDt = arrDt.asInstanceOf[ArrayType].elemType
+
+        FunType(
+          FunType(ExpType(initDt, read),
+            FunType(ExpType(elemDt, read), ExpType(initDt, write))),
+          FunType(ExpType(initDt, write),
+            FunType(ExpType(arrDt, read), ExpType(initDt, write))))
+
       case roclp.OclReduceSeq() | roclp.OclReduceSeqUnroll() =>
         val rT = p.t.asInstanceOf[
           rt.DepFunType[rt.AddressSpaceKind,
             rt.FunType[
               rt.FunType[rt.DataType, rt.FunType[rt.DataType, rt.DataType]],
               rt.FunType[rt.DataType, rt.FunType[rt.DataType, rt.DataType]]]]]
-
         val initDt = dataType(rT.t.outT.inT)
         val arrDt = dataType(rT.t.outT.outT.inT)
         val elemDt = arrDt.asInstanceOf[ArrayType].elemType
+
         DepFunType[AddressSpaceKind, PhraseType](
           addressSpaceIdentifier(rT.x),
           FunType(
@@ -358,7 +384,45 @@ private class InferAccessAnnotation() {
             FunType(ExpType(initDt, write),
               FunType(ExpType(arrDt, read), ExpType(initDt, read)))))
 
-      case rp.Slide() =>
+      case rp.SlideSeq(_) =>
+        val rT = p.t.asInstanceOf[
+          rt.DepFunType[rt.NatKind, rt.DepFunType[rt.NatKind,
+            rt.FunType[rt.FunType[rt.DataType, rt.DataType],
+              rt.FunType[rt.FunType[rt.DataType, rt.DataType],
+                rt.FunType[rt.DataType, rt.DataType]]]]]]
+        val dt1 = dataType(rT.t.t.inT.inT)
+        val fInT = dataType(rT.t.t.outT.inT.inT)
+        val fOutT = dataType(rT.t.t.outT.inT.outT)
+        val inputT = dataType(rT.t.t.outT.outT.inT)
+        val outT = dataType(rT.t.t.outT.outT.outT)
+
+        DepFunType[NatKind, PhraseType](natIdentifier(rT.x),
+          DepFunType[NatKind, PhraseType](natIdentifier(rT.t.x),
+            FunType(FunType(ExpType(dt1, read), ExpType(dt1, write)),
+              FunType(FunType(ExpType(fInT, read), ExpType(fOutT, write)),
+                FunType(ExpType(inputT, read), ExpType(outT, write))))))
+
+      case roclp.OclSlideSeq(_) =>
+        val rT = p.t.asInstanceOf[
+          rt.DepFunType[rt.AddressSpaceKind,
+            rt.DepFunType[rt.NatKind, rt.DepFunType[rt.NatKind,
+              rt.FunType[rt.FunType[rt.DataType, rt.DataType],
+                rt.FunType[rt.FunType[rt.DataType, rt.DataType],
+                  rt.FunType[rt.DataType, rt.DataType]]]]]]]
+        val dt1 = dataType(rT.t.t.t.inT.inT)
+        val fInT = dataType(rT.t.t.t.outT.inT.inT)
+        val fOutT = dataType(rT.t.t.t.outT.inT.outT)
+        val inputT = dataType(rT.t.t.t.outT.outT.inT)
+        val outT = dataType(rT.t.t.t.outT.outT.outT)
+
+        DepFunType[AddressSpaceKind, PhraseType](addressSpaceIdentifier(rT.x),
+        DepFunType[NatKind, PhraseType](natIdentifier(rT.t.x),
+          DepFunType[NatKind, PhraseType](natIdentifier(rT.t.t.x),
+            FunType(FunType(ExpType(dt1, read), ExpType(dt1, write)),
+              FunType(FunType(ExpType(fInT, read), ExpType(fOutT, write)),
+                FunType(ExpType(inputT, read), ExpType(outT, write)))))))
+
+      case rp.Slide() | rp.PadClamp() =>
         val rT = p.t.asInstanceOf[
           rt.DepFunType[rt.NatKind, rt.DepFunType[rt.NatKind,
             rt.FunType[rt.DataType, rt.DataType]]]]
@@ -367,6 +431,43 @@ private class InferAccessAnnotation() {
           DepFunType[NatKind, PhraseType](natIdentifier(rT.t.x),
             FunType(ExpType(dataType(rT.t.t.inT), read),
               ExpType(dataType(rT.t.t.outT), read))))
+
+      case rp.Iterate() =>
+        val rT = p.t.asInstanceOf[
+          rt.DepFunType[rt.NatKind,
+            rt.FunType[
+              rt.DepFunType[rt.NatKind, rt.FunType[rt.DataType, rt.DataType]],
+            rt.FunType[rt.DataType, rt.DataType]]]]
+        val fInT = rT.t.inT.t.inT
+        val fOutT = rT.t.inT.t.outT
+        val arrayT = rT.t.outT.inT
+        val outT = rT.t.outT.outT
+
+        DepFunType[NatKind, PhraseType](natIdentifier(rT.x),
+          FunType(DepFunType[NatKind, PhraseType](natIdentifier(rT.t.inT.x),
+            FunType(ExpType(dataType(fInT), read),
+              ExpType(dataType(fOutT), write))),
+              FunType(ExpType(dataType(arrayT), read),
+                ExpType(dataType(outT), write))))
+
+      case roclp.OclIterate() =>
+        val rT = p.t.asInstanceOf[
+          rt.DepFunType[rt.AddressSpaceKind, rt.DepFunType[rt.NatKind,
+            rt.FunType[
+              rt.DepFunType[rt.NatKind, rt.FunType[rt.DataType, rt.DataType]],
+              rt.FunType[rt.DataType, rt.DataType]]]]]
+        val fInT = rT.t.t.inT.t.inT
+        val fOutT = rT.t.t.inT.t.outT
+        val arrayT = rT.t.t.outT.inT
+        val outT = rT.t.t.outT.outT
+
+        DepFunType[AddressSpaceKind, PhraseType](addressSpaceIdentifier(rT.x),
+          DepFunType[NatKind, PhraseType](natIdentifier(rT.t.x),
+            FunType(DepFunType[NatKind, PhraseType](natIdentifier(rT.t.t.inT.x),
+              FunType(ExpType(dataType(fInT), read),
+                ExpType(dataType(fOutT), write))),
+              FunType(ExpType(dataType(arrayT), read),
+                ExpType(dataType(outT), write)))))
 
       case rp.Select() =>
         val rT = p.t.asInstanceOf[
@@ -377,6 +478,20 @@ private class InferAccessAnnotation() {
         FunType(ExpType(b, read), FunType(ExpType(dt, read),
           FunType(ExpType(dt, read), ExpType(dt, read))))
 
+      case rp.PadCst() =>
+        val rT = p.t.asInstanceOf[
+          rt.DepFunType[rt.NatKind, rt.DepFunType[rt.NatKind,
+            rt.FunType[rt.DataType, rt.FunType[rt.DataType, rt.DataType]]]]]
+        val dt = rT.t.t.inT
+        val arrayT = rT.t.t.outT.inT
+        val outT = rT.t.t.outT.outT
+
+        DepFunType[NatKind, PhraseType](natIdentifier(rT.x),
+          DepFunType[NatKind, PhraseType](natIdentifier(rT.t.x),
+            FunType(ExpType(dataType(dt), read),
+              FunType(ExpType(dataType(arrayT), read),
+                ExpType(dataType(outT), read)))))
+
       case rp.Generate() =>
         val rT = p.t.asInstanceOf[
           rt.FunType[rt.FunType[rt.DataType, rt.DataType], rt.DataType]]
@@ -386,6 +501,19 @@ private class InferAccessAnnotation() {
 
         FunType(FunType(ExpType(idxDt, read), ExpType(elemDt, read)),
           ExpType(arrDt, read))
+
+      case rp.Reorder() =>
+        val rT = p.t.asInstanceOf[
+          rt.FunType[rt.FunType[rt.DataType, rt.DataType],
+            rt.FunType[rt.FunType[rt.DataType, rt.DataType],
+              rt.FunType[rt.DataType, rt.DataType]]]]
+        val idxDt = dataType(rT.inT.inT)
+        val arrayDt = dataType(rT.outT.outT.inT)
+
+        val ai = accessTypeIdentifier()
+        FunType(FunType(ExpType(idxDt, read), ExpType(idxDt, read)),
+          FunType(FunType(ExpType(idxDt, read), ExpType(idxDt, read)),
+            FunType(ExpType(arrayDt, ai), ExpType(arrayDt, ai))))
 
       case f@r.ForeignFunction(decl) =>
         val (inTs, outT) = foreignFunIO(f.t)
@@ -421,7 +549,7 @@ private class InferAccessAnnotation() {
         case (li: AccessTypeIdentifier, _) => Subst() + (li, ra)
         case (_, ri: AccessTypeIdentifier) => Subst() + (ri, la)
         case _ => if (le `<=` re) Subst()
-                    else error(s"Cannot subunify $less and $larger.")
+                  else error(s"Cannot subunify $less and $larger.")
       }
     case (FunType(lin, lout), FunType(rin, rout)) =>
       val argSubst = subUnifyPhraseType(rin, lin)

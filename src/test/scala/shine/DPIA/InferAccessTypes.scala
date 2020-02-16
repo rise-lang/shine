@@ -10,7 +10,9 @@ import shine.DPIA.Types._
 import shine.DPIA.{fromRise => fr}
 
 class InferAccessTypes extends test_util.Tests {
-  test("(read -> read) is inferred for id over float.") {
+  //TODO decide whether an expression should be typing if it doesn't output
+  // write
+  ignore("(read -> read) is inferred for id over float.") {
     val id = rt.infer(fun(rt.f32)(x => x))
     val infPt = inferAccess(id)(id)
     val expecPt = FunType(ExpType(f32, read), ExpType(f32, read))
@@ -18,7 +20,7 @@ class InferAccessTypes extends test_util.Tests {
     assertResult(expecPt)(infPt)
   }
 
-  test("(read -> read) is inferred for id over 8.f32.") {
+  ignore("(read -> read) is inferred for id over 8.f32.") {
     //TODO decide whether an expression should be typing if it doesn't output
     // write
     val idArr8f32CopyUnspec = rt.infer(fun(8`.`rt.f32)(x => x))
@@ -36,7 +38,7 @@ class InferAccessTypes extends test_util.Tests {
     assertResult(expecPt)(infPt)
   }
 
-  test("(read -> read) is inferred for id over array with mapSeq") {
+  ignore("(read -> read) is inferred for id over array with mapSeq") {
     //TODO answer question: can we generate code for this case?
     val idArr = rt.infer(fun(8`.`rt.f32)(x => x |> map(fun(x => x))))
     val infPt = inferAccess(idArr)(idArr)
@@ -67,7 +69,7 @@ class InferAccessTypes extends test_util.Tests {
     assertResult(expecPt)(infPt)
   }
 
-  test("(read -> read) with map(transpose) on input") {
+  ignore("(read -> read) with map(transpose) on input") {
     val mapTransp = rt.infer(fun(8`.`8`.`4`.`rt.f32)(x => x |> map(transpose)))
     val infPt = inferAccess(mapTransp)(mapTransp)
     val expecPt = FunType(
@@ -77,8 +79,6 @@ class InferAccessTypes extends test_util.Tests {
     assertResult(expecPt)(infPt)
   }
 
-  //TODO decide whether an expression should be typing if it doesn't output
-  // write
   test("(read -> write) with map(transpose) after mapSeq(mapSeq)") {
     val mapTranspAfterMapSeqs = rt.infer(fun(8`.`8`.`4`.`rt.f32)(
       x => x |> mapSeq(mapSeq(mapSeq(fun(x => x)))) |> map(transpose)))
@@ -90,7 +90,7 @@ class InferAccessTypes extends test_util.Tests {
     assertResult(expecPt)(infPt)
   }
 
-  test("(read -> read) with toMem after mapSeq") {
+  ignore("(read -> read) with toMem after mapSeq") {
     val copyArrIntoIntermediary = rt.infer(fun(8`.`rt.f32)(
       x => x |> mapSeq(fun(x => x)) |> toMem))
     val infPt = inferAccess(copyArrIntoIntermediary)(copyArrIntoIntermediary)
@@ -100,7 +100,7 @@ class InferAccessTypes extends test_util.Tests {
     assertResult(expecPt)(infPt)
   }
 
-  test("(read -> read) with split on input") {
+  ignore("(read -> read) with split on input") {
     val splitArray = rt.infer(nFun(n => fun(8`.`rt.f32)(arr =>
       arr |> split(n))))
     val infPt = inferAccess(splitArray)(splitArray).asInstanceOf[

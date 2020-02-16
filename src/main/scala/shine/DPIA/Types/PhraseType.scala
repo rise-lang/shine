@@ -1,6 +1,6 @@
 package shine.DPIA.Types
 
-import shine.DPIA.FunctionalPrimitives.AsIndex
+import shine.DPIA.FunctionalPrimitives.NatAsIndex
 import shine.DPIA.Phrases._
 import shine.DPIA._
 
@@ -108,7 +108,7 @@ object PhraseType {
         p match {
           case Identifier(name, _) =>
             if (`for`.name == name) {
-              Stop(AsIndex(ae.max, Natural(ae)).asInstanceOf[Phrase[T2]])
+              Stop(NatAsIndex(ae.max, Natural(ae)).asInstanceOf[Phrase[T2]])
             } else {
               Continue(p, this)
             }

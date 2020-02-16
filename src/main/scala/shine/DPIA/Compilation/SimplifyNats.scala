@@ -1,6 +1,6 @@
 package shine.DPIA.Compilation
 
-import shine.DPIA.FunctionalPrimitives.AsIndex
+import shine.DPIA.FunctionalPrimitives.NatAsIndex
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA._
@@ -24,7 +24,7 @@ object SimplifyNats {
 
   def simplifyIndexAndNatExp(p: Phrase[ExpType]): Phrase[ExpType] = {
     p.t.dataType match {
-      case IndexType(n) => AsIndex(n, DSL.mapTransientNat(p, x => x))
+      case IndexType(n) => NatAsIndex(n, DSL.mapTransientNat(p, x => x))
       case NatType => DSL.mapTransientNat(p, x => x)
       case _ => p
     }

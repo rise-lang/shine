@@ -163,7 +163,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
           exp(e, env, CIntExpr((i * n) + j) :: ps, cont)
         case (i : CIntExpr) :: Nil =>
           OpenCLCodeGen.codeGenVectorLiteral(n.eval, dt, j =>
-            Idx(n * m, dt, AsIndex(n * m, Natural((i * n) + j)), e),
+            Idx(n * m, dt, NatAsIndex(n * m, Natural((i * n) + j)), e),
             env, cont
           )
         case _ => error(s"unexpected $path")

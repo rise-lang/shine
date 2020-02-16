@@ -2,7 +2,7 @@ package shine.DPIA.Phrases
 
 import arithexpr.arithmetic.{NamedVar, RangeAdd}
 import shine.DPIA.Compilation.TranslationContext
-import shine.DPIA.FunctionalPrimitives.AsIndex
+import shine.DPIA.FunctionalPrimitives.NatAsIndex
 import shine.DPIA.Lifting.{liftDependentFunction, liftFunction, liftPair}
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics.{IndexData, NatData}
@@ -238,7 +238,7 @@ object Phrase {
       p match {
         case Natural(n) => TransientNat(n)
         //TODO can we use our knowledge of n somehow?
-        case AsIndex(n, e) => transientNatFromExpr(e)
+        case NatAsIndex(n, e) => transientNatFromExpr(e)
         case IndexAsNat(_, e) => transientNatFromExpr(e)
         case UnaryOp(op, e) =>
           transientNatFromExpr(e).map(unOpToNat(op, _))

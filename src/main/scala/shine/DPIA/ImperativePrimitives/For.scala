@@ -1,6 +1,6 @@
 package shine.DPIA.ImperativePrimitives
 
-import shine.DPIA.FunctionalPrimitives.AsIndex
+import shine.DPIA.FunctionalPrimitives.NatAsIndex
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics
 import shine.DPIA.Semantics.OperationalSemantics._
@@ -19,7 +19,7 @@ final case class For(n: Nat,
     (n: Nat) ~>: (body :: expT(idx(n), read) ->: comm) ~>: comm
 
   override def eval(s: Store): Store = {
-    val nE = evalIndexExp(s, AsIndex(n, Natural(n)))
+    val nE = evalIndexExp(s, NatAsIndex(n, Natural(n)))
     val bodyE = OperationalSemantics.eval(s, body)
     (0 until nE.eval).foldLeft(s)((s1, i) =>
       OperationalSemantics.eval(s1, bodyE(Literal(i)))

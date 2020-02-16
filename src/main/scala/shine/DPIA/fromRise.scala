@@ -1,8 +1,10 @@
 package shine.DPIA
 
+import elevate.core.strategies.basic.normalize
+import elevate.rise.rules._
+import elevate.rise.rules.traversal._
 import rise.core.{semantics => rs, types => rt}
 import rise.{core => r}
-import rise.core.substitute.dataTypeInExpr
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.{OperationalSemantics => OpSem}
 import shine.DPIA.Types._
@@ -13,7 +15,8 @@ object fromRise {
     if (!r.IsClosedForm(expr)) {
       throw new Exception(s"expression is not in closed form: $expr")
     }
-    expression(expr, inferAccess(expr))
+    val bnfExpr = normalize.apply(betaReduction)(expr).get
+    expression(bnfExpr, inferAccess(bnfExpr))
   }
 
   def expression(
@@ -52,64 +55,13 @@ object fromRise {
       x match {
         case n: Nat => depApp[NatKind](f, n)
         case dt: rt.DataType =>
-          r.lifting.liftDepFunExpr[rt.DataKind](f) match {
-            case r.lifting.Reducing(r) =>
-              //Because of the following reduction, we need to substitute
-              // the data type identifier in the types of the subexpressions.
-              //Otherwise we would look for expressions with types that
-              // contain type variables which have been removed by
-              // the reduction.
-              val updPtMap = ptMap.map({ case (e, pt) =>
-                val depFunT = f.t.asInstanceOf[
-                  rt.DepFunType[rt.DataKind, rt.Type]]
-
-                case class TypeVisitor() extends rise.core.traversal.Visitor {
-                  import rise.core.types._
-                  import rise.core.traversal._
-
-                  override def visitType[T <: Type](t: T): Result[T] =
-                    t match {
-                      case DepFunType(x, _) if depFunT.x.equals(x) =>
-                        Stop(t)
-                      case _ =>
-                        if (depFunT.x == t)
-                          Stop(dt.asInstanceOf[T])
-                        else Continue(t, this)
-                    }
-                }
-
-                case class Visitor() extends rise.core.traversal.Visitor {
-                  import rise.core.{Expr, DepLambda, Identifier}
-                  import rise.core.types._
-                  import rise.core.traversal._
-
-                  override def visitType[T <: Type](t: T): Result[T] =
-                    Continue(
-                      types.DepthFirstLocalResult(t, TypeVisitor()), this)
-
-                  override def visitExpr(e: Expr): Result[Expr] =
-                    e match {
-                      case DepLambda(x, e) if x == depFunT.x => Stop(e)
-                      case i@Identifier(name) =>
-                        Continue(e, this)
-                      case _ => Continue(e, this)
-                    }
-                }
-                val updEt =
-                  rise.core.traversal.DepthFirstLocalResult(e, Visitor())
-
-                (updEt, pt)
-              })
-
-              expression(r(dt), updPtMap)
-            case _ => depApp[DataKind](f, dataType(dt))
-          }
+          depApp[DataKind](f, dataType(dt))
         case a: rt.AddressSpace => depApp[AddressSpaceKind](f, addressSpace(a))
       }
 
     case r.Literal(d) => d match {
       case rs.NatData(n) => Natural(n)
-      case rs.IndexData(i, n) => FunctionalPrimitives.AsIndex(n, Natural(i))
+      case rs.IndexData(i, n) => FunctionalPrimitives.NatAsIndex(n, Natural(i))
       case _ => Literal(data(d))
     }
 
@@ -164,7 +116,7 @@ object fromRise {
       =>
         DepLambda[NatKind](natIdentifier(n))(
           fun[ExpType](ExpType(NatType, read), e =>
-            AsIndex(n, e)))
+            NatAsIndex(n, e)))
 
       case (core.Map(), _)
       =>
@@ -740,6 +692,12 @@ object fromRise {
       =>
         fun[ExpType](expT(idx(n), read), e =>
           IndexAsNat(n, e))
+
+      case (core.ToMem(),
+      rt.FunType(la: rt.DataType, _))
+      =>
+        val a = dataType(la)
+        fun[ExpType](expT(a, write), e => ToMem(a, e))
 
       case (ocl.OclToMem(),
       rt.DepFunType(las: rt.AddressSpaceIdentifier,

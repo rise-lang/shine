@@ -23,7 +23,7 @@ abstract  class AbstractScan(n: Nat,
     (n: Nat) ~>: (dt1: DataType) ~>: (dt2: DataType) ~>:
       (f :: expT(dt1, read) ->: expT(dt2, read) ->: expT(dt2, write)) ~>:
       (init :: expT(dt2, write)) ~>:
-      (array :: expT(n`.`dt1, read)) ~>: expT(n`.`dt2, read)
+      (array :: expT(n`.`dt1, read)) ~>: expT(n`.`dt2, write)
 
   def makeScan: (Nat, DataType, DataType,
     Phrase[ExpType ->: ExpType ->: ExpType], Phrase[ExpType], Phrase[ExpType]
@@ -56,15 +56,12 @@ abstract  class AbstractScan(n: Nat,
     import TranslationToImperative._
 
     con(array)(λ(expT(n`.`dt1, read))(x =>
-      con(init)(λ(expT(dt2, write))(y =>
-        makeScanI(n, dt1, dt2,
-          λ(expT(dt1, read))(x =>
-            λ(expT(dt2, write))(y => λ(accT(dt2))(o =>
-            acc(f(x)(y))(o)))),
-          y, x, A)
-      )
-      ))
-    )
+      makeScanI(n, dt1, dt2,
+        λ(expT(dt1, read))(x =>
+          λ(expT(dt2, read))(y =>
+            λ(accT(dt2))(o =>
+              acc(f(x)(y))(o)))),
+        init, x, A)))
   }
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])(
@@ -72,8 +69,10 @@ abstract  class AbstractScan(n: Nat,
   ): Phrase[CommType] = {
     import TranslationToImperative._
 
-    `new`(n`.`dt2, λ(varT(n`.`dt2))(tmp =>
-      acc(this)(tmp.wr) `;` C(tmp.rd) ))
+    //TODO think about this more, this allocates memory implicitly
+    ???
+//    `new`(n`.`dt2, λ(varT(n`.`dt2))(tmp =>
+//      acc(this)(tmp.wr) `;` C(tmp.rd) ))
   }
 
   override def xmlPrinter: Elem =

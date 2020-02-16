@@ -13,7 +13,7 @@ import scala.language.reflectiveCalls
 import scala.xml.Elem
 
 //FIXME should this be parametric over the access type?
-final case class AsIndex(n: Nat, e: Phrase[ExpType])
+final case class NatAsIndex(n: Nat, e: Phrase[ExpType])
   extends ExpPrimitive {
 
   override val t: ExpType =
@@ -28,7 +28,7 @@ final case class AsIndex(n: Nat, e: Phrase[ExpType])
     </unsafeAsIndex>
 
   def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] =
-    AsIndex(fun.nat(n), VisitAndRebuild(e, fun))
+    NatAsIndex(fun.nat(n), VisitAndRebuild(e, fun))
 
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Data = {
     OperationalSemantics.eval(s, e) match {
@@ -37,19 +37,20 @@ final case class AsIndex(n: Nat, e: Phrase[ExpType])
     }
   }
 
-  def acceptorTranslation(A: Phrase[AccType])
-                         (implicit context: TranslationContext): Phrase[CommType] = {
+  def acceptorTranslation(A: Phrase[AccType])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] = {
     import TranslationToImperative._
 
-    con(e)(fun(expT(NatType, read))(x =>
-      A :=|IndexType(n)| AsIndex(n, x)))
+    con(e)(fun(expT(NatType, read))(x => acc(x)(A)))
   }
 
-  def continuationTranslation(C: Phrase[ExpType ->: CommType])
-                             (implicit context: TranslationContext): Phrase[CommType] = {
+  def continuationTranslation(C: Phrase[ExpType ->: CommType])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(e)(λ(e.t)(x =>
-      C(AsIndex(n, x))))
+      C(NatAsIndex(n, x))))
   }
 }

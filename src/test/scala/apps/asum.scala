@@ -90,7 +90,7 @@ class asum extends test_util.TestsWithExecutor {
           split(8192) |>
           mapPar(
             split(128) >>
-              mapSeq(reduceSeq(add)(l(0.0f))) >>
+              toMemFun(mapSeq(reduceSeq(add)(l(0.0f)))) >>
               iterate(6)(
                 nFun(_ =>
                   split(2) >>

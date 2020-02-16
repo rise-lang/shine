@@ -3,7 +3,7 @@ package shine.C
 import arithexpr.arithmetic.{Cst, Var}
 import shine.DPIA.Compilation._
 import shine.DPIA.DSL._
-import shine.DPIA.FunctionalPrimitives.AsIndex
+import shine.DPIA.FunctionalPrimitives.NatAsIndex
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA.{LetNatIdentifier, Lifting}
@@ -86,7 +86,7 @@ object ProgramGenerator {
     val output = (a.t.dataType, p.t.dataType) match {
       case (lhsT, rhsT) if lhsT == rhsT => a
       case (DPIA.Types.ArrayType(Cst(1), lhsT), rhsT) if lhsT == rhsT =>
-        a `@` AsIndex(1, Natural(0))
+        a `@` NatAsIndex(1, Natural(0))
       case (lhsT, rhsT) => throw new Exception(s" $lhsT and $rhsT should match")
     }
 

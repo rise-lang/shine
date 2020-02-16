@@ -221,12 +221,12 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case ReorderAcc(n, _, idxF, a) => path match {
         case (i : CIntExpr) :: ps =>
-          acc(a, env, CIntExpr(OperationalSemantics.evalIndexExp(idxF(AsIndex(n, Natural(i))))) :: ps, cont)
+          acc(a, env, CIntExpr(OperationalSemantics.evalIndexExp(idxF(NatAsIndex(n, Natural(i))))) :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
 
       case MapAcc(n, dt, _, f, a) => path match {
-        case (i : CIntExpr) :: ps => acc( f( IdxAcc(n, dt, AsIndex(n, Natural(i)), a) ), env, ps, cont)
+        case (i : CIntExpr) :: ps => acc( f( IdxAcc(n, dt, NatAsIndex(n, Natural(i)), a) ), env, ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
       case MapFstAcc(_, dt2, dt3, f, a) => path match {
@@ -317,7 +317,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case IndexAsNat(_, e) => exp(e, env, path, cont)
 
-      case AsIndex(_, e) => exp(e, env, path, cont)
+      case NatAsIndex(_, e) => exp(e, env, path, cont)
 
       case Split(n, _, _, _, e) => path match {
         case (i : CIntExpr) :: (j : CIntExpr) :: ps => exp(e, env, CIntExpr(n * i + j) :: ps, cont)
@@ -340,7 +340,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           case SndMember => exp(e2, env, i :: ps, cont)
         }
         case (i: CIntExpr) :: Nil =>
-          val j = AsIndex(n, Natural(i))
+          val j = NatAsIndex(n, Natural(i))
           exp(Pair(dt1, dt2, read, Idx(n, dt1, j, e1), Idx(n, dt2, j, e2)), env, Nil, cont)
         case _ => error(s"unexpected $path")
       }
@@ -386,13 +386,13 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case Reorder(n, _, _, idxF, _, a) => path match {
         case (i : CIntExpr) :: ps =>
-          exp(a, env, CIntExpr(OperationalSemantics.evalIndexExp(idxF(AsIndex(n, Natural(i))))) :: ps, cont)
+          exp(a, env, CIntExpr(OperationalSemantics.evalIndexExp(idxF(NatAsIndex(n, Natural(i))))) :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
 
       case Gather(n, m, dt, y, e) => path match {
         case (i: CIntExpr) :: ps =>
-          val yi = Idx(m, IndexType(n), AsIndex(m, Natural(i)), y)
+          val yi = Idx(m, IndexType(n), NatAsIndex(m, Natural(i)), y)
           exp(Idx(n, dt, yi, e), env, ps, cont)
         case _ => error(s"unexpected $path")
       }
@@ -429,7 +429,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       }
 
       case Map(n, dt, _, _, f, e) => path match {
-        case (i : CIntExpr) :: ps => exp( f( Idx(n, dt, AsIndex(n, Natural(i)), e) ), env, ps, cont)
+        case (i : CIntExpr) :: ps => exp( f( Idx(n, dt, NatAsIndex(n, Natural(i)), e) ), env, ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
 
@@ -440,7 +440,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
             Identifier[ExpType ->: CommType](s"continue_$freshName", ExpType(dt2, read) ->: comm)
 
           cmd(f(
-            Idx(n, dt1, AsIndex(n, Natural(i)), e)
+            Idx(n, dt1, NatAsIndex(n, Natural(i)), e)
           )(
             continue_cmd
           ), env updatedContEnv (continue_cmd -> (e => env => exp(e, env, ps, cont))))
@@ -452,7 +452,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
           val continue_cmd =
             Identifier[ExpType ->: CommType](s"continue_$freshName", ExpType(dt, read) ->: comm)
 
-          cmd(f(AsIndex(n, Natural(i)))(continue_cmd),
+          cmd(f(NatAsIndex(n, Natural(i)))(continue_cmd),
             env updatedContEnv (continue_cmd -> (e => env => exp(e, env, ps, cont))))
         case _ => error(s"Expected path to be not empty")
       }

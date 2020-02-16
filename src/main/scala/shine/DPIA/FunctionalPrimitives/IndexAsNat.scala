@@ -12,6 +12,7 @@ import shine.DPIA._
 import scala.language.reflectiveCalls
 import scala.xml.Elem
 
+//TODO parametric over the access type?
 final case class IndexAsNat(n: Nat, e: Phrase[ExpType])
   extends ExpPrimitive {
 
@@ -36,16 +37,17 @@ final case class IndexAsNat(n: Nat, e: Phrase[ExpType])
     }
   }
 
-  def acceptorTranslation(A: Phrase[AccType])
-                         (implicit context: TranslationContext): Phrase[CommType] = {
+  def acceptorTranslation(A: Phrase[AccType])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] = {
     import TranslationToImperative._
 
-    con(e)(λ(expT(idx(n), read))(x =>
-      A :=|NatType| IndexAsNat(n, x)))
+    con(e)(λ(expT(idx(n), read))(x => acc(x)(A)))
   }
 
-  def continuationTranslation(C: Phrase[ExpType ->: CommType])
-                             (implicit context: TranslationContext): Phrase[CommType] = {
+  def continuationTranslation(C: Phrase[ExpType ->: CommType])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(e)(λ(expT(idx(n), read))(x =>
