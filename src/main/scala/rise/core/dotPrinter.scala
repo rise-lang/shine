@@ -49,7 +49,7 @@ case object dotPrinter {
           this.copy(decorations =
             x => s"<font color='gray'>${decorations(x)}</font>"
           )
-        // keep for now: used as style in the paper
+        // keep for now: used as style in the arXive paper
         //def green: Label =
         //  this.copy(decorations =
         //    x => s"""<font color="#3C8031">${decorations(x)}</font>"""
