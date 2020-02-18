@@ -107,45 +107,45 @@ case object dotPrinter {
         case App(f, e) if !applyNodes =>
           val eID = getID(e)
           s"""${recurse(f, parent, None)}
-             |${recurse(e, eID, None)}
-             |$parent -> $eID ${edgeLabel("arg")};""".stripMargin
+            |${recurse(e, eID, None)}
+            |$parent -> $eID ${edgeLabel("arg")};""".stripMargin
 
         case DepLambda(x, e) if !inlineLambdaIdentifier =>
           val id = getID(x)
           val expr = getID(e)
           s"""$parent ${attr(fillWhite + Label("Λ").bold.green.toString)}
-             |$parent -> $id ${edgeLabel("id")};
-             |$parent -> $expr ${edgeLabel("body")};
-             |$id ${attr(fillWhite + Label(x.name).orange.toString)}
-             |${recurse(e, expr, None)}""".stripMargin
+            |$parent -> $id ${edgeLabel("id")};
+            |$parent -> $expr ${edgeLabel("body")};
+            |$id ${attr(fillWhite + Label(x.name).orange.toString)}
+            |${recurse(e, expr, None)}""".stripMargin
 
         case DepLambda(x, e) if inlineLambdaIdentifier =>
           val expr = getID(e)
           s"""$parent ${attr(fillWhite + Label(s"Λ.${x.name}").toString)}
-             |$parent -> $expr ${edgeLabel("body")};
-             |${recurse(e, expr, None)}""".stripMargin
+            |$parent -> $expr ${edgeLabel("body")};
+            |${recurse(e, expr, None)}""".stripMargin
 
         case DepApp(f, e) if applyNodes =>
           val fun = getID(f)
           val arg = getID(e)
           s"""$parent ${attr(fillWhite + Label("depApply").toString)}
-             |$parent -> $fun ${edgeLabel("fun")};
-             |$parent -> $arg ${edgeLabel("arg")};
-             |$arg ${attr(fillWhite + Label(e.toString).toString)}
-             |${recurse(f, fun, None)}""".stripMargin
+            |$parent -> $fun ${edgeLabel("fun")};
+            |$parent -> $arg ${edgeLabel("arg")};
+            |$arg ${attr(fillWhite + Label(e.toString).toString)}
+            |${recurse(f, fun, None)}""".stripMargin
 
         case DepApp(f, e) if !applyNodes =>
           val eID = getID(e)
           s"""${recurse(f, parent, None)}
-             |$eID ${attr(fillWhite + Label(e.toString).toString)}
-             |$parent -> $eID ${edgeLabel("dep arg")};""".stripMargin
+            |$eID ${attr(fillWhite + Label(e.toString).toString)}
+            |$parent -> $eID ${edgeLabel("dep arg")};""".stripMargin
 
         case Literal(data) =>
-          s"$parent ${attr(fillWhite + Label(data.toString).orange.italic.toString)}"
+          s"$parent ${attr(fillWhite + Label(data.toString).orange.italic)}"
         case i: Identifier =>
-          s"$parent ${attr(fillWhite + Label(i.name).orange.italic.toString)}"
+          s"$parent ${attr(fillWhite + Label(i.name).orange.italic)}"
         case p: Primitive =>
-          s"$parent ${attr(fillGray + Label(p.name).bold.green.toString)}"
+          s"$parent ${attr(fillGray + Label(p.name).bold.green)}"
       }
     }
 
