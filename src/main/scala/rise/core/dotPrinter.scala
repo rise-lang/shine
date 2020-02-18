@@ -74,7 +74,8 @@ case object dotPrinter {
         attr(fillBlack + Label(x).gray.edge.toString)
 
       def recurse(e: Expr, parent: String, ty: Option[String]): String =
-        generateNodesAndEdges(e, parent, printTypes, inlineLambdaIdentifier)
+        generateNodesAndEdges(e, parent,
+          printTypes, inlineLambdaIdentifier, applyNodes)
 
       def binaryNode(
           nodeLabel: String,
@@ -149,7 +150,8 @@ case object dotPrinter {
     }
 
     val content =
-      generateNodesAndEdges(expr, getID(expr), printTypes, inlineLambdaIdentifier)
+      generateNodesAndEdges(expr, getID(expr),
+        printTypes, inlineLambdaIdentifier, applyNodes)
 
     s"""
        |digraph graphname
