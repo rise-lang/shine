@@ -7,9 +7,10 @@ case object dotPrinter {
   def apply(expr: Expr): String = generateDotString(expr)
 
   def generateDotString(
-      expr: Expr,
-      printTypes: Boolean = false,
-      inlineLambdaIdentifier: Boolean = false
+    expr: Expr,
+    printTypes: Boolean = false,
+    inlineLambdaIdentifier: Boolean = false,
+    applyNodes: Boolean = false
   ): String = {
 
     def getID(x: Any): String = x match {
@@ -18,10 +19,11 @@ case object dotPrinter {
     }
 
     def generateNodesAndEdges(
-        expr: Expr,
-        parent: String,
-        printTypes: Boolean,
-        inlineLambdaIdentifier: Boolean
+      expr: Expr,
+      parent: String,
+      printTypes: Boolean,
+      inlineLambdaIdentifier: Boolean,
+      applyNodes: Boolean
     ): String = {
 
       def attr(str: String): String = s"[$str]"
@@ -94,11 +96,18 @@ case object dotPrinter {
 
         case Lambda(i, e) if inlineLambdaIdentifier =>
           val expr = getID(e)
-          s"""$parent ${attr(fillWhite + Label(s"λ.$i").toString)}
+          s"""$parent ${attr(fillWhite + Label(s"λ.${i.name}").toString)}
              |$parent -> $expr ${edgeLabel("body")};
              |${recurse(e, expr, None)}""".stripMargin
 
-        case App(f, e) => binaryNode("apply", (f, "fun"), (e, "arg"))
+        case App(f, e) if applyNodes =>
+          binaryNode("apply", (f, "fun"), (e, "arg"))
+
+        case App(f, e) if !applyNodes =>
+          val eID = getID(e)
+          s"""${recurse(f, parent, None)}
+             |${recurse(e, eID, None)}
+             |$parent -> $eID ${edgeLabel("arg")};""".stripMargin
 
         case DepLambda(x, e) if !inlineLambdaIdentifier =>
           val id = getID(x)
@@ -106,16 +115,16 @@ case object dotPrinter {
           s"""$parent ${attr(fillWhite + Label("Λ").bold.green.toString)}
              |$parent -> $id ${edgeLabel("id")};
              |$parent -> $expr ${edgeLabel("body")};
-             |$id ${attr(fillWhite + Label(x.toString).orange.toString)}
+             |$id ${attr(fillWhite + Label(x.name).orange.toString)}
              |${recurse(e, expr, None)}""".stripMargin
 
         case DepLambda(x, e) if inlineLambdaIdentifier =>
           val expr = getID(e)
-          s"""$parent ${attr(fillWhite + Label(s"Λ.$x").toString)}
+          s"""$parent ${attr(fillWhite + Label(s"Λ.${x.name}").toString)}
              |$parent -> $expr ${edgeLabel("body")};
              |${recurse(e, expr, None)}""".stripMargin
 
-        case DepApp(f, e) =>
+        case DepApp(f, e) if applyNodes =>
           val fun = getID(f)
           val arg = getID(e)
           s"""$parent ${attr(fillWhite + Label("depApply").toString)}
@@ -124,12 +133,18 @@ case object dotPrinter {
              |$arg ${attr(fillWhite + Label(e.toString).toString)}
              |${recurse(f, fun, None)}""".stripMargin
 
-        case l: Literal =>
-          s"$parent ${attr(fillWhite + Label(l.toString).orange.italic.toString)}"
+        case DepApp(f, e) if !applyNodes =>
+          val eID = getID(e)
+          s"""${recurse(f, parent, None)}
+             |$eID ${attr(fillWhite + Label(e.toString).toString)}
+             |$parent -> $eID ${edgeLabel("dep arg")};""".stripMargin
+
+        case Literal(data) =>
+          s"$parent ${attr(fillWhite + Label(data.toString).orange.italic.toString)}"
         case i: Identifier =>
-          s"$parent ${attr(fillWhite + Label(i.toString).orange.italic.toString)}"
+          s"$parent ${attr(fillWhite + Label(i.name).orange.italic.toString)}"
         case p: Primitive =>
-          s"$parent ${attr(fillGray + Label(p.toString).bold.green.toString)}"
+          s"$parent ${attr(fillGray + Label(p.name).bold.green.toString)}"
       }
     }
 
@@ -165,6 +180,6 @@ case object dotPrinter {
     w.write(dot(e))
     w.flush()
     w.close()
-    s"dot -Tpdf $path/$name.dot -o $path/$name.pdf".!
+    s"dot -Tsvg $path/$name.dot -o $path/$name.svg".!
   }
 }
