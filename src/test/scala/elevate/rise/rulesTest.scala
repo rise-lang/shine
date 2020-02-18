@@ -2,6 +2,7 @@ package elevate.rise
 
 import elevate.core._
 import elevate.rise.rules._
+import elevate.rise.rules.traversal._
 import rise.core.TypedDSL._
 
 class rulesTest extends shine.test_util.Tests {
@@ -13,7 +14,7 @@ class rulesTest extends shine.test_util.Tests {
     val one = fun(x => x)(l(1))
     val two = fun(y => fun(x => x + y))(l(1))(l(2))
     rewriteStep(one, betaReduction, l(1))
-    rewriteStep(two, betaReduction, fun(x => x + l(1))(l(2)))
-    rewriteStep(two, betaReduction `;` betaReduction, l(2) + l(1))
+    rewriteStep(two, function(betaReduction), fun(x => x + l(1))(l(2)))
+    rewriteStep(two, function(betaReduction) `;` betaReduction, l(2) + l(1))
   }
 }
