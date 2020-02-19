@@ -14,19 +14,21 @@ import scala.collection.mutable
 import scala.language.implicitConversions
 
 object inferAccess {
-  def apply(e: r.Expr): Map[r.Expr, PhraseType] = new InferAccessAnnotation()(e)
+  def apply(e: r.Expr): MutableIdentityHashMap[r.Expr, PhraseType] =
+    new InferAccessAnnotation()(e)
 }
 
-private class InferAccessAnnotation() {
+private class InferAccessAnnotation {
+  private val ptAnnotationMap = MutableIdentityHashMap[r.Expr, PhraseType]()
 
-  def apply(e: r.Expr): Predef.Map[r.Expr, PhraseType] = {
+  def apply(e: r.Expr): MutableIdentityHashMap[r.Expr, PhraseType] = {
     val (ePt, substAcc) =
       inferPhraseTypes(e, Map.empty, isKernelParamFun = true)
-    val fullySubstitutedPtMap = substAcc(ptAnnotationMap.toMap)
+    substAcc(ptAnnotationMap)
     if (!funOutIsWrite(ePt))
       error("The program does not specify how to write the result " +
         s"of the program into output:\n $e")
-    fullySubstitutedPtMap
+    ptAnnotationMap
   }
 
   @tailrec
@@ -58,8 +60,11 @@ private class InferAccessAnnotation() {
       }
     }
 
-    def apply[A <: r.Expr](ctx: Map[A, PhraseType]): Map[A, PhraseType] =
-      ctx.map({ case (ri, pt) => (ri, apply(pt)) })
+    def apply[A <: r.Expr](m: Map[A, PhraseType]): Map[A, PhraseType] =
+      m mapValues apply
+
+    def apply(m: mutable.Map[r.Expr, PhraseType]): Unit =
+      m.foreach({ case (i, pt) => m.update(i, apply(pt))})
 
     def apply(s: Subst): Subst = {
       val merged =
@@ -100,8 +105,6 @@ private class InferAccessAnnotation() {
     }
   }
 
-  private val ptAnnotationMap: mutable.Map[r.Expr, PhraseType] = mutable.Map()
-
   private def inferPhraseTypes(
     e: r.Expr,
     ctx: Context,
@@ -109,7 +112,9 @@ private class InferAccessAnnotation() {
   ): (PhraseType, Subst) = {
     e match {
       case i: r.Identifier =>
-        (ctx(i), Subst())
+        val pt = ctx(i)
+        ptAnnotationMap update(i, pt)
+        (pt, Subst())
       case lit: r.Literal =>
         val lpt = ExpType(dataType(e.t.asInstanceOf[rt.DataType]), read)
         ptAnnotationMap update(lit, lpt)
@@ -267,16 +272,16 @@ private class InferAccessAnnotation() {
           FunType(ExpType(dataType(rToMemT.t.inT), write),
             ExpType(dataType(rToMemT.t.outT), read)))
 
-      case rp.Join() | rp.Fst() | rp.Snd() | rp.Transpose() | rp.AsScalar()
-           | rp.Unzip() =>
+      case rp.Join() | rp.Transpose() | rp.AsScalar()
+           | rp.Unzip() | rp.Cast() =>
         val rT = p.t.asInstanceOf[rt.FunType[rt.DataType, rt.DataType]]
 
         val ai = accessTypeIdentifier()
         FunType(ExpType(dataType(rT.inT), ai),
           ExpType(dataType(rT.outT), ai))
 
-      case rp.VectorFromScalar() | rp.Cast() | rp.Neg() | rp.Not()
-           | rp.IndexAsNat() =>
+      case rp.VectorFromScalar() | rp.Neg() | rp.Not()
+           | rp.IndexAsNat() | rp.Fst() | rp.Snd() =>
         val rT = p.t.asInstanceOf[rt.FunType[rt.DataType, rt.DataType]]
 
         FunType(ExpType(dataType(rT.inT), read),
@@ -549,7 +554,7 @@ private class InferAccessAnnotation() {
         case (li: AccessTypeIdentifier, _) => Subst() + (li, ra)
         case (_, ri: AccessTypeIdentifier) => Subst() + (ri, la)
         case _ => if (le `<=` re) Subst()
-                  else error(s"Cannot subunify $less and $larger.")
+                  else error(s"Cannot subunify $less <: $larger.")
       }
     case (FunType(lin, lout), FunType(rin, rout)) =>
       val argSubst = subUnifyPhraseType(rin, lin)

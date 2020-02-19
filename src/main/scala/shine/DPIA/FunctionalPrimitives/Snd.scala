@@ -14,13 +14,12 @@ import scala.xml.Elem
 final case class Snd(
   dt1: DataType,
   dt2: DataType,
-  access: AccessType,
   pair: Phrase[ExpType]
 ) extends ExpPrimitive {
 
   override val t: ExpType =
-    (dt1: DataType) ~>: (dt2: DataType) ~>: (access: AccessType) ~>:
-      (pair :: expT(dt1 x dt2, access)) ~>: expT(dt2, access)
+    (dt1: DataType) ~>: (dt2: DataType) ~>:
+      (pair :: expT(dt1 x dt2, read)) ~>: expT(dt2, read)
 
   override def eval(s: Store): Data = {
     OperationalSemantics.eval(s, pair) match {
@@ -30,12 +29,11 @@ final case class Snd(
   }
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    Snd(f.data(dt1), f.data(dt2), f.access(access),
-      VisitAndRebuild(pair, f))
+    Snd(f.data(dt1), f.data(dt2), VisitAndRebuild(pair, f))
   }
 
   override def xmlPrinter: Elem =
-    <snd dt1={ToString(dt1)} dt2={ToString(dt2)} access={ToString(access)}>
+    <snd dt1={ToString(dt1)} dt2={ToString(dt2)}>
       {Phrases.xmlPrinter(pair)}
     </snd>
 
@@ -43,19 +41,12 @@ final case class Snd(
 
   override def acceptorTranslation(A: Phrase[AccType])(
     implicit context: TranslationContext
-  ): Phrase[CommType] = {
-    import TranslationToImperative._
-
-    //TODO Assignments for general types should not be allowed, making this definition invalid
-    assert(dt2 match { case _ : BasicType => true; case _ => false })
-    con(pair)(λ(expT(dt1 x dt2, access))(x =>
-      A :=|dt2| Snd(dt1, dt2, access, x)) )
-  }
+  ): Phrase[CommType] = ???
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])(
     implicit context: TranslationContext
   ): Phrase[CommType] = {
     import TranslationToImperative._
-    con(pair)(λ(expT(dt1 x dt2, read))(x => C(Snd(dt1, dt2, access, x))))
+    con(pair)(λ(expT(dt1 x dt2, read))(x => C(Snd(dt1, dt2, x))))
   }
 }

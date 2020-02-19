@@ -16,12 +16,13 @@ object fromRise {
       throw new Exception(s"expression is not in closed form: $expr")
     }
     val bnfExpr = normalize.apply(betaReduction)(expr).get
-    expression(bnfExpr, inferAccess(bnfExpr))
+    val rwMap = inferAccess(bnfExpr)
+    expression(bnfExpr, rwMap)
   }
 
   def expression(
     expr: r.Expr,
-    ptMap: Map[r.Expr, PhraseType]): Phrase[_ <: PhraseType] = expr match {
+    ptMap: MutableIdentityHashMap[r.Expr, PhraseType]): Phrase[_ <: PhraseType] = expr match {
 
     case r.Identifier(name) =>
       Identifier(name, ptMap(expr))
@@ -94,7 +95,7 @@ object fromRise {
   def primitive(
     p: r.Primitive,
     t: rt.Type,
-    ptMap: Predef.Map[r.Expr, PhraseType]
+    ptMap: MutableIdentityHashMap[r.Expr, PhraseType]
   ): Phrase[_ <: PhraseType] = {
     import rise.OpenCL.{primitives => ocl}
     import rise.OpenMP.{primitives => omp}
@@ -469,9 +470,7 @@ object fromRise {
       =>
         val a = dataType(la)
         val b = dataType(lb)
-        val w =
-          ptMap(p).asInstanceOf[FunType[ExpType, ExpType]].inT.accessType
-        fun[ExpType](expT(a x b, w), e => Fst(a, b, w, e))
+        fun[ExpType](expT(a x b, read), e => Fst(a, b, e))
 
       case (core.MapFst(),
       rt.FunType(rt.FunType(la: rt.DataType, la2: rt.DataType),
@@ -488,9 +487,7 @@ object fromRise {
       =>
         val a = dataType(la)
         val b = dataType(lb)
-        val w =
-          ptMap(p).asInstanceOf[FunType[ExpType, ExpType]].inT.accessType
-        fun[ExpType](expT(a x b, w), e => Snd(a, b, w, e))
+        fun[ExpType](expT(a x b, read), e => Snd(a, b, e))
 
       case (core.MapSnd(),
       rt.FunType(rt.FunType(lb: rt.DataType, lb2: rt.DataType),
@@ -587,8 +584,11 @@ object fromRise {
       =>
         val a = basicType(la)
         val b = basicType(lb)
+        val w = ptMap(p).asInstanceOf[
+          FunType[ExpType, ExpType]
+        ].inT.accessType
         fun[ExpType](ExpType(a, read), x =>
-          Cast(a, b, x))
+          Cast(a, b, w, x))
 
       case (core.Let(),
       rt.FunType(rt.FunType(la: rt.DataType, lb: rt.DataType), _))
