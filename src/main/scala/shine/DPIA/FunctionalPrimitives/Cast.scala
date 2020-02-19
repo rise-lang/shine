@@ -12,25 +12,23 @@ import scala.xml.Elem
 final case class Cast(
   dt1: BasicType,
   dt2: BasicType,
-  access: AccessType,
   e: Phrase[ExpType])
   extends ExpPrimitive {
 
   override val t: ExpType =
-    (dt1: BasicType) ~>: (dt2: BasicType) ~>: (access: AccessType) ~>:
-      (e :: expT(dt1, access)) ~>: expT(dt2, access)
+    (dt1: BasicType) ~>: (dt2: BasicType) ~>:
+      (e :: expT(dt1, read)) ~>: expT(dt2, read)
 
   def prettyPrint: String =
     s"${this.getClass.getSimpleName} (${PrettyPhrasePrinter(e)})"
 
   override def xmlPrinter: Elem =
-    <cast dt1={ToString(dt1)} dt2={ToString(dt2)} access={ToString(access)}>
+    <cast dt1={ToString(dt1)} dt2={ToString(dt2)}>
       {Phrases.xmlPrinter(e)}
     </cast>
 
   def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] =
-    Cast(fun.data(dt1), fun.data(dt2), fun.access(access),
-      VisitAndRebuild(e, fun))
+    Cast(fun.data(dt1), fun.data(dt2), VisitAndRebuild(e, fun))
 
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Data = ???
 
@@ -44,6 +42,6 @@ final case class Cast(
     import TranslationToImperative._
 
     con(e)(fun(e.t)(x =>
-      C(Cast(dt1, dt2, access, x))))
+      C(Cast(dt1, dt2, x))))
   }
 }

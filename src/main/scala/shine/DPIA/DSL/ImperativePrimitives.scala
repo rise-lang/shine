@@ -1,6 +1,5 @@
 package shine.DPIA.DSL
 
-import shine.DPIA.FunctionalPrimitives.{Fst, Snd}
 import shine.DPIA.ImperativePrimitives._
 import shine.DPIA.Phrases.{Identifier, IfThenElse, Phrase}
 import shine.DPIA.Types._

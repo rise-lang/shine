@@ -67,7 +67,7 @@ abstract  class AbstractScan(n: Nat,
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])(
     implicit context: TranslationContext
   ): Phrase[CommType] = {
-    import TranslationToImperative._
+//    import TranslationToImperative._
 
     //TODO think about this more, this allocates memory implicitly
     ???

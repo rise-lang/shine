@@ -1,13 +1,9 @@
 package shine.DPIA
 
-import arithexpr.arithmetic.ArithExpr
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
-import rise.{core => r}
 import rise.core.{types => rt}
-import shine.C.AST.DefaultImplementations.ArithmeticExpr
 import shine.DPIA.Types._
-import shine.DPIA.{fromRise => fr}
 
 class InferAccessTypes extends test_util.Tests {
   //TODO decide whether an expression should be typing if it doesn't output

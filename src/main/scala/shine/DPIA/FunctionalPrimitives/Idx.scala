@@ -9,7 +9,6 @@ import shine.DPIA.Types._
 import shine.DPIA.Types.DataType._
 import shine.DPIA.{Phrases, _}
 
-import scala.language.reflectiveCalls
 import scala.xml.Elem
 
 final case class Idx(n: Nat,

@@ -11,7 +11,6 @@ import shine.DPIA.fromRise._
 
 import scala.annotation.tailrec
 import scala.collection.mutable
-import scala.language.implicitConversions
 
 object inferAccess {
   def apply(e: r.Expr): MutableIdentityHashMap[r.Expr, PhraseType] =
@@ -273,7 +272,7 @@ private class InferAccessAnnotation {
             ExpType(dataType(rToMemT.t.outT), read)))
 
       case rp.Join() | rp.Transpose() | rp.AsScalar()
-           | rp.Unzip() | rp.Cast() =>
+           | rp.Unzip() =>
         val rT = p.t.asInstanceOf[rt.FunType[rt.DataType, rt.DataType]]
 
         val ai = accessTypeIdentifier()
@@ -281,7 +280,7 @@ private class InferAccessAnnotation {
           ExpType(dataType(rT.outT), ai))
 
       case rp.VectorFromScalar() | rp.Neg() | rp.Not()
-           | rp.IndexAsNat() | rp.Fst() | rp.Snd() =>
+           | rp.IndexAsNat() | rp.Fst() | rp.Snd()  | rp.Cast() =>
         val rT = p.t.asInstanceOf[rt.FunType[rt.DataType, rt.DataType]]
 
         FunType(ExpType(dataType(rT.inT), read),

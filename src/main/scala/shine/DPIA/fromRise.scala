@@ -584,11 +584,8 @@ object fromRise {
       =>
         val a = basicType(la)
         val b = basicType(lb)
-        val w = ptMap(p).asInstanceOf[
-          FunType[ExpType, ExpType]
-        ].inT.accessType
         fun[ExpType](ExpType(a, read), x =>
-          Cast(a, b, w, x))
+          Cast(a, b, x))
 
       case (core.Let(),
       rt.FunType(rt.FunType(la: rt.DataType, lb: rt.DataType), _))

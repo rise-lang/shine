@@ -135,12 +135,32 @@ class separableConvolution2DRewrite extends test_util.Tests {
         -> toTDSL(factorisedSeq)(weightsV)(weightsH)
     ))
   }
+//
+//  def toMemAfterMapSeq: Strategy[Rise] = ` -> toMem`
+//  case object ` -> toMem` extends Strategy[Rise] {
+//    def apply(e: Rise): RewriteResult[Rise] =
+//      e match {
+//        case a@App(App(MapSeq(), _), _) =>
+//          Success((typed(a) |> toMem) :: a.t)
+//        case _ => Failure(toMemAfterMapSeq)
+//      }
+//    override def toString = "toMemAfterMapSeq"
+//  }
+//
+  def toMemAfterMapSeq: Strategy[Rise] = ` -> toMem`
+  case object ` -> toMem` extends Strategy[Rise] {
+    def apply(e: Rise): RewriteResult[Rise] =
+      Success((typed(e) |> ToMem()(types.FunType(e.t, e.t))) :: e.t)
+    override def toString = "toMemAfterMapSeq"
+  }
 
   test("separated to separatedSeq") {
     rewrite_steps(toTDSL(separated)(weightsV)(weightsH), Seq(
       (repeatNTimes(2, oncetd(lowering.reduceSeqUnroll)) `;`
         repeatNTimes(2, oncetd(lowering.mapSeq)) `;`
-        repeatNTimes(2, skip(1)(lowering.mapSeq)))
+        repeatNTimes(2, skip(1)(lowering.mapSeq)) `;`
+        LCNF`;`
+        body(argument(toMemAfterMapSeq)))
         -> toTDSL(separatedSeq)(weightsV)(weightsH)
     ))
   }

@@ -9,7 +9,6 @@ import shine.DPIA.Types._
 import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
-import scala.language.reflectiveCalls
 import scala.xml.Elem
 
 //TODO parametric over the access type?

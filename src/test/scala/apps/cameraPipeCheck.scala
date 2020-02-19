@@ -9,7 +9,6 @@ import rise.core.TypeLevelDSL._
 import elevate.core._
 import elevate.rise.Rise
 import elevate.rise.rules._
-import shine.DPIA.inferAccess
 // import elevate.rise.rules.algorithmic._
 // import elevate.rise.rules.movement._
 import elevate.core.strategies.basic._

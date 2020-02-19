@@ -398,13 +398,13 @@ object cameraPipe {
       input |>
       hot_pixel_suppression(2*(h+2))(2*(w+2)) >>
       deinterleave(h)(w) >>
-      demosaic(h)(w) >>
+      toMemFun(demosaic(h)(w)) >>
       fun(x => color_correct(2*(h-2))(2*(w-2))(hm)(wm)(x)
         (matrix_3200)(matrix_7000)(color_temp)) >>
-      mapSeqUnroll(mapSeq(mapSeq(fun(x => x)))) >> // TODO: remove
+      toMemFun(mapSeqUnroll(mapSeq(mapSeq(fun(x => x))))) >> // TODO: remove
       fun(x => apply_curve(2*(h-2))(2*(w-2))(x)
         (gamma)(contrast)(blackLevel)(whiteLevel)) >>
-      mapSeq(mapSeq(mapSeq(fun(x => x)))) >> // TODO: remove
+      toMemFun(mapSeq(mapSeq(mapSeq(fun(x => x))))) >> // TODO: remove
       fun(x => sharpen(2*(h-2))(2*(w-2))(x)(sharpen_strength)) >>
       mapSeq(mapSeq(mapSeq(fun(x => x))))
     )
