@@ -2,20 +2,19 @@ package apps
 
 import cameraPipe._
 import util._
-import rise.core.IsClosedForm
+import rise.core._
 import rise.core.types._
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import elevate.core._
-import elevate.rise.Rise
-import elevate.rise.rules._
-// import elevate.rise.rules.algorithmic._
-// import elevate.rise.rules.movement._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
+import elevate.core.strategies.predicate._
+import elevate.rise.Rise
+import elevate.rise.rules._
 import elevate.rise.strategies.normalForm._
-// import elevate.rise.strategies.algorithmic._
 import elevate.rise.rules.traversal._
+import elevate.rise.rules.algorithmic._
 
 class cameraPipeCheck extends shine.test_util.TestsWithExecutor {
   val N = 121
@@ -153,6 +152,58 @@ int main(int argc, char** argv) {
     printTime("execute", util.Execute(testCode))
   }
 
+  def containsAtLeast(n: Int, x: Rise): Strategy[Rise] =
+    skip(n)(isEqualTo(x))
+
+  // TODO: express as a combination of strategies
+  case object gentleBetaReduction extends Strategy[Rise] {
+    def apply(e: Rise): RewriteResult[Rise] = e match {
+      case App(Lambda(x, b), v) if !containsAtLeast(2, x)(b) =>
+        Success(substitute.exprInExpr(v, `for` = x, in = b))
+      case DepApp(DepLambda(x, b), v) =>
+        Success(substitute.kindInExpr(v, `for` = x, in = b))
+      case _ => Failure(gentleBetaReduction)
+    }
+    override def toString = "gentleBetaReduction"
+  }
+
+  case object idxReduction extends Strategy[Rise] {
+    import rise.core.primitives._
+    import rise.core.semantics._
+    import arithexpr.arithmetic._
+
+    def isMakeArray(e: Rise): Boolean = e match {
+      case MakeArray(_) => true
+      case App(f, _) => isMakeArray(f)
+      case _ => false
+    }
+
+    def indexMakeArray(e: Rise, i: Long, n: Long): Rise = e match {
+      case App(_, v) if i == (n - 1) => v
+      case App(f, _) => indexMakeArray(f, i, n - 1)
+      case _ => throw new Exception("index out of bounds")
+    }
+
+    def apply(e: Rise): RewriteResult[Rise] = e match {
+      case App(App(Idx(), Literal(IndexData(Cst(i), Cst(n)))), mka)
+      if isMakeArray(mka) =>
+        Success(indexMakeArray(mka, i, n))
+      case _ =>
+        Failure(idxReduction)
+    }
+  }
+
+  def dotPrintTmp(name: String, e: Rise): Unit = {
+    val normalized = normalize.apply(gentleBetaReduction)(e).get
+    val generateDot = (e: Rise) => {
+      rise.core.dotPrinter.generateDotString(e,
+        printTypes = false,
+        inlineLambdaIdentifier = true,
+        applyNodes = false)
+    }
+    rise.core.dotPrinter.exprToDot("/tmp", name, normalized, generateDot)
+  }
+
   test("hot pixel suppression passes checks") {
     val typed = printTime("infer", infer(hot_pixel_suppression))
     println(s"hot pixel suppression: ${typed.t}")
@@ -220,6 +271,21 @@ int main(int argc, char** argv) {
     val lower: Strategy[Rise] = strategies.basic.id()
     val lowered = printTime("lower", lower(typed).get)
     checkDemosaic(lowered)
+  }
+
+  ignore("demosaic passes checks with circular buffers") {
+    val typed = printTime("infer", infer(demosaic))
+
+    val gentlyBetaReduced = normalize.apply(gentleBetaReduction)(typed).get
+    dotPrintTmp("demosaic", gentlyBetaReduced)
+
+    val mapFused = normalize.apply(
+      mapFusion <+ gentleBetaReduction <+ idxReduction
+    )(gentlyBetaReduced).get
+    dotPrintTmp("demosaicFused", mapFused)
+
+    throw new Exception("no circular buffers yet")
+    // checkDemosaic(lowered)
   }
 
   test("color correction passes checks") {

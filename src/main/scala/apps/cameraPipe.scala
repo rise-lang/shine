@@ -163,18 +163,14 @@ object cameraPipe {
     letImage(interpolate(stencilCollect(Seq((1, 0), (0, 0)), g_gr)), gh_r =>
     letImage(pointAbsDiff(stencilCollect(Seq((1, 0), (0, 0)), g_gr)), ghd_r =>
 
-    // TODO: mapPar and use elevate
-    memImage(mapSeq(mapSeq(fun(x => x))),
-      select_interpolation(gh_r, ghd_r, gv_r, gvd_r), g_r =>
+    letImage(select_interpolation(gh_r, ghd_r, gv_r, gvd_r), g_r =>
 
     letImage(interpolate(stencilCollect(Seq((0, 1), (0, 0)), g_gr)), gv_b =>
     letImage(pointAbsDiff(stencilCollect(Seq((0, 1), (0, 0)), g_gr)), gvd_b =>
     letImage(interpolate(stencilCollect(Seq((-1, 0), (0, 0)), g_gb)), gh_b =>
     letImage(pointAbsDiff(stencilCollect(Seq((-1, 0), (0, 0)), g_gb)), ghd_b =>
 
-    // TODO: mapPar and use elevate
-    memImage(mapSeq(mapSeq(fun(x => x))),
-      select_interpolation(gh_b, ghd_b, gv_b, gvd_b), g_b =>
+    letImage(select_interpolation(gh_b, ghd_b, gv_b, gvd_b), g_b =>
 
     // next interpolate red at gr by first interpolating,
     // then correcting using the error green would have had if we had
@@ -424,12 +420,10 @@ object cameraPipe {
       map(map(fun(p => cast(p) :: i16))) >>
       hot_pixel_suppression(2*(h+2)+38)(2*(w+2)+22) >>
       deinterleave(h+19)(w+11) >>
-      /*
       // TODO: reorder and store with elevate
-      transpose >> map(transpose) >>
-      mapSeq(mapSeq(mapSeqUnroll(fun(x => x)))) >>
-      map(transpose) >> transpose >>
-      */
+      // transpose >> map(transpose) >>
+      // mapSeq(mapSeq(mapSeqUnroll(fun(x => x)))) >>
+      // map(transpose) >> transpose >>
       demosaic(h+19)(w+11) >>
       map( // TODO: move up towards input
         implN(w => map(drop(16 - 5) >> take(w))) >>
