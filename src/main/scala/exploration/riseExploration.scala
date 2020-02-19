@@ -1,6 +1,7 @@
 package exploration
 
 import elevate.heuristic_search.heuristics.Random
+import elevate.heuristic_search.heuristics.IterativeImprovement
 import elevate.rise.Rise
 import exploration.search.MockupSearch
 
@@ -15,12 +16,15 @@ object riseExploration {
     val version = new MockupSearch()
 
     //heuristic
-    val search = new Random[Rise](s, version)
+    val random = new Random[Rise](s, version)
+    val iterativeImprovement = new IterativeImprovement[Rise](s, version)
 
     //start random search
-    val result = search.start()
+    val resultIterativeImprovement = iterativeImprovement.start()
+    val resultRandom = random.start()
 
     //print result
-    print("result: " + result)
+    println("result Iterative Improvement: " + resultIterativeImprovement)
+    println("result Random: " + resultRandom)
   }
 }
