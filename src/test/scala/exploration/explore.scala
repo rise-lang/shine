@@ -1,38 +1,20 @@
 package exploration
 
-import apps.convolution
-import apps.mm.dotSeq
-import elevate.core.Strategy
-import elevate.core.strategies.basic.{`try`, repeat, repeatNTimes}
+import elevate.core.strategies.basic.{repeat}
 import elevate.core.strategies.traversal.{alltd, bottomup, downup, downup2, oncebu, oncetd, one, somebu, topdown, tryAll}
 import elevate.rise.rules.lowering
 import elevate.rise.strategies.normalForm.{BENF, CNF, LCNF, RNF}
-import shine.DPIA.Types.{ExpType, read, write}
-import rise.core.DSL.{fst, fun, l, mapSeq, nFun, reduceSeq, snd, zip, _}
-//import rise.core.TypedDSL.{fst, fun, l, mapSeq, nFun, reduceSeq, snd, zip, map, reduce}
-import rise.core.HighLevelConstructs.reorderWithStride
-import rise.core.dotPrinter
-import util.gen
-import rise.core._
+import rise.core.DSL.{fun, nFun}
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.core.types._
-import util.gen
-import arithexpr.arithmetic.?
 import elevate.core.Strategy
-import elevate.heuristic_search.ProblemConstraints
 import elevate.rise.Rise
-import elevate.core.strategies.basic.{`try`, normalize, repeatNTimes}
+import elevate.core.strategies.basic.{`try`, repeatNTimes}
 import elevate.core.strategies.traversal.{oncetd, one}
-import elevate.rise.rules.traversal.function
-import elevate.fsmooth.rules.buildGet
 import elevate.rise.rules.algorithmic._
-import elevate.rise.meta.traversal._
-import elevate.rise.rules._
-import elevate.rise.rules.lowering.mapSeq
-import rise.core.ShowRise
 import elevate.rise.rules.traversal.LiftTraversable
-import rise.core.types.{ArrayType, NatIdentifier, f32}
+import rise.core.types.{f32}
 
 
 //test to run exploration

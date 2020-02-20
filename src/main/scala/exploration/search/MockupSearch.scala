@@ -1,20 +1,12 @@
 package exploration.search
 
-import elevate.core
-import elevate.core.strategies.traversal
-import elevate.core.strategies.traversal.{alltd, bottomup, oncetd}
-import elevate.core.{Failure, Strategy, Success}
+import elevate.core.strategies.traversal.{alltd, oncetd}
+import elevate.core.{Success}
 import elevate.heuristic_search.ProblemConstraints
 import elevate.rise.rules.lowering.mapSeq
 import elevate.rise.{Rise, rules}
 import elevate.rise.rules.traversal.LiftTraversable
-import elevate.rise.strategies.normalForm.RNF
 import elevate.rise.strategies.normalForm.CNF
-import elevate.core.strategies.basic.{`try`, normalize, repeat, repeatNTimes}
-import opencl.executor.Executor
-import util.{Execute, gen}
-
-import scala.annotation.meta
 
 //simple mockup search class
 class MockupSearch extends ProblemConstraints[Rise] {
@@ -61,9 +53,9 @@ class MockupSearch extends ProblemConstraints[Rise] {
   def N(solution:Rise):Set[Rise] = {
     val neighbours = scala.collection.mutable.Set[Rise]()
 
-    val rewrite = RNF
+//    val rewrite = RNF
 
-    val rnf  = rewrite.apply(solution)
+//    val rnf  = rewrite.apply(solution)
     //try strategies and add to neighbourhood set
     strategies.foreach(strategy  => {
         try {
