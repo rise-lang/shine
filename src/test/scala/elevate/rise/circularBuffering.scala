@@ -58,10 +58,49 @@ class circularBuffering extends shine.test_util.Tests {
           ) |> mapSeqUnroll(fun(x => x))
         )) >> transpose
 
-    gen.CProgram(wrapExpr(inlined), "inlined")
-    gen.CProgram(wrapExpr(buffered), "buffered")
-    gen.CProgram(wrapExpr(circBuf), "circularBuffered")
+    val inlinedP = gen.CProgram(wrapExpr(inlined), "inlined")
+    val bufferedP = gen.CProgram(wrapExpr(buffered), "buffered")
+    val circBufP = gen.CProgram(wrapExpr(circBuf), "circularBuffered")
 
-    // TODO: check outputs
+    val N = 20
+    val testCode =
+      s"""
+        |#include <stdio.h>
+        |
+        |${inlinedP.code}
+        |${bufferedP.code}
+        |${circBufP.code}
+        |
+        |int main(int argc, char** argv) {
+        |  float input[$N+5];
+        |
+        |  for (int i = 0; i < $N+5; i++) {
+        |    input[i] = (2 * i + 133) % 19;
+        |  }
+        |
+        |  float output1[2*$N];
+        |  inlined(output1, $N, input);
+        |
+        |  float output2[2*$N];
+        |  buffered(output2, $N, input);
+        |
+        |  float output3[2*$N];
+        |  circularBuffered(output3, $N, input);
+        |
+        |  for (int i = 0; i < 2*$N; i++) {
+        |    if (
+        |      (output1[i] != output2[i]) ||
+        |      (output1[i] != output3[i])
+        |    ) {
+        |      fprintf(stderr, "(%f, %f, %f)\\n",
+        |        output1[i], output2[i], output3[i]);
+        |      return 1;
+        |    }
+        |  }
+        |
+        |  return 0;
+        |}
+        |""".stripMargin
+    util.Execute(testCode)
   }
 }
