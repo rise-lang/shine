@@ -16,7 +16,7 @@ object Execute2 {
 
       //repeat execution
       //take median as runtime
-      val N = 10000
+      val N = 100
       val runtimes:Array[Double] = new Array[Double](N)
       for(i <- Range(0,N)){
         runtimes(i) = (s"$bin" !!).toDouble
