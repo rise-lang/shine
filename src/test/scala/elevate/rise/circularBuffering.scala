@@ -12,6 +12,8 @@ import elevate.rise.rules._
 import elevate.rise.rules.traversal._
 import elevate.rise.rules.algorithmic._
 import elevate.rise.rules.movement._
+import elevate.rise.strategies.predicate._
+import elevate.rise.rules.lowering
 
 import util.gen
 import elevate.util.makeClosed
@@ -111,8 +113,9 @@ class circularBuffering extends shine.test_util.Tests {
     makeClosed(typedA)._1 == makeClosed(typedB)._1
   }
 
+  private val norm = normalize.apply(gentleBetaReduction)
+
   private def rewriteSteps(a: Rise, steps: Seq[(Strategy[Rise], Rise)]): Unit = {
-    val norm = normalize.apply(gentleBetaReduction)
     steps.foldLeft[Rise](norm(infer(a)).get)({ case (e, (s, expected)) =>
       val result = (s `;` norm)(e).get
       val nuExpect = norm(infer(expected)).get
@@ -167,15 +170,21 @@ class circularBuffering extends shine.test_util.Tests {
             x |> sum
           ))) >> transpose
         ),
-      oncetd(lowering.slideSeq)
-        -> (
-        slide(3)(1) >> map(sum) >> slideSeq(4)(1)(fun(x => x))(fun(x =>
-          makeArray(2)(
-            x |> dropLast(1) >> drop(1) >> sum,
-            x |> sum
-          ))) >> transpose
-        ),
        */
+    ))
+    rewriteSteps(
+      slide(3)(1) >> map(sum) >> slide(4)(1) >> map(fun(x =>
+      makeArray(2)(
+        x |> dropLast(1) >> drop(1) >> sum,
+        x |> sum
+      ))) >> transpose, Seq(
+        (normalize.apply(lowering.reduceSeq) `;`
+          oncetd(dropAfterTake) `;`
+          oncetd(isApply `;` one(isApply `;` one(isMakeArray)) `;`
+            lowering.mapSeqUnrollWrite) `;`
+          oncetd(lowering.slideSeq(SlideSeq.Indices, fun(x => x))) `;`
+          norm `;` oncetd(slideSeqFusion))
+      -> circBuf,
     ))
   }
 }
