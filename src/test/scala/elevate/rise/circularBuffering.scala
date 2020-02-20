@@ -6,11 +6,12 @@ import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.core.HighLevelConstructs.dropLast
 import elevate.core._
-// import elevate.core.strategies.basic._
+import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
+import elevate.rise.rules._
 import elevate.rise.rules.traversal._
-// import elevate.rise.rules.lowering
 import elevate.rise.rules.algorithmic._
+import elevate.rise.rules.movement._
 
 import util.gen
 import elevate.util.makeClosed
@@ -105,16 +106,19 @@ class circularBuffering extends shine.test_util.Tests {
   }
 
   private def openEquality(typedA: Rise, b: Rise): Boolean = {
-    val typedB = infer(b :: typedA.t)
+    import rise.core.TypedDSL._
+    val typedB: Rise = toTDSL(b) :: typedA.t
     makeClosed(typedA)._1 == makeClosed(typedB)._1
   }
 
   private def rewriteSteps(a: Rise, steps: Seq[(Strategy[Rise], Rise)]): Unit = {
-    steps.foldLeft[Rise](infer(a))({ case (e, (s, expected)) =>
-      val result = s(e).get
-      if (!openEquality(result, expected)) {
+    val norm = normalize.apply(gentleBetaReduction)
+    steps.foldLeft[Rise](norm(infer(a)).get)({ case (e, (s, expected)) =>
+      val result = (s `;` norm)(e).get
+      val nuExpect = norm(infer(expected)).get
+      if (!openEquality(result, nuExpect)) {
         throw new Exception(
-          s"expected structural equality:\n$result\n\n$expected")
+          s"expected structural equality:\n$result\n\n$nuExpect")
       }
       result
     })
@@ -122,14 +126,56 @@ class circularBuffering extends shine.test_util.Tests {
 
   test("highLevel to circBuf") {
     rewriteSteps(highLevel, Seq(
-      body(oncetd(slideOverlap(4)))
+      (oncetd(dropAfterMap) `;` oncetd(takeAfterMap))
       -> (
         slide(3)(1) >> map(sum) >> fun(x =>
         makeArray(2)(
-          x |> slide(2)(1) >> map(sum) >> drop(1) >> dropLast(1),
+          x |> slide(2)(1) >> drop(1) >> dropLast(1) >> map(sum),
           x |> slide(4)(1) >> map(sum)
         ))
-      )
+      ),
+      (oncetd(dropInSlide) `;` oncetd(takeAfterMap) `;` oncetd(takeInSlide))
+        -> (
+        slide(3)(1) >> map(sum) >> fun(x =>
+          makeArray(2)(
+            x |> slide(4)(1) >> map(dropLast(1)) >> map(drop(1)) >> map(sum),
+            x |> slide(4)(1) >> map(sum)
+          ))
+        ),
+      normalize.apply(mapFusion)
+        -> (
+        slide(3)(1) >> map(sum) >> fun(x =>
+          makeArray(2)(
+            x |> slide(4)(1) >> map(dropLast(1) >> drop(1) >> sum),
+            x |> slide(4)(1) >> map(sum)
+          ))
+        ),
+      /*
+      oncetd(magicSlideHoist)
+        -> (
+        slide(3)(1) >> map(sum) >> slide(4)(1) >> fun(x =>
+          makeArray(2)(
+            x |> map(dropLast(1) >> drop(1) >> sum),
+            x |> map(sum)
+          ))
+        ),
+      oncetd(magicMapHoist)
+        -> (
+        slide(3)(1) >> map(sum) >> slide(4)(1) >> map(fun(x =>
+          makeArray(2)(
+            x |> dropLast(1) >> drop(1) >> sum,
+            x |> sum
+          ))) >> transpose
+        ),
+      oncetd(lowering.slideSeq)
+        -> (
+        slide(3)(1) >> map(sum) >> slideSeq(4)(1)(fun(x => x))(fun(x =>
+          makeArray(2)(
+            x |> dropLast(1) >> drop(1) >> sum,
+            x |> sum
+          ))) >> transpose
+        ),
+       */
     ))
   }
 }
