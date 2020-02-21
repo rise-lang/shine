@@ -66,8 +66,13 @@ object infer {
 
     expr match {
       case i: Identifier =>
-        val t = env
-          .getOrElse(i.name, error(s"$i has no type in the environment")(Seq()))
+        val t = env.getOrElseUpdate(i.name,
+          if (i.t == TypePlaceholder) {
+            error(s"$i has no type")(Seq())
+          } else {
+            i.t
+          })
+        assert(t =~= i.t)
         i.setType(t)
 
       case Lambda(x, e) =>
