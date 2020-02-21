@@ -138,52 +138,45 @@ class circularBuffering extends shine.test_util.Tests {
         ))
       ),
       (oncetd(dropInSlide) `;` oncetd(takeAfterMap) `;` oncetd(takeInSlide))
-        -> (
-        slide(3)(1) >> map(sum) >> fun(x =>
-          makeArray(2)(
-            x |> slide(4)(1) >> map(dropLast(1)) >> map(drop(1)) >> map(sum),
-            x |> slide(4)(1) >> map(sum)
-          ))
-        ),
+      -> (
+      slide(3)(1) >> map(sum) >> fun(x =>
+        makeArray(2)(
+          x |> slide(4)(1) >> map(dropLast(1)) >> map(drop(1)) >> map(sum),
+          x |> slide(4)(1) >> map(sum)
+        ))
+      ),
       normalize.apply(mapFusion)
-        -> (
-        slide(3)(1) >> map(sum) >> fun(x =>
-          makeArray(2)(
-            x |> slide(4)(1) >> map(dropLast(1) >> drop(1) >> sum),
-            x |> slide(4)(1) >> map(sum)
-          ))
-        ),
-      /*
-      oncetd(magicSlideHoist)
-        -> (
-        slide(3)(1) >> map(sum) >> slide(4)(1) >> fun(x =>
-          makeArray(2)(
-            x |> map(dropLast(1) >> drop(1) >> sum),
-            x |> map(sum)
-          ))
-        ),
-      oncetd(magicMapHoist)
-        -> (
-        slide(3)(1) >> map(sum) >> slide(4)(1) >> map(fun(x =>
-          makeArray(2)(
-            x |> dropLast(1) >> drop(1) >> sum,
-            x |> sum
-          ))) >> transpose
-        ),
-       */
-    ))
-    rewriteSteps(
+      -> (
+      slide(3)(1) >> map(sum) >> fun(x =>
+        makeArray(2)(
+          x |> slide(4)(1) >> map(dropLast(1) >> drop(1) >> sum),
+          x |> slide(4)(1) >> map(sum)
+        ))
+      ),
+      body(oncetd(lambdaBodyWithName(x =>
+        subexpressionElimination(x |> slide(4)(1))
+      )))
+      -> (
+      slide(3)(1) >> map(sum) >> slide(4)(1) >> fun(x =>
+        makeArray(2)(
+          x |> map(dropLast(1) >> drop(1) >> sum),
+          x |> map(sum)
+        ))
+      ),
+      oncetd(mapOutsideMakeArray)
+      -> (
       slide(3)(1) >> map(sum) >> slide(4)(1) >> map(fun(x =>
-      makeArray(2)(
-        x |> dropLast(1) >> drop(1) >> sum,
-        x |> sum
-      ))) >> transpose, Seq(
-        (normalize.apply(lowering.reduceSeq) `;`
-          oncetd(dropAfterTake) `;`
-          oncetd(isApply `;` one(isApply `;` one(isMakeArray)) `;`
-            lowering.mapSeqUnrollWrite) `;`
-          oncetd(lowering.slideSeq(SlideSeq.Indices, fun(x => x))) `;`
-          norm `;` oncetd(slideSeqFusion))
+        makeArray(2)(
+          x |> dropLast(1) >> drop(1) >> sum,
+          x |> sum
+        ))) >> transpose
+      ),
+      (normalize.apply(lowering.reduceSeq) `;`
+        oncetd(dropAfterTake) `;`
+        oncetd(isApply `;` one(isApply `;` one(isMakeArray)) `;`
+          lowering.mapSeqUnrollWrite) `;`
+        oncetd(lowering.slideSeq(SlideSeq.Indices, fun(x => x))) `;`
+        norm `;` oncetd(slideSeqFusion))
       -> circBuf,
     ))
   }
