@@ -48,10 +48,12 @@ final case class OpenCLSlideSeq(rot: lp.SlideSeq.Rotate,
   }
 
   override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext)
+    (implicit context: TranslationContext)
   : Phrase[CommType] = {
     import TranslationToImperative._
-    import shine.OpenCL.IntermediatePrimitives.{OpenCLSlideSeqIValues, OpenCLSlideSeqIIndices}
+    import shine.OpenCL.IntermediatePrimitives.{
+      OpenCLSlideSeqIValues, OpenCLSlideSeqIIndices
+    }
 
     val I = rot match {
       case lp.SlideSeq.Values => OpenCLSlideSeqIValues.apply _
