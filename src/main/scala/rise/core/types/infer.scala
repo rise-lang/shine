@@ -72,7 +72,7 @@ object infer {
           } else {
             i.t
           })
-        assert(t =~= i.t)
+        constraints += TypeConstraint(t, i.t)
         i.setType(t)
 
       case Lambda(x, e) =>
@@ -280,6 +280,8 @@ object infer {
     c match {
       case TypeConstraint(a, b) =>
         (a, b) match {
+          case (TypePlaceholder, _) => Solution()
+          case (_, TypePlaceholder) => Solution()
           case (i: TypeIdentifier, _) => unifyTypeIdent(i, b)
           case (_, i: TypeIdentifier) => unifyTypeIdent(i, a)
           case (i: DataTypeIdentifier, dt: DataType) =>

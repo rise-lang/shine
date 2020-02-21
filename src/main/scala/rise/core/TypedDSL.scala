@@ -322,7 +322,7 @@ object TypedDSL {
             } else {
               i.t
             })
-          assert(t =~= i.t)
+          constraints += TypeConstraint(t, i.t)
           (i.setType(t), Solution())
 
         case Lambda(x, e) =>

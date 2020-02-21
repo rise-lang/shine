@@ -60,7 +60,7 @@ object uniqueNames {
     ) extends traversal.Visitor {
       override def visitExpr(e: Expr): traversal.Result[Expr] = e match {
         case x: Identifier =>
-          traversal.Continue(values(x), this)
+          traversal.Stop(values(x))
         case Lambda(x, b) =>
           val x2 = Identifier(s"x$valN")(traversal.types.DepthFirstLocalResult(
             x.t, TypeVisitor(others)
