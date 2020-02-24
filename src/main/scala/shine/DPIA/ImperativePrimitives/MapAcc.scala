@@ -15,10 +15,9 @@ final case class MapAcc(n: Nat,
                         array: Phrase[AccType])
   extends AccPrimitive {
 
-  override val t: AccType =
-    (n: Nat) ~>: (dt1: DataType) ~>: (dt2: DataType) ~>:
-      (f :: accT(dt1) ->: accT(dt2)) ~>:
-      (array :: accT(n`.`dt1)) ~>: accT(n`.`dt2)
+  f :: accT(dt1) ->: accT(dt2)
+  array :: accT(n`.`dt1)
+  override val t: AccType = accT(n`.`dt2)
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {
     MapAcc(fun.nat(n), fun.data(dt1), fun.data(dt2), VisitAndRebuild(f, fun), VisitAndRebuild(array, fun))

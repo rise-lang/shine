@@ -382,6 +382,7 @@ trait AccPrimitive extends Primitive[AccType] {
 }
 
 trait CommandPrimitive extends Primitive[CommType] {
+  override val t: CommType = comm
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Store
 }
 

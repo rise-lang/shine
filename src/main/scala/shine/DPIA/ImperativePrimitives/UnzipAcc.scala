@@ -15,11 +15,8 @@ final case class UnzipAcc(n: Nat,
   extends AccPrimitive
 {
 
-  override val t: AccType =
-    (n: Nat) ~>: (dt1: DataType) ~>: (dt2: DataType) ~>:
-      (a :: accT((n`.`dt1) x (n`.`dt2))) ~>:
-        accT(n`.`(dt1 x dt2))
-
+  a :: accT((n`.`dt1) x (n`.`dt2))
+  override val t: AccType = accT(n`.`(dt1 x dt2))
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[AccType] = {
     UnzipAcc(fun.nat(n), fun.data(dt1), fun.data(dt2), VisitAndRebuild(a, fun))

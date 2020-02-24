@@ -22,11 +22,10 @@ final case class OpenCLReduceSeq(
   unroll: Boolean
 ) extends ExpPrimitive {
 
-  override val t: ExpType =
-    (n: Nat) ~>: (dt1: DataType) ~>: (dt2: DataType) ~>:
-      (f :: expT(dt2, read) ->: expT(dt1, read) ->: expT(dt2, write)) ~>:
-        (init :: expT(dt2, write)) ~>: (initAddrSpace : AddressSpace) ~>:
-          (array :: expT(n`.`dt1, read)) ~>: expT(dt2, read)
+  f :: expT(dt2, read) ->: expT(dt1, read) ->: expT(dt2, write)
+  init :: expT(dt2, write)
+  array :: expT(n`.`dt1, read)
+  override val t: ExpType = expT(dt2, read)
 
   override def visitAndRebuild(
     fun: VisitAndRebuild.Visitor

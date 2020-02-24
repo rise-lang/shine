@@ -25,10 +25,10 @@ final case class ForeignFunction(funDecl: ForeignFunction.Declaration,
                                  args: Seq[Phrase[ExpType]])
   extends ExpPrimitive {
 
-  override val t: ExpType =
-    (inTs zip args).foreach {
-      case (inT, arg) => arg :: expT(inT, read)
-    } ~>: expT(outT, read)
+  (inTs zip args).foreach {
+    case (inT, arg) => arg :: expT(inT, read)
+  }
+  override val t: ExpType = expT(outT, read)
 
   override def eval(s: Store): Data = ???
 

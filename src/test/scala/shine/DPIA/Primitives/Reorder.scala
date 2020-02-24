@@ -7,7 +7,7 @@ import util.gen
 
 import arithexpr.arithmetic.Cst
 
-class Reorder extends test_util.Tests {
+class Reorder extends shine.test_util.Tests {
   test("Simple gather example should generate syntactic valid C code with two one loops") {
     val e = nFun(n => fun(ArrayType(n, f32))(xs =>
       xs |> reorderWithStride(128) |> mapSeq(fun(x => x))

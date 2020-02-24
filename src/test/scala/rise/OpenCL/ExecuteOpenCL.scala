@@ -9,7 +9,7 @@ import util.gen
 
 import scala.language.{postfixOps, reflectiveCalls}
 
-class ExecuteOpenCL extends test_util.TestsWithExecutor {
+class ExecuteOpenCL extends shine.test_util.TestsWithExecutor {
   test("Running a simple kernel with generic input size") {
     val f: Expr = nFun(n => fun(ArrayType(n, int))(
       xs => xs |> mapSeq(fun(x => x + l(1)))))

@@ -21,14 +21,12 @@ final case class OpenCLIterate(
   array: Phrase[ExpType]
 ) extends ExpPrimitive {
 
-  override val t: ExpType = {
+  {
     val l = f.t.x
-    (a: AddressSpace) ~>: (n: Nat) ~>: (m: Nat) ~>:
-      (k: Nat) ~>: (dt: DataType) ~>:
-      (f :: l ->: expT({l * n}`.`dt, read) ->: expT(l`.`dt, write)) ~>:
-        (array :: expT({m * n.pow(k)}`.`dt, read)) ~>:
-          expT(m`.`dt, write)
+    f :: l ->: expT({l * n}`.`dt, read) ->: expT(l`.`dt, write)
+    array :: expT({m * n.pow(k)}`.`dt, read)
   }
+  override val t: ExpType = expT(m`.`dt, write)
 
   override def visitAndRebuild(
     fun: VisitAndRebuild.Visitor
@@ -44,7 +42,7 @@ final case class OpenCLIterate(
     <oclIterate a={ToString(a)} n={ToString(n)} m={ToString(m)}
                 k={ToString(k)} dt={ToString(dt)}>
       <f type={ToString(
-        l ~>: ExpType(ArrayType(l, dt), read) ->:
+        l ->: ExpType(ArrayType(l, dt), read) ->:
           ExpType(ArrayType(l /^ n, dt), read))}>
         {Phrases.xmlPrinter(f)}
       </f>

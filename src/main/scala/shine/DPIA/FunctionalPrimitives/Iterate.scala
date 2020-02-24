@@ -19,13 +19,12 @@ final case class Iterate(n: Nat,
                          array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override val t: ExpType = {
+  {
     val l = f.t.x
-    (n: Nat) ~>: (m: Nat) ~>: (k: Nat) ~>: (dt: DataType) ~>:
-      (f :: l ->: expT({l * n}`.`dt, read) ->: expT(l`.`dt, write)) ~>:
-        (array :: expT({m * n.pow(k)}`.`dt, read)) ~>:
-          expT(m`.`dt, write)
+    f :: l ->: expT({l * n}`.`dt, read) ->: expT(l`.`dt, write)
+    array :: expT({m * n.pow(k)}`.`dt, read)
   }
+  override val t: ExpType = expT(m`.`dt, write)
 
   override def visitAndRebuild(
     fun: VisitAndRebuild.Visitor

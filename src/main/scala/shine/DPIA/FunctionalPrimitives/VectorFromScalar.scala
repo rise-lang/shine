@@ -15,10 +15,8 @@ final case class VectorFromScalar(n: Nat,
                                   arg: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override val t: ExpType =
-    (n: Nat) ~>: (dt: ScalarType) ~>:
-      (arg :: expT(dt, read)) ~>:
-        expT(vec(n, dt), read)
+  arg :: expT(dt, read)
+  override val t: ExpType = expT(vec(n, dt), read)
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     VectorFromScalar(f.nat(n), f.data(dt), VisitAndRebuild(arg, f))

@@ -4,7 +4,7 @@ import mm._
 import shine.OpenCL._
 import util._
 
-class mmCheck extends test_util.TestsWithExecutor {
+class mmCheck extends shine.test_util.TestsWithExecutor {
   private val N = 64
   private val M = 128
   private val O = 128

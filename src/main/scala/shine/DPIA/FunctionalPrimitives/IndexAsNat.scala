@@ -15,8 +15,8 @@ import scala.xml.Elem
 final case class IndexAsNat(n: Nat, e: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override val t: ExpType =
-    (n: Nat) ~>: (e :: expT(idx(n), read)) ~>: expT(NatType, read)
+  e :: expT(idx(n), read)
+  override val t: ExpType = expT(NatType, read)
 
   def prettyPrint: String =
     s"${this.getClass.getSimpleName} (${PrettyPhrasePrinter(e)})"

@@ -12,13 +12,19 @@ import shine.DPIA._
 
 import scala.xml.Elem
 
-abstract class AbstractReduce(n: Nat,
-                              dt1: DataType,
-                              dt2: DataType,
-                              f: Phrase[ExpType ->: ExpType ->: ExpType],
-                              init: Phrase[ExpType],
-                              array: Phrase[ExpType])
-  extends ExpPrimitive {
+abstract class AbstractReduce(
+  n: Nat,
+  dt1: DataType,
+  dt2: DataType,
+  f: Phrase[ExpType ->: ExpType ->: ExpType],
+  init: Phrase[ExpType],
+  array: Phrase[ExpType]
+) extends ExpPrimitive {
+
+  f :: expT(dt2, read) ->: expT(dt1, read) ->: expT(dt2, write)
+  init :: expT(dt2, write)
+  array :: expT(n`.`dt1, read)
+  override val t: ExpType = expT(dt2, read)
 
   def makeReduce: (Nat, DataType, DataType,
     Phrase[ExpType ->: ExpType ->: ExpType], Phrase[ExpType], Phrase[ExpType]
@@ -32,12 +38,6 @@ abstract class AbstractReduce(n: Nat,
                   array: Phrase[ExpType],
                   out: Phrase[ExpType ->: CommType])
                  (implicit context: TranslationContext): Phrase[CommType]
-
-  override val t: ExpType =
-    (n: Nat) ~>: (dt1: DataType) ~>: (dt2: DataType) ~>:
-      (f :: expT(dt2, read) ->: expT(dt1, read) ->: expT(dt2, write)) ~>:
-        (init :: expT(dt2, write)) ~>:
-          (array :: expT(n`.`dt1, read)) ~>: expT(dt2, read)
 
   override def visitAndRebuild(
     fun: VisitAndRebuild.Visitor
@@ -74,17 +74,17 @@ abstract class AbstractReduce(n: Nat,
     import TranslationToImperative._
 
     con(array)(λ(expT(n`.`dt1, read))(X =>
-      con(init)(λ(expT(dt2, read))(Y =>
-        makeReduceI(n, dt1, dt2,
-          λ(expT(dt2, read))(x =>
-            λ(expT(dt1, read))(y =>
-              λ(accT(dt2))(o => acc( f(x)(y) )( o ) ))),
-          Y, X, C)))))
+      makeReduceI(n, dt1, dt2,
+        λ(expT(dt2, read))(x =>
+          λ(expT(dt1, read))(y =>
+            λ(accT(dt2))(o => acc(f(x)(y))(o)))),
+        init, X, C)(context)))
   }
 
   override def xmlPrinter: Elem =
     <reduce n={ToString(n)} dt1={ToString(dt1)} dt2={ToString(dt2)}>
-      <f type={ToString(ExpType(dt1, read) ->: ExpType(dt2, read) ->: ExpType(dt2, write))}>
+      <f type={ToString(
+        ExpType(dt1, read) ->: ExpType(dt2, read) ->: ExpType(dt2, write))}>
         {Phrases.xmlPrinter(f)}
       </f>
       <init type={ToString(ExpType(dt2, write))}>

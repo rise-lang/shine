@@ -20,13 +20,8 @@ final case class Unzip(
   e: Phrase[ExpType]
 ) extends ExpPrimitive {
 
-  override val t: ExpType =
-    (n: Nat) ~>: (dt1: DataType) ~>: (dt2: DataType) ~>:
-      (access: AccessType) ~>: (e :: expT(n`.`(dt1 x dt2), access)) ~>:
-      expT((n`.`dt1) x (n`.`dt2), access)
-
-  // TODO: fix parsing of this:
-//        exp"[($n.$dt1 x $n.$dt2)]"
+  e :: expT(n`.`(dt1 x dt2), access)
+  override val t: ExpType = expT((n`.`dt1) x (n`.`dt2), access)
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     Unzip(f.nat(n), f.data(dt1), f.data(dt2), f.access(access),

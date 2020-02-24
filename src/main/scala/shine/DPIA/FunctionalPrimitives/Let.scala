@@ -17,11 +17,10 @@ final case class Let(
   value: Phrase[ExpType],
   f: Phrase[ExpType ->: ExpType]
 ) extends ExpPrimitive {
-  override val t: ExpType =
-    (dt1: DataType) ~>: (dt2: DataType) ~>: (access: AccessType) ~>:
-      (value :: expT(dt1, read)) ~>:
-      (f :: expT(dt1, read) ->: expT(dt2, access)) ~>:
-      expT(dt2, access)
+
+  value :: expT(dt1, read)
+  f :: expT(dt1, read) ->: expT(dt2, access)
+  override val t: ExpType = expT(dt2, access)
 
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] =
     Let(v.data(dt1), v.data(dt2), v.access(access),

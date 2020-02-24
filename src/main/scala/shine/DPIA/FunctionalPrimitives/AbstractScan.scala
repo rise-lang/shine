@@ -19,12 +19,6 @@ abstract  class AbstractScan(n: Nat,
                              array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override val t: ExpType =
-    (n: Nat) ~>: (dt1: DataType) ~>: (dt2: DataType) ~>:
-      (f :: expT(dt1, read) ->: expT(dt2, read) ->: expT(dt2, write)) ~>:
-      (init :: expT(dt2, write)) ~>:
-      (array :: expT(n`.`dt1, read)) ~>: expT(n`.`dt2, write)
-
   def makeScan: (Nat, DataType, DataType,
     Phrase[ExpType ->: ExpType ->: ExpType], Phrase[ExpType], Phrase[ExpType]
   ) => AbstractScan
@@ -37,6 +31,11 @@ abstract  class AbstractScan(n: Nat,
                 array: Phrase[ExpType],
                 out: Phrase[AccType])
                (implicit context: TranslationContext): Phrase[CommType]
+
+  f :: expT(dt1, read) ->: expT(dt2, read) ->: expT(dt2, write)
+  init :: expT(dt2, write)
+  array :: expT(n`.`dt1, read)
+  override val t: ExpType = expT(n`.`dt2, write)
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     makeScan(fun.nat(n), fun.data(dt1), fun.data(dt2),

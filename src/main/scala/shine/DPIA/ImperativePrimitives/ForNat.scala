@@ -12,10 +12,11 @@ final case class ForNat(n: Nat,
                         unroll:Boolean)
   extends CommandPrimitive {
 
-  override val t: CommType = {
+  {
     val k = body.t.x
-    (n: Nat) ~>: (body :: k ->: comm) ~>: comm
+    body :: k ->: comm
   }
+
   override def eval(s: Store): Store = ???
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommType] = {

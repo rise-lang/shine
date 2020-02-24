@@ -17,9 +17,8 @@ final case class OclToMem(addrSpace: AddressSpace,
                           input: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override val t: ExpType =
-    (addrSpace: AddressSpace) ~>: (dt: DataType) ~>:
-      (input :: expT(dt, write)) ~>: expT(dt, read)
+  input :: expT(dt, write)
+  override val t: ExpType = expT(dt, read)
 
   override def eval(s: Store): Data = OperationalSemantics.eval(s, input)
 

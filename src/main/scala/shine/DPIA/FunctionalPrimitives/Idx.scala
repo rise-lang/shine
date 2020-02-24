@@ -17,12 +17,9 @@ final case class Idx(n: Nat,
                      array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  //TODO Answer Question: should this be polymorphic over the access type?
-  override val t: ExpType =
-    (n: Nat) ~>: (dt: DataType) ~>:
-      (index :: expT(idx(n), read)) ~>:
-        (array :: expT(n`.`dt, read)) ~>:
-          expT(dt, read)
+  index :: expT(idx(n), read)
+  array :: expT(n`.`dt, read)
+  override val t: ExpType = expT(dt, read)
 
   override def eval(s: Store): Data = {
     (OperationalSemantics.eval(s, array),

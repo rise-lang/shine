@@ -15,13 +15,9 @@ abstract class AbstractParForNat(val n: Nat,
                                  val body: Phrase[`(nat)->:`[AccType ->: CommType]])
   extends CommandPrimitive {
 
-  override val t: CommType = {
+  out :: accT(n`.d`ft)
+  body :: body.t.x ->: accT(ft(body.t.x)) ->: comm
 
-    (n: Nat) ~>: (ft: NatToData) ~>:
-      (out :: accT(n`.d`ft)) ~>:
-       (body :: (body.t.x : Nat) ~>: accT(ft(body.t.x)) ->: comm) ~>:
-          comm
-  }
   override def eval(s: Store): Store = ???
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[CommType] = {
@@ -37,7 +33,7 @@ abstract class AbstractParForNat(val n: Nat,
       <output type={ToString(AccType(DepArrayType(n, ft)))}>
         {Phrases.xmlPrinter(out)}
       </output>
-      <body type={ToString(body.t.x ~>: AccType({ft(body.t.x)}) ->: CommType())}>
+      <body type={ToString(body.t.x ->: AccType({ft(body.t.x)}) ->: CommType())}>
         {Phrases.xmlPrinter(body)}
       </body>
     </parForNat>.copy(label = {

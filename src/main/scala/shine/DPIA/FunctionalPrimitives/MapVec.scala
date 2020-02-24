@@ -18,10 +18,10 @@ final case class MapVec(n: Nat,
                         array: Phrase[ExpType])
   extends ExpPrimitive
 {
-  override val t: ExpType =
-    (n: Nat) ~>: (dt1: ScalarType) ~>: (dt2: ScalarType) ~>:
-      (f :: expT(dt1, read) ->: expT(dt2, write)) ~>:
-        (array :: expT(vec(n, dt1), read)) ~>: expT(vec(n, dt2), write)
+
+  f :: expT(dt1, read) ->: expT(dt2, write)
+  array :: expT(vec(n, dt1), read)
+  override val t: ExpType = expT(vec(n, dt2), write)
 
   override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     MapVec(fun.nat(n), fun.data(dt1), fun.data(dt2), VisitAndRebuild(f, fun), VisitAndRebuild(array, fun))

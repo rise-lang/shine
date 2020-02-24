@@ -17,7 +17,7 @@ import elevate.rise.strategies.algorithmic._
 import elevate.rise.rules.traversal._
 import elevate.util.makeClosed
 
-class separableConvolution2DRewrite extends test_util.Tests {
+class separableConvolution2DRewrite extends shine.test_util.Tests {
   private val idE: Expr = fun(x => x)
   private val idS: Strategy[Rise] = strategies.basic.id()
 

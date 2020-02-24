@@ -16,10 +16,8 @@ final case class Generate(n: Nat,
                           f : Phrase[ExpType ->: ExpType])
   extends ExpPrimitive {
 
-  override val t: ExpType =
-    (n: Nat) ~>: (dt: DataType) ~>:
-      (f :: expT(idx(n), read) ->: expT(dt, read)) ~>:
-        expT(n`.`dt, read)
+  f :: expT(idx(n), read) ->: expT(dt, read)
+  override val t: ExpType = expT(n`.`dt, read)
 
   def prettyPrint: String =
     s"${this.getClass.getSimpleName} (${PrettyPhrasePrinter(f)})"

@@ -19,9 +19,8 @@ final case class Transpose(
   array: Phrase[ExpType]
 ) extends ExpPrimitive {
 
-  override val t: ExpType =
-    (n: Nat) ~>: (m: Nat) ~>: (dt: DataType) ~>: (access: AccessType) ~>:
-      (array :: expT(n`.`(m`.`dt), access)) ~>: expT(m`.`(n`.`dt), access)
+  array :: expT(n`.`(m`.`dt), access)
+  override val t: ExpType = expT(m`.`(n`.`dt), access)
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] =
     Transpose(f.nat(n), f.nat(m), f.data(dt), f.access(access),

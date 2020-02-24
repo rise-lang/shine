@@ -6,7 +6,7 @@ import rise.core.TypeLevelDSL._
 import rise.core.types._
 import util.gen
 
-class scal extends test_util.Tests {
+class scal extends shine.test_util.Tests {
 
   private val simpleScal = nFun(n => fun(n`.`f32)(input => fun(f32)(alpha =>
     input |> mapSeq(fun(x => alpha * x)))

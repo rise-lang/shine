@@ -19,10 +19,8 @@ final case class AsVector(
   array: Phrase[ExpType]
 ) extends ExpPrimitive {
 
-  override val t: ExpType =
-    (n: Nat) ~>: (m: Nat) ~>: (dt: ScalarType) ~>:
-      (array :: expT({m * n}`.`dt, access)) ~>:
-        expT(m`.`vec(n, dt), access)
+  array :: expT({m * n}`.`dt, access)
+  override val t: ExpType = expT(m`.`vec(n, dt), access)
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     AsVector(f.nat(n), f.nat(m), f.data(dt), f.access(access),

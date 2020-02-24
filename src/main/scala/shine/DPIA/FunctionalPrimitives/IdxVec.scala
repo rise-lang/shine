@@ -18,11 +18,9 @@ final case class IdxVec(n: Nat,
                         vector: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override val t: ExpType =
-    (n: Nat) ~>: (st: ScalarType) ~>:
-      (index :: expT(idx(n), read)) ~>:
-        (vector :: expT(vec(n, st), read)) ~>:
-          expT(st, read)
+  index :: expT(idx(n), read)
+  vector :: expT(vec(n, st), read)
+  override val t: ExpType = expT(st, read)
 
   override def eval(s: Store): Data = {
     (OperationalSemantics.eval(s, vector), OperationalSemantics.eval(s, index)) match {

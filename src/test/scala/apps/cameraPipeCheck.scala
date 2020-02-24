@@ -17,7 +17,7 @@ import elevate.rise.strategies.normalForm._
 // import elevate.rise.strategies.algorithmic._
 import elevate.rise.rules.traversal._
 
-class cameraPipeCheck extends test_util.TestsWithExecutor {
+class cameraPipeCheck extends shine.test_util.TestsWithExecutor {
   val N = 8
   val M = 10
 

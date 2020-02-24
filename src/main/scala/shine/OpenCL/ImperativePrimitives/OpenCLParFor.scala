@@ -17,11 +17,8 @@ abstract class OpenCLParFor(val n: Nat,
                             val unroll: Boolean)
   extends CommandPrimitive {
 
-  override val t: CommType =
-    (n: Nat) ~>: (dt: DataType) ~>:
-      (out :: accT(n`.`dt)) ~>:
-      (body :: expT(idx(n), read) ->: accT(dt) ->: comm) ~>:
-      comm
+  out :: accT(n`.`dt)
+  body :: expT(idx(n), read) ->: accT(dt) ->: comm
 
   def parallelismLevel: shine.OpenCL.ParallelismLevel
 

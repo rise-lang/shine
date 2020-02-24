@@ -5,10 +5,11 @@ import rise.core.TypeLevelDSL._
 import rise.core.{types => rt}
 import shine.DPIA.Types._
 
-class InferAccessTypes extends test_util.Tests {
-  //TODO decide whether an expression should be typing if it doesn't output
-  // write
+class InferAccessTypes extends shine.test_util.Tests {
+
   ignore("(read -> read) is inferred for id over float.") {
+    //TODO decide whether an expression should be typing if it doesn't output
+    // write
     val id = rt.infer(fun(rt.f32)(x => x))
     val infPt = inferAccess(id)(id)
     val expecPt = FunType(ExpType(f32, read), ExpType(f32, read))

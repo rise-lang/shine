@@ -18,10 +18,10 @@ final case class OpenCLFunction(name: String,
                                 args: Seq[Phrase[ExpType]])
   extends ExpPrimitive {
 
-  override val t: ExpType =
-    (inTs zip args).foreach{
-      case (inT, arg) => arg :: expT(inT, read)
-    } ~>: expT(outT, read)
+  (inTs zip args).foreach{
+    case (inT, arg) => arg :: expT(inT, read)
+  }
+  override val t: ExpType = expT(outT, read)
 
   override def visitAndRebuild(f: Visitor): Phrase[ExpType] = {
     OpenCLFunction(name, inTs.map(f.data), f.data(outT), args.map(VisitAndRebuild(_, f)))

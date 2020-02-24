@@ -6,7 +6,7 @@ import shine.OpenCL.{GlobalSize, LocalSize}
 import rise.core.types._
 
 //noinspection TypeAnnotation
-class sgemmCheck extends test_util.TestsWithExecutor {
+class sgemmCheck extends shine.test_util.TestsWithExecutor {
 
   val epsilon = 1.0f
 

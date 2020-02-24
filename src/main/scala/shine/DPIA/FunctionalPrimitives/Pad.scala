@@ -18,10 +18,9 @@ final case class Pad(n: Nat,
                      array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override val t: ExpType =
-    (n: Nat) ~>: (l: Nat) ~>: (r: Nat) ~>: (dt: DataType) ~>:
-      (padExp :: expT(dt, read)) ~>:
-        (array :: expT(n`.`dt, read)) ~>: expT({l + n + r}`.`dt, read)
+  padExp :: expT(dt, read)
+  array :: expT(n`.`dt, read)
+  override val t: ExpType = expT({l + n + r}`.`dt, read)
 
   override def eval(s: Store): Data = ???
 

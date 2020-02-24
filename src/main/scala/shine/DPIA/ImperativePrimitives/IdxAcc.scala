@@ -15,11 +15,9 @@ final case class IdxAcc(n: Nat,
                         array: Phrase[AccType])
   extends AccPrimitive {
 
-  override val t: AccType =
-    (n: Nat) ~>: (dt: DataType) ~>:
-      (index :: expT(idx(n), read)) ~>:
-        (array :: accT(n`.`dt)) ~>:
-          accT(dt)
+  index :: expT(idx(n), read)
+  array :: accT(n`.`dt)
+  override val t: AccType = accT(dt)
 
   override def eval(s: Store): AccIdentifier = {
     val arrayE = OperationalSemantics.eval(s, array)

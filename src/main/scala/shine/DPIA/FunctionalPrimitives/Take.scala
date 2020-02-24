@@ -11,16 +11,16 @@ import shine.DPIA.{->:, Nat, Phrases, _}
 import scala.xml.Elem
 
 // this takes n many elements from an array of n + m elements
-final case class Take(n: Nat,
-                      m: Nat,
-                      w: AccessType,
-                      dt: DataType,
-                      array: Phrase[ExpType])
+final case class Take(
+  n: Nat,
+  m: Nat,
+  w: AccessType,
+  dt: DataType,
+  array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  override val t: ExpType =
-    (n: Nat) ~>: (m: Nat) ~>: (w: AccessType) ~>: (dt: DataType) ~>:
-      (array :: expT({n + m}`.`dt, w)) ~>: expT(n`.`dt, w)
+  array :: expT({n + m}`.`dt, w)
+  override val t: ExpType = expT(n`.`dt, w)
 
   override def eval(s: Store): Data = ???
 

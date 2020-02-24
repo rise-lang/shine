@@ -19,7 +19,7 @@ import util.gen
 
 import scala.language.implicitConversions
 
-class tiling extends test_util.Tests {
+class tiling extends shine.test_util.Tests {
 
   implicit def rewriteResultToExpr(r: RewriteResult[Expr]): Expr = r.get
 

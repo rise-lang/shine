@@ -12,9 +12,8 @@ final case class CycleAcc(n: Nat,
                           input: Phrase[AccType])
   extends AccPrimitive
 {
-  override val t: AccType =
-    (n: Nat) ~>: (m: Nat) ~>: (dt: DataType) ~>:
-      (input :: accT(m`.`dt)) ~>: accT(n`.`dt)
+  input :: accT(m`.`dt)
+  override val t: AccType = accT(n`.`dt)
 
   override def eval(s: Store): AccIdentifier = ???
 

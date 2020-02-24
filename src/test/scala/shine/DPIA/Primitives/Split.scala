@@ -4,7 +4,7 @@ import rise.core.DSL._
 import rise.core.types._
 import util.gen
 
-class Split extends test_util.Tests {
+class Split extends shine.test_util.Tests {
 
   test("Simple split example should generate syntactic valid C code with two for loops") {
     val e =

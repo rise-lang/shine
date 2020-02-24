@@ -20,10 +20,9 @@ final case class Map(
   array: Phrase[ExpType]
 ) extends ExpPrimitive {
 
-  override val t: ExpType =
-    (n: Nat) ~>: (dt1: DataType) ~>: (dt2: DataType) ~>:
-     (access: AccessType) ~>: (f :: expT(dt1, access) ->: expT(dt2, access)) ~>:
-      (array :: expT(n`.`dt1, access)) ~>: expT(n`.`dt2, access)
+  array :: expT(n`.`dt1, access)
+  f :: expT(dt1, access) ->: expT(dt2, access)
+  override val t: ExpType = expT(n`.`dt2, access)
 
   override def visitAndRebuild(
     fun: VisitAndRebuild.Visitor
