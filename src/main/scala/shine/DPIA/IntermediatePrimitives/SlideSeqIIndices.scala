@@ -40,7 +40,7 @@ object SlideSeqIIndices {
           CycleAcc(size - 1 + n, size, dt1, buffer.wr)) `@` i
         ) `;`
         // compute
-        f(Take(3, n - i - 3, read, dt1,
+        f(Take(size, n - i - size, read, dt1,
           Drop(i, n - i, read, dt1, Cycle(n, size, dt1, buffer.rd)))
         )(output `@` i)
       }), unroll = false)
