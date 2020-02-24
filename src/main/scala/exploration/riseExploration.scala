@@ -1,5 +1,6 @@
 package exploration
 
+import elevate.core.Strategy
 import elevate.heuristic_search.heuristics.Random
 import elevate.heuristic_search.heuristics.IterativeImprovement
 import elevate.rise.Rise
@@ -7,13 +8,12 @@ import exploration.search.MockupSearch
 
 object riseExploration {
 
-  def main(solution: Rise): Unit = {
+  def apply(solution: Rise, lowering: Strategy[Rise]):Unit = {
     val s = solution
     print("initial solution: " + s + "\n")
 
     //search version
-    //maybe config with lowering and co
-    val version = new MockupSearch()
+    val version = new MockupSearch(lowering)
 
     //heuristic
     val random = new Random[Rise](s, version)
@@ -24,7 +24,7 @@ object riseExploration {
     val resultRandom = random.start()
 
     //print result
-    println("result Iterative Improvement: " + resultIterativeImprovement)
     println("result Random: " + resultRandom)
+    println("result Iterative Improvement: " + resultIterativeImprovement)
   }
 }
