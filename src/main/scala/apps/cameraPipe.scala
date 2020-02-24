@@ -111,20 +111,16 @@ object cameraPipe {
     )
   }
 
-  val flattenPairArray: Expr = map(fun(p =>
-    generate(fun(i => select(i =:= lidx(0, 2))(p._1)(p._2)))
-  )) >> join
-
   def interleaveX: Expr = implDT(dt => implN(h => implN(w => fun(
     (h`.`w`.`dt) ->: (h`.`w`.`dt) ->: (h`.`(2*w)`.`dt)
   )((a, b) =>
-    zipND(2)(a, b) |> map(flattenPairArray)
+    generate(fun(i => select(i =:= lidx(0, 2))(a)(b))) |> transpose >> map(transpose >> join)
   ))))
 
   def interleaveY: Expr = implDT(dt => implN(h => implN(w => fun(
     (h`.`w`.`dt) ->: (h`.`w`.`dt) ->: ((2*h)`.`w`.`dt)
   )((a, b) =>
-    zipND(2)(a, b) |> transpose |> map(flattenPairArray) |> transpose
+    generate(fun(i => select(i =:= lidx(0, 2))(a)(b))) |> transpose >> join
   ))))
 
   val demosaic: Expr = nFun(h => nFun(w => fun(

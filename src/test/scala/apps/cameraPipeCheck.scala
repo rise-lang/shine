@@ -9,12 +9,15 @@ import rise.core.TypeLevelDSL._
 import elevate.core._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
-import elevate.core.strategies.predicate._
+// import elevate.core.strategies.predicate
 import elevate.rise.Rise
 import elevate.rise.rules._
 import elevate.rise.strategies.normalForm._
 import elevate.rise.rules.traversal._
+// import elevate.rise.strategies.traversal._
+import elevate.rise.rules.movement._
 import elevate.rise.rules.algorithmic._
+// import elevate.rise.strategies.predicate._
 
 class cameraPipeCheck extends shine.test_util.TestsWithExecutor {
   val N = 121
@@ -152,56 +155,14 @@ int main(int argc, char** argv) {
     printTime("execute", util.Execute(testCode))
   }
 
-  def containsAtLeast(n: Int, x: Rise): Strategy[Rise] =
-    skip(n)(isEqualTo(x))
-
-  // TODO: express as a combination of strategies
-  case object gentleBetaReduction extends Strategy[Rise] {
-    def apply(e: Rise): RewriteResult[Rise] = e match {
-      case App(Lambda(x, b), v) if !containsAtLeast(2, x)(b) =>
-        Success(substitute.exprInExpr(v, `for` = x, in = b))
-      case DepApp(DepLambda(x, b), v) =>
-        Success(substitute.kindInExpr(v, `for` = x, in = b))
-      case _ => Failure(gentleBetaReduction)
-    }
-    override def toString = "gentleBetaReduction"
-  }
-
-  case object idxReduction extends Strategy[Rise] {
-    import rise.core.primitives._
-    import rise.core.semantics._
-    import arithexpr.arithmetic._
-
-    def isMakeArray(e: Rise): Boolean = e match {
-      case MakeArray(_) => true
-      case App(f, _) => isMakeArray(f)
-      case _ => false
-    }
-
-    def indexMakeArray(e: Rise, i: Long, n: Long): Rise = e match {
-      case App(_, v) if i == (n - 1) => v
-      case App(f, _) => indexMakeArray(f, i, n - 1)
-      case _ => throw new Exception("index out of bounds")
-    }
-
-    def apply(e: Rise): RewriteResult[Rise] = e match {
-      case App(App(Idx(), Literal(IndexData(Cst(i), Cst(n)))), mka)
-      if isMakeArray(mka) =>
-        Success(indexMakeArray(mka, i, n))
-      case _ =>
-        Failure(idxReduction)
-    }
-  }
-
   def dotPrintTmp(name: String, e: Rise): Unit = {
-    val normalized = normalize.apply(gentleBetaReduction)(e).get
     val generateDot = (e: Rise) => {
       rise.core.dotPrinter.generateDotString(e,
         printTypes = false,
         inlineLambdaIdentifier = true,
         applyNodes = false)
     }
-    rise.core.dotPrinter.exprToDot("/tmp", name, normalized, generateDot)
+    rise.core.dotPrinter.exprToDot("/tmp", name, e, generateDot)
   }
 
   test("hot pixel suppression passes checks") {
@@ -273,16 +234,77 @@ int main(int argc, char** argv) {
     checkDemosaic(lowered)
   }
 
-  ignore("demosaic passes checks with circular buffers") {
+  test("demosaic passes checks with circular buffers") {
+    // import rise.core.primitives._
+
     val typed = printTime("infer", infer(demosaic))
 
-    val gentlyBetaReduced = normalize.apply(gentleBetaReduction)(typed).get
-    dotPrintTmp("demosaic", gentlyBetaReduced)
+    var nRewrite = 0
+    def rewrite(e: Rise, s: Strategy[Rise]): Rise = {
+      nRewrite += 1
+      val r = printTime(s"rewrite $nRewrite", s(e).get)
+      dotPrintTmp(s"demosaic$nRewrite", r)
+      r
+    }
 
-    val mapFused = normalize.apply(
-      mapFusion <+ gentleBetaReduction <+ idxReduction
-    )(gentlyBetaReduced).get
-    dotPrintTmp("demosaicFused", mapFused)
+    // 1. normalize a bit
+    val demosaic1 = rewrite(typed, normalize.apply(gentleBetaReduction))
+
+    def gentleFmap(s: Strategy[Rise]): Strategy[Rise] =
+      mapFusion `;` function(argument(body(s)) `;` mapLastFission)
+
+    // 2. push take/drop towards input
+    val demosaic2 = rewrite(demosaic1, normalize.apply(
+      gentleBetaReduction <+ etaReduction <+
+      takeAll <+ dropNothing <+ mapIdentity <+
+      takeAfterMap <+ dropAfterMap <+
+      gentleFmap(takeAfterMap <+ dropAfterMap) <+
+      takeInZip <+ dropInZip <+
+      takeInSelect <+ dropInSelect
+    ))
+
+    // 3. push line mapping towards output
+    val _ = rewrite(demosaic2, body(body(body(
+      repeat(oncebu(
+        gentleBetaReduction <+ etaReduction <+ mapFusion <+ mapOutsideZip <+ fOutsideSelect
+      ))
+    ))))
+
+      /*
+      function(lambdaBodyWithName(x5 =>
+      function(lambdaBodyWithName(x10 =>
+        alltd(
+          liftPredicate[Rise]({
+            case App(DepApp(DepApp(Slide(), _), _),
+              App(App(Map(), DepApp(DepApp(Slide(), _), _)), x)
+            ) if x == x10 || x == x5 => true
+            case _ => false
+          }) `;`
+          `*f >> S -> S >> **f`
+        ) `;`
+        normalize.apply(
+          gentleBetaReduction <+ etaReduction <+
+          takeAll <+ dropNothing <+ mapIdentity <+
+          takeAfterMap <+ dropAfterMap <+
+          takeInZip <+ dropInZip <+
+          takeInSelect <+ dropInSelect
+          // takeInSlide <+ dropInSlide
+          // fOutsideMakeArray <+ fOutsideSelect
+        ) `;`
+        alltd(
+          liftPredicate[Rise]({
+            case App(DepApp(Take(), _), x) if x == x10 || x == x5 => true
+            case App(DepApp(Drop(), _), x) if x == x10 || x == x5 => true
+            case _ => false
+          }) `;`
+          argument(slideAfter) `;`
+          (dropBeforeJoin <+ takeBeforeJoin) `;`
+          argument(argument(dropInSlide <+ takeInSlide)) `;`
+          (takeAll <+ dropNothing)
+        ) `;`
+        subexpressionElimination(slide(2)(1)(x10)) `;`
+        subexpressionElimination(slide(2)(1)(x5))
+      */
 
     throw new Exception("no circular buffers yet")
     // checkDemosaic(lowered)
