@@ -190,12 +190,16 @@ object primitives {
 
   @primitive case class MapSeq()(override val t: Type = TypePlaceholder)
       extends Primitive {
-    override def typeScheme: Type =
-      implN(n =>
-        implDT(s =>
-          implDT(t => (s ->: t) ->: ArrayType(n, s) ->: ArrayType(n, t))
-        )
-      )
+    override def typeScheme: Type = implN(n => implDT(s =>
+      implDT(t => (s ->: t) ->: ArrayType(n, s) ->: ArrayType(n, t))
+    ))
+  }
+
+  @primitive case class MapStream()(override val t: Type = TypePlaceholder)
+    extends Primitive {
+    override def typeScheme: Type = implN(n => implDT(s =>
+      implDT(t => (s ->: t) ->: ArrayType(n, s) ->: ArrayType(n, t))
+    ))
   }
 
   @primitive case class MapSeqUnroll()(override val t: Type = TypePlaceholder)
@@ -317,15 +321,9 @@ object primitives {
   @primitive case class Slide()(override val t: Type = TypePlaceholder)
       extends Primitive {
     override def typeScheme: Type =
-      implN(n =>
-        nFunT(sz =>
-          nFunT(sp =>
-            implDT(t => {
-              ArrayType(sp * n + sz, t) ->: ArrayType(1 + n, ArrayType(sz, t))
-            })
-          )
-        )
-      )
+      implN(n => nFunT(sz => nFunT(sp => implDT(t =>
+        ArrayType(sp * n + sz, t) ->: ArrayType(1 + n, ArrayType(sz, t))
+      ))))
   }
 
   object SlideSeq {
@@ -338,10 +336,10 @@ object primitives {
       override val t: Type = TypePlaceholder
   ) extends Primitive {
     override def typeScheme: Type =
-      implN(n => nFunT(sz => nFunT(sp => implDT(s => implDT(t =>
-        (s ->: s) ->: (ArrayType(sz, s) ->: t) ->:
-          ArrayType(sp * n + sz, s) ->: ArrayType(1 + n, t)
-      )))))
+      // TODO: should return a stream / sequential array, not an array
+      implN(n => nFunT(sz => nFunT(sp => implDT(t =>
+        (t ->: t) ->: ArrayType(sp * n + sz, t) ->: ArrayType(1 + n, ArrayType(sz, t))
+      ))))
   }
 
   @primitive case class Snd()(override val t: Type = TypePlaceholder)

@@ -97,9 +97,8 @@ object primitives {
       override val t: Type = TypePlaceholder
   ) extends Primitive {
     override def typeScheme: Type =
-      aFunT(a => implN(n => nFunT(sz => nFunT(sp => implDT(s => implDT(t =>
-        (s ->: s) ->: (ArrayType(sz, s) ->: t) ->:
-          ArrayType(sp * n + sz - sp, s) ->: ArrayType(n, t)
-      ))))))
+      aFunT(a => implN(n => nFunT(sz => nFunT(sp => implDT(t =>
+        (t ->: t) ->: ArrayType(sp * n + sz - sp, t) ->: ArrayType(n, ArrayType(sz, t))
+      )))))
   }
 }
