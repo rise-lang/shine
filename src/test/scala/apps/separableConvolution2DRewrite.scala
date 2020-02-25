@@ -157,10 +157,9 @@ class separableConvolution2DRewrite extends shine.test_util.Tests {
   test("scanline to regRotSeq") {
     rewrite_steps(toTDSL(scanline)(weightsV)(weightsH), Seq(
       (repeatNTimes(2, oncetd(lowering.reduceSeqUnroll)) `;`
+        oncetd(lowering.mapSeq) `;`
         oncetd(lowering.slideSeq(SlideSeq.Values, idE)) `;`
-        BENF `;`
-        oncetd(algorithmic.slideSeqFusion) `;`
-        oncetd(lowering.mapSeq))
+        oncetd(lowering.mapStream))
         -> toTDSL(regRotSeq)(weightsV)(weightsH)
     ))
   }

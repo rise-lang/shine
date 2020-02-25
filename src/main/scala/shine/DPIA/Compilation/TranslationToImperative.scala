@@ -131,4 +131,20 @@ object TranslationToImperative {
     }
   }
 
+  def str(E: Phrase[ExpType])
+         (C: Phrase[`(nat)->:`[(ExpType ->: CommType) ->: CommType] ->: CommType])
+         (implicit context: TranslationContext): Phrase[CommType] = {
+    E match {
+      case ep: ExpPrimitive => ep.streamTranslation(C)
+
+      // on the fly beta-reduction
+      case Apply(fun, arg) => str(Lifting.liftFunction(fun).reducing(arg))(C)
+      case DepApply(fun, arg) => arg match {
+        case a: Nat => str(Lifting.liftDependentFunction[NatKind, ExpType](fun.asInstanceOf[Phrase[NatKind `()->:` ExpType]])(a))(C)
+        case a: DataType => str(Lifting.liftDependentFunction[DataKind, ExpType](fun.asInstanceOf[Phrase[DataKind `()->:` ExpType]])(a))(C)
+      }
+
+      case _ => ???
+    }
+  }
 }

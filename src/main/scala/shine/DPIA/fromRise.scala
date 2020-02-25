@@ -203,6 +203,12 @@ object fromRise {
       =>
         makeMap(MapSeq, n, la, lb)
 
+      case (core.MapStream(),
+      lt.FunType(lt.FunType(_, lb: lt.DataType),
+      lt.FunType(lt.ArrayType(n, la: lt.DataType), _)))
+      =>
+        makeMap(MapStream, n, la, lb)
+
       case (core.MapSeqUnroll(),
       lt.FunType(lt.FunType(_, lb: lt.DataType),
       lt.FunType(lt.ArrayType(n, la: lt.DataType), _)))
@@ -359,40 +365,32 @@ object fromRise {
       lt.DepFunType(sz: lt.NatIdentifier,
       lt.DepFunType(sp: lt.NatIdentifier,
       lt.FunType(_,
-      lt.FunType(_,
-      lt.FunType(lt.ArrayType(insz, ls), lt.ArrayType(n, lt)))))))
+      lt.FunType(lt.ArrayType(insz, ldt), lt.ArrayType(n, _))))))
       =>
-        val s = dataType(ls)
-        val t = dataType(lt)
+        val t = dataType(ldt)
         DepLambda[NatKind](natIdentifier(sz))(
           DepLambda[NatKind](natIdentifier(sp))(
             fun[ExpType ->: ExpType](
-              expT(s, read) ->: expT(s, write), write_dt1 =>
-              fun[ExpType ->: ExpType](
-                expT(sz`.`s, read) ->: expT(t, write), f =>
-                fun[ExpType](expT(insz`.`s, read), e =>
-                  SlideSeq(rot, n, sz, sp, s, t, write_dt1, f, e))))))
+              expT(t, read) ->: expT(t, write), write_t =>
+                fun[ExpType](expT(insz`.`t, read), e =>
+                  SlideSeq(rot, n, sz, sp, t, write_t, e)))))
 
       case (ocl.OclSlideSeq(rot),
       lt.DepFunType(la: lt.AddressSpaceIdentifier,
       lt.DepFunType(sz: lt.NatIdentifier,
       lt.DepFunType(sp: lt.NatIdentifier,
       lt.FunType(_,
-      lt.FunType(_,
-      lt.FunType(lt.ArrayType(insz, ls), lt.ArrayType(n, lt))))))))
+      lt.FunType(lt.ArrayType(insz, ldt), lt.ArrayType(n, _)))))))
       =>
-        val s = dataType(ls)
-        val t = dataType(lt)
+        val t = dataType(ldt)
         val a = addressSpaceIdentifier(la)
         DepLambda[AddressSpaceKind](a)(
         DepLambda[NatKind](natIdentifier(sz))(
         DepLambda[NatKind](natIdentifier(sp))(
           fun[ExpType ->: ExpType](
-            expT(s, read) ->: expT(s, write), write_dt1 =>
-            fun[ExpType ->: ExpType](
-              expT(sz`.`s, read) ->: expT(t, write), f =>
-              fun[ExpType](expT(insz`.`s, read), e =>
-                OpenCLSlideSeq(rot, a, n, sz, sp, s, t, write_dt1, f, e)))))))
+            expT(t, read) ->: expT(t, write), write_t =>
+              fun[ExpType](expT(insz`.`t, read), e =>
+                OpenCLSlideSeq(rot, a, n, sz, sp, t, write_t, e))))))
 
       case (core.Reorder(),
       lt.FunType(_,
