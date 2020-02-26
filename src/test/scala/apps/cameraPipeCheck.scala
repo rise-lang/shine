@@ -9,7 +9,7 @@ import rise.core.TypeLevelDSL._
 import elevate.core._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
-// import elevate.core.strategies.predicate
+import elevate.core.strategies.predicate
 import elevate.rise.Rise
 import elevate.rise.rules._
 import elevate.rise.strategies.normalForm._
@@ -235,8 +235,6 @@ int main(int argc, char** argv) {
   }
 
   test("demosaic passes checks with circular buffers") {
-    // import rise.core.primitives._
-
     val typed = printTime("infer", infer(demosaic))
 
     var nRewrite = 0
@@ -260,19 +258,82 @@ int main(int argc, char** argv) {
       takeAfterMap <+ dropAfterMap <+
       gentleFmap(takeAfterMap <+ dropAfterMap) <+
       takeInZip <+ dropInZip <+
-      takeInSelect <+ dropInSelect
+      takeInSelect <+ dropInSelect <+
+      (mapFusion `;`
+       function(argument(body(
+         normalize.apply(gentleBetaReduction) `;`
+         (takeInZip <+ dropInZip)
+       ))) `;`
+       fBeforeZipMap
+      ) <+ mapFBeforeSlide
     ))
 
     // 3. push line mapping towards output
-    val _ = rewrite(demosaic2, body(body(body(
-      repeat(oncebu(
-        gentleBetaReduction <+ etaReduction <+ mapFusion <+ mapOutsideZip <+ fOutsideSelect
-      ))
-    ))))
-
-      /*
+    val demosaic3 = rewrite(demosaic2, body(body(
+      lambdaBodyWithName(x0 =>
       function(lambdaBodyWithName(x5 =>
       function(lambdaBodyWithName(x10 =>
+        repeat(oncebu(
+          gentleBetaReduction <+ etaReduction <+ mapFusion <+ mapOutsideZip
+        )) `;`
+        oncetd(function(predicate.isEqualTo(generate)) `;`
+          oncetd(one(function(predicate.isEqualTo(generate)) `;`
+            argument(body({ x =>
+              var exprFound: Rise = null
+              function(argument(argument(argument({ expr =>
+                exprFound = expr
+                Success(expr)
+              })))).apply(x).flatMapSuccess(
+                argument(argument(
+                  argument(argument(slideAfter2) `;` dropAfterMap) `;` takeAfterMap `;`
+                  argument(zipSndAfter(exprFound))
+                ) `;` mapFusion `;` mapFusion)
+              )
+            })) `;`
+            mapOutsideGenerateSelect
+          ))
+        ) `;`
+        oncetd(function(predicate.isEqualTo(generate)) `;`
+          oncetd(one(function(predicate.isEqualTo(generate)) `;`
+            argument(body({ x =>
+              var rightExpr: Rise = null
+              argument(argument(argument(function(argument({ expr =>
+                rightExpr = expr
+                Success(expr)
+              }))))).apply(x).flatMapSuccess({ x =>
+                var leftExpr: Rise = null
+                function(argument(argument(
+                  zipSame `;` argument(
+                  zipSwap `;` argument(
+                  zipRotate `;` argument(
+                    function(argument(zipSame)) `;`
+                    argument(
+                      function(argument({ expr =>
+                        leftExpr = expr
+                        zipSndAfter(rightExpr)(expr)
+                      })) `;`
+                      argument(mapIdentityAfter) `;` mapOutsideZip
+                    ) `;` mapOutsideZip
+                  ) `;` mapFusion) `;` mapFusion) `;` mapFusion
+                ) `;` mapFusion)).apply(x).flatMapSuccess(
+                argument(argument(
+                  argument(
+                    function(argument(zipFstAfter(leftExpr))) `;`
+                    argument(mapIdentityAfter) `;` mapOutsideZip
+                  ) `;`
+                  function(argument(mapIdentityAfter)) `;` mapOutsideZip
+                ) `;` mapFusion)
+                )
+              })
+            })) `;` mapOutsideGenerateSelect
+          ))
+        ) `;`
+        normalize.apply(gentleBetaReduction <+ etaReduction <+ removeTransposePair <+ mapFusion)
+        // TODO: continue ..
+      )))))
+    )))
+
+      /*
         alltd(
           liftPredicate[Rise]({
             case App(DepApp(DepApp(Slide(), _), _),
@@ -302,12 +363,16 @@ int main(int argc, char** argv) {
           argument(argument(dropInSlide <+ takeInSlide)) `;`
           (takeAll <+ dropNothing)
         ) `;`
-        subexpressionElimination(slide(2)(1)(x10)) `;`
-        subexpressionElimination(slide(2)(1)(x5))
       */
 
-    throw new Exception("no circular buffers yet")
-    // checkDemosaic(lowered)
+    throw new Exception("WIP")
+    checkDemosaic(printTime("infer", infer(nFun(h => nFun(w =>
+      demosaic3(h)(w) >> transpose >> map(transpose) >>
+        split(2) >> mapSeq(mapSeqUnroll(
+        mapSeq(
+          mapSeqUnroll(fun(x => x)))
+      )) >> join >> map(transpose) >> transpose
+    )))))
   }
 
   test("color correction passes checks") {
