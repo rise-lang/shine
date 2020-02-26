@@ -21,8 +21,8 @@ object executeC {
 
   def prepareInput(riseProgram:Program):(String,String,String) ={
 
-    val arrayTwo = "..[.]..[.]f32".r
-    val arrayOne = "..[.]f32".r
+    val arrayTwo = "(.)+[.](.)+[.]f32".r
+    val arrayOne = "(.)+[.]f32".r
     val elemOne = "f32".r
 
     var codeBeg = s"""
@@ -88,25 +88,32 @@ object executeC {
       } else if (arrayTwo.findFirstIn(riseProgram.outputParam.`type`.dataType.toString).size > 0) {
         codeBeg += s"""
         float* ${riseProgram.outputParam.name} = (float*) malloc(sizeof(float)*N*N);
+        float* gold = (float*) malloc(sizeof(float)*N*N);
         for (int i = 0; i < N*N; i++) {
           ${riseProgram.outputParam.name}[i] = 0;
+          gold[i] = 0;
         }
         """
         codeEnd += s"""
+        free(gold);
         free(${riseProgram.outputParam.name});"""
       } else if (arrayOne.findFirstIn(riseProgram.outputParam.`type`.dataType.toString).size > 0) {
         codeBeg += s"""
         float* ${riseProgram.outputParam.name} = (float*) malloc(sizeof(float)*N);
+        float* gold = (float*) malloc(sizeof(float)*N);
         for (int i = 0; i < N; i++) {
           ${riseProgram.outputParam.name}[i] = 0;
+          gold[i] = 0;
         }
         """
         codeEnd += s"""
+        free(gold);
         free(${riseProgram.outputParam.name});"""
 
       } else if (elemOne.findFirstIn(riseProgram.outputParam.`type`.dataType.toString).size > 0) {
         codeBeg += s"""
         float ${riseProgram.outputParam.name} = N;
+        float gold = N;
         """
       }
 
@@ -115,17 +122,46 @@ object executeC {
       (codeBeg,codeEnd, call)
     }
 
+  //Warning!! hard-coded for mm
+  def prepareGold(): String ={
+    val code = s"""
+  void compute_gold(float* GOLD, float* A, float* B){
+	  for(int i = 0; i < SIZE; i++)
+	  	for(int k = 0; k < SIZE; k++)
+			  for(int j = 0; j < SIZE; j++)
+				  GOLD[i*SIZE+j] += A[i*SIZE+k] * B[k*SIZE+j];
+   }
+
+  int compare_gold(float* C, float* GOLD){
+	  int valid = 1;
+	  for(int i = 0; i < SIZE*SIZE; i++){
+		  if(C[i] != GOLD[i]){
+			  valid = 0;
+        i = SIZE*SIZE;
+		  }
+	  }
+	  return valid;
+  }
+  """
+    code
+  }
+
     def genExecutableCode(riseProgram:Rise):String = {
 
       val p = gen.CProgram(riseProgram)
 
       val preparation = prepareInput(p)
 
+      val gold = prepareGold
+
     val testCode = s"""
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+int SIZE = ${N};
 ${p.code}
+
+${gold}
 
 int main(int argc, char** argv) {
 
@@ -144,13 +180,20 @@ int main(int argc, char** argv) {
   duration = (tp_end.tv_sec - tp_start.tv_sec) * 1000000000 + (tp_end.tv_nsec - tp_start.tv_nsec);
   duration = duration / 1000000;
 
-  //add checking code here
+  compute_gold(gold, x0, x1);
+  int check = compare_gold(output, gold);
+
+  if(!check){
+    return -1;
+  }
+
+  //print result
 
   ${preparation._2}
 
-  printf("%f", duration);
+  printf("%f\\n", duration);
 
-  return duration;
+  return 0;
 }
 """
 

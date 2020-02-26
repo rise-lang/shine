@@ -16,10 +16,11 @@ object Execute2 {
 
       //repeat execution
       //take median as runtime
-      val N = 100
+      val N = 3
       val runtimes:Array[Double] = new Array[Double](N)
       for(i <- Range(0,N)){
         runtimes(i) = (s"$bin" !!).toDouble
+        println("runtime:(" + i +"): " + runtimes(i))
       }
       runtimes.sorted.apply(N/2).toString()
     } catch {

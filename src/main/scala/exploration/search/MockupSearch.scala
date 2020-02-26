@@ -1,25 +1,25 @@
 package exploration.search
 
-import elevate.core.strategies.traversal.{alltd, oncetd}
+import elevate.core.strategies.traversal.{alltd, bottomup, oncetd, topdown}
 import elevate.core.{Strategy, Success}
 import elevate.heuristic_search.ProblemConstraints
 import elevate.rise.rules.lowering.{mapSeq, reduceSeq}
 import elevate.rise.{Rise, rules, strategies}
 import elevate.rise.rules.traversal.LiftTraversable
-import elevate.rise.strategies.normalForm.CNF
-import elevate.rise.strategies.tiling
+import elevate.rise.strategies.normalForm.{CNF, RNF}
+import elevate.rise.strategies.{tiling, traversal}
 
 //simple mockup search class
 class MockupSearch(val lowering: Strategy[Rise] = CNF `;` alltd(reduceSeq) `;` alltd(mapSeq))
   extends ProblemConstraints[Rise] {
 
   var value = 12
-  //  val traversals = Seq(
-//    traversal.oncetd[Rise](core.Strategy[Rise]),
-//    traversal.alltd[Rise],
-//    traversal.topdown[Rise],
-//    traversal.bottomup[Rise]
-//  )
+  val traversalss = Seq(
+    elevate.core.strategies.traversal.oncetd,
+    elevate.core.strategies.traversal.alltd,
+    elevate.core.strategies.traversal.topdown,
+    elevate.core.strategies.traversal.bottomup
+  )
   val strategies = Seq(
     rules.algorithmic.splitJoin(8),
     rules.algorithmic.mapLastFission,
@@ -40,8 +40,8 @@ class MockupSearch(val lowering: Strategy[Rise] = CNF `;` alltd(reduceSeq) `;` a
     rules.movement.transposeBeforeMapMapF,
     rules.movement.transposeBeforeMapJoin,
     tiling.loopInterchange,
-    tiling.tileND(32)(32),
-
+//    tiling.tileND(32)(32),
+//
     rules.betaReduction,
     rules.etaAbstraction,
     rules.etaReduction
@@ -60,12 +60,37 @@ class MockupSearch(val lowering: Strategy[Rise] = CNF `;` alltd(reduceSeq) `;` a
     //try strategies and add to neighbourhood set
     strategies.foreach(strategy  => {
         try {
-//          print("try: " + strategy)
-          val result = alltd(strategy).apply(solution)
+          print("try: " + strategy)
+          val resultOncetd = (RNF `;` oncetd(strategy))(solution)
+          val resultAlltd = (RNF `;` alltd(strategy))(solution)
+          val resultTopdown = (RNF `;` topdown(strategy))(solution)
+          val resultBottomUp = (RNF `;` bottomup(strategy))(solution)
+
           //check success/failure
-          if (result.isInstanceOf[Success[Rise]]) {
+          if (resultOncetd.isInstanceOf[Success[Rise]]) {
             println(" - success")
-            neighbours.add(result.get)
+            neighbours.add(resultOncetd.get)
+          }else{
+            println(" - failure")
+          }
+          //check success/failure
+          if (resultAlltd.isInstanceOf[Success[Rise]]) {
+            println(" - success")
+            neighbours.add(resultAlltd.get)
+          }else{
+            println(" - failure")
+          }
+          //check success/failure
+          if (resultTopdown.isInstanceOf[Success[Rise]]) {
+            println(" - success")
+            neighbours.add(resultTopdown.get)
+          }else{
+            println(" - failure")
+          }
+          //check success/failure
+          if (resultBottomUp.isInstanceOf[Success[Rise]]) {
+            println(" - success")
+            neighbours.add(resultBottomUp.get)
           }else{
             println(" - failure")
           }
@@ -84,16 +109,24 @@ class MockupSearch(val lowering: Strategy[Rise] = CNF `;` alltd(reduceSeq) `;` a
 
   def f(solution:Rise):Double = {
     println("lowering strategy: " + lowering)
-    //codegen normal form (CNF)
-    val cnf = CNF.apply(solution)
+    try {
+      //codegen normal form (CNF)
+      val cnf = CNF.apply(solution)
 
-    //lower CNF
-    var lowered = alltd(mapSeq).apply(cnf)
-    lowered = alltd(reduceSeq).apply(lowered)
+      //lower CNF
+      var lowered = alltd(mapSeq).apply(cnf)
+      lowered = alltd(reduceSeq).apply(lowered)
 
-    //execute
-    val performanceValue = executeC(lowered)
-    performanceValue
+      //execute
+      val performanceValue = executeC(lowered)
+      performanceValue
+
+    }catch{
+      case e: Throwable => {
+        println("error: " + e)
+        -1
+      }
+    }
   }
 
 }
