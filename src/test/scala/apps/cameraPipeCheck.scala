@@ -420,7 +420,98 @@ int main(int argc, char** argv) {
               )
             })
           })) `;` mapOutsideGenerateSelect
-        )
+        ) `;`
+        normalize.apply(gentleBetaReduction <+ etaReduction <+ removeTransposePair <+ mapFusion) `;`
+        oncetd(function(predicate.isEqualTo(generate)) `;`
+          oncetd(one(function(predicate.isEqualTo(generate)) `;`
+            argument(body({ x =>
+              var rightExpr: Rise = null
+              argument(argument(
+                zipSame `;` argument(
+                zipSwap `;` argument(
+                zipRotate `;` argument(
+                  function(argument(zipSame)) `;`
+                  argument(function(argument({ expr =>
+                    rightExpr = expr
+                    Success(expr)
+                  }))) `;`
+                  argument(mapIdentityAfter) `;` mapOutsideZip
+                ) `;` mapFusion) `;` mapFusion) `;` mapFusion
+              ) `;` mapFusion).apply(x).flatMapSuccess({ x =>
+                var leftExpr: Rise = null
+                function(argument(argument(
+                  argument(
+                    function(argument({ expr =>
+                      leftExpr = expr
+                      zipSndAfter(rightExpr)(expr)
+                    })) `;`
+                    argument(mapIdentityAfter) `;` mapOutsideZip
+                  ) `;`
+                  function(argument(mapIdentityAfter)) `;` mapOutsideZip
+                ) `;` mapFusion)).apply(x).flatMapSuccess(
+                  argument(argument(
+                    argument(
+                      function(argument(zipFstAfter(leftExpr))) `;`
+                      argument(mapIdentityAfter) `;` mapOutsideZip
+                    ) `;`
+                    function(argument(mapIdentityAfter)) `;` mapOutsideZip
+                  ) `;` mapFusion)
+                )
+              })
+            })) `;` mapOutsideGenerateSelect
+          ))
+        ) `;`
+        oncetd(function(predicate.isEqualTo(generate)) `;`
+          oncetd(one(function(predicate.isEqualTo(generate)) `;`
+            argument(body({ x =>
+              var rightExpr: Rise = null
+              argument(argument(argument({ expr =>
+                rightExpr = expr
+                Success(expr)
+              }))).apply(x).flatMapSuccess(
+              function(argument(argument(
+                takeAfterDrop `;`
+                argument(argument(slideAfter2) `;` takeAfterMap) `;` dropAfterMap `;`
+                argument(zipSndAfter(rightExpr)) `;` mapFusion
+              ) `;` mapFusion))
+              )
+            })) `;` mapOutsideGenerateSelect
+          ))
+        ) `;`
+        normalize.apply(gentleBetaReduction <+ etaReduction <+ removeTransposePair <+ mapFusion) `;`
+        oncetd(function(predicate.isEqualTo(generate)) `;`
+          argument(body({ x =>
+            var leftExpr: Rise = null
+            function(argument(argument(
+              argument(function(argument({ expr =>
+                leftExpr = expr
+                Success(expr)
+              })))
+            ))).apply(x).flatMapSuccess({ x =>
+              var rightExpr: Rise = null
+              argument(argument(
+                function(argument(dropAfterTake `;` argument(dropInSlide) `;` takeAfterMap)) `;`
+                argument(
+                  argument(dropInSlide) `;`
+                  function(argument({ expr =>
+                    rightExpr = expr
+                    zipFstAfter(leftExpr)(expr)
+                  })) `;`
+                  mapOutsideZip
+                ) `;` mapOutsideZip
+              ) `;` mapFusion).apply(x).flatMapSuccess(
+                function(argument(argument(
+                  argument(
+                    function(argument(zipSndAfter(rightExpr))) `;`
+                    argument(mapIdentityAfter) `;` mapOutsideZip
+                  ) `;`
+                  function(argument(mapIdentityAfter)) `;` mapOutsideZip
+                ) `;` mapFusion))
+              )
+              })
+          })) `;` mapOutsideGenerateSelect
+        ) `;`
+        normalize.apply(gentleBetaReduction <+ etaReduction <+ removeTransposePair <+ mapFusion)
         // TODO: continue ..
       ))))
     ))))
