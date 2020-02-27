@@ -269,10 +269,8 @@ int main(int argc, char** argv) {
     ))
 
     // 3. push line mapping towards output
-    val demosaic3 = rewrite(demosaic2, body(body(
-      lambdaBodyWithName(x0 =>
-      function(lambdaBodyWithName(x5 =>
-      function(lambdaBodyWithName(x10 =>
+    val demosaic3 = rewrite(demosaic2, body(body(body(
+      function(body(function(body(
         repeat(oncebu(
           gentleBetaReduction <+ etaReduction <+ mapFusion <+ mapOutsideZip
         )) `;`
@@ -328,10 +326,104 @@ int main(int argc, char** argv) {
             })) `;` mapOutsideGenerateSelect
           ))
         ) `;`
-        normalize.apply(gentleBetaReduction <+ etaReduction <+ removeTransposePair <+ mapFusion)
+        normalize.apply(gentleBetaReduction <+ etaReduction <+ removeTransposePair <+ mapFusion) `;`
+        oncetd(function(predicate.isEqualTo(generate)) `;`
+          argument(body({ x =>
+            var rightExpr: Rise = null
+            argument(argument(argument(function(argument({ expr =>
+              rightExpr = expr
+              Success(expr)
+            }))))).apply(x).flatMapSuccess({ x =>
+              var leftExpr: Rise = null
+              function(argument(
+                argument(
+                  function(argument(
+                    takeAfterDrop `;` argument(takeInSlide) `;` dropAfterMap
+                  )) `;`
+                  argument(argument(takeInSlide)) `;`
+                  argument(function(argument({ expr =>
+                    leftExpr = expr
+                    zipSndAfter(rightExpr)(expr)
+                  })) `;` mapOutsideZip) `;` mapOutsideZip
+                ) `;` mapFusion
+              )).apply(x).flatMapSuccess(
+                argument(argument(
+                  argument(
+                    function(argument(zipFstAfter(leftExpr))) `;`
+                    argument(mapIdentityAfter) `;` mapOutsideZip
+                  ) `;`
+                  function(argument(mapIdentityAfter)) `;` mapOutsideZip
+                ) `;` mapFusion)
+              )
+            })
+          })) `;` mapOutsideGenerateSelect
+        ) `;`
+        normalize.apply(gentleBetaReduction <+ etaReduction <+ removeTransposePair <+ mapFusion) `;`
+        oncetd(function(predicate.isEqualTo(generate)) `;`
+          oncetd(one(function(predicate.isEqualTo(generate)) `;`
+            argument(body({ x =>
+              var rightExpr: Rise = null
+              argument(argument({ expr =>
+                rightExpr = expr
+                Success(expr)
+              })).apply(x).flatMapSuccess({ x =>
+                var leftExpr: Rise = null
+                function(argument(argument({ expr =>
+                  leftExpr = expr
+                  zipSndAfter(rightExpr)(expr)
+                }) `;` mapFusion)).apply(x).flatMapSuccess(
+                  argument(argument(
+                    zipFstAfter(leftExpr)
+                  ) `;` mapFusion)
+                )
+              })
+            })) `;` mapOutsideGenerateSelect
+          ))
+        ) `;`
+        oncetd(function(predicate.isEqualTo(generate)) `;`
+          oncetd(one(function(predicate.isEqualTo(generate)) `;`
+            argument(body({ x =>
+              var rightExpr: Rise = null
+              argument(argument({ expr =>
+                rightExpr = expr
+                Success(expr)
+              })).apply(x).flatMapSuccess({ x =>
+                var leftExpr: Rise = null
+                function(argument(argument({ expr =>
+                  leftExpr = expr
+                  zipSndAfter(rightExpr)(expr)
+                }) `;` mapFusion)).apply(x).flatMapSuccess(
+                  argument(argument(
+                    zipFstAfter(leftExpr)
+                  ) `;` mapFusion)
+                )
+              })
+            })) `;` mapOutsideGenerateSelect
+          ))
+        ) `;`
+        normalize.apply(gentleBetaReduction <+ etaReduction <+ removeTransposePair <+ mapFusion) `;`
+        oncetd(function(predicate.isEqualTo(generate)) `;`
+          argument(body({ x =>
+            var rightExpr: Rise = null
+            argument(argument({ expr =>
+              rightExpr = expr
+              Success(expr)
+            })).apply(x).flatMapSuccess({ x =>
+              var leftExpr: Rise = null
+              function(argument(argument({ expr =>
+                leftExpr = expr
+                zipSndAfter(rightExpr)(expr)
+              }) `;` mapFusion)).apply(x).flatMapSuccess(
+                argument(argument(
+                  zipFstAfter(leftExpr)
+                ) `;` mapFusion)
+              )
+            })
+          })) `;` mapOutsideGenerateSelect
+        )
         // TODO: continue ..
-      )))))
-    )))
+      ))))
+    ))))
 
       /*
         alltd(
