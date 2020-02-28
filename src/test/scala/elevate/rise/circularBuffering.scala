@@ -129,7 +129,7 @@ class circularBuffering extends shine.test_util.Tests {
 
   test("highLevel to circBuf") {
     rewriteSteps(highLevel, Seq(
-      (oncetd(dropAfterMap) `;` oncetd(takeAfterMap))
+      (oncetd(dropBeforeMap) `;` oncetd(takeBeforeMap))
       -> (
         slide(3)(1) >> map(sum) >> fun(x =>
         makeArray(2)(
@@ -137,7 +137,7 @@ class circularBuffering extends shine.test_util.Tests {
           x |> slide(4)(1) >> map(sum)
         ))
       ),
-      (oncetd(dropInSlide) `;` oncetd(takeAfterMap) `;` oncetd(takeInSlide))
+      (oncetd(dropInSlide) `;` oncetd(takeBeforeMap) `;` oncetd(takeInSlide))
       -> (
       slide(3)(1) >> map(sum) >> fun(x =>
         makeArray(2)(
@@ -172,7 +172,7 @@ class circularBuffering extends shine.test_util.Tests {
         ))) >> transpose
       ),
       (normalize.apply(lowering.reduceSeq) `;`
-        oncetd(dropAfterTake) `;`
+        oncetd(dropBeforeTake) `;`
         oncetd(isApply `;` one(isApply `;` one(isMakeArray)) `;`
           lowering.mapSeqUnrollWrite) `;`
         oncetd(lowering.slideSeq(SlideSeq.Indices, fun(x => x))) `;`

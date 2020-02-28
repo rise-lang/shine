@@ -6,6 +6,7 @@ import rise.core._
 import rise.core.types._
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
+import rise.core.primitives._
 import elevate.core._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
@@ -241,7 +242,7 @@ int main(int argc, char** argv) {
     def rewrite(e: Rise, s: Strategy[Rise]): Rise = {
       nRewrite += 1
       val r = printTime(s"rewrite $nRewrite", s(e).get)
-      dotPrintTmp(s"demosaic$nRewrite", r)
+      // dotPrintTmp(s"demosaic$nRewrite", r)
       r
     }
 
@@ -255,8 +256,8 @@ int main(int argc, char** argv) {
     val demosaic2 = rewrite(demosaic1, normalize.apply(
       gentleBetaReduction <+ etaReduction <+
       takeAll <+ dropNothing <+ mapIdentity <+
-      takeAfterMap <+ dropAfterMap <+
-      gentleFmap(takeAfterMap <+ dropAfterMap) <+
+      takeBeforeMap <+ dropBeforeMap <+
+      gentleFmap(takeBeforeMap <+ dropBeforeMap) <+
       takeInZip <+ dropInZip <+
       takeInSelect <+ dropInSelect <+
       (mapFusion `;`
@@ -284,7 +285,7 @@ int main(int argc, char** argv) {
                 Success(expr)
               })))).apply(x).flatMapSuccess(
                 argument(argument(
-                  argument(argument(slideAfter2) `;` dropAfterMap) `;` takeAfterMap `;`
+                  argument(argument(slideAfter2) `;` dropBeforeMap) `;` takeBeforeMap `;`
                   argument(zipSndAfter(exprFound))
                 ) `;` mapFusion `;` mapFusion)
               )
@@ -341,7 +342,7 @@ int main(int argc, char** argv) {
               function(argument(
                 argument(
                   function(argument(
-                    takeAfterDrop `;` argument(takeInSlide) `;` dropAfterMap
+                    takeBeforeDrop `;` argument(takeInSlide) `;` dropBeforeMap
                   )) `;`
                   argument(argument(takeInSlide)) `;`
                   argument(function(argument({ expr =>
@@ -478,8 +479,8 @@ int main(int argc, char** argv) {
                 Success(expr)
               }))).apply(x).flatMapSuccess(
               function(argument(argument(
-                takeAfterDrop `;`
-                argument(argument(slideAfter2) `;` takeAfterMap) `;` dropAfterMap `;`
+                takeBeforeDrop `;`
+                argument(argument(slideAfter2) `;` takeBeforeMap) `;` dropBeforeMap `;`
                 argument(zipSndAfter(rightExpr)) `;` mapFusion
               ) `;` mapFusion))
               )
@@ -499,7 +500,7 @@ int main(int argc, char** argv) {
             ))).apply(x).flatMapSuccess({ x =>
               var rightExpr: Rise = null
               argument(argument(
-                function(argument(dropAfterTake `;` argument(dropInSlide) `;` takeAfterMap)) `;`
+                function(argument(dropBeforeTake `;` argument(dropInSlide) `;` takeBeforeMap)) `;`
                 argument(
                   argument(dropInSlide) `;`
                   function(argument({ expr =>
@@ -552,13 +553,12 @@ int main(int argc, char** argv) {
               argument(
                 function(argument({ expr =>
                   expr1 = expr
-                    println(expr)
                   Success(expr)
                 })) `;`
                 argument(
                   argument(
                     argument(
-                      argument(slideAfter2) `;` dropAfterMap `;` argument(dropInSlide) `;` mapFusion
+                      argument(slideAfter2) `;` dropBeforeMap `;` argument(dropInSlide) `;` mapFusion
                     ) `;` function(argument(mapIdentityAfter)) `;` mapOutsideZip
                   ) `;` function(argument(mapIdentityAfter)) `;` mapOutsideZip
                 ) `;` function(argument(mapIdentityAfter)) `;` mapOutsideZip
@@ -585,10 +585,10 @@ int main(int argc, char** argv) {
               argument(
                 argument(
                   argument(
-                    argument(slideAfter2) `;` dropAfterMap `;` argument(dropInSlide) `;` mapFusion
+                    argument(slideAfter2) `;` dropBeforeMap `;` argument(dropInSlide) `;` mapFusion
                   ) `;`
                   function(argument(
-                    argument(slideAfter2) `;` takeAfterMap `;` argument(takeInSlide) `;` mapFusion
+                    argument(slideAfter2) `;` takeBeforeMap `;` argument(takeInSlide) `;` mapFusion
                   )) `;` mapOutsideZip
                 ) `;` function(argument(mapIdentityAfter)) `;` mapOutsideZip
               ) `;` function(argument(mapIdentityAfter)) `;` mapOutsideZip
@@ -624,15 +624,14 @@ int main(int argc, char** argv) {
               argument(
                 function(argument({ expr =>
                   expr2 = expr
-                  println(expr)
                   Success(expr)
                 })) `;`
                 argument(
                   argument(
                     function(argument(
-                      argument(slideAfter2) `;` takeAfterMap `;` argument(takeInSlide) `;` mapFusion
+                      argument(slideAfter2) `;` takeBeforeMap `;` argument(takeInSlide) `;` mapFusion
                     )) `;` argument(mapIdentityAfter) `;` mapOutsideZip
-                  ) `;` function(argument(dropAfterTake `;` mapIdentityAfter)) `;` mapOutsideZip
+                  ) `;` function(argument(dropBeforeTake `;` mapIdentityAfter)) `;` mapOutsideZip
                 ) `;` function(argument(mapIdentityAfter)) `;` mapOutsideZip
               ) `;` function(argument(mapIdentityAfter)) `;` mapOutsideZip
             ) `;` mapFusion
@@ -659,45 +658,83 @@ int main(int argc, char** argv) {
           )}
           )
         } `;`
-        fOutsideMakeArray `;` argument(mapOutsideMakeArray)
-      )))) `;`
-      normalize.apply(gentleBetaReduction <+ etaReduction <+ removeTransposePair <+ mapFusion)
+        fOutsideMakeArray `;` argument(
+          mapOutsideMakeArray `;` argument(function(argument(
+            normalize.apply(
+              betaReduction <+ etaReduction <+ removeTransposePair <+ mapFusion <+
+              idxReduction <+ fstReduction <+ sndReduction
+            )
+          )))
+        )
+      ))))
     ))))
 
-    // TODO
-    // 3. line mapping input as single slide
-    // 4. lowering with slideSeq
+    // 4. line mapping input as single slide
+    val demosaic4 = rewrite(demosaic3, body(body(body(
+      function(body(function(body(
+        argument(argument(argument(
+          argument(
+            argument(
+              argument(
+                argument(slideOutsideZip) `;`
+                function(argument(
+                  argument(
+                    argument(slideAfter2) `;`
+                    dropBeforeMap `;` argument(dropInSlide) `;` mapFusion
+                  ) `;` takeBeforeMap `;` argument(takeBeforeSlide)
+                )) `;` mapOutsideZip `;` argument(slideOutsideZip) `;` mapFusion
+              ) `;`
+              function(argument(takeBeforeSlide `;` mapIdentityAfter)) `;`
+              mapOutsideZip `;` argument(slideOutsideZip) `;` mapFusion
+            ) `;`
+            function(argument(dropBeforeSlide `;` mapIdentityAfter)) `;`
+            mapOutsideZip `;` argument(slideOutsideZip) `;` mapFusion
+          ) `;`
+          function(argument(
+            argument(
+              argument(slideAfter2) `;`
+              dropBeforeMap `;` argument(dropInSlide) `;` mapFusion
+            ) `;` takeBeforeMap `;` argument(takeBeforeSlide)
+          )) `;` mapOutsideZip `;` argument(slideOutsideZip) `;` mapFusion
+        ) `;` mapFusion))
+      ))))
+    ))))
 
-      /*
-        normalize.apply(
-          gentleBetaReduction <+ etaReduction <+
-          takeAll <+ dropNothing <+ mapIdentity <+
-          takeAfterMap <+ dropAfterMap <+
-          takeInZip <+ dropInZip <+
-          takeInSelect <+ dropInSelect
-          // takeInSlide <+ dropInSlide
-          // fOutsideMakeArray <+ fOutsideSelect
-        ) `;`
-        alltd(
-          liftPredicate[Rise]({
-            case App(DepApp(Take(), _), x) if x == x10 || x == x5 => true
-            case App(DepApp(Drop(), _), x) if x == x10 || x == x5 => true
-            case _ => false
-          }) `;`
-          argument(slideAfter) `;`
-          (dropBeforeJoin <+ takeBeforeJoin) `;`
-          argument(argument(dropInSlide <+ takeInSlide)) `;`
-          (takeAll <+ dropNothing)
-        ) `;`
-      */
+    // 5. lowering with slideSeq
+    val demosaic5 = rewrite(demosaic4, body(body(body(
+      function(body(function(body(
+        argument(argument(
+          argument(function(oncetd(lowering.slideSeq(SlideSeq.Indices, {
+            val (f, s, w) = (mapFst, mapSnd, mapSeq(fun(x => x)))
+            // TODO: this does not work for code generation
+            f(w) >> s(f(w) >> s(f(w) >> s(f(w) >> s(f(w) >> s(w)))))
+          })))) `;`
+          normalize.apply(gentleBetaReduction) `;`
+          slideSeqFusion `;`
+          // TODO: use proper rewriting to achieve this
+          function(argument(body({ expr =>
+            Success(
+              expr |> transpose >> map(transpose) >>
+              // 2 bands of y. all x. rgb channels.
+              mapSeqUnroll(mapSeq(mapSeqUnroll(fun(x => x)))) >>
+              map(transpose) >> transpose
+            )
+          }))) `;`
+          normalize.apply(
+            betaReduction <+ etaReduction <+ removeTransposePair <+ mapFusion <+
+            idxReduction <+ fstReduction <+ sndReduction
+          )
+        ))
+      ))))
+    ))))
 
-    checkDemosaic(printTime("infer", infer(nFun(h => nFun(w =>
-      demosaic3(h)(w) >> transpose >> map(transpose) >>
-        split(2) >> mapSeq(mapSeqUnroll(
-        mapSeq(
-          mapSeqUnroll(fun(x => x)))
-      )) >> join >> map(transpose) >> transpose
-    )))))
+    // TODO: check the generated code and if the loop nests are similar to:
+    // demosaic(h)(w) >> transpose >> map(transpose) >>
+    //   split(2) >> mapSeq(mapSeqUnroll(
+    //     mapSeq(
+    //       mapSeqUnroll(fun(x => x)))
+    // )) >> join >> map(transpose) >> transpose
+    checkDemosaic(demosaic5)
   }
 
   test("color correction passes checks") {
