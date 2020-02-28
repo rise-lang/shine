@@ -274,6 +274,7 @@ int main(int argc, char** argv) {
         repeat(oncebu(
           gentleBetaReduction <+ etaReduction <+ mapFusion <+ mapOutsideZip
         )) `;`
+        // generate/select 1.1
         oncetd(function(predicate.isEqualTo(generate)) `;`
           oncetd(one(function(predicate.isEqualTo(generate)) `;`
             argument(body({ x =>
@@ -291,6 +292,7 @@ int main(int argc, char** argv) {
             mapOutsideGenerateSelect
           ))
         ) `;`
+        // generate/select 1.2
         oncetd(function(predicate.isEqualTo(generate)) `;`
           oncetd(one(function(predicate.isEqualTo(generate)) `;`
             argument(body({ x =>
@@ -327,6 +329,7 @@ int main(int argc, char** argv) {
           ))
         ) `;`
         normalize.apply(gentleBetaReduction <+ etaReduction <+ removeTransposePair <+ mapFusion) `;`
+        // generate/select 1
         oncetd(function(predicate.isEqualTo(generate)) `;`
           argument(body({ x =>
             var rightExpr: Rise = null
@@ -359,6 +362,7 @@ int main(int argc, char** argv) {
           })) `;` mapOutsideGenerateSelect
         ) `;`
         normalize.apply(gentleBetaReduction <+ etaReduction <+ removeTransposePair <+ mapFusion) `;`
+        // generate/select 2.1
         oncetd(function(predicate.isEqualTo(generate)) `;`
           oncetd(one(function(predicate.isEqualTo(generate)) `;`
             argument(body({ x =>
@@ -380,6 +384,7 @@ int main(int argc, char** argv) {
             })) `;` mapOutsideGenerateSelect
           ))
         ) `;`
+        // generate/select 2.2
         oncetd(function(predicate.isEqualTo(generate)) `;`
           oncetd(one(function(predicate.isEqualTo(generate)) `;`
             argument(body({ x =>
@@ -402,6 +407,7 @@ int main(int argc, char** argv) {
           ))
         ) `;`
         normalize.apply(gentleBetaReduction <+ etaReduction <+ removeTransposePair <+ mapFusion) `;`
+        // generate/select 2
         oncetd(function(predicate.isEqualTo(generate)) `;`
           argument(body({ x =>
             var rightExpr: Rise = null
@@ -422,6 +428,7 @@ int main(int argc, char** argv) {
           })) `;` mapOutsideGenerateSelect
         ) `;`
         normalize.apply(gentleBetaReduction <+ etaReduction <+ removeTransposePair <+ mapFusion) `;`
+        // generate/select 3.1
         oncetd(function(predicate.isEqualTo(generate)) `;`
           oncetd(one(function(predicate.isEqualTo(generate)) `;`
             argument(body({ x =>
@@ -461,6 +468,7 @@ int main(int argc, char** argv) {
             })) `;` mapOutsideGenerateSelect
           ))
         ) `;`
+        // generate/select 3.2
         oncetd(function(predicate.isEqualTo(generate)) `;`
           oncetd(one(function(predicate.isEqualTo(generate)) `;`
             argument(body({ x =>
@@ -479,6 +487,7 @@ int main(int argc, char** argv) {
           ))
         ) `;`
         normalize.apply(gentleBetaReduction <+ etaReduction <+ removeTransposePair <+ mapFusion) `;`
+        // generate/select 3
         oncetd(function(predicate.isEqualTo(generate)) `;`
           argument(body({ x =>
             var leftExpr: Rise = null
@@ -511,21 +520,155 @@ int main(int argc, char** argv) {
               })
           })) `;` mapOutsideGenerateSelect
         ) `;`
-        normalize.apply(gentleBetaReduction <+ etaReduction <+ removeTransposePair <+ mapFusion)
-        // TODO: continue ..
-      ))))
+        normalize.apply(gentleBetaReduction <+ etaReduction <+ removeTransposePair <+ mapFusion) `;`
+        // makeArray
+        // makeArray .1
+        { x =>
+          var expr1: Rise = null
+          function(function(argument(argument(argument(
+            // zip ordering
+            argument(zipRotate) `;`
+            zipSwap `;`
+            argument(argument(mapIdentityAfter) `;` mapOutsideZip `;` argument(zipRotate)) `;`
+            mapFusion `;` mapFusion `;`
+            argument(
+              argument(
+                zipSwap `;` argument(
+                  argument(
+                    function(argument(zipSwap)) `;`
+                    argument(mapIdentityAfter) `;` mapOutsideZip `;` argument(zipRotate) `;`
+                    mapFusion `;`
+                    argument(argument(zipSwap)) `;`
+                    argument(function(argument(mapIdentityAfter)) `;` mapOutsideZip) `;`
+                    mapFusion
+                  ) `;`
+                  function(argument(mapIdentityAfter)) `;` mapOutsideZip
+                ) `;` mapFusion
+              ) `;`
+              function(argument(mapIdentityAfter)) `;` mapOutsideZip
+            ) `;` mapFusion `;`
+            argument(
+              // zip branch unification
+              argument(
+                function(argument({ expr =>
+                  expr1 = expr
+                    println(expr)
+                  Success(expr)
+                })) `;`
+                argument(
+                  argument(
+                    argument(
+                      argument(slideAfter2) `;` dropAfterMap `;` argument(dropInSlide) `;` mapFusion
+                    ) `;` function(argument(mapIdentityAfter)) `;` mapOutsideZip
+                  ) `;` function(argument(mapIdentityAfter)) `;` mapOutsideZip
+                ) `;` function(argument(mapIdentityAfter)) `;` mapOutsideZip
+              ) `;` function(argument(mapIdentityAfter)) `;` mapOutsideZip
+            )
+          ) `;` repeat(mapFusion))))).apply(x).flatMapSuccess(
+          function(argument(argument(argument(
+            // zip ordering
+            zipRotateRight `;` argument(
+              argument(
+                argument(zipSwap) `;`
+                function(argument(mapIdentityAfter)) `;` mapOutsideZip `;`
+                argument(zipRotateLeft `;` argument(
+                  function(argument(zipSwap)) `;`
+                  argument(mapIdentityAfter) `;` mapOutsideZip `;`
+                  argument(zipRotateRight)
+                ))
+              ) `;`
+              argument(repeatNTimes(3, mapFusion)) `;`
+              function(argument(mapIdentityAfter)) `;` mapOutsideZip
+            ) `;` mapFusion `;`
+            argument(
+              // zip branch unification
+              argument(
+                argument(
+                  argument(
+                    argument(slideAfter2) `;` dropAfterMap `;` argument(dropInSlide) `;` mapFusion
+                  ) `;`
+                  function(argument(
+                    argument(slideAfter2) `;` takeAfterMap `;` argument(takeInSlide) `;` mapFusion
+                  )) `;` mapOutsideZip
+                ) `;` function(argument(mapIdentityAfter)) `;` mapOutsideZip
+              ) `;` function(argument(mapIdentityAfter)) `;` mapOutsideZip
+            )
+          ) `;` repeatNTimes(2, mapFusion)))) `;`
+          { x: Rise =>
+            var expr2: Rise = null
+            argument(argument(argument(
+              // zip ordering
+              argument(
+                function(argument(
+                  zipRotateRight `;` argument(argument(zipSwap))
+                )) `;`
+                argument(mapIdentityAfter) `;` mapOutsideZip `;`
+                argument(zipRotateRight `;` argument(argument(
+                  argument(mapIdentityAfter) `;` mapOutsideZip `;`
+                  argument(zipRotateRight)
+                )))
+              ) `;`
+              argument(mapFusion) `;` function(argument(mapIdentityAfter)) `;`
+              mapOutsideZip `;` argument(
+                zipRotateLeft `;` argument(
+                  function(argument(zipSwap))
+                ) `;`
+                argument(
+                  argument(mapFusion) `;` mapOutsideZip `;`
+                  argument(zipRotateRight)
+                )
+              )
+            ) `;` repeatNTimes(4, mapFusion) `;`
+            argument(
+              // zip branch unification
+              argument(
+                function(argument({ expr =>
+                  expr2 = expr
+                  println(expr)
+                  Success(expr)
+                })) `;`
+                argument(
+                  argument(
+                    function(argument(
+                      argument(slideAfter2) `;` takeAfterMap `;` argument(takeInSlide) `;` mapFusion
+                    )) `;` argument(mapIdentityAfter) `;` mapOutsideZip
+                  ) `;` function(argument(dropAfterTake `;` mapIdentityAfter)) `;` mapOutsideZip
+                ) `;` function(argument(mapIdentityAfter)) `;` mapOutsideZip
+              ) `;` function(argument(mapIdentityAfter)) `;` mapOutsideZip
+            ) `;` mapFusion
+          )).apply(x).flatMapSuccess(
+          // zip branch injection
+          function(function(argument(argument(argument(
+            argument(
+              argument(zipFstAfter(expr2)) `;`
+              function(argument(mapIdentityAfter)) `;` mapOutsideZip
+            ) `;` function(argument(mapIdentityAfter)) `;` mapOutsideZip
+          ) `;` mapFusion)))) `;`
+          function(argument(argument(argument(
+            argument(
+              zipFstAfter(expr1) `;`
+              argument(
+                argument(zipFstAfter(expr2)) `;`
+                function(argument(mapIdentityAfter)) `;` mapOutsideZip
+              ) `;` mapFusion
+            ) `;` function(argument(mapIdentityAfter)) `;` mapOutsideZip
+          ) `;` mapFusion))) `;`
+          argument(argument(argument(
+            argument(zipFstAfter(expr1)) `;` function(argument(mapIdentityAfter)) `;` mapOutsideZip
+          ) `;` mapFusion))
+          )}
+          )
+        } `;`
+        fOutsideMakeArray `;` argument(mapOutsideMakeArray)
+      )))) `;`
+      normalize.apply(gentleBetaReduction <+ etaReduction <+ removeTransposePair <+ mapFusion)
     ))))
 
+    // TODO
+    // 3. line mapping input as single slide
+    // 4. lowering with slideSeq
+
       /*
-        alltd(
-          liftPredicate[Rise]({
-            case App(DepApp(DepApp(Slide(), _), _),
-              App(App(Map(), DepApp(DepApp(Slide(), _), _)), x)
-            ) if x == x10 || x == x5 => true
-            case _ => false
-          }) `;`
-          `*f >> S -> S >> **f`
-        ) `;`
         normalize.apply(
           gentleBetaReduction <+ etaReduction <+
           takeAll <+ dropNothing <+ mapIdentity <+
@@ -548,7 +691,6 @@ int main(int argc, char** argv) {
         ) `;`
       */
 
-    throw new Exception("WIP")
     checkDemosaic(printTime("infer", infer(nFun(h => nFun(w =>
       demosaic3(h)(w) >> transpose >> map(transpose) >>
         split(2) >> mapSeq(mapSeqUnroll(
