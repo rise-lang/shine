@@ -98,7 +98,8 @@ object primitives {
   ) extends Primitive {
     override def typeScheme: Type =
       aFunT(a => implN(n => nFunT(sz => nFunT(sp => implDT(t =>
-        (t ->: t) ->: ArrayType(sp * n + sz - sp, t) ->: ArrayType(n, ArrayType(sz, t))
+        (t ->: t) ->:
+          ArrayType(sp * n + sz - sp, t) ->: ArrayType(n, ArrayType(sz, t))
       )))))
   }
 }
