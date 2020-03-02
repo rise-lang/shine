@@ -19,37 +19,40 @@ final case class OpenCLSlideSeq(rot: lp.SlideSeq.Rotate,
                                 n: Nat,
                                 sz: Nat,
                                 sp: Nat,
-                                dt1: DataType,
-                                dt2: DataType,
-                                write_dt1: Phrase[ExpType ->: ExpType],
-                                f: Phrase[ExpType ->: ExpType],
+                                dt: DataType,
+                                write_dt: Phrase[ExpType ->: ExpType],
                                 input: Phrase[ExpType])
   extends ExpPrimitive
 {
   val inputSize: Nat with SimplifiedExpr = sp * n + sz - sp
 
-  write_dt1 :: expT(dt1, read) ->: expT(dt1, write)
-  f :: expT(sz`.`dt1, read) ->: expT(dt2, write)
-  input :: expT(inputSize`.`dt1, read)
-  override val t: ExpType = expT(n`.`dt2, write)
+  write_dt :: expT(dt, read) ->: expT(dt, write)
+  input :: expT(inputSize`.`dt, read)
+  override val t: ExpType = expT(n`.`(sz`.`dt), write)
 
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     OpenCLSlideSeq(rot,
       v.addressSpace(a), v.nat(n), v.nat(sz), v.nat(sp),
-      v.data(dt1), v.data(dt2),
-      VisitAndRebuild(write_dt1, v),
-      VisitAndRebuild(f, v),
+      v.data(dt),
+      VisitAndRebuild(write_dt, v),
       VisitAndRebuild(input, v))
   }
 
   override def eval(s: Store): Data = {
     import shine.DPIA.FunctionalPrimitives._
-    Map(n, ArrayType(sz, dt1), dt2, f, Slide(n, sz, sp, dt1, input)).eval(s)
+    Slide(n, sz, sp, dt, input).eval(s)
   }
 
   override def acceptorTranslation(A: Phrase[AccType])
     (implicit context: TranslationContext)
-  : Phrase[CommType] = {
+  : Phrase[CommType] = ???
+
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])
+                                      (implicit context: TranslationContext): Phrase[CommType] =
+    ???
+
+  override def streamTranslation(C: Phrase[`(nat)->:`[(ExpType ->: CommType) ->: CommType] ->: CommType])
+                                (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
     import shine.OpenCL.IntermediatePrimitives.{
       OpenCLSlideSeqIValues, OpenCLSlideSeqIIndices
@@ -60,26 +63,19 @@ final case class OpenCLSlideSeq(rot: lp.SlideSeq.Rotate,
       case lp.SlideSeq.Indices => OpenCLSlideSeqIIndices.apply _
     }
 
-    con(input)(fun(expT(inputSize`.`dt1, read))(x =>
-      I(a, n, sz, sp, dt1, dt2,
-        fun(expT(dt1, read))(x =>
-          fun(accT(dt1))(o => acc(write_dt1(x))(o))),
-        fun(expT(sz`.`dt1, read))(x =>
-          fun(accT(dt2))(o => acc(f(x))(o))),
-        x, A
-      )))
+    con(input)(fun(expT(inputSize`.`dt, read))(x =>
+      I(a, n, sz, sp, dt,
+        fun(expT(dt, read))(x =>
+          fun(accT(dt))(o => acc(write_dt(x))(o))),
+        x, C)
+    ))
   }
 
-  override def continuationTranslation(C: Phrase[ExpType ->: CommType])
-    (implicit context: TranslationContext): Phrase[CommType] =
-    ???
-
   override def prettyPrint: String =
-    s"(slideSeq $sz $sp ${PrettyPhrasePrinter(f)} ${PrettyPhrasePrinter(input)})"
+    s"(slideSeq $sz $sp ${PrettyPhrasePrinter(input)})"
 
   override def xmlPrinter: Elem =
-    <slideSeq n={ToString(n)} sz={ToString(sz)} sp={ToString(sp)} dt1={ToString(dt1)} dt2={ToString(dt2)}>
-      <f>{Phrases.xmlPrinter(f)}</f>
+    <slideSeq n={ToString(n)} sz={ToString(sz)} sp={ToString(sp)} dt={ToString(dt)}>
       <input>{Phrases.xmlPrinter(input)}</input>
     </slideSeq>
 }

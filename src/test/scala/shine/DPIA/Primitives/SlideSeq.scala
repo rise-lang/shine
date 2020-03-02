@@ -41,13 +41,13 @@ int main(int argc, char** argv) {
 
   test("3 point sum value rotation: generated C code gives the expected result") {
     check3pSum(nFun(n => fun(ArrayType(n, int))(a =>
-      a |> slideSeq(Values)(3)(1)(fun(x => x))(reduceSeq(add)(l(0)))
+      a |> slideSeq(Values)(3)(1)(fun(x => x)) >> mapStream(reduceSeq(add)(l(0)))
     )))
   }
 
   test("3 point sum index rotation: generated C code gives the expected result") {
     check3pSum(nFun(n => fun(ArrayType(n, int))(a =>
-      a |> slideSeq(Indices)(3)(1)(fun(x => x))(reduceSeq(add)(l(0)))
+      a |> slideSeq(Indices)(3)(1)(fun(x => x)) >> mapStream(reduceSeq(add)(l(0)))
     )))
   }
 }

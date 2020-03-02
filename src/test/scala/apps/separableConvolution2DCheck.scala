@@ -117,7 +117,8 @@ int main(int argc, char** argv) {
     val e = padClamp2D(1) >> slide(3)(1) >> mapSeq(
       transpose >>
       map(dotSeqUnroll(binomialWeightsV)) >>
-      slideSeq(SlideSeq.Values)(3)(1)(id)(dotSeqUnroll(binomialWeightsH))
+      slideSeq(SlideSeq.Values)(3)(1)(id) >>
+      mapStream(dotSeqUnroll(binomialWeightsH))
     )
     val code = gen.CProgram(wrapExpr(e), "blur").code
     " % ".r.findAllIn(code).length shouldBe 0

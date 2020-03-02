@@ -53,12 +53,13 @@ class circularBuffering extends shine.test_util.Tests {
 
   val circBuf: Rise =
     slide(3)(1) >> map(sumSeq) >>
-      slideSeq(SlideSeq.Indices)(4)(1)(fun(x => x))(fun(nbh =>
-        makeArray(2)(
-          nbh |> drop(1) >> dropLast(1) >> sumSeq,
-          nbh |> sumSeq
-        ) |> mapSeqUnroll(fun(x => x))
-      )) >> transpose
+    slideSeq(SlideSeq.Indices)(4)(1)(fun(x => x)) >>
+    mapStream(fun(nbh =>
+      makeArray(2)(
+        nbh |> drop(1) >> dropLast(1) >> sumSeq,
+        nbh |> sumSeq
+      ) |> mapSeqUnroll(fun(x => x))
+    )) >> transpose
 
   test("example outputs are consistent") {
     val inlinedP = gen.CProgram(wrapExpr(inlined), "inlined")
@@ -166,7 +167,7 @@ class circularBuffering extends shine.test_util.Tests {
         oncetd(isApply `;` one(isApply `;` one(isMakeArray)) `;`
           lowering.mapSeqUnrollWrite) `;`
         oncetd(lowering.slideSeq(SlideSeq.Indices, fun(x => x))) `;`
-        norm `;` oncetd(slideSeqFusion))
+        oncetd(lowering.mapStream))
       -> circBuf,
     ))
   }

@@ -144,7 +144,8 @@ object separableConvolution2D {
     padClamp2D(1) >> slide(3)(1) >> mapSeq(
       transpose >>
       map(dotSeqUnroll(weightsV)) >>
-      slideSeq(SlideSeq.Values)(3)(1)(id)(dotSeqUnroll(weightsH))
+      slideSeq(SlideSeq.Values)(3)(1)(id) >>
+      mapStream(dotSeqUnroll(weightsH))
     )
   ))
   val regRotPar: Expr = fun(3`.`f32)(weightsV => fun(3`.`f32)(weightsH => {
@@ -159,9 +160,8 @@ object separableConvolution2D {
     slide(3)(1) >> mapGlobal(
       transpose >>
       map(Dv) >>
-      oclSlideSeq(SlideSeq.Values)(AddressSpace.Private)(3)(1)(id)(
-        shuffle >> Dh
-      ) >>
+      oclSlideSeq(SlideSeq.Values)(AddressSpace.Private)(3)(1)(id) >>
+      mapStream(shuffle >> Dh) >>
       asScalar
     )
   }))
