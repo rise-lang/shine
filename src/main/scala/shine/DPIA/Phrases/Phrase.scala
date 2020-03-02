@@ -367,7 +367,19 @@ abstract class ExpPrimitive extends Primitive[ExpType] {
                      (C: Phrase[AccType ->: AccType]) : Phrase[AccType] = ???
 
   def streamTranslation(C: Phrase[`(nat)->:`[(ExpType ->: CommType) ->: CommType] ->: CommType])
-                       (implicit context: TranslationContext): Phrase[CommType] = ???
+                       (implicit context: TranslationContext): Phrase[CommType] = {
+    import shine.DPIA.DSL._
+    import shine.DPIA.Compilation.TranslationToImperative.con
+
+    this.t match {
+      // TODO: works for arrays, but not streams
+      case ExpType(ArrayType(n, dt), read) =>
+        C(nFun(i => fun(expT(dt, read) ->: (comm: CommType))(k =>
+          con(this `@` i)(k)
+        ), arithexpr.arithmetic.RangeAdd(0, n, 1)))
+      case _ => throw new Exception("this should not happen")
+    }
+  }
 
   def acceptorTranslation(A: Phrase[AccType])
                          (implicit context: TranslationContext): Phrase[CommType]

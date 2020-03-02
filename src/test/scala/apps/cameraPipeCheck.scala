@@ -669,48 +669,14 @@ int main(int argc, char** argv) {
       ))))
     ))))
 
-    // 4. line mapping input as single slide
+    // 4. lowering with slideSeq
     val demosaic4 = rewrite(demosaic3, body(body(body(
       function(body(function(body(
-        argument(argument(argument(
-          argument(
-            argument(
-              argument(
-                argument(slideOutsideZip) `;`
-                function(argument(
-                  argument(
-                    argument(slideAfter2) `;`
-                    dropBeforeMap `;` argument(dropInSlide) `;` mapFusion
-                  ) `;` takeBeforeMap `;` argument(takeBeforeSlide)
-                )) `;` mapOutsideZip `;` argument(slideOutsideZip) `;` mapFusion
-              ) `;`
-              function(argument(takeBeforeSlide `;` mapIdentityAfter)) `;`
-              mapOutsideZip `;` argument(slideOutsideZip) `;` mapFusion
-            ) `;`
-            function(argument(dropBeforeSlide `;` mapIdentityAfter)) `;`
-            mapOutsideZip `;` argument(slideOutsideZip) `;` mapFusion
-          ) `;`
-          function(argument(
-            argument(
-              argument(slideAfter2) `;`
-              dropBeforeMap `;` argument(dropInSlide) `;` mapFusion
-            ) `;` takeBeforeMap `;` argument(takeBeforeSlide)
-          )) `;` mapOutsideZip `;` argument(slideOutsideZip) `;` mapFusion
-        ) `;` mapFusion))
-      ))))
-    ))))
-
-    // 5. lowering with slideSeq
-    val demosaic5 = rewrite(demosaic4, body(body(body(
-      function(body(function(body(
         argument(argument(
-          argument(function(oncetd(lowering.slideSeq(SlideSeq.Indices, fun(r => {
-            val (f, s, w) = (fst, snd, mapSeq(fun(x => x)))
-            // TODO: fix code generation
-            pair(w(f(r)), pair(w(f(s(r))), pair(w(f(s(s(r)))), pair(w(f(s(s(s(r))))), pair(w(f(s(s(s(s(r)))))), w(s(s(s(s(s(r)))))))))))
-          }))))) `;`
-          normalize.apply(gentleBetaReduction) `;`
-          slideSeqFusion `;`
+          function(function(lowering.mapStream)) `;`
+          argument(argument(argument(argument(argument(repeatNTimes(2, oncetd(
+            lowering.slideSeq(SlideSeq.Indices, mapSeq(fun(x => x)))
+          ))))))) `;`
           // TODO: use proper rewriting to achieve this
           function(argument(body({ expr =>
             Success(
@@ -734,7 +700,7 @@ int main(int argc, char** argv) {
     //     mapSeq(
     //       mapSeqUnroll(fun(x => x)))
     // )) >> join >> map(transpose) >> transpose
-    checkDemosaic(demosaic5)
+    checkDemosaic(demosaic4)
   }
 
   test("color correction passes checks") {
