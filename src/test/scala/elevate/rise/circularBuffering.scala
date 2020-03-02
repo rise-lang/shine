@@ -152,17 +152,7 @@ class circularBuffering extends shine.test_util.Tests {
           x |> slide(4)(1) >> map(dropLast(1) >> drop(1) >> sum),
           x |> slide(4)(1) >> map(sum)
         ))
-      ),/* not necessary
-      body(oncetd(lambdaBodyWithName(x =>
-        subexpressionElimination(x |> slide(4)(1))
-      )))
-      -> (
-      slide(3)(1) >> map(sum) >> slide(4)(1) >> fun(x =>
-        makeArray(2)(
-          x |> map(dropLast(1) >> drop(1) >> sum),
-          x |> map(sum)
-        ))
-      ),*/
+      ),
       oncetd(mapOutsideMakeArray)
       -> (
       slide(3)(1) >> map(sum) >> slide(4)(1) >> map(fun(x =>

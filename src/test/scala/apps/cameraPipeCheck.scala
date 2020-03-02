@@ -704,11 +704,11 @@ int main(int argc, char** argv) {
     val demosaic5 = rewrite(demosaic4, body(body(body(
       function(body(function(body(
         argument(argument(
-          argument(function(oncetd(lowering.slideSeq(SlideSeq.Indices, {
-            val (f, s, w) = (mapFst, mapSnd, mapSeq(fun(x => x)))
-            // TODO: this does not work for code generation
-            f(w) >> s(f(w) >> s(f(w) >> s(f(w) >> s(f(w) >> s(w)))))
-          })))) `;`
+          argument(function(oncetd(lowering.slideSeq(SlideSeq.Indices, fun(r => {
+            val (f, s, w) = (fst, snd, mapSeq(fun(x => x)))
+            // TODO: fix code generation
+            pair(w(f(r)), pair(w(f(s(r))), pair(w(f(s(s(r)))), pair(w(f(s(s(s(r))))), pair(w(f(s(s(s(s(r)))))), w(s(s(s(s(s(r)))))))))))
+          }))))) `;`
           normalize.apply(gentleBetaReduction) `;`
           slideSeqFusion `;`
           // TODO: use proper rewriting to achieve this
