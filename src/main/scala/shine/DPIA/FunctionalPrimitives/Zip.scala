@@ -51,16 +51,18 @@ final case class Zip(n: Nat,
       </rhs>
     </zip>
 
-  override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommType] = {
+  override def acceptorTranslation(A: Phrase[AccType])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] = {
     import TranslationToImperative._
 
     acc(e1)(ZipAcc1(n, dt1, dt2, A)) `;`
       acc(e2)(ZipAcc2(n, dt1, dt2, A))
   }
 
-  override def continuationTranslation(C: Phrase[ExpType ->: CommType])
-                                      (implicit context: TranslationContext): Phrase[CommType] = {
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(e1)(λ(expT(n`.`dt1, read))(x =>
@@ -68,24 +70,27 @@ final case class Zip(n: Nat,
         C(Zip(n, dt1, dt2, x, y)) )) ))
   }
 
-  override def streamTranslation(C: Phrase[`(nat)->:`[(ExpType ->: CommType) ->: CommType] ->: CommType])
-                                (implicit context: TranslationContext): Phrase[CommType] = {
+  override def streamTranslation(
+    C: Phrase[`(nat)->:`[(ExpType ->: CommType) ->: CommType] ->: CommType])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] = {
     import TranslationToImperative._
 
     val i = NatIdentifier("i")
-    str(e1)(fun((i: NatIdentifier) ->: (expT(dt1, read) ->: (comm: CommType)) ->: (comm: CommType))(next1 =>
-      str(e2)(fun((i: NatIdentifier) ->: (expT(dt2, read) ->: (comm: CommType)) ->: (comm: CommType))(next2 =>
-        C(nFun(i =>
-          fun(expT(dt1 x dt2, read) ->: (comm: CommType))(k =>
-            Apply(DepApply[NatKind, (ExpType ->: CommType) ->: CommType](next1, i),
-              fun(expT(dt1, read))(x1 =>
-                Apply(DepApply[NatKind, (ExpType ->: CommType) ->: CommType](next2, i),
-                  fun(expT(dt2, read))(x2 =>
-                    k(Pair(dt1, dt2, x1, x2))
-                ))
-            ))
-          ),
-        arithexpr.arithmetic.RangeAdd(0, n, 1)))
-      ))))
+    str(e1)(fun((i: NatIdentifier) ->:
+      (expT(dt1, read) ->: (comm: CommType)) ->: (comm: CommType)
+    )(next1 =>
+    str(e2)(fun((i: NatIdentifier) ->:
+      (expT(dt2, read) ->: (comm: CommType)) ->: (comm: CommType)
+    )(next2 =>
+      C(nFun(i => fun(expT(dt1 x dt2, read) ->: (comm: CommType))(k =>
+        Apply(DepApply[NatKind, (ExpType ->: CommType) ->: CommType](next1, i),
+        fun(expT(dt1, read))(x1 =>
+        Apply(DepApply[NatKind, (ExpType ->: CommType) ->: CommType](next2, i),
+        fun(expT(dt2, read))(x2 =>
+            k(Pair(dt1, dt2, x1, x2))
+        ))))
+      ), arithexpr.arithmetic.RangeAdd(0, n, 1)))
+    ))))
   }
 }

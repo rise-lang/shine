@@ -47,12 +47,14 @@ final case class OpenCLSlideSeq(rot: lp.SlideSeq.Rotate,
     (implicit context: TranslationContext)
   : Phrase[CommType] = ???
 
-  override def continuationTranslation(C: Phrase[ExpType ->: CommType])
-                                      (implicit context: TranslationContext): Phrase[CommType] =
-    ???
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] = ???
 
-  override def streamTranslation(C: Phrase[`(nat)->:`[(ExpType ->: CommType) ->: CommType] ->: CommType])
-                                (implicit context: TranslationContext): Phrase[CommType] = {
+  override def streamTranslation(
+    C: Phrase[`(nat)->:`[(ExpType ->: CommType) ->: CommType] ->: CommType])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] = {
     import TranslationToImperative._
     import shine.OpenCL.IntermediatePrimitives.{
       OpenCLSlideSeqIValues, OpenCLSlideSeqIIndices
@@ -75,7 +77,7 @@ final case class OpenCLSlideSeq(rot: lp.SlideSeq.Rotate,
     s"(slideSeq $sz $sp ${PrettyPhrasePrinter(input)})"
 
   override def xmlPrinter: Elem =
-    <slideSeq n={ToString(n)} sz={ToString(sz)} sp={ToString(sp)} dt={ToString(dt)}>
+    <slideSeq n={ToString(n)} sz={ToString(sz)} sp={ToString(sp)}>
       <input>{Phrases.xmlPrinter(input)}</input>
     </slideSeq>
 }

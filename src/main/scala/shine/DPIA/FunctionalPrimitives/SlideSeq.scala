@@ -38,14 +38,18 @@ final case class SlideSeq(rot: lp.SlideSeq.Rotate,
     Slide(n, sz, sp, dt, input).eval(s)
   }
 
-  override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommType] = ???
+  override def acceptorTranslation(A: Phrase[AccType])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] = ???
 
-  override def continuationTranslation(C: Phrase[ExpType ->: CommType])
-                                      (implicit context: TranslationContext): Phrase[CommType] = ???
+  override def continuationTranslation(C: Phrase[ExpType ->: CommType])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] = ???
 
-  override def streamTranslation(C: Phrase[`(nat)->:`[(ExpType ->: CommType) ->: CommType] ->: CommType])
-                                (implicit context: TranslationContext): Phrase[CommType] = {
+  override def streamTranslation(
+    C: Phrase[`(nat)->:`[(ExpType ->: CommType) ->: CommType] ->: CommType])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] = {
     import TranslationToImperative._
     import shine.DPIA.IntermediatePrimitives.{
       SlideSeqIValues, SlideSeqIIndices

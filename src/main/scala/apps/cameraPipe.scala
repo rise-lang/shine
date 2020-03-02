@@ -38,11 +38,6 @@ object cameraPipe {
   def letImage(img: Image, f: Image => Expr): Expr =
     img.expr |> fun(x => f(Image(img.xBeg, img.xEnd, img.yBeg, img.yEnd, x)))
 
-  // TODO: use elevate instead
-  def memImage(write: Expr, img: Image, f: Image => Expr): Expr =
-    img.expr |> write |> let(fun(x =>
-      f(Image(img.xBeg, img.xEnd, img.yBeg, img.yEnd, x))))
-
   def mapImage(img: Image, f: Expr): Image =
     Image(img.xBeg, img.xEnd, img.yBeg, img.yEnd, img.expr |> map(map(f)))
 
@@ -114,13 +109,15 @@ object cameraPipe {
   def interleaveX: Expr = implDT(dt => implN(h => implN(w => fun(
     (h`.`w`.`dt) ->: (h`.`w`.`dt) ->: (h`.`(2*w)`.`dt)
   )((a, b) =>
-    generate(fun(i => select(i =:= lidx(0, 2))(a)(b))) |> transpose >> map(transpose >> join)
+    generate(fun(i => select(i =:= lidx(0, 2))(a)(b))) |>
+    transpose >> map(transpose >> join)
   ))))
 
   def interleaveY: Expr = implDT(dt => implN(h => implN(w => fun(
     (h`.`w`.`dt) ->: (h`.`w`.`dt) ->: ((2*h)`.`w`.`dt)
   )((a, b) =>
-    generate(fun(i => select(i =:= lidx(0, 2))(a)(b))) |> transpose >> join
+    generate(fun(i => select(i =:= lidx(0, 2))(a)(b))) |>
+    transpose >> join
   ))))
 
   val demosaic: Expr = nFun(h => nFun(w => fun(
