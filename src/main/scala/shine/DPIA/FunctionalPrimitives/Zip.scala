@@ -88,7 +88,7 @@ final case class Zip(n: Nat,
         fun(expT(dt1, read))(x1 =>
         Apply(DepApply[NatKind, (ExpType ->: CommType) ->: CommType](next2, i),
         fun(expT(dt2, read))(x2 =>
-            k(Pair(dt1, dt2, x1, x2))
+          k(Pair(dt1, dt2, x1, x2))
         ))))
       ), arithexpr.arithmetic.RangeAdd(0, n, 1)))
     ))))

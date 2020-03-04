@@ -9,7 +9,9 @@ case class Program(decls: Seq[Decl],
                    outputParam: Identifier[AccType],
                    inputParams: Seq[Identifier[ExpType]]) {
 
-  def code: String = decls.map(shine.C.AST.Printer(_)).mkString("\n") +
+  def code: String =
+    "#include <stdint.h>\n" +
+    decls.map(shine.C.AST.Printer(_)).mkString("\n") +
     "\n\n" +
     shine.C.AST.Printer(function)
 

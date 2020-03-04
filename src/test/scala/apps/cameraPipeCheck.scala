@@ -21,8 +21,8 @@ import elevate.rise.rules.algorithmic._
 // import elevate.rise.strategies.predicate._
 
 class cameraPipeCheck extends shine.test_util.TestsWithExecutor {
-  val N = 121
-  val M = 160
+  val H = 99
+  val W = 146
 
   // test values are taken from Halide
   val color_temp = 3700.0f
@@ -105,7 +105,7 @@ void read_csv_${cty}(size_t n, ${cty}* buf, const char* path) {
     outputSize: Int, outputCty: String, outputPath: String,
     delta: Int,
   ): Unit = {
-    val prog = printTime("codegen", gen.CProgram(lowered))
+    val prog = printTime("codegen", gen.OpenMPProgram(lowered))
     val testCode = s"""
 ${cHeader}
 
@@ -174,9 +174,9 @@ int main(int argc, char** argv) {
     val lowered = printTime("lower", lower(typed).get)
     println(s"lowered: ${lowered}")
     check(
-      lowered, fName => s"${fName}(output, ${N*2 + 4}, ${M*2 + 4}, input);",
-      (N*2 + 4) * (M*2 + 4), "int16_t", "shifted.dump",
-      N*2 * M*2, "int16_t", "denoised.dump",
+      lowered, fName => s"${fName}(output, ${H*2 + 8}, ${W*2 + 8}, input);",
+      (H*2 + 12) * (W*2 + 12), "int16_t", "shifted.dump",
+      (H*2 + 8) * (W*2 + 8), "int16_t", "denoised.dump",
       0
     )
   }
@@ -193,18 +193,18 @@ int main(int argc, char** argv) {
     val lowered = typed
     println(s"lowered: ${lowered}")
     check(
-      lowered, fName => s"${fName}(output, $N, $M, input);",
-      N*2 * M*2, "int16_t", "denoised.dump",
-      4 * N * M, "int16_t", "deinterleaved.dump",
+      lowered, fName => s"${fName}(output, ${H + 4}, ${W + 4}, input);",
+      (H*2 + 8) * (W*2 + 8), "int16_t", "denoised.dump",
+      4 * (H + 4) * (W + 4), "int16_t", "deinterleaved.dump",
       0
     )
   }
 
   def checkDemosaic(lowered: Rise): Unit = {
     check(
-      lowered, fName => s"${fName}(output, $N, $M, input);",
-      4 * N * M, "int16_t", "deinterleaved.dump",
-      3 * (2*N - 4) * (2*M - 4), "int16_t", "demosaiced.dump",
+      lowered, fName => s"${fName}(output, ${H + 2}, ${W + 2}, input);",
+      4 * (H + 4) * (W + 4), "int16_t", "deinterleaved.dump",
+      3 * (2*H + 4) * (2*W + 4), "int16_t", "demosaiced.dump",
       0
     )
   }
@@ -704,7 +704,14 @@ int main(int argc, char** argv) {
   }
 
   test("color correction passes checks") {
-    val typed = printTime("infer", infer(color_correct))
+    val typed = printTime("infer", infer(
+      nFun(h => nFun(w => nFun(hm => nFun(wm => fun(3`.`(h+2)`.`(w+2)`.`i16)(in =>
+        color_correct(h)(w)(hm)(wm)(in |>
+          map(map(drop(1) >> take(w)) >>
+            drop(1) >> take(h))
+        )
+      )))))
+    ))
     println(s"color correction: ${typed.t}")
     val lower: Strategy[Rise] = LCNF `;` CNF `;`
       repeatNTimes(2, oncetd(lowering.mapSeq)) `;`
@@ -718,11 +725,11 @@ int main(int argc, char** argv) {
   float matrix_7000[3 * 4] = { ${matrix_7000.mkString(", ")} };
 
   ${fName}(output,
-    2*$N - 4, 2*$M - 4, 3, 4,
+    ${2*H + 2}, ${2*W + 2}, 3, 4,
     input, matrix_3200, matrix_7000, ${color_temp});
 """,
-      3 * (2*N - 4) * (2*M - 4), "int16_t", "demosaiced.dump",
-      3 * (2*N - 4) * (2*M - 4), "int16_t", "corrected.dump",
+      3 * (2*H + 4) * (2*W + 4), "int16_t", "demosaiced.dump",
+      3 * (2*H + 2) * (2*W + 2), "int16_t", "corrected.dump",
       1
     )
   }
@@ -736,18 +743,18 @@ int main(int argc, char** argv) {
     println(s"lowered: ${lowered}")
     check(
       lowered, fName => s"""
-${fName}(output, 2*$N - 4, 2*$M - 4,
+${fName}(output, ${2*H + 2}, ${2*W + 2},
   input, ${gamma}, ${contrast}, ${black_level}, ${white_level});
 """,
-      3 * (2*N - 4) * (2*M - 4), "int16_t", "corrected.dump",
-      3 * (2*N - 4) * (2*M - 4), "uint8_t", "curved.dump",
+      3 * (2*H + 2) * (2*W + 2), "int16_t", "corrected.dump",
+      3 * (2*H + 2) * (2*W + 2), "uint8_t", "curved.dump",
       0
     )
   }
 
   test("sharpen passes checks") {
     val typed = printTime("infer", infer(nFun(h => nFun(w => fun(
-      (3`.`h`.`w`.`u8) ->: f32 ->: (3`.`(h-2)`.`(w-2)`.`u8)
+      (3`.`(h+2)`.`(w+2)`.`u8) ->: f32 ->: (3`.`h`.`w`.`u8)
     )((input, strength) =>
       sharpen(h)(w)(input)(strength) |> mapSeq(mapSeq(mapSeq(fun(x => x))))
     )))))
@@ -757,30 +764,40 @@ ${fName}(output, 2*$N - 4, 2*$M - 4,
     println(s"lowered: ${lowered}")
     check(
       lowered, fName => s"""
-${fName}(output, 2*$N - 4, 2*$M - 4, input, ${sharpen_strength});
+${fName}(output, ${2*H}, ${2*W}, input, ${sharpen_strength});
 """,
-      3 * (2*N - 4) * (2*M - 4), "uint8_t", "curved.dump",
-      3 * (2*N - 6) * (2*M - 6), "uint8_t", "sharpened.dump",
+      3 * (2*H + 2) * (2*W + 2), "uint8_t", "curved.dump",
+      3 * 2*H * 2*W, "uint8_t", "sharpened.dump",
       0
     )
   }
 
-  // TODO: read the same input size as Halide
-  ignore("camera pipe passes checks") {
+  test("shift passes checks") {
+    val typed = printTime("infer", infer(nFun(h => nFun(w =>
+      shift(h)(w) >> mapSeq(mapSeq(fun(x => x)))
+    ))))
+    check(
+      typed, fName => s"${fName}(output, ${2*H + 12}, ${2*W + 12}, input);",
+      (2*H + 48) * (2*W + 32), "uint16_t", "input.dump",
+      (2*H + 12) * (2*W + 12), "int16_t", "shifted.dump",
+      0
+    )
+  }
+
+  test("camera pipe passes checks") {
     val typed = printTime("infer", infer(camera_pipe))
     check(
       typed, fName => s"""
   float matrix_3200[3 * 4] = { ${matrix_3200.mkString(", ")} };
   float matrix_7000[3 * 4] = { ${matrix_7000.mkString(", ")} };
 
-  ${fName}(output, $N, $M, 3, 4,
+  ${fName}(output, $H, $W, 3, 4,
     input, matrix_3200, matrix_7000, ${color_temp},
     ${gamma}, ${contrast}, ${black_level}, ${white_level},
     ${sharpen_strength});
 """,
-      // the shifted dump is the same as the input dump
-      (2*N + 42) * (2*M + 26), "uint16_t", "shifted.dump",
-      3 * (2*N - 6) * (2*M - 6), "uint8_t", "sharpened.dump",
+      (2*H + 48) * (2*W + 32), "uint16_t", "input.dump",
+      3 * 2*H * 2*W, "uint8_t", "sharpened.dump",
       0
     )
   }
