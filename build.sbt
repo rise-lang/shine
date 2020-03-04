@@ -8,7 +8,7 @@ lazy val shine = (project in file("."))
     name    := "shine",
     version := "1.0",
 
-    javaOptions ++= Seq("-Djava.library.path=lib/executor/lib/Executor/build", "-Xss20m"),
+    javaOptions ++= Seq("-Djava.library.path=lib/executor/lib/Executor/build", "-Xss26m"),
 
     scalacOptions ++= Seq(
       "-Xfatal-warnings",
