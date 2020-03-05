@@ -64,7 +64,9 @@ case object dotPrinter {
           val label =
             if (!forEdge && printTypes) {
               "\"" + s + "\\n" + formatType(expr.t) + "\""
-            } else "<" + decorations(s) + ">"
+            } else {
+              "<" + decorations(s) + ">"
+            }
 
           s"label=$label"
         }
