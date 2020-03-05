@@ -50,7 +50,7 @@ case object dotPrinter {
             x => s"<font color='gray'>${decorations(x)}</font>"
           )
         // keep for now: used as style in the arXive paper
-        //def green: Label =
+        // def green: Label =
         //  this.copy(decorations =
         //    x => s"""<font color="#3C8031">${decorations(x)}</font>"""
         //  )
@@ -62,9 +62,9 @@ case object dotPrinter {
 
         override def toString: String = {
           val label =
-            if (!forEdge && printTypes)
+            if (!forEdge && printTypes) {
               "\"" + s + "\\n" + formatType(expr.t) + "\""
-            else "<" + decorations(s) + ">"
+            } else "<" + decorations(s) + ">"
 
           s"label=$label"
         }
@@ -127,19 +127,25 @@ case object dotPrinter {
              |${recurse(f, fun, None)}""".stripMargin
 
         case l: Literal =>
-          s"$parent ${attr(fillWhite + Label(l.toString.trim).orange.italic.toString)}"
+          s"$parent ${attr(fillWhite +
+            Label(l.toString.trim).orange.italic.toString)}"
         case i: Identifier =>
-          s"$parent ${attr(fillWhite + Label(i.toString.trim).orange.italic.toString)}"
+          s"$parent ${attr(fillWhite +
+            Label(i.toString.trim).orange.italic.toString)}"
         case p: Primitive => p match {
-          case primitives.MapSeq() => s"$parent ${attr(fillDarkGray + Label(p.toString.trim).bold.toString)}"
-          case primitives.ReduceSeq() => s"$parent ${attr(fillDarkGray + Label(p.toString.trim).bold.toString)}"
-          case _ => s"$parent ${attr(fillGray + Label(p.toString.trim).bold.toString)}"
+          case primitives.MapSeq() => s"$parent ${attr(fillDarkGray +
+            Label(p.toString.trim).bold.toString)}"
+          case primitives.ReduceSeq() => s"$parent ${attr(fillDarkGray +
+            Label(p.toString.trim).bold.toString)}"
+          case _ => s"$parent ${attr(fillGray +
+            Label(p.toString.trim).bold.toString)}"
         }
       }
     }
 
     val content =
-      generateNodesAndEdges(expr, getID(expr), printTypes, inlineLambdaIdentifier)
+      generateNodesAndEdges(expr, getID(expr),
+        printTypes, inlineLambdaIdentifier)
 
     s"""
        |digraph graphname
@@ -151,25 +157,5 @@ case object dotPrinter {
        |$content
        |}
      """.stripMargin
-  }
-
-  // todo remove before pull-request
-  def exprToDot(name: String, e: Expr): Unit =
-    exprToDot("/home/bastian/development/rewriting/dot", name, e, dotPrinter(_))
-
-  def exprToDot(
-      path: String,
-      name: String,
-      e: Expr,
-      dot: Expr => String
-  ): Unit = {
-    import java.io._
-    import sys.process._
-
-    val w = new PrintWriter(new File(s"$path/$name.dot"))
-    w.write(dot(e))
-    w.flush()
-    w.close()
-    s"dot -Tpdf $path/$name.dot -o $path/$name.pdf".!
   }
 }
