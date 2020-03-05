@@ -51,8 +51,21 @@ final case class DepLambda[K <: Kind: KindName](
   val kindName: String = implicitly[KindName[K]].get
   override def setType(t: Type): DepLambda[K] = this.copy(x, e)(t)
   override def equals(obj: Any): Boolean = obj match {
-    case other: DepLambda[K] =>
-      (e == typedLifting.liftDepFunExpr[K](other).value(x)) && (other.t =~= t)
+    case other: DepLambda[_] =>
+      val otherWithX = (x, other.x) match {
+        case (n: NatIdentifier, _: NatIdentifier) =>
+          typedLifting.liftDepFunExpr[NatKind](other).value(n)
+        case (dt: DataTypeIdentifier, _: DataTypeIdentifier) =>
+          typedLifting.liftDepFunExpr[DataKind](other).value(dt)
+        case (addr: AddressSpaceIdentifier, _: AddressSpaceIdentifier) =>
+          typedLifting.liftDepFunExpr[AddressSpaceKind](other).value(addr)
+        case (n2n: NatToNatIdentifier, _: NatToNatIdentifier) =>
+          typedLifting.liftDepFunExpr[NatToNatKind](other).value(n2n)
+        case (n2d: NatToDataIdentifier, _: NatToDataIdentifier) =>
+          typedLifting.liftDepFunExpr[NatToDataKind](other).value(n2d)
+        case _ => false
+      }
+      e == otherWithX && (other.t =~= t)
     case _ => false
   }
 }

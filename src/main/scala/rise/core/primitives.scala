@@ -337,21 +337,11 @@ object primitives {
   @primitive case class SlideSeq(rot: SlideSeq.Rotate)(
       override val t: Type = TypePlaceholder
   ) extends Primitive {
-    // format: off
     override def typeScheme: Type =
-      implN(n =>
-        nFunT(sz =>
-          nFunT(sp =>
-            implDT(s =>
-              implDT(t =>
-                (s ->: s) ->: (ArrayType(sz, s) ->: t) ->:
-                  ArrayType(sp * n + sz, s) ->: ArrayType(1 + n, t)
-              )
-            )
-          )
-        )
-      )
-    // format: on
+      implN(n => nFunT(sz => nFunT(sp => implDT(s => implDT(t =>
+        (s ->: s) ->: (ArrayType(sz, s) ->: t) ->:
+          ArrayType(sp * n + sz, s) ->: ArrayType(1 + n, t)
+      )))))
   }
 
   @primitive case class Snd()(override val t: Type = TypePlaceholder)
