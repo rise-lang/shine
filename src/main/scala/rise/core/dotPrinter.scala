@@ -132,15 +132,17 @@ case object dotPrinter {
         case DepApp(f, e) if applyNodes =>
           val fun = getID(f)
           val arg = getID(e)
-          s"""$parent ${attr(fillWhite + Label("depApply").toString)}
-             |$parent -> $fun ${edgeLabel("fun")};
-             |$parent -> $arg ${edgeLabel("arg")};
-             |$arg ${attr(fillWhite + Label(e.toString).toString)}
-             |${recurse(f, fun, None)}""".stripMargin
+          s"""
+            |$parent ${attr(fillWhite + Label("depApply").toString)}
+            |$parent -> $fun ${edgeLabel("fun")};
+            |$parent -> $arg ${edgeLabel("arg")};
+            |$arg ${attr(fillWhite + Label(e.toString).toString)}
+            |${recurse(f, fun, None)}""".stripMargin
 
         case DepApp(f, e) if !applyNodes =>
           val eID = getID(e)
-          s"""${recurse(f, parent, None)}
+          s"""
+            |${recurse(f, parent, None)}
             |$eID ${attr(fillWhite + Label(e.toString).toString)}
             |$parent -> $eID ${edgeLabel("dep arg")};""".stripMargin
 
