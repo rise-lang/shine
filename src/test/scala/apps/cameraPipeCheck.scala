@@ -306,10 +306,9 @@ ${fName}(output, ${2*H}, ${2*W}, input, ${sharpen_strength});
     )
   }
 
-  test("camera pipe passes checks") {
-    val typed = printTime("infer", infer(camera_pipe))
+  def checkCameraPipe(lowered: Rise): Unit = {
     check(
-      typed, fName => s"""
+      lowered, fName => s"""
   float matrix_3200[3 * 4] = { ${matrix_3200.mkString(", ")} };
   float matrix_7000[3 * 4] = { ${matrix_7000.mkString(", ")} };
 
@@ -324,9 +323,14 @@ ${fName}(output, ${2*H}, ${2*W}, input, ${sharpen_strength});
     )
   }
 
+  test("camera pipe passes checks") {
+    val _ = printTime("infer", infer(camera_pipe))
+    // TODO: simple lowering and check output
+  }
+
   test("camera pipe passes checks with circular buffers") {
     cameraPipeRewrite.circularBuffers(
-      printTime("infer", infer(cameraPipe.camera_pipe))
+      printTime("infer", infer(camera_pipe))
     )
     // TODO: check output
   }
