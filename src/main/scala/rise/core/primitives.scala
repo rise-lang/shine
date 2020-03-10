@@ -198,6 +198,15 @@ object primitives {
   @primitive case class MapStream()(override val t: Type = TypePlaceholder)
     extends Primitive {
     override def typeScheme: Type = implN(n => implDT(s =>
+      // stream to stream
+      implDT(t => (s ->: t) ->: ArrayType(n, s) ->: ArrayType(n, t))
+    ))
+  }
+
+  @primitive case class IterateStream()(override val t: Type = TypePlaceholder)
+    extends Primitive {
+    override def typeScheme: Type = implN(n => implDT(s =>
+      // stream to array (or should it be stream to value?)
       implDT(t => (s ->: t) ->: ArrayType(n, s) ->: ArrayType(n, t))
     ))
   }
