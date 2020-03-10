@@ -60,11 +60,14 @@ final case class SlideSeq(rot: lp.SlideSeq.Rotate,
       case lp.SlideSeq.Indices => SlideSeqIIndices.apply _
     }
 
-    con(input)(fun(expT(inputSize`.`dt, read))(x =>
+    val i = NatIdentifier(freshName("i"))
+    str(input)(fun((i: NatIdentifier) ->:
+      (expT(dt, read) ->: (comm: CommType)) ->: (comm: CommType)
+    )(nextIn =>
       I(n, sz, sp, dt,
         fun(expT(dt, read))(x =>
           fun(accT(dt))(o => acc(write_dt(x))(o))),
-        x, C)
+        nextIn, C)
     ))
   }
 

@@ -54,7 +54,7 @@ class circularBuffering extends shine.test_util.Tests {
   val circBuf: Rise =
     slide(3)(1) >> map(sumSeq) >>
     slideSeq(SlideSeq.Indices)(4)(1)(fun(x => x)) >>
-    mapStream(fun(nbh =>
+    iterateStream(fun(nbh =>
       makeArray(2)(
         nbh |> drop(1) >> dropLast(1) >> sumSeq,
         nbh |> sumSeq
@@ -114,6 +114,7 @@ class circularBuffering extends shine.test_util.Tests {
     makeClosed(typedA)._1 == makeClosed(typedB)._1
   }
 
+  private val id = fun(x => x)
   private val norm = normalize.apply(gentleBetaReduction)
 
   private def rewriteSteps(a: Rise, steps: Seq[(Strategy[Rise], Rise)]): Unit = {
@@ -166,9 +167,71 @@ class circularBuffering extends shine.test_util.Tests {
         oncetd(dropBeforeTake) `;`
         oncetd(isApply `;` one(isApply `;` one(isMakeArray)) `;`
           lowering.mapSeqUnrollWrite) `;`
-        oncetd(lowering.slideSeq(SlideSeq.Indices, fun(x => x))) `;`
-        oncetd(lowering.mapStream))
+        oncetd(lowering.slideSeq(SlideSeq.Indices, id)) `;`
+        oncetd(lowering.iterateStream))
       -> circBuf,
     ))
+  }
+
+  def wrapExprChain(e: Rise): Rise = {
+    infer(nFun(n => fun(
+      ((n+6)`.`f32) ->: (n`.`f32)
+    )(input =>
+      e(input)
+    )))
+  }
+
+  val highLevelChain: Rise =
+    slide(4)(1) >> map(sum) >>
+    slide(3)(1) >> map(sum) >>
+    slide(2)(1) >> map(sum)
+
+  val inlinedChain: Rise =
+    slide(4)(1) >> map(sumSeq) >>
+    slide(3)(1) >> map(sumSeq) >>
+    slide(2)(1) >> mapSeq(sumSeq)
+
+  val circBufChain: Rise =
+    slide(4)(1) >> map(sumSeq) >>
+    slideSeq(SlideSeq.Indices)(3)(1)(id) >> mapStream(sumSeq) >>
+    slideSeq(SlideSeq.Indices)(2)(1)(id) >> iterateStream(sumSeq)
+
+  test("example chain outputs are consistent") {
+    val inlinedP = gen.CProgram(wrapExprChain(inlinedChain), "inlined")
+    val circBufP = gen.CProgram(wrapExprChain(circBufChain), "circularBuffered")
+
+    val N = 20
+    val testCode =
+      s"""
+         |#include <stdio.h>
+         |
+         |${inlinedP.code}
+         |${circBufP.code}
+         |
+         |int main(int argc, char** argv) {
+         |  float input[$N+6];
+         |
+         |  for (int i = 0; i < $N+6; i++) {
+         |    input[i] = (2 * i + 133) % 19;
+         |  }
+         |
+         |  float output1[$N];
+         |  inlined(output1, $N, input);
+         |
+         |  float output2[$N];
+         |  circularBuffered(output2, $N, input);
+         |
+         |  for (int i = 0; i < $N; i++) {
+         |    if (output1[i] != output2[i]) {
+         |      fprintf(stderr, "(%f, %f)\\n",
+         |        output1[i], output2[i]);
+         |      return 1;
+         |    }
+         |  }
+         |
+         |  return 0;
+         |}
+         |""".stripMargin
+    util.Execute(testCode)
   }
 }

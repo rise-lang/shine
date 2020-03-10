@@ -331,7 +331,7 @@ ${fName}(output, ${2*H}, ${2*W}, input, ${sharpen_strength});
   test("camera pipe passes checks with circular buffers") {
     cameraPipeRewrite.circularBuffers(
       printTime("infer", infer(camera_pipe))
-    )
+    ).get
     // TODO: check output
   }
 

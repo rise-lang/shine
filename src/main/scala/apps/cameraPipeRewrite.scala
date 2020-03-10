@@ -79,7 +79,7 @@ object cameraPipeRewrite {
 
   private def debugS(msg: String) =
     elevate.core.strategies.debug.debug[Rise](msg)
-  private def printS(msg: String) =
+  def printS(msg: String) =
     elevate.core.strategies.debug.print[Rise](msg)
   private val idS = elevate.core.strategies.basic.id[Rise]()
 
@@ -164,11 +164,9 @@ object cameraPipeRewrite {
       s(p)
     }
 
-    printS("n1") `;`
     normalizeZipStructure `;`
     afterMaps(normalizeZipOrder) `;`
-    repeat(mapFusion) `;`
-    printS("n3")
+    repeat(mapFusion)
   }
 
   // TODO: should be mapAfterSlide?
@@ -250,15 +248,13 @@ object cameraPipeRewrite {
       ) <+ {
         case p @ App(
           App(Idx(), Literal(IndexData(Cst(i), _))),
-          Identifier("x0")
+          Identifier(name)
         ) =>
-          num = i.toInt
+          // FIXME: could go wrong
+          num = name.drop(1).toInt - 10000 + i.toInt
           Success(p)
-        case p @ Identifier("x5") =>
-          num = 5
-          Success(p)
-        case p @ Identifier("x10") =>
-          num = 10
+        case p @ Identifier(name) =>
+          num = name.drop(1).toInt
           Success(p)
         case _ => Failure(traverse)
       }
@@ -359,7 +355,7 @@ object cameraPipeRewrite {
         body(body(body(
           function(body(function(body(
             argument(argument(
-              function(function(lowering.mapStream)) `;`
+              function(function(lowering.iterateStream)) `;`
                 argument(argument(argument(argument(argument(
                   repeatNTimes(2, oncetd(
                     lowering.slideSeq(primitives.SlideSeq.Indices,
@@ -411,14 +407,15 @@ object cameraPipeRewrite {
   def letHoist: Strategy[Rise] = {
     case expr @ App(f, App(App(primitives.Let(), Lambda(x, b)), v)) =>
       Success(let(lambda(untyped(x), typed(f)(b)), v) :: expr.t)
-    /*
-  case expr @ App(Map(Lambda(y, App(App(Let(), Lambda(x, b)), v)) =>
-    expr.t match {
-      case FunType(_: DataType, _: DataType) if !contains[Rise](y).apply(v) =>
-        Success(let(lambda(untyped(x), lambda(untyped(y), b)), v) :: expr.t)
-      case _ => Failure(letHoist)
-    }
-     */
+    // TODO: normal form / non-map specific?
+    case expr @ App(App(primitives.Map(), Lambda(y,
+      App(App(primitives.Let(), Lambda(x, b)), v)
+    )), in) if !contains[Rise](y).apply(v) =>
+      Success(let(lambda(untyped(x), map(lambda(untyped(y), b), in)), v) :: expr.t)
+    case expr @ App(primitives.Map(), Lambda(y,
+      App(App(primitives.Let(), Lambda(x, b)), v)
+    )) if !contains[Rise](y).apply(v) =>
+      Success(fun(in => let(lambda(untyped(x), map(lambda(untyped(y), b), in)), v)) :: expr.t)
     case _ => Failure(letHoist)
   }
 
@@ -458,7 +455,48 @@ object cameraPipeRewrite {
     rewriteSteps(Seq(
       normalize.apply(gentleBetaReduction),
       precomputeColorCorrectionMatrix,
-      precomputeCurve
+      precomputeCurve,
+      takeDropTowardsInput,
+
+      // demosaic: push line mapping towards output
+      afterTopLevel(
+        argument(argument(argument(argument(argument(
+          function(body(
+            function(body(
+              function(body(
+                // generate/select 3x2
+                repeatNTimes(6, oncetd(function(isEqualTo(DSL.generate)) `;`
+                  oncetd(one(unifyMapOutsideGenerateSelect))
+                )) `;`
+                normalize.apply(gentleBetaReduction <+ etaReduction <+
+                  removeTransposePair <+ mapFusion) `;`
+                // generate/select 3x2
+                repeatNTimes(3,
+                  oncetd(unifyMapOutsideGenerateSelect)
+                ) `;`
+                normalize.apply(gentleBetaReduction <+ etaReduction <+
+                  removeTransposePair <+ mapFusion) `;`
+                // makeArray
+                fOutsideMakeArray `;` argument(unifyMapOutsideMakeArray `;`
+                  argument(function(argument(
+                    normalize.apply(
+                      betaReduction <+ etaReduction <+
+                      removeTransposePair <+ mapFusion <+
+                      idxReduction <+ fstReduction <+ sndReduction
+                    )
+                  )))
+                )
+                // transposeBeforeMapJoin `;` argument(argument(mapFusion))
+              )) `;` argument(normalizeInput)
+            )) `;` argument(normalizeInput)
+          ))
+        )))))
+      ),
+/* curve and sharpen
+      argument(function(body(
+
+      )))
+*/
       // circular buffer demosaic
     ))
   }

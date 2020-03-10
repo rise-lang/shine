@@ -209,6 +209,12 @@ object fromRise {
       =>
         makeMap(MapStream, n, la, lb)
 
+      case (core.IterateStream(),
+      lt.FunType(lt.FunType(_, lb: lt.DataType),
+      lt.FunType(lt.ArrayType(n, la: lt.DataType), _)))
+      =>
+        makeMap(IterateStream, n, la, lb)
+
       case (core.MapSeqUnroll(),
       lt.FunType(lt.FunType(_, lb: lt.DataType),
       lt.FunType(lt.ArrayType(n, la: lt.DataType), _)))

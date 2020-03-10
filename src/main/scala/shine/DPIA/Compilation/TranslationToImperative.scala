@@ -151,7 +151,24 @@ object TranslationToImperative {
         )(C)
       }
 
-      case _ => ???
+      case _ => translateArrayToStream(E, C)
+    }
+  }
+
+  // TODO: works for arrays, but not streams
+  def translateArrayToStream(
+    E: Phrase[ExpType],
+    C: Phrase[`(nat)->:`[(ExpType ->: CommType) ->: CommType] ->: CommType])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] = {
+    import shine.DPIA.DSL._
+
+    E.t match {
+      case ExpType(ArrayType(n, dt), read) =>
+        C(nFun(i => fun(expT(dt, read) ->: (comm: CommType))(k =>
+          con(E `@` i)(k)
+        ), arithexpr.arithmetic.RangeAdd(0, n, 1)))
+      case _ => throw new Exception("this should not happen")
     }
   }
 }

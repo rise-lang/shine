@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
   ) {
     check3pSum(nFun(n => fun(ArrayType(n, int))(a => a |>
       slideSeq(Values)(3)(1)(fun(x => x)) >>
-      mapStream(reduceSeq(add)(l(0)))
+      iterateStream(reduceSeq(add)(l(0)))
     )))
   }
 
@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
   ) {
     check3pSum(nFun(n => fun(ArrayType(n, int))(a => a |>
       slideSeq(Indices)(3)(1)(fun(x => x)) >>
-      mapStream(reduceSeq(add)(l(0)))
+      iterateStream(reduceSeq(add)(l(0)))
     )))
   }
 }
