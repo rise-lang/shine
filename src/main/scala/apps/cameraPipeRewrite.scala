@@ -315,6 +315,18 @@ object cameraPipeRewrite {
     argument(argument(normalizeInput) `;` repeat(mapFusion))
   }
 
+  def stronglyReducedForm: Strategy[Rise] = normalize.apply(
+    betaReduction <+ etaReduction <+
+    removeTransposePair <+ mapFusion <+
+    idxReduction <+ fstReduction <+ sndReduction
+  )
+
+  def gentlyReducedForm: Strategy[Rise] = normalize.apply(
+    gentleBetaReduction <+ etaReduction <+
+    removeTransposePair <+ mapFusion <+
+    idxReduction <+ fstReduction <+ sndReduction
+  )
+
   def demosaicCircularBuffers: Strategy[Rise] = {
     rewriteSteps(Seq(
       normalize.apply(gentleBetaReduction),
@@ -328,23 +340,15 @@ object cameraPipeRewrite {
           repeatNTimes(6, oncetd(function(isEqualTo(DSL.generate)) `;`
             oncetd(one(unifyMapOutsideGenerateSelect))
           )) `;`
-          normalize.apply(gentleBetaReduction <+ etaReduction <+
-            removeTransposePair <+ mapFusion) `;`
+          gentlyReducedForm `;`
           // generate/select 3x2
           repeatNTimes(3,
             oncetd(unifyMapOutsideGenerateSelect)
           ) `;`
-          normalize.apply(gentleBetaReduction <+ etaReduction <+
-            removeTransposePair <+ mapFusion) `;`
+          gentlyReducedForm `;`
           // makeArray
           fOutsideMakeArray `;` argument(unifyMapOutsideMakeArray `;`
-            argument(function(argument(
-              normalize.apply(
-                betaReduction <+ etaReduction <+
-                removeTransposePair <+ mapFusion <+
-                idxReduction <+ fstReduction <+ sndReduction
-              )
-            )))
+            argument(function(argument(stronglyReducedForm)))
           )
         ))))
       ))),
@@ -370,12 +374,7 @@ object cameraPipeRewrite {
                       mapSeqUnroll(mapSeq(mapSeqUnroll(fun(x => x)))) >>
                       map(transpose) >> transpose
                   )
-                }))) `;`
-                normalize.apply(
-                  betaReduction <+ etaReduction <+
-                  removeTransposePair <+ mapFusion <+
-                  idxReduction <+ fstReduction <+ sndReduction
-                )
+                }))) `;` stronglyReducedForm
             ))
           ))))
         )))
@@ -468,27 +467,21 @@ object cameraPipeRewrite {
                 repeatNTimes(6, oncetd(function(isEqualTo(DSL.generate)) `;`
                   oncetd(one(unifyMapOutsideGenerateSelect))
                 )) `;`
-                normalize.apply(gentleBetaReduction <+ etaReduction <+
-                  removeTransposePair <+ mapFusion) `;`
+                gentlyReducedForm `;`
                 // generate/select 3x2
                 repeatNTimes(3,
                   oncetd(unifyMapOutsideGenerateSelect)
                 ) `;`
-                normalize.apply(gentleBetaReduction <+ etaReduction <+
-                  removeTransposePair <+ mapFusion) `;`
+                gentlyReducedForm `;`
                 // makeArray
                 fOutsideMakeArray `;` argument(unifyMapOutsideMakeArray `;`
-                  argument(function(argument(
-                    normalize.apply(
-                      betaReduction <+ etaReduction <+
-                      removeTransposePair <+ mapFusion <+
-                      idxReduction <+ fstReduction <+ sndReduction
-                    )
-                  )))
+                  argument(function(argument(stronglyReducedForm)))
                 )
                 // transposeBeforeMapJoin `;` argument(argument(mapFusion))
-              )) `;` argument(normalizeInput)
-            )) `;` argument(normalizeInput)
+              )) `;`
+              argument(normalizeInput `;` stronglyReducedForm)
+            )) `;`
+            argument(normalizeInput `;` stronglyReducedForm)
           ))
         )))))
       ),
