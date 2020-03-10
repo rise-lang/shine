@@ -64,11 +64,6 @@ object cameraPipeRewrite {
     fBeforeZipMap
   }
 
-  def mapFBeforeSlideFilter(fPredicate: Strategy[Rise]): Strategy[Rise] = {
-    argument(function(argument(fPredicate))) `;`
-    mapFBeforeSlide
-  }
-
   def takeDropTowardsInput: Strategy[Rise] = {
     normalize.apply(
       gentleBetaReduction <+ etaReduction <+
@@ -79,14 +74,15 @@ object cameraPipeRewrite {
       takeInSelect <+ dropInSelect // <+
       // TODO: think more about following
       // fBeforeZipMap <+ // fBeforeZipMapFilter(dropOrTake) <+
-      // mapFBeforeSlide // mapFBeforeSlideFilter(dropOrTake)
     )
   }
 
-  private def debug(msg: String) =
+  private def debugS(msg: String) =
     elevate.core.strategies.debug.debug[Rise](msg)
   private def printS(msg: String) =
     elevate.core.strategies.debug.print[Rise](msg)
+  private val idS = elevate.core.strategies.basic.id[Rise]()
+
   type Traversal = Strategy[Rise] => Strategy[Rise]
 
   def select(predicate: Strategy[Rise], a: Strategy[Rise], b: Strategy[Rise])
@@ -190,52 +186,52 @@ object cameraPipeRewrite {
   def zipSameId: Strategy[Rise] = {
     // TODO: generalize
     zipSame <+ (
-      debug("zsi0") `;`
+      debugS("zsi0") `;`
       function(argument(
         argument(argument(slideAfter2) `;` dropBeforeMap) `;` takeBeforeMap
       )) `;`
       anyMapOutsideZip `;` afterMaps(zipSame) `;` repeat(mapFusion) `;`
-      debug("zsi1")
+      debugS("zsi1")
     ) <+ (
       argument(
         argument(argument(slideAfter2) `;` dropBeforeMap) `;` takeBeforeMap
       ) `;`
       anyMapOutsideZip `;` afterMaps(zipSame) `;` repeat(mapFusion) `;`
-      debug("zsi2")
+      debugS("zsi2")
     ) <+ (
       argument(takeInSlide) `;`
       anyMapOutsideZip `;` afterMaps(zipSame) `;` repeat(mapFusion) `;`
-      debug("zsi3")
+      debugS("zsi3")
     ) <+ (
       function(argument(dropInSlide)) `;`
       anyMapOutsideZip `;` afterMaps(zipSame) `;` repeat(mapFusion) `;`
-      debug("zsi4")
+      debugS("zsi4")
     ) <+ (
       argument(
         takeBeforeDrop `;` argument(takeInSlide) `;` dropBeforeMap
       )`;`
       anyMapOutsideZip `;` afterMaps(zipSame) `;` repeat(mapFusion) `;`
-      debug("zsi5")
+      debugS("zsi5")
     ) <+ (
       function(argument(
         argument(dropInSlide) `;` takeBeforeMap
       ))`;`
       anyMapOutsideZip `;` afterMaps(zipSame) `;` repeat(mapFusion) `;`
-      debug("zsi6")
+      debugS("zsi6")
     ) <+ (
       argument(
         argument(slideAfter2) `;` dropBeforeMap `;`
         argument(dropInSlide) `;` mapFusion
       ) `;`
       anyMapOutsideZip `;` afterMaps(zipSame) `;` repeat(mapFusion) `;`
-      debug("zsi7")
+      debugS("zsi7")
     ) <+ (
       function(argument(
         argument(slideAfter2) `;` takeBeforeMap `;`
         argument(takeInSlide) `;` mapFusion
       )) `;`
       anyMapOutsideZip `;` afterMaps(zipSame) `;` repeat(mapFusion) `;`
-      debug("zsi8")
+      debugS("zsi8")
     )
   }
 
@@ -245,12 +241,12 @@ object cameraPipeRewrite {
     import arithexpr.arithmetic.Cst
 
     var num = -1
-    def nSI: Strategy[Rise] = { p =>
+    def traverse: Strategy[Rise] = { p =>
       val s = (
         (
           isAppliedMap <+ function(dropOrTake) <+
           function(depFunction(depFunction(isEqualTo(DSL.slide))))
-        ) `;` argument(nSI)
+        ) `;` argument(traverse)
       ) <+ {
         case p @ App(
           App(Idx(), Literal(IndexData(Cst(i), _))),
@@ -264,45 +260,61 @@ object cameraPipeRewrite {
         case p @ Identifier("x10") =>
           num = 10
           Success(p)
-        case _ => Failure(nSI)
+        case _ => Failure(traverse)
       }
       s(p)
     }
-    val r = nSI(p)
+    val r = traverse(p)
     ret(num)
     r
   }
 
-  def unifyMapInputs(toA: Traversal, toB: Traversal): Strategy[Rise] = p => {
-    var a: Rise = null
-    var b: Rise = null
-    val p2 = toA(normalizeInput `;` { e => a = e; Success(e) })(p)
-    val p3 = p2.flatMapSuccess(
-      toB(normalizeInput `;` { e => b = e; zipFstAfter(a)(b) }))
-    p3.flatMapSuccess(
-      toA(zipSndAfter(b)))
+  def unifyMapInputs(toMaps: Seq[Traversal]): Strategy[Rise] = p => {
+    var ps = Seq[Rise]()
+    val normalized = toMaps.foldLeft[RewriteResult[Rise]](Success(p)) {
+      case (r, toMap) => r.flatMapSuccess(toMap(
+        argument(normalizeInput) `;` repeat(mapFusion) `;`
+        argument { e => ps = ps :+ e; Success(e) }
+      ))
+    }
+    var leftPs = Seq[Rise]()
+    toMaps.foldLeft(normalized) {
+      case (r, toMap) => r.flatMapSuccess(toMap(ps match {
+        case current +: rightPs =>
+          val withSnd = if (rightPs.nonEmpty) {
+            argument(zipSndAfter(
+              rightPs.reduceRight[Rise] { case (a, b) => zip(a, b) }
+            )) `;` mapFusion
+          } else {
+            idS
+          }
+          val withFst = leftPs.foldRight[Strategy[Rise]](idS) { case (p, s) =>
+            s `;` argument(zipFstAfter(p)) `;` mapFusion
+          }
+          ps = rightPs
+          leftPs = leftPs :+ current
+          withSnd `;` withFst
+      }))
+    }
   }
 
   def unifyMapOutsideGenerateSelect: Strategy[Rise] = {
     function(isEqualTo(DSL.generate)) `;`
     argument(body(
       function(function(function(isEqualTo(DSL.select)))) `;`
-      unifyMapInputs(argument, s => function(argument(s)))
+      unifyMapInputs(Seq(argument, s => function(argument(s))))
     )) `;` mapOutsideGenerateSelect `;`
     argument(argument(normalizeInput) `;` repeat(mapFusion))
   }
 
   def unifyMapOutsideMakeArray: Strategy[Rise] = {
-    val norm = argument(normalizeInput) `;` repeat(mapFusion)
-    // TODO: transformations can be simpler
-    // .. and work for arbitrary size arrays
+    // TODO: can work for arbitrary size arrays
     function(function(function(isEqualTo(DSL.makeArray(3))))) `;`
-    unifyMapInputs(argument, s => function(argument(s))) `;`
-    argument(norm) `;` function(argument(norm)) `;`
-    unifyMapInputs(argument, s => function(function(argument(s)))) `;`
-    argument(norm) `;` function(function(argument(norm))) `;`
-    unifyMapInputs(s => function(argument(s)), s => function(function(argument(s)))) `;`
-    function(argument(norm)) `;` function(function(argument(norm))) `;`
+    unifyMapInputs(Seq(
+      argument,
+      s => function(argument(s)),
+      s => function(function(argument(s)))
+    )) `;`
     mapOutsideMakeArray `;`
     argument(argument(normalizeInput) `;` repeat(mapFusion))
   }
