@@ -50,10 +50,6 @@ object cameraPipeRewrite {
     override def toString = s"depFunction($s)"
   }
 
-  def dropOrTake: Strategy[Rise] = {
-    depFunction(isEqualTo(DSL.drop)) <+ depFunction(isEqualTo(DSL.take))
-  }
-
   def fBeforeZipMapFilter(fPredicate: Strategy[Rise]): Strategy[Rise] = {
     function(argument(body( // map lambda
       function(argument( // left zip
@@ -77,7 +73,7 @@ object cameraPipeRewrite {
     )
   }
 
-  private def debugS(msg: String) =
+  def debugS(msg: String) =
     elevate.core.strategies.debug.debug[Rise](msg)
   def printS(msg: String) =
     elevate.core.strategies.debug.print[Rise](msg)
@@ -92,6 +88,10 @@ object cameraPipeRewrite {
 
   def isAppliedMap: Strategy[Rise] = function(function(isEqualTo(DSL.map)))
   def isAppliedZip: Strategy[Rise] = function(function(isEqualTo(DSL.zip)))
+  def isAppliedDrop: Strategy[Rise] = function(depFunction(isEqualTo(DSL.drop)))
+  def isAppliedTake: Strategy[Rise] = function(depFunction(isEqualTo(DSL.take)))
+  def isAppliedSlide: Strategy[Rise] =
+    function(depFunction(depFunction(isEqualTo(DSL.slide))))
 
   def anyMapOutsideZip: Strategy[Rise] = {
     // function(function(isEqualTo(DSL.zip))) `;`
@@ -172,89 +172,83 @@ object cameraPipeRewrite {
   // TODO: should be mapAfterSlide?
   def mapAfterSlide: Strategy[Rise] = mapFBeforeSlide
 
+  // idx i >> f -> map f >> idx i
+  def idxAfterF: Strategy[Rise] = {
+    case expr @ App(f, App(App(primitives.Idx(), i), in)) =>
+      Success(idx(i, map(f, in)) :: expr.t)
+    case _ => Failure(idxAfterF)
+  }
+
   def normalizeSingleInput: Strategy[Rise] = normalize.apply(
     dropBeforeTake <+ dropBeforeMap <+ takeBeforeMap <+
-    mapAfterSlide <+ mapFusion
+    mapAfterSlide <+ mapFusion // <+ TODO
+    // (not(isAppliedMap) `;` idxAfterF `;` debugS("idx"))
   )
 
   def normalizeInput: Strategy[Rise] =
     afterMaps(select(isAppliedZip, normalizeZipInput, normalizeSingleInput)) `;`
     repeat(mapFusion)
 
-  def zipSameId: Strategy[Rise] = {
-    // TODO: generalize
-    zipSame <+ (
-      debugS("zsi0") `;`
-      function(argument(
-        argument(argument(slideAfter2) `;` dropBeforeMap) `;` takeBeforeMap
-      )) `;`
-      anyMapOutsideZip `;` afterMaps(zipSame) `;` repeat(mapFusion) `;`
-      debugS("zsi1")
-    ) <+ (
-      argument(
-        argument(argument(slideAfter2) `;` dropBeforeMap) `;` takeBeforeMap
-      ) `;`
-      anyMapOutsideZip `;` afterMaps(zipSame) `;` repeat(mapFusion) `;`
-      debugS("zsi2")
-    ) <+ (
-      argument(takeInSlide) `;`
-      anyMapOutsideZip `;` afterMaps(zipSame) `;` repeat(mapFusion) `;`
-      debugS("zsi3")
-    ) <+ (
-      function(argument(dropInSlide)) `;`
-      anyMapOutsideZip `;` afterMaps(zipSame) `;` repeat(mapFusion) `;`
-      debugS("zsi4")
-    ) <+ (
-      argument(
-        takeBeforeDrop `;` argument(takeInSlide) `;` dropBeforeMap
-      )`;`
-      anyMapOutsideZip `;` afterMaps(zipSame) `;` repeat(mapFusion) `;`
-      debugS("zsi5")
-    ) <+ (
-      function(argument(
-        argument(dropInSlide) `;` takeBeforeMap
-      ))`;`
-      anyMapOutsideZip `;` afterMaps(zipSame) `;` repeat(mapFusion) `;`
-      debugS("zsi6")
-    ) <+ (
-      argument(
-        argument(slideAfter2) `;` dropBeforeMap `;`
-        argument(dropInSlide) `;` mapFusion
-      ) `;`
-      anyMapOutsideZip `;` afterMaps(zipSame) `;` repeat(mapFusion) `;`
-      debugS("zsi7")
-    ) <+ (
-      function(argument(
-        argument(slideAfter2) `;` takeBeforeMap `;`
-        argument(takeInSlide) `;` mapFusion
-      )) `;`
-      anyMapOutsideZip `;` afterMaps(zipSame) `;` repeat(mapFusion) `;`
-      debugS("zsi8")
-    )
+  def same(toA: Traversal, toB: Traversal): Strategy[Rise] = { p =>
+    var a: Rise = null
+    toA { e => a = e; Success(e) }(p) flatMapSuccess { p2 =>
+      toB { isEqualTo(erase(a)) }(p2)
+    }
   }
+
+  def unifySingleInputsRec(toA: Traversal, toB: Traversal): Strategy[Rise] = { p =>
+    def symProgress(f: Traversal => Traversal => Strategy[Rise]): Strategy[Rise] =
+      f(toA)(toB) <+ f(toB)(toA)
+    (
+      same(toA, toB) <+
+      select(same(s => toA(function(s)), s => toB(function(s))),
+        unifySingleInputsRec(s => toA(argument(s)), s => toB(argument(s))),
+        symProgress(to1 => to2 =>
+          (to1(takeBeforeDrop) `;` unifySingleInputsRec(to1, to2)) <+
+          (to1(takeInSlide) `;` unifySingleInputsRec(s => to1(argument(s)), to2)) <+
+          (to1(dropInSlide) `;` unifySingleInputsRec(s => to1(argument(s)), to2)) <+
+          (to2(isAppliedSlide) `;` to1(slideAfter2) `;`
+            // slides can be different here and should be patched later
+            unifySingleInputsRec(s => to1(argument(argument(s))), s => to2(argument(s)))) <+
+          (to2(isAppliedSlide) `;` to1(isAppliedDrop <+ isAppliedTake) `;`
+            unifySingleInputsRec(s => to1(argument(s)), to2) `;`
+            to1((dropBeforeMap `;` argument(dropInSlide) `;` mapFusion) <+
+              (takeBeforeMap `;` argument(takeInSlide) `;` mapFusion)))
+        )
+      )
+    )(p)
+  }
+
+  def unifySingleInputs(toA: Traversal, toB: Traversal): Strategy[Rise] =
+    unifySingleInputsRec(toA, toB) `;`
+    toA(normalizeInput) `;` toB(normalizeInput)
+
+  def zipSameId: Strategy[Rise] = (
+    unifySingleInputs(argument, s => function(argument(s))) `;`
+    anyMapOutsideZip `;` afterMaps(zipSame) `;` repeat(mapFusion)
+  ) <+ debugS("zipSameId failed")
 
   def singleInputId(ret: Int => Unit): Strategy[Rise] = p => {
     import primitives.Idx
     import semantics.IndexData
     import arithexpr.arithmetic.Cst
 
-    var num = -1
+    var num = 0
     def traverse: Strategy[Rise] = { p =>
       val s = (
         (
-          isAppliedMap <+ function(dropOrTake) <+
-          function(depFunction(depFunction(isEqualTo(DSL.slide))))
+          isAppliedMap <+ isAppliedDrop <+ isAppliedTake <+ isAppliedSlide
         ) `;` argument(traverse)
       ) <+ {
         case p @ App(
           App(Idx(), Literal(IndexData(Cst(i), _))),
-          Identifier(name)
+          _
         ) =>
           // FIXME: could go wrong
-          num = name.drop(1).toInt - 10000 + i.toInt
-          Success(p)
+          num += i.toInt - 10000
+          argument(traverse)(p)
         case p @ Identifier(name) =>
-          num = name.drop(1).toInt
+          num += name.drop(1).toInt
           Success(p)
         case _ => Failure(traverse)
       }
@@ -275,22 +269,24 @@ object cameraPipeRewrite {
     }
     var leftPs = Seq[Rise]()
     toMaps.foldLeft(normalized) {
-      case (r, toMap) => r.flatMapSuccess(toMap(ps match {
-        case current +: rightPs =>
-          val withSnd = if (rightPs.nonEmpty) {
-            argument(zipSndAfter(
-              rightPs.reduceRight[Rise] { case (a, b) => zip(a, b) }
-            )) `;` mapFusion
-          } else {
-            idS
-          }
-          val withFst = leftPs.foldRight[Strategy[Rise]](idS) { case (p, s) =>
-            s `;` argument(zipFstAfter(p)) `;` mapFusion
-          }
-          ps = rightPs
-          leftPs = leftPs :+ current
-          withSnd `;` withFst
-      }))
+      case (r, toMap) => r.flatMapSuccess { p =>
+        toMap(ps match {
+          case current +: rightPs =>
+            val withSnd = if (rightPs.nonEmpty) {
+              argument(zipSndAfter(
+                rightPs.reduceRight[Rise] { case (a, b) => zip(a, b) }
+              )) `;` mapFusion
+            } else {
+              idS
+            }
+            val withFst = leftPs.foldRight[Strategy[Rise]](idS) { case (p, s) =>
+              s `;` argument(zipFstAfter(p)) `;` mapFusion
+            }
+            ps = rightPs
+            leftPs = leftPs :+ current
+            withSnd `;` withFst
+        })(p)
+      }
     }
   }
 
@@ -452,7 +448,6 @@ object cameraPipeRewrite {
 
   def circularBuffers: Strategy[Rise] = {
     rewriteSteps(Seq(
-      normalize.apply(gentleBetaReduction),
       precomputeColorCorrectionMatrix,
       precomputeCurve,
       takeDropTowardsInput,
@@ -477,7 +472,6 @@ object cameraPipeRewrite {
                 fOutsideMakeArray `;` argument(unifyMapOutsideMakeArray `;`
                   argument(function(argument(stronglyReducedForm)))
                 )
-                // transposeBeforeMapJoin `;` argument(argument(mapFusion))
               )) `;`
               argument(normalizeInput `;` stronglyReducedForm)
             )) `;`
@@ -485,11 +479,11 @@ object cameraPipeRewrite {
           ))
         )))))
       ),
-/* curve and sharpen
-      argument(function(body(
 
-      )))
-*/
+      afterTopLevel(function(argument(body(function(body(
+        printS("hello sharpen") `;`
+        normalizeInput `;` stronglyReducedForm
+      ))))))
       // circular buffer demosaic
     ))
   }
