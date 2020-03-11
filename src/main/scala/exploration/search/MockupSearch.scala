@@ -12,8 +12,8 @@ class MockupSearch(val runner:Rise => Option[Double], val strategies:Set[Strateg
 
   val solutions = new scala.collection.mutable.HashMap[Int, Option[Double]]()
 
-  def N(solution:Rise):Set[Rise] = {
-    val neighbours = scala.collection.mutable.Set[Rise]()
+  def N(solution:Rise):Set[(Rise, Strategy[Rise])]= {
+    val neighbours = scala.collection.mutable.Set[(Rise, Strategy[Rise])]()
 
     // try each strategy and add result to neighbourhood set
     strategies.foreach(strategy  => {
@@ -23,7 +23,7 @@ class MockupSearch(val runner:Rise => Option[Double], val strategies:Set[Strateg
 
         // check rewriting result and it add to neighbourhood set
         result match {
-          case _:Success[Rise] => neighbours.add(result.get) //add to neighbourhood
+          case _:Success[Rise] => neighbours.add(result.get,strategy) //add to neighbourhood
           case _:Failure[Rise] => //nothing
         }
       }catch{
@@ -33,8 +33,8 @@ class MockupSearch(val runner:Rise => Option[Double], val strategies:Set[Strateg
       }
     })
 
-    // add id to neighbourhood
-    neighbours.add(solution)
+    // add id to neighbourhood (use real id strategy instead of null)
+    neighbours.add((solution, null))
 
     neighbours.toSet
   }
@@ -42,7 +42,6 @@ class MockupSearch(val runner:Rise => Option[Double], val strategies:Set[Strateg
   // warning: check size of hashmap
   def f(solution:Rise): Option[Double] = {
     // buffer performance values in hashmap
-    val test = solutions.get(solution.hashCode())
     solutions.get(solution.hashCode()) match {
       case Some(value) => solutions.get(solution.hashCode()).get
       case _ => {

@@ -3,7 +3,6 @@ package exploration
 import elevate.core.Strategy
 import elevate.core.strategies.traversal.{oncebu, oncetd}
 import elevate.heuristic_search.heuristics.Random
-import elevate.heuristic_search.heuristics.IterativeImprovement
 import elevate.rise.rules.algorithmic.{blockedReduce, fissionReduceMap, fuseReduceMap}
 import elevate.rise.{Rise, rules}
 import elevate.rise.rules.movement.{liftReduce, mapFBeforeSlide}
@@ -11,10 +10,10 @@ import elevate.rise.strategies.normalForm.LCNF
 import elevate.rise.strategies.tiling
 import elevate.rise.strategies.tiling.tileNDList
 import exploration.search.{MockupSearch, executeC}
-
 import elevate.core.strategies.traversal.{alltd, bottomup, oncebu, oncetd, topdown}
 import elevate.core.{Failure, Strategy, Success}
 import elevate.heuristic_search.ProblemConstraints
+import elevate.heuristic_search.heuristic.IterativeImprovement
 import elevate.rise.rules.algorithmic.{blockedReduce, fissionReduceMap, fuseReduceMap}
 import elevate.rise.rules.movement.{liftReduce, mapFBeforeSlide}
 import elevate.rise.{Rise, rules}
@@ -88,7 +87,7 @@ object riseExploration {
       RNF `;` oncebu(liftReduce)
 
     val strategies = Set(
-      blocking,
+//      blocking,
       rules.algorithmic.splitJoin(8),
       rules.algorithmic.mapLastFission,
       rules.algorithmic.mapFusion,
@@ -108,8 +107,20 @@ object riseExploration {
       rules.movement.transposeBeforeMapMapF,
       rules.movement.transposeBeforeMapJoin,
       tiling.loopInterchange,
-      tiling.tileND(32)(32),
+//      tiling.tileND(32)(32),
+      tiling.tilingExternal,
+      fusedReduceMap,
+      tiledOuterTwo,
+      splitK,
+      prepareFusion,
+      fusedReduceMapAgain,
+      moveOuterKLoopOnce,
+      moveInnerKLoopOnce
     )
+
+    strategies.foreach(elem => {
+      println("strategy: " + elem.toString())
+    })
 
 
 
@@ -120,7 +131,7 @@ object riseExploration {
     val random = new Random[Rise](s, version)
     val iterativeImprovement = new IterativeImprovement[Rise](s, version)
 
-    //start random search
+//    start random search
     val resultIterativeImprovement = iterativeImprovement.start()
     val resultRandom = random.start()
 
