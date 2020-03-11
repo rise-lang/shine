@@ -7,7 +7,7 @@ import util.{Execute2, gen}
 object executeC {
   val N = 1024
 
-  def apply(riseProgram:Rise): Double = {
+  def apply(riseProgram:Rise): Option[Double] = {
 
     //generate executable program (including host code)
     val code = genExecutableCode(riseProgram)
@@ -200,14 +200,14 @@ int main(int argc, char** argv) {
     testCode
   }
 
-  def compileAndExecute(code:String):Double = {
+  def compileAndExecute(code:String):Option[Double] = {
     try {
       val returnValue = Execute2(code)
       println("result: " + returnValue)
-      returnValue.toDouble
+      Some(returnValue.toDouble)
     }catch {
       case e: Throwable => println("execution failed")
-        -1
+        None
     }
   }
 

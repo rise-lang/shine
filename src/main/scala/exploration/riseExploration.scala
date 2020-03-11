@@ -1,10 +1,28 @@
 package exploration
 
 import elevate.core.Strategy
+import elevate.core.strategies.traversal.{oncebu, oncetd}
 import elevate.heuristic_search.heuristics.Random
 import elevate.heuristic_search.heuristics.IterativeImprovement
-import elevate.rise.Rise
-import exploration.search.MockupSearch
+import elevate.rise.rules.algorithmic.{blockedReduce, fissionReduceMap, fuseReduceMap}
+import elevate.rise.{Rise, rules}
+import elevate.rise.rules.movement.{liftReduce, mapFBeforeSlide}
+import elevate.rise.strategies.normalForm.LCNF
+import elevate.rise.strategies.tiling
+import elevate.rise.strategies.tiling.tileNDList
+import exploration.search.{MockupSearch, executeC}
+
+import elevate.core.strategies.traversal.{alltd, bottomup, oncebu, oncetd, topdown}
+import elevate.core.{Failure, Strategy, Success}
+import elevate.heuristic_search.ProblemConstraints
+import elevate.rise.rules.algorithmic.{blockedReduce, fissionReduceMap, fuseReduceMap}
+import elevate.rise.rules.movement.{liftReduce, mapFBeforeSlide}
+import elevate.rise.{Rise, rules}
+import elevate.rise.rules.traversal.LiftTraversable
+import elevate.rise.strategies.normalForm.{LCNF, RNF}
+import elevate.rise.strategies.tiling
+import elevate.rise.strategies.tiling.tileNDList
+
 
 object riseExploration {
 
@@ -12,8 +30,91 @@ object riseExploration {
     val s = solution
     print("initial solution: " + s + "\n")
 
+    // runner: to be moved!
+    val runner = (solution: Rise) => {
+      //lower
+      try {
+        val lowered = lowering(solution)
+
+        //start new search or something else here
+
+        //execute
+        executeC(lowered)
+      }catch{
+        case e:Throwable => {
+          println("error in runner: " + e)
+          None
+        }
+      }
+    }
+
+
+    // blocking strategy: to be moved!
+
+    // prepare tiling, keep reduce(+) and map(*) close together, (necessary?)
+    val fusedReduceMap: Strategy[Rise] = LCNF `;` oncetd(fuseReduceMap)
+
+    // M.N.m.n.K (or in TVM terms: xo,yo,xi,yi,k)
+    val tiledOuterTwo: Strategy[Rise] = fusedReduceMap `;`
+      oncetd(tileNDList(List(32,32))) `;` LCNF
+
+    // M.N.m.n.K.k (tile K-loop),
+    // fission first to enable blocking the reduction loop
+    val splitK: Strategy[Rise] = tiledOuterTwo `;`
+      oncetd(fissionReduceMap) `;` oncetd(blockedReduce(4)) `;` LCNF
+
+    // move the split (blocking the reduction loop)
+    // to prepare fusing map(*) and reduce(+) again
+    val prepareFusion: Strategy[Rise] = splitK `;`
+      oncetd(mapFBeforeSlide) `;` LCNF
+
+    // move map(*) into both reduce loops again
+    val fusedReduceMapAgain: Strategy[Rise] = prepareFusion `;`
+      oncetd(fuseReduceMap) `;` LCNF `;` oncetd(fuseReduceMap) `;` LCNF
+
+    // move outer K loop up M.N.m.K.n.k
+    val moveOuterKLoopOnce: Strategy[Rise] = fusedReduceMapAgain `;`
+      RNF `;` oncetd(liftReduce) `;` LCNF
+
+    // move outer K loop further up M.N.K.m.n.k
+    val moveOuterKLoopTwice: Strategy[Rise] = moveOuterKLoopOnce `;`
+      RNF `;` oncetd(liftReduce) `;` LCNF
+
+    // move inner K loop further up M.N.K.m.k.n,
+    val moveInnerKLoopOnce: Strategy[Rise] = moveOuterKLoopTwice `;`
+      RNF `;` oncebu(liftReduce) `;` LCNF
+
+    val blocking : Strategy[Rise] = moveInnerKLoopOnce `;`
+      RNF `;` oncebu(liftReduce)
+
+    val strategies = Set(
+      blocking,
+      rules.algorithmic.splitJoin(8),
+      rules.algorithmic.mapLastFission,
+      rules.algorithmic.mapFusion,
+      rules.algorithmic.liftId,
+      rules.algorithmic.idAfter,
+      rules.algorithmic.createTransposePair,
+      rules.algorithmic.removeTransposePair,
+      rules.algorithmic.slideSeqFusion,
+      rules.movement.joinBeforeJoin,
+      rules.movement.joinBeforeMapF,
+      rules.movement.joinBeforeTranspose,
+      rules.movement.mapFBeforeSlide,
+      rules.movement.mapJoinBeforeJoin,
+      rules.movement.mapJoinBeforeTranspose,
+      rules.movement.mapTransposeBeforeJoin,
+      rules.movement.transposeBeforeSlide,
+      rules.movement.transposeBeforeMapMapF,
+      rules.movement.transposeBeforeMapJoin,
+      tiling.loopInterchange,
+      tiling.tileND(32)(32),
+    )
+
+
+
     //search version
-    val version = new MockupSearch(lowering)
+    val version = new MockupSearch(runner, strategies)
 
     //heuristic
     val random = new Random[Rise](s, version)
