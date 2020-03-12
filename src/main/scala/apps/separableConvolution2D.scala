@@ -10,9 +10,9 @@ import rise.OpenCL.DSL._
 import rise.core.HighLevelConstructs._
 
 object separableConvolution2D {
-  private def weights2d(scale: Float, ws: Seq[Seq[Int]]): Expr =
+  def weights2d(scale: Float, ws: Seq[Seq[Int]]): Expr =
     larr(ws.map(r => ArrayData(r.map(x => FloatData(x * scale)))))
-  private def weights1d(scale: Float, ws: Seq[Int]): Expr =
+  def weights1d(scale: Float, ws: Seq[Int]): Expr =
     larr(ws.map(x => FloatData(x * scale)))
 
   // Binomial filter, convolution is separable:
