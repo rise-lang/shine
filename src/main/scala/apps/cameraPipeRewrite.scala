@@ -12,6 +12,7 @@ import elevate.rise.rules._
 import elevate.rise.rules.movement._
 import elevate.rise.rules.algorithmic._
 import elevate.rise.rules.traversal._
+import arithexpr.arithmetic.Cst
 
 object cameraPipeRewrite {
   val dotPrint = true
@@ -62,9 +63,7 @@ object cameraPipeRewrite {
 
   def takeDropTowardsInput: Strategy[Rise] = {
     normalize.apply(
-      gentleBetaReduction <+ etaReduction <+
-      takeAll <+ dropNothing <+
-      mapFusion <+ mapIdentity <+
+      gentleBetaReduction <+ commonSimplifications <+
       takeBeforeMap <+ dropBeforeMap <+
       takeInZip <+ dropInZip <+
       takeInSelect <+ dropInSelect // <+
@@ -231,7 +230,6 @@ object cameraPipeRewrite {
   def singleInputId(ret: Int => Unit): Strategy[Rise] = p => {
     import primitives.Idx
     import semantics.IndexData
-    import arithexpr.arithmetic.Cst
 
     var num = 0
     def traverse: Strategy[Rise] = { p =>
@@ -311,16 +309,24 @@ object cameraPipeRewrite {
     argument(argument(normalizeInput) `;` repeat(mapFusion))
   }
 
+  def slide11AsMap: Strategy[Rise] = {
+    case expr @ DepApp(DepApp(primitives.Slide(), Cst(1)), Cst(1)) =>
+      Success(map(fun(x => generate(fun(_ => x)))) :: expr.t)
+    case _ => Failure(slide11AsMap)
+  }
+
+  def commonSimplifications: Strategy[Rise] =
+    etaReduction <+ removeTransposePair <+ mapFusion <+
+    takeAll <+ dropNothing <+ mapIdentity <+
+    idxReduction <+ fstReduction <+ sndReduction <+
+    slide11AsMap
+
   def stronglyReducedForm: Strategy[Rise] = normalize.apply(
-    betaReduction <+ etaReduction <+
-    removeTransposePair <+ mapFusion <+
-    idxReduction <+ fstReduction <+ sndReduction
+    betaReduction <+ commonSimplifications
   )
 
   def gentlyReducedForm: Strategy[Rise] = normalize.apply(
-    gentleBetaReduction <+ etaReduction <+
-    removeTransposePair <+ mapFusion <+
-    idxReduction <+ fstReduction <+ sndReduction
+    gentleBetaReduction <+ commonSimplifications
   )
 
   def demosaicCircularBuffers: Strategy[Rise] = {
@@ -480,10 +486,32 @@ object cameraPipeRewrite {
         )))))
       ),
 
-      afterTopLevel(function(argument(body(function(body(
-        printS("hello sharpen") `;`
-        normalizeInput `;` stronglyReducedForm
-      ))))))
+      // reorder c, x, y
+      afterTopLevel(
+        function(
+          argument(body(
+            function(body(normalizeInput `;` stronglyReducedForm)) `;`
+            gentleBetaReduction
+          )) `;`
+          mapLastFission `;`
+          body(argument(function(mapLastFission)))
+        ) `;` normalize.apply(gentleBetaReduction <+ etaReduction) `;`
+        transposePairAfter `;` normalize.apply(gentleBetaReduction <+ etaReduction) `;`
+        // argument(mapIdentityAfter `;` function(argument(body(transposePairAfter)))) `;`
+        // normalize.apply(gentleBetaReduction <+ etaReduction) `;`
+        // argument(function(mapLastFission)) `;`
+        // normalize.apply(gentleBetaReduction <+ etaReduction) `;`
+        argument(//argument(argument(
+          mapMapFBeforeTranspose `;` printS("0") `;`
+          argument(mapSlideBeforeTranspose `;` printS("1") `;`
+            normalize.apply(gentleBetaReduction <+ etaReduction) `;`
+            argument(argument(
+              mapMapFBeforeTranspose
+            ))
+          )
+         ) // ))
+        `;` normalize.apply(gentleBetaReduction <+ etaReduction <+ mapLastFission)
+      )
       // circular buffer demosaic
     ))
   }
