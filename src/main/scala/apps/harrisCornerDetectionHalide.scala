@@ -11,11 +11,15 @@ object harrisCornerDetectionHalide {
   private val mulT = C2D.mulT
   private val dot = C2D.dot
 
+  private def larr_f32(s: Seq[Float]): Expr = {
+    larr(s.map(semantics.FloatData))
+  }
+
   val gray: Expr = nFun(h => nFun(w => fun(
     (3`.`h`.`w`.`f32) ->: (h`.`w`.`f32)
   )(input => input |>
     transpose >> map(transpose) >>
-    map(map(dot(larr(Seq(0.299.f, 0.587f, 0.114f)))))
+    map(map(dot(larr_f32(Seq(0.299f, 0.587f, 0.114f)))))
   )))
 
   val sobelXWeights2d: Expr = C2D.weights2d(1.0f / 12.0f, Seq(
@@ -41,7 +45,7 @@ object harrisCornerDetectionHalide {
   val conv3x3: Expr = fun(3`.`3`.`f32)(weights =>
     nFun(h => nFun(w => fun(
       ((h+2)`.`(w+2)`.`f32) ->: (h`.`w`.`f32)
-    )(input =>
+    )(input => input |>
       slide2D(3, 1) >>
       map(map(fun(nbh => dot(join(weights))(join(nbh)))))
     )))
@@ -78,5 +82,21 @@ object harrisCornerDetectionHalide {
       val syy = snd(snd(s))
       coarsityScalar(sxx)(sxy)(syy)(l(0.04f))
     }))
+  )))
+
+  val harris = nFun(h => nFun(w => fun(
+    (3`.`(h+4)`.`(w+4)`.`f32) ->: (h`.`w`.`f32)
+  )(input =>
+    gray(h+4)(w+4)(input) |> fun(g =>
+    sobelX(h+2)(w+2)(g) |> fun(ix =>
+    sobelY(h+2)(w+2)(g) |> fun(iy =>
+    mul(h+2)(w+2)(ix)(ix) |> fun(ixx =>
+    mul(h+2)(w+2)(ix)(iy) |> fun(ixy =>
+    mul(h+2)(w+2)(iy)(iy) |> fun(iyy =>
+    sum3x3(h)(w)(ixx) |> fun(sxx =>
+    sum3x3(h)(w)(ixy) |> fun(sxy =>
+    sum3x3(h)(w)(ixy) |> fun(syy =>
+    coarsity(h)(w)(sxx)(sxy)(syy)
+    )))))))))
   )))
 }

@@ -14,33 +14,17 @@ import elevate.rise.rules.algorithmic._
 import elevate.rise.rules.traversal._
 
 object cameraPipeRewrite {
-  val dotPrint = true
-  def dotPrintTmp(name: String, r: RewriteResult[Rise]): Unit = r match {
-    case Success(e) if dotPrint =>
-      val generateDot = (e: Rise) => {
-        rise.core.dotPrinter.generateDotString(e,
-          printTypes = false,
-          inlineLambdaIdentifier = true,
-          applyNodes = false)
-      }
-      rise.core.dotPrinter.exprToDot("/tmp", name, e, generateDot)
-    case Success(_) =>
-      println(s"not generating $name")
-    case _ =>
-  }
-
   private def rewriteSteps(steps: Seq[Strategy[Rise]]): Strategy[Rise] = a => {
     var nRewrite = 0
     steps.foldLeft[RewriteResult[Rise]](Success(a))({ case (r, s) =>
       r.flatMapSuccess { e =>
         nRewrite += 1
         val result = printTime(s"rewrite $nRewrite", s(e))
-        dotPrintTmp(s"rewrite$nRewrite", result)
+        // util.dotPrintTmp(s"rewrite$nRewrite", result)
         result
       }
     })
   }
-
 
   case class depFunction(s: Strategy[Rise]) extends Strategy[Rise] {
     def apply(e: Rise): RewriteResult[Rise] = e match {

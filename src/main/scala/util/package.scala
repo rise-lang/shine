@@ -57,4 +57,22 @@ package object util {
     println(s"${msg}: ${minutesStr}${secondsStr}${millisStr}")
     result
   }
+
+  def dotPrintTmp(
+    name: String,
+    r: elevate.core.RewriteResult[elevate.rise.Rise]
+  ): Unit = r match {
+    case elevate.core.Success(p) => dotPrintTmp(name, p)
+    case _ =>
+  }
+
+  def dotPrintTmp(name: String, e: rise.core.Expr): Unit = {
+    val generateDot = (e: rise.core.Expr) => {
+      rise.core.dotPrinter.generateDotString(e,
+        printTypes = false,
+        inlineLambdaIdentifier = true,
+        applyNodes = false)
+    }
+    rise.core.dotPrinter.exprToDot("/tmp", name, e, generateDot)
+  }
 }
