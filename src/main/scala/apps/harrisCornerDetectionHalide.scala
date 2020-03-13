@@ -84,7 +84,7 @@ object harrisCornerDetectionHalide {
     }))
   )))
 
-  val harris = nFun(h => nFun(w => fun(
+  val harris: Expr = nFun(h => nFun(w => fun(
     (3`.`(h+4)`.`(w+4)`.`f32) ->: (h`.`w`.`f32)
   )(input =>
     gray(h+4)(w+4)(input) |> fun(g =>
@@ -95,8 +95,54 @@ object harrisCornerDetectionHalide {
     mul(h+2)(w+2)(iy)(iy) |> fun(iyy =>
     sum3x3(h)(w)(ixx) |> fun(sxx =>
     sum3x3(h)(w)(ixy) |> fun(sxy =>
-    sum3x3(h)(w)(ixy) |> fun(syy =>
+    sum3x3(h)(w)(iyy) |> fun(syy =>
     coarsity(h)(w)(sxx)(sxy)(syy)
     )))))))))
   )))
+
+//  import rise.OpenMP.DSL._
+  import rise.core.primitives.SlideSeq.{Indices => RotateIndices}
+
+  val harrisBuffered = {
+    nFun(h => nFun(w => fun(
+      (3`.`(h+4)`.`(w+4)`.`f32) ->: (h`.`w`.`f32)
+    )(input => input |>
+      transpose >> map(transpose) >>
+      map(map(dot(larr_f32(Seq(0.299f, 0.587f, 0.114f))))) >>
+      slideSeq(RotateIndices)(5)(1)(mapSeq(fun(x => x))) >>
+      mapStream(fun(g => pair(
+        // ix
+        g |> map(slide(3)(1)) >> slide(3)(1) >> map(transpose) >>
+        map(map(fun(nbh => dot(join(sobelXWeights2d))(join(nbh))))),
+        // iy
+        g |> map(slide(3)(1)) >> slide(3)(1) >> map(transpose) >>
+        map(map(fun(nbh => dot(join(sobelYWeights2d))(join(nbh)))))
+      ))) >>
+        typeHole("a") >>
+      slideSeq(RotateIndices)(3)(1)(fun(ixiy =>
+        pair(mapSeq(fun(x => x), fst(ixiy)), mapSeq(fun(x => x), snd(ixiy)))
+      )) >>
+        typeHole("b") >>
+      iterateStream(fun(ixiy => {
+        val ix = fst(ixiy)
+        val iy = snd(ixiy)
+        zipND(2)(ix, ix) |> map(map(mulT)) |> fun(ixx =>
+        zipND(2)(ix, iy) |> map(map(mulT)) |> fun(ixy =>
+        zipND(2)(iy, iy) |> map(map(mulT)) |> fun(iyy =>
+        slide2D(3, 1)(ixx) |> map(map(fun(nbh => sum(join(nbh))))) |>
+        fun(sxx =>
+        slide2D(3, 1)(ixy) |> map(map(fun(nbh => sum(join(nbh))))) |>
+        fun(sxy =>
+        slide2D(3, 1)(iyy) |> map(map(fun(nbh => sum(join(nbh))))) |>
+        fun(syy =>
+          zipND(2)(sxx, zipND(2)(sxy, syy)) |> map(map(fun { s =>
+            val sxx = fst(s)
+            val sxy = fst(snd(s))
+            val syy = snd(snd(s))
+            coarsityScalar(sxx)(sxy)(syy)(l(0.04f))
+          }))
+        ))))))
+      })) >> typeHole("out")
+    )))
+  }
 }
