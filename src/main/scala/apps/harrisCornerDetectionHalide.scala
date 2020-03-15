@@ -68,7 +68,7 @@ object harrisCornerDetectionHalide {
   )))
 
   // halide: det + trace + output
-  val coarsityScalar = fun(sxx => fun(sxy => fun(syy => fun(kappa => {
+  val coarsityElem = fun(sxx => fun(sxy => fun(syy => fun(kappa => {
     val det = sxx * syy - sxy * sxy
     val trace = sxx + syy
     det - kappa * trace * trace
@@ -80,7 +80,7 @@ object harrisCornerDetectionHalide {
       val sxx = fst(s)
       val sxy = fst(snd(s))
       val syy = snd(snd(s))
-      coarsityScalar(sxx)(sxy)(syy)(l(0.04f))
+      coarsityElem(sxx)(sxy)(syy)(l(0.04f))
     }))
   )))
 
@@ -100,49 +100,141 @@ object harrisCornerDetectionHalide {
     )))))))))
   )))
 
+  private val id = fun(x => x)
+  private val write1DSeq = mapSeq(id)
+  private val write2DSeq = mapSeq(write1DSeq)
+
+  val harrisSeqWrite: Expr = nFun(h => nFun(w => fun(
+    (3`.`(h+4)`.`(w+4)`.`f32) ->: (h`.`w`.`f32)
+  )(input =>
+    gray(h+4)(w+4)(input) |> write2DSeq |> let(fun(g =>
+    sobelX(h+2)(w+2)(g) |> write2DSeq |> let(fun(ix =>
+    sobelY(h+2)(w+2)(g) |> write2DSeq |> let(fun(iy =>
+    mul(h+2)(w+2)(ix)(ix) |> write2DSeq |> let(fun(ixx =>
+    mul(h+2)(w+2)(ix)(iy) |> write2DSeq |> let(fun(ixy =>
+    mul(h+2)(w+2)(iy)(iy) |> write2DSeq |> let(fun(iyy =>
+    sum3x3(h)(w)(ixx) |> write2DSeq |> let(fun(sxx =>
+    sum3x3(h)(w)(ixy) |> write2DSeq |> let(fun(sxy =>
+    sum3x3(h)(w)(iyy) |> write2DSeq |> let(fun(syy =>
+    coarsity(h)(w)(sxx)(sxy)(syy) |> write2DSeq
+    ))))))))))))))))))
+  )))
+
 //  import rise.OpenMP.DSL._
   import rise.core.primitives.SlideSeq.{Indices => RotateIndices}
 
-  val harrisBuffered = {
-    nFun(h => nFun(w => fun(
-      (3`.`(h+4)`.`(w+4)`.`f32) ->: (h`.`w`.`f32)
-    )(input => input |>
-      transpose >> map(transpose) >>
-      map(map(dot(larr_f32(Seq(0.299f, 0.587f, 0.114f))))) >>
-      slideSeq(RotateIndices)(5)(1)(mapSeq(fun(x => x))) >>
-      mapStream(fun(g => pair(
-        // ix
-        g |> map(slide(3)(1)) >> slide(3)(1) >> map(transpose) >>
-        map(map(fun(nbh => dot(join(sobelXWeights2d))(join(nbh))))),
-        // iy
-        g |> map(slide(3)(1)) >> slide(3)(1) >> map(transpose) >>
-        map(map(fun(nbh => dot(join(sobelYWeights2d))(join(nbh)))))
-      ))) >>
-        typeHole("a") >>
-      slideSeq(RotateIndices)(3)(1)(fun(ixiy =>
-        pair(mapSeq(fun(x => x), fst(ixiy)), mapSeq(fun(x => x), snd(ixiy)))
-      )) >>
-        typeHole("b") >>
-      iterateStream(fun(ixiy => {
-        val ix = fst(ixiy)
-        val iy = snd(ixiy)
-        zipND(2)(ix, ix) |> map(map(mulT)) |> fun(ixx =>
-        zipND(2)(ix, iy) |> map(map(mulT)) |> fun(ixy =>
-        zipND(2)(iy, iy) |> map(map(mulT)) |> fun(iyy =>
-        slide2D(3, 1)(ixx) |> map(map(fun(nbh => sum(join(nbh))))) |>
-        fun(sxx =>
-        slide2D(3, 1)(ixy) |> map(map(fun(nbh => sum(join(nbh))))) |>
-        fun(sxy =>
-        slide2D(3, 1)(iyy) |> map(map(fun(nbh => sum(join(nbh))))) |>
-        fun(syy =>
-          zipND(2)(sxx, zipND(2)(sxy, syy)) |> map(map(fun { s =>
-            val sxx = fst(s)
-            val sxy = fst(snd(s))
-            val syy = snd(snd(s))
-            coarsityScalar(sxx)(sxy)(syy)(l(0.04f))
-          }))
-        ))))))
-      })) >> typeHole("out")
-    )))
-  }
+  private def lineBuffer(n: Nat): Expr =
+    slideSeq(RotateIndices)(n)(1)(write1DSeq)
+
+  val harrisBuffered = nFun(h => nFun(w => fun(
+    (3`.`(h+4)`.`(w+4)`.`f32) ->: (h`.`w`.`f32)
+  )(input => input |>
+    transpose >> map(transpose) >>
+    map(map(dot(larr_f32(Seq(0.299f, 0.587f, 0.114f))))) >>
+    lineBuffer(3) >>
+    mapStream(
+      map(slide(3)(1)) >> transpose >>
+      map(fun(nbh => pair(
+        dot(join(sobelXWeights2d))(join(nbh)),
+        dot(join(sobelYWeights2d))(join(nbh))
+      )))
+    ) >>
+    lineBuffer(3) >>
+    iterateStream(fun(ixiy =>
+      ixiy |> map(map(fun(p => fst(p) * fst(p)))) |> fun(ixx =>
+      ixiy |> map(map(fun(p => fst(p) * snd(p)))) |> fun(ixy =>
+      ixiy |> map(map(fun(p => snd(p) * snd(p)))) |> fun(iyy =>
+      slide2D(3, 1)(ixx) |> map(map(fun(nbh => sum(join(nbh))))) |>
+      fun(sxx =>
+      slide2D(3, 1)(ixy) |> map(map(fun(nbh => sum(join(nbh))))) |>
+      fun(sxy =>
+      slide2D(3, 1)(iyy) |> map(map(fun(nbh => sum(join(nbh))))) |>
+      fun(syy =>
+        zipND(2)(sxx, zipND(2)(sxy, syy)) |> map(map(fun { s =>
+          val sxx = fst(s)
+          val sxy = fst(snd(s))
+          val syy = snd(snd(s))
+          coarsityElem(sxx)(sxy)(syy)(l(0.04f))
+        }))
+      )))))) >> write2DSeq
+    )) >> join
+  )))
+
+  private val sumVec = reduce(add)(vectorFromScalar(l(0.0f)))
+  private val dotWeightsVec = fun(weights => fun(input =>
+    zip(map(vectorFromScalar, weights), input) |> map(mulT) |> sumVec
+  ))
+
+  val harrisBufferedVecUnaligned = nFun(h => nFun(w => fun(
+    (3`.`(h+4)`.`(w+4)`.`f32) ->: (h`.`w`.`f32)
+  )(input => input |>
+    // FIXME? we use the aligned primitive to generate an unaligned vload
+    map(map(asVectorAligned(4))) >>
+    transpose >> map(transpose) >>
+    map(map(dotWeightsVec(larr_f32(Seq(0.299f, 0.587f, 0.114f))))) >>
+    map(asScalar) >>
+    lineBuffer(3) >>
+    mapStream(
+      map(slide(3)(1)) >> transpose >> // TODO: asVector
+      map(map(C2D.shuffle) >> fun(nbh => pair(
+        dotWeightsVec(join(sobelXWeights2d))(join(nbh)),
+        dotWeightsVec(join(sobelYWeights2d))(join(nbh))
+      )))
+    ) >>
+    lineBuffer(3) >>
+    iterateStream(fun(ixiy =>
+      ixiy |> map(map(fun(p => fst(p) * fst(p)))) |> fun(ixx =>
+      ixiy |> map(map(fun(p => fst(p) * snd(p)))) |> fun(ixy =>
+      ixiy |> map(map(fun(p => snd(p) * snd(p)))) |> fun(iyy =>
+      slide2D(3, 1)(ixx) |> map(map(map(C2D.shuffle) >> fun(nbh => sumVec(join(nbh))))) |>
+      fun(sxx =>
+      slide2D(3, 1)(ixy) |> map(map(map(C2D.shuffle) >> fun(nbh => sumVec(join(nbh))))) |>
+      fun(sxy =>
+      slide2D(3, 1)(iyy) |> map(map(map(C2D.shuffle) >> fun(nbh => sumVec(join(nbh))))) |>
+      fun(syy =>
+        zipND(2)(sxx, zipND(2)(sxy, syy)) |> map(map(fun { s =>
+          val sxx = fst(s)
+          val sxy = fst(snd(s))
+          val syy = snd(snd(s))
+          coarsityElem(sxx)(sxy)(syy)(vectorFromScalar(l(0.04f)))
+        }))
+      )))))) >> write2DSeq
+    )) >> join >> map(asScalar)
+  )))
+
+  // TODO: padding, tail strategy or something to keep same in/out?
+  val harrisBufferedVecAligned = nFun(h => nFun(w => fun(
+    (3`.`(h+4)`.`(w+4)`.`f32) ->: (h`.`w`.`f32)
+  )(input => input |>
+    map(map(asVectorAligned(4))) >>
+    transpose >> map(transpose) >>
+    map(map(dotWeightsVec(larr_f32(Seq(0.299f, 0.587f, 0.114f))))) >>
+    lineBuffer(3) >>
+    mapStream(
+      map(slide(3)(1)) >> transpose >> // W.3.3.4.f
+      map(map(C2D.shuffle) >> fun(nbh => pair(
+        dotWeightsVec(join(sobelXWeights2d))(join(nbh)),
+        dotWeightsVec(join(sobelYWeights2d))(join(nbh))
+      )))
+    ) >>
+    lineBuffer(3) >>
+    iterateStream(fun(ixiy =>
+      ixiy |> map(map(fun(p => fst(p) * fst(p)))) |> fun(ixx =>
+      ixiy |> map(map(fun(p => fst(p) * snd(p)))) |> fun(ixy =>
+      ixiy |> map(map(fun(p => snd(p) * snd(p)))) |> fun(iyy =>
+      slide2D(3, 1)(ixx) |> map(map(map(C2D.shuffle) >> fun(nbh => sumVec(join(nbh))))) |>
+      fun(sxx =>
+      slide2D(3, 1)(ixy) |> map(map(map(C2D.shuffle) >> fun(nbh => sumVec(join(nbh))))) |>
+      fun(sxy =>
+      slide2D(3, 1)(iyy) |> map(map(map(C2D.shuffle) >> fun(nbh => sumVec(join(nbh))))) |>
+      fun(syy =>
+        zipND(2)(sxx, zipND(2)(sxy, syy)) |> map(map(fun { s =>
+          val sxx = fst(s)
+          val sxy = fst(snd(s))
+          val syy = snd(snd(s))
+          coarsityElem(sxx)(sxy)(syy)(vectorFromScalar(l(0.04f)))
+        }))
+      )))))) >> write2DSeq
+    )) >> join >> map(asScalar)
+  )))
 }
