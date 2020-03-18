@@ -197,6 +197,18 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case PairAcc1(_, _, a) => acc(a, env, FstMember :: path, cont)
       case PairAcc2(_, _, a) => acc(a, env, SndMember :: path, cont)
+      case PairAcc(_, _, fst, snd) => path match {
+        case FstMember :: ps => acc(fst, env, ps, cont)
+        case SndMember :: ps => acc(snd, env, ps, cont)
+        case Nil =>
+          // FIXME: hacky
+          acc(fst, env, Nil, { case C.AST.StructMemberAccess(a1, _) =>
+            acc(snd, env, Nil, { case C.AST.StructMemberAccess(a2, _) =>
+              assert(a1 == a2)
+              cont(a1)
+            })})
+        case _ => error(s"did not expect $path")
+      }
 
       case ZipAcc1(_, _, _, a) => path match {
         case (i : CIntExpr) :: ps => acc(a, env, i :: FstMember :: ps, cont)
@@ -1036,6 +1048,12 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
          case Cst(c) => cont(AST.Literal(c.toString))
          case Pow(b, ex) =>
            ex match {
+             case Cst(-1) =>
+               if (Cst(1) % b != Cst(0)) {
+                 println(s"WARNING: 1 /^ $b might have a fractional part")
+               }
+               genNat(b, env, b =>
+                 cont(C.AST.BinaryExpr(AST.Literal("1"), C.AST.BinaryOperator./, b)))
              case Cst(2) =>
                genNat(b, env, b => cont(AST.BinaryExpr(b,AST.BinaryOperator.*, b)))
              case _ =>

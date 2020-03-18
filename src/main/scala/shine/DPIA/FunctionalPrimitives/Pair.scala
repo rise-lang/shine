@@ -49,7 +49,7 @@ final case class Pair(dt1: DataType,
     import TranslationToImperative._
 
     acc(fst)(pairAcc1(dt1, dt2, A)) `;`
-      acc(snd)(recordAcc2(dt1, dt2, A))
+      acc(snd)(pairAcc2(dt1, dt2, A))
   }
 
   override def continuationTranslation(C: Phrase[->:[ExpType, CommType]])

@@ -99,7 +99,7 @@ object AdjustArraySizesForAllocations {
 
         case (PairType(adjDt1, adjDt2), PairType(oldDt1, oldDt2)) =>
           parallInfo match {
-            case (ri: RecordInfo) :: _ => RecordAcc(oldDt1, oldDt2,
+            case (ri: RecordInfo) :: _ => PairAcc(oldDt1, oldDt2,
               adjustedAcceptor(ri.fst, adjDt1, oldDt1, addrSpace)(PairAcc1(adjDt1, adjDt2, A)),
               adjustedAcceptor(ri.snd, adjDt2, oldDt2, addrSpace)(PairAcc2(adjDt1, adjDt2, A)))
             case _ => throw new Exception("This should never happen.")

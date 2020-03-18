@@ -87,7 +87,7 @@ object harrisCornerDetection {
       )) >>
       oclSlideSeq(SlideSeq.Values)(AddressSpace.Private)(3)(1)
       (mapSeqUnroll(id))
-      >> mapStream(
+      >> iterateStream(
         transpose >> map(shuffle) >>
         zip(makeArray(2)(C2D.sobelXWeightsH)(C2D.sobelYWeightsH)) >>
         // TODO: this triggers an extra copy
@@ -129,7 +129,7 @@ object harrisCornerDetection {
       map(map(C2D.weightsSeqVecUnroll(C2D.binomialWeightsV))) >>
       oclSlideSeq(SlideSeq.Values)(AddressSpace.Private)(3)(1)
       (mapSeqUnroll(id)) >>
-      mapStream(
+      iterateStream(
         transpose >> map(shuffle) >>
         toPrivateFun(mapSeqUnroll(
           C2D.weightsSeqVecUnroll(C2D.binomialWeightsH)
@@ -159,7 +159,7 @@ object harrisCornerDetection {
       )) >>
       oclSlideSeq(SlideSeq.Values)(AddressSpace.Private)(3)(1)
       (mapSeqUnroll(id)) >>
-      mapStream(
+      iterateStream(
         transpose >> map(shuffle) >>
         zip(makeArray(2)(C2D.sobelXWeightsH)(C2D.sobelYWeightsH)) >>
         mapSeqUnroll(fun(hWsNbh =>
@@ -189,7 +189,7 @@ object harrisCornerDetection {
       map(map(C2D.weightsSeqVecUnroll(C2D.binomialWeightsV))) >>
       oclSlideSeq(SlideSeq.Values)(AddressSpace.Private)(3)(1)
       (mapSeqUnroll(id)) >>
-      mapStream(
+      iterateStream(
         transpose >> map(shuffle) >>
         toPrivateFun(mapSeqUnroll(
           C2D.weightsSeqVecUnroll(C2D.binomialWeightsH)

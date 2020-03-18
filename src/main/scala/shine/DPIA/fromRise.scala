@@ -371,15 +371,17 @@ object fromRise {
       lt.DepFunType(sz: lt.NatIdentifier,
       lt.DepFunType(sp: lt.NatIdentifier,
       lt.FunType(_,
-      lt.FunType(lt.ArrayType(insz, ldt), lt.ArrayType(n, _))))))
+      lt.FunType(lt.ArrayType(insz, la),
+      lt.ArrayType(n, lt.ArrayType(_, lb)))))))
       =>
-        val t = dataType(ldt)
+        val a = dataType(la)
+        val b = dataType(lb)
         DepLambda[NatKind](natIdentifier(sz))(
           DepLambda[NatKind](natIdentifier(sp))(
             fun[ExpType ->: ExpType](
-              expT(t, read) ->: expT(t, write), write_t =>
-                fun[ExpType](expT(insz`.`t, read), e =>
-                  SlideSeq(rot, n, sz, sp, t, write_t, e)))))
+              expT(a, read) ->: expT(b, write), load =>
+                fun[ExpType](expT(insz`.`a, read), e =>
+                  SlideSeq(rot, n, sz, sp, a, b, load, e)))))
 
       case (ocl.OclSlideSeq(rot),
       lt.DepFunType(la: lt.AddressSpaceIdentifier,

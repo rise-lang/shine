@@ -159,7 +159,7 @@ class separableConvolution2DRewrite extends shine.test_util.Tests {
       (repeatNTimes(2, oncetd(lowering.reduceSeqUnroll)) `;`
         oncetd(lowering.mapSeq) `;`
         oncetd(lowering.slideSeq(SlideSeq.Values, idE)) `;`
-        oncetd(lowering.mapStream))
+        oncetd(lowering.iterateStream))
         -> toTDSL(regRotSeq)(weightsV)(weightsH)
     ))
   }

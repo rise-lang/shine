@@ -97,7 +97,7 @@ object acoustic3D {
     transpose o map(transpose) o transpose o
       mapGlobal(0)(
         mapGlobal(1)(
-          mapStream(acoustic) o
+          iterateStream(acoustic) o
           oclSlideSeq(SlideSeq.Values)(AddressSpace.Private)(sz)(st)(
             mapSeqUnroll(mapSeqUnroll(id))
           ) o transpose o map(transpose)

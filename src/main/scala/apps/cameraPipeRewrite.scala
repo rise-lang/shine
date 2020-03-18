@@ -335,7 +335,7 @@ object cameraPipeRewrite {
 
       // 4. lowering with slideSeq
       {
-        import DSL._
+        import TypedDSL._
         body(body(body(
           function(body(function(body(
             argument(argument(
@@ -349,7 +349,7 @@ object cameraPipeRewrite {
                 // TODO: use proper rewriting to achieve this
                 function(argument(body({ expr =>
                   Success(
-                    expr |> transpose >> map(transpose) >>
+                    typed(expr) |> transpose >> map(transpose) >>
                       // 2 bands of y. all x. rgb channels.
                       mapSeqUnroll(mapSeq(mapSeqUnroll(fun(x => x)))) >>
                       map(transpose) >> transpose

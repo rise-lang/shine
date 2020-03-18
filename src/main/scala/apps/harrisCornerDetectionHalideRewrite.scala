@@ -1,5 +1,6 @@
 package apps
 
+import rise.core.types._
 import rise.core.TypedDSL._
 import rise.OpenMP.TypedDSL._
 import rise.core.primitives.SlideSeq.{Indices => RotateIndices}
@@ -26,6 +27,8 @@ object harrisCornerDetectionHalideRewrite {
   }
 
   val unrollDots = normalize.apply(lowering.reduceSeqUnroll)
+  val privateUnrollDots =
+    normalize.apply(lowering.ocl.reduceSeqUnroll(AddressSpace.Private))
 
   def splitPar: Strategy[Rise] = {
     rewriteSteps(Seq(

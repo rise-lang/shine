@@ -118,7 +118,7 @@ int main(int argc, char** argv) {
       transpose >>
       map(dotSeqUnroll(binomialWeightsV)) >>
       slideSeq(SlideSeq.Values)(3)(1)(id) >>
-      mapStream(dotSeqUnroll(binomialWeightsH))
+      iterateStream(dotSeqUnroll(binomialWeightsH))
     )
     val code = gen.CProgram(wrapExpr(e), "blur").code
     " % ".r.findAllIn(code).length shouldBe 0

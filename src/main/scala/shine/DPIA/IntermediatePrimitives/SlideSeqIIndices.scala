@@ -1,8 +1,8 @@
 package shine.DPIA.IntermediatePrimitives
 
 import shine.DPIA.DSL._
-import shine.DPIA.FunctionalPrimitives.{Cycle, Drop, Take}
-import shine.DPIA.ImperativePrimitives.{CycleAcc, DropAcc}
+import shine.DPIA.FunctionalPrimitives.{Cycle, Drop, Take, Zip}
+import shine.DPIA.ImperativePrimitives.{CycleAcc, DropAcc, UnzipAcc, PairAcc}
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA.Types.DataType._
@@ -13,33 +13,50 @@ object SlideSeqIIndices {
     n: Nat,
     size: Nat,
     step: Nat,
-    dt: DataType,
-    write_dt: Phrase[ExpType ->: AccType ->: CommType],
+    dt1: DataType,
+    dt2: DataType,
+    load: Phrase[ExpType ->: AccType ->: CommType],
     nextInput: Phrase[`(nat)->:`[(ExpType ->: CommType) ->: CommType]],
     nextC: Phrase[`(nat)->:`[(ExpType ->: CommType) ->: CommType] ->: CommType]
   ): Phrase[CommType] = {
     assert(step.eval == 1) // FIXME?
 
     // TODO: unroll flags?
-    `new`(size`.`dt, buffer => {
+    def gen(bufWr: Phrase[AccType], bufRd: Phrase[ExpType]): Phrase[CommType] = {
       // prologue initialisation
-      forNat(size - 1, i => streamNext(nextInput, i, fun(expT(dt, read))(x =>
-        write_dt(x)(buffer.wr `@` i)
+      forNat(size - 1, i => streamNext(nextInput, i, fun(expT(dt1, read))(x =>
+        load(x)(bufWr `@` i)
       ))) `;`
       nextC(nFun(i =>
-        fun(expT(size`.`dt, read) ->: (comm: CommType))(k =>
+        fun(expT(size`.`dt2, read) ->: (comm: CommType))(k =>
           // load next value
-          streamNext(nextInput, i + size - 1, fun(expT(dt, read))(x =>
-            write_dt(x)(DropAcc(size - 1, n, dt,
-              CycleAcc(size - 1 + n, size, dt, buffer.wr)) `@` i)
+          streamNext(nextInput, i + size - 1, fun(expT(dt1, read))(x =>
+            load(x)(DropAcc(size - 1, n, dt2,
+              CycleAcc(size - 1 + n, size, dt2, bufWr)) `@` i)
           )) `;`
           // use neighborhood
-          k(Take(size, n - i - size, read, dt,
-            Drop(i, n - i, read, dt, Cycle(n, size, dt, buffer.rd)))
+          k(Take(size, n - i - size, read, dt2,
+            Drop(i, n - i, read, dt2, Cycle(n, size, dt2, bufRd)))
           )
         ),
         arithexpr.arithmetic.RangeAdd(0, n, 1)
       ))
-    })
+    }
+
+    // TODO: generalize and make explicit? might not always be wanted
+    def allocGen(
+      dt: DataType,
+      C: (Phrase[AccType], Phrase[ExpType]) => Phrase[CommType]
+    ): Phrase[CommType] = dt match {
+      case PairType(a, b) =>
+        allocGen(a, (wa, ra) => allocGen(b, (wb, rb) =>
+          C(UnzipAcc(size, a, b, PairAcc(size`.`a, size`.`b, wa, wb)),
+            Zip(size, a, b, ra, rb))
+        ))
+      case _ =>
+        `new`(size`.`dt, buffer => C(buffer.wr, buffer.rd))
+    }
+
+    allocGen(dt2, gen)
   }
 }

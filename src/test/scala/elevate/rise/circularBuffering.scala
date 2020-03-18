@@ -234,4 +234,85 @@ class circularBuffering extends shine.test_util.Tests {
          |""".stripMargin
     util.Execute(testCode)
   }
+
+  def wrapExprTogether(e: Rise): Rise = {
+    infer(nFun(n => nFun(m => fun(
+      ((n+2)`.`(m+2)`.`f32) ->: (n`.`m`.`f32)
+    )(input =>
+      e(input)
+    ))))
+  }
+
+  val highLevelTogether: Rise =
+    fun(x => zip( // N+2.M+2.f
+      x |> map(slide(3)(1) >> map(sum)), // N+2.M.f
+      x |> map(slide(3)(1) >> map(sum)))) >>
+    map(fun(p => zip(fst(p), snd(p)))) >> // N+2.M.(f x f)
+    slide(3)(1) >> // N.3.M.(f x f)
+    map(transpose >> // M.3.(f x f)
+      map(map(fun(p => fst(p) + snd(p)))) >> // M.3.f
+      map(sum) // M.f
+    ) // N.M.f
+
+  val inlinedTogether: Rise =
+    fun(x => zip(
+      x |> map(slide(3)(1) >> map(sumSeq)),
+      x |> map(slide(3)(1) >> map(sumSeq)))) >>
+      map(fun(p => zip(fst(p), snd(p)))) >>
+      slide(3)(1) >>
+      mapSeq(transpose >>
+        map(map(fun(p => fst(p) + snd(p)))) >>
+        mapSeq(sumSeq)
+      )
+
+  val circBufTogether: Rise =
+    slideSeq(SlideSeq.Indices)(3)(1)(
+      slide(3)(1) >> mapSeq(fun(x => pair(sumSeq(x), sumSeq(x)))) >> unzip
+    ) >> // N.3.(M.f x M.f)
+    iterateStream(
+      map(fun(p => zip(fst(p), snd(p)))) >> // 3.M.(f x f)
+      transpose >>
+      map(map(fun(p => fst(p) + snd(p)))) >>
+      mapSeq(sumSeq)
+    )
+
+  test("example together outputs are consistent") {
+    val inlinedP = gen.CProgram(wrapExprTogether(inlinedTogether), "inlined")
+    val circBufP = gen.CProgram(wrapExprTogether(circBufTogether), "circularBuffered")
+
+    val N = 8
+    val M = 12
+    val testCode =
+      s"""
+         |#include <stdio.h>
+         |
+         |${inlinedP.code}
+         |${circBufP.code}
+         |
+         |int main(int argc, char** argv) {
+         |  float input[$N+2 * $M+2];
+         |
+         |  for (int i = 0; i < $N+2 * $M+2; i++) {
+         |    input[i] = (2 * i + 133) % 19;
+         |  }
+         |
+         |  float output1[$N * $M];
+         |  inlined(output1, $N, $M, input);
+         |
+         |  float output2[$N * $M];
+         |  circularBuffered(output2, $N, $M, input);
+         |
+         |  for (int i = 0; i < $N * $M; i++) {
+         |    if (output1[i] != output2[i]) {
+         |      fprintf(stderr, "(%f, %f)\\n",
+         |        output1[i], output2[i]);
+         |      return 1;
+         |    }
+         |  }
+         |
+         |  return 0;
+         |}
+         |""".stripMargin
+    util.Execute(testCode)
+  }
 }
