@@ -388,17 +388,19 @@ object fromRise {
       lt.DepFunType(sz: lt.NatIdentifier,
       lt.DepFunType(sp: lt.NatIdentifier,
       lt.FunType(_,
-      lt.FunType(lt.ArrayType(insz, ldt), lt.ArrayType(n, _)))))))
+      lt.FunType(lt.ArrayType(insz, lds),
+      lt.ArrayType(n, lt.ArrayType(_, ldt))))))))
       =>
+        val s = dataType(lds)
         val t = dataType(ldt)
         val a = addressSpaceIdentifier(la)
         DepLambda[AddressSpaceKind](a)(
         DepLambda[NatKind](natIdentifier(sz))(
         DepLambda[NatKind](natIdentifier(sp))(
           fun[ExpType ->: ExpType](
-            expT(t, read) ->: expT(t, write), write_t =>
-              fun[ExpType](expT(insz`.`t, read), e =>
-                OpenCLSlideSeq(rot, a, n, sz, sp, t, write_t, e))))))
+            expT(s, read) ->: expT(t, write), load =>
+              fun[ExpType](expT(insz`.`s, read), e =>
+                OpenCLSlideSeq(rot, a, n, sz, sp, s, t, load, e))))))
 
       case (core.Reorder(),
       lt.FunType(_,

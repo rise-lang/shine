@@ -13,15 +13,16 @@ import shine.DPIA._
 import scala.xml.Elem
 
 // performs a sequential slide, taking advantage of the space/time overlapping reuse opportunity
-final case class SlideSeq(rot: lp.SlideSeq.Rotate,
-                          n: Nat,
-                          sz: Nat,
-                          sp: Nat,
-                          dt1: DataType,
-                          dt2: DataType,
-                          load: Phrase[ExpType ->: ExpType],
-                          input: Phrase[ExpType])
-  extends ExpPrimitive
+final case class SlideSeq(
+  rot: lp.SlideSeq.Rotate,
+  n: Nat,
+  sz: Nat,
+  sp: Nat,
+  dt1: DataType,
+  dt2: DataType,
+  load: Phrase[ExpType ->: ExpType],
+  input: Phrase[ExpType]
+) extends ExpPrimitive
 {
   val inputSize: Nat with SimplifiedExpr = sp * n + sz - sp
 

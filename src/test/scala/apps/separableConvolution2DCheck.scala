@@ -16,7 +16,7 @@ class separableConvolution2DCheck extends shine.test_util.Tests {
     // at least 3*4 = 12 for one vector sliding window
     nFun(RangeAdd(3, PosInf, 1), h =>
       nFun(RangeAdd(12, PosInf, 4), w =>
-        fun(h `.` w `.` f32)(a => e(a))))
+        fun(h`.`w`.`f32)(a => e(a))))
   }
 
   private val H = 20
@@ -92,6 +92,12 @@ int main(int argc, char** argv) {
     val (output, time) = run(localSize, globalSize)(H `,` W `,` input)
     util.assertSame(output, gold, "output is different from gold")
     println(s"time: $time")
+  }
+
+  test("baseVecU compiles to valid OpenCL that passes checks") {
+    util.withExecutor {
+      checkOCL(LocalSize(1), GlobalSize(1), baseVecU(binomialWeights2d))
+    }
   }
 
   test("regRotPar compiles to valid OpenCL that passes checks") {

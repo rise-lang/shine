@@ -16,7 +16,8 @@ class TranslationContext() extends shine.DPIA.Compilation.TranslationContext {
       case _: IndexType => Assign(dt, lhs, rhs)
 
       // TODO: think about this more thoroughly
-      case PairType(dt1, dt2) => // Assign(dt, lhs, rhs)
+      // case PairType(_, _) => Assign(dt, lhs, rhs)
+      case PairType(dt1, dt2) =>
         assign(dt1, pairAcc1(dt1, dt2, lhs), fst(rhs)) `;`
         assign(dt2, pairAcc2(dt1, dt2, lhs), snd(rhs))
 

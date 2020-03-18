@@ -12,6 +12,7 @@ import scala.collection.mutable
 
 object FlagPrivateArrayLoops {
   def apply(p: Phrase[CommType]): Phrase[CommType] = {
+    return p // FIXME
     val vs = varsToEliminate(p)
     val p2 = eliminateLoopVars(p, vs)
     if (vs.nonEmpty) {

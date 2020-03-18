@@ -66,6 +66,11 @@ object AdjustArraySizesForAllocations {
       case Split(_, _, _, _, p) => visitAndGatherInformation(p, parallInfo)
       case Join(_, _, _, _, p) => visitAndGatherInformation(p, parallInfo)
 
+      case Unzip(_, _, _, p) => visitAndGatherInformation(p, parallInfo) match {
+        case Nil => Nil
+        case pi => error(s"did not expect $pi")
+      }
+
       case _: Identifier[_] | _: Literal | _: Natural |
            _: VectorFromScalar | _: Cast | _: ForeignFunction |
            _: BinOp | _: UnaryOp => parallInfo

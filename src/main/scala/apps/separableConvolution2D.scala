@@ -86,6 +86,11 @@ object separableConvolution2D {
     padClamp2D(1) >> slide2D(3, 1) >>
       mapSeq(mapSeq(fun(nbh => dotSeqUnroll(join(weights2d))(join(nbh)))))
   )
+  val baseVecU: Expr = fun(3`.`3`.`f32)(weights2d =>
+    padClamp2D(1) >> map(slideVectors(4) >> slide(3)(4)) >>
+    slide(3)(1) >> map(transpose) >>
+    mapSeq(mapSeq(fun(nbh => weightsSeqVecUnroll(join(weights2d))(join(nbh)))))
+  )
 
   val factorised: Expr = fun(3`.`f32)(weightsV => fun(3`.`f32)(weightsH =>
     padClamp2D(1) >> slide2D(3, 1) >>
@@ -124,7 +129,7 @@ object separableConvolution2D {
       mapSeq(dotSeqUnroll(weightsH)))
   ))
   val shuffle: Expr =
-    asScalar >> drop(3) >> take(6) >> slide(4)(1) >> join >> asVector(4)
+    asScalar >> drop(3) >> take(6) >> slideVectors(4)
   val scanlinePar: Expr = fun(3`.`f32)(weightsV => fun(3`.`f32)(weightsH =>
     map(implN(w => fun(w`.`f32)(x =>
       x |> asVectorAligned(4)

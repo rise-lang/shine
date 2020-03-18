@@ -27,8 +27,6 @@ object harrisCornerDetectionHalideRewrite {
   }
 
   val unrollDots = normalize.apply(lowering.reduceSeqUnroll)
-  val privateUnrollDots =
-    normalize.apply(lowering.ocl.reduceSeqUnroll(AddressSpace.Private))
 
   def splitPar: Strategy[Rise] = {
     rewriteSteps(Seq(
@@ -99,5 +97,10 @@ object harrisCornerDetectionHalideRewrite {
         )) `;` unrollDots
       ) `;` cameraPipeRewrite.gentlyReducedForm
     ))
+  }
+
+  object ocl {
+    val unrollDots = normalize.apply(
+      lowering.ocl.reduceSeqUnroll(AddressSpace.Private))
   }
 }
