@@ -11,9 +11,7 @@ object executeC {
 
     //generate executable program (including host code)
     val code = genExecutableCode(riseProgram)
-    println("code: " + code )
 
-//    println("code: " + code )
     //compile and execute program
     val performanceValue = compileAndExecute(code, iterations)
 
