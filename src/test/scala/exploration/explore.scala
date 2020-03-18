@@ -11,7 +11,7 @@ import elevate.rise.rules.movement.{liftReduce, mapFBeforeSlide}
 import elevate.rise.rules.traversal.LiftTraversable
 import elevate.rise.strategies.normalForm.{CNF, LCNF, RNF}
 import elevate.rise.strategies.tiling.tileNDList
-//import util.gen
+//import exploration.search.executeC.genExecutableCode
 
 
 
@@ -29,24 +29,45 @@ class explore extends shine.test_util.Tests {
               zip(ak, bk))) $ transpose(b) )) $ a))
   )
 
-  test("tesrt erxploration"){
+  val dot = infer(
+    fun(ArrayType(N, f32))(a =>
+      fun(ArrayType(N, f32))(b =>
+        reduce(add)(l(0.0f)) o map(fun(x => fst(x) * snd(x))) $ zip(a,b)))
+  )
+
+
+  val scal = infer(fun(ArrayType(N, f32))(input =>
+    fun(f32)(alpha =>
+      map(fun(x => alpha * x)) $ input))
+  )
+
+  test("scal exploration"){
     val lowering = elevate.rise.rules.lowering.lowerToC
-
-    val result = riseExploration(mm, lowering)
-
+    val result = riseExploration(scal, lowering)
     println("result: " + result)
-
   }
 
-  test( "test parser properly"){
-    val args = Seq(s"""--help""")
-    exploration.util.testParser(args)
+  test("dot exploration"){
+    val lowering = elevate.rise.rules.lowering.lowerToC
+    val result = riseExploration(dot, lowering)
+    println("result: " + result)
   }
 
-  test("test parser help message"){
-    val args = Seq(s"""shine /home/jo/developement/rise-lang/programs/mm.rise""")
-    exploration.util.testParser(args)
+  test("mm exploration"){
+    val lowering = elevate.rise.rules.lowering.lowerToC
+    val result = riseExploration(mm, lowering)
+    println("result: " + result)
   }
+  //
+//  test( "test parser properly"){
+//    val args = Seq(s"""--help""")
+//    exploration.util.testParser(args)
+//  }
+//
+//  test("test parser help message"){
+//    val args = Seq(s"""shine /home/jo/developement/rise-lang/programs/mm.rise""")
+//    exploration.util.testParser(args)
+//  }
 
 //  test("test json export"){
 //    val result = ExplorationSettings.generateConfigString
