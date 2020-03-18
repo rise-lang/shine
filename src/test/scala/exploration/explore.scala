@@ -11,7 +11,7 @@ import elevate.rise.rules.movement.{liftReduce, mapFBeforeSlide}
 import elevate.rise.rules.traversal.LiftTraversable
 import elevate.rise.strategies.normalForm.{CNF, LCNF, RNF}
 import elevate.rise.strategies.tiling.tileNDList
-import util.gen
+//import util.gen
 
 
 
@@ -29,7 +29,7 @@ class explore extends shine.test_util.Tests {
               zip(ak, bk))) $ transpose(b) )) $ a))
   )
 
-  test("test exploration"){
+  test("tesrt erxploration"){
     val lowering = elevate.rise.rules.lowering.lowerToC
 
     val result = riseExploration(mm, lowering)
@@ -37,5 +37,20 @@ class explore extends shine.test_util.Tests {
     println("result: " + result)
 
   }
+
+  test( "test parser properly"){
+    val args = Seq(s"""--help""")
+    exploration.util.testParser(args)
+  }
+
+  test("test parser help message"){
+    val args = Seq(s"""shine /home/jo/developement/rise-lang/programs/mm.rise""")
+    exploration.util.testParser(args)
+  }
+
+//  test("test json export"){
+//    val result = ExplorationSettings.generateConfigString
+//    println("json: " + result)
+//  }
 
 }

@@ -6,9 +6,10 @@ import elevate.heuristic_search.ProblemConstraints
 import elevate.rise.Rise
 import elevate.rise.rules.traversal.LiftTraversable
 import elevate.rise.strategies.normalForm.LCNF
+import exploration.Runner
 
 // simple mockup search class
-class MockupSearch(val runner:Rise => Option[Double], val strategies:Set[Strategy[Rise]]) extends ProblemConstraints[Rise] {
+class MockupSearch(val runner:Runner, val strategies:Set[Strategy[Rise]]) extends ProblemConstraints[Rise] {
 
   val solutions = new scala.collection.mutable.HashMap[Int, Option[Double]]()
 
@@ -45,7 +46,7 @@ class MockupSearch(val runner:Rise => Option[Double], val strategies:Set[Strateg
     solutions.get(solution.hashCode()) match {
       case Some(value) => solutions.get(solution.hashCode()).get
       case _ => {
-        val performanceValue = runner(solution)
+        val performanceValue = runner.execute(solution)
         solutions.+=(solution.hashCode() -> performanceValue)
         performanceValue
       }

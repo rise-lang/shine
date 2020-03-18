@@ -104,78 +104,15 @@ object riseExploration {
     })
 
 
-    // simple kind of executor
-    val runner2 = (solution: Rise) => {
-      //lower
-      try {
-        val lowered = lowering(solution)
-        //execute
-        executeC(lowered)
-      }catch{
-        case e:Throwable => {
-          println("error in runner: " + e)
-          None
-        }
-      }
+    // parse this from config
 
-    }
-
-    // runner: to be moved!
-    // version including randomized search
-    val runner = (solution: Rise) => {
-      val N  = 5
-      println("runner called")
-      //lower
-      try {
-        // create mockup search with executor-runner (runner2)
-        val version = new MockupSearch(runner2, strategies)
-
-        // initalize best performance value
-        val initialRandom = new Random[Rise](s, version)
-        var best = initialRandom.best
-
-        // do random search for n times
-        for(_ <- 1 to N) {
-          // create random search with executor-runner
-          val random = new Random[Rise](s, version)
-
-          // start random search and get best performance value
-          val result = random.start()
-
-          // check if there is a new best found
-          best match {
-            case None => {
-              random.best match {
-                case Some(_) => best = random.best
-                case _ =>
-              }
-            }
-            case Some(_) => {
-              random.best match{
-                case Some(_) => {
-                  random.best.get < best.get match{
-                    case true => best = random.best
-                    case _ =>
-                  }
-                }
-                case _ =>
-              }
-            }
-          }
-        }
-
-        best
-      }catch{
-        case e:Throwable => {
-          println("error in runner: " + e)
-          None
-        }
-      }
-    }
-
+    // C Runner with 3 iterations
+    val root = new Runner("C", 0, 3, null , strategies)
+    // Random runner with depth 5 and 5 iterations
+    val first = new Runner("Random", 5, 5, root, strategies)
 
     // search version
-    val version = new MockupSearch(runner, strategies)
+    val version = new MockupSearch(first, strategies)
 
     // heuristic
     val iterativeImprovement = new IterativeImprovement[Rise](s, version)

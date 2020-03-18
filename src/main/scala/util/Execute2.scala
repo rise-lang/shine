@@ -9,7 +9,7 @@ object Execute2 {
 
   //noinspection ScalaUnnecessaryParentheses
   @throws[Exception]
-  def apply(code: String): String = {
+  def apply(code: String, iterations: Int): String = {
     try {
       val src = writeToTempFile("code-", ".c", code).getAbsolutePath
       val bin = createTempFile("bin-", "").getAbsolutePath
@@ -17,7 +17,7 @@ object Execute2 {
 
       //repeat execution
       //take median as runtime
-      val N = 3
+      val N = iterations
       val runtimes:Array[Double] = new Array[Double](N)
       var runtime = 0.0
       //check global execution time. Discard any with factor 10
