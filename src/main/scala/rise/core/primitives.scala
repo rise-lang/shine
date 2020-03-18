@@ -347,7 +347,8 @@ object primitives {
     override def typeScheme: Type =
       // TODO: should return a stream / sequential array, not an array
       implN(n => nFunT(sz => nFunT(sp => implDT(s => implDT(t =>
-        (s ->: t) ->: ArrayType(sp * n + sz, s) ->: ArrayType(1 + n, ArrayType(sz, t))
+        (s ->: t) ->:
+        ArrayType(sp * n + sz, s) ->: ArrayType(1 + n, ArrayType(sz, t))
       )))))
   }
 
