@@ -9,14 +9,24 @@ package object util {
 
   def writeToTempFile(prefix: String, suffix: String, content: String): File = {
     val tmp = createTempFile(prefix, suffix)
-    new PrintWriter(tmp) {
+    writeToFile(tmp, content)
+    tmp
+  }
+
+  def writeToPath(path: String, content: String): Unit = {
+    val f = new File(path)
+    f.deleteOnExit()
+    writeToFile(f, content)
+  }
+
+  def writeToFile(file: File, content: String): Unit = {
+    new PrintWriter(file) {
       try {
         write(content)
       } finally {
         close()
       }
     }
-    tmp
   }
 
   def readFile(path: String): String = {

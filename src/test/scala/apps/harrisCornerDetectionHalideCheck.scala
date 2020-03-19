@@ -17,6 +17,7 @@ class harrisCornerDetectionHalideCheck
   val W = 64 // x vector width
   val Hi = H + 4
   val Wi = W + 4 // x vector width
+  // assert(Wi % 32 == 0) FIXME
 
   def checkOMP(lowered: Expr): Unit = {
     val dumbLowering = rewrite.unrollDots(types.infer(omp.harrisSeqWrite))
@@ -49,7 +50,7 @@ class harrisCornerDetectionHalideCheck
          |
          |   int exit_status = 0;
          |   for (int i = 0; i < ${H * W * v}; i++) {
-         |     if (fabs(gold[i] - output[i]) > 0.01) {
+         |     if (fabs(gold[i] - output[i]) > 0.001) {
          |       fprintf(stderr, "%.4f != %.4f\\n", gold[i], output[i]);
          |       exit_status = 1;
          |       break;

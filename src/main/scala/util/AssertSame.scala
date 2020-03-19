@@ -11,7 +11,7 @@ object AssertSame {
   implicit val float: AssertSame[Float] = new AssertSame[Float] {
     def apply(a: Float, b: Float, msg: String): Unit = {
       val d = Math.abs(a - b)
-      val dMax = 0.01
+      val dMax = 0.001
       assert(d < dMax, s"$msg (difference of $d between $a and $b)")
     }
   }
