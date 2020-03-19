@@ -1,21 +1,27 @@
 package exploration.search
 
 import elevate.rise.Rise
+import elevate.core.Strategy
+import elevate.heuristic_search.Runner
 import shine.C.Program
 import util.{Execute2, gen}
 
-object executeC {
+class CExecutor(val lowering: Strategy[Rise], val iterations: Int) extends Runner[Rise] {
   val N = 1024
 
-  def apply(riseProgram:Rise, iterations:Int): Option[Double] = {
+  def execute(solution: Rise):(Rise,Option[Double]) = {
+    // execute C code here
+
+    // lower solution
+    val lowered = lowering.apply(solution)
 
     //generate executable program (including host code)
-    val code = genExecutableCode(riseProgram)
+    val code = genExecutableCode(lowered.get)
 
     //compile and execute program
     val performanceValue = compileAndExecute(code, iterations)
 
-    performanceValue
+    (solution, performanceValue)
   }
 
   def prepareInput(riseProgram:Program):(String,String,String) ={
@@ -80,12 +86,12 @@ object executeC {
 
         //output"""
 
-      if(riseProgram.outputParam.`type`.dataType.toString.equals("int")) {
-        codeBeg +=
-          s"""
+    if(riseProgram.outputParam.`type`.dataType.toString.equals("int")) {
+      codeBeg +=
+        s"""
         const int ${riseProgram.outputParam.name} = N; """
-      } else if (arrayTwo.findFirstIn(riseProgram.outputParam.`type`.dataType.toString).size > 0) {
-        codeBeg += s"""
+    } else if (arrayTwo.findFirstIn(riseProgram.outputParam.`type`.dataType.toString).size > 0) {
+      codeBeg += s"""
         float* ${riseProgram.outputParam.name} = (float*) malloc(sizeof(float)*N*N);
         float* gold = (float*) malloc(sizeof(float)*N*N);
         for (int i = 0; i < N*N; i++) {
@@ -93,11 +99,11 @@ object executeC {
           gold[i] = 0;
         }
         """
-        codeEnd += s"""
+      codeEnd += s"""
         free(gold);
         free(${riseProgram.outputParam.name});"""
-      } else if (arrayOne.findFirstIn(riseProgram.outputParam.`type`.dataType.toString).size > 0) {
-        codeBeg += s"""
+    } else if (arrayOne.findFirstIn(riseProgram.outputParam.`type`.dataType.toString).size > 0) {
+      codeBeg += s"""
         float* ${riseProgram.outputParam.name} = (float*) malloc(sizeof(float)*N);
         float* gold = (float*) malloc(sizeof(float)*N);
         for (int i = 0; i < N; i++) {
@@ -105,62 +111,62 @@ object executeC {
           gold[i] = 0;
         }
         """
-        codeEnd += s"""
+      codeEnd += s"""
         free(gold);
         free(${riseProgram.outputParam.name});"""
 
-      } else if (elemOne.findFirstIn(riseProgram.outputParam.`type`.dataType.toString).size > 0) {
-        codeBeg += s"""
+    } else if (elemOne.findFirstIn(riseProgram.outputParam.`type`.dataType.toString).size > 0) {
+      codeBeg += s"""
         float ${riseProgram.outputParam.name} = N;
         float gold = N;
         """
-      }
-
-      call += s""");"""
-
-      (codeBeg,codeEnd, call)
     }
+
+    call += s""");"""
+
+    (codeBeg,codeEnd, call)
+  }
 
   // to be implemented
   def prepareGold(): String ={
-//    val code = s"""
-////  void compute_gold(float* GOLD, float* A, float* B){
-////	  for(int i = 0; i < SIZE; i++)
-////	  	for(int k = 0; k < SIZE; k++)
-////			  for(int j = 0; j < SIZE; j++)
-////				  GOLD[i*SIZE+j] += A[i*SIZE+k] * B[k*SIZE+j];
-////   }
+//        val code = s"""
+//      void compute_gold(float* GOLD, float* A, float* B){
+//    	  for(int i = 0; i < SIZE; i++)
+//    	  	for(int k = 0; k < SIZE; k++)
+//    			  for(int j = 0; j < SIZE; j++)
+//    				  GOLD[i*SIZE+j] += A[i*SIZE+k] * B[k*SIZE+j];
+//       }
 //
-//  void compute_gold(float* GOLD, float* A, float B){
-//	  for(int i = 0; i < SIZE; i++)
-////	  	for(int k = 0; k < SIZE; k++)
-////			  for(int j = 0; j < SIZE; j++)
-//				  GOLD[i] += A[i] * B;
-//   }
+////      void compute_gold(float* GOLD, float* A, float B){
+////    	  for(int i = 0; i < SIZE; i++)
+////    	  	for(int k = 0; k < SIZE; k++)
+////    			  for(int j = 0; j < SIZE; j++)
+////    				  GOLD[i] += A[i] * B;
+////       }
 //
-//  int compare_gold(float* C, float* GOLD){
-//	  int valid = 1;
-////	  for(int i = 0; i < SIZE*SIZE; i++){
-//	  for(int i = 0; i < SIZE; i++){
-//		  if(C[i] != GOLD[i]){
-//			  valid = 0;
-//        i = SIZE*SIZE;
-//		  }
-//	  }
-//	  return valid;
-//  }
-//  """
+//      int compare_gold(float* C, float* GOLD){
+//    	  int valid = 1;
+//    	  for(int i = 0; i < SIZE*SIZE; i++){
+////    	  for(int i = 0; i < SIZE; i++){
+//    		  if(C[i] != GOLD[i]){
+//    			  valid = 0;
+//            i = SIZE*SIZE;
+//    		  }
+//    	  }
+//    	  return valid;
+//      }
+//      """
     val code = s""""""
     code
   }
 
-    def genExecutableCode(riseProgram:Rise):String = {
+  def genExecutableCode(riseProgram:Rise):String = {
 
-      val p = gen.CProgram(riseProgram)
+    val p = gen.CProgram(riseProgram)
 
-      val preparation = prepareInput(p)
+    val preparation = prepareInput(p)
 
-      val gold = prepareGold
+    val gold = prepareGold
 
     val testCode = s"""
 #include <stdio.h>
@@ -187,11 +193,11 @@ int main(int argc, char** argv) {
 
   duration = (tp_end.tv_sec - tp_start.tv_sec) * 1000000000 + (tp_end.tv_nsec - tp_start.tv_nsec);
   duration = duration / 1000000;
-
-// to be implemented
+//
+//// to be implemented
 //  compute_gold(gold, x0, x1);
 //  int check = compare_gold(output, gold);
-
+//
 //  if(!check){
 //    return -1;
 //  }
@@ -217,11 +223,12 @@ int main(int argc, char** argv) {
     }catch {
       case e: Throwable => {
         println("execution failed")
-        println("return and get back to work")
         None
       }
     }
   }
+
+
 
 
 }

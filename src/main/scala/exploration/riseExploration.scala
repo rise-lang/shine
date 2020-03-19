@@ -9,10 +9,10 @@ import elevate.rise.rules.movement.{liftReduce, mapFBeforeSlide}
 import elevate.rise.strategies.normalForm.LCNF
 import elevate.rise.strategies.tiling
 import elevate.rise.strategies.tiling.tileNDList
-import exploration.search.{MockupSearch, executeC}
+import exploration.search.CExecutor
 import elevate.core.strategies.traversal.{alltd, bottomup, oncebu, oncetd, topdown}
 import elevate.core.{Failure, Strategy, Success}
-import elevate.heuristic_search.ProblemConstraints
+import elevate.heuristic_search.{Metaheuristic}
 import elevate.heuristic_search.heuristic.IterativeImprovement
 import elevate.rise.rules.algorithmic.{blockedReduce, fissionReduceMap, fuseReduceMap}
 import elevate.rise.rules.movement.{liftReduce, mapFBeforeSlide}
@@ -68,35 +68,35 @@ object riseExploration {
       RNF `;` oncebu(liftReduce)
 
     val strategies = Set(
-//      blocking,
-      rules.algorithmic.splitJoin(8),
-      rules.algorithmic.mapLastFission,
-      rules.algorithmic.mapFusion,
-      rules.algorithmic.liftId,
-      rules.algorithmic.idAfter,
-      rules.algorithmic.createTransposePair,
-      rules.algorithmic.removeTransposePair,
-      rules.algorithmic.slideSeqFusion,
-      rules.movement.joinBeforeJoin,
-      rules.movement.joinBeforeMapF,
-      rules.movement.joinBeforeTranspose,
-      rules.movement.mapFBeforeSlide,
-      rules.movement.mapJoinBeforeJoin,
-      rules.movement.mapJoinBeforeTranspose,
-      rules.movement.mapTransposeBeforeJoin,
-      rules.movement.transposeBeforeSlide,
-      rules.movement.transposeBeforeMapMapF,
-      rules.movement.transposeBeforeMapJoin,
-      tiling.loopInterchange,
-//      tiling.tileND(32)(32),
-      tiling.tilingExternal,
-      fusedReduceMap,
-      tiledOuterTwo,
-      splitK,
-      prepareFusion,
-      fusedReduceMapAgain,
-      moveOuterKLoopOnce,
-      moveInnerKLoopOnce
+      LCNF `;` blocking `;` LCNF,
+      LCNF `;` rules.algorithmic.splitJoin(8) `;` LCNF,
+      LCNF `;` rules.algorithmic.mapLastFission `;` LCNF,
+      LCNF `;` rules.algorithmic.mapFusion `;` LCNF,
+      LCNF `;` rules.algorithmic.liftId `;` LCNF,
+      LCNF `;` rules.algorithmic.idAfter `;` LCNF,
+      LCNF `;` rules.algorithmic.createTransposePair `;` LCNF,
+      LCNF `;` rules.algorithmic.removeTransposePair `;` LCNF,
+      LCNF `;` rules.algorithmic.slideSeqFusion `;` LCNF,
+      LCNF `;` rules.movement.joinBeforeJoin `;` LCNF,
+      LCNF `;` rules.movement.joinBeforeMapF `;` LCNF,
+      LCNF `;` rules.movement.joinBeforeTranspose `;` LCNF,
+      LCNF `;` rules.movement.mapFBeforeSlide `;` LCNF,
+      LCNF `;` rules.movement.mapJoinBeforeJoin `;` LCNF,
+      LCNF `;` rules.movement.mapJoinBeforeTranspose `;` LCNF,
+      LCNF `;`  rules.movement.mapTransposeBeforeJoin `;` LCNF,
+      LCNF `;` rules.movement.transposeBeforeSlide `;` LCNF,
+      LCNF `;` rules.movement.transposeBeforeMapMapF `;` LCNF,
+      LCNF `;` rules.movement.transposeBeforeMapJoin `;` LCNF,
+      LCNF `;` tiling.loopInterchange `;` LCNF,
+      LCNF `;` tiling.tileND(32)(32) `;` LCNF,
+      LCNF `;` tiling.tilingExternal `;` LCNF,
+      LCNF `;` fusedReduceMap `;` LCNF,
+      LCNF `;` tiledOuterTwo `;` LCNF,
+      LCNF `;` splitK `;` LCNF,
+      LCNF `;` prepareFusion `;` LCNF,
+      LCNF `;` fusedReduceMapAgain `;` LCNF,
+      LCNF `;` moveOuterKLoopOnce `;` LCNF,
+      LCNF `;` moveInnerKLoopOnce `;` LCNF `;` LCNF
     )
 
     strategies.foreach(elem => {
@@ -104,19 +104,33 @@ object riseExploration {
     })
 
 
+
     // parse this from config
 
-    // C Runner with 3 iterations
-    val root = new Runner("C", 0, 3, null , strategies)
-    // Random runner with depth 5 and 5 iterations
-    val first = new Runner("Random", 5, 5, root, strategies)
+    println("initialization started")
 
-    // search version
-    val version = new MockupSearch(first, strategies)
+    // c Runner with 3 iterations and lowering strategy
+    val lowering = elevate.rise.rules.lowering.lowerToC
+    val cExecutor = new CExecutor(lowering, 3)
 
-    // heuristic
-    val iterativeImprovement = new IterativeImprovement[Rise](s, version)
-    val resultIterativeImprovement = iterativeImprovement.start()
-    println("result Iterative Improvement: " + resultIterativeImprovement)
+    // create heuristics
+    val random = new Random[Rise]
+    val iterativeImprovement = new IterativeImprovement[Rise]
+
+    // depth and iterations matters
+    val first = new Metaheuristic[Rise]("Random", random, 5, 5, cExecutor, strategies)
+    // depth doesn't matter; iterations should be 1
+    val main = new Metaheuristic[Rise]("II", iterativeImprovement, 0, 1, first, strategies)
+
+    println("initialization finished")
+
+    // start things
+    println("execution started")
+    val result = main.execute(solution)
+    println("execution finished")
+
+    println("result: " + result._1)
+    println("result: " + result._2)
+
   }
 }

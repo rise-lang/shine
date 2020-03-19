@@ -12,9 +12,9 @@ class executeC extends shine.test_util.Tests {
       input |> mapSeq(fun(x => alpha * x)))
     ))
 
-    val performanceValue = exploration.search.executeC(simpleScal, 10)
+//    val performanceValue = exploration.search.executeC(simpleScal, 10)
 
-    println("performanceValue: " + performanceValue)
+//    println("performanceValue: " + performanceValue)
   }
 
 }
