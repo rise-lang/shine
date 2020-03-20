@@ -131,6 +131,7 @@ int main(int argc, char** argv) {
     " / ".r.findAllIn(code).length shouldBe 0
   }
 
+  // FIXME: got broken
   test("compiling OpenCL private arrays should unroll loops") {
     import rise.OpenCL.DSL._
 

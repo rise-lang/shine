@@ -14,9 +14,7 @@ package object util {
   }
 
   def writeToPath(path: String, content: String): Unit = {
-    val f = new File(path)
-    f.deleteOnExit()
-    writeToFile(f, content)
+    writeToFile(new File(path), content)
   }
 
   def writeToFile(file: File, content: String): Unit = {
