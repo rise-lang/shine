@@ -1,9 +1,6 @@
 package apps
 
 import rise.core.types._
-import rise.core.TypedDSL._
-import rise.OpenMP.TypedDSL._
-import rise.core.primitives.SlideSeq.{Indices => RotateIndices}
 import elevate.core._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
@@ -12,6 +9,10 @@ import elevate.rise.rules._
 import elevate.rise.rules.traversal._
 import elevate.rise.rules.algorithmic._
 import elevate.rise.rules.movement._
+import cameraPipeRewrite.{
+  afterTopLevel, gentlyReducedForm, stronglyReducedForm,
+  isAppliedZip
+}
 
 object harrisCornerDetectionHalideRewrite {
   private def rewriteSteps(steps: Seq[Strategy[Rise]]): Strategy[Rise] = a => {
@@ -28,20 +29,6 @@ object harrisCornerDetectionHalideRewrite {
 
   val unrollDots = normalize.apply(lowering.reduceSeqUnroll)
 
-  def splitPar: Strategy[Rise] = {
-    rewriteSteps(Seq(
-      cameraPipeRewrite.gentlyReducedForm,
-      cameraPipeRewrite.afterTopLevel(
-        { expr: Rise =>
-          Success[Rise](
-            (split(32) >> mapPar(mapSeq(mapSeq(fun(x => x)))) >> join)(expr))
-        } `;`
-        unrollDots `;`
-        cameraPipeRewrite.gentlyReducedForm
-      )
-    ))
-  }
-
   def afterDefs(s: Strategy[Rise]): Strategy[Rise] = p => {
     (function(body(afterDefs(s))) <+ s)(p)
   }
@@ -49,58 +36,65 @@ object harrisCornerDetectionHalideRewrite {
   def argumentsTd(s: Strategy[Rise]): Strategy[Rise] = p =>
     (s <+
       argument(argumentsTd(s)) <+
-      (cameraPipeRewrite.isAppliedZip `;` function(argument(argumentsTd(s))))
+      (isAppliedZip `;` function(argument(argumentsTd(s))))
       )(p)
 
   def normalizeInput: Strategy[Rise] =
     repeat(argumentsTd(
       gentleBetaReduction <+ etaReduction <+ mapFusion <+
-      mapFBeforeSlide <+ slideInsideZip <+ transposeBeforeMapMapF
+      mapFBeforeSlide <+ slideInsideZip <+ mapMapFBeforeTranspose
     )) `;`
     cameraPipeRewrite.normalizeInput
 
-  val lineBuffer = lowering.slideSeq(RotateIndices, mapSeq(fun(x => x)))
-
-  def circularBuffers: Strategy[Rise] = {
-    rewriteSteps(Seq(
-      cameraPipeRewrite.gentlyReducedForm,
-
-      cameraPipeRewrite.afterTopLevel(afterDefs(
-        normalizeInput `;` cameraPipeRewrite.stronglyReducedForm
-      )) `;` cameraPipeRewrite.gentlyReducedForm,
-
-      cameraPipeRewrite.afterTopLevel(afterDefs(
-        argument(
-          cameraPipeRewrite.unifyMapInputs(Seq(
-            s => function(argument(argument(s))),
-            s => argument(argument(s))
-          )) `;`
-          function(argument(argument(normalizeInput))) `;`
-          argument(argument(normalizeInput))
-        ) `;`
-        subexpressionElimination({
-          import rise.core.DSL._
-          slide(3)(1)(identifier("x1"))
-        })
-      )) `;` cameraPipeRewrite.gentlyReducedForm,
-
-      cameraPipeRewrite.afterTopLevel(
-        argument(oncetd(lineBuffer)) `;`
-        function(body(
-          oncetd(lowering.mapStream) `;`
-          argument(argument(oncetd(lineBuffer))) `;`
-          argument(function(argument(oncetd(lineBuffer)))) `;`
-          cameraPipeRewrite.gentlyReducedForm `;`
-          function(argument(body(
-            oncetd(lowering.iterateStream)
-          )))
-        )) `;` unrollDots
-      ) `;` cameraPipeRewrite.gentlyReducedForm
-    ))
-  }
+  def storeToPrivate(e: Rise): Strategy[Rise] =
+    subexpressionElimination(e) `;` {
+      // TODO: use rewrite rules
+      case rise.core.App(f, v) => Success(
+        rise.OpenCL.TypedDSL.toPrivate(v) |> rise.core.TypedDSL.let(f))
+      case _ => ???
+    }
 
   object ocl {
     val unrollDots = normalize.apply(
       lowering.ocl.reduceSeqUnroll(AddressSpace.Private))
+
+    val lineBuffer = lowering.ocl.circularBuffer(AddressSpace.Global)
+
+    def circularBuffers: Strategy[Rise] = {
+      rewriteSteps(Seq(
+        gentlyReducedForm,
+
+        afterTopLevel(afterDefs(
+          normalizeInput `;` stronglyReducedForm
+        )) `;` gentlyReducedForm,
+
+        afterTopLevel(afterDefs(argument(
+          slideOutsideZip `;`
+          argument(argument(normalizeInput `;` stronglyReducedForm))
+        ))) `;` gentlyReducedForm,
+
+        afterTopLevel(
+          oncetd(lowering.iterateStream) `;`
+          repeatNTimes(2, argumentsTd(function(lineBuffer))) `;`
+          normalize.apply(lowering.ocl.circularBufferLoadFusion) `;`
+          gentlyReducedForm `;`
+          argument(argument(oncetd(lowering.mapSeq))) `;`
+          argument(function(argument(
+            oncetd(mapOutsidePair) `;` oncetd(zipSame) `;`
+            stronglyReducedForm `;` oncetd(lowering.mapSeq)
+          ))) `;`
+          function(argument(oncetd(
+            function(lowering.mapSeq) `;`
+            argument(lambdaBodyWithName(x => {
+              import rise.core.DSL._
+              storeToPrivate(fst(x)) `;`
+              storeToPrivate(fst(snd(x))) `;`
+              storeToPrivate(snd(snd(x)))
+            }))
+          ))) `;`
+          unrollDots
+        ) `;` gentlyReducedForm
+      ))
+    }
   }
 }

@@ -132,15 +132,15 @@ object harrisCornerDetectionHalide {
         transpose >> map(transpose) >>
         map(map(dot(larr_f32(Seq(0.299f, 0.587f, 0.114f))))) >>
         circularBuffer(3)(write1DSeq) >>
-        mapStream(
+        circularBuffer(3)(
           map(slide(3)(1)) >> transpose >>
           map(fun(nbh => pair(
             dot(join(sobelXWeights2d))(join(nbh)),
             dot(join(sobelYWeights2d))(join(nbh))
-          )))
-        ) >>
-        circularBuffer(3)(write1DSeq) >>
-        iterateStream(fun(ixiy =>
+          ))) >> write1DSeq >> unzip
+        ) >> // H.3.(W.f x W.f)
+        iterateStream(
+          map(fun(p => zip(fst(p), snd(p)))) >> fun(ixiy => // 3.W.(f x f)
           ixiy |> map(map(fun(p => fst(p) * fst(p)))) |> fun(ixx =>
           ixiy |> map(map(fun(p => fst(p) * snd(p)))) |> fun(ixy =>
           ixiy |> map(map(fun(p => snd(p) * snd(p)))) |> fun(iyy =>
@@ -314,8 +314,8 @@ object harrisCornerDetectionHalide {
       circularBuffer(3)(
         map(slide(3)(1)) >> transpose >>
         map(map(C2D.shuffle) >> fun(nbh => pair(
-          dotWeightsVec(join(sobelXWeights2d))(join(nbh)),
-          dotWeightsVec(join(sobelYWeights2d))(join(nbh))
+          dotWeightsVec(join(sobelXWeights2d), join(nbh)),
+          dotWeightsVec(join(sobelYWeights2d), join(nbh))
         ))) >> write1DSeq >> unzip
       ) >>
       iterateStream( // 3.(W.<v>f x W.<v>f)

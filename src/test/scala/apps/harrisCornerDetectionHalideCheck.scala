@@ -17,10 +17,13 @@ class harrisCornerDetectionHalideCheck
   val W = 64 // x vector width
   val Hi = H + 4
   val Wi = W + 4 // x vector width
-  // assert(Wi % 32 == 0) FIXME
+  assert(H % 32 == 0)
+
+  def lowerOMP(e: Expr): Expr =
+    rewrite.unrollDots(util.printTime("infer", types.infer(e)))
 
   def checkOMP(lowered: Expr): Unit = {
-    val dumbLowering = rewrite.unrollDots(types.infer(omp.harrisSeqWrite))
+    val dumbLowering = lowerOMP(omp.harrisSeqWrite)
     val goldProg = gen.OpenMPProgram(dumbLowering, "harrisGold")
 
     val prog = util.printTime("codegen",
@@ -67,31 +70,18 @@ class harrisCornerDetectionHalideCheck
   }
 
   test("harrisBuffered generates valid OpenMP") {
-    val typed = util.printTime("infer", types.infer(omp.harrisBuffered))
-    val lowered = rewrite.unrollDots(typed)
-    checkOMP(lowered)
-  }
-
-  test("splitPar rewrite generates valid OpenMP") {
-    val typed = util.printTime("infer", types.infer(harris))
-    val lowered = rewrite.splitPar(typed)
-    util.printTime("codegen", gen.OpenMPProgram(lowered))
-  }
-
-  // TODO
-  ignore("circularBuffers rewrite generates valid OpenMP") {
-    val typed = util.printTime("infer", types.infer(harris))
-    val lowered = rewrite.circularBuffers(typed)
-    util.printTime("codegen", gen.OpenMPProgram(lowered))
+    checkOMP(lowerOMP(omp.harrisBuffered))
   }
 
   import shine.OpenCL._
 
+  def lowerOCL(e: Expr): Expr =
+    rewrite.ocl.unrollDots(util.printTime("infer", types.infer(e)))
+
   def checkOCL(run: Array[Array[Array[Float]]]
     => (Array[Float], util.TimeSpan[util.Time.ms])
   ): Unit = {
-    val dumbTyped = types.infer(ocl.harrisSeqWrite)
-    val dumbLowering = rewrite.ocl.unrollDots(dumbTyped)
+    val dumbLowering = lowerOCL(ocl.harrisSeqWrite)
     val goldProg = gen.OpenCLKernel(dumbLowering, "harrisGold")
 
     val localSize = LocalSize(1)
@@ -113,10 +103,8 @@ class harrisCornerDetectionHalideCheck
   }
 
   test("harrisBuffered generates valid OpenCL") {
-    val typed = util.printTime("infer", types.infer(ocl.harrisBuffered))
-    val lowered = rewrite.ocl.unrollDots(typed)
     val prog = util.printTime("codegen",
-      gen.OpenCLKernel(lowered, "harris"))
+      gen.OpenCLKernel(lowerOCL(ocl.harrisBuffered), "harris"))
 
     val localSize = LocalSize(1)
     val globalSize = GlobalSize(1)
@@ -141,25 +129,16 @@ class harrisCornerDetectionHalideCheck
   }
 
   test("harrisVecUnaligned generates valid OpenCL") {
-    val typed = util.printTime("infer",
-      types.infer(ocl.harrisVecUnaligned))
-    val lowered = rewrite.ocl.unrollDots(typed)
-    checkOCLSeq(lowered)
+    checkOCLSeq(lowerOCL(ocl.harrisVecUnaligned))
   }
 
   test("harrisBufferedVecUnaligned generates valid OpenCL") {
-    val typed = util.printTime("infer",
-      types.infer(ocl.harrisBufferedVecUnaligned))
-    val lowered = rewrite.ocl.unrollDots(typed)
-    checkOCLSeq(lowered)
+    checkOCLSeq(lowerOCL(ocl.harrisBufferedVecUnaligned))
   }
 
   test("harrisBufferedVecUnalignedSplitPar generates valid OpenCL") {
-    val typed = util.printTime("infer",
-      types.infer(ocl.harrisBufferedVecUnalignedSplitPar))
-    val lowered = rewrite.ocl.unrollDots(typed)
-    val prog = util.printTime("codegen",
-      gen.OpenCLKernel(lowered, "harris"))
+    val prog = util.printTime("codegen", gen.OpenCLKernel(
+      lowerOCL(ocl.harrisBufferedVecUnalignedSplitPar), "harris"))
 
     val localSize = LocalSize(1)
     val globalSize = GlobalSize(H / 32)
@@ -171,9 +150,13 @@ class harrisCornerDetectionHalideCheck
   }
 
   test("harrisBufferedVecAligned generates valid OpenCL") {
-    val typed = util.printTime("infer",
-      types.infer(ocl.harrisBufferedVecAligned))
-    val lowered = rewrite.ocl.unrollDots(typed)
-    checkOCLSeq(lowered)
+    checkOCLSeq(lowerOCL(ocl.harrisBufferedVecAligned))
+  }
+
+  test("circularBuffers rewrite generates valid OpenCL") {
+    val typed = util.printTime("infer", types.infer(harris))
+    val lowered = rewrite.ocl.circularBuffers(typed)
+    gen.OpenCLKernel(lowered)
+    // TODO: checkOCLSeq(lowered)
   }
 }
