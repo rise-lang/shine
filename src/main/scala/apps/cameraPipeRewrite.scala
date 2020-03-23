@@ -153,9 +153,6 @@ object cameraPipeRewrite {
     repeat(mapFusion)
   }
 
-  // TODO: should be mapAfterSlide?
-  def mapAfterSlide: Strategy[Rise] = mapFBeforeSlide
-
   // idx i >> f -> map f >> idx i
   def idxAfterF: Strategy[Rise] = {
     case expr @ App(f, App(App(primitives.Idx(), i), in)) =>
@@ -165,7 +162,7 @@ object cameraPipeRewrite {
 
   def normalizeSingleInput: Strategy[Rise] = normalize.apply(
     dropBeforeTake <+ dropBeforeMap <+ takeBeforeMap <+
-    mapAfterSlide <+ mapFusion // <+ TODO
+    slideBeforeMap <+ mapFusion // <+ TODO
     // (not(isAppliedMap) `;` idxAfterF `;` debugS("idx"))
   )
 

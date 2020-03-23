@@ -42,7 +42,7 @@ object harrisCornerDetectionHalideRewrite {
   def normalizeInput: Strategy[Rise] =
     repeat(argumentsTd(
       gentleBetaReduction <+ etaReduction <+ mapFusion <+
-      mapFBeforeSlide <+ slideInsideZip <+ mapMapFBeforeTranspose
+      slideBeforeMap <+ slideInsideZip <+ mapMapFBeforeTranspose
     )) `;`
     cameraPipeRewrite.normalizeInput
 
@@ -60,40 +60,62 @@ object harrisCornerDetectionHalideRewrite {
 
     val lineBuffer = lowering.ocl.circularBuffer(AddressSpace.Global)
 
-    def circularBuffers: Strategy[Rise] = {
-      rewriteSteps(Seq(
-        gentlyReducedForm,
+    def harrisBufferedShape: Seq[Strategy[Rise]] = Seq(
+      gentlyReducedForm,
 
-        afterTopLevel(afterDefs(
-          normalizeInput `;` stronglyReducedForm
-        )) `;` gentlyReducedForm,
+      afterTopLevel(afterDefs(
+        normalizeInput `;` stronglyReducedForm
+      )) `;` gentlyReducedForm,
 
-        afterTopLevel(afterDefs(argument(
-          slideOutsideZip `;`
+      afterTopLevel(afterDefs(argument(
+        slideOutsideZip `;`
           argument(argument(normalizeInput `;` stronglyReducedForm))
-        ))) `;` gentlyReducedForm,
+      ))) `;` gentlyReducedForm
+    )
+
+    def harrisBufferedLowering: Strategy[Rise] = {
+      oncetd(lowering.iterateStream) `;`
+      repeatNTimes(2, argumentsTd(function(lineBuffer))) `;`
+      normalize.apply(lowering.ocl.circularBufferLoadFusion) `;`
+      gentlyReducedForm `;`
+      argument(argument(oncetd(lowering.mapSeq))) `;`
+      argument(function(argument(
+        oncetd(mapOutsidePair) `;` oncetd(zipSame) `;`
+        stronglyReducedForm `;` oncetd(lowering.mapSeq)
+      ))) `;`
+      function(argument(oncetd(
+        function(lowering.mapSeq) `;`
+        argument(lambdaBodyWithName(x => {
+          import rise.core.DSL._
+          storeToPrivate(fst(x)) `;`
+          storeToPrivate(fst(snd(x))) `;`
+          storeToPrivate(snd(snd(x)))
+        }))
+      ))) `;`
+      unrollDots
+    }
+
+    def harrisBuffered: Strategy[Rise] = {
+      rewriteSteps(harrisBufferedShape :+ (
+        afterTopLevel(harrisBufferedLowering) `;` gentlyReducedForm
+      ))
+    }
+
+    def harrisBufferedSplitPar(n: Int): Strategy[Rise] = {
+      rewriteSteps(Seq(
+        harrisBufferedShape.reduce(_`;`_),
 
         afterTopLevel(
-          oncetd(lowering.iterateStream) `;`
-          repeatNTimes(2, argumentsTd(function(lineBuffer))) `;`
-          normalize.apply(lowering.ocl.circularBufferLoadFusion) `;`
+          oncetd(splitJoin(32)) `;`
           gentlyReducedForm `;`
-          argument(argument(oncetd(lowering.mapSeq))) `;`
-          argument(function(argument(
-            oncetd(mapOutsidePair) `;` oncetd(zipSame) `;`
-            stronglyReducedForm `;` oncetd(lowering.mapSeq)
-          ))) `;`
-          function(argument(oncetd(
-            function(lowering.mapSeq) `;`
-            argument(lambdaBodyWithName(x => {
-              import rise.core.DSL._
-              storeToPrivate(fst(x)) `;`
-              storeToPrivate(fst(snd(x))) `;`
-              storeToPrivate(snd(snd(x)))
-            }))
-          ))) `;`
-          unrollDots
-        ) `;` gentlyReducedForm
+          argumentsTd(slideBeforeSplit) `;`
+          argumentsTd(slideBeforeMap) `;`
+          argumentsTd(slideBeforeSlide) `;`
+          argumentsTd(slideBeforeMap) `;`
+          gentlyReducedForm `;`
+          oncetd(lowering.mapGlobal()) `;`
+          oncetd(harrisBufferedLowering)
+        )
       ))
     }
   }

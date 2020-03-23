@@ -17,7 +17,8 @@ class harrisCornerDetectionHalideCheck
   val W = 64 // x vector width
   val Hi = H + 4
   val Wi = W + 4 // x vector width
-  assert(H % 32 == 0)
+  val strip = 32
+  assert(H % strip == 0)
 
   def lowerOMP(e: Expr): Expr =
     rewrite.unrollDots(util.printTime("infer", types.infer(e)))
@@ -153,9 +154,16 @@ class harrisCornerDetectionHalideCheck
     checkOCLSeq(lowerOCL(ocl.harrisBufferedVecAligned))
   }
 
-  test("circularBuffers rewrite generates valid OpenCL") {
+  test("harrisBuffered rewrite generates valid OpenCL") {
     val typed = util.printTime("infer", types.infer(harris))
-    val lowered = rewrite.ocl.circularBuffers(typed)
+    val lowered = rewrite.ocl.harrisBuffered(typed)
+    gen.OpenCLKernel(lowered)
+    // TODO: checkOCLSeq(lowered)
+  }
+
+  test("harrisBufferedSplitPar rewrite generates valid OpenCL") {
+    val typed = util.printTime("infer", types.infer(harris))
+    val lowered = rewrite.ocl.harrisBufferedSplitPar(strip)(typed)
     gen.OpenCLKernel(lowered)
     // TODO: checkOCLSeq(lowered)
   }
