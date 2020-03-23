@@ -30,7 +30,7 @@ object Execute2 {
         // check if we have to skip this execution round
         globalBest match{
           case Some(value) => {
-            runtimes(i) > value * 1.2 match {
+            runtimes(i) > value * 1.5 match {
               case true => {
                 //break up
                 for( j <- Range(i, N)){

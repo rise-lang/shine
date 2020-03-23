@@ -1,6 +1,5 @@
 package exploration
 
-import elevate.core.Strategy
 import rise.core.TypedDSL.{add, fst, fun, l, map, reduce, snd, transpose, zip}
 import rise.core.types.{ArrayType, f32, infer}
 import elevate.core.strategies.traversal.{alltd, oncebu, oncetd}
@@ -11,6 +10,7 @@ import elevate.rise.rules.movement.{liftReduce, mapFBeforeSlide}
 import elevate.rise.rules.traversal.LiftTraversable
 import elevate.rise.strategies.normalForm.{CNF, LCNF, RNF}
 import elevate.rise.strategies.tiling.tileNDList
+import util._
 //import exploration.search.executeC.genExecutableCode
 
 
@@ -18,7 +18,7 @@ import elevate.rise.strategies.tiling.tileNDList
 //test to run exploration
 class explore extends shine.test_util.Tests {
 
-  val N = 1024
+  val N = 1 << 9
   val mm = infer(
     fun(ArrayType(N, ArrayType(N, f32)))(a =>
       fun(ArrayType(N, ArrayType(N, f32)))(b =>
@@ -43,19 +43,19 @@ class explore extends shine.test_util.Tests {
 
   test("scal exploration"){
     val lowering = elevate.rise.rules.lowering.lowerToC
-    val result = riseExploration(scal, lowering)
+    val result = riseExploration(scal, lowering, N)
     println("result: " + result)
   }
 
   test("dot exploration"){
     val lowering = elevate.rise.rules.lowering.lowerToC
-    val result = riseExploration(dot, lowering)
+    val result = riseExploration(dot, lowering, N)
     println("result: " + result)
   }
 
   test("mm exploration"){
     val lowering = elevate.rise.rules.lowering.lowerToC
-    val result = riseExploration(mm, lowering)
+    val result = riseExploration(mm, lowering, N)
     println("result: " + result)
   }
   //

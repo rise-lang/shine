@@ -25,7 +25,7 @@ import elevate.rise.strategies.tiling.tileNDList
 
 object riseExploration {
 
-  def apply(solution: Rise, lowering: Strategy[Rise]):Unit = {
+  def apply(solution: Rise, lowering: Strategy[Rise], inputSize: Int):Unit = {
     val s = solution
     print("initial solution: " + s + "\n")
 
@@ -99,9 +99,9 @@ object riseExploration {
       LCNF `;` moveInnerKLoopOnce `;` LCNF `;` LCNF
     )
 
-    strategies.foreach(elem => {
-      println("strategy: " + elem.toString())
-    })
+//    strategies.foreach(elem => {
+//      println("strategy: " + elem.toString())
+//    })
 
 
 
@@ -111,14 +111,15 @@ object riseExploration {
 
     // c Runner with 3 iterations and lowering strategy
     val lowering = elevate.rise.rules.lowering.lowerToC
-    val cExecutor = new CExecutor(lowering, 3)
+    val gold = lowering.apply(solution).get
+    val cExecutor = new CExecutor(lowering, gold, 5, inputSize)
 
     // create heuristics
     val random = new Random[Rise]
     val iterativeImprovement = new IterativeImprovement[Rise]
 
     // depth and iterations matters
-    val first = new Metaheuristic[Rise]("Random", random, 5, 5, cExecutor, strategies)
+    val first = new Metaheuristic[Rise]("Random", random, 10, 5, cExecutor, strategies)
     // depth doesn't matter; iterations should be 1
     val main = new Metaheuristic[Rise]("II", iterativeImprovement, 0, 1, first, strategies)
 

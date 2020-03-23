@@ -6,8 +6,10 @@ import elevate.heuristic_search.Runner
 import shine.C.Program
 import util.{Execute2, gen}
 
-class CExecutor(val lowering: Strategy[Rise], val iterations: Int) extends Runner[Rise] {
-  val N = 1024
+class CExecutor(val lowering: Strategy[Rise], val goldExpression: Rise, val iterations: Int, val inputSize: Int) extends Runner[Rise] {
+  val N = inputSize
+  var best:Option[Double] = None
+  var gold = gen.CProgram(goldExpression, "compute_gold")
 
   def execute(solution: Rise):(Rise,Option[Double]) = {
     // execute C code here
@@ -18,13 +20,19 @@ class CExecutor(val lowering: Strategy[Rise], val iterations: Int) extends Runne
     //generate executable program (including host code)
     val code = genExecutableCode(lowered.get)
 
+//    println("code: "  + code)
+
     //compile and execute program
-    val performanceValue = compileAndExecute(code, iterations)
+    val performanceValue = compileAndExecute(lowered.get, code, iterations)
+
+    // new gold
+    gold = gen.CProgram(goldExpression, "compute_gold")
+
 
     (solution, performanceValue)
   }
 
-  def prepareInput(riseProgram:Program):(String,String,String) ={
+  def prepareInput(riseProgram:Program):(String,String,String,String) ={
 
     val arrayTwo = "(.)+[.](.)+[.]f32".r
     val arrayOne = "(.)+[.]f32".r
@@ -39,6 +47,7 @@ class CExecutor(val lowering: Strategy[Rise], val iterations: Int) extends Runne
        //free memory"""
 
     var call = s"""${riseProgram.function.name}(output"""
+    var callGold = s"""${gold.function.name}(gold"""
 
     codeBeg +=
       s"""
@@ -49,6 +58,7 @@ class CExecutor(val lowering: Strategy[Rise], val iterations: Int) extends Runne
           s"""
         const int ${elem.name} = N; """
         call += s""", ${elem.name}"""
+        callGold += s""", ${elem.name}"""
       } else if (arrayTwo.findFirstIn(elem.`type`.dataType.toString).size > 0) {
         codeBeg +=
           s"""
@@ -61,6 +71,7 @@ class CExecutor(val lowering: Strategy[Rise], val iterations: Int) extends Runne
           s"""
         free(${elem.name});"""
         call += s""", ${elem.name}"""
+        callGold += s""", ${elem.name}"""
       } else if (arrayOne.findFirstIn(elem.`type`.dataType.toString).size > 0) {
         codeBeg +=
           s"""
@@ -73,12 +84,14 @@ class CExecutor(val lowering: Strategy[Rise], val iterations: Int) extends Runne
           s"""
         free(${elem.name});"""
         call += s""", ${elem.name}"""
+        callGold += s""", ${elem.name}"""
       } else if (elemOne.findFirstIn(elem.`type`.dataType.toString).size > 0) {
         codeBeg +=
           s"""
         float ${elem.name} = 5;
         """
         call += s""", ${elem.name}"""
+        callGold += s""", ${elem.name}"""
       }
     })
 
@@ -123,41 +136,57 @@ class CExecutor(val lowering: Strategy[Rise], val iterations: Int) extends Runne
     }
 
     call += s""");"""
+    callGold += s""");"""
 
-    (codeBeg,codeEnd, call)
+    (codeBeg,codeEnd, call, callGold)
   }
 
-  // to be implemented
+  // maybe change name
   def prepareGold(): String ={
-//        val code = s"""
-//      void compute_gold(float* GOLD, float* A, float* B){
-//    	  for(int i = 0; i < SIZE; i++)
-//    	  	for(int k = 0; k < SIZE; k++)
-//    			  for(int j = 0; j < SIZE; j++)
-//    				  GOLD[i*SIZE+j] += A[i*SIZE+k] * B[k*SIZE+j];
-//       }
-//
-////      void compute_gold(float* GOLD, float* A, float B){
-////    	  for(int i = 0; i < SIZE; i++)
-////    	  	for(int k = 0; k < SIZE; k++)
-////    			  for(int j = 0; j < SIZE; j++)
-////    				  GOLD[i] += A[i] * B;
-////       }
-//
-//      int compare_gold(float* C, float* GOLD){
-//    	  int valid = 1;
-//    	  for(int i = 0; i < SIZE*SIZE; i++){
-////    	  for(int i = 0; i < SIZE; i++){
-//    		  if(C[i] != GOLD[i]){
-//    			  valid = 0;
-//            i = SIZE*SIZE;
-//    		  }
-//    	  }
-//    	  return valid;
-//      }
-//      """
-    val code = s""""""
-    code
+
+    val arrayTwo = "(.)+[.](.)+[.]f32".r
+    val arrayOne = "(.)+[.]f32".r
+    val elemOne = "f32".r
+
+    var codeBeg = s"""
+int compare_gold(float* C, float* GOLD){
+  int valid = 1;"""
+
+    if(gold.outputParam.`type`.dataType.toString.equals("int")) {
+      throw new Exception("Should not reach this point")
+      codeBeg += s""""""
+    } else if (arrayTwo.findFirstIn(gold.outputParam.`type`.dataType.toString).size > 0) {
+      codeBeg += s"""
+        for(int i = 0; i < SIZE*SIZE; i++){
+    		  if(C[i] != GOLD[i]){
+    			  valid = 0;
+            i = SIZE*SIZE;
+    		  }
+    	  }
+        """
+    } else if (arrayOne.findFirstIn(gold.outputParam.`type`.dataType.toString).size > 0) {
+      codeBeg += s"""
+        for(int i = 0; i < SIZE; i++){
+          if(C[i] != GOLD[i]){
+    			  valid = 0;
+            i = SIZE*SIZE;
+    		  }
+    	  }
+        """
+    } else if (elemOne.findFirstIn(gold.outputParam.`type`.dataType.toString).size > 0) {
+      codeBeg += s"""
+        if(C[0] != GOLD[0]){
+    			  valid = 0;
+        }
+        """
+    }
+
+    codeBeg += s"""
+    return valid;
+    }
+    """
+
+    codeBeg
   }
 
   def genExecutableCode(riseProgram:Rise):String = {
@@ -166,7 +195,7 @@ class CExecutor(val lowering: Strategy[Rise], val iterations: Int) extends Runne
 
     val preparation = prepareInput(p)
 
-    val gold = prepareGold
+    val goldCheck = prepareGold
 
     val testCode = s"""
 #include <stdio.h>
@@ -175,7 +204,9 @@ class CExecutor(val lowering: Strategy[Rise], val iterations: Int) extends Runne
 int SIZE = ${N};
 ${p.code}
 
-${gold}
+${gold.code}
+
+${goldCheck}
 
 int main(int argc, char** argv) {
 
@@ -193,19 +224,18 @@ int main(int argc, char** argv) {
 
   duration = (tp_end.tv_sec - tp_start.tv_sec) * 1000000000 + (tp_end.tv_nsec - tp_start.tv_nsec);
   duration = duration / 1000000;
-//
-//// to be implemented
-//  compute_gold(gold, x0, x1);
-//  int check = compare_gold(output, gold);
-//
-//  if(!check){
-//    return -1;
-//  }
 
-  //print result
+  ${preparation._4}
+  int check = compare_gold(output, gold);
 
   ${preparation._2}
 
+  //check result
+  if(!check){
+    return -1;
+  }
+
+  //print result
   printf("%f\\n", duration);
 
   return 0;
@@ -215,9 +245,22 @@ int main(int argc, char** argv) {
     testCode
   }
 
-  def compileAndExecute(code:String, iterations:Int):Option[Double] = {
+  def compileAndExecute(solution:Rise, code:String, iterations:Int):Option[Double] = {
     try {
       val returnValue = Execute2(code, iterations)
+
+      // check for new best and new gold to use
+      best match {
+        case Some(value) => {
+          if(returnValue.toDouble < value){
+            best = Some(returnValue.toDouble)
+            gold = gen.CProgram(solution, "compute_gold")
+            println("use new gold with runtime: " + best.get)
+          }
+        }
+        case _ => best = Some(returnValue.toDouble)
+      }
+
       println("result: " + returnValue)
       Some(returnValue.toDouble)
     }catch {
@@ -227,8 +270,4 @@ int main(int argc, char** argv) {
       }
     }
   }
-
-
-
-
 }

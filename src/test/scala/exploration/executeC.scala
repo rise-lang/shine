@@ -1,20 +1,81 @@
-package exploration
+import elevate.core.strategies.traversal.oncetd
+import elevate.rise.rules.algorithmic.fuseReduceMap
+import elevate.rise.strategies.normalForm.LCNF
+import rise.core.TypedDSL.{add, fst, fun, l, map, reduce, snd, transpose, zip}
+import rise.core.types.{ArrayType, f32, infer}
 
-import rise.core.DSL._
-import rise.core.TypeLevelDSL._
-import rise.core.types.{f32}
-
+import elevate.core.Strategy
+import elevate.core.strategies.debug.peek
+import elevate.core.strategies.traversal._
+import elevate.rise.rules.traversal._
+import elevate.rise.rules.algorithmic._
+import elevate.rise.rules.lowering.lowerToC
+import elevate.rise.rules.movement._
+import elevate.rise.strategies.tiling._
+import elevate.rise.strategies.normalForm._
+import shine.test_util
+import rise.core.dotPrinter._
+import rise.core.TypedDSL._
+import rise.core.types.{ArrayType, f32, infer}
+import util.gen
 class executeC extends shine.test_util.Tests {
 
-  test("test execution"){
-    val simpleScal =
-    nFun(n => fun(n `.` f32)(input => fun(f32)(alpha =>
-      input |> mapSeq(fun(x => alpha * x)))
-    ))
+  val N = 1 << 9
+  val mm = infer(
+    fun(ArrayType(N, ArrayType(N, f32)))(a =>
+      fun(ArrayType(N, ArrayType(N, f32)))(b =>
+        map(fun(ak =>
+          map(fun(bk =>
+            (reduce(add)(l(0.0f)) o
+              map(fun(x => fst(x) * snd(x)))) $
+              zip(ak, bk))) $ transpose(b) )) $ a))
+  )
 
-//    val performanceValue = exploration.search.executeC(simpleScal, 10)
+  val dot = infer(
+    fun(ArrayType(N, f32))(a =>
+      fun(ArrayType(N, f32))(b =>
+        reduce(add)(l(0.0f)) o map(fun(x => fst(x) * snd(x))) $ zip(a,b)))
+  )
 
-//    println("performanceValue: " + performanceValue)
+  val scal = infer(fun(ArrayType(N, f32))(input =>
+    fun(f32)(alpha =>
+      map(fun(x => alpha * x)) $ input))
+  )
+
+  test("gen code vor scal"){
+    val lowering = elevate.rise.rules.lowering.lowerToC
+
+    val gold = lowering.apply(scal).get
+
+    val test = new exploration.search.CExecutor(lowering, gold, 5, N)
+
+    val result = test.execute(scal)
+
+    println("result: " + result._2)
+  }
+
+  test("gen code vor dot"){
+    val lowering = elevate.rise.rules.lowering.lowerToC
+
+    val gold = lowering.apply(dot).get
+
+    val test = new exploration.search.CExecutor(lowering, gold, 5, N)
+
+    val result = test.execute(dot)
+
+    println("result: " + result._2)
+  }
+
+  test("gen code for mm"){
+    val lowering = elevate.rise.rules.lowering.lowerToC
+
+    val gold = lowering.apply(mm).get
+
+    val test = new exploration.search.CExecutor(lowering, gold, 5, N)
+
+    val result = test.execute(mm)
+
+    println("result: " + result._2)
   }
 
 }
