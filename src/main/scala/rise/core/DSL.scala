@@ -44,6 +44,7 @@ object DSL {
   def mapSeqUnroll: MapSeqUnroll = primitives.MapSeqUnroll()()
   def natAsIndex: NatAsIndex = primitives.NatAsIndex()()
   def padCst: PadCst = primitives.PadCst()()
+  def padEmpty: PadEmpty = primitives.PadEmpty()()
   def padClamp: PadClamp = primitives.PadClamp()()
   def partition: Partition = primitives.Partition()()
   def pair: Pair = primitives.Pair()()

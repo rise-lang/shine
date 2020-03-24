@@ -235,13 +235,16 @@ object primitives {
   @primitive case class PadCst()(override val t: Type = TypePlaceholder)
       extends Primitive {
     override def typeScheme: Type =
-      implN(n =>
-        nFunT(l =>
-          nFunT(q =>
-            implDT(t => t ->: ArrayType(n, t) ->: ArrayType(l + n + q, t))
-          )
-        )
-      )
+      implN(n => nFunT(l => nFunT(q => implDT(t =>
+        t ->: ArrayType(n, t) ->: ArrayType(l + n + q, t))
+      )))
+  }
+
+  @primitive case class PadEmpty()(override val t: Type = TypePlaceholder)
+    extends Primitive {
+    override def typeScheme: Type = implN(n => nFunT(r => implDT(t =>
+      ArrayType(n, t) ->: ArrayType(n + r, t))
+    ))
   }
 
   // TODO? could be expressed in terms of a pad idx -> idx or idx -> val

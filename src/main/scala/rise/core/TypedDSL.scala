@@ -442,6 +442,7 @@ object TypedDSL {
   def mapSeqUnroll: TDSL[MapSeqUnroll] = toTDSL(primitives.MapSeqUnroll()())
   def natAsIndex: TDSL[NatAsIndex] = toTDSL(primitives.NatAsIndex()())
   def padCst: TDSL[PadCst] = toTDSL(primitives.PadCst()())
+  def padEmpty: TDSL[PadEmpty] = toTDSL(primitives.PadEmpty()())
   def padClamp: TDSL[PadClamp] = toTDSL(primitives.PadClamp()())
   def partition: TDSL[Partition] = toTDSL(primitives.Partition()())
   def pair: TDSL[Pair] = toTDSL(primitives.Pair()())
