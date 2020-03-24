@@ -492,6 +492,15 @@ object fromRise {
                 fun[ExpType](expT(n`.`a, read), e =>
                   Pad(n, l, r, a, cst, e)))))
 
+      case (core.PadEmpty(),
+      lt.DepFunType(r: lt.NatIdentifier,
+      lt.FunType(lt.ArrayType(n, la), _)))
+      =>
+        val a = dataType(la)
+        DepLambda[NatKind](natIdentifier(r))(
+          fun[ExpType](expT(n`.`a, read), e =>
+            PadEmpty(n, r, a, e)))
+
       case (core.PadClamp(),
       lt.DepFunType(l: lt.NatIdentifier,
       lt.DepFunType(r: lt.NatIdentifier,

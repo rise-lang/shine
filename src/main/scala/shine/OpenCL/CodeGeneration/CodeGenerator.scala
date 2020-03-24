@@ -197,8 +197,10 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
                               path: Path,
                               env: Environment): Expr = {
     (path, dt) match {
-      case ((i: CIntExpr) :: _, _: VectorType) =>
-        OpenCL.AST.VectorSubscript(expr, C.AST.ArithmeticExpr(i))
+      case (CIntExpr(Cst(i)) :: _, _: VectorType) =>
+        OpenCL.AST.VectorSubscript(expr, C.AST.ArithmeticExpr(Cst(i)))
+      case (CIntExpr(i) :: _, _: VectorType) =>
+        error(s"expected constant access to vector elements, found $i")
       case _ => super.generateAccess(dt, expr, path, env)
     }
   }

@@ -35,9 +35,10 @@ object harrisCornerDetection {
     // assert(H % 32 == 0) FIXME
 
     val kernelB = toFunction(harrisBuffered, s1)
-    val kernelVU = toFunction(harrisVecUnaligned, s1)
-    val kernelBVU = toFunction(harrisBufferedVecUnaligned, s1)
-    val kernelBVUSP = toFunction(harrisBufferedVecUnalignedSplitPar, s32)
+    val kernelVU = toFunction(harrisVecUnaligned(4), s1)
+    val kernelBVU = toFunction(harrisBufferedVecUnaligned(4), s1)
+    val kernelBVUSP = toFunction(harrisSplitPar(32, 4,
+      harrisBufferedVecUnaligned(4)), s32)
 
     withExecutor {
       val samples = 10

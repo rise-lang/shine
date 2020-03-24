@@ -4,6 +4,7 @@ import rise.core.types._
 import elevate.core._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
+import elevate.core.strategies.predicate._
 import elevate.rise._
 import elevate.rise.rules._
 import elevate.rise.rules.traversal._
@@ -11,7 +12,7 @@ import elevate.rise.rules.algorithmic._
 import elevate.rise.rules.movement._
 import cameraPipeRewrite.{
   afterTopLevel, gentlyReducedForm, stronglyReducedForm,
-  isAppliedZip
+  isAppliedZip, isAppliedMap
 }
 
 object harrisCornerDetectionHalideRewrite {
@@ -54,6 +55,9 @@ object harrisCornerDetectionHalideRewrite {
       case _ => ???
     }
 
+  def isAppliedReduce: Strategy[Rise] =
+    function(function(function(isEqualTo(rise.core.DSL.reduce))))
+
   object ocl {
     val unrollDots = normalize.apply(
       lowering.ocl.reduceSeqUnroll(AddressSpace.Private))
@@ -69,7 +73,7 @@ object harrisCornerDetectionHalideRewrite {
 
       afterTopLevel(afterDefs(argument(
         slideOutsideZip `;`
-          argument(argument(normalizeInput `;` stronglyReducedForm))
+        argument(argument(normalizeInput `;` stronglyReducedForm))
       ))) `;` gentlyReducedForm
     )
 
@@ -80,6 +84,7 @@ object harrisCornerDetectionHalideRewrite {
       gentlyReducedForm `;`
       argument(argument(oncetd(lowering.mapSeq))) `;`
       argument(function(argument(
+        `try` { oncetd(vectorize.asScalarOutsidePair) } `;`
         oncetd(mapOutsidePair) `;` oncetd(zipSame) `;`
         stronglyReducedForm `;` oncetd(lowering.mapSeq)
       ))) `;`
@@ -101,18 +106,80 @@ object harrisCornerDetectionHalideRewrite {
       ))
     }
 
-    def harrisBufferedSplitPar(n: Int): Strategy[Rise] = {
-      rewriteSteps(Seq(
-        harrisBufferedShape.reduce(_`;`_),
-
-        afterTopLevel(
-          oncetd(splitJoin(32)) `;`
+    def harrisSplitParShape(strip: Int): Strategy[Rise] = {
+      afterTopLevel(
+        oncetd(splitJoin(strip)) `;`
           gentlyReducedForm `;`
           argumentsTd(slideBeforeSplit) `;`
           argumentsTd(slideBeforeMap) `;`
           argumentsTd(slideBeforeSlide) `;`
-          argumentsTd(slideBeforeMap) `;`
-          gentlyReducedForm `;`
+          argumentsTd(slideBeforeMap)
+      ) `;` gentlyReducedForm
+    }
+
+    def harrisBufferedSplitPar(strip: Int): Strategy[Rise] = {
+      rewriteSteps(Seq(
+        harrisBufferedShape.reduce(_`;`_),
+
+        harrisSplitParShape(strip),
+
+        afterTopLevel(
+          oncetd(lowering.mapGlobal()) `;`
+          oncetd(harrisBufferedLowering)
+        )
+      ))
+    }
+
+    def harrisBufferedVecUnalignedSplitPar(vwidth: Int, strip: Int)
+    : Strategy[Rise] = {
+      rewriteSteps(Seq(
+        harrisBufferedShape.reduce(_ `;` _),
+
+        // TODO
+        afterTopLevel(argumentsTd(
+          mapMapFBeforeTranspose `;` function(argument(
+            cameraPipeRewrite.debugS("x")
+          ))
+        )),
+
+        harrisSplitParShape(strip),
+
+        afterTopLevel(
+          normalize.apply(
+            isAppliedMap `;`
+            function(argument(body(reduceMapFusion))) `;`
+            normalize.apply(
+              gentleBetaReduction <+ etaReduction <+ mapLastFission
+            ) `;`
+            // TODO: first one should be asVectorAligned
+            vectorize.after(vwidth) `;`
+            argument(vectorize.beforeMapDot)
+          ) `;`
+          normalize.apply(
+            isAppliedMap `;`
+            function(argument(body(isAppliedReduce))) `;`
+            normalize.apply(
+              gentleBetaReduction <+ etaReduction <+ mapLastFission
+            ) `;`
+            vectorize.after(vwidth) `;`
+            argument(vectorize.beforeMapReduce)
+          ) `;`
+          oncetd(
+            isAppliedMap `;`
+            argument(isAppliedZip) `;`
+            argument(argument(isAppliedZip)) `;`
+            vectorize.alignedAfter(vwidth) `;`
+            argument(vectorize.beforeMap) `;`
+            normalize.apply(
+              gentleBetaReduction <+ etaReduction <+
+              removeTransposePair <+ mapFusion <+
+              idxReduction <+ fstReduction <+ sndReduction <+
+              unzipZipIsPair <+ vectorize.asScalarAsVectorId
+            )
+          )
+        ) `;` gentlyReducedForm,
+
+        afterTopLevel(
           oncetd(lowering.mapGlobal()) `;`
           oncetd(harrisBufferedLowering)
         )
