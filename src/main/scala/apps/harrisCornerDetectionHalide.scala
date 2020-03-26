@@ -84,29 +84,28 @@ object harrisCornerDetectionHalide {
     }))
   )))
 
-  // ASSUMPTION: vector width >= 4
-
   // note: the output is strided:
   // it only contains w-4 meaningful values per line
   // so 4 meaningless values at the end of each line
   // this way if the input is dividable by a vector width,
   // so is the output
-  val harris: Expr = nFun(h => nFun(w => fun(
-    // (3`.`(h+4)`.`(w+4)`.`f32) ->: (h`.`w`.`f32)
-    (3`.`(h+4)`.`w`.`f32) ->: (h`.`w`.`f32)
-  )(input => { input |>
-    gray(h+4)(w) |> fun(g =>
-    sobelX(h+2)(w-2)(g) |> fun(ix =>
-    sobelY(h+2)(w-2)(g) |> fun(iy =>
-    mul(h+2)(w-2)(ix)(ix) |> fun(ixx =>
-    mul(h+2)(w-2)(ix)(iy) |> fun(ixy =>
-    mul(h+2)(w-2)(iy)(iy) |> fun(iyy =>
-    sum3x3(h)(w-4)(ixx) |> fun(sxx =>
-    sum3x3(h)(w-4)(ixy) |> fun(sxy =>
-    sum3x3(h)(w-4)(iyy) |> fun(syy =>
-    coarsity(h)(w-4)(sxx)(sxy)(syy) |> map(padEmpty(4))
-    )))))))))
-  })))
+  def harris(hMod: Int, wMod: Int): Expr =
+    nModFun(hMod, h => nModFun(wMod, w => fun(
+      // (3`.`(h+4)`.`(w+4)`.`f32) ->: (h`.`w`.`f32)
+      (3`.`(h+4)`.`w`.`f32) ->: (h`.`w`.`f32)
+    )(input => { input |>
+      gray(h+4)(w) |> fun(g =>
+      sobelX(h+2)(w-2)(g) |> fun(ix =>
+      sobelY(h+2)(w-2)(g) |> fun(iy =>
+      mul(h+2)(w-2)(ix)(ix) |> fun(ixx =>
+      mul(h+2)(w-2)(ix)(iy) |> fun(ixy =>
+      mul(h+2)(w-2)(iy)(iy) |> fun(iyy =>
+      sum3x3(h)(w-4)(ixx) |> fun(sxx =>
+      sum3x3(h)(w-4)(ixy) |> fun(sxy =>
+      sum3x3(h)(w-4)(iyy) |> fun(syy =>
+      coarsity(h)(w-4)(sxx)(sxy)(syy) |> map(padEmpty(4))
+      )))))))))
+    })))
 
   private val id = fun(x => x)
   private val write1DSeq = mapSeq(id)

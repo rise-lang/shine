@@ -10,10 +10,7 @@ import elevate.rise.rules._
 import elevate.rise.rules.traversal._
 import elevate.rise.rules.algorithmic._
 import elevate.rise.rules.movement._
-import cameraPipeRewrite.{
-  afterTopLevel, gentlyReducedForm, stronglyReducedForm,
-  isAppliedZip, isAppliedMap
-}
+import cameraPipeRewrite.{afterTopLevel, depFunction, gentlyReducedForm, isAppliedMap, isAppliedZip, stronglyReducedForm}
 
 object harrisCornerDetectionHalideRewrite {
   private def rewriteSteps(steps: Seq[Strategy[Rise]]): Strategy[Rise] = a => {
@@ -47,16 +44,22 @@ object harrisCornerDetectionHalideRewrite {
     )) `;`
     cameraPipeRewrite.normalizeInput
 
-  def storeToPrivate(e: Rise): Strategy[Rise] =
-    subexpressionElimination(e) `;` {
+  def storeToPrivate(find: Strategy[Rise]): Strategy[Rise] =
+    subexpressionElimination(find) `;` {
       // TODO: use rewrite rules
       case rise.core.App(f, v) => Success(
         rise.OpenCL.TypedDSL.toPrivate(v) |> rise.core.TypedDSL.let(f))
       case _ => ???
     }
 
+  def isAppliedPair: Strategy[Rise] =
+    function(function(isEqualTo(rise.core.DSL.pair)))
   def isAppliedReduce: Strategy[Rise] =
     function(function(function(isEqualTo(rise.core.DSL.reduce))))
+  def isAppliedUnzip: Strategy[Rise] =
+    function(isEqualTo(rise.core.DSL.unzip))
+  def isPadEmpty: Strategy[Rise] =
+    depFunction(isEqualTo(rise.core.DSL.padEmpty))
 
   object ocl {
     val unrollDots = normalize.apply(
@@ -77,6 +80,11 @@ object harrisCornerDetectionHalideRewrite {
       ))) `;` gentlyReducedForm
     )
 
+    def harrisIxWithIy: Strategy[Rise] =
+      afterTopLevel(afterDefs(oncetd(
+        isAppliedPair `;` mapOutsidePair `;` oncetd(zipSame)
+      )))
+
     def harrisBufferedLowering: Strategy[Rise] = {
       oncetd(lowering.iterateStream) `;`
       repeatNTimes(2, argumentsTd(function(lineBuffer))) `;`
@@ -84,24 +92,23 @@ object harrisCornerDetectionHalideRewrite {
       gentlyReducedForm `;`
       argument(argument(oncetd(lowering.mapSeq))) `;`
       argument(function(argument(
-        `try` { oncetd(vectorize.asScalarOutsidePair) } `;`
-        oncetd(mapOutsidePair) `;` oncetd(zipSame) `;`
         stronglyReducedForm `;` oncetd(lowering.mapSeq)
       ))) `;`
       function(argument(oncetd(
         function(lowering.mapSeq) `;`
         argument(lambdaBodyWithName(x => {
           import rise.core.DSL._
-          storeToPrivate(fst(x)) `;`
-          storeToPrivate(fst(snd(x))) `;`
-          storeToPrivate(snd(snd(x)))
+          storeToPrivate(isEqualTo(fst(x))) `;`
+          storeToPrivate(isEqualTo(fst(snd(x)))) `;`
+          storeToPrivate(isEqualTo(snd(snd(x))))
         }))
       ))) `;`
       unrollDots
     }
 
     def harrisBuffered: Strategy[Rise] = {
-      rewriteSteps(harrisBufferedShape :+ (
+      rewriteSteps(harrisBufferedShape ++ Seq(
+        harrisIxWithIy,
         afterTopLevel(harrisBufferedLowering) `;` gentlyReducedForm
       ))
     }
@@ -120,7 +127,7 @@ object harrisCornerDetectionHalideRewrite {
     def harrisBufferedSplitPar(strip: Int): Strategy[Rise] = {
       rewriteSteps(Seq(
         harrisBufferedShape.reduce(_`;`_),
-
+        harrisIxWithIy,
         harrisSplitParShape(strip),
 
         afterTopLevel(
@@ -135,25 +142,29 @@ object harrisCornerDetectionHalideRewrite {
       rewriteSteps(Seq(
         harrisBufferedShape.reduce(_ `;` _),
 
-        // TODO
-        afterTopLevel(argumentsTd(
-          mapMapFBeforeTranspose `;` function(argument(
-            cameraPipeRewrite.debugS("x")
-          ))
-        )),
-
         harrisSplitParShape(strip),
 
-        afterTopLevel(
+        afterTopLevel( // zip unzip simplification
+          oncetd(argument(isAppliedUnzip) `;` betaReduction) `;`
+          normalize.apply(
+            gentleBetaReduction <+ etaReduction <+ mapFusion <+
+            fstReduction <+ sndReduction <+
+            zipUnzipAccessSimplification <+ mapProjZipUnification
+          )
+        ),
+
+        afterTopLevel( // vectorize reductions
           normalize.apply(
             isAppliedMap `;`
-            function(argument(body(reduceMapFusion))) `;`
+            oncetd(reduceMapFusion) `;`
             normalize.apply(
               gentleBetaReduction <+ etaReduction <+ mapLastFission
-            ) `;`
-            // TODO: first one should be asVectorAligned
-            vectorize.after(vwidth) `;`
-            argument(vectorize.beforeMapDot)
+            ) `;` (
+              vectorize.alignedAfter(vwidth) <+ (
+              vectorize.roundUpAfter(vwidth) `;`
+              normalize.apply(padEmptyBeforeMap)
+            )) `;`
+            oncetd(vectorize.beforeMapDot)
           ) `;`
           normalize.apply(
             isAppliedMap `;`
@@ -161,14 +172,19 @@ object harrisCornerDetectionHalideRewrite {
             normalize.apply(
               gentleBetaReduction <+ etaReduction <+ mapLastFission
             ) `;`
-            vectorize.after(vwidth) `;`
-            argument(vectorize.beforeMapReduce)
+            vectorize.roundUpAfter(vwidth) `;`
+            normalize.apply(padEmptyBeforeMap) `;`
+            argument(argument(vectorize.beforeMapReduce))
+          ) `;`
+          normalize.apply(
+            takeOutisdeZip <+ takeAfterMap <+
+            removeTakeBeforePadEmpty
           ) `;`
           oncetd(
             isAppliedMap `;`
             argument(isAppliedZip) `;`
             argument(argument(isAppliedZip)) `;`
-            vectorize.alignedAfter(vwidth) `;`
+            vectorize.after(vwidth) `;`
             argument(vectorize.beforeMap) `;`
             normalize.apply(
               gentleBetaReduction <+ etaReduction <+
@@ -177,7 +193,58 @@ object harrisCornerDetectionHalideRewrite {
               unzipZipIsPair <+ vectorize.asScalarAsVectorId
             )
           )
-        ) `;` gentlyReducedForm,
+        ),
+
+        afterTopLevel( // move padEmpty
+          normalize.apply(
+            gentleBetaReduction <+ etaReduction <+
+            takeOutsidePair <+ vectorize.asScalarOutsidePair
+          ) `;`
+          harrisIxWithIy `;`
+          normalize.apply(
+            gentleBetaReduction <+ etaReduction <+
+            removeTransposePair <+ mapFusion <+
+            idxReduction <+ fstReduction <+ sndReduction <+
+            padEmptyBeforeTranspose <+ padEmptyBeforeMap <+
+            padEmptyBeforeSlide <+ padEmptyBeforeZip
+          ) `;`
+          normalize.apply(
+            gentleBetaReduction <+ etaReduction <+ mapLastFission
+          ) `;`
+          oncetd(
+            function(argument(argument(argument(isPadEmpty)))) `;`
+            mapFusion `;` function(oncetd(slideBeforeMapMapF))
+          ) `;`
+          oncetd(
+            isAppliedZip `;` argument(isAppliedZip) `;`
+            subexpressionElimination {
+              isAppliedMap `;` function(argument(
+                function(isEqualTo(rise.core.DSL.mapSnd)) `;`
+                argument(isPadEmpty)
+              ))
+            }
+          ) `;`
+          // gentlyReducedForm `;`
+          normalize.apply(
+            gentleBetaReduction <+ etaReduction <+
+            mapLastFission
+          ) `;`
+          oncetd(
+            isAppliedMap `;`
+            function(argument(argument(argument(
+              function(isEqualTo(rise.core.DSL.mapSnd)) `;`
+              argument(isPadEmpty)
+            )))) `;`
+            gentlyReducedForm `;`
+            oncetd(slideBeforeMapMapF)
+          ) `;`
+          gentlyReducedForm `;`
+          normalize.apply(
+            gentleBetaReduction <+ etaReduction <+
+            mapFstBeforeMapSnd <+ mapFstFusion <+ mapSndFusion <+
+            removeTakeBeforePadEmpty
+          )
+        ),
 
         afterTopLevel(
           oncetd(lowering.mapGlobal()) `;`
