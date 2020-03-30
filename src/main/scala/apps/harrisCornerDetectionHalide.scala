@@ -253,10 +253,13 @@ object harrisCornerDetectionHalide {
         circularBuffer(3)(write1DSeq >> asScalar >> padEmpty(2)) >>
         circularBuffer(3)( // 3.W.f
           map(slideVectors(v) >> slide(3)(v)) >> transpose >> // W.3.3.<v>f
-          map(fun(nbh => pair(
-            dotWeightsVec(join(sobelXWeights2d))(join(nbh)),
-            dotWeightsVec(join(sobelYWeights2d))(join(nbh))
-          ))) >> write1DSeq >> unzip >> // (W.<v>f x W.<v>f)
+          mapSeq(fun(nbh =>
+            join(nbh) |> mapSeqUnroll(fun(x => x)) |> toPrivate |>
+            let(fun(jnbh => pair(
+              dotWeightsVec(join(sobelXWeights2d))(jnbh),
+              dotWeightsVec(join(sobelYWeights2d))(jnbh)
+            )))
+          )) >> unzip >> // (W.<v>f x W.<v>f)
           mapFst(asScalar >> padEmpty(2)) >> mapSnd(asScalar >> padEmpty(2))
         ) >> // H.3.(W.f x W.f)
         iterateStream( // 3.(W.f x W.f)
@@ -264,7 +267,8 @@ object harrisCornerDetectionHalide {
             fst(p) |> slideVectors(v) >> slide(3)(v),
             snd(p) |> slideVectors(v) >> slide(3)(v)
           ))) >> transpose >> // W.3.3.(<v>f x <v>f)
-          map(fun(ixiy =>
+          mapSeq(mapSeqUnroll(mapSeqUnroll(fun(x => x))) >> toPrivate >>
+            let(fun(ixiy =>
             ixiy |> map(map(fun(p => fst(p) * fst(p)))) |> fun(ixx =>
             ixiy |> map(map(fun(p => fst(p) * snd(p)))) |> fun(ixy =>
             ixiy |> map(map(fun(p => snd(p) * snd(p)))) |> fun(iyy =>
@@ -275,7 +279,7 @@ object harrisCornerDetectionHalide {
             // ^ <v>f
             coarsityElem(sxx)(sxy)(syy)(vectorFromScalar(l(0.04f)))
             )))))))))
-          )) >> write1DSeq >> asScalar // W.f
+          ))) >> asScalar // W.f
         )
       )))
 
@@ -291,30 +295,34 @@ object harrisCornerDetectionHalide {
         circularBuffer(3)(write1DSeq >> padEmpty(1)) >>
         circularBuffer(3)(
           map(slide(2)(1)) >> transpose >>
-          map(map(shuffle(v)) >> fun(nbh => pair(
-            dotWeightsVec(join(sobelXWeights2d), join(nbh)),
-            dotWeightsVec(join(sobelYWeights2d), join(nbh))
-          ))) >> write1DSeq >> unzip >>
+          mapSeq(fun(nbh =>
+            nbh |> mapSeqUnroll(mapSeqUnroll(fun(x => x))) |> toPrivate |>
+            map(shuffle(v)) >> join >>
+            let(fun(jnbh => pair(
+              dotWeightsVec(join(sobelXWeights2d), jnbh),
+              dotWeightsVec(join(sobelYWeights2d), jnbh)
+            )))
+          )) >> unzip >>
           mapFst(padEmpty(1)) >> mapSnd(padEmpty(1))
         ) >>
         iterateStream( // 3.(W.<v>f x W.<v>f)
           map(fun(p =>
-            zip(fst(p), snd(p)) |> slide(2)(1) // W.3.(<v>f x <v>f)
-          )) >> transpose >> // W.3.3.(<v>f x <v>f)
-          map(fun(ixiy =>
+            zip(fst(p), snd(p)) |> slide(2)(1) // W.2.(<v>f x <v>f)
+          )) >> transpose >> // W.3.2.(<v>f x <v>f)
+          mapSeq(mapSeqUnroll(mapSeqUnroll(fun(x => x))) >> toPrivate >>
+            map(unzip >> fun(p =>
+              zip(shuffle(v)(fst(p)), shuffle(v)(snd(p)))
+            )) >> let(fun(ixiy =>
             ixiy |> map(map(fun(p => fst(p) * fst(p)))) |> fun(ixx =>
             ixiy |> map(map(fun(p => fst(p) * snd(p)))) |> fun(ixy =>
             ixiy |> map(map(fun(p => snd(p) * snd(p)))) |> fun(iyy =>
             // ^ 3.3.<v>f
-            ixx |> map(shuffle(v)) >> fun(nbh => sumVec(join(nbh))) >>
-            toPrivate >> let(fun(sxx =>
-            ixy |> map(shuffle(v)) >> fun(nbh => sumVec(join(nbh))) >>
-            toPrivate >> let(fun(sxy =>
-            iyy |> map(shuffle(v)) >> fun(nbh => sumVec(join(nbh))) >>
-            toPrivate >> let(fun(syy =>
+            sumVec(join(ixx)) |> toPrivate >> let(fun(sxx =>
+            sumVec(join(ixy)) |> toPrivate >> let(fun(sxy =>
+            sumVec(join(iyy)) |> toPrivate >> let(fun(syy =>
             coarsityElem(sxx)(sxy)(syy)(vectorFromScalar(l(0.04f)))
             )))))))))
-          )) >> write1DSeq >> asScalar
+          ))) >> asScalar
         )
       )))
   }
