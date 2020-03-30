@@ -19,7 +19,7 @@ object harrisCornerDetectionHalideRewrite {
       r.flatMapSuccess { e =>
         nRewrite += 1
         val result = util.printTime(s"rewrite $nRewrite", s(e))
-        util.dotPrintTmp(s"rewrite$nRewrite", result)
+        // util.dotPrintTmp(s"rewrite$nRewrite", result)
         result
       }
     })

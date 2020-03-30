@@ -27,10 +27,10 @@ object harrisCornerDetectionHalide {
     Seq(-2, 0, +2),
     Seq(-1, 0, +1)
   ))
-  val sobelXWeightsV: Expr = C2D.weights1d(1.0f / 4.0f, Seq(
+  val sobelXWeightsV: Expr = C2D.weights1d(1.0f, Seq(
     1, 2, 1
   ))
-  val sobelXWeightsH: Expr = C2D.weights1d(1.0f / 4.0f, Seq(
+  val sobelXWeightsH: Expr = C2D.weights1d(1.0f / 12.0f, Seq(
     -1, 0, +1
   ))
 
@@ -39,8 +39,12 @@ object harrisCornerDetectionHalide {
     Seq( 0,  0,  0),
     Seq( 1,  2,  1)
   ))
-  val sobelYWeightsV: Expr = sobelXWeightsH
-  val sobelYWeightsH: Expr = sobelXWeightsV
+  val sobelYWeightsV: Expr = C2D.weights1d(1.0f, Seq(
+    -1, 0, +1
+  ))
+  val sobelYWeightsH: Expr = C2D.weights1d(1.0f / 12.0f, Seq(
+    1, 2, 1
+  ))
 
   val conv3x3: Expr = fun(3`.`3`.`f32)(weights =>
     nFun(h => nFun(w => fun(
@@ -193,6 +197,8 @@ object harrisCornerDetectionHalide {
 
     private val circularBuffer: Expr = nFun(n => oclSlideSeq(
       rise.core.primitives.SlideSeq.Indices)(AddressSpace.Global)(n)(1))
+    private val registerRotation: Expr = nFun(n => oclSlideSeq(
+      rise.core.primitives.SlideSeq.Values)(AddressSpace.Private)(n)(1))
 
     val harrisBuffered: Expr = gen.harrisBuffered(circularBuffer)
 
@@ -254,7 +260,7 @@ object harrisCornerDetectionHalide {
         circularBuffer(3)( // 3.W.f
           map(slideVectors(v) >> slide(3)(v)) >> transpose >> // W.3.3.<v>f
           mapSeq(fun(nbh =>
-            join(nbh) |> mapSeqUnroll(fun(x => x)) |> toPrivate |>
+            join(nbh) |> mapSeqUnroll(id) |> toPrivate |>
             let(fun(jnbh => pair(
               dotWeightsVec(join(sobelXWeights2d))(jnbh),
               dotWeightsVec(join(sobelYWeights2d))(jnbh)
@@ -267,7 +273,7 @@ object harrisCornerDetectionHalide {
             fst(p) |> slideVectors(v) >> slide(3)(v),
             snd(p) |> slideVectors(v) >> slide(3)(v)
           ))) >> transpose >> // W.3.3.(<v>f x <v>f)
-          mapSeq(mapSeqUnroll(mapSeqUnroll(fun(x => x))) >> toPrivate >>
+          mapSeq(mapSeqUnroll(mapSeqUnroll(id)) >> toPrivate >>
             let(fun(ixiy =>
             ixiy |> map(map(fun(p => fst(p) * fst(p)))) |> fun(ixx =>
             ixiy |> map(map(fun(p => fst(p) * snd(p)))) |> fun(ixy =>
@@ -296,7 +302,7 @@ object harrisCornerDetectionHalide {
         circularBuffer(3)(
           map(slide(2)(1)) >> transpose >>
           mapSeq(fun(nbh =>
-            nbh |> mapSeqUnroll(mapSeqUnroll(fun(x => x))) |> toPrivate |>
+            nbh |> mapSeqUnroll(mapSeqUnroll(id)) |> toPrivate |>
             map(shuffle(v)) >> join >>
             let(fun(jnbh => pair(
               dotWeightsVec(join(sobelXWeights2d), jnbh),
@@ -309,7 +315,7 @@ object harrisCornerDetectionHalide {
           map(fun(p =>
             zip(fst(p), snd(p)) |> slide(2)(1) // W.2.(<v>f x <v>f)
           )) >> transpose >> // W.3.2.(<v>f x <v>f)
-          mapSeq(mapSeqUnroll(mapSeqUnroll(fun(x => x))) >> toPrivate >>
+          mapSeq(mapSeqUnroll(mapSeqUnroll(id)) >> toPrivate >>
             map(unzip >> fun(p =>
               zip(shuffle(v)(fst(p)), shuffle(v)(snd(p)))
             )) >> let(fun(ixiy =>
@@ -323,6 +329,47 @@ object harrisCornerDetectionHalide {
             coarsityElem(sxx)(sxy)(syy)(vectorFromScalar(l(0.04f)))
             )))))))))
           ))) >> asScalar
+        )
+      )))
+
+    def harrisBufferedRegRotVecAligned(v: Int): Expr =
+      nFun(h => nModFun(v, w => fun(
+        (3`.`(h+4)`.`w`.`f32) ->: (h`.`w`.`f32)
+      )(input => input |>
+        map(map(asVectorAligned(v))) >>
+        transpose >> map(transpose) >>
+        map(map(dotWeightsVec(larr_f32(Seq(0.299f, 0.587f, 0.114f))))) >>
+        circularBuffer(3)(write1DSeq >> padEmpty(1)) >>
+        circularBuffer(3)(
+          transpose >> map(fun(nbh => pair(
+            dotWeightsVec(sobelXWeightsV, nbh),
+            dotWeightsVec(sobelYWeightsV, nbh)
+          ))) >>
+          registerRotation(2)(id) >>
+          iterateStream(unzip >> fun(nbh => pair(
+            dotWeightsVec(sobelXWeightsH, shuffle(v)(fst(nbh))),
+            dotWeightsVec(sobelYWeightsH, shuffle(v)(snd(nbh)))
+          ))) >> unzip >>
+          mapFst(padEmpty(1)) >> mapSnd(padEmpty(1))
+        ) >>
+        iterateStream( // 3.(W.<v>f x W.<v>f)
+          map(fun(p => zip(fst(p), snd(p)))) >> // W.(<v>f x <v>f)
+          transpose >> // W.3.(<v>f x <v>f)
+          map(fun(nbh => makeArray(3)(
+            map(fun(p => fst(p) * fst(p)), nbh),
+            map(fun(p => fst(p) * snd(p)), nbh),
+            map(fun(p => snd(p) * snd(p)), nbh),
+          ) |> map(sumVec))) >> // W.3.<v>f
+          registerRotation(2)(mapSeqUnroll(id)) >> // W.2.3.<v>f
+          iterateStream(transpose >> // 3.2<v>f
+            mapSeqUnroll(shuffle(v) >> sumVec) >> // 3.<v>f
+            toPrivate >> let(fun(sxys => {
+              val sxx = sxys `@` lidx(0, 3)
+              val sxy = sxys `@` lidx(1, 3)
+              val syy = sxys `@` lidx(2, 3)
+              coarsityElem(sxx)(sxy)(syy)(vectorFromScalar(l(0.04f)))
+            }))
+          ) >> asScalar
         )
       )))
   }
