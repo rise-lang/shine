@@ -1,7 +1,6 @@
 package shine.OpenCL.FunctionalPrimitives
 
 import arithexpr.arithmetic.SimplifiedExpr
-import rise.core.{primitives => lp}
 import shine.DPIA.Compilation.{TranslationContext, TranslationToImperative}
 import shine.DPIA.DSL._
 import shine.DPIA.Phrases._
@@ -12,37 +11,32 @@ import shine.DPIA._
 
 import scala.xml.Elem
 
-// performs a sequential slide,
-// taking advantage of the space/time overlapping reuse opportunity
-final case class OpenCLSlideSeq(
-  rot: lp.SlideSeq.Rotate,
+final case class OpenCLRotateValues(
   a: AddressSpace,
   n: Nat,
   sz: Nat,
-  sp: Nat,
-  dt1: DataType,
-  dt2: DataType,
-  load: Phrase[ExpType ->: ExpType],
+  dt: DataType,
+  write_dt: Phrase[ExpType ->: ExpType],
   input: Phrase[ExpType]
 ) extends ExpPrimitive
 {
+  val sp = 1
   val inputSize: Nat with SimplifiedExpr = sp * n + sz - sp
 
-  load :: expT(dt1, read) ->: expT(dt2, write)
-  input :: expT(inputSize`.`dt1, read)
-  override val t: ExpType = expT(n`.`(sz`.`dt2), write)
+  write_dt :: expT(dt, read) ->: expT(dt, write)
+  input :: expT(inputSize`.`dt, read)
+  override val t: ExpType = expT(n`.`(sz`.`dt), write)
 
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    OpenCLSlideSeq(rot,
-      v.addressSpace(a), v.nat(n), v.nat(sz), v.nat(sp),
-      v.data(dt1), v.data(dt2),
-      VisitAndRebuild(load, v),
+    OpenCLRotateValues(
+      v.addressSpace(a), v.nat(n), v.nat(sz), v.data(dt),
+      VisitAndRebuild(write_dt, v),
       VisitAndRebuild(input, v))
   }
 
   override def eval(s: Store): Data = {
     import shine.DPIA.FunctionalPrimitives._
-    Slide(n, sz, sp, dt2, Map(inputSize, dt1, dt2, load, input)).eval(s)
+    Slide(n, sz, 1, dt, input).eval(s)
   }
 
   override def acceptorTranslation(A: Phrase[AccType])
@@ -58,31 +52,24 @@ final case class OpenCLSlideSeq(
     implicit context: TranslationContext
   ): Phrase[CommType] = {
     import TranslationToImperative._
-    import shine.OpenCL.IntermediatePrimitives.{
-      OpenCLSlideSeqIValues, OpenCLSlideSeqIIndices
-    }
-
-    val I = rot match {
-      case lp.SlideSeq.Values => OpenCLSlideSeqIValues.apply _
-      case lp.SlideSeq.Indices => OpenCLSlideSeqIIndices.apply _
-    }
+    import shine.OpenCL.IntermediatePrimitives.OpenCLRotateValuesI
 
     val i = NatIdentifier(freshName("i"))
     str(input)(fun((i: NatIdentifier) ->:
-      (expT(dt1, read) ->: (comm: CommType)) ->: (comm: CommType)
+      (expT(dt, read) ->: (comm: CommType)) ->: (comm: CommType)
     )(nextIn =>
-      I(a, n, sz, sp, dt1, dt2,
-        fun(expT(dt1, read))(x =>
-          fun(accT(dt2))(o => acc(load(x))(o))),
+      OpenCLRotateValuesI(a, n, sz, dt,
+        fun(expT(dt, read))(x =>
+          fun(accT(dt))(o => acc(write_dt(x))(o))),
         nextIn, C)
     ))
   }
 
   override def prettyPrint: String =
-    s"(slideSeq $sz $sp ${PrettyPhrasePrinter(input)})"
+    s"(rotateValues $sz ${PrettyPhrasePrinter(input)})"
 
   override def xmlPrinter: Elem =
-    <slideSeq n={ToString(n)} sz={ToString(sz)} sp={ToString(sp)}>
+    <rotateValues n={ToString(n)} sz={ToString(sz)}>
       <input>{Phrases.xmlPrinter(input)}</input>
-    </slideSeq>
+    </rotateValues>
 }

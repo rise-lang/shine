@@ -3,7 +3,6 @@ package apps
 import separableConvolution2D._
 import rise.core._
 import rise.core.types._
-import rise.core.primitives._
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.core.HighLevelConstructs._
@@ -123,7 +122,7 @@ int main(int argc, char** argv) {
     val e = padClamp2D(1) >> slide(3)(1) >> mapSeq(
       transpose >>
       map(dotSeqUnroll(binomialWeightsV)) >>
-      slideSeq(SlideSeq.Values)(3)(1)(id) >>
+      rotateValues(3)(id) >>
       iterateStream(dotSeqUnroll(binomialWeightsH))
     )
     val code = gen.CProgram(wrapExpr(e), "blur").code

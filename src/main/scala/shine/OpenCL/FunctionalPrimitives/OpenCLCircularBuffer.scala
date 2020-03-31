@@ -1,4 +1,4 @@
-package shine.DPIA.FunctionalPrimitives
+package shine.OpenCL.FunctionalPrimitives
 
 import arithexpr.arithmetic.SimplifiedExpr
 import shine.DPIA.Compilation.{TranslationContext, TranslationToImperative}
@@ -11,44 +11,38 @@ import shine.DPIA._
 
 import scala.xml.Elem
 
-// TODO: use separate primitives just like in rise
-object SlideSeq {
-  trait Rotate {}
-  case object Values extends Rotate {}
-  case object Indices extends Rotate {}
-}
-
-// performs a sequential slide, taking advantage of the space/time overlapping reuse opportunity
-final case class SlideSeq(
-  rot: SlideSeq.Rotate,
+final case class OpenCLCircularBuffer(
+  a: AddressSpace,
   n: Nat,
+  alloc: Nat,
   sz: Nat,
-  sp: Nat,
   dt1: DataType,
   dt2: DataType,
   load: Phrase[ExpType ->: ExpType],
   input: Phrase[ExpType]
 ) extends ExpPrimitive
 {
-  val inputSize: Nat with SimplifiedExpr = sp * n + sz - sp
+  val inputSize: Nat with SimplifiedExpr = n + sz - 1
 
   load :: expT(dt1, read) ->: expT(dt2, write)
   input :: expT(inputSize`.`dt1, read)
-  override val t: ExpType = expT(n`.`(sz`.`dt2), read)
+  override val t: ExpType = expT(n`.`(sz`.`dt2), write)
 
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    SlideSeq(rot, v.nat(n), v.nat(sz), v.nat(sp), v.data(dt1), v.data(dt2),
+    OpenCLCircularBuffer(v.addressSpace(a), v.nat(n), v.nat(alloc), v.nat(sz),
+      v.data(dt1), v.data(dt2),
       VisitAndRebuild(load, v),
       VisitAndRebuild(input, v))
   }
 
   override def eval(s: Store): Data = {
-    Slide(n, sz, sp, dt2, Map(inputSize, dt1, dt2, load, input)).eval(s)
+    import shine.DPIA.FunctionalPrimitives._
+    Slide(n, sz, 1, dt2, Map(inputSize, dt1, dt2, load, input)).eval(s)
   }
 
-  override def acceptorTranslation(A: Phrase[AccType])(
-    implicit context: TranslationContext
-  ): Phrase[CommType] = ???
+  override def acceptorTranslation(A: Phrase[AccType])
+    (implicit context: TranslationContext)
+  : Phrase[CommType] = ???
 
   override def continuationTranslation(C: Phrase[ExpType ->: CommType])(
     implicit context: TranslationContext
@@ -59,27 +53,24 @@ final case class SlideSeq(
     implicit context: TranslationContext
   ): Phrase[CommType] = {
     import TranslationToImperative._
-    import shine.DPIA.IntermediatePrimitives.{
-      SlideSeqIValues, SlideSeqIIndices
-    }
-
-    val I = rot match {
-      case SlideSeq.Values => SlideSeqIValues.apply _
-      case SlideSeq.Indices => SlideSeqIIndices.apply _
-    }
+    import shine.OpenCL.IntermediatePrimitives.OpenCLCircularBufferI
 
     val i = NatIdentifier(freshName("i"))
     str(input)(fun((i: NatIdentifier) ->:
       (expT(dt1, read) ->: (comm: CommType)) ->: (comm: CommType)
     )(nextIn =>
-      I(n, sz, sp, dt1, dt2,
+      OpenCLCircularBufferI(a, n, alloc, sz, dt1, dt2,
         fun(expT(dt1, read))(x =>
           fun(accT(dt2))(o => acc(load(x))(o))),
         nextIn, C)
     ))
   }
 
-  override def prettyPrint: String = s"slideSeq"
+  override def prettyPrint: String =
+    s"(circularBuffer $alloc $sz ${PrettyPhrasePrinter(input)})"
 
-  override def xmlPrinter: Elem = <slideSeq></slideSeq>
+  override def xmlPrinter: Elem =
+    <circularBuffer n={ToString(n)} sz={ToString(sz)}>
+      <input>{Phrases.xmlPrinter(input)}</input>
+    </circularBuffer>
 }

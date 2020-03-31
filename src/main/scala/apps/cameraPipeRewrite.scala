@@ -339,8 +339,7 @@ object cameraPipeRewrite {
               function(function(lowering.iterateStream)) `;`
                 argument(argument(argument(argument(argument(
                   repeatNTimes(2, oncetd(
-                    lowering.slideSeq(primitives.SlideSeq.Indices,
-                      mapSeq(fun(x => x)))
+                    lowering.circularBuffer(mapSeq(fun(x => x)))
                   ))
                 ))))) `;`
                 // TODO: use proper rewriting to achieve this

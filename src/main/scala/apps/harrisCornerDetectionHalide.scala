@@ -139,8 +139,8 @@ object harrisCornerDetectionHalide {
       )(input => input |>
         transpose >> map(transpose) >>
         map(map(dot(larr_f32(Seq(0.299f, 0.587f, 0.114f))))) >>
-        circularBuffer(3)(write1DSeq) >>
-        circularBuffer(3)(
+        circularBuffer(3)(3)(write1DSeq) >>
+        circularBuffer(3)(3)(
           map(slide(3)(1)) >> transpose >>
           map(fun(nbh => pair(
             dot(join(sobelXWeights2d))(join(nbh)),
@@ -172,8 +172,7 @@ object harrisCornerDetectionHalide {
   object omp { // and plain C
     val harrisSeqWrite: Expr = gen.harrisSeqWrite(let)
 
-    private val circularBuffer: Expr = nFun(n =>
-      slideSeq(rise.core.primitives.SlideSeq.Indices)(n)(1))
+    private val circularBuffer: Expr = DSL.circularBuffer
 
     val harrisBuffered: Expr = gen.harrisBuffered(circularBuffer)
   }
@@ -195,10 +194,8 @@ object harrisCornerDetectionHalide {
 
     val harrisSeqWrite: Expr = gen.harrisSeqWrite(letGlobal)
 
-    private val circularBuffer: Expr = nFun(n => oclSlideSeq(
-      rise.core.primitives.SlideSeq.Indices)(AddressSpace.Global)(n)(1))
-    private val registerRotation: Expr = nFun(n => oclSlideSeq(
-      rise.core.primitives.SlideSeq.Values)(AddressSpace.Private)(n)(1))
+    private val circularBuffer: Expr = oclCircularBuffer(AddressSpace.Global)
+    private val registerRotation: Expr = oclRotateValues(AddressSpace.Private)
 
     val harrisBuffered: Expr = gen.harrisBuffered(circularBuffer)
 
@@ -249,15 +246,15 @@ object harrisCornerDetectionHalide {
         )))
       )))
 
-    def harrisBufferedVecUnaligned(v: Int): Expr =
+    def harrisBufferedVecUnaligned(bLines: Int, v: Int): Expr =
       nFun(h => nModFun(v, w => fun(
         (3`.`(h+4)`.`w`.`f32) ->: (h`.`w`.`f32)
       )(input => input |>
         map(map(asVectorAligned(v))) >>
         transpose >> map(transpose) >> // H.W.3.<v>f
         map(map(dotWeightsVec(larr_f32(Seq(0.299f, 0.587f, 0.114f))))) >>
-        circularBuffer(3)(write1DSeq >> asScalar >> padEmpty(2)) >>
-        circularBuffer(3)( // 3.W.f
+        circularBuffer(bLines)(3)(write1DSeq >> asScalar >> padEmpty(2)) >>
+        circularBuffer(bLines)(3)( // 3.W.f
           map(slideVectors(v) >> slide(3)(v)) >> transpose >> // W.3.3.<v>f
           mapSeq(fun(nbh =>
             join(nbh) |> mapSeqUnroll(id) |> toPrivate |>
@@ -291,15 +288,15 @@ object harrisCornerDetectionHalide {
 
     def shuffle(v: Int): Expr =
       asScalar >> take(v+2) >> slideVectors(v)
-    def harrisBufferedVecAligned(v: Int): Expr =
+    def harrisBufferedVecAligned(bLines: Int, v: Int): Expr =
       nFun(h => nModFun(v, w => fun(
         (3`.`(h+4)`.`w`.`f32) ->: (h`.`w`.`f32)
       )(input => input |>
         map(map(asVectorAligned(v))) >>
         transpose >> map(transpose) >>
         map(map(dotWeightsVec(larr_f32(Seq(0.299f, 0.587f, 0.114f))))) >>
-        circularBuffer(3)(write1DSeq >> padEmpty(1)) >>
-        circularBuffer(3)(
+        circularBuffer(bLines)(3)(write1DSeq >> padEmpty(1)) >>
+        circularBuffer(bLines)(3)(
           map(slide(2)(1)) >> transpose >>
           mapSeq(fun(nbh =>
             nbh |> mapSeqUnroll(mapSeqUnroll(id)) |> toPrivate |>
@@ -332,15 +329,15 @@ object harrisCornerDetectionHalide {
         )
       )))
 
-    def harrisBufferedRegRotVecAligned(v: Int): Expr =
+    def harrisBufferedRegRotVecAligned(bLines: Int, v: Int): Expr =
       nFun(h => nModFun(v, w => fun(
         (3`.`(h+4)`.`w`.`f32) ->: (h`.`w`.`f32)
       )(input => input |>
         map(map(asVectorAligned(v))) >>
         transpose >> map(transpose) >>
         map(map(dotWeightsVec(larr_f32(Seq(0.299f, 0.587f, 0.114f))))) >>
-        circularBuffer(3)(write1DSeq >> padEmpty(1)) >>
-        circularBuffer(3)(
+        circularBuffer(bLines)(3)(write1DSeq >> padEmpty(1)) >>
+        circularBuffer(bLines)(3)(
           transpose >> map(fun(nbh => pair(
             dotWeightsVec(sobelXWeightsV, nbh),
             dotWeightsVec(sobelYWeightsV, nbh)

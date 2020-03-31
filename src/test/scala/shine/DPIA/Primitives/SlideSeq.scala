@@ -2,7 +2,6 @@ package shine.DPIA.Primitives
 
 import rise.core.DSL._
 import rise.core.types._
-import rise.core.primitives.SlideSeq._
 import util.{Execute, gen}
 
 class SlideSeq extends shine.test_util.Tests {
@@ -43,7 +42,7 @@ int main(int argc, char** argv) {
     + " generated C code gives the expected result"
   ) {
     check3pSum(nFun(n => fun(ArrayType(n, int))(a => a |>
-      slideSeq(Values)(3)(1)(fun(x => x)) >>
+      rotateValues(3)(fun(x => x)) >>
       iterateStream(reduceSeq(add)(l(0)))
     )))
   }
@@ -52,7 +51,7 @@ int main(int argc, char** argv) {
     + " generated C code gives the expected result"
   ) {
     check3pSum(nFun(n => fun(ArrayType(n, int))(a => a |>
-      slideSeq(Indices)(3)(1)(fun(x => x)) >>
+      circularBuffer(3)(3)(fun(x => x)) >>
       iterateStream(reduceSeq(add)(l(0)))
     )))
   }

@@ -4,7 +4,6 @@ import rise.core._
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.core.types._
-import rise.core.primitives._
 import rise.core.HighLevelConstructs._
 import rise.OpenCL.DSL._
 
@@ -98,7 +97,7 @@ object acoustic3D {
       mapGlobal(0)(
         mapGlobal(1)(
           iterateStream(acoustic) o
-          oclSlideSeq(SlideSeq.Values)(AddressSpace.Private)(sz)(st)(
+          oclRotateValues(AddressSpace.Private)(sz)(
             mapSeqUnroll(mapSeqUnroll(id))
           ) o transpose o map(transpose)
         )

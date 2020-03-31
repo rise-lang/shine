@@ -1,26 +1,30 @@
 package shine.OpenCL.IntermediatePrimitives
 
+import arithexpr.arithmetic.ArithExpr
 import shine.DPIA.DSL._
-import shine.DPIA.FunctionalPrimitives.{Cycle, Drop, Take, Zip}
+import shine.DPIA.FunctionalPrimitives.{Cycle, Drop, Zip}
 import shine.DPIA.ImperativePrimitives.{CycleAcc, DropAcc, PairAcc, UnzipAcc}
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
-object OpenCLSlideSeqIIndices {
+object OpenCLCircularBufferI {
   def apply(
     a: AddressSpace,
     n: Nat,
+    alloc: Nat,
     size: Nat,
-    step: Nat,
     dt1: DataType,
     dt2: DataType,
     load: Phrase[ExpType ->: AccType ->: CommType],
     nextInput: Phrase[`(nat)->:`[(ExpType ->: CommType) ->: CommType]],
     nextC: Phrase[`(nat)->:`[(ExpType ->: CommType) ->: CommType] ->: CommType]
   ): Phrase[CommType] = {
-    assert(step.eval == 1) // FIXME?
+    if (!ArithExpr.isSmaller(size, alloc + 1).contains(true)) {
+      println(s"WARNING: circular buffer of size $alloc used for"
+        + s" a sliding window of size $size")
+    }
 
     // TODO: unroll flags?
     def gen(bufWr: Phrase[AccType], bufRd: Phrase[ExpType]): Phrase[CommType] = {
@@ -33,12 +37,11 @@ object OpenCLSlideSeqIIndices {
           // load next value
           streamNext(nextInput, i + size - 1, fun(expT(dt1, read))(x =>
             load(x)(DropAcc(size - 1, n, dt2,
-              CycleAcc(size - 1 + n, size, dt2, bufWr)) `@` i)
+              CycleAcc(size - 1 + n, alloc, dt2, bufWr)) `@` i)
           )) `;`
           // use neighborhood
-          k(Take(size, n - i - size, read, dt2,
-            Drop(i, n - i, read, dt2, Cycle(n, size, dt2, bufRd)))
-          )
+          k(Drop(i, size, read, dt2,
+            Cycle(i + size, alloc, dt2, bufRd)))
         ),
         arithexpr.arithmetic.RangeAdd(0, n, 1)
       ))
@@ -51,11 +54,11 @@ object OpenCLSlideSeqIIndices {
     ): Phrase[CommType] = dt match {
       case PairType(a, b) =>
         allocGen(a, (wa, ra) => allocGen(b, (wb, rb) =>
-          C(UnzipAcc(size, a, b, PairAcc(size`.`a, size`.`b, wa, wb)),
-            Zip(size, a, b, ra, rb))
+          C(UnzipAcc(alloc, a, b, PairAcc(alloc`.`a, alloc`.`b, wa, wb)),
+            Zip(alloc, a, b, ra, rb))
         ))
       case _ =>
-        shine.OpenCL.DSL.`new`(a)(size`.`dt, buffer => C(buffer.wr, buffer.rd))
+        shine.OpenCL.DSL.`new`(a)(alloc`.`dt, buffer => C(buffer.wr, buffer.rd))
     }
 
     allocGen(dt2, gen)

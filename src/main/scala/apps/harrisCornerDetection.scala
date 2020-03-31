@@ -3,7 +3,6 @@ package apps
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.core.types._
-import rise.core.primitives._
 import rise.OpenCL.DSL._
 import util.gen
 
@@ -85,9 +84,8 @@ object harrisCornerDetection {
         makeArray(2)(C2D.sobelXWeightsV)(C2D.sobelYWeightsV) |>
         map(fun(vWs => C2D.weightsSeqVecUnroll(vWs)(vNbh)))
       )) >>
-      oclSlideSeq(SlideSeq.Values)(AddressSpace.Private)(3)(1)
-      (mapSeqUnroll(id))
-      >> iterateStream(
+      oclRotateValues(AddressSpace.Private)(3)(mapSeqUnroll(id)) >>
+      iterateStream(
         transpose >> map(shuffle) >>
         zip(makeArray(2)(C2D.sobelXWeightsH)(C2D.sobelYWeightsH)) >>
         // TODO: this triggers an extra copy
@@ -127,8 +125,7 @@ object harrisCornerDetection {
     slide(3)(1) |> mapGlobal(
       transpose >> map(transpose) >>
       map(map(C2D.weightsSeqVecUnroll(C2D.binomialWeightsV))) >>
-      oclSlideSeq(SlideSeq.Values)(AddressSpace.Private)(3)(1)
-      (mapSeqUnroll(id)) >>
+      oclRotateValues(AddressSpace.Private)(3)(mapSeqUnroll(id)) >>
       iterateStream(
         transpose >> map(shuffle) >>
         toPrivateFun(mapSeqUnroll(
@@ -157,8 +154,7 @@ object harrisCornerDetection {
         makeArray(2)(C2D.sobelXWeightsV)(C2D.sobelYWeightsV) |>
         map(fun(vWs => C2D.weightsSeqVecUnroll(vWs)(vNbh)))
       )) >>
-      oclSlideSeq(SlideSeq.Values)(AddressSpace.Private)(3)(1)
-      (mapSeqUnroll(id)) >>
+      oclRotateValues(AddressSpace.Private)(3)(mapSeqUnroll(id)) >>
       iterateStream(
         transpose >> map(shuffle) >>
         zip(makeArray(2)(C2D.sobelXWeightsH)(C2D.sobelYWeightsH)) >>
@@ -187,8 +183,7 @@ object harrisCornerDetection {
     slide(3)(1) |> mapGlobal(
     transpose >> map(transpose) >>
       map(map(C2D.weightsSeqVecUnroll(C2D.binomialWeightsV))) >>
-      oclSlideSeq(SlideSeq.Values)(AddressSpace.Private)(3)(1)
-      (mapSeqUnroll(id)) >>
+      oclRotateValues(AddressSpace.Private)(3)(mapSeqUnroll(id)) >>
       iterateStream(
         transpose >> map(shuffle) >>
         toPrivateFun(mapSeqUnroll(

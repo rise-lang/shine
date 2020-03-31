@@ -367,26 +367,39 @@ object fromRise {
             fun[ExpType](expT(insz`.`a, read), e =>
               Slide(n, sz, sp, a, e))))
 
-      case (core.SlideSeq(rot),
+      case (core.CircularBuffer(),
+      lt.DepFunType(alloc: lt.NatIdentifier,
       lt.DepFunType(sz: lt.NatIdentifier,
-      lt.DepFunType(sp: lt.NatIdentifier,
       lt.FunType(_,
       lt.FunType(lt.ArrayType(insz, la),
       lt.ArrayType(n, lt.ArrayType(_, lb)))))))
       =>
         val a = dataType(la)
         val b = dataType(lb)
+        DepLambda[NatKind](natIdentifier(alloc))(
         DepLambda[NatKind](natIdentifier(sz))(
-          DepLambda[NatKind](natIdentifier(sp))(
-            fun[ExpType ->: ExpType](
-              expT(a, read) ->: expT(b, write), load =>
-                fun[ExpType](expT(insz`.`a, read), e =>
-                  SlideSeq(rot, n, sz, sp, a, b, load, e)))))
+          fun[ExpType ->: ExpType](
+            expT(a, read) ->: expT(b, write), load =>
+              fun[ExpType](expT(insz`.`a, read), e =>
+                // TODO: alloc
+                SlideSeq(SlideSeq.Indices, n, sz, 1, a, b, load, e)))))
 
-      case (ocl.OclSlideSeq(rot),
-      lt.DepFunType(la: lt.AddressSpaceIdentifier,
+      case (core.RotateValues(),
       lt.DepFunType(sz: lt.NatIdentifier,
-      lt.DepFunType(sp: lt.NatIdentifier,
+      lt.FunType(_,
+      lt.FunType(lt.ArrayType(insz, la), lt.ArrayType(n, _)))))
+      =>
+        val a = dataType(la)
+        DepLambda[NatKind](natIdentifier(sz))(
+          fun[ExpType ->: ExpType](
+            expT(a, read) ->: expT(a, write), wr =>
+              fun[ExpType](expT(insz`.`a, read), e =>
+                SlideSeq(SlideSeq.Values, n, sz, 1, a, a, wr, e))))
+
+      case (ocl.OclCircularBuffer(),
+      lt.DepFunType(la: lt.AddressSpaceIdentifier,
+      lt.DepFunType(alloc: lt.NatIdentifier,
+      lt.DepFunType(sz: lt.NatIdentifier,
       lt.FunType(_,
       lt.FunType(lt.ArrayType(insz, lds),
       lt.ArrayType(n, lt.ArrayType(_, ldt))))))))
@@ -395,12 +408,27 @@ object fromRise {
         val t = dataType(ldt)
         val a = addressSpaceIdentifier(la)
         DepLambda[AddressSpaceKind](a)(
+        DepLambda[NatKind](natIdentifier(alloc))(
         DepLambda[NatKind](natIdentifier(sz))(
-        DepLambda[NatKind](natIdentifier(sp))(
           fun[ExpType ->: ExpType](
             expT(s, read) ->: expT(t, write), load =>
               fun[ExpType](expT(insz`.`s, read), e =>
-                OpenCLSlideSeq(rot, a, n, sz, sp, s, t, load, e))))))
+                OpenCLCircularBuffer(a, n, alloc, sz, s, t, load, e))))))
+
+      case (ocl.OclRotateValues(),
+      lt.DepFunType(la: lt.AddressSpaceIdentifier,
+      lt.DepFunType(sz: lt.NatIdentifier,
+      lt.FunType(_,
+      lt.FunType(lt.ArrayType(insz, lds), lt.ArrayType(n, _))))))
+      =>
+        val s = dataType(lds)
+        val a = addressSpaceIdentifier(la)
+        DepLambda[AddressSpaceKind](a)(
+        DepLambda[NatKind](natIdentifier(sz))(
+          fun[ExpType ->: ExpType](
+            expT(s, read) ->: expT(s, write), wr =>
+              fun[ExpType](expT(insz`.`s, read), e =>
+                OpenCLRotateValues(a, n, sz, s, wr, e)))))
 
       case (core.Reorder(),
       lt.FunType(_,

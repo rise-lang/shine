@@ -122,57 +122,64 @@ class harrisCornerDetectionHalideCheck
     checkOCL(lowerOCL(ocl.harrisVecUnaligned(4)), LocalSize(1), GlobalSize(1))
   }
 
-  test("harrisBufferedVecUnaligned generates valid OpenCL") {
+  test("harrisBufferedVecUnaligned(3, 4) generates valid OpenCL") {
     assert(Wo % 4 == 0)
-    checkOCL(lowerOCL(ocl.harrisBufferedVecUnaligned(4)),
+    checkOCL(lowerOCL(ocl.harrisBufferedVecUnaligned(3, 4)),
       LocalSize(1), GlobalSize(1))
   }
 
-  test("harrisBufferedVecUnalignedSplitPar(4) generates valid OpenCL") {
+  test("harrisBufferedVecUnalignedSplitPar(3, 4) generates valid OpenCL") {
     assert(Wo % 4 == 0)
     checkOCL(lowerOCL(ocl.harrisSplitPar(strip, 4,
-      ocl.harrisBufferedVecUnaligned(4))),
+      ocl.harrisBufferedVecUnaligned(3, 4))),
       LocalSize(1), GlobalSize(Ho / strip))
   }
 
-  test("harrisBufferedVecUnalignedSplitPar(8) generates valid OpenCL") {
+  test("harrisBufferedVecUnalignedSplitPar(3, 8) generates valid OpenCL") {
     assert(Wo % 8 == 0)
     checkOCL(lowerOCL(ocl.harrisSplitPar(strip, 8,
-      ocl.harrisBufferedVecUnaligned(8))),
+      ocl.harrisBufferedVecUnaligned(3, 8))),
       LocalSize(1), GlobalSize(Ho / strip))
   }
 
-  test("harrisBufferedVecAligned generates valid OpenCL") {
+  test("harrisBufferedVecAligned(3, 4) generates valid OpenCL") {
     assert(Wo % 4 == 0)
-    checkOCL(lowerOCL(ocl.harrisBufferedVecAligned(4)),
+    checkOCL(lowerOCL(ocl.harrisBufferedVecAligned(3, 4)),
       LocalSize(1), GlobalSize(1))
   }
 
-  test("harrisBufferedVecAlignedSplitPar(4) generates valid OpenCL") {
+  test("harrisBufferedVecAlignedSplitPar(3, 4) generates valid OpenCL") {
     assert(Wo % 4 == 0)
     checkOCL(lowerOCL(ocl.harrisSplitPar(strip, 4,
-      ocl.harrisBufferedVecAligned(4))),
+      ocl.harrisBufferedVecAligned(3, 4))),
       LocalSize(1), GlobalSize(Ho / strip))
   }
 
-  test("harrisBufferedVecAlignedSplitPar(8) generates valid OpenCL") {
+  test("harrisBufferedVecAlignedSplitPar(3, 8) generates valid OpenCL") {
     assert(Wo % 8 == 0)
     checkOCL(lowerOCL(ocl.harrisSplitPar(strip, 8,
-      ocl.harrisBufferedVecAligned(8))),
+      ocl.harrisBufferedVecAligned(3, 8))),
       LocalSize(1), GlobalSize(Ho / strip))
   }
 
-  test("harrisBufferedRegRotVecAlignedSplitPar(4) generates valid OpenCL") {
+  test("harrisBufferedRegRotVecAlignedSplitPar(3, 4) generates valid OpenCL") {
     assert(Wo % 4 == 0)
     checkOCL(lowerOCL(ocl.harrisSplitPar(strip, 4,
-      ocl.harrisBufferedRegRotVecAligned(4))),
+      ocl.harrisBufferedRegRotVecAligned(3, 4))),
       LocalSize(1), GlobalSize(Ho / strip))
   }
 
-  test("harrisBufferedRegRotVecAlignedSplitPar(8) generates valid OpenCL") {
+  test("harrisBufferedRegRotVecAlignedSplitPar(4, 4) generates valid OpenCL") {
+    assert(Wo % 4 == 0)
+    checkOCL(lowerOCL(ocl.harrisSplitPar(strip, 4,
+      ocl.harrisBufferedRegRotVecAligned(4, 4))),
+      LocalSize(1), GlobalSize(Ho / strip))
+  }
+
+  test("harrisBufferedRegRotVecAlignedSplitPar(3, 8) generates valid OpenCL") {
     assert(Wo % 8 == 0)
     checkOCL(lowerOCL(ocl.harrisSplitPar(strip, 8,
-      ocl.harrisBufferedRegRotVecAligned(8))),
+      ocl.harrisBufferedRegRotVecAligned(3, 8))),
       LocalSize(1), GlobalSize(Ho / strip))
   }
 
@@ -193,7 +200,7 @@ class harrisCornerDetectionHalideCheck
     val typed = util.printTime("infer", types.infer(harris(strip, 8)))
 
     val target = lowerOCL(ocl.harrisSplitPar(strip, 8,
-      ocl.harrisBufferedVecUnaligned(8)))
+      ocl.harrisBufferedVecUnaligned(3, 8)))
     util.dotPrintTmp("target", cameraPipeRewrite.gentlyReducedForm(target))
 
     val lowered =

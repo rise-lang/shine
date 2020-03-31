@@ -1,7 +1,6 @@
 package elevate.rise
 
 import rise.core.types._
-import rise.core.primitives.SlideSeq
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.core.HighLevelConstructs.dropLast
@@ -53,7 +52,7 @@ class circularBuffering extends shine.test_util.Tests {
 
   val circBuf: Rise =
     slide(3)(1) >> map(sumSeq) >>
-    slideSeq(SlideSeq.Indices)(4)(1)(fun(x => x)) >>
+    circularBuffer(4)(4)(fun(x => x)) >>
     iterateStream(fun(nbh =>
       makeArray(2)(
         nbh |> drop(1) >> dropLast(1) >> sumSeq,
@@ -167,7 +166,7 @@ class circularBuffering extends shine.test_util.Tests {
         oncetd(dropBeforeTake) `;`
         oncetd(isApply `;` one(isApply `;` one(isMakeArray)) `;`
           lowering.mapSeqUnrollWrite) `;`
-        oncetd(lowering.slideSeq(SlideSeq.Indices, id)) `;`
+        oncetd(lowering.circularBuffer(id)) `;`
         oncetd(lowering.iterateStream))
       -> circBuf,
     ))
@@ -193,8 +192,8 @@ class circularBuffering extends shine.test_util.Tests {
 
   val circBufChain: Rise =
     slide(4)(1) >> map(sumSeq) >>
-    slideSeq(SlideSeq.Indices)(3)(1)(id) >> mapStream(sumSeq) >>
-    slideSeq(SlideSeq.Indices)(2)(1)(id) >> iterateStream(sumSeq)
+    circularBuffer(3)(3)(id) >> mapStream(sumSeq) >>
+    circularBuffer(2)(2)(id) >> iterateStream(sumSeq)
 
   test("example chain outputs are consistent") {
     val inlinedP = gen.CProgram(wrapExprChain(inlinedChain), "inlined")
@@ -266,7 +265,7 @@ class circularBuffering extends shine.test_util.Tests {
       )
 
   val circBufTogether: Rise =
-    slideSeq(SlideSeq.Indices)(3)(1)(
+    circularBuffer(3)(3)(
       slide(3)(1) >> mapSeq(fun(x => pair(sumSeq(x), sumSeq(x)))) >> unzip
     ) >> // N.3.(M.f x M.f)
     iterateStream(
