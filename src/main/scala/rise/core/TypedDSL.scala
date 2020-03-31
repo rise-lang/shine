@@ -453,8 +453,10 @@ object TypedDSL {
   def reorder: TDSL[Reorder] = toTDSL(primitives.Reorder()())
   def scanSeq: TDSL[ScanSeq] = toTDSL(primitives.ScanSeq()())
   def slide: TDSL[Slide] = toTDSL(primitives.Slide()())
-  def slideSeq(roprimT: SlideSeq.Rotate): TDSL[SlideSeq] =
-    toTDSL(primitives.SlideSeq(roprimT)())
+  def circularBuffer: TDSL[CircularBuffer] =
+    toTDSL(primitives.CircularBuffer()())
+  def rotateValues: TDSL[RotateValues] =
+    toTDSL(primitives.RotateValues()())
   def snd: TDSL[Snd] = toTDSL(primitives.Snd()())
   def split: TDSL[Split] = toTDSL(primitives.Split()())
   def take: TDSL[Take] = toTDSL(primitives.Take()())

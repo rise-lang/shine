@@ -93,13 +93,17 @@ object primitives {
     // format: on
   }
 
-  @primitive case class OclSlideSeq(rot: core.SlideSeq.Rotate)(
+  @primitive case class OclCircularBuffer()(
       override val t: Type = TypePlaceholder
   ) extends Primitive {
     override def typeScheme: Type =
-      aFunT(a => implN(n => nFunT(sz => nFunT(sp => implDT(s => implDT(t =>
-        (s ->: t) ->:
-        ArrayType(sp * n + sz, s) ->: ArrayType(1 + n, ArrayType(sz, t))
-      ))))))
+      aFunT(a => core.CircularBuffer()().typeScheme)
+  }
+
+  @primitive case class OclRotateValues()(
+    override val t: Type = TypePlaceholder
+  ) extends Primitive {
+    override def typeScheme: Type =
+      aFunT(a => core.RotateValues()().typeScheme)
   }
 }
