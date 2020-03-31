@@ -44,13 +44,25 @@ object harrisCornerDetectionHalideRewrite {
     )) `;`
     cameraPipeRewrite.normalizeInput
 
-  def storeToPrivate(find: Strategy[Rise]): Strategy[Rise] =
-    subexpressionElimination(find) `;` {
-      // TODO: use rewrite rules
-      case rise.core.App(f, v) => Success(
-        rise.OpenCL.TypedDSL.toPrivate(v) |> rise.core.TypedDSL.let(f))
+  object storeToPrivate {
+    import rise.core.TypedDSL._
+    import rise.OpenCL.TypedDSL.toPrivate
+
+    def apply(find: Strategy[Rise]): Strategy[Rise] =
+      subexpressionElimination(find) `;` {
+        // TODO: use rewrite rules
+        case rise.core.App(f, v) =>
+          Success(writeUnrolled(v.t)(v) |> toPrivate |> let(f))
+        case _ => ???
+      } `;` gentlyReducedForm
+
+    def writeUnrolled(t: Type): TDSL[Rise] = t match {
+      case _: BasicType => fun(p => p)
+      case PairType(_: BasicType, _: BasicType) => fun(p => p)
+      case ArrayType(_, elem) => fun(p => mapSeqUnroll(writeUnrolled(elem), p))
       case _ => ???
     }
+  }
 
   def isAppliedPair: Strategy[Rise] =
     function(function(isEqualTo(rise.core.DSL.pair)))
@@ -98,9 +110,15 @@ object harrisCornerDetectionHalideRewrite {
         function(lowering.mapSeq) `;`
         argument(lambdaBodyWithName(x => {
           import rise.core.DSL._
-          storeToPrivate(isEqualTo(fst(x))) `;`
-          storeToPrivate(isEqualTo(fst(snd(x)))) `;`
-          storeToPrivate(isEqualTo(snd(snd(x))))
+          storeToPrivate(
+            isEqualTo(fst(x)) <+ isAppliedReduce
+          ) `;`
+          storeToPrivate(
+            isEqualTo(fst(snd(x))) <+ isAppliedReduce
+          ) `;`
+          storeToPrivate(
+            isEqualTo(snd(snd(x))) <+ isAppliedReduce
+          )
         }))
       ))) `;`
       unrollDots
@@ -247,8 +265,50 @@ object harrisCornerDetectionHalideRewrite {
         ),
 
         afterTopLevel(
+          oncetd(
+            isAppliedZip `;` argument(isAppliedZip) `;`
+            normalize.apply(
+              gentleBetaReduction <+ etaReduction <+ mapFusion <+
+                removeTransposePair <+ transposeBeforeMapJoin <+
+                slideBeforeMap <+ mapMapFBeforeTranspose
+            ) `;`
+            normalize.apply(
+              gentleBetaReduction <+ etaReduction <+ mapLastFission <+
+                mapMapFBeforeJoin
+            ) `;`
+            normalize.apply(
+              gentleBetaReduction <+ etaReduction <+ mapFusion <+
+                vectorize.beforeMap
+            ) `;`
+            normalize.apply(
+              gentleBetaReduction <+ etaReduction <+ mapLastFission <+
+                mapMapFBeforeTranspose
+            ) `;`
+            gentlyReducedForm `;`
+            repeatNTimes(2, oncetd(mapOutsideZip)) `;`
+            oncetd(zipSame) `;`
+            oncetd(isAppliedZip `;` cameraPipeRewrite.anyMapOutsideZip) `;`
+            oncetd(zipSame) `;`
+            gentlyReducedForm `;`
+            function(argument(stronglyReducedForm))
+          )
+        ) `;` gentlyReducedForm,
+
+        afterTopLevel(
           oncetd(lowering.mapGlobal()) `;`
-          oncetd(harrisBufferedLowering)
+          oncetd(harrisBufferedLowering) `;`
+          oncetd(
+            lambdaBodyWithName(jnbh =>
+              isAppliedPair `;`
+              storeToPrivate(isEqualTo(jnbh))
+            )
+          ) `;`
+          oncetd(
+            function(function(isEqualTo(rise.core.DSL.mapSeq))) `;`
+            oncetd(lambdaBodyWithName(x =>
+              storeToPrivate(isEqualTo(x))
+            ))
+          )
         )
       ))
     }
