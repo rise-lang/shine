@@ -343,8 +343,9 @@ object harrisCornerDetectionHalideRewrite {
           argument(function(isEqualTo(rise.core.DSL.transpose))) `;`
           normalize.apply(
             gentleBetaReduction <+ etaReduction <+ mapLastFission
-          ) `;` oncetd(vectorize.alignSlide)
-        ) `;` gentlyReducedForm
+          ) `;` oncetd(vectorize.alignSlide) `;`
+          gentlyReducedForm
+        )
       )
 
     def harrisBufferedVecAlignedSplitPar(vwidth: Int, strip: Int)
@@ -367,6 +368,33 @@ object harrisCornerDetectionHalideRewrite {
         afterTopLevel(
           oncetd(lowering.mapGlobal()) `;`
           oncetd(harrisBufferedLowering) `;`
+          normalize.apply(vectorize.mapAfterShuffle) `;`
+          storeSlidingWindowsToPrivate
+        )
+      ))
+    }
+
+    def harrisBufferedRegRotVecAlignedSplitPar(vwidth: Int, strip: Int)
+    : Strategy[Rise] = {
+      rewriteSteps(Seq(
+        harrisBufferedShape.reduce(_ `;` _),
+
+        harrisSplitParShape(strip),
+
+        vectorizeReductions(vwidth),
+
+        harrisIxWithIy,
+
+        alignLoads,
+
+        movePadEmpty,
+
+        unifyZipZipInput,
+
+        afterTopLevel(
+          oncetd(lowering.mapGlobal()) `;`
+          oncetd(harrisBufferedLowering) `;`
+          normalize.apply(vectorize.mapAfterShuffle) `;`
           storeSlidingWindowsToPrivate
         )
       ))
