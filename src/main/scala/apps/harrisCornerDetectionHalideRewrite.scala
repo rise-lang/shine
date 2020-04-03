@@ -1,5 +1,9 @@
 package apps
 
+import harrisCornerDetectionHalide.{
+  sobelXWeights2d, sobelXWeightsV, sobelXWeightsH,
+  sobelYWeights2d, sobelYWeightsV, sobelYWeightsH
+}
 import rise.core.types._
 import elevate.core._
 import elevate.core.strategies.basic._
@@ -10,7 +14,7 @@ import elevate.rise.rules._
 import elevate.rise.rules.traversal._
 import elevate.rise.rules.algorithmic._
 import elevate.rise.rules.movement._
-import cameraPipeRewrite.{afterTopLevel, depFunction, gentlyReducedForm, isAppliedMap, isAppliedZip, stronglyReducedForm}
+import cameraPipeRewrite.{afterTopLevel, depFunction, isAppliedMap, isAppliedZip, stronglyReducedForm}
 
 object harrisCornerDetectionHalideRewrite {
   private def rewriteSteps(steps: Seq[Strategy[Rise]]): Strategy[Rise] = a => {
@@ -19,13 +23,24 @@ object harrisCornerDetectionHalideRewrite {
       r.flatMapSuccess { e =>
         nRewrite += 1
         val result = util.printTime(s"rewrite $nRewrite", s(e))
-        // util.dotPrintTmp(s"rewrite$nRewrite", result)
+        util.dotPrintTmp(s"rewrite$nRewrite", result)
         result
       }
     })
   }
 
   val unrollDots = normalize.apply(lowering.reduceSeqUnroll)
+
+  def someGentleReduction: Strategy[Rise] =
+    gentleBetaReduction <+ etaReduction <+
+    idxReduction <+ fstReduction <+ sndReduction <+
+    removeTransposePair
+  def reducedFusedForm: Strategy[Rise] = normalize.apply(
+    someGentleReduction <+ mapFusion
+  )
+  def reducedFissionedForm: Strategy[Rise] = normalize.apply(
+    someGentleReduction <+ mapLastFission
+  )
 
   def afterDefs(s: Strategy[Rise]): Strategy[Rise] = p => {
     (function(body(afterDefs(s))) <+ s)(p)
@@ -39,7 +54,7 @@ object harrisCornerDetectionHalideRewrite {
 
   def normalizeInput: Strategy[Rise] =
     repeat(argumentsTd(
-      gentleBetaReduction <+ etaReduction <+ mapFusion <+
+      someGentleReduction <+ mapFusion <+
       slideBeforeMap <+ slideInsideZip <+ mapMapFBeforeTranspose
     )) `;`
     cameraPipeRewrite.normalizeInput
@@ -54,7 +69,7 @@ object harrisCornerDetectionHalideRewrite {
         case rise.core.App(f, v) =>
           Success(writeUnrolled(v.t)(v) |> toPrivate |> let(f))
         case _ => ???
-      } `;` gentlyReducedForm
+      } `;` reducedFusedForm
 
     def writeUnrolled(t: Type): TDSL[Rise] = t match {
       case _: BasicType => fun(p => p)
@@ -66,8 +81,9 @@ object harrisCornerDetectionHalideRewrite {
 
   def isAppliedPair: Strategy[Rise] =
     function(function(isEqualTo(rise.core.DSL.pair)))
-  def isAppliedReduce: Strategy[Rise] =
-    function(function(function(isEqualTo(rise.core.DSL.reduce))))
+  def isReduceFI: Strategy[Rise] =
+    function(function(isEqualTo(rise.core.DSL.reduce)))
+  def isAppliedReduce: Strategy[Rise] = function(isReduceFI)
   def isAppliedUnzip: Strategy[Rise] =
     function(isEqualTo(rise.core.DSL.unzip))
   def isPadEmpty: Strategy[Rise] =
@@ -80,22 +96,21 @@ object harrisCornerDetectionHalideRewrite {
     val lineBuffer = lowering.ocl.circularBuffer(AddressSpace.Global)
 
     def harrisBufferedShape: Seq[Strategy[Rise]] = Seq(
-      gentlyReducedForm,
+      reducedFusedForm,
 
       afterTopLevel(afterDefs(
         normalizeInput `;` stronglyReducedForm
-      )) `;` gentlyReducedForm,
+      )) `;` reducedFusedForm,
 
       afterTopLevel(afterDefs(argument(
         slideOutsideZip `;`
         argument(argument(normalizeInput `;` stronglyReducedForm))
-      ))) `;` gentlyReducedForm,
+      ))) `;` reducedFusedForm,
 
       afterTopLevel( // zip unzip simplification
         oncetd(argument(isAppliedUnzip) `;` betaReduction) `;`
         normalize.apply(
-          gentleBetaReduction <+ etaReduction <+ mapFusion <+
-          fstReduction <+ sndReduction <+
+          someGentleReduction <+ mapFusion <+
           zipUnzipAccessSimplification <+ mapProjZipUnification
         )
       ),
@@ -104,7 +119,7 @@ object harrisCornerDetectionHalideRewrite {
     def harrisIxWithIy: Strategy[Rise] =
       afterTopLevel(afterDefs(
         normalize.apply(
-          gentleBetaReduction <+ etaReduction <+
+          someGentleReduction <+
           takeOutsidePair <+ vectorize.asScalarOutsidePair
         ) `;`
         oncetd(isAppliedPair `;` mapOutsidePair `;` oncetd(zipSame))
@@ -114,7 +129,7 @@ object harrisCornerDetectionHalideRewrite {
       oncetd(lowering.iterateStream) `;`
       repeatNTimes(2, argumentsTd(function(lineBuffer))) `;`
       normalize.apply(lowering.ocl.circularBufferLoadFusion) `;`
-      gentlyReducedForm `;`
+      reducedFusedForm `;`
       argument(argument(oncetd(lowering.mapSeq))) `;`
       argument(function(argument(
         stronglyReducedForm `;` oncetd(lowering.mapSeq)
@@ -140,19 +155,19 @@ object harrisCornerDetectionHalideRewrite {
     def harrisBuffered: Strategy[Rise] = {
       rewriteSteps(harrisBufferedShape ++ Seq(
         harrisIxWithIy,
-        afterTopLevel(harrisBufferedLowering) `;` gentlyReducedForm
+        afterTopLevel(harrisBufferedLowering) `;` reducedFusedForm
       ))
     }
 
     def harrisSplitParShape(strip: Int): Strategy[Rise] = {
       afterTopLevel(
         oncetd(splitJoin(strip)) `;`
-        gentlyReducedForm `;`
+        reducedFusedForm `;`
         argumentsTd(slideBeforeSplit) `;`
         argumentsTd(slideBeforeMap) `;`
         argumentsTd(slideBeforeSlide) `;`
         argumentsTd(slideBeforeMap)
-      ) `;` gentlyReducedForm
+      ) `;` reducedFusedForm
     }
 
     def harrisBufferedSplitPar(strip: Int): Strategy[Rise] = {
@@ -174,9 +189,8 @@ object harrisCornerDetectionHalideRewrite {
     }
 
     def normalizeVectorized: Strategy[Rise] = normalize.apply(
-      gentleBetaReduction <+ etaReduction <+ mapFusion <+
-      removeTransposePair <+ transposeBeforeMapJoin <+
-      mapMapFBeforeTranspose
+      someGentleReduction <+ mapFusion <+
+      transposeBeforeMapJoin <+ mapMapFBeforeTranspose
     )
 
     def vectorizeReductions(vwidth: Int): Strategy[Rise] = {
@@ -184,9 +198,7 @@ object harrisCornerDetectionHalideRewrite {
         normalize.apply(
           isAppliedMap `;`
           oncetd(reduceMapFusion) `;`
-          normalize.apply(
-            gentleBetaReduction <+ etaReduction <+ mapLastFission
-          ) `;` (
+          reducedFissionedForm `;` (
             vectorize.alignedAfter(vwidth) <+
             vectorizeRoundUpAndNormalize(vwidth)
           ) `;`
@@ -195,10 +207,8 @@ object harrisCornerDetectionHalideRewrite {
         ) `;`
         normalize.apply(
           isAppliedMap `;`
-          function(argument(body(isAppliedReduce))) `;`
-          normalize.apply(
-            gentleBetaReduction <+ etaReduction <+ mapLastFission
-          ) `;`
+          function(argument(isReduceFI <+ body(isAppliedReduce))) `;`
+          reducedFissionedForm `;`
           vectorizeRoundUpAndNormalize(vwidth) `;`
           argument(argument(vectorize.beforeMapReduce)) `;`
           normalizeVectorized
@@ -214,9 +224,7 @@ object harrisCornerDetectionHalideRewrite {
           vectorize.after(vwidth) `;`
           argument(vectorize.beforeMap) `;`
           normalize.apply(
-            gentleBetaReduction <+ etaReduction <+
-            removeTransposePair <+ mapFusion <+
-            idxReduction <+ fstReduction <+ sndReduction <+
+            someGentleReduction <+ mapFusion <+
             unzipZipIsPair <+ vectorize.asScalarAsVectorId
           )
         )
@@ -226,15 +234,11 @@ object harrisCornerDetectionHalideRewrite {
     def movePadEmpty: Strategy[Rise] =
       afterTopLevel(
         normalize.apply(
-          gentleBetaReduction <+ etaReduction <+
-          removeTransposePair <+ mapFusion <+
-          idxReduction <+ fstReduction <+ sndReduction <+
+          someGentleReduction <+ mapFusion <+
           padEmptyBeforeTranspose <+ padEmptyBeforeMap <+
           padEmptyBeforeSlide <+ padEmptyBeforeZip
         ) `;`
-        normalize.apply(
-          gentleBetaReduction <+ etaReduction <+ mapLastFission
-        ) `;`
+        reducedFissionedForm `;`
         oncetd(
           function(argument(argument(argument(isPadEmpty)))) `;`
           mapFusion `;` function(oncetd(slideBeforeMapMapF))
@@ -248,23 +252,20 @@ object harrisCornerDetectionHalideRewrite {
             ))
           }
         ) `;`
-        normalize.apply(
-          gentleBetaReduction <+ etaReduction <+ mapLastFission
-        ) `;`
+        reducedFissionedForm `;`
         oncetd(
           isAppliedMap `;`
           function(argument(argument(argument(
             function(isEqualTo(rise.core.DSL.mapSnd)) `;`
             argument(isPadEmpty)
           )))) `;`
-          gentlyReducedForm `;`
+          reducedFusedForm `;`
           oncetd(slideBeforeMapMapF)
         ) `;`
-        gentlyReducedForm `;`
+        reducedFusedForm `;`
         normalize.apply(
-          gentleBetaReduction <+ etaReduction <+
-          mapFstBeforeMapSnd <+ mapFstFusion <+ mapSndFusion <+
-          removeTakeBeforePadEmpty
+          someGentleReduction <+ mapFstBeforeMapSnd <+
+          mapFstFusion <+ mapSndFusion <+ removeTakeBeforePadEmpty
         )
       )
 
@@ -273,31 +274,30 @@ object harrisCornerDetectionHalideRewrite {
         oncetd(
           isAppliedZip `;` argument(isAppliedZip) `;`
           normalize.apply(
-            gentleBetaReduction <+ etaReduction <+ mapFusion <+
-            removeTransposePair <+ transposeBeforeMapJoin <+
-            slideBeforeMap <+ mapMapFBeforeTranspose
+            someGentleReduction <+ mapFusion <+
+            transposeBeforeMapJoin <+ slideBeforeMap <+ mapMapFBeforeTranspose
           ) `;`
           normalize.apply(
-            gentleBetaReduction <+ etaReduction <+ mapLastFission <+
+            someGentleReduction <+ mapLastFission <+
             mapMapFBeforeJoin
           ) `;`
           normalize.apply(
-            gentleBetaReduction <+ etaReduction <+ mapFusion <+
+            someGentleReduction <+ mapFusion <+
             vectorize.beforeMap <+ slideBeforeMap
           ) `;`
           normalize.apply(
-            gentleBetaReduction <+ etaReduction <+ mapLastFission <+
+            someGentleReduction <+ mapLastFission <+
             mapMapFBeforeTranspose
           ) `;`
-          gentlyReducedForm `;`
+          reducedFusedForm `;`
           repeatNTimes(2, oncetd(mapOutsideZip)) `;`
           oncetd(zipSame) `;`
           oncetd(isAppliedZip `;` cameraPipeRewrite.anyMapOutsideZip) `;`
           oncetd(zipSame) `;`
-          gentlyReducedForm `;`
+          reducedFusedForm `;`
           function(argument(stronglyReducedForm))
         )
-      ) `;` gentlyReducedForm
+      ) `;` reducedFusedForm
 
     def storeSlidingWindowsToPrivate: Strategy[Rise] =
       oncetd(
@@ -317,15 +317,10 @@ object harrisCornerDetectionHalideRewrite {
     : Strategy[Rise] = {
       rewriteSteps(Seq(
         harrisBufferedShape.reduce(_ `;` _),
-
         harrisSplitParShape(strip),
-
         vectorizeReductions(vwidth),
-
         harrisIxWithIy,
-
         movePadEmpty,
-
         unifyZipZipInput,
 
         afterTopLevel(
@@ -341,10 +336,8 @@ object harrisCornerDetectionHalideRewrite {
         normalize.apply(
           isAppliedMap `;`
           argument(function(isEqualTo(rise.core.DSL.transpose))) `;`
-          normalize.apply(
-            gentleBetaReduction <+ etaReduction <+ mapLastFission
-          ) `;` oncetd(vectorize.alignSlide) `;`
-          gentlyReducedForm
+          reducedFissionedForm `;` oncetd(vectorize.alignSlide) `;`
+          reducedFusedForm
         )
       )
 
@@ -352,17 +345,11 @@ object harrisCornerDetectionHalideRewrite {
     : Strategy[Rise] = {
       rewriteSteps(Seq(
         harrisBufferedShape.reduce(_ `;` _),
-
         harrisSplitParShape(strip),
-
         vectorizeReductions(vwidth),
-
         harrisIxWithIy,
-
         alignLoads,
-
         movePadEmpty,
-
         unifyZipZipInput,
 
         afterTopLevel(
@@ -374,21 +361,36 @@ object harrisCornerDetectionHalideRewrite {
       ))
     }
 
+    def separateReductionThroughMap(separate: Strategy[Rise]): Strategy[Rise] =
+      isAppliedMap `;`
+      oncetd(separate) `;`
+      reducedFissionedForm `;`
+      oncetd(mapSlideBeforeTranspose) `;`
+      reducedFusedForm `;` reducedFissionedForm `;`
+      normalize.apply(slideBeforeMapMapF) `;`
+      reducedFusedForm
+
+    def separateReductions: Strategy[Rise] =
+      oncebu(separateReductionThroughMap(
+        separateDotVH(sobelXWeights2d, sobelXWeightsV, sobelXWeightsH)
+      )) `;`
+      oncebu(separateReductionThroughMap(
+        separateDotVH(sobelYWeights2d, sobelYWeightsV, sobelYWeightsH)
+      )) `;`
+      repeatNTimes(3, oncebu(separateReductionThroughMap(
+        separateSumVH
+      )))
+
     def harrisBufferedRegRotVecAlignedSplitPar(vwidth: Int, strip: Int)
     : Strategy[Rise] = {
       rewriteSteps(Seq(
         harrisBufferedShape.reduce(_ `;` _),
-
         harrisSplitParShape(strip),
-
+        separateReductions,
         vectorizeReductions(vwidth),
-
         harrisIxWithIy,
-
         alignLoads,
-
         movePadEmpty,
-
         unifyZipZipInput,
 
         afterTopLevel(
