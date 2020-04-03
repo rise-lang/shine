@@ -341,7 +341,7 @@ object harrisCornerDetectionHalide {
           transpose >> map(fun(nbh => pair(
             dotWeightsVec(sobelXWeightsV, nbh),
             dotWeightsVec(sobelYWeightsV, nbh)
-          ))) >>
+          ))) >
           registerRotation(2)(id) >>
           iterateStream(unzip >> fun(nbh => pair(
             dotWeightsVec(sobelXWeightsH, shuffle(v)(fst(nbh))),
