@@ -28,6 +28,9 @@ lazy val shine = (project in file("."))
     libraryDependencies += "org.scala-lang" % "scala-library" % scalaVersion.value,
     libraryDependencies += "org.scala-lang.modules" %% "scala-xml" % "1.2.0",
 
+    // command line parser
+    libraryDependencies += "com.typesafe.play" %% "play-json" % "2.8.0",
+
     // JUnit
     libraryDependencies += "junit" % "junit" % "4.11",
 

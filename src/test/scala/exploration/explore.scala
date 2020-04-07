@@ -1,8 +1,10 @@
 package exploration
 
+import arithexpr.arithmetic.ArithExpr
 import rise.core.TypedDSL.{add, fst, fun, l, map, reduce, snd, transpose, zip}
 import rise.core.types.{ArrayType, f32, infer}
 import elevate.core.strategies.traversal.{alltd, oncebu, oncetd}
+import elevate.heuristic_search.{Heuristic, Metaheuristic, Runner}
 import elevate.rise.Rise
 import elevate.rise.rules.algorithmic.{blockedReduce, fissionReduceMap, fuseReduceMap}
 import elevate.rise.rules.lowering.{mapSeq, reduceSeq}
@@ -10,6 +12,8 @@ import elevate.rise.rules.movement.{liftReduce, mapFBeforeSlide}
 import elevate.rise.rules.traversal.LiftTraversable
 import elevate.rise.strategies.normalForm.{CNF, LCNF, RNF}
 import elevate.rise.strategies.tiling.tileNDList
+import play.api.libs.json
+import play.api.libs.json.{JsDefined, JsError, JsPath, JsResult, JsSuccess, JsUndefined, Reads}
 import util._
 //import exploration.search.executeC.genExecutableCode
 
@@ -58,20 +62,18 @@ class explore extends shine.test_util.Tests {
     val result = riseExploration(mm, lowering, N)
     println("result: " + result)
   }
-  //
-//  test( "test parser properly"){
-//    val args = Seq(s"""--help""")
-//    exploration.util.testParser(args)
-//  }
-//
-//  test("test parser help message"){
-//    val args = Seq(s"""shine /home/jo/developement/rise-lang/programs/mm.rise""")
-//    exploration.util.testParser(args)
-//  }
 
-//  test("test json export"){
-//    val result = ExplorationSettings.generateConfigString
-//    println("json: " + result)
-//  }
+  test("alan parser"){
+
+    val metaheuristic = AlanParser.parse("/home/jo/developement/rise-lang/halde/dot_0.json")
+//    val metaheuristic = AlanParser.parse("/home/jo/developement/rise-lang/halde/dot_1.json")
+//    val metaheuristic = AlanParser.parse("/home/jo/developement/rise-lang/halde/dot_2.json")
+
+    metaheuristic.execute(mm)
+  }
+
+
+
 
 }
+

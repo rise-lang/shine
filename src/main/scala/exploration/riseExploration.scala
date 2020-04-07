@@ -29,7 +29,12 @@ object riseExploration {
     val s = solution
     print("initial solution: " + s + "\n")
 
-    // blocking strategy: to be moved!
+
+//    strategies.foreach(elem => {
+//      println("strategy: " + elem.toString())
+//    })
+
+
 
     // prepare tiling, keep reduce(+) and map(*) close together, (necessary?)
     val fusedReduceMap: Strategy[Rise] = LCNF `;` oncetd(fuseReduceMap)
@@ -83,7 +88,7 @@ object riseExploration {
       LCNF `;` rules.movement.mapFBeforeSlide `;` LCNF,
       LCNF `;` rules.movement.mapJoinBeforeJoin `;` LCNF,
       LCNF `;` rules.movement.mapJoinBeforeTranspose `;` LCNF,
-      LCNF `;`  rules.movement.mapTransposeBeforeJoin `;` LCNF,
+      LCNF `;` rules.movement.mapTransposeBeforeJoin `;` LCNF,
       LCNF `;` rules.movement.transposeBeforeSlide `;` LCNF,
       LCNF `;` rules.movement.transposeBeforeMapMapF `;` LCNF,
       LCNF `;` rules.movement.transposeBeforeMapJoin `;` LCNF,
@@ -99,12 +104,6 @@ object riseExploration {
       LCNF `;` moveInnerKLoopOnce `;` LCNF `;` LCNF
     )
 
-//    strategies.foreach(elem => {
-//      println("strategy: " + elem.toString())
-//    })
-
-
-
     // parse this from config
 
     println("initialization started")
@@ -119,9 +118,9 @@ object riseExploration {
     val iterativeImprovement = new IterativeImprovement[Rise]
 
     // depth and iterations matters
-    val first = new Metaheuristic[Rise]("Random", random, 10, 5, cExecutor, strategies)
+    val first = new Metaheuristic[Rise]("Random", random, 10, 5, cExecutor, strategies, "/home/jo/developement/rise-lang/exploration/II/random")
     // depth doesn't matter; iterations should be 1
-    val main = new Metaheuristic[Rise]("II", iterativeImprovement, 0, 1, first, strategies)
+    val main = new Metaheuristic[Rise]("II", iterativeImprovement, 0, 1, first, strategies, "/home/jo/developement/rise-lang/exploration/II")
 
     println("initialization finished")
 
