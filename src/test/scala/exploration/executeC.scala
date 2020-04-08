@@ -1,23 +1,8 @@
-import elevate.core.strategies.traversal.oncetd
-import elevate.rise.rules.algorithmic.fuseReduceMap
-import elevate.rise.strategies.normalForm.LCNF
 import rise.core.TypedDSL.{add, fst, fun, l, map, reduce, snd, transpose, zip}
-import rise.core.types.{ArrayType, f32, infer}
 
-import elevate.core.Strategy
-import elevate.core.strategies.debug.peek
-import elevate.core.strategies.traversal._
-import elevate.rise.rules.traversal._
-import elevate.rise.rules.algorithmic._
-import elevate.rise.rules.lowering.lowerToC
-import elevate.rise.rules.movement._
-import elevate.rise.strategies.tiling._
-import elevate.rise.strategies.normalForm._
-import shine.test_util
-import rise.core.dotPrinter._
 import rise.core.TypedDSL._
 import rise.core.types.{ArrayType, f32, infer}
-import util.gen
+
 class executeC extends shine.test_util.Tests {
 
   val N = 1 << 9

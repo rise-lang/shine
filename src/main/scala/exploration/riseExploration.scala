@@ -1,17 +1,9 @@
 package exploration
 
-import elevate.core.Strategy
-import elevate.core.strategies.traversal.{oncebu, oncetd}
 import elevate.heuristic_search.heuristics.Random
-import elevate.rise.rules.algorithmic.{blockedReduce, fissionReduceMap, fuseReduceMap}
-import elevate.rise.{Rise, rules}
-import elevate.rise.rules.movement.{liftReduce, mapFBeforeSlide}
-import elevate.rise.strategies.normalForm.LCNF
-import elevate.rise.strategies.tiling
-import elevate.rise.strategies.tiling.tileNDList
 import exploration.search.CExecutor
-import elevate.core.strategies.traversal.{alltd, bottomup, oncebu, oncetd, topdown}
-import elevate.core.{Failure, Strategy, Success}
+import elevate.core.strategies.traversal.{oncebu, oncetd}
+import elevate.core.Strategy
 import elevate.heuristic_search.{Metaheuristic}
 import elevate.heuristic_search.heuristic.IterativeImprovement
 import elevate.rise.rules.algorithmic.{blockedReduce, fissionReduceMap, fuseReduceMap}
