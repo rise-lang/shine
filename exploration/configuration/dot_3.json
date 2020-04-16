@@ -1,0 +1,18 @@
+  {
+      "name" : "example_exploration_2",
+      "strategies" : "default",
+      "input" : "/home/jo/development/rise-lang/expressions",
+      "output" : "/home/jo/development/rise-lang/shine/exploration",
+      "inputSize" : 1024,
+      "metaheuristic" : [{
+        "heuristic" : "IterativeImprovement",
+        "depth" : 0,
+        "iterations" : 1
+      }],
+      "executor" : {
+        "name" : "C",
+        "iterations" : 15,
+	"threshold" : 10,
+	"hallo helmut" : 10
+      }
+}

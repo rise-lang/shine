@@ -1,4 +1,4 @@
-package exploration.search
+package exploration.runner
 
 import elevate.rise.Rise
 import elevate.core.Strategy
