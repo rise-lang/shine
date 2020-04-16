@@ -103,7 +103,7 @@ object riseExploration {
     // c Runner with 3 iterations and lowering strategy
     val lowering = elevate.rise.rules.lowering.lowerToC
     val gold = lowering.apply(solution).get
-    val cExecutor = new CExecutor(lowering, gold, 5, inputSize)
+    val cExecutor = new CExecutor(lowering, gold, 5, inputSize, 1.5)
 
     // create heuristics
     val random = new Random[Rise]

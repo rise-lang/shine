@@ -137,14 +137,15 @@ object Programs {
 object AlanParser {
 
   // classes to parse
-  case class ParseExecutor(name:String, iterations:Int)
+  case class ParseExecutor(name:String, iterations:Int, threshold: Double)
   case class ParseMetaheuristic(heuristic: String, depth: Int, iteration: Int)
   case class ParseExploration(name: String, strategies: String, input:String, output:String, inputSize:Int, metaheuristic: Seq[ParseMetaheuristic], executor:ParseExecutor)
 
   // implicit readings
   implicit val executorRead: Reads[ParseExecutor] = (
     (JsPath \ "name").read[String] and
-      (JsPath \ "iterations").read[Int]
+      (JsPath \ "iterations").read[Int] and
+        (JsPath \ "threshold").read[Double]
     )(ParseExecutor.apply _)
 
   implicit val metaheuristicReads: Reads[ParseMetaheuristic] = (
@@ -196,7 +197,7 @@ object AlanParser {
 
     // begin with executor
     val executor = result.get.executor.name match {
-      case "C" => new CExecutor(lowering, gold, result.get.executor.iterations, inputSize)
+      case "C" => new CExecutor(lowering, gold, result.get.executor.iterations, inputSize, result.get.executor.threshold)
       case "OpenMP" => new Exception("executor option not yet implemented")
       case "OpenCL" => new Exception("executor option not yet implemented")
       case _ => new Exception("not a supported executor option")

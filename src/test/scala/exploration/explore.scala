@@ -57,6 +57,10 @@ class explore extends shine.test_util.Tests {
 //    val metaheuristic = AlanParser.parse("/home/jo/developement/rise-lang/halde/dot_1.json")
 //    val metaheuristic = AlanParser.parse("/home/jo/developement/rise-lang/halde/dot_2.json")
 
+    // rise exploration
+    // ./riseExploration -f file dot.json
+    // command line parser?
+
     metaheuristic.execute(mm)
   }
 

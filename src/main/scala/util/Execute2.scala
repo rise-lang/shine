@@ -9,7 +9,7 @@ object Execute2 {
 
   //noinspection ScalaUnnecessaryParentheses
   @throws[Exception]
-  def apply(code: String, iterations: Int): String = {
+  def apply(code: String, iterations: Int, threshold: Double): String = {
     try {
       val src = writeToTempFile("code-", ".c", code).getAbsolutePath
       val bin = createTempFile("bin-", "").getAbsolutePath
@@ -30,7 +30,7 @@ object Execute2 {
         // check if we have to skip this execution round
         globalBest match{
           case Some(value) => {
-            runtimes(i) > value * 1.5 match {
+            runtimes(i) > value * threshold match {
               case true => {
                 //break up
                 for( j <- Range(i, N)){

@@ -6,7 +6,7 @@ import elevate.heuristic_search.Runner
 import shine.C.Program
 import util.{Execute2, gen}
 
-class CExecutor(val lowering: Strategy[Rise], val goldExpression: Rise, val iterations: Int, val inputSize: Int) extends Runner[Rise] {
+class CExecutor(val lowering: Strategy[Rise], val goldExpression: Rise, val iterations: Int, val inputSize: Int, val threshold: Double) extends Runner[Rise] {
   val N = inputSize
   var best:Option[Double] = None
   var gold = gen.CProgram(goldExpression, "compute_gold")
@@ -247,7 +247,7 @@ int main(int argc, char** argv) {
 
   def compileAndExecute(solution:Rise, code:String, iterations:Int):Option[Double] = {
     try {
-      val returnValue = Execute2(code, iterations)
+      val returnValue = Execute2(code, iterations, threshold)
 
       // check for new best and new gold to use
       best match {
