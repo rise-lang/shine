@@ -33,7 +33,7 @@ class explore extends shine.test_util.Tests {
   test("test exploration") {
 
     // json path relative
-    riseExploration2(mm, "/home/jo/development/rise-lang/shine/exploration/configuration/dot_2.json")
+    riseExploration(mm, "/home/jo/development/rise-lang/shine/exploration/configuration/dot_2.json")
 
     // remove input size things from here
   }

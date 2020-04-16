@@ -32,7 +32,7 @@ class executeC extends shine.test_util.Tests {
 
     val gold = lowering.apply(scal).get
 
-    val test = new exploration.search.CExecutor(lowering, gold, 5, N, 1.5)
+    val test = new exploration.runner.CExecutor(lowering, gold, 5, N, 1.5)
 
     val result = test.execute(scal)
 
@@ -44,7 +44,7 @@ class executeC extends shine.test_util.Tests {
 
     val gold = lowering.apply(dot).get
 
-    val test = new exploration.search.CExecutor(lowering, gold, 5, N, 1.5)
+    val test = new exploration.runner.CExecutor(lowering, gold, 5, N, 1.5)
 
     val result = test.execute(dot)
 
@@ -56,7 +56,7 @@ class executeC extends shine.test_util.Tests {
 
     val gold = lowering.apply(mm).get
 
-    val test = new exploration.search.CExecutor(lowering, gold, 5, N, 1.5)
+    val test = new exploration.runner.CExecutor(lowering, gold, 5, N, 1.5)
 
     val result = test.execute(mm)
 
