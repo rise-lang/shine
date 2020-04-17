@@ -57,14 +57,6 @@ object riseExploration {
     val lowering = elevate.rise.rules.lowering.lowerToC
     val gold = lowering.apply(solution).get
 
-    // begin with executor
-    val executor = result.executor.name match {
-      case "C" => new CExecutor(lowering, gold, result.executor.iterations, inputSize, result.executor.threshold)
-      case "OpenMP" => new Exception("executor option not yet implemented")
-      case "OpenCL" => new Exception("executor option not yet implemented")
-      case _ => new Exception("not a supported executor option")
-    }
-
     // create unique output folder
     val uniqueFilename_full = uniqueFilename(output + "/" + name)
     (s"mkdir ${uniqueFilename_full}" !!)
@@ -77,11 +69,26 @@ object riseExploration {
       nameList += predecessor
     })
 
+    // create folder for executor
+    val executorOutput = predecessor + "/" + "executor"
+
     // create subfolders
     nameList.foreach(elem => {
       println("elem: " + elem)
       (s"mkdir ${elem}" !!)
     })
+
+    // create subfolder for executor
+    println("elem: " + executorOutput)
+    (s"mkdir ${executorOutput}" !!)
+
+    // begin with executor
+    val executor = result.executor.name match {
+      case "C" => new CExecutor(lowering, gold, result.executor.iterations, inputSize, result.executor.threshold, executorOutput)
+      case "OpenMP" => new Exception("executor option not yet implemented")
+      case "OpenCL" => new Exception("executor option not yet implemented")
+      case _ => new Exception("not a supported executor option")
+    }
 
     var index = 0
 

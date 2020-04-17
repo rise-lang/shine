@@ -1,33 +1,36 @@
 package exploration.runner
 
+import java.io.{File, FileOutputStream, PrintWriter}
+
 import elevate.rise.Rise
 import elevate.core.Strategy
 import elevate.heuristic_search.Runner
 import shine.C.Program
 import util.{Execute2, gen}
 
-class CExecutor(val lowering: Strategy[Rise], val goldExpression: Rise, val iterations: Int, val inputSize: Int, val threshold: Double) extends Runner[Rise] {
+class CExecutor(val lowering: Strategy[Rise], val goldExpression: Rise, val iterations: Int, val inputSize: Int, val threshold: Double, val output: String) extends Runner[Rise] {
   val N = inputSize
   var best:Option[Double] = None
   var gold = gen.CProgram(goldExpression, "compute_gold")
+  var counter = 0
+
+  // write header to csv output file
+  writeHeader(output + "/" + "executor.csv")
 
   def execute(solution: Rise):(Rise,Option[Double]) = {
-    // execute C code here
-
     // lower solution
     val lowered = lowering.apply(solution)
 
     //generate executable program (including host code)
     val code = genExecutableCode(lowered.get)
 
-//    println("code: "  + code)
-
     //compile and execute program
     val performanceValue = compileAndExecute(lowered.get, code, iterations)
 
+    writeValues(output + "/" + "executor.csv", (solution, performanceValue), "executor")
+
     // new gold
     gold = gen.CProgram(goldExpression, "compute_gold")
-
 
     (solution, performanceValue)
   }
@@ -270,4 +273,35 @@ int main(int argc, char** argv) {
       }
     }
   }
+
+  def writeValues(path: String, result: (Rise, Option[Double]), name:String) {
+    // open file for appendix
+    val file = new PrintWriter(new FileOutputStream(new File(path), true))
+
+    // create string to write to file
+    var string = counter + ", " + name + ", " + System.currentTimeMillis().toString + ", " + result._1.hashCode().toString + ", "
+    result._2 match{
+      case Some(value) => string += value.toString + "\n"
+      case _ => string += "-1 \n"
+    }
+
+    // write to file and close
+    file.write(string)
+    counter += 1
+    file.close()
+  }
+
+  def writeHeader(path:String) {
+    // open file for appendix
+    val file = new PrintWriter(new FileOutputStream(new File(path), true))
+
+    // create string to write to file
+    val string = "iteration, " + "runner, " + "timestamp, " + "hash, " + "runtime\n"
+
+    // write to file and close
+    file.write(string)
+    file.close()
+  }
+
+
 }

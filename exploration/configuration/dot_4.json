@@ -10,7 +10,7 @@
         "iterations" : 1
       },{
         "heuristic" : "Random",
-        "depth" : 5,
+        "depth" : 3,
         "iterations" : 3
         }],
       "executor" : {
