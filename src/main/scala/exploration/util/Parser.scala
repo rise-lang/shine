@@ -14,7 +14,7 @@ object JsonParser {
   // classes to parse
   case class ParseExecutor(name:String, iterations:Int, threshold: Double)
   case class ParseMetaheuristic(heuristic: String, depth: Int, iteration: Int)
-  case class ParseExploration(name: String, strategies: String, input:String, output:String, inputSize:Int, metaheuristic: Seq[ParseMetaheuristic], executor:ParseExecutor)
+  case class ParseExploration(name: String, strategies: String, output:String, inputSize:Int, metaheuristic: Seq[ParseMetaheuristic], executor:ParseExecutor)
 
   // implicit readings
   implicit val executorRead: Reads[ParseExecutor] = (
@@ -32,7 +32,6 @@ object JsonParser {
   implicit val explorationReads: Reads[ParseExploration] = (
     (JsPath \ "name").read[String] and
       (JsPath \ "strategies").read[String] and
-      (JsPath \ "input").read[String] and
       (JsPath \ "output").read[String] and
       (JsPath \ "inputSize").read[Int] and
       (JsPath \ "metaheuristic").read[Seq[ParseMetaheuristic]] and
