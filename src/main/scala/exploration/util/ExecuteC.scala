@@ -1,9 +1,11 @@
-package util
+package exploration.util
 
-import scala.language.postfixOps
+import util.{createTempFile, writeToTempFile}
+
 import scala.sys.process._
+import scala.language.postfixOps
 
-object Execute2 {
+object ExecuteC {
   case class Exception(msg: String) extends Throwable
   var globalBest:Option[Double] = None
 
@@ -13,6 +15,8 @@ object Execute2 {
     try {
       val src = writeToTempFile("code-", ".c", code).getAbsolutePath
       val bin = createTempFile("bin-", "").getAbsolutePath
+
+      // todo: make this configable using json file
       (s"clang -O2 $src -o $bin -lm" !!)
 
       //repeat execution
@@ -68,5 +72,3 @@ object Execute2 {
   }
 
 }
-
-

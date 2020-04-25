@@ -5,8 +5,8 @@ import java.nio.file.{Files, Paths}
 import exploration.runner.CExecutor
 import elevate.heuristic_search.Metaheuristic
 import elevate.rise.{Rise}
-import exploration.util.{AlanParser}
-import exploration.util.AlanParser.ParseExploration
+import exploration.util.{JsonParser}
+import exploration.util.JsonParser.ParseExploration
 import strategies.standardStrategies
 
 import scala.sys.process._
@@ -19,7 +19,7 @@ object riseExploration {
   def apply(solution:Rise, filePath:String) = {
 
     // parse config file
-    val parsedConfiguration = AlanParser.parse(filePath)
+    val parsedConfiguration = JsonParser.parse(filePath)
 
     // setup gold
     // code here
@@ -70,17 +70,20 @@ object riseExploration {
     })
 
     // create folder for executor
-    val executorOutput = predecessor + "/" + "executor"
+    val executorOutput = predecessor + "/" + "Executor"
 
     // create subfolders
     nameList.foreach(elem => {
       println("elem: " + elem)
       (s"mkdir ${elem}" !!)
+      (s"mkdir ${elem}" + "/Expressions" !!)
     })
 
     // create subfolder for executor
     println("elem: " + executorOutput)
     (s"mkdir ${executorOutput}" !!)
+    (s"mkdir ${executorOutput + "/C"}" !!)
+    (s"mkdir ${executorOutput + "/lowered"}" !!)
 
     // begin with executor
     val executor = result.executor.name match {
@@ -94,7 +97,7 @@ object riseExploration {
 
     // root metaheuristic using executor as executor
     val rootChoice = result.metaheuristic.reverse.head
-    val rootMetaheuristic = new Metaheuristic[Rise](rootChoice.heuristic, AlanParser.getHeuristic(rootChoice.heuristic),
+    val rootMetaheuristic = new Metaheuristic[Rise](rootChoice.heuristic, JsonParser.getHeuristic(rootChoice.heuristic),
       rootChoice.depth,rootChoice.iteration, executor.asInstanceOf[CExecutor], standardStrategies.strategies, nameList.reverse.apply(index))
     index = index + 1
 
@@ -102,7 +105,7 @@ object riseExploration {
     var metaheuristic = rootMetaheuristic
     result.metaheuristic.reverse.tail.foreach(elem => {
       // new metaheuristic with last one as Runner
-      metaheuristic = new Metaheuristic[Rise](elem.heuristic, AlanParser.getHeuristic(elem.heuristic),
+      metaheuristic = new Metaheuristic[Rise](elem.heuristic, JsonParser.getHeuristic(elem.heuristic),
         elem.depth,elem.iteration, metaheuristic, standardStrategies.strategies, nameList.reverse.apply(index))
       index = index + 1
     })

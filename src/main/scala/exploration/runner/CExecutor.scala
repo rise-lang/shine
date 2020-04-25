@@ -3,10 +3,12 @@ package exploration.runner
 import java.io.{File, FileOutputStream, PrintWriter}
 
 import elevate.rise.Rise
-import elevate.core.Strategy
 import elevate.heuristic_search.Runner
 import shine.C.Program
-import util.{Execute2, gen}
+import util.gen
+import elevate.core.Strategy
+import elevate.heuristic_search.util.IOHelper
+import exploration.util.ExecuteC
 
 class CExecutor(val lowering: Strategy[Rise], val goldExpression: Rise, val iterations: Int, val inputSize: Int, val threshold: Double, val output: String) extends Runner[Rise] {
   val N = inputSize
@@ -27,10 +29,62 @@ class CExecutor(val lowering: Strategy[Rise], val goldExpression: Rise, val iter
     //compile and execute program
     val performanceValue = compileAndExecute(lowered.get, code, iterations)
 
-    writeValues(output + "/" + "executor.csv", (solution, performanceValue), "executor")
+    // print code to file
+    var codeOutput = ""
+
+    // add high/low-level hash, performance value and code
+    codeOutput += "// high-level hash: " + solution.hashCode() + " \n"
+    codeOutput += "// low-level hash: " + lowered.get.hashCode() + " \n"
+
+    // check if execution was valid
+    var filenameC = solution.hashCode().toString + "_" + lowered.get.hashCode().toString()
+    var filenameLowered = lowered.get.hashCode().toString
+
+    performanceValue match {
+      case None => {
+        codeOutput += "// runtime: " + -1 + "\n \n"
+        filenameC += "_error"
+        filenameLowered += "_error"
+      }
+      case _ => codeOutput += "// runtime: " + performanceValue.get.toString  + "\n \n"
+    }
+
+    codeOutput += code
+
+    // print code to file
+    val uniqueFilenameCode = IOHelper.getUniqueFilename(output + "/C/" + filenameC + ".c", 2)
+
+    // create file for code
+    val pwCode = new PrintWriter(new FileOutputStream(new File(uniqueFilenameCode), false))
+
+    // write code to file
+    pwCode.write(codeOutput)
+
+    // close files
+    pwCode.close()
+
+    // write runtime to output file
+    writeValues(output + "/" + "executor.csv", (solution, lowered.get, performanceValue), "executor")
+
+    // print lowered expression to file
+    val uniqueFilenameLowered = IOHelper.getUniqueFilename(output + "/lowered/" + filenameLowered, 0)
+
+    // create file for for lowered expression
+    val pwLowered = new PrintWriter(new FileOutputStream(new File(uniqueFilenameLowered), false))
+
+    // lowered string
+    var loweredString = "high-level hash: " + solution.hashCode() + "\n"
+    loweredString += lowered.get
+
+    // write code to file
+    pwLowered.write(loweredString)
+
+    // close files
+    pwLowered.close()
+
 
     // new gold
-    gold = gen.CProgram(goldExpression, "compute_gold")
+//    gold = gen.CProgram(goldExpression, "compute_gold")
 
     (solution, performanceValue)
   }
@@ -250,7 +304,7 @@ int main(int argc, char** argv) {
 
   def compileAndExecute(solution:Rise, code:String, iterations:Int):Option[Double] = {
     try {
-      val returnValue = Execute2(code, iterations, threshold)
+      val returnValue = ExecuteC(code, iterations, threshold)
 
       // check for new best and new gold to use
       best match {
@@ -274,13 +328,13 @@ int main(int argc, char** argv) {
     }
   }
 
-  def writeValues(path: String, result: (Rise, Option[Double]), name:String) {
+  def writeValues(path: String, result: (Rise, Rise, Option[Double]), name:String) {
     // open file for appendix
     val file = new PrintWriter(new FileOutputStream(new File(path), true))
 
     // create string to write to file
-    var string = counter + ", " + name + ", " + System.currentTimeMillis().toString + ", " + result._1.hashCode().toString + ", "
-    result._2 match{
+    var string = counter + ", " + name + ", " + System.currentTimeMillis().toString + ", " + result._1.hashCode().toString + ", " + result._2.hashCode().toString() + ", "
+    result._3 match{
       case Some(value) => string += value.toString + "\n"
       case _ => string += "-1 \n"
     }
@@ -296,7 +350,7 @@ int main(int argc, char** argv) {
     val file = new PrintWriter(new FileOutputStream(new File(path), true))
 
     // create string to write to file
-    val string = "iteration, " + "runner, " + "timestamp, " + "hash, " + "runtime\n"
+    val string = "iteration, " + "runner, " + "timestamp, " + "high-level hash, " + "low-level hash, " + "runtime\n"
 
     // write to file and close
     file.write(string)

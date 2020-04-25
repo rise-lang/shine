@@ -9,7 +9,7 @@ import scala.io._
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
 
-object AlanParser {
+object JsonParser {
 
   // classes to parse
   case class ParseExecutor(name:String, iterations:Int, threshold: Double)
