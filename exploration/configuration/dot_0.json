@@ -1,7 +1,6 @@
   {
       "name" : "dot_example",
       "strategies" : "default",
-      "input" : "/home/jo/development/rise-lang/expressions",
       "output" : "/home/jo/development/rise-lang/shine/exploration",
       "inputSize" : 512,
       "metaheuristic" : [{
