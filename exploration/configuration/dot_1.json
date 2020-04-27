@@ -5,8 +5,8 @@
       "inputSize" : 512,
       "metaheuristic" : [{
         "heuristic" : "Random",
-        "depth" : 10,
-        "iterations" : 1
+        "depth" : 100,
+        "iterations" : 10
       }],
       "executor" : {
         "name" : "C",

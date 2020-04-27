@@ -8,7 +8,7 @@ import shine.C.Program
 import util.gen
 import elevate.core.Strategy
 import elevate.heuristic_search.util.IOHelper
-import exploration.util.ExecuteC
+import exploration.util.executeC
 
 class CExecutor(val lowering: Strategy[Rise], val goldExpression: Rise, val iterations: Int, val inputSize: Int, val threshold: Double, val output: String) extends Runner[Rise] {
   val N = inputSize
@@ -81,10 +81,6 @@ class CExecutor(val lowering: Strategy[Rise], val goldExpression: Rise, val iter
 
     // close files
     pwLowered.close()
-
-
-    // new gold
-//    gold = gen.CProgram(goldExpression, "compute_gold")
 
     (solution, performanceValue)
   }
@@ -304,7 +300,7 @@ int main(int argc, char** argv) {
 
   def compileAndExecute(solution:Rise, code:String, iterations:Int):Option[Double] = {
     try {
-      val returnValue = ExecuteC(code, iterations, threshold)
+      val returnValue = executeC(code, iterations, threshold)
 
       // check for new best and new gold to use
       best match {
@@ -329,7 +325,7 @@ int main(int argc, char** argv) {
   }
 
   def writeValues(path: String, result: (Rise, Rise, Option[Double]), name:String) {
-    // open file for appendix
+    // open file to append values
     val file = new PrintWriter(new FileOutputStream(new File(path), true))
 
     // create string to write to file
@@ -346,8 +342,8 @@ int main(int argc, char** argv) {
   }
 
   def writeHeader(path:String) {
-    // open file for appendix
-    val file = new PrintWriter(new FileOutputStream(new File(path), true))
+    // open file
+    val file = new PrintWriter(new FileOutputStream(new File(path), false))
 
     // create string to write to file
     val string = "iteration, " + "runner, " + "timestamp, " + "high-level hash, " + "low-level hash, " + "runtime\n"

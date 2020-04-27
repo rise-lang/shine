@@ -5,8 +5,8 @@ import java.nio.file.{Files, Paths}
 import exploration.runner.CExecutor
 import elevate.heuristic_search.Metaheuristic
 import elevate.rise.{Rise}
-import exploration.util.{JsonParser}
-import exploration.util.JsonParser.ParseExploration
+import exploration.util.{jsonParser}
+import exploration.util.jsonParser.ParseExploration
 import strategies.standardStrategies
 
 import scala.sys.process._
@@ -16,10 +16,11 @@ import scala.language.postfixOps
 object riseExploration {
 
 
+  // entry point for exploration
   def apply(solution:Rise, filePath:String) = {
 
     // parse config file
-    val parsedConfiguration = JsonParser.parse(filePath)
+    val parsedConfiguration = jsonParser.parse(filePath)
 
     // setup gold
     // code here
@@ -97,7 +98,7 @@ object riseExploration {
 
     // root metaheuristic using executor as executor
     val rootChoice = result.metaheuristic.reverse.head
-    val rootMetaheuristic = new Metaheuristic[Rise](rootChoice.heuristic, JsonParser.getHeuristic(rootChoice.heuristic),
+    val rootMetaheuristic = new Metaheuristic[Rise](rootChoice.heuristic, jsonParser.getHeuristic(rootChoice.heuristic),
       rootChoice.depth,rootChoice.iteration, executor.asInstanceOf[CExecutor], standardStrategies.strategies, nameList.reverse.apply(index))
     index = index + 1
 
@@ -105,7 +106,7 @@ object riseExploration {
     var metaheuristic = rootMetaheuristic
     result.metaheuristic.reverse.tail.foreach(elem => {
       // new metaheuristic with last one as Runner
-      metaheuristic = new Metaheuristic[Rise](elem.heuristic, JsonParser.getHeuristic(elem.heuristic),
+      metaheuristic = new Metaheuristic[Rise](elem.heuristic, jsonParser.getHeuristic(elem.heuristic),
         elem.depth,elem.iteration, metaheuristic, standardStrategies.strategies, nameList.reverse.apply(index))
       index = index + 1
     })

@@ -5,7 +5,7 @@ import util.{createTempFile, writeToTempFile}
 import scala.sys.process._
 import scala.language.postfixOps
 
-object ExecuteC {
+object executeC {
   case class Exception(msg: String) extends Throwable
   var globalBest:Option[Double] = None
 

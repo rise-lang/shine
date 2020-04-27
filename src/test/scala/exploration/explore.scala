@@ -1,8 +1,10 @@
 package exploration
 
+import org.scalatest.Ignore
 import rise.core.TypedDSL.{add, fst, fun, l, map, reduce, snd, transpose, zip}
 import rise.core.types.{ArrayType, f32, infer}
 
+@Ignore
 class explore extends shine.test_util.Tests {
 
   // input size
@@ -32,8 +34,10 @@ class explore extends shine.test_util.Tests {
 
   test("test exploration") {
 
-    // json path relative
-    riseExploration(mm, "/home/jo/development/rise-lang/shine/exploration/configuration/dot_2.json")
+    // -- todo -- json path relative
+//    riseExploration(mm, "/home/jo/development/rise-lang/shine/exploration/configuration/dot_0.json")
+//    riseExploration(mm, "/home/jo/development/rise-lang/shine/exploration/configuration/dot_1.json")
+//    riseExploration(mm, "/home/jo/development/rise-lang/shine/exploration/configuration/dot_2.json")
 
     // remove input size things from here
   }
