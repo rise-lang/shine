@@ -34,7 +34,6 @@ object DSL {
   def indexAsNat: IndexAsNat = primitives.IndexAsNat()()
   def iterate: Iterate = primitives.Iterate()()
   def join: Join = primitives.Join()()
-  def let: Let = primitives.Let()()
   def map: Map = primitives.Map()()
   def mapFst: MapFst = primitives.MapFst()()
   def mapSnd: MapSnd = primitives.MapSnd()()
@@ -161,6 +160,21 @@ object DSL {
 
   implicit class FunCompReverse(f: Expr) {
     def o(g: Expr): Expr = fun(x => f(g(x)))
+  }
+
+  object let {
+    def apply(e: Expr): Object {
+      def be(in: Expr => Expr): Expr
+    } = new {
+      def be(in: Expr => Expr): Expr =
+        primitives.Let()().apply(e).apply(fun(in))
+    }
+  }
+
+  object letf {
+    def apply(in: Expr => Expr): Expr = {
+      fun(e => primitives.Let()().apply(e).apply(fun(in)))
+    }
   }
 
   // function values
