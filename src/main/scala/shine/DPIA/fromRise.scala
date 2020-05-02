@@ -625,12 +625,12 @@ object fromRise {
         fun[ExpType](ExpType(a, read), x =>
           Cast(a, b, x))
 
-      case (core.Let(), lt.FunType(lt.FunType(la: lt.DataType, lb: lt.DataType), _))
+      case (core.Let(), lt.FunType(la: lt.DataType, lt.FunType(_, lb: lt.DataType)))
       =>
         val a = dataType(la)
         val b = dataType(lb)
-        fun[ExpType ->: ExpType](expT(a, read) ->: expT(b, read), f =>
-          fun[ExpType](ExpType(a, read), x =>
+        fun[ExpType](ExpType(a, read), x =>
+          fun[ExpType ->: ExpType](expT(a, read) ->: expT(b, read), f =>
             Let(a, b, x, f)))
 
       case (f @ l.ForeignFunction(decl), _)
