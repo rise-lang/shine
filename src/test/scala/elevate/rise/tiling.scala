@@ -38,12 +38,12 @@ class tiling extends shine.test_util.Tests {
     ))
 
     assert(betaEtaEquals(
-      LCNF(λ(i => λ(f => **(f) $ i))),
+      DFNF(λ(i => λ(f => **(f) $ i))),
       λ(i => λ(f => **!(f) $ i))
     ))
 
     assert(betaEtaEquals(
-      LCNF(λ(i => λ(f => ***(f) $ i))),
+      DFNF(λ(i => λ(f => ***(f) $ i))),
       λ(i => λ(f => ***!(f) $ i))
     ))
   }
@@ -141,13 +141,13 @@ class tiling extends shine.test_util.Tests {
     // outer two
     assert(betaEtaEquals(
       body(body(tileND(2)(tileSize)))(input3D),
-      LCNF(λ(i => λ(f => (J o **(J) o *(T) o *****(f) o *(T) o **(S) o S) $ i)))
+      DFNF(λ(i => λ(f => (J o **(J) o *(T) o *****(f) o *(T) o **(S) o S) $ i)))
     ))
 
     // inner two
     assert(betaEtaEquals(
       body(body(fmap(tileND(2)(tileSize))))(input3D),
-      LCNF(λ(i => λ(f => *(J o **(J) o *(T) o ****(f) o *(T) o **(S) o S) $ i)))
+      DFNF(λ(i => λ(f => *(J o **(J) o *(T) o ****(f) o *(T) o **(S) o S) $ i)))
     ))
   }
 
@@ -250,7 +250,7 @@ class tiling extends shine.test_util.Tests {
 
   // todo: this should use mapSeqCompute and CNF instead of RNF
   // ... but mapAcceptorTranslation for split is missing
-  val lower: Strategy[Rise] = LCNF `;` CNF `;` normalize.apply(lowering.mapSeq) `;` BENF
+  val lower: Strategy[Rise] = DFNF `;` CNF `;` normalize.apply(lowering.mapSeq) `;` BENF
 
   val identity = dtFun(t => foreignFun("identity", Seq("y"), "{ return y; }", t ->: t))
   val floatId: Expr = identity(f32)
@@ -306,8 +306,8 @@ class tiling extends shine.test_util.Tests {
     // we can't fission the map
     assert(betaEtaEquals(infer((RNF)(simple)), infer(simple)))
     // and tiling it doesn't break it either
-    infer((oncetd(splitJoin(4)) `;` RNF `;` LCNF)(simple))
-    infer((oncetd(tileND(1)(4)) `;` RNF `;` LCNF)(simple))
+    infer((topDown(splitJoin(4)) `;` RNF `;` DFNF)(simple))
+    infer((topDown(tileND(1)(4)) `;` RNF `;` DFNF)(simple))
   }
 
   test("normalform actually normalizes") {
@@ -316,11 +316,11 @@ class tiling extends shine.test_util.Tests {
     assert(betaEtaEquals((RNF `;` RNF `;` BENF) (λ(i => λ(f => (J o **(f) o S) $ i))), gold))
     assert(betaEtaEquals((RNF `;` RNF `;` RNF `;` BENF) (λ(i => λ(f => (J o **(f) o S) $ i))), gold))
 
-    val gold2 = LCNF(λ(i => λ(f => (J o **(f) o S) $ i))).get
-    assert(makeClosed((LCNF `;` LCNF)(λ(i => λ(f => (J o **(f) o S) $ i))).get) == makeClosed(gold2))
-    assert(makeClosed((LCNF `;` LCNF `;` LCNF)(λ(i => λ(f => (J o **(f) o S) $ i))).get) == makeClosed(gold2))
+    val gold2 = DFNF(λ(i => λ(f => (J o **(f) o S) $ i))).get
+    assert(makeClosed((DFNF `;` DFNF)(λ(i => λ(f => (J o **(f) o S) $ i))).get) == makeClosed(gold2))
+    assert(makeClosed((DFNF `;` DFNF `;` DFNF)(λ(i => λ(f => (J o **(f) o S) $ i))).get) == makeClosed(gold2))
 
-    val gold3 = (LCNF `;` RNF)(λ(i => λ(f => (J o **(f) o S) $ i))).get
-    assert(makeClosed((LCNF `;` RNF `;` LCNF `;` RNF)(λ(i => λ(f => (J o **(f) o S) $ i))).get) == makeClosed(gold3))
+    val gold3 = (DFNF `;` RNF)(λ(i => λ(f => (J o **(f) o S) $ i))).get
+    assert(makeClosed((DFNF `;` RNF `;` DFNF `;` RNF)(λ(i => λ(f => (J o **(f) o S) $ i))).get) == makeClosed(gold3))
   }
 }

@@ -108,8 +108,8 @@ float clamp_f32(float v, float l, float h) {
   test("hot pixel suppression passes checks") {
     val typed = printTime(infer(hot_pixel_suppression))
     println(s"hot pixel suppression: ${typed.t}")
-    val lower: Strategy[Rise] = LCNF `;` CNF `;`
-      repeatNTimes(2, oncetd(lowering.mapSeq))
+    val lower: Strategy[Rise] = DFNF `;` CNF `;`
+      repeatNTimes(2, topDown(lowering.mapSeq))
     val lowered = printTime(lower(typed).get)
     println(s"lowered: ${lowered}")
     val prog = gen.CProgram(lowered)
@@ -215,9 +215,9 @@ int main(int argc, char** argv) {
   test("color correction passes checks") {
     val typed = printTime(infer(color_correct))
     println(s"color correction: ${typed.t}")
-    val lower: Strategy[Rise] = LCNF `;` CNF `;`
-      repeatNTimes(2, oncetd(lowering.mapSeq)) `;`
-      oncetd(lowering.mapSeqUnroll)
+    val lower: Strategy[Rise] = DFNF `;` CNF `;`
+      repeatNTimes(2, topDown(lowering.mapSeq)) `;`
+      topDown(lowering.mapSeqUnroll)
     val lowered = printTime(lower(typed).get)
     println(s"lowered: ${lowered}")
     val prog = gen.CProgram(lowered)
@@ -263,8 +263,8 @@ int main(int argc, char** argv) {
   test("apply curve passes checks") {
     val typed = printTime(infer(apply_curve))
     println(s"apply curve: ${typed.t}")
-    val lower: Strategy[Rise] = LCNF `;` CNF `;`
-      repeatNTimes(3, oncetd(lowering.mapSeq))
+    val lower: Strategy[Rise] = DFNF `;` CNF `;`
+      repeatNTimes(3, topDown(lowering.mapSeq))
     val lowered = printTime(lower(typed).get)
     println(s"lowered: ${lowered}")
     val prog = gen.CProgram(lowered)
