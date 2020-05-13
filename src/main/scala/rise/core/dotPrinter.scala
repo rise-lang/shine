@@ -8,7 +8,7 @@ case object dotPrinter {
 
   def generateDotString(
     expr: Expr,
-    printTypes: Boolean = true,
+    printTypes: Boolean = false,
     inlineLambdaIdentifier: Boolean = false,
     applyNodes: Boolean = true
   ): String = {
@@ -157,6 +157,8 @@ case object dotPrinter {
           case primitives.ReduceSeq() => s"$parent ${attr(fillDarkGray +
             Label(p.name).bold.toString)}"
           case primitives.ReduceSeqUnroll() => s"$parent ${attr(fillDarkGray +
+            Label(p.name).bold.toString)}"
+          case rise.OpenMP.primitives.MapPar() => s"$parent ${attr(fillDarkGray +
             Label(p.name).bold.toString)}"
           case _ => s"$parent ${attr(fillGray +
             Label(p.toString.trim).bold.toString)}"
