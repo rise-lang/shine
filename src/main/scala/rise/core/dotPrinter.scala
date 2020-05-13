@@ -8,9 +8,9 @@ case object dotPrinter {
 
   def generateDotString(
     expr: Expr,
-    printTypes: Boolean = false,
+    printTypes: Boolean = true,
     inlineLambdaIdentifier: Boolean = false,
-    applyNodes: Boolean = false
+    applyNodes: Boolean = true
   ): String = {
 
     def getID(x: Any): String = x match {
@@ -156,6 +156,8 @@ case object dotPrinter {
             Label(p.name).bold.toString)}"
           case primitives.ReduceSeq() => s"$parent ${attr(fillDarkGray +
             Label(p.name).bold.toString)}"
+          case primitives.ReduceSeqUnroll() => s"$parent ${attr(fillDarkGray +
+            Label(p.name).bold.toString)}"
           case _ => s"$parent ${attr(fillGray +
             Label(p.toString.trim).bold.toString)}"
         }
@@ -177,4 +179,6 @@ case object dotPrinter {
        |}
      """.stripMargin
   }
+
+
 }
