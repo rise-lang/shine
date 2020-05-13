@@ -35,7 +35,7 @@ class tvmGemm extends test_util.Tests {
     s"dot -Tpdf $path/$name.dot -o $path/$name.pdf".!
   }
 
-  val N = 2048
+  val N = 1024
   val mm = infer(
     fun(ArrayType(N, ArrayType(N, f32)))(a =>
       fun(ArrayType(N, ArrayType(N, f32)))(b =>
@@ -72,6 +72,8 @@ class tvmGemm extends test_util.Tests {
 
   test("baseline") {
     gen.CProgram((baseline `;` lowerToC)(mm))
+
+    println(Success.rewriteCount) // 658
   }
 
   // -- BLOCKING ---------------------------------------------------------------
@@ -101,6 +103,8 @@ class tvmGemm extends test_util.Tests {
 
   test("blocking") {
     gen.CProgram((blocking `;` lowerToC)(mm))
+
+    println(Success.rewriteCount) // 90434
   }
 
   // -- VECTORIZATION ----------------------------------------------------------
@@ -116,6 +120,8 @@ class tvmGemm extends test_util.Tests {
 
   test("vectorization") {
     gen.OpenMPProgram((vectorization `;` lowerToC)(mm))
+
+    println(Success.rewriteCount) // 91714
   }
 
   // -- LOOP PERMUTATION -------------------------------------------------------
@@ -140,6 +146,8 @@ class tvmGemm extends test_util.Tests {
 
   test("loop permutation") {
     gen.OpenMPProgram((loopPerm `;` lowerToC)(mm))
+
+    println(Success.rewriteCount) // 82674
   }
 
   // -- ARRAY PACKING ----------------------------------------------------------
@@ -151,22 +159,20 @@ class tvmGemm extends test_util.Tests {
 
   def storeInMemory(what: Strategy[Rise],
                     how: Strategy[Rise]): Strategy[Rise] = { p =>
-    extract(what)(p) >>= how >>= (storedSubExpr => {
-      val idx = Identifier(freshName("x"))(extract(what)(p) match {
-        case Success(p) => p.t
-        case Failure(_)  => return _ => Failure(storeInMemory(what,how))
-      })
+    extract(what)(p) >>= (extracted => {
+      how(extracted) >>= (storedSubExpr => {
+        val idx = Identifier(freshName("x"))(extracted.t)
 
-      val replaced = replaceAll(what, idx)(p) match {
-        case Success(p) => p
-        case Failure(_)  => return _ => Failure(storeInMemory(what,how))
-      }
-      Success( toMem(storedSubExpr)
-                    (lambda(TDSL(idx),replaced)) )
+        replaceAll(what, idx)(p) match {
+          case Success(replaced) => Success(toMem(storedSubExpr)(lambda(TDSL(idx), replaced)))
+          case Failure(_) => Failure(storeInMemory(what, how))
+        }
+      })
     })
   }
 
-  def replaceAll(exprPredicate: Strategy[Rise], withExpr: Rise): Strategy[Rise] =
+
+    def replaceAll(exprPredicate: Strategy[Rise], withExpr: Rise): Strategy[Rise] =
     p => tryAll(exprPredicate `;` insert(withExpr)).apply(p)
 
   def toMem(e: Rise)(f: TDSL[Lambda]): TDSL[App] = let(f)(e)
@@ -204,34 +210,34 @@ class tvmGemm extends test_util.Tests {
   val arrayPacking: Strategy[Rise] = packB `;;` loopPerm
   test("array packing") {
     gen.OpenMPProgram((arrayPacking `;` lowerToC)(mm))
+
+    println(Success.rewriteCount) // 135022
   }
 
   // -- CACHE BLOCKS -----------------------------------------------------------
 
-  // bottomUp actually does not traverse to the deepest due to how 'one' is implemented
-
   val cacheBlocks: Strategy[Rise] = (
     arrayPacking `;;`
-    (unroll `@` bottomUp[Rise]) `;;`
-    (copyAfterReduce `@` bottomUp[Rise]) `;`
-    toDot("left")
-    //(copyAfterGenerate `@` tryAll[Rise]) //`;;`
-      //(copyAfterReduce `@` tryAll[Rise]) `;;` toDot("left")
-    )
+    (unroll `@` innermost(isReduceSeq))
+  )
 
   test("cache blocks") {
     gen.OpenMPProgram((cacheBlocks `;` lowerToC)(mm))
+
+    println(Success.rewriteCount) // 136123
   }
 
   // -- PARALLEL ---------------------------------------------------------------
 
   val par = (
     arrayPacking `;;`
-    (parallel `@` outermost(isApplied(isMap))) `;;`
-    (unroll `@` bottomUp[Rise])
+    ((parallel `@` outermost(isApplied(isMap))) `@` outermost(isApplied(isLet))) `;;`
+    (unroll `@` innermost(isReduceSeq))
   )
 
   test("parallel") {
     gen.OpenMPProgram((par `;` lowerToC)(mm))
+
+    println(Success.rewriteCount) // 137147
   }
 }
