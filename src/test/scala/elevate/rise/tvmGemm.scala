@@ -211,8 +211,10 @@ class tvmGemm extends test_util.Tests {
   // bottomUp actually does not traverse to the deepest due to how 'one' is implemented
 
   val cacheBlocks: Strategy[Rise] = (
-    arrayPacking `;;`toDot("left") `;`
-      (unroll `@` bottomUp[Rise])
+    arrayPacking `;;`
+    (unroll `@` bottomUp[Rise]) `;;`
+    (copyAfterReduce `@` bottomUp[Rise]) `;`
+    toDot("left")
     //(copyAfterGenerate `@` tryAll[Rise]) //`;;`
       //(copyAfterReduce `@` tryAll[Rise]) `;;` toDot("left")
     )
