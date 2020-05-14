@@ -212,6 +212,8 @@ class tvmGemm extends test_util.Tests {
     def currentTimeSec: Long = System.currentTimeMillis / 1000
 
     val versionUC = version.toUpperCase()
+    // reset rewrite step counter
+    Success.rewriteCount = 0
 
     // rewrite the matmul input expresssion
     val time0 = currentTimeSec
