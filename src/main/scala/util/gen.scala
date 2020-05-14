@@ -13,7 +13,7 @@ object gen {
     val dpia_e = toDPIA(e)
     val p = shine.C.ProgramGenerator.makeCode(dpia_e, name)
     SyntaxChecker(p.code)
-    println(p.code)
+    //println(p.code)
     p
   }
 
@@ -21,7 +21,7 @@ object gen {
     val dpia_e = toDPIA(e)
     val p = shine.OpenMP.ProgramGenerator.makeCode(dpia_e, name)
     SyntaxChecker(p.code)
-    println(p.code)
+    //println(p.code)
     p
   }
 

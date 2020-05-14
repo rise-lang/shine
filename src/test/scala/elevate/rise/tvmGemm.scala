@@ -18,7 +18,6 @@ import rise.core._
 import rise.core.types._
 import util.gen
 
-
 // scalastyle:off
 class tvmGemm extends test_util.Tests {
 
@@ -35,6 +34,14 @@ class tvmGemm extends test_util.Tests {
     s"dot -Tpdf $path/$name.dot -o $path/$name.pdf".!
   }
 
+  def programToFile(path: String, name: String, program: String): Unit = {
+    import java.io._
+    val w =new PrintWriter(new File(s"$path/$name.c"))
+    w.write(program)
+    w.flush()
+    w.close()
+  }
+
   val N = 1024
   val mm = infer(
     fun(ArrayType(N, ArrayType(N, f32)))(a =>
@@ -49,19 +56,35 @@ class tvmGemm extends test_util.Tests {
   // utils
   def currentTimeSec: Long = System.currentTimeMillis / 1000
 
-  // *** BASELINE **************************************************************
+  val kernelsFolder: String = "/home/bastian/kernels"
 
-  //test("baseline -- old") {
-  //  val time0 = currentTimeSec
-  //  val result = (DFNF `;` topDown.apply(reduceMapFusion) `;` lowerToC) (mm)
-  //  val time1 = currentTimeSec
-  //  println(time1 - time0)
+  def run(version: String,
+          strategy: Strategy[Rise],
+          openMP: Boolean // generate C or OpenMP code?
+         ): Unit = {
+    val versionUC = version.toUpperCase()
 
-  //  val time2 = currentTimeSec
-  //  println(gen.CProgram(result))
-  //  val time3 = currentTimeSec
-  //  println(time3 - time2)
-  //}
+    // rewrite the matmul input expresssion
+    val time0 = currentTimeSec
+    val rewritten = strategy(mm)
+    val time1 = currentTimeSec
+    println(s"[$versionUC] rewrite time: ${time1 - time0}s")
+    println(s"[$versionUC] required rewrite steps: ${Success.rewriteCount}") // 658
+
+    // generate the C code
+    val time2 = currentTimeSec
+    val program = if(openMP) {
+      gen.OpenMPProgram(rewritten, version).code
+    } else {
+      gen.CProgram(rewritten, version).code
+    }
+    val time3 = currentTimeSec
+    println(s"[$versionUC] codegen time: ${time3 - time2}s")
+
+    // store the C code
+    println(s"[$versionUC] generated code stored as $version in $kernelsFolder")
+    programToFile(kernelsFolder, version, program)
+  }
 
 //// ICFP'20 Versions /////////////////////////////////////////////////////////
 
@@ -71,9 +94,7 @@ class tvmGemm extends test_util.Tests {
     reduceMapFusion `@` topDown[Rise])
 
   test("baseline") {
-    gen.CProgram((baseline `;` lowerToC)(mm))
-
-    println(Success.rewriteCount) // 658
+    run("baseline", (baseline `;` lowerToC), openMP = false)
   }
 
   // -- BLOCKING ---------------------------------------------------------------
@@ -102,26 +123,18 @@ class tvmGemm extends test_util.Tests {
     reorder125634)
 
   test("blocking") {
-    gen.CProgram((blocking `;` lowerToC)(mm))
-
-    println(Success.rewriteCount) // 90434
+    run("blocking", (blocking `;` lowerToC), openMP = false)
   }
 
   // -- VECTORIZATION ----------------------------------------------------------
 
-  // differences compared to paper:
-  // * instead of isMap -> isFullyAppliedMap
-
   val isFullyAppliedMap: Strategy[Rise] = isApplied(isApplied(isMap))
-
   val vectorization: Strategy[Rise] =
     blocking `;;`
-    (vectorize(32) `@` innermost(isApplied(isApplied(isMap))))
+    (vectorize(32) `@` innermost(isApplied(isApplied(isMap)))) `;` toDot("test")
 
   test("vectorization") {
-    gen.OpenMPProgram((vectorization `;` lowerToC)(mm))
-
-    println(Success.rewriteCount) // 91714
+    run("vectorization", (vectorization `;` lowerToC), openMP = true)
   }
 
   // -- LOOP PERMUTATION -------------------------------------------------------
@@ -145,9 +158,7 @@ class tvmGemm extends test_util.Tests {
     (vectorize(32) `@` innermost(isFullyAppliedMap))
 
   test("loop permutation") {
-    gen.OpenMPProgram((loopPerm `;` lowerToC)(mm))
-
-    println(Success.rewriteCount) // 82674
+    run("loop_permutation", (loopPerm `;` lowerToC), openMP = true)
   }
 
   // -- ARRAY PACKING ----------------------------------------------------------
@@ -209,9 +220,7 @@ class tvmGemm extends test_util.Tests {
 
   val arrayPacking: Strategy[Rise] = packB `;;` loopPerm
   test("array packing") {
-    gen.OpenMPProgram((arrayPacking `;` lowerToC)(mm))
-
-    println(Success.rewriteCount) // 135022
+    run("array_packing", (arrayPacking `;` lowerToC), openMP = true)
   }
 
   // -- CACHE BLOCKS -----------------------------------------------------------
@@ -222,9 +231,7 @@ class tvmGemm extends test_util.Tests {
   )
 
   test("cache blocks") {
-    gen.OpenMPProgram((cacheBlocks `;` lowerToC)(mm))
-
-    println(Success.rewriteCount) // 136123
+    run("cache_blocks", (cacheBlocks `;` lowerToC), openMP = true)
   }
 
   // -- PARALLEL ---------------------------------------------------------------
@@ -236,8 +243,6 @@ class tvmGemm extends test_util.Tests {
   )
 
   test("parallel") {
-    gen.OpenMPProgram((par `;` lowerToC)(mm))
-
-    println(Success.rewriteCount) // 137147
+    run("parallel", (par `;` lowerToC), openMP = true)
   }
 }
