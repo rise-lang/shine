@@ -1,7 +1,6 @@
 package elevate.rise
 
 import elevate.core._
-import elevate.core.strategies.debug.peek
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
 import elevate.rise.rules.traversal._
