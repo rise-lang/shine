@@ -21,27 +21,7 @@ import util.gen
 // scalastyle:off
 class tvmGemm extends test_util.Tests {
 
-  def toDot(name: String): Strategy[Rise] = peek(x => exprToDot(name, x))
-  def exprToDot(name: String, e: Expr): Unit = exprToDot("/home/bastian/development/rewriting/dot", name, e, dotPrinter(_))
-  def exprToDot(path: String, name: String, e: Expr, dot: Expr => String): Unit = {
-    import java.io._
-    import sys.process._
-
-    val w =new PrintWriter(new File(s"$path/$name.dot"))
-    w.write(dot(e))
-    w.flush()
-    w.close()
-    s"dot -Tpdf $path/$name.dot -o $path/$name.pdf".!
-  }
-
-  def programToFile(path: String, name: String, program: String): Unit = {
-    import java.io._
-    val w =new PrintWriter(new File(s"$path/$name.c"))
-    w.write(program)
-    w.flush()
-    w.close()
-  }
-
+  //// MM INPUT EXPRESSION /////////////////////////////////////////////////////
   val N = 1024
   val mm = infer(
     fun(ArrayType(N, ArrayType(N, f32)))(a =>
@@ -53,41 +33,7 @@ class tvmGemm extends test_util.Tests {
               zip(ak, bk))) $ transpose(b))) $ a))
   )
 
-  // utils
-  def currentTimeSec: Long = System.currentTimeMillis / 1000
-
-  val kernelsFolder: String = "/home/artifact/kernels"
-
-  def run(version: String,
-          strategy: Strategy[Rise],
-          openMP: Boolean // generate C or OpenMP code?
-         ): Unit = {
-    val versionUC = version.toUpperCase()
-
-    // rewrite the matmul input expresssion
-    val time0 = currentTimeSec
-    val rewritten = strategy(mm)
-    val time1 = currentTimeSec
-    println(s"[$versionUC] rewrite time: ${time1 - time0}s")
-    println(s"[$versionUC] required rewrite steps: ${Success.rewriteCount}") // 658
-
-    // generate the C code
-    val time2 = currentTimeSec
-    val program = if(openMP) {
-      gen.OpenMPProgram(rewritten, version).code
-    } else {
-      gen.CProgram(rewritten, version).code
-    }
-    val time3 = currentTimeSec
-    println(s"[$versionUC] codegen time: ${time3 - time2}s")
-
-    // store the C code
-    println(s"[$versionUC] generated code stored as $version in $kernelsFolder")
-    programToFile(kernelsFolder, version, program)
-  }
-
-//// ICFP'20 Versions /////////////////////////////////////////////////////////
-
+  //// ICFP'20 TVM - STRATEGIES ////////////////////////////////////////////////
   // -- BASELINE ---------------------------------------------------------------
 
   val baseline: Strategy[Rise] = ( DFNF `;`
@@ -108,19 +54,19 @@ class tvmGemm extends test_util.Tests {
   val isFullyAppliedReduce: Strategy[Rise] = isApplied(isApplied(isApplied(isReduce)))
   val reorder125634: Strategy[Rise] =
     (mapFBeforeSlide `@` topDown[Rise]) `;;`
-    (reduceMapFusion `@` topDown[Rise]) `;;`
-    (reduceMapFusion `@` topDown[Rise]) `;;`
-    RNF `;` (liftReduce `@` topDown[Rise]) `;;`
-    RNF `;` (liftReduce `@` topDown[Rise]) `;;`
-    RNF `;` (liftReduce `@` bottomUp[Rise]) `;;`
-    RNF `;` (liftReduce `@` bottomUp[Rise])
+      (reduceMapFusion `@` topDown[Rise]) `;;`
+      (reduceMapFusion `@` topDown[Rise]) `;;`
+      RNF `;` (liftReduce `@` topDown[Rise]) `;;`
+      RNF `;` (liftReduce `@` topDown[Rise]) `;;`
+      RNF `;` (liftReduce `@` bottomUp[Rise]) `;;`
+      RNF `;` (liftReduce `@` bottomUp[Rise])
 
   val blocking: Strategy[Rise] =
     (baseline `;` // <- not in paper
-    (tile(32,32)      `@` outermost(mapNest(2))) `;;`
-    (reduceMapFission `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
-    (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;`
-    reorder125634)
+      (tile(32,32)      `@` outermost(mapNest(2))) `;;`
+      (reduceMapFission `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
+      (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;`
+      reorder125634)
 
   test("blocking") {
     run("blocking", (blocking `;` lowerToC), openMP = false)
@@ -131,7 +77,7 @@ class tvmGemm extends test_util.Tests {
   val isFullyAppliedMap: Strategy[Rise] = isApplied(isApplied(isMap))
   val vectorization: Strategy[Rise] =
     blocking `;;`
-    (vectorize(32) `@` innermost(isApplied(isApplied(isMap)))) `;` toDot("test")
+      (vectorize(32) `@` innermost(isApplied(isApplied(isMap))))
 
   test("vectorization") {
     run("vectorization", (vectorization `;` lowerToC), openMP = true)
@@ -183,7 +129,7 @@ class tvmGemm extends test_util.Tests {
   }
 
 
-    def replaceAll(exprPredicate: Strategy[Rise], withExpr: Rise): Strategy[Rise] =
+  def replaceAll(exprPredicate: Strategy[Rise], withExpr: Rise): Strategy[Rise] =
     p => tryAll(exprPredicate `;` insert(withExpr)).apply(p)
 
   def toMem(e: Rise)(f: TDSL[Lambda]): TDSL[App] = let(f)(e)
@@ -204,15 +150,15 @@ class tvmGemm extends test_util.Tests {
   val isTransposedB: Strategy[Rise] = isApplied(isTranspose)
   val permuteB: Strategy[Rise] =
     splitJoin2(32) `;` DFNF `;` argument(idAfter) `;`
-    topDown(liftId) `;` topDown(createTransposePair) `;` RNF `;`
-    argument(argument(idAfter)) `;` normalize.apply(liftId) `;`
-    topDown(idToCopy)
+      topDown(liftId) `;` topDown(createTransposePair) `;` RNF `;`
+      argument(argument(idAfter)) `;` normalize.apply(liftId) `;`
+      topDown(idToCopy)
 
   val packB: Strategy[Rise] =
     storeInMemory(isTransposedB,
       permuteB `;;` // <- todo: move permuteB here in the paper as well
-      (vectorize(32) `@` innermost(isVectorizeablePrimitive)) `;;`
-      (parallel      `@` outermost(isApplied(isMap)))
+        (vectorize(32) `@` innermost(isVectorizeablePrimitive)) `;;`
+        (parallel      `@` outermost(isApplied(isMap)))
     ) `@` inLambda
 
   def inLambda(s: Strategy[Rise]): Strategy[Rise] =
@@ -227,8 +173,8 @@ class tvmGemm extends test_util.Tests {
 
   val cacheBlocks: Strategy[Rise] = (
     arrayPacking `;;`
-    (unroll `@` innermost(isReduceSeq))
-  )
+      (unroll `@` innermost(isReduceSeq))
+    )
 
   test("cache blocks") {
     run("cache_blocks", (cacheBlocks `;` lowerToC), openMP = true)
@@ -238,11 +184,55 @@ class tvmGemm extends test_util.Tests {
 
   val par = (
     arrayPacking `;;`
-    ((parallel `@` outermost(isApplied(isMap))) `@` outermost(isApplied(isLet))) `;;`
-    (unroll `@` innermost(isReduceSeq))
-  )
+      ((parallel `@` outermost(isApplied(isMap))) `@` outermost(isApplied(isLet))) `;;`
+      (unroll `@` innermost(isReduceSeq))
+    )
 
   test("parallel") {
     run("parallel", (par `;` lowerToC), openMP = true)
+  }
+
+
+  /// UTILS ////////////////////////////////////////////////////////////////////
+
+  val kernelsFolder: String = "/home/artifact/kernels"
+
+  def run(version: String,
+          strategy: Strategy[Rise],
+          openMP: Boolean // generate C or OpenMP code?
+         ): Unit = {
+
+    def programToFile(path: String, name: String, program: String): Unit = {
+      import java.io._
+      val w =new PrintWriter(new File(s"$path/$name.c"))
+      w.write(program)
+      w.flush()
+      w.close()
+    }
+
+    def currentTimeSec: Long = System.currentTimeMillis / 1000
+
+    val versionUC = version.toUpperCase()
+
+    // rewrite the matmul input expresssion
+    val time0 = currentTimeSec
+    val rewritten = strategy(mm)
+    val time1 = currentTimeSec
+    println(s"[$versionUC] rewrite time: ${time1 - time0}s")
+    println(s"[$versionUC] required rewrite steps: ${Success.rewriteCount}") // 658
+
+    // generate the C code
+    val time2 = currentTimeSec
+    val program = if(openMP) {
+      gen.OpenMPProgram(rewritten, version).code
+    } else {
+      gen.CProgram(rewritten, version).code
+    }
+    val time3 = currentTimeSec
+    println(s"[$versionUC] codegen time: ${time3 - time2}s")
+
+    // store the C code
+    println(s"[$versionUC] generated code stored as $version in $kernelsFolder")
+    programToFile(kernelsFolder, version, program)
   }
 }
