@@ -56,7 +56,7 @@ class tvmGemm extends test_util.Tests {
   // utils
   def currentTimeSec: Long = System.currentTimeMillis / 1000
 
-  val kernelsFolder: String = "/home/bastian/kernels"
+  val kernelsFolder: String = "/home/artifact/kernels"
 
   def run(version: String,
           strategy: Strategy[Rise],
