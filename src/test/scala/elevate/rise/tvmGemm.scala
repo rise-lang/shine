@@ -2,6 +2,7 @@ package elevate.rise
 
 import elevate.core._
 import elevate.core.strategies.basic._
+import elevate.core.strategies.debug.peek
 import elevate.core.strategies.traversal._
 import elevate.rise.rules.traversal._
 import elevate.rise.rules.algorithmic._
@@ -14,6 +15,7 @@ import elevate.rise.strategies.traversal._
 import shine.test_util
 import rise.core.TypedDSL._
 import rise.core._
+import rise.core.primitives.{Reduce, ReduceSeq}
 import rise.core.types._
 import util.gen
 
@@ -44,7 +46,21 @@ class tvmGemm extends test_util.Tests {
 
   // -- BLOCKING ---------------------------------------------------------------
 
-  // differences compared to paper:
+  def toDot(name: String): Strategy[Rise] = peek(x => exprToDot(name, x))
+  def exprToDot(name: String, e: Expr): Unit = exprToDot("/home/bastian/development/rewriting/dot", name, e, dotPrinter(_))
+  def exprToDot(path: String, name: String, e: Expr, dot: Expr => String): Unit = {
+    import java.io._
+    import sys.process._
+
+    val w = new PrintWriter(new File(s"$path/$name.dot"))
+    w.write(dot(e))
+    w.flush()
+    w.close()
+    s"dot -Tpdf $path/$name.dot -o $path/$name.pdf".!
+  }
+
+
+    // differences compared to paper:
   // * todo: add 'baseline' reuse to paper
   // * need to fission reduce before `splitting` it
   // * isReduce must be isFullyAppliedReduce
@@ -60,12 +76,29 @@ class tvmGemm extends test_util.Tests {
       RNF `;` (liftReduce `@` bottomUp[Rise]) `;;`
       RNF `;` (liftReduce `@` bottomUp[Rise])
 
+  val normX = (mapFBeforeSlide `@` topDown[Rise]) `;;`
+    (reduceMapFusion `@` topDown[Rise]) `;;`
+    (reduceMapFusion `@` topDown[Rise])
   val blocking: Strategy[Rise] =
     (baseline `;` // <- not in paper
       (tile(32,32)      `@` outermost(mapNest(2))) `;;`
       (reduceMapFission `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
       (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;`
-      reorder125634)
+      normX `;;`
+      reorder(List(1,2,3,4,5,6)))
+      //reorder125634)
+
+  case class reorder(l: List[Int]) extends Strategy[Rise] {
+    def apply(e: Rise): RewriteResult[Rise] = l match {
+      case x :: xs if x == 1 => stepDown(reorder(xs.map(_-1)))(e)
+      case _ => Failure(reorder(l))
+    }
+
+    def stepDown(s: Strategy[Rise]): Strategy[Rise] =
+      function(function(argumentOf(Reduce(), s))) <+
+      function(function(argumentOf(ReduceSeq(), s))) <+
+      function(argumentOf(primitives.Map(), s))
+  }
 
   test("blocking") {
     run("blocking", (blocking `;` lowerToC), openMP = false)
@@ -194,7 +227,7 @@ class tvmGemm extends test_util.Tests {
 
   /// UTILS ////////////////////////////////////////////////////////////////////
 
-  val kernelsFolder: String = "/home/artifact/kernels"
+  val kernelsFolder: String = "/home/bastian/kernels"
 
   def run(version: String,
           strategy: Strategy[Rise],
