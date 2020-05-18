@@ -196,7 +196,7 @@ class tvmGemm extends test_util.Tests {
   /// UTILS ////////////////////////////////////////////////////////////////////
 
   val kernelsFolder: String = "/home/artifact/kernels"
-  val plotsFolder: String = "/home/artifact/plots/steps"
+  val plotsFolder: String = "/home/artifact/results/fig10/steps"
 
   def run(version: String,
           strategy: Strategy[Rise],
