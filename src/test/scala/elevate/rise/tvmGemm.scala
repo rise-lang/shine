@@ -9,13 +9,13 @@ import elevate.rise.rules.algorithmic._
 import elevate.rise.rules.lowering._
 import elevate.rise.rules.movement._
 import elevate.rise.strategies.tiling._
+import elevate.rise.strategies.lowering._
 import elevate.rise.strategies.normalForm._
 import elevate.rise.strategies.predicate._
 import elevate.rise.strategies.traversal._
 import shine.test_util
 import rise.core.TypedDSL._
 import rise.core._
-import rise.core.primitives.{Reduce, ReduceSeq}
 import rise.core.types._
 import util.gen
 
@@ -84,21 +84,21 @@ class tvmGemm extends test_util.Tests {
       (tile(32,32)      `@` outermost(mapNest(2))) `;;`
       (reduceMapFission `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
       (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;`
-      normX `;;`
-      reorder(List(1,2,3,4,5,6)))
-      //reorder125634)
+      //normX `;;`
+      //reorder(List(1,2,3,4,5,6)))
+      reorder125634)
 
-  case class reorder(l: List[Int]) extends Strategy[Rise] {
-    def apply(e: Rise): RewriteResult[Rise] = l match {
-      case x :: xs if x == 1 => stepDown(reorder(xs.map(_-1)))(e)
-      case _ => Failure(reorder(l))
-    }
+  //case class reorder(l: List[Int]) extends Strategy[Rise] {
+  //  def apply(e: Rise): RewriteResult[Rise] = l match {
+  //    case x :: xs if x == 1 => stepDown(reorder(xs.map(_-1)))(e)
+  //    case _ => Failure(reorder(l))
+  //  }
 
-    def stepDown(s: Strategy[Rise]): Strategy[Rise] =
-      function(function(argumentOf(Reduce(), s))) <+
-      function(function(argumentOf(ReduceSeq(), s))) <+
-      function(argumentOf(primitives.Map(), s))
-  }
+  //  def stepDown(s: Strategy[Rise]): Strategy[Rise] =
+  //    function(function(argumentOf(Reduce(), s))) <+
+  //    function(function(argumentOf(ReduceSeq(), s))) <+
+  //    function(argumentOf(primitives.Map(), s))
+  //}
 
   test("blocking") {
     run("blocking", (blocking `;` lowerToC), openMP = false)
@@ -146,38 +146,6 @@ class tvmGemm extends test_util.Tests {
   // pattern matching RewriteResult
   // * instead of fun(x => e) we build our own lambda with idx
 
-  def storeInMemory(what: Strategy[Rise],
-                    how: Strategy[Rise]): Strategy[Rise] = { p =>
-    extract(what)(p) >>= (extracted => {
-      how(extracted) >>= (storedSubExpr => {
-        val idx = Identifier(freshName("x"))(extracted.t)
-
-        replaceAll(what, idx)(p) match {
-          case Success(replaced) => Success(toMem(storedSubExpr)(lambda(TDSL(idx), replaced)))
-          case Failure(_) => Failure(storeInMemory(what, how))
-        }
-      })
-    })
-  }
-
-
-  def replaceAll(exprPredicate: Strategy[Rise], withExpr: Rise): Strategy[Rise] =
-    p => tryAll(exprPredicate `;` insert(withExpr)).apply(p)
-
-  def toMem(e: Rise)(f: TDSL[Lambda]): TDSL[App] = let(f)(e)
-  def insert(expr: Rise): Strategy[Rise] = _ => Success(expr)
-  def extract(what: Strategy[Rise]): Strategy[Rise] = (expr: Rise) => {
-    what(expr).flatMapFailure(_ => expr match {
-      case App(f,e)        => extract(what)(f).flatMapFailure(_ => extract(what)(e))
-      case Lambda(x, e)    => extract(what)(x).flatMapFailure(_ => extract(what)(e))
-      case DepLambda(x, e) => extract(what)(e)
-      case _: Identifier      => Failure(extract(what))
-      case _: Literal         => Failure(extract(what))
-      case _: ForeignFunction => Failure(extract(what))
-      case _: Primitive       => Failure(extract(what))
-      case _ => ??? // forgot something?
-    })
-  }
 
   val isTransposedB: Strategy[Rise] = isApplied(isTranspose)
   val permuteB: Strategy[Rise] =
@@ -227,17 +195,18 @@ class tvmGemm extends test_util.Tests {
 
   /// UTILS ////////////////////////////////////////////////////////////////////
 
-  val kernelsFolder: String = "/home/bastian/kernels"
+  val kernelsFolder: String = "/home/artifact/kernels"
+  val plotsFolder: String = "/home/artifact/plots/steps"
 
   def run(version: String,
           strategy: Strategy[Rise],
           openMP: Boolean // generate C or OpenMP code?
          ): Unit = {
 
-    def programToFile(path: String, name: String, program: String): Unit = {
+    def toFile(path: String, name: String, content: String, ending: String = ".c"): Unit = {
       import java.io._
-      val w =new PrintWriter(new File(s"$path/$name.c"))
-      w.write(program)
+      val w =new PrintWriter(new File(s"$path/$name$ending"))
+      w.write(content)
       w.flush()
       w.close()
     }
@@ -253,7 +222,9 @@ class tvmGemm extends test_util.Tests {
     val rewritten = strategy(mm)
     val time1 = currentTimeSec
     println(s"[$versionUC] rewrite time: ${time1 - time0}s")
-    println(s"[$versionUC] required rewrite steps: ${Success.rewriteCount}") // 658
+    val steps = Success.rewriteCount
+    println(s"[$versionUC] required rewrite steps: $steps\n")
+    toFile(plotsFolder, version, s"$version,$steps", ".csv")
 
     // generate the C code
     val time2 = currentTimeSec
@@ -267,6 +238,6 @@ class tvmGemm extends test_util.Tests {
 
     // store the C code
     println(s"[$versionUC] generated code stored as $version in $kernelsFolder")
-    programToFile(kernelsFolder, version, program)
+    toFile(kernelsFolder, version, program)
   }
 }
