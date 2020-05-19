@@ -2,12 +2,11 @@ package elevate.rise
 
 import elevate.core._
 import elevate.core.strategies.basic._
-import elevate.core.strategies.debug.peek
 import elevate.core.strategies.traversal._
 import elevate.rise.rules.traversal._
 import elevate.rise.rules.algorithmic._
 import elevate.rise.rules.lowering._
-import elevate.rise.rules.movement._
+import elevate.rise.strategies.algorithmic.reorder
 import elevate.rise.strategies.tiling._
 import elevate.rise.strategies.lowering._
 import elevate.rise.strategies.normalForm._
@@ -15,7 +14,6 @@ import elevate.rise.strategies.predicate._
 import elevate.rise.strategies.traversal._
 import shine.test_util
 import rise.core.TypedDSL._
-import rise.core._
 import rise.core.types._
 import util.gen
 
@@ -46,59 +44,13 @@ class tvmGemm extends test_util.Tests {
 
   // -- BLOCKING ---------------------------------------------------------------
 
-  def toDot(name: String): Strategy[Rise] = peek(x => exprToDot(name, x))
-  def exprToDot(name: String, e: Expr): Unit = exprToDot("/home/bastian/development/rewriting/dot", name, e, dotPrinter(_))
-  def exprToDot(path: String, name: String, e: Expr, dot: Expr => String): Unit = {
-    import java.io._
-    import sys.process._
-
-    val w = new PrintWriter(new File(s"$path/$name.dot"))
-    w.write(dot(e))
-    w.flush()
-    w.close()
-    s"dot -Tpdf $path/$name.dot -o $path/$name.pdf".!
-  }
-
-
-    // differences compared to paper:
-  // * todo: add 'baseline' reuse to paper
-  // * need to fission reduce before `splitting` it
-  // * isReduce must be isFullyAppliedReduce
-  // * reorder is hardcoded
-
   val isFullyAppliedReduce: Strategy[Rise] = isApplied(isApplied(isApplied(isReduce)))
-  val reorder125634: Strategy[Rise] =
-    (mapFBeforeSlide `@` topDown[Rise]) `;;`
-      (reduceMapFusion `@` topDown[Rise]) `;;`
-      (reduceMapFusion `@` topDown[Rise]) `;;`
-      RNF `;` (liftReduce `@` topDown[Rise]) `;;`
-      RNF `;` (liftReduce `@` topDown[Rise]) `;;`
-      RNF `;` (liftReduce `@` bottomUp[Rise]) `;;`
-      RNF `;` (liftReduce `@` bottomUp[Rise])
-
-  val normX = (mapFBeforeSlide `@` topDown[Rise]) `;;`
-    (reduceMapFusion `@` topDown[Rise]) `;;`
-    (reduceMapFusion `@` topDown[Rise])
   val blocking: Strategy[Rise] =
-    (baseline `;` // <- not in paper
+    baseline `;`
       (tile(32,32)      `@` outermost(mapNest(2))) `;;`
       (reduceMapFission `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
       (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;`
-      //normX `;;`
-      //reorder(List(1,2,3,4,5,6)))
-      reorder125634)
-
-  //case class reorder(l: List[Int]) extends Strategy[Rise] {
-  //  def apply(e: Rise): RewriteResult[Rise] = l match {
-  //    case x :: xs if x == 1 => stepDown(reorder(xs.map(_-1)))(e)
-  //    case _ => Failure(reorder(l))
-  //  }
-
-  //  def stepDown(s: Strategy[Rise]): Strategy[Rise] =
-  //    function(function(argumentOf(Reduce(), s))) <+
-  //    function(function(argumentOf(ReduceSeq(), s))) <+
-  //    function(argumentOf(primitives.Map(), s))
-  //}
+      reorder(List(1,2,5,6,3,4))
 
   test("blocking") {
     run("blocking", (blocking `;` lowerToC), openMP = false)
@@ -117,22 +69,11 @@ class tvmGemm extends test_util.Tests {
 
   // -- LOOP PERMUTATION -------------------------------------------------------
 
-  // differences compared to paper:
-  // * see blocking version (different loop perm used here but also hardcoded)
-
-  val reorder125364: Strategy[Rise] =
-    (mapFBeforeSlide `@` topDown[Rise]) `;;`
-      (reduceMapFusion `@` topDown[Rise]) `;;`
-      (reduceMapFusion `@` topDown[Rise]) `;;`
-      RNF `;` (liftReduce `@` topDown[Rise]) `;;`
-      RNF `;` (liftReduce `@` topDown[Rise]) `;;`
-      RNF `;` (liftReduce `@` bottomUp[Rise])
-
   val loopPerm: Strategy[Rise] = baseline `;`
     (tile(32,32)      `@` outermost(mapNest(2))) `;;`
     (reduceMapFission `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
     (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;`
-    reorder125364 `;;`
+    reorder(List(1,2,5,3,6,4)) `;;`
     (vectorize(32) `@` innermost(isFullyAppliedMap))
 
   test("loop permutation") {
@@ -140,12 +81,6 @@ class tvmGemm extends test_util.Tests {
   }
 
   // -- ARRAY PACKING ----------------------------------------------------------
-
-  // difference compared to the paper:
-  // * use of inLambda
-  // pattern matching RewriteResult
-  // * instead of fun(x => e) we build our own lambda with idx
-
 
   val isTransposedB: Strategy[Rise] = isApplied(isTranspose)
   val permuteB: Strategy[Rise] =
@@ -156,7 +91,7 @@ class tvmGemm extends test_util.Tests {
 
   val packB: Strategy[Rise] =
     storeInMemory(isTransposedB,
-      permuteB `;;` // <- todo: move permuteB here in the paper as well
+      permuteB `;;`
         (vectorize(32) `@` innermost(isVectorizeablePrimitive)) `;;`
         (parallel      `@` outermost(isApplied(isMap)))
     ) `@` inLambda
@@ -195,8 +130,8 @@ class tvmGemm extends test_util.Tests {
 
   /// UTILS ////////////////////////////////////////////////////////////////////
 
-  val kernelsFolder: String = "/home/artifact/kernels"
-  val plotsFolder: String = "/home/artifact/results/fig10/steps"
+  val kernelsFolder: String = "/home/bastian/kernels"
+  val plotsFolder: String = "/home/bastian/results/fig10/steps"
 
   def run(version: String,
           strategy: Strategy[Rise],
