@@ -36,7 +36,7 @@ class tvmGemm extends test_util.Tests {
   // -- BASELINE ---------------------------------------------------------------
 
   val baseline: Strategy[Rise] = ( DFNF `;`
-    reduceMapFusion `@` topDown[Rise])
+    fuseReduceMap `@` topDown[Rise])
 
   test("baseline") {
     run("baseline", (baseline `;` lowerToC), openMP = false)
@@ -92,7 +92,7 @@ class tvmGemm extends test_util.Tests {
   val packB: Strategy[Rise] =
     storeInMemory(isTransposedB,
       permuteB `;;`
-        (vectorize(32) `@` innermost(isVectorizeablePrimitive)) `;;`
+        (vectorize(32) `@` innermost(isFullyAppliedMap)) `;;`
         (parallel      `@` outermost(isApplied(isMap)))
     ) `@` inLambda
 
