@@ -25,7 +25,7 @@ object riseExploration {
     // setup gold
     // code here
 
-    val startingPoint = prepareExploration(parsedConfiguration, solution)
+    val startingPoint = prepareExploration(parsedConfiguration, solution, filePath)
 
     // start
     startingPoint.execute(solution)
@@ -38,7 +38,7 @@ object riseExploration {
     // todo command line parser (replace apply function by main)
 //    def main(args: Array[String], solution:Rise, filePath:String):Unit = {
 
-  def prepareExploration(result: ParseExploration, solution:Rise):Metaheuristic[Rise] = {
+  def prepareExploration(result: ParseExploration, solution:Rise, filePath: String):Metaheuristic[Rise] = {
 
     // -- todo --check elements -> requirements
 
@@ -61,6 +61,9 @@ object riseExploration {
     // create unique output folder
     val uniqueFilename_full = uniqueFilename(output + "/" + name)
     (s"mkdir ${uniqueFilename_full}" !!)
+
+    // copy configuration file to output folder
+    (s"cp ${filePath} ${uniqueFilename_full}" !!)
 
     // create names
     val nameList = scala.collection.mutable.ListBuffer.empty[String]
@@ -118,9 +121,8 @@ object riseExploration {
     // check if output path already exists
     var uniqueFilename_full = path
     if(Files.exists(Paths.get(uniqueFilename_full))){
-      println("path is there")
-      val warningString = "Warning! Clash at " + uniqueFilename_full + ".\n"
-      println(warningString + "adding System.currentTimeMillis().")
+      // wait for next millisecond to create unique filename using timestamp
+      Thread.sleep(1)
       uniqueFilename_full = uniqueFilename_full + "_" + System.currentTimeMillis()
     }
 
