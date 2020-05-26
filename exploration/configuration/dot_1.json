@@ -1,7 +1,7 @@
   {
-      "name" : "dot_example",
+      "name" : "dot_1_example",
       "strategies" : "default",
-      "output" : "/home/jo/development/rise-lang/shine/exploration",
+      "output" : "exploration",
       "inputSize" : 512,
       "metaheuristic" : [{
         "heuristic" : "Random",

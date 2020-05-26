@@ -1,20 +1,20 @@
   {
-      "name" : "dot_example",
+      "name" : "dot_2_example",
       "strategies" : "default",
-      "output" : "/home/jo/development/rise-lang/shine/exploration",
+      "output" : "exploration",
       "inputSize" : 512,
       "metaheuristic" : [{
         "heuristic" : "IterativeImprovement",
         "depth" : 0,
         "iterations" : 1
       }, {
-      "heuristic" : "Random",
-      "depth" : 5,
-      "iterations" : 3
+      	"heuristic" : "Random",
+      	"depth" : 5,
+      	"iterations" : 3
       }],
       "executor" : {
         "name" : "C",
         "iterations" : 9,
-	"threshold" : 100
+	"threshold" : 10
       }
 }

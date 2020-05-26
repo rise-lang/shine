@@ -1,10 +1,10 @@
 package exploration
 
-//import org.scalatest.Ignore
+import org.scalatest.Ignore
 import rise.core.TypedDSL.{add, fst, fun, l, map, reduce, snd, transpose, zip}
 import rise.core.types.{ArrayType, f32, infer}
 
-//@Ignore
+@Ignore
 class explore extends shine.test_util.Tests {
 
   // input size
@@ -32,21 +32,20 @@ class explore extends shine.test_util.Tests {
       map(fun(x => alpha * x)) $ input))
   )
 
-  test("test exploration dot 0") {
-
-    // -- todo -- json path relative
-    riseExploration(mm, "/home/jo/development/rise-lang/shine/exploration/configuration/dot_0.json")
-  }
-  test("test exploration dot 1") {
-    riseExploration(mm, "/home/jo/development/rise-lang/shine/exploration/configuration/dot_1.json")
+  test("test exploration dot version 0") {
+    riseExploration(mm, "exploration/configuration/dot_0.json")
   }
 
-  test("test exploration dot 2") {
-    riseExploration(mm, "/home/jo/development/rise-lang/shine/exploration/configuration/dot_2.json")
+  test("test exploration dot version 1") {
+    riseExploration(mm, "exploration/configuration/dot_1.json")
   }
 
-  test("test exploration dot 3") {
-    riseExploration(mm, "/home/jo/development/rise-lang/shine/exploration/configuration/dot_3.json")
+  test("test exploration dot version 2") {
+    riseExploration(mm, "exploration/configuration/dot_2.json")
+  }
+
+  test("test exploration dot version 3") {
+    riseExploration(mm, "exploration/configuration/dot_3.json")
   }
 }
 
