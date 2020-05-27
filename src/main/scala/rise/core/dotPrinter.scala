@@ -2,6 +2,7 @@ package rise.core
 
 import rise.core.types.Type
 
+// scalastyle:off indentation multiple.string.literals method.length
 case object dotPrinter {
 
   def apply(expr: Expr): String = generateDotString(expr)
@@ -18,14 +19,12 @@ case object dotPrinter {
       case _                                        => freshName("node")
     }
 
-    def generateNodesAndEdges(
-      expr: Expr,
-      parent: String,
-      printTypes: Boolean,
-      inlineLambdaIdentifier: Boolean,
-      applyNodes: Boolean
-    ): String = {
-
+    def generateNodesAndEdges(expr: Expr,
+                              parent: String,
+                              printTypes: Boolean,
+                              inlineLambdaIdentifier: Boolean,
+                              applyNodes: Boolean
+                             ): String = {
       def attr(str: String): String = s"[$str]"
       def fill(c: String): String = s"fillcolor=$c "
       def fillWhite: String = fill("white")
@@ -34,16 +33,17 @@ case object dotPrinter {
       def fillBlack: String = fill("black")
 
       def formatType(t: Type): String =
-        if(printTypes) {
+        if (printTypes) {
           t.toString.replaceAll(">", "\\\\>")
             .replaceAll("<", "\\\\<")
-        } else ""
+        } else {
+          ""
+        }
 
-      case class Label(
-          s: String,
-          decorations: String => String = x => s"$x",
-          forEdge: Boolean = false
-      ) {
+      case class Label(s: String,
+                       decorations: String => String = x => s"$x",
+                       forEdge: Boolean = false
+                      ) {
         def bold: Label =
           this.copy(decorations = x => s"<b>${decorations(x)}</b>")
         def italic: Label =
@@ -78,22 +78,21 @@ case object dotPrinter {
       val edgeLabel = (x: String) =>
         attr(fillBlack + Label(x).gray.edge.toString)
 
-      def recurse(e: Expr, parent: String, ty: Option[String]): String =
+      def recurse(e: Expr, parent: String) =
         generateNodesAndEdges(e, parent,
           printTypes, inlineLambdaIdentifier, applyNodes)
 
-      def binaryNode(
-          nodeLabel: String,
-          a: (Expr, String),
-          b: (Expr, String)
-      ): String = {
+      def binaryNode(nodeLabel: String,
+                     a: (Expr, String),
+                     b: (Expr, String)
+                    ): String = {
         val aID = getID(a._1)
         val bID = getID(b._1)
         s"""$parent ${attr(fillWhite + Label(nodeLabel).toString)}
            |$parent -> $aID ${edgeLabel(a._2)};
            |$parent -> $bID ${edgeLabel(b._2)};
-           |${recurse(a._1, aID, None)}
-           |${recurse(b._1, bID, None)}""".stripMargin
+           |${recurse(a._1, aID)}
+           |${recurse(b._1, bID)}""".stripMargin
       }
 
       expr match {
@@ -104,15 +103,15 @@ case object dotPrinter {
           val expr = getID(e)
           s"""$parent ${attr(fillWhite + Label(s"λ.${i.name}").toString)}
              |$parent -> $expr ${edgeLabel("body")};
-             |${recurse(e, expr, None)}""".stripMargin
+             |${recurse(e, expr)}""".stripMargin
 
         case App(f, e) if applyNodes =>
           binaryNode("apply", (f, "fun"), (e, "arg"))
 
         case App(f, e) if !applyNodes =>
           val eID = getID(e)
-          s"""${recurse(f, parent, None)}
-            |${recurse(e, eID, None)}
+          s"""${recurse(f, parent)}
+            |${recurse(e, eID)}
             |$parent -> $eID ${edgeLabel("arg")};""".stripMargin
 
         case DepLambda(x, e) if !inlineLambdaIdentifier =>
@@ -122,13 +121,13 @@ case object dotPrinter {
             |$parent -> $id ${edgeLabel("id")};
             |$parent -> $expr ${edgeLabel("body")};
             |$id ${attr(fillWhite + Label(x.name).orange.toString)}
-            |${recurse(e, expr, None)}""".stripMargin
+            |${recurse(e, expr)}""".stripMargin
 
         case DepLambda(x, e) if inlineLambdaIdentifier =>
           val expr = getID(e)
           s"""$parent ${attr(fillWhite + Label(s"Λ.${x.name}").toString)}
             |$parent -> $expr ${edgeLabel("body")};
-            |${recurse(e, expr, None)}""".stripMargin
+            |${recurse(e, expr)}""".stripMargin
 
         case DepApp(f, e) if applyNodes =>
           val fun = getID(f)
@@ -138,12 +137,12 @@ case object dotPrinter {
             |$parent -> $fun ${edgeLabel("fun")};
             |$parent -> $arg ${edgeLabel("arg")};
             |$arg ${attr(fillWhite + Label(e.toString).toString)}
-            |${recurse(f, fun, None)}""".stripMargin
+            |${recurse(f, fun)}""".stripMargin
 
         case DepApp(f, e) if !applyNodes =>
           val eID = getID(e)
           s"""
-            |${recurse(f, parent, None)}
+            |${recurse(f, parent)}
             |$eID ${attr(fillWhite + Label(e.toString).toString)}
             |$parent -> $eID ${edgeLabel("dep arg")};""".stripMargin
 
@@ -184,3 +183,4 @@ case object dotPrinter {
   }
 
 }
+// scalastyle:on indentation multiple.string.literals method.length
