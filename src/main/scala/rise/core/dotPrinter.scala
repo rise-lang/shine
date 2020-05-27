@@ -35,7 +35,8 @@ case object dotPrinter {
 
       def formatType(t: Type): String =
         if(printTypes)
-          t.toString.replaceAll(">", "\\\\>").replaceAll("<", "\\\\<")
+          t.toString.replaceAll(">", "\\\\>")
+                    .replaceAll("<", "\\\\<")
         else ""
 
       case class Label(
@@ -152,16 +153,16 @@ case object dotPrinter {
           s"$parent ${attr(fillWhite +
             Label(i.name).orange.italic.toString)}"
         case p: Primitive => p match {
-          case primitives.MapSeq() => s"$parent ${attr(fillDarkGray +
-            Label(p.name).bold.toString)}"
-          case primitives.ReduceSeq() => s"$parent ${attr(fillDarkGray +
-            Label(p.name).bold.toString)}"
-          case primitives.ReduceSeqUnroll() => s"$parent ${attr(fillDarkGray +
-            Label(p.name).bold.toString)}"
-          case rise.OpenMP.primitives.MapPar() => s"$parent ${attr(fillDarkGray +
-            Label(p.name).bold.toString)}"
-          case _ => s"$parent ${attr(fillGray +
-            Label(p.toString.trim).bold.toString)}"
+          case primitives.MapSeq() =>
+            s"$parent ${attr(fillDarkGray + Label(p.name).bold.toString)}"
+          case primitives.ReduceSeq() =>
+            s"$parent ${attr(fillDarkGray + Label(p.name).bold.toString)}"
+          case primitives.ReduceSeqUnroll() =>
+            s"$parent ${attr(fillDarkGray + Label(p.name).bold.toString)}"
+          case rise.OpenMP.primitives.MapPar() =>
+            s"$parent ${attr(fillDarkGray + Label(p.name).bold.toString)}"
+          case _ =>
+            s"$parent ${attr(fillGray + Label(p.toString.trim).bold.toString)}"
         }
       }
     }
@@ -181,6 +182,5 @@ case object dotPrinter {
        |}
      """.stripMargin
   }
-
 
 }
