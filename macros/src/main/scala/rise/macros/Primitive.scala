@@ -4,13 +4,16 @@ import scala.annotation.{StaticAnnotation, compileTimeOnly}
 import scala.reflect.macros.blackbox
 import scala.language.experimental.macros
 
+// scalastyle:off indentation
 object Primitive {
 
+  // noinspection ScalaUnusedSymbol
   @compileTimeOnly("primitive macro")
   class primitive extends StaticAnnotation {
     def macroTransform(annottees: Any*): Any = macro Impl.primitive
   }
 
+  // noinspection ScalaUnusedSymbol
   class Impl(val c: blackbox.Context) {
 
     import c.universe.Flag._
@@ -39,14 +42,17 @@ object Primitive {
         .asInstanceOf[Seq[TermName]]
 
     def makeChain(a: TermName, props: Seq[TermName]): Tree =
-      if (props.isEmpty) q"true"
-      else
-        q"(${a}.${props.head} == ${props.head}) && ${makeChain(a, props.tail)}"
+      if (props.isEmpty) {
+        q"true"
+      } else {
+        q"($a.${props.head} == ${props.head}) && ${makeChain(a, props.tail)}"
+      }
 
     def fromClassDef: ClassDef => ClassDef = {
       case q"case class $name(..$params)(..$_) extends $_ {..$body} " =>
         val r = q"""
-            case class $name(..$params)(override val t: Type = TypePlaceholder) extends Primitive {
+            case class $name(..$params)(override val t: Type = TypePlaceholder)
+              extends Primitive {
               override def equals(obj: Any) = obj match {
                 case ${TermName("p")} : ${name.asInstanceOf[c.TypeName]} =>
                   ${makeChain(
@@ -66,7 +72,8 @@ object Primitive {
             }
          """.asInstanceOf[ClassDef]
         // the Scala macro bug: https://github.com/scala/bug/issues/10589
-        // the workaround: https://stackoverflow.com/questions/52222122/workaround-for-scala-macro-annotation-bug
+        // the workaround: https://stackoverflow.com/questions/52222122/
+        //                         workaround-for-scala-macro-annotation-bug
         val noCaseAccessorForType = r match {
           case ClassDef(
               mods,
@@ -98,3 +105,4 @@ object Primitive {
     }
   }
 }
+// scalastyle:on indentation
