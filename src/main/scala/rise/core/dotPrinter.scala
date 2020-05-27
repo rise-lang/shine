@@ -34,10 +34,10 @@ case object dotPrinter {
       def fillBlack: String = fill("black")
 
       def formatType(t: Type): String =
-        if(printTypes)
+        if(printTypes) {
           t.toString.replaceAll(">", "\\\\>")
-                    .replaceAll("<", "\\\\<")
-        else ""
+            .replaceAll("<", "\\\\<")
+        } else ""
 
       case class Label(
           s: String,
