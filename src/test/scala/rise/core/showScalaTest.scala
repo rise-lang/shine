@@ -11,7 +11,7 @@ class showScalaTest extends rise.testUtil.Tests {
       |import rise.core.types._
       |import rise.core.semantics._
       |import rise.core.DSL._
-      |import rise.OpenCL.DSL._
+      |import rise.openCL.DSL._
       |import AddressSpace._
       |import arithexpr.arithmetic._
       |
