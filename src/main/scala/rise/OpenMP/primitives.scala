@@ -2,7 +2,7 @@ package rise.OpenMP
 
 import rise.core.TypeLevelDSL._
 import rise.core.types._
-import primitiveMacro.Primitive.primitive
+import rise.macros.Primitive.primitive
 
 object primitives {
   sealed trait Primitive extends rise.core.Primitive
