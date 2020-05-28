@@ -6,15 +6,15 @@ import rise.core.primitives._
 
 import scala.language.implicitConversions
 
+// scalastyle:off number.of.methods indentation
 object DSL {
 
   def identifier(name: String): Identifier = Identifier(name)()
   def lambda(x: Identifier, e: Expr): Lambda = Lambda(x, e)()
   def app(f: Expr, e: Expr): App = App(f, e)()
-  def depLambda[K <: Kind: KindName](
-      x: K#I with Kind.Explicitness,
-      e: Expr
-  ): DepLambda[K] = DepLambda[K](x, e)()
+  def depLambda[K <: Kind: KindName](x: K#I with Kind.Explicitness,
+                                     e: Expr
+                                    ): DepLambda[K] = DepLambda[K](x, e)()
   def depApp[K <: Kind](f: Expr, x: K#T): DepApp[K] = DepApp[K](f, x)()
   def literal(d: semantics.Data): Literal = Literal(d)
 
@@ -34,7 +34,6 @@ object DSL {
   def indexAsNat: IndexAsNat = primitives.IndexAsNat()()
   def iterate: Iterate = primitives.Iterate()()
   def join: Join = primitives.Join()()
-  def let: Let = primitives.Let()()
   def map: Map = primitives.Map()()
   def mapFst: MapFst = primitives.MapFst()()
   def mapSnd: MapSnd = primitives.MapSnd()()
@@ -82,6 +81,7 @@ object DSL {
   def printType(msg: String): PrintType = PrintType(msg)()
   def typeHole(msg: String): TypeHole = TypeHole(msg)()
 
+  // scalastyle:off method.name
   implicit class Ops(lhs: Expr) {
     // binary
     def +(rhs: Expr): Expr = add(lhs)(rhs)
@@ -95,14 +95,17 @@ object DSL {
     def <=(rhs: Expr): Expr = not(lhs > rhs) // TODO: dedicated primitive?
     def =:=(rhs: Expr): Expr = equal(lhs)(rhs)
 
+    // scalastyle:off disallow.space.before.token
     // unary
     def unary_- : Expr = neg(lhs)
     def unary_! : Expr = not(lhs)
+    // scalastyle:on  disallow.space.before.token
 
     // pair accesses
     def _1: Expr = fst(lhs)
     def _2: Expr = snd(lhs)
   }
+
 
   implicit class Indexing(e: Expr) {
     def `@`(i: Expr): Expr = idx(i)(e)
@@ -122,6 +125,7 @@ object DSL {
     def ::(e: Expr): Expr = Annotation(e, t)
     def `:`(e: Expr): Expr = e :: t
   }
+  // scalastyle:on method.name
 
   implicit class FunCall(f: Expr) {
 
@@ -149,6 +153,7 @@ object DSL {
     }
   }
 
+  // scalastyle:off method.name
   implicit class FunPipe(e: Expr) {
     def |>(f: Expr): Expr = f.apply(e)
   }
@@ -164,7 +169,27 @@ object DSL {
   implicit class FunCompReverse(f: Expr) {
     def o(g: Expr): Expr = fun(x => f(g(x)))
   }
+  // scalastyle:on method.name
 
+  // noinspection ScalaUnusedSymbol
+  // scalastyle:off structural.type
+  object let {
+    def apply(e: Expr): Object {
+      def be(in: Expr => Expr): Expr
+    } = new {
+      def be(in: Expr => Expr): Expr =
+        primitives.Let()().apply(e).apply(fun(in))
+    }
+  }
+  // scalastyle:on structural.type
+
+  object letf {
+    def apply(in: Expr => Expr): Expr = {
+      fun(e => primitives.Let()().apply(e).apply(fun(in)))
+    }
+  }
+
+  // noinspection DuplicatedCode
   // function values
   object fun {
     def apply(t: Type)(f: Expr => Expr): Expr = {
@@ -238,8 +263,24 @@ object DSL {
       lambda(e, untyped((e1, e2, e3, e4, e5) => f(e, e1, e2, e3, e4, e5)))
     }
 
-    //noinspection TypeAnnotation
-    def apply(ft: FunType[Type, Type]) = new {
+    // noinspection TypeAnnotation
+    // scalastyle:off structural.type
+    def apply(ft: FunType[Type, Type]): Object {
+      def apply(f: (Identifier, Identifier, Identifier,
+                    Identifier, Identifier, Identifier) => Expr): Expr
+
+      def apply(f: (Identifier, Identifier, Identifier,
+                    Identifier, Identifier) => Expr): Expr
+
+      def apply(f: (Identifier, Identifier, Identifier,
+                    Identifier) => Expr): Expr
+
+      def apply(f: (Identifier, Identifier, Identifier) => Expr): Expr
+
+      def apply(f: (Identifier, Identifier) => Expr): Expr
+
+      def apply(f: Identifier => Expr): Expr
+    } = new {
       def apply(f: Identifier => Expr): Expr = untyped(f) :: ft
       def apply(f: (Identifier, Identifier) => Expr): Expr = untyped(f) :: ft
       def apply(f: (Identifier, Identifier, Identifier) => Expr): Expr =
@@ -267,8 +308,10 @@ object DSL {
           ) => Expr
       ): Expr = untyped(f) :: ft
     }
+    // scalastyle:on  structural.type
   }
 
+  // noinspection DuplicatedCode
   object nFun {
     def apply(
         r: arithexpr.arithmetic.Range,
@@ -352,3 +395,4 @@ object DSL {
     }
   }
 }
+// scalastyle:on number.of.methods indentation

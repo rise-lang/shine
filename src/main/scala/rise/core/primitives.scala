@@ -155,7 +155,7 @@ object primitives {
   @primitive case class Let()(override val t: Type = TypePlaceholder)
       extends Primitive {
     override def typeScheme: Type =
-      implDT(s => implDT(t => (s ->: t) ->: (s ->: t)))
+      implDT(s => implDT(t => s ->: (s ->: t) ->: t))
   }
 
   @primitive case class Map()(override val t: Type = TypePlaceholder)
