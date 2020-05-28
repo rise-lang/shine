@@ -7,7 +7,7 @@ import rise.core.DSL._
 
 import scala.collection.mutable
 
-class traverse extends rise.test_util.Tests {
+class traverse extends rise.testUtil.Tests {
   val e: DepLambda[NatKind] = nFun(h =>
     nFun(w =>
       fun(ArrayType(h, ArrayType(w, f32)))(input => map(map(fun(x => x)))(input)

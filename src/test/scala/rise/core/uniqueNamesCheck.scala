@@ -3,7 +3,7 @@ package rise.core
 import rise.core.DSL._
 import rise.core.types._
 
-class uniqueNamesCheck extends rise.test_util.Tests {
+class uniqueNamesCheck extends rise.testUtil.Tests {
   test("beta-reducing holds unique names") {
     val f = fun(x => x(l(1)) + x(l(1)))
     val e = fun(y => y + l(1))
