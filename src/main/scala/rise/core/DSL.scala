@@ -38,6 +38,7 @@ object DSL {
   def mapFst: MapFst = primitives.MapFst()()
   def mapSnd: MapSnd = primitives.MapSnd()()
   def mapSeq: MapSeq = primitives.MapSeq()()
+  def mapStream: MapStream = primitives.MapStream()()
   def mapSeqUnroll: MapSeqUnroll = primitives.MapSeqUnroll()()
   def natAsIndex: NatAsIndex = primitives.NatAsIndex()()
   def padCst: PadCst = primitives.PadCst()()
