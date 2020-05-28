@@ -4,7 +4,7 @@ import rise.core.DrawTree.UnicodeConfig
 import rise.core.primitives.Annotation
 
 case class RenderException(msg: String) extends Exception {
-  override def toString = s"render exception: $msg"
+  override def toString: String = s"render exception: $msg"
 }
 
 object DrawTree {
@@ -24,8 +24,9 @@ object DrawTree {
 
   object UnicodeConfig {
     def apply(s: String): UnicodeConfig = {
-      if (s.length < 11) throw RenderException("not a valid Unicode Config")
-      else {
+      if (s.length < 11) {
+        throw RenderException("not a valid Unicode Config")
+      } else {
         val wireV = s(0).toString
         val connL = s(1).toString
         val connLL = s(2).toString
@@ -215,7 +216,9 @@ class ShowRiseCompact {
           val ls = s"λ$xs. $es"
           if (wrapped) wrappedLine("<", ls, ">") else line(ls)
         }))
-      } else (false, newSize, er >@> (ed => block(s"λ$xs", ed)))
+      } else {
+        (false, newSize, er >@> (ed => block(s"λ$xs", ed)))
+      }
 
     case App(f, e) =>
       val (fInline, fSize, fr) = f match {
@@ -224,7 +227,8 @@ class ShowRiseCompact {
       }
       val (_, eSize, er) = drawAST(e, wrapped = true)
       val newSize = fSize + eSize
-      if ((inlineSize > 0) && ((fInline && (eSize == 1)) || (newSize <= inlineSize))) {
+      if ((inlineSize > 0) &&
+          ((fInline && (eSize == 1)) || (newSize <= inlineSize))) {
         (
           true,
           newSize,
@@ -236,7 +240,9 @@ class ShowRiseCompact {
                 })
             )
         )
-      } else (false, newSize, fr >@> (fd => er >@> (ed => fd :+> ed)))
+      } else {
+        (false, newSize, fr >@> (fd => er >@> (ed => fd :+> ed)))
+      }
 
     case dl @ DepLambda(x, e) =>
       val xs = s"${x.name}:${dl.kindName}"
@@ -247,7 +253,9 @@ class ShowRiseCompact {
           val dls = s"Λ$xs. $es"
           if (wrapped) wrappedLine("[", dls, "]") else line(dls)
         }))
-      } else (false, newSize, er >@> (ed => block(s"Λ$xs", ed)))
+      } else {
+        (false, newSize, er >@> (ed => block(s"Λ$xs", ed)))
+      }
 
     case DepApp(f, x) =>
       val (fInline, fSize, fr) = f match {
@@ -261,7 +269,9 @@ class ShowRiseCompact {
           val das = s"$fs $xs"
           if (wrapped) wrappedLine("(", das, ")") else line(das)
         }))
-      } else (false, newSize, fr >@> (fd => line(xs) <+: fd))
+      } else {
+        (false, newSize, fr >@> (fd => line(xs) <+: fd))
+      }
 
     case Literal(d) => (true, dataSize(d), line(d.toString))
 
@@ -368,8 +378,9 @@ class ShowRiseCompactTrack extends ShowRiseCompact {
     val tr = if (sr.isInstanceOf[Track]) {
       val srTarget = track(sr).target
       val r =
-        if (sInline) srTarget
-        else
+        if (sInline) {
+          srTarget
+        } else {
           expr match {
             case _: App =>
               srTarget match {
@@ -387,9 +398,15 @@ class ShowRiseCompactTrack extends ShowRiseCompact {
               }
             case _ => srTarget
           }
+        }
       track(r)
-    } else if (probe(expr)) flag(sInline, sr)
-    else sr
+    } else {
+      if (probe(expr)) {
+        flag(sInline, sr)
+      } else {
+        sr
+      }
+    }
     (sInline, sSize, tr)
   }
 }

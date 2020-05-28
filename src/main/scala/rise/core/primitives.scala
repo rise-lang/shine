@@ -5,6 +5,8 @@ import rise.core.TypeLevelDSL._
 import rise.core.types._
 import primitiveMacro.Primitive.primitive
 
+// noinspection DuplicatedCode
+// scalastyle:off number.of.methods
 object primitives {
 
   case class Annotation(e: Expr, annotation: Type) extends Primitive {
@@ -48,17 +50,17 @@ object primitives {
 
   @primitive case class DepMapSeq()(override val t: Type = TypePlaceholder)
       extends Primitive {
+    // format: off
     override def typeScheme: Type =
       implN(n =>
         implN2DT(ft1 =>
           implN2DT(ft2 =>
-            nFunT(k => ft1(k) ->: ft2(k)) ->: DepArrayType(n, ft1) ->: DepArrayType(
-              n,
-              ft2
-            )
+            nFunT(k => ft1(k) ->: ft2(k)) ->: DepArrayType(n, ft1)
+              ->: DepArrayType(n,ft2)
           )
         )
       )
+    // format: on
   }
 
   @primitive case class DepZip()(override val t: Type = TypePlaceholder)
@@ -131,9 +133,9 @@ object primitives {
       implN(n =>
         implN(m =>
           nFunT(k =>
-            implDT(t => 
+            implDT(t =>
               nFunT(l =>
-                ArrayType(l * n, t) ->: ArrayType(l, t)) ->: 
+                ArrayType(l * n, t) ->: ArrayType(l, t)) ->:
                   ArrayType(m * n.pow(k), t)->: ArrayType(m, t)
             )
           )
@@ -327,9 +329,9 @@ object primitives {
   }
 
   object SlideSeq {
-    trait Rotate {}
-    case object Values extends Rotate {}
-    case object Indices extends Rotate {}
+    trait Rotate
+    case object Values extends Rotate
+    case object Indices extends Rotate
   }
 
   @primitive case class SlideSeq(rot: SlideSeq.Rotate)(
@@ -515,3 +517,4 @@ object primitives {
     override def typeScheme: Type = implT(t => t)
   }
 }
+// scalastyle:on number.of.methods

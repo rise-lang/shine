@@ -2,7 +2,7 @@ package rise.core
 
 import rise.core.types._
 import rise.core.DSL._
-import rise.OpenCL.DSL._
+import rise.openCL.DSL._
 
 class showScalaTest extends rise.test_util.Tests {
   def prefixImports(code: String): String =
@@ -15,7 +15,7 @@ class showScalaTest extends rise.test_util.Tests {
       |import AddressSpace._
       |import arithexpr.arithmetic._
       |
-      |${code}
+      |$code
       |""".stripMargin
 
   private val dotElemWeights = fun((weights, elem) =>

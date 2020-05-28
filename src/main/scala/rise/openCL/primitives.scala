@@ -1,10 +1,11 @@
-package rise.OpenCL
+package rise.openCL
 
 import rise.core.TypeLevelDSL._
 import rise.core.types._
 import rise.core.{primitives => core}
 import primitiveMacro.Primitive.primitive
 
+// noinspection DuplicatedCode
 object primitives {
   sealed trait Primitive extends rise.core.Primitive
 
@@ -45,13 +46,13 @@ object primitives {
 
   @primitive case class OclToMem()(override val t: Type = TypePlaceholder)
       extends Primitive {
-    override def typeScheme: Type = implDT(t => aFunT(a => t ->: t))
+    override def typeScheme: Type = implDT(t => aFunT(_ => t ->: t))
   }
 
   @primitive case class OclReduceSeq()(override val t: Type = TypePlaceholder)
       extends Primitive {
     override def typeScheme: Type =
-      aFunT(a =>
+      aFunT(_ =>
         implN(n =>
           implDT(s =>
             implDT(t => (t ->: s ->: t) ->: t ->: ArrayType(n, s) ->: t)
@@ -64,7 +65,7 @@ object primitives {
       override val t: Type = TypePlaceholder
   ) extends Primitive {
     override def typeScheme: Type =
-      aFunT(a =>
+      aFunT(_ =>
         implN(n =>
           implDT(s =>
             implDT(t => (t ->: s ->: t) ->: t ->: ArrayType(n, s) ->: t)
@@ -77,13 +78,13 @@ object primitives {
       extends Primitive {
     // format: off
     override def typeScheme: Type =
-      aFunT(a =>
+      aFunT(_ =>
         implN(n =>
           implN(m =>
             nFunT(k =>
               implDT(t =>
                 nFunT(l =>
-                  ArrayType(l * n, t) ->: ArrayType(l, t)) ->: 
+                  ArrayType(l * n, t) ->: ArrayType(l, t)) ->:
                     ArrayType(m * n.pow(k), t) ->: ArrayType(m, t)
               )
             )
@@ -97,7 +98,7 @@ object primitives {
       override val t: Type = TypePlaceholder
   ) extends Primitive {
     override def typeScheme: Type =
-      aFunT(a => implN(n => nFunT(sz => nFunT(sp => implDT(t =>
+      aFunT(_ => implN(n => nFunT(sz => nFunT(sp => implDT(t =>
         (t ->: t) ->:
           ArrayType(sp * n + sz - sp, t) ->: ArrayType(n, ArrayType(sz, t))
       )))))

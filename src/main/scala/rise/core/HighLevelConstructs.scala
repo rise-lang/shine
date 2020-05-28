@@ -21,7 +21,8 @@ object HighLevelConstructs {
         implN(n =>
           fun(IndexType(n))(i =>
             natAsIndex(n)(
-              (indexAsNat(i) / (n /^ s)) + ((s: Expr) * (indexAsNat(i) % (n /^ s)))
+              (indexAsNat(i) / (n /^ s)) +
+                ((s: Expr) * (indexAsNat(i) % (n /^ s)))
             )
           )
         )

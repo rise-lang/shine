@@ -1,8 +1,8 @@
-package rise.OpenCL
+package rise.openCL
 
 import rise.core.DSL._
 import rise.core.{Expr, primitives => core}
-import rise.OpenCL.primitives._
+import rise.openCL.primitives._
 import scala.language.implicitConversions
 
 object DSL {

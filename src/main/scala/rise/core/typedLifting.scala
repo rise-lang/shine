@@ -13,7 +13,7 @@ object typedLifting {
           Expanding((e: Expr) =>
             App(f, e)(f.t match {
               case FunType(_, outT) => outT
-              case _                => throw TypeException(s"$f cannot be lifted")
+              case _ => throw TypeException(s"$f cannot be lifted")
             })
           )
       )
@@ -46,7 +46,7 @@ object typedLifting {
           Expanding((x: K#T) =>
             DepApp(f, x)(f.t match {
               case DepFunType(_, _) => lifting.liftDependentFunctionType(f.t)(x)
-              case _                => throw TypeException(s"$f cannot be lifted")
+              case _ => throw TypeException(s"$f cannot be lifted")
             })
           )
       )

@@ -3,6 +3,7 @@ package rise.core
 import arithexpr.arithmetic.{Cst, RangeAdd}
 import rise.core.types._
 
+// scalastyle:off multiple.string.literals
 object TypeLevelDSL {
   implicit class TypeEqual(a: Type) {
     def =~=(b: Type): Boolean = (a, b) match {
@@ -153,3 +154,4 @@ object TypeLevelDSL {
     @inline def `.`(dt: DataType): ArrayType = ArrayType(Cst(n), dt)
   }
 }
+// scalastyle:on multiple.string.literals

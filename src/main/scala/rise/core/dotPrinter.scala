@@ -158,7 +158,7 @@ case object dotPrinter {
             s"$parent ${attr(fillDarkGray + Label(p.name).bold.toString)}"
           case primitives.ReduceSeqUnroll() =>
             s"$parent ${attr(fillDarkGray + Label(p.name).bold.toString)}"
-          case rise.OpenMP.primitives.MapPar() =>
+          case rise.openMP.primitives.MapPar() =>
             s"$parent ${attr(fillDarkGray + Label(p.name).bold.toString)}"
           case _ =>
             s"$parent ${attr(fillGray + Label(p.toString.trim).bold.toString)}"

@@ -1,7 +1,7 @@
 package rise.core.types
 
 import arithexpr.arithmetic.{ArithExpr, ArithExprFunctionCall, SimplifiedExpr}
-import rise.core.{Nat}
+import rise.core.Nat
 
 sealed trait NatToNat {
   def apply(n: Nat): Nat = NatToNatApply(this, n)
@@ -10,12 +10,13 @@ sealed trait NatToNat {
 final case class NatToNatLambda private (x: NatIdentifier, body: Nat)
     extends NatToNat {
   // NatToNat have an interesting comparison behavior, as we do not define
-  // equality for them as simple syntactic equality: we just want to make sure their bodies
-  // are equal up-to renaming of the binder.
+  // equality for them as simple syntactic equality: we just want to make sure
+  // their bodies are equal up-to renaming of the binder.
 
-  // However, just updating equals is not sufficient, as many data structures, such as HashMaps,
-  // use hashCodes as proxy for equality. In order to make sure this property is respected, we ignore
-  // the identifier variable, and just take the hash of the body evaluated at a known point
+  // However, just updating equals is not sufficient, as many data structures,
+  // such as HashMaps, use hashCodes as proxy for equality. In order to make
+  // sure this property is respected, we ignore the identifier variable, and
+  // just take the hash of the body evaluated at a known point
   override def hashCode(): Int =
     this(NatIdentifier("comparisonDummy")).hashCode()
 
@@ -48,8 +49,8 @@ final case class NatToNatIdentifier(
 final class NatToNatApply(val f: NatToNat, val n: Nat)
     extends ArithExprFunctionCall(s"$f($n)") {
   override def visitAndRebuild(f: Nat => Nat): Nat = this
-  override def substitute(subs: collection.Map[ArithExpr, ArithExpr]): Option[ArithExpr] =
-    ???
+  override def substitute(
+    subs: collection.Map[ArithExpr, ArithExpr]): Option[ArithExpr] = ???
 
   override lazy val toString: String = s"$f($n)"
 

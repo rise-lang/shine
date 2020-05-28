@@ -75,11 +75,9 @@ object substitute {
     traversal.DepthFirstLocalResult(in, Visitor)
   }
 
-  def addressSpaceInExpr(
-      a: AddressSpace,
-      `for`: AddressSpaceIdentifier,
-      in: Expr
-  ): Expr = ???
+  def addressSpaceInExpr(a: AddressSpace,
+                         `for`: AddressSpaceIdentifier,
+                         in: Expr): Expr = ???
 
   def n2nInExpr(n2n: NatToNat, `for`: NatToNatIdentifier, in: Expr): Expr = ???
 

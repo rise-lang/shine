@@ -48,8 +48,11 @@ object IsClosedForm {
               case DepArrayType(_, elementTypeFun) =>
                 elementTypeFun match {
                   case i: NatToDataIdentifier =>
-                    if (!boundNatDataTypeFun(i)) throw FreeVariable(t)
-                    else Continue(t, this)
+                    if (!boundNatDataTypeFun(i)) {
+                      throw FreeVariable(t)
+                    } else {
+                      Continue(t, this)
+                    }
                   case NatToDataLambda(x, _) =>
                     Continue(t, this.copy(boundN = boundN + x))
                 }

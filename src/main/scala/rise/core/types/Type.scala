@@ -6,11 +6,11 @@ import arithexpr.arithmetic.RangeAdd
 sealed trait Type
 
 case class TypeException(msg: String) extends Exception {
-  override def toString = s"type exception: $msg"
+  override def toString: String = s"type exception: $msg"
 }
 
 object TypePlaceholder extends Type {
-  override def toString = "?"
+  override def toString: String = "?"
 }
 
 final case class TypeIdentifier(name: String)
@@ -19,7 +19,7 @@ final case class TypeIdentifier(name: String)
   override def toString: String = "_" + name
 }
 
-final case class FunType[T1 <: Type, T2 <: Type](inT: T1, outT: T2)
+final case class FunType[T <: Type, U <: Type](inT: T, outT: U)
     extends Type {
   override def toString: String = s"($inT -> $outT)"
 }
@@ -115,7 +115,8 @@ sealed case class VectorType(size: Nat, elemType: DataType) extends BasicType {
 }
 
 object vec {
-  def apply(size: Nat, elemType: DataType) = VectorType(size, elemType)
+  def apply(size: Nat, elemType: DataType): VectorType =
+    VectorType(size, elemType)
 }
 
 final class NatToDataApply(val f: NatToData, val n: Nat) extends DataType {

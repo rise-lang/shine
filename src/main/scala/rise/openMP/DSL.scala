@@ -1,6 +1,6 @@
-package rise.OpenMP
+package rise.openMP
 
-import rise.OpenMP.primitives._
+import rise.openMP.primitives._
 
 object DSL {
   def mapPar: MapPar = MapPar()()
