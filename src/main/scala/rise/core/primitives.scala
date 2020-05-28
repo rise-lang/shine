@@ -190,17 +190,16 @@ object primitives {
 
   @primitive case class MapSeq()(override val t: Type = TypePlaceholder)
       extends Primitive {
-    override def typeScheme: Type = implN(n => implDT(s =>
-      implDT(t => (s ->: t) ->: ArrayType(n, s) ->: ArrayType(n, t))
-    ))
+    override def typeScheme: Type = implN(n => implDT(s => implDT(t =>
+      (s ->: t) ->: ArrayType(n, s) ->: ArrayType(n, t)
+    )))
   }
 
   @primitive case class MapStream()(override val t: Type = TypePlaceholder)
     extends Primitive {
-    override def typeScheme: Type = implN(n => implDT(s =>
-      // stream to stream
-      implDT(t => (s ->: t) ->: ArrayType(n, s) ->: ArrayType(n, t))
-    ))
+    override def typeScheme: Type = implN(n => implDT(s => implDT(t =>
+      (s ->: t) ->: ArrayType(n, s) ->: ArrayType(n, t)
+    )))
   }
 
   @primitive case class IterateStream()(override val t: Type = TypePlaceholder)
@@ -347,7 +346,8 @@ object primitives {
     override def typeScheme: Type =
       // TODO: should return a stream / sequential array, not an array
       implN(n => nFunT(sz => nFunT(sp => implDT(t =>
-        (t ->: t) ->: ArrayType(sp * n + sz, t) ->: ArrayType(1 + n, ArrayType(sz, t))
+        (t ->: t) ->:
+          ArrayType(sp * n + sz, t) ->: ArrayType(1 + n, ArrayType(sz, t))
       ))))
   }
 
