@@ -316,11 +316,13 @@ object TypedDSL {
 
       expr match {
         case i: Identifier =>
-          val t = env
-            .getOrElse(
-              i.name,
-              error(s"$i has no type in the environment")(Seq())
-            )
+          val t = env.getOrElseUpdate(i.name,
+            if (i.t == TypePlaceholder) {
+              error(s"$i has no type")(Seq())
+            } else {
+              i.t
+            })
+          constraints += TypeConstraint(t, i.t)
           (i.setType(t), Solution())
 
         case Lambda(x, e) =>
@@ -455,6 +457,7 @@ object TypedDSL {
   def snd: TDSL[Snd] = toTDSL(primitives.Snd()())
   def split: TDSL[Split] = toTDSL(primitives.Split()())
   def take: TDSL[Take] = toTDSL(primitives.Take()())
+  def toMem: TDSL[ToMem] = toTDSL(primitives.ToMem()())
   def transpose: TDSL[Transpose] = toTDSL(primitives.Transpose()())
   def select: TDSL[Select] = toTDSL(primitives.Select()())
   def unzip: TDSL[Unzip] = toTDSL(primitives.Unzip()())

@@ -96,22 +96,10 @@ object primitives {
   @primitive case class OclSlideSeq(rot: core.SlideSeq.Rotate)(
       override val t: Type = TypePlaceholder
   ) extends Primitive {
-    // format: off
     override def typeScheme: Type =
-      aFunT(a =>
-        implN(n =>
-          nFunT(sz =>
-            nFunT(sp =>
-              implDT(s =>
-                implDT(t =>
-                  (s ->: s) ->: (ArrayType(sz, s) ->: t) ->:
-                    ArrayType(sp * n + sz - sp, s) ->: ArrayType(n, t)
-                )
-              )
-            )
-          )
-        )
-      )
-    // format: on
+      aFunT(a => implN(n => nFunT(sz => nFunT(sp => implDT(t =>
+        (t ->: t) ->:
+          ArrayType(sp * n + sz - sp, t) ->: ArrayType(n, ArrayType(sz, t))
+      )))))
   }
 }
