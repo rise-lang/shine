@@ -3,7 +3,7 @@ package rise.core
 import arithexpr.arithmetic.BigSum
 import rise.core.TypeLevelDSL._
 import rise.core.types._
-import primitiveMacro.Primitive.primitive
+import rise.macros.Primitive.primitive
 
 object primitives {
 
@@ -131,9 +131,9 @@ object primitives {
       implN(n =>
         implN(m =>
           nFunT(k =>
-            implDT(t => 
+            implDT(t =>
               nFunT(l =>
-                ArrayType(l * n, t) ->: ArrayType(l, t)) ->: 
+                ArrayType(l * n, t) ->: ArrayType(l, t)) ->:
                   ArrayType(m * n.pow(k), t)->: ArrayType(m, t)
             )
           )
@@ -155,7 +155,7 @@ object primitives {
   @primitive case class Let()(override val t: Type = TypePlaceholder)
       extends Primitive {
     override def typeScheme: Type =
-      implDT(s => implDT(t => (s ->: t) ->: (s ->: t)))
+      implDT(s => implDT(t => s ->: (s ->: t) ->: t))
   }
 
   @primitive case class Map()(override val t: Type = TypePlaceholder)

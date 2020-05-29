@@ -3,7 +3,7 @@ package rise.OpenCL
 import rise.core.TypeLevelDSL._
 import rise.core.types._
 import rise.core.{primitives => core}
-import primitiveMacro.Primitive.primitive
+import rise.macros.Primitive.primitive
 
 object primitives {
   sealed trait Primitive extends rise.core.Primitive
@@ -83,7 +83,7 @@ object primitives {
             nFunT(k =>
               implDT(t =>
                 nFunT(l =>
-                  ArrayType(l * n, t) ->: ArrayType(l, t)) ->: 
+                  ArrayType(l * n, t) ->: ArrayType(l, t)) ->:
                     ArrayType(m * n.pow(k), t) ->: ArrayType(m, t)
               )
             )
