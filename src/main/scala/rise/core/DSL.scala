@@ -43,6 +43,7 @@ object DSL {
   def mapSeqUnroll: MapSeqUnroll = primitives.MapSeqUnroll()()
   def natAsIndex: NatAsIndex = primitives.NatAsIndex()()
   def padCst: PadCst = primitives.PadCst()()
+  def padEmpty: PadEmpty = primitives.PadEmpty()()
   def padClamp: PadClamp = primitives.PadClamp()()
   def partition: Partition = primitives.Partition()()
   def pair: Pair = primitives.Pair()()
@@ -52,8 +53,8 @@ object DSL {
   def reorder: Reorder = primitives.Reorder()()
   def scanSeq: ScanSeq = primitives.ScanSeq()()
   def slide: Slide = primitives.Slide()()
-  def slideSeq(roprimT: SlideSeq.Rotate): SlideSeq =
-    primitives.SlideSeq(roprimT)()
+  def circularBuffer: CircularBuffer = primitives.CircularBuffer()()
+  def rotateValues: RotateValues = primitives.RotateValues()()
   def snd: Snd = primitives.Snd()()
   def split: Split = primitives.Split()()
   def take: Take = primitives.Take()()

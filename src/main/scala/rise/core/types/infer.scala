@@ -16,6 +16,11 @@ case class InferenceException(msg: String, trace: Seq[infer.Constraint])
 
 object infer {
   def apply(e: Expr): Expr = {
+    if (e.t != TypePlaceholder) {
+      println("skipping type inference")
+      return e
+    }
+
     // build set of constraints
     val constraints = mutable.ArrayBuffer[Constraint]()
     val unique_e = uniqueNames.enforce(e)

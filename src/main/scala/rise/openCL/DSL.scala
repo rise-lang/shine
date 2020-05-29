@@ -1,7 +1,7 @@
 package rise.openCL
 
 import rise.core.DSL._
-import rise.core.{Expr, primitives => core}
+import rise.core.Expr
 import rise.openCL.primitives._
 import scala.language.implicitConversions
 
@@ -40,5 +40,6 @@ object DSL {
   def oclReduceSeq: OclReduceSeq = OclReduceSeq()()
   def oclReduceSeqUnroll: OclReduceSeqUnroll = OclReduceSeqUnroll()()
   def oclIterate: OclIterate = OclIterate()()
-  def oclSlideSeq(rot: core.SlideSeq.Rotate): OclSlideSeq = OclSlideSeq(rot)()
+  def oclCircularBuffer: OclCircularBuffer = OclCircularBuffer()()
+  def oclRotateValues: OclRotateValues = OclRotateValues()()
 }

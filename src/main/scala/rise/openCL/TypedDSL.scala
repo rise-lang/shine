@@ -1,7 +1,7 @@
 package rise.openCL
 
 import rise.core.TypedDSL._
-import rise.core.{Expr, primitives => core}
+import rise.core.Expr
 import rise.openCL.primitives._
 import rise.core.types.AddressSpaceKind
 
@@ -60,6 +60,8 @@ object TypedDSL {
   def oclReduceSeqUnroll: TDSL[OclReduceSeqUnroll] =
     toTDSL(OclReduceSeqUnroll()())
   def oclIterate: TDSL[OclIterate] = toTDSL(OclIterate()())
-  def oclSlideSeq(rot: core.SlideSeq.Rotate): TDSL[OclSlideSeq] =
-    toTDSL(OclSlideSeq(rot)())
+  def oclCircularBuffer: TDSL[OclCircularBuffer] =
+    toTDSL(OclCircularBuffer()())
+  def oclRotateValues: TDSL[OclRotateValues] =
+    toTDSL(OclRotateValues()())
 }
