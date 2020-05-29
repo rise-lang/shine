@@ -344,7 +344,7 @@ object primitives {
     override val t: Type = TypePlaceholder
   ) extends Primitive {
     override def typeScheme: Type =
-    // TODO: should return a stream / sequential array, not an array
+      // TODO: should return a stream / sequential array, not an array
       implN(n => nFunT(alloc => nFunT(sz => implDT(s => implDT(t =>
         (s ->: t) ->: // function to load an input
           ArrayType(n + sz, s) ->: ArrayType(1 + n, ArrayType(sz, t))
