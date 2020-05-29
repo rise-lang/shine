@@ -20,7 +20,7 @@ lazy val commonSettings = Seq(
 )
 
 lazy val rise = (project in file("."))
-  .dependsOn(macroSub, arithExpr)
+  .dependsOn(riseMacros, arithExpr)
   .settings(
     name          := "rise",
     version       := "1.0",
@@ -41,7 +41,7 @@ lazy val rise = (project in file("."))
     )
   )
 
-lazy val macroSub = (project in file("macros"))
+lazy val riseMacros = (project in file("macros"))
   .settings(
     name := "macros",
     version := "1.0",

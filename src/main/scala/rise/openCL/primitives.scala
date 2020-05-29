@@ -3,7 +3,7 @@ package rise.openCL
 import rise.core.TypeLevelDSL._
 import rise.core.types._
 import rise.core.{primitives => core}
-import primitiveMacro.Primitive.primitive
+import rise.macros.Primitive.primitive
 
 // noinspection DuplicatedCode
 object primitives {

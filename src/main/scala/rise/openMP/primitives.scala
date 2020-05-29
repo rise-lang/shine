@@ -2,7 +2,7 @@ package rise.openMP
 
 import rise.core.TypeLevelDSL._
 import rise.core.types._
-import primitiveMacro.Primitive.primitive
+import rise.macros.Primitive.primitive
 
 // noinspection DuplicatedCode
 object primitives {

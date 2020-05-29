@@ -12,10 +12,9 @@ object DSL {
   def identifier(name: String): Identifier = Identifier(name)()
   def lambda(x: Identifier, e: Expr): Lambda = Lambda(x, e)()
   def app(f: Expr, e: Expr): App = App(f, e)()
-  def depLambda[K <: Kind: KindName](
-      x: K#I with Kind.Explicitness,
-      e: Expr
-  ): DepLambda[K] = DepLambda[K](x, e)()
+  def depLambda[K <: Kind: KindName](x: K#I with Kind.Explicitness,
+                                     e: Expr
+                                    ): DepLambda[K] = DepLambda[K](x, e)()
   def depApp[K <: Kind](f: Expr, x: K#T): DepApp[K] = DepApp[K](f, x)()
   def literal(d: semantics.Data): Literal = Literal(d)
 
@@ -35,12 +34,12 @@ object DSL {
   def indexAsNat: IndexAsNat = primitives.IndexAsNat()()
   def iterate: Iterate = primitives.Iterate()()
   def join: Join = primitives.Join()()
-  def let: Let = primitives.Let()()
   def map: Map = primitives.Map()()
   def mapFst: MapFst = primitives.MapFst()()
   def mapSnd: MapSnd = primitives.MapSnd()()
   def mapSeq: MapSeq = primitives.MapSeq()()
   def mapStream: MapStream = primitives.MapStream()()
+  def iterateStream: IterateStream = primitives.IterateStream()()
   def mapSeqUnroll: MapSeqUnroll = primitives.MapSeqUnroll()()
   def natAsIndex: NatAsIndex = primitives.NatAsIndex()()
   def padCst: PadCst = primitives.PadCst()()
@@ -107,6 +106,7 @@ object DSL {
     def _2: Expr = snd(lhs)
   }
 
+
   implicit class Indexing(e: Expr) {
     def `@`(i: Expr): Expr = idx(i)(e)
   }
@@ -170,6 +170,24 @@ object DSL {
     def o(g: Expr): Expr = fun(x => f(g(x)))
   }
   // scalastyle:on method.name
+
+  // noinspection ScalaUnusedSymbol
+  // scalastyle:off structural.type
+  object let {
+    def apply(e: Expr): Object {
+      def be(in: Expr => Expr): Expr
+    } = new {
+      def be(in: Expr => Expr): Expr =
+        primitives.Let()().apply(e).apply(fun(in))
+    }
+  }
+  // scalastyle:on structural.type
+
+  object letf {
+    def apply(in: Expr => Expr): Expr = {
+      fun(e => primitives.Let()().apply(e).apply(fun(in)))
+    }
+  }
 
   // noinspection DuplicatedCode
   // function values

@@ -3,7 +3,7 @@ package rise.core
 import arithexpr.arithmetic.BigSum
 import rise.core.TypeLevelDSL._
 import rise.core.types._
-import primitiveMacro.Primitive.primitive
+import rise.macros.Primitive.primitive
 
 // noinspection DuplicatedCode
 // scalastyle:off number.of.methods
@@ -157,7 +157,7 @@ object primitives {
   @primitive case class Let()(override val t: Type = TypePlaceholder)
       extends Primitive {
     override def typeScheme: Type =
-      implDT(s => implDT(t => (s ->: t) ->: (s ->: t)))
+      implDT(s => implDT(t => s ->: (s ->: t) ->: t))
   }
 
   @primitive case class Map()(override val t: Type = TypePlaceholder)
@@ -202,6 +202,14 @@ object primitives {
     override def typeScheme: Type = implN(n => implDT(s => implDT(t =>
       (s ->: t) ->: ArrayType(n, s) ->: ArrayType(n, t)
     )))
+  }
+
+  @primitive case class IterateStream()(override val t: Type = TypePlaceholder)
+    extends Primitive {
+    override def typeScheme: Type = implN(n => implDT(s =>
+      // stream to array (or should it be stream to value?)
+      implDT(t => (s ->: t) ->: ArrayType(n, s) ->: ArrayType(n, t))
+    ))
   }
 
   @primitive case class MapSeqUnroll()(override val t: Type = TypePlaceholder)
