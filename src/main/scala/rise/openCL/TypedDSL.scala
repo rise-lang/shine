@@ -1,8 +1,8 @@
-package rise.OpenCL
+package rise.openCL
 
 import rise.core.TypedDSL._
 import rise.core.Expr
-import rise.OpenCL.primitives._
+import rise.openCL.primitives._
 import rise.core.types.AddressSpaceKind
 
 import scala.language.implicitConversions

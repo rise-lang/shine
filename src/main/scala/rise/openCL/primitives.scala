@@ -1,10 +1,10 @@
-package rise.OpenCL
+package rise.openCL
 
 import rise.core.TypeLevelDSL._
 import rise.core.types._
-import rise.core.{primitives => core}
 import rise.macros.Primitive.primitive
 
+// noinspection DuplicatedCode
 object primitives {
   sealed trait Primitive extends rise.core.Primitive
 
@@ -45,13 +45,13 @@ object primitives {
 
   @primitive case class OclToMem()(override val t: Type = TypePlaceholder)
       extends Primitive {
-    override def typeScheme: Type = implDT(t => aFunT(a => t ->: t))
+    override def typeScheme: Type = implDT(t => aFunT(_ => t ->: t))
   }
 
   @primitive case class OclReduceSeq()(override val t: Type = TypePlaceholder)
       extends Primitive {
     override def typeScheme: Type =
-      aFunT(a =>
+      aFunT(_ =>
         implN(n =>
           implDT(s =>
             implDT(t => (t ->: s ->: t) ->: t ->: ArrayType(n, s) ->: t)
@@ -64,7 +64,7 @@ object primitives {
       override val t: Type = TypePlaceholder
   ) extends Primitive {
     override def typeScheme: Type =
-      aFunT(a =>
+      aFunT(_ =>
         implN(n =>
           implDT(s =>
             implDT(t => (t ->: s ->: t) ->: t ->: ArrayType(n, s) ->: t)
@@ -77,7 +77,7 @@ object primitives {
       extends Primitive {
     // format: off
     override def typeScheme: Type =
-      aFunT(a =>
+      aFunT(_ =>
         implN(n =>
           implN(m =>
             nFunT(k =>
@@ -97,13 +97,21 @@ object primitives {
       override val t: Type = TypePlaceholder
   ) extends Primitive {
     override def typeScheme: Type =
-      aFunT(a => core.CircularBuffer()().typeScheme)
+      // TODO: should return a stream / sequential array, not an array
+      aFunT(_ => implN(n => nFunT(alloc => nFunT(sz => implDT(s => implDT(t =>
+        (s ->: t) ->: // function to load an input
+          ArrayType(n + sz, s) ->: ArrayType(1 + n, ArrayType(sz, t))
+      ))))))
   }
 
   @primitive case class OclRotateValues()(
     override val t: Type = TypePlaceholder
   ) extends Primitive {
     override def typeScheme: Type =
-      aFunT(a => core.RotateValues()().typeScheme)
+      // TODO: should return a stream / sequential array, not an array
+      aFunT(_ => implN(n => nFunT(sz => implDT(s =>
+        (s ->: s) ->: // function to write a value
+          ArrayType(n + sz, s) ->: ArrayType(1 + n, ArrayType(sz, s))
+      ))))
   }
 }

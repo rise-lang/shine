@@ -100,7 +100,7 @@ object DSL {
     // unary
     def unary_- : Expr = neg(lhs)
     def unary_! : Expr = not(lhs)
-    // scalastyle:on  disallow.space.before.token
+    // scalastyle:on disallow.space.before.token
 
     // pair accesses
     def _1: Expr = fst(lhs)
@@ -268,13 +268,13 @@ object DSL {
     // scalastyle:off structural.type
     def apply(ft: FunType[Type, Type]): Object {
       def apply(f: (Identifier, Identifier, Identifier,
-                    Identifier, Identifier, Identifier) => Expr): Expr
+        Identifier, Identifier, Identifier) => Expr): Expr
 
       def apply(f: (Identifier, Identifier, Identifier,
-                    Identifier, Identifier) => Expr): Expr
+        Identifier, Identifier) => Expr): Expr
 
       def apply(f: (Identifier, Identifier, Identifier,
-                    Identifier) => Expr): Expr
+        Identifier) => Expr): Expr
 
       def apply(f: (Identifier, Identifier, Identifier) => Expr): Expr
 

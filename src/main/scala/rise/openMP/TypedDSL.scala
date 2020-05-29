@@ -1,6 +1,6 @@
-package rise.OpenMP
+package rise.openMP
 
-import rise.OpenMP.primitives._
+import rise.openMP.primitives._
 import rise.core.TypedDSL._
 
 object TypedDSL {

@@ -1,6 +1,6 @@
 package rise.core
 
-import rise.OpenCL.DSL._
+import rise.openCL.DSL._
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.core.primitives._
@@ -9,7 +9,7 @@ import rise.core.HighLevelConstructs._
 import rise.core.types._
 import rise.core.ShowRise._
 
-class showRise extends rise.test_util.Tests {
+class showRise extends rise.testUtil.Tests {
   private val id = fun(x => x)
 
   private val dotElemWeights = fun((weights, elem) =>
@@ -117,7 +117,8 @@ class showRise extends rise.test_util.Tests {
   }
 
   test(
-    "change the configuration (rounded corners and extended horizontal connections)"
+    "change the configuration " +
+      "(rounded corners and extended horizontal connections)"
   ) {
     val probe: Expr => Boolean = {
       case _: Lambda => true

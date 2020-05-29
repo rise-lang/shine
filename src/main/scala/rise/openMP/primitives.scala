@@ -1,9 +1,10 @@
-package rise.OpenMP
+package rise.openMP
 
 import rise.core.TypeLevelDSL._
 import rise.core.types._
 import rise.macros.Primitive.primitive
 
+// noinspection DuplicatedCode
 object primitives {
   sealed trait Primitive extends rise.core.Primitive
 

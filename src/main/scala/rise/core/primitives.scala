@@ -5,6 +5,8 @@ import rise.core.TypeLevelDSL._
 import rise.core.types._
 import rise.macros.Primitive.primitive
 
+// noinspection DuplicatedCode
+// scalastyle:off number.of.methods
 object primitives {
 
   case class Annotation(e: Expr, annotation: Type) extends Primitive {
@@ -48,17 +50,17 @@ object primitives {
 
   @primitive case class DepMapSeq()(override val t: Type = TypePlaceholder)
       extends Primitive {
+    // format: off
     override def typeScheme: Type =
       implN(n =>
         implN2DT(ft1 =>
           implN2DT(ft2 =>
-            nFunT(k => ft1(k) ->: ft2(k)) ->: DepArrayType(n, ft1) ->: DepArrayType(
-              n,
-              ft2
-            )
+            nFunT(k => ft1(k) ->: ft2(k)) ->: DepArrayType(n, ft1)
+              ->: DepArrayType(n,ft2)
           )
         )
       )
+    // format: on
   }
 
   @primitive case class DepZip()(override val t: Type = TypePlaceholder)
@@ -342,7 +344,7 @@ object primitives {
     override val t: Type = TypePlaceholder
   ) extends Primitive {
     override def typeScheme: Type =
-    // TODO: should return a stream / sequential array, not an array
+      // TODO: should return a stream / sequential array, not an array
       implN(n => nFunT(alloc => nFunT(sz => implDT(s => implDT(t =>
         (s ->: t) ->: // function to load an input
           ArrayType(n + sz, s) ->: ArrayType(1 + n, ArrayType(sz, t))
@@ -533,3 +535,4 @@ object primitives {
     override def typeScheme: Type = implT(t => t)
   }
 }
+// scalastyle:on number.of.methods

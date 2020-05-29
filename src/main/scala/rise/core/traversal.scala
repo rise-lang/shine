@@ -242,7 +242,7 @@ object traversal {
             val v = c.v
             (c.value match {
               case i: DataTypeIdentifier => i
-              case ArrayType(n, e)       => ArrayType(v.visitNat(n).value, data(e, v))
+              case ArrayType(n, e) => ArrayType(v.visitNat(n).value, data(e, v))
               case DepArrayType(n, fdt) =>
                 DepArrayType(v.visitNat(n).value, v.visitN2D(fdt).value)
               case PairType(p1, p2) => PairType(data(p1, v), data(p2, v))

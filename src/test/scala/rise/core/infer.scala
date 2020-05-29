@@ -4,7 +4,7 @@ import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.core.types._
 
-class infer extends rise.test_util.Tests {
+class infer extends rise.testUtil.Tests {
   test("Infer int addition type") {
     val typed = infer(l(1) + l(2))
     assert(typed.t == int)

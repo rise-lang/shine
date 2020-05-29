@@ -14,12 +14,14 @@ package object core {
   }
 
   type Nat = ArithExpr
-  //type NatIdentifier = NamedVar with types.Kind.Identifier with types.Kind.Binder
+  // type NatIdentifier =
+  //    NamedVar with types.Kind.Identifier with types.Kind.Binder
 
   def toEvaluableString(e: Expr): String = {
     e match {
       case Identifier(name) =>
-        s"""Identifier("id$name")""" // id prefix prevents name clashes with freshName
+        // id prefix prevents name clashes with freshName
+        s"""Identifier("id$name")"""
       case Lambda(x, e) =>
         s"Lambda(${toEvaluableString(x)}, ${toEvaluableString(e)})"
       case App(f, e) =>
@@ -27,7 +29,8 @@ package object core {
       case DepLambda(x, e) =>
         x match {
           case n: NatIdentifier =>
-            s"""DepLambda[NatKind](NatIdentifier("id$n"), ${toEvaluableString(e)})"""
+            s"""DepLambda[NatKind](NatIdentifier("id$n"),
+               | ${toEvaluableString(e)})""".stripMargin
           case dt: DataTypeIdentifier =>
             s"""DepLambda[DataKind]("id$dt", ${toEvaluableString(e)})"""
         }

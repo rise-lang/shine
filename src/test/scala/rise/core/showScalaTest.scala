@@ -2,20 +2,20 @@ package rise.core
 
 import rise.core.types._
 import rise.core.DSL._
-import rise.OpenCL.DSL._
+import rise.openCL.DSL._
 
-class showScalaTest extends rise.test_util.Tests {
+class showScalaTest extends rise.testUtil.Tests {
   def prefixImports(code: String): String =
     s"""
       |import rise.core._
       |import rise.core.types._
       |import rise.core.semantics._
       |import rise.core.DSL._
-      |import rise.OpenCL.DSL._
+      |import rise.openCL.DSL._
       |import AddressSpace._
       |import arithexpr.arithmetic._
       |
-      |${code}
+      |$code
       |""".stripMargin
 
   private val dotElemWeights = fun((weights, elem) =>

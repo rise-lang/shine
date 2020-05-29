@@ -11,6 +11,7 @@ import scala.collection.mutable
 
 import scala.language.implicitConversions
 
+// scalastyle:off number.of.methods
 object TypedDSL {
 
   implicit class TrivialSolutionConcat(a: Solution) {
@@ -163,7 +164,7 @@ object TypedDSL {
           }
         }
       )
-      ftvs.distinct.toSeq
+      ftvs.distinct
     }
 
     case class Visitor(ftvSubs: Solution, sol: Solution)
@@ -498,8 +499,10 @@ object TypedDSL {
     def <(rhs: TDSL[Expr]): TDSL[App] = lt(lhs)(rhs)
     def =:=(rhs: TDSL[Expr]): TDSL[App] = equal(lhs)(rhs)
 
+    // scalastyle:off disallow.space.before.token
     // unary
     def unary_- : TDSL[App] = neg(lhs)
+    // scalastyle:on disallow.space.before.token
 
     // pair accesses
     def _1: TDSL[App] = fst(lhs)
@@ -680,8 +683,32 @@ object TypedDSL {
       lambda(e, untyped((e1, e2, e3, e4, e5) => f(e, e1, e2, e3, e4, e5)))
     }
 
-    //noinspection TypeAnnotation
-    def apply(ft: FunType[Type, Type]) = new {
+    // noinspection TypeAnnotation
+    // scalastyle:off structural.type
+    def apply(ft: FunType[Type, Type]): Object {
+      def apply(f: (TDSL[Identifier], TDSL[Identifier],
+                    TDSL[Identifier], TDSL[Identifier],
+                    TDSL[Identifier], TDSL[Identifier]) => TDSL[Expr]
+               ): TDSL[Expr]
+
+      def apply(f: (TDSL[Identifier], TDSL[Identifier],
+                    TDSL[Identifier], TDSL[Identifier],
+                    TDSL[Identifier]) => TDSL[Expr]
+               ): TDSL[Expr]
+
+      def apply(f: (TDSL[Identifier], TDSL[Identifier],
+                    TDSL[Identifier], TDSL[Identifier]) => TDSL[Expr]
+               ): TDSL[Expr]
+
+      def apply(f: (TDSL[Identifier], TDSL[Identifier],
+                    TDSL[Identifier]) => TDSL[Expr]
+               ): TDSL[Expr]
+
+      def apply(f: (TDSL[Identifier], TDSL[Identifier]) => TDSL[Expr]
+               ): TDSL[Expr]
+
+      def apply(f: TDSL[Identifier] => TDSL[Expr]): TDSL[Expr]
+    } = new {
       def apply(f: TDSL[Identifier] => TDSL[Expr]): TDSL[Expr] =
         untyped(f) :: ft
       def apply(
@@ -722,8 +749,10 @@ object TypedDSL {
           ) => TDSL[Expr]
       ): TDSL[Expr] = untyped(f) :: ft
     }
+    // scalastyle:on structural.type
   }
 
+  // noinspection DuplicatedCode
   object nFun {
     def apply(
         r: arithexpr.arithmetic.Range,
@@ -818,3 +847,4 @@ object TypedDSL {
     }
   }
 }
+// scalastyle:on number.of.methods

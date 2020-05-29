@@ -9,8 +9,9 @@ import scala.collection.mutable
 
 case class InferenceException(msg: String, trace: Seq[infer.Constraint])
     extends Exception {
-  override def toString =
-    s"inference exception: $msg\n${trace.mkString("---- trace ----\n", "\n", "\n---------------")}"
+  override def toString: String =
+    s"inference exception: $msg\n${trace.mkString("---- trace ----\n",
+      "\n", "\n---------------")}"
 }
 
 object infer {
@@ -21,14 +22,13 @@ object infer {
     }
 
     // build set of constraints
-    val constraintList = mutable.ArrayBuffer[Constraint]()
+    val constraints = mutable.ArrayBuffer[Constraint]()
     val unique_e = uniqueNames.enforce(e)
-    val typed_e = constrainTypes(unique_e, constraintList, mutable.Map())
-    val constraints = constraintList.toSeq
-    //constraints.foreach(println)
+    val typed_e = constrainTypes(unique_e, constraints, mutable.Map())
+    // constraints.foreach(println)
 
     // solve the constraints
-    //val bound = boundIdentifiers(typed_e)
+    // val bound = boundIdentifiers(typed_e)
     val solution = solve(constraints, Seq())
 
     // apply the solution
@@ -213,8 +213,8 @@ object infer {
 
     // concatenating two solutions into a single one
     def ++(other: Solution): Solution = {
-      // this function combines two solutions by applying all the solutions from s2 to the values in s1
-      // it then concatenates the resulting maps
+      // this function combines two solutions by applying all the solutions
+      // from s2 to the values in s1 it then concatenates the resulting maps
       val combine: (Solution, Solution) => Solution = (s1, s2) => {
         Solution(
           s1.ts.mapValues(t => s2(t)) ++ s2.ts,
@@ -334,8 +334,8 @@ object infer {
               )
             )
           case (
-              DepFunType(asa: AddressSpaceIdentifier, ta),
-              DepFunType(asb: AddressSpaceIdentifier, tb)
+              DepFunType(_: AddressSpaceIdentifier, _),
+              DepFunType(_: AddressSpaceIdentifier, _)
               ) =>
             ???
           case (_: NatToDataApply, dt: DataType) =>
@@ -351,7 +351,8 @@ object infer {
             decomposed(
               Seq(TypeConstraint(liftDependentFunctionType(df)(arg), t))
             )
-          case _ => error(s"expected a dependent function type, but got $df")
+          case _ =>
+            error(s"expected a dependent function type, but got $df")
         }
 
       case NatConstraint(a, b) =>
@@ -369,7 +370,7 @@ object infer {
           case (_, p: arithexpr.arithmetic.Pow)    => nat.unifyProd(p, a)
           case (p: arithexpr.arithmetic.IntDiv, _) => nat.unifyProd(p, b)
           case (_, p: arithexpr.arithmetic.IntDiv) => nat.unifyProd(p, a)
-          case _                                   => error(s"cannot unify $a and $b")
+          case _ => error(s"cannot unify $a and $b")
         }
 
       case NatToDataConstraint(a, b) =>
@@ -377,7 +378,7 @@ object infer {
           case (i: NatToDataIdentifier, _) => natToData.unifyIdent(i, b)
           case (_, i: NatToDataIdentifier) => natToData.unifyIdent(i, a)
           case _ if a == b                 => Solution()
-          case _                           => error(s"cannot unify $a and $b")
+          case _ => error(s"cannot unify $a and $b")
         }
 
     }
