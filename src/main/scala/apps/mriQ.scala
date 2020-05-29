@@ -39,15 +39,18 @@ object mriQ {
   )((x, y, z, Qr, Qi, kvalues) =>
     zip(x)(zip(y)(zip(z)(zip(Qr)(Qi)))) |>
     mapGlobal(fun(t =>
-      toPrivate(t._1) |> let(fun(sX =>
-        toPrivate(t._2._1) |> let(fun(sY =>
-          toPrivate(t._2._2._1) |> let(fun(sZ =>
+      let (toPrivate(t._1))
+      be (sX =>
+        let (toPrivate(t._2._1))
+        be (sY =>
+          let (toPrivate(t._2._2._1))
+          be (sZ =>
             kvalues |> oclReduceSeq(AddressSpace.Private)(fun((acc, p) =>
               qFun(sX)(sY)(sZ)(p._1._1._1)(p._1._1._2)(p._1._2)(p._2)(acc)
             ))(pair(t._2._2._2._1, t._2._2._2._2))
-          ))
-        ))
-      ))
+          )
+        )
+      )
     ))
   )))
 
