@@ -11,7 +11,6 @@ import shine.DPIA._
 
 import scala.xml.Elem
 
-//TODO parametric over the access type?
 final case class AsVectorAligned(n: Nat,
                                  m: Nat,
                                  w: AccessType,
