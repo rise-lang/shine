@@ -198,6 +198,7 @@ object primitives {
   @primitive case class MapStream()(override val t: Type = TypePlaceholder)
     extends Primitive {
     override def typeScheme: Type = implN(n => implDT(s => implDT(t =>
+      // stream to stream
       (s ->: t) ->: ArrayType(n, s) ->: ArrayType(n, t)
     )))
   }
@@ -234,13 +235,16 @@ object primitives {
   @primitive case class PadCst()(override val t: Type = TypePlaceholder)
       extends Primitive {
     override def typeScheme: Type =
-      implN(n =>
-        nFunT(l =>
-          nFunT(q =>
-            implDT(t => t ->: ArrayType(n, t) ->: ArrayType(l + n + q, t))
-          )
-        )
-      )
+      implN(n => nFunT(l => nFunT(q => implDT(t =>
+        t ->: ArrayType(n, t) ->: ArrayType(l + n + q, t))
+      )))
+  }
+
+  @primitive case class PadEmpty()(override val t: Type = TypePlaceholder)
+    extends Primitive {
+    override def typeScheme: Type = implN(n => nFunT(r => implDT(t =>
+      ArrayType(n, t) ->: ArrayType(n + r, t))
+    ))
   }
 
   // TODO? could be expressed in terms of a pad idx -> idx or idx -> val
@@ -334,21 +338,27 @@ object primitives {
       ))))
   }
 
-  object SlideSeq {
-    trait Rotate {}
-    case object Values extends Rotate {}
-    case object Indices extends Rotate {}
+  @primitive case class CircularBuffer()(
+    override val t: Type = TypePlaceholder
+  ) extends Primitive {
+    override def typeScheme: Type =
+    // TODO: should return a stream / sequential array, not an array
+      implN(n => nFunT(alloc => nFunT(sz => implDT(s => implDT(t =>
+        (s ->: t) ->: // function to load an input
+          ArrayType(n + sz, s) ->: ArrayType(1 + n, ArrayType(sz, t))
+      )))))
   }
 
-  @primitive case class SlideSeq(rot: SlideSeq.Rotate)(
+  // mainly to achieve register rotation
+  @primitive case class RotateValues()(
       override val t: Type = TypePlaceholder
   ) extends Primitive {
     override def typeScheme: Type =
       // TODO: should return a stream / sequential array, not an array
-      implN(n => nFunT(sz => nFunT(sp => implDT(t =>
-        (t ->: t) ->:
-          ArrayType(sp * n + sz, t) ->: ArrayType(1 + n, ArrayType(sz, t))
-      ))))
+      implN(n => nFunT(sz => implDT(s =>
+        (s ->: s) ->: // function to write a value
+          ArrayType(n + sz, s) ->: ArrayType(1 + n, ArrayType(sz, s))
+      )))
   }
 
   @primitive case class Snd()(override val t: Type = TypePlaceholder)

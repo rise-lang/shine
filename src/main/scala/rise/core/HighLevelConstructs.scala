@@ -70,4 +70,7 @@ object HighLevelConstructs {
       )
     )
   }
+
+  def slideVectors(n: Nat): Expr =
+    slide(n)(1) >> join >> asVector(n)
 }
