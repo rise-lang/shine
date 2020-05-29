@@ -53,7 +53,7 @@ final case class Split(
   override def prettyPrint: String = s"(split $n ${PrettyPhrasePrinter(array)})"
 
   override def xmlPrinter: Elem =
-    <split n={ToString(n)} m={ToString(m)} dt={ToString(dt)}>
+    <split n={ToString(n)} m={ToString(m)} w={ToString(w)} dt={ToString(dt)}>
       {Phrases.xmlPrinter(array)}
     </split>
 

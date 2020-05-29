@@ -14,20 +14,19 @@ import scala.xml.Elem
 final case class Take(
   n: Nat,
   m: Nat,
-  w: AccessType,
   dt: DataType,
   array: Phrase[ExpType])
   extends ExpPrimitive {
 
-  array :: expT({n + m}`.`dt, w)
-  override val t: ExpType = expT(n`.`dt, w)
+  array :: expT({n + m}`.`dt, read)
+  override val t: ExpType = expT(n`.`dt, read)
 
   override def eval(s: Store): Data = ???
 
   override def visitAndRebuild(
     fun: VisitAndRebuild.Visitor
   ): Phrase[ExpType] = {
-    Take(fun.nat(n), fun.nat(m), fun.access(w), fun.data(dt),
+    Take(fun.nat(n), fun.nat(m), fun.data(dt),
       VisitAndRebuild(array, fun))
   }
 
@@ -38,7 +37,7 @@ final case class Take(
     implicit context: TranslationContext
   ): Phrase[CommType] = {
     import TranslationToImperative._
-    con(array)(λ(expT({n + m}`.`dt, read))(x => C(Take(n, m, w, dt, x))))
+    con(array)(λ(expT({n + m}`.`dt, read))(x => C(Take(n, m, dt, x))))
   }
 
   override def xmlPrinter: Elem =

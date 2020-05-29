@@ -372,9 +372,9 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
       case Fst(_, _, e) => exp(e, env, FstMember :: path, cont)
       case Snd(_, _, e) => exp(e, env, SndMember :: path, cont)
 
-      case Take(_, _, _, _, e) => exp(e, env, path, cont)
+      case Take(_, _, _, e) => exp(e, env, path, cont)
 
-      case Drop(n, _, _, _, e) => path match {
+      case Drop(n, _, _, e) => path match {
         case (i : CIntExpr) :: ps => exp(e, env, CIntExpr(i + n) :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }

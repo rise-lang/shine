@@ -111,8 +111,8 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
 
       case IdxDistributeAcc(_, _, stride, _, _, a) => path match {
         // TODO: ensure that i % stride == init ?
-        case (i : CIntExpr)
-          :: ps => acc(a, env, CIntExpr(i / stride) :: ps, cont)
+        case (i : CIntExpr) :: ps =>
+          acc(a, env, CIntExpr(i / stride) :: ps, cont)
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
 
@@ -168,7 +168,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
           )
         case _ => error(s"unexpected $path")
       }
-      case AsVectorAligned(n, _, _, e) => path match {
+      case AsVectorAligned(n, _, _, _, e) => path match {
         case (i : CIntExpr) :: (j : CIntExpr) :: ps =>
           exp(e, env, CIntExpr((i * n) + j) :: ps, cont)
         case (i : CIntExpr) :: Nil =>

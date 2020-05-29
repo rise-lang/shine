@@ -391,16 +391,12 @@ object fromRise {
 
       case (core.Take(),
       rt.DepFunType(n: rt.NatIdentifier,
-      rt.FunType(rt.ArrayType(nm, la), lw)))
+      rt.FunType(rt.ArrayType(nm, la), _)))
       =>
         val m = nm - n
         val a = dataType(la)
-        val w =
-          ptMap(p).asInstanceOf[
-            DepFunType[NatKind, FunType[ExpType, ExpType]]].t.inT.accessType
         DepLambda[NatKind](natIdentifier(n))(
-          fun[ExpType](expT(nm`.`a, w), e =>
-            Take(n, m, w, a, e)))
+          fun[ExpType](expT(nm`.`a, read), e => Take(n, m, a, e)))
 
       case (core.Drop(),
       rt.DepFunType(n: rt.NatIdentifier,
@@ -408,12 +404,9 @@ object fromRise {
       =>
         val m = nm - n
         val a = dataType(la)
-        val w =
-          ptMap(p).asInstanceOf[
-            DepFunType[NatKind, FunType[ExpType, ExpType]]].t.inT.accessType
         DepLambda[NatKind](natIdentifier(n))(
-          fun[ExpType](expT(nm`.`a, w), e =>
-            Drop(n, m, w, a, e)))
+          fun[ExpType](expT(nm`.`a, read), e =>
+            Drop(n, m, a, e)))
 
       case (core.PadCst(),
       rt.DepFunType(l: rt.NatIdentifier,
@@ -476,11 +469,15 @@ object fromRise {
       rt.FunType(rt.FunType(la: rt.DataType, la2: rt.DataType),
       rt.FunType(rt.PairType(_, lb), _)))
       =>
+        val w =
+          ptMap(p).asInstanceOf[
+            FunType[FunType[ExpType, ExpType], FunType[ExpType, ExpType]]
+          ].inT.inT.accessType
         val a = dataType(la)
         val a2 = dataType(la2)
         val b = dataType(lb)
-        fun[ExpType ->: ExpType](expT(a, read) ->: expT(a2, read), f =>
-          fun[ExpType](expT(a x b, read), e => MapFst(a, b, a2, f, e)))
+        fun[ExpType ->: ExpType](expT(a, w) ->: expT(a2, w), f =>
+          fun[ExpType](expT(a x b, w), e => MapFst(w, a, b, a2, f, e)))
 
       case (core.Snd(),
       rt.FunType(rt.PairType(la, lb), _))
@@ -493,11 +490,15 @@ object fromRise {
       rt.FunType(rt.FunType(lb: rt.DataType, lb2: rt.DataType),
       rt.FunType(rt.PairType(la, _), _)))
       =>
+        val w =
+          ptMap(p).asInstanceOf[
+            FunType[FunType[ExpType, ExpType], FunType[ExpType, ExpType]]
+          ].inT.inT.accessType
         val a = dataType(la)
         val b = dataType(lb)
         val b2 = dataType(lb2)
-        fun[ExpType ->: ExpType](expT(b, read) ->: expT(b2, read), f =>
-          fun[ExpType](expT(a x b, read), e => MapSnd(a, b, b2, f, e)))
+        fun[ExpType ->: ExpType](expT(b, w) ->: expT(b2, w), f =>
+          fun[ExpType](expT(a x b, w), e => MapSnd(w, a, b, b2, f, e)))
 
       case (core.Pair(),
       rt.FunType(la: rt.DataType,
@@ -665,9 +666,12 @@ object fromRise {
       rt.FunType(rt.ArrayType(mn, la: rt.ScalarType), rt.ArrayType(m, _))))
       =>
         val a = scalarType(la)
+        val w =
+          ptMap(p).asInstanceOf[
+            DepFunType[NatKind, FunType[ExpType, ExpType]]].t.inT.accessType
         DepLambda[NatKind](natIdentifier(n))(
           fun[ExpType](expT(mn`.`a, read), e =>
-            AsVectorAligned(n, m, a, e)))
+            AsVectorAligned(n, m, w, a, e)))
 
       case (core.AsScalar(),
       rt.FunType(rt.ArrayType(m, rt.VectorType(n, la: rt.ScalarType)), _))

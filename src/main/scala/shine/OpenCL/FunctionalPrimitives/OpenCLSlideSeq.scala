@@ -41,10 +41,9 @@ final case class OpenCLSlideSeq(rot: lp.SlideSeq.Rotate,
   }
 
   override def eval(s: Store): Data = {
-    //import shine.DPIA.FunctionalPrimitives._
-    //FIXME (access type)
-    //Map(n, ArrayType(sz, dt1), dt2, f, Slide(n, sz, sp, dt1, input)).eval(s)
-    ???
+    import shine.DPIA.FunctionalPrimitives._
+    Map(n, ArrayType(sz, dt1), dt2, read,
+      f, Slide(n, sz, sp, dt1, input)).eval(s)
   }
 
   override def acceptorTranslation(A: Phrase[AccType])

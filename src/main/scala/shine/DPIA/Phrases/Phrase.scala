@@ -90,8 +90,6 @@ final case class Proj2[T1 <: PhraseType, T2 <: PhraseType](pair: Phrase[T1 x T2]
 final case class IfThenElse[T <: PhraseType](cond: Phrase[ExpType], thenP: Phrase[T], elseP: Phrase[T])
   extends Phrase[T] {
 
-  // FIXME: redundant with type checking
-  TypeCheck.check(thenP.t, elseP.t)
   override val t: T = thenP.t
 }
 

@@ -26,9 +26,8 @@ object TranslationToImperative {
 
       case c: Literal => A :=|c.t.dataType| c
 
-      //TODO remove this should be covered by the first case
-      // from here
-      case x: Identifier[ExpType] => A :=|x.t.dataType| x
+      //this should be covered by the first case for
+      // case x: Identifier[ExpType] => A :=|x.t.dataType| x
 
       case n: Natural => A :=|n.t.dataType| n
 
@@ -43,7 +42,6 @@ object TranslationToImperative {
             A :=|b.t.dataType| BinOp(op, x, y)
           ))
         ))
-      //TODO to here
 
       case ep: ExpPrimitive => ep.acceptorTranslation(A)
 

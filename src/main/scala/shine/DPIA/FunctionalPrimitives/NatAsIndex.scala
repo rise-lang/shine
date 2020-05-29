@@ -11,7 +11,6 @@ import shine.DPIA._
 
 import scala.xml.Elem
 
-//FIXME should this be parametric over the access type?
 final case class NatAsIndex(n: Nat, e: Phrase[ExpType])
   extends ExpPrimitive {
 
@@ -38,11 +37,8 @@ final case class NatAsIndex(n: Nat, e: Phrase[ExpType])
 
   def acceptorTranslation(A: Phrase[AccType])(
     implicit context: TranslationContext
-  ): Phrase[CommType] = {
-    import TranslationToImperative._
-
-    con(e)(fun(expT(NatType, read))(x => acc(x)(A)))
-  }
+  ): Phrase[CommType] =
+    ???
 
   def continuationTranslation(C: Phrase[ExpType ->: CommType])(
     implicit context: TranslationContext

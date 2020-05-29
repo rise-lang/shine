@@ -238,7 +238,7 @@ private class InferAccessAnnotation {
           FunType(ExpType(dataType(rArrT), read),
             ExpType(dataType(rMapOutT), write)))
 
-      case rp.Map() =>
+      case rp.Map() | rp.MapFst() | rp.MapSnd() =>
         val rMapT = p.t.asInstanceOf[
           rt.FunType[rt.FunType[rt.DataType, rt.DataType],
             rt.FunType[rt.DataType, rt.DataType]]
@@ -300,8 +300,7 @@ private class InferAccessAnnotation {
           FunType(ExpType(inT, read),
             ExpType(outT, ai)))
 
-      case rp.Split() | rp.AsVector() | rp.AsVectorAligned() | rp.Drop()
-           | rp.Take() =>
+      case rp.Split() | rp.AsVector() | rp.AsVectorAligned() =>
         val rT = p.t.asInstanceOf[
           rt.DepFunType[rt.NatKind, rt.FunType[rt.DataType, rt.DataType]]]
 
@@ -331,7 +330,7 @@ private class InferAccessAnnotation {
           FunType(ExpType(dataType(rT.outT.inT), read),
             ExpType(dataType(rT.outT.outT), read)))
 
-      case rp.NatAsIndex() =>
+      case rp.NatAsIndex() | rp.Take() | rp.Drop() =>
         val rT = p.t.asInstanceOf[
           rt.DepFunType[rt.NatKind, rt.FunType[rt.DataType, rt.DataType]]]
 
