@@ -456,6 +456,7 @@ object TypedDSL {
   def split: TDSL[Split] = toTDSL(primitives.Split()())
   def take: TDSL[Take] = toTDSL(primitives.Take()())
   def transpose: TDSL[Transpose] = toTDSL(primitives.Transpose()())
+  def toMem: TDSL[ToMem] = toTDSL(primitives.ToMem()())
   def select: TDSL[Select] = toTDSL(primitives.Select()())
   def unzip: TDSL[Unzip] = toTDSL(primitives.Unzip()())
   def zip: TDSL[Zip] = toTDSL(primitives.Zip()())
