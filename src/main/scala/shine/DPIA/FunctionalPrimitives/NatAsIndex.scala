@@ -9,10 +9,9 @@ import shine.DPIA.Types._
 import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
-import scala.language.reflectiveCalls
 import scala.xml.Elem
 
-final case class AsIndex(n: Nat, e: Phrase[ExpType])
+final case class NatAsIndex(n: Nat, e: Phrase[ExpType])
   extends ExpPrimitive {
 
   e :: expT(NatType, read)
@@ -27,7 +26,7 @@ final case class AsIndex(n: Nat, e: Phrase[ExpType])
     </unsafeAsIndex>
 
   def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] =
-    AsIndex(fun.nat(n), VisitAndRebuild(e, fun))
+    NatAsIndex(fun.nat(n), VisitAndRebuild(e, fun))
 
   def eval(s: OperationalSemantics.Store): OperationalSemantics.Data = {
     OperationalSemantics.eval(s, e) match {
@@ -36,19 +35,17 @@ final case class AsIndex(n: Nat, e: Phrase[ExpType])
     }
   }
 
-  def acceptorTranslation(A: Phrase[AccType])
-                         (implicit context: TranslationContext): Phrase[CommType] = {
-    import TranslationToImperative._
+  def acceptorTranslation(A: Phrase[AccType])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] =
+    ???
 
-    con(e)(fun(expT(NatType, read))(x =>
-      A :=|IndexType(n)| AsIndex(n, x)))
-  }
-
-  def continuationTranslation(C: Phrase[ExpType ->: CommType])
-                             (implicit context: TranslationContext): Phrase[CommType] = {
+  def continuationTranslation(C: Phrase[ExpType ->: CommType])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(e)(λ(e.t)(x =>
-      C(AsIndex(n, x))))
+      C(NatAsIndex(n, x))))
   }
 }

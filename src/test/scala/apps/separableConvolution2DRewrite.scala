@@ -140,7 +140,8 @@ class separableConvolution2DRewrite extends shine.test_util.Tests {
     rewrite_steps(toTDSL(separated)(weightsV)(weightsH), Seq(
       (repeatNTimes(2, oncetd(lowering.reduceSeqUnroll)) `;`
         repeatNTimes(2, oncetd(lowering.mapSeq)) `;`
-        repeatNTimes(2, skip(1)(lowering.mapSeq)))
+        repeatNTimes(2, skip(1)(lowering.mapSeq)) `;`
+        body(argument(lowering.toMemAfterMapSeq)))
         -> toTDSL(separatedSeq)(weightsV)(weightsH)
     ))
   }

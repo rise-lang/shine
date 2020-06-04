@@ -1,6 +1,5 @@
 package shine.DPIA.DSL
 
-import shine.DPIA.FunctionalPrimitives.{Fst, Snd}
 import shine.DPIA.ImperativePrimitives._
 import shine.DPIA.Phrases.{Identifier, IfThenElse, Phrase}
 import shine.DPIA.Types._
@@ -58,30 +57,12 @@ object comment {
   def apply(comment: String): Comment = Comment(comment)
 }
 
-object fst {
-  def apply(pair: Phrase[ExpType]): Fst = {
-    pair.t match {
-      case ExpType(PairType(dt1, dt2), _) => Fst(dt1, dt2, pair)
-      case x => error(x.toString, "ExpType(RecordType)")
-    }
-  }
-}
-
-object snd {
-  def apply(pair: Phrase[ExpType]): Snd = {
-    pair.t match {
-      case ExpType(PairType(dt1, dt2), _) => Snd(dt1, dt2, pair)
-      case x => error(x.toString, "ExpType(RecordType)")
-    }
-  }
-}
-
 object pairAcc1 {
   def apply(fstT: DataType, sndT: DataType, record: Phrase[AccType]): PairAcc1 =
     PairAcc1(fstT, sndT, record)
 }
 
-object recordAcc2 {
+object pairAcc2 {
   def apply(fstT: DataType, sndT: DataType, record: Phrase[AccType]): PairAcc2 =
     PairAcc2(fstT, sndT, record)
 }

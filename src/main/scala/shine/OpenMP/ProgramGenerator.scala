@@ -3,18 +3,25 @@ package shine.OpenMP
 import arithexpr.arithmetic.Cst
 import shine.DPIA.Compilation._
 import shine.DPIA.DSL._
-import shine.DPIA.FunctionalPrimitives.AsIndex
+import shine.DPIA.FunctionalPrimitives.NatAsIndex
 import shine.DPIA.LetNatIdentifier
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
 import shine._
 
+import scala.annotation.tailrec
 import scala.collection._
 
 object ProgramGenerator {
 
   def makeCode[T <: PhraseType](originalPhrase: Phrase[T], name: String = "foo"): OpenMP.Program = {
 
+    @tailrec
+    /*
+     * Precondition: Expression is fully beta-reduced and NOT eta-reduced.
+     * TODO: think about enabling fully eta-reduced expressions, i.e. possibly
+     *  something like App(mapSeq, f)
+     */
     def getPhraseAndParams[_ <: PhraseType](p: Phrase[_],
                                             ps: Seq[Identifier[ExpType]],
                                             defs:Seq[(LetNatIdentifier, Phrase[ExpType])]
@@ -84,7 +91,7 @@ object ProgramGenerator {
     val output = (a.t.dataType, p.t.dataType) match {
       case (lhsT, rhsT) if lhsT == rhsT => a
       case (ArrayType(Cst(1), lhsT), rhsT) if lhsT == rhsT =>
-        a `@` AsIndex(1, Natural(0))
+        a `@` NatAsIndex(1, Natural(0))
       case (lhsT, rhsT) => throw new Exception(s" $lhsT and $rhsT should match")
     }
 

@@ -2,7 +2,7 @@ package shine.DPIA.IntermediatePrimitives
 
 import arithexpr.arithmetic.NamedVar
 import shine.DPIA.DSL._
-import shine.DPIA.FunctionalPrimitives.{AsIndex, Take}
+import shine.DPIA.FunctionalPrimitives.{NatAsIndex, Take}
 import shine.DPIA.ImperativePrimitives.TakeAcc
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
@@ -31,8 +31,8 @@ object IterateIAcc {
           val osz = n.pow(k - i - 1) * m
           f.apply(osz)
             .apply(TakeAcc(osz, sz - osz, dt, v.wr))
-            .apply(Take(isz, sz - isz, read, dt, v.rd)) `;`
-            IfThenElse(ip < AsIndex(k, Natural(k - 2)), swap, done)
+            .apply(Take(isz, sz - isz, dt, v.rd)) `;`
+            IfThenElse(ip < NatAsIndex(k, Natural(k - 2)), swap, done)
         })
       })
   }

@@ -12,18 +12,19 @@ import shine.DPIA._
 
 import scala.xml.Elem
 
-// performs a sequential slide, taking advantage of the space/time overlapping reuse opportunity
-final case class SlideSeq(rot: lp.SlideSeq.Rotate,
-                          n: Nat,
-                          sz: Nat,
-                          sp: Nat,
-                          dt1: DataType,
-                          dt2: DataType,
-                          write_dt1: Phrase[ExpType ->: ExpType],
-                          f: Phrase[ExpType ->: ExpType],
-                          input: Phrase[ExpType])
-  extends ExpPrimitive
-{
+// performs a sequential slide, taking advantage of the space/time
+// overlapping reuse opportunity
+final case class SlideSeq(
+  rot: lp.SlideSeq.Rotate,
+  n: Nat,
+  sz: Nat,
+  sp: Nat,
+  dt1: DataType,
+  dt2: DataType,
+  write_dt1: Phrase[ExpType ->: ExpType],
+  f: Phrase[ExpType ->: ExpType],
+  input: Phrase[ExpType]
+)  extends ExpPrimitive {
   val inputSize: Nat with SimplifiedExpr = sp * n + sz - sp
 
   write_dt1 :: expT(dt1, read) ->: expT(dt1, write)
@@ -39,11 +40,13 @@ final case class SlideSeq(rot: lp.SlideSeq.Rotate,
   }
 
   override def eval(s: Store): Data = {
-    Map(n, ArrayType(sz, dt1), dt2, f, Slide(n, sz, sp, dt1, input)).eval(s)
+    Map(n, ArrayType(sz, dt1), dt2, read, f,
+      Slide(n, sz, sp, dt1, input)).eval(s)
   }
 
-  override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommType] = {
+  override def acceptorTranslation(
+    A: Phrase[AccType])(
+    implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
     import shine.DPIA.IntermediatePrimitives.SlideSeqIValues
 
@@ -62,8 +65,9 @@ final case class SlideSeq(rot: lp.SlideSeq.Rotate,
       )))
   }
 
-  override def continuationTranslation(C: Phrase[ExpType ->: CommType])
-                                      (implicit context: TranslationContext): Phrase[CommType] = {
+  override def continuationTranslation(
+    C: Phrase[ExpType ->: CommType])(
+    implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._
 
     `new`(n`.`dt2, fun(varT(n`.`dt2))(tmp =>
@@ -72,10 +76,12 @@ final case class SlideSeq(rot: lp.SlideSeq.Rotate,
   }
 
   override def prettyPrint: String =
-    s"(slideSeq $sz $sp ${PrettyPhrasePrinter(f)} ${PrettyPhrasePrinter(input)})"
+    s"(slideSeq" +
+      s"$sz $sp ${PrettyPhrasePrinter(f)} ${PrettyPhrasePrinter(input)})"
 
   override def xmlPrinter: Elem =
-    <slideSeq n={ToString(n)} sz={ToString(sz)} sp={ToString(sp)} dt1={ToString(dt1)} dt2={ToString(dt2)}>
+    <slideSeq n={ToString(n)} sz={ToString(sz)}
+              sp={ToString(sp)} dt1={ToString(dt1)} dt2={ToString(dt2)}>
       <f>{Phrases.xmlPrinter(f)}</f>
       <input>{Phrases.xmlPrinter(input)}</input>
     </slideSeq>
