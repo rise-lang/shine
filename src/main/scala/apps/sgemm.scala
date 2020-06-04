@@ -116,26 +116,28 @@ object sgemm {
       transpose (map (transpose) (split (s1) (map (split (s2)) (x))))  )))))
 
     def redOp: Expr = fun((8`.`32`.`8`.`4`.`f32) ->: ( (8`.`64`.`f32) x (8`.`128`.`f32) ) ->: (8`.`32`.`8`.`4`.`f32) )((p14, p15) =>
-      p15 |> (fun(p29 =>
-        zip (p29._1) (p29._2)
-          |> toLocalFun(mapLocal(1) (fun(p31 => pair (mapLocal(0) (id) (p31._1)) (mapLocal(0) (id) (p31._2)) )))
-          |> unzip
-      )) |> let(fun(p16 =>
+      let (p15 |> fun(p29 =>
+          zip (p29._1) (p29._2)
+            |> toLocalFun(mapLocal(1) (fun(p31 => pair (mapLocal(0) (id) (p31._1)) (mapLocal(0) (id) (p31._2)) )))
+            |> unzip
+        ))
+      be (p16 =>
         zip (p14) (split (v5) (transpose (p16._1)))
           |> mapLocal(1) (fun(p17 =>
           zip (p17._1) (split (v4) (reorderWithStride (v3/v4) (transpose (p16._2))))
             |> mapLocal(0) (fun(p18 =>
             zip (transpose (p17._2)) (transpose (p18._2))
               |> oclReduceSeq (AddressSpace.Private) (fun( (p20, p21) =>
-              pair (toPrivate(mapSeq (id) (p21._1))) (toPrivate(mapSeq (id) (p21._2)))
-                |> let(fun(p22 =>
-                  zip (p20) (p22._1) |> mapSeq (fun(p23 =>
-                    zip (p23._1) (p22._2) |> mapSeq (fun(p24 =>
-                      p24._1 + (p23._2 * p24._2) )) )) )))) (p18._1 |> mapSeq (mapSeq (fun(x => x))) )
+                let (pair (toPrivate(mapSeq (id) (p21._1))) (toPrivate(mapSeq (id) (p21._2))))
+                be (p22 =>
+                    zip (p20) (p22._1) |> mapSeq (fun(p23 =>
+                      zip (p23._1) (p22._2) |> mapSeq (fun(p24 =>
+                        p24._1 + (p23._2 * p24._2) )) )) )
+              )) (p18._1 |> mapSeq (mapSeq (fun(x => x))) )
               |> mapSeq (mapSeq (fun(x => x)))
           ))
         ))
-      )))
+      ))
 
     nFun((n, m, k) =>
       fun((k`.`m`.`f32) ->: (k`.`n`.`f32) ->: (m`.`n`.`f32) ->: f32 ->: f32 ->: (m`.`n`.`f32))

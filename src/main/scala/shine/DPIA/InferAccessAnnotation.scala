@@ -288,16 +288,17 @@ private class InferAccessAnnotation {
 
       case rp.Let() =>
         val rT = p.t.asInstanceOf[
-          rt.FunType[rt.FunType[rt.DataType, rt.DataType],
-            rt.FunType[rt.DataType, rt.DataType]]]
-        val inT = dataType(rT.inT.inT)
-        val outT = dataType(rT.inT.outT)
+          rt.FunType[rt.DataType,
+            rt.FunType[rt.FunType[rt.DataType, rt.DataType], rt.DataType]]]
+        val inT = dataType(rT.inT)
+        val outInT = dataType(rT.outT.inT.inT)
+        val outOutT = dataType(rT.outT.inT.outT)
+        val outT = dataType(rT.outT.outT)
 
         val ai = accessTypeIdentifier()
         FunType(
-          FunType(ExpType(inT, read),
-            ExpType(outT, ai)),
-          FunType(ExpType(inT, read),
+          ExpType(inT, read),
+          FunType(FunType(ExpType(outInT, read), ExpType(outOutT, ai)),
             ExpType(outT, ai)))
 
       case rp.Split() | rp.AsVector() | rp.AsVectorAligned() =>

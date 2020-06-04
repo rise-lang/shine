@@ -589,7 +589,7 @@ object fromRise {
           Cast(a, b, x))
 
       case (core.Let(),
-      rt.FunType(rt.FunType(la: rt.DataType, lb: rt.DataType), _))
+      rt.FunType(la: rt.DataType, rt.FunType(_, lb: rt.DataType)))
       =>
         val a = dataType(la)
         val b = dataType(lb)
@@ -597,8 +597,8 @@ object fromRise {
           ptMap(p).asInstanceOf[
             FunType[ExpType, FunType[PhraseType, ExpType]]
           ].outT.outT.accessType
-        fun[ExpType ->: ExpType](expT(a, read) ->: expT(b, w), f =>
-          fun[ExpType](expT(a, read), x =>
+        fun[ExpType](ExpType(a, read), x =>
+          fun[ExpType ->: ExpType](expT(a, read) ->: expT(b, w), f =>
             Let(a, b, w, x, f)))
 
       case (f @ r.ForeignFunction(decl), _)
