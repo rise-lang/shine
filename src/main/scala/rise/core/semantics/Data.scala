@@ -1,6 +1,5 @@
 package rise.core.semantics
 
-import rise.core.Nat
 import rise.core.types._
 
 sealed abstract class Data(val dataType: DataType)

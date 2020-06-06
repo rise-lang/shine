@@ -293,8 +293,11 @@ object infer {
             unifyDataTypeIdent(i, dt)
           case (dt: DataType, i: DataTypeIdentifier) =>
             unifyDataTypeIdent(i, dt)
-          case (b1: BasicType, b2: BasicType) if b1 == b2 =>
-            Solution()
+          case (_: ScalarType | _ : NatType.type |
+                 _: IndexType | _ : VectorType,
+                _: ScalarType | _ : NatType.type |
+                 _: IndexType | _ : VectorType)
+            if a == b => Solution()
           case (IndexType(sa), IndexType(sb)) =>
             decomposed(Seq(NatConstraint(sa, sb)))
           case (ArrayType(sa, ea), ArrayType(sb, eb)) =>
