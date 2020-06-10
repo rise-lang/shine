@@ -6,8 +6,8 @@ sealed trait NatToNat {
   def apply(n: Nat): Nat = NatToNatApply(this, n)
 }
 
-final case class NatToNatIdentifier( name: String,
-                                     override val isExplicit: Boolean = false
+final case class NatToNatIdentifier(name: String,
+                                    override val isExplicit: Boolean = false
                                    ) extends NatToNat
   with Kind.Identifier
   with Kind.Explicitness {

@@ -38,8 +38,8 @@ final case class DepFunType[K <: Kind: KindName, T <: Type](
 
 sealed trait DataType extends Type
 
-final case class DataTypeIdentifier( name: String,
-                                     override val isExplicit: Boolean = false
+final case class DataTypeIdentifier(name: String,
+                                    override val isExplicit: Boolean = false
                                    ) extends DataType
   with Kind.Identifier
   with Kind.Explicitness {
