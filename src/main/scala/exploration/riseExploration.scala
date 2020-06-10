@@ -5,8 +5,8 @@ import java.nio.file.{Files, Paths}
 import exploration.runner.CExecutor
 import elevate.heuristic_search.Metaheuristic
 import elevate.rise.{Rise}
-import exploration.util.{jsonParser}
-import exploration.util.jsonParser.ParseExploration
+import exploration.explorationUtil.{jsonParser}
+import exploration.explorationUtil.jsonParser.ParseExploration
 import strategies.standardStrategies
 
 import scala.sys.process._
@@ -87,8 +87,8 @@ object riseExploration {
     // create subfolder for executor
     println("elem: " + executorOutput)
     (s"mkdir ${executorOutput}" !!)
-    (s"mkdir ${executorOutput + "/C"}" !!)
-    (s"mkdir ${executorOutput + "/lowered"}" !!)
+//    (s"mkdir ${executorOutput + "/C"}" !!)
+//    (s"mkdir ${executorOutput + "/lowered"}" !!)
 
     // begin with executor
     val executor = result.executor.name match {

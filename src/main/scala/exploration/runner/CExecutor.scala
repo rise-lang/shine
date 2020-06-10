@@ -5,54 +5,144 @@ import java.io.{File, FileOutputStream, PrintWriter}
 import elevate.rise.Rise
 import elevate.heuristic_search.Runner
 import shine.C.Program
-import util.gen
+import util.{createTempFile, gen, writeToTempFile}
 import elevate.core.Strategy
 import elevate.heuristic_search.util.IOHelper
-import exploration.util.executeC
+import exploration.explorationUtil.ExplorationErrorLevel.ExplorationErrorLevel
+//import exploration.explorationUtil.executeC
+import exploration.explorationUtil.ExplorationErrorLevel._
+//import exploration.explorationUtil.executeC.{Exception, globalBest}
+
+import scala.sys.process._
+import scala.language.postfixOps
 
 class CExecutor(val lowering: Strategy[Rise], val goldExpression: Rise, val iterations: Int, val inputSize: Int, val threshold: Double, val output: String) extends Runner[Rise] {
+  var globalBest:Option[Double] = None
   val N = inputSize
   var best:Option[Double] = None
   var gold = gen.CProgram(goldExpression, "compute_gold")
   var counter = 0
+  var errorLevel:ExplorationErrorLevel = LoweringError
 
   // write header to csv output file
   writeHeader(output + "/" + "executor.csv")
 
   def execute(solution: Rise):(Rise,Option[Double]) = {
+    // initialize error level
+    errorLevel = LoweringError
+
     // lower solution
     val lowered = lowering.apply(solution)
 
+    // update error level
+    errorLevel = CodeGenerationError
+
     //generate executable program (including host code)
-    val code = genExecutableCode(lowered.get)
+    var performanceValue:Option[Double] = None
+    var code = ""
+    try {
+      code = genExecutableCode(lowered.get)
+
+      errorLevel = CompilationError
+
+      // compile
+      try {
+        val bin = compile(code)
+
+        // execute
+        try{
+          errorLevel = ExecutionError
+          val returnValue = execute(bin, iterations, threshold)
+
+          // check for new best to replace gold
+          best match {
+            case Some(value) => {
+              if (returnValue.toDouble < value) {
+                best = Some(returnValue.toDouble)
+                gold = gen.CProgram(lowered.get, "compute_gold")
+                println("use new gold with runtime: " + best.get)
+              }
+            }
+            case _ => best = Some(returnValue.toDouble)
+          }
+
+          println("result: " + returnValue)
+          performanceValue = Some(returnValue.toDouble)
+          errorLevel = ExecutionSuccess
+
+        } catch {
+          case e:Throwable => {
+            // handle different execution errors
+            e.getMessage.substring(20).toInt match {
+              case 11 => {
+                println("execution crashed")
+                System.exit(-1)
+                errorLevel = ExecutionError
+                performanceValue = None
+              }
+              case 255 => {
+                println("execution failed")
+                errorLevel = ExecutionFail
+                performanceValue = None
+              }
+              case _ => {
+                println("unknown error code - end program") // unknown error code end program
+                System.exit(-1)
+              }
+            }
+          }
+        }
+      } catch{
+        case e:Throwable => {
+          println("compiling error")
+        }
+      }
+
+    } catch {
+      case e:Throwable => {
+        println("code gen error")
+        code = "code generation error "
+      }
+    }
+
+    // result is performance value
 
     //compile and execute program
-    val performanceValue = compileAndExecute(lowered.get, code, iterations)
+    // val performanceValue = compileAndExecute(lowered.get, code, iterations)
 
     // print code to file
     var codeOutput = ""
 
     // add high/low-level hash, performance value and code
-    codeOutput += "// high-level hash: " + solution.hashCode() + " \n"
-    codeOutput += "// low-level hash: " + lowered.get.hashCode() + " \n"
+    codeOutput += "// high-level hash: " + Integer.toHexString(solution.hashCode()) + " \n"
+    codeOutput += "// low-level hash: " + Integer.toHexString(lowered.get.hashCode()) + " \n"
 
     // check if execution was valid
-    var filenameC = solution.hashCode().toString + "_" + lowered.get.hashCode().toString()
-    var filenameLowered = lowered.get.hashCode().toString
+    var filenameC = Integer.toHexString(solution.hashCode()) + "_" + Integer.toHexString(lowered.get.hashCode())
+    var filenameLowered = Integer.toHexString(lowered.get.hashCode())
+    var filenameHigh = Integer.toHexString(solution.hashCode())
+    var folder = output + "/" + Integer.toHexString(solution.hashCode())
 
     performanceValue match {
       case None => {
         codeOutput += "// runtime: " + -1 + "\n \n"
-        filenameC += "_error"
-        filenameLowered += "_error"
+//        filenameC += "_error"
+        filenameC += "_" + errorLevel.toString
+        filenameLowered += "_" + errorLevel.toString
+        filenameHigh += "_" + errorLevel.toString
+        folder += "_" + errorLevel.toString
       }
       case _ => codeOutput += "// runtime: " + performanceValue.get.toString  + "\n \n"
     }
 
+    // create folder for high-level expression
+    folder = IOHelper.getUniqueFilename(folder, 0)
+    (s"mkdir ${folder}" !!)
+
     codeOutput += code
 
     // print code to file
-    val uniqueFilenameCode = IOHelper.getUniqueFilename(output + "/C/" + filenameC + ".c", 2)
+    val uniqueFilenameCode = IOHelper.getUniqueFilename(folder + "/" + filenameC + ".c", 2)
 
     // create file for code
     val pwCode = new PrintWriter(new FileOutputStream(new File(uniqueFilenameCode), false))
@@ -63,17 +153,19 @@ class CExecutor(val lowering: Strategy[Rise], val goldExpression: Rise, val iter
     // close files
     pwCode.close()
 
+    // write lowered expressions
+
     // write runtime to output file
-    writeValues(output + "/" + "executor.csv", (solution, lowered.get, performanceValue), "executor")
+    writeValues(output + "/" + "executor.csv", (solution, lowered.get, performanceValue, errorLevel), "executor")
 
     // print lowered expression to file
-    val uniqueFilenameLowered = IOHelper.getUniqueFilename(output + "/lowered/" + filenameLowered, 0)
+    val uniqueFilenameLowered = IOHelper.getUniqueFilename(folder + "/" + filenameLowered, 0)
 
     // create file for for lowered expression
     val pwLowered = new PrintWriter(new FileOutputStream(new File(uniqueFilenameLowered), false))
 
     // lowered string
-    var loweredString = "high-level hash: " + solution.hashCode() + "\n"
+    var loweredString = "high-level hash: " + Integer.toHexString(solution.hashCode()) + "\n"
     loweredString += lowered.get
 
     // write code to file
@@ -81,6 +173,20 @@ class CExecutor(val lowering: Strategy[Rise], val goldExpression: Rise, val iter
 
     // close files
     pwLowered.close()
+
+    // write high-level expressions
+
+    // print lowered expression to file
+    val uniqueFilenameHigh = IOHelper.getUniqueFilename(folder + "/" + filenameHigh, 0)
+
+    // create file for for lowered expression
+    val pwHigh = new PrintWriter(new FileOutputStream(new File(uniqueFilenameHigh), false))
+
+    // write code to file
+    pwHigh.write(solution.toString)
+
+    // close files
+    pwHigh.close()
 
     (solution, performanceValue)
   }
@@ -298,38 +404,95 @@ int main(int argc, char** argv) {
     testCode
   }
 
-  def compileAndExecute(solution:Rise, code:String, iterations:Int):Option[Double] = {
-    try {
-      val returnValue = executeC(code, iterations, threshold)
+//  def compileAndExecute(solution:Rise, code:String, iterations:Int):Option[Double] = {
+//    try {
+//      val returnValue = executeC(code, iterations, threshold)
+//
+//      // check for new best and new gold to use
+//      best match {
+//        case Some(value) => {
+//          if(returnValue.toDouble < value){
+//            best = Some(returnValue.toDouble)
+//            gold = gen.CProgram(solution, "compute_gold")
+//            println("use new gold with runtime: " + best.get)
+//          }
+//        }
+//        case _ => best = Some(returnValue.toDouble)
+//      }
+//
+//      println("result: " + returnValue)
+//      Some(returnValue.toDouble)
+//    }catch {
+//      case e: Throwable => {
+//        println("execution failed")
+//        None
+//      }
+//    }
+//  }
 
-      // check for new best and new gold to use
-      best match {
-        case Some(value) => {
-          if(returnValue.toDouble < value){
-            best = Some(returnValue.toDouble)
-            gold = gen.CProgram(solution, "compute_gold")
-            println("use new gold with runtime: " + best.get)
-          }
-        }
-        case _ => best = Some(returnValue.toDouble)
-      }
+  def compile(code: String): String = {
+    // create files for source code and binary
+    val src = writeToTempFile("code-", ".c", code).getAbsolutePath
+    val bin = createTempFile("bin-", "").getAbsolutePath
 
-      println("result: " + returnValue)
-      Some(returnValue.toDouble)
-    }catch {
-      case e: Throwable => {
-        println("execution failed")
-        None
-      }
-    }
+    // todo: make this configable using json file
+    // compile
+    (s"clang -O2 $src -o $bin -lm" !!)
+
+    bin
   }
 
-  def writeValues(path: String, result: (Rise, Rise, Option[Double]), name:String) {
+  def execute(bin: String, iterations: Int, threshold: Double): String = {
+    //repeat execution
+    //take median as runtime
+    val N = iterations
+    val runtimes:Array[Double] = new Array[Double](N)
+    var runtime = 0.0
+    //check global execution time. Discard any with factor 10
+    var i = 0
+    while(i < N) {
+      runtimes(i) = (s"$bin" !!).toDouble
+
+      println("runtime:(" + i +"): " + runtimes(i))
+      println("globalBest: " + globalBest)
+      // check if we have to skip this execution round
+      globalBest match{
+        case Some(value) => {
+          runtimes(i) > value * threshold match {
+            case true => {
+              //break up
+              for( j <- Range(i, N)){
+                runtimes(j) = runtimes(i)
+              }
+              i = N
+            }
+            case false => // continue
+          }
+        }
+        case _ => globalBest = Some(runtimes(i))
+      }
+      i = i + 1
+    }
+
+    // get runtime (median of iterations)
+    runtime = runtimes.sorted.apply(N/2)
+
+    // check if new global best was found
+    runtime < globalBest.get match {
+      case true => globalBest = Some(runtime)
+      case false =>
+    }
+
+    runtime.toString
+  }
+
+
+  def writeValues(path: String, result: (Rise, Rise, Option[Double], ExplorationErrorLevel), name:String) {
     // open file to append values
     val file = new PrintWriter(new FileOutputStream(new File(path), true))
 
     // create string to write to file
-    var string = counter + ", " + name + ", " + System.currentTimeMillis().toString + ", " + result._1.hashCode().toString + ", " + result._2.hashCode().toString() + ", "
+    var string = counter + ", " + name + ", " + System.currentTimeMillis().toString + ", " + Integer.toHexString(result._1.hashCode()) + ", " + Integer.toHexString(result._2.hashCode()) + ", " + result._4.toString + ", "
     result._3 match{
       case Some(value) => string += value.toString + "\n"
       case _ => string += "-1 \n"
@@ -346,7 +509,7 @@ int main(int argc, char** argv) {
     val file = new PrintWriter(new FileOutputStream(new File(path), false))
 
     // create string to write to file
-    val string = "iteration, " + "runner, " + "timestamp, " + "high-level hash, " + "low-level hash, " + "runtime\n"
+    val string = "iteration, " + "runner, " + "timestamp, " + "high-level hash, " + "low-level hash, " + "error-level, " + "runtime\n"
 
     // write to file and close
     file.write(string)
