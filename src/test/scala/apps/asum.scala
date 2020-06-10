@@ -40,7 +40,7 @@ class asum extends shine.test_util.TestsWithExecutor {
 
   // OpenMP code gen
   test("Intel derived no warp compiles to syntactically correct OpenMP code") {
-    import rise.OpenMP.DSL._
+    import rise.openMP.DSL._
 
     val intelDerivedNoWarp1 = nFun(n =>
       fun(inputT(n))(input =>
@@ -64,7 +64,7 @@ class asum extends shine.test_util.TestsWithExecutor {
   test(
     "Second kernel of Intel derived compiles to syntactically correct OpenMP code"
   ) {
-    import rise.OpenMP.DSL._
+    import rise.openMP.DSL._
 
     val intelDerived2 = nFun(n =>
       fun(inputT(n))(input =>
@@ -82,7 +82,7 @@ class asum extends shine.test_util.TestsWithExecutor {
   test(
     "AMD/Nvidia second kernel derived compiles to syntactically correct OpenMP code"
   ) {
-    import rise.OpenMP.DSL._
+    import rise.openMP.DSL._
 
     val amdNvidiaDerived2 = nFun(n =>
       fun(inputT(n))(input =>
@@ -105,7 +105,7 @@ class asum extends shine.test_util.TestsWithExecutor {
   }
 
   { // OpenCL code gen
-    import rise.OpenCL.DSL._
+    import rise.openCL.DSL._
     import shine.OpenCL
 
     val random = new Random()

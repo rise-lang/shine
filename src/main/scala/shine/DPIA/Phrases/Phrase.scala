@@ -368,6 +368,9 @@ abstract class ExpPrimitive extends Primitive[ExpType] {
   def fedeTranslation(env: Map[Identifier[ExpType], Identifier[AccType]])
                      (C: Phrase[AccType ->: AccType]) : Phrase[AccType] = ???
 
+  def streamTranslation(C: Phrase[`(nat)->:`[(ExpType ->: CommType) ->: CommType] ->: CommType])
+                       (implicit context: TranslationContext): Phrase[CommType] = ???
+
   def acceptorTranslation(A: Phrase[AccType])
                          (implicit context: TranslationContext): Phrase[CommType]
 

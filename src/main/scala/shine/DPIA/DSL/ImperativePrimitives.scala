@@ -1,5 +1,6 @@
 package shine.DPIA.DSL
 
+import shine.DPIA.FunctionalPrimitives.{Fst, Snd}
 import shine.DPIA.ImperativePrimitives._
 import shine.DPIA.Phrases.{Identifier, IfThenElse, Phrase}
 import shine.DPIA.Types._
@@ -53,8 +54,50 @@ object `for` {
     For(n, λ(expT(idx(n), read))( i => f(i) ), unroll)
 }
 
+object forNat {
+  def apply(
+             n: Nat,
+             f: NatIdentifier => Phrase[CommType],
+             unroll: Boolean = false
+           ): ForNat = {
+    import arithexpr.arithmetic.RangeAdd
+    ForNat(n, nFun(i => f(i), RangeAdd(0, n, 1)), unroll)
+  }
+}
+
+object streamNext {
+  def apply(
+             next: Phrase[`(nat)->:`[(ExpType ->: CommType) ->: CommType]],
+             i: Nat,
+             f: Phrase[ExpType ->: CommType]
+           ): Phrase[CommType] = {
+    Phrases.Apply(
+      Phrases.DepApply[NatKind, (ExpType ->: CommType) ->: CommType](next, i),
+      f
+    )
+  }
+}
+
 object comment {
   def apply(comment: String): Comment = Comment(comment)
+}
+
+object fst {
+  def apply(pair: Phrase[ExpType]): Fst = {
+    pair.t match {
+      case ExpType(PairType(dt1, dt2), _) => Fst(dt1, dt2, pair)
+      case x => error(x.toString, "ExpType(RecordType)")
+    }
+  }
+}
+
+object snd {
+  def apply(pair: Phrase[ExpType]): Snd = {
+    pair.t match {
+      case ExpType(PairType(dt1, dt2), _) => Snd(dt1, dt2, pair)
+      case x => error(x.toString, "ExpType(RecordType)")
+    }
+  }
 }
 
 object pairAcc1 {

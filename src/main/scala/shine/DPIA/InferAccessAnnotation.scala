@@ -3,8 +3,8 @@ package shine.DPIA
 import rise.{core => r}
 import rise.core.{types => rt}
 import rise.core.{primitives => rp}
-import rise.OpenMP.{primitives => rompp}
-import rise.OpenCL.{primitives => roclp}
+import rise.openMP.{primitives => rompp}
+import rise.openCL.{primitives => roclp}
 import shine.DPIA.Types._
 import shine.DPIA.Types.TypeCheck.SubTypeCheckHelper
 import shine.DPIA.fromRise._
@@ -388,7 +388,8 @@ private class InferAccessAnnotation {
             FunType(ExpType(initDt, write),
               FunType(ExpType(arrDt, read), ExpType(initDt, read)))))
 
-      case rp.SlideSeq(_) =>
+        //TODO Circular Buffer and OCL versions
+      case rp.RotateValues() =>
         val rT = p.t.asInstanceOf[
           rt.DepFunType[rt.NatKind, rt.DepFunType[rt.NatKind,
             rt.FunType[rt.FunType[rt.DataType, rt.DataType],
@@ -406,7 +407,7 @@ private class InferAccessAnnotation {
               FunType(FunType(ExpType(fInT, read), ExpType(fOutT, write)),
                 FunType(ExpType(inputT, read), ExpType(outT, write))))))
 
-      case roclp.OclSlideSeq(_) =>
+      case roclp.OclRotateValues() =>
         val rT = p.t.asInstanceOf[
           rt.DepFunType[rt.AddressSpaceKind,
             rt.DepFunType[rt.NatKind, rt.DepFunType[rt.NatKind,

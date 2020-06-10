@@ -97,8 +97,8 @@ object fromRise {
     t: rt.Type,
     ptMap: MutableIdentityHashMap[r.Expr, PhraseType]
   ): Phrase[_ <: PhraseType] = {
-    import rise.OpenCL.{primitives => ocl}
-    import rise.OpenMP.{primitives => omp}
+    import rise.openCL.{primitives => ocl}
+    import rise.openMP.{primitives => omp}
     import shine.OpenCL.FunctionalPrimitives._
     import shine.OpenMP.FunctionalPrimitives._
 
@@ -128,6 +128,12 @@ object fromRise {
       rt.FunType(rt.ArrayType(n, la: rt.DataType), _)))
       =>
         makeMapLoop(MapSeq, n, la, lb)
+
+      case (core.MapStream(),
+      rt.FunType(rt.FunType(_, lb: rt.DataType),
+      rt.FunType(rt.ArrayType(n, la: rt.DataType), _)))
+      =>
+        makeMapLoop(MapStream, n, la, lb)
 
       case (core.MapSeqUnroll(),
       rt.FunType(rt.FunType(_, lb: rt.DataType),
@@ -284,44 +290,72 @@ object fromRise {
             fun[ExpType](expT(insz`.`a, read), e =>
               Slide(n, sz, sp, a, e))))
 
-      case (core.SlideSeq(rot),
+      case (core.CircularBuffer(),
+      rt.DepFunType(alloc: rt.NatIdentifier,
       rt.DepFunType(sz: rt.NatIdentifier,
-      rt.DepFunType(sp: rt.NatIdentifier,
       rt.FunType(_,
-      rt.FunType(_,
-      rt.FunType(rt.ArrayType(insz, ls), rt.ArrayType(n, lt)))))))
+      rt.FunType(rt.ArrayType(insz, la),
+      rt.ArrayType(n, rt.ArrayType(_, lb)))))))
       =>
-        val s = dataType(ls)
-        val t = dataType(lt)
-        DepLambda[NatKind](natIdentifier(sz))(
-          DepLambda[NatKind](natIdentifier(sp))(
+        val a = dataType(la)
+        val b = dataType(lb)
+        DepLambda[NatKind](natIdentifier(alloc))(
+          DepLambda[NatKind](natIdentifier(sz))(
             fun[ExpType ->: ExpType](
-              expT(s, read) ->: expT(s, write), write_dt1 =>
-              fun[ExpType ->: ExpType](
-                expT(sz`.`s, read) ->: expT(t, write), f =>
-                fun[ExpType](expT(insz`.`s, read), e =>
-                  SlideSeq(rot, n, sz, sp, s, t, write_dt1, f, e))))))
+              expT(a, read) ->: expT(b, write), load =>
+                fun[ExpType](expT(insz`.`a, read), e =>
+                  // TODO: alloc
+                  SlideSeq(SlideSeq.Indices, n, sz, 1, a, load, e)))))
 
-      case (ocl.OclSlideSeq(rot),
+      case (core.RotateValues(),
+      rt.DepFunType(sz: rt.NatIdentifier,
+      rt.FunType(_,
+      rt.FunType(rt.ArrayType(insz, la), rt.ArrayType(n, _)))))
+      =>
+        val a = dataType(la)
+        DepLambda[NatKind](natIdentifier(sz))(
+          fun[ExpType ->: ExpType](
+            expT(a, read) ->: expT(a, write), wr =>
+              fun[ExpType](expT(insz`.`a, read), e =>
+                SlideSeq(SlideSeq.Values, n, sz, 1, a, wr, e))))
+
+      case (ocl.OclCircularBuffer(),
+      rt.DepFunType(la: rt.AddressSpaceIdentifier,
+      rt.DepFunType(alloc: rt.NatIdentifier,
+      rt.DepFunType(sz: rt.NatIdentifier,
+      rt.FunType(_,
+      rt.FunType(rt.ArrayType(insz, lds),
+      rt.ArrayType(n, rt.ArrayType(_, ldt))))))))
+      =>
+        val s = dataType(lds)
+        val t = dataType(ldt)
+        val a = addressSpaceIdentifier(la)
+        DepLambda[AddressSpaceKind](a)(
+          DepLambda[NatKind](natIdentifier(alloc))(
+            DepLambda[NatKind](natIdentifier(sz))(
+              fun[ExpType ->: ExpType](
+                expT(s, read) ->: expT(t, write), load =>
+                  fun[ExpType](expT(insz`.`s, read), e =>
+                    OpenCLSlideSeq(OpenCLSlideSeq.Indices,
+                      a, n, alloc, sz, s, load, e))))))
+
+      case (ocl.OclRotateValues(),
       rt.DepFunType(la: rt.AddressSpaceIdentifier,
       rt.DepFunType(sz: rt.NatIdentifier,
       rt.DepFunType(sp: rt.NatIdentifier,
       rt.FunType(_,
-      rt.FunType(_,
-      rt.FunType(rt.ArrayType(insz, ls), rt.ArrayType(n, lt))))))))
+      rt.FunType(rt.ArrayType(insz, ldt), rt.ArrayType(n, _)))))))
       =>
-        val s = dataType(ls)
-        val t = dataType(lt)
+        val t = dataType(ldt)
         val a = addressSpaceIdentifier(la)
         DepLambda[AddressSpaceKind](a)(
         DepLambda[NatKind](natIdentifier(sz))(
         DepLambda[NatKind](natIdentifier(sp))(
           fun[ExpType ->: ExpType](
-            expT(s, read) ->: expT(s, write), write_dt1 =>
-            fun[ExpType ->: ExpType](
-              expT(sz`.`s, read) ->: expT(t, write), f =>
-              fun[ExpType](expT(insz`.`s, read), e =>
-                OpenCLSlideSeq(rot, a, n, sz, sp, s, t, write_dt1, f, e)))))))
+            expT(t, read) ->: expT(t, write), write_t =>
+              fun[ExpType](expT(insz`.`t, read), e =>
+                OpenCLSlideSeq(OpenCLSlideSeq.Values,
+                  a, n, sz, sp, t, write_t, e))))))
 
       case (core.Reorder(),
       rt.FunType(_,

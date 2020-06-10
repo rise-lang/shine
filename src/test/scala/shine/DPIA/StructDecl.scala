@@ -2,8 +2,8 @@ package shine.DPIA
 
 import rise.core.DSL.{fun, _}
 import rise.core.types._
-import rise.OpenCL.DSL._
-import rise.OpenMP.DSL._
+import rise.openCL.DSL._
+import rise.openMP.DSL._
 import util.gen
 
 class StructDecl extends shine.test_util.Tests {

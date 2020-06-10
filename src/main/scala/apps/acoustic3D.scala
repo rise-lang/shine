@@ -4,9 +4,8 @@ import rise.core._
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.core.types._
-import rise.core.primitives._
 import rise.core.HighLevelConstructs._
-import rise.OpenCL.DSL._
+import rise.openCL.DSL._
 
 object acoustic3D {
   private val getNumNeighbours = foreignFun("idxF",
@@ -97,9 +96,10 @@ object acoustic3D {
     transpose o map(transpose) o transpose o
       mapGlobal(0)(
         mapGlobal(1)(
-          oclSlideSeq(SlideSeq.Values)(AddressSpace.Private)(sz)(st)
-          (mapSeqUnroll(mapSeqUnroll(id)))(acoustic)
-            o transpose o map(transpose)
+          mapStream(acoustic) o
+          oclRotateValues(AddressSpace.Private)(sz)(st)(
+            mapSeqUnroll(mapSeqUnroll(id))
+          ) o transpose o map(transpose)
         )
       ) o transpose o slide2D(sz, st) o map(transpose) o transpose
       $ zip3D(mat1)(zip3D(mat2)(generateNumNeighbours(o + 2)(n + 2)(m + 2)))
