@@ -12,9 +12,9 @@ import elevate.rise.rules.movement._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
 import elevate.rise.Rise
-import elevate.rise.strategies.normalForm._
 import elevate.rise.strategies.algorithmic._
 import elevate.rise.rules.traversal._
+import elevate.rise.rules.traversal.alternative._
 import elevate.util.makeClosed
 
 class separableConvolution2DRewrite extends shine.test_util.Tests {
@@ -32,6 +32,8 @@ class separableConvolution2DRewrite extends shine.test_util.Tests {
   private val Sv = slide(3)(1)
   private val Dh = toTDSL(dot)(weightsH)
   private val Dv = toTDSL(dot)(weightsV)
+
+  private val BENF = elevate.rise.strategies.normalForm.BENF()(alternative.RiseTraversable)
 
   private def ben_eq(a: Expr, b: Expr): Boolean = {
     val na = BENF(a).get

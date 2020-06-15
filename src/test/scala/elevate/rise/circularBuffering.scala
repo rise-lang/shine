@@ -8,7 +8,8 @@ import elevate.core._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
 import elevate.rise.rules._
-import elevate.rise.rules.traversal._
+import elevate.rise.rules.traversal.alternative
+import elevate.rise.rules.traversal.alternative._
 import elevate.rise.rules.algorithmic._
 import elevate.rise.rules.movement._
 import elevate.rise.strategies.predicate._
@@ -113,7 +114,7 @@ class circularBuffering extends shine.test_util.Tests {
     makeClosed(typedA)._1 == makeClosed(typedB)._1
   }
 
-  private val norm = normalize.apply(gentleBetaReduction)
+  private val norm = normalize(alternative.RiseTraversable).apply(gentleBetaReduction())
 
   private def rewriteSteps(a: Rise, steps: Seq[(Strategy[Rise], Rise)]): Unit = {
     steps.foldLeft[Rise](norm(infer(a)).get)({ case (e, (s, expected)) =>

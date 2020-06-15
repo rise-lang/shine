@@ -1,5 +1,6 @@
 package apps
 
+import elevate.rise.rules.traversal.default
 import shine.DPIA.Types.{ExpType, read, write}
 import shine.DPIA.Types.TypeCheck._
 import rise.core.DSL._
@@ -34,7 +35,7 @@ class dot extends shine.test_util.Tests {
     import shine.DPIA.Types.f32
     import shine.DPIA.Types.DataType._
     import shine.DPIA._
-    val phrase = shine.DPIA.fromRise(infer(simpleDotProduct))
+    val phrase = shine.DPIA.fromRise(infer(simpleDotProduct))(default.RiseTraversable)
 
     val N = phrase.t.asInstanceOf[`(nat)->:`[ExpType ->: ExpType]].x
     val dt = f32

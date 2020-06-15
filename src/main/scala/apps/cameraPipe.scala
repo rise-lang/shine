@@ -100,7 +100,7 @@ object cameraPipe {
           e(nbh `@`
             lidx(offset._2 - y_min, y_range) `@`
             lidx(offset._1 - x_min, x_range))
-        }) |> mapSeq(fun(x => x))
+        })
       )
     )
   }

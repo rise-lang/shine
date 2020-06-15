@@ -9,13 +9,10 @@ import rise.core.TypeLevelDSL._
 import elevate.core._
 import elevate.rise.Rise
 import elevate.rise.rules._
-// import elevate.rise.rules.algorithmic._
-// import elevate.rise.rules.movement._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
-import elevate.rise.strategies.normalForm._
-// import elevate.rise.strategies.algorithmic._
-import elevate.rise.rules.traversal._
+import elevate.rise.rules.traversal.alternative
+import elevate.rise.rules.traversal.alternative._
 
 class cameraPipeCheck extends shine.test_util.TestsWithExecutor {
   val N = 8
@@ -104,6 +101,9 @@ float clamp_f32(float v, float l, float h) {
 }
 #define pow_f32 powf
 """
+
+  val DFNF = elevate.rise.strategies.normalForm.DFNF()(alternative.RiseTraversable)
+  val CNF = elevate.rise.strategies.normalForm.CNF()(alternative.RiseTraversable)
 
   test("hot pixel suppression passes checks") {
     val typed = printTime("infer", infer(hot_pixel_suppression))

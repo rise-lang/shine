@@ -1,21 +1,22 @@
 package shine.DPIA
 
+import elevate.core.strategies.Traversable
 import elevate.core.strategies.basic.normalize
+import elevate.rise.Rise
 import elevate.rise.rules._
-import elevate.rise.rules.traversal._
 import rise.core.{semantics => rs, types => rt}
 import rise.{core => r}
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.{OperationalSemantics => OpSem}
-import shine.DPIA.Types._
 import shine.DPIA.Types.DataType._
+import shine.DPIA.Types._
 
 object fromRise {
-  def apply(expr: r.Expr): Phrase[_ <: PhraseType] = {
+  def apply(expr: r.Expr)(implicit ev: Traversable[Rise]): Phrase[_ <: PhraseType] = {
     if (!r.IsClosedForm(expr)) {
       throw new Exception(s"expression is not in closed form: $expr")
     }
-    val bnfExpr = normalize.apply(betaReduction)(expr).get
+    val bnfExpr = normalize(ev).apply(betaReduction)(expr).get
     val rwMap = inferAccess(bnfExpr)
     expression(bnfExpr, rwMap)
   }
