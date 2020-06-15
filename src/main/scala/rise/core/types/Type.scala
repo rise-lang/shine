@@ -1,13 +1,9 @@
 package rise.core.types
 
-import rise.core._
 import arithexpr.arithmetic.RangeAdd
+import rise.core._
 
 sealed trait Type
-
-case class TypeException(msg: String) extends Exception {
-  override def toString: String = s"type exception: $msg"
-}
 
 object TypePlaceholder extends Type {
   override def toString: String = "?"
@@ -38,14 +34,15 @@ final case class DepFunType[K <: Kind: KindName, T <: Type](
   }
 }
 
+// == Data types ==============================================================
+
 sealed trait DataType extends Type
 
-final case class DataTypeIdentifier(
-    name: String,
-    override val isExplicit: Boolean = false
-) extends DataType
-    with Kind.Identifier
-    with Kind.Explicitness {
+final case class DataTypeIdentifier(name: String,
+                                    override val isExplicit: Boolean = false
+                                   ) extends DataType
+  with Kind.Identifier
+  with Kind.Explicitness {
   override def toString: String = if (isExplicit) name else "_" + name
   override def asExplicit: DataTypeIdentifier = this.copy(isExplicit = true)
   override def asImplicit: DataTypeIdentifier = this.copy(isExplicit = false)
@@ -56,45 +53,18 @@ final case class DataTypeIdentifier(
   override def hashCode(): Int = this.name.hashCode()
 }
 
-sealed trait ComposedType extends DataType
+sealed trait ScalarType extends DataType
 
-final case class ArrayType(size: Nat, elemType: DataType) extends ComposedType {
-  override def toString: String = s"$size.$elemType"
-}
+object bool extends ScalarType { override def toString: String = "bool" }
 
-final case class DepArrayType(size: Nat, fdt: NatToData) extends ComposedType {
-  override def toString: String = s"$size.$fdt"
-}
+object int extends ScalarType { override def toString: String = "int" }
 
-object DepArrayType {
-  def apply(size: Nat, f: Nat => DataType): DepArrayType = {
-    val n = NatIdentifier(freshName("n"), RangeAdd(0, size, 1))
-    DepArrayType(size, NatToDataLambda(n, f(n)))
-  }
-}
-
-final case class PairType(p1: DataType, p2: DataType) extends ComposedType {
-  override def toString: String = s"($p1, $p2)"
-}
-
-sealed trait BasicType extends DataType
-
-sealed trait ScalarType extends BasicType
-
-object bool extends ScalarType {
-  override def toString: String = "bool"
-}
-
-object int extends ScalarType {
-  override def toString: String = "int"
-}
-
-object i8 extends ScalarType { override def toString: String = "i8" }
+object i8  extends ScalarType { override def toString: String = "i8"  }
 object i16 extends ScalarType { override def toString: String = "i16" }
 object i32 extends ScalarType { override def toString: String = "i32" }
 object i64 extends ScalarType { override def toString: String = "i64" }
 
-object u8 extends ScalarType { override def toString: String = "u8" }
+object u8  extends ScalarType { override def toString: String = "u8"  }
 object u16 extends ScalarType { override def toString: String = "u16" }
 object u32 extends ScalarType { override def toString: String = "u32" }
 object u64 extends ScalarType { override def toString: String = "u64" }
@@ -103,20 +73,24 @@ object f16 extends ScalarType { override def toString: String = "f16" }
 object f32 extends ScalarType { override def toString: String = "f32" }
 object f64 extends ScalarType { override def toString: String = "f64" }
 
-object NatType extends ScalarType { override def toString: String = "nat" }
-
-final case class IndexType(size: Nat) extends BasicType {
-  override def toString: String = s"idx[$size]"
-}
+object NatType extends DataType { override def toString: String = "nat" }
 
 // TODO: enforce ScalarType
-sealed case class VectorType(size: Nat, elemType: DataType) extends BasicType {
+sealed case class VectorType(size: Nat, elemType: DataType) extends DataType {
   override def toString: String = s"<$size>$elemType"
 }
 
 object vec {
   def apply(size: Nat, elemType: DataType): VectorType =
     VectorType(size, elemType)
+}
+
+final case class IndexType(size: Nat) extends DataType {
+  override def toString: String = s"idx[$size]"
+}
+
+final case class PairType(dt1: DataType, dt2: DataType) extends DataType {
+  override def toString: String = s"($dt1, $dt2)"
 }
 
 final class NatToDataApply(val f: NatToData, val n: Nat) extends DataType {
@@ -131,4 +105,19 @@ object NatToDataApply {
 
   def unapply(arg: NatToDataApply): Option[(NatToData, Nat)] =
     Some((arg.f, arg.n))
+}
+
+final case class ArrayType(size: Nat, elemType: DataType) extends DataType {
+  override def toString: String = s"$size.$elemType"
+}
+
+final case class DepArrayType(size: Nat, fdt: NatToData) extends DataType {
+  override def toString: String = s"$size.$fdt"
+}
+
+object DepArrayType {
+  def apply(size: Nat, f: Nat => DataType): DepArrayType = {
+    val n = NatIdentifier(freshName("n"), RangeAdd(0, size, 1))
+    DepArrayType(size, NatToDataLambda(n, f(n)))
+  }
 }

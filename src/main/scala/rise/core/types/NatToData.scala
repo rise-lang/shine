@@ -11,6 +11,21 @@ sealed trait NatToData {
   def apply(n: Nat): DataType = NatToDataApply(this, n)
 }
 
+final case class NatToDataIdentifier(name: String,
+                                     override val isExplicit: Boolean = false
+                                    ) extends NatToData
+  with Kind.Identifier
+  with Kind.Explicitness {
+  override def toString: String = if (isExplicit) name else "_" + name
+  override def asExplicit: NatToDataIdentifier = this.copy(isExplicit = true)
+  override def asImplicit: NatToDataIdentifier = this.copy(isExplicit = false)
+  override def equals(that: Any): Boolean = that match {
+    case n2d: NatToDataIdentifier => this.name == n2d.name
+    case _                        => false
+  }
+  override def hashCode(): Int = this.name.hashCode()
+}
+
 case class NatToDataLambda private (x: NatIdentifier, body: DataType)
     extends NatToData {
   // See hash code of NatNatTypeFunction
@@ -26,20 +41,4 @@ case class NatToDataLambda private (x: NatIdentifier, body: DataType)
     case other: NatToDataLambda => body == other.apply(x)
     case _                      => false
   }
-}
-
-final case class NatToDataIdentifier(
-    name: String,
-    override val isExplicit: Boolean = false
-) extends NatToData
-    with Kind.Identifier
-    with Kind.Explicitness {
-  override def toString: String = if (isExplicit) name else "_" + name
-  override def asExplicit: NatToDataIdentifier = this.copy(isExplicit = true)
-  override def asImplicit: NatToDataIdentifier = this.copy(isExplicit = false)
-  override def equals(that: Any): Boolean = that match {
-    case n2d: NatToDataIdentifier => this.name == n2d.name
-    case _                        => false
-  }
-  override def hashCode(): Int = this.name.hashCode()
 }

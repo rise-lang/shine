@@ -3,18 +3,6 @@ package rise.core.types
 // TODO: should not be in the core
 sealed trait AddressSpace
 
-// scalastyle:off public.methods.have.type
-object AddressSpace {
-  object Global extends AddressSpace { override def toString = "Global" }
-
-  object Local extends AddressSpace { override def toString = "Local" }
-
-  object Private extends AddressSpace { override def toString = "Private" }
-
-  object Constant extends AddressSpace { override def toString = "Constant" }
-}
-// scalastyle:off public.methods.have.type
-
 final case class AddressSpaceIdentifier(
     name: String,
     override val isExplicit: Boolean = false
@@ -31,3 +19,15 @@ final case class AddressSpaceIdentifier(
   }
   override def hashCode(): Int = this.name.hashCode()
 }
+
+// scalastyle:off public.methods.have.type
+object AddressSpace {
+  object Global extends AddressSpace { override def toString = "Global" }
+
+  object Local extends AddressSpace { override def toString = "Local" }
+
+  object Private extends AddressSpace { override def toString = "Private" }
+
+  object Constant extends AddressSpace { override def toString = "Constant" }
+}
+// scalastyle:off public.methods.have.type

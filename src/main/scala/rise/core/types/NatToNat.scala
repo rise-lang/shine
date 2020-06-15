@@ -1,10 +1,24 @@
 package rise.core.types
 
-import arithexpr.arithmetic.{ArithExpr, ArithExprFunctionCall, SimplifiedExpr}
-import rise.core.Nat
+import arithexpr.arithmetic.ArithExpr
 
 sealed trait NatToNat {
   def apply(n: Nat): Nat = NatToNatApply(this, n)
+}
+
+final case class NatToNatIdentifier(name: String,
+                                    override val isExplicit: Boolean = false
+                                   ) extends NatToNat
+  with Kind.Identifier
+  with Kind.Explicitness {
+  override def toString: String = if (isExplicit) name else "_" + name
+  override def asExplicit: NatToNatIdentifier = this.copy(isExplicit = true)
+  override def asImplicit: NatToNatIdentifier = this.copy(isExplicit = false)
+  override def equals(that: Any): Boolean = that match {
+    case n2n: NatToNatIdentifier => this.name == n2n.name
+    case _                       => false
+  }
+  override def hashCode(): Int = this.name.hashCode()
 }
 
 final case class NatToNatLambda private (x: NatIdentifier, body: Nat)
@@ -28,45 +42,4 @@ final case class NatToNatLambda private (x: NatIdentifier, body: Nat)
     case other: NatToNatLambda => body == other(x)
     case _                     => false
   }
-}
-
-final case class NatToNatIdentifier(
-    name: String,
-    override val isExplicit: Boolean = false
-) extends NatToNat
-    with Kind.Identifier
-    with Kind.Explicitness {
-  override def toString: String = if (isExplicit) name else "_" + name
-  override def asExplicit: NatToNatIdentifier = this.copy(isExplicit = true)
-  override def asImplicit: NatToNatIdentifier = this.copy(isExplicit = false)
-  override def equals(that: Any): Boolean = that match {
-    case n2n: NatToNatIdentifier => this.name == n2n.name
-    case _                       => false
-  }
-  override def hashCode(): Int = this.name.hashCode()
-}
-
-final class NatToNatApply(val f: NatToNat, val n: Nat)
-    extends ArithExprFunctionCall(s"$f($n)") {
-  override def visitAndRebuild(f: Nat => Nat): Nat = this
-  override def substitute(
-    subs: collection.Map[ArithExpr, ArithExpr]): Option[ArithExpr] = ???
-
-  override lazy val toString: String = s"$f($n)"
-
-  override def exposedArgs: Seq[Nat] = Seq(n)
-
-  override def substituteExposedArgs(
-      subMap: Map[Nat, SimplifiedExpr]
-  ): ArithExprFunctionCall =
-    new NatToNatApply(f, subMap.getOrElse(n, n))
-}
-
-object NatToNatApply {
-  def apply(f: NatToNat, n: Nat): Nat = f match {
-    case l: NatToNatLambda     => l.apply(n)
-    case i: NatToNatIdentifier => new NatToNatApply(i, n)
-  }
-  def unapply(arg: NatToNatApply): Option[(NatToNat, Nat)] =
-    Some((arg.f, arg.n))
 }

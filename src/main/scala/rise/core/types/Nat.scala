@@ -45,3 +45,28 @@ object NatIdentifier {
 
   def apply(nv: NamedVar): NatIdentifier = apply(nv, isExplicit = false)
 }
+
+final class NatToNatApply(val f: NatToNat, val n: Nat)
+  extends ArithExprFunctionCall(s"$f($n)") {
+  override def visitAndRebuild(f: Nat => Nat): Nat = this
+  override def substitute(subs: collection.Map[ArithExpr, ArithExpr]
+                         ): Option[ArithExpr] = ???
+
+  override lazy val toString: String = s"$f($n)"
+
+  override def exposedArgs: Seq[Nat] = Seq(n)
+
+  override def substituteExposedArgs(
+                                      subMap: Map[Nat, SimplifiedExpr]
+                                    ): ArithExprFunctionCall =
+    new NatToNatApply(f, subMap.getOrElse(n, n))
+}
+
+object NatToNatApply {
+  def apply(f: NatToNat, n: Nat): Nat = f match {
+    case l: NatToNatLambda     => l.apply(n)
+    case i: NatToNatIdentifier => new NatToNatApply(i, n)
+  }
+  def unapply(arg: NatToNatApply): Option[(NatToNat, Nat)] =
+    Some((arg.f, arg.n))
+}

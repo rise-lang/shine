@@ -1,6 +1,5 @@
 package rise
 
-import arithexpr.arithmetic._
 import rise.core.types._
 
 package object core {
@@ -12,10 +11,6 @@ package object core {
       prefix + counter
     }
   }
-
-  type Nat = ArithExpr
-  // type NatIdentifier =
-  //    NamedVar with types.Kind.Identifier with types.Kind.Binder
 
   def toEvaluableString(e: Expr): String = {
     e match {

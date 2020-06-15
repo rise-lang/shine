@@ -1,7 +1,5 @@
 package rise.core.types
 
-import rise.core
-
 sealed trait Kind {
   type T
   type I <: Kind.Identifier with T
@@ -29,7 +27,7 @@ sealed trait DataKind extends Kind {
 }
 
 sealed trait NatKind extends Kind {
-  override type T = core.Nat
+  override type T = Nat
   override type I = NatIdentifier
 }
 
