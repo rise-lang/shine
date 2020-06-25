@@ -58,12 +58,26 @@ object TypeLevelDSL {
       val x = NatIdentifier(freshName("n"), isExplicit = true)
       DepFunType[NatKind, Type](x, f(x))
     }
+
+    def unapply[K <: Kind, T <: Type](funType: DepFunType[K, T]): Option[(NatIdentifier, T)] = {
+      funType.x match {
+        case n: NatIdentifier => Some((n, funType.t))
+        case _ => throw new Exception("Expected Nat DepFunType")
+      }
+    }
   }
 
   object dtFunT {
     def apply(f: DataTypeIdentifier => Type): Type = {
       val x = DataTypeIdentifier(freshName("dt"), isExplicit = true)
       DepFunType[DataKind, Type](x, f(x))
+    }
+
+    def unapply[K <: Kind, T <: Type](funType: DepFunType[K, T]): Option[(DataTypeIdentifier, T)] = {
+      funType.x match {
+        case dt: DataTypeIdentifier => Some((dt, funType.t))
+        case _ => throw new Exception("Expected DataType DepFunType")
+      }
     }
   }
 
@@ -72,6 +86,13 @@ object TypeLevelDSL {
       val x = NatToNatIdentifier(freshName("n2n"), isExplicit = true)
       DepFunType[NatToNatKind, Type](x, f(x))
     }
+
+    def unapply[K <: Kind, T <: Type](funType: DepFunType[K, T]): Option[(NatToNatIdentifier, T)] = {
+      funType.x match {
+        case n2n: NatToNatIdentifier => Some((n2n, funType.t))
+        case _ => throw new Exception("Expected Nat to Nat DepFunType")
+      }
+    }
   }
 
   object n2dtFunT {
@@ -79,12 +100,26 @@ object TypeLevelDSL {
       val x = NatToDataIdentifier(freshName("n2dt"), isExplicit = true)
       DepFunType[NatToDataKind, Type](x, f(x))
     }
+
+    def unapply[K <: Kind, T <: Type](funType: DepFunType[K, T]): Option[(NatToDataIdentifier, T)] = {
+      funType.x match {
+        case n2dt: NatToDataIdentifier => Some((n2dt, funType.t))
+        case _ => throw new Exception("Expected Nat to Data DepFunType")
+      }
+    }
   }
 
   object aFunT {
     def apply(f: AddressSpaceIdentifier => Type): Type = {
       val x = AddressSpaceIdentifier(freshName("a"), isExplicit = true)
       DepFunType[AddressSpaceKind, Type](x, f(x))
+    }
+
+    def unapply[K <: Kind, T <: Type](funType: DepFunType[K, T]): Option[(AddressSpaceIdentifier, T)] = {
+      funType.x match {
+        case a: AddressSpaceIdentifier => Some((a, funType.t))
+        case _ => throw new Exception("Expected AddressSpace DepFunType")
+      }
     }
   }
 
@@ -124,6 +159,12 @@ object TypeLevelDSL {
 
   implicit final class TypeConstructors(private val r: Type) extends AnyVal {
     @inline def ->:(t: Type): FunType[Type, Type] = FunType(t, r)
+  }
+
+  object ->: {
+    def unapply[T <: Type, U <: Type](funType: FunType[T, U]): Option[(T, U)] = {
+      FunType.unapply(funType)
+    }
   }
 
   implicit final class TupleTypeConstructors(private val a: DataType)
