@@ -2,6 +2,7 @@ package shine.DPIA
 
 import rise.{core => r}
 import rise.core.{types => rt}
+import rise.core.TypeLevelDSL.{->:, aFunT, nFunT}
 import rise.core.{primitives => rp}
 import rise.openMP.{primitives => rompp}
 import rise.openCL.{primitives => roclp}
@@ -238,7 +239,7 @@ private class InferAccessAnnotation {
           FunType(ExpType(dataType(rArrT), read),
             ExpType(dataType(rMapOutT), write)))
 
-      case rp.Map() | rp.MapFst() | rp.MapSnd() =>
+      case rp.Map() | rp.MapFst() | rp.MapSnd() | rp.MapStream() =>
         val rMapT = p.t.asInstanceOf[
           rt.FunType[rt.FunType[rt.DataType, rt.DataType],
             rt.FunType[rt.DataType, rt.DataType]]
@@ -389,43 +390,33 @@ private class InferAccessAnnotation {
               FunType(ExpType(arrDt, read), ExpType(initDt, read)))))
 
         //TODO Circular Buffer and OCL versions
-      case rp.RotateValues() =>
-        val rT = p.t.asInstanceOf[
-          rt.DepFunType[rt.NatKind, rt.DepFunType[rt.NatKind,
-            rt.FunType[rt.FunType[rt.DataType, rt.DataType],
-              rt.FunType[rt.FunType[rt.DataType, rt.DataType],
-                rt.FunType[rt.DataType, rt.DataType]]]]]]
-        val dt1 = dataType(rT.t.t.inT.inT)
-        val fInT = dataType(rT.t.t.outT.inT.inT)
-        val fOutT = dataType(rT.t.t.outT.inT.outT)
-        val inputT = dataType(rT.t.t.outT.outT.inT)
-        val outT = dataType(rT.t.t.outT.outT.outT)
+      case rp.RotateValues() => p.t match {
+        case  nFunT(sz,
+                    ((dt1: rt.DataType) ->: _)
+                ->: (inT  @ rt.ArrayType(_, _))
+                ->: (outT @ rt.ArrayType(_, _))) =>
+          DepFunType[NatKind, PhraseType](natIdentifier(sz),
+            FunType(FunType(ExpType(dataType(dt1), read),
+              ExpType(dataType(dt1), write)),
+            FunType(ExpType(dataType(inT), read),
+              ExpType(dataType(outT), write))))
+        case _ => ???
+      }
 
-        DepFunType[NatKind, PhraseType](natIdentifier(rT.x),
-          DepFunType[NatKind, PhraseType](natIdentifier(rT.t.x),
-            FunType(FunType(ExpType(dt1, read), ExpType(dt1, write)),
-              FunType(FunType(ExpType(fInT, read), ExpType(fOutT, write)),
-                FunType(ExpType(inputT, read), ExpType(outT, write))))))
+      case roclp.OclRotateValues() => p.t match {
+        case aFunT(a, nFunT(sz,
+                   ((dt1: rt.DataType) ->: _)
+               ->: (inT  @ rt.ArrayType(_, _))
+               ->: (outT @ rt.ArrayType(_, _)))) =>
 
-      case roclp.OclRotateValues() =>
-        val rT = p.t.asInstanceOf[
-          rt.DepFunType[rt.AddressSpaceKind,
-            rt.DepFunType[rt.NatKind, rt.DepFunType[rt.NatKind,
-              rt.FunType[rt.FunType[rt.DataType, rt.DataType],
-                rt.FunType[rt.FunType[rt.DataType, rt.DataType],
-                  rt.FunType[rt.DataType, rt.DataType]]]]]]]
-        val dt1 = dataType(rT.t.t.t.inT.inT)
-        val fInT = dataType(rT.t.t.t.outT.inT.inT)
-        val fOutT = dataType(rT.t.t.t.outT.inT.outT)
-        val inputT = dataType(rT.t.t.t.outT.outT.inT)
-        val outT = dataType(rT.t.t.t.outT.outT.outT)
-
-        DepFunType[AddressSpaceKind, PhraseType](addressSpaceIdentifier(rT.x),
-        DepFunType[NatKind, PhraseType](natIdentifier(rT.t.x),
-          DepFunType[NatKind, PhraseType](natIdentifier(rT.t.t.x),
-            FunType(FunType(ExpType(dt1, read), ExpType(dt1, write)),
-              FunType(FunType(ExpType(fInT, read), ExpType(fOutT, write)),
-                FunType(ExpType(inputT, read), ExpType(outT, write)))))))
+          DepFunType[AddressSpaceKind, PhraseType](addressSpaceIdentifier(a),
+            DepFunType[NatKind, PhraseType](natIdentifier(sz),
+              FunType(FunType(ExpType(dataType(dt1), read),
+                ExpType(dataType(dt1), write)),
+              FunType(ExpType(dataType(inT), read),
+                ExpType(dataType(outT), write)))))
+        case _ => ???
+      }
 
       case rp.Slide() | rp.PadClamp() =>
         val rT = p.t.asInstanceOf[
