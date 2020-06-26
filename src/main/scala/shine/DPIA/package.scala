@@ -10,7 +10,7 @@ package object DPIA {
     throw new TypeException(s"Found $found but expected $expected")
   }
 
-  def error(msg: String): Nothing = {
+  def error(msg: String = "This should not happen"): Nothing = {
     throw new Exception(msg)
   }
 
