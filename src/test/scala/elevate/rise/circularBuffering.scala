@@ -45,7 +45,7 @@ class circularBuffering extends shine.test_util.Tests {
       )) >> mapSeqUnroll(mapSeq(fun(x => x)))
 
   val buffered: Rise =
-    slide(3)(1) >> mapSeq(sumSeq) >> letf(x =>
+    slide(3)(1) >> mapSeq(sumSeq) >> toMem >> letf(x =>
       makeArray(2)(
         x |> slide(2)(1) >> map(sumSeq) >> drop(1) >> dropLast(1),
         x |> slide(4)(1) >> map(sumSeq)
@@ -53,7 +53,7 @@ class circularBuffering extends shine.test_util.Tests {
 
   val circBuf: Rise =
     slide(3)(1) >> map(sumSeq) >>
-    circularBuffer(4)(1)(fun(x => x)) >>
+    circularBuffer(0)(4)(fun(x => x)) >>
     mapStream(fun(nbh =>
       makeArray(2)(
         nbh |> drop(1) >> dropLast(1) >> sumSeq,

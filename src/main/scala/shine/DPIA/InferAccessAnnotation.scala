@@ -9,7 +9,6 @@ import rise.openCL.{primitives => roclp}
 import shine.DPIA.Types._
 import shine.DPIA.Types.TypeCheck.SubTypeCheckHelper
 import shine.DPIA.fromRise._
-import shine.DPIA.DSL.TypeLevel._
 
 import scala.annotation.tailrec
 import scala.collection.mutable
@@ -225,36 +224,37 @@ private class InferAccessAnnotation {
   private def inferPrimitive(p: r.Primitive): (PhraseType, Subst) = {
     val primitiveType = p match {
       case roclp.MapGlobal(_) | roclp.MapWorkGroup(_) | roclp.MapLocal(_)
-           | rompp.MapPar() | rp.MapSeq() | rp.MapSeqUnroll() => p.t match {
+           | rompp.MapPar() | rp.MapSeq() | rp.MapSeqUnroll()
+           | rp.MapStream() => p.t match {
         case ((s: rt.DataType) ->: (t: rt.DataType)) ->:
           rt.ArrayType(n, _) ->: rt.ArrayType(_, _) =>
 
-          (exp(s, read) -->: exp(t, write)) -->:
-            exp(rt.ArrayType(n, s), read) -->:
-            exp(rt.ArrayType(n, t), write)
+          (expT(s, read) ->: expT(t, write)) ->:
+            expT(rt.ArrayType(n, s), read) ->:
+            expT(rt.ArrayType(n, t), write)
         case _ => error()
       }
 
-      case rp.Map() | rp.MapFst() | rp.MapSnd() | rp.MapStream() => p.t match {
+      case rp.Map() | rp.MapFst() | rp.MapSnd() => p.t match {
         case ((s: rt.DataType) ->: (t: rt.DataType)) ->:
           rt.ArrayType(n, _) ->: rt.ArrayType(_, _) =>
 
           val ai = accessTypeIdentifier()
-          (exp(s, ai) -->: exp(t, ai)) -->:
-            exp(rt.ArrayType(n, s), ai) -->:
-            exp(rt.ArrayType(n, t), ai)
+          (expT(s, ai) ->: expT(t, ai)) ->:
+            expT(rt.ArrayType(n, s), ai) ->:
+            expT(rt.ArrayType(n, t), ai)
         case _ => error()
       }
 
       case rp.ToMem() => p.t match {
         case (t: rt.DataType) ->: (_: rt.DataType) =>
-          exp(t, write) -->: exp(t, read)
+          expT(t, write) ->: expT(t, read)
         case _ => error()
       }
 
       case roclp.OclToMem() => p.t match {
         case rtdsl.aFunT(a, (t: rt.DataType) ->: (_: rt.DataType)) =>
-          aFunT(a, exp(t, write) -->: exp(t, read))
+          aFunT(a, expT(t, write) ->: expT(t, read))
         case _ => error()
       }
 
@@ -262,14 +262,14 @@ private class InferAccessAnnotation {
            | rp.Unzip() => p.t match {
         case (dt1: rt.DataType) ->: (dt2: rt.DataType) =>
           val ai = accessTypeIdentifier()
-          exp(dt1, ai) -->: exp(dt2, ai)
+          expT(dt1, ai) ->: expT(dt2, ai)
         case _ => error()
       }
 
       case rp.VectorFromScalar() | rp.Neg() | rp.Not()
            | rp.IndexAsNat() | rp.Fst() | rp.Snd()  | rp.Cast() => p.t match {
         case (dt1: rt.DataType) ->: (dt2: rt.DataType) =>
-          exp(dt1, read) -->: exp(dt2, read)
+          expT(dt1, read) ->: expT(dt2, read)
         case _ => error()
       }
 
@@ -279,7 +279,7 @@ private class InferAccessAnnotation {
           (_: rt.DataType) =>
 
           val ai = accessTypeIdentifier()
-          exp(s, read) -->:(exp(s, read) -->: exp(t, ai)) -->: exp(t, ai)
+          expT(s, read) ->:(expT(s, read) ->: expT(t, ai)) ->: expT(t, ai)
         case _ => error()
       }
 
@@ -287,7 +287,7 @@ private class InferAccessAnnotation {
         case rtdsl.nFunT(n, (dt1: rt.DataType) ->: (dt2: rt.DataType)) =>
 
           val ai = accessTypeIdentifier()
-          nFunT(n, exp(dt1, ai) -->: exp(dt2, ai))
+          nFunT(n, expT(dt1, ai) ->: expT(dt2, ai))
         case _ => error()
       }
 
@@ -295,20 +295,20 @@ private class InferAccessAnnotation {
         case (dt1: rt.DataType) ->: (dt2: rt.DataType) ->: (dt3: rt.DataType) =>
 
           val ai = accessTypeIdentifier()
-          exp(dt1, ai) -->: exp(dt2, ai) -->: exp(dt3, ai)
+          expT(dt1, ai) ->: expT(dt2, ai) ->: expT(dt3, ai)
         case _ => error()
       }
 
       case rp.Idx() | rp.Add() | rp.Sub() | rp.Mul() | rp.Div() | rp.Gt()
            | rp.Lt() | rp.Equal() | rp.Mod() | rp.Gather() => p.t match {
         case (dt1: rt.DataType) ->: (dt2: rt.DataType) ->: (dt3: rt.DataType) =>
-          exp(dt1, read) -->: exp(dt2, read) -->: exp(dt3, read)
+          expT(dt1, read) ->: expT(dt2, read) ->: expT(dt3, read)
         case _ => error()
       }
 
       case rp.NatAsIndex() | rp.Take() | rp.Drop() => p.t match {
         case rtdsl.nFunT(n, (dt1: rt.DataType) ->: (dt2: rt.DataType)) =>
-          nFunT(n, exp(dt1, read) -->: exp(dt2, read))
+          nFunT(n, expT(dt1, read) ->: expT(dt2, read))
         case _ => error()
       }
 
@@ -316,10 +316,10 @@ private class InferAccessAnnotation {
         case ((t: rt.DataType) ->: (s: rt.DataType) ->: (_: rt.DataType)) ->:
           (_: rt.DataType) ->: rt.ArrayType(n, _) ->: (_: rt.DataType) =>
 
-          (exp(t, read) -->: exp(s, read) -->: exp(t, write)) -->:
-            exp(t, write) -->:
-            exp(rt.ArrayType(n, s), read) -->:
-            exp(t, read)
+          (expT(t, read) ->: expT(s, read) ->: expT(t, write)) ->:
+            expT(t, write) ->:
+            expT(rt.ArrayType(n, s), read) ->:
+            expT(t, read)
         case _ => error()
       }
 
@@ -327,10 +327,10 @@ private class InferAccessAnnotation {
         case ((s: rt.DataType) ->: (t: rt.DataType) ->: (_: rt.DataType)) ->:
           (_: rt.DataType) ->: rt.ArrayType(n, _) ->: rt.ArrayType(_, _) =>
 
-          (exp(s, read) -->: exp(t, read) -->: exp(t, write)) -->:
-            exp(t, write) -->:
-            exp(rt.ArrayType(n, s), read) -->:
-            exp(rt.ArrayType(n, t), write)
+          (expT(s, read) ->: expT(t, read) ->: expT(t, write)) ->:
+            expT(t, write) ->:
+            expT(rt.ArrayType(n, s), read) ->:
+            expT(rt.ArrayType(n, t), write)
         case _ => error()
       }
 
@@ -340,10 +340,10 @@ private class InferAccessAnnotation {
           (_: rt.DataType) ->: rt.ArrayType(n, _) ->: (_: rt.DataType)) =>
 
           aFunT(a,
-            (exp(t, read) -->: exp(s, read) -->: exp(t, write)) -->:
-            exp(t, write) -->:
-            exp(rt.ArrayType(n, s), read) -->:
-            exp(t, read))
+            (expT(t, read) ->: expT(s, read) ->: expT(t, write)) ->:
+            expT(t, write) ->:
+            expT(rt.ArrayType(n, s), read) ->:
+            expT(t, read))
         case _ => error()
       }
 
@@ -354,9 +354,21 @@ private class InferAccessAnnotation {
                       (inT: rt.ArrayType) ->:
                       (outT: rt.ArrayType)) =>
           nFunT(sz,
-            (exp(s, read) -->: exp(s, write)) -->:
-            exp(inT, read) -->:
-            exp(outT, write))
+            (expT(s, read) ->: expT(s, write)) ->:
+            expT(inT, read) ->:
+            expT(outT, read))
+        case _ => error()
+      }
+
+      case rp.CircularBuffer() => p.t match {
+        case rtdsl.nFunT(alloc, rtdsl.nFunT(sz,
+                      ((s: rt.DataType) ->: (t: rt.DataType)) ->:
+                      (inT: rt.ArrayType) ->:
+                      (outT: rt.ArrayType))) =>
+          nFunT(alloc, nFunT(sz,
+            (expT(s, read) ->: expT(s, write)) ->:
+            expT(inT, read) ->:
+            expT(outT, read)))
         case _ => error()
       }
 
@@ -367,9 +379,9 @@ private class InferAccessAnnotation {
                    (outT: rt.ArrayType))) =>
           aFunT(a,
             nFunT(sz,
-              (exp(s, read) -->: exp(s, write)) -->:
-              exp(inT, read) -->:
-              exp(outT, write)))
+              (expT(s, read) ->: expT(s, write)) ->:
+              expT(inT, read) ->:
+              expT(outT, read)))
         case _ => error()
       }
 
@@ -377,7 +389,7 @@ private class InferAccessAnnotation {
         case rtdsl.nFunT(sz, rtdsl.nFunT(sp,
                     (dt1: rt.DataType) ->: (dt2: rt.DataType))) =>
           nFunT(sz, nFunT(sp,
-            exp(dt1, read) -->: exp(dt2, read)))
+            expT(dt1, read) ->: expT(dt2, read)))
         case _ => error()
       }
 
@@ -387,9 +399,9 @@ private class InferAccessAnnotation {
               (at3: rt.ArrayType) ->:
               (at4: rt.ArrayType) ) =>
           nFunT(k,
-            nFunT(l, exp(at1, read) -->: exp(at2, write)) -->:
-            exp(at3, read) -->:
-            exp(at4, write) )
+            nFunT(l, expT(at1, read) ->: expT(at2, write)) ->:
+            expT(at3, read) ->:
+            expT(at4, write) )
         case _ => error()
       }
 
@@ -399,9 +411,9 @@ private class InferAccessAnnotation {
               (at3: rt.ArrayType) ->:
               (at4: rt.ArrayType) )) =>
           aFunT(a, nFunT(k,
-            nFunT(l, exp(at1, read) -->: exp(at2, write)) -->:
-              exp(at3, read) -->:
-              exp(at4, write) ))
+            nFunT(l, expT(at1, read) ->: expT(at2, write)) ->:
+              expT(at3, read) ->:
+              expT(at4, write) ))
         case _ => error()
       }
 
@@ -409,8 +421,8 @@ private class InferAccessAnnotation {
         case rt.bool ->: (t: rt.DataType) ->:
           (_: rt.DataType) ->: (_: rt.DataType) =>
 
-          exp(rt.bool, read) -->:
-            exp(t, read) -->: exp(t, read) -->: exp(t, read)
+          expT(rt.bool, read) ->:
+            expT(t, read) ->: expT(t, read) ->: expT(t, read)
         case _ => error()
       }
 
@@ -419,17 +431,17 @@ private class InferAccessAnnotation {
           (t: rt.DataType) ->: rt.ArrayType(n, _) ->: rt.ArrayType(_, _) )) =>
 
           nFunT(l, nFunT(q,
-            exp(t, read) -->:
-              exp(rt.ArrayType(n, t), read) -->:
-              exp(rt.ArrayType(l + n + q, t), read)
+            expT(t, read) ->:
+              expT(rt.ArrayType(n, t), read) ->:
+              expT(rt.ArrayType(l + n + q, t), read)
           ))
         case _ => error()
       }
 
       case rp.Generate() => p.t match {
         case (rt.IndexType(n) ->: (t: rt.DataType)) ->: rt.ArrayType(_, _) =>
-          (exp(rt.IndexType(n), read) -->: exp(t, read)) -->:
-            exp(rt.ArrayType(n, t), read)
+          (expT(rt.IndexType(n), read) ->: expT(t, read)) ->:
+            expT(rt.ArrayType(n, t), read)
         case _ => error()
       }
 
@@ -439,9 +451,9 @@ private class InferAccessAnnotation {
           rt.ArrayType(_, t) ->: rt.ArrayType(_, _) =>
 
           val ai = accessTypeIdentifier()
-          (exp(rt.IndexType(n), read) -->: exp(rt.IndexType(n), read)) -->:
-            (exp(rt.IndexType(n), read) -->: exp(rt.IndexType(n), read)) -->:
-            exp(rt.ArrayType(n, t), ai) -->: exp(rt.ArrayType(n, t), ai)
+          (expT(rt.IndexType(n), read) ->: expT(rt.IndexType(n), read)) ->:
+            (expT(rt.IndexType(n), read) ->: expT(rt.IndexType(n), read)) ->:
+            expT(rt.ArrayType(n, t), ai) ->: expT(rt.ArrayType(n, t), ai)
         case _ => error()
       }
 
@@ -454,6 +466,8 @@ private class InferAccessAnnotation {
         val wArr = wrapArray(arr.t, Vector())
         wArr.t
     }
+
+    checkConsistency(p.t, primitiveType)
 
     ptAnnotationMap update(p, primitiveType)
     (primitiveType, Subst())
@@ -506,5 +520,17 @@ private class InferAccessAnnotation {
     }
     case rt.TypeIdentifier(_) | rt.TypePlaceholder =>
       error()
+  }
+
+  private def checkConsistency(t: rt.Type, pt: PhraseType): Unit = (t, pt) match {
+    case (rt.FunType(inT, outT), FunType(inPT, outPT)) =>
+      checkConsistency(inT, inPT)
+      checkConsistency(outT, outPT)
+    case (rt.DepFunType(x, t), DepFunType(y, pt)) =>
+      if (x.name != y.name) error(s"Identifiers $x and $y differ")
+      checkConsistency(t, pt)
+    case (dt: rt.DataType, ExpType(dpt: DataType, _)) =>
+
+    case _ => error(s"Types $t and $pt not compatible")
   }
 }
