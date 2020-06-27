@@ -279,7 +279,7 @@ private class InferAccessAnnotation {
           (_: rt.DataType) =>
 
           val ai = accessTypeIdentifier()
-          expT(s, read) ->:(expT(s, read) ->: expT(t, ai)) ->: expT(t, ai)
+          expT(s, read) ->: (expT(s, read) ->: expT(t, ai)) ->: expT(t, ai)
         case _ => error()
       }
 
@@ -433,8 +433,7 @@ private class InferAccessAnnotation {
           nFunT(l, nFunT(q,
             expT(t, read) ->:
               expT(rt.ArrayType(n, t), read) ->:
-              expT(rt.ArrayType(l + n + q, t), read)
-          ))
+              expT(rt.ArrayType(l + n + q, t), read)))
         case _ => error()
       }
 
@@ -457,14 +456,25 @@ private class InferAccessAnnotation {
         case _ => error()
       }
 
-      case f@r.ForeignFunction(decl) =>
-        val (inTs, outT) = foreignFunIO(f.t)
-        val wF = wrapForeignFun(decl, inTs, outT, Vector())
-        wF.t
+      case r.ForeignFunction(_) =>
+        def buildType(t: rt.Type): PhraseType = t match {
+          case dt: rt.DataType =>
+            expT(dataType(dt), read)
+          case rt.FunType(in: rt.DataType, out) =>
+            expT(in, read) ->: buildType(out)
+          case _ =>
+            throw new Exception("This should not happen")
+        }
+        buildType(p.t)
 
-      case arr@rp.MakeArray(_) =>
-        val wArr = wrapArray(arr.t, Vector())
-        wArr.t
+      case rp.MakeArray(_) =>
+        def buildType(t: rt.Type): PhraseType = t match {
+          case rt.FunType(in: rt.DataType, out) =>
+            expT(dataType(in), read) ->: buildType(out)
+          case rt.ArrayType(n, dt) => expT(ArrayType(n, dataType(dt)), read)
+          case _ => error(s"did not expect t")
+        }
+        buildType(p.t)
     }
 
     checkConsistency(p.t, primitiveType)

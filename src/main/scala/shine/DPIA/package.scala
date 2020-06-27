@@ -109,21 +109,29 @@ package object DPIA {
     def ->:(n: NatToDataIdentifier): `()->:`[NatToDataKind, R] = DepFunType[NatToDataKind, R](n, r)
   }
 
-  @inline
-  def expT(dt: DataType, a: AccessType): ExpType = ExpType(dt, a)
-  @inline
-  def expT(dt: rt.DataType, a: AccessType): ExpType =
-    expT(fromRise.dataType(dt), a)
+  object expT {
+    def apply(dt: DataType, a: AccessType): ExpType = ExpType(dt, a)
+    def apply(dt: rt.DataType, a: AccessType): ExpType =
+      expT(fromRise.dataType(dt), a)
 
-  @inline
-  def accT(dt: DataType): AccType = AccType(dt)
-  @inline
-  def accT(dt: rt.DataType): AccType = accT(fromRise.dataType(dt))
+    def unapply(et: ExpType): Option[(DataType, AccessType)] = {
+      ExpType.unapply(et)
+    }
+  }
 
-  @inline
-  def varT(dt: DataType): VarType = expT(dt, read) x accT(dt)
-  @inline
-  def varT(dt: rt.DataType): VarType = expT(dt, read) x accT(dt)
+  object accT {
+    def apply(dt: DataType): AccType = AccType(dt)
+    def apply(dt: rt.DataType): AccType = accT(fromRise.dataType(dt))
+
+    def unapply(at: AccType): Option[DataType] = {
+      AccType.unapply(at)
+    }
+  }
+
+  object varT {
+    def apply(dt: DataType): VarType = expT(dt, read) x accT(dt)
+    def apply(dt: rt.DataType): VarType = expT(dt, read) x accT(dt)
+  }
 
   object nFunT {
     def apply(n: rt.NatIdentifier, t: PhraseType): PhraseType = {
