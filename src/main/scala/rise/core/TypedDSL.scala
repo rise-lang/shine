@@ -1,14 +1,13 @@
 package rise.core
 
-import rise.core.types._
-import rise.core.types.infer._
-import rise.core.semantics._
-import rise.core.primitives._
-import rise.core.traversal.{Continue, Result, Stop}
 import rise.core.TypeLevelDSL._
+import rise.core.primitives._
+import rise.core.semantics._
+import rise.core.traversal.{Continue, Result, Stop}
+import rise.core.types._
+import rise.core.types.InferenceException.error
 
 import scala.collection.mutable
-
 import scala.language.implicitConversions
 
 // scalastyle:off number.of.methods
@@ -393,7 +392,7 @@ object TypedDSL {
     def infer(e: Expr): Expr = {
       val constraints = mutable.ArrayBuffer[Constraint]()
       val (typed_e, ftvSubs) = constrainTypes(e, constraints, mutable.Map())
-      val solution = solve(constraints, Seq()) match {
+      val solution = Constraint.solve(constraints, Seq()) match {
         case Solution(ts, ns, as, n2ds) =>
           Solution(
             ts.mapValues(t => ftvSubs(t)),
