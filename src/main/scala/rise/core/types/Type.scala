@@ -93,6 +93,25 @@ final case class PairType(dt1: DataType, dt2: DataType) extends DataType {
   override def toString: String = s"($dt1, $dt2)"
 }
 
+final case class DepPairType(
+                            x: NatKind#I,
+                            t: DataType
+                           ) extends DataType {
+  override def toString: String =
+    s"(${x.name}: ${KindName.natKN.get} ** $t)"
+
+  override def equals(obj: Any): Boolean = obj match {
+    case other: DepPairType =>
+      t == substitute.kindInType[NatKind, DataType](
+        this.x, `for` = other.x, in = other.t
+      )
+    case _ => false
+  }
+
+  override def hashCode(): Int = super.hashCode()
+}
+
+
 final class NatToDataApply(val f: NatToData, val n: Nat) extends DataType {
   override def toString: String = s"$f($n)"
 }

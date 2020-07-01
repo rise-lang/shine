@@ -88,6 +88,14 @@ object TypeLevelDSL {
     }
   }
 
+  // dependent pairs
+  object  n2dPairT {
+    def apply(f: NatIdentifier => DataType): Type = {
+      val x = NatIdentifier(freshName("n"), isExplicit = true)
+      DepPairType(x, f(x))
+    }
+  }
+
   // types with implicit type parameters
   def implN[A](f: NatIdentifier => A): A = {
     f(NatIdentifier(freshName("n")))

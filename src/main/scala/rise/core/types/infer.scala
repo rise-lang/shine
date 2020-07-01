@@ -141,8 +141,42 @@ object infer {
 
   object Solution {
     def apply(): Solution = Solution(Map(), Map(), Map(), Map())
-    def subs(ta: Type, tb: Type): Solution =
-      Solution(Map(ta -> tb), Map(), Map(), Map())
+    def subs(ta: Type, tb: Type): Solution = {
+
+      /** Ta or Tb could be applied dependent functions with
+       *  an identifier rather then a lambda. In these cases,
+       *  we can attempt to fish out what the lambda represented
+       *  by the identifier actually is by 'unapplying' the other type
+       */
+      def attemptRecoverTypeLambda(ta: Type, tb: Type) = {
+        ta match {
+          // Ta must be a of the form f(n), where f and n are both identifiers
+          case NatToDataApply(f: NatToDataIdentifier, n: NatIdentifier) =>
+            tb match {
+                // if tb is of form g(_), we know f = g
+              case NatToDataApply(g, _) => Some(f -> g)
+              case _ => tb match {
+                  // if tb is an actual data type, we can unapply
+                  // n and recover the definition of f
+                case t: DataType =>
+                  val fBody = n2dtFun(
+                    fresh => substitute.natInDataType(fresh, n, t)
+                  )
+                  Some(f -> fBody)
+                case _ => None
+              }
+            }
+          case _ => None
+        }
+      }
+      val typeLambdaSols =
+        attemptRecoverTypeLambda(ta, tb)
+          .orElse(attemptRecoverTypeLambda(tb,ta))
+          .toMap
+
+      Solution(Map(ta -> tb), Map(), Map(), typeLambdaSols)
+    }
+
     def subs(ta: DataTypeIdentifier, tb: Type): Solution =
       Solution(Map(ta -> tb), Map(), Map(), Map())
     def subs(na: NatIdentifier, nb: Nat): Solution =
@@ -341,12 +375,24 @@ object infer {
               DepFunType(_: AddressSpaceIdentifier, _)
               ) =>
             ???
+
+          case (DepPairType(x1, t1), DepPairType(x2, t2)) =>
+            val n = NatIdentifier(freshName("n"), isExplicit = true)
+
+            decomposed(Seq(
+              NatConstraint(n, x1.asImplicit),
+              NatConstraint(n, x2.asImplicit),
+              TypeConstraint(t1, t2)
+            ))
           case (_: NatToDataApply, dt: DataType) =>
             Solution.subs(a, dt) // substitute apply by data type
           case (dt: DataType, _: NatToDataApply) =>
             Solution.subs(b, dt) // substitute apply by data type
-          case _ => error(s"cannot unify $a and $b")
+
+          case _ =>
+            error(s"cannot unify $a and $b")
         }
+
 
       case DepConstraint(df, arg, t) =>
         df match {

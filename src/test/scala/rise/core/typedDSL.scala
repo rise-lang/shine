@@ -17,5 +17,35 @@ class typedDSL extends rise.testUtil.Tests {
       )
     val inferred: Expr = e
     println(inferred)
+    println(inferred.t)
+  }
+
+  test("Dependent pair construct") {
+    val e = nFun(n =>
+      fun(n `.` f32)(x => dpair(n)(x))
+    )
+     val inferred: Expr = e
+    println(inferred)
+    print(inferred.t)
+  }
+
+  test("Dependent pair match") {
+    val e = fun(n2dPairT(n => n`.`f32))(pair =>
+      dmatch(pair)(nFun(n => fun(x => dpair(n)(x))))
+    )
+    val inferred: Expr = e
+    println(inferred)
+    print(inferred.t)
+  }
+
+  test("Dependent pair match with reduction") {
+    val e = fun(n2dPairT(n => n`.`f32))(pair =>
+      dmatch(pair)(nFun(_ => fun(xs =>
+        reduceSeq(fun(x => fun(y => x + y)))(l(1.0f))(xs))
+      ))
+    )
+    val inferred: Expr = e
+    println(inferred)
+    print(inferred.t)
   }
 }

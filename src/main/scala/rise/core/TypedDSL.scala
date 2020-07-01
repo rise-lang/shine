@@ -467,6 +467,9 @@ object TypedDSL {
   def unzip: TDSL[Unzip] = toTDSL(primitives.Unzip()())
   def zip: TDSL[Zip] = toTDSL(primitives.Zip()())
 
+  def dpair: TDSL[DPair] = toTDSL(primitives.DPair()())
+  def dmatch: TDSL[DMatch] = toTDSL(primitives.DMatch()())
+
   def neg: TDSL[Neg] = toTDSL(primitives.Neg()())
   def add: TDSL[Add] = toTDSL(primitives.Add()())
   def sub: TDSL[Sub] = toTDSL(primitives.Sub()())
