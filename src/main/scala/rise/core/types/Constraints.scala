@@ -35,6 +35,7 @@ object Constraint {
       s ++ solve(s.apply(cs), trace)
   }
 
+  // scalastyle:off method.length
   def solveOne(c: Constraint, trace: Seq[Constraint]): Solution = {
     implicit val _trace: Seq[Constraint] = trace
     def decomposed(cs: Seq[Constraint]) = solve(cs, c +: trace)
@@ -177,6 +178,7 @@ object Constraint {
 
     }
   }
+  // scalastyle:on method.length
 
   def unifyTypeIdent(i: TypeIdentifier, t: Type): Solution = {
     Solution.subs(i, t)
