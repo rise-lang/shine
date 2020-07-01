@@ -7,7 +7,7 @@ import elevate.heuristic_search.Runner
 import shine.C.Program
 import util.{createTempFile, gen, writeToTempFile}
 import elevate.core.Strategy
-import elevate.heuristic_search.util.IOHelper
+import elevate.heuristic_search.util.{IOHelper, Solution}
 import exploration.explorationUtil.ExplorationErrorLevel.ExplorationErrorLevel
 //import exploration.explorationUtil.executeC
 import exploration.explorationUtil.ExplorationErrorLevel._
@@ -27,12 +27,16 @@ class CExecutor(val lowering: Strategy[Rise], val goldExpression: Rise, val iter
   // write header to csv output file
   writeHeader(output + "/" + "executor.csv")
 
-  def execute(solution: Rise):(Rise,Option[Double]) = {
+  def execute(solution: Solution[Rise]):(Rise,Option[Double]) = {
+    println("[Executor] : strategy length: " + solution.strategies.size)
+    solution.strategies.foreach(elem => {
+      println("strategy: " + elem)
+    })
     // initialize error level
     errorLevel = LoweringError
 
     // lower solution
-    val lowered = lowering.apply(solution)
+    val lowered = lowering.apply(solution.expression)
 
     // update error level
     errorLevel = CodeGenerationError
@@ -52,6 +56,7 @@ class CExecutor(val lowering: Strategy[Rise], val goldExpression: Rise, val iter
         // execute
         try{
           errorLevel = ExecutionError
+          println("execute: " + Integer.toHexString(solution.expression.hashCode()))
           val returnValue = execute(bin, iterations, threshold)
 
           // check for new best to replace gold
@@ -114,14 +119,14 @@ class CExecutor(val lowering: Strategy[Rise], val goldExpression: Rise, val iter
     var codeOutput = ""
 
     // add high/low-level hash, performance value and code
-    codeOutput += "// high-level hash: " + Integer.toHexString(solution.hashCode()) + " \n"
+    codeOutput += "// high-level hash: " + Integer.toHexString(solution.expression.hashCode()) + " \n"
     codeOutput += "// low-level hash: " + Integer.toHexString(lowered.get.hashCode()) + " \n"
 
     // check if execution was valid
-    var filenameC = Integer.toHexString(solution.hashCode()) + "_" + Integer.toHexString(lowered.get.hashCode())
+    var filenameC = Integer.toHexString(solution.expression.hashCode()) + "_" + Integer.toHexString(lowered.get.hashCode())
     var filenameLowered = Integer.toHexString(lowered.get.hashCode())
-    var filenameHigh = Integer.toHexString(solution.hashCode())
-    var folder = output + "/" + Integer.toHexString(solution.hashCode())
+    var filenameHigh = Integer.toHexString(solution.expression.hashCode())
+    var folder = output + "/" + Integer.toHexString(solution.expression.hashCode())
 
     performanceValue match {
       case None => {
@@ -156,7 +161,7 @@ class CExecutor(val lowering: Strategy[Rise], val goldExpression: Rise, val iter
     // write lowered expressions
 
     // write runtime to output file
-    writeValues(output + "/" + "executor.csv", (solution, lowered.get, performanceValue, errorLevel), "executor")
+    writeValues(output + "/" + "executor.csv", (solution.expression, lowered.get, performanceValue, errorLevel), "executor")
 
     // print lowered expression to file
     val uniqueFilenameLowered = IOHelper.getUniqueFilename(folder + "/" + filenameLowered, 0)
@@ -165,7 +170,7 @@ class CExecutor(val lowering: Strategy[Rise], val goldExpression: Rise, val iter
     val pwLowered = new PrintWriter(new FileOutputStream(new File(uniqueFilenameLowered), false))
 
     // lowered string
-    var loweredString = "high-level hash: " + Integer.toHexString(solution.hashCode()) + "\n"
+    var loweredString = "high-level hash: " + Integer.toHexString(solution.expression.hashCode()) + "\n"
     loweredString += lowered.get
 
     // write code to file
@@ -183,12 +188,28 @@ class CExecutor(val lowering: Strategy[Rise], val goldExpression: Rise, val iter
     val pwHigh = new PrintWriter(new FileOutputStream(new File(uniqueFilenameHigh), false))
 
     // write code to file
-    pwHigh.write(solution.toString)
+    pwHigh.write(solution.expression.toString)
 
     // close files
     pwHigh.close()
 
-    (solution, performanceValue)
+    // write strategies
+    val uniqueFilenameStrategies = IOHelper.getUniqueFilename(folder + "/" + filenameHigh + "_strategies", 0)
+
+    // create file for for lowered expression
+    val pwStrategy= new PrintWriter(new FileOutputStream(new File(uniqueFilenameStrategies), false))
+
+    // create strategy string
+    var strategyString = ""
+    solution.strategies.foreach(elem =>{
+      strategyString += elem + "\n"
+    })
+
+    // write and close
+    pwStrategy.write(strategyString)
+    pwStrategy.close()
+
+    (solution.expression, performanceValue)
   }
 
   def prepareInput(riseProgram:Program):(String,String,String,String) ={
@@ -223,7 +244,8 @@ class CExecutor(val lowering: Strategy[Rise], val goldExpression: Rise, val iter
           s"""
         float* ${elem.name} = (float*) malloc(sizeof(float)*N*N);
         for (int i = 0; i < N*N; i++) {
-          ${elem.name}[i] = i;
+          ${elem.name}[i] = (rand() % 100) - 50;
+          //${elem.name}[i] = i;
         }
         """
         codeEnd +=
@@ -236,7 +258,8 @@ class CExecutor(val lowering: Strategy[Rise], val goldExpression: Rise, val iter
           s"""
         float* ${elem.name} = (float*) malloc(sizeof(float)*N);
         for (int i = 0; i < N; i++) {
-          ${elem.name}[i] = i;
+          ${elem.name}[i] = (rand() % 100) - 50;
+          //${elem.name}[i] = i;
         }
         """
         codeEnd +=

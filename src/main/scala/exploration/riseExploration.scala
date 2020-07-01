@@ -2,10 +2,12 @@ package exploration
 
 import java.nio.file.{Files, Paths}
 
+import elevate.core.Strategy
 import exploration.runner.CExecutor
 import elevate.heuristic_search.Metaheuristic
-import elevate.rise.{Rise}
-import exploration.explorationUtil.{jsonParser}
+import elevate.heuristic_search.util.Solution
+import elevate.rise.Rise
+import exploration.explorationUtil.jsonParser
 import exploration.explorationUtil.jsonParser.ParseExploration
 import strategies.standardStrategies
 
@@ -28,7 +30,7 @@ object riseExploration {
     val startingPoint = prepareExploration(parsedConfiguration, solution, filePath)
 
     // start
-    startingPoint.execute(solution)
+    startingPoint.execute(new Solution[Rise](solution, scala.collection.mutable.Seq.empty[Strategy[Rise]]))
 
     // collect results
     // code here
