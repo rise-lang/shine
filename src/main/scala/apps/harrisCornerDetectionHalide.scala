@@ -369,5 +369,60 @@ object harrisCornerDetectionHalide {
           ) >> asScalar
         )
       )))
+
+/*
+    def greyParVec(v: Int): Expr =
+      nFun(h => nModFun(v, w => fun(
+        (3`.`(h+4)`.`w`.`f32) ->: ((h+4)`.`w`.`f32)
+      )(input => input |>
+        map(map(asVectorAligned(v))) >>
+        transpose >> map(transpose) >> // H.W+2.3.<v>f
+        map(map(dotWeightsVec(larr_f32(Seq(0.299f, 0.587f, 0.114f))))) >>
+        mapGlobal(write1DSeq >> asScalar) // padEmpty(2))
+      )))
+*/
+    // following variants are used for comparison to Lift
+
+    def grayPar: Expr =
+      nFun(h => nFun(w => fun(
+        (3`.`(h+4)`.`w`.`f32) ->: ((h+4)`.`w`.`f32)
+      )(input =>
+        gray(h+4)(w)(input) |> mapGlobal(write1DSeq)
+      )))
+
+    def sobelXPar: Expr =
+      nFun(h => nFun(w => fun(
+        ((h+4)`.`w`.`f32) ->: ((h+2)`.`(w-2)`.`f32)
+      )(gray =>
+        sobelX(h+2)(w-2)(gray) |> mapGlobal(write1DSeq)
+      )))
+
+    def sobelYPar: Expr =
+      nFun(h => nFun(w => fun(
+        ((h+4)`.`w`.`f32) ->: ((h+2)`.`(w-2)`.`f32)
+      )(gray =>
+        sobelY(h+2)(w-2)(gray) |> mapGlobal(write1DSeq)
+      )))
+
+    def mulPar: Expr =
+      nFun(h => nFun(w => fun(
+        ((h+2)`.`(w-2)`.`f32) ->: ((h+2)`.`(w-2)`.`f32) ->: ((h+2)`.`(w-2)`.`f32)
+      )((ix, iy) =>
+        mul(h+2)(w-2)(ix)(iy) |> mapGlobal(write1DSeq)
+      )))
+
+    def sum3x3Par: Expr =
+      nFun(h => nFun(w => fun(
+        ((h+2)`.`(w-2)`.`f32) ->: (h`.`(w-4)`.`f32)
+      )(input =>
+        sum3x3(h)(w-4)(input) |> mapGlobal(write1DSeq)
+      )))
+
+    def coarsityPadPar: Expr =
+      nFun(h => nFun(w => fun(
+        (h`.`(w-4)`.`f32) ->: (h`.`(w-4)`.`f32) ->: (h`.`(w-4)`.`f32) ->: (h`.`w`.`f32)
+      )((sxx, sxy, syy) =>
+        coarsity(h)(w-4)(sxx)(sxy)(syy) |> mapGlobal(write1DSeq) |> map(padEmpty(4))
+      )))
   }
 }
