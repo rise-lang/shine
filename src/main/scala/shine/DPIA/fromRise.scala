@@ -203,7 +203,7 @@ object fromRise {
           expT(t, read) ->: expT(s, read) ->: expT(t, write), f =>
             fun[ExpType](expT(t, write), i =>
               fun[ExpType](expT(n`.`s, read), e =>
-                ReduceSeq(n, t, s, f, i, e))))
+                ReduceSeq(n, s, t, f, i, e))))
 
       case (core.ReduceSeqUnroll(),
         (expT(t, `read`) ->: expT(s, `read`) ->: expT(_, `write`)) ->:
