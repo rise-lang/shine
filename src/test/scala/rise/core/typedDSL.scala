@@ -48,4 +48,14 @@ class typedDSL extends rise.testUtil.Tests {
     println(inferred)
     print(inferred.t)
   }
+
+  test("List of list matrix vector multiplication") {
+    val e = nFun(n => fun(n `..` (i => (i+1) `.` f32))(array =>
+        depMapSeq(nFun(_ => mapSeq(fun(x => x))))(array)
+      ))
+
+    val inferred: Expr = e
+    println(inferred)
+    print(inferred.t)
+  }
 }

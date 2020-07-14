@@ -16,5 +16,5 @@ case class NonIdentifierInBinderException(lambda: NatToDataLambda,
                                           subbed: Nat) extends Exception {
   override def toString: String =
     s"substitution exception: the expression ($subbed):" +
-      s"nat cannot be substituted for ${lambda.x} in the expression $lambda"
+      s"nat (scala type ${subbed.getClass.getName})cannot be substituted for ${lambda.x} in the expression $lambda"
 }

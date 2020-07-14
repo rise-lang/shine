@@ -161,5 +161,11 @@ object TypeLevelDSL {
       ArrayTypeConstructorHelper(Seq(Cst(n), m))
     @inline def `.`(dt: DataType): ArrayType = ArrayType(Cst(n), dt)
   }
+
+  implicit final class DepArrayTypeConstructors(private val n: Nat)
+    extends AnyVal {
+    @inline def `..`(f: Nat => DataType): DepArrayType = DepArrayType(n, f)
+  }
+
 }
 // scalastyle:on multiple.string.literals
