@@ -173,6 +173,14 @@ object Constraint {
           case (i: NatToDataIdentifier, _) => natToData.unifyIdent(i, b)
           case (_, i: NatToDataIdentifier) => natToData.unifyIdent(i, a)
           case _ if a == b                 => Solution()
+          case (NatToDataLambda(x1, dt1), NatToDataLambda(x2, dt2)) =>
+            val n = NatIdentifier(freshName("n"), isExplicit = true)
+            decomposed(Seq(
+              NatConstraint(n, x1.asImplicit),
+              NatConstraint(n, x2.asImplicit),
+              TypeConstraint(dt1, dt2)
+            ))
+
           case _ => error(s"cannot unify $a and $b")
         }
 
@@ -280,7 +288,37 @@ object Constraint {
 
     def unifySum(s: Sum, n: Nat)(implicit trace: Seq[Constraint]): Solution = {
       // n = s --> 0 = s + (-n)
-      tryPivots(s - n, 0)
+      /** TODO(federico) I have no idea how this pivot system works for
+       *  unifying natural numbers. I need to solve a case like
+       *  x + 1 = y + 1. The bruteForceSum function does exactly that:
+       *  see if the pattern matches for some constant, and then unify
+       *  x and y.
+       *
+       *  Upon understanding the pivoting system, this should be cleaned up.
+       */
+      (n match {
+        case s2: Sum => bruteForceSum(s, s2)
+        case _ => None
+      }).getOrElse(tryPivots(s - n, 0))
+    }
+
+    private def bruteForceSum(s1: Sum, s2: Sum): Option[Solution] = {
+      val sortedS1 = s1.terms.sortBy({
+        case Cst(_) => 0
+        case _ => 1
+      })
+      val sortedS2 = s2.terms.sortBy({
+        case Cst(_) => 0
+        case _ => 1
+      })
+
+      (sortedS1, sortedS2) match {
+        case ((c1: Cst)::(x: NatIdentifier)::Nil, c2::e::Nil) if c1 == c2 =>
+          Some(Solution.subs(x,e))
+        case ((c1: Cst)::e::Nil, c2::(x: NatIdentifier)::Nil) if c1 == c2 =>
+          Some(Solution.subs(x, e))
+        case _ => None
+      }
     }
 
     def unifyIdent(i: NatIdentifier, n: Nat)(

@@ -18,10 +18,10 @@ object Solution {
     Solution(Map(), Map(), Map(), Map(na -> nb))
 }
 
-case class Solution( ts: Map[Type, Type],
-                     ns: Map[NatIdentifier, Nat],
-                     as: Map[AddressSpaceIdentifier, AddressSpace],
-                     n2ds: Map[NatToDataIdentifier, NatToData]
+case class Solution(ts: Map[Type, Type],
+                    ns: Map[NatIdentifier, Nat],
+                    as: Map[AddressSpaceIdentifier, AddressSpace],
+                    n2ds: Map[NatToDataIdentifier, NatToData]
                    ) {
   import traversal.{Continue, Result, Stop}
 
@@ -54,8 +54,17 @@ case class Solution( ts: Map[Type, Type],
   def apply(a: AddressSpace): AddressSpace =
     substitute.addressSpacesInAddressSpace(as, a)
 
-  def apply(n2d: NatToData): NatToData =
-    substitute.n2dsInN2d(n2ds, n2d)
+  def apply(n2d: NatToData): NatToData = {
+    substitute.n2dsInN2d(n2ds, n2d) match {
+      case id: NatToDataIdentifier => id
+      case lambda@NatToDataLambda(x, body) =>
+        val xSub = apply(x) match {
+          case n: NatIdentifier => n
+          case other => throw NonIdentifierInBinderException(lambda, other)
+        }
+        NatToDataLambda(xSub, apply(body).asInstanceOf[DataType])
+    }
+  }
 
   // concatenating two solutions into a single one
   def ++(other: Solution): Solution = {
