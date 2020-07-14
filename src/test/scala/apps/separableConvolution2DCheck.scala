@@ -116,7 +116,7 @@ int main(int argc, char** argv) {
     val e = padClamp2D(1) >> slide(3)(1) >> mapSeq(
       transpose >>
       map(dotSeqUnroll(binomialWeightsV)) >>
-      rotateValues(3)(1)(id) >>
+      rotateValues(3)(id) >>
       mapStream(dotSeqUnroll(binomialWeightsH))
     )
     val code = gen.CProgram(wrapExpr(e), "blur").code

@@ -84,7 +84,7 @@ object harrisCornerDetection {
         makeArray(2)(C2D.sobelXWeightsV)(C2D.sobelYWeightsV) |>
         map(fun(vWs => C2D.weightsSeqVecUnroll(vWs)(vNbh)))
       )) >>
-      oclRotateValues(AddressSpace.Private)(3)(1)
+      oclRotateValues(AddressSpace.Private)(3)
       (mapSeqUnroll(id))
       >> mapStream(
         transpose >> map(shuffle) >>
@@ -126,7 +126,7 @@ object harrisCornerDetection {
     slide(3)(1) |> mapGlobal(
       transpose >> map(transpose) >>
       map(map(C2D.weightsSeqVecUnroll(C2D.binomialWeightsV))) >>
-      oclRotateValues(AddressSpace.Private)(3)(1)
+      oclRotateValues(AddressSpace.Private)(3)
       (mapSeqUnroll(id)) >>
       mapStream(
         transpose >> map(shuffle) >>
@@ -156,7 +156,7 @@ object harrisCornerDetection {
         makeArray(2)(C2D.sobelXWeightsV)(C2D.sobelYWeightsV) |>
         map(fun(vWs => C2D.weightsSeqVecUnroll(vWs)(vNbh)))
       )) >>
-      oclRotateValues(AddressSpace.Private)(3)(1)
+      oclRotateValues(AddressSpace.Private)(3)
       (mapSeqUnroll(id)) >>
       mapStream(
         transpose >> map(shuffle) >>
@@ -186,7 +186,7 @@ object harrisCornerDetection {
     slide(3)(1) |> mapGlobal(
     transpose >> map(transpose) >>
       map(map(C2D.weightsSeqVecUnroll(C2D.binomialWeightsV))) >>
-      oclRotateValues(AddressSpace.Private)(3)(1)
+      oclRotateValues(AddressSpace.Private)(3)
       (mapSeqUnroll(id)) >>
       mapStream(
         transpose >> map(shuffle) >>

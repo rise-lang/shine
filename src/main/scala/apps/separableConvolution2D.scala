@@ -143,7 +143,7 @@ object separableConvolution2D {
     padClamp2D(1) >> slide(3)(1) >> mapSeq(
       transpose >>
       map(dotSeqUnroll(weightsV)) >>
-      rotateValues(3)(1)(id) >>
+      rotateValues(3)(id) >>
       mapStream(dotSeqUnroll(weightsH))
     )
   ))
@@ -159,7 +159,7 @@ object separableConvolution2D {
     slide(3)(1) >> mapGlobal(
       transpose >>
       map(Dv) >>
-      oclRotateValues(AddressSpace.Private)(3)(1)(id) >>
+      oclRotateValues(AddressSpace.Private)(3)(id) >>
       mapStream(shuffle >> Dh) >>
       asScalar
     )

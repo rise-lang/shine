@@ -60,7 +60,8 @@ class separableConvolution2DRewrite extends shine.test_util.Tests {
 
   private def assert_ben_eq(a: Expr, b: Expr): Unit =
     if (!ben_eq(a, b)) {
-      throw new Exception(s"expected structural equality:\n$a\n$b")
+      throw new Exception(s"expected structural equality:\n" +
+        s"Got:\n${BENF(a).get}\nExpected:\n${BENF(b).get}")
     }
 
   private def rewrite_steps(a: Expr, steps: Seq[(Strategy[Rise], Expr)]): Unit = {
