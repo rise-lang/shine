@@ -53,7 +53,7 @@ class circularBuffering extends shine.test_util.Tests {
 
   val circBuf: Rise =
     slide(3)(1) >> map(sumSeq) >>
-    circularBuffer(0)(4)(fun(x => x)) >>
+    circularBuffer(4)(4)(fun(x => x)) >>
     mapStream(fun(nbh =>
       makeArray(2)(
         nbh |> drop(1) >> dropLast(1) >> sumSeq,
@@ -122,7 +122,7 @@ class circularBuffering extends shine.test_util.Tests {
       val nuExpect = norm(infer(expected)).get
       if (!openEquality(result, nuExpect)) {
         throw new Exception(
-          s"expected structural equality:\n$result\n\n$nuExpect")
+          s"expected structural equality.\nGot:\n$result\nExpected:\n$nuExpect")
       }
       result
     })
@@ -130,7 +130,7 @@ class circularBuffering extends shine.test_util.Tests {
 
   test("highLevel to circBuf") {
     rewriteSteps(highLevel, Seq(
-      (topDown(dropBeforeMap) `;` topDown(takeAfterMap))
+      (topDown(dropBeforeMap)`;` topDown(takeBeforeMap))
       -> (
         slide(3)(1) >> map(sum) >> fun(x =>
         makeArray(2)(
@@ -138,7 +138,7 @@ class circularBuffering extends shine.test_util.Tests {
           x |> slide(4)(1) >> map(sum)
         ))
       ),
-      (topDown(dropInSlide) `;` topDown(takeAfterMap) `;` topDown(takeInSlide))
+      (topDown(dropInSlide) `;` topDown(takeBeforeMap) `;` topDown(takeInSlide))
       -> (
       slide(3)(1) >> map(sum) >> fun(x =>
         makeArray(2)(
