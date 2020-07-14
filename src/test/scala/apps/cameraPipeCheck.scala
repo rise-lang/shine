@@ -357,7 +357,7 @@ int main(int argc, char** argv) {
     util.Execute(testCode)
   }
 
-  test("camera pipe passes checks") {
+  ignore("camera pipe passes checks") {
     val typed = printTime("infer", infer(camera_pipe))
     val prog = printTime("codegen", gen.CProgram(typed))
     val testCode =

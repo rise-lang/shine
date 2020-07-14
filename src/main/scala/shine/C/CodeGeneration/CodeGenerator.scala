@@ -464,7 +464,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error(s"Expected path to be not empty")
       }
 
-      case Array(_, elems) => path match {
+      case MakeArray(_, elems) => path match {
         case (i: CIntExpr) :: ps => try {
           exp(elems(i.eval), env, ps, cont)
         } catch {

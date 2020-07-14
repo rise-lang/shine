@@ -551,7 +551,7 @@ object fromRise {
                      ): Phrase[_ <: PhraseType] = t match {
           case FunType(in: ExpType, out) =>
             fun[ExpType](in, e => buildArrayPrimitive(out, elements :+ e))
-          case ExpType(ArrayType(_, et), _) => Array(et, elements)
+          case ExpType(ArrayType(_, et), _) => MakeArray(et, elements)
           case _ => error(s"did not expect $t")
         }
         buildArrayPrimitive(t, Vector())

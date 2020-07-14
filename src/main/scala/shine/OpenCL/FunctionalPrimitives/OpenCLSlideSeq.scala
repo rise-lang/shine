@@ -34,7 +34,7 @@ final case class OpenCLSlideSeq(rot: OpenCLSlideSeq.Rotate,
 
   write_dt :: expT(dt, read) ->: expT(dt, write)
   input :: expT(inputSize`.`dt, read)
-  override val t: ExpType = expT(n`.`(sz`.`dt), write)
+  override val t: ExpType = expT(n`.`(sz`.`dt), read)
 
   override def visitAndRebuild(v: VisitAndRebuild.Visitor): Phrase[ExpType] = {
     OpenCLSlideSeq(rot,

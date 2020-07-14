@@ -34,7 +34,7 @@ final case class Apply[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 ->: T2
   override val t: T2 = {
     assert(arg.t `<=` fun.t.inT,
       s"Expected `${arg.t}' to be compatible with `${fun.t.inT}'\n" +
-        s"when applying `$arg' to `$fun'")
+        s"when applying:\n`$arg'\nto:\n`$fun'")
     fun.t.outT
   }
 
