@@ -246,11 +246,16 @@ object traversal {
               case DepArrayType(n, fdt) =>
                 DepArrayType(v.visitNat(n).value, v.visitN2D(fdt).value)
               case PairType(p1, p2) => PairType(data(p1, v), data(p2, v))
-              case DepPairType(n, e) =>
-                // This only makes sense if the substituted nat is an identifier
-                val n2 = visit.visitNat(n).value
-                  .asInstanceOf[NatIdentifier]
-                DepPairType(n2, data(e, v))
+              case pair@DepPairType(x, e) =>
+                  x match {
+                    case n: NatIdentifier =>
+                      val n2 = visit.visitNat(n).value
+                        .asInstanceOf[NatIdentifier]
+                      DepPairType[NatKind](n2, data(e, v))
+                    case _ => DepPairType(x, data(e,v))(pair.kindName)
+                  }
+
+
               case NatType          => NatType
               case s: ScalarType    => s
               case IndexType(n)     => IndexType(v.visitNat(n).value)

@@ -3,25 +3,28 @@ package rise.core.types
 import rise.core.{Expr, substitute, traversal}
 
 object Solution {
-  def apply(): Solution = Solution(Map(), Map(), Map(), Map())
+  def apply(): Solution = Solution(Map(), Map(), Map(), Map(), Map())
   def subs(ta: Type, tb: Type): Solution = {
-    Solution(Map(ta -> tb), Map(), Map(), Map())
+    Solution(Map(ta -> tb), Map(), Map(), Map(), Map())
   }
 
   def subs(ta: DataTypeIdentifier, tb: Type): Solution =
-    Solution(Map(ta -> tb), Map(), Map(), Map())
+    Solution(Map(ta -> tb), Map(), Map(), Map(), Map())
   def subs(na: NatIdentifier, nb: Nat): Solution =
-    Solution(Map(), Map(na -> nb), Map(), Map())
+    Solution(Map(), Map(na -> nb), Map(), Map(), Map())
   def subs(aa: AddressSpaceIdentifier, ab: AddressSpace): Solution =
-    Solution(Map(), Map(), Map(aa -> ab), Map())
+    Solution(Map(), Map(), Map(aa -> ab), Map(), Map())
   def subs(na: NatToDataIdentifier, nb: NatToData): Solution =
-    Solution(Map(), Map(), Map(), Map(na -> nb))
+    Solution(Map(), Map(), Map(), Map(na -> nb), Map())
+  def subs(na: NatCollectionIdentifier, nb: NatCollection): Solution =
+    Solution(Map(), Map(), Map(), Map(), Map(na -> nb))
 }
 
 case class Solution(ts: Map[Type, Type],
                     ns: Map[NatIdentifier, Nat],
                     as: Map[AddressSpaceIdentifier, AddressSpace],
-                    n2ds: Map[NatToDataIdentifier, NatToData]
+                    n2ds: Map[NatToDataIdentifier, NatToData],
+                    natColls: Map[NatCollectionIdentifier, NatCollection]
                    ) {
   import traversal.{Continue, Result, Stop}
 
@@ -54,6 +57,9 @@ case class Solution(ts: Map[Type, Type],
   def apply(a: AddressSpace): AddressSpace =
     substitute.addressSpacesInAddressSpace(as, a)
 
+  def apply(a: NatCollection): NatCollection =
+    substitute.natCollectionInNatCollection(natColls, a)
+
   def apply(n2d: NatToData): NatToData = {
     substitute.n2dsInN2d(n2ds, n2d) match {
       case id: NatToDataIdentifier => id
@@ -75,7 +81,8 @@ case class Solution(ts: Map[Type, Type],
         s1.ts.mapValues(t => s2(t)) ++ s2.ts,
         s1.ns.mapValues(n => s2(n)) ++ s2.ns,
         s1.as.mapValues(a => s2(a)) ++ s2.as,
-        s1.n2ds.mapValues(n => s2(n)) ++ s2.n2ds
+        s1.n2ds.mapValues(n => s2(n)) ++ s2.n2ds,
+        s1.natColls.mapValues(n => s2(n)) ++ s2.natColls
       )
     }
 

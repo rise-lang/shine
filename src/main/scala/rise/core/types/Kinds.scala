@@ -46,6 +46,11 @@ sealed trait NatToDataKind extends Kind {
   override type I = NatToDataIdentifier
 }
 
+sealed trait NatCollectionKind extends Kind {
+  override type T = NatCollection
+  override type I = NatCollectionIdentifier
+}
+
 trait KindName[K <: Kind] {
   def get: String
 }
@@ -70,4 +75,9 @@ object KindName {
   implicit val n2dtKN: KindName[NatToDataKind] = new KindName[NatToDataKind] {
     def get = "nat->data"
   }
+
+  implicit val natsKN: KindName[NatCollectionKind] =
+    new KindName[NatCollectionKind] {
+      override def get: String = "nats"
+    }
 }

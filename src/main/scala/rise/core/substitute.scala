@@ -240,4 +240,14 @@ object substitute {
   ): NatToData = {
     if (in == `for`) n2d else in
   }
+
+  def natCollectionInNatCollection(
+      subs: Map[NatCollectionIdentifier, NatCollection],
+      in: NatCollection): NatCollection = {
+    in match {
+      case ident: NatCollectionIdentifier=>
+        subs(ident)
+      case _ => throw new Exception("No idea how to substitute")
+    }
+  }
 }

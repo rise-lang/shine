@@ -93,16 +93,23 @@ final case class PairType(dt1: DataType, dt2: DataType) extends DataType {
   override def toString: String = s"($dt1, $dt2)"
 }
 
-final case class DepPairType(
-                            x: NatKind#I,
+
+final case class DepPairType[K <: Kind: KindName](
+                            x: K#I,
                             t: DataType
                            ) extends DataType {
+  type Kind = K
+
+  // Note(federico): for pattern-matching purposes, if we ever need to
+  // recover the kind name from a pattern-match over just DataType
+  val kindName: KindName[K] = implicitly[KindName[K]]
+
   override def toString: String =
-    s"(${x.name}: ${KindName.natKN.get} ** $t)"
+    s"(${x.name}: ${kindName.get} ** $t)"
 
   override def equals(obj: Any): Boolean = obj match {
-    case other: DepPairType =>
-      t == substitute.kindInType[NatKind, DataType](
+    case other: DepPairType[K] =>
+      t == substitute.kindInType[K, DataType](
         this.x, `for` = other.x, in = other.t
       )
     case _ => false

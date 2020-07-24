@@ -26,6 +26,10 @@ case class DepConstraint[K <: Kind](df: Type, arg: K#T, t: Type)
   extends Constraint {
   override def toString: String = s"$df ($arg) ~ $t"
 }
+case class NatCollectionConstraint(a: NatCollection, b: NatCollection)
+  extends Constraint {
+  override def toString: String = s"$a ~ $b"
+}
 
 object Constraint {
   def solve(cs: Seq[Constraint], trace: Seq[Constraint]): Solution = cs match {
@@ -100,7 +104,10 @@ object Constraint {
             ) =>
             ???
 
-          case (DepPairType(x1, t1), DepPairType(x2, t2)) =>
+          case (
+            DepPairType(x1: NatIdentifier, t1),
+            DepPairType(x2: NatIdentifier, t2)
+            ) =>
             val n = NatIdentifier(freshName("n"), isExplicit = true)
 
             decomposed(Seq(
@@ -108,6 +115,19 @@ object Constraint {
               NatConstraint(n, x2.asImplicit),
               TypeConstraint(t1, t2)
             ))
+
+          case (
+            DepPairType(x1: NatCollectionIdentifier, t1),
+            DepPairType(x2: NatCollectionIdentifier, t2)
+            ) =>
+            val n = NatCollectionIdentifier(freshName("n"), isExplicit = true)
+
+            decomposed(Seq(
+              NatCollectionConstraint(n, x1.asImplicit),
+              NatCollectionConstraint(n, x2.asImplicit),
+              TypeConstraint(t1, t2)
+            ))
+
           case (
             NatToDataApply(f: NatToDataIdentifier, _),
             NatToDataApply(g, _)
@@ -182,6 +202,16 @@ object Constraint {
             ))
 
           case _ => error(s"cannot unify $a and $b")
+        }
+
+      case NatCollectionConstraint(a, b) =>
+        (a,b) match {
+          case (i:NatCollectionIdentifier, _) => natCollection.unifyIdent(i, b)
+          case (_, i:NatCollectionIdentifier) => natCollection.unifyIdent(i, b)
+          case _ if a == b                    => Solution()
+          case (NatCollectionFromArray(e1), NatCollectionFromArray(e2)) =>
+            // What to do here???
+            ???
         }
 
     }
@@ -353,6 +383,20 @@ object Constraint {
           error(s"cannot unify $i and $j, they are both bound")
         }
       case _ => Solution.subs(i, n)
+    }
+  }
+
+  object natCollection {
+    def unifyIdent(i:NatCollectionIdentifier, n:NatCollection)(
+        implicit trace: Seq[Constraint]
+      ):Solution = n match {
+      case j: NatCollectionIdentifier =>
+        if (i == j) {
+          Solution()
+        } else {
+          error(s"cannot unify $i and $j, they are both bound")
+        }
+      case _ => Solution.subs(i,n)
     }
   }
 

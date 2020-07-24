@@ -92,7 +92,14 @@ object TypeLevelDSL {
   object  n2dPairT {
     def apply(f: NatIdentifier => DataType): Type = {
       val x = NatIdentifier(freshName("n"), isExplicit = true)
-      DepPairType(x, f(x))
+      DepPairType[NatKind](x, f(x))
+    }
+  }
+
+  object nats2dPairT {
+    def apply(f: NatCollectionIdentifier => DataType): Type = {
+      val x = NatCollectionIdentifier(freshName("ns"), isExplicit = true)
+      DepPairType[NatCollectionKind](x, f(x))
     }
   }
 
@@ -126,6 +133,10 @@ object TypeLevelDSL {
 
   def implA[A](f: AddressSpaceIdentifier => A): A = {
     f(AddressSpaceIdentifier(freshName("w")))
+  }
+
+  def implNatColl[A](f: NatCollectionIdentifier => A): A = {
+    f(NatCollectionIdentifier(freshName("ns")))
   }
 
   def freshTypeIdentifier: Type = implT(identity)
