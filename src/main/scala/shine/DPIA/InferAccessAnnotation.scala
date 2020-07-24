@@ -1,10 +1,11 @@
 package shine.DPIA
 
 import rise.{core => r}
-import rise.core.{types => rt}
+import rise.core.{types => rt, TypeLevelDSL => rtdsl}
+import rise.core.TypeLevelDSL.->:
 import rise.core.{primitives => rp}
-import rise.OpenMP.{primitives => rompp}
-import rise.OpenCL.{primitives => roclp}
+import rise.openMP.{primitives => rompp}
+import rise.openCL.{primitives => roclp}
 import shine.DPIA.Types._
 import shine.DPIA.Types.TypeCheck.SubTypeCheckHelper
 import shine.DPIA.fromRise._
@@ -223,311 +224,260 @@ private class InferAccessAnnotation {
   private def inferPrimitive(p: r.Primitive): (PhraseType, Subst) = {
     val primitiveType = p match {
       case roclp.MapGlobal(_) | roclp.MapWorkGroup(_) | roclp.MapLocal(_)
-           | rompp.MapPar() | rp.MapSeq() | rp.MapSeqUnroll() =>
-        val rMapT = p.t.asInstanceOf[
-          rt.FunType[rt.FunType[rt.DataType, rt.DataType],
-            rt.FunType[rt.DataType, rt.DataType]]]
-        val rFInT = rMapT.inT.inT
-        val rFOutT = rMapT.inT.outT
-        val rArrT = rMapT.outT.inT
-        val rMapOutT = rMapT.outT.outT
+           | rompp.MapPar() | rp.MapSeq() | rp.MapSeqUnroll()
+           | rp.MapStream() => p.t match {
+        case ((s: rt.DataType) ->: (t: rt.DataType)) ->:
+          rt.ArrayType(n, _) ->: rt.ArrayType(_, _) =>
 
-        FunType(
-          FunType(ExpType(dataType(rFInT), read),
-            ExpType(dataType(rFOutT), write)),
-          FunType(ExpType(dataType(rArrT), read),
-            ExpType(dataType(rMapOutT), write)))
+          (expT(s, read) ->: expT(t, write)) ->:
+            expT(rt.ArrayType(n, s), read) ->:
+            expT(rt.ArrayType(n, t), write)
+        case _ => error()
+      }
 
-      case rp.Map() | rp.MapFst() | rp.MapSnd() =>
-        val rMapT = p.t.asInstanceOf[
-          rt.FunType[rt.FunType[rt.DataType, rt.DataType],
-            rt.FunType[rt.DataType, rt.DataType]]
-        ]
-        val rFInT = rMapT.inT.inT
-        val rFOutT = rMapT.inT.outT
-        val rArrT = rMapT.outT.inT
-        val rMapOutT = rMapT.outT.outT
+      case rp.Map() | rp.MapFst() | rp.MapSnd() => p.t match {
+        case ((s: rt.DataType) ->: (t: rt.DataType)) ->:
+          rt.ArrayType(n, _) ->: rt.ArrayType(_, _) =>
 
-        val ai = accessTypeIdentifier()
-        FunType(
-          FunType(ExpType(dataType(rFInT), ai),
-            ExpType(dataType(rFOutT), ai)),
-          FunType(ExpType(dataType(rArrT), ai),
-            ExpType(dataType(rMapOutT), ai)))
+          val ai = accessTypeIdentifier()
+          (expT(s, ai) ->: expT(t, ai)) ->:
+            expT(rt.ArrayType(n, s), ai) ->:
+            expT(rt.ArrayType(n, t), ai)
+        case _ => error()
+      }
 
-      case rp.ToMem() =>
-        val rToMemT = p.t.asInstanceOf[rt.FunType[rt.DataType, rt.DataType]]
+      case rp.ToMem() => p.t match {
+        case (t: rt.DataType) ->: (_: rt.DataType) =>
+          expT(t, write) ->: expT(t, read)
+        case _ => error()
+      }
 
-        FunType(ExpType(dataType(rToMemT.inT), write),
-          ExpType(dataType(rToMemT.outT), read))
-
-      case roclp.OclToMem() =>
-        val rToMemT = p.t.asInstanceOf[
-          rt.DepFunType[rt.AddressSpaceKind,
-            rt.FunType[rt.DataType, rt.DataType]]]
-
-        DepFunType[AddressSpaceKind, PhraseType](
-          addressSpaceIdentifier(rToMemT.x),
-          FunType(ExpType(dataType(rToMemT.t.inT), write),
-            ExpType(dataType(rToMemT.t.outT), read)))
+      case roclp.OclToMem() => p.t match {
+        case rtdsl.aFunT(a, (t: rt.DataType) ->: (_: rt.DataType)) =>
+          aFunT(a, expT(t, write) ->: expT(t, read))
+        case _ => error()
+      }
 
       case rp.Join() | rp.Transpose() | rp.AsScalar()
-           | rp.Unzip() =>
-        val rT = p.t.asInstanceOf[rt.FunType[rt.DataType, rt.DataType]]
-
-        val ai = accessTypeIdentifier()
-        FunType(ExpType(dataType(rT.inT), ai),
-          ExpType(dataType(rT.outT), ai))
+           | rp.Unzip() => p.t match {
+        case (dt1: rt.DataType) ->: (dt2: rt.DataType) =>
+          val ai = accessTypeIdentifier()
+          expT(dt1, ai) ->: expT(dt2, ai)
+        case _ => error()
+      }
 
       case rp.VectorFromScalar() | rp.Neg() | rp.Not()
-           | rp.IndexAsNat() | rp.Fst() | rp.Snd()  | rp.Cast() =>
-        val rT = p.t.asInstanceOf[rt.FunType[rt.DataType, rt.DataType]]
+           | rp.IndexAsNat() | rp.Fst() | rp.Snd()  | rp.Cast() => p.t match {
+        case (dt1: rt.DataType) ->: (dt2: rt.DataType) =>
+          expT(dt1, read) ->: expT(dt2, read)
+        case _ => error()
+      }
 
-        FunType(ExpType(dataType(rT.inT), read),
-          ExpType(dataType(rT.outT), read))
+      case rp.Let() => p.t match {
+        case (s: rt.DataType) ->:
+          ((_: rt.DataType) ->: (t: rt.DataType)) ->:
+          (_: rt.DataType) =>
 
-      case rp.Let() =>
-        val rT = p.t.asInstanceOf[
-          rt.FunType[rt.DataType,
-            rt.FunType[rt.FunType[rt.DataType, rt.DataType], rt.DataType]]]
-        val inT = dataType(rT.inT)
-        val outInT = dataType(rT.outT.inT.inT)
-        val outOutT = dataType(rT.outT.inT.outT)
-        val outT = dataType(rT.outT.outT)
+          val ai = accessTypeIdentifier()
+          expT(s, read) ->: (expT(s, read) ->: expT(t, ai)) ->: expT(t, ai)
+        case _ => error()
+      }
 
-        val ai = accessTypeIdentifier()
-        FunType(
-          ExpType(inT, read),
-          FunType(FunType(ExpType(outInT, read), ExpType(outOutT, ai)),
-            ExpType(outT, ai)))
+      case rp.Split() | rp.AsVector() | rp.AsVectorAligned() => p.t match {
+        case rtdsl.nFunT(n, (dt1: rt.DataType) ->: (dt2: rt.DataType)) =>
 
-      case rp.Split() | rp.AsVector() | rp.AsVectorAligned() =>
-        val rT = p.t.asInstanceOf[
-          rt.DepFunType[rt.NatKind, rt.FunType[rt.DataType, rt.DataType]]]
+          val ai = accessTypeIdentifier()
+          nFunT(n, expT(dt1, ai) ->: expT(dt2, ai))
+        case _ => error()
+      }
 
-        val ai = accessTypeIdentifier()
-        DepFunType[NatKind, PhraseType](
-          natIdentifier(rT.x),
-          FunType(ExpType(dataType(rT.t.inT), ai),
-            ExpType(dataType(rT.t.outT), ai)))
+      case rp.Zip() | rp.Pair() => p.t match {
+        case (dt1: rt.DataType) ->: (dt2: rt.DataType) ->: (dt3: rt.DataType) =>
 
-      case rp.Zip() | rp.Pair() =>
-        val rT = p.t.asInstanceOf[
-          rt.FunType[rt.DataType, rt.FunType[rt.DataType, rt.DataType]]]
-        val fstT = rT.inT
-        val sndT = rT.outT.inT
-        val outT = rT.outT.outT
-
-        val ai = accessTypeIdentifier()
-        FunType(ExpType(dataType(fstT), ai),
-          FunType(ExpType(dataType(sndT), ai), ExpType(dataType(outT), ai)))
+          val ai = accessTypeIdentifier()
+          expT(dt1, ai) ->: expT(dt2, ai) ->: expT(dt3, ai)
+        case _ => error()
+      }
 
       case rp.Idx() | rp.Add() | rp.Sub() | rp.Mul() | rp.Div() | rp.Gt()
-           | rp.Lt() | rp.Equal() | rp.Mod() | rp.Gather() =>
-        val rT = p.t.asInstanceOf[
-          rt.FunType[rt.DataType, rt.FunType[rt.DataType, rt.DataType]]]
+           | rp.Lt() | rp.Equal() | rp.Mod() | rp.Gather() => p.t match {
+        case (dt1: rt.DataType) ->: (dt2: rt.DataType) ->: (dt3: rt.DataType) =>
+          expT(dt1, read) ->: expT(dt2, read) ->: expT(dt3, read)
+        case _ => error()
+      }
 
-        FunType(ExpType(dataType(rT.inT), read),
-          FunType(ExpType(dataType(rT.outT.inT), read),
-            ExpType(dataType(rT.outT.outT), read)))
+      case rp.NatAsIndex() | rp.Take() | rp.Drop() => p.t match {
+        case rtdsl.nFunT(n, (dt1: rt.DataType) ->: (dt2: rt.DataType)) =>
+          nFunT(n, expT(dt1, read) ->: expT(dt2, read))
+        case _ => error()
+      }
 
-      case rp.NatAsIndex() | rp.Take() | rp.Drop() =>
-        val rT = p.t.asInstanceOf[
-          rt.DepFunType[rt.NatKind, rt.FunType[rt.DataType, rt.DataType]]]
+      case rp.ReduceSeq() | rp.ReduceSeqUnroll() => p.t match {
+        case ((t: rt.DataType) ->: (s: rt.DataType) ->: (_: rt.DataType)) ->:
+          (_: rt.DataType) ->: rt.ArrayType(n, _) ->: (_: rt.DataType) =>
 
-        DepFunType[NatKind, PhraseType](
-          natIdentifier(rT.x),
-          FunType(ExpType(dataType(rT.t.inT), read),
-            ExpType(dataType(rT.t.outT), read)))
+          (expT(t, read) ->: expT(s, read) ->: expT(t, write)) ->:
+            expT(t, write) ->:
+            expT(rt.ArrayType(n, s), read) ->:
+            expT(t, read)
+        case _ => error()
+      }
 
-      case rp.ReduceSeq() | rp.ReduceSeqUnroll()=>
-        val rT = p.t.asInstanceOf[
-          rt.FunType[
-            rt.FunType[rt.DataType, rt.FunType[rt.DataType, rt.DataType]],
-            rt.FunType[rt.DataType, rt.FunType[rt.DataType, rt.DataType]]]]
-        val initDt = dataType(rT.outT.inT)
-        val arrDt = dataType(rT.outT.outT.inT)
-        val elemDt = arrDt.asInstanceOf[ArrayType].elemType
+      case  rp.ScanSeq() => p.t match {
+        case ((s: rt.DataType) ->: (t: rt.DataType) ->: (_: rt.DataType)) ->:
+          (_: rt.DataType) ->: rt.ArrayType(n, _) ->: rt.ArrayType(_, _) =>
 
-        FunType(
-          FunType(ExpType(initDt, read),
-            FunType(ExpType(elemDt, read), ExpType(initDt, write))),
-          FunType(ExpType(initDt, write),
-            FunType(ExpType(arrDt, read), ExpType(initDt, read))))
+          (expT(s, read) ->: expT(t, read) ->: expT(t, write)) ->:
+            expT(t, write) ->:
+            expT(rt.ArrayType(n, s), read) ->:
+            expT(rt.ArrayType(n, t), write)
+        case _ => error()
+      }
 
-      case  rp.ScanSeq() =>
-        val rT = p.t.asInstanceOf[
-          rt.FunType[
-            rt.FunType[rt.DataType, rt.FunType[rt.DataType, rt.DataType]],
-            rt.FunType[rt.DataType, rt.FunType[rt.DataType, rt.DataType]]]]
-        val initDt = dataType(rT.outT.inT)
-        val arrDt = dataType(rT.outT.outT.inT)
-        val elemDt = arrDt.asInstanceOf[ArrayType].elemType
+      case roclp.OclReduceSeq() | roclp.OclReduceSeqUnroll() => p.t match {
+        case rtdsl.aFunT(a,
+          ((t: rt.DataType) ->: (s: rt.DataType) ->: (_: rt.DataType)) ->:
+          (_: rt.DataType) ->: rt.ArrayType(n, _) ->: (_: rt.DataType)) =>
 
-        FunType(
-          FunType(ExpType(initDt, read),
-            FunType(ExpType(elemDt, read), ExpType(initDt, write))),
-          FunType(ExpType(initDt, write),
-            FunType(ExpType(arrDt, read), ExpType(initDt, write))))
+          aFunT(a,
+            (expT(t, read) ->: expT(s, read) ->: expT(t, write)) ->:
+            expT(t, write) ->:
+            expT(rt.ArrayType(n, s), read) ->:
+            expT(t, read))
+        case _ => error()
+      }
 
-      case roclp.OclReduceSeq() | roclp.OclReduceSeqUnroll() =>
-        val rT = p.t.asInstanceOf[
-          rt.DepFunType[rt.AddressSpaceKind,
-            rt.FunType[
-              rt.FunType[rt.DataType, rt.FunType[rt.DataType, rt.DataType]],
-              rt.FunType[rt.DataType, rt.FunType[rt.DataType, rt.DataType]]]]]
-        val initDt = dataType(rT.t.outT.inT)
-        val arrDt = dataType(rT.t.outT.outT.inT)
-        val elemDt = arrDt.asInstanceOf[ArrayType].elemType
+        //TODO Circular Buffer and OCL versions
+      case rp.RotateValues() => p.t match {
+        case  rtdsl.nFunT(sz,
+                      ((s: rt.DataType) ->: (_: rt.DataType)) ->:
+                      (inT: rt.ArrayType) ->:
+                      (outT: rt.ArrayType)) =>
+          nFunT(sz,
+            (expT(s, read) ->: expT(s, write)) ->:
+            expT(inT, read) ->:
+            expT(outT, read))
+        case _ => error()
+      }
 
-        DepFunType[AddressSpaceKind, PhraseType](
-          addressSpaceIdentifier(rT.x),
-          FunType(
-            FunType(ExpType(initDt, read),
-              FunType(ExpType(elemDt, read), ExpType(initDt, write))),
-            FunType(ExpType(initDt, write),
-              FunType(ExpType(arrDt, read), ExpType(initDt, read)))))
+      case rp.CircularBuffer() => p.t match {
+        case rtdsl.nFunT(alloc, rtdsl.nFunT(sz,
+                      ((s: rt.DataType) ->: (t: rt.DataType)) ->:
+                      (inT: rt.ArrayType) ->:
+                      (outT: rt.ArrayType))) =>
+          nFunT(alloc, nFunT(sz,
+            (expT(s, read) ->: expT(s, write)) ->:
+            expT(inT, read) ->:
+            expT(outT, read)))
+        case _ => error()
+      }
 
-      case rp.SlideSeq(_) =>
-        val rT = p.t.asInstanceOf[
-          rt.DepFunType[rt.NatKind, rt.DepFunType[rt.NatKind,
-            rt.FunType[rt.FunType[rt.DataType, rt.DataType],
-              rt.FunType[rt.FunType[rt.DataType, rt.DataType],
-                rt.FunType[rt.DataType, rt.DataType]]]]]]
-        val dt1 = dataType(rT.t.t.inT.inT)
-        val fInT = dataType(rT.t.t.outT.inT.inT)
-        val fOutT = dataType(rT.t.t.outT.inT.outT)
-        val inputT = dataType(rT.t.t.outT.outT.inT)
-        val outT = dataType(rT.t.t.outT.outT.outT)
+      case roclp.OclRotateValues() => p.t match {
+        case rtdsl.aFunT(a, rtdsl.nFunT(sz,
+                   ((s: rt.DataType) ->: (_: rt.DataType)) ->:
+                   (inT: rt.ArrayType) ->:
+                   (outT: rt.ArrayType))) =>
+          aFunT(a,
+            nFunT(sz,
+              (expT(s, read) ->: expT(s, write)) ->:
+              expT(inT, read) ->:
+              expT(outT, read)))
+        case _ => error()
+      }
 
-        DepFunType[NatKind, PhraseType](natIdentifier(rT.x),
-          DepFunType[NatKind, PhraseType](natIdentifier(rT.t.x),
-            FunType(FunType(ExpType(dt1, read), ExpType(dt1, write)),
-              FunType(FunType(ExpType(fInT, read), ExpType(fOutT, write)),
-                FunType(ExpType(inputT, read), ExpType(outT, write))))))
+      case rp.Slide() | rp.PadClamp() => p.t match {
+        case rtdsl.nFunT(sz, rtdsl.nFunT(sp,
+                    (dt1: rt.DataType) ->: (dt2: rt.DataType))) =>
+          nFunT(sz, nFunT(sp,
+            expT(dt1, read) ->: expT(dt2, read)))
+        case _ => error()
+      }
 
-      case roclp.OclSlideSeq(_) =>
-        val rT = p.t.asInstanceOf[
-          rt.DepFunType[rt.AddressSpaceKind,
-            rt.DepFunType[rt.NatKind, rt.DepFunType[rt.NatKind,
-              rt.FunType[rt.FunType[rt.DataType, rt.DataType],
-                rt.FunType[rt.FunType[rt.DataType, rt.DataType],
-                  rt.FunType[rt.DataType, rt.DataType]]]]]]]
-        val dt1 = dataType(rT.t.t.t.inT.inT)
-        val fInT = dataType(rT.t.t.t.outT.inT.inT)
-        val fOutT = dataType(rT.t.t.t.outT.inT.outT)
-        val inputT = dataType(rT.t.t.t.outT.outT.inT)
-        val outT = dataType(rT.t.t.t.outT.outT.outT)
+      case rp.Iterate() => p.t match {
+        case rtdsl.nFunT(k,
+              rtdsl.nFunT(l, (at1: rt.ArrayType) ->: (at2: rt.ArrayType)) ->:
+              (at3: rt.ArrayType) ->:
+              (at4: rt.ArrayType) ) =>
+          nFunT(k,
+            nFunT(l, expT(at1, read) ->: expT(at2, write)) ->:
+            expT(at3, read) ->:
+            expT(at4, write) )
+        case _ => error()
+      }
 
-        DepFunType[AddressSpaceKind, PhraseType](addressSpaceIdentifier(rT.x),
-        DepFunType[NatKind, PhraseType](natIdentifier(rT.t.x),
-          DepFunType[NatKind, PhraseType](natIdentifier(rT.t.t.x),
-            FunType(FunType(ExpType(dt1, read), ExpType(dt1, write)),
-              FunType(FunType(ExpType(fInT, read), ExpType(fOutT, write)),
-                FunType(ExpType(inputT, read), ExpType(outT, write)))))))
+      case roclp.OclIterate() => p.t match {
+        case rtdsl.aFunT(a, rtdsl.nFunT(k,
+              rtdsl.nFunT(l, (at1: rt.ArrayType) ->: (at2: rt.ArrayType)) ->:
+              (at3: rt.ArrayType) ->:
+              (at4: rt.ArrayType) )) =>
+          aFunT(a, nFunT(k,
+            nFunT(l, expT(at1, read) ->: expT(at2, write)) ->:
+              expT(at3, read) ->:
+              expT(at4, write) ))
+        case _ => error()
+      }
 
-      case rp.Slide() | rp.PadClamp() =>
-        val rT = p.t.asInstanceOf[
-          rt.DepFunType[rt.NatKind, rt.DepFunType[rt.NatKind,
-            rt.FunType[rt.DataType, rt.DataType]]]]
+      case rp.Select() => p.t match {
+        case rt.bool ->: (t: rt.DataType) ->:
+          (_: rt.DataType) ->: (_: rt.DataType) =>
 
-        DepFunType[NatKind, PhraseType](natIdentifier(rT.x),
-          DepFunType[NatKind, PhraseType](natIdentifier(rT.t.x),
-            FunType(ExpType(dataType(rT.t.t.inT), read),
-              ExpType(dataType(rT.t.t.outT), read))))
+          expT(rt.bool, read) ->:
+            expT(t, read) ->: expT(t, read) ->: expT(t, read)
+        case _ => error()
+      }
 
-      case rp.Iterate() =>
-        val rT = p.t.asInstanceOf[
-          rt.DepFunType[rt.NatKind,
-            rt.FunType[
-              rt.DepFunType[rt.NatKind, rt.FunType[rt.DataType, rt.DataType]],
-            rt.FunType[rt.DataType, rt.DataType]]]]
-        val fInT = rT.t.inT.t.inT
-        val fOutT = rT.t.inT.t.outT
-        val arrayT = rT.t.outT.inT
-        val outT = rT.t.outT.outT
+      case rp.PadCst() => p.t match {
+        case rtdsl.nFunT(l, rtdsl.nFunT(q,
+          (t: rt.DataType) ->: rt.ArrayType(n, _) ->: rt.ArrayType(_, _) )) =>
 
-        DepFunType[NatKind, PhraseType](natIdentifier(rT.x),
-          FunType(DepFunType[NatKind, PhraseType](natIdentifier(rT.t.inT.x),
-            FunType(ExpType(dataType(fInT), read),
-              ExpType(dataType(fOutT), write))),
-              FunType(ExpType(dataType(arrayT), read),
-                ExpType(dataType(outT), write))))
+          nFunT(l, nFunT(q,
+            expT(t, read) ->:
+              expT(rt.ArrayType(n, t), read) ->:
+              expT(rt.ArrayType(l + n + q, t), read)))
+        case _ => error()
+      }
 
-      case roclp.OclIterate() =>
-        val rT = p.t.asInstanceOf[
-          rt.DepFunType[rt.AddressSpaceKind, rt.DepFunType[rt.NatKind,
-            rt.FunType[
-              rt.DepFunType[rt.NatKind, rt.FunType[rt.DataType, rt.DataType]],
-              rt.FunType[rt.DataType, rt.DataType]]]]]
-        val fInT = rT.t.t.inT.t.inT
-        val fOutT = rT.t.t.inT.t.outT
-        val arrayT = rT.t.t.outT.inT
-        val outT = rT.t.t.outT.outT
+      case rp.Generate() => p.t match {
+        case (rt.IndexType(n) ->: (t: rt.DataType)) ->: rt.ArrayType(_, _) =>
+          (expT(rt.IndexType(n), read) ->: expT(t, read)) ->:
+            expT(rt.ArrayType(n, t), read)
+        case _ => error()
+      }
 
-        DepFunType[AddressSpaceKind, PhraseType](addressSpaceIdentifier(rT.x),
-          DepFunType[NatKind, PhraseType](natIdentifier(rT.t.x),
-            FunType(DepFunType[NatKind, PhraseType](natIdentifier(rT.t.t.inT.x),
-              FunType(ExpType(dataType(fInT), read),
-                ExpType(dataType(fOutT), write))),
-              FunType(ExpType(dataType(arrayT), read),
-                ExpType(dataType(outT), write)))))
+      case rp.Reorder() => p.t match {
+        case (rt.IndexType(n) ->: rt.IndexType(_)) ->:
+          (rt.IndexType(_) ->: rt.IndexType(_)) ->:
+          rt.ArrayType(_, t) ->: rt.ArrayType(_, _) =>
 
-      case rp.Select() =>
-        val rT = p.t.asInstanceOf[
-          rt.FunType[rt.DataType, rt.FunType[rt.DataType, rt.Type]]]
-        val b = dataType(rT.inT)
-        val dt = dataType(rT.outT.inT)
+          val ai = accessTypeIdentifier()
+          (expT(rt.IndexType(n), read) ->: expT(rt.IndexType(n), read)) ->:
+            (expT(rt.IndexType(n), read) ->: expT(rt.IndexType(n), read)) ->:
+            expT(rt.ArrayType(n, t), ai) ->: expT(rt.ArrayType(n, t), ai)
+        case _ => error()
+      }
 
-        FunType(ExpType(b, read), FunType(ExpType(dt, read),
-          FunType(ExpType(dt, read), ExpType(dt, read))))
+      case r.ForeignFunction(_) =>
+        def buildType(t: rt.Type): PhraseType = t match {
+          case dt: rt.DataType =>
+            expT(dataType(dt), read)
+          case rt.FunType(in: rt.DataType, out) =>
+            expT(in, read) ->: buildType(out)
+          case _ =>
+            throw new Exception("This should not happen")
+        }
+        buildType(p.t)
 
-      case rp.PadCst() =>
-        val rT = p.t.asInstanceOf[
-          rt.DepFunType[rt.NatKind, rt.DepFunType[rt.NatKind,
-            rt.FunType[rt.DataType, rt.FunType[rt.DataType, rt.DataType]]]]]
-        val dt = rT.t.t.inT
-        val arrayT = rT.t.t.outT.inT
-        val outT = rT.t.t.outT.outT
-
-        DepFunType[NatKind, PhraseType](natIdentifier(rT.x),
-          DepFunType[NatKind, PhraseType](natIdentifier(rT.t.x),
-            FunType(ExpType(dataType(dt), read),
-              FunType(ExpType(dataType(arrayT), read),
-                ExpType(dataType(outT), read)))))
-
-      case rp.Generate() =>
-        val rT = p.t.asInstanceOf[
-          rt.FunType[rt.FunType[rt.DataType, rt.DataType], rt.DataType]]
-        val idxDt = dataType(rT.inT.inT)
-        val elemDt = dataType(rT.inT.outT)
-        val arrDt = dataType(rT.outT)
-
-        FunType(FunType(ExpType(idxDt, read), ExpType(elemDt, read)),
-          ExpType(arrDt, read))
-
-      case rp.Reorder() =>
-        val rT = p.t.asInstanceOf[
-          rt.FunType[rt.FunType[rt.DataType, rt.DataType],
-            rt.FunType[rt.FunType[rt.DataType, rt.DataType],
-              rt.FunType[rt.DataType, rt.DataType]]]]
-        val idxDt = dataType(rT.inT.inT)
-        val arrayDt = dataType(rT.outT.outT.inT)
-
-        val ai = accessTypeIdentifier()
-        FunType(FunType(ExpType(idxDt, read), ExpType(idxDt, read)),
-          FunType(FunType(ExpType(idxDt, read), ExpType(idxDt, read)),
-            FunType(ExpType(arrayDt, ai), ExpType(arrayDt, ai))))
-
-      case f@r.ForeignFunction(decl) =>
-        val (inTs, outT) = foreignFunIO(f.t)
-        val wF = wrapForeignFun(decl, inTs, outT, Vector())
-        wF.t
-
-      case arr@rp.MakeArray(_) =>
-        val wArr = wrapArray(arr.t, Vector())
-        wArr.t
+      case rp.MakeArray(_) =>
+        def buildType(t: rt.Type): PhraseType = t match {
+          case rt.FunType(in: rt.DataType, out) =>
+            expT(dataType(in), read) ->: buildType(out)
+          case rt.ArrayType(n, dt) => expT(ArrayType(n, dataType(dt)), read)
+          case _ => error(s"did not expect t")
+        }
+        buildType(p.t)
     }
+
+    checkConsistency(p.t, primitiveType)
 
     ptAnnotationMap update(p, primitiveType)
     (primitiveType, Subst())
@@ -579,6 +529,18 @@ private class InferAccessAnnotation {
         natToDataIdentifier(n2d) ->: `type`(t)
     }
     case rt.TypeIdentifier(_) | rt.TypePlaceholder =>
-      throw new Exception("This should not happen")
+      error()
+  }
+
+  private def checkConsistency(t: rt.Type, pt: PhraseType): Unit = (t, pt) match {
+    case (rt.FunType(inT, outT), FunType(inPT, outPT)) =>
+      checkConsistency(inT, inPT)
+      checkConsistency(outT, outPT)
+    case (rt.DepFunType(x, t), DepFunType(y, pt)) =>
+      if (x.name != y.name) error(s"Identifiers $x and $y differ")
+      checkConsistency(t, pt)
+    case (dt: rt.DataType, ExpType(dpt: DataType, _)) =>
+
+    case _ => error(s"Types $t and $pt not compatible")
   }
 }

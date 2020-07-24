@@ -32,7 +32,9 @@ final case class Apply[T1 <: PhraseType, T2 <: PhraseType](fun: Phrase[T1 ->: T2
   extends Phrase[T2] {
 
   override val t: T2 = {
-    assert(arg.t `<=` fun.t.inT)
+    assert(arg.t `<=` fun.t.inT,
+      s"Expected `${arg.t}' to be compatible with `${fun.t.inT}'\n" +
+        s"when applying:\n`$arg'\nto:\n`$fun'")
     fun.t.outT
   }
 
@@ -367,6 +369,9 @@ abstract class ExpPrimitive extends Primitive[ExpType] {
 
   def fedeTranslation(env: Map[Identifier[ExpType], Identifier[AccType]])
                      (C: Phrase[AccType ->: AccType]) : Phrase[AccType] = ???
+
+  def streamTranslation(C: Phrase[`(nat)->:`[(ExpType ->: CommType) ->: CommType] ->: CommType])
+                       (implicit context: TranslationContext): Phrase[CommType] = ???
 
   def acceptorTranslation(A: Phrase[AccType])
                          (implicit context: TranslationContext): Phrase[CommType]

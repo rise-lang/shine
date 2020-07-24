@@ -105,6 +105,22 @@ object cameraPipe {
     )
   }
 
+  val flattenPairArray: Expr = map(fun(p =>
+    generate(fun(i => select(i =:= lidx(0, 2))(p._1)(p._2)))
+  )) >> join
+
+  def interleaveX: Expr = implDT(dt => implN(h => implN(w => fun(
+    (h`.`w`.`dt) ->: (h`.`w`.`dt) ->: (h`.`(2*w)`.`dt)
+  )((a, b) =>
+    zipND(2)(a, b) |> map(flattenPairArray)
+  ))))
+
+  def interleaveY: Expr = implDT(dt => implN(h => implN(w => fun(
+    (h`.`w`.`dt) ->: (h`.`w`.`dt) ->: ((2*h)`.`w`.`dt)
+  )((a, b) =>
+    zipND(2)(a, b) |> transpose |> map(flattenPairArray) |> transpose
+  ))))
+
   val demosaic: Expr = nFun(h => nFun(w => fun(
     (4`.`h`.`w`.`i16) ->: (3`.`(2*h - 4)`.`(2*w - 4)`.`i16)
   )(deinterleaved => {
@@ -219,24 +235,16 @@ object cameraPipe {
         b_gr, b_r, b_b, b_gb
       ))
       makeArray(3)(
-        makeArray(2)(
-          makeArray(2)(r_gr_o.expr, r_r_o.expr),
-          makeArray(2)(r_b_o.expr, r_gb_o.expr)), // r
-        makeArray(2)(
-          makeArray(2)(g_gr_o.expr, g_r_o.expr),
-          makeArray(2)(g_b_o.expr, g_gb_o.expr)), // g
-        makeArray(2)(
-          makeArray(2)(b_gr_o.expr, b_r_o.expr),
-          makeArray(2)(b_b_o.expr, b_gb_o.expr))  // b
-      ) /* 3.2.2.H.W.f */ |>
-        // -- TODO: remove
-        mapSeqUnroll(mapSeqUnroll(mapSeqUnroll(mapSeq(mapSeq(fun(x => x)))))) >>
-        // --
-        map(map( // 2.H.W.f
-          transpose >> map(transpose >> join) // H.(W * 2).f
-        ) // 2.H.(W * 2).f
-          >> transpose >> join // (H * 2).(W * 2).f
-      )
+        interleaveY(
+          interleaveX(r_gr_o.expr, r_r_o.expr),
+          interleaveX(r_b_o.expr, r_gb_o.expr)), // r
+        interleaveY(
+          interleaveX(g_gr_o.expr, g_r_o.expr),
+          interleaveX(g_b_o.expr, g_gb_o.expr)), // g
+        interleaveY(
+          interleaveX(b_gr_o.expr, b_r_o.expr),
+          interleaveX(b_b_o.expr, b_gb_o.expr))  // b
+      ) // 3.(2*H).(2*W).f
     }))))))))))))))))))))))))
   })))
 
@@ -398,7 +406,7 @@ object cameraPipe {
       input |>
       hot_pixel_suppression(2*(h+2))(2*(w+2)) >>
       deinterleave(h)(w) >>
-      toMemFun(demosaic(h)(w)) >>
+      demosaic(h)(w) >>
       fun(x => color_correct(2*(h-2))(2*(w-2))(hm)(wm)(x)
         (matrix_3200)(matrix_7000)(color_temp)) >>
       toMemFun(mapSeqUnroll(mapSeq(mapSeq(fun(x => x))))) >> // TODO: remove

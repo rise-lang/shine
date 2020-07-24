@@ -4,7 +4,7 @@ import rise.core._
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.core.types._
-import rise.OpenCL.DSL._
+import rise.openCL.DSL._
 
 object nbody {
   private val id = fun(x => x)

@@ -156,6 +156,13 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
 
       case Comment(comment) => C.AST.Comment(comment)
 
+      // on the fly beta-reduction
+      case Apply(fun, arg) => cmd(Lifting.liftFunction(fun).reducing(arg), env)
+      case DepApply(fun, arg) => arg match {
+        case a: Nat => cmd(Lifting.liftDependentFunction[NatKind, CommType](fun.asInstanceOf[Phrase[NatKind `()->:` CommType]])(a), env)
+        case a: DataType => cmd(Lifting.liftDependentFunction[DataKind, CommType](fun.asInstanceOf[Phrase[DataKind `()->:` CommType]])(a), env)
+      }
+
       case Apply(_, _) | DepApply(_, _) |
            _: CommandPrimitive =>
         error(s"Don't know how to generate code for $phrase")
@@ -457,7 +464,7 @@ class CodeGenerator(val decls: CodeGenerator.Declarations,
         case _ => error(s"Expected path to be not empty")
       }
 
-      case Array(_, elems) => path match {
+      case MakeArray(_, elems) => path match {
         case (i: CIntExpr) :: ps => try {
           exp(elems(i.eval), env, ps, cont)
         } catch {

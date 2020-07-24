@@ -30,7 +30,7 @@ class gemv extends shine.test_util.Tests {
   ))
 
   object ocl {
-    import rise.OpenCL.DSL._
+    import rise.openCL.DSL._
 
     val fullMatrixVectorFusedOpenCL = nFun((n, m) => fun(
       (m`.`n`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->:
@@ -85,7 +85,7 @@ class gemv extends shine.test_util.Tests {
   }
 
   object omp {
-    import rise.OpenMP.DSL._
+    import rise.openMP.DSL._
 
     val fullMatrixVectorFusedOpenMP = nFun((n, m) => fun(
       (m`.`n`.`f32) ->: (n`.`f32) ->: (m`.`f32) ->: f32 ->: f32 ->:

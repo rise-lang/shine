@@ -20,11 +20,6 @@ abstract class AbstractMapLoop(override val n: Nat,
                out: Phrase[AccType])
               (implicit context: TranslationContext): Phrase[CommType]
 
-  def mapAcceptorTranslation(f: Phrase[ExpType ->: ExpType],
-                             A: Phrase[AccType])
-                            (implicit context: TranslationContext): Phrase[CommType] = {
-    ???
-  }
   override def acceptorTranslation(A: Phrase[AccType])
                                   (implicit context: TranslationContext): Phrase[CommType] = {
     import TranslationToImperative._

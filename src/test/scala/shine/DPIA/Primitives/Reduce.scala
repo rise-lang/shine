@@ -6,7 +6,7 @@ import rise.core.types._
 import rise.core.types.AddressSpace
 import util.gen
 import shine.OpenCL._
-import rise.OpenCL.DSL._
+import rise.openCL.DSL._
 import rise.core.{Expr, Literal}
 import rise.core.semantics.NatData
 
