@@ -35,7 +35,7 @@ class Pad extends shine.test_util.Tests {
   }
 
   test("Simple OpenMP constant pad input and copy") {
-    import rise.OpenMP.DSL._
+    import rise.openMP.DSL._
 
     val e = nFun(n => fun(ArrayType(n, f32))( xs =>
       xs |> padCst(2)(3)(l(5.0f)) |> mapPar(fun(x => x))
@@ -45,7 +45,7 @@ class Pad extends shine.test_util.Tests {
   }
 
   test("Simple OpenCL pad input and copy") {
-    import rise.OpenCL.DSL._
+    import rise.openCL.DSL._
 
     val e = nFun(n => fun(ArrayType(n, f32))( xs =>
       xs |> padCst(2)(3)(l(5.0f)) |> mapGlobal(fun(x => x))
@@ -55,7 +55,7 @@ class Pad extends shine.test_util.Tests {
   }
 
   test("OpenCL Pad only left") {
-    import rise.OpenCL.DSL._
+    import rise.openCL.DSL._
 
     val e = nFun(n => fun(ArrayType(n, f32))( xs =>
       xs |> padCst(2)(0)(l(5.0f)) |> mapGlobal(fun(x => x))
@@ -65,7 +65,7 @@ class Pad extends shine.test_util.Tests {
   }
 
   test("OpenCL Pad only right") {
-    import rise.OpenCL.DSL._
+    import rise.openCL.DSL._
 
     val e = nFun(n => fun(ArrayType(n, f32))( xs =>
       xs |> padCst(0)(3)(l(5.0f)) |> mapGlobal(fun(x => x))
@@ -75,7 +75,7 @@ class Pad extends shine.test_util.Tests {
   }
 
   test("OpenCL pad before or after transpose") {
-    import rise.OpenCL.DSL._
+    import rise.openCL.DSL._
 
     val range = arithexpr.arithmetic.RangeAdd(1, arithexpr.arithmetic.PosInf, 1)
     val k1 = gen.OpenCLKernel(nFun(range, n =>

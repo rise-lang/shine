@@ -3,6 +3,7 @@ package shine
 import arithexpr.arithmetic._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
+import rise.core.{types => rt}
 
 package object DPIA {
 
@@ -10,7 +11,7 @@ package object DPIA {
     throw new TypeException(s"Found $found but expected $expected")
   }
 
-  def error(msg: String): Nothing = {
+  def error(msg: String = "This should not happen"): Nothing = {
     throw new Exception(msg)
   }
 
@@ -108,10 +109,65 @@ package object DPIA {
     def ->:(n: NatToDataIdentifier): `()->:`[NatToDataKind, R] = DepFunType[NatToDataKind, R](n, r)
   }
 
-  @inline
-  def expT(dt: DataType, a: AccessType): ExpType = ExpType(dt, a)
-  @inline
-  def accT(dt: DataType): AccType = AccType(dt)
-  @inline
-  def varT(dt: DataType): VarType = ExpType(dt, read) x AccType(dt)
+  object expT {
+    def apply(dt: DataType, a: AccessType): ExpType = ExpType(dt, a)
+    def apply(dt: rt.DataType, a: AccessType): ExpType =
+      expT(fromRise.dataType(dt), a)
+
+    def unapply(et: ExpType): Option[(DataType, AccessType)] = {
+      ExpType.unapply(et)
+    }
+  }
+
+  object accT {
+    def apply(dt: DataType): AccType = AccType(dt)
+    def apply(dt: rt.DataType): AccType = accT(fromRise.dataType(dt))
+
+    def unapply(at: AccType): Option[DataType] = {
+      AccType.unapply(at)
+    }
+  }
+
+  object varT {
+    def apply(dt: DataType): VarType = expT(dt, read) x accT(dt)
+    def apply(dt: rt.DataType): VarType = expT(dt, read) x accT(dt)
+  }
+
+  object nFunT {
+    def apply(n: rt.NatIdentifier, t: PhraseType): PhraseType = {
+      DepFunType[NatKind, PhraseType](fromRise.natIdentifier(n), t)
+    }
+
+    def apply(n: NatIdentifier, t: PhraseType): PhraseType = {
+      DepFunType[NatKind, PhraseType](n, t)
+    }
+
+    def unapply[K <: Kind, T <: PhraseType](funType: DepFunType[K, T]
+                                           ): Option[(NatIdentifier, T)] = {
+      funType.x match {
+        case n: NatIdentifier => Some((n, funType.t))
+        case _ => throw new Exception("Expected Nat DepFunType")
+      }
+    }
+  }
+
+  object aFunT {
+    def apply(a: rt.AddressSpaceIdentifier, t: PhraseType): PhraseType = {
+      DepFunType[AddressSpaceKind, PhraseType](
+        fromRise.addressSpaceIdentifier(a), t)
+    }
+
+    def apply(a: AddressSpaceIdentifier, t: PhraseType): PhraseType = {
+      DepFunType[AddressSpaceKind, PhraseType](a, t)
+    }
+
+    def unapply[K <: Kind,
+      T <: PhraseType](funType: DepFunType[K, T]
+                      ): Option[(AddressSpaceIdentifier, T)] = {
+      funType.x match {
+        case a: AddressSpaceIdentifier => Some((a, funType.t))
+        case _ => throw new Exception("Expected AddressSpace DepFunType")
+      }
+    }
+  }
 }

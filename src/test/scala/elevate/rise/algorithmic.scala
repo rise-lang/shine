@@ -6,9 +6,8 @@ import elevate.core.strategies.traversal._
 import elevate.rise.rules.algorithmic._
 import elevate.rise.rules.movement.liftReduce
 import elevate.rise.rules.traversal._
+import elevate.rise.rules.traversal.default._
 import elevate.rise.rules.{inferRise, lowering}
-import elevate.rise.strategies.normalForm._
-import elevate.rise.strategies.tiling.{loopInterchange, loopInterchangeAtLevel, _}
 import elevate.rise.strategies.traversal._
 import elevate.util._
 import rise.core.TypedDSL._
@@ -26,6 +25,16 @@ class algorithmic extends shine.test_util.Tests {
   // T: transpose
   // S: slide/split
   // J: join
+
+  def loopInterchange = elevate.rise.strategies.tiling.loopInterchange(default.RiseTraversable)
+  def loopInterchangeAtLevel = elevate.rise.strategies.tiling.loopInterchangeAtLevel(default.RiseTraversable)
+  def tileND = elevate.rise.strategies.tiling.tileND(default.RiseTraversable)
+  def tileNDList = elevate.rise.strategies.tiling.tileNDList(default.RiseTraversable)
+
+  def DFNF = elevate.rise.strategies.normalForm.DFNF()(default.RiseTraversable)
+  def RNF = elevate.rise.strategies.normalForm.RNF()(default.RiseTraversable)
+  def CNF = elevate.rise.strategies.normalForm.CNF()(default.RiseTraversable)
+  def BENF = elevate.rise.strategies.normalForm.BENF()(default.RiseTraversable)
 
   // Loop Interchange
 

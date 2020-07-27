@@ -6,7 +6,7 @@ import rise.core.types._
 import rise.core.types.AddressSpace
 import util.gen
 import shine.OpenCL._
-import rise.OpenCL.DSL._
+import rise.openCL.DSL._
 import rise.core.{Expr, Literal}
 import rise.core.semantics.NatData
 
@@ -15,7 +15,8 @@ import scala.language.postfixOps
 class Reduce extends shine.test_util.TestsWithExecutor {
   val add = fun(a => fun(b => a + b))
 
-  test("Simple example should generate syntactic valid C code with one loop") {
+  test("Simple example should generate syntactically valid C code" +
+    "with one loop") {
     val e =
       nFun(n => fun(ArrayType(n, f32))(a =>
         a |> reduceSeq(add)(l(0.0f))))
@@ -25,7 +26,8 @@ class Reduce extends shine.test_util.TestsWithExecutor {
     "for".r.findAllIn(code).length shouldBe 1
   }
 
-  test("Fusing a reduce into a map should generate syntactic valid C code") {
+  test("Fusing a reduce into a map should generate syntactically" +
+    "valid C code") {
     val e =
       nFun(h => nFun(w =>
         fun(ArrayType(h, ArrayType(w, f32)))(a =>
@@ -35,7 +37,8 @@ class Reduce extends shine.test_util.TestsWithExecutor {
     gen.CProgram(e)
   }
 
-  test("Fusing a reduce into another should generate syntactic valid C code with two loops") {
+  test("Fusing a reduce into another should generate syntactically" +
+    "valid C code with two loops") {
     val e =
       nFun(h => nFun(w =>
         fun(ArrayType(h, ArrayType(w, f32)))(a =>
@@ -47,7 +50,8 @@ class Reduce extends shine.test_util.TestsWithExecutor {
     "for".r.findAllIn(code).length shouldBe 2
   }
 
-  test("oclReduceSeq produces correct result over 2D array using private memory") {
+  test("oclReduceSeq produces correct result over 2D array" +
+    "using private memory") {
     import scala.util.Random
 
     val random = new Random()
@@ -57,11 +61,11 @@ class Reduce extends shine.test_util.TestsWithExecutor {
         |> mapSeq (fun(x => x)))
 
     val e = nFun((m, n) =>
-              fun(m`.`n`.`f32)(arr =>
-                arr |> oclReduceSeq (AddressSpace.Private)
-                                    (fun((in1, in2) => zip (in1) (in2) |> mapSeq (fun(t => t._1 + t._2))))
-                                    (initExp (n))
-                    |> mapSeq (fun(x => x))))
+      fun(m`.`n`.`f32)(arr => arr
+        |> oclReduceSeq (AddressSpace.Private)
+          (fun((in1, in2) => zip (in1) (in2) |> mapSeq (fun(t => t._1 + t._2))))
+          (initExp (n))
+        |> mapSeq (fun(x => x))))
 
     val m = 64
     val n = 64
@@ -76,10 +80,11 @@ class Reduce extends shine.test_util.TestsWithExecutor {
     assertResult(gold)(out)
   }
 
-  test("Record access to specify initial accumulator value of reduceSeq generates syntactically valid C code") {
+  test("Record access to specify initial accumulator value" +
+    "of reduceSeq generates syntactically valid C code") {
     val n = 8
     val initRecordExp =
-      (zip (generate(fun(IndexType(n))(_ => l(0.0f))) |> mapSeq (fun(x => x)))
+      (zip (generate(fun(IndexType(n))(_ => l(0.0f))))
            (generate(fun(IndexType(n))(_ => l(0.0f))))
         |> idx(natAsIndex (n) (Literal(NatData(0)))))
 
@@ -93,7 +98,8 @@ class Reduce extends shine.test_util.TestsWithExecutor {
     gen.CProgram(e(initRecordExp._2)).code
   }
 
-  test("Record access to specify initial accumulator value of oclReduceSeq produces correct result") {
+  test("Record access to specify initial accumulator value" +
+    "of oclReduceSeq produces correct result") {
     import scala.util.Random
 
     val random = new Random()
@@ -110,10 +116,13 @@ class Reduce extends shine.test_util.TestsWithExecutor {
     val gold = A.sum
 
     def runKernel(initWithRecordAccess: Expr) =
-      gen.OpenCLKernel(e(initWithRecordAccess)).as[ScalaFunction `(`Int`,`Array[Float]`)=>`Array[Float]]
+      gen.OpenCLKernel(e(initWithRecordAccess))
+        .as[ScalaFunction `(`Int`,`Array[Float]`)=>`Array[Float]]
 
-    val (out1, _) = runKernel(initRecordExp._1)(LocalSize(1), GlobalSize(1))(n `,` A)
-    val (out2, _) = runKernel(initRecordExp._2)(LocalSize(1), GlobalSize(1))(n `,` A)
+    val (out1, _) =
+      runKernel(initRecordExp._1)(LocalSize(1), GlobalSize(1))(n `,` A)
+    val (out2, _) =
+      runKernel(initRecordExp._2)(LocalSize(1), GlobalSize(1))(n `,` A)
 
     assertResult(gold)(out1(0))
     assertResult(gold)(out2(0))

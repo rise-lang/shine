@@ -2,7 +2,7 @@ package shine.DPIA.Compilation
 
 import arithexpr.arithmetic.ArithExpr.isSmaller
 import arithexpr.arithmetic.Cst
-import shine.DPIA.FunctionalPrimitives.AsIndex
+import shine.DPIA.FunctionalPrimitives.NatAsIndex
 import shine.DPIA.ImperativePrimitives._
 import shine.DPIA.Phrases._
 import shine.DPIA.Types._
@@ -14,15 +14,15 @@ object UnrollLoops {
     val r = VisitAndRebuild(p, new VisitAndRebuild.Visitor {
       override def phrase[T <: PhraseType](p: Phrase[T]): Result[Phrase[T]] = p match {
         case For(n, Lambda(ident: Identifier[_], body), true) =>
-          Continue(unrollLoop(n, init=0, step=1, i => Phrase.substitute(AsIndex(n, Natural(i)), `for`=ident, in=body)), this)
+          Continue(unrollLoop(n, init=0, step=1, i => Phrase.substitute(NatAsIndex(n, Natural(i)), `for`=ident, in=body)), this)
         case ForNat(n, DepLambda(ident: NatIdentifier, body), true) =>
           Continue(unrollLoop(n, init=0, step=1, i => PhraseType.substitute(i, `for`=ident, in=body)), this)
         case OpenCLParFor(n, _, out, Lambda(ident: Identifier[_], Lambda(identOut: Identifier[_], body)), init, step, true) =>
           out.t.dataType match {
             case ArrayType(_, elemType) =>
-              Continue(unrollLoop(n, init, step, i => Phrase.substitute(IdxAcc(n, elemType, AsIndex(n, Natural(i)), out),
+              Continue(unrollLoop(n, init, step, i => Phrase.substitute(IdxAcc(n, elemType, NatAsIndex(n, Natural(i)), out),
                 `for`=identOut,
-                Phrase.substitute(AsIndex(n, Natural(i)), `for`=ident, in=body))), this)
+                Phrase.substitute(NatAsIndex(n, Natural(i)), `for`=ident, in=body))), this)
             case _ => throw new Exception("OpenCLParFor acceptor has to be of ArrayType.")
           }
         case _ =>

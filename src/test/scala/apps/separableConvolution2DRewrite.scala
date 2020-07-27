@@ -12,9 +12,9 @@ import elevate.rise.rules.movement._
 import elevate.core.strategies.basic._
 import elevate.core.strategies.traversal._
 import elevate.rise.Rise
-import elevate.rise.strategies.normalForm._
 import elevate.rise.strategies.algorithmic._
 import elevate.rise.rules.traversal._
+import elevate.rise.rules.traversal.alternative._
 import elevate.util.makeClosed
 
 class separableConvolution2DRewrite extends shine.test_util.Tests {
@@ -32,6 +32,8 @@ class separableConvolution2DRewrite extends shine.test_util.Tests {
   private val Sv = slide(3)(1)
   private val Dh = toTDSL(dot)(weightsH)
   private val Dv = toTDSL(dot)(weightsV)
+
+  private val BENF = elevate.rise.strategies.normalForm.BENF()(alternative.RiseTraversable)
 
   private def ben_eq(a: Expr, b: Expr): Boolean = {
     val na = BENF(a).get
@@ -58,7 +60,8 @@ class separableConvolution2DRewrite extends shine.test_util.Tests {
 
   private def assert_ben_eq(a: Expr, b: Expr): Unit =
     if (!ben_eq(a, b)) {
-      throw new Exception(s"expected structural equality:\n$a\n$b")
+      throw new Exception(s"expected structural equality:\n" +
+        s"Got:\n${BENF(a).get}\nExpected:\n${BENF(b).get}")
     }
 
   private def rewrite_steps(a: Expr, steps: Seq[(Strategy[Rise], Expr)]): Unit = {
@@ -140,7 +143,8 @@ class separableConvolution2DRewrite extends shine.test_util.Tests {
     rewrite_steps(toTDSL(separated)(weightsV)(weightsH), Seq(
       (repeatNTimes(2, topDown(lowering.reduceSeqUnroll)) `;`
         repeatNTimes(2, topDown(lowering.mapSeq)) `;`
-        repeatNTimes(2, skip(1)(lowering.mapSeq)))
+        repeatNTimes(2, skip(1)(lowering.mapSeq)) `;`
+        body(argument(lowering.toMemAfterMapSeq)))
         -> toTDSL(separatedSeq)(weightsV)(weightsH)
     ))
   }
@@ -157,13 +161,23 @@ class separableConvolution2DRewrite extends shine.test_util.Tests {
   test("scanline to regRotSeq") {
     rewrite_steps(toTDSL(scanline)(weightsV)(weightsH), Seq(
       (repeatNTimes(2, topDown(lowering.reduceSeqUnroll)) `;`
-        topDown(lowering.slideSeq(SlideSeq.Values, idE)) `;`
-        BENF `;`
-        topDown(algorithmic.slideSeqFusion) `;`
-        topDown(lowering.mapSeq))
+        topDown(lowering.mapSeq) `;`
+        topDown(lowering.rotateValues(idE)) `;`
+        topDown(lowering.mapStream))
         -> toTDSL(regRotSeq)(weightsV)(weightsH)
     ))
   }
+
+//  test("scanline to regRotSeq") {
+//    rewrite_steps(toTDSL(scanline)(weightsV)(weightsH), Seq(
+//      (repeatNTimes(2, topDown(lowering.reduceSeqUnroll)) `;`
+//        topDown(lowering.slideSeq(SlideSeq.Values, idE)) `;`
+//        BENF `;`
+//        topDown(algorithmic.slideSeqFusion) `;`
+//        topDown(lowering.mapSeq))
+//        -> toTDSL(regRotSeq)(weightsV)(weightsH)
+//    ))
+//  }
 
   // TODO
   // test("scanline to regRotPar") {

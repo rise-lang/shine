@@ -12,12 +12,13 @@ import shine.DPIA._
 
 import scala.xml.Elem
 
-final case class Join(n: Nat,
-                      m: Nat,
-                      w: AccessType,
-                      dt: DataType,
-                      array: Phrase[ExpType])
-  extends ExpPrimitive {
+final case class Join(
+  n: Nat,
+  m: Nat,
+  w: AccessType,
+  dt: DataType,
+  array: Phrase[ExpType]
+) extends ExpPrimitive {
 
   array :: expT(n`.`(m`.`dt), w)
   override val t: ExpType = expT({n * m}`.`dt, w)

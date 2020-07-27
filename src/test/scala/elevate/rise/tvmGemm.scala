@@ -2,44 +2,57 @@ package elevate.rise
 
 import elevate.core._
 import elevate.core.strategies.basic._
+//import elevate.core.strategies.debug.peek
+//import rise.core.IsClosedForm
+import elevate.core.strategies.debug.debug
 import elevate.core.strategies.traversal._
-import elevate.rise.rules.traversal._
 import elevate.rise.rules.algorithmic._
 import elevate.rise.rules.lowering._
+import elevate.rise.rules.traversal._
+import elevate.rise.rules.traversal.default._
 import elevate.rise.strategies.algorithmic.reorder
-import elevate.rise.strategies.tiling._
 import elevate.rise.strategies.lowering._
 import elevate.rise.strategies.normalForm._
 import elevate.rise.strategies.predicate._
+import elevate.rise.strategies.tiling._
+import elevate.rise.strategies.traversal
 import elevate.rise.strategies.traversal._
-import shine.test_util
 import rise.core.TypedDSL._
 import rise.core.types._
+import shine.test_util
 import util.gen
 
 // scalastyle:off
 class tvmGemm extends test_util.Tests {
 
+  val outermost: (Strategy[Rise]) => (Strategy[Rise]) => Strategy[Rise] =
+    traversal.outermost(default.RiseTraversable)
+  val innermost: (Strategy[Rise]) => (Strategy[Rise]) => Strategy[Rise] =
+    traversal.innermost(default.RiseTraversable)
+
   //// MM INPUT EXPRESSION /////////////////////////////////////////////////////
   val N = 1024
-  val mm = infer(
+  val mm: Rise = //infer(
     fun(ArrayType(N, ArrayType(N, f32)))(a =>
       fun(ArrayType(N, ArrayType(N, f32)))(b =>
-        map(fun(ak =>
-          map(fun(bk =>
-            (reduce(add)(l(0.0f)) o
-              map(fun(x => fst(x) * snd(x)))) $
-              zip(ak, bk))) $ transpose(b))) $ a))
-  )
+        a |> map(fun(ak =>
+          transpose(b) |> map(fun(bk =>
+            zip(ak, bk) |>
+              map(fun(x => fst(x) * snd(x))) |>
+              reduce(add)(l(0.0f))
+          ))
+        ))
+      ))
+  //)
 
   //// ICFP'20 TVM - STRATEGIES ////////////////////////////////////////////////
   // -- BASELINE ---------------------------------------------------------------
 
-  val baseline: Strategy[Rise] = ( DFNF `;`
-    fuseReduceMap `@` topDown[Rise])
+  val baseline: Strategy[Rise] = DFNF()(default.RiseTraversable) `;`
+    fuseReduceMap `@` topDown[Rise]
 
   test("baseline") {
-    run("baseline", (baseline `;` lowerToC), openMP = false)
+    run("baseline", baseline `;` lowerToC, openMP = false)
   }
 
   // -- BLOCKING ---------------------------------------------------------------
@@ -47,13 +60,13 @@ class tvmGemm extends test_util.Tests {
   val isFullyAppliedReduce: Strategy[Rise] = isApplied(isApplied(isApplied(isReduce)))
   val blocking: Strategy[Rise] =
     baseline `;`
-      (tile(32,32)      `@` outermost(mapNest(2))) `;;`
-      (reduceMapFission `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
-      (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;`
+      (tile(32,32)        `@` outermost(mapNest(2))) `;;`
+      (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
+      (splitStrategy(4)   `@` innermost(isFullyAppliedReduce)) `;;`
       reorder(List(1,2,5,6,3,4))
 
   test("blocking") {
-    run("blocking", (blocking `;` lowerToC), openMP = false)
+    run("blocking", blocking `;` lowerToC, openMP = false)
   }
 
   // -- VECTORIZATION ----------------------------------------------------------
@@ -70,9 +83,9 @@ class tvmGemm extends test_util.Tests {
   // -- LOOP PERMUTATION -------------------------------------------------------
 
   val loopPerm: Strategy[Rise] = baseline `;`
-    (tile(32,32)      `@` outermost(mapNest(2))) `;;`
-    (reduceMapFission `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
-    (splitStrategy(4) `@` innermost(isFullyAppliedReduce)) `;;`
+    (tile(32,32)        `@` outermost(mapNest(2))) `;;`
+    (reduceMapFission() `@` outermost(isApplied(isApplied(isReduceSeq)))) `;;`
+    (splitStrategy(4)   `@` innermost(isFullyAppliedReduce)) `;;`
     reorder(List(1,2,5,3,6,4)) `;;`
     (vectorize(32) `@` innermost(isFullyAppliedMap))
 
@@ -84,8 +97,8 @@ class tvmGemm extends test_util.Tests {
 
   val isTransposedB: Strategy[Rise] = isApplied(isTranspose)
   val permuteB: Strategy[Rise] =
-    splitJoin2(32) `;` DFNF `;` argument(idAfter) `;`
-      topDown(liftId) `;` topDown(createTransposePair) `;` RNF `;`
+      splitJoin2(32) `;` DFNF() `;` argument(idAfter) `;`
+      topDown(liftId) `;` topDown(createTransposePair) `;` RNF() `;`
       argument(argument(idAfter)) `;` normalize.apply(liftId) `;`
       topDown(idToCopy)
 
@@ -93,58 +106,59 @@ class tvmGemm extends test_util.Tests {
     storeInMemory(isTransposedB,
       permuteB `;;`
         (vectorize(32) `@` innermost(isFullyAppliedMap)) `;;`
-        (parallel      `@` outermost(isApplied(isMap)))
+        (parallel()    `@` outermost(isApplied(isMap)))
     ) `@` inLambda
 
   def inLambda(s: Strategy[Rise]): Strategy[Rise] =
-    isLambda `;` ((e: Rise) => body(inLambda(s))(e)) <+ s
+    isLambda `;` ( (e: Rise) => body(inLambda(s))(e) ) <+ s
 
   val arrayPacking: Strategy[Rise] = packB `;;` loopPerm
   test("array packing") {
-    run("array_packing", (arrayPacking `;` lowerToC), openMP = true)
+    run("array_packing", arrayPacking `;` lowerToC, openMP = true)
   }
 
   // -- CACHE BLOCKS -----------------------------------------------------------
 
   val cacheBlocks: Strategy[Rise] = (
-    arrayPacking `;;`
+    arrayPacking `;;` debug[Rise]("after arrayPacking") `;`
       (unroll `@` innermost(isReduceSeq))
     )
 
   test("cache blocks") {
-    run("cache_blocks", (cacheBlocks `;` lowerToC), openMP = true)
+    run("cache_blocks", cacheBlocks `;` lowerToC, openMP = true)
   }
 
   // -- PARALLEL ---------------------------------------------------------------
 
   val par = (
     arrayPacking `;;`
-      ((parallel `@` outermost(isApplied(isMap))) `@` outermost(isApplied(isLet))) `;;`
+      ((parallel() `@` outermost(isApplied(isMap))) `@`
+        outermost(isApplied(isLet))) `;;`
       (unroll `@` innermost(isReduceSeq))
     )
 
   test("parallel") {
-    run("parallel", (par `;` lowerToC), openMP = true)
+    run("parallel", par `;` lowerToC, openMP = true)
   }
 
 
   /// UTILS ////////////////////////////////////////////////////////////////////
 
-  val kernelsFolder: String = "/home/artifact/kernels"
-  val plotsFolder: String = "/home/artifact/results/fig10/steps"
+//  val kernelsFolder: String = "/home/artifact/kernels"
+//  val plotsFolder: String = "/home/artifact/results/fig10/steps"
 
   def run(version: String,
           strategy: Strategy[Rise],
           openMP: Boolean // generate C or OpenMP code?
          ): Unit = {
 
-    def toFile(path: String, name: String, content: String, ending: String = ".c"): Unit = {
-      import java.io._
-      val w =new PrintWriter(new File(s"$path/$name$ending"))
-      w.write(content)
-      w.flush()
-      w.close()
-    }
+//    def toFile(path: String, name: String, content: String, ending: String = ".c"): Unit = {
+//      import java.io._
+//      val w =new PrintWriter(new File(s"$path/$name$ending"))
+//      w.write(content)
+//      w.flush()
+//      w.close()
+//    }
 
     def currentTimeSec: Long = System.currentTimeMillis / 1000
 
@@ -157,9 +171,9 @@ class tvmGemm extends test_util.Tests {
     val rewritten = strategy(mm)
     val time1 = currentTimeSec
     println(s"[$versionUC] rewrite time: ${time1 - time0}s")
-    val steps = Success.rewriteCount
-    println(s"[$versionUC] required rewrite steps: $steps\n")
-    toFile(plotsFolder, version, s"$version,$steps", ".csv")
+//    val steps = Success.rewriteCount
+//    println(s"[$versionUC] required rewrite steps: $steps\n")
+//    toFile(plotsFolder, version, s"$version,$steps", ".csv")
 
     // generate the C code
     val time2 = currentTimeSec
@@ -170,9 +184,10 @@ class tvmGemm extends test_util.Tests {
     }
     val time3 = currentTimeSec
     println(s"[$versionUC] codegen time: ${time3 - time2}s")
+    println(s"Program:\n${program}")
 
     // store the C code
-    println(s"[$versionUC] generated code stored as $version in $kernelsFolder")
-    toFile(kernelsFolder, version, program)
+//    println(s"[$versionUC] generated code stored as $version in $kernelsFolder")
+//    toFile(kernelsFolder, version, program)
   }
 }

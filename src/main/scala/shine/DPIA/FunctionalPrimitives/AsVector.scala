@@ -11,37 +11,44 @@ import shine.DPIA._
 
 import scala.xml.Elem
 
-final case class AsVector(n: Nat,
-                          m: Nat,
-                          dt: ScalarType,
-                          array: Phrase[ExpType])
-  extends ExpPrimitive {
+final case class AsVector(
+  n: Nat,
+  m: Nat,
+  dt: ScalarType,
+  access: AccessType,
+  array: Phrase[ExpType]
+) extends ExpPrimitive {
 
-  array :: expT({m * n}`.`dt, read)
-  override val t: ExpType = expT(m`.`vec(n, dt), read)
+  array :: expT({m * n}`.`dt, access)
+  override val t: ExpType = expT(m`.`vec(n, dt), access)
 
   override def visitAndRebuild(f: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    AsVector(f.nat(n), f.nat(m), f.data(dt), VisitAndRebuild(array, f))
+    AsVector(f.nat(n), f.nat(m), f.data(dt), f.access(access),
+      VisitAndRebuild(array, f))
   }
 
   override def eval(s: Store): Data = ???
 
-  override def prettyPrint: String = s"(asVector ${n.toString} ${PrettyPhrasePrinter(array)})"
+  override def prettyPrint: String =
+    s"(asVector ${n.toString} ${PrettyPhrasePrinter(array)})"
 
   override def xmlPrinter: Elem =
-    <asVector n={ToString(n)}>
+    <asVector n={ToString(n)} dt={ToString(dt)} access={ToString(access)}>
       {Phrases.xmlPrinter(array)}
     </asVector>
 
-  override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommType] = {
+  override def acceptorTranslation(A: Phrase[AccType])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] = {
     import TranslationToImperative._
 
     acc(array)(AsVectorAcc(n, m, dt, A))
   }
 
-  override def continuationTranslation(C: Phrase[->:[ExpType, CommType]])
-                                      (implicit context: TranslationContext): Phrase[CommType] = {
-    TranslationToImperative.con(array)(λ(array.t)(x => C(AsVector(n, m, dt, x)) ))
+  override def continuationTranslation(C: Phrase[->:[ExpType, CommType]])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] = {
+    TranslationToImperative.con(array)(λ(array.t)(x =>
+      C(AsVector(n, m, dt, access, x)) ))
   }
 }

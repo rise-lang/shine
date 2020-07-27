@@ -9,7 +9,6 @@ import shine.DPIA.Types._
 import shine.DPIA.Types.DataType._
 import shine.DPIA._
 
-import scala.language.reflectiveCalls
 import scala.xml.Elem
 
 final case class IndexAsNat(n: Nat, e: Phrase[ExpType])
@@ -36,16 +35,14 @@ final case class IndexAsNat(n: Nat, e: Phrase[ExpType])
     }
   }
 
-  def acceptorTranslation(A: Phrase[AccType])
-                         (implicit context: TranslationContext): Phrase[CommType] = {
-    import TranslationToImperative._
+  def acceptorTranslation(A: Phrase[AccType])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] =
+    ???
 
-    con(e)(λ(expT(idx(n), read))(x =>
-      A :=|NatType| IndexAsNat(n, x)))
-  }
-
-  def continuationTranslation(C: Phrase[ExpType ->: CommType])
-                             (implicit context: TranslationContext): Phrase[CommType] = {
+  def continuationTranslation(C: Phrase[ExpType ->: CommType])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(e)(λ(expT(idx(n), read))(x =>

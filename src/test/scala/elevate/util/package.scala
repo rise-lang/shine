@@ -6,12 +6,13 @@ import _root_.rise.core.primitives._
 import _root_.rise.core._
 import _root_.rise.core.types._
 import _root_.rise.core.TypedDSL._
+import elevate.core.strategies.Traversable
 
 package object util {
 
   // Rise-related utils
 
-  def betaEtaEquals(a: Rise, b: Rise): Boolean = BENF(makeClosed(a)._1).get == BENF(makeClosed(b)._1).get
+  def betaEtaEquals(a: Rise, b: Rise)(implicit ev: Traversable[Rise]): Boolean = BENF()(ev)(makeClosed(a)._1).get == BENF()(ev)(makeClosed(b)._1).get
 
   val tileSize = 4
 
@@ -84,7 +85,7 @@ package object util {
     map(lambda(i, app(***!(x), i)))
   }
 
-  def testMultiple(list: List[Rise], gold: Rise): Unit = {
+  def testMultiple(list: List[Rise], gold: Rise)(implicit ev: Traversable[Rise]): Unit = {
     assert(list.forall(betaEtaEquals(_, gold)))
   }
 }

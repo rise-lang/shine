@@ -4,7 +4,7 @@ import rise.core._
 import rise.core.types._
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
-import rise.OpenCL.DSL._
+import rise.openCL.DSL._
 
 class fft extends shine.test_util.Tests {
   def createStockhamIterationLambda(p: Int, LPrevIter: Int, N: Int): Expr = {

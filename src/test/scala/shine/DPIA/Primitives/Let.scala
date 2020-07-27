@@ -2,7 +2,7 @@ package shine.DPIA.Primitives
 
 import rise.core.DSL._
 import rise.core.types._
-import rise.OpenCL.DSL._
+import rise.openCL.DSL._
 import util.gen
 
 class Let extends shine.test_util.Tests {
@@ -17,10 +17,10 @@ class Let extends shine.test_util.Tests {
       toPrivate(x + l(2)) |> fun(y => y * y)
     )).code)
     plusNum(2, gen.OpenCLKernel(fun(int)(x =>
-      (x + l(2)) |> let(fun(y => y * y))
+      let (x + l(2)) be (y => y * y)
     )).code)
     plusNum(1, gen.OpenCLKernel(fun(int)(x =>
-      toPrivate(x + l(2)) |> let(fun(y => y * y))
+      let (toPrivate(x + l(2))) be (y => y * y)
     )).code)
   }
 }

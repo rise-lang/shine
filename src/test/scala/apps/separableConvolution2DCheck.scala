@@ -3,7 +3,6 @@ package apps
 import separableConvolution2D._
 import rise.core._
 import rise.core.types._
-import rise.core.primitives._
 import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.core.HighLevelConstructs._
@@ -117,7 +116,8 @@ int main(int argc, char** argv) {
     val e = padClamp2D(1) >> slide(3)(1) >> mapSeq(
       transpose >>
       map(dotSeqUnroll(binomialWeightsV)) >>
-      slideSeq(SlideSeq.Values)(3)(1)(id)(dotSeqUnroll(binomialWeightsH))
+      rotateValues(3)(id) >>
+      mapStream(dotSeqUnroll(binomialWeightsH))
     )
     val code = gen.CProgram(wrapExpr(e), "blur").code
     " % ".r.findAllIn(code).length shouldBe 0
@@ -125,7 +125,7 @@ int main(int argc, char** argv) {
   }
 
   test("compiling OpenCL private arrays should unroll loops") {
-    import rise.OpenCL.DSL._
+    import rise.openCL.DSL._
 
     val dotSeqPrivate = fun(a => fun(b =>
       zip(a)(b) |> map(mulT) |> oclReduceSeq(AddressSpace.Private)(add)(l(0.0f))

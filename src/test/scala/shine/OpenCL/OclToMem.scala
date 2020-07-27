@@ -5,9 +5,9 @@ import rise.core.DSL._
 import rise.core.TypeLevelDSL._
 import rise.core.types._
 import rise.core.types.AddressSpace._
-import rise.OpenCL.DSL._
+import rise.openCL.DSL._
 
-class To extends shine.test_util.Tests {
+class OclToMem extends shine.test_util.Tests {
   val id = fun(x => x)
   val add1 = fun(x => x + l(1.0f))
 

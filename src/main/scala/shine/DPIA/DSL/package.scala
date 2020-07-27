@@ -1,7 +1,7 @@
 package shine.DPIA
 
 import shine.DPIA.Compilation.TranslationContext
-import shine.DPIA.FunctionalPrimitives.{AsIndex, DepIdx, Idx, IdxVec}
+import shine.DPIA.FunctionalPrimitives.{NatAsIndex, DepIdx, Idx, IdxVec}
 import shine.DPIA.ImperativePrimitives._
 import shine.DPIA.Phrases.{Operators, _}
 import shine.DPIA.Semantics.OperationalSemantics.{FloatData, IntData}
@@ -32,7 +32,7 @@ package object DSL {
 
     def `@`(index: Nat): Idx = e.t match {
       case ExpType(ArrayType(n, dt), _) =>
-        Idx(n, dt, AsIndex(n, Natural(index)), e)
+        Idx(n, dt, NatAsIndex(n, Natural(index)), e)
       case x => error(x.toString, "exp[n.dt, _]")
     }
 
@@ -58,7 +58,7 @@ package object DSL {
 
     def `@`(index: Nat): IdxAcc = a.t match {
       case AccType(ArrayType(n, dt)) =>
-        IdxAcc(n, dt, AsIndex(n, Natural(index)), a)
+        IdxAcc(n, dt, NatAsIndex(n, Natural(index)), a)
       case x => error(x.toString, "acc[n.dt]")
     }
 

@@ -6,7 +6,7 @@ import util.gen
 
 class scan extends shine.test_util.Tests {
   private val simpleScan = fun(ArrayType(8, f32))(array =>
-    array |> scanSeq(fun(x => fun(a => a + x)))(l(0.0f))
+    array |> scanSeq(add)(l(0.0f))
   )
 
   test("Simple scan compiles to syntactically correct C") {

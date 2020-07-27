@@ -10,15 +10,17 @@ import shine.DPIA._
 
 import scala.xml.Elem
 
-final case class Pair(dt1: DataType,
-                      dt2: DataType,
-                      fst: Phrase[ExpType],
-                      snd: Phrase[ExpType])
-  extends ExpPrimitive {
+final case class Pair(
+  dt1: DataType,
+  dt2: DataType,
+  access: AccessType,
+  fst: Phrase[ExpType],
+  snd: Phrase[ExpType]
+) extends ExpPrimitive {
 
-  fst :: expT(dt1, read)
-  snd :: expT(dt2, read)
-  override val t: ExpType = expT(dt1 x dt2, read)
+  fst :: expT(dt1, access)
+  snd :: expT(dt2, access)
+  override val t: ExpType = expT(dt1 x dt2, access)
 
   override def eval(s: Store): Data = {
     PairData(
@@ -26,8 +28,10 @@ final case class Pair(dt1: DataType,
       OperationalSemantics.eval(s, snd))
   }
 
-  override def visitAndRebuild(fun: VisitAndRebuild.Visitor): Phrase[ExpType] = {
-    Pair(fun.data(dt1), fun.data(dt2),
+  override def visitAndRebuild(
+    fun: VisitAndRebuild.Visitor
+  ): Phrase[ExpType] = {
+    Pair(fun.data(dt1), fun.data(dt2), fun.access(access),
       VisitAndRebuild(fst, fun), VisitAndRebuild(snd, fun))
   }
 
@@ -35,7 +39,7 @@ final case class Pair(dt1: DataType,
     s"(${PrettyPhrasePrinter(fst)}, ${PrettyPhrasePrinter(snd)})"
 
   override def xmlPrinter: Elem =
-    <record>
+    <record access={ToString(access)}>
       <fst>
         {Phrases.xmlPrinter(fst)}
       </fst>
@@ -44,20 +48,22 @@ final case class Pair(dt1: DataType,
       </snd>
     </record>
 
-  override def acceptorTranslation(A: Phrase[AccType])
-                                  (implicit context: TranslationContext): Phrase[CommType] = {
+  override def acceptorTranslation(A: Phrase[AccType])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] = {
     import TranslationToImperative._
 
     acc(fst)(pairAcc1(dt1, dt2, A)) `;`
-      acc(snd)(recordAcc2(dt1, dt2, A))
+      acc(snd)(pairAcc2(dt1, dt2, A))
   }
 
-  override def continuationTranslation(C: Phrase[->:[ExpType, CommType]])
-                                      (implicit context: TranslationContext): Phrase[CommType] = {
+  override def continuationTranslation(C: Phrase[->:[ExpType, CommType]])(
+    implicit context: TranslationContext
+  ): Phrase[CommType] = {
     import TranslationToImperative._
 
     con(fst)(λ(expT(dt1, read))(x =>
       con(snd)(λ(expT(dt2, read))(y =>
-        C(Pair(dt1, dt2, x, y)) )) ))
+        C(Pair(dt1, dt2, access, x, y)) )) ))
   }
 }
