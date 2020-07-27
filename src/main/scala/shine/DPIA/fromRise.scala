@@ -638,21 +638,18 @@ object fromRise {
   }
 
   def dataType(t: rt.DataType): DataType = t match {
-    case bt: rt.BasicType => basicType(bt)
-    case i: rt.DataTypeIdentifier => dataTypeIdentifier(i)
-    case rt.ArrayType(sz, et) => ArrayType(sz, dataType(et))
-    case rt.DepArrayType(sz, f) => DepArrayType(sz, ntd(f))
-    case rt.PairType(a, b) => PairType(dataType(a), dataType(b))
-    case rt.NatToDataApply(f, n) => NatToDataApply(ntd(f), n)
-  }
-
-  def basicType(t: rt.BasicType): BasicType = t match {
     case st: rt.ScalarType => scalarType(st)
+    case rt.NatType => NatType
     case rt.IndexType(sz) => IndexType(sz)
     case rt.VectorType(sz, et) => et match {
       case e : rt.ScalarType => VectorType(sz, scalarType(e))
       case _ => ???
     }
+    case i: rt.DataTypeIdentifier => dataTypeIdentifier(i)
+    case rt.ArrayType(sz, et) => ArrayType(sz, dataType(et))
+    case rt.DepArrayType(sz, f) => DepArrayType(sz, ntd(f))
+    case rt.PairType(a, b) => PairType(dataType(a), dataType(b))
+    case rt.NatToDataApply(f, n) => NatToDataApply(ntd(f), n)
   }
 
   def scalarType(t: rt.ScalarType): ScalarType = t match {
@@ -669,7 +666,6 @@ object fromRise {
     case rt.f16 => f16
     case rt.f32 => f32
     case rt.f64 => f64
-    case rt.NatType => NatType
   }
 
   def ntd(ntd: rt.NatToData): NatToData= ntd match {
