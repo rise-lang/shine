@@ -5,7 +5,8 @@ import rise.core.Expr
 
 
 private final class NatCollectionIndexing(collection: NatCollection, idxs: Seq[Nat])
-  extends ArithExprFunctionCall(s"index[$collection][$idxs]") {
+  extends ArithExprFunctionCall(s"($collection)#[${idxs.map(_.toString).mkString(",")}]") {
+  override lazy val toString: String = this.name
 
   override def exposedArgs: Seq[Nat] = idxs
 
@@ -15,8 +16,9 @@ private final class NatCollectionIndexing(collection: NatCollection, idxs: Seq[N
   override def visitAndRebuild(f: Nat => Nat): Nat =
     new NatCollectionIndexing(collection, idxs.map(idx => f(idx)))
 
-  override def substitute(subs: scala.collection.Map[Nat, Nat]): Option[Nat] =
-    Some(visitAndRebuild(x => subs.getOrElse(x, x)))
+  override def substitute(subs: scala.collection.Map[Nat, Nat]): Option[Nat] = {
+    Some(visitAndRebuild(x => subs.getOrElse(x, x.substitute(subs).getOrElse(x))))
+  }
 
 }
 
@@ -43,5 +45,7 @@ final case class NatCollectionIdentifier(
 }
 
 final case class NatCollectionFromArray(expr: Expr)
-    extends NatCollection
+    extends NatCollection {
+  override def toString: String = expr.toString
+}
 

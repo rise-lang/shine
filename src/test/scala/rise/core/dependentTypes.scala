@@ -49,7 +49,8 @@ class dependentTypes extends rise.testUtil.Tests {
     print(inferred.t)
   }
 
-  test("List of list matrix vector multiplication") {
+
+  test("Simple nested") {
     val e = nFun(n => fun(n `..` (i => (i+1) `.` f32))(array =>
         depMapSeq(nFun(_ => mapSeq(fun(x => x))))(array)
       ))
@@ -58,4 +59,39 @@ class dependentTypes extends rise.testUtil.Tests {
     println(inferred)
     print(inferred.t)
   }
+
+  test("Simple reduce") {
+    val e = nFun(n => fun(n `..` (i => (i+1) `.` f32))(array =>
+      depMapSeq(nFun(_ => reduceSeq(fun(x => fun(y => x + y)))(l(0.0f))))(array)
+    ))
+
+    val inferred: Expr = e
+    println(inferred)
+    print(inferred.t)
+  }
+
+  test("List of list dot product") {
+    val e = nFun(n =>
+      fun(n `.` f32)(vector =>
+      fun(n `.` NatType)(lengths =>
+      fun(n `..` (i => (lengths `#` i) `.` (f32 `x` IndexType(n))))(array => {
+        depMapSeq(nFun(_ => fun(
+          row =>
+            reduceSeq(
+              fun(x => fun(y => x + y))
+            )(l(0.0f))(mapSeq(fun(entry => {
+              val number = entry._1
+              val index = entry._2
+              number * (vector `@` index)
+            }))(row))
+        )
+        ))(array)
+      }
+    ))))
+
+    val inferred: Expr = e
+    println(inferred)
+    print(inferred.t)
+  }
+
 }

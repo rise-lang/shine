@@ -1,6 +1,7 @@
 package rise.core
 
 import arithexpr.arithmetic.{Cst, RangeAdd}
+import rise.core.TypedDSL.TDSL
 import rise.core.types._
 
 // scalastyle:off multiple.string.literals
@@ -16,14 +17,14 @@ object TypeLevelDSL {
   // type level lambdas
   object n2dtFun {
     def apply(f: NatIdentifier => DataType): NatToDataLambda = {
-      val x = NatIdentifier(freshName("n2dt"), isExplicit = true)
+      val x = NatIdentifier(freshName("n"), isExplicit = true)
       NatToDataLambda(x, f(x))
     }
 
     def apply(
         r: arithexpr.arithmetic.Range
     )(f: NatIdentifier => DataType): NatToDataLambda = {
-      val x = NatIdentifier(freshName("n2dt"), r, isExplicit = true)
+      val x = NatIdentifier(freshName("n"), r, isExplicit = true)
       NatToDataLambda(x, f(x))
     }
 
@@ -176,6 +177,13 @@ object TypeLevelDSL {
   implicit final class DepArrayTypeConstructors(private val n: Nat)
     extends AnyVal {
     @inline def `..`(f: Nat => DataType): DepArrayType = DepArrayType(n, f)
+  }
+
+  implicit final class NatCollectionConstructors(private val e: TDSL[Expr])
+    extends AnyVal {
+    @inline def `#`(nats: Nat*): Nat = {
+      NatCollectionFromArray(e)(nats: _*)
+    }
   }
 
 }

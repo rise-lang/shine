@@ -138,7 +138,7 @@ final case class ArrayType(size: Nat, elemType: DataType) extends DataType {
 }
 
 final case class DepArrayType(size: Nat, fdt: NatToData) extends DataType {
-  override def toString: String = s"$size.$fdt"
+  override def toString: String = s"$size..$fdt"
 }
 
 object DepArrayType {

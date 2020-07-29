@@ -206,8 +206,8 @@ object Constraint {
 
       case NatCollectionConstraint(a, b) =>
         (a,b) match {
-          case (i:NatCollectionIdentifier, _) => natCollection.unifyIdent(i, b)
-          case (_, i:NatCollectionIdentifier) => natCollection.unifyIdent(i, b)
+          case (i: NatCollectionIdentifier, _) => natCollection.unifyIdent(i, b)
+          case (_, i: NatCollectionIdentifier) => natCollection.unifyIdent(i, b)
           case _ if a == b                    => Solution()
           case (NatCollectionFromArray(e1), NatCollectionFromArray(e2)) =>
             // What to do here???
@@ -387,7 +387,7 @@ object Constraint {
   }
 
   object natCollection {
-    def unifyIdent(i:NatCollectionIdentifier, n:NatCollection)(
+    def unifyIdent(i: NatCollectionIdentifier, n: NatCollection)(
         implicit trace: Seq[Constraint]
       ):Solution = n match {
       case j: NatCollectionIdentifier =>

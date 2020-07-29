@@ -254,8 +254,6 @@ object traversal {
                       DepPairType[NatKind](n2, data(e, v))
                     case _ => DepPairType(x, data(e,v))(pair.kindName)
                   }
-
-
               case NatType          => NatType
               case s: ScalarType    => s
               case IndexType(n)     => IndexType(v.visitNat(n).value)
