@@ -12,9 +12,9 @@ object InferenceException {
     throw InferenceException(msg, trace)
 }
 
-case class NonIdentifierInBinderException(lambda: NatToDataLambda,
+case class NonIdentifierInBinderException[T](lambda: T,
                                           subbed: Nat) extends Exception {
   override def toString: String =
     s"substitution exception: the expression ($subbed):" +
-      s"nat (scala type ${subbed.getClass.getName})cannot be substituted for ${lambda.x} in the expression $lambda"
+      s"nat (scala type ${subbed.getClass.getName})cannot be substituted for binder in the expression $lambda"
 }

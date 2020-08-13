@@ -79,11 +79,22 @@ object Constraint {
             DepFunType(nb: NatIdentifier, tb)
             ) =>
             val n = NatIdentifier(freshName("n"), isExplicit = true)
-            decomposed(
+            val (nTa, nTaSub) = dependence.explicitlyDependent(
+              substitute.natInType(n, `for`=na, ta), n
+            )
+            val (nTb, nTbSub) = dependence.explicitlyDependent(
+              substitute.natInType(n, `for`= nb, tb), n
+            )
+            /** Note(federico): I am not 100% sure it is necessary to propagate nTaSub/nTbSub
+             * (the explicit-dependence substitutions) upwards.
+             * It seems to me it might be necessary, but I have no evidence of it.
+             * In any case, this should be safe to do
+             */
+            nTaSub ++ nTbSub ++ decomposed(
               Seq(
                 NatConstraint(n, na.asImplicit),
                 NatConstraint(n, nb.asImplicit),
-                TypeConstraint(ta, tb)
+                TypeConstraint(nTa, nTb)
               )
             )
           case (
@@ -170,24 +181,7 @@ object Constraint {
             error(s"expected a dependent function type, but got $df")
         }
 
-      case NatConstraint(a, b) =>
-        (a, b) match {
-          case (i: NatIdentifier, _) => nat.unifyIdent(i, b)
-          case (_, i: NatIdentifier) => nat.unifyIdent(i, a)
-          case _ if a == b           => Solution()
-          // case _ if !nat.potentialPivots(a).isEmpty => nat.tryPivots(a, b)
-          // case _ if !nat.potentialPivots(b).isEmpty => nat.tryPivots(b, a)
-          case (s: arithexpr.arithmetic.Sum, _)    => nat.unifySum(s, b)
-          case (_, s: arithexpr.arithmetic.Sum)    => nat.unifySum(s, a)
-          case (p: arithexpr.arithmetic.Prod, _)   => nat.unifyProd(p, b)
-          case (_, p: arithexpr.arithmetic.Prod)   => nat.unifyProd(p, a)
-          case (p: arithexpr.arithmetic.Pow, _)    => nat.unifyProd(p, b)
-          case (_, p: arithexpr.arithmetic.Pow)    => nat.unifyProd(p, a)
-          case (p: arithexpr.arithmetic.IntDiv, _) => nat.unifyProd(p, b)
-          case (_, p: arithexpr.arithmetic.IntDiv) => nat.unifyProd(p, a)
-          case _ => error(s"cannot unify $a and $b")
-        }
-
+      case NatConstraint(a, b) => nat.unify(a, b)
       case NatToDataConstraint(a, b) =>
         (a, b) match {
           case (i: NatToDataIdentifier, _) => natToData.unifyIdent(i, b)
@@ -246,6 +240,29 @@ object Constraint {
 
   private object nat {
     import arithexpr.arithmetic._
+
+    def unify(a: Nat, b: Nat)(implicit trace: Seq[Constraint]): Solution = {
+      (a, b) match {
+        case (i: NatIdentifier, _) => nat.unifyIdent(i, b)
+        case (_, i: NatIdentifier) => nat.unifyIdent(i, a)
+        case (app: NatToNatApply, _) =>
+          nat.unifyApply(app, b)
+        case (_, app: NatToNatApply) =>
+          nat.unifyApply(app, a)
+        case _ if a == b => Solution()
+        // case _ if !nat.potentialPivots(a).isEmpty => nat.tryPivots(a, b)
+        // case _ if !nat.potentialPivots(b).isEmpty => nat.tryPivots(b, a)
+        case (s: arithexpr.arithmetic.Sum, _) => nat.unifySum(s, b)
+        case (_, s: arithexpr.arithmetic.Sum) => nat.unifySum(s, a)
+        case (p: arithexpr.arithmetic.Prod, _) => nat.unifyProd(p, b)
+        case (_, p: arithexpr.arithmetic.Prod) => nat.unifyProd(p, a)
+        case (p: arithexpr.arithmetic.Pow, _) => nat.unifyProd(p, b)
+        case (_, p: arithexpr.arithmetic.Pow) => nat.unifyProd(p, a)
+        case (p: arithexpr.arithmetic.IntDiv, _) => nat.unifyProd(p, b)
+        case (_, p: arithexpr.arithmetic.IntDiv) => nat.unifyProd(p, a)
+        case _ => error(s"cannot unify $a and $b")
+      }
+    }
 
     def freeOccurences(n: Nat): Map[NatIdentifier, Integer] = {
       val free_occurrences = mutable
@@ -364,11 +381,29 @@ object Constraint {
         } else {
           error(s"cannot unify $i and $j, they are both bound")
         }
+      case fx: NatToNatApply => unifyApply(fx, i)
       case _ if !ArithExpr.contains(n, i) && (!i.isExplicit) =>
         Solution.subs(i, n)
       case p: Prod => unifyProd(p, i)
       case s: Sum  => unifySum(s, i)
       case _       => error(s"cannot unify $i and $n")
+    }
+
+    def unifyApply(apply: NatToNatApply, nat: Nat)(
+      implicit trace: Seq[Constraint]
+    ): Solution = {
+      val NatToNatApply(f1, n1) = apply
+      nat match {
+        case NatToNatApply(f2, n2) =>
+          natToNat.unify(f1, f2) ++ unify(n1, n2)
+        case _ => (f1, n1) match {
+          case (f1: NatToNatIdentifier, n1: NatIdentifier) =>
+            val freshVar = NatIdentifier(freshName("n"), isExplicit = true)
+            val lambda = NatToNatLambda(freshVar, substitute.natInNat(freshVar, n1, nat))
+            Solution.subs(f1, lambda)
+          case _ => ???
+        }
+      }
     }
   }
 
@@ -384,6 +419,10 @@ object Constraint {
         }
       case _ => Solution.subs(i, n)
     }
+  }
+
+  object natToNat {
+    def unify(f1:NatToNat, f2:NatToNat):Solution = Solution()
   }
 
   object natCollection {
@@ -405,4 +444,47 @@ object Constraint {
     case _               => false
   }
 
+}
+
+object dependence {
+
+  import rise.core.traversal._
+
+  /*
+   * Given a type t which is in the scope of a natIdentifier depVar,
+   * explicitly represent the dependence by replacing identifiers in t
+   * with applied nat-to-X functions.
+   */
+  def explicitlyDependent(t: Type, depVar: NatIdentifier): (Type, Solution) = {
+    val visitor = new Visitor {
+      private val sols = Seq.newBuilder[Solution]
+
+      override def visitNat(ae: Nat): Result[Nat] = ae match {
+        case ident: NatIdentifier if ident != depVar && !ident.isExplicit =>
+          sols += Solution.subs(ident, NatToNatApply(NatToNatIdentifier(freshName("nnf")), depVar))
+          Continue(ident.asImplicit, this)
+        case n2n@NatToNatApply(_, n) if n == depVar =>
+          Continue(n2n, this)
+        case other => Continue(other, this)
+      }
+
+      override def visitType[T <: Type](t: T): Result[T] = t match {
+        case ident@TypeIdentifier(_) =>
+          val application = NatToDataApply(NatToDataIdentifier(freshName("nnf")), depVar)
+          sols += Solution.subs(ident, application)
+          Continue(ident.asInstanceOf[T], this)
+        case n2d@NatToDataApply(_, x) if x == depVar =>
+          Continue(n2d, this)
+        case other => Continue(other, this)
+      }
+
+      def apply(t: Type): (Type, Solution) = {
+        val rewrittenT = types.DepthFirstGlobalResult(t, this).value
+        val solution = this.sols.result().foldLeft(Solution())(_ ++ _)
+        (solution.apply(rewrittenT), solution)
+      }
+    }
+
+    visitor(t)
+  }
 }

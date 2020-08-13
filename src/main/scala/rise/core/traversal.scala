@@ -7,17 +7,21 @@ import rise.core.types._
 object traversal {
   sealed abstract class Result[+T](val value: T) {
     def map[U](f: T => U): Result[U]
+    def flatMap[U](f:T => Result[U]):Result[U]
     def mapVisitor(f: Visitor => Visitor): Result[T]
   }
 
   final case class Stop[+T](override val value: T) extends Result[T](value) {
     override def map[U](f: T => U): Result[U] = Stop(f(value))
+    override def flatMap[U](f:T => Result[U]):Result[U] = f(value)
     def mapVisitor(f: Visitor => Visitor): Result[T] = this
   }
 
   final case class Continue[+T](override val value: T, v: Visitor)
       extends Result[T](value) {
     override def map[U](f: T => U): Result[U] = Continue(f(value), v)
+
+    override def flatMap[U](f: T => Result[U]): Result[U] = f(value)
     def mapVisitor(f: Visitor => Visitor): Result[T] = Continue(value, f(v))
   }
 
@@ -275,6 +279,9 @@ object traversal {
       def chainDT[A, DT <: DataType](a: Result[A], dt: DT): Result[(A, DT)] =
         chain(a, dt, data(dt, _))
 
+      def chainN[A](a: Result[A], n: Nat): Result[(A, Nat)] =
+        chain(a, n, v => v.visitNat(n))
+
       def apply[T <: Type](ty: T, visit: Visitor): Result[T] = {
         visit.visitType(ty) match {
           case Stop(r) => Stop(r)
@@ -324,6 +331,17 @@ object traversal {
               case IndexType(n)  => v.visitNat(n).map(IndexType)
               case VectorType(n, e) =>
                 chainDT(v.visitNat(n), e).map(r => VectorType(r._1, r._2))
+              case DepPairType(x, t) => x match {
+                case n: NatIdentifier =>
+                  chainT(v.visitNat(n), t).map(r =>
+                    DepPairType[NatKind]((r._1: @unchecked) match {
+                      case n: NamedVar =>
+                        NatIdentifier(n.name, n.range, isExplicit = true)
+                    }, r._2))
+              }
+              case NatToDataApply(nat2Data, n) =>
+                chainN(v.visitN2D(nat2Data), n)
+                  .map(r => NatToDataApply(r._1, r._2))
             }).asInstanceOf[Result[DT]]
         }
       }

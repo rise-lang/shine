@@ -3,27 +3,30 @@ package rise.core.types
 import rise.core.{Expr, substitute, traversal}
 
 object Solution {
-  def apply(): Solution = Solution(Map(), Map(), Map(), Map(), Map())
+  def apply(): Solution = Solution(Map(), Map(), Map(), Map(), Map(), Map())
   def subs(ta: Type, tb: Type): Solution = {
-    Solution(Map(ta -> tb), Map(), Map(), Map(), Map())
+    Solution(Map(ta -> tb), Map(), Map(), Map(), Map(), Map())
   }
 
   def subs(ta: DataTypeIdentifier, tb: Type): Solution =
-    Solution(Map(ta -> tb), Map(), Map(), Map(), Map())
+    Solution(Map(ta -> tb), Map(), Map(), Map(), Map(), Map())
   def subs(na: NatIdentifier, nb: Nat): Solution =
-    Solution(Map(), Map(na -> nb), Map(), Map(), Map())
+    Solution(Map(), Map(na -> nb), Map(), Map(), Map(), Map())
   def subs(aa: AddressSpaceIdentifier, ab: AddressSpace): Solution =
-    Solution(Map(), Map(), Map(aa -> ab), Map(), Map())
+    Solution(Map(), Map(), Map(aa -> ab), Map(), Map(), Map())
   def subs(na: NatToDataIdentifier, nb: NatToData): Solution =
-    Solution(Map(), Map(), Map(), Map(na -> nb), Map())
+    Solution(Map(), Map(), Map(), Map(na -> nb), Map(), Map())
+  def subs(na: NatToNatIdentifier, nb: NatToNat): Solution =
+    Solution(Map(), Map(), Map(), Map(), Map(na -> nb), Map())
   def subs(na: NatCollectionIdentifier, nb: NatCollection): Solution =
-    Solution(Map(), Map(), Map(), Map(), Map(na -> nb))
+    Solution(Map(), Map(), Map(), Map(), Map(), Map(na -> nb))
 }
 
 case class Solution(ts: Map[Type, Type],
                     ns: Map[NatIdentifier, Nat],
                     as: Map[AddressSpaceIdentifier, AddressSpace],
                     n2ds: Map[NatToDataIdentifier, NatToData],
+                    n2ns: Map[NatToNatIdentifier, NatToNat],
                     natColls: Map[NatCollectionIdentifier, NatCollection]
                    ) {
   import traversal.{Continue, Result, Stop}
@@ -35,6 +38,8 @@ case class Solution(ts: Map[Type, Type],
     override def visitAddressSpace(a: AddressSpace): Result[AddressSpace] =
       Stop(sol(a))
     override def visitN2D(n2d: NatToData): Result[NatToData] = Stop(sol(n2d))
+
+    override def visitN2N(n2n: NatToNat): Result[NatToNat] = Stop(sol(n2n))
   }
 
   def apply(e: Expr): Expr = {
@@ -52,7 +57,8 @@ case class Solution(ts: Map[Type, Type],
   }
 
   def apply(n: Nat): Nat =
-    substitute.natsInNat(ns, n)
+    (substitute.natsInNat(ns, _)).andThen(substitute.n2nsInNat(n2ns, _))(n)
+
 
   def apply(a: AddressSpace): AddressSpace =
     substitute.addressSpacesInAddressSpace(as, a)
@@ -72,6 +78,18 @@ case class Solution(ts: Map[Type, Type],
     }
   }
 
+  def apply(n2n: NatToNat): NatToNat = {
+    substitute.n2nsInN2n(n2ns, n2n) match {
+      case id: NatToNatIdentifier => id
+      case lambda@NatToNatLambda(x, body) =>
+        val xSub = apply(x) match {
+          case n: NatIdentifier => n
+          case other => throw NonIdentifierInBinderException(lambda, other)
+        }
+        NatToNatLambda(xSub, apply(body))
+    }
+  }
+
   // concatenating two solutions into a single one
   def ++(other: Solution): Solution = {
     // this function combines two solutions by applying all the solutions
@@ -82,6 +100,7 @@ case class Solution(ts: Map[Type, Type],
         s1.ns.mapValues(n => s2(n)) ++ s2.ns,
         s1.as.mapValues(a => s2(a)) ++ s2.as,
         s1.n2ds.mapValues(n => s2(n)) ++ s2.n2ds,
+        s1.n2ns.mapValues(n => s2(n)) ++ s2.n2ns,
         s1.natColls.mapValues(n => s2(n)) ++ s2.natColls
       )
     }
