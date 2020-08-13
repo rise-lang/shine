@@ -7,21 +7,17 @@ import rise.core.types._
 object traversal {
   sealed abstract class Result[+T](val value: T) {
     def map[U](f: T => U): Result[U]
-    def flatMap[U](f:T => Result[U]):Result[U]
     def mapVisitor(f: Visitor => Visitor): Result[T]
   }
 
   final case class Stop[+T](override val value: T) extends Result[T](value) {
     override def map[U](f: T => U): Result[U] = Stop(f(value))
-    override def flatMap[U](f:T => Result[U]):Result[U] = f(value)
     def mapVisitor(f: Visitor => Visitor): Result[T] = this
   }
 
   final case class Continue[+T](override val value: T, v: Visitor)
       extends Result[T](value) {
     override def map[U](f: T => U): Result[U] = Continue(f(value), v)
-
-    override def flatMap[U](f: T => Result[U]): Result[U] = f(value)
     def mapVisitor(f: Visitor => Visitor): Result[T] = Continue(value, f(v))
   }
 
