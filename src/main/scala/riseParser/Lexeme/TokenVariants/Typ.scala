@@ -1,6 +1,7 @@
-package Lexeme.TokenVariants
+package riseParser.Lexeme.TokenVariants
 
-import Lexeme.{Identifier}
+import riseParser.Lexeme.Identifier
+
 
 /*
 nat is a natural number

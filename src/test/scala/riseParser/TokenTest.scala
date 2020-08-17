@@ -1,5 +1,5 @@
-import Lexeme.{AddrSpaceType, BinOp, IdentifierType, Location, OpType, Span}
-import Lexer.FileReader
+import riseParser.Lexeme.{AddrSpaceType, BinOp, IdentifierType, Location, OpType, Span}
+import riseParser.Lexer.FileReader
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.flatspec.AnyFlatSpec
 class matchesToken extends  AnyFlatSpec {
@@ -43,9 +43,8 @@ class matchesToken extends  AnyFlatSpec {
   "Span" should "not be unlogical2" in {
     val b  = new Location(3, 1)
     val e  = new Location(2, 2)
-    val s:String = "Span don't throwed an Exception"
     val thrown = intercept[Exception] {
-      val s = new Span(file, b, e)
+      new Span(file, b, e)
     }
     thrown.getMessage should equal ("requirement failed: end.column is before begin.column")
   }
@@ -63,14 +62,14 @@ class matchesToken extends  AnyFlatSpec {
 
   "FileReader" should "not be unlogical" in {
     val thrown = intercept[Exception] {
-      val f = new FileReader("asdf.jkloe")
+      new FileReader("asdf.jkloe")
     }
     thrown.getMessage should equal ("requirement failed: not a RISE file")
   }
 
   "FileReader" should "not be unlogical2" in {
     val thrown = intercept[Exception] {
-      val f = new FileReader("asdf.rise")
+      new FileReader("asdf.rise")
     }
     thrown.getMessage should equal ("The File asdf.rise does not exist!")
   }

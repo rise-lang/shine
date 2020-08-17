@@ -1,10 +1,12 @@
-import Lexeme.OpType.{BinOpType, UnaryOpType}
-import Lexeme.TokenVariants.{BoolType, FloatTyp, IntTyp}
-import Lexeme.{Arrow, Backslash, BinOp, Dots, F32, I32, Identifier, IdentifierType, LBrace, Location, RBrace, Span, Type, UnOp}
-import Lexer.{FileReader, RecognizeLexeme}
+import riseParser.Lexeme.OpType.{BinOpType, UnaryOpType}
+import riseParser.Lexeme.TokenVariants.{BoolType, FloatTyp, IntTyp}
+import riseParser.Lexeme.{Arrow, Backslash, BinOp, Dots, F32, I32, Identifier, IdentifierType, LBrace, Location, RBrace, Span, Type, UnOp}
+import riseParser.Lexer.{FileReader, RecognizeLexeme}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers.equal
 import org.scalatest.matchers.should.Matchers._
+import riseParser.Lexeme
+
 
 class LexerTest extends  AnyFlatSpec{
 

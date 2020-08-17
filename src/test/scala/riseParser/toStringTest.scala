@@ -1,6 +1,6 @@
-import Lexeme.{Identifier, IdentifierType, Location, Span}
-import Lexeme.TokenVariants.{ArrayType, BoolType, DoubleType, FloatTyp, FunctionTyp, GenericsTyp, IndexType, Nat, TupleType, DataK}
-import Lexer.FileReader
+import riseParser.Lexeme.{Identifier, IdentifierType, Location, Span}
+import riseParser.Lexeme.TokenVariants.{ArrayType, BoolType, DoubleType, FloatTyp, FunctionTyp, GenericsTyp, IndexType, Nat, TupleType, DataK}
+import riseParser.Lexer.FileReader
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers._
 

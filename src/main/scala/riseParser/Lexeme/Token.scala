@@ -1,8 +1,8 @@
-package Lexeme
+package riseParser.Lexeme
 
-import Lexeme.OpType.UnaryOpType.UnaryOp
-import Lexer.FileReader
-import TokenVariants.TypeKind
+import riseParser.Lexeme.OpType.UnaryOpType.UnaryOp
+import riseParser.Lexer.FileReader
+import riseParser.Lexeme.TokenVariants.TypeKind
 
 /*
   is the span of the specified Token
@@ -169,7 +169,6 @@ object OpType {
       val EQ: BinaryOp = Value("==")
   }
 }
-import Lexer.FileReader
 import OpType.BinOpType._
 
   // example: "+"

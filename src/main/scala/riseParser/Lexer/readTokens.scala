@@ -1,10 +1,11 @@
-package Lexer
+package riseParser.Lexer
 
-import Lexeme.{BinOp, IdentifierType, Location, OpType, Span, Token}
-
+import riseParser.Lexeme.{Arrow, Backslash, BinOp, Dots, F32, F64, I32, I8, Identifier, IdentifierType, LBrace, Location, OpType, RBrace, Span, Token, Type, UnOp}
 import java.io._
 
-import Lexeme.OpType.{BinOpType, UnaryOpType}
+import riseParser.Lexeme.OpType.{BinOpType, UnaryOpType}
+import riseParser.Lexeme.TokenVariants.{BoolType, DoubleType, FloatTyp, IntTyp, NatTyp, ShortTyp}
+
 
 //alles muss in ein Try gemappt werden
 //Try{ file= openFile(); parse(file);}catch{...}finally{file.close}
@@ -249,11 +250,11 @@ case class RecognizeLexeme(fileReader: FileReader){
     //enough leftBraces are controlled in lexerExpression and shouldn't happen
     val arr: Array[String]= fileReader.sourceLines
     val lB: Int = list.count(a => a match {
-      case Right(Lexeme.LBrace(_)) => true
+      case Right(LBrace(_)) => true
       case b => false
     } )
     val rB: Int = list.count(a => a match {
-      case Right(Lexeme.RBrace(_)) => true
+      case Right(RBrace(_)) => true
       case b => false
     } )
     if(lB>rB){ //for example "( .. ( ... )"
@@ -327,13 +328,13 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Either[PreAndErrorToke
 
   //only one or two steps
   lexDotsOrArrow(column, row) match {
-    case Right(Lexeme.Dots(span)) => {
+    case Right(Dots(span)) => {
       row = row +1
-      list= list.::(Right(Lexeme.Dots(span)))
+      list= list.::(Right(Dots(span)))
     }
-    case Right(Lexeme.Arrow(span)) => {
+    case Right(Arrow(span)) => {
       row = row +2
-      list= list.::(Right(Lexeme.Arrow(span)))
+      list= list.::(Right(Arrow(span)))
     }
     case Right(a) => {
       val loc:Location = Location(column, row) //endLocation is equal to startLocation
@@ -354,7 +355,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Either[PreAndErrorToke
 
   //match the last Token in the List
   list(0) match {
-    case Right(Lexeme.Dots(_)) => {
+    case Right(Dots(_)) => {
       // :Typ ->
       lexType(column,row) match {
         case (Right(a), r) => {
@@ -384,7 +385,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Either[PreAndErrorToke
         }
       }
     }
-    case Right(Lexeme.Arrow(_)) => {
+    case Right(Arrow(_)) => {
       //nothing to do
     }
     case Right(a) => {
@@ -435,7 +436,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Either[PreAndErrorToke
       }
       case '(' => {
         val loc:Location = Location(column, row) //endLocation is equal to startLocation
-        list = list.::(Right(Lexeme.LBrace(new Span(fileReader,loc))))
+        list = list.::(Right(LBrace(new Span(fileReader,loc))))
         row = row +1
         //ignore whitespaces
         skipWhitespace(column, row) match {
@@ -447,7 +448,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Either[PreAndErrorToke
         lexerExpression(column,row, list) match {
           case (l, c, r) =>{
             l(0) match {
-              case Right(Lexeme.RBrace(_)) => {
+              case Right(RBrace(_)) => {
                 list = l
                 column = c
                 row = r
@@ -469,14 +470,14 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Either[PreAndErrorToke
       }
       case ')' => {
         val loc:Location = Location(column, row) //endLocation is equal to startLocation
-        list = list.::(Right(Lexeme.RBrace(new Span(fileReader, loc))))
+        list = list.::(Right(RBrace(new Span(fileReader, loc))))
         row = row +1
         val lB: Int = list.count(a => a match {
-          case Right(Lexeme.LBrace(_)) => true
+          case Right(LBrace(_)) => true
           case b => false
         } )
         val rB: Int = list.count(a => a match {
-          case Right(Lexeme.RBrace(_)) => true
+          case Right(RBrace(_)) => true
           case b => false
         } )
         if(lB<rB){ //for example "( ... ) .. )"
@@ -487,7 +488,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Either[PreAndErrorToke
       }
       case '!' => {
         val loc:Location = Location(column, row) //endLocation is equal to startLocation
-        list = list.::(Right(Lexeme.UnOp(UnaryOpType.NOT,new Span(fileReader, loc))))
+        list = list.::(Right(UnOp(UnaryOpType.NOT,new Span(fileReader, loc))))
         row = row +1
         //ignore whitespaces
         skipWhitespace(column, row) match {
@@ -579,9 +580,9 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Either[PreAndErrorToke
 
     if(isBinaryOperatorSymbol(arr(column)(row))){ //it is a binary operator
       lexBinOperator(column, row) match {
-        case Right(Lexeme.BinOp(BinOpType.EQ, span)) =>{
+        case Right(BinOp(BinOpType.EQ, span)) =>{
           row = row+2
-          list=list.::(Right(Lexeme.BinOp(BinOpType.EQ, span)))
+          list=list.::(Right(BinOp(BinOpType.EQ, span)))
         }
         case (Right(a)) => {
           row = row +1
@@ -631,7 +632,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Either[PreAndErrorToke
     arr(column)(row) match {
       case '\\' => {
         val loc:Location = Location(column, row) //endLocation is equal to startLocation
-        Right(Lexeme.Backslash(new Span(fileReader,loc)))
+        Right(Backslash(new Span(fileReader,loc)))
       }
       case a => {
         val loc:Location = Location(column, row) //endLocation is equal to startLocation
@@ -650,7 +651,7 @@ requirements:  no whitespace at arr(column)(row)
     arr(column)(row) match {
       case ':' => {
         val loc:Location = Location(column, row) //endLocation is equal to startLocation
-        Right(Lexeme.Dots(new Span(fileReader,loc)))
+        Right(Dots(new Span(fileReader,loc)))
       }
       case '-' => {
         if(arr(column).length <= row +1){
@@ -662,7 +663,7 @@ requirements:  no whitespace at arr(column)(row)
           val span:Span = Span(fileReader,beginLoc, endLoc)
           arr(column).substring(row, row+2) match {
             case "->" => {
-              Right(Lexeme.Arrow(span))
+              Right(Arrow(span))
             }
             case a => {
               Left(NotExpectedToken("->", a, span, fileReader))
@@ -712,7 +713,7 @@ requirements:  no whitespace at arr(column)(row)
       case '-' => {
         if (arr(column).length <= row + 1 || arr(column).substring(row, row + 2) != "->") { // -
           val loc: Location = Location(column, row) //endLocation is equal to startLocation
-          Right(Lexeme.UnOp(OpType.UnaryOpType.NEG, new Span(fileReader, loc))) //it is possible that it is OpType.UnaryType.Neg, but here it is not decideable
+          Right(UnOp(OpType.UnaryOpType.NEG, new Span(fileReader, loc))) //it is possible that it is OpType.UnaryType.Neg, but here it is not decideable
           //so we save it at first as NegSign so, that we can decide later
         } else { // ->
           val locStart: Location = Location(column, row)
@@ -747,27 +748,27 @@ if '==' then two steps else only one step
       }
       case '+' => { // +
         val loc: Location = Location(column, row) //endLocation is equal to startLocation
-        Right(Lexeme.BinOp(OpType.BinOpType.ADD, new Span(fileReader, loc)))
+        Right(BinOp(OpType.BinOpType.ADD, new Span(fileReader, loc)))
       }
       case '*' => { // *
         val loc: Location = Location(column, row) //endLocation is equal to startLocation
-        Right(Lexeme.BinOp(OpType.BinOpType.MUL, new Span(fileReader, loc)))
+        Right(BinOp(OpType.BinOpType.MUL, new Span(fileReader, loc)))
       }
       case '/' => { // /
         val loc: Location = Location(column, row) //endLocation is equal to startLocation
-        Right(Lexeme.BinOp(OpType.BinOpType.DIV, new Span(fileReader, loc)))
+        Right(BinOp(OpType.BinOpType.DIV, new Span(fileReader, loc)))
       }
       case '%' => { // %
         val loc: Location = Location(column, row) //endLocation is equal to startLocation
-        Right(Lexeme.BinOp(OpType.BinOpType.MOD, new Span(fileReader, loc)))
+        Right(BinOp(OpType.BinOpType.MOD, new Span(fileReader, loc)))
       }
       case '<' => { // <
         val loc: Location = Location(column, row) //endLocation is equal to startLocation
-        Right(Lexeme.BinOp(OpType.BinOpType.LT, new Span(fileReader, loc)))
+        Right(BinOp(OpType.BinOpType.LT, new Span(fileReader, loc)))
       }
       case '>' => { // >
         val loc: Location = Location(column, row) //endLocation is equal to startLocation
-        Right(Lexeme.BinOp(OpType.BinOpType.GT, new Span(fileReader, loc)))
+        Right(BinOp(OpType.BinOpType.GT, new Span(fileReader, loc)))
       }
       case '=' => {
         if (arr(column).length <= row + 1 || arr(column).substring(row, row + 2) != "==") {
@@ -776,7 +777,7 @@ if '==' then two steps else only one step
         } else { // ==
           val beginLoc: Location = Location(column, row)
           val endLoc: Location = Location(column, row + 1)
-          Right(Lexeme.BinOp(OpType.BinOpType.EQ, Span(fileReader, beginLoc, endLoc)))
+          Right(BinOp(OpType.BinOpType.EQ, Span(fileReader, beginLoc, endLoc)))
         }
       }
       case a => {
@@ -806,13 +807,13 @@ if '==' then two steps else only one step
       val locEnd:Location = Location(column, pos)
       //different Types in RISE //Todo: not completed yet
       substring match {
-        case "bool" => (Right(Lexeme.Type(Lexeme.TokenVariants.BoolType(), Span(fileReader,locStart, locEnd))),pos)
-        case "Bool" => (Right(Lexeme.Type(Lexeme.TokenVariants.BoolType(), Span(fileReader,locStart, locEnd))),pos)
-        case "I8"   => (Right(Lexeme.Type(Lexeme.TokenVariants.ShortTyp(), Span(fileReader,locStart, locEnd))),pos)
-        case "I32"  => (Right(Lexeme.Type(Lexeme.TokenVariants.IntTyp(), Span(fileReader,locStart, locEnd))),pos)
-        case "F32"  => (Right(Lexeme.Type(Lexeme.TokenVariants.FloatTyp(), Span(fileReader,locStart, locEnd))),pos)
-        case "F64"  => (Right(Lexeme.Type(Lexeme.TokenVariants.DoubleType(), Span(fileReader,locStart, locEnd))),pos)
-        case "nat"  => (Right(Lexeme.Type(Lexeme.TokenVariants.NatTyp(), Span(fileReader,locStart, locEnd))),pos)
+        case "bool" => (Right(Type(BoolType(), Span(fileReader,locStart, locEnd))),pos)
+        case "Bool" => (Right(Type(BoolType(), Span(fileReader,locStart, locEnd))),pos)
+        case "I8"   => (Right(Type(ShortTyp(), Span(fileReader,locStart, locEnd))),pos)
+        case "I32"  => (Right(Type(IntTyp(), Span(fileReader,locStart, locEnd))),pos)
+        case "F32"  => (Right(Type(FloatTyp(), Span(fileReader,locStart, locEnd))),pos)
+        case "F64"  => (Right(Type(DoubleType(), Span(fileReader,locStart, locEnd))),pos)
+        case "nat"  => (Right(Type(NatTyp(), Span(fileReader,locStart, locEnd))),pos)
         //unknown Type
         case a => (Left(UnknownType(substring, Span(fileReader,locStart, locEnd), fileReader)),pos)
       }
@@ -837,7 +838,7 @@ if '==' then two steps else only one step
       (Left(IdentifierWithNotAllowedSymbol(arr(column)(pos), arr(column).substring(row, pos+1), Span(fileReader,locStart, locEnd), fileReader)), pos+1)
     }else{
       val locEnd:Location = Location(column, pos)
-      (Right(Lexeme.Identifier(IdentifierType(substring), Span(fileReader,locStart, locEnd))), pos)
+      (Right(Identifier(IdentifierType(substring), Span(fileReader,locStart, locEnd))), pos)
     }
   }
 
@@ -857,10 +858,10 @@ if '==' then two steps else only one step
       lexNumberComplexMatch(column, row, arr, substring, locStart, pos)
     } else if(substring.matches("[0-9]+")){
       val locEnd:Location = Location(column, pos)
-      (Right(Lexeme.I32(substring.toInt, Span(fileReader,locStart, locEnd))),pos)
+      (Right(I32(substring.toInt, Span(fileReader,locStart, locEnd))),pos)
     }else{
       val locEnd:Location = Location(column, pos)
-      (Right(Lexeme.F32(substring.toFloat, Span(fileReader,locStart, locEnd))),pos)
+      (Right(F32(substring.toFloat, Span(fileReader,locStart, locEnd))),pos)
     }
   }
 
@@ -873,10 +874,10 @@ private def lexNumberComplexMatch(column: Int, row: Int,  arr: Array[String], su
     if (substring.matches("[0-9]+")) {
       if (arr(column).substring(pos, pos + 2) == "I8") {
         val locEnd: Location = Location(column, pos + 2)
-        (Right(Lexeme.I8(substring.toInt.toShort, Span(fileReader, locStart, locEnd))),pos+2)
+        (Right(I8(substring.toInt.toShort, Span(fileReader, locStart, locEnd))),pos+2)
       } else if (arr(column).substring(pos, pos + 3) == "I32") {
         val locEnd: Location = Location(column, pos + 3)
-        (Right(Lexeme.I32(substring.toInt, Span(fileReader, locStart, locEnd))),pos + 3)
+        (Right(I32(substring.toInt, Span(fileReader, locStart, locEnd))),pos + 3)
       } else {
         val a = createIdentifierBeginsWithDigits(column, row, pos, locStart)
         (Left(a._1),a._2)
@@ -898,10 +899,10 @@ private def lexNumberComplexMatch(column: Int, row: Int,  arr: Array[String], su
     //Todo: should there be an extra warning for if (substring.matches("[0-9]+")) {
     if (arr(column).substring(pos, pos + 3) == "F32") {
       val locEnd: Location = Location(column, pos + 3)
-      (Right(Lexeme.F32(substring.toFloat, Span(fileReader, locStart, locEnd))),pos + 3)
+      (Right(F32(substring.toFloat, Span(fileReader, locStart, locEnd))),pos + 3)
     }else if (arr(column).substring(pos, pos + 3) == "F64") {
       val locEnd: Location = Location(column, pos + 3)
-      (Right(Lexeme.F64(substring.toDouble, Span(fileReader, locStart, locEnd))),pos + 3)
+      (Right(F64(substring.toDouble, Span(fileReader, locStart, locEnd))),pos + 3)
     } else{
       val a = createIdentifierBeginsWithAF32Number(column, row, pos, locStart)
       (Left(a._1),a._2)
@@ -993,7 +994,7 @@ two steps
       val span:Span = Span(fileReader,beginLoc, endLoc)
       arr(column).substring(row, row+2) match {
         case "->" => {
-          Right(Lexeme.Arrow(span))
+          Right(Arrow(span))
         }
         case a => {
           Left(NotExpectedToken("->", a, span, fileReader))
