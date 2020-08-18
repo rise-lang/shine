@@ -9,7 +9,7 @@ class FileReaderTest extends  AnyFlatSpec{
 
 
   "FileReader" should " be able to read the contents of 'src/test/scala/readFiles/aRISEFile.rise'" in {
-    val fileName:String = "src/test/scala/readFiles/aRISEFile.rise"
+    val fileName:String = "src/test/scala/riseParser/readFiles/aRISEFile.rise"
     val fR:FileReader = FileReader(fileName)
     fR.sourceLines(0) should equal("\\x:Int -> x+1")
     fR.sourceLines(1) should equal("\\z:Double -> z  +    20")

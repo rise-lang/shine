@@ -8,7 +8,7 @@ class toStringTest extends  AnyFlatSpec{
 
   val beginLocation: Location = new Location( 13, 10)
   val endLocation: Location = new Location( 13, 14)
-  val fileName:String = "src/test/scala/readFiles/aRISEFile.rise"
+  val fileName:String = "src/test/scala/riseParser/readFiles/aRISEFile.rise"
   val file:FileReader = new FileReader(fileName)
   val location: Span = new Span(file, beginLocation, endLocation)
 

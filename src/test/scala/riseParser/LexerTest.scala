@@ -11,7 +11,7 @@ import riseParser.Lexeme
 class LexerTest extends  AnyFlatSpec{
 
   "RecognizeLexeme" should "work for the identity" in {
-    val fileName:String = "src/test/scala/readFiles/filesToLexe/identity.rise"
+    val fileName:String = "src/test/scala/riseParser/readFiles/filesToLexe/identity.rise"
     val file:FileReader = new FileReader(fileName)
     val lexer:RecognizeLexeme = new RecognizeLexeme(file)
     lexer.tokens match {
@@ -21,7 +21,7 @@ class LexerTest extends  AnyFlatSpec{
   }
 
   "RecognizeLexeme" should "work for the constant42" in {
-    val fileName:String = "src/test/scala/readFiles/filesToLexe/constant42.rise"
+    val fileName:String = "src/test/scala/riseParser/readFiles/filesToLexe/constant42.rise"
     val file:FileReader = new FileReader(fileName)
     val lexer:RecognizeLexeme = new RecognizeLexeme(file)
     lexer.tokens match {
@@ -31,7 +31,7 @@ class LexerTest extends  AnyFlatSpec{
   }
 
   "RecognizeLexeme" should "work for the longIdentity" in {
-    val fileName:String = "src/test/scala/readFiles/filesToLexe/longIdentity.rise"
+    val fileName:String = "src/test/scala/riseParser/readFiles/filesToLexe/longIdentity.rise"
     val file:FileReader = new FileReader(fileName)
     val lexer:RecognizeLexeme = new RecognizeLexeme(file)
     lexer.tokens match {
@@ -41,7 +41,7 @@ class LexerTest extends  AnyFlatSpec{
   }
 
   "RecognizeLexeme" should "work for the identityWithI32" in {
-    val fileName:String = "src/test/scala/readFiles/filesToLexe/identityWithI32.rise"
+    val fileName:String = "src/test/scala/riseParser/readFiles/filesToLexe/identityWithI32.rise"
     val file:FileReader = new FileReader(fileName)
     val lexer:RecognizeLexeme = new RecognizeLexeme(file)
     lexer.tokens match {
@@ -51,7 +51,7 @@ class LexerTest extends  AnyFlatSpec{
   }
 
   "RecognizeLexeme" should "work for the longIdentityWithI32" in {
-    val fileName:String = "src/test/scala/readFiles/filesToLexe/longIdentityWithI32.rise"
+    val fileName:String = "src/test/scala/riseParser/readFiles/filesToLexe/longIdentityWithI32.rise"
     val file:FileReader = new FileReader(fileName)
     val lexer:RecognizeLexeme = new RecognizeLexeme(file)
     lexer.tokens match {
@@ -61,7 +61,7 @@ class LexerTest extends  AnyFlatSpec{
   }
 
   "RecognizeLexeme" should "work for the ComplexIdentifier" in {
-    val fileName:String = "src/test/scala/readFiles/filesToLexe/ComplexIdentifier.rise"
+    val fileName:String = "src/test/scala/riseParser/readFiles/filesToLexe/ComplexIdentifier.rise"
     val file:FileReader = new FileReader(fileName)
     val lexer:RecognizeLexeme = new RecognizeLexeme(file)
     lexer.tokens match {
@@ -71,26 +71,26 @@ class LexerTest extends  AnyFlatSpec{
   }
 
   "RecognizeLexeme" should "work for TypWith-" in {
-    val fileName:String = "src/test/scala/readFiles/filesToLexe/TypWith-.rise"
+    val fileName:String = "src/test/scala/riseParser/readFiles/filesToLexe/TypWith-.rise"
     val file:FileReader = new FileReader(fileName)
     val thrown = intercept[Exception] {
       new RecognizeLexeme(file)
     }
-    val expected:String = "ErrorToken: It is an '->' expected. The Lexeme '--' is not an '->'! at FileReader: fileName: 'src/test/scala/readFiles/filesToLexe/TypWith-.rise'; fileContent: {\n\\x:I32-->x\n}; beginLocation: (column: 0 ; row: 6); endLocation: (column: 0 ; row: 7)\n\\x:I32-̲->x"
+    val expected:String = "ErrorToken: It is an '->' expected. The Lexeme '--' is not an '->'! at FileReader: fileName: 'src/test/scala/riseParser/readFiles/filesToLexe/TypWith-.rise'; fileContent: {\n\\x:I32-->x\n}; beginLocation: (column: 0 ; row: 6); endLocation: (column: 0 ; row: 7)\n\\x:I32-̲->x"
     thrown.getMessage should equal (expected)
   }
 
   "RecognizeLexeme" should "work for noBacklashAtBeginning.rise" in {
-    val fileName:String = "src/test/scala/readFiles/filesToLexe/noBacklashAtBeginning.rise"
+    val fileName:String = "src/test/scala/riseParser/readFiles/filesToLexe/noBacklashAtBeginning.rise"
     val file:FileReader = new FileReader(fileName)
     val thrown = intercept[Exception] {
       new RecognizeLexeme(file)
     } //Todo: should we have a underline of the important code here too? yes, but here is no
-    val expected:String = "ErrorToken: It is an '\\' expected. The Lexeme 'x' is not an '\\'! at FileReader: fileName: 'src/test/scala/readFiles/filesToLexe/noBacklashAtBeginning.rise'; fileContent: {\nx:I32->x+5\n}; beginLocation: (column: 0 ; row: 0); endLocation: (column: 0 ; row: 0)\nx:I32->x+5"
+    val expected:String = "ErrorToken: It is an '\\' expected. The Lexeme 'x' is not an '\\'! at FileReader: fileName: 'src/test/scala/riseParser/readFiles/filesToLexe/noBacklashAtBeginning.rise'; fileContent: {\nx:I32->x+5\n}; beginLocation: (column: 0 ; row: 0); endLocation: (column: 0 ; row: 0)\nx:I32->x+5"
     thrown.getMessage should equal (expected)
   }
   "RecognizeLexeme" should "work for plus" in {
-    val fileName:String = "src/test/scala/readFiles/filesToLexe/plus.rise"
+    val fileName:String = "src/test/scala/riseParser/readFiles/filesToLexe/plus.rise"
     val file:FileReader = new FileReader(fileName)
     val lexer:RecognizeLexeme = new RecognizeLexeme(file)
     lexer.tokens match {
@@ -100,7 +100,7 @@ class LexerTest extends  AnyFlatSpec{
   }
 
   "RecognizeLexeme" should "work for minus" in {
-    val fileName:String = "src/test/scala/readFiles/filesToLexe/minus.rise"
+    val fileName:String = "src/test/scala/riseParser/readFiles/filesToLexe/minus.rise"
     val file:FileReader = new FileReader(fileName)
     val lexer:RecognizeLexeme = new RecognizeLexeme(file)
     lexer.tokens match {
@@ -110,7 +110,7 @@ class LexerTest extends  AnyFlatSpec{
   }
 
   "RecognizeLexeme" should "work for negation" in {
-    val fileName:String = "src/test/scala/readFiles/filesToLexe/negation.rise"
+    val fileName:String = "src/test/scala/riseParser/readFiles/filesToLexe/negation.rise"
     val file:FileReader = new FileReader(fileName)
     val lexer:RecognizeLexeme = new RecognizeLexeme(file)
     lexer.tokens match {
@@ -120,7 +120,7 @@ class LexerTest extends  AnyFlatSpec{
   }
 
   "RecognizeLexeme" should "work for negationWithBool" in {
-    val fileName:String = "src/test/scala/readFiles/filesToLexe/negationWithBool.rise"
+    val fileName:String = "src/test/scala/riseParser/readFiles/filesToLexe/negationWithBool.rise"
     val file:FileReader = new FileReader(fileName)
     val lexer:RecognizeLexeme = new RecognizeLexeme(file)
     lexer.tokens match {
@@ -130,7 +130,7 @@ class LexerTest extends  AnyFlatSpec{
   }
 
   "RecognizeLexeme" should "work for not" in {
-    val fileName:String = "src/test/scala/readFiles/filesToLexe/not.rise"
+    val fileName:String = "src/test/scala/riseParser/readFiles/filesToLexe/not.rise"
     val file:FileReader = new FileReader(fileName)
     val lexer:RecognizeLexeme = new RecognizeLexeme(file)
     lexer.tokens match {
@@ -140,7 +140,7 @@ class LexerTest extends  AnyFlatSpec{
   }
 
   "RecognizeLexeme" should "work for braces" in {
-    val fileName:String = "src/test/scala/readFiles/filesToLexe/braces.rise"
+    val fileName:String = "src/test/scala/riseParser/readFiles/filesToLexe/braces.rise"
     val file:FileReader = new FileReader(fileName)
     val lexer:RecognizeLexeme = new RecognizeLexeme(file)
     lexer.tokens match {
@@ -150,7 +150,7 @@ class LexerTest extends  AnyFlatSpec{
   }
 
   "RecognizeLexeme" should "work for bracesWithNot" in {
-    val fileName:String = "src/test/scala/readFiles/filesToLexe/bracesWithNot.rise"
+    val fileName:String = "src/test/scala/riseParser/readFiles/filesToLexe/bracesWithNot.rise"
     val file:FileReader = new FileReader(fileName)
     val lexer:RecognizeLexeme = new RecognizeLexeme(file)
     lexer.tokens match {
@@ -160,47 +160,47 @@ class LexerTest extends  AnyFlatSpec{
   }
 
   "RecognizeLexeme" should "work for LeftBraceMissing.rise" in {
-    val fileName:String = "src/test/scala/readFiles/filesToLexe/LeftBraceMissing.rise"
+    val fileName:String = "src/test/scala/riseParser/readFiles/filesToLexe/LeftBraceMissing.rise"
     val file:FileReader = new FileReader(fileName)
     val thrown = intercept[Exception] {
       new RecognizeLexeme(file)
     } //Todo: should we have a underline of the important code here too? yes, but here is no
-    val expected:String = "ErrorToken: Left Brace is missing! at FileReader: fileName: 'src/test/scala/readFiles/filesToLexe/LeftBraceMissing.rise'; fileContent: {\n\\b:bool-> b )\n}; beginLocation: (column: 0 ; row: 12); endLocation: (column: 0 ; row: 12)\n\\b:bool-> b )"
+    val expected:String = "ErrorToken: Left Brace is missing! at FileReader: fileName: 'src/test/scala/riseParser/readFiles/filesToLexe/LeftBraceMissing.rise'; fileContent: {\n\\b:bool-> b )\n}; beginLocation: (column: 0 ; row: 12); endLocation: (column: 0 ; row: 12)\n\\b:bool-> b )"
     thrown.getMessage should equal (expected)
   }
 
   "RecognizeLexeme" should "work for RightBraceMissing.rise" in {
-    val fileName:String = "src/test/scala/readFiles/filesToLexe/RightBraceMissing.rise"
+    val fileName:String = "src/test/scala/riseParser/readFiles/filesToLexe/RightBraceMissing.rise"
     val file:FileReader = new FileReader(fileName)
     val thrown = intercept[Exception] {
       new RecognizeLexeme(file)
     }
-    val expected:String = "ErrorToken: Right Brace is missing! at FileReader: fileName: 'src/test/scala/readFiles/filesToLexe/RightBraceMissing.rise'; fileContent: {\n\\b:bool->(   b\n}; beginLocation: (column: 0 ; row: 13); endLocation: (column: 0 ; row: 14)\n\\b:bool->(   b̲"
+    val expected:String = "ErrorToken: Right Brace is missing! at FileReader: fileName: 'src/test/scala/riseParser/readFiles/filesToLexe/RightBraceMissing.rise'; fileContent: {\n\\b:bool->(   b\n}; beginLocation: (column: 0 ; row: 13); endLocation: (column: 0 ; row: 14)\n\\b:bool->(   b̲"
     thrown.getMessage should equal (expected)
   }
 
   "RecognizeLexeme" should "work for tooMuchRightBraces.rise" in {
-    val fileName:String = "src/test/scala/readFiles/filesToLexe/tooMuchRightBraces.rise"
+    val fileName:String = "src/test/scala/riseParser/readFiles/filesToLexe/tooMuchRightBraces.rise"
     val file:FileReader = new FileReader(fileName)
     val thrown = intercept[Exception] {
       new RecognizeLexeme(file)
     } //Todo: should we have a underline of the important code here too? yes, but here is no
-    val expected:String = "ErrorToken: Left Brace is missing! at FileReader: fileName: 'src/test/scala/readFiles/filesToLexe/tooMuchRightBraces.rise'; fileContent: {\n\\b:bool->( b )      )\n}; beginLocation: (column: 0 ; row: 20); endLocation: (column: 0 ; row: 20)\n\\b:bool->( b )      )"
+    val expected:String = "ErrorToken: Left Brace is missing! at FileReader: fileName: 'src/test/scala/riseParser/readFiles/filesToLexe/tooMuchRightBraces.rise'; fileContent: {\n\\b:bool->( b )      )\n}; beginLocation: (column: 0 ; row: 20); endLocation: (column: 0 ; row: 20)\n\\b:bool->( b )      )"
     thrown.getMessage should equal (expected)
   }
 
   "RecognizeLexeme" should "work for tooMuchLeftBraces.rise" in {
-    val fileName:String = "src/test/scala/readFiles/filesToLexe/tooMuchLeftBraces.rise"
+    val fileName:String = "src/test/scala/riseParser/readFiles/filesToLexe/tooMuchLeftBraces.rise"
     val file:FileReader = new FileReader(fileName)
     val thrown = intercept[Exception] {
       new RecognizeLexeme(file)
     }
-    val expected:String = "ErrorToken: Right Brace is missing! at FileReader: fileName: 'src/test/scala/readFiles/filesToLexe/tooMuchLeftBraces.rise'; fileContent: {\n\\b:bool->(( b )\n}; beginLocation: (column: 0 ; row: 15); endLocation: (column: 0 ; row: 15)\n\\b:bool->(( b )"
+    val expected:String = "ErrorToken: Right Brace is missing! at FileReader: fileName: 'src/test/scala/riseParser/readFiles/filesToLexe/tooMuchLeftBraces.rise'; fileContent: {\n\\b:bool->(( b )\n}; beginLocation: (column: 0 ; row: 15); endLocation: (column: 0 ; row: 15)\n\\b:bool->(( b )"
     thrown.getMessage should equal (expected)
   }
 
   "RecognizeLexeme" should "complexInOneLine" in {
-    val fileName:String = "src/test/scala/readFiles/filesToLexe/complexInOneLine.rise"
+    val fileName:String = "src/test/scala/riseParser/readFiles/filesToLexe/complexInOneLine.rise"
     val file:FileReader = new FileReader(fileName)
     val lexer:RecognizeLexeme = new RecognizeLexeme(file)
     lexer.tokens match {//\x:I32->\y->-(x*y)+42%5
@@ -218,7 +218,7 @@ val l = Right(I32(5, span))::Right(BinOp(BinOpType.MOD, span)):: Right(I32(42, s
   }
 
   "RecognizeLexeme" should "complexInThreeLines" in {
-    val fileName:String = "src/test/scala/readFiles/filesToLexe/complexInThreeLines.rise"
+    val fileName:String = "src/test/scala/riseParser/readFiles/filesToLexe/complexInThreeLines.rise"
     val file:FileReader = new FileReader(fileName)
     val lexer:RecognizeLexeme = new RecognizeLexeme(file)
     lexer.tokens match {
@@ -235,7 +235,7 @@ val l = Right(I32(5, span))::Right(BinOp(BinOpType.MOD, span)):: Right(I32(42, s
   }
 
   "RecognizeLexeme" should "veryComplicated.rise" in {
-    val fileName:String = "src/test/scala/readFiles/filesToLexe/veryComplicated.rise"
+    val fileName:String = "src/test/scala/riseParser/readFiles/filesToLexe/veryComplicated.rise"
     val file:FileReader = new FileReader(fileName)
     val lexer:RecognizeLexeme = new RecognizeLexeme(file)
     lexer.tokens match {
