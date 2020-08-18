@@ -1,5 +1,5 @@
 
-import riseParser.Lexer.FileReader
+import parser.lexer.FileReader
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers._
 

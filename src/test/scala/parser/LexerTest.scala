@@ -1,12 +1,10 @@
-import riseParser.Lexeme.OpType.{BinOpType, UnaryOpType}
-import riseParser.Lexeme.TokenVariants.{BoolType, FloatTyp, IntTyp}
-import riseParser.Lexeme.{Arrow, Backslash, BinOp, Dots, F32, I32, Identifier, IdentifierType, LBrace, Location, RBrace, Span, Type, UnOp}
-import riseParser.Lexer.{FileReader, RecognizeLexeme}
+import parser.lexer.OpType.{BinOpType, UnaryOpType}
+import parser.lexer.FloatTyp
+import parser.lexer.FloatTyp
+import parser.lexer.{Arrow, Backslash, BinOp, BoolType, Dots, F32, FileReader, FloatTyp, I32, Identifier, IdentifierType, IntTyp, LBrace, Location, RBrace, RecognizeLexeme, Span, Type, UnOp}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers.equal
 import org.scalatest.matchers.should.Matchers._
-import riseParser.Lexeme
-
 
 class LexerTest extends  AnyFlatSpec{
 
@@ -25,7 +23,7 @@ class LexerTest extends  AnyFlatSpec{
     val file:FileReader = new FileReader(fileName)
     val lexer:RecognizeLexeme = new RecognizeLexeme(file)
     lexer.tokens match {
-      case  Right(Lexeme.I32(42, span1)) :: Right(Arrow(span2)):: Right(Identifier(IdentifierType("c"), span3)) :: Right(Backslash(span4)) :: Nil => true
+      case  Right(I32(42, span1)) :: Right(Arrow(span2)):: Right(Identifier(IdentifierType("c"), span3)) :: Right(Backslash(span4)) :: Nil => true
       case a => throw new Exception(a.toString())
     }
   }

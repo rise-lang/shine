@@ -1,10 +1,8 @@
-package riseParser.Lexer
+package parser.lexer
 
-import riseParser.Lexeme.{Arrow, Backslash, BinOp, Dots, F32, F64, I32, I8, Identifier, IdentifierType, LBrace, Location, OpType, RBrace, Span, Token, Type, UnOp}
 import java.io._
 
-import riseParser.Lexeme.OpType.{BinOpType, UnaryOpType}
-import riseParser.Lexeme.TokenVariants.{BoolType, DoubleType, FloatTyp, IntTyp, NatTyp, ShortTyp}
+import OpType.{BinOpType, UnaryOpType}
 
 
 //alles muss in ein Try gemappt werden
@@ -807,13 +805,13 @@ if '==' then two steps else only one step
       val locEnd:Location = Location(column, pos)
       //different Types in RISE //Todo: not completed yet
       substring match {
-        case "bool" => (Right(Type(BoolType(), Span(fileReader,locStart, locEnd))),pos)
-        case "Bool" => (Right(Type(BoolType(), Span(fileReader,locStart, locEnd))),pos)
-        case "I8"   => (Right(Type(ShortTyp(), Span(fileReader,locStart, locEnd))),pos)
-        case "I32"  => (Right(Type(IntTyp(), Span(fileReader,locStart, locEnd))),pos)
-        case "F32"  => (Right(Type(FloatTyp(), Span(fileReader,locStart, locEnd))),pos)
-        case "F64"  => (Right(Type(DoubleType(), Span(fileReader,locStart, locEnd))),pos)
-        case "nat"  => (Right(Type(NatTyp(), Span(fileReader,locStart, locEnd))),pos)
+        case "bool" => (Right(parser.lexer.Type(BoolType(), Span(fileReader,locStart, locEnd))),pos)
+        case "Bool" => (Right(parser.lexer.Type(BoolType(), Span(fileReader,locStart, locEnd))),pos)
+        case "I8"   => (Right(parser.lexer.Type(ShortTyp(), Span(fileReader,locStart, locEnd))),pos)
+        case "I32"  => (Right(parser.lexer.Type(IntTyp(), Span(fileReader,locStart, locEnd))),pos)
+        case "F32"  => (Right(parser.lexer.Type(FloatTyp(), Span(fileReader,locStart, locEnd))),pos)
+        case "F64"  => (Right(parser.lexer.Type(DoubleType(), Span(fileReader,locStart, locEnd))),pos)
+        case "nat"  => (Right(parser.lexer.Type(NatTyp(), Span(fileReader,locStart, locEnd))),pos)
         //unknown Type
         case a => (Left(UnknownType(substring, Span(fileReader,locStart, locEnd), fileReader)),pos)
       }

@@ -1,6 +1,4 @@
-package riseParser.Lexeme.TokenVariants
-
-import riseParser.Lexeme.Identifier
+package parser.lexer
 
 
 /*
