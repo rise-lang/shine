@@ -29,6 +29,11 @@ class test extends shine.test_util.Tests {
     gen.OpenCLKernel(vectorScalTest)
   }
 
+  /*
+  **    write <: read: Es wurde versucht, Speicher auszulesen, der noch nicht geschrieben wurde.
+  **    read <: write: Es wurde versucht, in Speicher zu schreiben, der schon ausgelesen wurde.
+   */
+
   test("Nvidia Absolute Sum test") {
     val nvidiaAbsSumTest = nFun(n => fun(xsT(n))(xs =>
       xs |>
@@ -41,8 +46,7 @@ class test extends shine.test_util.Tests {
             fun(a => fun(x => a + abs(f32)(x)))
           )(l(0.0f))
         )
-      ) |>
-        toGlobal |>
+      ) |> toGlobal |>
       join |>
         oclReduceSeq(AddressSpace.Private)(
           fun(a => fun(x => a + abs(f32)(x)))
