@@ -239,7 +239,7 @@ final case class RightBraceMissing(span:Span, fileReader: FileReader) extends Pr
 this recognizes the Lexeme in the File which represents the right Token
  */
 case class RecognizeLexeme(fileReader: FileReader){
-  val tokens:List[Either[PreAndErrorToken, Token]] = lexer() //lexe the contents of the File
+  val tokens:List[Either[PreAndErrorToken, Token]] = lexer().reverse //lexe the contents of the File
 
 
   private def lexer():List[Either[PreAndErrorToken, Token]] = {
