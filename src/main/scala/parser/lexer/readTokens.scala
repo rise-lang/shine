@@ -239,28 +239,11 @@ final case class RightBraceMissing(span:Span, fileReader: FileReader) extends Pr
 this recognizes the Lexeme in the File which represents the right Token
  */
 case class RecognizeLexeme(fileReader: FileReader){
-  val tokens:List[Either[PreAndErrorToken, Token]] = lexer().reverse //lexe the contents of the File
-
+  val tokens:List[Either[PreAndErrorToken, Token]] = lexer()
 
   private def lexer():List[Either[PreAndErrorToken, Token]] = {
     val list:List[Either[PreAndErrorToken, Token]] = lexerLambda(0,0, Nil)._1
-    //are here enought RightBraces
-    //enough leftBraces are controlled in lexerExpression and shouldn't happen
-    val arr: Array[String]= fileReader.sourceLines
-    val lB: Int = list.count(a => a match {
-      case Right(LBrace(_)) => true
-      case b => false
-    } )
-    val rB: Int = list.count(a => a match {
-      case Right(RBrace(_)) => true
-      case b => false
-    } )
-    if(lB>rB){ //for example "( .. ( ... )"
-      val loc:Location = Location(arr.length-1, arr(arr.length-1).length)
-      val ex = RightBraceMissing(new Span(fileReader, loc), fileReader)
-      ex.throwException()
-    }
-    list
+    list.reverse //lexe the contents of the File
   }
   /*
   it lexes a Lambda
@@ -470,18 +453,18 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Either[PreAndErrorToke
         val loc:Location = Location(column, row) //endLocation is equal to startLocation
         list = list.::(Right(RBrace(new Span(fileReader, loc))))
         row = row +1
-        val lB: Int = list.count(a => a match {
-          case Right(LBrace(_)) => true
-          case b => false
-        } )
-        val rB: Int = list.count(a => a match {
-          case Right(RBrace(_)) => true
-          case b => false
-        } )
-        if(lB<rB){ //for example "( ... ) .. )"
-          val ex = LeftBraceMissing(new Span(fileReader, loc), fileReader)
-          ex.throwException()
-        }
+//        val lB: Int = list.count(a => a match {
+//          case Right(LBrace(_)) => true
+//          case b => false
+//        } )
+//        val rB: Int = list.count(a => a match {
+//          case Right(RBrace(_)) => true
+//          case b => false
+//        } )
+//        if(lB<rB){ //for example "( ... ) .. )"
+//          val ex = LeftBraceMissing(new Span(fileReader, loc), fileReader)
+//          ex.throwException()
+//        }
         return (list, column, row) //i have to return, because the LBrace wants to see a RBrace
       }
       case '!' => {
