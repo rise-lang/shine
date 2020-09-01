@@ -1,7 +1,7 @@
 package shine.OpenCL.FunctionalPrimitives
 
 import shine.DPIA.Compilation.TranslationContext
-import shine.DPIA.DSL._
+//import shine.DPIA.DSL._
 import shine.DPIA._
 import shine.DPIA.Phrases._
 import shine.DPIA.Semantics.OperationalSemantics._
@@ -54,17 +54,17 @@ final case class IfExpression(
 
   override def acceptorTranslation(A: Phrase[AccType])(
     implicit context: TranslationContext
-  ): Phrase[CommType] = {
-    import shine.DPIA.Compilation.TranslationToImperative._
+  ): Phrase[CommType] = ??? //{
+    //import shine.DPIA.Compilation.TranslationToImperative._
 
-    con(input)(fun(expT(dt1, read))(input =>
-      con(cond)(fun(expT(bool, read))(cond =>
+    //con(input)(fun(expT(dt1, read))(input =>
+    //  con(cond)(fun(expT(bool, read))(cond =>
         //TODO: Can this also be used on the imperative level?
         // In C this would something like: A; (cond) ? firstCase(input) : secondCase(input)
-        IfExpression(cond, acc(firstCasegessen(input))(A), acc(secondCase(input))(A))
-      ))
-    ))
-  }
+     //   IfExpression(cond, acc(firstCase(input))(A), acc(secondCase(input))(A))
+     // ))
+    //))
+  //}
   //TODO: Figure out what kind of C code we want here.
   // Then, create Primitives if missing! (if we cannot generate C code from this
   // primitive immediately).

@@ -18,7 +18,7 @@ class simpleHisto extends shine.test_util.TestsWithExecutor {
   test("Simple Histogram Test") {
     val numBins: Nat = 4
 
-    def incrementBin(
+    /*def incrementBin(
       numBins: Int,
       input: Expr,
       hist: Identifier,
@@ -32,7 +32,7 @@ class simpleHisto extends shine.test_util.TestsWithExecutor {
       //If(input, (input == l(binCounter)),
       // Set(hist, idx(binCounter, numBins), (idx(a, lidx(binCounter, n)))),
       // incrementBin(numBins, input, hist, ++binCounter))
-    }
+    }*/
 
     val simpleHistoTest = nFun(n => nFun(chunkSize => fun(xsT(n))(is =>
       is |> // n.int
@@ -40,7 +40,9 @@ class simpleHisto extends shine.test_util.TestsWithExecutor {
       mapGlobal(
         oclReduceSeq(AddressSpace.Private)(
           fun(a => // numBins.int
-            fun(i => // int
+            fun(i =>
+              a |>
+              mapSeq(fun(a => a + i))// int
               // if (i == 0) set(a, lidx(0, numBins), a[lidx(0, numBins)]+1)) else
               //   if (i == 1) set(a, lidx(1, numBins), a[lidx(1, numBins)]+1)) else
               //     if (i == 2) set(a, lidx(2, numBins), a[lidx(2, numBins)]+1))
@@ -53,5 +55,46 @@ class simpleHisto extends shine.test_util.TestsWithExecutor {
     )))
 
     gen.OpenCLKernel(simpleHistoTest)
+  }
+
+  test("Simplest Histogramm Test") {
+    val numBins: Nat = 4
+
+    val simplestHistoTest = nFun(n => fun(xsT(n))(is =>
+      is |>
+      mapGlobal(
+        fun(i =>
+          generate(fun(IndexType(numBins))(_ => l(0))) |>
+          mapSeq(fun(x => x + i)) // test function, to replace with reduce by index operation
+        )
+      )
+    ))
+
+    gen.OpenCLKernel(simplestHistoTest)
+  }
+
+  test("Simpler Histogramm Test") {
+    val numBins: Nat = 4
+
+    val simplerHistoTest = nFun(n => nFun(chunkSize => fun(xsT(n))(is =>
+      is |>
+        split(chunkSize) |>
+        mapGlobal(
+          fun(chunk =>
+            generate(fun(IndexType(numBins))(_ => l(0))) |>
+              mapSeq(fun(x => x)) |>
+              toPrivate |>
+              fun(histo =>
+                chunk |>
+                mapSeq(fun(element =>
+                  // test function, to replace with reduce by index operation
+                  histo |>
+                  mapSeq(fun(bin => bin + element))
+              )
+          )
+        )
+    )))))
+
+    gen.OpenCLKernel(simplerHistoTest)
   }
 }
