@@ -3,19 +3,23 @@ package apps
 import rise.core.DSL._
 import rise.core.Expr
 import rise.core.types._
+import rise.core.TypeLevelDSL._
 import rise.core._
 import rise.openCL.DSL._
 import util.gen
 
 class simpleHisto extends shine.test_util.TestsWithExecutor {
 
+  // scalastyle:off
+
   private def isT(N: NatIdentifier) = ArrayType(N, NatType)
+  private def histosT(N: NatIdentifier, M: NatIdentifier) = ArrayType(N, ArrayType(M, int))
 
   val add = fun(x => fun(a => x + a))
   def id: Expr = fun(x => x)
 
   test("Simple Histogram Test") {
-    val numBins: Nat = 4
+    // val numBins: Nat = 2000
 
     /*def incrementBin(
       numBins: Int,
@@ -33,25 +37,45 @@ class simpleHisto extends shine.test_util.TestsWithExecutor {
       // incrementBin(numBins, input, hist, ++binCounter))
     }*/
 
-    val simpleHistoTest = nFun(n => nFun(chunkSize => fun(isT(n))(is =>
+    val reduceHistos = implN(n => implN(numBins => fun(histosT(n, numBins))(histos =>
+      histos |> // n.numBins.int
+        oclReduceSeq(AddressSpace.Global)(
+          fun(acc_histo => // numBins.int
+            fun(cur_histo => // numBins.int
+              zip(acc_histo)(cur_histo) |> // 2.numBins.int
+                mapSeq(fun(x => fst(x) + snd(x)))
+            )
+          )
+        )(
+          generate(fun(IndexType(numBins))(_ => l(0))) |> // numBins.int
+            mapSeq(fun(x => x)) //numBins.int
+        )
+    )))
+
+    val simpleHistoTest = nFun(n => nFun(numBins => nFun(chunkSize => fun(isT(n))(is =>
       is |> // n.NatType
       split(chunkSize) |> // n/chunkSize.chunkSize.NatType
       mapGlobal(
-        oclReduceSeq(AddressSpace.Private)(
+        oclReduceSeq(AddressSpace.Global)(
           fun(histo => // numBins.int
             fun(i => // nat
               histo |>
-              mapSeq(fun(histo => histo)) // int
+              mapSeq(fun(histo => histo + l(1))) // int
               // if (i == 0) set(a, lidx(0, numBins), a[lidx(0, numBins)]+1)) else
               //   if (i == 1) set(a, lidx(1, numBins), a[lidx(1, numBins)]+1)) else
               //     if (i == 2) set(a, lidx(2, numBins), a[lidx(2, numBins)]+1))
-          ))
+            )
+          )
         )(
           generate(fun(IndexType(numBins))(_ => l(0))) |> // numBins.int
           mapSeq(fun(x => x)) // numBins.int
         ) >> mapSeq(fun(x => x))
-      )
-    )))
+      ) |> // n/chunkSize.numBins.int
+      toGlobal |>
+      // reduce all subhistograms
+      reduceHistos |>
+      mapSeq(fun(x => x))
+    ))))
 
     gen.OpenCLKernel(simpleHistoTest)
   }
