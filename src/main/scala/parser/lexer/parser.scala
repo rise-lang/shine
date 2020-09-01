@@ -1,7 +1,7 @@
 package parser.lexer
 
 import shine.DPIA.Phrases.{Lambda, Phrase, Identifier => Id}
-import shine.DPIA.Types.{ExpType, PhraseType, ScalarType, f32, f64, i32, i8}
+import shine.DPIA.Types.{DataType, ExpType, PhraseType, ScalarType, f32, f64, i32, i8}
 
 abstract sealed class SyntacticErrors(pos:Int, tokens:List[Either[PreAndErrorToken, Token]]) extends Throwable{
   require(pos >=0, "pos is less than zero")
@@ -18,10 +18,10 @@ final case class WrongToken(pos:Int, tokens:List[Either[PreAndErrorToken, Token]
   override def toString = "at postion " + pos + " is "+ expectedToken + " expected, but found '"+ tokens(pos) +"'!\n"+ tokens.toString()
 }
 
-case class syntacticAnalysis(lexer:RecognizeLexeme){
+case class parse(lexer:RecognizeLexeme){
   private val fileReader:FileReader = lexer.fileReader
   private val tokens:List[Either[PreAndErrorToken, Token]] = lexer.tokens
-   val shinePhrase: Lambda[Id[ScalarType], PhraseType] = createSyntaxTree()
+   val shineLambda = createSyntaxTree()
     private def checkBracesNumber():Unit = {
       val list:List[Either[PreAndErrorToken, Token]] = tokens
       val arr: Array[String]= fileReader.sourceLines
@@ -49,19 +49,19 @@ case class syntacticAnalysis(lexer:RecognizeLexeme){
   is the whole Syntax-Tree.
   the syntax-Tree has on top an Lambda-Expression
    */
-    private def createSyntaxTree():Lambda[Id[ScalarType], PhraseType]= {
+    private def createShineExpression():Lambda[PhraseType, PhraseType]= {
       var pos: Int = 0 //beginningPosition
       require(isBacklash(pos), s"on position $pos is no Backslash!")
       //We are at the beginning of the SyntaxTree and a Type has to be defined
       require(isDots(pos+2), s"on position $pos are no Dots!")
       require(isArrow(pos+4), s"on position $pos is no Arrow!")
       checkBracesNumber() //check if the Braces Number of left and right Braces is equal
-      val identifierType:ScalarType = giveIdentifierType(pos+3)._1 //type of the Identifier
+      val identifierType = giveIdentifierType(pos+3)._1 //type of the Identifier
       val identifierName:String = giveIdentifierName(pos+1)._1 //the name of the Identifier
       //creates the Identifier (first PhraseType) and the expression after the Arrow(second PhraseType)
-      val identifier: Id[ScalarType] = new Id[ScalarType](identifierName, identifierType)
-      val exp:Phrase[ExpType] = createExpression(pos+5, identifier)
-      val lambda:Lambda[ScalarType, ExpType]=new Lambda[ScalarType, ExpType](identifier, exp)
+      val identifier= Id[ScalarType](identifierName, identifierType)
+      val exp = createExpression(pos+5, identifier)
+      val lambda= Lambda[PhraseType, ExpType](identifier, exp)
       lambda
    }
 
@@ -93,7 +93,7 @@ no PreAndErrorToken is expected
 give me the StringName of the Identifier in the Position in pos
 no PreAndErrorToken is expected
 */
-  private def giveIdentifierType(pos:Int):(ScalarType, Span)={
+  private def giveIdentifierType(pos:Int):(DataType, Span)={
     tokens(pos) match {
       case Right(Type(typType, span))=> typType match {
         case ShortTyp() => (i8, span)
