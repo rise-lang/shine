@@ -107,19 +107,14 @@ sealed abstract class Token (span: Span){
     override def toString = ")"
   }
 
-//<Identifier>::=[<leer>] <Buchstaben>{<Buchstaben>|<Ziffer>| _ }
-case class IdentifierType(identifier:String){
-  require(!identifier.isEmpty, "String is empty")
-  //<Identifier>::=[<leer>] <Buchstaben>{<Buchstaben>|<Ziffer>| _ }
-  require(identifier.matches("[a-zA-Z][a-zA-Z0-9_]*"), "has not the preffered structure")
-  val i:String = identifier
-  override def toString = s"<$i :Identifier>"
-}
   // example: "split"
-  final case class Identifier (identifierType: IdentifierType , span: Span) extends Token(span){
+  final case class Identifier (name: String, span: Span) extends Token(span){
+    require(!name.isEmpty, "String is empty")
+    //<Identifier>::=[<leer>] <Buchstaben>{<Buchstaben>|<Ziffer>| _ }
+    require(name.matches("[a-zA-Z][a-zA-Z0-9_]*"), "has not the preffered structure")
     require(span.begin.column == span.end.column, "not in one column")
-    val i:IdentifierType = identifierType
-    override def toString = i.toString
+
+    override def toString = s"<$name :Identifier>"
   }
 
   // example "Double" which is saved as <doubleTyp>
@@ -143,7 +138,7 @@ case class IdentifierType(identifier:String){
 
   // ":"
   //  (\x:a.x) : a -> a
-  final case class Dots (span: Span) extends Token(span){
+  final case class Colon(span: Span) extends Token(span){
     require(span.begin == span.end, "span,begin is unequal to span.end") //span.begin == span.end
     override def toString = ":"
   }

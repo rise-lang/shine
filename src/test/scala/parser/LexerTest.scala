@@ -3,7 +3,7 @@ package parser
 import parser.lexer.OpType.{BinOpType, UnaryOpType}
 import parser.lexer.FloatTyp
 import parser.lexer.FloatTyp
-import parser.lexer.{Arrow, Backslash, BinOp, BoolType, Dots, F32, FileReader, FloatTyp, I32, Identifier, IdentifierType, IntTyp, LBrace, Location, RBrace, RecognizeLexeme, Span, Type, UnOp}
+import parser.lexer.{Arrow, Backslash, BinOp, BoolType, Colon, F32, FileReader, FloatTyp, I32, Identifier, IdentifierType, IntTyp, LBrace, Location, RBrace, RecognizeLexeme, Span, Type, UnOp}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers.equal
 import org.scalatest.matchers.should.Matchers._
@@ -45,7 +45,7 @@ class LexerTest extends  AnyFlatSpec {
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
     lexer.tokens match {
-      case Right(Backslash(span4)) :: Right(Identifier(IdentifierType("x"), span3)) :: Right(Dots(span0)) :: Right(Type(IntTyp(), span)) :: Right(Arrow(span2)) :: Right(Identifier(IdentifierType("x"), span1)) :: Nil => true
+      case Right(Backslash(span4)) :: Right(Identifier(IdentifierType("x"), span3)) :: Right(Colon(span0)) :: Right(Type(IntTyp(), span)) :: Right(Arrow(span2)) :: Right(Identifier(IdentifierType("x"), span1)) :: Nil => true
       case a => throw new Exception(a.toString())
     }
   }
@@ -55,7 +55,7 @@ class LexerTest extends  AnyFlatSpec {
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
     lexer.tokens match {
-      case Right(Backslash(span4)) :: Right(Identifier(IdentifierType("jens"), span3)) :: Right(Dots(span0)) :: Right(Type(IntTyp(), span)) :: Right(Arrow(span2)) :: Right(Identifier(IdentifierType("jens"), span1)) :: Nil => true
+      case Right(Backslash(span4)) :: Right(Identifier(IdentifierType("jens"), span3)) :: Right(Colon(span0)) :: Right(Type(IntTyp(), span)) :: Right(Arrow(span2)) :: Right(Identifier(IdentifierType("jens"), span1)) :: Nil => true
       case a => throw new Exception(a.toString())
     }
   }
@@ -65,7 +65,7 @@ class LexerTest extends  AnyFlatSpec {
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
     lexer.tokens match {
-      case Right(Backslash(span6)) :: Right(Identifier(IdentifierType("Hans_Georg"), span5)) ::  Right(Dots(span4)) ::Right(Type(FloatTyp(), span3)) :: Right(Arrow(span2)) :: Right(Identifier(IdentifierType("Hans_Georg"), span1)) :: Nil => true
+      case Right(Backslash(span6)) :: Right(Identifier(IdentifierType("Hans_Georg"), span5)) ::  Right(Colon(span4)) ::Right(Type(FloatTyp(), span3)) :: Right(Arrow(span2)) :: Right(Identifier(IdentifierType("Hans_Georg"), span1)) :: Nil => true
       case a => throw new Exception(a.toString())
     }
   }
@@ -94,7 +94,7 @@ class LexerTest extends  AnyFlatSpec {
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
     lexer.tokens match {
-      case Right(Backslash(span8)) :: Right(Identifier(IdentifierType("x"), span7)) :: Right(Dots(span6)) :: Right(Type(IntTyp(), span5)) :: Right(Arrow(span4)) :: Right(Identifier(IdentifierType("x"), span3)) :: Right(BinOp(BinOpType.ADD, span2)) :: Right(I32(5, span1)) :: Nil => true
+      case Right(Backslash(span8)) :: Right(Identifier(IdentifierType("x"), span7)) :: Right(Colon(span6)) :: Right(Type(IntTyp(), span5)) :: Right(Arrow(span4)) :: Right(Identifier(IdentifierType("x"), span3)) :: Right(BinOp(BinOpType.ADD, span2)) :: Right(I32(5, span1)) :: Nil => true
       case a => throw new Exception(a.toString())
     }
   }
@@ -104,7 +104,7 @@ class LexerTest extends  AnyFlatSpec {
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
     lexer.tokens match {
-      case Right(Backslash(span8)) :: Right(Identifier(IdentifierType("x"), span7)) :: Right(Dots(span6)) :: Right(Type(IntTyp(), span5)) :: Right(Arrow(span4)) :: Right(Identifier(IdentifierType("x"), span3)) :: Right(BinOp(BinOpType.SUB, span2)) :: Right(I32(5, span1)) :: Nil => true
+      case Right(Backslash(span8)) :: Right(Identifier(IdentifierType("x"), span7)) :: Right(Colon(span6)) :: Right(Type(IntTyp(), span5)) :: Right(Arrow(span4)) :: Right(Identifier(IdentifierType("x"), span3)) :: Right(BinOp(BinOpType.SUB, span2)) :: Right(I32(5, span1)) :: Nil => true
       case a => throw new Exception(a.toString())
     }
   }
@@ -114,7 +114,7 @@ class LexerTest extends  AnyFlatSpec {
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
     lexer.tokens match {
-      case Right(Backslash(span8)) :: Right(Identifier(IdentifierType("y"), span7)) :: Right(Dots(span6)) :: Right(Type(IntTyp(), span5)) :: Right(Arrow(span4)) :: Right(UnOp(UnaryOpType.NEG, span2)) :: Right(Identifier(IdentifierType("y"), span1)) :: Nil => true
+      case Right(Backslash(span8)) :: Right(Identifier(IdentifierType("y"), span7)) :: Right(Colon(span6)) :: Right(Type(IntTyp(), span5)) :: Right(Arrow(span4)) :: Right(UnOp(UnaryOpType.NEG, span2)) :: Right(Identifier(IdentifierType("y"), span1)) :: Nil => true
       case a => throw new Exception(a.toString())
     }
   }
@@ -124,7 +124,7 @@ class LexerTest extends  AnyFlatSpec {
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
     lexer.tokens match {
-      case Right(Backslash(span8)) :: Right(Identifier(IdentifierType("b"), span7)) :: Right(Dots(span6)) :: Right(Type(BoolType(), span5)) :: Right(Arrow(span4)) :: Right(UnOp(UnaryOpType.NEG, span2)) :: Right(Identifier(IdentifierType("b"), span1)) :: Nil => true
+      case Right(Backslash(span8)) :: Right(Identifier(IdentifierType("b"), span7)) :: Right(Colon(span6)) :: Right(Type(BoolType(), span5)) :: Right(Arrow(span4)) :: Right(UnOp(UnaryOpType.NEG, span2)) :: Right(Identifier(IdentifierType("b"), span1)) :: Nil => true
       case a => throw new Exception(a.toString())
     }
   }
@@ -134,7 +134,7 @@ class LexerTest extends  AnyFlatSpec {
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
     lexer.tokens match {
-      case Right(Backslash(span8)) :: Right(Identifier(IdentifierType("b"), span7)) :: Right(Dots(span6)) :: Right(Type(BoolType(), span5)) :: Right(Arrow(span4)) :: Right(UnOp(UnaryOpType.NOT, span2)) :: Right(Identifier(IdentifierType("b"), span1)) :: Nil => true
+      case Right(Backslash(span8)) :: Right(Identifier(IdentifierType("b"), span7)) :: Right(Colon(span6)) :: Right(Type(BoolType(), span5)) :: Right(Arrow(span4)) :: Right(UnOp(UnaryOpType.NOT, span2)) :: Right(Identifier(IdentifierType("b"), span1)) :: Nil => true
       case a => throw new Exception(a.toString())
     }
   }
@@ -144,7 +144,7 @@ class LexerTest extends  AnyFlatSpec {
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
     lexer.tokens match {
-      case Right(Backslash(span8)) :: Right(Identifier(IdentifierType("b"), span7)) :: Right(Dots(span6)) :: Right(Type(BoolType(), span5)) :: Right(Arrow(span4)) :: Right(LBrace(span3)) :: Right(Identifier(IdentifierType("b"), span2)) :: Right(RBrace(span1)) :: Nil => true
+      case Right(Backslash(span8)) :: Right(Identifier(IdentifierType("b"), span7)) :: Right(Colon(span6)) :: Right(Type(BoolType(), span5)) :: Right(Arrow(span4)) :: Right(LBrace(span3)) :: Right(Identifier(IdentifierType("b"), span2)) :: Right(RBrace(span1)) :: Nil => true
       case a => throw new Exception(a.toString())
     }
   }
@@ -154,7 +154,7 @@ class LexerTest extends  AnyFlatSpec {
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
     lexer.tokens match {
-      case Right(Backslash(span8)) :: Right(Identifier(IdentifierType("b"), span7)) :: Right(Dots(span6)) :: Right(Type(BoolType(), span5)) :: Right(Arrow(span4)) :: Right(LBrace(span3)) :: Right(UnOp(UnaryOpType.NOT, span2)) :: Right(Identifier(IdentifierType("b"), span1)) :: Right(RBrace(span0)) :: Nil => true
+      case Right(Backslash(span8)) :: Right(Identifier(IdentifierType("b"), span7)) :: Right(Colon(span6)) :: Right(Type(BoolType(), span5)) :: Right(Arrow(span4)) :: Right(LBrace(span3)) :: Right(UnOp(UnaryOpType.NOT, span2)) :: Right(Identifier(IdentifierType("b"), span1)) :: Right(RBrace(span0)) :: Nil => true
       case a => throw new Exception(a.toString())
     }
   }
@@ -204,14 +204,14 @@ class LexerTest extends  AnyFlatSpec {
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
     lexer.tokens match { //\x:I32->\y->-(x*y)+42%5
-      case Right(Backslash(_)) :: Right(Identifier(IdentifierType("x"), _)) :: Right(Dots(_)) :: Right(Type(IntTyp(), _)) :: Right(Arrow(_)) :: Right(Backslash(_)) :: Right(Identifier(IdentifierType("y"), _)) :: Right(Arrow(_)) :: Right(UnOp(UnaryOpType.NEG, _)) :: Right(LBrace(_)) :: Right(Identifier(IdentifierType("x"), _)) :: Right(BinOp(BinOpType.MUL, _)) :: Right(Identifier(IdentifierType("y"), _)) :: Right(RBrace(_)) :: Right(BinOp(BinOpType.ADD, _)) :: Right(I32(42, _)) :: Right(BinOp(BinOpType.MOD, _)) :: Right(I32(5, _)) :: Nil => true
+      case Right(Backslash(_)) :: Right(Identifier(IdentifierType("x"), _)) :: Right(Colon(_)) :: Right(Type(IntTyp(), _)) :: Right(Arrow(_)) :: Right(Backslash(_)) :: Right(Identifier(IdentifierType("y"), _)) :: Right(Arrow(_)) :: Right(UnOp(UnaryOpType.NEG, _)) :: Right(LBrace(_)) :: Right(Identifier(IdentifierType("x"), _)) :: Right(BinOp(BinOpType.MUL, _)) :: Right(Identifier(IdentifierType("y"), _)) :: Right(RBrace(_)) :: Right(BinOp(BinOpType.ADD, _)) :: Right(I32(42, _)) :: Right(BinOp(BinOpType.MOD, _)) :: Right(I32(5, _)) :: Nil => true
       case a => {
         val loc = Location(0, 0)
         val loc2 = Location(0, 1)
         val span = new Span(file, loc)
         val span2 = Span(file, loc, loc2)
         //        val l = Right(I32(5, span))::Right(BinOp(BinOpType.MOD, span)):: Right(I32(42, span))::Right(BinOp(BinOpType.ADD, span))::Right(RBrace(span)):: Right(Identifier(IdentifierType("y"), span)):: Right(BinOp(BinOpType.MUL, span))::Right(Identifier(IdentifierType("x"), span)):: Right(LBrace(span)):: Right(UnOp(UnaryOpType.NEG, span)):: Right(Arrow(span2)):: Right(Typ(IntTyp(), span)) :: Right(Dots(span)) :: Right(Identifier(IdentifierType("y"), span)) :: Right(Backslash(span)) ::Right(Arrow(span2)):: Right(Typ(IntTyp(), span)) :: Right(Dots(span)) :: Right(Identifier(IdentifierType("x"), span)) :: Right(Backslash(span)) :: Nil
-        val l = Right(Backslash(span)) :: Right(Identifier(IdentifierType("x"), span)) :: Right(Dots(span)) :: Right(Type(IntTyp(), span)) :: Right(Arrow(span2)) :: Right(Backslash(span)) :: Right(Identifier(IdentifierType("y"), span)) :: Right(Arrow(span2)) :: Right(UnOp(UnaryOpType.NEG, span)) :: Right(LBrace(span)) :: Right(Identifier(IdentifierType("x"), span)) :: Right(BinOp(BinOpType.MUL, span)) :: Right(Identifier(IdentifierType("y"), span)) :: Right(RBrace(span)) :: Right(BinOp(BinOpType.ADD, span)) :: Right(I32(42, span)) :: Right(BinOp(BinOpType.MOD, span)) :: Right(I32(5, span)) :: Nil
+        val l = Right(Backslash(span)) :: Right(Identifier(IdentifierType("x"), span)) :: Right(Colon(span)) :: Right(Type(IntTyp(), span)) :: Right(Arrow(span2)) :: Right(Backslash(span)) :: Right(Identifier(IdentifierType("y"), span)) :: Right(Arrow(span2)) :: Right(UnOp(UnaryOpType.NEG, span)) :: Right(LBrace(span)) :: Right(Identifier(IdentifierType("x"), span)) :: Right(BinOp(BinOpType.MUL, span)) :: Right(Identifier(IdentifierType("y"), span)) :: Right(RBrace(span)) :: Right(BinOp(BinOpType.ADD, span)) :: Right(I32(42, span)) :: Right(BinOp(BinOpType.MOD, span)) :: Right(I32(5, span)) :: Nil
         throw new Exception(a.toString() + "\n" + l.toString())
       }
     }
@@ -222,13 +222,13 @@ class LexerTest extends  AnyFlatSpec {
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
     lexer.tokens match {
-      case Right(Backslash(_)) :: Right(Identifier(IdentifierType("x"), _)) :: Right(Dots(_)) :: Right(Type(IntTyp(), _)) :: Right(Arrow(_)) :: Right(Backslash(_)) :: Right(Identifier(IdentifierType("y"), _)) :: Right(Dots(_)) :: Right(Type(IntTyp(), _)) :: Right(Arrow(_)) :: Right(UnOp(UnaryOpType.NEG, _)) :: Right(LBrace(_)) :: Right(Identifier(IdentifierType("x"), _)) :: Right(BinOp(BinOpType.MUL, _)) :: Right(Identifier(IdentifierType("y"), _)) :: Right(RBrace(_)) :: Right(BinOp(BinOpType.ADD, _)) :: Right(I32(42, _)) :: Right(BinOp(BinOpType.MOD, _)) :: Right(I32(5, _)) :: Nil => true
+      case Right(Backslash(_)) :: Right(Identifier(IdentifierType("x"), _)) :: Right(Colon(_)) :: Right(Type(IntTyp(), _)) :: Right(Arrow(_)) :: Right(Backslash(_)) :: Right(Identifier(IdentifierType("y"), _)) :: Right(Colon(_)) :: Right(Type(IntTyp(), _)) :: Right(Arrow(_)) :: Right(UnOp(UnaryOpType.NEG, _)) :: Right(LBrace(_)) :: Right(Identifier(IdentifierType("x"), _)) :: Right(BinOp(BinOpType.MUL, _)) :: Right(Identifier(IdentifierType("y"), _)) :: Right(RBrace(_)) :: Right(BinOp(BinOpType.ADD, _)) :: Right(I32(42, _)) :: Right(BinOp(BinOpType.MOD, _)) :: Right(I32(5, _)) :: Nil => true
       case a => {
         val loc = Location(0, 0)
         val loc2 = Location(0, 1)
         val span = new Span(file, loc)
         val span2 = Span(file, loc, loc2)
-        val l = Right(Backslash(span)) :: Right(Identifier(IdentifierType("x"), span)) :: Right(Dots(span)) :: Right(Type(IntTyp(), span)) :: Right(Arrow(span2)) :: Right(Backslash(span)) :: Right(Identifier(IdentifierType("y"), span)) :: Right(Dots(span)) :: Right(Type(IntTyp(), span)) :: Right(Arrow(span2)) :: Right(UnOp(UnaryOpType.NEG, span)) :: Right(LBrace(span)) :: Right(Identifier(IdentifierType("x"), span)) :: Right(BinOp(BinOpType.MUL, span)) :: Right(Identifier(IdentifierType("y"), span)) :: Right(RBrace(span)) :: Right(BinOp(BinOpType.ADD, span)) :: Right(I32(42, span)) :: Right(BinOp(BinOpType.MOD, span)) :: Right(I32(5, span)) :: Nil
+        val l = Right(Backslash(span)) :: Right(Identifier(IdentifierType("x"), span)) :: Right(Colon(span)) :: Right(Type(IntTyp(), span)) :: Right(Arrow(span2)) :: Right(Backslash(span)) :: Right(Identifier(IdentifierType("y"), span)) :: Right(Colon(span)) :: Right(Type(IntTyp(), span)) :: Right(Arrow(span2)) :: Right(UnOp(UnaryOpType.NEG, span)) :: Right(LBrace(span)) :: Right(Identifier(IdentifierType("x"), span)) :: Right(BinOp(BinOpType.MUL, span)) :: Right(Identifier(IdentifierType("y"), span)) :: Right(RBrace(span)) :: Right(BinOp(BinOpType.ADD, span)) :: Right(I32(42, span)) :: Right(BinOp(BinOpType.MOD, span)) :: Right(I32(5, span)) :: Nil
         throw new Exception(a.toString() + "\n" + l.toString())
       }
     }
@@ -239,7 +239,7 @@ class LexerTest extends  AnyFlatSpec {
     val file: FileReader = new FileReader(fileName)
     val lexer: RecognizeLexeme = new RecognizeLexeme(file)
     lexer.tokens match {
-      case Right(Backslash(_)) :: Right(Identifier(IdentifierType("Michael"), _)) :: Right(Dots(_)) :: Right(Type(BoolType(), _)) :: Right(Arrow(_)) :: Right(Backslash(_)) :: Right(Identifier(IdentifierType("Heinrich"), _)) :: Right(Dots(_)) :: Right(Type(BoolType(), _)) :: Right(Arrow(_)) :: Right(UnOp(UnaryOpType.NOT, _)) :: Right(LBrace(_)) :: Right(LBrace(_)) :: Right(Backslash(_)) :: Right(Identifier(IdentifierType("varX"), _)) :: Right(Dots(_)) :: Right(Type(IntTyp(), _)) :: Right(Arrow(_)) :: Right(Backslash(_)) :: Right(Identifier(IdentifierType("varY"), _)) :: Right(Dots(_)) :: Right(Type(FloatTyp(), _)) :: Right(Arrow(_)) :: Right(Identifier(IdentifierType("varX"), _)) :: Right(BinOp(BinOpType.MUL, _)) :: Right(Identifier(IdentifierType("varY"), _)) :: Right(BinOp(BinOpType.MUL, _)) :: Right(LBrace(_)) :: Right(I32(25, _)) :: Right(BinOp(BinOpType.SUB, _)) :: Right(F32(a, _)) :: Right(RBrace(_)) :: Right(BinOp(BinOpType.DIV, _)) :: Right(F32(b, _)) :: Right(RBrace(_)) :: Right(BinOp(BinOpType.MOD, _)) :: Right(I32(42, _)) :: Right(BinOp(BinOpType.EQ, _)) :: Right(I32(0, _)) :: Right(RBrace(_)) :: Nil => {
+      case Right(Backslash(_)) :: Right(Identifier(IdentifierType("Michael"), _)) :: Right(Colon(_)) :: Right(Type(BoolType(), _)) :: Right(Arrow(_)) :: Right(Backslash(_)) :: Right(Identifier(IdentifierType("Heinrich"), _)) :: Right(Colon(_)) :: Right(Type(BoolType(), _)) :: Right(Arrow(_)) :: Right(UnOp(UnaryOpType.NOT, _)) :: Right(LBrace(_)) :: Right(LBrace(_)) :: Right(Backslash(_)) :: Right(Identifier(IdentifierType("varX"), _)) :: Right(Colon(_)) :: Right(Type(IntTyp(), _)) :: Right(Arrow(_)) :: Right(Backslash(_)) :: Right(Identifier(IdentifierType("varY"), _)) :: Right(Colon(_)) :: Right(Type(FloatTyp(), _)) :: Right(Arrow(_)) :: Right(Identifier(IdentifierType("varX"), _)) :: Right(BinOp(BinOpType.MUL, _)) :: Right(Identifier(IdentifierType("varY"), _)) :: Right(BinOp(BinOpType.MUL, _)) :: Right(LBrace(_)) :: Right(I32(25, _)) :: Right(BinOp(BinOpType.SUB, _)) :: Right(F32(a, _)) :: Right(RBrace(_)) :: Right(BinOp(BinOpType.DIV, _)) :: Right(F32(b, _)) :: Right(RBrace(_)) :: Right(BinOp(BinOpType.MOD, _)) :: Right(I32(42, _)) :: Right(BinOp(BinOpType.EQ, _)) :: Right(I32(0, _)) :: Right(RBrace(_)) :: Nil => {
         a == 10.5 && b == 2.3 //I can't write 2.3 directly in the pattern match, because then it would be unequal
       }
       case a => {

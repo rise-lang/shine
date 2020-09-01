@@ -8,117 +8,7 @@ import OpType.{BinOpType, UnaryOpType}
 //alles muss in ein Try gemappt werden
 //Try{ file= openFile(); parse(file);}catch{...}finally{file.close}
 
-/*
-reads the File and saves the name and the content of the file as an Array of Strings
- */
-case class FileReader(fileName: String) {
-  require(fileName != null, "FileName should not be null")
-  require(fileName.endsWith(".rise"), "not a RISE file") //if not, it's not a RISE file
 
-  val sourceLines:Array[String] = readFile(fileName)
-  /*
-  returns the Content of the File with name fileName in
-  an String-Array
-
-  requirement: FileName is not null //TODO: more stability
-   */
-  private def readFile(fileName: String): Array[String] ={
-    //create File
-    val f:File = try {
-      new File(fileName)
-    }catch {
-      case ex: NullPointerException => throw readFileExNullPointerException(fileName,ex) //Error File //Todo: Nullpointer entfernen
-    }
-    //requirements of the File to be read
-    if(!f.exists()){
-      //file does not exist
-      val s: String= "The File " + fileName + " does not exist!"
-      throw new IllegalArgumentException(s)
-    }
-    if(!f.isFile){
-      //file is not a File
-      if(f.isDirectory){
-        //file is a directory
-        val s: String= "The File " + fileName + " is a directory and not a File!"
-        throw new IllegalArgumentException(s)
-      }else{
-        //file is not a File and not a directory //Todo: is this a possible case? <- It should't be possible
-        val s: String= "The File " + fileName + " is neither a File nor a directory"
-        throw new IllegalArgumentException(s)
-      }
-    }
-    if(!f.canRead){
-      //file can not be read
-      val s: String= "The File " + fileName + " is not readable!"
-      throw new IllegalArgumentException(s)
-    }
-    val input:FileInputStream = try{ //Todo: Schau dir die Try-Klasse von Scala an, weil so kännten unerwartete Fehler auftreten und dann schließen wir ihn nicht
-      //read the File with the Java-InputStream
-      new FileInputStream(f)
-    }catch {
-            //both errors should not be able to appear
-      case ex: FileNotFoundException => throw readFileExFileNotFound(fileName, ex) //Error FileInputStream
-      case ex: SecurityException => throw readFileExSecurityException(fileName, ex) //Error FileInputStream
-    }/* finally {
-      val b:Boolean = f.delete() //deletes the File (not only the scala object but the whole File)
-      if(!b){
-        //File is not deleted
-        val s: String= "\n\n!!!The File " + fileName + " is not deleted!!!\n\n"
-        println(s)
-      }
-    } */
-
-    val arr:Array[String] = try {
-      //Todo:Try with resources
-      val arr:Array[String] = scala.io.Source.fromInputStream(input).getLines().toArray
-      arr
-    }finally{
-        input.close //close the InputStream (very important) //throw the IOException if occours
-    }
-    arr //return the Content of the File
-  }
-
-  /*
-  returns a List of Files which have similar names
-   */
-  /*private def isSimilarFile(fileName: String):Array[File]={
-    //in the fileName we extract, if contains, the path in which it should be
-    val pathName:String = if(fileName.contains('/')){
-      fileName.substring(0,fileName.lastIndexWhere(p => p =='/'))
-    }else{
-      "."
-    }
-    //Todo: check if path exists
-    //takes all Files in the same path
-    val filesHere:Array[File] = listAllFilesInDirectory(pathName)
-    //returns all Files which FileNames are less than 5 chars different than fileName //https://alvinalexander.com/scala/scala-strings-differences-intersection-distinct-characters/
-    filesHere.filter(p => p.getName.toSeq.diff(fileName.toSeq).length<5)
-  }*/
-  /*
-  list all Files in the Directory
-   */
-/*  private def listAllFilesInDirectory(pathname: String = "."):Array[File]={
-    val filesHere:Array[File] = (new java.io.File(pathname)).listFiles()
-    filesHere.filter(file => file.isFile && file.getName().endsWith(".rise"))
-  }*/
-
-  // if the file does not exist, is a directory rather than a regular file, or for some other reason cannot be opened for reading.
-  private def readFileExFileNotFound(fileName: String, exception: Exception):Exception ={
-    exception
-  }
-  // if a security manager exists and its checkRead method denies read access to the file.
-  private def readFileExSecurityException(fileName: String, exception: Exception):Exception ={
-    exception
-  }
-  //If the pathname argument is null
-  private def readFileExNullPointerException(fileName: String, exception: Exception):Exception ={
-    exception
-  }
-
-
-  override def toString = "fileName: '" + fileName + "'; fileContent: {\n"+ sourceLines.mkString + "\n}"
-
-}
 
 abstract sealed class PreAndErrorToken(span:Span, fileReader: FileReader){
   private def underline(str:String):String = {
@@ -241,7 +131,9 @@ this recognizes the Lexeme in the File which represents the right Token
 case class RecognizeLexeme(fileReader: FileReader){
   val tokens:List[Either[PreAndErrorToken, Token]] = lexer()
 
-  private def lexer():List[Either[PreAndErrorToken, Token]] = {
+  type TokenList = List[Either[PreAndErrorToken, Token]]
+
+  private def lexer(): List[Token] = {
     val list:List[Either[PreAndErrorToken, Token]] = lexerLambda(0,0, Nil)._1
     list.reverse //lexe the contents of the File
   }
@@ -309,9 +201,9 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Either[PreAndErrorToke
 
   //only one or two steps
   lexDotsOrArrow(column, row) match {
-    case Right(Dots(span)) => {
+    case Right(Colon(span)) => {
       row = row +1
-      list= list.::(Right(Dots(span)))
+      list= list.::(Right(Colon(span)))
     }
     case Right(Arrow(span)) => {
       row = row +2
@@ -336,7 +228,7 @@ private def lexerLambda(oldColumn:Int, oldRow:Int, l:List[Either[PreAndErrorToke
 
   //match the last Token in the List
   list(0) match {
-    case Right(Dots(_)) => {
+    case Right(Colon(_)) => {
       // :Typ ->
       lexType(column,row) match {
         case (Right(a), r) => {
@@ -632,7 +524,7 @@ requirements:  no whitespace at arr(column)(row)
     arr(column)(row) match {
       case ':' => {
         val loc:Location = Location(column, row) //endLocation is equal to startLocation
-        Right(Dots(new Span(fileReader,loc)))
+        Right(Colon(new Span(fileReader,loc)))
       }
       case '-' => {
         if(arr(column).length <= row +1){
