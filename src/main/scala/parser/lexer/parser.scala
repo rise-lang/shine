@@ -55,14 +55,13 @@ object parse {
       val (tokens, parsedExprs) = parseState
       val nextToken :: restTokens = tokens
 
-      val (ident,spanIndent) = nextToken match {
-        case Identifier(name, span) => {
-          if(parsedExprs.contains(Identifier)){
-            (r.Identifier(name)(parsedExprs.findLast(a:Identifier => a == Identifier)) , span)
-          }else{
-            (r.Identifier(name)(i32), span)
-          }
-        }
+      val ident = nextToken match {
+        case Identifier(name, _) => r.Identifier(name)
+//          if(parsedExprs.contains(Identifier)){
+//            (r.Identifier(name)(parsedExprs.findLast(a:Identifier => a == Identifier)) , span)
+//          }else{
+//            (r.Identifier(name)(i32), span)
+//          }
         case _ => throw new Exception("not an identifier")
       }
 
