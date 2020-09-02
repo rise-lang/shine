@@ -43,13 +43,14 @@ class simpleHisto extends shine.test_util.TestsWithExecutor {
           fun(acc_histo => // numBins.int
             fun(cur_histo => // numBins.int
               zip(acc_histo)(cur_histo) |> // 2.numBins.int
-                mapSeq(fun(x => fst(x) + snd(x)))
+                mapGlobal(fun(x => fst(x) + snd(x)))
             )
           )
         )(
           generate(fun(IndexType(numBins))(_ => l(0))) |> // numBins.int
-            mapSeq(fun(x => x)) //numBins.int
-        )
+            mapSeq(id) //numBins.int
+        ) |>
+        mapSeq(id)
     )))
 
     val simpleHistoTest = nFun(n => nFun(numBins => nFun(chunkSize => fun(isT(n))(is =>
@@ -68,18 +69,18 @@ class simpleHisto extends shine.test_util.TestsWithExecutor {
           )
         )(
           generate(fun(IndexType(numBins))(_ => l(0))) |> // numBins.int
-          mapSeq(fun(x => x)) // numBins.int
-        ) >> mapSeq(fun(x => x))
+          mapSeq(id) // numBins.int
+        ) >> mapSeq(id)
       ) |> // n/chunkSize.numBins.int
       toGlobal |>
       // reduce all subhistograms
-      reduceHistos |>
-      mapSeq(fun(x => x))
+      reduceHistos
     ))))
 
     gen.OpenCLKernel(simpleHistoTest)
   }
 
+  /* Deprecated, will be removed later
   test("Simplest Histogramm Test") {
     val numBins: Nat = 4
 
@@ -120,5 +121,5 @@ class simpleHisto extends shine.test_util.TestsWithExecutor {
     ))))
 
     gen.OpenCLKernel(oldHistoTest)
-  }
+  } */
 }
