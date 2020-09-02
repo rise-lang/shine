@@ -48,12 +48,11 @@ object parse {
       }
     }
 
-    implicit class ParseStateElse(val psAndOldPs: (Option[ParseState], ParseState)) extends AnyVal {
-      def ||(f: ParseState => Option[ParseState]): (Option[ParseState], ParseState) ={
-        val (ps, oldPs) = psAndOldPs
-        ps match {
-          case None => (f(oldPs), oldPs)
-          case Some(state) => (Some(state), oldPs)
+    implicit class ParseStateElse(val ps: Option[ParseState]) extends AnyVal {
+      def ||(f: ParseState => Option[ParseState]): Option[ParseState] = {
+        f(ps.get) match {
+          case None => ps
+          case Some(ps) => Some(ps)
         }
       }
     }
@@ -140,7 +139,7 @@ object parse {
       val (tokens, parsedExprs) = parseState
       val nextToken :: restTokens = tokens
 
-      (Some(parseState), parseState) || parseLambda || parseApp || parseIdent ||
+      Some(parseState) || parseLambda || parseApp || parseIdent ||
     }
 
     /*
