@@ -129,13 +129,21 @@ final case class RightBraceMissing(span:Span, fileReader: FileReader) extends Pr
 this recognizes the Lexeme in the File which represents the right Token
  */
 case class RecognizeLexeme(fileReader: FileReader){
-  val tokens:List[Either[PreAndErrorToken, Token]] = lexer()
+  val tokens:List[Token] = lexer()
 
   type TokenList = List[Either[PreAndErrorToken, Token]]
 
   private def lexer(): List[Token] = {
     val list:List[Either[PreAndErrorToken, Token]] = lexerLambda(0,0, Nil)._1
-    list.reverse //lexe the contents of the File
+    val l:List[Token] = Nil
+    for(i <- list){
+      i match {
+        case Right(a) => a :: l
+        case Left(a) => a.throwException()
+      }
+    }
+    //list.reverse
+    l
   }
   /*
   it lexes a Lambda
@@ -711,7 +719,7 @@ if '==' then two steps else only one step
       (Left(IdentifierWithNotAllowedSymbol(arr(column)(pos), arr(column).substring(row, pos+1), Span(fileReader,locStart, locEnd), fileReader)), pos+1)
     }else{
       val locEnd:Location = Location(column, pos)
-      (Right(Identifier(IdentifierType(substring), Span(fileReader,locStart, locEnd))), pos)
+      (Right(Identifier(substring, Span(fileReader,locStart, locEnd))), pos)
     }
   }
 
