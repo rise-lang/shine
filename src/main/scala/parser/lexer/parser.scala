@@ -1,6 +1,7 @@
 package parser.lexer
 
 import rise.core.Expr
+import rise.core.types.{f32, f64, i32, i8}
 import rise.{core => r}
 import shine._
 
@@ -54,12 +55,58 @@ object parse {
       val (tokens, parsedExprs) = parseState
       val nextToken :: restTokens = tokens
 
-      val ident = nextToken match {
-        case Identifier(name, _) => r.Identifier(name)
+      val (ident,spanIndent) = nextToken match {
+        case Identifier(name, span) => {
+          if(parsedExprs.contains(Identifier)){
+            (r.Identifier(name)(parsedExprs.findLast(a:Identifier => a == Identifier)) , span)
+          }else{
+            (r.Identifier(name)(i32), span)
+          }
+        }
         case _ => throw new Exception("not an identifier")
       }
 
       (restTokens, ident :: parsedExprs)
+    }
+
+    def parseMaybeTypeAnnotation(parseState: ParseState): ParseState = {
+      val (tokens, parsedExprs) = parseState
+      val colonToken :: typeToken :: restTokens = tokens
+
+      colonToken match {
+        case Colon(_) =>
+        case _ => return parseState
+      }
+    //if a type Annotation exist, we set the type new of the Identifier
+      val (t,tSpan) = typeToken match {
+        case Type(t, span) => {
+          t match {
+            case ShortTyp() => (i8, span)
+            case IntTyp() => (i32, span)
+            case FloatTyp() => (f32, span)
+            case DoubleType() => (f64, span)
+            case _ => throw new Exception("not an accepted Type")
+          }
+        }
+        case _ => throw new Exception("not a Type")
+      }
+
+      val inden :: exprs = parsedExprs
+      inden.setType(t)
+
+      (restTokens, inden :: parsedExprs)
+    }
+
+    def parseArrow(parseState: ParseState): ParseState = {
+      val (tokens, parsedExprs) = parseState
+      val nextToken :: restTokens = tokens
+
+      nextToken match {
+        case Arrow(_) =>
+        case _ => throw new Exception("not an arrow")
+      }
+
+      (restTokens, parsedExprs)
     }
 
     /*
@@ -72,8 +119,8 @@ object parse {
         parseBackslash |>
         parseIdent |>
         parseMaybeTypeAnnotation |>
-        parseArrow |>
-        parseExpression
+        parseArrow //|>
+        //parseExpression
 
       if ( parsedExprs is with type) { } else {}
 
