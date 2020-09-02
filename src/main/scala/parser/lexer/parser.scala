@@ -48,6 +48,16 @@ object parse {
       }
     }
 
+    implicit class ParseStateElse(val psAndOldPs: (Option[ParseState], ParseState)) extends AnyVal {
+      def ||(f: ParseState => Option[ParseState]): (Option[ParseState], ParseState) ={
+        val (ps, oldPs) = psAndOldPs
+        ps match {
+          case None => (f(oldPs), oldPs)
+          case Some(state) => (Some(state), oldPs)
+        }
+      }
+    }
+
 
     def parseBackslash(parseState: ParseState): Option[ParseState] = {
       val (tokens, parsedExprs) = parseState
@@ -112,24 +122,25 @@ object parse {
   is the whole Syntax-Tree.
   the syntax-Tree has on top an Lambda-Expression
    */
-    def parseLambda(parseState: ParseState): ParseState = {
-      val (restTokens, parsedExprs) =
-        Some((tokenList, Nil))t status |>
+    def parseLambda(parseState: ParseState): Option[ParseState] = {
+      val (restTokens, parsedExprs):(List[Token],List[SyntaxElement]) =
+        Some((tokenList, Nil)) |>
         parseBackslash |>
         parseIdent |>
         parseMaybeTypeAnnotation |>
         parseArrow //|>
         //parseExpression
 
-      if ( parsedExprs is with type) { } else {}
-
+//      if ( parsedExprs is with type) { } else {}
+      val p:ParseState = (restTokens, parsedExprs)
+        Some(parseState)
     }
 
     def parseExpression(parseState: ParseState): ParseState = {
       val (tokens, parsedExprs) = parseState
       val nextToken :: restTokens = tokens
 
-      parseLambda | parseApp || parseIdent ||
+      (Some(parseState), parseState) || parseLambda || parseApp || parseIdent ||
     }
 
     /*
