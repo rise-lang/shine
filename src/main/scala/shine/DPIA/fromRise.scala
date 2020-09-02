@@ -622,6 +622,16 @@ object fromRise {
           fun[ExpType](expT(t, write), e =>
             OclToMem(a, t, e)))
 
+      case (ocl.SetVal(),
+        expT(ArrayType(n, t), `read`) ->:
+          expT(IndexType(_), `read`) ->:
+            expT(_, `read`) ->:
+              expT(ArrayType(_, _), `read`)) =>
+        fun[ExpType](expT(n`.`t, read), e =>
+          fun[ExpType](expT(idx(n), read), i =>
+            fun[ExpType](expT(t, read), x =>
+              SetVal(n, t, e, i, x))))
+
       case (core.Reduce(), _) =>
         throw new Exception(s"$p has no implementation")
 

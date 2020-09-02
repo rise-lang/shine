@@ -456,6 +456,12 @@ private class InferAccessAnnotation {
         case _ => error()
       }
 
+      case roclp.SetVal()  => p.t match {
+        case (dt1: rt.DataType) ->: (dt2: rt.DataType) ->: (dt3: rt.DataType) ->: (dt4: rt.DataType) =>
+          expT(dt1, read) ->: expT(dt2, read) ->: expT(dt3, read) ->: expT(dt4, read)
+        case _ => error()
+      }
+
       case r.ForeignFunction(_) =>
         def buildType(t: rt.Type): PhraseType = t match {
           case dt: rt.DataType =>

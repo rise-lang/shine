@@ -478,8 +478,8 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
                       x: Phrase[ExpType],
                       env: Environment,
                       ps: Path,
-                      cont: Expr => Stmt): Stmt = {
-      exp(i, env, Nil, {
+                      cont: Expr => Stmt): Stmt =  ??? //{
+      /*exp(i, env, Nil, {
         case C.AST.DeclRef(name) => exp(e, env, CIntExpr(NamedVar(name, ranges(name))) :: ps, cont)
         case C.AST.ArithmeticExpr(ae) => exp(e, env, CIntExpr(ae) :: ps, cont)
         case cExpr:C.AST.Expr =>
@@ -489,6 +489,6 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
             exp(e, env, CIntExpr(arithVar) :: ps, cont)
           ))
       })
-    }
+    }*/
   }
 }
