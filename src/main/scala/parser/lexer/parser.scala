@@ -1,12 +1,11 @@
 package parser.lexer
 
 import rise.core.Expr
-import rise.core.types.{f32, f64, i32, i8}
+import rise.core.{types => rt}
 import rise.{core => r}
-import shine._
-
 
 object parse {
+
   /*
    * Precondition: Only valid Tokens in tokenList.
    */
@@ -37,9 +36,20 @@ object parse {
       }
     }
 
-    type ParseState = (List[Token], List[Expr])
+    sealed trait SyntaxElement
+    final case class SExpr(expr: r.Expr) extends SyntaxElement
+    final case class SType(t: r.types.Type) extends SyntaxElement
 
-    def parseBackslash(parseState: ParseState): ParseState = {
+    type ParseState = (List[Token], List[SyntaxElement])
+
+    implicit class ParseStatePipe(val ps: Option[ParseState]) extends AnyVal {
+      def |>(f: ParseState => Option[ParseState]): Option[ParseState] = {
+        f(ps.get)
+      }
+    }
+
+
+    def parseBackslash(parseState: ParseState): Option[ParseState] = {
       val (tokens, parsedExprs) = parseState
       val nextToken :: restTokens = tokens
 
@@ -48,28 +58,22 @@ object parse {
         case _ => throw new Exception("not a backslash")
       }
 
-      (restTokens, parsedExprs)
+      Some((restTokens, parsedExprs))
     }
 
-    def parseIdent(parseState: ParseState): ParseState = {
-      val (tokens, parsedExprs) = parseState
+    def parseIdent(parseState: ParseState): Option[ParseState] = {
+      val (tokens, parsedSynElems) = parseState
       val nextToken :: restTokens = tokens
 
-      val ident = nextToken match {
-        case Identifier(name, _) => r.Identifier(name)
-//          if(parsedExprs.contains(Identifier)){
-//            (r.Identifier(name)(parsedExprs.findLast(a:Identifier => a == Identifier)) , span)
-//          }else{
-//            (r.Identifier(name)(i32), span)
-//          }
-        case _ => throw new Exception("not an identifier")
+      nextToken match {
+        case Identifier(name, _) =>
+          Some((restTokens, SExpr(r.Identifier(name)) :: parsedSynElems)
+        case _ => None
       }
-
-      (restTokens, ident :: parsedExprs)
     }
 
     def parseMaybeTypeAnnotation(parseState: ParseState): ParseState = {
-      val (tokens, parsedExprs) = parseState
+      val (tokens, parsedSynElems) = parseState
       val colonToken :: typeToken :: restTokens = tokens
 
       colonToken match {
@@ -77,23 +81,19 @@ object parse {
         case _ => return parseState
       }
     //if a type Annotation exist, we set the type new of the Identifier
-      val (t,tSpan) = typeToken match {
-        case Type(t, span) => {
+      val t = typeToken match {
+        case Type(t, _) =>
           t match {
-            case ShortTyp() => (i8, span)
-            case IntTyp() => (i32, span)
-            case FloatTyp() => (f32, span)
-            case DoubleType() => (f64, span)
+            case ShortTyp() => rt.i8
+            case IntTyp() => rt.i32
+            case FloatTyp() => rt.f32
+            case DoubleType() => rt.f64
             case _ => throw new Exception("not an accepted Type")
           }
-        }
         case _ => throw new Exception("not a Type")
       }
 
-      val inden :: exprs = parsedExprs
-      inden.setType(t)
-
-      (restTokens, inden :: parsedExprs)
+      (restTokens, SType(t) :: parsedSynElems)
     }
 
     def parseArrow(parseState: ParseState): ParseState = {
@@ -114,7 +114,7 @@ object parse {
    */
     def parseLambda(parseState: ParseState): ParseState = {
       val (restTokens, parsedExprs) =
-        (tokenList, Nil) |>
+        Some((tokenList, Nil))t status |>
         parseBackslash |>
         parseIdent |>
         parseMaybeTypeAnnotation |>
@@ -123,6 +123,13 @@ object parse {
 
       if ( parsedExprs is with type) { } else {}
 
+    }
+
+    def parseExpression(parseState: ParseState): ParseState = {
+      val (tokens, parsedExprs) = parseState
+      val nextToken :: restTokens = tokens
+
+      parseLambda | parseApp || parseIdent ||
     }
 
     /*
