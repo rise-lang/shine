@@ -6,15 +6,11 @@ import rise.core.types._
 import rise.core.TypeLevelDSL._
 import rise.core._
 import rise.openCL.DSL._
-//import shine.OpenCL.FunctionalPrimitives.SetVal
 import util.gen
 
 class simpleHisto extends shine.test_util.TestsWithExecutor {
 
-  // scalastyle:off
-
   private def isT(N: NatIdentifier) = ArrayType(N, NatType)
-  private def xsT(N: NatIdentifier) = ArrayType(N, int)
   private def histosT(N: NatIdentifier, M: NatIdentifier) = ArrayType(N, ArrayType(M, int))
 
   val add = fun(x => fun(a => x + a))
@@ -80,28 +76,6 @@ class simpleHisto extends shine.test_util.TestsWithExecutor {
 
     gen.OpenCLKernel(simpleHistoTest)
   }
-
-  test("Idx Test") {
-
-    val idxTest = nFun(n => nFun(i => fun(xsT(n))(xs =>
-      xs |>
-      mapSeq(
-        fun(x => x + idx(lidx(i, n), xs))
-      )
-    )))
-
-    gen.OpenCLKernel(idxTest)
-  }
-
-  /*
-  test("Set Test") {
-
-    val setTest = nFun(n => nFun(i => fun(xsT(n))(xs =>
-      SetVal(xs, lidx(i, n), l(5))
-    )))
-
-    gen.OpenCLKernel(setTest)
-  }*/
 
   /* Deprecated, will be removed later
   test("Simplest Histogramm Test") {
