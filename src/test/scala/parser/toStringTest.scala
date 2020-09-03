@@ -1,7 +1,5 @@
 package parser
-import parser.lexer.ArrayType
-import parser.lexer.ArrayType
-import parser.lexer.{ArrayType, BoolType, DataK, DoubleType, FileReader, FloatTyp, FunctionTyp, GenericsTyp, Identifier, IdentifierType, IndexType, Location, Nat, Span, TupleType}
+import parser.lexer.{ArrayType, BoolType, DataK, DoubleType, FileReader, FloatTyp, FunctionTyp, GenericsTyp, Identifier, IndexType, Location, Nat, Span, TupleType}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers._
 
@@ -20,13 +18,13 @@ class toStringTest extends  AnyFlatSpec{
   }
 
   "toString" should " work in GenericExpression" in {
-    val identifier:IdentifierType = IdentifierType("PeterVogel_123")
+    val identifier="PeterVogel_123"
     val l:GenericsTyp = new GenericsTyp(new Identifier(identifier, location), new DataK(), new DoubleType())
     l.toString should equal("( " + identifier.toString() + " : <dataKind> ) -> <Double>")
   }
 
   "toString" should " work in ToupleTypes" in {
-    val identifier:IdentifierType = IdentifierType("PeterVogel_123")
+    val identifier="PeterVogel_123"
     val l:GenericsTyp = new GenericsTyp(new Identifier(identifier, location), new DataK(), new DoubleType())
     val t:TupleType = new TupleType(l, new FloatTyp())
     t.toString should equal("( ( " + identifier.toString() + " : <dataKind> ) -> <Double> , <Float> )")

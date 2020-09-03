@@ -1,7 +1,7 @@
 package parser
 
 import parser.lexer.AddrSpaceType
-import parser.lexer.{AddrSpaceType, BinOp, FileReader, IdentifierType, Location, OpType, Span}
+import parser.lexer.{AddrSpaceType, BinOp, FileReader, Location, OpType, Span}
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.flatspec.AnyFlatSpec
 class matchesToken extends  AnyFlatSpec {
@@ -152,36 +152,8 @@ class matchesToken extends  AnyFlatSpec {
     }
 
   "IdentifierType" should "be like <Identifier>::=[<leer>] <Buchstaben>{<Buchstaben>|<Ziffer>| _ }" in {
-    val identifier:IdentifierType = IdentifierType("PeterVogel_123")
-    identifier.identifier should be ("PeterVogel_123")
-  }
-
-  "IdentifierType-Excpetion" should "is not like <Identifier>::=[<leer>] <Buchstaben>{<Buchstaben>|<Ziffer>| _ }" in {
-    val thrown = intercept[Exception] {
-      IdentifierType("PeterVogel!_123")
-    }
-    thrown.getMessage should equal ("requirement failed: has not the preffered structure")
-  }
-
-  "IdentifierType-Excpetion2" should "is not like <Identifier>::=[<leer>] <Buchstaben>{<Buchstaben>|<Ziffer>| _ }" in {
-    val thrown = intercept[Exception] {
-      IdentifierType("123Hase")
-    }
-    thrown.getMessage should equal ("requirement failed: has not the preffered structure")
-  }
-
-  "IdentifierType-Excpetion3" should "is not like <Identifier>::=[<leer>] <Buchstaben>{<Buchstaben>|<Ziffer>| _ }" in {
-    val thrown = intercept[Exception] {
-      IdentifierType("_Heinz")
-    }
-    thrown.getMessage should equal ("requirement failed: has not the preffered structure")
-  }
-
-  "IdentifierType-Excpetion" should "not be empty" in {
-    val thrown = intercept[Exception] {
-      IdentifierType("")
-    }
-    thrown.getMessage should equal ("requirement failed: String is empty")
+    val identifier="PeterVogel_123"
+    identifier should be ("PeterVogel_123")
   }
 
   "AdresspaceType" should "be Global, Local, Private oder Constant" in {

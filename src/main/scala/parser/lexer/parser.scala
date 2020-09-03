@@ -1,6 +1,5 @@
 package parser.lexer
 
-import rise.core.Expr
 import rise.core.{semantics => rS}
 import rise.core.{types => rt}
 import rise.{core => r}
@@ -42,6 +41,7 @@ object parse {
   final case class SExpr(expr: r.Expr) extends SyntaxElement
 
   final case class SType(t: r.types.Type) extends SyntaxElement
+  final case class SPrim(prim: r.Primitive) extends SyntaxElement
 
   type ParseState = (List[Token], List[SyntaxElement])
 
@@ -156,7 +156,27 @@ object parse {
     val (tokens, parsedExprs) = parseState
     val nextToken :: restTokens = tokens
 
-    Some(parseState) || parseLambda || parseApp || parseBinOperatorAnnotation || parseUnOperatorAnnoation || parseBracesAnnotation || parseIdent || parseNumber
+    Some(parseState) || parseLambda //|| parseApp || parseBinOperatorAnnotation || parseUnOperatorAnnoation || parseBracesAnnotation || parseIdent || parseNumber
+  }
+
+  def parseUnOperatorAnnotation(parseState: ParseState): Option[ParseState] = {
+    val (tokens, parsedSynElems) = parseState
+    val nextToken :: restTokens = tokens
+
+    val p = nextToken match {
+      case UnOp(un, _) => un match {
+        case OpType.UnaryOpType.NEG => Some((restTokens, SPrim(r.primitives.Neg()()) :: parsedSynElems))
+      }
+      case _ => None
+    }
+
+
+    //      if ( parsedExprs is with type) { } else {}
+    p match {
+      case Some(pState) => Some(pState)
+      case None => None
+    }
+
   }
 
   def parseNumber(parseState: ParseState): Option[ParseState] = {

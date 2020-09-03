@@ -1,6 +1,5 @@
 package parser.lexer
 
-import java.io._
 
 import OpType.{BinOpType, UnaryOpType}
 
@@ -135,10 +134,13 @@ case class RecognizeLexeme(fileReader: FileReader){
 
   private def lexer(): List[Token] = {
     val list:List[Either[PreAndErrorToken, Token]] = lexerLambda(0,0, Nil)._1
-    val l:List[Token] = Nil
+    var l:List[Token] = Nil
     for(i <- list){
       i match {
-        case Right(a) => a :: l
+        case Right(a) => {
+          l= l.::(a)
+          println("nextToken: " + a.toString)
+        }
         case Left(a) => a.throwException()
       }
     }
