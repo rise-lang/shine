@@ -457,8 +457,9 @@ private class InferAccessAnnotation {
       }
 
       case roclp.SetVal()  => p.t match {
-        case (dt1: rt.DataType) ->: (dt2: rt.DataType) ->: (dt3: rt.DataType) ->: (dt4: rt.DataType) =>
-          expT(dt1, read) ->: expT(dt2, read) ->: expT(dt3, read) ->: expT(dt4, read)
+        case rt.ArrayType(n, dt) ->: rt.IndexType(_) ->: (_: rt.DataType) ->: rt.ArrayType(_, _) =>
+          expT(rt.ArrayType(n, dt), read) ->: expT(rt.IndexType(n), read)->:
+            expT(dt, read) ->: expT(rt.ArrayType(n, dt), read)
         case _ => error()
       }
 

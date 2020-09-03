@@ -215,7 +215,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
         case _ => error(s"Expected a C-Integer-Expression on the path.")
       }
 
-      case SetVal(n, dt, e, i, x) => OpenCLCodeGen.codeGenSetVal(n, dt, e, i, x, env, path, cont)
+      case SetVal(_, _, e, i, x) => OpenCLCodeGen.codeGenSetVal(e, i, x, env, path, cont)
 
       case _ => super.exp(phrase, env, path, cont)
     }
@@ -473,9 +473,7 @@ class CodeGenerator(override val decls: CCodeGenerator.Declarations,
       }
     }
 
-    def codeGenSetVal(n: Nat,
-                      dt: DataType,
-                      e: Phrase[ExpType],
+    def codeGenSetVal(e: Phrase[ExpType],
                       i: Phrase[ExpType],
                       x: Phrase[ExpType],
                       env: Environment,

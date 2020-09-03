@@ -28,6 +28,8 @@ class SetVal extends shine.test_util.Tests {
         mapSeq(fun(x => x)) |>
         toGlobal |>
       setVal(lidx(i, n), l(5)) |>
+        mapSeq(fun(x => x)) |>
+        toGlobal |>
         mapSeq(fun(x => x))
     )))
 
