@@ -24,7 +24,10 @@ class SetVal extends shine.test_util.Tests {
   test("Set Test") {
 
     val setTest = nFun(n => nFun(i => fun(xsT(n))(xs =>
-      setVal(xs, lidx(i, n), l(5)) |>
+      generate(fun(IndexType(n))(_ => l(0))) |>
+        mapSeq(fun(x => x)) |>
+        toGlobal |>
+      setVal(lidx(i, n), l(5)) |>
         mapSeq(fun(x => x))
     )))
 

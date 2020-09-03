@@ -39,7 +39,18 @@ final case class SetVal(n: Nat,
   override def prettyPrint: String =
     s"(${PrettyPhrasePrinter(array)})[${PrettyPhrasePrinter(index)}] = ${PrettyPhrasePrinter(value)}"
 
-  override def xmlPrinter: Elem = ???
+  override def xmlPrinter: Elem =
+    <set n={ToString(n)} dt={ToString(dt)}>
+      <input type={ToString(ExpType(ArrayType(n, dt), read))}>
+        {Phrases.xmlPrinter(array)}
+      </input>
+      <index type={ToString(ExpType(int, read))}>
+        {Phrases.xmlPrinter(index)}
+      </index>
+      <value type={ToString(ExpType(dt, read))}>
+        {Phrases.xmlPrinter(value)}
+      </value>
+    </set>
 
   override def acceptorTranslation(A: Phrase[AccType])(
     implicit context: TranslationContext
@@ -56,7 +67,7 @@ final case class SetVal(n: Nat,
   }
 }
 
-/*
+
 object SetVal {
   def apply(array: Phrase[ExpType], index: Phrase[ExpType], value: Phrase[ExpType]): SetVal = {
     (array.t, index.t, value.t) match {
@@ -68,4 +79,4 @@ object SetVal {
       case x => error(x.toString, "(exp[n.dt], exp[idx(n)], exp[dt])")
     }
   }
-}*/
+}
