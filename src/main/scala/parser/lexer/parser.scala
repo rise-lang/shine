@@ -64,7 +64,7 @@ object parse {
 
       nextToken match {
         case Backslash(_) =>
-        case _ => throw new Exception("not a backslash")
+        case _ => None
       }
 
       Some((restTokens, parsedExprs))
@@ -76,7 +76,7 @@ object parse {
 
       nextToken match {
         case Identifier(name, _) =>
-          Some((restTokens, SExpr(r.Identifier(name) :: parsedSynElems)))
+          Some((restTokens, SExpr(r.Identifier(name)()) :: parsedSynElems))
         case _ => None
       }
     }
@@ -88,9 +88,9 @@ object parse {
       colonToken match {
         case Colon(_) => {
           //if a type Annotation exist, we set the type new of the Identifier
-          val t = typeToken match {
-            case Type(t, _) => {
-              val t = t match {
+          typeToken match {
+            case Type(typ, _) => {
+              val t:Option[rt.Type] = typ match {
                 case ShortTyp() => Some(rt.i8)
                 case IntTyp() => Some(rt.i32)
                 case FloatTyp() => Some(rt.f32)
@@ -109,16 +109,16 @@ object parse {
       }
     }
 
-  def parseArrow(parseState: ParseState): ParseState = {
+  def parseArrow(parseState: ParseState): Option[ParseState] = {
     val (tokens, parsedExprs) = parseState
     val nextToken :: restTokens = tokens
 
     nextToken match {
       case Arrow(_) =>
-      case _ => throw new Exception("not an arrow")
+      case _ => None
     }
 
-    (restTokens, parsedExprs)
+    Some((restTokens, parsedExprs))
   }
 
   /*
@@ -126,7 +126,8 @@ object parse {
   the syntax-Tree has on top an Lambda-Expression
    */
   def parseLambda(parseState: ParseState): Option[ParseState] = {
-    val (restTokens, parsedExprs): (List[Token], List[SyntaxElement]) =
+    val (tokenList, _) = parseState
+    val p =
       Some((tokenList, Nil)) |>
         parseBackslash |>
         parseIdent |>
@@ -135,8 +136,11 @@ object parse {
     //parseExpression
 
     //      if ( parsedExprs is with type) { } else {}
-    val p: ParseState = (restTokens, parsedExprs)
-    Some(parseState)
+    p match {
+      case Some(pState) => Some(pState)
+      case None => None
+    }
+
   }
 
   def parseExpression(parseState: ParseState): ParseState = {
