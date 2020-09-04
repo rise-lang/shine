@@ -1,7 +1,6 @@
 package parser.lexer
 
-import rise.core.{semantics => rS}
-import rise.core.{types => rt}
+import rise.core.{Lambda, semantics => rS, types => rt}
 import rise.{core => r}
 
 object parse {
@@ -9,8 +8,10 @@ object parse {
   /*
    * Precondition: Only valid Tokens in tokenList.
    */
-  //  def apply(tokenList: List[Token]): Expr = {
-  //    val shineLambda = parseLambda()
+    def apply(tokenList: List[Token]): Expr = {
+      val parseState: ParseState = (tokenList, Nil)
+      val shineLambda = parseLambda(parseState)
+    }
   //
   //    def checkBracesNumber(tokenList: List[Token]): Unit = {
   //      val list: List[Either[PreAndErrorToken, Token]] = tokens
@@ -59,6 +60,8 @@ object parse {
       }
     }
   }
+
+
 
 
   //_________________________________________________________Lambda
@@ -142,7 +145,26 @@ object parse {
 
     //      if ( parsedExprs is with type) { } else {}
     p match {
-      case Some(pState) => Some(pState)
+      case Some(pState) => {
+        val (tokens, parsedExprs) = parseState
+        val expr :: maybeTypeOrIdent  :: restExprs= parsedExprs
+        val e: r.Expr = expr match {
+          case SExpr(expr) => expr
+          case SPrim(prim) => prim
+          case SType(t) => throw new Exception("not type expected")
+        }
+        maybeTypeOrIdent match {
+          case SType(t) => {
+              val ident :: rExpr = restExprs
+              ident match {
+                case SExpr(r.Identifier(a)) => Some(tokens, SExpr(Lambda(r.Identifier(a)(), e)(t))::rExpr)
+                case _ => None
+              }
+          }
+          case SExpr(r.Identifier(a)) => Some(tokens, SExpr(Lambda(r.Identifier(a)(), e)()):: restExprs)
+          case _ => None
+        }
+      }
       case None => None
     }
 
