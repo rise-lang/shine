@@ -132,14 +132,13 @@ object parse {
   the syntax-Tree has on top an Lambda-Expression
    */
   def parseLambda(parseState: ParseState): Option[ParseState] = {
-    val (tokenList, _) = parseState
     val p =
-      Some((tokenList, Nil)) |>
+      Some(parseState) |>
         parseBackslash |>
         parseIdent |>
         parseMaybeTypeAnnotation |>
-        parseArrow //|>
-    //parseExpression
+        parseArrow |>
+        parseExpression
 
     //      if ( parsedExprs is with type) { } else {}
     p match {
@@ -153,10 +152,48 @@ object parse {
   //_________________________________________________________Expres
 
   def parseExpression(parseState: ParseState): Option[ParseState] = {
-    val (tokens, parsedExprs) = parseState
-    val nextToken :: restTokens = tokens
+    Some(parseState) || parseLambda || parseApp || parseBinOperatorAnnotation || parseUnOperatorAnnotation || parseBracesAnnotation || parseIdent || parseNumber
+  }
 
-    Some(parseState) || parseLambda //|| parseApp || parseBinOperatorAnnotation || parseUnOperatorAnnoation || parseBracesAnnotation || parseIdent || parseNumber
+  def parseBracesAnnotation(parseState: ParseState): Option[ParseState] = {
+    val p =
+      Some(parseState)  |>
+        parseLeftBrace  |>
+        parseExpression |>
+        parseRightBrace
+
+    //      if ( parsedExprs is with type) { } else {}
+    p match {
+      case Some(pState) => Some(pState)
+      case None => None
+    }
+  }
+
+  def parseBinOperatorAnnotation(parseState: ParseState): Option[ParseState] = {
+    val p =
+      Some(parseState)  |>
+        parseExpression |>
+        parseBinOperator |>
+        parseExpression
+
+    //      if ( parsedExprs is with type) { } else {}
+    p match {
+      case Some(pState) => Some(pState)
+      case None => None
+    }
+  }
+
+  def parseApp(parseState: ParseState): Option[ParseState] = {
+    val p =
+      Some(parseState)  |>
+        parseExpression |>
+        parseExpression
+
+    //      if ( parsedExprs is with type) { } else {}
+    p match {
+      case Some(pState) => Some(pState)
+      case None => None
+    }
   }
 
   def parseUnOperatorAnnotation(parseState: ParseState): Option[ParseState] = {
@@ -166,6 +203,7 @@ object parse {
     val p = nextToken match {
       case UnOp(un, _) => un match {
         case OpType.UnaryOpType.NEG => Some((restTokens, SPrim(r.primitives.Neg()()) :: parsedSynElems))
+        case OpType.UnaryOpType.NOT => Some((restTokens, SPrim(r.primitives.Not()()) :: parsedSynElems))
       }
       case _ => None
     }
@@ -173,7 +211,7 @@ object parse {
 
     //      if ( parsedExprs is with type) { } else {}
     p match {
-      case Some(pState) => Some(pState)
+      case Some(pState) => Some(pState) |> parseExpression
       case None => None
     }
 
@@ -192,6 +230,46 @@ object parse {
         Some((restTokens, SExpr(r.Literal(rS.FloatData(number))) :: parsedSynElems))
       case F64(number, _) =>
         Some((restTokens, SExpr(r.Literal(rS.DoubleData(number))) :: parsedSynElems))
+      case _ => None
+    }
+  }
+
+
+  def parseBinOperator(parseState: ParseState): Option[ParseState] = {
+    val (tokens, parsedSynElems) = parseState
+    val nextToken :: restTokens = tokens
+
+    nextToken match {
+      case BinOp(op, _) => op match {
+        case OpType.BinOpType.ADD => Some((restTokens, SPrim(r.primitives.Add()()) :: parsedSynElems))
+        case OpType.BinOpType.DIV => Some((restTokens, SPrim(r.primitives.Div()()) :: parsedSynElems))
+        case OpType.BinOpType.EQ => Some((restTokens, SPrim(r.primitives.Equal()()) :: parsedSynElems))
+        case OpType.BinOpType.GT => Some((restTokens, SPrim(r.primitives.Gt()()) :: parsedSynElems))
+        case OpType.BinOpType.LT => Some((restTokens, SPrim(r.primitives.Lt()()) :: parsedSynElems))
+        case OpType.BinOpType.MOD => Some((restTokens, SPrim(r.primitives.Mod()()) :: parsedSynElems))
+        case OpType.BinOpType.MUL => Some((restTokens, SPrim(r.primitives.Mul()()) :: parsedSynElems))
+        case OpType.BinOpType.SUB => Some((restTokens, SPrim(r.primitives.Sub()()) :: parsedSynElems))
+      }
+      case _ => None
+    }
+  }
+
+  def parseLeftBrace(parseState: ParseState): Option[ParseState] = {
+    val (tokens, parsedSynElems) = parseState
+    val nextToken :: restTokens = tokens
+
+    nextToken match {
+      case LBrace(_) => Some((restTokens, parsedSynElems))
+      case _ => None
+    }
+  }
+
+  def parseRightBrace(parseState: ParseState): Option[ParseState] = {
+    val (tokens, parsedSynElems) = parseState
+    val nextToken :: restTokens = tokens
+
+    nextToken match {
+      case RBrace(_) => Some((restTokens, parsedSynElems))
       case _ => None
     }
   }
