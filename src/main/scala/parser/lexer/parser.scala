@@ -3,6 +3,7 @@ package parser.lexer
 import rise.core.{Lambda, semantics => rS, types => rt}
 import rise.{core => r}
 import shine.C.AST.DefaultImplementations.BinaryExpr
+import shine.C.AST.UnaryExpr
 
 object parse {
 
@@ -208,18 +209,13 @@ object parse {
 
     expr2 match {
       case SExpr(e2) => expr1 match {
-        case SExpr(e1) =>  binOp match { //Todo: I want to create a Tree but I have problems to create a Tree for BinaryOperators
-          case SPrim(prim) => Some((tokens, SExpr(BinaryExpr(e1, binOp, e2).)  :: restExpr))
+        case SExpr(e1) =>  binOp match { //Todo: I want to create a Tree but I have problems to create a Tree for BinaryOperators SExpr(BinaryExpr(e1, prim, e2))
+          case SPrim(prim) => Some((tokens, SExpr(r.substitute.exprInExpr(e1, prim, e2))  :: restExpr)) //Todo: What is r.substitute.exprInExpr(e1, prim, e2) ?
+          case _ => None
         }
         case _ => None
       }
       case _ => None
-    }
-
-    //      if ( parsedExprs is with type) { } else {}
-    p match {
-      case Some(pState) => Some(pState)
-      case None => None
     }
   }
 
@@ -257,12 +253,25 @@ object parse {
     }
 
 
-    //      if ( parsedExprs is with type) { } else {}
-    p match {
-      case Some(pState) => Some(pState) |> parseExpression
+    val (tokens, parsedExprs):ParseState = p match {
+      case Some(parseState) => parseState
       case None => None
     }
+    val expr :: unOp :: restExpr= parsedExprs
 
+    val e = expr match {
+      case SExpr(e) =>  unOp match {
+          case SPrim(r.primitives.Neg()) => SExpr(r.TypedDSL.neg(e))
+          case SPrim(r.primitives.Not()) => SExpr(r.DSL.not(e))
+          case _ => None
+        }
+      case _ => None
+    }
+
+    e match {
+      case SExpr(ex) => Some((tokens, ex:: restExpr))
+      case _ => None
+    }
   }
 
   def parseNumber(parseState: ParseState): Option[ParseState] = {
