@@ -2,15 +2,17 @@ package parser.lexer
 
 import rise.core.{Lambda, semantics => rS, types => rt}
 import rise.{core => r}
+import shine.C.AST.DefaultImplementations.BinaryExpr
 
 object parse {
 
   /*
    * Precondition: Only valid Tokens in tokenList.
    */
-    def apply(tokenList: List[Token]): Expr = {
+    def apply(tokenList: List[Token]): r.Expr = {
       val parseState: ParseState = (tokenList, Nil)
       val shineLambda = parseLambda(parseState)
+
     }
   //
   //    def checkBracesNumber(tokenList: List[Token]): Unit = {
@@ -198,6 +200,22 @@ object parse {
         parseBinOperator |>
         parseExpression
 
+    val (tokens, parsedExprs) = p match {
+      case Some(parseState) => parseState
+      case None => None
+    }
+    val expr2 :: binOp  :: expr1 :: restExpr= parsedExprs
+
+    expr2 match {
+      case SExpr(e2) => expr1 match {
+        case SExpr(e1) =>  binOp match { //Todo: I want to create a Tree but I have problems to create a Tree for BinaryOperators
+          case SPrim(prim) => Some((tokens, SExpr(BinaryExpr(e1, binOp, e2).)  :: restExpr))
+        }
+        case _ => None
+      }
+      case _ => None
+    }
+
     //      if ( parsedExprs is with type) { } else {}
     p match {
       case Some(pState) => Some(pState)
@@ -211,10 +229,18 @@ object parse {
         parseExpression |>
         parseExpression
 
-    //      if ( parsedExprs is with type) { } else {}
-    p match {
-      case Some(pState) => Some(pState)
+    val (tokens, parsedExprs): ParseState = p match {
+      case Some(parseState) => parseState
       case None => None
+    }
+    val expr2 :: expr1 :: restExpr= parsedExprs
+
+    expr2 match {
+      case SExpr(e2) => expr1 match {
+        case SExpr(e1) =>  Some((tokens, SExpr(r.App(e1, e2)())  :: restExpr))
+        case _ => None
+      }
+      case _ => None
     }
   }
 
@@ -263,7 +289,7 @@ object parse {
 
     nextToken match {
       case BinOp(op, _) => op match {
-        case OpType.BinOpType.ADD => Some((restTokens, SPrim(r.primitives.Add()()) :: parsedSynElems))
+        case OpType.BinOpType.ADD => Some((restTokens, SPrim(r.primitives.Add()()) :: parsedSynElems))  //Todo: Or r.DSL.add ?
         case OpType.BinOpType.DIV => Some((restTokens, SPrim(r.primitives.Div()()) :: parsedSynElems))
         case OpType.BinOpType.EQ => Some((restTokens, SPrim(r.primitives.Equal()()) :: parsedSynElems))
         case OpType.BinOpType.GT => Some((restTokens, SPrim(r.primitives.Gt()()) :: parsedSynElems))
