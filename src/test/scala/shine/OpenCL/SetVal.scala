@@ -27,11 +27,11 @@ class SetVal extends shine.test_util.Tests {
       generate(fun(IndexType(n))(_ => l(0))) |>
         mapSeq(fun(x => x)) |>
         toGlobal |>
+        letf(arr =>
+          arr |>
       setVal(lidx(i, n), l(5)) |>
-        mapSeq(fun(x => x)) |>
-        toGlobal |>
         mapSeq(fun(x => x))
-    )))
+    ))))
 
     gen.OpenCLKernel(setTest)
   }

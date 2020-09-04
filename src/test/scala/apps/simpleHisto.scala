@@ -58,7 +58,9 @@ class simpleHisto extends shine.test_util.TestsWithExecutor {
           fun(histo => // numBins.int
             fun(i => // nat
               histo |>
-              mapSeq(fun(histo => histo + l(1))) // int
+                setVal(lidx(n, numBins), l(5)) |>
+                mapSeq(id)
+              //mapSeq(fun(histo => histo + l(1))) // int
               // if (i == 0) set(a, lidx(0, numBins), a[lidx(0, numBins)]+1)) else
               //   if (i == 1) set(a, lidx(1, numBins), a[lidx(1, numBins)]+1)) else
               //     if (i == 2) set(a, lidx(2, numBins), a[lidx(2, numBins)]+1))
