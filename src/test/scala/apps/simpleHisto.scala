@@ -54,7 +54,15 @@ class simpleHisto extends shine.test_util.TestsWithExecutor {
       is |> // n.NatType
       split(chunkSize) |> // n/chunkSize.chunkSize.NatType
       mapGlobal(
-        oclReduceSeq(AddressSpace.Global)(
+        fun(chunk =>
+          reduceByIndexSeq(add)(
+            generate(fun(IndexType(numBins))(_ => l(0)))
+          )(chunk)(
+            generate(fun(IndexType(chunkSize))(_ => l(1)))
+          )
+        ) >> mapSeq(id)
+
+        /*oclReduceSeq(AddressSpace.Global)(
           fun(histo => // numBins.int
             fun(i => // nat
               histo |>
@@ -69,7 +77,8 @@ class simpleHisto extends shine.test_util.TestsWithExecutor {
         )(
           generate(fun(IndexType(numBins))(_ => l(0))) |> // numBins.int
           mapSeq(id) // numBins.int
-        ) >> mapSeq(id)
+        ) >> mapSeq(id)*/
+
       ) |> // n/chunkSize.numBins.int
       toGlobal |>
       // reduce all subhistograms

@@ -14,15 +14,10 @@ class ReduceByIndexSeq extends shine.test_util.Tests {
 
   test("Reduce By Index Seq Test") {
 
-    val reduceByIndexSeqTest = nFun(n => nFun(k => fun(isT(n))(is => fun(xsT(n))(xs =>
-      xs |>
-      reduceByIndexSeq(add)(
-        generate(fun(IndexType(n))(_ => l(0))) |>
-          mapSeq(fun(x => x)) |>
-          toGlobal
-      )(is) |>
+    val reduceByIndexSeqTest = nFun(n => nFun(k => fun(xsT(k))(hist => fun(isT(n))(is => fun(xsT(n))(xs =>
+      reduceByIndexSeq(add)(hist)(is)(xs) |>
         mapSeq(fun(x => x))
-    ))))
+    )))))
 
     gen.OpenCLKernel(reduceByIndexSeqTest)
   }
