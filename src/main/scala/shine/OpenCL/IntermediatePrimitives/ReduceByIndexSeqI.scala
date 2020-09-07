@@ -13,6 +13,7 @@ import shine.OpenCL.DSL._
 object ReduceByIndexSeqI {
   def apply(n: Nat,
             k: Nat,
+            histAddrSpace: shine.DPIA.Types.AddressSpace,
             dt: DataType,
             f: Phrase[ExpType ->: ExpType ->: AccType ->: CommType],
             hist: Phrase[ExpType],
@@ -20,10 +21,10 @@ object ReduceByIndexSeqI {
             xs: Phrase[ExpType],
             out: Phrase[ExpType ->: CommType])
            (implicit context: TranslationContext): Phrase[CommType] = {
-    val adj = AdjustArraySizesForAllocations(hist, ArrayType(k, dt), AddressSpace.Global)
+    val adj = AdjustArraySizesForAllocations(hist, ArrayType(k, dt), histAddrSpace)
 
     comment("reduceByIndexSeq") `;`
-      `new` (AddressSpace.Global) (adj.dt, accumulator =>
+      `new` (histAddrSpace) (adj.dt, accumulator =>
         //TODO: Is there a better way than copying the whole input histogram?
         `for`(k, j => acc(hist `@` j)(adj.accF(accumulator.wr) `@` j)) `;`
           `for`(n, j =>

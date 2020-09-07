@@ -633,17 +633,19 @@ object fromRise {
               SetVal(n, t, e, i, x))))
 
       case (ocl.ReduceByIndexSeq(),
+      aFunT(a,
         (expT(t, `read`) ->: expT(_, `read`) ->: expT(_, `write`)) ->:
           expT(ArrayType(k, _), `read`) ->:
             expT(ArrayType(n, `NatType`), `read`) ->:
               expT(ArrayType(_, _), `read`) ->:
-                expT(ArrayType(_, _), `read`)) =>
+                expT(ArrayType(_, _), `read`))) =>
+        depFun[AddressSpaceKind](a)(
           fun[ExpType ->: ExpType ->: ExpType](
             expT(t, read) ->: expT(t, read) ->: expT(t, write), f =>
               fun[ExpType](expT(k`.`t, read), h =>
                 fun[ExpType](expT(n`.`NatType, read), i =>
                   fun[ExpType](expT(n`.`t, read), x =>
-                    ReduceByIndexSeq(n, k, t, f, h, i, x)))))
+                    ReduceByIndexSeq(n, k, a, t, f, h, i, x))))))
 
       case (core.Reduce(), _) =>
         throw new Exception(s"$p has no implementation")

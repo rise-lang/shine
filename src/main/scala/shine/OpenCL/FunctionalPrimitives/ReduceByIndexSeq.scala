@@ -14,6 +14,7 @@ import scala.xml.Elem
 final case class ReduceByIndexSeq(
                                   n: Nat,
                                   k: Nat,
+                                  histAddrSpace: shine.DPIA.Types.AddressSpace,
                                   dt: DataType,
                                   f: Phrase[ExpType ->: ExpType ->: ExpType],
                                   hist: Phrase[ExpType],
@@ -30,7 +31,7 @@ final case class ReduceByIndexSeq(
   override def visitAndRebuild(
                                 fun: VisitAndRebuild.Visitor
                               ): Phrase[ExpType] = {
-    ReduceByIndexSeq(fun.nat(n), fun.nat(k), fun.data(dt),
+    ReduceByIndexSeq(fun.nat(n), fun.nat(k), fun.addressSpace(histAddrSpace), fun.data(dt),
       VisitAndRebuild(f, fun), VisitAndRebuild(hist, fun),
       VisitAndRebuild(is, fun), VisitAndRebuild(xs, fun))
   }
@@ -38,6 +39,7 @@ final case class ReduceByIndexSeq(
   override def eval(s: Store): Data = ???
 
   override def prettyPrint: String =
+    s"${this.getClass.getSimpleName} (${histAddrSpace})" +
       s"(${PrettyPhrasePrinter(f)}) (${PrettyPhrasePrinter(hist)})" +
       s"(${PrettyPhrasePrinter(is)}) (${PrettyPhrasePrinter(xs)})"
 
@@ -53,7 +55,7 @@ final case class ReduceByIndexSeq(
     con(xs)(λ(expT(n`.`dt, read))(X =>
       con(is)(λ(expT(n`.`NatType, read))(I =>
         con(hist)(λ(expT(k`.`dt, read))(H =>
-      ReduceByIndexSeqI(n, k, dt,
+      ReduceByIndexSeqI(n, k, histAddrSpace, dt,
         λ(expT(dt, read))(x =>
           λ(expT(dt, read))(y =>
             λ(accT(dt))(o => acc( f(x)(y) )( o )))),
@@ -61,7 +63,8 @@ final case class ReduceByIndexSeq(
   }
 
   override def xmlPrinter: Elem =
-    <reduce n={ToString(n)} k={ToString(n)} dt={ToString(dt)}>
+    <reduce n={ToString(n)} addrSpace={ToString(histAddrSpace)}
+            k={ToString(n)} dt={ToString(dt)}>
       <f type={ToString(
         ExpType(dt, read) ->: (ExpType(dt, read) ->: ExpType(dt, write)))}>
         {Phrases.xmlPrinter(f)}
@@ -75,6 +78,9 @@ final case class ReduceByIndexSeq(
       <xs type={ToString(ExpType(ArrayType(n, dt), read))}>
         {Phrases.xmlPrinter(is)}
       </xs>
-    </reduce>
+    </reduce>.copy(label = {
+      val name = this.getClass.getSimpleName
+      Character.toLowerCase(name.charAt(0)) + name.substring(1)
+    })
 
 }

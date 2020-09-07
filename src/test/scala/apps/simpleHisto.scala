@@ -55,7 +55,7 @@ class simpleHisto extends shine.test_util.TestsWithExecutor {
       split(chunkSize) |> // n/chunkSize.chunkSize.NatType
       mapGlobal(
         fun(chunk =>
-          reduceByIndexSeq(add)(
+          reduceByIndexSeq(AddressSpace.Global)(add)(
             generate(fun(IndexType(numBins))(_ => l(0)))
           )(chunk)(
             generate(fun(IndexType(chunkSize))(_ => l(1)))
